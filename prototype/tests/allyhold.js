@@ -19,6 +19,12 @@ Kit.suite(({ok})=>{
    for(const u of b.units)if(u.team===0)u.hp=0;t.checkBattleOver();ok(!b.over,'your army down: the battle goes on while the watch fights');
    for(const u of b.units)if(t.battleEnemy(0,u))u.hp=0;t.checkBattleOver();ok(b.over&&b.win&&b.byAllies,'the watch beats the bandits: won, by your allies');
    const rep=t.repOf?t.repOf(town.name):null;t.finishBattle();ok(/Victory/.test(document.getElementById('panel').innerHTML)&&/allies held the field/.test(document.getElementById('panel').innerHTML)&&!t.Captivity.held,'Victory: your allies held the field; no captivity')}
+  // (an army not at war with you, fighting your foes, fights on too (the owner, 2026-10-30); Skip to the end runs the rest at once)
+  {const {b,watch}=fight();b.sides.activate();const wt=watch[0].team,rel=b.sides.relation.bind(b.sides);b.sides.relation=(a,c)=>a===0&&c===wt||a===wt&&c===0?0:rel(a,c);
+   down(b);t.checkBattleOver();ok(!b.over&&b.allyOn&&b.sides.relation(0,wt)===0,'a neutral army fighting your foes: your army down, the battle goes on');
+   t.bhudSkip();const bar=document.getElementById('bSkip');ok(bar&&!bar.hidden&&bar.querySelector('[data-bskip]')&&/Skip to the end/.test(bar.textContent),'a bar says so, with Skip to the end');
+   const t0=performance.now();t.skipBattle();ok(b.over&&b.win&&b.byAllies,'skipped: the rest fought out at once ('+Math.round(performance.now()-t0)+' ms), the twelve beat the two');
+   t.finishBattle();ok(/Victory/.test(document.getElementById('panel').innerHTML)&&/the others held the field/.test(document.getElementById('panel').innerHTML)&&!t.Captivity.held,'Victory: the others held the field; no captivity')}
   // (they fall too: Defeat, through the escape roll)
   {const {b,watch}=fight();b.sides.activate();for(const u of b.units)if(u.team===0||watch.includes(u))u.hp=0;t.checkBattleOver();ok(b.over&&!b.win&&!b.byAllies,'the watch falls too: lost');
    window.Math.random=()=>.99;try{t.finishBattle()}finally{window.Math.random=rnd}ok(/Defeat/.test(document.getElementById('panel').innerHTML)&&t.Captivity.held,'Defeat: taken captive, as any lost battle');t.Captivity.held=null}

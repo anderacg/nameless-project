@@ -10,8 +10,12 @@ function parley(o,kind){
   showPanel('<h2>'+(lord?o.name+' is cornered':'The '+(o.kind==='raiders'?'raiders':o.kind==='bog'?'bog raiders':'bandits')+' are cornered')+'</h2>'+
     '<p>They ran from you, but you have caught them. '+n+' '+(lord?'soldiers of the '+FACS[o.fac].n:'fighters')+' (power '+o.power()+') against your '+partyPower()+'.</p>'+
     '<p class="muted">Call on them to yield ('+insight(['you cannot tell whether they would','they '+(ch>=50?'may well':'might')+' yield','about '+ch+'% they do'],'know the odds')+'; if not, they fight), attack at once, or let them go.</p><div class="btns">'+
-    dlgBtn('pl-yield',null,'Demand surrender',null,true)+dlgBtn('pl-fight',null,'Attack')+dlgBtn('pl-go',null,'Let them go')+'</div>');
+    dlgBtn('pl-yield',null,'Demand surrender',null,true)+dlgBtn('pl-fight',null,'Attack')+dlgBtn('pl-go',null,'Let them go')+'</div>'+
+    '<p class="muted" style="font-size:13px">'+YIELD_WHY+'</p>');
 }
+// what decides it, said plainly (the owner, 2026-10-30: "just need explanations"); and why they would not, when they will not
+const YIELD_WHY='Who yields: they ran because they are under half your strength, but those near half of it still think they can fight their way out and seldom give up; the weaker they are, the likelier, and nearly all of a band a tenth of yours do. Your renown and Persuasion make it likelier.';
+const yieldNo=o=>{const r=o.power()/Math.max(1,partyPower());return r>=.35?'they are not beaten yet: near half your strength, they mean to fight their way out':r>=.2?'enough of them think they can still break through':'a few hard men among them will not kneel'};
 function parleyFight(o,kind){G.par=null;if(kind==='lord')return startEncounter({kind:'lord',ref:o,list:o.troops.slice(),mine:true});startEncounter({kind:'party',ref:o,n:o.n,list:o.troops.slice(),band:o.kind||'bandits',mine:true})}
 // they yield: take them prisoner, (bandits) take them into your band, or disarm them and let them go
 function parleyYield(){
@@ -53,7 +57,7 @@ function parleyAct(a,arg){
   const p=G.par;if(!p){closeDialog();return}const {o,kind}=p;
   if(a==='pl-fight')return parleyFight(o,kind);
   if(a==='pl-go'){o.cool=8;G.encCool=3;if(kind==='lord'){addHonor(o.fac,2,true);changeRel(o,RELATION.letGo,'you let them go')}else repNear(o.x,o.y,-2);mood('mercy');closeDialog();log(kind==='lord'?'You let '+o.name+' ride away.':'You let the band go. The roads stay dangerous.');return}
-  if(a==='pl-yield'){const y=Math.random()<yieldChance(o,kind);train('pers',y?6:2);if(y)return parleyYield();log((kind==='lord'?o.name:'The band')+' refuses to yield and draws steel.','bad');return parleyFight(o,kind)}
+  if(a==='pl-yield'){const y=Math.random()<yieldChance(o,kind);train('pers',y?6:2);if(y)return parleyYield();log((kind==='lord'?o.name:'The band')+' refuses to yield: '+yieldNo(o)+'.','bad');return parleyFight(o,kind)}
   if(a==='pl-cage'&&kind==='band'){const n=cage(o.troops),gold=rint(5,15)+o.n*2;P.gold+=gold;P.renown+=2;bandGone(o);G.par=null;return notice('Prisoners',n+' of them are bound and marched with you'+(o.n>n?'; the rest are disarmed and chased off':'')+'. You take '+gold+' gold they had stolen.','good')}
   if(a==='pl-join'&&kind==='band'&&RecruitPick.room())return RecruitPick.open();
   if(a==='pl-pick'&&kind==='band'&&p.take){const [k,d]=String(arg).split(':');return RecruitPick.step(k,+d)}

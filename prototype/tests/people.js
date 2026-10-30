@@ -58,6 +58,8 @@ try{
  // ---- cornered parties
  world();P.troops={hum_knight:8};P.prisoners={};const b={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b));
  ok(t.cornered(b,'band'),'a small band is afraid of a big one');t.meetBand(b);ok(G.par&&/cornered/.test(panel()),'catching a band that fled from you opens a parley');
+ ok(/Who yields/.test(panel())&&/Persuasion/.test(panel()),'the parley says what decides whether they yield (the owner, 2026-10-30)');
+ {const w=t.yieldNo({power:()=>t.partyPower()*.45}),f=t.yieldNo({power:()=>t.partyPower()*.05});ok(/fight their way out/.test(w)&&w!==f,'and a refusal says why: near half your strength, they mean to fight their way out')}
  fix(.01);t.act('pl-yield');unfix();ok(/throw down/.test(panel()),'it may yield');const pc=t.prisonerCount();t.act('pl-cage');
  ok(t.prisonerCount()===pc+2&&!t.bandits.includes(b),'and its fighters become your prisoners ('+pc+' → '+t.prisonerCount()+', cap '+t.prisonCap()+')');t.act('dlg-ok');
  const b2={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','spearman'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b2));world();t.meetBand(b2);fix(.01);t.act('pl-yield');unfix();

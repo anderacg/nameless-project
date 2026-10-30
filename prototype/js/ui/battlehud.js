@@ -165,8 +165,13 @@ function bhudTop(){
   $id('bStatus').textContent=B.over?(B.hunt?'Hunt over':B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.muster?.active?(B.paused?'Preparation paused · Space to continue':'Forming up · '+B.muster.done+'/'+B.muster.entries.length):B.ready?'Ready · Start Battle to begin':B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone · Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused · give your orders · Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
   {const b=$id('bAmove');if(b){b.classList.toggle('on',!!B.amArm);b.setAttribute('aria-pressed',String(!!B.amArm));b.disabled=!!B.deploy}}// (armed: commands.js armAttackMove)
-  bhudAbilities();bhudArmies();withdrawView.hud();
+  bhudAbilities();bhudArmies();withdrawView.hud();bhudSkip();
 }
+// (your army down, others fighting on for you: a bar saying so, and Skip to the end: sides.js skipBattle)
+function bhudSkip(){let el=document.getElementById('bSkip');const on=!!(B&&!B.over&&B.allyOn);
+  if(!el){if(!on)return;const top=document.querySelector('.btop');if(!top)return;el=document.createElement('div');el.id='bSkip';el.className='bwithdraw';el.setAttribute('role','status');top.appendChild(el);
+    el.addEventListener('click',e=>{if(e.target.closest('[data-bskip]'))skipBattle()})}
+  el.hidden=!on;if(on&&!el.innerHTML)el.innerHTML='<b>Your army is down</b> <em>The others fight on against your foes.</em> <button type="button" class="wgo" data-bskip>Skip to the end</button>';if(!on)el.innerHTML=''}
 // Army banners open a relationship view without changing selection or issuing an order.
 class BattleArmyHud{
  constructor(){
