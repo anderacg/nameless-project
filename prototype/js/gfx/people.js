@@ -25,6 +25,26 @@ const PEOPLE_T=[
   '.....LL.LM......',
   '.....F...F......',
   '................'];
+// The player's approved adventurer: open arms, a narrow belt and boots under a blue-green cloak.
+const PLAYER_HERO_T=[
+  '................',
+  '......112.......',
+  '.....12232......',
+  '.....2ssst......',
+  '.....1sexe......',
+  '.....1ttst......',
+  '......uuu.......',
+  '....abpqqcd.....',
+  '...abpqqrcdd....',
+  '...b.pnnr.d.....',
+  '...s.pnnr.s.....',
+  '...b.qoor.d.....',
+  '.....kllk.......',
+  '.....LL.LM......',
+  '.....F...F......',
+  '................'];
+const PLAYER_HERO_SHORT=PLAYER_HERO_T.filter((r,i)=>i!==9);
+const PLAYER_HERO_LOOK={cape:['#83a8ad','#456e78','#2d4b5b','#203040'],inner:'forest',outer:'leather'};
 // a dwarf: the same, a row shorter in the body
 const PEOPLE_T_SHORT=PEOPLE_T.filter((r,i)=>i!==9);
 const PEOPLE_OUT='#1a1c26',PEOPLE_SCAR='#c06a5a';
@@ -126,7 +146,7 @@ function lookOf(type,team,hero,v,cid,cg){
     else if(hw)o.weapon=hw.base==='spear'||hw.tag==='spear'?'spear':hw.base==='warhammer'||hw.icon==='club'?'hammer':hw.base==='dagger'||hw.icon==='dagger'?'dagger':hw.base==='axe'||hw.icon==='axe'?'axe':hw.base==='great'||hw.base==='greatsword'?'great':'sword';
     const body=hero?P.gear.body:cg&&cg.body,head=hero?P.gear.head:cg&&cg.head;
     if(body&&ITEMS[body]&&ITEMS[body].col)o.outer=ITEMS[body].col;if(head&&ITEMS[head]&&ITEMS[head].col){o.helm=hero?'crown':'kettle';o.helmC=ITEMS[head].col}}
-  if(hero){o.cape=true;o.beard=null;o.hair=R.hair[0]}
+  if(hero){o.playerStyle=true;o.cape=PLAYER_HERO_LOOK.cape;o.beard=R.beard?R.hair[0]:null;o.hair=R.hair[0];o.inner=PLAYER_HERO_LOOK.inner;o.helm=P.gear.head?'kettle':'bare';if(!P.gear.body)o.outer=PLAYER_HERO_LOOK.outer}
   return o;
 }
 // the letters' colours for a look
@@ -143,13 +163,16 @@ const STRIDE_RUN=[[3,10,2,11],[5,8,5,9],[4,9,3,11],[6,7,6,8]],RUN_BOB=[0,-2,0,-1
 const STRIDE_CLIMB=[[5,8,5,9],[5,9,5,10],[5,8,5,9],[4,9,4,10]],CLIMB_BOB=[0,-1,0,0],STRIDE_DESC=[[4,9,3,10],[5,8,5,9],[3,10,3,11],[6,8,6,8]],DESC_BOB=[0,0,1,0];
 /* a figure into grid g at (ox, oy): the template, then its head, shield and weapon. walk: -1 or 0-3; atk: -1 or 0-2 with style */
 function drawFigure(g,o,ox,oy,walk,style,atk,cut){
-  const run=walk>=4&&walk<8,climb=walk>=8&&walk<12,desc=walk>=12,T=o.short?PEOPLE_T_SHORT:PEOPLE_T,Lc=lettersOf(o),sh=o.short?1:0;
+  const run=walk>=4&&walk<8,climb=walk>=8&&walk<12,desc=walk>=12,T=o.playerStyle?(o.short?PLAYER_HERO_SHORT:PLAYER_HERO_T):(o.short?PEOPLE_T_SHORT:PEOPLE_T),Lc=lettersOf(o),sh=o.short?1:0;
   const bob=run?RUN_BOB[walk-4]:climb?CLIMB_BOB[walk-8]:desc?DESC_BOB[walk-12]:walk===1||walk===3||walk===-2?-1:0,lean=run?9:desc?6:0;
   // (climbing: bent double, the head two pixels forward and the shoulders one, all above the belt a pixel lower)
   // (bare hands: a frame of the rig, FIST_RIG: the head and the body each moved, the arms and legs drawn from their joints)
   const rig=cut==null&&!o.weapon&&!o.mount?FIST_STYLES.includes(style)&&atk>=0?FIST_RIG[style][atk]:o.guardUp&&!o.shield?FIST_RIG.guard[0]:null:null,
     rd=y=>!rig||y>=13-sh?null:y<7?rig.head:rig.body;
   const set=climb?(x,y,c)=>pset(g,ox+x+(y<6?2:y<9?1:0),oy+y+(y<9?1:0)+(y<13-sh?bob:0),c):(x,y,c)=>{const d=rd(y);pset(g,ox+x+(y<lean?1:0)+(d?d[0]:0),oy+y+(y<13-sh?bob:0)+(d?d[1]:0),c)};
+  if(o.playerStyle&&o.cape){const C=pal(o.cape),sway=walk>=0&&walk%4>=2?1:0;
+    for(let y=7;y<=12-sh;y++)for(let x=y===7?4:y===8?3:2;x<=4;x++)set(x+(y>=11?sway:0),y,C[x===4?1:x===3?2:3]);
+    set(2+sway,12-sh,C[2]);set(3+sway,12-sh,C[3])}
   if(rig)rigLimbs(g,o,ox,oy+bob,rig,sh,true);// (an arm behind the body first)
   T.forEach((row,y)=>{if(cut!=null&&y>cut)return;[...row].forEach((c,x)=>{if(c==='.'||c==='L'||c==='M'||c==='F'||rig&&y>=7&&(x<=4||x>=10))return;set(x,y+(o.short&&y>=9?0:0),Lc[c])})});// (rigged: the arms drawn apart)
   const ly=13-sh;
@@ -157,10 +180,11 @@ function drawFigure(g,o,ox,oy,walk,style,atk,cut){
   // (rigged: its legs drawn with its arms, rigLimbs)
   if(cut==null&&!(rig&&!o.robe)){if(o.robe){for(let x=4;x<=9;x++)set(x,ly,x<6?Lc.b:x<8?Lc.c:Lc.d);set(5,ly+1,Lc.d);set(8,ly+1,Lc.d)}
     else{const s=run?STRIDE_RUN[walk-4]:climb?STRIDE_CLIMB[walk-8]:desc?STRIDE_DESC[walk-12]:STRIDE[walk<0?2:walk],k=climb&&walk&1?1:0;/* (standing or breathing: the standing stride; climbing, the front knee up: k) */
-      set(s[0],ly,Lc.L);set(s[0]+1,ly,Lc.L);set(s[1],ly-k,Lc.L);set(s[1]+1,ly-k,Lc.M);set(s[2],ly+1,Lc.F);set(s[3],ly+1-k,Lc.F)}}
+      set(s[0],ly,Lc.L);set(s[0]+1,ly,Lc.L);set(s[1],ly-k,Lc.L);set(s[1]+1,ly-k,Lc.M);set(s[2],ly+1,Lc.F);set(s[3],ly+1-k,Lc.F);if(o.playerStyle){set(s[2]+1,ly+1,Lc.F);set(s[3]+1,ly+1-k,Lc.F)}}}
   // short hair: off the shoulders
   if(o.shortHair&&!o.robe){set(5,7,Lc.a);set(9,7,Lc.c);set(5,6,Lc.t)}
-  if(o.cape){const C=pal(o.cape===true?o.team:o.cape);for(let y=7;y<=12-sh;y++){set(2,y,C[2]);set(3,y,y===7?C[1]:C[2])}set(2,12-sh,C[3])}
+  if(o.cape&&!o.playerStyle){const C=pal(o.cape===true?o.team:o.cape);for(let y=7;y<=12-sh;y++){set(2,y,C[2]);set(3,y,y===7?C[1]:C[2])}set(2,12-sh,C[3])}
+  if(o.playerStyle){set(5,7,PPAL.gold[1]);set(7,12-sh,PPAL.gold[1])}
   const B=o.beard&&pal(o.beard);
   if(B){set(6,5,B[1]);set(7,5,B[1]);set(8,5,B[0]);set(9,5,B[1]);set(6,6,B[2]);set(7,6,B[1]);set(8,6,B[1]);set(9,6,B[2]);if(o.short){set(7,7,B[2]);set(8,7,B[3])}}
   if(o.ears){set(4,3,Lc.s);set(4,4,Lc.t)}
@@ -422,7 +446,7 @@ function mapFigure(o,f,mountCol){
     drawMapFigure(g,{...o,weapon:null,shield:null,cape:null},X+2,H0-3,-1,4);
     const Lc=lettersOf(o);hs(3,3,Lc.L);hs(3,4,Lc.F);
     poutline(g);return cellOf(pcanvas(g))}
-  return mapPerson({...o,weapon:o.weapon||'sword'},f);
+  return mapPerson({...o,weapon:o.playerStyle?o.weapon:o.weapon||'sword'},f);
 }
 
 /* the world map's people beside the lords, every one the same small figure (a soldier, a worker and a lord stand alike) in a
