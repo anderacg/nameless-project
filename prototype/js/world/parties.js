@@ -125,7 +125,6 @@ class PlayerParty extends Party{
   here(){return false}// (drawn on its own, never picked or met: render.js drawWorld)
   get tc(){return this.troops} set tc(v){this.troops=v}
   get list(){return expandCounts(this.troops)}
-  changed(){super.changed();txpClamp()}
   get brain(){return null}
   get inside(){return this.stay?this.stay.town:null}
   onMap(){return !this.stay}

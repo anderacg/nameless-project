@@ -17,12 +17,15 @@ const partyBack=()=>G.char==='roster'&&(G.armyEdit||partyView().path||partyFull(
 function partyGroup(id,r=partyRoster(P)){const g=r.groups.find(g=>g.id===id),w=(P.woundedGroups||[]).find(g=>g.id===id),cid=id.startsWith('comp_')?id.slice(5):null,c=cid&&P.comps[cid],type=g?.type||w?.type,hurt=c&&c.hurt>G.day+Clock.frac;
   return{id,g,cid,type,name:armyGroupLabel(id,r),fit:g?g.count:id==='hero'?1:c&&!hurt?1:0,wounded:type?r.wounded(id):hurt?1:0,pic:portrait(type||cid||'hero',id==='hero'),sub:type?ST[type].n+' · '+((g?.count||0)+r.wounded(id))+' / '+r.groupCap(type):cid?'Companion':'Your hero',hurt};
 }
-// a card's experience: your hero's and a companion's toward the next level, a troop type's toward training (pooled by type)
+// a card's experience: your hero's and a companion's toward the next level, a troop group's toward its next rank (core/ranks.js;
+// all wounded, its wounded's record keeps it)
+function rankLine(g){const r=rankOf(g),need=rankNeed(g),x=Math.floor(rankXp(g));
+  if(!r)return{v:x,max:need,txt:rankReady(g)?'Ready to upgrade':x+' / '+need+' to its first upgrade'};
+  return need?{v:x,max:need,txt:'Rank '+r+' · '+x+' / '+need}:{v:1,max:1,txt:'Rank '+r+' · '+(UP[g.type]?'ready to upgrade':'top of its path')}}
 function rosterXp(id,u){
   if(id==='hero')return{v:P.xp,max:LV_XP(P.level),txt:'Lv. '+P.level+' · '+Math.floor(P.xp)+' / '+LV_XP(P.level)+' XP'};
   if(u.cid){const c=compInit(u.cid);return{v:c.xp,max:LV_XP(c.lv),txt:'Lv. '+c.lv+' · '+Math.floor(c.xp)+' / '+LV_XP(c.lv)+' XP'}}
-  const k=u.type,need=(P.troops[k]||0)*txpNeed(k);
-  return !UP[k]?{v:1,max:1,txt:'Top tier'}:need?{v:txpOf(k),max:need,txt:Math.floor(txpOf(k))+' / '+need+' to train'}:{v:0,max:1,txt:'No fit soldiers to train'};
+  const g=u.g||(P.woundedGroups||[]).find(w=>w.id===id);return g?rankLine(g):{v:0,max:1,txt:''};
 }
 const partyUnitWage=u=>u.id==='hero'?0:u.cid?BAND_PAY.companion:(u.fit+u.wounded)*BAND_PAY.soldier+(ST[u.type]?.mounted?u.fit*BAND_PAY.mounted:0);
 function partyWageNote(u){return u.id==='hero'?'Your hero takes no wage.':u.cid?'Companion wage, including while wounded or leading a party.':BAND_PAY.soldier+(ST[u.type]?.mounted?BAND_PAY.mounted:0)+'g per fit soldier per day; '+BAND_PAY.soldier+'g per wounded soldier. Group costs are added before the daily bill is rounded up.'}
@@ -35,8 +38,8 @@ function partyRecoveryText(u){return u.cid&&u.hurt?recoveryTimeText(compRecovery
 // (a troop group's type as the battle marks it, its banner's icon: ui/moraleicons.js UNIT_GLYPH; your hero's crown, a companion's star)
 const partyGlyph=(id,g,kind,ico)=>{const k=kind==='troop'&&g.type&&ST[g.type]?iconOfType(g.type):null;return k&&UNIT_GLYPH[k]?glyphSVG(k,14):fbIcon(ico,14)};
 function partyCard(id,r,index){const g=partyGroup(id,r),kind=rosterKind(id),[ico,word]=ROSTER_KIND[kind],on=partyView().sel===id,x=rosterXp(id,g),share=g.fit/Math.max(1,g.fit+g.wounded)*100;
-  return '<button type="button" class="fb-unit fb-'+kind+(on?' on':'')+'" data-army-group="'+id+'" data-kind="'+kind+'" data-act="party-select" data-arg="'+id+'" aria-pressed="'+on+'"><span class="fb-unit-key">'+(g.hurt||!g.fit?'—':index)+'</span><span class="fb-unit-kind" title="'+word+'">'+partyGlyph(id,g,kind,ico)+'<span class="fb-sr">'+word+': </span>'+htmlText(g.type?classN(ST[g.type]):g.sub)+'</span><img src="'+g.pic+'" alt=""><strong>'+htmlText(g.name)+'</strong><small>'+htmlText(g.sub)+'</small><span class="fb-unit-count">'+fbIcon('troops',14)+'<b>'+g.fit+'</b> fit<span class="grow"></span>'+fbIcon('wounded',14)+'<b>'+g.wounded+'</b>'+(g.wounded?' wounded':'')+'</span><span class="fb-bar"><i style="width:'+share+'%"></i></span>'+
-    '<span class="fb-unit-xp" role="meter" aria-label="'+(kind==='troop'?'Training':'Experience')+'" aria-valuemin="0" aria-valuemax="'+x.max+'" aria-valuenow="'+clamp(x.v,0,x.max)+'"><i style="width:'+Math.round(clamp(x.v/Math.max(1,x.max),0,1)*100)+'%"></i></span><small class="fb-unit-xptxt">'+x.txt+'</small><small class="fb-unit-wage" title="'+htmlText(partyWageNote(g))+'">Wages: '+partyUnitWage(g)+'g / day</small>'+(g.wounded?'<small class="fb-unit-note">'+htmlText(partyRecoveryText(g))+'</small>':'')+'</button>';
+  return '<button type="button" class="fb-unit fb-'+kind+(on?' on':'')+'" data-army-group="'+id+'" data-kind="'+kind+'" data-act="party-select" data-arg="'+id+'" aria-pressed="'+on+'"><span class="fb-unit-key">'+(g.hurt||!g.fit?'—':index)+'</span><span class="fb-unit-kind" title="'+word+'">'+partyGlyph(id,g,kind,ico)+'<span class="fb-sr">'+word+': </span>'+htmlText(g.type?classN(ST[g.type]):g.sub)+'</span><img src="'+g.pic+'" alt=""><strong>'+(kind==='troop'&&g.type?rankBadge(g.type,rankOf(g.g||(P.woundedGroups||[]).find(w=>w.id===id)||{type:g.type}),12)+' ':'')+htmlText(g.name)+'</strong><small>'+htmlText(g.sub)+'</small><span class="fb-unit-count">'+fbIcon('troops',14)+'<b>'+g.fit+'</b> fit<span class="grow"></span>'+fbIcon('wounded',14)+'<b>'+g.wounded+'</b>'+(g.wounded?' wounded':'')+'</span><span class="fb-bar"><i style="width:'+share+'%"></i></span>'+
+    '<span class="fb-unit-xp" role="meter" aria-label="'+(kind==='troop'?'Rank':'Experience')+'" aria-valuemin="0" aria-valuemax="'+x.max+'" aria-valuenow="'+clamp(x.v,0,x.max)+'"><i style="width:'+Math.round(clamp(x.v/Math.max(1,x.max),0,1)*100)+'%"></i></span><small class="fb-unit-xptxt">'+x.txt+'</small><small class="fb-unit-wage" title="'+htmlText(partyWageNote(g))+'">Wages: '+partyUnitWage(g)+'g / day</small>'+(g.wounded?'<small class="fb-unit-note">'+htmlText(partyRecoveryText(g))+'</small>':'')+'</button>';
 }
 // the window's header, the company muster (to read, not a link): its standard, the band's name, its groups, fit and wounded, and the
 // Fitness, Morale and Stamina bars
@@ -75,7 +78,7 @@ function partyUnitCompany(d){
 // training or experience, its upkeep (the wage rule in its tip) and its buttons; a hero or companion: Character, Equipment and Role
 function partyUnitCard(d,r){const {u,c,s,kind}=d,h=kind==='hero',x=rosterXp(d.id,u),mor=unitMoraleOf(s);
   const hp=h?P.hp:kind==='comp'&&u.hurt?Math.round(s.hp*compHealthShare(c)):s.hp,now={hp,mor:clamp(mor*(.6+.4*clamp(P.morale,0,100)/100),20,100)};
-  const rank=kind==='troop'?{label:UP[u.type]?'Training':'Top tier',v:x.v,max:UP[u.type]?x.max:0}:{label:'To level '+(d.level+1),v:x.v,max:x.max};
+  const rank=kind==='troop'?{label:x.txt,v:x.v,max:x.max}:{label:'To level '+(d.level+1),v:x.v,max:x.max};
   const tip=partyWageNote(u)+(u.wounded||u.hurt?' '+partyRecoveryText(u)+'. Based on current care; '+(u.cid?'companion recovery updates hourly':'troop recovery is checked daily')+'.':'');
   return new UnitCard({key:u.type||d.id,s,name:htmlText(u.name),sub:{hero:'Hero',comp:'Companion',troop:'Troop'}[kind]+' · '+(kind==='troop'?'Tier ':'Level ')+d.level+(h?' · '+rankName()+' · '+RACES[P.race].n:''),
     hero:h,pic:u.pic,now,strength:kind==='troop'?{fit:u.fit,max:ARMY_GROUP.units,hurt:u.wounded}:null,rank,meters:h?(v=>[{label:'Stamina',v:P.sp,max:v[1],tip:'Spent running and fighting; back with rest'},{label:'Mana',v:P.mp,max:v[2],tip:'Spent on spells; back with rest'}])(vitals()):null,abil:unitAbilities(s),skills:d.ch?d.ch.actives().map(id=>[ABILITIES[id].n,abilityText(id,s)]):null,
@@ -87,20 +90,24 @@ function partyUnitTabs(d){if(d.kind==='troop')return '';const s=partyView(),tabs
 function partyDetail(id,r){return partyInspector(id,r)}
 function heroDetail(r){return partyInspector('hero',r)}
 function partyInspector(id,r){const d=partyUnit(id,r),edit=G.armyEdit===id,path=d.kind==='troop'&&partyView().path,cls=d.kind==='hero'?' fb-person-detail fb-hero-detail':d.kind==='comp'?' fb-person-detail fb-comp-detail':'',type={hero:'Hero',comp:'Companion',troop:'Troop'}[d.kind],sub=type+' · '+(d.kind==='troop'?'Tier ':'Level ')+d.level+' · '+(d.kind==='hero'?rankName()+' · '+RACES[P.race].n:classN(d.s));
-  return '<section class="fb-pane fb-inspector fb-unit-inspector'+cls+'" data-unit-id="'+id+'" data-unit-kind="'+d.kind+'"><div class="fb-scroll" data-fb-scroll="army:'+id+(edit?':edit':path?':path':'')+'">'+(path?troopPath(d.u.type):(edit?'<div class="fb-figure"><img src="'+d.u.pic+'" alt=""></div><div class="fb-title"><small>'+htmlText(sub)+'</small><h3 title="'+htmlText(d.u.name)+'">'+htmlText(d.u.name)+'</h3></div>'+partyUnitActions(d,r)+partyGroupEditor(id,r):partyUnitCard(d,r)+partyUnitTabs(d)))+'</div></section>';
+  return '<section class="fb-pane fb-inspector fb-unit-inspector'+cls+'" data-unit-id="'+id+'" data-unit-kind="'+d.kind+'"><div class="fb-scroll" data-fb-scroll="army:'+id+(edit?':edit':path?':path':'')+'">'+(path?troopPath(d.u.type,id):(edit?'<div class="fb-figure"><img src="'+d.u.pic+'" alt=""></div><div class="fb-title"><small>'+htmlText(sub)+'</small><h3 title="'+htmlText(d.u.name)+'">'+htmlText(d.u.name)+'</h3></div>'+partyUnitActions(d,r)+partyGroupEditor(id,r):partyUnitCard(d,r)+partyUnitTabs(d)))+'</div></section>';
 }
 
 /* a troop type's skills: its training path (where it is trained from, what it trains into, at a barracks), its battle orders (the
    unit abilities it has: battle/unitabilities.js, asked of one of its soldiers) and its traits (unitcard.js) */
 function troopOrdersOf(k){const u={s:ST[k],type:k,team:0,ally:false};return UNIT_ABIL_ORDER.filter(id=>UNIT_ABILITIES[id].who(u))}
-// (one training of its path: here, free, when it trains anywhere (its buttons: one, or all those ready); else where and its price)
-function troopTrainRow(k,to,row){const s=ST[to],sub='Tier '+s.tier+' · '+classN(s)+' · ',n=txpReady(k);
-  if(!trainsAnywhere(to))return row(s.n,sub+trainCost(to)+'g each at a holding\'s barracks ('+(s.magic?'a caster':'tier '+s.tier)+')');
-  const q=recruitment.quoteTraining(null,k,to),why=n?!q.ok&&recruitmentWhy(q):'Fight with them to gain experience';
-  return row(s.n,sub+'free, trained here')+'<div class="btns fb-train-btns">'+fbBtn('party-train',k+':'+to+':1','Train 1',why)+(n>1?fbBtn('party-train',k+':'+to+':all','Train all '+n,why):'')+'</div>'}
-function troopPath(k){const s=ST[k],from=UP_FROM(k),need=(P.troops[k]||0)*txpNeed(k),orders=troopOrdersOf(k),traits=unitAbilities(s),row=(n,sub,cls='')=>'<div class="fb-path-step'+cls+'"><strong>'+n+'</strong><small>'+sub+'</small></div>';
-  return '<div class="fb-title"><small>Training path and abilities</small><h3>'+htmlText(s.n)+'</h3></div>'+(UP[k]?fbMeter('skills','Training · all '+s.n,txpOf(k),Math.max(1,need))+'<p class="fb-training-note">'+txpReady(k)+' ready to train</p>':'<p class="fb-note">The top of its path: it trains no further.</p>')+
-    '<div class="lab">Path</div><div class="fb-path">'+(from?row(ST[from].n,'Tier '+ST[from].tier+' · trained from'):'')+row(s.n,'Tier '+s.tier+' · '+classN(s)+' · now',' on')+(UP[k]||[]).map(t=>troopTrainRow(k,t,row)).join('')+'</div>'+
+// (an upgrade of its path: at its last rank (a peasants' group, its experience full), here and free when it upgrades anywhere;
+// else where and its price (core/recruitment.js anywhere))
+function troopUpRow(g,to,row){const s=ST[to],sub='Tier '+s.tier+' · '+classN(s)+' · ',at=rankPeasant(g.type)?'its experience full':'rank '+RANKS.max;
+  if(!trainsAnywhere(to))return row(s.n,sub+'at '+at+', at a holding\'s barracks, '+trainCost(to)+'g each ('+(s.magic?'a caster':'tier '+s.tier)+')');
+  if(!rankReady(g))return row(s.n,sub+'at '+at+', free, anywhere');
+  const q=recruitment.quoteGroupTraining(null,g.id,to);
+  return row(s.n,sub+'free, upgraded here')+'<div class="btns fb-train-btns">'+fbBtn('party-up',g.id+':'+to,'Upgrade to '+htmlText(s.n),!q.ok&&(recruitmentWhy(q)||'Not now'))+'</div>'}
+// a troop group's path: its rank (core/ranks.js), where it came from, what it upgrades into; its battle orders and traits
+function troopPath(k,id){const s=ST[k],from=UP_FROM(k),orders=troopOrdersOf(k),traits=unitAbilities(s),row=(n,sub,cls='')=>'<div class="fb-path-step'+cls+'"><strong>'+n+'</strong><small>'+sub+'</small></div>',
+    g=partyRoster(P).groups.find(x=>x.id===id)||(P.woundedGroups||[]).find(w=>w.id===id)||{id,type:k},L=rankLine(g);
+  return '<div class="fb-title"><small>Rank and path</small><h3>'+groupBadge(g,16)+' '+htmlText(s.n)+'</h3></div>'+fbMeter('skills',L.txt,L.v,Math.max(1,L.max))+(UP[k]?'':'<p class="fb-note">The top of its path: it upgrades no further.</p>')+
+    '<div class="lab">Path</div><div class="fb-path">'+(from?row(ST[from].n,'Tier '+ST[from].tier+' · upgraded from'):'')+row(s.n,'Tier '+s.tier+' · '+classN(s)+' · now',' on')+(UP[k]||[]).map(t=>troopUpRow(g,t,row)).join('')+'</div>'+
     '<div class="lab">Battle orders</div>'+(orders.length?orders.map(id=>row(UNIT_ABILITIES[id].n+' ('+UNIT_ABILITIES[id].key+')',UNIT_ABILITIES[id].d)).join(''):'<p class="muted">No special orders.</p>')+
     '<div class="lab">Traits</div>'+(traits.length?traits.map(([n,d])=>row(n,d)).join(''):'<p class="muted">No special traits.</p>');
 }
@@ -156,7 +163,7 @@ onAct('party-',(a,arg)=>{
   if(a==='party-select'){s.sel=arg;s.open=true;s.path=false;G.armyEdit=null;if(rosterKind(arg)==='comp')compPick(arg.slice(5))}
   else if(a==='party-back'){if(G.armyEdit)G.armyEdit=null;else if(s.path)s.path=false;else s.open=false}
   else if(a==='party-path'){s.path=!s.path;G.armyEdit=null}
-  else if(a==='party-train'){const [k,to,n]=String(arg).split(':');if(!trainsAnywhere(to))return;for(let i=0,m=n==='all'?txpReady(k):1;i<m;i++){const r=recruitment.train(null,k,to);recruitmentFeedback(r,null);if(!r.ok)break}}
+  else if(a==='party-up'){const [id,to]=String(arg).split(':');if(!trainsAnywhere(to))return;recruitmentFeedback(recruitment.trainGroup(null,id,to),null)}
   else if(a==='party-unit-tab'&&PARTY_TABS[arg]){(s.tabs||(s.tabs={}))[s.sel]=arg}
   else if(a==='party-holder'){if(ROLES[arg]&&Object.keys(P.comps).length)armyRolePick(arg);return}
   else if(a==='party-equipment'){G.mode='world';hidePanel();openInv();G.invArmy=true;G.invView='equipment';renderInv();return}

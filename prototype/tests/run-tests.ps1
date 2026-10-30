@@ -9,7 +9,7 @@ param(
   [switch]$Sweep
 )
 # Native Windows runner: isolated headless browsers (one per -Parallel worker), a fresh tab per suite, no npm dependencies.
-# Usage from PowerShell: .\tests\run-tests.ps1 -Suites parties,troopxp [-Seed 1,2] [-Parallel 4]
+# Usage from PowerShell: .\tests\run-tests.ps1 -Suites parties,ranks [-Seed 1,2] [-Parallel 4]
 # The world: the generated one, the only one (the old hand-made map is gone: doc/WORLD_DESIGN.md D49).
 # -Gen: kept so old commands still work (it adds nothing).
 # Output: "== suite" (and "# seed=N"), the suite's lines (PASS/FAIL/EXC/ERR/INFO...), then "# N pass, N fail, N.N s".

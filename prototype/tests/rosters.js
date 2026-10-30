@@ -42,21 +42,21 @@ try{
   before=JSON.stringify({p,town});ok(service.hire(town,-1)===0&&service.hire(town,.5)===0&&JSON.stringify({p,town})===before,'invalid guard quantities cannot change funds or population');
 
   t.act('begin','soldier');G.quietEvents=true;const cached=t.partyRoster(P);
-  P.troops={hum_levy:3};P.txp={hum_levy:120};P.remove('hum_levy');ok(P.txp.hum_levy===80,'every player removal clamps pooled XP to the remaining soldiers');
-  t.applyLosses({hum_levy:99});ok(!P.troops.hum_levy&&!P.txp.hum_levy,'battle losses remove the last soldier and its unusable XP');
+  P.troops={hum_levy:3};{const g=t.partyRoster(P).groups[0];t.rankGain(g,50);P.remove('hum_levy');ok(P.troops.hum_levy===2&&t.rankOf(g)===2,'a removal keeps the group\'s rank (core/ranks.js)')}
+  t.applyLosses({hum_levy:99});ok(!P.troops.hum_levy&&!t.partyRoster(P).groups.length,'battle losses remove the last soldier, and his group with him');
   P.comps={brann:{ap:5,role:''}};const comp=t.compInit('brann');comp.lv=3;
-  P.troops={hum_levy:6};P.txp={hum_levy:240};ok(t.cpGive('brann','hum_levy',3)===3&&P.txp.hum_levy===120&&comp.party.tc.hum_levy===3,'companion handover uses the shared transfer and trims unusable hero-pool XP');
+  P.troops={hum_levy:6};ok(t.cpGive('brann','hum_levy',3)===3&&P.troops.hum_levy===3&&comp.party.tc.hum_levy===3,'companion handover uses the shared transfer');
   const cp=comp.party;cp.x=P.x;cp.y=P.y;P.wounded={hum_levy:1};P.troops={hum_levy:t.partyCap()-2};
   ok(t.cpTake('brann','hum_levy',3)===0&&cp.size===3,'taking soldiers back includes companions and wounded in the capacity check');
   P.remove('hum_levy');ok(t.cpTake('brann','hum_levy',3)===1&&cp.size===2,'a partial return fills only the free slot');
   before=P.size;t.cpDisband('brann',false);ok(comp.party===cp&&cp.size===2&&P.size===before,'a return that would pass your group slots (three, untrained) is blocked whole: no soldier is lost');P.sk.lead.lv=10;
   before=P.size;t.cpDisband('brann',false);ok(!comp.party&&cp.size===0&&P.size===before+2,'automatic disband preserves the existing over-cap return policy but drains its old source');
   before=P.size;t.cpDisband('brann',false);t.partyRoster(cp).transferAllTo(t.partyRoster(P));ok(P.size===before,'repeating a disband or using its stale party reference cannot duplicate soldiers');
-  const fief=t.TOWNS.find(h=>h.kind==='town');fief.owner='player';fief.gar=1;P.troops={hum_levy:1};P.txp={hum_levy:40};
-  ok(t.garrisons.station(fief,'hum_levy',1)===1&&!P.txp.hum_levy,'garrison stationing also removes unusable troop XP');
+  const fief=t.TOWNS.find(h=>h.kind==='town');fief.owner='player';fief.gar=1;P.troops={hum_levy:1};
+  ok(t.garrisons.station(fief,'hum_levy',1)===1&&!P.troops.hum_levy,'garrison stationing takes the soldier from your band');
   const band=t.asParty({kind:'bandits',list:['militia','militia'],x:0,y:0});const list=band.troops;band.remove('militia');ok(band.n===1&&band.troops!==list&&band.troops.length===1,'shared mutations invalidate the immutable band list and count');
-  P.troops={hum_levy:2};P.txp={hum_levy:999};G.mode='world';G.modal=false;t.hidePanel();t.saveGame(true);t.loadGame();
-  ok(t.partyRoster(P)===cached&&P instanceof t.PlayerParty&&cached.count('hum_levy')===2&&P.txp.hum_levy===80,'load keeps the cached adapter and clamps stale XP without changing the save schema');
+  P.troops={hum_levy:2};t.rankGain(cached.groups[0],50);G.mode='world';G.modal=false;t.hidePanel();t.saveGame(true);t.loadGame();
+  ok(t.partyRoster(P)===cached&&P instanceof t.PlayerParty&&cached.count('hum_levy')===2&&t.rankOf(cached.groups[0])===2,'load keeps the cached adapter and the group\'s rank');
   const saved=t.readSave();ok(saved.P.troops.hum_levy===2&&!saved.P.tc&&!saved.P.roster&&!saved.P.rules,'saves still contain plain troop counts, never roster services');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

@@ -61,8 +61,8 @@ class BattleResolution{
         slot:(b.playerOrder||Object.keys(b.groups)).indexOf(g.id)});
       const source=partyRoster(P).groups.find(s=>s.id===g.sourceGroupId);if(source){source.form=g.form;source.files=g.files}
     }
-    if(!b.opts.tournament)for(const u of b.units)if(u.team===0&&!u.hero&&!u.comp&&!u.lord&&!u.leader&&(u.hp>0||u.left))(b.txp=b.txp||{})[u.type]=(b.txp[u.type]||0)+(u.xp||0)+TROOP_XP.fight+(b.win?TROOP_XP.win:0);
-    const txp=b.txp||{},o=b.opts,win=b.win,retreat=!!b.retreat,caught=b.caught||0,got=b.withdrawn||0,standing=b.units.filter(u=>u.team===1&&u.hp>0).length,fallen=Object.values(b.lost).reduce((a,n)=>a+n,0);bbar.hidden=true;G.mode='dialog';lootStart();
+    this.ranksUp=b.ranksUp=b.opts.tournament?[]:groupRanks(b,b.win);// (each of your groups' experience from its men's, before the losses: core/ranks.js)
+    const o=b.opts,win=b.win,retreat=!!b.retreat,caught=b.caught||0,got=b.withdrawn||0,standing=b.units.filter(u=>u.team===1&&u.hp>0).length,fallen=Object.values(b.lost).reduce((a,n)=>a+n,0);bbar.hidden=true;G.mode='dialog';lootStart();
     const lost=o.tournament?{}:b.lost,kills=b.kills,slain=b.slain,h=b.hero,X=b.hx;this.ambush=b.surprise?.report;
     if(b.bestCombo>=3)toast('Your longest chain of blows: '+b.bestCombo+' hits.',undefined,'war');
     // carry the hero's condition out of the fight; a knocked-out hero comes to at 10% health
@@ -86,10 +86,10 @@ class BattleResolution{
     }
     if(b.sides?.active)b.sides.settle(b,lost,groupLosses);
     else if(b.hunt)b.hunt.settle(b,lost,groupLosses);
-    else this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,blocked:!!b.stalemate,carried:h.hp<=0&&!h.left},txp,groupLosses);
+    else this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,blocked:!!b.stalemate,carried:h.hp<=0&&!h.left},groupLosses);
     armies?.present();
   }
-  conclude(win,lost,kills,auto,slain,retreat,txp,groupLosses){
+  conclude(win,lost,kills,auto,slain,retreat,groupLosses){
     if(auto)BATTLE_MOOD=null;
     lootStart();const e=G.enc;if(e)reinfAfter(e,win);let html;const saved=heal(lost,groupLosses);
     if(groupLosses){for(const g of groupLosses)if(g.count)partyRoster(P).remove(g.type,g.count,g.id)}else applyLosses(lost);
@@ -144,11 +144,9 @@ class BattleResolution{
       html='<h2>Defeat</h2><p>Your band was routed. '+fate.text+'</p>'+moodLine;
       log('Defeat. '+fate.text,'bad','war');
     }
-    // your troops' experience (core/recruitment.js): what each kind earned, after the shared roster has applied the losses
-    {const before=Object.keys(P.troops).reduce((a,k)=>a+txpReady(k),0);
-      if(auto){const n=troopCount(),each=TROOP_XP.auto*(TROOP_XP.fight+(win?TROOP_XP.win:0)+(n?kills*TROOP_XP.kill*2/n:0));for(const k in P.troops)txpGain(k,each*P.troops[k])}
-      else for(const k in txp||{})txpGain(k,txp[k]);txpClamp();const ready=Object.keys(P.troops).reduce((a,k)=>a+txpReady(k),0);
-      if(ready>before)html+='<p class="gold">Your troops learn from the fight: '+ready+' soldier'+(ready>1?'s are':' is')+' ready to train at a barracks.</p>'}
+    // your groups' experience (core/ranks.js): a fought battle's from its men (finish, groupRanks); auto-resolved, each group the
+    // same share of the fight
+    {const up=auto?groupRanksAuto(win,kills):this.ranksUp||[];html+=rankUpHtml(up)}
     // (withdrawn or beaten, the beasts holding the field: the spoils stay there, a quest to take them back: world/fieldloot.js)
     if(!win&&e.kind==='monster'){const at=this.battle?.world||e.ref,q=leaveFieldLoot(at.x,at.y,slain||[],e.ref);if(q)html+=fieldLootLine(q)}
     if(!win)encLost(e);// (withdrawn or beaten: what that costs or leaves behind, engage.js ON_WIN lost)
@@ -163,4 +161,16 @@ class BattleResolution{
 }
 // Existing callers (simulation, auto-resolve, encounters and tests) keep the same entry points.
 function finishBattle(){if(B&&B.opts.sandbox)return BattleLab.finish();return new BattleResolution(B).finish()}
-function concludeEncounter(win,lost,kills,auto,slain,retreat,txp){return new BattleResolution().conclude(win,lost,kills,auto,slain,retreat,txp)}
+function concludeEncounter(win,lost,kills,auto,slain,retreat){return new BattleResolution().conclude(win,lost,kills,auto,slain,retreat)}
+// each of your troop groups that fought: its men's average experience (attacks.js u.xp), and TROOP_XP.fight and, won, .win;
+// Leadership 5% more a level. Its ranks gained (core/ranks.js), for the report
+function groupRanks(b,win){const r=partyRoster(P),up=[],lead=1+.05*skill('lead');
+  for(const g of Object.values(b.groups)){if(!g.player||!g.sourceGroupId)continue;const men=b.units.filter(u=>u.grp===g.id&&!u.hero&&!u.comp&&!u.lord&&!u.leader),rec=r.groups.find(x=>x.id===g.sourceGroupId);if(!men.length||!rec)continue;
+    const k=rankGain(rec,(men.reduce((a,u)=>a+(u.xp||0),0)/men.length+TROOP_XP.fight+(win?TROOP_XP.win:0))*lead);if(k)up.push({id:rec.id,type:rec.type,rank:rankOf(rec)})}
+  return up}
+// (auto-resolved: each group the same, TROOP_XP.auto of a fought one's, the kills shared among your men)
+function groupRanksAuto(win,kills){const r=partyRoster(P),n=troopCount(),each=TROOP_XP.auto*(TROOP_XP.fight+(win?TROOP_XP.win:0)+(n?kills*TROOP_XP.kill*2/n:0))*(1+.05*skill('lead')),up=[];
+  for(const g of r.groups){const k=rankGain(g,each);if(k)up.push({id:g.id,type:g.type,rank:rankOf(g)})}return up}
+// (the report's line, and the messages: each group that ranked up, its badge)
+function rankUpHtml(up){for(const x of up)log(armyGroupLabel(x.id)+' reach rank '+x.rank+'.','good','band');
+  return up.length?'<p class="gold">Ranked up: '+up.map(x=>rankBadge(x.type,x.rank,14)+' '+htmlText(armyGroupLabel(x.id))+' rank '+x.rank).join(', ')+'.</p>':''}

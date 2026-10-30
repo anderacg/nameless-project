@@ -5,13 +5,12 @@ const recruitmentWhy=r=>RECRUIT_WHY[r.code]||'';
 function recruitmentFeedback(r,t){
   if(r.ok){
     if(r.code==='hire')log((r.count>1?r.count+' × '+ST[r.kind].n:cap1(an(ST[r.kind].n.toLowerCase())))+' join'+(r.count>1?'':'s')+' your band.');
-    else if(r.code==='training')log(ST[r.from].n+' trained into '+ST[r.to].n.toLowerCase()+'.');
-    else if(r.code==='group-training')log(r.id+': '+r.count+' × '+ST[r.from].n+' upgraded to '+ST[r.to].n+' for '+r.cost+'g.','good');
+    else if(r.code==='group-training')log(armyGroupLabel(r.id)+': '+r.count+' × '+ST[r.from].n+' upgraded to '+ST[r.to].n+(r.cost?' for '+r.cost+'g':'')+'. They start again at rank 1.','good');
     else if(r.code==='companion')log(COMPS[r.id].n+' joins your band. Give them a role with C.','good');
     else if(r.code==='prisoner')log('A captured '+ST[r.kind].n.toLowerCase()+' swears to follow you.');
   }else if(r.code==='standing')toast('The people of '+t.name+' do not know you well enough yet.','bad');
   else if(r.code==='volunteers')toast('No one else in '+t.name+' will take up arms today.','bad');
-  else if(r.code==='experience')toast(ST[r.from].n+' needs more experience first ('+Math.floor(txpOf(r.from))+' / '+(r.xpCost||txpNeed(r.from))+' XP): fight with them.','bad');
+  else if(r.code==='experience')toast(armyGroupLabel(r.id)+' needs rank '+RANKS.max+' first: fight with them.','bad');
   else if(recruitmentWhy(r))toast(recruitmentWhy(r)+'.','bad');
 }
 /* ---------- economy ---------- */
@@ -286,7 +285,7 @@ definePlace('stable',Stable);
    ready in one press, or a whole group at once. The order (G.town.cart) belongs to this visit, never to a save */
 class Barracks extends Place{
   constructor(id){
-    super(id,{n:'Barracks',ico:'shield',verbs:{'rec-tab':'tab',hire:'hire',train:'train','rec-upgroup':'upgroup','rec-tnum':'tnum','rec-tset':'tset',
+    super(id,{n:'Barracks',ico:'shield',verbs:{'rec-tab':'tab',hire:'hire','rec-upgroup':'upgroup',
       ...Object.fromEntries(['pick','add','set','clear','fill','groups','hire','hire-ok','hire-no','info','info-back'].map(v=>['rec-'+v,'desk']))}});
   }
   shut(t){
@@ -294,36 +293,28 @@ class Barracks extends Place{
     return closed||Timed.of(t).has('turmoil')?'<p class="muted">'+(closed?'No one here will take up arms: '+t.name+' was '+closed+' and is still burying its dead.':t.name+' is in turmoil after changing hands. No one will enlist for '+Timed.of(t).daysLeft('turmoil')+' more days.')+'</p>':'';
   }
   hires(t){return t.races.flatMap(r=>t.hires(r))}
-  ups(t){return t.T.train?Object.keys(P.troops).filter(k=>P.troops[k]>0&&UP[k]).flatMap(k=>UP[k].map(to=>[k,to])):[]}
   // (its desk: the town's troops, their price, its willing, the standing each needs)
   deskOf(t){return new HireDesk('rec-',{state:G.town,kinds:this.hires(t),cost:hireCost,willing:Math.floor(t.vol||0),why:k=>!canHire(t,k)?'Needs standing '+needFor(k):'',
     line:k=>'You lead ×'+(P.troops[k]||0),note:'More volunteers come forward each day as the '+t.label+' grows and prospers.',
     hire:(k,n,tgt)=>{const r=recruitment.hire(t,k,n,tgt);if(r.ok)recruitmentFeedback(r,t);return {ok:r.ok,cost:r.cost,why:r.ok?'':recruitmentWhy(r)}}})}
   body(t){
     const s=G.town,tab=t.T.train&&s.recTab==='train'?'train':'hire',v=Math.floor(t.vol||0);
-    const tabs=t.T.train?'<div class="rec-tabs" role="tablist">'+[['hire','Hire'],['train','Train']].map(([k,n])=>'<button class="btn sm'+(k===tab?' on':'')+'" type="button" role="tab" aria-selected="'+(k===tab)+'" data-act="rec-tab" data-arg="'+k+'">'+n+'</button>').join('')+'</div>':'';
+    const tabs=t.T.train?'<div class="rec-tabs" role="tablist">'+[['hire','Hire'],['train','Upgrade']].map(([k,n])=>'<button class="btn sm'+(k===tab?' on':'')+'" type="button" role="tab" aria-selected="'+(k===tab)+'" data-act="rec-tab" data-arg="'+k+'">'+n+'</button>').join('')+'</div>':'';
     const head='<div class="top rec-top">'+tabs+'<span class="lab">'+t.races.map(r=>RACES[r].n).join(' and ')+' troops · band '+partySize()+' / '+partyCap()+'</span><span class="lab">Standing <b class="gold" style="font-size:14px">'+standingAt(t)+'</b> · '+v+' willing</span></div>';
     return head+(tab==='train'&&!s.info?this.trainTab(t):this.deskOf(t).body());
   }
   desk(arg,t,a){this.deskOf(t).act(a,arg)}
   tab(arg){G.town.recTab=arg==='train'?'train':'hire';G.town.info=null}
   hire(arg,t){const result=recruitment.hire(t,arg,1);recruitmentFeedback(result,t)}
-  // ---- Train: each training a row (ready ones in one press, or a whole group's upgrade, keeping its place)
-  // (how many of a training you choose (the owner, 2026-10-30: "able to select how many we want to train"): G.town.trainN by
-  // from>to, 1 to n (those ready you can pay for), n at first)
-  trainWant(key,n){const v=(G.town.trainN||{})[key];return n<1?0:clamp(v==null?n:v,1,n)}
-  tnum(arg,t){const [key,d]=String(arg).split(':'),[k,to]=key.split('>'),n=this.trainMax(k,to),T=G.town.trainN||(G.town.trainN={});T[key]=d==='max'?n:clamp(this.trainWant(key,n)+(+d||0),1,Math.max(1,n))}
-  tset(arg){const [key,v]=String(arg).split(':'),[k,to]=key.split('>'),n=this.trainMax(k,to),T=G.town.trainN||(G.town.trainN={});T[key]=clamp(Math.floor(+v)||1,1,Math.max(1,n))}
-  trainMax(k,to){const c=trainPrice(to);return Math.min(txpReady(k),c?Math.floor(P.gold/c):Infinity)}
-  trainTab(t){const ups=this.ups(t);if(!ups.length)return '<p class="muted">None of your troops can train further. They gain experience by fighting.</p>';
-    return '<div class="rec-rows">'+ups.map(([k,to])=>{const s=ST[to],ready=txpReady(k),c=trainPrice(to),n=this.trainMax(k,to),q=recruitment.quoteTraining(t,k,to),key=k+'>'+to,w=this.trainWant(key,n),
-        whole=partyRoster(P).groups.filter(g=>g.type===k).map(g=>({g,q:recruitment.quoteGroupTraining(t,g.id,to)})).filter(x=>x.q.ok);
-      return '<div class="rec-row" data-act="rec-pick" data-arg="'+k+'>'+to+'"><button class="rec-pic" type="button" data-act="rec-info" data-arg="'+k+'>'+to+'"><img src="'+portrait(to)+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
-        '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(to),14)+' '+ST[k].n+' → '+s.n+'</strong><small>'+(ready?'<b class="gold">'+ready+' of '+P.troops[k]+' ready</b>':'Experience '+Math.floor(txpOf(k))+' / '+txpNeed(k)+' to train one')+' · '+(c?c+'g each':'free, anywhere (the Army window too)')+'</small></div>'+
-        '<div class="rec-step">'+(n>1?'<button class="btn sm" type="button" data-act="rec-tnum" data-arg="'+key+':-1"'+(w<=1?' disabled':'')+' aria-label="One fewer">−</button><input class="rec-n" type="number" inputmode="numeric" min="1" max="'+n+'" step="1" value="'+w+'" data-qty="rec-tset" data-arg="'+key+'" aria-label="'+htmlText(s.n)+': how many to train"><button class="btn sm" type="button" data-act="rec-tnum" data-arg="'+key+':1"'+(w>=n?' disabled':'')+' aria-label="One more">+</button><button class="btn sm" type="button" data-act="rec-tnum" data-arg="'+key+':max"'+(w>=n?' disabled':'')+'>Max</button>':'')+
-        '<button class="btn sm primary" type="button" data-act="train" data-arg="'+k+':'+to+':'+Math.max(1,w)+'"'+(q.ok&&n>0?'':' disabled title="'+htmlText(q.ok?'Not enough gold':q.code==='experience'?'Fight with them to gain experience':recruitmentWhy(q)||'Not available')+'"')+'>Train '+Math.max(1,w)+(n>0&&c?' · '+w*c+'g':'')+'</button>'+
-        whole.map(x=>'<button class="btn sm" type="button" data-act="rec-upgroup" data-arg="'+x.g.id+':'+to+'">Whole group '+htmlText(x.g.name||x.g.id)+' ×'+x.g.count+(x.q.cost?' · '+x.q.cost+'g':'')+'</button>').join('')+'</div></div>'}).join('')+'</div>'}
-  train(arg,t){const [k,to,ns]=String(arg).split(':');for(let i=0;i<Math.max(1,+ns||1);i++){const r=recruitment.train(t,k,to);recruitmentFeedback(r,t);if(!r.ok)break}}
+  // ---- Upgrade (doc/RANKS_DESIGN.md §4): each of your groups that upgrades a row (its badge, its rank), a button for each kind
+  // it upgrades into: at its last rank, here for its price (core/recruitment.js quoteGroupTraining), keeping its place
+  trainTab(t){const gs=partyRoster(P).groups.filter(g=>UP[g.type]);if(!gs.length)return '<p class="muted">None of your groups upgrades further.</p>';
+    return '<div class="rec-rows">'+gs.map(g=>{const L=rankLine(g);
+      const key=g.type+'>'+UP[g.type][0];// (its card: the first it upgrades into, against it)
+      return '<div class="rec-row" data-act="rec-pick" data-arg="'+key+'"><button class="rec-pic" type="button" data-act="rec-info" data-arg="'+key+'"><img src="'+portrait(UP[g.type][0])+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
+        '<div class="rec-txt"><strong>'+groupBadge(g,14)+' '+htmlText(armyGroupLabel(g.id))+' ×'+g.count+'</strong><small>'+(rankReady(g)?'<b class="gold">'+L.txt+'</b>':L.txt)+'</small></div>'+
+        '<div class="rec-step">'+UP[g.type].map(to=>{const q=recruitment.quoteGroupTraining(t,g.id,to);
+          return '<button class="btn sm'+(q.ok?' primary':'')+'" type="button" data-act="rec-upgroup" data-arg="'+g.id+':'+to+'"'+(q.ok?'':' disabled title="'+htmlText(q.code==='experience'?(rankPeasant(g.type)?'Its experience is not full yet':'Needs rank '+RANKS.max+': fight with them'):recruitmentWhy(q)||'Not available')+'"')+'>'+htmlText(ST[to].n)+(q.cost?' · '+q.cost+'g':'')+'</button>'}).join('')+'</div></div>'}).join('')+'</div>'}
   upgroup(arg,t){const [id,to]=String(arg).split(':'),r=recruitment.trainGroup(t,id,to);recruitmentFeedback(r,t)}
   // (back from a unit's card: the list where you left it)
   focus(a){return this.deskOf(G.town.ref).focus(a)}

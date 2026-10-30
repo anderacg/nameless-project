@@ -2,7 +2,7 @@
 // Prepared recruitment and talent screens: ?test=visual/progression&v=review&scene=recruit|talents|companion.
 window.RUN=()=>{
   const t=T,P=t.P,G=t.G;window.requestAnimationFrame=()=>0;t.begin('soldier');G.quietEvents=true;
-  const scene=new URLSearchParams(location.search).get('scene'),ash=t.townBy('Ashford');P.gold=1000;P.troops={hum_levy:3};P.txp={hum_levy:t.txpNeed('hum_levy')};P.rep[ash.name]=90;ash.vol=5;
+  const scene=new URLSearchParams(location.search).get('scene'),ash=t.townBy('Ashford');P.gold=1000;P.troops={hum_levy:3};t.rankGain(t.partyRoster(P).groups[0],1e6);P.rep[ash.name]=90;ash.vol=5;
   G.mode='world';G.modal=false;t.hidePanel();
   if(scene==='recruit'){t.enterTown(ash);G.town.pick='hum_levy>hum_spear';t.renderTown()}
   else if(scene==='companion'){

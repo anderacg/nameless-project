@@ -143,7 +143,6 @@ class BattleSides{
   const sh=b.win?this.shares():null,mine=sh?.get(credit)||0,spoils=sh?[...sh.keys()].flatMap(r=>r.kills):[];gainXp(kills.length*(b.win?8:BATTLE_SPOILS.lostXp));
   if(b.win){let gold=0;for(const k of spoils)if(!ST[k].beast)gold+=rint(2,6);gold=Math.round(gold*mine*(1+tm('loot')));P.gold+=gold;P.renown+=Math.round(spoils.length*mine);takePrisoners(spoils.slice(0,Math.round(spoils.length*mine)));
    for(const r of this.records)if(r.owner.mapKind==='monster'&&r.playerKills.length)monsterLoot(r.owner,r.playerKills)}
-  for(const u of b.units)if(u.team===0&&!u.hero&&!u.comp&&!u.lord&&((u.xp||0)>0||u.atkAt!=null))txpGain(u.type,(u.xp||0)+TROOP_XP.fight+(b.win?TROOP_XP.win:0));txpClamp();
   if(b.win)for(const r of this.records){if(r.owner===P||!r.joined||this.survivors(r).length||!r.playerKills.length)continue;const o=r.owner;
    if(o.mapKind==='lord'&&r.playerLeader){spoilsWon({kind:'lord',ref:o});const res={gold:0,fame:0};lordWon(o,res);P.gold+=res.gold||0;r.handled=true}
    else if(o.mapKind==='caravan'&&r.playerKills.length>=r.start/2){if(e.kind==='caravan'&&o===e.ref&&e.seize)o.seize();else o.loot();r.handled=true}
@@ -164,6 +163,6 @@ class BattleSides{
   if(!b.win)encLost(e);
   const moodLine=battleMood(b.win?(kills.length?4:0):b.retreat?-8:-15,b.win?'victory':b.retreat?'withdrawal':'defeat');G.enc=null;G.encCool=4;G.mode='dialog';worldEmit('battle:ended',{enc:e,how:b.win?'won':b.retreat?'withdrawn':'lost'});
   const report={groups:groups.map(g=>({id:g.id,type:g.type,name:g.name,start:g.start,fit:g.start-g.count,wounded:g.wounded,killed:g.count-g.wounded,saved:g.saved,rearguard:0})),characters:[]};
-  lootShow('<h2>'+heading+'</h2><p>'+detail+' Surviving armies keep their own soldiers; other hostile armies can continue fighting.</p>'+moodLine,lost,saved,'cont',report);updateHUD(true);
+  lootShow('<h2>'+heading+'</h2><p>'+detail+' Surviving armies keep their own soldiers; other hostile armies can continue fighting.</p>'+moodLine+rankUpHtml(b.ranksUp||[]),lost,saved,'cont',report);updateHUD(true);
  }
 }

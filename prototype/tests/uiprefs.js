@@ -71,7 +71,7 @@ try{
   t.act('hire',kind);ok(P.troops[kind]===1&&last()===t.cap1(t.an(t.ST[kind].n.toLowerCase()))+' joins your band.','hire: '+last());
   t.act('rec-add',kind+':1');t.act('rec-clear');ok(!Object.keys(G.town.cart).length&&P.troops[kind]===1,'rec-add, then rec-clear: nothing bought');
   t.act('rec-add',kind+':1');t.act('rec-hire');ok(P.troops[kind]===2&&!Object.keys(G.town.cart).length,'rec-add, then rec-hire: one more');
-  P.txp[kind]=t.txpNeed(kind);const to=t.UP[kind][0];t.act('train',kind+':'+to);ok(P.troops[to]===1&&P.troops[kind]===1&&last()===t.ST[kind].n+' trained into '+t.ST[to].n.toLowerCase()+'.','train: '+last())}
+  const g=t.partyRoster(P).groups.find(x=>x.type===kind),to=t.UP[kind][0];t.rankGain(g,1e6);t.act('rec-tab','train');t.act('rec-upgroup',g.id+':'+to);ok(P.troops[to]===2&&!P.troops[kind]&&/upgraded to .*start again at rank 1/.test(last()),'upgrade: '+last())}
  t.act('tab','tavern');{const f=t.FACS[ash.owner].n;P.fac=null;t.act('contract');ok(P.fac===ash.owner&&last()==='You sign on with the '+f+'. Their enemies are now yours.','contract: '+last());
   t.act('end-contract');ok(P.fac===null&&last()==='You end your contract with the '+f+'.','end-contract: '+last())}
  {P.prisoners={militia:2};const v=t.ransomValue(),g0=P.gold;t.act('ransom');ok(v>0&&P.gold===g0+v&&!Object.keys(P.prisoners).length&&last()==='The broker pays '+v+' gold for 2 prisoners.','ransom: '+last())}

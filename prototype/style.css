@@ -343,6 +343,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .hint{position:absolute;top:calc(var(--e-t) + 44px);left:50%;transform:translateX(-50%);max-width:56%;text-align:center;pointer-events:none;
   color:var(--fg-2);text-shadow:0 1px 2px #000,0 0 6px #000;opacity:.85}
 .hint[hidden]{display:none}
+/* a group's rank badge (ui/rankbadge.js): pixel art, kept sharp */
+.rbadge{image-rendering:pixelated;vertical-align:-2px;flex:none}
 
 /* the dock (bottom right): your windows, icon tiles with their keys; under them the game's own (save, full screen, menu) */
 .dock{position:absolute;right:var(--e-r);bottom:var(--e-b);display:flex;flex-direction:column;gap:5px;align-items:flex-end}

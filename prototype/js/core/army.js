@@ -63,7 +63,7 @@ class ArmyRoster extends TroopRoster{
     let left=this.limit(type,n),taken=0;const gs=this.groups;
     for(const g of gs){if(g.type!==type||groupId&&g.id!==groupId)continue;const m=Math.min(left,g.count);g.count-=m;left-=m;taken+=m;if(!left)break}
     if(taken){const c=this.counts;c[type]-=taken;if(!c[type])delete c[type];
-      for(const g of gs.filter(g=>!g.count))for(const w of this.owner.woundedGroups||[])if(w.id===g.id){if(g.name)w.name=g.name;else delete w.name}
+      for(const g of gs.filter(g=>!g.count))for(const w of this.owner.woundedGroups||[])if(w.id===g.id){if(g.name)w.name=g.name;else delete w.name;rankReset(w);rankKeep(g,w)}// (its name and rank kept by its wounded)
       this.owner.army.groups=gs.filter(g=>g.count>0);this.changed()}return taken;
   }
   split(id,n){
@@ -73,7 +73,7 @@ class ArmyRoster extends TroopRoster{
   }
   merge(fromId,toId){
     const gs=this.groups,a=gs.find(g=>g.id===fromId),b=gs.find(g=>g.id===toId);
-    if(!a||!b||a===b||a.type!==b.type||a.count+b.count+this.wounded(a.id)+this.wounded(b.id)>this.groupCap(a.type))return false;b.count+=a.count;this.owner.army.groups=gs.filter(g=>g!==a);
+    if(!a||!b||a===b||a.type!==b.type||a.count+b.count+this.wounded(a.id)+this.wounded(b.id)>this.groupCap(a.type))return false;b.count+=a.count;rankKeep(a,b);this.owner.army.groups=gs.filter(g=>g!==a);
     for(const w of this.owner.woundedGroups||[])if(w.id===a.id){w.id=b.id;if(b.name)w.name=b.name;else delete w.name}this.changed();return true;
   }
   upgrade(id,to){
@@ -81,13 +81,13 @@ class ArmyRoster extends TroopRoster{
     const c=this.counts,from=g.type,n=g.count;if(!Number.isSafeInteger(this.count(to)+n))return false;
     c[from]-=n;if(!c[from])delete c[from];c[to]=this.count(to)+n;g.type=to;
     // Do not carry a cavalry-only shape or an old frontage into a different troop type.
-    g.form='line';g.files=null;this.changed();return true;
+    g.form='line';g.files=null;rankReset(g);this.changed();return true;
   }
   restore(group,n){
     const gs=this.groups,existing=gs.find(g=>g.id===group.id);
     if(existing){const amount=Math.min(n,this.groupCap(group.type)-existing.count);if(amount<=0)return 0;existing.count+=amount;const c=this.owner[this.field];c[group.type]=this.count(group.type)+amount;this.changed();return amount}
     if(this.slots-(this.wounded(group.id)>0?1:0)>=this.groupLimit||n>this.groupCap(group.type)||!troopAmount(n)||!this.accepts(group.type))return 0;// (its own held place counted once)
-    gs.push({id:group.id,type:group.type,count:n,form:'line',...(group.name?{name:group.name}:{})});const c=this.owner[this.field]||(this.owner[this.field]={});c[group.type]=this.count(group.type)+n;this.changed();return n;
+    gs.push({id:group.id,type:group.type,count:n,form:'line',...(group.name?{name:group.name}:{}),...(group.rank?{rank:group.rank}:{}),...(group.xp?{xp:group.xp}:{})});const c=this.owner[this.field]||(this.owner[this.field]={});c[group.type]=this.count(group.type)+n;this.changed();return n;
   }
   transferTo(target,k,n=1,room=Infinity){
     if(target===this||target.counts===this.counts||!target.accepts(k))return 0;

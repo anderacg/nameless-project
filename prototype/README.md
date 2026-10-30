@@ -59,10 +59,10 @@ art/tracks.py         the tracks' art, drawn once: writes art/tracks.svg (the sh
 style.css
 fieldbook.css        scoped management-window theme and responsive layouts (doc/FIELDBOOK_UI.md)
 js/core/              core.js (DOM, canvas, constants, helpers, the action registry), state.js (state factories, G, P; your numbers' older names),
-                      roster.js (TroopRoster, count/list helpers), army.js (ArmyRoster, persistent groups and slot budget), garrison.js (GarrisonService),
+                      roster.js (TroopRoster, count/list helpers), army.js (ArmyRoster, persistent groups and slot budget), ranks.js (a group's rank: rankOf, rankGain, rankReady; data/ranks.js RANKS), garrison.js (GarrisonService),
                       items.js (the item kinds: Gear, Mount, Quiver, Good, Trophy, Valuable, QuestItem; their categories; itemKind),
                       inventory.js (Inventory: the bag, its overflow slots and their burden; bag operations),
-                      equipment.js (EquipmentService), recruitment.js (RecruitmentService and troop XP),
+                      equipment.js (EquipmentService), recruitment.js (RecruitmentService: hiring, prices, whole-group upgrades),
                       talents.js (TalentService and character talent commands), session.js (GameSession and new game), save.js,
                       systems.js (Systems: the world's day and frame, each system's work registered in its own file with its order),
                       saves.js (Saves: the world part of a save, each piece registered with its key, order, save, load and defaults)
@@ -229,7 +229,7 @@ js/ui/                fieldbook.js (management frame, native-art cache, meters, 
                       places: Place, definePlace, PLACES; class wave D),
                       window.js (rail windows: a rail of places beside the chosen one's window; the same place drawn again changes in place, morph, its buttons kept), townui.js (a town's places, its overview, your
                       holding's buildings), estate.js (an estate's window on the map, and the Fief's Estates section), input.js (actions, mouse, keys), map.js (the full map:
-                      M or a click on the minimap), loot.js (the spoils and the battle report, army by army), icons.js, battlehud.js (battle HUD and army relationships), characterportraits.js (named faces), moraleicons.js (morale
+                      M or a click on the minimap), loot.js (the spoils and the battle report, army by army), icons.js, rankbadge.js (a group's rank badge), battlehud.js (battle HUD and army relationships), characterportraits.js (named faces), moraleicons.js (morale
                       badges and marks), orderpaths.js (where your groups are going; the withdrawal's preview and strip: WithdrawView), unitcard.js (UnitCard: the unit card, as Total War: Warhammer III's, in the Army window, the battle's panel and the barracks), developer.js (developer console),
                       ring.js (map hold progress and round action buttons: ActionRing)
 js/main.js            game loop and boot
@@ -434,7 +434,7 @@ the world piece `band` once it is not fresh. The band's own numbers are `PlayerP
 
 ## Recruitment and talents
 
-**Training anywhere** (2026-10-30; the owner: "upgradeable anywhere, only certain classes or special upgrades require a holding"; which: casters and every tier 3; in the field: free): an upgrade to a tier below `TRAIN_PLACE.tier` (3) that is not a caster trains anywhere, for nothing but its experience (`RecruitmentService#anywhere`, `trainPrice`: 0), from the Army window's training path (Train 1, Train all: `troopTrainRow`) or a barracks' Train tab; an upgrade to tier 3 or into a caster (Battle Mage, Runepriest, Spellweaver, Orc Shaman) only at a holding that trains, for `trainCost`. Tests: fieldtrain, trainpick, grouprecruitment, troopxp.
+**Ranks** (2026-10-30, doc/RANKS_DESIGN.md phase 1; the owner: "each level a rank with a badge, capped at 5, bronze, silver, gold for each tier"; "once you have max rank you can upgrade to higher tier units"): experience and rank belong to each troop group (`core/ranks.js`: a group's `xp` and `rank`, 1 to `RANKS.max`; its next rank's need by its tier, `data/ranks.js` `RANKS.xp`). A battle gives each group its men's average experience (`attacks.js` `u.xp`) and `TROOP_XP.fight` and `.win`, Leadership 5% more a level (`battle/resolution.js` `groupRanks`; auto-resolved: `groupRanksAuto`); a group that ranks up says so in the messages and the report. The rank stays whoever joins (Total War): refilled, split (both halves) or merged (the higher), and its men all wounded, their record keeps it till they come back. Only at rank 5 a group upgrades, as a whole, keeping its place, and starts again at rank 1 (`RecruitmentService#quoteGroupTraining`/`trainGroup`, gated by `rankReady`): below tier 3 and not into a caster, free and anywhere (the Army window's Rank and path: Upgrade to …); tier 3 and casters at a holding that trains, for `trainCost` a man (the Barracks' Upgrade tab). Peasants have no rank: `RANKS.peasant` experience to their first upgrade. The badge (`ui/rankbadge.js`): a pixel shield, bronze, silver or gold by tier (iron for peasants), a chevron a rank; on the Army window's cards, its Rank and path, the battle's unit cards, the March formation's buttons and the Barracks. The old pooled experience by kind (`P.txp`, Train 1 / Train all) is gone. Tests: ranks, recruitment, grouprecruitment, army, rosters, factions, uiprefs.
 
 `RecruitmentService` owns troop hiring, training, tavern companion hiring, prisoner recruitment, prices and pooled troop XP. Its `quoteHire`, `quoteTraining`, `quoteCompanion` and `quotePrisoner` results drive the buttons and the commands. Commands recheck eligibility before spending anything. A recovering holding cannot recruit, training needs a barracks and a valid upgrade, troops must belong to the holding's roster, and a tavern companion must be available there. These checks also apply to direct action calls that bypass a disabled button. Existing price formulas and normal transfers are preserved.
 

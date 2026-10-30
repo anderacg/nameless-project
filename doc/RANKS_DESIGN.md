@@ -1,6 +1,6 @@
 # Unit ranks: design
 
-Status: **design only, revision 3** (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner answered revisions 1 and 2's questions; his answers are in **Decisions** and folded into the rules. §9 lists what is still open.
+Status: **phase 1 built** (2026-10-30: ranks, badges, the rank-5 upgrade, the peasants' grind; README "Ranks"); phases 2 to 6 not yet; design revision 3 (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner answered revisions 1 and 2's questions; his answers are in **Decisions** and folded into the rules. §9 lists what is still open.
 
 **Readers:** the owner, and whoever builds the phases of §8.
 
