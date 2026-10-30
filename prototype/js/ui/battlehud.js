@@ -168,10 +168,11 @@ function bhudTop(){
   bhudAbilities();bhudArmies();withdrawView.hud();bhudSkip();
 }
 // (your army down, others fighting on for you: a bar saying so, and Skip to the end: sides.js skipBattle)
-function bhudSkip(){let el=document.getElementById('bSkip');const on=!!(B&&!B.over&&B.allyOn);
+function bhudSkip(){let el=document.getElementById('bSkip');const on=ownDown();
   if(!el){if(!on)return;const top=document.querySelector('.btop');if(!top)return;el=document.createElement('div');el.id='bSkip';el.className='bwithdraw';el.setAttribute('role','status');top.appendChild(el);
-    el.addEventListener('click',e=>{if(e.target.closest('[data-bskip]'))skipBattle()})}
-  el.hidden=!on;if(on&&!el.innerHTML)el.innerHTML='<b>Your army is down</b> <em>'+(B.rivals?'Your foes fight on against each other.':'The others fight on against your foes.')+'</em> <button type="button" class="wgo" data-bskip>Skip to the end</button>';if(!on)el.innerHTML=''}
+    el.addEventListener('click',e=>{if(e.target.closest('[data-bskip]'))skipBattle();else if(e.target.closest('[data-bres]'))resolveBattle()})}
+  const h=on?'<b>Your army is down</b> <em>'+(B.rivals?'Your foes fight on against each other.':'The others fight on.')+'</em> <button type="button" class="wgo" data-bskip>Skip to the end</button> <button type="button" class="wgo" data-bres>Auto-resolve</button>':'';
+  el.hidden=!on;if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h}}
 // Army banners open a relationship view without changing selection or issuing an order.
 class BattleArmyHud{
  constructor(){

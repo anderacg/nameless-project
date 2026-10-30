@@ -13,12 +13,21 @@ function armyRelation(a,b){
 const battleTeam=x=>typeof x==='number'?x:x?.team;
 const battleEnemy=(a,b)=>B?.sides?.active?B.sides.relation(battleTeam(a),battleTeam(b))<0:battleTeam(a)!==battleTeam(b);
 const battleFriend=(a,b)=>B?.sides?.active?B.sides.relation(battleTeam(a),battleTeam(b))>0:battleTeam(a)===battleTeam(b);
-// (skip to the end of a fight your army is out of: run on at once, in the field's own steps (a world battle's WORLD_BATTLE.step,
-// as its frames are; else step s), at most max s of it; BattleSides#skip)
+// (a fight your own army is out of (your hero and your groups, none of them fighting) while others fight on, in any battle (the
+// owner, 2026-10-30: "if player army fallen, ensure that we can skip or end battle with auto resolve"): Skip to the end runs it
+// on at once, in the field's own steps (a world battle's WORLD_BATTLE.step, as its frames are; else step s), at most max s of it,
+// still undecided then the stronger has the field; Auto-resolve settles it now, by chance as their strength stands)
 const BATTLE_SKIP={step:1/30,max:180};
 // (what an army has left on the field: each man's health by his tier, a character as four)
 const armyPower=u=>u.hp/Math.max(1,u.max)*(isChar(u)?4:ST[u.type]?.tier||1);
-function skipBattle(){if(B&&!B.over&&B.allyOn&&B.sides?.active)B.sides.skip()}
+const ownDown=()=>!!B&&!B.over&&!B.opts?.tournament&&!B.units.some(u=>u.team===0&&(u.hero||B.groups[u.grp]?.player)&&fighting(u));
+function skipBattle(){if(!ownDown())return;B.paused=false;if(B.sides?.active)return B.sides.skip();runOn(B);if(!B.over)settleBy(B,...teamPowers(B),false)}
+function resolveBattle(){if(!ownDown())return;if(B.sides?.active)return B.sides.skip(true);settleBy(B,...teamPowers(B),true)}
+function runOn(b){const X=BATTLE_SKIP,st=b.world?WORLD_BATTLE.step:X.step;for(let i=0;i<X.max/st&&!b.over&&B===b;i++)battleStep(st,!!b.world)}
+// (two sides: what each has left fighting)
+const teamPowers=b=>[0,1].map(t=>b.units.filter(u=>u.team===t&&fighting(u)).reduce((n,u)=>n+armyPower(u),0));
+// (settled by what is left, f for you and e against: the stronger has the field; now, by chance as they stand)
+function settleBy(b,f,e,now){b.over=true;b.endT=END_WAIT;b.win=now?Math.random()<f/Math.max(1e-9,f+e):f>e}
 class BattleSides{
  static eligible(e){return ['party','lord','patrol','caravan','monster','field'].includes(e?.kind)}
  static limit(e,enemies=e?.list?.length||0){if(!e)return;const slots=BATTLE_JOIN.armies-(enemies?2:1),keepFoes=!enemies&&e.foes?.length?1:0;e.allies=(e.allies||[]).slice(0,Math.max(0,slots-keepFoes));e.foes=(e.foes||[]).slice(0,slots-e.allies.length)}
@@ -98,10 +107,11 @@ class BattleSides{
  // fled or fallen too, so a foe beaten still leaves them yours)
  fightOn(){const teams=[...new Set(this.b.units.filter(u=>battleEnemy(0,u)).map(u=>u.team))];return this.b.units.filter(u=>u.team!==0&&fighting(u)&&(this.relation(0,u.team)>0||this.relation(0,u.team)===0&&teams.some(t=>this.relation(u.team,t)<0)))}
  /* skip to the end (your army down, the rest fighting on: BATTLE_SKIP): the fight run on at once, as it would go, at most max s of
-    it; still undecided then, the stronger side by what is left of it (power: their health by their tier) has the field */
- skip(){const b=this.b,X=BATTLE_SKIP,st=b.world?WORLD_BATTLE.step:X.step;for(let i=0;i<X.max/st&&!b.over&&B===b;i++)battleStep(st,!!b.world);if(b.over||B!==b)return;
+    it; still undecided then, the stronger side by what is left of it (power: their health by their tier) has the field; now
+    (Auto-resolve): settled at once, by chance as they stand */
+ skip(now){const b=this.b;if(!now)runOn(b);if(b.over||B!==b)return;
   const enemies=b.units.filter(u=>battleEnemy(0,u)&&fighting(u)),friends=this.fightOn(),sum=a=>a.reduce((n,u)=>n+armyPower(u),0);
-  b.over=true;b.endT=END_WAIT;b.win=sum(friends)>sum(enemies);b.byAllies=b.win;if(!b.win)b.captor=this.victor()}
+  settleBy(b,sum(friends),sum(enemies),now);b.byAllies=b.win;if(!b.win)b.captor=this.victor()}
  survivors(r){return this.b.units.filter(u=>r.groups.includes(u.grp)&&(u.hp>0||u.left)&&!u.waiting)}
  continueFight(){
   const b=this.b,old=b.world.fight;if(old)W.fights=W.fights.filter(f=>f!==old);

@@ -13,7 +13,11 @@ Kit.suite(({ok})=>{
  const down=b=>{for(const u of b.units)if(u.team===0)u.hp=0};
  try{
   // (two-sided: the watch is on your side)
-  {const {b,watch}=fight();ok(watch.length&&watch.every(u=>u.team===0),'the watch joins on your side');for(const u of b.units)if(u.team===0&&!watch.includes(u))u.hp=0;t.checkBattleOver();ok(!b.over,'two-sided: your army down, the watch fights on')}
+  {const {b,watch}=fight();ok(watch.length&&watch.every(u=>u.team===0),'the watch joins on your side');t.skipBattle();t.resolveBattle();ok(!b.over,'your army still fighting: no skip, no auto-resolve');
+   for(const u of b.units)if(u.team===0&&!watch.includes(u))u.hp=0;t.checkBattleOver();ok(!b.over,'two-sided: your army down, the watch fights on');
+   t.bhudSkip();const bar=document.getElementById('bSkip');ok(bar&&!bar.hidden&&bar.querySelector('[data-bskip]')&&bar.querySelector('[data-bres]'),'(the owner, 2026-10-30) your army down in any battle: Skip to the end and Auto-resolve');
+   window.Math.random=()=>.01;try{bar.querySelector('[data-bres]').click()}finally{window.Math.random=rnd}ok(b.over&&b.win,'Auto-resolve: settled at once by the strength left (the twelve of the watch against two)');t.finishBattle();t.bhudSkip();ok(!t.B&&(!document.getElementById('bSkip')||document.getElementById('bSkip').hidden),'and the bar is gone')}
+  {const {b,watch}=fight();for(const u of b.units)if(u.team===0&&!watch.includes(u))u.hp=0;t.checkBattleOver();t.skipBattle();ok(b.over&&b.win,'Skip to the end in a battle of two: fought out at once');t.finishBattle()}
   // (several armies: your army down, they fight on; they win: Victory)
   {const {b,watch}=fight();b.sides.activate();ok(b.sides.active&&watch.every(u=>u.team!==0&&b.sides.relation(0,u.team)>0),'several armies: the watch is its own army, beside you');
    for(const u of b.units)if(u.team===0)u.hp=0;t.checkBattleOver();ok(!b.over,'your army down: the battle goes on while the watch fights');
@@ -38,6 +42,8 @@ Kit.suite(({ok})=>{
    ok(/Defeat/.test(pn)&&/held the field/.test(pn)&&H&&H.k==='realm'&&H.fac===fac,'Defeat: taken by the watch\'s realm ('+(H&&H.name)+'), not by the bandits you met');t.Captivity.held=null}
   {const {b,watch}=fight();b.sides.activate();const wt=watch[0].team,rel=b.sides.relation.bind(b.sides);b.sides.relation=(a,c)=>a===0&&c===wt||a===wt&&c===0?-1:rel(a,c);
    down(b);t.checkBattleOver();t.skipBattle();ok(b.over&&!b.win&&b.captor?.team===wt,'skipped: fought out at once, the twelve of the watch hold the field');t.finishBattle();t.Captivity.held=null}
+  {const {b,watch}=fight();b.sides.activate();const wt=watch[0].team,rel=b.sides.relation.bind(b.sides);b.sides.relation=(a,c)=>a===0&&c===wt||a===wt&&c===0?-1:rel(a,c);
+   down(b);t.checkBattleOver();t.resolveBattle();ok(b.over&&!b.win&&b.captor?.team===wt,'Auto-resolve with two foes: lost, the strongest of them (the watch) holds the field');t.finishBattle();t.Captivity.held=null}
   // (one foe: a man of yours fleeing off the field is no withdrawal; it is a defeat)
   {const {b,watch}=fight();b.sides.activate();for(const u of b.units)if(u.team===0||watch.includes(u))u.hp=0;b.units.find(u=>u.team===0).left=true;t.checkBattleOver();ok(b.over&&!b.win&&!b.retreat,'beaten with a man run off the field: lost, not withdrawn');
    window.Math.random=()=>.99;try{t.finishBattle()}finally{window.Math.random=rnd}ok(/Defeat/.test(document.getElementById('panel').innerHTML)&&!/Withdrawn/.test(document.getElementById('panel').innerHTML),'Defeat, never Withdrawn');t.Captivity.held=null}
