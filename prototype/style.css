@@ -1007,7 +1007,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 @container ovl (max-width:520px){.qfacts{grid-template-columns:minmax(0,1fr);gap:1px}.qfacts dd{margin-bottom:5px}}
 
 /* Named portrait art: compact face crops in cards, readable busts in conversations. */
-img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover}
+img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:border-box;border:2px solid #a5834b;border-radius:4px;outline:1px solid #1a140c;background:#16130f}
+/* (painted art is framed, not shadowed: the shadow stays for the sprites, cut round their figures) */
+:is(.fb-unit,.fb-figure,.fb-person,.fb-character-stage)>img[src^="art/portrait/game/"]{filter:none}
 .lord-portrait{width:48px;height:48px;flex:none;object-fit:cover;image-rendering:pixelated;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--field)}
 .talk-pic[src^="art/portrait/game/"]{width:88px;height:88px}
 @media(max-height:500px){.talk-pic[src^="art/portrait/game/"]{width:52px;height:52px}.lord-portrait{width:40px;height:40px}}
