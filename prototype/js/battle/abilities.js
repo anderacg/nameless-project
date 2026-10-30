@@ -52,13 +52,13 @@ const CAST={
 };
 // cast it: paid and cooled down, or false (your hero's own checks first: combat.js castSkill)
 function castAbility(u,id,at){
-  const K=kitOf(u,id);if(K.st.cds[id]>0||!K.pay())return false;K.st.cds[id]=K.A.cd;CAST[id](u,K,at);
+  const K=kitOf(u,id);if(K.st.cds[id]>0||!K.pay())return false;K.st.cds[id]=K.A.cd;CAST[id](u,K,at);battleEvent('cast',{u,id,st:K.st});
   if(!K.hero&&!['cry','heal','banner'].includes(id))castSay(u,ABILITIES[id].n);return true}
 // a leap or a dash under way (your hero's and a champion's): true while it lasts
 function leapStep(u,st,dt){
   const L=st.leap;L.t+=dt;const p=Math.min(1,L.t/L.dur);if(Math.random()<.6)vfxGhost(u);u.x=L.sx+(L.tx-L.sx)*p;u.y=L.sy+(L.ty-L.sy)*p;u.z=Math.sin(Math.PI*p)*16;
   if(p>=1){st.leap=null;u.z=0;const K=kitOf(u,'leap'),A=K.A,R=34*A.r;B.rings.push({x:u.x,y:u.y-4,r:R,life:.4,max:.4,col:'255,190,90'});vfxCracks(u.x,u.y,6,R*.8);vfxRing(u.x,u.y,R*1.1,'190,160,110',.5);for(let i=0;i<10;i++){const b=rnd(0,6.283);vfx({k:'dust',x:u.x,y:u.y,vx:Math.cos(b)*rnd(40,90),vy:Math.sin(b)*rnd(15,35),r:rnd(2,4),grow:12,life:rnd(.5,.8),col:dustCol()})}
-    let n=0;for(const e of withinOf(u.x,u.y,R,foesOf(u))){K.strike(e,1.5,{kb:14,stun:1+A.stun,dt:'blunt'});n++}shakeIt(4);if(n&&K.hero)st.stop=.06}
+    battleEvent('land',{u,r:R});let n=0;for(const e of withinOf(u.x,u.y,R,foesOf(u))){K.strike(e,1.5,{kb:14,stun:1+A.stun,dt:'blunt'});n++}shakeIt(4);if(n&&K.hero)st.stop=.06}
   return true}
 function dashStep(u,st,dt){
   const D=st.dash,K=kitOf(u,'dash');D.t+=dt;vfxGhost(u);const p=Math.min(1,D.t/D.dur);u.x=D.sx+(D.tx-D.sx)*p;u.y=D.sy+(D.ty-D.sy)*p;fx(u.x,u.y,'#e8e4d0',1);

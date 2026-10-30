@@ -139,7 +139,7 @@ class HeroHands{
     Duel.meet(B.hero,e);if(!this.hard&&this.step!==heroCombo().length-1&&Defence.stops(B.hero,e))return;// (met in his stance: defence.js; the finisher, a hard attack never)
     const h=B.hero,X=this,dt=o.dt||shapeDt(o.shape,h.s.dt),mu=matchup(h.s,e.s,dt);let dm=h.s.dmg*(.85+Math.random()*.3)*mu*mult*(h.buffT>0?1.3:1)*(MANUAL_HERO?1:tiredMul(h).dmg);
     if(!o.noCrit&&Math.random()<(has('bloodlust')?.2:.1)+gm('crit')){dm*=1.8;B.floats.push({x:e.x,y:e.y-22,t:'Crit',life:.6,c:'#ffd24a'})}
-    Actor.of(e).wound(dm*formTaken(e,h),mu,dt,h,false);vfxHit(h,e,dm,{crit:dm>h.s.dmg*1.7});train(meleeSk(),2);
+    Actor.of(e).wound(dm*formTaken(e,h),mu,dt,h,false);vfxHit(h,e,dm,{crit:dm>h.s.dmg*1.7});battleEvent('blow',{u:h,e,crit:dm>h.s.dmg*1.7,kill:e.hp<=0});train(meleeSk(),2);
     knock(e,h.x,h.y,o.kb||0);if(o.stun)stun(e,o.stun);if(X.hard&&PHYSICS.on)physBlow(h,e,X.hard);// (your hero's hard attack: charmind.js)
     X.combo++;X.comboT=2.2;B.bestCombo=Math.max(B.bestCombo||0,X.combo);// (the longest chain: told in the log when the battle ends)
   }
@@ -159,7 +159,7 @@ class HeroHands{
     const h=B.hero,X=this,S=heroShot();if(h.cd>0){X.buf=true;return}X.buf=false;if(!haveShots()||!X.spend(S.sp,S.mp))return;
     heroSpendShots(1);
     h.cd=S.cd*(h.s.cd/.45);h.atkAt=B.t;h.face=Math.cos(B.aim)>=0?1:-1;
-    const dmg=h.s.dmg*S.mult*(.9+Math.random()*.2)*(h.buffT>0?1.3:1)*(kind==='magic'?spellMul():1+.04*skill('archery')),src={...h.s,bolt:'#ffe08a',flat:!!S.flat,heroShot:true};if(kind==='magic')train('spell',.5);
+    const dmg=h.s.dmg*S.mult*(.9+Math.random()*.2)*(h.buffT>0?1.3:1)*(kind==='magic'?spellMul():1+.04*skill('archery')),src={...h.s,bolt:'#ffe08a',flat:!!S.flat,heroShot:true};if(kind==='magic'){train('spell',.5);battleEvent('cast',{u:h,id:'bolt'})}
     // (as true as any shooter's: attacks.js aimErr, by their skill, their bow and their draw)
     if(kind==='ranged'&&!S.flat){const p=power==null?.75:power,dm=dmg*(.55+.6*p),E=Actor.of(h).aimErr(p);
       const dd=Math.min(bowRange(),aimReach(p));Missile.fire(h,B.aim+spreadOf(E),dm,src,dd,{speed:ARC_SPEED*(.8+dd/250)*(.6+.4*p),sc:E.d});return}
@@ -185,6 +185,7 @@ class HeroHands{
     for(const e of hits){X.hitFoe(e,c.mult*(pierce?Math.max(.5,1-.2*n):1),c);n++;if(c.one)break}// (a fist strikes one)
     if(n&&c.stop){X.stop=c.stop;shakeIt(c.shake)}
     if(n&&X.step===2)B.floats.push({x:h.x,y:h.y-28,t:c.n,life:.6,c:'#ffb04a'});
+    battleEvent('swing',{u:h,c,a:B.aim,r:R,n,last:step===CB.length-1});
     return n;
   }
   shove(){

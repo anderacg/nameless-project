@@ -175,12 +175,13 @@ function vfxAir(){
    Line), a gold burst from its men; flanked, a red flash on the side it is struck from; its leader down, a ring of shock round
    him and his men shaken. Light (Settings, Battle effects: fxLite): the rings, colours and stars only, no particles */
 const STATE_FX={on:true,pulse:1.6,flare:1.4,shock:.45,col:{cry:'236,104,64',banner:'120,170,255',stand:'236,200,110',rally:'255,220,120'},pale:.35,grey:.1};
-const fxLite=()=>prefGet('bfx')==='light';
+const fxLite=()=>prefGet('bfx')==='light',FX_LITE=new Set(['ring','flash','trail','streak','wave','star']);
 const STATE_MARKS=new WeakMap(),FXP=[];let FXR=1,FXT=0;
 const fxr=()=>(FXR=(FXR*1103515245+12345)%2147483648)/2147483648;
 const stateMark=o=>{let m=STATE_MARKS.get(o);if(!m){m={};STATE_MARKS.set(o,m)}return m};
-// (a moment's own particle: k ring, spark (rising), dust, flash; drawn in the air but rings and dust, which lie on the ground)
-function fxp(o){if(FXP.b!==B){FXP.length=0;FXP.b=B}if(fxLite()&&o.k!=='ring'&&o.k!=='flash')return;if(FXP.length>300)FXP.shift();o.age=0;FXP.push(o)}
+// (a moment's own particle: k ring, spark (rising), dust, flash, and the hero's (herofx.js); drawn in the air but rings and dust,
+// which lie on the ground. Light keeps FX_LITE's only)
+function fxp(o){if(FXP.b!==B){FXP.length=0;FXP.b=B}if(fxLite()&&!FX_LITE.has(o.k))return;if(FXP.length>300)FXP.shift();o.age=0;FXP.push(o)}
 // (his rings: what lifts him now)
 function stateRings(u){const C=STATE_FX.col,out=[],r=resolveOf(u);if(u.buffT>0)out.push(C.cry);
   const b=B.banner;if(b&&battleFriend(b.team,u)&&Math.hypot(u.x-b.x,u.y-b.y)<b.r)out.push(C.banner);if(r&&r.standing&&r.standing())out.push(C.stand);return out}
@@ -213,7 +214,7 @@ battleOn((type,d)=>{if(!STATE_FX.on||!B)return;const men=r=>r?B.units.filter(u=>
   if(type==='leader'&&d.u){const r=resolveOf(d.u);if(r)stateMark(r).shock=B.t;fxp({k:'ring',x:d.u.x,y:d.u.y,r:36,col:'255,120,100',life:.8})}
   if(type==='power'&&d.id==='rally')for(const g of d.gs||[])if(g.resolve)stateMark(g.resolve).rally=B.t});
 // (their particles, by the real clock: rings and dust on the ground (stateGround), the rest in the air (stateFxAir))
-function fxpStep(){const now=performance.now()/1000,dt=FXT?Math.min(.1,now-FXT):0;FXT=now;for(const p of FXP){p.age+=dt;if(p.vy)p.y+=p.vy*dt;if(p.vx)p.x+=p.vx*dt}for(let i=FXP.length-1;i>=0;i--)if(FXP[i].age>=FXP[i].life)FXP.splice(i,1)}
+function fxpStep(){const now=performance.now()/1000,dt=FXT?Math.min(.1,now-FXT):0;FXT=now;for(const p of FXP){p.age+=dt;if(p.g){p.vz-=p.g*dt;p.z=Math.max(0,p.z+p.vz*dt);if(!p.z&&p.vz<0)p.vx=p.vy=0}if(p.vy)p.y+=p.vy*dt;if(p.vx)p.x+=p.vx*dt}for(let i=FXP.length-1;i>=0;i--)if(FXP[i].age>=FXP[i].life)FXP.splice(i,1)}
 function stateGround(){if(!B||!FXP.length)return;fxpStep();for(const p of FXP){const a=1-p.age/p.life;
   if(p.k==='ring'){const q=p.age/p.life;ctx.strokeStyle='rgba('+p.col+','+(a*.7).toFixed(2)+')';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p.x,p.y,p.r*(.3+.8*q),p.r*(.3+.8*q)*.42,0,0,6.283);ctx.stroke()}
   else if(p.k==='dust'){ctx.fillStyle='rgba(196,180,140,'+(a*.4).toFixed(2)+')';ctx.beginPath();ctx.arc(p.x,p.y,p.r+p.age*4,0,6.283);ctx.fill()}}}

@@ -10,7 +10,7 @@ function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   fastWatch();// (Travel fast: back to 1x when anything calls for you: world.js)
   if(!DevConsole.opened){
-    if(G.mode==='battle'&&B)updateBattle(dt);
+    if(G.mode==='battle'&&B)updateBattle(heroBeat(dt));// (a crit's or a kill's beat of slow motion: gfx/herofx.js)
     else if(G.mode==='scene')updateScene(dt);
     else if(G.mode==='world')updateWorld(dt);
   }

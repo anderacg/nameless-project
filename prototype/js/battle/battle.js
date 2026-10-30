@@ -93,7 +93,9 @@ function checkBattleOver(){
    rout {r, m: its men}, rally {r} (r: a BattleResolve, morale.js); flank {u, src}, leader {u} (a leader falls), down {u} (a
    soldier falls: attacks.js), left {u} (off the field: morale.js leaveField); ambush {u} (terrain.js ambushMul); fallback
    {team} (an army falls back as one: commander.js); btype {text, team} (the battle's type, as it opens: setup.js); power
-   {team, id, c, gs} (commandpowers.js); ability {g, id} (unitabilities.js); withdraw {g} (battlecontrol.js) */
+   {team, id, c, gs} (commandpowers.js); ability {g, id} (unitabilities.js); withdraw {g} (battlecontrol.js); your hero's
+   blows, swing {u, c: the combo step, a, r, n: struck, last} and blow {u, e, crit, kill} (combat.js); a cast {u, id, st} (abilities.js,
+   and a hero's spell bolt) and a leap's landing, land {u, r} (gfx/herofx.js draws them) */
 const BATTLE_EARS=[];
 const battleOn=f=>{BATTLE_EARS.push(f)};
 function battleEvent(type,d){for(const f of BATTLE_EARS)f(type,d)}

@@ -236,8 +236,8 @@ function drawUnit(u){
   // round him, its back half behind him; a ford wets his feet and splashes as he walks; a frozen ford (frost) is ice. From the
   // battle's time and his id: drawn only)
   const z=Math.round(u.z||0),ghost=u.hero&&B.hx&&B.hx.inv>0,wk=B.terrain&&!z?groundAt(u.x,u.y):0,deep=wk===4,ford=wk===3&&B.env.c!=='frost',rr=Math.round(5*big+1);
-  if(deep)waterRing(x,y-2,rr,u,-1);else{ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y,5.5*big,1.8*big,0,0,6.283);ctx.fill()}// (a soft shadow)
-  stateAura(u,x,y,big);// (what lifts him, under his feet: vfx.js STATE_FX)
+  if(deep)waterRing(x,y-2,rr,u,-1);else{const sh=1-Math.min(.5,(u.z||0)/32);ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y,5.5*big*sh,1.8*big*sh,0,0,6.283);ctx.fill()}// (a soft shadow, smaller as he leaps)
+  heroAura(u,x,y,big);stateAura(u,x,y,big);// (what lifts him, under his feet: vfx.js STATE_FX)
   const hit=u.hitAt!=null&&B.t-u.hitAt<.09;
   // (moving: a step in the last few frames, so a man who stops and starts as he settles does not flicker between standing and walking)
   // (knocked down: over, lying, up again, physics.js)
@@ -361,7 +361,7 @@ function drawBattle(){
   if(!B.world&&B.terrain&&B.ground.water){const gw=B.ground,now=performance.now();if(!B.paused&&gw.wl)gw.wt=(gw.wt||0)+Math.min(.1,(now-gw.wl)/1000);gw.wl=now;
     if(!reducedMotion()){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0;PX.battleWater(ctx,gw,gw.wt||0,[vx,vy,vx+BVW/z,vy+BVH/z])}}if(!B.world){const t=fieldTop()-FIELD_EDGE.body+6,b=fieldBot()+4;ctx.fillStyle='rgba(8,10,16,.35)';if(t>0)ctx.fillRect(0,0,BW,t);if(b<BH)ctx.fillRect(0,b,BW,BH-b);ctx.fillStyle='rgba(232,224,200,.18)';if(t>0)ctx.fillRect(0,t,BW,1);if(b<BH)ctx.fillRect(0,b,BW,1)}// (the field's edges in sight: battle.js fieldTop)
   if(!B.world){if(!B.deploy)drawExit();drawDeploy();}// (the withdrawal edge: morale.js; the deployment zone: deploy.js)
-  drawCorpses();vfxGround();stateGround();// (the fallen and their blood; dust, shockwaves: vfx.js)
+  drawCorpses();vfxGround();stateGround();heroFxGround();// (the fallen and their blood; dust, shockwaves: vfx.js)
   {const l=!B.world&&B.terrain&&B.ground?lodStep():0;TREE_A=1-l;if(l>0){if(l<1)ctx.globalAlpha=l;drawLayer(PX.battleCanopy(B.ground));ctx.globalAlpha=1}}// (a big wood zoomed out: its canopy layer, LOD)
   for(const g of playerGroups()){const gr=B.groups[g];if((gr.order!=='hold'&&gr.order!=='advance')||!grpUnits(g).length)continue;
     const fx_=Math.round(gr.ax),fy=Math.round(gr.ay);rect(ctx,C.wood,fx_,fy-14,1,14);rect(ctx,C.team[0],fx_+1,fy-14,6,4);rect(ctx,'#e4e0cf',fx_+3,fy-13,2,2)}
@@ -393,7 +393,7 @@ function drawBattle(){
   for(const r of B.rings){const p=1-r.life/r.max;ctx.strokeStyle='rgba('+r.col+','+(r.life/r.max).toFixed(2)+')';ctx.lineWidth=3*worldEffectScale();ctx.beginPath();ctx.arc(r.x,r.y,r.r*(.5+.5*p),0,6.283);ctx.stroke()}
   for(const p of B.parts){ctx.save();effectTransform(p.x,p.y);if(p.stuck){const x=Math.round(p.x),y=Math.round(p.y);ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle='#c9b48a';ctx.fillRect(x-p.stuck,y-3,1,2);ctx.fillRect(x-2*p.stuck,y-5,1,2);ctx.fillStyle='#e8e4d0';ctx.fillRect(x-3*p.stuck,y-6,1,1);ctx.globalAlpha=1;ctx.restore();continue}
     ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x),Math.round(p.y),2,2);ctx.restore()}
-  vfxAir();stateFxAir();// (sparks, glows, embers, flying blood: vfx.js)
+  vfxAir();stateFxAir();heroFxAir();// (sparks, glows, embers, flying blood: vfx.js)
   // (a number pops up big and settles)
   for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1;if(k===1){txt(f.t,Math.round(f.x),Math.round(f.y),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(f.y));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();
@@ -417,11 +417,12 @@ function frame(){
   if(bat&&B.world){BVW=VW;BVH=VH}setRes(map?VW*VS:bat?BVW:VW,map?VH*VS:bat?BVH:VH,map?VS:1);
   ctx.save();if(map&&VS>1)ctx.scale(VS,VS);
   {const s=shakeView(bat);if(s)ctx.translate(s.x,s.y)}// (a blow's shake, a charge's jolt: drawn only, vfx.js)
+  if(bat){const z=heroZoom();if(z!==1){const w=ctx.canvas.width/2,h=ctx.canvas.height/2;ctx.translate(w,h);ctx.scale(z,z);ctx.translate(-w,-h)}}// (the finisher's zoom-punch: herofx.js)
   if(bat){drawBattle();if(B.hudWait){B.hudWait=false;bbar.hidden=false}}// (its HUD shown with its first frame: setup.js present)
   else if(scn)drawScene();
   else if(G.mode==='title'){ctx.fillStyle='#0b0d14';ctx.fillRect(0,0,VW,VH);drawWorld()}
   else drawWorld();
-  ctx.restore();
+  ctx.restore();if(bat)heroFlashDraw();
   if(typeof drawTouchHold==='function')drawTouchHold();
   if(typeof drawMapHold==='function')drawMapHold();// (the map's click-and-hold progress, in screen pixels: ring.js)
 }
