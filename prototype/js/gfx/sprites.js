@@ -107,8 +107,7 @@ function procPose(u,moved){
 }
 // a banner bearer on the map (people.js mapFigure): the party's leader in the banner's colour, on foot or riding a mount of colour
 // mc; f the step (0 to WALK.n-1)
-function partySprite(col,mc,f,race){f=(f||0)%PEOPLE_STEPS;const you=col==='#e8b94a';race=race||(you?P.race:'human');const k='p'+col+(mc||'')+f+race+(you?':'+(P.gear.weapon||'')+':'+(P.gear.body||'')+':'+(P.gear.head||''):'');if(spr[k])return spr[k];
-  if(you)return spr[k]=mapFigure({...lookOf('hero',0,true,0),race,team:'blue'},f,mc||null);
+function partySprite(col,mc,f,race){f=(f||0)%PEOPLE_STEPS;const you=col==='#e8b94a';race=race||(you?P.race:'human');const k='p'+col+(mc||'')+f+race;if(spr[k])return spr[k];
   const R=RACE_LOOK[race]||RACE_LOOK.human;
   return spr[k]=mapFigure({race,skin:R.skin[0],hair:R.hair[you?0:2],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,beard:R.beard?R.hair[0]:null,
     helm:you?'crown':'kettle',outer:'steel',inner:'dark',team:col,shortHair:true},f,mc||null)}
