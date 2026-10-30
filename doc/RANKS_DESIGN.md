@@ -38,6 +38,14 @@ Revision 3 (the owner's answers to revision 2's questions):
 - **The trainer trait** is a companion role (Trainer) and a hero talent, and **holdings' trainers work by the same rules** (roles, level, 5 a week).
 - **Some trainers stay put, some travel** between holdings and places; where they are is heard in the news and rumours. A player may need a certain trainer to train, or to **upgrade**, certain units.
 
+## 0. Proficiency and mastery (owner, 2026-10-30; built)
+
+- **Proficiency:** each rank above the first, +1% damage, health and aim (`RANKS.prof`).
+- **Mastery replaces the tier metals:** the badge is steel with its rank's chevrons; at rank 5 a group's experience is mastery experience, its badge bronze, silver, gold at 300, 700, 1200 more (`RANKS.mastery`).
+- **Each mastery is a pick:** a reached skill of its ladder improved (its `up`), or a drill (one more step of proficiency).
+- **Upgraded,** mastery and picks reset; half its mastery experience is its new kind's first experience (`RANKS.mastery.carry`).
+- §2's "metal is the tier" is superseded by this.
+
 ## 1. Experience and rank
 
 - Each group keeps `xp` (its experience) and `rank` (1 to 5). A new group starts at rank 1, `xp` 0.

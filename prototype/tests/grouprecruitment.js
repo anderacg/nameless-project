@@ -15,7 +15,7 @@ try{
  const fame=P.renown;P.renown=0;rejects(()=>service.hire(town,k,t.partyCap(),a.id),'capacity','bulk hire checks headcount for the whole order');P.renown=fame;
  while(r.slots<10)r.add(k,1,'new');rejects(()=>service.hire(town,k,2,'new'),'groups','full-slot army cannot create another bulk group');
  ok(service.hire(town,k,2,a.id).ok,'a full-slot army can reinforce an existing group');
- t.rankGain(a,1e6);a.form='loose';a.files=2;const count=a.count,id=a.id,oldGold=P.gold,oldOther=b.count;
+ t.rankGain(a,t.RANKS.xp[t.ST[k].tier].reduce((x,y)=>x+y,0));/* (rank 5, no mastery: nothing to carry) */a.form='loose';a.files=2;const count=a.count,id=a.id,oldGold=P.gold,oldOther=b.count;
  before=state();q=service.quoteGroupTraining(town,id,to);ok(q.ok&&q.count===count&&q.cost===count*service.trainPrice(to)&&q.rank===t.RANKS.max&&state()===before,'whole-group quote: its gold and its rank, without mutation');
  ok(service.trainGroup(town,id,to).ok&&r.slots===10&&a.id===id&&a.type===to&&a.count===count,'whole-group upgrade preserves ID, count and slot in a full army');
  ok(b.type===k&&b.count===oldOther&&P.gold===oldGold-q.cost&&t.rankOf(a)===1,'upgrade does not change the duplicate, spends its gold once, and starts again at rank 1');

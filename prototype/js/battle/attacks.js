@@ -74,7 +74,7 @@ class Fighter{
   // how true he shoots (p: a bow's draw, 0 to 1): AIM's spread by his weapon, his race, how steady he is, how tired, the draw
   aimErr(p){
     const u=this.u,s=u.s,base=s.magic||s.flat||this.flatShot()?AIM.flat:AIM.bow;let m=this.race()==='elf'?AIM.elf:1;
-    m*=this.steady()*(rankSkill(u,'aim')?.aim||1);
+    m*=this.steady()*rankAim(u);// (his rank's: battle/rankskills.js)
     const T=tiredMul(u);m*=T.dmg<.8?AIM.spent:T.dmg<1?AIM.tired:1;if(p!=null)m*=1+AIM.draw*(1-p);
     return{a:base[0]*m,d:base[1]*m}}
   flatShot(){return false}

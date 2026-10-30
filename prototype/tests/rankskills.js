@@ -23,7 +23,7 @@ Kit.suite(({ok})=>{
  {const a=unit(sp1),c=unit(sp5);ok(Math.abs(c.s.reach/a.s.reach-t.RANK_SKILLS.spear[2].reach)<1e-9,'Long reach at rank 3 and up: +'+Math.round((t.RANK_SKILLS.spear[2].reach-1)*100)+'% ('+c.s.reach.toFixed(1)+' against '+a.s.reach+')');
   ok(t.rankSkill(c,'hedge')&&!t.rankSkill(a,'hedge'),'the Hedge of spears at rank 5');
   const e=b.units.find(u=>u.team===1),sx=c.x,sy=c.y;c.face=1;e.x=c.x;e.y=c.y-20;ok(t.sideOf(c,e)!=='back'&&(t.sideOf(c,e)!=='flank'||t.spearBraced(c,e)),'hedged: braced against a charge from the flank, no Brace ordered ('+t.sideOf(c,e)+')');c.x=sx;c.y=sy}
- {const a=unit(bw1),c=unit(bw4),k=t.RANK_SKILLS.bow[2].aim;ok(Math.abs(t.aimErr(c).a/t.aimErr(a).a-k)<1e-9,'Steady aim at rank 3: their shots '+Math.round((1-k)*100)+'% truer');
+ {const a=unit(bw1),c=unit(bw4),k=t.RANK_SKILLS.bow[2].aim;ok(Math.abs(t.aimErr(c).a/t.aimErr(a).a-k*(1-3*t.RANKS.prof))<1e-9,'Steady aim at rank 3: their shots '+Math.round((1-k)*100)+'% truer (and 3% more for rank 4\'s proficiency)');
   ok(c.s.range===a.s.range,'Marksmen only at rank 5: the rank-4 bowmen\'s range as a rank 1\'s');
   const t0=t.Actor.of(c).shotTime();b.deploy=false;b.paused=false;ok(t.useGroupAbility(bg(bw4),'rapid')&&Math.abs(t.Actor.of(c).shotTime()/t0-t.UNIT_ABILITIES.rapid.mul)<1e-9,'Rapid shot: they shoot '+Math.round((1/t.UNIT_ABILITIES.rapid.mul-1)*100)+'% faster while it lasts')}
  for(const u of b.units)if(u.team===1)u.hp=0;t.checkBattleOver();b.endT=0;t.updateBattle(.01);if(t.B)t.finishBattle();t.act('cont');t.hidePanel();

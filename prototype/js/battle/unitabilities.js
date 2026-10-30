@@ -31,7 +31,7 @@ const UNIT_ABILITIES={
   // gain: morale at once (from 0, if they are breaking); morale: needs morale on
   rally:{n:'Rally',key:'Y',dur:0,cd:60,snd:'rally',gain:15,morale:true,who:u=>!u.s.mounted&&!u.s.charge,
     d:'Officers steady the ranks: +15 shared morale at once (at most 100), and a unit that is Breaking stops breaking. Not while routing, nor with morale off.',
-    use(g){const r=g.resolve;r.mor=Math.min(100,Math.max(0,r.mor)+this.gain);r.breakT=0;delete r.breakLimit;r.refreshState();r.sync();const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Rally!','#9fe09a',.8)}},
+    use(g){const r=g.resolve;r.mor=Math.min(100,Math.max(0,r.mor)+this.gain+rankUp(g,'rally','gain'));r.breakT=0;delete r.breakLimit;r.refreshState();r.sync();const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Rally!','#9fe09a',.8)}},
   // only scout troops (data/units.js isScout, by kind; never a character, the owner 2026-10-20). sight: their sight range in the fog of war
   // (battlefog.js fogRange; nothing with the fog off); speed: theirs (abilitySpeed, with Spur's); aiEarly: the AI's captains use
   // it while some enemy is unseen in the fight's first aiEarly s, or whenever they see none (commander.js captainScout)
@@ -65,14 +65,14 @@ function abilityWhyNot(g,id){
 }
 // one ability's state for a group: on (and how long left), cooling down (how long), and why it cannot be used now
 function abilityStatus(g,id){const A=UNIT_ABILITIES[id],S=g.abil&&g.abil[id],on=abilityActive(g,id);
-  return{id,n:A.n,active:on,left:on?Math.max(0,S.until-B.t):0,cooldown:S?Math.max(0,S.readyAt-B.t):0,cd:A.cd,dur:A.dur,why:abilityWhyNot(g,id)}}
+  return{id,n:A.n,active:on,left:on?Math.max(0,S.until-B.t):0,cooldown:S?Math.max(0,S.readyAt-B.t):0,cd:A.cd,dur:rankDur(g,id),why:abilityWhyNot(g,id)}}
 // what a group has (a BattleControl or its ID), in the registry's order
 function groupAbilities(g){if(typeof g==='string')g=B&&B.groups[g];return g?UNIT_ABIL_ORDER.filter(id=>groupHasAbility(g,id)).map(id=>abilityStatus(g,id)):[]}
 // use it: false (nothing done) when it cannot be used now
 function useGroupAbility(g,id){
   if(abilityWhyNot(g,id))return false;const A=UNIT_ABILITIES[id];
   if(!Object.hasOwn(g,'abil'))Object.defineProperty(g,'abil',{value:{},writable:true,configurable:true});
-  const S=g.abil[id]={at:B.t,until:B.t+A.dur,readyAt:B.t+A.cd};A.use(g,S);if(A.snd&&sfxOn()){const C=g.centre();sfxAt(A.snd,C.x,C.y)}// (its sound, snd: audio.js; a group rallying from a rout has its own, morale.js)
+  const S=g.abil[id]={at:B.t,until:B.t+rankDur(g,id),readyAt:B.t+A.cd};A.use(g,S);if(A.snd&&sfxOn()){const C=g.centre();sfxAt(A.snd,C.x,C.y)}// (its sound, snd: audio.js; a group rallying from a rout has its own, morale.js)
   battleEvent('ability',{g,id});
   return true;
 }
@@ -97,4 +97,4 @@ const abilityMomentum=u=>unitAbility(u,'spur');
 // a shot (attacks.js attack): the shooter's stats as his arrow carries them, fire arrows their fire copy (made once a kind)
 const FIRE_ARROW_SRC=new WeakMap();
 function arrowSrc(u,s){if(!unitAbility(u,'fire'))return s;let f=FIRE_ARROW_SRC.get(s);if(!f){f={...s,dt:'fire',bolt:UNIT_ABILITIES.fire.col,fireArrow:true};FIRE_ARROW_SRC.set(s,f)}return f}
-const arrowMul=u=>unitAbility(u,'fire')?UNIT_ABILITIES.fire.mul:1;
+const arrowMul=u=>unitAbility(u,'fire')?UNIT_ABILITIES.fire.mul+rankUp(B.groups[u.grp],'fire','mul'):1;

@@ -31,16 +31,16 @@ Kit.suite(({ok})=>{
   ok(t.rankXp(gg)>0&&t.rankOf(gg)===1,'an auto-resolved win teaches them too ('+t.rankXp(gg).toFixed(1)+')');t.act('cont');t.hidePanel()}
  // ======== upgrade: only at rank 5, the whole group, rank 1 again
  {Kit.world();const gg=r.groups.find(x=>x.type==='hum_foot'),to=t.UP.hum_foot[0],id=gg.id,n=gg.count;
-  ok(t.recruitment.quoteGroupTraining(null,id,to).code==='experience','rank 1: no upgrade');t.rankGain(gg,99999);
+  ok(t.recruitment.quoteGroupTraining(null,id,to).code==='experience','rank 1: no upgrade');t.rankReset(gg);t.rankGain(gg,t.RANKS.xp[1].reduce((a,b)=>a+b,0));
   const q=t.recruitment.trainGroup(null,id,to);const up=r.groups.find(x=>x.id===id);
-  ok(q.ok&&up.type===to&&up.count===n&&t.rankOf(up)===1&&!t.rankXp(up),'rank '+R.max+': the whole group upgrades ('+t.ST[to].n+' ×'+n+'), at rank 1 again')}
+  ok(q.ok&&up.type===to&&up.count===n&&t.rankOf(up)===1&&!t.rankXp(up),'rank '+R.max+' (no mastery yet): the whole group upgrades ('+t.ST[to].n+' ×'+n+'), at rank 1 again')}
  // ======== peasants: no rank, a long grind
  {const pk=t.peasantKind('human','farmer');r.add(pk,4,'new');const pg=r.groups.find(x=>x.type===pk);
   ok(t.rankOf(pg)===0&&t.rankNeed(pg)===R.peasant&&R.peasant>R.xp[1][1],'peasants: no rank, '+R.peasant+' experience to their first upgrade (more than a soldier\'s rank 3)');
   t.rankGain(pg,R.peasant-1);ok(!t.rankReady(pg)&&t.rankOf(pg)===0,'one short: not yet');t.rankGain(pg,5);ok(t.rankReady(pg)&&t.rankXp(pg)===R.peasant,'full: ready to upgrade')}
  // ======== the badge
  {const a=t.rankBadge('hum_foot',3,14),b=t.rankBadge('hum_sword',3,14),c=t.rankBadge('hum_foot',4,14);
-  ok(/<img class="rbadge"/.test(a)&&/Bronze/.test(a)&&/Silver/.test(b)&&/Gold/.test(t.rankBadge('hum_sergeant',1,14)),'a badge: bronze for tier 1, silver for tier 2, gold for tier 3');
+  ok(/<img class="rbadge"/.test(a)&&!/mastery/.test(a+b)&&a.match(/src="([^"]+)"/)[1]===b.match(/src="([^"]+)"/)[1]&&/Bronze mastery/.test(t.rankBadge('hum_foot',5,14,1))&&/Gold mastery/.test(t.rankBadge('hum_foot',5,14,3)),'a badge: steel, whatever its tier, till its mastery: bronze, silver, gold');
   const src=s=>s.match(/src="([^"]+)"/)[1];ok(src(a)!==src(c)&&src(a)===src(t.rankBadge('hum_foot',3,20)),'a picture for each metal and rank, drawn once');
   G.mode='world';t.openChar();const gg=r.groups[0];t.act('party-select',gg.id);const pn=document.getElementById('panel');
   ok(pn.querySelector('[data-army-group="'+gg.id+'"] .rbadge')&&/Rank \d/.test(pn.querySelector('[data-army-group="'+gg.id+'"] .fb-unit-xptxt').textContent),'the Army window: each group its badge and its rank');t.act('char-close')}

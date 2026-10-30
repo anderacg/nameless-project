@@ -56,7 +56,7 @@ Kit.suite(({ok})=>{
    ok(val(xp('hero'))===P.xp+'/'+t.LV_XP(P.level)&&txt('hero')==='Lv. '+P.level+' · '+P.xp+' / '+t.LV_XP(P.level)+' XP','the hero’s: experience to the next level ('+txt('hero')+')');
    ok(val(xp('comp_brann'))===brann.xp+'/'+t.LV_XP(brann.lv)&&txt('comp_brann')==='Lv. 4 · 50 / '+t.LV_XP(4)+' XP','a companion’s: its own, to its next level ('+txt('comp_brann')+')');
    ok(val(xp(foot.id))==='10/'+t.RANKS.xp[1][1]&&txt(foot.id)==='Rank 2 · 10 / '+t.RANKS.xp[1][1],'a troop group’s: its rank and the way to the next ('+txt(foot.id)+')');
-   ok(txt(knight.id)==='Rank 5 · top of its path'&&val(xp(knight.id))==='1/1','a top-tier group at its last rank: full, the top of its path')}
+   ok(txt(knight.id)==='Rank 5 · Gold mastery'&&val(xp(knight.id))==='1/1','a group at its last rank, its mastery full: gold')}
   // ---- opening each kind
   t.act('party-select','hero');{const d=q('.fb-hero-detail');const c=d&&d.querySelector('.ucard-x');ok(c&&/raised on the skill tree/.test(d.innerHTML)&&/Health/.test(c.querySelector('.uc-stats').textContent)&&/To level 2/.test(c.textContent)&&/Stamina/.test(c.textContent)&&c.querySelector('[data-act="army-edit"][data-arg="hero"]'),'the hero’s card: its numbers, experience, stamina and mana, Manage; its Character tab (attributes, perks)')}
   t.act('party-select','comp_brann');{const d=q('.fb-comp-detail');ok(d&&t.compShown()&&G.compSel==='brann'&&!qa('.fb-comp-detail [data-act="party-comp-tab"]').length&&d.querySelector('[data-act="party-unit-tab"][data-arg="gear"]')&&d.querySelector('[data-act="party-unit-tab"][data-arg="role"]')&&/To level 5/.test(d.querySelector('.ucard-x').textContent),'a companion’s card: the shared card, Equipment and Role tabs, its experience to the next level');

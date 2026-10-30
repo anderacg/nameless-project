@@ -79,15 +79,15 @@ class ArmyRoster extends TroopRoster{
   upgrade(id,to){
     const g=this.groups.find(g=>g.id===id);if(!g||!this.accepts(to)||g.type===to)return false;
     const c=this.counts,from=g.type,n=g.count;if(!Number.isSafeInteger(this.count(to)+n))return false;
-    c[from]-=n;if(!c[from])delete c[from];c[to]=this.count(to)+n;g.type=to;
+    const carry=masteryXp(g)*RANKS.mastery.carry;c[from]-=n;if(!c[from])delete c[from];c[to]=this.count(to)+n;g.type=to;
     // Do not carry a cavalry-only shape or an old frontage into a different troop type.
-    g.form='line';g.files=null;rankReset(g);this.changed();return true;
+    g.form='line';g.files=null;rankReset(g);rankGain(g,carry);this.changed();return true;// (its mastery, part of it, its new kind's first experience: core/ranks.js)
   }
   restore(group,n){
     const gs=this.groups,existing=gs.find(g=>g.id===group.id);
     if(existing){const amount=Math.min(n,this.groupCap(group.type)-existing.count);if(amount<=0)return 0;existing.count+=amount;const c=this.owner[this.field];c[group.type]=this.count(group.type)+amount;this.changed();return amount}
     if(this.slots-(this.wounded(group.id)>0?1:0)>=this.groupLimit||n>this.groupCap(group.type)||!troopAmount(n)||!this.accepts(group.type))return 0;// (its own held place counted once)
-    gs.push({id:group.id,type:group.type,count:n,form:'line',...(group.name?{name:group.name}:{}),...(group.rank?{rank:group.rank}:{}),...(group.xp?{xp:group.xp}:{})});const c=this.owner[this.field]||(this.owner[this.field]={});c[group.type]=this.count(group.type)+n;this.changed();return n;
+    gs.push({id:group.id,type:group.type,count:n,form:'line',...(group.name?{name:group.name}:{}),...(group.rank?{rank:group.rank}:{}),...(group.xp?{xp:group.xp}:{}),...(group.mxp?{mxp:group.mxp}:{}),...(group.picks?{picks:group.picks.slice()}:{})});const c=this.owner[this.field]||(this.owner[this.field]={});c[group.type]=this.count(group.type)+n;this.changed();return n;
   }
   transferTo(target,k,n=1,room=Infinity){
     if(target===this||target.counts===this.counts||!target.accepts(k))return 0;

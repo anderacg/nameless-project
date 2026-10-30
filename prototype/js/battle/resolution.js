@@ -166,11 +166,12 @@ function concludeEncounter(win,lost,kills,auto,slain,retreat){return new BattleR
 // Leadership 5% more a level. Its ranks gained (core/ranks.js), for the report
 function groupRanks(b,win){const r=partyRoster(P),up=[],lead=1+.05*skill('lead');
   for(const g of Object.values(b.groups)){if(!g.player||!g.sourceGroupId)continue;const men=b.units.filter(u=>u.grp===g.id&&!u.hero&&!u.comp&&!u.lord&&!u.leader),rec=r.groups.find(x=>x.id===g.sourceGroupId);if(!men.length||!rec)continue;
-    const k=rankGain(rec,(men.reduce((a,u)=>a+(u.xp||0),0)/men.length+TROOP_XP.fight+(win?TROOP_XP.win:0))*lead);if(k)up.push({id:rec.id,type:rec.type,rank:rankOf(rec)})}
+    const m0=masteryOf(rec),k=rankGain(rec,(men.reduce((a,u)=>a+(u.xp||0),0)/men.length+TROOP_XP.fight+(win?TROOP_XP.win:0))*lead);if(k||masteryOf(rec)>m0)up.push({id:rec.id,type:rec.type,rank:rankOf(rec),mastery:masteryOf(rec)>m0&&masteryOf(rec)})}
   return up}
 // (auto-resolved: each group the same, TROOP_XP.auto of a fought one's, the kills shared among your men)
 function groupRanksAuto(win,kills){const r=partyRoster(P),n=troopCount(),each=TROOP_XP.auto*(TROOP_XP.fight+(win?TROOP_XP.win:0)+(n?kills*TROOP_XP.kill*2/n:0))*(1+.05*skill('lead')),up=[];
-  for(const g of r.groups){const k=rankGain(g,each);if(k)up.push({id:g.id,type:g.type,rank:rankOf(g)})}return up}
+  for(const g of r.groups){const m0=masteryOf(g),k=rankGain(g,each);if(k||masteryOf(g)>m0)up.push({id:g.id,type:g.type,rank:rankOf(g),mastery:masteryOf(g)>m0&&masteryOf(g)})}return up}
 // (the report's line, and the messages: each group that ranked up, its badge)
-function rankUpHtml(up){for(const x of up)log(armyGroupLabel(x.id)+' reach rank '+x.rank+'.','good','band');
-  return up.length?'<p class="gold">Ranked up: '+up.map(x=>rankBadge(x.type,x.rank,14)+' '+htmlText(armyGroupLabel(x.id))+' rank '+x.rank).join(', ')+'.</p>':''}
+const rankUpWord=x=>x.mastery?cap1(RANKS.mastery.metal[x.mastery-1])+' mastery':'rank '+x.rank;
+function rankUpHtml(up){for(const x of up)log(armyGroupLabel(x.id)+' reach '+rankUpWord(x)+(x.mastery?': choose an improvement in the Army window.':'.'),'good','band');
+  return up.length?'<p class="gold">Ranked up: '+up.map(x=>rankBadge(x.type,x.rank,14,x.mastery||0)+' '+htmlText(armyGroupLabel(x.id))+' '+rankUpWord(x)).join(', ')+'.</p>':''}
