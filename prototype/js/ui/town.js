@@ -286,7 +286,7 @@ definePlace('stable',Stable);
    ready in one press, or a whole group at once. The order (G.town.cart) belongs to this visit, never to a save */
 class Barracks extends Place{
   constructor(id){
-    super(id,{n:'Barracks',ico:'shield',verbs:{'rec-tab':'tab',hire:'hire',train:'train','rec-upgroup':'upgroup',
+    super(id,{n:'Barracks',ico:'shield',verbs:{'rec-tab':'tab',hire:'hire',train:'train','rec-upgroup':'upgroup','rec-tnum':'tnum','rec-tset':'tset',
       ...Object.fromEntries(['pick','add','set','clear','fill','groups','hire','hire-ok','hire-no','info','info-back'].map(v=>['rec-'+v,'desk']))}});
   }
   shut(t){
@@ -309,12 +309,19 @@ class Barracks extends Place{
   tab(arg){G.town.recTab=arg==='train'?'train':'hire';G.town.info=null}
   hire(arg,t){const result=recruitment.hire(t,arg,1);recruitmentFeedback(result,t)}
   // ---- Train: each training a row (ready ones in one press, or a whole group's upgrade, keeping its place)
+  // (how many of a training you choose (the owner, 2026-10-30: "able to select how many we want to train"): G.town.trainN by
+  // from>to, 1 to n (those ready you can pay for), n at first)
+  trainWant(key,n){const v=(G.town.trainN||{})[key];return n<1?0:clamp(v==null?n:v,1,n)}
+  tnum(arg,t){const [key,d]=String(arg).split(':'),[k,to]=key.split('>'),n=this.trainMax(k,to),T=G.town.trainN||(G.town.trainN={});T[key]=d==='max'?n:clamp(this.trainWant(key,n)+(+d||0),1,Math.max(1,n))}
+  tset(arg){const [key,v]=String(arg).split(':'),[k,to]=key.split('>'),n=this.trainMax(k,to),T=G.town.trainN||(G.town.trainN={});T[key]=clamp(Math.floor(+v)||1,1,Math.max(1,n))}
+  trainMax(k,to){return Math.min(txpReady(k),Math.floor(P.gold/Math.max(1,trainCost(to))))}
   trainTab(t){const ups=this.ups(t);if(!ups.length)return '<p class="muted">None of your troops can train further. They gain experience by fighting.</p>';
-    return '<div class="rec-rows">'+ups.map(([k,to])=>{const s=ST[to],ready=txpReady(k),c=trainCost(to),n=Math.min(ready,Math.floor(P.gold/Math.max(1,c))),q=recruitment.quoteTraining(t,k,to),
+    return '<div class="rec-rows">'+ups.map(([k,to])=>{const s=ST[to],ready=txpReady(k),c=trainCost(to),n=this.trainMax(k,to),q=recruitment.quoteTraining(t,k,to),key=k+'>'+to,w=this.trainWant(key,n),
         whole=partyRoster(P).groups.filter(g=>g.type===k).map(g=>({g,q:recruitment.quoteGroupTraining(t,g.id,to)})).filter(x=>x.q.ok);
       return '<div class="rec-row" data-act="rec-pick" data-arg="'+k+'>'+to+'"><button class="rec-pic" type="button" data-act="rec-info" data-arg="'+k+'>'+to+'"><img src="'+portrait(to)+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
         '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(to),14)+' '+ST[k].n+' → '+s.n+'</strong><small>'+(ready?'<b class="gold">'+ready+' of '+P.troops[k]+' ready</b>':'Experience '+Math.floor(txpOf(k))+' / '+txpNeed(k)+' to train one')+' · '+c+'g each</small></div>'+
-        '<div class="rec-step"><button class="btn sm primary" type="button" data-act="train" data-arg="'+k+':'+to+':'+Math.max(1,n)+'"'+(q.ok&&n>0?'':' disabled title="'+htmlText(q.ok?'Not enough gold':q.code==='experience'?'Fight with them to gain experience':recruitmentWhy(q)||'Not available')+'"')+'>Train '+Math.max(1,n)+(n>0?' · '+n*c+'g':'')+'</button>'+
+        '<div class="rec-step">'+(n>1?'<button class="btn sm" type="button" data-act="rec-tnum" data-arg="'+key+':-1"'+(w<=1?' disabled':'')+' aria-label="One fewer">−</button><input class="rec-n" type="number" inputmode="numeric" min="1" max="'+n+'" step="1" value="'+w+'" data-qty="rec-tset" data-arg="'+key+'" aria-label="'+htmlText(s.n)+': how many to train"><button class="btn sm" type="button" data-act="rec-tnum" data-arg="'+key+':1"'+(w>=n?' disabled':'')+' aria-label="One more">+</button><button class="btn sm" type="button" data-act="rec-tnum" data-arg="'+key+':max"'+(w>=n?' disabled':'')+'>Max</button>':'')+
+        '<button class="btn sm primary" type="button" data-act="train" data-arg="'+k+':'+to+':'+Math.max(1,w)+'"'+(q.ok&&n>0?'':' disabled title="'+htmlText(q.ok?'Not enough gold':q.code==='experience'?'Fight with them to gain experience':recruitmentWhy(q)||'Not available')+'"')+'>Train '+Math.max(1,w)+(n>0?' · '+w*c+'g':'')+'</button>'+
         whole.map(x=>'<button class="btn sm" type="button" data-act="rec-upgroup" data-arg="'+x.g.id+':'+to+'">Whole group '+htmlText(x.g.name||x.g.id)+' ×'+x.g.count+' · '+x.q.cost+'g</button>').join('')+'</div></div>'}).join('')+'</div>'}
   train(arg,t){const [k,to,ns]=String(arg).split(':');for(let i=0;i<Math.max(1,+ns||1);i++){const r=recruitment.train(t,k,to);recruitmentFeedback(r,t);if(!r.ok)break}}
   upgroup(arg,t){const [id,to]=String(arg).split(':'),r=recruitment.trainGroup(t,id,to);recruitmentFeedback(r,t)}
