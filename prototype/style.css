@@ -396,6 +396,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .qt-row em{display:block;font-size:var(--fs-xs);font-style:normal;color:var(--faint)}
 @media (hover:hover){.qt-row:hover{background:rgba(255,255,255,.05)}}
 .qt-row:focus-visible{outline:1px solid var(--trim-hi);outline-offset:-1px}
+.qt-pops{display:flex;flex-direction:column;gap:6px}
 .qt-pop{border-color:var(--trim-hi);transition:opacity .3s,transform .3s}
 .qt-pop b{display:block;font-size:var(--fs-md);margin-bottom:6px}
 .qt-pop.going{opacity:0;transform:translateX(-10px)}
@@ -407,7 +408,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 /* (a phone on its side: at the top left, the band card being a sheet; two of them at most, a quest just taken beside them: below
    them it would cover the messages) */
 .screen.mobile-world .qtrack{top:var(--e-t);width:auto;flex-direction:row;align-items:flex-start;gap:6px}
-.screen.mobile-world .qt-list{width:230px}.screen.mobile-world .qt-pop{width:200px}
+.screen.mobile-world .qt-list{width:230px}.screen.mobile-world .qt-pop{width:270px}
 .screen.mobile-world .qt-list .qt-row:nth-child(n+4){display:none}
 /* under way (ui/underway.js): what your band is doing that lasts, under the minimap at the right edge, each a line and its way out */
 .underway{position:absolute;right:var(--e-r);top:calc(var(--e-t) + 130px);max-width:min(240px,46%);display:flex;flex-direction:column;background:var(--hud-face);border:1px solid var(--trim);border-radius:var(--r-md);box-shadow:var(--float),inset 0 0 0 1px var(--shade);padding:2px 4px;pointer-events:auto}
@@ -420,6 +421,10 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .screen.mobile-world .underway{max-width:min(200px,40%)}.screen.mobile-world .uw-row{min-height:28px;font-size:var(--fs-xs);gap:4px}.screen.mobile-world .uw-row .btn.sm{min-height:28px;min-width:0;padding:1px 7px;font-size:var(--fs-xs)}
 .screen.mobile-world .qt-row{min-height:0;padding:2px 4px 3px}
 .screen.mobile-world .qt-pop b{margin-bottom:4px}
+/* (a phone: each note one row, its title beside its buttons; the newest two) */
+.screen.mobile-world .qt-pop{display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:6px;padding:4px 6px}.screen.mobile-world .qt-pop .qt-new{display:none}
+.screen.mobile-world .qt-pop b{margin:0;font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.screen.mobile-world .qt-pop .qt-bar{grid-column:1/-1;margin-top:4px}
+.screen.mobile-world .qt-pop .btn.sm{min-height:28px;padding:1px 7px}.screen.mobile-world .qt-pop:nth-last-child(n+3){display:none}
 
 /* ---------- 6c. supplies ---------- */
 /* the band card's bars (render.js updateHUD), each its % at its end: fitness steel blue, red under half; morale violet, orange

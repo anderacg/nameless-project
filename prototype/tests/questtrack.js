@@ -22,6 +22,13 @@ Kit.suite(({ok})=>{
  t.saveGame(true,'1');t.loadGame('1');t.updateHUD(true);ok(rows().length===2&&P.track==='q'+q3.id,'a save keeps them');
  t.QuestTrack.set(null);t.updateHUD(true);ok(rows().length===1&&!P.track,'untracked in your Quests: gone from the tracker, none marked');
  t.QuestTrack.set('q'+q3.id);t.QuestTrack.drop('q'+q3.id);t.updateHUD(true);ok(rows().length===1&&P.track==='q'+q2.id,'a marked quest over: the next tracked one is marked')
+ // ======== several taken at once: their notes stacked
+ {const pops=()=>[...(tr()?.querySelectorAll('.qt-pop')||[])],qs=[21,25,29].map(take);
+  ok(pops().length===3&&qs.every((q,i)=>pops()[i].textContent.includes(q.title)),'three quests taken at once: three notes, stacked, the first on top');
+  const keep=pops()[2];pops()[1].querySelector('[data-act="qt-hide"]').click();ok(pops().length===2&&pops()[1]===keep&&pops()[0].textContent.includes(qs[0].title),'× on one: only it goes, the others\' notes (their bars) as they were');
+  pops()[0].querySelector('[data-act="qt-track"]').click();ok(pops().length===1&&rows().some(r=>r.textContent.includes(qs[0].title)),'Track on one: it joins the tracker, the other note stays');
+  [33,37,41].map(take);ok(pops().length===t.QTRACK.stack,'at most '+t.QTRACK.stack+' at once, the newest');
+  const pn=performance.now;let now=pn.call(performance)+(t.QTRACK.show+.5)*1000;performance.now=()=>now;try{t.updateHUD(true)}finally{performance.now=pn}ok(!pops().length,'their time up, all gone')}
  G.mode='battle';t.updateHUD(true);ok(tr().hidden,'not in battle');Kit.world();t.updateHUD(true);
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });
