@@ -1,11 +1,13 @@
 'use strict';
 /* ---------- under way (the owner, 2026-10-30: "staying should be more compact and use less space, at a corner of the screen; a
    panel that groups all the special actions"): on the world map, under the minimap, one small box of what your band is doing
-   that lasts (staying in a holding, in camp or making for it, following, by road, hurrying, a siege or a raid of yours), each a
+   that lasts (recruiting volunteers, or the chance to; staying in a holding, in camp or making for it, following, by road, hurrying, a siege or a raid of yours), each a
    line and its one way out. Each kind a row of UNDERWAY: on() its state (falsy: not shown), its icon, line and button. ---------- */
 const UNDERWAY=[
   {k:'stay',on:()=>stayTown(),ico:'house',line:t=>'<b>'+t.name+'</b> · '+(stayFree(t)?'free':stayCost()+'g/day')+(siegeLordsAt(t).length?' · <span class="bad">besieged</span>':''),
    title:t=>'Staying in '+t.name+(stayFree(t)?': free, as long as you like':': '+stayCost()+'g a day; your gold lasts until Day '+stayUntil()),btn:['sy-leave','Leave']},
+  {k:'recruit',on:()=>P.recruit&&townBy(P.recruit.town),ico:'troops',line:t=>'<b>Recruiting</b> · '+t.name+' · '+P.recruit.n+' joined',title:t=>'Volunteers from '+t.name+' join your groups for free, about '+volunteerRate(t).toFixed(1)+' an hour, while you stay or camp on its lands',btn:['uw-vstop','Stop']},
+  {k:'volunteers',on:()=>!P.recruit&&(P.camp||P.stay)&&(t=>t&&!volunteerWhy(t)&&t)(volunteerTown()),ico:'troops',line:t=>'<b>Volunteers</b> · '+t.name,title:t=>'Its people would join you for free to refill your groups: about '+volunteerRate(t).toFixed(1)+' an hour',btn:['uw-vgo','Recruit']},
   {k:'camp',on:()=>P.camp,ico:'fire',line:()=>'<b>In camp</b>',title:()=>'Your band rests: stamina comes back faster and the wounded mend (Z)',btn:['uw-camp','Break']},
   {k:'pitch',on:()=>!P.camp&&G.pitch,ico:'fire',line:()=>'<b>Making camp</b>',title:()=>'Your band makes for clear ground to camp',btn:['uw-pitch','Stop']},
   {k:'follow',on:()=>G.follow,ico:'shoe',line:f=>'<b>'+followName(f.o,true)+'</b>',title:f=>'Following '+followName(f.o)+': your band keeps after it at a distance (any other order ends it)',btn:['uw-follow','Stop']},
@@ -33,6 +35,8 @@ onAct('uw-',a=>{
   else if(a==='uw-follow'&&G.follow)followItem(G.follow.o).run();
   else if(a==='uw-road')setByRoad(false);
   else if(a==='uw-hurry')setHurry(false);
+  else if(a==='uw-vgo')volunteerStart();
+  else if(a==='uw-vstop')volunteerStop();
   else if(a==='uw-siege'){const t=townBy((P.siege||P.raid)?.town);if(t&&G.mode==='world')P.raid?(G.bes=t,G.mode='besiege',showRaid(t)):openSiege(t)}
   updateHUD(true);
 });
