@@ -15,7 +15,7 @@ Kit.suite(({ok})=>{
  const reach=t.marchRangeShape(r);ok(reach&&!reach.circle&&Math.abs(reach.range-t.ST.hum_bow.range/t.WORLD_BATTLE.scale)<.001,'archer preview uses its real base range and forward firing arc');
  ok(t.marchRangeShape(t.marchDraftRows().find(r=>r.type==='hum_knight'))===null,'melee-only groups have no ranged attack overlay');
  const cv=document.getElementById('marchCanvas'),ctx=cv.getContext('2d'),arc=ctx.arc,arcs=[];try{ctx.arc=function(...a){arcs.push(a);return arc.apply(this,a)};t.drawMarch()}finally{ctx.arc=arc}
- ok(arcs.length===3,'unit guides follow formation footprints instead of adding filled unit circles');
+ ok(new Set(arcs.map(a=>a[0]+','+a[1]+','+a[2].toFixed(3))).size===3,'unit guides follow formation footprints instead of adding filled unit circles (only the three rings, each drawn in its layers)');
  G.march.draft[arch.id].x=999;t.act('march-apply');t.openMarch();ok(t.marchGuidePoints(row()).every(p=>Math.hypot(row().x+p.x,row().y+p.y)<=t.marchDraftOuter()+.001),'Apply validates formation bounds before saving');t.act('march-back');
  Kit.world();const h=Kit.goHome('Ashford');Kit.goTo(h.x+160,h.y+120);const e=t.asParty({kind:'bandits',troops:['militia'],x:P.x+70,y:P.y,cool:0});G.enc={kind:'party',ref:e,list:e.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});
  const b=t.B,id=Object.keys(b.groups).find(id=>b.groups[id].sourceGroupId===arch.id),gr=b.groups[id];gr.currentFacing=gr.face=0;t.layForm(id);b.sel=id;b.hov=null;

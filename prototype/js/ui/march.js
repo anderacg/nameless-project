@@ -73,15 +73,31 @@ function marchFacingGuide(g,row,x,y,scale){
   const a=row.face||0,c=Math.cos(a),s=Math.sin(a),r=marchExtent(row)*scale+6,sx=x+c*r,sy=y+s*r,ex=sx+c*24,ey=sy+s*24;
   g.beginPath();g.moveTo(sx,sy);g.lineTo(ex,ey);g.moveTo(ex-c*8-s*5,ey-s*8+c*5);g.lineTo(ex,ey);g.lineTo(ex-c*8+s*5,ey-s*8-c*5);g.stroke();
 }
+/* the rings, alive (the owner, 2026-10-30: "more interesting effect or animated"): the gold boundary glowing, a highlight sweeping
+   round it once every spin s (red and quicker while a group is dragged outside it), the interaction ring's dashes creeping round
+   (ants px a second), the core breathing (breathe s); the selected group's outline creeping too. Drawn fps times a second while the
+   window is open (marchAnimate); still for anyone who asks the system for less motion */
+const MARCH_FX={spin:6,ants:10,breathe:3.5,fps:30,sweep:.7};
+const marchStill=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+function marchRings(g,v,scale,t,bad){const R=marchDraftOuter()*scale,I=(marchDraftOuter()+WORLD_BATTLE.interaction)*scale,C=marchCore(P)*scale,X=MARCH_FX,arc=r=>{g.beginPath();g.arc(v.x,v.y,r,0,Math.PI*2);g.stroke()};
+  g.save();g.strokeStyle='#756447';g.setLineDash([4,4]);g.lineDashOffset=-t*X.ants;arc(I);g.setLineDash([]);
+  g.globalAlpha=.55+.3*Math.sin(t*2*Math.PI/X.breathe);g.strokeStyle='#796943';arc(C);g.globalAlpha=1;
+  const gold=bad?'#ef8176':'#c9a551',pulse=bad?.5+.5*Math.sin(t*8):0;g.lineWidth=6;g.globalAlpha=.12+.2*pulse;g.strokeStyle=gold;arc(R);g.lineWidth=3;g.globalAlpha=.2+.2*pulse;arc(R);g.globalAlpha=1;g.lineWidth=1;arc(R);
+  const a=(t/(bad?X.spin/2:X.spin))%1*Math.PI*2,grd=g.createConicGradient?g.createConicGradient(a-X.sweep,v.x,v.y):null;
+  if(grd){grd.addColorStop(0,'rgba(255,232,160,0)');grd.addColorStop(X.sweep/(Math.PI*2),bad?'rgba(255,190,170,.95)':'rgba(255,236,170,.95)');grd.addColorStop(X.sweep/(Math.PI*2)+.002,'rgba(255,232,160,0)');grd.addColorStop(1,'rgba(255,232,160,0)');g.strokeStyle=grd;g.lineWidth=2.5;arc(R)}
+  g.restore()}
+// (drawn again fps times a second while the window is open, unless still)
+function marchAnimate(){if(G.marchAnim||marchStill())return;let last=0;const tick=now=>{if(!G.march||!document.getElementById('marchCanvas')){G.marchAnim=null;return}
+  if(now-last>=1000/MARCH_FX.fps){last=now;drawMarch()}G.marchAnim=requestAnimationFrame(tick)};G.marchAnim=requestAnimationFrame(tick)}
 function drawMarch(){
   const s=G.march,cv=document.getElementById('marchCanvas');if(!s||!cv)return;const v=marchCanvasView(),scale=v.scale,g=cv.getContext('2d'),dpr=dprOf();
   const width=Math.round(v.w*dpr),height=Math.round(v.h*dpr);if(cv.width!==width)cv.width=width;if(cv.height!==height)cv.height=height;g.setTransform(dpr,0,0,dpr,0,0);g.fillStyle='#211c18';g.fillRect(0,0,v.w,v.h);g.font='12px Arial';g.textAlign='center';
-  for(const [r,col,dash] of [[marchDraftOuter()+WORLD_BATTLE.interaction,'#756447',[4,4]],[marchDraftOuter(),'#c9a551',[]],[marchCore(P),'#796943',[]]]){g.strokeStyle=col;g.setLineDash(dash);g.beginPath();g.arc(v.x,v.y,r*scale,0,Math.PI*2);g.stroke()}g.setLineDash([]);g.fillStyle='#cfba85';g.fillText('FRONT →',v.w-48,v.y);
+  const t=marchStill()?0:performance.now()/1000;marchRings(g,v,scale,t,!!s.invalid);marchAnimate();g.fillStyle='#cfba85';g.fillText('FRONT →',v.w-48,v.y);
   const drag=s.gesture;if(drag?.form){g.strokeStyle='#ffe09a';g.lineWidth=2;g.beginPath();g.moveTo(drag.start.x,drag.start.y);g.lineTo(drag.end.x,drag.end.y);g.stroke();g.lineWidth=1}
   const reach=s.range&&marchRangeShape(marchDraftRows().find(r=>r.id===s.sel));
   if(reach){g.save();g.translate(v.x,v.y);g.scale(scale,scale);g.beginPath();if(reach.circle)g.arc(reach.ax,reach.ay,reach.range,0,Math.PI*2);else{reach.points.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.closePath()}g.fillStyle='rgba(120,190,255,.09)';g.strokeStyle='#78beff';g.lineWidth=1.5/scale;g.fill();g.stroke();g.restore()}
   if(s.invalid){const r=s.invalid,points=marchGuidePoints(r);g.strokeStyle='#ef8176';g.fillStyle='rgba(239,129,118,.12)';g.setLineDash([5,4]);g.beginPath();points.forEach((p,i)=>i?g.lineTo(v.x+(r.x+p.x)*scale,v.y+(r.y+p.y)*scale):g.moveTo(v.x+(r.x+p.x)*scale,v.y+(r.y+p.y)*scale));g.closePath();g.fill();g.stroke();g.setLineDash([]);g.fillStyle='#efaaa1';g.fillText('Outside army boundary · preview fitted inside',v.w/2,22)}
-  for(const row of marchDraftRows()){const x=v.x+row.x*scale,y=v.y+row.y*scale,points=marchGuidePoints(row);g.strokeStyle=row.id===s.sel?'#ffe09a':'#97804c';g.setLineDash([3,3]);g.beginPath();points.forEach((p,i)=>i?g.lineTo(x+p.x*scale,y+p.y*scale):g.moveTo(x+p.x*scale,y+p.y*scale));g.closePath();g.stroke();g.setLineDash([]);g.lineWidth=row.id===s.sel?2:1.5;marchFacingGuide(g,row,x,y,scale);g.lineWidth=1}g.setLineDash([]);
+  for(const row of marchDraftRows()){const x=v.x+row.x*scale,y=v.y+row.y*scale,points=marchGuidePoints(row);g.strokeStyle=row.id===s.sel?'#ffe09a':'#97804c';g.setLineDash([3,3]);g.lineDashOffset=row.id===s.sel?-t*MARCH_FX.ants:0;g.beginPath();points.forEach((p,i)=>i?g.lineTo(x+p.x*scale,y+p.y*scale):g.moveTo(x+p.x*scale,y+p.y*scale));g.closePath();g.stroke();g.setLineDash([]);g.lineWidth=row.id===s.sel?2:1.5;marchFacingGuide(g,row,x,y,scale);g.lineWidth=1}g.setLineDash([]);
   for(const row of marchDraftRows()){const p=s.draft[row.id],x=v.x+p.x*scale,y=v.y+p.y*scale,r=Math.max(marchExtent(row)*scale,marchPreviewFigures(row,scale).r);marchUnitPreview(g,row,x,y,scale);g.fillStyle='#211c18';g.fillRect(x-9,y-r-7,18,15);g.fillStyle='#eee0bc';g.fillText(String(marchNumbers(P)[row.id]),x,y-r+5)}
   const label=document.getElementById('marchLabel');if(label)label.textContent=armyGroupLabel(s.sel)+' · '+Math.round(s.draft[s.sel].x*10)/10+', '+Math.round(s.draft[s.sel].y*10)/10;
 }
