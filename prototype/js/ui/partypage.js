@@ -30,8 +30,8 @@ function rosterXp(id,u){
   if(u.cid){const c=compInit(u.cid);return{v:c.xp,max:LV_XP(c.lv),txt:'Lv. '+c.lv+' · '+Math.floor(c.xp)+' / '+LV_XP(c.lv)+' XP'}}
   const g=u.g||(P.woundedGroups||[]).find(w=>w.id===id);return g?rankLine(g):{v:0,max:1,txt:''};
 }
-const partyUnitWage=u=>u.id==='hero'?0:u.cid?BAND_PAY.companion:(u.fit+u.wounded)*BAND_PAY.soldier+(ST[u.type]?.mounted?u.fit*BAND_PAY.mounted:0);
-function partyWageNote(u){return u.id==='hero'?'Your hero takes no wage.':u.cid?'Companion wage, including while wounded or leading a party.':BAND_PAY.soldier+(ST[u.type]?.mounted?BAND_PAY.mounted:0)+'g per fit soldier per day; '+BAND_PAY.soldier+'g per wounded soldier. Group costs are added before the daily bill is rounded up.'}
+const partyUnitWage=u=>u.id==='hero'?0:u.cid?BAND_PAY.companion:(u.fit+u.wounded)*soldierPay(u.type)+(ST[u.type]?.mounted?u.fit*BAND_PAY.mounted:0);
+function partyWageNote(u){return u.id==='hero'?'Your hero takes no wage.':u.cid?'Companion wage, including while wounded or leading a party.':soldierPay(u.type)+(ST[u.type]?.mounted?BAND_PAY.mounted:0)+'g per fit soldier per day (tier '+(ST[u.type]?.tier||0)+'); '+soldierPay(u.type)+'g per wounded soldier. Group costs are added before the daily bill is rounded up.'}
 function recoveryTimeText(hours){
   if(!Number.isFinite(hours))return 'Recovery blocked: free space in the army group';
   const h=Math.max(1,Math.ceil(hours)),days=Math.floor(h/24),rest=h%24,at=Math.ceil(G.day*24+Clock.hour+h),day=Math.floor(at/24),hour=Math.floor(at%24);

@@ -39,7 +39,7 @@ const classN=s=>s.mounted&&s.range?'Missile cavalry':tagsOf(s).includes('shield'
 // the card; from: the troop it is trained from (its numbers shown as gains and losses)
 function unitCard(k,from){
   const s=ST[k];return cardHtml({key:k,s,name:s.n,sub:'Tier '+s.tier+(s.race?' · '+RACES[s.race].n:''),from:from&&ST[from],fromN:from&&ST[from]&&ST[from].n,
-    abil:unitAbilities(s),foot:(HIRE[k]?'Hire '+hireCost(k)+'g · ':'')+(UP_FROM(k)?'Train '+trainCost(k)+'g · ':'')+'Upkeep '+(.5+(s.mounted?.5:0))+'g a day'})}
+    abil:unitAbilities(s),foot:(HIRE[k]?'Hire '+hireCost(k)+'g · ':'')+(UP_FROM(k)?'Train '+trainCost(k)+'g · ':'')+'Upkeep '+(soldierPay(k)+(s.mounted?BAND_PAY.mounted:0))+'g a day'})}
 // a character's card (a companion, a lord, a chieftain; your hero): its own numbers, its traits and the skills it casts
 function charCard(c){
   const s=c.stats(),A=c.actives().map(id=>[ABILITIES[id].n,abilityText(id,s)]);

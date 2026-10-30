@@ -190,12 +190,15 @@ function dayTick(){
   G.day++;
   Systems.day();
 }
-// your band's wages for the day (cnt: everyone paid), and its larder: fresh food spoils; a varied larder (3 or more kinds) lifts
+// your band's wages for the day (everyone paid, each by his tier), and its larder: fresh food spoils; a varied larder (3 or more kinds) lifts
 // spirits. (It eats by the hour: world/supply.js)
-const BAND_PAY={soldier:.5,mounted:.5,companion:2};
-function bandPayroll(cnt){const detached=cparties().reduce((a,p)=>a+p.troops.length,0),soldiers=cnt??troopCount()+woundedN()+detached,base=soldiers*BAND_PAY.soldier,mounts=mountedN()*BAND_PAY.mounted,companions=compCount()*BAND_PAY.companion,raw=base+mounts+companions;return{base,mounts,companions,detached,raw,total:Math.ceil(raw)}}
+// (a soldier's wage a day by his kind's tier (the owner, 2026-10-30: "scale by tier"): peasants, then tiers 1 to 3; a fit rider more)
+const BAND_PAY={tier:[.25,.5,1,2],mounted:.5,companion:2};
+const soldierPay=k=>BAND_PAY.tier[clamp(ST[k]?.tier||0,0,3)];
+function bandPayroll(){const counts=[P.troops,P.wounded||{},...cparties().map(p=>countsOf(p.troops))],detached=cparties().reduce((a,p)=>a+p.troops.length,0),
+    base=counts.reduce((a,c)=>a+Object.entries(c).reduce((b,[k,n])=>b+n*soldierPay(k),0),0),mounts=mountedN()*BAND_PAY.mounted,companions=compCount()*BAND_PAY.companion,raw=base+mounts+companions;return{base,mounts,companions,detached,raw,total:Math.ceil(raw)}}
 // (none while you are held captive: you are not with your band, world/captivity.js)
-function bandWages(cnt){if(Captivity.held)return;const wage=bandPayroll(cnt).total;
+function bandWages(){if(Captivity.held)return;const wage=bandPayroll().total;
   if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad','band');mood('unpaid')}}}
 function bandLarder(){
   let rot=0;for(const g of FOODS){const r=GOODS[g].spoil,n=goodN(g);if(r&&n)rot+=goodTake(g,Math.min(n,Math.floor(n*r+Math.random())))}
@@ -206,7 +209,7 @@ function bandLarder(){
 // roads now and then; your fame; a realm's pay
 function bandDay(){
   const cnt=troopCount()+woundedN()+cparties().reduce((a,p)=>a+p.troops.length,0);
-  bandWages(cnt);bandLarder();
+  bandWages();bandLarder();
   for(const id in P.comps){const r=COMPS[id].rival;if(r&&P.comps[r]&&Math.random()<.12){P.comps[id].ap--;P.comps[r].ap--;log(COMPS[id].short+' and '+COMPS[r].short+' quarrel by the fire. Both are unhappy.','bad','band')}}
   if(P.morale<25&&cnt>0&&Math.random()<.5){const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);if(ks.length){const k=ks[rint(0,ks.length-1)];P.remove(k);log(cap1(an(ST[k].n.toLowerCase()))+' deserts in the night.','bad','band')}}// (only a fit soldier: the wounded and companions' parties count in cnt)
   survive();
