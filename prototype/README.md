@@ -1102,6 +1102,8 @@ Waterskin interaction range (2026-10-25): world-mode shoreline and well refills 
 
 World routing: escaped units return through a reachable terrain route instead of a straight radial line. Physical world-battle missiles scale with character sprites. Regression coverage: tests/worldretreat.js.
 
+March formation's wounded (2026-10-30; the owner: "should show current wounded units as well"): each group's wounded drawn in its last places, faded (`MARCH_PREVIEW.hurt`), a red cross on each (`marchHurt`); the selected group's line says how many are fit and wounded; a group all wounded is named under the field, out of the formation. Its dashed footprint is still its fit men's. Tests: marchwounded.
+
 March formation guides: dashed unit footprints follow actual slots and must fit inside the army placement circle. Selected ranged groups show base attack coverage; the live world-battle overlay follows native map scaling. Shared firing geometry lives in ui/battlehud.js; editor guides and previews in ui/march.js. Tests: marchrange and formationfacing.
 
 March editor dragging: right-drag a line to set the selected group frontage, placement and facing; touch users choose Draw formation first. Move groups repositions normally. Apply saves the relative heading for travel and starting world-battle formations; Back discards edits. Wedges preserve their shape and all formations stay inside the army circle. Tests: marchdrag.
