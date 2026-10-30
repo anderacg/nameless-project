@@ -436,9 +436,9 @@ function drawExits(){
 // charge momentum: how far it has run at its target, 0 to 1
 const momentum=u=>{const r=clamp((u.run||0)/CHARGE.run,0,1);return PHYSICS.on?Math.min(r,physSpeed(u)):r};// (physics: never more than the speed he still has, physics.js)
 /* a charge's weight on its first blow; its shock to the one it hits. The run is spent, and its stamina only once it counts as a
-   charge (riders CHARGE.min, foot CHARGE.foot_min). Spearmen still in the fight brace against a charge on their front (Brace:
-   their flanks too, unitabilities.js): no bonus, no shock. A deep block blunts the bonus, never from behind (formations.js formCharge) */
-function spearBraced(t,u){if(unitClass(t.s)!=='spear'||t.rout||withdrawing(t)||PHYSICS.on&&t.down>0)return false;const side=sideOf(t,u);return side==='front'||side==='flank'&&unitAbility(t,'brace')}
+   charge (riders CHARGE.min, foot CHARGE.foot_min). Spearmen still in the fight brace against a charge on their front (Brace,
+   and at rank 5 the Hedge of spears: their flanks too, unitabilities.js, battle/rankskills.js): no bonus, no shock. A deep block blunts the bonus, never from behind (formations.js formCharge) */
+function spearBraced(t,u){if(unitClass(t.s)!=='spear'||t.rout||withdrawing(t)||PHYSICS.on&&t.down>0)return false;const side=sideOf(t,u);return side==='front'||side==='flank'&&(unitAbility(t,'brace')||!!rankSkill(t,'hedge'))}
 function chargeMul(u,t){
   const m=momentum(u),s=u.s;u.run=0;if(s.range&&!s.charge||m<(s.charge?CHARGE.min:CHARGE.foot_min))return 1;fatigueCharge(u,m);// (the charge spends the runner's stamina: fatigue.js)
   if(spearBraced(t,u)){if(PHYSICS.on){physBraced(u,t,m);moraleSay(t,'Braced!','#cfe0ff',.7)}else B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}// (physics: the charge stopped dead, the riders hurt: physics.js)

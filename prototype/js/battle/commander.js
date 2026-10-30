@@ -759,7 +759,9 @@ class Commander{
       // (without a focus order, actors.js shooterTarget selects the nearest eligible foe by range and arc)
       }
       // (Fire arrows: their mark (their focus, else the nearest in reach) armoured or weak to fire: fireWorth)
-      const mk=focus?worth:g.tgt||(inR.length?inR.reduce((p,e)=>d2(e,C)<d2(p,C)?e:p):null);if(mk&&fireWorth(armed[0],mk)&&!abilityWhyNot(g,'fire'))g.useAbility('fire')}}
+      const mk=focus?worth:g.tgt||(inR.length?inR.reduce((p,e)=>d2(e,C)<d2(p,C)?e:p):null);if(mk&&fireWorth(armed[0],mk)&&!abilityWhyNot(g,'fire'))g.useAbility('fire');
+      // (Rapid shot, a ranked bowmen's (battle/rankskills.js): whenever a mark is in reach)
+      if(mk&&inR.length&&!abilityWhyNot(g,'rapid'))g.useAbility('rapid')}}
   // cavalry
   // (fresh riders (AI_TACTICS.fresh) charge from further off (cavStart: not only once on top of the foe) and pull back further to
   // charge again (regroupFar); tired ones stand off after a charge till rested (rested, restMax), and walk (runFor, captainFinish))

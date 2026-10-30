@@ -39,14 +39,18 @@ const UNIT_ABILITIES={
     get d(){return 'Scouts range ahead: for '+this.dur+' s they see '+Math.round((this.sight-1)*100)+'% farther through the fog of war and move '+Math.round((this.speed-1)*100)+'% faster. Only scout troops: rangers, hunters, marksmen and light riders.'},
     // (the tooltip's word on the fog: battlehud.js bhudAbilities)
     note:()=>B&&B.fog?'':' Fog of war is off: only the speed applies.',
-    use(g){if(B.fog&&sightOn())sightStep(true);const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Scout ahead!','#bfe6ff',.8)}}
+    use(g){if(B.fog&&sightOn())sightStep(true);const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Scout ahead!','#bfe6ff',.8)}},
+  // a bowmen's rung (data/ranks.js RANK_SKILLS bow, rank 4): mul, their shot time while it lasts (actors.js shotTime)
+  rapid:{n:'Rapid shot',key:'N',dur:8,cd:45,mul:.7,who:u=>rankRole(u)==='bow'&&!u.empty,
+    get d(){return 'Bowmen loose as fast as they can draw: for '+this.dur+' s they shoot '+Math.round((1/this.mul-1)*100)+'% faster.'},
+    use(g){const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Rapid shot!','#ffe08a',.8)}}
 };
 const UNIT_ABIL_ORDER=Object.keys(UNIT_ABILITIES);
 // a group's orders as Spur found them (a new order since: its pace is that order's)
 const spurSig=g=>[g.order,g.targetGroupId,g.targetUnitId,g.mvId,g.queue&&g.queue.length].join();
 // the troops an ability looks at: living, not routing, not a character or a beast
 const abilityTroops=g=>g.units.filter(u=>!u.rout&&!steady(u));
-function groupHasAbility(g,id){const A=UNIT_ABILITIES[id];if(!g||!A)return false;const m=abilityTroops(g);return m.length>0&&m.filter(A.who).length*2>=m.length}
+function groupHasAbility(g,id){const A=UNIT_ABILITIES[id];if(!g||!A)return false;const m=abilityTroops(g);return m.length>0&&m.filter(A.who).length*2>=m.length&&rankAllows(g,id)}// (and its rank's: battle/rankskills.js)
 // is it on (timed, and still holding: a braced group given another order is braced no more)
 function abilityActive(g,id){const S=g&&g.abil&&g.abil[id],A=UNIT_ABILITIES[id];return !!(S&&B&&B.t<S.until&&(!A.holds||A.holds(g,S)))}
 // why a group cannot use it now ('' when it can)

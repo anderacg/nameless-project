@@ -1,6 +1,6 @@
 # Unit ranks: design
 
-Status: **phase 1 built** (2026-10-30: ranks, badges, the rank-5 upgrade, the peasants' grind; README "Ranks"); phases 2 to 6 not yet; design revision 3 (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner answered revisions 1 and 2's questions; his answers are in **Decisions** and folded into the rules. §9 lists what is still open.
+Status: **phases 1 and 2 built** (2026-10-30: ranks, badges, the rank-5 upgrade, the peasants' grind; the Spear and Bow ladders; README "Ranks", "Rank skills"); phases 3 to 6 not yet; design revision 3 (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner answered revisions 1 and 2's questions; his answers are in **Decisions** and folded into the rules. §9 lists what is still open.
 
 **Readers:** the owner, and whoever builds the phases of §8.
 
@@ -99,7 +99,7 @@ Each role has five rungs. **Rank 1** has the role's basic skill; the rest unlock
 
 | Role | Rank 1 | Rank 2 | Rank 3 | Rank 4 | Rank 5 |
 |---|---|---|---|---|---|
-| Spear | Set spears (passive: braced against a charge on their front, as today) | ★ Brace (active) | Long reach (passive: +1 reach) | Rally ★ (active) | Hedge of spears (passive: a charge into them loses its bonus from any side but behind) |
+| Spear | Set spears (passive: braced against a charge on their front, as today) | ★ Brace (active) | Long reach (passive: +10% reach; built so, as world battles scale reach) | Rally ★ (active) | Hedge of spears (passive: a charge into them loses its bonus from any side but behind) |
 | Shield | Shield up (passive: +5% block) | Rally ★ | Shield push (active: knocks the front foe back) | Steady (passive: +10% morale) | Shield wall mastery (passive: shield wall without supporting shields) |
 | Sword | Drilled (passive: +5% attack speed) | Rally ★ | Press (active: +15% damage for 8 s) | Hardened (passive: +10% health) | Veteran blades (passive: +10% crit) |
 | Bow | Volley (the plain shot, as today) | ★ Fire arrows | Steady aim (passive: +10% accuracy) | Rapid shot (active: faster shots for 8 s) | Marksmen (passive: +10% range) |
@@ -111,6 +111,7 @@ Each role has five rungs. **Rank 1** has the role's basic skill; the rest unlock
 
 - A group has a skill when its rank has reached it. The rule that a group has an ability when half its men qualify stays for the role check.
 - One table (`RANK_SKILLS`, by role and rank) in `data/`, its numbers there; actives are new entries in `UNIT_ABILITIES`, gated by `rank`.
+- **As built (phase 2):** an ability on a role's ladder unlocks at its rung; one on another role's ladder and not its own is lost (bowmen have no Rally now); one on no built ladder yet (Spur, Scout ahead) stays from rank 1, as does every ability of a role not yet on a ladder. AI armies' groups count as rank `RANKS.ai` (2) until phase 5. Rapid shot is a new order (key N).
 - **Built first: Spear and Bow** (the owner). The other rows stay in the table as the plan, each added later as data (its passives as stat changes, its actives as `UNIT_ABILITIES` entries) with no new code paths. Until a role is built, its group has today's abilities from rank 1, so no role is left weaker meanwhile.
 
 ## 6. AI armies' ranks

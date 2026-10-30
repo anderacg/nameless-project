@@ -115,7 +115,7 @@ class Actor extends Fighter{
     const u=this.u;if(u.s.magic)return 'magic';if(ST[u.type]&&ST[u.type].beast)return 'throw';
     const w=unitLook(u).weapon||'';return w==='xbow'?'xbow':w==='sling'?'sling':w==='javelin'?'throw':u.s.flat?'xbow':'bow'}
   // (his attack time, split into his aim and reload by his weapon)
-  shotTime(){return this.u.s.cd}
+  shotTime(){return this.u.s.cd*(unitAbility(this.u,'rapid')?UNIT_ABILITIES.rapid.mul:1)}
   shotTimes(){const u=this.u,f=SHOOT.kinds[this.shotKind()],tot=this.shotTime();return{aim:u.s.aim??tot*f[0],reload:u.s.reload??tot*f[1]}}
   // a moment of a shooter: follow the movement/group facing, then draw, loose, reload
   shot(g,t,can,mv,dx,dy,mx,my,dt,strike){

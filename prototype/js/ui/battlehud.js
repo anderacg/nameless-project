@@ -215,6 +215,7 @@ function bhudArmies(){if(!window.battleArmyHud)window.battleArmyHud=new BattleAr
    with the reason in its tooltip, when none of them can use it now. A press (or its key) uses it for every selected group that
    can (commands.js groupAbility). data-abil, never data-order/flag/form: those lists are the orders' own */
 const ABIL_ICON={
+  rapid:['.........','.a...a...','..a...a..','...a...a.','aaaaaaaaa','...a...a.','..a...a..','.a...a...','.........'],
   brace:['....a....','...aaa...','....a....','....a....','....a....','...ba....','..b.a....','.b..a....','aaaaaaaaa'],
   fire:['....a....','...aa....','...aab...','..aabba..','.aabbba..','.abbbbaa.','.abbbbba.','..abbba..','...aaa...'],
   spur:['.........','a...a....','.a...a...','..a...a..','...a...a.','..a...a..','.a...a...','a...a....','.........'],

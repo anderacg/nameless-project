@@ -113,7 +113,7 @@ function updateBattle(rt){
 function battleStep(rt,world){
   // the battle's speed: everything runs on its clock; paused, nothing moves but you can still give orders
   if(B.paused||B.deploy)return;if(!world)rt*=B.speed||1;if(!world&&B.slow>0){B.slow-=rt;rt*=VFX.slow}// (a charge's impact: a moment of slow motion, vfx.js)
-  const dt=world?moveStep(1,rt*WORLD_PACE,false)*B.world.scale:rt*BATTLE_PACE;B.t+=dt;
+  const dt=world?moveStep(1,rt*WORLD_PACE,false)*B.world.scale:rt*BATTLE_PACE;B.t+=dt;for(const u of B.units)rankUnit(u);// (each soldier's rank passives, once: battle/rankskills.js)
   // World combat keeps the campaign clock: a hero impact must not freeze every army.
   if(world){B.slow=0;if(B.hx)B.hx.stop=0}
   // hit-stop: heavy blows freeze the fight for a moment while effects keep moving

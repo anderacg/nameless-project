@@ -15,11 +15,11 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  // ---- who has which
  let f=start([{type:'hum_spear',count:10},{type:'hum_bow',count:8},{type:'hum_knight',count:6},{type:'hum_mage',count:4},{type:'hum_xbow',count:6},{type:'hum_hbow',count:4},{type:'hum_foot',count:8}]);
  let [spear,bow,knight,mage,xbow,hbow,foot]=f.mine;
- ok(ids(spear)==='brace,rally'&&ids(bow)==='fire,rally'&&ids(xbow)==='fire,rally','spear infantry can brace, bow and crossbow archers loose fire arrows, and foot units rally');
+ ok(ids(spear)==='brace'&&ids(bow)==='fire'&&ids(xbow)==='fire,rally','at rank '+t.RANKS.ai+' (a lab\'s groups: RANKS.ai): spear infantry brace (Rally on their ladder at 4), bowmen loose fire arrows (no Rally on theirs), crossbowmen (no ladder yet) fire and rally (battle/rankskills.js)');
  ok(ids(knight)==='spur'&&ids(mage)==='rally'&&ids(foot)==='rally'&&ids(hbow)==='fire,scout','cavalry spur; casters get no fire arrows; mounted archers loose fire arrows and scout ahead but neither rally (not infantry) nor spur (no lance charge) ('+[knight,mage,foot,hbow].map(ids).join(' / ')+')');
  const half=spear.units.slice(0,6);half.forEach(u=>u.s={...u.s,tags:[]});ok(!t.groupHasAbility(spear,'brace')&&t.abilityWhyNot(spear,'brace')==='Not for this unit','a group has an ability only while most of its living, steady members qualify');
  half.forEach(u=>u.hp=0);ok(t.groupHasAbility(spear,'brace'),'the dead no longer count against it');
- ok(t.groupAbilities(spear.id).length===2&&t.groupAbilities(spear.id)[0].n==='Brace'&&spear.abilities().length===2,'groupAbilities accepts a control or an ID; BattleControl.abilities() is the same list');
+ ok(t.groupAbilities(spear.id).length===1&&t.groupAbilities(spear.id)[0].n==='Brace'&&spear.abilities().length===1,'groupAbilities accepts a control or an ID; BattleControl.abilities() is the same list');
  ok(!Object.keys(spear).includes('abil')&&!JSON.stringify(spear).includes('abil'),'no ability state is created by looking');
  // ---- cooldown, duration, refusals, pause
  f=start([{type:'hum_spear',count:10}]);spear=f.mine[0];const b=f.b;
@@ -87,7 +87,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  // ---- Scout ahead: only the scout kinds; characters never
  {const K=[...t.SCOUT_KINDS];ok(K.length>=8&&K.every(k=>t.ST[k]&&!t.ST[k].beast&&!t.ST[k].big&&!t.COMPS[k])&&['ranger','orc_hunter','elf_marks','hum_hbow','orc_wolf','elf_hart'].every(t.isScout)&&!['hum_knight','hum_bow','hum_spear','elf_archer','dw_iron','orc_grunt','brann','tavi'].some(t.isScout),'the scout kinds are light, fast troops ('+K.join(', ')+'), none heavy, none a character');
   const f5=start([{type:'ranger',count:6},{type:'orc_wolf',count:6},{type:'elf_marks',count:6},{type:'hum_bow',count:6},{type:'hum_knight',count:6},{type:'orc_hunter',count:6}]),[rg,wolf,mk,hb,kn,hu]=f5.mine;
-  ok(ids(rg)==='fire,rally,scout'&&ids(wolf)==='spur,scout'&&ids(mk)==='fire,rally,scout'&&ids(hu)==='fire,rally,scout','rangers, hunters, marksmen and wolf riders have Scout ahead ('+[rg,wolf,mk,hu].map(ids).join(' / ')+')');
+  ok(ids(rg)==='fire,scout'&&ids(wolf)==='spur,scout'&&ids(mk)==='fire,scout'&&ids(hu)==='fire,scout','rangers, hunters, marksmen and wolf riders have Scout ahead (on no ladder yet; the bowmen among them no Rally: '+[rg,wolf,mk,hu].map(ids).join(' / ')+')');
   ok(!t.groupHasAbility(hb,'scout')&&!t.groupHasAbility(kn,'scout')&&t.abilityWhyNot(kn,'scout')==='Not for this unit'&&!kn.useAbility('scout'),'bowmen and knights do not, and are refused it');
   ok(!UA.scout.who({type:'ranger',s:t.ST.ranger,hero:true})&&!UA.scout.who({type:'ranger',s:t.ST.ranger,comp:true})&&UA.scout.who({type:'ranger',s:t.ST.ranger}),'a character never counts as a scout, whatever his kind')}
  // ---- Scout ahead: the fog pushed back and the speed while on, then the cooldown
@@ -117,6 +117,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  // ---- the enemy (an AI captain) uses the same API
  f=start([{type:'hum_foot',count:6}],[{type:'hum_bow',count:6}]);ok(f.foes[0].useAbility('fire')&&t.abilityActive(f.foes[0],'fire'),'an enemy group uses its abilities through the same API');
  // ---- the order bar
+ const ai0=t.RANKS.ai;t.RANKS.ai=t.RANKS.max;// (the order bar's buttons with every rung reached)
  f=start([{type:'hum_spear',count:10},{type:'hum_spear',count:10},{type:'hum_bow',count:8}]);[spear]=f.mine;const sp2=f.mine[1],bw=f.mine[2];
  const fixed=()=>[...document.querySelectorAll('[data-order],[data-flag],[data-form]')].map(x=>x.dataset.order||x.dataset.flag||x.dataset.form).join(),before=fixed();
  const bar=()=>document.querySelector('#bbar .abils'),btn=id=>bar().querySelector('[data-abil="'+id+'"]');
@@ -131,12 +132,12 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  f.b.t+=20;t.setOrderUI();ok(parseFloat(btn('brace').querySelector('.acd').style.height)<h,'the shade shrinks as the cooldown runs');
  t.selectGroup(sp2.id,true);ok(!btn('brace').disabled&&/Ready for 1 of 2/.test(btn('brace').title),'with several selected, it is ready while any of them can use it');
  btn('brace').click();ok(t.abilityActive(sp2,'brace'),'and a press uses it for those that can');
- t.selectGroup(bw.id);ok([...bar().children].map(x=>x.dataset.abil).join()==='fire,rally','the buttons follow the selection');
+ t.selectGroup(bw.id);ok([...bar().children].map(x=>x.dataset.abil).join()==='fire,rapid','the buttons follow the selection (rank-5 bowmen: Fire arrows, Rapid shot)');
  window.dispatchEvent(new KeyboardEvent('keydown',{key:'ร',code:'KeyI',bubbles:true}));ok(t.abilityActive(bw,'fire'),'I looses fire arrows (keys by position, any layout)');
- t.selectGroup('all');ok([...bar().children].map(x=>x.dataset.abil).join()==='brace,fire,rally','All selected: every ability any group has');
- window.dispatchEvent(new KeyboardEvent('keydown',{key:'y',code:'KeyY',bubbles:true}));ok([spear,sp2,bw].every(g=>g.abil.rally),'Y rallies every selected group');
+ t.selectGroup('all');ok([...bar().children].map(x=>x.dataset.abil).join()==='brace,fire,rally,rapid','All selected: every ability any group has');
+ window.dispatchEvent(new KeyboardEvent('keydown',{key:'y',code:'KeyY',bubbles:true}));ok([spear,sp2].every(g=>g.abil.rally),'Y rallies every selected group that can');
  const hero=t.playerGroups().find(id=>id==='hero');if(hero){t.selectGroup(hero);ok(bar().hidden,'a selection without abilities hides the group')}
  else{f.b.sel=[];t.setOrderUI();ok(bar().hidden,'a selection without abilities hides the group')}
- L.exit();
+ L.exit();t.RANKS.ai=ai0;
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
