@@ -27,7 +27,9 @@ class ArmyRoster extends TroopRoster{
     // Count-based spawns get the same ten-soldier groups; never discard troops from an already oversized saved army.
     for(const g of a.groups.slice())while(g.count>this.groupCap(g.type)&&a.groups.length+this.reserved<ARMY_LIMIT){const n=Math.min(this.groupCap(g.type),g.count-this.groupCap(g.type));g.count-=n;a.groups.push({id:'g'+a.nextId++,type:g.type,count:n,form:g.form,files:g.files??null})}return a.groups;
   }
-  get slots(){return this.groups.length+this.reserved}
+  // (a group whose men are all wounded keeps its place till they heal or are lost: no new group takes it)
+  get held(){const gs=this.groups;return new Set((this.owner.woundedGroups||[]).filter(w=>w.count>0&&!gs.some(g=>g.id===w.id)).map(w=>w.id)).size}
+  get slots(){return this.groups.length+this.reserved+this.held}
   get order(){
     const ids=[...(this.rules.characters?this.rules.characters():[]),...this.groups.map(g=>g.id)],saved=this.owner.army.order||[];
     return [...new Set([...saved.filter(id=>ids.includes(id)),...ids])];
@@ -84,7 +86,7 @@ class ArmyRoster extends TroopRoster{
   restore(group,n){
     const gs=this.groups,existing=gs.find(g=>g.id===group.id);
     if(existing){const amount=Math.min(n,this.groupCap(group.type)-existing.count);if(amount<=0)return 0;existing.count+=amount;const c=this.owner[this.field];c[group.type]=this.count(group.type)+amount;this.changed();return amount}
-    if(this.slots>=this.groupLimit||n>this.groupCap(group.type)||!troopAmount(n)||!this.accepts(group.type))return 0;
+    if(this.slots-(this.wounded(group.id)>0?1:0)>=this.groupLimit||n>this.groupCap(group.type)||!troopAmount(n)||!this.accepts(group.type))return 0;// (its own held place counted once)
     gs.push({id:group.id,type:group.type,count:n,form:'line',...(group.name?{name:group.name}:{})});const c=this.owner[this.field]||(this.owner[this.field]={});c[group.type]=this.count(group.type)+n;this.changed();return n;
   }
   transferTo(target,k,n=1,room=Infinity){
