@@ -16,6 +16,8 @@ const battleFriend=(a,b)=>B?.sides?.active?B.sides.relation(battleTeam(a),battle
 // (skip to the end of a fight your army is out of: run on at once, in the field's own steps (a world battle's WORLD_BATTLE.step,
 // as its frames are; else step s), at most max s of it; BattleSides#skip)
 const BATTLE_SKIP={step:1/30,max:180};
+// (what an army has left on the field: each man's health by his tier, a character as four)
+const armyPower=u=>u.hp/Math.max(1,u.max)*(isChar(u)?4:ST[u.type]?.tier||1);
 function skipBattle(){if(B&&!B.over&&B.allyOn&&B.sides?.active)B.sides.skip()}
 class BattleSides{
  static eligible(e){return ['party','lord','patrol','caravan','monster','field'].includes(e?.kind)}
@@ -76,18 +78,30 @@ class BattleSides{
   const b=this.b,player=b.units.filter(u=>u.team===0&&fighting(u)),enemies=b.units.filter(u=>battleEnemy(0,u)&&fighting(u));
   if(enemies.length&&retreating()){retreatNow();return}
   const friends=player.length?player:this.fightOn();
+  // (no one fights for you, but your foes are at war with each other: they fight on, and whoever holds the field takes you (the
+  // owner, 2026-10-30: a watch and bandits both on you, "captured or have to do something with the winner, instead of withdrawn"))
+  if(!player.length&&!friends.length&&this.rivals()){if(!b.allyOn){b.allyOn=b.rivals=true;log('Your army is down. Your foes fight on against each other: whoever holds the field decides your fate.','bad','war')}return}
   if(!player.length&&friends.length&&!b.allyOn){b.allyOn=true;log('Your army is down. '+(friends.some(u=>this.relation(0,u.team)>0)?'Your allies fight on.':'The others fight on against your foes.'),'bad','war')}
   if(friends.length&&(enemies.length||b.world.pending.some(p=>p.o.troops.length&&this.relation(0,this.byOwner.get(p.o)?.team)<0)))return;b.over=true;b.endT=END_WAIT;b.win=!!friends.length;b.byAllies=b.win&&!player.length;
-  if(!b.win&&player.length===0&&b.units.some(u=>u.team===0&&u.left))b.retreat=true;
+  // (withdrawn only as you withdrew (morale.js retreating): a man of yours routing off the field is no withdrawal; beaten, the
+  // strongest of your foes still standing has you: victor)
+  if(!b.win&&retreating())b.retreat=true;if(!b.win&&!b.retreat)b.captor=this.victor();
  }
+ // (your foes still fighting, at war with each other)
+ rivals(){const t=[...new Set(this.b.units.filter(u=>battleEnemy(0,u)&&fighting(u)).map(u=>u.team))];return t.some(a=>t.some(c=>this.relation(a,c)<0))}
+ // (who holds the field among your foes: the strongest still fighting, by power (their health by their tier); its record)
+ victor(){const by=new Map();for(const u of this.b.units)if(battleEnemy(0,u)&&fighting(u))by.set(u.team,(by.get(u.team)||0)+armyPower(u));
+  let best=null,bp=0;for(const [t,p] of by)if(p>bp){bp=p;best=t}return best==null?null:this.teamRecord(best)}
+ // (the encounter you are beaten by: the one you met, or the army that holds the field)
+ captorEnc(r){const e=this.enc,o=r?.owner;if(!o||o===P||o===armySource(e?.ref))return e;return{kind:o.mapKind==='band'?'party':o.mapKind,ref:o,list:(o.troops||[]).slice()}}
  // (who fights on for you, your army down: an ally, or one not at war with you at war with a foe of yours: any of the field's,
  // fled or fallen too, so a foe beaten still leaves them yours)
  fightOn(){const teams=[...new Set(this.b.units.filter(u=>battleEnemy(0,u)).map(u=>u.team))];return this.b.units.filter(u=>u.team!==0&&fighting(u)&&(this.relation(0,u.team)>0||this.relation(0,u.team)===0&&teams.some(t=>this.relation(u.team,t)<0)))}
  /* skip to the end (your army down, the rest fighting on: BATTLE_SKIP): the fight run on at once, as it would go, at most max s of
     it; still undecided then, the stronger side by what is left of it (power: their health by their tier) has the field */
  skip(){const b=this.b,X=BATTLE_SKIP,st=b.world?WORLD_BATTLE.step:X.step;for(let i=0;i<X.max/st&&!b.over&&B===b;i++)battleStep(st,!!b.world);if(b.over||B!==b)return;
-  const w=u=>u.hp/Math.max(1,u.max)*(isChar(u)?4:ST[u.type]?.tier||1),enemies=b.units.filter(u=>battleEnemy(0,u)&&fighting(u)),friends=this.fightOn(),sum=a=>a.reduce((n,u)=>n+w(u),0);
-  b.over=true;b.endT=END_WAIT;b.win=sum(friends)>sum(enemies);b.byAllies=b.win}
+  const enemies=b.units.filter(u=>battleEnemy(0,u)&&fighting(u)),friends=this.fightOn(),sum=a=>a.reduce((n,u)=>n+armyPower(u),0);
+  b.over=true;b.endT=END_WAIT;b.win=sum(friends)>sum(enemies);b.byAllies=b.win;if(!b.win)b.captor=this.victor()}
  survivors(r){return this.b.units.filter(u=>r.groups.includes(u.grp)&&(u.hp>0||u.left)&&!u.waiting)}
  continueFight(){
   const b=this.b,old=b.world.fight;if(old)W.fights=W.fights.filter(f=>f!==old);
@@ -118,7 +132,11 @@ class BattleSides{
   this.continueFight();let heading=b.win?'Victory':b.retreat?'Withdrawn':'Defeat',detail=(b.byAllies?'Your army fell, but '+(b.units.some(u=>u.team!==0&&u.hp>0&&this.relation(0,u.team)>0)?'your allies':'the others')+' held the field. ':'')+'Your army defeated '+kills.length+' foes. Rewards count only your army’s kills.';
   if(b.win)this.thanks();
   // (beaten, your allies too: taken captive, or away in the rout: world/captivity.js)
-  if(!b.win&&!b.retreat){if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}captivesEscape();const fate=Captivity.defeat(e);if(e?.ref&&e.kind!=='camp')e.ref.cool=8;detail+=' '+fate.text;log('Defeat. '+fate.text,'bad','war')}
+  // (by whoever holds the field: captorEnc; it grows by its win as in a battle of two, resolution.js conclude)
+  if(!b.win&&!b.retreat){if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}captivesEscape();const ce=this.captorEnc(b.captor)||e,fate=Captivity.defeat(ce);if(ce?.ref&&ce.kind!=='camp')ce.ref.cool=8;
+   if(ce?.kind==='party')chiefWins(ce.ref,partySize()+1);if(ce?.kind==='lord')lordWins(ce.ref,partySize());if(ce?.kind==='patrol'){const h=townBy(ce.ref.home);if(h)h.crime=null}
+   if(ce!==e)detail+=' '+cap1(this.label(b.captor))+' held the field.';detail+=' '+fate.text;log('Defeat. '+fate.text,'bad','war')}
+  if(!b.win)encLost(e);
   const moodLine=battleMood(b.win?(kills.length?4:0):b.retreat?-8:-15,b.win?'victory':b.retreat?'withdrawal':'defeat');G.enc=null;G.encCool=4;G.mode='dialog';worldEmit('battle:ended',{enc:e,how:b.win?'won':b.retreat?'withdrawn':'lost'});
   const report={groups:groups.map(g=>({id:g.id,type:g.type,name:g.name,start:g.start,fit:g.start-g.count,wounded:g.wounded,killed:g.count-g.wounded,saved:g.saved,rearguard:0})),characters:[]};
   lootShow('<h2>'+heading+'</h2><p>'+detail+' Surviving armies keep their own soldiers; other hostile armies can continue fighting.</p>'+moodLine,lost,saved,'cont',report);updateHUD(true);

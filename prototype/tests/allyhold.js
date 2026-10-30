@@ -28,6 +28,19 @@ Kit.suite(({ok})=>{
   // (they fall too: Defeat, through the escape roll)
   {const {b,watch}=fight();b.sides.activate();for(const u of b.units)if(u.team===0||watch.includes(u))u.hp=0;t.checkBattleOver();ok(b.over&&!b.win&&!b.byAllies,'the watch falls too: lost');
    window.Math.random=()=>.99;try{t.finishBattle()}finally{window.Math.random=rnd}ok(/Defeat/.test(document.getElementById('panel').innerHTML)&&t.Captivity.held,'Defeat: taken captive, as any lost battle');t.Captivity.held=null}
+  // (two foes on you, at war with each other (the owner, 2026-10-30: a watch and bandits; before, "Withdrawn"): your army down, they
+  // fight on; whoever holds the field takes you, even with a man of yours who ran off the field)
+  {const {b,watch}=fight();b.sides.activate();const wt=watch[0].team,rel=b.sides.relation.bind(b.sides);b.sides.relation=(a,c)=>a===0&&c===wt||a===wt&&c===0?-1:rel(a,c);
+   const mine=b.units.filter(u=>u.team===0);down(b);mine[0].left=true;t.checkBattleOver();ok(!b.over&&b.allyOn&&b.rivals&&!b.retreat,'two foes at war with each other: your army down (one man fled off the field), the battle goes on');
+   const el=document.getElementById('bSkip');if(el)el.innerHTML='';t.bhudSkip();ok(/against each other/.test(document.getElementById('bSkip')?.textContent||''),'the bar says your foes fight each other, with Skip to the end');
+   for(const u of b.units)if(u.team!==wt&&t.battleEnemy(0,u))u.hp=0;t.checkBattleOver();ok(b.over&&!b.win&&!b.retreat&&b.captor&&b.captor.team===wt,'the watch beats the bandits: you lost, not withdrawn, and the watch holds the field');
+   window.Math.random=()=>.99;try{t.finishBattle()}finally{window.Math.random=rnd}const H=t.Captivity.held,pn=document.getElementById('panel').innerHTML;
+   ok(/Defeat/.test(pn)&&/held the field/.test(pn)&&H&&H.k==='realm'&&H.fac===fac,'Defeat: taken by the watch\'s realm ('+(H&&H.name)+'), not by the bandits you met');t.Captivity.held=null}
+  {const {b,watch}=fight();b.sides.activate();const wt=watch[0].team,rel=b.sides.relation.bind(b.sides);b.sides.relation=(a,c)=>a===0&&c===wt||a===wt&&c===0?-1:rel(a,c);
+   down(b);t.checkBattleOver();t.skipBattle();ok(b.over&&!b.win&&b.captor?.team===wt,'skipped: fought out at once, the twelve of the watch hold the field');t.finishBattle();t.Captivity.held=null}
+  // (one foe: a man of yours fleeing off the field is no withdrawal; it is a defeat)
+  {const {b,watch}=fight();b.sides.activate();for(const u of b.units)if(u.team===0||watch.includes(u))u.hp=0;b.units.find(u=>u.team===0).left=true;t.checkBattleOver();ok(b.over&&!b.win&&!b.retreat,'beaten with a man run off the field: lost, not withdrawn');
+   window.Math.random=()=>.99;try{t.finishBattle()}finally{window.Math.random=rnd}ok(/Defeat/.test(document.getElementById('panel').innerHTML)&&!/Withdrawn/.test(document.getElementById('panel').innerHTML),'Defeat, never Withdrawn');t.Captivity.held=null}
  }finally{window.Math.random=rnd;t.Captivity.held=null}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

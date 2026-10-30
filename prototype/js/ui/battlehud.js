@@ -171,7 +171,7 @@ function bhudTop(){
 function bhudSkip(){let el=document.getElementById('bSkip');const on=!!(B&&!B.over&&B.allyOn);
   if(!el){if(!on)return;const top=document.querySelector('.btop');if(!top)return;el=document.createElement('div');el.id='bSkip';el.className='bwithdraw';el.setAttribute('role','status');top.appendChild(el);
     el.addEventListener('click',e=>{if(e.target.closest('[data-bskip]'))skipBattle()})}
-  el.hidden=!on;if(on&&!el.innerHTML)el.innerHTML='<b>Your army is down</b> <em>The others fight on against your foes.</em> <button type="button" class="wgo" data-bskip>Skip to the end</button>';if(!on)el.innerHTML=''}
+  el.hidden=!on;if(on&&!el.innerHTML)el.innerHTML='<b>Your army is down</b> <em>'+(B.rivals?'Your foes fight on against each other.':'The others fight on against your foes.')+'</em> <button type="button" class="wgo" data-bskip>Skip to the end</button>';if(!on)el.innerHTML=''}
 // Army banners open a relationship view without changing selection or issuing an order.
 class BattleArmyHud{
  constructor(){
