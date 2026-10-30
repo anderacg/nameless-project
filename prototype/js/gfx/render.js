@@ -442,7 +442,7 @@ function frame(){
    carried, troops, power and pace as icon chips (what runs short is red); where you are and whom you serve. Your hero's health
    and mana are in the Hero window (C) and the battle. The top bar: the day and the time */
 function updateHUD(force){
-  stayBanner();hurryUI();const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=bandFitness(),fp=Math.round(F.pct),mo=Math.round(P.morale),lh=landHold(P.x,P.y),sp=bandPace()*hurryPace();// (Hurry lit, and in the pace: supply.js)
+  hurryUI();const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=bandFitness(),fp=Math.round(F.pct),mo=Math.round(P.morale),lh=landHold(P.x,P.y),sp=bandPace()*hurryPace();// (Hurry lit, and in the pace: supply.js)
   const bar=(v,cls,txt,title)=>'<div class="bar '+cls+'" title="'+title+'"><i style="width:'+Math.max(0,Math.min(100,Math.round(v)))+'%"></i><em>'+txt+'</em></div>';
   const chip=(ic,val,title,warn,cls)=>'<span class="chip'+(warn?' warn':'')+'" title="'+title+'">'+icon(ic,14)+'<span'+(cls?' class="'+cls+'"':'')+'>'+val+'</span></span>';
   const days=d=>(d>=10?Math.floor(d):Math.floor(d*10)/10)+'d',rate=S.r.n,go=S.go?'on the march':'at rest';
@@ -468,10 +468,11 @@ function updateHUD(force){
       (prisonerCount()?chip('prisoners',prisonerCount(),'Prisoners'):'')+'</div>'+
     '<div class="pc-line" title="Where you are">'+icon('region',12)+'<span>'+regionAt(P.x,P.y).name+' · <span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span></span></div>'+
     '<div class="pc-line" title="Renown and whom you serve">'+icon('renown',12)+'<span>'+P.renown+'</span>'+icon('banner',12)+'<span'+(P.fac?' style="color:'+FACS[P.fac].col+'"':'')+'>'+(P.fac?FACS[P.fac].n:'Independent')+'</span></div>');
-  const d=$('#wday');if(d)setHtml(d,icon(darkness()>.3?'moon':'sun',16)+'<span>Day '+G.day+' · '+timeOfDay()+'</span>'+byRoadPill()+followPill()+'<b'+(G.paused?'':' class="off"')+'>Paused</b>');
+  const d=$('#wday');if(d)setHtml(d,icon(darkness()>.3?'moon':'sun',16)+'<span>Day '+G.day+' · '+timeOfDay()+'</span><b'+(G.paused?'':' class="off"')+'>Paused</b>');
   window.mobileWorldHud?.update(fp,mo,Math.round(P.bsta));
   const cb=$('#campBtn');if(cb){cb.classList.toggle('on',!!P.camp);cb.setAttribute('aria-pressed',String(!!P.camp))}
   questTrackHUD();// (the quests you track, under the band card as it now stands: ui/questtrack.js)
+  underwayHUD();// (what your band is doing, under the minimap: ui/underway.js)
 }
 // a short hint at the top of the screen for where you are (H shows every control)
 function updateHint(){

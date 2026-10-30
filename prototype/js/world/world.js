@@ -90,7 +90,7 @@ function approach(o){if(o.mapKind==='critter'&&o.wild&&o.inView(vis()))return hu
    your band stopping there; any other order (a click, Travel here, a chase, making camp: followStop, quietly), or a battle, a
    meeting, an encounter (the map no longer yours: G.mode one of FOLLOW.ends). Hostile or not: what it does about you is its own
    mind's. What can be followed: a party on the map that is not yours, moving (FOLLOW.kinds), in sight and in no fight. Its
-   ring's Follow and Stop following (supply.js mapRingItems, partyRingItems: followItem), the day bar's tag (followPill), the
+   ring's Follow and Stop following (supply.js mapRingItems, partyRingItems: followItem), the Under way panel's line (ui/underway.js), the
    footprints to it (gfx/worldui.js) ---------- */
 const FOLLOW={trail:2.5,near:1.5,crumb:4,kinds:['lord','cparty','patrol','band','caravan','refugee'],ends:['battle','besiege','capture','dialog','road','scene','site','story','town','dead','title','loading']};
 onWorld(()=>{if(typeof G!=='undefined')G.follow=null});
@@ -125,7 +125,6 @@ const followItem=o=>Host.follows(o)?{icon:'shoe',label:'Stop following',active:t
   :G.follow&&(G.follow.o===o||!followable(o))?{icon:'shoe',label:'Stop following',active:true,run:()=>followStop('You stop following '+followName(G.follow.o)+'.',true)}
   :followable(o)?{icon:'shoe',label:'Follow',run:()=>followStart(o)}:null;
 // (the day bar's tag while you follow: render.js updateHUD)
-const followPill=()=>G.follow?'<em class="wroad wfollow" title="Following '+followName(G.follow.o)+': your band keeps after it at a distance (any other order, or the action ring’s Stop following, ends it)">'+icon('shoe',12)+'<i><small>Following </small>'+followName(G.follow.o,true)+'</i></em>':'';
 // the camp a band heads for at night: the nearest that is not cleared, within reach
 const campNear=b=>{let best=null,bd=WORLD_SCALE.ai.bandCamp;for(const c of camps()){if(c.cleared)continue;const d=Math.hypot(c.x-b.x,c.y-b.y);if(d<bd){bd=d;best=c}}return best};
 // at dawn the bands in a camp ride out again
@@ -285,7 +284,7 @@ function heroStep(dx,dy,dist,step){
    the dots ahead show it (gfx/worldui.js wuiWay walks heroWay). With no road or track within
    ROAD_GO.near tiles of you or of the point, that trip goes the plain way, quietly. G.byRoad: the trip's answer, {k: the goal's
    tile, on} (never saved; a new order or arriving forgets it). Turned on or off by key B (ui/input.js) or the action ring's By
-   road (supply.js mapRingItems: lit while on); the day bar shows it (render.js updateHUD, byRoadPill) */
+   road (supply.js mapRingItems: lit while on); the Under way panel shows it (ui/underway.js) */
 const ROAD_GO={near:8,keep:1.15};
 function byRoadTo(x,y){if(!P.byRoad)return false;const k=Math.floor(x/TILE)+','+Math.floor(y/TILE);
   if(!G.byRoad||G.byRoad.k!==k)G.byRoad={k,on:roadNear(P.x,P.y,ROAD_GO.near)||roadNear(x,y,ROAD_GO.near)};return G.byRoad.on}
@@ -298,7 +297,6 @@ function setByRoad(on){on=!!on;G.byRoad=null;if(typeof WUI!=='undefined')WUI.way
 const toggleByRoad=()=>setByRoad(!P.byRoad);
 function roadGo(wx,wy){if(P.byRoad)return setByRoad(false);setByRoad(true);worldMove(wx,wy);return true}
 // (the day bar's mark while it is on: render.js updateHUD)
-const byRoadPill=()=>P.byRoad?'<em class="wroad" title="By road: every way you go keeps to the roads and tracks when one is within '+ROAD_GO.near+' tiles (B or the action ring’s By road turns it off)">'+icon('map',12)+'<i>By road</i></em>':'';
 // a holding you reach opens (true), unless you only pass it
 function arriveStep(){
   for(const t of TOWNS){

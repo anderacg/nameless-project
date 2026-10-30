@@ -7,7 +7,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}t.act('begin','soldier');G.quietEvents=true;
  W.monsters=[];W.critters=[];t.bandits.length=0;W.patrols=[];W.caravans=[];W.refugees=[];W.sites=[];P.fac=null;P.hostile={};G.clock=t.DAY*.3;
- const panel=()=>document.getElementById('panel').innerHTML,bar=()=>document.getElementById('staybar'),world=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.town=null};
+ const panel=()=>document.getElementById('panel').innerHTML,bar=()=>document.querySelector('#underway [data-k="stay"]'),world=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.town=null};
  const setSt=(q,v)=>{P.rep[q.name]=(P.rep[q.name]||0)+v-t.standingAt(q)};
  const town=t.TOWNS.find(q=>q.kind==='town'&&q.owner&&q.owner!=='player'&&!t.besieged(q)&&!t.ruined(q));
  const castle=t.TOWNS.find(q=>q.kind==='castle'&&q.owner&&q.owner!=='player'&&!t.besieged(q)&&!t.ruined(q));
@@ -15,7 +15,7 @@ try{
  // paid
  t.enterTown(town);ok(/Stay · 10g a day/.test(panel()),'a holding that hardly knows you offers lodgings by the day (5g, and 1g for every 2 people: 10g)');
  t.act('sy-stay',town.name);ok(P.stay&&P.stay.town===town.name&&P.gold===190&&G.mode==='world'&&!G.modal,'you pay the first day and go inside; time runs on');
- t.updateHUD(true);ok(!bar().hidden&&/Staying in/.test(bar().innerHTML)&&/your gold lasts until Day \d+/.test(bar().innerHTML)&&/data-act="sy-leave"/.test(bar().innerHTML),'a banner says where you stay, the price, the day your gold runs out, and offers Leave');
+ t.updateHUD(true);ok(bar()&&/Staying in/.test(bar().outerHTML)&&/\d+g\/day/.test(bar().textContent)&&/your gold lasts until Day \d+/.test(bar().outerHTML)&&/data-act="sy-leave"/.test(bar().outerHTML),'a line under the minimap (Under way) says where you stay and the price, the day your gold runs out on it, and offers Leave');
  {P.stay.paidTo=t.worldTime()-.01;t.stayTick(.01);ok(P.gold===180&&P.stay.paidTo>t.worldTime(),'each day inside is paid as it begins (10g)')}
  // nothing reaches you inside
  {const b={x:P.x+6,y:P.y,n:12,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(t.asParty(b));for(let i=0;i<30;i++)t.updateWorld(.05);
@@ -31,10 +31,10 @@ try{
   ok(inside>=out*2-1&&inside>out,'the wounded heal twice as fast ('+out+' → '+inside+' a day)')}
  // out of gold
  P.gold=3;P.stay.paidTo=t.worldTime()-.01;t.stayTick(.01);ok(!P.stay&&(g=>Math.abs(P.x-g.x)<1&&Math.abs(P.y-g.y)<1)(t.gateSpot(town))&&P.gold===3,'when you cannot pay for another day, the innkeeper sends you out at the gate');
- t.updateHUD(true);ok(bar().hidden,'and the banner goes');
+ t.updateHUD(true);ok(!bar(),'and the line goes');
  // free
  P.gold=50;setSt(town,35);world();t.enterTown(town);ok(/Stay · free \(they know you\)/.test(panel()),'where they know you (standing 30+), you stay free');t.act('sy-stay',town.name);
- ok(P.stay&&P.gold===50,'and pay nothing');P.stay.paidTo=t.worldTime()-5;t.stayTick(.01);t.updateHUD(true);ok(P.stay&&P.gold===50&&/free, as long as you like/.test(bar().innerHTML),'for as long as you like');
+ ok(P.stay&&P.gold===50,'and pay nothing');P.stay.paidTo=t.worldTime()-5;t.stayTick(.01);t.updateHUD(true);ok(P.stay&&P.gold===50&&/free, as long as you like/.test(bar().outerHTML),'for as long as you like');
  t.act('sy-leave');ok(!P.stay&&G.mode==='world','Leave on the banner takes you out');
  // refused
  setSt(town,-5);ok(t.stayWhy(town)==='They will not have you','refused where they dislike you');setSt(town,10);

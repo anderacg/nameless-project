@@ -40,11 +40,11 @@ Kit.suite(({ok,info})=>{
    ok(!met&&G.follow&&ds.length>=600&&Math.min(...ds)>=F.near*TL-4&&Math.abs(med(ds)-T)<=10,'over '+ds.length+' moments he marches on and you trail him, never meeting him: '+Math.min(...ds).toFixed(1)+' to '+Math.max(...ds).toFixed(1)+' px apart, '+med(ds).toFixed(1)+' most ('+F.trail+' tiles: '+T+' px)'+(met?' (met: '+mode+')':''));
    ok(gs.length>500&&Math.abs(med(gs)-T)<=4&&Math.max(...gs)<=T+1,'each moment you make for a point '+T+' px behind him on his way ('+med(gs).toFixed(1)+' px from him most, at most '+Math.max(...gs).toFixed(1)+')');
    t.frame();if(t.WUI.way)t.WUI.way.t0-=2000;t.frame();const W2=t.WUI;ok(W2.tgt&&W2.tgt.o===L&&W2.tgt.f&&W2.way&&Math.hypot(W2.way.gx-L.x,W2.way.gy-L.y)<6&&W2.dots.length>0,'the footprints lead to him ('+W2.dots.length/3+' prints), his ring round him, no arrow');
-   t.updateHUD(true);const pill=document.querySelector('#wday .wfollow');ok(pill&&pill.textContent==='Following '+t.lordName(L)&&/Stop following/.test(pill.title),'the day bar: '+(pill&&pill.textContent));
+   t.updateHUD(true);const pill=document.querySelector('#underway [data-k="follow"]');ok(pill&&pill.textContent===t.lordName(L)+'Stop'&&pill.title.startsWith('Following '+t.lordName(L)),'Under way: '+(pill&&pill.textContent));
    const it=t.mapRingItems(P.x+30,P.y,null,0,0).find(i=>i.label==='Stop following'),il=t.mapRingItems(L.x,L.y,L,0,0).find(i=>i.label==='Stop following'),pr=t.partyRingItems(L,0,0).map(i=>i.label+(i.active?'*':''));
    ok(it&&it.active&&il&&il.active&&pr.join()==='Meet,Stop following*,Look','the ring shows Stop following, lit (on the ground, on him; his click ring: '+pr.join(', ')+')');
    t.ringOpen(200,200,P.x+30,P.y);const lit=[...document.querySelectorAll('.aring .ar-btn.on')].map(b=>b.textContent);t.ActionRing.close();ok(lit.join()==='Stop following','lit in the ring as the other modes are ('+lit.join()+')');
-   const n1=said.length;it.run();t.updateHUD(true);ok(!G.follow&&P.tx==null&&!document.querySelector('#wday .wfollow')&&/You stop following/.test(msgs(n1)),'Stop following: it ends, your band stops, the tag gone')}
+   const n1=said.length;it.run();t.updateHUD(true);ok(!G.follow&&P.tx==null&&!document.querySelector('#underway [data-k="follow"]')&&/You stop following/.test(msgs(n1)),'Stop following: it ends, your band stops, the tag gone')}
   // ---- not saved
   {t.followStart(L);G.mode='world';t.saveGame(true,'7');const s=localStorage.getItem(t.slotKey('7'));ok(G.follow&&s&&!/"follow"/.test(s),'a save keeps no Follow (an order, as a chase)');
    t.loadGame('7');ok(!G.follow,'and a load starts without one');Kit.world({encCool:1e9})}

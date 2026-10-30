@@ -376,7 +376,7 @@ hero's: it is kept in her `P.sp`, on her scale (`maxSP`; when that grows, by a l
 - **By road** (key B, or the ring's By road; the owner, 2026-10-23: a toggle): a mode, `P.byRoad` (saved; absent = off). While on,
   every trip keeps to the roads and tracks (`world.js byRoadTo`: the router's road keeping, mild for you, `ROAD_GO.keep` 1.15: the shortest way, preferring the road; a caravan's `WAY.keep` is strict) when one is within
   `ROAD_GO.near` (8) tiles of you or the goal, decided once a trip (`G.byRoad`, never saved); otherwise it quietly goes the plain way.
-  The top bar shows a BY ROAD pill; the ring lights active modes (`active`: By road, Stop hurrying, Break camp, Water first,
+  Under way (under the minimap) shows By road, with Off; the ring lights active modes (`active`: By road, Stop hurrying, Break camp, Water first,
   Stop following). Hurry (R) goes on as it was. Tests: `tests/roadband.js`, `tests/ring.js`.
 - **Straight ways** (`world/router.js` `WAY_SMOOTH`; the owner, 2026-10-23: the way was a staircase): every walker that goes by the
   router (you, lords, bands, patrols, caravans, workers, refugees, companions' parties) walks each leg pulled straight
@@ -392,8 +392,8 @@ hero's: it is kept in her `P.sp`, on her scale (`maxSP`; when that grows, by a l
   Meet (today's chase), Follow, Look; Esc or a press elsewhere closes it; a double click or a double tap approaches at once, as one
   click did. The hold ring has Follow on a party too. Following, your band trails it 2.5 tiles behind on its way (`followStep`:
   where it walked), standing when it comes within 1.5; never meeting it. It ends when the party leaves your sight, goes into a
-  holding or a camp, or is gone; on any other order, camp, a meeting or a battle; or Stop following (lit on the ring). The day bar
-  shows FOLLOWING and its name; the footprints lead to it. An order: never saved. Tests: `tests/follow.js`, `tests/ring.js`,
+  holding or a camp, or is gone; on any other order, camp, a meeting or a battle; or Stop following (lit on the ring). Under way
+  (under the minimap) shows its name, with Stop; the footprints lead to it. An order: never saved. Tests: `tests/follow.js`, `tests/ring.js`,
   `tests/touch.js`, `tests/clicks.js`.
 - **The road's band** (`world/roadband.js`; the owner, 2026-10-23: "my character stands on the road but the game still reads it as
   swamp"): a road's speed follows the road as drawn, not its tiles (a staircase on a diagonal). Within `ROAD_BAND.great[0]` (10) px
@@ -1074,6 +1074,8 @@ seed redwater". Tests: `tests/worldsettings.js`; screenshots: `tests/visual/worl
 People menu removed (2026-10-24): Journal (J) owns known lords and realms; Army (C) owns companion management, and Quests (Q) owns jobs and their givers. The dock has no People button and P is unassigned. World sightings still update saved last-known reports; hall audiences return to the hall when left.
 
 The quest tracker (2026-10-30; the owner: "a quest tracking tab at the left-hand side for quick access like RPG games"; a new quest's popup "below that tracking tab, disappearing automatically in 5 secs, with an animation"): `ui/questtrack.js`. On the world map, under your band card (a phone: at the top left, at most two, the card being a sheet there), the quests you track (`world/quests.js` `QuestTrack.list`: `P.tracks`, the newest first, at most `QUEST_TRACKS`), each its title, what to do now and which way; a click opens it in your Quests; the one marked on the map (`P.track`) in gold. A quest you take (`Quest#accept` tells `quest:new`) shows its note below them (beside them on a phone) for `QTRACK.show` s, its bar running down: Track adds it and marks it, × lets it go, as the time does. Untracked in your Quests, it leaves the tracker and none is marked; a marked quest over, the next tracked one is marked (`QuestTrack.drop`). Tests: questtrack, questwindow.
+
+Under way (2026-10-30; the owner: staying "more compact, at a corner of the screen", "a panel that groups all the special actions"): `ui/underway.js`. On the world map, under the minimap (its right edge the minimap's, clear of a phone's notch), one small box: a line for each thing your band is doing that lasts, each with its way out (`UNDERWAY`, one row per kind): staying in a holding (its name and price; Leave), in camp (Break), making camp (Stop), following (Stop), by road (Off), hurrying (Stop), your siege (its day) or raid (how far; Open, its window). It replaces the stay banner and the day bar's By road and Following pills. Nothing under way, in a battle or under a window: no box. Tests: underway, stay, follow, roadband, mobile.
 
 Spoils left on the field (2026-10-30; the owner: withdrawn or beaten with beasts left, "you can still get all loots, but you have to come back at that area and claim it"; "the beast may wander around there, looters or bandits may also seek this"): `world/fieldloot.js`. When a fight against beasts ends in a withdrawal or a defeat (`resolution.js` `conclude`; a battle of several sides when beasts hold the field, `sides.js` `settle`), what it would have paid stays where it was fought (`fieldSpoils`: gold for each man slain, the beasts' mats, meat, furs and gear rolls, none in your bag yet), the pack's lair moves there (it wanders around it), and the side quest Spoils left on the field points you back. There with no beast within `FIELD_LOOT.guard` px, the spoils are yours (the bag full, the rest stays). Each day a band within `FIELD_LOOT.seek` px may set out for it (`lure`, `b.lootGo`, `BandBrain`); there, it takes them and the quest is over. In `FIELD_LOOT.days` (5) they are gone. Tests: fieldloot.
 

@@ -336,14 +336,6 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .wday span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wday b{font-size:var(--fs-2xs);letter-spacing:.09em;text-transform:uppercase;color:var(--accent);animation:blink 1.4s steps(2) infinite}
 .wday b.off{visibility:hidden;animation:none}
-/* by-road mode on (world.js byRoadPill): a small gold pill beside the time */
-.wday:has(.wroad){width:304px}
-.wroad{display:inline-flex;align-items:center;gap:3px;flex:none;font-style:normal;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.06em;line-height:1;text-transform:uppercase;
-  color:var(--accent);border:1px solid var(--accent);border-radius:9px;padding:2px 6px 2px 4px;background:rgba(160,120,30,.22);box-shadow:0 0 6px rgba(232,185,74,.4)}
-.wroad i{font-style:normal}
-/* following a party (world.js followPill): the same pill, its name cut short; the bar as wide as it needs */
-.wday:has(.wfollow){width:auto;min-width:220px}
-.wfollow i{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wfollow small{font-size:inherit}
 .wtime{display:flex;gap:3px}
 .tbtn{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:28px;padding:0 7px;font-size:var(--fs-md);font-weight:700;color:var(--fg);
   background:var(--button-face);border:1px solid var(--line-2);border-radius:var(--r-sm);cursor:pointer}
@@ -351,10 +343,6 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .hint{position:absolute;top:calc(var(--e-t) + 44px);left:50%;transform:translateX(-50%);max-width:56%;text-align:center;pointer-events:none;
   color:var(--fg-2);text-shadow:0 1px 2px #000,0 0 6px #000;opacity:.85}
 .hint[hidden]{display:none}
-.staybar{position:absolute;top:calc(var(--e-t) + 44px);left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;max-width:calc(100% - 24px - var(--sa-l) - var(--sa-r));
-  background:var(--glass-hi);border:1px solid var(--accent);border-radius:var(--r-md);box-shadow:var(--float);padding:5px 6px 5px 12px;font-size:var(--fs-base)}
-.staybar[hidden]{display:none}
-.staybar b{color:var(--accent)}
 
 /* the dock (bottom right): your windows, icon tiles with their keys; under them the game's own (save, full screen, menu) */
 .dock{position:absolute;right:var(--e-r);bottom:var(--e-b);display:flex;flex-direction:column;gap:5px;align-items:flex-end}
@@ -421,6 +409,15 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .screen.mobile-world .qtrack{top:var(--e-t);width:auto;flex-direction:row;align-items:flex-start;gap:6px}
 .screen.mobile-world .qt-list{width:230px}.screen.mobile-world .qt-pop{width:200px}
 .screen.mobile-world .qt-list .qt-row:nth-child(n+4){display:none}
+/* under way (ui/underway.js): what your band is doing that lasts, under the minimap at the right edge, each a line and its way out */
+.underway{position:absolute;right:var(--e-r);top:calc(var(--e-t) + 130px);max-width:min(240px,46%);display:flex;flex-direction:column;background:var(--hud-face);border:1px solid var(--trim);border-radius:var(--r-md);box-shadow:var(--float),inset 0 0 0 1px var(--shade);padding:2px 4px;pointer-events:auto}
+.underway[hidden]{display:none}
+.uw-row{display:flex;align-items:center;gap:6px;min-height:30px;font-size:var(--fs-sm);color:var(--fg-2)}
+.uw-row+.uw-row{border-top:1px solid var(--line)}
+.uw-row .gico{flex:none;color:var(--trim-hi)}
+.uw-row span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.uw-row b{color:var(--accent)}
+.uw-row .btn.sm{flex:none;min-height:26px;padding:2px 8px}
+.screen.mobile-world .underway{max-width:min(200px,40%)}.screen.mobile-world .uw-row{min-height:28px;font-size:var(--fs-xs);gap:4px}.screen.mobile-world .uw-row .btn.sm{min-height:28px;min-width:0;padding:1px 7px;font-size:var(--fs-xs)}
 .screen.mobile-world .qt-row{min-height:0;padding:2px 4px 3px}
 .screen.mobile-world .qt-pop b{margin-bottom:4px}
 
@@ -1090,11 +1087,8 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
   .pc-fill{height:9px;margin:-3px 0 5px}.pc-fill em{font-size:8px;line-height:7px}
   .pc-res{gap:3px;margin-bottom:0}.chip{font-size:var(--fs-sm);padding:1px 4px}
   .pc-line{display:none}
-  .wtop{padding:3px 3px 3px 9px;gap:6px}.wday,.wday:has(.wroad){width:auto;font-size:var(--fs-base)}
-  .wroad{padding:2px 3px}.wroad i{display:none}.wday:has(.wroad){gap:4px}
-  .wday:has(.wfollow){min-width:0}.wfollow i{display:inline;max-width:96px}.wfollow small{display:none}
+  .wtop{padding:3px 3px 3px 9px;gap:6px}.wday{width:auto;font-size:var(--fs-base)}
   .hint{display:none}
-  .staybar{top:calc(var(--e-t) + 40px)}
   .dock{gap:4px}.dockrow{gap:4px}
   .dbtn{min-width:44px;min-height:44px;padding:4px}
   .dbtn .dl,.dbtn kbd{display:none}
@@ -1222,7 +1216,7 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .mobile-world-hud{position:absolute;left:var(--e-l);right:var(--e-r);bottom:var(--e-b);display:flex;flex-direction:column;gap:4px;z-index:15;--mwh-face:linear-gradient(#30261d,#191519)}
 .mwh-status,.mwh-dock,.mwh-speeds{background:var(--hud-face);border:1px solid var(--trim);border-top:2px solid var(--trim-hi);border-radius:var(--r-md);box-shadow:var(--float)}
 .mwh-status{display:flex;align-items:center;gap:8px;padding:3px 7px;min-height:40px}
-.mwh-status>[data-place="day"]{flex:1;min-width:0}.mwh-status .wday{width:auto;min-width:0;font-size:11px;gap:4px}.mwh-status .wday .gico{flex:none;width:13px;height:13px}.mwh-status .wday span{overflow:hidden;text-overflow:ellipsis}.mwh-status .wday b,.mwh-status .wroad,.mwh-status .wfollow{display:none}
+.mwh-status>[data-place="day"]{flex:1;min-width:0}.mwh-status .wday{width:auto;min-width:0;font-size:11px;gap:4px}.mwh-status .wday .gico{flex:none;width:13px;height:13px}.mwh-status .wday span{overflow:hidden;text-overflow:ellipsis}.mwh-status .wday b{display:none}
 .mwh-status button{display:flex;align-items:center;gap:4px;flex:none;max-width:65%;min-height:36px;padding:3px 5px;background:none;border:0;color:var(--fg);font:700 10px/1.3 Arial,sans-serif;text-align:right;cursor:pointer}.mwh-status button span{max-width:175px}.mwh-status button.warn{color:#ffb0a0}.mwh-status button[aria-expanded="true"] b{transform:rotate(180deg)}
 .mwh-dock{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:5px}
 .mwh-dock>div{min-width:0;display:flex}.mwh-dock .dbtn,.mwh-dock .tbtn,#speedToggle{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;width:100%;min-height:48px;height:auto;padding:4px 2px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--mwh-face);color:var(--fg);font:700 12px Arial,sans-serif;cursor:pointer}
@@ -1232,7 +1226,6 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .screen.mobile-world #stats{display:none;top:auto;bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 8px);left:var(--e-l);right:var(--e-r);width:auto;max-height:calc(100% - var(--e-t) - var(--e-b) - var(--mobile-hud-height,108px) - 16px);overflow:auto;z-index:16}
 .screen.mobile-world.party-open #stats{display:block}
 .screen.mobile-world .toasts{bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 12px);width:min(75%,380px)}
-.screen.mobile-world .staybar{top:auto;bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 12px)}
 .screen.mobile-world.party-open .toasts,.screen.mobile-world:has(#worldSpeedChoices:not([hidden])) .toasts{display:none}
 .screen.mobile-controls .overlay:has(.fb-gm){align-items:flex-end;padding:0}
 .screen.mobile-controls .panel:has(.fb-gm){width:100%;height:min(620px,85%);max-height:calc(100% - var(--e-t));border-radius:12px 12px 0 0;border:1px solid var(--trim);padding:0;padding-bottom:var(--sa-b)}

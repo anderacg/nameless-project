@@ -55,19 +55,11 @@ function stayTick(d){
   }
   return false;
 }
-// the banner while you stay
-function stayBanner(){
-  const el=$('#staybar');if(!el)return;const t=stayTown();
-  if(!t||G.mode==='battle'||G.mode==='title'){if(!el.hidden)el.hidden=true;return}
-  const terms=stayFree(t)?'free, as long as you like':stayCost()+'g a day · your gold lasts until Day '+stayUntil();
-  const html='<span>Staying in <b>'+t.name+'</b> · '+terms+(siegeLordsAt(t).length?' · <span class="bad">under siege</span>':'')+'</span><button class="btn sm" type="button" data-act="sy-leave">Leave</button>';
-  if(el.dataset.html!==html){el.dataset.html=html;el.innerHTML=html}el.hidden=false;
-}
 // clicking on the map while you stay: the holding opens its panel, anything else reminds you to leave first
 function stayClick(wx,wy){
   const t=stayTown(),o=pickAt(wx,wy);
   if(o===t){if(siegeLordsAt(t).length)return staySiege(t);return enterTown(t)}
-  const now=performance.now();if(now-(G.stayNag||-1e9)>2500){G.stayNag=now;log('You are staying in '+t.name+'. Leave first (the Leave button at the top).')}
+  const now=performance.now();if(now-(G.stayNag||-1e9)>2500){G.stayNag=now;log('You are staying in '+t.name+'. Leave first (Leave, under the minimap).')}
 }
 // a siege on the holding while you are inside: man the walls, slip out, or wait it out
 function staySiege(t){
@@ -100,6 +92,5 @@ function stayAct(a,arg){
     leaveStay('Your band slips out of '+t.name+' by night.');e.foes=[];G.enc=e;flee();return}
 }
 onAct('sy-',stayAct);
-$('#staybar')&&$('#staybar').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b)act(b.dataset.act,b.dataset.arg)});
 // its work in the world's day and frame (core/systems.js) (a stay's moment ends the frame while it runs: stayTick)
 Systems.add({name:'stay',order:{frame:10},frame:d=>P.stay&&stayTick(d),ends:true});

@@ -37,8 +37,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     setSA(true);t.updateHUD(true);t.log('A message by the notch.');t.frame();ok(scr.dataset.mode==='world','on the map ('+scr.dataset.mode+')');
     const si=t.safeInsets();ok(si.t===SA.t&&si.r===SA.r&&si.b===SA.b&&si.l===SA.l,'the safe area reads in px off the HUD layer ('+JSON.stringify(si)+')');
     ok(inside(q('#stats'),'lt')&&inside(q('#wtop'),'t')&&inside(q('.dock'),'rb')&&inside(q('#log'),'lb'),'the map HUD clears the notch: party '+box(q('#stats'))+', day bar '+box(q('#wtop'))+', dock '+box(q('.dock'))+', messages '+box(q('#log')));
-    // by-road mode on (world.js byRoadPill): its pill on the day bar, the bar still inside the safe area, the time readable
-    {t.setByRoad(true);const pl=q('#wday .wroad'),sp=q('#wday span');ok(pl&&rect(pl).width>0&&inside(q('#wtop'),'lrt')&&rect(sp).width>=40,'by road on: its pill on the day bar ('+(pl?box(pl):'none')+'), the bar inside the safe area ('+box(q('#wtop'))+'), the day still readable ('+Math.round(rect(sp).width)+' px)');t.setByRoad(false)}
+    // by-road mode on: its line under the minimap (ui/underway.js), inside the safe area
+    {t.setByRoad(true);t.updateHUD(true);const pl=q('#underway');ok(pl&&rect(pl).width>0&&inside(pl,'rt'),'by road on: its line under the minimap, inside the safe area ('+(pl?box(pl):'none')+')');t.setByRoad(false);t.updateHUD(true)}
     // the long-press card: held by the left edge, the right edge, the top
     const tip=q('#tip'),s=rect(scr);t.holdCard('<b>Ashford</b><small class="act">Click: travel there</small>',s.left+3,s.top+200);
     ok(!tip.hidden&&tip.classList.contains('hold')&&rect(tip).left>=s.left+SA.l+6-.5,'a card held by the left edge stays clear of the notch ('+box(tip)+')');

@@ -59,14 +59,14 @@ Kit.suite(({ok,info})=>{
  const onShare=w=>w.X.filter((x,i)=>t.regionAt(x,w.Y[i]).road).length/w.n;
  const march=n=>Kit.frames(n,.05,dt=>t.marchStep(dt*t.WORLD_PACE),()=>P.tx==null||G.mode!=='world');
  if(!pairs.length)info('no two holdings with a road between them across a swamp');
- const pill=()=>!!document.querySelector('#wday .wroad');
+ const pill=()=>!!document.querySelector('#underway [data-k="road"]');
  // what was said on the screen since (system lines are toasts, not the journal: state.js toast)
  const told=()=>new Set(document.querySelectorAll('#log>div')),toldSince=s=>[...document.querySelectorAll('#log>div')].filter(d=>!s.has(d)).map(d=>d.textContent);
  for(const [h1,h2,sw] of pairs.slice(0,1)){const s1=t.gateSpot(h1),s2=t.gateSpot(h2),from=on=>{Kit.clear();Kit.world({encCool:99});Kit.goTo(s1.x,s1.y);G.lastTown=h1;P.bsta=100;P.stuck=0;G.chase=null;t.setByRoad(on)};
   from(false);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w0=t.WUI.way,p0=onShare(w0);
   const said=told();from(true);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w1=t.WUI.way,p1=onShare(w1);
   ok(P.byRoad===true&&G.byRoad&&G.byRoad.on&&w1!==w0&&w1.ok&&p1>p0&&p1>.9&&toldSince(said).some(m=>/keeps to the roads/.test(m)),h1.name+' to '+h2.name+' ('+Math.round(sw*100)+'% swamp on the straight line): by-road mode on, a plain click\'s way drawn keeps to the roads, '+Math.round(p1*100)+'% of it on them (the plain way '+Math.round(p0*100)+'%), and the log says it is on');
-  t.updateHUD(true);ok(pill(),'the day bar shows By road while it is on ('+(document.querySelector('#wday .wroad')||{}).textContent+')');
+  t.updateHUD(true);ok(pill(),'Under way shows By road while it is on ('+(document.querySelector('#underway [data-k="road"]')||{}).textContent+')');
   let on=0;const f1=Kit.frames(20000,.05,dt=>{t.marchStep(dt*t.WORLD_PACE);if(t.regionAt(P.x,P.y).road)on++},()=>P.tx==null||G.mode!=='world'),end=Math.hypot(P.x-s2.x,P.y-s2.y);
   // (still on for the next trip: back the way you came, a plain click again)
   const back=P.byRoad===true;G.lastTown=h2;t.worldGo(s1.x,s1.y);t.wuiSync(performance.now());const p2=onShare(t.WUI.way);
