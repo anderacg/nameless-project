@@ -11,7 +11,7 @@ try{
  const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
  const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
  const panel=()=>document.getElementById('panel').innerHTML;
- const fight=()=>{t.act('fight');if(t.B)t.beginFight()};// (Fight, then Start Battle: battles open waiting for it)
+ const fight=()=>{t.act('fight');Kit.engage()};// (Fight, then Start Battle: battles open waiting for it, a world battle's armies formed up first)
  const world=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.encCool=0};
  t.act('begin','soldier');W.critters=[];W.sites=[];W.monsters=[];t.bandits.length=0;W.patrols=[];W.caravans=[];
  const mk=(name,fac,dx,n,type)=>t.asParty({id:name,name,fac,x:P.x+dx,y:P.y,troops:Array(n).fill(type||'hum_spear'),state:'rest',tgt:t.TOWNS[0].name,sd:0,dead:false,cool:0});
@@ -98,15 +98,16 @@ try{
  // ---- after the fight: relation up, honour, the renown shared, the loot share
  {const fr=mk('Ser Friend',Bf,30,10),p0=wt(T0,25);W.lords=[fr];P.lrel[fr.id]=RL.helpAt;P.honor={};const r0=t.relWith(fr),hA=t.honorWith(A),hB=t.honorWith(Bf);
   const e=vs();ok(helps(fr,e)&&helps(p0,e),'(a friend and the watch beside you)');const g0=P.gold,n0=P.renown,men=e.men;
-  fight();const B=t.B;B.units.filter(u=>u.team===1).forEach(u=>t.applyDmg(u,999));for(let i=0;i<80&&!B.over;i++)t.updateBattle(.05);B.endT=0;t.updateBattle(.01);
-  const html=panel(),k=+((html.match(/You defeated (\d+) foes/)||[])[1]||0),cuts=[...html.matchAll(/(Ser Friend|Day watch of [^<]+?) takes (\d+) gold for (?:his|its) (\d+) men/g)].map(m=>({who:m[1],g:+m[2],n:+m[3]}));
+  // (struck down by your hero: your army's kills; the lord and the watch ride in as armies of their own, so the spoils go by each
+  // army's part in the fight, sides.js BattleSides#shares: here all yours)
+  fight();const B=t.B;B.units.filter(u=>t.battleEnemy(0,u)).forEach(u=>t.applyDmg(u,999,1,null,B.hero,false));for(let i=0;i<80&&!B.over;i++)t.updateBattle(.05);B.endT=0;t.updateBattle(.01);
+  const html=panel(),k=+((html.match(/defeated (\d+) foes/)||[])[1]||0),share=+((html.match(/yours (\d+)%/)||[])[1]??-1)/100,cuts=[...html.matchAll(/(Ser Friend|Day watch of [^<]+?) takes (\d+) gold for (?:his|its) (\d+) men/g)].map(m=>({who:m[1],g:+m[2],n:+m[3]}));
   ok(t.relWith(fr)===r0+RL.fightBeside,'the lord who helped thinks better of you (+'+RL.fightBeside+')');
   ok(t.honorWith(Bf)===hB+R.honor.beside,'his realm honours you (+'+R.honor.beside+')');
   const fame=Math.max(1,Math.round(Math.max(2,Math.round(k/2))/3));// (the holding's own thanks for the fight near it: reputation.js repNear)
   ok(t.honorWith(A)===hA+R.honor.beside+R.honor.land+fame,'the watch’s realm too, and more for a common enemy cleared on its land (+'+R.honor.beside+' +'+R.honor.land+', and +'+fame+' for the fight near its holding, as before)');
-  ok(k>0&&P.renown-n0===Math.ceil(k*R.renown),'the renown is shared: +'+(P.renown-n0)+' for '+k+' foes (x'+R.renown+')');
-  const got=P.gold-g0,all=men+cuts.reduce((a,c)=>a+c.n,0),gold=got+cuts.reduce((a,c)=>a+c.g,0);
-  ok(cuts.length===2&&cuts.every(c=>c.g===Math.round(gold*c.n/all))&&/You share the renown with them/.test(html),'each takes his share of the gold by his men ('+cuts.map(c=>c.who+' '+c.g+' for '+c.n).join(', ')+'; yours '+got+' of '+gold+' for '+men+')');
+  ok(k>0&&share>=0&&P.renown-n0===Math.round(k*share),'the renown is shared by your part in the fight: +'+(P.renown-n0)+' for '+k+' foes (yours '+Math.round(share*100)+'%)');
+  ok(P.gold>g0&&/The spoils are shared by each army’s part in the fight/.test(html),'the gold too, by your part in the fight (+'+(P.gold-g0)+')');
   t.act('cont');done();W.patrols=[];W.lords=[];P.lrel={}}
  t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

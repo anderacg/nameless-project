@@ -18,6 +18,8 @@ const battleFriend=(a,b)=>B?.sides?.active?B.sides.relation(battleTeam(a),battle
 // on at once, in the field's own steps (a world battle's WORLD_BATTLE.step, as its frames are; else step s), at most max s of it,
 // still undecided then the stronger has the field; Auto-resolve settles it now, by chance as their strength stands)
 const BATTLE_SKIP={step:1/30,max:180};
+// (beaten or withdrawn: your hero's experience for each of your army's kills, as a withdrawal's: resolution.js conclude)
+const BATTLE_SPOILS={lostXp:4};
 // (what an army has left on the field: each man's health by his tier, a character as four)
 const armyPower=u=>u.hp/Math.max(1,u.max)*(isChar(u)?4:ST[u.type]?.tier||1);
 const ownDown=()=>!!B&&!B.over&&!B.opts?.tournament&&!B.units.some(u=>u.team===0&&(u.hero||B.groups[u.grp]?.player)&&fighting(u));
@@ -125,22 +127,34 @@ class BattleSides{
   if(old)for(const o of fightParties(old))if(!this.byOwner.has(o)&&o.troops.length){o.fight=null;o.cool=4;alive.push(o)}
   resumeArmyFight(alive,(a,b)=>{const x=this.byOwner.get(a),y=this.byOwner.get(b);return x&&y?this.pair(x,y)<0:old?fightHostile(old,a,b):armyRelation(a,b)<0});
  }
+ // (won: the armies that won it with you, each with its share of the spoils by its part in the fight (the harm it did the foe, else
+ // its kills; yours from before you fell too): you, your allies, and those not at war with you who fought your foes)
+ shares(){const me=this.records.find(r=>r.owner===P);if(!me)return new Map();
+  const won=this.records.filter(r=>r===me||r.joined&&(this.pair(me,r)>0||this.pair(me,r)===0&&r.damage>0&&this.records.some(q=>this.pair(me,q)<0&&this.pair(r,q)<0)));
+  const by=won.some(r=>r.damage>0)?r=>r.damage:won.some(r=>r.kills.length)?r=>r.kills.length:r=>r===me?1:0,all=won.reduce((n,r)=>n+by(r),0)||1;return new Map(won.map(r=>[r,by(r)/all]))}
  // (won: each army that stood beside you thinks better of you: a lord (RELATION.fightBeside), his realm (REINF.honor.beside), a
  // watch's holding (REINF.rep))
  thanks(){for(const r of this.records){if(r.owner===P||!r.joined||this.relation(0,r.team)<=0)continue;const o=r.owner;
    if(o.mapKind==='lord'&&!o.dead)changeRel(o,RELATION.fightBeside,'you fought beside them');if(o.fac&&FACS[o.fac]&&o.fac!=='player')addHonor(o.fac,REINF.honor.beside,true);if(o.mapKind==='patrol'&&o.home)addRep(o.home,REINF.rep,true)}}
  settle(b,lost,groups){
   const e=this.enc,credit=this.records.find(r=>r.owner===P),kills=credit?.kills||[],saved=heal(lost,groups);for(const g of groups)if(g.count)partyRoster(P).remove(g.type,g.count,g.id);
-  let gold=0;for(const k of kills)if(!ST[k].beast)gold+=rint(2,6);gold=Math.round(gold*(1+tm('loot')));P.gold+=gold;P.renown+=kills.length;gainXp(kills.length*8);takePrisoners(kills);
-  for(const r of this.records)if(r.owner.mapKind==='monster'&&r.playerKills.length)monsterLoot(r.owner,r.playerKills);
+  // (the owner, 2026-10-30: won, "the split shared based on army performance"; lost or withdrawn, "no reward beside exp": only the
+  // experience your army earned, its kills', BATTLE_SPOILS.lostXp of them)
+  const sh=b.win?this.shares():null,mine=sh?.get(credit)||0,spoils=sh?[...sh.keys()].flatMap(r=>r.kills):[];gainXp(kills.length*(b.win?8:BATTLE_SPOILS.lostXp));
+  if(b.win){let gold=0;for(const k of spoils)if(!ST[k].beast)gold+=rint(2,6);gold=Math.round(gold*mine*(1+tm('loot')));P.gold+=gold;P.renown+=Math.round(spoils.length*mine);takePrisoners(spoils.slice(0,Math.round(spoils.length*mine)));
+   for(const r of this.records)if(r.owner.mapKind==='monster'&&r.playerKills.length)monsterLoot(r.owner,r.playerKills)}
   for(const u of b.units)if(u.team===0&&!u.hero&&!u.comp&&!u.lord&&((u.xp||0)>0||u.atkAt!=null))txpGain(u.type,(u.xp||0)+TROOP_XP.fight+(b.win?TROOP_XP.win:0));txpClamp();
-  for(const r of this.records){if(r.owner===P||!r.joined||this.survivors(r).length||!r.playerKills.length)continue;const o=r.owner;
+  if(b.win)for(const r of this.records){if(r.owner===P||!r.joined||this.survivors(r).length||!r.playerKills.length)continue;const o=r.owner;
    if(o.mapKind==='lord'&&r.playerLeader){spoilsWon({kind:'lord',ref:o});const res={gold:0,fame:0};lordWon(o,res);P.gold+=res.gold||0;r.handled=true}
    else if(o.mapKind==='caravan'&&r.playerKills.length>=r.start/2){if(e.kind==='caravan'&&o===e.ref&&e.seize)o.seize();else o.loot();r.handled=true}
    else if(o.mapKind==='band'&&o.ld&&r.playerLeader){spoilsWon({kind:'party',ref:o});captureChief(o.ld);o.ld=null}
   }
-  this.continueFight();let heading=b.win?'Victory':b.retreat?'Withdrawn':'Defeat',detail=(b.byAllies?'Your army fell, but '+(b.units.some(u=>u.team!==0&&u.hp>0&&this.relation(0,u.team)>0)?'your allies':'the others')+' held the field. ':'')+'Your army defeated '+kills.length+' foes. Rewards count only your army’s kills.';
-  if(b.win)this.thanks();
+  this.continueFight();let heading=b.win?'Victory':b.retreat?'Withdrawn':'Defeat',detail=(b.byAllies?'Your army fell, but '+(b.units.some(u=>u.team!==0&&u.hp>0&&this.relation(0,u.team)>0)?'your allies':'the others')+' held the field. ':'')+'Your army defeated '+kills.length+' foes. '+(b.win?'The spoils are shared by each army’s part in the fight: yours '+Math.round(mine*100)+'%.':'You keep only what your men learned.');
+  if(b.win){this.thanks();
+   // (as a battle of two gives (resolution.js conclude, engage.js reinfAfter): the holding near the fight thinks better of you, and a
+   // common enemy cleared on a realm's land with its men beside you, that realm more)
+   const O=ON_WIN[e?.kind]||ON_WIN.party,fame=O.fame==null?Math.max(2,Math.round(spoils.length*mine/2)):O.fame;if(fame)repNear(P.x,P.y,fame);
+   const h=e&&commonFoe(e)&&landHold(P.x,P.y),lf=h&&h.owner;if(lf&&lf!=='player'&&this.records.some(r=>r.owner!==P&&r.joined&&this.relation(0,r.team)>0&&forceRealm(r.owner)===lf))addHonor(lf,REINF.honor.land,true)}
   // (beaten, your allies too: taken captive, or away in the rout: world/captivity.js)
   // (by whoever holds the field: captorEnc; it grows by its win as in a battle of two, resolution.js conclude)
   if(!b.win&&!b.retreat){if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}captivesEscape();const ce=this.captorEnc(b.captor)||e,fate=Captivity.defeat(ce);if(ce?.ref&&ce.kind!=='camp')ce.ref.cool=8;

@@ -105,7 +105,7 @@ class BattleResolution{
       bounty+=spoilsWon(e);// (valuables: a lord's or chieftain's purse, a camp's plunder: captives.js)
       {const c=(e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld;if(c){captureChief(c);e.ref.ld=null;bounty+=' You take '+chiefLabel(c)+' captive: hand him over for '+bountyOf(c)+' gold, or let him go (Hero, Party).'}}
       bounty=(O.won(e,slain,res)||'')+bounty;
-      bounty+=reinfCut(e,res);// (the lords and watches beside you take their share of the gold, and of the renown: engage.js)
+      bounty+=reinfCut(e,res,this.battle?.sides);// (the lords and watches beside you take their share of the gold, and of the renown: engage.js)
       P.gold+=res.gold;
       const fame=res.fame==null?Math.max(2,Math.round(kills/2)):res.fame;if(fame)repNear(P.x,P.y,fame);
       html='<h2>Victory</h2><p>You defeated '+(e.kind==='monster'?(kills>1?kills+' ':'the ')+MONSTERS[e.ref.id].n.toLowerCase():kills+' '+(e.kind==='lord'?'soldiers':'foes'))+(taken?' and took '+taken+' prisoner'+(taken>1?'s':''):'')+'.'+bounty+'</p>'+moodLine;
@@ -116,7 +116,7 @@ class BattleResolution{
       const o=e.ref;slain=slain||[];if(!this.primaryLossesApplied&&o&&(e.kind==='lord'||e.kind==='patrol'||e.kind==='party'))for(const k of slain)if(formsFit(o))o.remove(k,1);
       if(e.kind==='siege'||e.kind==='raid')siegeFallen(e.ref,this.wallsFell);
       if(e.list)for(const k of slain){const i=e.list.indexOf(k);if(i>=0)e.list.splice(i,1)}
-      mood('flee');if(kills)gainXp(kills*4);
+      mood('flee');if(kills)gainXp(kills*BATTLE_SPOILS.lostXp);
       const od=retreat.blocked?{leave:true,ch:1}:fleeOdds(e),away=od.leave||od.ch>0&&Math.random()<od.ch,rear={};
       // (a retreat costs, as in Total War: the band's morale and your renown; run down, more)
       const moodLine=battleMood(retreat.blocked?0:-MOOD.retreat-(away?0:MOOD.runDown),retreat.blocked?'disengaged':away?'a retreat':'run down in the retreat');P.renown=Math.max(0,P.renown-(retreat.blocked?0:MOOD.renown));
@@ -132,7 +132,7 @@ class BattleResolution{
         '<div class="lab">The battle</div><div class="loot-stats">'+[['Enemies slain',kills,'good'],['Your fallen',retreat.fallen||0,retreat.fallen?'bad':''],['Got away',retreat.got||0,''],['Enemies still standing',retreat.standing||0,'']].map(([k,v,c])=>'<span><b>'+k+'</b><span class="'+c+'">'+v+'</span></span>').join('')+'</div>'+moodLine+'<p class="bad">Renown −'+MOOD.renown+' for the retreat.</p>';
       if(retreat.blocked)html='<h2>Disengaged</h2><p>Impassable ground blocks every route through the battle area. Both armies break contact; neither side claims victory.</p>'+moodLine;
     }else{
-      const moodLine=battleMood(-15,'defeat');if(auto){vitals();P.hp=Math.max(1,Math.round(P.hp*.5))}
+      const moodLine=battleMood(-15,'defeat');if(auto){vitals();P.hp=Math.max(1,Math.round(P.hp*.5))}if(kills)gainXp(kills*BATTLE_SPOILS.lostXp);// (beaten: only the experience earned, sides.js BATTLE_SPOILS)
       if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}
       captivesEscape();
       if(e.kind==='siege'||e.kind==='raid'){P.siege=null;G.capWith=null;siegeFallen(e.ref,auto?Math.round((e.list||[]).length*(e.fell??.25)):this.wallsFell??0)}// (those slain: siege.js)

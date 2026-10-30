@@ -389,6 +389,7 @@ class Commander{
     // (orders hands its groups on to finish: the same as groups would find again, groups being made only at the start)
     if(B.sides?.active){for(const team of B.sides.teams())if(team>0)Commander.of(team).think()}else{if(!B.hunt)Commander.of(1).think();if(Object.values(B.groups).some(g=>g.ally))Commander.of('ally').think()}// (your allies' own captain)
     if(aiAny())Commander.of(0).think();// (yours: the groups the AI has, deploy.js aiHas)
+    stallWatch();
   }
   // one think: its orders, then each group's pace, formation and front (finish)
   think(){if(B.surprise?.holds(this.team))return;if(B.hunt&&this.team===0){B.hunt.orders(Object.values(this.groups()).flat().map(id=>B.groups[id]));return}const groups=B.sides?.active?this.groups():null,N=this.orders();if(groups)(this.tactics||(this.tactics=new ArmyTactics(this))).step(groups);this.finish(N)}
@@ -400,7 +401,8 @@ class Commander{
     const {team,ck}=this,N0=this.groups(),Z=beastsOf(N0),S=this.assess(),foes=S.foes;
     if(Z.length)captainBeasts(team,ck,S,Z);// (its beasts their own ways, taken out of its arms: beastmind.js PackMind; none with BEAST_TACTICS off; by its old name, which tests/beastai.js wraps)
     this.scout(N0,S);// (its scouts range ahead while the foe is unseen)
-    if(!foes.length){const seen=B.fog&&B.captains&&B.captains[ck]&&B.captains[ck].seen||0;if(!this.typeHolds(S)&&(B.t-Math.max(B.lastHit||0,seen)>FOE_CMD.lull||B.fog&&B.t>FOG.scout&&!foesKnown(team)))this.search(N0);return N0}
+    // (no foe in sight that still fights: those leaving the field, withdrawing, are none, so it goes looking, not charging at them)
+    if(!foes.some(e=>!withdrawing(e))){const seen=B.fog&&B.captains&&B.captains[ck]&&B.captains[ck].seen||0;if(!this.typeHolds(S)&&(B.t-Math.max(B.lastHit||0,seen)>FOE_CMD.lull||B.fog&&B.t>FOG.scout&&!foesKnown(team)))this.search(N0);return N0}
     // (its temperament, once, from its army's troops (temperFor); the enemy's style told as the battle opens)
     const Q=this.Q;if(B.fog&&Q.seen==null)Q.seen=B.t;if(Q.temper===undefined){Q.temper=this.temperFor();this.announce(Q.temper)}
     // (a beaten enemy army falls back as one, rather than fighting to the last man; once begun it does not turn round)
@@ -464,9 +466,10 @@ class Commander{
   scout(N,S){const team=this.team;
     const X=UNIT_ABILITIES.scout;if(!(S.foes.length===0||B.t<X.aiEarly)||!B.units.some(u=>battleEnemy(team,u)&&fighting(u)&&!seenBy(team,u)))return;
     for(const id of Object.values(N).flat()){const g=B.groups[id];if(g&&!abilityWhyNot(g,'scout'))g.useAbility('scout')}}
+  // (where it goes looking: where the foe was last seen, else the far side of the field (a world battle: its ring's middle))
   search(N){const team=this.team;
     const hid=B.units.filter(u=>battleEnemy(team,u)&&fighting(u));if(!hid.length)return;let x=0,y=0,c=0;for(const u of hid){const p=lastSeen(team,u);if(p){x+=p.x;y+=p.y;c++}}
-    const Z=BFIELD&&fieldZone(1-team),far={x:Z?(Z.x0+Z.x1)/2:team?BW*.15:BW*.85,y:(fieldTop()+fieldBot())/2},ids=Object.values(N).flat().filter(id=>B.groups[id]&&B.groups[id].order!=='withdraw'&&grpUnits(id).length);
+    const Z=BFIELD&&fieldZone(1-team),far=B.world?{x:B.world.cx,y:B.world.cy}:{x:Z?(Z.x0+Z.x1)/2:team?BW*.15:BW*.85,y:(fieldTop()+fieldBot())/2},ids=Object.values(N).flat().filter(id=>B.groups[id]&&B.groups[id].order!=='withdraw'&&grpUnits(id).length);
     if(B.fog&&!c){const C=ids.map(id=>B.groups[id].centre()),dir=team?-1:1,mx=C.reduce((a,p)=>a+p.x,0)/Math.max(1,C.length);
       ids.forEach((id,i)=>{const g=B.groups[id],back=g.role==='arc'||g.role==='mag'?FOE_CMD.behind:0;g.standAt(clamp(mx+dir*(FOG.probe-back),BW*.1,BW*.9),C[i].y)});return}
     ids.forEach((id,i)=>{const g=B.groups[id],C=g.centre();let at=c?{x:x/c,y:y/c}:far;if(Math.hypot(C.x-at.x,C.y-at.y)<FOE_CMD.moved*2)at=far;g.standAt(at.x,at.y+(i-(ids.length-1)/2)*FOE_CMD.screen*2)})}
@@ -878,3 +881,11 @@ function captainRally(c,id){return Commander.of(c.ck).rally(c,id)}
 function captainShooters(c,k,id){return Commander.of(c.ck).shooters(c,k,id)}
 function captainCav(c,id){return Commander.of(c.ck).cavalry(c,id)}
 function captainHero(c,id){return Commander.of(c.ck).hero(c,id)}
+/* the stall watch (the owner, 2026-10-30: "the battle sometimes seems stuck"): a battle where no blow lands for FOE_CMD.stall s while
+   a foe still fights (not routing nor withdrawing) sends every group the AI has, on each side, at its nearest such foe: seen, at
+   him; unseen, to where he stands (the battle has told of him). Its clock (STALLS, by battle), from the last blow (B.lastHit) */
+const STALLS=new WeakMap();
+function stallWatch(){if(!B||B.over||B.deploy||B.hunt)return;const t=B.lastHit||0;let S=STALLS.get(B);if(S?.hit!==t)STALLS.set(B,S={hit:t,at:B.t});if(B.t-S.at<FOE_CMD.stall)return;S.at=B.t;
+  for(const g of Object.values(B.groups)){if(g.player&&!aiHas(g)||g.order==='withdraw'||g.resolve?.routed)continue;const m=grpUnits(g.id).filter(fighting);if(!m.length)continue;const C=g.centre();
+    let e=null,d=Infinity;for(const u of B.units)if(fighting(u)&&!withdrawing(u)&&battleEnemy(g.team,u)){const k=Math.hypot(u.x-C.x,u.y-C.y);if(k<d){d=k;e=u}}
+    if(e){if(BattleSight.seen(g.team,e))g.attack(e);else g.standAt(e.x,e.y)}}}

@@ -3,6 +3,12 @@
 /* melee: on the world map each fighter is drawn sprite times as big (and his formation's slots as wide), so his melee reach and
    the few fixed melee distances (meleeK: a duel's slack, the riders' contact, a bowman's blade) are that much more too (the owner,
    2026-10-29: "the units overlap in world battle"); off, as they were */
+// (an army coming in is told as it comes ("X enters the battle"): where its men stepped in, every other side has as last seen (BattleSight
+// lastSeen), so a captain who has not set eyes on them still knows where to go: commander.js search; the owner, 2026-10-30: his army
+// stood idle as bandits joined, the watch routing)
+function heralded(units){const teams=B.sides?.active?B.sides.teams():[0,1];for(const u of units){const p=u.ls||(u.ls=[]);for(const t of teams)if(t!==u.team){p[2*t]=u.x;p[2*t+1]=u.y}}}
+// (where a joining army comes in: the marker's radius r px, its colours by where it stands with you, its pulse a second, its fade s once in)
+const ARRIVAL={r:5,pulse:1.2,fade:1.5,col:{own:'#6fa8e0',ally:'#8fd08a',foe:'#e0605a',neutral:'#dba75f'}};
 const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1};
 // Only local avoidance runs while campaign time is paused. Existing work/travel orders stay on their owners.
 class BattleBystanders{
@@ -89,7 +95,7 @@ class WorldBattleArea{
     g.ax=p.x;g.ay=p.y;g.face=g.currentFacing=face+(offset.face||0);g.order='hold';if(initial&&offset.id&&g.form!=='pack'){g.form=offset.form;g.files=offset.files}const slots=formSlots(g.form,units.length,g.face,g.files,WORLD_BATTLE.sprite);
     const army=MARCH_ARMIES.get(owner),march=army?.forGroup(g.sourceGroupId||g.id).filter(m=>!B.units.some(u=>!units.includes(u)&&u.marchUnit===m))||[];
     units.forEach((u,i)=>{u.sx=slots[i][0];u.sy=slots[i][1];const mini=march[i],worker=owner.ws?.find(f=>!f.gone&&workerAppearance(f).type===u.type&&!B.units.some(v=>v.worker===f));let q=worker?this.field(worker):mini?this.field(mini):initial&&Number.isFinite(owner.x)?this.field(owner):this.openPoint({x:p.x+u.sx,y:p.y+u.sy});if(!initial&&mini&&this.inside(q,6)&&B.terrain?.solid[tIx(B.terrain,q.x,q.y)])q=this.openPoint(q);u.x=q.x;u.y=q.y;u.dir=worker?(worker.dir<0?Math.PI:0):mini?.dir??face;u.face=Math.cos(u.dir)>=0?1:-1;
-      u.v=mini?mini.id%6:u.hero||u.leader?0:u.v;u.worldTint=owner!==P&&FACS[forceRealm(owner)]?.col||owner.look?.().col;u.worldSide=owner.mapKind==='monster'?1:0;delete u.look;delete u.side;// (your band keeps its map colour, P.look; any other force wears its realm's)
+      u.v=mini?mini.id%6:u.hero||u.leader?0:u.v;u.worldTint=owner!==P&&FACS[forceRealm(owner)]?.col||owner?.look?.().col;u.worldSide=owner.mapKind==='monster'?1:0;delete u.look;delete u.side;// (your band keeps its map colour, P.look; any other force wears its realm's)
       if(owner.ws)u.worldTint=FACS[owner.fac]?.col||'#bda882';if(worker){u.worker=worker;const L=workerAppearance(worker);u.v=L.v;u.worldTint=L.tint}
       if(mini){u.marchUnit=mini;if(!this.inside(q,6)){u.hpLeft=u.hp;u.hp=0;u.left=true;u.waiting=true;this.arrivals.push({u,mini,army})}}});
     if(march.length){const live=units.filter(u=>u.hp>0);if(live.length){g.ax=live.reduce((n,u)=>n+u.x-u.sx,0)/live.length;g.ay=live.reduce((n,u)=>n+u.y-u.sy,0)/live.length}}
@@ -113,10 +119,25 @@ class WorldBattleArea{
   clipSight(){ctx.beginPath();for(const p of this.sight()){const q=this.field(p),r=p.r*this.scale;ctx.moveTo(q.x+r,q.y);ctx.arc(q.x,q.y,r,0,Math.PI*2)}ctx.clip()}
   draw(){
     ctx.save();ctx.strokeStyle='#d1b464';ctx.lineWidth=this.scale;ctx.setLineDash([3*this.scale,4*this.scale]);ctx.beginPath();ctx.arc(this.cx,this.cy,this.radius,0,Math.PI*2);ctx.stroke();ctx.restore();
-    for(const a of this.pending){if(!Number.isFinite(a.o.x))continue;const p=this.field(a.o);if(a.team&&!this.visible(p))continue;const x=clamp(p.x,16,BW-16),y=clamp(p.y,22,BH-16);ctx.fillStyle=a.team?'#dd7060':'#b9d28c';ctx.fillRect(x-3,y-9,6,9);txt('Reinforcements',x,y-15,ctx.fillStyle,'center')}
+    this.drawArrivals();
     for(const a of this.arrivals){const p=this.field(a.mini);if(a.u.team&&!this.visible(p))continue;const s=marchSprite(a.mini,a.army.owner),k=WORLD_BATTLE.sprite;ctx.save();ctx.translate(p.x,p.y);ctx.scale(Math.cos(a.mini.dir??a.army.face)<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore()}
     for(const u of B.units)if(u.regroup&&(!u.team||this.visible(u))){ctx.fillStyle=sideCol(u,'ui');ctx.fillRect(u.x-2*WORLD_BATTLE.sprite,u.y-6*WORLD_BATTLE.sprite,4*WORLD_BATTLE.sprite,6*WORLD_BATTLE.sprite)}
   }
+  /* where each army joining comes in (the owner, 2026-10-30: "an icon at the edge of the ring where that unit is coming in"): a
+     marker on the ring toward it, while it closes in (pending) and while its men walk in (arrivals), in its colour by where it
+     stands with you (ARRIVAL.col), its banner over it, its name, an arrow in; it fades over ARRIVAL.fade s once all are in. Drawn
+     only (on the real clock; this.marks: the last seen of each) */
+  arrivalsNow(){const at=new Map(),add=(o,team,p)=>{if(!o||!Number.isFinite(p.x))return;const m=at.get(o)||{o,team,x:0,y:0,n:0};m.x+=p.x;m.y+=p.y;m.n++;at.set(o,m)};
+    for(const a of this.pending)add(a.o,a.team,this.field(a.o));for(const a of this.arrivals)add(a.army.owner,a.u.team,this.field(a.mini));return [...at.values()]}
+  drawArrivals(){const A=ARRIVAL,now=performance.now()/1000,M=this.marks||(this.marks=new Map()),k=this.scale/WORLD_BATTLE.scale*WORLD_BATTLE.sprite,S=this.sides;
+    for(const m of this.arrivalsNow()){const a=Math.atan2(m.y/m.n-this.cy,m.x/m.n-this.cx),r=S?.byOwner.get(armySource(m.o)),key=S&&r?S.colourKey(r.team):m.team?'foe':'ally';
+      M.set(m.o,{a,col:A.col[key]||A.col.neutral,name:r?S.label(r):m.o.name||(m.o.mapKind==='lord'?lordName(m.o):'An army'),b:m.o.banner?.(),seen:now})}
+    for(const [o,m] of M){const q=(now-m.seen)/A.fade;if(q>=1){M.delete(o);continue}const al=q>0?1-q:.75+.25*Math.sin(now*A.pulse*6.283),c=Math.cos(m.a),s=Math.sin(m.a),x=this.cx+c*this.radius,y=this.cy+s*this.radius;
+      ctx.save();ctx.globalAlpha=al;ctx.translate(Math.round(x),Math.round(y));ctx.scale(k,k);
+      ctx.fillStyle='#14161e';ctx.beginPath();ctx.arc(0,0,A.r+1,0,6.283);ctx.fill();ctx.fillStyle=m.col;ctx.beginPath();ctx.arc(0,0,A.r,0,6.283);ctx.fill();
+      ctx.fillStyle='#14161e';ctx.beginPath();ctx.moveTo(-c*A.r*.65,-s*A.r*.65);ctx.lineTo(-s*A.r*.45+c*A.r*.25,c*A.r*.45+s*A.r*.25);ctx.lineTo(s*A.r*.45+c*A.r*.25,-c*A.r*.45+s*A.r*.25);ctx.closePath();ctx.fill();// (its arrow: in)
+      if(m.b){const sp=bannerSprite(m.b,Math.floor(now*2)%2);ctx.drawImage(sp,-2,-A.r-sp.height)}ctx.restore();
+      ctx.save();ctx.globalAlpha=al;txt(m.name,Math.round(x),Math.round(y+(A.r+5)*k),m.col,'center');ctx.restore()}}
   // Choose once from the reachable apron, rather than chasing a radial point which can be rock or behind a cliff.
   escapePlan(u){
     const g=this.escapeRoutes?.[routeWho(u.s)];if(!g)return null;const old=u.worldEscape;if(old&&old.g===g&&old.v===g.v)return old;
@@ -177,7 +198,7 @@ class WorldBattleArea{
   }
   enterMarchers(dt){
     if(!this.arrivals.length)return;for(const army of new Set(this.arrivals.map(a=>a.army))){const o=army.owner,d=Math.hypot(o.x-this.x,o.y-this.y);if(o!==P&&d>Math.max(0,this.r-marchOuter(o)-3))walk(o,this.x-o.x,this.y-o.y,Math.min(d,partySpeed(o,o.troops)*dt/this.scale));army.step(dt/(this.scale*WORLD_SCALE.move),false,this.marchClamp,this.marchInside)}let entered=false;
-    this.arrivals=this.arrivals.filter(a=>{const p=this.field(a.mini),u=a.u;u.x=p.x;u.y=p.y;if(!this.inside(p,6))return true;u.hp=u.hpLeft;delete u.waiting;delete u.left;const r=B.groups[u.grp]?.resolve;if(r){r.refreshState();r.sync()}entered=true;return false});
+    this.arrivals=this.arrivals.filter(a=>{const p=this.field(a.mini),u=a.u;u.x=p.x;u.y=p.y;if(!this.inside(p,6))return true;u.hp=u.hpLeft;delete u.waiting;delete u.left;heralded([u]);const r=B.groups[u.grp]?.resolve;if(r){r.refreshState();r.sync()}entered=true;return false});
     if(entered){B.cmdT=0;B.moraleNext=0;setOrderUI()}
   }
   teamFor(o){
@@ -200,7 +221,7 @@ class WorldBattleArea{
       const units=Array.from({length:row.count},()=>{const u=builder.spawn(troopOf(row.type),team,0,0);Object.assign(u,{grp:id,sourceGroupId:row.id,sourceArmy:owner,lord:owner});return u});B.units.push(...units);rows.push([g,units]);}
     for(const leader of battleLeaders({kind:'field',allies:team?[]:[force],foes:team?[force]:[]})){const unit=leader.comp?charOf(compInit(leader.comp),leader.comp):charOf(leader.ref),u=builder.spawn(unit,team,0,0),id=prefix+'leader';leader.team=team;Object.assign(u,{grp:id,leader,sourceArmy:owner});if(leader.comp)u.comp=true;const g=new BattleControl(id,team,{player:false,ally:team!==0&&battleFriend(0,team)||team===0,foe:battleEnemy(0,team),role:'hero',name:W.lords.includes(leader.ref)?lordName(leader.ref):leader.name,type:u.type});B.groups[id]=g;B.units.push(u);rows.push([g,[u]])}
     this.participants.add(o);this.sides?.joined(o,owner,rows.map(([g])=>g.id));if(this.sides?.active)for(const [g] of rows){g.armyName=this.sides.label(this.sides.byOwner.get(o));g.name=g.armyName+' · '+g.name}const added=rows.flatMap(a=>a[1]);for(const u of added){u.mor0=u.mor=unitMoraleOf(u.s);u.sta=FATIGUE.max;u.vig=1}
-    rows.forEach(([g,m],i)=>{this.place(g,m,o,{x:0,y:(i-(rows.length-1)/2)*5},o);if(m.some(u=>!steady(u)))g.resolve=new BattleResolve(g.id,team,m.filter(u=>!steady(u)))});
+    rows.forEach(([g,m],i)=>{this.place(g,m,o,{x:0,y:(i-(rows.length-1)/2)*5},o);if(m.some(u=>!steady(u)))g.resolve=new BattleResolve(g.id,team,m.filter(u=>!steady(u)))});heralded(added);
     warmBattle(added);B.cmdT=0;B.moraleNext=0;B.sight=null;B.captains={};log((o.mapKind==='lord'?lordName(o):force.name||o.label())+' enters the battle.',team?'bad':'good','war');battleEvent('reinforcement',{party:o,team});setOrderUI();
   }
   finish(b){
@@ -277,7 +298,7 @@ class WorldBattleSetup extends BattleSetup{
     BVW=VW;BVH=VH;const deploy=this.opts.deploy;this.opts.deploy=false;try{super.initialize()}finally{this.opts.deploy=deploy}const a=this.area,e=G.enc,rows=marchRows(P),primary=e.ref?.src||e.ref;
     for(const [id,g] of Object.entries(B.groups)){const m=B.units.filter(u=>u.grp===id),first=m[0],source=first?.sourceArmy,anchor=g.player?a.starts[0]:source?.src||source;
       if(!g.player&&source&&Number.isFinite(anchor?.x)&&Number.isFinite(anchor?.y)){a.participants.add(anchor);if(source!==primary&&source!==e.ref&&!a.initial.has(anchor)&&!a.inside(a.field(anchor),6)){const team=g.team;let p=a.pending.find(p=>p.o===anchor);if(!p){p={o:anchor,team,existing:[]};a.pending.push(p)}p.existing.push(id);m.forEach(u=>{u.hpLeft=u.hp;u.hp=0;u.left=true;u.waiting=true});continue}}
-      const key=g.sourceGroupId||id,formation=g.player?rows:source instanceof Party?marchRows(source):[],offset=formation.find(r=>r.id===key)||{x:0,y:first?.leader?0:(Object.keys(B.groups).indexOf(id)%5-2)*7};a.place(g,m,g.player?a.starts[0]:this.area.joinedFight&&Number.isFinite(anchor?.x)?anchor:a.starts[1],offset,g.player?P:source?.src||source,true);
+      const key=g.sourceGroupId||id,formation=g.player?rows:source instanceof Party?marchRows(source):[],offset=formation.find(r=>r.id===key)||{x:0,y:first?.leader?0:(Object.keys(B.groups).indexOf(id)%5-2)*7};a.place(g,m,g.player?a.starts[0]:this.area.joinedFight&&Number.isFinite(anchor?.x)?anchor:a.starts[1],offset,g.player?P:source?.src||source||e.ref,true);// (men of no army of their own, a camp's after a load: they stand for the place, e.ref)
     }
     if(this.surprise||a.joinedFight){B.ready=false;B.paused=false}else{B.muster=new BattleMuster(B);B.ready=false;B.paused=false}B.speed=G.speed;B.deploy=false;exitInit(B.units);a.clamp();B.sight=null;for(const u of B.units){delete u.ls;u.hid=0}if(BattleSides.eligible(e))this.area.sides=B.sides=new BattleSides(B,e);Surprise.begin(B,e);sightStep(true);warmBattle(B.units);
   }
