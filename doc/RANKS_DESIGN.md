@@ -1,6 +1,6 @@
 # Unit ranks: design
 
-Status: **design only, revision 1** (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner's answers are in **Decisions**; §9 lists what is still open.
+Status: **design only, revision 2** (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner answered revision 1's questions; his answers are in **Decisions** and folded into the rules. §9 lists what is still open.
 
 **Readers:** the owner, and whoever builds the phases of §8.
 
@@ -8,6 +8,7 @@ Status: **design only, revision 1** (2026-10-30, written against `codex` at c06c
 - A **group** is one of an army's troop groups (`ArmyRoster` groups, `core/army.js`): one kind of soldier, its own id, name, slot and formation. Every army has them: yours, a lord's, a band's, a patrol's.
 - A **kind** is a troop type (`ST`, `data/units.js`); its **tier** is `ST[k].tier` (0 peasants, 1 to 3 soldiers).
 - A **role** is what a kind does in a fight: spear, shield, sword, bow, crossbow (and sling), caster, cavalry, horse archer, scout (`unitClass`, `isScout`).
+- A **trainer** is someone who drills soldiers: your hero or a companion with the trainer trait, or a holding's or special place's trainer.
 
 ## Decisions (owner, 2026-10-30)
 
@@ -23,6 +24,13 @@ Status: **design only, revision 1** (2026-10-30, written against `codex` at c06c
 - **The five group abilities move into the ladder:** Brace, Fire arrows, Spur, Rally and Scout ahead are no longer there from the start; each is unlocked at a rank.
 - **AI armies have ranks too,** and they grow realistically (§6).
 
+Revision 2 (the owner's answers to revision 1's questions):
+- **Train needs a trainer.** In your camp, only if your band has a trainer (a hero or companion with the trainer trait); otherwise for gold at a holding, or at a special place, that has one. Train gives **flat experience, by the trainer's expertise**. **About 5 trainings a week.** A trainer is expert in **certain kinds of units** (by role): a holding without a trainer for your group's role cannot train it. **The trainer's expertise level caps the tier** he can train (§3).
+- **Rank stays with the group, as in Total War:** a group refilled with recruits keeps its rank.
+- **No old saves:** the game restarts; nothing is carried over (no defaults for old records needed).
+- **The ladder is a baseline for later:** Spear and Bow are built first; the table and its code are made so the other roles are added as data later.
+- **Peasants (tier 0) have no ranks:** they grind experience toward their first upgrade, and that first grind is made hard.
+
 ## 1. Experience and rank
 
 - Each group keeps `xp` (its experience) and `rank` (1 to 5). A new group starts at rank 1, `xp` 0.
@@ -37,25 +45,28 @@ Status: **design only, revision 1** (2026-10-30, written against `codex` at c06c
   | tier 3 | 90 | 220 | 400 | 620 |
 
   (A first proposal, about 2 to 3 even fights a rank at tier 1. `RANKS.xp` in `data/`.)
-- **Rank stays fixed:** recruits join at the group's rank; merging two groups keeps the higher rank; a split keeps the rank in both; the wounded keep their group's rank (a group all wounded keeps its slot already: `ArmyRoster#held`). A group wiped out is gone, its rank with it.
+- **Rank stays with the group (Total War):** a group refilled with recruits keeps its rank; merging two groups keeps the higher rank; a split keeps the rank in both; the wounded keep their group's rank (a group all wounded keeps its slot already: `ArmyRoster#held`). A group wiped out is gone, its rank with it.
 - At rank 5 experience stops; the group waits to upgrade.
 - **The old pool goes:** `P.txp` (experience by kind) and `txpReady` are removed. The Army window's "Training" meter becomes the group's rank meter.
+- **Peasants (tier 0) have no ranks** and no badge rank: a group of peasants gathers experience toward its first upgrade only (`RANKS.peasant`, proposal: as much as a tier-1 group needs for rank 3, 100). No skills.
 
 ## 2. The badge
 
-- A small pixel shield, its metal the tier: **iron** (tier 0, peasants), **bronze** (1), **silver** (2), **gold** (3). On it, **1 to 5 chevrons** for the rank. Drawn once per metal and rank and cached (17 pictures).
+- A small pixel shield, its metal the tier: **bronze** (1), **silver** (2), **gold** (3). On it, **1 to 5 chevrons** for the rank. Peasants show a plain iron shield, no chevrons. Drawn once per metal and rank and cached (16 pictures).
 - Shown on: the Army window's group list and unit card, the battle unit cards (bottom bar), the March formation group buttons, the Barracks' Upgrade tab, and the report after a battle (a group that ranked up: "Rank 3!").
 - A group ranking up says so in the messages, with its badge.
 
-## 3. Train (experience)
+## 3. Train (experience) and trainers
 
-- **Train** is an order to a group: it drills, and gains `RANKS.train.xp` experience.
-- **Limits:** each group may be trained `RANKS.train.day` times a day and `RANKS.train.week` times a week (the owner's numbers; proposal: once a day, three times a week).
-- **Proposal for where and what it costs** (open, §9):
-  - in camp or staying in a holding: free, `RANKS.train.xp` (proposal 15);
-  - at a holding's barracks: more (`RANKS.train.barracks`, proposal ×2) for gold (`RANKS.train.gold`, by tier);
-  - Train alone reaches **rank 3 at most** (`RANKS.train.cap`); ranks 4 and 5 are earned in battle.
-- In the Army window (the group's page: Train, with how many times are left this day and week) and at a barracks (its Train tab, for every group).
+- **Train** is an order to a group: it drills under a trainer and gains **flat experience by the trainer's expertise level** (`RANKS.train.xp[level]`, proposal: 20 / 35 / 50 for levels 1 to 3).
+- **A trainer** has an **expertise**: one or more roles (§ "Words used": spear, bow, shield, sword, cavalry…) and a **level** (1 to 3). He can train only groups of his roles, and only up to **his level's tier** (level 1: tier 0 and 1; level 2: up to tier 2; level 3: up to tier 3).
+- **Where:**
+  - **In your camp:** only when your band has a trainer: your hero or a companion with the **trainer trait** (a new companion role, `ROLES.trainer`, with its expertise; for the hero a talent). Free.
+  - **At a holding:** its trainers (each holding has a few, by its size and people: a town 1 to 2 roles, a castle 2 to 3, the capital more, at higher levels), for **gold** (`RANKS.train.gold`, by tier). A holding with no trainer for your group's role cannot train it.
+  - **At a special place:** e.g. a knightly order's house or a mercenary camp, with a master trainer of one role (later; the shape is the same as a holding's).
+- **Limits:** about **5 trainings a week** (`RANKS.train.week`, the owner's to adjust). Proposal: counted for the band (any groups), at most one per group a day.
+- **Ranks it reaches:** training raises experience like battle does; the trainer's level caps the tier, not the rank (open, §9).
+- In the Army window (a group's page: Train, with the trainer and what it gives, how many are left this week) and at a holding (its trainers: the Barracks' Train tab).
 
 ## 4. Upgrade (tier)
 
@@ -81,6 +92,7 @@ Each role has five rungs. **Rank 1** has the role's basic skill; the rest unlock
 
 - A group has a skill when its rank has reached it. The rule that a group has an ability when half its men qualify stays for the role check.
 - One table (`RANK_SKILLS`, by role and rank) in `data/`, its numbers there; actives are new entries in `UNIT_ABILITIES`, gated by `rank`.
+- **Built first: Spear and Bow** (the owner). The other rows stay in the table as the plan, each added later as data (its passives as stat changes, its actives as `UNIT_ABILITIES` entries) with no new code paths. Until a role is built, its group has today's abilities from rank 1, so no role is left weaker meanwhile.
 
 ## 6. AI armies' ranks
 
@@ -100,22 +112,22 @@ Each role has five rungs. **Rank 1** has the role's basic skill; the rest unlock
 
 ## 7. Saves, tests, fingerprints
 
-- **Saves:** each group gains `xp` and `rank` (defaults on load: 0 and 1); no migration of old saves (the house rule); `P.txp` is dropped. AI groups' ranks are saved with their armies.
+- **Saves:** each group saves `xp` and `rank`; the game restarts (the owner: no old saves are used), so no defaults for old records; `P.txp` is dropped. AI groups' ranks are saved with their armies; trainers with their holdings and companions.
 - **Fingerprints:** gating today's five abilities behind ranks changes battles where they are used (the battle suites' AI captains use Brace, Spur and the others); the battle fingerprints and `rts` will move in phase 2, each with its reason written. Phase 1 changes no battle numbers.
 - **Tests:** a suite per phase (ranks, badge, train, upgrade gate, skills ladder, AI ranks), in the existing style.
 
 ## 8. Phases
 
-1. **Ranks and badges:** group `xp`/`rank`, the ladder, earning in battle, the badge everywhere, Upgrade gated by rank 5 (Train 1/all removed), `P.txp` dropped. No battle numbers change.
-2. **The ladder:** `RANK_SKILLS`, today's five abilities gated by rank, the passives. Fingerprints re-recorded with reasons.
-3. **Train:** the drill order, its limits and caps, in the Army window and the barracks.
+1. **Ranks and badges:** group `xp`/`rank`, the ladder, earning in battle, the badge everywhere, Upgrade gated by rank 5 (Train 1/all removed), `P.txp` dropped, the peasants' first grind. No battle numbers change.
+2. **The ladder, Spear and Bow:** `RANK_SKILLS`, Brace and Fire arrows gated by rank, their passives. Fingerprints re-recorded with reasons.
+3. **Trainers and Train:** the trainer trait and companion role, holdings' and places' trainers by role and level, the weekly limit, gold at holdings.
 4. **AI ranks:** starting ranks, growth from fights and drill, lords' upgrades.
-5. **New actives:** the new ★-less actives of §5, a few at a time.
+5. **The other roles' ladders** and new actives, a few at a time.
 
 ## 9. Open questions
 
-1. **Train: where and what it costs.** My proposal (§3): free in camp or a holding, more for gold at a barracks, at most once a day and three times a week, reaching rank 3 at most. Your numbers?
-2. **Recruits at the group's rank.** With rank fixed, ten fresh recruits joining a rank-5 group become rank-5 veterans at once. Is that what you want, or should recruits only fill a group up to the men it had (its losses), with a larger group needing a new rank-1 group?
-3. **Rank 1's skill.** I gave every role a basic rank-1 skill that is what it does today (a spearman braced to the front, a bowman's volley), so a new group is not weaker than today's. Keep it so?
-4. **The skills of §5:** cut, keep or change any of them; which two roles to build first (my proposal: Spear and Bow).
-5. **Peasants (tier 0):** do they rank (iron badge), or only upgrade to their first soldiers as now?
+1. **The trainer's cap:** "the training cap for tier based on the trainer's expertise level". I read it as: a level-1 trainer trains tier-1 groups (and peasants), level 2 up to tier 2, level 3 up to tier 3. Or does his level cap the **rank** he can train a group to (e.g. level 1 to rank 2, level 2 to rank 4, level 3 to rank 5)?
+2. **Can training alone reach rank 5,** or must the last rank(s) be earned in battle?
+3. **5 a week:** for the whole band, or for each group?
+4. **The trainer trait:** who has it? My proposal: a new companion role, Trainer (each companion an expertise of 1 to 2 roles and a level, raised as they level up), and a hero talent on the tree (Drillmaster becomes it: the hero trains his own people's roles).
+5. **Holdings' trainers:** fixed per holding (made with the world: a town's by its people and size), or changing over time (one leaves, another comes)?
