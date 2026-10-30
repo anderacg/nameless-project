@@ -728,8 +728,10 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .uc-ico{image-rendering:pixelated;vertical-align:-2px}
 .ucard-x{padding:10px 12px;font-size:var(--fs-md);background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:var(--lift)}
 .uc-head{display:flex;gap:10px;align-items:center;margin-bottom:8px}
-.uc-pic{width:52px;height:52px;flex:none;image-rendering:pixelated;background:var(--field);border:1px solid var(--line-2);border-radius:var(--r-sm)}
-.uc-pic.uc-anim{width:78px;height:78px}.uc-sprbtn{align-self:flex-start;margin-top:3px}
+/* (the card's picture: its portrait, or its sprite (View sprite), one size; smaller on a short screen) */
+.uc-pic{width:80px;height:80px;flex:none;image-rendering:pixelated;background:var(--field);border:1px solid var(--line-2);border-radius:var(--r-sm)}
+.uc-sprbtn{align-self:flex-start;margin-top:3px}
+@media(max-height:500px){.uc-pic{width:64px;height:64px}}
 .uc-name{display:flex;flex-direction:column;gap:2px}
 .uc-name strong{font-size:var(--fs-lg);color:var(--accent)}
 .uc-name small{color:var(--muted)}
