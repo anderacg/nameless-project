@@ -801,6 +801,8 @@ The tracks are drawn pixel only, in 8 directions (the owner). `art/tracks.py` dr
 
 **Screen shake** is drawn only (`shakeView` in `gfx/vfx.js`, tuned by `SHAKE`): `frame()` offsets the view by a sine wobble, never moving `B.cam` and never drawing random numbers. A rider or big beast charging home at momentum over `SHAKE.charge` jolts the view (capped at `SHAKE.max` px, fading over `SHAKE.life` s); one of your groups routing gives a lighter jolt. `SHAKE.on=false` or the system's reduced-motion setting turns it off.
 
+**The fighters' states, on them** (`STATE_FX` in `gfx/vfx.js`, drawn only: marks kept off the battle in `STATE_MARKS`, particles in `FXP` aged by the real clock, randomness from its own stream, so no fingerprint moves): a pulsing ring at a man's feet for War Cry (orange), the War Banner's reach (blue), Stand Fast! (gold) and a fresh rally (a gold flare); wavering, he flickers dim and trembles now and then; routing, his sprite goes pale and he kicks up dust; his group shattered, grey; stunned, stars circle his head; spent, a drop of sweat. A group breaking shudders and leaves a grey ring; a rally throws gold sparks from its men; a flank flashes red on the side struck; a leader falling, a red ring. Settings → **Battle effects**: Full, or Light (the rings, colours and stars only). Tests: statefx, uiprefs.
+
 **Unit of the battle**: kills are counted per source group (`B.grpKills`, `applyDmg`); the battle report names your troop group with the most kills (ties: `resolve.damageDealt`). Not shown in tournaments, for heroes and companions, or when none of your groups fought. Tests: `tests/battlejuice.js`.
 
 ## Unit abilities

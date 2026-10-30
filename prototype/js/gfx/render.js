@@ -237,7 +237,7 @@ function drawUnit(u){
   // battle's time and his id: drawn only)
   const z=Math.round(u.z||0),ghost=u.hero&&B.hx&&B.hx.inv>0,wk=B.terrain&&!z?groundAt(u.x,u.y):0,deep=wk===4,ford=wk===3&&B.env.c!=='frost',rr=Math.round(5*big+1);
   if(deep)waterRing(x,y-2,rr,u,-1);else{ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y,5.5*big,1.8*big,0,0,6.283);ctx.fill()}// (a soft shadow)
-  if(u.buffT>0){ctx.fillStyle='rgba(232,185,74,.35)';ctx.fillRect(x-6,y-2,12,3)}
+  stateAura(u,x,y,big);// (what lifts him, under his feet: vfx.js STATE_FX)
   const hit=u.hitAt!=null&&B.t-u.hitAt<.09;
   // (moving: a step in the last few frames, so a man who stops and starts as he settles does not flicker between standing and walking)
   // (knocked down: over, lying, up again, physics.js)
@@ -246,14 +246,14 @@ function drawUnit(u){
     if(cl&&!beast&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
     const sp=beast?actorSprite(u,pose):actorSprite(u,pose,true,!!u.inMelee);
     // (a beast's blow: its pose, and a short lunge with it; its steps bob in its frames)
-    let bx=0,bo=0;if(beast&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(2*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))
+    let [bx,sa]=stateShake(u),bo=0;if(beast&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(2*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))
     // (meeting a blow (battle/defence.js): turned to it; a dodge, a sway back on the spot, leaning away, or a step aside; a heavy
     // blow blocked, a step back; struck, a flinch back, a heavy wound a stagger; a blow of his own, a lunge into it (battle/duel.js))
     const dk=Defence.now(u),dp=dk?Math.sin((B.t-u.defAt)/DEFENCE.anim*Math.PI):0,side=dk==='dodge'&&u.defV==='side';
     if(dk==='dodge'&&!side)bx-=Math.round(2*dp);if(side)bo+=Math.round((u.id&1?2:-2)*dp);if(dk==='block'&&u.defV==='push')bx-=Math.round(2*dp);if(hit)bx-=1;
     const sg=u.stagAt!=null&&B.t-u.stagAt<.3?Math.sin((B.t-u.stagAt)/.3*Math.PI):0;if(sg)bx-=Math.round(2*sg);
     if(!beast&&DUEL.on&&u.atkLook&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx+=Math.round((u.atkLook==='bash'?2.5:1.5)*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI));
-    ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if((dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLean(u)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg;if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */if(ghost)ctx.globalAlpha=.55;ctx.drawImage(hit?whiteOf(sp):sp,-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore();
+    ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if((dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLean(u)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg;if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */ctx.globalAlpha=(ghost?.55:1)*sa;ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore();
     // (climbing: a little grit trickles down the slope behind him now and then; coming down, a puff at the heel: from his id and the
     // battle's time, drawn only)
     if(cl){const ph=(B.t*(cl==='up'?2.2:3)+((u.id||0)*.37))%1,dc=B.env.c==='frost'?'#e8eef4':B.env.c==='desert'?'#e6cc96':'#a8987a';
@@ -262,8 +262,7 @@ function drawUnit(u){
     if(deep)waterRing(x,y-2,rr,u,1,moved);else if(ford){const ph=(B.t*3+(u.id||0)*.37)%1;ctx.fillStyle='rgba(232,242,240,.55)';ctx.fillRect(Math.round(x-rr+1),Math.round(y),2*rr-2,1);
       if(moved&&ph<.5){ctx.fillStyle='#e8f2f0';ctx.fillRect(Math.round(x-3),Math.round(y-1-ph*4),1,1);ctx.fillRect(Math.round(x+3),Math.round(y-ph*5),1,1);ctx.fillRect(Math.round(x+(u.face<0?4:-4)),Math.round(y),1,1)}}}// (his weapon in his hand: weapons.js)
   drawStuck(u,x,y-Math.round(u.z||0));// (arrows in him: vfx.js)
-  if(u.buffT>0&&Math.random()<.06)vfx({k:'ember',x:u.x+rnd(-4,4),y:u.y-rnd(2,12),vx:rnd(-4,4),vy:-rnd(10,25),life:rnd(.4,.7),col:'#ffd25a'});// (inspired: golden sparks)
-  if(u.stun>0)txt('*',x+(Math.floor(performance.now()/120)%2?3:-3),y-h-z-2,'#ffe08a','center');
+  stateAir(u,x,y-z,h);// (stars, sweat, a router's dust: vfx.js)
   drawMorale(u,x,y-h-z-3);// (running or wavering: ui/moraleicons.js)
   // its health: over every fighter with health bars on (Settings, or HP bars in battle), else over you and your companions
   if(u.leader)txt(u.leader.name+' Lv'+u.leader.lv,x,y-h-8-z,sideCol(u,'say'),'center');// a leader: his name over him
@@ -362,7 +361,7 @@ function drawBattle(){
   if(!B.world&&B.terrain&&B.ground.water){const gw=B.ground,now=performance.now();if(!B.paused&&gw.wl)gw.wt=(gw.wt||0)+Math.min(.1,(now-gw.wl)/1000);gw.wl=now;
     if(!reducedMotion()){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0;PX.battleWater(ctx,gw,gw.wt||0,[vx,vy,vx+BVW/z,vy+BVH/z])}}if(!B.world){const t=fieldTop()-FIELD_EDGE.body+6,b=fieldBot()+4;ctx.fillStyle='rgba(8,10,16,.35)';if(t>0)ctx.fillRect(0,0,BW,t);if(b<BH)ctx.fillRect(0,b,BW,BH-b);ctx.fillStyle='rgba(232,224,200,.18)';if(t>0)ctx.fillRect(0,t,BW,1);if(b<BH)ctx.fillRect(0,b,BW,1)}// (the field's edges in sight: battle.js fieldTop)
   if(!B.world){if(!B.deploy)drawExit();drawDeploy();}// (the withdrawal edge: morale.js; the deployment zone: deploy.js)
-  drawCorpses();vfxGround();// (the fallen and their blood; dust, shockwaves: vfx.js)
+  drawCorpses();vfxGround();stateGround();// (the fallen and their blood; dust, shockwaves: vfx.js)
   {const l=!B.world&&B.terrain&&B.ground?lodStep():0;TREE_A=1-l;if(l>0){if(l<1)ctx.globalAlpha=l;drawLayer(PX.battleCanopy(B.ground));ctx.globalAlpha=1}}// (a big wood zoomed out: its canopy layer, LOD)
   for(const g of playerGroups()){const gr=B.groups[g];if((gr.order!=='hold'&&gr.order!=='advance')||!grpUnits(g).length)continue;
     const fx_=Math.round(gr.ax),fy=Math.round(gr.ay);rect(ctx,C.wood,fx_,fy-14,1,14);rect(ctx,C.team[0],fx_+1,fy-14,6,4);rect(ctx,'#e4e0cf',fx_+3,fy-13,2,2)}
@@ -394,7 +393,7 @@ function drawBattle(){
   for(const r of B.rings){const p=1-r.life/r.max;ctx.strokeStyle='rgba('+r.col+','+(r.life/r.max).toFixed(2)+')';ctx.lineWidth=3*worldEffectScale();ctx.beginPath();ctx.arc(r.x,r.y,r.r*(.5+.5*p),0,6.283);ctx.stroke()}
   for(const p of B.parts){ctx.save();effectTransform(p.x,p.y);if(p.stuck){const x=Math.round(p.x),y=Math.round(p.y);ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle='#c9b48a';ctx.fillRect(x-p.stuck,y-3,1,2);ctx.fillRect(x-2*p.stuck,y-5,1,2);ctx.fillStyle='#e8e4d0';ctx.fillRect(x-3*p.stuck,y-6,1,1);ctx.globalAlpha=1;ctx.restore();continue}
     ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x),Math.round(p.y),2,2);ctx.restore()}
-  vfxAir();// (sparks, glows, embers, flying blood: vfx.js)
+  vfxAir();stateFxAir();// (sparks, glows, embers, flying blood: vfx.js)
   // (a number pops up big and settles)
   for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1;if(k===1){txt(f.t,Math.round(f.x),Math.round(f.y),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(f.y));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();

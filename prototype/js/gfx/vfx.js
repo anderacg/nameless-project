@@ -162,3 +162,62 @@ function vfxAir(){
     else if(p.k==='ghost'){ctx.globalAlpha=a*.5;ctx.save();ctx.translate(Math.round(p.x),Math.round(p.y));if(p.face<0)ctx.scale(-1,1);ctx.drawImage(whiteOf(p.sp),-Math.floor(p.sp.width/2),-p.sp.height+2);ctx.restore()}
     else if(p.k==='glow'){const r=p.r*(1.2-.4*a),g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);g.addColorStop(0,p.col);g.addColorStop(1,'rgba(0,0,0,0)');ctx.globalAlpha=a;ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,r,0,6.283);ctx.fill()}ctx.restore()}
   ctx.restore()}
+/* ---------- the fighters' states, shown on them (the owner, 2026-10-30: "highlight on units" when morale falls or buffs; Wave 1 of
+   a livelier battle). Drawn only: their marks kept off the battle (STATE_MARKS, by unit and resolve; FXP, their own particles,
+   aged by the real clock) and their randomness a stream of its own (fxr), so no fight goes otherwise and no fingerprint moves.
+   On each man (stateAura, under him; statePic, his sprite; stateShake, a pixel's tremble; stateAir, over him):
+     a ring at his feet: War Cry's (cry, its heart: buffT), the War Banner's (banner, within its reach), Stand Fast!'s (stand),
+     pulsing every pulse s; a rally's flare (rally) for flare s after one;
+     wavering (morale under MORALE.waver): his colours dim and flicker, now and then a tremble; routing: pale (pale), dust kicked
+     up behind him as he runs; his group shattered: grey;
+     stunned: small stars circling his head; spent (fatigue.js): a drop of sweat now and then.
+   On a moment (battle events): a group breaking, a shudder through it (shock s) and a grey ring; rallying (on its own or Rally the
+   Line), a gold burst from its men; flanked, a red flash on the side it is struck from; its leader down, a ring of shock round
+   him and his men shaken. Light (Settings, Battle effects: fxLite): the rings, colours and stars only, no particles */
+const STATE_FX={on:true,pulse:1.6,flare:1.4,shock:.45,col:{cry:'236,104,64',banner:'120,170,255',stand:'236,200,110',rally:'255,220,120'},pale:.35,grey:.1};
+const fxLite=()=>prefGet('bfx')==='light';
+const STATE_MARKS=new WeakMap(),FXP=[];let FXR=1,FXT=0;
+const fxr=()=>(FXR=(FXR*1103515245+12345)%2147483648)/2147483648;
+const stateMark=o=>{let m=STATE_MARKS.get(o);if(!m){m={};STATE_MARKS.set(o,m)}return m};
+// (a moment's own particle: k ring, spark (rising), dust, flash; drawn in the air but rings and dust, which lie on the ground)
+function fxp(o){if(FXP.b!==B){FXP.length=0;FXP.b=B}if(fxLite()&&o.k!=='ring'&&o.k!=='flash')return;if(FXP.length>300)FXP.shift();o.age=0;FXP.push(o)}
+// (his rings: what lifts him now)
+function stateRings(u){const C=STATE_FX.col,out=[],r=resolveOf(u);if(u.buffT>0)out.push(C.cry);
+  const b=B.banner;if(b&&battleFriend(b.team,u)&&Math.hypot(u.x-b.x,u.y-b.y)<b.r)out.push(C.banner);if(r&&r.standing&&r.standing())out.push(C.stand);return out}
+function stateAura(u,x,y,big){if(!STATE_FX.on||u.hp<=0)return;const rs=stateRings(u),r=resolveOf(u),m=r&&STATE_MARKS.get(r),t=performance.now()/1000;
+  if(m&&m.rally!=null&&B.t-m.rally<STATE_FX.flare)rs.push(STATE_FX.col.rally);if(!rs.length)return;
+  ctx.save();ctx.globalCompositeOperation='lighter';rs.forEach((c,i)=>{const p=.5+.5*Math.sin((t/STATE_FX.pulse+(u.id||0)*.13+i*.3)*6.283),R=(6+i*1.5)*big;
+    ctx.strokeStyle='rgba('+c+','+(.35+.3*p).toFixed(2)+')';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(x,y,R,R*.38,0,0,6.283);ctx.stroke();
+    ctx.fillStyle='rgba('+c+','+(.08+.08*p).toFixed(2)+')';ctx.beginPath();ctx.ellipse(x,y,R-1,(R-1)*.38,0,0,6.283);ctx.fill()});ctx.restore()}
+// (a pale or grey copy of a sprite: a routing man, a shattered group's; kept with it)
+function paleOf(src,s){const k=s<.2?'_grey':'_pale';if(src[k])return src[k];const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(src,0,0);
+  const d=g.getImageData(0,0,c.width,c.height),p=d.data;for(let i=0;i<p.length;i+=4){const l=.3*p[i]+.59*p[i+1]+.11*p[i+2];p[i]=l+(p[i]-l)*s+12;p[i+1]=l+(p[i+1]-l)*s+12;p[i+2]=l+(p[i+2]-l)*s+18}g.putImageData(d,0,0);
+  for(const q of ['cw','ch','hand','fh'])if(src[q]!=null)c[q]=src[q];return src[k]=c}
+function statePic(u,sp){if(!STATE_FX.on||B.noMorale||u.mor==null)return sp;const r=resolveOf(u);if(r&&r.shattered)return paleOf(sp,STATE_FX.grey);if(u.rout)return paleOf(sp,STATE_FX.pale);return sp}
+// (wavering: dimmed and flickering; any of a breaking group's men, a shudder: px across, and the alpha to draw him at)
+function stateShake(u){if(!STATE_FX.on||B.noMorale||u.mor==null)return[0,1];const r=resolveOf(u),m=r&&STATE_MARKS.get(r),t=performance.now()/1000;let dx=0,a=1;
+  if(m&&m.shock!=null&&B.t-m.shock<STATE_FX.shock)dx=(Math.floor(t*30+(u.id||0))%2?1:-1);
+  else if(!u.rout&&u.mor<MORALE.waver){a=.78+.22*(Math.floor(t*5+(u.id||0)*.7)%2);if(Math.floor(t*3+(u.id||0)*.31)%7===0)dx=Math.floor(t*24)%2?1:-1}
+  return[dx,a]}
+// (over him: a stunned man's stars, a spent man's sweat, a router's dust behind him)
+function stateAir(u,x,y,h){if(!STATE_FX.on||u.hp<=0)return;const t=performance.now()/1000;
+  if(u.stun>0)for(let i=0;i<3;i++){const a=t*5+i*2.094;ctx.fillStyle=i?'#ffe08a':'#ffffff';ctx.fillRect(Math.round(x+Math.cos(a)*4),Math.round(y-h-1+Math.sin(a)*1.5),1,1)}
+  if(fxLite())return;
+  if(staOf(u)<FATIGUE.spent&&fxr()<.012)fxp({k:'sweat',x:x+(u.face<0?-2:2),y:y-h+4,life:.7});
+  if(u.rout&&!u.left&&u.spdNow>5&&fxr()<.15)fxp({k:'dust',x:x-(u.face||1)*3,y,vx:-(u.face||1)*(6+fxr()*8),r:1.5,life:.5})}
+// (a moment: a group breaks, rallies, is flanked, its leader falls; marks and particles only)
+battleOn((type,d)=>{if(!STATE_FX.on||!B)return;const men=r=>r?B.units.filter(u=>u.hp>0&&resolveOf(u)===r):[];
+  if(type==='rout'){const m=stateMark(d.r);m.shock=B.t;const ms=d.m||men(d.r);if(ms.length){const c=ms.reduce((a,u)=>[a[0]+u.x/ms.length,a[1]+u.y/ms.length],[0,0]);fxp({k:'ring',x:c[0],y:c[1],r:24,col:'190,190,200',life:.6})}}
+  if(type==='rally'){stateMark(d.r).rally=B.t;for(const u of men(d.r))for(let i=0;i<2;i++)fxp({k:'spark',x:u.x+(fxr()-.5)*6,y:u.y-4-fxr()*6,vy:-(14+fxr()*16),col:'#ffd76a',life:.6+fxr()*.4})}
+  if(type==='flank'&&d.u&&d.src){const a=Math.atan2(d.src.y-d.u.y,d.src.x-d.u.x);fxp({k:'flash',x:d.u.x+Math.cos(a)*4,y:d.u.y-6+Math.sin(a)*2,r:7,col:'255,80,60',life:.25})}
+  if(type==='leader'&&d.u){const r=resolveOf(d.u);if(r)stateMark(r).shock=B.t;fxp({k:'ring',x:d.u.x,y:d.u.y,r:36,col:'255,120,100',life:.8})}
+  if(type==='power'&&d.id==='rally')for(const g of d.gs||[])if(g.resolve)stateMark(g.resolve).rally=B.t});
+// (their particles, by the real clock: rings and dust on the ground (stateGround), the rest in the air (stateFxAir))
+function fxpStep(){const now=performance.now()/1000,dt=FXT?Math.min(.1,now-FXT):0;FXT=now;for(const p of FXP){p.age+=dt;if(p.vy)p.y+=p.vy*dt;if(p.vx)p.x+=p.vx*dt}for(let i=FXP.length-1;i>=0;i--)if(FXP[i].age>=FXP[i].life)FXP.splice(i,1)}
+function stateGround(){if(!B||!FXP.length)return;fxpStep();for(const p of FXP){const a=1-p.age/p.life;
+  if(p.k==='ring'){const q=p.age/p.life;ctx.strokeStyle='rgba('+p.col+','+(a*.7).toFixed(2)+')';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p.x,p.y,p.r*(.3+.8*q),p.r*(.3+.8*q)*.42,0,0,6.283);ctx.stroke()}
+  else if(p.k==='dust'){ctx.fillStyle='rgba(196,180,140,'+(a*.4).toFixed(2)+')';ctx.beginPath();ctx.arc(p.x,p.y,p.r+p.age*4,0,6.283);ctx.fill()}}}
+function stateFxAir(){if(!B||!FXP.length)return;ctx.save();ctx.globalCompositeOperation='lighter';for(const p of FXP){const a=1-p.age/p.life;
+  if(p.k==='spark'){ctx.fillStyle=p.col;ctx.globalAlpha=a;ctx.fillRect(Math.round(p.x),Math.round(p.y),1,1)}
+  else if(p.k==='flash'){const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);g.addColorStop(0,'rgba('+p.col+','+a.toFixed(2)+')');g.addColorStop(1,'rgba('+p.col+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill()}}
+  ctx.globalCompositeOperation='source-over';for(const p of FXP)if(p.k==='sweat'){ctx.globalAlpha=1-p.age/p.life;ctx.fillStyle='#bfe4ff';ctx.fillRect(Math.round(p.x),Math.round(p.y+p.age*8),1,1)}ctx.restore()}
