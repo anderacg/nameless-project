@@ -280,7 +280,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // W6 re-recorded 2026-10-24 for native-resolution world-map labels (Arial and a dark outline), requested for legibility.
 // Was 6b64690d; now ca946ef1 (parts b20337fd 06f656b2 c148aa51 0c40944c 4403a5ea 8319b986). Switching only the
 // queue flush back to txt restored the old W6 and all 16 checks. World data, simulation, saves, W1-W5, W7-W8 and B2 held.
-const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'ca946ef1',W7:'b1a67c01',W8:'a465c56e',B2:'8712b6a2'};
+// (W1, W3, W4, W5 re-recorded 2026-10-30, on purpose: the woods' glades (worldgen.js GEN_GLADE, stage 9b, after the holdings, roads
+// and camps, so none of them moved) open ground in every wood of the world; W2 the same as before)
+const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'ba811bfe',W4:'2bf73f82',W5:'59a8b3fa',W6:'ca946ef1',W7:'b1a67c01',W8:'a465c56e',B2:'8712b6a2'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -330,7 +332,8 @@ const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f28490
 // (classic and Normal s1-s3 re-recorded 2026-10-23, on purpose, stage 3 of the building redesign (W1-W8 above): a village's clearing
 //  of 110 tiles (PLACE_CLEAR, was 80) for its 64 px centre. Checked: with it back at 80 all five as before (Large s1 never moved).
 //  Were classic efa9e400, Normal s1 f9e8cbcf, s2 be89157c, s3 5d829885)
-const SUMS={classic:'91df174b','Normal s1':'ce4bf2b8','Normal s2':'f73a2073','Normal s3':'3c444fc8','Large s1':'c0456394'};
+// (all five re-recorded 2026-10-30, on purpose: the woods' glades, GEN_GLADE; the generator's stages before 9b as before)
+const SUMS={classic:'c2e6ebf4','Normal s1':'7de4f831','Normal s2':'994d7cb0','Normal s3':'d0b32a24','Large s1':'03a19dc7'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

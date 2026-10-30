@@ -84,6 +84,14 @@ const GEN_RIVER={share:.026,systems:[8,14],great:[[1,2],[2,3],[3,5]],river:6,min
 // 5. forests (§8.6): base density by climate (CLIMS' order: grass, frost, desert, swamp), times moisture and patches; forest over
 // wood, deep (pieces of deepN tiles and more) over deep, a sparse edge over sparse; banks more wooded (bank: x1.15 plus)
 const GEN_FOREST={base:[.45,.35,0,.5],wood:.55,deep:.75,deepN:300,sparse:.4,bank:.06,k:3.6};
+/* 5a. glades (the owner, 2026-10-30: "more open field in forest", for a band to camp in, world/supply.js campGround): open ground
+   in the woods, one for about every every tiles of a wood of min tiles and more, round a forest tile at least edge tiles in from
+   its edge and apart tiles from another glade's; of a radius r tiles (drawn between), its edge ragged (noise rough of it at scale
+   tiles); its ground open, the wood's deep and sparse marks (feat 8, 16) off, and the deep mark off ring tiles round it; a wood
+   tile round it left with under thin of its 8 neighbours wood opened too (no thin tongues of trees). Laid after the holdings,
+   roads and camps (stage 9b), hold tiles from a holding and site tiles from a camp, so none of them is placed otherwise for them. Never in
+   the swamp (no band camps there) nor round a tile within brook tiles of running water (a river, a brook) */
+const GEN_GLADE={min:80,every:420,apart:14,edge:4,r:[3.6,5],rough:.3,scale:3,ring:1.2,brook:2,thin:3,hold:16,site:8};
 // the stages, in order (§15.2.1): id, the loading label (§5.2), w (its weight on the bar), run, and its check (§8.14), if any
 const GEN_STAGES=[
   {id:'land',label:'Raising the land',w:80,run:g=>genLand(g),check:g=>{const n=g.work.land/(g.map.w*g.map.h);return n<.6||n>.8?'land '+(n*100).toFixed(0)+'%':null}},
@@ -97,6 +105,7 @@ const GEN_STAGES=[
   {id:'holdings',label:'Founding holdings',w:250,run:g=>genHoldings(g)},
   {id:'roads',label:'Laying roads',w:500,run:g=>genRoads(g)},
   {id:'sites',label:'Placing camps',w:50,run:g=>genCamps(g)},
+  {id:'glades',label:'Glades in the woods',w:20,run:g=>genGladeStage(g)},
   {id:'graph',label:'Charting the ways',w:150,run:g=>genGraph(g)}
 ];
 function genWorldSteps(settings){
@@ -666,6 +675,29 @@ function* genForest(g){
   const L=new Int32Array(N),size=yield* genPieces(g,L,i=>K[i]===T_FOREST);
   for(let i=0;i<N;i++)if(L[i]>=0&&size[L[i]]>=T.deepN&&Dn[i]>T.deep)F[i]|=8;
 }
+// (stage 9b: the glades, once the holdings, roads and camps are laid (so none of them moves for them), before the ways are charted)
+function* genGladeStage(g){const m=g.map,N=m.w*m.h,L=new Int32Array(N),size=yield* genPieces(g,L,i=>m.kind[i]===T_FOREST);g.work.glades=genGlades(g,L,size)}
+// (the glades (GEN_GLADE), drawn from their own stream, hold tiles from every holding and site tiles from every camp: how many)
+function genGlades(g,L,size){const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,F=m.feat,X=GEN_GLADE,R=g.rng('glade',g.attempt),salt=genSalt(R);
+  // (each forest tile's distance in from the wood's edge, 4 ways)
+  const D=new Int16Array(N).fill(-1),q=[];for(let i=0;i<N;i++)if(K[i]!==T_FOREST){D[i]=0;q.push(i)}
+  for(let h=0;h<q.length;h++){const i=q[h],x=i%W,y=(i-x)/W;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+a,ny=y+b;if(nx<0||ny<0||nx>=W||ny>=H)continue;const j=ny*W+nx;if(D[j]<0){D[j]=D[i]+1;q.push(j)}}}
+  // (never in the swamp, where no band camps, nor within brook tiles of running water)
+  const wet=i=>{const x=i%W,y=(i-x)/W;for(let b=-X.brook;b<=X.brook;b++)for(let a=-X.brook;a<=X.brook;a++){const nx=x+a,ny=y+b;if(nx<0||ny<0||nx>=W||ny>=H)continue;const j=ny*W+nx;if(m.river[j]&3||(m.flow[j]&31)>=GEN_RIVER.brook)return true}return false};
+  const away=[...(g.holdings||[]).map(h=>[h.tx,h.ty,X.hold]),...(g.camps||[]).map(c=>[c.tx,c.ty,X.site])],kept=(x,y)=>away.some(([a,b,r])=>(a-x)*(a-x)+(b-y)*(b-y)<r*r);
+  const B0=Math.ceil(X.r[1]+X.edge),cand=[];for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;if(x>=B0&&y>=B0&&x<W-B0&&y<H-B0&&K[i]===T_FOREST&&D[i]>=X.edge&&size[L[i]]>=X.min&&m.clim[i]!==CLIM.swamp&&!wet(i)&&!kept(x,y))cand.push(i)}// (and never by the map's frame)
+  for(let k=cand.length-1;k>0;k--){const j=Math.floor(R()*(k+1));[cand[k],cand[j]]=[cand[j],cand[k]]}// (in an order of their own stream's)
+  const left=new Map(),at=[],cell=X.apart,near=new Map(),key=(x,y)=>Math.floor(x/cell)+','+Math.floor(y/cell);let n=0;
+  for(const i of cand){const p=L[i];if(!left.has(p))left.set(p,Math.max(1,Math.round(size[p]/X.every)));if(!left.get(p))continue;const x=i%W,y=(i-x)/W;
+    let ok=true;for(let b=-1;b<=1&&ok;b++)for(let a=-1;a<=1&&ok;a++)for(const [gx,gy] of near.get(key(x+a*cell,y+b*cell))||[])if((gx-x)*(gx-x)+(gy-y)*(gy-y)<X.apart*X.apart){ok=false;break}
+    if(!ok)continue;left.set(p,left.get(p)-1);(m.glades||(m.glades=[])).push(i);const k=key(x,y);if(!near.has(k))near.set(k,[]);near.get(k).push([x,y]);n++;
+    const r=X.r[0]+R()*(X.r[1]-X.r[0]),B=Math.ceil(r+X.ring+1);
+    for(let b=-B;b<=B;b++)for(let a=-B;a<=B;a++){const tx=x+a,ty=y+b;if(tx<0||ty<0||tx>=W||ty>=H)continue;const j=ty*W+tx;if(K[j]!==T_FOREST)continue;
+      const d=Math.sqrt(a*a+b*b)*(1+X.rough*(gfbm(tx/X.scale,ty/X.scale,salt,2)-.5)*2);if(d<=r){K[j]=T_OPEN;F[j]&=~24}else if(d<=r+X.ring&&(F[j]&8))F[j]&=~8}
+    // (its edge tidied: a wood tile left with under thin of its 8 neighbours wood (a thin tongue, a lone tree's tile) opened too)
+    for(let b=-B;b<=B;b++)for(let a=-B;a<=B;a++){const tx=x+a,ty=y+b;if(tx<1||ty<1||tx>=W-1||ty>=H-1)continue;const j=ty*W+tx;if(K[j]!==T_FOREST)continue;
+      let w=0;for(const [p,q] of DIR8)if(K[(ty+q)*W+tx+p]===T_FOREST)w++;if(w<X.thin){K[j]=T_OPEN;F[j]&=~24}}}
+  return n}
 /* 5b. springs, ponds and oases (the owner's fifth play-test): small water of its own, lake water (feat lake, basin 0), never in a
    river's way, each listed with its middle tile i, its radius r (tiles: its water and a ring of one tile round it, the art's reeds,
    palms and green ground) and its water tiles: m.ponds [{i, r, kind, tiles}], m.oases [{i, r, big, tiles}]. None within held

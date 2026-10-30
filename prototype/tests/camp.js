@@ -45,10 +45,10 @@ try{
   reset();Kit.goTo(wood[0],wood[1]);ok(!t.campGround(P.x,P.y),'(by a wood: the camp would stand over its trees)');ok(t.makeCamp()&&!P.camp&&P.tx!=null&&!!G.pitch,'Make camp there: your band walks to clear ground first ('+Math.round(Math.hypot(P.tx-P.x,P.ty-P.y))+' px)');
   const goal=[P.tx,P.ty];Kit.frames(800,.05,null,()=>!!P.camp||P.tx==null);ok(!!P.camp&&Math.hypot(P.x-goal[0],P.y-goal[1])<3&&t.campGround(P.x,P.y),'and pitches there, on clear ground: no water, wood, swamp or lot under it, nothing standing on it'+(P.camp?'':' (camp '+!!P.camp+', '+Math.round(Math.hypot(P.x-goal[0],P.y-goal[1]))+' px off, going '+P.tx+')'));
   reset();Kit.goTo(wood[0],wood[1]);t.makeCamp();t.worldGo(P.x-60,P.y);const off=!G.pitch;Kit.frames(400,.05,null,()=>P.tx==null);ok(off&&!P.camp,'a travel order on the way calls it off')}
- {const deep=k=>{for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++){let all=true;for(let j=-6;j<=6&&all;j++)for(let i=-6;i<=6&&all;i++)if(!k(tx+i,ty+j))all=false;if(all)return [(tx+.5)*16,(ty+.5)*16]}return null};
+ {const r0=S.camp.r;S.camp.r=4;const R=S.camp.r+1,deep=k=>{for(let ty=R;ty<t.MH-R;ty++)for(let tx=R;tx<t.MW-R;tx++){let all=true;for(let j=-R;j<=R&&all;j++)for(let i=-R;i<=R&&all;i++)if(!k(tx+i,ty+j))all=false;if(all)return [(tx+.5)*16,(ty+.5)*16]}return null};
   const inWood=deep((x,y)=>t.tAt(x,y)===t.T_FOREST),inFen=deep((x,y)=>t.passable(t.tAt(x,y))&&t.CLIMS[t.climate[y*t.MW+x]]==='swamp');
   for(const [w,at] of [['deep in a wood',inWood],['in a swamp',inFen]]){if(!at){o.push('INFO no '+w+' on this map');continue}reset();Kit.goTo(at[0],at[1]);const n=msgs(/No clear ground to camp here/);
-   ok(!t.makeCamp()&&!P.camp&&P.tx==null&&msgs(/No clear ground to camp here/)===n+1,w+': no clear ground near, no camp, said in the log')}}
+   ok(!t.makeCamp()&&!P.camp&&P.tx==null&&msgs(/No clear ground to camp here/)===n+1,w+': no clear ground near, no camp, said in the log (searching '+S.camp.r+' tiles: with the glades and the 12-tile search such places are rare)')}S.camp.r=r0}
  // ---- hidden while camped (the owner, 2026-10-23): no figure or host drawn, your banner on a pole in the camp; back when it breaks
  // (the stealth eye and the fatigue badge over your band only ask where your banner would stand, drawing none: not counted)
  {const draws=()=>{let hero=0,badge=0;const bn=[],ps=window.partySprite,ba=window.bannerAt,dt=window.drawTravelDetection,aside=f=>function(){badge++;try{return f.apply(this,arguments)}finally{badge--}};
@@ -91,6 +91,12 @@ try{
    ok(t.makeCamp()&&!P.camp&&!!G.pitch&&P.tx===s.x&&P.ty===s.y,'farther than '+S.camp.hop+' tiles the band walks there first ('+Math.round(Math.hypot(s.x-P.x,s.y-P.y))+' px)');
    Kit.frames(800,.05,null,()=>!!P.camp||P.tx==null);ok(!!P.camp&&Math.hypot(P.x-s.x,P.y-s.y)<3&&!bad(P.x,P.y),'and pitches there, on allowed ground')}}
  reset();t.makeCamp();G.mode='world';t.saveGame(true,'quick');ev('BAND=freshBand()');ok(!P.camp,'(a fresh record has no camp)');t.loadGame('quick');ok(!!P.camp,'saved and loaded in camp');
+ // ---- glades in the woods (worldgen.js GEN_GLADE; the owner, 2026-10-30: "more open field in forest") and the farther search
+ {Kit.begin('soldier',1);const K=t.WM.kind,W=t.MW,gl=t.WM.glades||[],X=t.GEN_GLADE;let open=0;for(const i of gl)if(K[i]===t.T_OPEN)open++;
+  ok(gl.length>=10&&open>=gl.length*.8&&S.camp.r>=12,gl.length+' glades in the woods ('+open+' still open ground at their middle once the holdings and roads are placed); Make camp looks '+S.camp.r+' tiles round you');
+  let s0=7,n=0,found=0;const rr=()=>(s0=(s0*1103515245+12345)%2147483648)/2147483648;
+  for(let k=0;k<6000&&n<120;k++){const i=Math.floor(rr()*K.length);if(K[i]!==t.T_FOREST||!(t.WM.feat[i]&8))continue;n++;P.x=(i%W+.5)*t.TILE;P.y=(Math.floor(i/W)+.5)*t.TILE;if(t.campSpot())found++}
+  ok(n>=60&&found>=n*.6,'deep in a wood your band finds ground to camp from '+found+' of '+n+' places (it was about 1 in 9)')}
  Kit.begin('soldier',4242);ok(!P.camp,'a new game: no camp');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{window.toast=toast0}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

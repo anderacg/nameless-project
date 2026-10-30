@@ -945,6 +945,7 @@ Forest density per tile = biome base (grass 0.45, frost 0.35, swamp 0.5, desert 
 - **Deep:** pieces ≥ 300 tiles with a core over 0.75 get `feat` DEEP.
 - **Sparse edges:** 0.4–0.55 is `feat` SPARSE, painted as copses and lone trees.
 - **Rivers:** banks are 15% more wooded (gallery forests), including through grassland and desert, where palms line oasis rivers.
+- **Glades (built 2026-10-30, the owner: "more open field in forest", to camp in):** open ground inside the woods, about one per 420 tiles of a wood of 80 tiles or more, `GEN_GLADE`. Each is 3.6–5 tiles in radius with a ragged edge, at least 4 tiles in from the wood's edge and 14 from another glade. None in the swamp, by running water, by the map's frame, within 16 tiles of a holding or 8 of a camp. Thin tongues of trees left round it are opened. They come from their own seeded stream, `glade`, at stage 9b, after the holdings, roads and camps, so none of those moves for them. They take about a seventh of the wood.
 
 ### 8.7 Wild regions, chosen on purpose
 
