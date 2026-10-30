@@ -2,7 +2,7 @@
 /* ---------- a companion in the Army window (ui/partypage.js): its shared unit inspector on the Roster, expandable Equipment, Character details and
    reviewed army Orders. Role, equipment and dismissal choices are pages with Cancel/Apply ---------- */
 // what a company role does (the role choice pages' notes)
-const ROLE_NOTES={scout:'Scouting bonus; grows with their discipline.',surgeon:'Medicine bonus; grows with their discipline.',quarter:'Your band eats 25% less.',guide:'Reduces stamina drain on the march.'};
+const ROLE_NOTES={scout:'Scouting bonus; grows with their discipline.',surgeon:'Medicine bonus; grows with their discipline.',quarter:'Your band eats 25% less.',guide:'Reduces stamina drain on the march.',trainer:'Drills your groups of their roles in camp: '+TRAINERS.week+' lessons a week.'};
 // the companion the Army window shows (its card open on the Roster), or none
 const compShown=()=>G.mode==='char'&&G.char==='roster'&&partyView().sel==='comp_'+G.compSel&&!!P.comps[G.compSel];
 // a companion's card chosen: its drafts start afresh when it is another one (fresh: always)

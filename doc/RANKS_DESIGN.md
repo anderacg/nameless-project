@@ -1,6 +1,6 @@
 # Unit ranks: design
 
-Status: **phases 1 and 2 built** (2026-10-30: ranks, badges, the rank-5 upgrade, the peasants' grind; the Spear and Bow ladders; README "Ranks", "Rank skills"); phases 3 to 6 not yet; design revision 3 (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner answered revisions 1 and 2's questions; his answers are in **Decisions** and folded into the rules. §9 lists what is still open.
+Status: **phases 1 to 3 built** (trainers: README "Trainers"; mastery and proficiency too) (2026-10-30: ranks, badges, the rank-5 upgrade, the peasants' grind; the Spear and Bow ladders; README "Ranks", "Rank skills"); phases 4 to 6 not yet; design revision 3 (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner answered revisions 1 and 2's questions; his answers are in **Decisions** and folded into the rules. §9 lists what is still open.
 
 **Readers:** the owner, and whoever builds the phases of §8.
 

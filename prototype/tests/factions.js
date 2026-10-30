@@ -13,7 +13,7 @@ try{
  P.gold=1000;
  t.enterTown(t.townBy('Ashford'));t.act('tab','tavern');t.act('contract');ok(P.fac==='vale'&&t.hostileTo('karn')&&!t.hostileTo('salt'),'contract with vale makes karn hostile');
  P.troops.hum_spear=2;t.act('tab','recruit');t.act('rec-tab','train');ok(/Pikeman/.test(document.getElementById('panel').innerHTML),'branching upgrade shown');
- {const g=t.partyRoster(P).groups.find(x=>x.type==='hum_spear');t.rankGain(g,1e6);t.act('rec-upgroup',g.id+':hum_pike');ok(P.troops.hum_pike===2&&!P.troops.hum_spear,'upgraded to pikemen (the group at rank '+t.RANKS.max+')')}
+ {const g=t.partyRoster(P).groups.find(x=>x.type==='hum_spear');t.rankGain(g,1e6);t.W.trainers={...t.W.trainers,Ashford:[{id:'A:0',name:'Hob the Spearmaster',roles:['spear'],level:2,town:'Ashford'}]};/* (an expert of spears there: world/trainers.js) */t.act('rec-upgroup',g.id+':hum_pike');ok(P.troops.hum_pike===2&&!P.troops.hum_spear,'upgraded to pikemen (the group at rank '+t.RANKS.max+')')}
  // (a third group wants a step of Leadership: an army starts with room for 3, your hero's own one of them, army.js armyGroupLimit)
  P.sk.lead.lv=Math.max(P.sk.lead.lv,t.ARMY_GROUP.leadBase+1);t.act('hire','hum_levy');ok(P.troops.hum_levy===1,'hired race troop');
  t.act('leave');done();

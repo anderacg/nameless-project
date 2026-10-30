@@ -52,7 +52,7 @@ const PERKS={
   rearguard:{n:'Rearguard',d:'Caught fleeing, you lose half as many men.'},
   forced:{n:'Forced March',d:'Your band travels 15% faster, and eats 20% more.'}
 };
-const ROLES={scout:'Scout',surgeon:'Surgeon',quarter:'Quartermaster',guide:'Guide'};
+const ROLES={scout:'Scout',surgeon:'Surgeon',quarter:'Quartermaster',guide:'Guide',trainer:'Trainer'};
 const COMPS={
   // short: name in passing; rival: a companion they quarrel with when both ride with you; town: whose tavern they wait in,
   // race: their people (all drawn human: people.js), whose capital they wait in where the world has no such town (compTown)

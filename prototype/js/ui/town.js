@@ -1,6 +1,6 @@
 'use strict';
 // Commands return outcomes; the screen decides how to describe them.
-const RECRUIT_WHY={amount:'Enter a positive whole number with a valid total cost',target:'Choose an existing group of this unit type, or a new group','wounded-group':'Wait for this group’s wounded to return before upgrading it',groups:'Army slot or troop-group limit reached. Train Leadership, choose another group, or make room',gold:'Not enough gold for this order',capacity:'Not enough headcount capacity for this order',volunteers:'Not enough volunteers for this order',standing:'Not enough standing',closed:'No one will enlist while the holding recovers',unavailable:'This holding does not raise that troop',experience:'Needs more experience: fight with them',troops:'No soldiers of that kind',upgrade:'Not a valid troop upgrade','training-unavailable':'Trained only at a holding with a barracks that trains','companion-unavailable':'This companion is not available here','companion-hired':'Already in your band','invalid-unit':'Unknown recruit'};
+const RECRUIT_WHY={amount:'Enter a positive whole number with a valid total cost',target:'Choose an existing group of this unit type, or a new group','wounded-group':'Wait for this group’s wounded to return before upgrading it',groups:'Army slot or troop-group limit reached. Train Leadership, choose another group, or make room',gold:'Not enough gold for this order',capacity:'Not enough headcount capacity for this order',volunteers:'Not enough volunteers for this order',standing:'Not enough standing',closed:'No one will enlist while the holding recovers',unavailable:'This holding does not raise that troop',experience:'Needs more experience: fight with them',troops:'No soldiers of that kind',upgrade:'Not a valid troop upgrade','training-unavailable':'Needs an expert trainer of its role (here, or yours in your camp)','companion-unavailable':'This companion is not available here','companion-hired':'Already in your band','invalid-unit':'Unknown recruit'};
 const recruitmentWhy=r=>RECRUIT_WHY[r.code]||'';
 function recruitmentFeedback(r,t){
   if(r.ok){
@@ -283,6 +283,11 @@ definePlace('stable',Stable);
 /* the barracks (the owner, 2026-10-28: casual recruiting): two tabs. Hire: the hiring desk (ui/hiredesk.js HireDesk, its acts
    rec-*): a row for each troop they raise, the standing each needs, those willing; Train: a row for each training, all that are
    ready in one press, or a whole group at once. The order (G.town.cart) belongs to this visit, never to a save */
+// trainers' rows (a holding's, or yours): each his level, roles, the rank he trains to and what a lesson gives, his lessons left this
+// week; a button for each of your groups of his roles (its badge, its price, or why not)
+function trainerRows(trs){const gs=partyRoster(P).groups;return '<div class="rec-rows">'+trs.map(tr=>{const mine=gs.filter(g=>tr.roles.includes(trainRole(g.type)));
+  return '<div class="rec-row trainer"><div class="rec-txt"><strong>'+htmlText(tr.name)+'</strong><small>'+trainLevelN(tr)+' · '+trainRolesN(tr)+' · to rank '+TRAINERS.cap[tr.level-1]+' · +'+TRAINERS.xp[tr.level-1]+' a lesson · '+trainLeft(tr)+' of '+TRAINERS.week+' left this week</small></div>'+
+    '<div class="rec-step">'+(mine.length?mine.map(g=>{const why=lessonWhy(tr,g),p=lessonPrice(tr,g);return '<button class="btn sm" type="button" data-act="trn-lesson" data-arg="'+htmlText(tr.id+'|'+g.id)+'"'+(why?' disabled title="'+htmlText(why)+'"':'')+'>'+groupBadge(g,12)+' '+htmlText(armyGroupLabel(g.id))+(p?' · '+p+'g':'')+'</button>'}).join(''):'<small class="muted">None of your groups</small>')+'</div></div>'}).join('')+'</div>'}
 class Barracks extends Place{
   constructor(id){
     super(id,{n:'Barracks',ico:'shield',verbs:{'rec-tab':'tab',hire:'hire','rec-upgroup':'upgroup',
@@ -299,17 +304,18 @@ class Barracks extends Place{
     hire:(k,n,tgt)=>{const r=recruitment.hire(t,k,n,tgt);if(r.ok)recruitmentFeedback(r,t);return {ok:r.ok,cost:r.cost,why:r.ok?'':recruitmentWhy(r)}}})}
   body(t){
     const s=G.town,tab=t.T.train&&s.recTab==='train'?'train':'hire',v=Math.floor(t.vol||0);
-    const tabs=t.T.train?'<div class="rec-tabs" role="tablist">'+[['hire','Hire'],['train','Upgrade']].map(([k,n])=>'<button class="btn sm'+(k===tab?' on':'')+'" type="button" role="tab" aria-selected="'+(k===tab)+'" data-act="rec-tab" data-arg="'+k+'">'+n+'</button>').join('')+'</div>':'';
+    const tabs=t.T.train?'<div class="rec-tabs" role="tablist">'+[['hire','Hire'],['train','Train & upgrade']].map(([k,n])=>'<button class="btn sm'+(k===tab?' on':'')+'" type="button" role="tab" aria-selected="'+(k===tab)+'" data-act="rec-tab" data-arg="'+k+'">'+n+'</button>').join('')+'</div>':'';
     const head='<div class="top rec-top">'+tabs+'<span class="lab">'+t.races.map(r=>RACES[r].n).join(' and ')+' troops · band '+partySize()+' / '+partyCap()+'</span><span class="lab">Standing <b class="gold" style="font-size:14px">'+standingAt(t)+'</b> · '+v+' willing</span></div>';
     return head+(tab==='train'&&!s.info?this.trainTab(t):this.deskOf(t).body());
   }
   desk(arg,t,a){this.deskOf(t).act(a,arg)}
   tab(arg){G.town.recTab=arg==='train'?'train':'hire';G.town.info=null}
   hire(arg,t){const result=recruitment.hire(t,arg,1);recruitmentFeedback(result,t)}
-  // ---- Upgrade (doc/RANKS_DESIGN.md §4): each of your groups that upgrades a row (its badge, its rank), a button for each kind
+  // ---- Train (doc/RANKS_DESIGN.md §3: its trainers, world/trainers.js) and upgrade (§4): each of your groups that upgrades a row (its badge, its rank), a button for each kind
   // it upgrades into: at its last rank, here for its price (core/recruitment.js quoteGroupTraining), keeping its place
-  trainTab(t){const gs=partyRoster(P).groups.filter(g=>UP[g.type]);if(!gs.length)return '<p class="muted">None of your groups upgrades further.</p>';
-    return '<div class="rec-rows">'+gs.map(g=>{const L=rankLine(g);
+  trainTab(t){const trs=trainersAt(t),lessons=trs.length?'<div class="lab">Trainers here</div>'+trainerRows(trs):'<p class="muted">No trainer here.</p>',gs=partyRoster(P).groups.filter(g=>UP[g.type]);
+    if(!gs.length)return lessons+'<p class="muted">None of your groups upgrades further.</p>';
+    return lessons+'<div class="lab">Upgrades</div><div class="rec-rows">'+gs.map(g=>{const L=rankLine(g);
       const key=g.type+'>'+UP[g.type][0];// (its card: the first it upgrades into, against it)
       return '<div class="rec-row" data-act="rec-pick" data-arg="'+key+'"><button class="rec-pic" type="button" data-act="rec-info" data-arg="'+key+'"><img src="'+portrait(UP[g.type][0])+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
         '<div class="rec-txt"><strong>'+groupBadge(g,14)+' '+htmlText(armyGroupLabel(g.id))+' ×'+g.count+'</strong><small>'+(rankReady(g)?'<b class="gold">'+L.txt+'</b>':L.txt)+'</small></div>'+
