@@ -287,7 +287,7 @@ definePlace('stable',Stable);
 // week; a button for each of your groups of his roles (its badge, its price, or why not)
 function trainerRows(trs){const gs=partyRoster(P).groups,where=tr=>tr.wander?' · passing through, till Day '+tr.until:'';return '<div class="rec-rows">'+trs.map(tr=>{const mine=gs.filter(g=>tr.roles.includes(trainRole(g.type)));
   return '<div class="rec-row trainer"><div class="rec-txt"><strong>'+htmlText(tr.name)+'</strong><small>'+trainLevelN(tr)+' · '+trainRolesN(tr)+' · to rank '+TRAINERS.cap[tr.level-1]+' · +'+TRAINERS.xp[tr.level-1]+' a lesson · '+trainLeft(tr)+' of '+TRAINERS.week+' left this week'+where(tr)+'</small></div>'+
-    '<div class="rec-step">'+(mine.length?mine.map(g=>{const why=lessonWhy(tr,g),p=lessonPrice(tr,g);return '<button class="btn sm" type="button" data-act="trn-lesson" data-arg="'+htmlText(tr.id+'|'+g.id)+'"'+(why?' disabled title="'+htmlText(why)+'"':'')+'>'+groupBadge(g,12)+' '+htmlText(armyGroupLabel(g.id))+(p?' · '+p+'g':'')+'</button>'}).join(''):'<small class="muted">None of your groups</small>')+'</div></div>'}).join('')+'</div>'}
+    '<div class="rec-step">'+(mine.length?mine.map(g=>{const why=lessonWhy(tr,g),p=lessonPrice(tr,g);return '<button class="btn sm" type="button" data-act="trn-lesson" data-arg="'+htmlText(tr.id+'|'+g.id)+'"'+(why?' disabled title="'+htmlText(why)+'"':'')+'>'+groupBadge(g,12)+' Train '+htmlText(armyGroupLabel(g.id))+(p?' · '+p+'g':'')+'</button>'}).join(''):'<small class="muted">None of your groups</small>')+'</div></div>'}).join('')+'</div>'}
 class Barracks extends Place{
   constructor(id){
     super(id,{n:'Barracks',ico:'shield',verbs:{'rec-tab':'tab',hire:'hire','rec-upgroup':'upgroup',
@@ -319,8 +319,8 @@ class Barracks extends Place{
       const key=g.type+'>'+UP[g.type][0];// (its card: the first it upgrades into, against it)
       return '<div class="rec-row" data-act="rec-pick" data-arg="'+key+'"><button class="rec-pic" type="button" data-act="rec-info" data-arg="'+key+'"><img src="'+portrait(UP[g.type][0])+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
         '<div class="rec-txt"><strong>'+groupBadge(g,14)+' '+htmlText(armyGroupLabel(g.id))+' ×'+g.count+'</strong><small>'+(rankReady(g)?'<b class="gold">'+L.txt+'</b>':L.txt)+'</small></div>'+
-        '<div class="rec-step">'+UP[g.type].map(to=>{const q=recruitment.quoteGroupTraining(t,g.id,to);
-          return '<button class="btn sm'+(q.ok?' primary':'')+'" type="button" data-act="rec-upgroup" data-arg="'+g.id+':'+to+'"'+(q.ok?'':' disabled title="'+htmlText(q.code==='experience'?(rankPeasant(g.type)?'Its experience is not full yet':'Needs rank '+RANKS.max+': fight with them'):recruitmentWhy(q)||'Not available')+'"')+'>'+htmlText(ST[to].n)+(q.cost?' · '+q.cost+'g':'')+'</button>'}).join('')+'</div></div>'}).join('')+'</div>'}
+        '<div class="rec-step">'+(rankReady(g)?UP[g.type].map(to=>{const q=recruitment.quoteGroupTraining(t,g.id,to);
+          return '<button class="btn sm'+(q.ok?' primary':'')+'" type="button" data-act="rec-upgroup" data-arg="'+g.id+':'+to+'"'+(q.ok?'':' disabled title="'+htmlText(q.code==='experience'?(rankPeasant(g.type)?'Its experience is not full yet':'Needs rank '+RANKS.max+': fight with them'):recruitmentWhy(q)||'Not available')+'"')+'>'+htmlText(ST[to].n)+(q.cost?' · '+q.cost+'g':'')+'</button>'}).join(''):'<small class="muted">'+(rankPeasant(g.type)?'When its experience is full':'At rank '+RANKS.max)+': '+UP[g.type].map(to=>htmlText(ST[to].n)).join(', ')+'</small>')+'</div></div>'}).join('')+'</div>'}
   upgroup(arg,t){const [id,to]=String(arg).split(':'),r=recruitment.trainGroup(t,id,to);recruitmentFeedback(r,t)}
   // (back from a unit's card: the list where you left it)
   focus(a){return this.deskOf(G.town.ref).focus(a)}

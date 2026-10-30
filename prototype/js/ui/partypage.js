@@ -19,12 +19,17 @@ function partyGroup(id,r=partyRoster(P)){const g=r.groups.find(g=>g.id===id),w=(
 }
 // a card's experience: your hero's and a companion's toward the next level, a troop group's toward its next rank (core/ranks.js;
 // all wounded, its wounded's record keeps it)
+// (label: its words alone; val: its numbers; txt: both, for a card's one line)
+const rankLn=(v,max,label,val)=>({v,max,label,val,txt:label+' · '+val});
 function rankLine(g){const r=rankOf(g),need=rankNeed(g),x=Math.floor(rankXp(g));
-  if(!r)return{v:x,max:need,txt:rankReady(g)?'Ready to upgrade':x+' / '+need+' to its first upgrade'};
-  if(need)return{v:x,max:need,txt:'Rank '+r+' · '+x+' / '+need};
+  if(!r)return rankLn(x,need,'First upgrade',rankReady(g)?'ready':x+' / '+need);
+  if(need)return rankLn(x,need,'Rank '+r,x+' / '+need);
   // (at the last rank: its mastery, toward the next metal)
   const m=masteryOf(g),ends=masteryEnds(),lo=ends[m-1]||0,hi=ends[m],mx=Math.floor(masteryXp(g)),name=m?cap1(RANKS.mastery.metal[m-1])+' mastery':'Mastery';
-  return hi?{v:mx-lo,max:hi-lo,txt:'Rank '+r+' · '+name+' · '+(mx-lo)+' / '+(hi-lo)}:{v:1,max:1,txt:'Rank '+r+' · '+name}}
+  return hi?rankLn(mx-lo,hi-lo,'Rank '+r+' · '+name,(mx-lo)+' / '+(hi-lo)):rankLn(1,1,'Rank '+r+' · '+name,'full')}
+// (a rank meter in a pane: its words, its numbers, its bar; and its five rungs, lit as reached, in its mastery's metal)
+const rankMeter=L=>fbMeter('skills',L.label,L.v,Math.max(1,L.max)).replace(/<b>[^<]*<\/b>/,'<b>'+htmlText(L.val)+'</b>');
+const rankPips=g=>{const r=rankOf(g),m=masteryOf(g);return r?'<span class="rk-pips'+(m?' m'+m:'')+'" aria-label="Rank '+r+' of '+RANKS.max+'">'+Array.from({length:RANKS.max},(_,i)=>'<i'+(i<r?' class="on"':'')+'></i>').join('')+'</span>':''};
 function rosterXp(id,u){
   if(id==='hero')return{v:P.xp,max:LV_XP(P.level),txt:'Lv. '+P.level+' · '+Math.floor(P.xp)+' / '+LV_XP(P.level)+' XP'};
   if(u.cid){const c=compInit(u.cid);return{v:c.xp,max:LV_XP(c.lv),txt:'Lv. '+c.lv+' · '+Math.floor(c.xp)+' / '+LV_XP(c.lv)+' XP'}}
@@ -81,7 +86,7 @@ function partyUnitCompany(d){
 // training or experience, its upkeep (the wage rule in its tip) and its buttons; a hero or companion: Character, Equipment and Role
 function partyUnitCard(d,r){const {u,c,s,kind}=d,h=kind==='hero',x=rosterXp(d.id,u),mor=unitMoraleOf(s);
   const hp=h?P.hp:kind==='comp'&&u.hurt?Math.round(s.hp*compHealthShare(c)):s.hp,now={hp,mor:clamp(mor*(.6+.4*clamp(P.morale,0,100)/100),20,100)};
-  const rank=kind==='troop'?{label:x.txt,v:x.v,max:x.max}:{label:'To level '+(d.level+1),v:x.v,max:x.max};
+  const rank=kind==='troop'?{label:x.label||x.txt,val:x.val,v:x.v,max:x.max}:{label:'To level '+(d.level+1),v:x.v,max:x.max};
   const tip=partyWageNote(u)+(u.wounded||u.hurt?' '+partyRecoveryText(u)+'. Based on current care; '+(u.cid?'companion recovery updates hourly':'troop recovery is checked daily')+'.':'');
   return new UnitCard({key:u.type||d.id,s,name:htmlText(u.name),sub:{hero:'Hero',comp:'Companion',troop:'Troop'}[kind]+' · '+(kind==='troop'?'Tier ':'Level ')+d.level+(h?' · '+rankName()+' · '+RACES[P.race].n:''),
     hero:h,pic:u.pic,now,strength:kind==='troop'?{fit:u.fit,max:ARMY_GROUP.units,hurt:u.wounded}:null,rank,meters:h?(v=>[{label:'Stamina',v:P.sp,max:v[1],tip:'Spent running and fighting; back with rest'},{label:'Mana',v:P.mp,max:v[2],tip:'Spent on spells; back with rest'}])(vitals()):null,abil:unitAbilities(s),skills:d.ch?d.ch.actives().map(id=>[ABILITIES[id].n,abilityText(id,s)]):null,
@@ -103,11 +108,11 @@ function troopOrdersOf(k){const u={s:ST[k],type:k,team:0,ally:false};return UNIT
 // else where and its price (core/recruitment.js anywhere))
 function troopUpRow(g,to,row){const s=ST[to],sub='Tier '+s.tier+' · '+classN(s)+' · ',at=rankPeasant(g.type)?'its experience full':'rank '+RANKS.max;
   if(!trainsAnywhere(to)){const tr=upgradeTrainer(null,to),q=tr&&rankReady(g)?recruitment.quoteGroupTraining(null,g.id,to):null;
-    const say=sub+'at '+at+', with an expert '+TRAINERS.roles[trainRole(to)].toLowerCase()+' trainer ('+(s.magic?'a caster':'tier '+s.tier)+'): a holding\'s for '+trainCost(to)+'g each, or yours in camp'+(tr?' ('+htmlText(tr.name)+')':'');
+    const say=sub+at+' · an expert '+TRAINERS.roles[trainRole(to)].toLowerCase()+' trainer · '+trainCost(to)+'g each'+(tr?' · '+htmlText(tr.name)+' (free)':'');
     return row(s.n,say)+(q?'<div class="btns fb-train-btns">'+fbBtn('party-up',g.id+':'+to,'Upgrade to '+htmlText(s.n),!q.ok&&(recruitmentWhy(q)||'Not now'))+'</div>':'')}
-  if(!rankReady(g))return row(s.n,sub+'at '+at+', free, anywhere');
+  if(!rankReady(g))return row(s.n,sub+at+' · free');
   const q=recruitment.quoteGroupTraining(null,g.id,to);
-  return row(s.n,sub+'free, upgraded here')+'<div class="btns fb-train-btns">'+fbBtn('party-up',g.id+':'+to,'Upgrade to '+htmlText(s.n),!q.ok&&(recruitmentWhy(q)||'Not now'))+'</div>'}
+  return row(s.n,sub+'free')+'<div class="btns fb-train-btns">'+fbBtn('party-up',g.id+':'+to,'Upgrade to '+htmlText(s.n),!q.ok&&(recruitmentWhy(q)||'Not now'))+'</div>'}
 // a troop group's path: its rank (core/ranks.js), where it came from, what it upgrades into; its rank skills (a role on a ladder:
 // data/ranks.js RANK_SKILLS, each rung lit once reached), else its battle orders; its traits
 // (its mastery: the improvements picked, and one to pick for each mastery not yet used: a reached skill of its ladder with an up,
@@ -119,11 +124,11 @@ function masteryHtml(g,L){const r=rankOf(g),picks=g.picks||[],name=id=>{const k=
   return has+'<div class="lab">Mastery: improve one</div><div class="btns fb-train-btns">'+opts.map(id=>fbBtn('party-master',g.id+':'+id,htmlText(name(id))+' +')).join('')+'</div>'}
 // (yours to drill it: your hero with Drillmaster, a companion as Trainer, in your camp (world/trainers.js))
 function ownTrainHtml(g){const trs=ownTrainers().filter(tr=>tr.roles.includes(trainRole(g.type)));if(!g.id)return '';
-  if(!trs.length)return '<p class="fb-note">Training: your hero with Drillmaster, or a companion as Trainer, drills your groups in camp; a holding\'s trainers for gold.</p>';
+  if(!trs.length)return '<p class="fb-note">Training: a Drillmaster hero or a Trainer companion, in camp; else a holding\'s trainers.</p>';
   return '<div class="lab">Training'+(P.camp?'':' (in camp)')+'</div><div class="btns fb-train-btns">'+trs.map(tr=>{const why=lessonWhy(tr,g);return fbBtn('trn-lesson',tr.id+'|'+g.id,htmlText(tr.name)+' · +'+TRAINERS.xp[tr.level-1]+' ('+trainLeft(tr)+' left)',why)}).join('')+'</div>'}
 function troopPath(k,id){const s=ST[k],from=UP_FROM(k),orders=troopOrdersOf(k),traits=traitsOf(s).filter(id=>!(RANK_SKILLS[rankRole({s,type:k,team:0})]||[]).some(x=>x.traits?.includes(id))).map(id=>[ABILITIES[id].n,abilityText(id,s)]),row=(n,sub,cls='')=>'<div class="fb-path-step'+cls+'"><strong>'+n+'</strong><small>'+sub+'</small></div>',
     g=partyRoster(P).groups.find(x=>x.id===id)||(P.woundedGroups||[]).find(w=>w.id===id)||{id,type:k},L=rankLine(g),L2=RANK_SKILLS[rankRole({s,type:k,team:0})];// (its ladder: data/ranks.js)
-  return '<div class="fb-title"><small>Rank and path</small><h3>'+groupBadge(g,16)+' '+htmlText(s.n)+'</h3></div>'+fbMeter('skills',L.txt,L.v,Math.max(1,L.max))+(UP[k]?'':'<p class="fb-note">The top of its path: it upgrades no further.</p>')+masteryHtml(g,L2)+ownTrainHtml(g)+
+  return '<div class="fb-title fb-path-title"><small>Rank and path</small><h3>'+groupBadge(g,16)+' '+htmlText(s.n)+'</h3>'+rankPips(g)+'</div>'+rankMeter(L)+(UP[k]?'':'<p class="fb-note">The top of its path: it upgrades no further.</p>')+masteryHtml(g,L2)+ownTrainHtml(g)+
     '<div class="lab">Path</div><div class="fb-path">'+(from?row(ST[from].n,'Tier '+ST[from].tier+' · upgraded from'):'')+row(s.n,'Tier '+s.tier+' · '+classN(s)+' · now',' on')+(UP[k]||[]).map(t=>troopUpRow(g,t,row)).join('')+'</div>'+
     (L2?'<div class="lab">Rank skills</div>'+L2.map((x,i)=>{const A=x.ab&&UNIT_ABILITIES[x.ab],tr=x.traits&&x.traits.find(id=>traitsOf(s).includes(id)),got=rankOf(g)>i;
       return row(rankBadge(k,i+1,12)+' Rank '+(i+1)+' · '+(A?A.n+' ('+A.key+')':tr?ABILITIES[tr].n+' <small>(its trait)</small>':x.n),(A?A.d:tr?abilityText(tr,s):x.d)+(got?'':' <i>(at rank '+(i+1)+')</i>'),got?' on':' off')}).join(''):
