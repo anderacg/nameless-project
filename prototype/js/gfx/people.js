@@ -156,8 +156,6 @@ function lettersOf(o){
 }
 // the legs as it walks: [left leg x, right leg x, left foot x, right foot x] for each of the four strides
 const STRIDE=[[4,9,4,10],[5,8,5,8],[5,9,5,9],[6,8,6,8]];
-// The hero at rest: legs under the hips, back toe turned out and both soles on the ground.
-const PLAYER_HERO_STAND=[5,8,4,8];
 // running (walk 4-7): a long stride, a moment off the ground, the body leaning forward and bouncing
 const STRIDE_RUN=[[3,10,2,11],[5,8,5,9],[4,9,3,11],[6,7,6,8]],RUN_BOB=[0,-2,0,-1];
 // climbing a slope (walk 8-11): bent forward, short steps, the front knee lifted every other frame, a small bob; descending (walk
@@ -181,7 +179,7 @@ function drawFigure(g,o,ox,oy,walk,style,atk,cut){
   // legs and feet (by the stride), or a robe to the ground
   // (rigged: its legs drawn with its arms, rigLimbs)
   if(cut==null&&!(rig&&!o.robe)){if(o.robe){for(let x=4;x<=9;x++)set(x,ly,x<6?Lc.b:x<8?Lc.c:Lc.d);set(5,ly+1,Lc.d);set(8,ly+1,Lc.d)}
-    else{const s=run?STRIDE_RUN[walk-4]:climb?STRIDE_CLIMB[walk-8]:desc?STRIDE_DESC[walk-12]:o.playerStyle&&walk<0&&!style?PLAYER_HERO_STAND:STRIDE[walk<0?2:walk],k=climb&&walk&1?1:0;/* (standing or breathing: the standing stride; climbing, the front knee up: k) */
+    else{const s=run?STRIDE_RUN[walk-4]:climb?STRIDE_CLIMB[walk-8]:desc?STRIDE_DESC[walk-12]:STRIDE[walk<0?2:walk],k=climb&&walk&1?1:0;/* (standing or breathing: the standing stride; climbing, the front knee up: k) */
       set(s[0],ly,Lc.L);set(s[0]+1,ly,Lc.L);set(s[1],ly-k,Lc.L);set(s[1]+1,ly-k,Lc.M);set(s[2],ly+1,Lc.F);set(s[3],ly+1-k,Lc.F);if(o.playerStyle){set(s[2]+1,ly+1,Lc.F);set(s[3]+1,ly+1-k,Lc.F)}}}
   // short hair: off the shoulders
   if(o.shortHair&&!o.robe){set(5,7,Lc.a);set(9,7,Lc.c);set(5,6,Lc.t)}
