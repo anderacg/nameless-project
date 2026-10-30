@@ -1198,3 +1198,5 @@ Hero standing stance (2026-10-30): gfx/people.js gives idle, breathing and stati
 Hero cape refinement (2026-10-30): the player cape is shorter and narrower, held close behind the shoulder and arm, with a muted blue-grey ramp. Its broad side flap and flared hem are removed. The planted standing stance, other equipment and troop capes keep their existing layout. Checked with herosprite and rendered comparisons.
 
 Hero idle leg correction (2026-10-30): the standing template uses slim, vertical trouser columns beneath the hips and a narrower footprint. Only the boot toes turn slightly outward; the legs no longer widen away from the waist. Walking, running and combat poses retain their existing leg drawing. Checked with herosprite and before/after frame comparisons.
+
+Hero boot proportions (2026-10-30): player boots use a compact one-pixel sole, aligned with each ankle while standing. The extra boot-width pixel is removed from movement and unarmed poses as well. Troop footwear and the hero leg spacing are retained. Checked with herosprite, unarmed and rendered comparisons.

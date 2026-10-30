@@ -156,8 +156,8 @@ function lettersOf(o){
 }
 // the legs as it walks: [left leg x, right leg x, left foot x, right foot x] for each of the four strides
 const STRIDE=[[4,9,4,10],[5,8,5,8],[5,9,5,9],[6,8,6,8]];
-// The hero at rest: slim vertical legs under the hips, with only the boot toes turned out.
-const PLAYER_HERO_STAND=[6,8,5,8];
+// The hero at rest: slim vertical legs and compact boots directly under the ankles.
+const PLAYER_HERO_STAND=[6,8,6,8];
 // running (walk 4-7): a long stride, a moment off the ground, the body leaning forward and bouncing
 const STRIDE_RUN=[[3,10,2,11],[5,8,5,9],[4,9,3,11],[6,7,6,8]],RUN_BOB=[0,-2,0,-1];
 // climbing a slope (walk 8-11): bent forward, short steps, the front knee lifted every other frame, a small bob; descending (walk
@@ -181,7 +181,7 @@ function drawFigure(g,o,ox,oy,walk,style,atk,cut){
   // (rigged: its legs drawn with its arms, rigLimbs)
   if(cut==null&&!(rig&&!o.robe)){if(o.robe){for(let x=4;x<=9;x++)set(x,ly,x<6?Lc.b:x<8?Lc.c:Lc.d);set(5,ly+1,Lc.d);set(8,ly+1,Lc.d)}
     else{const stand=o.playerStyle&&walk<0&&!style,s=run?STRIDE_RUN[walk-4]:climb?STRIDE_CLIMB[walk-8]:desc?STRIDE_DESC[walk-12]:stand?PLAYER_HERO_STAND:STRIDE[walk<0?2:walk],k=climb&&walk&1?1:0;/* (standing or breathing: the standing stride; climbing, the front knee up: k) */
-      set(s[0],ly,Lc.L);if(!stand)set(s[0]+1,ly,Lc.L);set(s[1],ly-k,stand?Lc.M:Lc.L);if(!stand)set(s[1]+1,ly-k,Lc.M);set(s[2],ly+1,Lc.F);set(s[3],ly+1-k,Lc.F);if(o.playerStyle){set(s[2]+1,ly+1,Lc.F);set(s[3]+1,ly+1-k,Lc.F)}}}
+      set(s[0],ly,Lc.L);if(!stand)set(s[0]+1,ly,Lc.L);set(s[1],ly-k,stand?Lc.M:Lc.L);if(!stand)set(s[1]+1,ly-k,Lc.M);set(s[2],ly+1,Lc.F);set(s[3],ly+1-k,Lc.F);}}
   // short hair: off the shoulders
   if(o.shortHair&&!o.robe){set(5,7,Lc.a);set(9,7,Lc.c);set(5,6,Lc.t)}
   if(o.cape&&!o.playerStyle){const C=pal(o.cape===true?o.team:o.cape);for(let y=7;y<=12-sh;y++){set(2,y,C[2]);set(3,y,y===7?C[1]:C[2])}set(2,12-sh,C[3])}
@@ -237,7 +237,7 @@ function rigLine(g,ox,oy,pts,sh,col,end,wide,dark){const at=([x,y])=>[x,y-(y>=9?
   if(end)end(at(pts[pts.length-1]))}
 // (the rig's limbs: behind, the rear arm unless it crosses over and the back leg; else the legs, then the arms in front)
 function rigLimbs(g,o,ox,oy,R,sh,behind){const S=pal(o.skin),A=pal(o.outer),Lg=pal(o.legs||'leather'),put=(x,y,c)=>pset(g,ox+x,oy+y,c);
-  const arm=(pts,col)=>rigLine(g,ox,oy,pts,sh,col,([x,y])=>{put(x,y,S[1]);put(x,y+1,S[2])},[0,1],A[3]),leg=(pts,col,toe)=>rigLine(g,ox,oy,pts,sh,col,([x,y])=>{put(x,y,Lg[3]);if(!toe)put(x+1,y,Lg[3])},[1,0],Lg[2]);
+  const arm=(pts,col)=>rigLine(g,ox,oy,pts,sh,col,([x,y])=>{put(x,y,S[1]);put(x,y+1,S[2])},[0,1],A[3]),leg=(pts,col,toe)=>rigLine(g,ox,oy,pts,sh,col,([x,y])=>{put(x,y,Lg[3]);if(!toe&&!o.playerStyle)put(x+1,y,Lg[3])},[1,0],Lg[2]);
   if(behind){if(!R.over)arm(R.rear,A[3]);if(!o.robe)leg(R.back,Lg[2],R.toe);return}
   if(!o.robe)leg(R.lead,Lg[1]);if(R.over)arm(R.rear,A[3]);arm(R.fore,A[2])}
 // the weapon in its right hand: upright at rest; in a blow, swung from the hand at the frame's angle (as the old figures did)
