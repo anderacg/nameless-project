@@ -1059,6 +1059,13 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .qrw-item b{font-size:var(--fs-lg);color:var(--trim-hi);line-height:1}
 .qrw-item small{color:var(--muted);line-height:1.2}
 .qrw-item canvas{width:28px;height:28px;image-rendering:pixelated}
+/* (on a small screen too a floating card, not edge to edge as the other windows (9. responsive): its margins and rounded edge kept) */
+@media (max-width:720px),(max-height:520px){
+  .overlay.qrw{padding:calc(16px + var(--sa-t)) calc(16px + var(--sa-r)) calc(16px + var(--sa-b)) calc(16px + var(--sa-l))}
+  .qrw .panel.qrw-card{width:min(460px,100%);height:auto;max-height:100%;padding:14px 16px;border:1px solid var(--line-2);border-top:2px solid var(--trim);border-radius:var(--r-lg)}
+  .qrw .panel.qrw-card > .top:first-child{top:-14px;margin:-14px -16px 0;padding:12px 16px 10px;border-radius:var(--r-lg) var(--r-lg) 0 0}
+  .qrw .panel.qrw-card > .btns:last-child{bottom:-14px;margin:auto -16px -14px;padding:10px 16px 12px}
+}
 @media (max-height:520px){.qrw-body{gap:6px}.qrw-items{gap:5px;margin-top:3px}.qrw-item{flex-direction:row;max-width:none;flex:1 1 150px;padding:5px 8px;gap:7px;text-align:left}.qrw-item svg,.qrw-item canvas{width:20px;height:20px;flex:none}.qrw-item b{font-size:var(--fs-base)}}
 
 /* ---------- 8e. conversations ---------- */
