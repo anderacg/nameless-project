@@ -80,6 +80,7 @@ class StepQuest extends Quest{
     const r=Outcome.apply(this.prize,{e:this}),line=this.say(k||'arrive');
     if(line)log(line,'good','story',this.journalKey);
     log('Quest complete: '+this.title+'.'+(r.say?' '+r.say:''),'good','story',this.journalKey);
+    if(typeof QuestReward!=='undefined')QuestReward.outcome(this.title,this.prize,r);// (what it gave, in the window in the middle: ui/questreward.js)
     updateHUD(true);
     this.shown(line);
     this.announceEnd('paid');

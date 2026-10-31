@@ -114,6 +114,7 @@ Thread.starters.goal={until:'quest:ended',start:(v,th)=>{const st=Stories.vals(t
 // ---- the goals: a quest of an existing kind (story/steps.js, world/escort.js); an end pays at once
 defineGoal('end',{start(st,th){const E=st.end,o=Stories.outcome(E.reward,th),r=Outcome.apply(o,{e:th}),s=Stories.fill(E.say,th)||r.say;
   if(s)log(s,E.failed?'bad':'good','story',th.journalKey);log((E.failed?'Quest failed: ':'Quest complete: ')+th.title+'.'+(r.say&&r.say!==s?' '+r.say:''),E.failed?'bad':'good','story',th.journalKey);
+  if(!E.failed&&typeof QuestReward!=='undefined')QuestReward.outcome(th.title,o,r);// (what it gave, in the window in the middle: ui/questreward.js)
   updateHUD(true);return {how:E.failed?'failed':'done'}}});
 defineGoal('visit',{start:(st,th)=>{const to=Stories.place(st.spec?.to||st.to,th);return to&&Stories.quest('visit',st,th,{to})}});
 defineGoal('deliver',{start:(st,th)=>{const to=Stories.place(st.spec?.to||st.to,th);return to&&Stories.quest('deliver',st,th,{to,give:st.give})}});

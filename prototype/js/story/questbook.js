@@ -22,7 +22,7 @@ class Questbook{
   // ---- begun: its thread, its memory where it was offered (at: a step to begin at; force: offered or not); its line
   static take(id,ctx,at,force){const E=this.entry(id);if(!E||this.live(id)||!force&&!this.ready(id))return null;
     const m={book:id,town:ctx.town||Spatial.nearestHolding(P.x,P.y)?.name,fac:ctx.fac||townBy(ctx.town)?.owner||null,lord:ctx.lord||null,x:Math.round(ctx.x??P.x),y:Math.round(ctx.y??P.y)};
-    if(ctx.comp)m.comp=ctx.comp;const th=Thread.start('book:'+id,m,at);if(th)log('New quest: '+E.title+'. Track it in your Quests (Q).','gold','story',th.journalKey);return th}
+    if(ctx.comp)m.comp=ctx.comp;const th=Thread.start('book:'+id,m,at);if(th)log('New quest: '+E.title+'.','gold','story',th.journalKey);return th}
   // ---- the givers' offers drawn: a card (a tavern's), a row (a board's), a reply (a lord's, a companion's), a button (the priest's)
   static pic(id,t){const g=this.entry(id).giver;return g.pic==='folk'||!g.pic?personPic('folk',t?.races?.[0]||'human',Rng.seedOf(id)%4):portrait(g.pic)}
   static card(id,t){const E=this.entry(id);return {pic:this.pic(id,t),name:E.giver.name||'A stranger',role:E.title,note:Stories.fill(E.text,{memory:{town:t.name,fac:t.owner}}),acts:[['qb-take',id,'Take it']]}}

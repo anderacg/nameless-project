@@ -1058,7 +1058,8 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .qrw-item{flex:1 1 84px;max-width:132px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);text-align:center}
 .qrw-item b{font-size:var(--fs-lg);color:var(--trim-hi);line-height:1}
 .qrw-item small{color:var(--muted);line-height:1.2}
-@media (max-height:520px){.qrw-body{gap:6px}.qrw-items{gap:5px;margin-top:3px}.qrw-item{flex-direction:row;max-width:none;flex:1 1 150px;padding:5px 8px;gap:7px;text-align:left}.qrw-item svg{width:20px;height:20px;flex:none}.qrw-item b{font-size:var(--fs-base)}}
+.qrw-item canvas{width:28px;height:28px;image-rendering:pixelated}
+@media (max-height:520px){.qrw-body{gap:6px}.qrw-items{gap:5px;margin-top:3px}.qrw-item{flex-direction:row;max-width:none;flex:1 1 150px;padding:5px 8px;gap:7px;text-align:left}.qrw-item svg,.qrw-item canvas{width:20px;height:20px;flex:none}.qrw-item b{font-size:var(--fs-base)}}
 
 /* ---------- 8e. conversations ---------- */
 /* story/conversation.js: a talk with someone. Its head (their face, big and pixel-sharp, their name and standing), what has been

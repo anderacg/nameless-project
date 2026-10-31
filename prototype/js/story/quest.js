@@ -104,7 +104,7 @@ class Quest extends Happening{
     this.done=false;
     if(this.begin(townBy(this.home))===false)return false;
     P.quests.push(this);
-    log('New quest: '+this.title+'. '+this.takenLine()+'Track it in your Quests (Q).','gold','story',this.journalKey);
+    log(('New quest: '+this.title+'. '+this.takenLine()).trim(),'gold','story',this.journalKey);
     worldEmit('quest:new',{q:this});// (its note under the tracker: ui/questtrack.js)
     return true;
   }
@@ -242,7 +242,7 @@ class Quest extends Happening{
     log('Quest complete: '+this.title+'. +'+gold+' gold'+(r.rep?', +'+r.rep+' reputation':'')+(r.honor?', +'+r.honor+' honor':'')+'.','good','story',this.journalKey);
     this.announceEnd('paid');
     // (what it gave, in the window in the middle of the screen: ui/questreward.js)
-    if(typeof QuestReward!=='undefined')QuestReward.add(this.title,{gold,bonus,xp:r.xp,renown,rep:r.rep,at,honor:r.honor,fac:this.fac,rel:giver?RELATION.jobDone:0,giver:giver?.name});
+    if(typeof QuestReward!=='undefined')QuestReward.job(this.title,{gold,bonus,xp:r.xp,renown,rep:r.rep,at,honor:r.honor,fac:this.fac,rel:giver?RELATION.jobDone:0,giver:giver?.name});
   }
   // (the gold it pays now: its reward's; a late job's less, world/quests.js)
   earned(){

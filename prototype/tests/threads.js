@@ -41,7 +41,7 @@ Kit.suite(({ok,info})=>{
   ok(th2.i===th.i+1,'each thread its own number ('+th.i+', '+th2.i+')');
   q2.fail('Given up.');
   ok(th2.at==='regret'&&th2.past.map(p=>p.join(':')).join()==='job:failed'&&G.mode==='story'&&G.thread===th2&&/Word from the giver/.test(Kit.panel())&&/Ashford is disappointed in you/.test(Kit.panel()),'the job failed: the branch to its page, shown at once (its text from the memory)');
-  ok(t.Thread.paged().includes(th2)&&!Kit.q('[data-nav="close"]'),'a page waiting is listed (Thread.paged), with no way out till chosen');
+  ok(t.Thread.paged().includes(th2)&&!Kit.q('#panel [data-nav="close"]'),'a page waiting is listed (Thread.paged), with no way out till chosen');
   const g0=P.gold;t.act('thr-do','0');
   ok(P.gold===g0-5&&G.mode==='world'&&!G.thread&&ended.length===2&&ended[1].e===th2&&ended[1].how==='amends','its choice done (−5 gold), the page closed, and the thread ended by that choice (amends)');
   ok(!t.worldSave().threads.on.length&&t.worldSave().threads.n===2,'once begun, the save keeps the threads\' count, none live')}
