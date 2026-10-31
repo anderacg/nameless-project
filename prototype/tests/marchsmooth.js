@@ -27,7 +27,7 @@ Kit.suite(({ok,info})=>{
    for(const u of A.units){if(u.pivot)continue;const p=pr.get(u),sx=u.x-p[0],sy=u.y-p[1];all++;if(Math.hypot(sx,sy)<.02){stop++;continue}const l=last.get(u);
     if(l){const a=Math.atan2(sy,sx)-Math.atan2(l[1],l[0]);n++;if(Math.abs(Math.atan2(Math.sin(a),Math.cos(a)))>.6)sharp++}last.set(u,[sx,sy])}}return{sharp:sharp/n,stop:stop/all}};
  {const q=turn(4,0,26),b=(run(3,0,26),turn(4,0,-26));info('turning: '+(q.sharp*100).toFixed(1)+'% sharp steps a quarter turn, '+(b.sharp*100).toFixed(1)+'% about; stops '+(q.stop*100).toFixed(1)+'%, '+(b.stop*100).toFixed(1)+'%');
-  ok(b.stop<.12&&q.stop<.12,'wheeling, they keep walking: stops '+(Math.max(q.stop,b.stop)*100).toFixed(0)+'% (once 11%)')}
+  ok(q.sharp<.13&&b.sharp<.15&&q.stop<.1&&b.stop<.1,'wheeling, they curve round at their march pace: few sharp swings ('+(q.sharp*100).toFixed(0)+'% a quarter turn, '+(b.sharp*100).toFixed(0)+'% about; once 19% and 22%), fewer stops ('+(Math.max(q.stop,b.stop)*100).toFixed(0)+'%; once 11%)')}
  run(3,0,18);run(6,0,0);ok(off()<1.5,'turned and halted, they settle in their places again (the farthest '+off().toFixed(2)+' px off)');
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

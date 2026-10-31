@@ -62,8 +62,8 @@ function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDete
 // march is one walk, not a flicker; wake: px off his place before a settled man moves again while the army stands; squeeze:
 // [s hemmed in by his own side, the share of a step he then squeezes through at, px he must be short of his place], the army standing
 // (and "not smooth when turning") turn: the army's wheel, rad/s (was 1.5: its outer places swept faster than a man marches, and
-// none hurries: marchwheeling)
-const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,.6,2]};
+// none hurries: marchwheeling); steer: rad a walking man swings his way a step at most, so he curves round rather than snaps
+const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,.6,2],steer:.45};
 /* no two marchers on each other (the owner, 2026-10-30: "make sure units cannot overlap"): each has his body, as in battle
    (battle.js JOSTLE: foot, mounted, a big one 18), drawn WORLD_BATTLE.sprite/scale as big on the map; a row of bigger bodies
    than its formation's spacing marches that much wider (marchRoomK); after each step, MARCH_MOVE.part passes push apart any two
@@ -163,7 +163,8 @@ class MarchArmy{
     requests.sort((a,b)=>a.needAt-b.needAt||a.id-b.id);for(const u of requests.slice(0,MARCH_MOVE.queries)){this.queries++;u.plan={ground:nav,p:nav.path(u,u.goal),i:0,goal:u.goal,at:this.time+MARCH_MOVE.repath+u.id%7*.025};delete u.needAt}
     for(const u of this.units){if(u.pivot)continue;const goal=u.goal,gd=goal?Math.hypot(goal.x-u.x,goal.y-u.y):0;if(!goal||gd<=MARCH_MOVE.settle){u.rest=!!goal;continue}if(u.rest&&moved<=.001&&gd<MARCH_MOVE.wake)continue;u.rest=false;
       let aim=goal;if(!u.straight){const w=u.plan;if(!w||w.ground!==nav||!w.p.length)continue;while(w.i<w.p.length-1&&(Math.hypot(w.p[w.i].x-u.x,w.p[w.i].y-u.y)<MARCH_MOVE.waypoint||nav.clear(u,w.p[w.i+1])))w.i++;aim=w.p[w.i]}
-      const ax=aim.x-u.x,ay=aim.y-u.y,l=Math.hypot(ax,ay);if(l<.001)continue;const amount=Math.min(step,l),friends=near(u),angle=Math.atan2(ay,ax),ru=marchBody(u);let q=null;
+      const ax=aim.x-u.x,ay=aim.y-u.y,l=Math.hypot(ax,ay);if(l<.001)continue;const amount=Math.min(step,l),friends=near(u),want=Math.atan2(ay,ax),sw=u.walking&&u.dir!=null&&l>amount?Math.atan2(Math.sin(want-u.dir),Math.cos(want-u.dir)):0,angle=want-sw+clamp(sw,-MARCH_MOVE.steer,MARCH_MOVE.steer),ru=marchBody(u);// (a walking man swings his way at most steer a step, unless his place is within the step)
+      let q=null;
       for(const off of MARCH_MOVE.sidestep){const p={x:u.x+Math.cos(angle+off)*amount,y:u.y+Math.sin(angle+off)*amount};if(nav.clear(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<(ru+marchBody(v))/2&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){q=p;break}}
       // (the army standing, he hemmed in by his own side a while, well short of his place: he squeezes through at a slower step, the parting pass below making room)
       if(q)u.stuck=Math.max(0,(u.stuck||0)-d/2);else{u.stuck=(u.stuck||0)+d;const p={x:u.x+Math.cos(angle)*amount*MARCH_MOVE.squeeze[1],y:u.y+Math.sin(angle)*amount*MARCH_MOVE.squeeze[1]};if(u.stuck>=MARCH_MOVE.squeeze[0]&&gd>MARCH_MOVE.squeeze[2]&&moved<=.001&&nav.clear(u,p))q=p;else continue}
