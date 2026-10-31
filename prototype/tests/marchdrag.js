@@ -22,7 +22,10 @@ Kit.suite(({ok})=>{
   t.marchFacingGuide(g,{...t.marchDraftRows().find(r=>r.id===arch.id),face},100,100,2);const dx=lines[0][0]-moves[0][0],dy=lines[0][1]-moves[0][1];
   ok(Math.abs(dx*Math.sin(face)-dy*Math.cos(face))<.001&&dx*Math.cos(face)+dy*Math.sin(face)>0&&lines.length===3,'facing guide paints a forward arrow with a head at angle '+face);
  }
- t.act('march-select',cav.id);t.act('march-form','wedge');drag(0,-20,0,20,{touch:true});ok(G.march.draft[cav.id].form==='wedge'&&G.march.draft[cav.id].files===null,'dragging a wedge changes its placement and facing while preserving its shape');
+ t.act('march-select',cav.id);t.act('march-form','wedge');drag(0,-20,0,20,{touch:true});ok(G.march.draft[cav.id].form==='wedge'&&G.march.draft[cav.id].files>=1,'dragging a wedge keeps it a wedge, the drag its width at the back (the owner, 2026-10-31: right-drag "seems to support only lines"): '+G.march.draft[cav.id].files+' wide');
+ {const S=t.formSlots('wedge',10,0,3),rows=new Set(S.map(p=>Math.round(p[0])));ok(Math.max(...[...rows].map(x=>S.filter(p=>Math.round(p[0])===x).length))===3&&S.length===10,'a wedge 3 wide: its point, then ranks of 2 and 3, the rest 3 abreast')}
+ ok(t.dragFiles('wedge',12,60,1)>1&&t.dragFiles('pack',12,60,1)>1&&t.dragFiles('loose',12,60,1)>1&&t.dragFiles('line',12,200,1,1)===1&&t.dragFiles('line',12,60,1,4)>1,'in battle too, a drag sets the width of a wedge, a pack, loose order and a line; a column (one file) stays one');
+ {t.act('march-form','column');const c0=G.march.draft[cav.id];drag(0,-30,0,30,{touch:true});ok(G.march.draft[cav.id].files===1,'a column dragged stays a column: one file, the drag its place and facing')}
  t.act('march-select','hero');const hero=JSON.stringify(G.march.draft.hero);drag(-10,0,10,0,{touch:true});ok(JSON.stringify(G.march.draft.hero)===hero,'the hero remains the fixed army anchor');
  t.act('march-select',arch.id);drag(-10,0,10,0,{touch:true});t.act('march-apply');const row=t.marchRows(P).find(r=>r.id===arch.id);ok(Math.abs(row.face+Math.PI/2)<.001&&row.files===4,'Apply persists facing and frontage into marching rows');
  const army=t.MarchArmy.of(P);army.sync();const targets=army.targets().filter(p=>p.row===arch.id),first=targets[0],second=targets[1];ok(Math.abs(first.x-second.x)>Math.abs(first.y-second.y)*5,'marching slots rotate with the saved relative facing');
