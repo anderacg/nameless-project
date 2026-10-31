@@ -316,6 +316,12 @@ function arriveStep(){
 // the wounded heal: each day a share of them is fit again (more with Medicine, more near a friendly holding, faster in camp or
 // staying in a holding)
 function healShare(){const near=TOWNS.some(t=>!hostileTo(t.owner)&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.healNear);return{near,share:Math.min(.9,(.2+.03*skill('med')+(near?.2:0))*(P.stay?2:P.camp?SUPPLY.camp.heal:1))}}
+// n of kind k out of the line, wounded (sick on the march, an outcome's), each from his own group and kept under it in
+// P.woundedGroups, as a battle's wounded are (so the March and Army windows show them there). Returns how many
+function woundTroops(k,n=1){const r=partyRoster(P),wg=P.woundedGroups||(P.woundedGroups=[]);let got=0;P.wounded=P.wounded||{};
+  for(const g of r.groups.filter(g=>g.type===k)){if(got>=n)break;const m=Math.min(n-got,g.count),w=wg.find(x=>x.id===g.id&&x.type===k);if(!m)continue;
+    if(w)w.count+=m;else wg.push({id:g.id,type:k,count:m});got+=r.remove(k,m,g.id)}
+  if(got)P.wounded[k]=(P.wounded[k]||0)+got;return got}
 // up to n of the wounded of kind k fit again, back into their own groups first; a blocked originating group keeps its
 // wounded (they never silently reinforce a duplicate group). Returns how many came back. (The day's healing, the herbalist.)
 function woundedBack(k,n){const W0=P.wounded;let h=Math.min(n,W0[k]||0),got=0;

@@ -231,7 +231,7 @@ function supplyMoved(){const w=WALKED.get(P)||0,m=w-SUPPLY_WALK.at>=1;SUPPLY_WAL
 // while he heals (P.wounded), or your hero's health with none; kept for the card
 function supplyHurt(why,desert){
   const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0).sort((a,b)=>P.troops[b]-P.troops[a]),k=ks[0],u=BAND;
-  if(k){P.remove(k);if(desert)supplyLost(k,'deserted');else{P.wounded[k]=(P.wounded[k]||0)+1;const s=u.sick[k]||(u.sick[k]={});s[why]=(s[why]||0)+1}
+  if(k){if(desert){P.remove(k);supplyLost(k,'deserted')}else{woundTroops(k,1);const s=u.sick[k]||(u.sick[k]={});s[why]=(s[why]||0)+1}
     log(desert?cap1(an(ST[k].n.toLowerCase()))+' deserts, hungry.':cap1(why)+': '+an(ST[k].n.toLowerCase())+' falls sick.','bad','band')}
   else if(!desert){log(cap1(why)+' wears you down.','bad','band');heroHurt(.1,0,why)}
   u.hurt=[{why,day:G.day},...u.hurt.filter(h=>h.why!==why)].slice(0,SUPPLY.hurt)}

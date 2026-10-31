@@ -31,9 +31,9 @@ const worldBattleReach=o=>WORLD_BATTLE.on&&o instanceof Party&&o!==P?marchIntera
 // Only a character added to the troop list in battle gets an extra map figure. Other anchors are already in the formation.
 const marchSeparateLeader=o=>o.mapKind==='caravan'||o===P||!!o.cid||o.mapKind==='lord'||!!o.ld&&!o.troops.includes('chief');
 // The battle's full sprites at its world scale, with weapons included and movement-driven poses.
-function marchSprite(u,o){
+function marchSprite(u,o,pose){
   const type=u.character?u.type.replace(/^comp_/,''):u.type;
-  return unitSprite(type,o.mapKind==='monster'?1:0,false,u.id%6,u.walking?2+Math.floor(u.walk/WALK.foot)%4:0,false,false,o.look().col);
+  return unitSprite(type,o.mapKind==='monster'?1:0,false,u.id%6,pose??(u.walking?2+Math.floor(u.walk/WALK.foot)%4:0),false,false,o.look().col);
 }
 // Leaders use the same character kind and equipment as battle; cached cells also serve map picking and banner height.
 const MARCH_LEADERS=new WeakMap();
@@ -50,8 +50,10 @@ function marchDraw(ents,o,cam){
   for(const u of army.units)ents.push({y:u.y,own:o===P||o.faction==='player',f:()=>{drawMarcher(u,o,cam);if(u.pivot&&o.mapKind==='monster')BANNERQ.push({o,marker:{h:marchSprite(u,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})}});return true;
 }
 function drawMarcher(u,o,cam){
-  subT(u);const s=marchSprite(u,o),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y);
-  ctx.save();ctx.translate(x,y);ctx.scale(Math.cos(u.dir??marchFacing(o))<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore();
+  // (standing: breathing and his fidgets, as in battle: render.js idleLife, on the real clock)
+  const S=ST[u.type]||{},I=!u.walking?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
+  subT(u);const s=marchSprite(u,o,I?.pose),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y);
+  ctx.save();ctx.translate(x,y);ctx.scale(Math.cos(u.dir??marchFacing(o))<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2)+(I?.dx||0),-s.height+2+(I?.dy||0));ctx.restore();
 }
 function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDetectionColor(travelDetectionState()):o.look().col){
   ents.push({y:o.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,marchInteractRadius(o,r),0,Math.PI*2);ctx.stroke();ctx.restore()}});

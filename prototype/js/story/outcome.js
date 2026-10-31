@@ -81,10 +81,7 @@ const Outcome={
     wounded:{
       apply(v){
         P.wounded=P.wounded||{};
-        for(const [k,n] of Object.entries(v)){
-          const m=P.remove(k,n);
-          if(m)P.wounded[k]=(P.wounded[k]||0)+m;
-        }
+        for(const [k,n] of Object.entries(v))woundTroops(k,n);// (each under his own group: world/world.js)
       },
       text:v=>Object.entries(v).map(([k,n])=>n+' '+ST[k].n+' wounded'),
     },

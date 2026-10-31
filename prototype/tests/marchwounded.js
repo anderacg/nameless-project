@@ -12,5 +12,10 @@ Kit.suite(({ok})=>{
   ok(al.filter(a=>a===t.MARCH_PREVIEW.hurt).length===2&&al.filter(a=>a==='x').length===4,'the wounded faded, a red cross over each')}
  ok(/3 fit, 2 wounded/.test(document.getElementById('marchLabel').textContent),'its line: '+document.getElementById('marchLabel').textContent);
  ok(!t.marchDraftRows().some(x=>x.id===foot.id)&&/All wounded, out of the formation: 3 /.test(document.getElementById('panel').textContent),'a group all wounded: named under the field, not in the formation');
- t.act('march-back');ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
+ t.act('march-back');
+ // (the wounded of a march's sickness and of an outcome: under their own groups too, so the window shows them)
+ {P.woundedGroups=[];P.wounded={};const f=r.groups.find(g=>g.type==='hum_bow');t.supplyHurt('the cold');t.applyOutcome({wounded:{hum_bow:1}},{});
+  const w=r.wounded(f.id);G.mode='char';t.openMarch();t.act('march-select',f.id);
+  ok(w===2&&/1 fit, 2 wounded/.test(document.getElementById('marchLabel').textContent),'one fallen sick on the march, one hurt by an outcome: both shown under their group ('+document.getElementById('marchLabel').textContent+')');t.act('march-back')}
+ ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

@@ -217,9 +217,14 @@ function drawWorld(){
 }
 // how long a unit holds its attack pose after it strikes
 const ATK_ANIM=.36;
-// the body's small life (drawUnit): a flinch for flinch s after a blow; standing, every 1/idle s a glance back (look of it) and
-// the weight shifted (shift of it)
-const BODY_LIFE={flinch:.16,idle:.11,look:.07,shift:.08};
+// the body's small life (drawUnit): a flinch for flinch s after a blow; standing (the owner, 2026-10-31: "idle animation for
+// sprites", breathing and fidgets), every 1/idle s a glance back (look of it) and the weight shifted (shift of it) on foot, a
+// horse tossing its head (toss of it: a px start forward), a beast swaying (sway px each swayT s); and all breathing, a px up for
+// up of every breathe s. From his id and the clock, drawn only: the map's marchers too (world/march.js drawMarcher)
+const BODY_LIFE={flinch:.16,idle:.11,look:.07,shift:.08,breathe:2.3,up:.45,toss:.06,sway:1,swayT:3.1};
+// (standing: kind foot, mount or beast; t its clock) its pose (a glance, a shift: null, his own), and its offset
+function idleLife(id,t,kind){const L=BODY_LIFE,i=id||0,br=((t+i*.37)/L.breathe)%1,ph=(t*L.idle+i*.618)%1;
+  return{dy:br<L.up?-1:0,pose:kind!=='foot'?null:ph<L.look?LOOK_POSE:ph>.5&&ph<.5+L.shift?SHIFT_POSE:null,dx:kind==='mount'&&ph>.25&&ph<.25+L.toss?1:kind==='beast'?Math.round(L.sway*Math.sin((t+i)*6.283/L.swayT)):0}}
 // the box a picture's drawn pixels fill, [x0, y0, x1, y1] (inclusive), worked out once per picture: what a label clears and a
 // click answers on (world.js pickAt)
 function opaqueBox(s){if(s._ob)return s._ob;const d=s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data;let x0=s.width,y0=s.height,x1=-1,y1=-1;
@@ -248,7 +253,7 @@ function drawUnit(u){
     // (on a hill's slope (the ground's climbState): walking or running up, bent forward on short slow steps; down, leaning on long ones)
     if(cl&&!beast&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
     // (struck, a flinch; standing about, now and then a glance back or the weight shifted: from his id and the battle's time, drawn only)
-    if(!beast&&!u.s.mounted&&!cl){if(u.hitAt!=null&&B.t-u.hitAt<BODY_LIFE.flinch&&(pose<6||pose>=15&&pose<=18))pose=FLINCH_POSE;else if(pose<2&&!moved){const ph=(B.t*BODY_LIFE.idle+(u.id||0)*.618)%1;if(ph<BODY_LIFE.look)pose=LOOK_POSE;else if(ph>.5&&ph<.5+BODY_LIFE.shift)pose=SHIFT_POSE}}
+    if(!beast&&!u.s.mounted&&!cl){if(u.hitAt!=null&&B.t-u.hitAt<BODY_LIFE.flinch&&(pose<6||pose>=15&&pose<=18))pose=FLINCH_POSE;else if(pose<2&&!moved){const ip=idleLife(u.id,B.t,'foot').pose;if(ip!=null)pose=ip}}
     const sp=beast?actorSprite(u,pose):actorSprite(u,pose,true,!!u.inMelee);
     // (a beast's blow: its pose, and a short lunge with it; its steps bob in its frames)
     let [bx,sa]=stateShake(u),bo=0;if(beast&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(2*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))
@@ -257,6 +262,7 @@ function drawUnit(u){
     const dk=Defence.now(u),dp=dk?Math.sin((B.t-u.defAt)/DEFENCE.anim*Math.PI):0,side=dk==='dodge'&&u.defV==='side';
     if(dk==='dodge'&&!side)bx-=Math.round(2*dp);if(side)bo+=Math.round((u.id&1?2:-2)*dp);if(dk==='block'&&u.defV==='push')bx-=Math.round(2*dp);if(hit)bx-=1;
     const sg=u.stagAt!=null&&B.t-u.stagAt<.3?Math.sin((B.t-u.stagAt)/.3*Math.PI):0;if(sg)bx-=Math.round(2*sg);
+    if(!moved&&!dk&&!hit&&!sg&&!(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)){const I=idleLife(u.id,B.t,beast?'beast':u.s.mounted?'mount':'foot');bo+=I.dy;bx+=I.dx}// (standing: breathing, a horse's toss, a beast's sway)
     if(!beast&&DUEL.on&&u.atkLook&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx+=Math.round((u.atkLook==='bash'?2.5:1.5)*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI));
     ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(spinFace(u,dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLean(u)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg;if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */ctx.globalAlpha=(ghost?.55:1)*sa;ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore();
     // (climbing: a little grit trickles down the slope behind him now and then; coming down, a puff at the heel: from his id and the
