@@ -45,8 +45,10 @@ try{
  t.frame();
  // structures answer wherever they are drawn: the centre's far corner, a house, a wall piece, but not the open ground beside
  reset();P.troops={};{const tw=t.townBy('Ashford'),c=t.lotCentre(tw),h=tw.lots.find(l=>l.k==='house'),w=tw.lots.find(l=>l.k==='wall');P.x=tw.x;P.y=tw.y+20;
-  const spots=[[c.x*16+3,c.y*16+3,'the centre\u2019s back corner'],[h.x*16+8,h.y*16+8,'a house'],...(w?[[w.x*16+8,w.y*16+8,'a wall']]:[])];
+  const spots=[[c.x*16+3,c.y*16+3,'the centre\u2019s back corner'],...(w?[[w.x*16+8,w.y*16+8,'a wall']]:[])];
   ok(spots.every(([x,y])=>t.pickAt(x,y)===tw),'clicking any of a holding\u2019s buildings picks it: '+spots.map(q=>q[2]).join(', '));
+  {const hn=tw.lots.filter(l=>l.k==='house').sort((a,b)=>Math.hypot(a.x*16-P.x,a.y*16-P.y)-Math.hypot(b.x*16-P.x,b.y*16-P.y))[0],o=t.pickAt(hn.x*16+8,hn.y*16+8);
+   ok(o instanceof t.House&&o.holding===tw,'but a house in sight is its own (world/houses.js): the house')}
   let free=null;for(let r=1;r<12&&!free;r++)for(let i=-r;i<=r&&!free;i++){const x=tw.tx+i,y=tw.ty+r;if(!t.occAt(x,y)&&t.tAt(x,y)===t.T_OPEN)free=[x,y]}
   ok(!free||t.pickAt(free[0]*16+8,free[1]*16+8)!==tw,'but not the open ground beside them')}
  {const c=t.camps().find(k=>!k.cleared);P.x=c.x;P.y=c.y+30;t.reveal();ok(t.pickAt(c.x,c.y-12)===c&&t.pickAt(c.x+16,c.y-12)===c&&t.pickAt(c.x+16,c.y+4)===c&&t.pickAt(c.x-14,c.y-12)!==c,'clicking anywhere on a bandit camp picks it, and not beside it')}
