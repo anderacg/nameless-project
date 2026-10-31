@@ -68,16 +68,23 @@ const LandDefence={
     worldEvent({text:l.name+' rides out against the '+o.label().toLowerCase()+' near '+t.name+'.',x:l.x,y:l.y,fac:[l.fac,t.owner],towns:[t],post:false,kind:'',
       was:l.fac===P.fac||t.owner==='player'||Math.hypot(l.x-P.x,l.y-P.y)<vis()*1.5});
   },
+  // on the road (marching, going home, riding his lands, resting outside): a beast within DEFEND.pass he can beat, wherever it
+  // is, he turns on it (l.defend, l.defWild: no land of his needed)
+  lordPasses(l){
+    if(l.dead||l.fight||l.defend||l.inside||!['march','home','patrol','rest'].includes(l.state)||(l.defT||0)>worldTime())return false;
+    const o=(this.grid?this.grid.within(l.x,l.y,DEFEND.pass):this.threats()).find(o=>o.mapKind==='monster'&&this.isThreat(o)&&Math.hypot(o.x-l.x,o.y-l.y)<DEFEND.pass&&this.canBeat(l.power(),o));
+    if(!o)return false;l.defend=uidOf(o);l.defWild=true;l.defX=l.x;l.defY=l.y;return true;
+  },
   // done (the threat beaten, gone or out of reach): back to what he was doing, and no new sortie for DEFEND.cool
   lordDefended(l){
-    l.defend=null;l.defT=worldTime()+DEFEND.cool;
+    l.defend=null;l.defWild=false;l.defT=worldTime()+DEFEND.cool;
   },
   // a lord's moment while he rides out (LordBrain): after the threat while it is there to fight on his realm's land, within his
   // leash and while home's business is still his; true while he does (his brain does nothing else)
   lordDefends(l,d){
     if(inFight(l))return false;
-    const o=partyBy(l.defend),t=o&&landHold(o.x,o.y);
-    if(!this.isThreat(o)||!t||t.owner!==l.fac||Math.hypot(o.x-l.defX,o.y-l.defY)>DEFEND.leash||!HOME_STATES.includes(l.state)){this.lordDefended(l);return false}
+    const o=partyBy(l.defend),t=o&&landHold(o.x,o.y),wild=l.defWild;
+    if(!this.isThreat(o)||!wild&&(!t||t.owner!==l.fac||!HOME_STATES.includes(l.state))||Math.hypot(o.x-l.defX,o.y-l.defY)>DEFEND.leash){this.lordDefended(l);return false}
     if(l.inside)l.leave();
     const sp=moveStep(lordSpeed(l),d);Router.travel(l,o,sp)||walk(l,o.x-l.x,o.y-l.y,Math.min(Math.hypot(o.x-l.x,o.y-l.y),sp));
     if(Math.hypot(o.x-l.x,o.y-l.y)<12)startFight([l],[o]);

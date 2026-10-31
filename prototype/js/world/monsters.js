@@ -83,19 +83,22 @@ const BEAST_MIND={think(m,d,hide){
     {const b=beastMeets(m);if(b){startFight([asMonster(m)],[b]);return false}}
     if(M.aggro&&TravelAwareness.sees(m)&&dist<(WORLD_BATTLE.on?worldBattleReach(m):10)&&stance(monPower(m),m)==='attack'&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
     return false}};
-// the band a beast falls on: one it meets, out of any fight; neither of them set out by a quest, nor a mythic beast (it ravages
+// the party a beast falls on: one it meets, out of any fight; a band always, any other (a lord's army, a watch, a caravan, a
+// companion's party) when the beast dares it (DEFEND.dare); neither of them set out by a quest, nor a mythic beast (it ravages
 // armies its own way: roamMythic)
 const fightsOnMap=m=>!m.qid&&!MONSTERS[m.id].mythic;
-// (the first such in the bands' order; while the beasts move, from a grid of where the bands stand, which answers as the
-// scan of them all does: Spatial.index. A band set in a fight meanwhile is out of the reckoning wherever it stands)
+const beastPrey=()=>[...bandits,...W.lords.filter(l=>!l.dead&&!l.inside),...W.patrols,...W.caravans,...cparties()];
+const beastDares=(m,o)=>o.mapKind==='band'||monPower(m)>=o.power()*DEFEND.dare;
+// (the first such in the parties' order; while the beasts move, from a grid of where they stand, which answers as the scan of
+// them all does: Spatial.index. One set in a fight meanwhile is out of the reckoning wherever it stands)
 let BAND_GRID=null;
-const beastMeets=m=>m.cool<=0&&fightsOnMap(m)&&(BAND_GRID?BAND_GRID.within(m.x,m.y,DEFEND.meet):bandits).find(b=>!b.qid&&!b.fight&&!b.gone&&Math.hypot(b.x-m.x,b.y-m.y)<DEFEND.meet)||null;
+const beastMeets=m=>m.cool<=0&&fightsOnMap(m)&&(BAND_GRID?BAND_GRID.within(m.x,m.y,DEFEND.meet):beastPrey()).find(b=>!b.qid&&!b.fight&&!b.gone&&!b.dead&&!b.inside&&b.troops.length&&Math.hypot(b.x-m.x,b.y-m.y)<DEFEND.meet&&beastDares(m,b))||null;
 // beaten in a fight on the map: cut down as it flees (DEFEND.rout of the pack, rounded up: a lone beast dies), and those left
 // break off, wounded, and slink back to its lair
 function beastRouted(m){m.fight=null;m.n=Math.max(0,m.n-Math.ceil(m.n*DEFEND.rout));m.pw=0;const near=Math.hypot(m.x-P.x,m.y-P.y)<vis()*1.5,nm=MONSTERS[m.id].n.toLowerCase(),many=/s$/.test(nm);
   if(m.n<=0){W.monsters=W.monsters.filter(x=>x!==m);if(near)log('The '+nm+(many?' are':' is')+' slain near '+Spatial.nearestHolding(m.x,m.y).name+'.');return}
   m.cool=6;m.a=Math.atan2(m.hy-m.y,m.hx-m.x);m.t=3;if(near)log('The '+nm+(many?' break off and slink':' breaks off and slinks')+' away.')}
-function updateMonsters(d){BAND_GRID=Spatial.index(bandits,64);try{return lodEach(W.monsters,BEAST_MIND,d,hiddenAt(P.x,P.y)?.55:1)}finally{BAND_GRID=null}}
+function updateMonsters(d){BAND_GRID=Spatial.index(beastPrey(),64);try{return lodEach(W.monsters,BEAST_MIND,d,hiddenAt(P.x,P.y)?.55:1)}finally{BAND_GRID=null}}
 function startMonster(m){const M=MONSTERS[m.id];startEncounter({kind:'monster',ref:m,lv:m.lv,list:Array(m.n).fill(M.unit)})}
 // roll trophies and gear for a won monster fight, into the bag (the victory panel lists them with the rest of the spoils)
 function monsterLoot(m,slain){

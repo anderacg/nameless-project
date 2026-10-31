@@ -3,7 +3,8 @@
 // their lairs in the wilds (or, their ground not found there, at a land's far edge), bands take to the roads away from every
 // holding and estate; a beast falls on a band it meets and they fight it out on the map, either side winning; a holding sends
 // its watch at a band or beast on its land that it sees, when the watch can beat it; a lord at home rides at one that nears his
-// realm's holdings and estates, never from a campaign, and goes back to what he was doing; you can join a beast's fight against
+// realm's holdings and estates, never from a campaign, and goes back to what he was doing; off their lands a beast falls on any
+// party it dares, and a lord on the road turns on a beast near him he can beat; you can join a beast's fight against
 // it (your battle with the beast); and a beast's fight is saved.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
 try{
@@ -74,6 +75,20 @@ try{
   else ok(false,'a spot by '+z.name+'\'s estates to test with')}
  {const {l,at}=lordCase('march',false);ok(at&&!l.defend,'a lord on a war march does not turn aside for it')}
  {const {l,at}=lordCase('rest',true);ok(at&&!l.defend,'nor does one at home for a band on his land far from its holdings and estates'+(at?'':' (no spot)'))}
+ // ---- off their lands too (the owner, 2026-10-31): a beast falls on a caravan or a lord's army it dares; a lord on the road
+ // turns on a beast near him he can beat, and goes on after
+ {clear();t.LandDefence.grid=null;const to=t.TOWNS.find(z=>z.owner),c=t.asParty({x:wild.x+6,y:wild.y,cv:true,fac:to.owner,troops:['militia','militia'],guards:2,from:to.name,to:to.name,goods:{},dir:1,cool:0});W.caravans.push(c);
+  const m=beast('troll',wild.x,wild.y,2,2);t.updateMonsters(.05);const f=W.fights[0];
+  ok(f&&m.fight===f.id&&c.fight===f.id,'trolls that meet a caravan fall on it (power '+m.power()+' vs '+c.power()+'): a fight on the map')}
+ {clear();t.LandDefence.grid=null;const l=W.lords.find(q=>!q.dead);Object.assign(l,{troops:Array(30).fill('hum_knight'),x:wild.x+6,y:wild.y,state:'march',cool:0});
+  const m=beast('wolf',wild.x,wild.y,1,1);t.updateMonsters(.05);ok(!W.fights.length,'a lone wolf beside an army of 30 knights does not dare it')}
+ {clear();t.LandDefence.grid=null;const l=W.lords.find(q=>!q.dead),z=t.TOWNS.find(q=>q.owner&&q.owner!==l.fac)||t.TOWNS[0];
+  Object.assign(l,{troops:Array(20).fill('hum_knight'),x:wild.x+D.pass*.7,y:wild.y,state:'march',tgt:z.name,cool:0});const m=beast('boar',wild.x,wild.y,1,1);
+  t.updateLords(.05);ok(l.defend===m.uid,l.name+', marching on '+z.name+' through the wilds, turns on a boar '+Math.round(D.pass*.7)+' px from him');
+  let i=0;for(;i<3000&&W.monsters.includes(m);i++){t.updateLords(.05);t.updateMonsters(.05);t.updateFights(.05)}
+  t.updateLords(.05);ok(!W.monsters.includes(m)&&!l.defend&&l.state==='march'&&l.tgt===z.name,'kills it ('+i+' steps) and marches on to '+z.name)}
+ {clear();t.LandDefence.grid=null;const l=W.lords.find(q=>!q.dead);Object.assign(l,{troops:['militia'],x:wild.x+D.pass*.7,y:wild.y,state:'march',cool:0});beast('troll',wild.x,wild.y,3,2);
+  t.updateLords(.05);ok(!l.defend,'one too weak for the beast leaves it be')}
  // ---- you join a beast's fight against it: your battle with the beast, the band beside you
  {clear();P.troops={hum_knight:30};P.fac=null;P.hostile={};const m=beast('troll',wild.x,wild.y,1,2),b=band(wild.x+6,wild.y,Array(6).fill('militia'));t.startFight([m],[b]);const f=W.fights[0];
   P.x=f.x+20;P.y=f.y;t.interact(m);const s=f.sides[0].includes(m.uid)?1:0;

@@ -139,7 +139,8 @@ js/world/             the campaign map and everything on it
   prisons.js            who is held where (Prisons, the save piece prisons): every holding's Prison on its rail (who is held; pay, bribe, visit, break out; from outside a hostile one's walls), lords taken in the realms' wars (their ransom, exchanges, peace, a prison broken open), your companions left behind when you break out alone, your own prisoners (lock up, ransom, mercy, exchange, execute; soldiers recruited) (doc/PRISONS_DESIGN.md)
   captives.js           leaders in battle; captured, ransomed, let go or escaped; a passenger of yours carried off (carryOff)
   patrols.js            every holding's guards ride its land: a day watch and a night watch (Watches, t.watch; class wave D)
-  defence.js            the land defended: monsters in the wilds, bandits away from homes, the watch and lords ride out at them
+  defence.js            the land defended: monsters in the wilds, bandits away from homes, the watch and lords ride out at them;
+                        off their lands a beast falls on any party it dares (DEFEND.dare), a lord on the road turns on one near him he can beat (DEFEND.pass)
                         (the LandDefence service; class wave D)
   fights.js             fights between parties on the map, which take time and can be joined
   stay.js               staying in a holding (your band), and the shelter rules for you and your companions

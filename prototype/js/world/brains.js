@@ -20,12 +20,13 @@ class Brain{
 }
 
 // a lord: marches to war, lays siege, rests in his realm's holdings; hunts you if your realms are at odds and he is the stronger;
-// at home, rides out against bands and beasts that come near his realm's holdings and estates (defence.js)
+// at home, rides out against bands and beasts that come near his realm's holdings and estates; on the road, turns on a beast
+// near him he can beat (defence.js)
 class LordBrain extends Brain{
   think(l,d){
     if(l.dead)return false;if(l.follow||l.with){Host.lordStep(l,d,this);return false}// (he follows you, or his marshal: his place in the column, hosts.js)
     this.cool(l,d);
-    if(l.defend&&LandDefence.lordDefends(l,d))return false;
+    if((l.defend||LandDefence.lordPasses(l))&&LandDefence.lordDefends(l,d))return false;
     if(l.inside){const h=townBy(l.inside);if(l.state==='rest'&&l.tgt===l.inside&&h&&h.owner===l.fac)return false;l.leave()}
     if(inFight(l))return false;
     // (lying in wait in the trees: waylay.js)

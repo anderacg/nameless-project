@@ -45,8 +45,12 @@ const REINF={r:110,max:3,foes:2,band:30,guards:2,chance:.5,fair:.8,honor:{beside
 // within near px of one of its holdings or estates and within ride px of him, on the same edge; he gives it up past leash px
 // from where he set out, and after it waits cool (worldTime: a day is DAY, 12) before he looks again. A beast falls on a band
 // it meets (meet px), and the band fights back; a beast beaten in a fight on the map is cut down as it flees, rout of its pack
-// (rounded up: a lone beast dies). look: how often the land is looked over (the map's own time, as the watch check)
-const DEFEND={see:110,edge:1.2,home:200,near:80,ride:200,leash:260,cool:3,meet:12,rout:.5,look:.5};
+// (rounded up: a lone beast dies). look: how often the land is looked over (the map's own time, as the watch check).
+// Off their lands too (the owner, 2026-10-31: "lords dont attack monsters nor monster attack the lord, caravans, and other
+// entity while travelling"): a beast falls on any other party it meets (a lord's army, a watch, a caravan, a companion's
+// party) when it is at least dare times as strong; a lord on the road or at home turns on a beast within pass px that he can
+// beat (on the same edge), and gives it up past leash
+const DEFEND={see:110,edge:1.2,home:200,near:80,ride:200,leash:260,cool:3,meet:12,rout:.5,look:.5,dare:.8,pass:48};
 // personal relations (world/relations.js): you and each lord, and lords with each other, from -100 to 100, apart from
 // realm honor. levels name them; the rest is what moves them, and what they buy. A lord's friends and rivals feel some of
 // what you do to them (ripple). Relations drift back toward where they started by decay a day.

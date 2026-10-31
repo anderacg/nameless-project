@@ -36,7 +36,7 @@ try{
  // ---- a beast meets bands from a grid exactly as from the scan of them all: 600 beasts set down by bands, each with its own cool
  {const R=t.seeded(11),probe=[];for(let k=0;k<600;k++){const b=bands[Math.floor(R()*bands.length)];probe.push({id:'wolf',x:b.x+(R()-.5)*30,y:b.y+(R()-.5)*30,cool:R()<.1?1:0})}
   bands.forEach((b,i)=>{if(i%7===0)b.fight=b.fight||'probe'});
-  try{const scan=probe.map(x=>t.beastMeets(x));(0,eval)('BAND_GRID=Spatial.index(bandits,64)');const grid=probe.map(x=>t.beastMeets(x));(0,eval)('BAND_GRID=null');
+  try{const scan=probe.map(x=>t.beastMeets(x));(0,eval)('BAND_GRID=Spatial.index(beastPrey(),64)');const grid=probe.map(x=>t.beastMeets(x));(0,eval)('BAND_GRID=null');
    const met=scan.filter(Boolean).length;ok(met>100&&scan.every((b,i)=>b===grid[i]),'from the grid each of 600 beasts meets the very band the scan finds ('+met+' meet one; bands in a fight passed over)')}
   finally{bands.forEach(b=>{if(b.fight==='probe')b.fight=null})}}
  // ---- the level of detail: near within a quarter of the longer side, the rest mid
