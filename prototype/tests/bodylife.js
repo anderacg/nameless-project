@@ -17,10 +17,10 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  // ======== the small life: struck, glancing, shifting
  {const st=px(spr('militia',0));ok([t.FLINCH_POSE,t.LOOK_POSE,t.SHIFT_POSE].every(p=>px(spr('militia',p))!==st),'struck, a flinch; standing, a glance back and the weight shifted: each its own frame');
   ok(spr('militia',t.FLINCH_POSE).rig&&spr('militia',t.SHIFT_POSE).hand[0]===spr('militia',0).hand[0]-1,'the weapon stays in his hand as he moves (the shift: his hand a pixel back)')}
- // ======== standing about (the owner, 2026-10-31: idle animation, "breathing + fidgets"): everyone breathes, a px up part of the
- // time, each at his own; on foot a glance and a shift; a horse tosses its head; a beast sways
+ // ======== standing about (the owner, 2026-10-31: idle animation, "breathing + fidgets"; then no bob, "floating"): on foot a
+ // glance and a shift; a horse tosses its head; a beast sways; the whole body never lifted
  {const L=t.idleLife,ts=[...Array(200)].map((_,i)=>i*.05),share=(id,k)=>ts.filter(x=>L(id,x,k).dy<0).length/ts.length,flat=k=>ts.map(x=>L(7,x,k).dx);
-  ok(share(1,'foot')>.3&&share(1,'foot')<.6&&ts.some(x=>L(1,x,'foot').dy!==L(2,x,'foot').dy),'breathing: a px up '+Math.round(share(1,'foot')*100)+'% of the time, two men not in step');
+  ok(ts.every(x=>L(1,x,'foot').dy===undefined&&L(1,x,'mount').dy===undefined&&L(1,x,'beast').dy===undefined),'no breathing bob: the whole body never lifts (the owner: it made them look to float)');
   const P0=[...Array(400)].map((_,i)=>L(3,i*.25,'foot').pose);ok(P0.includes(t.LOOK_POSE)&&P0.includes(t.SHIFT_POSE)&&[...Array(400)].every((_,i)=>L(3,i*.25,'mount').pose==null),'on foot now and then a glance and a shift; a rider keeps his seat');
   ok(flat('mount').some(d=>d===1)&&new Set(flat('beast')).size>=3&&flat('foot').every(d=>d===0),'a horse tosses its head, a beast sways, a man on foot keeps his place')}
  // ======== three ways to fall, the weapon flung

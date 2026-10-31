@@ -69,10 +69,11 @@ class RecruitmentService{
     if(!this.rules.troops[k]||!((this.player.prisoners||{})[k]>0))return fail('prisoner-unavailable');
     if(this.player.gold<cost)return fail('gold');
     if(this.rules.size()>=this.rules.capacity())return fail('capacity');
-    if(this.rules.canGroup&&!this.rules.canGroup(k))return fail('groups');
+    if(this.rules.canGroup&&!this.rules.canGroup(k,this.rules.prisonerTarget?.(k)))return fail('groups');
     return {ok:true,code:'prisoner',kind:k,cost};
   }
-  recruitPrisoner(k){const result=this.quotePrisoner(k);if(!result.ok)return result;this.player.gold-=result.cost;this.player.prisoners[k]--;if(this.rules.add)this.rules.add(k);else this.player.add(k);return result}
+  recruitPrisoner(k){const result=this.quotePrisoner(k);if(!result.ok)return result;this.player.gold-=result.cost;this.player.prisoners[k]--;if(this.rules.add)this.rules.add(k,1,this.rules.prisonerTarget?.(k));else this.player.add(k);return result}
+
 }
 // a soldier's experience in a fight (attacks.js: by the harm he does and his kills), and his group's for fighting, winning and
 // an auto-resolved fight's share; his group gains its men's average (battle/resolution.js groupRanks)
@@ -82,7 +83,10 @@ const TRAIN_PLACE={tier:3};
 const recruitment=new RecruitmentService(P,{troops:ST,upgrades:UP,companions:COMPS,compTown:id=>compTown(id),hire:HIRE,xp:TROOP_XP,trainPlace:TRAIN_PLACE,prisonerCost:10,has,effect:tm,
   lead:()=>skill('lead'),size:partySize,capacity:partyCap,canHire:(t,k)=>canHire(t,k),day:()=>G.day,
   upgradeTrainer:(t,to)=>upgradeTrainer(t,to),roster:()=>partyRoster(P),target:k=>recruitTarget(k)||partyRoster(P).groups.find(g=>g.type===k&&partyRoster(P).groupRoom(k,g.id)>0)?.id||'new',
-  canGroup:(k,target,n=1)=>partyRoster(P).canAdd(k,target===undefined?recruitTarget(k):target,n),freeGroup:()=>partyRoster(P).slots<partyRoster(P).groupLimit,
+  canGroup:(k,target,n=1)=>partyRoster(P).canAdd(k,target===undefined?recruitTarget(k):target,n),
+  // (the group a freed prisoner joins: one of his kind with room, else a new one; never the hiring desk's last choice, the owner,
+  // 2026-10-31: "why i cannot recruit prisoner into existing group that has the same unit type?")
+  prisonerTarget:k=>{const r=partyRoster(P),g=r.groups.find(g=>g.type===k&&r.groupRoom(k,g.id)>0);return g?g.id:'new'},freeGroup:()=>partyRoster(P).slots<partyRoster(P).groupLimit,
   add:(k,n=1,target=recruitTarget(k))=>{const r=partyRoster(P),added=r.add(k,n,target);if(added&&target==='new')G.recruitTarget=r.groups[r.groups.length-1].id;if(added)skinsJoin(added);return added}});// (each recruit brings an empty waterskin: world/supply.js)
 const hireCost=k=>recruitment.hireCost(k),trainCost=k=>recruitment.trainCost(k),trainPrice=k=>recruitment.trainPrice(k),trainsAnywhere=k=>recruitment.anywhere(k);
 function recruitTarget(k){const id=G.recruitTarget;return id==='new'||partyRoster(P).groups.some(g=>g.id===id&&g.type===k)?id:undefined}

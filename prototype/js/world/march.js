@@ -50,10 +50,10 @@ function marchDraw(ents,o,cam){
   for(const u of army.units)ents.push({y:u.y,own:o===P||o.faction==='player',f:()=>{drawMarcher(u,o,cam);if(u.pivot&&o.mapKind==='monster')BANNERQ.push({o,marker:{h:marchSprite(u,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})}});return true;
 }
 function drawMarcher(u,o,cam){
-  // (standing: breathing and his fidgets, as in battle: render.js idleLife, on the real clock)
+  // (standing: his fidgets, as in battle: render.js idleLife, on the real clock)
   const S=ST[u.type]||{},I=!u.walking?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
   subT(u);const s=marchSprite(u,o,I?.pose),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y);
-  ctx.save();ctx.translate(x,y);ctx.scale(Math.cos(u.dir??marchFacing(o))<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2)+(I?.dx||0),-s.height+2+(I?.dy||0));ctx.restore();
+  ctx.save();ctx.translate(x,y);ctx.scale(Math.cos(u.dir??marchFacing(o))<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2)+(I?.dx||0),-s.height+2);ctx.restore();
 }
 function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDetectionColor(travelDetectionState()):o.look().col){
   ents.push({y:o.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,marchInteractRadius(o,r),0,Math.PI*2);ctx.stroke();ctx.restore()}});
