@@ -306,8 +306,12 @@ class Barracks extends Place{
     const s=G.town,tab=t.T.train&&s.recTab==='train'?'train':'hire',v=Math.floor(t.vol||0);
     const tabs=t.T.train?'<div class="rec-tabs" role="tablist">'+[['hire','Hire'],['train','Train & upgrade']].map(([k,n])=>'<button class="btn sm'+(k===tab?' on':'')+'" type="button" role="tab" aria-selected="'+(k===tab)+'" data-act="rec-tab" data-arg="'+k+'">'+n+'</button>').join('')+'</div>':'';
     const head='<div class="top rec-top">'+tabs+'<span class="lab">'+t.races.map(r=>RACES[r].n).join(' and ')+' troops · band '+partySize()+' / '+partyCap()+'</span><span class="lab">Standing <b class="gold" style="font-size:14px">'+standingAt(t)+'</b> · '+v+' willing</span></div>';
-    return head+(tab==='train'&&!s.info?this.trainTab(t):this.deskOf(t).body());
+    return head+(tab==='hire'&&!s.info?this.volunteers(t):'')+(tab==='train'&&!s.info?this.trainTab(t):this.deskOf(t).body());
   }
+  // (its free volunteers, world/volunteers.js: taking them while you stay here or camp on its lands, or why they will not come)
+  volunteers(t){const R=P.recruit,on=R&&R.town===t.name,here=volunteerTown()===t,why=here?volunteerWhy(t):'Stay here, or camp on its lands, to take them';
+    return '<div class="rec-row vol-row"><div class="rec-txt"><strong>'+icon('recruit',14)+' Free volunteers</strong><small>'+(on?'Joining your groups: '+R.n+' so far, about '+volunteerRate(t).toFixed(1)+' an hour':why?htmlText(why):'Its people would refill your tier-1 groups for free, about '+volunteerRate(t).toFixed(1)+' an hour')+'</small></div>'+
+      '<div class="rec-step">'+(on?'<button class="btn sm" type="button" data-act="uw-vstop">Stop</button>':'<button class="btn sm primary" type="button" data-act="uw-vgo"'+(why?' disabled title="'+htmlText(why)+'"':'')+'>Take volunteers</button>')+'</div></div>'}
   desk(arg,t,a){this.deskOf(t).act(a,arg)}
   tab(arg){G.town.recTab=arg==='train'?'train':'hire';G.town.info=null}
   hire(arg,t){const result=recruitment.hire(t,arg,1);recruitmentFeedback(result,t)}

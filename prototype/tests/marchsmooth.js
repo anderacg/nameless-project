@@ -3,7 +3,8 @@
 // form in the marching formation they move weird ... the unit seems not walking but shaking a bit"): from a heap every man
 // reaches his place, none left hemmed in by his own side (MARCH_MOVE.squeeze); marching, a man's place keeps its own spot (no hop
 // from grid cell to cell), so he seldom steps back; and his walk shows as one walk, not a flicker of walking and standing
-// (MARCH_MOVE.stride).
+// (MARCH_MOVE.stride); and every man marches at the army's own step, its roads and woods with it (the owner: "all units should share
+// the same speed (army speed)").
 Kit.suite(({ok,info})=>{
  const t=T,P=t.P;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:1e9});
  let at=null;const okT=q=>q===t.T_OPEN||q===t.T_ROAD;
@@ -29,5 +30,11 @@ Kit.suite(({ok,info})=>{
  {const q=turn(4,0,26),b=(run(3,0,26),turn(4,0,-26));info('turning: '+(q.sharp*100).toFixed(1)+'% sharp steps a quarter turn, '+(b.sharp*100).toFixed(1)+'% about; stops '+(q.stop*100).toFixed(1)+'%, '+(b.stop*100).toFixed(1)+'%');
   ok(q.sharp<.13&&b.sharp<.15&&q.stop<.1&&b.stop<.1,'wheeling, they curve round at their march pace: few sharp swings ('+(q.sharp*100).toFixed(0)+'% a quarter turn, '+(b.sharp*100).toFixed(0)+'% about; once 19% and 22%), fewer stops ('+(Math.max(q.stop,b.stop)*100).toFixed(0)+'%; once 11%)')}
  run(3,0,18);run(6,0,0);ok(off()<1.5,'turned and halted, they settle in their places again (the farthest '+off().toFixed(2)+' px off)');
+ // (the army's own pace, as on a road (faster) and in woods (slower), a fresh army back where it began: in his place every man goes
+ // at it, never faster (the parting's nudge aside), and none falls further behind)
+ {Kit.goTo(at[0],at[1]);const B2=t.MarchArmy.of(P);B2.sync();for(let i=0;i<120;i++)B2.step(.05);const base=t.moveStep(t.MAP_BASE*t.travelMul(),.05,true),off2=()=>Math.max(...B2.units.filter(u=>u.goal&&!u.pivot).map(u=>Math.hypot(u.goal.x-u.x,u.goal.y-u.y)));
+  for(let i=0;i<40;i++){P.x+=base;B2.step(.05)}const o0=off2();let over=0;
+  for(const k of [1.4,.6])for(let i=0;i<40;i++){const pr=new Map(B2.units.map(u=>[u,[u.x,u.y]]));P.x+=base*k;B2.step(.05);for(const u of B2.units){if(u.pivot)continue;const p=pr.get(u);over=Math.max(over,Math.hypot(u.x-p[0],u.y-p[1])-Math.max(base,base*k))}}
+  const o1=off2();ok(over<.5&&o1<=o0+base,'the army faster (a road) or slower (woods): every man at its step, never faster (most '+over.toFixed(2)+' px over, the parting\'s nudge), none further behind ('+o0.toFixed(1)+' then '+o1.toFixed(1)+' px off his place)')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

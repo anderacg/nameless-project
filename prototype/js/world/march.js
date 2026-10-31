@@ -63,7 +63,7 @@ function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDete
 // [s hemmed in by his own side, the share of a step he then squeezes through at, px he must be short of his place], the army standing
 // (and "not smooth when turning") turn: the army's wheel, rad/s (was 1.5: its outer places swept faster than a man marches, and
 // none hurries: marchwheeling); steer: rad a walking man swings his way a step at most, so he curves round rather than snaps
-const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,.6,2],steer:.45};
+const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,1,2],steer:.45,road:1.45};
 /* no two marchers on each other (the owner, 2026-10-30: "make sure units cannot overlap"): each has his body, as in battle
    (battle.js JOSTLE: foot, mounted, a big one 18), drawn WORLD_BATTLE.sprite/scale as big on the map; a row of bigger bodies
    than its formation's spacing marches that much wider (marchRoomK); after each step, MARCH_MOVE.part passes push apart any two
@@ -151,7 +151,9 @@ class MarchArmy{
     const pivot=this.units.find(u=>u.pivot);if(pivot){pivot.walk+=Math.hypot(o.x-pivot.x,o.y-pivot.y);pivot.walking=moved>.001;pivot.x=o.x;pivot.y=o.y;pivot.dir=this.face;pivot.goal={x:o.x,y:o.y};pivot.plan=null;if(this.units.length===1){this.queries=0;return}}
     if(!this.ground||this.ground.version!==WAYV||this.time>=(this.refresh||0)||!this.ground.covers(o,marchOuter(o)+8)||this.units.some(u=>!this.ground.covers(u,8))){this.ground=new MarchGround(o,this.units);this.refresh=this.time+MARCH_MOVE.refresh}
     const nav=this.ground,reach=nav.reachable(o),reserved=new Set(),targets=this.targets();this.queries=0;
-    const pace=o===P?MAP_BASE*travelMul()*(P.morale<25?.8:1)*hurryPace():partySpeed(o,o.troops),step=moveStep(pace,d,!B?.world)*MARCH_MOVE.catchup;
+    const pace=o===P?MAP_BASE*travelMul()*(P.morale<25?.8:1)*hurryPace():partySpeed(o,o.troops),walk=moveStep(pace,d,!B?.world),step=(moved>walk&&moved<=walk*MARCH_MOVE.road?moved:walk)*MARCH_MOVE.catchup;// (each man the army's own step this moment, its
+    // road with it (road: at most so many of his march pace; a leap past it is no
+    // march), else his march pace: in his place he goes as it goes)
     const buckets=new Map(),cell=MARCH_MOVE.bucket,key=(x,y)=>Math.floor(x/cell)+','+Math.floor(y/cell),put=u=>{const k=key(u.x,u.y),a=buckets.get(k)||[];if(!buckets.has(k))buckets.set(k,a);a.push(u);u.bucket=k};this.units.forEach(put);
     const near=u=>{const out=[],cx=Math.floor(u.x/cell),cy=Math.floor(u.y/cell);for(let y=cy-1;y<=cy+1;y++)for(let x=cx-1;x<=cx+1;x++)out.push(...buckets.get(x+','+y)||[]);return out};
     const wanted=new Map(targets.map(p=>[p.row+':'+p.index,p])),requests=[],sameGoals=this.goalGround===nav&&this.goalX===o.x&&this.goalY===o.y&&this.goalFace===this.face&&this.goalRoster===this.key&&this.goalBounds===bounds;

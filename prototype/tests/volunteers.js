@@ -8,6 +8,8 @@ Kit.suite(({ok})=>{
  const uw=()=>{t.frame();t.updateHUD(true);return document.getElementById('underway')},row=k=>uw()?.querySelector('[data-k="'+k+'"]');
  // ======== who will come
  P.rep[ash.name]=0;P.stay={town:ash.name,paidTo:t.worldTime()+t.DAY*5};ok(t.volunteerTown()===ash&&/do not know you/.test(t.volunteerWhy(ash)),'staying in Ashford, little known there: no volunteers ('+t.volunteerWhy(ash)+')');
+ {const r=row('volunteers'),b=r&&r.querySelector('[data-act="uw-vgo"]');ok(b&&b.disabled&&/do not know you/.test(r.title),'yet Under way shows them, its Recruit greyed and why in its tooltip')}
+ {t.enterTown(ash);t.act('tab','recruit');const v=document.querySelector('#panel .vol-row');ok(v&&/Free volunteers/.test(v.textContent)&&/do not know you/.test(v.textContent)&&v.querySelector('[data-act="uw-vgo"]').disabled,'and the barracks: a Free volunteers line, why not, its button greyed');t.act('leave');G.mode='world';G.modal=false;t.hidePanel()}
  P.rep[ash.name]=90;ash.vol=20;ok(!t.volunteerWhy(ash)&&row('volunteers')?.querySelector('[data-act="uw-vgo"]'),'well known: Under way offers Recruit');
  ok(t.volunteerGroups(ash).map(g=>g.id).join()===foot.id,'only your tier-1 groups to refill (the swordsmen, tier 2, not)');
  {const a=t.volunteerRate(ash);P.rep[ash.name]=V.standing-t.standingAt(ash)+P.rep[ash.name];const b=t.volunteerRate(ash);P.rep[ash.name]=90;ok(a>b&&b>=V.slow,'better known, more an hour ('+a.toFixed(2)+' against '+b.toFixed(2)+')')}
