@@ -61,7 +61,9 @@ function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDete
 // (the owner, 2026-10-31: units forming up "not walking but shaking") stride: s a man still shows walking after his last step, so a
 // march is one walk, not a flicker; wake: px off his place before a settled man moves again while the army stands; squeeze:
 // [s hemmed in by his own side, the share of a step he then squeezes through at, px he must be short of his place], the army standing
-const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:1.5,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,.6,2]};
+// (and "not smooth when turning") turn: the army's wheel, rad/s (was 1.5: its outer places swept faster than a man marches, and
+// none hurries: marchwheeling)
+const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,.6,2]};
 /* no two marchers on each other (the owner, 2026-10-30: "make sure units cannot overlap"): each has his body, as in battle
    (battle.js JOSTLE: foot, mounted, a big one 18), drawn WORLD_BATTLE.sprite/scale as big on the map; a row of bigger bodies
    than its formation's spacing marches that much wider (marchRoomK); after each step, MARCH_MOVE.part passes push apart any two
@@ -98,6 +100,10 @@ class MarchGround{
     // (its own spot when there is a body's room there: never moved off it for another goal in the same cell, the cells smaller
     // than a body, or the slots would hop from cell to cell as the army moves)
     if(this.contains(p)&&this.stand(p)&&g.cost[i]&&(!reach||reach[i])&&(!inside||inside(p))&&space(p))return keep({x:p.x,y:p.y},i);
+    // (a body in the way, the leader's or another's: pushed straight out of it, just clear, so the place moves with the army rather
+    // than hop to a cell's middle)
+    {const v=reserved?.points?.find(v=>Math.hypot(v.x-p.x,v.y-p.y)<(rb+(v.r??rb))/2);if(v){const d=Math.hypot(p.x-v.x,p.y-v.y)||1,n=(rb+(v.r??rb))/2+.05,q={x:v.x+(p.x-v.x)/d*n,y:v.y+(p.y-v.y)/d*n},a=this.local(q),j=routeIx(g,a.x,a.y);
+      if(this.contains(q)&&this.stand(q)&&g.cost[j]&&(!reach||reach[j])&&(!inside||inside(q))&&space(q))return keep(q,j)}}
     const c0=i%g.C,r0=Math.floor(i/g.C);let best=-1,dist=Infinity;
     for(let k=0;k<Math.max(g.C,g.R)&&!(best>=0&&k*k>dist);k++)for(let r=Math.max(0,r0-k);r<=Math.min(g.R-1,r0+k);r++){
       const edge=r===r0-k||r===r0+k;for(let c=c0-k;c<=c0+k;c+=edge||k===0?1:2*k){if(c<0||c>=g.C)continue;const j=r*g.C+c,d=(c-c0)**2+(r-r0)**2;if(ok(j)&&d<dist){best=j;dist=d}}}

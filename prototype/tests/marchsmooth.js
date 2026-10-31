@@ -20,8 +20,14 @@ Kit.suite(({ok,info})=>{
  A.units.forEach((u,i)=>{if(!u.pivot){u.x=P.x+((i*37)%21-10)*1.5;u.y=P.y+((i*53)%17-8)*1.5}});run(10,0,0);
  ok(off()<1.5,'from a heap of '+N+' men, every one reaches his place (the farthest '+off().toFixed(2)+' px off it)');
  const m=run(6,18,0);info('marching: '+m.rev.toFixed(2)+' steps back, '+m.tog.toFixed(2)+' flickers a man a second');
- ok(m.rev<.3,'marching east, a man seldom steps back ('+m.rev.toFixed(2)+' a second; once .9)');
+ ok(m.rev<.1,'marching east, a man seldom steps back ('+m.rev.toFixed(2)+' a second; once .9, then .16 with the leader\'s body still hopping his neighbours\' places)');
  ok(m.tog<.5,'and walks as one walk, not walking and standing by turns ('+m.tog.toFixed(2)+' a second; once 2.1)');
+ // (a turn: how often a man's step swings more than .6 rad from his last, how often he stops, in a quarter turn and an about turn)
+ const turn=(sec,dx,dy)=>{const last=new Map();let sharp=0,n=0,stop=0,all=0;for(let i=0;i<sec/.05;i++){P.x+=dx*.05;P.y+=dy*.05;const pr=new Map(A.units.map(u=>[u,[u.x,u.y]]));A.step(.05);
+   for(const u of A.units){if(u.pivot)continue;const p=pr.get(u),sx=u.x-p[0],sy=u.y-p[1];all++;if(Math.hypot(sx,sy)<.02){stop++;continue}const l=last.get(u);
+    if(l){const a=Math.atan2(sy,sx)-Math.atan2(l[1],l[0]);n++;if(Math.abs(Math.atan2(Math.sin(a),Math.cos(a)))>.6)sharp++}last.set(u,[sx,sy])}}return{sharp:sharp/n,stop:stop/all}};
+ {const q=turn(4,0,26),b=(run(3,0,26),turn(4,0,-26));info('turning: '+(q.sharp*100).toFixed(1)+'% sharp steps a quarter turn, '+(b.sharp*100).toFixed(1)+'% about; stops '+(q.stop*100).toFixed(1)+'%, '+(b.stop*100).toFixed(1)+'%');
+  ok(b.stop<.12&&q.stop<.12,'wheeling, they keep walking: stops '+(Math.max(q.stop,b.stop)*100).toFixed(0)+'% (once 11%)')}
  run(3,0,18);run(6,0,0);ok(off()<1.5,'turned and halted, they settle in their places again (the farthest '+off().toFixed(2)+' px off)');
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });
