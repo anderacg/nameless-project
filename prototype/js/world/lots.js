@@ -467,7 +467,7 @@ const placeAt=(wx,wy,n)=>({x:Math.floor(wx/TILE-n/2+.5),y:Math.floor(wy/TILE-n/2
 function startPlace(t,k){
   const R=seeded(G.day*7+t.seed+k.length),type=k==='house'?typeFor(t,'house',R):typeFor(t,k,R);
   G.place={town:t.name,k,type,n:lotSize(type),seed:Math.floor(R()*1e6)};G.town=null;G.scene=null;hidePanel();G.mode='world';G.modal=false;
-  log('Choose where the '+(k==='house'?'new house':ESTATES[k].n.toLowerCase())+' of '+t.name+' will stand: click a green spot (Esc to stop).');
+  toast('Choose where the '+(k==='house'?'new house':ESTATES[k].n.toLowerCase())+' of '+t.name+' will stand: click a green spot (Esc to stop).');
 }
 function placeClick(wx,wy){
   const pl=G.place,t=pl&&townBy(pl.town);if(!t){G.place=null;return}const {x,y}=placeAt(wx,wy,pl.n);

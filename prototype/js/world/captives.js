@@ -101,7 +101,7 @@ function recruitCaptive(i){
   cs.splice(i,1);
   if(c.k==='lord'){const l=W.lords.find(x=>x.id===c.id);Object.assign(l,{gone:true,held:false,recruited:true,dead:true,back:1e9})}
   else for(const f of FIDS)if(!W.dead[f])addHonor(f,-RECRUIT.honor,true);
-  log(r.n+' joins your band as a companion'+(c.k==='chief'?' (the realms think less of you for it)':'')+'. Manage him in the Army window (C).','gold');return true}
+  log(r.n+' joins your band as a companion'+(c.k==='chief'?' (the realms think less of you for it)':'')+'.','gold');return true}
 
 /* the Army window's Passengers: your captives, and what to do with them */
 function captivesHtml(){

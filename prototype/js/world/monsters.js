@@ -108,7 +108,7 @@ function monsterLoot(m,slain){
   if(mats&&M.mat){const kept=invAdd('mat',M.mat,mats);if(kept<mats)log('Your bag is full. You leave '+(mats-kept)+' '+MATS[M.mat].n.toLowerCase()+(mats-kept>1?'s':'')+' behind.','bad')}
   if(M.meat&&mats)invAdd('good','meat',mats*M.meat);
   for(const [it,ch] of M.gear)if(monRng().chance(ch*(1+.1*(m.lv-1)))){
-    if(invAdd('gear',it,1))log('You found '+ITEMS[it].n+' ('+ITEMS[it].r+')! Open your inventory with I.','gold');
+    if(invAdd('gear',it,1))log('You found '+ITEMS[it].n+' ('+ITEMS[it].r+')!','gold');
     else log('Your bag is full. You leave '+ITEMS[it].n+' behind.','bad');
   }
   return '';

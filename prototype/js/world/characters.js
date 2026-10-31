@@ -205,7 +205,7 @@ class Hero extends Character{
   kit(){return this.o}
   levelled(up){
     P.tp=(P.tp||0)+up;
-    log('You reach level '+P.level+'. '+(up>1?up+' skill points':'A skill point')+' to spend in Skills (K).','gold')}
+    log('You reach level '+P.level+'. '+(up>1?up+' skill points':'A skill point')+' to spend.','gold')}
   rose(k,lv){log(SKILLS[k].n+' rises to '+lv+'.','gold')}
   meleeSkill(){return meleeSk()}
   hasPerk(p){return has(p)}

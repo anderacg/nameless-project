@@ -53,7 +53,7 @@ function compJoin(id,o){
   const c=compInit(id);
   if(o&&o.lv)c.lv=o.lv;
   if(o&&o.attr)c.attr={...o.attr};
-  log(COMPS[id].n+' joins your band as a companion. Manage him in the Army window (C).','gold');
+  log(COMPS[id].n+' joins your band as a companion.','gold');
   return c}
 // (the older names: the companion's methods)
 const compSkill=(id,k)=>{const c=compOf(id);return c?c.trained(k):0};

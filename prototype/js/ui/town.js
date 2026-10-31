@@ -6,7 +6,7 @@ function recruitmentFeedback(r,t){
   if(r.ok){
     if(r.code==='hire')log((r.count>1?r.count+' × '+ST[r.kind].n:cap1(an(ST[r.kind].n.toLowerCase())))+' join'+(r.count>1?'':'s')+' your band.');
     else if(r.code==='group-training')log(armyGroupLabel(r.id)+': '+r.count+' × '+ST[r.from].n+' upgraded to '+ST[r.to].n+(r.cost?' for '+r.cost+'g':'')+'. They start again at rank 1.','good');
-    else if(r.code==='companion')log(COMPS[r.id].n+' joins your band. Give them a role with C.','good');
+    else if(r.code==='companion')log(COMPS[r.id].n+' joins your band.','good');
     else if(r.code==='prisoner')log('A captured '+ST[r.kind].n.toLowerCase()+' swears to follow you.');
   }else if(r.code==='standing')toast('The people of '+t.name+' do not know you well enough yet.','bad');
   else if(r.code==='volunteers')toast('No one else in '+t.name+' will take up arms today.','bad');
