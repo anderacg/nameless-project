@@ -221,10 +221,10 @@ class Quest extends Happening{
   }
   // ---- reporting: the reward (a friendly lord adds to it), and it is off your list
   pay(where){
-    const r=this.reward,giver=this.lord&&W.lords.find(l=>l.name===this.giver),gold=this.earned();
+    const r=this.reward,giver=this.lord&&W.lords.find(l=>l.name===this.giver),gold=this.earned();let bonus=0;
     P.gold+=gold;
     if(giver){
-      const bonus=Math.round(gold*Math.max(0,relWith(giver))/200);
+      bonus=Math.round(gold*Math.max(0,relWith(giver))/200);
       if(bonus){
         P.gold+=bonus;
         log(giver.name+' adds '+bonus+' gold for a friend.','gold','story',this.journalKey);
@@ -232,7 +232,8 @@ class Quest extends Happening{
       changeRel(giver,RELATION.jobDone,'you did their work');
     }
     gainXp(r.xp);
-    P.renown+=this.lord?4:2;
+    const renown=this.lord?4:2;
+    P.renown+=renown;
     // (a lord's: where you were paid; none, his realm holding nothing: no holding's reputation)
     const at=this.lord?where:this.home;
     if(r.rep&&at)addRep(at,r.rep,true);
@@ -240,6 +241,8 @@ class Quest extends Happening{
     P.quests=P.quests.filter(x=>x!==this);
     log('Quest complete: '+this.title+'. +'+gold+' gold'+(r.rep?', +'+r.rep+' reputation':'')+(r.honor?', +'+r.honor+' honor':'')+'.','good','story',this.journalKey);
     this.announceEnd('paid');
+    // (what it gave, in the window in the middle of the screen: ui/questreward.js)
+    if(typeof QuestReward!=='undefined')QuestReward.add(this.title,{gold,bonus,xp:r.xp,renown,rep:r.rep,at,honor:r.honor,fac:this.fac,rel:giver?RELATION.jobDone:0,giver:giver?.name});
   }
   // (the gold it pays now: its reward's; a late job's less, world/quests.js)
   earned(){

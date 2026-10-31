@@ -29,7 +29,9 @@ Kit.suite(({ok})=>{
  const goal=t.questGoal(qb);ok(goal&&goal.x===band.x,'the quest points at the band');
  t.startEncounter({kind:'party',ref:band,n:band.n,list:band.troops.slice(),band:band.kind});win();ok(qb.done&&!t.bandits.includes(band),'breaking the band finishes the deed');
  const g0=P.gold,r0=t.repAt('Ashford');near(ash);t.updateWorld(.01);ok(G.town&&G.town.tab==='jobs','entering with a quest to report opens the Jobs tab');
- t.act('q-turnin',String(qb.id));ok(!P.quests.includes(qb)&&P.gold>=g0+qb.reward.gold&&t.repAt('Ashford')>r0,'reporting pays '+qb.reward.gold+' gold and reputation');t.act('leave');done();
+ t.act('q-turnin',String(qb.id));ok(!P.quests.includes(qb)&&P.gold>=g0+qb.reward.gold&&t.repAt('Ashford')>r0,'reporting pays '+qb.reward.gold+' gold and reputation');
+ {const el=document.getElementById('qreward'),txt=el&&el.textContent||'';ok(t.QuestReward.open()&&/Quest complete/.test(txt)&&txt.includes(qb.title)&&txt.includes('+'+qb.reward.gold)&&/Gold/.test(txt)&&/Reputation/.test(txt)&&el.querySelectorAll('.qrw-item canvas,.qrw-item img,.qrw-item svg,.qrw-item .gico,.qrw-item [class*=ico]').length>=2,'and shows what you received in a window in the middle of the screen: '+[...el.querySelectorAll('.qrw-item')].map(x=>x.textContent).join(', '));
+  t.onEscape();ok(!t.QuestReward.open(),'Esc (its Continue) closes it')}t.act('leave');done();
  // beast
  world();let qm=null;for(let k=0;k<20&&!qm;k++)qm=t.makeQuest('beast',ash);t.acceptQuest(qm);const mon=W.monsters.find(m=>m.qid===qm.id);
  ok(mon&&mon.id===qm.mon&&mon.lv===qm.lv,'a beast hunt brings '+t.MONSTERS[qm.mon].n.toLowerCase()+' (level '+qm.lv+')');t.startMonster(mon);win();ok(qm.done,'killing them finishes it');P.quests=[];

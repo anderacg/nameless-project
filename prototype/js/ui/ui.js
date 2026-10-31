@@ -174,7 +174,7 @@ const ESC_CLOSE={help:'help-close',fullmap:'map-close',journal:'journal-close',q
 // Esc closes the window in front, one press at a time: its bottom bar's Back (an inner window back to the one behind it), else
 // its way out (ui.js nav). A panel that only offers real choices (a fight, a perk, the fate of a holding) has no bar and is
 // never chosen for you: Esc then pauses with the Game Menu, as it does once no window is left.
-function escDismiss(){if(ov.hidden)return null;return panel.querySelector('.nav [data-nav="back"]:not([disabled])')||panel.querySelector('.nav [data-nav="close"]:not([disabled]):not([data-noesc])')}
+function escDismiss(){const q=QuestReward.esc();if(q)return q;if(ov.hidden)return null;return panel.querySelector('.nav [data-nav="back"]:not([disabled])')||panel.querySelector('.nav [data-nav="close"]:not([disabled]):not([data-noesc])')}
 function onEscape(){
   uiSfx('back');
   if(G.mode==='esc'){const b=escDismiss();return b?act(b.dataset.act,b.dataset.arg):escAct('esc-resume')}// (the Game Menu: a page's Back, else Resume: hub.js)

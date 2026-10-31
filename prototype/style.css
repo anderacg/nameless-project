@@ -1049,6 +1049,17 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .lord-portrait{width:48px;height:48px;flex:none;object-fit:cover;image-rendering:pixelated;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--field)}
 .talk-pic[src^="art/portrait/game/"]{width:88px;height:88px}
 @media(max-height:500px){.talk-pic[src^="art/portrait/game/"]{width:52px;height:52px}.lord-portrait{width:40px;height:40px}}
+/* questreward.js: a quest's reward, in the middle of the screen over whatever is open: a small window, a card a quest (its title,
+   then its rewards in a row, each an icon over its amount and what it is) */
+.qrw{z-index:30}
+.panel.qrw-card{width:min(460px,100%);height:auto;max-height:100%}
+.qrw-body{display:flex;flex-direction:column;gap:12px}
+.qrw-items{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.qrw-item{flex:1 1 84px;max-width:132px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);text-align:center}
+.qrw-item b{font-size:var(--fs-lg);color:var(--trim-hi);line-height:1}
+.qrw-item small{color:var(--muted);line-height:1.2}
+@media (max-height:520px){.qrw-body{gap:6px}.qrw-items{gap:5px;margin-top:3px}.qrw-item{flex-direction:row;max-width:none;flex:1 1 150px;padding:5px 8px;gap:7px;text-align:left}.qrw-item svg{width:20px;height:20px;flex:none}.qrw-item b{font-size:var(--fs-base)}}
+
 /* ---------- 8e. conversations ---------- */
 /* story/conversation.js: a talk with someone. Its head (their face, big and pixel-sharp, their name and standing), what has been
    said this visit (their words quoted, the rest told, the newest last), the replies (numbered: keys 1-9), then the speaker's own
