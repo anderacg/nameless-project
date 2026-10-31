@@ -96,6 +96,13 @@ button,.btn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none
 .screen[data-mode="title"] .hudlayer>*{display:none}
 
 /* ---------- 3. primitives ---------- */
+/* scroll areas (the owner, 2026-10-31: "always show scroll bar, full bar or disabled if there no scrolling"): every window's and
+   pane's that scrolls up and down keeps its bar, an empty track when all fits, so nothing shifts as it fills; one look for all
+   (fieldbook.css's too). A window of its own panes (rail windows, the Army and Character book, the quests, the saves) leaves it
+   to them; a small one (a menu list, a quest's reward) has none */
+:is(.panel:not(.railed,.paged,.wsp,.qrw-card):not(:has(.fb-shell,.slots,.qw,> .menulist)),.slots,.ws-set,.binfo,.rail,.rwbody,.fm-leg,.qw-list,.qw-detail,
+  .fb-march .fb-body,.screen.mobile-world #stats,.mbh-drawer,.army-panel,.fb-scroll,.fb-qscroll,.fb-node-copy,.fb-tree-overview,.fb-tree-list,.ch-scroll){
+  overflow-y:scroll!important;scrollbar-width:thin!important;scrollbar-color:var(--line-2) rgba(0,0,0,.35)!important}
 /* buttons: one look, three sizes (.btn, .btn.sm, and the HUD's square ones); gold border on hover, gold text when on */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:var(--tap);padding:6px 14px;
   font-weight:700;font-size:var(--fs-base);line-height:1.15;color:var(--fg);text-align:center;
