@@ -378,7 +378,13 @@ function drawBattle(){
   drawCommandPowers();// (the command radius, Stand Fast!'s glow: commandpowers.js)
   if(B.box){const b=B.box;ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(Math.min(b.x0,b.x1)+.5,Math.min(b.y0,b.y1)+.5,Math.abs(b.x1-b.x0),Math.abs(b.y1-b.y0))}
   if(B.mark&&B.mark.t>0){const m=B.mark;ctx.strokeStyle=m.foe||m.am?'#ff6a5a':'#e8b94a';ctx.globalAlpha=Math.min(1,m.t*2);ctx.beginPath();ctx.ellipse(m.x,m.y,8*(1.4-m.t*.5),4*(1.4-m.t*.5),0,0,7);ctx.stroke();ctx.globalAlpha=1;m.t-=1/60}
-  obstacleGround();battleEnts().forEach(o=>o.kind?drawObstacle(o):o.dk?drawProp(o):drawUnit(o));// (obstacles: their ground, then each in the depth order: sprites.js)
+  // (obstacles: their ground, then each in the depth order: sprites.js; on the world map (a world battle) each with the trees in front of
+  // it drawn back over it, as the map's own figures are, those over your men faded: depth.js worldOverdraw; the owner, 2026-10-31:
+  // "the forest seems not to cover units")
+  obstacleGround();{const draw=o=>o.kind?drawObstacle(o):o.dk?drawProp(o):drawUnit(o),E=battleEnts();
+    // (the overdraw reckons in the map scene's pixels: under that transform, each drawn under the field's own)
+    if(B.world){const T=ctx.getTransform(),w=B.world,k=T.a*w.scale;ctx.save();ctx.setTransform(k,0,0,k,T.e+k*(G.cam.x-w.x0),T.f+k*(G.cam.y-w.y0));
+      try{worldOverdraw(E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,f:()=>{ctx.setTransform(T);draw(o)}})),G.cam)}finally{ctx.restore()}}else E.forEach(draw)}
   for(const a of B.arrows){if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50),kind=missileOf(a);
       ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';const k=B.world?WORLD_BATTLE.sprite:1;ctx.fillRect(Math.round(a.x-2*k),Math.round(a.y),4*k,k);
       ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-4-z));ctx.scale(k,k);
