@@ -10,8 +10,8 @@ Kit.suite(({ok})=>{
  ok(t.marchDraftRows().every(row=>Math.hypot(row.x,row.y)+t.marchExtent(row)<=t.marchDraftOuter()+.001),'draft formation footprints remain inside the outer ring');
  t.act('march-back');ok(foot.files!==1,'Back discards unit formation edits');
  t.openMarch();t.act('march-select',foot.id);t.act('march-form','column');t.act('march-select',cav.id);t.act('march-form','wedge');t.act('march-apply');
- ok(foot.form==='line'&&foot.files===1&&cav.form==='wedge'&&t.marchRows(P).find(row=>row.id===foot.id).files===1,'Apply stores Column and Wedge in persistent troop groups and travel uses them');
- t.openMarch();t.act('march-select',foot.id);t.act('march-form','wedge');ok(G.march.draft[foot.id].form==='line','infantry cannot select cavalry Wedge');t.act('march-back');
+ ok(foot.form==='column'&&foot.files===1&&cav.form==='wedge'&&t.marchRows(P).find(row=>row.id===foot.id).form==='column','Apply stores Column and Wedge in persistent troop groups and travel uses them');
+ t.openMarch();t.act('march-select',foot.id);{const was=G.march.draft[foot.id].form;t.act('march-form','wedge');ok(G.march.draft[foot.id].form===was&&was!=='wedge','infantry cannot select cavalry Wedge')}t.act('march-back');
  Kit.world();const enemy=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x+70,y:P.y,cool:0});t.bandits.push(enemy);G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});
  ok(t.B.world&&t.B.groups['p_'+foot.id].files===1&&t.B.groups['p_'+cav.id].form==='wedge','world battle starts with the march editor unit formations');
 });

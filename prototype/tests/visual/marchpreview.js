@@ -7,6 +7,6 @@ Kit.suite(({ok})=>{
  ok(Math.abs(resized.width-box.width)<1&&Math.abs(resized.height-box.height)<1,'canvas bitmap changes do not resize the preview pane');
  cv.width=bitmap;t.drawMarch();
  const sizes=[];for(const row of rows){const draws=[],g={save(){},restore(){},drawImage(...a){draws.push(a)}};t.marchUnitPreview(g,row,100,100,v.scale);sizes.push(...draws.map(a=>a[3]/a[0].width))}
- ok(sizes.every(k=>Math.abs(k-t.MARCH_PREVIEW.sprite)<.001),'hero and soldiers use one fixed preview sprite scale');
+ {const k=t.marchSpriteK(v.scale);ok(sizes.every(x=>Math.abs(x-k)<.001),'hero and soldiers drawn at the map\'s own size for the view, as their spacing is ('+k.toFixed(2)+'×: WORLD_BATTLE.sprite / scale × the view; the owner, 2026-10-31: "match the real battle space and proportion")')}
  ok(!ERR.length,'editor renders without errors on '+innerWidth+' by '+innerHeight);
 });

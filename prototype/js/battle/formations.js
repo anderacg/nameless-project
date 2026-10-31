@@ -6,9 +6,12 @@
    loose order (foot) or a wedge (cavalry). Shield wall is a capability-filtered ability, not a formation. A block 4 or more ranks deep blunts a charge. ---------- */
 // files: soldiers abreast (until a line is dragged; a wedge: its widest rank, none a whole triangle); gx, gy: spacing across and
 // back (px). who: the troops it suits (FORM_WHO); key: its key. A drag sets every form's width (the owner, 2026-10-31: "the right
-// click ... seems to support only lines formation"), a column's aside (one file: a drag sets only where and which way: dragFiles)
+// click ... seems to support only lines formation"): a column's, how many columns (dragFiles)
 const FORMS={
   line:{n:'Line',files:8,gx:14,gy:13,d:'Ranks across the front, as wide as you drag the line.'},
+  // (a column: files cw abreast, a file's gap between columns; files: how many columns, the rest of the men behind, the owner,
+  // 2026-10-31: "column will prioritize unit to the back ... dragging long line will create more column")
+  column:{n:'Column',col:true,files:1,cw:2,gx:14,gy:13,d:'Files two abreast, deep; the line you drag sets how many columns stand side by side, the rest behind.'},
   loose:{n:'Loose',files:8,gx:24,gy:22,who:'foot',key:'L',d:'Wider spacing only; no direct damage bonus or penalty.'},
   wedge:{n:'Wedge',wedge:true,gx:13,gy:12,who:'cav',key:'T',d:'Cavalry spearhead: 6 formed cavalry give +5% charge, +2.5 percentage points per additional rider, capped at +30% at 16. Scattered or routing riders do not count.'},
   // (beasts: no ranks, a ragged clump files wide, each beast off its place by a fixed jitter, beastmind.js; never one of yours to pick: FORM_ORDER)
@@ -38,11 +41,13 @@ const FORM_DRAG=8;// a right-click dragged further than this lays out a line
 function formFits(g,f){const F=FORMS[f];if(!F)return false;if(!F.who)return true;if(g==='hero')return false;const m=grpUnits(g);return m.length>0&&m.filter(FORM_WHO[F.who]).length*2>=m.length}
 // a group's shape: soldiers abreast and ranks deep
 function grpShape(g){const gr=B.groups[g],n=grpUnits(g).length;if(!gr||!n)return null;const F=FORMS[gr.form]||FORMS.line;
-  if(F.wedge){const W=gr.files||Infinity;let r=0,i=0;while(i<n){i+=Math.min(r+1,W);r++}return{files:Math.min(n,r,W),ranks:r}}const w=Math.max(1,Math.min(n,gr.files||F.files));return{files:w,ranks:Math.ceil(n/w)}}
+  if(F.wedge){const W=gr.files||Infinity;let r=0,i=0;while(i<n){i+=Math.min(r+1,W);r++}return{files:Math.min(n,r,W),ranks:r}}if(F.col){const a=Math.min(n,Math.max(1,gr.files||1)*F.cw);return{files:a,ranks:Math.ceil(n/a)}}const w=Math.max(1,Math.min(n,gr.files||F.files));return{files:w,ranks:Math.ceil(n/w)}}
 // the slots of n soldiers in formation f, facing a (radians), files wide: positions relative to its anchor (its middle)
 function formSlots(f,n,a,files,space=1){
   const F=FORMS[f]||FORMS.line,out=[];if(n<=0)return out;
   if(F.wedge){const W=files||Infinity;let r=0,i=0;while(i<n){const k=Math.min(r+1,W,n-i);for(let j=0;j<k;j++)out.push([-r*F.gy,(j-(k-1)/2)*F.gx]);i+=k;r++}}
+  else if(F.col){const k=Math.max(1,Math.min(Math.ceil(n/F.cw),files||1)),a=k*F.cw,at=j=>Math.floor(j/F.cw)*(F.cw+1)+j%F.cw;// (at: a file's place across, a gap after each column's)
+    for(let i=0;i<n;i++){const r=Math.floor(i/a),rowN=Math.min(a,n-r*a);out.push([-r*F.gy,(at(i%a)-at(rowN-1)/2)*F.gx])}}
   else if(F.pack){const w=Math.max(1,Math.min(n,files||F.files));for(let i=0;i<n;i++){const r=Math.floor(i/w),c=i%w,rowN=Math.min(w,n-r*w);out.push([-r*F.gy+((i*37)%11-5)*1.6,(c-(rowN-1)/2+(r%2)*.5)*F.gx+((i*53)%9-4)*1.5])}}
   else{const w=Math.max(1,Math.min(n,files||F.files));for(let i=0;i<n;i++){const r=Math.floor(i/w),c=i%w,rowN=Math.min(w,n-r*w);out.push([-r*F.gy,(c-(rowN-1)/2)*F.gx])}}
   const mr=out.reduce((s,p)=>s+p[0],0)/out.length,ca=Math.cos(a),sa=Math.sin(a);
@@ -74,17 +79,19 @@ function breakWall(g){const gr=B.groups[g];if(gr&&gr.shieldWall){gr.setFlag('shi
 // explicit dragged facing bypasses this helper in BattleControl.moveTo.
 function faceToward(g,x,y){const gr=B.groups[g],m=grpUnits(g);if(!m.length)return;const cx=m.reduce((a,u)=>a+u.x,0)/m.length,cy=m.reduce((a,u)=>a+u.y,0)/m.length;if(Math.hypot(x-cx,y-cy)>.01)gr.setForm(gr.form||'line',{face:Math.atan2(y-cy,x-cx),files:gr.files})}
 // a line dragged from (x0,y0) to (x1,y1): the selection along it, shared by their numbers, facing the left of the drag.
-// Each is as wide as its share of the line (and so as deep as its numbers make it); a wedge as wide at its back, a column one file.
+// Each is as wide as its share of the line (and so as deep as its numbers make it); a wedge as wide at its back, a column as many
+// columns as fit.
 // Your hero shares the line as a one-person group, like a companion; preview and placement use this same plan.
-// (a column, a line one file wide, stays one: cur, its files now)
-function dragFiles(f,n,seg,space=B?.world?WORLD_BATTLE.sprite:1,cur){const F=FORMS[f]||FORMS.line;return F.drag==='fixed'?null:(f||'line')==='line'&&cur===1&&n>1?1:Math.max(1,Math.min(n,Math.round(seg/(F.gx*space))+1))}
+// (a column: how many columns the line holds, each cw files and a file's gap)
+function dragFiles(f,n,seg,space=B?.world?WORLD_BATTLE.sprite:1){const F=FORMS[f]||FORMS.line;if(F.drag==='fixed')return null;
+  if(F.col)return Math.max(1,Math.min(Math.ceil(n/F.cw),Math.round((seg/(F.gx*space)+1)/(F.cw+1))));return Math.max(1,Math.min(n,Math.round(seg/(F.gx*space))+1))}
 function formPlan(x0,y0,x1,y1){
   const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed),L=Math.hypot(x1-x0,y1-y0);if(!gs.length||L<FORM_DRAG)return[];
   const ux=(x1-x0)/L,uy=(y1-y0)/L;
   // (its front on the left of the drag, as in Total War: dragged down they face right, up left, left to right up, right to left down)
   const face=Math.atan2(-ux,uy),tot=gs.reduce((a,g)=>a+grpUnits(g).length,0);let s=0;
   return gs.map(g=>{const n=grpUnits(g).length,seg=L*n/tot,c=s+seg/2;s+=seg;
-    return{g,...(g==='hero'?{hero:true}:{}),ax:clamp(x0+ux*c,8,BW-8),ay:clamp(y0+uy*c,fieldTop(),fieldBot()),face,files:g==='hero'?null:dragFiles(B.groups[g].form||'line',n,seg,undefined,B.groups[g].files)}});
+    return{g,...(g==='hero'?{hero:true}:{}),ax:clamp(x0+ux*c,8,BW-8),ay:clamp(y0+uy*c,fieldTop(),fieldBot()),face,files:g==='hero'?null:dragFiles(B.groups[g].form||'line',n,seg)}});
 }
 // World ghosts scale with the battle sprites and their slot spacing.
 // the ghost of a dragged line: each soldier's slot, faint, and an arrow the way they will face. On a phone or a small window
