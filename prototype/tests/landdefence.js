@@ -89,6 +89,13 @@ try{
   t.updateLords(.05);ok(!W.monsters.includes(m)&&!l.defend&&l.state==='march'&&l.tgt===z.name,'kills it ('+i+' steps) and marches on to '+z.name)}
  {clear();t.LandDefence.grid=null;const l=W.lords.find(q=>!q.dead);Object.assign(l,{troops:['militia'],x:wild.x+D.pass*.7,y:wild.y,state:'march',cool:0});beast('troll',wild.x,wild.y,3,2);
   t.updateLords(.05);ok(!l.defend,'one too weak for the beast leaves it be')}
+ // ---- a beast that waits to be hunted (a boar, a bear) charges you when you corner it, unless you are far the stronger (by what
+ // it sees of you: TravelAwareness.power)
+ {const corner=n=>{clear();P.troops={militia:2};const m=beast('boar',wild.x,wild.y,1,n);P.x=wild.x+4;P.y=wild.y;G.encCool=0;G.enc=null;t.TravelAwareness.snapshot=null;t.TravelAwareness.notice(m);/* (seen at once, right on it: TRAVEL_AWARE.contact) */
+   const st=t.stance(t.monPower(m),m);t.updateMonsters(.05);const r=!!(G.enc&&G.enc.kind==='monster'&&G.enc.ref===m);world();G.encCool=1e9;return [r,st]};
+  const [three,s3]=corner(3),[one,s1]=corner(1);
+  ok(three&&s3!=='afraid'&&!one&&s1==='afraid','dire boars, cornered: three charge you ('+s3+'), a lone one you far outmatch does not ('+s1+')');
+  clear();P.troops={militia:2};const m=beast('boar',wild.x,wild.y,1,3);P.x=wild.x+60;P.y=wild.y;G.encCool=0;t.TravelAwareness.snapshot=null;t.TravelAwareness.notice(m);t.updateMonsters(.05);ok(!G.enc,'further off, they leave you alone');world();G.encCool=1e9}
  // ---- you join a beast's fight against it: your battle with the beast, the band beside you
  {clear();P.troops={hum_knight:30};P.fac=null;P.hostile={};const m=beast('troll',wild.x,wild.y,1,2),b=band(wild.x+6,wild.y,Array(6).fill('militia'));t.startFight([m],[b]);const f=W.fights[0];
   P.x=f.x+20;P.y=f.y;t.interact(m);const s=f.sides[0].includes(m.uid)?1:0;

@@ -69,7 +69,7 @@ const lairLand=(x,y,rim)=>!landHold(x,y)||!!rim&&landRim(x,y,WORLD_SCALE.spawn.r
 // (as many tries a day as the world's density: data/world.js)
 function monsterDay(){const D=density(WM);for(let k=0;k<D.daily.monsters;k++)if(W.monsters.length<D.monsterCap&&monRng().chance(.6))spawnMonster(false);mythicDay()}
 // a beast's moment (parties.js lodThink; hide: how well you are hidden from it): a mythic one roams; the rest hunt you, keep
-// off, or wander near the lair. True when it falls on you
+// off, or wander near the lair; one that waits to be hunted charges when you corner it. True when it falls on you
 const BEAST_MIND={think(m,d,hide){
     if(inFight(m))return false;// (fighting on the map: fights.js)
     if(MONSTERS[m.id].mythic)return roamMythic(m,d);
@@ -81,7 +81,9 @@ const BEAST_MIND={think(m,d,hide){
       const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>A.lairLeash)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),moveStep(10,d))}
     // a band it meets: it falls on them, and they fight back (a fight on the map)
     {const b=beastMeets(m);if(b){startFight([asMonster(m)],[b]);return false}}
-    if(M.aggro&&TravelAwareness.sees(m)&&dist<(WORLD_BATTLE.on?worldBattleReach(m):10)&&stance(monPower(m),m)==='attack'&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
+    // (on you: a hunter when it is the stronger; one that waits to be hunted (a boar, a bear) when cornered, you right on it and
+    // not far the stronger, the owner 2026-10-31: "make them charge when cornered")
+    {const at=stance(monPower(m),m);if((M.aggro?at==='attack':at!=='afraid')&&TravelAwareness.sees(m)&&dist<(WORLD_BATTLE.on?worldBattleReach(m):10)&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}}
     return false}};
 // the party a beast falls on: one it meets, out of any fight; a band always, any other (a lord's army, a watch, a caravan, a
 // companion's party) when the beast dares it (DEFEND.dare); neither of them set out by a quest, nor a mythic beast (it ravages
