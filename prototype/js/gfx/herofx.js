@@ -26,7 +26,7 @@ function heroBeat(dt){if(!B)return dt;const V=heroView();if(!(V.beat>0))return d
 // each drawn frame: the zoom-punch's scale (1: none), and the flash's alpha
 function heroZoom(){if(!B)return 1;const V=heroView(),F=HERO_FX.fin,now=performance.now()/1000,q=(now-V.zoom)/F.zt;if(!V.zoom||q>=1||q<0||reducedMotion())return 1;return 1+F.zoom*Math.sin(Math.PI*q)*(1-q)}
 function heroFlash(){if(!B)return 0;const V=heroView(),F=HERO_FX.fin,q=(performance.now()/1000-V.flash)/F.flash;return V.flash&&q>=0&&q<1?F.fa*(1-q):0}
-function heroFinisher(){if(reducedMotion())return;const V=heroView(),now=performance.now()/1000;V.zoom=now;V.flash=now}
+function heroFinisher(epic){if(reducedMotion()||!screenFx(epic))return;const V=heroView(),now=performance.now()/1000;V.zoom=now;V.flash=now}
 // the moments, as the battle tells them
 battleOn((type,d)=>{if(!STATE_FX.on||!B)return;const T=HERO_FX.trail;
   if(type==='swing'&&d.u){const big=d.last&&d.n,u=d.u;fxp({k:'trail',x:u.x,y:u.y-6,a:d.a,r:d.r,arc:d.c.arc||.9,dir:d.c.dir||1,shape:d.c.shape,w:big?T.fin:T.w,col:d.c.col||T.col,life:T.life*(big?1.4:1)});
@@ -39,7 +39,7 @@ battleOn((type,d)=>{if(!STATE_FX.on||!B)return;const T=HERO_FX.trail;
     if(C){const hx=u.x+(u.face||1)*4,hy=u.y-10;for(let i=0;i<8;i++){const b=fxr()*6.283;fxp({k:'mote',x:hx+Math.cos(b)*16,y:hy+Math.sin(b)*10,tx:hx,ty:hy,col:C,life:.22})}
       fxp({k:'flash',x:hx,y:hy,r:14,col:C,life:.28});fxp({k:'ring',x:u.x,y:u.y,r:22,col:C,life:.45})}}
   if(type==='land'&&d.u){const u=d.u;for(let i=0;i<HERO_FX.debris;i++){const b=fxr()*6.283,v=30+fxr()*50;fxp({k:'rock',x:u.x,y:u.y,vx:Math.cos(b)*v,vy:Math.sin(b)*v*.45,z:0,vz:40+fxr()*50,g:260,life:.6})}
-    fxp({k:'wave',x:u.x,y:u.y,r:(d.r||30)*1.3,col:'255,214,140',life:.4});fxp({k:'flash',x:u.x,y:u.y-2,r:12,col:'255,236,190',life:.18});if(mine(u))heroFinisher()}});
+    fxp({k:'wave',x:u.x,y:u.y,r:(d.r||30)*1.3,col:'255,214,140',life:.4});fxp({k:'flash',x:u.x,y:u.y-2,r:12,col:'255,236,190',life:.18});if(mine(u))heroFinisher(true)}});
 // (a spin: turning round on his feet, his facing flipped n times over t s of the battle's clock (render.js drawUnit))
 const SPIN={t:.36,n:6};
 function spinFace(u,f){const m=STATE_MARKS.get(u),q=m&&m.spin!=null?(B.t-m.spin)/SPIN.t:-1;return q>=0&&q<1&&Math.floor(q*SPIN.n)%2?-f:f}

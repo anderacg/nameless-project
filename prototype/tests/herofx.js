@@ -4,7 +4,7 @@ window.ARENA=true;// (the battle screen's own rules, on its own field: tests/har
 // each swing, the finisher's zoom-punch and flash, a crit's star and beat of slow motion (capped), whirlwind after-images, a
 // dash's streak, a spell's sparks and burst, a landing's debris and shockwave, her glow; Light keeps the ribbons and flashes;
 // all drawn only (no Math.random, no battle field changed).
-window.RUN=()=>{const t=T,L=t.BattleLab,G=t.G,P=t.P,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),random=Math.random,ev=s=>(0,eval)(s);try{
+window.RUN=()=>{const t=T,L=t.BattleLab,G=t.G,P=t.P,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),random=Math.random,ev=s=>(0,eval)(s),near=t.SHAKE.near;try{
  const wait=ms=>{const e=performance.now()+ms;while(performance.now()<e);};
  const kinds=()=>t.FXP.map(p=>p.k),has=k=>kinds().includes(k),count=k=>kinds().filter(x=>x===k).length;
  t.prefSet('bfx','full');
@@ -13,8 +13,9 @@ window.RUN=()=>{const t=T,L=t.BattleLab,G=t.G,P=t.P,o=[],ok=(c,m)=>o.push((c?'PA
  G.enc={kind:'party',ref:{cool:0},list:['chief']};t.startBattle({enemies:['chief'],tournament:false});t.beginFight();
  const B=t.B,h=B.hero,e=B.units.find(u=>u.team===1);B.noMorale=true;e.x=h.x+10;e.y=h.y;e.cd=99;e.hp=e.max=9999;B.aim=0;
  t.FXP.length=0;h.cd=0;t.swing();ok(has('trail'),'a swing of hers: a ribbon of light along its arc');
- {const V=t.HERO_VIEW;t.battleEvent('swing',{u:h,c:{shape:'arc',arc:.9,dir:1},a:0,r:20,n:1,last:true});wait(40);const z=t.heroZoom(),f=t.heroFlash();
-  ok(z>1&&z<1.1&&f>0,'the finisher landing: a zoom-punch (×'+z.toFixed(3)+') and a flash over the field ('+f.toFixed(2)+')');
+ {const V=t.HERO_VIEW,fin=()=>t.battleEvent('swing',{u:h,c:{shape:'arc',arc:.9,dir:1},a:0,r:20,n:1,last:true});const zz=V.zoom;fin();ok(V.zoom===zz&&!t.heroFlash(),'the field seen whole: the finisher neither flashes nor punches the view (the owner, 2026-10-31)');
+  t.SHAKE.near=0;fin();ok(V.zoom===zz&&!t.heroFlash(),'up close, an ordinary finisher against men: neither');B.epicAt=performance.now()/1000;fin();wait(40);const z=t.heroZoom(),f=t.heroFlash();
+  ok(z>1&&z<1.1&&f>0,'up close, an epic skill\'s moment: the finisher\'s zoom-punch (×'+z.toFixed(3)+') and a flash over the field ('+f.toFixed(2)+')');
   {const z0=V.zoom,n0=t.FXP.length;t.battleEvent('swing',{u:e,c:{shape:'arc'},a:0,r:20,n:1,last:true});ok(V.zoom===z0&&t.FXP.length===n0+1,'a foe\'s finisher: its ribbon, never your view\'s punch')}
   wait(260);ok(t.heroZoom()===1&&t.heroFlash()===0,'and both gone within a fifth of a second')}
  // ======== a crit: a star, and a beat of slow motion, at most once every few seconds
@@ -37,6 +38,6 @@ window.RUN=()=>{const t=T,L=t.BattleLab,G=t.G,P=t.P,o=[],ok=(c,m)=>o.push((c?'PA
   ok(!n&&snap()===s0,'the effects draw without Math.random ('+n+') and change nothing in the battle');
   for(let i=0;i<5;i++){B.t+=1/60;t.drawBattle()}t.frame();ok(!ERR.length,'a battle with all of them draws')}
  B.over=true;B.endT=0;t.updateBattle(.01);
-}catch(x){o.push('EXC '+x.message+' '+x.stack)}finally{Math.random=random;ev('MANUAL_HERO=false');try{T.prefSet('bfx','full')}catch(x){}if(T.B){T.B.over=true;T.B.endT=0;T.updateBattle(.01)}if(L.active)L.exit()}
+}catch(x){o.push('EXC '+x.message+' '+x.stack)}finally{Math.random=random;T.SHAKE.near=near;ev('MANUAL_HERO=false');try{T.prefSet('bfx','full')}catch(x){}if(T.B){T.B.over=true;T.B.endT=0;T.updateBattle(.01)}if(L.active)L.exit()}
  const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
 };

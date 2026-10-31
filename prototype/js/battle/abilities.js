@@ -35,7 +35,7 @@ const CAST={
     vfxRing(u.x,u.y,70*A.r,'232,185,74',.5);vfxRing(u.x,u.y,100*A.r,'255,220,120',.7);for(const o of B.units)if(battleFriend(o,u)&&o.hp>0&&Math.hypot(o.x-u.x,o.y-u.y)<90*A.r)vfxBurst(o.x,o.y-8,2,'#ffd25a',5,15,'ember',25);
     castSay(u,'WAR CRY',u.team?'#ff9a90':'#e8b94a');shakeIt(2)},
   quake(u,K){const A=K.A,R=50*A.r;vfxCracks(u.x,u.y,8,R*.7);vfxRing(u.x,u.y,R*1.2,'170,130,90',.55);vfxBurst(u.x,u.y,10,'#a88a60',30,90,'spark',40);for(let i=0;i<8;i++){const b=rnd(0,6.283);vfx({k:'dust',x:u.x+Math.cos(b)*R*.5,y:u.y+Math.sin(b)*R*.25,vx:Math.cos(b)*30,vy:Math.sin(b)*12,r:rnd(3,5),grow:12,life:rnd(.6,.9),col:dustCol()})}B.rings.push({x:u.x,y:u.y-4,r:R,life:.45,max:.45,col:'200,160,110'});fx(u.x,u.y,'#c8b48a',12);
-    for(const e of withinOf(u.x,u.y,R,foesOf(u)))K.strike(e,.9*A.dmg,{kb:8,stun:.6+A.stun,dt:'blunt'});shakeIt(5)},
+    for(const e of withinOf(u.x,u.y,R,foesOf(u)))K.strike(e,.9*A.dmg,{kb:8,stun:.6+A.stun,dt:'blunt'});epicShake(5)},
   dash(u,K,at){const a=angleOf(K,at||{x:u.x+1,y:u.y});K.st.dash={sx:u.x,sy:u.y,tx:clamp(u.x+Math.cos(a)*80,8,BW-8),ty:clamp(u.y+Math.sin(a)*80,fieldTop(),fieldBot()),t:0,dur:.2,hit:[],mult:1.1*K.A.dmg};
     K.st.inv=.25;u.face=Math.cos(a)>=0?1:-1},
   volley(u,K,at){const A=K.A;if(K.hero)heroSpendShots(4);const c=aimOf(K,at,130);
@@ -58,7 +58,7 @@ function castAbility(u,id,at){
 function leapStep(u,st,dt){
   const L=st.leap;L.t+=dt;const p=Math.min(1,L.t/L.dur);if(Math.random()<.6)vfxGhost(u);u.x=L.sx+(L.tx-L.sx)*p;u.y=L.sy+(L.ty-L.sy)*p;u.z=Math.sin(Math.PI*p)*16;
   if(p>=1){st.leap=null;u.z=0;const K=kitOf(u,'leap'),A=K.A,R=34*A.r;B.rings.push({x:u.x,y:u.y-4,r:R,life:.4,max:.4,col:'255,190,90'});vfxCracks(u.x,u.y,6,R*.8);vfxRing(u.x,u.y,R*1.1,'190,160,110',.5);for(let i=0;i<10;i++){const b=rnd(0,6.283);vfx({k:'dust',x:u.x,y:u.y,vx:Math.cos(b)*rnd(40,90),vy:Math.sin(b)*rnd(15,35),r:rnd(2,4),grow:12,life:rnd(.5,.8),col:dustCol()})}
-    battleEvent('land',{u,r:R});let n=0;for(const e of withinOf(u.x,u.y,R,foesOf(u))){K.strike(e,1.5,{kb:14,stun:1+A.stun,dt:'blunt'});n++}shakeIt(4);if(n&&K.hero)st.stop=.06}
+    battleEvent('land',{u,r:R});let n=0;for(const e of withinOf(u.x,u.y,R,foesOf(u))){K.strike(e,1.5,{kb:14,stun:1+A.stun,dt:'blunt'});n++}epicShake(4);if(n&&K.hero)st.stop=.06}
   return true}
 function dashStep(u,st,dt){
   const D=st.dash,K=kitOf(u,'dash');D.t+=dt;vfxGhost(u);const p=Math.min(1,D.t/D.dur);u.x=D.sx+(D.tx-D.sx)*p;u.y=D.sy+(D.ty-D.sy)*p;fx(u.x,u.y,'#e8e4d0',1);

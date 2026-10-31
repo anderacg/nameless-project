@@ -28,12 +28,22 @@ function vfxCharge(u,t,m){
 /* screen shake, drawn only: a jolt of the whole view (frame, render.js) when a strong charge strikes home (a rider or a big beast,
    momentum over SHAKE.charge) and, lighter, when a group of yours routs; with it the small shake of every blow (G.shake). A wobble
    by the clock, never a random draw; the jolt fades over SHAKE.life seconds of real time and never moves the camera (B.cam).
-   Off: SHAKE.on false, or the system asks for reduced motion */
-const SHAKE={on:true,world:.2,charge:.6,amp:4,rout:1.5,max:5,life:.45,hz:38};
+   Seen only up close (the owner, 2026-10-31: "only if we zoom in very near; only from skills that has epic range or power, or
+   when fought with numerous monster"; screenFx): the view zoomed in very near (an arena field's camera at SHAKE.near or more; a
+   world battle's map zoom at its closest step), and an epic skill just now (epicShake: Quake, a leap's landing; for SHAKE.epic
+   s) or a horde of beasts against you (SHAKE.horde or more standing). The finisher's flash and zoom-punch keep the same rule
+   (herofx.js heroFinisher). Off: SHAKE.on false, or the system asks for reduced motion */
+const SHAKE={on:true,world:.2,charge:.6,amp:4,rout:1.5,max:5,life:.45,hz:38,near:2.5,horde:30,epic:.6};
 // (asked of the browser once: its answer kept up to date by the query itself)
 const REDUCED_Q=(()=>{try{return window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):null}catch(e){return null}})();
 function reducedMotion(){return !!(REDUCED_Q&&REDUCED_Q.matches)}
 const shakeOn=()=>SHAKE.on&&!reducedMotion();
+// (zoomed in very near; a horde of beasts on the other side; an epic skill's moment)
+const viewNear=()=>!!B&&(B.world?MAPZOOM.hi>MAPZOOM.lo&&VS>=MAPZOOM.hi:bcam().z>=SHAKE.near);
+function hordeFight(){if(!B)return false;let n=0;for(const u of B.units)if(u.team&&u.hp>0&&ST[u.type]?.beast&&++n>=SHAKE.horde)return true;return false}
+const epicNow=()=>!!B&&B.epicAt!=null&&performance.now()/1000-B.epicAt<SHAKE.epic;
+const screenFx=epic=>viewNear()&&(!!epic||epicNow()||hordeFight());
+function epicShake(n){shakeIt(n);if(B)B.epicAt=performance.now()/1000}
 // a jolt of n pixels, unless a stronger one is still going (lt: its clock restarts on the next frame)
 function jolt(n){if(!B||!(n>0)||!shakeOn())return;const J=B.jolt||(B.jolt={a:0,t:0,lt:0});if(n<joltAmp())return;J.a=Math.min(SHAKE.max,n);J.t=SHAKE.life;J.lt=0}
 const joltAmp=()=>{const J=B&&B.jolt;return J&&J.t>0?J.a*J.t/SHAKE.life:0};
@@ -44,7 +54,7 @@ function chargeJolt(u,m){if(m>SHAKE.charge&&(u.s.charge||u.s.big))jolt(SHAKE.amp
 function shakeView(bat){
   const now=performance.now()/1000,J=bat&&B&&B.jolt;if(J){joltStep(J.lt?Math.min(.1,now-J.lt):0);J.lt=now}
   if(!bat){G.shake=0;return null}// (only a battle shakes: a blow's shake left over must never shake the map)
-  if(!shakeOn())return null;const a=Math.max(B.paused?0:G.shake/2,joltAmp())*(B.world?SHAKE.world:1);if(a<.5)return null;
+  if(!shakeOn()||!screenFx())return null;const a=Math.max(B.paused?0:G.shake/2,joltAmp())*(B.world?SHAKE.world:1);if(a<.5)return null;
   return{x:Math.round(Math.sin(now*SHAKE.hz)*a),y:Math.round(Math.cos(now*SHAKE.hz*1.3)*a)}}
 // one falls: the body tips over (drawCorpses), lies, and bleeds; a puff of dust. Its weapon drops beside it
 function vfxDeath(t,corpse){

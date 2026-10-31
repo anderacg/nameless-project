@@ -1,7 +1,7 @@
 'use strict';
 // battle juice: the callouts for the big moments (battlehud.js), the drawn-only screen shake (vfx.js) and the unit of the battle
 // in the battle report (resolution.js, loot.js)
-window.RUN=()=>{const t=T,L=t.BattleLab,G=t.G,P=t.P,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),random=Math.random,media=window.matchMedia,shakeOn=t.SHAKE.on;try{
+window.RUN=()=>{const t=T,L=t.BattleLab,G=t.G,P=t.P,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),random=Math.random,media=window.matchMedia,shakeOn=t.SHAKE.on,S0={...t.SHAKE};try{
  const start=(extra={})=>{if(L.active)L.exit();L.start({leftGroups:[{type:'hum_foot',count:20}],rightGroups:[{type:'hum_foot',count:20}],morale:true,deploy:false,paused:true,ai:false,seed:42,...extra});const b=t.B,g=b.groups[t.playerGroups()[0]],foe=Object.values(b.groups).find(x=>x.foe);b.obs=[];for(const [gr,x] of [[g,300],[foe,340]]){gr.placeAt(x,300);t.layForm(gr.id);gr.units.forEach(u=>{u.x=gr.ax+u.sx;u.y=gr.ay+u.sy;u.cd=999})}return {b,g,foe,r:g.resolve,a:g.units,e:foe.units}};
  const C=()=>t.B.callouts||{q:[],on:[]},all=()=>[...C().q,...C().on],said=re=>all().filter(c=>re.test(c.text)).length,logged=(n0,re)=>G.msgs.slice(n0).filter(m=>re.test(m.m)).length;
  const banners=()=>[...document.querySelectorAll('#bCallouts .callout')];
@@ -49,7 +49,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,G=t.G,P=t.P,o=[],ok=(c,m)=>o.push((c?'PA
  f=start({leftGroups:[{type:'hum_knight',count:4},{type:'hum_foot',count:4},{type:'troll',count:1}]});const B=f.b,cam=()=>JSON.stringify({x:B.cam.x,y:B.cam.y,z:B.cam.z,fit:B.cam.fit}),cam0=cam();
  const knight=B.units.find(x=>!x.team&&x.type==='hum_knight'),foot=B.units.find(x=>!x.team&&x.type==='hum_foot'),troll=B.units.find(x=>!x.team&&x.type==='troll'),foe=f.e[0];
  knight.run=t.CHARGE.run;t.chargeMul(knight,foe);const amp=t.joltAmp();ok(amp>=t.SHAKE.amp*.99&&amp<=t.SHAKE.max,'a full cavalry charge jolts the view ('+amp.toFixed(1)+' px, capped at '+t.SHAKE.max+')');
- const s=t.shakeView(true);ok(s&&Math.abs(s.x)<=t.SHAKE.max&&Math.abs(s.y)<=t.SHAKE.max,'the jolt is a small draw offset');
+ t.SHAKE.near=0;B.epicAt=performance.now()/1000;/* (seen up close, an epic skill's moment: below) */const s=t.shakeView(true);ok(s&&Math.abs(s.x)<=t.SHAKE.max&&Math.abs(s.y)<=t.SHAKE.max,'the jolt is a small draw offset');
  G.mode='battle';t.frame();ok(cam()===cam0,'drawing a jolted frame leaves the camera where it was');
  let last=amp,falling=true;for(let i=0;i<20;i++){t.joltStep(.05);falling=falling&&t.joltAmp()<=last;last=t.joltAmp()}ok(falling&&t.joltAmp()===0&&B.jolt.a===0&&!t.shakeView(true),'it fades to nothing within '+t.SHAKE.life+' s');
  ok(cam()===cam0,'the camera’s place and zoom never change');
@@ -61,6 +61,13 @@ window.RUN=()=>{const t=T,L=t.BattleLab,G=t.G,P=t.P,o=[],ok=(c,m)=>o.push((c?'PA
  window.matchMedia=q=>({matches:/prefers-reduced-motion: reduce/.test(q)});knight.run=t.CHARGE.run;t.chargeMul(knight,foe);G.shake=4;B.paused=false;ok(!t.joltAmp()&&!t.shakeView(true),'reduced motion: no jolt and no blow shake');window.matchMedia=media;G.shake=0;B.paused=true;
  B.jolt=null;B.groups[t.playerGroups().find(id=>B.groups[id].type==='hum_foot')].resolve.route();ok(t.joltAmp()>0&&t.joltAmp()<=t.SHAKE.rout,'a rout of yours: a lighter jolt');
  const fr=Object.values(B.groups).find(x=>x.foe).resolve;B.jolt=null;fr.route();ok(!t.joltAmp(),'their rout: none');ok(cam()===cam0,'and the camera is still untouched');
+ // ----- seen only up close (the owner, 2026-10-31): zoomed in very near, and an epic skill or a horde of beasts against you
+ {const sv=()=>{t.jolt(4);G.shake=4;B.paused=false;const v=t.shakeView(true);B.jolt=null;G.shake=0;return v};Object.assign(t.SHAKE,S0);B.epicAt=null;
+  ok(!t.viewNear()&&!sv(),'the field seen whole: no shake, even an epic one\'s ('+B.cam.z.toFixed(2)+' < '+t.SHAKE.near+')');
+  t.SHAKE.near=0;ok(t.viewNear()&&!t.hordeFight()&&!sv(),'up close, a charge or a blow against men: no shake');
+  t.epicShake(5);ok(!!sv(),'up close, an epic skill (Quake, a leap\'s landing): the screen shakes');B.epicAt=null;
+  const fe=B.units.filter(u=>u.team&&u.hp>0),ty=fe.map(u=>u.type);t.SHAKE.horde=fe.length;fe.forEach(u=>u.type='boar');
+  ok(t.hordeFight()&&!!sv(),'up close, against a horde of '+fe.length+' beasts: every blow and charge shakes it');fe.forEach((u,i)=>u.type=ty[i]);Object.assign(t.SHAKE,S0)}
  if(L.active)L.exit();
  // ----- the unit of the battle, in the battle report
  const fixture=()=>{
@@ -80,6 +87,6 @@ window.RUN=()=>{const t=T,L=t.BattleLab,G=t.G,P=t.P,o=[],ok=(c,m)=>o.push((c?'PA
  t.lootEnd();x=fixture();x.Bg.resolve.damageDealt=40;rep=finish(x);ok(rep.best&&rep.best.id===x.gb.id&&panel.querySelector('.battle-best')?.textContent.endsWith('40 damage dealt'),'no kills at all: the one that dealt damage, by its damage');
  t.lootEnd();x=fixture();rep=finish(x);ok(rep&&!rep.best&&!panel.querySelector('.battle-best'),'no group of yours fought: no unit of the battle');
  t.lootEnd();
-}catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{Math.random=random;window.matchMedia=media;t.SHAKE.on=shakeOn;if(L.active)L.exit()}
+}catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{Math.random=random;window.matchMedia=media;Object.assign(t.SHAKE,S0);t.SHAKE.on=shakeOn;if(L.active)L.exit()}
  const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
 };
