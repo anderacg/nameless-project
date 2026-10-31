@@ -153,13 +153,13 @@ class CaravanParty extends Party{
       if(at.owner==='player'){for(const g in c.goods)at.stock[g]=(at.stock[g]||0)+c.goods[g];log('Your caravan delivers '+cargoText(c)+' to '+at.name+'.','good')}
       else{let gold=0;for(const g in c.goods)for(let i=0;i<c.goods[g];i++){gold+=Math.max(1,Math.floor(marketPrice(at,g)*.92));at.stock[g]=(at.stock[g]||0)+1}
         c.purse=(c.purse||0)+gold;log('Your caravan sells '+cargoText(c)+' at '+at.name+' for '+gold+' gold.','gold')}
-      c.goods={};c.leg='back';c.to=c.home;return false}
+      c.goods={};c.leg='back';c.to=c.home;c.turned=false;return false}
     // home again: pay out, and reload for another run if it is a standing route
     if(c.purse){P.gold+=c.purse;log('Your caravan is back at '+at.name+' with '+c.purse+' gold.','gold');c.purse=0}
     if(!c.repeat||at.owner!=='player'){log('Your caravan is disbanded at '+at.name+'.');return true}
     const load={};ensureEcon(at);for(const g in c.order){const n=Math.min(c.order[g],at.stock[g]||0);if(n>0){load[g]=n;at.stock[g]-=n}}
     if(!Object.keys(load).length){log('Your caravan waits at '+at.name+': nothing in stock to carry.');c.idle=true;return false}
-    c.goods=load;c.leg='out';c.to=c.dest||c.to;return false;
+    c.goods=load;c.leg='out';c.to=c.dest||c.to;c.turned=false;return false;
   }
 }
 onAct('cv-',(a,arg)=>G.cv?G.cv.act(a,arg):true);

@@ -10,6 +10,11 @@ Kit.suite(({ok})=>{
   {P.x=gate.x;P.y=gate.y;const c=mk(gate.x+50,gate.y);for(let i=0;i<5;i++)t.BRAINS.caravan.think(c,.05);ok(c.to!==to.name&&t.townBy(c.to).owner===f,'you at its gate: it turns for '+c.to+', another holding of its realm')}
   {P.x=gate.x+70;P.y=gate.y;const c=mk(gate.x+25,gate.y),d0=Math.hypot(c.x-gate.x,c.y-gate.y);for(let i=0;i<5;i++)t.BRAINS.caravan.think(c,.05);
    ok(c.to===to.name&&Math.hypot(c.x-gate.x,c.y-gate.y)<d0||c.gone,'the gate nearer it than you: it runs for it ('+Math.round(d0)+' → '+Math.round(Math.hypot(c.x-gate.x,c.y-gate.y))+' px)')}
+  // (you between it and its gate, the gate farther: once it turns for another holding of its realm away from you, and keeps to it,
+  // not running off and back for ever)
+  {const c=mk(gate.x+220,gate.y);P.x=gate.x+120;P.y=gate.y;const tos=new Set();let back=0,lastD=null;const d0=Math.hypot(c.x-P.x,c.y-P.y);TA.sees=o=>Math.hypot(o.x-P.x,o.y-P.y)<90;/* (it sees you only near: out of sight, it would come back) */
+   for(let i=0;i<400;i++){t.BRAINS.caravan.think(c,.05);tos.add(c.to);const d=Math.hypot(c.x-P.x,c.y-P.y);if(lastD!=null&&d<lastD-.01)back++;lastD=d;if(c.gone)break}
+   const end=Math.hypot(c.x-P.x,c.y-P.y);TA.sees=()=>true;ok(c.to!==to.name&&tos.size<=2&&back<60&&(c.gone||end>200),'you between it and its gate: it turns once for '+c.to+' and goes its way ('+tos.size+' destinations, '+Math.round(end)+' px from you after; '+back+' steps back toward you as the road bends, once 177, pacing)')}
   {P.x=gate.x+400;P.y=gate.y+400;const c=mk(gate.x+120,gate.y),dp=Math.hypot(c.x-P.x,c.y-P.y);for(let i=0;i<5;i++)t.BRAINS.caravan.think(c,.05);ok(Math.hypot(c.x-P.x,c.y-P.y)>=dp-.01||Math.hypot(c.x-gate.x,c.y-gate.y)<120,'you far, between it and nothing: it keeps away from you or makes for its gate')}
  }finally{TA.sees=sees;t.Timed.of(P,'hostile').clear(f);W.caravans.length=0}
  {P.x=-9999;P.y=-9999;const a=t.asParty({x:gate.x+200,y:gate.y,cv:true,fac:f,troops:['militia'],guards:1,from:other.name,to:to.name,goods:{},dir:1,cool:0}),b=t.asParty({x:gate.x+206,y:gate.y+2,cv:true,fac:f,troops:['militia'],guards:1,from:other.name,to:to.name,goods:{},dir:1,cool:0});

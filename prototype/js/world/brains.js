@@ -132,6 +132,11 @@ class CaravanBrain extends Brain{
     // (afraid of you: the gate near, a run for it; you at the gate, another holding of its realm; else away from you)
     const gate=gateGoal(to),gd=Math.hypot(gate.x-c.x,gate.y-c.y),X=CARAVAN_FEAR,block=scared&&Math.hypot(P.x-gate.x,P.y-gate.y)<X.block;
     if(block){const alt=Spatial.nearest(TOWNS.filter(t=>t!==to&&t.owner===c.fac),c.x,c.y);if(alt)c.to=alt.name}
+    // (you between it and its gate: once a trip it turns for a holding of its realm, or back whence it came, that lies the other way
+    // from you, rather than run off and come back for ever (the owner, 2026-10-31: "stuck in the loop between going to
+    // castle or escape from player"))
+    else if(scared&&!(gd<pd*X.dash)&&!c.turned){const away=TOWNS.filter(t=>t!==to&&!t.gone&&(t.owner===c.fac||t.name===c.from)&&!atWar(t.owner,c.fac)&&(g=>(g.x-c.x)*(P.x-c.x)+(g.y-c.y)*(P.y-c.y)<0)(gateGoal(t))),alt=Spatial.nearest(away,c.x,c.y);
+      if(alt){c.to=alt.name;c.turned=true;return false}}
     if(scared&&!block&&gd<pd*X.dash){const ox=c.x;Router.travel(c,{...gate,road:true},moveStep(CARAVAN_SPD,d));this.face(c,ox)}
     else if(scared){const ox=c.x;Router.flee(c,{x:c.x+v.dx,y:c.y+v.dy},moveStep(CARAVAN_SPD*.9,d));this.face(c,ox)}
     else{const ox=c.x;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1)*(this.behind(c,gate,gd)?CARAVAN_GAP.slow:1),d));c.dir=c.x>=ox?1:-1}
