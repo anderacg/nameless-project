@@ -41,5 +41,8 @@ Kit.suite(({ok,info})=>{
  // (his walk's frames: by his walking time, about MARCH_MOVE.cadence a second, the battle's pace, never five strides a second)
  {let ch=0,n=0;const f=u=>t.marchSprite(u,P);for(let i=0;i<60;i++){const pr=new Map(A.units.map(u=>[u,f(u)]));P.x+=1.3;A.step(.05);for(const u of A.units){if(u.pivot||!u.walking)continue;n++;if(f(u)!==pr.get(u))ch++}}const fps=ch/n/.05;
   ok(fps>4&&fps<=t.MARCH_MOVE.cadence+.5,'marching, a man’s walk steps about '+fps.toFixed(1)+' frames a second (an arena battle’s 8-9; by distance it was 21: "like running or shaking")')}
+ // (a pack's centre man, carried with the pack: he steps too, not sliding on one frame)
+ {const m=t.asMonster({id:'wolf',x:P.x,y:P.y-60,hx:P.x,hy:P.y-60,lv:1,n:4,t:0,a:0,cool:0});t.W.monsters.push(m);const B3=t.MarchArmy.of(m),pv=B3.units.find(u=>u.pivot),fr=new Set();for(let i=0;i<30;i++){m.x+=1.3;B3.step(.05);fr.add(t.marchSprite(pv,m))}
+  ok(pv&&pv.walking&&fr.size>=3,'a pack’s leader, the centre man, walks as the pack moves ('+fr.size+' frames in 1.5 s; frozen on one, he slid)');t.W.monsters.splice(t.W.monsters.indexOf(m),1)}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

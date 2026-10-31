@@ -65,7 +65,7 @@ function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDete
 // [s hemmed in by his own side, the share of a step he then squeezes through at, px he must be short of his place, his share of
 // the parting's push against one not squeezing (the other gives way the rest)], the army standing
 // (and "not smooth when turning") turn: the army's wheel, rad/s (was 1.5: its outer places swept faster than a man marches, and
-// none hurries: marchwheeling); body: × the time each takes to come up to pace (marchKind);
+// none hurries: marchwheeling); body: Ã— the time each takes to come up to pace (marchKind);
 // cadence: his walk's frames a second, by the time he has walked (as an arena battle's: sprites.js procPose), never by the ground
 // he covers (the map's time runs fast: by distance, his legs flicked five strides a second, "like running or shaking")
 const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,1,2,0],road:1.45,cadence:9,body:1};
@@ -74,7 +74,7 @@ const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,
    than its formation's spacing marches that much wider (marchRoomK); after each step, MARCH_MOVE.part passes push apart any two
    closer than their bodies, half each, onto open ground (the pivot, and a leader drawn apart, never pushed: the others give way) */
 // (a marcher's body: his battle kind's turn rates (physics.js PHYSICS.kinds), and t, the s he takes to come up to the army's pace (his
-// kind's battle speed over its acceleration, × MARCH_MOVE.body))
+// kind's battle speed over its acceleration, Ã— MARCH_MOVE.body))
 const MARCH_KINDS=new Map();
 const marchKind=type=>{let k=MARCH_KINDS.get(type);if(!k){const s=ST[type]||ST.militia,K=physKind({s,type});k={turn:K.turn,turn0:K.turn0,t:Math.max(.08,(s.spd||40)/K.acc*MARCH_MOVE.body)};MARCH_KINDS.set(type,k)}return k};
 const marchBodyOf=type=>{const s=ST[type]||{};return s.big?18:s.mounted?JOSTLE.mount:JOSTLE.foot};
@@ -157,7 +157,7 @@ class MarchArmy{
   step(d,sync=true,bounds=null,inside=null){
     if(!(d>0))return;const o=this.owner;if(Math.hypot(o.x-this.x,o.y-this.y)>MARCH_MOVE.teleport){MARCH_ARMIES.delete(o);MarchArmy.of(o);return}
     if(sync)this.sync();this.time+=d;const dx=o.x-this.x,dy=o.y-this.y,moved=Math.hypot(dx,dy),to=moved>.001?(this.heading=Math.atan2(dy,dx)):this.heading,gap=Math.atan2(Math.sin(to-this.face),Math.cos(to-this.face));this.face+=clamp(gap,-MARCH_MOVE.turn*d,MARCH_MOVE.turn*d);this.x=o.x;this.y=o.y;
-    const pivot=this.units.find(u=>u.pivot);if(pivot){pivot.walk+=Math.hypot(o.x-pivot.x,o.y-pivot.y);pivot.walking=moved>.001;pivot.x=o.x;pivot.y=o.y;pivot.dir=this.face;pivot.goal={x:o.x,y:o.y};pivot.plan=null;if(this.units.length===1){this.queries=0;return}}
+    const pivot=this.units.find(u=>u.pivot);if(pivot){pivot.walk+=Math.hypot(o.x-pivot.x,o.y-pivot.y);if(moved>.001){pivot.stepT=(pivot.stepT||0)+d;pivot.walkT=MARCH_MOVE.stride}else pivot.walkT=Math.max(0,(pivot.walkT||0)-d);pivot.walking=pivot.walkT>0;/* (he steps as the army moves: its walk his, marchSprite) */pivot.x=o.x;pivot.y=o.y;pivot.dir=this.face;pivot.goal={x:o.x,y:o.y};pivot.plan=null;if(this.units.length===1){this.queries=0;return}}
     if(!this.ground||this.ground.version!==WAYV||this.time>=(this.refresh||0)||!this.ground.covers(o,marchOuter(o)+8)||this.units.some(u=>!this.ground.covers(u,8))){this.ground=new MarchGround(o,this.units);this.refresh=this.time+MARCH_MOVE.refresh}
     const nav=this.ground,reach=nav.reachable(o),reserved=new Set(),targets=this.targets();this.queries=0;
     const pace=o===P?MAP_BASE*travelMul()*(P.morale<25?.8:1)*hurryPace():partySpeed(o,o.troops),walk=moveStep(pace,d,!B?.world),step=(moved>walk&&moved<=walk*MARCH_MOVE.road?moved:walk)*MARCH_MOVE.catchup;// (each man the army's own step this moment, its
