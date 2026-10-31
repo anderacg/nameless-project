@@ -1,0 +1,27 @@
+'use strict';
+// A march forms up and walks smoothly (world/march.js MarchArmy#step, MarchGround#snap; the owner, 2026-10-31: "when units try to
+// form in the marching formation they move weird ... the unit seems not walking but shaking a bit"): from a heap every man
+// reaches his place, none left hemmed in by his own side (MARCH_MOVE.squeeze); marching, a man's place keeps its own spot (no hop
+// from grid cell to cell), so he seldom steps back; and his walk shows as one walk, not a flicker of walking and standing
+// (MARCH_MOVE.stride).
+Kit.suite(({ok,info})=>{
+ const t=T,P=t.P;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:1e9});
+ let at=null;const okT=q=>q===t.T_OPEN||q===t.T_ROAD;
+ for(let ty=10;ty<t.MH-10&&!at;ty+=3)for(let tx=12;tx<t.MW-12&&!at;tx+=3){let open=true;for(let j=-4;j<=4&&open;j++)for(let i=-8;i<=8&&open;i++)if(!okT(t.tAt(tx+i,ty+j)))open=false;
+  if(open&&t.TOWNS.every(z=>Math.hypot(z.x-(tx+.5)*16,z.y-(ty+.5)*16)>200))at=[(tx-4.5)*16,(ty+.5)*16]}
+ ok(!!at,'(open ground for the march)');if(!at)return;Kit.goTo(at[0],at[1]);P.troops={hum_foot:24,hum_spear:12,hum_knight:8};
+ const A=t.MarchArmy.of(P);A.sync();const N=A.units.length;
+ // (each step: how often a man steps back against his last step, how often his walk flickers on and off, a second each)
+ const run=(sec,dx,dy)=>{const last=new Map();let rev=0,tog=0;
+  for(let i=0;i<sec/.05;i++){P.x+=dx*.05;P.y+=dy*.05;const pr=new Map(A.units.map(u=>[u,[u.x,u.y,u.walking]]));A.step(.05);
+   for(const u of A.units){if(u.pivot)continue;const p=pr.get(u),sx=u.x-p[0],sy=u.y-p[1],m=Math.hypot(sx,sy);if(u.walking!==p[2])tog++;if(m>.02){const l=last.get(u);if(l&&sx*l[0]+sy*l[1]<-.3*m*Math.hypot(...l))rev++;last.set(u,[sx,sy])}}}
+  return{rev:rev/N/sec,tog:tog/N/sec}};
+ const off=()=>Math.max(...A.units.filter(u=>u.goal&&!u.pivot).map(u=>Math.hypot(u.goal.x-u.x,u.goal.y-u.y)));
+ A.units.forEach((u,i)=>{if(!u.pivot){u.x=P.x+((i*37)%21-10)*1.5;u.y=P.y+((i*53)%17-8)*1.5}});run(10,0,0);
+ ok(off()<1.5,'from a heap of '+N+' men, every one reaches his place (the farthest '+off().toFixed(2)+' px off it)');
+ const m=run(6,18,0);info('marching: '+m.rev.toFixed(2)+' steps back, '+m.tog.toFixed(2)+' flickers a man a second');
+ ok(m.rev<.3,'marching east, a man seldom steps back ('+m.rev.toFixed(2)+' a second; once .9)');
+ ok(m.tog<.5,'and walks as one walk, not walking and standing by turns ('+m.tog.toFixed(2)+' a second; once 2.1)');
+ run(3,0,18);run(6,0,0);ok(off()<1.5,'turned and halted, they settle in their places again (the farthest '+off().toFixed(2)+' px off)');
+ ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
+});
