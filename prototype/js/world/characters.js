@@ -11,6 +11,9 @@
    In battle a soldier is a link to its Unit (u.unit) and its own state there (health, morale, stamina, place): every one is made
    by the Unit's fieldStats. ---------- */
 const LV_XP=lv=>lv*60,SK_XP=lv=>(lv+1)*20,SK_MAX=10;
+// every fighter's health in battle, × this (your hero's and a lord's own health come and go at it: battle/setup.js, resolution.js,
+// sides.js)
+const FIELD_HP=2;
 class Unit{
   // key: its kind's id (its look, its data); race; name
   get key(){return ''} get race(){return null} get name(){return ''}
@@ -27,7 +30,7 @@ class Unit{
   // its numbers on a battlefield: the ground (env), its side (team) and the enemy's strength (lv, the encounter's level), the
   // walls of a siege, your talents for your troops; a leader's boost last
   fieldStats(env,team,lv){
-    let s=envStats(this.base(),this.race,env);
+    let s=envStats(this.base(),this.race,env);s={...s,hp:s.hp*FIELD_HP};// (the owner, 2026-10-31: "the battle seems to finish too fast": every fighter's health on the field)
     if(team===1&&lv>1)s={...s,hp:Math.round(s.hp*(1+.2*(lv-1))),dmg:s.dmg*(1+.12*(lv-1))};
     if(team===0&&s.charge&&G.enc&&G.enc.kind==='siege'&&wallOf(G.enc.ref)>0)s={...s,dmg:s.dmg*.7,charge:false};// riders at the walls
     if(team===0&&this.role!=='hero'&&(tm('tHp')||tm('tDmg')))s={...s,hp:Math.round(s.hp*(1+tm('tHp'))),dmg:s.dmg*(1+tm('tDmg'))};

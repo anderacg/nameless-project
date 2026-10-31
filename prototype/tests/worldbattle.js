@@ -27,11 +27,11 @@ Kit.suite(({ok,info})=>{
  const before=P.x;b.hero.x=a.cx+40;b.hero.y=a.cy;a.clamp();ok(P.x===before&&a.x===initial.x&&a.r===initial.r,'hero combat movement cannot move the campaign anchor or battlefield boundary');
  u.x=a.cx+a.radius+50;u.y=a.cy;a.clamp();ok(a.inside(u,5),'ordinary soldiers cannot cross the fixed boundary');
  const hp=u.hp=17,sta=u.sta=39;u.x=a.cx+a.radius-1;u.y=a.cy;u.rout=true;if(g.resolve)g.resolve.routed=true;
- for(let i=0;i<400&&!u.regroup;i++)a.escape(u,.05);
- ok(u.left&&u.regroup&&u.hpLeft===hp&&!a.inside(u),'routing soldiers physically escape and retain their health');
- const escapedSta=u.sta;for(let i=0;i<500&&u.regroup;i++)a.step(.05);
- ok(!u.left&&!u.regroup&&u.hp===hp&&u.sta===escapedSta&&u.sta<=sta&&a.inside(u),'escaped soldiers recover and physically return without healing or restoring fatigue');
- ok(!u.rout&&!g.resolve.routed&&g.resolve.mor>=t.MORALE.rally,'returning groups recover morale and accept orders again');
+ // (the owner, 2026-10-31: a router who may still rally "should stay in battle area only. Otherwise, they will be immortal beyond
+ // the boundary"): he runs along its edge, never out; one broken for good leaves alive, and none comes back
+ for(let i=0;i<400;i++)a.escape(u,.05);
+ ok(!u.left&&!u.regroup&&u.hp===hp&&a.inside(u,-1),'a router who may still rally stays in the battle area, on its edge, with his health: still to be run down');
+ u.shattered=true;for(let i=0;i<40&&!u.left;i++)a.escape(u,.05);ok(u.left&&u.hpLeft===hp&&!u.regroup,'one broken for good leaves the field alive, never to come back');
  const helper=W.lords.find(l=>l.fac==='vale');helper.dead=false;helper.inside=null;helper.fight=null;helper.troops=['hum_foot','hum_bow'];helper.x=a.x+a.r+40;helper.y=a.y;G.enc.allies.push(helper);
  const n=b.units.length;a.step(.1);ok(a.pending.some(p=>p.o===helper)&&b.units.length===n,'a reinforcement starts outside the battle and must approach before spawning');
  for(let i=0;i<300&&a.pending.some(p=>p.o===helper);i++)a.step(.1);

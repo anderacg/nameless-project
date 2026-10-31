@@ -70,8 +70,10 @@ function moraleBreaking(u,dt){
 }
 // Ratios use the formation's STARTING roster/health, not the shrinking number left alive.
 const GROUP_RESOLVE={hurt:35,death:45,attrition:35,wounds:12,recent:65,strainCap:30,window:5,history:20,bucket:.25,
-  missileMin:.01,missileFull:.25,missileRate:8,answer:.35,quietAfter:3,rallyQuiet:3,routeRadius:140,fade:1};
-// (fade: per combat second, morale above its ceiling (a Rally, a war cry, an enemy leader's fall) drifts back down to it)
+  missileMin:.01,missileFull:.25,missileRate:8,answer:.35,quietAfter:3,rallyQuiet:3,routeRadius:140,fade:1,grit:.55};
+// (fade: per combat second, morale above its ceiling (a Rally, a war cry, an enemy leader's fall) drifts back down to it; grit: every
+// loss of morale, its shocks, the strain of its recent dead, the pressure of being outmatched, × this (the owner, 2026-10-31:
+// "routing happen too much", with the fighters' health doubled: characters.js FIELD_HP))
 class BattleResolve{
   constructor(groupId,team,m,unitId=null){
     this.groupId=groupId;this.unitId=unitId;this.team=team;this.initialCount=m.length;this.initialHP=Math.max(1,m.reduce((n,u)=>n+u.max,0));
@@ -88,7 +90,7 @@ class BattleResolve{
   bucket(){const at=Math.floor(B.t/GROUP_RESOLVE.bucket)*GROUP_RESOLVE.bucket;this.events=this.events.filter(e=>B.t-e.at<=GROUP_RESOLVE.history);let e=this.events.at(-1);if(!e||e.at!==at){e={at,in:0,out:0,missiles:0,deaths:0};this.events.push(e)}return e}
   recent(){return this.events.filter(e=>B.t-e.at<GROUP_RESOLVE.window).reduce((n,e)=>({in:n.in+e.in,out:n.out+e.out,missiles:n.missiles+e.missiles}),{in:0,out:0,missiles:0})}
   ceiling(){return Math.min(100,this.base-GROUP_RESOLVE.attrition*this.casualties.length/this.initialCount-GROUP_RESOLVE.wounds*Math.min(1,this.damageTaken/this.initialHP)+CONFIDENCE.max*this.confidence)}
-  shock(n,ordinary=true){this.mor-=n*(ordinary?(1-CONFIDENCE.resist*this.confidence)*(1-COHESION.resist*this.cohesion):1)*(this.standing()?COMMAND_POWERS.stand.shock:1);this.standFloor();this.refreshState();this.sync()}
+  shock(n,ordinary=true){this.mor-=n*GROUP_RESOLVE.grit*(ordinary?(1-CONFIDENCE.resist*this.confidence)*(1-COHESION.resist*this.cohesion):1)*(this.standing()?COMMAND_POWERS.stand.shock:1);this.standFloor();this.refreshState();this.sync()}
   // (Stand Fast!, commandpowers.js: shaken less meanwhile, and never under MORALE.waver while it lasts)
   standing(){return B.t<(this.standUntil??-Infinity)}
   standFloor(){if(this.standing()&&!this.routed&&this.mor<MORALE.waver)this.mor=MORALE.waver}
@@ -116,12 +118,12 @@ class BattleResolve{
     this.events=this.events.filter(e=>B.t-e.at<=GROUP_RESOLVE.history);const recent=this.recent();
     const unanswered=recent.missiles/this.initialHP>=GROUP_RESOLVE.missileMin&&recent.out<recent.in*GROUP_RESOLVE.answer;
     this.missilePressure=unanswered?clamp(recent.missiles/this.initialHP/GROUP_RESOLVE.missileFull,0,1):0;
-    const strain=Math.min(GROUP_RESOLVE.strainCap,this.events.reduce((n,e)=>n+e.deaths/this.initialCount*GROUP_RESOLVE.recent*Math.exp(-Math.max(0,B.t-e.at)/LOSS_MEMORY.life),0));
+    const strain=Math.min(GROUP_RESOLVE.strainCap,this.events.reduce((n,e)=>n+e.deaths/this.initialCount*GROUP_RESOLVE.recent*GROUP_RESOLVE.grit*Math.exp(-Math.max(0,B.t-e.at)/LOSS_MEMORY.life),0));
     this.mor+=strain>this.lossStrain?this.lossStrain-strain:Math.min(this.lossStrain-strain,Math.max(0,this.ceiling()-this.mor));this.lossStrain=strain;
     const withdrawingGroup=this.control?.order==='withdraw',quiet=view.closest>MORALE.quiet+10&&B.t-(this.lastHurtAt??-Infinity)>=GROUP_RESOLVE.quietAfter&&!this.missilePressure;
     if(this.routed){this.confidence=0;if(quiet&&!this.rallied&&!this.shattered){this.rallyT=(this.rallyT||0)+dt;this.mor=Math.min(MORALE.rally,this.mor+MORALE.rallyBack*dt);if(this.mor>=MORALE.rally&&this.rallyT>=GROUP_RESOLVE.rallyQuiet)this.rally()}else this.rallyT=0;this.refreshState();this.sync();return false}
     this.confidence=!withdrawingGroup&&!this.missilePressure&&this.mor>0&&B.t>=this.confidenceBlockedUntil?view.confidence:0;
-    if(!withdrawingGroup){const pressure=(view.outmatched*AWARENESS.outmatched+view.overwhelmed*AWARENESS.overwhelmed)*(1-COHESION.resist*this.cohesion)+GROUP_RESOLVE.missileRate*this.missilePressure;this.mor-=pressure*dt;if(view.overwhelmed>.1)this.outAt=B.t}
+    if(!withdrawingGroup){const pressure=((view.outmatched*AWARENESS.outmatched+view.overwhelmed*AWARENESS.overwhelmed)*(1-COHESION.resist*this.cohesion)+GROUP_RESOLVE.missileRate*this.missilePressure)*GROUP_RESOLVE.grit;this.mor-=pressure*dt;if(view.overwhelmed>.1)this.outAt=B.t}
     this.standFloor();
     if(this.mor<=0){if(quiet)this.mor=Math.min(this.ceiling(),this.mor+MORALE.back*dt);const broken=moraleBreaking(this,dt);this.refreshState();this.sync();return broken}
     moraleBreaking(this,0);const cap=this.ceiling()-this.lossStrain;

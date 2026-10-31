@@ -119,7 +119,7 @@ class BattleSides{
   const b=this.b,old=b.world.fight;if(old)W.fights=W.fights.filter(f=>f!==old);
   const alive=[];
   for(const r of this.records){if(r.owner===P||!r.joined)continue;syncForces([r.force]);const survivors=this.survivors(r),o=r.owner;
-   if(o instanceof Party){const leader=survivors.find(u=>u.leader);if(leader)o.hp=leader.left?leader.hpLeft:leader.hp;
+   if(o instanceof Party){const leader=survivors.find(u=>u.leader);if(leader)o.hp=(leader.left?leader.hpLeft:leader.hp)/FIELD_HP;
     if(!survivors.length){if(r.handled)continue;if(r.playerKills.length){if(o.mapKind==='monster')worldEmit('monster:slain',{monster:o});if(o.mapKind==='band')worldEmit('band:beaten',{band:o});if(o.mapKind==='lord')worldEmit('lord:beaten',{lord:o})}routParty(o,[]);continue}
     const positions=survivors.map(u=>b.world.world(u));o.x=positions.reduce((n,p)=>n+p.x,0)/positions.length;o.y=positions.reduce((n,p)=>n+p.y,0)/positions.length;o.fight=null;o.cool=4;const live=survivors.filter(u=>u.hp>0&&!u.rout&&b.groups[u.grp]?.order!=='withdraw');if(live.length&&o.troops.length)alive.push(o);
    }

@@ -126,7 +126,7 @@ class BattleSetup{
   }
   createUnits(){
     const {opts,env,units}=this,lv=opts.lv||1,mk=(...args)=>this.spawn(...args),enc=!opts.tournament&&G.enc;
-    const hero=this.hero=mk(charOf(P),0,116,BH/2);hero.cd=0;vitals();hero.hp=Math.max(1,Math.round(P.hp));hero.grp='hero';units.push(hero);
+    const hero=this.hero=mk(charOf(P),0,116,BH/2);hero.cd=0;vitals();hero.hp=Math.max(1,Math.round(P.hp*FIELD_HP));hero.grp='hero';/* (his health at the field's scale: characters.js FIELD_HP) */units.push(hero);
     if(!opts.tournament)compsInBand().forEach((id,i)=>{const u=mk(charOf(compInit(id),id),0,90,BH/2+(i+1)*18);u.comp=true;u.grp='comp_'+id;units.push(u)});
     // Each source army retains its own ten-slot budget, even when several armies reinforce the same side.
     const addArmy=(source,list,team,prefix,player=false,reinforcement=false)=>{

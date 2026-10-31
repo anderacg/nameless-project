@@ -66,7 +66,7 @@ class BattleResolution{
     const lost=o.tournament?{}:b.lost,kills=b.kills,slain=b.slain,h=b.hero,X=b.hx;this.ambush=b.surprise?.report;
     if(b.bestCombo>=3)toast('Your longest chain of blows: '+b.bestCombo+' hits.',undefined,'war');
     // carry the hero's condition out of the fight; a knocked-out hero comes to at 10% health
-    if(h.hp>0||h.left)P.hp=h.left?h.hpLeft:h.hp;else{P.hp=Math.max(1,Math.round(h.max*.1));log('You come to after the fight, badly wounded.','bad','war')}
+    if(h.hp>0||h.left)P.hp=(h.left?h.hpLeft:h.hp)/FIELD_HP;else{P.hp=Math.max(1,Math.round(h.max/FIELD_HP*.1));log('You come to after the fight, badly wounded.','bad','war')}
     if(X){P.sp=X.sp;P.mp=X.mp}
     {const m=b.units.filter(u=>u.team===0&&!u.hero&&!u.lord&&!u.leader&&!u.comp&&u.mor0);
       BATTLE_MOOD=o.tournament||!m.length?null:{share:fallen/m.length,shaken:m.filter(u=>u.hp>0||u.left).reduce((a,u)=>a+clamp((u.rout?0:u.mor)/u.mor0,0,1),0)/Math.max(1,m.filter(u=>u.hp>0||u.left).length),broke:b.routed===1}}

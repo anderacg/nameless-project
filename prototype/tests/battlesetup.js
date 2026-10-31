@@ -55,7 +55,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       }else if(name==='deployment_off'){t.BDEPLOY.on=false;t.BAUTO.on=true}
       let calls=0;const random=t.seeded(900+index);Math.random=()=>{calls++;return random()};const returned=t.startBattle(opts),B=t.B,used=calls,next=[Math.random(),Math.random(),Math.random()];
       const hash=fingerprint(snapshot(B,used,next));if(expected[name])ok(hash===expected[name],name+' matches independent-group setup snapshot ('+hash+')');else o.push('SNAP '+name+' '+hash);
-      ok(returned===undefined&&B.opts===opts&&B.hero===B.units[0]&&B.hero.hp===23,name+': entry point, options identity and hero health are preserved');
+      ok(returned===undefined&&B.opts===opts&&B.hero===B.units[0]&&B.hero.hp===23*t.FIELD_HP,name+': entry point, options identity and hero health are preserved (at the field\'s scale, FIELD_HP)');
       ok(new Set(B.units.map(u=>u.id)).size===B.units.length&&B.units.every((u,i)=>u.id===i),name+': unit IDs are consecutive and restart per battle');
       ok(B.units.every(u=>u.unit instanceof t.Unit&&u.unit.key===u.type)&&Object.values(B.groups).every(g=>g instanceof t.BattleControl),name+': units and group controls keep their existing models');
       ok(B.units.every(u=>u.y>=B.ftop&&u.y<=B.fbot)&&B.rings.length===0&&B.arrows.length===0&&B.t===0&&!B.over,name+': units start in bounds with fresh transient state');

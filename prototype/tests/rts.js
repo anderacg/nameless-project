@@ -60,7 +60,7 @@ try{
   const w=S('wedge',6,0),fw=Math.max(...w.map(p=>p[0]));ok(w.filter(p=>Math.abs(p[0]-fw)<1).length===1,'a wedge: one at its point');
   const gap=sl=>Math.min(...sl.slice(1).map(p=>Math.hypot(p[0]-sl[0][0],p[1]-sl[0][1])));ok(gap(S('loose',8,0))>gap(S('line',8,0))*1.5,'loose order: spread out');
   const up=S('line',8,-Math.PI/2);ok(new Set(up.map(p=>Math.round(p[1]))).size===1,'facing north, the line runs east to west');
-  ok(t.FORM_ORDER.join()==='line,loose,wedge'&&!t.FORMS.deep&&!t.FORMS.column,'three positioning formations: line, loose, wedge (deep and column are just lines dragged short)')}
+  ok(t.FORM_ORDER.join()==='line,loose,wedge'&&!t.FORMS.deep&&t.FORMS.column&&!t.FORM_ORDER.includes('column'),'three positioning formations on the battle bar: line, loose, wedge (deep is a line dragged short; a column, the march formation\'s, the owner 2026-10-31)')}
  {const B=fight(['militia','militia','militia']);B.units.filter(u=>u.team===1).forEach(u=>{u.x=t.BW-30;u.cd=99;u.hp=u.max=9999;u.s={...u.s,spd:0}});
   ok([testGroup('inf'),testGroup('arc'),testGroup('cav')].every(g=>B.groups[g].form==='line')&&B.groups[testGroup('inf')].face===0&&B.groups[testGroup('e_inf')]&&B.groups[testGroup('e_inf')].face===Math.PI,'every group starts in line, facing the other side');
   const key=(k,code)=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code}));
@@ -140,7 +140,7 @@ try{
   ok(t.chargeMul(cav,e)===1,'a rider who has not run at them: no charge');cav.run=t.CHARGE.run;const full=t.chargeMul(cav,e);ok(Math.abs(full-(1+t.CHARGE.cav))<.01&&cav.run===0,'a full run: the charge hits '+Math.round((full-1)*100)+'% harder, and the run is spent');
   cav.run=t.CHARGE.run/2;const half=t.chargeMul(cav,e);ok(half>1&&half<full,'half a run, half a charge');
   const sp=B.units.find(u=>u.team===0&&u.type==='hum_spear');cav.run=t.CHARGE.run;cav.team=1;ok(t.chargeMul(cav,sp)===1,'spearmen brace against it');
-  const er=t.resolveOf(e);er.mor=80;cav.team=0;cav.run=t.CHARGE.run;t.chargeMul(cav,e);ok(er.mor<=80-t.CHARGE.shock+.01&&e.mor===er.mor,'and a charge shakes the ones it hits');
+  const er=t.resolveOf(e);er.mor=80;cav.team=0;cav.run=t.CHARGE.run;t.chargeMul(cav,e);ok(er.mor<=80-t.CHARGE.shock*t.GROUP_RESOLVE.grit+.01&&e.mor===er.mor,'and a charge shakes the ones it hits (by its grit: GROUP_RESOLVE.grit)');
   const foot={s:{...t.ST.militia},x:e.x-12,y:e.y,team:0,run:t.CHARGE.run};ok(Math.abs(t.chargeMul(foot,e)-(1+t.CHARGE.foot))<.01,'infantry running in hit '+Math.round(t.CHARGE.foot*100)+'% harder');
   // a rider's run builds as it rides at the enemy
   B.obs=[];B.units.filter(u=>u.team===0&&!u.hero).forEach(u=>u.hp=0);e.x=t.BW/2;e.y=t.BH/2;e.cd=99;e.s={...e.s,spd:0};e.hp=e.max=9999;B.hero.x=10;B.hero.y=10;B.hero.s={...B.hero.s,spd:0};
@@ -165,7 +165,7 @@ try{
   G.enc.mine=true;t.selectGroup('all');t.setOrder('withdraw');const hp0=B.hero.hp;for(i=0;i<3000&&!B.over;i++)t.updateBattle(.03);
   ok(B.over&&B.retreat&&!B.win&&B.units.filter(u=>u.team===0&&!u.lord).every(u=>u.hp<=0),'withdraw everyone: once all are off the field, the battle is over (your retreat)');
   const troops0=t.troopCount();B.endT=0;t.updateBattle(.01);const pan=document.querySelector('#panel').textContent;
-  ok(!t.B&&/Withdrawn/.test(pan)&&/Your losses/.test(pan)&&/None/.test(pan)&&/Enemies slain/.test(pan)&&/Got away/.test(pan)&&/Enemies still standing/.test(pan),'the battle summary: withdrawn, the tally (slain, fallen, got away, still standing) and your losses (none)');ok(t.troopCount()===troops0&&Math.abs(P.hp-hp0)<1,'everyone who withdrew rides on, your hero as hurt as they left');
+  ok(!t.B&&/Withdrawn/.test(pan)&&/Your losses/.test(pan)&&/None/.test(pan)&&/Enemies slain/.test(pan)&&/Got away/.test(pan)&&/Enemies still standing/.test(pan),'the battle summary: withdrawn, the tally (slain, fallen, got away, still standing) and your losses (none)');ok(t.troopCount()===troops0&&Math.abs(P.hp-hp0/t.FIELD_HP)<1,'everyone who withdrew rides on, your hero as hurt as they left (his health back at the map\'s scale: FIELD_HP)');
   ok(!G.enc&&G.encCool>0,'they lose your trail for a while');t.act('cont');ok(G.mode==='world','Continue: back on the map')}
  // the rearguard: one the enemy cuts down on the way is lost, and the summary says so
  {const B=fight(['militia']);const e=B.units.find(u=>u.team===1);e.hp=e.max=9999;e.cd=99;e.s={...e.s,spd:0};e.x=t.BW-30;

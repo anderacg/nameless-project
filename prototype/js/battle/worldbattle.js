@@ -14,7 +14,7 @@ const ARRIVAL={r:5,pulse:1.2,fade:1.5,col:{own:'#6fa8e0',ally:'#8fd08a',foe:'#e0
 // within near px of a holding, by chance: WorldBattleArea#tempted)
 const JOIN_RULES={reach:120,every:5,band:{small:12,after:40,worn:.4,chance:.5},beast:{near:240,chance:.25},wild:o=>o.mapKind==='band'||o.mapKind==='monster',
   kin:(o,e)=>!!e&&(o.mapKind==='monster'?e.kind==='monster'&&o.id===e.ref?.id:e.kind==='party'&&(o.kind||'bandits')===((e.ref?.src||e.ref)?.kind||'bandits'))};// (kin: a pack or band of the kind you fight, riding to its own: as ever)
-const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1};
+const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1};
 // Only local avoidance runs while campaign time is paused. Existing work/travel orders stay on their owners.
 class BattleBystanders{
   constructor(area){this.area=area;this.time=0;this.next=0;this.entries=new Map();this.navs=new Map()}
@@ -177,11 +177,14 @@ class WorldBattleArea{
     if(canReach(a,b)||canReach(b,a))return;
     B.stalemate=true;B.retreat=true;B.over=true;B.win=false;B.endT=END_WAIT;log('The armies disengage: impassable ground blocks every route through the battle area.','gold','war');
   }
-  escape(u,dt){
-    if(!this.inside(u,-2)){this.depart(u);return}
+  // (a router who may still rally stays in the battle area, running along its edge where he can be run down, and rallies there; only
+  // one broken for good leaves the field, and none comes back (returns 0; the owner, 2026-10-31: "they will be immortal beyond the
+  // boundary"))
+  escape(u,dt){const keep=!u.shattered&&!B.over,hold=()=>{const p=this.constrain(u);u.x=p.x;u.y=p.y};
+    if(!this.inside(u,-2)){if(keep)hold();else{this.depart(u);return}}
     const exit=this.escapePlan(u)?.to||this.exit(u,2),way=this.escapeWay(u),p=way?{x:u.x+way[0]*way[2],y:u.y+way[1]*way[2]}:exit,d=Math.hypot(p.x-u.x,p.y-u.y),s=Math.min(d,u.s.spd*1.1*dt*tiredMul(u).spd);
     if(d>0){u.x+=(p.x-u.x)*s/d;u.y+=(p.y-u.y)*s/d;u.dir=Math.atan2(p.y-u.y,p.x-u.x);u.face=Math.cos(u.dir)>0?1:-1;u.spdNow=u.s.spd}fatigueStep(u,dt,s>0,false,false);
-    if(!this.inside(u,-2))this.depart(u);
+    if(!this.inside(u,-2)){if(keep)hold();else this.depart(u)}
   }
   depart(u){
     u.fled=true;u.worldFled=true;const key=u.team?'fledFoes':'fledMine';B[key]=(B[key]||0)+1;const r=B.groups[u.grp]?.resolve;

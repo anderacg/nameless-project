@@ -17,7 +17,8 @@ Kit.suite(({ok,info})=>{
  const soldier=b.units.find(u=>u.team===1),group=b.groups[soldier.grp],hp=soldier.hp=11;group.resolve.worldReturns=t.WORLD_BATTLE.returns;group.resolve.routed=true;soldier.rout=true;
  // The second escape is final; it must not seed another rest/return cycle.
  const ex=a.exit({x:a.cx+a.radius,y:a.cy},t.WORLD_BATTLE.apron*.65*a.scale);soldier.x=ex.x;soldier.y=ex.y;a.escape(soldier,.01);
- ok(soldier.left&&!soldier.regroup&&soldier.hpLeft===hp&&b.fledFoes===1,'a group that has already regrouped leaves alive on its next rout instead of returning forever');
+ ok(!soldier.left&&!soldier.regroup&&a.inside(soldier,-1),'a router that may still rally is kept in the battle area, not let out to return later');soldier.shattered=true;for(let i=0;i<400&&!soldier.left;i++)a.escape(soldier,.05);
+ ok(soldier.left&&!soldier.regroup&&soldier.hpLeft===hp&&b.fledFoes===1,'one broken for good leaves alive, and never returns');
  soldier.regroup={t:0,phase:'return',cycle:0};const returnPoint=a.openPoint(a.exit(soldier,-18));soldier.x=returnPoint.x;soldier.y=returnPoint.y;a.step(.01);ok(group.resolve.routed&&soldier.rout&&group.resolve.worldReturns===t.WORLD_BATTLE.returns,'a late straggler cannot reset a group that has already broken again');
  for(const [who,g] of Object.entries(b.terrain.route)){const original=a.escapeRoutes[who];ok(g.cost.some((v,i)=>!v&&original.cost[i]&&Math.hypot((i%g.C+.5)*g.cs-a.cx,(Math.floor(i/g.C)+.5)*g.cs-a.cy)>a.radius),'normal '+who+' paths cannot leave the circle while escape paths retain the apron')}
  // Two separated open islands inside the same boundary: both armies alive, no legal route or missile reach.
