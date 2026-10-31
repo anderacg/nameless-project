@@ -33,7 +33,7 @@ const marchSeparateLeader=o=>o.mapKind==='caravan'||o===P||!!o.cid||o.mapKind===
 // The battle's full sprites at its world scale, with weapons included and movement-driven poses.
 function marchSprite(u,o,pose){
   const type=u.character?u.type.replace(/^comp_/,''):u.type;
-  return unitSprite(type,o.mapKind==='monster'?1:0,false,u.id%6,pose??(u.walking?2+Math.floor(u.walk/WALK.foot)%4:0),false,false,o.look().col);
+  return unitSprite(type,o.mapKind==='monster'?1:0,false,u.id%6,pose??(u.walking?2+(Math.floor((u.stepT||0)*MARCH_MOVE.cadence)+u.id)%4:0),false,false,o.look().col);
 }
 // Leaders use the same character kind and equipment as battle; cached cells also serve map picking and banner height.
 const MARCH_LEADERS=new WeakMap();
@@ -64,8 +64,10 @@ function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDete
 // march is one walk, not a flicker; wake: px off his place before a settled man moves again while the army stands; squeeze:
 // [s hemmed in by his own side, the share of a step he then squeezes through at, px he must be short of his place], the army standing
 // (and "not smooth when turning") turn: the army's wheel, rad/s (was 1.5: its outer places swept faster than a man marches, and
-// none hurries: marchwheeling); steer: rad a walking man swings his way a step at most, so he curves round rather than snaps
-const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,1,2],steer:.45,road:1.45};
+// none hurries: marchwheeling); steer: rad a walking man swings his way a step at most, so he curves round rather than snaps;
+// cadence: his walk's frames a second, by the time he has walked (as an arena battle's: sprites.js procPose), never by the ground
+// he covers (the map's time runs fast: by distance, his legs flicked five strides a second, "like running or shaking")
+const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,1,2],steer:.45,road:1.45,cadence:9};
 /* no two marchers on each other (the owner, 2026-10-30: "make sure units cannot overlap"): each has his body, as in battle
    (battle.js JOSTLE: foot, mounted, a big one 18), drawn WORLD_BATTLE.sprite/scale as big on the map; a row of bigger bodies
    than its formation's spacing marches that much wider (marchRoomK); after each step, MARCH_MOVE.part passes push apart any two
@@ -172,7 +174,7 @@ class MarchArmy{
       for(const off of MARCH_MOVE.sidestep){const p={x:u.x+Math.cos(angle+off)*amount,y:u.y+Math.sin(angle+off)*amount};if(nav.clear(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<(ru+marchBody(v))/2&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){q=p;break}}
       // (the army standing, he hemmed in by his own side a while, well short of his place: he squeezes through at a slower step, the parting pass below making room)
       if(q)u.stuck=Math.max(0,(u.stuck||0)-d/2);else{u.stuck=(u.stuck||0)+d;const p={x:u.x+Math.cos(angle)*amount*MARCH_MOVE.squeeze[1],y:u.y+Math.sin(angle)*amount*MARCH_MOVE.squeeze[1]};if(u.stuck>=MARCH_MOVE.squeeze[0]&&gd>MARCH_MOVE.squeeze[2]&&moved<=.001&&nav.clear(u,p))q=p;else continue}
-      const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.dir=Math.atan2(q.y-u.y,q.x-u.x);u.x=q.x;u.y=q.y;u.walk+=amount;u.walking=true;u.walkT=MARCH_MOVE.stride;put(u);
+      const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.dir=Math.atan2(q.y-u.y,q.x-u.x);u.x=q.x;u.y=q.y;u.walk+=amount;u.stepT=(u.stepT||0)+d;u.walking=true;u.walkT=MARCH_MOVE.stride;put(u);
     }
     // (then apart: no two closer than their bodies; a leader drawn apart is a body too, never pushed)
     const lead=marchSeparateLeader(o)?{x:o.x,y:o.y,pivot:true,type:o===P?'hero':'militia'}:null,move=(u,x,y)=>{const p={x,y};if(!nav.clear(u,p)||!nav.stand(p))return;const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.x=x;u.y=y;put(u)};

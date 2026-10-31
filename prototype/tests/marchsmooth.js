@@ -36,5 +36,8 @@ Kit.suite(({ok,info})=>{
   for(let i=0;i<40;i++){P.x+=base;B2.step(.05)}const o0=off2();let over=0;
   for(const k of [1.4,.6])for(let i=0;i<40;i++){const pr=new Map(B2.units.map(u=>[u,[u.x,u.y]]));P.x+=base*k;B2.step(.05);for(const u of B2.units){if(u.pivot)continue;const p=pr.get(u);over=Math.max(over,Math.hypot(u.x-p[0],u.y-p[1])-Math.max(base,base*k))}}
   const o1=off2();ok(over<.5&&o1<=o0+base,'the army faster (a road) or slower (woods): every man at its step, never faster (most '+over.toFixed(2)+' px over, the parting\'s nudge), none further behind ('+o0.toFixed(1)+' then '+o1.toFixed(1)+' px off his place)')}
+ // (his walk's frames: by his walking time, about MARCH_MOVE.cadence a second, the battle's pace, never five strides a second)
+ {let ch=0,n=0;const f=u=>t.marchSprite(u,P);for(let i=0;i<60;i++){const pr=new Map(A.units.map(u=>[u,f(u)]));P.x+=1.3;A.step(.05);for(const u of A.units){if(u.pivot||!u.walking)continue;n++;if(f(u)!==pr.get(u))ch++}}const fps=ch/n/.05;
+  ok(fps>4&&fps<=t.MARCH_MOVE.cadence+.5,'marching, a man’s walk steps about '+fps.toFixed(1)+' frames a second (an arena battle’s 8-9; by distance it was 21: "like running or shaking")')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });
