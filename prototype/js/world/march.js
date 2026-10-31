@@ -62,16 +62,21 @@ function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDete
 // Positions are runtime state. Saved group offsets remain the destination, never a rigid transform of the men.
 // (the owner, 2026-10-31: units forming up "not walking but shaking") stride: s a man still shows walking after his last step, so a
 // march is one walk, not a flicker; wake: px off his place before a settled man moves again while the army stands; squeeze:
-// [s hemmed in by his own side, the share of a step he then squeezes through at, px he must be short of his place], the army standing
+// [s hemmed in by his own side, the share of a step he then squeezes through at, px he must be short of his place, his share of
+// the parting's push against one not squeezing (the other gives way the rest)], the army standing
 // (and "not smooth when turning") turn: the army's wheel, rad/s (was 1.5: its outer places swept faster than a man marches, and
-// none hurries: marchwheeling); steer: rad a walking man swings his way a step at most, so he curves round rather than snaps;
+// none hurries: marchwheeling); body: × the time each takes to come up to pace (marchKind);
 // cadence: his walk's frames a second, by the time he has walked (as an arena battle's: sprites.js procPose), never by the ground
 // he covers (the map's time runs fast: by distance, his legs flicked five strides a second, "like running or shaking")
-const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,1,2],steer:.45,road:1.45,cadence:9};
+const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,1,2,0],road:1.45,cadence:9,body:1};
 /* no two marchers on each other (the owner, 2026-10-30: "make sure units cannot overlap"): each has his body, as in battle
    (battle.js JOSTLE: foot, mounted, a big one 18), drawn WORLD_BATTLE.sprite/scale as big on the map; a row of bigger bodies
    than its formation's spacing marches that much wider (marchRoomK); after each step, MARCH_MOVE.part passes push apart any two
    closer than their bodies, half each, onto open ground (the pivot, and a leader drawn apart, never pushed: the others give way) */
+// (a marcher's body: his battle kind's turn rates (physics.js PHYSICS.kinds), and t, the s he takes to come up to the army's pace (his
+// kind's battle speed over its acceleration, × MARCH_MOVE.body))
+const MARCH_KINDS=new Map();
+const marchKind=type=>{let k=MARCH_KINDS.get(type);if(!k){const s=ST[type]||ST.militia,K=physKind({s,type});k={turn:K.turn,turn0:K.turn0,t:Math.max(.08,(s.spd||40)/K.acc*MARCH_MOVE.body)};MARCH_KINDS.set(type,k)}return k};
 const marchBodyOf=type=>{const s=ST[type]||{};return s.big?18:s.mounted?JOSTLE.mount:JOSTLE.foot};
 const marchBody=u=>marchBodyOf(u.type)*WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
 const marchRoomK=row=>{const F=FORMS[row.form]||FORMS.line;return Math.max(1,marchBodyOf(row.type)/Math.min(F.gx,F.gy))};
@@ -167,20 +172,32 @@ class MarchArmy{
       u.straight=nav.clear(u,u.goal);if(u.straight){u.plan=null;delete u.needAt;continue}
       const w=u.plan;if(!w||w.ground!==nav||this.time>=w.at||Math.hypot(w.goal.x-u.goal.x,w.goal.y-u.goal.y)>nav.grid.cs){u.needAt??=this.time;requests.push(u)}}
     requests.sort((a,b)=>a.needAt-b.needAt||a.id-b.id);for(const u of requests.slice(0,MARCH_MOVE.queries)){this.queries++;u.plan={ground:nav,p:nav.path(u,u.goal),i:0,goal:u.goal,at:this.time+MARCH_MOVE.repath+u.id%7*.025};delete u.needAt}
-    for(const u of this.units){if(u.pivot)continue;const goal=u.goal,gd=goal?Math.hypot(goal.x-u.x,goal.y-u.y):0;if(!goal||gd<=MARCH_MOVE.settle){u.rest=!!goal;continue}if(u.rest&&moved<=.001&&gd<MARCH_MOVE.wake)continue;u.rest=false;
+    for(const u of this.units){if(u.pivot)continue;u.squeeze=false;const goal=u.goal,gd=goal?Math.hypot(goal.x-u.x,goal.y-u.y):0;if(!goal||gd<=MARCH_MOVE.settle){u.rest=!!goal;continue}if(u.rest&&moved<=.001&&gd<MARCH_MOVE.wake)continue;u.rest=false;
       let aim=goal;if(!u.straight){const w=u.plan;if(!w||w.ground!==nav||!w.p.length)continue;while(w.i<w.p.length-1&&(Math.hypot(w.p[w.i].x-u.x,w.p[w.i].y-u.y)<MARCH_MOVE.waypoint||nav.clear(u,w.p[w.i+1])))w.i++;aim=w.p[w.i]}
-      const ax=aim.x-u.x,ay=aim.y-u.y,l=Math.hypot(ax,ay);if(l<.001)continue;const amount=Math.min(step,l),friends=near(u),want=Math.atan2(ay,ax),sw=u.walking&&u.dir!=null&&l>amount?Math.atan2(Math.sin(want-u.dir),Math.cos(want-u.dir)):0,angle=want-sw+clamp(sw,-MARCH_MOVE.steer,MARCH_MOVE.steer),ru=marchBody(u);// (a walking man swings his way at most steer a step, unless his place is within the step)
-      let q=null;
-      for(const off of MARCH_MOVE.sidestep){const p={x:u.x+Math.cos(angle+off)*amount,y:u.y+Math.sin(angle+off)*amount};if(nav.clear(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<(ru+marchBody(v))/2&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){q=p;break}}
-      // (the army standing, he hemmed in by his own side a while, well short of his place: he squeezes through at a slower step, the parting pass below making room)
-      if(q)u.stuck=Math.max(0,(u.stuck||0)-d/2);else{u.stuck=(u.stuck||0)+d;const p={x:u.x+Math.cos(angle)*amount*MARCH_MOVE.squeeze[1],y:u.y+Math.sin(angle)*amount*MARCH_MOVE.squeeze[1]};if(u.stuck>=MARCH_MOVE.squeeze[0]&&gd>MARCH_MOVE.squeeze[2]&&moved<=.001&&nav.clear(u,p))q=p;else continue}
-      const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.dir=Math.atan2(q.y-u.y,q.x-u.x);u.x=q.x;u.y=q.y;u.walk+=amount;u.stepT=(u.stepT||0)+d;u.walking=true;u.walkT=MARCH_MOVE.stride;put(u);
+      const ax=aim.x-u.x,ay=aim.y-u.y,l=Math.hypot(ax,ay);if(l<.001)continue;const friends=near(u),want=Math.atan2(ay,ax),ru=marchBody(u),K=marchKind(u.type),top=step/d,probe=Math.min(l,Math.max(step,ru*.5));
+      // (a body (the owner, 2026-10-31: "like unit really have physics"): his heading turns at his kind's rate, his speed rises and
+      // falls over its time, braking as he nears his place; he goes only the way he faces: no jump aside, no sudden stop.
+      // The way: straight at his place, else the first of the sidesteps a friend leaves open; none open, he slows to a halt)
+      if(u.hd==null){u.hd=u.dir??want;u.vel=0}let way=null;
+      // (round a friend, the side he took last, while he still goes round: no flip from one side to the other)
+      const sides=u.side?MARCH_MOVE.sidestep.filter(o=>!o||Math.sign(o)===u.side):MARCH_MOVE.sidestep;
+      for(const off of sides){const a=want+off,p={x:u.x+Math.cos(a)*probe,y:u.y+Math.sin(a)*probe};if(nav.clear(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<(ru+marchBody(v))/2&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){way=a;break}}
+      // (the army standing, he hemmed in by his own side a while (blocked, or only stepping round them), well short of his place: he
+      // squeezes through, the parting pass below making room)
+      u.side=way!=null&&way!==want?Math.sign(Math.atan2(Math.sin(way-want),Math.cos(way-want))):0;let cap=top;if(way===want)u.stuck=Math.max(0,(u.stuck||0)-d/2);else if(way!=null)u.stuck=(u.stuck||0)+d/2;else{u.stuck=(u.stuck||0)+d;}u.squeeze=u.stuck>=MARCH_MOVE.squeeze[0]&&gd>MARCH_MOVE.squeeze[2]&&moved<=.001;if(u.squeeze){way=want;cap=top*MARCH_MOVE.squeeze[1]}
+      const df=way==null?0:Math.atan2(Math.sin(way-u.hd),Math.cos(way-u.hd)),rate=K.turn0+(K.turn-K.turn0)*Math.min(1,u.vel/Math.max(1e-6,top));u.hd+=clamp(df,-rate*d,rate*d);
+      const off=Math.atan2(Math.sin((way??want)-u.hd),Math.cos((way??want)-u.hd)),tgt=way==null?0:Math.min(cap*Math.max(0,Math.cos(off))**2,Math.sqrt(2*top/K.t*.6*l));
+      u.vel=clamp(tgt,u.vel-top/K.t*d*1.6,u.vel+top/K.t*d);if(!(u.vel>1e-4)){u.vel=0;continue}
+      const s1=Math.min(u.vel*d,l),last=s1>=l-.001&&Math.abs(off)<.35,q=last?{x:aim.x,y:aim.y}:{x:u.x+Math.cos(u.hd)*s1,y:u.y+Math.sin(u.hd)*s1};
+      if(!nav.clear(u,q)||friends.some(v=>v!==u&&way!==want&&Math.hypot(v.x-q.x,v.y-q.y)<(ru+marchBody(v))/2-.05&&Math.hypot(v.x-q.x,v.y-q.y)<Math.hypot(v.x-u.x,v.y-u.y))){u.vel*=.5;continue}
+      const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.dir=u.hd;u.x=q.x;u.y=q.y;u.walk+=s1;u.stepT=(u.stepT||0)+d;u.walking=true;u.walkT=MARCH_MOVE.stride;put(u);
     }
-    // (then apart: no two closer than their bodies; a leader drawn apart is a body too, never pushed)
+    // (then apart: no two closer than their bodies; a leader drawn apart is a body too, never pushed; one squeezing through takes
+    // little of the push, those he passes give way)
     const lead=marchSeparateLeader(o)?{x:o.x,y:o.y,pivot:true,type:o===P?'hero':'militia'}:null,move=(u,x,y)=>{const p={x,y};if(!nav.clear(u,p)||!nav.stand(p))return;const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.x=x;u.y=y;put(u)};
     for(let pass=0;pass<MARCH_MOVE.part;pass++)for(const u of this.units){if(u.pivot)continue;const ru=marchBody(u);
       for(const v of lead?[...near(u),lead]:near(u)){if(v===u)continue;const dx=u.x-v.x,dy=u.y-v.y,dd=Math.hypot(dx,dy),need=(ru+marchBody(v))/2;if(dd>=need)continue;
-        const k=v.pivot?1:.5,a=dd>1e-6?Math.atan2(dy,dx):u.id*2.39996;move(u,u.x+Math.cos(a)*(need-dd)*k,u.y+Math.sin(a)*(need-dd)*k)}}
+        const k=v.pivot?1:u.squeeze===!!v.squeeze?.5:u.squeeze?MARCH_MOVE.squeeze[3]:1-MARCH_MOVE.squeeze[3],a=dd>1e-6?Math.atan2(dy,dx):u.id*2.39996;move(u,u.x+Math.cos(a)*(need-dd)*k,u.y+Math.sin(a)*(need-dd)*k)}}
   }
   forGroup(id){return this.units.filter(u=>u.row===id)}
   settlePivot(){

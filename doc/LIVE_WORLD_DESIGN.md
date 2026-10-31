@@ -1,6 +1,6 @@
 # Live world: marching bodies, battles in the open, loot on the ground
 
-Status: design, 2026-10-31, waiting for the owner's answers (§5). Nothing built yet.
+Status: §2 built, 2026-10-31 (the owner: "just change only #1 for now"; the wheel's outer men never faster than the army, as before; the step its own in world/march.js, not shared with physics.js: the battle's fingerprints untouched). §3 and §4: designed, waiting for the owner (§5).
 
 The owner, 2026-10-31:
 - "when the unit adjust their position (turning) in the marching it's like they are teleporting and their movement is not realistic. can we have movement pace like in battle?, like unit really have physics or something";
