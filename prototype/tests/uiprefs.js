@@ -9,9 +9,9 @@ try{
  // (the newest line on screen: town and system lines are toasts, not the journal's)
  const toastLast=()=>{const l=document.querySelector('#log')?.lastElementChild;return l?l.textContent:''};
  // the readers as they were before the table (the stored text → the value), and the defaults
- const sp=[.5,1,2,5],OLD={bpause:s=>s!=='0',grid:s=>s==='1',bspeed:s=>sp.includes(+s)?+s:1,hpbars:s=>s!=='0',blood:s=>s!=='0',guide:s=>s!=='0',bdeploy:s=>s!=='0',autoskills:s=>s!=='0',bauto:s=>s==='1',bfog:s=>s!=='0',ambient:s=>s!=='0',bfx:s=>s==='light'?'light':'full',opaths:s=>['all','sel','off'].includes(s)?s:'sel'};
- const DEF={bpause:true,grid:false,bspeed:1,hpbars:true,blood:true,guide:true,bdeploy:true,autoskills:true,bauto:false,bfog:true,ambient:true,bfx:'full',opaths:'sel'};
- const VIEW={grid:['GRID','on'],bspeed:['BSPEED','v'],hpbars:['HPBARS','on'],blood:['BLOOD','on'],guide:['GUIDE','on'],bdeploy:['BDEPLOY','on'],autoskills:['AUTOSK','on'],bauto:['BAUTO','on'],bfog:['FOG','on'],ambient:['AMBIENT','on']};
+ const sp=[.5,1,2,5],OLD={bpause:s=>s!=='0',grid:s=>s==='1',bspeed:s=>sp.includes(+s)?+s:1,hpbars:s=>s!=='0',blood:s=>s!=='0',guide:s=>s!=='0',bdeploy:s=>s!=='0',autoskills:s=>s!=='0',bauto:s=>s==='1',bfog:s=>s!=='0',ambient:s=>s!=='0',bshake:s=>s!=='0',bfx:s=>s==='light'?'light':'full',opaths:s=>['all','sel','off'].includes(s)?s:'sel'};
+ const DEF={bpause:true,grid:false,bspeed:1,hpbars:true,blood:true,guide:true,bdeploy:true,autoskills:true,bauto:false,bfog:true,ambient:true,bshake:true,bfx:'full',opaths:'sel'};
+ const VIEW={grid:['GRID','on'],bspeed:['BSPEED','v'],hpbars:['HPBARS','on'],blood:['BLOOD','on'],guide:['GUIDE','on'],bdeploy:['BDEPLOY','on'],autoskills:['AUTOSK','on'],bauto:['BAUTO','on'],bfog:['FOG','on'],ambient:['AMBIENT','on'],bshake:['SHAKE','on']};
  ok(Object.keys(t.PREFS).sort().join()===[...Object.keys(OLD),'mute','volmaster','volmusic','volsfx','mapzoom','res','fps'].sort().join(),'the battle and world settings (fog of war: battlefog.js; order paths: ui/orderpaths.js; ambient life: gfx/ambient.js), the four of sound (audio.js), the map zoom (tests/mapzoom.js) and the resolution and frame rate (tests/render.js) in one table: '+Object.keys(t.PREFS).join(', '));
  const inputs=[null,'1','0','','junk','2','0.5','.5','5','7','true'];
  for(const k in OLD){const bad=inputs.filter(s=>{if(s==null)localStorage.removeItem('ashmark.'+k);else localStorage.setItem('ashmark.'+k,s);return t.prefLoad(k)!==OLD[k](s)});
@@ -30,7 +30,7 @@ try{
  t.setBattleSpeed(3,true);ok(key('bspeed')==='0.5'&&t.BSPEED.v===.5,'a speed not offered is ignored');t.setBattleSpeed(1,true);ok(key('bspeed')==='1'&&t.BSPEED.v===1,'and back to 1');
  // the Settings buttons: one handler, the page redraws with the button on
  t.showTitle('settings');{const bad=[];
-  for(const [a,arg,v] of [['grid','on',true],['grid','off',false],['blood','off',false],['blood','on',true],['hpbars','off',false],['hpbars','on',true],['bdeploy','off',false],['bdeploy','on',true],['guide','off',false],['guide','on',true],['bfog','off',false],['bfog','on',true],['ambient','off',false],['ambient','on',true],['opaths','all','all'],['opaths','off','off'],['opaths','sel','sel'],['bfx','light','light'],['bfx','full','full'],['bspeed','2',2],['bspeed','0.5',.5],['bspeed','1',1]]){
+  for(const [a,arg,v] of [['grid','on',true],['grid','off',false],['blood','off',false],['blood','on',true],['hpbars','off',false],['hpbars','on',true],['bdeploy','off',false],['bdeploy','on',true],['guide','off',false],['guide','on',true],['bfog','off',false],['bfog','on',true],['ambient','off',false],['ambient','on',true],['bshake','off',false],['bshake','on',true],['opaths','all','all'],['opaths','off','off'],['opaths','sel','sel'],['bfx','light','light'],['bfx','full','full'],['bspeed','2',2],['bspeed','0.5',.5],['bspeed','1',1]]){
    t.act(a,arg);const b=document.querySelector('#panel [data-act="'+a+'"][data-arg="'+arg+'"]');
    if(!(t.prefGet(a)===v&&key(a)===(typeof v==='boolean'?(v?'1':'0'):String(v))&&G.menu==='settings'&&b&&b.classList.contains('on')))bad.push(a+' '+arg)}
   ok(!bad.length,'each Settings button sets, stores and shows its setting'+(bad.length?': wrong for '+bad.join(', '):''))}

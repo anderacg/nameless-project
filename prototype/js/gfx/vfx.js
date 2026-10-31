@@ -32,8 +32,9 @@ function vfxCharge(u,t,m){
    when fought with numerous monster"; screenFx): the view zoomed in very near (an arena field's camera at SHAKE.near or more; a
    world battle's map zoom at its closest step), and an epic skill just now (epicShake: Quake, a leap's landing; for SHAKE.epic
    s) or a horde of beasts against you (SHAKE.horde or more standing). The finisher's flash and zoom-punch keep the same rule
-   (herofx.js heroFinisher). Off: SHAKE.on false, or the system asks for reduced motion */
-const SHAKE={on:true,world:.2,charge:.6,amp:4,rout:1.5,max:5,life:.45,hz:38,near:2.5,horde:30,epic:.6};
+   (herofx.js heroFinisher). Off: SHAKE.on false (Settings, Screen shake: PREFS bshake), or the system asks for reduced motion */
+const SHAKE={world:.2,charge:.6,amp:4,rout:1.5,max:5,life:.45,hz:38,near:2.5,horde:30,epic:.6};
+Object.defineProperty(SHAKE,'on',{get:()=>prefGet('bshake'),set:v=>{PREFS.bshake.v=!!v},enumerable:true});
 // (asked of the browser once: its answer kept up to date by the query itself)
 const REDUCED_Q=(()=>{try{return window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):null}catch(e){return null}})();
 function reducedMotion(){return !!(REDUCED_Q&&REDUCED_Q.matches)}
@@ -42,7 +43,7 @@ const shakeOn=()=>SHAKE.on&&!reducedMotion();
 const viewNear=()=>!!B&&(B.world?MAPZOOM.hi>MAPZOOM.lo&&VS>=MAPZOOM.hi:bcam().z>=SHAKE.near);
 function hordeFight(){if(!B)return false;let n=0;for(const u of B.units)if(u.team&&u.hp>0&&ST[u.type]?.beast&&++n>=SHAKE.horde)return true;return false}
 const epicNow=()=>!!B&&B.epicAt!=null&&performance.now()/1000-B.epicAt<SHAKE.epic;
-const screenFx=epic=>viewNear()&&(!!epic||epicNow()||hordeFight());
+const screenFx=epic=>shakeOn()&&viewNear()&&(!!epic||epicNow()||hordeFight());
 function epicShake(n){shakeIt(n);if(B)B.epicAt=performance.now()/1000}
 // a jolt of n pixels, unless a stronger one is still going (lt: its clock restarts on the next frame)
 function jolt(n){if(!B||!(n>0)||!shakeOn())return;const J=B.jolt||(B.jolt={a:0,t:0,lt:0});if(n<joltAmp())return;J.a=Math.min(SHAKE.max,n);J.t=SHAKE.life;J.lt=0}
