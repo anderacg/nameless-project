@@ -64,7 +64,7 @@ Kit.suite(({ok})=>{
    t.act('party-comp-tab','gear');ok(q('.fb-gear-rows')&&G.compTab==='gear','its Equipment');t.act('party-comp-tab','orders');ok(q('.fb-order-buttons')&&q('[data-cp-transfer="give"]'),'its Orders');t.act('party-comp-tab','overview');
    t.act('party-role');t.act('fb-choice','guide');t.act('fb-cancel');ok(brann.role==='scout'&&q('.fb-comp-detail'),'its role page cancels back to its card')}
   t.act('party-select',foot.id);{const d=q('.fb-inspector');ok(d&&!d.classList.contains('fb-person-detail')&&d.querySelector('.uc-strength')&&/Rank \d/.test(d.querySelector('.uc-rank').textContent)&&d.querySelector('[data-act="army-edit"]')&&!d.querySelector('[data-act="party-unit-tab"]'),'a troop group’s card: its strength, rank and Manage Group (no tabs)');
-   t.act('army-edit',foot.id);ok(q('[data-army-editor="'+foot.id+'"]')&&q('[data-act="army-split-exact"]')&&q('[data-act="party-merge"]'),'and Manage group (rename, order, split, merge)');t.act('army-edit-close')}
+   t.act('army-edit',foot.id);ok(q('[data-army-editor="'+foot.id+'"]')&&!q('[data-act="army-split-exact"]')&&q('[data-act="party-merge"]'),'and Manage group (rename, order, merge; no split)');t.act('army-edit-close')}
   // ---- each card's Skills
   t.act('party-select','hero');t.act('open-skills');ok(G.mode==='skills'&&!G.skWho&&q('svg.tree')&&navBack().textContent==='Back to Army'&&navClose().textContent==='Back to map','the hero’s Skills: your tree, Back to Army');
   t.act('sk-close');ok(G.mode==='char'&&G.char==='roster'&&t.partyView().sel==='hero'&&q('.fb-hero-detail'),'and Back returns to the hero’s card');

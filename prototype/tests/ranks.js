@@ -11,8 +11,8 @@ Kit.suite(({ok})=>{
  t.rankGain(g,99999);ok(t.rankOf(g)===R.max&&t.rankXp(g)===0&&t.rankReady(g)&&t.rankGain(g,50)===0,'and on to rank '+R.max+': it stops there, ready to upgrade');
  // ======== kept whoever joins it
  r.add('hum_foot',3,g.id);ok(g.count===9&&t.rankOf(g)===R.max,'refilled with recruits: still rank '+R.max);
- {const h=r.split(g.id,4);ok(h&&t.rankOf(h)===R.max&&t.rankOf(g)===R.max,'split: both halves keep it');r.add('hum_foot',1,'new');const fresh=r.groups.find(x=>x.type==='hum_foot'&&x!==g&&x!==h);
-  ok(t.rankOf(fresh)===1,'a new group of the same kind: rank 1');r.merge(fresh.id,h.id);ok(t.rankOf(h)===R.max,'merged: the higher rank kept');r.merge(h.id,g.id)}
+ {ok(!r.split,'no splitting: a unit keeps its rank whole');r.add('hum_foot',1,'new');const fresh=r.groups.find(x=>x.type==='hum_foot'&&x!==g);
+  ok(t.rankOf(fresh)===1,'a new group of the same kind: rank 1');r.merge(fresh.id,g.id);ok(t.rankOf(g)===R.max,'merged: the higher rank kept')}
  // ======== its men all wounded: their record keeps it, and gives it back
  {P.wounded={hum_foot:g.count};P.woundedGroups=[{id:g.id,type:'hum_foot',count:g.count}];const id=g.id,n=g.count;r.remove('hum_foot',n,id);
   const w=P.woundedGroups[0];ok(!r.groups.some(x=>x.id===id)&&t.rankOf(w)===R.max,'every man wounded: the group out of the ranks, its wounded keep rank '+R.max);

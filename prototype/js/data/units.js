@@ -45,6 +45,11 @@ for(const k in ST){const s=ST[k];if(!s.range||s.bow||s.beast)continue;s.range=Ma
 // riders: every charging horse, ram, stag and wolf, and the mounted archers (who shoot instead of charging); riders cost more
 // to keep, and ride faster on grass and slower in swamps
 for(const k in ST)if(ST[k].charge||['hum_hbow','elf_hartbow','orc_wolfbow'].includes(k))ST[k].mounted=true;
+// a unit's size: how many men make one full unit (a group) of a kind, by what it is (the owner, 2026-10-31: "size by kind ... adjustable
+// and dynamic enough for changing": foot 15, ranged 10, mounted 6), or a kind's own (ST[k].size). Upgrades keep to a unit's kind, so its size
+const UNIT_SIZE={foot:15,ranged:10,mounted:6};
+const unitKind=k=>{const s=ST[k]||{};return s.mounted?'mounted':s.range>0?'ranged':'foot'};
+const unitSize=k=>ST[k]?.size||UNIT_SIZE[unitKind(k)];
 // scouts: the light, fast troops who range ahead (their ability Scout ahead: battle/unitabilities.js), every people's own: rangers
 // and hunters, the elves' marksmen, light horse and the riders who shoot; no character (the owner, 2026-10-20: "only for scout units").
 // By kind (isScout), not a stat of the kind: a troop's numbers stay as they were

@@ -59,6 +59,8 @@ class Party extends WorldObject{
   get faction(){return this.fac}
 }
 class LordParty extends Party{
+  // (his unit slots: his men limit (realms.js lcapOf) in units of LORD_RECRUIT.men; he hires and refills units as you do)
+  unitSlots(){return clamp(Math.round(lcapOf(this)/LORD_RECRUIT.men),1,ARMY_LIMIT)}
   get mapKind(){return 'lord'}
   here(){return W.lords.includes(this)}
   meet(){lordMeet(this)}
@@ -148,10 +150,9 @@ class PlayerParty extends Party{
   // everyone you lead: soldiers, companions and the wounded
   headcount(){return this.troopCount()+this.compCount()+this.woundedCount()}
   prisonerCount(){return sum(this.prisoners)}
-  // how many you may lead: your level, renown, Leadership and Charisma, and your talents
-  cap(){
-    const n=8+this.level*3+Math.floor(this.renown/25)+this.skill('lead')+Math.floor(this.attr.cha/2)+this.treeMod('cap');
-    return Math.max((armyGroupLimit(this)-1)*ARMY_GROUP.units,Math.round(n*(1+this.treeMod('capPct'))))}
+  // how many you may lead: everyone now and the men your units could still take in (unit slots by Leadership and talents, each unit
+  // its kind's size: core/army.js; the owner, 2026-10-31: "go by units")
+  cap(){return this.headcount()+partyRoster(this).room()}
   // room left: negative while over capacity (callers decide whether a transfer is allowed)
   room(){return this.cap()-this.headcount()}
   prisonCap(){return 2+this.skill('lead')+(this.hasPerk('warden')?6:0)+this.treeMod('prison')}

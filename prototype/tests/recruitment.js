@@ -26,10 +26,10 @@ try{
   ok(service.recruitPrisoner('a').ok&&p.gold===10&&!p.prisoners.a&&p.troops.a===1,'a prisoner transfers to the roster for the existing fee exactly once');
   rejects(()=>service.recruitPrisoner('a'),'prisoner-unavailable','an already recruited prisoner cannot be recruited again');
   ok(JSON.stringify(P)===globalBefore,'the injected service never changes the live player record');
-  t.begin('soldier');G.quietEvents=true;const ash=t.townBy('Ashford');P.troops={};P.gold=1000;P.rep[ash.name]=90;ash.vol=2;
-  t.enterTown(ash);t.act('tab','recruit');const kind=t.RACES.human.melee,quote=t.recruitment.quoteHire(ash,kind),button=document.querySelector('[data-act="rec-add"][data-arg="'+kind+':1"]'),row=button&&button.closest('.rec-row');
-  ok(quote.ok&&button&&!button.disabled&&row.textContent.includes(quote.cost+'g'),'the recruit row uses the service eligibility and price');
-  const g0=P.gold;t.act('hire',kind);ok(P.troops[kind]===1&&P.gold===g0-quote.cost&&ash.vol===1,'the existing hire action delegates to the service');
+  t.begin('soldier');G.quietEvents=true;const ash=t.townBy('Ashford');P.troops={};P.gold=1000;P.rep[ash.name]=90;ash.vol=40;
+  t.enterTown(ash);t.act('tab','recruit');const kind=t.RACES.human.melee,n=t.unitSize(kind),quote=t.recruitment.quoteHire(ash,kind,n,'new'),button=document.querySelector('[data-act="rec-unit"][data-arg="'+kind+'"]'),row=button&&button.closest('.rec-row');
+  ok(quote.ok&&button&&!button.disabled&&row.textContent.includes(quote.cost+'g')&&row.textContent.includes(n+' men'),'the recruit row uses the service eligibility and price: a whole unit of '+n+', '+quote.cost+'g');
+  const g0=P.gold,q1=t.recruitment.quoteHire(ash,kind);t.act('hire',kind);ok(P.troops[kind]===1&&P.gold===g0-q1.cost&&ash.vol===39,'the existing hire action delegates to the service');
   const saved=JSON.stringify({gold:P.gold,troops:P.troops,army:P.army});t.act('hire','missing');t.act('rec-upgroup','missing:'+kind);
   ok(JSON.stringify({gold:P.gold,troops:P.troops,army:P.army})===saved,'invalid UI action arguments cannot mutate the roster or funds');
   const grp=t.partyRoster(P).groups.find(g=>g.type===kind);t.rankGain(grp,1e6);t.act('rec-tab','train');const to=t.UP[kind][0],train=document.querySelector('[data-act="rec-upgroup"][data-arg="'+grp.id+':'+to+'"]');

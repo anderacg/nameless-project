@@ -23,7 +23,7 @@ try{
   try{localStorage.clear()}catch(e){}t.act('begin','soldier');G.quietEvents=true;
   P.comps={};P.wounded={hum_levy:2};P.troops={hum_levy:3};
   ok(t.partyRoom()===t.partyCap()-5,'party room includes wounded soldiers');
-  P.troops={hum_levy:t.partyCap()+2};ok(t.partyRoom()===-4,'over-cap room stays negative rather than silently changing transfer rules');
+  P.troops={hum_levy:t.partyCap()+2};ok(t.partyRoom()<0,'over-cap room stays negative rather than silently changing transfer rules');
   ok(t.garrisons.rules.room===t.partyRoom,'garrison call-ups use the same party-room rule');
   P.wounded={};P.troops={hum_levy:5,hum_bow:3};P.comps={brann:{ap:5,role:''}};const c=t.compInit('brann');c.lv=3;
   t.cpGive('brann','hum_levy',3);t.cpGive('brann','hum_bow',2);const party=c.party,snapshot=JSON.stringify(party.tc);

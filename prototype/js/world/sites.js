@@ -524,7 +524,7 @@ class TravellersCamp extends Site{
   // by name; hired, the first in line of that kind take your coin. The order (G.siteHire) belongs to this visit)
   deskOf(){const s=this,sw=s.swords(),of=k=>sw.filter(w=>w.k===k);
     return new HireDesk('site-rec-',{state:G.siteHire||(G.siteHire={}),kinds:[...new Set(sw.map(w=>w.k))],cost:k=>mercCost(k,s.unit),avail:k=>of(k).length,willing:s.mercs,
-      line:k=>of(k).map(w=>w.name).join(', '),note:'Sellswords need no standing, only coin. They move on with the camp in '+Math.max(1,s.until-G.day)+' days.',
+      line:k=>of(k).map(w=>w.name).join(', '),note:'Sellswords need no standing, only coin. Too few for a unit of their own, they can still refill yours. They move on with the camp in '+Math.max(1,s.until-G.day)+' days.',
       hire:(k,n,tgt)=>{const ws=of(k).slice(0,n),cost=ws.reduce((a,w)=>a+w.c,0);
         if(ws.length<n)return {ok:false,why:'Not that many willing'};if(P.gold<cost)return {ok:false,why:'Not enough gold'};if(partySize()+n>partyCap())return {ok:false,why:'No room in your band'};
         if(partyRoster(P).add(k,n,tgt)!==n)return {ok:false,why:'No room in a group for more '+ST[k].n};
@@ -535,7 +535,7 @@ class TravellersCamp extends Site{
         Object.keys(s.stock).map(g=>{const p=travPrice(g),n=s.stock[g],k=Math.min(5,n);return railRow(GOODS[g].n,p+'g each · '+n+' left · you have '+goodN(g)+(k?' · '+k+' for '+p*k+'g':''),railBtn('site-buy',g,'Buy',!k?'Sold out':P.gold<p*k?'Not enough gold':goodRoom(g)<k?'No room in your bag':''))}).join('')+
         (P.inv.some(x=>x&&x.k==='mat')?railRow('Your trophies','They pay a little less than a town market: '+Math.round(P.inv.reduce((a,x)=>a+(x&&x.k==='mat'?matPrice(x.id)*x.n:0),0)*.85)+'g for all',railBtn('site-sellpick',null,'Sell')):'')},
       u&&{k:'hire',n:'Sellswords',short:'Hire',ico:'shield',note:s.mercs?s.mercs+' sellsword'+(s.mercs>1?'s':'')+' willing':'no sellswords left',
-        body:'<div class="top rec-top"><span class="lab">'+RACES[race].n+' sellswords · band '+partySize()+' / '+partyCap()+'</span><span class="lab">'+s.mercs+' willing</span></div>'+
+        body:'<div class="top rec-top"><span class="lab">'+RACES[race].n+' sellswords · '+unitsLine()+'</span><span class="lab">'+s.mercs+' willing</span></div>'+
           (s.mercs?s.deskOf().body():'<p class="muted">No one is left to hire: the sellswords went with their pay.</p>')},
       {k:'fire',n:'Campfire',short:'Fire',ico:'fire',note:[TR.special&&!s.special&&(TR.special==='bless'?'a blessing':'a song'),s.news===G.day?'':'news',s.fire===G.day?'rested today':'rest'].filter(Boolean).join(' · '),
       body:railCards([

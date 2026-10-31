@@ -135,18 +135,17 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       P.gold=2000;P.inv=P.inv.map(()=>null);t.act('site-tab','trade');const g=Object.keys(tr.stock)[0],n0=t.goodN(g);t.act('site-buy',g);
       ok(t.goodN(g)===n0+5&&G.siteTab==='trade'&&/You buy/.test(q('.rwbody').textContent),'an action works as before; its result shows in the window, which stays open');
       ok(q('.rwbody .rcard img.rc-pic')&&/The traders/.test(q('.rwbody .rcard').textContent)&&qa('.rwbody .row [data-act="site-buy"]').length===Object.keys(tr.stock).length,'the Wagons: the traders as a card, their goods as rows');
-      // the Sellswords: the hiring desk, as a town's barracks (ui/hiredesk.js): a row for each kind (its face with i, tier, price,
-      // the sellswords of it by name), how many with − + or typed, the card of the one picked, the hire bar
-      tr.mercs=3;delete tr.hired;P.troops={};G.siteHire=null;t.act('site-tab','hire');const sw=tr.swords(),ks=[...new Set(sw.map(w=>w.k))],rows=qa('.rwbody .rec-row');
-      ok(sw.length===3&&rows.length===ks.length&&rows.every((r,i)=>{const k=ks[i],of=sw.filter(w=>w.k===k);return r.dataset.act==='site-rec-pick'&&r.dataset.arg===k&&r.querySelector('.rec-pic[data-act="site-rec-info"] .rec-badge')&&new RegExp(t.mercCost(k,tr.unit)+'g').test(r.textContent)&&of.every(w=>r.textContent.includes(w.name))&&r.querySelector('input.rec-n[data-qty="site-rec-set"]')&&r.querySelector('[data-act="site-rec-add"][data-arg="'+k+':max"]')}),
-        'the Sellswords: a row for each kind ('+ks.map(k=>t.ST[k].n).join(', ')+'), its face with i, its price, its men by name ('+sw.map(w=>w.name).join(', ')+'), − + Max and a count to type');
-      ok(q('.rwbody .reccard .ucard-x')&&q('.rec-bar [data-act="site-rec-hire"]').disabled&&q('.rec-bar [data-act="site-rec-fill"]'),'the picked one\'s card beside the list; the hire bar (Fill band, Hire)');
+      // the Sellswords: the hiring desk, as a town's barracks (ui/hiredesk.js): a row for each kind (its face with i, tier, its unit's men
+      // and price, the sellswords of it by name); too few for a unit of their own, they refill one of yours of their kind (the owner, 2026-10-31)
+      tr.mercs=3;delete tr.hired;P.troops={};G.siteHire=null;t.act('site-tab','hire');const sw=tr.swords(),ks=[...new Set(sw.map(w=>w.k))],rows=qa('.rwbody .rec-row[data-act="site-rec-pick"]');
+      ok(sw.length===3&&rows.length===ks.length&&rows.every((r,i)=>{const k=ks[i],of=sw.filter(w=>w.k===k),u=r.querySelector('[data-act="site-rec-unit"]');return r.dataset.arg===k&&r.querySelector('.rec-pic[data-act="site-rec-info"] .rec-badge')&&new RegExp(t.unitSize(k)*t.mercCost(k,tr.unit)+'g').test(r.textContent)&&of.every(w=>r.textContent.includes(w.name))&&u&&u.disabled&&/willing/.test(u.title)}),
+        'the Sellswords: a row for each kind ('+ks.map(k=>t.ST[k].n).join(', ')+'), its face with i, its unit’s price, its men by name ('+sw.map(w=>w.name).join(', ')+'); three, too few for a unit: Recruit unit greyed');
+      ok(q('.rwbody .reccard .ucard-x')&&/None of your units/.test(q('.rwbody').textContent),'the picked one’s card beside the list; nothing of yours to refill yet');
       ok(new Set(sw.map(w=>w.name)).size===3&&JSON.stringify(tr.swords())===JSON.stringify(sw),'each his own name, the same each time they are asked (seeded from the camp)');
-      {const k=ks[0],of=sw.filter(w=>w.k===k),f=q('.rwbody .rec-row[data-arg="'+k+'"] .rec-n');f.value='9';f.dispatchEvent(new Event('change',{bubbles:true}));
-        ok(G.siteHire.cart[k]===of.length,'a count typed past those willing: as many as there are ('+of.length+')');
-        t.act('site-rec-set',k+':1');const w=of[0],g0=P.gold;q('.rec-bar [data-act="site-rec-hire"]').click();
-        ok(P.troops[k]===1&&P.gold===g0-w.c&&tr.mercs===2&&tr.hired.join()===String(w.i)&&!panel().includes(w.name)&&G.siteTab==='hire'&&q('#panel.railed')&&/Hired 1 soldier/.test(q('.rec-bar').textContent),
-          'Hire: the first of them in line, '+w.name+', joins ('+w.c+'g); his name goes from the list');
+      {const k=ks[0],of=sw.filter(w=>w.k===k),r=t.partyRoster(P);r.add(k,t.unitSize(k)-1,'new');const g=r.groups.find(x=>x.type===k);t.act('site-tab','hire');
+        const w=of[0],g0=P.gold,f=q('.rwbody [data-act="site-rec-refill"][data-arg="'+g.id+'"]');ok(f&&!f.disabled&&/\+1/.test(f.textContent),'a unit of yours of their kind, one short: its Refill, +1');f.click();
+        ok(g.count===t.unitSize(k)&&P.gold===g0-w.c&&tr.mercs===2&&tr.hired.join()===String(w.i)&&!panel().includes(w.name)&&G.siteTab==='hire'&&q('#panel.railed')&&/join your unit/.test(q('.rwbody').textContent),
+          'Refill: the first of them in line, '+w.name+', joins it ('+w.c+'g); his name goes from the list');
         ok(JSON.stringify(tr.swords())===JSON.stringify(sw.filter(x=>x!==w)),'the two left keep their names and looks');
         G.mode='world';t.saveGame(true,'3');const sv=t.readSlot('3').world.sites.find(x=>x.tx===tr.tx&&x.ty===tr.ty&&x.type==='travelers');ok(sv&&sv.mercs===2&&sv.hired.join()===String(w.i),'saved: how many are left and whose place was hired (the rest of the save as it was)');G.mode='site'}
       {const W0=window.matchMedia;window.matchMedia=()=>({matches:true});try{const k=tr.swords()[0].k;q('.rwbody .rec-pic[data-act="site-rec-info"][data-arg="'+k+'"]').click();

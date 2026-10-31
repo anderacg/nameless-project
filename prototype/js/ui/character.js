@@ -36,9 +36,7 @@ function charAct(a,arg){
   else if(a==='army-name-save'){const value=panel.querySelector('[data-army-name]')?.value;G.armyNotice=partyRoster(P).rename(arg,value)?'Group name saved.':'Use up to 32 characters, without control characters.'}
   else if(a==='army-name-reset'){partyRoster(P).rename(arg,'');G.armyNotice='Default group name restored.'}
   else if(a==='army-move'){const [id,step]=String(arg).split(':');partyRoster(P).move(id,Number(step))}
-  else if(a==='army-split-exact'){const n=Number(panel.querySelector('[data-army-split]')?.value),created=partyRoster(P).split(arg,n);G.armyNotice=created?'Split '+n+' fit soldiers into '+created.id+'. Wounded stay with the original group.':'Split needs a free slot and a whole number from 1 to one less than the fit count.'}
   else if(a==='army-merge-picked'){const to=G.armyMergeTarget;G.armyMergeTarget=null;if(partyRoster(P).merge(arg,to)){G.armyEdit=null;G.armyNotice='Groups merged; the destination keeps its name and wounded ownership.'}}
-  else if(a==='army-split'){const r=partyRoster(P),g=r.groups.find(g=>g.id===arg);if(g)r.split(g.id,Math.floor(g.count/2))}
   else if(a==='army-merge'){const [from,to]=arg.split(':');partyRoster(P).merge(from,to)}
   else if(a==='army-auto-reinforce'){const r=partyRoster(P);if(r.groups.some(g=>g.id===arg)){const flags=P.army.autoReinforce||(P.army.autoReinforce={});flags[arg]=!flags[arg];recruitment.autoWait=0}}
   else if(a==='role'){const [id,r]=arg.split(':');const c=P.comps[id];if(c){if(c.role===r)c.role='';else{const o=roleOf(r);if(o)P.comps[o].role='';c.role=r}}}

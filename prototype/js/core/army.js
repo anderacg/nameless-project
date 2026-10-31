@@ -3,12 +3,17 @@
    all normal roster mutations pass through this service. Reconciliation also supports explicit developer count edits,
    not old saves (only the current save schema is accepted). IDs never depend on type, slot or array position. */
 const ARMY_LIMIT=10;
-const ARMY_GROUP={start:3,leadBase:2,units:10};
-const armyGroupLimit=o=>o===P?Math.min(ARMY_LIMIT,ARMY_GROUP.start+Math.max(0,(P.sk?.lead?.lv||0)-ARMY_GROUP.leadBase)):ARMY_LIMIT;
+// your unit slots: start, one more each Leadership level past leadBase, and your talents' (Followers, Guard, Lone Wolf: tree.js slots);
+// your hero and each companion take one, as each troop unit does. A unit's men: its kind's size (data/units.js unitSize)
+const ARMY_GROUP={start:3,leadBase:2};
+const armyGroupLimit=o=>o===P?clamp(ARMY_GROUP.start+Math.max(0,(P.sk?.lead?.lv||0)-ARMY_GROUP.leadBase)+(P.treeMod?P.treeMod('slots'):0),1,ARMY_LIMIT):o?.unitSlots?o.unitSlots():ARMY_LIMIT;
 class ArmyRoster extends TroopRoster{
   get reserved(){return this.rules.reserved?this.rules.reserved():0}
   get groupLimit(){return armyGroupLimit(this.owner)}
-  groupCap(type){return ARMY_GROUP.units}
+  groupCap(type){return unitSize(type)}
+  // (the men it could still take in: room in its units, and its free slots, each a unit of the largest size; under none while it is
+  // over: a unit past its size, more units than slots)
+  room(){return this.groups.reduce((n,g)=>n+this.groupCap(g.type)-g.count-this.wounded(g.id),0)+(this.groupLimit-this.slots)*Math.max(...Object.values(UNIT_SIZE))}
   groupRoom(type,target){
     const cap=this.groupCap(type),gs=this.groups;
     if(target&&target!=='new'){const g=gs.find(g=>g.id===target&&g.type===type);return g?Math.max(0,cap-g.count-this.wounded(g.id)):0}
@@ -65,11 +70,6 @@ class ArmyRoster extends TroopRoster{
     if(taken){const c=this.counts;c[type]-=taken;if(!c[type])delete c[type];
       for(const g of gs.filter(g=>!g.count))for(const w of this.owner.woundedGroups||[])if(w.id===g.id){if(g.name)w.name=g.name;else delete w.name;rankReset(w);rankKeep(g,w)}// (its name and rank kept by its wounded)
       this.owner.army.groups=gs.filter(g=>g.count>0);this.changed()}return taken;
-  }
-  split(id,n){
-    const g=this.groups.find(g=>g.id===id);if(!g||!troopAmount(n)||n>=g.count||n>this.groupCap(g.type)||this.slots>=this.groupLimit)return null;
-    const order=this.order;g.count-=n;const out={...g,id:'g'+this.owner.army.nextId++,count:n};delete out.name;this.owner.army.groups.push(out);
-    order.splice(order.indexOf(id)+1,0,out.id);this.owner.army.order=order;this.changed();return out;
   }
   merge(fromId,toId){
     const gs=this.groups,a=gs.find(g=>g.id===fromId),b=gs.find(g=>g.id===toId);

@@ -25,7 +25,7 @@ const SKILLS={
   fist:{n:'Unarmed',a:'str',d:'+0.6 damage per level with your bare hands (no weapon in either hand): punches, kicks and throws. Rises with each blow you land unarmed'},
   athl:{n:'Athletics',a:'agi',d:'+4 stamina per level. Rises as you sprint and dodge'},
   // command
-  lead:{n:'Leadership',a:'cha',d:'+1 army group slot per trained level above 2 (3 starting slots, 10 maximum), +1 party size, +1 prisoner and +3 to the floor under morale per level. Rises with each battle your troops win'},
+  lead:{n:'Leadership',a:'cha',d:'+1 unit slot per trained level above 2 (3 starting slots, 10 maximum), +1 prisoner and +3 to the floor under morale per level. Rises with each battle your troops win'},
   tact:{n:'Tactics',a:'int',d:'Auto-resolved battles go 5% better per level. Rises with each battle you win, most when you auto-resolve'},
   med:{n:'Medicine',a:'int',d:'7% per level that a fallen troop survives, and you heal 3% more a day. Rises as you tend your fallen'},
   eng:{n:'Engineering',a:'int',d:'10% a day per level that a siege camp gains an extra day of work. Rises each day of a siege'},

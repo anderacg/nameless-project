@@ -69,9 +69,8 @@ try{
   ok(P.gear.mount===id&&P.gold===g0-t.gearPrice(id)&&last()==='You buy a '+t.ITEMS[id].n+' and ride it out of the stable.','buy-mount: '+last())}
  t.act('tab','recruit');{const kind=t.RACES.human.melee;t.act('rec-pick',kind);ok(G.town.pick===kind,'rec-pick picks the unit');
   t.act('hire',kind);ok(P.troops[kind]===1&&last()===t.cap1(t.an(t.ST[kind].n.toLowerCase()))+' joins your band.','hire: '+last());
-  t.act('rec-add',kind+':1');t.act('rec-clear');ok(!Object.keys(G.town.cart).length&&P.troops[kind]===1,'rec-add, then rec-clear: nothing bought');
-  t.act('rec-add',kind+':1');t.act('rec-hire');ok(P.troops[kind]===2&&!Object.keys(G.town.cart).length,'rec-add, then rec-hire: one more');
-  const g=t.partyRoster(P).groups.find(x=>x.type===kind),to=t.UP[kind][0];t.rankGain(g,1e6);t.act('rec-tab','train');t.act('rec-upgroup',g.id+':'+to);ok(P.troops[to]===2&&!P.troops[kind]&&/upgraded to .*start again at rank 1/.test(last()),'upgrade: '+last())}
+  const g=t.partyRoster(P).groups.find(x=>x.type===kind),n=t.unitSize(kind);P.gold=Math.max(P.gold,5000);ash.vol=Math.max(ash.vol||0,40);t.act('rec-refill',g.id);if(G.town.recAsk)t.act('rec-ok');ok(g.count===n&&P.troops[kind]===n,'rec-refill: his unit filled to '+n);
+  const to=t.UP[kind][0];t.rankGain(g,1e6);t.act('rec-tab','train');t.act('rec-upgroup',g.id+':'+to);ok(P.troops[to]===n&&!P.troops[kind]&&/upgraded to .*start again at rank 1/.test(last()),'upgrade: '+last())}
  t.act('tab','tavern');{const f=t.FACS[ash.owner].n;P.fac=null;t.act('contract');ok(P.fac===ash.owner&&last()==='You sign on with the '+f+'. Their enemies are now yours.','contract: '+last());
   t.act('end-contract');ok(P.fac===null&&last()==='You end your contract with the '+f+'.','end-contract: '+last())}
  {P.prisoners={militia:2};const v=t.ransomValue(),g0=P.gold;t.act('ransom');ok(v>0&&P.gold===g0+v&&!Object.keys(P.prisoners).length&&last()==='The broker pays '+v+' gold for 2 prisoners.','ransom: '+last())}

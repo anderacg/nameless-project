@@ -164,6 +164,9 @@ function lordStats(l){if(l.lv)return l;l.lv=rint(2,6);l.xp=0;l.renown=l.lv*8;l.s
 const lordSkill=(l,k)=>{const s=lordStats(l).sk[k];return s?s.lv:0};
 function lordTrain(l,k,n){leaderOf(l).train(k,n)}
 function lordXp(l,n){leaderOf(l).gainXp(n)}// (leaders.js Lord)
+// a lord's hiring (doRealms, realms.js): men a unit slot (his slots: lcapOf over it, parties.js LordParty unitSlots), men refilled a unit a
+// visit, the shares of his kinds (melee, shield, the rest ranged), and up: a unit's chance a visit to be trained up whole, over its size
+const LORD_RECRUIT={men:12,refill:6,melee:.4,shield:.2,up:.7};
 const lcapOf=l=>{lordStats(l);return Math.round(9+3*l.lv+Math.floor((l.renown||0)/25)+lordSkill(l,'lead'))+4*Math.max(0,FIEF0-fiefsOf(l.fac).length)};
 // how much a lord's Tactics makes his army count for in a fight
 const lordTac=ls=>1+.05*Math.max(0,...ls.filter(o=>W.lords.includes(o)).map(o=>lordSkill(o,'tact')));
@@ -271,9 +274,14 @@ function worldDay(){
           was:Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5||t.owner===P.fac||t.owner==='player',past:who+' rode out of '+t.name+' to break the siege'})}continue}
       if(++l.sd>=2+wallOf(t))resolveSiege(l,t);continue}
     if(l.state==='rest'&&t&&t.owner===l.fac){
-      // he hires as you do: the holding's own volunteers, at the price you pay, from his realm's treasury
-      for(let k=0,n=3+Math.max(0,FIEF0-fiefsOf(l.fac).length);k<n&&l.troops.length<lcapOf(l)&&canDraft(t);k++){const c=RACES[t.races[rint(0,t.races.length-1)]],r=Math.random(),type=r<.4?c.melee:r<.6?c.shield:c.ranged;if(!partyRoster(l).canAdd(type)||!payRealm(l.fac,HIRE[type]||22,t,1))break;draftLocals(t,1);l.add(type)}
-      const k=l.troops.find(x=>UP[x]);if(k&&Math.random()<.7){const u=UP[k],to=u[rint(0,u.length-1)],r=partyRoster(l);if(r.canAdd(to)||r.groups.find(g=>g.type===k)?.count===1){l.remove(k,1);l.add(to)}}// (one is trained up)
+      // he hires as you do (the owner, 2026-10-31: "same way"): first his short units refilled, a man at a time, from the holding's own
+      // willing at the price you pay, out of his realm's treasury; then, a unit slot free and willing enough, one whole unit; and now
+      // and then one of his units trained up whole, as yours are at its last rank (LORD_RECRUIT)
+      const R=partyRoster(l),X=LORD_RECRUIT,pool=()=>Math.min(Math.floor(t.vol||0),Math.floor((t.pop||0)-GUARD_FLOOR));
+      for(const g of R.groups.slice()){for(let k=0;k<X.refill&&R.groupRoom(g.type,g.id)>0&&pool()>=1&&payRealm(l.fac,HIRE[g.type]||22,t,1);k++){draftLocals(t,1);R.add(g.type,1,g.id)}}
+      if(R.slots<R.groupLimit){const c=RACES[t.races[rint(0,t.races.length-1)]],r=Math.random(),type=r<X.melee?c.melee:r<X.melee+X.shield?c.shield:c.ranged,n=unitSize(type);
+        if(pool()>=n&&payRealm(l.fac,(HIRE[type]||22)*n,t,n)){draftLocals(t,n);R.add(type,n,'new')}}
+      {const g=R.groups.find(g=>UP[g.type]&&Math.random()<X.up/unitSize(g.type));if(g){const u=UP[g.type],to=u[rint(0,u.length-1)],n=g.count;R.remove(g.type,n,g.id);R.add(to,n,'new')}}
     }
     if(l.state==='rest'||Math.random()<.35)lordThink(l);
   }

@@ -291,7 +291,7 @@ function trainerRows(trs){const gs=partyRoster(P).groups,where=tr=>tr.wander?' �
 class Barracks extends Place{
   constructor(id){
     super(id,{n:'Barracks',ico:'shield',verbs:{'rec-tab':'tab',hire:'hire','rec-upgroup':'upgroup',
-      ...Object.fromEntries(['pick','add','set','clear','fill','groups','hire','hire-ok','hire-no','info','info-back'].map(v=>['rec-'+v,'desk']))}});
+      ...Object.fromEntries(['pick','unit','refill','refillall','ok','no','info','info-back'].map(v=>['rec-'+v,'desk']))}});
   }
   shut(t){
     const closed=Place.closed(t);
@@ -300,13 +300,13 @@ class Barracks extends Place{
   hires(t){return t.races.flatMap(r=>t.hires(r))}
   // (its desk: the town's troops, their price, its willing, the standing each needs)
   deskOf(t){return new HireDesk('rec-',{state:G.town,kinds:this.hires(t),cost:hireCost,willing:Math.floor(t.vol||0),why:k=>!canHire(t,k)?'Needs standing '+needFor(k):'',
-    line:k=>'You lead ×'+(P.troops[k]||0),note:'More volunteers come forward each day as the '+t.label+' grows and prospers.',
+    line:k=>'You lead ×'+(P.troops[k]||0),note:'More volunteers come forward each day as the '+t.label+' grows and prospers.',extra:this.volunteers(t),
     hire:(k,n,tgt)=>{const r=recruitment.hire(t,k,n,tgt);if(r.ok)recruitmentFeedback(r,t);return {ok:r.ok,cost:r.cost,why:r.ok?'':recruitmentWhy(r)}}})}
   body(t){
     const s=G.town,tab=t.T.train&&s.recTab==='train'?'train':'hire',v=Math.floor(t.vol||0);
     const tabs=t.T.train?'<div class="rec-tabs" role="tablist">'+[['hire','Hire'],['train','Train & upgrade']].map(([k,n])=>'<button class="btn sm'+(k===tab?' on':'')+'" type="button" role="tab" aria-selected="'+(k===tab)+'" data-act="rec-tab" data-arg="'+k+'">'+n+'</button>').join('')+'</div>':'';
-    const head='<div class="top rec-top">'+tabs+'<span class="lab">'+t.races.map(r=>RACES[r].n).join(' and ')+' troops · band '+partySize()+' / '+partyCap()+'</span><span class="lab">Standing <b class="gold" style="font-size:14px">'+standingAt(t)+'</b> · '+v+' willing</span></div>';
-    return head+(tab==='hire'&&!s.info?this.volunteers(t):'')+(tab==='train'&&!s.info?this.trainTab(t):this.deskOf(t).body());
+    const head='<div class="top rec-top">'+tabs+'<span class="lab">'+t.races.map(r=>RACES[r].n).join(' and ')+' troops · '+unitsLine()+'</span><span class="lab">Standing <b class="gold" style="font-size:14px">'+standingAt(t)+'</b> · '+v+' willing</span></div>';
+    return head+(tab==='train'&&!s.info?this.trainTab(t):this.deskOf(t).body());
   }
   // (its free volunteers, world/volunteers.js: taking them while you stay here or camp on its lands, or why they will not come)
   volunteers(t){const R=P.recruit,on=R&&R.town===t.name,here=volunteerTown()===t,why=here?volunteerWhy(t):'Stay here, or camp on its lands, to take them';

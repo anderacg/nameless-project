@@ -27,7 +27,7 @@ class Economy{
   /* setting it up: people, prosperity, and stock shaped by what it is known for (its old trade profile) */
   init(){
     const t=this.t;
-    t.pop=t.T.pop0;t.pros=55;t.tax=1;t.vol=Math.round(t.pop/12);t.stock={};t.popF=0;t.hist=[];
+    t.pop=t.T.pop0;t.pros=55;t.tax=1;t.vol=Math.round(t.pop*VOL_POOL.start);t.stock={};t.popF=0;t.hist=[];
     for(const g of T_GOODS()){const m=(t.mod&&t.mod[g])||1,tg=this.target(g);t.stock[g]=Math.round(Math.max(2,tg)*Math.min(3,Math.pow(1/m,2))*(.8+Math.random()*.4))}
     // regional goods (metals, gems, rare fish, pearls): a store of what its own land yields, none of the rest
     for(const g of T_GOODS())if(GOODS[g].res)t.stock[g]=resOf(t)[g]?Math.round(Math.max(4,this.target(g))*(1+Math.random())):0}
@@ -103,7 +103,7 @@ class Economy{
     let d=(c.sat*100-t.pros)*.08+(c.kinds>=3?.5:0)+[1,0,-1.5][t.tax==null?1:t.tax];
     if(Timed.of(t).has('turmoil'))d-=2;if(t.ruined())d-=3;if(t.besieged())d-=1.5;
     t.pros=clamp(t.pros+d,0,100);
-    t.vol=Math.min(Math.round(t.pop/10),(t.vol||0)+t.pop/150*(t.pros/60))}
+    t.vol=Math.min(Math.round(t.pop*VOL_POOL.cap),(t.vol||0)+t.pop*VOL_POOL.grow*(t.pros/60))}
   // a day: its estates and land produce, its people eat, food spoils, its people grow or starve (ly: what its land yields)
   day(ly){
     const t=this.t;
@@ -171,6 +171,10 @@ function landYield(){const y=TOWNS.map(()=>({grain:0,timber:0,stone:0}));if(type
 
 const treas=f=>{if(W.treas[f]==null)W.treas[f]=TREAS0+60*fiefsOf(f).length;return W.treas[f]};
 // pay for something a realm wants: gold from its treasury, food from a holding's stock; false if it cannot (never in off mode)
+// a holding's willing (t.vol: the pool its units are hired from, yours and its lords'; the owner, 2026-10-31: "from holding, the pool
+// should be high so like 100 willing"): a share of its people at the start, at most cap of them, growing grow of them a day (× its
+// prosperity over 60). A city of 320: 107 at most
+const VOL_POOL={start:.25,cap:1/3,grow:1/45};
 function payRealm(f,gold,t,food){
   if(ECON.mode==='off'||!f||f==='player')return true;const light=ECON.mode==='light';gold*=light?.5:1;
   if(treas(f)-gold<(light?-400:0))return false;

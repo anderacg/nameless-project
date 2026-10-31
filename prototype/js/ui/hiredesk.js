@@ -1,69 +1,71 @@
 'use strict';
 /* ---------- the hiring desk: one way to hire soldiers wherever they are hired (the owner, 2026-10-29: the camp's recruiting the
-   same as the barracks). A row for each kind on offer (its face with i for its card, tier, role, price; how many you want with
-   − + +5 Max, or typed), the picked one's card beside the list (on a small screen over it, Back the list where you were), and
-   the hire bar: what the order costs and does to your band, Fill band (a mix of melee and ranged: RECRUIT_UI.fill), Clear,
-   Groups (each kind to its group) and Hire (asked first when it spends more than RECRUIT_UI.ask of your gold). Its acts are
-   its prefix's (p: 'rec-' in a town's Barracks, 'site-rec-' at a camp): pick, add, set, clear, fill, groups, hire, hire-ok,
-   hire-no, info, info-back. Where it stands gives it its source (src):
-     state: the visit's own object (its order: cart, cartTarget; pick, info, recScroll, recBack, recGroups, cartAsk, recruitNotice)
-     kinds: the kinds on offer · cost(k) · avail(k): how many of k there are (none: as many as the willing) · willing: how many
-       will take your coin · why(k): '' or why not (shown on its row) · line(k): its row's last line · note: under the list
-     hire(k, n, group): {ok, cost, why}, the soldiers taken into that group ('new': a new one)
-   The order belongs to the visit, never to a save ---------- */
-const RECRUIT_UI={fill:.6,ask:.5,step:5};
+   same as the barracks; 2026-10-31: "newly purchase will always provide 1 full units ... then you have another section to
+   replenish your troop", from a pool: "if it has 19 then you can only hire 1 unit and 9 is for replenish"). Two sections:
+   New units, a row for each kind on offer (its face with i for its card, tier, role, its unit's men and price; Recruit unit, one
+   whole unit of its kind's size, data/units.js unitSize, into a free unit slot), and Replenish, a row for each of your units of a
+   kind on offer that is short (its men, its wounded, the men and price to fill it; Refill, as many as the willing and your gold
+   allow; Refill all). The picked kind's card beside the list (on a small screen over it, Back the list where you were); asked
+   first when a press spends more than RECRUIT_UI.ask of your gold. Its acts are its prefix's (p: 'rec-' in a town's Barracks,
+   'site-rec-' at a camp): pick, unit, refill, refillall, ok, no, info, info-back. Where it stands gives it its source (src):
+     state: the visit's own object (pick, info, recScroll, recBack, recAsk, recruitNotice) · kinds: the kinds on offer · cost(k):
+     a man's price · willing: the pool, how many will take your coin · avail(k): how many of k there are (none: as many as the
+     willing) · why(k): '' or why not (shown on its row) · line(k): its row's last line · note: under the list · extra: more of
+     Replenish (the barracks: its free volunteers)
+     hire(k, n, group): {ok, cost, why}, the soldiers taken into that group ('new': a new unit)
+   ---------- */
+const RECRUIT_UI={ask:.5};
+// (your units and men, for a desk's head: units in their slots, everyone you lead)
+const unitsLine=()=>{const r=partyRoster(P);return 'units '+r.slots+' / '+r.groupLimit+' · '+partySize()+' men'};
 // (the window's scroll: read, or set)
 const panelScroll=v=>{const b=panel.querySelector('.rwbody');if(v===undefined)return b?b.scrollTop:0;if(b)b.scrollTop=v};
 class HireDesk{
   constructor(p,src){this.p=p;this.src=src}
   get s(){return this.src.state}
-  cart(){const s=this.s;return s.cart||(s.cart={})}
-  totals(){const c=this.cart(),ks=Object.keys(c).filter(k=>c[k]>0);return {ks,n:ks.reduce((a,k)=>a+c[k],0),cost:ks.reduce((a,k)=>a+c[k]*this.src.cost(k),0)}}
-  // (how many more of one kind you could still add: the willing, your band's room, your gold, how many of it there are)
-  room(k){const S=this.src,c=this.cart(),T=this.totals(),mine=c[k]||0,others=T.n-mine,cost=T.cost-mine*S.cost(k),av=S.avail?S.avail(k):Infinity;
-    return Math.max(0,Math.min(Math.floor(S.willing||0)-others,partyCap()-partySize()-others,Math.floor((P.gold-cost)/Math.max(1,S.cost(k))),av)-mine)}
+  // (the willing for k: the pool, and as many of k as there are)
+  pool(k){const S=this.src;return Math.max(0,Math.min(Math.floor(S.willing||0),S.avail?S.avail(k):Infinity))}
   why(k){return this.src.why?this.src.why(k):''}
-  btn(a,arg,label,why,cls=''){return '<button class="btn sm'+cls+'" type="button" data-act="'+this.p+a+'" data-arg="'+arg+'"'+(why?' disabled':'')+'>'+label+'</button>'}
-  // the list (or, open, a unit's card over it on a small screen) and the hire bar
+  // a new unit of k: its men, its price, or why not
+  unit(k){const r=partyRoster(P),n=unitSize(k),cost=n*this.src.cost(k),w=this.why(k);
+    return{n,cost,why:w||(r.slots>=r.groupLimit?'No free unit slot (units '+r.slots+' / '+r.groupLimit+')':!r.accepts(k)?'Not in your band':this.pool(k)<n?'Needs '+n+' willing ('+this.pool(k)+' here: they can only refill)':P.gold<cost?'Needs '+cost+'g':'')}}
+  // your units it could refill: of a kind on offer, short of their size (wounded count: they come back to it)
+  short(){const r=partyRoster(P);return r.groups.filter(g=>this.src.kinds.includes(g.type)&&r.groupRoom(g.type,g.id)>0)}
+  // a unit's refill: the men it lacks, how many it gets now (the willing, your gold), their price, or why not
+  fill(g){const r=partyRoster(P),k=g.type,need=r.groupRoom(k,g.id),c=this.src.cost(k),w=this.why(k),n=Math.min(need,this.pool(k),Math.floor(P.gold/Math.max(1,c)));
+    return{need,n,cost:n*c,why:w||(!this.pool(k)?'None willing':n<1?'Needs '+c+'g a man':'')}}
+  btn(a,arg,label,why,cls=''){return '<button class="btn sm'+cls+'" type="button" data-act="'+this.p+a+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+htmlText(why)+'"':'')+'>'+label+'</button>'}
+  // the list (or, open, a unit's card over it on a small screen) and the question (when a press spends much)
   body(){const s=this.s;
     if(s.info)return '<div class="rec-info"><div class="btns"><button class="btn" type="button" data-act="'+this.p+'info-back">‹ Back to the list</button></div>'+unitCard(s.info.split('>').pop(),s.info.includes('>')?s.info.split('>')[0]:null)+'</div>';
-    const S=this.src,ks=S.kinds,c=this.cart(),kind=s=>s.range?'ranged':s.charge?'mounted':'melee';let pick=s.pick;if(!ks.includes(pick))pick=ks[0]||null;
-    const rows=ks.map(k=>{const st=ST[k],n=c[k]||0,why=this.why(k),more=why?0:this.room(k);
+    const S=this.src,ks=S.kinds,r=partyRoster(P),kind=s=>s.range?'ranged':s.mounted?'mounted':'melee';let pick=s.pick;if(!ks.includes(pick))pick=ks[0]||null;
+    const units=ks.map(k=>{const st=ST[k],u=this.unit(k);
       return '<div class="rec-row'+(pick===k?' sel':'')+'" data-act="'+this.p+'pick" data-arg="'+k+'"><button class="rec-pic" type="button" data-act="'+this.p+'info" data-arg="'+k+'" aria-label="'+htmlText(st.n)+': its card"><img src="'+portrait(k)+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
-        '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(k),14)+' '+st.n+'</strong><small>Tier '+st.tier+(st.race?' · '+RACES[st.race].n:'')+' · '+kind(st)+' · <b class="gold">'+S.cost(k)+'g</b></small><small>'+(why?'<span class="bad">'+why+'</span>':S.line(k))+'</small></div>'+
-        '<div class="rec-step">'+this.btn('add',k+':-1','−',!n)+'<input class="rec-n" type="number" inputmode="numeric" min="0" max="'+(n+more)+'" step="1" value="'+n+'" data-qty="'+this.p+'set" data-arg="'+k+'" aria-label="'+htmlText(st.n)+': how many"'+(why?' disabled':'')+'>'+this.btn('add',k+':1','+',!more)+this.btn('add',k+':'+RECRUIT_UI.step,'+'+RECRUIT_UI.step,!more)+this.btn('add',k+':max','Max',!more)+'</div></div>'}).join('');
-    return '<div class="recwrap"><div class="reclist"><div class="rec-rows">'+rows+'</div>'+(S.note?'<p class="muted" style="font-size:12px">'+S.note+'</p>':'')+'</div><div class="reccard">'+(pick?unitCard(pick):'')+'</div></div>'+this.bar()}
-  // the hire bar: the order's totals, its buttons, the groups (when open) and the question (when it spends much)
-  bar(){const s=this.s,T=this.totals(),r=partyRoster(P),c=this.cart(),q=this.check(),p=this.p,opt=(v,n,sel,dis)=>'<option value="'+v+'"'+(sel?' selected':'')+(dis?' disabled':'')+'>'+htmlText(n)+'</option>';
-    const groups=s.recGroups&&T.ks.length?'<div class="rec-groups">'+T.ks.map(k=>'<label>'+ST[k].n+' ×'+c[k]+'<select data-recruit-field="cartTarget:'+k+'" aria-label="'+htmlText(ST[k].n)+': group">'+opt('auto','Automatic',!(s.cartTarget||{})[k])+r.groups.filter(g=>g.type===k).map(g=>opt(g.id,(g.name||ST[k].n)+' · '+g.id+' × '+g.count,(s.cartTarget||{})[k]===g.id,r.groupRoom(k,g.id)<c[k])).join('')+opt('new','A new group',(s.cartTarget||{})[k]==='new',r.groupRoom(k,'new')<c[k])+'</select></label>').join('')+'</div>':'';
-    const ask=s.cartAsk?'<div class="recruit-confirm" role="status">Spend '+T.cost+'g, more than half your gold?<div class="btns"><button type="button" class="btn primary" data-act="'+p+'hire-ok">Yes, hire</button><button type="button" class="btn" data-act="'+p+'hire-no">Cancel</button></div></div>':'';
-    return '<section class="rec-bar" aria-label="Your order"><div class="rec-sum" aria-live="polite">'+(T.n?'Hire <b>'+T.n+'</b> soldier'+(T.n>1?'s':'')+' · <b class="gold">'+T.cost+'g</b> · band '+partySize()+' → '+(partySize()+T.n)+' / '+partyCap():'Choose how many with + and − (or type it), or Fill band.')+(T.n&&!q.ok?' · <span class="bad">'+q.why+'</span>':'')+'</div>'+
-      '<div class="btns"><button type="button" class="btn sm" data-act="'+p+'fill"'+(partySize()>=partyCap()?' disabled':'')+'>Fill band</button><button type="button" class="btn sm" data-act="'+p+'clear"'+(T.n?'':' disabled')+'>Clear</button><button type="button" class="btn sm" data-act="'+p+'groups"'+(T.n?'':' disabled')+'>Groups: '+(Object.keys(s.cartTarget||{}).some(k=>c[k])?'chosen':'auto')+(s.recGroups?' ▴':' ▾')+'</button><span class="grow"></span><button type="button" class="btn primary" data-act="'+p+'hire"'+(T.n&&q.ok?'':' disabled')+'>Hire'+(T.n?' · '+T.cost+'g':'')+'</button></div>'+groups+ask+(s.recruitNotice?'<p role="status">'+s.recruitNotice+'</p>':'')+'</section>'}
-  // (can the whole order be hired: gold, willing, room in your band, each kind's own rules)
-  check(){const T=this.totals(),S=this.src;if(!T.n)return {ok:false,why:''};if(T.cost>P.gold)return {ok:false,why:'Not enough gold'};if(T.n>Math.floor(S.willing||0)||S.avail&&T.ks.some(k=>this.cart()[k]>S.avail(k)))return {ok:false,why:'Not that many willing'};
-    if(partySize()+T.n>partyCap())return {ok:false,why:'No room in your band'};const bad=T.ks.find(k=>this.why(k));return bad?{ok:false,why:ST[bad].n+': '+this.why(bad)}:{ok:true}}
+        '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(k),14)+' '+st.n+'</strong><small>Tier '+st.tier+(st.race?' · '+RACES[st.race].n:'')+' · '+kind(st)+' · <b>'+u.n+' men</b> · <b class="gold">'+u.cost+'g</b></small><small>'+S.line(k)+(u.why?' · <span class="bad">'+htmlText(u.why)+'</span>':'')+'</small></div>'+
+        '<div class="rec-step">'+this.btn('unit',k,'Recruit unit',u.why,u.why?'':' primary')+'</div></div>'}).join('');
+    const gs=this.short(),fills=gs.map(g=>{const f=this.fill(g),n=unitSize(g.type),w=r.wounded(g.id);
+      return '<div class="rec-row rec-refill"><div class="rec-txt"><strong>'+groupBadge(g,12)+' '+htmlText(armyGroupLabel(g.id))+'</strong><span class="rec-meter" aria-hidden="true"><i style="width:'+Math.round(g.count/n*100)+'%"></i><b style="width:'+Math.round(w/n*100)+'%"></b></span>'+
+        '<small>'+g.count+' / '+n+(w?' · '+w+' wounded':'')+' · needs '+f.need+(f.why?' · <span class="bad">'+htmlText(f.why)+'</span>':f.n<f.need?' · '+f.n+' now':'')+'</small></div>'+
+        '<div class="rec-step">'+this.btn('refill',g.id,'Refill'+(f.n?' +'+f.n+' · '+f.cost+'g':''),f.why)+'</div></div>'}).join(''),
+      all=gs.map(g=>this.fill(g)).filter(f=>!f.why),allCost=all.reduce((a,f)=>a+f.cost,0);
+    const ask=s.recAsk?'<div class="recruit-confirm" role="status">Spend '+s.recAsk.cost+'g, more than half your gold?<div class="btns">'+this.btn('ok',null,'Yes, hire','',' primary')+this.btn('no',null,'Cancel','')+'</div></div>':'';
+    return '<div class="recwrap"><div class="reclist">'+ask+(s.recruitNotice?'<p class="rec-notice" role="status">'+s.recruitNotice+'</p>':'')+
+      '<div class="lab">New units <small class="muted">each a full unit</small></div><div class="rec-rows">'+units+'</div>'+
+      '<div class="lab">Replenish your units</div><div class="rec-rows">'+(S.extra||'')+(fills||'<p class="muted">None of your units of these kinds is short.</p>')+'</div>'+
+      (gs.length>1?'<div class="btns rec-all">'+this.btn('refillall',null,'Refill all'+(allCost?' · '+allCost+'g':''),all.length?'':'None can be refilled now')+'</div>':'')+
+      (S.note?'<p class="muted" style="font-size:12px">'+S.note+'</p>':'')+'</div><div class="reccard">'+(pick?unitCard(pick):'')+'</div></div>'}
   // ---- its acts (a: the act, its prefix taken off)
-  act(a,arg){const v=a.slice(this.p.length),f={pick:'pick',add:'add',set:'set',clear:'clear',fill:'fill',groups:'groups',hire:'order','hire-ok':'order','hire-no':'order',info:'info','info-back':'info'}[v];
+  act(a,arg){const v=a.slice(this.p.length),f={pick:'pick',unit:'buy',refill:'buy',refillall:'buy',ok:'buy',no:'buy',info:'info','info-back':'info'}[v];
     if(f)this[f](arg,v);return !!f}
   pick(arg){this.s.pick=arg}
-  ok(k){return this.src.kinds.includes(k)&&!this.why(k)}
-  add(arg){const [k,n]=String(arg).split(':'),c=this.cart();if(!this.ok(k))return;const more=this.room(k);
-    c[k]=Math.max(0,(c[k]||0)+(n==='max'?more:Math.min(+n||0,more)));this.s.cartAsk=false;this.s.recruitNotice=''}
-  // (a typed count (k:n): as many as could be hired, none below 0)
-  set(arg){const [k,n]=String(arg).split(':'),c=this.cart();if(!this.ok(k))return;
-    c[k]=Math.max(0,Math.min(Math.floor(+n)||0,(c[k]||0)+this.room(k)));this.s.cartAsk=false;this.s.recruitNotice=''}
-  clear(){const s=this.s;s.cart={};s.cartAsk=false;s.recruitNotice=''}
-  groups(){this.s.recGroups=!this.s.recGroups}
-  // Fill band: your free places, a mix of the cheapest melee and ranged kinds on offer (RECRUIT_UI.fill melee), as gold and the willing allow
-  fill(){this.clear();const S=this.src,ok=S.kinds.filter(k=>!this.why(k)),cheap=l=>l.sort((a,b)=>S.cost(a)-S.cost(b))[0],m=cheap(ok.filter(k=>!ST[k].range)),r=cheap(ok.filter(k=>ST[k].range)),c=this.cart();
-    for(let i=0;;i++){const T=this.totals(),k=!r?m:!m?r:(c[m]||0)<Math.ceil((T.n+1)*RECRUIT_UI.fill)?m:r;if(!k||!this.room(k))break;c[k]=(c[k]||0)+1}}
-  // Hire: asked first when it spends much; then each kind into its group (chosen, or the one with room, then new ones), all or what could be
-  order(arg,v){const s=this.s,T=this.totals();if(v==='hire-no'){s.cartAsk=false;return}if(!this.check().ok)return;
-    if(v==='hire'&&T.cost>P.gold*RECRUIT_UI.ask){s.cartAsk=true;return}s.cartAsk=false;let got=0,spent=0,why='';
-    for(const k of T.ks){let left=this.cart()[k];const chosen=(s.cartTarget||{})[k];
-      while(left>0){const r=partyRoster(P),tgt=chosen||recruitment.rules.target(k),room=r.groupRoom(k,tgt)||0,n=Math.min(left,tgt==='new'?ARMY_GROUP.units:room);if(n<1){why='No room in a group for more '+ST[k].n;break}
-        const res=this.src.hire(k,n,tgt);if(!res.ok){why=res.why;break}got+=n;spent+=res.cost;left-=n;this.cart()[k]=left;if(chosen==='new')break}}
-    s.recruitNotice=got?'Hired '+got+' soldier'+(got>1?'s':'')+' for '+spent+'g.'+(why?' '+why+'.':''):why;for(const k in this.cart())if(!this.cart()[k])delete this.cart()[k]}
+  // Recruit unit, Refill, Refill all: asked first when it spends much (its question's Yes: ok, its No: no)
+  buy(arg,v){const s=this.s;if(v==='no'){s.recAsk=null;return}if(v==='ok'){const q=s.recAsk;s.recAsk=null;if(q)this.run(q.v,q.arg);return}
+    const cost=v==='unit'?this.unit(arg).cost:v==='refill'?this.fill(partyRoster(P).groups.find(g=>g.id===arg)||{type:''}).cost:this.short().reduce((a,g)=>{const f=this.fill(g);return a+(f.why?0:f.cost)},0);
+    if(cost>P.gold*RECRUIT_UI.ask){s.recAsk={v,arg,cost};return}s.recAsk=null;this.run(v,arg)}
+  run(v,arg){const s=this.s,r=partyRoster(P);let got=0,spent=0,why='';
+    const take=(k,n,g)=>{const res=this.src.hire(k,n,g);if(res.ok){got+=n;spent+=res.cost}else why=res.why;return res.ok};
+    if(v==='unit'){const u=this.unit(arg);if(u.why)why=u.why;else take(arg,u.n,'new')}
+    else for(const g of v==='refill'?r.groups.filter(g=>g.id===arg):this.short()){const f=this.fill(g);if(f.why){why=why||f.why;continue}if(!take(g.type,f.n,g.id))break}
+    s.recruitNotice=got?(v==='unit'?'A new unit of '+got+' '+ST[arg].n+(got>1?'s':'')+' joins you':got+' men join your unit'+(v==='refillall'?'s':''))+' for '+spent+'g.'+(why?' '+why+'.':''):why}
   // a unit's card: beside the list on a wide screen (picked), in the window over it on a small one (Back: the list, where you were)
   info(arg,v){const s=this.s;if(v==='info-back'){s.info=null;s.recBack=true;return}s.pick=arg;if(!window.matchMedia('(max-width:820px),(max-height:600px)').matches)return;s.info=arg;s.recScroll=panelScroll()}
   // (drawn again after an act: back from a card, the list where you left it; a card opened, its top)

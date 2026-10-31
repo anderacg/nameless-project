@@ -34,8 +34,8 @@ function parleyYield(){
 class RecruitPick{
   static kinds(){const c={};for(const k of G.par.o.troops)c[k]=(c[k]||0)+1;return c}
   // (does this choice fit your band?)
-  static fits(take){const r=partyRoster(P),cap=ARMY_GROUP.units;let heads=partyRoom(),free=r.groupLimit-r.slots;
-    for(const [k,n] of Object.entries(take)){if(!n)continue;if(!r.accepts(k))return false;heads-=n;const room=r.groups.filter(g=>g.type===k).reduce((a,g)=>a+Math.max(0,cap-g.count-r.wounded(g.id)),0);free-=Math.ceil(Math.max(0,n-room)/cap)}
+  static fits(take){const r=partyRoster(P);let heads=partyRoom(),free=r.groupLimit-r.slots;
+    for(const [k,n] of Object.entries(take)){if(!n)continue;if(!r.accepts(k))return false;heads-=n;const cap=r.groupCap(k),room=r.groups.filter(g=>g.type===k).reduce((a,g)=>a+Math.max(0,cap-g.count-r.wounded(g.id)),0);free-=Math.ceil(Math.max(0,n-room)/cap)}
     return heads>=0&&free>=0}
   static room(){return partyRoom()>0&&Object.keys(this.kinds()).some(k=>this.fits({[k]:1}))}
   static open(){const take={},have=this.kinds();for(const k in have)while(take[k]!==have[k]&&this.fits({...take,[k]:(take[k]||0)+1}))take[k]=(take[k]||0)+1;G.par.take=take;this.show()}

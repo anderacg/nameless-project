@@ -5,7 +5,7 @@ Kit.suite(({ok})=>{
  Kit.begin('soldier',23);Kit.clear();Kit.world();
  P.band='Grey <Company>';P.comps={brann:{ap:5,role:'scout'},elske:{ap:5,role:'surgeon'}};t.compInit('brann').lv=8;t.compInit('elske');
  P.sk.lead.lv=7;// (room for the groups: an army starts at 3 slots, your hero and companions among them, and leadership adds more: core/army.js armyGroupLimit)
- const r=t.partyRoster(P);r.add('hum_foot',12);const a=r.groups[0],b=r.split(a.id,4);r.rename(a.id,'First <Guard>');P.wounded={hum_foot:3};P.woundedGroups=[{id:a.id,type:a.type,count:3}];
+ const r=t.partyRoster(P);r.add('hum_foot',8);const a=r.groups[0];r.add('hum_foot',4,'new');const b=r.groups.find(g=>g!==a&&g.type==='hum_foot');r.rename(a.id,'First <Guard>');P.wounded={hum_foot:3};P.woundedGroups=[{id:a.id,type:a.type,count:3}];
  t.vitals();P.morale=63;P.bsta=24;P.gold=1000;P.tp=3;
  const world=()=>{G.mode='world';t.hidePanel()},army=()=>{world();G.char='roster';t.openChar()};
  army();ok(+q('[aria-label="Morale"]').getAttribute('aria-valuenow')===63&&Math.abs(+q('[aria-label="Stamina"]').getAttribute('aria-valuenow')-24)<1e-9,'Army bars read actual morale and band stamina');

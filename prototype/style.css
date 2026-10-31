@@ -733,6 +733,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .rec-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .rec-txt small{color:var(--muted);font-size:var(--fs-xs)}
 .rec-step{display:flex;align-items:center;gap:var(--sp-1);flex-wrap:wrap;justify-content:flex-end}
+/* (the desk's Replenish: a unit's men as a bar, its fit gold and its wounded red after them; Refill all under the rows) */
+.rec-meter{display:flex;height:5px;margin:2px 0 1px;max-width:180px;background:var(--shade);border-radius:3px;overflow:hidden}.rec-meter i{background:var(--accent)}.rec-meter b{background:#b9463c}
+.rec-all{justify-content:flex-end;margin:var(--sp-1) 0}.rec-notice{margin:0 0 var(--sp-1)}
 .rec-n{width:44px;min-height:30px;text-align:center;font-size:var(--fs-lg);color:var(--accent);background:var(--shade);border:1px solid var(--line-2);border-radius:var(--r-sm);-moz-appearance:textfield}
 .rec-n::-webkit-inner-spin-button,.qty-n::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .rec-pic{position:relative}

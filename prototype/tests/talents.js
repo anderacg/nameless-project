@@ -32,7 +32,7 @@ try{
  const l0=t.abil('leap');learn(['mighta1','mighta2']);const l1=t.abil('leap');ok(l1.r>l0.r&&l1.stun>l0.stun&&l1.cd<l0.cd,'Earthshaker and Quick Leap upgrade it ('+l0.cd+'s → '+l1.cd+'s)');
  learn(['start','finesse0','finesse1','finesse2','finessea0','finessea1','finessea2']);const w=t.abil('whirl');ok(w.r>1.3&&w.dmg>1.3&&w.mp<t.HSKILLS.whirl.mp,'Whirlwind: wider, harder, cheaper');
  {const rn=P.renown;P.renown=1000;// (renown past the floor of your groups' room, parties.js cap: else +1 is lost under it)
- learn(['command0']);const c0=t.partyCap();learn(['command1']);ok(t.partyCap()===c0+1,'Followers: +1 party size');P.renown=rn}
+ learn(['command0']);const c0=t.partyRoster(P).groupLimit;learn(['command1']);ok(t.partyRoster(P).groupLimit===Math.min(t.ARMY_LIMIT,c0+1),'Followers: +1 unit slot');P.renown=rn}
  const hc=t.hireCost('hum_levy');learn(['command2']);ok(t.has('silver')&&t.hireCost('hum_levy')<hc,'Silver Tongue: the perk, and cheaper hiring');
  learn(['arcana0']);const ms=t.maxMP();learn(['arcana1']);ok(t.maxMP()===ms+15,'Clarity: +15 mana');
  P.tp++;ok(t.takeNode('h_might_finesse')&&t.treeHas('h_might_finesse'),'hybrid nodes link neighbouring branches (Might and Finesse taken: the node between them can be learned)');
