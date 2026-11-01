@@ -18,7 +18,13 @@ try{
  // bbefddd proficiency by rank (>2961751b), fa23bde battles longer (>e69782cb, 803bd3a's); then the night's troop tree (the human
  // kinds' stats: hum_foot, hum_bow, hum_knight fight here): >a9786be6. Checked: with data/units.js, races.js, matchups.js and
  // world/holding.js as at 803bd3a it is e69782cb again. Was 6b1cc863)
- {const first=run('none',false),HEAD_FP='a9786be6';ok(first===HEAD_FP||t.BW!==960,'terrain off: the page’s first lab battle plays as at HEAD (fingerprint '+first+(t.BW!==960?'; field '+t.BW+' px wide, HEAD’s was taken at 960':'')+')')}
+ // (re-recorded 2026-11-01, on purpose: men fill the nearest free place (the owner, 2026-11-01); core/assign.js SLOTFILL, formations.js layForm, battlecontrol.js refill):
+ // a group's slots go to its men by the least walking in all. With SLOTFILL.on false it is a9786be6 again. Was a9786be6)
+ // (re-recorded 2026-11-01, on purpose: unit kits step 2 (the owner; doc/UNIT_KITS_DESIGN.md §10): a rank's stats only, Brace a
+ // stance (the AI braces its spears for a charge it sees coming: commander.js chargeIn), the lab counting a rank's morale. Checked:
+ // with every step-2 switch off (RANKS.statsOnly, mastery5; KITS.brace, traits2, cap, keys2) it is 1ac65f8f again. Was 1ac65f8f)
+ // (re-recorded 2026-11-01, on purpose: the melee hold (actors.js MELEE_HOLD: a man-sized fighter at his foe holds till the foe is 1 px past his reach (no further than he strikes), as a shooter keeps his range; a big beast wades on; the owner, 2026-11-01: "the fighter that I fight in battle map seems to move weird, jiggering left right"). Proof: MELEE_HOLD.on false gives fe102f34 again. Was fe102f34)
+ {const first=run('none',false),HEAD_FP='f1fcd063';ok(first===HEAD_FP||t.BW!==960,'terrain off: the page’s first lab battle plays as at HEAD (fingerprint '+first+(t.BW!==960?'; field '+t.BW+' px wide, HEAD’s was taken at 960':'')+')')}
  ev('TERRAIN.on=true');
  const gridHash=T=>{let h=2166136261;const mix=v=>{h=Math.imul(h^(v&255),16777619)>>>0};for(const a of [T.kind,T.lvl,T.up])for(const v of a)mix(v);return h.toString(16)};
  // ---- generation: same place, same field; never Math.random

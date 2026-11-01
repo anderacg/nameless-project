@@ -40,9 +40,9 @@ Kit.suite(({ok})=>{
   t.rankGain(pg,R.peasant-1);ok(!t.rankReady(pg)&&t.rankOf(pg)===0,'one short: not yet');t.rankGain(pg,5);ok(t.rankReady(pg)&&t.rankXp(pg)===R.peasant,'full: ready to upgrade')}
  // ======== the badge
  {const a=t.rankBadge('hum_foot',3,14),b=t.rankBadge('hum_sword',3,14),c=t.rankBadge('hum_foot',4,14);
-  ok(/<img class="rbadge"/.test(a)&&!/mastery/.test(a+b)&&a.match(/src="([^"]+)"/)[1]===b.match(/src="([^"]+)"/)[1]&&/Bronze mastery/.test(t.rankBadge('hum_foot',5,14,1))&&/Gold mastery/.test(t.rankBadge('hum_foot',5,14,3)),'a badge: steel, whatever its tier, till its mastery: bronze, silver, gold');
+  ok(/<img class="rbadge"/.test(a)&&!/mastery/.test(a+b)&&a.match(/src="([^"]+)"/)[1]===b.match(/src="([^"]+)"/)[1]&&/Adept/.test(t.rankBadge('hum_foot',5,14,1))&&/Legend/.test(t.rankBadge('hum_foot',5,14,t.RANKS.mastery.metal.length)),'a badge: steel, whatever its tier, till its mastery: bronze up to gold (five levels, Adept to Legend: doc/UNIT_KITS_DESIGN.md §7)');
   const src=s=>s.match(/src="([^"]+)"/)[1];ok(src(a)!==src(c)&&src(a)===src(t.rankBadge('hum_foot',3,20)),'a picture for each metal and rank, drawn once');
   G.mode='world';t.openChar();const gg=r.groups[0];t.act('party-select',gg.id);const pn=document.getElementById('panel');
-  ok(pn.querySelector('[data-army-group="'+gg.id+'"] .rbadge')&&/Rank \d/.test(pn.querySelector('[data-army-group="'+gg.id+'"] .fb-unit-xptxt').textContent),'the Army window: each group its badge and its rank');t.act('char-close')}
+  ok(pn.querySelector('[data-army-group="'+gg.id+'"] .rbadge')&&/[Rr]ank \d/.test(pn.querySelector('[data-army-group="'+gg.id+'"] .fb-unit-xptxt').textContent),'the Army window: each group its badge and its rank (its name too: doc/UNIT_KITS_DESIGN.md §7)');t.act('char-close')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

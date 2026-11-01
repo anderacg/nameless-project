@@ -103,7 +103,9 @@ try{
   P.gear.mount=null;P.sk.ride.lv=0;P.sk.athl.lv=0;P.perks=[];P.comps={};P.wounded={};P.morale=60;P.hp=t.vitals()[0];(0,eval)('BAND=freshBand()');P.bsta=100;// (the pace by ground alone: fresh, not Parched or Tired after the day above, world/supply.js)
   const rows=[],bad=[],kmDay=v=>v*t.DAY_SECONDS/t.TILE*.25,want={foot:{open:[8.9,.05],road:[11.6,.05],forest:[5.3,.05]},horse:{open:[13.3,.08],road:[17.3,.08]}},race0=P.race;
   for(const [who,setup] of [['foot',()=>{P.race='dwarf';P.gear.mount=null;P.troops={hum_levy:10}}],['horse',()=>{P.race='dwarf';P.gear.mount='m_horse';P.troops={hum_knight:10}}],['human foot',()=>{P.race='human';P.gear.mount=null;P.troops={hum_levy:10}}]]){setup();
-   for(const g in grounds){if(!grounds[g])continue;P.x=grounds[g][0];P.y=grounds[g][1];const v=speed(grounds[g]),tm=(P.x=grounds[g][0],P.y=grounds[g][1],t.travelMul()),today=t.MAP_BASE*tm*.6,now=t.MAP_BASE*tm*t.WORLD_PACE*S.move*S.travel;
+   // (the road's speed is a column's: By road on there, the owner, 2026-11-01, marchstyles.js TravelStyle; a ring across it gets
+   // a share, tests/roadcolumn.js)
+   for(const g in grounds){if(!grounds[g])continue;t.setByRoad(g==='road');P.x=grounds[g][0];P.y=grounds[g][1];const v=speed(grounds[g]),tm=(P.x=grounds[g][0],P.y=grounds[g][1],t.travelMul()),today=t.MAP_BASE*tm*.6,now=t.MAP_BASE*tm*t.WORLD_PACE*S.move*S.travel;
     if(Math.abs(v-now)>1e-6||Math.abs(v/today-.4/.6*.68*S.travel)>1e-6)bad.push(who+' '+g+' '+v.toFixed(2)+' (want '+now.toFixed(2)+')');
     const w=(want[who]||{})[g];if(w&&Math.abs(v/S.travel/w[0]-1)>w[1])bad.push(who+' '+g+' '+(v/S.travel).toFixed(2)+' px/s at the base, off the doc\'s '+w[0]+' by '+Math.round((v/S.travel/w[0]-1)*100)+'%');
     if(who==='human foot'&&g!=='open'&&g!=='road')continue;rows.push(who+' '+g+' '+v.toFixed(1)+' px/s ('+today.toFixed(1)+' before), '+kmDay(v).toFixed(0)+' km a day')}}

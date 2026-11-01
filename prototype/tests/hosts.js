@@ -25,7 +25,8 @@ Kit.suite(({ok})=>{
   const p=m1.troops.slice();m1.troops=Array(4).fill('hum_knight');const fast=h.paceOf();m1.troops=p;ok(fast>=h.paceOf()-1e-9,'none slower than you: your own pace')}
  // ---- they hunt no prey: a weak band near, they keep their places
  // (standing, they close up to their places: through the ford behind you, a party's men squeeze across it, MARCH_MOVE.jam)
- const at=m=>{const q=t.Host.yours().slot(m);return Math.hypot(m.x-q.x,m.y-q.y)},settle=Kit.frames(900,.05,null,()=>[m1,m2].every(m=>at(m)<X.gap/2))*.05;
+ // (a party is slowed by its own men in the ford, world.js armyGround: the last across a little later)
+ const at=m=>{const q=t.Host.yours().slot(m);return Math.hypot(m.x-q.x,m.y-q.y)},settle=Kit.frames(900,.05,null,()=>[m1,m2].every(m=>at(m)<X.gap/4))*.05;
  ok(at(m1)<X.gap/2&&at(m2)<X.gap/2&&ring(P,m1)>0&&ring(m1,m2)>0&&ring(P,m1)<X.gap*1.5&&ring(m1,m2)<X.gap*1.5,'standing, each comes to its place by the rings in '+settle.toFixed(1)+' s ('+Math.round(at(m1))+' and '+Math.round(at(m2))+' px off it): '+Math.round(ring(P,m1))+' and '+Math.round(ring(m1,m2))+' px between rings (HOSTS.gap '+X.gap+')');
  {const bd=t.asParty({kind:'bandits',troops:['militia'],x:m1.x+40,y:m1.y,cool:0,idle:true,t:0,a:0});t.bandits.push(bd);const x0=m1.x,y0=m1.y;for(let i=0;i<40;i++)t.BRAINS.cparty.think(m1,.05);
   ok(!m1.fight&&Math.hypot(m1.x-x0,m1.y-y0)<12,'a weak band near: the party following you keeps its place');t.bandits.length=0}
@@ -47,7 +48,7 @@ Kit.suite(({ok})=>{
  // (asked in his talk)
  {G.enc={kind:'lord',ref:L,list:L.troops.slice()};t.lordMeet(L);const b=document.querySelector('[data-act="talk-follow"]');ok(b&&!b.disabled&&/follow you/.test(b.textContent),'his talk: Ask him to follow you');
   Kit.stubStream('talk',0,()=>t.act('talk-follow',L.id));ok(L.follow&&L.follow.until>G.day&&/will follow you for/.test(document.getElementById('panel').textContent),'he agrees: he follows you for '+(L.follow&&L.follow.until-G.day)+' days');Kit.world()}
- {const h=t.Host.yours();ok(h&&h.members.includes(L),'a lord in your host');P.tx=P.x+20*t.TILE;P.ty=P.y;Kit.frames(500,.05,null,()=>P.tx==null);const d=Math.hypot(L.x-P.x,L.y-P.y);ok(Math.abs(d-back(L))<X.gap&&ring(P,L)>0,'he keeps his place in your column ('+Math.round(d)+' px back, his place '+Math.round(back(L))+'; '+Math.round(ring(P,L))+' px between your rings)')}
+ {const h=t.Host.yours();ok(h&&h.members.includes(L),'a lord in your host');P.tx=P.x+20*t.TILE;P.ty=P.y;Kit.frames(500,.05,null,()=>P.tx==null);Kit.frames(40,.05);const d=Math.hypot(L.x-P.x,L.y-P.y);ok(Math.abs(d-back(L))<X.gap&&ring(P,L)>0,'he keeps his place in your column ('+Math.round(d)+' px back, his place '+Math.round(back(L))+'; '+Math.round(ring(P,L))+' px between your rings)')}
  // (a battle of yours: he joins against bandits; against a realm at peace with his, he stands aside and leaves your host)
  {const bd=t.asParty({kind:'bandits',troops:Array(4).fill('militia'),x:P.x+30,y:P.y,cool:0});t.bandits.push(bd);t.startEncounter({kind:'party',ref:bd,n:4,list:bd.troops.slice(),band:'bandits'});
   ok((G.enc?.allies||[]).includes(L),'bandits: he joins your battle');G.enc=null;Kit.world();t.bandits.length=0}

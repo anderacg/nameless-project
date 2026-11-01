@@ -48,11 +48,11 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  ok(k.phase==='regroup'&&k.rest,'tired after a charge, they stand off to get their breath back');k.t=X.restMax;t.command(1);ok(k.phase==='charge','but no longer than restMax s');
  // ----- abilities
  // Brace: riders running in at a spear group's front
- w=army([G('hum_knight',10)],[G('hum_spear',16)],[[300,300],[380,300]]);const sp=w.foe[0];ok(sp.abilities().some(a=>a.id==='brace'),'fixture: an enemy spear group can brace');
- w.mine[0].units.forEach(u=>{u.run=t.CHARGE.run;u.cd=999});t.command(1);ok(t.abilityActive(sp,'brace'),'riders charging in at its front: the spear group braces');
- for(let i=0;i<4;i++){w.b.t+=.5;t.command(1)}ok(t.abilityActive(sp,'brace')&&sp.order==='hold'&&!sp.hasTarget,'and its captain leaves it braced while they are near');
- w.mine[0].units.forEach(u=>{u.x=40;u.y=40;u.run=0});t.captainMem(1).commit=true;w.b.t+=.5;t.command(1);w.b.t+=.5;t.command(1);ok(!t.abilityActive(sp,'brace'),'the danger past, it is given orders again (attacking: ending the brace)');
- w=army([G('hum_knight',10)],[G('hum_spear',16)],[[300,300],[380,300]]);w.mine[0].units.forEach(u=>{u.run=0});t.command(1);ok(!t.abilityActive(w.foe[0],'brace'),'riders standing (no momentum): no brace');
+ w=army([G('hum_knight',10)],[G('hum_spear',16)],[[300,300],[380,300]]);const sp=w.foe[0];ok(t.braceCan(sp),'fixture: an enemy spear group can brace (the Brace stance: doc/UNIT_KITS_DESIGN.md §3)');
+ w.mine[0].units.forEach(u=>{u.run=t.CHARGE.run;u.spdNow=u.s.spd;u.dir=0;u.cd=999})/* (riding in at speed, as the AI's brace now asks: commander.js chargeIn; 2026-11-01) */;t.command(1);ok(t.braceOn(sp),'riders charging in at its front: the spear group braces');
+ for(let i=0;i<4;i++){w.b.t+=.5;t.command(1)}ok(t.braceOn(sp)&&sp.order==='hold'&&!sp.hasTarget,'and its captain leaves it braced while they are near');
+ w.mine[0].units.forEach(u=>{u.x=40;u.y=40;u.run=0});t.captainMem(1).commit=true;w.b.t+=.5;t.command(1);w.b.t+=.5;t.command(1);ok(!t.braceOn(sp),'the danger past, it is given orders again (attacking: ending the brace)');
+ w=army([G('hum_knight',10)],[G('hum_spear',16)],[[300,300],[380,300]]);w.mine[0].units.forEach(u=>{u.run=0});t.command(1);ok(!t.braceOn(w.foe[0]),'riders standing (no momentum): no brace');
  // Rally
  w=army([G('hum_foot',20)],[G('hum_foot',15),G('hum_foot',15)],[[200,300],[600,250],[600,350]]);let [r1]=w.foe;r1.resolve.mor=20;t.command(1);
  ok(r1.abil&&r1.abil.rally&&r1.resolve.mor>=34,'a wavering group rallies (+15)');r1.resolve.mor=20;t.command(1);ok(r1.resolve.mor===20,'not again while Rally cools down');
@@ -64,7 +64,8 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  w=army([G('hum_foot',20)],[G('hum_knight',10)],[[200,300],[330,300]]);k=w.foe[0];k.phase='charge';k.attack(w.mine[0]);sta(k,X.spurSta-10);t.command(1);ok(!(k.abil&&k.abil.spur),'short of breath: no spur');
  w=army([G('hum_foot',20)],[G('hum_knight',10)],[[200,300],[700,300]]);k=w.foe[0];k.phase='charge';k.attack(w.mine[0]);t.command(1);ok(!(k.abil&&k.abil.spur),'a mark far off: not yet');
  // Fire arrows
- w=army([G('hum_knight',10)],[G('hum_bow',12)],[[400,300],[700,300]]);still(w.mine[0]);t.command(1);ok(w.foe[0].abil&&w.foe[0].abil.fire,'archers shooting at armoured knights loose fire arrows');
+ // (Fire arrows an AI army's from its lord's level (KITS.aiFire; doc/UNIT_KITS_DESIGN.md §5): this lab's archers a lord's)
+ w=army([G('hum_knight',10)],[G('hum_bow',12)],[[400,300],[700,300]]);t.AI_OF.set(t.battleRec(w.foe[0]),{lv:t.KITS.aiFire});still(w.mine[0]);t.command(1);ok(w.foe[0].abil&&w.foe[0].abil.fire,'a lord’s archers shooting at armoured knights loose fire arrows');
  w=army([G('hum_levy',10)],[G('hum_bow',12)],[[400,300],[700,300]]);still(w.mine[0]);t.command(1);ok(!(w.foe[0].abil&&w.foe[0].abil.fire),'at unarmoured levies, plain arrows');
  ok(t.fireWorth({s:t.ST.hum_bow},{s:t.ST.wolf})&&!t.fireWorth({s:t.ST.hum_bow},{s:t.ST.dragon}),'fire for a beast weak to it (wolves), not one that shrugs it off (a dragon)');
  // ----- morale off, and your army on auto

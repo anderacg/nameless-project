@@ -36,5 +36,20 @@
   PX.flame=function(f){f=((f|0)%4+4)%4;const c=PX.canvas(6,7,g=>{const P=PX.paint(g);
     FLAME[f].forEach((h,i)=>{P.rect('#e86a2a',1+i,7-h,1,h);if(i===1||i===2)P.rect('#ffc060',1+i,9-h,1,h-2)});P.px('#fff0b0',2+(f&1),6)});
     return{img:PX.outline(c),ax:4,ay:8}};
+  /* a fire's flame as it burns (the game's fire.js picks the frame and keeps each): w x h px at most, frame f of n. Two or three
+     tongues (by its width) over a low bed of fire, each pointed, swaying and rising and falling at its own two rates on a loop of
+     n, so they lick, split and part unevenly (the middle one the tallest), the tallest now and then breaking off a pixel above its
+     tip; its tips trailing lean px (- left, + right: a torch carried, an arrow flying); coloured by heat from ramp (hottest
+     first) by height and by the middle: a white-yellow heart low in it, yellow, orange, the deep red of its tips and edges. No
+     outline. Returns {img, ax, ay}, as PX.flame's: (ax, ay) the middle of its foot */
+  PX.fireFlame=function(s){const {w,h,ramp}=s,n=s.n||8,f=((s.f|0)%n+n)%n,lean=s.lean|0,seed=s.seed|0,th=f/n*2*Math.PI,m=Math.abs(lean),mid=(w-1)/2,R=ramp.length,K=w>=6?3:w>=3?2:1,
+      ph=(j,k)=>PX.hash(j,k,seed)*6.283,bed=h>=8?2:1,H=[...Array(w)].map((_,c)=>Math.abs(c-mid)<w/2-1?bed:0);
+    for(let j=0;j<K;j++){const c0=mid+(K>1?(j/(K-1)-.5)*(w-1)*.5:0)+.55*Math.sin(th+ph(j,1)),hj=h*(K===3&&j!==1?.6:1)*(.8+.2*(.6*Math.sin(th+ph(j,2))+.4*Math.sin(2*th+ph(j,3)))),hw=w/K*.55+.75;
+      for(let c=0;c<w;c++){const e=Math.abs(c-c0)/hw;if(e<1)H[c]=Math.max(H[c],Math.round(hj*Math.pow(1-e,.7)))}}
+    const top=H.indexOf(Math.max(...H)),lick=H[top]>=4&&PX.hash(f,3,seed)<.45,x=r=>Math.round(lean*Math.pow(r/h,1.5))+(lean<0?m:0);
+    const img=PX.canvas(w+m,h+2,g=>{const P=PX.paint(g);
+      H.forEach((hc,c)=>{const d=Math.abs(c-mid)/(w/2);for(let r=0;r<hc;r++){const t=Math.min(.999,r/h*1.1+d*.5+(r===hc-1&&hc>2?.12:0));P.px(ramp[Math.floor(t*R)],c+x(r),h+1-r)}});
+      if(lick)P.px(ramp[R-2],top+x(H[top]+1),h-H[top])});
+    return{img,ax:Math.round(mid)+(lean<0?m:0),ay:h+2}};
 
 })(window.PX=window.PX||{});

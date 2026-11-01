@@ -244,7 +244,8 @@ class HeroHands{
   }
   updateBar(){
     const X=this;$('#swing').textContent={melee:'Attack',ranged:'Shoot',magic:'Cast'}[heroKind()]+(heroShots()!=null?' ('+heroShotsLeft()+')':'');
-    document.querySelectorAll('[data-slot]').forEach(b=>{const id=P.slots[+b.dataset.slot];if(!id)return;const A=abil(id),lock=!knows(id);b.disabled=lock||X.cds[id]>0;
+    // (your hero's own bar only: the units' skill bar has data-slot buttons too, battlehud.js; written over, it threw and froze the loop)
+    document.querySelectorAll('#slotbar [data-slot]').forEach(b=>{const id=P.slots[+b.dataset.slot];if(!id)return;const A=abil(id),lock=!knows(id);b.disabled=lock||X.cds[id]>0;
       b.textContent=SLOT_KEYS[+b.dataset.slot]+' '+A.n+(lock?' (not learned)':X.cds[id]>0?' '+Math.ceil(X.cds[id]):'');b.title=A.d+' Costs '+costText(A)+'.'});
     const db=document.querySelector('[data-skill="dodge"]');if(db){db.disabled=X.rollCd>0||X.sp<dodgeCost();db.textContent='F Dodge'+(X.rollCd>0?' '+X.rollCd.toFixed(1):'')}
   }

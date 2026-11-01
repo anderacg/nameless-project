@@ -1185,6 +1185,8 @@ The season comes from `G.day`, so it needs nothing extra.
 
 ### 10.1 Figures against buildings and trees
 
+Status 2026-11-01: the map's people are drawn as battle figures at the marchers' scale (people.js `MAP_FIGS`: road encounters, workers, refugees, followers, ships' crews, a site's builder); the small template stays for the map off the march (`MAP_FIGS.on` false, or `WORLD_BATTLE.on` false), the menu art and the cards.
+
 One building per 16-px tile; **a person is clearly smaller than a house.** The map gets **its own small templates**; battle figures stay 15 px.
 
 | Thing | Today (box, drawn) | Proposed (box, drawn) |

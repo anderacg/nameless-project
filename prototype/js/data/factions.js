@@ -14,6 +14,11 @@ const FACS={
   salt:{n:'Salt League',col:'#4cc0a8',d:'Free merchant ports of the south coast, where elves, humans and orcs trade and fight side by side.',races:['elf','human','orc'],lords:['Admiral Cass','Captain Ivo','Admiral Neri','Captain Mirelle'],
     gender:{'Admiral Cass':'m','Captain Ivo':'m','Admiral Neri':'f','Captain Mirelle':'f'}}
 };
+// a named lord's title as shown, by her name in the realm's list (the owner, 2026-11-01: "change whatever you see fits for now, just make
+// sure it can be changed in the future"): women lords of the dwarves and orcs by the female titles (worldplace.js LORD_SHE). The list's
+// name stays its key (its portrait, its gender, an old save's lord); empty it and every name is the list's again
+const LORD_RETITLE={'Thane Borka':'Clanmother Borka','Thane Gimra':'Clanmother Gimra','Warchief Ulgra':'Warmother Ulgra'};
+const lordTitled=n=>LORD_RETITLE[n]||n,lordListed=n=>Object.keys(LORD_RETITLE).find(k=>LORD_RETITLE[k]===n)||n;
 // city guards: every holding sends a patrol out of its garrison to ride its land (world/patrols.js); how many, and the guard it
 // keeps behind, by its kind (holdings.js patrol). days: how long it stays out; see: how far it spots trouble (px); speed: on foot;
 // fine: gold per point of reputation a crime cost, demanded when the guards catch you; wanted: days they remember it

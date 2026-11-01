@@ -14,17 +14,18 @@ const worldEye=()=>B?.world&&B.hero?B.world.world(B.hero):P;
    with it until it next steps) and, with middle, your army's middle, vis() wide as before (a few men spread round a wide ring
    never see less than the army did); you alone without an army (or far from it). In a battle fought on the map, till it is
    over, each of your side's living men still in it (worldbattle.js). Each man sees vis(), the army's scouting, times his kind's
-   share of a character's (battlefog.js fogRange / FOG.char: a rider farther, a man on foot less), as the battle's sides see.
+   share of a character's (data/world.js SIGHT_KIND, sightShare: a rider farther, a man on foot less, a scout far farther), as the
+   battle's sides see (battlefog.js fogRange).
    eyes ({x, y, r}): only those whose disks make its edge, the farthest out first; one whose rim (rim points round it) and middle
    lie within the kept ones' disks, tol px wider, adds nothing, so a big army keeps a dozen or two (tol doubled, up to most px,
    while more than max: never more, so no edge man's sight is lost; armies in lanes, marchstyles.js, keep the most). Gathered
    again when you, your army or the battle moved on (at most once a frame), built again only when someone moved over move px.
    x0..x1, y0..y1: the men's box; rm: the widest sight; ver: counts its builds */
-const SIGHT_EYES={tol:3,most:6,rim:24,max:16,move:.5,middle:true};
+const SIGHT_EYES={tol:3,most:6,rim:24,max:16,move:.5,middle:true,armies:true};// (armies: another army seen, and drawn, man by man: worldobject.js spotted, march.js marchDraw)
 class Sight{
   constructor(){const K=SIGHT_EYES.rim;this.eyes=[];this.pool=[];this.raw=new Float64Array(96);this.was=new Float64Array(96);this.m=0;this.mw=-1;this.ord=[];this.key=new Float64Array(32);
     this.cos=Float64Array.from({length:K},(_,i)=>Math.cos(i*2*Math.PI/K));this.sin=Float64Array.from({length:K},(_,i)=>Math.sin(i*2*Math.PI/K));
-    this.by=(a,b)=>this.key[b]-this.key[a]||a-b;this.share={};this.st={};this.V=0;this.ver=0;this.x0=this.y0=this.x1=this.y1=this.rm=0}
+    this.by=(a,b)=>this.key[b]-this.key[a]||a-b;this.st={};this.V=0;this.ver=0;this.x0=this.y0=this.x1=this.y1=this.rm=0}
   // up to date for sight V (your army left further behind than a march's leap (MARCH_MOVE.teleport) is made again round you when
   // it next steps, MarchArmy.of: you alone till then; a battle over is not seen from)
   at(V){const s=this.st,w=B&&!B.over&&B.world||null;let a=!w&&WORLD_BATTLE.on&&MARCH_ARMIES.get(P)||null;if(a&&Math.hypot(P.x-a.x,P.y-a.y)>MARCH_MOVE.teleport)a=null;
@@ -34,11 +35,9 @@ class Sight{
   // (each man's x, y, r into raw, m of them)
   gather(V,w,a){this.m=0;
     if(w){for(const u of B.units)if(!u.team&&u.hp>0&&!u.left&&!u.rout)this.put(w.x0+u.x/w.scale,w.y0+u.y/w.scale,V*fogRange(u)/FOG.char)}
-    else if(a){const dx=P.x-a.x,dy=P.y-a.y;if(SIGHT_EYES.middle)this.put(P.x,P.y,V);for(const u of a.units)if(!u.dead)this.put(u.x+dx,u.y+dy,V*this.of(u))}
+    else if(a){const dx=P.x-a.x,dy=P.y-a.y;if(SIGHT_EYES.middle)this.put(P.x,P.y,V);for(const u of a.units)if(!u.dead)this.put(u.x+dx,u.y+dy,V*manSight(u))}
     if(!this.m){const p=w?worldEye():P;this.put(p.x,p.y,V)}}
   put(x,y,r){let R=this.raw;const i=3*this.m++;if(i+3>R.length){R=new Float64Array(R.length*2);R.set(this.raw);this.raw=R}R[i]=x;R[i+1]=y;R[i+2]=r}
-  // (a marcher's share of a character's sight, by his kind: fogRange's, kept a kind)
-  of(u){if(u.character||u.row==='hero'||u.row==='leader')return 1;const S=this.share;return S[u.type]??(S[u.type]=ST[u.type]?fogRange({s:ST[u.type]})/FOG.char:1)}
   // (anyone moved over move px, came or went since the last build: raw kept as was)
   moved(){const R=this.raw,n=3*this.m,e=SIGHT_EYES.move;let go=this.m!==this.mw;for(let i=0;i<n&&!go;i++)if(Math.abs(R[i]-this.was[i])>e)go=true;
     if(go){if(this.was.length!==R.length)this.was=new Float64Array(R.length);this.was.set(R);this.mw=this.m}return go}
@@ -56,10 +55,11 @@ class Sight{
       if(out){const e=this.pool[E.length]||(this.pool[E.length]={x:0,y:0,r:0});e.x=x;e.y=y;e.r=r;E.push(e)}}
     return E.length}
   covered(x,y,tol){const E=this.eyes;for(let j=0;j<E.length;j++){const e=E[j],dx=x-e.x,dy=y-e.y,r=e.r+tol;if(dx*dx+dy*dy<=r*r)return true}return false}
-  // (x, y) in your sight, each eye's r times k (k below 1: a wood's nearer sight, asked of every man; above: a margin past it)
-  sees(x,y,k=1){const g=this.rm*(k>1?k:1);if(x<this.x0-g||x>this.x1+g||y<this.y0-g||y>this.y1+g)return false;
-    const E=this.eyes;for(let j=0;j<E.length;j++){const e=E[j],dx=x-e.x,dy=y-e.y,r=e.r*k;if(dx*dx+dy*dy<r*r)return true}
-    if(k>=1)return false;const R=this.raw;for(let i=0;i<3*this.m;i+=3){const dx=x-R[i],dy=y-R[i+1],r=R[i+2]*k;if(dx*dx+dy*dy<r*r)return true}return false}
+  // (x, y) in your sight, each eye's r times k (k below 1: a wood's nearer sight, asked of every man; above: a margin past it), and
+  // pad px more (a ring of that much round x, y that it touches)
+  sees(x,y,k=1,pad=0){const g=this.rm*(k>1?k:1)+pad;if(x<this.x0-g||x>this.x1+g||y<this.y0-g||y>this.y1+g)return false;
+    const E=this.eyes;for(let j=0;j<E.length;j++){const e=E[j],dx=x-e.x,dy=y-e.y,r=e.r*k+pad;if(dx*dx+dy*dy<r*r)return true}
+    if(k>=1)return false;const R=this.raw;for(let i=0;i<3*this.m;i+=3){const dx=x-R[i],dy=y-R[i+1],r=R[i+2]*k+pad;if(dx*dx+dy*dy<r*r)return true}return false}
   // px from (x, y) out to its edge (below 0: inside), the nearest eye's: the fog's smooth strengths (past far px out, only that it
   // is: the men's box tells, no eye asked)
   edge(x,y,far=Infinity){const bx=x<this.x0?this.x0-x:x>this.x1?x-this.x1:0,by=y<this.y0?this.y0-y:y>this.y1?y-this.y1:0,lo=Math.sqrt(bx*bx+by*by)-this.rm;if(lo>=far)return lo;
@@ -68,6 +68,21 @@ class Sight{
 const ARMY_SIGHT=new Sight();
 // your sight now, for sight V (vis(): the army's scouting); in it
 const yourSight=(V=vis())=>ARMY_SIGHT.at(V);
+// (a marcher's share of a character's sight, by his kind: data/world.js sightShare; a character's 1)
+const manSight=u=>u.character||u.row==='hero'||u.row==='leader'?1:sightShare(u.type);
+/* an army's eyes (the owner, 2026-11-01: "Every unit spots now and has its vision range, so the army should depend on all units'
+   capabilities"): each man of its march (march.js MarchArmy, carried with its middle till it next steps) r px times his kind's
+   share (manSight), merged as yours are; a column's head sees furthest down its road. marchstyles.js TravelStyle asks it, of armies
+   marched man by man (near you), when a foe comes near enough: gathered again when its men stepped or it moved, built again only
+   when one moved over SIGHT_EYES.move px (ver counts its builds). One an army (armySight), kept with its march */
+class ArmySight extends Sight{
+  of(a,r){const s=this.st,o=a.owner;if(s.a===a&&s.r===r&&s.t===a.time&&s.x===o.x&&s.y===o.y&&s.n===a.units.length)return this;
+    s.a=a;s.r=r;s.t=a.time;s.x=o.x;s.y=o.y;s.n=a.units.length;this.m=0;const dx=o.x-a.x,dy=o.y-a.y;
+    for(const u of a.units)if(!u.dead)this.put(u.x+dx,u.y+dy,r*manSight(u));if(!this.m)this.put(o.x,o.y,r);if(this.moved())this.build();return this}
+}
+const ARMY_SIGHTS=new WeakMap();
+// (march a's eyes, a character's r px wide)
+const armySight=(a,r)=>{let s=ARMY_SIGHTS.get(a);if(!s)ARMY_SIGHTS.set(a,s=new ArmySight());return s.of(a,r)};
 const inSight=(x,y)=>yourSight().sees(x,y);
 let fogDirty=true,lastReveal=-1;
 // what you see now becomes known (each tile whose middle lies within an eye of your sight, after each build)

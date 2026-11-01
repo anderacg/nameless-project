@@ -138,7 +138,15 @@ const SFX={
   victory:{g:'battle',n:'Victory fanfare',pri:3,gap:2,vol:.7,play:V=>{[[0,293.7,.12],[.18,293.7,.12],[.36,440,.25],[.7,370,.12],[.88,440,.12],[1.06,587.3,1]].forEach(([at,f,hold])=>AU.horn(V,{f,at,a:.04,hold,r:.15,amp:.19,scoop:.97}));
     AU.drum(V,{f:80,at:1.06,d:.6,amp:.5});return 2.6}},
   defeat:{g:'battle',n:'Defeat stinger',pri:3,gap:2,vol:.7,play:V=>{[[0,220,.4],[.55,196,.4],[1.1,174.6,.45],[1.7,164.8,1.2]].forEach(([at,f,hold])=>AU.horn(V,{f,at,a:.1,hold,r:.3,amp:.16,bright:3}));
-    AU.drum(V,{f:55,d:.9,amp:.5});AU.drum(V,{f:50,at:1.7,d:1.2,amp:.55});return 3.4}}};
+    AU.drum(V,{f:55,d:.9,amp:.5});AU.drum(V,{f:50,at:1.7,d:1.2,amp:.55});return 3.4}},
+  // the crowd in the lists (gfx/tourney.js TourneyCrowd): a cheer at a hard blow or a man down, the roar at the bout's end
+  cheer:{g:'battle',n:'The crowd cheers (the lists)',pri:2,gap:.35,max:2,vol:.6,vary:.05,play:V=>{const mouth=V.c.createBiquadFilter();mouth.type='bandpass';mouth.frequency.value=900;mouth.Q.value=.9;mouth.connect(V.out);
+    AU.noise(V,{f:1100,q:.7,a:.08,d:.8,amp:.22,dest:mouth});AU.noise(V,{ft:'highpass',f:2400,q:.6,a:.05,d:.5,amp:.06});
+    for(let i=0;i<6;i++){const f=210+V.r()*200;AU.tone(V,{type:'sawtooth',f,f1:f*1.15,at:V.r()*.25,a:.04,d:.35+V.r()*.3,amp:.06,lp:1600,dest:mouth})}return 1.1}},
+  roar:{g:'battle',n:'The crowd roars (a bout ends)',pri:3,gap:2,vol:.7,play:V=>{const mouth=V.c.createBiquadFilter();mouth.type='bandpass';mouth.frequency.value=800;mouth.Q.value=.8;mouth.connect(V.out);
+    AU.noise(V,{f:700,f1:1000,q:.6,a:.3,d:2.2,amp:.3,dest:mouth});AU.noise(V,{f:1600,q:.8,a:.25,d:1.8,amp:.12,dest:mouth});
+    for(let i=0;i<10;i++){const f=180+V.r()*240;AU.tone(V,{type:'sawtooth',f,f1:f*1.2,at:V.r()*.8,a:.05,d:.5+V.r()*.5,amp:.05,lp:1500,dest:mouth})}
+    for(let i=0;i<24;i++)AU.tek(V,{f:1800+V.r()*1200,q:1.4,at:.2+V.r()*2,amp:.06,d:.03});return 2.8}}};// (hands clapping)
 
 /* ---------- playing them ---------- */
 // is anything heard (the battle's hooks ask first, so a cue that needs reckoning costs nothing with sound off)

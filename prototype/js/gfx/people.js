@@ -148,12 +148,12 @@ const STRIDE_RUN=[[3,10,2,11],[5,8,5,9],[4,9,3,11],[6,7,6,8]],RUN_BOB=[0,-2,0,-1
 // 12-15): the head forward, long steps, sinking a little (render.js picks them from the ground's climbState)
 const STRIDE_CLIMB=[[5,8,5,9],[5,9,5,10],[5,8,5,9],[4,9,4,10]],CLIMB_BOB=[0,-1,0,0],STRIDE_DESC=[[4,9,3,10],[5,8,5,9],[3,10,3,11],[6,8,6,8]],DESC_BOB=[0,0,1,0];
 /* a figure into grid g at (ox, oy): its body, then its gear from the body's anchors (figures.js FigureRig). walk: -1 or 0-3; atk:
-   -1 or 0-2 with style; cut: only the rows down to it (a rider). Returns the weapon hand */
-function drawFigure(g,o,ox,oy,walk,style,atk,cut){const A=drawFigureBody(g,o,ox,oy,walk,style,atk,cut);FigureRig.dress(g,o,A,style,atk);return A.hand}
+   -1 or 0-2 with style; cut: only the rows down to it (a rider). Returns its anchors (drawFigureBody's) */
+function drawFigure(g,o,ox,oy,walk,style,atk,cut){const A=drawFigureBody(g,o,ox,oy,walk,style,atk,cut);FigureRig.dress(g,o,A,style,atk);return A}
 /* a figure's body into grid g at (ox, oy): the template, its legs, cape, beard, helm and limbs, no gear. Returns its anchors, in
    g's pixels (its gear is drawn from them: figures.js): hand, the weapon hand (weapons.js holds a weapon there); off, the shield
    arm (a shield slung there, its top left); guard, a shield raised before him, over his front (its top left); back, between the
-   shoulders; sh, a dwarf's row less; rig, its blow drawn on the rig */
+   shoulders; free, the off hand (a marcher's torch: marchgear.js); sh, a dwarf's row less; rig, its blow drawn on the rig */
 function drawFigureBody(g,o,ox,oy,walk,style,atk,cut){
   const run=walk>=4&&walk<8,climb=walk>=8&&walk<12,desc=walk>=12,T=o.short?PEOPLE_T_SHORT:PEOPLE_T,Lc=lettersOf(o),sh=o.short?1:0,shield=shieldLook(o);
   const bob=run?RUN_BOB[walk-4]:climb?CLIMB_BOB[walk-8]:desc?DESC_BOB[walk-12]:walk===1||walk===3||walk===-2?-1:0,lean=run?9:desc?6:0;
@@ -194,13 +194,16 @@ function drawFigureBody(g,o,ox,oy,walk,style,atk,cut){
   if(h==='crown'){set(6,1,PPAL.gold[1]);set(7,1,PPAL.red[1]);set(8,1,PPAL.gold[2]);set(6,0,PPAL.gold[0]);set(8,0,PPAL.gold[1])}
   if(h==='circlet'){set(5,2,PPAL.gold[1]);set(6,2,PPAL.gold[0]);set(7,2,PPAL.teal[0]);set(8,2,PPAL.gold[1]);set(9,2,PPAL.gold[2])}
   if(h==='skull'){const W=PPAL.white;set(6,1,W[0]);set(7,1,W[1]);set(8,1,W[1]);set(5,2,W[1]);set(6,2,PEOPLE_OUT);set(7,2,W[1]);set(8,2,PEOPLE_OUT);set(9,2,W[2])}
+  if(h==='bandage'){set(5,3,'#d8d2c4');set(6,3,'#f2efe6');set(7,3,'#f2efe6');set(8,3,'#a8302a');set(9,3,'#d8d2c4')}// (a bandage round the brow, blood on it: one tended on the road, MAP_FIGS)
   if(rig)rigLimbs(g,o,ox,oy+bob,rig,sh,false);
   // (the hand: rigged, the fore fist (the weapon in it); else before the belt, moved with the body as it glances or shifts)
   const f=rig&&o.held&&rig.fore[2],hand=f?[ox+f[0],oy+bob+f[1]-(f[1]>=9?sh:0)]:[ox+11+(nd?nd.body[0]:0),oy+bob+10-sh+(nd?nd.body[1]:0)],gy=o.guardUp==='low'?8:5;
-  return{hand,off:[ax(FIG_AT.off[0],FIG_AT.off[1]),ay(FIG_AT.off[0],FIG_AT.off[1])],guard:[ax(10,gy),ay(10,gy)],back:[ax(FIG_AT.back[0],FIG_AT.back[1]),ay(FIG_AT.back[0],FIG_AT.back[1])],sh,rig:!!rig};
+  const fy=FIG_AT.free[1]-sh;
+  return{hand,off:[ax(FIG_AT.off[0],FIG_AT.off[1]),ay(FIG_AT.off[0],FIG_AT.off[1])],guard:[ax(10,gy),ay(10,gy)],back:[ax(FIG_AT.back[0],FIG_AT.back[1]),ay(FIG_AT.back[0],FIG_AT.back[1])],free:[ax(FIG_AT.free[0],fy),ay(FIG_AT.free[0],fy)],sh,rig:!!rig};
 }
-// (the anchors on the template: the shield arm's shield, its top left; the back, between the shoulders)
-const FIG_AT={off:[0,8],back:[3,7]};
+// (the anchors on the template: the shield arm's shield, its top left; the back, between the shoulders; the free (off) hand, the
+// far arm's fist on his side)
+const FIG_AT={off:[0,8],back:[3,7],free:[4,10]};
 // (a figure's shield: its kind's, or the one in your hero's or a companion's off hand: drawn only, CharacterMind reads o.shield)
 const shieldLook=o=>o.shield||o.offShield||null;
 /* a weapon's blows on the rig (the owner, 2026-10-30: "more alive bodies"; Wave 3): swing, thrust and overhead, three frames each
@@ -337,10 +340,10 @@ function peopleSprite(o,pose,bare){
   // (bare: the melee weapon left off, to be held apart: weapons.js; DEF_POSE: standing, his shield raised before him)
   if(bare&&heldWeapon(o))o={...o,weapon:null,held:heldWeapon(o)};if(pose===DEF_POSE||pose===DEF_LOW)o={...o,guardUp:pose===DEF_LOW?'low':true};
   const R=GEAR.room;
-  if(o.mount){const g=pgrid(32+2*R,32+R),top=drawMount(g,o,walk,R,R),hand=drawFigure(g,{...o,shield:null,offShield:null},6+R,top-6,-1,style,atk,12);
+  if(o.mount){const g=pgrid(32+2*R,32+R),top=drawMount(g,o,walk,R,R),A=drawFigure(g,{...o,shield:null,offShield:null},6+R,top-6,-1,style,atk,12);
     // the rider's leg down the mount's side
-    const Lc=lettersOf(o);pset(g,11+R,top+7,Lc.L);pset(g,11+R,top+8,Lc.L);pset(g,11+R,top+9,Lc.F);return FigureRig.frame(g,R,32,hand,32-(top-R-6),false)}
-  const g=pgrid(24+2*R,19+R),hand=drawFigure(g,o,4+R,3+R,walk,style,atk);return FigureRig.frame(g,R,24,hand,o.short?15:16,!!o.held&&(blow||pose===FLINCH_POSE));
+    const Lc=lettersOf(o);pset(g,11+R,top+7,Lc.L);pset(g,11+R,top+8,Lc.L);pset(g,11+R,top+9,Lc.F);return FigureRig.frame(g,R,32,A,32-(top-R-6),false)}
+  const g=pgrid(24+2*R,19+R),A=drawFigure(g,o,4+R,3+R,walk,style,atk);return FigureRig.frame(g,R,24,A,o.short?15:16,!!o.held&&(blow||pose===FLINCH_POSE));
 }
 
 /* the world map's own figures (doc/WORLD_DESIGN.md §10.1), smaller than the battle's, so a person is clearly smaller than a
@@ -348,7 +351,9 @@ function peopleSprite(o,pose,bare){
    the shoulders and the front in the side's colours, a belt, legs and feet. PEOPLE_MAP_T uses the battle template's letters
    (lettersOf), so every look maps one to one; a small helm, beard, shield, cape and load go over it, and what is in the hand
    stands in a column before him (MAP_HELD). walk 0 to PEOPLE_STEPS-1, a step each WALK.foot px walked (render.js stepOf), 0
-   standing (MAP_WALK). cut: only the rows down to it (a rider, a sailor at the rail) */
+   standing (MAP_WALK). cut: only the rows down to it (a rider, a sailor at the rail). Since 2026-11-01 the map's people are the
+   battle's figures (MAP_FIGS, below): these stay for the map off the march (WORLD_BATTLE.on false), the menu's art, the cards,
+   and MAP_FIGS.on false */
 const PEOPLE_MAP_T=['.112','.2se','..tu','apqc','bpqd','bqrd','bkld'];
 /* the map's walk, PEOPLE_STEPS frames, facing right: the near leg's x and the far leg's on the legs' row (L, M: a hip each), and
    the feet, [x, lifted] (a lifted foot drawn on the legs' row, nothing under it). Passing (the feet together; 0 is standing too),
@@ -387,7 +392,8 @@ function drawMapBody(g,o,ox,oy,walk,cut){
   return{hand:[ox+3,oy+5],off:[ox-1,oy+3],back:[ox,oy],ly,cut,map:true};
 }
 // a load carried on the back (the left of a figure facing right): a sack, a churn, logs, a basket or a sack of ore
-const LOADS={farmer:['sack','#ece4cc'],herder:['churn','#d8dce4'],woodcutter:['logs','#9a6436'],miner:['sack','#7a808e'],fisher:['basket','#a8804e'],quarry:['sack','#a8a49a'],pack:['pack','#8a6a44']};
+const LOADS={farmer:['sack','#ece4cc'],herder:['churn','#d8dce4'],woodcutter:['logs','#9a6436'],miner:['sack','#7a808e'],fisher:['basket','#a8804e'],quarry:['sack','#a8a49a'],pack:['pack','#8a6a44'],
+  bundle:['bundle','#8a7458']};// (bundle: a refugee's blanket rolled over his shoulders, a sack under it: MAP_FIGS only)
 function drawMapLoad(set,job){const L=LOADS[job]||LOADS.farmer,R=rampOf(L[1]);
   if(L[0]==='logs'){set(-1,2,'#e8c890');set(-1,3,R[0]);set(-1,4,R[2]);set(-1,5,'#c8a070');return}
   set(-1,3,R[0]);set(-1,4,R[1]);set(-1,5,R[2]);
@@ -431,11 +437,12 @@ function mapFigure(o,f,mountCol){
    a refugee with a blanket on the back. f: the step (0 to PEOPLE_STEPS-1), cut: as drawMapFigure (a sailor at the rail: ships.js) */
 function mapPerson(o,f,cut){const g=mapGrid(o,f,cut);poutline(g);return cellOf(pcanvas(g))}
 function followerSprite(col,f,v,race,band){v=(v||0)%6;f=(f||0)%PEOPLE_STEPS;race=race||'human';const k='fw'+col+f+v+race+(band?'b':''),c=FIGURES.get(k);if(c)return c;
-  const R=RACE_LOOK[race]||RACE_LOOK.human,arms=['spear','spear','sword','spear','axe','spear'][v],
-    o={race,skin:R.skin[v%R.skin.length],hair:R.hair[v%R.hair.length],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,beard:R.beard?R.hair[v%R.hair.length]:null,
-      helm:band?(v%3?'hood':'bare'):['kettle','cap','kettle','bare','kettle','cap'][v],hood:'leather',outer:band?['leather','fur','cloth'][v%3]:v%3===2?'leather':'steel',inner:'dark',team:col,
-      weapon:band?['spear','axe','dagger','spear','sword','axe'][v]:arms,shield:!band&&(v===2||v===4)?'wood':null,shortHair:v%2===0};
-  return FIGURES.set(k,mapPerson(o,f))}
+  return FIGURES.set(k,mapPerson(followerLook(col,v,race,band),f))}
+// (a follower's look: his lord's colour and race, armed, a shield now and then; a band's hooded and ragged)
+function followerLook(col,v,race,band){const R=RACE_LOOK[race]||RACE_LOOK.human,arms=['spear','spear','sword','spear','axe','spear'][v];
+  return{race,skin:R.skin[v%R.skin.length],hair:R.hair[v%R.hair.length],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,beard:R.beard?R.hair[v%R.hair.length]:null,
+    helm:band?(v%3?'hood':'bare'):['kettle','cap','kettle','bare','kettle','cap'][v],hood:'leather',outer:band?['leather','fur','cloth'][v%3]:v%3===2?'leather':'steel',inner:'dark',team:col,
+    weapon:band?['spear','axe','dagger','spear','sword','axe'][v]:arms,shield:!band&&(v===2||v===4)?'wood':null,shortHair:v%2===0}}
 // a worker in the fields: the trade's clothes and tool (economy.js JOBS), the home's race
 const WORK_LOOK={farmer:{helm:'straw',outer:'cloth',team:'linen',weapon:'hoe'},herder:{helm:'hood',hood:'leather',outer:'fur',team:'leather',weapon:'crook'},
   woodcutter:{helm:'bare',outer:'forest',team:'leather',weapon:'axe'},miner:{helm:'cap',helmC:'iron',outer:'leather',team:'dark',weapon:'pick'},fisher:{helm:'bare',outer:'blue',team:'linen',weapon:'rod'},
@@ -443,11 +450,12 @@ const WORK_LOOK={farmer:{helm:'straw',outer:'cloth',team:'linen',weapon:'hoe'},h
 // (the peasants recruited from the estates wear their trade's clothes and carry its tool: data/units.js TRADES)
 for(const k in ST)if(ST[k].peasant){const {team,...L}=WORK_LOOK[ST[k].peasant]||{...WORK_LOOK.miner,weapon:'hammer'};PEOPLE_LOOK[k]=L}
 function workerSprite(job,f,race,v,carry){v=(v||0)%4;f=(f||0)%PEOPLE_STEPS;race=race||'human';const k='wk'+job+f+race+v+(carry?'c':''),c=FIGURES.get(k);if(c)return c;
-  const L={...folkLook('folk',race,v*3+1),robe:false,...(WORK_LOOK[job]||WORK_LOOK.farmer)};if(carry){L.weapon=null;L.load=job}// (loaded: his tool left behind)
-  return FIGURES.set(k,mapPerson(L,f))}
+  return FIGURES.set(k,mapPerson(workerLook(job,race,v,carry),f))}
+const workerLook=(job,race,v,carry)=>{const L={...folkLook('folk',race,v*3+1),robe:false,...(WORK_LOOK[job]||WORK_LOOK.farmer)};if(carry){L.weapon=null;L.load=job}return L};// (loaded: his tool left behind)
 // a refugee: worn clothes, a hood, a rolled blanket on the back, a walking stick now and then
 function refugeeSprite(f,v){v=(v||0)%4;f=(f||0)%PEOPLE_STEPS;const k='rf'+f+v,c=FIGURES.get(k);if(c)return c;
-  return FIGURES.set(k,mapPerson({...folkLook('folk','human',v*5+2),robe:false,helm:v%2?'hood':'bare',hood:'linen',outer:['linen','cloth','leather','linen'][v],team:'dark',cape:'leather',weapon:v===1||v===3?'crook':null},f))}
+  return FIGURES.set(k,mapPerson(refugeeLook(v,'human'),f))}
+const refugeeLook=(v,race)=>({...folkLook('folk',race,v*5+2),robe:false,helm:v%2?'hood':'bare',hood:'linen',outer:['linen','cloth','leather','linen'][v],team:'dark',cape:'leather',weapon:v===1||v===3?'crook':null});
 
 /* townsfolk: the same figures in their trade's clothes (and folk in all sorts, a dress now and then), their race's skin and hair */
 const FOLK_CLOTH=['cloth','linen','olive','teal','violet','rust','forest','leather','blue','red'];
@@ -459,3 +467,54 @@ function folkLook(look,race,v){
     priest:{outer:'white',team:'gold',robe:true,helm:'hood',hood:'white',beard:null},steward:{outer:'blue',team:'gold',robe:true},groom:{outer:'cloth',team:'leather',helm:'kettle',helmC:'#d8c060'}}[look];
   return T?{...o,...T}:o;
 }
+
+/* ---------- the map's people in the battle's figures (the owner, 2026-11-01: "can you update encounters and old sprites to look
+   like current sprite designs?"). Every person on the world map is drawn as its marchers are (march.js drawMarcher): the battle's
+   template and gear (peopleSprite, figures.js), at the battle's density, drawn figK() as big (drawFig), each in its own clothes
+   with its own things: a follower's arms in his colour, a worker's tool or his load, a refugee's bundle, a peddler's pack, the
+   wounded's blood and bandage, a rider's horse, a sailor at the rail. They walk as the marchers do (figPose: the battle's four
+   steps, a step each WALK.foot px walked), standing at 0. Each made once and kept in FIGURES by its key, in its cell (sprites.js
+   cellOf), dense (drawn at the guards' size: encounterscene.js). figsOn(): MAP_FIGS.on while the march draws its men (off the
+   march, WORLD_BATTLE.on false, the map keeps its small figures throughout); off, the map's own small figures as before
+   (mapPerson, mapFigure): the proof (tests/mapfigs.js) ---------- */
+const MAP_FIGS={on:true};
+const figsOn=()=>MAP_FIGS.on&&WORLD_BATTLE.on;
+// (the map px to a figure's px, as the marchers'; a map walk frame f (0 to WALK.n-1) as a pose: walking (go) the battle's steps,
+// else standing)
+const figK=()=>WORLD_BATTLE.sprite/WORLD_BATTLE.scale,figPose=(f,go)=>go?2+(f||0)%4:0;
+// one drawn with its feet at (x, y) on the screen, facing face, as a marcher is; its picture at the map's own size (a click, a
+// box, a page's banner: figPic)
+function drawFig(s,x,y,face){const k=figK();ctx.save();ctx.translate(x,y);ctx.scale(face<0?-k:k,k);ctx.drawImage(s,-(s.width>>1),2-s.height);ctx.restore()}
+const FIG_PICS=new WeakMap();
+function figPic(s){let m=FIG_PICS.get(s);if(m)return m;const k=figK();m=mkc(Math.ceil(s.width*k),Math.ceil(s.height*k),g=>g.drawImage(s,0,0,s.width*k,s.height*k));
+  m.cw=Math.ceil((s.cw||s.width)*k);m.ch=Math.ceil((s.ch||s.height)*k);FIG_PICS.set(s,m);return m}
+// (made once by its key (mk: its cell), kept, dense)
+const figKeep=(k,mk)=>FIGURES.get(k)||FIGURES.set(k,Object.assign(mk(),{dense:true}));
+const figOf=(L,pose)=>cellOf(peopleSprite(L,pose));
+// a lord's follower (followerLook), a worker (workerLook; carry: loaded), a refugee (his bundle on his back), one of a road
+// encounter (ENC_LOOK[key]) on foot or riding (on a horse of coat, in col), a saddled horse no one rides
+function figFollower(col,v,race,band,pose){v=(v||0)%6;race=race||'human';return figKeep('mfw'+col+v+race+(band?'b':'')+'p'+pose,()=>figOf(followerLook(col,v,race,band),pose))}
+function figWorker(job,race,v,pose,carry){v=(v||0)%4;race=race||'human';return figKeep('mwk'+job+race+v+(carry?'c':'')+'p'+pose,()=>figOf(workerLook(job,race,v,carry),pose))}
+function figRefugee(v,race,pose){v=(v||0)%4;race=race||'human';return figKeep('mrf'+v+race+'p'+pose,()=>figOf({...refugeeLook(v,race),load:'bundle'},pose))}
+function figRoad(key,race,v,pose){return figKeep('mrp'+key+race+v+'p'+pose,()=>figOf(ENC_LOOK[key](race,v),pose))}
+function figRider(key,race,v,col,coat,pose){return figKeep('mrr'+key+race+v+col+coat+'p'+pose,()=>figOf({...ENC_LOOK[key](race,v),team:col||'leather',mount:'horse',mountC:coat||'horse'},pose))}
+function figHorse(coat,pose){return figKeep('mrh'+coat+'p'+pose,()=>{const g=pgrid(32,32);drawMount(g,{mount:'horse',mountC:coat,team:'red',saddled:true},pose>=2?pose-2:-1);poutline(g);return cellOf(pcanvas(g))})}
+// a worker on the march's map carrying his load to his holding (folk.js): his trade's battle kind (type, v) in his holding's
+// cloth (tint), his tool left behind
+function figCarrier(type,v,tint,job,pose){return figKeep('mca'+type+v+tint+job+'p'+pose,()=>figOf({...lookOf(type,0,false,v%6),team:tint,weapon:null,load:job},pose))}
+/* kneeling: the body FIG_KNEEL rows down, sat back on its heels, the near knee forward and the far foot out behind (a robe's hem on
+   the ground); lying: the standing figure turned a quarter, head to the right, as the battle's fallen are (sprites.js corpseOf);
+   blood: in a pool of it (FIG_BLOOD: [colour, x, y, w, h] in a 16 cell's px, as the map's was, grown to its own) */
+const FIG_KNEEL=2,FIG_BLOOD=[['#5a1414',3,13,10,1],['#6e1a18',1,14,14,1],['#8a2a22',5,14,5,1],['#5a1414',3,15,10,1]];
+function figKneel(key,race,v){return figKeep('mrk'+key+race+v,()=>{const L=ENC_LOOK[key](race,v),R=GEAR.room,g=pgrid(24+2*R,19+R),sh=L.short?1:0,ox=4+R,gy=3+R+14-sh;
+  const A=drawFigure(g,L,ox,3+R+FIG_KNEEL,-1,null,-1,12-sh);
+  if(!L.robe){const Lc=lettersOf(L);pset(g,ox+11,gy-1,Lc.L);pset(g,ox+11,gy,Lc.M);pset(g,ox+12,gy,Lc.F);pset(g,ox+2,gy,Lc.F);pset(g,ox+1,gy,Lc.F)}
+  return cellOf(FigureRig.frame(g,R,24,A,16-FIG_KNEEL-sh,false))})}
+function figDown(key,race,v,blood){return figKeep('mrd'+key+race+v+(blood?'b':''),()=>{
+  if(blood){const b=figDown(key,race,v),n=b.width,s=n/16,c=mkc(n,n,g=>{for(const [col,x,y,w,h] of FIG_BLOOD)rect(g,col,x*s,y*s,w*s,h*s);g.drawImage(b,0,-s)});c.cw=b.cw;c.ch=b.ch+s;return c}
+  const g=pgrid(24,20);drawFigure(g,{...ENC_LOOK[key](race,v),weapon:null,load:null},4,3,-1,null,-1);const L=pturn(g);let h=L.h;
+  while(h>1&&!L.p.slice((h-1)*L.w,h*L.w).some(Boolean))h--;L.h=h+1;L.p.length=L.w*L.h;L.p.fill(null,h*L.w);poutline(L);return cellOf(pcanvas(L))})}
+// a sailor at the rail (ships.js): head and shoulders over the side, down to the figure's row FIG_RAIL, its last row the picture's
+// but one (the outline under it); mx: his head's middle
+const FIG_RAIL=8;
+function figCrew(L){const g=pgrid(24,FIG_RAIL+5);drawFigure(g,L,4,3,-1,null,-1,FIG_RAIL);poutline(g);const t=ptop(g),c=pcanvas(pcrop(g,0,t,24,g.h-t));c.mx=11;return c}

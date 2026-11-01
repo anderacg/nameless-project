@@ -10,7 +10,7 @@ const spr={};
 const CELLS=[8,16,32,64];
 function cellOf(src){const n=CELLS.find(s=>s>=src.width&&s>=src.height)||Math.max(src.width,src.height);
   const c=mkc(n,n,g=>g.drawImage(src,(n>>1)-(src.width>>1),n-src.height));c.cw=src.width;c.ch=src.fh||src.height;
-  if(src.hand)c.hand=[(n>>1)-(src.width>>1)+src.hand[0],n-src.height+src.hand[1]];// (the hand, where it went)
+  for(const k of FIG_ANCHORS)if(src[k])c[k]=[(n>>1)-(src.width>>1)+src[k][0],n-src.height+src[k][1]];// (the hands and back, where they went)
   c.rig=src.rig;
   return c}
 // pose: 0-1 idle (breathing), 2-5 walking (legs stride, body bobs), 15-18 running (a long stride, leaning, bouncing), then three blows of three frames each (wind up, strike,
@@ -138,8 +138,8 @@ function partySprite(col,mc,f,race){f=(f||0)%PEOPLE_STEPS;const you=col==='#e8b9
     helm:you?'crown':'kettle',outer:'steel',inner:'dark',team:col,shortHair:true},f,mc||null))}
 // a bandit on the map: hooded, a spear
 function banditSprite(f){f=(f||0)%PEOPLE_STEPS;const k='bd'+f;return FIGURES.get(k)||FIGURES.set(k,mapFigure({race:'human',skin:'skinTan',hair:'black',helm:'hood',hood:'leather',outer:'leather',inner:'dark',team:'#8a3a2a',weapon:'spear',shortHair:true},f,null))}
-/* a party's banner on the map (Total War-style: larger than any real flag, floating over its army's middle, drawn over everything:
-   render.js drawBanners): a pole with a gilt finial (a spearhead over a knob and a collar) and its cloth flying east, in a 32
+/* a party's banner: on its card (ui.js tipFlag; none floats over an army now, the owner, 2026-11-01) and on your camp's pole
+   (render.js drawBanners): a pole with a gilt finial (a spearhead over a knob and a collar) and its cloth flying east, in a 32
    cell, the pole's foot at (px, py) of the cell (render.js bannerAt stands it there), its cloth's middle lx. Its look b
    (Party.banner): k, the shape: 'banner' a swallow-tailed standard (a realm's lords, you, your companions), 'pennant' a tapering
    pennant (a holding's guards), 'trade' a small pennant on a short pole (a caravan), 'rag' a tattered standard (bandits, desert
@@ -282,7 +282,8 @@ function itemIcon(def){const k='ic'+def.icon+def.col;return spr[k]||(spr[k]=mkc(
 let TXTQ=null;
 const TXT_FONT='8px Silkscreen, "Courier New", monospace';
 function txt(s,x,y,col,al){if(TXTQ&&(ctx===TXTQ.ctx||ctx===TXTQ.lo)){TXTQ.push([s,x,y,col,al]);return}
-  if(CVS>1&&ctx===ctx0){const c=txtPic(s,col,al);ctx.drawImage(c,x-c.ox,y-c.oy);return}
+  // (on the map's canvas of VS px a game px, its picture enlarged; a battle drawn sharp (core.js bview) writes it at its own px)
+  if(CVS>1&&ctx===ctx0&&MAPZOOM.map){const c=txtPic(s,col,al);ctx.drawImage(c,x-c.ox,y-c.oy);return}
   ctx.font=TXT_FONT;ctx.textAlign=al||'left';ctx.textBaseline='alphabetic';ctx.fillStyle='#000';ctx.fillText(s,x+1,y+1);ctx.fillStyle=col||'#e4e0cf';ctx.fillText(s,x,y)}
 // (a label's picture: drawn as txt draws it at a whole pixel, its pen (ox, oy) a whole pixel in it, so its letters fall on the
 // same pixels; kept by text, colour and alignment, the lot let go when it grows past 600 or a font comes in)

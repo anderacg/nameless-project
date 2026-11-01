@@ -9,8 +9,13 @@
    only: saves keep plain data, made one of its kind again on loading or when the map next asks (asClass; world.js
    asWorldObject, worldObjects). The parties and caravans (here), holdings (holding.js) and estates (estates.js), sites, beasts (monsters.js),
    herds (critters.js), refugees, workers (folk.js) and ships are world objects. ---------- */
-// (in sight: within your sight (any of your men's: fog.js Sight), or nearer one of them where it hides in woods or hills)
-const spotted=(o,V)=>!Waylay.hidden(o)&&yourSight(V).sees(o.x,o.y,hiddenAt(o.x,o.y)?.45:1);
+// (in sight: within your sight (any of your men's: fog.js Sight), or nearer one of them where it hides in woods or hills; an army
+// marched man by man (march.js marchMen), while any of its men is, each by his own ground (the owner, 2026-11-01: "a huge army
+// roaming around but suddenly disappear even with in just few feet away. and even weird when in the forest"): its middle first,
+// then, its men's reach touching your sight (MarchArmy.spread), man by man. SIGHT_EYES.armies off: by its middle alone, as before)
+const manSpotted=(S,u)=>S.sees(u.x,u.y,hiddenAt(u.x,u.y)?.45:1);
+const spotted=(o,V)=>{if(Waylay.hidden(o))return false;const S=yourSight(V);if(S.sees(o.x,o.y,hiddenAt(o.x,o.y)?.45:1))return true;
+  const a=SIGHT_EYES.armies&&o!==P&&marchMen(o);return !!a&&S.sees(o.x,o.y,1,MarchArmy.spread(o))&&a.units.some(u=>!u.dead&&manSpotted(S,u))};
 // Travel perception uses the brains' distance/cover thresholds and each observer's suspicion.
 function travelDetection(o){
   if(!o||o===P||B||P.stay||o.dead||o.gone||o.inside||o.fight||!Number.isFinite(o.x)||!Number.isFinite(o.y))return null;
@@ -54,7 +59,10 @@ class TravelAwareness{
   static gen=0;// (each reset: what is drawn from it is worked out afresh, render.js travelDetectionState)
   static level(o){return this.states.get(o)||0}
   static rows(o){let r=this.records.get(o);if(!r){r=new Map();this.records.set(o,r)}return r}
-  static scan(o,base,factor){return (this.snapshot||TravelGroups.groups()).map(row=>{const group=row.id==='hero'?{...row,x:P.x,y:P.y,cover:!!hiddenAt(P.x,P.y),moving:P.tx!=null}:row,range=base*(group.cover?factor:1)*(1+Math.min(TRAVEL_GROUPS.maxSize,Math.sqrt(Math.max(0,group.count-1))*TRAVEL_GROUPS.size)),distance=Math.max(0,Math.hypot(o.x-group.x,o.y-group.y)-Math.min(12,group.extent)),r=this.records.get(o)?.get(group.id);return{group,range,distance,within:distance<range,q:r?.q||0}})}
+  // (a group's distance: to its nearest man (TRAVEL_GROUPS.nearest), your hero at his marcher; else, as before, its middle less its
+  // spread, your hero where you are)
+  static scan(o,base,factor){const N=TRAVEL_GROUPS.nearest;return (this.snapshot||TravelGroups.groups()).map(row=>{const group=row.id==='hero'&&!(N&&row.men)?{...row,x:P.x,y:P.y,cover:!!hiddenAt(P.x,P.y),moving:P.tx!=null}:row.id==='hero'?{...row,moving:P.tx!=null}:row,range=base*(group.cover?factor:1)*(1+Math.min(TRAVEL_GROUPS.maxSize,Math.sqrt(Math.max(0,group.count-1))*TRAVEL_GROUPS.size)),
+      distance=N&&group.men?Math.min(...group.men.map(u=>Math.hypot(o.x-u.x,o.y-u.y))):Math.max(0,Math.hypot(o.x-group.x,o.y-group.y)-Math.min(12,group.extent)),r=this.records.get(o)?.get(group.id);return{group,range,distance,within:distance<range,q:r?.q||0}})}
   static notice(o,id='hero'){const group=(this.snapshot||TravelGroups.groups()).find(g=>g.id===id);if(group)this.rows(o).set(id,{q:1,last:this.time,power:group.power});this.states.set(o,1);this.live.add(o)}
   static sees(o){return !!travelDetection(o)?.sees}
   static target(o){return travelDetection(o)?.target||null}

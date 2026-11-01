@@ -1,10 +1,11 @@
 'use strict';
 /* ---------- the Army window (C; the Menu's Army), its header the company muster (your band's name and its bars, on every tab).
-   Its four tabs are its top level, each its bar's Back to the Game Menu. Roster: one list of cards in battle order, your hero, your companions and your troop groups, each its kind's icon and its experience, opening its detail
+   Its five tabs are its top level, each its bar's Back to the Game Menu. Roster: one list of cards in battle order, your hero, your companions and your troop groups, each its kind's icon and its experience, opening its detail
    beside it (on a narrow phone, as a page of its own). Army skills: the band's skills, who gives
-   them, and the companions' roles. Condition. Passengers: escorts, prisoners and captives. The commands stay their owners'
-   (character.js charAct, companionpage.js, talents.js, captives.js); this file presents them ---------- */
-const ARMY_TABS=[['roster','Roster'],['skills','Army skills'],['condition','Condition'],['passengers','Passengers']];
+   them, and the companions' roles. Condition. Passengers: escorts, prisoners and captives. March formation: its editors (ui/march.js
+   marchTabPage). The commands stay their owners' (character.js charAct, companionpage.js, talents.js, captives.js, march.js); this
+   file presents them ---------- */
+const ARMY_TABS=[['roster','Roster'],['march','March formation'],['skills','Army skills'],['condition','Condition'],['passengers','Passengers']];
 const partyView=()=>G.partyUI||(G.partyUI={sel:'hero',open:false,path:false});
 // what a roster card is: your hero, a companion ('comp_' and its id) or a troop group; its icon and word
 const rosterKind=id=>id==='hero'?'hero':id.startsWith('comp_')?'comp':'troop';
@@ -12,7 +13,7 @@ const ROSTER_KIND={hero:['rosterhero','Your hero'],comp:['rostercomp','Companion
 const partyFull=()=>{const s=partyView();return G.char==='roster'&&s.open&&fbNarrow()};
 // (the screen's shape the Roster was laid out for: a turned phone lays it out again)
 const partyShape=()=>[partyFull(),fbShort(),fbNarrow()].join();
-addEventListener('resize',()=>{if(G.mode==='char'&&G.char==='roster'&&!FIELDBOOK.pick&&partyView().shape!==partyShape()){if(G.march)renderMarch();else renderChar()}});
+addEventListener('resize',()=>{if(G.mode==='char'&&G.char==='roster'&&!FIELDBOOK.pick&&partyView().shape!==partyShape())renderChar()});
 const partyBack=()=>G.char==='roster'&&(G.armyEdit||partyView().path||partyFull())?['party-back',null,'Back']:null;
 function partyGroup(id,r=partyRoster(P)){const g=r.groups.find(g=>g.id===id),w=(P.woundedGroups||[]).find(g=>g.id===id),cid=id.startsWith('comp_')?id.slice(5):null,c=cid&&P.comps[cid],type=g?.type||w?.type,hurt=c&&c.hurt>G.day+Clock.frac;
   return{id,g,cid,type,name:armyGroupLabel(id,r),fit:g?g.count:id==='hero'?1:c&&!hurt?1:0,wounded:type?r.wounded(id):hurt?1:0,pic:portrait(type||cid||'hero',id==='hero'),sub:type?ST[type].n+' · '+((g?.count||0)+r.wounded(id))+' / '+r.groupCap(type):cid?'Companion':'Your hero',hurt};
@@ -21,15 +22,17 @@ function partyGroup(id,r=partyRoster(P)){const g=r.groups.find(g=>g.id===id),w=(
 // all wounded, its wounded's record keeps it)
 // (label: its words alone; val: its numbers; txt: both, for a card's one line)
 const rankLn=(v,max,label,val)=>({v,max,label,val,txt:label+' · '+val});
+// (a rank's words: its name with RANKS.statsOnly (Seasoned · rank 3); a mastery level's name, Adept to Legend (step 1, its metal))
+const rankLabel=r=>RANKS.statsOnly?rankWord(r)+' · rank '+r:'Rank '+r;
 function rankLine(g){const r=rankOf(g),need=rankNeed(g),x=Math.floor(rankXp(g));
   if(!r)return rankLn(x,need,'First upgrade',rankReady(g)?'ready':x+' / '+need);
-  if(need)return rankLn(x,need,'Rank '+r,x+' / '+need);
-  // (at the last rank: its mastery, toward the next metal)
-  const m=masteryOf(g),ends=masteryEnds(),lo=ends[m-1]||0,hi=ends[m],mx=Math.floor(masteryXp(g)),name=m?cap1(RANKS.mastery.metal[m-1])+' mastery':'Mastery';
-  return hi?rankLn(mx-lo,hi-lo,'Rank '+r+' · '+name,(mx-lo)+' / '+(hi-lo)):rankLn(1,1,'Rank '+r+' · '+name,'full')}
+  if(need)return rankLn(x,need,rankLabel(r),x+' / '+need);
+  // (at the last rank: its mastery, toward the next level)
+  const m=masteryOf(g),ends=masteryEnds(),lo=ends[m-1]||0,hi=ends[m],mx=Math.floor(masteryXp(g)),name=m?masteryWord(m):'Mastery';
+  return hi?rankLn(mx-lo,hi-lo,rankLabel(r)+' · '+name,(mx-lo)+' / '+(hi-lo)):rankLn(1,1,rankLabel(r)+' · '+name,'full')}
 // (a rank meter in a pane: its words, its numbers, its bar; and its five rungs, lit as reached, in its mastery's metal)
 const rankMeter=L=>fbMeter('skills',L.label,L.v,Math.max(1,L.max)).replace(/<b>[^<]*<\/b>/,'<b>'+htmlText(L.val)+'</b>');
-const rankPips=g=>{const r=rankOf(g),m=masteryOf(g);return r?'<span class="rk-pips'+(m?' m'+m:'')+'" aria-label="Rank '+r+' of '+RANKS.max+'">'+Array.from({length:RANKS.max},(_,i)=>'<i'+(i<r?' class="on"':'')+'></i>').join('')+'</span>':''};
+const rankPips=g=>{const r=rankOf(g),m=masteryOf(g);return r?'<span class="rk-pips'+(m?' m'+(['bronze','silver','gold'].indexOf(RANKS.mastery.metal[m-1])+1):'')+'" aria-label="Rank '+r+' of '+RANKS.max+'">'+Array.from({length:RANKS.max},(_,i)=>'<i'+(i<r?' class="on"':'')+'></i>').join('')+'</span>':''};
 function rosterXp(id,u){
   if(id==='hero')return{v:P.xp,max:LV_XP(P.level),txt:'Lv. '+P.level+' · '+Math.floor(P.xp)+' / '+LV_XP(P.level)+' XP'};
   if(u.cid){const c=compInit(u.cid);return{v:c.xp,max:LV_XP(c.lv),txt:'Lv. '+c.lv+' · '+Math.floor(c.xp)+' / '+LV_XP(c.lv)+' XP'}}
@@ -91,7 +94,7 @@ function partyUnitCard(d,r){const {u,c,kind}=d,h=kind==='hero',x=rosterXp(d.id,u
   const rank=kind==='troop'?{label:x.label||x.txt,val:x.val,v:x.v,max:x.max}:{label:'To level '+(d.level+1),v:x.v,max:x.max};
   const tip=partyWageNote(u)+(u.wounded||u.hurt?' '+partyRecoveryText(u)+'. Based on current care; '+(u.cid?'companion recovery updates hourly':'troop recovery is checked daily')+'.':'');
   return new UnitCard({key:u.type||d.id,s,name:htmlText(u.name),sub:{hero:'Hero',comp:'Companion',troop:'Troop'}[kind]+' · '+(kind==='troop'?'Tier ':'Level ')+d.level+(h?' · '+rankName()+' · '+RACES[P.race].n+' '+manWord(P):''),
-    hero:h,pic:u.pic,grow:gr.stats,now,strength:kind==='troop'?{fit:u.fit,max:unitSize(u.type),hurt:u.wounded}:null,rank,meters:h?(v=>[{label:'Stamina',v:P.sp,max:v[1],tip:'Spent running and fighting; back with rest'},{label:'Mana',v:P.mp,max:v[2],tip:'Spent on spells; back with rest'}])(vitals()):null,abil:unitAbilities(s),skills:d.ch?d.ch.actives().map(id=>[ABILITIES[id].n,abilityText(id,s)]):null,
+    hero:h,pic:u.pic,grow:gr.stats,now,strength:kind==='troop'?{fit:u.fit,max:unitSize(u.type),hurt:u.wounded}:null,rank,meters:h?(v=>[{label:'Stamina',v:P.sp,max:v[1],tip:'Spent running and fighting; back with rest'},{label:'Mana',v:P.mp,max:v[2],tip:'Spent on spells; back with rest'}])(vitals()):null,abil:unitAbilities(s),kit:kind==='troop'?kitChips(u.g||(P.woundedGroups||[]).find(w=>w.id===d.id)||{id:d.id,type:u.type}):null,skills:d.ch?d.ch.actives().map(id=>[ABILITIES[id].n,abilityText(id,s)]):null,
     foot:'Upkeep '+partyUnitWage(u)+'g a day',footTip:tip,acts:partyUnitActions(d,r)}).html()}
 const PARTY_TABS={character:'Character',gear:'Equipment',role:'Role'};
 function partyUnitTabs(d){if(d.kind==='troop')return '';const s=partyView(),tabs=Object.keys(PARTY_TABS).filter(k=>k!=='role'||d.kind==='comp'),on=tabs.includes((s.tabs||{})[d.id])?s.tabs[d.id]:'character';
@@ -103,7 +106,8 @@ function partyInspector(id,r){const d=partyUnit(id,r),edit=G.armyEdit===id,path=
   return '<section class="fb-pane fb-inspector fb-unit-inspector'+cls+'" data-unit-id="'+id+'" data-unit-kind="'+d.kind+'"><div class="fb-scroll" data-fb-scroll="army:'+id+(edit?':edit':path?':path':'')+'">'+(path?troopPath(d.u.type,id):(edit?'<div class="fb-figure"><img src="'+d.u.pic+'" alt=""></div><div class="fb-title"><small>'+htmlText(sub)+'</small><h3 title="'+htmlText(d.u.name)+'">'+htmlText(d.u.name)+'</h3></div>'+partyUnitActions(d,r)+partyGroupEditor(id,r):partyUnitCard(d,r)+partyUnitTabs(d)))+'</div></section>';
 }
 
-/* a troop type's skills: its training path (where it is trained from, what it trains into, at a barracks), its battle orders (the
+/* a troop type's skills: its training path (where it is trained from, what it trains into, at a barracks), its kit (doc/UNIT_KITS_DESIGN.md
+   §8: battle/unitkit.js UnitKit, its stances in their slots, its skills in theirs, its perks earned; step 1, its battle orders, the
    unit abilities it has: battle/unitabilities.js, asked of one of its soldiers) and its traits (unitcard.js) */
 function troopOrdersOf(k){const u={s:ST[k],type:k,team:0,ally:false};return UNIT_ABIL_ORDER.filter(id=>UNIT_ABILITIES[id].who(u))}
 // (an upgrade of its path: at its last rank (a peasants' group, its experience full), at a barracks for its price, an expert
@@ -111,41 +115,54 @@ function troopOrdersOf(k){const u={s:ST[k],type:k,team:0,ally:false};return UNIT
 function troopUpRow(g,to,row){const s=ST[to],at=rankPeasant(g.type)?'its experience full':'rank '+RANKS.max,h=horseOf(to)&&horseOf(to)!==horseOf(g.type)?' · a '+ITEMS[horseOf(to)].n.toLowerCase()+' a man':'',
     ex=recruitment.special(to)?' · an expert '+TRAINERS.roles[trainRole(to)].toLowerCase()+' trainer':'';
   return row(s.n,'Tier '+s.tier+' · '+classN(s)+' · '+at+' · at a barracks, '+trainCost(to)+'g each'+ex+h)}
-// a troop group's path: its rank (core/ranks.js), where it came from, what it upgrades into; its rank skills (a role on a ladder:
-// data/ranks.js RANK_SKILLS, each rung lit once reached), else its battle orders; its traits
-// (its mastery: the improvements picked, and one to pick for each mastery not yet used: a reached skill of its ladder with an up,
+// a troop group's path: its rank (core/ranks.js), where it came from, what it upgrades into; its kit (step 1: its rank skills, a role
+// on a ladder: data/kits.js KITS.ladders, each rung lit once reached, else its battle orders); its traits
+// (its mastery (§7, RANKS.mastery5): the picks made, and for each level not yet used its kind's menu, each option with what it does
+// in words, those it may take now (UnitKit opts) as buttons, the rest marked taken; step 1, a reached skill of its ladder with an up,
 // or a drill (core/ranks.js masteryPick))
-const masteryOpts=g=>{const L=RANK_SKILLS[rankRole({s:ST[g.type],type:g.type,team:0})];return [...(L||[]).slice(0,rankOf(g)).filter(k=>k.up).map(k=>k.id||k.ab),'drill']};
-function masteryHtml(g,L){const r=rankOf(g),picks=g.picks||[],name=id=>{const k=L&&L.find(x=>(x.id||x.ab)===id);return id==='drill'?RANKS.drill.n:k?(k.ab?UNIT_ABILITIES[k.ab].n:k.n):id};
-  const has=picks.length?'<p class="fb-note">Mastery: '+picks.map(name).join(', ')+'.</p>':'';if(masteryPending(g)<1||!g.id)return has;
+const kitMenu=()=>RANKS.statsOnly&&RANKS.mastery5;
+const masteryOpts=g=>{if(kitMenu())return UnitKit.of(g).opts();const L=RANK_SKILLS[rankRole({s:ST[g.type],type:g.type,team:0})];return [...(L||[]).slice(0,rankOf(g)).filter(k=>k.up).map(k=>k.id||k.ab),'drill']};
+function masteryHtml(g,L){const r=rankOf(g),picks=g.picks||[],K=kitMenu()&&UnitKit.of(g),name=id=>{if(K)return K.pickName(kitPickId(id));const k=L&&L.find(x=>(x.id||x.ab)===id);return id==='drill'?RANKS.drill.n:k?(k.ab?UNIT_ABILITIES[k.ab].n:k.n):id};
+  const has=picks.length?'<p class="fb-note">Mastery: '+picks.map(name).map(htmlText).join(', ')+'.</p>':'';if(masteryPending(g)<1||!g.id)return has;
   const opts=masteryOpts(g);
+  if(K)return has+'<section class="fb-mastery" aria-label="Mastery: choose one"><div class="lab">'+htmlText(masteryWord(picks.length+1))+': choose one ('+masteryPending(g)+' to choose)</div>'+
+    K.menu.map(id=>{const M=MASTERY[id],ok=opts.includes(id),n=(K.count[id]||0);return '<button type="button" class="fb-mpick'+(ok?'':' off')+'" data-act="party-master" data-arg="'+g.id+':'+id+'"'+(ok?'':' disabled')+'><strong>'+htmlText(K.pickName(id))+(n&&M.again?' <small>×'+n+'</small>':'')+'</strong><small>'+htmlText(M.d)+(ok?'':M.sk&&!n?' (no room: five skills)':' (taken)')+'</small></button>'}).join('')+'</section>';
   return has+'<div class="lab">Mastery: improve one</div><div class="btns fb-train-btns">'+opts.map(id=>fbBtn('party-master',g.id+':'+id,htmlText(name(id))+' +')).join('')+'</div>'}
+// (its kit, step 2 (RANKS.statsOnly): its stances in their slots, its skills in theirs (their keys), its perks earned, its picks kept
+// from a kind it was (idle: not on its menu now))
+function troopKitHtml(g,row){const K=UnitKit.of(g),SK=skillKeys(),SS=KITS.keys2?KIT_KEYS.now.stance:[],from={kind:'its kind\u2019s',mastery:'its mastery\u2019s',tech:'bought'};
+  return '<div class="lab">Stances</div>'+(K.slots.length?K.slots.map((id,i)=>row((SS[i]?'<kbd>'+SS[i]+'</kbd> ':'')+htmlText(STANCES[id].n),htmlText(STANCES[id].ch.map(c=>c.d||c.n).join(' / ')))).join(''):'<p class="muted">Only Pace and Discipline.</p>')+
+    '<div class="lab">Skills ('+K.skills.length+' / '+KITS.max+')</div>'+(K.skills.length?K.skills.map((x,i)=>{const A=UNIT_SKILLS[x.id];return row((SK[i]?'<kbd>'+SK[i]+'</kbd> ':'')+htmlText(A.n)+' <small>('+from[x.from]+')</small>',htmlText(A.d)+(x.idle?' <i>(idle: not for their kind)</i>':''),x.idle?' off':' on')}).join(''):'<p class="muted">None.</p>')+
+    (K.perks.length?'<div class="lab">Perks (earned)</div>'+K.perks.map(p=>row('★ '+htmlText(p.n),htmlText(p.d),' on')).join(''):'')+
+    (K.idle.length?'<div class="lab">Kept from its past</div>'+K.idle.map(id=>row(htmlText(MASTERY[id].n),htmlText(MASTERY[id].d)+' <i>(idle: not on its menu now)</i>',' off')).join(''):'')}
 // (yours to drill it: your hero with Drillmaster, a companion as Trainer, in your camp (world/trainers.js))
 function ownTrainHtml(g){const trs=ownTrainers().filter(tr=>tr.roles.includes(trainRole(g.type)));if(!g.id)return '';
   if(!trs.length)return '<p class="fb-note">Training: a Drillmaster hero or a Trainer companion, in camp; else a holding\'s trainers.</p>';
   return '<div class="lab">Training'+(P.camp?'':' (in camp)')+'</div><div class="btns fb-train-btns">'+trs.map(tr=>{const why=lessonWhy(tr,g);return fbBtn('trn-lesson',tr.id+'|'+g.id,htmlText(tr.name)+' · +'+TRAINERS.xp[tr.level-1]+' ('+trainLeft(tr)+' left)',why)}).join('')+'</div>'}
-function troopPath(k,id){const s=ST[k],from=UP_FROM(k),orders=troopOrdersOf(k),traits=traitsOf(s).filter(id=>!(RANK_SKILLS[rankRole({s,type:k,team:0})]||[]).some(x=>x.traits?.includes(id))).map(id=>[ABILITIES[id].n,abilityText(id,s)]),row=(n,sub,cls='')=>'<div class="fb-path-step'+cls+'"><strong>'+n+'</strong><small>'+sub+'</small></div>',
+function troopPath(k,id){const s=ST[k],from=UP_FROM(k),orders=troopOrdersOf(k),traits=traitsOf(s).filter(id=>RANKS.statsOnly||!(RANK_SKILLS[rankRole({s,type:k,team:0})]||[]).some(x=>x.traits?.includes(id))).map(id=>[ABILITIES[id].n,abilityText(id,s)]),row=(n,sub,cls='')=>'<div class="fb-path-step'+cls+'"><strong>'+n+'</strong><small>'+sub+'</small></div>',
     g=partyRoster(P).groups.find(x=>x.id===id)||(P.woundedGroups||[]).find(w=>w.id===id)||{id,type:k},L=rankLine(g),L2=RANK_SKILLS[rankRole({s,type:k,team:0})];// (its ladder: data/ranks.js)
   return '<div class="fb-title fb-path-title"><small>Rank and path</small><h3>'+groupBadge(g,16)+' '+htmlText(s.n)+'</h3>'+rankPips(g)+'</div>'+rankMeter(L)+(UP[k]?'':'<p class="fb-note">The top of its path: it upgrades no further.</p>')+masteryHtml(g,L2)+ownTrainHtml(g)+
     '<div class="lab">Path</div><div class="fb-path">'+(from?row(ST[from].n,'Tier '+ST[from].tier+' · upgraded from'):'')+row(s.n,'Tier '+s.tier+' · '+classN(s)+' · now',' on')+(UP[k]||[]).map(t=>troopUpRow(g,t,row)).join('')+'</div>'+
-    (L2?'<div class="lab">Rank skills</div>'+L2.map((x,i)=>{const A=x.ab&&UNIT_ABILITIES[x.ab],tr=x.traits&&x.traits.find(id=>traitsOf(s).includes(id)),got=Math.max(rankOf(g),g.learned?.[rankRole({s,type:k,team:0})]||0)>i;
+    (RANKS.statsOnly?troopKitHtml(g,row):L2?'<div class="lab">Rank skills</div>'+L2.map((x,i)=>{const A=x.ab&&UNIT_ABILITIES[x.ab],tr=x.traits&&x.traits.find(id=>traitsOf(s).includes(id)),got=Math.max(rankOf(g),g.learned?.[rankRole({s,type:k,team:0})]||0)>i;
       return row(rankBadge(k,i+1,12)+' Rank '+(i+1)+' · '+(A?A.n+' ('+A.key+')':tr?ABILITIES[tr].n+' <small>(its trait)</small>':x.n),(A?A.d:tr?abilityText(tr,s):x.d)+(got?'':' <i>(at rank '+(i+1)+')</i>'),got?' on':' off')}).join(''):
     '<div class="lab">Battle orders</div>'+(orders.length?orders.map(id=>row(UNIT_ABILITIES[id].n+' ('+UNIT_ABILITIES[id].key+')',UNIT_ABILITIES[id].d)).join(''):'<p class="muted">No special orders.</p>'))+
     // (the skills it kept from the kinds it was before an upgrade, another ladder's: core/ranks.js rankLadders; a foot drill off on a horse)
-    (()=>{const own=rankRole({s,type:k,team:0}),kept=rankLadders(g).filter(([r])=>r!==own&&RANK_SKILLS[r]).flatMap(([r,n])=>RANK_SKILLS[r].slice(0,n).filter(x=>!x.traits));if(!kept.length)return '';
+    (()=>{if(RANKS.statsOnly)return '';const own=rankRole({s,type:k,team:0}),kept=rankLadders(g).filter(([r])=>r!==own&&RANK_SKILLS[r]).flatMap(([r,n])=>RANK_SKILLS[r].slice(0,n).filter(x=>!x.traits));if(!kept.length)return '';
       return '<div class="lab">Kept from its past</div>'+kept.map(x=>{const A=x.ab&&UNIT_ABILITIES[x.ab],off=x.foot&&s.mounted;return row((A?A.n+' ('+A.key+')':x.n)+(x.foot?' <small>(on foot)</small>':''),(A?A.d:x.d)+(off?' <i>(not on horseback)</i>':''),off?' off':' on')}).join('')})()+
     '<div class="lab">Traits</div>'+(traits.length?traits.map(([n,d])=>row(n,d)).join(''):'<p class="muted">No special traits.</p>')+
     // (its upgrades, its group's own: where each was bought, one that no longer fits its kind idle; world/buffs.js, the tech tree's)
     '<div class="lab">Upgrades</div>'+(Buffs.list(id).length?Buffs.list(id).map(x=>{const b=BUFFS[x.id],on=Buffs.fits(b,k);return row(htmlText(b.n),(b.d?htmlText(b.d)+' ':'')+Buffs.text(b)+' · from '+htmlText(x.from)+(on?'':' <i>(idle: not for their kind)</i>'),on?' on':' off')}).join(''):'<p class="muted">None yet.</p>');
 }
+// (character.js renderChar shows this for any tab it does not name: the March formation tab's page is march.js's)
 function partyRosterPage(){
+  if(G.char==='march')return marchTabPage();
   const s=partyView(),r=partyRoster(P);if(G.armyEdit){s.sel=G.armyEdit;s.open=true}
   const recover=[...new Set((P.woundedGroups||[]).filter(w=>w.count>0&&!r.groups.some(g=>g.id===w.id)).map(w=>w.id))],away=Object.keys(P.comps).filter(id=>P.comps[id].party).map(id=>'comp_'+id),held=Object.keys(P.comps).filter(id=>P.comps[id].jail&&!P.comps[id].party).map(id=>'comp_'+id),ids=[...r.order,...recover,...away,...held.filter(id=>!r.order.includes(id))];
   if(!ids.includes(s.sel)){s.sel=ids[0];s.path=false}if(rosterKind(s.sel)==='comp')compPick(s.sel.slice(5));
   const full=partyFull(),cls=(s.open?' open':'')+(full?' full':'');const numbers=marchNumbers(P);s.shape=partyShape();
   return '<div class="fb-army-layout'+cls+'"><div class="fb-split"><section class="fb-pane fb-collection"><div class="fb-pane-head"><h3>Battle Group</h3><span>'+r.slots+' / '+r.groupLimit+'</span></div><div class="fb-scroll fb-unit-grid" data-fb-scroll="army-roster">'+r.order.filter(id=>!held.includes(id)).map(id=>{const g=partyGroup(id,r);return partyCard(id,r,numbers[id]??'—')}).join('')+
     (recover.length?'<div class="fb-section">Recovering groups · no fit soldiers</div>'+recover.map(id=>partyCard(id,r,'—')).join(''):'')+(away.length?'<div class="fb-section">Away · leading their own party</div>'+away.map(id=>partyCard(id,r,'—')).join(''):'')+(held.length?'<div class="fb-section">Held · in prison</div>'+held.map(id=>partyCard(id,r,'—')).join(''):'')+
-    '<div class="btns fb-recruit-options">'+(WORLD_BATTLE.on?fbBtn('march-open',null,'March formation'):'')+'</div></div></section>'+partyDetail(s.sel,r)+'</div></div>';
+    '</div></section>'+partyDetail(s.sel,r)+'</div></div>';
 }
 /* ---- Army skills: your band's skills are your hero's (parties.js Leader.skill): what you have trained, with what a companion in its
    role adds (a Scout to Scouting, a Surgeon to Medicine: 2 and a third of theirs, Leader.roleBonus), your gear and your skill tree.
@@ -190,7 +207,7 @@ onAct('party-',(a,arg)=>{
   if(a==='party-select'){s.sel=arg;s.open=true;s.path=false;G.armyEdit=null;if(rosterKind(arg)==='comp')compPick(arg.slice(5))}
   else if(a==='party-back'){if(G.armyEdit)G.armyEdit=null;else if(s.path)s.path=false;else s.open=false}
   else if(a==='party-path'){s.path=!s.path;G.armyEdit=null}
-  else if(a==='party-master'){const [id,pick]=String(arg).split(':'),g=partyRoster(P).groups.find(x=>x.id===id);if(g&&masteryOpts(g).includes(pick)&&masteryPick(g,pick))log(armyGroupLabel(id)+': '+(pick==='drill'?RANKS.drill.n:pick)+' improved by their mastery.','good','band')}
+  else if(a==='party-master'){const [id,pick]=String(arg).split(':'),g=partyRoster(P).groups.find(x=>x.id===id);if(g&&masteryOpts(g).includes(pick)&&masteryPick(g,pick))log(armyGroupLabel(id)+': '+(kitMenu()?UnitKit.of(g).pickName(pick)+', their mastery\u2019s pick':(pick==='drill'?RANKS.drill.n:pick)+' improved by their mastery')+'.','good','band')}
   else if(a==='party-unit-tab'&&PARTY_TABS[arg]){(s.tabs||(s.tabs={}))[s.sel]=arg}
   else if(a==='party-holder'){if(ROLES[arg]&&Object.keys(P.comps).length)armyRolePick(arg);return}
   else if(a==='party-equipment'){G.mode='world';hidePanel();openInv();G.invArmy=true;G.invView='equipment';renderInv();return}

@@ -10,16 +10,17 @@
 const WEAPON_STEPS=32;
 const heldWeapon=o=>o&&WPN[o.weapon]?o.weapon:null;
 const POLE=k=>k==='spear'||k==='pike'||k==='javelin'||k==='lance';
-// the weapon at angle step i (0: pointing forward, a quarter turn: down), round its hand at the canvas's middle
+// the weapon at angle step i (0: pointing forward, a quarter turn: down), round its hand at the canvas's middle; len: its length
+// if not WPN's (a flag's longer spear: marchgear.js)
 const WEAPONS={};let WEAPON_N=0;
-function weaponSprite(k,team,skin,i){
-  const key=k+team+skin+i;if(WEAPONS[key])return WEAPONS[key];
-  const [len]=WPN[k],R=len+4,S=R*2+1,g=pgrid(S,S),deg=i/WEAPON_STEPS*360;
-  drawBlade((x,y,c)=>pset(g,x,y,c),R,R,deg,k,pal(team),skin);poutline(g);const c=pcanvas(g);c.R=R;c.n=++WEAPON_N;return WEAPONS[key]=c}
-// a weapon's pixels from its hand (hx, hy) at deg (figures.js HandWeapon draws the same into a figure; a worker's tool's head too);
-// returns the point just past its tip (a blow's flash)
-function drawBlade(set,hx,hy,deg,k,Tm,skin){
-  const [len,mat,head]=WPN[k],W=PPAL.wood,M=PPAL.steel,col=mat==='steel'?M[1]:W[1],a=deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
+function weaponSprite(k,team,skin,i,len=WPN[k][0]){
+  const key=k+team+skin+i+(len===WPN[k][0]?'':'L'+len);if(WEAPONS[key])return WEAPONS[key];
+  const R=len+4,S=R*2+1,g=pgrid(S,S),deg=i/WEAPON_STEPS*360;
+  drawBlade((x,y,c)=>pset(g,x,y,c),R,R,deg,k,pal(team),skin,len);poutline(g);const c=pcanvas(g);c.R=R;c.n=++WEAPON_N;return WEAPONS[key]=c}
+// a weapon's pixels from its hand (hx, hy) at deg (figures.js HandWeapon draws the same into a figure; a worker's tool's head too),
+// len px long (WPN's, or the item's own: a flag's spear); returns the point just past its tip (a blow's flash)
+function drawBlade(set,hx,hy,deg,k,Tm,skin,len=WPN[k][0]){
+  const [,mat,head]=WPN[k],W=PPAL.wood,M=PPAL.steel,col=mat==='steel'?M[1]:W[1],a=deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
   // (one pixel per step along the longer axis, so a slanted shaft is a single clean line, never two side by side)
   // (it returns its pixels: a blade's shine recolours the same ones, and a head sits on the shaft's own last pixel)
   const line=(x0,y0,ang,n,cl)=>{const pts=[];if(n<1)return pts;const ex=x0+Math.cos(ang)*(n-1),ey=y0+Math.sin(ang)*(n-1),st=Math.max(1,Math.round(Math.max(Math.abs(ex-x0),Math.abs(ey-y0))));for(let i=0;i<=st;i++){const p=[Math.round(x0+(ex-x0)*i/st),Math.round(y0+(ey-y0)*i/st)],q=pts[pts.length-1];
@@ -77,13 +78,13 @@ function heldAngle(u,k){
   return[u.wAng,u.wDx,u.wDy]}
 // (the weapon in his hand this frame, worked out once (HELD, one record, no allocation a frame): its picture, its corner from his
 // sprite's, and whether it goes behind his body (GEAR.behind); null for none. render.js drawUnit draws it before his body or after)
-const HELD={w:null,x:0,y:0,back:false};
+const HELD={w:null,x:0,y:0,back:false,k:null,i:0};// (k, i: the weapon and its angle's step: a flag's cloth at its tip, marchgear.js)
 function heldNow(u,o,sp){
   const k=heldWeapon(o);if(!k||!sp.hand)return null;const [deg,hx,hy]=heldAngle(u,k),dx=sp.rig?0:hx,dy=sp.rig?0:hy,f=deg/360*WEAPON_STEPS;// (rigged: the fist carries it, people.js BLOW_RIG)
   // (the step drawn changes only when the angle is well past the middle between two: no flicker on the boundary)
   if(u.wIdx==null||Math.abs(((f-u.wIdx)%WEAPON_STEPS+WEAPON_STEPS*1.5)%WEAPON_STEPS-WEAPON_STEPS/2)>.8)u.wIdx=Math.round(f);
   const i=((u.wIdx%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,w=weaponSprite(k,o.team,pal(o.skin)[1],i),a=(i/WEAPON_STEPS*360+180)%360-180;
-  HELD.w=w;HELD.x=sp.hand[0]+Math.round(dx)-w.R;HELD.y=sp.hand[1]+Math.round(dy)-w.R;HELD.back=a>GEAR.behind[0]&&a<GEAR.behind[1]&&peeks(sp,w,HELD.x,HELD.y);return HELD}
+  HELD.w=w;HELD.k=k;HELD.i=i;HELD.x=sp.hand[0]+Math.round(dx)-w.R;HELD.y=sp.hand[1]+Math.round(dy)-w.R;HELD.back=a>GEAR.behind[0]&&a<GEAR.behind[1]&&peeks(sp,w,HELD.x,HELD.y);return HELD}
 // (a picture's alpha by pixel, read once)
 function alphaOf(c){if(c.alpha)return c.alpha;const d=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data,A=new Uint8Array(c.width*c.height);for(let i=0;i<A.length;i++)A[i]=d[i*4+3];return c.alpha=A}
 /* (behind the body sp at (x, y), does the weapon w still show past it, GEAR.peek of its pixels at least? A sword on the shoulder

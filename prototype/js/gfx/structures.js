@@ -43,8 +43,8 @@ function charred(src,seed){return mkc(src.width,src.height,g=>{g.drawImage(src,0
 function flagSprite(col,f){const k='fl'+col+f;if(spr[k])return spr[k];return spr[k]=outlined(mkc(7,11,g=>{rect(g,'#4a3020',0,1,1,10);rect(g,'#c8a040',0,0,1,1);
   const wave=[[0,0,0,0,0],[0,0,1,1,0],[0,1,1,0,0]][f];for(let i=0;i<5;i++){rect(g,col,1+i,1+wave[i],1,3);rect(g,shade(col,1.25),1+i,1+wave[i],1,1);rect(g,shade(col,.7),1+i,3+wave[i],1,1)}}),'#1a1512')}
 const drawFlag=(col,x,y,seed)=>{const f=Math.floor(performance.now()/220+(seed||0))%3,s=flagSprite(col,f);ctx.drawImage(s,Math.round(x)-1,Math.round(y)-12)};
-// a camp's fire: its flame flickers through the engine's four frames, its foot at (x, y)
-const drawFire=(x,y,seed)=>{const f=Math.floor(performance.now()/110+(seed||0))%4,s=spr['flm'+f]||(spr['flm'+f]=PX.flame(f));ctx.drawImage(s.img,Math.round(x)-s.ax,Math.round(y)-s.ay)};
+// a camp's fire, its foot at (x, y): as it burns (fire.js fireCamp); FLAMES off, its flame through the engine's four frames
+const drawFire=(x,y,seed)=>{if(FLAMES.on){fireCamp(x,y,seed);return}const f=Math.floor(performance.now()/110+(seed||0))%4,s=spr['flm'+f]||(spr['flm'+f]=PX.flame(f));ctx.drawImage(s.img,Math.round(x)-s.ax,Math.round(y)-s.ay)};
 // the lots of every holding near the view: their fields flat on the ground, under everyone (their yards are painted in: townGround)
 function drawLotGround(cam,V){
   lotsAhead(V);
@@ -81,7 +81,8 @@ function drawSite(s,X,Y,N,p,full,seed){
   for(let y=Y-4;y>Y-top;y-=6){rect(ctx,'#1a1512',x0-1,y-1,x1-x0+3,3);rect(ctx,'#a07e54',x0,y,x1-x0+1,1)}
   // the worker: walks the plank at the height reached, swings his hammer, a spark now and then
   const ly=full?Y-Math.round(top/2):Math.max(Y-top+2,Y-h-1),span=x1-x0-4,wx=x0+2+Math.round((Math.sin(now/900+seed)*.5+.5)*span),f=Math.floor(now*PEOPLE_STEPS/720)%PEOPLE_STEPS,ws=workerSprite('builder',f,'human',seed%4);
-  ctx.drawImage(ws,wx-8,ly-14);if(Math.floor(now/180+seed)%7===0)rect(ctx,'#ffe090',wx+4,ly-8,1,1);
+  if(figsOn())drawFig(figWorker('builder','human',seed%4,figPose(f,true)),wx,ly,1);else ctx.drawImage(ws,wx-8,ly-14);// (a battle figure, as the map's people: people.js MAP_FIGS)
+  if(Math.floor(now/180+seed)%7===0)rect(ctx,'#ffe090',wx+4,ly-8,1,1);
 }
 // placing a building by hand: its ghost under the pointer, its tiles green where it may stand and red where not
 function drawPlace(cam){

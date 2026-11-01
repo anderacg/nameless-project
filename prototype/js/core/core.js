@@ -10,8 +10,8 @@ let MW=224,MH=160;
 const VIEW={h:320,w:400};
 let VW=576,VH=360,HUD_PX=.5;// (HUD_PX: game pixels to one CSS pixel)
 // VS: the world map's canvas pixels to a game pixel (the screen's own: its backing store VW*VS x VH*VS, every game pixel VS x VS
-// device pixels), so the world glides a device pixel at a time (render.js drawWorld); CVS: the canvas's now (VS on the map, 1 in
-// a battle, a scene or a town, drawn in game pixels as before)
+// device pixels), so the world glides a device pixel at a time (render.js drawWorld); CVS: the canvas's now (VS on the map, a
+// battle's bview().k (1 unless drawn sharp), 1 in a scene or a town, drawn in game pixels as before)
 let VS=1,CVS=1;
 /* the density drawn at (the owner, 2026-10-29: "it lags on mobile"): the screen's own (devicePixelRatio), at most cap (the setting
    Resolution, ui.js: Full none, Balanced 2, Fast 1.5). The game's art is whole pixels, so a canvas of fewer pixels shown at the
@@ -19,21 +19,29 @@ let VS=1,CVS=1;
    (at 3, Balanced fills 4/9 of the pixels, Fast 1/4) */
 // gpu: the screen's canvas left to the GPU (no willReadFrequently; Ashmark.html?gpu=1). Off by default: measured headless on a
 // desktop GPU (doc/WORLD_DESIGN.md §3.5, "The frame's cost"), a GPU screen fed by the software canvases the frame is built in was
-// no faster, and every layer moved to the GPU was slower; for trying on a phone
-const RENDER={cap:2,fps:60,gpu:/[?&]gpu=1/.test(location.search)};
+// no faster, and every layer moved to the GPU was slower; for trying on a phone. sharpBattle: a battle fought apart drawn at the
+// screen's own pixels (bview, below); off, today's canvas of BVW x BVH stretched to the window
+const RENDER={cap:2,fps:60,gpu:/[?&]gpu=1/.test(location.search),sharpBattle:true};
 const dprOf=()=>Math.min(window.devicePixelRatio||1,RENDER.cap);
 // ctx: the context drawn into; the world map's ground and buildings go into a canvas of game pixels first (render.js drawWorld)
 const cv=$('#game');let ctx=cv.getContext('2d',{willReadFrequently:!RENDER.gpu});const ctx0=ctx;
 cv.width=VW;cv.height=VH;ctx.imageSmoothingEnabled=false;
 // the battlefield: BW x BH, set as a battle starts by its size (setup.js FIELD_SIZES); with sizes off (the older test suites) today's
-// field, FIELD_H high and as wide as the screen's shape asks (FIELD_W). In a battle the canvas runs at BVW x BVH (FIELD_H field px
-// down at zoom 1, the screen's shape) in the same space on screen; the camera fits the whole field in it (camera.js camFit), and
-// its HUD is drawn at the screen's scale
+// field, FIELD_H high and as wide as the screen's shape asks (FIELD_W). In a battle the canvas's view is BVW x BVH (FIELD_H field px
+// down at zoom 1, the screen's shape; its pixels: bview) in the same space on screen; the camera fits the whole field in it
+// (camera.js camFit), and its HUD is drawn at the screen's scale
 const FIELD_H=600,FIELD_W={min:960,max:1300};
 let BW=960,BH=FIELD_H,BVW=960,BVH=FIELD_H;
 function setRes(w,h,k=1){CVS=k;if(cv.width===w&&cv.height===h)return;cv.width=w;cv.height=h;ctx0.imageSmoothingEnabled=false}
 // (the test suites keep the old fixed view, 576 x 360, so their clicks and sums stay put; ?v= is a look at the real thing)
 const FIXED_VIEW=/[?&]test=/.test(location.search)&&!/[?&]v=/.test(location.search);
+/* a battle fought apart (not on the map, B.world), drawn sharp (the owner, 2026-11-01: "why separated battle screen seems not
+   sharp like the world screen?"): its canvas the screen's own pixels as the map's (cw x ch: VW*VS x VH*VS at the map's own scale,
+   so RENDER.cap rules it too), its view still FIELD_H px down in the screen's shape (w x h: what toCanvas, the camera and the HUD
+   read), k device px each; the camera puts a field px on a whole number of them (camera.js camZooms). Off (RENDER.sharpBattle),
+   in the tests' fixed view or on the map: today's BVW x BVH, the browser stretching it */
+function bview(){const Z=MAPZOOM;if(!RENDER.sharpBattle||FIXED_VIEW||typeof B!=='undefined'&&B?.world)return{w:BVW,h:BVH,k:1,cw:BVW,ch:BVH,sharp:false};
+  const cw=Z.vw*Z.s0,ch=Z.vh*Z.s0,k=ch/BVH;return{w:cw/k,h:BVH,k,cw,ch,sharp:true}}
 /* Map art stays on whole device pixels. z: saved scale (0 Auto); lo/hi: zoom limits. Desktop Auto and limits follow the
    window. On phones, the former default (PHONE × window scale, bounded by PHONE_IN/PHONE_IN_H) is now the farthest view.
    Auto starts PHONE_START times closer, with further zoom up to PHONE_MAX times the former default. HUD scale stays s0. */
@@ -51,7 +59,7 @@ function fitScreen(){
   const w=VW*s/dpr,h=VH*s/dpr;HUD_PX=dpr/s0;VS=s;cv.style.width=w+'px';cv.style.height=h+'px';
   if(FIXED_VIEW){scr.style.width=w+'px';scr.style.height=h+'px'}else{scr.style.width=aw+'px';scr.style.height=ah+'px'}
   if(typeof B!=='undefined'&&B?.world){BVW=VW;BVH=VH}
-  if(typeof B!=='undefined'&&B&&B.cam&&typeof camClamp==='function')camClamp();
+  if(typeof B!=='undefined'&&B&&B.cam&&typeof camResize==='function')camResize();
   if(typeof zoomUI==='function')zoomUI();
 }
 // a step of the map's zoom (d: 1 in, -1 out) within its range, remembered (ui.js PREFS mapzoom); back at auto it is auto again.

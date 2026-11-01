@@ -58,7 +58,7 @@ class CaravanParty extends Party{
   inView(V){return yourSight(V).sees(this.x,this.y,1.2)}
   // a click: marched man by man, on any of its guards or inside its outline (world.js pickAt army) and its small ring; else on its
   // army's ring; and anywhere on its cart, ox and drover (caravanPic)
-  pick(at){at.add(this,at.army?.(this)?11:WORLD_BATTLE.on?marchInteractRadius(this):11,5);const s=caravanPic(this);at.fig(this,s,this.x-(s.width>>1),this.y+2*cvK()-s.height,this.dir<0);const B=at.flag&&bannerAt(this,0);if(B)at.flag(this,B)}
+  pick(at){at.add(this,at.army?.(this)?11:WORLD_BATTLE.on?marchInteractRadius(this):11,5);const s=caravanPic(this);at.fig(this,s,this.x-(s.width>>1),this.y+2*cvK()-s.height,this.dir<0)}
   // a small trade pennant in its owner's colour over its cart (Party banner)
   banner(){return{k:'trade',col:caravanCol(this),dev:'coin'}}
   headY(){const s=caravanPic(this);return Math.round(this.y+2*cvK()-s.height+opaqueBox(s)[1])}

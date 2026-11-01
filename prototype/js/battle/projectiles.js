@@ -51,12 +51,13 @@ class Missile{
   // whom it trains as it hits: the shooter's Archery, an arrow and a bolt alike: your hero's (your own shots: heroShot) or a
   // companion's (owner, 2026-10-21)
   trains(){const a=this.a;if(a.src&&a.src.heroShot)train('archery',1.5);else if(a.by&&a.by.comp)compTrain(a.by.type,'archery',1.5)}
-  // it strikes e: his guard, a web, the shooter's training, the wound, its look and sound, the arrow left in him, the XP
+  // it strikes e: his guard, a web, the shooter's training, the wound, its look (a fire arrow's sparks: fire.js fireSparks) and
+  // sound, the arrow left in him, the XP
   strike(e){
     const a=this.a,mu=matchup(a.src||{},e.s);let dm=a.dmg*mu;
     if(Actor.of(e).guards(a.a+Math.PI,dm))dm=this.blocked(dm);
     if(a.web){e.slow=2;B.floats.push({x:e.x,y:e.y-20,t:'Webbed',life:.6,c:'#e4e0cf'})}this.trains();
-    {const O={x:a.x-a.vx,y:a.y-a.vy,arrow:!a.magic},was=e.hp;e.shotAt=B.t;Actor.of(e).wound(dm*formTaken(e,O)*flankMul(e,O),mu,dtOf(a.src),a.by,true);vfxHit(O,e,dm,{arrow:!a.magic,magic:a.magic,col:a.col||(a.src&&a.src.bolt)});if(sfxOn())blowSound(O,e,true,a.magic);if(!a.magic)stickArrow(e,a);earnXp(a.by,e,was)}a.life=0;
+    {const O={x:a.x-a.vx,y:a.y-a.vy,arrow:!a.magic},was=e.hp;e.shotAt=B.t;Actor.of(e).wound(dm*formTaken(e,O)*flankMul(e,O),mu,dtOf(a.src),a.by,true);vfxHit(O,e,dm,{arrow:!a.magic,magic:a.magic,col:a.col||(a.src&&a.src.bolt)});if(a.src&&a.src.fireArrow)fireSparks(e.x,e.y-7);if(sfxOn())blowSound(O,e,true,a.magic);if(!a.magic)stickArrow(e,a);earnXp(a.by,e,was)}a.life=0;
   }
 }
 // an arrow, javelin, stone or web: trees catch it only low, it hits on the way down, a miss sticks in the ground
@@ -67,7 +68,7 @@ class ArcMissile extends Missile{
     if(z<10&&!a.elf&&B.terrain&&B.terrain.has.wood&&woodStops(a,a.x,a.y,a.x-a.vx*dt,a.y-a.vy*dt,a.vz<0)){a.life=0;fx(a.x,a.y-z-4,'#8b5a2b',2);return}// (low through woods, or down into them: terrain.js)
     if(B.world){const e=worldMissileHit(a,from,true);if(e){this.strike(e);return}}
     else if(z<9)for(const e of spatialOn()?SG.near(a.x,a.y,16,a.team,true):B.units){if(e.hp<=0||!battleEnemy(e,a))continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs(e.y-a.y)<(e.s.big?10:5)){this.strike(e);return}}
-    if(a.z<=0&&a.t>.03){a.life=0;B.parts.push({x:a.x,y:a.y-1,vx:0,vy:0,life:5,c:'#c9b48a',stuck:a.vx>=0?1:-1});vfx({k:'dust',x:a.x,y:a.y,vx:0,vy:-3,r:1,grow:5,life:.3,col:dustCol()});if(sfxOn()&&sndTurn('ground'))sfxAt('arrowhit',a.x,a.y,{vol:.4})}// (it stays where it lands a while; a thud, softer)
+    if(a.z<=0&&a.t>.03){a.life=0;B.parts.push({x:a.x,y:a.y-1,vx:0,vy:0,life:5,c:'#c9b48a',stuck:a.vx>=0?1:-1});vfx({k:'dust',x:a.x,y:a.y,vx:0,vy:-3,r:1,grow:5,life:.3,col:dustCol()});if(a.src&&a.src.fireArrow)fireSparks(a.x,a.y-1,3);if(sfxOn()&&sndTurn('ground'))sfxAt('arrowhit',a.x,a.y,{vol:.4})}// (it stays where it lands a while; a thud, softer)
   }
   blocked(dm){const a=this.a;dm*=blockMul();fx(a.x,a.y-6,'#cfe0ff',4);return dm}
 }

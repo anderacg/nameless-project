@@ -14,12 +14,12 @@ Kit.suite(({ok})=>{
   // ======== a fresh troop: its kind's own numbers, nothing grown
   {const g=t.statGrowth(gf);ok(Object.values(g.stats).every(x=>!x.parts.length&&x.now===x.base),'a fresh group: statGrowth finds nothing grown');
    const c=open(gf.id);ok(c&&!c.querySelector('.uc-bar i.gr')&&!c.querySelector('.uc-grow')&&!c.querySelector('.uc-v .gr'),'and its card shows no grown segment, no "Grown by" line')}
-  // ======== a ranked group: its proficiency and its ladder's Long reach, with their sources
-  {gs.rank=3;gs.picks=[];const g=t.statGrowth(gs),R=g.stats.reach,A=g.stats.atk;
-   ok(R&&R.now>R.base&&R.parts.some(([l])=>l==='Long reach')&&A.now>A.base&&A.parts.some(([l])=>/^Rank 3/.test(l)),'rank 3 spearmen: reach '+R.base+' → '+Math.round(R.now)+' (Long reach), attack up by Rank 3 ('+A.parts.map(p=>p[0]).join(', ')+')');
+  // ======== a ranked group: its rank's stats and its mastery's Long reach (a pick at Adept: doc/UNIT_KITS_DESIGN.md §6, §7), with their sources
+  {gs.rank=5;gs.mxp=300;gs.picks=['longReach'];const g=t.statGrowth(gs),R=g.stats.reach,A=g.stats.atk;
+   ok(R&&R.now>R.base&&R.parts.some(([l])=>l==='Long reach')&&A.now>A.base&&A.parts.some(([l])=>/^Rank 5/.test(l)),'rank 5 spearmen, Adept: reach '+R.base+' → '+Math.round(R.now)+' (Long reach), attack up by Rank 5 ('+A.parts.map(p=>p[0]).join(', ')+')');
    const c=open(gs.id),s=stat(c,'reach');
    ok(s&&s.querySelector('.uc-bar i.gr')&&s.querySelector('.uc-v .gr')&&/original \d+: .*Long reach \+/.test(s.title),'its card: the reach bar\'s gain in the grown colour, its value too, the tip naming its source ('+(s&&s.title.split(' · ').slice(1).join(' · '))+')');
-   ok(/Rank 3/.test(stat(c,'atk').title)&&/Grown by .*Rank 3.*Long reach|Grown by .*Long reach.*Rank 3/.test(c.querySelector('.uc-grow')?.textContent||''),'the attack\'s tip names Rank 3; the line under the bars names every source (a phone has no tooltips)')}
+   ok(/Rank 5/.test(stat(c,'atk').title)&&/Grown by .*Rank 5.*Long reach|Grown by .*Long reach.*Rank 5/.test(c.querySelector('.uc-grow')?.textContent||''),'the attack\'s tip names Rank 5; the line under the bars names every source (a phone has no tooltips)')}
   // ======== an upgrade (world/buffs.js): its own part, by its name
   {t.BUFFS.ugDrill={n:'Drill upgrade',d:'',mods:{hpPct:.2}};try{gs.buffs=[{id:'ugDrill',from:'Ashford'}];const g=t.statGrowth(gs),H=g.stats.hp;
     ok(H.now>H.base&&H.parts.some(([l,n])=>l==='Drill upgrade'&&n>0),'an upgrade bought for the group: health '+H.base+' → '+H.now+' (Drill upgrade)');

@@ -13,7 +13,9 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  const look=()=>{H.sp=t.maxSP();H.fbT=0;t.commandCharacters(.01)};
  const key=k=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code:'Key'+k.toUpperCase(),bubbles:true}));
  ok(fall(),'(your hero on Auto skills falls back)');look();ok(H.fallBack,'(no order of yours: still out, the press a trap)');
- t.selectGroup(h.grp);const w0=!!hg.walk;key('r');ok(!!hg.walk!==w0,'(the R key toggles the pace: walk '+hg.walk+')');look();ok(!H.fallBack,'the R key (pace, toggleFlag walk) ends a fall-back');
+ // (the pace on its key in the layout in force (KIT_KEYS.now: R in §7b's, Q in step 1's), doc/UNIT_KITS_DESIGN.md §7b)
+ {const pk=(t.KITS.keys2?t.KIT_KEYS.now.pace:'q').toLowerCase(),PK=pk.toUpperCase();
+ t.selectGroup(h.grp);const w0=!!hg.walk;key(pk);ok(!!hg.walk!==w0,'(the '+PK+' key toggles the pace: walk '+hg.walk+')');look();ok(!H.fallBack,'the '+PK+' key (pace, toggleFlag walk) ends a fall-back')}
  ok(fall(),'(falls back again)');t.toggleFlag('walk');look();ok(!H.fallBack,'toggleFlag(walk) ends a fall-back');
  ok(fall(),'(falls back again)');t.toggleFlag('firm');look();ok(!H.fallBack,'a flag (hold their ground) ends a fall-back');
  ok(fall(),'(falls back again)');t.setForm('line');look();ok(!H.fallBack,'a formation (line) ends a fall-back');

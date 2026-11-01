@@ -14,6 +14,14 @@ Kit.suite(({ok})=>{
  const status=root.querySelector('.btop'),cards=root.querySelector('.bcards');ok(r(status).bottom<=r(cards).top&&r(cards).bottom<=r(dock).top,'status, unit cards and controls stack without overlap');
  const card=cards.querySelector('[data-grp]:not([data-grp="all"])');card.click();ok(t.B.sel===card.dataset.grp,'unit cards still select their real army groups');
  click('battleOrdersToggle');const orders=document.getElementById('battleOrderChoices');ok(!orders.hidden&&r(orders).bottom<=r(root).top&&root.contains(document.getElementById('bCmd')),'orders and commander powers open together above the dock');
+ // (the order bar in the drawer, the unit kits' (doc/UNIT_KITS_DESIGN.md §10 step 1): its stance rows and the skill bar's three slots,
+ // bowmen selected, every button a thumb's size, none over another, within the drawer, in a few rows)
+ {const bw=Object.values(t.B.groups).find(g=>g.player&&g.units.some(u=>u.type==='hum_bow'));t.selectGroup(bw.id);t.setOrderUI();
+  const bs=[...orders.querySelectorAll('.borders .obtn')].filter(shown),D=r(orders),over=bs.some((a,i)=>bs.some((b,j)=>j>i&&!(r(a).right<=r(b).left+.5||r(b).right<=r(a).left+.5||r(a).bottom<=r(b).top+.5||r(b).bottom<=r(a).top+.5))),rows=new Set(bs.map(b=>Math.round(r(b).top))).size;
+  // (step 2, doc/UNIT_KITS_DESIGN.md §7b: Pace and Discipline rows, the stance slots (bowmen: Shooting on Q), five skill slots (Rapid shot their kind's))
+  ok(['pace','discipline'].every(id=>orders.querySelector('.srow[data-stance="'+id+'"]'))&&orders.querySelector('.sslot[data-stance="shooting"]:not([hidden])')&&orders.querySelectorAll('.skills [data-slot]').length===5&&orders.querySelector('.skills [data-slot="0"]').dataset.abil==='rapid','the drawer has the stance rows and slots and the skill bar (bowmen: Shooting on Q, Rapid shot in slot 1)');
+  ok(bs.length>=15&&bs.every(b=>r(b).width>=44&&r(b).height>=44&&r(b).left>=D.left&&r(b).right<=D.right)&&!over&&rows<=4,'on a phone the '+bs.length+' buttons fit: each at least 44 px, within the drawer, none over another, in '+rows+' rows');
+  ok(bs.reduce((a,b)=>r(b).top>r(a).top+2||Math.abs(r(b).top-r(a).top)<=2&&r(b).left>r(a).left?b:a)===orders.querySelector('[data-order="withdraw"]'),'Withdraw last, the way out')}
  const hold=orders.querySelector('[data-order="hold"]');hold.click();ok(orders.hidden,'issuing an order closes the drawer so the field is usable');
  click('battleSpeedToggle');const speeds=document.getElementById('battleSpeedChoices');ok([...speeds.querySelectorAll('[data-bspeed]')].map(b=>b.textContent).join()==='1×,2×,4×,8×','world-battle speed choices retain their correct values');
  speeds.querySelector('[data-bspeed="2"]').click();ok(t.B.speed===2&&G.speed===2&&speeds.hidden&&document.getElementById('battleSpeedToggle').textContent.includes('2×'),'the real world-battle speed changes and the picker collapses');

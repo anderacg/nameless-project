@@ -84,8 +84,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,L=t
    ok(apart().d>=apart().need-1,'less motion: the fan in place at once');fight(false);lay(0);const m=t.grpUnits(foot);m.forEach(u=>u.x+=20);B.t+=.01;lay(0);
    ok(Math.abs(centre(foot))<=1,'and the banner on its group at once, as it moves');ev('reducedMotion=__rm0')}
   // ---- one style: every card icon the same round badge, its rim by its kind
-  {B.groups[bow].useAbility('fire');t.setOrderUI();peek();const f=card(bow).querySelector('.si[data-st=fire]');
-   ok(f&&f.className==='si si-g'&&f.querySelector('title').textContent===t.UNIT_ABILITIES.fire.n+' on','an ability on: its badge, its words ('+(f&&f.querySelector('title').textContent)+')');
+  {B.groups[bow].useAbility('rapid');t.setOrderUI();peek();const f=card(bow).querySelector('.si[data-st=rapid]');// (Rapid shot: the bows' own, doc/UNIT_KITS_DESIGN.md §5)
+   ok(f&&f.className==='si si-g'&&f.querySelector('title').textContent===t.UNIT_ABILITIES.rapid.n+' on','an ability on: its badge, its words ('+(f&&f.querySelector('title').textContent)+')');
    const bad=seen.filter(o=>!isBadge(o));ok(seen.length>15&&!bad.length,'every icon on the cards ('+seen.length+': '+[...new Set(seen.map(o=>o.k))].join(', ')+') is a round badge: BADGE\u2019s shape, its rim, a dark inside, its white glyph'+(bad.length?' (not: '+bad.map(o=>o.k).join()+')':''));
    ok(!document.querySelector('.bcards .cmi svg.oico')&&[...document.querySelectorAll('.obtn[data-order] svg,.obtn[data-flag] svg,.obtn[data-abil] svg')].every(e=>e.classList.contains('oico')),'no bare glyph left on a card; the order bar\u2019s buttons keep their own icons');
    // (every key cardStatus can show: the ones it names, the morale states, the weaknesses and the abilities; hold has no icon)
@@ -97,7 +97,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,L=t
    ok(!same.length,'no two of them look alike (glyph and rim; spent is tired\u2019s mark in red)'+(same.length?': '+same.map(v=>v.join('=')).join(' '):''));
    // (the rim by kind; morale and weaknesses their own)
    // (ai: the AI in command of the group, a kind of its own, violet: deploy.js aiHas; amove: an attack-move, an order)
-   const KIND={ai:['ai'],order:['amove','move','attack','charge','advance','withdraw'],pace:['walk','run'],ability:[...t.UNIT_ABIL_ORDER,'standfast'],warning:['ammo','tired','fallback'],bad:['noammo','spent'],flag:['shieldWall','firm','cease','skirmish','melee'],sight:['hidden','seen','woods']};
+   const KIND={ai:['ai'],order:['amove','move','attack','charge','advance','withdraw'],pace:['walk','run'],ability:[...t.UNIT_ABIL_ORDER,'standfast'],warning:['ammo','tired','fallback'],bad:['noammo','spent'],flag:['shieldWall','firm','cease','skirmish','melee','pavise'],sight:['hidden','seen','woods']};
    const wrong=Object.entries(KIND).flatMap(([c,ks])=>ks.filter(k=>t.BADGE_KIND[k]!==c||t.BADGE_RIM[k]!==t.BADGE_CAT[c]));
    ok(!wrong.length&&new Set(Object.values(t.BADGE_CAT)).size===Object.keys(KIND).length,'each kind its own rim: order '+t.BADGE_CAT.order+', pace '+t.BADGE_CAT.pace+', ability '+t.BADGE_CAT.ability+', warning '+t.BADGE_CAT.warning+', bad '+t.BADGE_CAT.bad+', flag '+t.BADGE_CAT.flag+', sight '+t.BADGE_CAT.sight+', AI '+t.BADGE_CAT.ai+(wrong.length?' (wrong: '+wrong+')':''));
    const own=[...keys].filter(k=>!t.BADGE_KIND[k]);ok(own.every(k=>t.BADGE_RIM[k])&&t.BADGE_RIM.routing==='#f2efe6'&&t.BADGE_RIM.wavering==='#ffa040'&&t.BADGE_RIM.flanked==='#e0605a'&&t.BADGE_RIM.confident==='#70dfb0','morale and weaknesses keep their own rims ('+own.join(', ')+')');

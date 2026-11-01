@@ -215,8 +215,8 @@ function wayGraph(G,A,B,gt,rm){rm=rm||1;const n=G.n,S=WAYA&&WAYA.g.length>=n?WAY
 // two single nodes (a road keeper's, rm, apart); counted in Router.stats)
 function wayRoute(G,s,g,gn,rm){const t0=performance.now(),A=wayEnds(G,s,false),B=new Map(gn!=null?[[gn,0]]:wayEnds(G,g,true)),t1=performance.now();WAYS.localMs+=t1-t0;WAYS.queries++;
   if(!A.length||!B.size)return null;let r=null;
-  if(A.length===1&&B.size===1){const [a,ca]=A[0],[b,cb]=[...B][0],k=(a*G.n+b)*3+(rm===WAY.keep?1:rm>1?2:0),c=PAIRS.get(k);if(c){WAYS.hits++;PAIRS.delete(k);PAIRS.set(k,c);r={cost:ca+c.g+cb,nodes:c.nodes,via:c.via}}}
-  if(!r&&(r=wayGraph(G,A,B,g,rm))){const a=r.nodes[0],b=r.nodes[r.nodes.length-1];PAIRS.set((a*G.n+b)*3+(rm===WAY.keep?1:rm>1?2:0),{g:r.cost-A.find(q=>q[0]===a)[1]-B.get(b),nodes:r.nodes,via:r.via});if(PAIRS.size>WAY.pairs)PAIRS.delete(PAIRS.keys().next().value)}
+  if(A.length===1&&B.size===1){const [a,ca]=A[0],[b,cb]=[...B][0],k=(a*G.n+b)+':'+rm,c=PAIRS.get(k);if(c){WAYS.hits++;PAIRS.delete(k);PAIRS.set(k,c);r={cost:ca+c.g+cb,nodes:c.nodes,via:c.via}}}
+  if(!r&&(r=wayGraph(G,A,B,g,rm))){const a=r.nodes[0],b=r.nodes[r.nodes.length-1];PAIRS.set((a*G.n+b)+':'+rm,{g:r.cost-A.find(q=>q[0]===a)[1]-B.get(b),nodes:r.nodes,via:r.via});if(PAIRS.size>WAY.pairs)PAIRS.delete(PAIRS.keys().next().value)}
   WAYS.graphMs+=performance.now()-t1;return r}
 // (the tiles from one point to another, searched in a box round both (findPath), then in a wider one; rm: a road keeper's; timed
 // into Router.stats)

@@ -46,6 +46,8 @@ const roadCloth=()=>spr.rpCloth||(spr.rpCloth=mkc(7,4,g=>{rect(g,'#1a1c26',0,0,7
 const roadCart=burnt=>caravanSprite('#8a7a5a',0,0,burnt?'burnt':'left');
 const ROAD_FLIP=new WeakMap(),roadFlip=s=>{let c=ROAD_FLIP.get(s);if(!c){c=mkc(s.width,s.height,g=>{g.scale(-1,1);g.drawImage(s,-s.width,0)});ROAD_FLIP.set(s,c)}return c};
 const ROAD_LIVE=['wisp','dust','smoke','notes','rustle'],ROAD_ART=['cart','oldcart','wreck'];
+// (a piece's picture at the map's own size: the cart's and the battle-density figures' made so (caravanMapPic, people.js figPic))
+const roadMapPic=p=>!p.s?null:ROAD_ART.includes(p.k)?caravanMapPic(p.s):p.s.dense?figPic(p.s):p.s;
 // (a rustle in the trees where an ambush lies (the lure's, seen by Scouting): leaves that shake now and then, [dx, dy, colour]
 // from its point; v: a glint of steel among them too. Drawn over the trees: depth.js worldOverdraw's top)
 const ROAD_RUSTLE=[[-3,-7,'#a6c85a'],[-1,-9,'#8ab84a'],[1,-6,'#c4dc78'],[3,-8,'#8ab84a'],[0,-11,'#a6c85a'],[-2,-5,'#6e9a42']];
@@ -53,14 +55,18 @@ class EncounterScene{
   // its pieces now: {k, s (the picture, null for one drawn live), x, y (its feet on the map), face, a, o}; still: standing (the banner)
   lay(e,still){const m=e.dir<0?-1:1,go=!still&&mapStepping(e),f=go?frameOf(e,WALK.foot,WALK.n):0,out=[];
     for(const [k,w,dx,dy,o={}] of roadPieces(e)){const fr=go&&!o.at?(f+(o.v||0)*3)%WALK.n:0;
-      out.push({k,s:ROAD_LIVE.includes(k)?null:this.pic(k,w,e,o,fr),x:o.at?o.at[0]:e.x+dx*m,y:o.at?o.at[1]:e.y+dy,face:(o.face||1)*(o.at?1:m),a:o.a??1,o})}
+      out.push({k,s:ROAD_LIVE.includes(k)?null:this.pic(k,w,e,o,fr,go&&!o.at),x:o.at?o.at[0]:e.x+dx*m,y:o.at?o.at[1]:e.y+dy,face:(o.face||1)*(o.at?1:m),a:o.a??1,o})}
     return out}
-  pic(k,w,e,o,f){const r=e.race||'human',v=o.v||0;
+  pic(k,w,e,o,f,go){const r=e.race||'human',v=o.v||0;
+    if(figsOn()){const s=this.fig(k,w,r,v,o,figPose(f,go));if(s)return s}
     return k==='walk'?roadPerson(w,r,v,f):k==='stand'?roadPerson(w,r,v,0):k==='kneel'?roadKneel(w,r,v):k==='down'?roadDown(w,r,v,o.blood):k==='soldier'?followerSprite(o.col||ENC_RAIDER,f,v,r,o.band):k==='refugee'?refugeeSprite(f,v):
       k==='worker'?workerSprite(w,f,r,v):k==='beast'?critterSprite(w,f):k==='cart'?caravanSprite(o.col||'#8a7a5a',f?1+f%CARAVAN_ART.steps:0,f%CARAVAN_ART.turns):k==='bld'?roadBld(w,e):k==='prop'?roadProp(w):k==='fire'?roadFire():k==='cloth'?roadCloth():k==='wreck'?roadCart(1):
       k==='rider'?roadRider(w,r,v,f,o.col,o.coat):k==='horse'?roadHorse(o.coat||'horse',f):k==='carcass'?roadCarcass(w):k==='mud'?roadMud():k==='oldcart'?roadCart(0):k==='embers'?roadEmbers():k==='bedroll'?roadBedroll():k==='basket'?roadBasket():k==='barrier'?roadBarrier():null}
+  // (its people as the battle's figures, at the marchers' size (people.js MAP_FIGS; p: its pose, figPose); null: none of them)
+  fig(k,w,r,v,o,p){return k==='walk'?figRoad(w,r,v,p):k==='stand'?figRoad(w,r,v,0):k==='kneel'?figKneel(w,r,v):k==='down'?figDown(w,r,v,o.blood):k==='soldier'?figFollower(o.col||ENC_RAIDER,v,r,o.band,p):
+    k==='refugee'?figRefugee(v,'human',p):k==='worker'?figWorker(w,r,v,p):k==='rider'?figRider(w,r,v,o.col,o.coat,p):k==='horse'?figHorse(o.coat||'horse',p):null}
   // the box it covers on the map [x0, y0, x1, y1] (a click anywhere on it, the highlights round it; not what it left behind)
-  box(e){let b=null;for(const p of this.lay(e,true)){if(p.o.at)continue;const s=p.s&&ROAD_ART.includes(p.k)?caravanMapPic(p.s):p.s,w=s?s.width:12,h=s?(s.ch||s.height):12,x0=Math.round(p.x)-(w>>1),y0=Math.round(p.y)+1-h;
+  box(e){let b=null;for(const p of this.lay(e,true)){if(p.o.at)continue;const s=roadMapPic(p),w=s?s.width:12,h=s?(s.ch||s.height):12,x0=Math.round(p.x)-(w>>1),y0=Math.round(p.y)+1-h;
     b=b?[Math.min(b[0],x0),Math.min(b[1],y0),Math.max(b[2],x0+w),Math.max(b[3],p.y+1)]:[x0,y0,x0+w,p.y+1]}
     return b||[e.x-6,e.y-12,e.x+6,e.y+2]}
   // onto the frame's list, each piece by its feet (a trace fading over its last six hours)
@@ -78,13 +84,13 @@ class EncounterScene{
         if(p.o.v&&(rm||(t*.45+ph)%1<.14)){rect(ctx,'#1a1c26',X+1,Y-11,3,3);rect(ctx,'#fff6d8',X+2,Y-10)}}// (the glint: they are there, and armed)
       else if(p.k==='smoke'){for(let i=0;i<3;i++){const q=((rm?0:t*.35)+i/3)%1;ctx.fillStyle='rgba(70,64,60,'+(.45*(1-q)).toFixed(2)+')';ctx.fillRect(X+Math.round(Math.sin(q*5+i)*2)-1,Y-Math.round(q*12),2+Math.round(q*2),2)}}
       else{const s=p.s;if(['walk','stand','kneel','soldier','refugee','worker','beast'].includes(p.k)){ctx.fillStyle='rgba(0,0,0,.22)';ctx.fillRect(X-3,Y-1,6,2)}
-        if(ROAD_ART.includes(p.k))drawCaravanArt(s,X,Y,p.face);else{ctx.save();ctx.translate(X,Y);if(p.face<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),1-s.height);ctx.restore()}
-        if(p.k==='fire'){drawFire(X,Y-1,e.seed);LIGHTQ.push({x:X,y:Y-3,r:22})}}
+        if(ROAD_ART.includes(p.k))drawCaravanArt(s,X,Y,p.face);else if(s.dense)drawFig(s,X,Y,p.face);else{ctx.save();ctx.translate(X,Y);if(p.face<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),1-s.height);ctx.restore()}
+        if(p.k==='fire'){drawFire(X,Y-1,e.seed);if(!FLAMES.on)LIGHTQ.push({x:X,y:Y-3,r:22})}}// (as it burns, the fire queues its own light: fire.js fireCamp)
       ctx.globalAlpha=1}})}
   // its pictures for the page's banner: [picture, x, y (top left, map px), alpha], a fire's flame and the lights as they stand
   pics(e){const out=[];for(const p of this.lay(e,true)){
-    if(p.s){const s=ROAD_ART.includes(p.k)?caravanMapPic(p.s):p.s;out.push([p.face<0?roadFlip(s):s,Math.round(p.x)-(s.width>>1),Math.round(p.y)+1-s.height,p.a])}
-    if(p.k==='fire'){const fl=spr.flm0||(spr.flm0=PX.flame(0));out.push([fl.img,Math.round(p.x)-fl.ax,Math.round(p.y)-1-fl.ay])}
+    if(p.s){const s=roadMapPic(p);out.push([p.face<0?roadFlip(s):s,Math.round(p.x)-(s.width>>1),Math.round(p.y)+1-s.height,p.a])}
+    if(p.k==='fire'){const fl=campFlame();out.push([fl.img,Math.round(p.x)-fl.ax,Math.round(p.y)-1-fl.ay])}
     if(p.k==='wisp')out.push([spr.rpWisp||(spr.rpWisp=mkc(5,5,g=>{rect(g,'rgba(150,240,225,.45)',0,1,5,3);rect(g,'rgba(150,240,225,.45)',1,0,3,5);rect(g,'#c8fff0',1,1,3,3);rect(g,'#ffffff',2,1)})),Math.round(p.x)-2,Math.round(p.y)-8])}
     return out}
 }

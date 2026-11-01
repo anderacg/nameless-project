@@ -3,7 +3,7 @@ window.ARENA=true;// (the battle screen's own field: tests/harness.js)
 // Figures and their gear (gfx/figures.js, the owner, 2026-10-31): every figure a body and its gear apart, laid at the body's anchors
 // in GEAR's layers; nothing cut off (a pike, a lance); a cell's feet where its callers expect them; the finished figures kept in an
 // LRU; the battle's weapon behind the body or in front; what a unit carries shown (a shield in the off hand, a bow put away, a
-// dismounted rider's lance); health shown by group, by its icon, not over each man; the map's banner over its army's ring
+// dismounted rider's lance); health shown by group, by its icon, not over each man; the map's tag over its army's ring
 Kit.suite(({ok})=>{
  const t=T,G=t.G,P=t.P;Kit.begin('soldier',3);
  const px=c=>c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data,OUT=[0x1a,0x1c,0x26];
@@ -44,9 +44,9 @@ Kit.suite(({ok})=>{
   const icons=t.B.icons.length,foe=t.B.icons.findIndex(r=>r.g===g);ok(icons>=2&&bars.length===icons,'every group, yours and theirs, has its health bar by its icon ('+bars.length+' of '+icons+')');
   ok(foe>=0&&Math.abs(bars[foe]/(t.UICON.s-2)-.5)<.15,'its height its health now over what it began with (a group at half health: '+(bars[foe]/(t.UICON.s-2)).toFixed(2)+')');
   B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);t.B=null;G.mode='world'}
- // ---- the map's banner on its army's ring
+ // ---- the army's tag (its label, the eye, your badges: the banner over it is gone, 2026-11-01) on its army's ring
  {const wb=t.WORLD_BATTLE.on;t.WORLD_BATTLE.on=true;try{Kit.world();t.frame();const a=t.MarchArmy.of(P),r=t.marchOuter(P);a.mid={x:P.x+r*.5,y:P.y+3};
-   const b=t.bannerAt(P,0),c=t.MARCH_MOVE.menCentre&&a.units.some(u=>!u.dead)?(P.x===a.wx&&P.y===a.wy?P:a.centre()):a.mid;// (the army where its men are (march.js menCentre): its banner at its men's middle, where its outline is drawn round)
-   ok(Math.abs(b.c.x-c.x)<1e-6&&Math.abs(b.c.y-c.y)<1e-6&&b.x===Math.round(c.x)-b.s.px,'your banner stands over the middle your rings are drawn on');
-   a.mid={x:P.x+r*2,y:P.y};const f=t.bannerAt(P,0);ok(f.c===P&&f.x===Math.round(P.x)-f.s.px,'that middle out past the ring: over you, as the rings are')}finally{t.WORLD_BATTLE.on=wb}}
+   const b=t.armyTagAt(P,null,{x:0,y:0}),c=t.MARCH_MOVE.menCentre&&a.units.some(u=>!u.dead)?(P.x===a.wx&&P.y===a.wy?P:a.centre()):a.mid;// (the army where its men are (march.js menCentre): its tag at its men's middle, where its outline is drawn round)
+   ok(Math.abs(b.c.x-c.x)<1e-6&&Math.abs(b.c.y-c.y)<1e-6&&b.x===t.snapV(c.x),'your army\'s tag stands over the middle your rings are drawn on');
+   a.mid={x:P.x+r*2,y:P.y};const f=t.armyTagAt(P,null,{x:0,y:0});ok(f.c===P&&f.x===t.snapV(P.x),'that middle out past the ring: over you, as the rings are')}finally{t.WORLD_BATTLE.on=wb}}
 });

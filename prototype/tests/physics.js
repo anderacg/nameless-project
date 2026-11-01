@@ -44,8 +44,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
    go(B,6,()=>{if(T==null&&g.units.every(u=>Math.abs(Math.atan2(Math.sin(t.facing(u)-Math.PI/2),Math.cos(t.facing(u)-Math.PI/2)))<.1))T=B.t-t0},()=>T!=null);return T};
   {const f=turn('hum_foot'),c=turn('hum_knight');ok(f!=null&&c!=null&&f>.12&&c>f*1.3,'ordered to face its flank, a man turns in time (and the side he is struck on with him): foot '+(f&&f.toFixed(2))+' s, knights '+(c&&c.toFixed(2))+' s')}
   // ======== a charge into light foot: thrown back and down, then up again
+  // (a spear group in the Brace stance, planted now: KITS.brace on, Brace a stance; off, spear lines are braced anyway)
+  const braced=g=>{if(t.KITS.brace&&g.units[0]&&t.STANCES.brace.who(g.units[0])&&g.plant('brace',true))g.posts.brace.at=t.B.t};
+  // (the riders' rank stats on them first (rankskills.js rankUnit, once, at a man's first step): their health counted from its true full)
   const charge=(foe,form,seed=7)=>{const B=lab([Gp('hum_knight',8,'wedge')],[Gp(foe,10)],{seed}),g=mine(B),e=theirs(B);place(g,300,300,0);place(e,560,300,Math.PI);e.files=10;t.layForm(e.id);e.units.forEach(u=>{u.x=e.ax+u.sx;u.y=e.ay+u.sy});
-   e.units.forEach(u=>{u.cd=999;u.hp=u.max=400});g.attack(e.units[0],{run:true});const R={down:new Set(),up:0,kb:0,rv:[],hurt:0,hp0:g.units.reduce((a,u)=>a+u.hp,0),braced:0,impact:null,v:null};
+   e.units.forEach(u=>{u.cd=999;u.hp=u.max=400});braced(e);g.units.forEach(t.rankUnit);g.attack(e.units[0],{run:true});const R={down:new Set(),up:0,kb:0,rv:[],hurt:0,hp0:g.units.reduce((a,u)=>a+u.hp,0),braced:0,impact:null,v:null};
    go(B,4,()=>{for(const u of e.units){if(u.down>0)R.down.add(u.id);R.kb=Math.max(R.kb,Math.hypot(u.kx||0,u.ky||0))}if(B.floats.some(f=>f.t==='Braced!'))R.braced++;
     if(R.impact==null&&B.units.some(u=>u.team===0&&u.atkAt!=null)){R.impact=B.t;R.v=g.units.map(u=>u.vel)}});
    g.units.forEach(u=>u.cd=1e9);go(B,PH.hit.downMax+.2);
@@ -55,7 +58,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
   // ======== braced spears stop the charge dead and hurt the riders
   {const r=charge('hum_spear');const B=r.B;let v=null;
    ok(r.braced>0&&r.hurt>0&&r.down.size===0,'knights into braced spears: "Braced!", none of the spears down, the riders hurt ('+Math.round(r.hurt)+' hp)');
-   const B2=lab([Gp('hum_knight',1)],[Gp('hum_spear',1)]),g=mine(B2),e=theirs(B2),u=g.units[0],s=e.units[0];place(g,300,300,0);place(e,420,300,Math.PI);s.cd=999;g.attack(s,{run:true});let at=null,vb=0,hp0=u.hp;
+   const B2=lab([Gp('hum_knight',1)],[Gp('hum_spear',1)]),g=mine(B2),e=theirs(B2),u=g.units[0],s=e.units[0];place(g,300,300,0);place(e,420,300,Math.PI);s.cd=999;braced(e);t.rankUnit(u);g.attack(s,{run:true});let at=null,vb=0,hp0=u.hp;
    go(B2,4,()=>{if(at==null&&u.atkAt!=null){at=B2.t;vb=Math.max(vb,u.vel)}},()=>at!=null&&B2.t>at+.05);ok(at!=null&&u.vel<1&&u.hp<hp0,'one knight at a braced spearman: stopped dead at the blow ('+u.vel.toFixed(1)+' px/s after), hurt '+Math.round(hp0-u.hp)+' hp')}
   // ======== the heavy shove the light; a troll ploughs through a line
   {const B=lab([Gp('dw_longbeard',1)],[Gp('hum_levy',1)]),a=mine(B).units[0],b=theirs(B).units[0];still(mine(B));still(theirs(B));a.x=400;a.y=300;b.x=404;b.y=300;

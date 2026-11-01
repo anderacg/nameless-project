@@ -5,7 +5,7 @@
 // archers out on the sides, beasts a pack, a caravan its guards round the wagon facing out; orcs come on, dwarves hold. Chosen with
 // no Math.random, made again only when the rows change. No two groups overlap; every army's ring (yours too) holds its whole layout,
 // its farthest man a margin inside; a bigger army a bigger ring and reach. Yours in battle lanes (the owner, 2026-11-01), turning
-// with the march. A night watch's torch in its carrier's hand.
+// with the march. A night watch's torches in its men's hands after dark (gfx/marchgear.js; tests/marchgear.js).
 Kit.suite(({ok,info})=>{
  const t=T,P=t.P,G=t.G,W=t.W,S=t.MARCH_STYLES;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
  const home=Kit.goHome('Ashford');Kit.goTo(home.x+240,home.y+200);const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);
@@ -87,12 +87,11 @@ Kit.suite(({ok,info})=>{
   lord.state='rest';ok(t.marchRows(lord)!==k,'its errand changed, it lays out again')}
  // ---- a battle on the map starts from it: the groups' forms
  {lord.state='march';const A=t.MarchArmy.of(lord);A.sync();ok(A.rows===t.marchRows(lord)&&A.units.filter(u=>u.row!=='leader').length===46,'its marchers take their places in it ('+A.units.length+')')}
- // ---- the torch: in its carrier's hand, going with him
- {const night=t.asParty({pt:true,watch:'night',home:'Ashford',fac:lord.fac,x:P.x+30,y:P.y-30,troops:Array(8).fill(H.spear),cool:0});W.patrols.push(night);const A=t.MarchArmy.of(night),cam={x:P.x-150,y:P.y-100};
-  const lit=()=>{window.eval('LIGHTQ=[];BANNERQ=[]');const ents=[];night.draw(ents,cam,t.vis());ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());return t.LIGHTQ[0]};
-  for(let i=0;i<200;i++)A.step(.05);const u=A.carrier,a=lit(),h=A.hand();
-  ok(night.look().torch&&u===A.units[0]&&a&&Math.abs(a.x-Math.round(h.x-cam.x))<1e-6&&Math.abs(a.y-Math.round(h.y-cam.y)+1)<1e-6&&a.y<u.y-cam.y-3,'a night watch\'s torch is in its first marcher\'s hand, over his feet ('+[a?.x,a?.y]+' for his '+[Math.round(u.x-cam.x),Math.round(u.y-cam.y)]+'), lit there');
-  const was={x:u.x,y:u.y};for(let i=0;i<60;i++){night.x+=.5;A.step(.05)}const b=lit();ok(u.x-was.x>5&&b&&Math.abs((b.x-a.x)-Math.round(u.x-cam.x)+Math.round(was.x-cam.x))<=1,'it moves with him ('+(b.x-a.x)+' px as he went '+(u.x-was.x).toFixed(1)+')');
-  W.patrols.splice(W.patrols.indexOf(night),1);
-  lord.state='march';const LA=t.MarchArmy.of(lord);LA.sync();ok(LA.carrier&&LA.carrier.row==='leader','a lord\'s torch would be in his own hand: the leader carries it')}
+ // ---- the torches: in its men's hands after dark, going with them (gfx/marchgear.js)
+ {const night=t.asParty({pt:true,watch:'night',home:'Ashford',fac:lord.fac,x:P.x+30,y:P.y-30,troops:Array(8).fill(H.spear),cool:0});W.patrols.push(night);const A=t.MarchArmy.of(night),cam={x:P.x-150,y:P.y-100},clock=G.clock;G.clock=t.DAY*.75;
+  const lit=()=>{window.eval('LIGHTQ=[];BANNERQ=[]');const ents=[];night.draw(ents,cam,t.vis());ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());return t.LIGHTQ.slice()};
+  try{for(let i=0;i<200;i++)A.step(.05);const R=t.marchRoles(A),u=A.units.find(u=>R.get(u)?.torch),a=lit(),near=(L,u)=>Math.abs(L.x-Math.round(u.x-cam.x))<=8&&L.y<u.y-cam.y-3&&L.y>u.y-cam.y-20;
+   ok(night.look().torch&&u&&a.length===A.units.filter(u=>R.get(u)?.torch).length&&a.some(L=>near(L,u)),'a night watch\'s torches are in its men\'s hands, over their feet, lit there ('+a.length+')');
+   const was={x:u.x,y:u.y};for(let i=0;i<60;i++){night.x+=.5;A.step(.05)}const b=lit();ok(u.x-was.x>5&&b.some(L=>near(L,u)),'they move with them (his went '+(u.x-was.x).toFixed(1)+' px)')}
+  finally{G.clock=clock;W.patrols.splice(W.patrols.indexOf(night),1)}}
 });

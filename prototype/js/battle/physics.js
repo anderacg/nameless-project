@@ -44,7 +44,7 @@ const PHYSICS={on:true,
   // feel: dust (every dustEvery s at most) when a rider or big beast brakes harder than dust of his braking, or turns faster than
   // wheel of his turning at over half speed; drawn only (render.js): lean, rad at full speed, plus acc at full acceleration (back,
   // braking); downFall, downRise: s to fall and to get up
-  feel:{dust:.6,wheel:.8,dustEvery:.12,lean:.1,acc:.08,downFall:.18,downRise:.25}
+  feel:{dust:.6,wheel:.8,dustEvery:.12,lean:.1,acc:.08,downFall:.18,downRise:.25,leanStep:true,leanEase:.2,leanHold:.75}
 };
 // his mass (kept until his stats change: a quiver run dry)
 function physMass(u){const s=u.s;if(u.pmass!=null&&u.pmassOf===s)return u.pmass;const M=PHYSICS.mass;let m;
@@ -73,7 +73,7 @@ function physGo(u,dt,mx,my,top,arr,want,spur){
    step kept them (o: chase, back, wk, routed, spurred, tm, dx, dy, s, from aiUnit). Facing a foe or his formation's way he turns,
    not snaps (want) */
 function physAct(u,g,t,dt,mv,mx,my,spd,arr,o){
-  const top=spd*(u.slow>0?.5:1)*(u.buffT>0?1.25:1),want=u.inSlot&&g?g.face:t?Math.atan2(o.dy,o.dx):null;
+  const top=spd*(u.slow>0?.5:1)*(u.buffT>0?1.25:1),want=u.inSlot&&g?(ringed(u)?ringFace(u):g.face):t?Math.atan2(o.dy,o.dx):null;
   const sp=physGo(u,dt,mv?mx:0,mv?my:0,mv?top:0,arr,want,o.spurred);u.spdNow=u.vel;
   if(sp>0){ownStep(u);u.dir=u.hd}
   const c=Math.cos(u.hd);if(sp>0||!(o.s.range&&!roundFire(u))&&(t||u.inSlot)){if(Math.abs(c)>(sp>0?.35:.2))u.face=c>0?1:-1}
@@ -152,4 +152,11 @@ function physFeel(u,dt){
 // how far over he is (0 standing to 1 lying: falling, lying, getting up), or null
 function physLean(u){const F=PHYSICS.feel;if(!PHYSICS.on||u.down>0||u.s.beast||u.s.big)return 0;const K=physKind(u);
   return(F.lean*physSpeed(u)+F.acc*clamp((u.acl||0)/K.acc,-1,1))*(u.s.mounted?.5:1)}
+// (his lean as drawn (render.js drawUnit; the owner, 2026-11-01: "I think it's because the sprite is stretching in the animation"):
+// eased toward physLean over feel.leanEase s, so a step's jolt of acceleration does not flicker it, and stepped so his head stands
+// whole pixels (h px up) off his feet, a step kept till the lean is leanHold px past it: pixel art leans, never shears by fractions.
+// Drawn only, on the battle's clock; feel.leanStep off: physLean as it is)
+const PHYS_LEAN=new WeakMap();
+function physLeanDrawn(u,h){const F=PHYSICS.feel,want=physLean(u);if(!F.leanStep)return want;let L=PHYS_LEAN.get(u);if(!L){L={v:want,t:B.t,px:Math.round(want*h)};PHYS_LEAN.set(u,L)}
+  const dt=Math.max(0,B.t-L.t);L.t=B.t;L.v+=(want-L.v)*Math.min(1,dt/F.leanEase);const p=L.v*h;if(Math.abs(p-L.px)>F.leanHold)L.px=Math.round(p);return L.px/h}
 function physDownPose(u){if(!PHYSICS.on||!(u.down>0))return null;const F=PHYSICS.feel,since=(u.downFor||u.down)-u.down;return Math.min(1,since/F.downFall,u.down/F.downRise)}

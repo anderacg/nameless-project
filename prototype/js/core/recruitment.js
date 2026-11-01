@@ -38,12 +38,15 @@ class RecruitmentService{
     const n=Math.max(0,Math.floor(Math.min(room,t.vol||0,this.rules.capacity()-this.rules.size(),funds)));
     return n>0?this.hire(t,g.type,n,id):null;
   }
+  // (it moves at most one full unit of its new kind, the rest staying behind (core/army.js ArmyRoster#upgrade): count, the men who
+  // go, priced and horsed alone; stay, the rest; split, a new unit for them, which needs a free unit slot (slot))
   quoteGroupTraining(t,id,to){
-    const g=this.rules.roster&&this.rules.roster().groups.find(g=>g.id===id),from=g&&g.type,count=g&&g.count||0,tr=!this.special(to)||!this.rules.upgradeTrainer?null:this.rules.upgradeTrainer(t,to),unitCost=tr?.own?0:this.trainCost(to);
+    const R=this.rules.roster&&this.rules.roster(),g=R&&R.groups.find(g=>g.id===id),from=g&&g.type,count=g?R.upgradeCount(g,to):0,split=!!g&&count<g.count,tr=!this.special(to)||!this.rules.upgradeTrainer?null:this.rules.upgradeTrainer(t,to),unitCost=tr?.own?0:this.trainCost(to);
     const horses=this.rules.horses?this.rules.horses(t,from,to,count):null,cost=unitCost*count+(horses?horses.cost:0);
-    const result={id,from,to,count,unitCost,cost,horses,rank:g?rankOf(g):0,trainer:tr?.name},fail=code=>({...result,ok:false,code});
+    const result={id,from,to,count,stay:g?g.count-count:0,split,unitCost,cost,horses,rank:g?rankOf(g):0,trainer:tr?.name},fail=code=>({...result,ok:false,code});
     if(!g)return fail('target');
     if(!this.rules.troops[to]||!Array.isArray(this.rules.upgrades[from])||!this.rules.upgrades[from].includes(to))return fail('upgrade');
+    if(split&&R.slots>=R.groupLimit)return fail('slot');
     if(this.rules.barracks&&!this.rules.barracks(t))return fail('barracks');
     if(this.special(to)&&!tr)return fail('training-unavailable');
     if(horses&&horses.why)return fail('horses');
@@ -55,9 +58,9 @@ class RecruitmentService{
   }
   trainGroup(t,id,to){
     const result=this.quoteGroupTraining(t,id,to);if(!result.ok)return result;
-    // (the group's ID and its slot kept; its rank starts again: ArmyRoster#upgrade)
-    if(!this.rules.roster().upgrade(id,to))return {...result,ok:false,code:'target'};
-    if(result.horses&&result.horses.own&&this.rules.useHorses)this.rules.useHorses(result.horses);this.player.gold-=result.cost;return result;
+    // (the group's ID and its slot kept, its rank begun again; split, the new unit's ID (unit): ArmyRoster#upgrade)
+    const unit=this.rules.roster().upgrade(id,to);if(!unit)return {...result,ok:false,code:'target'};
+    if(result.horses&&result.horses.own&&this.rules.useHorses)this.rules.useHorses(result.horses);this.player.gold-=result.cost;return {...result,unit};
   }
   quoteCompanion(t,id){
     const c=this.rules.companions[id],cost=c&&c.cost,fail=code=>({ok:false,code,id,cost});

@@ -3,7 +3,7 @@
 // x, y: the leader's feet on screen; dir: which way the host faces; seed keeps each follower's place steady; wd: how far the
 // leader has walked while it walks (each follower's step by it, a little out of time with the next: WALK), null standing
 // (race: the host's people; band: a bandit band, hooded and ragged. Every follower stands as tall as the leader: people.js; at
-// most 9 of them, three abreast, the ranks 4 px apart; the party's banner floats over it all: drawBanners)
+// most 9 of them, three abreast, the ranks 4 px apart; its label over it all: drawBanners)
 function drawHost(n,col,x,y,dir,wd,seed,race,band){
   const k=hostSize(n);if(!k)return;const pts=[];
   for(let i=0;i<k;i++){const row=Math.floor(i/3),c=i%3,j=hash(i,seed|0,7);pts.push([x-dir*(6+row*4+(c===1?2:0))+Math.round(j*2-1),y-2+(c-1)*3+(row%2),i])}
@@ -30,11 +30,13 @@ const subOf=o=>[snapV(o.x)-Math.round(o.x),snapV(o.y)-Math.round(o.y)];
 function subT(o){if(VS<=1)return;const d=subOf(o);if(!d[0]&&!d[1])return;ctx.translate(d[0],d[1]);SUBD=d}
 function drawMover(e){if(VS<=1){e.f();return}const nt=TXTQ?TXTQ.length:0,nl=LIGHTQ.length;SUBD=null;ctx.save();try{e.f()}finally{ctx.restore()}
   const d=SUBD;SUBD=null;if(!d)return;if(TXTQ)for(let i=nt;i<TXTQ.length;i++){TXTQ[i][1]+=d[0];TXTQ[i][2]+=d[1]}for(let i=nl;i<LIGHTQ.length;i++){LIGHTQ[i].x+=d[0];LIGHTQ[i].y+=d[1]}}
-/* the parties' banners (Total War-style, Party.banner): each over its army's middle (bannerHome), its pole's foot BANNER_GAP px
-   over the leader's head's height (headY), the cloth to the east; queued (BANNERQ) as each party in sight is drawn, so a party
-   out of sight or sheltering shows none, and drawn after everyone and every tree (drawBanners), yours over the rest, each its
-   label over it (a party's size and its stance against you, as before). They flutter in real time, still under reducedMotion (vfx.js). A click on one picks its party
-   (Party.pick, world.js pickAt) */
+/* the parties' tags over their armies (the owner, 2026-11-01: "remove a floating banner, show the banner detail only when you
+   inspect them along with the detail window": no banner flies over an army, its banner is on its card: ui.js tipFlag). Each over
+   its army's middle (armyHome), BANNER_GAP px over its leader's head's height (headY): its label (a party's size and its stance
+   against you, as before), the eye watching you just right of it; your badges over you (heroTagAt). Queued (BANNERQ) as each
+   party in sight is drawn, so a party out of sight or sheltering shows none, and drawn after everyone and every tree
+   (drawBanners), with a beast pack's marker and the one banner still standing: yours, planted on a pole in your camp
+   (supply.js campPole) */
 const BANNER_GAP=2;let BANNERQ=[];
 const BAND_MARKERS=new Map();
 function bandMarkerSprite(col){let s=BAND_MARKERS.get(col);if(!s){s=mkc(9,11,g=>{rect(g,col,0,0,9,9);rect(g,'#211b16',1,1,7,7);for(const [x,y] of [[2,3],[4,2],[6,3]])rect(g,'#efe2bb',x,y);rect(g,'#efe2bb',3,5,3,2);rect(g,col,4,9,1,2)});BAND_MARKERS.set(col,s)}return s}
@@ -42,33 +44,41 @@ function bandMarkerSprite(col){let s=BAND_MARKERS.get(col);if(!s){s=mkc(9,11,g=>
 function bandMarkerAt(o,m,cam){
   const s=bandMarkerSprite(m.col),x=Math.round(o.x-cam.x)-4,y=Math.round(o.y-cam.y-m.h-BANNER_GAP-s.height),n=o.fighters??o.n;
   const count=n>1?mapTxtPic(String(n),m.col,'center',VS,dprOf()):null,right=Math.max(x+s.width,count?x+4+(count.width-count.ox+1)/VS:x+s.width);
-  return{s,x,y,right};
+  return{s,x,y,top:y,right};
 }
-// (where a party's banner stands (the owner, 2026-10-31: "locked to the army's ring"): over the point its rings are drawn on
-// (world/march.js marchCircle: the middle its men make, MarchArmy mid, while it is within the ring), so flag and rings go
-// together; else over the party. The ring's radius worked out once a step of its men (when its middle moves): BANNER_HOME)
-const BANNER_HOME=new WeakMap();
+// (where a party's army stands, its tag over it (the owner, 2026-10-31: "locked to the army's ring"): the point its rings are
+// drawn on (world/march.js marchCircle: the middle its men make, MarchArmy mid, while it is within the ring), so tag and rings go
+// together; else the party. The ring's radius worked out once a step of its men (when its middle moves): ARMY_HOME)
+const ARMY_HOME=new WeakMap();
 // (menCentre: the army is where its men are, its point written by its last step; put elsewhere since (a battle's end, the game
 // paused) its men's middle as they stand: march.js MarchArmy#centre)
-function bannerHome(o){const a=WORLD_BATTLE.on&&MARCH_ARMIES.get(o);if(a&&MARCH_MOVE.menCentre&&a.units.some(u=>!u.dead)&&Math.hypot(o.x-a.x,o.y-a.y)<=MARCH_MOVE.teleport)return o.x===a.wx&&o.y===a.wy?o:a.centre();
-  const m=a&&a.mid;if(!m)return o;let h=BANNER_HOME.get(a);if(!h||h.m!==m)BANNER_HOME.set(a,h={m,r:marchOuter(o)});return Math.hypot(m.x-o.x,m.y-o.y)<h.r?m:o}
-// (a party's banner only: a site's banner() is its camp flag's colour, structures.js; c: the point it stands over)
-function bannerAt(o,f){const b=o.banner&&o.banner();if(!b||typeof b!=='object')return null;const s=bannerSprite(b,f),c=bannerHome(o);return{s,c,x:Math.round(c.x)-s.px,y:o.headY()+Math.round(c.y)-Math.round(o.y)-BANNER_GAP-s.py}}
-// (the screen x just right of a banner's drawn pixels, where the badges over your band stand)
-const bannerRight=b=>b.x+opaqueBox(b.s)[2]+1;
+function armyHome(o){const a=WORLD_BATTLE.on&&MARCH_ARMIES.get(o);if(a&&MARCH_MOVE.menCentre&&a.units.some(u=>!u.dead)&&Math.hypot(o.x-a.x,o.y-a.y)<=MARCH_MOVE.teleport)return o.x===a.wx&&o.y===a.wy?o:a.centre();
+  const m=a&&a.mid;if(!m)return o;let h=ARMY_HOME.get(a);if(!h||h.m!==m)ARMY_HOME.set(a,h={m,r:marchOuter(o)});return Math.hypot(m.x-o.x,m.y-o.y)<h.r?m:o}
+// (a party's tag on the screen (cam): x, y its label's middle and foot, top and right its label's, where the eye watching you
+// stands; label: [text, colour] or none)
+function armyTagAt(o,label,cam){const c=armyHome(o),d=VS>1?subOf(c):[0,0],x=Math.round(c.x)-cam.x+d[0],y=o.headY()+Math.round(c.y)-Math.round(o.y)-BANNER_GAP-cam.y+d[1];
+  const pic=label&&mapTxtPic(label[0],label[1],'center',VS,dprOf());return{c,x,y,top:pic?y-pic.oy/VS:y,right:pic?x+(pic.width-pic.ox+1)/VS:x+4}}
+// (over your hero (the owner, 2026-11-01: the badges that stood by your banner): the eye watching you centred over his figure's
+// head (marched, your army's carrier, march.js; else your tag), x, y its top left; your badges (cover, then pace) in a row just
+// right of it, their feet level with its foot (bottom); screen px, a fixed size on the screen whatever the zoom: k)
+function heroTagAt(cam){const a=marchPicked(P),u=a&&a.carrier&&!a.carrier.dead?a.carrier:null,t=u?{x:snapV(u.x)-cam.x,y:snapV(u.y)+a.figure(u)[1]-cam.y}:armyTagAt(P,null,cam);
+  const k=dprOf()/VS,w=STEALTH_EYE.player*k,h=w*2/3;return{x:t.x-w/2,y:t.y-h-2*k,right:t.x+w/2,bottom:t.y-2*k,k}}
+// (a banner planted on a pole, your camp's (supply.js campPole), standing over o; null for what flies none (a site's banner()
+// is its camp flag's colour, structures.js); c: the point it stands over)
+function bannerAt(o,f){const b=o.banner&&o.banner();if(!b||typeof b!=='object')return null;const s=bannerSprite(b,f),c=armyHome(o);return{s,c,x:Math.round(c.x)-s.px,y:o.headY()+Math.round(c.y)-Math.round(o.y)-BANNER_GAP-s.py}}
 // Travel cover reduces detection distance; this is the same closed-eye badge used by battle concealment.
 const TRAVEL_HIDE={size:14,gap:4,s:null};
 function drawTravelConcealment(cam){
   if(B||P.stay||!hiddenAt(P.x,P.y))return null;
-  const b=bannerAt(P,0);if(!b)return null;const k=dprOf()/VS,size=TRAVEL_HIDE.size*k,x=bannerRight(b)+TRAVEL_HIDE.gap*k-cam.x,y=b.y+opaqueBox(b.s)[1]-cam.y;
+  const e=heroTagAt(cam),k=e.k,size=TRAVEL_HIDE.size*k,x=e.right+TRAVEL_HIDE.gap*k,y=e.bottom-size;
   const s=TRAVEL_HIDE.s||(TRAVEL_HIDE.s=mkc(9,9,g=>{for(const [x,y,c] of badgePx('hidden'))rect(g,c,x,y)}));
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size};
 }
-// Pace shares the battle unit cards' walk/run badges, stacked with travel concealment.
+// Pace shares the battle unit cards' walk/run badges, in a row after travel concealment.
 const TRAVEL_PACE={size:14,gap:4,cache:new Map()};
 function drawTravelPace(cam){
-  if(B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;const b=bannerAt(P,0);if(!b)return null;
-  const kind='walk',k=dprOf()/VS,size=TRAVEL_PACE.size*k,x=bannerRight(b)+TRAVEL_PACE.gap*k-cam.x,y=b.y+opaqueBox(b.s)[1]-cam.y+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0)*k;
+  if(B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;
+  const e=heroTagAt(cam),kind='walk',k=e.k,size=TRAVEL_PACE.size*k,x=e.right+(TRAVEL_PACE.gap+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0))*k,y=e.bottom-size;
   let s=TRAVEL_PACE.cache.get(kind);if(!s){s=mkc(9,9,g=>{for(const [x,y,c] of badgePx(kind))rect(g,c,x,y)});TRAVEL_PACE.cache.set(kind,s)}
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
 }
@@ -98,19 +108,21 @@ function travelDetectionNow(){
 }
 const travelDetectionColor=state=>state.seen.length?state.danger?'#ef8c73':'#dbca91':state.exposure?'#d9ad57':'#82c6b3';
 function drawTravelDetection(cam){
-  if(B||P.stay)return null;const state=travelDetectionState(),k=dprOf()/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)]));ctx.save();ctx.imageSmoothingEnabled=false;
-  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const b=bannerAt(o,0),m=markers.get(o),w=STEALTH_EYE.size*k,h=w*2/3,x=b?bannerRight(b)+STEALTH_EYE.gap*k-cam.x:m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=b?b.y+opaqueBox(b.s)[1]-cam.y:m?m.y:o.y-cam.y-18-h;
+  if(B||P.stay)return null;const state=travelDetectionState(),k=dprOf()/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)])),labels=new Map(BANNERQ.map(q=>[q.o,q.label]));ctx.save();ctx.imageSmoothingEnabled=false;
+  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const m=markers.get(o)||o instanceof Party&&armyTagAt(o,labels.get(o),cam),w=STEALTH_EYE.size*k,h=w*2/3,x=m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=m?m.top:o.y-cam.y-18-h;
     drawStealthEye(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94',x,y,STEALTH_EYE.size);
     const q=!d.sees&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,q.y-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)
   }
-  const b=bannerAt(P,0),w=STEALTH_EYE.player*k,h=w*2/3,x=(b?b.c.x:P.x)-cam.x-w/2,y=(b?b.y+opaqueBox(b.s)[1]:P.y-24)-cam.y-h-10*k,col=travelDetectionColor(state);
-  drawStealthEye(state.exposure,col,x,y,STEALTH_EYE.player);ctx.restore();
+  const e=heroTagAt(cam);drawStealthEye(state.exposure,travelDetectionColor(state),e.x,e.y,STEALTH_EYE.player);ctx.restore();
   return state;
 }
+// (what is queued over all: a pack's marker and its count; a party's label (armyTagAt); a banner planted on a pole, fluttering in
+// real time, still under reducedMotion (vfx.js), the only one drawn on the map: not a party's (a WorldObject), whose is on its card)
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
-  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const d=VS>1?subOf(B.c):[0,0],X=B.x-cam.x+d[0],Y=B.y-cam.y+d[1];ctx.drawImage(B.s,X,Y);
-    if(q.label)txt(q.label[0],X+B.s.lx,Y+opaqueBox(B.s)[1]-2,q.label[1],'center')}
+  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}
+    if(q.o instanceof WorldObject){if(q.label){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}continue}
+    const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(B){const d=VS>1?subOf(B.c):[0,0];ctx.drawImage(B.s,B.x-cam.x+d[0],B.y-cam.y+d[1])}}
   BANNERQ=[]}
 // (an animal's step on the map, ms a frame)
 const D_STEP=150;
@@ -178,10 +190,10 @@ function drawWorld(){
   if(P.siege)ents.push({y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
   if(P.camp){if(WORLD_BATTLE.on&&!B?.world)marchCircle(ents,P,cam);ents.push(bandCampEnt(cam));}// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
   // (you, not while you camp: on foot, a step each WALK.foot px you walk; mounted, your horse on the same feet, a step each WALK.ride px; your host behind, as a lord's: drawParties)
-  // (marching: you are one of your army, in your own place in it (march.js), its banner over its middle)
-  if(!P.stay&&!P.camp&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam);ents.push({y:P.y,own:1,f:()=>BANNERQ.push({o:P})})}
+  // (marching: you are one of your army, in your own place in it: march.js)
+  if(!P.stay&&!P.camp&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam)}
     else ents.push({y:P.y,own:1,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
-    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();BANNERQ.push({o:P})}}); }
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore()}}); }
   drawFolk(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
   ambientWorld(ents,cam,V);// (the birds, critters and butterflies on the ground, with everyone; the rest stepped: ambient.js)
   // the order: the ground (the chunks: their trees, woods and ranges painted in), what lies flat (fields, yards, borders), the
@@ -212,8 +224,10 @@ function drawWorld(){
   if(G.place)drawPlace(cam);
   const a=darkness();
   if(a>0){ctx.fillStyle='rgba(10,14,50,'+(a*.34).toFixed(3)+')';ctx.fillRect(0,0,VW+1,VH+1)}
-  // torchlight: a warm glow over the dark, and the flame itself, flickering
-  {const now=performance.now();for(const L of LIGHTQ){if(!inSight(L.x+cam.x,L.y+cam.y))continue;const r=L.r*(1+.06*Math.sin(now/90+L.x)),g=ctx.createRadialGradient(L.x,L.y,1,L.x,L.y,r);g.addColorStop(0,'rgba(255,190,90,'+(.12+.28*a).toFixed(3)+')');g.addColorStop(1,'rgba(255,150,60,0)');
+  // torchlight: a warm glow over the dark, pulsing unevenly, its pool on the ground; light only, each fire draws its own flame
+  // (fire.js fireLights). FLAMES off: as it was, a round glow and a small flame of its own, flickering
+  if(FLAMES.on)fireLights(cam,a);
+  else{const now=performance.now();for(const L of LIGHTQ){if(!inSight(L.x+cam.x,L.y+cam.y))continue;const r=L.r*(1+.06*Math.sin(now/90+L.x)),g=ctx.createRadialGradient(L.x,L.y,1,L.x,L.y,r);g.addColorStop(0,'rgba(255,190,90,'+(.12+.28*a).toFixed(3)+')');g.addColorStop(1,'rgba(255,150,60,0)');
     ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(L.x-r,L.y-r,2*r,2*r);ctx.restore();const f=Math.floor(now/120+L.x)%2;rect(ctx,'#e8803a',L.x-1+f,L.y-2,2,2);rect(ctx,'#ffe090',L.x,L.y-1-f,1,1)}}
   ambientGlow(cam);// (the fireflies' light: ambient.js)
   wuiUnder(cam);// (the way you walk, your goal's ring, a click's ripple, the ring round what you chase: worldui.js)
@@ -221,7 +235,7 @@ function drawWorld(){
   drawTravelConcealment(cam);
   drawTravelPace(cam);
   drawTravelDetection(cam);
-  drawBanners(cam);// (the parties' banners, over all, their labels queued with the rest)
+  drawBanners(cam);// (the parties' labels and the packs' markers, over all, their counts queued with the rest)
   // Queued names and counts use native-resolution text; their world anchors and visibility stay the same.
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
   drawQuestMarks(cam);drawRumourMarks(cam);// (the quests' marks, then the rumours' faint "?": news.js)
@@ -261,7 +275,7 @@ const figTop=(L,o=P)=>Math.min(...[...Array(PEOPLE_STEPS).keys()].map(f=>{const 
 function drawParties(ents,cam,V){for(const o of W.parties)o.draw(ents,cam,V)}
 function drawUnit(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
-  const q=B.world?VS/B.world.scale:B.cam?B.cam.z:1,big=u.s.big?2:1,s=actorSprite(u),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;
+  const q=camPx(),big=u.s.big?2:1,s=actorSprite(u),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;
   if(B.world){const k=WORLD_BATTLE.sprite;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.translate(-x,-y)}
   // (in a river (terrain.js groundAt; engine/ground.js paints it): deep water hides him to the waist, sunk 2 px, a ring of ripples
   // round him, its back half behind him; a ford wets his feet and splashes as he walks; a frozen ford (frost) is ice. From the
@@ -287,10 +301,11 @@ function drawUnit(u){
     const sg=u.stagAt!=null&&B.t-u.stagAt<.3?Math.sin((B.t-u.stagAt)/.3*Math.PI):0;if(sg)bx-=Math.round(2*sg);
     if(!moved&&!dk&&!hit&&!sg&&!(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)){const I=idleLife(u.id,B.t,beast?'beast':u.s.mounted?'mount':'foot');bx+=I.dx}// (standing: a horse's toss, a beast's sway)
     if(!beast&&DUEL.on&&u.atkLook&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx+=Math.round((u.atkLook==='bash'?2.5:1.5)*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI));
-    ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(spinFace(u,dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLean(u)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg;if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */ctx.globalAlpha=(ghost?.55:1)*sa;
+    ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(spinFace(u,dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLeanDrawn(u,16)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg;if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */ctx.globalAlpha=(ghost?.55:1)*sa;
     // (his weapon in his hand behind his body or in front of it: weapons.js heldNow, figures.js GEAR.behind)
     const X=-Math.floor(sp.width/2)+bx,Y=-sp.height+2,hw=!beast&&heldNow(u,u.inMelee?sidearmLook(u):unitLook(u),sp);if(hw&&hw.back)ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);
-    ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),X,Y);if(hw&&!hw.back)ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);ctx.restore();
+    const fb=!beast&&battleFlag(u),fw=fb?battleWave(u,moved):0;if(fb)battleFlagBack(u,fb,sp,X,Y,fw);// (his army's flag: marchgear.js)
+    ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),X,Y);if(hw&&!hw.back)ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);if(fb)battleFlagFront(u,fb,hw,X,Y,fw);ctx.restore();
     // (climbing: a little grit trickles down the slope behind him now and then; coming down, a puff at the heel: from his id and the
     // battle's time, drawn only)
     if(cl){const ph=(B.t*(cl==='up'?2.2:3)+((u.id||0)*.37))%1,dc=B.env.c==='frost'?'#e8eef4':B.env.c==='desert'?'#e6cc96':'#a8987a';
@@ -372,33 +387,34 @@ function drawProp(o){const a=(o.al==null?1:o.al)*(o.dk===1?TREE_A:1);if(a<1)ctx.
 // (ENT_PAD px round it for their bodies; a big field zoomed in leaves most of them out)
 const ENT_PAD={x:64,up:24,down:96};
 function battleEnts(){
-  const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0,x0=vx-ENT_PAD.x,x1=vx+BVW/z+ENT_PAD.x,y0=vy-ENT_PAD.up,y1=vy+BVH/z+ENT_PAD.down,inV=o=>o.x>=x0&&o.x<=x1&&o.y>=y0&&o.y<=y1;
-  let ents;if(B.terrain&&B.ground){ents=B.obs.filter(inV);propsInView(ents,vx-16,vy-16,vx+BVW/z+16,vy+BVH/z+40);for(const u of B.units)if(u.hp>0&&inV(u)&&seenBy(0,u))ents.push(u)}
+  const v=camView(),vx=v.x,vy=v.y,x0=vx-ENT_PAD.x,x1=vx+v.w+ENT_PAD.x,y0=vy-ENT_PAD.up,y1=vy+v.h+ENT_PAD.down,inV=o=>o.x>=x0&&o.x<=x1&&o.y>=y0&&o.y<=y1;
+  let ents;if(B.terrain&&B.ground){ents=B.obs.filter(inV);propsInView(ents,vx-16,vy-16,vx+v.w+16,vy+v.h+40);for(const u of B.units)if(u.hp>0&&inV(u)&&seenBy(0,u))ents.push(u)}
   else ents=[...B.obs.filter(inV),...B.units.filter(u=>u.hp>0&&inV(u)&&seenBy(0,u))];
   for(const h of B.horses||[])if(inV(h))ents.push(h);// (horses no one rides: battle/dismount.js)
   return ents.sort((a,b)=>a.y-b.y)}
 // (a canvas the field's size, only the part in view: the same pixels as drawing it whole)
-function drawInView(img){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0,W=img.width,H=img.height,x0=clamp(Math.floor(vx)-2,0,W),y0=clamp(Math.floor(vy)-2,0,H),x1=clamp(Math.ceil(vx+BVW/z)+2,0,W),y1=clamp(Math.ceil(vy+BVH/z)+2,0,H);
+function drawInView(img){const v=camView(),vx=v.x,vy=v.y,W=img.width,H=img.height,x0=clamp(Math.floor(vx)-2,0,W),y0=clamp(Math.floor(vy)-2,0,H),x1=clamp(Math.ceil(vx+v.w)+2,0,W),y1=clamp(Math.ceil(vy+v.h)+2,0,H);
   if(x1>x0&&y1>y0)ctx.drawImage(img,x0,y0,x1-x0,y1-y0,x0,y0,x1-x0,y1-y0)}
 // (a field layer, the part in view: kept by tiles or at half resolution (R16: the ground, the arena, the canopy, the blood:
 // drawView), or a canvas the field's size)
-function drawLayer(L){if(!L)return;if(!L.drawView){drawInView(L);return}const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0;L.drawView(ctx,vx,vy,vx+BVW/z,vy+BVH/z,z)}
+function drawLayer(L){if(!L)return;if(!L.drawView){drawInView(L);return}const v=camView();L.drawView(ctx,v.x,v.y,v.x+v.w,v.y+v.h,v.z)}
 // (what an arcing missile is, for its look: a spider's web (a.web), a sling's stone or a thrown javelin by its shooter's weapon;
 // else an arrow. Read when drawn, so a shot's own state is as it was)
 const missileOf=a=>{if(a.web)return 'web';const w=(a.by&&PEOPLE_LOOK[a.by.type]||{}).weapon;return w==='sling'?'stone':w==='javelin'?'javelin':'arrow'};
 function drawBattle(){
   warmStep();FIGURES.frame();// (sprites made ahead before they are needed: sprites.js; the finished figures' frame: figures.js)
-  // the camera (camera.js): the field drawn at its zoom and pan, the HUD over it at the screen's scale
-  if(B.cam)camTick();const Cz=B.cam?B.cam.z:1;
+  // the camera (camera.js): the field drawn at its zoom and pan, its corner on a whole canvas px (V.k of them a view px: core.js
+  // bview), the HUD over it at the screen's scale
+  if(B.cam)camTick();const Cz=B.cam?B.cam.z:1,V=bview();
   // (deploying, the battle's clock stands: who sees whom is reckoned on the real one as your men are placed, terrain.js)
-  if(sightOn()&&B.deploy){const n=performance.now(),S=B.sight;if(!S||!(n-(S.rt||0)<250)){sightStep(true);B.sight.rt=n}}ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);if(B.world)B.world.base();ctx.save();if(B.cam){ctx.scale(Cz,Cz);const q=B.world?VS:1;ctx.translate(-Math.round(B.cam.x*Cz*q)/(Cz*q),-Math.round(B.cam.y*Cz*q)/(Cz*q))}
+  if(sightOn()&&B.deploy){const n=performance.now(),S=B.sight;if(!S||!(n-(S.rt||0)<250)){sightStep(true);B.sight.rt=n}}ctx.fillStyle='#07090e';ctx.fillRect(0,0,V.w,V.h);if(B.world)B.world.base();ctx.save();if(B.cam){ctx.scale(Cz,Cz);const q=B.world?VS:V.k;ctx.translate(-Math.round(B.cam.x*Cz*q)/(Cz*q),-Math.round(B.cam.y*Cz*q)/(Cz*q))}
   // (a field with terrain: its own ground, painted over the arena at the start and kept by tiles (engine/ground.js PX.BattleGround);
   // without, the arena by its own tiles (worldart.js paintArena); units, as ever, over it)
   if(B.world){B.world.draw();B.world.clipSight()}else drawLayer(B.terrain?B.ground||(B.ground=runGen(PX.battleGroundSteps({...B.terrain,climate:B.env.c,base:B.arena}))):B.arena.ground||B.arena);
   // (a river moves: glints and current over its water, engine/ground.js PX.battleWater, on the ground's own clock (real time, still
   // while paused); still water for those who ask for less motion (vfx.js reducedMotion))
   if(!B.world&&B.terrain&&B.ground.water){const gw=B.ground,now=performance.now();if(!B.paused&&gw.wl)gw.wt=(gw.wt||0)+Math.min(.1,(now-gw.wl)/1000);gw.wl=now;
-    if(!reducedMotion()){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0;PX.battleWater(ctx,gw,gw.wt||0,[vx,vy,vx+BVW/z,vy+BVH/z])}}if(!B.world){const t=fieldTop()-FIELD_EDGE.body+6,b=fieldBot()+4;ctx.fillStyle='rgba(8,10,16,.35)';if(t>0)ctx.fillRect(0,0,BW,t);if(b<BH)ctx.fillRect(0,b,BW,BH-b);ctx.fillStyle='rgba(232,224,200,.18)';if(t>0)ctx.fillRect(0,t,BW,1);if(b<BH)ctx.fillRect(0,b,BW,1)}// (the field's edges in sight: battle.js fieldTop)
+    if(!reducedMotion()){const v=camView();PX.battleWater(ctx,gw,gw.wt||0,[v.x,v.y,v.x+v.w,v.y+v.h])}}if(!B.world){const t=fieldTop()-FIELD_EDGE.body+6,b=fieldBot()+4;ctx.fillStyle='rgba(8,10,16,.35)';if(t>0)ctx.fillRect(0,0,BW,t);if(b<BH)ctx.fillRect(0,b,BW,BH-b);ctx.fillStyle='rgba(232,224,200,.18)';if(t>0)ctx.fillRect(0,t,BW,1);if(b<BH)ctx.fillRect(0,b,BW,1)}// (the field's edges in sight: battle.js fieldTop)
   if(!B.world){if(!B.deploy)drawExit();drawDeploy();}// (the withdrawal edge: morale.js; the deployment zone: deploy.js)
   drawCorpses();vfxGround();stateGround();heroFxGround();// (the fallen and their blood; dust, shockwaves: vfx.js)
   {const l=!B.world&&B.terrain&&B.ground?lodStep():0;TREE_A=1-l;if(l>0){if(l<1)ctx.globalAlpha=l;drawLayer(PX.battleCanopy(B.ground));ctx.globalAlpha=1}}// (a big wood zoomed out: its canopy layer, LOD)
@@ -444,7 +460,7 @@ function drawBattle(){
   ctx.restore();
   drawFogGhosts();drawUnitIcons();drawGroupHealth();// (the fog's ghosts, where enemy groups were last seen; each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js; its health of what it began with, a bar standing by it: battlehud.js)
   // the HUD at the screen's scale over the zoomed-out field
-  ctx.save();ctx.scale(BVW/VW,BVH/VH);
+  ctx.save();ctx.scale(V.w/VW,V.h/VH);
   drawHeroHud();if(!B.world)drawMiniField();// (the small map of the field, top right: camera.js)
   if(B.over){txt(B.stalemate?'DISENGAGED':B.hunt?'HUNT OVER':B.retreat?'WITHDRAWN':B.win?'VICTORY':'DEFEAT',VW/2,VH/2,B.win?'#e8b94a':B.retreat?'#6fa8e0':'#e0605a','center')}
   ctx.restore();
@@ -456,13 +472,13 @@ function frame(){
   // (loading: the overlay over the last frame, nothing drawn under it, so no effect draws a random number meanwhile: ui/loading.js)
   if(G.mode==='loading'){if(typeof loadingFrame==='function')loadingFrame();return}
   const bat=B&&(G.mode==='battle'||G.mode==='esc'&&G.esc&&G.esc.mode==='battle'),scn=!bat&&G.scene&&(G.mode==='scene'||G.mode==='town'&&G.town&&G.town.inScene||G.mode==='esc'&&G.esc&&(G.esc.mode==='scene'||G.esc.mode==='town'&&G.town&&G.town.inScene)),map=(!bat||!!B?.world)&&!scn;
-  // (a battle: the field's height, the screen's shape; the world map: the screen's own pixels, VS a game pixel: core.js; the map's
-  // zoom only on the map: core.js MAPZOOM)
+  // (a battle: the field's height, the screen's shape, drawn sharp at the screen's own pixels, V.k a view px (core.js bview); the
+  // world map: the screen's own pixels, VS a game pixel: core.js; the map's zoom only on the map: core.js MAPZOOM)
   if(map!==MAPZOOM.map){MAPZOOM.map=map;if(MAPZOOM.z||MAPZOOM.auto!==MAPZOOM.s0)fitScreen()}
-  if(bat&&B.world){BVW=VW;BVH=VH}setRes(map?VW*VS:bat?BVW:VW,map?VH*VS:bat?BVH:VH,map?VS:1);
-  ctx.save();if(map&&VS>1)ctx.scale(VS,VS);
-  {const s=shakeView(bat);if(s)ctx.translate(s.x,s.y)}// (a blow's shake, a charge's jolt: drawn only, vfx.js)
-  if(bat){const z=heroZoom();if(z!==1){const w=ctx.canvas.width/2,h=ctx.canvas.height/2;ctx.translate(w,h);ctx.scale(z,z);ctx.translate(-w,-h)}}// (the finisher's zoom-punch: herofx.js)
+  if(bat&&B.world){BVW=VW;BVH=VH}const V=bat&&!map?bview():null;setRes(map?VW*VS:V?V.cw:VW,map?VH*VS:V?V.ch:VH,map?VS:V?V.k:1);
+  ctx.save();if(CVS!==1)ctx.scale(CVS,CVS);
+  {const s=shakeView(bat);if(s)ctx.translate(Math.round(s.x*CVS)/CVS,Math.round(s.y*CVS)/CVS)}// (a blow's shake, a charge's jolt, on whole canvas px: drawn only, vfx.js)
+  if(bat){const z=heroZoom();if(z!==1){const w=ctx.canvas.width/2/CVS,h=ctx.canvas.height/2/CVS;ctx.translate(w,h);ctx.scale(z,z);ctx.translate(-w,-h)}}// (the finisher's zoom-punch about the middle: herofx.js)
   if(bat){drawBattle();if(B.hudWait){B.hudWait=false;bbar.hidden=false}}// (its HUD shown with its first frame: setup.js present)
   else if(scn)drawScene();
   else if(G.mode==='title'){ctx.fillStyle='#0b0d14';ctx.fillRect(0,0,VW,VH);drawWorld()}
@@ -506,7 +522,9 @@ function updateHUD(force){
       chip('troops',cnt+'<small> '+partyRoster(P).slots+'/'+partyRoster(P).groupLimit+'</small>','Troops: '+cnt+' men in '+partyRoster(P).slots+' of '+partyRoster(P).groupLimit+' unit slots')+chip('power',partyPower(),'Party power','', 'gold')+
       chip('speed',sp.toFixed(1)+'×','Your band’s pace before the ground: the slowest of you, its size, the wounded, mounts, Athletics or Riding, a Guide, Forced March, tiredness, Hurry, an overfilled bag',sp<.8)+
       (prisonerCount()?chip('prisoners',prisonerCount(),'Prisoners'):'')+'</div>'+
-    '<div class="pc-line" title="Where you are">'+icon('region',12)+'<span>'+regionAt(P.x,P.y).name+' · <span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span></span></div>'+
+    (()=>{const M=armyGroundMix(P),main=M.names[0][0],part=M.road&&M.road*2<M.n?' · part on the road':'',
+      pace=travelMul()/Math.max(1e-6,bandPace()),tip='Your men stand on: '+M.names.map(([k,v])=>k+' '+v+' of '+M.n).join(', ')+' · their ground, pace ×'+pace.toFixed(2)+(M.n>1&&!P.byRoad&&M.road?'. By road (B): your men form a column on the road, at its full speed':'');
+      return '<div class="pc-line" title="Where you are">'+icon('region',12)+'<span>'+regionAt(P.x,P.y).name+' · <span title="'+htmlText(tip)+'">'+htmlText(main)+part+'</span> · '})()+'<span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span></span></div>'+
     '<div class="pc-line" title="Renown and whom you serve">'+icon('renown',12)+'<span>'+P.renown+'</span>'+icon('banner',12)+'<span'+(P.fac?' style="color:'+FACS[P.fac].col+'"':'')+'>'+(P.fac?FACS[P.fac].n:'Independent')+'</span></div>');
   const d=$('#wday');if(d)setHtml(d,icon(darkness()>.3?'moon':'sun',16)+'<span>Day '+G.day+' · '+timeOfDay()+'</span><b'+(G.paused?'':' class="off"')+'>Paused</b>');
   window.mobileWorldHud?.update(fp,mo,Math.round(P.bsta));
@@ -529,7 +547,7 @@ function setOrderUI(){
   document.querySelectorAll('[data-form]').forEach(b=>{const f=b.dataset.form,fit=src.filter(g=>formFits(g,f)),on=fit.length>0&&fit.every(g=>B.groups[g].form===f);b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));b.disabled=!fit.length});
   // (a shooters' flag dimmed when none of the selection shoots; lit when every one of them that does has it)
   document.querySelectorAll('[data-flag]').forEach(b=>{const f=b.dataset.flag,l=src.filter(g=>grpUnits(g).some(u=>flagEligible(u,f))),on=l.length>0&&l.every(g=>B.groups[g][f]);b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));b.disabled=!l.length;
-    if(f==='shieldWall'){const m=gs.flatMap(grpUnits),eligible=m.filter(shieldEligible).length,active=m.filter(shieldWallActive).length;b.title='Shield wall (B): '+eligible+'/'+m.length+' eligible, '+active+' supported and active. Supported shield infantry: 35% less frontal damage, 40% slower. Charge/run lowers shields.';b.setAttribute('aria-label',b.title)}});
+    if(f==='shieldWall'){const m=gs.flatMap(grpUnits),eligible=m.filter(shieldEligible).length,active=m.filter(shieldWallActive).length;b.title='Shield wall (a stance slot: Q, W or E by the kind): '+eligible+'/'+m.length+' eligible, '+active+' supported and active. Supported shield infantry: 35% less frontal damage, 40% slower. Charge/run lowers shields.';b.setAttribute('aria-label',b.title)}});
   // unit cards, the selected unit's details and the top bar (battlehud.js)
   bhudCards();document.querySelectorAll('[data-grp]').forEach(b=>bhudCard(b,b.dataset.grp));bhudInfo();bhudTop();
 }

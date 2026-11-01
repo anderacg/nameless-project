@@ -38,16 +38,18 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,L=t.BattleLab,M=t.MOVESETS,ev=s=>(0,eval
   {const B=lab([Gp('bear',1)],[Gp('militia',1)]),u=mine(B).units[0],f=theirs(B).units[0];u.x=400;u.y=300;f.x=414;f.y=300;u.hardAt=-10;t.attack(u,f);const wound=!!u.wind;t.stun(u,.3);const a=!u.wind;
    u.stun=0;u.hardAt=-10;t.attack(u,f);const wound2=!!u.wind;t.physFall(u,100);ok(wound&&a&&wound2&&!u.wind,'a stun or a fall spoils a wind-up')}
   // ======== a charge throws down only at speed, after a true run
+  // (a group in the Brace stance, planted now: KITS.brace on; off, spear lines are braced anyway)
+  const braced=g=>{if(t.KITS.brace&&g.plant('brace',true))g.posts.brace.at=t.B.t};
   const charge=(k,foe,run,v,o={})=>{const hero=foe==='hero',B=hero?lab([{type:'hero',count:1}],[Gp(k,1)]):lab([Gp(k,1)],[Gp(foe,1)]),u=(hero?theirs(B):mine(B)).units[0],f=hero?B.hero:theirs(B).units[0];u.x=400;u.y=300;f.x=414;f.y=300;f.dir=f.hd=Math.PI;f.face=-1;u.hd=0;u.dir=0;
-   f.down=0;f.upAt=o.up!=null?B.t-o.up:null;if(o.inv)B.hx.inv=1;u.run=t.CHARGE.run*run;u.vel=u.s.spd*v;u.sta=100;t.chargeMul(u,f);return{down:f.down>0,braced:B.floats.some(x=>/^Braced/.test(x.t)),vel:u.vel}};
+   f.down=0;f.upAt=o.up!=null?B.t-o.up:null;if(o.inv)B.hx.inv=1;if(o.brace)braced(B.groups[f.grp]);u.run=t.CHARGE.run*run;u.vel=u.s.spd*v;u.sta=100;t.chargeMul(u,f);return{down:f.down>0,braced:B.floats.some(x=>/^Braced/.test(x.t)),vel:u.vel}};
   {const full=charge('hum_knight','militia',1,1),short=charge('hum_knight','militia',.3,1);M.old=true;const shortOld=charge('hum_knight','militia',.3,1);M.old=false;
    const foot=charge('hum_foot','militia',1,1),bear=charge('bear','militia',1,1),bearSlow=charge('bear','militia',.5,1);
    ok(full.down&&!short.down&&shortOld.down,'a knight at the gallop after a full run throws a militiaman down; at the gallop but only just turned on him (momentum 0.3), not (the old rules did)');
    ok(!foot.down&&bear.down&&!bearSlow.down,'a footman\'s running blow never does; a bear\'s full rush does (its rush ×'+t.Moveset.of(t.B.units.find(q=>q.type==='bear')).charge+'), half a rush not')}
-  // ======== braced spears stop it
-  {const r=charge('hum_knight','hum_spear',1,1);ok(r.braced&&!r.down&&r.vel===0,'a knight at the gallop into a braced spearman: "Braced!", the rider stopped dead, the spearman on his feet')}
+  // ======== braced spears stop it (KITS.brace: Brace a stance, set on them, planted; off: every spear line braced, as before)
+  {const r=charge('hum_knight','hum_spear',1,1,{brace:true});ok(r.braced&&!r.down&&r.vel===0,'a knight at the gallop into a braced spearman: "Braced!", the rider stopped dead, the spearman on his feet')}
   {const B=lab([Gp('troll',1)],[Gp('hum_spear',1),Gp('hum_foot',1),Gp('militia',1)]),u=mine(B).units[0],[sp,sh,mi]=B.units.filter(q=>q.team===1);
-   for(const q of [sp,sh,mi]){q.x=420;q.y=300;q.dir=q.hd=Math.PI;q.face=-1}u.x=400;u.y=300;const R=M.resist,F=q=>t.Moveset.footing(u,q);
+   for(const q of [sp,sh,mi]){q.x=420;q.y=300;q.dir=q.hd=Math.PI;q.face=-1}u.x=400;u.y=300;braced(B.groups[sp.grp]);const R=M.resist,F=q=>t.Moveset.footing(u,q);
    ok(F(sp)===R.brace*R.shield&&F(sh)===R.shield&&F(mi)===1,'a hard blow\'s footing: a braced spearman (with his shield) ×'+F(sp)+', a shield toward it ×'+F(sh)+', a militiaman ×'+F(mi))}
   // ======== no second fall within the grace after getting up; none while rolling clear
   {const B=lab([Gp('hum_knight',1)],[Gp('militia',1)]),f=theirs(B).units[0];f.down=.05;t.physDown(f,.1);const up=f.upAt===B.t&&!(f.down>0);

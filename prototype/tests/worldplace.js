@@ -205,6 +205,7 @@ try{
   ok(Object.keys(a).every(g=>b[g]===Math.round(a[g]*1.3)&&c[g]===Math.round(a[g]*.75)),'first stocks: x1.3 rich, x0.75 poor, as they were with no settings (grain '+a.grain+', '+b.grain+', '+c.grain+')')}
  {const W=t.W,L0=t.WM.lords,keep=W.lords.slice();t.WM.lords=null;W.lords=[];t.addMissingLords();const a=W.lords.map(l=>l.name);
   t.WM.lords=R['Large redwater'].lords;W.lords=[];t.addMissingLords();const b=W.lords.map(l=>l.name);t.WM.lords=L0;W.lords=keep;
-  ok(J(a)===J(t.FIDS.flatMap(f=>t.FACS[f].lords))&&b.length===30&&t.FIDS.every(f=>t.WM&&R['Large redwater'].lords[f].every(n=>b.includes(n))),'lords: FACS\' with no WM.lords ('+a.length+'), WM.lords\' when a world has them ('+b.length+' at Large)')}
+  // (their names as titled: three women lords' titles, data/factions.js LORD_RETITLE, lordTitled; the owner, 2026-11-01)
+  ok(J(a)===J(t.FIDS.flatMap(f=>t.FACS[f].lords.map(t.lordTitled)))&&b.length===30&&t.FIDS.every(f=>t.WM&&R['Large redwater'].lords[f].every(n=>b.includes(t.lordTitled(n)))),'lords: FACS\' with no WM.lords ('+a.length+'), WM.lords\' when a world has them ('+b.length+' at Large)')}
 }catch(e){o.push('EXC '+e.message+' '+(e.stack||'').split('\n').slice(0,3).join(' | '))}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.join('\n');document.body.appendChild(d)};

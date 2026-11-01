@@ -178,13 +178,16 @@ function moraleInit(units,opts){
   // (each soldier from his own Morale (matchups.js unitMoraleOf): yours scaled by your band's morale, theirs by their level;
   // a lord's men +10)
   const lv=opts.lv||1,mine=.6+.4*clamp(P.morale,0,100)/100,theirs=clamp(.9+.05*(lv-1),.8,1.2);
-  for(const u of units){u.mor0=Math.round(clamp(unitMoraleOf(u.s)*(u.team?theirs:mine)+(u.team&&u.lord?10:0),20,100));u.mor=u.mor0}
+  for(const u of units){u.mor0=Math.round(clamp(unitMoraleOf(u.s)*(u.team?theirs:mine)+(u.team&&u.lord?10:0)+rankMor(u),20,100));u.mor=u.mor0}// (and his rank's: battle/rankskills.js)
   groupMoraleInit(units);
 }
-// where a soldier faces: its formation's front while it stands in its slot, else where it last moved or struck
-function facing(u){if(PHYSICS.on&&u.hd!=null)return u.hd;/* (physics: his body's heading, which turns in time: physics.js) */const g=u.grp&&B.groups[u.grp];if(g&&g.form&&u.inSlot)return g.face||0;return u.dir!=null?u.dir:u.face<0?Math.PI:0}
-// which side of t a blow from src comes at
+// where a soldier faces: its formation's front while it stands in its slot, else where it last moved or struck; in a formed circle,
+// out from its middle (formations.js ringed)
+function facing(u){if(ringed(u))return ringFace(u);if(PHYSICS.on&&u.hd!=null)return u.hd;/* (physics: his body's heading, which turns in time: physics.js) */const g=u.grp&&B.groups[u.grp];if(g&&g.form&&u.inSlot)return g.face||0;return u.dir!=null?u.dir:u.face<0?Math.PI:0}
+// which side of t a blow from src comes at: a man of a formed circle has no flank nor rear to strike, every blow on his front (an
+// arrow on the side it flies at, CIRCLE.arrows: formations.js)
 function sideOf(t,src){
+  if(ringed(t)&&!(src.arrow&&CIRCLE.arrows))return 'front';
   const a=Math.atan2(src.y-t.y,src.x-t.x),f=facing(t),df=angGap(a,f);
   return df<1.05?'front':df<2.1?'flank':'rear';
 }
@@ -217,13 +220,14 @@ class Surprise{
   get report(){return this.hard?{stage:this.stage,secs:this.secs,say:SURPRISE.says[this.stage]}:{caught:true,secs:this.secs}}
 }
 function flankMul(t,src){
-  if(!src||B.opts&&B.opts.tournament||t.hero&&MANUAL_HERO)return 1;const s0=sideOf(t,src),s=s0==='front'&&B.surprise?.flank(t)?'flank':s0;if(s==='front')return 1;// (a tournament: no flank bonus; morale off still has it, only the shake and banner go)
+  if(!src||B.opts&&B.opts.tournament||t.hero&&MANUAL_HERO)return 1;const s0=sideOf(t,src),s=s0==='front'&&B.surprise?.flank(t)?'flank':s0;if(s==='front')return kitGuard(t,src,s);// (a tournament: no flank bonus; morale off still has it, only the shake and banner go; a ward or a pavise: unitabilities.js)
   if(!B.noMorale){if(!steady(t)&&B.t-(t.sideShockAt??-Infinity)>=RESOLVE.flankEvery){shake(t,MORALE[s]);t.sideShockAt=B.t}t.flankAt=B.t;const r=resolveOf(t);if(r)r.flankAt=B.t;battleEvent('flank',{u:t,src})}// (its banner, now and then: battlehud.js)
   if(!src.arrow)moraleSay(t,s==='rear'?'Rear!':'Flank!','#ffb04a',.5);
-  return 1+(FLANK[s]-1)*(src.arrow?FLANK.arrow:1);
+  return kitGuard(t,src,s)*(1+(FLANK[s]-1)*(src.arrow?FLANK.arrow:1));
 }
 // a blow on morale: by the share of health it took
 function moraleHurt(t,amt,source,missile){
+  if(amt>0)kitStruck(t,amt,source,missile);// (what it does beyond: fire's fear, a volley's shock, a cleave: unitabilities.js)
   if(B.noMorale||!(amt>0))return;const own=resolveOf(t),attacker=resolveOf(source);
   if(own){own.hurt(amt,missile??!!(source?.s.range&&!source.inMelee));if(t.flankAt!==undefined)own.flankAt=t.flankAt}
   if(attacker&&battleEnemy(source,t))attacker.dealt(amt);
@@ -438,17 +442,23 @@ function drawExits(){
 // charge momentum: how far it has run at its target, 0 to 1
 const momentum=u=>{const r=clamp((u.run||0)/CHARGE.run,0,1);return PHYSICS.on?Math.min(r,physSpeed(u)):r};// (physics: never more than the speed he still has, physics.js)
 /* a charge's weight on its first blow; its shock to the one it hits. The run is spent, and its stamina only once it counts as a
-   charge (riders CHARGE.min, foot CHARGE.foot_min). Spearmen still in the fight brace against a charge on their front (Brace,
-   and at rank 5 the Hedge of spears: their flanks too, unitabilities.js, battle/rankskills.js): no bonus, no shock. A deep block blunts the bonus, never from behind (formations.js formCharge) */
-function spearBraced(t,u){if(unitClass(t.s)!=='spear'||t.rout||withdrawing(t)||PHYSICS.on&&t.down>0)return false;const side=sideOf(t,u);return side==='front'||side==='flank'&&(unitAbility(t,'brace')||!!rankSkill(t,'hedge'))}
-function chargeMul(u,t){
+   charge (riders CHARGE.min, foot CHARGE.foot_min). Braced spears (doc/UNIT_KITS_DESIGN.md §3, KITS.brace): the Brace stance's
+   front and flanks (battlecontrol.js plant), the Hedge of spears' front unordered (its perk): no bonus, no shock; Brace+ unhorses
+   more, Pike push throws the charge back (unitabilities.js braceCounter). Step 1's: spearmen still in the fight braced on their
+   front always, Brace flanks or Braced flanks their flanks too. A deep block blunts the bonus, never from behind (formations.js
+   formCharge). A rider's perks on top (Heavy charge, Wedge drill: unitabilities.js chargePerk; Ride down, against routers) */
+function spearBraced(t,u){if(unitClass(t.s)!=='spear'||t.rout||withdrawing(t)||PHYSICS.on&&t.down>0)return false;const side=sideOf(t,u);
+  if(KITS.brace)return side!=='rear'&&unitPost(t,'brace')||side==='front'&&!!rankSkill(t,'hedge');
+  return side==='front'||side==='flank'&&(unitAbility(t,'brace')||!!rankSkill(t,'hedge'))}
+function chargeMul(u,t){const k=chargeHit(u,t);return RANKS.mastery5&&t.rout?k*(rankSkill(u,'rideDown')?.rideDown||1):k}
+function chargeHit(u,t){
   const m=momentum(u),s=u.s;u.run=0;if(s.range&&!s.charge||m<(s.charge?CHARGE.min:CHARGE.foot_min))return 1;fatigueCharge(u,m);// (the charge spends the runner's stamina: fatigue.js)
-  if(spearBraced(t,u)){if(PHYSICS.on){physBraced(u,t,m);moraleSay(t,'Braced!','#cfe0ff',.7)}else B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}// (physics: the charge stopped dead, the riders hurt: physics.js)
+  if(spearBraced(t,u)){if(PHYSICS.on){physBraced(u,t,m);moraleSay(t,'Braced!','#cfe0ff',.7)}else B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});if(KITS.brace)braceCounter(u,t,m);return 1}// (physics: the charge stopped dead, the riders hurt: physics.js)
   // (out of hiding: a group unseen till it charged shakes them harder, once: terrain.js ambushMul)
   const amb=Math.max(B.terrain?ambushMul(u):1,B.surprise?.shock(u,t)||1);
   // (physics on: the impact throws them by the two masses in place of chargeJolt and chargePush, physics.js physImpact)
-  if(s.charge){vfxCharge(u,t,m);if(!PHYSICS.on)chargeJolt(u,m);fx(t.x,t.y-6,'#fff',4);if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.shock*m*amb);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}if(PHYSICS.on)physImpact(u,t,m);else chargePush(u,t,m);if(m>.6)moraleSay(t,'Charge!','#fff',.6);
-    return 1+CHARGE.cav*m*formCharge(u,t,sideOf(t,u))*groundCharge(u,t)}// (downhill harder, uphill softer, into woods halved: terrain.js)
+  if(s.charge){const K=chargePerk(u);vfxCharge(u,t,m);if(!PHYSICS.on)chargeJolt(u,m);fx(t.x,t.y-6,'#fff',4);if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.shock*m*amb*K.shock);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}if(PHYSICS.on)physImpact(u,t,m);else chargePush(u,t,m);if(m>.6)moraleSay(t,'Charge!','#fff',.6);
+    return 1+CHARGE.cav*m*formCharge(u,t,sideOf(t,u))*groundCharge(u,t)*K.bonus}// (downhill harder, uphill softer, into woods halved: terrain.js)
   if(B.opts&&B.opts.tournament)return 1;// (a tournament: no foot charges; morale off still has them, only the shake goes)
   if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.footShock*m*amb);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}if(PHYSICS.on)physImpact(u,t,m);else{chargeJolt(u,m);chargePush(u,t,m)}return 1+CHARGE.foot*m*formCharge(u,t,sideOf(t,u))*groundCharge(u,t);
 }

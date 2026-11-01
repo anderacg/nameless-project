@@ -27,6 +27,9 @@ const SKIRM={keep:.6,until:.85,max:140,burst:1.5,stand:1.2,outpaced:1.15,room:24
 // (shooting on the move: a trait, 'mobile' (riders' bows, rangers), and every elf with a bow; the rest stand to shoot)
 const onTheMove=s=>!!s&&!s.magic&&(tagsOf(s).includes('mobile')||s.race==='elf');
 const meleeFoe=(u,r)=>{let best=null,bd=r;for(const e of B.units){if(e.hp<=0||!battleEnemy(e,u)||!ArmyTactics.local(u,e)||e.rout||e.s.range)continue;const d=Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0);if(d<bd){bd=d;best=e}}return best};
+// (a melee fighter's hold at his foe: slack px past his reach before he steps in again (aiUnit, held); never past where he strikes
+// (de <= reach + 1, below), or a foe knocked into the gap is neither struck nor closed on; a big beast holds none: it wades on in, through a line, physics.js)
+const MELEE_HOLD={on:true,slack:1};const MELEE_HELD=new WeakMap();// (whom each holds at: kept off the unit, so its own fields are as they were)
 /* whom a soldier goes for by himself (fire at will): the nearest foe in his reach, one already in his arc first (he turns for
    none he need not); out of reach, the nearest, to face or close on. Routers last. Nothing cleverer: whom to finish, whom to
    focus, when to hold fire are his commander's calls (commander.js) or yours: an attack order, cease fire */
@@ -172,7 +175,10 @@ class Actor extends Fighter{
     const order=g?(gt?'charge':g.order):'charge';
     if(!t&&!(g&&order!=='charge'))return;
     const dx=t?t.x-u.x:0,dy=t?t.y-u.y:0,d=Math.hypot(dx,dy)||1,de=t?d-(t.s.big&&!s.range?12:0):1e9;
-    const reach=s.range?s.range:s.reach+2;let mv=false,mx=0,my=0,chase=false,back=false,routed=false,arr=null;// (arr: how far to where he stops, physics.js)
+    // (a fighter at his foe holds there till the foe is MELEE_HOLD.slack px past his reach, as a shooter keeps his range (inRng), as far as he strikes: else
+    // a body's push or a blow's knock takes him just out, he steps in, and over again, jiggling where he stands (the owner,
+    // 2026-11-01: "the fighter that I fight in battle map seems to move weird, jiggering left right"))
+    const reach=s.range?s.range:s.reach+2,held=!s.range&&!!t&&(de<=reach||MELEE_HOLD.on&&!s.big&&MELEE_HELD.get(u)===t&&de<=reach+MELEE_HOLD.slack);if(MELEE_HOLD.on){if(held)MELEE_HELD.set(u,t);else MELEE_HELD.delete(u)}let mv=false,mx=0,my=0,chase=false,back=false,routed=false,arr=null;// (arr: how far to where he stops, physics.js)
     // (on ground that blocks: round it toward (x,y) when the straight way is not clear (terrain.js steerDir); routed, a charge builds no momentum)
     const round=(x,y)=>{const w=B.terrain&&B.terrain.blocky?steerDir(u,x,y):null;if(w){mx=w[0];my=w[1];routed=true}};
     const reloc=relocating(u,g,gt);
@@ -186,17 +192,17 @@ class Actor extends Fighter{
       // (the way there: round rock, cliffs and impassable water along its group's way (terrain.js slotWay; via: not yet his place);
       // with wadeable water alone, over a ford or bridge when that beats wading (crossWay))
       let wx=sx,wy=sy,via=false;const TR=B.terrain;if(TR&&TR.blocky){const w=slotWay(u,g,sx,sy);if(w){wx=w[0];wy=w[1];via=!w.at}}else if(TR&&TR.has.water){const w=crossWay(u,sx,sy);if(w){wx=w[0];wy=w[1]}}
-      const engage=order==='withdraw'||g.firm||unitFlag(u,'shieldWall')?0:28;
+      const engage=order==='withdraw'||g.firm||g.form==='circle'||unitFlag(u,'shieldWall')?0:28;// (a circle's men never step out after a foe: formations.js)
       if(reloc){const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);if(u.relocFor!==g.mvId){u.relocFor=g.mvId;u.relocT=0}u.relocT+=dt;
         if((pd>RELOCATE.near||via)&&u.relocT<RELOCATE.max){mv=true;mx=px/pd;my=py/pd;if(!via)arr=pd}else{u.mvId=g.mvId;u.relocT=0;u.inSlot=true}}
-      else if(t&&!s.range&&de<=reach){}
+      else if(t&&!s.range&&held){}
       else if(t&&!s.range&&engage&&Math.hypot(t.x-sx,t.y-sy)<engage&&!holdsBank(u,t)&&!wayBarred(u,t)){mv=true;mx=dx/d;my=dy/d;chase=true;round(t.x,t.y)}// (not down off a bank into the water after him, nor round a cliff: terrain.js)
       else if(s.range&&t&&de<=reach&&!onTheMove(s)&&!g.backing&&!(g.cease&&!gt)){}// (a foe in reach: they keep their ground and shoot, not step to their exact place: attacking first)
       else{const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);const going=g.going;// (its place on the move: battlecontrol.js step)
-        if(pd>(u.slotted&&!going?7:2)||via&&pd>.5){mv=true;mx=px/pd;my=py/pd;u.slotted=false;if(!via&&!going)arr=pd}else{u.inSlot=true;u.slotted=true}}// (in its slot: it faces the formation's way, and stays till pushed clearly out)
+        if(pd>(u.slotted&&!going?7:2)||via&&pd>.5){mv=true;mx=px/pd;my=py/pd;u.slotted=false;if(!via&&!going)arr=pd}else{u.inSlot=true;u.slotted=true;if(ringed(u))u.face=Math.cos(ringFace(u))>=0?1:-1}}// (in its slot: it faces the formation's way (a circle's man outward), and stays till pushed clearly out)
     }else{
       if(s.range){if(d>s.range||!u.inRng&&d>s.range*.97){mv=true;mx=dx/d;my=dy/d;u.inRng=false;round(t.x,t.y)}else{u.inRng=true;if(d<28){mv=true;mx=-dx/d;my=-dy/d;back=true}}}
-      else if(de>reach){mv=true;mx=dx/d;my=dy/d;if(B.terrain&&B.terrain.blocky)round(t.x,t.y);else if(B.terrain&&B.terrain.has.water){const w=crossWay(u,t.x,t.y);if(w){const qx=w[0]-u.x,qy=w[1]-u.y,ql=Math.hypot(qx,qy)||1;mx=qx/ql;my=qy/ql}}}// (a charge goes over a bridge or ford when that beats wading, terrain.js)
+      else if(!held){mv=true;mx=dx/d;my=dy/d;if(B.terrain&&B.terrain.blocky)round(t.x,t.y);else if(B.terrain&&B.terrain.has.water){const w=crossWay(u,t.x,t.y);if(w){const qx=w[0]-u.x,qy=w[1]-u.y,ql=Math.hypot(qx,qy)||1;mx=qx/ql;my=qy/ql}}}// (a charge goes over a bridge or ford when that beats wading, terrain.js)
       chase=true;
     }
     // walking, they keep to the slowest one's pace (and keep their formation); running, or fighting, each goes as fast as it can
@@ -206,7 +212,14 @@ class Actor extends Fighter{
     // (stuck: trying to move but going nowhere, against a rock or the field's edge, it steps aside to get round; not in the press
     // round its foe, where it finds another instead: crowd)
     if(mv&&chase&&!back&&!(t&&!s.range&&de<reach+CROWD.slack)){u.stk=(u.stk||0)+dt;if(u.stk>.5){if(u.sx0!=null&&Math.hypot(u.x-u.sx0,u.y-u.sy0)<3){u.side=u.side||(Math.random()<.5?-1:1);u.sideT=.6}u.stk=0;u.sx0=u.x;u.sy0=u.y}
-      if(u.sideT>0){u.sideT-=dt;const px=-my*u.side,py=mx*u.side;mx=mx*.3+px;my=my*.3+py;const l=Math.hypot(mx,my)||1;mx/=l;my/=l}}else{u.stk=0;u.sx0=u.x;u.sy0=u.y}
+      if(u.sideT>0){u.sideT-=dt;const px=-my*u.side,py=mx*u.side;mx=mx*.3+px;my=my*.3+py;const l=Math.hypot(mx,my)||1;mx/=l;my/=l}}
+    // (PATHS.slide, on ground that blocks: one going to his place who has gone no more than PATHS.back px in PATHS.stuck s (the chase's
+    // watch, stk from where he was, sx0, sy0) reckons his way afresh (his straight-way reckonings, his own way and his field's point
+    // dropped: terrain.js), then, still held another PATHS.stuck s, steps aside a moment as one chasing does)
+    else if(PATHS.slide&&mv&&!chase&&B.terrain&&B.terrain.blocky){if(u.sx0==null||Math.hypot(u.x-u.sx0,u.y-u.sy0)>PATHS.back){u.stk=0;u.sx0=u.x;u.sy0=u.y}
+      else{const s0=u.stk||0;u.stk=s0+dt;if(s0<PATHS.stuck&&u.stk>=PATHS.stuck){if(u.wy)u.wy=null;if(u.lc)u.lc[0]=u.lc[4]=-1;ROUTE_AIM.delete(u);if(u.sf)u.sf=null}else if(u.stk>=2*PATHS.stuck){u.stk=0;u.side=u.side||(u.id&1?1:-1);u.sideT=.6}}
+      if(u.sideT>0){u.sideT-=dt;const px=-my*u.side,py=mx*u.side;mx=mx*.3+px;my=my*.3+py;const l=Math.hypot(mx,my)||1;mx/=l;my/=l}}
+    else{u.stk=0;u.sx0=u.x;u.sy0=u.y}
     if(mv&&!wk&&seenBy(0,u))footDust(u,dt);// (running: dust from their feet, vfx.js; none where your side cannot see him: terrain.js)
     // (the ground: woods, marsh, slopes slow him or speed him, and build his charge slower or faster: terrain.js)
     // (physics on: he speeds up, slows and turns as his mass and kind let him, physics.js; off, he steps at his speed at once)

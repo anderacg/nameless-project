@@ -24,8 +24,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   //  lanes (the owner: "keep battle lanes"; world/marchstyles.js lanes, march.js marchLayout): your army opens in its march's lanes
   //  (setup.js arrangeMarch, from marchRows(P)), not round the old ring, so your groups start elsewhere; the setup unchanged. Checked:
   //  with march.js and marchstyles.js as before, every one is as before; the tournament (no march) held. Were field 603b995a, reinforced 92c139da, chief_reuse a5a181b4, siege 4638df18, beasts d01f9214, deployment_off 69190168, narrow 3cbb2b2f, wide 6d5328c4)
-  const expected={field:'842a2849',reinforced:'c403a05b'/* (re-recorded: your allies' men in their own green cloth (battle.js SIDE, sprites.js allyLook), so their sprites are warmed apart from yours (WARM.q's length); nothing of the battle else) */,chief_reuse:'199f9451',siege:'93e5cbc1',beasts:'c7105449'/* (re-recorded: spider stats changed in the balance pass) */,tournament:'6b3997ae',deployment_off:'1add94b7',narrow:'6656bf08',wide:'eb236445'};
-  const original={random:Math.random,measure:t.measureField,width:t.BVW,height:t.BVH,deploy:t.BDEPLOY.on,auto:t.BAUTO.on,speed:t.BSPEED.v,guide:t.GUIDE.on};
+  // (chief_reuse, deployment_off, field, narrow, siege, wide re-recorded 2026-11-01: unit kits step 2 (the owner, 2026-11-01), the part that moved them RANKS.statsOnly: a rank's stats (+3% damage, health and aim a rank, +2 morale, +2% vigor; the lab's groups rank 2, RANKS.ai) and no skill from a rank (no Brace flanks, no Fire arrows at rank 2). Checked: with RANKS.statsOnly off
+  //  (and every other part of step 2 on its own), every one as before. Were field 842a2849, chief_reuse 199f9451, siege 93e5cbc1, deployment_off 1add94b7, narrow 6656bf08, wide eb236445)
+  const expected={field:'585d0d85',reinforced:'318dd977'/* (re-recorded 2026-11-01, on purpose: the women lords' titles (data/factions.js LORD_RETITLE: the owner, "change whatever you see fits for now"), your ally's name in the snapshot. Checked: LORD_RETITLE {} gives c403a05b again; the step-2 switches move nothing here. Was c403a05b) */,chief_reuse:'04afd2a9',siege:'f1fe5f0d',beasts:'c7105449'/* (re-recorded: spider stats changed in the balance pass) */,tournament:'190c8a8a'/* (re-recorded 2026-11-01, on purpose: every bout in the lists is fought in the arena (gfx/tourney.js TourneyArena; the owner: "can you have some small arena battle screen instead of open green field?"), so its field is FIELD_SIZES.tourney (448x256, not today's 960x600), its rows the ring's (92-216, not the measured 40-560), its two fighters 140 px apart in the middle of the ring, the camera closer and B.arena the arena. Proof: tournament_off below (TOURNEY_ARENA.on false, the same seeds) gives 6b3997ae again. Was 6b3997ae) */,tournament_off:'6b3997ae',deployment_off:'ffdac60b',narrow:'01a78aa0',wide:'7506e649'};
+  const original={random:Math.random,measure:t.measureField,width:t.BVW,height:t.BVH,deploy:t.BDEPLOY.on,auto:t.BAUTO.on,speed:t.BSPEED.v,guide:t.GUIDE.on,arena:t.TOURNEY_ARENA.on};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const fingerprint=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const snapshot=(B,calls,next)=>({width:t.BW,env:B.env,top:B.ftop,bot:B.fbot,obs:B.obs,
@@ -37,8 +39,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     fresh:[B.rings,B.arrows,B.parts,B.floats,B.slashes,B.corpses,B.lost],clock:B.t,kills:B.kills,slain:B.slain,sel:B.sel,mode:G.mode,calls,next});
   try{
     window.__setupMeasure=original.measure;(0,eval)('measureField=()=>({top:40,bot:560})');
-    const cases=['field','reinforced','chief_reuse','siege','beasts','tournament','deployment_off','narrow','wide'];
-    for(const [index,name] of cases.entries()){
+    // (tournament_off: the tournament with the arena off, on the tournament's own seeds: today's open field, as recorded before it)
+    const cases=['field','reinforced','chief_reuse','siege','beasts','tournament','deployment_off','narrow','wide','tournament_off'];
+    for(const [at,name] of cases.entries()){const index=name==='tournament_off'?cases.indexOf('tournament'):at;t.TOURNEY_ARENA.on=name!=='tournament_off';
       Math.random=t.seeded(100+index);t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;
       // (the snapshots hold your army's point on the map and the ground under it, fixed here: where a new game left you on the old hand-made map,
       // on the ground there, the road by Ashford's gate)
@@ -61,7 +64,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
         const town=t.TOWNS.find(h=>h.owner==='karn'&&h.kind==='town');town.wall=3;enemies=t.garList(town);opts={enemies,tournament:false,lv:4,deploy:true};G.enc={kind:'siege',ref:town,list:enemies,allies:[],foes:[]};
       }else if(name==='beasts'){
         enemies=['troll','dragon','wolf','spider'];opts={enemies,tournament:false,lv:3};G.enc={kind:'monster',ref:{id:'dragon'},list:enemies,allies:[],foes:[]};
-      }else if(name==='tournament'){
+      }else if(name.startsWith('tournament')){
         enemies=['chief'];opts={enemies,tournament:true,deploy:true};t.BAUTO.on=true;
       }else if(name==='deployment_off'){t.BDEPLOY.on=false;t.BAUTO.on=true}
       let calls=0;const random=t.seeded(900+index);Math.random=()=>{calls++;return random()};const returned=t.startBattle(opts),B=t.B,used=calls,next=[Math.random(),Math.random(),Math.random()];
@@ -70,7 +73,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       ok(new Set(B.units.map(u=>u.id)).size===B.units.length&&B.units.every((u,i)=>u.id===i),name+': unit IDs are consecutive and restart per battle');
       ok(B.units.every(u=>u.unit instanceof t.Unit&&u.unit.key===u.type)&&Object.values(B.groups).every(g=>g instanceof t.BattleControl),name+': units and group controls keep their existing models');
       ok(B.units.every(u=>u.y>=B.ftop&&u.y<=B.fbot)&&B.rings.length===0&&B.arrows.length===0&&B.t===0&&!B.over,name+': units start in bounds with fresh transient state');
-      if(name==='tournament')ok(B.units.length===2&&B.noMorale&&!B.deploy&&!B.auto&&!B.obs.length,'tournaments still exclude the warband, reinforcements, deployment and obstacles');
+      if(name.startsWith('tournament'))ok(B.units.length===2&&B.noMorale&&!B.deploy&&!B.auto&&!B.obs.length,'tournaments still exclude the warband, reinforcements, deployment and obstacles');
       else ok(B.units.filter(u=>u.comp).length===1&&B.units.some(u=>u.type==='brann')&&!B.units.some(u=>u.type==='elske'||u.type==='tavi'),name+': only healthy companions in the band spawn');
       if(name==='reinforced')ok(B.units.filter(u=>u.leader).length===3&&B.units.some(u=>u.grp&&B.groups[u.grp].ally),'reinforcements retain their leaders, source links and allied groups');
       if(name==='chief_reuse')ok(B.units.filter(u=>u.type==='chief').length===1&&B.units.find(u=>u.type==='chief').leader,'the camp chief already in the ranks becomes its leader, not a duplicate');
@@ -84,7 +87,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     ok(t.fieldTop()>=t.FIELD_EDGE.top&&t.fieldBot()<=t.BH-t.FIELD_EDGE.bot&&t.fieldBot()>t.fieldTop(),'real HUD measurement still leaves a valid fighting area');
   }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{delete t.WM.battleSite;
     Math.random=original.random;if(window.__setupMeasure){(0,eval)('measureField=window.__setupMeasure');delete window.__setupMeasure}
-    (0,eval)('BVW='+original.width+';BVH='+original.height);t.BDEPLOY.on=original.deploy;t.BAUTO.on=original.auto;t.BSPEED.v=original.speed;t.GUIDE.on=original.guide;
+    (0,eval)('BVW='+original.width+';BVH='+original.height);t.BDEPLOY.on=original.deploy;t.BAUTO.on=original.auto;t.BSPEED.v=original.speed;t.GUIDE.on=original.guide;t.TOURNEY_ARENA.on=original.arena;
   }
   const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
 };

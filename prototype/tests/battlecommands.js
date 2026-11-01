@@ -19,7 +19,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   //  619baeb8, queue e3988d7e, attack 30a7c1a9, own_icon bca1cbbd, orders 78927b0f, flags d5c9b760, formations 740cba6b, line_drag
   //  7a82a8aa, deployment 8cf425b5, empty 3ce8e39b, pointer_select f60d232d, pointer_orders d9382130, pointer_line 1a6d2d33, touch
   //  5f816ed1, keyboard 03b1480f)
-  const expected={"pick":"723f5db6","select":"2b845867","boxes":"ee514f7a","control_groups":"e621bf86","move":"d888f4e9","queue":"bfed0aaf","attack":"f3d329d3","own_icon":"64453fda","orders":"1d6414ea","flags":"9037748f","formations":"598705cc","line_drag":"10a5c3fc","deployment":"6d667ed5","empty":"b7f1987a","pointer_select":"9699bae8","pointer_orders":"2d1c35c9","pointer_line":"05c3e722","touch":"1e22ee24","keyboard":"b5056072"};
+  // (own_icon re-recorded 2026-11-01, on purpose: men fill the nearest free place (the owner, 2026-11-01); core/assign.js SLOTFILL, formations.js layForm): its group's
+  //  slots go to its men by the least walking in all, not front slots first, so its men's sx, sy differ. With SLOTFILL.on false it
+  //  is 64453fda again and the other 18 held both ways. Was 64453fda)
+  const expected={"pick":"723f5db6","select":"2b845867","boxes":"ee514f7a","control_groups":"e621bf86","move":"d888f4e9","queue":"bfed0aaf","attack":"f3d329d3","own_icon":"5db3fe6e","orders":"1d6414ea","flags":"9037748f","formations":"598705cc","line_drag":"10a5c3fc","deployment":"6d667ed5","empty":"b7f1987a","pointer_select":"9699bae8","pointer_orders":"2d1c35c9","pointer_line":"05c3e722","touch":"1e22ee24","keyboard":"b5056072"};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const methods=['moveTo','attack','queueTo','hold','withdraw','setWalk','setFlag','setForm','setRun'],original={},calls=[];
@@ -115,7 +118,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
         B.sel='all';click(inf[0].x,inf[0].y-6,0,{pointerType:'touch'});results.select=B.sel;click(500,300,0,{pointerType:'touch'});
         ok(results.select===testGroup('inf')&&B.groups[testGroup('inf')].ax===500&&B.groups[testGroup('inf')].ay===300,'touch selects a group and a subsequent ground touch moves it');
       }else if(name==='keyboard'){
-        key('Digit1',{ctrlKey:true});t.selectGroup(testGroup('arc'));key('Digit1');results.recalled=B.sel;key('KeyR');results.run=!B.groups[testGroup('inf')].walk;key('KeyH');key('KeyW');
+        // (the owner's layout, doc/UNIT_KITS_DESIGN.md §7b (unit kits step 2): the pace on R, withdraw on Backspace; Q W E the stance slots)
+        key('Digit1',{ctrlKey:true});t.selectGroup(testGroup('arc'));key('Digit1');results.recalled=B.sel;key('KeyR');results.run=!B.groups[testGroup('inf')].walk;key('KeyH');key('Backspace');
         ok(results.recalled===testGroup('inf')&&results.run&&B.groups[testGroup('inf')].order==='withdraw','real keyboard control groups, flags, hold and withdrawal remain connected');
       }
       const fingerprint=hash(snapshot(B,results,randomCalls));if(expected[name])ok(fingerprint===expected[name],name+' matches '+(['attack','formations'].includes(name)?'independent-group ability':name==='line_drag'?'independent-group facing':'independent-group')+' command state ('+fingerprint+')');else o.push('SNAP '+name+' '+fingerprint);

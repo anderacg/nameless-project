@@ -26,17 +26,50 @@ const ORDER_ICON={
 };
 function pixelSVG(rows,size,cls){const s=rows.length;let r='';rows.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')r+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="currentColor"'+(c==='b'?' opacity=".5"':'')+'/>'}));
   return '<svg class="'+(cls||'oico')+'" viewBox="0 0 '+s+' '+s+'" width="'+size+'" height="'+size+'" shape-rendering="crispEdges" aria-hidden="true">'+r+'</svg>'}
-// the order, flag and formation buttons: their icon and key (once, at load)
+/* the order bar (doc/UNIT_KITS_DESIGN.md §2, §3, §5, §7b), built from the tables (data/kits.js; its keys KIT_KEYS, by KITS.keys2): the
+   orders (ORDERS: Hold, Charge (keys2: a true order, bCharge), the Attack-move; Withdraw last, on the right), the stances (STANCES:
+   Pace, its Run and Walk; Discipline; keys2, the three stance slots, Q W E, each the selected units' own stance in it (bhudStances);
+   step 1, a row each: Shooting, one cycle; Shield wall; Mounted, kept under keys2 hidden: their buttons the flags' own), the
+   formations (FORMS; the ring, each kind its own, bRing (no data-form: bhudRing lights it); keep formation after them) and the skill bar (its slots, Z X C V B: bhudSkills). Today's buttons keep their
+   data-order, data-flag and data-form, in their order (render.js setOrderUI lights them; tests/battlecommands.js reads them so);
+   a group's place on the bar by CSS (style.css: Withdraw's). Their icon and key, at load; built again when the keys change */
+const barBtn=(attr,key,title,extra)=>'<button class="obtn" type="button" '+attr+' data-key="'+keyFace(key||'')+'" title="'+htmlText(title+(key?' ('+keyFace(key)+')':''))+'"'+(extra||'')+'></button>';
+function bhudBar(){const O=ORDERS,S=STANCES,K=kitKey,k2=KITS.keys2,row=(id,h,hid)=>'<span class="srow'+(hid?' legacy':'')+'" role="group" data-stance="'+id+'"'+(hid?' hidden':'')+' aria-label="'+htmlText(S[id].n+(K(id)?' ('+K(id)+')':'')+(S[id].cycle?': '+[S[id].none,...S[id].ch.map(c=>c.n)].join(', '):''))+'">'+h+'</span>',
+    flag=(c,key)=>barBtn('data-flag="'+c.flag+'"',key,c.d,' aria-pressed="false"'),pace=S.pace.ch;
+  return '<div class="ogrp orders" role="group" aria-label="Orders">'+barBtn('data-order="hold"',K('hold'),O.hold.d)+(k2?barBtn('id="bCharge"',K('charge'),O.charge.d):'')+barBtn('id="bAmove"',K('amove'),O.attack.amove.d,' aria-pressed="false"')+'</div>'+
+    '<div class="ogrp stances pace" role="group" aria-label="Stances">'+row('pace',barBtn('data-order="charge"',k2?'':K('charge'),k2?O.run.d:'Charge: they move at a run; a run at an enemy is a charge')+barBtn('data-order="advance"',K('pace'),pace[1].d+'; '+K('pace')+' switches walking and running'))+'</div>'+
+    '<div class="ogrp wd" role="group" aria-label="Withdraw">'+barBtn('data-order="withdraw"',K('withdraw'),O.withdraw.d)+'</div>'+
+    '<div class="ogrp stances rest" role="group" aria-label="Stances">'+row('discipline',flag(S.discipline.ch[0],K('discipline')))+
+      (k2?'<span class="srow sslots" role="group" aria-label="Stance slots ('+KIT_KEYS.now.stance.join(', ')+': each selected unit its own stance in that slot)">'+KIT_KEYS.now.stance.map((k,i)=>'<button class="obtn abtn sslot" type="button" data-sslot="'+i+'" hidden aria-pressed="false"><i class="acd" aria-hidden="true"></i><span class="si"></span><span class="at" aria-hidden="true"></span><span class="k">'+k+'</span><span class="mbh-label"></span></button>').join('')+'</span>':'')+
+      row('shooting',S.shooting.ch.map((c,i)=>flag({...c,d:c.d+'; pressed again, '+S.shooting.none.toLowerCase()+(K('shooting')?'. '+K('shooting')+': the next of '+[S.shooting.none,...S.shooting.ch.map(x=>x.n)].join(', '):'')},i?'':K('shooting'))).join(''),k2)+
+      row('shieldWall',flag(S.shieldWall.ch[0],K('shieldWall')),k2)+
+      row('mounted','<button class="obtn abtn" type="button" id="bMounted" hidden aria-pressed="false"><i class="acd" aria-hidden="true"></i>'+pixelSVG(ABIL_ICON.dismount,18)+'<span class="at" aria-hidden="true"></span><span class="k">'+K('mounted')+'</span></button>',k2)+'</div>'+
+    '<div class="ogrp forms" role="group" aria-label="Formations ('+(k2?K('form')+': the next of line, loose, a circle, wedge or column; '+K('ring')+': a circle':'L/T again: line')+'; drag for width and depth)">'+FORM_PICK.map(f=>'<button class="obtn" type="button" data-form="'+f+'" aria-pressed="false"></button>').join('')+'<button class="obtn" type="button" id="bRing" aria-pressed="false"></button></div>'+
+    '<div class="ogrp abils skills" role="group" aria-label="Skills ('+skillKeys().join(', ')+': each selected unit its own in that slot)" hidden></div>'}
 function bhudInit(){
+  {const bar=document.querySelector('#bbar .borders');if(bar){bar.innerHTML=bhudBar();bar.dataset.keys=KITS.keys2;withdrawView.bind()}}// (Withdraw's preview on its new button: orderpaths.js)
   document.querySelectorAll('.obtn[data-order],.obtn[data-flag]').forEach(b=>{const k=b.dataset.order||b.dataset.flag;b.innerHTML=pixelSVG(ORDER_ICON[k],18)+'<span class="k">'+(b.dataset.key||'')+'</span>';b.setAttribute('aria-label',b.title)});
-  {const b=document.getElementById('bAmove');if(b){b.innerHTML=pixelSVG(ORDER_ICON.amove,18)+'<span class="k">'+(b.dataset.key||'')+'</span>';b.setAttribute('aria-label',b.title)}}// (attack-move: commands.js armAttackMove)
+  {const b=document.getElementById('bAmove');if(b){b.innerHTML=pixelSVG(ORDER_ICON.amove,18)+'<span class="k">'+(b.dataset.key||'')+'</span>';b.setAttribute('aria-label',b.title);b.addEventListener('click',()=>armAttackMove())}}// (attack-move: commands.js armAttackMove)
+  // (the Mounted stance: commands.js toggleMounted; Charge, a true order: chargeOrder; the stance slots: stanceSlot)
+  {const b=document.getElementById('bMounted');if(b)b.addEventListener('click',()=>{if(!b.disabled)toggleMounted()})}
+  {const b=document.getElementById('bCharge');if(b){b.innerHTML=pixelSVG(ORDER_ICON.charge,18)+'<span class="k">'+b.dataset.key+'</span><span class="mbh-label">Charge</span>';b.setAttribute('aria-label',b.title);b.addEventListener('click',()=>chargeOrder())}}
+  {const el=document.querySelector('#bbar .borders .sslots');if(el)el.addEventListener('click',e=>{const b=e.target.closest('[data-sslot]');if(b&&!b.disabled)stanceSlot(+b.dataset.sslot)})}
+  // (the skill bar's slots: commands.js groupSlot; one past the third, its skill: groupAbility)
+  {const el=document.querySelector('#bbar .borders .skills');if(el)el.addEventListener('click',e=>{const b=e.target.closest('[data-slot]');if(!b||b.disabled)return;if(+b.dataset.slot<skillKeys().length)groupSlot(+b.dataset.slot);else groupAbility(b.dataset.abil)})}
   // (keep formation: a toggle kept as a setting, lit while on, after the formations; its own label on a phone: commands.js toggleKeepForm)
   {const f=document.querySelector('.borders .ogrp.forms');if(f&&!document.getElementById('bKeep')){const b=document.createElement('button');b.type='button';b.className='obtn';b.id='bKeep';b.dataset.key='⇧K';
     b.title='Keep formation (Shift+K): two or more groups selected move as one block, each keeping its place (archers stay behind the foot); a right-click turns the block to face the way it goes, a right-drag sets its front line. Off: each group goes on its own';
     b.innerHTML=pixelSVG(ORDER_ICON.keep,18)+'<span class="k">⇧K</span><span class="mbh-label">Keep form</span>';b.setAttribute('aria-label',b.title);b.addEventListener('click',()=>toggleKeepForm());f.appendChild(b)}keepFormUI()}
+  {const b=document.getElementById('bRing');if(b)b.addEventListener('click',()=>{if(!b.disabled)ringForm()});bhudRing()}// (the ring: commands.js ringForm)
   {const el=document.getElementById('bInfo');if(el)el.addEventListener('click',e=>{if(e.target.closest('[data-bi-card]')&&B){B.infoCard=!B.infoCard;bhudInfo()}})}// (its portrait opens its unit card: bhudCardOf)
-  document.querySelectorAll('.obtn[data-form]').forEach(b=>{const F=FORMS[b.dataset.form];b.innerHTML=formIcon(b.dataset.form,24,16)+'<span class="k">'+F.key+'</span>';b.title=F.n+': '+F.d+' ('+F.key+')';b.setAttribute('aria-label',b.title)});
+  document.querySelectorAll('.obtn[data-form]').forEach(b=>{const F=FORMS[b.dataset.form],k=KITS.keys2?kitKey('form'):F.key;b.innerHTML=formIcon(b.dataset.form,24,16)+'<span class="k">'+k+'</span>';b.title=F.n+': '+F.d+' ('+k+(KITS.keys2?' cycles':'')+')';b.setAttribute('aria-label',b.title)});
 }
+/* the ring's button (O: commands.js ringForm): the selection's ring, a circle or, horse archers alone, a Cantabrian circle (its icon,
+   name and words); lit when every selected group it suits stands in its ring; dimmed when it suits none */
+function bhudRing(){const b=typeof document!=='undefined'&&document.getElementById('bRing');if(!b)return;const gs=B?selGroups().filter(g=>grpUnits(g).length):[],fit=gs.filter(groupRing),fs=[...new Set(fit.map(groupRing))];
+  const f=fs.length===1?fs[0]:'circle',F=FORMS[f],k=kitKey('ring'),on=fit.length>0&&fit.every(g=>B.groups[g].form===groupRing(g)),title=(fs.length>1?'Circle or Cantabrian circle, each its own: ':F.n+': ')+F.d+' ('+k+'; again: line)';
+  if(b.dataset.f!==f){b.dataset.f=f;b.innerHTML=formIcon(f,24,16)+'<span class="k">'+k+'</span><span class="mbh-label">'+(f==='circle'?'Circle':'Cantabrian')+'</span>'}
+  if(b.title!==title){b.title=title;b.setAttribute('aria-label',title)}b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));b.disabled=!fit.length}
 // the keep-formation button, lit while it is on (ui.js PREFS.keepform)
 function keepFormUI(){const b=typeof document!=='undefined'&&document.getElementById('bKeep');if(!b)return;const on=keepFormOn();b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))}
 // a unit's portrait: its painted one (a named face, or its kind's: data/unitportraits.js; the owner, 2026-10-29), else its
@@ -90,11 +123,13 @@ function cardStatus(g,m,mo,stm){
     else if(gr.amove)add(1,'amove',gr.amove.at?'Attack-move: fighting on the way':'Attack-move: fighting what they meet',{tone:'si-b'});
     else add(1,moving?'move':'hold',moving?'Moving':'Holding',null,moving);
     const walk=walking(gr);add(2,walk?'walk':'run',walk?'At a walk':'At a run',null,moving);
-    for(const id of UNIT_ABIL_ORDER)if(abilityActive(gr,id))add(3,id,UNIT_ABILITIES[id].n+' on',{tone:'si-g'});
+    for(const id of SKILL_ORDER)if(abilityActive(gr,id))add(3,id,UNIT_SKILLS[id].n+' on',{tone:'si-g'});
     const q=quiverLeft(m),sta=stm==null?null:stm*FATIGUE.max;
     if(q&&!q.left)add(4,'noammo','Out of ammunition',{tone:'si-b'});
     if(sta!=null&&sta<FATIGUE.spent)add(4,'spent','Exhausted: stamina '+Math.round(sta));
     if(gr.shieldWall)add(5,'shieldWall','Shield wall');
+    if(gr.posts&&gr.posted('brace'))add(5,'brace',gr.planted('brace')?'Braced':'Bracing');
+    if(gr.posts&&gr.posted('pavise'))add(5,'pavise',gr.planted('pavise')?'Pavises planted':'Planting pavises');
     if(gr.firm)add(5,'firm','Holding their ground');
     if(gr.cease)add(5,'cease','Cease fire');
     if(gr.skirmish)add(5,'skirmish','Skirmishing');
@@ -165,7 +200,7 @@ function bhudInfo(){
 function bhudCardOf(g,S,rep,st){const m=S.m,hero=g==='hero',tm=tiredMul(m[0]),start=B.units.filter(u=>u.grp===g).length,now={hp:S.hp/Math.max(1,m.length),spd:st.spd*tm.spd,atk:meleeDmgOf(st)/st.cd*tm.dmg,shot:missileDmgOf(st)/st.cd*tm.dmg};
   if(S.mo)now.mor=S.mo.v*100;
   return new UnitCard({key:rep,s:st,name:htmlText(hero&&!S.gr.customName?(P.name||'Your hero'):groupName(g)),sub:hero?'Your hero':ST[rep]?ST[rep].n:rep,hero,now,strength:hero?null:{fit:m.length,max:start,hurt:0,tip:'Men still fighting, of the '+start+' it began with'},
-    meters:hero&&B.hx?[{label:'Stamina',v:B.hx.sp,max:maxSP()},{label:'Mana',v:B.hx.mp,max:maxMP()}]:null,abil:unitAbilities(st)}).html()}
+    meters:hero&&B.hx?[{label:'Stamina',v:B.hx.sp,max:maxSP()},{label:'Mana',v:B.hx.mp,max:maxMP()}]:null,abil:unitAbilities(st),kit:!hero&&m[0]&&!ladderless(m[0])?kitChips(battleRec(B.groups[g])):null}).html()}// (a troop's kit: unitcard.js kitChips)
 // the top bar: each side's numbers and strength (health by tier), the field, and what is happening (deploying, paused, speed)
 function bhudTop(){
   if(!B)return;window.mobileBattleHud?.update();const w=u=>u.hp/Math.max(1,u.max)*(u.hero||u.leader||u.comp?4:(ST[u.type]&&ST[u.type].tier||1));let me=0,foe=0,nm=0,nf=0;
@@ -176,7 +211,7 @@ function bhudTop(){
   $id('bStatus').textContent=B.over?(B.hunt?'Hunt over':B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.muster?.active?(B.paused?'Preparation paused · Space to continue':'Forming up · '+B.muster.done+'/'+B.muster.entries.length):B.ready?'Ready · Start Battle to begin':B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone · Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused · give your orders · Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
   {const b=$id('bAmove');if(b){b.classList.toggle('on',!!B.amArm);b.setAttribute('aria-pressed',String(!!B.amArm));b.disabled=!!B.deploy}}// (armed: commands.js armAttackMove)
-  bhudAbilities();bhudArmies();withdrawView.hud();bhudSkip();
+  bhudSkills();bhudRing();bhudArmies();withdrawView.hud();bhudSkip();
 }
 // (your army down, others fighting on for you: a bar saying so, and Skip to the end: sides.js skipBattle)
 function bhudSkip(){let el=document.getElementById('bSkip');const on=ownDown();
@@ -221,11 +256,21 @@ class BattleArmyHud{
 }
 function bhudArmies(){if(!window.battleArmyHud)window.battleArmyHud=new BattleArmyHud();window.battleArmyHud.update()}
 
-/* the unit abilities (unitabilities.js) in their own group at the end of the order bar: a button for each one any selected group
-   has. On (lit): the seconds it has left; cooling down: a shade over it that shrinks as it comes back, and the seconds; dimmed,
-   with the reason in its tooltip, when none of them can use it now. A press (or its key) uses it for every selected group that
-   can (commands.js groupAbility). data-abil, never data-order/flag/form: those lists are the orders' own */
+/* the skill bar (doc/UNIT_KITS_DESIGN.md §5, §7b) at the end of the order bar: its slots, Z X C V B (data/kits.js KIT_KEYS; step 1,
+   Z X C), each selected group its own skill in each (battle/unitkit.js groupSlots: its kit's, in its kind's order), one past the
+   last (a dismounted rider's) with no key. On (lit): the seconds it has left; cooling down: a shade over it that shrinks as it comes back,
+   and the seconds; dimmed, with the reason in its tooltip, when none of them can use it now (locked: its rank not reached). A
+   press (or its key) uses it for every selected group that can (commands.js groupSlot). data-slot (and data-abil, the skill in
+   it), never data-order/flag/form: those lists are the orders' own */
 const ABIL_ICON={
+  lunge:['........a','.......a.','......a..','.....a...','....a....','...a.....','..a......','.bb......','bb.......'],
+  volley:['a.a.a.a..','.a.a.a.a.','..a.a.a.a','.........','bbbbbbbbb','.........','a.a.a.a..','.a.a.a.a.','..a.a.a.a'],
+  pikePush:['a...a...a','a...a...a','a...a...a','aa..aa..a','.a...a...','.a...a...','bbbbbbbbb','.........','.........'],
+  counter:['a.......a','.a.....a.','..a...a..','...a.a...','....a....','...a.a...','..a...a..','.b.....b.','b.......b'],
+  storm:['.a..a..a.','a..a..a..','.a..a..a.','.........','....a....','...a.a...','..a...a..','.bbbbbbb.','.........'],
+  parthian:['.........','a....aaa.','.a..a....','aaaa.....','.a..a....','a....aaa.','.........','.bb..bb..','.........'],
+  ward:['...aaa...','..a...a..','.a.bbb.a.','.a.b.b.a.','.a.bbb.a.','..a...a..','...a.a...','....a....','.........'],
+  pavise:['.aaaaaaa.','.abbbbba.','.ab...ba.','.ab...ba.','.ab...ba.','.abbbbba.','.aaaaaaa.','..a...a..','.a.....a.'],
   rapid:['.........','.a...a...','..a...a..','...a...a.','aaaaaaaaa','...a...a.','..a...a..','.a...a...','.........'],
   brace:['....a....','...aaa...','....a....','....a....','....a....','...ba....','..b.a....','.b..a....','aaaaaaaaa'],
   fire:['....a....','...aa....','...aab...','..aabba..','.aabbba..','.abbbbaa.','.abbbbba.','..abbba..','...aaa...'],
@@ -235,23 +280,59 @@ const ABIL_ICON={
   dismount:['....a....','....a....','....a....','..a.a.a..','...aaa...','....a....','.........','aaaaaaaaa','.b.....b.'],
   mount:['....a....','...aaa...','..a.a.a..','....a....','....a....','....a....','.........','aaaaaaaaa','.b.....b.']
 };
-function bhudAbilities(){
+// (a skill's tooltip: what it does, how long, its cooldown)
+const skillTip=(A,key)=>A.n+(key?' ('+key+')':'')+': '+A.d+(A.note?A.note():'')+(A.dur?' Lasts '+A.dur+' s.':'')+' Cooldown '+A.cd+' s.';
+// (a button's state from the statuses of those who have its skill: lit while on, the shade and seconds of the soonest back; its words)
+function skillState(b,st,cd){const ready=st.filter(x=>!x.why),on=st.filter(x=>x.active),cool=st.filter(x=>x.cooldown>0);
+  const back=!ready.length&&!on.length&&cool.length?Math.min(...cool.map(x=>x.cooldown)):0,left=on.length?Math.max(...on.map(x=>x.left)):0;
+  b.classList.toggle('on',on.length>0);b.setAttribute('aria-pressed',String(on.length>0));b.disabled=!ready.length;
+  // (its shade and seconds only where the button still has them: a hero's slot text written over it once threw here every HUD tick, the
+  // game's loop stopped and the battle frozen while forming up: combat.js HeroHands#updateBar)
+  const shade=b.querySelector('.acd'),secs=b.querySelector('.at');if(shade)shade.style.height=back?pct(back/cd):'0%';if(secs)secs.textContent=on.length?Math.ceil(left-1e-9):back?Math.ceil(back-1e-9):'';
+  return (on.length?' Active: '+Math.ceil(left-1e-9)+' s left.':'')+(ready.length?ready.length<st.length?' Ready for '+ready.length+' of '+st.length+' selected units.':' Ready.':st.length?' Unavailable: '+(back?'ready in '+Math.ceil(back-1e-9)+' s':st[0].why)+'.':'')}
+function bhudSkills(){
   bhudPowers();// (the commander bar, on the same clock: commandpowers.js)
-  const bar=document.querySelector('#bbar .borders');if(!bar||!B)return;let el=bar.querySelector('.abils');
-  if(!el){el=document.createElement('div');el.className='ogrp abils';el.setAttribute('role','group');el.setAttribute('aria-label','Unit abilities (G brace, I fire arrows, U spur, Y rally, O scout ahead, N rapid shot, J dismount, P mount)');
-    el.addEventListener('click',e=>{const b=e.target.closest('[data-abil]');if(b&&!b.disabled)groupAbility(b.dataset.abil)});bar.appendChild(el)}
-  const gs=selGroups().filter(g=>grpUnits(g).length).map(g=>B.groups[g]),ids=UNIT_ABIL_ORDER.filter(id=>gs.some(g=>groupHasAbility(g,id)));
-  if(el.dataset.ids!==ids.join()){el.dataset.ids=ids.join();el.replaceChildren(...ids.map(id=>{const b=document.createElement('button');b.type='button';b.className='obtn abtn';b.dataset.abil=id;
-    b.innerHTML='<i class="acd" aria-hidden="true"></i>'+pixelSVG(ABIL_ICON[id],18)+'<span class="at" aria-hidden="true"></span><span class="k">'+UNIT_ABILITIES[id].key+'</span>';return b}))}
-  el.hidden=!ids.length;
-  for(const b of el.children){const id=b.dataset.abil,A=UNIT_ABILITIES[id],st=gs.filter(g=>groupHasAbility(g,id)).map(g=>abilityStatus(g,id)),ready=st.filter(x=>!x.why),on=st.filter(x=>x.active),cool=st.filter(x=>x.cooldown>0);
-    // (the soonest back of those cooling down, when none is ready nor on; the longest still on)
-    const back=!ready.length&&!on.length&&cool.length?Math.min(...cool.map(x=>x.cooldown)):0,left=on.length?Math.max(...on.map(x=>x.left)):0;
-    b.classList.toggle('on',on.length>0);b.setAttribute('aria-pressed',String(on.length>0));b.disabled=!ready.length;
-    b.querySelector('.acd').style.height=back?pct(back/A.cd):'0%';b.querySelector('.at').textContent=on.length?Math.ceil(left-1e-9):back?Math.ceil(back-1e-9):'';
-    b.title=A.n+' ('+A.key+'): '+A.d+(A.note?A.note():'')+(A.dur?' Lasts '+A.dur+' s.':'')+' Cooldown '+A.cd+' s.'+(on.length?' Active: '+Math.ceil(left-1e-9)+' s left.':'')+(ready.length?ready.length<st.length?' Ready for '+ready.length+' of '+st.length+' selected units.':' Ready.':' Unavailable: '+(back?'ready in '+Math.ceil(back-1e-9)+' s':st[0].why)+'.');
+  {const bar=document.querySelector('#bbar .borders');if(bar&&bar.dataset.keys&&bar.dataset.keys!==String(KITS.keys2))bhudInit()}// (the keys changed: the bar made again)
+  const el=document.querySelector('#bbar .borders .skills');if(!el||!B)return;bhudMounted();bhudStances();
+  const SK=skillKeys(),gs=selGroups().filter(g=>grpUnits(g).length).map(g=>B.groups[g]),bars=gs.map(g=>groupSlots(g)),n=Math.max(0,...bars.map(x=>x.length)),slots=[];
+  for(let i=0;i<Math.max(n?SK.length:0,n);i++){const xs=[];bars.forEach((x,j)=>{if(x[i])xs.push({g:gs[j],...x[i]})});if(xs.length||i<SK.length)slots.push(xs)}
+  // (built again only when what is in the slots changes)
+  const sig=slots.map(xs=>[...new Set(xs.map(x=>x.id+(x.locked?'!':'')))].join('/')).join();
+  if(el.dataset.ids!==sig||[...el.children].some(b=>!b.querySelector('.acd'))){el.dataset.ids=sig;el.replaceChildren(...slots.map((xs,i)=>{const b=document.createElement('button'),id=xs[0]?.id;b.type='button';b.className='obtn abtn'+(new Set(xs.map(x=>x.id)).size>1?' mix':'');b.dataset.slot=i;if(id)b.dataset.abil=id;
+    b.innerHTML='<i class="acd" aria-hidden="true"></i>'+(id?pixelSVG(ABIL_ICON[id],18):'')+'<span class="at" aria-hidden="true"></span><span class="k">'+(SK[i]||'')+'</span>'+(id?'<span class="mbh-label">'+htmlText(UNIT_SKILLS[id].n)+'</span>':'');return b}))}
+  el.hidden=!n;
+  for(const b of el.children){const i=+b.dataset.slot,xs=slots[i]||[],key=SK[i],ids=[...new Set(xs.map(x=>x.id))],open=xs.filter(x=>!x.locked);
+    if(!ids.length){b.disabled=true;b.title='Slot '+(i+1)+(key?' ('+key+')':'')+': empty for the selected units.';b.setAttribute('aria-label',b.title);continue}
+    const A=UNIT_SKILLS[ids[0]],st=open.filter(x=>groupHasAbility(x.g,x.id)).map(x=>abilityStatus(x.g,x.id)),lock=xs.filter(x=>x.locked);
+    b.title=(ids.length>1?'Slot '+(i+1)+(key?' ('+key+')':'')+', each selected unit its own: '+ids.map(id=>UNIT_SKILLS[id].n).join(' / ')+'.':skillTip(A,key))+
+      (lock.length?' Unlocks at rank '+Math.min(...lock.map(x=>x.rank))+(lock.length<xs.length?' for '+lock.length+' of '+xs.length+' selected units':'')+'.':'')+skillState(b,st,A.cd)+(!st.length&&!lock.length?' Unavailable: '+abilityWhyNot(xs[0].g,xs[0].id).toLowerCase()+'.':'');
     b.setAttribute('aria-label',b.title)}
 }
+// (the old name: main.js redraws it on the HUD's clock)
+const bhudAbilities=bhudSkills;
+// the Mounted stance's button (data/kits.js STANCES.mounted; commands.js toggleMounted): shown while a selected group has riders who
+// can step down; lit while they are all on foot; its press: Dismount while any is up, else Mount, each with its cooldown
+function bhudMounted(){const b=document.getElementById('bMounted');if(!b)return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>Dismount.rider(u))).map(g=>B.groups[g]),r=gs.map(g=>Dismount.tally(g.units)).filter(Boolean);
+  b.hidden=!r.length;if(!r.length)return;const up=gs.some(g=>groupHasAbility(g,'dismount')),id=up?'dismount':'mount',A=UNIT_SKILLS[id],S=STANCES.mounted,afoot=r.every(x=>!x.on);
+  if(b.dataset.abil!==id){b.dataset.abil=id;b.querySelector('svg').outerHTML=pixelSVG(ABIL_ICON[id],18)}
+  const words=skillState(b,gs.filter(g=>groupHasAbility(g,id)).map(g=>abilityStatus(g,id)),A.cd);b.setAttribute('aria-pressed',String(afoot));
+  b.title=S.n+(kitKey('mounted')?' ('+kitKey('mounted')+')':'')+': '+(afoot?'on foot':'mounted')+'. '+skillTip(A,'')+words;b.setAttribute('aria-label',b.title)}
+/* the stance slots (§7b, KITS.keys2: Q W E; commands.js stanceSlot): each its icon, key and what it holds for the units selected (a
+   slot whose units differ marked +); lit while on (Brace, Pavise: planted or planting; Shield wall; Shooting: any choice but Fire at
+   will, its name the label; Mounted: all on foot, its cooldowns' shade); empty slots hidden */
+const STANCE_ICON={brace:ABIL_ICON.brace,pavise:ABIL_ICON.pavise,shieldWall:ORDER_ICON.shieldWall,shooting:ORDER_ICON.cease,mounted:ABIL_ICON.dismount};
+function stanceState(id,gs){const S=STANCES[id];
+  if(id==='shooting'){const ch=gs.map(g=>shootingOf(g)),i=ch.every(x=>x===ch[0])?ch[0]:-2;return{on:i>=0,n:i>=0?S.ch[i].n:i===-1?S.none:'Mixed',icon:ORDER_ICON[i>=0?S.ch[i].flag:'cease']}}
+  if(id==='mounted'){const r=gs.map(g=>Dismount.tally(g.units)).filter(Boolean),afoot=r.length>0&&r.every(x=>!x.on);return{on:afoot,n:afoot?S.ch[0].n:S.ch[1].n,icon:ABIL_ICON[afoot?'mount':'dismount']}}
+  if(S.ch[0].post){const on=gs.every(g=>g.posted(id));return{on,n:on?S.ch[0].n:S.n,icon:STANCE_ICON[id]}}
+  const f=S.ch[0].flag,on=gs.every(g=>g[f]);return{on,n:S.n,icon:STANCE_ICON[id]}}
+function bhudStances(){const el=document.querySelector('#bbar .borders .sslots');if(!el||!B)return;const gs=selGroups().filter(g=>grpUnits(g).length).map(g=>B.groups[g]),by=gs.map(g=>groupStances(g));
+  for(const b of el.children){const i=+b.dataset.sslot,xs=gs.map((g,j)=>[g,by[j][i]]).filter(x=>x[1]),ids=[...new Set(xs.map(x=>x[1]))];b.hidden=!ids.length;if(!ids.length)continue;
+    const id=ids[0],own=xs.filter(x=>x[1]===id).map(x=>x[0]),st=stanceState(id,own),S=STANCES[id],sig=ids.join('/')+':'+st.n;
+    if(b.dataset.sig!==sig){b.dataset.sig=sig;b.dataset.stance=id;b.querySelector('.si').innerHTML=pixelSVG(st.icon,18);b.querySelector('.mbh-label').textContent=ids.length>1?'Slot '+(i+1):st.n}
+    b.classList.toggle('mix',ids.length>1);b.classList.toggle('on',st.on);b.setAttribute('aria-pressed',String(st.on));
+    let words='';if(id==='mounted'){const up=own.some(g=>groupHasAbility(g,'dismount')),A=UNIT_SKILLS[up?'dismount':'mount'];words=skillState(b,own.filter(g=>groupHasAbility(g,A===UNIT_SKILLS.dismount?'dismount':'mount')).map(g=>abilityStatus(g,up?'dismount':'mount')),A.cd);b.classList.toggle('on',st.on)}else{b.disabled=false;b.querySelector('.acd').style.height='0%';b.querySelector('.at').textContent=''}
+    b.title=(ids.length>1?'Stance slot '+(i+1)+' ('+KIT_KEYS.now.stance[i]+'), each selected unit its own: '+ids.map(x=>STANCES[x].n).join(' / ')+'.':S.n+' ('+KIT_KEYS.now.stance[i]+'): '+st.n.toLowerCase()+'. '+(S.ch[0].d||S.ch.map(c=>c.n).join(' or '))+(S.cycle?'. Pressed: the next of '+[S.none,...S.ch.map(c=>c.n)].join(', '):''))+words;b.setAttribute('aria-label',b.title)}}
 /* callouts: a short banner at the top middle of the field for the big moments, in the colour of the side it is about: a group
    routs, is shattered, rallies or is flanked, a leader falls, the enemy falls back. Each is said once (key, again only after
    CALLOUT.same combat seconds; a flank once a group in flankEvery), never twice on screen at once; a rout or shattering of yours
@@ -351,8 +432,8 @@ const shooters=g=>grpUnits(g).filter(u=>!u.rout&&!u.empty&&u.s.range>0);
 // curve cut at the layer's edge is cut as the field's own layer cut it): a field seen whole at ×1 has the field's own layer. rangeView:
 // its rect in the zoom's pixels (ox, oy, w, h) and the camera's (cx, cy); rangeClear sets the layer to it; rangeBlit puts it over the view)
 const RANGE_M=32;
-function rangeView(){const cm=B.cam,native=B.world?VS:1,z=(cm?cm.z:1)*native,cx=Math.round((cm?cm.x:0)*z),cy=Math.round((cm?cm.y:0)*z),ox=Math.max(0,cx-RANGE_M),oy=Math.max(0,cy-RANGE_M);
-  return{z,cx,cy,ox,oy,w:Math.max(1,Math.min(Math.ceil(BW*z),cx+BVW*native+RANGE_M)-ox),h:Math.max(1,Math.min(Math.ceil(BH*z),cy+BVH*native+RANGE_M)-oy)}}
+function rangeView(){const cm=B.cam,V=bview(),native=B.world?VS:V.k,z=(cm?cm.z:1)*native,cx=Math.round((cm?cm.x:0)*z),cy=Math.round((cm?cm.y:0)*z),ox=Math.max(0,cx-RANGE_M),oy=Math.max(0,cy-RANGE_M);
+  return{z,cx,cy,ox,oy,w:Math.max(1,Math.min(Math.ceil(BW*z),cx+V.w*native+RANGE_M)-ox),h:Math.max(1,Math.min(Math.ceil(BH*z),cy+V.h*native+RANGE_M)-oy)}}
 function rangeLayer(){const v=rangeView(),c=B.rangeCv||(B.rangeCv=document.createElement('canvas'));if(c.width!==v.w||c.height!==v.h){c.width=v.w;c.height=v.h}c.rv=v;return c}
 function rangeClear(g){const v=g.canvas.rv;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,g.canvas.width,g.canvas.height);g.setTransform(v.z,0,0,v.z,-v.ox,-v.oy)}
 function rangeBlit(c){const v=c.rv,m=ctx.getTransform();ctx.save();ctx.setTransform(1,0,0,1,Math.round(m.e+v.cx)+v.ox-v.cx,Math.round(m.f+v.cy)+v.oy-v.cy);ctx.globalAlpha=.75;ctx.drawImage(c,0,0);ctx.restore()}

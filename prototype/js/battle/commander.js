@@ -30,12 +30,15 @@ const UNIT_AI={pullAt:25,backAt:45,pullDist:90,maxRecover:15,chargeAt:40,cavReco
 // when not fresh, runNear tired, at a walk spent; riders fresh gallop all the way); footFar: fresh infantry attacking charge from
 // this gap (else FOE_CMD.clash); cavStart: fresh riders on their way round a flank charge from this gap, not on top of the foe;
 // regroupFar: fresh riders pull back this far to charge again; rested, restMax: tired riders stand off till this stamina, or this long
-// braceAt, braceMom: riders or a big beast with this momentum this near a spear group's front (px), it braces; braceKeep: and is
-// left braced while one is this near; spur, spurWin, spurSta: riders spur on a fresh charge (spurWin s old) at a mark this far off
-// (px), with this stamina; fireGain: fire arrows at an armoured mark (or one weak to fire) when fire does this much more than theirs
+// braceAt, braceMom, braceT, braceIn: riders or a big beast riding at a spear group's front, closing at braceMom of their top speed
+// or more, this near (px) and at that speed this soon (s: the spears planted before it strikes), beyond braceIn px (none in the
+// melee: a new run-up), and it braces; braceKeep: and is left braced while one still closes so this near (px), taken up once the
+// charge has struck or turned away (the owner, 2026-11-01); spur, spurWin, spurSta: riders spur on a fresh charge (spurWin s old) at a
+// mark this far off (px), with this stamina; fireGain: fire arrows at an armoured mark (or one weak to fire) when fire does this much
+// more than theirs
 const AI_TACTICS={fast:60,fastIn:.15,fastOut:.3,outRange:1.1,outShoot:1.25,ammo:.35,dwell:2,dangerT:3.5,near:110,screenGap:60,pushRun:80,
   fresh:60,runFar:240,runNear:130,footFar:140,cavStart:160,regroupFar:150,rested:55,restMax:5,
-  braceAt:80,braceMom:.3,braceKeep:120,spur:[60,140],spurWin:2.5,spurSta:45,fireGain:1.15};
+  braceAt:180,braceMom:.75,braceT:1.9,braceIn:30,braceKeep:120,spur:[60,140],spurWin:2.5,spurSta:45,fireGain:1.15};
 /* race fighting styles (the captain's temperament): multipliers on the tunables of FOE_CMD, UNIT_AI, AI_TACTICS, CAPT and HUNT (keyed
    by name; prey is UNIT_AI's, every other key used here in one table only), read through tun at the captain's decision points. Chosen once per
    captain from its army's troops (temperFor) and kept in captainMem(ck).temper. human: the base itself (balanced); dwarf: holds the
@@ -148,7 +151,9 @@ function huntSpot(sh,foes,busy,T){
       if(Math.hypot(p.x-t.x,p.y-t.y)<=R&&huntSafe(p,foes,busy,R,T)&&canReach(C,p))return{t,x:p.x,y:p.y,tx:t.x,ty:t.y}}}// (a spot they can get to: terrain.js)
   return null}
 // fire arrows worth it on e: armoured (mail, plate) or weak to fire, and fire does AI_TACTICS.fireGain more to him than a's own shots
-function fireWorth(a,e){const s=e.s,ar=armorOf(s);return (ar==='mail'||ar==='plate'||((s.resist&&s.resist.fire)||1)>1)&&typeMul(a.s,s,'fire')*UNIT_ABILITIES.fire.mul>=typeMul(a.s,s)*AI_TACTICS.fireGain}
+function fireWorth(a,e){const s=e.s,ar=armorOf(s);return (ar==='mail'||ar==='plate'||((s.resist&&s.resist.fire)||1)>1)&&typeMul(a.s,s,'fire')*UNIT_SKILLS.fire.mul>=typeMul(a.s,s)*AI_TACTICS.fireGain}
+// (an AI captain's use of its group's kit skills (battle/unitkit.js) whose moment it is (UNIT_SKILLS ai: melee, shoot, charge, threat))
+function captainSkills(g,when){if(!RANKS.statsOnly)return;const K=groupKit(g);if(K)for(const x of K.skills)if(UNIT_SKILLS[x.id].ai===when&&!abilityWhyNot(g,x.id))g.useAbility(x.id)}
 const segDist=(p,a,b)=>{const dx=b.x-a.x,dy=b.y-a.y,L=dx*dx+dy*dy||1,k=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/L,0,1);return Math.hypot(a.x+dx*k-p.x,a.y+dy*k-p.y)};
 /* Kite: the commander's look at a group of its shooters. The foe they must keep away from: one who fights hand to hand coming
    at them (inside their keeping distance, or charging in, there within CAPT.contact s) with none of our fighters on him or
@@ -207,7 +212,7 @@ class CavalryRide{
  // braced: what riders never charge head on) facing them (within 60° of head on); a foe coming at them (moving, within 60° of
  // straight at them)
  static avoid(e){return CAVALRY_RIDE.avoid+(unitClass(e.s)==='spear'?e.s.reach||0:0)}
- static wall(e){const g=e.grp&&B.groups[e.grp];return unitClass(e.s)==='spear'||shieldWallActive(e)||!!g&&abilityActive(g,'brace')}
+ static wall(e){const g=e.grp&&B.groups[e.grp];return unitClass(e.s)==='spear'||shieldWallActive(e)||!!g&&braceOn(g)}
  static spearFront(e,C){const g=e.grp&&B.groups[e.grp],f=g?.currentFacing??g?.face;return this.wall(e)&&f!=null&&Math.cos(Math.atan2(C.y-e.y,C.x-e.x)-f)>.5}
  static coming(e,C){return (e.vel??e.spdNow??0)>CAVALRY_RIDE.moving&&Math.cos(Math.atan2(C.y-e.y,C.x-e.x)-(e.hd??e.dir??0))>.5}
  // a spear wall facing them, fighting no one else, that they can leave behind: no charge, they stand off
@@ -315,7 +320,7 @@ class ArmyTactics{
   for(const g of groups){const m=g.units.filter(u=>fighting(u)&&!u.left),C=centroid(m),start=m.reduce((a,u)=>dist(u,C)<dist(a,C)?u:a),gap=e=>Math.min(...m.map(u=>dist(u,e))),who=m.some(u=>u.s.big)?'big':m.filter(u=>u.s.mounted).length>m.length/2?'mounted':'foot';let state=this.states.get(g.id);if(!state){state={offset:{x:C.x-core.x,y:C.y-core.y},lock:0};this.states.set(g.id,state)}
    if(g.ridePlan)continue;
    if(state.chase&&(B.t-state.chase.at>=X.chase||dist(C,state.chase)>=X.chaseLeash)){state.skipFleeUntil=B.t+X.retry;state.chase=null;state.target=null;state.regroup={x:C.x,y:C.y,until:B.t+X.regroup}}
-   if(g.resolve?.routed||g.recover||abilityActive(g,'brace')||g.phase==='regroup')continue;
+   if(g.resolve?.routed||g.recover||braceOn(g)||g.phase==='regroup')continue;
    const sx=m.reduce((n,u)=>n+(u.sx||0),0)/m.length,sy=m.reduce((n,u)=>n+(u.sy||0),0)/m.length,near=foes.some(e=>!e.rout&&!withdrawing(e)&&m.some(u=>dist(u,e)<X.urgent)),leash=this.radius*(g.role==='cav'?X.cavPursuit:1),spread=m.filter(u=>Math.hypot(u.x-C.x-(u.sx||0)+sx,u.y-C.y-(u.sy||0)+sy)>X.scatter).length;
    const scattered=m.length>=3&&spread/m.length>=X.scatterShare,outlier=dist(C,core)>leash;
    if(!near&&(g.order==='charge'||g.order==='advance'||state.regroup)&&((scattered||outlier)&&B.t>=(state.retry||0)||state.regroup)){
@@ -413,7 +418,7 @@ class Commander{
     const N=Object.fromEntries(Object.entries(N0).map(([k,l])=>[k,l.filter(id=>B.groups[id].order!=='withdraw')]));
     // (a lull: nobody has landed a blow in a while, everyone holding out of reach: every group of ours goes in; not an army already
     // on its way in, which walks up on its own plan)
-    if(B.t-Math.max(B.lastHit||0,Q.seen||0)>FOE_CMD.lull&&post!=='attack'&&!this.typeHolds(S)){Q.commit=true;for(const k of ['inf','arc','mag','cav'])for(const id of N[k]){const g=B.groups[id];if(grpUnits(id).length&&!abilityActive(g,'brace')){g.charge();g.setFlag('skirmish',false)}}return N0}// (a braced group stands: any order would end it)
+    if(B.t-Math.max(B.lastHit||0,Q.seen||0)>FOE_CMD.lull&&post!=='attack'&&!this.typeHolds(S)){Q.commit=true;for(const k of ['inf','arc','mag','cav'])for(const id of N[k]){const g=B.groups[id];if(grpUnits(id).length&&!braceOn(g)){g.charge();g.setFlag('skirmish',false)}}return N0}// (a braced group stands: any order would end it)
     const c=this.read(Q,S,N,post);c.take=this.take(c);
     for(const id of N.inf)this.infantry(c,id);
     // (Rally: a group of ours wavering or breaking, its officers steady it; after the infantry's orders, so a wavering group still pulls back)
@@ -462,10 +467,10 @@ class Commander{
      as a line, each group keeping its place across the field, FOG.probe px ahead of the army's middle (shooters FOE_CMD.behind
      back), at a walk, till it sees them */
   /* Scout ahead (unitabilities.js, scout units only): a captain's scouts range ahead to find the foe, while some of the foe still
-     fighting is unseen, and either it sees none of them or the fight is in its first UNIT_ABILITIES.scout.aiEarly s; with every foe
+     fighting is unseen, and either it sees none of them or the fight is in its first UNIT_SKILLS.scout.aiEarly s; with every foe
      in sight (no fog, no terrain hiding them) never */
   scout(N,S){const team=this.team;
-    const X=UNIT_ABILITIES.scout;if(!(S.foes.length===0||B.t<X.aiEarly)||!B.units.some(u=>battleEnemy(team,u)&&fighting(u)&&!seenBy(team,u)))return;
+    const X=UNIT_SKILLS.scout;if(!(S.foes.length===0||B.t<X.aiEarly)||!B.units.some(u=>battleEnemy(team,u)&&fighting(u)&&!seenBy(team,u)))return;
     for(const id of Object.values(N).flat()){const g=B.groups[id];if(g&&!abilityWhyNot(g,'scout'))g.useAbility('scout')}}
   // (where it goes looking: where the foe was last seen, else the far side of the field (a world battle: its ring's middle))
   search(N){const team=this.team;
@@ -567,6 +572,12 @@ class Commander{
     if(blk&&line&&shots.length&&!shots.some(u=>u.spdNow>0||u.s.range&&foes.some(e=>d2(u,e)<=u.s.range)))Q.lineT=(Q.lineT||0)+FOE_CMD.think;
     // (a charge coming: riders or a big beast running in (momentum mom), within far px of one of these men and not behind them)
     const chargeOn=(m,far,mom)=>foes.some(e=>(e.s.charge||e.s.big)&&!e.rout&&momentum(e)>=mom&&m.some(u=>d2(u,e)<far&&(mom<=0||sideOf(u,e)!=='rear')));
+    // (a charge truly coming at them: riders or a big beast closing on the nearest of m at mom of their top speed or more (riding
+    // straight at him: not a feint nor a ride round), within far px and, at that speed, soon s; beyond near px of every one of m (none
+    // standing in the melee: a new run-up); at his front (keep: or his flank, as Brace covers))
+    const chargeIn=(m,far,mom,soon,near,keep)=>foes.some(e=>{if(!(e.s.charge||e.s.big)||e.rout||!m.length)return false;const ph=PHYSICS.on&&e.hd!=null,v=ph?e.vel||0:e.spdNow||0,h=ph?e.hd:e.dir??0;
+      if(v<mom*e.s.spd)return false;const u=m.reduce((a,o)=>d2(o,e)<d2(a,e)?o:a),d=d2(u,e)||1,c=v*(Math.cos(h)*(u.x-e.x)+Math.sin(h)*(u.y-e.y))/d,side=sideOf(u,e);
+      return d<far&&d>near&&c>=mom*e.s.spd&&d<=c*soon&&(side==='front'||keep&&side==='flank')});
     const footCharge=m=>{const I=centroid(m),e=foes.reduce((a,o)=>d2(o,I)<d2(a,I)?o:a);return !(e.s.charge||e.s.big)&&!chargeOn(m,CAPT.brace,.25)};
     // (unit-level morale, UNIT_AI: a group's own resolve (none: steady); a foe wavering is worth more to riders and shooters;
     // recovering: a group stepped back to get its breath, g.recover {at, x, y}, or {done} once ended by the time cap)
@@ -634,18 +645,23 @@ class Commander{
         for(let j=onLine?0:-Math.floor(R/cs);j<=(onLine?0:Math.floor(F/cs));j++)for(let i=-Math.floor(R/cs);i<=Math.floor(R/cs);i++){const dx=j*cs,dy=i*cs,r=Math.hypot(dx,dy);if(r>R+1)continue;
           const px=x+fwd*dx,py=y+dy;if(px<8||px>BW-8||py<fieldTop()||py>fieldBot())continue;const v=val(px,py),s=v-r/(R*8);if(v>=v0+TERRAIN_AI.hillGain&&s>bs&&(!keep||keep(px,py))&&(!GT.blocky||nearLen({x,y},{x:px,y:py},2*R+cs)<Infinity)){bs=s;best={x:px,y:py}}}// (phase 4: a spot walked to round cliffs and rock no further than twice its reach: terrain.js)
         return best||{x,y}}}
-    return{team,ck,T,Q,S,N,post,foes,M,d2,lead,gap,within,inf,offset,shots,engaged,clash,goIn,lost,shooterNear,threats,A,line,aggr,chargeOn,footCharge,rOf,weak,recovering,firm,ground,gt,uphill,hold,holdAt,shootHold,stand,send,ride,flankAt,perch,rush:this.typeRush(),holding:!!hold&&!!hold.river&&this.typeHolds(S),take:null}}
+    return{team,ck,T,Q,S,N,post,foes,M,d2,lead,gap,within,inf,offset,shots,engaged,clash,goIn,lost,shooterNear,threats,A,line,aggr,chargeOn,chargeIn,footCharge,rOf,weak,recovering,firm,ground,gt,uphill,hold,holdAt,shootHold,stand,send,ride,flankAt,perch,rush:this.typeRush(),holding:!!hold&&!!hold.river&&this.typeHolds(S),take:null}}
   // infantry
   infantry(c,id){
-    const {T,Q,N,post,foes,M,d2,gap,within,offset,shots,clash,goIn,shooterNear,threats,A,line,chargeOn,footCharge,rOf,recovering,firm,gt,uphill,holdAt,stand,send}=c,X=AI_TACTICS,volley0=tun(T,FOE_CMD,'volley');
+    const {T,Q,N,post,foes,M,d2,gap,within,offset,shots,clash,goIn,shooterNear,threats,A,line,chargeIn,footCharge,rOf,recovering,firm,gt,uphill,holdAt,stand,send}=c,X=AI_TACTICS,volley0=tun(T,FOE_CMD,'volley');
     const inf=grpUnits(id).filter(u=>!u.rout);if(!inf.length)return;
     if(c.rush){const g=B.groups[id];if(g.order!=='charge')g.charge();return}// (an ambush sprung: straight in)
     // (a foe above them on the ground: longer volleys before they go up, TERRAIN_AI.upVolley)
     // (standing for them: no longer than twice their time where its shooters reach nobody from the line, Q.lineT (ground that blocks))
     const volley=uphill&&uphill(inf)?volley0*gt('upVolley'):volley0,wait=!!line&&Q.vol<volley&&!(Q.lineT>=volley*2);const g=B.groups[id],busy=inf.some(u=>foes.some(e=>d2(e,u)<20)),r=rOf(id);
-    // (Brace: a charge coming at its front, a spear group braces; braced, it is given no order (any would end it) while one is near)
-    if(abilityActive(g,'brace')){if(chargeOn(inf,X.braceKeep,0))return}
-    else if(chargeOn(inf,tun(T,X,'braceAt'),X.braceMom)&&!abilityWhyNot(g,'brace')){g.useAbility('brace');return}
+    // (Brace: a charge truly coming at its front, soon enough to plant the spears first, a spear group braces (KITS.brace: the stance;
+    // step 1, Brace flanks); braced, it is given no order (any would end it) while one still closes on it, a Pike push of its own ready
+    // for it; the stance, no timer, taken up as soon as the charge has struck or turned away, never kept against riders standing in
+    // the melee, its men free to fight; again only for a new run-up (the owner, 2026-11-01))
+    if(braceOn(g)){if(chargeIn(inf,X.braceKeep,X.braceMom,Infinity,0,true)){captainSkills(g,'charge');return}if(KITS.brace)g.plant('brace',false)}
+    else if(chargeIn(inf,tun(T,X,'braceAt'),X.braceMom,X.braceT,X.braceIn)&&braceCan(g)){braceUse(g);return}
+    // (in a fight hand to hand: its kit's skills for it, Lunge, Counterstroke)
+    if(busy)captainSkills(g,'melee');
     // (recovering: it stands where it stepped back to, till its resolve is back to backAt or maxRecover s pass; then its orders as ever)
     if(recovering(id)){if(!r||r.mor>=UNIT_AI.backAt)delete g.recover;else if(B.t-g.recover.at>=UNIT_AI.maxRecover)g.recover={done:B.t};else{g.standAt(g.recover.x,g.recover.y);return}}
     // (wavering, a steady group of ours beside it: it steps back from the foe; the nearest steady one not in a fight of its own goes
@@ -653,7 +669,7 @@ class Commander{
     // (only one not in a fight hand to hand: an engaged one stepping back loses men and breaks as soon; it fights on, Rally its help)
     else if(r&&!r.routed&&r.mor<tun(T,UNIT_AI,'pullAt')&&!busy&&(!g.recover||B.t-g.recover.done>=UNIT_AI.maxRecover)&&N.inf.some(o=>o!==id&&firm(o))){
       const I=centroid(inf),x=clamp(I.x-(Math.sign(M.x-I.x)||1)*UNIT_AI.pullDist,8,BW-8),y=clamp(I.y,fieldTop(),fieldBot());g.recover={at:B.t,x,y};g.plug=null;g.standAt(x,y);
-      const free=N.inf.filter(o=>o!==id&&firm(o)&&!abilityActive(B.groups[o],'brace')&&!grpUnits(o).some(u=>!u.rout&&foes.some(e=>d2(e,u)<20))).sort((a,b)=>d2(B.groups[a].centre(),I)-d2(B.groups[b].centre(),I));
+      const free=N.inf.filter(o=>o!==id&&firm(o)&&!braceOn(B.groups[o])&&!grpUnits(o).some(u=>!u.rout&&foes.some(e=>d2(e,u)<20))).sort((a,b)=>d2(B.groups[a].centre(),I)-d2(B.groups[b].centre(),I));
       if(free.length){const q=B.groups[free[0]];q.attack(foes.reduce((a,e)=>d2(e,I)<d2(a,I)?e:a));q.plug=id}
       return}
     // (holding a bridge (typeHolds): on its bank at the crossing, fighting whoever comes over; never after anyone over the water. While
@@ -762,7 +778,9 @@ class Commander{
       // (Fire arrows: their mark (their focus, else the nearest in reach) armoured or weak to fire: fireWorth)
       const mk=focus?worth:g.tgt||(inR.length?inR.reduce((p,e)=>d2(e,C)<d2(p,C)?e:p):null);if(mk&&fireWorth(armed[0],mk)&&!abilityWhyNot(g,'fire'))g.useAbility('fire');
       // (Rapid shot, a ranked bowmen's (battle/rankskills.js): whenever a mark is in reach)
-      if(mk&&inR.length&&!abilityWhyNot(g,'rapid'))g.useAbility('rapid')}}
+      if(mk&&inR.length&&!abilityWhyNot(g,'rapid'))g.useAbility('rapid');
+      // (its kit's other skills: a mark in reach, Volley, Arrow storm; one who fights hand to hand coming, Parthian shot)
+      if(mk&&inR.length)captainSkills(g,'shoot');if(open||threats.length)captainSkills(g,'threat')}}
   // cavalry
   // (fresh riders (AI_TACTICS.fresh) charge from further off (cavStart: not only once on top of the foe) and pull back further to
   // charge again (regroupFar); tired ones stand off after a charge till rested (rested, restMax), and walk (runFor, captainFinish))
@@ -815,7 +833,8 @@ class Commander{
   /* a captain gives its orders through the same tools you use. Its pace: a charge (and a cavalry's ride round a flank) at a run,
      else at a walk. A new place well away (CAPT.move): a move, its men break off and go (battlecontrol.js moveOrder). Its formation for
      the moment: a wedge for a cavalry charge, a shield wall for shielded infantry holding under the other side's arrows, loose
-     order for archers under them, else a line; its front toward the other army. */
+     order for archers under them, a circle for spears with riders about them on more than one side, else a line; its front toward
+     the other army. */
   // (ck: the captain's memory, for its temperament; the team's own by default)
   finish(N){const {team,ck}=this;
     const S=this.assess(),foes=S.foes;if(!foes.length)return;const M=centroid(foes),T=this.T;
@@ -843,7 +862,11 @@ class Commander{
       const held=(g.shieldWall||g.form==='loose')&&g.formAt!=null&&B.t-g.formAt<CAPT.keep;// (taken by the captain: one with no time of its own is not held)
       const wall=k==='inf'&&g.order!=='charge'&&!marching&&(shot||brace||held&&g.shieldWall)&&m.some(shieldEligible);
       if(wall&&!g.shieldWall)g.formAt=B.t;g.setFlag('shieldWall',wall);
-      const f=k==='cav'&&g.order==='charge'&&formFits(id,'wedge')?'wedge':(k==='arc'||k==='mag')&&(shot||held&&g.form==='loose')&&formFits(id,'loose')?'loose':'line';
+      // (shot at, its crossbows plant their pavises where they stand (KITS.brace; a move takes them up again))
+      if(KITS.brace&&shot&&!marching&&(g.order==='hold'||g.order==='charge'&&g.hasTarget)&&!g.posted('pavise')&&m.some(u=>STANCES.pavise.who(u)))g.plant('pavise',true);
+      // (spears with riders about them from more than one side, standing: a circle till the riders are gone, CIRCLE.ai: formations.js ringWanted)
+      const ring=CIRCLE.ai&&k==='inf'&&g.order!=='charge'&&ringWanted(id,m.filter(u=>!u.rout),foes,g.form==='circle');
+      const f=ring?'circle':k==='cav'&&g.order==='charge'&&formFits(id,'wedge')?'wedge':(k==='arc'||k==='mag')&&(shot||held&&g.form==='loose')&&formFits(id,'loose')?'loose':'line';
       if(f!==g.form&&f==='loose')g.formAt=B.t;
       // (its front: toward the foe's army; its shooters toward whom they should shoot (their mark, else the nearest in their
       // reach), turned only once he is out of their arc: the soldiers never turn themselves; on its way over a crossing, its way)

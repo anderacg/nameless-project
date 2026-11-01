@@ -82,13 +82,23 @@ class ArmyRoster extends TroopRoster{
     if(!a||!b||a===b||a.type!==b.type||a.count+b.count+this.wounded(a.id)+this.wounded(b.id)>this.groupCap(a.type))return false;if(a.horses!=null||b.horses!=null)b.horses=groupHorses(a,this.owner)+groupHorses(b,this.owner);b.count+=a.count;rankKeep(a,b);if(b.buffs)b.buffs=b.buffs.filter(x=>(a.buffs||[]).some(y=>y.id===x.id));/* (merged: only the upgrades both had) */this.owner.army.groups=gs.filter(g=>g!==a);
     for(const w of this.owner.woundedGroups||[])if(w.id===a.id){w.id=b.id;if(b.name)w.name=b.name;else delete w.name}this.changed();return true;
   }
+  /* an upgrade (the owner, 2026-11-01): it moves at most one full unit of its new kind (upgradeCount). All of it fits: the whole unit
+     converts, its ID and slot kept (under-strength when its new kind's unit is larger). More: that many go into a new unit beside it
+     (a free slot needed: upgradeSplits), the rest stay in the old one, its rank, mastery and picks kept, to refill at a barracks.
+     Returns the upgraded unit's ID (false: refused) */
+  upgradeCount(g,to){return Math.min(g.count,this.groupCap(to))}
+  upgradeSplits(g,to){return this.upgradeCount(g,to)<g.count}
   upgrade(id,to){
     const g=this.groups.find(g=>g.id===id);if(!g||!this.accepts(to)||g.type===to)return false;
-    const c=this.counts,from=g.type,n=g.count;if(!Number.isSafeInteger(this.count(to)+n))return false;
-    const carry=masteryXp(g)*RANKS.mastery.carry;rankLearn(g);/* (what it learned as what it was: core/ranks.js) */c[from]-=n;if(!c[from])delete c[from];c[to]=this.count(to)+n;g.type=to;
-    if(horseOf(to)!==horseOf(from))delete g.horses;// (a new kind's horses bought with its training, or none: core/recruitment.js horsesFor)
+    const c=this.counts,from=g.type,n=this.upgradeCount(g,to),split=n<g.count;if(!Number.isSafeInteger(this.count(to)+n)||split&&this.slots>=this.groupLimit)return false;
+    let u=g;if(split){const a=this.owner.army,R=['rank','xp','mxp','learned','keptPicks'];u={id:'g'+a.nextId++,type:from,count:n,form:'line'};
+      for(const k of R)if(g[k]!=null)u[k]=structuredClone(g[k]);if(g.picks)u.picks=g.picks.slice();if(g.buffs?.length)u.buffs=g.buffs.slice();
+      if(g.horses!=null&&horseOf(to)===horseOf(from)){u.horses=Math.min(n,g.horses);g.horses-=u.horses}// (the same horses: theirs go with them)
+      g.count-=n;a.groups.splice(a.groups.indexOf(g)+1,0,u);if(a.order?.includes(g.id))a.order.splice(a.order.indexOf(g.id)+1,0,u.id)}// (beside it)
+    const carry=masteryXp(u)*RANKS.mastery.carry;rankLearn(u);/* (what it learned as what it was: core/ranks.js) */c[from]-=n;if(!c[from])delete c[from];c[to]=this.count(to)+n;u.type=to;
+    if(horseOf(to)!==horseOf(from))delete u.horses;// (a new kind's horses bought with its training, or none: core/recruitment.js horsesFor)
     // Do not carry a cavalry-only shape or an old frontage into a different troop type.
-    g.form='line';g.files=null;rankReset(g);rankGain(g,carry);this.changed();return true;// (its mastery, part of it, its new kind's first experience: core/ranks.js)
+    u.form='line';u.files=null;rankReset(u);rankGain(u,carry);this.changed();return u.id;// (its mastery, part of it, its new kind's first experience: core/ranks.js)
   }
   restore(group,n){
     const gs=this.groups,existing=gs.find(g=>g.id===group.id);

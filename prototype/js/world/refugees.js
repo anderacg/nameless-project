@@ -11,10 +11,12 @@ class Refugees extends WorldObject{
   meet(){refugeeMeet(this)}
   inView(V){return yourSight(V).sees(this.x,this.y,1.2)}// (on the road: seen a little past your sight, woods or not)
   pick(at){at.add(this,10,4)}
-  // a few of them walking (people.js refugeeSprite: a step each WALK.foot px walked, each a little out of time), how many near you
+  // a few of them walking (people.js refugeeSprite: a step each WALK.foot px walked, each a little out of time), how many near you;
+  // (MAP_FIGS) as the battle's figures, of their people, their bundles on their backs (people.js figRefugee)
   draw(ents,cam,V){if(!this.inView(V))return;const r=this;
-    ents.push({y:r.y,f:()=>{subT(r);const sx=Math.round(r.x-cam.x),sy=Math.round(r.y-cam.y),k=Math.min(6,Math.max(3,Math.ceil(r.n/3))),go=mapStepping(r);ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-6,sy-1,12,2);
-      for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*4-4)+(i>2?-r.dir*2:0),py=sy-(i>2?2:0);const s=refugeeSprite(go?(frameOf(r,WALK.foot,WALK.n)+i*2)%WALK.n:0,i);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
+    ents.push({y:r.y,f:()=>{subT(r);const sx=Math.round(r.x-cam.x),sy=Math.round(r.y-cam.y),k=Math.min(6,Math.max(3,Math.ceil(r.n/3))),go=mapStepping(r),fig=figsOn();ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-6,sy-1,12,2);
+      for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*4-4)+(i>2?-r.dir*2:0),py=sy-(i>2?2:0),fr=go?(frameOf(r,WALK.foot,WALK.n)+i*2)%WALK.n:0;if(fig){drawFig(figRefugee(i,r.race,figPose(fr,go)),px,py,r.dir);continue}
+        const s=refugeeSprite(fr,i);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
       if(r.fromYou()<90)txt('Refugees '+r.n,sx,sy-13,r.fear?'#ff9a90':'#c8c2ae','center')}})}
   tip(){return '<b>Refugees</b><small>From '+this.from+' to '+this.to+'</small><span class="act">Click: actions · double-click: meet</span>'}
 }

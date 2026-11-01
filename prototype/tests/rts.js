@@ -54,7 +54,7 @@ try{
   ok(Array.isArray(B.sel)&&B.sel.includes(testGroup('inf'))&&B.sel.includes(testGroup('arc')),'Shift + click adds the archers to the infantry');
   t.ctrlGroup('1',true);t.selectGroup('all');t.ctrlGroup('1');ok(Array.isArray(B.sel)&&B.sel.length===2,'Ctrl+1 keeps the selection, 1 picks it again');
   const key=(k,code,o2)=>window.dispatchEvent(new KeyboardEvent('keydown',Object.assign({key:k,code},o2||{})));t.selectGroup(testGroup('inf'));
-  B.groups[testGroup('inf')].order='charge';key('h','KeyH');ok(B.groups[testGroup('inf')].order==='hold','H on the keyboard holds');{const w0=B.groups[testGroup('inf')].walk;key('r','KeyR');ok(B.groups[testGroup('inf')].walk===!w0,'R switches walking and running')}key('w','KeyW');ok(B.groups[testGroup('inf')].order==='withdraw','W withdraws');
+  B.groups[testGroup('inf')].order='charge';key('h','KeyH');ok(B.groups[testGroup('inf')].order==='hold','H on the keyboard holds');{const w0=B.groups[testGroup('inf')].walk;key('r','KeyR');ok(B.groups[testGroup('inf')].walk===!w0,'R (the Pace stance: the owner’s layout, doc/UNIT_KITS_DESIGN.md §7b) switches walking and running')}key('Backspace','Backspace');ok(B.groups[testGroup('inf')].order==='withdraw','Backspace withdraws (§7b)');
   key('7','Digit7',{ctrlKey:true});t.selectGroup('all');key('7','Digit7');ok(B.sel===testGroup('inf'),'Ctrl+7 then 7 on the keyboard');B.over=true;B.endT=0;t.B=null}
  // formations: the shape is the line you drag; the formation is how the men stand in it
  {const S=t.formSlots,ranks=sl=>new Set(sl.map(p=>Math.round(p[0]/4))).size,front=sl=>{const f=Math.max(...sl.map(q=>q[0]));return sl.filter(q=>Math.abs(q[0]-f)<1).length};
@@ -66,9 +66,10 @@ try{
  {const B=fight(['militia','militia','militia']);B.units.filter(u=>u.team===1).forEach(u=>{u.x=t.BW-30;u.cd=99;u.hp=u.max=9999;u.s={...u.s,spd:0}});
   ok([testGroup('inf'),testGroup('arc'),testGroup('cav')].every(g=>B.groups[g].form==='line')&&B.groups[testGroup('inf')].face===0&&B.groups[testGroup('e_inf')]&&B.groups[testGroup('e_inf')].face===Math.PI,'every group starts in line, facing the other side');
   const key=(k,code)=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code}));
-  t.selectGroup(testGroup('inf'));key('b','KeyB');const inf=t.grpUnits(testGroup('inf'));ok(B.groups[testGroup('inf')].shieldWall&&B.groups[testGroup('inf')].form==='line','B requests shield wall without changing positioning');
-  key('b','KeyB');ok(!B.groups[testGroup('inf')].shieldWall,'B again: shields lowered');key('l','KeyL');ok(B.groups[testGroup('inf')].form==='loose','L: loose order');key('l','KeyL');
-  key('t','KeyT');ok(B.groups[testGroup('inf')].form==='line','infantry cannot form a wedge');t.selectGroup(testGroup('arc'));t.setForm('wall');ok(B.groups[testGroup('arc')].form==='line','nor archers a shield wall');t.setOrderUI();
+  // (§7b: shield spearmen's second stance slot W, Shield wall (Q is their Brace); T the formation cycle, line, loose, a circle (foot who fight hand to hand), then column for foot (a wedge is cavalry's))
+  t.selectGroup(testGroup('inf'));key('w','KeyW');const inf=t.grpUnits(testGroup('inf'));ok(B.groups[testGroup('inf')].shieldWall&&B.groups[testGroup('inf')].form==='line','W (its stance slot) requests shield wall without changing positioning');
+  key('w','KeyW');ok(!B.groups[testGroup('inf')].shieldWall,'W again: shields lowered');key('t','KeyT');ok(B.groups[testGroup('inf')].form==='loose','T: loose order');
+  key('t','KeyT');ok(B.groups[testGroup('inf')].form==='circle','T again: a circle');key('t','KeyT');ok(B.groups[testGroup('inf')].form==='column','T again: column, infantry cannot form a wedge');key('t','KeyT');ok(B.groups[testGroup('inf')].form==='line','and back to line');t.selectGroup(testGroup('arc'));t.setForm('wall');ok(B.groups[testGroup('arc')].form==='line','nor archers a shield wall');t.setOrderUI();
   ok(document.querySelector('[data-flag="shieldWall"]').disabled&&!document.querySelector('[data-form="loose"]').disabled,'with archers selected, the shield wall button is dimmed');
   t.selectGroup('all');t.setForm('wall');ok(B.groups[testGroup('inf')].shieldWall&&!B.groups[testGroup('arc')].shieldWall,'with everyone selected, only those it suits take it');t.setForm('wall');ok(!B.groups[testGroup('inf')].shieldWall,'and again: back to line');
   t.selectGroup(testGroup('inf'));
@@ -144,7 +145,8 @@ try{
  {const B=fight(['militia']),e=B.units.find(u=>u.team===1),cav={s:{...t.ST.horse},x:e.x-14,y:e.y,team:0,run:0};
   ok(t.chargeMul(cav,e)===1,'a rider who has not run at them: no charge');cav.run=t.CHARGE.run;const full=t.chargeMul(cav,e);ok(Math.abs(full-(1+t.CHARGE.cav))<.01&&cav.run===0,'a full run: the charge hits '+Math.round((full-1)*100)+'% harder, and the run is spent');
   cav.run=t.CHARGE.run/2;const half=t.chargeMul(cav,e);ok(half>1&&half<full,'half a run, half a charge');
-  const sp=B.units.find(u=>u.team===0&&u.type==='hum_spear');cav.run=t.CHARGE.run;cav.team=1;ok(t.chargeMul(cav,sp)===1,'spearmen brace against it');
+  // (braced: the Brace stance, doc/UNIT_KITS_DESIGN.md §3; unbraced, the charge hits home)
+  const sp=B.units.find(u=>u.team===0&&u.type==='hum_spear'),sg=B.groups[sp.grp],t0=B.t;cav.run=t.CHARGE.run;cav.team=1;const loose=t.chargeMul(cav,sp);sg.plant('brace',true);B.t+=t.KITS.braceAt.set+.01;cav.run=t.CHARGE.run;ok(loose>1&&t.chargeMul(cav,sp)===1,'spearmen braced stand against it (unbraced it hits home: ×'+loose.toFixed(2)+')');sg.plant('brace',false);B.t=t0;
   const er=t.resolveOf(e);er.mor=80;cav.team=0;cav.run=t.CHARGE.run;t.chargeMul(cav,e);ok(er.mor<=80-t.CHARGE.shock*t.GROUP_RESOLVE.grit+.01&&e.mor===er.mor,'and a charge shakes the ones it hits (by its grit: GROUP_RESOLVE.grit)');
   const foot={s:{...t.ST.militia},x:e.x-12,y:e.y,team:0,run:t.CHARGE.run};ok(Math.abs(t.chargeMul(foot,e)-(1+t.CHARGE.foot))<.01,'infantry running in hit '+Math.round(t.CHARGE.foot*100)+'% harder');
   // a rider's run builds as it rides at the enemy
@@ -219,7 +221,7 @@ try{
  {const B=fight(['militia','militia']);B.units.filter(u=>u.team===1).forEach(u=>{u.cd=99;u.s={...u.s,spd:0};u.hp=u.max=9999});t.setOrderUI();
   const ap=B.units.filter(u=>u.team===0&&u.hp>0).length;ok(document.getElementById('bMine').textContent===String(ap)&&document.getElementById('bFoe').textContent==='2'&&/%/.test(document.getElementById('bPowMe').style.width),'the top bar: each side\u2019s numbers and the balance of power');
   ok(['hero',testGroup('inf'),testGroup('arc')].every(g=>document.querySelector('[data-grp="'+g+'"] img.upic')),'each unit card has its soldiers\u2019 portrait');
-  ok(document.querySelectorAll('.obtn[data-order] svg.oico').length===4&&document.querySelectorAll('.obtn[data-flag] svg.oico').length===5&&document.querySelector('.obtn[data-order="charge"] .k').textContent==='C','the orders are icon buttons with their keys');
+  ok(document.querySelectorAll('.obtn[data-order] svg.oico').length===4&&document.querySelectorAll('.obtn[data-flag] svg.oico').length===5&&document.querySelector('#bCharge .k').textContent==='G','the orders are icon buttons with their keys (Charge on G: the owner’s layout, doc/UNIT_KITS_DESIGN.md §7b)');
   t.selectGroup(testGroup('inf'));let info=document.getElementById('bInfo').textContent;ok(info.includes(t.groupName(testGroup('inf')))&&/Health \d+ \/ \d+/.test(info)&&/Morale \d+/.test(info)&&/Damage/.test(info),'the selected unit\u2019s details: health, morale, its numbers');
   t.selectGroup('all');info=document.getElementById('bInfo').textContent;ok(/All troops/.test(info)&&info.includes(t.groupName(testGroup('inf')))&&info.includes(t.groupName(testGroup('arc'))),'with everyone selected, a line for each unit');
   t.battlePause(true);ok(/Paused/.test(document.getElementById('bStatus').textContent),'the top bar says when the battle is paused');t.battlePause(false);

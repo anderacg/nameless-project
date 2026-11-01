@@ -8,12 +8,16 @@
    (the explicit attack identity), tgt (a resolved representative), ax, ay
    (where it stands), face, form, files (its formation), queue (waypoints), mvId (a move under way: actors.js relocating),
    walk, run (its pace), firm, cease, skirmish, melee (its flags: battle.js GRP_FLAGS), pace (its slowest man's speed),
-   going (its place on the move), backing (backing off from a foe), orderSeq (bumped by every order of yours: commands.js;
+   going (its place on the move), backing (backing off from a foe), still (a Cantabrian loop stopped by Hold: loop), spin (how far
+   that loop has turned), orderSeq (bumped by every order of yours: commands.js;
    not enumerable, out of snapshots), aiCmd (yours in the AI's hands, on its own: deploy.js; not enumerable either), amove (an
    attack-move under way: AMOVE; none on a group never given one). An AI keeps its own notes on it too (AI_NOTES), cleared when it
    is handed over ---------- */
-// (every FORM_SWAP.every seconds its places are shared out again, a swap made when it saves FORM_SWAP.gain px of walking)
+// (every FORM_SWAP.every seconds its places are shared out again, a new share (a swap, SLOTFILL off) taken when it saves
+// FORM_SWAP.gain px of walking)
 const FORM_SWAP={every:1,gain:6};
+// (each group's men at its last look, SLOTFILL: one fewer, its formation laid again; kept off the group, out of its snapshots)
+const FORM_FILL=new WeakMap();
 // the AI's own notes on a group (commander.js): its phase and time in it, its stand, hunt and way home, its screen and lead, a
 // recovery and a plug, a cavalry's rest, melee count, charge time and flank, a form's time, where it last stood; a beast's side,
 // nerve, lair and prey (beastmind.js)
@@ -56,10 +60,11 @@ class BattleControl{
   centre(){const m=this.units;return m.length?{x:m.reduce((a,u)=>a+u.x,0)/m.length,y:m.reduce((a,u)=>a+u.y,0)/m.length}:{x:this.ax,y:this.ay}}
   regroup(){const m=this.units;if(!m.length)return;const C=this.centre();this.ax=C.x;this.ay=C.y}
   // ---------- orders: the same for you and the AI ----------
-  // stand where they are
-  hold(){if(this.resolve?.routed)return;this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='hold'}
-  // go to (x,y) and stand there facing the move (face: an explicit facing instead); run: at a run; a move under way
-  moveTo(x,y,o){if(this.resolve?.routed)return;if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}o=o||{};this.tgt=null;this.queue=[];this.order='hold';this.run=!!o.run;moveOrder(this.id);
+  // stand where they are (a Cantabrian loop stops: still)
+  hold(){if(this.resolve?.routed)return;this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='hold';if(this.form==='cantabrian')this.still=true}
+  // go to (x,y) and stand there facing the move (face: an explicit facing instead); run: at a run (never a circle); a move under way
+  // (a Cantabrian loop: its middle moved there, riding on)
+  moveTo(x,y,o){if(this.resolve?.routed)return;if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}o=o||{};this.tgt=null;this.queue=[];this.order='hold';this.run=!!o.run&&this.form!=='circle';if(this.still)delete this.still;moveOrder(this.id);
     if(o.face!=null){this.face=o.face;if(o.files!==undefined)this.files=o.files;layForm(this.id)}else if(o.turn!==false)faceToward(this.id,x,y);
     if(o.run)breakWall(this.id);this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot())}
   // standing (its waypoints kept): from a charge or an advance, where they are
@@ -96,17 +101,17 @@ class BattleControl{
   standAt(x,y){if(this.resolve?.routed)return;const ends=this.order==='charge';if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
     if(ends||this.lax==null||Math.hypot(this.ax-this.lax,this.ay-this.lay)>CAPT.move){if(ends||this.lax!=null)moveOrder(this.id);this.lax=this.ax;this.lay=this.ay}}
   // Set on an enemy formation, accepting its control or any member. Lone ungrouped foes remain valid targets.
-  attack(e,o){if(this.resolve?.routed||!e||!battleEnemy(this.team,e))return;const prior=[this.targetGroupId,this.targetUnitId];this.tgt=e;if(!this.tgt){[this.targetGroupId,this.targetUnitId]=prior;return}o=o||{};breakWall(this.id);this.queue=[];this.order='charge';if(o.run!=null)this.run=!!o.run}
+  attack(e,o){if(this.resolve?.routed||!e||!battleEnemy(this.team,e))return;const prior=[this.targetGroupId,this.targetUnitId];this.tgt=e;if(!this.tgt){[this.targetGroupId,this.targetUnitId]=prior;return}o=o||{};breakWall(this.id);breakRing(this.id);this.queue=[];this.order='charge';if(o.run!=null)this.run=!!o.run}
   // at them all: each man at the foe nearest him
-  charge(o){if(this.resolve?.routed)return;o=o||{};breakWall(this.id);this.queue=[];this.tgt=null;this.order='charge';if(o.run!=null)this.run=!!o.run}
+  charge(o){if(this.resolve?.routed)return;o=o||{};breakWall(this.id);breakRing(this.id);this.queue=[];this.tgt=null;this.order='charge';if(o.run!=null)this.run=!!o.run}
   // walk on at the foe, in its ranks (step)
   advance(){if(this.resolve?.routed)return;if(this.order!=='advance'){this.regroup();this.order='advance';this.tgt=null}}
   // off the field by your edge, striking no one (EXITS.on: by the safest open edge, its exit chosen now: morale.js exitOf)
-  withdraw(){if(this.resolve?.routed)return;this.amEnd();if(this.order!=='withdraw'){battleEvent('withdraw',{g:this});for(const u of this.units)delete u.withdrawal;delete this.exitTo}this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='withdraw';this.ax=this.team?BW-MORALE.edge:B.exit?B.exit.x:MARCH.edge;
+  withdraw(){if(this.resolve?.routed)return;this.amEnd();breakRing(this.id);if(this.order!=='withdraw'){battleEvent('withdraw',{g:this});for(const u of this.units)delete u.withdrawal;delete this.exitTo}this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='withdraw';this.ax=this.team?BW-MORALE.edge:B.exit?B.exit.x:MARCH.edge;
     const m=this.units.filter(u=>u.hp>0);if(exitsOn()&&m.length){const X=exitOf(m[0]);this.ax=X.x;this.ay=X.y}}
-  // its pace: walk (keeping its ranks) or run; this order at a run (the AI's charges)
-  setWalk(walk){if(this.resolve?.routed)return;this.walk=!!walk;this.run=false;if(!walk)breakWall(this.id)}
-  setRun(run){if(this.resolve?.routed)return;this.run=!!run;if(run)breakWall(this.id)}
+  // its pace: walk (keeping its ranks) or run; this order at a run (the AI's charges). A circle only walks
+  setWalk(walk){if(this.resolve?.routed)return;this.walk=!!walk||this.form==='circle';this.run=false;if(!walk)breakWall(this.id)}
+  setRun(run){if(this.resolve?.routed)return;this.run=!!run&&this.form!=='circle';if(run)breakWall(this.id)}
   // `face` is the ordered/destination heading. The field's firing front catches up on simulation time.
   faceTo(angle){this.face=angle}
   // your shooters set on a foe wheel to face him when he is outside their arc (a move left them facing elsewhere): the group
@@ -116,9 +121,36 @@ class BattleControl{
   turnFacing(dt){const from=this.currentFacing==null?this.face:this.currentFacing,diff=Math.atan2(Math.sin(this.face-from),Math.cos(this.face-from)),step=Math.min(Math.abs(diff),SHOOT.turn*Math.max(0,dt));this.currentFacing=from+Math.sign(diff)*step}
   // (surprised: no time to close a shield wall: morale.js Surprise)
   setFlag(k,on){if(this.resolve?.routed||!Object.hasOwn(GRP_FLAGS,k)||on&&k==='shieldWall'&&B?.surprise?.has({grp:this.id}))return;this[k]=!!on&&this.units.some(u=>flagEligible(u,k))}
-  // a formation (formations.js), facing face, files wide
-  setForm(f,o){if(this.resolve?.routed)return;if(f==='wall'){this.setFlag('shieldWall',true);return}if(!FORMS[f])return;o=o||{};if(o.face!=null)this.face=o.face;if(o.files!==undefined)this.files=o.files;this.form=f;if(FORMS[f].wedge&&o.files===undefined)this.files=null;layForm(this.id)}
-  // its unit abilities (unitabilities.js): Brace, Fire arrows, Spur, Rally, as it has them; false when refused (cooldown, routing...)
+  // (its places shared out again (SLOTFILL, core/assign.js; m: its men not running): one kept at grips through a re-form (slotKept),
+  // his fight over, the whole formation laid again; else its free men (no character, none at grips) trade the places they hold,
+  // by the least walking, when that saves FORM_SWAP.gain px of walking in all)
+  refill(m){const foes=fillFoes(this.team);if(m.some(u=>u.slotKept&&!fillEngaged(u,foes)))return layForm(this.id);
+    const free=m.filter(u=>u.sx!=null&&!isChar(u)&&!fillEngaged(u,foes)).sort((a,b)=>a.id-b.id),n=free.length;if(n<2)return;const F=fillRoom(n);
+    free.forEach((u,i)=>{F.mx[i]=u.x;F.my[i]=u.y;F.px[i]=this.ax+u.sx;F.py[i]=this.ay+u.sy});const was=fillWalk(n,null);assignSlots(n,n);
+    if(fillWalk(n,F.out)<was-FORM_SWAP.gain){const xs=free.map(u=>u.sx),ys=free.map(u=>u.sy);free.forEach((u,i)=>{u.sx=xs[F.out[i]];u.sy=ys[F.out[i]]})}}
+  // a formation (formations.js), facing face, files wide (a circle: at a walk; a Cantabrian loop riding again, or its turn gone with it)
+  setForm(f,o){if(this.resolve?.routed)return;if(f==='wall'){this.setFlag('shieldWall',true);return}if(!FORMS[f])return;o=o||{};if(o.face!=null)this.face=o.face;if(o.files!==undefined)this.files=o.files;this.form=f;if(FORMS[f].wedge&&o.files===undefined)this.files=null;
+    if(f==='circle'){this.walk=true;this.run=false}if(this.still)delete this.still;if(f!=='cantabrian'&&this.spin!=null)delete this.spin;layForm(this.id)}
+  // (riding its Cantabrian loop: its order a stand, not stopped, no waypoints, not backing off)
+  get looping(){return this.form==='cantabrian'&&this.order==='hold'&&!this.still&&!this.queue.length&&!this.backing&&!this.resolve?.routed}
+  // (a moment of its loop (m: its men not running): its places turned round its middle, CANTABRIAN.pace of its walk along the ring,
+  // its riders keeping to them as they go (going))
+  loop(m,dt){const R=Math.max(1,...m.map(u=>Math.hypot(u.sx||0,u.sy||0))),w=CANTABRIAN.dir*CANTABRIAN.pace*this.pace*MARCH.walk/R*dt,c=Math.cos(w),s=Math.sin(w);
+    this.spin=((this.spin||0)+w)%(2*Math.PI);for(const u of this.units)if(u.sx!=null){const x=u.sx,y=u.sy;u.sx=x*c-y*s;u.sy=x*s+y*c}this.going=true}
+  /* its posts (doc/UNIT_KITS_DESIGN.md §3; data/kits.js STANCES, KITS.brace): Brace and Pavise, planted where they stand (on the move:
+     halted first). posts[id]: the move it was planted in and when it holds from (KITS.braceAt.set s to plant the spears, none with
+     Quick brace; KITS.pavise.set); any order that moves it ends it (a move, a waypoint, a charge, an advance, a withdrawal, a
+     skirmish's step back; Brace an attack too: a pavise stays planted for the foe its crossbows are set on). No timer, no cooldown.
+     Not enumerable (out of saves and snapshots) */
+  plant(id,on){if(this.resolve?.routed||on&&B?.surprise?.has({grp:this.id}))return false;if(!Object.hasOwn(this,'posts'))Object.defineProperty(this,'posts',{value:{},writable:true,configurable:true});
+    if(!on){delete this.posts[id];return true}const C=this.centre();if(this.order!=='hold'&&!(id==='pavise'&&this.hasTarget)||id==='brace'&&this.hasTarget||this.queue.length||Math.hypot(C.x-this.ax,C.y-this.ay)>MARCH.reached)this.hold();
+    this.posts[id]={mv:this.mvId,at:B.t+(id==='brace'?(rankUp(this,'brace','set')?0:KITS.braceAt.set):KITS.pavise.set)};return true}
+  // (planting or planted, still: its order unchanged since; planted: and its time to plant past)
+  posted(id){const p=this.posts&&this.posts[id];if(!p)return false;const set=id==='pavise'&&this.order==='charge'&&this.hasTarget;
+    if(this.order!=='hold'&&!set||id==='brace'&&this.hasTarget||this.mvId!==p.mv||this.queue.length||this.backing||this.resolve?.routed){delete this.posts[id];return false}return true}
+  planted(id){return this.posted(id)&&B.t>=this.posts[id].at}
+  get braced(){return this.planted('brace')}
+  // its unit abilities (unitabilities.js): Lunge, Fire arrows, Spur, Rally..., as it has them; false when refused (cooldown, routing...)
   useAbility(id){return useGroupAbility(this,id)}
   abilities(){return groupAbilities(this)}
   // ---------- its own moment ----------
@@ -127,7 +159,9 @@ class BattleControl{
     if(this.resolve?.routed){this.backing=false;this.amEnd();return}
     if(this.player&&!aiHas(this))this.aimAt();// (yours, set on a foe out of their arc: wheeled to him)
     this.turnFacing(dt);
-    const m=this.units.filter(u=>!u.rout);
+    const all=this.units,m=all.filter(u=>!u.rout);
+    // (a man of it fallen (SLOTFILL, core/assign.js): its formation laid again for those left, the rest closing the gap)
+    if(SLOTFILL.on){const f=FORM_FILL.get(this);if(f&&all.length<f.n&&all.length)layForm(this.id);if(!f)FORM_FILL.set(this,{n:all.length});else f.n=all.length}
     if(this.amove&&m.length)this.amStep(m);// (an attack-move: a foe met, or on its way: AMOVE)
     // An explicit order pursues routers/withdrawers still on the field, but never silently charges a new formation.
     if(this.hasTarget&&!this.tgt)this.hold();
@@ -138,9 +172,11 @@ class BattleControl{
     // (its way to its place round rock, cliffs and impassable water, its men following it: terrain.js groupWay)
     if(B.terrain&&B.terrain.blocky){if(this.order==='hold'||this.order==='advance')groupWay(this,m);else if(this.way)this.way=null}
     this.pace=Math.min(...m.map(u=>u.s.spd));// (walking: the slowest sets the pace)
-    // (its places shared out again now and then: two of its men who would each be nearer their places by swapping, swap; else
-    // one who must pass another to get to his can shove and be shoved forever)
-    if((this.swapT=(this.swapT||0)-dt)<=0){this.swapT=FORM_SWAP.every;const at=u=>({x:this.ax+(u.sx||0),y:this.ay+(u.sy||0)}),dd=(u,p)=>Math.hypot(u.x-p.x,u.y-p.y);
+    if(this.looping)this.loop(m,dt);// (a Cantabrian circle riding its loop)
+    // (its places shared out again now and then, else one who must pass another to get to his can shove and be shoved forever:
+    // SLOTFILL (core/assign.js), refill; off, two of its men who would each be nearer their places by swapping, swap)
+    if((this.swapT=(this.swapT||0)-dt)<=0&&SLOTFILL.on){this.swapT=FORM_SWAP.every;this.refill(m)}
+    else if(this.swapT<=0){this.swapT=FORM_SWAP.every;const at=u=>({x:this.ax+(u.sx||0),y:this.ay+(u.sy||0)}),dd=(u,p)=>Math.hypot(u.x-p.x,u.y-p.y);
       for(let i=0;i<m.length;i++)for(let j=i+1;j<m.length;j++){const a=m[i],b=m[j];if(a.hero||b.hero)continue;const pa=at(a),pb=at(b);
         if(dd(a,pb)+dd(b,pa)<dd(a,pa)+dd(b,pb)-FORM_SWAP.gain){const sx=a.sx,sy=a.sy;a.sx=b.sx;a.sy=b.sy;b.sx=sx;b.sy=sy}}}
     // the next waypoint once they are there

@@ -1,6 +1,6 @@
 'use strict';
 // The Army window (the owner's design, 2026-10-23; ui/partypage.js): C and the Menu's Army, its header the company muster (the band's
-// name once, its bars, on every tab; to read, not a link); its four tabs its top level, each its bar's Back to the Game Menu. Roster: one list of cards (your hero, companions, troop groups), each
+// name once, its bars, on every tab; to read, not a link); its five tabs its top level, each its bar's Back to the Game Menu. Roster: one list of cards (your hero, companions, troop groups), each
 // its kind's icon (crown, star, shield) and experience bar, opening its detail and its Skills. Army skills: the band's values, who
 // gives them, the roles assigned. Condition. Passengers: escorts, prisoners and captives with their actions. K opens
 // your hero's Skills inside it. Esc follows the bar; the phone layouts (844 × 390, 390 × 844); one bottom bar and one scrolling
@@ -21,7 +21,7 @@ Kit.suite(({ok})=>{
  try{
   // ---- the window: the band's name, its tabs
   open();ok(G.mode==='char'&&q('.fb-head h2').textContent==='Iron <Band>'&&!q('Band')&&q('.fb-head small').textContent==='Army','the Army window, titled with the band’s name (literal text)');
-  ok(qa('[data-act="char-tab"]').map(b=>b.textContent).join('|')==='Roster|Army skills|Condition|Passengers'&&G.char==='roster','its tabs: Roster (first), Army skills, Condition, Passengers');
+  ok(qa('[data-act="char-tab"]').map(b=>b.textContent).join('|')==='Roster|March formation|Army skills|Condition|Passengers'&&G.char==='roster','its tabs: Roster (first), March formation (its editors: tests/columnorder.js), Army skills, Condition, Passengers');
   // ---- the company muster: the window's header, on every tab
   const F=t.bandFitness(),h=q('.fb-head');
   ok(h.textContent.includes('Iron <Band>')&&h.textContent.includes(r.slots+' / '+t.ARMY_LIMIT+' groups · '+(F.fit+1)+' fit (including hero) · '+F.wounded+' wounded')&&!q('.fb-head>.muted'),'the header is the muster: the band’s name, its groups, fit and wounded');
@@ -55,23 +55,24 @@ Kit.suite(({ok})=>{
    ok(cards.every(c=>c.querySelector('.fb-unit-xp[role="meter"]')),'every card has an experience bar');
    ok(val(xp('hero'))===P.xp+'/'+t.LV_XP(P.level)&&txt('hero')==='Lv. '+P.level+' · '+P.xp+' / '+t.LV_XP(P.level)+' XP','the hero’s: experience to the next level ('+txt('hero')+')');
    ok(val(xp('comp_brann'))===brann.xp+'/'+t.LV_XP(brann.lv)&&txt('comp_brann')==='Lv. 4 · 50 / '+t.LV_XP(4)+' XP','a companion’s: its own, to its next level ('+txt('comp_brann')+')');
-   ok(val(xp(foot.id))==='10/'+t.RANKS.xp[1][1]&&txt(foot.id)==='Rank 2 · 10 / '+t.RANKS.xp[1][1],'a troop group’s: its rank and the way to the next ('+txt(foot.id)+')');
-   ok(txt(knight.id)==='Rank 5 · Gold mastery · full'&&val(xp(knight.id))==='1/1','a group at its last rank, its mastery full: gold')}
+   // (the ranks and mastery levels named, doc/UNIT_KITS_DESIGN.md §7: Recruit to Elite, Adept to Legend)
+   ok(val(xp(foot.id))==='10/'+t.RANKS.xp[1][1]&&txt(foot.id)==='Trained · rank 2 · 10 / '+t.RANKS.xp[1][1],'a troop group’s: its rank and the way to the next ('+txt(foot.id)+')');
+   ok(txt(knight.id)==='Elite · rank 5 · Legend · full'&&val(xp(knight.id))==='1/1','a group at its last rank, its mastery full: Legend ('+txt(knight.id)+')')}
   // ---- opening each kind
   t.act('party-select','hero');{const d=q('.fb-hero-detail');const c=d&&d.querySelector('.ucard-x');ok(c&&/raised on the skill tree/.test(d.innerHTML)&&/Health/.test(c.querySelector('.uc-stats').textContent)&&/To level 2/.test(c.textContent)&&/Stamina/.test(c.textContent)&&c.querySelector('[data-act="army-edit"][data-arg="hero"]'),'the hero’s card: its numbers, experience, stamina and mana, Manage; its Character tab (attributes, perks)')}
   t.act('party-select','comp_brann');{const d=q('.fb-comp-detail');ok(d&&t.compShown()&&G.compSel==='brann'&&!qa('.fb-comp-detail [data-act="party-comp-tab"]').length&&d.querySelector('[data-act="party-unit-tab"][data-arg="gear"]')&&d.querySelector('[data-act="party-unit-tab"][data-arg="role"]')&&/To level 5/.test(d.querySelector('.ucard-x').textContent),'a companion’s card: the shared card, Equipment and Role tabs, its experience to the next level');
    t.act('party-unit-tab','gear');ok(q('.fb-comp-detail [data-unit-tab="gear"] .fb-gear-rows'),'its Equipment tab');t.act('party-unit-tab','role');ok(q('.fb-comp-detail [data-unit-tab="role"]'),'its Role tab');t.act('party-unit-tab','character');
    t.act('party-comp-tab','gear');ok(q('.fb-gear-rows')&&G.compTab==='gear','its Equipment');t.act('party-comp-tab','orders');ok(q('.fb-order-buttons')&&q('[data-cp-transfer="give"]'),'its Orders');t.act('party-comp-tab','overview');
    t.act('party-role');t.act('fb-choice','guide');t.act('fb-cancel');ok(brann.role==='scout'&&q('.fb-comp-detail'),'its role page cancels back to its card')}
-  t.act('party-select',foot.id);{const d=q('.fb-inspector');ok(d&&!d.classList.contains('fb-person-detail')&&d.querySelector('.uc-strength')&&/Rank \d/.test(d.querySelector('.uc-rank').textContent)&&d.querySelector('[data-act="army-edit"]')&&!d.querySelector('[data-act="party-unit-tab"]'),'a troop group’s card: its strength, rank and Manage Group (no tabs)');
+  t.act('party-select',foot.id);{const d=q('.fb-inspector');ok(d&&!d.classList.contains('fb-person-detail')&&d.querySelector('.uc-strength')&&/[Rr]ank \d/.test(d.querySelector('.uc-rank').textContent)&&d.querySelector('[data-act="army-edit"]')&&!d.querySelector('[data-act="party-unit-tab"]'),'a troop group’s card: its strength, rank and Manage Group (no tabs)');
    t.act('army-edit',foot.id);ok(q('[data-army-editor="'+foot.id+'"]')&&!q('[data-act="army-split-exact"]')&&q('[data-act="party-merge"]'),'and Manage group (rename, order, merge; no split)');t.act('army-edit-close')}
   // ---- each card's Skills
   t.act('party-select','hero');t.act('open-skills');ok(G.mode==='skills'&&!G.skWho&&q('svg.tree')&&navBack().textContent==='Back to Army'&&navClose().textContent==='Back to map','the hero’s Skills: your tree, Back to Army');
   t.act('sk-close');ok(G.mode==='char'&&G.char==='roster'&&t.partyView().sel==='hero'&&q('.fb-hero-detail'),'and Back returns to the hero’s card');
   t.act('party-select','comp_brann');t.act('cm-tree');ok(G.mode==='skills'&&G.skWho==='brann'&&navBack().textContent==='Back to Brann','a companion’s Skills: its own tree');
   t.act('sk-close');ok(G.mode==='char'&&t.compShown()&&G.compSel==='brann','and Back returns to its card');
-  t.act('party-select',foot.id);t.act('party-path',foot.id);{const d=q('.fb-inspector').textContent;ok(t.partyView().path&&/Rank and path/.test(d)&&d.includes(t.ST[t.UP.hum_foot[0]].n)&&d.includes('Rally (Y)')&&/Traits/.test(d)&&sub(),'a troop group’s Skills: its rank and path, its battle orders and traits')}
-  t.act('party-path',foot.id);t.act('party-select',knight.id);t.act('party-path',knight.id);{const d=q('.fb-inspector').textContent;ok(d.includes('Spur (U)')&&/upgrades no further/.test(d),'a rider’s: Spur, and the top of its path')}
+  t.act('party-select',foot.id);t.act('party-path',foot.id);{const d=q('.fb-inspector').textContent;ok(t.partyView().path&&/Rank and path/.test(d)&&d.includes(t.ST[t.UP.hum_foot[0]].n)&&/Skills \(1 \/ 5\)/.test(d)&&/Z Rally/.test(d)&&/Traits/.test(d)&&sub(),'a troop group’s Skills: its rank and path, its kit (Rally in slot Z: doc/UNIT_KITS_DESIGN.md §7b) and traits')}
+  t.act('party-path',foot.id);t.act('party-select',knight.id);t.act('party-path',knight.id);{const d=q('.fb-inspector').textContent;ok(/Z Spur/.test(d)&&/upgrades no further/.test(d),'a rider’s: Spur, and the top of its path')}
   t.act('party-back');ok(!t.partyView().path&&q('.fb-inspector .ucard-x'),'Back leaves the path');
   // ---- Army skills
   P.sk.trade.lv=3;t.act('char-tab','skills');
@@ -136,7 +137,7 @@ Kit.suite(({ok})=>{
      ok(last&&last.tagName==='SUMMARY'&&last.textContent==='Condition and recovery','Condition '+at+': its last control is the Condition and recovery notes (the recruitment target moved to the Roster)');reach(sc,last,'Condition '+at);area(sc,'Condition '+at);oneBar(c,'Condition '+at);
      ok(menuBack()&&navClose().textContent==='Back to map','Condition '+at+': Back (to the Game Menu) on the left, Back to map on the right');
      esc();ok(G.mode==='esc','Condition '+at+': Esc, the Game Menu');esc();ok(G.mode==='world','Condition '+at+': and resumed')}
-    open();{const c=q('.fb-collection'),sc=c.querySelector('.fb-scroll');reach(sc,q('.fb-recruit-options'),'Roster '+at);area(sc,'Roster '+at);oneBar(c,'Roster '+at)}
+    open();{const c=q('.fb-collection'),sc=c.querySelector('.fb-scroll');reach(sc,[...sc.children].pop(),'Roster '+at);area(sc,'Roster '+at);oneBar(c,'Roster '+at)}
     t.act('party-select','hero');const hw=q('.fb-inspector').getBoundingClientRect().width;
     {const c=q('.fb-hero-detail'),sc=c.querySelector('.fb-scroll');ok(qa('.fb-hero-detail [data-act="open-skills"]').length===1&&sc.querySelector('.fb-inspector-acts [data-act="open-skills"]')&&sc.querySelector('.fb-inspector-acts [data-act="army-edit"]')&&!c.querySelector('.fb-head-acts'),'Hero '+at+': one Development button and Manage group in its content');{const el=[...sc.querySelectorAll('button,summary')].pop();el.scrollIntoView({block:'nearest'});const r=sc.getBoundingClientRect(),b=el.getBoundingClientRect(),seen=b.height>0&&b.top>=r.top-1&&b.bottom<=r.bottom+1&&inside(el);sc.scrollTop=sc.scrollHeight;ok(seen&&sc.scrollTop+sc.clientHeight>=sc.scrollHeight-1,'Hero '+at+': its last control scrolls fully into view, and so does its end')}oneBar(c,'Hero '+at);ok(sc.scrollWidth<=sc.clientWidth+1,'Hero '+at+': no horizontal overflow')}
     t.act('party-select',foot.id);ok(Math.abs(q('.fb-inspector').getBoundingClientRect().width-hw)<=1,'Hero '+at+': same inspector width as a troop group ('+Math.round(hw)+'px)');{const c=q('.fb-inspector'),sc=c.querySelector('.fb-scroll');ok(sc.querySelector('.fb-inspector-acts [data-act="army-edit"]')&&!sc.querySelector('.fb-inspector-acts [data-act="army-recruit"]')&&sc.querySelector('.fb-inspector-acts [data-act="party-path"]'),'Troops '+at+': Manage Group and Development, with no direct Reinforce action');{const el=[...sc.querySelectorAll('button,summary')].pop();el.scrollIntoView({block:'nearest'});const r=sc.getBoundingClientRect(),b=el.getBoundingClientRect(),seen=b.height>0&&b.top>=r.top-1&&b.bottom<=r.bottom+1&&inside(el);sc.scrollTop=sc.scrollHeight;ok(seen&&sc.scrollTop+sc.clientHeight>=sc.scrollHeight-1,'Troops '+at+': its last control scrolls fully into view, and so does its end')}area(sc,'Troops '+at);oneBar(c,'Troops '+at)}

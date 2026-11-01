@@ -10,7 +10,8 @@ try{
  // (moving your hero with WASD and casting with 1-0 are set aside with the manual control; in RTS command 1-9 are control groups)
  t.selectGroup(testGroup('inf'));t.ctrlGroup('2',true);t.selectGroup('all');key('keydown','/','Digit2');ok(t.B.sel===testGroup('inf'),'2 picks the selection kept under it, on a Thai layout too');t.selectGroup('hero');const s1=t.B.sel;key('keydown','ๅ','Digit1');ok(t.B.sel===s1,'an unassigned number selects its actual army card');t.selectGroup('all');
  key('keydown','D','KeyD');run(5);ok(!G.keys.d,'D no longer moves your hero');key('keyup','D','KeyD');
- key('keydown','ผ','KeyZ');ok(t.B.groups[testGroup('inf')].order==='hold','Z gives the Hold order');
+ // (H holds; Z is the skill bar's slot 1 now, the owner's layout: doc/UNIT_KITS_DESIGN.md §7b)
+ if(t.B.muster)t.B.muster.active=false;/* (formed up: orders go) */t.B.groups[testGroup('inf')].order='charge';key('keydown','้','KeyH');ok(t.B.groups[testGroup('inf')].order==='hold','H gives the Hold order on a Thai layout');
  ok(!G.keys.d&&!G.keys.w,'keys release cleanly');
  t.B.over=true;t.B.endT=0;run(2);t.act('cont');G.mode='world';G.modal=false;t.hidePanel();key('keydown','ร','KeyI');ok(G.mode==='inv','I opens the inventory on a Thai layout');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

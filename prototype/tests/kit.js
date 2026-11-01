@@ -138,6 +138,14 @@ const Kit={
     Math.random=()=>i<vals.length?vals[i++]:s();
     try{return fn()}finally{Math.random=r0}
   },
+  /* unit kits (doc/UNIT_KITS_DESIGN.md §10.2): step 2's parts, each its own switch (RANKS statsOnly, mastery5; KITS brace, traits2,
+     cap, keys2), set to on (true: all on, false: all off, or {name: on}) while fn runs, then as they were. Step 1's suites run
+     with them off: the proof that the switches give step 1 back */
+  kits(on,fn){
+    const R=T.RANKS,K=T.KITS,sw={statsOnly:R,mastery5:R,brace:K,traits2:K,cap:K,keys2:K},was={};
+    for(const [k,o] of Object.entries(sw)){was[k]=o[k];o[k]=typeof on==='object'?(on[k]??o[k]):on}
+    try{return fn()}finally{for(const [k,o] of Object.entries(sw))o[k]=was[k]}
+  },
   // Math.random seeded while fn runs
   seeded(seed,fn){
     return Kit.stub(T.seeded(seed),fn);

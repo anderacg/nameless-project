@@ -34,9 +34,11 @@ const Buffs={
     const pct=(y,v)=>v==null?v:v*(1+(m[y]||0));
     return {...s,hp:Math.round(pct('hpPct',s.hp)),dmg:pct('dmgPct',s.dmg),spd:pct('spdPct',s.spd),reach:pct('reachPct',s.reach),range:s.range?pct('rangePct',s.range):s.range,cd:pct('cdPct',s.cd),
       ...(m.armor?{av:Math.max(0,Math.min(100,armorValue(s)+m.armor))}:{}),...(m.morale?{morale:unitMoraleOf(s)+m.morale}:{})}},
+  // the skills its upgrades teach a kind k (list: [{id}]; data/buffs.js skill: battle/unitkit.js UnitKit's slots), each once, in the order bought
+  skills(list,k,s=ST[k]){return [...new Set((list||[]).map(x=>BUFFS[x.id]).filter(b=>b?.skill&&this.fits(b,k,s)).map(b=>b.skill))]},
   // (a buff's changes in words)
   text(b){const M=b.mods||{},L={hpPct:'health',dmgPct:'damage',spdPct:'speed',reachPct:'reach',rangePct:'range',cdPct:'swing and shot time'},p=v=>(v>0?'+':'')+Math.round(v*100)+'%';
-    return [...Object.keys(L).filter(x=>M[x]).map(x=>p(M[x])+' '+L[x]),M.armor&&(M.armor>0?'+':'')+M.armor+' armour',M.morale&&(M.morale>0?'+':'')+M.morale+' morale'].filter(Boolean).join(', ')}};
+    return [...Object.keys(L).filter(x=>M[x]).map(x=>p(M[x])+' '+L[x]),M.armor&&(M.armor>0?'+':'')+M.armor+' armour',M.morale&&(M.morale>0?'+':'')+M.morale+' morale',b.skill&&UNIT_SKILLS[b.skill]&&'the skill '+UNIT_SKILLS[b.skill].n].filter(Boolean).join(', ')}};
 // each of your soldiers in battle, once (battle.js battleStep, after his rank's): his group's upgrades; your hero's and a companion's their own
 const BUFFED=new WeakSet();
 function buffUnit(u){if(BUFFED.has(u))return;BUFFED.add(u);if(u.team!==0)return;const g=B.groups[u.grp];if(!g?.player&&!u.hero)return;

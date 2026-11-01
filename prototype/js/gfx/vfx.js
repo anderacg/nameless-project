@@ -139,12 +139,15 @@ function drawStuck(u,x,y){if(!u.stuckA||!u.stuckA.length)return;for(const s of u
   ctx.save();ctx.translate(x+dx,y+s.dy);ctx.rotate(a);ctx.globalAlpha=Math.min(1,(5-age)/1.5);ctx.fillStyle='#6a4a2a';ctx.fillRect(-3,0,3,1);ctx.fillStyle='#f2efe6';ctx.fillRect(-4,-1,1,1);ctx.fillRect(-4,1,1,1);ctx.restore()}}
 /* ---------- D: the skills, each its own: helpers ---------- */
 function vfxRing(x,y,r,col,life){vfx({k:'shock',x,y,r,life:life||.45,col,area:true})}
-function vfxBurst(x,y,n,col,v0,v1,k,up){for(let i=0;i<n;i++){const b=rnd(0,6.283),v=rnd(v0,v1);vfx({k:k||'ember',x,y,vx:Math.cos(b)*v,vy:Math.sin(b)*v*(k==='spark'?.6:1)-(up||0),life:rnd(.3,.7),col})}}
+// (fire: a fire's embers, coloured as they cool: marked so (fire.js fireMark), each vfx itself as it was)
+function vfxBurst(x,y,n,col,v0,v1,k,up,fire){for(let i=0;i<n;i++){const b=rnd(0,6.283),v=rnd(v0,v1),p=vfx({k:k||'ember',x,y,vx:Math.cos(b)*v,vy:Math.sin(b)*v*(k==='spark'?.6:1)-(up||0),life:rnd(.3,.7),col});if(fire)fireMark(p)}}
 function vfxCracks(x,y,n,len){for(let i=0;i<n;i++){const a=i/n*6.283+rnd(-.3,.3);vfx({k:'crack',x,y,a,len:len*rnd(.6,1.1),br:rnd(-.6,.6),life:rnd(1.2,1.8)})}}
 function vfxSmoke(x,y,n){for(let i=0;i<n;i++)vfx({k:'dust',x:x+rnd(-6,6),y:y+rnd(-4,2),vx:rnd(-8,8),vy:rnd(-22,-10),r:rnd(3,5),grow:10,life:rnd(.7,1.1),col:'120,116,110'})}
 function vfxGhost(u){const sp=actorSprite(u,0,true);vfx({k:'ghost',x:u.x,y:u.y-(u.z||0),face:u.face||1,sp,life:.22,col:sideCol(u,'say')})}
-// a spell's explosion: a flash, a ring of fire, embers and smoke
-function vfxExplode(x,y,r,col){vfx({k:'glow',x,y,r:r*1.1,area:true,life:.3,col:col||'#ffb050'});vfxRing(x,y+4,r,'255,150,70',.4);vfxBurst(x,y,16,'#ffd070',40,130,'ember',30);vfxBurst(x,y,6,'#ff7a30',20,70,'spark');vfxSmoke(x,y,5);shakeIt(3)}
+// a spell's explosion: a flash, a ring of fire, embers and smoke; as fire burns (FLAMES.on), its embers cooling from yellow to red
+// and a blaze left a moment where it burst (fire.js fireBlazeAt: drawn only, off the battle's own effects; the same draws of
+// Math.random either way)
+function vfxExplode(x,y,r,col){vfx({k:'glow',x,y,r:r*1.1,area:true,life:.3,col:col||'#ffb050'});vfxRing(x,y+4,r,'255,150,70',.4);vfxBurst(x,y,16,'#ffd070',40,130,'ember',30,FLAMES.on);if(FLAMES.on)fireBlazeAt(x,y);vfxBurst(x,y,6,'#ff7a30',20,70,'spark');vfxSmoke(x,y,5);shakeIt(3)}
 // each moment: they move, slow, fall, fade (blood that lands leaves a stain that fades)
 function vfxStep(dt){
   const L=B&&B.vfx;if(!L)return;
@@ -169,13 +172,14 @@ function vfxGround(){
     else if(p.k==='shock'){const q=1-a;ctx.strokeStyle='rgba('+p.col+','+(a*.8).toFixed(2)+')';ctx.lineWidth=(2+2*a)*(p.area?k:1);ctx.beginPath();ctx.ellipse(p.x,p.y,p.r*(.3+.9*q),p.r*(.3+.9*q)*.45,0,0,6.283);ctx.stroke()}
     else if(p.k==='dust'){ctx.fillStyle='rgba('+p.col+','+(a*.45).toFixed(2)+')';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill()}ctx.restore()}}
 // the air layer: over the fighters, glowing
+// (first the fire arrows in flight, burning (fire.js fireArrows), and a blaze left where a spell burst, drawn as they are, not added)
 function vfxAir(){
-  const L=B&&B.vfx;if(!L)return;
+  fireArrows();fireBlazes();const L=B&&B.vfx;if(!L)return;
   for(const p of L)if(p.k==='blood'){ctx.save();effectTransform(p.x,p.y);ctx.fillStyle='#c03232';ctx.fillRect(Math.round(p.x),Math.round(p.y-p.z),1,1);ctx.restore()}
   ctx.save();ctx.globalCompositeOperation='lighter';
   for(const p of L){const a=vfxA(p),k=worldEffectScale();ctx.save();if(p.k!=='swirl'&&!p.area)effectTransform(p.x,p.y,k);
     if(p.k==='spark'){ctx.strokeStyle=p.col;ctx.globalAlpha=a;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*.05,p.y-p.vy*.05);ctx.stroke()}
-    else if(p.k==='ember'){ctx.fillStyle=p.col;ctx.globalAlpha=a*(Math.random()<.2?.4:1);ctx.fillRect(Math.round(p.x),Math.round(p.y),1+(a>.6),1+(a>.6))}
+    else if(p.k==='ember'){ctx.fillStyle=FLAMES.on&&FIRE_EMBERS.has(p)?fireAge(a):p.col;ctx.globalAlpha=a*(Math.random()<.2?.4:1);ctx.fillRect(Math.round(p.x),Math.round(p.y),1+(a>.6),1+(a>.6))}
     else if(p.k==='swirl'){ctx.lineWidth=2*k;for(let k=0;k<3;k++){const b=p.a+k*2.094;ctx.strokeStyle=k?p.col:'#ffffff';ctx.globalAlpha=a*(k?.6:.9);ctx.beginPath();ctx.arc(p.x,p.y,p.r*(.7+.3*(1-a)),b,b+1.1);ctx.stroke()}}
     else if(p.k==='ghost'){ctx.globalAlpha=a*.5;ctx.save();ctx.translate(Math.round(p.x),Math.round(p.y));if(p.face<0)ctx.scale(-1,1);ctx.drawImage(whiteOf(p.sp),-Math.floor(p.sp.width/2),-p.sp.height+2);ctx.restore()}
     else if(p.k==='glow'){const r=p.r*(1.2-.4*a),g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);g.addColorStop(0,p.col);g.addColorStop(1,'rgba(0,0,0,0)');ctx.globalAlpha=a;ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,r,0,6.283);ctx.fill()}ctx.restore()}

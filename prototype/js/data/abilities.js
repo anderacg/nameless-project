@@ -4,7 +4,7 @@
    skill tree (learn: its node) and puts it in a slot (characters.js). melee: not for a fighter with a bow; needs: 'bow' (and arrows); magic: spell power makes it stronger.
    kind 'trait': what a unit is, always on: a troop's by its kind (has: from its numbers and tags), a monster's by its ability.
    d: what it does (a function where it reads the game's numbers). ---------- */
-const ABILITIES={
+const HERO_SKILLS={
   whirl:{kind:'active',n:'Whirlwind',learn:'might1',melee:true,cd:6,mp:15,sp:20,d:'Spin and hit every enemy around you for 1.3× damage.'},
   leap:{kind:'active',n:'Leap Slam',learn:'mighta0',melee:true,cd:9,mp:20,sp:25,d:'Leap onto a knot of enemies and stun every one where you land.'},
   quake:{kind:'active',n:'Earthquake',learn:'mightc0',cd:12,mp:20,sp:20,d:'Slam the ground: hurt and stagger every enemy around you.'},
@@ -14,9 +14,17 @@ const ABILITIES={
   nova:{kind:'active',n:'Frost Nova',learn:'arcanac2',cd:14,mp:25,sp:0,magic:true,d:'A freezing burst: hurts and slows every enemy around you.'},
   heal:{kind:'active',n:'Healing Light',learn:'arcanad0',cd:20,mp:30,sp:0,magic:true,d:'Mend 30% of your health, and 20% of your nearby troops’.'},
   cry:{kind:'active',n:'War Cry',learn:'commanda0',cd:18,mp:30,sp:0,d:'Nearby troops hit 30% harder and move 25% faster for 6 seconds. Nearby enemies flinch.'},
-  banner:{kind:'active',n:'War Banner',learn:'commandc0',cd:24,mp:20,sp:10,d:'Plant your banner: troops near it take 25% less damage for 8 seconds.'},
+  banner:{kind:'active',n:'War Banner',learn:'commandc0',cd:24,mp:20,sp:10,d:'Plant your banner: troops near it take 25% less damage for 8 seconds.'}};
+/* the traits (doc/UNIT_KITS_DESIGN.md §4): what a unit is, always on, several a unit: a troop's by its kind (has: from its numbers
+   and tags), a monster's by its ability; first on its unit card (battle/unitkit.js UnitKit traits). A troop type may add or take
+   one away (ST[type].traits: an id, or '-' and an id). Anti-cavalry and Anti-large (§4, KITS.traits2): mul, against riders and
+   against the big (data/matchups.js matchup); Anti-large's from tier (pikes and spear-armed veterans). The braced front is the
+   Brace stance's with KITS.brace (data/kits.js STANCES) */
+const TRAITS={
   // traits: troops'
-  brace:{kind:'trait',n:'Set spears',has:s=>unitClass(s)==='spear',d:'Braced against a charge on its front: riders who hit it there get no charge bonus and no shock. Its thrusts carry on into the enemy behind for half damage.'},
+  antiCav:{kind:'trait',n:'Anti-cavalry',mul:1.6,has:s=>KITS.traits2&&unitClass(s)==='spear',d:()=>'×'+TRAITS.antiCav.mul+' damage against mounted units.'},
+  antiLarge:{kind:'trait',n:'Anti-large',mul:1.4,tier:2,has:s=>KITS.traits2&&unitClass(s)==='spear'&&(s.tier||1)>=TRAITS.antiLarge.tier,d:()=>'×'+TRAITS.antiLarge.mul+' damage against large beasts.'},
+  brace:{kind:'trait',n:'Braced front',has:s=>!KITS.brace&&unitClass(s)==='spear',d:'Braced against a charge on its front: riders who hit it there get no charge bonus and no shock. Its thrusts carry on into the enemy behind for half damage.'},
   charge:{kind:'trait',n:'Cavalry charge',has:s=>unitClass(s)==='cav',d:()=>'Its first blow after a full run hits '+Math.round(CHARGE.cav*100)+'% harder, knocks the one it hits back and shakes their morale.'},
   runcharge:{kind:'trait',n:'Running charge',has:s=>unitClass(s)==='foot'&&!s.range,d:()=>'Running in, its first blow hits up to '+Math.round(CHARGE.foot*100)+'% harder.'},
   shield:{kind:'trait',n:'Shield',has:s=>tagsOf(s).includes('shield')&&!s.mounted,d:'Takes 30% less from arrows, bolts and javelins that hit it from the front (not from spells).'},
@@ -39,6 +47,8 @@ const ABILITIES={
   regen:{kind:'trait',n:'Regenerate',has:s=>s.ability==='regen',d:'Regenerates 4 health per second.'},
   huge:{kind:'trait',n:'Huge',has:s=>!!s.big,d:'Takes up more room and ignores battleground rules.'}
 };
+// (the old name: the characters' skills and the traits, one list)
+const ABILITIES={...HERO_SKILLS,...TRAITS};
 const abilityText=(id,s)=>{const d=ABILITIES[id].d;return typeof d==='function'?d(s):d};
 // a unit's traits (by its numbers)
-const traitsOf=s=>Object.keys(ABILITIES).filter(id=>ABILITIES[id].kind==='trait'&&ABILITIES[id].has(s));
+const traitsOf=s=>{const x=s.traits||[];return [...Object.keys(TRAITS).filter(id=>TRAITS[id].has(s)&&!x.includes('-'+id)),...x.filter(id=>TRAITS[id]&&!TRAITS[id].has(s))]};

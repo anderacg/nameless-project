@@ -17,17 +17,18 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  // a charger set beside tg on one side (of tg facing east), at full momentum unless told
  const at=(a,tg,side,run=C.run)=>{a.x=tg.x+(side==='rear'?-12:side==='flank'?0:12);a.y=tg.y+(side==='flank'?12:0);a.run=run;a.sta=100;return a};
 
- // 1. spearmen brace only against a charge on their front, and only while they fight
+ // 1. spearmen brace only when told (the Brace stance, doc/UNIT_KITS_DESIGN.md §3): then front and flanks, never the rear; and only while they fight
  {let f=start([{type:'hum_spear',count:8}],[{type:'hum_knight',count:3}]);const sp=f.mine[0],kn=f.foes[0].units[0],tg=sp.units[0];
+  const loose=t.chargeMul(at(kn,tg,'front'),tg);t.braceUse(sp);t.B.t+=t.KITS.braceAt.set+.01;
   const front=t.chargeMul(at(kn,tg,'front'),tg),rear=t.chargeMul(at(kn,tg,'rear'),tg),flank=t.chargeMul(at(kn,tg,'flank'),tg);
-  ok(front===1&&rear>1.5&&flank>1.5&&t.sideOf(tg,at(kn,tg,'rear'))==='rear','a rider charging spearmen in the rear or flank hits home; only their front braces (front '+f2(front)+', flank '+f2(flank)+', rear '+f2(rear)+')');
+  ok(loose>1.5&&front===1&&flank===1&&rear>1.5&&t.sideOf(tg,at(kn,tg,'rear'))==='rear','unbraced spearmen take a charge home ('+f2(loose)+'); braced, their front and flanks no bonus, the rear still (front '+f2(front)+', flank '+f2(flank)+', rear '+f2(rear)+')');
   sp.withdraw();const wd=t.chargeMul(at(kn,tg,'front'),tg);
   f=start([{type:'hum_spear',count:8}],[{type:'hum_knight',count:3}]);const sp2=f.mine[0],kn2=f.foes[0].units[0],tg2=sp2.units[0];sp2.resolve.route();const rt=t.chargeMul(at(kn2,tg2,'front'),tg2);
   ok(wd>1.5&&rt>1.5,'withdrawing or routing spearmen brace against nothing (withdrawing '+f2(wd)+', routing '+f2(rt)+')')}
 
  // 2. Brace: the flanks too, no extra damage cut on top, and a shield wall does not make a charge softer than a blow walked in
  {const hit=(braced,side,run,wall)=>{const f=start([{type:'hum_spear',count:10}],[{type:'hum_knight',count:3}]),g=f.mine[0],tg=g.units[2];
-   if(wall){g.setWalk(true);g.setFlag('shieldWall',true)}if(braced)g.useAbility('brace');tg.hp=tg.max=999;const kn=at(f.foes[0].units[0],tg,side,run);
+   if(wall){g.setWalk(true);g.setFlag('shieldWall',true)}if(braced){t.braceUse(g);t.B.t+=t.KITS.braceAt.set+.01}/* (Brace, a stance: doc/UNIT_KITS_DESIGN.md §3) */tg.hp=tg.max=999;const kn=at(f.foes[0].units[0],tg,side,run);
    const m=t.chargeMul({...kn,s:kn.s},tg),wallOn=t.shieldWallActive(tg);at(kn,tg,side,run);seeded(31,()=>t.attack(kn,tg));return{d:999-tg.hp,m,wallOn}};
   const bf=hit(true,'flank',C.run),wf=hit(true,'flank',0),uf=hit(false,'flank',C.run),br=hit(true,'rear',C.run),wr=hit(true,'rear',0);
   ok(bf.m===1&&bf.d===wf.d&&uf.d>wf.d*1.5,'braced spearmen take a flank charge as a blow walked in, as on their front ('+bf.d+' against '+wf.d+'; unbraced '+uf.d+')');
@@ -75,7 +76,9 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  {const f=start([{type:'hum_foot',count:10}]),g=f.mine[0],r=g.resolve;L.step(5);const top=r.ceiling();g.useAbility('rally');const m0=r.mor;
   const t0=t.B.t;stepFor(5);const m5=r.mor,dt5=t.B.t-t0;stepFor(40);
   ok(m0>top+5&&m5<m0-3&&m5>top,'a Rally above the ceiling fades slowly ('+f2(m0)+' -> '+f2(m5)+' in '+dt5.toFixed(1)+' combat s, ceiling '+f2(top)+')');
-  ok(Math.abs(r.mor-r.ceiling())<.01,'and settles at the ceiling ('+f2(r.mor)+')')}
+  // (no longer above it, and at it or just under: the two sides fight meanwhile, a kill's confidence raising the ceiling as the men
+  // reach it (morale.js ceiling, CONFIDENCE), so when a kill comes, which the ground and the paths move, decides how near)
+  ok(r.mor<=r.ceiling()+.01&&r.mor>=r.ceiling()-1,'and settles at the ceiling, not above it ('+f2(r.mor)+', ceiling '+f2(r.ceiling())+', at the rally '+f2(top)+')')}
 
  // 9. a run too short to count as a charge costs no charge stamina
  {const f=start([{type:'hum_foot',count:4}],[{type:'hum_foot',count:4}]),u=f.mine[0].units[0],e=f.foes[0].units[0];at(u,e,'front',C.run*(C.min+C.foot_min)/2);

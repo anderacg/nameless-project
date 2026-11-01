@@ -19,7 +19,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  let f=start([{type:'hero',count:1},{type:'hum_foot',count:8}],[{type:'hum_foot',count:6}],{powers:undefined},[[0,0],[0,-80]]);
  ok(!t.powersOn()&&t.powerWhyNot(0,'stand')==='Commander powers are off'&&!t.usePower(0,'stand'),'off (COMMAND_POWERS.on false, no lab key): no power ('+t.powerWhyNot(0,'stand')+')');
  t.bhudPowers();{const c=document.getElementById('bCmd');ok(c&&!c.hidden&&[...c.querySelectorAll('[data-power]')].every(b=>b.hidden)&&c.querySelector('#bAuto')&&!c.querySelector('#bAuto').hidden,'and the commander bar shows only the AI button (yours, no power)')}
- {const key=k=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code:'Key'+k.toUpperCase(),bubbles:true}));key('s');key('z');
+ {const key=k=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code:'Key'+k.toUpperCase(),bubbles:true}));key('u');key('y');
   L.step(60);ok(!f.b.cmdp&&f.b.cpT===undefined&&f.ms[1].resolve.standUntil===undefined,'its keys do nothing and the AI’s think touches nothing (no B.cmdp, no timer)')}
  f=start([{type:'hero',count:1},{type:'hum_foot',count:8}],[{type:'hum_foot',count:6}],{powers:false});ok(!t.powersOn()&&!t.usePower(0,'stand'),'the lab’s powers:false turns them off as well');
  // ---- the commander, the radius and the cooldowns by Leadership
@@ -91,25 +91,25 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  // ---- the commander bar, its keys, the radius on the field
  f=start([{type:'hero',count:1},{type:'hum_foot',count:8},{type:'hum_foot',count:8}],[{type:'hum_foot',count:6}],{},[[0,0],[0,-90],[0,90]]);b=f.b;b.cmdLead={0:0};
  t.bhudPowers();let bar=document.getElementById('bCmd');const btn=id=>bar.querySelector('[data-power="'+id+'"]');
- ok(bar&&!bar.hidden&&['rally','stand'].every(id=>btn(id))&&btn('rally').querySelector('.k').textContent==='Z'&&btn('stand').querySelector('.k').textContent==='S','the commander bar: Rally the Line (Z), Stand Fast! (S)');
+ ok(bar&&!bar.hidden&&['rally','stand'].every(id=>btn(id))&&btn('rally').querySelector('.k').textContent==='Y'&&btn('stand').querySelector('.k').textContent==='U','the commander bar: Rally the Line (Y, the owner’s layout, doc/UNIT_KITS_DESIGN.md §7b: Z, X, C are the skill bar\'s), Stand Fast! (U)');
  ok(!btn('scout')&&[...bar.querySelectorAll('[data-power]')].map(x=>x.dataset.power).join()==='rally,stand'&&bar.querySelector('#bAuto')&&!('scout' in CP)&&t.POWER_ORDER.join()==='rally,stand'&&!/scout/i.test(bar.getAttribute('aria-label')),'no Scout on it (the commander’s Scout is gone, the owner 2026-10-20): Rally, Stand Fast! and the AI button');
  ok(bar.className==='cmdbar'&&!bar.closest('.borders')&&btn('stand').classList.contains('cbtn')&&!btn('stand').classList.contains('obtn'),'apart from the order bar and its unit abilities, a style of its own');
  ok(/Stand Fast!/.test(btn('stand').title)&&/Cooldown 45 s/.test(btn('stand').title)&&/within range/.test(btn('stand').title)&&/radius 220 px/.test(btn('stand').title),'its tooltip: name, effect, cooldown, radius, “needs the units within range”');
  ok(btn('rally').classList.contains('off')&&btn('rally').getAttribute('aria-disabled')==='true'&&/Unavailable: No routing or wavering/.test(btn('rally').title),'Rally dimmed with its reason while no one routs or wavers');
  const key=k=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code:'Key'+k.toUpperCase(),bubbles:true}));
- G.mode='battle';key('s');ok(b.cmdp&&b.cmdp[0].stand&&R(f.ms[1]).standing(),'the S key calls Stand Fast!');
+ G.mode='battle';key('u');ok(b.cmdp&&b.cmdp[0].stand&&R(f.ms[1]).standing(),'the U key calls Stand Fast! (§7b)');
  t.bhudPowers();ok(btn('stand').classList.contains('on')&&btn('stand').querySelector('.ct').textContent==='45'&&parseFloat(btn('stand').querySelector('.ccd').style.getPropertyValue('--cd'))>350,'lit while on, its cooldown sweep full and the seconds shown ('+btn('stand').querySelector('.ct').textContent+')');
  L.step(120);t.bhudPowers();const sw=parseFloat(btn('stand').querySelector('.ccd').style.getPropertyValue('--cd'));ok(sw<360&&sw>300,'the sweep empties as the cooldown runs ('+sw+'°)');
  R(f.ms[2]).route();btn('rally').dispatchEvent(new MouseEvent('click',{bubbles:true}));ok(b.cmdp[0].rally&&!R(f.ms[2]).routed,'a click (or tap) on Rally the Line rallies');
- const cs=t.KEYS.find(k=>k[0]==='Battle')[1].find(k=>k[0]==='Z S');ok(cs&&/Rally the Line/.test(cs[1])&&/Stand Fast!/.test(cs[1])&&!/Scout/.test(cs[1]),'the controls list has them (Z S), no Scout');
+ const cs=t.KEYS.find(k=>k[0]==='Battle')[1].find(k=>k[0]==='Y U');ok(cs&&/Rally the Line/.test(cs[1])&&/Stand Fast!/.test(cs[1])&&!/Scout/.test(cs[1]),'the controls list has them (Y U), no Scout');
  btn('stand').dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));ok(b.cmdHov==='stand','pointing at a power arms its radius on the field');
  {let arcs=0;const c=t.ctx,a0=c.arc;c.arc=function(){arcs++;return a0.apply(this,arguments)};try{t.drawCommandPowers()}finally{c.arc=a0}ok(arcs>=1,'which is drawn round your commander ('+arcs+' arc)')}
  bar.dispatchEvent(new PointerEvent('pointerleave'));ok(b.cmdHov===null,'and goes when the pointer leaves');
  // ---- no order: a character's fall-back goes on, Auto stays as it is
  {const h=b.hero,S=t.charState(h),hgr=b.groups[h.grp];b.t+=CP.stand.cd+1;S.fallBack={at:b.t,x:h.x-40,y:h.y,ord:t.ordKey(hgr)};const seq=Object.values(b.groups).map(g=>g.orderSeq|0).join();
-  key('s');t.fallLook(h,S);
+  key('u');t.fallLook(h,S);
   ok(b.cmdp[0].stand.at===b.t&&S.fallBack&&Object.values(b.groups).map(g=>g.orderSeq|0).join()===seq,'a power is no order: no group’s order count moves, your hero’s fall-back goes on');
-  b.t+=CP.rally.cd+1;b.auto=true;R(f.ms[1]).route();key('z');ok(b.cmdp[0].rally.at===b.t&&b.auto,'nor does it take command back from Auto');b.auto=false;
+  b.t+=CP.rally.cd+1;b.auto=true;R(f.ms[1]).route();key('y');ok(b.cmdp[0].rally.at===b.t&&b.auto,'nor does it take command back from Auto (Y: Rally the Line, the owner’s layout, doc/UNIT_KITS_DESIGN.md §7b)');b.auto=false;
   S.fallBack={at:b.t,x:h.x-40,y:h.y,ord:t.ordKey(hgr)};t.selectGroup(h.grp);t.toggleFlag('firm');t.fallLook(h,S);ok(!S.fallBack,'(while a flag to the hero’s group ends it, as ever)')}
  // ---- no Scout in the fog either: no power sees through it, the AI's commander uses none, the fog stays over the enemy
  {const r=start([{type:'hero',count:1},{type:'hum_foot',count:8}],[{type:'brann',count:1},{type:'hum_foot',count:8}],{fog:true,deploy:true},[[0,0],[0,-60]],[[0,0],[0,-60]]);b=r.b;b.cmdLead={0:0,1:0};t.sightStep(true);

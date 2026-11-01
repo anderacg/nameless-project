@@ -3,7 +3,9 @@
 // RANKS.prof, RANKS.mastery; the owner, 2026-10-30: "each rank should also increase unit proficiency a bit", "1% per rank"; "the
 // bronze, silver, gold badge means mastery: once your xp is at max and you do not or cannot upgrade, you gain mastery xp"; each
 // mastery "may select which skill to improve"; upgraded, "reset, but converted to exp for the new unit").
-Kit.suite(({ok})=>{
+// Step 1's rules: run with unit kits step 2's switches off (Kit.kits(false): doc/UNIT_KITS_DESIGN.md §10.2), the proof they give
+// step 1 back; step 2's rules (ranks give stats only, the five mastery levels, Brace a stance, Lunge...): tests/kits2.js.
+Kit.suite(({ok})=>Kit.kits(false,()=>{
  const t=T,P=t.P,G=t.G,R=t.RANKS,M=R.mastery;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:0});P.sk.lead.lv=10;const r=t.partyRoster(P);P.troops={};
  const grp=(k,n)=>{r.add(k,n,'new');return r.groups.filter(x=>x.type===k).pop()},full=k=>R.xp[t.ST[k].tier].reduce((a,b)=>a+b,0);
  // ======== mastery: the last rank's experience
@@ -15,7 +17,7 @@ Kit.suite(({ok})=>{
  Kit.world();t.openChar();t.act('party-select',sp.id);t.act('party-path',sp.id);
  {const btns=[...document.querySelectorAll('[data-act="party-master"]')].map(b=>b.dataset.arg.split(':')[1]);ok(btns.join()==='brace,reach,rally,drill','its choices: its reached skills that improve (Brace, Long reach, Rally) and a drill ('+btns.join(', ')+')')}
  t.act('party-master',sp.id+':reach');t.act('party-master',sp.id+':brace');t.act('party-master',sp.id+':hedge');t.act('party-master',sp.id+':drill');
- ok((sp.picks||[]).join()==='reach,brace,drill'&&t.masteryPending(sp)===0,'three picked (Long reach, Brace, a drill); the Hedge of spears (it does not improve) refused');t.act('char-close');
+ ok((sp.picks||[]).join()==='reach,brace,drill'&&t.masteryPending(sp)===0,'three picked (Long reach, Brace, a drill); Braced flanks (it does not improve) refused');t.act('char-close');
  // ======== proficiency, and the picks, in battle
  const sp1=grp('hum_spear',5),bw=grp('hum_bow',5);t.rankGain(bw,R.xp[1][0]+R.xp[1][1]);ok(t.rankOf(bw)===3&&Math.abs(t.rankProf(bw)-2*R.prof)<1e-9&&Math.abs(t.rankProf(sp)-5*R.prof)<1e-9,'proficiency: '+R.prof*100+'% a rank above the first (rank 3: 2%), and a drill one more (the spearmen: 5%)');
  {Kit.world({encCool:0});const foe=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x+30,y:P.y,cool:0});t.bandits.length=0;t.bandits.push(foe);
@@ -32,4 +34,4 @@ Kit.suite(({ok})=>{
   ok(t.recruitment.trainGroup((P.gold=Math.max(P.gold,1e5),t.townBy('Ashford')),ft.id,to).ok,'it upgrades');const up=r.groups.find(g=>g.id===ft.id),ref={type:to};t.rankGain(ref,x);
   ok(up.type===to&&t.rankOf(up)===t.rankOf(ref)&&t.rankXp(up)===t.rankXp(ref)&&!t.masteryOf(up)&&!(up.picks||[]).length,'into '+t.ST[to].n+': its mastery gone, '+M.carry*100+'% of its experience ('+x+') its new ranks (rank '+t.rankOf(up)+')')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
-});
+}));

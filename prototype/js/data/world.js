@@ -46,6 +46,16 @@ const WORLD_SCALE={
   battle:{elfR:10,bridge:2}
 };
 const moveStep=(px,d,travel=true)=>px*d*WORLD_SCALE.move*(travel?WORLD_SCALE.travel:1);
+/* sight by kind (the owner, 2026-11-01: "Every unit spots now and has its vision range, so the army should depend on all units'
+   capabilities"): each man's share of a character's sight, the one table for the map (fog.js Sight: your army's eyes, and every
+   army's eyes for a threat on the march, marchstyles.js TravelStyle) and for battle (battlefog.js fogRange: FOG.char px times it,
+   rounded: 220, 260, 300). The most of those that fit him: a rider's, a shooter's, else a man on foot's; a character's char. A scout
+   (data/units.js SCOUT_KINDS, isScout: light horse, rangers, hunters; a new scout unit needs only its kind there) sees scout times
+   his kind's. In battle Scout ahead (unitabilities.js) still multiplies it while on */
+const SIGHT_KIND={char:1,foot:.786,shoot:.929,mounted:1.071,scout:1.6};
+// (kind k's share (s: its stats, ST[k] unless given: a battle's soldier carries his own); the farthest any kind sees)
+function sightShare(k,s=ST[k]){const S=SIGHT_KIND;if(!s)return S.char;let r=S.foot;if(s.range&&S.shoot>r)r=S.shoot;if(s.mounted&&S.mounted>r)r=S.mounted;return isScout(k)?r*S.scout:r}
+const sightMost=()=>{const S=SIGHT_KIND;return Math.max(S.char,S.foot,S.shoot,S.mounted)*S.scout};
 /* how many of each wild thing a world holds (doc/WORLD_DESIGN.md §10.6). classic: the base caps and starting counts (the old
    hand-made map's, the measure every world grows from); sites by kind (sites.js SITE_TYPES), camps by the map's spots; daily: the
    tries a day to bring bands, beasts and game back.

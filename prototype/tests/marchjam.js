@@ -23,4 +23,5 @@ Kit.suite(({ok,info})=>{
  const foot={hum_levy:45},riders={hum_levy:30,hum_knight:12};
  for(const [name,wall,gap] of [['a ford',t.T_WATER,t.T_FORD],['a bridge',t.T_WATER,t.T_ROAD],['a pass in a cliff',t.T_MOUNT,t.T_OPEN]])for(const [who,tc] of [['your foot, every group ahead of you',foot],['foot and riders',riders]]){
   const r=cross(wall,gap,tc);ok(r.on>=200&&r.all&&r.legal&&r.worst<=STALL,name+', '+who+': through, every man over on open ground, never standing more than '+STALL+' s ('+r.worst.toFixed(1)+' s)')}
+
 });

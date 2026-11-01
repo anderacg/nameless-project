@@ -7,7 +7,8 @@ try{
  ok(mu('horse','archer')===1.4,'cavalry beat archers (×1.4)');
  ok(mu('archer','militia')===1.2,'archers beat unarmored foot (×1.2)');
  ok(mu('militia','spearman')===1.25,'foot beat spearmen (×1.25)');
- ok(mu('spearman','horse')===1.6&&mu('spearman','troll')===1.6,'spears beat cavalry and large monsters (×1.6)');
+ // (a spear's two traits, doc/UNIT_KITS_DESIGN.md §4: Anti-cavalry ×1.6 every spear, Anti-large ×1.4 pikes and veterans (tier 2 and up))
+ ok(mu('spearman','horse')===1.6&&mu('spearman','troll')===1.4&&mu('hum_levy','troll')===1,'spears beat cavalry (×1.6); veterans and pikes large monsters (×1.4), levies not');
  {const pl=1-t.ARMOR.plate.v/100*t.ARMOR_PEN.pierce;ok(tm('archer','hum_guard')===+pl.toFixed(3)&&tm('hum_long','hum_guard')===+(pl+(1-pl)*t.AP).toFixed(3)&&pl<.65,'plate (armour '+t.ARMOR.plate.v+') shrugs off arrows (×'+pl.toFixed(3)+'), armour-piercing ones half as much')}
  ok(['none','leather','hide','mail','plate'].every((k,i,a)=>!i||t.ARMOR[k].v>t.ARMOR[a[i-1]].v)&&t.ARMOR_PEN.slash>t.ARMOR_PEN.pierce&&t.ARMOR_PEN.pierce>t.ARMOR_PEN.blunt,'armour has a value, rising from none to plate; slashes are stopped most by it, blows least');
  ok(mu('dw_berserk','archer')===1.4,'shock troops tear into archers (×1.4)');
@@ -16,8 +17,9 @@ try{
  ok(!gaps.length,'every unit ('+Object.keys(ST).length+') has a strength and a weakness'+(gaps.length?': missing '+gaps.join(', '):''));
  // battle mechanics
  t.act('begin','soldier');P.troops={horse:1};P.comps={};G.mode='world';G.enc={kind:'party',ref:{cool:0},list:['spearman']};t.startBattle({enemies:['spearman'],tournament:false});
- const B=t.B,hu=B.units.find(u=>u.type==='horse'),sp=B.units.find(u=>u.type==='spearman');hu.run=t.CHARGE.run;sp.inSlot=false;sp.dir=Math.atan2(hu.y-sp.y,hu.x-sp.x);const hp0=sp.hp;t.attack(hu,sp);
- ok(B.floats.some(f=>f.t==='Braced')&&hp0-sp.hp<=ST.horse.dmg*1.2+1,'a charge into spearmen is braced: no charge bonus ('+(hp0-sp.hp)+' damage)');
+ // (braced: the Brace stance, planted, doc/UNIT_KITS_DESIGN.md §3; unbraced, a charge's bonus)
+ const B=t.B,hu=B.units.find(u=>u.type==='horse'),sp=B.units.find(u=>u.type==='spearman');B.paused=false;B.deploy=false;B.ready=false;const sg=B.groups[sp.grp];sg.plant('brace',true);B.t+=t.KITS.braceAt.set+.01;hu.run=t.CHARGE.run;sp.inSlot=false;sp.dir=Math.atan2(hu.y-sp.y,hu.x-sp.x);const hp0=sp.hp;t.attack(hu,sp);
+ ok(sg.planted('brace')&&B.floats.some(f=>f.t==='Braced')&&hp0-sp.hp<=ST.horse.dmg*1.2+1,'a charge into braced spearmen: no charge bonus ('+(hp0-sp.hp)+' damage)');
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');
  // the hero's class follows the gear
  P.gear.weapon='wyrmspear';ok(t.unitClass(t.heroStats())==='spear','the Wyrm Tooth Spear makes your hero fight as a spearman');P.gear.weapon=null;

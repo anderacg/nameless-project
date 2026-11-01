@@ -44,11 +44,11 @@ try{
    const ys=[];for(const ms of [60,60,60,60,60,200,300,300,300]){frame(ms);const a=arrows()[0];ys.push(a?a[1][1]:null)}
    ok(ys.every(y=>y!=null)&&ys[0]<ys[4]&&new Set(ys.slice(5)).size>1,'the arrow drops onto the goal, then bobs ('+ys.map(y=>Math.round(y)).join(' ')+')');
    ok(!WUI.fx.length,'the ripple is gone after '+t.WUI_K.ripple+' s');
-   const dots0=WUI.dots.length/3;ok(dots0>=6,'dots mark the way ('+dots0+')');
+   const dots0=WUI.dots.length/3,from=t.wuiOut(WUI.way,WUI.s);ok(dots0>=2&&Math.abs(dots0-(WUI.way.S[WUI.way.n-1]-6-(from+3))/t.WUI_FOOT.gap)<=1.5,'dots mark the way from your army’s head ('+dots0+')');
    // (footprints: as many as the way has room for, a print each WUI_FOOT.gap px; each turned the way it goes, a left and a right
    // in turn, each on its own side)
    {const w=WUI.way,D=WUI.dots,FT=WUI.feet,F=t.WUI_FOOT,n=D.length/3,cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)},ux=(gx-w.X[0])/Math.hypot(gx-w.X[0],gy-w.Y[0]),uy=(gy-w.Y[0])/Math.hypot(gx-w.X[0],gy-w.Y[0]);
-    const want=((Math.round(Math.atan2(uy,ux)/6.2832*F.dirs))%F.dirs+F.dirs)%F.dirs,room=(w.S[w.n-1]-6-(WUI.s+3))/F.gap,bad=[];
+    const want=((Math.round(Math.atan2(uy,ux)/6.2832*F.dirs))%F.dirs+F.dirs)%F.dirs,room=(w.S[w.n-1]-6-(t.wuiOut(w,WUI.s)+3))/F.gap,bad=[];// (from your army's head: wuiOut)
     for(let i=0;i<n;i++){const d=FT[2*i],l=FT[2*i+1],x=D[3*i]+cam.x,y=D[3*i+1]+cam.y,side=(x-w.X[0])*-uy+(y-w.Y[0])*ux;
      if(Math.min((d-want+F.dirs)%F.dirs,(want-d+F.dirs)%F.dirs)>1)bad.push('turned '+d+' for '+want);if(i&&l===FT[2*i-1])bad.push('two '+(l?'lefts':'rights')+' in a row');if(l?side>-.2:side<.2)bad.push((l?'a left':'a right')+' on the wrong side ('+side.toFixed(2)+')')}
     ok(FT.length===2*n&&Math.abs(n-room)<=1.5&&!bad.length,'footprints along it: '+n+' for '+room.toFixed(1)+' prints\' room, each turned the way it goes ('+want+' of '+F.dirs+'), a left then a right, each on its side'+(bad.length?': '+bad.slice(0,4).join('; '):''));
@@ -86,7 +86,7 @@ try{
   // ---- the dots: none on land you have never seen
   home();{let far=null;for(let r=10;r<120&&!far;r++){const x=P.x+r*16,y=P.y;if(x<t.MW*16-16&&!t.seenAt(x,y)&&t.passable(t.terrAt(x,y)))far=[x,y]}
    if(far){P.tx=far[0];P.ty=far[1];frame(16);frame(800);const D=WUI.dots,cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)};let bad=0,n=0;for(let i=0;i<D.length;i+=3){n++;if(!t.seenAt(D[i]+cam.x,D[i+1]+cam.y))bad++}
-    ok(n>3&&!bad&&WUI.way.S[WUI.way.n-1]>16*10,'a way into land never seen: dots only where you have seen ('+n+' drawn, '+bad+' in the dark)')}else o.push('INFO no unseen land in reach');P.tx=null}
+    ok(n>3&&!bad&&WUI.way.S[WUI.way.n-1]>=16*10,'a way into land never seen: dots only where you have seen ('+n+' drawn, '+bad+' in the dark; way '+Math.round(WUI.way.S[WUI.way.n-1])+' px, goal '+Math.round(far[0]-P.x)+' px off, ok '+WUI.way.ok+')')}else o.push('INFO no unseen land in reach');P.tx=null}
   // ---- chasing a band: a ring round it, an arrow over it; giving up clears them
   // (out of reach but in sight: halfway between where your armies' rings meet, march.js worldBattleReach, and your sight. Within
   // reach, as 60 px off is since world battles are on in the tests, 2026-10-30, a double click or an approach meets it at once)
@@ -105,7 +105,7 @@ try{
    // at Resolution Full, RENDER.cap: Balanced, the default since 2026-10-29, draws a 3x screen at 2, a game px a CSS px)
    {const dp=Object.getOwnPropertyDescriptor(window,'devicePixelRatio'),cap=t.RENDER.cap;Object.defineProperty(window,'devicePixelRatio',{value:3,configurable:true});t.RENDER.cap=Infinity;ev('VS=2');let a;try{frame(16);a=swords()[0]}finally{ev('VS=1');t.RENDER.cap=cap;if(dp)Object.defineProperty(window,'devicePixelRatio',dp);else delete window.devicePixelRatio}
     const c=t.wuiSwords();ok(a&&a[1].length===4&&a[1][2]===c.width*2&&a[1][3]===c.height*2&&c.height*2*2/3>=t.WUI_K.swords,'at the farthest zoom of a phone the swords are drawn at twice their pixels ('+(a?a[1].slice(2).join('x'):'none')+' game px: '+(c.height*2*2/3).toFixed(1)+' CSS px high)')}
-   ok(WUI.way&&Math.hypot(WUI.way.gx-b.x,WUI.way.gy-b.y)<1&&WUI.dots.length>0,'the dots lead to it');
+   ok(WUI.way&&Math.hypot(WUI.way.gx-b.x,WUI.way.gy-b.y)<1&&(WUI.dots.length>0||WUI.way.S[WUI.way.n-1]-6<=t.wuiOut(WUI.way,WUI.s)+3+t.WUI_FOOT.gap),'the dots lead to it (none where it is nearer than your army’s head)');
    b.x+=12;for(let i=0;i<20;i++)frame(30);ok(Math.hypot(WUI.way.gx-b.x,WUI.way.gy-b.y)<1,'it moves on: the way follows it');
    click(P.x-30,P.y+30);frame(16);ok(G.chase===null&&!WUI.tgt&&WUI.dest,'a click elsewhere: the chase and its ring are gone, a new goal marked');t.bandits.length=0;P.tx=null}
   // ---- making for a friendly lord: his ring and the arrow, in green, as before; no swords
@@ -116,7 +116,8 @@ try{
   home();{click(P.x+50,P.y-20,'touch');frame(16);ok(P.tx!=null&&WUI.dest&&WUI.fx.some(f=>f.k==='ripple')&&arrows().length===1&&WUI.way,'a tap sends you, with the ripple, the arrow and the way');
    ok(G.mouse.type==='touch'&&!WUI.hov,'a finger shows no brackets');P.tx=null;G.mouse.type='mouse'}
   // ---- reducedMotion: all still
-  home();ev('reducedMotion=()=>true');try{click(P.x+50,P.y+24);frame(16);ok(P.tx!=null&&!WUI.fx.length,'reduced motion: no ripple');
+  home();ev('reducedMotion=()=>true');try{click(P.x+110,P.y+24);// (far enough for prints past your army's head: wuiOut)
+  frame(16);ok(P.tx!=null&&!WUI.fx.length,'reduced motion: no ripple');
    const ys=[];for(let i=0;i<6;i++){frame(170);ys.push(arrows()[0][1][1])}ok(new Set(ys).size===1,'the arrow stands still on its goal');
    const d0=WUI.dots.join();frame(300);ok(WUI.dots.join()===d0&&WUI.dots.length>0,'the dots do not march');
    const tx=Math.floor((P.x-40)/16)*16,ty=Math.floor((P.y+40)/16)*16;pointAt(tx+8,ty+8);frame(16);ok(WUI.hov&&WUI.hov.b.join()===[tx,ty,tx+16,ty+16].join(),'the brackets come straight to the tile');
@@ -124,7 +125,12 @@ try{
    const BR=brk();frame(16);const h1=BR.at()+mine().map(q=>q[1].join()).join();frame(500);frame(450);const h2=BR.at()+mine().map(q=>q[1].join()).join();BR.off();ok(h1===h2&&!!BR.last,'nothing pulses: the arrow and brackets hold');
    P.tx=null;G.mouse.in=false;let n=0;frame(16);ok(!WUI.fx.length&&!WUI.dest,'and no puff')}finally{window.__rm0=rm0;ev('reducedMotion=window.__rm0')}
   // ---- the route has footprints, with no separate pace figure
-  home();click(P.x+80,P.y);frame(16);frame(500);ok(WUI.dots.length>0&&![...t.WUIP.keys()].some(k=>k.startsWith('pace')),'the travel guide keeps its footprints without a separate pace icon');
+  home();click(P.x+140,P.y);frame(16);frame(500);ok(WUI.dots.length>0&&![...t.WUIP.keys()].some(k=>k.startsWith('pace')),'the travel guide keeps its footprints without a separate pace icon');
+  // (the owner, 2026-11-01: "the guide path (yellow one) can you make it to start at the head too?": its prints begin at your army's
+  // foremost man the way it goes, none behind him; its men formed first, the way read in world px from the screen's)
+  {home();P.troops={hum_levy:30};t.MARCH_ARMIES.delete(P);for(let i=0;i<40;i++)frame(33);click(P.x+120,P.y);frame(16);frame(900);const A=t.MARCH_ARMIES.get(P),D=WUI.dots,w=WUI.way,behind=[];
+   const head=Math.max(...A.units.map(u=>u.x-P.x));for(let i=0;i<D.length;i+=3){const x=D[i]+G.cam.x-P.x;if(x<head-t.WUI_FOOT.side-2)behind.push(Math.round(x))}
+   ok(D.length>0&&!behind.length&&D.length/3>=2,'the guide path begins at your army’s head ('+Math.round(head)+' px on): '+(D.length/3)+' prints, none behind him'+(behind.length?' (behind: '+behind.join(' ')+')':''))}
   // ---- crisp at the screen's 3x: every picture of it at its own size, on whole device pixels
   home();ev('VS=3');try{const b=t.asParty({x:P.x+60,y:P.y+10,n:6,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(6,false,'bandits');outOfReach(b);t.bandits.push(b);
    P.x+=.37;frame(16);click(b.x,b.y-4);click(b.x,b.y-4);pointAt(P.x-30.3,P.y+20);const bad=[];let n=0,fills=0;const fr0=c.fillRect;c.fillRect=function(x,y,w,h){if(rec){const m=this.getTransform();fills++;const isI=v=>Math.abs(v-Math.round(v))<1e-3;if(!isI(m.e+m.a*x)||!isI(m.f+m.d*y)||!isI(m.a*w)||!isI(m.d*h))bad.push('rect '+[x,y,w,h].map(v=>+v.toFixed(3)).join(','))}return fr0.call(this,x,y,w,h)};

@@ -11,7 +11,7 @@ function badgeSrc(metal,rank){const key=metal+rank;if(BADGES.has(key))return BAD
   const src=c.toDataURL();BADGES.set(key,src);return src}
 // a kind's badge at a rank and mastery (0 none: steel; 1 to 3: RANKS.mastery.metal), size px wide: an image
 function rankBadge(type,rank,size=14,mastery=0){const peasant=rankPeasant(type),metal=peasant?'iron':mastery?RANKS.mastery.metal[mastery-1]:'steel',r=peasant?0:rank,
-  tip=peasant?'Peasants: no rank':'Rank '+r+' of '+RANKS.max+(mastery?' · '+cap1(metal)+' mastery':'');
+  tip=peasant?'Peasants: no rank':'Rank '+r+' of '+RANKS.max+(rankWord(r)?' ('+rankWord(r)+')':'')+(mastery?' · '+(masteryWord(mastery)||cap1(metal)+' mastery'):'');// (the ranks' and masteries' names: core/ranks.js)
   return '<img class="rbadge" src="'+badgeSrc(metal,r)+'" width="'+size+'" height="'+Math.round(size*BADGE_SHAPE.h/BADGE_SHAPE.w)+'" alt="'+tip+'" title="'+tip+'">'}
 // (a group's)
 const groupBadge=(g,size)=>rankBadge(g.type,rankOf(g),size,masteryOf(g));

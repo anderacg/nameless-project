@@ -3,7 +3,9 @@
 // against the same fixture without it, the order bar's ability buttons and keys, and the refusals (routing, morale off, over).
 // Scout ahead (the owner, 2026-10-20): only the scout kinds (data/units.js SCOUT_KINDS), farther sight in the fog and more speed
 // while on, then its cooldown; with the fog off only the speed (its tooltip says so); the AI's captains using it to find the foe.
-window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);try{
+// Step 1's rules: run with unit kits step 2's switches off (Kit.kits(false): doc/UNIT_KITS_DESIGN.md §10.2), the proof they give
+// step 1 back; step 2's rules (ranks give stats only, the five mastery levels, Brace a stance, Lunge...): tests/kits2.js.
+window.RUN=()=>Kit.kits(false,()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);try{
  const UA=t.UNIT_ABILITIES,ids=g=>t.groupAbilities(g).map(a=>a.id).join(','),G0=()=>t.G;
  // (a paused lab battle; the groups by their place in the left/right lists; the foe parked far away unless a case brings it)
  const start=(left,right=[{type:'hum_foot',count:6}],extra={})=>{if(L.active)L.exit();L.start({leftGroups:left,rightGroups:right,morale:true,deploy:false,paused:true,ai:false,seed:42,...extra});
@@ -19,7 +21,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  ok(ids(knight)==='spur'&&ids(mage)==='rally'&&ids(foot)==='rally'&&ids(hbow)==='fire,scout','cavalry spur; casters get no fire arrows; mounted archers loose fire arrows and scout ahead but neither rally (not infantry) nor spur (no lance charge) ('+[knight,mage,foot,hbow].map(ids).join(' / ')+')');
  const half=spear.units.slice(0,6);half.forEach(u=>u.s={...u.s,tags:[]});ok(!t.groupHasAbility(spear,'brace')&&t.abilityWhyNot(spear,'brace')==='Not for this unit','a group has an ability only while most of its living, steady members qualify');
  half.forEach(u=>u.hp=0);ok(t.groupHasAbility(spear,'brace'),'the dead no longer count against it');
- ok(t.groupAbilities(spear.id).length===1&&t.groupAbilities(spear.id)[0].n==='Brace'&&spear.abilities().length===1,'groupAbilities accepts a control or an ID; BattleControl.abilities() is the same list');
+ ok(t.groupAbilities(spear.id).length===1&&t.groupAbilities(spear.id)[0].n==='Brace flanks'&&spear.abilities().length===1,'groupAbilities accepts a control or an ID; BattleControl.abilities() is the same list');
  ok(!Object.keys(spear).includes('abil')&&!JSON.stringify(spear).includes('abil'),'no ability state is created by looking');
  // ---- cooldown, duration, refusals, pause
  f=start([{type:'hum_spear',count:10}]);spear=f.mine[0];const b=f.b;
@@ -92,8 +94,9 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   ok(!UA.scout.who({type:'ranger',s:t.ST.ranger,hero:true})&&!UA.scout.who({type:'ranger',s:t.ST.ranger,comp:true})&&UA.scout.who({type:'ranger',s:t.ST.ranger}),'a character never counts as a scout, whatever his kind')}
  // ---- Scout ahead: the fog pushed back and the speed while on, then the cooldown
  {const f6=start([{type:'hum_hbow',count:6},{type:'hum_hbow',count:6}],[{type:'hum_foot',count:6}],{fog:true}),[s1,s2]=f6.mine,b6=f6.b,foe=f6.foes[0];
-  foe.units.forEach(u=>{u.x=s1.units[0].x+400;u.y=s1.units[0].y});s2.placeAt(s1.ax,s1.ay+300);t.layForm(s2.id);s2.units.forEach(u=>{u.x=s2.ax+u.sx;u.y=s2.ay+u.sy});t.sightStep(true);const u0=s1.units[0],R0=t.fogRange(u0);
-  ok(b6.fog&&R0===t.FOG.mounted&&foe.units.every(u=>!t.seenBy(0,u)),'(fog: the riders see '+R0+' px; the foot 400 px off are unseen)');
+  foe.units.forEach(u=>{u.x=s1.units[0].x+600;u.y=s1.units[0].y});// (600: mounted archers are scouts, ×SIGHT_KIND.scout: 480 px; the owner, 2026-11-01)
+  s2.placeAt(s1.ax,s1.ay+300);t.layForm(s2.id);s2.units.forEach(u=>{u.x=s2.ax+u.sx;u.y=s2.ay+u.sy});t.sightStep(true);const u0=s1.units[0],R0=t.fogRange(u0);
+  ok(b6.fog&&R0===Math.round(t.FOG.mounted*t.SIGHT_KIND.scout)&&foe.units.every(u=>!t.seenBy(0,u)),'(fog: the riders see '+R0+' px; the foot 600 px off are unseen)');
   ok(s1.useAbility('scout')&&t.abilityActive(s1,'scout')&&!t.abilityActive(s2,'scout'),'Scout ahead is used, on for that group alone');
   ok(t.fogRange(u0)===Math.round(R0*UA.scout.sight)&&t.fogRange(s2.units[0])===R0&&foe.units.every(u=>t.seenBy(0,u)),'its sight reaches '+t.fogRange(u0)+' px (x'+UA.scout.sight+') in the fog: the foot 400 px off are seen at once');
   ok(t.abilitySpeed(u0)===UA.scout.speed&&t.abilitySpeed(s2.units[0])===1,'and the scouts are faster (x'+UA.scout.speed+')');
@@ -103,8 +106,9 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   b6.t=s1.abil.scout.at+UA.scout.dur+.01;t.sightStep(true);ok(!t.abilityActive(s1,'scout')&&t.fogRange(u0)===R0&&t.abilitySpeed(u0)===1,'after its '+UA.scout.dur+' s their sight and speed are as before');
   ok(!s1.useAbility('scout')&&/^Ready in \d+ s$/.test(t.abilityWhyNot(s1,'scout')),'then it rests ('+t.abilityWhyNot(s1,'scout')+')');
   b6.t=s1.abil.scout.readyAt+.01;ok(t.abilityWhyNot(s1,'scout')===''&&UA.scout.cd>UA.scout.dur,'ready again after its '+UA.scout.cd+' s cooldown');
-  t.selectGroup(s1.id);const sb=document.querySelector('#bbar .abils [data-abil="scout"]');ok(sb&&sb.querySelector('.k').textContent==='O'&&/Scout ahead \(O\)/.test(sb.title)&&!/Fog of war is off/.test(sb.title),'its button on the order bar: key O, a tooltip with no fog warning while the fog is on');
-  G0().mode='battle';window.dispatchEvent(new KeyboardEvent('keydown',{key:'o',code:'KeyO',bubbles:true}));ok(s1.abil.scout.at===b6.t,'O scouts ahead with the selection')}
+  // (the skill bar's slots, the owner's layout (doc/UNIT_KITS_DESIGN.md §7b): mounted archers Fire arrows, Rapid shot, Scout ahead on Z, X, C)
+  t.selectGroup(s1.id);const sb=document.querySelector('#bbar .abils [data-abil="scout"]');ok(sb&&sb.dataset.slot==='2'&&sb.querySelector('.k').textContent==='C'&&/Scout ahead \(C\)/.test(sb.title)&&!/Fog of war is off/.test(sb.title),'its button on the skill bar: slot 3, key C, a tooltip with no fog warning while the fog is on');
+  G0().mode='battle';window.dispatchEvent(new KeyboardEvent('keydown',{key:'c',code:'KeyC',bubbles:true}));ok(s1.abil.scout.at===b6.t,'C scouts ahead with the selection')}
  {const f7=start([{type:'hum_hbow',count:6}],undefined,{fog:false}),s=f7.mine[0],u=s.units[0],R=t.fogRange(u);t.selectGroup(s.id);const sb=document.querySelector('#bbar .abils [data-abil="scout"]');
   ok(!f7.b.fog&&sb&&/Fog of war is off: only the speed applies/.test(sb.title),'with the fog off its tooltip says only the speed applies');
   ok(s.useAbility('scout')&&t.abilitySpeed(u)===UA.scout.speed&&t.fogRange(u)===Math.round(R*UA.scout.sight),'and it still speeds them (the fog range is read only by the fog)')}
@@ -121,9 +125,11 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  f=start([{type:'hum_spear',count:10},{type:'hum_spear',count:10},{type:'hum_bow',count:8}]);[spear]=f.mine;const sp2=f.mine[1],bw=f.mine[2];
  const fixed=()=>[...document.querySelectorAll('[data-order],[data-flag],[data-form]')].map(x=>x.dataset.order||x.dataset.flag||x.dataset.form).join(),before=fixed();
  const bar=()=>document.querySelector('#bbar .abils'),btn=id=>bar().querySelector('[data-abil="'+id+'"]');
- t.selectGroup(spear.id);ok(bar()&&!bar().hidden&&[...bar().children].map(x=>x.dataset.abil).join()==='brace,rally','the selected spearmen show Brace and Rally on the order bar');
+ // (the skill bar: three slots, Z, X, C, each selected group its own skill in each: the owner's layout, doc/UNIT_KITS_DESIGN.md §7b)
+ const slots=()=>[...bar().children].map(x=>x.dataset.abil||'').join(),keys=()=>[...bar().children].map(x=>x.querySelector('.k').textContent).join('');
+ t.selectGroup(spear.id);ok(bar()&&!bar().hidden&&slots()==='brace,rally,'&&keys()==='ZXC','the selected spearmen show Brace flanks and Rally in slots 1 and 2 of the skill bar (Z, X; C empty)');
  ok(fixed()===before&&!document.querySelector('[data-abil][data-order],[data-abil][data-flag],[data-abil][data-form]'),'the order, flag and formation buttons are unchanged');
- ok(btn('brace').querySelector('svg')&&btn('brace').querySelector('.k').textContent==='G'&&/Brace \(G\)/.test(btn('brace').title)&&/Ready/.test(btn('brace').title)&&!btn('brace').disabled,'each button has its icon, key and a tooltip');
+ ok(btn('brace').querySelector('svg')&&btn('brace').querySelector('.k').textContent==='Z'&&/Brace flanks \(Z\)/.test(btn('brace').title)&&/Ready/.test(btn('brace').title)&&!btn('brace').disabled,'each button has its icon, key and a tooltip');
  btn('brace').click();ok(t.abilityActive(spear,'brace')&&!t.abilityActive(sp2,'brace'),'a press uses it for the selected group only');
  ok(btn('brace').classList.contains('on')&&btn('brace').getAttribute('aria-pressed')==='true'&&btn('brace').querySelector('.at').textContent===String(UA.brace.dur)&&parseFloat(btn('brace').querySelector('.acd').style.height)===0,'the button is lit while it is on, with its seconds left (no cooldown shade yet)');
  f.b.t+=UA.brace.dur+2;t.setOrderUI();const h=parseFloat(btn('brace').querySelector('.acd').style.height);
@@ -132,12 +138,13 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  f.b.t+=20;t.setOrderUI();ok(parseFloat(btn('brace').querySelector('.acd').style.height)<h,'the shade shrinks as the cooldown runs');
  t.selectGroup(sp2.id,true);ok(!btn('brace').disabled&&/Ready for 1 of 2/.test(btn('brace').title),'with several selected, it is ready while any of them can use it');
  btn('brace').click();ok(t.abilityActive(sp2,'brace'),'and a press uses it for those that can');
- t.selectGroup(bw.id);ok([...bar().children].map(x=>x.dataset.abil).join()==='fire,rapid','the buttons follow the selection (rank-5 bowmen: Fire arrows, Rapid shot)');
- window.dispatchEvent(new KeyboardEvent('keydown',{key:'ร',code:'KeyI',bubbles:true}));ok(t.abilityActive(bw,'fire'),'I looses fire arrows (keys by position, any layout)');
- t.selectGroup('all');ok([...bar().children].map(x=>x.dataset.abil).join()==='brace,fire,rally,rapid','All selected: every ability any group has');
- window.dispatchEvent(new KeyboardEvent('keydown',{key:'y',code:'KeyY',bubbles:true}));ok([spear,sp2].every(g=>g.abil.rally),'Y rallies every selected group that can');
+ t.selectGroup(bw.id);ok(slots()==='fire,rapid,','the slots follow the selection (rank-5 bowmen: Fire arrows, Rapid shot)');
+ window.dispatchEvent(new KeyboardEvent('keydown',{key:'ผ',code:'KeyZ',bubbles:true}));ok(t.abilityActive(bw,'fire'),'Z looses fire arrows, slot 1 (keys by position, any layout)');
+ t.selectGroup('all');ok(slots()==='brace,rally,'&&bar().children[0].classList.contains('mix')&&/Brace flanks \/ Fire arrows/.test(bar().children[0].title)&&/Rally \/ Rapid shot/.test(bar().children[1].title),'All selected: each slot holds each unit\'s own (slot 1 Brace flanks / Fire arrows, marked +; slot 2 Rally / Rapid shot)');
+ window.dispatchEvent(new KeyboardEvent('keydown',{key:'x',code:'KeyX',bubbles:true}));ok([spear,sp2].every(g=>g.abil.rally)&&bw.abil.rapid,'X: slot 2 for every selected group, the spearmen rally and the bowmen loose rapid shots');
+ t.selectGroup(spear.id);f.b.t=spear.abil.brace.readyAt+.01;window.dispatchEvent(new KeyboardEvent('keydown',{key:'g',code:'KeyG',bubbles:true}));ok(spear.abil.brace.at===f.b.t,'G still braces: a quiet alias of the slot holding Brace flanks');
  const hero=t.playerGroups().find(id=>id==='hero');if(hero){t.selectGroup(hero);ok(bar().hidden,'a selection without abilities hides the group')}
  else{f.b.sel=[];t.setOrderUI();ok(bar().hidden,'a selection without abilities hides the group')}
  L.exit();t.RANKS.ai=ai0;
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
-const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
+const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)});

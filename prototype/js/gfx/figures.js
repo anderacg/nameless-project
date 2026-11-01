@@ -31,6 +31,9 @@ class FigureCache{
   frame(){this.tick++}
 }
 const FIGURES=new FigureCache(GEAR.cap);
+// (the anchors a finished figure keeps, where its body put them (people.js drawFigureBody): the weapon hand (weapons.js holds a
+// weapon there), the free hand and the back (a marcher's torch and flag: marchgear.js); sprites.js cellOf keeps them in its cell)
+const FIG_ANCHORS=['hand','free','back'];
 // a piece of gear: its slot (GEAR.layer) and the anchor it hangs from; draw(set, o, p) puts its pixels from the anchor, facing
 // right, for the look o and the pose p (style, atk: a blow's or a shot's frame; sh: a dwarf's row less; the map's ly, the legs' row,
 // and cut)
@@ -117,13 +120,29 @@ class MapLoad extends FigureGear{
   constructor(job){super('load','back');this.job=job}
   draw(set,o,p){if(p.cut==null)drawMapLoad(set,this.job)}
 }
+/* the map's people at the battle's density (people.js MAP_FIGS): a load on the back (o.load: a job's, LOADS), behind him from
+   between his shoulders, its top lift rows over them; LOAD_ART its pixels, x from -4 (the body's back edge 0): h light, H its
+   colour, d shade, k deep (its ramp), e end grain, r a cord, f a fish. A lute (a bard's) across his front, its neck up and ahead */
+const LOAD_ART={sack:[1,['..rr.','.hHH.','hHHHd','hHHHd','hHHdd','.ddk.']],churn:[2,['.hhH.','.kkk.','.hHd.','.hHd.','.kkk.','.hHd.','.ddk.']],
+  logs:[3,['.eee.','.HdH.','.HdH.','.rrr.','.HdH.','.HdH.','.ddd.']],basket:[1,['.ff..','hHdHd','HdHdH','hHdHd','.kkk.']],
+  pack:[3,['.hhH.','.dddd','hHHHd','hHrHd','hHHHd','hHHHd','.kkkk']],bundle:[1,['.hHHHd','.dHHdk','..hHd.','..hHd.','..ddk.']]};
+class BackLoad extends FigureGear{
+  constructor(job){super('load','back');this.job=job}
+  draw(set,o,p){const [k,col]=LOADS[this.job]||LOADS.farmer,[lift,rows]=LOAD_ART[k],R=rampOf(col),C={h:R[0],H:R[1],d:R[2],k:R[3],e:'#e8c890',r:'#6a4a2a',f:'#9ab8c8'};
+    rows.forEach((row,y)=>[...row].forEach((c,x)=>{if(C[c])set(x-4,y-lift,C[c])}))}
+}
+class LuteGear extends FigureGear{
+  constructor(){super('main','hand')}
+  draw(set,o,p){const W=PPAL.wood;for(const [x,y,c] of [[-3,-1,1],[-3,0,2],[-2,-2,0],[-2,-1,1],[-2,0,2],[-1,-2,1],[-1,-1,2],[-1,0,3]])set(x,y,W[c]);set(-2,-1,'#2e2018');
+    for(let i=0;i<4;i++)set(i,-2-i,W[2]);set(4,-6,W[3]);set(0,0,pal(o.skin)[1])}
+}
 /* a figure laid out: its gear by its look (gearOf: what people.js lookOf gives it, or a map figure's own), put on its body from the
    body's anchors (dress), and the finished picture (frame) */
 class FigureRig{
   static gearOf(o,map){const G=[],k=o.weapon,s=shieldLook(o);
     if(map){if(MAP_HELD[k])G.push(new MapHeld(k));if(s)G.push(new MapShield());if(o.load)G.push(new MapLoad(o.load))}
-    else{if(k)G.push(WPN[k]?new HandWeapon(k):new ShooterGear(k));if(s&&!o.mount)G.push(new ShieldGear(o.guardUp||null));
-      const q=GEAR.back[k]||GEAR.back[o.slung];if(q)G.push(new QuiverGear(q));if(o.slung)G.push(new SlungBow(o.slung));if(o.goad)G.push(new GoadGear())}
+    else{if(k)G.push(WPN[k]?new HandWeapon(k):k==='lute'?new LuteGear():new ShooterGear(k));if(s&&!o.mount)G.push(new ShieldGear(o.guardUp||null));
+      const q=GEAR.back[k]||GEAR.back[o.slung];if(q)G.push(new QuiverGear(q));if(o.slung)G.push(new SlungBow(o.slung));if(o.goad)G.push(new GoadGear());if(o.load)G.push(new BackLoad(o.load))}
     return G.sort((a,b)=>a.layer-b.layer)}
   // its gear into grid g from the body's anchors A (people.js drawFigureBody, drawMapBody): behind it first, the nearest first, each
   // only where the body and what is already behind it are not; then in front, the nearest last
@@ -133,8 +152,9 @@ class FigureRig{
     for(const x of G)if(x.layer>0)put(x,A[x.at][0],A[x.at][1],false)}
   /* the finished picture: g outlined round all it holds, cut to its frame (w wide, about g's middle less R each side; down to g's
      bottom from R in), grown each way only as far as its pixels reach past it, evenly about the frame's middle so its feet stay the
-     cell's bottom middle (sprites.js cellOf); hand: the weapon hand in g; fh: the figure's height (its bars and labels); rig */
-  static frame(g,R,w,hand,fh,rig){poutline(g);let x0=g.w,x1=-1;const top=Math.min(R,ptop(g));
+     cell's bottom middle (sprites.js cellOf); A: the body's anchors in g (people.js drawFigureBody), of which the picture keeps
+     hand (the weapon hand), free (the off hand) and back (FIG_ANCHORS); fh: the figure's height (its bars and labels); rig */
+  static frame(g,R,w,A,fh,rig){poutline(g);let x0=g.w,x1=-1;const top=Math.min(R,ptop(g));
     for(let i=0;i<g.p.length;i++)if(g.p[i]){const x=i%g.w;if(x<x0)x0=x;if(x>x1)x1=x}
-    const cx=R+(w>>1),half=Math.max(w>>1,cx-x0,x1+1-cx),c=pcanvas(pcrop(g,cx-half,top,2*half,g.h-top));c.fh=fh;c.hand=[hand[0]-(cx-half),hand[1]-top];c.rig=rig;return c}
+    const cx=R+(w>>1),half=Math.max(w>>1,cx-x0,x1+1-cx),c=pcanvas(pcrop(g,cx-half,top,2*half,g.h-top));c.fh=fh;for(const k of FIG_ANCHORS)c[k]=[A[k][0]-(cx-half),A[k][1]-top];c.rig=rig;return c}
 }

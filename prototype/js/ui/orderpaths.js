@@ -104,7 +104,7 @@ const orderPathPhase=(now,rm)=>rm?0:now/1000*OPATH.march;
 // when they are off (Settings): render.js draws the straight lines instead (orderPathsOn)
 function drawOrderPaths(){
   if(opMode()==='off')return false;if(B.deploy)return true;opReset();
-  const now=OPATH.now(),sel=selGroups(),z=B.cam?B.cam.z:1,u=1/Math.min(1,z),ph=orderPathPhase(now,reducedMotion()),vx=B.cam?B.cam.x:0,vy=B.cam?B.cam.y:0,vw=BVW/z,vh=BVH/z;
+  const now=OPATH.now(),sel=selGroups(),{x:vx,y:vy,w:vw,h:vh,z}=camView(),u=1/Math.min(1,z),ph=orderPathPhase(now,reducedMotion());
   const D=OPS.dash;if(D.u!==u){D.u=u;D.d=OPATH.dash.map(v=>v*u);D.o=OPATH.dot.map(v=>v*u)}
   let tallied=false;OPS.drawn.length=0;OPS.ph=ph;
   for(const id in B.groups){const al=orderPathAlpha(id,sel,now),pv=withdrawView.shows(id)&&B.groups[id].order!=='withdraw';if(al<=.01)continue;if(!tallied){opTally();tallied=true}if(!opBuild(B.groups[id],pv))continue;

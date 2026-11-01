@@ -54,9 +54,8 @@ function pickAt(wx,wy){
   // ring (someone small beside it, clicked on, is still picked), before a building it stands in front of
   const fig=(o,s,x0,y0,flip)=>{if(Math.hypot(o.x-wx,o.y-wy)>s.width)return;const b=opaqueBox(s),L=flip?x0+s.width-1-b[2]:x0+b[0],R=L+b[2]-b[0]+1,T=y0+b[1],Bt=y0+b[3]+1,hw=(R-L)/2,hh=(Bt-T)/2;
     if(wx>=L&&wx<R&&wy>=T&&wy<Bt&&S.sees(o.x,o.y,1.2))c.push([10+2*Math.max(Math.abs(wx-L-hw)/hw,Math.abs(wy-T-hh)/hh),o])};
-  // a party's banner (render.js bannerAt) answers anywhere on it while the party is in sight, ranked 9.5: over the buildings and
-  // figures it floats over, after anyone's ring clicked nearer
-  const flag=(o,B)=>{const b=opaqueBox(B.s);if(wx>=B.x+b[0]&&wx<=B.x+b[2]&&wy>=B.y+b[1]&&wy<=B.y+b[3]&&o.inView(V))c.push([9.5,o])};
+  // (no banner floats over a party to click (the owner, 2026-11-01: "remove a floating banner"): the at.flag parties.js and
+  // caravans.js ask for is gone; its army answers, below)
   // (the owner, 2026-11-01: "make a whole army clickable") an army marched man by man (march.js marchPicked) answers anywhere on
   // its men's figures as drawn, ranked as a big figure is (10-12), and anywhere inside its outline, ranked 13 on by px to its
   // nearest man: after any figure, building or place under the pointer, the nearer army's man first. Not inside your own outline
@@ -68,7 +67,7 @@ function pickAt(wx,wy){
   const army=o=>{const a=marchPicked(o);if(!a)return false;if(!o.inView(V))return true;const h=a.hit(wx,wy,tol);
     if(h&&(h.kind==='figure'||yours()==null||h.d<mine))c.push([h.kind==='figure'?10+2*Math.min(1,h.d):13+Math.min(h.d,999)/1000,o]);return !!(MARCH_RING.on&&a.ring)};
   // every world object says where a click answers on it (WorldObject pick), with these, in worldObjects' order (a tie keeps it)
-  const at={x:wx,y:wy,V,add,box,fig,camp,flag,army};for(const o of worldObjects())o.pick(at);
+  const at={x:wx,y:wy,V,add,box,fig,camp,army};for(const o of worldObjects())o.pick(at);
   c.sort((a,b)=>a[0]-b[0]);return c.length?c[0][1]:null;
 }
 // what a thing on the map is (its mapKind), while it is still on the map (here); null for anything else
@@ -102,7 +101,10 @@ function approach(o){if(o.mapKind==='critter'&&o.wild&&o.inView(vis()))return hu
    mind's. What can be followed: a party on the map that is not yours, moving (FOLLOW.kinds), in sight and in no fight. Its
    ring's Follow and Stop following (supply.js mapRingItems, partyRingItems: followItem), the Under way panel's line (ui/underway.js), the
    footprints to it (gfx/worldui.js) ---------- */
-const FOLLOW={trail:2.5,near:1.5,crumb:4,kinds:['lord','cparty','patrol','band','caravan','refugee'],ends:['battle','besiege','capture','dialog','road','scene','site','story','town','dead','title','loading']};
+// (keep: it goes on till you end it (the owner, 2026-11-01: "by following, can you just make it keep follow without stop?"): out of
+// sight you keep to its trail, it inside a holding or a camp you wait at its gate, a battle, a talk or an encounter pauses it; it
+// ends only when it is gone (dead, broken), or by your own order (Stop following, another order, a camp, a stay). keep false: as before)
+const FOLLOW={keep:true,trail:2.5,near:1.5,crumb:4,kinds:['lord','cparty','patrol','band','caravan','refugee'],ends:['battle','besiege','capture','dialog','road','scene','site','story','town','dead','title','loading']};
 onWorld(()=>{if(typeof G!=='undefined')G.follow=null});
 const followable=o=>!!o&&FOLLOW.kinds.includes(objKind(o))&&!o.fight&&o.inView(vis());
 // (its name in a line: a lord's or your companion's party's own, the rest "the caravan of Ashford", "the bandits"...; cap: as a tag)
@@ -117,15 +119,23 @@ function followWatch(){Host.watch();const F=G.follow;if(!F)return;const o=F.o;
   // (in his host: a battle, a talk, a holding's window pause it (taken up again after: Host.watch); he inside or out of sight, you
   // keep your place, at his gate)
   if(F.host&&FOLLOW.ends.includes(G.mode)){Host.paused=true;return followStop()}
+  if(FOLLOW.keep&&FOLLOW.ends.includes(G.mode)&&!P.stay)return;// (paused: taken up again when the map is yours)
   if(FOLLOW.ends.includes(G.mode)||P.camp||G.pitch||P.stay||G.chase)return followStop();
   if(F.host)return;
-  const nm=followName(o),gone=!objKind(o)||o.dead||o.inside;
+  const nm=followName(o);
+  if(FOLLOW.keep){if(!objKind(o)||o.dead||o.gone)return followStop(cap1(nm)+' is gone.',true);
+    // (inside a holding or a camp: you wait at its gate, once told; out again, on its trail)
+    const t=o.inside?townBy(o.inside):null;if(t&&!F.wait){F.wait=t;toast(cap1(nm)+' rides into '+t.name+'. You wait outside.')}else if(!t)F.wait=null;return}
+  const gone=!objKind(o)||o.dead||o.inside;
   if(gone){const t=o.inside?townBy(o.inside):TOWNS.find(h=>Math.hypot(h.x-o.x,h.y-o.y)<30),c=!t&&camps().find(k=>Math.hypot(k.x-o.x,k.y-o.y)<30);
     return followStop(t?cap1(nm)+' rides into '+t.name+'.':c?cap1(nm)+' slips into '+(c.name||'their camp')+'.':cap1(nm)+' is gone.',true)}
   if(!o.inView(vis()))return followStop('You lose sight of '+nm+'.',true)}
 // (your goal this moment: the point FOLLOW.trail tiles behind it along its crumbs (those older dropped), else that far from it on
-// your side; within FOLLOW.near tiles of it, where you stand)
-function followStep(){const F=G.follow,o=F.o,c=F.crumbs,l=c[c.length-1],T=FOLLOW.trail*TILE;if(F.host){const s=Host.yourSlot(o);P.tx=s.x;P.ty=s.y;return}if(Math.hypot(o.x-l[0],o.y-l[1])>=FOLLOW.crumb)c.push([o.x,o.y]);
+// your side; within FOLLOW.near tiles of it, where you stand. It: where it stands, a column's middle, not its head (march.js
+// marchPoint)
+function followStep(){const F=G.follow,c=F.crumbs,l=c[c.length-1],T=FOLLOW.trail*TILE;if(F.host){const s=Host.yourSlot(F.o);P.tx=s.x;P.ty=s.y;return}
+  if(F.wait){const g=F.wait;P.tx=g.x;P.ty=g.y+TILE*FOLLOW.trail;return}// (waiting at the gate of the holding it went into)
+  const o=marchPoint(F.o);if(Math.hypot(o.x-l[0],o.y-l[1])>=FOLLOW.crumb)c.push([o.x,o.y]);
   let s=0,px=o.x,py=o.y,tx=null,ty=null;for(let i=c.length-1;i>=0;i--){const [x,y]=c[i],d=Math.hypot(x-px,y-py);if(s+d>=T&&d>0){const q=(T-s)/d;tx=px+(x-px)*q;ty=py+(y-py)*q;c.splice(0,i);break}s+=d;px=x;py=y}
   const d=Math.hypot(P.x-o.x,P.y-o.y);if(tx==null){tx=d>T?o.x+(P.x-o.x)/d*T:P.x;ty=d>T?o.y+(P.y-o.y)/d*T:P.y}
   if(d<FOLLOW.near*TILE){tx=P.x;ty=P.y}P.tx=tx;P.ty=ty}
@@ -153,9 +163,31 @@ const PACE_REF=38,MAP_BASE=34;
 function paceRatio(sp){let n=0,sum=0,mn=1e9;for(const [s,c] of sp){if(!c)continue;n+=c;sum+=s*c;if(s<mn)mn=s}return n?Math.pow((.75*mn+.25*sum/n)/PACE_REF,.7):1}
 const sizeMul=n=>Math.max(.7,1-.006*Math.max(0,n-12));
 const mountedShare=sp=>{let n=0,m=0;for(const [s,c] of sp){n+=c;if(s>=60)m+=c}return n?m/n:0};
-const roughFor=(x,y,ign)=>{const t=RoadBand.on(x,y)?T_ROAD:terrAt(x,y);ign=ign||[];return t===T_FOREST&&!ign.includes('forest')||t===T_HILL&&!ign.includes('hills')||climAt(x,y)==='swamp'&&!ign.includes('swamp')};
+const ROUGH_NONE=[],roughFor=(x,y,ign)=>{const t=RoadBand.on(x,y)?T_ROAD:terrAt(x,y);ign=ign||ROUGH_NONE;return t===T_FOREST&&!ign.includes('forest')||t===T_HILL&&!ign.includes('hills')||climAt(x,y)==='swamp'&&!ign.includes('swamp')};
 function listSpeeds(list){const m={};for(const k of list){const s=(ST[k]&&ST[k].spd)||PACE_REF;m[s]=(m[s]||0)+1}return Object.entries(m).map(([s,c])=>[+s,c])}
-function partySpeed(o,list){const sp=listSpeeds(list);return MAP_BASE*paceRatio(sp)*sizeMul(list.length)*Math.max(.45,speedAt(o.x,o.y)||1)*(mountedShare(sp)>=.5&&roughFor(o.x,o.y)?.8:1)*EscapeStamina.factor(o)}
+function partySpeed(o,list){const sp=listSpeeds(list);return MAP_BASE*paceRatio(sp)*sizeMul(list.length)*armyGround(o,partyGround,mountedShare(sp)>=.5)*EscapeStamina.factor(o)*marchOutriders(o)}// (Outriders: march.js)
+/* (the owner, 2026-11-01: the road's speed earned by the men on it, doc/LIVE_WORLD_DESIGN.md §6) an army's ground, at(x, y, arg)
+   where its men stand: the mean of TRAVEL_STYLES.sample of them (the same ones each time, spread through it) while it is marched
+   man by man (march.js marchMen), so a column on a road has all of its bonus, a ring across one a share, an army half in a wood
+   is half slowed; else at its point, by its style: a column (marchstyles.js TravelStyle) the whole of it there, any other only
+   TRAVEL_STYLES.share of a road's bonus. TRAVEL_STYLES.on false: at its point, as before. A party's (partyGround: the land, rough
+   ground for riders), yours (heroGround), a caravan's (caravanGround) */
+function armyGround(o,at,arg){const T=TRAVEL_STYLES;if(!T.on)return at(o.x,o.y,arg);const a=marchMen(o);
+  if(!a){const v=at(o.x,o.y,arg);return v>1&&!TravelStyle.column(o)&&(RoadBand.at(o.x,o.y)||terrAt(o.x,o.y)===T_ROAD)?1+(v-1)*T.share:v}
+  const U=a.units,n=U.length,m=Math.min(T.sample,n);let s=0,k=0;for(let i=0;i<m;i++){const u=U[Math.floor((i+.5)*n/m)];if(u.dead)continue;s+=at(u.x,u.y,arg);k++}return k?s/k:at(o.x,o.y,arg)}
+// (what o's men stand on, the same men armyGround weighs: {names: [[the ground's name, how many]] most first, road: how many on a road
+// or track, n: how many asked}; none marched man by man: its point's. The Party card's ground (render.js; the owner, 2026-11-01: "Road"
+// shown while most of the army stood in the woods))
+function armyGroundMix(o){const a=TRAVEL_STYLES.on&&marchMen(o),C=new Map();let road=0,k=0;
+  const add=(x,y)=>{const r=regionAt(x,y);C.set(r.name,(C.get(r.name)||0)+1);if(RoadBand.on(x,y)||terrAt(x,y)===T_ROAD)road++;k++};
+  if(!a)add(o.x,o.y);else{const U=a.units,n=U.length,m=Math.min(TRAVEL_STYLES.sample,n);for(let i=0;i<m;i++){const u=U[Math.floor((i+.5)*n/m)];if(!u.dead)add(u.x,u.y)}if(!k)add(o.x,o.y)}
+  return{names:[...C].sort((p,q)=>q[1]-p[1]),road,n:k}}
+const partyGround=(x,y,ride)=>Math.max(.45,speedAt(x,y)||1)*(ride&&roughFor(x,y)?.8:1);
+const caravanGround=(x,y)=>Math.max(.5,speedAt(x,y)||1);
+// (your band's: the land for your race and mounts, a Pathfinder's and Woodcraft's ease, rough ground for riders; HERO_GROUND: what
+// travelMul knows of your band for it)
+const HERO_GROUND={ign:null,ride:false};
+function heroGround(x,y){const H=HERO_GROUND;let t=speedAt(x,y,P.race,H.ign)||1;if(t<1&&has('path'))t=1-(1-t)/2;if(t<1&&terrAt(x,y)===T_FOREST)t=1-(1-t)*(1-Math.min(WOODCRAFT.cap,WOODCRAFT.per*skill('wood')));return t*(H.ride&&roughFor(x,y,H.ign)?.8:1)}
 // your hero's own pace: on foot a fit 40; mounted, by the mount
 // a lord's army: its pace, slowed by its baggage train unless it is mostly mounted
 const lordSpeed=l=>partySpeed(l,l.troops)*(mountedShare(listSpeeds(l.troops))>=.5?1:.85);
@@ -172,7 +204,7 @@ function bandPace(){
 }
 // (Woodcraft: in a wood, its slowing cut by WOODCRAFT.per a level, up to cap)
 const WOODCRAFT={per:.06,cap:.6,xp:.1};
-function travelMul(){let t=speedAt(P.x,P.y,P.race,mountIgn())||1;if(t<1&&has('path'))t=1-(1-t)/2;if(t<1&&terrAt(P.x,P.y)===T_FOREST)t=1-(1-t)*(1-Math.min(WOODCRAFT.cap,WOODCRAFT.per*skill('wood')));return bandPace()*t*(mountedShare(bandSpeeds())>=.5&&roughFor(P.x,P.y,mountIgn())?.8:1)}
+function travelMul(){const H=HERO_GROUND;H.ign=mountIgn();H.ride=mountedShare(bandSpeeds())>=.5;return bandPace()*armyGround(P,heroGround)*marchOutriders(P)}// (Outriders: march.js)
 // daily price of the land you camp in; holdings shelter you from all of it. (By the hour, world/supply.js: the frost's extra food,
 // its cold short of furs and frostbite; the desert's thirst.) Each night short of furs in the frost costs a little morale; swamp fever
 function survive(){
@@ -263,8 +295,8 @@ function marchStep(d){
   if(G.chase){const o=G.chase;if(!objKind(o)||!o.chaseable())G.chase=null;else{P.tx=o.x;P.ty=o.y;
     if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o)&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return true}}}
   if(P.tx!=null){
-    const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
-    if(dist<2){if(!G.follow&&marchArrived(P.tx,P.ty)){P.tx=null;G.byRoad=null;campArrive()}}// (your army there: march.js marchArrived)// (the clear ground you walked to: your band pitches there, supply.js)
+    const aim=marchAim(P.tx,P.ty),dx=aim.x-P.x,dy=aim.y-P.y,dist=Math.hypot(dx,dy);// (your army's head on your goal: march.js)
+    if(dist<2){if(!G.follow&&marchArrived(aim.x,aim.y)){P.tx=null;G.byRoad=null;campArrive()}}// (your army there: march.js marchArrived)// (the clear ground you walked to: your band pitches there, supply.js)
     else{
       const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*Host.yourPace());// (your host's slowest: hosts.js)
       P.dir=dx>=0?1:-1;
@@ -283,10 +315,11 @@ const HERO_WAY={x:NaN,y:NaN,d:Infinity};
 function heroWay(o,tx,ty,step){const rd=byRoadTo(tx,ty);
   if(!rd&&passable(terrAt(o.x,o.y))&&clearLine(o.x,o.y,tx,ty))return walk(o,tx-o.x,ty-o.y,step)?1:0;// (not while on a ferry's water: its leg goes on by the router)
   const x0=o.x,y0=o.y;if(!Router.travel(o,rd?{x:tx,y:ty,road:ROAD_GO.keep}:{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}
+// (toward dx, dy from you: your goal, or short of it so your army's head stands on it: march.js marchAim)
 function heroStep(dx,dy,dist,step){
-  const x0=P.x,r=heroWay(P,P.tx,P.ty,step);if(r===2&&P.x!==x0)P.dir=P.x>x0?1:-1;if(r>=0)return r>0;
-  const W=HERO_WAY;if(W.x!==P.tx||W.y!==P.ty){W.x=P.tx;W.y=P.ty;W.d=dist}
-  if(!walk(P,dx,dy,step))return false;const nd=Math.hypot(P.tx-P.x,P.ty-P.y);if(nd>=W.d-step*.25)return false;W.d=nd;return true}
+  const x0=P.x,gx=P.x+dx,gy=P.y+dy,r=heroWay(P,gx,gy,step);if(r===2&&P.x!==x0)P.dir=P.x>x0?1:-1;if(r>=0)return r>0;
+  const W=HERO_WAY;if(!(Math.hypot(W.x-gx,W.y-gy)<=1)){W.x=gx;W.y=gy;W.d=dist}// (a new goal, or the first: NaN)
+  if(!walk(P,dx,dy,step))return false;const nd=Math.hypot(gx-P.x,gy-P.y);if(nd>=W.d-step*.25)return false;W.d=nd;return true}
 /* by road (the owner, 2026-10-23: "a road snap in the action ring, to make the pathfinder prefer moving by road"; then "By road
    mode should be a toggle: the pathfinder always uses roads for travelling (if any are near)"): a mode, P.byRoad (true while on;
    absent, off: saved with you, a new hero's off). While it is on, every way you go (a click, Travel here, a chase, Hurry here)

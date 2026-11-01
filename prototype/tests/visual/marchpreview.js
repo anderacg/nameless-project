@@ -2,7 +2,7 @@
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;P.troops={hum_levy:3};t.fitScreen();G.mode='char';t.openMarch();
  const cv=document.getElementById('marchCanvas'),box=cv.getBoundingClientRect(),v=t.marchCanvasView(),rows=t.marchDraftRows();
- ok(box.width>innerWidth*.45&&box.height>=270,'formation drawing uses the available left pane');
+ ok(box.width>innerWidth*.45&&box.height>=200,'formation drawing uses the available left pane ('+Math.round(box.width)+' × '+Math.round(box.height)+'; in the Army window’s March formation tab, under its muster and tabs)');
  const bitmap=cv.width;cv.width=bitmap+400;const resized=cv.getBoundingClientRect();
  ok(Math.abs(resized.width-box.width)<1&&Math.abs(resized.height-box.height)<1,'canvas bitmap changes do not resize the preview pane');
  cv.width=bitmap;t.drawMarch();

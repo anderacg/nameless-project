@@ -38,7 +38,7 @@ Kit.suite(({ok,info})=>{
   // ---- Follow: he marches home, you trail him
   {press(L.x,L.y-4);const n0=said.length,b=[...document.querySelectorAll('.aring .ar-btn')].find(x=>x.textContent==='Follow');b.click();
    ok(G.follow&&G.follow.o===L&&!G.chase&&msgs(n0).includes('You follow '+t.lordName(L)+' at a distance'),'Follow: your band follows him ('+msgs(n0)+')');
-   const ds=[],gs=[];let mode=G.mode,met=false;for(let f=0;f<700&&G.follow;f++){t.updateWorld(.05);if(G.mode!=='world'){mode=G.mode;met=true;break}if(f>=80){ds.push(Math.hypot(P.x-L.x,P.y-L.y));if(P.tx!=null){const g=t.MARCH_ARMIES.get(L),q=t.MARCH_MOVE.menCentre&&g?{x:g.gx,y:g.gy}:L;gs.push(Math.hypot(P.tx-q.x,P.ty-q.y))}}}// (the point behind him where his march goes, his guide: march.js menCentre)
+   const ds=[],gs=[];let mode=G.mode,met=false;for(let f=0;f<700&&G.follow;f++){const L0={x:L.x,y:L.y};t.updateWorld(.05);if(G.mode!=='world'){mode=G.mode;met=true;break}if(f>=80){ds.push(Math.hypot(P.x-L.x,P.y-L.y));if(P.tx!=null){const g=t.MARCH_ARMIES.get(L),q=t.MARCH_MOVE.menCentre&&g?t.TRAVEL_STYLES.on?L0:{x:g.gx,y:g.gy}:L;gs.push(Math.hypot(P.tx-q.x,P.ty-q.y))}}}// (the point behind him where his march goes, his guide: march.js menCentre; where his men are as you made for it, his point (a column's middle, not its head): march.js marchPoint)
    const srt=a=>[...a].sort((x,y)=>x-y),med=a=>srt(a)[a.length>>1],T=F.trail*TL;
    ok(!met&&G.follow&&ds.length>=600&&Math.min(...ds)>=F.near*TL-4&&Math.abs(med(ds)-T)<=10,'over '+ds.length+' moments he marches on and you trail him, never meeting him: '+Math.min(...ds).toFixed(1)+' to '+Math.max(...ds).toFixed(1)+' px apart, '+med(ds).toFixed(1)+' most ('+F.trail+' tiles: '+T+' px)'+(met?' (met: '+mode+')':''));
    ok(gs.length>500&&Math.abs(med(gs)-T)<=4&&Math.max(...gs)<=T+1,'each moment you make for a point '+T+' px behind him on his way ('+med(gs).toFixed(1)+' px from him most, at most '+Math.max(...gs).toFixed(1)+')');
@@ -55,15 +55,22 @@ Kit.suite(({ok,info})=>{
   // (open ground away from the holdings: you there, him 3 tiles east, marching home; following him)
   const sp=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*TL,y=(ty+.5)*TL;if(t.tAt(tx,ty)===t.T_OPEN&&t.tAt(tx+3,ty)===t.T_OPEN&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<200)&&t.campGround(x,y))return [x,y]}})();
   const again=()=>{const M=lord();Kit.goTo(sp[0],sp[1]);M.x=sp[0]+Math.max(48,t.worldBattleReach(M)+20);M.y=sp[1];t.followStart(M);t.updateWorld(.05);return M};
-  {const M=again(),n=said.length;M.x+=4000;t.updateWorld(.05);ok(!G.follow&&P.tx==null&&msgs(n).includes('You lose sight of '+t.lordName(M)),'he goes out of sight: '+msgs(n))}
-  {const M=again(),n=said.length,h=t.townBy(M.tgt);M.enter(h);t.updateWorld(.05);ok(!G.follow&&P.tx==null&&msgs(n).includes(t.lordName(M)+' rides into '+h.name),'he goes into a holding: '+msgs(n))}
+  // (FOLLOW.keep, the owner, 2026-11-01: "keep follow without stop": out of sight, on his trail; into a holding, you wait at its
+  // gate; a talk pauses it; gone, it ends. keep false: as before)
+  {const M=again();M.x+=4000;t.updateWorld(.05);ok(G.follow&&G.follow.o===M&&P.tx!=null,'he goes out of sight: you keep to his trail')}
+  {const M=again(),n=said.length,h=t.townBy(M.tgt);M.enter(h);t.updateWorld(.05);ok(G.follow&&G.follow.wait===h&&Math.hypot(P.tx-h.x,P.ty-h.y)<3*t.TILE&&msgs(n).includes(t.lordName(M)+' rides into '+h.name+'. You wait outside'),'he goes into a holding: you wait at its gate ('+msgs(n)+')');
+   M.inside=null;M.x=h.x+60;M.y=h.y;t.updateWorld(.05);ok(G.follow&&!G.follow.wait,'out again: you take up his trail')}
+  {const M=again();G.mode='dialog';t.fastWatch();ok(G.follow&&G.follow.o===M,'a talk or an encounter pauses it');G.mode='world';t.fastWatch();ok(G.follow,'and it goes on after')}
+  {const M=again(),n=said.length;M.dead=true;t.updateWorld(.05);ok(!G.follow&&P.tx==null&&msgs(n).includes('is gone'),'he is gone (dead, broken): it ends ('+msgs(n)+')');M.dead=false}
+  {const F=t.FOLLOW;F.keep=false;try{let M=again(),n=said.length;M.x+=4000;t.updateWorld(.05);ok(!G.follow&&P.tx==null&&msgs(n).includes('You lose sight of '+t.lordName(M)),'keep off, as before: he goes out of sight: '+msgs(n));
+   M=again();n=said.length;const h=t.townBy(M.tgt);M.enter(h);t.updateWorld(.05);ok(!G.follow&&P.tx==null&&msgs(n).includes(t.lordName(M)+' rides into '+h.name),'keep off: he goes into a holding: '+msgs(n))}finally{F.keep=true}}
   {const M=again(),n=said.length,i=W.lords.indexOf(M);W.lords.splice(i,1);t.updateWorld(.05);W.lords.splice(i,0,M);ok(!G.follow&&msgs(n).includes(t.lordName(M)+' is gone'),'he is gone (beaten): '+msgs(n))}
   {again();const n=said.length;t.worldMove(P.x+50,P.y+20);ok(!G.follow&&P.tx!=null&&Math.abs(P.tx-P.x-50)<60&&msgs(n)==='','another order (a click on the ground: Travel) ends it quietly, the new order stands')}
   {again();const n=said.length;t.worldGo(P.x+50,P.y+20);ok(!G.follow,'a click on the ground ends it')}
   {again();const why=t.campWhy();t.makeCamp();t.updateWorld(.05);ok(!why&&!G.follow&&(P.camp||G.pitch),'making camp ends it'+(why?' ('+why+')':''))}
   P.camp=null;G.pitch=null;
   {const M=again();t.worldApproach(M);ok(!G.follow&&G.chase===M,'Approach on his ring ends it, and chases him')}G.chase=null;
-  {again();G.mode='dialog';t.fastWatch();ok(!G.follow,'a meeting, an encounter or a battle ends it (the map no longer yours)');Kit.world({encCool:1e9})}
+  {const F=t.FOLLOW;F.keep=false;try{again();G.mode='dialog';t.fastWatch();ok(!G.follow,'keep off: a meeting, an encounter or a battle ends it (the map no longer yours)')}finally{F.keep=true}Kit.world({encCool:1e9})}
   // ---- a band: hostile, still followed
   {Kit.clear();const s=t.gateSpot(t.TOWNS[0]),b=t.asParty({x:P.x+60,y:P.y,n:4,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(4,false,'bandits');t.bandits.push(b);t.drawWorld();
    const pr=t.partyRingItems(b,0,0).map(i=>i.label);ok(pr.join()==='Attack,Follow,Look'&&t.followStart(b)&&G.follow.o===b,'a band: its ring '+pr.join(', ')+'; you may follow it (shadowing; what it does about you is its own mind\'s)');t.followStop();t.bandits.length=0}

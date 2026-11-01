@@ -5,7 +5,8 @@
    bridge's deck. How long it lasts: its climate's life in hours (a road's, short), cut by the weather there (the frost's snow
    fills them fastest, the desert's wind too).
    Who sees them: your own always while they last; others' by Scouting. Units: px, game hours, Scouting levels (0-10). ---------- */
-const TRACKS={on:true,
+const TRACKS={on:true,head:true,// (head: laid at a marched army's foremost man, world/tracks.js trackHead)
+
   // a trail's point every sample px walked; a jump of more than gap samples (into a holding, out of one, a ferry) starts a new trail
   sample:24,gap:4,
   // the points kept in all, the oldest dropped first (slack: how far over the cap before they are cut back), never older than keep hours

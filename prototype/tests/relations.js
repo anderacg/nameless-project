@@ -50,5 +50,10 @@ Kit.suite(({ok})=>{
  t.P.lrel[b.id]=50;t.relDay();ok(t.relWith(b)<50&&t.relWith(b)>45,'feelings soften a little each day');
  // saved, and listed
  t.P.lrel[b.id]=33;W.lrel={'x|y':7};t.saveGame(true);t.P.lrel={};W.lrel={};t.loadGame();ok(t.relWith(W.lords.find(l=>l.id===b.id))===33&&W.lrel['x|y']===7,'relations are saved');
+ // (the owner, 2026-11-01: "I randomly get to know lords that I'm not even met yet": a lord you do not know changes his mind
+ // quietly, no line naming him (a name in the log makes him known: knowledge.js hear); one you know, told)
+ {const K=t.KNOWLEDGE,u=W.lords.find(l=>!l.dead&&!K.knowsLord(l))||(()=>{const l=W.lords.find(l=>!l.dead);delete K.lords[l.id];return l})(),r0=t.relWith(u),n0=t.G.msgs.length;
+  t.changeRel(u,8,'a friend’s share');ok(t.relWith(u)===r0+8&&!K.knowsLord(u)&&!t.G.msgs.slice(n0).some(m=>m.m.includes(u.name)),'a lord you do not know: his mind changed ('+r0+' to '+t.relWith(u)+'), no line naming him, still unknown');
+  K.lord(u);const n1=t.G.msgs.length;t.changeRel(u,8,'a deed');ok(t.G.msgs.slice(n1).some(m=>m.m.includes(u.name)&&/thinks better of you/.test(m.m)),'one you know: told')}
  world();t.openJournal('lords');ok(/Lords/.test(panel())&&new RegExp(b.name).test(panel())&&/Friend|Warm/.test(panel()),'the Journal’s Lords lists every lord and how they feel');t.act('journal-close');
 });

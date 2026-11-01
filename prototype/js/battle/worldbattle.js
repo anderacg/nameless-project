@@ -274,8 +274,13 @@ class WorldBattleArea{
   ended(ap,ae){return !ap||!ae}
 }
 // Preparation has its own real-time movement clock. No combat systems or late arrivals run here. Each army forms up from where it
-// stands; men made for the fight (a place's, no army on the map) from their side's start (WorldBattleArea.clearOf)
-const BATTLE_MUSTER={gap:20,retreat:16,inset:10,speed:1,minimum:18,queries:6,reach:.001,look:.25};
+// stands; men made for the fight (a place's, no army on the map) from their side's start (WorldBattleArea.clearOf). max: s of its own
+// time at most (paused time not counted; the owner, 2026-11-01: "we only give forming up around 10 seconds. If exceeded, just start
+// off like that, and the units out of formation will have to run back to the formation")
+const BATTLE_MUSTER={gap:20,retreat:16,inset:10,speed:1,minimum:18,queries:6,reach:.001,look:.25,max:10};
+// (a cell's middle, field px; the cell of reach (a flood, route.js) nearest p that a man can stand in, none of skip's: -1 none)
+const routeMid=(g,i)=>({x:(i%g.C+.5)*g.cs,y:(Math.floor(i/g.C)+.5)*g.cs});
+function musterCell(g,reach,p,skip){let best=-1,score=Infinity;for(let i=0;i<reach.length;i++){if(!reach[i]||!g.cost[i]||skip?.has(i))continue;const q=routeMid(g,i),d=(q.x-p.x)**2+(q.y-p.y)**2;if(d<score){score=d;best=i}}return best}
 class BattleMuster{
   constructor(b){
     this.b=b;this.area=b.world;this.active=true;this.time=0;this.done=0;this.entries=[];this.armies=[];this.reserved=new Set();
@@ -288,23 +293,27 @@ class BattleMuster{
       const points=layout.flatMap(l=>l.slots.map(([x,y])=>({x:l.offset.x+x,y:l.offset.y+y}))),extent=Math.max(0,...points.map(p=>Math.hypot(p.x,p.y))),front=Math.max(0,...points.map(p=>p.x*co+p.y*si)),origin=a.field(Number.isFinite(army.owner.x)&&!a.madeBy(army.owner)?army.owner:a.starts[army.team?1:0]),middle={x:(centers[0].x+centers[1].x)/2,y:(centers[0].y+centers[1].y)/2},room=(middle.x-origin.x)*co+(middle.y-origin.y)*si;
       const back=clamp(front+BATTLE_MUSTER.gap*a.scale/2-room,0,BATTLE_MUSTER.retreat*a.scale),anchor=a.constrain({x:origin.x-co*back,y:origin.y-si*back},extent+BATTLE_MUSTER.inset*a.scale);
       army.anchor={...a.world(anchor),facing:face};
-      for(const l of layout){const {g,units,slots,offset}=l;g.ax=anchor.x+offset.x;g.ay=anchor.y+offset.y;
+      for(const l of layout){const {g,units,slots,offset}=l;g.ax=anchor.x+offset.x;g.ay=anchor.y+offset.y;this.stand(g,units);
         units.forEach((u,i)=>{[u.sx,u.sy]=slots[i];this.entries.push({u,g,goal:a.constrain({x:g.ax+u.sx,y:g.ay+u.sy},12),path:null,at:0,done:false})});
       }
     }
   }
+  // (a group's anchor in a house, the water or ground its men cannot reach: at the nearest cell they can stand in and reach, its places
+  // with it, so its way in battle (terrain.js groupWay) ends at its place and a man still on his way goes to his own, not the way's end)
+  stand(g,units){const grid=this.b.terrain?.route?.[groupWho(units)];if(!grid)return;const reach=routeFlood(grid,routeIx(grid,units[0].x,units[0].y)),i=routeIx(grid,g.ax,g.ay);if(grid.cost[i]&&reach[i])return;
+    const best=musterCell(grid,reach,{x:g.ax,y:g.ay});if(best>=0){const q=routeMid(grid,best);g.ax=q.x;g.ay=q.y}}
   plan(e){
     const grid=this.b.terrain.route[routeWho(e.u.s)],u=e.u;let goal=e.goal,p=routePath(grid,u.x,u.y,goal.x,goal.y,{budget:grid.cost.length}),ix=routeIx(grid,goal.x,goal.y);
     // An island, bank or building may prevent the ideal slot. Choose reachable ground without moving the actor there.
     if(!p.ok||this.reserved.has(ix)){
-      const reach=routeFlood(grid,routeIx(grid,u.x,u.y));let best=-1,score=Infinity;
-      for(let i=0;i<reach.length;i++){if(!reach[i]||!grid.cost[i]||this.reserved.has(i))continue;const x=(i%grid.C+.5)*grid.cs,y=(Math.floor(i/grid.C)+.5)*grid.cs,d=(x-goal.x)**2+(y-goal.y)**2;if(d<score){score=d;best=i}}
-      if(best>=0){goal={x:(best%grid.C+.5)*grid.cs,y:(Math.floor(best/grid.C)+.5)*grid.cs};p=routePath(grid,u.x,u.y,goal.x,goal.y,{budget:grid.cost.length});ix=best}
+      const best=musterCell(grid,routeFlood(grid,routeIx(grid,u.x,u.y)),goal,this.reserved);
+      if(best>=0){goal=routeMid(grid,best);p=routePath(grid,u.x,u.y,goal.x,goal.y,{budget:grid.cost.length});ix=best}
     }
     this.reserved.add(ix);e.grid=grid;e.path=p;e.goal=p.length?{x:p.at(-1)[0],y:p.at(-1)[1]}:{x:u.x,y:u.y};u.sx=e.goal.x-e.g.ax;u.sy=e.goal.y-e.g.ay;
   }
   step(rt){
-    if(!this.active||this.b!==B||B.paused||G.modal)return;const dt=Math.min(.1,Math.max(0,rt));if(!dt)return;this.time+=dt;let queries=0;
+    // (held while paused or under a window really open; G.modal alone, left set with no window shown, never freezes it)
+    if(!this.active||this.b!==B||B.paused||G.modal&&!ov.hidden)return;const dt=Math.min(.1,Math.max(0,rt));if(!dt)return;this.time+=dt;let queries=0;
     const hero={x:B.hero.x,y:B.hero.y};
     for(const e of this.entries){
       if(e.done)continue;const u=e.u;if(!e.path){if(queries++>=BATTLE_MUSTER.queries)continue;this.plan(e)}
@@ -316,7 +325,13 @@ class BattleMuster{
     // Follow the hero's actual movement, preserving the user's current zoom and framing.
     this.area.pan((B.hero.x-hero.x)/this.area.scale,(B.hero.y-hero.y)/this.area.scale);this.area.view=null;
     if(this.time>=(this.look||0)){this.look=this.time+BATTLE_MUSTER.look;B.sight=null;sightStep(true)}
-    if(this.done===this.entries.length){this.active=false;B.ready=true;B.paused=true;B.sight=null;B.captains={};battleSpeedUI();setOrderUI();toast('Armies are in position. Press Start Battle when ready.')}
+    if(this.done===this.entries.length||this.time>=BATTLE_MUSTER.max)this.finish();
+  }
+  // (everyone in place, or out of time: the battle ready as it stands, no one moved there; a man not yet in his place walks to it
+  // once it starts, as his holding group's man does (actors.js), round the river by the field's routes)
+  finish(){
+    this.active=false;for(const e of this.entries)if(!e.done){const u=e.u;u.spdNow=0;u.vel=0;u.movF=0}
+    B.ready=true;B.paused=true;B.sight=null;B.captains={};battleSpeedUI();setOrderUI();toast('Armies are in position. Press Start Battle when ready.');
   }
 }
 const meleeK=()=>B?.world&&WORLD_BATTLE.melee?WORLD_BATTLE.sprite:1;

@@ -31,7 +31,7 @@ class Horse{
   die(){const u=this.rider,c=corpseOf(u);this.dead=true;this.hp=0;this.ride();
     B.corpses.push({x:u.x,y:u.y,team:u.team,face:u.face||1,sp:{mount:c.mount,down:c.down,horse:true},td:B.t,dry:false,pool:rnd(8,11),seed:Math.random()*4|0})}
   // standing saddled in its side's colour (sprites.js horseSprite), on the camera's pixels as the living are
-  draw(){const q=B.world?VS/B.world.scale:B.cam?B.cam.z:1,x=Math.round(this.x*q)/q,y=Math.round(this.y*q)/q,sp=horseSprite(this.look);
+  draw(){const q=B.world?VS/B.world.scale:B.cam?camPx():1,x=Math.round(this.x*q)/q,y=Math.round(this.y*q)/q,sp=horseSprite(this.look);
     ctx.save();ctx.translate(x,y);if(B.world)ctx.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);
     ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(0,0,9,2,0,0,6.283);ctx.fill();if(this.face<0)ctx.scale(-1,1);ctx.drawImage(sp,-(sp.width>>1),-sp.height+2);ctx.restore()}
 }

@@ -22,7 +22,13 @@ class Brain{
 // a lord: marches to war, lays siege, rests in his realm's holdings; hunts you if your realms are at odds and he is the stronger;
 // at home, rides out against bands and beasts that come near his realm's holdings and estates; on the road, turns on a beast
 // near him he can beat (defence.js)
+const LORD_TRIPS=new WeakMap();// (each lord's trip: its end, x, y, and whether it was long when he set out; never saved)
 class LordBrain extends Brain{
+  // (his way to tx, ty by holding t: a trip of more than TRAVEL_STYLES.long px when he set out on it (LORD_TRIPS) keeps to the roads a
+  // little all the way (lordKeep, router.js wayKeep), so his column gets the road's pace (never dropped near its end: the way found
+  // again there cut across the land, off the road); a shorter one as the land goes)
+  way(l,tx,ty,t){const T=TRAVEL_STYLES;let k=LORD_TRIPS.get(l);if(!k||k.x!==tx||k.y!==ty)LORD_TRIPS.set(l,k={x:tx,y:ty,long:Math.hypot(tx-l.x,ty-l.y)>T.long});
+    return{x:tx,y:ty,tw:t,road:k.long&&T.lordKeep}}
   think(l,d){
     if(l.dead)return false;if(l.follow||l.with){Host.lordStep(l,d,this);return false}// (he follows you, or his marshal: his place in the column, hosts.js)
     this.cool(l,d);
@@ -43,7 +49,7 @@ class LordBrain extends Brain{
       {const f=hostile&&fearOf(l,st)||dread;if(f&&l.state!=='siege'&&!safeRefuge(l,{x:t.x,y:t.y+12},f)){const alt=Spatial.nearest(fiefsOf(l.fac).filter(h=>h!==t&&safeRefuge(l,{x:h.x,y:h.y+12},f)),l.x,l.y);
         if(!alt){Router.flee(l,f,moveStep(26*mul,d));return false}l.tgt=alt.name;t=alt}}
       const tx=t.x+(l.state==='siege'?(l.id.endsWith('0')?-16:16):0),ty=t.y+12,dd=Math.hypot(tx-l.x,ty-l.y);
-      if(dd>4){const step=moveStep(26*mul,d);if(dread)EscapeStamina.run(l,dread,step,n=>Router.travel(l,{x:tx,y:ty,tw:t},n),true);else Router.travel(l,{x:tx,y:ty,tw:t},step)}
+      if(dd>4){const step=moveStep(26*mul,d);if(dread)EscapeStamina.run(l,dread,step,n=>Router.travel(l,{x:tx,y:ty,tw:t},n),true);else Router.travel(l,this.way(l,tx,ty,t),step)}
       else if(l.state==='march'){
         if(atWar(l.fac,t.owner)){l.state='siege';l.sd=0;worldEmit('siege:laid',{town:t,lord:l});
           {const F=FACS[l.fac].n,mine=t.owner==='player';worldEvent({text:l.name+' of the '+F+' lays siege to '+t.name+(mine?', your fief!':'.'),cls:t.owner===P.fac||mine?'bad':'',x:t.x,y:t.y,fac:[l.fac,t.owner],towns:[t],heard:['siege',t],kind:'',
@@ -156,7 +162,7 @@ class CaravanBrain extends Brain{
       if(alt){c.to=alt.name;c.turned=true;return false}}
     if(scared&&!block&&gd<pd*X.dash){const ox=c.x;Router.travel(c,{...gate,road:true},moveStep(CARAVAN_SPD,d));this.face(c,ox)}
     else if(scared){const ox=c.x;Router.flee(c,{x:c.x+v.dx,y:c.y+v.dy},moveStep(CARAVAN_SPD*.9,d));this.face(c,ox)}
-    else{const ox=c.x,oy=c.y;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1)*(this.behind(c,gate,gd)?CARAVAN_GAP.slow:1),d));c.dir=c.x>=ox?1:-1;
+    else{const ox=c.x,oy=c.y;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*armyGround(c,caravanGround)*(this.behind(c,gate,gd)?CARAVAN_GAP.slow:1),d));c.dir=c.x>=ox?1:-1;
       const m=Math.hypot(c.x-ox,c.y-oy);if(m>0)CARAVAN_HEAD.set(c,[(c.x-ox)/m,(c.y-oy)/m])}
     if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.arrive(to))c.gone=true;return false}
     // preyed on: bandits close by, or a lord at war with its owner; the guards fight it out (fights.js)

@@ -1,11 +1,13 @@
 'use strict';
 // Commands return outcomes; the screen decides how to describe them.
-const RECRUIT_WHY={barracks:'Upgraded only at a barracks',amount:'Enter a positive whole number with a valid total cost',target:'Choose an existing group of this unit type, or a new group','wounded-group':'Wait for this group’s wounded to return before upgrading it',groups:'Army slot or troop-group limit reached. Train Leadership, choose another group, or make room',gold:'Not enough gold for this order',capacity:'Not enough headcount capacity for this order',volunteers:'Not enough volunteers for this order',standing:'Not enough standing',closed:'No one will enlist while the holding recovers',unavailable:'This holding does not raise that troop',experience:'Needs more experience: fight with them',troops:'No soldiers of that kind',upgrade:'Not a valid troop upgrade','training-unavailable':'Needs an expert trainer of its role (here, or yours in your camp)','companion-unavailable':'This companion is not available here','companion-hired':'Already in your band','invalid-unit':'Unknown recruit'};
+const RECRUIT_WHY={barracks:'Upgraded only at a barracks',amount:'Enter a positive whole number with a valid total cost',target:'Choose an existing group of this unit type, or a new group','wounded-group':'Wait for this group’s wounded to return before upgrading it',slot:'No free unit slot: one full unit of its new kind trains, the rest stay, and they need a slot of their own',groups:'Army slot or troop-group limit reached. Train Leadership, choose another group, or make room',gold:'Not enough gold for this order',capacity:'Not enough headcount capacity for this order',volunteers:'Not enough volunteers for this order',standing:'Not enough standing',closed:'No one will enlist while the holding recovers',unavailable:'This holding does not raise that troop',experience:'Needs more experience: fight with them',troops:'No soldiers of that kind',upgrade:'Not a valid troop upgrade','training-unavailable':'Needs an expert trainer of its role (here, or yours in your camp)','companion-unavailable':'This companion is not available here','companion-hired':'Already in your band','invalid-unit':'Unknown recruit'};
+// (a troop name for many: Lancer, Lancers; Spearman, Spearmen)
+const troopsWord=n=>/man$/.test(n)?n.slice(0,-3)+'men':/s$/.test(n)?n:n+'s';
 const recruitmentWhy=r=>r.code==='horses'&&r.horses?r.horses.why:RECRUIT_WHY[r.code]||'';
 function recruitmentFeedback(r,t){
   if(r.ok){
     if(r.code==='hire')log((r.count>1?r.count+' × '+ST[r.kind].n:cap1(an(ST[r.kind].n.toLowerCase())))+' join'+(r.count>1?'':'s')+' your band.');
-    else if(r.code==='group-training')log(armyGroupLabel(r.id)+': '+r.count+' × '+ST[r.from].n+' upgraded to '+ST[r.to].n+(r.cost?' for '+r.cost+'g':'')+'. They start again at rank 1.','good');
+    else if(r.code==='group-training')log(armyGroupLabel(r.id)+': '+r.count+' × '+ST[r.from].n+' upgraded to '+ST[r.to].n+(r.cost?' for '+r.cost+'g':'')+'. They start again at rank 1.'+(r.split?' The other '+r.stay+' stay as they were.':''),'good');
     else if(r.code==='companion')log(COMPS[r.id].n+' joins your band.','good');
     else if(r.code==='prisoner')log('A captured '+ST[r.kind].n.toLowerCase()+' swears to follow you.');
   }else if(r.code==='standing')toast('The people of '+t.name+' do not know you well enough yet.','bad');
@@ -90,14 +92,17 @@ class Place{
   body(t){
     return '';
   }
+  // its window: closed, or its own content, and under it the unit upgrades sold here, whichever building it is (data/buffs.js BUFFS
+  // at: a building's id; the owner, 2026-11-01: "dynamic enough so that I can just switch building type")
   page(t){
-    return this.shut(t)||this.body(t);
+    return this.shut(t)||this.body(t)+(Buffs.offer(t,this.id).length?buffShop(t,this.id):'');
   }
   handles(a){
-    return Object.prototype.hasOwnProperty.call(this.verbs,a);
+    return Object.prototype.hasOwnProperty.call(this.verbs,a)||a==='buff-buy';
   }
-  // (each verb's method has (arg, t, a): a, for one method doing two verbs)
+  // (each verb's method has (arg, t, a): a, for one method doing two verbs; an upgrade bought, at any building that sells it)
   act(a,arg,t){
+    if(a==='buff-buy'&&!this.verbs[a])return buffBuy(arg,t,this.id);
     return this[this.verbs[a]](arg,t,a);
   }
   focus(a,arg){
@@ -116,7 +121,8 @@ function definePlace(id,spec){
   return p;
 }
 // the place whose verb an action is (none: the window's own, or nobody's)
-const placeActing=a=>Object.values(PLACES).find(p=>p.handles(a))||null;
+// (the place a verb is for: the one you are in first (a verb every place has, as buying an upgrade: Place#act), else the one that has it)
+const placeActing=a=>{const cur=G.town&&PLACES[G.town.tab];return cur&&cur.handles(a)?cur:Object.values(PLACES).find(p=>p.handles(a))||null};
 
 /* the market square: its goods by category (bought and sold one unit at a time, each moving the price; a holding's old arrows are
    none), empty waterskins at their base price among the Water (world/supply.js skinsBuy; no market stocks them), its quivers, and
@@ -251,7 +257,7 @@ class Smithy extends Place{
     return railCards([{pic:personPic('smith',t.races[0]),name:'The smith',role:'At the forge of '+t.name,facts:[st.length?st.length+' pieces for sale':'Sold out','New stock in '+(7-Clock.daysSince(W.shops[t.name].day)%7)+' days'],
       note:forgeText(t)+' Bring copper and tin, silver, gold, mithril or adamantite to its market and the smith will forge with them.'}])+'<div class="lab">For sale</div>'+(st.length?st.map((id,i)=>{const I=ITEMS[id],p=gearPrice(id);
       return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+SLOTS[I.slot]+' · '+I.d+'</small><small class="diff">'+(gearDiff(id).join(' · ')||'<span class="muted">No change from what you wear.</span>')+'</small></div><div class="acts">'+railBtn('buy-gear',i,'Buy',P.gold<p?'Not enough gold':playerInventory.room('gear',id)<1?BAG_FULL:'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')
-      :'<p class="muted">Sold out until the next delivery.</p>')+quiverRows(t,'smith','buy-quiver')+buffShop(t,this.id);
+      :'<p class="muted">Sold out until the next delivery.</p>')+quiverRows(t,'smith','buy-quiver');
   }
   buyBuff(arg,t){buffBuy(arg,t,this.id)}
   // a piece (its place in the stock): yours, your standing up a little
@@ -285,7 +291,7 @@ class Stable extends Place{
       note:'A mount goes in its own slot and speeds your travel. Rare beasts need standing '+REP_NEED[2]+' here (yours: '+standingAt(t)+').'}])+'<div class="lab">In the stalls</div>'+
       stableStock(t).map(id=>{const I=ITEMS[id],p=gearPrice(id),ok=canBuyMount(t,id),own=P.gear.mount===id;
         return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+I.d+'</small><small class="diff">'+(gearDiff(id).join(' · ')||'<span class="muted">No change from your mount.</span>')+'</small></div><div class="acts">'+(ok?'':'<small class="bad">Needs standing '+REP_NEED[2]+'</small>')+
-          railBtn('buy-mount',id,own?'Riding':'Buy',own?'You ride it':!ok?'Needs standing '+REP_NEED[2]:P.gold<p?'Not enough gold':P.gear.mount&&!invFree()?'Your bag is full':'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')+horseRows(t)+buffShop(t,this.id);
+          railBtn('buy-mount',id,own?'Riding':'Buy',own?'You ride it':!ok?'Needs standing '+REP_NEED[2]:P.gold<p?'Not enough gold':P.gear.mount&&!invFree()?'Your bag is full':'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')+horseRows(t);
   }
   buyBuff(arg,t){buffBuy(arg,t,this.id)}
   // a unit's riders horsed again: your spare horses taken from your bag, the rest paid for
@@ -337,7 +343,8 @@ class Barracks extends Place{
   tab(arg){G.town.recTab=arg==='train'?'train':'hire';G.town.info=null}
   hire(arg,t){const result=recruitment.hire(t,arg,1);recruitmentFeedback(result,t)}
   // ---- Train (doc/RANKS_DESIGN.md §3: its trainers, world/trainers.js) and upgrade (§4): each of your groups that upgrades a row (its badge, its rank), a button for each kind
-  // it upgrades into: at its last rank, here for its price (core/recruitment.js quoteGroupTraining), keeping its place
+  // it upgrades into: at its last rank, here for its price (core/recruitment.js quoteGroupTraining), keeping its place; into a smaller
+  // unit, one full unit of it ("Train 6 of 15 into Lancers"), the rest staying, a free unit slot needed
   trainTab(t){const trs=trainersAt(t);trs.forEach(trainerMeet);const lessons=trs.length?'<div class="lab">Trainers here</div>'+trainerRows(trs):'<p class="muted">No trainer here.</p>',gs=partyRoster(P).groups.filter(g=>UP[g.type]);
     if(!gs.length)return lessons+'<p class="muted">None of your groups upgrades further.</p>';
     return lessons+'<div class="lab">Upgrades</div><div class="rec-rows">'+gs.map(g=>{const L=rankLine(g);
@@ -345,7 +352,8 @@ class Barracks extends Place{
       return '<div class="rec-row" data-act="rec-pick" data-arg="'+key+'"><button class="rec-pic" type="button" data-act="rec-info" data-arg="'+key+'"><img src="'+portrait(UP[g.type][0])+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
         '<div class="rec-txt"><strong>'+groupBadge(g,14)+' '+htmlText(armyGroupLabel(g.id))+' ×'+g.count+'</strong><small>'+(rankReady(g)?'<b class="gold">'+L.txt+'</b>':L.txt)+'</small></div>'+
         '<div class="rec-step">'+(rankReady(g)?UP[g.type].map(to=>{const q=recruitment.quoteGroupTraining(t,g.id,to);
-          return '<button class="btn sm'+(q.ok?' primary':'')+'" type="button" data-act="rec-upgroup" data-arg="'+g.id+':'+to+'"'+(q.ok?'':' disabled title="'+htmlText(q.code==='experience'?(rankPeasant(g.type)?'Its experience is not full yet':'Needs rank '+RANKS.max+': fight with them'):recruitmentWhy(q)||'Not available')+'"')+'>'+htmlText(ST[to].n)+(q.cost?' · '+q.cost+'g':'')+(q.horses?' · '+q.horses.n+' '+htmlText(ITEMS[q.horses.id].n.toLowerCase())+(q.horses.n>1?'s':'')+(q.horses.own?' ('+q.horses.own+' yours)':''):'')+'</button>'}).join(''):'<small class="muted">'+(rankPeasant(g.type)?'When its experience is full':'At rank '+RANKS.max)+': '+UP[g.type].map(to=>htmlText(ST[to].n)).join(', ')+'</small>')+'</div></div>'}).join('')+'</div>'}
+          if(q.code==='slot')return '<button class="btn sm" type="button" disabled title="'+htmlText(recruitmentWhy(q))+'">No free unit slot</button>';// (a split: room for its new unit first)
+          return '<button class="btn sm'+(q.ok?' primary':'')+'" type="button" data-act="rec-upgroup" data-arg="'+g.id+':'+to+'"'+(q.ok?'':' disabled title="'+htmlText(q.code==='experience'?(rankPeasant(g.type)?'Its experience is not full yet':'Needs rank '+RANKS.max+': fight with them'):recruitmentWhy(q)||'Not available')+'"')+'>'+htmlText(q.split?'Train '+q.count+' of '+g.count+' into '+troopsWord(ST[to].n):ST[to].n)+(q.cost?' · '+q.cost+'g':'')+(q.horses?' · '+q.horses.n+' '+htmlText(ITEMS[q.horses.id].n.toLowerCase())+(q.horses.n>1?'s':'')+(q.horses.own?' ('+q.horses.own+' yours)':''):'')+'</button>'}).join(''):'<small class="muted">'+(rankPeasant(g.type)?'When its experience is full':'At rank '+RANKS.max)+': '+UP[g.type].map(to=>htmlText(ST[to].n)).join(', ')+'</small>')+'</div></div>'}).join('')+'</div>'}
   upgroup(arg,t){const [id,to]=String(arg).split(':'),r=recruitment.trainGroup(t,id,to);recruitmentFeedback(r,t)}
   // (back from a unit's card: the list where you left it)
   focus(a){return this.deskOf(G.town.ref).focus(a)}

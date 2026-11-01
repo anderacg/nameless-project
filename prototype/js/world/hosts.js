@@ -33,7 +33,9 @@
    Host.besiegers), the members never alone. It ends: the holding taken (or no longer an enemy's), the marshal beaten, or its
    days up (camp.days); its members go their own way. Serving the realm, you are summoned (a page: Ride with his host, his
    days; Decline, honour camp.refuse lower). ---------- */
-const HOSTS={crumb:6,gap:22,catch:1.3,far:160,join:220,
+// (lagTol: px a member may stand past its place before those behind count it as lagging and wait on it: a fraction of a px, as men
+// filling their places leave it, is no lag; core/assign.js)
+const HOSTS={crumb:6,gap:22,lagTol:2,catch:1.3,far:160,join:220,
   lord:{rel:20,max:3,troops:6,days:[5,10],near:150,offer:.03,leave:6,honor:2,end:{rel:5,renown:3,honor:2},hopeless:2.5,cautious:['greedy','cunning'],aside:3,peace:6,desert:3},
   camp:{start:.12,min:3,members:[2,4],troops:9,reach:700,days:20,refuse:3}};
 // (an army's ring in a host's column: its outer ring, march.js marchOuter; none with world battles off)
@@ -54,8 +56,9 @@ class Host{
   // (the next place in your column)
   static seq(){return Math.max(0,...cparties().map(p=>p.fseq||0),...this.lords().map(l=>l.follow.seq||0))+1}
   // ---- the leader's trail: a point each time he has gone crumb px, as long as the column needs
-  static trailOf(o){let t=this.trails.get(o);if(!t)this.trails.set(o,t=[[o.x,o.y]]);return t}
-  mark(){const o=this.lead,t=Host.trailOf(o),l=t[t.length-1],d=Math.hypot(o.x-l[0],o.y-l[1]);if(d<HOSTS.crumb)return;if(d>HOSTS.far)t.length=0;t.push([o.x,o.y]);// (a leap, out of a gate: a fresh trail)
+  // (where he stands: a column's middle, not its head, march.js marchPoint)
+  static trailOf(o){let t=this.trails.get(o);if(!t){const p=marchPoint(o);this.trails.set(o,t=[[p.x,p.y]])}return t}
+  mark(){const o=marchPoint(this.lead),t=Host.trailOf(this.lead),l=t[t.length-1],d=Math.hypot(o.x-l[0],o.y-l[1]);if(d<HOSTS.crumb)return;if(d>HOSTS.far)t.length=0;t.push([o.x,o.y]);// (a leap, out of a gate: a fresh trail)
     const keep=Math.ceil((this.back(this.members.at(-1))+2*HOSTS.gap)/HOSTS.crumb)+2;if(t.length>keep)t.splice(0,t.length-keep)}
   // (how far back along the trail a member's place is: each ring (march.js marchOuter; none with world battles off) behind the
   // one ahead of it, HOSTS.gap px between them; the leader's 0)
@@ -64,11 +67,11 @@ class Host{
   // place ahead of it, straight, so round a bend too; one lagging behind its place holds those behind it back past it; the trail
   // shorter, on past its oldest point the way it went, none yet: straight back from the leader toward the member)
   places(){
-    const L=this.lead,t=Host.trailOf(L),pts=[{x:L.x,y:L.y}];for(let k=t.length-1;k>=0;k--){const q=pts.at(-1);if(Math.hypot(t[k][0]-q.x,t[k][1]-q.y)>1e-6)pts.push({x:t[k][0],y:t[k][1]})}
+    const L=this.lead,at0=marchPoint(L),lx=at0.x,ly=at0.y,t=Host.trailOf(L),pts=[{x:lx,y:ly}];for(let k=t.length-1;k>=0;k--){const q=pts.at(-1);if(Math.hypot(t[k][0]-q.x,t[k][1]-q.y)>1e-6)pts.push({x:t[k][0],y:t[k][1]})}
     const out=new Map();let i=0,c=pts[0],prev=pts[0],a=L;
-    for(const m of this.members){const need=hostRing(a)+hostRing(m)+HOSTS.gap,far=a!==L?Math.hypot(a.x-L.x,a.y-L.y):0,lag=far>Math.hypot(prev.x-L.x,prev.y-L.y)?far+need:0;
-      const ok=p=>Math.hypot(p.x-prev.x,p.y-prev.y)>=need&&Math.hypot(p.x-L.x,p.y-L.y)>=lag;let place=null;
-      while(!place){let r=pts[i+1],end=!r;if(end){const q=pts[i-1]||{x:L.x,y:L.y},u=i||c!==pts[0]?{x:c.x-q.x,y:c.y-q.y}:{x:m.x-L.x,y:m.y-L.y},d=Math.hypot(u.x,u.y)||1,k=need+lag+Math.hypot(c.x-prev.x,c.y-prev.y)+Math.hypot(c.x-L.x,c.y-L.y)+1;
+    for(const m of this.members){const need=hostRing(a)+hostRing(m)+HOSTS.gap,far=a!==L?Math.hypot(a.x-lx,a.y-ly):0,lag=far>Math.hypot(prev.x-lx,prev.y-ly)+HOSTS.lagTol?far+need:0;
+      const ok=p=>Math.hypot(p.x-prev.x,p.y-prev.y)>=need&&Math.hypot(p.x-lx,p.y-ly)>=lag;let place=null;
+      while(!place){let r=pts[i+1],end=!r;if(end){const q=pts[i-1]||{x:lx,y:ly},u=i||c!==pts[0]?{x:c.x-q.x,y:c.y-q.y}:{x:m.x-lx,y:m.y-ly},d=Math.hypot(u.x,u.y)||1,k=need+lag+Math.hypot(c.x-prev.x,c.y-prev.y)+Math.hypot(c.x-lx,c.y-ly)+1;
           r=i||Math.hypot(u.x,u.y)>1e-6?{x:c.x+u.x/d*k,y:c.y+u.y/d*k}:{x:c.x-k,y:c.y}}
         if(!ok(r)&&!end){c=r;i++;continue}let lo=0,hi=1;const at=s=>({x:c.x+(r.x-c.x)*s,y:c.y+(r.y-c.y)*s});if(ok(c))hi=0;else for(let n=0;n<30;n++){const s=(lo+hi)/2;if(ok(at(s)))hi=s;else lo=s}
         place=at(hi);c=place}
@@ -77,7 +80,7 @@ class Host{
   // a member's place (places)
   slot(o){return this.members.includes(o)?this.places().get(o):null}
   // ---- a member's moment (go(x, y, step): its brain's way of moving there, its step at its own pace sp)
-  static keep(o,sp,go){const h=this.of(o);if(!h)return false;h.mark();const L=h.lead,far=Math.hypot(L.x-o.x,L.y-o.y)>h.back(o)+HOSTS.far,s=far?{x:L.x,y:L.y}:h.slot(o),d=Math.hypot(s.x-o.x,s.y-o.y);
+  static keep(o,sp,go){const h=this.of(o);if(!h)return false;h.mark();const L=marchPoint(h.lead),far=Math.hypot(L.x-o.x,L.y-o.y)>h.back(o)+HOSTS.far,s=far?{x:L.x,y:L.y}:h.slot(o),d=Math.hypot(s.x-o.x,s.y-o.y);
     if(d>1.5)go(s.x,s.y,Math.min(d,sp*(far||d>HOSTS.gap/2?HOSTS.catch:1)));return true}
   // ---- the leader's pace: slowed to its slowest member near (within far), never faster. Their own paces, before the ground
   // (they walk where he walked a moment later: the ground slows them as it slowed him); a multiplier of his

@@ -764,6 +764,8 @@ The owner's rule, "world first": a battle's field shows what the world map has w
 
 ## 10. Phase 4 routing core (built 2026-10-17: `battle/route.js`, `tests/route.js`)
 
+Status 2026-11-01: paths keep a body's room off walls (`battle/route.js` `PATHS`: clearance `routeRoom`, body room `routeNeed`, flow fields `routeFlow`, wall sliding `routeSlide`); battle groups share a field to their way's end (`TerrainRoutes` `groupFlow`). Each part has its switch.
+
 `route.js` is a standalone library. Since 2026-10-18 game code calls it (wired as below; see "Deviations as built" at the end of this section). Two helpers were added then: `routeFlood(g, s)` (every cell reachable from cell s) and `routeDist(g, x, y)` (a Dijkstra cost field from a point, kept per start cell, `ROUTE.dist` of them).
 
 ### Grid

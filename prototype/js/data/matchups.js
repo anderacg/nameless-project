@@ -58,7 +58,7 @@ const shapeDt=(shape,base)=>shape==='thrust'||shape==='twin'?'pierce':shape==='s
 // what is left of a blow of type dt (else the attacker's) from a on d, after armour or ward and resistances
 function typeMul(a,d,dt){dt=dt||dtOf(a);if(!DMG[dt])return 1;
   if(isMagical(dt))return (tagsOf(d).includes('ward')?WARD:1)*((d.resist&&d.resist[dt])||1)*((RACE_RESIST[d.race]||{})[dt]||1);
-  const m=1-armorValue(d)/100*(ARMOR_PEN[dt]??0);return m<1&&tagsOf(a).includes('pierce')?m+(1-m)*AP:m}
+  const m=1-armorValue(d)/100*(ARMOR_PEN[dt]??0);return m<1&&(a.ap!=null||tagsOf(a).includes('pierce'))?m+(1-m)*(a.ap??AP):m}// (ap: a Heavy bolt's, data/kits.js MASTERY)
 const tagsOf=s=>s.tags||[];
 /* every unit two attacks: a melee damage and a missile damage. A shooter's melee (his sidearm: Melee Mode) is s.mdmg, else
    MELEE_SHOT of his shot; a fighter's missile is his shot if he has one, else none (0) */
@@ -76,7 +76,9 @@ const unitClass=s=>s.range?(s.magic?'magic':'ranged'):s.charge?'cav':tagsOf(s).i
 // damage multiplier when a hits d (dt: the blow's own type, else a's): its kind against d's, then its type against d's armour or ward
 function matchup(a,d,dt){
   const ac=unitClass(a),dc=unitClass(d),at=tagsOf(a);let m=1;
-  if(ac==='spear'&&(dc==='cav'||d.big))m*=1.6;
+  // (a spear's: its traits, Anti-cavalry and Anti-large, each its own number (data/abilities.js TRAITS); KITS.traits2 off: the one rule)
+  if(KITS.traits2){if(dc==='cav'&&TRAITS.antiCav.has(a))m*=TRAITS.antiCav.mul;if(d.big&&TRAITS.antiLarge.has(a))m*=TRAITS.antiLarge.mul}
+  else if(ac==='spear'&&(dc==='cav'||d.big))m*=1.6;
   if(ac==='cav'&&(dc==='ranged'||dc==='magic'))m*=1.4;
   if(ac==='ranged'&&dc==='foot')m*=1.2;
   if(ac==='foot'&&dc==='spear')m*=1.25;
@@ -86,7 +88,7 @@ function matchup(a,d,dt){
 // plain-language strengths and weaknesses for a unit's stats
 function vsInfo(s){
   const c=unitClass(s),t=tagsOf(s),strong=[],weak=[];
-  if(c==='spear'){strong.push('cavalry','large monsters');weak.push('swordsmen and axemen')}
+  if(c==='spear'){strong.push(...(!KITS.traits2||TRAITS.antiCav.has(s)?['cavalry']:[]),...(!KITS.traits2||TRAITS.antiLarge.has(s)?['large monsters']:[]));weak.push('swordsmen and axemen')}
   if(c==='cav'){strong.push('archers');weak.push('spearmen')}
   if(c==='ranged'){strong.push('infantry');weak.push('cavalry','shock troops')}
   if(c==='magic'){strong.push('armour (magic ignores it)','packed ranks');weak.push('cavalry','shock troops','warded troops')}

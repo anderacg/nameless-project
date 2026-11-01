@@ -1,10 +1,12 @@
 'use strict';
 // The ranks' skills, Spear and Bow (battle/rankskills.js, data/ranks.js RANK_SKILLS; doc/RANKS_DESIGN.md phase 2; the owner,
 // 2026-10-30: "each rank has certain skills, passive or active, limited to their proficiency and play style"; "move those to the
-// ladder for unlocking"): a spearmen's Brace at rank 2, Long reach (+10%) at 3, Rally at 4, the Hedge of spears at 5; a bowmen's Fire
+// ladder for unlocking"): a spearmen's Brace at rank 2, Long reach (+10%) at 3, Rally at 4, Braced flanks at 5; a bowmen's Fire
 // arrows at 2, Steady aim at 3, Rapid shot at 4, Marksmen at 5; a role not yet on a ladder keeps its abilities from rank 1; an AI
 // army's groups count as RANKS.ai till they rank.
-Kit.suite(({ok})=>{
+// Step 1's rules: run with unit kits step 2's switches off (Kit.kits(false): doc/UNIT_KITS_DESIGN.md §10.2), the proof they give
+// step 1 back; step 2's rules (ranks give stats only, the five mastery levels, Brace a stance, Lunge...): tests/kits2.js.
+Kit.suite(({ok})=>Kit.kits(false,()=>{
  const t=T,P=t.P,G=t.G,R=t.RANKS;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:0});P.sk.lead.lv=10;const r=t.partyRoster(P);P.troops={};
  const grp=(k,n,rank)=>{r.add(k,n,'new');const g=r.groups.filter(x=>x.type===k).pop();t.rankGain(g,1e6);if(rank<R.max){t.rankReset(g);t.rankGain(g,R.xp[t.ST[k].tier].slice(0,rank-1).reduce((a,b)=>a+b,0))}return g};
  const sp1=grp('hum_spear',4,1),sp5=grp('hum_spear',4,5),bw1=grp('hum_bow',4,1),bw4=grp('hum_bow',4,4),cav=grp('hum_squire',3,1);
@@ -21,7 +23,7 @@ Kit.suite(({ok})=>{
  {const ai=Object.values(b.groups).find(g=>!g.player&&g.units.some(u=>u.type==='hum_spear'));ok(ai&&t.battleRank(ai)===R.ai&&t.groupHasAbility(ai,'brace')&&!t.groupHasAbility(ai,'rally'),'an AI army\'s spearmen: rank '+R.ai+', Brace and no Rally')}
  // ======== the passives
  {const a=unit(sp1),c=unit(sp5);ok(Math.abs(c.s.reach/a.s.reach-t.RANK_SKILLS.spear[2].reach)<1e-9,'Long reach at rank 3 and up: +'+Math.round((t.RANK_SKILLS.spear[2].reach-1)*100)+'% ('+c.s.reach.toFixed(1)+' against '+a.s.reach+')');
-  ok(t.rankSkill(c,'hedge')&&!t.rankSkill(a,'hedge'),'the Hedge of spears at rank 5');
+  ok(t.rankSkill(c,'hedge')&&!t.rankSkill(a,'hedge'),'Braced flanks at rank 5');
   const e=b.units.find(u=>u.team===1),sx=c.x,sy=c.y;c.face=1;e.x=c.x;e.y=c.y-20;ok(t.sideOf(c,e)!=='back'&&(t.sideOf(c,e)!=='flank'||t.spearBraced(c,e)),'hedged: braced against a charge from the flank, no Brace ordered ('+t.sideOf(c,e)+')');c.x=sx;c.y=sy}
  {const a=unit(bw1),c=unit(bw4),k=t.RANK_SKILLS.bow[2].aim;ok(Math.abs(t.aimErr(c).a/t.aimErr(a).a-k*(1-3*t.RANKS.prof))<1e-9,'Steady aim at rank 3: their shots '+Math.round((1-k)*100)+'% truer (and 3% more for rank 4\'s proficiency)');
   ok(c.s.range===a.s.range,'Marksmen only at rank 5: the rank-4 bowmen\'s range as a rank 1\'s');
@@ -34,7 +36,7 @@ Kit.suite(({ok})=>{
   ok(Math.abs(u4.s.range/u1.s.range-t.RANK_SKILLS.bow[4].range)<1e-9,'Marksmen at rank 5: +'+Math.round((t.RANK_SKILLS.bow[4].range-1)*100)+'% range');for(const u of b2.units)if(u.team===1)u.hp=0;t.checkBattleOver();b2.endT=0;t.updateBattle(.01);if(t.B)t.finishBattle();t.act('cont');t.hidePanel()}
  // ======== the Army window: the ladder
  {Kit.world();t.openChar();t.act('party-select',sp1.id);t.act('party-path',sp1.id);const d=document.querySelector('.fb-inspector');
-  ok(/Rank skills/.test(d.textContent)&&d.querySelectorAll('.fb-path-step.off').length===4&&/Brace \(G\)/.test(d.textContent),'a spearmen\'s path: its five rungs, four still to reach');
-  {const rungs=[...d.querySelectorAll('.fb-path-step')].map(x=>x.textContent),tl=d.textContent.split('Traits')[1]||'';ok(/Rank 1 · Set spears \(its trait\)/.test(rungs.join('|'))&&!/Set spears/.test(tl)&&/Shield/.test(tl),'rank 1 is its own trait, Set spears, not listed again with its traits (its Shield is)')}t.act('char-close')}
+  ok(/Rank skills/.test(d.textContent)&&d.querySelectorAll('.fb-path-step.off').length===4&&/Brace flanks \(G\)/.test(d.textContent),'a spearmen\'s path: its five rungs, four still to reach');
+  {const rungs=[...d.querySelectorAll('.fb-path-step')].map(x=>x.textContent),tl=d.textContent.split('Traits')[1]||'';ok(/Rank 1 · Braced front \(its trait\)/.test(rungs.join('|'))&&!/Set spears/.test(tl)&&/Shield/.test(tl),'rank 1 is its own trait, Set spears, not listed again with its traits (its Shield is)')}t.act('char-close')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
-});
+}));

@@ -79,7 +79,8 @@ class LabBattleSetup extends BattleSetup{
   }
   // (fog of war: the config's fog key, else as the game has it (FOG.on): battlefog.js)
   fogOn(){const f=this.config.fog;return f==null?FOG.on:!!f}
-  initialize(){super.initialize();const c=this.config;for(const u of this.units){u.mor0=Math.round(clamp(unitMoraleOf(u.s),20,100));u.mor=u.mor0}groupMoraleInit(this.units);B.noMorale=!c.morale;B.auto=c.ai;B.paused=c.paused;heroState();this.powers()}
+  // (each soldier from his own Morale and his rank's, as a real battle's (morale.js moraleInit), unscaled by a band's morale)
+  initialize(){super.initialize();const c=this.config;for(const u of this.units){u.mor0=Math.round(clamp(unitMoraleOf(u.s)+rankMor(u),20,100));u.mor=u.mor0}groupMoraleInit(this.units);B.noMorale=!c.morale;B.auto=c.ai;B.paused=c.paused;heroState();this.powers()}
   /* commander powers (commandpowers.js): the config's powers key (true/false; left out, COMMAND_POWERS.on); commander {left, right}:
      a side's null (none), or {group (its row index: that group's first soldier commands; left out, the game's rule: your hero,
      their first leader), lead (his Leadership, 0-10)} */

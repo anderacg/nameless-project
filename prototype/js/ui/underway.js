@@ -12,7 +12,8 @@ const UNDERWAY=[
   {k:'camp',on:()=>P.camp,ico:'fire',line:()=>'<b>In camp</b>'+(P.recruit?' '+icon('recruit',12,'gico uw-live')+' <small>recruiting</small>':''),title:()=>'Your band rests: stamina comes back faster and the wounded mend (Z)',btn:['uw-camp','Break']},
   {k:'pitch',on:()=>!P.camp&&G.pitch,ico:'fire',line:()=>'<b>Making camp</b>',title:()=>'Your band makes for clear ground to camp',btn:['uw-pitch','Stop']},
   {k:'follow',on:()=>G.follow,ico:'shoe',line:f=>'<b>'+followName(f.o,true)+'</b>',title:f=>'Following '+followName(f.o)+': your band keeps after it at a distance (any other order ends it)',btn:['uw-follow','Stop']},
-  {k:'road',on:()=>P.byRoad,ico:'map',line:()=>'<b>By road</b>',title:()=>'Every way you go keeps to the roads and tracks when one is within '+ROAD_GO.near+' tiles (B)',btn:['uw-road','Off']},
+  // (in column: your army marching in one now, marchstyles.js TravelStyle)
+  {k:'road',on:()=>P.byRoad,ico:'map',line:()=>'<b>By road</b>'+(TravelStyle.column(P)?' · in column':''),title:()=>'Every way you go keeps to the roads and tracks when one is within '+ROAD_GO.near+' tiles, your band in a column on them, two abreast (B)',btn:['uw-road','Off']},
   {k:'siege',on:()=>P.siege&&townBy(P.siege.town),ico:'ladder',line:t=>'<b>'+t.name+'</b> · siege, day '+P.siege.days,title:t=>'Your band besieges '+t.name,btn:['uw-siege','Open']},
   {k:'raid',on:()=>P.raid&&townBy(P.raid.town),ico:'axe',line:t=>'<b>'+t.name+'</b> · raid '+Math.min(100,Math.round(P.raid.t/RAID_TIME*100))+'%',title:t=>'Your band plunders '+t.name,btn:['uw-siege','Open']},
 ];

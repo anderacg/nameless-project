@@ -35,7 +35,7 @@ try{
   ok(qb.w===6&&qb.fh===10,'a person with nothing in his hands is 6 x 10 (with the outline; '+qb.w+' x '+qb.fh+')');
   const oi=L.filter(([n,q])=>q.inner>0||q.open>0);ok(!oi.length,'each outlined round the silhouette only: no outline inside, no edge without it'+(oi.length?': '+oi.slice(0,3).map(([n,q])=>n+' '+q.inner+'/'+q.open).join(', '):''));
   const house=16;ok(bh<house*.7,'a person ('+bh+') is clearly smaller than a house (a 16-px tile)')}
- // ---- banners: each party flies its own over it (Total War-style), none for a beast or a herd
+ // ---- banners: each party its own (on its card since 2026-11-01: tests/bannercard.js), none for a beast or a herd
  {const tw=t.townBy('Ashford'),L=W.lords.find(l=>!l.dead);t.spawnBandit(true);const b=t.bandits[0];
   const pt=t.asParty({pt:true,watch:'day',home:tw.name,fac:tw.owner,troops:['hum_spear'],x:0,y:0,cool:0,dir:1}),cv=t.asParty({cv:true,fac:tw.owner,from:tw.name,to:tw.name,x:0,y:0,goods:{},guards:2,cool:0,dir:1});
   const rd=t.asParty({x:0,y:0,n:3,kind:'raiders',list:['militia','militia','militia'],t:0,a:0,cool:0}),cp=t.asParty({cid:'brann',troops:['hum_levy'],x:0,y:0,order:'stay'});
@@ -48,19 +48,18 @@ try{
   // (the owner, 2026-10-31: more detailed, its folds shaded, a finial, its device clear: a 32 cell, at most BANNER's grid)
   const bb=sp.filter(([n,q,s])=>s.width!==32||q.h>t.BANNER.h||q.w>t.BANNER.w||q.inner||q.open);info('banners: '+sp.filter((x,i)=>!(i%2)).map(([n,q])=>n+' '+q.w+'x'+q.h).join(', '));
   ok(!bb.length&&t.bannerSprite(L.banner(),0)!==t.bannerSprite(L.banner(),1),'each banner in a 32 cell, at most '+t.BANNER.w+' x '+t.BANNER.h+', outlined round the silhouette only, fluttering in two frames'+(bb.length?': '+bb.slice(0,3).map(([n,q])=>n+' '+q.w+'x'+q.h+' '+q.inner+'/'+q.open).join(', '):''));
-  // (drawn: over the party, after every figure, yours last; none for a party out of sight or sheltering inside)
+  // (drawn: none over any party now, the owner, 2026-11-01: "remove a floating banner, show the banner detail only when you
+  // inspect them along with the detail window")
   t.bandits.length=0;W.lords.forEach(l=>{l.x=-9999;l.y=-9999});W.monsters=[];W.critters=[];W.caravans=[];W.refugees=[];W.folk=[];W.patrols=[];G.mode='world';G.modal=false;t.hidePanel();G.clock=t.DAY*.3;
   let spot=null;for(let ty=12;ty<t.MH-12&&!spot;ty++)for(let tx=12;tx<t.MW-12&&!spot;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&!t.hiddenAt(x,y)&&t.TOWNS.every(z=>Math.hypot(z.x-x,z.y-y)>200)&&W.sites.every(z=>Math.hypot(z.x-x,z.y-y)>80))spot=[x,y]}
   P.x=spot[0];P.y=spot[1];P.stay=null;t.reveal();Object.assign(L,{x:P.x+40,y:P.y,inside:null,fight:null,dead:false});
   const c=t.ctx,orig=c.drawImage;let drawn=[];c.drawImage=function(img,...a){drawn.push(img);return orig.call(c,img,...a)};const sees=()=>{drawn=[];t.drawWorld();return drawn};
-  try{const fl=s=>[0,1].map(f=>t.bannerSprite(s.banner(),f)),has=(d,q)=>fl(q).some(s=>d.includes(s)),at=(d,q)=>Math.max(...fl(q).map(s=>d.lastIndexOf(s)));
+  try{const fl=s=>[0,1].map(f=>t.bannerSprite(s.banner(),f)),has=(d,q)=>fl(q).some(s=>d.includes(s));
    const d1=sees();
-   ok(has(d1,L)&&has(d1,P)&&at(d1,P)>at(d1,L),'a lord in sight flies his banner, yours over his');
-   L.x=P.x+t.vis()*1.5;const d2=sees();ok(!has(d2,L),'out of your sight, no banner');L.x=P.x+40;L.inside=tw.name;const d3=sees();ok(!has(d3,L),'sheltering inside a holding, none');L.inside=null}
+   ok(!has(d1,L)&&!has(d1,P)&&L.inView(t.vis()),'a lord in sight flies no banner over his army, nor you');L.inside=null}
   finally{c.drawImage=orig}
-  // (a click on the banner picks its party; its ring still does)
-  const B=t.bannerAt(L,0),q=t.opaqueBox(B.s);ok(t.pickAt(B.x+q[0]+4,B.y+q[1]+3)===L&&t.pickAt(L.x+6,L.y-4)===L,'a click on his banner picks him, and his ring still does');
-  L.x=P.x+t.vis()*1.5;const B2=t.bannerAt(L,0);ok(t.pickAt(B2.x+q[0]+4,B2.y+q[1]+3)!==L,'a banner out of sight answers no click');L.x=-9999}
+  // (his ring still picks him; out of sight, nothing does)
+  ok(t.pickAt(L.x+6,L.y-4)===L,'his ring still picks him');L.x=P.x+t.vis()*1.5;ok(t.pickAt(L.x+6,L.y-4)!==L,'out of sight he answers no click');L.x=-9999}
  // ---- beasts, herds, the caravan and the ships: their sizes and cells
  {const sz={wolf:[9,6],boar:[9,6],bear:[11,8],tiger:[11,6],spider:[9,6],scorpion:[10,7],slime:[7,5],troll:[9,13],wyrm:[15,7],griffin:[12,9]},rows=[],bad=[];
   for(const id of Object.keys(t.MONSTERS)){const M=t.MONSTERS[id];for(const f of [0,1]){const s=t.monsterMapSprite(id,f),q=look(s),z=sz[M.unit];

@@ -14,7 +14,9 @@ const lordRel0=(a,b)=>{const k=lordKey(a,b);let h=0;for(const c of k)h=(h*31+c.c
 const Relations={
   // how a lord feels about you
   withYou(l){return l&&P.lrel?P.lrel[l.id]||0:0},
-  // change it, with the reason kept (the last four); big changes are told in the log
+  // change it, with the reason kept (the last four); big changes are told in the log, only of a lord you know (the log names him, and
+  // a name in it makes him known: knowledge.js hear; the owner, 2026-11-01: "I randomly get to know lords that I'm not even met yet":
+  // a friend's or a rival's share of a deed, ripple, told)
   change(l,n,why){
     if(!l||!n)return;
     P.lrel=P.lrel||{};
@@ -23,7 +25,7 @@ const Relations={
     P.lrel[l.id]=v;
     (P.lrelWhy[l.id]=P.lrelWhy[l.id]||[]).push({d:G.day,n:Math.round(n),why});
     P.lrelWhy[l.id]=P.lrelWhy[l.id].slice(-4);
-    if(Math.abs(n)>=5)log(l.name+(n>0?' thinks better of you':' thinks less of you')+': '+why+' ('+(n>0?'+':'')+Math.round(n)+').',n>0?'good':'bad');
+    if(Math.abs(n)>=5&&KNOWLEDGE.knowsLord(l))log(l.name+(n>0?' thinks better of you':' thinks less of you')+': '+why+' ('+(n>0?'+':'')+Math.round(n)+').',n>0?'good':'bad');
   },
   // a deed against (or for) a lord: their friends feel some of it, their rivals the opposite
   ripple(l,n,why){

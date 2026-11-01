@@ -17,7 +17,7 @@ class Ship extends WorldObject{
     ents.push({y:D?Math.min(s.y+4,D.top-.5):s.y+4,f:()=>{subT(s);const b=shipSprite(s),sx=Math.round(s.x-cam.x),sy=Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2);
       const sailing=s.state!=='fish';
       if(sailing)for(let i=1;i<=3;i++){const ph=(now/300+i/3)%1;ctx.fillStyle=i===1?'#e8f4fa':'#bcd8e8';ctx.fillRect(sx-s.dir*(b.stern+i*2+Math.floor(ph*2)),sy-1+(i%2),2,1)}
-      ctx.save();ctx.translate(sx,sy);if(s.dir<0)ctx.scale(-1,1);ctx.drawImage(b,-b.ax,-b.ay);ctx.restore();
+      ctx.save();ctx.translate(sx,sy);if(s.dir<0)ctx.scale(-1,1);if(b.hi)ctx.drawImage(b.hi,-b.ax,-b.ay,b.width,b.height);else ctx.drawImage(b,-b.ax,-b.ay);ctx.restore();// (hi: its crew at the battle's density, MAP_FIGS)
       if(!sailing){const ph=(now/700+s.seed)%2;ctx.fillStyle='#d8c890';ctx.fillRect(sx+s.dir*b.net,sy-3,1,3);if(ph<1){ctx.fillStyle='#e8f4fa';ctx.fillRect(sx+s.dir*b.net-1,sy+1,3,1)}}
       if(D)shipUnder(D.list,shipBox(b,sx,sy),cam);
       if(s.k==='trade'&&s.fromYou()<110)txt('Trade ship',sx,sy-b.ay+opaqueBox(b)[1]-2,hostileTo(s.fac)?'#ff9a90':'#e8d8a0','center')}})}
@@ -151,7 +151,7 @@ function updateShips(d){sendBoats();lodEach(W.ships,SHIP_MIND,d,Clock.frac);W.sh
    hull: its hull's height over the waterline, top: its castles' (or posts') */
 const SH_HULL=['#9a7e5e','#6e5642','#4c3c34','#30262a'];
 function shipSprite(o){
-  const big=!!o.big,v=(o.seed|0)%3,key='sh'+(big?1:0)+(o.col||'')+v+(o.moored?'m':'');if(spr[key])return spr[key];
+  const big=!!o.big,v=(o.seed|0)%3,key='sh'+(big?1:0)+(o.col||'')+v+(o.moored?'m':'')+(figsOn()?'f':'');if(spr[key])return spr[key];
   const n=big?32:16,WL=n-1,R=big?26:13,H=SH_HULL,Wo=CV_WOOD,g=pgrid(n,n),s=(x,y,c)=>pset(g,x,y,c);
   // the hull, planked (clinker: a dark seam every other strake), its stern post raked, its stem curved; a cog's castles
   const xa=t=>big?3+Math.floor(t/2):2+(t>1?1:0),xb=t=>big?28-Math.floor(t*t/8):13-(t>1?1:0);
@@ -173,12 +173,18 @@ function shipSprite(o){
     else for(let y=15;y<=23;y++){const e=y===23?1:0;for(let x=10+e;x<=21-e;x++){const st=Math.floor((x-10)/sw)%2,lee=x>19||y>21;q(x,y,st?(lee?Cv[4]:Cv[3]):(lee?Cv[2]:y<17?Cv[0]:Cv[1]))}}
     poutline(r);rig=pcanvas(r)}
   // the crew: a sailor at the helm on the stern castle and one at the rail amidships, the fisherman in his boat: head and
-  // shoulders over the side (people.js mapPerson, to the first row of the body)
-  const man=k=>mapPerson({...folkLook('folk','human',(o.seed|0)+k*7),robe:false,helm:k%2?'cap':'bare',helmC:'leather',weapon:null},0,3);
-  // (ropes, a pixel thin, no outline: the stays from the masthead to bow and stern, behind the sail; the fisherman's oar)
-  const c=mkc(n,n,x=>{const line=(x0,y0,x1,y1,col)=>{const k=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));x.fillStyle=col;for(let i=0;i<=k;i++)x.fillRect(Math.round(x0+(x1-x0)*i/k),Math.round(y0+(y1-y0)*i/k),1,1)};
-    if(big){line(17,13,27,R-3,'#3e2e26');line(14,13,4,R-4,'#3e2e26');x.drawImage(rig,0,0);x.drawImage(man(0),6-8,R-3-15);x.drawImage(man(1),21-8,R-15)}else if(!o.moored)x.drawImage(man(0),7-8,R-15);
-    x.drawImage(hull,0,0);if(!big&&!o.moored)line(5,R,2,WL,Wo[1])});
+  // shoulders over the side (people.js mapPerson, to the first row of the body); each [his head's middle, his last row, which]
+  const look=k=>({...folkLook('folk','human',(o.seed|0)+k*7),robe:false,helm:k%2?'cap':'bare',helmC:'leather',weapon:null}),crew=big?[[6,R-4,0],[21,R-1,1]]:o.moored?[]:[[7,R-1,0]];
+  // (ropes, a pixel thin, no outline: the stays from the masthead to bow and stern, behind the sail; the fisherman's oar. Painted z
+  // times the map's scale, each man put in by man(x, his middle, his last row, which))
+  const paint=(z,man)=>mkc(n*z,n*z,x=>{const line=(x0,y0,x1,y1,col)=>{const k=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));x.fillStyle=col;for(let i=0;i<=k;i++)x.fillRect(Math.round(x0+(x1-x0)*i/k),Math.round(y0+(y1-y0)*i/k),1,1)};
+    x.save();x.scale(z,z);if(big){line(17,13,27,R-3,'#3e2e26');line(14,13,4,R-4,'#3e2e26');x.drawImage(rig,0,0)}x.restore();for(const [mx,row,k] of crew)man(x,mx,row,k);
+    x.save();x.scale(z,z);x.drawImage(hull,0,0);if(!big&&!o.moored)line(5,R,2,WL,Wo[1]);x.restore()});
+  // (MAP_FIGS: the crew the battle's figures (people.js figCrew), painted at their density (hi: drawn back to the map's size, Ship
+  // draw) and the picture at the map's own size from it; else the map's small figures. His last row on the one over the hull's
+  // outline, his shoulders showing over it, as the small figure's head and shoulders do)
+  let c;if(figsOn()){const z=Math.max(1,Math.round(1/figK())),hi=paint(z,(x,mx,row,k)=>{const m=figCrew(look(k));x.drawImage(m,mx*z-m.mx,row*z-m.height+1)});c=mkc(n,n,x=>x.drawImage(hi,0,0,n,n));c.hi=hi}
+  else c=paint(1,(x,mx,row,k)=>x.drawImage(mapPerson(look(k),0,3),mx-8,row-14));
   c.cw=n;c.ch=n;c.ax=n>>1;c.ay=WL;c.stern=(n>>1)-(big?3:2);c.net=big?0:6;c.posts=big?[[4,R-3],[27,R-2]]:[[1,12],[14,11]];c.hull=WL-R;c.top=big?WL-(R-3):WL-11;return spr[key]=c;
 }
 // every ship in sight (Ship draw)

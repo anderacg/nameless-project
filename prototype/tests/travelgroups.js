@@ -22,5 +22,11 @@ Kit.suite(({ok})=>{
   t.act('conceal-toggle',main.id);ok(JSON.stringify(army.targets().filter(u=>u.row===main.id))===JSON.stringify(targets),'an old hold action has no effect');
   G.enc={kind:'party',ref:observer,list:observer.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});const b=t.B,g=Object.values(b.groups).find(g=>g.player&&g.sourceGroupId===main.id);
   ok(b.muster?.active&&!g.concealHold&&!g.cease&&!g.firm,'old save hold data cannot skip preparation or force battle hold orders');b.auto=true;ok(t.aiHas(g),'every troop group can follow the automatic commander');
+  window.eval('B=null');G.mode='world';G.modal=false;
+  // (the owner, 2026-11-01: "nearest man": a group is as near an observer as its nearest man, not its middle less 12 px of its
+  // spread; TRAVEL_GROUPS.nearest. The bait group strung out in a file 80 px long, its tail beside the observer)
+  {army.forGroup(bait.id).forEach((u,i,m)=>{u.x=observer.x-10-i*80/Math.max(1,m.length-1);u.y=observer.y;u.walking=false});const T=t.TRAVEL_GROUPS,gap=()=>A.scan(observer,1,1).find(r=>r.group.id===bait.id).distance;
+   A.snapshot=null;const near=gap();T.nearest=false;let mid;try{mid=gap()}finally{T.nearest=true}
+   ok(Math.abs(near-10)<.5&&mid>25,'a group strung out in a file: as near as its tail ('+near.toFixed(1)+' px), not its middle less its spread ('+mid.toFixed(1)+' px, as before)')}
  }finally{for(const [i,k] of changed)t.tiles[i]=k;window.eval('B=null');delete P.army.concealed;A.reset();G.mode='world';G.modal=false}
 });

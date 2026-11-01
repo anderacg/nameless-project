@@ -1203,15 +1203,23 @@ class FieldWays{
 // moved; reach: a waypoint this near is passed; r: the half-width (px) a soldier's straight way keeps clear (a charge's too: no
 // momentum builds while it is not clear); clear: a straight way reckoned again this often (s), or when he or its end changes
 // cell; half: a group's way keeps the lesser of half its front and this clear (px); n: the ways laid so far (their ids); lead,
-// wait: an advancing group's place on its way round goes on only while its men are within lead px of it, or it has waited wait s
-const ROUTE_UNIT={every:.5,min:.25,reach:10,r:3,clear:.5,half:24,n:0,lead:40,wait:3};
+// wait: an advancing group's place on its way round goes on only while its men are within lead px of it, or it has waited wait s;
+// big: a big body's half (px: battle.js roomOf's 18 apart), the room it keeps off walls (PATHS.clear: routeBody)
+const ROUTE_UNIT={every:.5,min:.25,reach:10,r:3,clear:.5,half:24,n:0,lead:40,wait:3,big:9};
 // (a soldier's grid: big, mounted or foot; s: his stats)
 const routeWho=s=>s.big?'big':s.mounted?'mounted':'foot';
+// (the half-width a soldier's straight way keeps clear: PATHS.clear, his body's half (battle.js bodyOf; a big one's ROUTE_UNIT.big; on the map's
+// battles × the sprite's scale, as roomOf), the room he keeps off rock, water, walls and cliffs (route.js routeNeed); else ROUTE_UNIT.r)
+const routeBody=u=>PATHS.clear?(u.s.big?ROUTE_UNIT.big:bodyOf(u)/2)*(B&&B.world?WORLD_BATTLE.sprite:1):ROUTE_UNIT.r;
+// (the room a soldier's search keeps: his body's half with PATHS.clear, else none (route.js routePath need))
+const routeNeedOf=u=>PATHS.clear?routeBody(u):0;
 // (a group's grid: its slowest kind's: a big one's, else riders' when most ride)
 const groupWho=m=>m.some(u=>u.s.big)?'big':m.filter(u=>u.s.mounted).length*2>m.length?'mounted':'foot';
 // (the way a soldier goes on ground that blocks, as a unit vector (steerDir); an advancing group's place walking on (wayOn): reused)
 const STEER=[0,0];
 const WAYON=[0,0];
+// (PATHS.flow: each soldier's field's point (flowAim), kept off him, so his shape stays as it was)
+const ROUTE_AIM=new WeakMap();
 /* T.routes: the routing part of a BattleTerrain (T: its terrain), over T.route's grids. None of it runs unless T.blocky (the old
    names, at the end of this file, check it), so on ground where nothing blocks a step every step is as it was */
 class TerrainRoutes{
@@ -1242,16 +1250,26 @@ class TerrainRoutes{
     const T=this.T;
     return this.stepOk(ax,ay,x,y)&&(T.solid[tIx(T,ax,ay)]===1||this.stepOk(x,y,ax,ay)||u.rout||withdrawing(u)||u.hero&&MANUAL_HERO||u.oT===B.t&&!this.stepOk(u.oX,u.oY,ax,ay))}
   hold(was){
-    for(const u of B.units){if(u.hp<=0)continue;const p=was.get(u);if(!p)continue;const ax=p[0],ay=p[1],bx=u.x,by=u.y;if(ax===bx&&ay===by||this.holdOk(u,ax,ay,bx,by))continue;
-      if(this.holdOk(u,ax,ay,bx,ay))u.y=ay;else if(this.holdOk(u,ax,ay,ax,by))u.x=ax;else{u.x=ax;u.y=ay}}}
-  // (is the straight way from u to (x,y) clear on grid g, ROUTE_UNIT.r either side: reckoned again when he or it changes cell, the
+    const room=PATHS.slide&&PATHS.clear;
+    for(const u of B.units){if(u.hp<=0)continue;const p=was.get(u);if(!p)continue;const ax=p[0],ay=p[1],bx=u.x,by=u.y;
+      if(!(ax===bx&&ay===by||this.holdOk(u,ax,ay,bx,by))){if(this.holdOk(u,ax,ay,bx,ay))u.y=ay;else if(this.holdOk(u,ax,ay,ax,by))u.x=ax;else{u.x=ax;u.y=ay}}
+      if(room&&(u.x!==ax||u.y!==ay))this.room(u)}}
+  /* (PATHS.slide with PATHS.clear, hold: each soldier moved this frame) one nearer a wall than his room (route.js routeNeed: rock,
+     water, a building, a cliff both ways) pushed out of it along the wall's way out, as the rocks' push does round them (battle.js
+     obstaclePush), where that step is one. Read off the foot grid: every grid shuts the same cells (route.js routeGridOf), so they
+     have the same clearance; one far from any wall (by the biggest body's room) passed at once. Not one going his own way that keeps
+     no room (a router, a map battle's escape: worldbattle.js; a hunted beast's flight: hunting.js), or the two would pull against each
+     other; nor in a battle on the map (B.world), whose places are laid by its muster on any open ground (worldbattle.js) */
+  room(u){if(B.world||u.rout||u.worldEscape||u.huntWay)return;const g=this.T.route.foot,i=routeIx(g,u.x,u.y),cl=g.clv===g.v&&g.cl?g.cl:routeRoom(g),b=cl[i]-g.cs*.7072;if(!g.cost[i]||b>=ROUTE_UNIT.big*WORLD_BATTLE.sprite)return;const r=routeBody(u);if(b>=r)return;
+    const w=routeNeed(g,i,r),v=routeGap(g,u.x,u.y,w);if(!(v<w-1e-3)||!(ROUTE_GAP.nx||ROUTE_GAP.ny))return;const k=w-v+1e-3,x=u.x+ROUTE_GAP.nx*k,y=u.y+ROUTE_GAP.ny*k;if(this.stepOk(u.x,u.y,x,y)){u.x=x;u.y=y}}
+  // (is the straight way from u to (x,y) clear on grid g, his routeBody either side (ROUTE_UNIT.r, PATHS.clear off): reckoned again when he or it changes cell, the
   // grid's version moves, or every ROUTE_UNIT.clear s; k: which of his two such reckonings (0, 1) it is)
   clearTo(u,g,x,y,k){const key=routeIx(g,u.x,u.y)*g.cost.length+routeIx(g,x,y),c=u.lc||(u.lc=[-1,0,0,false,-1,0,0,false]),o=k*4;
-    if(c[o]===key&&c[o+1]===g.v&&B.t<c[o+2])return c[o+3];c[o]=key;c[o+1]=g.v;c[o+2]=B.t+ROUTE_UNIT.clear;return c[o+3]=lineClear(g,u.x,u.y,x,y,g.wcap||255,ROUTE_UNIT.r)}
+    if(c[o]===key&&c[o+1]===g.v&&B.t<c[o+2])return c[o+3];c[o]=key;c[o+1]=g.v;c[o+2]=B.t+ROUTE_UNIT.clear;return c[o+3]=lineClear(g,u.x,u.y,x,y,g.wcap||255,routeBody(u))}
   // (the point to make for on way p, from his place on it (o[k], a waypoint index): one within reach is passed, and one skipped while
   // the one after it lies in a clear line (looked at when he changes cell, or every ROUTE_UNIT.clear s: o[k+'C'], o[k+'T']))
   wayNext(u,g,p,o,k){if(!p.length)return null;let i=o[k]||0;const c=routeIx(g,u.x,u.y),look=c!==o[k+'C']||B.t>=(o[k+'T']||0);if(look){o[k+'C']=c;o[k+'T']=B.t+ROUTE_UNIT.clear}
-    while(i<p.length-1&&(Math.hypot(p[i][0]-u.x,p[i][1]-u.y)<ROUTE_UNIT.reach||look&&lineClear(g,u.x,u.y,p[i+1][0],p[i+1][1],g.wcap||255,ROUTE_UNIT.r)))i++;o[k]=i;return p[i]}
+    while(i<p.length-1&&(Math.hypot(p[i][0]-u.x,p[i][1]-u.y)<ROUTE_UNIT.reach||look&&lineClear(g,u.x,u.y,p[i+1][0],p[i+1][1],g.wcap||255,routeBody(u))))i++;o[k]=i;return p[i]}
   /* the point a soldier going to (x,y) on grid g makes for: null (straight there) while the straight way is clear; else the next
      point of his own way there (route.js routePath, kept in u.wy: taken again when the grid's version moves, every ROUTE_UNIT.every
      s (staggered by his id), or when the goal changes cell (after ROUTE_UNIT.min s); neighbours going alike share the path cache).
@@ -1259,8 +1277,16 @@ class TerrainRoutes{
   steerTo(u,x,y,g,k=0){
     if(this.clearTo(u,g,x,y,k)){if(u.wy)u.wy=null;return null}
     const gc=routeIx(g,x,y);let W=u.wy;
-    if(!W||W.g!==g||W.v!==g.v||B.t>=W.at||W.gc!==gc&&B.t>=W.t0+ROUTE_UNIT.min)W=u.wy={p:routePath(g,u.x,u.y,x,y),i:0,g,gc,v:g.v,t0:B.t,at:B.t+ROUTE_UNIT.every*(.75+.5*((u.id||0)*.618%1))};
+    if(!W||W.g!==g||W.v!==g.v||B.t>=W.at||W.gc!==gc&&B.t>=W.t0+ROUTE_UNIT.min)if(!(PATHS.smooth&&this.mend(u,W,g,x,y,gc)))W=u.wy={p:routePath(g,u.x,u.y,x,y,{need:routeNeedOf(u)}),i:0,g,gc,v:g.v,t0:B.t,at:B.t+ROUTE_UNIT.every*(.75+.5*((u.id||0)*.618%1))};
     return this.wayNext(u,g,W.p,W,'i')}
+  /* (PATHS.smooth) his way W mended for its goal moved to (x,y) (cell gc), no search: on the same grid and version, whole (not cut),
+     he still walks straight to its point he makes for, and one of its points from there on reaches (x,y) straight with his room:
+     the way to there kept, (x,y) after it. False: searched afresh */
+  mend(u,W,g,x,y,gc){
+    if(!W||W.g!==g||W.v!==g.v||W.p.cut||!W.p.length)return false;const p=W.p,i=Math.min(W.i||0,p.length-1),r=routeBody(u),cap=g.wcap||255;
+    if(!lineClear(g,u.x,u.y,p[i][0],p[i][1],cap,r))return false;
+    for(let k=p.length-1;k>=i;k--)if(lineClear(g,p[k][0],p[k][1],x,y,cap,r)){if(p[k][0]!==x||p[k][1]!==y){p.length=k+1;p.push([x,y])}p.ok=true;W.gc=gc;W.t0=B.t;W.at=B.t+ROUTE_UNIT.every*(.75+.5*((u.id||0)*.618%1));return true}
+    return false}
   // (the way u goes toward (x,y): a unit vector (STEER, reused), or null: straight on)
   steerDir(u,x,y){
     const T=this.T,w=this.steerTo(u,x,y,T.route[routeWho(u.s)]);if(!w)return null;
@@ -1277,7 +1303,7 @@ class TerrainRoutes{
     const T=this.T,who=groupWho(m),gr=T.route[who],gc=routeIx(gr,g.ax,g.ay),W=g.way;
     let cx=0,cy=0;for(const u of m){cx+=u.x;cy+=u.y}cx/=m.length;cy/=m.length;
     if(W&&W.gc===gc&&W.v===gr.v&&W.who===who&&W.mv===g.mvId&&!(W.cut&&Math.hypot(W.end[0]-cx,W.end[1]-cy)<ROUTE_UNIT.reach*3))return W;
-    const sh=grpShape(g.id),half=sh?Math.min(ROUTE_UNIT.half,sh.files*(FORMS[g.form]||FORMS.line).gx/2):ROUTE_UNIT.r,p=routePath(gr,cx,cy,g.ax,g.ay,{r:half});
+    const sh=grpShape(g.id),half=sh?Math.min(ROUTE_UNIT.half,sh.files*(FORMS[g.form]||FORMS.line).gx/2):ROUTE_UNIT.r,p=routePath(gr,cx,cy,g.ax,g.ay,{r:half,need:PATHS.clear?Math.max(...m.map(routeBody)):0});
     return g.way={p,id:++ROUTE_UNIT.n,gc,v:gr.v,who,mv:g.mvId,ok:p.ok,cut:p.cut,end:p.length?p[p.length-1]:[g.ax,g.ay]}}
   /* an advancing group's place walking on at (x,y) (battlecontrol.js step) while the straight way there is not clear: along the way
      round from the place (a unit vector, WAYON reused; [0,0] waiting), going on only while its men are within ROUTE_UNIT.lead px of
@@ -1295,10 +1321,22 @@ class TerrainRoutes{
   slotWay(u,g,sx,sy){
     const T=this.T,gr=T.route[routeWho(u.s)],W=g.way;if(!W)return null;let f=u.sf;
     if(!f||f[0]!==W.id||f[1]!==sx||f[2]!==sy){const A=W.ok?[g.ax,g.ay]:W.end,ox=sx-g.ax,oy=sy-g.ay;let q=A;
-      for(const k of [1,.8,.6,.4,.2]){const x=A[0]+ox*k,y=A[1]+oy*k;if(gr.cost[routeIx(gr,x,y)]&&lineClear(gr,A[0],A[1],x,y)&&lineClear(gr,x,y,A[0],A[1])){q=[x,y];break}}f=u.sf=[W.id,sx,sy,q[0],q[1]]}
-    if(this.clearTo(u,gr,f[3],f[4],0)){const o=[f[3],f[4]];o.at=true;return o}
-    if(u.gwId!==W.id){u.gwId=W.id;u.gw=0;u.gwT=0}const q=this.wayNext(u,gr,W.p,u,'gw');if(!q){const o=[f[3],f[4]];o.at=true;return o}
-    return this.clearTo(u,gr,q[0],q[1],1)?q:this.steerTo(u,q[0],q[1],gr,1)||q}
+      for(const k of [1,.8,.6,.4,.2]){const x=A[0]+ox*k,y=A[1]+oy*k;if(gr.cost[routeIx(gr,x,y)]&&lineClear(gr,A[0],A[1],x,y)&&lineClear(gr,x,y,A[0],A[1])){q=[x,y];break}}f=u.sf=[W.id,sx,sy,q[0],q[1]];f.at=[q[0],q[1]];f.at.at=true}
+    if(this.clearTo(u,gr,f[3],f[4],0))return f.at;
+    if(u.gwId!==W.id){u.gwId=W.id;u.gw=0;u.gwT=0}const q=this.wayNext(u,gr,W.p,u,'gw');if(!q)return f.at;
+    if(this.clearTo(u,gr,q[0],q[1],1))return q;
+    // (PATHS.flow: pushed off it, down his group's field toward where its way ends (groupFlow), not a search of his own)
+    if(PATHS.flow){const F=this.groupFlow(g,gr,routeWho(u.s),routeNeedOf(u),W.ok?g.ax:W.end[0],W.ok?g.ay:W.end[1]),a=this.flowAim(u,F);if(a)return a}
+    return this.steerTo(u,q[0],q[1],gr,1)||q}
+  /* (PATHS.flow) group g's field on grid gr (its men of kind who, bodies of half r) toward (x, y), where its way ends (route.js
+     routeFlow): kept on it for each kind, made when one of its men cannot walk straight to his point on its way, again when that end
+     moves PATHS.move cells or the grid's version moves; made out till every one of its men is reached */
+  groupFlow(g,gr,who,r,x,y){const M=g.flows||(g.flows={}),F0=M[who];if(F0&&F0.g===gr&&F0.v===gr.v&&F0.need===r&&Math.hypot(F0.x-x,F0.y-y)<=PATHS.move*gr.cs)return F0;
+    const F=routeFlow(gr,x,y,r,g.units.map(u=>routeIx(gr,u.x,u.y)),F0&&F0.g===gr?F0:null);F.cap=gr.wcap||255;F.id=ROUTE_N.flow;return M[who]=F}
+  // (the point a soldier going down field F makes for (route.js routeFlowAim): kept for him (ROUTE_AIM) till he changes cell or it is
+  // made again)
+  flowAim(u,F){const g=F.g,c=routeIx(g,u.x,u.y);let A=ROUTE_AIM.get(u);if(!A)ROUTE_AIM.set(u,A={id:-1,c:-1,p:[0,0]});
+    if(A.id!==F.id||A.c!==c){A.id=F.id;A.c=c;A.ok=!!routeFlowAim(F,u.x,u.y,routeBody(u),A.p)}return A.ok?A.p:null}
   /* the way to (x,y) for a soldier going there (actors.js: his place in his group's formation, or the foe he charges) when his
      straight way crosses deep water: by a crossing — to its mouth on his side, then over to the far mouth, keeping his place
      across its width (TERRAIN_RIVER.inset in from its edges: a wide line squeezes onto a bridge or a ford, and those far off it

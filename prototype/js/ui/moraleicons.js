@@ -114,7 +114,10 @@ function iconPick(x,y,team){
   const c=B.iconCyc;return st.find(r=>r.g===c.order[c.i])||st[0]}
 // the icons over each group on the field (yours and theirs), drawn on the screen (not the zoomed field) so they keep their size
 const UICON={s:13,lift:22,k:2,crowd:2};// (its art in pixels, drawn k times over; crowd: the badges a banner keeps in a press: iconLayout)
-const unitIconScale=()=>B?.world?UICON.k*dprOf()/VS:UICON.k;
+// (a battle drawn sharp (core.js bview, k canvas px a view px): its art px a whole number of canvas px, about k as many, each icon
+// put on a whole canvas px (iconPx))
+const unitIconScale=()=>{if(B?.world)return UICON.k*dprOf()/VS;const k=bview().k;return Math.max(1,Math.round(UICON.k*k))/k};
+const iconPx=v=>{const k=bview().k;return Math.round(v*k)/k};
 /* where they stand (iconLayout; B.icons, for clicks, in the order drawn): each over its own group, its place on the field eased
    after its men on the battle's clock (follow: a man falling or running moves it with no jump; snap: field px past which it is
    simply put there, as when a group comes back into sight; deploying, the clock stands still and groups are placed at once, so
@@ -145,7 +148,7 @@ function iconLayout(rt){
   for(const i of new Set(items.map((_,i)=>root(i)))){const c=items.filter((_,j)=>root(j)===i).sort((a,b)=>a.bx-b.bx||(a.g<b.g?-1:1));if(c.length<2)continue;
     const t=[];c.forEach((o,j)=>t.push(j?Math.max(o.bx,t[j-1]+c[j-1].W+ICON_FAN.gap):o.bx));const sh=(c.reduce((a,o)=>a+o.bx,0)-t.reduce((a,x)=>a+x,0))/c.length;c.forEach((o,j)=>fan.set(o.g,t[j]+sh-o.bx))}
   const k=rm?1:1-Math.exp(-Math.max(0,rt)*3/ICON_FAN.ease);// (about 95% of the way in ease s)
-  for(const it of items){const p=it.p,to=fan.get(it.g)||0;p.dx=(p.dx||0)+(to-(p.dx||0))*k;if(Math.abs(to-p.dx)<.05)p.dx=to;it.x=Math.round(it.bx+p.dx);it.y=Math.round(it.y)}
+  for(const it of items){const p=it.p,to=fan.get(it.g)||0;p.dx=(p.dx||0)+(to-(p.dx||0))*k;if(Math.abs(to-p.dx)<.05)p.dx=to;it.x=iconPx(it.bx+p.dx);it.y=iconPx(it.y)}
   items.sort((a,b)=>a.tier-b.tier||a.y-b.y||(a.g<b.g?-1:1));
   B.icons=items.map(it=>({g:it.g,x:it.x,y:it.y,w:S*K,h:it.H,bw:it.W,team:it.team,cx:it.cx,cy:it.cy}));// (w: the plate, what is clicked; bw: with its badges)
   items.forEach((it,i)=>{it.under=items.some((o,j)=>j>i&&it.x<o.x+o.W&&o.x<it.x+it.W&&it.y<o.y+o.H&&o.y<it.y+it.H);B.icons[i].under=it.under});
@@ -173,7 +176,7 @@ function drawUnitIcons(){
    faint dashed ring on the ground under it; drawn on the screen as the icons, but no icon of B.icons (nothing to click) */
 function drawFogGhosts(){
   const Gs=B.fog&&B.sight&&B.sight.ghost;if(!Gs||!Gs.size)return;const K=unitIconScale(),S=UICON.s,z=B.cam?B.cam.z:1;
-  for(const [g,q] of Gs){const m=grpUnits(g),a=ghostFade(q);if(!m.length||a<=0)continue;const p=fromField({x:q.x,y:q.y}),x=Math.round(p.x-S*K/2),y=Math.round(p.y-UICON.lift*z-(S+6)*K);
+  for(const [g,q] of Gs){const m=grpUnits(g),a=ghostFade(q);if(!m.length||a<=0)continue;const p=fromField({x:q.x,y:q.y}),x=iconPx(p.x-S*K/2),y=iconPx(p.y-UICON.lift*z-(S+6)*K);
     if(p.x<-40||p.x>BVW+40||p.y<0||p.y>BVH+60)continue;
     ctx.save();ctx.globalAlpha=.75*a;ctx.strokeStyle='#b8bcc4';ctx.setLineDash([3,3]);ctx.lineWidth=1;const rr=Math.max(8,Math.sqrt(m.length)*5)*z;ctx.beginPath();ctx.ellipse(Math.round(p.x),Math.round(p.y),rr,rr*.5,0,0,7);ctx.stroke();ctx.setLineDash([]);
     ctx.translate(x,y);ctx.scale(K,K);ctx.fillStyle='#2a2d33';ctx.fillRect(1,0,S-2,S);ctx.fillRect(0,1,S,S-2);ctx.fillRect(S/2-1.5|0,S,3,1);ctx.fillStyle='#6a6e78';ctx.fillRect(1,1,S-2,S-2);ctx.fillStyle='#585c66';ctx.fillRect(1,S-3,S-2,2);

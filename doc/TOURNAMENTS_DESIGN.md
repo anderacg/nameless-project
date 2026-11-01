@@ -2,6 +2,8 @@
 
 Status: **designed, the owner's answers in** (2026-10-19, §9); waiting for the owner's go. Nothing here is built yet, but **its framework exists** (2026-10-21): the story wave's Gathering shape (`js/story/gathering.js`, doc/STORY_DESIGN.md §9, S5) already schedules a kind at its places (every N days on a seeded offset per place, or a day of the year: the Grand Tournament's), announces it N days ahead (`gathering:announced`, for the notices and rumours), opens and closes it (`gathering:opened`, `gathering:closed`), keeps its entrants, saves its calendar and shows its entry page. Each tournament size is then one gathering kind, with its own page and bracket. The numbers live in one tunables table (`TOURNEY`), so they are easy to change.
 
+**Built 2026-11-01: the arena** (the owner: "can you have some small arena battle screen instead of open green field?"). Every bout in a town's lists is fought in a small walled ring, not the open field: `prototype/js/gfx/tourney.js` `TourneyArena` (any fight may ask for it with `opts.arena`), its field `FIELD_SIZES.tourney` (448×256), the fighters 140 px apart. The wall in the holding's culture with its gatehouse, the lord's banners, stands of the town's peoples who cheer hard blows and roar at the end (`TourneyCrowd`; audio.js `cheer`, `roar`). The bout's rules and rewards are as before; the rest of this design (the gathering, the brackets, the events) is still to build. `TOURNEY_ARENA.on` false: the open field.
+
 ## 1. The idea
 
 Today every holding with lists offers "a tournament today" at any time: pay 10 gold, fight the town champion one-on-one, win 45 gold and renown (`ui/townui.js` `tourneyBody`, `ui/town.js` `tourney`, `battle/resolution.js` with `tournament:true`).

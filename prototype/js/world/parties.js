@@ -30,22 +30,22 @@ class Party extends WorldObject{
   inView(V){return this.onMap()&&spotted(this,V)}
   // a click: on its ring; marched man by man, on any of its men or inside its outline (world.js pickAt army, march.js MarchArmy
   // hit), else on its leader's figure (a lord's whole horse: render.js partyFig, opaqueBox); and on its banner
-  pick(at){if(!this.onMap())return;at.add(this,10,4);if(!at.army?.(this)&&Math.hypot(this.x-at.x,this.y-at.y)<32){const F=partyFig(this,this.look(),0);at.fig(this,F.s,F.x,F.y,F.flip)}const B=at.flag&&bannerAt(this,0);if(B)at.flag(this,B)}
-  // the banner it flies over it, Total War-style (sprites.js bannerSprite: k its shape, col its field, dev its device), null for
-  // none; and the map row of its leader's head, the banner's pole standing over it (render.js bannerAt)
+  pick(at){if(!this.onMap())return;at.add(this,10,4);if(!at.army?.(this)&&Math.hypot(this.x-at.x,this.y-at.y)<32){const F=partyFig(this,this.look(),0);at.fig(this,F.s,F.x,F.y,F.flip)}}
+  // its banner, on its card (ui.js tipFlag) and its men's flags (marchgear.js) (sprites.js bannerSprite: k its shape, col its field,
+  // dev its device), null for none; and the map row of its leader's head, its label over it (render.js armyTagAt)
   banner(){return null}
   headY(){return Math.round(this.y)+3-16+figTop(this.look(),this)}
   // in sight: its host of soldiers, its leader's figure (a rider, a bandit), a torch on a night watch, its label (as it looks: look)
-  // (marching, its torch in its carrier's hand, going with him: march.js marchTorch; else over its middle, as before)
-  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const o=this,L=o.look();if(WORLD_BATTLE.on)marchDraw(ents,o,cam);const torch=!!L.torch&&WORLD_BATTLE.on&&marchTorch(ents,o,cam);
+  // (marching, its men hold the torches after dark, every army's: gfx/marchgear.js; else a night watch's over its middle, as before)
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const o=this,L=o.look();if(WORLD_BATTLE.on)marchDraw(ents,o,cam);
     // (its step by how far it has walked: on foot a step each WALK.foot px, a rider each WALK.ride; standing still, or resting,
     // the first; drawn at its own place to the screen's pixel: render.js subT)
-    // (its banner over it all, with its label over the banner: render.js drawBanners)
+    // (its label over it: render.js drawBanners)
     ents.push({y:o.y,own:o.faction==='player',f:()=>{subT(o);const sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,rider=!!L.rider&&!L.bandit,go=L.moving&&mapStepping(o),fr=go?frameOf(o,rider?WALK.ride:WALK.foot,WALK.n):0;
       const s=partyFig(o,L,fr).s;// (a rider: his host behind his horse)
       if(!WORLD_BATTLE.on)drawHost(o.size,L.col,sx-(rider?fd*4:0),sy+12,fd,go?o.wd:null,L.seed,L.race,L.bandit);
       if(!WORLD_BATTLE.on){ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();}// (marching, its leader is one of its army: march.js)
-      if(L.torch&&!torch){const tx=sx+fd*4,ty=sy+3;rect(ctx,'#5a3e24',tx,ty,1,4);LIGHTQ.push({x:tx,y:ty-1,r:16})}
+      if(L.torch&&!WORLD_BATTLE.on){const tx=sx+fd*4,ty=sy+3;rect(ctx,'#5a3e24',tx,ty,1,4);if(FLAMES.on)fireTorchAt(tx,ty,o.id);LIGHTQ.push({x:tx,y:ty-1,r:16,id:o.id,g:8})}// (its flame: fire.js; the light only light)
       BANNERQ.push({o,label:!o.fight&&L.label?[L.label,L.labelCol]:null})}})}
   // sheltering in a holding: inside is the holding's name. shelterWhy(t): why it may not go in there ('' if it may; each kind
   // has its rules); enter and leave by the gate

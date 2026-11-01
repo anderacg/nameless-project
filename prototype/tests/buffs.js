@@ -31,6 +31,11 @@ Kit.suite(({ok,info})=>{
   ok(/Upgrades/.test(d)&&d.includes('Tempered blades')&&d.includes('from Ashford'),'the Army window: its upgrades under its traits, where each was bought');
   t.act('party-select',bow.id);t.act('party-path',bow.id);ok(/Upgrades\s*None yet/.test(document.querySelector('.fb-inspector').textContent),'Bowmen, none: None yet');
   {G.mode='world';G.modal=false;t.hidePanel();t.enterTown(ash);t.act('tab','smith');const tx=document.getElementById('panel').textContent;ok(/Upgrades for your units/.test(tx)&&tx.includes('Tempered blades'),'the smith\'s window: its upgrades, a button for each of your groups they fit');t.act('leave')}
+ // (the owner, 2026-11-01: "dynamic enough so that I can just switch building type") an upgrade moved to another building is sold there:
+ // its at, nothing else (town.js Place#page, #act)
+ {X._test={n:'Test oil',at:'trade',cost:1,mods:{armor:1}};P.gold=1e4;G.mode='world';G.modal=false;t.hidePanel();t.enterTown(ash);t.act('tab','trade');const tx=document.getElementById('panel').textContent,btn=[...document.querySelectorAll('[data-act="buff-buy"]')].find(b=>b.dataset.arg.endsWith('|_test')&&!b.disabled),g0=P.gold;
+  if(btn){btn.click();const id=btn.dataset.arg.split('|')[0];ok(/Test oil/.test(tx)&&P.gold<g0&&B.has(id,'_test'),'an upgrade at the market (trade): sold there and bought, its at all it took')}else ok(false,'an upgrade at the market: no button for it ('+(/Test oil/.test(tx)?'listed':'not listed')+')');
+  t.act('tab','smith');ok(!/Test oil/.test(document.getElementById('panel').textContent),'and the smith does not sell it');delete X._test;t.act('leave')}
  }finally{delete X._blades;delete X._shoes}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

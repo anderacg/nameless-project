@@ -6,7 +6,7 @@
 // hardier than men, shock troops are bred for it, and every tier of training adds to it
 function vigorOf(s){
   const t=tagsOf(s);let v=100;if(t.includes('heavy'))v*=.85;if(s.mounted)v*=1.15;if(t.includes('shock'))v*=1.1;
-  v*={dwarf:1.15,elf:1.1,orc:1.05}[s.race]||1;v*=1+.05*((s.tier||1)-1);return Math.round(v)}
+  v*={dwarf:1.15,elf:1.1,orc:1.05}[s.race]||1;v*=1+.05*((s.tier||1)-1);if(s.vigK)v*=s.vigK;return Math.round(v)}// (vigK: its rank's, troopGrowth)
 // the troops you can raise (the bars' scale)
 const TROOP_TYPES=()=>Object.keys(ST).filter(k=>ST[k].race&&!ST[k].beast&&!ST[k].big);
 // a unit's numbers: [key, label, value, the value shown, what it means]
@@ -27,8 +27,15 @@ function unitNumbers(s){
 // the scale: the best of every troop type, per number
 let UC_MAX=null;
 function ucMax(){if(UC_MAX)return UC_MAX;UC_MAX={};for(const k of TROOP_TYPES())for(const [id,,v] of unitNumbers(ST[k]))UC_MAX[id]=Math.max(UC_MAX[id]||0,v);return UC_MAX}
-// what it is (its traits, data/abilities.js): [name, what it does]
+// what it is (its traits, data/abilities.js TRAITS: its kit's, battle/unitkit.js): [name, what it does]
 const unitAbilities=s=>traitsOf(s).map(id=>[ABILITIES[id].n,abilityText(id,s)]);
+/* a troop's kit on its card (doc/UNIT_KITS_DESIGN.md §8; battle/unitkit.js UnitKit; rec: its roster record, or {type}): its stances
+   in their slots, its skills in theirs (their keys: data/kits.js KIT_KEYS), the perks its mastery earned; each [name, what it does].
+   None with RANKS.statsOnly off (step 1's card) */
+function kitChips(rec){if(!RANKS.statsOnly||!ST[rec.type])return null;const K=UnitKit.of(rec),SK=skillKeys(),SS=KITS.keys2?KIT_KEYS.now.stance:[],from={kind:'Its kind\u2019s.',mastery:'From its mastery.',tech:'From an upgrade (the tech tree).'};
+  return{stances:K.slots.map((id,i)=>[(SS[i]?SS[i]+' · ':'')+STANCES[id].n,STANCES[id].ch.map(c=>c.d||c.n).join(' / ')]),
+    skills:K.skills.map((x,i)=>{const A=UNIT_SKILLS[x.id];return [(SK[i]?SK[i]+' · ':'')+A.n+(x.idle?' (idle)':''),A.d+' '+from[x.from]+(x.idle?' Not for their kind.':'')]}),
+    perks:K.perks.map(p=>['★ '+p.n,p.d+' Earned by mastery.'])}}
 // the type icon (ui/moraleicons.js UNIT_GLYPH) as SVG
 function glyphSVG(kind,size){const G=UNIT_GLYPH[kind];if(!G)return '';size=size||18;
   return '<svg class="uc-ico" viewBox="0 0 13 13" width="'+size+'" height="'+size+'" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="13" height="13" fill="#0a0c12"/><rect x="1" y="1" width="11" height="11" fill="#3466c0"/>'+
@@ -39,11 +46,11 @@ const classN=s=>s.mounted&&s.range?'Missile cavalry':tagsOf(s).includes('shield'
 // the card; from: the troop it is trained from (its numbers shown as gains and losses)
 function unitCard(k,from){
   const s=ST[k];return cardHtml({key:k,s,name:s.n,sub:'Tier '+s.tier+(s.race?' · '+RACES[s.race].n:''),from:from&&ST[from],fromN:from&&ST[from]&&ST[from].n,
-    abil:unitAbilities(s),foot:(HIRE[k]?'Hire '+hireCost(k)+'g · ':'')+(UP_FROM(k)?'Train '+trainCost(k)+'g · ':'')+'Upkeep '+(soldierPay(k)+(s.mounted?BAND_PAY.mounted:0))+'g a day'})}
+    abil:unitAbilities(s),kit:kitChips({type:k}),foot:(HIRE[k]?'Hire '+hireCost(k)+'g · ':'')+(UP_FROM(k)?'Train '+trainCost(k)+'g · ':'')+'Upkeep '+(soldierPay(k)+(s.mounted?BAND_PAY.mounted:0))+'g a day'})}
 /* growth (the owner, 2026-11-01: "the unit detail should show which stat they grow from the original"): a troop group or a
    character now against its original, and what grew it, in the order a battle gives it. A troop group: its kind's own numbers (ST),
    then your talents (tHp, tDmg: as Unit.fieldStats), its rank (proficiency on damage and health, its ladder's reach and range
-   and their mastery: battle/rankskills.js rankUnit, rankUp) and its upgrades (world/buffs.js Buffs). A character: the one formula
+   and their mastery: its kit's, battle/unitkit.js UnitKit; in battle rankskills.js rankUnit) and its upgrades (world/buffs.js Buffs). A character: the one formula
    on its record stripped (its kind at its level and race; your hero's background bonus kept), then its attributes, disciplines,
    talents and gear given back in turn, the last its numbers now (c.stats()); then its upgrades. Each step its numbers (unitNumbers).
    statGrowth(x) → {s: its numbers now, stats: {id: {base, now, parts: [[label, n]]}}}: a part what one source added; a number
@@ -59,9 +66,13 @@ function statGrowth(x){
 function troopGrowth(g){
   const k=g.type,out=[['',ST[k]]],step=(label,s)=>{if(s!==out[out.length-1][1])out.push([label,s]);return s};let s=ST[k];
   if(tm('tHp')||tm('tDmg'))s=step('Talents',{...s,hp:Math.round(s.hp*(1+tm('tHp'))),dmg:s.dmg*(1+tm('tDmg'))});
-  const p=rankProf(g),dr=(g.picks||[]).filter(x=>x==='drill').length,picks=[...(g.picks||[]),...(g.keptPicks||[])],up=(r,key)=>r.up&&r.up[key]?picks.filter(x=>x===r.id).length*r.up[key]:0;
-  if(p>0)s=step('Rank '+rankOf(g)+(dr?' · '+dr+' drill'+(dr>1?'s':''):''),{...s,dmg:s.dmg*(1+p),hp:Math.round(s.hp*(1+p))});
-  for(const r of rankRungs(g,null)){if(r.reach)s=step(r.n,{...s,reach:(s.reach||11)*(r.reach+up(r,'reach'))});if(r.range&&s.range)s=step(r.n,{...s,range:s.range*(r.range+up(r,'range'))})}
+  // (its kit's: its rank's stats (§6) and its drills, its perks and their mastery, on a horse no foot drill: battle/unitkit.js; as
+  // battle/rankskills.js rankUnit gives them)
+  const K=UnitKit.of(g),p=K.prof,S=K.stats,dr=(g.picks||[]).filter(x=>x==='drill').length,rode=!!ST[k]?.mounted,rk='Rank '+rankOf(g)+(RANKS.statsOnly&&rankOf(g)?' ('+rankWord(rankOf(g))+')':'')+(dr?' · '+dr+' drill'+(dr>1?'s':''):'');
+  if(!RANKS.statsOnly){if(p>0)s=step(rk,{...s,dmg:s.dmg*(1+p),hp:Math.round(s.hp*(1+p))});
+    for(const r of K.rungs(rode)){if(r.reach)s=step(r.n,{...s,reach:(s.reach||11)*(r.reach+K.up(r.id,'reach',rode))});if(r.range&&s.range)s=step(r.n,{...s,range:s.range*(r.range+K.up(r.id,'range',rode))})}}
+  else{if(S.dmg>0||S.hp>0||S.mor>0||S.vig>0)s=step(rk,{...s,dmg:s.dmg*(1+S.dmg),hp:Math.round(s.hp*(1+S.hp)),morale:unitMoraleOf(s)+S.mor,vigK:(s.vigK||1)*(1+S.vig)});
+    for(const r of K.rungs(rode)){const c={};if(r.reach)c.reach=(s.reach||11)*r.reach;if(r.range&&s.range)c.range=s.range*r.range;if(r.cd)c.cd=s.cd*r.cd;if(r.dmg)c.dmg=s.dmg*r.dmg;if(r.spd)c.spd=s.spd*r.spd;if(Object.keys(c).length)s=step(r.n,{...s,...c})}}
   for(const b of Buffs.list(g.id))s=step(BUFFS[b.id].n,Buffs.apply(s,[b],k));
   return out}
 // (a character's steps: the same formula on a view of its record, each source given back in turn)
@@ -87,7 +98,7 @@ function charCard(c){
    (▲▼ against the troop it trains from); its buttons under its name; its traits and skills as chips, what it is strong and weak
    against, its upkeep.
    o: key, s, name, sub, hero, from, fromN, grow, now, strength {fit, max, hurt}, rank and meters ({label, v, max, tip}: a hero's
-   stamina and mana), abil, skills, foot, footTip, acts */
+   stamina and mana), abil, skills, kit (a troop's: kitChips, its stances, skills in slots and earned perks), foot, footTip, acts */
 class UnitCard{
   constructor(o){Object.assign(this,o)}
   static pct(v,m){return Math.round(clamp(v/(m||1),0,1)*1000)/10}
@@ -109,7 +120,7 @@ class UnitCard{
   html(){const s=this.s,M=ucMax(),F=this.from?Object.fromEntries(unitNumbers(this.from).map(r=>[r[0],r[2]])):null,vs=vsInfo(s),chips=(l,cls)=>l.map(([n,d])=>'<span class="uc-ab'+(cls||'')+'" title="'+htmlText(d)+'" tabindex="0">'+n+'</span>').join('');
     return '<div class="ucard-x" data-unit="'+this.key+'"><div class="uc-head"><img class="uc-pic" src="'+(this.pic||portrait(this.key,this.hero))+'" alt=""><canvas class="uc-pic uc-anim" width="120" height="120" hidden data-spr="'+this.key+'"'+(this.hero?' data-hero="1"':'')+'></canvas><div class="uc-name"><strong>'+this.name+'</strong><small>'+this.sub+'</small><small>'+glyphSVG(this.hero?'hero':iconOfType(this.key),14)+' '+classN(s)+' · <span class="uc-type" title="Its damage type, and the armour it wears">'+DMG[dtOf(s)].n+(isMagical(dtOf(s))?' (magic)':'')+' · '+ARMOR[armorOf(s)].n+'</span></small>'+(this.fromN?'<small class="uc-from">▲▼ against '+this.fromN+'</small>':'')+'<button class="btn sm uc-sprbtn" type="button" data-act="uc-sprite" data-arg="'+this.key+'" aria-pressed="false">View sprite</button></div></div>'+(this.acts?'<div class="uc-acts">'+this.acts+'</div>':'')+
       this.strengthHtml()+this.rankHtml()+'<div class="uc-stats">'+unitNumbers(s).map(r=>this.bar(r,M,F)).join('')+'</div>'+this.growHtml()+
-      (this.abil.length||this.skills?.length?'<div class="uc-abs">'+chips(this.abil)+chips(this.skills||[],' sk')+'</div>':'')+
+      (this.abil.length||this.skills?.length||this.kit?'<div class="uc-abs">'+chips(this.abil)+(this.kit?chips(this.kit.stances,' st')+chips(this.kit.skills,' sk')+chips(this.kit.perks,' pk'):'')+chips(this.skills||[],' sk')+'</div>':'')+
       '<div class="uc-vs"><span class="good">✔ Strong vs</span> '+(vs.strong.join(', ')||'—')+'<br><span class="bad">✖ Weak vs</span> '+(vs.weak.join(', ')||'—')+'</div>'+
       (this.foot?'<div class="uc-foot"><span'+(this.footTip?' title="'+htmlText(this.footTip)+'"':'')+'>'+this.foot+'</span></div>':'')+'</div>'}
 }

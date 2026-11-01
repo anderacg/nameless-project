@@ -1,5 +1,5 @@
 'use strict';
-// The map's big figures: a lord's troop count stands clear above his banner (floating over him since Phase 1) and keeps still as he
+// The map's big figures: a lord's troop count stands clear above his army (no banner over it since 2026-11-01) and keeps still as he
 // walks; a caravan answers a click or hover anywhere on what is drawn of it (cart, ox
 // and drover), and someone small beside them still takes his own click; ships sit in power-of-two cells on the people's scale.
 // (Phase 1, D25: the map's own smaller figures: a rider and a person in a 16 cell, a caravan and a cog in 32, a rowing boat in 16;
@@ -18,9 +18,9 @@ try{const t=T,G=t.G,P=t.P,W=t.W;t.act('begin','soldier');G.mode='world';G.modal=
  // ---- the lord's label
  // (the map's labels are queued and drawn last at the screen's own resolution: sprites.js mapTxt)
  const labels=[],txt0=window.mapTxt;window.mapTxt=function(...a){labels.push(a);return txt0.apply(this,a)};
- const ys=[];for(const fr of [0,1]){performance.now=()=>fr*170+5;labels.length=0;t.drawWorld();const B=t.bannerAt(l,0),bx=B.x-G.cam.x+B.s.lx,L=labels.find(a=>a[0]===String(l.fighters)&&Math.abs(a[1]-bx)<2);
-   const top=B.y-G.cam.y+t.opaqueBox(B.s)[1];ys.push(L?L[2]:null);
-   ok(!!L&&L[2]+1<top,'step '+fr+': the lord’s troop count ('+l.fighters+', he among them) is drawn clear above his banner (label row '+(L&&L[2])+', banner top '+top+')')}
+ const ys=[];for(const fr of [0,1]){performance.now=()=>fr*170+5;labels.length=0;t.drawWorld();const T0=t.armyTagAt(l,null,G.cam),L=labels.find(a=>a[0]===String(l.fighters)&&Math.abs(a[1]-T0.x)<2);
+   const head=T0.y+t.BANNER_GAP;ys.push(L?L[2]:null);
+   ok(!!L&&L[2]<head,'step '+fr+': the lord’s troop count ('+l.fighters+', he among them) is drawn over his army, clear above his head (no banner since 2026-11-01; label row '+(L&&L[2])+', head '+head+')')}
  window.mapTxt=txt0;delete performance.now;
  ok(ys[0]!=null&&ys[0]===ys[1],'and it stays still as his horse steps ('+ys.join(' / ')+')');
  // (a picture's drawn pixels in world places: the cell's top left and whether it faces left)

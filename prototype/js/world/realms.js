@@ -203,8 +203,8 @@ function initWorld(){
 // every faction fields its listed lords (a generated world's when it needs more: WM.lords, doc/WORLD_DESIGN.md D10); also fills
 // in lords for factions an older save didn't have
 function addMissingLords(){
-  FIDS.forEach(f=>(WM.lords&&WM.lords[f]||FACS[f].lords).forEach((n,i)=>{if(W.lords.some(l=>l.name===n)||W.dead[f])return;const own=fiefsOf(f);if(!own.length)return;const h=own[i%own.length];
-    W.lords.push(asParty({id:f+i,name:n,fac:f,x:h.x+rint(-8,8),y:h.y+14,troops:armyOf(f,12),state:'rest',tgt:h.name,sd:0,cool:0,dead:false,gone:false,back:0}))}));
+  FIDS.forEach(f=>(WM.lords&&WM.lords[f]||FACS[f].lords).forEach((n,i)=>{if(W.lords.some(l=>l.name===n||l.name===lordTitled(n))||W.dead[f])return;const own=fiefsOf(f);if(!own.length)return;const h=own[i%own.length];
+    W.lords.push(asParty({id:f+i,name:lordTitled(n),fac:f,x:h.x+rint(-8,8),y:h.y+14,troops:armyOf(f,12),state:'rest',tgt:h.name,sd:0,cool:0,dead:false,gone:false,back:0}))}));
 }
 function setRel(a,b,s,chain){realmOf(a).setRel(b,s,chain)}
 /* lords inside: a lord resting at one of his realm's holdings goes in (l.inside = its name). He is off the map, and his
@@ -252,15 +252,18 @@ function resolveSiege(l,t){
 }
 // a lord resting at a holding of his realm hires as you do (the owner, 2026-10-31: "same way"): first his short units refilled, a
 // man at a time, from the holding's own willing at the price you pay, out of his realm's treasury; then, a unit slot free and
-// willing enough, one whole unit; and now and then one of his units trained up whole, as yours are at its last rank
-// (LORD_RECRUIT), into a kind whose unit holds all its men (a levy of 7 never into lancers, a unit of 6: they were lost)
+// willing enough, one whole unit; and now and then one of his units trained up, as yours are at its last rank (LORD_RECRUIT):
+// one full unit of its new kind at most, the rest staying, room for them needed (a levy of 15 into 6 lancers and 9 levies)
 function lordRecruit(l,t){
   const R=partyRoster(l),X=LORD_RECRUIT,pool=()=>Math.min(Math.floor(t.vol||0),Math.floor((t.pop||0)-GUARD_FLOOR));
   for(const g of R.groups.slice()){for(let k=0;k<X.refill&&R.groupRoom(g.type,g.id)>0&&pool()>=1&&payRealm(l.fac,HIRE[g.type]||22,t,1);k++){draftLocals(t,1);R.add(g.type,1,g.id)}}
   if(R.slots<R.groupLimit){const c=RACES[t.races[rint(0,t.races.length-1)]],r=Math.random(),type=r<X.melee?c.melee:r<X.melee+X.shield?c.shield:c.ranged,n=unitSize(type);
     if(pool()>=n&&payRealm(l.fac,(HIRE[type]||22)*n,t,n)){draftLocals(t,n);R.add(type,n,'new')}}
-  {const g=R.groups.find(g=>UP[g.type]&&Math.random()<X.up/unitSize(g.type));if(g){const n=g.count,u=UP[g.type].filter(k=>unitSize(k)>=n);
-    if(u.length){const to=u[rint(0,u.length-1)];R.remove(g.type,n,g.id);R.add(to,n,'new')}}}
+  // (his new unit a fresh one, its rank his army's (world/armyranks.js); a split's in a free unit slot, else not that kind: core/army.js
+  // ArmyRoster#upgradeCount)
+  // (a lord over his unit slots converts nothing till he is within them: the remove-then-add below would lose the men, the add refused)
+  {const g=R.groups.find(g=>UP[g.type]&&Math.random()<X.up/unitSize(g.type));if(g&&R.slots<=R.groupLimit){const u=UP[g.type].filter(k=>!R.upgradeSplits(g,k)||R.slots<R.groupLimit);
+    if(u.length){const to=u[rint(0,u.length-1)],n=R.upgradeCount(g,to);R.remove(g.type,n,g.id);R.add(to,n,'new')}}}
 }
 function worldDay(){
   Realm.day();// (wars and peace)

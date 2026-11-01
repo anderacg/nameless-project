@@ -7,7 +7,7 @@ try{
  const same=(a,b)=>['hp','dmg','spd','reach','range','cd'].every(k=>Math.abs((a[k]||0)-(b[k]||0))<1e-9);
  // the kinds (hum_spear is the Shield Men since the troop tree, 2026-10-31: was the Man-at-Arms)
  {const a=t.troopOf('hum_spear'),b=t.troopOf('hum_spear');ok(a===b&&a instanceof t.Troop&&a instanceof t.Unit&&!a.isChar,'a Troop is one object for every soldier of its kind');
-  ok(a.key==='hum_spear'&&a.name==='Shield Men'&&a.race==='human'&&a.stats()===ST.hum_spear&&a.tags.includes('spear')&&a.abilities().includes('brace'),'its key, name, race, numbers (its data), tags and abilities')}
+  ok(a.key==='hum_spear'&&a.name==='Shield Men'&&a.race==='human'&&a.stats()===ST.hum_spear&&a.tags.includes('spear')&&a.abilities().includes('antiCav'),'its key, name, race, numbers (its data), tags and abilities (a spear\u2019s Anti-cavalry: doc/UNIT_KITS_DESIGN.md §4)')}
  P.comps={brann:{ap:0,role:''}};const c=t.compInit('brann'),L=W.lords[0],ch=t.newChief('bandits',4);
  const H=t.charOf(P),C=t.charOf(c,'brann'),Lc=t.charOf(L),Cc=t.charOf(ch);
  ok([H,C,Lc,Cc].every(x=>x instanceof t.Character&&x instanceof t.Unit&&x.isChar)&&[H,C,Lc,Cc].map(x=>x.role).join()==='hero,companion,lord,chieftain','your hero, a companion, a lord and a chieftain: each a Character, in its role');
@@ -32,7 +32,7 @@ try{
  // abilities: one list for every unit; traits by what a unit is, actives cast the same way by every caster
  {const A=t.ABILITIES,act=Object.keys(A).filter(k=>A[k].kind==='active');ok(act.length===10&&act.every(k=>t.HSKILLS[k]===A[k]),'ten actives, the same ones your hero learns (HSKILLS is their view)');
   ok(t.traitsOf(ST.hum_knight).join()==='charge,heavy,wedge'&&t.traitsOf(ST.troll).includes('regen')&&t.traitsOf(ST.troll).includes('huge'),'traits: a knight\u2019s by its kind, a troll\u2019s by what it is ('+t.traitsOf(ST.troll).join(', ')+')');
-  ok(t.troopOf('hum_spear').actives().length===0&&t.troopOf('hum_spear').traits().includes('brace'),'troops: their traits, no actives (yet)');
+  ok(t.troopOf('hum_spear').actives().length===0&&t.troopOf('hum_spear').traits().includes('antiCav'),'troops: their traits, no actives (yet)');
   ok((()=>{try{t.CHAMP_SK;return false}catch(e){return true}})(),'(the champions\u2019 own list is gone)');
   P.slots=['whirl','heal',...Array(8).fill(null)];P.tree=['start','might0','might1'];ok(H.actives().join()==='whirl','your hero: the learned skills in her slots (Healing is slotted but not learned)');
   c.lv=1;ok(C.actives().join()==='whirl','a companion at level 1 has grown its tree as a warrior: Whirlwind ('+c.tree.join(', ')+')');ok(Lc.actives().length>0&&Lc.actives().every(k=>t.knowsOf(L,k)&&L.slots.includes(k)),'a lord: the skills his tree has given him, in his slots ('+Lc.actives().join(', ')+')');}

@@ -45,7 +45,7 @@ Kit.suite(({ok,info})=>{
  ok(G.mode==='quests'&&q('.fb-head h2').textContent==='Quests'&&qa('.qw-tabs [data-act="qw-tab"]').map(b=>b.textContent.split(' · ')[0]).join('|')==='Main|Side|Jobs|Archive','Q: the Quests window, its tabs Main, Side, Jobs, Archive');
  ok(back()&&back().textContent==='Back'&&back().dataset.act==='fb-menu'&&close().textContent==='Back to map','its bar: Back to the Game Menu, the way out');
  key('KeyQ','q');ok(G.mode==='world','Q again: closed');t.openQuests();esc();ok(G.mode==='esc','Esc: its Back, the Game Menu');esc();ok(G.mode==='world','and resumes');
- t.openChar();ok(G.mode==='char'&&tabs().join('|')==='Roster|Army skills|Condition|Passengers'&&!q('[data-act="char-tab"][data-arg="quests"]'),'the Army window: Roster, Army skills, Condition, Passengers ('+tabs().join(', ')+')');
+ t.openChar();ok(G.mode==='char'&&tabs().join('|')==='Roster|March formation|Army skills|Condition|Passengers'&&!q('[data-act="char-tab"][data-arg="quests"]'),'the Army window: Roster, March formation, Army skills, Condition, Passengers ('+tabs().join(', ')+')');
  t.act('char-tab','quests');ok(G.char==='roster','no Quests tab to turn to');Kit.world();
  // ---- the Journal: J on its last section; Chronicle, Lords, Realms, Trainers (ui/trainerlist.js); L on the Chronicle
  key('KeyJ','j');

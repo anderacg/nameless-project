@@ -99,7 +99,8 @@ try{
   const there=mine.map((g,i)=>g.units.filter(u=>off(g,u)<=14).length+'/'+g.units.length+' (ford '+by[i][0].size+', bridge '+by[i][1].size+')');
   ok(mine.every(g=>g.units.every(u=>u.x>cB.x1))&&!wet&&onF>0&&onB>0&&clean(w),'four groups (foot, riders, trolls, archers) sent over: all across in '+Math.round(t.B.t)+' s by the ford and the bridge ('+onF+' and '+onB+' soldier-frames on them), never in deep water; at their places '+there.join(', '));
   // a charge over the river: no wading, by a crossing
-  {const k=mine[1],f=foe.units[0];place(foe,cF.x1+120,cF.y+90);place(k,cF.x0-120,cF.y+90);k.attack(f);let wk=0;const w2=watch(t.B.t+30,()=>f.hp>f.max-1,()=>{for(const u of k.units)if(t.groundAt(u.x,u.y)===K.deep)wk++});
+  // (its foe unhurt first: men sent over above may have struck him, their places shared out by the least walking, core/assign.js)
+  {const k=mine[1],f=foe.units[0];place(foe,cF.x1+120,cF.y+90);place(k,cF.x0-120,cF.y+90);for(const u of foe.units)u.hp=u.max;k.attack(f);let wk=0;const w2=watch(t.B.t+30,()=>f.hp>f.max-1,()=>{for(const u of k.units)if(t.groundAt(u.x,u.y)===K.deep)wk++});
    ok(!wk&&clean(w2)&&k.units.some(u=>Math.hypot(u.x-f.x,u.y-f.y)<30),'riders charging a foe over the river go round by a crossing (none ever in deep water) and reach him')}
   L.exit()}
  // ======== one bridge, no ford: two columns over it the same way and two the other way at once; then a whole battle on it

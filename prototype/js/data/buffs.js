@@ -6,7 +6,12 @@
    spear, ranged, cav, magic), tier [lowest, highest], kinds [ids]), and mods what it changes on the field:
      hpPct, dmgPct, spdPct, reachPct, rangePct: a share more (.1: +10%); cdPct: a share of their swing or shot time (-.1: 10% faster);
      armor: points of armour (matchups.js ARMOR, 0-100); morale: points of morale.
-   Bought and kept by world/buffs.js (Buffs). None yet: the tech tree adds them. One as it would be written:
+   skill: a skill it teaches the group (doc/UNIT_KITS_DESIGN.md §5, "Skills from the tech tree"; battle/unitkit.js UnitKit reads it,
+   KITS.cap): one of battle/unitabilities.js UNIT_SKILLS, in the group's next free skill slot, idle for a kind whose soldiers cannot use it.
+   Bought and kept by world/buffs.js (Buffs). The tech tree adds the rest. One as it would be written:
      temperedBlades:{n:'Tempered blades',d:'Better steel for their swords.',at:'smith',need:{tier:3},cost:6,who:{unit:'foot'},mods:{dmgPct:.08}}
    ---------- */
-const BUFFS={};
+const BUFFS={
+  // PLACEHOLDER building: at 'smith' only so Fire arrows can be bought and tested; which building sells it is the owner's to say
+  // (doc/UNIT_KITS_DESIGN.md §5: "a fletcher's or the smith's, at a level")
+  fireArrows:{n:'Fire arrows',d:'Pitch, tow and fire pots: their bows and crossbows can loose fire arrows (a skill).',at:'smith',need:{tier:1},cost:4,who:{cls:'ranged'},skill:'fire',placeholder:true}};

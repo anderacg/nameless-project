@@ -328,7 +328,64 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  moment, a little behind where its brain moved it (you at 1430.8,1447.4 for 1430.9,1447.4), so the parties' places after 600
 //  frames move. Checked: with MARCH_MOVE.menCentre, MARCH_RING.on and MARCH_RING.meet false, W6 is 4624b5bf and W8 8a273919
 //  again; W1-W5, W7, B2 and the five sums held both ways. Was W6 4624b5bf, W8 8a273919)
-const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'3d4ee001',W4:'2bf73f82',W5:'0b1fd5be',W6:'83e0a0f1',W7:'26e752f8',W8:'f3fea1fb',B2:'ccd4914c'};
+// (W6, W7 and W8 re-recorded 2026-11-01, on purpose, road travel by column (the owner, 2026-11-01: "when travel by road it will
+//  force the marching to columns in order to snap them near the road, this should apply for all armies, otherwise no road bonus";
+//  marchstyles.js TRAVEL_STYLES, TravelStyle, MarchColumn; world.js armyGround). Each army marches in its kind's travel style (a
+//  column for a caravan, a lord on a long trip, a patrol on its beat) and its ground, so its pace, is its men's, not its point's.
+//  W6: the first two spots' views by day and night move (7617572a 1096644e eccb3319 93623e46 to 90b8a0b7 ceb52f86 7ad32b78
+//  c4206294), the third spot's two as before. W8: the parties' places after 600 frames (you at 1430.4,1447.2 for 1430.8,1447.4;
+//  bands 75 for 74, fights 0 for 2). W7: the three days run so (a save 277499 chars for 261889). Checked: with TRAVEL_STYLES.on false (no columns, the
+//  ground at each army's point), W6 is 83e0a0f1, W7 26e752f8 and W8 f3fea1fb again; W1-W5, B2 and the five sums held both ways.
+//  Was W6 83e0a0f1, W7 26e752f8, W8 f3fea1fb)
+// (W7 and W8 re-recorded 2026-11-01, on purpose: men fill the nearest free place (the owner, 2026-11-01: "when unit groups moving
+//  in march formation or battle, just make units try to fill the position instead of fixed to one specific unit"; core/assign.js
+//  SLOTFILL, world/march.js MarchArmy refill, battle/formations.js layForm). A group's men on the march take its places by the
+//  least walking in all (its rows made again, a column formed or broken, its places turned, now and then on the march), and an
+//  army is where its men are (menCentre), so the armies near you stand a little elsewhere: W8 the parties' places after 600 frames
+//  (you at 1430.4,1447.2 as before; a save of the same counts), W7 the three days run so (a save 274063 chars for 277499). Checked:
+//  with SLOTFILL.on false, W7 is da07007c and W8 235d3b93 again; W1-W6, B2 and the five sums held both ways. Was W7 da07007c,
+//  W8 235d3b93)
+// (W7 and B2 re-recorded 2026-11-01: unit kits step 2 (the owner, 2026-11-01), the part that moved them RANKS.mastery5: the world
+//  part of a save carries its 'kits' piece (core/ranks.js: a save made before the five mastery levels is told apart, its groups'
+//  picks read again; nine chars more, 274072 for 274063). Checked: with every part of step 2 off, W7 640de23c and B2 ccd4914c again;
+//  W1-W6, W8 and the five sums held. Was W7 640de23c, B2 ccd4914c)
+// (re-recorded 2026-11-01, the three women lords' titles (the owner: "change whatever you see fits for now, just make sure it can
+// be changed in the future"; data/factions.js LORD_RETITLE: Clanmother Borka, Clanmother Gimra, Warmother Ulgra): their names are in
+// the world's state. Proof: LORD_RETITLE {} gives W7 cd936f95 and B2 0dfcc7a7 again. Were W7 cd936f95, B2 0dfcc7a7)
+// (re-recorded 2026-11-01, armies see by every man, lords keep to roads (the owner): W7 c86932ec → 5c351a7f, the lords' road keeping
+// on long trips (marchstyles.js TRAVEL_STYLES.lordKeep 1.1; the routes' cache keyed by each road cost, router.js, moves nothing here).
+// Proof: lordKeep 1 gives c86932ec again. Was W7 c86932ec)
+// (re-recorded 2026-11-01, a bug fix: a lord over his unit slots lost the men he trained up (realms.js lordRecruit took the unit
+// off, then the add was refused: no slot); now he trains none till he is within them. Proof: the guard taken out gives 5c351a7f
+// again. Was W7 5c351a7f. The army's footing (march.js MARCH_MOVE.footing) moves nothing here)
+// (re-recorded 2026-11-01, on purpose: no banner floats over an army (the owner: "remove a floating banner, show the banner detail
+// only when you inspect them along with the detail window"; render.js drawBanners, ui.js tipFlag): W6, the map's pixels, without
+// your banner, your eye and badges over your hero (heroTagAt). Proof: that patch's code taken out gives 738abfed again; W7, W8
+// (the world's own) held. Was W6 738abfed)
+// (W7 and W8 re-recorded 2026-11-01, on purpose, about face (the owner: a column sent the other way "kind of chaos, it takes several
+//  seconds just to turn around"; march.js MARCH_MOVE.about, MarchArmy aboutColumn, reorder; marchstyles.js MarchColumn turn, pass):
+//  an army near you sent back the way it came turns where it stands (a column's tail its head, a formation laid as it stood, its
+//  guide on at once), its order coming back after a long leg or a halt, so the armies that turn back stand elsewhere. Outriders on
+//  the map (march.js marchOutriders) moves nothing here: no army in it has the perk. W6 re-recorded with them, on purpose: the
+//  army's flags on its marching men and torches after dark (gfx/marchgear.js; the owner: "20% of unit for each group", torches
+//  "every army can use during night time"), drawn in the map's pixels. Checked: with MARCH_MOVE.about.on and MARCH_GEAR.flags and
+//  torches false, W6 a1d57a54, W7 94c785ba and W8 71df061a again; the rest held. Were W6 a1d57a54, W7 94c785ba, W8 71df061a)
+// (W6 re-recorded 2026-11-01, on purpose, realistic fire (the owner: "can you change a fire effect to be more realistic?";
+//  gfx/fire.js): torches, camp and site fires drawn as they burn (PX.fireFlame's frames, by noise of the clock and their ids), the
+//  night's lights pulsing unevenly with a pool on the ground and no small flame of their own over the torches'. Only the night's
+//  three parts moved (63bf262d b5d6edb6 607ee460 to 56f76e49 1e3b5c68 0d2d6889); the day's held. Proof: FLAMES.on false gives
+//  de8bb9db again; W1-W5, W7, W8 and B2 held. Was W6 de8bb9db)
+// (W6 re-recorded 2026-11-01, on purpose: another army seen by its nearest man and drawn only where you see it (worldobject.js
+//  spotted, march.js marchDraw; the owner: "a huge army roaming around but suddenly disappear even with in just few feet away"):
+//  the map's pixels. Checked: SIGHT_EYES.armies false gives 06a05ba5 again; W7, W8 and the rest held. Was W6 06a05ba5)
+// (W6 re-recorded 2026-11-01, on purpose, paths round obstacles (the owner: "can you make the pathfinder better for obstacles?
+//  right now the units seem to bump into boundaries, houses, etc. which sometimes make them stuck"; and the buildings' footings: "make
+//  sure that you also make the buildings actually have hidden wall that cannot be walked by in the map"; battle/route.js PATHS,
+//  world/march.js marchFootings): your men at the first spot, by Ashford's centre (whose own foot is as before), keep their bodies'
+//  room off its walls, so they stand a little elsewhere. Only the first spot's two views moved (c9c1d9ac 56f76e49 to 63b9fd07
+//  19472329); the other four held. W7, W8, B2 and the five sums held. Proof: every PATHS switch off gives 3755c2ed again. Was W6
+//  3755c2ed)
+const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'3d4ee001',W4:'2bf73f82',W5:'0b1fd5be',W6:'c12fc40c',W7:'13f8aeb3',W8:'bd7d9103',B2:'db4c9cc7'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

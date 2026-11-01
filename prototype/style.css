@@ -384,6 +384,10 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .tip b{display:block;font-size:var(--fs-base);color:var(--accent)}
 .tip small{display:block;color:var(--muted)}
 .tip .act{color:var(--good)}
+/* a party's banner on its card (ui.js tipFlag, 2 CSS px a pixel): a flag tab on the top left corner, its pole down the left edge,
+   its cloth over the corner; the header clears the cloth (input.js keeps the tab on the screen) */
+.tipflag{position:absolute;left:-6px;top:-14px;image-rendering:pixelated;filter:drop-shadow(0 1px 0 rgba(0,0,0,.5))}
+.tipflag+b{padding-left:20px}
 /* a long press on the map (touch, input.js): the same tooltip as a card over the finger, until the next tap */
 .tip.hold{max-width:min(280px,calc(100% - 12px - var(--sa-l) - var(--sa-r)));border-color:var(--accent)}
 
@@ -555,13 +559,21 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .borders{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:4px;background:var(--hud-face);border:1px solid var(--trim);border-radius:var(--r-md);box-shadow:var(--float),inset 0 0 0 1px var(--shade)}
 .ogrp{display:flex;gap:3px}
 .ogrp+.ogrp{border-left:1px solid var(--line);padding-left:6px}
+/* its groups (battlehud.js bhudBar): the orders, the stances (the Pace, then the rest: one group to the eye), the formations, the
+   skill bar, Withdraw last, on the right; a stance's row its buttons together, a dotted line between rows */
+.ogrp.wd{order:9}
+.ogrp.stances.rest{border-left:0;padding-left:0}
+.srow{display:flex;gap:1px}
+.srow+.srow{margin-left:2px;padding-left:4px;border-left:1px dotted var(--line)}
+.srow:empty,.srow:has(> [hidden]:only-child){display:none}
 .obtn{position:relative;width:36px;height:34px;display:inline-flex;align-items:center;justify-content:center;padding:0;color:#e7d7b3;cursor:pointer;
   background:var(--button-face);border:1px solid var(--line-2);border-radius:var(--r-sm)}
 @media (hover:hover){.obtn:hover{border-color:var(--trim-hi);color:#fff0c7;background:linear-gradient(#443520,#211a13)}}
 .obtn.on{border-color:var(--trim-hi);color:#fff0c7;background:linear-gradient(#4a3923,#2a2016);box-shadow:inset 0 -2px var(--accent)}
 .obtn:disabled{opacity:.3;cursor:not-allowed}
 .obtn .k{position:absolute;right:2px;bottom:1px;font-size:8px;font-weight:700;color:var(--faint);line-height:1}
-/* unit abilities (battlehud.js bhudAbilities): a shade that shrinks as the cooldown runs out, the seconds left (or still on), lit while on */
+/* the skill bar's slots and the Mounted stance (battlehud.js bhudSkills, bhudMounted): a shade that shrinks as the cooldown runs out,
+   the seconds left (or still on), lit while on; a slot whose units have different skills there, a + by its key */
 .abtn{overflow:hidden}
 .abtn .acd{position:absolute;left:0;right:0;bottom:0;height:0;background:rgba(0,0,0,.62);transition:height .25s linear;pointer-events:none}
 .abtn .at{position:absolute;left:2px;top:1px;font-size:10px;font-weight:700;line-height:1;color:#fff;text-shadow:0 1px 1px #000;pointer-events:none}
@@ -569,6 +581,12 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .abtn.on{box-shadow:inset 0 0 0 1px var(--accent),0 0 8px rgba(255,210,90,.55)}
 .abtn.on:disabled{opacity:1;cursor:default}
 .abtn[data-abil="fire"]{color:#ffb070}
+.abtn.mix::after{content:'+';position:absolute;left:2px;bottom:1px;font-size:9px;font-weight:700;line-height:1;color:var(--accent)}
+/* the stance slots (doc/UNIT_KITS_DESIGN.md §7b, KITS.keys2: battlehud.js bhudStances): Q W E, each the selection's own stance's icon,
+   lit while on; step 1's stance rows kept under them, hidden (their flag buttons still the flags' own) */
+.sslot .si{display:flex}
+.legacy[hidden],.mobile-battle-hud .legacy[hidden]{display:none!important}
+#bCharge{color:#ffcf9a}
 /* the commander bar (commandpowers.js bhudPowers): round, gold-rimmed buttons down the left of the field, apart from the order bar;
    a sweep that empties as the cooldown runs out, the seconds (or left on), lit while Stand Fast! is on; dimmed when it cannot be used */
 .cmdbar{position:absolute;left:var(--e-l);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 5px;background:var(--hud-face);border:1px solid var(--trim);border-left:2px solid var(--trim);border-radius:var(--r-md);box-shadow:var(--float)}
@@ -806,6 +824,15 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .uc-abs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
 .uc-ab{padding:2px 7px;font-size:var(--fs-sm);background:#342b22;border:1px solid var(--line-2);border-radius:var(--r-sm);cursor:help}
 .uc-ab.sk{border-color:var(--accent);background:#3a3020}
+/* a troop's kit on its card (unitcard.js kitChips): its stances, its skills in their slots, its earned perks */
+.uc-ab.st{border-color:#6f8fb8;background:#232b38}
+.uc-ab.pk{border-color:#c9a64a;background:#3b331c;color:#ffe9a8}
+/* the mastery pick (partypage.js masteryHtml): the kind's menu, each option its effect in words; those it may not take dimmed */
+.fb-mastery{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.fb-mpick{display:block;width:100%;text-align:left;padding:7px 9px;font:inherit;color:inherit;background:#2a2118;border:1px solid #d7b36b;border-radius:var(--r-sm);cursor:pointer;min-height:44px}
+.fb-mpick strong,.fb-mpick small{display:block}.fb-mpick small{font-size:11px;line-height:1.35;color:#c3b798;margin-top:2px}
+.fb-mpick.off{opacity:.5;cursor:default;border-color:#6b5533}
+@media (hover:hover){.fb-mpick:not(.off):hover{background:#3a2d1c}}
 .uc-vs{margin-bottom:6px;font-size:var(--fs-sm);line-height:1.45;color:var(--fg-2)}
 .uc-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-top:6px;border-top:1px solid var(--line);font-size:var(--fs-sm);color:var(--accent)}.uc-foot>span{flex:1;cursor:help}.uc-foot .btns{margin:0}
 /* a companion's window: its card beside the rest (character.js renderComp) */
@@ -1250,9 +1277,20 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 #dev-lab-bar{position:fixed;z-index:10001;bottom:calc(8px + var(--sa-b));left:50%;transform:translateX(-50%);display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:95vw;width:max-content;padding:8px;background:#101922ef;color:#ffe0a0;border:1px solid #8e7955;font:12px monospace}
 @media(max-width:520px){.dev-grid{grid-template-columns:1fr}#dev-console [data-dev-form]{grid-template-columns:1fr auto}#dev-console [data-dev-form]>label{grid-column:1/-1}}
 
-/* March formation editor */
-.march-layout{display:grid;flex:none;width:100%;min-width:0;align-content:start;grid-template-columns:minmax(0,1fr) minmax(200px,280px);gap:16px;padding:12px}.march-layout>div{min-width:0}.march-layout canvas{display:block;contain:inline-size;width:100%;height:clamp(280px,68vh,680px);object-fit:fill;margin:0;touch-action:none;border:1px solid #806b3f}.march-layout .btns{display:flex;flex-wrap:wrap;gap:6px}.march-layout .btn.on{border-color:#f0cd76;background:#514026}.march-layout p{color:#c6b691}.fb-march .fb-body{overflow:auto}
-@media(max-width:600px){.march-layout{gap:8px;padding:8px;grid-template-columns:minmax(180px,1.5fr) minmax(120px,1fr)}.march-layout .btn{font-size:11px;padding:6px}.march-layout canvas{width:100%;height:280px}}
+/* March formation (the Army window's tab, ui/march.js): the switch of its two views (Field, By road) in the pane's head; each view
+   its preview filling the pane and its controls beside it, scrolling. By road: the column a strip across its stage, the order a list */
+.fb-march-pane>.fb-pane-head .fb-tabs{flex:0 1 380px;padding:0}
+.march-layout{display:grid;flex:1;min-height:0;width:100%;min-width:0;grid-template-columns:minmax(0,1fr) minmax(200px,280px);grid-template-rows:minmax(0,1fr);gap:12px;padding:10px}.march-layout>div{min-width:0}
+.march-stage{display:flex;flex-direction:column;gap:6px;min-height:0}.march-stage canvas{display:block;flex:1 1 0;min-height:0;contain:size;width:100%;margin:0;touch-action:none;border:1px solid #806b3f}
+.march-column .march-stage{justify-content:center}.march-column .march-stage canvas{flex:0 1 300px}
+.march-side{display:flex;flex-direction:column;min-height:0}.march-side>.fb-scroll{padding:0 4px 0 0}.march-layout .btns{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.march-layout .btn.on{border-color:#f0cd76;background:#514026}.march-layout p{color:#c6b691}
+.march-caption-row{display:flex;flex-wrap:wrap;align-items:center;gap:0 10px}.march-caption-row>.btns{flex:none;margin:0}.march-caption{flex:1 1 200px;margin:0;font-size:12px;line-height:1.4}
+.march-col-list{flex-direction:column;align-items:stretch}.march-col-list>.btn{display:flex;align-items:center;gap:6px;justify-content:flex-start;text-align:left}.march-col-list>.btn>b{min-width:16px;color:#e9d5a9}.march-col-list>.btn>small{margin-left:auto;color:#c3ad85}
+.march-commit{flex:none;padding-top:6px;border-top:1px solid #6b5636}.march-layout .march-commit{flex-wrap:nowrap}.march-commit>.btn{flex:1 1 auto;white-space:nowrap}
+/* (a phone on its side: the pane's title gone, the switch its head; a narrow column of controls) */
+@container ovl (max-height:520px){.fb-march-pane>.fb-pane-head h3{display:none}.fb-march-pane>.fb-pane-head .fb-tabs{flex:1}.march-layout{gap:8px;padding:6px;grid-template-columns:minmax(0,1fr) 230px}.march-layout .btn{font-size:11px;padding:6px}.march-layout .fb-note{font-size:11px;padding:6px}.march-caption{font-size:11px}}
+/* (a narrow phone: the preview above, its controls below it; the Army window's five tabs, a long name on two lines) */
+@container ovl (max-width:650px){.fb-army>.fb-tabs>.btn{white-space:normal;line-height:1.15}.march-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(200px,1fr) minmax(0,1fr)}.march-column .march-stage canvas{flex-basis:200px}}
 
 /* Short hunts stay on the map, with one way to leave. */
 
@@ -1299,8 +1337,9 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .mbh-drawer *{touch-action:pan-y}
 .mbh-drawer header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:7px;color:var(--fg-2);font-size:12px}.mbh-close{width:44px;min-height:44px;margin:-6px -5px -3px 0;border:0;background:none;color:var(--fg);font-size:23px;cursor:pointer}
 .mbh-speed-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.mbh-speed-grid button{min-height:48px;font-size:14px}
-.mobile-battle-hud .borders{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:0;border:0;box-shadow:none;background:none}
-.mobile-battle-hud .ogrp{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:0;border:0}.mobile-battle-hud .obtn{display:flex;flex-direction:column;gap:3px;width:100%;height:auto;min-height:54px;padding:4px 2px}.mobile-battle-hud .obtn .k{display:none}.mbh-label{display:none}.mobile-battle-hud .mbh-label{display:block;position:relative;z-index:1;font:10px/1.1 Arial,sans-serif;text-align:center}.mobile-battle-hud .obtn .ficon,.mobile-battle-hud .obtn .mico{flex:none}
+/* (the order bar in the Orders drawer: every button in one grid, six a row, the stances' and groups' boxes gone) */
+.mobile-battle-hud .borders{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;padding:0;border:0;box-shadow:none;background:none}
+.mobile-battle-hud .ogrp,.mobile-battle-hud .srow{display:contents}.mobile-battle-hud [data-order="withdraw"]{order:9}.mobile-battle-hud .obtn{display:flex;flex-direction:column;gap:3px;width:100%;height:auto;min-height:54px;padding:4px 2px}.mobile-battle-hud .obtn .k{display:none}.mbh-label{display:none}.mobile-battle-hud .mbh-label{display:block;position:relative;z-index:1;font:10px/1.1 Arial,sans-serif;text-align:center}.mobile-battle-hud .obtn .ficon,.mobile-battle-hud .obtn .mico{flex:none}
 .mobile-battle-hud .cmdbar{position:static;transform:none;flex-direction:row;justify-content:flex-start;margin-top:8px;padding:6px;background:none;box-shadow:none;border:0;border-top:1px solid var(--line)}.mobile-battle-hud .cmdbar .k{display:none}.mobile-battle-hud .cbtn{width:44px;height:44px}.mobile-battle-hud .cmdh{display:block}
 .mbh-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.mobile-battle-hud .binfo{position:static;display:grid;min-height:0;max-height:none;width:100%;margin-top:8px;overflow:visible;box-shadow:none;border:0;padding:8px 0 0;background:none;backdrop-filter:none}
 .screen.mobile-battle .btime,.screen.mobile-battle .bcmd{display:none}
@@ -1314,8 +1353,8 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .screen.mobile-battle .battle-ready>.battle-start{max-width:calc(100% - var(--e-l) - var(--e-r))}
 .cmdh{max-width:90px;text-align:center;line-height:1.3}
 .mbh-help{font:12px/1.4 Arial,sans-serif;color:var(--muted);margin:0 0 8px}
-.abils::before{content:'Unit abilities';font:700 10px/1.3 Arial,sans-serif;color:var(--accent);max-width:58px;text-align:center}
-.mobile-battle-hud .abils::before{grid-column:1/-1;max-width:none;text-align:left}
+.abils::before{content:'Skills';font:700 10px/1.3 Arial,sans-serif;color:var(--accent);max-width:58px;text-align:center;align-self:center}
+.mobile-battle-hud .abils::before{display:none}
 
 .overlay:has(.hunt-setup){align-items:flex-end;background:#0002;padding:8px}
 .panel.hunt-setup{height:auto;max-height:55dvh;width:min(620px,100%);gap:7px;padding:12px}

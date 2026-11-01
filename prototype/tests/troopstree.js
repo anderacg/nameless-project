@@ -25,13 +25,17 @@ Kit.suite(({ok})=>{
   if(sold){const n0=hs();ok(t.recruitment.trainGroup(ash,g.id,'hum_lancer').ok&&g.type==='hum_lancer'&&hs()===n0-2,'upgraded: your two horses ridden, four bought')}}
  {const g=grp('hum_squire',3),q=t.recruitment.quoteGroupTraining(ash,g.id,'hum_knight');ok(q.horses&&q.horses.id==='m_destrier','Squire to Knight: war horses, a riding horse is not enough');
   const g2=grp('hum_bow',4),q2=t.recruitment.quoteGroupTraining(ash,g2.id,'hum_long');ok(!q2.horses,'a foot upgrade needs no horse')}
- // ======== skills kept through an upgrade
- {const g=grp('hum_levy',4);ok(t.rankOf(g)===5&&t.rankLadders(g).join()==='spear,5','a Spearman unit at rank 5: its spear ladder, all five rungs');
+ // ======== skills kept through an upgrade: step 1's ladders (unit kits step 2's switches off: doc/UNIT_KITS_DESIGN.md §10.2)
+ Kit.kits(false,()=>{const g=grp('hum_levy',4);ok(t.rankOf(g)===5&&t.rankLadders(g).join()==='spear,5','a Spearman unit at rank 5: its spear ladder, all five rungs');
   r.upgrade(g.id,'hum_lancer');ok(g.type==='hum_lancer'&&t.rankOf(g)===1&&g.learned&&g.learned.spear===5,'made Lancers: rank 1 again, its spear ladder kept');
   const rungs=t.rankRungs(g,{s:ST.hum_lancer}).map(k=>k.id||k.ab);ok(rungs.includes('reach')&&rungs.includes('rally')&&!rungs.includes('brace')&&!rungs.includes('hedge'),'on horseback: Long reach and Rally still his; Brace and the hedge of spears foot drills, off ('+rungs.join(', ')+')');
   ok(t.rankRungs(g,{s:{...ST.hum_lancer,mounted:false}}).some(k=>k.ab==='brace'),'on foot again (the dismount, to come): Brace back');
   const p=grp('hum_levy',4);r.upgrade(p.id,'hum_pike');ok(t.rankLadders(p).join()==='spear,5'&&t.rankRungs(p,{s:ST.hum_pike}).some(k=>k.id==='hedge'),'made Pikemen: the same ladder, every rung kept');
-  t.saveGame(true,'quick');t.loadGame('quick');const L=t.partyRoster(P).groups.find(x=>x.id===g.id);ok(L&&L.learned?.spear===5,'saved and loaded: what it learned kept')}
+  t.saveGame(true,'quick');t.loadGame('quick');const L=t.partyRoster(P).groups.find(x=>x.id===g.id);ok(L&&L.learned?.spear===5,'saved and loaded: what it learned kept')});
+ // (step 2, §7: its mastery's picks kept through an upgrade, those its new kind's menu has working, the rest idle)
+ {const g=grp('hum_levy',4);g.mxp=700;g.picks=['longReach','braceUp'];r.upgrade(g.id,'hum_pike');const K=t.UnitKit.of(g);
+  ok(g.type==='hum_pike'&&!g.picks&&K.kept.join()==='longReach,braceUp'&&K.perk('longReach')&&K.up('brace','push')>0,'made Pikemen: its picks kept, Long reach and Brace+ still at work');
+  const h=grp('hum_levy',4);h.mxp=300;h.picks=['longReach'];r.upgrade(h.id,'hum_lancer');const H=t.UnitKit.of(h);ok(H.idle.join()==='longReach'&&!H.perk('longReach'),'made Lancers: Long reach kept but idle (not on the cavalry\u2019s menu)');r.remove('hum_pike',4,g.id);r.remove('hum_lancer',4,h.id)}
  // ======== a worker taken on: only ever a Peasant Levy, refilling yours first (the owner, 2026-10-31: "he is just a worker, only peasant")
  {r.add(pl,12,'new');const g=r.groups.find(x=>x.type===pl);r.add('hum_levy',3,'new');const sp=r.groups.filter(x=>x.type==='hum_levy').pop();
   ok(t.workerJoins(pl)==='into your Peasant Levy (12/20)','the estate says where he goes: '+t.workerJoins(pl));const n0=g.count,s0=sp.count;P.add(pl);

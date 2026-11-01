@@ -23,11 +23,8 @@ try{
    for(let y=Math.max(b[1],y0+c.y);y<=Math.min(b[3],y1+c.y);y++)for(let x=Math.max(b[0],x0+c.x);x<=Math.min(b[2],x1+c.x);x++){if(e.s&&!e.s.a[(y-e.dy)*e.s.width+x-e.dx])continue;m.add((y-c.y)*VW+x-c.x)}}return m};
  const behind=(box,fy)=>WA.standing(box[0]+G.cam.x,box[1]+G.cam.y,box[2]+G.cam.x,box[3]+G.cam.y).filter(e=>e.y<=fy).length;
  // a figure's pixels: on, off, the scene without it (hide/show it); in its box, those it drew (off differs from the scene)
- // (less its banner's pixels, drawn over all after: checked on their own)
- const flag=q=>{const B=t.bannerAt(q,Math.floor(now/420+q.x*.13)%2),m=new Set();if(!B)return m;const d=B.s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,B.s.width,B.s.height).data;
-   for(let j=0;j<B.s.height;j++)for(let k=0;k<B.s.width;k++)if(d[(j*B.s.width+k)*4+3])m.add((B.y-G.cam.y+j)*VW+B.x-G.cam.x+k);return m};
- const look=(q,fy,hide,show)=>{settle();const on=grab(true),box=D.boxes.find(b=>b[4]===fy),off=grab(false),fl=flag(q);hide();const z=grab(true);show();if(!box)return null;
-   const px=[];for(let y=box[1];y<=box[3];y++)for(let x=box[0];x<=box[2];x++){const i=(y*VW+x)*4;if(!same(off,z,i)&&!fl.has(y*VW+x))px.push(y*VW+x)}return{on,off,z,box,px}};
+ const look=(q,fy,hide,show)=>{settle();const on=grab(true),box=D.boxes.find(b=>b[4]===fy),off=grab(false);hide();const z=grab(true);show();if(!box)return null;
+   const px=[];for(let y=box[1];y<=box[3];y++)for(let x=box[0];x<=box[2];x++){const i=(y*VW+x)*4;if(!same(off,z,i))px.push(y*VW+x)}return{on,off,z,box,px}};
  const F=D.fade,near=(a,b,c,i)=>{for(let k=0;k<3;k++)if(Math.abs(a[i+k]-Math.round(F*c[i+k]+(1-F)*b[i+k]))>3)return false;return true};// (on ≈ fade × scene + the rest figure)
  const deep=[];for(let y=4;y<MH-4;y++)for(let x=4;x<MW-4;x++){let f=true;for(let b=-2;b<=2&&f;b++)for(let a=-3;a<=3;a++)if(tAt(x+a,y+b)!==t.T_FOREST){f=false;break}if(f)deep.push([x,y])}
  // (a wood's edge: open ground south of it, and a spot on that ground just before the trees where a lord stands with nothing in
@@ -45,15 +42,12 @@ try{
   ok(a.n===b.n&&a.h===b.h&&a.sorted&&a.spr>30000&&a.rock>1000,'the standing index: '+a.spr+' sprites (trees, small things standing; crossing a chunk\'s edge, in each) and '+a.rock+' column runs of rock, sorted by foot; the same after the map is painted afresh ('+b.n+', '+(a.h===b.h?'same':'differs')+')');
   ok(a.bytes/a.n<16,'it costs '+(a.bytes/a.n).toFixed(1)+' bytes an entry, '+(a.bytes/1048576).toFixed(2)+' MB over the whole classic map ('+WA.cols*WA.rows+' chunks)');
   info('index: '+a.n+' entries, '+(a.bytes/1024).toFixed(0)+' KB')}
- // ---- an enemy band behind the wood's edge: the crowns before it fade as over yours (WDEPTH.fade); its banner over all
+ // ---- an enemy band behind the wood's edge: the crowns before it fade as over yours (WDEPTH.fade)
  {park();const [x,y]=edge;P.x=x*TILE+8+30;P.y=(y+1)*TILE+12;P.dir=-1;const b=t.bandits[0];b.n=12;b.fight=null;b.x=x*TILE+8;b.y=y*TILE+7;const by=b.y;
   const L=look(b,by,()=>{b.x=-999},()=>{b.x=x*TILE+8});
   if(!L)ok(false,'the band behind the trees is drawn');else{const m=front(L.box,by);let inM=0,cov=0,bad=0,free=0;for(const p of L.px){const i=p*4;if(m.has(p)){inM++;if(near(L.on,L.off,L.z,i))cov++;else bad++}else if(!same(L.on,L.off,i))free++}
    /* (a band is its marchers now (world/march.js), each faded by its own feet: a few of its pixels stand before a crown, not behind it) */
    ok(inM>15&&cov>=inM*.6&&!free,'an enemy band behind trees: the crowns in front of it ('+inM+' of its '+L.px.length+' px) fade to '+F+' over it ('+cov+'; '+bad+' not), the rest of it untouched ('+free+' changed)');
-   const B=t.bannerAt(b,Math.floor(now/420+b.x*.13)%2),bd=B.s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,B.s.width,B.s.height).data;let n=0,diff=0;
-   for(let j=0;j<B.s.height;j++)for(let k=0;k<B.s.width;k++){if(bd[(j*B.s.width+k)*4+3]<255)continue;const X=B.x-G.cam.x+k,Y=B.y-G.cam.y+j;if(X<0||Y<0||X>=VW||Y>=VH)continue;n++;if(!same(L.on,L.off,(Y*VW+X)*4))diff++}
-   ok(n>20&&!diff,'its banner stays on top: '+n+' banner px the same with the depth on and off ('+diff+' differ)');
    const V=t.vis(),px0=P.x-G.cam.x,py0=P.y-G.cam.y;let inS=0,outS=0;for(let i=0;i<VW*VH;i++){if(same(L.on,L.off,i*4))continue;if(Math.hypot(i%VW-px0,(i/VW|0)-py0)<=V)inS++;else outS++}
    ok(inS>0&&!outS,'outside your sight nothing changes: the depth changed '+inS+' px within your sight, '+outS+' beyond it')}}
  // ---- hidden by the fog: a band in the wood out of your sight is not drawn, so nothing of it shows

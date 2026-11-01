@@ -12,11 +12,13 @@
    ground behind each side's deployment zone (px), depth: the zone's depth (px); band: the rows a side's lines form up over (px, the
    field's middle; 0 the whole field); heads: under this many soldiers in the battle that size, else the largest; the world tile
    steps it one up on open plains, one down in forest, a mountain pass or a swamp (fieldNudge); types: a typed battle's sizes
-   ([least, most]: a bridge's river and an ambush's road keep their measure) */
+   ([least, most]: a bridge's river and an ambush's road keep their measure). tourney: the arena's (gfx/tourney.js TourneyArena),
+   not in the order: a ring of a fifth of the small field, its fighters 140 px apart (each 97 px in from back), on with the arena
+   whether sizes are or not */
 const FIELD_SIZES={on:true,order:['small','big','large','vlarge','huge'],
   small:{n:'Small',w:960,h:544,back:32,depth:288,band:0},big:{n:'Big',w:1280,h:720,back:96,depth:320,band:0},
   large:{n:'Large',w:1792,h:1008,back:256,depth:352,band:760},vlarge:{n:'Very large',w:2400,h:1344,back:512,depth:384,band:840},
-  huge:{n:'Huge',w:3200,h:1792,back:832,depth:416,band:920},
+  huge:{n:'Huge',w:3200,h:1792,back:832,depth:416,band:920},tourney:{n:'Arena',w:448,h:256,back:57,depth:64,band:0},
   heads:[60,150,300,600],types:{bridge:['big','large'],ambush:['small','big']}};
 let BFIELD=null;
 // (the size for a battle of heads soldiers on world tile r (its BattleSite: t, c; none for a tournament), of battle type kind)
@@ -194,13 +196,13 @@ class BattleSetup{
     // marsh are the field's only features (the owner, 2026-10-17, reversing D10); without terrain the obstacles as ever: terrain.js)
     const TR=this.ground?buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot}):null;if(TR&&!opts.sandbox)env.text=groundEnvText(env,TR);return this.TR=TR}
   // (its ground painted in slices: the climate's arena (sprites.js arenaSteps: every battle's, kept), then over it the terrain
-  // (engine/ground.js), as the first frame painted it till R15: the same spec, so the same pixels)
-  *paint(){const base=yield* arenaSteps(this.env.c),TR=this.TR;if(TR)this.painted=yield* PX.battleGroundSteps({...TR,climate:this.env.c,base})}
+  // (engine/ground.js), as the first frame painted it till R15: the same spec, so the same pixels; a tournament's ring its own)
+  *paint(){if(this.tarena){yield* this.tarena.paintSteps();return}const base=yield* arenaSteps(this.env.c),TR=this.TR;if(TR)this.painted=yield* PX.battleGroundSteps({...TR,climate:this.env.c,base})}
   // (a wood of more trees than LOD.trees: its canopy layer made now, not when first zoomed out (render.js LOD))
   canopy(){const g=this.painted;if(g&&LOD.on&&g.trees>LOD.trees)PX.battleCanopy(g)}
   createState(){
     const {units,hero,groups,env,opts}=this,FI=this.field,TR=this.TR;
-    const st={units,hero,groups,env,arena:arenaFor(env.c),ftop:FI.top,fbot:FI.bot,obs:opts.tournament||TR?[]:placeObstacles(env,FI.top,FI.bot),sel:'all',rings:[],arrows:[],parts:[],floats:[],slashes:[],corpses:[],aim:0,blocking:false,touchBlock:false,mt:null,over:false,endT:0,kills:0,slain:[],lost:{},heroDown:false,opts,t:0};
+    const st={units,hero,groups,env,arena:this.tarena||arenaFor(env.c),ftop:FI.top,fbot:FI.bot,obs:opts.tournament||TR?[]:placeObstacles(env,FI.top,FI.bot),sel:'all',rings:[],arrows:[],parts:[],floats:[],slashes:[],corpses:[],aim:0,blocking:false,touchBlock:false,mt:null,over:false,endT:0,kills:0,slain:[],lost:{},heroDown:false,opts,t:0};
     if(TR)st.terrain=TR;if(this.painted)st.ground=this.painted;if(TR&&this.btype)st.btype=this.btype;if(this.fogOn())st.fog=true;if(BFIELD)st.fsize=BFIELD.key;return st;
   }
   // (fog of war: field battles, terrain or none, with the setting on; never a tournament, a siege or a raid: battlefog.js)
@@ -280,7 +282,7 @@ class BattleSetup{
   present(){
     G.mode='battle';hidePanel();if(LOADING.sync)bbar.hidden=false;else B.hudWait=true;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();
     if(!B.world){for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));}
-    toast((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD?' '+BFIELD.n+' field.':''));
+    toast((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD&&!this.tarena?' '+BFIELD.n+' field.':''));
     if(B.btype)typeSay();
   }
   // (the world where it is fought: its BattleSite (worldmap.js), all the battle reads of the world; yours, none for a tournament; the
@@ -288,21 +290,22 @@ class BattleSetup{
   battleSite(){return this.opts.tournament?null:battleSiteAt(P.x,P.y)}
   // (the battle's terrain: its recipe and seed, or null; the lab's own: lab.js)
   groundSpec(){return groundSpecFor(this.opts,this.env,this.site)}
-  /* (the field's size (FIELD_SIZES): by the soldiers coming to it, the world tile and the battle's type; null with sizes off. Counted
-     from the armies before anyone spawns: the ground's recipe and the spawns already read the field) */
-  fieldSize(){if(!FIELD_SIZES.on)return null;const o=this.opts,e=!o.tournament&&G.enc,bt=e&&e.btype,n=x=>Array.isArray(x)?x.length:x&&typeof x==='object'?Object.values(x).reduce((a,v)=>a+(+v||0),0):0;
+  /* (the field's size (FIELD_SIZES): by the soldiers coming to it, the world tile and the battle's type; null with sizes off; an
+     arena's its own. Counted from the armies before anyone spawns: the ground's recipe and the spawns already read the field) */
+  fieldSize(){if(this.tarena)return 'tourney';if(!FIELD_SIZES.on)return null;const o=this.opts,e=!o.tournament&&G.enc,bt=e&&e.btype,n=x=>Array.isArray(x)?x.length:x&&typeof x==='object'?Object.values(x).reduce((a,v)=>a+(+v||0),0):0;
     let heads=1+o.enemies.length;if(!o.tournament)heads+=compsInBand().length+P.list.length;if(e)for(const l of [...(e.allies||[]),...(e.foes||[])])heads+=n(l.troops)+1;
     const kind=bt&&TERRAIN.on&&!['siege','raid','tourney'].includes(e.kind)&&(bt.kind==='bridge'||bt.kind==='ambush')?bt.kind:null;
     return fieldSizeFor(heads,this.battleSite(),kind)}
   // (the field, its look and its armies: their randoms drawn here, in this order)
   survey(){
+    this.tarena=TourneyArena.forBattle(this.opts);// (a tournament's arena, or none: gfx/tourney.js)
     fieldSet(this.fieldSize());// (the field's size first: everything after lays out on it, the ground's generation too)
     damageTypesInit();
     this.site=this.battleSite();this.env=battleEnv(this.opts.tournament,this.site);
     this.ground=this.groundSpec();groundEnv(this.env,this.ground);// (the ground's recipe and seed before anyone spawns: D2, terrain.js)
     this.createUnits();
     this.btype=this.battleType();if(this.btype)this.typeGround();// (its type, if any: BTYPE)
-    this.field=measureField(!this.opts.sandbox);
+    this.field=measureField(!this.opts.sandbox);if(this.tarena)this.field=this.tarena.ring(this.field);// (an arena's fighters inside its wall)
     this.createGroups();
   }
   // (the battle's state (B), its type's lay-out, morale, the camera, deployment and the sprites queued (initialize))

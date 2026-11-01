@@ -76,21 +76,48 @@ function setOrder(o){
   toast(htmlText(selLabel())+': '+(pace?o==='charge'?'at a run.':'at a walk.':o==='withdraw'&&B.sides?.active?'withdraw. The other armies fight on after you leave.':o+'.'));
   if(o==='charge'&&sfxOn()){const gs=selGroups();if(gs.length)sfx(gs.some(g=>grpUnits(g).some(u=>unitClass(u.s)==='cav'))?'gallop':'charge')}// (riders' hooves, else the horn)
 }
-// a group's flag on or off for the selection: walk, firm (hold ground), cease (cease fire), skirmish, melee (shooters' blades)
-const FLAG_N={walk:['walk','run'],firm:['hold their ground','fight freely'],shieldWall:['shield wall requested for eligible soldiers','shields lowered'],cease:['cease fire','fire at will'],skirmish:['skirmish','stand'],melee:['melee mode on: they fight whoever reaches them','melee mode off: they keep shooting, point blank']};
-function toggleFlag(f){if(!B||B.muster?.active||!FLAG_N[f])return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));if(!gs.length)return;const on=playerOrder(gs,()=>{const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));return on});toast(htmlText(selLabel())+': '+FLAG_N[f][on?0:1]+'.')}
+// Charge (G, doc/UNIT_KITS_DESIGN.md §7b: a true order): the selection at a run into the enemy, each group at the foe it is set on,
+// else each man at the foe nearest him
+function chargeOrder(){if(!B||B.muster?.active||B.deploy)return;const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed);if(!gs.length)return;
+  playerOrder(gs,()=>{for(const g of gs){const gr=B.groups[g],e=gr.tgt;gr.amEnd();if(e)gr.attack(e,{run:true});else gr.charge({run:true})}},{late:true});
+  toast(htmlText(selLabel())+': charge!');if(sfxOn())sfx(gs.some(g=>grpUnits(g).some(u=>unitClass(u.s)==='cav'))?'gallop':'charge')}
+// a group's flag on or off for the selection (gs: those of it, the stance slots'): walk, firm (hold ground), cease (cease fire),
+// skirmish, melee (shooters' blades), shieldWall; what is said of each (FLAG_N, on and off): its stance's (data/kits.js STANCES)
+const FLAG_N=Object.assign({},...STANCE_ORDER.map(id=>STANCES[id].say||{}));
+function toggleFlag(f,sel=selGroups()){if(!B||B.muster?.active||!FLAG_N[f])return;const gs=sel.filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));if(!gs.length)return;const on=playerOrder(gs,()=>{const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));return on});toast(htmlText(selLabel())+': '+FLAG_N[f][on?0:1]+'.')}
+/* the Shooting stance (data/kits.js STANCES.shooting): one cycle, Fire at will, Hold fire, Skirmish, Melee, one at a time (its
+   flags: cease, skirmish, melee). A group's choice: its first flag on, none Fire at will (-1) */
+const SHOOT_FLAGS=STANCES.shooting.ch.map(c=>c.flag);
+const shootingOf=gr=>SHOOT_FLAGS.findIndex(f=>gr[f]);
+// (the selection's shooters to choice i, -1 Fire at will)
+function setShooting(i,sel=selGroups()){if(!B||B.muster?.active)return;const gs=sel.filter(g=>grpUnits(g).some(u=>flagEligible(u,'cease')));if(!gs.length)return;
+  playerOrder(gs,()=>gs.forEach(g=>SHOOT_FLAGS.forEach((f,k)=>B.groups[g].setFlag(f,k===i))));toast(htmlText(selLabel())+': '+(i<0?STANCES.shooting.none:STANCES.shooting.ch[i].n).toLowerCase()+'.')}
+// (its key: on to the next choice, from the first of the selection's shooters as it stands)
+function shootingCycle(sel=selGroups()){if(!B)return;const g=sel.find(g=>grpUnits(g).some(u=>flagEligible(u,'cease')));if(!g)return;const i=shootingOf(B.groups[g]);setShooting(i+1<SHOOT_FLAGS.length?i+1:-1,sel)}
+// a flag's button on the order bar: a Shooting choice picked (pressed again: Fire at will); any other, toggled
+function stanceFlag(f){if(STANCES[f]?.ch[0].post)return toggleStance(f);const i=SHOOT_FLAGS.indexOf(f);if(i<0)return toggleFlag(f);if(!B)return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));setShooting(gs.length&&gs.every(g=>shootingOf(B.groups[g])===i)?-1:i)}
 // control groups: Ctrl+1-9/0 keeps the selection; the same live binding drives recall and card badges.
 function ctrlGroups(k){if(!B)return[];const c=B.ctrl&&B.ctrl[k],id=playerGroups()[k==='0'?9:Number(k)-1];return c==='all'?'all':(c||[id]).filter(g=>g&&grpUnits(g).length)}
 function ctrlGroup(k,save){if(!B)return;B.ctrl=B.ctrl||{};if(save){B.ctrl[k]=B.sel==='all'?'all':selGroups().slice();toast('Group '+k+': '+htmlText(selLabel())+'.');setOrderUI();return}
   const gs=ctrlGroups(k);if(gs!=='all'&&!gs.length)return;B.sel=gs==='all'?'all':gs.length===1?gs[0]:gs;setOrderUI()}
 function selectGroup(g,add=false){if(!B||g!=='all'&&(!playerGroups().includes(g)||!grpUnits(g).length))return;if(add&&g!=='all'){const gs=B.sel==='all'?[]:selGroups();B.sel=[...new Set([...gs,g])]}else B.sel=g;setOrderUI()}
 function cycleGroup(){if(!B)return;const opts=['all',...playerGroups().filter(g=>grpUnits(g).length)];B.sel=opts[(opts.indexOf(B.sel)+1)%opts.length];setOrderUI()}
+/* a post (Brace, Pavise: data/kits.js STANCES, KITS.brace) planted or taken up by the selection's groups (gs) that take it, all
+   planted already: taken up; an order (battlecontrol.js plant) */
+function toggleStance(id,sel=selGroups()){if(!B||B.muster?.active||!STANCES[id])return false;const gs=sel.filter(g=>grpUnits(g).some(u=>!u.rout&&STANCES[id].who(u)));if(!gs.length)return false;
+  const on=playerOrder(gs,()=>{const on=!gs.every(g=>B.groups[g].posted(id));gs.forEach(g=>B.groups[g].plant(id,on));return on});
+  toast(htmlText(gs.map(g=>groupName(g)).join(' and '))+': '+STANCES[id].say[id][on?0:1]+'.');if(on&&id==='brace'&&sfxOn()){const C=B.groups[gs[0]].centre();sfxAt('brace',C.x,C.y)}return true}
+// (a stance slot's key or button (§7b: Q W E): each selected group its own stance in slot i, each stance for those whose it is)
+function stanceSlot(i){if(!B||B.muster?.active)return false;const by={};
+  for(const g of selGroups()){const id=grpUnits(g).length&&groupStances(B.groups[g])[i];if(id)(by[id]||(by[id]=[])).push(g)}
+  for(const id in by){const gs=by[id];if(id==='shooting')shootingCycle(gs);else if(id==='mounted')toggleMounted(gs);else if(STANCES[id].ch[0].post)toggleStance(id,gs);else toggleFlag(STANCES[id].ch[0].flag,gs)}
+  return Object.keys(by).length>0}
 /* your commands: a formation for the selected groups it suits (pressed again: back to line) */
 function setForm(f){
   if(B?.muster?.active)return;
   if(f==='wall')return toggleFlag('shieldWall');// Compatibility for old command callers, not a formation.
   if(!B||!FORMS[f])return;const sel=selGroups().filter(g=>grpUnits(g).length),gs=sel.filter(g=>formFits(g,f));
-  if(!gs.length){if(sel.length)toast('Only '+WHO_N[FORMS[f].who]+' can form '+(f==='wall'?'a shield wall':f==='wedge'?'a wedge':'loose order')+'.');return}
+  if(!gs.length){if(sel.length)toast('Only '+WHO_N[FORMS[f].who]+' can form '+(f==='wall'?'a shield wall':FORMS[f].say||(f==='wedge'?'a wedge':'loose order'))+'.');return}
   const to=playerOrder(gs,()=>{const to=f!=='line'&&gs.every(g=>B.groups[g].form===f)?'line':f;gs.forEach(g=>B.groups[g].setForm(to));return to});toast(gs.map(g=>htmlText(groupName(g))).join(' and ')+': '+FORMS[to].n.toLowerCase()+'.');
 }
 // (o.amove: Ctrl, or the Attack-move button: an attack-move to the line, rtsOrder)
@@ -102,11 +129,33 @@ function formDragTo(x0,y0,x1,y1,o){
   for(const p of plan){const gr=B.groups[p.g],go=am?'attackMove':'moveTo';gr.amEnd();if(p.hero){gr[go](p.ax,p.ay,{face:p.face});B.hero.sx=B.hero.sy=0;continue}gr[go](p.ax,p.ay,{face:p.face,files:p.files})}
   B.mark={x:(x0+x1)/2,y:(y0+y1)/2,t:.7,foe:false};if(am)B.mark.am=true;if(B.deploy)deploySnap(plan.map(p=>p.g))},{late:true});toast(htmlText(selLabel())+(am?': attack-move to the line.':': form up there.'));return true;
 }
-// a unit ability (unitabilities.js) for every selected group that has it: each that can use it now does; the rest are left as
-// they are (cooling down, routing...). The order bar's ability buttons and their keys (G, I, U, Y) come here
-function groupAbility(id){
+// a skill (unitabilities.js UNIT_SKILLS) for every selected group that has it (gs: those groups, the selection's): each that can use it now
+// does; the rest are left as they are (cooling down, routing...). The skill bar's slots (groupSlot), the Mounted stance and the
+// old letters (quiet aliases: input.js) come here
+function groupAbility(id,gs=selGroups()){
   if(B?.muster?.active)return false;
-  const A=B&&UNIT_ABILITIES[id];if(!A)return false;const has=selGroups().filter(g=>grpUnits(g).length&&groupHasAbility(B.groups[g],id));if(!has.length)return false;
-  const used=playerOrder(has,()=>has.filter(g=>B.groups[g].useAbility(id)),{counts:false});// (an ability is no order: a fall-back goes on)
+  const A=B&&UNIT_SKILLS[id];if(!A)return false;const has=gs.filter(g=>grpUnits(g).length&&groupHasAbility(B.groups[g],id));if(!has.length)return false;
+  const used=playerOrder(has,()=>has.filter(g=>B.groups[g].useAbility(id)),{counts:false});// (a skill is no order: a fall-back goes on)
   toast(used.length?used.map(g=>htmlText(groupName(g))).join(' and ')+': '+A.n.toLowerCase()+'.':htmlText(A.n)+': '+htmlText(abilityWhyNot(B.groups[has[0]],id).toLowerCase())+'.');return used.length>0;
 }
+// the formation cycle (T, §7b): each selected group on to its next of Line, Loose, a Circle (foot) or a Cantabrian circle (horse
+// archers), then Wedge or Column (what its kind has: formFits)
+const FORM_CYCLE=['line','loose','circle','cantabrian','wedge','column'];
+function formCycle(){if(!B||B.muster?.active)return;const gs=selGroups().filter(g=>grpUnits(g).length);if(!gs.length)return;
+  const next=g=>{const gr=B.groups[g],has=['line',...['loose',...RING_FORMS].filter(f=>formFits(g,f)),formFits(g,'wedge')?'wedge':'column'],i=has.indexOf(gr.form);return has[(i+1)%has.length]};
+  const to=playerOrder(gs,()=>gs.map(g=>{const f=next(g);B.groups[g].setForm(f);return f}));if(to)toast(gs.map((g,i)=>htmlText(groupName(g))+': '+FORMS[to[i]].n.toLowerCase()).join(' · ')+'.')}
+/* the ring (O, its button: the owner, 2026-11-01): each selected group into its own ring, a circle (foot who fight hand to hand) or a
+   Cantabrian circle (horse archers), those it suits; all of them in theirs already: back to line. Its size: as the group stands
+   (its files), or the line you drag next */
+const groupRing=g=>RING_FORMS.find(f=>formFits(g,f))||null;
+function ringForm(){if(!B||B.muster?.active)return false;const sel=selGroups().filter(g=>grpUnits(g).length),gs=sel.filter(groupRing);
+  if(!gs.length){if(sel.length)toast('Only foot who fight hand to hand can form a circle, and horse archers a Cantabrian circle.');return false}
+  const back=gs.every(g=>B.groups[g].form===groupRing(g)),to=playerOrder(gs,()=>gs.map(g=>{const f=back?'line':groupRing(g);B.groups[g].setForm(f);return f}));
+  toast(gs.map((g,i)=>htmlText(groupName(g))+': '+FORMS[to[i]].n.toLowerCase()).join(' · ')+'.');return true}
+// the skill bar's slot i (0-4: Z, X, C, V, B; battle/unitkit.js groupSlots): each selected group its own skill in that slot
+function groupSlot(i){
+  if(!B||B.muster?.active)return false;const by={};
+  for(const g of selGroups()){const x=grpUnits(g).length&&groupSlots(B.groups[g])[i];if(x&&!x.locked)(by[x.id]||(by[x.id]=[])).push(g)}
+  let used=false;for(const id in by)used=groupAbility(id,by[id])||used;return used}
+// the Mounted stance (data/kits.js STANCES.mounted; its slot's key): its riders step down while any is up, else mount again
+function toggleMounted(sel=selGroups()){if(!B)return false;const gs=sel.filter(g=>grpUnits(g).length);return groupAbility(gs.some(g=>groupHasAbility(B.groups[g],'dismount'))?'dismount':'mount',gs)}

@@ -1,6 +1,6 @@
 'use strict';
-/* ---------- the world map's pointer UI, drawn over the fog and the night as the banners and labels are (render.js drawWorld:
-   wuiUnder just before the banners, wuiOver after the labels; input.js worldGo: wuiClick). Drawing only: it reads your goal
+/* ---------- the world map's pointer UI, drawn over the fog and the night as the markers and labels are (render.js drawWorld:
+   wuiUnder just before the markers, wuiOver after the labels; input.js worldGo: wuiClick). Drawing only: it reads your goal
    (P.tx, P.ty), what you chase (G.chase), the pointer (G.mouse) and the fog, and writes none of them; its own state (WUI) is
    never saved and draws no random number.
    - A click or tap that sends you somewhere: a ring ripples out from the point; a gold arrow drops onto the goal, lands with a
@@ -105,7 +105,7 @@ function wuiSync(now){WUI.now=now;WUI.fx=WUI.fx.filter(f=>(now-f.t)/1000<(f.k===
   const fo=!G.chase&&G.follow&&objKind(G.follow.o)?G.follow.o:null,ch=G.chase&&objKind(G.chase)?G.chase:fo;
   if(ch){if(!WUI.tgt||WUI.tgt.o!==ch||WUI.tgt.f!==!!fo){WUI.tgt={o:ch,t:now,f:!!fo};WUI.way=null}WUI.dest=null}
   else{WUI.tgt=null;if(P.tx!=null&&!P.stay){const d=WUI.dest;if(!d||Math.abs(d.x-P.tx)>.5||Math.abs(d.y-P.ty)>.5){WUI.dest={x:P.tx,y:P.ty,t:now};WUI.way=null}}
-    else{const d=WUI.dest;if(d&&Math.hypot(P.x-d.x,P.y-d.y)<6&&!reducedMotion())WUI.fx.push({k:'poof',x:Math.round(d.x),y:Math.round(d.y),t:now,col:WUI_K.col.gold});WUI.dest=null}}
+    else{const d=WUI.dest;if(d&&marchNear(d.x,d.y)<6&&!reducedMotion())WUI.fx.push({k:'poof',x:Math.round(d.x),y:Math.round(d.y),t:now,col:WUI_K.col.gold});WUI.dest=null}}
   if(!WUI.dest&&!WUI.tgt)WUI.way=null;
   // (the way: laid again for a new goal, a chased party gone on (at most every WUI_K.rebuild ms), the router's ways changed, or you
   // off it)
@@ -172,17 +172,24 @@ function wuiBrackets(x0,y0,x1,y1,col,a,p,g){const w=x1-x0,h=y1-y0;
 // WUI_FOOT.gap px, a left then a right, each WUI_FOOT.side px off the way's middle on its side and turned along it; their phase by
 // the clock, over a pair's stride, so a print keeps its side as they march); drawn out from you over WUI_K.draw s when it is
 // new; faint the first px from you; none on land never seen
-function wuiTrail(cam,now,rm){const w=WUI.way,D=WUI.dots,FT=WUI.feet;D.length=0;FT.length=0;if(!w||w.n<2)return;const F=WUI_FOOT,s0=WUI.s,end=w.S[w.n-1]-(WUI.tgt?10:6),gp=F.gap,ph=rm?0:(now/1000*WUI_K.march)%(2*gp),col=WUI.tgt?WUI_K.col[wuiKind(WUI.tgt.o)]:WUI_K.col.gold;
+// (your army's head along the way, from s on (the owner, 2026-11-01: "the guide path (yellow one) can you make it to start at the head
+// too?"): its foremost man the way it sets out (its first WUI_HEAD px), his reach past you along it; the prints begin level with him,
+// none over the army behind him)
+const WUI_HEAD={look:16};
+function wuiOut(w,s){const a=WORLD_BATTLE.on&&MARCH_ARMIES.get(P);if(!a||!a.units.length||w.n<2)return s;const [hx,hy]=wuiPt(w,s+WUI_HEAD.look),[sx,sy]=wuiPt(w,s),l=Math.hypot(hx-sx,hy-sy);if(l<1e-3)return s;
+  const ux=(hx-sx)/l,uy=(hy-sy)/l;let d=0;for(const u of a.units)if(!u.dead){const k=(u.x-sx)*ux+(u.y-sy)*uy;if(k>d)d=k}return Math.min(w.S[w.n-1],s+d)}
+function wuiTrail(cam,now,rm){const w=WUI.way,D=WUI.dots,FT=WUI.feet;D.length=0;FT.length=0;if(!w||w.n<2)return;const F=WUI_FOOT,s0=wuiOut(w,WUI.s),end=w.S[w.n-1]-(WUI.tgt?10:6),gp=F.gap,ph=rm?0:(now/1000*WUI_K.march)%(2*gp),col=WUI.tgt?WUI_K.col[wuiKind(WUI.tgt.o)]:WUI_K.col.gold;
   const reach=rm?1e9:s0+(now-w.t0)/1000/WUI_K.draw*(end-s0+20);let n=0;
   for(let k=Math.ceil((s0+3-ph)/gp),s=k*gp+ph;s<end&&s<reach&&n<400;k++,s+=gp){const [x,y]=wuiPt(w,s),[ax,ay]=wuiPt(w,s-F.look),[bx,by]=wuiPt(w,s+F.look),l=Math.hypot(bx-ax,by-ay)||1,ux=(bx-ax)/l,uy=(by-ay)/l,left=!(k&1),sd=left?-F.side:F.side;
     // (seen where it is drawn: a point rounded over a tile's edge into the dark is not)
     const rx=Math.round(x-uy*sd),ry=Math.round(y+ux*sd);if(!seenAt(rx,ry))continue;const sx=rx-cam.x,sy=ry-cam.y;if(sx<-6||sy<-6||sx>VW+6||sy>VH+6)continue;
     D.push(sx,sy,Math.min(1,(s-s0-3)/14,(end+6-s)/8));FT.push(((Math.round(Math.atan2(uy,ux)/6.2832*F.dirs))%F.dirs+F.dirs)%F.dirs,left?1:0);n++}
   for(let i=0,f=0;i<D.length;i+=3,f+=2){const c=wuiFoot(FT[f],FT[f+1],col);ctx.globalAlpha=D[i+2];wuiPut(c,D[i],D[i+1],c.cx,c.cy)}ctx.globalAlpha=1}
-// (a chased thing's feet, the top of what is drawn of it (its banner and label too) and its ring's width, on the screen)
-function wuiTargetAt(o,cam){const b=wuiBox(o)||[o.x-6,o.y-12,o.x+6,o.y+2],B=o.banner&&bannerAt(o,0),top=B?Math.min(b[1],B.y+snapV(o.y)-Math.round(o.y)+opaqueBox(B.s)[1]-8):b[1];// (over its banner and the label on it)
+// (a chased thing's feet, the top of what is drawn of it (a party's label over its army too: render.js armyTagAt) and its ring's
+// width, on the screen)
+function wuiTargetAt(o,cam){const b=wuiBox(o)||[o.x-6,o.y-12,o.x+6,o.y+2],top=o instanceof Party?Math.min(b[1],armyTagAt(o,null,{x:0,y:0}).y-MAP_TEXT.size-2):b[1];
   return{x:wuiX(o.x,cam),y:wuiY(o.y,cam)+1,top:Math.floor(top-cam.y),rx:Math.round(clamp((b[2]-b[0])/2+3,7,22))}}
-// under the banners and labels: the way, the goal's ring, the ripples and puffs, the ring round what you chase
+// under the markers and labels: the way, the goal's ring, the ripples and puffs, the ring round what you chase
 function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(now-(WUI.last||now))/1000)),rm=reducedMotion();WUI.last=now;
   if(G.mode==='title'){WUI.hov=null;return}wuiSync(now);wuiHover(now,dt);
   wuiTrail(cam,now,rm);
@@ -205,7 +212,7 @@ function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.
   wuiRoadOver(cam,now,rm);wuiDistractions(cam,now,rm);wuiEscorts(cam,now,rm);wuiFilling(cam);
   const h=WUI.hov;if(h){const b=h.b,col=WUI_K.col[h.kind],x0=wuiX(b[0],cam),y0=wuiY(b[1],cam),x1=wuiX(b[2],cam),y1=wuiY(b[3],cam),br=rm?0:(1+Math.sin(now/1000/WUI_K.breathe*6.2832))/2;
     wuiBrackets(x0,y0,x1,y1,col,h.kind==='ground'?.75:1,rm?0:Math.round(br),h.kind==='ground'?.5+.5*br:1+br)}}
-/* ---- the encounters on the road (world/road.js), each you know of and have not met (marked). Under the banners: sound
+/* ---- the encounters on the road (world/road.js), each you know of and have not met (marked). Under the markers: sound
    waves rippling out from its feet while you see it. Over the labels: a pulsing "!" over it while it is on the screen (heard and
    not yet seen, over the fog too), its call-out over that for ENC_LIFE.say s the first time you see it there; off the screen,
    at the screen's edge toward it, its waves rolling in from there "((((" (arcs round a point just past the edge), the "!" just

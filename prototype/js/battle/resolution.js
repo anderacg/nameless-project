@@ -172,6 +172,7 @@ function groupRanks(b,win){const r=partyRoster(P),up=[],lead=1+.05*skill('lead')
 function groupRanksAuto(win,kills){const r=partyRoster(P),n=troopCount(),each=TROOP_XP.auto*(TROOP_XP.fight+(win?TROOP_XP.win:0)+(n?kills*TROOP_XP.kill*2/n:0))*(1+.05*skill('lead')),up=[];
   for(const g of r.groups){const m0=masteryOf(g),k=rankGain(g,each);if(k||masteryOf(g)>m0)up.push({id:g.id,type:g.type,rank:rankOf(g),mastery:masteryOf(g)>m0&&masteryOf(g)})}return up}
 // (the report's line, and the messages: each group that ranked up, its badge)
-const rankUpWord=x=>x.mastery?cap1(RANKS.mastery.metal[x.mastery-1])+' mastery':'rank '+x.rank;
+// (a rank's word, its name with RANKS.statsOnly (Seasoned, rank 3); a mastery level's name (Adept; step 1, Bronze mastery))
+const rankUpWord=x=>x.mastery?masteryWord(x.mastery):RANKS.statsOnly?rankWord(x.rank)+' (rank '+x.rank+')':'rank '+x.rank;
 function rankUpHtml(up){for(const x of up)log(armyGroupLabel(x.id)+' reach '+rankUpWord(x)+(x.mastery?': choose an improvement in the Army window.':'.'),'good','band');
   return up.length?'<p class="gold">Ranked up: '+up.map(x=>rankBadge(x.type,x.rank,14,x.mastery||0)+' '+htmlText(armyGroupLabel(x.id))+' '+rankUpWord(x)).join(', ')+'.</p>':''}

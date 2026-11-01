@@ -37,7 +37,7 @@ const NAMED_PORTRAITS={
 // the new kinds' paintings till their own are made (doc/TROOPS_DESIGN.md): the Lancer a Squire's, the Crossbowman an Arbalester's
 const PORTRAIT_LIKE={hum_lancer:'hum_squire',hum_crossbow:'hum_xbow'};
 class NamedPortraits{
-  static of(key){return Object.hasOwn(NAMED_PORTRAITS,key)?'art/portrait/game/'+NAMED_PORTRAITS[key]:''}
+  static of(key){if(!Object.hasOwn(NAMED_PORTRAITS,key)&&typeof lordListed==='function')key=lordListed(key);return Object.hasOwn(NAMED_PORTRAITS,key)?'art/portrait/game/'+NAMED_PORTRAITS[key]:''}// (a retitled lord by her listed name: data/factions.js)
   // (a troop's: its kind's painted portrait, data/unitportraits.js, after a named one)
   // (a kind with no painting of its own yet: its neighbour's, PORTRAIT_LIKE)
   static unit(type){const k=Object.hasOwn(UNIT_PORTRAITS,type)?type:PORTRAIT_LIKE[type];return this.of(type)||(k?'art/portrait/game/'+UNIT_PORTRAITS[k]:'')}

@@ -38,8 +38,9 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  F=hfx(true);t.AUTOSK.on=false;look(F.h,F.H);ok(!F.H.fallBack,'Auto skills off: your hero has no fall-back of the AI’s');t.AUTOSK.on=true;
  // ----- 4. a group braced this think is no plug
  w=army([G('hum_knight',10),G('hum_foot',12)],[G('hum_spear',16),G('hum_foot',12)],[[310,300],[330,480],[380,300],[440,480]],{},false);let [sp,wv]=w.foe;
- w.mine[0].units.forEach(u=>{u.run=t.CHARGE.run;u.cd=999});wv.resolve.mor=10;sp.resolve.mor=80;t.command(1);
- ok(wv.recover,'(fixture: the wavering group pulls back)');ok(t.abilityActive(sp,'brace')&&!sp.plug&&!sp.hasTarget,'the spear group braced against riders is not sent off to plug the gap (brace '+t.abilityActive(sp,'brace')+', plug '+sp.plug+')');
+ w.mine[0].units.forEach(u=>{u.run=t.CHARGE.run;u.spdNow=u.s.spd;u.dir=0;u.cd=999});wv.resolve.mor=10;// (at the gallop, toward the spears: the AI braces for a charge it sees coming, commander.js chargeIn)
+sp.resolve.mor=80;t.command(1);
+ ok(wv.recover,'(fixture: the wavering group pulls back)');ok(t.braceOn(sp)&&!sp.plug&&!sp.hasTarget,'the spear group braced against riders (the Brace stance: doc/UNIT_KITS_DESIGN.md §3) is not sent off to plug the gap (brace '+t.braceOn(sp)+', plug '+sp.plug+')');
  // ----- 5. riders keep the flank they chose
  w=army([G('hum_foot',12)],[G('hum_knight',8)],[[300,t.BH/2-5],[800,120]],{},false);let k=w.foe[0];k.phase='flank';k.t=0;
  const side=()=>Math.sign(k.ay-C(w.mine[0]).y);think();const s1=side();w.mine[0].units.forEach(u=>u.y=t.BH/2+5);think();

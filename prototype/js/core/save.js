@@ -65,7 +65,7 @@ Saves.add({key:'own',      order:50,  save:()=>TOWNS.map(t=>t.saveRec()),
 // the world's lists, kept as they stand (the parties and beasts made their kinds again on a load: asParty, asMonster)
 Saves.add({key:'rel',      order:60,  save:()=>W.rel,          load:v=>{W.rel=v}});
 Saves.add({key:'dead',     order:70,  save:()=>W.dead,         load:v=>{W.dead=v}});
-Saves.add({key:'lords',    order:80,  save:()=>W.lords,        load:v=>{W.lords=v.map(asParty)}});
+Saves.add({key:'lords',    order:80,  save:()=>W.lords,        load:v=>{W.lords=v.map(l=>(l.name=lordTitled(l.name),asParty(l)))}});// (a lord by her title as shown now: data/factions.js LORD_RETITLE)
 Saves.add({key:'exiles',   order:90,  save:()=>W.exiles||[],   load:v=>{W.exiles=v}});
 Saves.add({key:'mythic',   order:100, save:()=>W.mythic,       load:v=>{W.mythic=v}});
 Saves.add({key:'monsters', order:110, save:()=>W.monsters,     load:v=>{W.monsters=v.map(asMonster)}});

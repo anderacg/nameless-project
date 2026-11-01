@@ -16,7 +16,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   f=fixture();f.q.mor=20;kill(f.a[0]);ok(near(f.q.mor,20.5),'enemy formations use the same bounded kill rule');
   f=fixture();r=f.r;r.mor=20;f.e.slice(0,10).forEach(kill);const m=r.mor;f.e[10].leader={};kill(f.e[10]);ok(near(r.mor-m,t.MORALE.lead/2),'leader kills remain a separate meaningful uncapped event');
   f=fixture();for(let i=0;i<40;i++){kill(f.a[i]);kill(f.e[i])}ok(f.r.mor<f.r.base&&f.q.mor<f.q.base,'paired casualty bursts no longer pump untouched survivors to perfect morale');
-  f=fixture();for(let i=0;i<30;i++){f.b.t+=.25;kill(f.a[i]);kill(f.e[i]);t.moraleTick(.25)}ok(f.r.mor<40&&f.q.mor<40,'sustained mutual losses produce net morale pressure in an even fight');
+  f=fixture();for(let i=0;i<30;i++){f.b.t+=.25;kill(f.a[i]);kill(f.e[i]);t.moraleTick(.25)}ok(f.r.mor<f.r.base-8&&f.q.mor<f.q.base-8,'sustained mutual losses produce net morale pressure in an even fight ('+f.r.base+' to '+f.r.mor.toFixed(1)+'; a drop, not a mark: the lab counts a rank’s morale now, lab.js rankMor)');
   f=fixture();r=f.r;r.mor=-1;tick(f,.59);ok(!r.routed,'mild breaking still has a short reaction window');tick(f,.01);ok(r.routed&&f.a.every(u=>u.rout),'ordinary collapse routes the formation at 0.6 combat seconds');
   f=fixture();r=f.r;r.mor=-10;tick(f,.24);ok(!r.routed,'severe collapse is not an instantaneous rout');tick(f,.01);ok(r.routed,'severe collapse routes at 0.25 combat seconds');
   f=fixture();r=f.r;r.mor=-1;tick(f,.2);r.mor=-11;tick(f,.06);ok(r.routed,'worsening morale shortens the existing timer without restarting it');

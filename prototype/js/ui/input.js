@@ -41,13 +41,13 @@ document.addEventListener('click',e=>{
   // held; a second, or Retreat now beside the preview, withdraws: orderpaths.js WithdrawView)
   const o=e.target.closest('[data-order]');if(o&&!(o.dataset.order==='withdraw'&&(e.pointerType==='touch'||window.mobileBattleHud?.enabled)&&withdrawView.tap()))setOrder(o.dataset.order);
   const g=e.target.closest('[data-grp]');if(g)selectGroup(g.dataset.grp,e.shiftKey);
+  // (the order bar's formations and flags (a Shooting choice one of a cycle: commands.js), wherever the bar is made again: battlehud.js bhudInit)
+  const f=e.target.closest('.borders [data-form]');if(f)setForm(f.dataset.form);
+  const fl=e.target.closest('.borders [data-flag]');if(fl)stanceFlag(fl.dataset.flag);
 });
-bhudInit();// (the order, flag and formation buttons' icons: battlehud.js)
-document.querySelectorAll('[data-form]').forEach(b=>b.addEventListener('click',()=>setForm(b.dataset.form)));
-document.querySelectorAll('[data-flag]').forEach(b=>b.addEventListener('click',()=>toggleFlag(b.dataset.flag)));
+bhudInit();// (the order bar, built from its tables: battlehud.js)
 document.querySelectorAll('[data-bspeed]').forEach(b=>b.addEventListener('click',()=>setBattleSpeed(+b.dataset.bspeed)));
 $('#bPause').addEventListener('click',()=>battlePause());
-{const b=document.getElementById('bAmove');if(b)b.addEventListener('click',()=>armAttackMove())}// (the next ground order an attack-move: commands.js)
 {const b=document.getElementById('bSkills');if(b)b.addEventListener('click',()=>setAutoSkills(!AUTOSK.on))}
 $('#hpBtn').addEventListener('click',()=>setHpBars(!HPBARS.on));setHpBars(HPBARS.on);
 $('#pause').addEventListener('click',togglePause);pauseUI();
@@ -73,7 +73,8 @@ $('#invBtn').addEventListener('click',()=>{if(G.mode==='inv')act('inv-close');el
 /* the manual control's buttons (Attack, the skill slots, Dodge, Block), set aside for now with it (RTS command: battle.js)
 $('#swing').addEventListener('click',swing);
 document.querySelectorAll('[data-skill]').forEach(b=>b.addEventListener('click',()=>dodge()));
-document.addEventListener('click',e=>{const s=e.target.closest&&e.target.closest('[data-slot]');if(s&&B)castSlot(+s.dataset.slot)});
+// (your hero's own slot bar only: the units' skill bar has data-slot buttons too, battlehud.js bhudSkills)
+document.addEventListener('click',e=>{const s=e.target.closest&&e.target.closest('#slotbar [data-slot]');if(s&&B)castSlot(+s.dataset.slot)});
 const blk=$('#block');
 blk.addEventListener('pointerdown',()=>{if(B)B.touchBlock=true});
 ['pointerup','pointerleave','pointercancel'].forEach(ev=>blk.addEventListener(ev,()=>{if(B)B.touchBlock=false}));
@@ -86,7 +87,7 @@ const MINI_TIP='<b>Map</b><small>Where you are, what you know of the land</small
 function eatClick(){const eat=e=>{e.stopPropagation();e.preventDefault();off()},off=()=>{clearTimeout(t);document.removeEventListener('click',eat,true);document.removeEventListener('pointerdown',off,true)},t=setTimeout(off,600);
   document.addEventListener('click',eat,true);document.addEventListener('pointerdown',off,true)}
 // (in the canvas's own pixels: the screen's game pixels (the world map's canvas has CVS of its own to one: core.js), or the
-// battlefield's in a battle)
+// battle's view (a battle drawn sharp: CVS of the canvas's to one, core.js bview))
 function toCanvas(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width/CVS,y:(e.clientY-r.top)*cv.height/r.height/CVS}}
 cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;ringMove(e);
   // the tooltip: what is under the pointer on the map
@@ -94,8 +95,10 @@ cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.
   if(G.mode!=='world'||G.modal||e.pointerType==='touch'){tip.hidden=true;if(G.mode!=='battle')cv.style.cursor='';return}
   const mini=!G.place&&fullMapHit(p);cv.style.cursor=mini?'pointer':'';// (over the minimap: it opens the full map, not what lies under it)
   const o=!mini&&pickAt(G.cam.x+p.x,G.cam.y+p.y),h=mini?MINI_TIP:o&&tipFor(o)||rumourTip(G.cam.x+p.x,G.cam.y+p.y)||trackTip(G.cam.x+p.x,G.cam.y+p.y);if(!h){tip.hidden=true;return}// (nothing there: a rumour's "?", news.js; else tracks you see, world/tracks.js)
-  tip.innerHTML=h;tip.classList.remove('hold');tip.hidden=false;const r=cv.getBoundingClientRect(),x=e.clientX-r.left+16,y=e.clientY-r.top+14;
-  tip.style.left=Math.min(x,r.width-tip.offsetWidth-6)+'px';tip.style.top=Math.min(y,r.height-tip.offsetHeight-6)+'px'});
+  tip.innerHTML=h;tip.classList.remove('hold');tip.hidden=false;const r=cv.getBoundingClientRect(),x=e.clientX-r.left+16,y=e.clientY-r.top+14,[ox,oy]=tipOver(tip);
+  tip.style.left=Math.max(ox,Math.min(x,r.width-tip.offsetWidth-6))+'px';tip.style.top=Math.max(oy,Math.min(y,r.height-tip.offsetHeight-6))+'px'});
+// (px a card's banner tab stands out past its left and top edges (ui.js tipFlag): kept on the screen with it)
+const tipOver=tip=>{const f=tip.querySelector('.tipflag');return f?[Math.max(0,-f.offsetLeft),Math.max(0,-f.offsetTop)]:[0,0]};
 cv.addEventListener('pointerleave',()=>{ringDrop();G.mouse.in=false;if(!holdCardUp())hideTip();if(B)B.hov=null;cv.style.cursor=''});
 cv.addEventListener('pointerdown',e=>{
   const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;
@@ -200,7 +203,8 @@ function touchMove(e,p){const T=TOUCH,pt=T.pts.get(e.pointerId);if(!pt)return;pt
   if(l.mode==='world'){l.off=true;return}// (wandered: no card; the lift still travels to where it went down)
   if(B===l.B){l.box=true;const q=toField(p);B.box={x0:l.q.x,y0:l.q.y,x1:q.x,y1:q.y,add:false}}}
 // a finger lifts (cancel: the browser took it): what the press was comes about; true when it was a touch of ours
-function touchUp(e,cancel){const T=TOUCH,id=e.pointerId;if(!T.pts.has(id))return false;T.pts.delete(id);if(T.pinch&&T.pts.size<2)T.pinch=null;
+function touchUp(e,cancel){const T=TOUCH,id=e.pointerId;if(!T.pts.has(id))return false;const m=T.pinch&&!T.pinch.map&&T.pts.size===2?touchMid():null;T.pts.delete(id);
+  if(T.pinch&&T.pts.size<2){T.pinch=null;if(m&&B&&G.mode==='battle')camSettle(m.x,m.y)}// (a battle's pinch let go: drawn sharp, onto a zoom's stop, camera.js)
   if(T.spent.delete(id))return true;const l=T.lp;if(!l||l.id!==id)return true;
   if(cancel){touchDrop();return true}touchTick(performance.now());clearTimeout(l.timer);T.lp=null;
   if(l.mode==='world'){if(l.armed)ringUp(e);else if(G.mode==='world'&&!G.modal)worldGo(l.wx,l.wy);return true}// (let go over a ring's button: picked)
@@ -229,7 +233,7 @@ function safeInsets(){const h=$('.hudlayer'),s=h&&getComputedStyle(h),n=v=>parse
  document.addEventListener('pointermove',e=>{if(down&&e.pointerType==='touch'){down.mx=e.clientX;down.my=e.clientY}},true);
  document.addEventListener('pointercancel',e=>{const h=down;down=null;if(!h||e.pointerType!=='touch'||performance.now()-h.t>TOUCH.hold||Math.hypot((h.mx??h.x)-h.x,(h.my??h.y)-h.y)>TOUCH.slop)return;if(!h.b.disabled&&h.b.isConnected)h.b.click()},true)}
 function holdCard(h,cx,cy){const tip=$('#tip'),r=cv.getBoundingClientRect(),sa=safeInsets();tip.innerHTML=h.replace(/>Click:/g,'>Tap:');tip.classList.add('hold');tip.hidden=false;
-  const w=tip.offsetWidth,ht=tip.offsetHeight,x=cx-r.left,y=cy-r.top,up=y-ht-TOUCH.ring,L=6+sa.l,T=6+sa.t;
+  const w=tip.offsetWidth,ht=tip.offsetHeight,x=cx-r.left,y=cy-r.top,up=y-ht-TOUCH.ring,[ox,oy]=tipOver(tip),L=6+sa.l+ox,T=6+sa.t+oy;
   tip.style.left=clamp(x-w/2,L,Math.max(L,r.width-w-6-sa.r))+'px';tip.style.top=(up>=T?up:clamp(y+TOUCH.ring,T,Math.max(T,r.height-ht-6-sa.b)))+'px'}
 // iOS Safari ignores user-scalable=no: a pinch begun on the HUD or a window would zoom the whole page. Its own gesture events
 // (iOS only; other browsers never send them) are stopped; the game's pinch reads pointers and windows still scroll (style.css
@@ -261,7 +265,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
   if(k==='tab'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!G.modal&&['world','scene','battle'].includes(G.mode)){e.preventDefault();if(!e.repeat)menuKey();return}// Tab: the Game Menu (hub.js; in a window, the menu too, Tab moves between its buttons)
   if(k==='escape'){e.preventDefault();if(window.battleArmyHud?.close()||window.mobileBattleHud?.close()||window.mobileWorldHud?.close()||ActionRing.close()||dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
-  if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat){if(e.shiftKey)toggleMute();else fullMapKey()}return}// M: the full map (map.js); Shift+M: the sound off or on, anywhere (ui.js)
+  if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat){if(e.shiftKey)toggleMute();else if(G.mode==='battle'&&B){if(!KITS.keys2)shootingCycle()}else fullMapKey()}return}// M: the full map (map.js), in battle free (step 1's keys: the Shooting stance's next choice, commands.js); Shift+M: the sound off or on, anywhere (ui.js)
   if(/^[0-9]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&(railKey(k)||Conversation.key(k))){e.preventDefault();return}// a number: a place on the window's rail (window.js), or a reply in a talk (story/conversation.js)
   if(/^[qwer]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railActKey(k)){e.preventDefault();return}// Q, W, E, R: the window's key actions (window.js)
   if(G.mode==='battle'&&B){
@@ -276,21 +280,31 @@ window.addEventListener('keydown',e=>{
     if(k.startsWith('arrow')){e.preventDefault();B.cam.keys[k]=true;return}
     if(!e.repeat&&(k==='='||k==='+'||k==='-')){camZoom(k==='-'?-1:1);return}
     if(!e.repeat&&k==='home'){camReset();return}
-    // H hold (where they stand), W withdraw; R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode
+    // the keys (data/kits.js KIT_KEYS; the owner's layout, doc/UNIT_KITS_DESIGN.md §7b, KITS.keys2): H hold, G charge (a true order), D
+    // attack-move, R pace (walk or run), F discipline (hold ground), T the formation cycle, O the ring (both layouts: commands.js
+    // ringForm; step 1's old O alias of Scout ahead gone), Backspace withdraw, A the AI; Q W E the
+    // stance slots, Z X C V B the skill slots (each selected group its own in each); Y U your hero's commands. Step 1's: H, V the
+    // pace's run, W withdraw, Q pace, F, B shield wall, J mounted (M shooting: above), L T formations, Z X C, R S, and the skills'
+    // old letters (G, I, U, Y, N, P) quiet aliases
     if(!e.repeat&&k==='a')return autoKey();// (the selected groups to the AI or back; none selected: the whole army, deploy.js)
     if(!e.repeat&&k==='d'&&!e.ctrlKey&&!e.metaKey)return armAttackMove();// (the next order on the ground an attack-move: commands.js)
+    if(!e.repeat&&k===kitKey('ring').toLowerCase())return ringForm();// (each selected group into its own ring: commands.js)
     if(!e.repeat&&k==='k')return e.shiftKey?toggleKeepForm():setAutoSkills(!AUTOSK.on);// (K: your characters' skills on their own; Shift+K: keep formation, commands.js)
-    if(!e.repeat){if(k==='h')return setOrder('hold');if(k==='w')return setOrder('withdraw');const fl={r:'walk',f:'firm',q:'cease',e:'skirmish',x:'melee'}[k];if(fl)return toggleFlag(fl)}
+    if(KITS.keys2){if(e.repeat)return;const K=KIT_KEYS.now,is=x=>k===x.toLowerCase();if(is(K.withdraw))e.preventDefault();
+      if(is(K.hold))return setOrder('hold');if(is(K.charge))return chargeOrder();if(is(K.withdraw))return setOrder('withdraw');if(is(K.pace))return toggleFlag('walk');if(is(K.discipline))return toggleFlag('firm');if(is(K.form))return formCycle();
+      {const i=K.stance.findIndex(is);if(i>=0)return stanceSlot(i)}{const i=K.skill.findIndex(is);if(i>=0)return groupSlot(i)}{const cp=powerKey(k);if(cp)return commandPower(cp)}return}
+    if(!e.repeat){if(k==='h')return setOrder('hold');if(k==='w')return setOrder('withdraw');if(k===kitKey('charge').toLowerCase())return setOrder('charge');
+      const st=STANCE_ORDER.find(id=>kitKey(id)&&kitKey(id).toLowerCase()===k);if(st==='mounted')return toggleMounted();if(st&&st!=='shooting')return toggleFlag(STANCES[st].flag||STANCES[st].ch[0].flag)}
     /* the manual control, set aside for now:
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){if(isBow())drawStart();else swing()}return}
     if(!e.repeat){const si=SLOT_KEYS.indexOf(k);if(si>=0)return castSlot(si);if(k==='f')return dodge()} */
-    if(k==='c')return setOrder('charge');if(k==='v')return setOrder('advance');
-    // formations: B shield wall, L loose, T wedge (pressed again: line)
-    if(!e.repeat){if(k==='b')return toggleFlag('shieldWall');const fk=FORM_PICK.find(f=>FORMS[f].key.toLowerCase()===k);if(fk)return setForm(fk)}
-    // commander powers: Z rally the line, S stand fast (commandpowers.js)
+    // formations: L loose, T wedge (pressed again: line)
+    if(!e.repeat){const fk=FORM_PICK.find(f=>FORMS[f].key.toLowerCase()===k);if(fk)return setForm(fk)}
+    // commander powers: R rally the line, S stand fast (commandpowers.js COMMANDS)
     if(!e.repeat){const cp=powerKey(k);if(cp)return commandPower(cp)}
-    // unit abilities: G brace, I fire arrows, U spur, Y rally, O scout ahead (unitabilities.js)
-    if(!e.repeat){const ab=UNIT_ABIL_ORDER.find(id=>UNIT_ABILITIES[id].key.toLowerCase()===k);if(ab)return groupAbility(ab)}
+    // the skill bar: Z, X, C its slots, each selected group its own skill there (the owner's layout, doc/UNIT_KITS_DESIGN.md §7b);
+    // the old letters (G brace, I fire arrows, U spur, Y rally, O scout ahead, N rapid shot, P mount) quiet aliases of their skill
+    if(!e.repeat){const si=SKILL_KEYS.findIndex(x=>x.toLowerCase()===k);if(si>=0)return groupSlot(si);const ab=SKILL_ORDER.find(id=>UNIT_SKILLS[id].key&&UNIT_SKILLS[id].key.toLowerCase()===k);if(ab)return groupAbility(ab)}
     /* (moving your hero with WASD, sprinting with Shift, blocking with B: set aside)
     if(['arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();
     G.keys[k]=true;if(e.shiftKey)G.keys.shift=true; */
@@ -380,7 +394,7 @@ class MobileBattleHud{
     this.panels=[['battleSpeedToggle','battleSpeedChoices'],['battleOrdersToggle','battleOrderChoices'],['battleMoreToggle','battleMoreChoices']].map(([button,panel])=>({button:$('#'+button),panel:$('#'+panel)}));
     for(const p of this.panels)p.button.addEventListener('click',()=>{const open=p.panel.hidden;this.close();p.panel.hidden=!open;p.button.setAttribute('aria-expanded',String(open))});
     this.root.addEventListener('click',e=>{if(e.target.closest('.mbh-close'))this.close();const view=e.target.closest('[data-bview]');if(view){if(view.dataset.bview==='reset')camReset();else camZoom(view.dataset.bview==='in'?1:-1)}});
-    document.addEventListener('click',e=>{if(e.target.closest('[data-bspeed],[data-order],#bAmove,[data-power],#bAuto')||!this.root.contains(e.target))this.close();this.sync()});
+    document.addEventListener('click',e=>{if(e.target.closest('[data-bspeed],[data-order],#bAmove,#bCharge,[data-sslot],[data-power],#bAuto')||!this.root.contains(e.target))this.close();this.sync()});
     document.addEventListener('pointerdown',e=>{if(!this.root.contains(e.target))this.close()});
     new ResizeObserver(()=>this.measure()).observe(this.root);
     window.mobileWorldHud.media.addEventListener('change',()=>this.sync());addEventListener('resize',()=>this.sync());
@@ -404,9 +418,9 @@ class MobileBattleHud{
   measure(){if(this.enabled){const height=this.root.getBoundingClientRect().height;if(height>0)this.screen.style.setProperty('--mobile-battle-height',height+'px')}}
   update(){
     if(!this.enabled||!B)return;const speed=B.world?G.speed:B.speed,button=$('#battleSpeedToggle'),text=speed+'× ▴';if(button.textContent!==text)button.textContent=text;button.setAttribute('aria-label','Battle speed '+speed+' times');
-    const labels={hold:'Hold',charge:'Run',advance:'Walk',withdraw:'Retreat',firm:'Hold ground',cease:'Hold fire',skirmish:'Skirmish',melee:'Melee',shieldWall:'Shields'};
+    const labels={hold:'Hold',charge:KITS.keys2?'Run':'Charge',advance:'Walk',withdraw:'Retreat',firm:'Hold ground',cease:'Hold fire',skirmish:'Skirmish',melee:'Melee',shieldWall:'Shields'};
     for(const b of this.root.querySelectorAll('.obtn'))if(!b.querySelector('.mbh-label')){
-      const label=b.id==='bAmove'?'Attack move':labels[b.dataset.order||b.dataset.flag]||(b.dataset.form&&FORMS[b.dataset.form]?.n)||(b.dataset.abil&&UNIT_ABILITIES[b.dataset.abil]?.n);
+      const label=b.id==='bAmove'?'Attack move':labels[b.dataset.order||b.dataset.flag]||(b.dataset.form&&FORMS[b.dataset.form]?.n)||(b.dataset.abil&&UNIT_SKILLS[b.dataset.abil]?.n);
       if(label){const span=document.createElement('span');span.className='mbh-label';span.textContent=label;b.appendChild(span)}
     }
   }

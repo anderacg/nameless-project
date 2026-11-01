@@ -32,6 +32,12 @@ const trackHeading=(dx,dy)=>compass(dx,dy).replace(/north|south|east|west/g,w=>w
    never saved: box (its points' bounds, for the drawing's quick skip), read (you have read it once: it trained you) and by (who
    walks it, while it is still walked: Tracks.live). In a save
    (toJSON): [k, n, m, nm, q, x0, y0, t0, then each next point as its steps from the last: dx, dy, dt] */
+// (where a band's prints are laid this moment (the owner, 2026-11-01: "please also change the tracks to the head as well"): its army's
+// head, marched man by man (march.js), the foremost of its men the way it went (dx, dy); else (TRACKS.head off, no army near) where it
+// stands. One answer, written afresh)
+const TRACK_AT={x:0,y:0};
+function trackHead(o,dx,dy){const T=TRACK_AT,a=TRACKS.head&&WORLD_BATTLE.on&&MARCH_ARMIES.get(o);T.x=o.x;T.y=o.y;if(!a||!a.units.length||Math.hypot(o.x-a.x,o.y-a.y)>MARCH_MOVE.teleport)return T;
+  let b=-Infinity;for(const u of a.units)if(!u.dead){const k=(u.x-o.x)*dx+(u.y-o.y)*dy;if(k>b){b=k;T.x=u.x;T.y=u.y}}return T}
 class Track{
   constructor(k,n,m,nm,q){this.k=k;this.n=n;this.m=m;this.nm=nm;this.q=q||0;this.p=[];this.box=[Infinity,Infinity,-Infinity,-Infinity]}
   get own(){return this.k==='you'}
@@ -97,8 +103,9 @@ const Tracks={
     if(!s){O.set(o,{tr:null,x:o.x,y:o.y,t:now});return}
     const dx=o.x-s.x,dy=o.y-s.y,d2=dx*dx+dy*dy,S=TRACKS.sample;if(d2<S*S)return;
     if(d2>S*S*TRACKS.gap*TRACKS.gap)s.tr=null;
-    else if(!trackGround(o.x,o.y))s.tr=null;
-    else{if(!s.tr||s.tr.gone){s.tr=this.start(o,k);if(trackGround(s.x,s.y)){s.tr.add(s.x,s.y,s.t);this.n++}}s.tr.add(o.x,o.y,now);this.n++}
+    else{const h=trackHead(o,dx,dy),hx=h.x,hy=h.y;if(!trackGround(hx,hy))s.tr=null;
+      else{if(!s.tr||s.tr.gone){s.tr=this.start(o,k);const fx=s.hx??s.x,fy=s.hy??s.y;if(trackGround(fx,fy)){s.tr.add(fx,fy,s.t);this.n++}}s.tr.add(hx,hy,now);this.n++}
+      s.hx=hx;s.hy=hy}
     s.x=o.x;s.y=o.y;s.t=now},
   // each frame: every band on the map (no list made: the frame's own), then the cap
   frame(){if(!TRACKS.on||!W.tracks)return;const now=trackNow();

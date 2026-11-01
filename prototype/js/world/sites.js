@@ -99,7 +99,7 @@ class Site extends WorldObject{
   page(r){return{body:this.about(r)}}
   // its banner on its page (window.js PageScreen banner): it as it stands on the map, its trampled ground, shadow, sprite, fire and
   // flag (render.js drawWorld's way), faded while it lies empty
-  view(){const s=this,sp=siteSprite(s),X=s.x-sp.ax,Y=s.y+8-sp.ay,on=!s.cleared,fl=sp.fire&&on&&(spr.flm0||(spr.flm0=PX.flame(0))),fg=sp.flag&&on&&flagSprite(s.flagCol(),0);
+  view(){const s=this,sp=siteSprite(s),X=s.x-sp.ax,Y=s.y+8-sp.ay,on=!s.cleared,fl=sp.fire&&on&&campFlame(),fg=sp.flag&&on&&flagSprite(s.flagCol(),0);
     return{key:'site:'+s.type+':'+s.seed+':'+(s.kind??'')+':'+(on?1:0),x:s.x,y:s.y+8,alt:s.name,ps:[sp.gr&&[sp.gr,X,Y],sp.sh&&[sp.sh,X,Y,SHADOW.a],[sp,X,Y,on?1:.5],
       fl&&[fl.img,X+sp.fire[0]-fl.ax,Y+sp.fire[1]-fl.ay],fg&&[fg,X+sp.flag[0]-1,Y+sp.flag[1]-12]].filter(Boolean)}}
   panel(r){return ''}

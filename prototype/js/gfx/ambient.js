@@ -323,7 +323,7 @@ function ambientBattle(){
   const dt=Math.min(.1,Math.max(0,now-S.t));S.t=now;
   if(!S.burst&&!B.deploy){S.burst=true;ambBurst(S)}
   if(!S.crows&&B.over){S.crows=true;ambFieldCrows(S)}
-  if(!S.list.length)return;const z=B.cam?B.cam.z:1,sn=v=>Math.round(v*z)/z,Sp=ambSpr(),rm=reducedMotion();
+  if(!S.list.length)return;const z=camPx(),sn=v=>Math.round(v*z)/z,Sp=ambSpr(),rm=reducedMotion();
   for(const b of S.list){b.t+=dt;if(b.k==='crow'){b.a+=b.w*dt;b.x=b.cx+Math.cos(b.a)*b.r;b.y=b.cy+Math.sin(b.a)*b.r*.5}else if(b.t>b.d){b.x+=b.vx*dt;b.y+=b.vy*dt;b.alt+=b.va*dt}}
   S.list=S.list.filter(b=>b.t<b.life);
   const al=b=>b.k==='crow'?Math.min(1,b.t/.8):Math.max(0,Math.min(1,(b.life-b.t)/.6));
@@ -332,11 +332,11 @@ function ambientBattle(){
   for(const b of S.list){if(b.k!=='crow'&&b.t<=b.d)continue;const s=b.k==='crow'?Sp.crow[ambWing(b.t+b.ph,rm)]:Sp.bird[rm?1:Math.floor(b.t*10+b.ph)%2?0:2];ctx.globalAlpha=al(b);ctx.drawImage(s,sn(b.x)-2,sn(b.y-b.alt)-1)}
   ctx.restore()}
 // (the birds out of the trees: trees trees in view (toward its middle), n birds each, off every way from its crown, one after another)
-function ambBurst(S){const A=AMBIENT.battle,T=B.ground&&B.ground.props;if(!T)return;const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0,w=BVW/z,h=BVH/z,s=reducedMotion()?AMBIENT.slow:1;
+function ambBurst(S){const A=AMBIENT.battle,T=B.ground&&B.ground.props;if(!T)return;const {x:vx,y:vy,w,h}=camView(),s=reducedMotion()?AMBIENT.slow:1;
   const inB=(p,f,g)=>p.dk===1&&p.x>=vx+w*f&&p.x<=vx+w*(1-f)&&p.y>=vy+h*g+16&&p.y<=vy+h*(1-g)+16,mid=T.filter(p=>inB(p,.2,.15)),trees=mid.length?mid:T.filter(p=>inB(p,0,0));// (the middle of the view first)
   for(let i=0,k=Math.max(1,Math.round(ambInt(A.trees)*(reducedMotion()?AMBIENT.calm:1)));i<k&&trees.length;i++){const p=trees.splice(Math.floor(ambR()*trees.length),1)[0],top=Math.max(8,(p.y-p.box[1])*.7);
     for(let q=0,n=ambInt(A.n);q<n;q++){const a=ambR()*6.283,v=ambIn(A.speed)*s;S.list.push({k:'bird',x:p.x+(ambR()-.5)*8,y:p.y,alt:top,vx:Math.cos(a)*v,vy:Math.sin(a)*v*.6,va:ambIn(A.rise)*s,t:0,d:ambR()*.5,life:A.life,ph:ambR()*6.283})}}}
 // (crows over the fallen nearest the middle of the view, or its middle when none fell)
-function ambFieldCrows(S){const A=AMBIENT.battle,c=B.cam,z=c?c.z:1,mx=(c?c.x:0)+BVW/z/2,my=(c?c.y:0)+BVH/z/2,cs=B.corpses||[];
+function ambFieldCrows(S){const A=AMBIENT.battle,v=camView(),mx=v.x+v.w/2,my=v.y+v.h/2,cs=B.corpses||[];
   const o=cs.length?cs.reduce((a,b)=>Math.hypot(b.x-mx,b.y-my)<Math.hypot(a.x-mx,a.y-my)?b:a):{x:mx,y:my},dir=ambR()<.5?1:-1;
   for(let i=0,n=Math.max(2,Math.round(ambInt(A.crows)*(reducedMotion()?AMBIENT.calm:1)));i<n;i++)S.list.push({k:'crow',cx:o.x,cy:o.y,r:ambIn(A.r),a:ambR()*6.283,w:A.spin*dir*(.8+ambR()*.4)*(reducedMotion()?AMBIENT.slow:1),alt:ambIn(A.alt),ph:ambR()*6.283,t:0,d:0,life:1e9,x:o.x,y:o.y})}

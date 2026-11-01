@@ -27,9 +27,11 @@ try{
  const spot={x:P.x+V+40,y:P.y};for(let k=-2;k<=2;k++)for(let j=-2;j<=2;j++)t.seenArr()[(Math.floor(spot.y/TILE)+j)*MW+Math.floor(spot.x/TILE)+k]=1;
  const L=W.lords.find(l=>!l.dead);const keep=[L.x,L.y,L.inside];L.inside=null;
  const shot=()=>{t.drawWorld();return t.ctx.getImageData(Math.round(spot.x-G.cam.x-10),Math.round(spot.y-G.cam.y-22),20,26).data};
- L.x=-9999;L.y=-9999;const a0=shot();L.x=spot.x;L.y=spot.y;const a1=shot();let diff=0;for(let i=0;i<a0.length;i++)if(Math.abs(a0[i]-a1[i])>6)diff++;
+ // (moved as the game moves an army, its men with it: march.js MarchArmy.jump; a bare x, y would leave its men, drawn, where they were)
+ const put=(x,y)=>{L.x=x;L.y=y;t.MarchArmy.jump?.(L,x,y);t.MarchArmy.of(L).step(1/60)};
+ put(-9999,-9999);const a0=shot();put(spot.x,spot.y);const a1=shot();let diff=0;for(let i=0;i<a0.length;i++)if(Math.abs(a0[i]-a1[i])>6)diff++;
  ok(diff<12,'a lord on land you know but cannot see now is not shown ('+diff+' pixels differ)');
- L.x=P.x+30;L.y=P.y;spot.x=L.x;spot.y=L.y;const b1=shot();L.x=-9999;const b0=shot();let d2=0;for(let i=0;i<b0.length;i++)if(Math.abs(b0[i]-b1[i])>6)d2++;
+ put(P.x+30,P.y);spot.x=L.x;spot.y=L.y;const b1=shot();put(-9999,L.y);const b0=shot();let d2=0;for(let i=0;i<b0.length;i++)if(Math.abs(b0[i]-b1[i])>6)d2++;
  ok(d2>40,'in your sight he is ('+d2+' pixels)');[L.x,L.y,L.inside]=keep;
  // buildings outside your sight stay as you last saw them
  {const z=t.TOWNS.find(q=>q.lots&&q.lots.some(l=>l.k==='house'));const l=z.lots.find(q=>q.k==='house');P.x=(l.x+.5)*TILE;P.y=(l.y+1.5)*TILE;t.drawWorld();const seenAs=l._mem;

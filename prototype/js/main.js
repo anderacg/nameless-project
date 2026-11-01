@@ -16,7 +16,9 @@ function loop(now){
   }
   // (the HUD on its own clock, in real time, never the simulation's: in a battle the ability buttons every tick, the orders, unit
   // cards, details and top bar every other one (setOrderUI redraws the abilities too: battlehud.js bhudTop))
-  G.hudT+=dt;if(G.hudT>.25&&WM){G.hudT=0;updateHUD();if(G.mode==='battle'){updateSkillBar();if(B&&(hudCards=!hudCards))setOrderUI();else bhudAbilities()}}
+  // (one HUD that throws never stops the game: the loop goes on, the error still raised a moment later for the tests and the console;
+  // the owner, 2026-11-01: a skill bar written over froze the game mid-battle)
+  G.hudT+=dt;if(G.hudT>.25&&WM){G.hudT=0;try{updateHUD();if(G.mode==='battle'){updateSkillBar();if(B&&(hudCards=!hudCards))setOrderUI();else bhudAbilities()}}catch(e){setTimeout(()=>{throw e})}}
   audioWatch();// (the music follows the scene; a town, a meeting, a new day, a battle's start are heard: music.js)
   // (the main menu draws its own scene, never the world: ui/mainmenu.js; anything else, the game's frame)
   MainMenu.frame(now);if(G.mode!=='title')frame();requestAnimationFrame(loop);
