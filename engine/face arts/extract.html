@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8"><title>Coherent portrait layer extraction</title><script>
+'use strict';
+const load=async src=>{const image=new Image();image.src=src;await image.decode();return image};
+const inPoly=(x,y,p)=>{let hit=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const a=p[i],b=p[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])hit=!hit}return hit};
+(async()=>{
+ const [master,blank,regions]=await Promise.all([load('sources/master.png'),load('sources/blank-reference.png'),fetch('regions.json').then(r=>r.json())]);
+ const size=regions.canvas,canvas=()=>{const c=document.createElement('canvas');c.width=c.height=size;return c},read=image=>{const c=canvas();c.getContext('2d').drawImage(image,0,0);const data=c.getContext('2d').getImageData(0,0,size,size);for(let i=3;i<data.data.length;i+=4)data.data[i]=data.data[i]>=128?255:0;return data};
+ const M=read(master),B=read(blank),base=new ImageData(size,size),layers=Object.fromEntries(regions.order.map(id=>[id,new ImageData(size,size)]));
+ for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+  const i=(y*size+x)*4,id=regions.priority.find(id=>regions.regions[id].some(p=>inPoly(x+.5,y+.5,p)));
+  if(M.data[i+3]===255)for(let k=0;k<4;k++)base.data[i+k]=B.data[i+k];
+  const target=id?layers[id]:layers.planes;for(let k=0;k<4;k++)target.data[i+k]=M.data[i+k]
+
+ }
+ const output={master:M,base,...layers},images={};for(const [id,data]of Object.entries(output)){const c=canvas();c.getContext('2d').putImageData(data,0,0);images[id]=c}
+ const rebuilt=canvas(),g=rebuilt.getContext('2d');g.drawImage(images.base,0,0);for(const id of regions.order)g.drawImage(images[id],0,0);
+ const R=g.getImageData(0,0,size,size);let differing=0,maxDelta=0,visible=0;for(let i=0;i<R.data.length;i+=4){if(M.data[i+3])visible++;let bad=false;for(let k=0;k<4;k++){if(k<3&&!M.data[i+3]&&!R.data[i+3])continue;const d=Math.abs(R.data[i+k]-M.data[i+k]);if(d){bad=true;maxDelta=Math.max(maxDelta,d)}}if(bad)differing++}
+ window.extraction={images,rebuilt,result:{differing,maxDelta,visible,size},pngs:()=>Object.fromEntries(Object.entries(images).map(([id,c])=>[id,c.toDataURL()]))};document.body.append(rebuilt);document.title='READY';
+})().catch(e=>{document.body.textContent=e.stack;document.title='ERROR'});
+</script>
