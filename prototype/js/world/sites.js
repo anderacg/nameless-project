@@ -132,6 +132,9 @@ class Site extends WorldObject{
   pickable(){return this.known()}
   pick(at){if(this.pickable())this.box(at.box,at.camp)}
   box(box,camp){box(this,this.x-8,this.y-8,this.x+8,this.y+8)}
+  // its footprint, what is drawn of it (structures.js siteSprite: its picture's opaque box, set as Site draw sets it), reached from
+  // your army's ring (march.js ringReach)
+  reachRadius(){const sp=siteSprite(this),b=opaqueBox(sp),x=this.x-sp.ax,y=this.y+8-sp.ay;return boxReach(this,{x0:x+b[0],y0:y+b[1],x1:x+b[2]+1,y1:y+b[3]+1})}
   // drawn once you know of it (as you last saw it, outside your sight: a building, render.js drawWorld), its name near you; dotted
   // on the minimap in its kind's colour (grey, cleared)
   inView(V){return this.known()}
@@ -405,7 +408,7 @@ class Lair extends Site{
           {icon:'troops',label:'Into your band',act:'site-fate',arg:'join',facts:[Math.min(n,Math.max(0,partyRoom()))+' join','morale −'+tb.morale+' · honor −'+tb.honorAll],why:partyRoom()<1?'Your band is full':''},
           {icon:'truce',label:'Let them go',act:'site-fate',arg:'free',facts:['disarmed','renown +1']}],close:['site-fate','free','Let them go']}}
     if(step==='parley'){const pw=y?s.power(s.all(y.list)):g.pw,afraid=stance(pw)==='afraid',ch=Math.round(yieldChance({power:()=>pw},'band')*100),tb=tribute(s);
-      return{title:'Parley',body:'<p>You ride up with a white rag on a spear. '+(ld?ld.name+' steps out':'Their chieftain steps out')+' to hear you, '+roughly(g.n)+' at his back.</p>',
+      return{title:'Parley',body:'<p>You ride up with a white rag on a spear. '+(ld?ld.name+' steps out':'Their chieftain steps out')+' to hear you, '+roughly(g.n)+' at '+pr(ld).his+' back.</p>',
         acts:[{icon:'gold',label:'Pay them to go',act:'site-pay',facts:[tb+'g','they break camp'],why:P.gold<tb?'Not enough gold':'',tip:'Buy them off: '+tb+' gold and they break camp and ride away, any bands sheltering with them. No fight, no loot, no bounty; the place lies empty for a while.'},
           {icon:'prisoners',label:'Demand surrender',act:'site-yield',facts:[afraid?insight(['they might yield, or not',oddsWord(ch/100)+' they yield',ch+'% they yield'],'know the odds'):'they do not fear you','else they fight'],why:afraid?'':'They do not fear you: it takes about twice their strength',tip:'Call on them to yield, as a cornered band would. If they do, you choose their fate: prisoners, recruits or let go. If not, they fight.'}],
         note:'They '+(afraid?'eye your band warily.':'laugh at your band.'),back:['site-tab','home','Back']}}
@@ -414,7 +417,7 @@ class Lair extends Site{
         '<ul class="tnotes"><li>Power <b>'+pw+'</b> vs your '+partyPower()+'.</li><li>Loot: '+s.lootSay(all.length)+', and '+(ld?ld.name:'their chieftain')+' to take captive ('+bountyOf(ld)+'g bounty).</li></ul>':
         pageFacts([insight([band+' in their tents',cap1(roughly(g.n))+' '+band.toLowerCase(),g.n+' '+band.toLowerCase()+' and their chieftain'],'know their numbers')+(s.sheltering().length?', bands among them sheltering for the night':''),
           insight(['you cannot tell how strong','<span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>','power '+g.pw+' vs your '+partyPower()],'know their strength')])+
-        '<ul class="tnotes"><li>Led by '+(ld?chiefLabel(ld)+', '+bountyOf(ld)+' gold on his head':'a chieftain')+'.</li><li>Talk of plunder piled in the tents.</li></ul>'),
+        '<ul class="tnotes"><li>Led by '+(ld?chiefLabel(ld)+', '+bountyOf(ld)+' gold on '+pr(ld).his+' head':'a chieftain')+'.</li><li>Talk of plunder piled in the tents.</li></ul>'),
       acts:[s.scoutDeed(),{icon:'attack',label:'Attack',act:'site-ask',facts:[y?'power '+pw+' vs '+partyPower():insight(['what waits inside: unknown',lk[0].replace('They look ',''),'power about '+pw+' vs '+partyPower()],'know their strength')],tip:'Storm it: its fighters, its chieftain and any band sheltering there. It asks you first.'},
         {icon:'truce',label:'Parley',act:'site-tab',arg:'parley',facts:['pay them off','or make them yield'],tip:'Talk: pay them to break camp, or, if they fear you, demand their surrender.'}]}}
   act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const s=this,y=s.spied();
@@ -423,7 +426,7 @@ class Lair extends Site{
     if(a==='site-attack'){s.fight(true,y&&y.list);return true}
     if(a==='site-pay'){const m=lairPay(s);if(m){G.siteTab=null;done(m)}return true}
     if(a==='site-yield'){const m=lairYield(s);if(m){G.siteTab='yield';done(m)}return true}
-    if(a==='site-fate'){const yl=G.siteSpy&&G.siteSpy.s===s&&G.siteSpy.yielded;if(yl){G.siteTab=null;done(lairFate(s,yl,arg))}return true}
+    if(a==='site-fate'){const yl=G.siteSpy&&G.siteSpy.s===s&&G.siteSpy.yielded;if(yl){G.siteTab=null;G.site=null;G.siteHire=null;lairFate(s,yl,arg)}return true}// (their fate's end: the spoils window, the page left)
     return false}
 }
 /* where a hideout stands (the owner, 2026-10-23: "bandit and raider hideouts should spawn far away from holdings, mostly found in
@@ -604,16 +607,16 @@ function genSites(){
 }
 
 /* on the map */
-// spot sites in view, and forget the one you last left once you are well away from it (G.lastSite). A site opens only when you
-// clicked or tapped it (the owner, 2026-10-22): a click beside it opens it at once, one further off walks you there and opens it
-// on arrival (world.js clickAt, the chase: marchStep meets it); walking past one, or stopping by one you did not click, opens
-// nothing. Never opens anything itself (false)
+// spot sites in view, and forget the one you last left once you are well away from it (G.lastSite: REACH past where your army
+// reaches it). A site opens only when you clicked or tapped it (the owner, 2026-10-22): a click beside it opens it at once, one
+// further off walks you there and opens it on arrival (world.js clickAt, the chase: marchStep meets it); walking past one, or
+// stopping by one you did not click, opens nothing. Never opens anything itself (false)
 function updateSites(){
-  const V=vis();
+  const S=yourSight();
   for(const s of W.sites){
     const dd=Math.hypot(P.x-s.x,P.y-s.y);
-    if(!s.seen&&s.scoutable&&dd<V*.9){s.seen=true;train('scout',4);log('Your scouts spot '+s.scoutLine()+'.')}
-    if(G.lastSite===s&&dd>28)G.lastSite=null;
+    if(!s.seen&&s.scoutable&&S.sees(s.x,s.y,.9)){s.seen=true;train('scout',4);log('Your scouts spot '+s.scoutLine()+'.')}
+    if(G.lastSite===s&&dd>worldBattleReach(s)+REACH)G.lastSite=null;
   }
   return false;
 }
@@ -630,13 +633,13 @@ function siteChest(s){
 }
 /* valuables found (doc/ITEMS_DESIGN.md §4b) where: a cave's or a ruin's chest, a bandit camp's plunder, a beaten chieftain's or
    lord's purse (VALUE_FINDS: the chance of any, how many, of which rarities, each by its weight). Drawn from the stream
-   'valuables' (core/rng.js: so the world's Math.random stays as it was), into your bag (or onto the loot pile): in words ('' none) */
-function valuablesFound(where){
+   'valuables' (core/rng.js: so the world's Math.random stays as it was), into your bag (or onto the loot pile): in words ('' none); who: whose purse it is (a lord's or a chief's: his or hers) */
+function valuablesFound(where,who){
   const F=VALUE_FINDS[where],r=rngOf('valuables');if(!F||!r.chance(F.p))return '';
   const ids=Object.keys(VALUABLES).filter(k=>F.r.includes(VALUABLES[k].r)),got={};
   for(let i=r.int(F.n[0],F.n[1]);i>0;i--){const id=r.weighted(ids,k=>VALUE_RARITY[VALUABLES[k].r]);got[id]=(got[id]||0)+1}
   const said=Object.entries(got).map(([id,n])=>{const k=invAdd('val',id,n),w=VALUABLES[id].n.toLowerCase();return k?k>1?k+' × '+w:an(w):''}).filter(Boolean);
-  return said.length?' '+(where==='lord'||where==='chief'?'His purse holds ':where==='camp'?'Among their plunder: ':'Among the gold: ')+said.join(', ')+'.':' '+BAG_FULL+': you leave their valuables.';
+  return said.length?' '+(where==='lord'||where==='chief'?pr(who).His+' purse holds ':where==='camp'?'Among their plunder: ':'Among the gold: ')+said.join(', ')+'.':' '+BAG_FULL+': you leave their valuables.';
 }
 // (lv: its level as your scouts saw it; else rolled now)
 function caveFight(s,lv){

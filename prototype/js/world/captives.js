@@ -31,7 +31,7 @@ function captureChief(ld){if(ld)captives().push({k:'chief',ld})}
 // (asked before he is taken: resolution.js), a bandit camp's plunder
 function spoilsWon(e){
   if(!e)return '';
-  return (e.kind==='lord'?valuablesFound('lord'):'')+((e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld?valuablesFound('chief'):'')+(e.kind==='camp'?valuablesFound('camp'):'');
+  return (e.kind==='lord'?valuablesFound('lord',e.ref):'')+((e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld?valuablesFound('chief',e.ref.ld):'')+(e.kind==='camp'?valuablesFound('camp'):'');
 }
 // a chieftain who got away: back with a new band in a few days
 function chiefEscapes(ld,days){if(!ld)return;W.exiles.push({ld,back:G.day+(days||rint(4,8))})}
@@ -83,11 +83,11 @@ function recruitWhy(c){
   if(partySize()>=partyCap())return 'No room in your band';
   if(c.k==='chief')return P.fac&&honorWith(P.fac)-RECRUIT.honor<0?'The '+FACS[P.fac].n+' will not stand for an outlaw in your band (your honor with them: '+honorWith(P.fac)+')':'';
   const l=W.lords.find(x=>x.id===c.id),fallen=!!W.dead[c.fac]||!fiefsOf(c.fac).length,shame=l&&l.shame||0;
-  return !l?'Gone':fallen||shame>=RECRUIT.shame?'':'Sworn to the '+FACS[c.fac].n+': only when his realm falls, or once he is disgraced (taken '+RECRUIT.shame+' times; '+shame+' so far)'}
+  return !l?'Gone':fallen||shame>=RECRUIT.shame?'':'Sworn to the '+FACS[c.fac].n+': only when '+pr(l).his+' realm falls, or once '+pr(l).he+' is disgraced (taken '+RECRUIT.shame+' times; '+shame+' so far)'}
 // a recruit's companion entry and its kind (made again on loading: P.recruits keeps them)
 function registerRecruit(id,r){
   COMPS[id]={n:r.n,short:r.n.split(' ')[0],look:r.kind,recruit:r.from,
-    d:r.from==='chief'?'Once a bandit chief; now he rides with you.':'Once a lord of the '+(FACS[r.fac]?FACS[r.fac].n:'old realms')+'; now he rides with you.',
+    d:r.from==='chief'?'Once a bandit chief; now '+pr(r.n).he+' rides with you.':'Once a '+lordWord(r.n)+' of the '+(FACS[r.fac]?FACS[r.fac].n:'old realms')+'; now '+pr(r.n).he+' rides with you.',
     react:r.from==='chief'?{win:1,ransom:1,cruel:1,mercy:-1,flee:-1}:{win:1,mercy:1,release:1,cruel:-2,flee:-1}};
   ST[id]={...ST[r.kind],n:r.n,look:typeof PEOPLE_LOOK!=='undefined'&&PEOPLE_LOOK[r.kind]?r.kind:ST[r.kind].look||r.kind}}
 function registerRecruits(){for(const id in P.recruits||{})registerRecruit(id,P.recruits[id])}
@@ -107,10 +107,10 @@ function recruitCaptive(i){
 function captivesHtml(){
   const cs=captives(),b=(act,i,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'" data-arg="'+i+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
   return '<div class="lab" style="margin-top:6px">Captives ('+cs.length+')</div>'+(cs.length?cs.map((c,i)=>c.k==='lord'
-    ?'<div class="row"><div class="info"><strong>'+c.name+' <span class="muted">Lv '+c.lv+'</span></strong><small>Lord of the '+FACS[c.fac].n+'. Ransomed or let go, he rides home to raise a new army.</small></div><div class="acts">'+
-      b('ct-ransom',i,'Ransom '+lordRansom(c)+'g',fiefsOf(c.fac).length?'':'His realm has fallen: no one will pay')+b('ct-recruit',i,'Recruit',recruitWhy(c))+b('ct-free',i,'Let go')+'</div></div>'
-    :'<div class="row"><div class="info"><strong>'+c.ld.name+' <span class="muted">Lv '+c.ld.lv+'</span></strong><small>Bandit chief. Handed over, he hangs; let go, he gathers a new band; or he may join you.</small></div><div class="acts">'+
-      b('ct-hand',i,'Hand over '+bountyOf(c.ld)+'g')+b('ct-recruit',i,'Recruit',recruitWhy(c))+b('ct-free',i,'Let go')+'</div></div>').join(''):'<p class="muted">None. Beat a lord or a bandit chief in battle to take him.</p>');
+    ?'<div class="row"><div class="info"><strong>'+c.name+' <span class="muted">Lv '+c.lv+'</span></strong><small>'+cap1(lordWord(c))+' of the '+FACS[c.fac].n+'. Ransomed or let go, '+pr(c).he+' rides home to raise a new army.</small></div><div class="acts">'+
+      b('ct-ransom',i,'Ransom '+lordRansom(c)+'g',fiefsOf(c.fac).length?'':pr(c).His+' realm has fallen: no one will pay')+b('ct-recruit',i,'Recruit',recruitWhy(c))+b('ct-free',i,'Let go')+'</div></div>'
+    :'<div class="row"><div class="info"><strong>'+c.ld.name+' <span class="muted">Lv '+c.ld.lv+'</span></strong><small>Bandit chief. Handed over, '+pr(c.ld).he+' hangs; let go, '+pr(c.ld).he+' gathers a new band; or '+pr(c.ld).he+' may join you.</small></div><div class="acts">'+
+      b('ct-hand',i,'Hand over '+bountyOf(c.ld)+'g')+b('ct-recruit',i,'Recruit',recruitWhy(c))+b('ct-free',i,'Let go')+'</div></div>').join(''):'<p class="muted">None. Beat a lord or a bandit chief in battle to take one captive.</p>');
 }
 function captiveAct(a,arg){
   const cs=captives(),c=cs[+arg];if(!c)return;

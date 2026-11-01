@@ -23,7 +23,7 @@ try{
  rejects(()=>service.trainGroup(town,id,to),'upgrade','an upgrade cannot be purchased twice');
  rejects(()=>service.trainGroup(town,b.id,to),'experience','a group below rank '+t.RANKS.max+' cannot upgrade');t.rankGain(b,1e6);
  P.woundedGroups=[{id:b.id,type:k,count:1}];P.wounded[k]=1;rejects(()=>service.trainGroup(town,b.id,to),'wounded-group','pending wounded cannot be stranded by an in-place type change');P.woundedGroups=[];P.wounded={};
- {const tier=t.TRAIN_PLACE.tier;t.TRAIN_PLACE.tier=1;town.raided=G.day+2;rejects(()=>service.trainGroup(town,b.id,to),'training-unavailable','closed barracks reject whole-group upgrades that need a holding');town.raided=0;t.TRAIN_PLACE.tier=tier}
+ {const tier=t.TRAIN_PLACE.tier;t.TRAIN_PLACE.tier=1;town.raided=G.day+2;rejects(()=>service.trainGroup(town,b.id,to),'barracks','a closed barracks rejects every upgrade');town.raided=0;t.TRAIN_PLACE.tier=tier}
  // The barracks (town.js Barracks, ui/hiredesk.js; the owner, 2026-10-31: whole units, and a section to replenish): Recruit unit, one
  // whole unit of its kind's size a press, into a free slot; Refill and Refill all, your short units; the willing and your gold checked
  // as you press; asked first when a press spends more than half your gold; the Upgrade tab's whole-group upgrade.

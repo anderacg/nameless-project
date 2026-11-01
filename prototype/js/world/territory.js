@@ -112,10 +112,14 @@ const landCol=o=>o?FACS[o].col:'#98a0ba';
 function drawLand(cam,part){
   landFresh();const x0=Math.max(0,Math.floor(cam.x/TILE)),y0=Math.max(0,Math.floor(cam.y/TILE)),x1=Math.min(MW-1,x0+Math.ceil(VW/TILE)+1),y1=Math.min(MH-1,y0+Math.ceil(VH/TILE)+1);
   ctx.save();
-  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
-    const k=y*MW+x,i=LAND[k];if(i<0)continue;const sx=x*TILE-cam.x,sy=y*TILE-cam.y,e=LAND_EDGE[k];
-    ctx.fillStyle=landCol(TOWNS[i].owner);if(part!=='line'){ctx.globalAlpha=.08;ctx.fillRect(sx,sy,TILE,TILE)}
-    for(let d=0;e&&part!=='tint'&&d<4;d++){const b=e>>2*d&3;if(!b)continue;const [dx,dy]=NB4[d];// (b: the line's width too)
+  // (the tint a run of a row's tiles of one colour at a time: one rect, the same pixels as a rect a tile; then the lines)
+  if(part!=='line'){ctx.globalAlpha=.08;for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=LAND[y*MW+x];if(i<0)continue;const c=landCol(TOWNS[i].owner);let n=1;
+    while(x+n<=x1){const j=LAND[y*MW+x+n];if(j<0||landCol(TOWNS[j].owner)!==c)break;n++}
+    ctx.fillStyle=c;ctx.fillRect(x*TILE-cam.x,y*TILE-cam.y,n*TILE,TILE);x+=n-1}}
+  if(part!=='tint')for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    const k=y*MW+x,i=LAND[k],e=LAND_EDGE[k];if(i<0||!e)continue;const sx=x*TILE-cam.x,sy=y*TILE-cam.y;
+    ctx.fillStyle=landCol(TOWNS[i].owner);
+    for(let d=0;d<4;d++){const b=e>>2*d&3;if(!b)continue;const [dx,dy]=NB4[d];// (b: the line's width too)
       ctx.globalAlpha=b===2?.7:.22;ctx.fillRect(dx>0?sx+TILE-b:sx,dy>0?sy+TILE-b:sy,dx?b:TILE,dy?b:TILE)}
   }
   ctx.restore();

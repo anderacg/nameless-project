@@ -13,7 +13,7 @@ class EstateWorker extends WorldObject{
   here(){return W.folk.includes(this)}
   get meetsAnyTime(){return true}
   meet(){workerMeet(this)}
-  inView(V){return folkSeen(this)&&Math.abs(this.x-P.x)<=V*1.3&&Math.abs(this.y-P.y)<=V*1.3}
+  inView(V){return folkSeen(this)&&yourSight(V).sees(this.x,this.y,1.3)}
   // (at work inside: met at his estate, estates.js; out on its ground, or on the road with a delivery, where he is)
   pick(at){if(folkSeen(this))at.add(this,6,4)}
   // World combat uses the trade's real battle unit, with stable variant and holding cloth; legacy mode keeps folkSprite. His
@@ -40,6 +40,10 @@ const FIELD={from:.07,to:DELIVER.from,out:.6,speed:26,carry:.7,hurry:37,pause:[1
 const FOLK_NAMES={human:['Alys','Bran','Cedric','Dora','Edwin','Gwen','Hob','Ida','Jory','Maud','Ned','Osric','Peg','Rafe','Tilda','Wat'],
   dwarf:['Bofri','Dagna','Durli','Grimma','Helga','Korri','Nali','Thrain','Ulfa','Vigdis'],elf:['Aelin','Caelir','Elowen','Faelar','Ilyth','Lorien','Naeris','Saelith','Thalia','Varis'],
   orc:['Brak','Durza','Gash','Hruk','Krenna','Mogg','Nazra','Rukk','Shagra','Ugak']};
+// (its women; the rest are men: core/pronouns.js. A worker, a trainer, a sellsword or a watch captain is one by the name)
+const FOLK_WOMEN=['Alys','Dora','Gwen','Ida','Maud','Peg','Tilda','Dagna','Grimma','Helga','Nali','Ulfa','Vigdis','Aelin','Elowen','Ilyth','Naeris','Saelith','Thalia',
+  'Durza','Krenna','Nazra','Shagra'];
+givenNames(FOLK_NAMES,FOLK_WOMEN);
 const FOLK_COUNT=new Map(),REFILL_DAYS=3;
 const folkHash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0};
 function folkName(f,race){const N=FOLK_NAMES[race]||FOLK_NAMES.human,h=folkHash(f.id);f.name=N[h%N.length];f.v=(h>>>8)%4;return f}
@@ -48,16 +52,21 @@ const lostHands=(t,k)=>((t.lost||{})[k]||[]).filter(d=>d>G.day).length;
 const handsLeft=(t,k)=>{const n=lostHands(t,k);return n?Math.max(0,1-n/Math.min(3,bldLv(t,k)+1)):1};
 // a worker's trade as a soldier (a quarry's miners are quarrymen), the peasant he becomes (data/units.js), and why not
 const tradeOf=f=>f.k==='quarry'?'quarryman':f.job;
-const recruitKind=(t,f)=>peasantKind(t.races[0],tradeOf(f));
-function workerAppearance(f){const t=townBy(f.home);const type=t?recruitKind(t,f):'militia';return{type:ST[type]?type:'militia',v:folkHash(f.id||f.home+'|'+f.job)%6,tint:FACS[t?.owner]?.col||'#bda882'}}
+// (whom a worker joins as: a Peasant Levy, data/units.js peasantLevy; his look at work, his trade's)
+const recruitKind=(t,f)=>peasantLevy(t.races[0]);
+function workerAppearance(f){const t=townBy(f.home);const type=t?peasantKind(t.races[0],tradeOf(f)):'militia';return{type:ST[type]?type:'militia',v:folkHash(f.id||f.home+'|'+f.job)%6,tint:FACS[t?.owner]?.col||'#bda882'}}
 function workerBattleFinish(b,area){
   for(const u of b.units){const f=u.worker;if(!f)continue;if(u.hp>0||u.left){const p=area.world(u);f.x=p.x;f.y=p.y;f.dir=u.face;continue}if(b.win||f.gone)continue;
     const t=townBy(f.home);f.gone=true;if(t){t.pop=Math.max(10,(t.pop||0)-1);t.lost=t.lost||{};(t.lost[f.k]||(t.lost[f.k]=[])).push(G.day+REFILL_DAYS)}
   }
   W.folk=W.folk.filter(f=>!f.gone);
 }
+// (where a worker taken on goes (the owner, 2026-10-31: "he is just a worker, only peasant"): into your Peasant Levy unit with the most
+// room, else a new one in a free slot; never any other unit)
+function workerJoins(k){const r=partyRoster(P),g=r.groups.filter(x=>x.type===k&&r.groupRoom(k,x.id)>0).sort((a,b)=>r.groupRoom(k,b.id)-r.groupRoom(k,a.id))[0];
+  return g?'into your '+ST[k].n+' ('+(g.count+r.wounded(g.id))+'/'+unitSize(k)+')':r.slots<r.groupLimit?'a new '+ST[k].n+' unit':''}
 function workerRecruitWhy(t,f){const k=recruitKind(t,f),c=hireCost(k);
-  return P.fac&&P.fac===t.owner?'Your employer’s people':remembers(t,f)?'They will not follow you':partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(k)?'No room for another group':P.gold<c?'Not enough gold':t.owner!=='player'&&!canHire(t,k)?'They do not trust you yet':''}
+  return P.fac&&P.fac===t.owner?'Your employer’s people':remembers(t,f)?'They will not follow you':partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(k)?'No Peasant Levy unit with room, nor a free slot':P.gold<c?'Not enough gold':t.owner!=='player'&&!canHire(t,k)?'They do not trust you yet':''}
 function workerRecruit(f){const t=townBy(f.home);if(!t||!W.folk.includes(f)||workerRecruitWhy(t,f))return false;const k=recruitKind(t,f),c=hireCost(k);
   P.gold-=c;P.add(k);f.gone=true;W.folk=W.folk.filter(x=>x!==f);t.pop=Math.max(10,(t.pop||0)-1);t.lost=t.lost||{};t.lost[f.k]=[...(t.lost[f.k]||[]).filter(d=>d>G.day),G.day+REFILL_DAYS];
   if(t.owner!=='player')addRep(t.name,-2,true);log(f.name+' the '+f.job+' takes your coin and joins your band as '+an(ST[k].n.toLowerCase())+'. The '+ESTATES[f.k].n.toLowerCase()+' of '+t.name+' is a pair of hands short for a few days.','gold');return true}
@@ -234,12 +243,12 @@ function workerMeet(f,from){
 // his deeds: Hire; someone else's worker, Rob and Press-gang (each asks first: wk-ask)
 // (whoever you take on joins as what he is, a farmer, a woodcutter, a miner: tier 0, trained up to a levy (data/units.js peasantKind))
 function workerDeeds(t,f){const own=t.owner==='player',lv=recruitKind(t,f),c=hireCost(lv),mem=remembers(t,f),rb=CONDUCT.robWorker,pg=CONDUCT.pressWorker;
-  return [{icon:'troops',label:'Hire',act:'wk-hire',facts:['as '+an(ST[lv].n.toLowerCase()),c+'g'],why:mem?'They will not follow you':partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(lv)?'No room for another group':P.gold<c?'Not enough gold':!canHire(t,lv)&&!own?'They do not trust you':'',
+  return [{icon:'troops',label:'Hire',act:'wk-hire',facts:[workerJoins(lv)||'as '+an(ST[lv].n.toLowerCase()),c+'g'],why:mem?'They will not follow you':partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(lv)?'No Peasant Levy unit with room, nor a free slot':P.gold<c?'Not enough gold':!canHire(t,lv)&&!own?'They do not trust you':'',
       tip:'Hire the '+f.job+' as '+an(ST[lv].n.toLowerCase())+' for '+c+' gold: '+t.name+' has one less pair of hands.'},
     !own&&{icon:'bag',label:'Rob',act:'wk-ask',arg:'rob',facts:[robCarries(t,f),mem?'':robRead(t,f,robOdds(t,f))],why:mem?'They have nothing left to give you':'',
       tip:'Take what they carry. They may fight back, with any guards near: then it is a fight. Reputation −'+rb.rep+', honor −'+rb.honor+'; killing them costs far more. It asks you first.'},
-    !own&&{icon:'prisoners',label:'Press-gang',act:'wk-ask',arg:'press',facts:['into your band as '+an(ST[lv].n.toLowerCase()),'reputation −'+pg.rep+' · honor −'+pg.honor],why:partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(lv)?'No room for another group':'',
-      tip:'Drag the '+f.job+' into your ranks: reputation −'+pg.rep+', honor −'+pg.honor+', morale −'+pg.morale+', and his estate remembers you for '+ROB.estate+' days. It asks you first.'}]}
+    !own&&{icon:'prisoners',label:'Press-gang',act:'wk-ask',arg:'press',facts:['into your band as '+an(ST[lv].n.toLowerCase()),'reputation −'+pg.rep+' · honor −'+pg.honor],why:partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(lv)?'No Peasant Levy unit with room, nor a free slot':'',
+      tip:'Drag the '+f.job+' into your ranks: reputation −'+pg.rep+', honor −'+pg.honor+', morale −'+pg.morale+', and '+pr(f).his+' estate remembers you for '+ROB.estate+' days. It asks you first.'}]}
 /* robbing (doc/CONDUCT_RUINS_DESIGN.md §2; its numbers: ROB, data/conduct.js). What he carries goes by what he is doing (robLoot);
    whether they fight back, by their power against yours and their nerve (robOdds); given in, you take it (robTake); fighting
    back, it is a fight with them as their peasant kinds (data/units.js), and the estate's guards if near (robFight: won,
@@ -253,13 +262,13 @@ const WARY_SAY=['You’ve taken enough from us.','Leave us be. There is nothing 
 const warySay=f=>WARY_SAY[folkHash(f.id)%WARY_SAY.length];
 // (the workers within reach of him, the estate's guards if he is within reach of it: their kinds, their power, the chance they resist)
 function robOdds(t,f){const R=ROB.reach*TILE,sp=bldSpots(t)[f.k],ws=W.folk.filter(x=>x.home===f.home&&x.k===f.k&&Math.hypot(x.x-f.x,x.y-f.y)<=R);if(!ws.includes(f))ws.unshift(f);
-  const gs=sp&&Math.hypot(sp.x-f.x,sp.y-f.y)<=R?estateGuards(t,f.k):[],list=ws.map(x=>recruitKind(t,x)).concat(gs),pw=rating(list),
+  const gs=sp&&Math.hypot(sp.x-f.x,sp.y-f.y)<=R?estateGuards(t,f.k):[],list=ws.map(x=>peasantKind(t.races[0],tradeOf(x))).concat(gs),pw=rating(list),
     nerve=(ROB.nerve[t.races[0]]||1)*(Timed.of(t).has('fear')?ROB.fear:1)*((t.pros||0)>=ROB.loveAt?ROB.love:1);
   return{ws,gs,list,pw,ch:clamp(ROB.k*pw/Math.max(1,partyPower())*nerve,ROB.resist[0],ROB.resist[1])}}
 function robCarries(t,f){const L=robLoot(f),[g]=jobGood(t,f.job);return (L.goods[1]?L.goods[0]+'–'+L.goods[1]+' '+GOODS[g].n.toLowerCase()+', ':'')+L.coins[0]+'–'+L.coins[1]+' coins'}
 // the Insight read (window.js insight): what anyone sees, how they look, or the numbers and the chance
 function robRead(t,f,o){const n=o.ws.length,g=o.gs.length,who=n>1?f.job+'s':f.job,tone=o.ch>=.5?'bad':o.ch>=.2?'gold':'good';
-  return insight([(n>1?'a group of '+who+' with their':an(f.job)+' with his')+' tools'+(g?', guards about':''),
+  return insight([(n>1?'a group of '+who+' with their':an(f.job)+' with '+pr(f).his)+' tools'+(g?', guards about':''),
     '<span class="'+tone+'">'+(o.ch>=.5?'they look ready to fight':o.ch>=.2?'they may fight back':'they cower')+'</span>'+(g?', '+roughly(g)+' guards near':''),
     n+' '+who+(g?' and '+g+' guards':'')+', power '+o.pw+' vs your '+partyPower()+': <span class="'+tone+'">'+Math.round(o.ch*100)+'% they fight back</span>'],'know their odds')}
 function robTake(t,f){const L=robLoot(f),[g]=jobGood(t,f.job),n=L.goods[1]?rint(L.goods[0],L.goods[1]):0;ensureEcon(t);

@@ -25,7 +25,8 @@ try{
  ok(G.mode==='besiege'&&!document.querySelector('[data-act="sg-assault"]').disabled,'after 2 days the ladders are ready');
  t.act('sg-wait');days(2);ok(t.siegeLv(town)===lvA-1,'a ram after 4 days weakens the walls (level '+lvA+' → '+t.siegeLv(town)+')');
  const g0=town.gar;ok(town.stock&&t.foodDays(town)>0,'the besieged town lives on its stores ('+t.foodDays(town)+' days of food)');t.FOODS.forEach(g=>town.stock[g]=0);['farm','pasture','port'].forEach(k=>town.bld[k]=0);days(2);ok(town.gar<g0,'when the stores run out the garrison starves ('+g0+' → '+town.gar+')');
- P.x+=200;t.updateWorld(.01);ok(!P.siege,'marching away lifts the siege');
+ // (away: past the leash, measured from where your army's ring reaches the holding: march.js ringReach)
+ {const st=t.townBy(P.siege.town);P.x=st.x+1e3;P.x=st.x+t.worldBattleReach(st)+t.WORLD_SCALE.war.siegeLeash+20}t.updateWorld(.01);ok(!P.siege,'marching away lifts the siege');
  // assault, then take it in peace (independent)
  at(town);t.updateWorld(.01);t.act('sg-camp');days(2);at(town);G.lastTown=town;t.clickAt(town.x,town.y-4);army();t.act('sg-auto');
  ok(G.capture===town&&/Decide its fate/.test(panel()),'storming the walls wins the town');t.act('cont');
@@ -88,7 +89,7 @@ try{
  // Days of world simulation above can build a palisade here (reproduced with seed 28). This scenario specifically needs a raid, not a siege.
  vi2.wall=0;
  W.lords=[kl];army();at(vi2);t.updateWorld(.01);{const r=Math.random;Math.random=()=>.5;t.act('sg-raid-auto');Math.random=r}/* (the auto-resolve's dice fixed: this is about the lords, not luck) */t.act('cont');done();t.lordThink(kl);ok(P.raid&&kl.state==='relieve'&&kl.tgt===vi2.name,'the village lords ride to stop your raid (wall '+t.wallOf(vi2)+', mode '+G.mode+', raid '+!!P.raid+', lord '+kl.state+', target '+kl.tgt+')');
- const f0=t.foodN();P.x+=200;t.updateWorld(.01);ok(!P.raid&&vi2.raided>G.day,'walking away ends the raid early with part of the loot'+(P.raid?' (still raiding: mode '+G.mode+', paused '+G.paused+', capture '+!!G.capture+', stay '+!!P.stay+', '+Math.round(Math.hypot(P.x-vi2.x,P.y-vi2.y))+' px)':''));W.lords=[];
+ const f0=t.foodN();P.x=vi2.x+1e3;P.x=vi2.x+t.worldBattleReach(vi2)+t.WORLD_SCALE.war.raidLeash+20;t.updateWorld(.01);ok(!P.raid&&vi2.raided>G.day,'walking away ends the raid early with part of the loot'+(P.raid?' (still raiding: mode '+G.mode+', paused '+G.paused+', capture '+!!G.capture+', stay '+!!P.stay+', '+Math.round(Math.hypot(P.x-vi2.x,P.y-vi2.y))+' px)':''));W.lords=[];
  }finally{Math.random=r0}}
  // save and load
  G.mode='world';G.modal=false;t.hidePanel();t.saveGame();const snap=JSON.stringify(t.TOWNS.map(x=>[x.owner,x.sacked||0,x.raided||0,x.turmoil||0]));t.act('load');

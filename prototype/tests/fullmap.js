@@ -35,6 +35,13 @@ Kit.suite(({ok,info})=>{
   down('mouse',R.x+R.w/2,R.y+R.h/2);up('mouse',R.x+R.w/2,R.y+R.h/2);ok(G.mode==='fullmap','a click on the minimap opens it');t.act('map-close');
   world();down('touch',R.x+3,R.y+R.h-3);up('touch',R.x+3,R.y+R.h-3);ok(G.mode==='fullmap','a tap on the minimap opens it');t.act('map-close');
   world();down('mouse',R.x-30,R.y+R.h+30);up('mouse',R.x-30,R.y+R.h+30);ok(G.mode!=='fullmap','a click beside it does not open it (it travels, as ever)');Kit.world();P.tx=null;
+  // (the click a tap's letting go still sends lands on what the map put under the finger, its zoom's −: eaten; the owner, 2026-10-31:
+  // "the minimap isn't clickable"); a mouse over it: a hand, and a tooltip that says so, not what lies on the map under it
+  {world();const at=cl(R.x+R.w/2,R.y+R.h/2);down('touch',R.x+R.w/2,R.y+R.h/2);up('touch',R.x+R.w/2,R.y+R.h/2);const z=t.FULLMAP.ppt,el=document.elementFromPoint(at.clientX,at.clientY);let heard=0;const count=()=>heard++;
+   document.addEventListener('click',count);try{el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,...at}))}finally{document.removeEventListener('click',count)}
+   ok(G.mode==='fullmap'&&t.FULLMAP.ppt===z&&!heard,'a tap on the minimap opens the map, and the click it sends after presses nothing on it ('+(el&&(el.dataset.act||el.className||el.tagName))+')');t.act('map-close')}
+  {world();const mv=(x,y)=>cv.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerType:'mouse',pointerId:1,...cl(x,y)}));mv(R.x+R.w/2,R.y+R.h/2);const tip=q('#tip'),on=cv.style.cursor,text=tip.textContent,said=!tip.hidden&&/full map/.test(text);mv(R.x-40,R.y+R.h+40);
+   ok(on==='pointer'&&said&&cv.style.cursor!=='pointer','a mouse over the minimap shows a hand and says a click opens the full map ('+text+'); off it, the hand goes')}
   // ---- the dock's Map, beside Camp (input.js): a click or a tap opens it, the world waits, its bar's Close and Esc close it ----
   {world();const b=q('#mapBtn'),camp=q('#campBtn'),seen=e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0},run=()=>t.loop((0,eval)('last')+16);
     ok(b&&camp&&b.previousElementSibling===camp&&b.parentElement===camp.parentElement&&b.querySelector('svg')&&b.querySelector('.dl').textContent==='Map'&&b.querySelector('kbd').textContent==='M'&&seen(b),

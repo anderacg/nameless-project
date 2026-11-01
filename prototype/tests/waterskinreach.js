@@ -1,7 +1,7 @@
 'use strict';
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
- const home=Kit.goHome('Ashford');Kit.goTo(Math.round(home.x+240),Math.round(home.y+200));P.troops={};P.comps={};P.stay=null;P.tx=P.ty=null;G.chase=null;G.hurry=false;t.SKINS.reset(false);
+ const home=Kit.goHome('Ashford');Kit.goTo(Math.round(home.x+240),Math.round(home.y+200));P.troops={};P.comps={};P.stay=null;P.tx=P.ty=null;G.chase=null;t.SKINS.reset(false);
  P.inv=P.inv.map(()=>null);t.invAdd('good','skin_empty',10);
  const small=t.fillReach();ok(small===t.marchInteractRadius(P)&&t.fillReach(true)===small,'water and wells use exactly the army outer interaction radius');
  const arc=t.ctx.arc,radii=[],ents=[];t.marchCircle(ents,P,{x:0,y:0});try{t.ctx.arc=function(x,y,r,...args){radii.push(r);return arc.call(this,x,y,r,...args)};ents.forEach(e=>e.f())}finally{t.ctx.arc=arc}

@@ -80,6 +80,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     // the map: a long press shows the card of what is there, travelling nowhere; the next tap puts it away
     B.paused=false;B.over=true;B.endT=0;for(let i=0;i<3;i++)t.loop((0,eval)('last')+16);if(G.mode!=='world')t.act('cont');
     G.mode='world';G.modal=false;t.hidePanel();G.enc=null;P.tx=null;G.chase=null;t.W.folk=[];t.W.patrols=[];t.W.caravans=[];t.W.refugees=[];t.W.critters=[];
+    // (the generated world's start may have no other holding in view: you set down west of the nearest, out of its reach, within
+    // your sight: a thing on the map answers a press only there, world.js pickAt)
+    {const h=t.TOWNS.reduce((a,x)=>!a||Math.hypot(x.x-P.x,x.y-P.y)<Math.hypot(a.x-P.x,a.y-P.y)?x:a,null);Kit.goTo(h.x-Math.min(60,t.vis()*.8),h.y)}
     t.frame();t.drawWorld();far=t.TOWNS.filter(x=>Math.hypot(x.x-P.x,x.y-P.y)>t.REACH+2&&Math.abs(x.x-G.cam.x-t.VW/2)<t.VW/2-20&&Math.abs(x.y-G.cam.y-t.VH/2)<t.VH/2-20).sort((p,q)=>Math.hypot(p.x-P.x,p.y-P.y)-Math.hypot(q.x-P.x,q.y-P.y))[0]||null;
     if(!far)ok(false,'a holding on the screen to press ('+G.mode+' cam '+JSON.stringify(G.cam)+' P '+Math.round(P.x)+','+Math.round(P.y)+' VW '+t.VW+'x'+t.VH+' cv '+cv.width+' towns '+t.TOWNS.map(x=>Math.round(x.x)+','+Math.round(x.y)).join(' ')+')');else{
       const tip=document.getElementById('tip'),wc=fromW(far.x,far.y);ok(t.pickAt(far.x,far.y)===far,'the holding answers where it is pressed');

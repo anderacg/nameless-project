@@ -3,18 +3,20 @@ Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;
  P.troops={};P.comps={};P.army={nextId:1,groups:[]};P.sk.lead.lv=1;const r=t.partyRoster(P);
  ok(r.groupLimit===3&&r.slots===1,'new army has three slots including its hero');
- ok(r.add('hum_foot',10)===10&&r.add('hum_bow',10)===10&&r.slots===3,'two full ten-soldier groups fill the starting army');
- const snapshot=JSON.stringify(P.troops);ok(r.add('hum_foot')===0&&r.add('hum_knight',1,'new')===0&&JSON.stringify(P.troops)===snapshot,'full groups and locked slots reject additions without changing soldiers');
+ // (whole units of their kind's size, data/units.js unitSize, since 2026-10-31: no more groups of ten)
+ const F=t.unitSize('hum_foot'),Bw=t.unitSize('hum_bow');
+ ok(r.add('hum_foot',F)===F&&r.add('hum_bow',Bw)===Bw&&r.slots===3,'two full units ('+F+' foot, '+Bw+' bowmen) fill the starting army');
+ const snapshot=JSON.stringify(P.troops);ok(r.add('hum_foot')===0&&r.add('hum_knight',1,'new')===0&&JSON.stringify(P.troops)===snapshot,'full units and locked slots reject additions without changing soldiers');
  P.sk.lead.lv=3;ok(r.groupLimit===4&&r.add('hum_foot',4,'new')===4,'trained Leadership unlocks the next group slot');
- const foot=r.groups.filter(g=>g.type==='hum_foot');ok(!r.merge(foot[1].id,foot[0].id),'merging cannot exceed ten soldiers in one group');
+ const foot=r.groups.filter(g=>g.type==='hum_foot');ok(!r.merge(foot[1].id,foot[0].id),'merging cannot exceed a unit\'s size');
  P.sk.lead.lv=10;ok(r.groupLimit===10,'Leadership progression stops at ten army slots');
  P.comps.brann={ap:0,role:''};t.compInit('brann');ok(r.slots===5,'a companion consumes one army slot');
  P.gold=10000;const holder={vol:100,pop:100,races:['human'],hires:()=>['hum_foot']},service=new t.RecruitmentService(P,{...t.recruitment.rules,canHire:()=>true}),gold=P.gold;
  ok(!service.hire(holder,'hum_foot',1,foot[0].id).ok&&P.gold===gold&&holder.vol===100,'hiring into a full group neither spends gold nor consumes volunteers');
- ok(!service.quoteHire(holder,'hum_foot',11,'new').ok,'bulk recruitment cannot create an oversized group');
- const target=t.partyRoster(t.asParty({troops:[]}));target.add('hum_foot',10);
+ ok(!service.quoteHire(holder,'hum_foot',F+1,'new').ok,'bulk recruitment cannot create an oversized unit');
+ const target=t.partyRoster(t.asParty({troops:[]}));target.add('hum_foot',F);
  ok(!r.quoteGroupTransfer(target,foot[1].id,1,target.groups[0].id).ok,'group transfer cannot overfill a destination');
- const npc=t.partyRoster(t.asParty({troops:Array(25).fill('hum_foot')}));ok(npc.groups.length===3&&npc.groups.every(g=>g.count<=10),'count-based NPC armies split into ten-soldier groups');
+ const npc=t.partyRoster(t.asParty({troops:Array(2*F+5).fill('hum_foot')}));ok(npc.groups.length===3&&npc.groups.every(g=>g.count<=F),'count-based NPC armies split into units of their kind\'s size');
  const single=t.asParty({troops:['hum_foot'],x:P.x,y:P.y}),large=t.asParty({troops:Array(30).fill('hum_foot'),x:P.x,y:P.y});ok(t.marchOuter(single)<t.marchOuter(large),'army radius grows with actual army size');
  ok(!t.settingsPage().includes('Pause when battle starts'),'every battle opens paused at Start Battle: Settings has no battle-start pause to turn off');
  const start=pause=>{

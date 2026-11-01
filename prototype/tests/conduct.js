@@ -77,7 +77,9 @@ try{
    if(other){world();t.workerMeet(other);ok(!q('.rkact[data-act="wk-ask"][data-arg="rob"]').disabled,'a fellow he works with is not robbed: he does not remember you')}
    G.day=d0+4;ok(t.remembers(wt,f),'4 days on, he still remembers');G.day=d0+5;world();t.workerMeet(f);ok(!t.remembers(wt,f)&&!q('.rkact[data-act="wk-ask"][data-arg="rob"]').disabled&&!t.WARY_SAY.some(s=>text().includes(s)),'5 days on, he has forgotten: talk and Rob as before');world()}
  // press-gang: asks first, and the whole estate remembers you 10 days
- {f=spawn();P.troops={hum_knight:4};t.workerMeet(f);t.act('wk-ask','press');ok(q('#panel.confirm')&&q('.nav [data-nav="close"]').dataset.act==='wk-press','Press-gang asks first');
+ // (a free unit slot: a man press-ganged needs a Peasant Levy unit with room or a free slot since whole units, 2026-10-31; the
+ // knights of the fights above may be left in two units, filling the slots, and their wounded hold theirs)
+ {f=spawn();delete P.army;P.woundedGroups=[];P.troops={hum_knight:4};t.workerMeet(f);t.act('wk-ask','press');ok(q('#panel.confirm')&&q('.nav [data-nav="close"]').dataset.act==='wk-press','Press-gang asks first');
    t.act('wk-press');const mates=W.folk.filter(x=>x.home===wt.name&&x.k===f.k);ok(wt.mem[f.k]===G.day+10&&mates.every(x=>t.remembers(wt,x)),'press-ganged: his estate remembers you 10 days ('+mates.length+' left there remember)');
    // saved (holdings.js saveRec: m, only while someone remembers), and back on a load
    world();t.saveGame(true,'3');const rec=t.readSlot('3').world.own,mine=rec.find(x=>x[2]===wt.name)[3],other=rec.find(x=>x[2]!==wt.name)[3];

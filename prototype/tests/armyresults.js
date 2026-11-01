@@ -6,7 +6,9 @@
 Kit.suite(({ok,info})=>{
  const t=T,P=t.P,G=t.G,W=t.W;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;
  const adds=a=>a.start===a.fallen+a.withdrew+a.fled+a.standing,rows=()=>[...document.querySelectorAll('[data-report-army]')];
- const world=(wd)=>{t.WORLD_BATTLE.on=true;t.TERRAIN.on=true;t.PHYSICS.on=true;t.EXITS.on=true;G.paused=false;G.speed=1;P.fac='vale';P.hostile={};P.troops={hum_foot:10,hum_bow:6,hum_knight:4};
+ // (a beast near a fight rides in by chance and never by a holding since JOIN_RULES, 2026-10-30; Wardenhall is near: here the
+ // wolves surely do, a third army)
+ const world=(wd)=>{Object.assign(t.JOIN_RULES.beast,{chance:1,near:0});t.WORLD_BATTLE.on=true;t.TERRAIN.on=true;t.PHYSICS.on=true;t.EXITS.on=true;G.paused=false;G.speed=1;P.fac='vale';P.hostile={};P.troops={hum_foot:10,hum_bow:6,hum_knight:4};
   const home=Kit.goHome('Ashford');Kit.goTo(home.x+400,home.y+350);const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);for(let y=ty-30;y<=ty+30;y++)for(let x=tx-30;x<=tx+30;x++){const i=y*t.MW+x;t.tiles[i]=t.T_OPEN;t.WM.edge[i]=0}
   const band=t.asParty({kind:'bandits',troops:Array(14).fill('militia'),x:P.x+25,y:P.y,cool:0});t.bandits.push(band);W.monsters=[t.asMonster({id:'wolf',n:5,lv:1,x:P.x+10,y:P.y+22,hx:P.x+10,hy:P.y+22,t:0,a:0,cool:0})];
   G.enc={kind:'party',ref:band,list:band.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,surprise:true});const b=t.B;t.setAuto(true,true);

@@ -303,21 +303,21 @@
       farmstead(C){piece(C,'yurt',[-13,-15],0);piece(C,'barn',[15,-6],1);piece(C,'haystack',[-22,12],0);piece(C,'cart',[2,16],0);P(C,'trough',[-2,0]);
         C.Q.parts.push({k:'bed',name:'f1',u:[-30,-12],v:[20,29]},{k:'bed',name:'f2',u:[8,29],v:[18,29]});logFence(C,'yf',[[-30,4],[-30,18]])},
       // a smithy yard: the forge yurt to the street, the smith's family yurt behind, charcoal, a woodpile, a weapon rack
-      smithy(C){piece(C,'smithy',[-6,14],0);famYurt(C,[14,-16],0,7.5);piece(C,'woodpile',[22,12],0);P(C,'coal',[-22,-18]);here(C,Q=>rack(Q,'rk',-14,-6))},
+      smithy(C){piece(C,'smithy',[-12,14],0);famYurt(C,[16,-16],0,7.5);piece(C,'woodpile',[22,12],0);P(C,'coal',[-22,-18]);here(C,Q=>rack(Q,'rk',-14,-6))},
       // an inn: the feast yurt on the street, its sign; the hide stable shelter across the yard, a tether line, the water
       inn(C){made(C,[-8,12],0,Q=>{yurt(Q,Q.o,{r:12,z:14,dw:Q.home('inn','inn')});Q.box('sn',[13,15],[10,12],[0,15],'timber',{top:true});Q.cut('sh',15,10.5,9,['tttt.','.++++','.+^^+','.++++'],{t:'timber','+':'ashgorOx','^':'bone'},{dv:1});Q.prop('barrel',[-14,9],0,2)});
         made(C,[10,-18],0,Q=>shelter(Q,Q.o,'s',[0,0],24,10,9,'stable','stable'));here(C,Q=>tether(Q,'tt',12,28,6));piece(C,'barrels',[-24,-16],0)},
       // a spirit yurt's ground: the spirit yurt, a ring of trophy poles and cairns, the shaman's family yurt
-      chapel(C){piece(C,'chapel',[-10,-8],0);famYurt(C,[17,-16],0,6.5);here(C,Q=>{for(const [a,b] of [[6,8],[18,8],[6,22],[18,22]])trophy(Q,'tp'+a+b,a,b,14)});for(const [a,b] of [[12,6],[24,15],[12,26]])P(C,'boulder',[a,b],0,2)},
+      chapel(C){piece(C,'chapel',[-12,4],0);famYurt(C,[17,-16],0,6.5);here(C,Q=>{for(const [a,b] of [[6,8],[18,8],[6,22],[18,22]])trophy(Q,'tp'+a+b,a,b,14)});for(const [a,b] of [[12,6],[24,15],[12,26]])P(C,'boulder',[a,b],0,2)},
       // a market: stalls under hide awnings round the fire, covered wagons selling from their tails, barrels and crates
-      market(C){C.Q.ground=null;piece(C,'stall',[-18,-20],0);piece(C,'stall',[2,-22],0);piece(C,'stall',[-22,4],3);piece(C,'stall',[22,0],1);piece(C,'wagon',[18,-20],0);piece(C,'wagon',[-14,22],0);
+      market(C){C.Q.ground=null;piece(C,'stall',[-18,-20],0);piece(C,'stall',[2,-22],0);piece(C,'stall',[-22,4],3);piece(C,'stall',[22,0],1);piece(C,'wagon',[18,-26],0);piece(C,'wagon',[-14,22],0);
         fire(C,[0,2]);piece(C,'crates',[14,22],0);piece(C,'barrels',[2,24],0);here(C,Q=>standard(Q,'st',-8,-6,20,1))},
       // a mill: the watermill on its race, the raised cache, sacks and a cart
-      mill(C){piece(C,'watermill',[-8,12],0);piece(C,'granary',[16,-16],0);P(C,'sacks',[14,4]);piece(C,'cart',[-20,-18],0)},
+      mill(C){piece(C,'watermill',[-12,12],0);piece(C,'granary',[16,-16],0);P(C,'sacks',[14,4]);piece(C,'cart',[-20,-18],0)},
       // a lumber yard: the log shed, the woodcutters' yurt, stumps, a woodpile, a cart
-      lumber(C){piece(C,'lumbershed',[-6,14],0);famYurt(C,[14,-17],0,7);P(C,'stump',[-22,-14]);P(C,'stump',[-14,-24]);piece(C,'woodpile',[22,10],0);piece(C,'cart',[-20,-4],0)},
+      lumber(C){piece(C,'lumbershed',[-12,14],0);famYurt(C,[16,-17],0,7);P(C,'stump',[-22,-14]);P(C,'stump',[-14,-24]);piece(C,'woodpile',[22,10],0);piece(C,'cart',[-20,-4],0)},
       // a mine: the adit, the miners' yurt, spoil, barrels
-      mine(C){piece(C,'minehead',[-6,8],0);famYurt(C,[16,-17],0,7);P(C,'spoil',[22,14]);piece(C,'barrels',[-24,-20],0)},
+      mine(C){piece(C,'minehead',[-10,8],0);famYurt(C,[16,-17],0,7);P(C,'spoil',[22,14]);piece(C,'barrels',[-24,-20],0)},
       // a quarry: the shear legs over cut blocks before a face of rock, a sledge of stone, a cart
       quarry(C){C.Q.parts.push({k:'tower',name:'rk',round:true,c:[-12,-20],r:12,z:[0,10],wall:'rock',roof:{form:'cone',rise:8,mat:'rock',o:0,lip:0,moss:C.o.env==='desert'?0:.3},rough:.6,rs:C.spec.seed|0});
         piece(C,'crane',[-2,8],0);famYurt(C,[18,-16],0,7);P(C,'block',[-22,18]);P(C,'block',[-16,24],1);piece(C,'cart',[18,18],0)},
@@ -331,10 +331,10 @@
       brewery(C){made(C,[-10,-10],0,Q=>yurt(Q,Q.o,{r:10,z:13,dw:Q.home('brewery','work')}));here(C,Q=>{vat(Q,'v1',12,-14,4);vat(Q,'v2',22,-8,3.5);hearth(Q,'ck',10,10);
         Q.cut('hr',16,20,0,['tttttttt','.c.c.c.c','tttttttt','.c.c.c.c','t......t'],{t:'timber',c:'crop'},{dv:1})});piece(C,'barrels',[-20,18],0);piece(C,'barrels',[24,14],0)},
       // the clan's stores (the Horde's granary): covered wagons drawn up, the raised cache, a guarded tent, barrels and sacks
-      granary(C){piece(C,'granary',[-14,-14],0);piece(C,'wagon',[12,-20],0);piece(C,'wagon',[14,-6],0);piece(C,'wagon',[-18,14],0);piece(C,'tent',[12,14],0);P(C,'sacks',[0,4]);P(C,'barrel',[-2,22]);
+      granary(C){piece(C,'granary',[-14,-14],0);piece(C,'wagon',[18,-24],0);piece(C,'wagon',[4,-6],0);piece(C,'wagon',[-18,14],0);piece(C,'tent',[12,14],0);P(C,'sacks',[0,4]);P(C,'barrel',[-2,22]);
         here(C,Q=>standard(Q,'st',24,22,18,-1))},
       // a workshop yard: the supply tent, the leatherworkers' yurt, tanning frames, crates
-      workshop(C){piece(C,'warehouse',[-6,14],0);made(C,[14,-16],0,Q=>yurt(Q,Q.o,{r:8,z:12,dw:Q.home('workshop','work')}));here(C,Q=>{tanning(Q,'tf1',-20,-16);tanning(Q,'tf2',-8,-20)});piece(C,'crates',[24,8],0)},
+      workshop(C){piece(C,'warehouse',[-12,14],0);made(C,[16,-16],0,Q=>yurt(Q,Q.o,{r:8,z:12,dw:Q.home('workshop','work')}));here(C,Q=>{tanning(Q,'tf1',-20,-16);tanning(Q,'tf2',-8,-20)});piece(C,'crates',[24,8],0)},
       // a town quarter (128): family yurts in rows along two lanes, fences of logs behind, wagons, cooking fires, a well
       quarter(C){C.Q.ground=null;const d=C.d;for(const v of [-42,2,46])for(const u of [-48,-24,24,48])famYurt(C,[u+d.pick([-2,0,2]),v+d.pick([-2,0,2])],0,8.5);
         here(C,Q=>{for(const v of [-22,22]){wagon(Q,'wg'+v,-8,v,'canvas');hearth(Q,'ck'+v,8,v+4)}});for(const v of [-58,-14,30]){logFence(C,'f'+v,[[-60,v],[-12,v]]);logFence(C,'g'+v,[[12,v],[60,v]])}piece(C,'well',[0,0],0)}

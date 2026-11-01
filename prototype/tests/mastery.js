@@ -29,7 +29,7 @@ Kit.suite(({ok})=>{
   for(const x of b.units)if(x.team===1)x.hp=0;t.checkBattleOver();b.endT=0;t.updateBattle(.01);if(t.B)t.finishBattle();t.act('cont');t.hidePanel()}
  // ======== upgraded: rank 1, half its mastery its new kind's experience
  {const ft=grp('hum_foot',4);t.rankGain(ft,full('hum_foot')+M.xp[0]);ok(t.masteryOf(ft)===1,'(a bronze footmen group)');const to=t.UP.hum_foot[0],x=t.masteryXp(ft)*M.carry;
-  ok(t.recruitment.trainGroup(null,ft.id,to).ok,'it upgrades');const up=r.groups.find(g=>g.id===ft.id),ref={type:to};t.rankGain(ref,x);
+  ok(t.recruitment.trainGroup((P.gold=Math.max(P.gold,1e5),t.townBy('Ashford')),ft.id,to).ok,'it upgrades');const up=r.groups.find(g=>g.id===ft.id),ref={type:to};t.rankGain(ref,x);
   ok(up.type===to&&t.rankOf(up)===t.rankOf(ref)&&t.rankXp(up)===t.rankXp(ref)&&!t.masteryOf(up)&&!(up.picks||[]).length,'into '+t.ST[to].n+': its mastery gone, '+M.carry*100+'% of its experience ('+x+') its new ranks (rank '+t.rankOf(up)+')')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

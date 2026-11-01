@@ -14,12 +14,13 @@ try{
  const press=(wx,wy,kind)=>{t.drawWorld();const cv=document.querySelector('canvas'),r=cv.getBoundingClientRect(),x=r.left+(wx-G.cam.x)*r.width/t.VW,y=r.top+(wy-G.cam.y)*r.height/t.VH;
    for(const ty of ['pointerdown','pointerup'])cv.dispatchEvent(new PointerEvent(ty,{clientX:x,clientY:y,pointerId:kind==='touch'?7:1,isPrimary:true,pointerType:kind,button:0,bubbles:true,cancelable:true}))};
  const walk=n=>{for(let i=0;i<n&&G.mode==='world';i++)t.updateWorld(.05)};
- // (open ground some way off a site, in a plain line of it)
+ // (open ground some way off a site, in a plain line of it); FAR: beyond where your army reaches it (its ring and the site's footprint: march.js ringReach)
  const offAt=(s,r)=>{for(let a=0;a<16;a++){const x=s.x+Math.cos(a*Math.PI/8)*r,y=s.y+Math.sin(a*Math.PI/8)*r;if(t.tAt(Math.floor(x/t.TILE),Math.floor(y/t.TILE))===t.T_OPEN&&t.clearLine(x,y,s.x,s.y))return[x,y]}return null};
- const kinds=Object.keys(t.SITE_TYPES),one=k=>W.sites.find(s=>s.type===k&&offAt(s,50)&&offAt(s,8))||W.sites.find(s=>s.type===k);
+ const FAR=Math.round(t.marchInteractRadius(P)+60);
+ const kinds=Object.keys(t.SITE_TYPES),one=k=>W.sites.find(s=>s.type===k&&offAt(s,FAR)&&offAt(s,8))||W.sites.find(s=>s.type===k);
  const ready=s=>{s.seen=true;s.cleared=false;if(s.type==='camp')s.bands=[];if(s.type==='shrine')s.back=0};
  const leave=()=>{if(G.mode==='site')t.act('site-leave');if(G.enc)t.act('flee');t.hidePanel();G.mode='world';G.modal=false};
- for(const k of kinds){const s=one(k);if(!s){o.push('INFO no '+k+' on this world');continue}ready(s);const near=offAt(s,8)||[s.x+6,s.y],far=offAt(s,50);
+ for(const k of kinds){const s=one(k);if(!s){o.push('INFO no '+k+' on this world');continue}ready(s);const near=offAt(s,8)||[s.x+6,s.y],far=offAt(s,FAR);
   // walking past it, within a few pixels, on your way elsewhere: nothing opens
   reset();P.x=near[0];P.y=near[1];P.tx=s.x+(s.x-near[0])*20;P.ty=s.y+(s.y-near[1])*20;let hit=false;for(let i=0;i<6;i++){t.updateWorld(.05);if(Math.hypot(P.x-s.x,P.y-s.y)<12)hit=true}
   ok(G.mode==='world'&&!G.site&&!G.enc,s.T.n+': walking past it'+(hit?' (within 12 px)':'')+' opens nothing');
@@ -29,10 +30,10 @@ try{
   reset();P.x=near[0];P.y=near[1];press(s.x,s.y,'mouse');ok(G.mode==='site'&&G.site===s&&!G.enc&&G.lastSite===s,s.T.n+': a click on it beside you opens it at once');leave();
   // and the one you just left stays shut as you stand by it, until you click it again
   walk(10);ok(G.mode==='world'&&G.lastSite===s,s.T.n+': the one you just left stays shut');
-  if(!far){o.push('INFO '+s.T.n+': no open ground 50 px off it in a plain line, skipped the far clicks');continue}
+  if(!far){o.push('INFO '+s.T.n+': no open ground '+FAR+' px off it in a plain line, skipped the far clicks');continue}
   // a click on it from further off: your band walks there, and it opens on arrival
-  reset();P.x=far[0];P.y=far[1];press(s.x,s.y,'mouse');ok(G.mode==='world'&&G.chase===s&&P.tx!=null,s.T.n+': a click on it 50 px off walks your band there');
-  walk(400);ok(G.mode==='site'&&G.site===s&&!G.enc&&Math.hypot(P.x-s.x,P.y-s.y)<=t.REACH+1,s.T.n+': and it opens on arrival, its page, no fight ('+G.mode+')');leave();
+  reset();P.x=far[0];P.y=far[1];press(s.x,s.y,'mouse');ok(G.mode==='world'&&G.chase===s&&P.tx!=null,s.T.n+': a click on it '+FAR+' px off walks your band there');
+  walk(400);ok(G.mode==='site'&&G.site===s&&!G.enc&&Math.hypot(P.x-s.x,P.y-s.y)<=t.worldBattleReach(s)+1,s.T.n+': and it opens on arrival, as your army’s ring reaches it (march.js ringReach), its page, no fight ('+G.mode+')');leave();
   // a tap: the same
   reset();P.x=far[0];P.y=far[1];press(s.x,s.y,'touch');ok(G.mode==='world'&&G.chase===s,s.T.n+': a tap on it walks your band there');
   walk(400);ok(G.mode==='site'&&G.site===s&&!G.enc,s.T.n+': and opens it on arrival');leave();

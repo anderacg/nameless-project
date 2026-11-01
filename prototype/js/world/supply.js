@@ -21,8 +21,6 @@
    Your hero (the owner, 2026-10-22: hunger and thirst hit her, mana too): Hungry or Parched, her mana stops coming back; Starving,
    she loses hunger.hero.hp of her health and .mp of her mana every .every hours; Dying of thirst, thirst.hero.hp and .mp on every
    thirst toll; Starving or Dying of thirst, her health stops coming back. At 0 health off the battlefield she dies: the game is over.
-   forcedMarch: Hurry (key R, the action ring) marches the band × pace, its stamina draining × drain; it ends once
-   the band is Exhausted (world.js fastWatch). Not the Forced March perk (forced, above).
    drink (the owner, 2026-10-24: one of a drink is one person's day of it): perDay of a drink a person a day on the march, so
    (people + 1) × perDay ÷ 24 an hour, × rest stopped; order: what is drunk first (cheapest; liquor first when you choose:
    BAND.liquor); each drink's morale, one of it, once, as it comes into your stores (drinkIn; the owner, 2026-10-22:
@@ -54,7 +52,7 @@ const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5
   eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
   drink:{perDay:1,rest:.5,order:['water','ale','liquor'],water:{morale:0},ale:{morale:2},liquor:{morale:6}},skins:{start:4,recruit:1,lot:5},
   thirst:{desert:2,parched:12,pace:.85,morale:1,dying:24,death:48,toll:6,hero:{hp:.1,mp:.1}},lost:{days:7,keep:20},
-  fill:{days:2,near:.5,well:1.5,timed:true,minPerDay:15,min:5,max:180},furPer:5,frost:{every:6,morale:1},forcedMarch:{pace:2,drain:2.5},
+  fill:{days:2,near:.5,well:1.5,timed:true,minPerDay:15,min:5,max:180},furPer:5,frost:{every:6,morale:1},
   battleMin:25,camp:{heal:1.5,caught:8,r:12,step:8,hop:2,across:4,m:2,road:4,lot:0,ring:1,site:4,pole:[20,1]},hint:60,hurt:3,fever:{sick:.5,die:.2,dieMin:.05,med:.02}};
 
 /* the band's own record, kept beside P (not on it: P is your hero's record too, which every battle's snapshot holds whole): its
@@ -143,8 +141,8 @@ function fillNow(quiet){
 // fill them (the action ring's Fill waterskins): timed (SKINS.start: true when it began), or at once with SUPPLY.fill.timed off
 const fillSkins=quiet=>SUPPLY.fill.timed?SKINS.start(quiet):fillNow(quiet);
 const canFill=L=>(L=L||supplyLand()).water||L.well;
-// (moving, as a fill sees it: any order (a goal, a chase, following), Hurry)
-const fillMoving=()=>!P.stay&&(P.tx!=null||!!G.chase)||!!G.hurry;
+// (moving, as a fill sees it: any order (a goal, a chase, following))
+const fillMoving=()=>!P.stay&&(P.tx!=null||!!G.chase);
 /* ---------- the waterskins filling (the owner, 2026-10-23: it takes time, a bar on the band card and a mark over your band:
    render.js updateHUD, gfx/worldui.js wuiFilling). SKINS.on, while it fills: {at: the game hour it began, h: the hours it takes
    (fillHours), n: the empty skins it fills (as many as you have, up to the wanted), got: filled so far, x, y: where you stood,
@@ -210,7 +208,6 @@ function staminaRate(moving,dr,L){
     if(L.rough)mul(S.rough,'rough ground');
     if(Clock.isNight)mul(S.night,'night');
     if(P.hasPerk('forced'))mul(S.forced,'Forced March');
-    if(G.hurry)mul(S.forcedMarch.drain,'hurrying');
     if(!dr)mul(L.desert?S.desertDry:S.dry,L.desert?'no water in the desert':'nothing to drink');
     if(L.frost)mul(1+S.cold*coldShare(),'short of furs');
     const ride=mountedShare(bandSpeeds())>=.5,sk=skill(ride?'ride':'athl');
@@ -249,7 +246,7 @@ function supplyDie(why){
    battlefield (thirst, hunger, fever, frostbite), she dies and the game is over (G.dead; ui.js showDeath). Battles keep their own
    rules: a lost battle is not death */
 function heroHurt(hp,mp,why){const m=vitals();P.hp=Math.max(0,P.hp-m[0]*hp);P.mp=Math.max(0,P.mp-m[2]*mp);if(P.hp<=0)heroDies(why)}
-function heroDies(why){if(G.dead)return;G.dead={why,day:G.day};P.tx=P.ty=null;G.chase=null;G.pitch=null;if(G.hurry)setHurry(false);log('You die of '+(WHY_SICK[why]||why)+'.','bad','band');showDeath()}
+function heroDies(why){if(G.dead)return;G.dead={why,day:G.day};P.tx=P.ty=null;G.chase=null;G.pitch=null;log('You die of '+(WHY_SICK[why]||why)+'.','bad','band');showDeath()}
 // where your band's hunger and thirst stand (the stages of hungerTag and thirstTag), and what they leave your hero: her mana comes
 // back unless Parched or Hungry (or worse), her health unless Dying of thirst or Starving (parties.js regenVitals)
 function supplyStage(){const T=SUPPLY.thirst,H=SUPPLY.hunger,h=BAND.hungry;if(CHEAT.noNeeds)return{parched:false,dying:false,hungry:false,starving:false};return{parched:BAND.dry>=T.parched,dying:BAND.dry>=T.dying,hungry:h>0||!foodN(),starving:h>=H.starving}}
@@ -401,19 +398,8 @@ function campStep(){
   if((P.tx!=null||G.chase||P.stay)&&!RING.press){breakCamp();return true}
   if(G.speed>1){const d=dangerInSight();if(d){log('Your camp stirs: '+d+'.','bad','band');setSpeed(1)}}
   return false}
-/* ---------- Hurry (the owner, 2026-10-22: the band marches faster; off the top bar since the second play-test, the 8× time
-   button back there): key R, the action ring. The band walks × SUPPLY.forcedMarch.pace, its stamina on the march draining × drain
-   (staminaRate); it cannot start Exhausted, and ends on its own once the band is Exhausted, stops, or anything calls for you
-   (world.js fastWatch). The time's speed is not touched. G.hurry: on or off (never saved) ---------- */
-const hurryPace=()=>G.hurry?SUPPLY.forcedMarch.pace:1;
-// On or off; the path guide shows the pace. False if it cannot start.
-function setHurry(on,why){on=!!on;
-  if(on&&(G.mode!=='world'||P.stay||P.staminaState()==='exhausted')){if(P.staminaState()==='exhausted')toast('Your band is too exhausted to hurry.','bad','band');on=false}
-  if(!!G.hurry!==on){G.hurry=on;if(on&&P.camp)breakCamp()}
-  hurryUI();return on}
-const toggleHurry=()=>setHurry(!G.hurry);
-// a Hurry button lit while on (none on the top bar now)
-function hurryUI(){if(typeof document==='undefined')return;document.querySelectorAll('[data-hurry]').forEach(b=>{b.classList.toggle('on',!!G.hurry);b.setAttribute('aria-pressed',String(!!G.hurry))})}
+// (Hurry, a forced march on key R and the action ring, is gone: the owner, 2026-10-31, "remove hurry features": an army marches at
+// its men's pace, its ring never outrunning them, world/march.js)
 // a battle that finds you in camp (battle/setup.js, before morale): caught unready, morale lower; the camp is struck either way
 function campCaught(opts){if(!P.camp||opts.tournament||opts.sandbox)return;P.camp=null;P.morale=Math.max(0,P.morale-SUPPLY.camp.caught);log('They catch your band in camp, unready.','bad','band')}
 /* your camp in your place: two tents and the fire, with your band's banner planted beside them; your figure and host are not
@@ -440,7 +426,6 @@ function supplyNow(){
   if(!dr)tags.push(thirstTag(L));
   if(!foodN()||BAND.hungry)tags.push(hungerTag());
   if(L.frost&&coldShare())tags.push(['Cold','bad','Short of furs in the frost ('+furs.have+' of '+furs.need+'): stamina drains faster, and frostbite takes men.']);
-  if(G.hurry)tags.push(['Hurrying','warn','Marching at '+S.forcedMarch.pace+'× the pace, stamina draining '+S.forcedMarch.drain+'× as fast. It ends once your band is Exhausted (R or the action ring’s Stop hurrying to stop).']);
   if(P.camp)tags.push(['In camp','good','Resting: stamina +'+S.rest.camp+' an hour, the wounded mend faster. Any travel order breaks camp.']);
   {const pas=Escort.tag();if(pas)tags.push(pas)}// (your passengers, who eat with you: world/escort.js)
   return{L,go,dr,r,st,foodDays,drinkDays,furs,fit:P.fitness(),tags,fill:SKINS.on?Math.floor(SKINS.share*100):null}}
@@ -462,8 +447,6 @@ function mapRingItems(wx,wy,o,cx,cy){
     followItem(o),
     ground&&{icon:'banner',label:'Travel here',run:()=>worldMove(wx,wy)},
     (ground||P.byRoad)&&{icon:'map',label:'By road',run:()=>roadGo(wx,wy),active:!!P.byRoad},
-    ground&&!G.hurry&&P.staminaState()!=='exhausted'&&{icon:'speed',label:'Hurry here',run:()=>{worldMove(wx,wy);setHurry(true)}},
-    G.hurry&&{icon:'speed',label:'Stop hurrying',run:()=>setHurry(false),active:true},
     canFill(L)&&{icon:'mug',label:SKINS.on||skinsWant()<=0||skinsEmpty()?'Fill waterskins':SKINS_NONE,active:!!SKINS.on,run:()=>fillSkins()},// (none to fill: said so)
     goodN('liquor')>0&&{icon:'barrel',label:BAND.liquor?'Water first':'Drink liquor',active:!!BAND.liquor,run:()=>{BAND.liquor=!BAND.liquor;toast(BAND.liquor?'Your band drinks its liquor first: a hard march.':'Your band drinks water first again.');updateHUD(true)}},
     look&&{icon:'eye',label:'Look',run:()=>holdCard(look,cx,cy)}].filter(Boolean)}

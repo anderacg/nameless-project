@@ -1,4 +1,5 @@
 'use strict';
+window.PHONE=true;// (run in a phone's window, 844 x 390 with touch: tests/run-tests.ps1)
 Kit.suite(({ok})=>{
  const t=T,G=t.G,P=t.P;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
  const home=Kit.goHome('Ashford');Kit.goTo(home.x+160,home.y+120);P.troops={hum_foot:5,hum_bow:4};

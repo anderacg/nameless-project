@@ -20,7 +20,9 @@ const ORDER_ICON={
   melee:['.......a.','......a.a','.....a.a.','....a.a..','.b.a.a...','..b.a....','..bb.....','.b..b....','b........'],
   skirmish:['.........','..a...b..','.aa...bb.','aaaaa.bbb','.aa...bb.','..a...b..','.........','.........','.........'],
   // (attack-move: an arrow on, crossed blades where it ends)
-  amove:['.....a..a','......aa.','......aa.','.b...a..a','bbb......','.b.......','.b.......','.b.......','.b.......']
+  amove:['.....a..a','......aa.','......aa.','.b...a..a','bbb......','.b.......','.b.......','.b.......','.b.......'],
+  // (keep formation: a front rank and a rear rank, bracketed together)
+  keep:['aa.....aa','a.......a','..aaaaa..','.........','.........','..bbbbb..','.........','a.......a','aa.....aa']
 };
 function pixelSVG(rows,size,cls){const s=rows.length;let r='';rows.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')r+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="currentColor"'+(c==='b'?' opacity=".5"':'')+'/>'}));
   return '<svg class="'+(cls||'oico')+'" viewBox="0 0 '+s+' '+s+'" width="'+size+'" height="'+size+'" shape-rendering="crispEdges" aria-hidden="true">'+r+'</svg>'}
@@ -28,14 +30,22 @@ function pixelSVG(rows,size,cls){const s=rows.length;let r='';rows.forEach((row,
 function bhudInit(){
   document.querySelectorAll('.obtn[data-order],.obtn[data-flag]').forEach(b=>{const k=b.dataset.order||b.dataset.flag;b.innerHTML=pixelSVG(ORDER_ICON[k],18)+'<span class="k">'+(b.dataset.key||'')+'</span>';b.setAttribute('aria-label',b.title)});
   {const b=document.getElementById('bAmove');if(b){b.innerHTML=pixelSVG(ORDER_ICON.amove,18)+'<span class="k">'+(b.dataset.key||'')+'</span>';b.setAttribute('aria-label',b.title)}}// (attack-move: commands.js armAttackMove)
+  // (keep formation: a toggle kept as a setting, lit while on, after the formations; its own label on a phone: commands.js toggleKeepForm)
+  {const f=document.querySelector('.borders .ogrp.forms');if(f&&!document.getElementById('bKeep')){const b=document.createElement('button');b.type='button';b.className='obtn';b.id='bKeep';b.dataset.key='⇧K';
+    b.title='Keep formation (Shift+K): two or more groups selected move as one block, each keeping its place (archers stay behind the foot); a right-click turns the block to face the way it goes, a right-drag sets its front line. Off: each group goes on its own';
+    b.innerHTML=pixelSVG(ORDER_ICON.keep,18)+'<span class="k">⇧K</span><span class="mbh-label">Keep form</span>';b.setAttribute('aria-label',b.title);b.addEventListener('click',()=>toggleKeepForm());f.appendChild(b)}keepFormUI()}
   {const el=document.getElementById('bInfo');if(el)el.addEventListener('click',e=>{if(e.target.closest('[data-bi-card]')&&B){B.infoCard=!B.infoCard;bhudInfo()}})}// (its portrait opens its unit card: bhudCardOf)
   document.querySelectorAll('.obtn[data-form]').forEach(b=>{const F=FORMS[b.dataset.form];b.innerHTML=formIcon(b.dataset.form,24,16)+'<span class="k">'+F.key+'</span>';b.title=F.n+': '+F.d+' ('+F.key+')';b.setAttribute('aria-label',b.title)});
 }
+// the keep-formation button, lit while it is on (ui.js PREFS.keepform)
+function keepFormUI(){const b=typeof document!=='undefined'&&document.getElementById('bKeep');if(!b)return;const on=keepFormOn();b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))}
 // a unit's portrait: its painted one (a named face, or its kind's: data/unitportraits.js; the owner, 2026-10-29), else its
 // sprite, drawn once into a picture (cached by kind); hudPic, the battle's own cards: the sprite, as its soldiers look on the field
 const PORTRAITS={};
 function portrait(type,hero,v){return !hero&&NamedPortraits.unit(type)||hudPic(type,hero,v)}
-function hudPic(type,hero,v){const art=!hero&&NamedPortraits.of(type);if(art)return art;return spritePic((hero?'hero:':'')+type+(v?':'+v:''),()=>unitSprite(type,0,!!hero,v||0))}// (v: one of its looks)
+function hudPic(type,hero,v){const art=!hero&&NamedPortraits.of(type);if(art)return art;return spritePic((hero?'hero:'+heroLookKey()+':':'')+type+(v?':'+v:''),()=>unitSprite(type,0,!!hero,v||0))}// (v: one of its looks; your hero's by what he wears now)
+// (your hero's look in a picture's key: his race and gear, so one who takes up a weapon or armour is drawn anew)
+const heroLookKey=()=>[P.race,P.gender,P.gear?.weapon,P.gear?.offhand,P.gear?.body,P.gear?.head,P.gear?.mount].join('/')
 // any figure's picture the same way (mk: its sprite cell): a worker at his trade (workerPic), a townsperson (personPic: the
 // smith, the innkeeper, a merchant…)
 function spritePic(k,mk){if(!PORTRAITS[k]){try{const sp=mk(),n=sp.width,S=Math.min(n,Math.max(sp.cw||n,(sp.ch||n)+3));// (the figure itself, cropped from its cell: feet at the bottom, centred)
@@ -89,6 +99,7 @@ function cardStatus(g,m,mo,stm){
     if(gr.cease)add(5,'cease','Cease fire');
     if(gr.skirmish)add(5,'skirmish','Skirmishing');
     if(gr.melee&&m.some(u=>u.s.range))add(5,'melee','Melee mode: bows put away');
+    {const r=Dismount.tally(m);if(r&&r.on<r.of)add(5,'mounted',r.on+'/'+r.of+' mounted',{n:r.on+'/'+r.of})}// (riders on foot: battle/dismount.js)
     // (read off its state, never made: charmind.js champ would roll a new one)
     if(m.some(u=>{const S=u.hero?B.hx:u.ch;return S&&S.fallBack}))add(6,'fallback','Falling back',{tone:'si-w'});
     if(q&&q.left&&q.left<q.tot*CARD.low)add(7,'ammo','Low on ammunition: '+q.left+'/'+q.tot,{tone:'si-w'});
@@ -135,7 +146,7 @@ function bhudInfo(){
   const stat=(g)=>{const m=grpUnits(g),gr=B.groups[g],mo=B.noMorale?null:grpMorale(m),hp=m.reduce((a,u)=>a+u.hp,0),mx=m.reduce((a,u)=>a+u.max,0);return{m,gr,mo,hp,mx}};
   if(gs.length>1){setHtml(el,'<div class="bi-title">'+(B.sel==='all'?'All troops':gs.length+' units')+'</div>'+gs.map(g=>{const S=stat(g);return '<div class="bi-row"><img class="bi-mini" src="'+hudPic(g==='hero'?'hero':repOf(S.m),g==='hero')+'" alt=""><span class="bi-n">'+htmlText(groupName(g))+' <b>'+S.m.length+'</b></span><span class="ub"><i class="chp" style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i></span>'+(aiHas(S.gr)?badgeSVG('ai',12):'')+(S.mo?badgeSVG(stateIcon(S.mo.state),12)+(S.mo.confident?badgeSVG('confident',12):''):'')+'</div>'}).join(''));return}
   const g=gs[0],S=stat(g),gr=S.gr,rep=g==='hero'?'hero':repOf(S.m),st=g==='hero'?B.hero.s:ST[rep]||S.m[0].s,sh=g!=='hero'?grpShape(g):null;
-  const flags=[S.mo&&S.mo.breaking?'Breaking: '+S.mo.breaking+' (morale collapse)':'',gr.walk?'Walking':'Running',gr.firm?'Holding ground':'',gr.cease?'Cease fire':'',gr.skirmish?'Skirmishing':'',gr.melee===false&&grpUnits(g).some(u=>u.s.range)?'Melee mode off':'',S.mo?.confident?'Confident: local superiority':''].filter(Boolean).join(' · ');
+  const flags=[S.mo&&S.mo.breaking?'Breaking: '+S.mo.breaking+' (morale collapse)':'',gr.walk?'Walking':'Running',gr.firm?'Holding ground':'',gr.cease?'Cease fire':'',gr.skirmish?'Skirmishing':'',gr.melee===false&&grpUnits(g).some(u=>u.s.range)?'Melee mode off':'',(r=>r&&r.on<r.of?r.on+'/'+r.of+' mounted':'')(Dismount.tally(S.m)),S.mo?.confident?'Confident: local superiority':''].filter(Boolean).join(' · ');
   const head='<div class="bi-head"><button class="bi-picb'+(B.infoCard?' on':'')+'" type="button" data-bi-card title="'+(B.infoCard?'Back to its orders and bars':'Its unit card')+'" aria-pressed="'+!!B.infoCard+'"><img class="bi-pic" src="'+hudPic(rep,g==='hero')+'" alt=""></button><div><div class="bi-title">'+htmlText(g==='hero'&&!gr.customName?(P.name||'Your hero'):groupName(g))+'</div><small>'+(g==='hero'?'Your hero':S.m.length+' × '+(ST[rep]?ST[rep].n:rep))+'</small>'+
     '<small>'+(aiHas(gr)?'AI · ':'')+(gr.amove?'Attack-move':cap1(gr.order))+(g!=='hero'?' · '+FORMS[gr.form||'line'].n+(sh?' '+sh.files+'×'+sh.ranks:''):'')+'</small></div></div>';
   if(B.infoCard){setHtml(el,head+bhudCardOf(g,S,rep,st));return}
@@ -220,12 +231,14 @@ const ABIL_ICON={
   fire:['....a....','...aa....','...aab...','..aabba..','.aabbba..','.abbbbaa.','.abbbbba.','..abbba..','...aaa...'],
   spur:['.........','a...a....','.a...a...','..a...a..','...a...a.','..a...a..','.a...a...','a...a....','.........'],
   rally:['a........','aaaaaa...','abbbbba..','abbbba...','aaaaaaa..','a........','a........','a........','aa.......'],
-  scout:['.........','..aaaaa..','.a.....a.','a..bbb..a','a.bbabb.a','a..bbb..a','.a.....a.','..aaaaa..','.........']
+  scout:['.........','..aaaaa..','.a.....a.','a..bbb..a','a.bbabb.a','a..bbb..a','.a.....a.','..aaaaa..','.........'],
+  dismount:['....a....','....a....','....a....','..a.a.a..','...aaa...','....a....','.........','aaaaaaaaa','.b.....b.'],
+  mount:['....a....','...aaa...','..a.a.a..','....a....','....a....','....a....','.........','aaaaaaaaa','.b.....b.']
 };
 function bhudAbilities(){
   bhudPowers();// (the commander bar, on the same clock: commandpowers.js)
   const bar=document.querySelector('#bbar .borders');if(!bar||!B)return;let el=bar.querySelector('.abils');
-  if(!el){el=document.createElement('div');el.className='ogrp abils';el.setAttribute('role','group');el.setAttribute('aria-label','Unit abilities (G brace, I fire arrows, U spur, Y rally, O scout ahead)');
+  if(!el){el=document.createElement('div');el.className='ogrp abils';el.setAttribute('role','group');el.setAttribute('aria-label','Unit abilities (G brace, I fire arrows, U spur, Y rally, O scout ahead, N rapid shot, J dismount, P mount)');
     el.addEventListener('click',e=>{const b=e.target.closest('[data-abil]');if(b&&!b.disabled)groupAbility(b.dataset.abil)});bar.appendChild(el)}
   const gs=selGroups().filter(g=>grpUnits(g).length).map(g=>B.groups[g]),ids=UNIT_ABIL_ORDER.filter(id=>gs.some(g=>groupHasAbility(g,id)));
   if(el.dataset.ids!==ids.join()){el.dataset.ids=ids.join();el.replaceChildren(...ids.map(id=>{const b=document.createElement('button');b.type='button';b.className='obtn abtn';b.dataset.abil=id;
@@ -302,6 +315,21 @@ function calloutDraw(C){
 }
 
 /* on the field */
+/* each group's health (the owner, 2026-10-31: no bars over each man, one for the group by its flag): a bar standing on the left of
+   its icon (ui/moraleicons.js drawUnitIcons, B.icons), as tall as the icon's plate while the group is whole: its men's health now
+   over theirs as the battle began (GROUP_HP0, by battle and group: taken the first frame the group is on the field, a group come
+   late at its coming; more men since count as whole), in the unit card's health green over a dark trough; every group's, yours,
+   your allies' and the enemy's, faded as its icon is under another. On the screen as the icons are, the same size at any zoom.
+   w, gap: its width and the gap to the plate, art px (the icon's: UICON.k screen px each) */
+const GROUP_HP={w:4,gap:1,col:'#78c474',trough:'#2c2a26',edge:'#0a0c12',now:{}},GROUP_HP0=new WeakMap();
+function drawGroupHealth(){
+  const G=GROUP_HP,now=G.now;for(const k in now)now[k]=0;for(const u of B.units)if(u.grp&&u.hp>0)now[u.grp]=(now[u.grp]||0)+u.hp;
+  let h0=GROUP_HP0.get(B);if(!h0)GROUP_HP0.set(B,h0={});for(const g in B.groups)if(h0[g]==null&&now[g]>0)h0[g]=now[g];
+  if(!B.icons||!B.icons.length)return;const K=unitIconScale(),S=UICON.s;
+  for(const r of B.icons){const f=Math.min(1,(now[r.g]||0)/Math.max(1,h0[r.g]||1)),n=Math.round((S-2)*f);
+    ctx.save();ctx.translate(r.x-(G.w+G.gap)*K,r.y);ctx.scale(K,K);if(r.under)ctx.globalAlpha=ICON_FAN.under;
+    ctx.fillStyle=G.edge;ctx.fillRect(0,0,G.w,S);ctx.fillStyle=G.trough;ctx.fillRect(1,1,G.w-2,S-2);if(n>0){ctx.fillStyle=G.col;ctx.fillRect(1,S-1-n,G.w-2,n)}ctx.restore()}
+}
 // rings: under every soldier of the groups you have selected (bright; with All, light), under the group you point at (soft); an enemy you point
 // at, red (a right-click sets them on it)
 function drawSelection(){

@@ -420,7 +420,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .screen.mobile-world .qt-list{width:230px}.screen.mobile-world .qt-pop{width:270px}
 .screen.mobile-world .qt-list .qt-row:nth-child(n+4){display:none}
 /* under way (ui/underway.js): what your band is doing that lasts, under the minimap at the right edge, each a line and its way out */
-.underway{position:absolute;right:var(--e-r);top:calc(var(--e-t) + 130px);max-width:min(240px,46%);display:flex;flex-direction:column;background:var(--hud-face);border:1px solid var(--trim);border-radius:var(--r-md);box-shadow:var(--float),inset 0 0 0 1px var(--shade);padding:2px 4px;pointer-events:auto}
+.underway{position:absolute;right:var(--e-r);top:calc(var(--e-t) + 130px);box-sizing:border-box;max-width:46%;display:flex;flex-direction:column;background:var(--hud-face);border:1px solid var(--trim);border-radius:var(--r-md);box-shadow:var(--float),inset 0 0 0 1px var(--shade);padding:2px 4px;pointer-events:auto}
 .underway[hidden]{display:none}
 .uw-row{display:flex;align-items:center;gap:6px;min-height:30px;font-size:var(--fs-sm);color:var(--fg-2)}
 .uw-row+.uw-row{border-top:1px solid var(--line)}
@@ -430,7 +430,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .uw-live{animation:uw-live 1.6s ease-in-out infinite}.uw-row small{color:var(--fg-2)}
 @keyframes uw-live{50%{opacity:.45;transform:translateY(-1px)}}
 @media (prefers-reduced-motion:reduce){.uw-live{animation:none}}
-.screen.mobile-world .underway{max-width:min(200px,40%)}.screen.mobile-world .uw-row{min-height:28px;font-size:var(--fs-xs);gap:4px}.screen.mobile-world .uw-row .btn.sm{min-height:28px;min-width:0;padding:1px 7px;font-size:var(--fs-xs)}
+.screen.mobile-world .underway{max-width:40%}.screen.mobile-world .uw-row{min-height:28px;font-size:var(--fs-xs);gap:4px}.screen.mobile-world .uw-row .btn.sm{min-height:28px;min-width:0;padding:1px 7px;font-size:var(--fs-xs)}
 .screen.mobile-world .qt-row{min-height:0;padding:2px 4px 3px}
 .screen.mobile-world .qt-pop b{margin-bottom:4px}
 /* (a phone: each note one row, its title beside its buttons; the newest two) */
@@ -792,6 +792,12 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .fb-unit-tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;margin:12px 0 8px}.fb-unit-tabs .btn{min-height:36px}.fb-unit-tabs .btn.on{border-color:var(--accent);color:var(--accent)}
 /* (what lowers a number now, red; what raises it, green; the unit's strength and rank over its numbers: UnitCard) */
 .uc-bar i.dn,.uc-bar i.up{position:absolute;top:0}.uc-bar i.dn{background:#c0503f}.uc-bar i.up{background:#6fbf5a}
+/* (growth that lasts past its original: rank, upgrades, talents, gear (statGrowth), pale gold after a dark notch, its value too; a
+   lasting loss, grey; a red end over growth, striped so the growth shows through; the line naming what grew it) */
+.uc-bar i.gr,.uc-bar i.lo{position:absolute;top:0}.uc-bar i.gr{background:#fff0a8;box-shadow:inset 1px 0 0 #5a4416}.uc-bar i.lo{background:#6e655a}
+.uc-bar i.dn.over{background:repeating-linear-gradient(135deg,#c0503f 0 3px,rgba(192,80,63,.3) 3px 6px)}
+.uc-v .gr{color:#fff0a8}
+.uc-grow{display:flex;align-items:center;gap:6px;margin:-4px 0 8px;font-size:var(--fs-sm);line-height:1.35;color:var(--fg-2)}.uc-grow i{flex:none;width:12px;height:7px;background:#fff0a8;border:1px solid var(--line);border-radius:2px}
 .uc-strength{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:0 0 6px;font-size:var(--fs-sm);font-weight:700}.uc-strength .uc-bar{height:10px}.uc-strength .uc-bar i:first-child{background:#7fb24f}
 .uc-rank{display:grid;grid-template-columns:96px 1fr 68px;gap:6px;align-items:center;margin:0 0 8px;font-size:var(--fs-sm)}.uc-rank .uc-bar i{background:#8fa8d8}.uc-meter{margin-top:-4px}.uc-meter .uc-bar i{background:#7fc4b0}
 .uc-v{text-align:right;white-space:nowrap;font-weight:700}
@@ -929,12 +935,12 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .rail{width:76px;padding:0 4px 8px;gap:3px}
   .rail-head{margin:0 -4px 2px;padding:8px 2px 6px;flex-direction:column;gap:3px}
   .rh-flag{width:28px;height:28px}
-  .rh-t{align-items:center;max-width:70px}.rh-t b{font-size:var(--fs-xs);max-width:100%}.rh-t small:not(.gold){display:none}.rh-t small.gold{font-size:var(--fs-2xs)}
+  .rh-t{align-items:center;max-width:100%}.rh-t b{font-size:var(--fs-xs);max-width:100%}.rh-t small:not(.gold){display:none}.rh-t small.gold{font-size:var(--fs-2xs)}
   .rail-lab{display:none}
   .rail-i{flex-direction:column;justify-content:center;gap:2px;min-height:50px;padding:4px 1px 3px}
   .ri-ico{width:28px;height:28px}
   .ri-n,.rail-i kbd{display:none}
-  .ri-s{display:block;max-width:70px;font-size:var(--fs-2xs);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ri-s{display:block;max-width:100%;font-size:var(--fs-2xs);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ri-dot{left:auto;right:12px;top:3px}
   .rcards{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
   .rcard{padding:8px 9px;gap:6px}.rc-pic{width:36px;height:36px}

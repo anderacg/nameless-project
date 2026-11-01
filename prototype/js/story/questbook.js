@@ -55,5 +55,5 @@ for(const id of Questbook.all())Questbook.compile(id);
 // the priest's (the holding of the streets you walk))
 onAct('qb-',(a,arg)=>{if(a!=='qb-take')return;const [id0,lid]=String(arg).split('@'),[id,cid]=id0.split('#'),l=lid&&W.lords.find(x=>String(x.id)===lid),t=G.town?.ref||G.scene&&townBy(G.scene.ref);
   const ctx=l?Stories.ctx({town:Spatial.nearest(fiefsOf(l.fac),l.x,l.y)?.name,fac:l.fac,lord:l.name,lordRef:l}):cid?Stories.ctx({town:Spatial.nearestHolding(P.x,P.y)?.name,comp:cid}):Stories.ctx({town:t?.name});
-  if(!Questbook.take(id,ctx))return;updateHUD(true);if(G.scene){hidePanel();G.modal=false;return}if(G.town)return renderTown();if(G.mode==='dialog'){G.enc=null;G.mode='world';hidePanel()}});
+  if(!Questbook.take(id,ctx))return;updateHUD(true);if(G.scene){hidePanel();G.modal=false;return}if(G.town){if(G.mode==='dialog')G.enc=null;G.mode='town';return renderTown()}if(G.mode==='dialog'){G.enc=null;G.mode='world';hidePanel()}});// (taken at a lord's audience in a holding: back to it, the audience over)
 Systems.add({name:'questbook',order:{day:215},day:()=>Questbook.day()});

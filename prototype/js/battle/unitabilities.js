@@ -1,8 +1,8 @@
 'use strict';
-/* ---------- unit abilities: a group's own special orders (Brace, Fire arrows, Spur, Rally, Scout ahead), each with a duration and a cooldown
+/* ---------- unit abilities: a group's own special orders (Brace, Fire arrows, Spur, Rally, Scout ahead, Rapid shot, Dismount, Mount), each with a duration and a cooldown
    on the combat clock (B.t: a pause or deployment freezes both). UNIT_ABILITIES is the registry: n (its name), d (what it does),
    key (its hotkey), who (does one soldier qualify; a group has the ability when at least half of its living, steady, non-routing
-   troops do: heroes, companions, lords and beasts never count), dur and cd (combat seconds; the cooldown runs from the moment
+   troops do (any: one of them is enough): heroes, companions, lords and beasts never count), dur and cd (combat seconds; the cooldown runs from the moment
    it is used), use (its effect, at once), snd (the cue heard from the group as it is used: audio.js) and, for the timed ones,
    holds (still on?) and step (each moment while on). The lasting
    effects are read where they happen: actors.js (a braced soldier stands, a spurred rider is faster and keeps his momentum),
@@ -43,14 +43,22 @@ const UNIT_ABILITIES={
   // a bowmen's rung (data/ranks.js RANK_SKILLS bow, rank 4): mul, their shot time while it lasts (actors.js shotTime)
   rapid:{n:'Rapid shot',key:'N',dur:8,cd:45,mul:.7,who:u=>rankRole(u)==='bow'&&!u.empty,
     get d(){return 'Bowmen loose as fast as they can draw: for '+this.dur+' s they shoot '+Math.round((1/this.mul-1)*100)+'% faster.'},
-    use(g){const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Rapid shot!','#ffe08a',.8)}}
+    use(g){const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Rapid shot!','#ffe08a',.8)}},
+  // the dismount (battle/dismount.js; any: a group has it with one of its men who can): riders step down where they stand, their
+  // horses left there, and stay on foot till told to Mount; Mount: each walks back to his own horse and up, enemies near or not
+  dismount:{n:'Dismount',key:'J',dur:0,get cd(){return DISMOUNT.cd.dismount},any:true,who:u=>Dismount.rider(u)&&!u.afoot,
+    d:'Riders step down where they stand and fight on foot: no charge, but their foot drills (Brace, the hedge of spears) are theirs again. Their horses wait where they left them. They stay on foot until ordered to Mount.',
+    use(g){g.hold();const m=abilityTroops(g);for(const u of m)if(this.who(u))Dismount.down(u,'order');else if(u.afoot)u.remount=null;/* (those on foot already stay so) */if(m[0])moraleSay(m[0],'Dismount!','#e8d8b0',.8)}},
+  mount:{n:'Mount',key:'P',dur:0,get cd(){return DISMOUNT.cd.mount},any:true,who:u=>Dismount.rider(u)&&!!u.afoot&&!!u.horse&&!u.horse.dead,
+    d:'The men on foot walk back to their own horses and mount, enemies near or not. Those whose horse fell stay on foot.',
+    use(g){const m=abilityTroops(g);for(const u of m)if(this.who(u)){u.remount='order';u.mountT=0}if(m[0])moraleSay(m[0],'Mount up!','#e8d8b0',.8)}}
 };
 const UNIT_ABIL_ORDER=Object.keys(UNIT_ABILITIES);
 // a group's orders as Spur found them (a new order since: its pace is that order's)
 const spurSig=g=>[g.order,g.targetGroupId,g.targetUnitId,g.mvId,g.queue&&g.queue.length].join();
 // the troops an ability looks at: living, not routing, not a character or a beast
 const abilityTroops=g=>g.units.filter(u=>!u.rout&&!steady(u));
-function groupHasAbility(g,id){const A=UNIT_ABILITIES[id];if(!g||!A)return false;const m=abilityTroops(g);return m.length>0&&m.filter(A.who).length*2>=m.length&&rankAllows(g,id)}// (and its rank's: battle/rankskills.js)
+function groupHasAbility(g,id){const A=UNIT_ABILITIES[id];if(!g||!A)return false;const m=abilityTroops(g),n=m.filter(A.who).length;return m.length>0&&(A.any?n>0:n*2>=m.length)&&rankAllows(g,id)}// (and its rank's: battle/rankskills.js)
 // is it on (timed, and still holding: a braced group given another order is braced no more)
 function abilityActive(g,id){const S=g&&g.abil&&g.abil[id],A=UNIT_ABILITIES[id];return !!(S&&B&&B.t<S.until&&(!A.holds||A.holds(g,S)))}
 // why a group cannot use it now ('' when it can)

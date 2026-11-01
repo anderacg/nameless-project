@@ -16,7 +16,26 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
  // 06c5c85a, rout c6baa295, withdraw 64ba7ae1, ordered_target 04dd9352, firm_hold 1484470c, relocation 380e7e73, tired_movement d111f1e9,
  // crowding 4671d8b2, melee_mode 6e2d76a9, cease_fire 70b540a8, regeneration 2f0bcc1a, pounce fccfbe20, pounce_range 678bbcb5,
  // manual_movement a9799369, frame_dispatch 3bd98359, frame_gates a48500bf)
- const expected={"nearest":"fa2d24f7","shooter_target":"cce41bab","range_fallback":"8b8e23fe","firing_arcs":"b38af394","shot_cycle":"c657a076","held_draw":"88e1b815","moving_draw":"d3fab869","stunned":"d6f6aaa4","rout":"9c8c02ab","withdraw":"25292351","ordered_target":"bbc5ed26","firm_hold":"cb5292fe","relocation":"e2e64c39","tired_movement":"6dc67b7d","crowding":"028ebecc","melee_mode":"fe866a37","cease_fire":"2142132e","regeneration":"2fea5440","pounce":"cff418c2","pounce_range":"476718ad","manual_movement":"5f147247","frame_dispatch":"bc8f618b","frame_gates":"9f637cbd"};
+ // (all 23 re-recorded 2026-11-01, on purpose, at the sweep fix after the night of 2026-10-31. The baseline had stood through every
+ //  move since, found commit by commit on the first-parent history (a worktree at each commit): 696de87 the owner's notes of
+ //  2026-10-25 (frame_dispatch), f8cfe32 battles open ready for Start Battle, 46be83f the Nobody's bare hands, 577cae4 a hero sprite merged
+ //  and reverted (7065f88, 762e128), 454af04 ranks and fa23bde battles longer (health doubled, morale by grit) (all 23 at each);
+ //  then the night's troop tree (data/units.js, races.js, matchups.js, world/holding.js: the kinds, their names and stats) and the
+ //  AI march styles (setup.js arrangeMarch, from world/marchstyles.js). Checked: with those four files as at 803bd3a and march.js
+ //  marchLayout's style null, every one is 803bd3a's again (the Buffs placeholder's empty P.unitBuffs.hero, left by a look in each
+ //  battle, moved five more: fixed, world/buffs.js Buffs.rec, so no move). The fixture now runs its battle (B.ready and B.paused
+ //  false: since 696de87 and f8cfe32 a battle opens frozen till Start Battle, so frame_dispatch, the case that steps it, saw it
+ //  frozen and its own check failed); so measured, frame_dispatch held bc8f618b till f8cfe32 (>5db7e2a5), then 46be83f (>82695941),
+ //  454af04 (>28d2fbe5), fa23bde (>cf9ae442, 803bd3a's) and the night (>dbd85ab6). Were nearest fa2d24f7, shooter_target cce41bab,
+ //  range_fallback 8b8e23fe, firing_arcs b38af394, shot_cycle c657a076, held_draw 88e1b815, moving_draw d3fab869, stunned d6f6aaa4,
+ //  rout 9c8c02ab, withdraw 25292351, ordered_target bbc5ed26, firm_hold cb5292fe, relocation e2e64c39, tired_movement 6dc67b7d,
+ //  crowding 028ebecc, melee_mode fe866a37, cease_fire 2142132e, regeneration 2fea5440, pounce cff418c2, pounce_range 476718ad,
+ //  manual_movement 5f147247, frame_dispatch bc8f618b, frame_gates 9f637cbd)
+ // (all 23 re-recorded 2026-11-01, on purpose, for battle lanes (the owner: "keep battle lanes"; world/marchstyles.js lanes, march.js
+ //  marchLayout): your army opens in its march's lanes (setup.js arrangeMarch, from marchRows(P)), not round the old ring, so your
+ //  men start elsewhere; the rules unchanged. Checked: with march.js and marchstyles.js as before, every one is as before; the AI
+ //  armies' styles unchanged (worldprint held). Were nearest 19142d7e, shooter_target 96c58818, range_fallback 8b03ec8d, firing_arcs a94ca1f9, shot_cycle 563d475f, held_draw 68ea05d6, moving_draw 6d99b4b8, stunned 640c380b, rout f67779ce, withdraw 50eeada4, ordered_target 28c9965e, firm_hold 1997fe2b, relocation 261aee1b, tired_movement 57169e3a, crowding 28af9137, melee_mode e538b851, cease_fire d14c086a, regeneration cbe42bc7, pounce d01c9fcf, pounce_range 6c571d8c, manual_movement 6bcfa70c, frame_dispatch dbd85ab6, frame_gates f741d4e3)
+ const expected={"nearest":"924a900a","shooter_target":"d3ee1084","range_fallback":"f7b586d1","firing_arcs":"61a5f71d","shot_cycle":"bc93c499","held_draw":"faca2bf2","moving_draw":"9458170c","stunned":"196cd6e7","rout":"685507d2","withdraw":"78b0e860","ordered_target":"2945aa5c","firm_hold":"cdca19e9","relocation":"73467925","tired_movement":"a08e2d0e","crowding":"98f86cdb","melee_mode":"93a0564b","cease_fire":"3b9d1408","regeneration":"7a54f253","pounce":"7b8cca43","pounce_range":"d9e38568","manual_movement":"1d702758","frame_dispatch":"1a554f9c","frame_gates":"07f755c7"};
  const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
  const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
  const cases=['nearest','shooter_target','range_fallback','firing_arcs','shot_cycle','held_draw','moving_draw','stunned','rout','withdraw','ordered_target','firm_hold','relocation','tired_movement','crowding','melee_mode','cease_fire','regeneration','pounce','pounce_range','manual_movement','frame_dispatch','frame_gates'];
@@ -31,7 +50,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
    if(name==='frame_dispatch'){P.comps={brann:{ap:0,role:''}};t.compInit('brann')}
    G.mode='world';G.modal=false;G.keys={};G.mouse.in=false;G.enc={kind:'party',ref:{cool:0,x:P.x+8,y:P.y},list:['militia','militia','archer','tiger','troll','dragon'],allies:[],foes:[]};
    t.startBattle({enemies:G.enc.list,tournament:false});const B=t.B,inf=B.units.filter(q=>q.team===0&&q.type==='hum_levy'),u=inf[0],bow=B.units.find(q=>q.team===0&&q.type==='hum_bow'),mage=B.units.find(q=>q.team===0&&q.type==='hum_mage'),es=B.units.filter(q=>q.team===1),e=es[0],g=B.groups[testGroup('inf')];
-   B.noMorale=true;B.obs=[];B.t=2;B.speed=1;B.slow=0;B.hx.stop=0;B.hx.inv=0;B.hx.sp=1000;B.hx.mp=1000;B.cam=null;
+   // (running: a battle opens ready, frozen till Start Battle, since f8cfe32; the cases that step it saw it frozen)
+   B.ready=false;B.paused=false;B.noMorale=true;B.obs=[];B.t=2;B.speed=1;B.slow=0;B.hx.stop=0;B.hx.inv=0;B.hx.sp=1000;B.hx.mp=1000;B.cam=null;
    B.units.forEach((q,i)=>{q.hp=q.max=10000;q.cd=999;q.grp=null;q.x=600+i*20;q.y=500;q.s={...q.s};q.rt=0});B.hero.x=70;B.hero.y=70;u.x=200;u.y=250;u.sx=u.sy=0;bow.x=150;bow.y=300;bow.face=1;bow.aimA=0;bow.sx=bow.sy=0;mage.x=140;mage.y=400;e.x=260;e.y=250;es[1].x=360;es[1].y=250;es[2].x=520;es[2].y=300;g.placeAt(u.x,u.y);B.groups[testGroup('arc')].placeAt(bow.x,bow.y);
    B.arrows=[];B.parts=[];B.floats=[];B.slashes=[];B.corpses=[];B.vfx=[];G.shake=0;G.msgs=[];
    let calls=0;const stream=t.seeded(900+index);Math.random=()=>{calls++;return stream()};const result={},strikes=[],strike=(a,b)=>strikes.push([a.id,b.id]);

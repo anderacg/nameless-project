@@ -2,7 +2,7 @@
 /* ---------- choices and their page (doc/STORY_DESIGN.md §3.4; the story wave, S0) ----------
    A Choice is one verb on a page: a happening's (a road encounter's), a thing's (the sealed letter's) or a place's (a shrine's).
    Made from its spec, plain data, each field read with the subject s it is about (the encounter, the letter, the site):
-     icon, label, tip;
+     icon, label, tip (label and tip: plain, or of s: a person's he or she, core/pronouns.js);
      when(s): offered now (none: always);
      need(s): why it is greyed ('' or false: free to choose);
      ask(s): the confirm before it (what cannot be undone; none or null: no confirm);
@@ -66,9 +66,16 @@ class Choice{
     const r=this.out?this.out(s):this.run(s,this);
     return Outcome.is(r)?Outcome.apply(r,{e:s}).say:r;
   }
+  // its words (plain, or of s)
+  labelFor(s){
+    return typeof this.label==='function'?this.label(s):this.label;
+  }
+  tipFor(s){
+    return typeof this.tip==='function'?this.tip(s):this.tip;
+  }
   // its key action on a page (window.js railKeyActions): it sends act with its place in the list
   button(s,act,i){
-    return {icon:this.icon,label:this.label,facts:this.factsFor(s),act,arg:i,why:this.why(s),tip:this.tip};
+    return {icon:this.icon,label:this.labelFor(s),facts:this.factsFor(s),act,arg:i,why:this.why(s),tip:this.tipFor(s)};
   }
 }
 class ChoicePage extends PageScreen{
@@ -92,7 +99,7 @@ class ChoicePage extends PageScreen{
   // its confirm (o: sub, act, i (its place), back): the same window as every confirm (window.js railConfirm)
   confirm(c,s,o){
     const fs=c.factsFor(s);
-    railConfirm({title:c.label+'?',sub:o.sub,text:c.asks(s),facts:fs?fs.filter(Boolean):[],confirm:[o.act,o.i+'!',c.label],back:o.back});
+    railConfirm({title:c.labelFor(s)+'?',sub:o.sub,text:c.asks(s),facts:fs?fs.filter(Boolean):[],confirm:[o.act,o.i+'!',c.labelFor(s)],back:o.back});
   }
 }
 const CHOICE_PAGE=new ChoicePage();

@@ -401,8 +401,9 @@ class Commander{
     const {team,ck}=this,N0=this.groups(),Z=beastsOf(N0),S=this.assess(),foes=S.foes;
     if(Z.length)captainBeasts(team,ck,S,Z);// (its beasts their own ways, taken out of its arms: beastmind.js PackMind; none with BEAST_TACTICS off; by its old name, which tests/beastai.js wraps)
     this.scout(N0,S);// (its scouts range ahead while the foe is unseen)
-    // (no foe in sight that still fights: those leaving the field, withdrawing, are none, so it goes looking, not charging at them)
-    if(!foes.some(e=>!withdrawing(e))){const seen=B.fog&&B.captains&&B.captains[ck]&&B.captains[ck].seen||0;if(!this.typeHolds(S)&&(B.t-Math.max(B.lastHit||0,seen)>FOE_CMD.lull||B.fog&&B.t>FOG.scout&&!foesKnown(team)))this.search(N0);return N0}
+    // (no foe in sight that still fights: those leaving the field, withdrawing, are none, so it goes looking, not charging at them;
+    // its riders' rides end, with no mark left to ride at (CavalryRide): they finish the leg they are on, and plan anew on sight)
+    if(!foes.some(e=>!withdrawing(e))){for(const id of N0.cav)delete B.groups[id].ridePlan;const seen=B.fog&&B.captains&&B.captains[ck]&&B.captains[ck].seen||0;if(!this.typeHolds(S)&&(B.t-Math.max(B.lastHit||0,seen)>FOE_CMD.lull||B.fog&&B.t>FOG.scout&&!foesKnown(team)))this.search(N0);return N0}
     // (its temperament, once, from its army's troops (temperFor); the enemy's style told as the battle opens)
     const Q=this.Q;if(B.fog&&Q.seen==null)Q.seen=B.t;if(Q.temper===undefined){Q.temper=this.temperFor();this.announce(Q.temper)}
     // (a beaten enemy army falls back as one, rather than fighting to the last man; once begun it does not turn round)

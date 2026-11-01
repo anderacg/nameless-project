@@ -79,22 +79,29 @@ blk.addEventListener('pointerdown',()=>{if(B)B.touchBlock=true});
 ['pointerup','pointerleave','pointercancel'].forEach(ev=>blk.addEventListener(ev,()=>{if(B)B.touchBlock=false}));
 */
 /* ---------- input ---------- */
+// (the minimap's tooltip: a click there opens the full map, map.js)
+const MINI_TIP='<b>Map</b><small>Where you are, what you know of the land</small><span class="act">Click: the full map (M)</span>';
+// (the click a press's letting go still sends, eaten once: the press that opened a window did its work, and on a phone that click
+// lands on what the window put under the finger (the full map's zoom −); gone by the next press, or soon, if none comes)
+function eatClick(){const eat=e=>{e.stopPropagation();e.preventDefault();off()},off=()=>{clearTimeout(t);document.removeEventListener('click',eat,true);document.removeEventListener('pointerdown',off,true)},t=setTimeout(off,600);
+  document.addEventListener('click',eat,true);document.addEventListener('pointerdown',off,true)}
 // (in the canvas's own pixels: the screen's game pixels (the world map's canvas has CVS of its own to one: core.js), or the
 // battlefield's in a battle)
 function toCanvas(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width/CVS,y:(e.clientY-r.top)*cv.height/r.height/CVS}}
 cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;ringMove(e);
   // the tooltip: what is under the pointer on the map
   const tip=$('#tip');if(holdCardUp()&&e.pointerType==='touch')return;// (a long press's card stays until the next tap: below)
-  if(G.mode!=='world'||G.modal||e.pointerType==='touch'){tip.hidden=true;return}
-  const o=pickAt(G.cam.x+p.x,G.cam.y+p.y),h=o&&tipFor(o)||rumourTip(G.cam.x+p.x,G.cam.y+p.y)||trackTip(G.cam.x+p.x,G.cam.y+p.y);if(!h){tip.hidden=true;return}// (nothing there: a rumour's "?", news.js; else tracks you see, world/tracks.js)
+  if(G.mode!=='world'||G.modal||e.pointerType==='touch'){tip.hidden=true;if(G.mode!=='battle')cv.style.cursor='';return}
+  const mini=!G.place&&fullMapHit(p);cv.style.cursor=mini?'pointer':'';// (over the minimap: it opens the full map, not what lies under it)
+  const o=!mini&&pickAt(G.cam.x+p.x,G.cam.y+p.y),h=mini?MINI_TIP:o&&tipFor(o)||rumourTip(G.cam.x+p.x,G.cam.y+p.y)||trackTip(G.cam.x+p.x,G.cam.y+p.y);if(!h){tip.hidden=true;return}// (nothing there: a rumour's "?", news.js; else tracks you see, world/tracks.js)
   tip.innerHTML=h;tip.classList.remove('hold');tip.hidden=false;const r=cv.getBoundingClientRect(),x=e.clientX-r.left+16,y=e.clientY-r.top+14;
   tip.style.left=Math.min(x,r.width-tip.offsetWidth-6)+'px';tip.style.top=Math.min(y,r.height-tip.offsetHeight-6)+'px'});
 cv.addEventListener('pointerleave',()=>{ringDrop();G.mouse.in=false;if(!holdCardUp())hideTip();if(B)B.hov=null;cv.style.cursor=''});
 cv.addEventListener('pointerdown',e=>{
   const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;
-  if(ActionRing.now){const o=partyAgain(p);ringTapOut();if(o)worldApproach(o,true);return}// (the action ring open: a press outside it only closes it, ring.js; on the party whose ring a click just opened, it approaches it: partyAgain)
+  if(ActionRing.now){const o=partyAgain(p);ringTapOut();if(o)worldApproach(o);return}// (the action ring open: a press outside it only closes it, ring.js; on the party whose ring a click just opened, it approaches it: partyAgain)
   if(G.modal)return;
-  if(G.mode==='world'&&!G.place&&e.button===0&&fullMapHit(p)){fullMapOpen();return}// (a click or a tap on the minimap: the full map, map.js)
+  if(G.mode==='world'&&!G.place&&e.button===0&&fullMapHit(p)){if(fullMapOpen())eatClick();return}// (a click or a tap on the minimap: the full map, map.js; the click its letting go still sends goes nowhere)
   if(e.pointerType==='touch'&&touchDown(e,p))return;// (a finger in battle or on the map: below; it acts when it lifts)
   if(G.mode==='world'){const wx=G.cam.x+p.x,wy=G.cam.y+p.y;if(G.place){if(e.button===2){G.place=null;toast('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);
     if(e.button===0)ringPress(e,wx,wy);else worldMove(wx,wy)}// (the left button: nothing yet; let go, you travel (on a party, its ring: worldGo); held still, the action ring: ring.js. The right one travels, or chases, at once)
@@ -128,32 +135,28 @@ cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=to
 // the box or the finger's press gone, nothing sent, the selection kept; letting go after it does nothing. True if there was one
 function dragCancel(){if(G.mode!=='battle'||!B||!(B.rdrag||B.box||TOUCH.lp))return false;touchDrop();B.rdrag=null;B.box=null;return true}
 // the map's click or tap (ring.js ringUp, touchUp): on another party, its ring (partyRing); else worldMove
-const WORLD_CLICK={dbl:400,r:18};
 function worldGo(wx,wy){
   if(G.mode!=='world'||G.modal)return;
-  const was=!!G.hurry,last=G.travelClick,now=performance.now(),box=cv.getBoundingClientRect(),sx=(wx-G.cam.x)*box.width/VW,sy=(wy-G.cam.y)*box.height/VH;
-  if(was)setHurry(false);if(partyRing(pickAt(wx,wy))){G.travelClick=null;return}
-  const twice=!was&&last&&now-last.t<=WORLD_CLICK.dbl&&Math.hypot(sx-last.x,sy-last.y)<=WORLD_CLICK.r;
-  worldMove(wx,wy);G.travelClick=twice||was?null:{x:sx,y:sy,t:now};
-  if(twice&&G.mode==='world'&&!G.modal&&(P.tx!=null||G.chase))setHurry(true);
+  if(!partyRing(pickAt(wx,wy),wx,wy))worldMove(wx,wy);
 }
 // travel to a point, or meet what is there (Follow ends: world.js followStop)
 // (a new trip: by road, if that mode is on, asks again whether a road is near: world.js byRoadTo)
-function worldMove(wx,wy){if(G.hurry)setHurry(false);G.travelClick=null;followStop();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
+function worldMove(wx,wy){followStop();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
 /* a click or a tap on another party (the owner, 2026-10-23: Follow "can be used when you click at the other unit in the world
    map"): its ring at it (ActionRing; supply.js partyRingItems: Approach, today's chase, Follow, Look), nothing done yet; Esc or a
    press elsewhere closes it (ring.js). A second press on it within PARTY_CLICK.dbl ms (a double click or tap) approaches it at
    once, as one click did before. Which: world.js FOLLOW.kinds, not in a fight (a click on a fight meets it). last: the ring a
-   click opened, its party, when */
+   click opened, its party, when. At (wx, wy), where you clicked it (the owner, 2026-11-01: a big army clicked on its flank opened its
+   ring far off at its middle); none given, at the party */
 const PARTY_CLICK={dbl:400,r:16,last:null};
-function partyRing(o){if(!o||!FOLLOW.kinds.includes(objKind(o))||o.fight||G.mode!=='world'||G.modal)return false;
-  const r=cv.getBoundingClientRect(),cx=r.left+(o.x-G.cam.x)*r.width/VW,cy=r.top+(o.y-6-G.cam.y)*r.height/VH,items=partyRingItems(o,cx,cy);if(!items.length)return false;
+function partyRing(o,wx,wy){if(!o||!FOLLOW.kinds.includes(objKind(o))||o.fight||G.mode!=='world'||G.modal)return false;
+  const at=Number.isFinite(wx)&&Number.isFinite(wy),x=at?wx:o.x,y=at?wy:o.y-6,r=cv.getBoundingClientRect(),cx=r.left+(x-G.cam.x)*r.width/VW,cy=r.top+(y-G.cam.y)*r.height/VH,items=partyRingItems(o,cx,cy);if(!items.length)return false;
   const R=new ActionRing(cx,cy,items).open();PARTY_CLICK.last={R,o,t:performance.now()};return true}
 // (a press at canvas point p with a ring open: the party it is on, if a click opened that ring on it within PARTY_CLICK.dbl ms)
 function partyAgain(p){const q=PARTY_CLICK.last;PARTY_CLICK.last=null;if(!q||ActionRing.now!==q.R||performance.now()-q.t>PARTY_CLICK.dbl||G.mode!=='world'||G.modal||!objKind(q.o))return null;
   const wx=G.cam.x+p.x,wy=G.cam.y+p.y;return pickAt(wx,wy)===q.o||Math.hypot(wx-q.o.x,wy-q.o.y)<PARTY_CLICK.r?q.o:null}
 // its ring's Approach (or the double click): today's chase of o, or met at once beside it (world.js approach)
-function worldApproach(o,hurry=false){if(G.hurry)setHurry(false);G.travelClick=null;followStop();G.pitch=null;G.byRoad=null;approach(o);if(hurry&&G.mode==='world'&&!G.modal&&(P.tx!=null||G.chase))setHurry(true);wuiClick(o.x,o.y)}
+function worldApproach(o){followStop();G.pitch=null;G.byRoad=null;approach(o);wuiClick(o.x,o.y)}
 /* ---------- touch (a phone on its side): Pointer Events with pointerType 'touch' only; the mouse, pen and keys above are as they were.
    Battle: a tap selects and a tap again sends, as before (now when the finger lifts); a long press (TOUCH.hold ms, the finger
    within TOUCH.slop CSS px) sends the selection there, or onto the enemy under it; a long press then a drag lays the line, as a
@@ -276,7 +279,7 @@ window.addEventListener('keydown',e=>{
     // H hold (where they stand), W withdraw; R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode
     if(!e.repeat&&k==='a')return autoKey();// (the selected groups to the AI or back; none selected: the whole army, deploy.js)
     if(!e.repeat&&k==='d'&&!e.ctrlKey&&!e.metaKey)return armAttackMove();// (the next order on the ground an attack-move: commands.js)
-    if(!e.repeat&&k==='k')return setAutoSkills(!AUTOSK.on);// (your characters' skills on their own)// (the AI in command of your army)
+    if(!e.repeat&&k==='k')return e.shiftKey?toggleKeepForm():setAutoSkills(!AUTOSK.on);// (K: your characters' skills on their own; Shift+K: keep formation, commands.js)
     if(!e.repeat){if(k==='h')return setOrder('hold');if(k==='w')return setOrder('withdraw');const fl={r:'walk',f:'firm',q:'cease',e:'skirmish',x:'melee'}[k];if(fl)return toggleFlag(fl)}
     /* the manual control, set aside for now:
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){if(isBow())drawStart();else swing()}return}
@@ -299,7 +302,6 @@ window.addEventListener('keydown',e=>{
   }else if(G.mode==='world'&&!G.modal){
     if(e.code==='Space'){e.preventDefault();if(!e.repeat)togglePause()}
     if(k>='1'&&k<='3')setSpeed(SPEEDS[k-1]);if(k==='4'&&!e.repeat)setSpeed(G.speed===TRAVEL_FAST?1:TRAVEL_FAST);// (4: Travel fast, 8×, or back to 1×)
-    if(k==='r'&&!e.repeat)toggleHurry();// R: Hurry, or stop hurrying (world/supply.js; the action ring's Hurry here too)
     if(k==='b'&&!e.repeat)toggleByRoad();// B: by-road mode on or off, every trip keeping to the roads while it is on (world.js; the action ring's By road too)
     if(k==='c')openChar();if(k==='i')openInv();if(k==='k')openSkills();if(k==='h')openHelp();// (C: the Army window; K: it, on your hero's Skills)
     if(!e.repeat){if(k==='q')questsKey();if(k==='j')journalKey();if(k==='l')chronicleKey()}// (Q: your Quests; J: the Journal, L: on its Chronicle)

@@ -120,3 +120,47 @@ Size: medium, one wave. Independent of §3: it works with today's battles, and b
 4. **Ground loot pick-up:** walking over it picks it up at once? Or click and confirm, or only your hero?
 5. **Gold:** dropped as sacks to pick up too, or straight to your purse at the end of the fight (only items on the ground)?
 6. **Order of work:** suggested §2 (march physics), then §4 (ground loot), then §3 stage A, then B. Stage C only if needed.
+
+## 6. Road travel by army type (the owner, 2026-11-01)
+
+The goal: the road's speed is earned by an army that marches on it in a column, not by an army whose middle happens to touch it. Each kind of army travels in its own way.
+
+**The road bonus belongs to the men.**
+- Today an army's ground speed is read at its invisible middle (`world.js` `partySpeed`, `travelMul`), so a ring spread over a field gets the whole road bonus if its middle is on the road.
+- Instead: an army's ground speed is the mean of what its men stand on (a sample of about 8 marchers, cheap). A column on the road gets all of the bonus. A ring across it gets a share. An army half in a wood is slowed by it.
+- Parties not marched man by man (far off, `WORLD_LOD`): by their style. A column-on-road style on a road gets the bonus; the others do not.
+
+**Travel styles** (one table, `TRAVEL_STYLES`, next to `MARCH_STYLES`):
+
+| Who | On roads | Off roads |
+|---|---|---|
+| Caravans | Always a column (wagons in the middle, guards along it), keeping to the roads (`WAY.keep`) | Only when fleeing |
+| Lords | A column on long trips | Near enemy territory: their battle style (offensive or defensive, `marchstyles.js`) |
+| Bandits | Never a column: they cross roads and lurk near them | A loose pack, cutting across |
+| Beasts, monsters | Ignore roads | A pack |
+| You | By road (key B) on: a column | Off: your march layout |
+
+**The column:**
+- 2 men abreast for now, along the road as drawn (`RoadBand`), in the march's order (the van, then the main body round the leader, then the rear).
+- The ring becomes a long oval along the road, so the place where others meet the army follows its men.
+- **Forming up takes time.** From formation to column and back, the men file into their new places at their own pace (§2), and the army is slow while they do. It is a choice, not a free switch.
+
+**A fight that finds an army in column** depends on detection:
+- If the army detected the enemy before contact (its sight, its scouts, `TravelAwareness`), it has time to form up: its battle lanes, as today.
+- If it was ambushed (not detected), the battle starts from the column as it marched: strung out, its flanks open.
+- So road travel is fast but exposed, and scouting matters. Bandit ambushes on roads become a real danger.
+
+**How:**
+- `TRAVEL_STYLES` data, and a style per army: kind, trip length, and whether it is near enemy territory (`territory.js`).
+- A column layout in `marchstyles.js`, laid along the way's road points.
+- The ground speed from the men's sample, in one helper for `partySpeed` and `travelMul`.
+- `arrangeMarch` and world battles use the column when the fight is an ambush.
+- Tests:
+  - a ring across a road is slower than a column on it;
+  - a lord in column on a long trip, in his battle style near enemy land;
+  - bandits never in column;
+  - a caravan always in column on a road;
+  - an ambushed column starts strung out;
+  - an army that detected the enemy starts in lanes.
+
+Size: medium to large, one wave, after the battle lanes (the default deployment, 2026-11-01). The fingerprints `worldprint` W6–W8 and `rts` will move: re-recorded with reasons.

@@ -44,21 +44,31 @@ const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...
 const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRefugees(o):o.rd?asRoadEnc(o):o.folk?asWorker(o):o.path?asShip(o):MONSTERS[o.id]&&!o.type?asMonster(o):o;
 // what lies under a click: the nearest clickable thing you can see
 function pickAt(wx,wy){
-  const V=vis(),c=[],add=(o,r,dy)=>{const d=Math.hypot(o.x-wx,o.y-(dy||0)-wy);if(d<r&&Math.hypot(o.x-P.x,o.y-P.y)<V*1.2)c.push([d,o])};
+  const V=vis(),S=yourSight(V),c=[],add=(o,r,dy)=>{const d=Math.hypot(o.x-wx,o.y-(dy||0)-wy);if(d<r&&S.sees(o.x,o.y,1.2))c.push([d,o])};
   // structures answer anywhere on what is drawn of them, ranked as near as their own spot (a holding's gate) but never nearer
   // than 12 pixels away, so someone clicked on top of one is picked, and a click on the gate still picks the holding
-  const box=(o,x0,y0,x1,y1,dy)=>{if(wx>=x0&&wx<x1&&wy>=y0&&wy<y1&&Math.hypot(o.x-P.x,o.y-P.y)<V*1.2)c.push([Math.min(12,Math.hypot(o.x-wx,o.y-(dy||0)-wy))+Math.hypot(o.x-wx,o.y-wy)/1000,o])};
+  const box=(o,x0,y0,x1,y1,dy)=>{if(wx>=x0&&wx<x1&&wy>=y0&&wy<y1&&S.sees(o.x,o.y,1.2))c.push([Math.min(12,Math.hypot(o.x-wx,o.y-(dy||0)-wy))+Math.hypot(o.x-wx,o.y-wy)/1000,o])};
   const camp=(o,sp)=>{const x0=o.x-sp.ax,y0=o.y+8-sp.ay;box(o,x0,y0,x0+sp.width,y0+sp.height)};// anywhere on its picture
   // a big figure (a mounted lord, a caravan's cart, ox and drover) answers anywhere on what is drawn of it (its picture s, cell
   // top left x0, y0, mirrored when it faces left: render.js opaqueBox), ranked 10-12 by how far from its middle: after anyone's
   // ring (someone small beside it, clicked on, is still picked), before a building it stands in front of
   const fig=(o,s,x0,y0,flip)=>{if(Math.hypot(o.x-wx,o.y-wy)>s.width)return;const b=opaqueBox(s),L=flip?x0+s.width-1-b[2]:x0+b[0],R=L+b[2]-b[0]+1,T=y0+b[1],Bt=y0+b[3]+1,hw=(R-L)/2,hh=(Bt-T)/2;
-    if(wx>=L&&wx<R&&wy>=T&&wy<Bt&&Math.hypot(o.x-P.x,o.y-P.y)<V*1.2)c.push([10+2*Math.max(Math.abs(wx-L-hw)/hw,Math.abs(wy-T-hh)/hh),o])};
+    if(wx>=L&&wx<R&&wy>=T&&wy<Bt&&S.sees(o.x,o.y,1.2))c.push([10+2*Math.max(Math.abs(wx-L-hw)/hw,Math.abs(wy-T-hh)/hh),o])};
   // a party's banner (render.js bannerAt) answers anywhere on it while the party is in sight, ranked 9.5: over the buildings and
   // figures it floats over, after anyone's ring clicked nearer
   const flag=(o,B)=>{const b=opaqueBox(B.s);if(wx>=B.x+b[0]&&wx<=B.x+b[2]&&wy>=B.y+b[1]&&wy<=B.y+b[3]&&o.inView(V))c.push([9.5,o])};
+  // (the owner, 2026-11-01: "make a whole army clickable") an army marched man by man (march.js marchPicked) answers anywhere on
+  // its men's figures as drawn, ranked as a big figure is (10-12), and anywhere inside its outline, ranked 13 on by px to its
+  // nearest man: after any figure, building or place under the pointer, the nearer army's man first. Not inside your own outline
+  // with your man nearer (or on him): there it is ground, a click travels. A finger's tap MARCH_PICK.tap CSS px of slack. Its
+  // small ring round its middle (add) stays, ranked as ever, so a small band is never harder to click. False when it is not so
+  // marched, or has no outline (MARCH_RING off): its leader's figure too, the caller's
+  const tol=G.mouse.type==='touch'?MARCH_PICK.tap*VW/(cv.clientWidth||VW):0;let mine;
+  const yours=()=>{if(mine===undefined){const h=marchPicked(P)?.hit(wx,wy,tol);mine=h?(h.kind==='figure'?0:h.d):null}return mine};
+  const army=o=>{const a=marchPicked(o);if(!a)return false;if(!o.inView(V))return true;const h=a.hit(wx,wy,tol);
+    if(h&&(h.kind==='figure'||yours()==null||h.d<mine))c.push([h.kind==='figure'?10+2*Math.min(1,h.d):13+Math.min(h.d,999)/1000,o]);return !!(MARCH_RING.on&&a.ring)};
   // every world object says where a click answers on it (WorldObject pick), with these, in worldObjects' order (a tie keeps it)
-  const at={x:wx,y:wy,V,add,box,fig,camp,flag};for(const o of worldObjects())o.pick(at);
+  const at={x:wx,y:wy,V,add,box,fig,camp,flag,army};for(const o of worldObjects())o.pick(at);
   c.sort((a,b)=>a[0]-b[0]);return c.length?c[0][1]:null;
 }
 // what a thing on the map is (its mapKind), while it is still on the map (here); null for anything else
@@ -125,8 +135,9 @@ const followItem=o=>Host.follows(o)?{icon:'shoe',label:'Stop following',active:t
   :G.follow&&(G.follow.o===o||!followable(o))?{icon:'shoe',label:'Stop following',active:true,run:()=>followStop('You stop following '+followName(G.follow.o)+'.',true)}
   :followable(o)?{icon:'shoe',label:'Follow',run:()=>followStart(o)}:null;
 // (the day bar's tag while you follow: render.js updateHUD)
-// the camp a band heads for at night: the nearest that is not cleared, within reach
-const campNear=b=>{let best=null,bd=WORLD_SCALE.ai.bandCamp;for(const c of camps()){if(c.cleared)continue;const d=Math.hypot(c.x-b.x,c.y-b.y);if(d<bd){bd=d;best=c}}return best};
+// the camp a band heads for at night: the nearest that is not cleared, within reach, and safe from the army it fears (f: engage.js
+// fearOf, safeRefuge)
+const campNear=(b,f)=>{let best=null,bd=WORLD_SCALE.ai.bandCamp;for(const c of camps()){if(c.cleared)continue;const d=Math.hypot(c.x-b.x,c.y-b.y);if(d<bd&&safeRefuge(b,c,f)){bd=d;best=c}}return best};
 // at dawn the bands in a camp ride out again
 function campEmpty(c){if(!c.bands||!c.bands.length)return;for(const b of c.bands){b.x=c.x+rint(-12,12);b.y=c.y+rint(10,18);b.cool=2;b.gone=false;bandits.push(b)}c.bands=[]}
 // attacking a camp: its own bandits and chieftain (own: as your scouts saw them; else rolled now: sites.js BanditCamp foes), and
@@ -227,10 +238,8 @@ function dangerInSight(){const V=vis();
   for(const o of W.parties){const k=o.mapKind;if(o.inView(V)&&(k==='band'||(k==='lord'||k==='patrol')&&hostileTo(o.faction)))return k==='band'?'bandits in sight':k==='lord'?'an enemy army in sight':'enemy guards in sight'}
   for(const m of W.monsters){const M=MONSTERS[m.id];if((M.mythic||M.aggro||stance(monPower(m))==='attack')&&asMonster(m).inView(V))return (M.mythic?'the ':'')+(M.n||m.id).toLowerCase()+' in sight'}
   return ''}
-// Hurry (supply.js) holds only while nothing calls for you: an event, a meeting or any window opening (main.js calls this every
-// frame, whatever is shown), your band Exhausted, in camp or staying in a holding end it. Following a party is watched here too
-// (followWatch)
-function fastWatch(){followWatch();if(!G.hurry)return;const why=G.mode!=='world'||G.modal?'':P.staminaState()==='exhausted'?'your band is exhausted':P.camp||P.stay?'you stop':null;if(why!=null)setHurry(false,why)}
+// (main.js calls this every frame, whatever is shown): following a party is watched here (followWatch)
+function fastWatch(){followWatch()}
 function updateWorld(dt){
   if(G.paused||G.dead)return;
   fastWatch();KNOWLEDGE.watch();// (last-known sightings: knowledge.js)
@@ -247,7 +256,7 @@ function updateWorld(dt){
 // reached what you chased and met it; following, at your goal you wait there)
 function marchStep(d){
   if(P.camp&&!campStep())return false;
-  if(P.siege){const st=townBy(P.siege.town);if(!st||Math.hypot(P.x-st.x,P.y-st.y)>WORLD_SCALE.war.siegeLeash){P.siege=null;log('You march away and the siege'+(st?' of '+st.name:'')+' is lifted.','bad','war')}}
+  if(P.siege){const st=townBy(P.siege.town);if(!st||Math.hypot(P.x-st.x,P.y-st.y)>worldBattleReach(st)+WORLD_SCALE.war.siegeLeash){P.siege=null;log('You march away and the siege'+(st?' of '+st.name:'')+' is lifted.','bad','war')}}
   // (a chase ends when what you chase is gone or not worth it: WorldObject here, chaseable; reached, it is met, unless you just
   // fought and it would fight you: meetsAnyTime)
   if(G.follow)followStep();
@@ -255,9 +264,9 @@ function marchStep(d){
     if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o)&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return true}}}
   if(P.tx!=null){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
-    if(dist<2){if(!G.follow){P.tx=null;G.byRoad=null;campArrive()}}// (the clear ground you walked to: your band pitches there, supply.js)
+    if(dist<2){if(!G.follow&&marchArrived(P.tx,P.ty)){P.tx=null;G.byRoad=null;campArrive()}}// (your army there: march.js marchArrived)// (the clear ground you walked to: your band pitches there, supply.js)
     else{
-      const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*hurryPace()*Host.yourPace());// (Hurry: supply.js; your host's slowest: hosts.js)
+      const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*Host.yourPace());// (your host's slowest: hosts.js)
       P.dir=dx>=0?1:-1;
       const x0=P.x,y0=P.y;if(heroStep(dx,dy,dist,step)){P.stuck=0;const moved=Math.hypot(P.x-x0,P.y-y0);if(moved>0){train('scout',moved/TILE*.08);if(mountDef())train('ride',moved/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',moved/TILE*WOODCRAFT.xp)}}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0;campArrive()}}
     }
@@ -288,7 +297,7 @@ function heroStep(dx,dy,dist,step){
    ROAD_GO.near tiles of you or of the point, that trip goes the plain way, quietly. G.byRoad: the trip's answer, {k: the goal's
    tile, on} (never saved; a new order or arriving forgets it). Turned on or off by key B (ui/input.js) or the action ring's By
    road (supply.js mapRingItems: lit while on); the Under way panel shows it (ui/underway.js) */
-const ROAD_GO={near:8,keep:1.15};
+const ROAD_GO={near:8,keep:1.1};// (keep 1.15 → 1.1, the owner, 2026-11-01: from the road to a spot just off it, cut across sooner)
 function byRoadTo(x,y){if(!P.byRoad)return false;const k=Math.floor(x/TILE)+','+Math.floor(y/TILE);
   if(!G.byRoad||G.byRoad.k!==k)G.byRoad={k,on:roadNear(P.x,P.y,ROAD_GO.near)||roadNear(x,y,ROAD_GO.near)};return G.byRoad.on}
 // (a road's or a track's tile within n tiles of (x, y))
@@ -309,7 +318,7 @@ function arriveStep(){
       approachHolding(t);
       return true;
     }
-    if(G.lastTown===t&&dd>28)G.lastTown=null;
+    if(G.lastTown===t&&dd>worldBattleReach(t)+REACH)G.lastTown=null;// (REACH past where your army reaches it: march.js ringReach)
   }
 }
 

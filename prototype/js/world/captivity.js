@@ -137,8 +137,8 @@ class Captivity{
     if(c.war&&!this.atWar(c))return this.free('peace','The '+FACS[c.fac].n+' are at war with your realm no more: peace, and their prisoners are let go.');
     if(!c.war)q.offer=Math.max(Math.round(c.ransom*X.floor/5)*5,q.offer-Math.max(5,Math.round(q.offer*X.fall/5)*5));
     if(this.realmPays(c)&&Math.random()<(c.war?CAPTIVITY.war.realm:CAPTIVITY.realm.daily)&&(!c.war||payRealm(P.fac,c.ransom)))return this.free('light','On day '+q.day+' the '+FACS[P.fac].n+' pay '+(c.war?'your war price, '+c.ransom+' gold,':'for you')+' and you are let out.',0,true);
-    {const x=c.war&&Prisons.heldBy(P.fac,r=>r.k==='lord'&&r.fac===c.fac);if(x&&Math.random()<PRISON.exchange){Prisons.out(x.r,x.key,'exchanged');return this.free('exchange','On day '+q.day+' the '+FACS[P.fac].n+' trade '+x.r.name+', a lord of the '+FACS[c.fac].n+' they hold, for you.')}}
-    if(Math.random()<this.paroleChance(c))return this.free('parole','On day '+q.day+' '+c.name+' sends for you: he remembers you from before the war, and lets you go on your word.');
+    {const x=c.war&&Prisons.heldBy(P.fac,r=>r.k==='lord'&&r.fac===c.fac);if(x&&Math.random()<PRISON.exchange){Prisons.out(x.r,x.key,'exchanged');return this.free('exchange','On day '+q.day+' the '+FACS[P.fac].n+' trade '+x.r.name+', a '+lordWord(x.r)+' of the '+FACS[c.fac].n+' they hold, for you.')}}
+    if(Math.random()<this.paroleChance(c))return this.free('parole','On day '+q.day+' '+c.name+' sends for you: '+pr(this.lord(c)||c.name).he+' remembers you from before the war, and lets you go on your word.');
     if(c.away.length&&Math.random()<Math.min(X.rescue.max,c.away.length*X.rescue.each))return this.free('rescued',c.away.map(id=>COMPS[id].short).join(' and ')+' come for you in the night and break you out.');
     if(c.k==='band'&&this.sells(c,q))return this.sell(c,q);
     if(!c.war&&q.day>this.limit(c))return this.free('prison',c.k==='broker'?'No buyer comes for you; after '+this.limit(c)+' days he lets you go.':'After '+X.days+' days they tire of you and turn you out, with nothing but what you hid.');

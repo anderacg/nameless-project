@@ -61,10 +61,10 @@ try{
  ok(/Who yields/.test(panel())&&/Persuasion/.test(panel()),'the parley says what decides whether they yield (the owner, 2026-10-30)');
  {const w=t.yieldNo({power:()=>t.partyPower()*.45}),f=t.yieldNo({power:()=>t.partyPower()*.05});ok(/fight their way out/.test(w)&&w!==f,'and a refusal says why: near half your strength, they mean to fight their way out')}
  fix(.01);t.act('pl-yield');unfix();ok(/throw down/.test(panel()),'it may yield');const pc=t.prisonerCount();t.act('pl-cage');
- ok(t.prisonerCount()===pc+2&&!t.bandits.includes(b),'and its fighters become your prisoners ('+pc+' → '+t.prisonerCount()+', cap '+t.prisonCap()+')');t.act('dlg-ok');
+ ok(t.prisonerCount()===pc+2&&!t.bandits.includes(b),'and its fighters become your prisoners ('+pc+' → '+t.prisonerCount()+', cap '+t.prisonCap()+')');t.act('lt-leave');// (a yield ends in the spoils' window: parley.js yieldEnd)
  const b2={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','spearman'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b2));world();t.meetBand(b2);fix(.01);t.act('pl-yield');unfix();
  P.wounded={};P.sk.lead.lv=10;// (the wounded from earlier take room in the band; and two new kinds need two new groups: army.js armyGroupLimit)
- const tc2=t.troopCount(),hh=t.honorWith(t.FIDS[0]);t.act('pl-join');ok(/Take them into your band/.test(panel())&&/Take 2/.test(panel()),'or join your band: you choose who, all who fit chosen to begin with');t.act('pl-take');ok(t.troopCount()===tc2+2&&t.honorWith(t.FIDS[0])<hh,'and they join, at a cost to your honor');t.act('dlg-ok');
+ const tc2=t.troopCount(),hh=t.honorWith(t.FIDS[0]);t.act('pl-join');ok(/Take them into your band/.test(panel())&&/Take 2/.test(panel()),'or join your band: you choose who, all who fit chosen to begin with');t.act('pl-take');ok(t.troopCount()===tc2+2&&t.honorWith(t.FIDS[0])<hh,'and they join, at a cost to your honor');t.act('lt-leave');
  // (choosing who joins: as many as your band's groups hold, the rest sent off; nobody dropped unseen)
  {P.sk.lead.lv=t.ARMY_GROUP.leadBase;P.troops={hum_knight:9};P.wounded={};const r=t.partyRoster(P);while(r.groupLimit-r.slots<1)P.sk.lead.lv++;const free=r.groupLimit-r.slots;// (one free group: your companions hold slots too)
   
@@ -75,12 +75,12 @@ try{
   t.act('pl-pick','militia:-1');t.act('pl-pick','militia:-1');t.act('pl-pick','spearman:1');t.act('pl-pick','spearman:1');ok(take().militia===0&&take().spearman===2&&/Take 2/.test(panel()),'leave the militia, and the spearmen may have the group instead');
   t.act('pl-back');ok(/throw down/.test(panel())&&G.par,'Back: the band’s fate to choose again');t.act('pl-join');
   t.act('pl-pick','militia:-1');t.act('pl-pick','militia:-1');t.act('pl-pick','spearman:1');const n0=t.troopCount();t.act('pl-take');
-  ok(t.troopCount()===n0+1&&P.troops.spearman===1&&!P.troops.militia&&/the rest are disarmed and sent off/.test(panel())&&!t.bandits.includes(b4),'you take the one you chose; the rest are sent off, and the page says so');t.act('dlg-ok')}
+  ok(t.troopCount()===n0+1&&P.troops.spearman===1&&!P.troops.militia&&/the rest are disarmed and sent off/.test(panel())&&!t.bandits.includes(b4),'you take the one you chose; the rest are sent off, and the page says so');t.act('lt-leave')}
  const b3={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b3));world();t.meetBand(b3);fix(.99);t.act('pl-yield');unfix();
  ok(G.enc&&G.enc.ref===b3&&/Fight|Normal attack/.test(panel()),'if they refuse, they fight');/* (with world battles its button reads Normal attack: engage.js encounterAttackButtons) */t.act('flee');
  const l=W.lords.find(x=>!x.dead);l.troops=['hum_levy','hum_levy'];P.hostile[l.fac]=G.day+20;world();P.x=l.x;P.y=l.y;t.interact(l);
  ok(G.par&&G.par.o===l,'a weak enemy lord who is caught may be called on to yield');const lg=P.gold;fix(.01);t.act('pl-yield');unfix();
- ok(l.dead&&P.gold>lg&&/yields/.test(panel()),'the lord pays a ransom and the army is gone');t.act('dlg-ok');
+ ok(l.dead&&P.gold>lg&&/yields/.test(panel()),'the lord pays a ransom and the army is gone');t.act('lt-leave');// (the spoils' window: parley.js parleyYield)
  // ---- a big host looks big
  world();P.troops={hum_knight:40};W.refugees=[];t.sendRefugees(src,dst,'hunger');W.refugees[0].x=P.x+30;W.refugees[0].y=P.y;t.drawWorld();ok(true,'the map draws big hosts and refugees');
  // ---- saved

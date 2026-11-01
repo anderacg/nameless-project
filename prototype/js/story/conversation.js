@@ -40,7 +40,9 @@ class Speaker{
   body(){return ''}
   // (its first words: by role, first meeting or again; '' says nothing)
   greet(again){const g=DIALOGUE.greet[this.role]||{},s=again?g.again:g.first;return s?this.fill(s):''}
-  fill(s){return s.replace(/\{N\}/g,this.name()).replace(/\{you\}/g,heroName()||'Stranger').replace(/\{town\}/g,this.t?.name||'').replace(/\{realm\}/g,this.realm?.()||'')}
+  // (who the words are of: {he}, {his} and the like are theirs, core/pronouns.js)
+  who(){return this.o}
+  fill(s){return prFill(s,this.who()).replace(/\{N\}/g,this.name()).replace(/\{you\}/g,heroName()||'Stranger').replace(/\{town\}/g,this.t?.name||'').replace(/\{realm\}/g,this.realm?.()||'')}
 }
 class LordSpeaker extends Speaker{
   get role(){return 'lord'}
@@ -49,7 +51,7 @@ class LordSpeaker extends Speaker{
   realm(){return FACS[this.o.fac].n}
   temper(){return this.o.temper||(this.o.temper=rngOf('talk').pick(TEMPERS))}
   knowsTemper(){return insightLv()>=2||!!TalkMemory.all[this.key]?.temper}
-  sub(){const l=this.o,f=FACS[l.fac];return 'Lord of the <span style="color:'+f.col+'">'+f.n+'</span>, leading '+l.troops.length+' soldiers (power '+l.power()+' vs your '+partyPower()+')'+(this.knowsTemper()?' · '+this.temper():'')}
+  sub(){const l=this.o,f=FACS[l.fac];return cap1(lordWord(l))+' of the <span style="color:'+f.col+'">'+f.n+'</span>, leading '+l.troops.length+' soldiers (power '+l.power()+' vs your '+partyPower()+')'+(this.knowsTemper()?' · '+this.temper():'')}
   // (his first words: what he holds against you first (a threat a month, a slight a week), else by his temper)
   greet(again){const m=TalkMemory.all[this.key]||{},G0=DIALOGUE.greet.lord,g=G0[this.temper()]||G0;
     return this.fill(m.threat!=null&&G.day-m.threat<=30?G0.threatened:m.slight!=null&&G.day-m.slight<=7?G0.slighted:again?g.again:g.first)}
@@ -57,16 +59,16 @@ class LordSpeaker extends Speaker{
   checkWhy(id){const l=this.o,m=TalkMemory.all[this.key]||{},v=relWith(l);
     if(id==='follow'){const w=Host.askWhy(l);if(w!=='')return w===false?false:w}
     if(id==='threaten'&&P.fac===l.fac)return false;if(id==='favour'&&v>=RELATION.troopsAt)return false;
-    if(m.tried?.[id]===G.day)return 'Not again today';if(id==='favour')return v<0?'He does not like you enough':lendWhy(l);
+    if(m.tried?.[id]===G.day)return 'Not again today';if(id==='favour')return v<0?pr(l).He+' does not like you enough':lendWhy(l);
     if(id==='threaten'&&partyPower()<l.power())return 'Your army is weaker';return ''}
   odds(id){const C=DIALOGUE.checks,X=C[id],l=this.o,pw=Math.max(0,partyPower()/Math.max(1,l.power())-1);
     return clamp(X.base+(P.attr?.cha||0)*(X.cha||0)+skill('pers')*(X.pers||0)+P.renown*(X.renown||0)+honorWith(l.fac)*(X.honor||0)+relWith(l)*(X.rel||0)+Math.min(1,pw)*(X.power||0)+(X.temper[this.temper()]||0)+(has('silver')?CAPTIVITY.traits.silver:0),C.min,C.max)}
   outcome(id,won){const X=DIALOGUE.checks[id],o=won?X.win:X.lose,l=this.o,out={};if(!o)return out;
-    if(o.gold)out.gold=Math.min(o.gold,treas(l.fac));if(o.rel)out.rel=[l,o.rel,'what you said to him'];if(o.honor)out.honor=[l.fac,o.honor];return out}
-  replies(){const l=this.o,C=DIALOGUE.checks,read=p=>insight(['you cannot tell your odds',p>=.5?'he may well':'a long chance','about '+Math.round(p*100)+'%'],'know the odds');
+    if(o.gold)out.gold=Math.min(o.gold,treas(l.fac));if(o.rel)out.rel=[l,o.rel,'what you said to '+pr(l).him];if(o.honor)out.honor=[l.fac,o.honor];return out}
+  replies(){const l=this.o,C=DIALOGUE.checks,read=p=>insight(['you cannot tell your odds',p>=.5?pr(l).he+' may well':'a long chance','about '+Math.round(p*100)+'%'],'know the odds');
     return [{act:'lr-rumours',arg:l.id,label:'Ask for rumours'},{act:'lr-lords',arg:l.id,label:'Ask about other lords'},
       ...['flatter','favour','threaten','follow'].map(id=>{const why=this.checkWhy(id);if(why===false)return null;const win=Outcome.describe(this.outcome(id,true)),lose=Outcome.describe(this.outcome(id,false));
-        return {act:'talk-'+id,arg:l.id,label:C[id].label+' · '+read(this.odds(id)),note:(id==='favour'?RELATION.troops+' soldiers':id==='follow'?'he follows you for some days':win)+(lose?' / failing: '+lose:''),why}}),
+        return {act:'talk-'+id,arg:l.id,label:this.fill(C[id].label)+' · '+read(this.odds(id)),note:(id==='favour'?RELATION.troops+' soldiers':id==='follow'?pr(l).he+' follows you for some days':win)+(lose?' / failing: '+lose:''),why}}),
       ...Questbook.replies(l)]}
   // a check tried: your words, the roll (the stream talk), his answer by temper, what came of it; remembered
   act(id,cv){const l=this.o,X=DIALOGUE.checks[id];if(!X||this.checkWhy(id))return;const m=TalkMemory.meet(this.key);(m.tried||(m.tried={}))[id]=G.day;
@@ -131,6 +133,7 @@ class CaptorSpeaker extends Speaker{
   get role(){return 'captor'}
   get key(){return 'captor:'+(this.o.id??this.o.town??this.o.fac??this.o.k)}
   get lord(){return Captivity.lord(this.o)}
+  who(){return this.lord}
   name(){const c=this.o;return this.lord?.name||(c.k==='broker'?cap1(c.name):c.k==='band'?'Their chief':'Their captain')}
   sub(){const c=this.o;return c.k==='broker'?'Holds you, bought from your captors':'Holds you: '+c.name}
   pic(){return this.lord?TALK_PIC.lord(this.lord):TALK_PIC.captor(this.o)}

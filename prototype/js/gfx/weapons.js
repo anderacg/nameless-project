@@ -4,18 +4,20 @@
    sprite.hand), turned to fit what he is doing. Pixel art does not rotate freely, so each weapon is drawn once at each of
    WEAPON_STEPS angles round the hand, outlined, and kept. A sword hangs point down at rest, rides the shoulder on the march,
    is raised up and back in a charge, held in guard near a foe and swung in a smooth arc; a spear stands upright at rest, is
-   levelled forward in a charge and pointed at the foe close by, and thrust. Bows, crossbows, slings and staves stay drawn with
-   the body (people.js). ---------- */
+   levelled forward in a charge and pointed at the foe close by, and thrust; drawn behind the body while it points up and back
+   over the shoulder (GEAR.behind: a sword on the march, a wind-up) while it still shows past the body (peeks), else in front. Bows, crossbows, slings and staves turn with
+   the body's frames, so they are kept with its pose (figures.js ShooterGear). ---------- */
 const WEAPON_STEPS=32;
 const heldWeapon=o=>o&&WPN[o.weapon]?o.weapon:null;
 const POLE=k=>k==='spear'||k==='pike'||k==='javelin'||k==='lance';
 // the weapon at angle step i (0: pointing forward, a quarter turn: down), round its hand at the canvas's middle
-const WEAPONS={};
+const WEAPONS={};let WEAPON_N=0;
 function weaponSprite(k,team,skin,i){
   const key=k+team+skin+i;if(WEAPONS[key])return WEAPONS[key];
   const [len]=WPN[k],R=len+4,S=R*2+1,g=pgrid(S,S),deg=i/WEAPON_STEPS*360;
-  drawBlade((x,y,c)=>pset(g,x,y,c),R,R,deg,k,pal(team),skin);poutline(g);const c=pcanvas(g);c.R=R;return WEAPONS[key]=c}
-// a weapon's pixels from its hand (hx, hy) at deg (people.js drawWeapon draws the same into a figure)
+  drawBlade((x,y,c)=>pset(g,x,y,c),R,R,deg,k,pal(team),skin);poutline(g);const c=pcanvas(g);c.R=R;c.n=++WEAPON_N;return WEAPONS[key]=c}
+// a weapon's pixels from its hand (hx, hy) at deg (figures.js HandWeapon draws the same into a figure; a worker's tool's head too);
+// returns the point just past its tip (a blow's flash)
 function drawBlade(set,hx,hy,deg,k,Tm,skin){
   const [len,mat,head]=WPN[k],W=PPAL.wood,M=PPAL.steel,col=mat==='steel'?M[1]:W[1],a=deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
   // (one pixel per step along the longer axis, so a slanted shaft is a single clean line, never two side by side)
@@ -30,7 +32,13 @@ function drawBlade(set,hx,hy,deg,k,Tm,skin){
   if(head==='pennant'){set(tx,ty,M[0]);set(tx-s,ty+c,Tm[1]);set(tx-s*2,ty+c*2,Tm[2]);set(tx-s-c,ty+c-s,Tm[1])}
   if(head==='axe'||head==='bigaxe'){for(let i=1;i<=(head==='bigaxe'?3:2);i++){set(tx-s*i,ty+c*i,M[1]);set(tx-s*i-c,ty+c*i-s,M[2])}if(head==='bigaxe')for(let i=1;i<=2;i++)set(tx+s*i,ty-c*i,M[1])}
   if(head==='hammer'){for(let i=-1;i<=1;i++){set(tx-s*i,ty+c*i,M[1]);set(tx-s*i-c,ty+c*i-s,M[2])}}
-  set(hx,hy,skin)}
+  // (a tool's head, across the haft at its end: px, py the way across, forward)
+  const px=-s,py=c;
+  if(head==='hoe'){set(tx+px,ty+py,M[2]);set(tx+px*2,ty+py*2,M[1]);set(tx+px*2-c,ty+py*2-s,M[1])}
+  if(head==='pick'){for(const k2 of [-2,-1,1,2])set(tx+px*k2,ty+py*k2,Math.abs(k2)===1?M[1]:M[2]);set(tx+px*2-c,ty+py*2-s,M[2]);set(tx-px*2-c,ty-py*2-s,M[2])}
+  if(head==='crook'){set(tx+c,ty+s,W[1]);set(tx+c+px,ty+s+py,W[1]);set(tx+px*2,ty+py*2,W[1]);set(tx+px*2-c,ty+py*2-s,W[2])}
+  if(head==='rod'){for(let i=1;i<=5;i++)set(tx,ty+i,'#d8dce4')}
+  set(hx,hy,skin);return[tx+c,ty+s]}
 // how he holds it now: [angle (degrees, 0 forward, -90 up), hand dx, hand dy] by what he is doing
 const HOLD={
   // at rest, on the march, in a charge, in guard near a foe, stunned, a parry (raised across before him: battle/defence.js) and
@@ -67,9 +75,22 @@ function heldAngle(u,k){
   u.wAng=deg;// (straight to the hold: a sweep from hold to hold looked like spinning)
   u.wDx=u.wDx==null?dx:u.wDx+(dx-u.wDx)*Math.min(1,dt*12);u.wDy=u.wDy==null?dy:u.wDy+(dy-u.wDy)*Math.min(1,dt*12);
   return[u.wAng,u.wDx,u.wDy]}
-function drawHeld(u,o,sp,bx,by,flash){
-  const k=heldWeapon(o);if(!k||!sp.hand)return;const [deg,hx,hy]=heldAngle(u,k),dx=sp.rig?0:hx,dy=sp.rig?0:hy,f=deg/360*WEAPON_STEPS;// (rigged: the fist carries it, people.js BLOW_RIG)
+// (the weapon in his hand this frame, worked out once (HELD, one record, no allocation a frame): its picture, its corner from his
+// sprite's, and whether it goes behind his body (GEAR.behind); null for none. render.js drawUnit draws it before his body or after)
+const HELD={w:null,x:0,y:0,back:false};
+function heldNow(u,o,sp){
+  const k=heldWeapon(o);if(!k||!sp.hand)return null;const [deg,hx,hy]=heldAngle(u,k),dx=sp.rig?0:hx,dy=sp.rig?0:hy,f=deg/360*WEAPON_STEPS;// (rigged: the fist carries it, people.js BLOW_RIG)
   // (the step drawn changes only when the angle is well past the middle between two: no flicker on the boundary)
   if(u.wIdx==null||Math.abs(((f-u.wIdx)%WEAPON_STEPS+WEAPON_STEPS*1.5)%WEAPON_STEPS-WEAPON_STEPS/2)>.8)u.wIdx=Math.round(f);
-  const i=((u.wIdx%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS;
-  const w=weaponSprite(k,o.team,pal(o.skin)[1],i);ctx.drawImage(flash?whiteOf(w):w,bx+sp.hand[0]+Math.round(dx)-w.R,by+sp.hand[1]+Math.round(dy)-w.R)}
+  const i=((u.wIdx%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,w=weaponSprite(k,o.team,pal(o.skin)[1],i),a=(i/WEAPON_STEPS*360+180)%360-180;
+  HELD.w=w;HELD.x=sp.hand[0]+Math.round(dx)-w.R;HELD.y=sp.hand[1]+Math.round(dy)-w.R;HELD.back=a>GEAR.behind[0]&&a<GEAR.behind[1]&&peeks(sp,w,HELD.x,HELD.y);return HELD}
+// (a picture's alpha by pixel, read once)
+function alphaOf(c){if(c.alpha)return c.alpha;const d=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data,A=new Uint8Array(c.width*c.height);for(let i=0;i<A.length;i++)A[i]=d[i*4+3];return c.alpha=A}
+/* (behind the body sp at (x, y), does the weapon w still show past it, GEAR.peek of its pixels at least? A sword on the shoulder
+   from a hand before the belt lies all over his body: behind it only its hilt would show (the owner, 2026-11-01: "the hero battle
+   unit should also draw a weapon from start to finish"), so it is drawn before him instead. Kept on the body, by weapon and place) */
+function peeks(sp,w,x,y){const m=sp.peek||(sp.peek=new Map()),k=(w.n*256+x+128)*256+y+128;let v=m.get(k);if(v!=null)return v;
+  const A=alphaOf(sp),Wa=alphaOf(w);let n=0,out=0;
+  for(let j=0;j<w.height;j++)for(let i=0;i<w.width;i++){if(!Wa[j*w.width+i])continue;n++;const X=x+i,Y=y+j;if(X<0||Y<0||X>=sp.width||Y>=sp.height||!A[Y*sp.width+X])out++}
+  m.set(k,v=out>=n*GEAR.peek);return v}
+function drawHeld(u,o,sp,bx,by,flash){const h=heldNow(u,o,sp);if(h)ctx.drawImage(flash?whiteOf(h.w):h.w,bx+h.x,by+h.y)}

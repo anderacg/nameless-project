@@ -30,8 +30,9 @@ class Stories{
   // (a goal's fields resolved, its hooks kept)
   static vals(st,th){const o={};for(const [k,v] of Object.entries(st))o[k]=['remember','how','then','on','when','need'].includes(k)?v:this.val(v,th);return o}
   // ---- its words, from its memory
+  // ({lord.his}, {n.him}, {you.he} and the like: the words for the person a memory's field names, core/pronouns.js)
   static fill(s,th){const m=th?.memory||th||{};s=this.val(s,th);if(s==null)return '';
-    return String(s).replace(/\{(\w+)\}/g,(all,k)=>k==='town'?m.town||'':k==='realm'?(m.fac&&FACS[m.fac]?'the '+FACS[m.fac].n:'the realm'):k==='lord'?m.lord||'the lord':k==='you'?heroName()||'stranger':k==='to'?m.to||'':
+    return String(s).replace(new RegExp('\\{(\\w+)\\.('+PR_WORDS+')\\}','gi'),(all,x,k)=>prWord(k,x==='you'?P:m[x]??null)).replace(/\{(\w+)\}/g,(all,k)=>k==='town'?m.town||'':k==='realm'?(m.fac&&FACS[m.fac]?'the '+FACS[m.fac].n:'the realm'):k==='lord'?m.lord||'the lord':k==='you'?heroName()||'stranger':k==='to'?m.to||'':
       typeof m[k]==='string'||typeof m[k]==='number'?String(m[k]):all)}
   // ---- an outcome from a story's (plain numbers by its memory; once: the first time, then after)
   static outcome(o,th){o=this.val(o,th);if(!o)return {};const m=th?.memory||{};
@@ -132,7 +133,7 @@ defineGoal('kill',{start:(st,th)=>{const l=Stories.target(st,th);return l&&Stori
 defineCond('level',(v)=>P.level>=v,v=>'Level '+v);
 defineCond('renown',(v)=>P.renown>=v,v=>'Renown '+v);
 defineCond('honor',(v,c)=>!!c.fac&&!!FACS[c.fac]&&honorWith(c.fac)>=v,v=>'Honour '+v+' with this realm');
-defineCond('rel',(v,c)=>{const l=c.lordRef||c.lord&&W.lords.find(x=>x.name===c.lord);return !!l&&relWith(l)>=v},v=>'His regard '+v);
+defineCond('rel',(v,c)=>{const l=c.lordRef||c.lord&&W.lords.find(x=>x.name===c.lord);return !!l&&relWith(l)>=v},(v,c)=>pr(c.lordRef||c.lord&&W.lords.find(x=>x.name===c.lord)).His+' regard '+v);
 defineCond('realm',(v,c)=>v===true?!!P.fac:v===false?!P.fac:v==='same'?!!P.fac&&P.fac===c.fac:P.fac===v,()=>'Not your realm');
 defineCond('war',(v,c)=>!!c.fac&&!!FACS[c.fac]&&realmOf(c.fac).enemies().length>0===!!v);
 defineCond('kind',(v,c)=>[].concat(v).includes(c.kind));

@@ -1,6 +1,6 @@
 'use strict';
 Kit.suite(({ok})=>{
- const t=T,P=t.P,G=t.G,W=t.W;Kit.begin('soldier',1);Kit.clear();Kit.world();P.troops={};G.paused=false;G.speed=1;G.modal=false;G.hurry=false;P.stay=null;
+ const t=T,P=t.P,G=t.G,W=t.W;Kit.begin('soldier',1);Kit.clear();Kit.world();P.troops={};G.paused=false;G.speed=1;G.modal=false;P.stay=null;
  const home=t.TOWNS[0];Kit.goTo(home.x+160,home.y+120);W.lords=[];W.patrols=[];W.monsters=[];W.caravans=[];W.refugees=[];W.critters=[];W.folk=[];t.bandits.length=0;
  const b=t.asParty({kind:'bandits',troops:['militia'],x:P.x+60,y:P.y,cool:0,t:999,idle:true});t.bandits.push(b);
  const i=Math.floor(P.y/t.TILE)*t.MW+Math.floor(P.x/t.TILE),tile=t.tiles[i],A=t.TravelAwareness,step=n=>A.step(n),level=()=>A.level(b),detect=()=>t.travelDetection(b);
@@ -12,7 +12,7 @@ Kit.suite(({ok})=>{
   step(2);ok(level()<1e-8,'three seconds out of sight clears suspicion');
   b.x=P.x+40;t.tiles[i]=t.T_FOREST;A.reset();step(2);ok(level()===.5&&!detect().sees,'forest takes four seconds at ordinary distance');
   step(2);ok(detect().sees,'forest observers can eventually detect you');
-  t.tiles[i]=t.T_OPEN;b.x=P.x+60;A.reset();G.hurry=true;step(1);ok(level()===.75,'hurrying builds suspicion faster');G.hurry=false;
+  t.tiles[i]=t.T_OPEN;b.x=P.x+60;A.reset();
   A.reset();b.x=P.x+20;step(.5);ok(level()===.75,'close observers notice the army faster');
   A.reset();b.x=P.x+4;step(.01);ok(detect().sees,'physical contact cannot be exploited to stay undetected');
   b.x=P.x+60;A.reset();G.paused=true;step(10);ok(level()===0,'paused travel does not build suspicion');G.paused=false;
@@ -34,5 +34,17 @@ Kit.suite(({ok})=>{
    P.x+=300;const d0=Math.hypot(o.x-at.x,o.y-at.y);ok(t.stanceMove(o,'attack',300,P.x-o.x,0,0,1,true)&&Math.hypot(o.x-at.x,o.y-at.y)<d0&&/Searching/.test(t.travelDetectionText(o)||'Searching'),'out of its sight, it goes to that place, not to where you are now');
    let n=0;while(S.of(o)&&n++<400){A.time+=.1;t.stanceMove(o,'attack',300,P.x-o.x,0,0,1,true)}ok(!S.of(o)&&Math.hypot(o.x-at.x,o.y-at.y)<X.reach+2&&n*.1>=X.look,'it looks about there for '+X.look+' s, finds nothing, and turns back');
    ok(!t.stanceMove(o,'attack',300,P.x-o.x,0,0,1,true),'and then goes about its own business')}finally{P.x=px;window.walk=walk}}
- }finally{t.tiles[i]=tile;G.speed=1;G.hurry=false;G.paused=false;G.modal=false;P.stay=null;G.chase=null;A.reset()}
+ // (the owner, 2026-11-01: "you ambush and kill monster. the eye still not remove") one that noticed you, then gone from its list
+ // without a mark (engage.js ON_WIN's monster: W.monsters filtered): no longer asked, and no eye drawn for it
+ {const m=t.asMonster({id:'wolf',x:P.x+50,y:P.y,hx:P.x+50,hy:P.y,lv:1,n:3,t:9,a:0,cool:0});W.monsters.push(m);t.lodFile();A.notice(m);
+  ok(A.observers().has(m),'a beast that noticed you is asked');
+  W.monsters=W.monsters.filter(x=>x!==m);const obs=A.observers();
+  ok(!obs.has(m)&&!A.live.has(m)&&!t.travelDetectionNow().rows.some(d=>d.o===m),'slain (gone from the list, no mark): no longer asked, nor its eye drawn')}
+ // (the owner, 2026-11-01: "disarm bandits without fighting also leave the eye") a band that yields and is disarmed (parley.js
+ // pl-free: bandGone, the bandits list made anew without it): its eye goes with it
+ {const d=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x+40,y:P.y,cool:0,t:999,idle:true});t.bandits.push(d);t.lodFile();A.notice(d);
+  ok(A.observers().has(d),'a band that noticed you is asked');
+  G.par={o:d,kind:'band'};t.parleyAct('pl-free');t.act('lt-leave');// (its spoils' window, left: parley.js yieldEnd)
+  ok(!t.bandits.includes(d)&&!A.observers().has(d)&&!t.travelDetectionNow().rows.some(r=>r.o===d),'disarmed and sent off: no longer asked, nor its eye drawn')}
+ }finally{t.tiles[i]=tile;G.speed=1;G.paused=false;G.modal=false;P.stay=null;G.chase=null;A.reset()}
 });

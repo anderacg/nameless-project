@@ -9,5 +9,6 @@ Kit.suite(({ok})=>{
  const L=t.supplyLand();P.stay=null;P.camp=null;const stopped=t.staminaRate(false,'water',L).n;P.camp={at:0};const camp=t.staminaRate(false,'water',L).n;P.camp=null;
  ok(t.SUPPLY.rest.stop===4&&t.SUPPLY.rest.camp===16&&t.SUPPLY.rest.stay===20&&camp>stopped,'rest recovery is doubled and camp remains faster than stopping');
  const battle=t.moveStep(34,1,false),travel=t.moveStep(34,1);
- ok(Math.abs(battle-34*.68)<1e-8&&travel===battle*2,'campaign movement doubles while battle movement keeps its prior scale');
+ // (campaign travel 1.6x, was 2x: the owner, 2026-10-31, "drop campaign speed about 20%", WORLD_SCALE.travel)
+ ok(Math.abs(battle-34*.68)<1e-8&&t.WORLD_SCALE.travel===1.6&&travel===battle*1.6,'campaign movement is 1.6x while battle movement keeps its prior scale');
 });

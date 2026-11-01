@@ -416,7 +416,7 @@ class FoeQuest extends StepQuest{
   get deed(){return 'lord:beaten'}
   hits(d){return d.lord?.id===this.target}
   finish(){this.pay('beaten','beaten')}
-  todo(){const l=this.foe();return 'Beat '+(l?l.name:'him')+' in battle.'}
+  todo(){const l=this.foe();return 'Beat '+(l?l.name:pr(l).him)+' in battle.'}
   lapse(){const l=this.foe();if(!l||l.gone)return this.over('gone','gone');super.lapse()}
 }
 defineKinds('step',{},{

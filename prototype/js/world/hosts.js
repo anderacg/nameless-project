@@ -2,12 +2,15 @@
 /* ---------- hosts: armies that march together (doc/HOSTS_DESIGN.md, phases 1 and 2) ----------
    A host is a leader and the armies that follow him, each still drawn and fighting as itself, never merged. On the march they walk
    in a column on the leader's own path: his trail (a point every HOSTS.crumb px, kept for each leader while he leads, never saved),
-   member i making for the point (i + 1) × HOSTS.gap px back along it, so on a long road they string out along it, through a ford
-   or round a wood as he went; standing still, they stand in that column behind him. A member behind its place hurries
-   (HOSTS.catch); one farther than HOSTS.far (back from a patrol, a stay) makes straight for the leader first. The host goes at its
-   slowest member's pace: the leader is slowed to it (paceOf). A member keeps its place: it runs off after no prey.
+   each member making for its place back along it (Host#back: the owner's rule for rings, "big army, bigger interaction
+   touchpoint, otherwise the army units may collide": each army's ring behind the one ahead of it, HOSTS.gap px between the two
+   rings, so armies never stand inside one another), so on a long road they string out along it, through a ford or round a wood
+   as he went; standing still, they stand in that column behind him. A member behind its place hurries (HOSTS.catch); one farther
+   than HOSTS.far past its place (back from a patrol, a stay) makes straight for the leader first. The host goes at its slowest
+   member's pace: the leader is slowed to it (paceOf). A member keeps its place: it runs off after no prey.
    Phase 1: your host, you and your companions' parties with the order Follow (world/brains.js CompanionBrain), in the order
-   they were given it (fseq); each within HOSTS.join of a battle of yours joins it (battle/engage.js).
+   they were given it (fseq); each within HOSTS.join past its place in the column of a battle of yours joins it (joinReach,
+   battle/engage.js).
    Phase 2 (HOSTS.lord): lords. Who may march with you: a lord of your realm, of a realm allied to it, or one whose relation with
    you is lord.rel or more (Host.friend); never one hostile to you.
    - A lord follows you (l.follow: {since, until, seq}, saved with him): asked in his talk (story/conversation.js LordSpeaker, the
@@ -33,6 +36,8 @@
 const HOSTS={crumb:6,gap:22,catch:1.3,far:160,join:220,
   lord:{rel:20,max:3,troops:6,days:[5,10],near:150,offer:.03,leave:6,honor:2,end:{rel:5,renown:3,honor:2},hopeless:2.5,cautious:['greedy','cunning'],aside:3,peace:6,desert:3},
   camp:{start:.12,min:3,members:[2,4],troops:9,reach:700,days:20,refuse:3}};
+// (an army's ring in a host's column: its outer ring, march.js marchOuter; none with world battles off)
+const hostRing=o=>WORLD_BATTLE.on?marchOuter(o):0;
 class Host{
   constructor(lead,members){this.lead=lead;this.members=members}
   // ---- your host: you, your companions' parties that follow you and the lords that do (none: no host)
@@ -50,28 +55,47 @@ class Host{
   static seq(){return Math.max(0,...cparties().map(p=>p.fseq||0),...this.lords().map(l=>l.follow.seq||0))+1}
   // ---- the leader's trail: a point each time he has gone crumb px, as long as the column needs
   static trailOf(o){let t=this.trails.get(o);if(!t)this.trails.set(o,t=[[o.x,o.y]]);return t}
-  mark(){const o=this.lead,t=Host.trailOf(o),l=t[t.length-1];if(Math.hypot(o.x-l[0],o.y-l[1])<HOSTS.crumb)return;t.push([o.x,o.y]);
-    const keep=Math.ceil((this.members.length+2)*HOSTS.gap/HOSTS.crumb)+2;if(t.length>keep)t.splice(0,t.length-keep)}
-  // a member's place: (i + 1) × gap back along the trail from the leader; the trail shorter, its oldest point
-  slot(o){const i=this.members.indexOf(o);if(i<0)return null;const t=Host.trailOf(this.lead);let left=(i+1)*HOSTS.gap,x=this.lead.x,y=this.lead.y;
-    for(let k=t.length-1;k>=0;k--){const [px,py]=t[k],d=Math.hypot(px-x,py-y);if(d>=left&&d>0){const f=left/d;return {x:x+(px-x)*f,y:y+(py-y)*f}}left-=d;x=px;y=py}return {x,y}}
+  mark(){const o=this.lead,t=Host.trailOf(o),l=t[t.length-1],d=Math.hypot(o.x-l[0],o.y-l[1]);if(d<HOSTS.crumb)return;if(d>HOSTS.far)t.length=0;t.push([o.x,o.y]);// (a leap, out of a gate: a fresh trail)
+    const keep=Math.ceil((this.back(this.members.at(-1))+2*HOSTS.gap)/HOSTS.crumb)+2;if(t.length>keep)t.splice(0,t.length-keep)}
+  // (how far back along the trail a member's place is: each ring (march.js marchOuter; none with world battles off) behind the
+  // one ahead of it, HOSTS.gap px between them; the leader's 0)
+  back(o){let s=0,a=this.lead;for(const m of this.members){s+=hostRing(a)+hostRing(m)+HOSTS.gap;if(m===o)return s;a=m}return o===this.lead?0:s}
+  // (every member's place: back along the trail from the leader, each where its ring stands HOSTS.gap px clear of the ring of the
+  // place ahead of it, straight, so round a bend too; one lagging behind its place holds those behind it back past it; the trail
+  // shorter, on past its oldest point the way it went, none yet: straight back from the leader toward the member)
+  places(){
+    const L=this.lead,t=Host.trailOf(L),pts=[{x:L.x,y:L.y}];for(let k=t.length-1;k>=0;k--){const q=pts.at(-1);if(Math.hypot(t[k][0]-q.x,t[k][1]-q.y)>1e-6)pts.push({x:t[k][0],y:t[k][1]})}
+    const out=new Map();let i=0,c=pts[0],prev=pts[0],a=L;
+    for(const m of this.members){const need=hostRing(a)+hostRing(m)+HOSTS.gap,far=a!==L?Math.hypot(a.x-L.x,a.y-L.y):0,lag=far>Math.hypot(prev.x-L.x,prev.y-L.y)?far+need:0;
+      const ok=p=>Math.hypot(p.x-prev.x,p.y-prev.y)>=need&&Math.hypot(p.x-L.x,p.y-L.y)>=lag;let place=null;
+      while(!place){let r=pts[i+1],end=!r;if(end){const q=pts[i-1]||{x:L.x,y:L.y},u=i||c!==pts[0]?{x:c.x-q.x,y:c.y-q.y}:{x:m.x-L.x,y:m.y-L.y},d=Math.hypot(u.x,u.y)||1,k=need+lag+Math.hypot(c.x-prev.x,c.y-prev.y)+Math.hypot(c.x-L.x,c.y-L.y)+1;
+          r=i||Math.hypot(u.x,u.y)>1e-6?{x:c.x+u.x/d*k,y:c.y+u.y/d*k}:{x:c.x-k,y:c.y}}
+        if(!ok(r)&&!end){c=r;i++;continue}let lo=0,hi=1;const at=s=>({x:c.x+(r.x-c.x)*s,y:c.y+(r.y-c.y)*s});if(ok(c))hi=0;else for(let n=0;n<30;n++){const s=(lo+hi)/2;if(ok(at(s)))hi=s;else lo=s}
+        place=at(hi);c=place}
+      out.set(m,place);prev=place;a=m}
+    return out}
+  // a member's place (places)
+  slot(o){return this.members.includes(o)?this.places().get(o):null}
   // ---- a member's moment (go(x, y, step): its brain's way of moving there, its step at its own pace sp)
-  static keep(o,sp,go){const h=this.of(o);if(!h)return false;h.mark();const L=h.lead,far=Math.hypot(L.x-o.x,L.y-o.y)>HOSTS.far,s=far?{x:L.x,y:L.y}:h.slot(o),d=Math.hypot(s.x-o.x,s.y-o.y);
+  static keep(o,sp,go){const h=this.of(o);if(!h)return false;h.mark();const L=h.lead,far=Math.hypot(L.x-o.x,L.y-o.y)>h.back(o)+HOSTS.far,s=far?{x:L.x,y:L.y}:h.slot(o),d=Math.hypot(s.x-o.x,s.y-o.y);
     if(d>1.5)go(s.x,s.y,Math.min(d,sp*(far||d>HOSTS.gap/2?HOSTS.catch:1)));return true}
   // ---- the leader's pace: slowed to its slowest member near (within far), never faster. Their own paces, before the ground
   // (they walk where he walked a moment later: the ground slows them as it slowed him); a multiplier of his
   static base(o){return o===P?bandPace():paceRatio(listSpeeds(o.troops))*sizeMul(o.troops.length)*EscapeStamina.factor(o)*(o.mapKind==='lord'&&mountedShare(listSpeeds(o.troops))<.5?.85:1)}
-  paceOf(){const own=Host.base(this.lead);let m=1;for(const o of this.members)if(Math.hypot(o.x-this.lead.x,o.y-this.lead.y)<=HOSTS.far)m=Math.min(m,Host.base(o)/Math.max(.01,own));return Math.max(.3,m)}
+  paceOf(){const own=Host.base(this.lead);let m=1;for(const o of this.members)if(Math.hypot(o.x-this.lead.x,o.y-this.lead.y)<=this.back(o)+HOSTS.far)m=Math.min(m,Host.base(o)/Math.max(.01,own));return Math.max(.3,m)}
   // (your pace, as world.js moves you: your host's slowest member's, or yours)
   static yourPace(){const h=this.yours();return h?h.paceOf():1}
   // (is o one of your host's members, near enough a battle of yours to join it)
-  static joins(o){const h=this.yours();return !!h&&h.members.includes(o)&&Math.hypot(o.x-P.x,o.y-P.y)<HOSTS.join}
+  static joins(o){const h=this.yours();return !!h&&h.members.includes(o)&&Math.hypot(o.x-P.x,o.y-P.y)<this.joinReach(o)}
+  // (how near you one of your host's members joins a battle of yours: HOSTS.join past its place in your column, so a long column's
+  // last joins as its first does)
+  static joinReach(o){const h=this.yours();return HOSTS.join+(h&&h.members.includes(o)?h.back(o):0)}
 
   // ---- phase 2: who may march with you: your realm's, its ally's, a friend; never one hostile to you
   static friend(l){return !!l&&!hostileTo(l.fac)&&(!!P.fac&&(P.fac===l.fac||relOf(P.fac,l.fac).s==='ally')||relWith(l)>=HOSTS.lord.rel)}
   // (why he will not follow you now: '' he may; false: not to be asked)
-  static askWhy(l){const X=HOSTS.lord;if(!l||l.dead||l.follow||hostileTo(l.fac)||this.leader()===l)return false;if(!this.friend(l))return 'He does not know you well enough';
-    if(this.lords().length>=X.max)return 'Your host has lords enough';if(l.troops.length<X.troops)return 'He has too few men';if(l.state==='siege'||l.state==='relieve')return 'He has a siege to see to';return ''}
+  static askWhy(l){const X=HOSTS.lord;if(!l||l.dead||l.follow||hostileTo(l.fac)||this.leader()===l)return false;const w=pr(l);if(!this.friend(l))return w.He+' does not know you well enough';
+    if(this.lords().length>=X.max)return 'Your host has lords enough';if(l.troops.length<X.troops)return w.He+' has too few men';if(l.state==='siege'||l.state==='relieve')return w.He+' has a siege to see to';return ''}
   // he follows you, for days; his line
   static lead(l,days){const X=HOSTS.lord,n=days||rint(...X.days);if(l.inside)l.leave();l.follow={since:G.day,until:G.day+n,seq:this.seq()};log(lordName(l)+' follows you for '+n+' days.','good','war');return n}
   static release(l,why){if(!l.follow)return;l.follow=null;if(!l.dead)lordThink(l);if(why)log(why,'gold','war')}
@@ -83,11 +107,11 @@ class Host{
   // on those at peace with his realm he leaves your host. The ones standing aside, with why: e.asides
   static decide(e){const X=HOSTS.lord,fr=foeRealm(e),out=[];if(e.kind==='tourney')return;
     const foe=rating(e.list||[],e.lv||1)+e.foes.reduce((a,o)=>a+(o.power?o.power():power(o.troops)),0),ours=partyPower()+e.allies.reduce((a,o)=>a+(o.power?o.power():power(o.troops)),0);
-    for(const l of this.lords()){if(Math.hypot(l.x-P.x,l.y-P.y)>HOSTS.join||l===e.ref)continue;const i=e.allies.indexOf(l),temper=l.temper||'';
+    for(const l of this.lords()){if(Math.hypot(l.x-P.x,l.y-P.y)>this.joinReach(l)||l===e.ref)continue;const i=e.allies.indexOf(l),temper=l.temper||'';
       if(i>=0&&foe>ours*X.hopeless&&X.cautious.includes(temper)){e.allies.splice(i,1);out.push([l,'the odds are hopeless']);continue}
-      if(i>=0)continue;const peace=fr&&fr!=='player'&&FACS[fr]&&!atWar(l.fac,fr)&&l.fac!==fr;
-      if(peace&&!(P.fac&&atWar(P.fac,fr))){out.push([l,'his realm is at peace with the '+FACS[fr].n]);changeRel(l,-X.peace,'you attacked those at peace with his realm');this.release(l,lordName(l)+' will not ride with one who attacks the friends of his realm. He leaves your host.')}
-      else if(fr===l.fac)out.push([l,'they are his own realm']);else out.push([l,'he has no quarrel with them'])}
+      if(i>=0)continue;const peace=fr&&fr!=='player'&&FACS[fr]&&!atWar(l.fac,fr)&&l.fac!==fr,w=pr(l);
+      if(peace&&!(P.fac&&atWar(P.fac,fr))){out.push([l,w.his+' realm is at peace with the '+FACS[fr].n]);changeRel(l,-X.peace,'you attacked those at peace with '+w.his+' realm');this.release(l,lordName(l)+' will not ride with one who attacks the friends of '+w.his+' realm. '+w.He+' leaves your host.')}
+      else if(fr===l.fac)out.push([l,'they are '+w.his+' own realm']);else out.push([l,w.he+' has no quarrel with them'])}
     e.asides=out}
   static asidesHtml(e){return e.asides?.length?'<p class="bad">Standing aside: '+e.asides.map(([l,w])=>lordName(l)+' ('+w+')').join('; ')+'.</p>':''}
   // ---- you follow a lord: his host (Host.under), its leader now
@@ -97,22 +121,22 @@ class Host{
   static join(o,days){const X=HOSTS.lord,n=days||rint(...X.days);this.under={id:o.id,since:G.day,until:G.day+n};log('You join the host of '+lordName(o)+' for '+n+' days.','gold','war');return n}
   // (you leave him: before his days are up, relation and honour; his days up, his thanks; why: its line)
   static leave(early,why){const l=this.leader(),X=HOSTS.lord;this.under=null;if(!l)return;
-    if(early){changeRel(l,-X.leave,'you left his host');addHonor(l.fac,-X.honor,true);log(why||'You leave the host of '+lordName(l)+' before he lets you go.','bad','war')}
-    else{changeRel(l,X.end.rel,'you marched with him');P.renown+=X.end.renown;addHonor(l.fac,X.end.honor,true);log(lordName(l)+' lets you go with his thanks.','good','war')}}
+    const w=pr(l);if(early){changeRel(l,-X.leave,'you left '+w.his+' host');addHonor(l.fac,-X.honor,true);log(why||'You leave the host of '+lordName(l)+' before '+w.he+' lets you go.','bad','war')}
+    else{changeRel(l,X.end.rel,'you marched with '+w.him);P.renown+=X.end.renown;addHonor(l.fac,X.end.honor,true);log(lordName(l)+' lets you go with '+w.his+' thanks.','good','war')}}
   // (your place in his column: world.js followStep; he inside a holding, at its gate)
   static yourSlot(l){if(l.inside){const t=townBy(l.inside);return t?gateGoal(t):{x:l.x,y:l.y}}const h=this.of(P);h.mark();return h.slot(P)}
   // (each moment on the map: your place taken up again after a battle or a talk; his battle near, its page)
   static watch(){const l=this.leader();if(!l){if(this.under)this.under=null;return}if(G.mode!=='world'||G.modal)return;
     if(!G.follow&&this.paused){this.paused=false;if(followable(l)||l.inside){G.follow={o:l,crumbs:[[l.x,l.y]],host:true}}}
-    const f=l.fight&&W.fights.find(x=>x.id===l.fight);if(f&&this.asked!==f.id&&Math.hypot(f.x-P.x,f.y-P.y)<HOSTS.join){this.asked=f.id;fightMeet(f)}}
+    const f=l.fight&&W.fights.find(x=>x.id===l.fight);if(f&&this.asked!==f.id&&Math.hypot(f.x-P.x,f.y-P.y)<HOSTS.join+(this.of(P)?.back(P)||0)){this.asked=f.id;fightMeet(f)}}
   // (his battle's page: Stand aside, in place of Watch from afar)
   static asideAct(f){const l=this.leader();return l&&f.sides.some((_,i)=>sideParties(f,i).includes(l))?['hs-aside',null,'Stand aside']:null}
   // ---- each day: lords that follow you, their days up or no longer friends, go; his host: its days, or you gone far from it;
   // a friend near may offer to follow you
   static day(){const X=HOSTS.lord;this.campaignDay();
-    for(const l of this.lords()){if(G.day>=l.follow.until)this.release(l,lordName(l)+' takes his leave of your host.');else if(!this.friend(l)||l.troops.length<3)this.release(l,lordName(l)+' leaves your host.')}
+    for(const l of this.lords()){if(G.day>=l.follow.until)this.release(l,lordName(l)+' takes '+pr(l).his+' leave of your host.');else if(!this.friend(l)||l.troops.length<3)this.release(l,lordName(l)+' leaves your host.')}
     if(this.under){const l=this.leader();if(!l||hostileTo(l.fac))this.under=null;else if(G.day>=this.under.until)this.leave(false);
-      else if(!G.follow&&!this.paused&&Math.hypot(l.x-P.x,l.y-P.y)>HOSTS.far*X.desert)this.leave(true,'You have gone far from the host of '+lordName(l)+': he counts you gone.')}
+      else if(!G.follow&&!this.paused&&Math.hypot(l.x-P.x,l.y-P.y)>(this.of(P)?.back(P)||0)+HOSTS.far*X.desert)this.leave(true,'You have gone far from the host of '+lordName(l)+': '+pr(l).he+' counts you gone.')}
     if(G.quietEvents||G.mode!=='world'||G.modal||Captivity.held)return;
     const o=W.lords.find(l=>!this.askWhy(l)&&!l.inside&&!l.fight&&Math.hypot(l.x-P.x,l.y-P.y)<X.near);if(o&&Math.random()<X.offer)this.offer(o)}
   // (his offer: a page, Accept or Decline)
@@ -135,14 +159,14 @@ class Host{
     worldEvent({text:'The '+FACS[f].n+' make '+L.name+' their marshal: '+(ms.length+1)+' lords march on '+t.name+'.',fac:[f,t.owner],x:L.x,y:L.y,towns:[t],cls:t.owner===P.fac||t.owner==='player'?'bad':f===P.fac?'good':'',
       past:L.name+' of the '+FACS[f].n+' led '+(ms.length+1)+' lords on '+t.name});
     if(P.fac===f&&!this.under&&!G.quietEvents&&G.mode==='world'&&!G.modal&&!Captivity.held)this.summon(L);return L}
-  static summon(L){G.mode='dialog';G.hostSummon=L;const c=L.campaign;showPanel('<h2>'+lordName(L)+', marshal of the '+FACS[L.fac].n+'</h2><p>A rider brings word: '+lordName(L)+' calls the lords of the '+FACS[L.fac].n+' to march with him on '+c.tgt+'. You serve the realm: will you ride with his host?</p>'+
-    '<div class="btns">'+dlgBtn('hs-summon',null,'Ride with his host',this.under?'You follow another':'',true)+'</div><p class="muted">Declining costs honour with the '+FACS[L.fac].n+' ('+HOSTS.camp.refuse+').</p>'+nav(null,['hs-decline-summon',null,'Decline']))}
+  static summon(L){G.mode='dialog';G.hostSummon=L;const c=L.campaign;showPanel('<h2>'+lordName(L)+', marshal of the '+FACS[L.fac].n+'</h2><p>A rider brings word: '+lordName(L)+' calls the lords of the '+FACS[L.fac].n+' to march with '+pr(L).him+' on '+c.tgt+'. You serve the realm: will you ride with '+pr(L).his+' host?</p>'+
+    '<div class="btns">'+dlgBtn('hs-summon',null,'Ride with '+pr(L).his+' host',this.under?'You follow another':'',true)+'</div><p class="muted">Declining costs honour with the '+FACS[L.fac].n+' ('+HOSTS.camp.refuse+').</p>'+nav(null,['hs-decline-summon',null,'Decline']))}
   // (a member gone its own way; a campaign ended, its line, its members released)
   static part(l){l.with=null;l.wseq=null;if(!l.dead)lordThink(l)}
   static disband(L,why){for(const m of this.campMembers(L))this.part(m);L.campaign=null;if(!L.dead){L.state=L.state==='siege'?L.state:'home';lordThink(L)}
     if(why)worldEvent({text:why,fac:[L.fac],x:L.x,y:L.y,past:why.replace(/\.$/,'')})}
   // (the lords besieging t with l: his host's, there; or him alone)
-  static besiegers(l,t){return l.campaign?[l,...this.campMembers(l).filter(m=>!m.fight&&Math.hypot(m.x-t.x,m.y-t.y)<HOSTS.far*1.5)]:[l]}
+  static besiegers(l,t){if(!l.campaign)return[l];const h=new Host(l,this.campMembers(l));return[l,...h.members.filter(m=>!m.fight&&Math.hypot(m.x-t.x,m.y-t.y)<h.back(m)+HOSTS.far*1.5)]}
   static save(){return this.under?{under:this.under}:null}
   static load(v){this.under=v?.under||null;this.paused=!!this.under}
 }
@@ -152,6 +176,6 @@ onAct('hs-',a=>{
   if(a==='hs-accept'||a==='hs-decline'){const l=G.hostOffer;G.hostOffer=null;G.mode='world';hidePanel();if(a==='hs-accept'&&l&&!Host.askWhy(l))Host.lead(l);else if(l)log('You thank '+lordName(l)+', and ride on alone.','gold','war');return}
   if(a==='hs-summon'||a==='hs-decline-summon'){const L=G.hostSummon;G.hostSummon=null;G.mode='world';hidePanel();if(!L||!L.campaign)return;
     if(a==='hs-summon'&&!Host.under){Host.join(L,Math.max(1,L.campaign.until-G.day));Host.paused=false;G.follow={o:L,crumbs:[[L.x,L.y]],host:true}}else{addHonor(L.fac,-HOSTS.camp.refuse,true);log('You do not answer the call of '+lordName(L)+'.','bad','war')}return}
-  if(a==='hs-aside'){const l=Host.leader();if(l)changeRel(l,-HOSTS.lord.aside,'you stood aside from his battle');G.fg=null;G.mode='world';hidePanel();if(l)log('You stand aside while '+lordName(l)+' fights.','bad','war')}});
+  if(a==='hs-aside'){const l=Host.leader();if(l)changeRel(l,-HOSTS.lord.aside,'you stood aside from '+pr(l).his+' battle');G.fg=null;G.mode='world';hidePanel();if(l)log('You stand aside while '+lordName(l)+' fights.','bad','war')}});
 Systems.add({name:'hosts',order:{day:177},day:()=>Host.day()});
 Saves.add({key:'hosts',order:345,defaults:null,save:()=>Host.save(),load:v=>Host.load(v)});

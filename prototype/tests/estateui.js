@@ -74,9 +74,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       t.act('wk-back');ok(G.mode==='dialog'&&G.est&&!G.wk&&G.estTab==='folk','Back: the '+t.ESTATE_AREAS[k].folk+' again');
       t.act('es-folk');ok(G.wk&&on()==='folk','(Talk to the '+f.job+'s, as before, opens it too)');t.onEscape();ok(G.est&&!G.wk,'Esc from the worker: the estate again');
       t.act('es-folk');t.act('es-tab','works');ok(G.est&&!G.wk&&G.mode==='dialog'&&on()==='works','another menu from the worker\'s window');
-      // recruit one: a tier-0 peasant of his trade, the estate a pair of hands short, then someone new
+      // recruit one: a Peasant Levy (whatever his trade: the owner, 2026-10-31), the estate a pair of hands short, then someone new
       {world();t.estateMeet(t.estatePick(ash,k));t.act('es-tab','folk');const w=ws().find(x=>x.st==='in'),kk=t.recruitKind(ash,w),before=P.troops[kk]||0,g0=P.gold,h0=t.handsLeft(ash,k);ash.lost={};P.troops={hum_knight:2};t.showEstate();
-        t.act('es-recruit',w.id);ok(P.troops[kk]===1&&t.ST[kk].tier===0&&t.ST[kk].n===t.TRADES[t.tradeOf(w)].n&&t.UP[kk][0]===t.RACES[ash.races[0]].melee&&P.gold===g0-t.hireCost(kk)&&!W.folk.includes(w)&&!q('.rwbody [data-arg="'+w.id+'"]'),
+        t.act('es-recruit',w.id);ok(P.troops[kk]===1&&t.ST[kk].tier===0&&t.ST[kk].n==='Peasant Levy'&&kk===t.peasantLevy(ash.races[0])&&t.UP[kk].includes(t.RACES[ash.races[0]].melee)&&P.gold===g0-t.hireCost(kk)&&!W.folk.includes(w)&&!q('.rwbody [data-arg="'+w.id+'"]'),
           'Recruit: '+w.name+' joins as a '+t.ST[kk].n+' (tier 0, '+t.hireCost(kk)+'g, trains into '+t.ST[t.UP[kk][0]].n+'), his card gone');
         ok(t.handsLeft(ash,k)<1&&/hands short/.test(panel()),'the '+t.ESTATES[k].n.toLowerCase()+' makes less: '+Math.round(t.handsLeft(ash,k)*100)+'% until someone new moves in');
         const d0=G.day;G.day+=t.REFILL_DAYS;ok(t.handsLeft(ash,k)===1,'after '+t.REFILL_DAYS+' days the gap is filled');G.day=d0;

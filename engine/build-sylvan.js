@@ -318,38 +318,38 @@
       yard(C,base){base(C);made(C,[18,-17],0,Q=>tree(Q,Q.o,'t',[0,0],1.6,13,15,16));made(C,[8,25],0,Q=>lantern(Q,Q.o,'l',[0,0],6))},
       // a forest garden (the Court's farm): the farmer's pod and a garden barn; terraces of raised beds stepping down to the path,
       // a pergola of hanging baskets, herb beds, two little orchard platforms each round its fruit tree; the desert's water channels
-      farmstead(C){const K=SY(C.o),des=!!K.shade;piece(C,'cottage',[-15,-15],0,{lv:1,cut:['prop']});piece(C,'barn',[17,-9],1,{cut:['prop']});
+      farmstead(C){const K=SY(C.o),des=!!K.shade;piece(C,'cottage',[-15,-21],0,{lv:1,cut:['prop']});piece(C,'barn',[17,-8],1,{cut:['prop']});
         made(C,[-18,12],0,Q=>{for(let i=0;i<3;i++)Q.box('t'+i,[-12,12],[-8+i*5,-3+i*5],[0,3-i],'bark',{top:true,topMat:'crop'});
           if(des)for(let i=0;i<2;i++)Q.box('ch'+i,[-12,12],[-3.5+i*5,-2.5+i*5],[0,2.5-i],'stone',{top:true,topMat:'water'})});
         made(C,[2,6],0,Q=>{for(const s of [-1,1])Q.box('pp'+s,[s*5-.5,s*5+.5],[-.5,.5],[0,8],'bark',{top:true});Q.box('pb',[-6,6],[-.5,.5],[8,9],K.wood,{top:true});
           for(const a of [-3,0,3]){Q.box('br'+a,[a-.5,a+.5],[-.5,.5],[6,8],'rope',{thin:true});Q.box('bk'+a,[a-1,a+1],[-1,1],[4,6],'plank',{top:true,topMat:'flower'})}});
-        for(const [u,v] of [[10,20],[23,15]])made(C,[u,v],0,Q=>{Q.round('dk',[0,0],4.5,[1,2],'plank',{form:'lid',mat:'plank'});Q.round('rl',[0,0],4.5,[3,4],K.wood,null);tree(Q,Q.o,'t',[0,0],1,7,9,12)});
+        for(const [u,v] of [[10,26],[22,26]])made(C,[u,v],0,Q=>{Q.round('dk',[0,0],4.5,[1,2],'plank',{form:'lid',mat:'plank'});Q.round('rl',[0,0],4.5,[3,4],K.wood,null);tree(Q,Q.o,'t',[0,0],1,7,9,12)});
         C.Q.parts.push({k:'bed',name:'h1',u:[-6,4],v:[18,27]});P(C,'sacks',[-2,0])},
       // an inn: its hall of two storeys on a root plinth under a leaf roof, the sign and lantern by the door; the stable across the
       // yard (stalls under a leaf roof), a well, a cart, lanterns
-      inn(C){C.Q.ground=null;made(C,[-6,17],0,Q=>{const K=SY(Q.o),dw=Q.home('inn','inn',2);plinth(Q,'pl',[-14,14],[-6.5,6.5],2,0);Q.lift=2;
+      inn(C){C.Q.ground=null;made(C,[-14,17],0,Q=>{const K=SY(Q.o),dw=Q.home('inn','inn',2);plinth(Q,'pl',[-14,14],[-6.5,6.5],2,0);Q.lift=2;
           pod(Q,Q.o,{n:'h',w:28,d:13,z:18,ax:'u',R:9,sweep:3,dw,door:.5,wins:[.12,.32,.68,.88]});for(const x of [.12,.88])Q.dec('h.S','WinLeaf',x,11);Q.dec('h.S','Sign',.68,10);Q.lift=0});
-        stableOf(C,[12,-18]);piece(C,'well',[-22,-14],0);piece(C,'cart',[22,4],0);made(C,[-24,26],0,Q=>lantern(Q,Q.o,'l',[0,0],7))},
+        stableOf(C,[16,-20]);piece(C,'well',[-22,-14],0);piece(C,'cart',[22,4],0);made(C,[-24,26],0,Q=>lantern(Q,Q.o,'l',[0,0],7))},
       // a herd's shelter: stalls under a leaf roof on bark posts, a paddock in its fence, a trough, a haystack, a lantern
       pasture(C){stableOf(C,[-14,-16]);C.Q.parts.push({k:'fence',name:'pd',pts:[[0,28],[30,28],[30,-8],[0,-8],[0,28]],h:4,gates:[[4,10,3]]});P(C,'trough',[14,10]);piece(C,'haystack',[-18,14],0);made(C,[-4,24],0,Q=>lantern(Q,Q.o,'l',[0,0],6))},
       // a lumber yard: the fallen tree's work platform, the woodcutter's pod, a second nursery bed of saplings, a woodpile, a cart;
       // never a clear-cut (no stumps)
-      lumber(C){piece(C,'lumbershed',[-6,12],0);piece(C,'cottage',[14,-18],0,{lv:1,cut:['prop']});piece(C,'woodpile',[22,10],0);piece(C,'cart',[-20,-4],0);
+      lumber(C){piece(C,'lumbershed',[-12,12],0);piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});piece(C,'woodpile',[22,10],0);piece(C,'cart',[-20,-4],0);
         made(C,[-16,-20],0,Q=>{Q.bed([-8,8],[-4,4],'crop');for(let i=0;i<6;i++){const u=-6+(i%3)*6,v=-2+(i>>1>0?4:0)*(i>2?1:0);Q.round('sa'+i,[u,v],1.5,[1,2],'canopy',{form:'cone',rise:2,mat:'canopy',o:0,lip:0});Q.box('sk'+i,[u-.5,u+.5],[v-.5,v+.5],[0,1],'bark',{top:true})}})},
       // a weavers' workshop: the weavers' hall, an open weaving porch under a leaf roof with its loom, lines of dyed cloth, dye vats,
       // a bridge of planks with rope rails from the hall to a pod across the yard
-      workshop(C){C.Q.ground=null;piece(C,'warehouse',[-12,-14],0);piece(C,'cottage',[18,-16],0,{lv:1,cut:['prop']});
-        made(C,[-12,14],0,Q=>{const K=SY(Q.o);for(const [a,b] of [[-10,-5],[9,-5],[-10,5],[9,5]])Q.box('p'+a+b,[a,a+1],[b,b+1],[0,9],'bark',{top:true});Q.box('r',[-10,10],[-5,6],[9,10],'bark',{thin:true});
+      workshop(C){C.Q.ground=null;piece(C,'warehouse',[-12,-6],0);piece(C,'cottage',[18,-20],0,{lv:1,cut:['prop']});
+        made(C,[14,12],0,Q=>{const K=SY(Q.o);for(const [a,b] of [[-10,-5],[9,-5],[-10,5],[9,5]])Q.box('p'+a+b,[a,a+1],[b,b+1],[0,9],'bark',{top:true});Q.box('r',[-10,10],[-5,6],[9,10],'bark',{thin:true});
           Q.roof('r','leaf','u',4,Q.o.roofMat,{o:1,ov:1,lip:1,sweep:1,curl:1,vmat:K.vmat});for(const s of [-1,1])Q.box('lp'+s,[s*4-.5,s*4+.5],[-.5,.5],[0,6],'bark',{top:true});
           Q.cut('lm',-4,0,1,['bbbbbbbb','m.m.m.m.','.m.m.m.m','m.m.m.m.','mmmmmmmm'],{b:'bark',m:K.vmat})});
-        made(C,[16,12],0,Q=>{for(const s of [-1,1])Q.box('cp'+s,[s*8-.5,s*8+.5],[-.5,.5],[0,8],'bark',{top:true});Q.box('cl',[-8,8],[-.5,.5],[7,8],'rope',{thin:true});
+        made(C,[-14,20],0,Q=>{for(const s of [-1,1])Q.box('cp'+s,[s*8-.5,s*8+.5],[-.5,.5],[0,8],'bark',{top:true});Q.box('cl',[-8,8],[-.5,.5],[7,8],'rope',{thin:true});
           ['moon','canvasB','flower','awningG','gold'].forEach((m,i)=>Q.box('c'+i,[-6.5+i*3,-4.5+i*3],[-.5,.5],[3+(i%2),7],m,{thin:true}));
           for(const [u,m] of [[-5,'moon'],[0,'canvasB'],[5,'flower']])Q.round('v'+u,[u,6],1.8,[0,2],'plank',{form:'lid',mat:m})});
-        made(C,[6,-15],0,Q=>{Q.box('bd',[-8,8],[-1.5,1.5],[7,8],'plank',{top:true,thin:true});for(const s of [-1,1]){Q.box('bp'+s,[s*4-.5,s*4+.5],[-.5,.5],[0,7],'bark',{top:true});Q.cut('br'+s,-8,s<0?-1.5:.5,8,['rrrrrrrrrrrrrrrr'],{r:'rope'})}})},
+        made(C,[5,-14],0,Q=>{Q.box('bd',[-8,8],[-1.5,1.5],[7,8],'plank',{top:true,thin:true});for(const s of [-1,1]){Q.box('bp'+s,[s*4-.5,s*4+.5],[-.5,.5],[0,7],'bark',{top:true});Q.cut('br'+s,-8,s<0?-1.5:.5,8,['rrrrrrrrrrrrrrrr'],{r:'rope'})}})},
       // a market: stalls under leaf-shaped awnings round a green with its living tree on a mossed plinth, moon lanterns, carts, crates
-      market(C){C.Q.ground=null;piece(C,'stall',[-18,-18],0);piece(C,'stall',[0,-22],0);piece(C,'stall',[18,-18],0);piece(C,'stall',[-22,4],3);piece(C,'stall',[22,4],1);
-        made(C,[0,0],0,Q=>{Q.round('pl',[0,0],5.5,[0,1],'bark',{form:'lid',mat:'moss'});tree(Q,Q.o,'t',[0,0],1.6,12,14,16);for(const s of [-1,1])lantern(Q,Q.o,'l'+s,[s*8,5],6);if(SY(Q.o).shade)Q.round('pool',[0,9],3,[0,1],'stone',{form:'water'})});
-        piece(C,'cart',[-14,22],0);piece(C,'crates',[14,22],0);piece(C,'barrels',[2,24],0)},
+      market(C){C.Q.ground=null;piece(C,'stall',[-18,-18],0);piece(C,'stall',[0,16],0);piece(C,'stall',[18,-18],0);piece(C,'stall',[-24,14],3);piece(C,'stall',[24,14],1);
+        made(C,[0,0],0,Q=>{Q.round('pl',[0,0],5.5,[0,1],'bark',{form:'lid',mat:'moss'});tree(Q,Q.o,'t',[0,0],1.4,11,13,13);for(const s of [-1,1])lantern(Q,Q.o,'l'+s,[s*8,5],6);if(SY(Q.o).shade)Q.round('pool',[0,9],3,[0,1],'stone',{form:'water'})});
+        piece(C,'cart',[-14,22],0);piece(C,'crates',[14,22],0);piece(C,'barrels',[24,-4],0)},
       // a brewhouse: two storeys of pale living wood under a leaf roof, a rack of drying herbs, its dry store, casks
       brewery(C){made(C,[-8,15],0,Q=>{const dw=Q.home('brewery','work',2);plinth(Q,'pl',[-12,12],[-6.5,6.5],2,-2);Q.lift=2;pod(Q,Q.o,{n:'h',w:24,d:13,z:17,ax:'u',R:8,sweep:2,dw,door:.42,wins:[.12,.8]});Q.dec('h.S','WinLeaf',.2,10);Q.dec('h.S','WinLeaf',.8,10);Q.lift=0});
         piece(C,'granary',[16,-16],0,{cut:['prop']});piece(C,'barrels',[20,12],0);piece(C,'barrels',[-20,-16],0);

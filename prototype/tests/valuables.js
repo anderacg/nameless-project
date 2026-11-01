@@ -21,14 +21,14 @@ try{
  Math.random=r0;ok(drew===0,'drawn from their own stream, never the world\'s Math.random');
  empty();{const s={chest:{gold:0,gear:0,finds:'ruin'}},g0=P.gold;const say=Kit.stubStream('valuables',0,()=>Kit.stub(.99,()=>t.siteChest(s)));ok(P.gold>g0&&vals()>=1&&/The chest holds/.test(say)&&/Among the gold/.test(say),'a chest: its gold and its valuables ('+say.replace(/<[^>]+>/g,'').trim()+')')}
  ok(t.Site.prototype.__lookupGetter__('chest').call({}).finds==='cave'&&t.Ruins.prototype.__lookupGetter__('chest').call({}).finds==='ruin','caves\' and ruins\' chests have theirs (VALUE_FINDS)');
- empty();{const say=Kit.stubStream('valuables',0,()=>t.spoilsWon({kind:'lord',ref:{}}));ok(/His purse holds/.test(say)&&vals()>=1,'a beaten lord\'s purse: '+say.trim())}
+ empty();{const say=Kit.stubStream('valuables',0,()=>t.spoilsWon({kind:'lord',ref:{name:'Lord Aldric'}}));ok(/His purse holds/.test(say)&&vals()>=1,'a beaten lord\'s purse: '+say.trim())}
  empty();{const say=Kit.stubStream('valuables',0,()=>t.spoilsWon({kind:'camp',ref:{ld:{name:'X'}}}));ok((say.match(/His purse holds/g)||[]).length===1&&/Among their plunder/.test(say),'a bandit camp: its chieftain\'s purse and its plunder')}
  empty();{const say=Kit.stubStream('valuables',0,()=>t.spoilsWon({kind:'party',ref:{}}));ok(say===''&&!vals(),'a band with no chieftain: none')}
  // past the bag's limit: left behind, said so
  empty();for(let i=0;i<t.invCap()+t.BAG.maxOver;i++)t.invAdd('mat','pelt',t.STACK);{const say=Kit.stubStream('valuables',0,()=>t.valuablesFound('lord'));ok(new RegExp(t.BAG_FULL).test(say)&&!vals(),'with no room at all: '+say.trim())}
  // a won fight: on the loot pile
  empty();P.troops={hum_knight:20};G.enc={kind:'camp',ref:{cleared:false,back:0,x:P.x,y:P.y,plunder:()=>'',ld:t.newChief('bandits',2)},n:3};Kit.world({enc:G.enc});t.startEncounter(G.enc);
- Kit.stubStream('valuables',0,()=>t.autoResolve());ok(G.loot&&G.loot.pile.some(s=>s.k==='val')&&/His purse holds/.test(Kit.panel())&&/Among their plunder/.test(Kit.panel()),'a bandit camp beaten: the valuables on the loot pile, and the victory says so');
+ Kit.stubStream('valuables',0,()=>t.autoResolve());ok(G.loot&&G.loot.pile.some(s=>s.k==='val')&&/(His|Her) purse holds/.test(Kit.panel())&&/Among their plunder/.test(Kit.panel()),'a bandit camp beaten: the valuables on the loot pile, and the victory says so');
  t.act('lt-all');ok(vals()>=1,'taken');t.act('cont');Kit.done({world:true});
  // sold at the market
  const ash=t.townBy('Ashford');G.lastTown=null;Kit.world();t.enterTown(ash);t.act('tab','trade');

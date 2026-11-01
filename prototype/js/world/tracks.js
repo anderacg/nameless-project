@@ -125,12 +125,15 @@ const Tracks={
     this.sweep()},
   // the trails left with no points gone
   sweep(){const L=W.tracks;let w=0;for(const tr of L){if(tr.p.length)L[w++]=tr;else tr.gone=true}L.length=w},
-  /* what you see this frame (kept in V, no new object): the time, your Scouting, others' oldest (age, hours) and farthest
-     (r2, px squared) trails seen, your sight (v2) and where you stand */
+  /* what you see this frame (kept in V, no new object): the time, your Scouting, others' oldest (age, hours) trails seen and how far
+     (k: a share of each man's sight), your sight (eye: every man's, fog.js Sight; the owner, 2026-11-01: trails seen from all your
+     army, not its middle alone); r2, v2, x, y: the old circle round you, others' and your own */
   view(){const V=this.V,s=vis(),lv=skill('scout'),S=TRACKS.see;V.now=trackNow();V.lv=lv;V.age=S.age[0]+S.age[1]*lv;
-    const r=s*Math.min(1,S.range[0]+S.range[1]*lv);V.r2=r*r;V.v2=s*s;V.x=P.x;V.y=P.y;return V},
+    V.k=Math.min(1,S.range[0]+S.range[1]*lv);V.eye=yourSight(s);const r=s*V.k;V.r2=r*r;V.v2=s*s;V.x=P.x;V.y=P.y;return V},
+  // (x, y) of trail tr in your sight: your own within any man's, others' within his share k of it (V: view)
+  sees(tr,x,y,V){return tr.own?V.eye.sees(x,y):V.eye.sees(x,y,V.k)},
   // how old trail tr's stretch from point i is if you see it (in your sight; others' by your Scouting), else null (V: view)
-  sight(tr,i,V){const p=tr.p,dx=p[3*i]-V.x,dy=p[3*i+1]-V.y,age=tr.age(i,V.now,this.live(tr));return dx*dx+dy*dy>(tr.own?V.v2:V.r2)||!tr.own&&age>V.age?null:age},
+  sight(tr,i,V){const p=tr.p,age=tr.age(i,V.now,this.live(tr));return !tr.own&&age>V.age||!this.sees(tr,p[3*i],p[3*i+1],V)?null:age},
   // (how clear a print of age hours is at (x, y): its ground's, faded over its life there; 0 gone; its spot left in TRACK_SPOT)
   clear(x,y,age){const o=trackSpot(x,y),f=o.life?1-age/o.life:0;return f>0?TRACKS.alpha*o.g*f:0},
   // how clearly you see trail tr's point i (its stretch to the next): 0 not at all, else its alpha (V: view)

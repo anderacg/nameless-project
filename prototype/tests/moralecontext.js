@@ -29,7 +29,8 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   f=fixture();f.a.filter(u=>u!==f.u).forEach(u=>u.sx+=100);tick(f,.01);const m2=f.u.mor;kill(f.a.find(u=>u!==f.u));ok(m2-f.u.mor>supported,'cohesion softens casualty shock without changing health or damage');
   f=fixture(20,20,440);const u=f.u;kill(f.a.find(q=>q!==u));tick(f,0);const low=u.mor,strain=u.lossStrain;
   tick(f,0);f.b.sel=testGroup('inf');t.setOrderUI();ok(document.getElementById('bInfo').textContent.includes('Recent-loss pressure')&&t.grpMorale(f.a).weak.includes('recentloss'),'recent-loss pressure is explained in selected details and badge metadata');
-  const panel=document.getElementById('bInfo'),line=[...panel.querySelectorAll('.bi-flags')].find(e=>e.textContent.includes('Cohesion'));ok(line&&line.getBoundingClientRect().bottom<=panel.getBoundingClientRect().bottom&&getComputedStyle(panel).overflowY==='auto','expanded details keep morale context visible and allow overflow scrolling');
+  // (a scroll area always shows its bar since 9bcc9dd: overflow scroll, not auto)
+  const panel=document.getElementById('bInfo'),line=[...panel.querySelectorAll('.bi-flags')].find(e=>e.textContent.includes('Cohesion'));ok(line&&line.getBoundingClientRect().bottom<=panel.getBoundingClientRect().bottom&&/^(auto|scroll)$/.test(getComputedStyle(panel).overflowY),'expanded details keep morale context visible and allow overflow scrolling');
   f.b.t+=2;t.moraleTick(0);ok(u.lossStrain<strain&&u.mor>low&&u.mor<u.mor0,'recent pressure fades but part of the casualty loss remains');
   const paused=u.mor;t.moraleTick(0);ok(near(u.mor,paused),'releasing loss memory with no combat time cannot heal morale twice');
   f=fixture(20,20,440);const burst=f.u;f.a.filter(q=>q!==burst).slice(0,4).forEach(kill);tick(f,0);const burstMorale=burst.mor;

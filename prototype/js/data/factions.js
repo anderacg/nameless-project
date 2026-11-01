@@ -1,12 +1,18 @@
 'use strict';
 /* ---------- data: factions ---------- */
-// four single-race kingdoms and one mixed league
+// four single-race kingdoms and one mixed league; gender: each named lord's, as the portraits show them (core/pronouns.js: a
+// Thane or a Warchief may be a woman)
 const FACS={
-  vale:{n:'Vale Crown',col:'#e07a48',d:'Human kingdom of the western farmlands. Shield walls, pikes and armored knights.',races:['human'],lords:['Lord Aldric','Lady Maren','Ser Corwin','Lady Rowena']},
-  karn:{n:'Karn Clans',col:'#6b9cf0',d:'Dwarf holds in the frozen north-east. Axes, crossbows and stubborn walls.',races:['dwarf'],lords:['Thane Borka','Thane Hroth','Thane Dain','Thane Gimra']},
-  sylvan:{n:'Sylvan Court',col:'#e7a0d8',d:'Elven realm of the south-western woods. Archers without equal and swift riders.',races:['elf'],lords:['Lady Ithriel','Lord Caelan','Warden Sylas','Lord Faelar']},
-  horde:{n:'Ashgor Horde',col:'#c84040',d:'Orc warbands of the eastern desert. Brutal, fast and many.',races:['orc'],lords:['Warchief Ulgra','Gash Bonecleaver','Mok the Red','Grukk Ironjaw']},
-  salt:{n:'Salt League',col:'#4cc0a8',d:'Free merchant ports of the south coast, where elves, humans and orcs trade and fight side by side.',races:['elf','human','orc'],lords:['Admiral Cass','Captain Ivo','Admiral Neri','Captain Mirelle']}
+  vale:{n:'Vale Crown',col:'#e07a48',d:'Human kingdom of the western farmlands. Shield walls, pikes and armored knights.',races:['human'],lords:['Lord Aldric','Lady Maren','Ser Corwin','Lady Rowena'],
+    gender:{'Lord Aldric':'m','Lady Maren':'f','Ser Corwin':'m','Lady Rowena':'f'}},
+  karn:{n:'Karn Clans',col:'#6b9cf0',d:'Dwarf holds in the frozen north-east. Axes, crossbows and stubborn walls.',races:['dwarf'],lords:['Thane Borka','Thane Hroth','Thane Dain','Thane Gimra'],
+    gender:{'Thane Borka':'f','Thane Hroth':'m','Thane Dain':'m','Thane Gimra':'f'}},
+  sylvan:{n:'Sylvan Court',col:'#e7a0d8',d:'Elven realm of the south-western woods. Archers without equal and swift riders.',races:['elf'],lords:['Lady Ithriel','Lord Caelan','Warden Sylas','Lord Faelar'],
+    gender:{'Lady Ithriel':'f','Lord Caelan':'m','Warden Sylas':'m','Lord Faelar':'m'}},
+  horde:{n:'Ashgor Horde',col:'#c84040',d:'Orc warbands of the eastern desert. Brutal, fast and many.',races:['orc'],lords:['Warchief Ulgra','Gash Bonecleaver','Mok the Red','Grukk Ironjaw'],
+    gender:{'Warchief Ulgra':'f','Gash Bonecleaver':'m','Mok the Red':'m','Grukk Ironjaw':'m'}},
+  salt:{n:'Salt League',col:'#4cc0a8',d:'Free merchant ports of the south coast, where elves, humans and orcs trade and fight side by side.',races:['elf','human','orc'],lords:['Admiral Cass','Captain Ivo','Admiral Neri','Captain Mirelle'],
+    gender:{'Admiral Cass':'m','Captain Ivo':'m','Admiral Neri':'f','Captain Mirelle':'f'}}
 };
 // city guards: every holding sends a patrol out of its garrison to ride its land (world/patrols.js); how many, and the guard it
 // keeps behind, by its kind (holdings.js patrol). days: how long it stays out; see: how far it spots trouble (px); speed: on foot;
@@ -20,10 +26,10 @@ const PATROL={days:2,see:110,speed:24,fine:3,wanted:5,rest:1};// rest: days a be
 const WATCH={refill:1,
   day:{n:'Day watch',lead:['horse','ranged'],mix:['melee','shield','horse','melee','ranged','shield'],beat:'riding the roads of',
     say:{quiet:['Roads are clear to the next milestone. Keep to them and keep moving.','Carts, drovers, pilgrims: all on the move, and all of it ours to watch. On your way.','Clear and dry. Ride on while the light lasts.'],
-      band:'Bandits on our roads. We will have them by noon; keep your blade loose till then.',mine:'The roads are clear, my lord. Nothing moves on them we have not seen.'}},
+      band:'Bandits on our roads. We will have them by noon; keep your blade loose till then.',mine:'The roads are clear, my {you.lord}. Nothing moves on them we have not seen.'}},
   night:{n:'Night watch',lead:['spear','shield'],mix:['spear','shield','melee'],beat:'keeping the dark round of',pennant:'#1c2238',
     say:{quiet:['Who goes there? ... Hm. Keep to the lit lanes, stranger, and be quick about it.','Nothing honest walks about this late. Say your business, then get indoors.','Quiet tonight. Too quiet. Keep your torch where we can see it.'],
-      band:'There are cutthroats out past the fields tonight. Stay in the light.',mine:'The gates are shut and the lanes are lit, my lord. All quiet.'}}};
+      band:'There are cutthroats out past the fields tonight. Stay in the light.',mine:'The gates are shut and the lanes are lit, my {you.lord}. All quiet.'}}};
 // battles on the map between parties (world/fights.js) take time, so you (and others nearby) can join: one lasts about
 // base + per x every fighter in it (world time), each side wearing the other down by their strength; a side whose strength
 // falls below rout x the other's breaks. join: how close a lord or patrol must be to ride in

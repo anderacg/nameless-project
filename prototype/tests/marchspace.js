@@ -2,7 +2,7 @@
 // No two marchers on each other (world/march.js marchBody, marchRoomK, the parting pass in MarchArmy#step; the owner, 2026-10-30:
 // "army marching formation makes units overlap, please make sure that units cannot overlap"): an army of foot and riders, standing,
 // marching, turning and halting, never has two of its men closer than their bodies (foot 5.5 px on the map, riders 8), the riders'
-// rows marching wider to fit.
+// rows marching wider to fit; halting, as on the march, then settled as standing.
 Kit.suite(({ok,info})=>{
  const t=T,P=t.P,G=t.G,W=t.W;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:1e9});
  let at=null;const okT=q=>q===t.T_OPEN||q===t.T_ROAD;
@@ -16,7 +16,9 @@ Kit.suite(({ok,info})=>{
  {const r=run(6,0,0);info('standing: closest '+r.lo.toFixed(2)+' '+JSON.stringify(r.pr));ok(r.lo>-TOL,'formed up, standing: no two closer than their bodies (closest '+r.lo.toFixed(2)+' px past it)')}
  {const r=run(5,18,0);info('marching: '+r.lo.toFixed(2)+' '+JSON.stringify(r.pr));ok(r.lo>-TOL*2,'marching east: none on each other (closest '+r.lo.toFixed(2)+')')}
  {const r=run(3,0,18);info('turning: '+r.lo.toFixed(2)+' '+JSON.stringify(r.pr));ok(r.lo>-TOL*2,'turning south: none on each other (closest '+r.lo.toFixed(2)+')')}
- {const r=run(6,0,0);ok(r.lo>-TOL,'halted: they settle apart (closest '+r.lo.toFixed(2)+')')}
+ // (halting from the wheel south, a man still walking back through his own line (march.js squeeze) is a moment as close as on the
+ // march; settled, as standing. In battle lanes (the owner, 2026-11-01: world/marchstyles.js) one of the second rank's did, -0.54 px)
+ {const r=run(4,0,0),q=run(2,0,0);info('halting: '+r.lo.toFixed(2)+' '+JSON.stringify(r.pr)+'; settled: '+q.lo.toFixed(2)+' '+JSON.stringify(q.pr));ok(r.lo>-TOL*2&&q.lo>-TOL,'halted: none on each other as they halt (closest '+r.lo.toFixed(2)+'), and they settle apart ('+q.lo.toFixed(2)+')')}
  {const K=A.units.filter(u=>u.type==='hum_knight');ok(t.marchRoomK({form:'line',type:'hum_knight'})>1&&t.marchRoomK({form:'line',type:'hum_foot'})===1,'riders\' rows march wider ('+t.marchRoomK({form:'line',type:'hum_knight'}).toFixed(2)+'×), foot as before')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

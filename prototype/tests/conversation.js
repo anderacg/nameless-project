@@ -8,7 +8,7 @@ Kit.suite(({ok})=>{
  const l=W.lords.find(x=>!x.dead&&!t.hostileTo(x.fac));Object.assign(l,{inside:null,x:P.x+3,y:P.y});M.all={};
  // ---- a lord
  t.lordMeet(l);
- ok(q('.talk-head img.talk-pic')&&q('.talk-head h2').textContent===l.name&&/Lord of the/.test(q('.talk-head').textContent),'a lord: his face, his name and his standing at the head');
+ ok(q('.talk-head img.talk-pic')&&q('.talk-head h2').textContent===l.name&&/(Lord|Lady) of the/.test(q('.talk-head').textContent),'a lord: his face, his name and his standing at the head');
  const sp=new t.LordSpeaker(l),g=t.DIALOGUE.greet.lord[l.temper];ok(t.TEMPERS.includes(l.temper)&&qa('.talk-line').length===1&&qa('.talk-line')[0].innerHTML.includes(sp.fill(g.first).split(' ')[0]),'his first words, by his temper ('+l.temper+'), as you have never met');
  ok(qa('.talk-replies [data-key]').map(b=>b.dataset.key+':'+b.dataset.act).slice(0,2).join()==='1:lr-rumours,2:lr-lords'&&q('[data-act="talk-flatter"]'),'his replies numbered: 1 rumours, 2 other lords, then the checks');
  ok(q('.nav [data-act="lord-leave"]')&&q('[data-act="lr-gift"]'),'his own blocks under them (a gift), and Leave in the bottom bar');

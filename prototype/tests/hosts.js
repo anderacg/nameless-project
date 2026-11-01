@@ -1,10 +1,14 @@
 'use strict';
 // Hosts (world/hosts.js, doc/HOSTS_DESIGN.md phase 1): your companions' parties that Follow you march as your host, in a column on
 // your own path (each at its place back along your trail, never stacked), at the pace of the slowest; they hunt no prey; one far
-// off makes for you; each within HOSTS.join of a battle of yours joins it.
+// off makes for you; each within HOSTS.join of a battle of yours joins it. Places by rings (the owner, 2026-11-01: "big army,
+// bigger interaction touchpoint, otherwise the army units may collide"): each army's ring (marchOuter) behind the one ahead of it,
+// HOSTS.gap px between them (Host#back), so the checks read each army against its own place and the gaps between rings.
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,W=t.W,X=t.HOSTS;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:1e9});t.GUIDE.on=false;
  const ash=Kit.goHome('Ashford');P.troops={hum_levy:20};P.sk.lead.lv=10;
+ // (o's place back in its host (Host#back) against how far behind its leader it is; the gap between two armies' rings)
+ const back=o=>t.Host.of(o).back(o),ring=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)-t.marchOuter(a)-t.marchOuter(b);
  for(const id of ['brann','elske']){P.comps[id]={ap:5,role:''};const c=t.compInit(id);c.lv=Math.max(c.lv,t.COMP_LEAD.lv);c.ap=5;t.cpGive(id,'hum_levy',4)}
  const ps=t.cparties(),[a,b]=ps;
  ok(ps.length===2&&ps.every(p=>p.order==='follow')&&t.Host.yours()?.members.length===2,'two companions’ parties follow you: your host');
@@ -13,13 +17,16 @@ Kit.suite(({ok})=>{
  const trail=[];Kit.frames(900,.05,null,()=>{trail.push([P.x,P.y]);return P.tx==null});
  const h=t.Host.yours(),[m1,m2]=h.members,d1=Math.hypot(m1.x-P.x,m1.y-P.y),d2=Math.hypot(m2.x-P.x,m2.y-P.y),apart=Math.hypot(m1.x-m2.x,m1.y-m2.y);
  const off=o=>Math.min(...trail.map(([x,y])=>Math.hypot(o.x-x,o.y-y)));
- ok(d1>X.gap*.5&&d1<X.gap*2.2&&d2>d1&&apart>X.gap*.5,'in a column behind you: the first '+Math.round(d1)+' px back, the second '+Math.round(d2)+' px, '+Math.round(apart)+' px apart');
+ // (marching: in order, no ring inside another, a lagging one holding those behind it back; standing, each at its place below)
+ ok(d2>d1&&ring(P,m1)>0&&ring(m1,m2)>0,'in a column behind you: the first '+Math.round(d1)+' px back, the second '+Math.round(d2)+' px, '+Math.round(apart)+' px apart; '+Math.round(ring(P,m1))+' and '+Math.round(ring(m1,m2))+' px between rings, none inside another');
  ok(off(m1)<12&&off(m2)<12,'on your own path ('+Math.round(off(m1))+' and '+Math.round(off(m2))+' px off it)');
  // ---- the pace: the slowest's
  {const own=t.Host.base(P),slow=Math.min(...h.members.map(o=>t.Host.base(o)));ok(Math.abs(h.paceOf()-Math.min(1,Math.max(.3,slow/own)))<1e-6&&h.paceOf()>.8,'the host at its slowest’s pace, the ground aside: ×'+h.paceOf().toFixed(2)+' of yours');
   const p=m1.troops.slice();m1.troops=Array(4).fill('hum_knight');const fast=h.paceOf();m1.troops=p;ok(fast>=h.paceOf()-1e-9,'none slower than you: your own pace')}
  // ---- they hunt no prey: a weak band near, they keep their places
- Kit.frames(200,.05);// (settled in their places, you standing)
+ // (standing, they close up to their places: through the ford behind you, a party's men squeeze across it, MARCH_MOVE.jam)
+ const at=m=>{const q=t.Host.yours().slot(m);return Math.hypot(m.x-q.x,m.y-q.y)},settle=Kit.frames(900,.05,null,()=>[m1,m2].every(m=>at(m)<X.gap/2))*.05;
+ ok(at(m1)<X.gap/2&&at(m2)<X.gap/2&&ring(P,m1)>0&&ring(m1,m2)>0&&ring(P,m1)<X.gap*1.5&&ring(m1,m2)<X.gap*1.5,'standing, each comes to its place by the rings in '+settle.toFixed(1)+' s ('+Math.round(at(m1))+' and '+Math.round(at(m2))+' px off it): '+Math.round(ring(P,m1))+' and '+Math.round(ring(m1,m2))+' px between rings (HOSTS.gap '+X.gap+')');
  {const bd=t.asParty({kind:'bandits',troops:['militia'],x:m1.x+40,y:m1.y,cool:0,idle:true,t:0,a:0});t.bandits.push(bd);const x0=m1.x,y0=m1.y;for(let i=0;i<40;i++)t.BRAINS.cparty.think(m1,.05);
   ok(!m1.fight&&Math.hypot(m1.x-x0,m1.y-y0)<12,'a weak band near: the party following you keeps its place');t.bandits.length=0}
  // ---- one far off makes for you
@@ -40,7 +47,7 @@ Kit.suite(({ok})=>{
  // (asked in his talk)
  {G.enc={kind:'lord',ref:L,list:L.troops.slice()};t.lordMeet(L);const b=document.querySelector('[data-act="talk-follow"]');ok(b&&!b.disabled&&/follow you/.test(b.textContent),'his talk: Ask him to follow you');
   Kit.stubStream('talk',0,()=>t.act('talk-follow',L.id));ok(L.follow&&L.follow.until>G.day&&/will follow you for/.test(document.getElementById('panel').textContent),'he agrees: he follows you for '+(L.follow&&L.follow.until-G.day)+' days');Kit.world()}
- {const h=t.Host.yours();ok(h&&h.members.includes(L),'a lord in your host');P.tx=P.x+20*t.TILE;P.ty=P.y;Kit.frames(500,.05,null,()=>P.tx==null);const d=Math.hypot(L.x-P.x,L.y-P.y);ok(d<X.gap*3,'he keeps his place in your column ('+Math.round(d)+' px back)')}
+ {const h=t.Host.yours();ok(h&&h.members.includes(L),'a lord in your host');P.tx=P.x+20*t.TILE;P.ty=P.y;Kit.frames(500,.05,null,()=>P.tx==null);const d=Math.hypot(L.x-P.x,L.y-P.y);ok(Math.abs(d-back(L))<X.gap&&ring(P,L)>0,'he keeps his place in your column ('+Math.round(d)+' px back, his place '+Math.round(back(L))+'; '+Math.round(ring(P,L))+' px between your rings)')}
  // (a battle of yours: he joins against bandits; against a realm at peace with his, he stands aside and leaves your host)
  {const bd=t.asParty({kind:'bandits',troops:Array(4).fill('militia'),x:P.x+30,y:P.y,cool:0});t.bandits.push(bd);t.startEncounter({kind:'party',ref:bd,n:4,list:bd.troops.slice(),band:'bandits'});
   ok((G.enc?.allies||[]).includes(L),'bandits: he joins your battle');G.enc=null;Kit.world();t.bandits.length=0}
@@ -56,7 +63,7 @@ Kit.suite(({ok})=>{
  // ---- you follow a lord: his host
  {Kit.world();Object.assign(L,{x:P.x+30,y:P.y,state:'patrol',inside:null});Kit.goTo(P.x,P.y);t.followStart(L);ok(t.Host.under?.id===L.id&&G.follow?.host,'Follow on a lord of your realm: you join his host');
   const s=JSON.stringify(t.Host.save());t.Host.under=null;t.Host.load(JSON.parse(s));ok(t.Host.under?.id===L.id,'kept in the save');
-  Kit.world();G.follow={o:L,crumbs:[[L.x,L.y]],host:true};L.x+=80;for(let i=0;i<200;i++){t.followStep();t.updateWorld(.05)}const d=Math.hypot(L.x-P.x,L.y-P.y);ok(d<X.gap*3,'your band keeps its place in his column ('+Math.round(d)+' px)');
+  Kit.world();G.follow={o:L,crumbs:[[L.x,L.y]],host:true};L.x+=80;for(let i=0;i<200;i++){t.followStep();t.updateWorld(.05)}const d=Math.hypot(L.x-P.x,L.y-P.y);ok(Math.abs(d-back(P))<X.gap&&ring(P,L)>0,'your band keeps its place in his column ('+Math.round(d)+' px back, its place '+Math.round(back(P))+'; '+Math.round(ring(P,L))+' px between your rings)');
   const r0=t.relWith(L);t.Host.leave(true);ok(!t.Host.under&&t.relWith(L)<r0,'leaving before he lets you go: his regard lower');
   L.x=P.x+30;L.y=P.y;Kit.goTo(P.x,P.y);t.followStart(L);const r1=t.relWith(L),n0=P.renown;G.day=t.Host.under.until;t.Host.day();ok(!t.Host.under&&t.relWith(L)>r1&&P.renown>n0,'his days up: he lets you go with his thanks');t.followStop()}
  // (his battle near you: its page, Stand aside)
@@ -72,7 +79,8 @@ Kit.suite(({ok})=>{
    ok(L&&L.power()===Math.max(...ls.map(l=>l.power()))&&ms.length>=C.members[0]&&ms.every(m=>m.with===L.id),'a realm at war makes its strongest lord its marshal, '+ms.length+' lords his host, marching on '+L?.campaign?.tgt);
    ok(t.townBy(L.campaign.tgt)&&t.atWar(fa,t.townBy(L.campaign.tgt).owner)&&L.state==='march','his aim: an enemy holding, '+L.campaign.tgt);
    for(let i=0;i<300;i++){t.BRAINS.lord.think(L,.05);ms.forEach(m=>t.BRAINS.lord.think(m,.05))}
-   const far=Math.max(...ms.map(m=>Math.hypot(m.x-L.x,m.y-L.y)));ok(far<X.gap*(ms.length+2),'they march in his column (the last '+Math.round(far)+' px back)');
+   const H=t.Host.of(L),far=Math.max(...ms.map(m=>Math.hypot(m.x-L.x,m.y-L.y))),last=ms.at(-1),ahead=[L,...ms];
+   ok(ms.every(m=>Math.hypot(m.x-H.slot(m).x,m.y-H.slot(m).y)<X.gap)&&ms.every((m,i)=>ring(ahead[i],m)>0),'they march in his column, each at its place by the rings (the last '+Math.round(far)+' px back, its place '+Math.round(H.back(last))+' along his way; rings '+ms.map((m,i)=>Math.round(ring(ahead[i],m))).join(', ')+' px apart)');
    const tg=t.townBy(L.campaign.tgt);ms.forEach(m=>{m.x=tg.x+5;m.y=tg.y+12});L.x=tg.x;L.y=tg.y+12;ok(t.Host.besiegers(L,tg).length===ms.length+1,'at the walls: the marshal’s siege has all his host’s strength ('+(ms.length+1)+' lords)');
    // (you, serving the realm: summoned)
    P.fac=fa;G.quietEvents=false;try{L.campaign=null;ms.forEach(m=>m.with=null);Math.random=()=>0;Kit.world();t.Host.campaign(fa)}finally{Math.random=r;G.quietEvents=true}

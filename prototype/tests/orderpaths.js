@@ -64,8 +64,9 @@ try{
    try{for(let i=0;i<30;i++){clk+=16;t.drawOrderPaths();t.orderPath(gf.id);t.orderPath(gk.id)}}finally{Math.random=rnd}
    ok(snap()===s0&&!draws,'drawing writes nothing: the groups, their ways and queues, the soldiers, the route caches and the clock are as they were; no Math.random ('+draws+' draws)');B.iconHov=null;gf.queue=[];gf.moveTo(goal[0],goal[1])}
   // ---- reducedMotion: the dashes and chevrons stand still
-  {const mm=window.matchMedia;const ph=()=>{t.drawOrderPaths();return OS.ph};const a=ph();clk+=250;const b=ph();
-   window.matchMedia=q=>({matches:/reduce/.test(q),addEventListener(){},removeEventListener(){}});let r1,r2;try{r1=ph();clk+=250;r2=ph()}finally{window.matchMedia=mm}
+  // (reducedMotion itself replaced: the browser is asked once, vfx.js REDUCED_Q, since 2026-10-29, so a matchMedia stub tests nothing)
+  {const rm=window.reducedMotion;const ph=()=>{t.drawOrderPaths();return OS.ph};const a=ph();clk+=250;const b=ph();
+   window.reducedMotion=()=>true;let r1,r2;try{r1=ph();clk+=250;r2=ph()}finally{window.reducedMotion=rm}
    ok(a!==b&&r1===0&&r2===0&&t.orderPathPhase(5000,true)===0,'the dashes march ('+a.toFixed(1)+' → '+b.toFixed(1)+' px); with reducedMotion they stand still (0)')}
   L.exit()}
  // ======== under fog: an attack on a foe gone from sight goes to where he was last seen

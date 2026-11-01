@@ -13,7 +13,18 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // its troops and companion start the battle at that share of their stamina (battle/fatigue.js fatigueInit), not fresh. With the
   // old fatigueInit put back, every case is as recorded: was field 65c78ccc, reinforced 1137fce4, chief_reuse a69d5122, siege 5bbc07b7,
   // beasts 981e3c34, deployment_off 04e59939, narrow 09cd58d9, wide e206f675; the tournament (your hero alone) unchanged)
-  const expected={field:'15b927a4',reinforced:'32935430'/* (re-recorded: your allies' men in their own green cloth (battle.js SIDE, sprites.js allyLook), so their sprites are warmed apart from yours (WARM.q's length); nothing of the battle else) */,chief_reuse:'7ee88816',siege:'2638f197',beasts:'a25047fc'/* (re-recorded: spider stats changed in the balance pass) */,tournament:'11b1a925',deployment_off:'2b8838b9',narrow:'4c20d689',wide:'148ae225'};
+  // (all 9 re-recorded 2026-11-01, on purpose, at the sweep fix after the night of 2026-10-31. The baseline had stood through every
+  //  move since, found commit by commit on the first-parent history (a worktree at each commit): 696de87 the owner's notes of
+  //  2026-10-25, f8cfe32 battles open ready for Start Battle (8), 628b397 livelier bodies and fa23bde battles longer (all 9 at
+  //  each); then the night's troop tree (data/units.js, races.js, matchups.js, world/holding.js: the kinds, their names and stats)
+  //  and the AI march styles (setup.js arrangeMarch, from world/marchstyles.js). Checked: with those four files as at 803bd3a and
+  //  march.js marchLayout's style null, every one is 803bd3a's again. Were field 15b927a4, reinforced 32935430, chief_reuse
+  //  7ee88816, siege 2638f197, beasts a25047fc, tournament 11b1a925, deployment_off 2b8838b9, narrow 4c20d689, wide 148ae225)
+  // (field, reinforced, chief_reuse, siege, beasts, deployment_off, narrow and wide re-recorded 2026-11-01, on purpose, for battle
+  //  lanes (the owner: "keep battle lanes"; world/marchstyles.js lanes, march.js marchLayout): your army opens in its march's lanes
+  //  (setup.js arrangeMarch, from marchRows(P)), not round the old ring, so your groups start elsewhere; the setup unchanged. Checked:
+  //  with march.js and marchstyles.js as before, every one is as before; the tournament (no march) held. Were field 603b995a, reinforced 92c139da, chief_reuse a5a181b4, siege 4638df18, beasts d01f9214, deployment_off 69190168, narrow 3cbb2b2f, wide 6d5328c4)
+  const expected={field:'842a2849',reinforced:'c403a05b'/* (re-recorded: your allies' men in their own green cloth (battle.js SIDE, sprites.js allyLook), so their sprites are warmed apart from yours (WARM.q's length); nothing of the battle else) */,chief_reuse:'199f9451',siege:'93e5cbc1',beasts:'c7105449'/* (re-recorded: spider stats changed in the balance pass) */,tournament:'6b3997ae',deployment_off:'1add94b7',narrow:'6656bf08',wide:'eb236445'};
   const original={random:Math.random,measure:t.measureField,width:t.BVW,height:t.BVH,deploy:t.BDEPLOY.on,auto:t.BAUTO.on,speed:t.BSPEED.v,guide:t.GUIDE.on};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const fingerprint=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};

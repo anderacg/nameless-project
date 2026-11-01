@@ -2,7 +2,7 @@
 // Under way (ui/underway.js; the owner, 2026-10-30: "staying should be more compact and use less space, at a corner of the screen;
 // a panel that groups all the special actions"): under the minimap at the right edge, one line for each thing your band is doing
 // that lasts, each with its way out: staying (Leave), in camp (Break), making camp (Stop), following (Stop), by road (Off),
-// hurrying (Stop), your siege or raid (Open). Nothing under way, or not on the map: no panel.
+// your siege or raid (Open). Nothing under way, or not on the map: no panel.
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,ash=t.townBy('Ashford');Kit.begin('soldier',1);Kit.clear();Kit.world();Kit.goTo(ash.x+60,ash.y+40);t.GUIDE.on=false;
  const el=()=>document.getElementById('underway'),row=k=>el()?.querySelector('[data-k="'+k+'"]'),hud=()=>{t.frame();t.updateHUD(true)},press=k=>{row(k).querySelector('button').click();hud()};
@@ -11,11 +11,14 @@ Kit.suite(({ok})=>{
  {P.stay={town:ash.name,paidTo:t.worldTime()+t.DAY};hud();const r=row('stay');
   ok(r&&r.textContent.includes(ash.name)&&r.querySelector('[data-act="sy-leave"]'),'staying: '+(r&&r.textContent));
   const b=r.getBoundingClientRect();ok(b.height<=40,'one line ('+Math.round(b.height)+' px high)');
-  {const c=t.cv.getBoundingClientRect(),m=t.worldMiniRect(),k=c.width/t.VW,e=el().getBoundingClientRect();ok(e.top>=c.top+(m.y+m.h)*k&&Math.abs(e.right-(c.left+(m.x+m.w)*k))<2,'under the minimap, at its right edge ('+[e.top,c.top+(m.y+m.h)*k,e.right,c.left+(m.x+m.w)*k].map(Math.round)+')')}
+  // (the owner, 2026-11-01: "the ui is a bit off") just under the minimap's frame (UW_FRAME round its map), its edges the frame's
+  {const c=t.cv.getBoundingClientRect(),m=t.worldMiniRect(),k=c.width/t.VW,f=t.UW_FRAME,e=el().getBoundingClientRect(),fb=c.top+(m.y+m.h+f)*k,fl=c.left+(m.x-f)*k,fr=c.left+(m.x+m.w+f)*k;
+   ok(e.top>=fb&&e.top-fb<=8&&Math.abs(e.right-fr)<2,'just under the frame of the minimap, at its right edge ('+[e.top,fb,e.right,fr].map(Math.round)+')');
+   ok(fr-fl<t.UW_MIN||Math.abs(e.left-fl)<2,'as wide as the frame: its left edge the same ('+[e.left,fl].map(Math.round)+')')}
   press('stay');ok(!P.stay&&!row('stay'),'Leave: you leave, the line goes')}
  // ======== the rest, each its line and way out
- {P.byRoad=true;t.setHurry(true);hud();ok(row('road')&&row('hurry')&&el().querySelectorAll('.uw-row').length===2,'by road and hurrying: two lines in the one panel');
-  press('road');ok(!P.byRoad&&!row('road'),'By road: Off');press('hurry');ok(!G.hurry&&!row('hurry')&&el().hidden,'Hurrying: Stop; nothing left, no panel')}
+ {P.byRoad=true;hud();ok(row('road')&&el().querySelectorAll('.uw-row').length===1,'by road: its line in the panel');
+  press('road');ok(!P.byRoad&&!row('road')&&el().hidden,'By road: Off; nothing left, no panel')}
  {t.pitchCamp();hud();ok(row('camp'),'in camp');press('camp');ok(!P.camp&&!row('camp'),'Break: camp struck')}
  {G.pitch={x:P.x+40,y:P.y};P.tx=P.x+40;P.ty=P.y;hud();ok(row('pitch'),'making for a camp spot');press('pitch');ok(!G.pitch&&P.tx==null,'Stop: you stay where you are')}
  {const L=W_LORD();if(L){G.follow={o:L,crumbs:[[L.x,L.y]]};hud();ok(row('follow')&&row('follow').textContent.includes(t.lordName(L)),'following '+t.lordName(L));press('follow');ok(!G.follow&&!row('follow'),'Stop: you stop following')}else ok(false,'(a lord to follow)')}

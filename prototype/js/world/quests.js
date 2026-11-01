@@ -54,7 +54,7 @@ class JobQuest extends Quest{
     return this.lord?{honor:[this.fac,-n]}:{rep:[this.home,-n]};
   }
   abandonCost(){
-    return super.abandonCost()+(this.lord?', and '+this.giver+' thinks less of you':'')+'; no work from '+(this.lord?'him':this.home)+' for '+QUEST_ABANDON.shut+' days';
+    return super.abandonCost()+(this.lord?', and '+this.giver+' thinks less of you':'')+'; no work from '+(this.lord?pr(this.giver).him:this.home)+' for '+QUEST_ABANDON.shut+' days';
   }
   abandon(){
     QuestShut.set(this);
@@ -536,7 +536,7 @@ const QuestShut={
     return s&&G.day<s.until?s:null;
   },
   line(q,s){
-    return (q.lord?q.giver+' has no work for you':'No work for you here')+' until day '+s.until+' (you gave up '+(q.lord?'his':'their')+' '+s.what+')';
+    return (q.lord?q.giver+' has no work for you':'No work for you here')+' until day '+s.until+' (you gave up '+(q.lord?pr(q.giver).his:'their')+' '+s.what+')';
   },
   day(){
     if(!P.shut)return;

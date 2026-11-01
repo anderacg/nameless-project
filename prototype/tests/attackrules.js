@@ -15,7 +15,24 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // spear_follow 2e5e3e4a, heavy_follow 605a0edd, sidearm 740e1607, launches 50992592, ammunition ddd0ddfb, accuracy ec18b3e7, arc_hit
   // f1da5d0c, arc_high_miss aa566e32, arc_trees 87a80fdf, flat_hit 4b489c87, magic_splash 73888f7d, web_hit 66e39a79, flat_trees aaa09661,
   // expiry_bounds db57248c, pause_freeze 41993b3b, guard 42df107f, shot_timing 2a200747, moving_draw 48c0ae26)
-  const expected={"reductions":"adfbc127","dodge":"bb8f0d4e","enemy_kill":"55c4e9e3","own_losses":"569b635f","hero_down":"da54c1a5","companion_down":"03b3d362","lord_losses":"b61d7609","melee":"a47b03a2","spear_follow":"c1c80187","heavy_follow":"a779f262","sidearm":"56d3450e","launches":"c799d2f7","ammunition":"f496d7a4","accuracy":"fecaeb76","arc_hit":"58208073","arc_high_miss":"59a6300f","arc_trees":"6ae17e04","flat_hit":"5204948c","magic_splash":"944d475a","web_hit":"5de97e32","flat_trees":"db8445b8","expiry_bounds":"a6567a5f","pause_freeze":"963fefa8","guard":"cf4b4e5c","shot_timing":"17ff0812","moving_draw":"f0b5861d"};
+  // (all 26 re-recorded 2026-11-01, on purpose, at the sweep fix after the night of 2026-10-31. The baseline had stood through
+  //  every move since, found commit by commit on the first-parent history (a worktree at each commit): 696de87 the owner's notes of
+  //  2026-10-25 (5), f8cfe32 battles open ready for Start Battle (25), 8a9eab7 armour has a value (1), 46be83f the Nobody's bare
+  //  hands, 577cae4 a hero sprite merged and reverted (7065f88, 762e128), 454af04 ranks and fa23bde battles longer (all 26 at each);
+  //  then the night's troop tree (data/units.js, races.js, matchups.js, world/holding.js: the kinds, their names and stats) and the
+  //  AI march styles (setup.js arrangeMarch, from world/marchstyles.js). Checked: with those four files as at 803bd3a and march.js
+  //  marchLayout's style null, every one is 803bd3a's again (the Buffs placeholder's empty P.unitBuffs.hero, left by a look in each
+  //  battle, moved five more: fixed, world/buffs.js Buffs.rec, so no move). The fixture now runs its battle (B.ready and B.paused
+  //  false: since 696de87 and f8cfe32 a battle opens frozen till Start Battle, so the cases that step it, flat_hit, magic_splash,
+  //  web_hit, flat_trees and expiry_bounds, saw it frozen and their own checks failed); so measured, magic_splash moved at 6b2a85b
+  //  (944d475a>c74615bc) and all five at 46be83f, 454af04 and fa23bde: flat_hit 5204948c>17db999a>7ebd6f0a>235106ee, magic_splash
+  //  >df13a08e>65ce44f6>9ba3741e, web_hit 5de97e32>13e0cdf4>f792f7c0>cb70a47c, flat_trees db8445b8>a0765d2c>2d1f8cce>9eb2f8a6,
+  //  expiry_bounds a6567a5f>58efdced>db44eb3d>4378092d (803bd3a's), then the night's. Were reductions adfbc127, dodge bb8f0d4e,
+  //  enemy_kill 55c4e9e3, own_losses 569b635f, hero_down da54c1a5, companion_down 03b3d362, lord_losses b61d7609, melee a47b03a2,
+  //  spear_follow c1c80187, heavy_follow a779f262, sidearm 56d3450e, launches c799d2f7, ammunition f496d7a4, accuracy fecaeb76,
+  //  arc_hit 58208073, arc_high_miss 59a6300f, arc_trees 6ae17e04, flat_hit 5204948c, magic_splash 944d475a, web_hit 5de97e32,
+  //  flat_trees db8445b8, expiry_bounds a6567a5f, pause_freeze 963fefa8, guard cf4b4e5c, shot_timing 17ff0812, moving_draw f0b5861d)
+  const expected={"reductions":"72b4302f","dodge":"f94bb43e","enemy_kill":"0d7092f1","own_losses":"cb712735","hero_down":"366536ed","companion_down":"fedeb703","lord_losses":"68ac30fb","melee":"5fb7d2a8","spear_follow":"64aec8fb","heavy_follow":"1454fb76","sidearm":"c6590504","launches":"defe5d0f","ammunition":"14e25d1b","accuracy":"98b925b4","arc_hit":"bff42cb8","arc_high_miss":"97b3b9d8","arc_trees":"2df058c4","flat_hit":"b82ec733","magic_splash":"78acfea7","web_hit":"dd07500b","flat_trees":"4046a4af","expiry_bounds":"84727671","pause_freeze":"2d81faac","guard":"fc291f8e","shot_timing":"55caec0b","moving_draw":"9944281f"};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['reductions','dodge','enemy_kill','own_losses','hero_down','companion_down','lord_losses','melee','spear_follow','heavy_follow','sidearm','launches','ammunition','accuracy','arc_hit','arc_high_miss','arc_trees','flat_hit','magic_splash','web_hit','flat_trees','expiry_bounds','pause_freeze','guard','shot_timing','moving_draw'];
@@ -31,7 +48,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       const lord=name==='lord_losses'?t.asParty({id:'test_ally',fac:'vale',name:'Test ally',lv:3,xp:0,renown:24,troops:['hum_levy','hum_levy'],x:P.x,y:P.y,sk:Object.fromEntries(t.LORD_SK.map(k=>[k,{lv:1,xp:0}]))}):null;
       t.W.lords=lord?[lord]:[];G.mode='world';G.modal=false;G.loot=null;G.enc={kind:'party',ref:{cool:0,x:P.x+8,y:P.y},list:['militia','militia','archer'],allies:lord?[lord]:[],foes:[]};G.keys={};
       t.startBattle({enemies:G.enc.list,tournament:false});const B=t.B,inf=B.units.filter(u=>u.team===0&&!u.hero&&!u.comp&&!u.lord&&u.type==='hum_levy'),bow=B.units.find(u=>u.team===0&&u.type==='hum_bow'),enemies=B.units.filter(u=>u.team===1),e=enemies[0],u=inf[0];
-      B.noMorale=true;B.obs=[];B.t=2;B.speed=1;B.slow=0;B.hx.stop=0;B.hx.inv=0;B.hx.sp=1000;B.hx.mp=1000;B.cam=null;
+      // (running: a battle opens ready, frozen till Start Battle, since f8cfe32; the cases that step it saw it frozen)
+      B.ready=false;B.paused=false;B.noMorale=true;B.obs=[];B.t=2;B.speed=1;B.slow=0;B.hx.stop=0;B.hx.inv=0;B.hx.sp=1000;B.hx.mp=1000;B.cam=null;
       B.units.forEach((q,i)=>{q.hp=q.max=10000;q.cd=999;q.s={...q.s,spd:0};q.grp=null;q.x=60+i*60;q.y=500});
       u.x=200;u.y=250;bow.x=150;bow.y=250;e.x=400;e.y=250;enemies[1].x=500;enemies[1].y=320;enemies[2].x=600;enemies[2].y=350;B.hero.x=70;B.hero.y=70;
       B.arrows=[];B.parts=[];B.floats=[];B.slashes=[];B.corpses=[];B.vfx=[];G.shake=0;G.msgs=[];t.BLOOD.on=true;

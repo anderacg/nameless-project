@@ -21,9 +21,10 @@ Kit.suite(({ok,info})=>{
  {
   const b=start(),a=b.world,u=b.units.find(u=>u.team===1),tr=b.terrain;
   tr.kind.fill(t.TKIND.open);tr.lvl.fill(0);tr.built.fill(0);tr.wall.fill(0);
-  // A rock strip covers the radial destination; a legal escape exists around it.
+  // A rock strip covers the radial destination; a legal escape exists around it. (Broken for good: one who may still rally stays in
+  // the ring since 2026-10-31, worldbattle.js escape.)
   for(let i=0;i<tr.kind.length;i++){const x=(i%tr.C+.5)*tr.cs,y=(Math.floor(i/tr.C)+.5)*tr.cs;if(x>a.cx+a.radius-16)tr.kind[i]=t.TKIND.rock}
-  tr.routes.build(8,t.BH-8);a.escapeRoutes=tr.route;tr.index();u.x=a.cx+a.radius-30;u.y=a.cy;u.rout=true;const hp=u.hp;
+  tr.routes.build(8,t.BH-8);a.escapeRoutes=tr.route;tr.index();u.x=a.cx+a.radius-30;u.y=a.cy;u.rout=true;u.shattered=true;const hp=u.hp;
   let frames=0,legal=true;for(;frames<1800&&!u.left;frames++){b.t+=1/30;const was=new Map([[u,[u.x,u.y]]]);a.escape(u,1/30);t.keepOffObstacles(was);legal&&=!tr.solid[t.tIx(tr,u.x,u.y)]}
   ok(legal,'escaping never steps through the blocking rock');
   ok(u.left&&!a.inside(u)&&u.hpLeft===hp,'a router walks to a reachable circular exit when its radial destination is rock');info('Blocked exit: '+frames+' frames');

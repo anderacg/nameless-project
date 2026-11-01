@@ -18,7 +18,7 @@ Kit.suite(({ok,info})=>{
  let th=null;
  {const D=t.kindOf('encounter','traveller'),p0=t.WOUNDED.ander.p;t.WOUNDED.ander.p=0;
   try{for(const z of [ash,...t.TOWNS]){fresh(z);const p=t.roadSpot(D.on,0,D.near),e=p&&t.roadSpawn('traveller',p[0],p[1]);if(!e)continue;
-    t.roadMeet(e);t.act('enc-do','0');t.act('enc-do',pick('Take him home'));t.act('enc-leave');th=W.story.threads.on.find(x=>x.k==='wounded');if(th)break}}
+    t.roadMeet(e);t.act('enc-do','0');t.act('enc-do',pick('Escort home'));t.act('enc-leave');th=W.story.threads.on.find(x=>x.k==='wounded');if(th)break}}
   finally{t.WOUNDED.ander.p=p0}}
  ok(!!th&&th.wait&&th.wait.shape==='quest','a story under way: '+(th&&th.kind.n)+', its stage a quest');
  const stepQ=P.quests.find(x=>x.id===th.wait.id);

@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js; missed at f8c7c00, so a world battle's muster)
 // Groups handed to the AI one by one (deploy.js aiHas, setGroupsAuto, autoKey): the captain orders only the groups it has, your
 // others keep your orders; an order of yours takes a group back; A with nothing selected, the whole army as ever (and the whole
 // army flagged group by group plays exactly as the whole-army AI, whose fingerprint is the one recorded before the change); the
@@ -11,12 +12,25 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
   P.troops={hum_spear:8,hum_bow:6,hum_knight:4};P.comps={};const ally=W.lords.find(l=>l.fac==='vale');
   ally.inside=null;ally.dead=false;ally.lv=3;ally.xp=0;ally.renown=24;ally.sk=Object.fromEntries(t.LORD_SK.map(k=>[k,{lv:1,xp:0}]));ally.troops=['hum_spear','hum_spear','hum_bow','hum_bow'];
   const enemies=['militia','militia','militia','militia','militia','militia','archer','archer','archer','archer','horse','horse'];G.mode='world';G.modal=false;t.hidePanel();
-  G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:enemies,allies:[ally],foes:[]};t.startBattle({enemies,tournament:false});return t.B};
+  G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:enemies,allies:[ally],foes:[]};t.startBattle({enemies,tournament:false});t.beginFight();return t.B};// (Start Battle: a battle opens ready since f8cfe32)
  const run=(B,s)=>{while(B.t<s&&!B.over)t.updateBattle(1/30)};
  const print=B=>hash({u:B.units.map(u=>[u.id,u.x,u.y,u.hp,!!u.rout,u.tgt&&u.tgt.id]),g:Object.entries(B.groups).map(([id,g])=>[id,g.order,g.ax,g.ay,g.form,g.run,g.targetGroupId]),c:Object.entries(B.captains||{}).map(([k,c])=>[k,c.post,c.commit])});
  const key=k=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code:'Key'+k.toUpperCase(),bubbles:true}));
  const role=(B,r)=>t.playerGroups().find(id=>B.groups[id].role===r);
  try{
+  // (all three re-recorded 2026-11-01, on purpose, at the sweep fix after the night of 2026-10-31; this suite now on the battle
+  // screen (ARENA, missed at f8c7c00) and its battle started (Start Battle, f8cfe32): since 696de87 opened every battle paused it hung
+  // to the runner's timeout. Found commit by commit on the first-parent history (a worktree at each commit, this suite as now):
+  // the whole army's f8ef51d3 held till 9405d0a; from 696de87 to 177605b the battle never started (no value); f8cfe32 (battles open
+  // ready, formed up) 802ca814, f78dd88 (battle start centred) 4b4be247, 322d202 (a codex merge) 71bc6583, 8a9eab7 (armour has a
+  // value) c443cd3a, 9167b37 (blocks, parries, dodges) 488d5375, 7abcc4c (the glades) 6d88429b, 8ba1919 (the Spear and Bow
+  // ladders) 58857a97, bbefddd (proficiency) 407533f6, 72cbebc (AI armies rank) 87ad5f30, fa23bde (battles longer) 5c1677ce;
+  // the lab's, morale off 596d6d9c and on 17c1387b, held till 8a9eab7 (5e2548f3, 66510895), then 761b3ec (Skip to the end) off
+  // d53ced7f, 58ed321 (no stuck armies) on 81f763e1, 8ba1919 on 74613a99, bbefddd off 39a09206 and on 756da8bc, fa23bde off
+  // d3bf0fc7 and on bca3376e (803bd3a's). Then the night's troop tree and AI march styles: whole 8038c047, lab off 35c3a4b8,
+  // on 8d8f4210; checked: with data/units.js, races.js, matchups.js and world/holding.js as at 803bd3a and march.js marchLayout's
+  // style null, all three are 803bd3a's again. Were f8ef51d3, 596d6d9c and 17c1387b. The lab with morale off: every group flagged
+  // one by one no longer plays the very battle the whole army does (9e6168ac against 35c3a4b8; at 803bd3a too): to look into)
   // ======== the whole army: the A key with nothing selected (its old path) against every group flagged one by one. Fingerprints
   // recorded on the code before groups could be handed over (commit 13af1f5). A battle's start leans on what earlier battles left
   // in the page (its caches): the world battle is this page's first, as it was recorded; the lab's are compared after one to warm up
@@ -50,10 +64,17 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
   // (the generated world's f8ef51d3 re-recorded 2026-10-23, on purpose, workplaces where they make sense (agent EW: tests/
   //  worldprint.js W1, W3-W8, B2): estates where their land suits them, so begin's draws and the battle's ground move; with the new
   //  rules off 28831f27 as before)
-  {const B=battle(4242);B.noMorale=true;B.sel=null;key('a');const a=B.auto&&t.aiAll();run(B,60);const fp=print(B),REC='f8ef51d3';
+  // (the whole army's re-recorded 2026-11-01, on purpose, for battle lanes (the owner: "keep battle lanes"; world/marchstyles.js
+  //  lanes): your army opens in its march's lanes (setup.js arrangeMarch), not round the old ring; with march.js and marchstyles.js as
+  //  before, 8038c047 again. The lab's (no march) held. Was 8038c047)
+  // (the lab's re-recorded 2026-11-01, on purpose, on top of the battle lanes: an AI group's stand that ends its charge is a move, its
+  //  men breaking off to go (the owner's cavalry fix, battlecontrol.js standAt): off 1511059e, on d96fe005; with that one rule off,
+  //  35c3a4b8 and 8d8f4210 again (the Footman's morale 45 and riders' rides ended with no foe in sight move neither). The whole
+  //  army's a1fc7122 held. Were 35c3a4b8 and 8d8f4210. With morale off the lab still differs group by group (44d81b58), as before)
+  {const B=battle(4242);B.noMorale=true;B.sel=null;key('a');const a=B.auto&&t.aiAll();run(B,60);const fp=print(B),REC='a1fc7122';
    ok(a&&fp===REC,'A with nothing selected, your army and an ally’s against the enemy (seed 4242, no morale): the whole-army AI plays the very battle it did before ('+fp+', recorded '+REC+', '+B.t.toFixed(1)+' s)')}
   {const L=t.BattleLab,Gp=(type,count)=>({type,count}),lab=mor=>{if(L.active)L.exit();G.mode='world';G.modal=false;L.start({leftGroups:[Gp('hum_spear',16),Gp('hum_bow',12),Gp('hum_knight',6)],rightGroups:[Gp('hum_levy',20),Gp('hum_bow',12),Gp('hum_spear',10)],deploy:false,ai:false,paused:false,morale:mor,seed:42});return t.B};
-   Math.random=t.seeded(1);t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;const REC={false:'596d6d9c',true:'17c1387b'};run(lab(false),60);// (to warm up)
+   Math.random=t.seeded(1);t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;const REC={false:'1511059e',true:'d96fe005'};run(lab(false),60);// (to warm up)
    for(const mor of [false,true]){let B=lab(mor);B.sel=null;key('a');const a=B.auto;run(B,60);const whole=print(B);
     B=lab(mor);t.setGroupsAuto(t.playerGroups(),true,true);const b=!B.auto&&t.aiAll();run(B,60);const each=print(B);
     ok(a&&b&&whole===REC[mor]&&each===whole,'lab, morale '+(mor?'on':'off')+': the whole-army AI as recorded before ('+whole+', recorded '+REC[mor]+'), and every group flagged one by one plays the very same battle ('+each+')')}

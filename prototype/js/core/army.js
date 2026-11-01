@@ -6,6 +6,11 @@ const ARMY_LIMIT=10;
 // your unit slots: start, one more each Leadership level past leadBase, and your talents' (Followers, Guard, Lone Wolf: tree.js slots);
 // your hero and each companion take one, as each troop unit does. A unit's men: its kind's size (data/units.js unitSize)
 const ARMY_GROUP={start:3,leadBase:2};
+// a mounted unit's horses (the dismount: battle/dismount.js): its own count once it has lost some in battle or taken in men without
+// any (horses), else one a man, its wounded's too. Only yours: a lord's army rides out whole to every fight
+const groupHorses=(g,o=P)=>g.horses??g.count+partyRoster(o).wounded(g.id);
+// (its men, fit and wounded, without one)
+const horsesShort=(g,o=P)=>g.horses==null?0:Math.max(0,g.count+partyRoster(o).wounded(g.id)-g.horses);
 const armyGroupLimit=o=>o===P?clamp(ARMY_GROUP.start+Math.max(0,(P.sk?.lead?.lv||0)-ARMY_GROUP.leadBase)+(P.treeMod?P.treeMod('slots'):0),1,ARMY_LIMIT):o?.unitSlots?o.unitSlots():ARMY_LIMIT;
 class ArmyRoster extends TroopRoster{
   get reserved(){return this.rules.reserved?this.rules.reserved():0}
@@ -61,25 +66,27 @@ class ArmyRoster extends TroopRoster{
     if(!this.canAdd(type,groupId,n)||groupId==='new'&&n>this.groupCap(type))return 0;
     const gs=this.groups;let g=groupId==='new'?null:groupId?gs.find(g=>g.id===groupId&&g.type===type):gs.find(g=>g.type===type&&g.count+this.wounded(g.id)<this.groupCap(type));
     if(groupId&&groupId!=='new'&&!g)return 0;
-    let left=n;while(left){if(!g){g={id:'g'+this.owner.army.nextId++,type,count:0,form:'line'};gs.push(g)}const put=Math.min(left,this.groupCap(type)-g.count-this.wounded(g.id));g.count+=put;left-=put;g=gs.find(g=>g.type===type&&g.count+this.wounded(g.id)<this.groupCap(type))}
+    const mount=DISMOUNT.on&&this.owner===P&&!!horseOf(type);// (men joining a unit of yours come without horses: the stable's, town.js)
+    let left=n;while(left){if(!g){g={id:'g'+this.owner.army.nextId++,type,count:0,form:'line'};gs.push(g)}if(mount&&g.horses==null&&g.count+this.wounded(g.id)>0)g.horses=groupHorses(g);const put=Math.min(left,this.groupCap(type)-g.count-this.wounded(g.id));g.count+=put;left-=put;g=gs.find(g=>g.type===type&&g.count+this.wounded(g.id)<this.groupCap(type))}
     const c=this.owner[this.field]||(this.owner[this.field]={});c[type]=this.count(type)+n;this.changed();return n;
   }
   remove(type,n=1,groupId){
     let left=this.limit(type,n),taken=0;const gs=this.groups;
     for(const g of gs){if(g.type!==type||groupId&&g.id!==groupId)continue;const m=Math.min(left,g.count);g.count-=m;left-=m;taken+=m;if(!left)break}
     if(taken){const c=this.counts;c[type]-=taken;if(!c[type])delete c[type];
-      for(const g of gs.filter(g=>!g.count))for(const w of this.owner.woundedGroups||[])if(w.id===g.id){if(g.name)w.name=g.name;else delete w.name;rankReset(w);rankKeep(g,w)}// (its name and rank kept by its wounded)
+      for(const g of gs.filter(g=>!g.count))for(const w of this.owner.woundedGroups||[])if(w.id===g.id){if(g.name)w.name=g.name;else delete w.name;rankReset(w);rankKeep(g,w);if(g.buffs?.length)w.buffs=g.buffs.slice();if(g.horses!=null)w.horses=g.horses}// (its name, rank and horses kept by its wounded)
       this.owner.army.groups=gs.filter(g=>g.count>0);this.changed()}return taken;
   }
   merge(fromId,toId){
     const gs=this.groups,a=gs.find(g=>g.id===fromId),b=gs.find(g=>g.id===toId);
-    if(!a||!b||a===b||a.type!==b.type||a.count+b.count+this.wounded(a.id)+this.wounded(b.id)>this.groupCap(a.type))return false;b.count+=a.count;rankKeep(a,b);this.owner.army.groups=gs.filter(g=>g!==a);
+    if(!a||!b||a===b||a.type!==b.type||a.count+b.count+this.wounded(a.id)+this.wounded(b.id)>this.groupCap(a.type))return false;if(a.horses!=null||b.horses!=null)b.horses=groupHorses(a,this.owner)+groupHorses(b,this.owner);b.count+=a.count;rankKeep(a,b);if(b.buffs)b.buffs=b.buffs.filter(x=>(a.buffs||[]).some(y=>y.id===x.id));/* (merged: only the upgrades both had) */this.owner.army.groups=gs.filter(g=>g!==a);
     for(const w of this.owner.woundedGroups||[])if(w.id===a.id){w.id=b.id;if(b.name)w.name=b.name;else delete w.name}this.changed();return true;
   }
   upgrade(id,to){
     const g=this.groups.find(g=>g.id===id);if(!g||!this.accepts(to)||g.type===to)return false;
     const c=this.counts,from=g.type,n=g.count;if(!Number.isSafeInteger(this.count(to)+n))return false;
-    const carry=masteryXp(g)*RANKS.mastery.carry;c[from]-=n;if(!c[from])delete c[from];c[to]=this.count(to)+n;g.type=to;
+    const carry=masteryXp(g)*RANKS.mastery.carry;rankLearn(g);/* (what it learned as what it was: core/ranks.js) */c[from]-=n;if(!c[from])delete c[from];c[to]=this.count(to)+n;g.type=to;
+    if(horseOf(to)!==horseOf(from))delete g.horses;// (a new kind's horses bought with its training, or none: core/recruitment.js horsesFor)
     // Do not carry a cavalry-only shape or an old frontage into a different troop type.
     g.form='line';g.files=null;rankReset(g);rankGain(g,carry);this.changed();return true;// (its mastery, part of it, its new kind's first experience: core/ranks.js)
   }
@@ -87,7 +94,7 @@ class ArmyRoster extends TroopRoster{
     const gs=this.groups,existing=gs.find(g=>g.id===group.id);
     if(existing){const amount=Math.min(n,this.groupCap(group.type)-existing.count);if(amount<=0)return 0;existing.count+=amount;const c=this.owner[this.field];c[group.type]=this.count(group.type)+amount;this.changed();return amount}
     if(this.slots-(this.wounded(group.id)>0?1:0)>=this.groupLimit||n>this.groupCap(group.type)||!troopAmount(n)||!this.accepts(group.type))return 0;// (its own held place counted once)
-    gs.push({id:group.id,type:group.type,count:n,form:'line',...(group.name?{name:group.name}:{}),...(group.rank?{rank:group.rank}:{}),...(group.xp?{xp:group.xp}:{}),...(group.mxp?{mxp:group.mxp}:{}),...(group.picks?{picks:group.picks.slice()}:{})});const c=this.owner[this.field]||(this.owner[this.field]={});c[group.type]=this.count(group.type)+n;this.changed();return n;
+    gs.push({id:group.id,type:group.type,count:n,form:'line',...(group.name?{name:group.name}:{}),...(group.rank?{rank:group.rank}:{}),...(group.xp?{xp:group.xp}:{}),...(group.mxp?{mxp:group.mxp}:{}),...(group.picks?{picks:group.picks.slice()}:{}),...(group.learned?{learned:{...group.learned}}:{}),...(group.keptPicks?{keptPicks:group.keptPicks.slice()}:{}),...(group.buffs?.length?{buffs:group.buffs.slice()}:{}),...(group.horses!=null?{horses:group.horses}:{})});const c=this.owner[this.field]||(this.owner[this.field]={});c[group.type]=this.count(group.type)+n;this.changed();return n;
   }
   transferTo(target,k,n=1,room=Infinity){
     if(target===this||target.counts===this.counts||!target.accepts(k))return 0;

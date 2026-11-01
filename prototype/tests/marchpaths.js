@@ -8,7 +8,7 @@ Kit.suite(({ok,info})=>{
   const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);for(let y=ty-20;y<=ty+20;y++)for(let x=tx-20;x<=tx+30;x++)if(t.WM.has(x,y)){const i=y*t.MW+x;t.WM.kind[i]=t.T_OPEN;t.WM.edge[i]=0;t.WM.elev[i]=64}
   return t.MarchArmy.of(P);
  }
- let a=begin();ok(a.units.length===8&&a.units.every(u=>a.ground.open(u)),'each fit soldier has a real position on open terrain');const ids=a.units.map(u=>u.id).join();
+ let a=begin();ok(a.units.length===9&&a.units.every(u=>a.ground.open(u)),'each fit soldier (and your hero, one of them) has a real position on open terrain');const ids=a.units.map(u=>u.id).join();
  let bounds=true;for(let i=0;i<360;i++){const old=a.units.map(u=>({x:u.x,y:u.y}));if(i<180)P.x+=.3;a.step(1/30);bounds&&=a.units.every((u,k)=>Math.hypot(u.x-old[k].x,u.y-old[k].y )<2)}
  ok(bounds&&a.units.map(u=>u.id).join()===ids,'marchers move by bounded steps and keep their identities as the hero travels');ok(a.units.every(u=>Math.hypot(u.x-u.goal.x,u.y-u.goal.y)<.5),'the army reforms on its saved slots when the hero stops');
  const before=a.units.map(u=>({x:u.x,y:u.y})),face=a.face;P.y+=.3;a.step(1/30);ok(Math.abs(a.face-face)<=t.MARCH_MOVE.turn/30+.001&&a.units.every((u,i)=>Math.hypot(u.x-before[i].x,u.y-before[i].y )<2),'turning moves each soldier rather than rotating the entire formation instantly');
@@ -31,7 +31,7 @@ Kit.suite(({ok,info})=>{
   const old=a.units.map(u=>({x:u.x,y:u.y}));P.x+=25;a.step(1/30);ok(a.units.every((u,i)=>Math.hypot(u.x-old[i].x,u.y-old[i].y)<2),'a large leader step does not teleport the mini sprites with it');
  }
  {
-  a=begin();const id=a.units[0].id,first=a.units[0];P.troops={hum_foot:10};a.step(1/30);ok(a.units.length===10&&a.units.includes(first)&&a.units[0].id===id,'recruitment adds marchers without rebuilding surviving soldiers');P.troops={hum_foot:5};a.step(1/30);ok(a.units.length===5&&a.units.includes(first),'roster losses remove surplus sprites while preserving the survivors');
+  a=begin();const id=a.units[0].id,first=a.units[0];P.troops={hum_foot:10};a.step(1/30);ok(a.units.length===11&&a.units.includes(first)&&a.units[0].id===id,'recruitment adds marchers without rebuilding surviving soldiers');P.troops={hum_foot:5};a.step(1/30);ok(a.units.length===6&&a.units.includes(first),'roster losses remove surplus sprites while preserving the survivors');
   const pos=a.units.map(u=>[u.x,u.y]);t.marchDraw([],P,G.cam);t.marchDraw([],P,G.cam);ok(a.units.every((u,i)=>u.x===pos[i][0]&&u.y===pos[i][1]),'drawing never advances march movement');
   G.paused=true;const time=a.time;t.updateWorld(.2);ok(a.time===time,'world pause freezes mini-sprite movement');
   const old=a;Kit.begin('soldier',seed);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;ok(t.MARCH_ARMIES.get(P)!==old,'a new session forgets old positions and paths');

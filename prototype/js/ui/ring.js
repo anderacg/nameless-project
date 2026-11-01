@@ -5,7 +5,7 @@
    over it, or let go first and tap one; Esc, a right-click or a tap outside closes it. A press does nothing until it is let go or
    held: a short click travels (or meets what was clicked) as it is let go (the owner, 2026-10-22, mouse and touch alike).
    ActionRing takes a point (client px) and a list of {icon, label, run(), active}: the map hands it its own; the battle can hand it
-   another later. active: a mode that is on now (camped, by road, hurrying), lit in the UI's gold with a soft glow (style.css
+   another later. active: a mode that is on now (camped, by road, following), lit in the UI's gold with a soft glow (style.css
    .ar-btn.on; the owner, 2026-10-23: "active and inactive actions should look different"). The one open is ActionRing.now ---------- */
 // hold: ms a press must stay still; slop: client px it may wander meanwhile; r: the ring's radius (CSS px); press: the press under way
 const RING={hold:350,slop:8,r:80,progress:{delay:90,r:18,line:3},press:null};
@@ -19,7 +19,7 @@ class ActionRing{
     el.innerHTML='<i class="ar-dot"></i>'+this.items.map((it,i)=>{const a=-Math.PI/2+i*2*Math.PI/n;
       return '<button class="ar-btn'+(it.active?' on" role="menuitemcheckbox" aria-checked="true':'" role="menuitem')+'" type="button" data-ring="'+i+'" title="'+it.label+(it.active?' (on)':'')+'" style="--x:'+Math.round(Math.cos(a)*R)+'px;--y:'+Math.round(Math.sin(a)*R)+'px">'+icon(it.icon,22)+'<span>'+it.label+'</span></button>'}).join('');
     el.addEventListener('click',e=>{const b=e.target.closest('[data-ring]');if(b)this.pick(+b.dataset.ring)});
-    scr.appendChild(el);this.el=el;ActionRing.now=this;uiSfx('click');return this}
+    scr.appendChild(el);this.el=el;this.mode=G.mode;ActionRing.now=this;uiSfx('click');return this}
   close(){if(this.el)this.el.remove();this.el=null;if(ActionRing.now===this)ActionRing.now=null}
   // one picked: the ring closes, then it is done (on the map only while the map is yours: no window opened meanwhile)
   pick(i){const it=this.items[i];this.close();if(it&&G.mode==='world'&&!G.modal)it.run()}
@@ -29,6 +29,11 @@ class ActionRing{
   static close(){if(!ActionRing.now)return false;ActionRing.now.close();return true}
 }
 ActionRing.now=null;
+/* (the owner, 2026-10-31: the ring stayed open under other menus) anything else opened closes it: every window (ui.js showPanel
+   closes it, the Game Menu, the Army, the full map and the key shortcuts that open them all go through it), a press on the HUD
+   outside it (the dock, the top bar, a phone's drawers: below; a press on the map is input.js's), and, each frame, the screen it
+   opened on gone or under a window (a battle, a town, the main menu: drawMapHold) */
+document.addEventListener('pointerdown',e=>{const R=ActionRing.now;if(R&&e.target!==cv&&!R.el?.contains(e.target))R.close()},true);
 /* the map's press (ui/input.js): the mouse's left button; nothing happens yet. Let go before RING.hold ms, it was a click: you
    travel there or meet what is there (input.js worldGo, at the point pressed); held still RING.hold ms, the ring opens there with
    the map's actions and waits for a choice. A move beyond RING.slop first (off) means no ring, and letting go still travels. A
@@ -49,7 +54,7 @@ function ringTapOut(){return ActionRing.close()}
 // A map hold fills clockwise in CSS pixels, over the finished frame: mouse, pen and touch use their real hold timer.
 // Quick clicks stay quiet; release, movement, an opened ring or another window leaves nothing to draw.
 function drawMapHold(now=performance.now()){
-  if(G.mode!=='world'||G.modal)return false;
+  {const R=ActionRing.now;if(R&&(G.modal||G.mode!==R.mode))R.close()}if(G.mode!=='world'||G.modal)return false;
   const p=RING.press||(typeof TOUCH!=='undefined'&&TOUCH.lp?.mode==='world'?TOUCH.lp:null),H=RING.progress;
   if(!p||p.off||p.armed||now-p.t0<H.delay)return false;
   const r=cv.getBoundingClientRect();if(!r.width||!r.height)return false;

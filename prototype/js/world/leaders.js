@@ -8,7 +8,7 @@
    loose helpers (lordStats, lordSkill, lcapOf) are in realms.js */
 class Lord extends Character{
   get role(){return 'lord'}
-  get roleName(){return 'Lord'}
+  get roleName(){return cap1(lordWord(this.o))}
   get key(){return lordUnit(this.o)}
   get race(){return ST[lordUnit(this.o)].race}
   get aiOwned(){return true}
@@ -58,6 +58,8 @@ const CHIEF_NAMES={
   raiders:[['Zug','Krath','Ograk','Shaz','Durg','Mogra','Varz','Ishka'],['Sandfang','the Scorched','Skullsplitter','Dune-Runner','Sun-Eater','Bonegrin']],
   bog:[['Slurk','Mire-Ma','Gubb','Nettle','Hagga','Wort'],['Bogtooth','the Drowned','Reedcutter','Leechmother','Mudjaw']]
 };
+// (the chiefs' women, by their first names; the rest are men: core/pronouns.js)
+givenNames(Object.values(CHIEF_NAMES).map(N=>N[0]),['Morwen','Sable','Vey','Edda','Maudlin','Shaz','Mogra','Ishka','Mire-Ma','Nettle','Hagga']);
 const CHIEF_SK=['lead','tact'];
 // every chieftain on the map: those leading bands, and those holding camps and hideouts
 const allChiefs=()=>[...bandits,...W.sites,...W.sites.map(s=>s.occ&&s.occ.s).filter(Boolean),...W.exiles,...(P.captives||[])].map(o=>o.ld).filter(Boolean);// (with those rebuilding, those in ruins (sites.js Ruins) and those you hold)

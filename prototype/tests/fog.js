@@ -73,6 +73,14 @@ try{
     let far=null;for(let y=0;y<MH&&far==null;y+=8)for(let x=0;x<MW&&far==null;x+=8){let none=true;for(let j=-4;j<=4&&none;j++)for(let i=-4;i<=4&&none;i++)if(t.seenTile(x+i,y+j))none=false;if(none)far=[x,y]}
     const col=[];for(let y=ty;y<=ty+9;y++)col.push(al(tx+10,y));const soft=col.filter(a=>a>60&&a<250).length;
     ok(al(tx+8,ty)<70&&al(tx+8,ty)>20&&far&&al(far[0],far[1])===255&&soft>=2,'the minimap: the land you know dimmed ('+al(tx+8,ty)+'/255), the unknown dark, their edge soft ('+col.join(' ')+')')}
+   // the minimap brought up to date by chunks (fog.js fogMiniCv: only the chunks that changed blurred again) is the whole map's
+   // blur made afresh: land revealed in patches, on chunk edges, at the map's edge and a tile alone, then compared pixel by pixel
+   {const R=t.seeded(9),pic=()=>Array.from(t.fogMiniCv().getContext('2d', { willReadFrequently: true }).getImageData(0,0,MW,MH).data),mark=(x,y,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const u=x+i,v=y+j;if(u>=0&&v>=0&&u<MW&&v<MH)S[v*MW+u]=1}},
+     go=()=>{(0,eval)('fogDirty=true;fogMiniT=-1e9');return pic()},keep=S.slice();let bad=0,n=0;
+    for(let k=0;k<6;k++){for(let q=0;q<4;q++)mark(Math.floor(R()*MW),Math.floor(R()*MH),Math.floor(R()*5));if(k===2){mark(31,31,1);mark(0,0,2);mark(MW-1,MH-1,0);mark(64,10,0)}
+     const by=go();(0,eval)('fogMini=null');const whole=go();n++;if(by.some((v,i)=>v!==whole[i]))bad++}
+    S.set(keep);go();
+    ok(!bad,'the minimap\'s dark brought up to date by chunks is the whole map\'s blur, pixel for pixel ('+n+' rounds of land revealed, '+bad+' differ)')}
    // land coming to light clears over about 0.3 s, eased
    {const bx=Math.floor(ex/TILE),by=Math.floor((P.y+110)/TILE);for(let y=by-3;y<=by+3;y++)for(let x=bx-3;x<=bx+3;x++)S[y*MW+x]=1;
     const sq=[fogShot(0)(ex,P.y+110)];for(let k=0;k<8;k++)sq.push(fogShot(50)(ex,P.y+110));const mid=sq.filter(a=>a>dark+.05&&a<.93).length,last=sq[sq.length-1];
@@ -105,8 +113,9 @@ try{
     run();const w=run();window.__dm0=t.mistLay;window.__dm1=t.mistOnto;(0,eval)('mistLay=()=>{};mistOnto=()=>{}');let wo;try{run();wo=run()}finally{(0,eval)('mistLay=__dm0;mistOnto=__dm1')}
     ok(w-wo<1,'the mist costs '+(w-wo).toFixed(3)+' ms a frame on the map ('+t.VW+'×'+t.VH+'; the fog with it '+w.toFixed(3)+' ms, each frame drawn through)')}
   }finally{performance.now=pn}
-  // drawing never changes what you have explored, so the save is as it was
-  {const s0=t.seenSave();for(let i=0;i<3;i++)t.drawWorld();ok(t.seenSave()===s0,'drawing the fog never changes what you have explored (the save the same)')}
+  // drawing never changes what you have explored, so the save is as it was (once drawn here: your army formed up where you were
+  // put, its men's sight with it, fog.js Sight)
+  {t.drawWorld();const s0=t.seenSave();for(let i=0;i<3;i++)t.drawWorld();ok(t.seenSave()===s0,'drawing the fog never changes what you have explored (the save the same)')}
   // nothing that moves shows on the land you remember, even just past your sight's edge
   {const L=W.lords.find(l=>!l.dead),keep=[L.x,L.y,L.inside];L.inside=null;const V=t.vis(),sx=P.x+V+12,sy=P.y;
    const box=()=>{t.drawWorld();return t.ctx.getImageData(Math.round(sx-G.cam.x-10),Math.round(sy-G.cam.y-22),20,26).data};

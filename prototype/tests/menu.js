@@ -32,8 +32,9 @@ try{
  {const h=document.querySelector('#panel .fb-head'),s=t.WM.settings,cp=h&&h.querySelector('[data-act="esc-seed"]'),x=h?h.textContent:'';
   ok(h&&/Paused/.test(x)&&x.includes('Day '+G.day)&&x.includes(t.worldName(t.WM))&&x.includes(t.worldKind(s))&&(s.seed?x.includes(s.seed)&&!!cp:!cp)&&!!h.querySelector('[data-act="esc-wpage"]'),'its header: Paused, the day, the world, its seed with Copy seed, and World ('+x+')');
   if(cp){cp.click();ok(G.mode==='esc','Copy seed keeps the menu open')}}
- // the game paused while it is open: the loop runs no world (frames stepped by hand, none scheduled)
- {const raf=window.requestAnimationFrame,p0=G.paused,step=n=>{for(let i=0;i<n;i++)t.loop(performance.now()+1000*(i+1))};window.requestAnimationFrame=()=>0;G.paused=false;
+ // the game paused while it is open: the loop runs no world (frames stepped by hand, none scheduled; their times always on, as
+ // the screen's are: the loop skips a frame sooner than its rate allows since 60c5ebe, main.js)
+ {let at=performance.now()+1e5;const raf=window.requestAnimationFrame,p0=G.paused,step=n=>{for(let i=0;i<n;i++)t.loop(at+=1000)};window.requestAnimationFrame=()=>0;G.paused=false;
   try{const c0=G.clock,d0=G.day;step(10);ok(G.mode==='esc'&&G.clock===c0&&G.day===d0,'the clock stands still while the menu is open');
    esc();ok(G.mode==='world'&&!G.modal,'Esc again resumes');const c1=G.clock;step(4);ok(G.clock!==c1,'and the clock runs again ('+c1+' → '+G.clock+')')}
   finally{window.requestAnimationFrame=raf;(0,eval)('last=performance.now()');G.paused=p0;G.mode='world';G.modal=false;G.enc=null;t.hidePanel()}}

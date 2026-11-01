@@ -4,9 +4,8 @@
 // before it opens calls the ring off, and letting go still travels; let go over a button picks it, or let go first
 // and tap one; Esc, a right-click or a tap outside closes it, travelling nowhere. A short click on another party opens its own
 // ring at it (ui/input.js partyRing: Attack or Meet, Follow, Look), chasing nothing yet; held on it, the map's with Follow. Only what applies: Hunting area (world/hunting.js), Make camp or Break camp,
-// Travel here, By road (world.js roadGo: by-road mode on, and you go there; on, it turns it off) and Hurry here on the ground (Stop
-// hurrying while you hurry), Fill waterskins at the water's edge or a holding's well (lit while they fill; "No empty waterskins" with none to fill), Drink liquor with liquor, Look on something. A mode that is on (camped, by
-// road, hurrying) is lit: the button's class on, a gold glow; the rest are not. A finger's long press opens it too, and its Look
+// Travel here, By road (world.js roadGo: by-road mode on, and you go there; on, it turns it off) on the ground, Fill waterskins at the water's edge or a holding's well (lit while they fill; "No empty waterskins" with none to fill), Drink liquor with liquor, Look on something. A mode that is on (camped, by
+// road) is lit: the button's class on, a gold glow; the rest are not. A finger's long press opens it too, and its Look
 // shows the card. At a phone's 844 x 390 every button, lit or not, is on the screen.
 window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
@@ -31,7 +30,7 @@ try{
  // ---- held still: the ring, the travel put back
  reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);await held();
   ok(!!ring()&&P.tx==null&&document.querySelector('.aring'),'held still '+R.hold+' ms: the ring opens, travelling nowhere');
-  ok(labels().join()==='Hunting area,Make camp,Travel here,By road,Hurry here','on bare ground: '+labels().join(', '));
+  ok(labels().join()==='Hunting area,Make camp,Travel here,By road','on bare ground: '+labels().join(', '));
   const b=btn('Travel here');up(b);ok(!ring()&&P.tx!=null&&Math.abs(P.tx-wx)<2,'let go over Travel here: you travel there, the ring closed ('+(b&&b.el.textContent)+', '+P.tx+' for '+wx+')')}
  // ---- By road: by-road mode on and you travel there; it stays on for a plain click after it, and the ring lights it; picked
  // again, it is off
@@ -43,8 +42,6 @@ try{
   ok(lit().join()==='By road'&&b.el.getAttribute('aria-checked')==='true'&&/\(on\)/.test(b.el.title)&&/rgba?\(232, 185, 74/.test(glow('By road'))&&!/rgba?\(232, 185, 74/.test(glow('Travel here')),'the ring lights By road while it is on (gold glow: '+glow('By road').slice(0,60)+'), and only it ('+lit().join()+')');
   b.el.click();ok(!P.byRoad&&P.tx==null,'picked again: off, travelling nowhere');
   down(p);await held();up(p);ok(lit().length===0&&labels().includes('By road'),'off: none lit');t.ActionRing.close()}
- // ---- hurrying, camped: lit too
- reset();{const p=cl(P.x+60,P.y+20);t.worldGo(P.x+200,P.y);t.setHurry(true);down(p);await held();up(p);ok(lit().join()==='Stop hurrying','hurrying: Stop hurrying is lit ('+lit().join()+')');t.ActionRing.close();t.setHurry(false);P.tx=null}
  // ---- a phone on its side (844 x 390): every button on the screen, the lit one too
  reset();t.setByRoad(true);{const scr=document.getElementById('screen'),css=scr.style.cssText;scr.style.cssText+=';width:844px;height:390px';
   const bad=[];for(const [fx,fy] of [[.5,.5],[.04,.06],[.96,.94]]){const r=scr.getBoundingClientRect(),cx=r.left+r.width*fx,cy=r.top+r.height*fy;t.ringOpen(cx,cy,P.x+40,P.y+20);

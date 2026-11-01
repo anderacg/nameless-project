@@ -1,8 +1,8 @@
 'use strict';
 /* ---------- The Wounded Traveller: the first story chain, and Ander The Fallen, its rare variant (doc/STORY_DESIGN.md §9,
    doc/IMPLEMENTATION_PLAN.md §10.7–10.8; the owner, 2026-10-19 and 2026-10-23; the story batch, ST2) ----------
-   1. Heal him: the road's wounded traveller (world/encounters.js traveller: Tend his wounds). He stands, bandaged, and his page
-      offers (its next page, Wounded.offer): Join you (a first-tier soldier of his people), Take him home (the thread below
+   1. Heal him: the road's wounded traveller (world/encounters.js traveller: Tend the wounds). He stands, bandaged, and his page
+      offers (its next page, Wounded.offer): Join you (a first-tier soldier of his people), Escort home (the thread below
       begins), or Refuse (he limps off; a little reputation lost at his home). Ander (WOUNDED.ander.p × HIDDEN_RATE of them,
       never twice a game) offers no Join: see him home and clear the bandits who hurt him, and he joins you as a companion.
    2–7. The thread 'wounded' (story/thread.js), on the reusable step kinds (story/steps.js):
@@ -34,6 +34,8 @@
    here draws a random number ---------- */
 // (a step's key: its quest's fate, else the event's how)
 const fateOf=d=>d&&d.e&&d.e.fate||d&&d.how;
+// (the travellers' names: men's, but these women's; core/pronouns.js)
+givenNames(WOUNDED.names,['Aelin','Mokra','Azga']);
 const Wounded={
   // ---- who he is: Ander, free only once a game and while none lies on the road or rides in a chain
   anderFree(){
@@ -79,13 +81,18 @@ const Wounded={
   },
   // ---- the thread's memory, read (a thread begun bare: its town, x and y)
   name:th=>th.memory.name||'the traveller',
+  // (his or her words: Ander's, or the traveller's by name; core/pronouns.js)
+  pr:th=>pr(th.memory.ander?COMPS.ander:th.memory.name||'m'),
+  prOf:e=>pr(e.ander?COMPS.ander:Wounded.nameOf(e)),
   who:th=>th.memory.ander?'Ander The Fallen':Wounded.name(th),
   // (who speaks on his pages: Ander, or the traveller's family; a talk's head: story/conversation.js)
   speaker:th=>th.memory.ander?{name:COMPS.ander.n,pic:portrait('ander'),sub:'At his sister’s, mending'}:{name:cap1(Wounded.name(th))+'’s family',pic:personPic('folk',townBy(Wounded.home(th).town)?.races?.[0]||'human',2),sub:'At '+Wounded.place(th)},
   home:th=>th.memory.home||{town:th.memory.town,lot:'house',i:th.i},
   at:th=>th.memory.at||{x:th.memory.x,y:th.memory.y},
   gang:th=>'the '+(th.memory.gang||'bandits'),
-  kin:th=>th.memory.ander?'his sister':'his family',
+  // (the traveller's wife, or her husband)
+  spouse:th=>genderWord('wife',th.memory.ander?COMPS.ander:th.memory.name||'m'),
+  kin:th=>th.memory.ander?'his sister':Wounded.pr(th).his+' family',
   // (his home in words: a house in Ashford, the farm by Ashford)
   place(th){
     const h=Wounded.home(th),E=h.lot&&h.lot!=='house'&&ESTATES[h.lot];
@@ -100,12 +107,12 @@ const Wounded={
   // ---- the steps' specs (story/steps.js, world/escort.js)
   // (from where he lay; freed, from where you are: a fresh due day; Ander's none: open)
   escort(th){
-    const h=Wounded.home(th),n=Wounded.name(th),E=WOUNDED.escort,m=th.memory,a=m.ander;
+    const h=Wounded.home(th),n=Wounded.name(th),E=WOUNDED.escort,m=th.memory,a=m.ander,w=Wounded.pr(th);
     return {who:'traveller',n,to:h,...(m.freed?{}:{at:Wounded.at(th)}),open:!!a,rescue:true,quiet:true,prize:{rep:[h.town,E.rep]},forfeit:{rep:[h.town,-E.late]},forfeits:{captured:{morale:-E.morale}},
       say:a?{arrive:'Ander is at his sister’s door in {town}.',captured:'In the rout, your foes drag Ander off in chains. A sellsword of his name will fetch a price; wherever they hold him, he lives.',
         scattered:'In the rout, Ander slips away into the dark. A man like him lands on his feet: the taverns will hear of him.'}
-        :{arrive:'{N} is home: the door of {to} flies open.',late:'Tired of waiting on you, {n} limps the rest of the way to {town} alone. His family will hear of it.',
-        captured:'In the rout, your foes drag {n} off in chains. Wherever they hold him, he lives.',scattered:'In the rout, {n} slips away into the dark. He will make his own way home.'}};
+        :{arrive:'{N} is home: the door of {to} flies open.',late:'Tired of waiting on you, {n} limps the rest of the way to {town} alone. '+w.His+' family will hear of it.',
+        captured:'In the rout, your foes drag {n} off in chains. Wherever they hold '+w.him+', '+w.he+' lives.',scattered:'In the rout, {n} slips away into the dark. '+w.He+' will make '+w.his+' own way home.'}};
   },
   // ---- the rescue: carried off (the escort's key: captured, held; no one took him (beasts): an ordinary traveller walks home,
   // Ander is loose, wandering); freed by you (the chain resumes at the escort; no room for him: he rides on alone), his holder
@@ -126,29 +133,29 @@ const Wounded={
   price:th=>WOUNDED.rescue.ransom[th.memory.ander?'ander':'traveller'],
   // (his rescue, story/steps.js HeldQuest: who holds him as he was carried off (none: the gaol of his home's holding), its lines)
   held(th){
-    const n=Wounded.name(th),p=Wounded.price(th);
+    const n=Wounded.name(th),p=Wounded.price(th),w=Wounded.pr(th);
     return {held:th.memory.held,n,home:WOUNDED.rescue.home,price:p,title:'Free '+n,
-      say:{band:'You cut {n} loose from the bandits’ ropes. He is free.',lair:'In the back of {to} you find {n}, chained and starved, but alive. He is free.',
-        paid:'You count out the gold. {N} walks out of the gaol, blinking at the light.',taken:'In the gaol of {town} you find {n}, and strike off his chains.',
+      say:{band:'You cut {n} loose from the bandits’ ropes. '+w.He+' is free.',lair:'In the back of {to} you find {n}, chained and starved, but alive. '+w.He+' is free.',
+        paid:'You count out the gold. {N} walks out of the gaol, blinking at the light.',taken:'In the gaol of {town} you find {n}, and strike off '+w.his+' chains.',
         home:'The band has taken {n} to {to}: it is marked on your map.',moved:'Its survivors have taken {n} to {to}: it is marked on your map.',
-        gone:'Word comes that those who held {n} are scattered. In the confusion, he got away.',
+        gone:'Word comes that those who held {n} are scattered. In the confusion, '+w.he+' got away.',
         gaol:th.memory.ander?'“The sellsword?” The gaoler of {town} grins through the bars. “Ander the Fallen, they say. A name like that is worth '+p+' gold.”'
-          :'The gaoler of {town} leans on the bars. “{N}? Aye, we have him. '+p+' gold, and he walks.”'}};
+          :'The gaoler of {town} leans on the bars. “{N}? Aye, we have '+w.him+'. '+p+' gold, and '+w.he+' walks.”'}};
   },
   // (what to do now: by where he is, his rescue's own words)
   heldNote(th){
     const q=th.wait&&P.quests.find(x=>x.id===th.wait.id),Q=q&&Quest.as(q);
-    return Q&&Q.held?{band:'Free '+Q.pn+' from '+Q.to.name+' (marked on your map) before they take him to their hideout.',lair:'Free '+Q.pn+' from '+Q.to.name+' (marked on your map).',
+    return Q&&Q.held?{band:'Free '+Q.pn+' from '+Q.to.name+' (marked on your map) before they take '+Wounded.pr(th).him+' to their hideout.',lair:'Free '+Q.pn+' from '+Q.to.name+' (marked on your map).',
       holding:'Ransom '+Q.pn+' at the gates of '+Q.held.town+' ('+Q.price+' gold), or take '+Q.held.town+'.'}[Q.held.k]:'Free '+Wounded.name(th)+'.';
   },
   call(th){
     const n=Wounded.name(th),a=th.memory.ander;
-    return {to:Wounded.home(th),title:a?'Ander at his sister’s':n+' is home',text:a?'Ander made his own way to his sister’s door in '+Wounded.home(th).town+'.':n+' made his own way home to '+Wounded.place(th)+'.',
+    return {to:Wounded.home(th),title:a?'Ander at his sister’s':n+' is home',text:a?'Ander made his own way to his sister’s door in '+Wounded.home(th).town+'.':n+' made '+Wounded.pr(th).his+' own way home to '+Wounded.place(th)+'.',
       say:{arrive:a?'Ander is at his sister’s door.':n+'’s family comes out to meet you.'}};
   },
   tracks(th){
     const p=Wounded.at(th),n=Wounded.name(th),g=Wounded.gang(th);
-    return {to:{x:p.x,y:p.y,name:'where you found '+n},title:'Find the trail of '+g,text:cap1(g)+' set on '+n+' on the road where you found him. Their trail starts there.',
+    return {to:{x:p.x,y:p.y,name:'where you found '+n},title:'Find the trail of '+g,text:cap1(g)+' set on '+n+' on the road where you found '+Wounded.pr(th).him+'. Their trail starts there.',
       say:{arrive:'You are back where you found '+n+'.'}};
   },
   lair(th){
@@ -175,7 +182,8 @@ const Wounded={
   text(e){
     const th={memory:Wounded.memory(e),i:0},p=Wounded.place(th);
     if(e.ander)return 'The sellsword stands, testing the bandage. “Ander,” he says. “Some call me the Fallen.” An old scar runs down his cheek; his dark cloak is cut to ribbons. “See me to my sister’s door, '+p+', and help me settle with '+Wounded.gang(th)+'. Then my sword is yours.”';
-    return 'On his feet now, bandaged, '+th.memory.name+' grips your hand. “I owe you my life,” he says. “I can fight: let me ride with you. Or, if you would, see me home to '+p+'. My family must think me dead.”';
+    const w=Wounded.prOf(e);
+    return 'On '+w.his+' feet now, bandaged, '+th.memory.name+' grips your hand. “I owe you my life,” '+w.he+' says. “I can fight: let me ride with you. Or, if you would, see me home to '+p+'. My family must think me dead.”';
   },
   facts(e){
     const th={memory:Wounded.memory(e),i:0};
@@ -185,13 +193,13 @@ const Wounded={
   lying:()=>'A tall man in a dark cloak lies among three dead bandits, a notched sword still in his fist and a deep wound in his side. An old scar runs down his face. He is barely breathing.',
   // his offer: the encounter's choices once he is healed (world/encounters.js traveller's acts)
   offer:[
-    {icon:'troops',label:'Join you',when:e=>!!e.healed&&!e.ander,need:()=>partyRoom()<1&&'Your band is full.',tip:'He takes up arms with your band: a first-tier soldier of his people.',
-      out:e=>({troops:{[Wounded.troop(e)]:1},gone:true,say:'He takes up a spear and falls in with your band.'})},
-    {icon:'people',label:'Take him home',when:e=>!!e.healed&&!(e.ander&&Escort.why()),need:()=>Escort.why(),tip:'He rides with you to his family’s door. More may come of it.',
+    {icon:'troops',label:'Join you',when:e=>!!e.healed&&!e.ander,need:()=>partyRoom()<1&&'Your band is full.',tip:e=>{const w=Wounded.prOf(e);return w.He+' takes up arms with your band: a first-tier soldier of '+w.his+' people.'},
+      out:e=>({troops:{[Wounded.troop(e)]:1},gone:true,say:Wounded.prOf(e).He+' takes up a spear and falls in with your band.'})},
+    {icon:'people',label:'Escort home',when:e=>!!e.healed&&!(e.ander&&Escort.why()),need:()=>Escort.why(),tip:e=>{const w=Wounded.prOf(e);return w.He+' rides with you to '+w.his+' family’s door. More may come of it.'},
       also:e=>{const th={memory:Wounded.memory(e),i:0};return Escort.facts(Wounded.escort(th)).concat(e.ander?['then he joins you, once '+Wounded.gang(th)+' are dealt with']:[])},
-      out:e=>({start:{thread:'wounded',memory:Wounded.memory(e)},gone:true,say:e.ander?'Ander climbs up behind one of your riders.':'He climbs up behind one of your riders.'})},
-    {icon:'shoe',label:'Refuse',when:e=>!!e.healed,tip:'You have done enough. He goes his own way.',
-      out:e=>({rep:[Wounded.homeOf(e).town,-WOUNDED.refuse],call:c=>{c.e.goOff();if(e.ander)Wanderer.start(Wounded.memory(e))},say:e.ander?'Ander shrugs. “Your loss.” He limps off down the road.':'He nods slowly, and limps off down the road alone.'})},
+      out:e=>({start:{thread:'wounded',memory:Wounded.memory(e)},gone:true,say:e.ander?'Ander climbs up behind one of your riders.':Wounded.prOf(e).He+' climbs up behind one of your riders.'})},
+    {icon:'shoe',label:'Refuse',when:e=>!!e.healed,tip:e=>{const w=Wounded.prOf(e);return 'You have done enough. '+w.He+' goes '+w.his+' own way.'},
+      out:e=>({rep:[Wounded.homeOf(e).town,-WOUNDED.refuse],call:c=>{c.e.goOff();if(e.ander)Wanderer.start(Wounded.memory(e))},say:e.ander?'Ander shrugs. “Your loss.” He limps off down the road.':Wounded.prOf(e).He+' nods slowly, and limps off down the road alone.'})},
     // (Ander, and no room for a passenger: no forced refusal, he offers to meet you later)
     {icon:'shoe',label:'Meet him later',when:e=>!!e.healed&&!!e.ander&&!!Escort.why(),tip:'You have no room for another passenger. He will find his own road; look for him in the taverns.',
       also:()=>['he goes his own way: look for him in the taverns'],out:e=>({call:c=>{c.e.goOff();Wanderer.start(Wounded.memory(e))},say:'“No room for me? Then I find my own road,” Ander says. “Look for me in the taverns.”'})}],
@@ -204,11 +212,11 @@ defineStory('wounded',{n:'The Wounded Traveller',who:th=>Wounded.who(th),resume:
     remember:d=>fateOf(d)==='captured'?{held:d.e.by||null,freed:0}:{},
     note:th=>'Bring '+Wounded.name(th)+' home to '+Wounded.place(th)+'.',next:'family',on:{captured:'held',walk:'call',loose:null}},
   {id:'family',stage:th=>'Hear '+Wounded.kin(th)+' out',ico:'people',title:th=>th.memory.ander?'Ander’s sister':Wounded.name(th)+'’s family',who:th=>Wounded.speaker(th),
-    text:th=>{const n=Wounded.name(th),g=Wounded.gang(th),b=Wounded.bandWord(th),d=Wounded.dir(th),m=th.memory;
+    text:th=>{const n=Wounded.name(th),g=Wounded.gang(th),b=Wounded.bandWord(th),d=Wounded.dir(th),m=th.memory,w=Wounded.pr(th),sp=Wounded.spouse(th);
       if(m.ander)return (m.alone?'Ander is at his sister’s in '+Wounded.home(th).town+' before you, leaner and meaner for his road.':'His sister meets you at the door of '+Wounded.place(th)+', and swears at the state of him.')+' “'+cap1(g)+',” Ander says, easing himself onto a bench. “'+cap1(b)+'. Six of them jumped me on the road to the '+d+'; I left three in the dirt. The rest crawled back to their hole. See that they never crawl out again, and my sword is yours.”';
-      return (m.alone?'At '+Wounded.place(th)+', '+n+' is home before you: thin and bruised, he made his own way back. His family runs out to meet you all the same.':'At '+Wounded.place(th)+', '+n+'’s family runs out to meet him: his wife in tears, the children at his legs.')+' Over bread at their table he tells you who did this: '+g+', '+b+' who prey on the road to the '+d+'. “They took all we had saved,” his wife says. “If only someone would make them pay.”'},
+      return (m.alone?'At '+Wounded.place(th)+', '+n+' is home before you: thin and bruised, '+w.he+' made '+w.his+' own way back. '+w.His+' family runs out to meet you all the same.':'At '+Wounded.place(th)+', '+n+'’s family runs out to meet '+w.him+': '+w.his+' '+sp+' in tears, the children at '+w.his+' legs.')+' Over bread at their table '+w.he+' tells you who did this: '+g+', '+b+' who prey on the road to the '+d+'. “They took all we had saved,” '+w.his+' '+sp+' says. “If only someone would make them pay.”'},
     choose:[
-      {icon:'sword',label:'Promise to find them',how:'ask',next:'tracks',tip:'Their trail starts where you found him.',out:th=>({say:'You promise to find '+Wounded.gang(th)+'. Their trail starts where you found '+Wounded.name(th)+'.'})},
+      {icon:'sword',label:'Promise to find them',how:'ask',next:'tracks',tip:th=>'Their trail starts where you found '+Wounded.pr(th).him+'.',out:th=>({say:'You promise to find '+Wounded.gang(th)+'. Their trail starts where you found '+Wounded.name(th)+'.'})},
       {icon:'shoe',label:'Ride on',how:'part',next:null,tip:'Wish them well and go your way.',out:th=>({say:th.memory.ander?'You leave Ander to mend. “When you want a sword,” he says, “ask in the taverns.”':'You wish them well and ride on.'})}],
     note:th=>cap1(Wounded.kin(th))+' waits for you at '+Wounded.place(th)+'.'},
   {id:'tracks',goal:'track',stage:'Find the trail',town:th=>Wounded.home(th).town,spec:th=>Wounded.tracks(th),at:th=>Wounded.at(th),band:th=>th.memory.band||'bandits',
@@ -219,7 +227,7 @@ defineStory('wounded',{n:'The Wounded Traveller',who:th=>Wounded.who(th),resume:
       return 'Where you found '+n+', the trail is still plain: hoofprints, a dropped boot, the ruts of a stolen cart turning off the road. Your scouts follow it '+Math.round(Math.hypot(m.lx-a.x,m.ly-a.y)/TILE)+' tiles to the '+compass(m.lx-a.x,m.ly-a.y)+', to the '+m.lair+'. It is marked on your map.'},
     choose:[
       {icon:'sword',label:'Ride for their hideout',how:'follow',next:'clear',when:th=>th.memory.site!=null,tip:'Clear it out: they will not give up their plunder for asking.',out:th=>({say:'You turn your band toward the '+th.memory.lair+'.'})},
-      {icon:'people',label:'Back to his family',how:'cold',next:'back',when:th=>th.memory.site==null,tip:'Tell them what you found.',out:()=>({say:'You turn back with the news.'})},
+      {icon:'people',label:th=>'Back to '+Wounded.pr(th).his+' family',how:'cold',next:'back',when:th=>th.memory.site==null,tip:'Tell them what you found.',out:()=>({say:'You turn back with the news.'})},
       {icon:'shoe',label:'Let it lie',how:'drop',next:null,tip:'Leave them be.',ask:th=>th.memory.ander?'Ander will not ride with you while they go unpunished: he will go his own way.':null,out:()=>({say:'You let it lie.'})}],
     note:()=>'Read the trail.'},
   {id:'clear',goal:'clear',stage:th=>'Clear out '+Wounded.gang(th),town:th=>Wounded.home(th).town,spec:th=>Wounded.lair(th),
@@ -227,10 +235,10 @@ defineStory('wounded',{n:'The Wounded Traveller',who:th=>Wounded.who(th),resume:
   {id:'back',goal:'visit',stage:th=>'Back to '+(th.memory.ander?'Ander':Wounded.kin(th)),town:th=>Wounded.home(th).town,spec:th=>Wounded.back(th),
     note:th=>'Go back to '+(th.memory.ander?'Ander':Wounded.name(th)+'’s family')+' at '+Wounded.place(th)+'.',next:'reward'},
   {id:'reward',stage:th=>th.memory.ander?'Ander’s word':'Their thanks',ico:'gold',title:th=>th.memory.ander?'Ander The Fallen':Wounded.name(th)+'’s family',who:th=>Wounded.speaker(th),
-    text:th=>{const g=Wounded.gang(th),n=Wounded.name(th);
+    text:th=>{const g=Wounded.gang(th),n=Wounded.name(th),w=Wounded.pr(th);
       if(th.memory.ander)return 'Ander is on his feet again, his sword belted on and his dark cloak about him. “'+cap1(g)+' are done,” he says. “I pay my debts. Where you ride, I ride.”';
       return Thread.once('heirloom')?n+'’s family has heard: '+g+' are no more. They have little, but they press their savings on you all the same. Word of you goes round '+Wounded.home(th).town+'.'
-        :n+'’s family has heard: '+g+' are no more. His wife presses a small cloth bundle into your hands: the '+ITEMS.hearthring.n+', worn by her mother and hers before her. “It has kept this house. Let it keep you.” Word of you goes round '+Wounded.home(th).town+'.'},
+        :n+'’s family has heard: '+g+' are no more. '+w.His+' '+Wounded.spouse(th)+' presses a small cloth bundle into your hands: the '+ITEMS.hearthring.n+', worn by her mother and hers before her. “It has kept this house. Let it keep you.” Word of you goes round '+Wounded.home(th).town+'.'},
     choose:[
       {icon:'gold',label:'Accept their thanks',how:'thanks',next:null,when:th=>!th.memory.ander,out:th=>Wounded.gift(th)},
       {icon:'troops',label:'Ride with me',how:'joins',next:null,when:th=>!!th.memory.ander,tip:'Ander joins your band as a companion.',out:th=>Wounded.joins(th)}],
@@ -240,7 +248,7 @@ defineStory('wounded',{n:'The Wounded Traveller',who:th=>Wounded.who(th),resume:
   // (Ander: wandering); given up: over
   {id:'held',goal:'rescue',stage:th=>'Free '+Wounded.name(th),fail:[],town:th=>Wounded.home(th).town,spec:th=>Wounded.held(th),key:(d,th)=>Wounded.freed(d,th),remember:d=>Wounded.after(d),
     note:th=>Wounded.heldNote(th),on:{freed:null,ride:'call',walk:'call',loose:null}},
-  {id:'call',goal:'visit',stage:th=>Wounded.name(th)+' made his own way home',town:th=>Wounded.home(th).town,spec:th=>Wounded.call(th),
+  {id:'call',goal:'visit',stage:th=>Wounded.name(th)+' made '+Wounded.pr(th).his+' own way home',town:th=>Wounded.home(th).town,spec:th=>Wounded.call(th),
     note:th=>(th.memory.ander?'Ander':Wounded.name(th))+' is home: go to '+Wounded.place(th)+'.',next:'family'}]});
 /* ---------- Ander wandering (the owner, 2026-10-23: never lost, but for dying unhealed): every end of his chain but the reward
    sends him to the taverns, kept aside (Thread.store().aside.ander, saved with the threads: {since (the day he set off), memory

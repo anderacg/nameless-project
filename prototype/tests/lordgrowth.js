@@ -22,5 +22,11 @@ try{
   ok(a.xp+a.lv*1e4>xp0&&a.sk.lead.lv*1e4+a.sk.lead.xp>ld,'a victory gives him experience and raises his Leadership');a.xp=a.lv*60-1;t.lordXp(a,5);ok(a.lv===lv0+1||a.lv>lv0,'enough experience and he reaches the next level ('+lv0+' → '+a.lv+')')}
  // tactics
  {const a=W.lords[0];a.sk.tact.lv=0;const m0=t.lordTac([a]);a.sk.tact.lv=6;ok(t.lordTac([a])>m0,'Tactics makes his army count for more in a fight (×'+t.lordTac([a]).toFixed(2)+')')}
+ // a unit he trains up keeps its men: never into a kind whose unit is smaller than it (realms.js lordRecruit: a levy of 7, after
+ // a refill, was once trained into Lancers, a mounted unit of 6, and all 7 were lost; the lancers first here, as a roll may pick them)
+ {const a=W.lords.find(x=>!x.dead),h=t.TOWNS.find(z=>z.owner===a.fac),up=t.UP.hum_levy,rnd=Math.random;t.ensureEcon(h);h.vol=0;
+  Object.assign(a,{inside:null,state:'rest',tgt:h.name,troops:Array(7).fill('hum_levy')});
+  try{t.UP.hum_levy=['hum_lancer','hum_pike'];Math.random=()=>.01;t.lordRecruit(a,h)}finally{Math.random=rnd;t.UP.hum_levy=up}
+  const c=t.countsOf(a.troops);ok(a.troops.length===7&&c.hum_pike===7,'a levy of 7 trained up keeps its 7 men: Pikemen, not Lancers, whose unit is 6 ('+JSON.stringify(c)+')')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

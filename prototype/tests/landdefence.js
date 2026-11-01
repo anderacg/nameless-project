@@ -10,6 +10,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 try{
  const t=T,G=t.G,P=t.P,W=t.W,S=t.WORLD_SCALE.spawn,D=t.DEFEND;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');G.quietEvents=true;G.encCool=1e9;
+ t.WORLD_LOD.on=false;// (the beasts' and bands' rules wherever they meet, you far off: the tiers off, every one thinking every frame; lod.js tests them)
  const panel=()=>document.getElementById('panel').innerHTML,world=()=>{G.mode='world';G.modal=false;t.hidePanel();G.enc=null;G.fg=null};
  const lair=(x,y)=>!t.landHold(x,y)||t.landRim(x,y,S.rim)&&t.farFromHomes(x,y,S.away);
  // ---- spawns: at the start, and over many more

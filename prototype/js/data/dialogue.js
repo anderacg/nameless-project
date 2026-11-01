@@ -1,7 +1,8 @@
 'use strict';
 /* ---------- data: conversations' words and faces (doc/DIALOGUE_DESIGN.md; story/conversation.js) ----------
    greet: the speaker's first words, by role: first (you have not met: TalkMemory), again (you have). {N} the speaker's name,
-   {realm} his realm, {you} your hero's name (or "stranger"), {town} the holding. A role with none says nothing first.
+   {realm} his realm, {you} your hero's name (or "stranger"), {town} the holding; {he} {his} {him} {himself} and {lord} (capitalised too: {He}) the
+   speaker's words, {you.he} and the like your hero's (core/pronouns.js prFill). A role with none says nothing first.
    TALK_PIC: each role's portrait (a function of the speaker's record and its holding, giving an image's URL); any of them may be
    swapped for a bigger bust later without touching the conversations. */
 const DIALOGUE={
@@ -24,17 +25,17 @@ const DIALOGUE={
      (lose): an outcome (story/outcome.js: rel his relation, honor his realm's, gold; favour won: he lends you his soldiers). His
      words: yes or no, by temper (none: the plain one); yours: you */
   checks:{
-    flatter:{label:'Praise his deeds',base:.45,cha:.04,pers:.04,temper:{proud:-.3,cunning:-.15,greedy:.05,kind:.1,honourable:-.05},win:{rel:4},lose:{rel:-3},
+    flatter:{label:'Praise {his} deeds',base:.45,cha:.04,pers:.04,temper:{proud:-.3,cunning:-.15,greedy:.05,kind:.1,honourable:-.05},win:{rel:4},lose:{rel:-3},
       you:'Your deeds are spoken of in every hall from here to the sea.',
       yes:{plain:'Kind of you to say.',greedy:'Ha! Words cost nothing, but I like them.',kind:'You are generous.'},no:{plain:'Spare me the honey.',proud:'Do you take me for a fool, to be bought with words?',cunning:'Flattery. What are you after?'}},
-    favour:{label:'Ask a favour: some of his soldiers',base:.25,cha:.03,pers:.05,renown:.001,honor:.004,temper:{kind:.15,honourable:.05,greedy:-.15,proud:-.05,cunning:-.05},lose:{rel:-3},
+    favour:{label:'Ask a favour: some of {his} soldiers',base:.25,cha:.03,pers:.05,renown:.001,honor:.004,temper:{kind:.15,honourable:.05,greedy:-.15,proud:-.05,cunning:-.05},lose:{rel:-3},
       you:'I could use a few good men. Would you spare me some of yours?',
       yes:{plain:'Take them, and bring them back alive.',kind:'Of course. Take care of them.',greedy:'You will owe me for this.'},no:{plain:'I need every man I have.',proud:'My soldiers are not yours to ask for.'}},
-    threaten:{label:'Threaten him',base:.2,cha:.02,power:.3,renown:.001,temper:{kind:.15,greedy:.05,cunning:-.05,honourable:-.1,proud:-.25},win:{gold:60,rel:-8},lose:{rel:-12,honor:-5},
+    threaten:{label:'Threaten {him}',base:.2,cha:.02,power:.3,renown:.001,temper:{kind:.15,greedy:.05,cunning:-.05,honourable:-.1,proud:-.25},win:{gold:60,rel:-8},lose:{rel:-12,honor:-5},
       you:'Pay me, or I will burn your fields to the last stalk.',
       yes:{plain:'Take it, then, and go.',greedy:'Fine! Take it. But this is not over.'},no:{plain:'Get out before I have you thrown out.',proud:'You dare? Out of my sight!',honourable:'I do not bend to threats.'}},
     // (ask him to follow you: he marches in your host for some days: world/hosts.js; by his relation with you too (rel))
-    follow:{label:'Ask him to follow you',base:.25,cha:.03,pers:.03,renown:.0015,honor:.004,rel:.006,temper:{honourable:.1,kind:.1,proud:-.15,greedy:-.05,cunning:0},
+    follow:{label:'Ask {him} to follow you',base:.25,cha:.03,pers:.03,renown:.0015,honor:.004,rel:.006,temper:{honourable:.1,kind:.1,proud:-.15,greedy:-.05,cunning:0},
       you:'Ride with me for a while. There is work on the road for both of us.',
       yes:{plain:'Very well. For a few days, then.',honourable:'Gladly. Lead on.',greedy:'If there is plunder in it, why not.'},no:{plain:'I have my own road to ride.',proud:'I follow my liege, and no one else.',cunning:'Not yet. Show me what you are worth first.'}},
     min:.05,max:.9},

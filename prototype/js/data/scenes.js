@@ -7,7 +7,7 @@
 const SCENE_ZOOM=2;
 const SCENE_ROLES={
   steward:{look:'steward',n:'Steward',bld:'hall',tab:'jobs',icon:'scroll',say:'The lord has work for those who can do it.'},
-  reeve:{look:'steward',n:'Reeve',bld:'hall',tab:'fief',icon:'crown',say:'Welcome home, my lord. The ledgers are ready.'},
+  reeve:{look:'steward',n:'Reeve',bld:'hall',tab:'fief',icon:'crown',say:'Welcome home, my {you.lord}. The ledgers are ready.'},
   captain:{look:'guard',n:'Captain of the guard',bld:'barracks',tab:'recruit',icon:'sword',say:'Looking for fighters? Some here would follow you.'},
   merchant:{look:'merchant',n:'Merchant',bld:'stall',tab:'trade',icon:'coin',say:'Fresh goods, fair prices. Mostly fair.'},
   smith:{look:'smith',n:'Smith',bld:'smithy',tab:'smith',icon:'anvil',say:'Blades, mail and arrows. Mind the sparks.'},

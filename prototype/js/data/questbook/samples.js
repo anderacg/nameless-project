@@ -20,7 +20,7 @@ Object.assign(QUESTBOOK,{
     steps:{start:{goal:'deliver',to:{town:'{town}',lot:'house'},give:{grain:10},title:'Bread for the poorhouse',note:'Bring 10 grain to the poorhouse in {town}.',say:'The sisters bless you.',days:12,reward:{gold:40,rep:4}}}},
   // (a lord's: carry his word to another holding of his realm)
   lords_word:{title:'A word for the steward',ico:'scroll',giver:{by:'lord'},when:{rel:0},cool:15,
-    text:'{lord} wants a word carried to his steward, quickly and quietly.',
+    text:'{lord} wants a word carried to {lord.his} steward, quickly and quietly.',
     steps:{start:{goal:'visit',to:{pick:'realm'},title:'Carry {lord}’s word',note:'Carry {lord}’s word to {to}.',say:'The steward reads it, and burns it.',days:8,reward:{gold:30,rel:5,honor:2}}}},
   // (the road's: a page first, a check, a beast hunt)
   shepherds_wolves:{title:'The shepherd’s wolves',ico:'sheep',giver:{by:'road',name:'A shepherd',pic:'folk'},cool:30,

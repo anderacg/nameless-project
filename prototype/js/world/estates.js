@@ -16,6 +16,8 @@ class Estate extends WorldObject{
   #t;
   constructor(t,k){super();this.#t=t;this.town=t.name;this.k=k}
   get mapKind(){return 'estate'}
+  // (reached where your army's ring touches its lot: march.js ringReach)
+  reachRadius(){const l=Number.isFinite(this.x)&&lotAt(this.#t,this.k);return l?boxReach(this,lotBox(l)):REACH}// (not yet placed (estatePick): the old touch)
   get est(){return true}
   chaseable(){return super.chaseable()&&!!bldLv(townBy(this.town)||{},this.k)}// (pulled down or burnt while you walk there: no more)
   get meetsAnyTime(){return true}

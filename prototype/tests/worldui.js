@@ -88,8 +88,11 @@ try{
    if(far){P.tx=far[0];P.ty=far[1];frame(16);frame(800);const D=WUI.dots,cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)};let bad=0,n=0;for(let i=0;i<D.length;i+=3){n++;if(!t.seenAt(D[i]+cam.x,D[i+1]+cam.y))bad++}
     ok(n>3&&!bad&&WUI.way.S[WUI.way.n-1]>16*10,'a way into land never seen: dots only where you have seen ('+n+' drawn, '+bad+' in the dark)')}else o.push('INFO no unseen land in reach');P.tx=null}
   // ---- chasing a band: a ring round it, an arrow over it; giving up clears them
-  home();{const b=t.asParty({x:P.x+60,y:P.y+10,n:6,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(6,false,'bandits');t.bandits.push(b);frame(16);
-   click(b.x,b.y-4);const ring=t.ActionRing.now;click(b.x,b.y-4);frame(16);frame(400);ok(ring&&!t.ActionRing.now&&G.chase===b&&WUI.tgt&&WUI.tgt.o===b&&!WUI.dest,'a click on a band 60 px off opens its ring, a second chases it, and it is the UI\'s target');
+  // (out of reach but in sight: halfway between where your armies' rings meet, march.js worldBattleReach, and your sight. Within
+  // reach, as 60 px off is since world battles are on in the tests, 2026-10-30, a double click or an approach meets it at once)
+  const outOfReach=b=>{b.x=P.x+Math.max(60,(t.worldBattleReach(b)+t.vis())/2);return b};
+  home();{const b=t.asParty({x:P.x+60,y:P.y+10,n:6,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(6,false,'bandits');outOfReach(b);t.bandits.push(b);frame(16);
+   click(b.x,b.y-4);const ring=t.ActionRing.now;click(b.x,b.y-4);frame(16);frame(400);ok(ring&&!t.ActionRing.now&&G.chase===b&&WUI.tgt&&WUI.tgt.o===b&&!WUI.dest,'a click on a band out of reach ('+Math.round(b.x-P.x)+' px off) opens its ring, a second chases it, and it is the UI\'s target');
    const T=t.wuiTargetAt(b,{x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)}),rs=rings(),sw=swords();
    ok(rs.length>=1&&!arrows().length&&sw.length===1&&sw[0][1][1]<T.y-14,'a ring pulses round it ('+rs.length+' drawn) and crossed swords stand over it, no arrow: you go to attack it');
    {const c=t.wuiSwords(),I=t.ICONS.attack,d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data,hx=v=>'#'+[0,1,2].map(k=>d[v+k].toString(16).padStart(2,'0')).join('');let red=0,navy=0,other=0;
@@ -98,14 +101,15 @@ try{
     ok(red>=30&&navy>=30&&!other&&I.p.r===t.WUI_K.col.foe,'the swords: the attack icon, '+red+' px in the red of foes, outlined by '+navy+' px of the navy of the figures, drawn in code');
     ok(it.label==='Attack'&&it.icon==='attack'&&/viewBox="0 0 11 11"/.test(svg)&&(svg.match(/<rect/g)||[]).length===red,'the Attack of the ring shows the same crossed swords ('+it.icon+', '+(svg.match(/<rect/g)||[]).length+' px)');
     ok((t.icon('sword',16).match(/viewBox="0 0 9 9"/)||[]).length===1,'the 9 x 9 icons are drawn as before')}
-   // (zoomed far out on a phone, 2 device px a game px at a devicePixelRatio of 3: drawn twice the size, at least WUI_K.swords CSS px)
-   {const dp=Object.getOwnPropertyDescriptor(window,'devicePixelRatio');Object.defineProperty(window,'devicePixelRatio',{value:3,configurable:true});ev('VS=2');let a;try{frame(16);a=swords()[0]}finally{ev('VS=1');if(dp)Object.defineProperty(window,'devicePixelRatio',dp);else delete window.devicePixelRatio}
+   // (zoomed far out on a phone, 2 device px a game px at a devicePixelRatio of 3: drawn twice the size, at least WUI_K.swords CSS px;
+   // at Resolution Full, RENDER.cap: Balanced, the default since 2026-10-29, draws a 3x screen at 2, a game px a CSS px)
+   {const dp=Object.getOwnPropertyDescriptor(window,'devicePixelRatio'),cap=t.RENDER.cap;Object.defineProperty(window,'devicePixelRatio',{value:3,configurable:true});t.RENDER.cap=Infinity;ev('VS=2');let a;try{frame(16);a=swords()[0]}finally{ev('VS=1');t.RENDER.cap=cap;if(dp)Object.defineProperty(window,'devicePixelRatio',dp);else delete window.devicePixelRatio}
     const c=t.wuiSwords();ok(a&&a[1].length===4&&a[1][2]===c.width*2&&a[1][3]===c.height*2&&c.height*2*2/3>=t.WUI_K.swords,'at the farthest zoom of a phone the swords are drawn at twice their pixels ('+(a?a[1].slice(2).join('x'):'none')+' game px: '+(c.height*2*2/3).toFixed(1)+' CSS px high)')}
    ok(WUI.way&&Math.hypot(WUI.way.gx-b.x,WUI.way.gy-b.y)<1&&WUI.dots.length>0,'the dots lead to it');
    b.x+=12;for(let i=0;i<20;i++)frame(30);ok(Math.hypot(WUI.way.gx-b.x,WUI.way.gy-b.y)<1,'it moves on: the way follows it');
    click(P.x-30,P.y+30);frame(16);ok(G.chase===null&&!WUI.tgt&&WUI.dest,'a click elsewhere: the chase and its ring are gone, a new goal marked');t.bandits.length=0;P.tx=null}
   // ---- making for a friendly lord: his ring and the arrow, in green, as before; no swords
-  home();{const L=W.lords.find(l=>!l.dead),fac0=P.fac;P.fac=L.fac;Object.assign(L,{x:P.x+60,y:P.y+10,inside:null,fight:null,dead:false,dir:1,state:'march'});frame(16);t.approach(L);frame(16);frame(400);
+  home();{const L=W.lords.find(l=>!l.dead),fac0=P.fac;P.fac=L.fac;Object.assign(L,{x:P.x+60,y:P.y+10,inside:null,fight:null,dead:false,dir:1,state:'march'});outOfReach(L);frame(16);t.approach(L);frame(16);frame(400);
    const as=arrows(),k=[...t.WUIP.entries()].find(([,v])=>as[0]&&v===as[0][0]);ok(G.chase===L&&as.length===1&&!swords().length&&k&&k[0].endsWith(t.WUI_K.col.friend)&&t.partyRingItems(L,0,0)[0].icon==='people','making for a lord of your realm: the green arrow over him, no swords; Meet on his ring as before');
    P.fac=fac0;L.x=-9999;G.chase=null;P.tx=null}
   // ---- a tap on a phone: the ripple, the arrow and the way; no brackets
@@ -122,7 +126,7 @@ try{
   // ---- the route has footprints, with no separate pace figure
   home();click(P.x+80,P.y);frame(16);frame(500);ok(WUI.dots.length>0&&![...t.WUIP.keys()].some(k=>k.startsWith('pace')),'the travel guide keeps its footprints without a separate pace icon');
   // ---- crisp at the screen's 3x: every picture of it at its own size, on whole device pixels
-  home();ev('VS=3');try{const b=t.asParty({x:P.x+60,y:P.y+10,n:6,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(6,false,'bandits');t.bandits.push(b);
+  home();ev('VS=3');try{const b=t.asParty({x:P.x+60,y:P.y+10,n:6,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(6,false,'bandits');outOfReach(b);t.bandits.push(b);
    P.x+=.37;frame(16);click(b.x,b.y-4);click(b.x,b.y-4);pointAt(P.x-30.3,P.y+20);const bad=[];let n=0,fills=0;const fr0=c.fillRect;c.fillRect=function(x,y,w,h){if(rec){const m=this.getTransform();fills++;const isI=v=>Math.abs(v-Math.round(v))<1e-3;if(!isI(m.e+m.a*x)||!isI(m.f+m.d*y)||!isI(m.a*w)||!isI(m.d*h))bad.push('rect '+[x,y,w,h].map(v=>+v.toFixed(3)).join(','))}return fr0.call(this,x,y,w,h)};
    try{for(let i=0;i<12;i++){frame(37);for(const [img,a,m] of mine()){n++;const isI=v=>Math.abs(v-Math.round(v))<1e-3;if(a.length!==2||Math.abs(m.a-3)>1e-3||Math.abs(m.d-3)>1e-3||!isI(m.e+m.a*a[0])||!isI(m.f+m.d*a[1]))bad.push(img.width+'x'+img.height+' @'+a.map(v=>+(+v).toFixed(3)).join(','))}}}finally{c.fillRect=fr0}
    ok(n>12&&!bad.length,'at 3x its pictures ('+n+') and fills are on whole device pixels at their own size: crisp'+(bad.length?': '+bad.slice(0,4).join('; '):''));t.bandits.length=0;G.chase=null;P.tx=null;G.mouse.in=false}finally{ev('VS=1')}

@@ -3,13 +3,14 @@
 // step at a time by the wheel, + and −, the buttons by Save (dimmed at the ends) and a two-finger pinch (never a tap), within its
 // range; clicks and picking read through it, the minimap keeps its size on the screen, the step is remembered (PREFS mapzoom,
 // Settings → Map zoom); the default is the window's own scale, closer on a phone; battles keep their own zoom and the window's scale. The screen
-// here a 3x one (devicePixelRatio 3: the fixed view's 576 x 360 game px at 3x or more).
+// here a 3x one (devicePixelRatio 3: the fixed view's 576 x 360 game px at 3x or more), drawn at Full (RENDER.cap: the setting
+// Resolution, Balanced by default since 2026-10-29, draws a 3x screen at 2).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 const t=T,G=t.G,P=t.P,W=t.W,Z=t.MAPZOOM,ev=s=>(0,eval)(s),pn=performance.now,r0=Math.random,cv=document.querySelector('canvas');
-const dprD=Object.getOwnPropertyDescriptor(window,'devicePixelRatio');
+const dprD=Object.getOwnPropertyDescriptor(window,'devicePixelRatio'),cap0=t.RENDER.cap;
 try{
  try{localStorage.clear()}catch(e){}
- window.requestAnimationFrame=()=>0;Object.defineProperty(window,'devicePixelRatio',{get:()=>3,configurable:true});
+ window.requestAnimationFrame=()=>0;Object.defineProperty(window,'devicePixelRatio',{get:()=>3,configurable:true});t.RENDER.cap=Infinity;
  t.act('begin','soldier');G.quietEvents=true;G.encCool=1e9;G.clock=t.DAY*.3;let now=1e7;performance.now=()=>now;
  const world=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.chase=null;P.tx=null};world();
  // a quiet spot on open ground, as tests/smoothmove.js finds one
@@ -109,5 +110,5 @@ try{
   finally{Z.phone=ph;t.act('mapzoom','0');world();t.fitScreen();t.frame()}
   t.fitScreen();ok(Z.auto===s0&&t.VS===s0,'a desktop window: the default is the window\'s own scale, as ever')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
-finally{performance.now=pn;Math.random=r0;try{if(dprD)Object.defineProperty(window,'devicePixelRatio',dprD);else delete window.devicePixelRatio}catch(e){}try{localStorage.removeItem('ashmark.mapzoom');t.MAPZOOM.z=0;t.fitScreen()}catch(e){}}
+finally{performance.now=pn;Math.random=r0;t.RENDER.cap=cap0;try{if(dprD)Object.defineProperty(window,'devicePixelRatio',dprD);else delete window.devicePixelRatio}catch(e){}try{localStorage.removeItem('ashmark.mapzoom');t.MAPZOOM.z=0;t.fitScreen()}catch(e){}}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

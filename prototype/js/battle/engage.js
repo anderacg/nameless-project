@@ -10,12 +10,25 @@ const partyPower=()=>rating(playerList());
 const ATTACK_AT=.8,FLEE_AT=.5,STANCE_COL={attack:'#ff9a90',wary:'#e8d8a0',afraid:'#78c474'};
 const stance=(pw,observer=null)=>{const r=pw/Math.max(1,observer?TravelAwareness.power(observer):partyPower());return r>=ATTACK_AT?'attack':r>=FLEE_AT?'wary':'afraid'};
 const monPower=m=>m.pw||(m.pw=rating(Array(m.n).fill(MONSTERS[m.id].unit),m.lv));
+/* fear (the owner, 2026-11-01: bands that fled your army walked back into it to reach their camp): one afraid of your army keeps
+   away from it while it remembers it (fearSeen: a group of yours it saw within TRAVEL_GROUPS.memory, TravelAwareness), in its
+   sight or not, straight away from your army's middle (armyMid); and it takes refuge only where your army is neither at nor across
+   its way (safeRefuge) */
+const fearSeen=o=>{const r=TravelAwareness.records.get(o);if(r)for(const v of r.values())if(v.last!=null&&TravelAwareness.time-v.last<=TRAVEL_GROUPS.memory)return true;return false};
+// (an army's middle: its men's (march.js MarchArmy mid) while they are formed round it, else where it stands)
+const armyMid=o=>{const m=WORLD_BATTLE.on&&MARCH_ARMIES.get(o)?.mid;return m&&Math.hypot(m.x-o.x,m.y-o.y)<marchOuter(o)?m:o};
+// the army o flees (your army's middle) while it is afraid of it (st: its stance) and remembers it; null for none
+const fearOf=(o,st)=>st==='afraid'&&!P.stay&&fearSeen(o)?armyMid(P):null;
+// whether place is a safe refuge for o as far as it knows (f: the army it fears, fearOf; none: any is): that army not at it (within
+// the reach to meet o there, and refugeAt), nor across its way there (ahead of it, within its ring and refugeLane of the line)
+function safeRefuge(o,place,f){if(!f)return true;const A=WORLD_SCALE.ai,dx=place.x-o.x,dy=place.y-o.y,k=((f.x-o.x)*dx+(f.y-o.y)*dy)/(dx*dx+dy*dy||1);
+  return Math.hypot(f.x-place.x,f.y-place.y)>=worldBattleReach(o)+A.refugeAt&&(k<=0||segDist(f,o,place)>=(WORLD_BATTLE.on?marchOuter(P):0)+A.refugeLane)}
 // move a party for one frame by its stance: hunt, keep its distance, or run
 function stanceMove(o,st,dist,dx,dy,see,sp,canHunt){
   if(P.stay)return false;
   if(st==='attack'&&canHunt&&dist<see){TravelSearch.seen(o);const s=G.encCool>0?Math.min(dist,sp,dist-GRACE_GAP):Math.min(dist,sp);if(s>0)walk(o,dx,dy,s);return true}// (the grace after a fight: they keep a few steps off, no step into the gap)
   if(st==='attack'&&canHunt&&TravelSearch.step(o,sp))return true;// (lost sight of you: where it saw you last, a look about, then back: TravelSearch)
-  if(st==='afraid'&&dist<see){Router.flee(o,{x:o.x+dx,y:o.y+dy},sp*.85);o.fled=true;return true}
+  if(st==='afraid'&&(dist<see||fearSeen(o))){Router.flee(o,armyMid(P),sp*.85);o.fled=true;return true}// (out of sight too, while it remembers you: fearSeen)
   if(st==='wary'&&dist<see*.45){Router.flee(o,{x:o.x+dx,y:o.y+dy},sp*.5);return true}
   return false;
 }
@@ -68,7 +81,7 @@ const commonFoe=e=>e.kind==='field'?(e.foes||[]).every(f=>!f.fac):e.kind!=='tour
 const siegeTown=e=>e.kind==='siege'||e.kind==='raid'?e.ref.name:e.kind==='lord'&&(e.ref.state==='siege'||e.ref.state==='relieve')?e.ref.tgt:null;
 const nearYou=o=>Math.hypot(o.x-P.x,o.y-P.y);
 // lords near you who could take part: free lords, plus, in a fight over a siege, its besiegers and the lords holding its walls
-const lordFree=(e,l,st)=>!l.dead&&(!l.inside||st&&l.inside===st&&e.kind==='lord')&&l!==e.ref&&!(e.lords||[]).includes(l)&&l.troops.length>=3&&(l.state!=='siege'||l.tgt===st)&&(nearYou(l)<REINF.r||!!l.follow&&nearYou(l)<HOSTS.join);
+const lordFree=(e,l,st)=>!l.dead&&(!l.inside||st&&l.inside===st&&e.kind==='lord')&&l!==e.ref&&!(e.lords||[]).includes(l)&&l.troops.length>=3&&(l.state!=='siege'||l.tgt===st)&&(nearYou(l)<REINF.r||Host.joins(l));
 const nearLords=(e,ok)=>{const st=siegeTown(e);return W.lords.filter(l=>lordFree(e,l,st)&&ok(l)).sort((a,b)=>nearYou(a)-nearYou(b)).slice(0,REINF.foes+(st?2:0))};
 // a friend's why ('' for none, or when his realm is hostile to you): your own, your liege's, his ally's, a lord who likes you,
 // a realm that honours you
@@ -133,7 +146,7 @@ const reinfRenown=e=>realmHelpers(e).length?REINF.renown:1;
 // (each helper's share: by its part in the fight, the harm it did the foe (S: the battle's sides, sides.js), else by its men)
 function reinfCut(e,res,S){const hs=realmHelpers(e);if(!hs.length)return '';const dm=o=>S?.byOwner.get(armySource(o))?.damage||0,me=S?.records.find(r=>r.owner===P)?.damage||0,by=me+hs.reduce((a,h)=>a+dm(h.l),0)>0;
   const w=h=>by?dm(h.l):h.n,all=(by?me:e.men||playerList().length)+hs.reduce((a,h)=>a+w(h),0)||1,g0=res.gold-(res.own||0),cuts=[];
-  for(const h of hs){if(h.l.dead||h.l.src&&h.l.src.gone)continue;const g=Math.min(res.gold-(res.own||0),Math.round(g0*w(h)/all));if(g>0){res.gold-=g;cuts.push(h.l.name+' takes '+g+' gold for '+(by?(h.l.kind?'its':'his')+' part in the fight':(h.l.kind?'its':'his')+' '+h.n+' men'))}}
+  for(const h of hs){if(h.l.dead||h.l.src&&h.l.src.gone)continue;const g=Math.min(res.gold-(res.own||0),Math.round(g0*w(h)/all));if(g>0){res.gold-=g;cuts.push(h.l.name+' takes '+g+' gold for '+(by?(h.l.kind?'its':pr(h.l).his)+' part in the fight':(h.l.kind?'its':pr(h.l).his)+' '+h.n+' men'))}}
   return ' '+(cuts.length?cuts.join(', ')+' as a share of the spoils. ':'')+'You share the renown with '+(hs.length>1?'them':hs[0].l.name)+'.'}
 /* ---------- battle types from the world (setup.js BTYPE), only with terrain (TERRAIN.on) ----------
    Hold the bridge: a fight with a lord, a band, a patrol or a caravan on a road bridge or next to one (a road tile with water on

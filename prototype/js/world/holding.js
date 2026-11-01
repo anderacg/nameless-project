@@ -5,6 +5,15 @@
 /* on the map: a holding is a world object (worldobject.js WorldObject). It answers a click on its gate and on any of its buildings
    and walls, and its estates on their buildings and fields, in its order of lots (pick). Drawn with its lots (structures.js
    holdingEnts, drawLotGround) */
+// a mage for hire (the owner, 2026-10-31: "at large holding, high prospect, will have more chance, they are very rare to come
+// across"): a week's chance at a city or town, by how far its prosperity is over pros, the whole chance at 100 (town: of it); kept
+// for the week (t.mageWk: the week and whether), on its own stream (core/rng.js: the world's dice untouched)
+const MAGE_HIRE={pros:60,chance:.1,town:.4};
+function mageHere(t){const wk=Math.floor((G.day||0)/7);if(t.mageWk?.wk===wk)return t.mageWk.on;const M=MAGE_HIRE,k=t.kind==='city'?1:t.kind==='town'?M.town:0;
+  const on=k>0&&(t.pros||0)>M.pros&&rngOf('mages').chance(M.chance*k*((t.pros-M.pros)/(100-M.pros)));t.mageWk={wk,on};return on}
+// (a holding's gate, world.js gateSpot, kept while its centre's lot stands where it did)
+const HOLDING_GATES=new WeakMap();
+function holdingGate(t,c){const k=HOLDING_GATES.get(t);if(k&&k.c===c&&k.x===c.x&&k.y===c.y)return k.g;const g=gateSpot(t);HOLDING_GATES.set(t,{c,x:c.x,y:c.y,g});return g}
 class HoldingObject extends WorldObject{
   get mapKind(){return 'town'}
   here(){return TOWNS.includes(this)}
@@ -15,6 +24,13 @@ class HoldingObject extends WorldObject{
   // (structures answer anywhere on what is drawn of them: pickAt box)
   pick(at){if(Math.hypot(this.x-P.x,this.y-P.y)>at.V+340)return;at.box(this,this.x-8,this.y-18,this.x+8,this.y+8,4);// its gate
     for(const l of this.lots||[]){if(ESTATES[l.k]&&bldLv(this,l.k))estatePick(this,l.k).pickOn(at,this,l);else if(l.k==='house')housePick(this,l).pickOn(at,this,l);else at.box(this,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,ESTATES[l.k]?0:4)}}// (a house its own: world/houses.js)
+  // its own building, its centre's lot (the citadel, keep or hall: lots.js Layout centre), reached from your army's outline (march.js
+  // ringReach); its houses and estates apart, each reached at its own lot (houses.js, estates.js reachRadius): walking up to a house or
+  // a farm meets that, not the holding (the owner, 2026-11-01: "the holding interaction should be separated from estate buildings
+  // and houses"). Its siege's and raid's leashes past this reach (world.js marchStep, siege.js). Its gate is part of it (the owner,
+  // 2026-11-01): its centre's lot and its gate's tile, one box (holdingGate)
+  reachRadius(){const c=Layout.of(this).centre();if(!c)return REACH;const b=lotBox(c),g=holdingGate(this,c),h=TILE/2;
+    return boxReach(this,{x0:Math.min(b.x0,g.x-h),y0:Math.min(b.y0,g.y-h),x1:Math.max(b.x1,g.x+h),y1:Math.max(b.y1,g.y+h)})}
   draw(ents,cam,V){holdingEnts(this,ents,cam,V)}
   mapDot(V){return seenTile(this.tx,this.ty)?[this._memCol||facCol(this),3]:null}// (its colour as you last saw it)
   tip(){return '<b>'+this.name+'</b><small>'+cap1(this.label)+(this.owner?' of the '+tipFac(this.owner):'')+' · '+WALL_N[wallOf(this)]+'</small>'+(closedNow(this)?'<small class="bad">Under siege</small>':'')+'<span class="act">'+(hostileTo(this.owner)?'Click: attack it':'Click: enter')+'</span>'}
@@ -28,7 +44,9 @@ class Holding extends HoldingObject{
   // does its window offer this tab
   has(tab){return this.T.tabs.includes(tab)}
   // the troops it raises from one of its peoples
-  hires(race){const c=RACES[race];return this.T.hires.map(k=>c[k])}
+  // (the kinds its barracks hires of a people: by its kind's roles (data/holdings.js hires), a people's own where it says (RACES hires:
+  // the humans' riders come only from their Footmen now), and now and then a mage at a large, prosperous one (mageHere))
+  hires(race){const c=RACES[race],own=c.hires||{};return [...this.T.hires.flatMap(k=>own[k]??[c[k]]),...(mageHere(this)?[c.mage]:[])].filter(Boolean)}
   // does its stable sell this mount (MOUNTS entry), in its climate
   sellsMount(M,clim){const m=this.T.mounts;if(m.includes(M.where))return true;if(M.where!=='any'&&M.where!=='town'&&M.where!=='castle'&&m.includes('local'))return M.race?this.races.includes(M.race):M.clim===clim;return false}
   // does it take a band in to stay (free: they know you, stay.js)

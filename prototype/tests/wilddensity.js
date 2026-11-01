@@ -3,14 +3,14 @@
 // a new game starts with the world's own counts, today's per tile of land: its bands, beasts, game and sites; spread over the
 // whole of it (every quarter of the map holds its share), each beast's lair and each herd in its own ground; the tries a day to
 // bring beasts back grow with it; and a beast meets bands from a grid of where they stand exactly as from the scan of them all.
-// The level of detail (worldobject.js WORLD_LOD): unbounded at Normal; on Large, near within a quarter of its
-// longer side, the rest mid. A save there packs the beasts' and herds' records, the bands' without their strength, and loads
+// The level of detail (worldobject.js WORLD_LOD): by rings of chunks round yours at every size; on Large, near, mid and far all
+// there, the far beasts and herds a share of them as the far land is. A save there packs the beasts' and herds' records, the bands' without their strength, and loads
 // back to the same save. INFO: each count per 1,000 tiles of land beside the old map's, and the world's frame with them.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
 try{
  const J=JSON.stringify,t=T,G=t.G,P=t.P,W=t.W,D=t.DENSITY,g=D.grow,C=D.classic,pn=()=>performance.now();try{localStorage.clear()}catch(e){}
  window.requestAnimationFrame=()=>0;const LOD=t.WORLD_LOD;
- ok(LOD.near===Infinity&&LOD.mid===Infinity,'the world in ('+'the classic seed, at Normal'+'): its tiers unbounded, everything thinks every frame');
+ ok(LOD.on&&LOD.near===1&&LOD.mid===4&&LOD.chunk===512,'the tiers by rings of chunks round yours: near within '+LOD.near+', mid to '+LOD.mid+', far beyond');
  t.forgeInstall(t.genWorld({preset:'large',seed:'1'}));t.startGame('soldier',t.BGS.soldier);G.quietEvents=true;
  const m=t.WM,L=t.worldLand(m),f=L/g.land,N=t.density(t.WM),wild=W.critters.filter(c=>!c.home),bands=t.bandits;
  // ---- the counts: today's x the land's growth, and a new game starts with them
@@ -39,9 +39,10 @@ try{
   try{const scan=probe.map(x=>t.beastMeets(x));(0,eval)('BAND_GRID=Spatial.index(beastPrey(),64)');const grid=probe.map(x=>t.beastMeets(x));(0,eval)('BAND_GRID=null');
    const met=scan.filter(Boolean).length;ok(met>100&&scan.every((b,i)=>b===grid[i]),'from the grid each of 600 beasts meets the very band the scan finds ('+met+' meet one; bands in a fight passed over)')}
   finally{bands.forEach(b=>{if(b.fight==='probe')b.fight=null})}}
- // ---- the level of detail: near within a quarter of the longer side, the rest mid
- {LOD.t=0;t.lodTick(.01);const near=x=>Math.hypot(x.x-P.x,x.y-P.y)<=LOD.near,all=[...W.monsters,...wild,...bands],n=all.filter(near).length;
-  ok(LOD.near===m.w*16/4&&LOD.mid===Infinity&&all.every(x=>t.tierOf(x)===(near(x)?'near':'mid'))&&n>0&&n<all.length,'a Large world bounds its tiers: within '+LOD.near+' px of you near ('+n+' of '+all.length+' beasts, herds and bands), the rest mid, every 4th frame')}
+ // ---- the level of detail: by rings of chunks round yours; most of a Large world far
+ {LOD.t=0;t.lodTick(.01);const C=LOD.grid,ring=x=>Math.max(Math.abs(C.at(x.x)-C.at(P.x)),Math.abs(C.at(x.y)-C.at(P.y))),tier=x=>ring(x)<=LOD.near?'near':ring(x)<=LOD.mid?'mid':'far',all=[...W.monsters,...wild,...bands],n={near:0,mid:0,far:0};
+  for(const x of all)n[t.tierOf(x)]++;
+  ok(all.every(x=>t.tierOf(x)===tier(x))&&n.near>0&&n.mid>0&&n.far>all.length/2,'a Large world by rings: '+n.near+' near, '+n.mid+' mid (every 4th frame), '+n.far+' far of '+all.length+' beasts, herds and bands')}
  // ---- its save: the beasts and herds packed, the bands without their strength; loaded back to the same save
  {const LD=t.LOADING,s0=LD.sync,raw=()=>localStorage.getItem(t.slotKey('quick')),strip=s=>{const v=JSON.parse(s);delete v.at;return JSON.stringify(v)};LD.sync=true;
   try{G.mode='world';G.modal=false;t.hidePanel();t.saveGame(true,'quick');const a=raw(),d=JSON.parse(a),m0=W.monsters.find(x=>!x.qid),i0=W.monsters.indexOf(m0),n=W.monsters.length,h=W.critters.length;

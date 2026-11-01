@@ -131,7 +131,7 @@ function startRaid(t){
 // each moment on the map: plunder on, or give up if you walk away
 function raidTick(d){
   const r=P.raid;if(!r)return;const t=townBy(r.town);if(!t){P.raid=null;return}
-  if(Math.hypot(P.x-t.x,P.y-t.y)>WORLD_SCALE.war.raidLeash){finishRaid(t,r.t/RAID_TIME);return}
+  if(Math.hypot(P.x-t.x,P.y-t.y)>worldBattleReach(t)+WORLD_SCALE.war.raidLeash){finishRaid(t,r.t/RAID_TIME);return}
   r.t+=d;if(r.t>=RAID_TIME)finishRaid(t,1);
 }
 // the loot, by how much of the raid you finished; a full raid burns the herds and counts for quests

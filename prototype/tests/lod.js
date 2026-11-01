@@ -1,28 +1,37 @@
 'use strict';
-// Level of detail (doc/WORLD_DESIGN.md §2.2 R12; §3.5): every mover thinks by its tier, near (every frame), mid (every 4th
-// frame, 4x d) or far (its kind's farStep). Unbounded radii, as now: everything is near, and through 300 frames of the world
-// every mover thinks every frame with the frame's own d, as before the tiers (worldprint W8 holds the places). Bounded: the
-// tiers follow the distance, mid ones think a quarter as often with the same time in all, far ones take farStep. Then the hooks that change nothing yet: the router's calls
-// (R11: reach equals a flood over the land on every tile, days), the walked
-// distance and frameOf (R13), and that neither tier nor walked distance is ever saved.
+// Level of detail (doc/WORLD_DESIGN.md §2.2 R12; §3.5): every mover thinks by its tier, the ring of chunks it stands in round
+// yours (worldobject.js WORLD_LOD): near (every frame), mid (every 4th frame, 4x d) or far (its kind's farStep: beasts and herds
+// hold; else as mid). Tiers off: everything is near, and through 300 frames of the world every mover thinks every frame with
+// the frame's own d, as before the tiers. On: a Normal world has all three, and a far beast or herd stands still; sorted by
+// rings, mid ones think a quarter as often with the same time in all, far ones take farStep. The chunk grid (core/spatial.js
+// ChunkGrid) answers a box as the scan of all does, in the lists' order. Then the hooks that change nothing yet: the router's
+// calls (R11: reach equals a flood over the land on every tile, days), the walked distance and frameOf (R13), and that neither
+// tier nor walked distance is ever saved.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,W=t.W,r0=Math.random,pn=performance.now;
 try{
  try{localStorage.clear()}catch(e){}
  const L=t.WORLD_LOD;
- // ---- unbounded: every moment of every mover goes to its thinker's think, at once, with the frame's d (as before the tiers)
+ // ---- tiers off: every moment of every mover goes to its thinker's think, at once, with the frame's d (as before the tiers)
  {Math.random=t.seeded(4242);t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();
-  const real=t.lodThink;let calls=0,bad=0;
+  const real=t.lodThink;let calls=0,bad=0;L.on=false;L.t=0;
   window.__lodSpy=(by,o,k,d,x)=>{calls++;const spy={think:(o2,d2,x2)=>{if(o2!==o||d2!==d||x2!==x)bad++;return by.think(o2,d2,x2)},farStep:()=>{bad++;return false}};return real(spy,o,k,d,x)};
   window.__lodKeep=real;(0,eval)('lodThink=(by,o,k,d,x)=>__lodSpy(by,o,k,d,x)');
   try{t.setSpeed(1);P.tx=P.x+120;P.ty=P.y+40;for(let f=0;f<300;f++)t.updateWorld(.05)}finally{(0,eval)('lodThink=__lodKeep')}
   const all=[...W.parties,...W.caravans,...W.monsters,...W.critters,...W.refugees,...W.folk,...W.ships];
-  ok(L.near===Infinity&&L.mid===Infinity&&all.every(q=>t.tierOf(q)==='near'),'the tiers are unbounded: every one of '+all.length+' movers is near');
-  ok(calls>1000&&!bad,'300 frames: each of '+calls+' moments went straight to its think, with the frame\'s d ('+bad+' did not)')}
+  ok(all.every(q=>t.tierOf(q)==='near'),'tiers off: every one of '+all.length+' movers is near');
+  ok(calls>1000&&!bad,'300 frames: each of '+calls+' moments went straight to its think, with the frame\'s d ('+bad+' did not)');L.on=true;L.t=0}
+ // ---- tiers on, a Normal world: near, mid and far all there, by rings of chunks; a far beast and a far herd hold
+ {t.lodTick(1);const all=[...W.monsters,...W.critters,...W.parties],n={near:0,mid:0,far:0},C=L.grid,ring=q=>Math.max(Math.abs(C.at(q.x)-C.at(P.x)),Math.abs(C.at(q.y)-C.at(P.y)));
+  for(const q of all)n[t.tierOf(q)]++;
+  ok(n.near&&n.mid&&n.far&&all.every(q=>t.tierOf(q)===(ring(q)<=L.near?'near':ring(q)<=L.mid?'mid':'far')),'a Normal world ('+t.MW+' x '+t.MH+' tiles): '+n.near+' near (within '+L.near+' ring of chunks of yours), '+n.mid+' mid (to '+L.mid+'), '+n.far+' far');
+  const fm=W.monsters.find(q=>t.tierOf(q)==='far'&&!t.MONSTERS[q.id].mythic&&!q.fight),fc=W.critters.find(q=>t.tierOf(q)==='far'),at=[fm.x,fm.y,fc.x,fc.y];
+  for(let f=0;f<60;f++){G.encCool=1e9;t.updateWorld(.05);if(G.mode!=='world'){t.hidePanel();G.mode='world';G.modal=false;G.enc=null}}
+  ok(fm.x===at[0]&&fm.y===at[1]&&fc.x===at[2]&&fc.y===at[3],'a far beast and a far herd hold where they are (they wander only near you)')}
  Math.random=r0;
- // ---- bounded: sorted by distance; mid every 4th frame with 4x d; far by farStep when the kind has one
- {const keep={...L},mons=W.monsters,at=dx=>({x:P.x+dx,y:P.y,id:'wolf'}),n=at(50),m=at(300),f=at(2000);
-  try{L.near=100;L.mid=600;L.t=0;W.monsters=[n,m,f];t.lodTick(.01);
-   ok(t.tierOf(n)==='near'&&t.tierOf(m)==='mid'&&t.tierOf(f)==='far','sorted by distance: 50 px near, 300 mid, 2000 far');
+ // ---- by rings: sorted; mid every 4th frame with 4x d; far by farStep when the kind has one, else as mid
+ {const keep={...L},mons=W.monsters,at=dx=>({x:P.x+dx,y:P.y,id:'wolf'}),n=at(50),m=at(1200),f=at(4000);
+  try{L.t=0;W.monsters=[n,m,f];t.lodTick(.01);
+   ok(t.tierOf(n)==='near'&&t.tierOf(m)==='mid'&&t.tierOf(f)==='far','sorted by rings of chunks: 50 px near, 1200 mid, 4000 far');
    const calls=new Map(),log=(k,o,d)=>{const c=calls.get(o)||{think:0,far:0,d:0};c[k]++;c.d+=d;calls.set(o,c)};
    const mind={think(o,d){log('think',o,d);return false}},far={think(o,d){log('think',o,d);return false},farStep(o,d){log('far',o,d);return false}};
    L.every=1e9;for(let i=0;i<8;i++){t.lodTick(.01);t.lodEach([n,m],mind,.05)}
@@ -30,9 +39,21 @@ try{
    ok(cn.think===8&&Math.abs(cn.d-.4)<1e-9,'near thinks every frame ('+cn.think+' of 8)');
    ok(cm.think===2&&Math.abs(cm.d-.4)<1e-9,'mid thinks every 4th frame with 4x d: '+cm.think+' of 8, the same time in all ('+cm.d.toFixed(2)+' s)');
    calls.clear();for(let i=0;i<4;i++){t.lodTick(.01);t.lodEach([f],mind,.05);t.lodEach([f],far,.05)}
-   const cf=calls.get(f);ok(cf.think===4&&cf.far===4,'far takes its kind\'s farStep, or thinks as near when it has none');
-   ok(f.tier===undefined&&t.asMonster(f).tier==='far','a world object tells its tier (WorldObject tier)');
-  }finally{Object.assign(L,keep);W.monsters=mons;t.lodTick(1)}}
+   const cf=calls.get(f);ok(cf.think===1&&cf.far===4,'far takes its kind\'s farStep, or thinks as mid when it has none');
+   ok(t.asMonster(f).tier==='far','a world object tells its tier (WorldObject tier)');
+  }finally{Object.assign(L,keep);W.monsters=mons;L.t=0;t.lodTick(1)}}
+ // ---- the chunk grid: a box gathers what the scan of all finds in its chunks, in the lists' order, each once
+ {const R=t.seeded(5),A=[],B=[];for(let i=0;i<400;i++)(i%3?A:B).push({x:R()*6000-500,y:R()*4000-500});
+  const g=new (t.ChunkGrid)(512).file([A,B,A]),all=[...A,...B],c=k=>Math.floor(k/512);let bad=0;
+  for(let q=0;q<50;q++){const x0=R()*5000,y0=R()*3000,x1=x0+R()*1500,y1=y0+R()*1500,got=g.box(x0,y0,x1,y1,[]);
+   const want=all.filter(p=>c(p.x)>=c(x0)&&c(p.x)<=c(x1)&&c(p.y)>=c(y0)&&c(p.y)<=c(y1));if(got.length!==want.length||got.some((p,i)=>p!==want[i]))bad++}
+  // (the minimap's dots, render.js mapDots, from the grid round you: the old scan's, worldObjects by layer, in order)
+  {const V=t.vis(),near=[...W.monsters.slice(0,3),...t.bandits.slice(0,3),...W.lords.filter(l=>!l.dead&&!l.inside).slice(0,3)];near.forEach((q,i)=>{q.x=P.x-90+i*20;q.y=P.y+(i%3-1)*30});
+   L.t=0;t.lodTick(.01);const a=[],b=[];t.mapDots(V,(q,d)=>a.push(q,d.join()));
+   for(const q of t.worldObjects().filter(q=>q.mapKind in t.MAP_LAYER).sort((p,r)=>t.MAP_LAYER[p.mapKind]-t.MAP_LAYER[r.mapKind])){const d=q.mapDot(V);if(d)b.push(q,d.join())}
+   const moving=a.filter((v,i)=>!(i%2)&&near.includes(v)).length;
+   ok(moving>=5&&a.length===b.length&&a.every((v,i)=>v===b[i]),'the minimap\'s dots from the grid round you are the old scan of everything\'s, in its order ('+a.length/2+' dots, '+moving+' of them beasts and parties by you; the scan '+b.length/2+')')}
+  ok(!bad&&g.n===all.length&&g.tag.get(B[0])===1&&g.tag.get(A[0])===0,'a box of chunks gathers what the scan of all finds in them, in the lists\' order, each once (50 boxes, '+bad+' differ)')}
  // ---- the router's calls (R11)
  {Math.random=t.seeded(77);t.act('begin','soldier');G.quietEvents=true;
   const MW=t.MW,MH=t.MH,TILE=t.TILE,R=t.Router;let bad=0,checked=0;

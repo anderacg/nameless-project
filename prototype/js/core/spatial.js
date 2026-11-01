@@ -81,6 +81,53 @@ class SpatialIndex{
     return best;
   }
 }
+/* the world's movers filed by the chunk they stand in (doc/WORLD_DESIGN.md §3.5: cost follows what is near you, not the map):
+   a chunk px wide (the painted map's, 512). file(lists) files them all afresh, in the lists' order (each one once, its place
+   in that order its ord, the list it came from its tag); box(x0, y0, x1, y1, out) gathers into out those filed in the chunks
+   the rect (px) touches, back in that order. A snapshot, as the index above: what moved since stands where it was filed, so
+   ask with a margin */
+class ChunkGrid{
+  constructor(px){
+    this.px=px;
+    this.cells=new Map();
+    this.ord=new WeakMap();
+    this.tag=new WeakMap();
+    this.gen=0;
+    this.n=0;
+  }
+  key(cx,cy){
+    return (cx+32768)*65536+(cy+32768);
+  }
+  // (the chunk a point stands in, along one axis)
+  at(v){
+    return Math.floor(v/this.px);
+  }
+  // (o filed by the last filing: one gone from every list since is not)
+  has(o){return (this.ord.get(o)||0)>this.gen*1e7-1}
+  file(lists){
+    for(const c of this.cells.values())c.length=0;
+    const base=++this.gen*1e7;let i=0;
+    lists.forEach((L,t)=>{for(const o of L){
+      if(!o||(this.ord.get(o)||0)>=base)continue;
+      this.ord.set(o,base+i++);
+      this.tag.set(o,t);
+      const k=this.key(this.at(o.x),this.at(o.y));let c=this.cells.get(k);
+      if(!c)this.cells.set(k,c=[]);
+      c.push(o);
+    }});
+    this.n=i;
+    return this;
+  }
+  box(x0,y0,x1,y1,out){
+    const n0=out.length,c0=this.at(x0),c1=this.at(x1),r0=this.at(y0),r1=this.at(y1);
+    for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){
+      const b=this.cells.get(this.key(c,r));
+      if(b)for(const o of b)out.push(o);
+    }
+    if(out.length-n0>1){const O=this.ord,s=out.splice(n0).sort((a,b)=>O.get(a)-O.get(b));for(const o of s)out.push(o)}
+    return out;
+  }
+}
 const Spatial={
   nearest(list,x,y,filter){
     let best=null,bd=1e9;

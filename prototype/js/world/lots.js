@@ -241,6 +241,8 @@ function lotSpot(t,n,rule,rmin,rmax,R,o){
   return best;
 }
 const lotAt=(t,k)=>Layout.of(t).at(k);
+// (lot l's box in world px: where an army's ring reaches an estate or a house, march.js boxReach)
+const lotBox=l=>({x0:l.x*TILE,y0:l.y*TILE,x1:(l.x+l.n)*TILE,y1:(l.y+l.n)*TILE});
 const lotCentre=t=>Layout.of(t).centre();
 // the tile middle of a lot, in pixels (where its workers go, where it is clicked)
 const lotMid=l=>({tx:l.x+(l.n>>1),ty:l.y+l.n-1,x:(l.x+l.n/2)*TILE,y:(l.y+l.n)*TILE-6});
@@ -315,6 +317,8 @@ class Layout{
     let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
     for(const l of this.list)if(l.k==='centre'||l.k==='house'||INNER.includes(l.k)){x0=Math.min(x0,l.x);y0=Math.min(y0,l.y);x1=Math.max(x1,l.x+l.n-1);y1=Math.max(y1,l.y+l.n-1)}
     return x1<x0?null:{x0,y0,x1,y1}}
+  // the town in world px (innerBox): the footprint your army reaches it at (holding.js reachRadius); null, none laid out yet
+  footprint(){const b=this.innerBox();return b&&{x0:b.x0*TILE,y0:b.y0*TILE,x1:(b.x1+1)*TILE,y1:(b.y1+1)*TILE}}
   // the town and a lane round it: fields and outer works keep clear of it
   wallBox(){
     const b=this.innerBox();

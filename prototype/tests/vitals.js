@@ -12,8 +12,9 @@ try{
  const finish=(B,win)=>{B.win=win;B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done()};
  // carry over
  let B=battle();B.hero.hp-=30;t.updateBattle(.01);B.hx.sp-=25;B.hx.mp-=20;const hp=B.hero.hp,sp=B.hx.sp,mp=B.hx.mp;finish(B,true);
- ok(Math.abs(P.hp-hp)<1&&Math.abs(P.sp-sp)<1&&Math.abs(P.mp-mp)<1,'health, stamina and mana carry out of a battle');
- B=battle();ok(Math.abs(B.hero.hp-P.hp)<1&&B.hero.hp<B.hero.max,'the next battle starts wounded ('+Math.round(B.hero.hp)+' / '+B.hero.max+')');t.updateBattle(.01);
+ // (a fighter's health is FIELD_HP times his own on the field since fa23bde, "battles longer and steadier": your hero's back at the map's)
+ ok(Math.abs(P.hp-hp/t.FIELD_HP)<1&&Math.abs(P.sp-sp)<1&&Math.abs(P.mp-mp)<1,'health, stamina and mana carry out of a battle');
+ B=battle();ok(Math.abs(B.hero.hp-P.hp*t.FIELD_HP)<1&&B.hero.hp<B.hero.max,'the next battle starts wounded ('+Math.round(B.hero.hp)+' / '+B.hero.max+')');t.updateBattle(.01);
  ok(Math.abs(B.hx.sp-P.sp)<2&&Math.abs(B.hx.mp-P.mp)<2,'and with the stamina and mana you had left');
  B.hero.hp=0;finish(B,false);ok(P.hp===Math.max(1,Math.round(m[0]*.1)),'a knocked-out hero comes to at 10% health ('+P.hp+')');
  // recovery on the map

@@ -25,7 +25,14 @@ function rankGain(g,n){if(!(n>0))return 0;if(rankPeasant(g.type)){g.xp=Math.min(
   g.rank=r;if(r>=RANKS.max){g.xp=0;const end=masteryEnds().pop();if(x>0)g.mxp=Math.min(end,masteryXp(g)+x)}else g.xp=x;return up}
 // (one group's rank and mastery into another, the further on kept: a merge; a group emptied into its wounded, and back)
 const rankPlace=g=>[rankOf(g),masteryXp(g),rankXp(g)];
-function rankKeep(from,to){const a=rankPlace(from),b=rankPlace(to);if(a[0]>b[0]||a[0]===b[0]&&(a[1]>b[1]||a[1]===b[1]&&a[2]>b[2])){rankReset(to);for(const k of ['rank','xp','mxp','picks'])if(from[k]!=null)to[k]=k==='picks'?from[k].slice():from[k]}}
+// a group's learned ladders (the owner, 2026-10-31: "upgrading won't loose skills of that unit"): its own kind's, at its rank, and those
+// it kept from the kinds it was before (g.learned: a ladder's role, its rung; g.keptPicks: their mastery picks), each its best: [role, rungs]
+function rankLadders(g){const own=typeof rankRole==='function'?rankRole({s:ST[g.type]||{},type:g.type,team:0}):null,out=own?{[own]:rankOf(g)}:{};
+  for(const [k,n] of Object.entries(g.learned||{}))out[k]=Math.max(out[k]||0,n);return Object.entries(out)}
+// (upgraded: its ladders and their picks kept, its rank begun again)
+function rankLearn(g){const L={};for(const [k,n] of rankLadders(g))if(n>0)L[k]=n;g.learned=L;g.keptPicks=[...(g.keptPicks||[]),...(g.picks||[]).filter(x=>x!=='drill')];if(!g.keptPicks.length)delete g.keptPicks;if(!Object.keys(L).length)delete g.learned}
+function rankKeep(from,to){const a=rankPlace(from),b=rankPlace(to);if(a[0]>b[0]||a[0]===b[0]&&(a[1]>b[1]||a[1]===b[1]&&a[2]>b[2])){rankReset(to);for(const k of ['rank','xp','mxp','picks'])if(from[k]!=null)to[k]=k==='picks'?from[k].slice():from[k]}
+  for(const [k,n] of Object.entries(from.learned||{}))(to.learned||(to.learned={}))[k]=Math.max(to.learned[k]||0,n);if(from.keptPicks&&!to.keptPicks)to.keptPicks=from.keptPicks.slice()}
 // (a fresh start: an upgraded group; carry, its mastery's experience carried into it first)
 function rankReset(g){delete g.rank;delete g.xp;delete g.mxp;delete g.picks}
 // (a mastery's pick: a skill of its ladder (data/ranks.js RANK_SKILLS, one with an up, reached), or a drill)

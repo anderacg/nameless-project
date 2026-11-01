@@ -227,7 +227,7 @@ function lordWon(l,res){
   let txt='';worldEmit('lord:routed',{lord:l});if(l.state==='siege'&&townBy(l.tgt))worldEmit('siege:broken',{town:townBy(l.tgt),lord:l});// (the bus: news.js)
   if(P.fac&&atWar(P.fac,l.fac)){res.gold+=40;P.renown+=5;txt+=' Your employer adds a 40 gold bounty.'}
   if(l.state==='siege'){const st=townBy(l.tgt);if(st&&!hostileTo(st.owner)){addRep(st.name,10,true);if(st.owner!=='player')addHonor(st.owner,8,true);lordsInside(st).forEach(o=>changeRel(o,RELATION.breakSiege,'you broke the siege of '+st.name));txt+=' You break the siege of '+st.name+'. Its people cheer you in.'}}
-  rippleRel(l,RELATION.beatThem,'you beat them in battle');worldEmit('lord:beaten',{lord:l});captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom him or let him go (Hero, Party).';
+  rippleRel(l,RELATION.beatThem,'you beat them in battle');worldEmit('lord:beaten',{lord:l});captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom '+pr(l).him+' or let '+pr(l).him+' go (Hero, Party).';
   FIDS.filter(f=>atWar(f,l.fac)).forEach(f=>addHonor(f,5));addHonor(l.fac,-10);
   return txt;
 }
@@ -243,12 +243,24 @@ function resolveSiege(l,t){
     worldEmit('holding:taken',{town:t,lord:l,sacked});
     {const F=FACS[l.fac].n,lost=mine?' You have lost your fief.':'';
      worldEvent({text:t.name+' falls to '+l.name+' of the '+F+(sacked?', who sacks it':'')+'.'+lost,cls:l.fac===P.fac?'good':prev===P.fac||mine?'bad':'gold',x:t.x,y:t.y,fac:[l.fac,prev],towns:[t],heard:['fell',t],
-       seen:'You see the banners of the '+F+' go up over '+t.name+': it falls to '+l.name+(sacked?', who sacks it':'')+'.'+lost,past:t.name+' fell to '+l.name+' of the '+F,also:(sacked?' He sacked it.':'')+lost})}
+       seen:'You see the banners of the '+F+' go up over '+t.name+': it falls to '+l.name+(sacked?', who sacks it':'')+'.'+lost,past:t.name+' fell to '+l.name+' of the '+F,also:(sacked?' '+pr(l).He+' sacked it.':'')+lost})}
     W.lords.forEach(o=>{if(!o.dead&&o!==l&&o.tgt===t.name)lordThink(o)});
     stayFall(t);
     if(!mine&&!fiefsOf(prev).length)fallFaction(prev,t);
   }else{ls.forEach(o=>cull(o,.55));lordXp(l,6);lordTrain(l,'tact',2);t.gar=Math.max(2,Math.round(t.gar*.6));worldEmit('siege:broken',{town:t,lord:l});
     worldEvent({text:'The siege of '+t.name+' fails. '+l.name+' falls back.',x:t.x,y:t.y,fac:[t.owner,l.fac],towns:[t],heard:['relieved',t],seen:'You see the siege of '+t.name+' fail. '+l.name+' falls back.',past:'the siege of '+t.name+' failed and '+l.name+' fell back'});lordThink(l)}
+}
+// a lord resting at a holding of his realm hires as you do (the owner, 2026-10-31: "same way"): first his short units refilled, a
+// man at a time, from the holding's own willing at the price you pay, out of his realm's treasury; then, a unit slot free and
+// willing enough, one whole unit; and now and then one of his units trained up whole, as yours are at its last rank
+// (LORD_RECRUIT), into a kind whose unit holds all its men (a levy of 7 never into lancers, a unit of 6: they were lost)
+function lordRecruit(l,t){
+  const R=partyRoster(l),X=LORD_RECRUIT,pool=()=>Math.min(Math.floor(t.vol||0),Math.floor((t.pop||0)-GUARD_FLOOR));
+  for(const g of R.groups.slice()){for(let k=0;k<X.refill&&R.groupRoom(g.type,g.id)>0&&pool()>=1&&payRealm(l.fac,HIRE[g.type]||22,t,1);k++){draftLocals(t,1);R.add(g.type,1,g.id)}}
+  if(R.slots<R.groupLimit){const c=RACES[t.races[rint(0,t.races.length-1)]],r=Math.random(),type=r<X.melee?c.melee:r<X.melee+X.shield?c.shield:c.ranged,n=unitSize(type);
+    if(pool()>=n&&payRealm(l.fac,(HIRE[type]||22)*n,t,n)){draftLocals(t,n);R.add(type,n,'new')}}
+  {const g=R.groups.find(g=>UP[g.type]&&Math.random()<X.up/unitSize(g.type));if(g){const n=g.count,u=UP[g.type].filter(k=>unitSize(k)>=n);
+    if(u.length){const to=u[rint(0,u.length-1)];R.remove(g.type,n,g.id);R.add(to,n,'new')}}}
 }
 function worldDay(){
   Realm.day();// (wars and peace)
@@ -273,16 +285,7 @@ function worldDay(){
         {const who=sal.map(o=>o.name).join(' and ');worldEvent({text:who+' ride'+(sal.length>1?'':'s')+' out of '+t.name+' to break the siege.',x:t.x,y:t.y,fac:[t.owner,...sal.map(o=>o.fac)],towns:[t],
           was:Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5||t.owner===P.fac||t.owner==='player',past:who+' rode out of '+t.name+' to break the siege'})}continue}
       if(++l.sd>=2+wallOf(t))resolveSiege(l,t);continue}
-    if(l.state==='rest'&&t&&t.owner===l.fac){
-      // he hires as you do (the owner, 2026-10-31: "same way"): first his short units refilled, a man at a time, from the holding's own
-      // willing at the price you pay, out of his realm's treasury; then, a unit slot free and willing enough, one whole unit; and now
-      // and then one of his units trained up whole, as yours are at its last rank (LORD_RECRUIT)
-      const R=partyRoster(l),X=LORD_RECRUIT,pool=()=>Math.min(Math.floor(t.vol||0),Math.floor((t.pop||0)-GUARD_FLOOR));
-      for(const g of R.groups.slice()){for(let k=0;k<X.refill&&R.groupRoom(g.type,g.id)>0&&pool()>=1&&payRealm(l.fac,HIRE[g.type]||22,t,1);k++){draftLocals(t,1);R.add(g.type,1,g.id)}}
-      if(R.slots<R.groupLimit){const c=RACES[t.races[rint(0,t.races.length-1)]],r=Math.random(),type=r<X.melee?c.melee:r<X.melee+X.shield?c.shield:c.ranged,n=unitSize(type);
-        if(pool()>=n&&payRealm(l.fac,(HIRE[type]||22)*n,t,n)){draftLocals(t,n);R.add(type,n,'new')}}
-      {const g=R.groups.find(g=>UP[g.type]&&Math.random()<X.up/unitSize(g.type));if(g){const u=UP[g.type],to=u[rint(0,u.length-1)],n=g.count;R.remove(g.type,n,g.id);R.add(to,n,'new')}}
-    }
+    if(l.state==='rest'&&t&&t.owner===l.fac)lordRecruit(l,t);
     if(l.state==='rest'||Math.random()<.35)lordThink(l);
   }
 }

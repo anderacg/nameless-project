@@ -33,11 +33,14 @@ try{
  // (livestock is never clicked: it lives in its pasture, drawn with it; a click there finds what stands behind it)
  reset();const cw={crit:true,id:'cow',x:P.x+10,y:P.y,hx:P.x,hy:P.y,n:3,home:'Ashford',t:0,a:0,dir:1,tire:0,cool:4,milked:0};W.critters=[cw];click(cw.x,cw.y-4);ok(G.mode!=='herd'&&t.pickAt(cw.x,cw.y-4)!==cw,'a herd of livestock is not clicked: nothing to buy');
  // a click on something far away walks you there; you meet it only on contact
- reset();W.critters=[];const far2=t.TOWNS.find(x=>x!==ash&&Math.hypot(x.x-ash.x,x.y-ash.y)<30*t.TILE)||t.TOWNS[1];P.x=far2.x+60;P.y=far2.y;G.lastTown=null;
- // (60 px off it on open ground in plain line of it: east first, else the first way round that is)
- for(const [dx,dy] of [[60,0],[-60,0],[0,60],[0,-60],[42,42],[-42,42],[42,-42],[-42,-42]]){const x=far2.x+dx,y=far2.y+dy;if(t.tAt(Math.floor(x/t.TILE),Math.floor(y/t.TILE))===t.T_OPEN&&t.clearLine(x,y,far2.x,far2.y)){P.x=x;P.y=y;break}}
+ // (a holding and a spot off it: beyond where your army reaches it that way (your ring and its town: march.js ringReach), yet in
+ // your sight, where a click answers (world.js pickAt), on open ground in plain line of it and on the screen; none: its ring's Approach)
+ reset();W.critters=[];G.lastTown=null;const V=t.vis()*1.2-4,ways=[[1,0],[-1,0],[0,1],[0,-1],[.7071,.7071],[-.7071,.7071],[.7071,-.7071],[-.7071,-.7071]];let far2=null,D=0,at=null;
+ for(const h of t.TOWNS.filter(x=>x!==ash).sort((p,q)=>Math.hypot(p.x-ash.x,p.y-ash.y)-Math.hypot(q.x-ash.x,q.y-ash.y)).slice(0,12)){for(const [ux,uy] of ways){P.x=h.x+ux*10;P.y=h.y+uy*10;const d=Math.round(t.worldBattleReach(h)+20),x=h.x+ux*d,y=h.y+uy*d;
+   if(d<V&&Math.abs(ux*d)<t.VW/2-12&&Math.abs(uy*d)<t.VH/2-12&&t.tAt(Math.floor(x/t.TILE),Math.floor(y/t.TILE))===t.T_OPEN&&t.clearLine(x,y,h.x,h.y)){far2=h;D=d;at=[x,y];break}}if(far2)break}
+ const clicked=!!far2;if(!far2){far2=t.TOWNS.find(x=>x!==ash);P.x=far2.x+10;P.y=far2.y;D=Math.round(t.worldBattleReach(far2)+20);at=[far2.x+D,far2.y]}P.x=at[0];P.y=at[1];
  W.patrols=[];W.caravans=[];W.refugees=[];W.folk=[];t.bandits.length=0;W.monsters=[];G.encCool=1e9;// nobody on the road to meet on the way
- click(far2.x,far2.y);ok(G.mode==='world'&&G.chase===far2&&P.tx!=null,'clicking a holding 60 away does not open it, your band walks there');
+ if(clicked)click(far2.x,far2.y);else t.approach(far2);ok(G.mode==='world'&&G.chase===far2&&P.tx!=null,(clicked?'clicking':'approaching')+' a holding '+D+' px away (beyond your reach of it) does not open it, your band walks there');
  for(let i=0;i<400&&G.mode==='world';i++)t.updateWorld(.05);ok(G.mode==='town'||G.mode==='besiege','on arrival it opens ('+G.mode+' '+(G.mode==='dialog'?document.getElementById('panel').textContent.slice(0,160):'')+')');t.hidePanel();G.mode='world';G.modal=false;G.town=null;
  reset();G.encCool=0;const b2={x:P.x+40,y:P.y,n:3,cool:0,t:0,a:0,kind:'bandits',idle:true};t.bandits.length=0;t.bandits.push(t.asParty(b2));
  // (beyond where the armies would meet: their rings touching, march.js worldBattleReach)

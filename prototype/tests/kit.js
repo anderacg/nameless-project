@@ -60,21 +60,23 @@ const Kit={
     for(const n of ['monsters','caravans','refugees','folk','patrols','fights','critters'])if(!k.has(n))W[n]=[];
     if(!k.has('lords'))W.lords.forEach(l=>{l.x=-9999;l.y=-9999});
   },
-  // back on the map: the panel hidden, no meeting (more: other fields of G to set, as {town:null, encCool:0})
+  // back on the map: the panel hidden, no meeting (more: other fields of G to set, as {town:null, encCool:0}); a quest's reward
+  // window closed too (ui/questreward.js: it stays over whatever opens next, its Continue the first a bottom bar or Esc finds)
   world(more){
     const G=T.G;
     T.hidePanel();
+    T.QuestReward.close();
     G.mode='world';
     G.modal=false;
     G.enc=null;
     if(more)Object.assign(G,more);
   },
   // the marching armies on the map (world/march.js): their soldiers and leaders are the battle's figures drawn smaller
-  // (WORLD_BATTLE.sprite/scale), so resampled on purpose; Kit.marching is true while one is drawn (watchMarch: the hook on,
+  // (WORLD_BATTLE.sprite/scale), so resampled on purpose, and a caravan's cart with them (caravans.js drawCaravanArt); Kit.marching is true while one is drawn (watchMarch: the hook on,
   // its return takes it off; hide: not drawn at all, for a look at the map's own pixels)
   marching:false,
   watchMarch(hide){
-    const fs=['drawMarcher','drawMarchLeader',...(hide?['marchCircle']:[])],keep=fs.map(n=>window[n]);// (hidden: their rings too, drawn smooth)
+    const fs=['drawMarcher','drawMarchLeader','drawCaravanArt',...(hide?['marchCircle']:[])],keep=fs.map(n=>window[n]);// (hidden: their rings too, drawn smooth)
     fs.forEach((n,i)=>{window[n]=function(){if(hide)return;Kit.marching=true;try{return keep[i].apply(this,arguments)}finally{Kit.marching=false}}});
     return ()=>fs.forEach((n,i)=>{window[n]=keep[i]});
   },

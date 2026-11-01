@@ -24,6 +24,10 @@ Kit.suite(({ok})=>{
   // ======== beasts
   const beast=(A,id,d)=>{const m=t.asMonster({id,x:A.x+A.r+d,y:A.y,hx:A.x+A.r+d,hy:A.y,lv:1,n:3,t:0,a:0,cool:0});W.monsters=[m];return m};
   {const b=fight(4,3,far),A=b.world,m=beast(A,'wolf',40);ok(tries(A,m),'away from the holdings a hungry pack (wolves) may join');W.monsters=[];end()}
+  // (the owner, 2026-11-01: a troll came in that could not have known of the fight) one past its sight and the fight's noise, though
+  // in the old reach, never knows of it: never joins (WorldBattleArea#knows)
+  {const b=fight(4,3,far),A=b.world,H=J.hear,hear=Math.min(H.max,H.base+H.per*t.B.units.length),d=Math.round(t.WORLD_SCALE.sight.monster+hear+10),m=beast(A,'wolf',d);
+   ok(d<J.reach&&!A.knows(m,hear)&&!tries(A,m,12),'a hungry pack '+d+' px past the fight (its sight '+t.WORLD_SCALE.sight.monster+' and the noise '+Math.round(hear)+' px short of it, the old reach '+J.reach+'): it never knows of it, never joins');W.monsters=[];end()}
   {const b=fight(4,3,far),A=b.world,m=beast(A,'boar',40);ok(!tries(A,m),'a beast that waits to be hunted (boars) never does');W.monsters=[];end()}
   {const b=fight(4,3,near),A=b.world,m=beast(A,'wolf',40),by=t.TOWNS.some(h=>Math.hypot(h.x-m.x,h.y-m.y)<J.beast.near);ok(by&&!tries(A,m),'by a holding, no beast joins the fight');W.monsters=[];end()}
   // ======== the chance, weighed once every few seconds

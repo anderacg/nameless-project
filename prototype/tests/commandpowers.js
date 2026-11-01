@@ -62,7 +62,8 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  for(const g of [g1,g2,g3]){R(g).mor=50;R(g).refreshState()}
  ok(t.usePower(0,'stand')&&R(g1).standing()&&R(g2).standing()&&!R(g3).standing(),'Stand Fast!: the groups in range stand fast, the one out of range does not');
  ok(Math.abs(R(g1).mor-60)<1e-9&&R(g3).mor===50,'+'+CP.stand.gain+' morale at once ('+R(g1).mor+')');
- R(g1).shock(10);R(g3).shock(10);ok(Math.abs((60-R(g1).mor)-10*CP.stand.shock)<1e-6&&Math.abs(50-R(g3).mor-10)<1e-6,'a shock shakes them '+Math.round((1-CP.stand.shock)*100)+'% less ('+(60-R(g1).mor).toFixed(2)+' against '+(50-R(g3).mor).toFixed(2)+')');
+ // (a shock of 10 is 10 x GROUP_RESOLVE.grit since fa23bde, "battles longer and steadier")
+ R(g1).shock(10);R(g3).shock(10);ok(Math.abs((60-R(g1).mor)-10*t.GROUP_RESOLVE.grit*CP.stand.shock)<1e-6&&Math.abs(50-R(g3).mor-10*t.GROUP_RESOLVE.grit)<1e-6,'a shock shakes them '+Math.round((1-CP.stand.shock)*100)+'% less ('+(60-R(g1).mor).toFixed(2)+' against '+(50-R(g3).mor).toFixed(2)+')');
  R(g1).shock(200);R(g3).shock(200);ok(R(g1).mor===t.MORALE.waver&&R(g1).state==='shaken'&&R(g3).mor<0,'a crushing one leaves them at '+t.MORALE.waver+' (shaken), never wavering; the other is breaking ('+R(g3).mor.toFixed(1)+')');
  {const st=t.grpMorale(g1.units);ok(st.stand&&t.statusOf(st).includes('standfast')&&!t.grpMorale(g3.units).stand,'its banner shows the Stand Fast! badge (grpMorale stand, statusOf standfast); the other’s not')}
  // (its own think: pressure from foes on every side cannot push it under either)

@@ -22,10 +22,14 @@ try{
   for(const r of races)for(let v=0;v<6;v++)for(let f=0;f<4;f++){ps.push(['follower '+r+v,t.followerSprite('#3d74d6',f,v,r),r]);ps.push(['band '+r+v,t.followerSprite('#8a4a3a',f,v,r,true),r])}
   for(let v=0;v<4;v++)ps.push(['refugee',t.refugeeSprite(v,v),'human']);
   for(let v=0;v<4;v++)ps.push(['refugee',t.refugeeSprite(v,v),'human']);
-  const L=ps.map(([n,s,r])=>[n,look(s),r]),tall=L.filter(([n,q,r])=>q.fh>(r==='dwarf'?9:10)||q.h<9),wide=L.filter(([n,q])=>q.w>9),cells=ps.filter(([n,s])=>s.width!==16||!cell(s));
-  const body=L.filter(([n])=>/^follower/.test(n)),bw=Math.max(...body.map(([n,q])=>q.w)),bh=Math.max(...L.filter(([n,q,r])=>r==='human').map(([n,q])=>q.fh));
-  info('a person '+bh+' high over the outline under the feet ('+(bh+1)+' with it), a dwarf '+Math.max(...L.filter(([n,q,r])=>r==='dwarf').map(([n,q])=>q.fh))+'; '+Math.min(...L.map(([n,q])=>q.w))+'-'+bw+' wide with what is in the hand');
-  ok(!tall.length&&!cells.length&&L.length>=200,'every person on the map (followers, bands, workers, refugees: '+L.length+') is 10 high (a dwarf 9) in a 16 cell'+(tall.length?': '+tall.slice(0,3).map(([n,q])=>n+' '+q.fh).join(', '):''));
+  // (a pole in his hand stands over his head as far as it reaches (figures.js GEAR.rise, the owner, 2026-10-31: gear drawn apart,
+  // nothing cut off); the man himself 10 high)
+  const rise=Math.max(...Object.values(t.GEAR.rise)),L=ps.map(([n,s,r])=>[n,look(s),r]),tall=L.filter(([n,q,r])=>q.fh>(r==='dwarf'?9:10)+rise||q.h<9),wide=L.filter(([n,q])=>q.w>9),cells=ps.filter(([n,s])=>s.width!==16||!cell(s));
+  const hq=w=>look(t.mapPerson({race:'human',skin:'skin',hair:'brown',helm:'bare',outer:'leather',inner:'dark',team:'#3d74d6',weapon:w},0)).fh;
+  const body=L.filter(([n])=>/^follower/.test(n)),bw=Math.max(...body.map(([n,q])=>q.w)),bh=hq('sword');
+  info('a person '+bh+' high over the outline under the feet ('+(bh+1)+' with it), a dwarf '+Math.min(...L.filter(([n,q,r])=>r==='dwarf').map(([n,q])=>q.fh))+'; '+Math.min(...L.map(([n,q])=>q.w))+'-'+bw+' wide with what is in the hand; a spear '+hq('spear')+', a pike '+hq('pike')+' high');
+  ok(!tall.length&&!cells.length&&L.length>=200,'every person on the map (followers, bands, workers, refugees: '+L.length+') is 10 high (a dwarf 9), a pole in his hand at most '+rise+' over his head, in a 16 cell'+(tall.length?': '+tall.slice(0,3).map(([n,q])=>n+' '+q.fh).join(', '):''));
+  ok(bh===10&&hq('spear')===10+t.GEAR.rise.spear&&hq('pike')===10+t.GEAR.rise.pike&&hq('dagger')===10,'a sword or a dagger in his hand stays within him; a spear or a pike stands its own reach over his head');
   ok(!wide.length,'and at most 9 wide, held weapon or tool and load on the back included (6 without)'+(wide.length?': '+wide.slice(0,3).map(([n,q])=>n+' '+q.w).join(', '):''));
   const bare=t.mapPerson({race:'human',skin:'skin',hair:'brown',helm:'bare',outer:'leather',inner:'dark',team:'#3d74d6'},0),qb=look(bare);
   ok(qb.w===6&&qb.fh===10,'a person with nothing in his hands is 6 x 10 (with the outline; '+qb.w+' x '+qb.fh+')');
@@ -41,8 +45,9 @@ try{
   const beasts=[t.asMonster({id:'wolf',x:0,y:0,lv:1,n:1}),t.asMonster({id:'dragon',x:0,y:0,lv:1,n:1}),t.asHerd({crit:true,id:'deer',x:0,y:0,n:2}),t.asRefugees({rf:true,from:tw.name,to:tw.name,n:4,x:0,y:0})];
   ok(beasts.every(q=>!(q.banner&&q.banner())&&!t.bannerAt(q,0)),'a beast, the dragon, a herd and refugees fly none');
   const sp=[];for(const [q] of want)for(const f of [0,1])sp.push([q.mapKind,look(t.bannerSprite(q.banner(),f)),t.bannerSprite(q.banner(),f)]);
-  const bb=sp.filter(([n,q,s])=>s.width!==16||q.h>16||q.w>12||q.inner||q.open);info('banners: '+sp.filter((x,i)=>!(i%2)).map(([n,q])=>n+' '+q.w+'x'+q.h).join(', '));
-  ok(!bb.length&&t.bannerSprite(L.banner(),0)!==t.bannerSprite(L.banner(),1),'each banner in a 16 cell, at most 12 x 16, outlined round the silhouette only, fluttering in two frames'+(bb.length?': '+bb.slice(0,3).map(([n,q])=>n+' '+q.w+'x'+q.h+' '+q.inner+'/'+q.open).join(', '):''));
+  // (the owner, 2026-10-31: more detailed, its folds shaded, a finial, its device clear: a 32 cell, at most BANNER's grid)
+  const bb=sp.filter(([n,q,s])=>s.width!==32||q.h>t.BANNER.h||q.w>t.BANNER.w||q.inner||q.open);info('banners: '+sp.filter((x,i)=>!(i%2)).map(([n,q])=>n+' '+q.w+'x'+q.h).join(', '));
+  ok(!bb.length&&t.bannerSprite(L.banner(),0)!==t.bannerSprite(L.banner(),1),'each banner in a 32 cell, at most '+t.BANNER.w+' x '+t.BANNER.h+', outlined round the silhouette only, fluttering in two frames'+(bb.length?': '+bb.slice(0,3).map(([n,q])=>n+' '+q.w+'x'+q.h+' '+q.inner+'/'+q.open).join(', '):''));
   // (drawn: over the party, after every figure, yours last; none for a party out of sight or sheltering inside)
   t.bandits.length=0;W.lords.forEach(l=>{l.x=-9999;l.y=-9999});W.monsters=[];W.critters=[];W.caravans=[];W.refugees=[];W.folk=[];W.patrols=[];G.mode='world';G.modal=false;t.hidePanel();G.clock=t.DAY*.3;
   let spot=null;for(let ty=12;ty<t.MH-12&&!spot;ty++)for(let tx=12;tx<t.MW-12&&!spot;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&!t.hiddenAt(x,y)&&t.TOWNS.every(z=>Math.hypot(z.x-x,z.y-y)>200)&&W.sites.every(z=>Math.hypot(z.x-x,z.y-y)>80))spot=[x,y]}
@@ -68,7 +73,21 @@ try{
   for(const id of Object.keys(t.CRITTERS))for(const f of [0,1]){const s=t.critterSprite(id,f),q=look(s),z=csz[id];if(!z||s.width!==z[2]||Math.abs(q.w-z[0])>1||Math.abs(q.h-z[1])>1||q.inner||q.open)cb.push(id+' '+q.w+'x'+q.h+' in '+s.width);if(!f)cr.push(id+' '+q.w+'x'+q.h)}
   info('herds: '+cr.join(', '));
   ok(!cb.length,'every animal of the herds at its size: a cow or a water buffalo 11 x 7 in 16, a camel 12 x 9, a sheep, pig or goat 6 x 5 in 8, deer and their kin some 9 x 8 in 16, a hen or a rabbit in 8'+(cb.length?': '+cb.join('; '):''));
-  const cv=[0,1,2,3].map(f=>look(t.caravanSprite('#c74453',f)));ok(cv.every(q=>q.cell===32&&q.w>=28&&q.w<=31&&q.h<=13),'a caravan (ox, cart, drover) some 30 x 12 in a 32 cell ('+cv[0].w+' x '+cv[0].h+')');
+  // (the caravan in the battle figures' style (the owner, 2026-11-01): at their density, a soldier 16 high, its cart a man and a half;
+  // built once a picture (spr); drawn on the map as big as its guards: caravans.js caravanSprite, drawCaravanArt)
+  {const A=t.CARAVAN_ART,man=look(t.unitSprite('militia',0,false,0,0)),cv=[0,1,2,3,4].map(f=>look(t.caravanSprite('#c74453',f,f%A.turns))),k=cv[0].h/man.h,alone=['left','burnt'].map(h=>look(t.caravanSprite('#8a7a5a',0,0,h)));
+   ok(cv.every(q=>q.cell===64&&q.w>=54&&q.w<=62&&q.h>=24&&q.h<=28)&&k>=1.3&&k<=1.7&&alone.every(q=>q.cell===32&&q.w>=26&&q.w<=31&&q.h>=24&&q.h<=28),'a caravan (cart, ox, drover) at the battle figures\' density: '+cv[0].w+' x '+cv[0].h+' in a 64 cell, its cart '+k.toFixed(2)+' times a soldier\'s height ('+man.h+'); the cart alone, left behind or burnt, '+alone.map(q=>q.w+' x '+q.h).join(', ')+' in a 32');
+   const keys=()=>Object.keys(t.spr).filter(q=>q.startsWith('cv#')).length,n0=keys(),same=[0,1,2,3,4].every(f=>[0,1,2].every(w=>t.caravanSprite('#c74453',f,w)===t.caravanSprite('#c74453',f,w))),n1=keys();
+   ok(same&&n1-n0<=(A.steps+1)*A.turns&&keys()===n1&&new Set([0,1,2,3,4].map(f=>t.caravanSprite('#c74453',f,0))).size===A.steps+1&&new Set([0,1,2].map(w=>t.caravanSprite('#c74453',1,w))).size===A.turns,'each of its pictures built once and kept (spr: '+n1+' of them), the same one each time it is drawn: '+(A.steps+1)+' of its walk, '+A.turns+' of its wheel\'s turn');
+   for(let i=0;i<30&&!W.caravans.length;i++)t.sendCaravan(t.TOWNS[i%t.TOWNS.length]);const c=W.caravans[0];
+   if(c){c.x=P.x+30;c.y=P.y+12;c.dir=1;const ctx=t.ctx,di=ctx.drawImage,seen=[],unmarch=Kit.watchMarch(),pics=new Set();
+     ctx.drawImage=function(img,...a){if(Kit.marching)seen.push([img,Math.abs(this.getTransform().a)]);return di.call(this,img,...a)};try{t.drawWorld()}finally{ctx.drawImage=di;unmarch()}
+     Object.keys(t.spr).filter(q=>q.startsWith('cv#')).forEach(q=>pics.add(t.spr[q]));const a=seen.filter(q=>pics.has(q[0])).map(q=>q[1]),b=seen.filter(q=>!pics.has(q[0])).map(q=>q[1]);
+     ok(a.length&&b.length&&a.concat(b).every(v=>Math.abs(v-b[0])<1e-9),'on the map it is drawn as big as its guards marching round it ('+a.length+' cart, '+b.length+' guards, at '+(b[0]||0).toFixed(2)+' screen px to its pixel)');W.caravans.length=0}
+   // (its legs at the march's cadence while it moves (its own time walked, not the ground it covers), still once it stands)
+   const q={},T0=1e6;let now=T0,fr=[];performance.now=()=>now;try{t.WALKED.set(q,0);t.caravanGait(q);for(let i=0;i<20;i++){now+=50;t.WALKED.set(q,i+1);fr.push(t.caravanGait(q))}now+=400;fr.push(t.caravanGait(q))}finally{delete performance.now}
+   const walk=fr.slice(0,-1),flips=walk.filter((f,i)=>i&&f!==walk[i-1]).length,want=Math.floor(walk.length*.05*t.MARCH_MOVE.cadence);
+   ok(walk.every(f=>f>=1&&f<=A.steps)&&new Set(walk).size===A.steps&&Math.abs(flips-want)<=1&&fr[fr.length-1]===0,'its ox and drover walk at the march\'s cadence ('+flips+' steps in '+(walk.length*.05)+' s, its guards\' '+t.MARCH_MOVE.cadence+' a second), and stand still when it stops ('+fr.join('')+')')}
   const cog=look(t.shipSprite({seed:1,big:true,col:'#c74453'})),boat=look(t.shipSprite({seed:1,big:false})),mc=t.shipSprite({seed:1,big:true,moored:true}),mb=t.shipSprite({seed:1,big:false,moored:true});
   ok(cog.cell===32&&Math.abs(cog.w-26)<=2&&Math.abs(cog.h-20)<=2&&boat.cell===16&&Math.abs(boat.w-14)<=2&&boat.h<=9,'a cog some 26 x 20 in a 32 cell ('+cog.w+' x '+cog.h+'), a rowing boat some 12 x 8 in 16 ('+boat.w+' x '+boat.h+')');
   ok(mc.width===32&&mb.width===16&&t.opaqueBox(mc)[3]===31&&t.opaqueBox(mb)[3]===15&&mc.hull>0&&mc.top>mc.hull,'moored, they keep their cells and waterlines (the pier reads their hull and castles: hull '+mc.hull+', top '+mc.top+')')}

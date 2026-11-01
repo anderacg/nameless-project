@@ -24,14 +24,14 @@ Kit.suite(({ok})=>{
  {const b=document.querySelector('[data-act="trn-lesson"][data-arg="A:0|'+sp.id+'"]');ok(b&&!b.disabled&&/Trainers here/.test(document.getElementById('panel').textContent),'the Barracks\' Train & upgrade tab: its trainers, a lesson for each of your groups of theirs');
   const x0=t.rankXp(sp)+100*t.rankOf(sp);b.click();ok(t.rankXp(sp)+100*t.rankOf(sp)>x0,'one press: a lesson')}
  // ======== a special upgrade: an expert of its role
- {const pk=grp('hum_spear',2);t.rankGain(pk,t.RANKS.xp[2].reduce((a,b)=>a+b,0));ok(t.recruitment.quoteGroupTraining(ash,pk.id,'hum_pike').ok,'pikemen (tier 3) at Ashford: its expert of spears there, so it may');
-  t.W.trainers[ash.name]=[jy];ok(t.recruitment.quoteGroupTraining(ash,pk.id,'hum_pike').code==='training-unavailable','with only a journeyman of bows there: not here');t.W.trainers[ash.name]=[ex,jy]}
+ {const pk=grp('hum_spear',2);t.rankGain(pk,t.RANKS.xp[2].reduce((a,b)=>a+b,0));t.W.trainers[ash.name]=[{id:'A:2',name:'Gil the Drillmaster',roles:['foot'],level:2,town:ash.name}];ok(t.trainRole('hum_guard')==='foot'&&t.recruitment.quoteGroupTraining(ash,pk.id,'hum_guard').ok,'Shield Guard (tier 3) at Ashford: its expert of infantry there, so it may');
+  t.W.trainers[ash.name]=[jy];ok(t.recruitment.quoteGroupTraining(ash,pk.id,'hum_guard').code==='training-unavailable','with only a journeyman of bows there: not here');t.W.trainers[ash.name]=[ex,jy]}
  t.act('leave');
  // ======== yours: in camp, free
  {Kit.world();ok(!t.ownTrainers().length,'no Drillmaster, no Trainer: none of your own');P.tree.push('drill');P.perks.push('drill');const own=t.ownTrainers();
   ok(own.length===1&&own[0].own&&own[0].level===3&&own[0].roles.includes('spear'),'Drillmaster: your hero trains (Leadership 10: a master)');
   ok(t.lessonWhy(own[0],sp)==='Only in your camp','out of camp: not now');t.pitchCamp();const g0=P.gold,q=t.lesson(own[0],sp);ok(q.ok&&P.gold===g0,'in camp: a lesson, free');
-  const pk=r.groups.find(g=>g.type==='hum_spear'&&t.rankReady(g));const tr=t.upgradeTrainer(null,'hum_pike');ok(tr&&tr.own&&t.recruitment.quoteGroupTraining(null,pk.id,'hum_pike').ok&&t.recruitment.quoteGroupTraining(null,pk.id,'hum_pike').cost===0,'and in camp your own master of spears makes pikemen, free');t.breakCamp()}
+  const pk=r.groups.find(g=>g.type==='hum_spear'&&t.rankReady(g));ok(t.recruitment.quoteGroupTraining(null,pk.id,'hum_guard').code==='barracks','but no upgrade in camp: only at a barracks (the owner, 2026-10-31: "every tier after levy require enlist")');t.breakCamp()}
  {P.comps={tavi:{ap:0,role:'trainer'}};t.compInit('tavi');const c=t.ownTrainers().find(x=>x.id==='comp_tavi');ok(c&&c.roles.join()==='bow','a companion as Trainer: his roles by his kind (Tavi, a ranger: bows)')}
  // ======== saved
  {G.mode='world';G.modal=false;t.hidePanel();t.saveGame(true);const was=JSON.stringify(t.W.trainers);t.loadGame();ok(JSON.stringify(t.W.trainers)===was,'saved and loaded: the holdings\' trainers and their week')}

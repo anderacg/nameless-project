@@ -25,7 +25,11 @@ Kit.suite(({ok})=>{
  const b=L.find(l=>!l.dead&&l!==foe&&l!==ally);Object.assign(b,{inside:null,troops:Array(15).fill('hum_spear'),x:P.x+8,y:P.y});P.gold=500;t.lordMeet(b);
  ok(/Toward you/.test(panel())&&/Give 100 gold/.test(panel()),'a lord\'s audience shows how they feel, and offers a gift');
  const gb=t.relWith(b);t.act('lr-gift',b.id);ok(P.gold===500-R.gift.gold&&t.relWith(b)===gb+R.gift.rel,'a gift warms them (+'+R.gift.rel+')');t.act('lr-gift',b.id);ok(t.relWith(b)===gb+R.gift.rel&&P.gold===400,'once a week');
- t.P.lrel[b.id]=R.troopsAt;const tc=t.troopCount(),bt=b.troops.length;P.troops={hum_knight:4};t.lordMeet(b);t.act('lr-troops',b.id);ok(t.troopCount()===4+R.troops&&b.troops.length===bt-R.troops,'a friend lends you '+R.troops+' soldiers from their army');world();
+ // (whole units in unit slots, 803bd3a: his men join a unit of their kind or take a free slot; every slot full of other kinds, no room)
+ t.P.lrel[b.id]=R.troopsAt;const bt=b.troops.length,band=t.partyRoster(P);P.troops={};
+ P.troops=Object.fromEntries(['hum_knight','hum_bow','hum_foot','hum_levy','hum_squire'].slice(0,band.groupLimit-band.slots).map(k=>[k,2]));
+ ok(t.lendWhy(b)==='No room in your band','every unit slot full, none of his men’s kind: no room in your band (he lends no one)');
+ P.troops={hum_spear:4};t.lordMeet(b);t.act('lr-troops',b.id);ok(t.troopCount()===4+R.troops&&b.troops.length===bt-R.troops,'a friend lends you '+R.troops+' soldiers from their army');world();
  // no work from a lord who dislikes you; a bonus from a friend
  t.P.lrel[b.id]=R.jobsAt-5;ok(/no work for you/.test(t.lordJobHtml(b)),'a lord who dislikes you has no work for you');
  t.P.lrel[b.id]=60;const q={id:999,lord:true,giver:b.name,fac:b.fac,title:'Test job',reward:{gold:100,xp:0}};P.quests=[q];const g0=P.gold;t.payQuest(q,t.TOWNS[0].name);

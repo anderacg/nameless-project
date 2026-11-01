@@ -27,10 +27,10 @@ const TRACKS={on:true,
   // A first reading of a trail trains Scouting by train
   read:[2,5,8],train:2,
   // the prints: px between them along a trail by their style; the most drawn a frame; how dark at their clearest
-  step:{foot:13,hoof:13,paw:12,rut:3,drag:3},max:700,alpha:.8,
+  step:{foot:6,hoof:7,paw:6,rut:3,drag:3},max:700,alpha:.8,
   // the prints (gfx/tracks.js trackPic): lanes px apart across a band's way, steps stagger px apart along it; their details
   // (tread, nails, a hoof's frog) lighter (detail)
-  lane:7,stagger:3,detail:'rgba(255,246,222,.3)',
+  lane:3,stagger:2,detail:'rgba(255,246,222,.3)',
   // the size classes: up to size[0] people class 0 (a pair of prints), up to size[1] class 1, up to size[2] class 2, more class 3
   size:[2,9,29],
   // their colour on each ground; a bounty's band's once you have read one of its trails (a faint gold); on a road (dust)
@@ -45,7 +45,7 @@ const TRACKS={on:true,
   art:{who:{you:'hobnail',lord:'hobnail',patrol:'hobnail',cparty:'hobnail',band:'boot',refugee:'barefoot',caravan:'ruts'},mounted:'horse',
     beast:{wolf:'wolf',boar:'cloven',tiger:'cat',bear:'bear',spider:'talon',troll:'troll',scorpion:'talon',wyrm:'dragon',slime:'drag',griffin:'talon'},
     game:{big:'cloven',small:'wolf'},style:{foot:'boot',hoof:'hoof',paw:'wolf',rut:'ruts',drag:'drag'},
-    px:{hobnail:7,boot:7,barefoot:6,horse:6,hoof:6,cloven:5,wolf:4.5,bear:7,cat:5,troll:11,talon:6,dragon:12,ruts:7,drag:3}},
+    px:{hobnail:3,boot:3,barefoot:3,horse:3,hoof:3,cloven:2.5,wolf:2,bear:3.5,cat:2.5,troll:6,talon:3,dragon:7,ruts:5,drag:3}},// (at the figures' scale: a man some 10 px tall, his print a sixth of him (the owner, 2026-11-01: "make it realistic with sprite scale"); were hobnail 7, boot 7, barefoot 6, horse 6, hoof 6, cloven 5, wolf 4.5, bear 7, cat 5, troll 11, talon 6, dragon 12, ruts 7; lanes 7, stagger 3, steps foot 13, hoof 13, paw 12)
   // what the card calls each style (mounted people: mounted)
   how:{foot:'on foot',hoof:'hooves',paw:'paws',rut:'wagon wheels',drag:'something dragged',mounted:'mounted'}
 };

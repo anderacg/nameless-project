@@ -37,16 +37,18 @@ const ENC_LOOK={traveller:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'bare
   beggar:(r,v)=>({...folkLook('folk',r,v),robe:false,hair:'grey',beard:'grey',helm:'hood',hood:'leather',outer:'linen',team:'dark',cape:'leather',weapon:'crook'}),
   messenger:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'cap',outer:'leather',team:'white',weapon:null}),
   herbalist:(r,v)=>({...folkLook('folk',r,v),robe:true,hair:'grey',beard:null,helm:'hood',hood:'forest',outer:'forest',team:'linen',weapon:'crook'})};
-// (Tend his wounds' tooltip, the real wounded traveller's and the lure's: roadTend)
-const ROAD_TEND_TIP='Bandage him and share your food. Medicine and Intellect: the better he mends, the more he owes you.';
+// (Tend the wounds' tooltip, the real wounded traveller's and the lure's: roadTend; his or her words, story/wounded.js Wounded.prOf)
+const ROAD_TEND_TIP=e=>{const w=Wounded.prOf(e);return 'Bandage '+w.him+' and share your food. Medicine and Intellect: the better '+w.he+' mends, the more '+w.he+' owes you.'};
 const roadCol=e=>e.fac&&FACS[e.fac]?FACS[e.fac].col:'#8a7458',roadPrice=e=>Math.round(ITEMS[e.item].v*.7);
 // a fight on the road, as today's events made them: the raiders on a caravan, or an ambush's band (amb: its own band by the land,
 // its fighters mustered here; or the lure's, mustered when it came: e.band, e.foes); edge (as amb unless given): you in their
 // trap, the ambush's battle; false: you came ready for them. A kind's vs(e): the fight's title and its word for them (the toll)
 const roadBand=(x,y)=>{const c=climAt(x,y);return c==='desert'?'raiders':c==='swamp'?'bog':'bandits'};
 const roadBandN=()=>roadRng().int(5,7)+Math.floor(G.day/15);
-// (the encounter fought: off the map, encounter:fought; the battle carries it (road), so its end is the battle's: story/encounter.js)
-function roadFight(e,amb,edge=amb){asEncounter(e).fought();G.road=null;const k=amb?e.band||roadBand(P.x,P.y):'bandits',n=e.foes?e.foes.length:amb?roadBandN():e.n,b=asParty({x:P.x,y:P.y,cool:0,n,kind:k,...(e.foes?{troops:e.foes.slice()}:{})});
+// (the encounter fought: off the map, encounter:fought; the battle carries it (road), so its end is the battle's: story/encounter.js.
+// An ambush's band stands where it lay hidden (roadLieOf), so the battle on the map opens with it coming out of the trees; else
+// where you are)
+function roadFight(e,amb,edge=amb){asEncounter(e).fought();G.road=null;const L=roadLieOf(e),x=L?L[0]:P.x,y=L?L[1]:P.y,k=amb?e.band||roadBand(P.x,P.y):'bandits',n=e.foes?e.foes.length:amb?roadBandN():e.n,b=asParty({x,y,dir:P.x>=x?1:-1,cool:0,n,kind:k,...(e.foes?{troops:e.foes.slice()}:{})});
   startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),band:k,road:e,...(e.D&&e.D.vs?e.D.vs(e):{}),...(edge?{btype:{kind:'ambush',hid:1}}:{})})}
 /* the kinds: Encounter kinds (story/kinds.js defineKinds; their trigger 'travelHour', the pity timer's: ROAD_ENC is their view;
    a kind of its own class, cls: the shepherd). n, ico (its page's icon), w (weight; wf: × by your band), ok() (can it come here and now: today's event's rule), on
@@ -158,38 +160,41 @@ class Stray extends Encounter{
   }
 }
 defineKinds('encounter',{trigger:'travelHour'},{
-  /* the wounded traveller: the first step of a chain (story/wounded.js, The Wounded Traveller). Tended (Tend his wounds), he stands
-     bandaged and his page goes on to his offer (Wounded.offer: Join you, Take him home, Refuse; no way out till you answer), his
+  /* the wounded traveller: the first step of a chain (story/wounded.js, The Wounded Traveller). Tended (Tend the wounds), he stands
+     bandaged and his page goes on to his offer (Wounded.offer: Join you, Escort home, Refuse; no way out till you answer), his
      time lengthened; healed, he never dies by the road (ending: dealt with). Ander The Fallen is one of them, rarely (setup:
      Wounded.met, no draw) */
   traveller:{n:'Wounded traveller',ico:'wounded',w:2,ok:()=>true,on:'byroad',beh:'stay',ends:'die',call:'Help! Over here!',hear:'Someone calls out from the road to the {d}.',trace:'body',tip:'Lying by the road',
     setup:e=>Wounded.met(e),ending:e=>{if(e.healed)e.done=1},forced:e=>!!e.healed,stage:e=>e.healed?1:0,
     scene:e=>e.healed?[[e.done?'walk':'stand',e.ander?'anderHealed':'healed',0,0]]:[['down',e.ander?'ander':'traveller',0,0,{blood:1}]],// (tended: up on his feet, bandaged; then on his way)
-    text:e=>e.healed?Wounded.text(e):e.ander?Wounded.lying():'A wounded traveller lies by the road, robbed and left for dead. He clutches a purse the bandits missed.',
-    facts:e=>e.healed?Wounded.facts(e):[insight(['badly hurt','he will not last the day without help','he has about '+Math.max(1,Math.round(e.end-roadNow()))+' hours left'],'know how long he has'),'a purse: about 20 gold'],
-    left:()=>'You leave him to his fate.',
-    acts:[{icon:'food',label:'Tend his wounds',when:e=>!e.healed,again:true,facts:()=>roadTendFacts(),need:()=>foodN()<ENC_TUNE.traveller.food&&'You have no food to spare.',tip:ROAD_TEND_TIP,
+    text:e=>e.healed?Wounded.text(e):e.ander?Wounded.lying():'A wounded traveller lies by the road, robbed and left for dead. '+Wounded.prOf(e).He+' clutches a purse the bandits missed.',
+    facts:e=>{const w=Wounded.prOf(e);return e.healed?Wounded.facts(e):[insight(['badly hurt',w.he+' will not last the day without help',w.he+' has about '+Math.max(1,Math.round(e.end-roadNow()))+' hours left'],'know how long '+w.he+' has'),'a purse: about 20 gold']},
+    left:e=>'You leave '+Wounded.prOf(e).him+' to '+Wounded.prOf(e).his+' fate.',
+    acts:[{icon:'food',label:'Tend the wounds',when:e=>!e.healed,again:true,facts:e=>roadTendFacts(e),need:()=>foodN()<ENC_TUNE.traveller.food&&'You have no food to spare.',tip:ROAD_TEND_TIP,
         run:e=>roadTend(e)},
-      {icon:'gold',label:'Take his purse',when:e=>!e.healed,ask:()=>'Take the last coins of a dying man? Your band will see it, and word gets round.',
+      {icon:'gold',label:'Take the purse',when:e=>!e.healed,ask:e=>'Take the last coins of a dying '+manWord(Wounded.nameOf(e))+'? Your band will see it, and word gets round.',
         out:()=>{const t=nearHold(),f=t&&FACS[t.owner]&&t.owner;return{gold:20,honor:[f,-5],morale:-3,say:'You take 20 gold. Some of your band look away.'+(f?' Word reaches the '+FACS[f].n+'.':'')}}},
       ...Wounded.offer]},
   /* the fake wounded (phase 4): the wounded traveller to the eye (his name, picture, call, page and choices), bandits lying in the
-     woods by the road, a band the size of an ambush's (mustered when he comes: band, foes). Scouting warn sees the brush move,
-     count how many and the odds; below it, his page is the real one's, and helping him (or robbing him) springs the ambush. Warned:
-     come ready (no ambush edge), or call them out (they show themselves: fight, or leave; a small band may run). Left be, the
-     bandits move on (after: the word on the road) */
+     woods by the road, a band the size of an ambush's (mustered when he comes: band, foes). He lies only where woods are behind
+     him, away from the road (road.js roadLie: none, no lure there), his band hidden in them (lie, never drawn; edge, the tree
+     line). Scouting warn sees the brush move (a rustle there on the map), count how many and the odds (a glint of steel); below it,
+     his page is the real one's, and helping him (or robbing him) springs the ambush: the battle on the map opens with them in the
+     trees where they lay (roadFight). Warned: come ready (no ambush edge), or call them out (they show themselves at the tree
+     line: fight, or leave; a small band may run). Left be, the bandits slip away into the woods (after: the word on the road) */
   lure:{n:'Wounded traveller',wn:'Fake wounded (a lure)',ico:'wounded',w:1,wf:()=>roadLureW(),ok:(c=storyCtx())=>c.troops>=3,on:'lure',beh:'stay',ends:'unseen',call:'Help! Over here!',hear:'Someone calls out from the road to the {d}.',tip:'Lying by the road',they:'stay; bandits lie hidden near',
-    setup:e=>{e.band=roadBand(e.x,e.y);e.foes=Rng.use('road',()=>makeEnemies(roadBandN(),false,e.band))},
-    scene:e=>e.out?[['stand','traveller',0,0],['soldier','',-9,-3,{band:1,col:ENC_RAIDER,v:1}],['soldier','',9,-4,{band:1,col:ENC_RAIDER,v:3,face:-1}],['soldier','',14,1,{band:1,col:ENC_RAIDER,v:5,face:-1}]]:[['down','traveller',0,0,{blood:1}]],
-    text:e=>e.out?'The “wounded man” gets up, grinning. '+e.foes.length+' bandits rise from the brush behind him, weapons out.':ROAD_ENC.traveller.text(e),
-    facts:e=>e.out?[e.foes.length+' bandits',roadLureOdds(e)]:[...ROAD_ENC.traveller.facts(e),roadWarned()&&'<span class="bad">something moves in the brush behind him</span>',skill('scout')>=ENC_TUNE.lure.count&&'<span class="bad">'+e.foes.length+' bandits lie in wait: '+roadLureOdds(e)+'</span>'],
-    left:e=>e.out?'You ride on. The bandits watch you go.':'You leave him to his fate.',after:()=>'Word on the road: a “wounded man” lay by the road as bait for bandits.',
-    acts:[{icon:'food',label:'Tend his wounds',when:e=>!roadWarned(),facts:()=>roadTendFacts(),need:()=>foodN()<ENC_TUNE.traveller.food&&'You have no food to spare.',tip:ROAD_TEND_TIP,run:e=>roadSpring(e)},
-      {icon:'gold',label:'Take his purse',when:e=>!roadWarned(),facts:e=>ROAD_ENC.traveller.acts[1].factsFor(e),ask:()=>'Take the last coins of a dying man? Your band will see it, and word gets round.',run:e=>roadSpring(e)},
-      {icon:'sword',label:'Approach ready',when:e=>roadWarned()&&!e.out,also:e=>['no ambush: they lose their edge',skill('scout')>=ENC_TUNE.lure.count&&e.foes.length+' bandits'],tip:'Walk up to him with your band closed up and weapons drawn.',
+    setup:e=>{const L=roadLie(e.x,e.y);if(!L||hiddenAt(e.x,e.y))return false;e.lie=[L.x,L.y];e.edge=[L.ex,L.ey];e.dir=L.x>e.x?-1:1;// (he faces the road, the woods behind him)
+      e.band=roadBand(e.x,e.y);e.foes=Rng.use('road',()=>makeEnemies(roadBandN(),false,e.band))},
+    scene:e=>e.out?[['stand','traveller',0,0],...roadLureOut(e)]:[['down','traveller',0,0,{blood:1}],...roadLureHint(e)],
+    text:e=>e.out?'The “wounded '+manWord(Wounded.nameOf(e))+'” gets up, grinning. '+e.foes.length+' bandits rise from the brush behind '+Wounded.prOf(e).him+', weapons out.':ROAD_ENC.traveller.text(e),
+    facts:e=>e.out?[e.foes.length+' bandits',roadLureOdds(e)]:[...ROAD_ENC.traveller.facts(e),roadWarned()&&'<span class="bad">something moves in the brush behind '+Wounded.prOf(e).him+'</span>',skill('scout')>=ENC_TUNE.lure.count&&'<span class="bad">'+e.foes.length+' bandits lie in wait: '+roadLureOdds(e)+'</span>'],
+    left:e=>e.out?'You ride on. The bandits watch you go.':ROAD_ENC.traveller.left(e),after:e=>'Word on the road: a “wounded '+manWord(Wounded.nameOf(e))+'” lay by the road as bait for bandits.',
+    acts:[{icon:'food',label:'Tend the wounds',when:e=>!roadWarned(),facts:e=>roadTendFacts(e),need:()=>foodN()<ENC_TUNE.traveller.food&&'You have no food to spare.',tip:ROAD_TEND_TIP,run:e=>roadSpring(e)},
+      {icon:'gold',label:'Take the purse',when:e=>!roadWarned(),facts:e=>ROAD_ENC.traveller.acts[1].factsFor(e),ask:e=>ROAD_ENC.traveller.acts[1].asks(e),run:e=>roadSpring(e)},
+      {icon:'sword',label:'Approach ready',when:e=>roadWarned()&&!e.out,also:e=>['no ambush: they lose their edge',skill('scout')>=ENC_TUNE.lure.count&&e.foes.length+' bandits'],tip:e=>'Walk up to '+Wounded.prOf(e).him+' with your band closed up and weapons drawn.',
         out:()=>({fight:{amb:true,edge:false},say:'Your band closes up, weapons drawn. The bandits break cover too late.'})},
       {icon:'eye',label:'Call them out',when:e=>roadWarned()&&!e.out,again:true,facts:e=>[e.foes.length<=ENC_TUNE.lure.scare.max?insight(['they may run',oddsWord(roadScare())+' they run','a '+Math.round(roadScare()*100)+'% chance they run'],'know if they run'):'too many to scare off','then fight, or leave'],tip:'Shout to the brush that you see them. Leadership and Charisma may scare a small band off.',
-        run:e=>{e.out=1;if(e.foes.length<=ENC_TUNE.lure.scare.max&&roadRng().chance(roadScare()))return{end:true,gone:true,say:'You call them out. Seeing your band ready, they melt back into the woods, their “wounded man” limping after them.'};
+        run:e=>{e.out=1;if(e.foes.length<=ENC_TUNE.lure.scare.max&&roadRng().chance(roadScare()))return{end:true,gone:true,say:'You call them out. Seeing your band ready, they melt back into the woods, their “wounded '+manWord(Wounded.nameOf(e))+'” limping after them.'};
           return'You call them out. '+e.foes.length+' bandits rise from the brush, weapons out.'}},
       {icon:'sword',label:'Fight them',when:e=>!!e.out,also:e=>[e.foes.length+' bandits',roadLureOdds(e)],out:()=>({fight:{amb:true,edge:false},say:'You ride at them.'})}]},
   merchant:{n:'Wandering merchant',ico:'stall',w:2,ok:()=>true,on:'road',beh:'approach',call:'Wares! Fine wares!',hear:'A peddler hails you from the road to the {d}.',tip:'A peddler with his pack',
@@ -277,7 +282,10 @@ defineKinds('encounter',{trigger:'travelHour'},{
     facts:e=>[insight(['raiders','about '+roughly(e.n)+' raiders',e.n+' raiders'],'know how many'),'it will not hold out long'],
     left:()=>'You wait until the screams stop.',
     acts:[{icon:'sword',label:'Join the fight',also:e=>[insight(['raiders','about '+roughly(e.n),e.n+' raiders'],'know how many')],out:()=>({fight:true,say:'You draw steel and ride at the raiders.'})}]},
+  // (the ambush: its band in the trees where it waits (lie: its own spot in the woods, else the woods by it within ENC_TUNE.lure.woods
+  // px, else its own spot in the cover), where the battle finds them as it springs: roadFight)
   ambush:{n:'Ambush',ico:'sword',w:1.5,ok:(c=storyCtx())=>TERRAIN.on&&c.troops>=3&&!!c.cover,on:'cover',beh:'stay',ends:'unseen',hidden:true,spring:true,forced:true,vanish:true,foe:true,call:'Movement in the trees…',hear:null,tip:'Movement in the trees',
+    setup:e=>{const L=!hiddenAt(e.x,e.y)&&roadLie(e.x,e.y);e.lie=L?[L.x,L.y]:[e.x,e.y]},
     scene:()=>[['soldier','',-4,0,{band:1,col:ENC_RAIDER,v:1,a:.7}],['soldier','',5,-2,{band:1,col:ENC_RAIDER,v:3,face:-1,a:.7}]],
     text:e=>'The road runs on between '+COVER_SAY[coverAt(e.x,e.y)||'field']+'. No birdsong. Too late, your outriders see the glint of steel beside the road: an ambush.',
     acts:[{icon:'sword',label:'Close up and fight',also:()=>['caught in their trap'],out:()=>({fight:{amb:true},say:'Your band closes up on the road, weapons drawn.'})},
@@ -358,7 +366,7 @@ defineKinds('encounter',{trigger:'travelHour'},{
     facts:e=>[statRead('horse',{vague:'skittish',what:'to catch it'}),statHelps('horse'),P.gear.mount?'you have a mount: it is worth '+itemPrice('m_'+e.mk)+' gold':'a '+MOUNTS[e.mk].n],
     left:()=>'You leave it to its grazing.',
     acts:[{icon:'shoe',label:'Catch it',facts:e=>[P.gear.mount?'+'+itemPrice('m_'+e.mk)+' gold':'a '+MOUNTS[e.mk].n],tip:'Walk up slowly and take the reins. Fail and it bolts.',run:e=>roadCatchHorse(e)}]},
-  beggar:{n:'Beggar',ico:'gold',w:1.2,wf:()=>P.gold>=200?1.5:1,ok:(c=storyCtx())=>!!c.nearHold,on:'road',beh:'approach',leave:'Ignore',call:'Alms, my lord?',hear:'An old man calls to you from the road to the {d}.',tip:'An old man with a bowl',
+  beggar:{n:'Beggar',ico:'gold',w:1.2,wf:()=>P.gold>=200?1.5:1,ok:(c=storyCtx())=>!!c.nearHold,on:'road',beh:'approach',leave:'Ignore',call:'Alms, my {you.lord}?',hear:'An old man calls to you from the road to the {d}.',tip:'An old man with a bowl',
     setup:e=>{const t=Spatial.nearestHolding(e.x,e.y);e.race=t.races[0];e.fac=roadFac(t)},
     scene:()=>[['walk','beggar',0,0]],
     text:()=>'An old man in rags hobbles up and holds out a wooden bowl. His hands shake.',
@@ -445,14 +453,14 @@ const roadPush=()=>(P.sp||0)>=roadPushSp();
    (ENC_STAT.care, 0–1: kept on him as e.care, for what may follow), and the more he owes you: reputation and renown × (1 + it),
    and a chance (gift × it) he presses a little gold from his purse on you. Then he stands and makes his offer (story/wounded.js
    Wounded.healed: the page stays open). The lure shows the same (its tend springs the ambush) */
-const roadCareWord=c=>c<.25?'he will live':c<.5?'he will mend':c<.8?'he will recover well':'he will be on his feet in days';
-const roadTendFacts=()=>{const x=ENC_TUNE.traveller,c=statOdds('care');return['−'+x.food+' food','reputation +'+statMore('care',x.rep)+', renown +'+statMore('care',x.renown),'Medicine: '+roadCareWord(c),c>0&&'maybe a gift from his purse']};
+const roadCareWord=(c,w)=>c<.25?w.he+' will live':c<.5?w.he+' will mend':c<.8?w.he+' will recover well':w.he+' will be on '+w.his+' feet in days';
+const roadTendFacts=e=>{const x=ENC_TUNE.traveller,c=statOdds('care'),w=Wounded.prOf(e);return['−'+x.food+' food','reputation +'+statMore('care',x.rep)+', renown +'+statMore('care',x.renown),'Medicine: '+roadCareWord(c,w),c>0&&'maybe a gift from '+w.his+' purse']};
 // (he is on his feet and his gift rolled first, then the outcome: the food, the word of you, the gold; nothing of yours is read
 // in between, and the one draw is the same)
 function roadTend(e){const x=ENC_TUNE.traveller,c=statOdds('care'),t=nearHold();
-  e.care=Math.round(c*100)/100;e.healed=1;Wounded.healed(e);const r=roadRng(),g=c>0&&r.chance(c*x.gift)?r.int(x.gold[0],x.gold[1]):0;
+  e.care=Math.round(c*100)/100;e.healed=1;Wounded.healed(e);const r=roadRng(),g=c>0&&r.chance(c*x.gift)?r.int(x.gold[0],x.gold[1]):0,w=Wounded.prOf(e);
   return{food:-x.food,rep:[t&&t.name,statMore('care',x.rep)],renown:statMore('care',x.renown),gold:g,
-    say:'Bandaged and fed, '+(e.ander?'the sellsword':'he')+' gets to his feet. He swears to tell '+(t?t.name:'everyone')+' of your kindness.'+(g?' He presses '+g+' gold from his purse into your hand.':'')}}
+    say:'Bandaged and fed, '+(e.ander?'the sellsword':w.he)+' gets to '+w.his+' feet. '+w.He+' swears to tell '+(t?t.name:'everyone')+' of your kindness.'+(g?' '+w.He+' presses '+g+' gold from '+w.his+' purse into your hand.':'')}}
 // Join the hunt (ENC_TUNE.hunters): the haul, more by your Survival, Hunting and Archery (ENC_STAT.hunt): meat × (1 + it), furs × it
 const roadHaul=()=>{const x=ENC_TUNE.hunters,h=statOdds('hunt');return{meat:Math.round(x.meat*(1+h)),furs:Math.round(x.furs*h)}};
 // (a runaway's kind: the mount of the region, by its climate)
@@ -492,7 +500,15 @@ function roadLureW(){const x=ENC_TUNE.lure,nr=o=>Math.hypot(o.x-P.x,o.y-P.y)<x.n
 const roadWarned=()=>skill('scout')>=ENC_TUNE.lure.warn;
 const roadLureOdds=e=>{const [w,c]=odds(rating(e.foes));return '<span class="'+c+'">'+w+'</span> odds'};
 const roadScare=()=>{const s=ENC_TUNE.lure.scare;return clamp(s.base+s.lead*skill('lead')+s.cha*P.attr.cha,s.lo,s.hi)};
-function roadSpring(e){const m='You kneel beside him, and he grins. Bandits burst from the brush: an ambush!';return{log:[m,'bad'],fight:{amb:true},say:m}}
+function roadSpring(e){const w=Wounded.prOf(e),m='You kneel beside '+w.him+', and '+w.he+' grins. Bandits burst from the brush: an ambush!';return{log:[m,'bad'],fight:{amb:true},say:m}}
+// where an ambush's band stands as its fight begins: called out, at the tree line (edge); else where it lies hidden (lie); none
+// (one from before, the caravan's raiders): null
+const roadLieOf=e=>e.out&&e.edge?e.edge:e.lie||null;
+// (warned, the brush moves where they lie: a rustle in the trees; with count, a glint of steel too: gfx/encounterscene.js)
+const roadLureHint=e=>roadWarned()&&e.lie?[['rustle','',0,0,{at:e.lie,v:skill('scout')>=ENC_TUNE.lure.count?1:0}]]:[];
+// (called out: three of them stand at the tree line, a pace apart across his way to it, facing him)
+function roadLureOut(e){const [ex,ey]=e.edge||[e.x+(e.dir<0?14:-14),e.y],d=Math.hypot(ex-e.x,ey-e.y)||1,ux=(ex-e.x)/d,uy=(ey-e.y)/d;
+  return [[-9,1],[0,5],[9,3]].map(([s,v])=>{const x=ex-uy*s,y=ey+ux*s;return['soldier','',0,0,{band:1,col:ENC_RAIDER,v,at:[x,y],face:e.x>=x?1:-1}]})}
 // the messenger's news: a place you have not found (it goes on your map), where a lord rides, or the wars
 function roadNews(){const out=[],s=W.sites.filter(x=>!x.seen&&x.scoutable).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[0],
     ls=W.lords.filter(l=>!l.dead&&!l.inside&&l.x>=0&&l.y>=0&&FACS[l.fac]),wars=FIDS.flatMap(a=>FIDS.filter(b=>a<b&&atWar(a,b)).map(b=>[a,b]));
@@ -506,7 +522,7 @@ function roadNews(){const out=[],s=W.sites.filter(x=>!x.seen&&x.scoutable).sort(
 const roadSprint=()=>1;
 const catchSpd=()=>ENC_SPD.run*Math.max(ENC_CATCH.lo,1-ENC_CATCH.agi*P.attr.agi);
 const catchReach=()=>ENC_CATCH.reach+ENC_CATCH.agiReach*P.attr.agi;
-function catchHours(dist,who){const g=MAP_BASE*travelMul()*(P.morale<25?.8:1)*hurryPace()-catchSpd()*(who?EscapeStamina.factor(who):1);return dist<=catchReach()?0:g>0?(dist-catchReach())/moveStep(g,Clock.hourSecs()):Infinity}
+function catchHours(dist,who){const g=MAP_BASE*travelMul()*(P.morale<25?.8:1)-catchSpd()*(who?EscapeStamina.factor(who):1);return dist<=catchReach()?0:g>0?(dist-catchReach())/moveStep(g,Clock.hourSecs()):Infinity}
 const catchOdds=()=>statOdds('horse');
 // (the thief's Insight read: can you run him down, from here)
 function roadChaseRead(e){const h=catchHours(e.fromYou(),e),H=ENC_CATCH.hours;

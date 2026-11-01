@@ -13,7 +13,7 @@ class WildHunt{
   }
   static start(){
     const area=this.choice;if(!area||B||G.mode!=='dialog'||P.stay||Math.hypot(P.x-area.x,P.y-area.y)>=HUNT_AREA.radius-WORLD_BATTLE.inner)return false;const herds=this.prey(area);if(!herds.length)return false;
-    this.choice=null;breakCamp();followStop();G.chase=null;G.pitch=null;G.byRoad=null;if(G.hurry)setHurry(false);G.mode='world';hidePanel();
+    this.choice=null;breakCamp();followStop();G.chase=null;G.pitch=null;G.byRoad=null;G.mode='world';hidePanel();
     const ref=herds[0];G.enc={kind:'hunt',name:'Wildlife hunt',ref,list:[],lv:1,allies:[],foes:[],hunt:{...area,herds}};return new HuntBattleSetup({enemies:[],lv:1,deploy:false,surprise:true}).start();
   }
   static drawArea(cam){const a=this.choice;if(!a)return;const k=dprOf()/VS;ctx.save();ctx.strokeStyle='#d8c179';ctx.lineWidth=1.5*k;ctx.setLineDash([6*k,4*k]);ctx.beginPath();ctx.arc(a.x-cam.x,a.y-cam.y,HUNT_AREA.radius,0,Math.PI*2);ctx.stroke();ctx.restore()}

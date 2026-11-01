@@ -9,7 +9,7 @@ class Refugees extends WorldObject{
   here(){return W.refugees.includes(this)}
   get meetsAnyTime(){return true}
   meet(){refugeeMeet(this)}
-  inView(V){return this.fromYou()<=V*1.2}// (on the road: seen a little past your sight, woods or not)
+  inView(V){return yourSight(V).sees(this.x,this.y,1.2)}// (on the road: seen a little past your sight, woods or not)
   pick(at){at.add(this,10,4)}
   // a few of them walking (people.js refugeeSprite: a step each WALK.foot px walked, each a little out of time), how many near you
   draw(ents,cam,V){if(!this.inView(V))return;const r=this;
@@ -46,13 +46,14 @@ function updateRefugees(d){
   for(const r of W.refugees){
     r.cool=Math.max(0,r.cool-d);let to=townBy(r.to);
     if(!to||besieged(to)||to.owner!=='player'&&atWar(to.owner,(townBy(r.from)||{}).owner)){const f=townBy(r.from);to=f&&refuge(f);if(!to){r.gone=true;continue}r.to=to.name}
-    const dx=P.x-r.x,dy=P.y-r.y,pd=Math.hypot(dx,dy),afraid=r.fear&&TravelAwareness.sees(asRefugees(r));
+    // (afraid of you: away while they see you or remember you (engage.js fearSeen), and never on to their refuge through you: safeRefuge)
+    const dx=P.x-r.x,dy=P.y-r.y,pd=Math.hypot(dx,dy),o=asRefugees(r),afraid=r.fear&&(TravelAwareness.sees(o)||fearSeen(o)&&!safeRefuge(r,gateGoal(to),armyMid(P)));
     if(afraid){Router.flee(r,{x:r.x+dx,y:r.y+dy},moveStep(REFUGEE_SPD,d));r.dir=dx>0?-1:1}
     else{const ox=r.x;Router.travel(r,gateGoal(to),moveStep(REFUGEE_SPD*Math.max(.5,speedAt(r.x,r.y)||1),d));r.dir=r.x>=ox?1:-1}
     if(Math.hypot(to.x-r.x,to.y+12-r.y)<8){refugeesArrive(r,to);r.gone=true;continue}
     // bandits rob them of what they carry, and some do not survive it
     const b=!r.robbed&&bandits.find(o=>Math.hypot(o.x-r.x,o.y-r.y)<12);
-    if(b){r.robbed=true;r.goods={};r.purse=0;r.n=Math.max(2,r.n-rint(0,2));if(pd<vis())log('Bandits fall on refugees from '+r.from+'.','bad')}
+    if(b){r.robbed=true;r.goods={};r.purse=0;r.n=Math.max(2,r.n-rint(0,2));if(inSight(r.x,r.y))log('Bandits fall on refugees from '+r.from+'.','bad')}
     if(pd<10&&r.cool<=0&&!G.modal&&G.chase===r){refugeeMeet(r);return true}
   }
   W.refugees=W.refugees.filter(r=>!r.gone);return false;

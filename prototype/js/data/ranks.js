@@ -29,11 +29,11 @@ const RANKS={max:5,
    listed there and not again with its traits: the ladder builds on it (the owner: skills and traits "not overlapping", "relevant
    to each other") ---------- */
 const RANK_SKILLS={
-  spear:[{traits:['brace']},
-    {ab:'brace',up:{dur:3}},
+  spear:[{traits:['brace'],foot:true},
+    {ab:'brace',up:{dur:3},foot:true},
     {id:'reach',n:'Long reach',d:'+10% reach.',reach:1.1,up:{reach:.05}},
     {ab:'rally',up:{gain:5}},
-    {id:'hedge',n:'Hedge of spears',d:'Set spears on the flanks too, always, Brace ordered or not: only a charge from behind still hits home.'}],
+    {id:'hedge',foot:true,n:'Hedge of spears',d:'Set spears on the flanks too, always, Brace ordered or not: only a charge from behind still hits home.'}],
   bow:[{traits:['longshot','elvenaim']},
     {ab:'fire',up:{mul:.05}},
     {id:'aim',n:'Steady aim',d:'Their shots 10% truer.',aim:.9,up:{aim:-.05}},

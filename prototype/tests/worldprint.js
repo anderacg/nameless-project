@@ -282,7 +282,53 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // queue flush back to txt restored the old W6 and all 16 checks. World data, simulation, saves, W1-W5, W7-W8 and B2 held.
 // (W1, W3, W4, W5 re-recorded 2026-10-30, on purpose: the woods' glades (worldgen.js GEN_GLADE, stage 9b, after the holdings, roads
 // and camps, so none of them moved) open ground in every wood of the world; W2 the same as before)
-const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'ba811bfe',W4:'2bf73f82',W5:'59a8b3fa',W6:'ca946ef1',W7:'b1a67c01',W8:'a465c56e',B2:'8712b6a2'};
+// (W3, W5-W8 and B2 re-recorded 2026-11-01, on purpose, at the sweep fix after the night of 2026-10-31. The baseline had stood since
+//  4dd5c19 for W6-W8 and B2 (7abcc4c re-recorded only W1, W3-W5). Every move since, found commit by commit on the first-parent
+//  history (a worktree at each commit, worldprint -Seed 1), each at a deliberate change by its message:
+//  696de87 the owner's notes of 2026-10-25 (world speed, stamina): W7 b1a67c01>362675f6, W8 a465c56e>a1706c0a; e429a13 (wages),
+//  544a6ad (world projectiles), 00ff53a (travel suspicion), a370b85, 251e298, 7bf495e (the awareness eyes): W6 ca946ef1>37d46e05>
+//  4ba9619b>c6e62cc9>b9abfd36>0309b69e>00e43885; 177605b wildlife flee NPCs: W7 >e9ae8f2b, W8 >1e44ed99; aa3ed8d escape fatigue and
+//  hunting areas: W6 >73de5eed, W7 >5d14aa18, W8 >638acc9a, B2 8712b6a2>041ef9cb; 67d4a94 free-for-alls: W7 >75359bd7; 3b9fbcb
+//  waylay: W7 >953d6057, W8 >53e3067b; 322d202 a codex merge (Start Battle in the tests, sites off roads, companions' parties by your
+//  group limit): W6 >5044015b, W7 >2db42af1, W8 >1b463b3e, B2 >7581642d; bebc14a captivity: W7 >8ae9da09, B2 >0a9d85fb; 3b0ff21 the
+//  map's stamina badges gone: W6 >4f6f90b0; b0936ed, 7b6d7cb dialogue: W7 >8f2f1ed8>b4cee2d7, B2 >8d855332; 3634e7a prisons: W7
+//  >a76f7726, B2 >57f1b515; d3158a5, 03371f2 hosts: W7 >90adcffc>1ef4227c, B2 >06ffd309; 46be83f the Nobody: W7 >0fd83ad6, B2
+//  >664a93ef; 577cae4 a hero sprite (W6 >384c2ff4>95bb5a6e), reverted at 762e128 (W6 4f6f90b0 again); 7abcc4c the glades (W3
+//  224e40e8>ba811bfe, W5 f284901d>59a8b3fa, recorded there): W6 >4d0788c2, W7 >e630360c, W8 >b9ea3d9d, B2 >22b80ef5; f8c7c00 world
+//  battles on in the tests: W6 >4aaf2ce9, W7 >f29bdc5b; 1765c21 marchers apart: W6 >6e7aee49; 454af04, 8ddd843, 72cbebc ranks: W7
+//  >46a6a16b>656144af>f0407fe0, B2 >27249675; 367c115 beasts on lords: W7 >0e5cee1e; 275f3d2, b6543dc the smooth march, 62aee5f
+//  idle life, 6e66dd7 recruited prisoners: W6 >998cb9c6>1f61299e>c832c8c5>9d0d3a44; 803bd3a whole units: W3 >acc3f66b, W7
+//  >ca58c8e8, B2 >0abb1e12. Then the night of 2026-10-31: the building clusters re-laid (engine/build*.js): W5 59a8b3fa>0b1fd5be,
+//  and W6's first two spots; the troop tree (data/units.js, races.js, matchups.js, world/holding.js: the kinds, their names and
+//  stats, the hires, the mage): W3 acc3f66b>3d4ee001, B2 0abb1e12>ccd4914c, with W7, W8 and W6's first two spots; the map's tiers
+//  (WORLD_LOD) and travel 1.6x (WORLD_SCALE.travel): W7 ca58c8e8>ec3fbce8, W8 b9ea3d9d>8a273919; the figures (body and gear),
+//  the map banner and the rings on the men's middle: W6 9d0d3a44>2686f07a (all six parts, cd1e7875 7684c955 454f6f5f 647fde13
+//  ab701f26 b4d2da5e to f8f4b413 788a4114 a7dc90b5 2394fece 08abb60a 78a4df10). Checked: with engine/build*.js and those four troop
+//  files as at 803bd3a, WORLD_LOD.on false and WORLD_SCALE.travel 2, W3, W5, W7, W8 and B2 are 803bd3a's again. W6 then still
+//  differs at all six parts, also with world battles off (no marchers drawn: the map's small figures and banners) and with
+//  gfx/people.js, sprites.js and weapons.js as at 803bd3a: its last part is the drawing, not proven by a switch (render.js and
+//  march.js as at 803bd3a do not load with the rest). W1, W2, W4 and the five sums held)
+// (W6 re-recorded 2026-11-01, on purpose, your sight every man's (fog.js Sight; the owner: "the vision and fog of war should be
+//  based on all army units not only heroes"): the remembered scene is cut out under each eye by a feathered disk drawn once a
+//  radius and stamped (fog.js fogDisk; a gradient drawn afresh for a dozen eyes cost ms a frame), not a gradient drawn at the eye
+//  each frame, so its rim's alpha comes from a picture: measured on begin's screen, one pixel's alpha 1/255 apart. All six parts
+//  move (f8f4b413 788a4114 a7dc90b5 2394fece 08abb60a 78a4df10 to ed2680a6 85467fe0 ee00bcaa 6cb20dd5 28b24219 205b4506). Checked:
+//  with the cut-out drawn as before (a gradient disk at each eye, straight onto the scene) and the new sight whole (your army's
+//  middle and every man's eye), W6 is 2686f07a again: begin's spots see as before (you alone, your eye where you stand). W1-W5, W7,
+//  W8, B2 and the five sums held: what you learn and the save unchanged. Was W6 2686f07a)
+// (W7 re-recorded 2026-11-01, on purpose, a host's column by its rings (world/hosts.js Host#back, Host#places; the owner: "big army,
+//  bigger interaction touchpoint", armies never inside one another): a marshal's lords march each its ring behind the one ahead,
+//  HOSTS.gap px between the rings, not 22 px apart, so the realms' campaigns move as the days run. Checked: with world/hosts.js as
+//  before (march.js's jam rule kept), W7 is ec3fbce8 again; W1-W6, W8, B2 and the five sums held. Was W7 ec3fbce8)
+// (W6 and W8 re-recorded 2026-11-01, on purpose, the army is where its men are and its ring the outline of their ground (march.js
+//  MARCH_MOVE.menCentre, MARCH_RING; the owner: "why don't you calculate the center based on unit's position", "how about making a
+//  ring like freeform based on the area?", meetings measure to the outline). W6: the rings drawn are your men's outline, not
+//  circles, and you stand where your men are (the camera with you): all six parts move (ed2680a6 85467fe0 ee00bcaa 6cb20dd5 28b24219
+//  205b4506 to 7617572a 1096644e eccb3319 93623e46 cfaf7c14 dcfb8c7f). W8: every army near you put at its men's middle each
+//  moment, a little behind where its brain moved it (you at 1430.8,1447.4 for 1430.9,1447.4), so the parties' places after 600
+//  frames move. Checked: with MARCH_MOVE.menCentre, MARCH_RING.on and MARCH_RING.meet false, W6 is 4624b5bf and W8 8a273919
+//  again; W1-W5, W7, B2 and the five sums held both ways. Was W6 4624b5bf, W8 8a273919)
+const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'3d4ee001',W4:'2bf73f82',W5:'0b1fd5be',W6:'83e0a0f1',W7:'26e752f8',W8:'f3fea1fb',B2:'ccd4914c'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

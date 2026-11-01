@@ -37,8 +37,11 @@ const ENC_WALK={min:64,wind:.75,far:400};
    Phase 4: pilgrims (n [from, to] of them; Pray with them: morale, rep in their holding, walk: hours walking with them; alms: gold,
    morale, xp; Take the coins: gold, morale), the lure (the fake wounded: w its weight, × night, × wild (no holding's land), ×
    (1 + bandit for each band or camp within near px, at most bands of them), never over cap (the real one weighs 2); warn: the
-   Scouting that sees the brush move, count: that tells how many and the odds; scare: calling them out may send a band of max or
-   fewer running: base + lead × Leadership + cha × Charisma, between lo and hi), the sealed letter (stale: [from, to] days it keeps;
+   Scouting that sees the brush move (and a rustle in the trees where they lie), count: that tells how many and the odds (a glint
+   of steel there too); scare: calling them out may send a band of max or fewer running: base + lead × Leadership + cha ×
+   Charisma, between lo and hi; woods: he lies only where the trees come within this many px of him on his side away from the
+   road (within arc rad of straight away, rays a side: world/road.js roadLie), his band hide px into them past the tree line,
+   and there the battle finds them when it springs: the road's ambush too, where woods are by it), the sealed letter (stale: [from, to] days it keeps;
    worth: gold [from, to] × its kind's; w: how likely each kind is, of those there can be; sell: × worth a rival pays, deliver: ×
    worth its lord pays; opened: × for an opened one, old: × for a stale one; rep: sell, deliver, seen (what delivering costs when
    the robbery was seen); witness: the roll when you rob the rider: base + per for each soul within r px of him + hold when a
@@ -55,7 +58,7 @@ const ENC_TUNE={wagon:{gold:15},traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5
   funeral:{n:[3,5],honor:2,morale:4},wedding:{morale:10,hours:2,gift:25,rep:5},beggar:{gold:[5,10,20],honor:[1,2,3]},messenger:{purse:[8,16]},
   child:{rep:6,morale:5,late:3},refugees:{grain:4,renown:1,min:8,late:1},
   pilgrims:{n:[2,4],morale:8,rep:3,walk:1,alms:20,almsMorale:12,xp:25,coins:12,coinsMorale:8},
-  lure:{w:.5,night:1.6,wild:1.4,bandit:.3,bands:3,near:400,cap:1.6,warn:3,count:5,scare:{max:6,base:.2,lead:.06,cha:.05,lo:.05,hi:.85}},
+  lure:{w:.5,night:1.6,wild:1.4,bandit:.3,bands:3,near:400,cap:1.6,warn:3,count:5,woods:40,hide:12,arc:1.2,rays:4,scare:{max:6,base:.2,lead:.06,cha:.05,lo:.05,hi:.85}},
   letter:{stale:[5,10],worth:[30,45],kind:{army:1.4,attack:1.3,deal:1.1,news:.6},w:{army:1,attack:1,deal:.7,news:.8},sell:1.2,deliver:.8,opened:.5,old:.15,
     rep:{sell:4,deliver:5,seen:6},witness:{r:120,base:.08,per:.12,hold:.25,holdR:160,scout:.07,night:.5,lo:.02,hi:.9},reveal:5},
   /* the small encounters (IMPLEMENTATION_PLAN §10.3; each kind's w its weight, again: the days before it comes again, once the

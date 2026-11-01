@@ -12,6 +12,8 @@ param(
 # Usage from PowerShell: .\tests\run-tests.ps1 -Suites parties,ranks [-Seed 1,2] [-Parallel 4]
 # The world: the generated one, the only one (the old hand-made map is gone: doc/WORLD_DESIGN.md D49).
 # -Gen: kept so old commands still work (it adds nothing).
+# A suite whose file has a line 'window.PHONE=true' runs in a phone's window: 844 x 390, touch (a phone on its side, as AGENTS.md
+# targets), so its CSS and the mobile HUDs (input.js MobileWorldHud's media) see a phone.
 # Output: "== suite" (and "# seed=N"), the suite's lines (PASS/FAIL/EXC/ERR/INFO...), then "# N pass, N fail, N.N s".
 # The last lines ("# summary: ...") total every suite; the exit code is 1 if any line of any suite reads FAIL, EXC or ERR.
 # The flake finder: -Repeat N runs each suite N times unseeded (-Repeat N -Sweep: once with each seed 1..N instead; -Seed is
@@ -106,6 +108,11 @@ $worker = {
         # (saves and settings left in the reused profile by an earlier run)
         if (!$cleared) { Invoke-Cdp $socket 'Storage.clearDataForOrigin' @{origin='file://'; storageTypes='local_storage,indexeddb'} | Out-Null; $cleared = $true }
         $pageUrl = ([Uri](Join-Path $ProjectRoot 'Ashmark.html')).AbsoluteUri + '?test=' + $run.Suite
+        $suiteFile = Join-Path $ProjectRoot ('tests/' + $run.Suite + '.js')
+        if ((Test-Path -LiteralPath $suiteFile) -and (Select-String -LiteralPath $suiteFile -Pattern '^window\.PHONE=true' -Quiet)) {
+          Invoke-Cdp $socket 'Emulation.setDeviceMetricsOverride' @{width=844; height=390; deviceScaleFactor=2; mobile=$true} | Out-Null
+          Invoke-Cdp $socket 'Emulation.setTouchEmulationEnabled' @{enabled=$true; maxTouchPoints=5} | Out-Null
+        }
         if ($null -ne $run.Seed) { $pageUrl += '&seed=' + $run.Seed }
         Invoke-Cdp $socket 'Page.navigate' @{url=$pageUrl} | Out-Null
         $out = ''

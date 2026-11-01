@@ -96,10 +96,10 @@ function physBacked(t,a){
     const dx=o.x-t.x,dy=o.y-t.y,al=dx*c+dy*s;if(al>2&&al<H.supR&&Math.abs(dx*s-dy*c)<8){m+=H.support*physMass(o);n++}}
   return m*(shieldWallActive(t)?H.wall:1)}
 /* thrown back by dv px/s along a; down a moment if it may (down: false never; true, or the footing it must beat: a number, ×
-   what fells him) and it is hard enough (physFells) */
+   what fells him) and it is hard enough (physFells); a rider, out of the saddle (battle/dismount.js Dismount.throws) */
 function physThrow(t,a,dv,down){
-  if(!(dv>0)||t.hp<=0)return;t.kx=(t.kx||0)+Math.cos(a)*dv;t.ky=(t.ky||0)+Math.sin(a)*dv;
-  if(down&&physFells(t,dv,down===true?1:down))physFall(t,dv)}
+  if(!(dv>0)||t.hp<=0)return;t.kx=(t.kx||0)+Math.cos(a)*dv;t.ky=(t.ky||0)+Math.sin(a)*dv;if(!down)return;const res=down===true?1:down;
+  if(physFells(t,dv,res))physFall(t,dv);else if(Dismount.throws(t,dv,res))Dismount.down(t,'thrown')}
 /* the one rule for going down: thrown hard enough for his weight (dv over PHYSICS.hit.down × his mass, × res: his footing; heavy
    men stand firmer), never a rider or a big one, nor one down already; with movesets (movesets.js; not MOVESETS.old) nor one
    rolling clear, nor one up again within MOVESETS.grace s */
@@ -117,10 +117,11 @@ function physImpact(u,t,m){
   physThrow(t,a,dv,fell);
   for(const o of spatialOn()?SG.near(t.x,t.y,H.splashR+1,t.team,false):B.units)if(o!==t&&battleFriend(o,t)&&o.hp>0&&!o.s.big&&Math.hypot(o.x-t.x,o.y-t.y)<H.splashR)physThrow(o,a,dv*H.splash*physMass(t)/physMass(o),wb>0&&fell);
   u.vel=Math.min(u.vel,vc);if((u.s.charge||u.s.big)&&m>SHAKE.charge)jolt(SHAKE.amp*clamp(ma*va/H.shake,0,1.25))}
-// braced spears take a charge (morale.js chargeMul, physics on): the rider stopped dead, thrown back, staggered, shaken and hurt
+// braced spears take a charge (morale.js chargeMul, physics on): the rider stopped dead, thrown back, staggered, shaken and hurt;
+// now and then (DISMOUNT.brace × the momentum, the battle's own stream) out of the saddle (battle/dismount.js)
 function physBraced(u,t,m){
   const H=PHYSICS.hit,a=Math.atan2(u.y-t.y,u.x-t.x),v=u.vel||0;u.vel=0;u.kx=(u.kx||0)+Math.cos(a)*v*H.braceBack;u.ky=(u.ky||0)+Math.sin(a)*v*H.braceBack;stun(u,H.braceStun);if(!steady(u))shake(u,H.braceShock*m);
-  hit(t,u,meleeDmgOf(t.s)*H.braceHurt*m);fx(t.x,t.y-6,'#cfe0ff',4)}
+  hit(t,u,meleeDmgOf(t.s)*H.braceHurt*m);fx(t.x,t.y-6,'#cfe0ff',4);if(Dismount.rider(u)&&u.s.mounted&&u.hp>0&&physRng()()<DISMOUNT.brace*m)Dismount.down(u,'thrown')}
 /* a blow's throw (attacks.js, physics on). A normal one, from one as heavy as blowMass (a big beast, a rider): the one it hits
    thrown by push of its weight's share (MOVESETS.push), never down (old movesets: in full, and down if hard enough). A hard
    attack (Hd: movesets.js) from anyone: by its kb, against his ranks and shield wall behind him (physBacked), and down if that

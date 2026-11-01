@@ -37,7 +37,11 @@ class LordBrain extends Brain{
     const dread=W.lords.find(o=>!o.dead&&!o.inside&&o!==l&&atWar(o.fac,l.fac)&&Math.hypot(o.x-l.x,o.y-l.y)<WORLD_SCALE.ai.dread&&o.power()>=l.power()*1.5);
     if(dread&&l.state==='march'&&fiefsOf(l.fac).length){l.state='home';l.tgt=Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name}
     if(!(hostile&&l.cool<=0&&l.state!=='siege'&&stanceMove(l,st,pd,v.dx,v.dy,see,moveStep(26*mul,d),true))){
-      const t=townBy(l.tgt);if(!t){lordThink(l);return false}
+      let t=townBy(l.tgt);if(!t){lordThink(l);return false}
+      // (afraid of you (fearOf) or of a lord far stronger (dread): never home through him; another fief of his that is safe, else away
+      // from him (the owner, 2026-11-01: "same goes for all entity"; engage.js safeRefuge))
+      {const f=hostile&&fearOf(l,st)||dread;if(f&&l.state!=='siege'&&!safeRefuge(l,{x:t.x,y:t.y+12},f)){const alt=Spatial.nearest(fiefsOf(l.fac).filter(h=>h!==t&&safeRefuge(l,{x:h.x,y:h.y+12},f)),l.x,l.y);
+        if(!alt){Router.flee(l,f,moveStep(26*mul,d));return false}l.tgt=alt.name;t=alt}}
       const tx=t.x+(l.state==='siege'?(l.id.endsWith('0')?-16:16):0),ty=t.y+12,dd=Math.hypot(tx-l.x,ty-l.y);
       if(dd>4){const step=moveStep(26*mul,d);if(dread)EscapeStamina.run(l,dread,step,n=>Router.travel(l,{x:tx,y:ty,tw:t},n),true);else Router.travel(l,{x:tx,y:ty,tw:t},step)}
       else if(l.state==='march'){
@@ -53,20 +57,27 @@ class LordBrain extends Brain{
   }
 }
 
-// a bandit band: hunts you if it is the stronger, flees if it is not, wanders otherwise, and shelters in a camp by night
+// a bandit band: hunts you if it is the stronger, flees if it is not, wanders otherwise, and shelters in a camp by night. Afraid of
+// your army and remembering it (engage.js fearOf), it runs from it, just after a fight too (its cool-down), or by night into a camp
+// your army is neither at nor across the way to (campNear); never into your army to reach its own
 class BandBrain extends Brain{
   think(b,d,night){
     if(inFight(b))return false;
     const v=this.look(b);this.cool(b,d);
     if(b.waylay||!TravelAwareness.sees(b)&&Waylay.consider(b,d)){const r=Waylay.step(b,moveStep(partySpeed(b,b.troops),d),d);if(r==='met')return true;if(r)return false}// (lying in wait: waylay.js)
-    const st=stance(b.power(),b),home=night&&campNear(b);
-    if(b.cool>0||!stanceMove(b,st,v.d,v.dx,v.dy,TravelAwareness.sees(b)?travelDetection(b).range:0,moveStep(partySpeed(b,b.troops),d),true)){
-      if(home){Router.travel(b,home,moveStep(16,d))||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),moveStep(16,d)));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
+    const st=stance(b.power(),b),fear=fearOf(b,st),home=night&&campNear(b,fear),sp=moveStep(partySpeed(b,b.troops),d);
+    if(fear&&home||b.cool>0&&!fear||!stanceMove(b,st,v.d,v.dx,v.dy,TravelAwareness.sees(b)?travelDetection(b).range:0,sp,true)){
+      if(home){const s=fear?sp*.85:moveStep(16,d);Router.travel(b,home,s)||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),s));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
       else if(!(b.lootGo&&FieldLootQuest.seek(b,d))){b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(12,d))}}
     if(this.canMeet(b,v.d)){meetBand(b);return true}
     return false;
   }
 }
+// (a band that fought in your battle, against you or beside you, knows where your army stands: the weaker leaves the field
+// remembering every group of it (TravelAwareness), afraid of it as if it had just seen it; battle/sides.js puts it back on the map.
+// Its power weighed without caching it (pw), so the battle's outcome stays as it was)
+worldOn('battle:ended',({enc:e})=>{if(!e)return;for(const f of [e.ref,...(e.foes||[]),...(e.allies||[])]){const b=f&&(f.src||f);
+  if(b&&b.mapKind==='band'&&bandits.includes(b)&&!b.fight&&stance(b.pw||rating(b.troops,chiefLv(b)))==='afraid')for(const g of TravelAwareness.snapshot||TravelGroups.groups())TravelAwareness.notice(b,g.id)}});
 
 // your companion's party: keeps clear of what it cannot beat, runs down bandits and weaker enemies near it, otherwise follows
 // you, patrols its holding's land, comes back to you, or shelters in a holding (stay.js)
@@ -78,7 +89,8 @@ class CompanionBrain extends Brain{
     this.cool(p,d);const sp=moveStep(partySpeed(p,p.troops)*.9,d),ox=p.x,mine=p.power(),A=WORLD_SCALE.ai,go=(x,y,s)=>{const dd=Math.hypot(x-p.x,y-p.y);if(dd>1)Router.travel(p,{x,y},s)||walk(p,x-p.x,y-p.y,Math.min(dd,s))};
     const foes=[...bandits.filter(b=>!b.fight),...W.lords.filter(l=>!l.dead&&!l.inside&&!l.fight&&hostileTo(l.fac))].map(o=>[o,Math.hypot(o.x-p.x,o.y-p.y),o.power()]).filter(([,dd])=>dd<A.compFoes).sort((a,b)=>a[1]-b[1]);
     const strong=foes.find(([,,pw])=>pw>mine*1.2),prey=p.order!=='return'&&p.order!=='follow'&&foes.find(([,,pw])=>pw<=mine);// (following, it keeps its place in your host: hosts.js)
-    if(strong&&strong[1]<A.compFlee){EscapeStamina.run(p,strong[0],sp,n=>go(P.x,P.y,n),true)}
+    // (a foe too strong near: back to you, unless he stands at you or across the way, then away from him: engage.js safeRefuge)
+    if(strong&&strong[1]<A.compFlee){if(safeRefuge(p,P,strong[0]))EscapeStamina.run(p,strong[0],sp,n=>go(P.x,P.y,n),true);else Router.flee(p,strong[0],sp)}
     else if(prey&&p.cool<=0){go(prey[0].x,prey[0].y,sp);if(prey[1]<10){startFight([p],[prey[0]]);p.cool=3}}
     else if(p.order==='follow')Host.keep(p,sp,go);// (its place in your column: hosts.js)
     else if(p.order==='return'){go(P.x,P.y,sp*1.2);if(Math.hypot(P.x-p.x,P.y-p.y)<12)cpDisband(p.cid,true)}
@@ -101,11 +113,12 @@ class PatrolBrain extends Brain{
     const threat=W.lords.find(l=>!l.dead&&!l.inside&&atWar(l.fac,p.fac)&&Math.hypot(l.x-p.x,l.y-p.y)<PATROL.see);
     const home=besieged(t)||watchOf(p)!==watchNow()||p.troops.length<t.T.patrol.size/2||threat&&threat.power()>p.power();
     const v=this.look(p),pd=v.d,hostile=hostileTo(p.fac),wanted=!!crimeAt(t)&&p.fac!=='player',sees=TravelAwareness.sees(p);
-    const afraid=hostile&&stance(p.power(),p)==='afraid';
+    const afraid=hostile&&stance(p.power(),p)==='afraid',fear=afraid&&fearOf(p,'afraid');
     if(sees&&(hostile||wanted)&&!home&&!afraid&&p.cool<=0){const st=G.encCool>0?Math.min(sp,pd-GRACE_GAP):sp;// (in the grace, no step into the gap)
       if(st>0)Router.travel(p,{x:p.x+v.dx,y:p.y+v.dy},st)||walk(p,v.dx,v.dy,Math.min(pd,st));
       if(this.canMeet(p,pd)){patrolMeet(p);return true}}
-    else if(afraid&&sees){EscapeStamina.run(p,P,sp,n=>Router.travel(p,gateGoal(t),n),true)}
+    // (afraid of you, in its sight or remembered: home and in, unless your army is at its gate or across its way there: then away from it)
+    else if(fear){const g=gateGoal(t);if(!safeRefuge(p,g,fear))Router.flee(p,fear,sp);else{EscapeStamina.run(p,P,sp,n=>Router.travel(p,g,n),true);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8)t.watch.back(p)}}
     else if(threat&&!home&&Math.hypot(threat.x-p.x,threat.y-p.y)<16)startFight([p],[threat]);
     else{
       const b=!home&&LandDefence.prey(p);
@@ -120,15 +133,19 @@ class PatrolBrain extends Brain{
 
 // a caravan (CaravanParty, caravans.js): on the road to its market (keeping to the roads where they go: Router.travel's road),
 // off it only away from you if you are its enemy; bandits and enemy lords near it fall on it
+// (each caravan's heading on its way, its last step's: never saved)
+const CARAVAN_HEAD=new WeakMap();
 class CaravanBrain extends Brain{
-  // (another caravan just in front of it, heading as it does: it holds back, CARAVAN_GAP)
-  behind(c,gate,gd){const X=CARAVAN_GAP,ux=(gate.x-c.x)/(gd||1),uy=(gate.y-c.y)/(gd||1);
-    return W.caravans.some(o=>{if(o===c||o.gone||o.idle||inFight(o)||Math.hypot(o.x-c.x,o.y-c.y)>X.px)return false;const g=gateGoal(townBy(o.to)||{x:o.x,y:o.y}),od=Math.hypot(g.x-o.x,g.y-o.y)||1;
-      return (ux*(g.x-o.x)+uy*(g.y-o.y))/od>=X.dot&&(o.x-c.x)*ux+(o.y-c.y)*uy>0})}
+  // (another caravan just in front of it, heading as it does: it holds back, CARAVAN_GAP; each one's heading its last step's, as
+  // the road goes (a road may wind away from its gate a while), else straight for its gate: CARAVAN_HEAD)
+  heading(c,gate,gd){return CARAVAN_HEAD.get(c)||[(gate.x-c.x)/(gd||1),(gate.y-c.y)/(gd||1)]}
+  behind(c,gate,gd){const X=CARAVAN_GAP,[ux,uy]=this.heading(c,gate,gd);
+    return W.caravans.some(o=>{if(o===c||o.gone||o.idle||inFight(o)||Math.hypot(o.x-c.x,o.y-c.y)>X.px)return false;const g=gateGoal(townBy(o.to)||{x:o.x,y:o.y}),[vx,vy]=this.heading(o,g,Math.hypot(g.x-o.x,g.y-o.y));
+      return ux*vx+uy*vy>=X.dot&&(o.x-c.x)*ux+(o.y-c.y)*uy>0})}
   think(c,d){
     if(c.idle||inFight(c))return false;
     this.cool(c,d);const to=townBy(c.to);if(!to||!c.mine&&atWar(to.owner,c.fac)){c.gone=true;return false}
-    const v=this.look(c),pd=v.d,scared=!c.mine&&hostileTo(c.fac)&&TravelAwareness.sees(c);
+    const v=this.look(c),pd=v.d,scared=!c.mine&&hostileTo(c.fac)&&(TravelAwareness.sees(c)||fearSeen(c));// (in its sight, or remembered: engage.js fearSeen)
     // (afraid of you: the gate near, a run for it; you at the gate, another holding of its realm; else away from you)
     const gate=gateGoal(to),gd=Math.hypot(gate.x-c.x,gate.y-c.y),X=CARAVAN_FEAR,block=scared&&Math.hypot(P.x-gate.x,P.y-gate.y)<X.block;
     if(block){const alt=Spatial.nearest(TOWNS.filter(t=>t!==to&&t.owner===c.fac),c.x,c.y);if(alt)c.to=alt.name}
@@ -139,7 +156,8 @@ class CaravanBrain extends Brain{
       if(alt){c.to=alt.name;c.turned=true;return false}}
     if(scared&&!block&&gd<pd*X.dash){const ox=c.x;Router.travel(c,{...gate,road:true},moveStep(CARAVAN_SPD,d));this.face(c,ox)}
     else if(scared){const ox=c.x;Router.flee(c,{x:c.x+v.dx,y:c.y+v.dy},moveStep(CARAVAN_SPD*.9,d));this.face(c,ox)}
-    else{const ox=c.x;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1)*(this.behind(c,gate,gd)?CARAVAN_GAP.slow:1),d));c.dir=c.x>=ox?1:-1}
+    else{const ox=c.x,oy=c.y;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1)*(this.behind(c,gate,gd)?CARAVAN_GAP.slow:1),d));c.dir=c.x>=ox?1:-1;
+      const m=Math.hypot(c.x-ox,c.y-oy);if(m>0)CARAVAN_HEAD.set(c,[(c.x-ox)/m,(c.y-oy)/m])}
     if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.arrive(to))c.gone=true;return false}
     // preyed on: bandits close by, or a lord at war with its owner; the guards fight it out (fights.js)
     const b=bandits.find(o=>Math.hypot(o.x-c.x,o.y-c.y)<12&&!o.cvT);

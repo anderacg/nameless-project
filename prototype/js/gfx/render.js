@@ -30,10 +30,10 @@ const subOf=o=>[snapV(o.x)-Math.round(o.x),snapV(o.y)-Math.round(o.y)];
 function subT(o){if(VS<=1)return;const d=subOf(o);if(!d[0]&&!d[1])return;ctx.translate(d[0],d[1]);SUBD=d}
 function drawMover(e){if(VS<=1){e.f();return}const nt=TXTQ?TXTQ.length:0,nl=LIGHTQ.length;SUBD=null;ctx.save();try{e.f()}finally{ctx.restore()}
   const d=SUBD;SUBD=null;if(!d)return;if(TXTQ)for(let i=nt;i<TXTQ.length;i++){TXTQ[i][1]+=d[0];TXTQ[i][2]+=d[1]}for(let i=nl;i<LIGHTQ.length;i++){LIGHTQ[i].x+=d[0];LIGHTQ[i].y+=d[1]}}
-/* the parties' banners (Total War-style, Party.banner): each over its party, its pole's foot BANNER_GAP px over the leader's head
-   (headY), the cloth to the east; queued (BANNERQ) as each party in sight is drawn, so a party out of sight or sheltering shows
-   none, and drawn after everyone and every tree (drawBanners), yours over the rest, each its label over it (a party's size and its
-   stance against you, as before). They flutter in real time, still under reducedMotion (vfx.js). A click on one picks its party
+/* the parties' banners (Total War-style, Party.banner): each over its army's middle (bannerHome), its pole's foot BANNER_GAP px
+   over the leader's head's height (headY), the cloth to the east; queued (BANNERQ) as each party in sight is drawn, so a party
+   out of sight or sheltering shows none, and drawn after everyone and every tree (drawBanners), yours over the rest, each its
+   label over it (a party's size and its stance against you, as before). They flutter in real time, still under reducedMotion (vfx.js). A click on one picks its party
    (Party.pick, world.js pickAt) */
 const BANNER_GAP=2;let BANNERQ=[];
 const BAND_MARKERS=new Map();
@@ -44,13 +44,23 @@ function bandMarkerAt(o,m,cam){
   const count=n>1?mapTxtPic(String(n),m.col,'center',VS,dprOf()):null,right=Math.max(x+s.width,count?x+4+(count.width-count.ox+1)/VS:x+s.width);
   return{s,x,y,right};
 }
-// (a party's banner only: a site's banner() is its camp flag's colour, structures.js)
-function bannerAt(o,f){const b=o.banner&&o.banner();if(!b||typeof b!=='object')return null;const s=bannerSprite(b,f);return{s,x:Math.round(o.x)-4,y:o.headY()-BANNER_GAP-14}}
+// (where a party's banner stands (the owner, 2026-10-31: "locked to the army's ring"): over the point its rings are drawn on
+// (world/march.js marchCircle: the middle its men make, MarchArmy mid, while it is within the ring), so flag and rings go
+// together; else over the party. The ring's radius worked out once a step of its men (when its middle moves): BANNER_HOME)
+const BANNER_HOME=new WeakMap();
+// (menCentre: the army is where its men are, its point written by its last step; put elsewhere since (a battle's end, the game
+// paused) its men's middle as they stand: march.js MarchArmy#centre)
+function bannerHome(o){const a=WORLD_BATTLE.on&&MARCH_ARMIES.get(o);if(a&&MARCH_MOVE.menCentre&&a.units.some(u=>!u.dead)&&Math.hypot(o.x-a.x,o.y-a.y)<=MARCH_MOVE.teleport)return o.x===a.wx&&o.y===a.wy?o:a.centre();
+  const m=a&&a.mid;if(!m)return o;let h=BANNER_HOME.get(a);if(!h||h.m!==m)BANNER_HOME.set(a,h={m,r:marchOuter(o)});return Math.hypot(m.x-o.x,m.y-o.y)<h.r?m:o}
+// (a party's banner only: a site's banner() is its camp flag's colour, structures.js; c: the point it stands over)
+function bannerAt(o,f){const b=o.banner&&o.banner();if(!b||typeof b!=='object')return null;const s=bannerSprite(b,f),c=bannerHome(o);return{s,c,x:Math.round(c.x)-s.px,y:o.headY()+Math.round(c.y)-Math.round(o.y)-BANNER_GAP-s.py}}
+// (the screen x just right of a banner's drawn pixels, where the badges over your band stand)
+const bannerRight=b=>b.x+opaqueBox(b.s)[2]+1;
 // Travel cover reduces detection distance; this is the same closed-eye badge used by battle concealment.
 const TRAVEL_HIDE={size:14,gap:4,s:null};
 function drawTravelConcealment(cam){
   if(B||P.stay||!hiddenAt(P.x,P.y))return null;
-  const b=bannerAt(P,0);if(!b)return null;const k=dprOf()/VS,size=TRAVEL_HIDE.size*k,x=b.x+b.s.width+TRAVEL_HIDE.gap*k-cam.x,y=b.y-cam.y;
+  const b=bannerAt(P,0);if(!b)return null;const k=dprOf()/VS,size=TRAVEL_HIDE.size*k,x=bannerRight(b)+TRAVEL_HIDE.gap*k-cam.x,y=b.y+opaqueBox(b.s)[1]-cam.y;
   const s=TRAVEL_HIDE.s||(TRAVEL_HIDE.s=mkc(9,9,g=>{for(const [x,y,c] of badgePx('hidden'))rect(g,c,x,y)}));
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size};
 }
@@ -58,7 +68,7 @@ function drawTravelConcealment(cam){
 const TRAVEL_PACE={size:14,gap:4,cache:new Map()};
 function drawTravelPace(cam){
   if(B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;const b=bannerAt(P,0);if(!b)return null;
-  const kind=G.hurry?'run':'walk',k=dprOf()/VS,size=TRAVEL_PACE.size*k,x=b.x+b.s.width+TRAVEL_PACE.gap*k-cam.x,y=b.y-cam.y+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0)*k;
+  const kind='walk',k=dprOf()/VS,size=TRAVEL_PACE.size*k,x=bannerRight(b)+TRAVEL_PACE.gap*k-cam.x,y=b.y+opaqueBox(b.s)[1]-cam.y+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0)*k;
   let s=TRAVEL_PACE.cache.get(kind);if(!s){s=mkc(9,9,g=>{for(const [x,y,c] of badgePx(kind))rect(g,c,x,y)});TRAVEL_PACE.cache.set(kind,s)}
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
 }
@@ -89,18 +99,18 @@ function travelDetectionNow(){
 const travelDetectionColor=state=>state.seen.length?state.danger?'#ef8c73':'#dbca91':state.exposure?'#d9ad57':'#82c6b3';
 function drawTravelDetection(cam){
   if(B||P.stay)return null;const state=travelDetectionState(),k=dprOf()/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)]));ctx.save();ctx.imageSmoothingEnabled=false;
-  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const b=bannerAt(o,0),m=markers.get(o),w=STEALTH_EYE.size*k,h=w*2/3,x=b?b.x+b.s.width+STEALTH_EYE.gap*k-cam.x:m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=b?b.y-cam.y:m?m.y:o.y-cam.y-18-h;
+  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const b=bannerAt(o,0),m=markers.get(o),w=STEALTH_EYE.size*k,h=w*2/3,x=b?bannerRight(b)+STEALTH_EYE.gap*k-cam.x:m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=b?b.y+opaqueBox(b.s)[1]-cam.y:m?m.y:o.y-cam.y-18-h;
     drawStealthEye(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94',x,y,STEALTH_EYE.size);
     const q=!d.sees&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,q.y-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)
   }
-  const b=bannerAt(P,0),w=STEALTH_EYE.player*k,h=w*2/3,x=P.x-cam.x-w/2,y=(b?b.y:P.y-24)-cam.y-h-10*k,col=travelDetectionColor(state);
+  const b=bannerAt(P,0),w=STEALTH_EYE.player*k,h=w*2/3,x=(b?b.c.x:P.x)-cam.x-w/2,y=(b?b.y+opaqueBox(b.s)[1]:P.y-24)-cam.y-h-10*k,col=travelDetectionColor(state);
   drawStealthEye(state.exposure,col,x,y,STEALTH_EYE.player);ctx.restore();
   return state;
 }
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
-  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const d=VS>1?subOf(q.o):[0,0],X=B.x-cam.x+d[0],Y=B.y-cam.y+d[1];ctx.drawImage(B.s,X,Y);
-    if(q.label)txt(q.label[0],X+7,Y+opaqueBox(B.s)[1]-2,q.label[1],'center')}
+  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const d=VS>1?subOf(B.c):[0,0],X=B.x-cam.x+d[0],Y=B.y-cam.y+d[1];ctx.drawImage(B.s,X,Y);
+    if(q.label)txt(q.label[0],X+B.s.lx,Y+opaqueBox(B.s)[1]-2,q.label[1],'center')}
   BANNERQ=[]}
 // (an animal's step on the map, ms a frame)
 const D_STEP=150;
@@ -128,6 +138,17 @@ let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=
 // the minimap's layers, bottom first, by what each thing is (mapKind): the holdings, then the sites, the beasts, the parties and
 // the caravans and the encounters on the road over them; a kind not here is not dotted
 const MAP_LAYER={town:0,site:1,monster:2,lord:3,band:3,patrol:3,cparty:3,caravan:4,road:4};
+/* the minimap's dots, layer by layer (MAP_LAYER), each layer in worldObjects' order: fn(o, its mapDot) for each with one. The
+   holdings, sites and the encounters on the road from their lists; the beasts, parties and caravans dot only in your sight, so
+   they come from the chunk grid round you (worldobject.js lodGrid, with its lag), never from every mover on the map, sorted */
+const MAP_NEAR=[];
+function mapDots(V,fn){const T=LOD_TAG,G=lodGrid(),L=MAP_NEAR,r=V+WORLD_LOD.lag,each=o=>{if(!(o.mapKind in MAP_LAYER))return;const d=o.mapDot(V);if(d)fn(o,d)};
+  for(const t of TOWNS)each(t);for(const s of W.sites)each(s);
+  L.length=0;G.box(P.x-r,P.y-r,P.x+r,P.y+r,L);
+  for(const o of L)if(G.tag.get(o)===T.monster)each(o);
+  for(const o of L)if(G.tag.get(o)<=T.cparty&&!o.dead)each(o);
+  for(const o of L)if(G.tag.get(o)===T.caravan)each(o);
+  for(const o of roadList())each(o)}
 // the two minimaps' frame: the management windows' brown and gold, outside their unchanged map and hit rectangles
 const MAP_FRAME={bg:'#141116',edge:'#967744',light:'#c9a24e',view:'#e7d7b3',muted:'#b5a88e'};
 function drawMapFrame(r){ctx.save();ctx.fillStyle=MAP_FRAME.edge;ctx.fillRect(r.x-2,r.y-2,r.w+4,r.h+4);
@@ -138,7 +159,7 @@ function worldMiniRect(){const zk=MAPZOOM.k(),s=112*zk/MW,w=Math.round(MW*s),h=M
 const faceDir=o=>{let f=FACE.get(o);if(!f)FACE.set(o,f={x:o.x,d:o.x>P.x?-1:1});if(Math.abs(o.x-f.x)>.05){f.d=o.x>f.x?1:-1;f.x=o.x}return o.fight&&o.dir?o.dir:f.d};
 function drawWorld(){
   // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
-  reveal();const V=vis(),C=G.cam;if(!B?.world){C.x=snapV(clamp(P.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(P.y-VH/2,0,MH*TILE-VH));}
+  reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){C.x=snapV(clamp(P.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(P.y-VH/2,0,MH*TILE-VH));}
   const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
   // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
   ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
@@ -157,8 +178,10 @@ function drawWorld(){
   if(P.siege)ents.push({y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
   if(P.camp){if(WORLD_BATTLE.on&&!B?.world)marchCircle(ents,P,cam);ents.push(bandCampEnt(cam));}// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
   // (you, not while you camp: on foot, a step each WALK.foot px you walk; mounted, your horse on the same feet, a step each WALK.ride px; your host behind, as a lord's: drawParties)
-  if(!P.stay&&!P.camp&&!B?.world){if(WORLD_BATTLE.on)marchDraw(ents,P,cam);ents.push({y:P.y,own:1,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P),s=WORLD_BATTLE.on?marchLeaderSprite(P,go?frameOf(P,WALK.foot,WALK.n):0):partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
-    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);if(!WORLD_BATTLE.on)drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);if(WORLD_BATTLE.on)drawMarchLeader(s,sx,sy,P.dir);else{ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();}BANNERQ.push({o:P})}}); }
+  // (marching: you are one of your army, in your own place in it (march.js), its banner over its middle)
+  if(!P.stay&&!P.camp&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam);ents.push({y:P.y,own:1,f:()=>BANNERQ.push({o:P})})}
+    else ents.push({y:P.y,own:1,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();BANNERQ.push({o:P})}}); }
   drawFolk(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
   ambientWorld(ents,cam,V);// (the birds, critters and butterflies on the ground, with everyone; the rest stepped: ambient.js)
   // the order: the ground (the chunks: their trees, woods and ranges painted in), what lies flat (fields, yards, borders), the
@@ -171,7 +194,7 @@ function drawWorld(){
   drawLand(cam,'line');// (the borders over all that stands and the water's glints, under everyone who moves: territory.js)
   nPlace=TXTQ.length}finally{ctx=scr;if(hi){VW--;VH--}}
   // onto the screen, shifted by the camera's fraction, as is everything over it up to the minimap
-  ctx.drawImage(low,-fx,-fy);ctx.save();ctx.translate(-fx,-fy);const eye=worldEye(),px0=eye.x-cam.x,py0=eye.y-cam.y;
+  ctx.drawImage(low,-fx,-fy);ctx.save();ctx.translate(-fx,-fy);
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
   ambientFlat(cam);worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);ambientAir(cam);// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
@@ -179,7 +202,7 @@ function drawWorld(){
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
-  fogMem(low,px0,py0,V);
+  fogMem(low,cam,V);
   drawEnv(cam,V,1);
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
   drawWorldFog(cam,V);
@@ -210,7 +233,7 @@ function drawWorld(){
   drawMapFrame({x:mx,y:my,w:mw,h:mh});ctx.drawImage(atSize(WorldArt.mini(mk),mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
   // each its own dot (WorldObject mapDot), layer by layer (MAP_LAYER; in a layer, as worldObjects lists them): the holdings and
   // sites you know of, then the beasts, parties and caravans in sight over them
-  for(const o of worldObjects().filter(o=>o.mapKind in MAP_LAYER).sort((a,b)=>MAP_LAYER[a.mapKind]-MAP_LAYER[b.mapKind])){if(B?.world?.hides(o))continue;const d=o.mapDot(V);if(d)dot(o.x,o.y,d[0],d[1])}
+  mapDots(V,(o,d)=>{if(!B?.world?.hides(o))dot(o.x,o.y,d[0],d[1])});
   drawQuestDots(dot);// (the quests' goals, the tracked one the strongest: world/quests.js)
   for(const m of rumourMarks())if(rumourFade(m)>0)dot(m.x,m.y,RUMOUR_COL,2);
   if(B?.world){for(const u of B.units)if(u.hp>0&&seenBy(0,u)){const p=B.world.world(u);dot(p.x,p.y,u.hero?'#fff':sideCol(u,'ui'),u.hero?3:1)}}else dot(P.x,P.y,'#fff',3);
@@ -264,7 +287,10 @@ function drawUnit(u){
     const sg=u.stagAt!=null&&B.t-u.stagAt<.3?Math.sin((B.t-u.stagAt)/.3*Math.PI):0;if(sg)bx-=Math.round(2*sg);
     if(!moved&&!dk&&!hit&&!sg&&!(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)){const I=idleLife(u.id,B.t,beast?'beast':u.s.mounted?'mount':'foot');bx+=I.dx}// (standing: a horse's toss, a beast's sway)
     if(!beast&&DUEL.on&&u.atkLook&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx+=Math.round((u.atkLook==='bash'?2.5:1.5)*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI));
-    ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(spinFace(u,dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLean(u)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg;if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */ctx.globalAlpha=(ghost?.55:1)*sa;ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore();
+    ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(spinFace(u,dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLean(u)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg;if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */ctx.globalAlpha=(ghost?.55:1)*sa;
+    // (his weapon in his hand behind his body or in front of it: weapons.js heldNow, figures.js GEAR.behind)
+    const X=-Math.floor(sp.width/2)+bx,Y=-sp.height+2,hw=!beast&&heldNow(u,u.inMelee?sidearmLook(u):unitLook(u),sp);if(hw&&hw.back)ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);
+    ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),X,Y);if(hw&&!hw.back)ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);ctx.restore();
     // (climbing: a little grit trickles down the slope behind him now and then; coming down, a puff at the heel: from his id and the
     // battle's time, drawn only)
     if(cl){const ph=(B.t*(cl==='up'?2.2:3)+((u.id||0)*.37))%1,dc=B.env.c==='frost'?'#e8eef4':B.env.c==='desert'?'#e6cc96':'#a8987a';
@@ -275,17 +301,18 @@ function drawUnit(u){
   drawStuck(u,x,y-Math.round(u.z||0));// (arrows in him: vfx.js)
   stateAir(u,x,y-z,h);// (stars, sweat, a router's dust: vfx.js)
   drawMorale(u,x,y-h-z-3);// (running or wavering: ui/moraleicons.js)
-  // its health: over every fighter with health bars on (Settings, or HP bars in battle), else over you and your companions
+  // its health: over every fighter with health bars on (Settings, or HP bars in battle; off at first), your hero, companions and
+  // leaders too; else none (each group's health stands by its icon: battlehud.js drawGroupHealth)
   if(u.leader)txt(u.leader.name+' Lv'+u.leader.lv,x,y-h-8-z,sideCol(u,'say'),'center');// a leader: his name over him
-  if(HPBARS.on||u.hero||u.comp||u.leader){const bw=u.s.big?28:12,f=Math.max(0,u.hp/u.max),bx=Math.round(x-bw/2),by=y-h-2-z;ctx.fillStyle='#0a0c12';ctx.fillRect(bx-1,by-1,bw+2,4);ctx.fillStyle='#3a2420';ctx.fillRect(bx,by,bw,2);
+  if(HPBARS.on){const bw=u.s.big?28:12,f=Math.max(0,u.hp/u.max),bx=Math.round(x-bw/2),by=y-h-2-z;ctx.fillStyle='#0a0c12';ctx.fillRect(bx-1,by-1,bw+2,4);ctx.fillStyle='#3a2420';ctx.fillRect(bx,by,bw,2);
     ctx.fillStyle=u.hero||u.comp?'#e8b94a':sideCol(u);ctx.fillRect(bx,by,Math.round(bw*f),2)}// (by side: battle.js SIDE)
   if(B.world)ctx.restore();
 }
 // one knocked down (physics.js physDownPose: q 0 standing to 1 lying): he goes over as the fallen do (vfx.js drawBody), lies, and
-// gets up; a beast pressed low, then on its side
-function drawDowned(u,x,y,q){const c=corpseOf(u);ctx.save();ctx.translate(Math.round(x),Math.round(y));if(u.face<0)ctx.scale(-1,1);
+// gets up, his weapon still in his hand (sprites.js downedOf); a beast pressed low, then on its side
+function drawDowned(u,x,y,q){const c=downedOf(u);ctx.save();ctx.translate(Math.round(x),Math.round(y));if(u.face<0)ctx.scale(-1,1);
   if(c.beast){const sp=c.beast,w=sp.width,h=sp.height,x0=-Math.floor(w/2);if(c.down&&q>=.6)ctx.drawImage(c.down,x0,-h+2);else{const k=1-.5*q*q;ctx.drawImage(sp,x0,Math.round((-h+2)*k),w,Math.max(1,Math.round(h*k)))}}
-  else if(q<1){ctx.translate(0,1);ctx.rotate(q*q*Math.PI/2);ctx.drawImage(c.stand,-12,-18)}else ctx.drawImage(c.body,-c.ax,1-c.ay);
+  else if(q<1){ctx.translate(0,1);ctx.rotate(q*q*Math.PI/2);ctx.drawImage(c.stand,-12,-18-(c.top||0))}else ctx.drawImage(c.body,-c.ax,1-c.ay);
   ctx.restore()}
 // a ring of ripples round one wading (half -1: its back half, drawn before him; 1: its front, after): whole pixels on the ellipse
 // (rx, 2), a fainter one spreading from it, a wake behind him as he moves
@@ -348,6 +375,7 @@ function battleEnts(){
   const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0,x0=vx-ENT_PAD.x,x1=vx+BVW/z+ENT_PAD.x,y0=vy-ENT_PAD.up,y1=vy+BVH/z+ENT_PAD.down,inV=o=>o.x>=x0&&o.x<=x1&&o.y>=y0&&o.y<=y1;
   let ents;if(B.terrain&&B.ground){ents=B.obs.filter(inV);propsInView(ents,vx-16,vy-16,vx+BVW/z+16,vy+BVH/z+40);for(const u of B.units)if(u.hp>0&&inV(u)&&seenBy(0,u))ents.push(u)}
   else ents=[...B.obs.filter(inV),...B.units.filter(u=>u.hp>0&&inV(u)&&seenBy(0,u))];
+  for(const h of B.horses||[])if(inV(h))ents.push(h);// (horses no one rides: battle/dismount.js)
   return ents.sort((a,b)=>a.y-b.y)}
 // (a canvas the field's size, only the part in view: the same pixels as drawing it whole)
 function drawInView(img){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0,W=img.width,H=img.height,x0=clamp(Math.floor(vx)-2,0,W),y0=clamp(Math.floor(vy)-2,0,H),x1=clamp(Math.ceil(vx+BVW/z)+2,0,W),y1=clamp(Math.ceil(vy+BVH/z)+2,0,H);
@@ -359,7 +387,7 @@ function drawLayer(L){if(!L)return;if(!L.drawView){drawInView(L);return}const c=
 // else an arrow. Read when drawn, so a shot's own state is as it was)
 const missileOf=a=>{if(a.web)return 'web';const w=(a.by&&PEOPLE_LOOK[a.by.type]||{}).weapon;return w==='sling'?'stone':w==='javelin'?'javelin':'arrow'};
 function drawBattle(){
-  warmStep();// (sprites made ahead before they are needed: sprites.js)
+  warmStep();FIGURES.frame();// (sprites made ahead before they are needed: sprites.js; the finished figures' frame: figures.js)
   // the camera (camera.js): the field drawn at its zoom and pan, the HUD over it at the screen's scale
   if(B.cam)camTick();const Cz=B.cam?B.cam.z:1;
   // (deploying, the battle's clock stands: who sees whom is reckoned on the real one as your men are placed, terrain.js)
@@ -387,7 +415,7 @@ function drawBattle(){
   // (obstacles: their ground, then each in the depth order: sprites.js; on the world map (a world battle) each with the trees in front of
   // it drawn back over it, as the map's own figures are, those over your men faded: depth.js worldOverdraw; the owner, 2026-10-31:
   // "the forest seems not to cover units")
-  obstacleGround();{const draw=o=>o.kind?drawObstacle(o):o.dk?drawProp(o):drawUnit(o),E=battleEnts();
+  obstacleGround();{const draw=o=>o.kind?drawObstacle(o):o.dk?drawProp(o):o.isHorse?o.draw():drawUnit(o),E=battleEnts();
     // (the overdraw reckons in the map scene's pixels: under that transform, each drawn under the field's own)
     if(B.world){const T=ctx.getTransform(),w=B.world,k=T.a*w.scale;ctx.save();ctx.setTransform(k,0,0,k,T.e+k*(G.cam.x-w.x0),T.f+k*(G.cam.y-w.y0));
       try{worldOverdraw(E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,f:()=>{ctx.setTransform(T);draw(o)}})),G.cam)}finally{ctx.restore()}}else E.forEach(draw)}
@@ -414,7 +442,7 @@ function drawBattle(){
   // (a number pops up big and settles)
   for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1;if(k===1){txt(f.t,Math.round(f.x),Math.round(f.y),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(f.y));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();
-  drawFogGhosts();drawUnitIcons();// (the fog's ghosts, where enemy groups were last seen; each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js)
+  drawFogGhosts();drawUnitIcons();drawGroupHealth();// (the fog's ghosts, where enemy groups were last seen; each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js; its health of what it began with, a bar standing by it: battlehud.js)
   // the HUD at the screen's scale over the zoomed-out field
   ctx.save();ctx.scale(BVW/VW,BVH/VH);
   drawHeroHud();if(!B.world)drawMiniField();// (the small map of the field, top right: camera.js)
@@ -454,7 +482,7 @@ function frame(){
    carried, troops, power and pace as icon chips (what runs short is red); where you are and whom you serve. Your hero's health
    and mana are in the Hero window (C) and the battle. The top bar: the day and the time */
 function updateHUD(force){
-  hurryUI();const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=bandFitness(),fp=Math.round(F.pct),mo=Math.round(P.morale),lh=landHold(P.x,P.y),sp=bandPace()*hurryPace();// (Hurry lit, and in the pace: supply.js)
+  const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=bandFitness(),fp=Math.round(F.pct),mo=Math.round(P.morale),lh=landHold(P.x,P.y),sp=bandPace();
   const bar=(v,cls,txt,title)=>'<div class="bar '+cls+'" title="'+title+'"><i style="width:'+Math.max(0,Math.min(100,Math.round(v)))+'%"></i><em>'+txt+'</em></div>';
   const chip=(ic,val,title,warn,cls)=>'<span class="chip'+(warn?' warn':'')+'" title="'+title+'">'+icon(ic,14)+'<span'+(cls?' class="'+cls+'"':'')+'>'+val+'</span></span>';
   const days=d=>(d>=10?Math.floor(d):Math.floor(d*10)/10)+'d',rate=S.r.n,go=S.go?'on the march':'at rest';
@@ -471,7 +499,7 @@ function updateHUD(force){
       (P.tp?'<span class="pc-pts" title="Talent points to spend (K)">+'+P.tp+'</span>':'')+'</div>'+
     '<div class="bars">'+bar(fp,'fit'+(fp<50?' low':''),'Fitness<b>'+fp+'%</b>',fitTip)+bar(mo,'mor'+(mo<30?' low':''),'Morale<b>'+mo+'%</b>',moTip)+
       bar(P.bsta,'sta '+S.st,'Stamina'+arrow+'<b>'+(word?word+' · ':'')+Math.round(P.bsta)+'%</b>',staTip)+'</div>'+
-    (S.fill!=null?'<div class="pc-fill" title="Filling your waterskins: '+S.fill+'%. Any order or Hurry stops it; you keep what is in."><i style="width:'+S.fill+'%"></i><em>Filling waterskins<b>'+S.fill+'%</b></em></div>':'')+
+    (S.fill!=null?'<div class="pc-fill" title="Filling your waterskins: '+S.fill+'%. Any order stops it; you keep what is in."><i style="width:'+S.fill+'%"></i><em>Filling waterskins<b>'+S.fill+'%</b></em></div>':'')+
     (tags.length?'<div class="pc-tags">'+tags.map(([t,c,w])=>'<span class="tag '+c+'" title="'+w+'">'+t+'</span>').join('')+'</div>':'')+
     '<div class="pc-res">'+chip('gold',P.gold,'Gold',false,'gold')+chip('food',days(S.foodDays),foodTip,S.foodDays<1)+chip('mug',days(S.drinkDays),drinkTip,S.drinkDays<1)+
       (S.furs.show?chip('furs',S.furs.have+'<small>/'+S.furs.need+'</small>','Furs: '+S.furs.need+' needed in the frost (1 for every '+SUPPLY.furPer+' people)',S.L.frost&&S.furs.have<S.furs.need):'')+

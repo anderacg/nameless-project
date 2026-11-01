@@ -29,9 +29,12 @@ Kit.suite(({ok})=>{
   t.act('march-form','line');drag(0,-40,0,40,{touch:true});const l=G.march.draft[cav.id];ok(l.form==='line'&&l.files>1,'and back to a line, a drag widens it again ('+l.files+' abreast)')}
  {const S=t.formSlots('column',12,0,2),xs=[...new Set(S.map(p=>Math.round(p[1])))].sort((a,b)=>a-b),gaps=xs.slice(1).map((x,i)=>x-xs[i]);
   ok(xs.length===4&&gaps.some(g=>g>t.FORMS.column.gx*1.5)&&new Set(S.map(p=>Math.round(p[0]))).size===3,'two columns of 12: two men abreast each, a gap between them, three ranks deep')}
- t.act('march-select','hero');const hero=JSON.stringify(G.march.draft.hero);drag(-10,0,10,0,{touch:true});ok(JSON.stringify(G.march.draft.hero)===hero,'the hero remains the fixed army anchor');
+ // (the owner, 2026-10-31: "an invisible point at the center now hero can be placed any where in the army circle")
+ t.act('march-select','hero');for(let i=0;i<5;i++)t.act('march-step','down');ok(G.march.draft.hero.x===0&&Math.abs(G.march.draft.hero.y-10)<.01,'your hero has his place as a group has: stepped off the army\'s middle, which is no one\'s');
+ {const hero=JSON.stringify(G.march.draft.hero);drag(-10,0,10,0,{touch:true});ok(JSON.stringify(G.march.draft.hero)===hero,'a character has no frontage: a drawn formation leaves your hero where he is')}
  t.act('march-select',arch.id);drag(-10,0,10,0,{touch:true});t.act('march-apply');const row=t.marchRows(P).find(r=>r.id===arch.id);ok(Math.abs(row.face+Math.PI/2)<.001&&row.files===4,'Apply persists facing and frontage into marching rows');
- const army=t.MarchArmy.of(P);army.sync();const targets=army.targets().filter(p=>p.row===arch.id),first=targets[0],second=targets[1];ok(Math.abs(first.x-second.x)>Math.abs(first.y-second.y)*5,'marching slots rotate with the saved relative facing');
+ const army=t.MarchArmy.of(P);army.sync();
+ {const h=army.targets().find(p=>p.row==='hero');ok(h&&Math.abs(Math.hypot(h.x-P.x,h.y-P.y)-10)<.01&&army.units.some(u=>u.row==='hero'),'and he marches there, one of the army\'s marchers, 10 px off its middle')}const targets=army.targets().filter(p=>p.row===arch.id),first=targets[0],second=targets[1];ok(Math.abs(first.x-second.x)>Math.abs(first.y-second.y)*5,'marching slots rotate with the saved relative facing');
  t.openMarch();ok(Math.abs(G.march.draft[arch.id].face+Math.PI/2)<.001,'reopening the editor retains saved facing');t.act('march-back');Kit.world();
  const h=Kit.goHome('Ashford');Kit.goTo(h.x+160,h.y+120);const e=t.asParty({kind:'bandits',troops:['militia'],x:P.x+70,y:P.y,cool:0});G.enc={kind:'party',ref:e,list:e.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});
  const b=t.B,g=Object.values(b.groups).find(g=>g.player&&g.sourceGroupId===arch.id);const mine=b.muster.armies.find(a=>a.owner===P);// (the armies form up facing each other first: c0ba7c6)

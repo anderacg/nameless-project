@@ -19,7 +19,7 @@ Kit.suite(({ok})=>{
   G.enc={kind,ref:o,list:o.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});
   ok(t.B.units.filter(u=>u.team===1).length===drawn,name+': real battle actor count matches world sprites');window.eval('B=null');
  }
- Kit.world();const own=t.MarchArmy.of(P);ok(own.units.length===3&&t.marchSeparateLeader(P)&&P.fighters===4,'player marches three soldiers and one separate hero, without a duplicate hero');
+ Kit.world();const own=t.MarchArmy.of(P);ok(own.units.length===4&&own.units.filter(u=>u.type==='hero').length===1&&P.fighters===4,'player marches three soldiers and his hero among them (the army\'s middle no one\'s), without a duplicate hero');
  P.comps.brann={ap:5};t.compInit('brann');const companion=t.asParty({cid:'brann',troops:Array(7).fill('hum_foot'),x:P.x+25,y:P.y});P.comps.brann.party=companion;
  ok(count(companion)===8&&t.battleLeaders({kind:'field',allies:[t.forceOf(companion)],foes:[]}).length===1,'detached companion draws seven troops plus its one reinforcement leader');
 });

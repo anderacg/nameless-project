@@ -5,7 +5,8 @@
 // not caught standing (stuck: on a leg but not moving, out of reach of any foe) and do not swing back and forth (flips: a run-in
 // given up within 2 s of starting it; reversals: their way turned round, over 140°, between two half-second looks).
 Kit.suite(({ok,info})=>{
- const LS=+(new URLSearchParams(location.search).get('ls')||7),t=T,L=t.BattleLab,X=t.CAVALRY_RIDE;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;t.PHYSICS.on=true;t.TERRAIN.on=true;t.FOG.on=false;t.COMMAND_POWERS.on=false;
+ // (the runner's -Seed n: the labs' ground and dice, and the game's, all from n; none: ground 7, game 1, as always)
+ const Q=new URLSearchParams(location.search),S=Q.get('seed'),LS=+(Q.get('ls')||S||7),t=T,L=t.BattleLab,X=t.CAVALRY_RIDE;window.requestAnimationFrame=()=>0;Kit.begin('soldier',S==null?1:+S);Kit.clear();Kit.world();t.GUIDE.on=false;t.PHYSICS.on=true;t.TERRAIN.on=true;t.FOG.on=false;t.COMMAND_POWERS.on=false;
  const mounted=g=>g.units.every(u=>u.s.mounted&&!u.s.range);
  // (the riders' record over secs s: each through its own loop, step (each: before each frame))
  const record=(b,cav,secs,each)=>{const o={charges:[],stuck:0,flips:0,drops:0,turns:0,plan:0,start:cav.units.length};let last=null,lastAt=0,lastPh=null,prevDir=null;const mid=()=>{const m=cav.units.filter(u=>u.hp>0&&!u.left);return m.length?t.centroid(m):cav.centre()};let prevC=mid();
@@ -28,8 +29,9 @@ Kit.suite(({ok,info})=>{
   return ()=>{log.push('END t'+t.B.t.toFixed(1)+' over '+t.B.over+' k'+k+' groups '+JSON.stringify(Object.values(t.B.groups).map(g=>[g.id,g.foe,g.order,g.units.filter(u=>u.hp>0).length,g.resolve?.routed])));t.Commander.prototype.cavalry=cv;t.Commander.prototype.orders=od;R.charge=ch;R.step=st;R.route=rt;R.breakAway=ba;info('TRACE '+log.join(' | '))}};
  const lab=(name,cfg,secs,each)=>{L.start({deploy:false,paused:false,morale:false,seed:LS,...cfg});const b=t.B,cav=Object.values(b.groups).find(g=>g.foe&&mounted(g)),un=TR&&name.startsWith(TR)?hook():null;let o;try{o=record(b,cav,secs,each)}finally{un&&un()}say(name,o);L.exit();return o};
  const steady=(name,o)=>ok(o.stuck<=3&&o.flips<=3&&o.drops===0&&o.turns<=6,name+': the riders neither stall nor swing back and forth');
- // (forced: cornered with no way out, or met by riders as fast: at most one)
- const runUps=(name,o,n)=>ok(o.charges.length>=n&&o.charges.every(c=>c.forced||c.d>=X.runMin)&&o.charges.filter(c=>c.forced).length<=1,name+': '+n+'+ charges, each from a run-up of '+X.runMin+' px at least (one forced at most)');
+ // (forced: cornered with no way out (the world battle's edge counts), or met by riders as fast; a forced one from a full run-up
+ // is a good charge all the same (the owner, 2026-11-01): forced and short, at most one)
+ const runUps=(name,o,n)=>ok(o.charges.length>=n&&o.charges.every(c=>c.forced||c.d>=X.runMin)&&o.charges.filter(c=>c.forced&&c.d<X.runMin).length<=1,name+': '+n+'+ charges, each from a run-up of '+X.runMin+' px at least (one forced and short at most)');
  const knights={type:'hum_knight',count:6},open={recipe:'open',seed:LS},march=(b,cav,i)=>{if(i%240===0)for(const g of Object.values(b.groups).filter(g=>g.player))g.moveTo(g.ax,i%480?t.fieldTop()+70:t.fieldBot()-70)};
  const moving=lab('a column marching across',{leftGroups:[{type:'hum_foot',count:12}],rightGroups:[knights],ai:false,ground:open},45,march);runUps('a moving column',moving,2);steady('a moving column',moving);
  const crowd=lab('a crowded field',{leftGroups:[{type:'hum_foot',count:24},{type:'hum_spear',count:16},knights],rightGroups:[{type:'hum_foot',count:24},{type:'hum_levy',count:24},{type:'hum_bow',count:12},knights],ai:true,ground:open},50);ok(crowd.charges.length>=1&&crowd.alive>=crowd.start-3,'a crowded field: the riders charge and are not caught in the press (three lost at most: both sides\u2019 knights ride on to low stamina and meet)');steady('a crowded field',crowd);

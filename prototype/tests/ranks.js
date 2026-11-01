@@ -31,8 +31,8 @@ Kit.suite(({ok})=>{
   ok(t.rankXp(gg)>0&&t.rankOf(gg)===1,'an auto-resolved win teaches them too ('+t.rankXp(gg).toFixed(1)+')');t.act('cont');t.hidePanel()}
  // ======== upgrade: only at rank 5, the whole group, rank 1 again
  {Kit.world();const gg=r.groups.find(x=>x.type==='hum_foot'),to=t.UP.hum_foot[0],id=gg.id,n=gg.count;
-  ok(t.recruitment.quoteGroupTraining(null,id,to).code==='experience','rank 1: no upgrade');t.rankReset(gg);t.rankGain(gg,t.RANKS.xp[1].reduce((a,b)=>a+b,0));
-  const q=t.recruitment.trainGroup(null,id,to);const up=r.groups.find(x=>x.id===id);
+  ok(t.recruitment.quoteGroupTraining((P.gold=Math.max(P.gold,1e5),t.townBy('Ashford')),id,to).code==='experience','rank 1: no upgrade');t.rankReset(gg);t.rankGain(gg,t.RANKS.xp[1].reduce((a,b)=>a+b,0));
+  const q=t.recruitment.trainGroup((P.gold=Math.max(P.gold,1e5),t.townBy('Ashford')),id,to);const up=r.groups.find(x=>x.id===id);
   ok(q.ok&&up.type===to&&up.count===n&&t.rankOf(up)===1&&!t.rankXp(up),'rank '+R.max+' (no mastery yet): the whole group upgrades ('+t.ST[to].n+' ×'+n+'), at rank 1 again')}
  // ======== peasants: no rank, a long grind
  {const pk=t.peasantKind('human','farmer');r.add(pk,4,'new');const pg=r.groups.find(x=>x.type===pk);

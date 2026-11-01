@@ -41,6 +41,10 @@ const GLYPH={
   rapid:['g.g..','.g.g.','..g.g','.g.g.','g.g..'],
   rally:['ggggg','.ggg.','.ggg.','.ggg.','.g.g.'],
   scout:['g...g','.ggg.','gg.gg','.ggg.','g...g'],
+  dismount:['..g..','..g..','g.g.g','.ggg.','ggggg'],
+  mount:['..g..','.ggg.','g.g.g','..g..','ggggg'],
+  // (riders on foot, how many still mounted beside it: battle/dismount.js)
+  mounted:['g..gg','ggggg','.ggg.','.g.g.','.g.g.'],
   noammo:['g...g','g...g','g...g','g...g','ggggg'],
   ammo:['..g..','.ggg.','g.g.g','g.g.g','ggggg'],
   shieldWall:['gg.gg','gg.gg','gg.gg','gg.gg','.g.g.'],
@@ -63,7 +67,7 @@ const BADGE_RIM={breaking:'#ff8040',rallying:'#9fe09a',missile:'#e8a75a',confide
    (Stand Fast! too), a warning amber (few shots, tired, falling back), something bad red (no shots, spent), a flag steel blue,
    sight teal; morale and weaknesses keep their own rims above */
 const BADGE_CAT={order:'#e0b050',pace:'#c8ccd4',ability:'#6cd06c',warning:'#e8a040',bad:'#e0605a',flag:'#8ca4c0',sight:'#4cc0a8',ai:'#b48cf0'};
-const BADGE_KIND={ai:'ai',amove:'order',move:'order',attack:'order',charge:'order',advance:'order',withdraw:'order',walk:'pace',run:'pace',brace:'ability',spur:'ability',rapid:'ability',fire:'ability',rally:'ability',scout:'ability',standfast:'ability',
+const BADGE_KIND={ai:'ai',amove:'order',move:'order',attack:'order',charge:'order',advance:'order',withdraw:'order',walk:'pace',run:'pace',brace:'ability',spur:'ability',rapid:'ability',fire:'ability',rally:'ability',scout:'ability',dismount:'ability',mount:'ability',standfast:'ability',mounted:'flag',
   ammo:'warning',tired:'warning',fallback:'warning',noammo:'bad',spent:'bad',shieldWall:'flag',firm:'flag',cease:'flag',skirmish:'flag',melee:'flag',hidden:'sight',seen:'sight',woods:'sight'};
 for(const k in BADGE_KIND)BADGE_RIM[k]=BADGE_CAT[BADGE_KIND[k]];
 const CONFIDENCE_LABEL='Confident: visible, distance-weighted fighting strength advantage. Up to +'+CONFIDENCE.max+' morale and '+Math.round(CONFIDENCE.resist*100)+'% less ordinary morale shock. Panic and leader loss can suppress it.';
@@ -160,9 +164,7 @@ function drawUnitIcons(){
     const gl=UNIT_GLYPH[unitIcon(g,m)];
     for(const [col,dx] of [['rgba(0,0,0,.45)',1],['#f4efe0',0]]){ctx.fillStyle=col;gl.forEach((row,ry)=>[...row].forEach((c,rx)=>{if(c==='g')ctx.fillRect(2+rx+dx,2+ry+dx,1,1)}))}
     ctx.globalAlpha=fade;
-    // its health, under it
-    const hp=m.reduce((a,u)=>a+u.hp,0)/Math.max(1,m.reduce((a,u)=>a+u.max,0)),hy=S+2;
-    ctx.fillStyle='#0a0c12';ctx.fillRect(0,hy,S,3);ctx.fillStyle=hp>.6?'#78c474':hp>.3?'#e8d04a':'#e0605a';ctx.fillRect(1,hy+1,Math.max(1,Math.round((S-2)*hp)),1);
+    // (its health: the vertical bar beside it, battlehud.js drawGroupHealth: the owner, 2026-10-31)
     // what is wrong with it, beside it (two to a column)
     st.forEach((k,i)=>{const bx=S+2+Math.floor(i/2)*10,by=(i%2)*10;for(const [px,py,c] of badgePx(k)){ctx.fillStyle=c;ctx.fillRect(bx+px,by+py,1,1)}});
     ctx.restore()}

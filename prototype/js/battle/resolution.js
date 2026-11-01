@@ -59,7 +59,7 @@ class BattleResolution{
       const members=b.units.filter(u=>u.grp===g.id),fallen=members.filter(u=>u.hp<=0&&!u.left).length;
       groupLosses.push({id:g.sourceGroupId,type:g.type,name:g.name,start:members.length,count:fallen,saved:0,wounded:0,rearguard:0,
         slot:(b.playerOrder||Object.keys(b.groups)).indexOf(g.id)});
-      const source=partyRoster(P).groups.find(s=>s.id===g.sourceGroupId);if(source){source.form=g.form;source.files=g.files}
+      const source=partyRoster(P).groups.find(s=>s.id===g.sourceGroupId);if(source){source.form=g.form;source.files=g.files}Dismount.settle(members,source);// (its horses: the dead lost, battle/dismount.js)
     }
     this.ranksUp=b.ranksUp=b.opts.tournament?[]:groupRanks(b,b.win);if(!b.opts.tournament)aiBattleRanks(b);// (each of your groups' experience from its men's, before the losses: core/ranks.js)
     const o=b.opts,win=b.win,retreat=!!b.retreat,caught=b.caught||0,got=b.withdrawn||0,standing=b.units.filter(u=>u.team===1&&u.hp>0).length,fallen=Object.values(b.lost).reduce((a,n)=>a+n,0);bbar.hidden=true;G.mode='dialog';lootStart();
@@ -103,7 +103,7 @@ class BattleResolution{
       const taken=takePrisoners(slain),drop=O.drop&&O.drop();
       if(drop&&!invAdd('gear',drop,1))log(BAG_FULL+'. You leave a '+ITEMS[drop].n+' behind.','bad');
       bounty+=spoilsWon(e);// (valuables: a lord's or chieftain's purse, a camp's plunder: captives.js)
-      {const c=(e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld;if(c){captureChief(c);e.ref.ld=null;bounty+=' You take '+chiefLabel(c)+' captive: hand him over for '+bountyOf(c)+' gold, or let him go (Hero, Party).'}}
+      {const c=(e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld;if(c){captureChief(c);e.ref.ld=null;bounty+=' You take '+chiefLabel(c)+' captive: hand '+pr(c).him+' over for '+bountyOf(c)+' gold, or let '+pr(c).him+' go (Hero, Party).'}}
       bounty=(O.won(e,slain,res)||'')+bounty;
       bounty+=reinfCut(e,res,this.battle?.sides);// (the lords and watches beside you take their share of the gold, and of the renown: engage.js)
       P.gold+=res.gold;

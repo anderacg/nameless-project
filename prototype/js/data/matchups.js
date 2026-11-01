@@ -11,7 +11,7 @@
 const TAGS={
   spearman:['spear','shield'],chief:['heavy'],brann:['shock'],tavi:['pierce','mobile'],
   hum_levy:['spear'],hum_spear:['spear','shield'],hum_guard:['heavy','shield'],hum_pike:['spear'],hum_long:['pierce'],hum_knight:['heavy'],
-  hum_foot:['shield'],hum_sword:['shield'],hum_sergeant:['heavy','shield'],hum_champ:['shock'],hum_xbow:['pierce'],
+  hum_foot:['shield'],hum_sword:['shield'],hum_sergeant:['heavy','shield'],hum_champ:['shock'],hum_xbow:['pierce'],hum_crossbow:['pierce'],hum_lancer:['spear'],
   dw_axe:['pierce'],dw_iron:['heavy','ward','shield'],dw_rune:['ward'],dw_berserk:['shock'],dw_xbow:['pierce'],dw_ramlord:['heavy'],
   dw_shield:['shield'],dw_hammer:['heavy','shield'],dw_longbeard:['heavy','ward','shield'],dw_thane:['pierce'],
   elf_dancer:['shock'],elf_blade:['shock'],elf_sentinel:['spear','heavy','ward','shield'],elf_weaver:['ward'],elf_sharp:['pierce'],elf_lance:['pierce'],

@@ -20,27 +20,37 @@ function cellOf(src){const n=CELLS.find(s=>s>=src.width&&s>=src.height)||Math.ma
 const ATK_BASE={swing:6,thrust:9,overhead:12,jab:29,hook:32,kick:35,grapple:38},DEF_POSE=27,DEF_LOW=28,FIST_POSE=29,FIST_STYLES=['jab','hook','kick','grapple'];
 // 41 struck (a flinch), 42 a glance back, 43 the weight shifted (render.js picks them: drawn only)
 const FLINCH_POSE=41,LOOK_POSE=42,SHIFT_POSE=43,LIFE_POSES={41:'flinch',42:'look',43:'shift'};
-// bare: in battle, a soldier's melee weapon is drawn apart (weapons.js); the sprite leaves it off
-// (arm: a shooter in melee mode: his bow put away, his body bare for the sidearm drawn in his hand: weapons.js, sidearmLook)
-function unitSprite(type,team,hero,v,pose,bare,arm,tint){
+// bare: in battle, a soldier's melee weapon is drawn apart (weapons.js); the sprite leaves it off, the body and the rest of its
+// gear kept by pose in spr (figures.js); else the finished figure, its weapon on it, kept in FIGURES (an LRU: the map, the cards)
+// (arm: a shooter in melee mode: his bow put away, slung on his back (figures.js SlungBow), his body bare for the sidearm drawn in
+// his hand: weapons.js, sidearmLook)
+// (afoot: a rider off his horse, on his own feet, his lance in his hand: battle/dismount.js)
+// (your hero's and a companion's key: their gear's, but a melee weapon's when it is held apart: one body for every sword)
+function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
   // a companion wears what you gave them: their weapon, armour and helm show (cg)
   const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null;
   // (a beast or a monster: its own figure (engine/beasts.js), one of three variants, its poses: beastSprite)
   if(ST[type]?.wildlife){const id=ST[type].wildlife,f=pose>=2?pose%PX.MAP_STEPS:0,key='hunt:'+id+':'+f;if(spr[key])return spr[key];const s=critterSprite(id,f),c=mkc(s.width*2,s.height*2,g=>g.drawImage(s,0,0,s.width*2,s.height*2));c.cw=s.cw*2;c.ch=s.ch*2;return spr[key]=c;}
   if(ST[type]&&ST[type].beast)return beastSprite(type,team===2?0:team,v,pose);
-  v=hero?0:(v||0)%6;pose=pose||0;const key=type+team+(hero?'h'+P.race+(P.gear.weapon||'')+(P.gear.body||'')+(P.gear.head||''):'')+(cg?'g'+(cg.weapon||'')+(cg.body||'')+(cg.head||''):'')+'v'+v+'p'+pose+(bare?'b':'')+(arm?'s':'')+(tint?'c'+tint:'');if(spr[key])return spr[key];
+  v=hero?0:(v||0)%6;pose=pose||0;const wk=(w,melee)=>bare&&melee?'m':w||'',key=type+team+(hero?'h'+P.race+wk(P.gear.weapon,heroKind()==='melee'&&!unarmed())+(P.gear.body||'')+(P.gear.head||'')+(P.gear.offhand||''):'')+(cg?'g'+wk(cg.weapon,cg.weapon&&(ITEMS[cg.weapon].kind||'melee')==='melee')+(cg.body||'')+(cg.head||'')+(cg.offhand||''):'')+'v'+v+'p'+pose+(bare?'b':'')+(arm?'s':'')+(afoot?'f':'')+(tint?'c'+tint:'');
+  {const c=bare?spr[key]:FIGURES.get(key);if(c)return c}
   // soldiers, your hero and companions: the template figures (people.js)
-  const cid=COMPS[type]?type:'',L0=allyLook(lookOf(type,team===2?0:team,hero,v,cid,cg),team),L={...L0,...(tint?{team:tint}:{}),...(arm?{weapon:null}:{})};
+  const cid=COMPS[type]?type:'',L0=allyLook(lookOf(type,team===2?0:team,hero,v,cid,cg),team),L={...L0,...(tint?{team:tint}:{}),...(arm?{weapon:null,slung:WPN[L0.weapon]?null:L0.weapon}:{}),...(afoot?{mount:null}:{})};
   // (a rider's bare body in a blow is the body standing: its weapon is drawn apart, so one sprite serves all nine blow frames; on
   // foot, each frame his own: people.js BLOW_RIG)
   if(bare&&pose>=6&&pose<=14&&heldWeapon(L)&&L.mount){const k0=key.replace('p'+pose+'b','p0b');return spr[key]=spr[k0]||(spr[k0]=cellOf(peopleSprite(L,0,true)))}
-  return spr[key]=cellOf(peopleSprite(L,pose,bare));
+  const c=cellOf(peopleSprite(L,pose,bare));return bare?spr[key]=c:FIGURES.set(key,c);
 }
 // World combat retains the army's cloth and each marcher's appearance instead of repainting by battle side.
-const actorSprite=(u,pose,bare,arm)=>unitSprite(u.type,u.worldSide??spriteTeam(u),u.hero,u.v,pose,bare,arm,u.worldTint);
+const actorSprite=(u,pose,bare,arm)=>unitSprite(u.type,u.worldSide??spriteTeam(u),u.hero,u.v,pose,bare,arm,u.worldTint,u.afoot);
+/* a horse no one rides (battle/dismount.js Horse): its rider's mount standing, saddled, a cloth of its side's colour under the
+   saddle (people.js drawMount: saddled); in a rider's cell, its feet where his were. Cached by its look */
+function horseSprite(L){const key='hz'+L.mount+(L.mountC||'')+L.team+(L.barded?'b':'');if(spr[key])return spr[key];
+  const g=pgrid(32,32);drawMount(g,{...L,saddled:true},-1);poutline(g);return spr[key]=cellOf(pcanvas(g))}
 /* the fallen (vfx.js drawCorpses): a man flat where he fell, head the way he faced, turned a quarter pixel for pixel so he stays
    crisp; a rider thrown from his mount, which lies low beside him; a beast slumped where it stood. stand: him upright (his fall
-   turns it about his feet), body: him lying, ax, ay: his feet in it; wk: the weapon he dropped; mount: his mount standing, down: lying */
+   turns it about his feet), body: him lying, ax, ay: his feet in it; wk: the weapon he dropped; mount: his mount standing, down:
+   lying */
 const CORPSES=new WeakMap(),BEAST_FALL={troll:'over',spider:'back',scorpion:'back',slime:'melt'};
 /* the beasts and monsters (engine/beasts.js PX.beast): the people's style, side-on, in a power-of-two cell (the dragon 64, a troll
    or a wyrm 32, a slime 16, the rest 32), feet on its bottom row; three variants; the poses as the people's (BEAST_POSES: 0-1
@@ -72,6 +82,13 @@ function corpseOf(u){
     c={stand:pcanvas(g),body:pcanvas(lie),ax:2,ay:12,wk,team:L.team};
     if(L.mount){const m=pgrid(32,32),d=pgrid(32,22);drawMount(m,L,-1);drawMountDown(d,L);poutline(m);poutline(d);c.mount=pcanvas(m);c.down=pcanvas(d)}}
   CORPSES.set(base,c);return c}
+/* one knocked down, not dead (render.js drawDowned): him falling and lying as the fallen do, but his weapon kept in his hand (the
+   owner, 2026-11-01: "draw a weapon from start to finish"), GEAR.room rows over him for it (top); his corpse's (corpseOf) when he
+   holds none apart. Kept by his body, apart from the corpse's record (the battle keeps that) */
+const DOWNED=new WeakMap();
+function downedOf(u){const c=corpseOf(u);if(!c.wk)return c;const base=actorSprite(u,0,true);let d=DOWNED.get(base);if(d)return d;
+  const L=unitLook(u),R=GEAR.room,g=pgrid(24,20+R);drawFigure(g,{...L,mount:null},4,3+R,-1,null,-1);const lie=pturn(g);poutline(g);poutline(lie);
+  d={stand:pcanvas(g),body:pcanvas(lie),ax:c.ax,ay:c.ay,top:R};DOWNED.set(base,d);return d}
 // which pose a fighter shows now: striking just after an attack, striding while moving, breathing while still
 /* the sprites a battle will need, made a little each frame before they are first shown (WARM.budget ms a frame, during the
    deployment and the opening): every body of every kind, side and look on the field, standing, breathing, walking and
@@ -93,7 +110,11 @@ function warmStep(){const t0=performance.now();while((WARM.q.length||WARM.b.leng
 // a soldier's look (what unitSprite draws him from), for the weapon in his hand
 // a shooter's sidearm: a short sword, on the weapon layer
 const sidearmLook=u=>u.side||(u.side={...unitLook(u),weapon:'sword'});
-function unitLook(u){if(u.look)return u.look;const cg=COMPS[u.type]&&P.comps&&P.comps[u.type]&&P.comps[u.type].gear||null;const L=allyLook(lookOf(u.type,u.worldSide??u.team,u.hero,u.hero?0:(u.v||0)%6,COMPS[u.type]?u.type:'',cg),u.worldSide??spriteTeam(u));return u.look=u.worldTint?{...L,team:u.worldTint}:L}
+// (a rider on foot: his look without his mount, battle/dismount.js)
+const FOOT_LOOK=new WeakMap();
+function unitLook(u){const L=riderLook(u);if(!u.afoot)return L;let f=FOOT_LOOK.get(L);if(!f)FOOT_LOOK.set(L,f={...L,mount:null});return f}
+// (his look as he is made, a rider in the saddle: kept on him)
+function riderLook(u){if(u.look)return u.look;const cg=COMPS[u.type]&&P.comps&&P.comps[u.type]&&P.comps[u.type].gear||null;const L=allyLook(lookOf(u.type,u.worldSide??u.team,u.hero,u.hero?0:(u.v||0)%6,COMPS[u.type]?u.type:'',cg),u.worldSide??spriteTeam(u));return u.look=u.worldTint?{...L,team:u.worldTint}:L}
 // (your allies' men (team 2: battle.js spriteTeam) in their side's cloth, SIDE.ally.tabard)
 const allyLook=(L,team)=>team===2?{...L,team:SIDE.ally.tabard}:L;
 function procPose(u,moved){
@@ -111,42 +132,51 @@ function procPose(u,moved){
 }
 // a banner bearer on the map (people.js mapFigure): the party's leader in the banner's colour, on foot or riding a mount of colour
 // mc; f the step (0 to WALK.n-1)
-function partySprite(col,mc,f,race){f=(f||0)%PEOPLE_STEPS;const you=col==='#e8b94a';race=race||(you?P.race:'human');const k='p'+col+(mc||'')+f+race;if(spr[k])return spr[k];
+function partySprite(col,mc,f,race){f=(f||0)%PEOPLE_STEPS;const you=col==='#e8b94a';race=race||(you?P.race:'human');const k='p'+col+(mc||'')+f+race,c=FIGURES.get(k);if(c)return c;
   const R=RACE_LOOK[race]||RACE_LOOK.human;
-  return spr[k]=mapFigure({race,skin:R.skin[0],hair:R.hair[you?0:2],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,beard:R.beard?R.hair[0]:null,
-    helm:you?'crown':'kettle',outer:'steel',inner:'dark',team:col,shortHair:true},f,mc||null)}
+  return FIGURES.set(k,mapFigure({race,skin:R.skin[0],hair:R.hair[you?0:2],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,beard:R.beard?R.hair[0]:null,
+    helm:you?'crown':'kettle',outer:'steel',inner:'dark',team:col,shortHair:true},f,mc||null))}
 // a bandit on the map: hooded, a spear
-function banditSprite(f){f=(f||0)%PEOPLE_STEPS;const k='bd'+f;return spr[k]||(spr[k]=mapFigure({race:'human',skin:'skinTan',hair:'black',helm:'hood',hood:'leather',outer:'leather',inner:'dark',team:'#8a3a2a',weapon:'spear',shortHair:true},f,null))}
-/* a party's banner on the map (Total War-style: larger than any real flag, floating over the party, drawn over everything:
-   render.js drawBanners): a pole with a gilt finial and the cloth on it, in its own 16 cell, its pole's foot at the cell's bottom
-   left (x 2). Its look b (Party.banner): k, the shape: 'banner' a swallow-tailed standard (a realm's lords, you, your
-   companions), 'pennant' a tapering pennant (a holding's guards), 'trade' a small pennant on a short pole (a caravan), 'rag' a
-   tattered standard (bandits, desert raiders, bog raiders); col its field, dev its device (BANNER_DEV: a realm's emblem by its
-   id, a crown for you, a star for a companion, a skull, a coin, a lit lantern (a night watch's pennant: gilt, its flame pale)). In the field's hue-shifted ramp (engine PX.ramp), lit from the
-   top left, a fold in shade; the device light on a dark field, dark on a light one; the people's outline (people.js). f: the
-   flutter (0, 1) */
+function banditSprite(f){f=(f||0)%PEOPLE_STEPS;const k='bd'+f;return FIGURES.get(k)||FIGURES.set(k,mapFigure({race:'human',skin:'skinTan',hair:'black',helm:'hood',hood:'leather',outer:'leather',inner:'dark',team:'#8a3a2a',weapon:'spear',shortHair:true},f,null))}
+/* a party's banner on the map (Total War-style: larger than any real flag, floating over its army's middle, drawn over everything:
+   render.js drawBanners): a pole with a gilt finial (a spearhead over a knob and a collar) and its cloth flying east, in a 32
+   cell, the pole's foot at (px, py) of the cell (render.js bannerAt stands it there), its cloth's middle lx. Its look b
+   (Party.banner): k, the shape: 'banner' a swallow-tailed standard (a realm's lords, you, your companions), 'pennant' a tapering
+   pennant (a holding's guards), 'trade' a small pennant on a short pole (a caravan), 'rag' a tattered standard (bandits, desert
+   raiders, bog raiders); col its field, dev its device (BANNER_DEV: a realm's emblem by its id, a crown for you, a star for a
+   companion, a skull, a coin, a lit lantern (a night watch's pennant: gilt, its flame pale)). The cloth in the field's ramp (engine
+   PX.ramp: light, the colour, shade, deep), lit from the top left: its folds run down it, each column lit as its fold turns to the
+   light and in shade as it turns away (BANNER.fold), the hem along its top lit and its foot in shade; its fly end waves (the
+   device's columns stay flat, so it reads); the device in the middle of the field, light on a dark field and dark on a light one,
+   ringed in the field's deepest shade so it stays clear zoomed out (a pennant's the device in small: BANNER_DEV's every other row
+   and column); the people's outline round it all (people.js). f: the flutter (0, 1), the folds half a fold along.
+   BANNER: the grid (w, h), the cloth's top and the pole's foot (rows; a caravan's top: trade), each shape's cloth [w, h], the folds
+   across it (fold) and where its fly end begins to wave (fly, columns) */
+const BANNER={w:16,h:24,top:4,foot:22,trade:10,cloth:{banner:[11,9],rag:[11,9],pennant:[12,8],trade:[7,4]},fold:2.2,fly:8};
 // (a band's rag by its kind: bandits, desert raiders, bog raiders)
 const BAND_FLAG={bandits:'#8a2a2a',raiders:'#b07a38',bog:'#4e6a3a'};
 const BANNER_DEV={vale:['..w..','..w..','wwwww','..x..','..x..'],karn:['wwwww','wwwww','..x..','..x..','..x..'],sylvan:['..w..','.www.','wwwww','.www.','..x..'],
   horde:['w...w','.w.w.','..x..','.w.w.','w...w'],salt:['..w..','wwwww','..w..','w.w.w','.www.'],crown:['.....','w.w.w','wwwww','wxwxw','.....'],
   star:['.....','..w..','.www.','..w..','.....'],skull:['.www.','wxwxw','.www.','.w.w.','.....'],coin:['ww','wx'],lantern:['.g.','gfg','gfg','.g.']};
 function bannerSprite(b,f){f=f?1:0;const key='bn'+b.k+b.col+b.dev+f;if(spr[key])return spr[key];
-  const g=pgrid(12,16),s=(x,y,c)=>pset(g,x,y,c),R=PX.ramp(b.col),Wd=PPAL.wood,G=PPAL.gold,trade=b.k==='trade',top=trade?6:2;
-  const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?['#5a2a2a','#3a1a22']:['#f4ecd8','#c8bca0'];
-  for(let y=top;y<=14;y++)s(2,y,y>11?Wd[2]:Wd[1]);s(2,top-1,G[1]);
-  // the cloth: each row's runs [first x, last x] down from the pole's top (a swallow tail, tatters, a pennant's taper); its top and
-  // the pole's side lit, its fold and far edge in shade
-  const F=[[3,9]],rows=b.k==='banner'?[F,F,F,F,F,F,F,F,f?[[3,5],[8,9]]:[[3,5],[7,9]],f?[[3,4],[9,9]]:[[3,4],[8,9]]]
-    :b.k==='rag'?[F,F,F,F,F,F,[[3,6],[8,9]],f?[[4,5],[8,9]]:[[3,4],[6,6],[9,9]]]
-    :trade?[[[3,8]],[[3,7]],[[3,5]],[[3,4]]]:[[[3,10]],[[3,9]],[[3,8]],[f?[3,6]:[3,7]],[[3,5]],[[3,4]]];
-  rows.forEach((runs,i)=>{const y=top+i,far=Math.max(...runs.map(r=>r[1]));for(const [a,c] of runs)for(let x=a;x<=c;x++)s(x,y,i===0||x===3?R[0]:x===far||x===(f?6:7)&&!trade?R[2]:R[1])});
-  if(b.k==='rag'){s(7,top+3,R[3]);s(9,top+5,R[3])}// (a hole, a stain)
-  // the device, in the middle of the field
-  const T=BANNER_DEV[b.dev];if(T&&!trade){const h=T.length,w=T[0].length,x0=b.k==='banner'||b.k==='rag'?4:trade?4:3,y0=top+(b.k==='banner'||b.k==='rag'?2:trade?1:1);
-    const sm=b.k==='pennant'&&b.dev!=='lantern'?[[0,0],[1,0],[0,1],[1,1]]:null,lx=b.dev==='lantern'?1:0,C={w:D[0],x:D[1],g:G[1],f:'#fff2a0'};
-    if(sm)for(const [x,y] of sm)s(x0+x+1,y0+y,(x+y)%2?D[1]:D[0]);else T.forEach((r,y)=>[...r].forEach((c,x)=>{if(c!=='.')s(x0+x+lx,y0+y,C[c])}))}
-  if(trade)T&&T.forEach((r,y)=>[...r].forEach((c,x)=>{if(c!=='.')s(4+x,top+1+y,c==='w'?G[0]:G[2])}));
-  poutline(g);return spr[key]=cellOf(pcanvas(g))}
+  const N=BANNER,g=pgrid(N.w,N.h),s=(x,y,c)=>pset(g,x,y,c),R=PX.ramp(b.col),Wd=PPAL.wood,G=PPAL.gold,trade=b.k==='trade',pen=b.k==='pennant'||trade,top=trade?N.trade:N.top,[cw,ch]=N.cloth[b.k]||N.cloth.banner;
+  const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?['#4a2226','#2a1418']:['#f6eedc','#d0c4a6'];
+  // the pole, its foot darker; the finial: a collar, a knob, a point
+  for(let y=top;y<=N.foot;y++)s(2,y,y>N.foot-4?Wd[2]:Wd[1]);s(2,top-1,G[2]);s(1,top-2,G[2]);s(2,top-2,G[0]);s(3,top-2,G[1]);s(2,top-3,G[0]);
+  // the cloth: each column's rows [r0, r1] by its shape (a swallow tail's notch, a rag's torn foot and fly, a pennant's taper)
+  const rows=i=>{if(pen){const t=Math.round(i*(ch-1)/(cw-1));return[[0,ch-1-t]]}
+    if(b.k==='rag'){const d=[0,1,0,2,1,0,3,1,2,0,2][(i+f*3)%11];return i===cw-1?[[0,0],[2,2],[4,5]]:[[0,ch-1-d]]}
+    const n=i-(cw-3),m=(ch-1)>>1;return n<0?[[0,ch-1]]:[[0,m-1-n],[m+1+n,ch-1]]};
+  const ph=i=>(i/cw*N.fold+f*.5)*Math.PI,wave=i=>i<N.fly?0:Math.round(Math.sin(ph(i))),at=new Map();
+  for(let i=0;i<cw;i++){const sl=Math.cos(ph(i)),k=i===0?1:sl>.45?0:sl<-.45?2:1;for(const [r0,r1] of rows(i))for(let r=r0;r<=r1;r++){const y=top+r+wave(i);at.set(i+','+r,y);s(3+i,y,R[r===0?Math.max(0,k-1):r===r1?Math.min(3,k+1):k])}}
+  if(b.k==='rag'){s(9,top+3+wave(6),R[3]);s(10,top+5+wave(7),R[3])}// (a hole, a stain)
+  // the device in the middle of the field, ringed in its deepest shade (a pennant's in small; a caravan's coin gilt)
+  let T=BANNER_DEV[b.dev];if(T&&pen&&!trade&&b.dev!=='lantern')T=[0,2,4].map(y=>[0,2,4].map(x=>T[y][x]).join(''));
+  if(T){const i0=trade?1:pen?1:(cw-T[0].length)>>1,r0=trade?0:pen?2:(ch-T.length)>>1,C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'},dev=new Set();
+    T.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')dev.add((i0+x)+','+(r0+y))}));
+    if(!trade)for(const p of dev){const [i,r]=p.split(',').map(Number);for(const [di,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=(i+di)+','+(r+dr);if(!dev.has(q)&&at.has(q))s(3+i+di,at.get(q),R[3])}}
+    T.forEach((row,y)=>[...row].forEach((c,x)=>{const q=(i0+x)+','+(r0+y);if(c!=='.'&&at.has(q))s(3+i0+x,at.get(q),C[c])}))}
+  poutline(g);const c=cellOf(pcanvas(g)),n=c.width;c.px=(n>>1)-(N.w>>1)+2;c.py=n-N.h+N.foot;c.lx=c.px+1+(cw>>1);return spr[key]=c}
 /* pre-rendered world map: ground colors per climate, then terrain on top; mini: the minimap's colour of each kind of tile (T_OPEN
    ... T_FORD, map.js) */
 const PAL={

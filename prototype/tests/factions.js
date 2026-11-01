@@ -12,8 +12,8 @@ try{
  W.rel={};W.rel[t.rk('vale','karn')]={s:'war',since:1};
  P.gold=1000;
  t.enterTown(t.townBy('Ashford'));t.act('tab','tavern');t.act('contract');ok(P.fac==='vale'&&t.hostileTo('karn')&&!t.hostileTo('salt'),'contract with vale makes karn hostile');
- P.troops.hum_spear=2;t.act('tab','recruit');t.act('rec-tab','train');ok(/Pikeman/.test(document.getElementById('panel').innerHTML),'branching upgrade shown');
- {const g=t.partyRoster(P).groups.find(x=>x.type==='hum_spear');t.rankGain(g,1e6);t.W.trainers={...t.W.trainers,Ashford:[{id:'A:0',name:'Hob the Spearmaster',roles:['spear'],level:2,town:'Ashford'}]};/* (an expert of spears there: world/trainers.js) */t.act('rec-upgroup',g.id+':hum_pike');ok(P.troops.hum_pike===2&&!P.troops.hum_spear,'upgraded to pikemen (the group at rank '+t.RANKS.max+')')}
+ P.troops.hum_levy=2;t.act('tab','recruit');t.act('rec-tab','train');ok(/Pikeman/.test(document.getElementById('panel').innerHTML)&&/Lancer/.test(document.getElementById('panel').innerHTML),'branching upgrade shown (Spearman: Pikeman or Lancer)');
+ {const g=t.partyRoster(P).groups.find(x=>x.type==='hum_levy');t.rankGain(g,1e6);P.gold=Math.max(P.gold,1e4);t.act('rec-upgroup',g.id+':hum_pike');ok(P.troops.hum_pike===2&&!P.troops.hum_levy,'upgraded to pikemen (the group at rank '+t.RANKS.max+')')}
  // (a third group wants a step of Leadership: an army starts with room for 3, your hero's own one of them, army.js armyGroupLimit)
  P.sk.lead.lv=Math.max(P.sk.lead.lv,t.ARMY_GROUP.leadBase+1);t.act('hire','hum_levy');ok(P.troops.hum_levy===1,'hired race troop');
  t.act('leave');done();
@@ -28,7 +28,8 @@ try{
  t.act('cont');done();
  const sl=W.lords.find(l=>l.fac==='salt'&&!l.dead);sl.inside=null;G.encCool=0;t.lordMeet(sl);/* met on the road (in a hall there is no attacking) */ok(/Attack/.test(document.getElementById('panel').innerHTML),'neutral lord dialog');
  t.act('lord-attack');ok(G.enc.kind==='lord'&&t.hostileTo('salt'),'attacking makes salt hostile');t.act('auto');t.act('cont');done();
- G.mode='world';t.openJournal('realms');ok(/Relations/.test(document.getElementById('panel').innerHTML),'realms tab');t.act('journal-close');
+ // (back on the map whatever came of the fight: lost, you are taken captive and its page waits, modal)
+ Kit.world();t.openJournal('realms');ok(/Relations/.test(document.getElementById('panel').innerHTML),'realms tab');t.act('journal-close');
  for(let k=0;k<3;k++)t.dayTick();
  t.TOWNS[2].owner='karn';t.saveGame();t.TOWNS[2].owner='vale';W.lords[0].troops=[];
  t.act('load');ok(t.TOWNS[2].owner==='karn'&&W.lords.length===20&&P.fac==='vale','save/load keeps world');

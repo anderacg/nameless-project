@@ -31,7 +31,7 @@ class HireDesk{
   // your units it could refill: of a kind on offer, short of their size (wounded count: they come back to it)
   short(){const r=partyRoster(P);return r.groups.filter(g=>this.src.kinds.includes(g.type)&&r.groupRoom(g.type,g.id)>0)}
   // a unit's refill: the men it lacks, how many it gets now (the willing, your gold), their price, or why not
-  fill(g){const r=partyRoster(P),k=g.type,need=r.groupRoom(k,g.id),c=this.src.cost(k),w=this.why(k),n=Math.min(need,this.pool(k),Math.floor(P.gold/Math.max(1,c)));
+  fill(g){const r=partyRoster(P),k=g.type,need=r.groupRoom(k,g.id),c=this.src.cost(k)+Buffs.perMan(g.id),w=this.why(k),n=Math.min(need,this.pool(k),Math.floor(P.gold/Math.max(1,c)));
     return{need,n,cost:n*c,why:w||(!this.pool(k)?'None willing':n<1?'Needs '+c+'g a man':'')}}
   btn(a,arg,label,why,cls=''){return '<button class="btn sm'+cls+'" type="button" data-act="'+this.p+a+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+htmlText(why)+'"':'')+'>'+label+'</button>'}
   // the list (or, open, a unit's card over it on a small screen) and the question (when a press spends much)
@@ -64,7 +64,8 @@ class HireDesk{
   run(v,arg){const s=this.s,r=partyRoster(P);let got=0,spent=0,why='';
     const take=(k,n,g)=>{const res=this.src.hire(k,n,g);if(res.ok){got+=n;spent+=res.cost}else why=res.why;return res.ok};
     if(v==='unit'){const u=this.unit(arg);if(u.why)why=u.why;else take(arg,u.n,'new')}
-    else for(const g of v==='refill'?r.groups.filter(g=>g.id===arg):this.short()){const f=this.fill(g);if(f.why){why=why||f.why;continue}if(!take(g.type,f.n,g.id))break}
+    else for(const g of v==='refill'?r.groups.filter(g=>g.id===arg):this.short()){const f=this.fill(g);if(f.why){why=why||f.why;continue}if(!take(g.type,f.n,g.id))break;
+      const x=f.n*Buffs.perMan(g.id);if(x){P.gold-=x;spent+=x}}// (the new men's share of the unit's upgrades: world/buffs.js)
     s.recruitNotice=got?(v==='unit'?'A new unit of '+got+' '+ST[arg].n+(got>1?'s':'')+' joins you':got+' men join your unit'+(v==='refillall'?'s':''))+' for '+spent+'g.'+(why?' '+why+'.':''):why}
   // a unit's card: beside the list on a wide screen (picked), in the window over it on a small one (Back: the list, where you were)
   info(arg,v){const s=this.s;if(v==='info-back'){s.info=null;s.recBack=true;return}s.pick=arg;if(!window.matchMedia('(max-width:820px),(max-height:600px)').matches)return;s.info=arg;s.recScroll=panelScroll()}

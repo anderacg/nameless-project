@@ -11,8 +11,9 @@ try{
  ok(t.rating(['tiger'],3)>t.rating(['tiger'],1),'monster levels raise power');
  ok(t.rating(['hum_knight'])>t.rating(['hum_spear'])&&t.rating(['hum_spear'])>t.rating(['hum_levy']),'higher tiers rate higher');
  t.updateHUD(true);ok(new RegExp('title="Party power">.*?<span class="gold">'+t.partyPower()+'<').test(document.getElementById('stats').innerHTML),'HUD shows power');
+ // (hum_levy is the Spearman since the troop tree, 2026-10-31: was the Levy)
  G.mode='world';t.openChar();t.act('char-tab','condition');const h=document.getElementById('panel').innerHTML;
- ok(/Party power/.test(h)&&/Brann the Wolf/.test(h)&&/Levy/.test(h),'the Army window’s Condition breaks power down by hero, companion and troop type');t.act('char-close');
+ ok(/Party power/.test(h)&&/Brann the Wolf/.test(h)&&/Spearman/.test(h),'the Army window’s Condition breaks power down by hero, companion and troop type');t.act('char-close');
  t.startEncounter({kind:'party',ref:t.bandits[0],n:5,band:'bandits'});ok(/Your power <strong>\d+<\/strong> vs <strong>\d+<\/strong>/.test(document.getElementById('panel').innerHTML),'encounters show your power vs theirs');t.act('flee');
  const m={id:'troll',x:P.x+30,y:P.y,hx:P.x,hy:P.y,lv:2,n:1,cool:0};W.monsters.push(m);G.encCool=0;t.startMonster(m);
  ok(document.getElementById('panel').innerHTML.includes('vs <strong>'+t.rating(['troll'],2)+'</strong>'),'monster encounter uses the leveled power');t.act('flee');

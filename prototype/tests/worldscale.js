@@ -6,18 +6,19 @@
 // lever at .68 (a band on foot some 9 px a second on open ground, 25 km a day), the grace after a fight 1.47 times as long (the
 // gap you open in it as before), the AI on the same lever, and the walk cycles by the distance walked.
 // Since then campaign travel goes at twice that (WORLD_SCALE.travel, moveStep's third argument); a world battle keeps the base.
+// (2026-10-31, the owner: "drop campaign speed about 20%": 1.6 times the base)
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,get=u=>{const x=new XMLHttpRequest();x.open('GET',u,false);x.send();return x.responseText};
  const S=t.WORLD_SCALE,D=t.DENSITY;
  // ---- the table: every moved number, at today's value
- const want={move:.68,travel:2,sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
-  ai:{graceGap:24,grace:1.47,dread:70,bandCamp:220,lairHunt:140,lairLeash:60,mythicRoam:[120,90],mythicScorch:200,gameLeash:50,herdLeash:24,penLeash:99,
+ const want={move:.68,travel:1.6,sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
+  ai:{graceGap:24,grace:1.47,dread:70,bandCamp:220,refugeAt:24,refugeLane:24,lairHunt:140,lairLeash:60,mythicRoam:[120,90],mythicScorch:200,gameLeash:50,herdLeash:24,penLeash:99,
    compFoes:90,compFlee:70,compBeat:[80,60],compTake:60,compDraft:120,folkNear:520,folkForget:120,folkBandit:70,folkFear:90,slipAway:40},
   spawn:{bandit:[220,260],monster:[180,240],monsterHold:64,mythic:200,critter:[120,200],critterHold:56,away:120,rim:3},
   econ:{caravanNear:10,caravanFar:90,caravanCost:150,refuge:70,resRange:10,homeRange:24},
   law:{repNear:15,eventNear:15,siegeOutrage:20},land:{shelter:48,healNear:80,estateGuard:7,friendly:50,pacify:35},war:{front:60,raidLeash:80,siegeLeash:80},battle:{elfR:10,bridge:2}};
- ok(JSON.stringify(S)===JSON.stringify(want),'WORLD_SCALE holds every moved distance at today\'s value, the lever and the grace at Phase 1\'s, campaign travel twice the base (696de87) ('+Object.keys(S).join(', ')+')');
+ ok(JSON.stringify(S)===JSON.stringify(want),'WORLD_SCALE holds every moved distance at today\'s value, the lever and the grace at Phase 1\'s, campaign travel 1.6 times the base (twice at 696de87; 20% less, the owner, 2026-10-31) ('+Object.keys(S).join(', ')+')');
  const classic={bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18},daily:{bandits:1,monsters:3,critters:3}};
  ok(JSON.stringify(D.classic)===JSON.stringify(classic)&&t.density()===D.classic,'DENSITY.classic holds today\'s caps, and it is the one in use (the classic world: the classic seed)');
  // ---- every cap reads the table; the site kinds scattered at random are the table's, and none keeps a count of its own
@@ -55,7 +56,7 @@ try{
  ok(t.GRACE_GAP===S.ai.graceGap&&t.RES_RANGE===S.econ.resRange&&t.HOME_RANGE===S.econ.homeRange,'the old names (GRACE_GAP, RES_RANGE, HOME_RANGE) read the table');
  // ---- one movement lever: at move 1 a step is exactly pace x d
  const R=t.seeded(5);let same=true;for(let i=0;i<2000;i++){const px=R()*90,d=R()*.2;same=same&&t.moveStep(px,d)===px*d*S.move*S.travel&&t.moveStep(px,d,false)===px*d*S.move}
- ok(S.move===.68&&S.travel===2&&same,'moveStep(pace, d) is exactly pace x d x move x travel on the campaign map, pace x d x move in a world battle (2000 samples)');
+ ok(S.move===.68&&S.travel===1.6&&same,'moveStep(pace, d) is exactly pace x d x move x travel on the campaign map, pace x d x move in a world battle (2000 samples)');
  // ---- no moved number left written out (the old expressions are gone; every step goes through moveStep)
  const gone={
   'world/brains.js':['const GRACE_GAP=24','this.sight(90)','this.sight(95)','this.sight(80)','o.y-l.y)<70','26*mul*d','16*d','12*d','.9*d','.75*d','dd<90','[1]<70','rint(-80,80)','rint(-60,60)','*d)'],
@@ -94,7 +95,11 @@ try{
   const spot=(tt,cl,k=0)=>{let n=0;for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++){if(t.tAt(tx,ty)!==tt||t.tAt(tx+1,ty)!==tt||t.climAt((tx+.5)*16,(ty+.5)*16)!==cl||t.climAt((tx+1.5)*16,(ty+.5)*16)!==cl)continue;
     if(t.TOWNS.some(h=>Math.hypot(h.x-(tx+.5)*16,h.y-(ty+.5)*16)<60))continue;if(n++===k)return [(tx+.5)*16,(ty+.5)*16]}return null};
   const grounds={open:spot(t.T_OPEN,'grass'),road:spot(t.T_ROAD,'grass'),forest:spot(t.T_FOREST,'grass'),hills:spot(t.T_HILL,'grass'),swamp:spot(t.T_OPEN,'swamp')};
-  const speed=([x,y])=>{P.x=x;P.y=y;P.dir=1;P.tx=x+60;P.ty=y;G.chase=null;const x0=P.x,y0=P.y;t.updateWorld(.05);const px=Math.hypot(P.x-x0,P.y-y0)/.05;P.tx=null;return px};
+  // (the pace's formula, exact, a moment after a teleport: with world battles off, the army's position its own step; on, it is its men's
+  // middle (march.js menCentre), the teleport's snap in that moment: the march's own pace below, steady, march)
+  const speed=([x,y])=>{const wb=t.WORLD_BATTLE.on;t.WORLD_BATTLE.on=false;try{P.x=x;P.y=y;P.dir=1;P.tx=x+60;P.ty=y;G.chase=null;const x0=P.x,y0=P.y;t.updateWorld(.05);const px=Math.hypot(P.x-x0,P.y-y0)/.05;P.tx=null;return px}finally{t.WORLD_BATTLE.on=wb}};
+  // (the march's own pace: your men marching on open ground, 2 s to form and gather speed, then 2 s measured)
+  const march=([x,y])=>{P.x=x;P.y=y;P.dir=1;G.chase=null;t.MarchArmy.of(P).sync();P.tx=x+400;P.ty=y;for(let i=0;i<40;i++)t.updateWorld(.05);const x0=P.x,y0=P.y;for(let i=0;i<40;i++)t.updateWorld(.05);const px=Math.hypot(P.x-x0,P.y-y0)/2;P.tx=null;return px};
   P.gear.mount=null;P.sk.ride.lv=0;P.sk.athl.lv=0;P.perks=[];P.comps={};P.wounded={};P.morale=60;P.hp=t.vitals()[0];(0,eval)('BAND=freshBand()');P.bsta=100;// (the pace by ground alone: fresh, not Parched or Tired after the day above, world/supply.js)
   const rows=[],bad=[],kmDay=v=>v*t.DAY_SECONDS/t.TILE*.25,want={foot:{open:[8.9,.05],road:[11.6,.05],forest:[5.3,.05]},horse:{open:[13.3,.08],road:[17.3,.08]}},race0=P.race;
   for(const [who,setup] of [['foot',()=>{P.race='dwarf';P.gear.mount=null;P.troops={hum_levy:10}}],['horse',()=>{P.race='dwarf';P.gear.mount='m_horse';P.troops={hum_knight:10}}],['human foot',()=>{P.race='human';P.gear.mount=null;P.troops={hum_levy:10}}]]){setup();
@@ -102,6 +107,8 @@ try{
     if(Math.abs(v-now)>1e-6||Math.abs(v/today-.4/.6*.68*S.travel)>1e-6)bad.push(who+' '+g+' '+v.toFixed(2)+' (want '+now.toFixed(2)+')');
     const w=(want[who]||{})[g];if(w&&Math.abs(v/S.travel/w[0]-1)>w[1])bad.push(who+' '+g+' '+(v/S.travel).toFixed(2)+' px/s at the base, off the doc\'s '+w[0]+' by '+Math.round((v/S.travel/w[0]-1)*100)+'%');
     if(who==='human foot'&&g!=='open'&&g!=='road')continue;rows.push(who+' '+g+' '+v.toFixed(1)+' px/s ('+today.toFixed(1)+' before), '+kmDay(v).toFixed(0)+' km a day')}}
+  // (the owner, 2026-11-01: the army is where its men are) its men marching keep its pace on open ground
+  if(t.WORLD_BATTLE.on&&grounds.open){P.race='dwarf';P.gear.mount=null;P.troops={hum_levy:10};P.x=grounds.open[0];P.y=grounds.open[1];const want=t.MAP_BASE*t.travelMul()*t.WORLD_PACE*S.move*S.travel,v=march(grounds.open);ok(Math.abs(v/want-1)<=.06,'your men marching on open ground keep the pace: '+v.toFixed(2)+' px/s (the formula '+want.toFixed(2)+')')}
   P.gear.mount=null;P.troops={};
   info('on screen at 1x: '+rows.join('; '));
   ok(!bad.length&&rows.length>=12,'every ground, on foot and mounted: today\'s pace x .4/.6 x .68 x travel exactly, the base near the doc\'s targets (on foot within 5% of 8.9 open, 11.6 road, 5.3 forest; mounted within 8% of 13.3 and 17.3)'+(bad.length?': '+bad.join('; '):''));
@@ -116,7 +123,7 @@ try{
    const secs=f*.05,gap=secs*t.MAP_BASE*tm*t.WORLD_PACE*S.move,before=3*t.MAP_BASE*tm;
    ok(Math.abs(gap/before-1)<.02,'the grace (G.encCool 3) lasts '+secs.toFixed(1)+' s at 1x: you walk '+gap.toFixed(0)+' px in it, as before ('+before.toFixed(0)+' px in '+(3/.6).toFixed(1)+' s)');P.troops={}}
   // ---- a caravan's wheel by its frame (the walk cycles by distance, R13: render.js)
-  {const cv=t.caravanSprite('#c74453',0),cv1=t.caravanSprite('#c74453',1),cv2=t.caravanSprite('#c74453',2);ok(cv!==cv1&&cv1!==cv2&&cv.width===32,'a caravan\'s wheel turns and its ox and drover step by its frame ('+t.WALK.n+' of them, a step each 1.2 px)');}
+  {const A=t.CARAVAN_ART,cv=t.caravanSprite('#c74453',0),cv1=t.caravanSprite('#c74453',1),cv2=t.caravanSprite('#c74453',1,1);ok(cv!==cv1&&cv1!==cv2&&cv.width===64,'a caravan\'s ox and drover step by its frame ('+A.steps+' of them, at the march\'s cadence) and its wheel turns by the way it rolls ('+A.turns+' frames to a spoke, one each '+t.caravanRoll().toFixed(2)+' px)');}
   park()}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

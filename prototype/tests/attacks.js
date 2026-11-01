@@ -12,7 +12,7 @@ try{
  // classes and matchups
  const mages=['hum_mage','dw_rune','elf_weaver','orc_shaman'];
  ok(mages.every(k=>ST[k]&&ST[k].magic&&t.unitClass(ST[k])==='magic'),'every race has a caster: '+mages.map(k=>ST[k].n).join(', '));
- ok(Object.values(t.RACES).every(r=>ST[r.mage].race&&t.UP[r.ranged].includes(r.mage)),'casters are trained from each race\'s ranged recruits');
+ ok(Object.values(t.RACES).every(r=>ST[r.mage].race&&(r===t.RACES.human?!t.UP[r.ranged].includes(r.mage):t.UP[r.ranged].includes(r.mage))),'casters: each race’s own; the humans’ a rare hire, no longer from their archers');
  ok(t.unitClass(ST.hum_bow)==='ranged'&&t.unitClass(ST.hum_foot)==='foot'&&t.unitClass(ST.hum_levy)==='spear','ranged and melee classes stay as before (a levy carries a spear)');
  const M=t.matchup;
  ok(M(ST.hum_mage,ST.hum_knight)>=1&&M(ST.hum_bow,ST.hum_knight)<.7,'plate stops arrows but not magic ('+M(ST.hum_bow,ST.hum_knight).toFixed(2)+' vs '+M(ST.hum_mage,ST.hum_knight).toFixed(2)+')');
@@ -133,15 +133,16 @@ try{
  // damage types and armour: physical against armour, magic against ward; every kind its type and armour from its look
  {const M=t.matchup,TM=t.typeMul;
   ok(['hum_sword','hum_spear','dw_hammer','hum_bow','dw_sling','hum_mage','hedge','dw_rune','wolf'].map(k=>ST[k].dt).join()==='slash,pierce,blunt,pierce,blunt,fire,frost,arcane,slash','each kind its damage type, by its weapon (casters by their school, beasts by their claws)');
-  ok(['hum_foot','militia','hum_sword','hum_knight','bear'].map(k=>ST[k].armor).join()==='none,leather,mail,plate,hide','and its armour by what it wears (unarmoured, leather, mail, plate, hide)');
+  ok(['hum_farmer','militia','hum_sword','hum_knight','bear'].map(k=>ST[k].armor).join()==='none,leather,mail,plate,hide','and its armour by what it wears (unarmoured, leather, mail, plate, hide)');
   const pl=ST.hum_knight;ok(TM(ST.hum_sword,pl)<TM(ST.dw_hammer,pl)&&TM(ST.dw_hammer,pl)<1,'against plate a sword does least, a hammer more ('+TM(ST.hum_sword,pl)+' / '+TM(ST.dw_hammer,pl)+')');
-  ok(TM(ST.hum_sword,ST.hum_foot)===1&&TM(ST.hum_sword,ST.hum_sword)<TM(ST.hum_sword,ST.militia),'mail stops more of a slash than leather, nothing stops it on the unarmoured');
+  ok(TM(ST.hum_sword,ST.hum_farmer)===1&&TM(ST.hum_sword,ST.hum_sword)<TM(ST.hum_sword,ST.militia),'mail stops more of a slash than leather, nothing stops it on the unarmoured');
   ok(TM(ST.hum_long,pl)>TM(ST.hum_bow,pl),'an armour-piercing longbow is stopped half as much');
   ok(TM(ST.hum_mage,pl)===1&&TM(ST.hum_mage,ST.dw_rune)<1,'magic ignores armour; a ward stops it');
   ok(TM(ST.hum_mage,ST.troll)>1&&TM(ST.hedge,ST.troll)<1&&TM(ST.hum_mage,ST.dragon)<.5,'a troll fears fire and shrugs off frost; a dragon all but ignores fire');
   ok(t.shapeDt('thrust','slash')==='pierce'&&t.shapeDt('slam','slash')==='blunt'&&t.shapeDt('arc','slash')==='slash','a combo\u2019s thrust pierces, its slam crushes, its sweep is its weapon\u2019s');
   P.gear.weapon=t.gearId('warhammer',0);P.gear.body=t.gearId('mail',4);ok(t.heroStats().dt==='blunt'&&t.heroStats().armor==='plate','your hero: a warhammer crushes, golden armour is plate');P.gear.body=null;ok(t.heroStats().armor==='none','no armour, unarmoured');
-  ok(/Slash · physical · Mail armour/.test(t.unitCard('hum_sword')),'the unit card says it (Slash · physical · Mail armour)');}
+  // (the card as Total War's since 83036ab: its class, its blow's kind and its armour on one line)
+  ok(/Shield infantry · Slash · Mail/.test(t.unitCard('hum_sword').replace(/<[^>]+>/g,'')),'the unit card says it (Shield infantry · Slash · Mail)');}
  // who trains as a missile hits (owner, 2026-10-21): the shooter's Archery, an arrow and a bolt alike, your hero's (your own
  // shots) or a companion's; magic, a companion's Spellcraft (your hero's is trained as you cast)
  {const tr0=window.train,ct0=window.compTrain,got=[];window.train=(k,n)=>got.push('hero:'+k);window.compTrain=(id,k,n)=>got.push(id+':'+k);try{

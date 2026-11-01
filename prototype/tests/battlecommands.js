@@ -10,7 +10,16 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // ordered (the rest stay the AI's, the log says whom), not the whole army; with the old whole-army take-back the hashes are as before.
   // line_drag: b68251ea -> 7a82a8aa (2026-10-24): hero now owns one share on the line, in selection order.
   // The hotkey-only refactor retained all 19 old hashes; only this hero-inclusive fixture changes with the new planner.
-  const expected={"pick":"f8ea01cb","select":"870a2099","boxes":"627fa3d1","control_groups":"1f6e535a","move":"619baeb8","queue":"e3988d7e","attack":"30a7c1a9","own_icon":"bca1cbbd","orders":"78927b0f","flags":"d5c9b760","formations":"740cba6b","line_drag":"7a82a8aa","deployment":"8cf425b5","empty":"3ce8e39b","pointer_select":"f60d232d","pointer_orders":"d9382130","pointer_line":"1a6d2d33","touch":"5f816ed1","keyboard":"03b1480f"};
+  // (all 19 re-recorded 2026-11-01, on purpose, at the sweep fix after the night of 2026-10-31. The baseline had stood through
+  //  every move since, found commit by commit on the first-parent history (a worktree at each commit): 696de87 the owner's notes of
+  //  2026-10-25, f8cfe32 battles open ready for Start Battle and fa23bde battles longer (all 19 at each); then the night's troop
+  //  tree (data/units.js, races.js, matchups.js, world/holding.js: the kinds, their names and stats) and the AI march styles
+  //  (setup.js arrangeMarch, from world/marchstyles.js). Checked: with those four files as at 803bd3a and march.js marchLayout's
+  //  style null, every one is 803bd3a's again. Were pick f8ea01cb, select 870a2099, boxes 627fa3d1, control_groups 1f6e535a, move
+  //  619baeb8, queue e3988d7e, attack 30a7c1a9, own_icon bca1cbbd, orders 78927b0f, flags d5c9b760, formations 740cba6b, line_drag
+  //  7a82a8aa, deployment 8cf425b5, empty 3ce8e39b, pointer_select f60d232d, pointer_orders d9382130, pointer_line 1a6d2d33, touch
+  //  5f816ed1, keyboard 03b1480f)
+  const expected={"pick":"723f5db6","select":"2b845867","boxes":"ee514f7a","control_groups":"e621bf86","move":"d888f4e9","queue":"bfed0aaf","attack":"f3d329d3","own_icon":"64453fda","orders":"1d6414ea","flags":"9037748f","formations":"598705cc","line_drag":"10a5c3fc","deployment":"6d667ed5","empty":"b7f1987a","pointer_select":"9699bae8","pointer_orders":"2d1c35c9","pointer_line":"05c3e722","touch":"1e22ee24","keyboard":"b5056072"};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const methods=['moveTo','attack','queueTo','hold','withdraw','setWalk','setFlag','setForm','setRun'],original={},calls=[];
@@ -25,6 +34,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     drag:[B.box||null,B.rdrag||null],lastRc:B.lastRc&&{x:B.lastRc.x,y:B.lastRc.y},camera:B.cam&&{x:B.cam.x,y:B.cam.y,z:B.cam.z,fit:B.cam.fit},
     messages:G.msgs.map(m=>({m:m.m,cls:m.cls})),buttons:[...document.querySelectorAll('[data-order],[data-flag],[data-form]')].map(b=>({order:b.dataset.order,flag:b.dataset.flag==='shieldWall'?undefined:b.dataset.flag,form:b.dataset.flag==='shieldWall'?'wall':b.dataset.form,on:b.classList.contains('on'),pressed:b.getAttribute('aria-pressed'),disabled:b.disabled})),
     results,calls:calls.slice(),randomCalls,next:[Math.random(),Math.random(),Math.random()]});
+  // (keep formation off, as it was when these were recorded: move, queue, line_drag and deployment send several groups at once,
+  // and on (the default since 2026-11-01) they would go as one turned block: tests/keepform.js)
+  const keep0=t.PREFS.keepform.v;t.PREFS.keepform.v=false;
   try{
     Math.random=t.seeded(800);t.act('begin','soldier');G.quietEvents=true;t.W.lords=[];t.GUIDE.on=false;
     window.__commandMeasure=measure0;(0,eval)('measureField=()=>({top:40,bot:560})');
@@ -110,7 +122,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       ok(Object.values(B.groups).every(g=>g instanceof t.BattleControl),name+': commands retain the existing group model');
     }
   }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{
-    Math.random=random0;for(const m in original)t.BattleControl.prototype[m]=original[m];if(window.__commandMeasure){(0,eval)('measureField=window.__commandMeasure');delete window.__commandMeasure}
+    Math.random=random0;t.PREFS.keepform.v=keep0;for(const m in original)t.BattleControl.prototype[m]=original[m];if(window.__commandMeasure){(0,eval)('measureField=window.__commandMeasure');delete window.__commandMeasure}
   }
   const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
 };

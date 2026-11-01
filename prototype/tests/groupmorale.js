@@ -28,10 +28,11 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  f=start();f.g.withdraw();tick(f,.1);ok(!f.r.routed&&f.r.confidence===0&&f.g.order==='withdraw','ordered withdrawal is distinct from automatic routing');
  f=start(20,20,{morale:false});f.r.mor=-100;tick(f,10);ok(!f.r.routed,'morale-disabled laboratory battles do not make automatic routing decisions');
  f=start(20,20,{leftGroups:[{type:'hum_foot',count:20},{type:'hero',count:1},{type:'brann',count:1},{type:'troll',count:1}]});const immune=f.b.units.filter(u=>!u.team&&t.steady(u));immune.forEach(u=>t.rout(u));ok(immune.every(u=>!t.resolveOf(u)&&!u.rout),'heroes, companion templates and unbreakable creatures retain their immunity');
- const hero=f.b.hero;f.r.confidence=1;f.r.mor=60;t.applyDmg(hero,hero.hp+1,1,'slash',f.e[0]);ok(f.r.confidence===0&&f.r.mor===40&&f.r.confidenceBlockedUntil>f.b.t,'leader loss applies once to each formation and overrides confidence');
+ // (every morale loss by GROUP_RESOLVE.grit since fa23bde, "battles longer and steadier": the leader's fall MORALE.lead x grit)
+ const hero=f.b.hero;f.r.confidence=1;f.r.mor=60;t.applyDmg(hero,hero.hp+1,1,'slash',f.e[0]);ok(f.r.confidence===0&&Math.abs(f.r.mor-(60-t.MORALE.lead*t.GROUP_RESOLVE.grit))<1e-9&&f.r.confidenceBlockedUntil>f.b.t,'leader loss applies once to each formation and overrides confidence');
  f=start(20,20);f.r.mor=20;t.moraleCry([...f.a,...f.a]);ok(f.r.mor===35,'War Cry heartens a formation once, not once per recipient soldier');
  f.r.mor=0;f.r.breakT=.4;f.r.mor=5;tick(f,0);ok(!f.r.breakT,'positive shared morale resets the breaking episode');
- f=start(20,20,{leftGroups:[{type:'hum_foot',count:10},{type:'hum_foot',count:10},{type:'hum_foot',count:10}]});const groups=t.playerGroups().map(id=>f.b.groups[id]);groups.forEach((g,i)=>{g.units.forEach(u=>{u.x=300+i*20;u.y=300});g.resolve.mor=i?5:0});
+ f=start(20,20,{leftGroups:[{type:'hum_foot',count:10},{type:'hum_foot',count:10},{type:'hum_foot',count:10}]});const groups=t.playerGroups().map(id=>f.b.groups[id]);groups.forEach((g,i)=>{g.units.forEach(u=>{u.x=300+i*20;u.y=300});g.resolve.mor=i?1:0});// (the neighbours at 1: under the cascade's shock, MORALE.cascade x grit since fa23bde)
  t.rout(groups[0].units[0]);tick(f,0);ok(groups[1].resolve.mor<0&&!groups[1].resolve.routed&&!groups[2].resolve.routed,'nearby group panic is deferred and cannot cascade in the same update');
  const shocked=groups[1].resolve.mor;t.rout(groups[0].units[0]);tick(f,0);ok(groups[1].resolve.mor===shocked,'a repeated route event cannot multiply the neighbouring shock');
  f.b.units.reverse();tick(f,.01);ok(!groups[1].resolve.routed&&groups[1].resolve.breakT>0,'neighbouring groups must sustain their own breaking period');

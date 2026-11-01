@@ -4,6 +4,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');G.encCool=99;// no herds or sites in the way of the chases
+ t.WORLD_LOD.on=false;// (the map's tiers, 2026-10-31: lords set down beside you, or far from you, think every frame here; lod.js tests the tiers)
  t.W.critters=[];t.W.sites=[];t.W.patrols=[];// no guards to step in: this is about the band and you
  // (open ground 8 tiles every way round you: the chases are about who runs, not the ground; a generated world's start may stand
  // among hills: then the nearest such spot)

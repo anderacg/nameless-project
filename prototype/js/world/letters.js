@@ -52,7 +52,7 @@ class Letter extends ItemKind{
   site(L){return L.site?W.sites.find(s=>s.tx===L.site[0]&&s.ty===L.site[1]):null}
   // what it says (its news, in the sender's words)
   text(L){const F=this.facName(L.fac);
-    if(L.kind==='army')return '“'+L.ln+' marches with '+L.n+' men on '+L.tgt+'. Hold '+L.to+' ready, and send what grain you can spare to his host.”';
+    if(L.kind==='army')return '“'+L.ln+' marches with '+L.n+' men on '+L.tgt+'. Hold '+L.to+' ready, and send what grain you can spare to '+pr(L.ln).his+' host.”';
     if(L.kind==='attack')return '“The '+F+' will fall on '+L.tgt+' of the '+this.facName(L.vs)+'. Muster your men at '+L.to+' and wait for the word.”';
     if(L.kind==='deal')return L.vs?'“The '+F+' offers the '+this.facName(L.with)+' an alliance against the '+this.facName(L.vs)+'. Send your answer by this rider.”':'“The '+F+' offers the '+this.facName(L.with)+' a treaty of friendship and trade.”';
     const s=this.site(L),t=townBy(L.to);return s&&t?'“All is well at '+L.from+'. Our riders found the '+s.label+', to the '+compass(s.x-t.x,s.y-t.y)+' of '+L.to+'.”':'“All is well at '+L.from+': the tithes are in and the roads are quiet.”'}

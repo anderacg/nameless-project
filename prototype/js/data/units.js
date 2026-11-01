@@ -15,7 +15,7 @@ const ST={
 [['human','hum_levy','Levy',1,30,5,38,12,0,.85,'militia'],['human','hum_spear','Man-at-Arms',2,42,8,38,17,0,.95,'spearman'],['human','hum_guard','Shield Guard',3,64,8,34,16,0,1,'spearman'],['human','hum_pike','Pikeman',3,46,10,36,22,0,1.05,'spearman'],
  ['human','hum_bow','Bowman',1,18,5,34,0,90,1.5,'archer'],['human','hum_long','Longbowman',2,24,8,36,0,120,1.5,'ranger'],['human','hum_squire','Squire',2,44,8,70,13,0,1,'horse',1],['human','hum_knight','Knight',3,64,11,70,14,0,.95,'horse',1],
  ['dwarf','dw_clan','Dwarf Clansman',1,30,6,34,11,0,.95,'militia'],['dwarf','dw_axe','Dwarf Axeman',2,46,9,34,12,0,.9,'chief'],['dwarf','dw_iron','Ironbreaker',3,76,10,32,13,0,.9,'chief'],['dwarf','dw_berserk','Berserker',3,50,14,44,12,0,.7,'chief'],
- ['dwarf','dw_sling','Dwarf Slinger',1,22,4,34,0,80,1.2,'archer'],['dwarf','dw_xbow','Crossbowman',2,30,11,30,0,100,2.1,'ranger'],['dwarf','dw_ram','Ram Rider',2,44,7,62,12,0,.95,'horse',1],['dwarf','dw_ramlord','Ram Knight',3,58,10,66,13,0,.85,'horse',1],
+ ['dwarf','dw_sling','Dwarf Slinger',1,22,4,34,0,80,1.2,'archer'],['dwarf','dw_xbow','Crossbowman',2,30,11,30,0,190,2.1,'ranger'],['dwarf','dw_ram','Ram Rider',2,44,7,62,12,0,.95,'horse',1],['dwarf','dw_ramlord','Ram Knight',3,58,10,66,13,0,.85,'horse',1],
  ['elf','elf_glade','Glade Warden',1,24,5,44,12,0,.8,'militia'],['elf','elf_dancer','Wardancer',2,36,8,48,13,0,.75,'militia'],['elf','elf_blade','Bladesinger',3,46,11,52,14,0,.65,'militia'],['elf','elf_sentinel','Sentinel',3,54,10,40,20,0,1,'spearman'],
  ['elf','elf_archer','Elf Archer',1,18,6,38,0,100,1.3,'archer'],['elf','elf_marks','Elf Marksman',2,24,8,38,0,120,1.3,'ranger'],['elf','elf_sharp','Starshot',3,28,12,38,0,135,1.3,'ranger'],['elf','elf_hart','Hart Rider',2,36,6,78,12,0,.95,'horse',1],['elf','elf_lance','Wild Lancer',3,50,10,76,16,0,.95,'horse',1],
  ['orc','orc_grunt','Orc Grunt',1,32,6,38,12,0,1,'militia'],['orc','orc_brute','Orc Brute',2,46,9,38,13,0,1,'chief'],['orc','orc_ironjaw','Ironjaw',3,78,12,34,14,0,1.05,'chief'],['orc','orc_reaver','Bloodreaver',3,54,16,46,13,0,.8,'chief'],
@@ -31,13 +31,32 @@ const ST={
  ['orc','orc_shield','Shield Orc',1,36,6,36,12,0,1,'militia'],['orc','orc_warrior','Orc Warrior',2,52,9,36,13,0,1,'chief'],['orc','orc_black','Black Orc',3,80,12,34,14,0,1,'chief'],
  ['orc','orc_wolfbow','Wolf Archer',3,44,8,74,0,0,1.4,'horse']
 ]).forEach(([race,id,n,tier,hp,dmg,spd,reach,range,cd,look,charge])=>{ST[id]={n,tier,hp,dmg,spd,reach,range,cd,look,race,charge:!!charge}});
+// the humans' tree (doc/TROOPS_DESIGN.md; the owner, 2026-10-31): the Peasant Levy at its root, every kind above it enlisted (gold, at a
+// barracks: core/recruitment.js); two kinds of its own, the Lancer (a spearman on a horse) and the Crossbowman; the Pikeman and the
+// Mounted Archer now tier 2 (weaker by a sixth); the Levy a Spearman, the Man-at-Arms the Shield Men. (Swordsman, Sword Sergeant and
+// Greatsword are out of the tree: no one hires or trains them)
+ST.hum_lancer={n:'Lancer',tier:2,look:'horse',race:'human',charge:true,range:0};ST.hum_crossbow={n:'Crossbowman',tier:1,look:'ranger',race:'human',charge:false,flat:true,reach:0};
+// their numbers (the owner, 2026-10-31: "balance the human unit stats to match historical and realistic"): health, damage, speed, reach,
+// range (before RANGE_SCALE: a bow's own below), swing or shot time, armour (matchups.js ARMOR: a padded coat leather, mail, plate).
+// A spear outreaches a sword and a pike a spear, its men lightly armoured; a crossbow hits hard and slow, shorter than a bow; a
+// longbowman and an arbalester wear a jack; a mounted archer's bow is a short one; the lancer rides in mail, the knight in plate,
+// on a war horse, the strongest of them
+const HUMAN_TROOPS={
+  hum_levy:{n:'Spearman',hp:30,dmg:5,spd:37,reach:16,cd:.9,armor:'leather'},hum_foot:{hp:32,dmg:6,spd:36,reach:12,cd:.85,armor:'leather',morale:45},// (the Footman's morale under his tier's 50: the owner, 2026-11-01; at 50 a hundred broke only with 11-16 left, tests/moralebalance.js)
+  hum_bow:{hp:20,dmg:5,spd:36,cd:1.5,armor:'leather'},hum_crossbow:{hp:24,dmg:9,spd:34,range:160,cd:2,armor:'leather'},
+  hum_pike:{tier:2,hp:38,dmg:7,spd:34,reach:26,cd:1.1,armor:'leather'},hum_lancer:{hp:46,dmg:10,spd:72,reach:18,cd:1,armor:'mail'},
+  hum_long:{hp:26,dmg:8,spd:36,cd:1.4,armor:'leather'},hum_hbow:{tier:2,hp:36,dmg:6,spd:70,cd:1.4,armor:'leather'},
+  hum_spear:{n:'Shield Men',hp:44,dmg:7,spd:36,reach:16,cd:.95,armor:'mail'},hum_squire:{hp:44,dmg:8,spd:70,reach:13,cd:1,armor:'mail'},
+  hum_xbow:{hp:30,dmg:12,spd:32,range:190,cd:2.2,armor:'mail'},hum_guard:{hp:62,dmg:8,spd:33,reach:14,cd:1,armor:'plate'},
+  hum_knight:{hp:70,dmg:12,spd:68,reach:16,cd:.95,armor:'plate',horse:'m_destrier'}};
+for(const [k,v] of Object.entries(HUMAN_TROOPS))Object.assign(ST[k],v);
 // casters: they shoot slow bolts of magic that splash and ignore armor (see matchups); bolt is the colour of their magic
 [['human','hum_mage','Battle Mage',2,24,9,34,0,100,1.7,'#7fb0ff'],['dwarf','dw_rune','Runepriest',2,32,8,30,0,90,1.8,'#ff9a40'],
  ['elf','elf_weaver','Spellweaver',2,22,9,38,0,110,1.6,'#c58af0'],['orc','orc_shaman','Orc Shaman',2,28,9,36,0,85,1.8,'#78e070']
 ].forEach(([race,id,n,tier,hp,dmg,spd,reach,range,cd,bolt])=>{ST[id]={n,tier,hp,dmg,spd,reach,range,cd,look:'mage',race,charge:false,magic:true,bolt}});
 ST.dw_xbow.flat=true;ST.hum_xbow.flat=true;ST.orc_thrower.ammo=6;
 // bows outrange everything: at least 400, and elves reach farthest (their arrows also scatter half as much)
-Object.entries({archer:400,ranger:440,tavi:440,hum_bow:400,hum_long:460,orc_hunter:400,elf_archer:480,elf_marks:520,elf_sharp:560,hum_hbow:400,elf_hartbow:480,orc_wolfbow:400}).forEach(([k,r])=>{ST[k].range=r;ST[k].bow=true});
+Object.entries({archer:400,ranger:440,tavi:440,hum_bow:400,hum_long:460,orc_hunter:400,elf_archer:480,elf_marks:520,elf_sharp:560,hum_hbow:360,elf_hartbow:480,orc_wolfbow:400}).forEach(([k,r])=>{ST[k].range=r;ST[k].bow=true});
 // and the other shooters on that scale: crossbows, slings and javelins twice their reach, casters' bolts RANGE_SCALE.magic of it
 // (beasts keep theirs: a spider's web, a slime's spit)
 const RANGE_SCALE={missile:2,magic:1.6};
@@ -61,10 +80,10 @@ ST.wolf={n:'Frost Wolf',tier:1,hp:26,dmg:6,spd:62,reach:10,range:0,cd:.8,beast:t
 ST.scorpion={n:'Giant Scorpion',tier:2,hp:48,dmg:8,spd:34,reach:12,range:0,cd:1.1,beast:true,home:['desert']};
 ST.dragon={n:'Dragon',tier:4,hp:1500,dmg:22,spd:30,reach:24,range:0,cd:1.4,big:true,breath:true,beast:true};
 const HIRE={militia:20,archer:35,horse:65,hum_levy:22,hum_bow:32,hum_squire:60,dw_clan:26,dw_sling:26,dw_ram:58,elf_glade:24,elf_archer:36,elf_hart:56,orc_grunt:22,orc_thrower:26,orc_wolf:54,
-  hum_foot:26,dw_shield:28,elf_spear:28,orc_shield:26};
+  hum_foot:26,hum_crossbow:30,dw_shield:28,elf_spear:28,orc_shield:26};
 const UP={militia:['spearman'],archer:['ranger'],
-  hum_levy:['hum_spear'],hum_spear:['hum_guard','hum_pike'],hum_bow:['hum_long','hum_mage','hum_xbow'],hum_squire:['hum_knight','hum_hbow'],
-  hum_foot:['hum_sword'],hum_sword:['hum_sergeant','hum_champ'],
+  hum_levy:['hum_pike','hum_lancer'],hum_spear:['hum_guard'],hum_bow:['hum_long','hum_hbow'],hum_squire:['hum_knight'],
+  hum_foot:['hum_spear','hum_squire'],hum_crossbow:['hum_xbow'],
   dw_clan:['dw_axe'],dw_axe:['dw_iron','dw_berserk'],dw_sling:['dw_xbow','dw_rune'],dw_ram:['dw_ramlord'],
   dw_shield:['dw_hammer'],dw_hammer:['dw_longbeard','dw_thane'],
   elf_glade:['elf_dancer'],elf_dancer:['elf_blade','elf_sentinel'],elf_archer:['elf_marks','elf_weaver'],elf_marks:['elf_sharp'],elf_hart:['elf_lance','elf_hartbow'],
@@ -73,11 +92,15 @@ const UP={militia:['spearman'],archer:['ranger'],
   orc_shield:['orc_warrior'],orc_warrior:['orc_black']};
 // the estates' workers, recruited where they work (folk.js workerRecruit), as in Mount & Blade's villages: a peasant of each
 // trade and people, tier 0 and cheap, each trade a little different (a woodcutter hits harder, a herder is quicker, a miner and a
-// quarryman tougher, a farmer's hoe and a fisher's pole reach further), each training into its people's first footmen
+// quarryman tougher, a farmer's hoe and a fisher's pole reach further), each training into its people's first footmen. Recruited, every
+// one of them is a Peasant Levy (the owner, 2026-10-31: "rename all of that into just peasant levy": each people's farmer, peasantLevy,
+// a unit of 20); the other trades only their looks, the workers at the estates. A Peasant Levy trains into its people's first kinds (PEASANT_OF)
 const TRADES={farmer:{n:'Farmer',reach:14,dt:'pierce'},herder:{n:'Herder',spd:44,dt:'blunt'},woodcutter:{n:'Woodcutter',dmg:5,dt:'slash'},miner:{n:'Miner',hp:26,dt:'pierce'},
   fisher:{n:'Fisher',reach:13,dt:'pierce'},quarryman:{n:'Quarryman',hp:26,dmg:5,dt:'blunt'}};
-const PEASANT_OF={human:['hum','hum_levy'],dwarf:['dw','dw_clan'],elf:['elf','elf_glade'],orc:['orc','orc_grunt']};
+const PEASANT_OF={human:['hum',['hum_levy','hum_bow','hum_foot','hum_crossbow']],dwarf:['dw',['dw_clan','dw_sling']],elf:['elf',['elf_glade','elf_archer']],orc:['orc',['orc_grunt','orc_thrower']]};
 const peasantKind=(race,job)=>(PEASANT_OF[race]||PEASANT_OF.human)[0]+'_'+job;
+const peasantLevy=race=>peasantKind(race,'farmer');
 for(const r in PEASANT_OF)for(const j in TRADES){const T=TRADES[j],id=peasantKind(r,j);
-  ST[id]={n:T.n,tier:0,hp:T.hp||22,dmg:T.dmg||4,spd:T.spd||36,reach:T.reach||11,range:0,cd:1,race:r,charge:false,peasant:j,dt:T.dt};HIRE[id]=8;UP[id]=[PEASANT_OF[r][1]]}
+  ST[id]={n:T.n,tier:0,hp:T.hp||22,dmg:T.dmg||4,spd:T.spd||36,reach:T.reach||11,range:0,cd:1,race:r,charge:false,peasant:j,dt:T.dt};HIRE[id]=8;UP[id]=PEASANT_OF[r][1].slice()}
+for(const r in PEASANT_OF)Object.assign(ST[peasantLevy(r)],{n:'Peasant Levy',size:20,morale:40});// (tools, no drill: the least steady of all)
 const RANSOM=[0,15,30,60];

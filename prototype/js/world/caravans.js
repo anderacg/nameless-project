@@ -55,17 +55,21 @@ class CaravanParty extends Party{
   get mapKind(){return 'caravan'}
   here(){return W.caravans.includes(this)}
   // on the map (drawCaravans): its carts seen out to a little past your sight, not hidden by woods; its label near you
-  inView(V){return this.fromYou()<=V*1.2}
-  // a click: on its ring, and anywhere on its cart, ox and drover (caravanPic)
-  pick(at){at.add(this,WORLD_BATTLE.on?marchInteractRadius(this):11,5);const s=caravanPic(this);at.fig(this,s,this.x-(s.width>>1),this.y+1-s.height,this.dir<0);const B=at.flag&&bannerAt(this,0);if(B)at.flag(this,B)}
+  inView(V){return yourSight(V).sees(this.x,this.y,1.2)}
+  // a click: marched man by man, on any of its guards or inside its outline (world.js pickAt army) and its small ring; else on its
+  // army's ring; and anywhere on its cart, ox and drover (caravanPic)
+  pick(at){at.add(this,at.army?.(this)?11:WORLD_BATTLE.on?marchInteractRadius(this):11,5);const s=caravanPic(this);at.fig(this,s,this.x-(s.width>>1),this.y+2*cvK()-s.height,this.dir<0);const B=at.flag&&bannerAt(this,0);if(B)at.flag(this,B)}
   // a small trade pennant in its owner's colour over its cart (Party banner)
   banner(){return{k:'trade',col:caravanCol(this),dev:'coin'}}
-  headY(){const s=caravanPic(this);return Math.round(this.y)+1-s.height+opaqueBox(s)[1]}
+  headY(){const s=caravanPic(this);return Math.round(this.y+2*cvK()-s.height+opaqueBox(s)[1])}
+  // (its cart, ox and drover at its guards' size (caravanSprite): its walk by its gait, its wheel by the way it has rolled; its
+  // shadow under them)
   draw(ents,cam,V){if(!this.inView(V))return;const c=this;if(WORLD_BATTLE.on&&!B?.world?.hides(c))marchDraw(ents,c,cam);
-    ents.push({y:c.y,f:()=>{subT(c);const L=c.look(),s=caravanSprite(L.col,stepOf(c,1.2)),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(s.cw>>1)+3,sy-1,s.cw-6,2);
-      ctx.save();ctx.translate(sx,sy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),1-s.height);ctx.restore();
+    ents.push({y:c.y,f:()=>{subT(c);const L=c.look(),s=caravanSprite(L.col,caravanGait(c),frameOf(c,caravanRoll(),CARAVAN_ART.turns)),b=opaqueBox(s),k=cvK(),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),
+        e=[(b[0]-(s.width>>1))*k,(b[2]+1-(s.width>>1))*k].map(v=>v*(c.dir<0?-1:1)),x0=Math.round(Math.min(...e));ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x0+sx+2,sy-1,Math.round(Math.abs(e[1]-e[0]))-4,2);
+      drawCaravanArt(s,sx,sy,c.dir);
       BANNERQ.push({o:c,label:c.fromYou()<90?[L.label,L.labelCol]:null})}})}
-  mapDot(V){return this.fromYou()<V?['#e8d8a0',1]:null}
+  mapDot(V){return yourSight(V).sees(this.x,this.y)?['#e8d8a0',1]:null}
   get meetsAnyTime(){return true}
   label(){return 'Caravan of '+this.from}
   tip(){return '<b>Caravan</b><small>'+(this.from||'')+' → '+(this.to||'')+(this.fac?' · '+tipFac(this.fac):'')+'</small><span class="act">Click: actions · double-click: meet</span>'}
@@ -178,37 +182,92 @@ function hireCaravan(from,to,cargo,guards,repeat){
 }
 function caravanUpkeep(){const mine=myCaravans();if(!mine.length)return;const cost=mine.reduce((a,c)=>a+PCV.upkeep+c.guards*PCV.guardUp,0);P.gold=Math.max(0,P.gold-cost)}
 
-/* on the map: a covered two-wheeled cart behind an ox, its drover walking ahead at its head (people.js mapPerson), all on the map's
-   scale (a man 10 high: the ox's back at his chest, a wheel 6 across; doc/WORLD_DESIGN.md §10.1), some 30 × 12 in a 32×32 cell
-   (sprites.js cellOf), its middle where the caravan stands. The cart's cover is canvas dyed in its owner's colour: col. f: 0 to
-   PEOPLE_STEPS-1, a step each 1.2 px walked (CaravanParty.draw): the wheel's spokes an eighth of a turn each other one (f >> 1 & 1:
-   a 6-px wheel turns once in 19 px), the drover's step each (people.js), the ox's walk each (engine/beasts.js PX.mapLegs) */
-const CV_WOOD=['#b8925e','#8e6a44','#604630','#3e2e26'],CV_OX=['#d8c094','#a88a62','#6e5a44','#463a32'];
-// (a colour mixed toward another by k: the cover's lights warm, its shade cool)
+/* on the map: a covered two-wheeled cart behind its ox, its drover walking at the ox's head, drawn as the battle's figures are (the
+   owner, 2026-11-01: "the caravan sprite looks out of place not match with battle style"): at their density (a man 16 high), lit
+   from the top left in hue-shifted ramps (PX.ramp: the beasts' and the buildings' own), one navy outline round it all, and drawn
+   on the map WORLD_BATTLE.sprite/scale as big, as the guards marching round it are (march.js drawMarcher; drawCaravanArt). Its
+   cart a man and a half tall: the cover on its hoops in its owner's colour (col) mixed toward canvas, the near wheel and the far
+   one in shade, a planked bed, its goods at the open back, the shafts to the ox's yoke; the ox a battle beast (engine/beasts.js's
+   kit: its body, its walk); the drover a battle figure (people.js peopleSprite), hooded, his goad on his shoulder (figures.js
+   GoadGear), his front in its owner's colour. f: its walk, 0 standing, 1 to steps its frames, the ox's and the drover's legs in
+   step (caravanGait: the march's cadence); w: the wheel's turn, 0 to turns-1 of a spoke's eighth (by the distance walked:
+   caravanRoll); how: 'left', the cart alone, its shafts on the ground; 'burnt', charred, its cover gone to its hoops (both:
+   gfx/encounterscene.js). Each kept in spr, built once, in a 64 cell (32 alone: sprites.js cellOf), its middle where it stands */
+const CV_WOOD=['#b8925e','#8e6a44','#604630','#3e2e26'];// (the map's old wood: ships.js)
+// (a colour mixed toward another by k)
 const cvMix=(a,b,k)=>'#'+[1,3,5].map(i=>Math.round(parseInt(a.slice(i,i+2),16)*(1-k)+parseInt(b.slice(i,i+2),16)*k).toString(16).padStart(2,'0')).join('');
-const CV_OXT=['......ow.','.hhhhhhHe','dHHHHHHHn','.dHHHHHd.'],CV_OXL=[['.kH..kH..'],['k.H.k..H.']];
-function caravanSprite(col,f){
-  f=(f||0)%PEOPLE_STEPS;const key='cv'+col+f;if(spr[key])return spr[key];
-  const g=pgrid(30,12),s=(x,y,c)=>pset(g,x+1,y+1,c),Wo=CV_WOOD,O=CV_OX,G=9;
-  const Cv=[cvMix(col,'#f4e8c8',.5),cvMix(col,'#d8ccb0',.3),cvMix(col,'#2e2a40',.35),cvMix(col,'#1a1c26',.55)];
-  // the ox (13-21), facing right, its far legs in shade, its head carried low; the yoke on its neck
-  const oc={h:O[0],H:O[1],d:O[2],k:O[3],o:'#a8987a',w:'#ece4cc',e:'#1a1410',n:'#b8a090'};
-  CV_OXT.concat(PX.mapLegs(CV_OXL[0],CV_OXL[1],f)).forEach((r,y)=>[...r].forEach((c,x)=>{if(oc[c])s(13+x,G-4+y,oc[c])}));s(19,G-4,Wo[0]);s(19,G-3,Wo[1]);
-  // the cart: the cover on its hoops, its front open; the bed; the shaft on to the yoke
-  for(let y=0;y<=3;y++)for(let x=y?1:2;x<=(y?9:8);x++)s(x,y,x===9?Cv[3]:y===0?Cv[0]:(x-1)%3===2?Cv[2]:y===1?Cv[0]:Cv[1]);
-  for(let x=0;x<=10;x++){s(x,4,Wo[0]);s(x,5,Wo[2])}s(11,6,Wo[1]);s(12,6,Wo[1]);
-  // the wheel, its rim, four spokes and the hub
-  const wx=2,wy=4;for(const [x,y] of [[1,0],[2,0],[3,0],[4,0],[0,1],[5,1],[0,2],[5,2],[0,3],[5,3],[0,4],[5,4],[1,5],[2,5],[3,5],[4,5]])s(wx+x,wy+y,y>=4||x===0&&y>=2?Wo[3]:Wo[2]);
-  for(const [x,y] of (f>>1&1?[[3,1],[4,3],[2,4],[1,2]]:[[2,1],[4,2],[3,4],[1,3]]))s(wx+x,wy+y,Wo[1]);for(const [x,y] of [[2,2],[3,2],[2,3],[3,3]])s(wx+x,wy+y,x===2&&y===2?'#8e95a6':'#6e7890');
-  poutline(g);
-  // the drover, walking at the ox's head, leading it, his goad in hand (his own outline)
-  const drover=mapPerson({race:'human',skin:'skinTan',hair:'brown',eye:PEOPLE_EYE,helm:'hood',hood:'linen',outer:'cloth',inner:'dark',team:'leather',weapon:'javelin',shortHair:true},f);
-  const c=mkc(32,12,x=>{x.drawImage(pcanvas(g),0,0);x.drawImage(drover,26-8,12-16)});
+/* CARAVAN_ART, in the battle's pixels: W, H its picture (W alone: the cart's), the ground row H-2; cart [its back's x, its bed's
+   length]; bed [top, bottom] rows over the ground; top the cover's; hoops along the bed; wheel [its middle along the bed, radius],
+   far (the far wheel's offset); shaft [its height at the ox, its reach on the ground alone]; yoke, its top over the ground; ox, where
+   the ox begins (its haunch 6 on: oxShape); drover, his middle's x. Its palette: cover (the canvas its owner's colour is mixed toward, by mix), the ox's coat, belly, muzzle,
+   horn and hoof; the buildings' timber, plank and iron (engine/model.js), sack, char and embers (burnt); spokes, turns (frames to a
+   spoke's turn), steps (the walk's frames); look, the drover's */
+const CARAVAN_ART={W:64,H:28,alone:32,cart:[1,24],bed:[13,9],top:24,hoops:[6,11,16,21],wheel:[12,5.5],far:[-3,-1],shaft:[9,4],yoke:14,ox:25,drover:56,
+  cover:'#d4c4a0',mix:.45,coat:'#b8a486',belly:'#d4c8ae',muzzle:'#cab49c',horn:'#ece4cc',hoof:'#3e302a',
+  timber:'#5e402c',plank:'#8f6c49',iron:'#5a5e66',sack:'#c4b08a',char:'#3e3430',ember:['#e8803a','#c84a20'],spokes:8,turns:3,steps:4,
+  look:{race:'human',skin:'skinTan',hair:'brown',beard:'brown',helm:'hood',hood:'linen',outer:'leather',inner:'dark',shortHair:true,goad:true}};
+const CV_RAMPS=new Map(),cvRamp=c=>CV_RAMPS.get(c)||CV_RAMPS.set(c,PX.ramp(c)).get(c);
+const cvK=()=>WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
+// (the map px its wheel rolls for a frame of its turn)
+const caravanRoll=()=>2*Math.PI*CARAVAN_ART.wheel[1]*cvK()/CARAVAN_ART.spokes/CARAVAN_ART.turns;
+// (its walk's frame now: its own time walked at the march's cadence, as its guards' legs go (march.js marchSprite); 0 standing)
+const CV_GAIT=new WeakMap();
+function caravanGait(c){const now=performance.now()/1000,g=CV_GAIT.get(c)||{t:0,at:now},go=mapStepping(c);if(go)g.t+=clamp(now-g.at,0,.1);g.at=now;CV_GAIT.set(c,g);
+  return go?1+Math.floor(g.t*MARCH_MOVE.cadence)%CARAVAN_ART.steps:0}
+// (the ox, a beast of the battle's (engine/beasts.js quad): heavy, a little hump at its withers, its head carried low, short horns,
+// a dewlap, a long tail with its tuft; X its haunch's x, Y the ground row)
+function oxShape(X,Y){const A=CARAVAN_ART,K=PX._beastKit,C=cvRamp(A.coat),D=cvRamp(A.hoof),Hn=cvRamp(A.horn);
+  return{Y,hip:X+6,sho:X+17,back:[12,12],belly:4,ry:5,rh:5.5,rc:6,cx:1,hump:[1,4,2.5],legs:[3,3,0],C,L:cvRamp(A.belly),lb:0,D,paw:1,pawUp:0,
+    head:{x:4,y:7,w:6,h:5,snout:[3,3],sy:1,M:cvRamp(A.muzzle),ex:0,ey:-1,eye:'#1a1410',
+      ear:(g,x,y)=>{K.put(g,x-2,y-3,Hn[2]);K.put(g,x-2,y-4,Hn[2]);K.put(g,x,y-3,Hn[1]);K.put(g,x+1,y-4,Hn[0]);K.put(g,x+1,y-5,Hn[0]);K.put(g,x-3,y-1,C[1]);K.put(g,x-4,y-1,C[2])},
+      more:(g,x,y)=>{for(const [dx,dy,t] of [[-3,3,1],[-2,3,1],[-3,4,2],[-4,4,2],[-4,5,3]])K.put(g,x+dx,y+dy,C[t])}},
+    tail:(g,x,y)=>{K.flat(g,K.mask().limb(x+1,y,x-1,Y-5,1,1),C,2,2);K.put(g,x-1,Y-4,D[1]);K.put(g,x-2,Y-4,D[2]);K.put(g,x-1,Y-3,D[2])}}}
+// (a wheel at (cx, cy), radius r: its iron tyre, its felloe, its spokes turned w frames, its hub; lit from the top left, dk tones
+// darker (the far one); between its spokes nothing, so what is behind shows, and the outline fills the rest)
+function cvWheel(g,cx,cy,r,w,dk,Wd,Ir){const A=CARAVAN_ART,n=A.spokes,a0=w/A.turns*2*Math.PI/n,t=(dx,dy,d)=>{const L=-(dx*.45+dy*.9)/Math.max(1,d);return Math.min(3,(L>.4?0:L>-.3?1:2)+dk)};
+  for(let y=Math.floor(cy-r);y<=Math.ceil(cy+r);y++)for(let x=Math.floor(cx-r);x<=Math.ceil(cx+r);x++){const dx=x+.5-cx,dy=y+.5-cy,d=Math.hypot(dx,dy);if(d>r)continue;
+    if(d>r-1)pset(g,x,y,Ir[Math.min(3,t(dx,dy,d)+1)]);else if(d>r-2)pset(g,x,y,Wd[t(dx,dy,d)]);else if(d<1.5)pset(g,x,y,Ir[Math.min(3,(dx<0&&dy<0?0:1)+dk)]);
+    else for(let i=0;i<n;i++){const a=a0+i*2*Math.PI/n;if(dx*Math.cos(a)+dy*Math.sin(a)>0&&Math.abs(dx*Math.sin(a)-dy*Math.cos(a))<.55){pset(g,x,y,Wd[Math.min(3,1+dk)]);break}}}}
+// (a line from (x0, y0) to (x1, y1), a staircase with its corners filled, its underside a tone darker: a shaft)
+function cvLine(g,x0,y0,x1,y1,R){const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0))||1;let q=null;
+  for(let i=0;i<=n;i++){const p=[Math.round(x0+(x1-x0)*i/n),Math.round(y0+(y1-y0)*i/n)];if(q&&q[0]!==p[0]&&q[1]!==p[1])pset(g,p[0],q[1],R[1]);pset(g,p[0],p[1],R[1]);pset(g,p[0],p[1]+1,R[2]);q=p}}
+function caravanSprite(col,f,w,how){
+  const A=CARAVAN_ART;f=(f||0)%(A.steps+1);w=(w||0)%A.turns;const key='cv'+col+f+w+(how||'');if(spr[key])return spr[key];
+  const alone=!!how,burnt=how==='burnt',K=PX._beastKit,g=pgrid(alone?A.alone:A.W,A.H),Y=A.H-2,s=(x,y,c)=>pset(g,x,y,c);
+  const Wd=cvRamp(burnt?A.char:A.timber),Pl=cvRamp(burnt?A.char:A.plank),Ir=burnt?Wd:cvRamp(A.iron),Cv=cvRamp(cvMix(col,A.cover,A.mix));
+  const x0=A.cart[0],x1=x0+A.cart[1]-1,bt=Y-A.bed[0],bb=Y-A.bed[1],ct=Y-A.top,c0=x0+3,c1=x1-1,wx=x0+A.wheel[0]+.5,wy=Y+1-A.wheel[1];
+  // the far wheel in shade; the bed, its planks (a rail, a seam, stakes); the near wheel before it
+  cvWheel(g,wx+A.far[0],wy+A.far[1],A.wheel[1],w,2,Wd,Ir);
+  for(let y=bt;y<=bb;y++)for(let x=x0;x<=x1;x++){const r=y-bt;s(x,y,Pl[y===bb?3:r===0?0:r===2?2:(x-x0)%6===5?2:x===x1?2:1])}
+  cvWheel(g,wx,wy,A.wheel[1],w,0,Wd,Ir);
+  // the cover on its hoops (lit on the left, a fold at each hoop), open at the back; burnt, only the hoops are left, charred
+  const cover=K.mask().poly([[c0,bt],[c0,ct+3],[c0+2,ct+1],[c0+4,ct],[c1-3,ct],[c1-1,ct+1],[c1+1,ct+3],[c1+1,bt]]),topAt=x=>{for(let y=ct;y<bt;y++)if(cover.has(x,y))return y;return bt};
+  if(!burnt){K.shade(g,cover,Cv,{cx:c0+4,cy:ct+3,rx:c1-c0,ry:bt-ct});for(const h of A.hoops){const x=x0+h;for(let y=topAt(x);y<bt;y++){s(x,y,Cv[y===topAt(x)?1:2]);if(cover.has(x+1,y)&&y>topAt(x))s(x+1,y,Cv[1])}}
+    for(let y=topAt(c0);y<bt;y++)s(c0,y,Cv[3])}
+  else{for(const h of A.hoops){const x=x0+h,t0=topAt(x);for(let y=t0;y<bt;y++)s(x,y,Wd[y===t0?1:2])}for(let x=c0;x<=c1;x++)if(A.hoops.some(h=>Math.abs(x0+h-x)===1))s(x,topAt(x),Wd[2])}
+  // the goods at the open back: a crate, a sack on it (burnt: what is left of them, an ember in it)
+  {const C=burnt?Wd:Pl,S=burnt?Wd:cvRamp(A.sack);for(let y=bt-5;y<bt;y++)for(let x=x0;x<x0+5;x++)s(x,y,C[y===bt-5?0:x===x0+4||y===bt-1?2:x===x0?1:(x+y)%4===0?2:1]);
+    if(!burnt){const m=K.mask().ell(x0+5.5,bt-3,2.5,3);K.shade(g,m,S);s(x0+5,bt-7,S[2]);s(x0+5,bt-6,S[1])}else{s(x0+2,bt-3,A.ember[0]);s(x0+3,bt-2,A.ember[1]);s(x1-4,bt,A.ember[0])}}
+  // the shafts on to the ox's yoke, or left on the ground
+  const X=A.ox,sho=X+17;
+  if(alone)cvLine(g,x1+1,bb-1,x1+A.shaft[1],Y-1,Pl);
+  else{const F=K.gait(f?'walk':'idle',f?f-1:0);K.quad(g,oxShape(X,Y),F,{team:1});cvLine(g,x1+1,bb-1,sho,Y-A.shaft[0]+F.bob,Pl);
+    // (the yoke on its neck before its withers, the shafts at it)
+    for(let y=Y-A.yoke+F.bob;y<=Y-A.shaft[0]+F.bob;y++){s(sho+1,y,Wd[y===Y-A.yoke+F.bob?0:1]);s(sho+2,y,Wd[2])}}
+  poutline(g);let c=pcanvas(g);
+  // the drover at the ox's head, before it: a battle figure, walking as it walks
+  if(!alone){const d=peopleSprite({...A.look,eye:PEOPLE_EYE,team:col},f?1+f:0),bg=c,H=Math.max(A.H,d.height);c=mkc(A.W,H,x=>{x.drawImage(bg,0,H-A.H);x.drawImage(d,A.drover-(d.width>>1),H-d.height)})}
   return spr[key]=cellOf(c);
 }
+// (drawn on the map at its guards' size, its feet on its point (x, y: on the screen), facing face: CaravanParty draw, EncounterScene)
+function drawCaravanArt(s,x,y,face){const k=cvK();ctx.save();ctx.translate(x,y);ctx.scale(face<0?-k:k,k);ctx.drawImage(s,-(s.width>>1),2-s.height);ctx.restore()}
+// (its picture at the map's own size: what a click answers on, the banner's height (CaravanParty pick, headY), a page's banner)
+const CV_MAP=new WeakMap();
+function caravanMapPic(s){let m=CV_MAP.get(s);if(m)return m;const k=cvK();m=mkc(Math.ceil(s.width*k),Math.ceil(s.height*k),g=>g.drawImage(s,0,0,s.width*k,s.height*k));
+  m.cw=Math.ceil(s.cw*k);m.ch=Math.ceil(s.ch*k);CV_MAP.set(s,m);return m}
 // (a caravan's picture, in its owner's colour: drawn as it looks (CaravanParty.look, draw), clicked on its whole cart, ox and
 // drover: CaravanParty.pick)
-const caravanCol=c=>c.fac==='player'||!FACS[c.fac]?FACS.player.col:FACS[c.fac].col,caravanPic=c=>caravanSprite(caravanCol(c));
+const caravanCol=c=>c.fac==='player'||!FACS[c.fac]?FACS.player.col:FACS[c.fac].col,caravanPic=c=>caravanMapPic(caravanSprite(caravanCol(c)));
 function drawCaravans(ents,cam,V){for(const c of W.caravans)c.draw(ents,cam,V)}
 // its work in the world's day and frame (core/systems.js)
 Systems.add({name:'caravans',order:{day:130},day:caravanDay});

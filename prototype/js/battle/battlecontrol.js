@@ -91,9 +91,10 @@ class BattleControl{
   placeAt(x,y){if(this.resolve?.routed)return;if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}this.ax=x;this.ay=y;this.order='hold';this.tgt=null;this.queue=[]}
   // handed to the AI: its notes and waypoints cleared, for a fresh start (none left from an earlier spell of the AI's)
   aiReset(){if(B.sides?.active)Commander.of(this.team).tactics?.states.delete(this.id);for(const k of AI_NOTES)delete this[k];this.phase=null;this.t=0;this.queue=[];this.amEnd()}
-  // the AI's placing: stand at (x,y); a move (its men break off and go) only when that is well away from where it last stood
-  standAt(x,y){if(this.resolve?.routed)return;if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
-    if(this.lax==null||Math.hypot(this.ax-this.lax,this.ay-this.lay)>CAPT.move){if(this.lax!=null)moveOrder(this.id);this.lax=this.ax;this.lay=this.ay}}
+  // the AI's placing: stand at (x,y); a move (its men break off and go) when that is well away from where it last stood, or when
+  // it ends a charge, its first stand too (else its men stay in the fight where they are: the owner, 2026-11-01)
+  standAt(x,y){if(this.resolve?.routed)return;const ends=this.order==='charge';if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
+    if(ends||this.lax==null||Math.hypot(this.ax-this.lax,this.ay-this.lay)>CAPT.move){if(ends||this.lax!=null)moveOrder(this.id);this.lax=this.ax;this.lay=this.ay}}
   // Set on an enemy formation, accepting its control or any member. Lone ungrouped foes remain valid targets.
   attack(e,o){if(this.resolve?.routed||!e||!battleEnemy(this.team,e))return;const prior=[this.targetGroupId,this.targetUnitId];this.tgt=e;if(!this.tgt){[this.targetGroupId,this.targetUnitId]=prior;return}o=o||{};breakWall(this.id);this.queue=[];this.order='charge';if(o.run!=null)this.run=!!o.run}
   // at them all: each man at the foe nearest him
@@ -146,7 +147,7 @@ class BattleControl{
     if(this.queue&&this.queue.length&&this.order==='hold'){const cx=m.reduce((a,u)=>a+u.x-(u.sx||0),0)/m.length,cy=m.reduce((a,u)=>a+u.y-(u.sy||0),0)/m.length;
       // (a place out of reach (terrain.js groupWay: its way ends short of it): its men there as near as they get)
       const W=this.way,short=!!W&&!W.ok&&m.every(u=>u.mvId===this.mvId);
-      if(Math.hypot(cx-this.ax,cy-this.ay)<MARCH.reached||short){const w=this.queue.shift();this.ax=w.x;this.ay=w.y;moveOrder(this.id);if(w.am)this.amove={x:w.x,y:w.y,run:this.run};else this.amEnd()}}
+      if(Math.hypot(cx-this.ax,cy-this.ay)<MARCH.reached||short){const w=this.queue.shift();this.ax=w.x;this.ay=w.y;moveOrder(this.id);if(w.face!=null){this.face=w.face;layForm(this.id)}/* (a waypoint kept in its block's shape: its facing there, commands.js) */if(w.am)this.amove={x:w.x,y:w.y,run:this.run};else this.amEnd()}}
     const foes=B.units.filter(e=>battleEnemy(this.team,e)&&e.hp>0&&!e.rout&&(!B.fog||seenBy(this.team,e))),C=this.centre(),near=foes.length?foes.reduce((a,e)=>Math.hypot(e.x-this.ax,e.y-this.ay)<Math.hypot(a.x-this.ax,a.y-this.ay)?e:a):null;
     // an advance: its place walks on at the nearest foe till it is close (shooters stop further off); on ground that blocks, round
     // by the way while the straight one is not clear (a cliff's ramp, a ford: terrain.js wayOn), never to stop below a cliff

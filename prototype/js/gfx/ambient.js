@@ -111,9 +111,9 @@ function ambHomes(cx,cy){const S=AMBV,H=AMBIENT.homes,key=cx+':'+cy;let list=S.h
     }
   }
   S.homes.set(key,list);if(S.homes.size>H.cache)S.homes.delete(S.homes.keys().next().value);return list}
-function ambHomeView(cam,V){const d=AMBIENT.homes.tiles*TILE,r=V+TILE,out=[];
-  for(let cy=Math.max(0,Math.floor((P.y-r)/d));cy<=Math.min(Math.ceil(MH*TILE/d)-1,Math.floor((P.y+r)/d));cy++)
-    for(let cx=Math.max(0,Math.floor((P.x-r)/d));cx<=Math.min(Math.ceil(MW*TILE/d)-1,Math.floor((P.x+r)/d));cx++)out.push(...ambHomes(cx,cy));
+function ambHomeView(cam,V){const d=AMBIENT.homes.tiles*TILE,S=yourSight(V),r=S.rm+TILE,out=[];// (round your sight: every man's, fog.js Sight)
+  for(let cy=Math.max(0,Math.floor((S.y0-r)/d));cy<=Math.min(Math.ceil(MH*TILE/d)-1,Math.floor((S.y1+r)/d));cy++)
+    for(let cx=Math.max(0,Math.floor((S.x0-r)/d));cx<=Math.min(Math.ceil(MW*TILE/d)-1,Math.floor((S.x1+r)/d));cx++)out.push(...ambHomes(cx,cy));
   return out}
 function ambQuiet(e){if(!e.hk)return;AMBV.quiet.delete(e.hk);AMBV.quiet.set(e.hk,Clock.hours()+AMBIENT.homes.quiet);
   if(AMBV.quiet.size>AMBIENT.homes.memories)AMBV.quiet.delete(AMBV.quiet.keys().next().value)}
@@ -139,7 +139,7 @@ function ambShadow(alt){const f=Math.max(0,Math.min(1,Clock.frac/NIGHT_AT));retu
 // may one of kind k be born at (x, y) now: in your sight, on its ground, at its hours, in its weather
 function ambientCan(k,x,y){
   if(!inSight(x,y))return false;
-  const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),t=tAt(tx,ty),c=climAt(x,y),w=ambWeather(),d=darkness(),near=f=>Math.hypot(x-P.x,y-P.y)<vis()*f;
+  const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),t=tAt(tx,ty),c=climAt(x,y),w=ambWeather(),d=darkness(),near=f=>yourSight().sees(x,y,f);
   if(k==='flock')return d<.35;
   if(k==='peck')return d<.35&&w!=='storm'&&ambHabitat(k,x,y)&&(t!==T_FOREST||near(AMBIENT.squirrel.near));
   if(k==='crow')return d<.6;
@@ -310,7 +310,7 @@ function ambientAir(cam){const L=AMBV.list;if(!AMBIENT.on||!L.length)return;ctx.
   ctx.restore()}
 // the fireflies' light, over the night (render.js drawWorld, after the dark): only in your sight, and in a wood only near you
 function ambientGlow(cam){const L=AMBV.list;if(!AMBIENT.on||!L.some(e=>e.k==='glow'))return;const V=vis(),gn=AMBIENT.glow.near,dk=darkness(),rm=reducedMotion();ctx.save();ctx.globalCompositeOperation='lighter';
-  for(const e of L){if(e.k!=='glow'||!inSight(e.x,e.y)||terrAt(e.x,e.y)===T_FOREST&&Math.hypot(e.x-P.x,e.y-P.y)>=V*gn)continue;
+  const S=yourSight(V);for(const e of L){if(e.k!=='glow'||!S.sees(e.x,e.y)||terrAt(e.x,e.y)===T_FOREST&&!S.sees(e.x,e.y,gn))continue;
     const b=Math.max(0,Math.sin(e.t*(rm?1:2.2)+e.ph)),a=b*b*Math.max(0,Math.min(1,e.t/.8,(e.life-e.t)/.8))*dk;if(a<.03)continue;const X=snapV(e.x)-cam.x,Y=snapV(e.y-e.z)-cam.y;
     ctx.globalAlpha=a*.35;ctx.fillStyle='#9ad040';ctx.fillRect(X-1,Y,3,1);ctx.fillRect(X,Y-1,1,3);ctx.globalAlpha=a;ctx.fillStyle='#eaff8c';ctx.fillRect(X,Y,1,1)}
   ctx.restore()}

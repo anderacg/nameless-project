@@ -81,6 +81,10 @@ const LORD_SYL={
   elf:[['Lady','Lord','Warden'],['Ith','Cae','Sy','Fae','Ela','Ae','Lin','Thal','Ny','Ere'],['riel','lan','las','lar','wen','dor','ion','nis']],
   orc:[['Warchief','Chief'],['Ul','Gash','Mok','Gru','Raz','Dur','Gor','Sna','Ur','Bol'],['gra','kk','ka','zug','bash','nak','rok','ga']],
   league:[['Admiral','Captain'],['Al','Bran','Cass','Ed','Ivo','Mar','Ner','Ro','Sel','Tam'],['ric','wen','a','ard','o','ys','elle','an']]};
+// a man's title and its woman's (the owner, 2026-11-01: "add females"): a lord drawn with one of these is a woman when the hash of
+// the name's syllables says so (core/pronouns.js genderHash; no draw), and takes the woman's title. Lord and Lady are drawn as
+// they are; Ser, Warden, Admiral and Captain are either
+const LORD_SHE={Thane:'Clanmother',Warchief:'Warmother',Chief:'Chieftess'};
 // prices: each people's (as today's holdings'), moved by the land (placeMod)
 const PLACE_MOD={human:{grain:.8,iron:1.35,cloth:1.1,timber:1,furs:1.3,spice:1.4},dwarf:{grain:1.3,iron:.75,cloth:1.3,timber:1.2,furs:.8,spice:1.5},
   elf:{grain:.95,iron:1.4,cloth:.85,timber:.65,furs:1.35,spice:1.25},orc:{grain:1.05,iron:1.3,cloth:1.4,timber:1.5,furs:1.2,spice:.65}};
@@ -349,10 +353,12 @@ function placeNote(m,F,d,i){
 // (the river nearest tile i within 2, by its tiles; the water tile nearest i within 2)
 function placeRiver(m,F,i){const j=placeShore(m,i,j=>F.rv[j]>=0);return j<0?0:F.rv[j]}
 function placeShore(m,i,ok){const W=m.w,x=i%W,y=(i-x)/W;for(let d=1;d<=2;d++)for(let b=-d;b<=d;b++)for(let a=-d;a<=d;a++){const j=(y+b)*W+x+a;if(m.has(x+a,y+b)&&m.kind[j]===T_WATER&&(!ok||ok(j)))return j}return -1}
-// (lords per realm: past FACS' four, names from their people's syllables, unique; null when four will do)
+// (lords per realm: past FACS' four, names from their people's syllables, unique as drawn; a woman's title swapped in after,
+// LORD_SHE; null when four will do)
 function placeLords(R,n){if(n<=4)return null;const used=new Set(PLACE_REALMS.flatMap(f=>FACS[f].lords)),o={};
   for(const f of PLACE_REALMS){const L=o[f]=FACS[f].lords.slice(),[T,A,B]=LORD_SYL[PLACE_PEOPLE[f]];
-    for(let t=0;L.length<n;t++){const s=T[Math.floor(R()*T.length)]+' '+A[Math.floor(R()*A.length)]+B[Math.floor(R()*B.length)]+(t>300?' '+t:'');if(!used.has(s)){used.add(s);L.push(s)}}}
+    for(let t=0;L.length<n;t++){const ti=T[Math.floor(R()*T.length)],g=A[Math.floor(R()*A.length)]+B[Math.floor(R()*B.length)],end=' '+g+(t>300?' '+t:''),s=ti+end;
+      if(!used.has(s)){used.add(s);L.push((LORD_SHE[ti]&&genderHash(g)==='f'?LORD_SHE[ti]:ti)+end)}}}
   return o}
 
 /* 8. roads (above). The search's buffers kept for the stage; a tile's cost: open 1, forest 1.8, hill 2.2, a road or ford 0.5,

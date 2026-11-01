@@ -18,7 +18,7 @@ const Behaviours={
       // (to where it meets you on your way, or straight at you)
       const v=ENC_SPD[e.D.spd||'approach'],w=roadWay(e,v),gx=w?w[0]-e.x:m.dx,gy=w?w[1]-e.y:m.dy;
       if(m.dist>8&&Math.hypot(gx,gy)>2)e.go(gx,gy,v,m.d);
-      if(m.dist<=ENC_LIFE.hail&&!G.modal&&G.encCool<=0){
+      if(m.near<=ENC_LIFE.hail&&!G.modal&&G.encCool<=0){// (at your nearest man: march.js marchNear)
         roadMeet(e);
         return true;
       }
@@ -162,7 +162,7 @@ class Encounter extends Happening{
     if(this.gone||this.trace&&roadNow()<this.from)return false;
     const D=this.D;
     if(D.hidden&&skill('scout')<INSIGHT.rough)return false;
-    return D.glow?this.fromYou()<V*1.3:spotted(this,V);
+    return D.glow?yourSight(V).sees(this.x,this.y,1.3):spotted(this,V);
   }
   pick(at){
     if(this.chaseable()&&this.inView(at.V)){
@@ -235,7 +235,7 @@ class Encounter extends Happening{
     }
     if(!this.seen&&!this.met&&!D.part&&(see||D.hear&&dist<V+ENC_SPAWN.near[1]+16))this.notice();
     if(see)this.vw=1;// (it has been in your sight)
-    const m={d,V,now,dist,see,dx:P.x-this.x,dy:P.y-this.y};
+    const m={d,V,now,dist,see,dx:P.x-this.x,dy:P.y-this.y,near:marchNear(this.x,this.y)};
     if(this.chase)return Behaviours.chase.step(this,m);
     if(dist>Math.max(ENC_LIFE.leave*V,this.d0+ENC_LIFE.slack)||this.done&&!see){
       this.over();
@@ -260,7 +260,7 @@ class Encounter extends Happening{
     }
     const r=this.behaviour.step(this,m);
     if(r!==undefined)return r;
-    if(D.spring&&!this.met&&dist<=ENC_LIFE.spring&&!G.modal){
+    if(D.spring&&!this.met&&m.near<=ENC_LIFE.spring&&!G.modal){
       roadMeet(this);
       return true;
     }

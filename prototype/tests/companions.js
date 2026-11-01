@@ -35,7 +35,10 @@ try{
  G.mode='world';G.modal=false;t.hidePanel();c.ap=0;P.troops={hum_levy:8};ok(t.cpGive('brann','hum_levy',3)===0,'he will not lead your soldiers until he trusts you');
  c.ap=3;ok(t.cpGive('brann','hum_levy',4)===4&&c.party&&P.troops.hum_levy===4,'trusted, he takes 4 soldiers to lead');
  ok(!t.compsInBand().includes('brann'),'while he leads them he is not in your band');
- const p=c.party;P.x+=60;for(let k=0;k<40;k++)t.updateCParties(.1);ok(Math.hypot(p.x-P.x,p.y-P.y)<40,'his party rides with you');
+ // (at his place in your column: his ring HOSTS.gap px behind yours, so as far back as the two rings and the gap (hosts.js
+ // Host#back: host columns spaced by rings, 2026-11-01; was within 40 px of you))
+ const p=c.party;P.x+=60;for(let k=0;k<40;k++)t.updateCParties(.1);
+ {const h=t.Host.of(p),s=h&&h.slot(p),d=Math.hypot(p.x-P.x,p.y-P.y);ok(s&&Math.hypot(s.x-p.x,s.y-p.y)<4&&d<h.back(p)+4,'his party rides with you, at his place in your column ('+Math.round(d)+' px back, his place '+(h&&Math.round(h.back(p)))+')')}
  t.cpOrder('brann','patrol');const base=t.townBy(p.base);ok(!!base,'ordered to patrol, he takes the land of '+p.base);
  p.x=base.x;p.y=base.y+20;t.ensureEcon(base);base.vol=6;P.gold=500;const n0=p.troops.length;t.compDay();ok(p.troops.length>n0&&P.gold<500,'patrolling, he hires its volunteers with your gold ('+n0+' → '+p.troops.length+')');
  // fighting beside you

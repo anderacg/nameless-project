@@ -13,7 +13,9 @@ try{
  const t=T,G=t.G,P=t.P,S=t.SUPPLY,ev=s=>(0,eval)(s);
  Kit.begin('soldier',4242);Kit.clear();Kit.world();
  const tile=f=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(f(tx,ty,x,y))return [x,y]}return null};
- const far=(x,y)=>!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<120)&&!t.nearWater(x,y,4);
+ // (no water within 8 tiles: past the reach of a band of 30's ring, as wide as the battle lanes make it (marchInteractRadius,
+ // ~73 px: lanes as the march layout, 2026-11-01), so the thirst checks below stand where no water is in reach)
+ const far=(x,y)=>!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<120)&&!t.nearWater(x,y,8);
  const spot={open:tile((tx,ty,x,y)=>t.tAt(tx,ty)===t.T_OPEN&&t.climAt(x,y)==='grass'&&far(x,y)),
   hill:tile((tx,ty,x,y)=>t.tAt(tx,ty)===t.T_HILL&&t.climAt(x,y)==='grass'&&far(x,y)),
   desert:tile((tx,ty,x,y)=>t.tAt(tx,ty)===t.T_OPEN&&t.climAt(x,y)==='desert'&&far(x,y)),
@@ -87,7 +89,7 @@ try{
   hours(H.desert-H.starving-1,false);const n0=P.troops.hum_levy;hour(false);ok(P.troops.hum_levy===n0-1&&!t.woundedN()&&lost('deserted')===1,'after '+H.desert+' hours a man deserts');
   hours(H.sick-H.desert,false);ok(t.woundedN()===1&&t.BAND.sick.hum_levy.hunger===1,'after '+H.sick+' hours one falls sick as well (of hunger)');
   hours(H.die-H.sick,false);ok(lost('hunger')===1&&/dies of hunger/.test(msgs()),'after '+H.die+' hours a sick man dies of hunger');
-  ok(/Wounded and sick/.test(t.woundedPanel())&&/sick \(hunger\)/.test(t.woundedPanel())&&/Died of hunger: Levy ×1/i.test(t.woundedPanel())&&/Deserted/.test(t.woundedPanel()),'the troops tab lists the sick and why, and the men lost on the road')}
+  ok(/Wounded and sick/.test(t.woundedPanel())&&/sick \(hunger\)/.test(t.woundedPanel())&&/Died of hunger: Spearman ×1/i.test(t.woundedPanel())&&/Deserted/.test(t.woundedPanel()),'the troops tab lists the sick and why, and the men lost on the road')}// (hum_levy is the Spearman since the troop tree, 2026-10-31)
  // ---- water at the water's edge and at a holding's well (the owner, 2026-10-23): much nearer than before, and over game time
  {const F=S.fill,K=t.WorldArt.ensure().wk;
   // (a shore: a land tile with water to its north and land two tiles south, far from the holdings; down from the tile's top the
@@ -113,11 +115,10 @@ try{
    t.updateHUD(true);ok(!document.querySelector('#stats .pc-fill'),'and the bar is gone')}
   {reset();Kit.goHome();bag({grain:60,skin_empty:99});t.SKINS.reset(false);P.troops={};t.fillSkins();const h1=t.SKINS.on.h;t.SKINS.reset(false);P.troops={hum_levy:2};t.fillSkins();const h3=t.SKINS.on.h;t.SKINS.reset(false);P.troops={hum_levy:40};t.fillSkins();const h41=t.SKINS.on.h;t.SKINS.reset(false);
    ok(Math.abs(h3-3*h1)<1e-9&&h41*60===F.max,'a bigger band takes longer: alone '+h1*60+' min, three '+h3*60+', forty-one '+h41*60+' (the most, '+F.max+')')}
-  // moving stops it, keeping what is in; so do Hurry, a battle and a page off the map
+  // moving stops it, keeping what is in; so do a battle and a page off the map
   const part=go=>{reset();Kit.goHome();bag({grain:60,skin_empty:99});P.troops={};t.SKINS.reset(false);t.fillSkins();const f=t.SKINS.on;pass(f.h*60/2);const w=t.goodN('water');go();t.SKINS.frame(0);const left=!t.SKINS.on,w2=t.goodN('water');
-   G.hurry=false;Kit.world();P.tx=null;G.chase=null;return[left&&w2>0&&w2<f.n&&w2>=w,w2+' of '+f.n]};
+   Kit.world();P.tx=null;G.chase=null;return[left&&w2>0&&w2<f.n&&w2>=w,w2+' of '+f.n]};
   {const [a,m]=part(()=>{P.tx=P.x+100;P.ty=P.y});ok(a,'an order to travel stops it; the water in stays ('+m+')')}
-  {const [a,m]=part(()=>{G.hurry=true});ok(a,'Hurry stops it ('+m+')')}
   {const [a,m]=part(()=>t.worldEmit('battle:ended',{enc:null,how:'won'}));ok(a,'a battle stops it ('+m+')')}
   {const [a,m]=part(()=>{G.mode='dialog';t.supplyNow();G.mode='world'});ok(a,'an encounter (anything off the map: the card asks every quarter second) stops it ('+m+')')}
   // it follows the game clock: paused, nothing; faster at a higher speed

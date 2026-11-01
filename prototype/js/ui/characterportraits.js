@@ -34,10 +34,13 @@ const NAMED_PORTRAITS={
   "bear": "bear.webp?v=86eccd29",
   "griffin": "griffin.webp?v=d24cc600"
 };
+// the new kinds' paintings till their own are made (doc/TROOPS_DESIGN.md): the Lancer a Squire's, the Crossbowman an Arbalester's
+const PORTRAIT_LIKE={hum_lancer:'hum_squire',hum_crossbow:'hum_xbow'};
 class NamedPortraits{
   static of(key){return Object.hasOwn(NAMED_PORTRAITS,key)?'art/portrait/game/'+NAMED_PORTRAITS[key]:''}
   // (a troop's: its kind's painted portrait, data/unitportraits.js, after a named one)
-  static unit(type){return this.of(type)||(Object.hasOwn(UNIT_PORTRAITS,type)?'art/portrait/game/'+UNIT_PORTRAITS[type]:'')}
+  // (a kind with no painting of its own yet: its neighbour's, PORTRAIT_LIKE)
+  static unit(type){const k=Object.hasOwn(UNIT_PORTRAITS,type)?type:PORTRAIT_LIKE[type];return this.of(type)||(k?'art/portrait/game/'+UNIT_PORTRAITS[k]:'')}
   static lord(l){
     const art=this.of(l.name);if(art)return art;
     const key=l.name||l.id||'lord';let h=2166136261;for(const c of key)h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;

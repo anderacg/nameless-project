@@ -32,10 +32,11 @@ function rtsSelect(x0,y0,x1,y1,add){
 }
 // right-click: on an enemy, the selected set on it; on the ground, sent there keeping their places relative to one another
 // (opt.queue: Shift, a waypoint after the ones they have; opt.run: a double right-click, at a run; opt.amove: Ctrl, or the
-// Attack-move button armed (B.amArm), an attack-move there: battlecontrol.js AMOVE). Any order but a waypoint ends an attack-move
+// Attack-move button armed (B.amArm), an attack-move there: battlecontrol.js AMOVE). Any order but a waypoint ends an attack-move.
+// Keep formation on (two or more groups): sent as one block, turned to face the way it goes (formations.js GroupBlock)
 function rtsOrder(x,y,opt){
   if(B?.muster?.active)return;
-  opt=opt||{};const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed);if(!gs.length)return;const am=amTake(opt);playerOrder(gs,()=>{
+  opt=opt||{};const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed);if(!gs.length)return;const am=amTake(opt),keep=gs.length>1&&keepFormOn();playerOrder(gs,()=>{
   if(B.deploy){const p=inZone(x,y);x=p.x;y=p.y;opt={}}// (deploying: a spot in your zone, no enemy to set them on)
   const e=B.deploy?null:rtsUnitAt(x,y,1);
   {const ic=!e&&iconAt(x,y,0);if(ic&&!B.deploy){x=ic.cx;y=ic.cy}}// (on one of your icons: to where that group stands)
@@ -43,9 +44,14 @@ function rtsOrder(x,y,opt){
   if(!e&&opt.queue){// a waypoint after their last, the groups keeping their places relative to one another
     gs.forEach(g=>B.groups[g].toHold());
     const last=g=>{const gr=B.groups[g];return gr.queue.length?gr.queue[gr.queue.length-1]:{x:gr.ax,y:gr.ay}},cx=gs.reduce((a,g)=>a+last(g).x,0)/gs.length,cy=gs.reduce((a,g)=>a+last(g).y,0)/gs.length;
-    gs.forEach(g=>{const l=last(g),gr=B.groups[g];if(am)gr.queueTo(x+l.x-cx,y+l.y-cy,true);else gr.queueTo(x+l.x-cx,y+l.y-cy)});B.mark={x,y,t:.7,foe:false};if(am){B.mark.am=true;amSay()}return}
+    // (keep formation: the block as it will stand at their last waypoints, turned from there; each waypoint keeps the facing it
+    // is given, so the next one turns from it)
+    if(keep){const K=GroupBlock.of(gs,g=>{const l=last(g);return{x:l.x,y:l.y,face:l.face??B.groups[g].face??0}});
+      for(const p of K.placeAt(x,y,K.faceTo(x,y))){const gr=B.groups[p.g],n=gr.queue.length;gr.queueTo(p.ax,p.ay,am);if(gr.queue.length>n)gr.queue[n].face=p.face}}
+    else gs.forEach(g=>{const l=last(g),gr=B.groups[g];if(am)gr.queueTo(x+l.x-cx,y+l.y-cy,true);else gr.queueTo(x+l.x-cx,y+l.y-cy)});B.mark={x,y,t:.7,foe:false};if(am){B.mark.am=true;amSay()}return}
   gs.forEach(g=>B.groups[g].amEnd());
   if(e){gs.forEach(g=>B.groups[g].attack(e,{run:!!opt.run}));toast(htmlText(selLabel())+': attack the '+htmlText(e.grp&&B.groups[e.grp]?groupName(e.grp):e.leader?e.leader.name:ST[e.type]?ST[e.type].n.toLowerCase():'enemy')+'.')}
+  else if(keep){const K=GroupBlock.of(gs);for(const p of K.placeAt(x,y,K.faceTo(x,y)))B.groups[p.g][am?'attackMove':'moveTo'](p.ax,p.ay,{run:!!opt.run,face:p.face});if(am)amSay()}
   else{gs.forEach(regroup);const cx=gs.reduce((a,g)=>a+B.groups[g].ax,0)/gs.length,cy=gs.reduce((a,g)=>a+B.groups[g].ay,0)/gs.length;
     gs.forEach(g=>{const gr=B.groups[g];gr[am?'attackMove':'moveTo'](x+gr.ax-cx,y+gr.ay-cy,{run:!!opt.run})});if(am)amSay()}
   if(B.deploy)deploySnap(gs);
@@ -56,6 +62,8 @@ function amTake(opt){const am=!!(opt&&opt.amove||B.amArm)&&!B.deploy;if(B.amArm)
 const amSay=()=>toast(htmlText(selLabel())+': attack-move.');
 // the Attack-move button (D): the selection's next order on the ground an attack-move (pressed again, or Esc: not)
 function armAttackMove(on){if(!B||B.deploy||B.muster?.active)return;B.amArm=on??(!B.amArm&&selGroups().length>0);setOrderUI()}
+// keep formation on or off (its button, Shift+K; a setting kept: ui.js PREFS.keepform): on, two or more groups sent as one block
+function toggleKeepForm(on){prefSet('keepform',on??!prefGet('keepform'));toast(prefGet('keepform')?'Keep formation: several groups move as one block, turning to face the way they go.':'Keep formation off: each group goes on its own.')}
 // an order to the selected groups: hold (where they stand), charge, advance, withdraw (flee the battle: off your edge,
 // straight back off your edge, striking no one: once all have withdrawn the battle ends as your retreat, morale.js). Any order calls off a target and the waypoints
 function setOrder(o){

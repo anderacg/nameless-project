@@ -29,7 +29,7 @@ Kit.suite(({ok,info})=>{
  // (the Prison of the holding that holds him: on its rail, or from outside its walls when it is hostile: world/prisons.js)
  const atPrison=q=>{const h=t.townBy(q.held.town);if(t.hostileTo(h.owner)){t.openSiege(h);t.act('sg-prison')}else{t.enterTown(h);t.act('tab','prison')}};
  // (a chain under way, taken home from a fresh traveller)
- const home=()=>{const e=heal(spawn());t.act('enc-do',pick('Take him home'));t.act('enc-leave');return {e,th:live(),q:step()}};
+ const home=()=>{const e=heal(spawn());t.act('enc-do',pick('Escort home'));t.act('enc-leave');return {e,th:live(),q:step()}};
  try{
   // ---- what it is made of: the chain's steps, the step kinds, Ander's entries, the heirloom
   {const K=t.kindOf('thread','wounded');ok(!!K&&K.steps.map(s=>s.id).join()==='escort,family,tracks,trail,clear,back,reward,held,call'&&['visit','deliver','lair','held'].every(k=>t.kindOf('step',k))&&!t.kindOf('quest','visit'),
@@ -40,12 +40,12 @@ Kit.suite(({ok,info})=>{
   // ---- 1. heal him: he stands, bandaged, and his page goes on to his offer
   {const e=spawn();ok(!!e&&!e.ander,'a wounded traveller by the road');const end0=e.end,m0=G.msgs.length;heal(e);
    ok(e.healed&&!e.done&&!e.gone&&G.mode==='road'&&G.road===e&&e.end>=t.roadNow()+WD.wait-1e-6&&e.end>end0,'Tend his wounds: healed, not done with; his page stays open, his time lengthened');
-   ok(pageHas('Join you','Take him home','Refuse')&&!pageHas('Tend his wounds','Take his purse')&&!Kit.q('[data-nav="close"]'),'his offer: Join you, Take him home or Refuse; no way out till you answer');
+   ok(pageHas('Join you','Escort home','Refuse')&&!pageHas('Tend the wounds','Take the purse')&&!Kit.q('[data-nav="close"]'),'his offer: Join you, Take him home or Refuse; no way out till you answer');
    ok(pageHas(t.Wounded.nameOf(e),t.Wounded.homeOf(e).town)&&G.msgs.slice(m0).some(m=>/Bandaged and fed, he gets to his feet/.test(m.m)),'what you see: his name and his family’s place; the result’s line');
    const sc=t.ROAD_ENC.traveller.scene(e);ok(sc[0][0]==='stand'&&sc[0][1]==='healed'&&/:1$/.test(e.view().key),'he stands, bandaged (the healed look), on his page’s banner too');
    // (saved and loaded with his offer open: from the map, as a save is only made there)
    Kit.world();const snap=JSON.stringify(e);t.saveGame(true);W.road=null;t.loadGame();Kit.world();const z=t.roadList().find(o=>o.i===e.i);
-   ok(z&&JSON.stringify(z)===snap&&z.home&&z.healed,'saved and loaded with his offer open: as he was, his home kept');t.roadMeet(z);ok(pageHas('Take him home'),'met again: his offer')}
+   ok(z&&JSON.stringify(z)===snap&&z.home&&z.healed,'saved and loaded with his offer open: as he was, his home kept');t.roadMeet(z);ok(pageHas('Escort home'),'met again: his offer')}
   // ---- 2a. Join you: a first-tier soldier of his people, gone from the road; no chain
   {const e=heal(spawn()),k=t.Wounded.troop(e),n0=P.troops[k]||0;t.act('enc-do',pick('Join you'));
    ok(t.ST[k].tier===1&&P.troops[k]===n0+1&&e.gone&&e.done&&encEnd.filter(x=>x.e===e).map(x=>x.how).join()==='done'&&!live(),'Join you: +1 '+t.ST[k].n+' (his people’s first tier), off the road, done once; no chain begins');t.act('enc-leave')}
@@ -57,7 +57,7 @@ Kit.suite(({ok,info})=>{
   let C=home();
   {const {e,th,q}=C,m=th.memory;
    ok(th&&th.at==='escort'&&m.name===t.Wounded.nameOf(e)&&m.home.town&&m.town===m.home.town&&m.at.x===Math.round(e.x)&&['bandits','raiders','bog'].includes(m.band)&&!!m.gang&&!m.ander&&e.gone,
-    'Take him home: the chain begins with what it knows ('+m.name+', home '+JSON.stringify(m.home)+', the '+m.gang+')');
+    'Escort home: the chain begins with what it knows ('+m.name+', home '+JSON.stringify(m.home)+', the '+m.gang+')');
    const d=Math.hypot(t.townBy(m.town).x-e.x,t.townBy(m.town).y-e.y)/t.TILE;ok(d<=WD.home.max+1||t.TOWNS.every(z=>Math.hypot(z.x-e.x,z.y-e.y)/t.TILE<WD.home.min||Math.hypot(z.x-e.x,z.y-e.y)/t.TILE>WD.home.max),'his home within a sensible way ('+Math.round(d)+' tiles)');
    ok(q&&q.type==='escort'&&q.quiet&&q.pn===m.name&&['house','estate','holding'].includes(q.to.k)&&q.homeMark()===q.to&&t.Escort.list().includes(q),'the escort: '+q.title+', a passenger, its place a home (a house on the map)');
    t.openQuests();ok(pageHas('The Wounded Traveller: '+m.name,'Side quest','Bring '+m.name+' home')&&!Kit.qa('.qw-row').some(r=>r.textContent.includes('Escort '+m.name)),'your Quests: the story, once (its escort is its objective, not a row of its own), with what to do now');Kit.world();
@@ -66,7 +66,7 @@ Kit.suite(({ok,info})=>{
   // ---- 3/4. arrival: no page of the escort's own; his family's page
   {const {th,q}=C,r0=t.repAt(th.memory.town),m0=G.msgs.length;there(q);
    ok(q.fate==='arrived'&&th.at==='family'&&G.mode==='story'&&G.thread===th&&!G.escort&&t.repAt(th.memory.town)===r0+WD.escort.rep,'at his door: arrived (reputation +'+WD.escort.rep+'), and his family’s page at once (no escort page of its own)');
-   ok(G.msgs.slice(m0).some(m=>/is home: the door of/.test(m.m))&&pageHas(th.memory.name+'’s family',th.memory.gang,'Promise to find them','Ride on')&&!Kit.q('[data-nav="close"]'),'his line; his family names the gang: '+th.memory.gang);
+   ok(G.msgs.slice(m0).some(m=>/is home: the door of/.test(m.m))&&pageHas(th.memory.name+'’s family',th.memory.gang,'Promise to find them','Ride on')&&!Kit.q('#panel [data-nav="close"]'),'his line; his family names the gang: '+th.memory.gang);// (the family's page has no way out of its own; the escort's reward window over it has its Continue: ui/questreward.js, 2026-10-31)
    ok(save()&&live().at==='family'&&G.mode==='world','saved and loaded with the family’s page waiting');frame();ok(G.mode==='story'&&G.thread===live(),'back on the map: the page waiting is shown');
    C.th=live();t.act('thr-do','0');ok(C.th.at==='tracks'&&G.mode==='world','promised: the next step, back to where you found him')}
   // ---- 5. the investigation: to where you found him; the trail binds the chain to a hideout and marks it
@@ -119,8 +119,8 @@ Kit.suite(({ok,info})=>{
    const s0=x('ander'),e=t.roadList().find(o=>o.k==='traveller'&&o.ander);ok(/Ander The Fallen lies wounded/.test(s0)&&e&&e.race==='human'&&t.ROAD_ENC.traveller.scene(e)[0][1]==='ander','the command ander: Ander The Fallen lies wounded near you ('+s0+')');
    ok(/^ERR .*never twice/.test(x('enc wounded ander')),'one at a time: another refused while he lies there');
    t.roadMeet(e);ok(pageHas('A tall man in a dark cloak'),'his own page');t.act('enc-do','0');
-   ok(e.healed&&Th.once('ander')===G.day&&!pageHas('Join you')&&pageHas('Take him home','Refuse','Ander','then he joins you'),'healed: met once this game; no Join: take him home, then he joins');
-   t.act('enc-do',pick('Take him home'));t.act('enc-leave');const th=live();ok(th.memory.ander&&th.memory.name==='Ander'&&step().pn==='Ander','his chain: his escort');
+   ok(e.healed&&Th.once('ander')===G.day&&!pageHas('Join you')&&pageHas('Escort home','Refuse','Ander','then he joins you'),'healed: met once this game; no Join: take him home, then he joins');
+   t.act('enc-do',pick('Escort home'));t.act('enc-leave');const th=live();ok(th.memory.ander&&th.memory.name==='Ander'&&step().pn==='Ander','his chain: his escort');
    ok(save(),'saved and loaded with Ander aboard');there(step());ok(pageHas('Ander’s sister','my sword is yours'),'at his sister’s door: his page');t.act('thr-do','0');there(step());t.act('thr-do','0');
    ok(step().type==='lair','he joins only once the hideout is cleared: '+step().title);ok(save(),'saved and loaded before the fight');const s=step().lair();
    Kit.meet({kind:'camp',ref:s,n:4,band:s.band});Kit.seeded(5,()=>t.concludeEncounter(true,{},0,true,[]));Kit.done({cont:true,world:true});there(step());
@@ -182,13 +182,13 @@ Kit.suite(({ok,info})=>{
    ok(C.q.fate==='captured'&&live().at==='call'&&live().memory.held.k==='none'&&G.msgs.slice(m0).some(m=>/slips away into the dark/.test(m.m)),'lost to beasts: they take no captives; he slips away and makes his own way home');drop()}
   // ---- Ander is never lost: every end but the reward (and dying unhealed) sends him wandering the taverns
   const anderHealed=before=>{fresh();delete Th.store().once;delete Th.store().aside;W.news=null;if(before)before();t.DevConsole.execute('ander');const e=t.roadList().find(o=>o.k==='traveller'&&o.ander);t.roadMeet(e);t.act('enc-do','0');return e};
-  const anderHome=()=>{anderHealed();t.act('enc-do',pick('Take him home'));t.act('enc-leave');return {th:live(),q:step()}};
+  const anderHome=()=>{anderHealed();t.act('enc-do',pick('Escort home'));t.act('enc-leave');return {th:live(),q:step()}};
   const wanders=()=>!!t.Wanderer.state&&!!t.Wanderer.at();
   {const a=anderHome();ok(a.q.days===0&&/no hurry/.test(t.Escort.tag()[2]),'Ander’s escort has no due day');G.day+=60;t.questDay();ok(P.quests.includes(a.q)&&live()===a.th,'never late: 60 days on he still rides with you');
    t.Quest.as(a.q).abandon();ok(ends(a.th).join()==='left'&&wanders(),'abandoned: he goes wandering')}
   {anderHealed();t.act('enc-do',pick('Refuse'));t.act('enc-leave');ok(wanders()&&!live(),'refused: wandering')}
   {anderHealed(()=>{for(let i=0;i<t.ESCORT.max;i++)t.Escort.start({who:'child',to:{town:'Ashford'}})});
-   ok(!!t.Escort.why()&&pageHas('Meet him later')&&!pageHas('Take him home'),'no room for a passenger: no forced refusal, he offers to meet you later');
+   ok(!!t.Escort.why()&&pageHas('Meet him later')&&!pageHas('Escort home'),'no room for a passenger: no forced refusal, he offers to meet you later');
    t.act('enc-do',pick('Meet him later'));t.act('enc-leave');ok(wanders()&&!live(),'met later: wandering');P.quests=[]}
   {const a=anderHome();there(a.q);t.act('thr-do','1');ok(ends(a.th).join()==='part'&&wanders(),'Ride on at his sister’s: wandering')}
   {const a=anderHome();there(a.q);t.act('thr-do','0');there(step());t.act('thr-do','2');t.act('thr-do','2!');ok(ends(a.th).join()==='drop'&&wanders()&&!t.Wanderer.state.done,'Let it lie: wandering')}

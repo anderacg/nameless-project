@@ -20,9 +20,11 @@ function parleyFight(o,kind){G.par=null;if(kind==='lord')return startEncounter({
 // they yield: take them prisoner, (bandits) take them into your band, or disarm them and let them go
 function parleyYield(){
   const {o,kind}=G.par,lord=kind==='lord',list=o.troops;
-  if(lord){const ransom=80+5*list.length;P.gold+=ransom;rippleRel(o,RELATION.ransom,'you took their ransom');P.renown+=8;addHonor(o.fac,-5,true);FIDS.filter(f=>atWar(f,o.fac)).forEach(f=>addHonor(f,3,true));
-    const pr=cage(list);worldEmit('lord:beaten',{lord:o});defeatLord(o);G.par=null;mood('ransom');
-    return notice(o.name+' yields','The sword is handed over, and '+ransom+' gold paid as ransom. '+(pr?pr+' of the soldiers become your prisoners; the rest are sent home unarmed.':'The soldiers are sent home unarmed.')+' Renown +8; the '+FACS[o.fac].n+' will not forget the shame (−5 honor).','good')}
+  // (a lord: his ransom, renown and the honor it costs as ever; his end the same window as a band's, his army's spoils a beaten
+  // lord's (yieldSpoils: ON_WIN lord's drop, his purse), the soldiers sent home unarmed leaving their weapons)
+  if(lord){lootStart();const ransom=80+5*list.length;P.gold+=ransom;rippleRel(o,RELATION.ransom,'you took their ransom');P.renown+=8;addHonor(o.fac,-5,true);FIDS.filter(f=>atWar(f,o.fac)).forEach(f=>addHonor(f,3,true));
+    const n=cage(list),more=yieldSpoils({kind:'lord',ref:o,list},list.length-n);worldEmit('lord:beaten',{lord:o});defeatLord(o);G.par=null;mood('ransom');G.mode='dialog';
+    return lootShow('<h2>'+o.name+' yields</h2><p>The sword is handed over, and '+ransom+' gold paid as ransom. '+(n?n+' of the soldiers become your prisoners; the rest are sent home unarmed.':'The soldiers are sent home unarmed.')+' Renown +8; the '+FACS[o.fac].n+' will not forget the shame (−5 honor).'+more+'</p>',null,0,'cont')}
   G.mode='dialog';showPanel('<h2>They yield</h2><p>The '+(o.kind==='raiders'?'raiders':'bandits')+' throw down their weapons. What becomes of them?</p><div class="btns">'+
     dlgBtn('pl-cage',null,'Take them prisoner ('+Math.min(list.length,prisonCap()-prisonerCount())+' fit)',prisonerCount()>=prisonCap()?'No room for prisoners':'',true)+
     dlgBtn('pl-join',null,'Take them into your band…',RecruitPick.room()?'':'Your band is full')+dlgBtn('pl-free',null,'Disarm them and let them go')+'</div>'+
@@ -47,23 +49,40 @@ class RecruitPick{
         '<span class="pick-step">'+this.btn(k,-1,'−',!c)+'<b>'+c+'</b>'+this.btn(k,1,'+',!more)+'</span>')+'</div>'}).join('');
     G.mode='dialog';showPanel('<h2>Take them into your band</h2><p class="muted">Room for '+Math.max(0,heads)+' more fighters; '+free+' free group'+(free===1?'':'s')+' of ten. The rest are disarmed and sent off.</p><div class="pick-rows">'+rows+'</div>'+
       nav(['pl-back',null,'Back'],['pl-take',null,n?'Take '+n:'Take none',n?'':'Choose who joins']))}
-  static take(){const {o,take}=G.par,r=partyRoster(P);let k=0;for(const [type,n] of Object.entries(take))if(n)k+=r.add(type,n);
-    const c=CONDUCT.takeBrigands;P.morale=clamp(P.morale-c.morale,0,100);FIDS.forEach(f=>addHonor(f,-c.honorAll,true));mood('cruel');bandGone(o);G.par=null;
-    return notice('New recruits',k+' brigands join your band'+(o.troops.length>k?'; the rest are disarmed and sent off':'')+'. Your honest soldiers grumble (morale −'+c.morale+'), and every realm thinks a little less of you (−'+c.honorAll+' honor).','gold')}
+  static take(){const {o,take}=G.par,r=partyRoster(P);lootStart();let k=0;for(const [type,n] of Object.entries(take))if(n)k+=r.add(type,n);
+    const c=CONDUCT.takeBrigands;P.morale=clamp(P.morale-c.morale,0,100);FIDS.forEach(f=>addHonor(f,-c.honorAll,true));mood('cruel');
+    return yieldEnd(o,'New recruits',k+' brigands join your band'+(o.troops.length>k?'; the rest are disarmed and sent off':'')+'. Your honest soldiers grumble (morale −'+c.morale+'), and every realm thinks a little less of you (−'+c.honorAll+' honor).',o.troops.length-k)}
 }
 function cage(list){let n=0;for(const k of list){if(prisonerCount()>=prisonCap())break;if(!ST[k]||ST[k].tier>=4||ST[k].beast)continue;P.prisoners[k]=(P.prisoners[k]||0)+1;n++}return n}
 function bandGone(o){bandits=bandits.filter(x=>x!==o);worldEmit('band:beaten',{band:o});repNear(o.x,o.y,3)}
+/* what a band that yields hands over (the owner, 2026-11-01: "disarm bandit should also show renown loots from them like battle
+   ends"): every yield ends in a won fight's window (ui/loot.js lootShow: the head, the renown and gold it brought, the pile to take
+   or leave), opened with lootStart() before the yield's own gains so it counts them. Its spoils are a win's (yieldSpoils), with no
+   experience for a fight not fought. Its chieftain is yours if you take them prisoner, his purse with him; else he gets away */
+function yieldEnd(o,head,text,sent,caught){
+  const ld=o.ld;if(ld&&!caught){chiefEscapes(ld);o.ld=null}
+  let more=yieldSpoils({kind:'party',ref:o,list:o.troops},sent);
+  if(ld&&caught){captureChief(ld);o.ld=null;more+=' '+chiefCaught(ld)}
+  bandGone(o);G.par=null;G.mode='dialog';lootShow('<h2>'+head+'</h2><p>'+text+more+'</p>',null,0,'cont')}
+/* a yield's spoils, rolled as a win rolls them (engage.js ON_WIN: its kind's drop; a chieftain's purse, a camp's plunder:
+   captives.js spoilsWon); those disarmed and sent off (sent) leave their weapons: the drop once more for every YIELD_SPOILS.arms
+   of them. While a window is collecting (lootStart) it all goes on its pile. Returns the line for its window */
+const YIELD_SPOILS={arms:4};
+function yieldSpoils(e,sent){const O=ON_WIN[e.kind]||ON_WIN.party;
+  for(let i=1+Math.round(sent/YIELD_SPOILS.arms);O.drop&&i>0;i--){const d=O.drop();if(d&&!invAdd('gear',d,1))log(BAG_FULL+'. You leave a '+ITEMS[d].n+' behind.','bad')}
+  return spoilsWon(e)}
 function parleyAct(a,arg){
   const p=G.par;if(!p){closeDialog();return}const {o,kind}=p;
   if(a==='pl-fight')return parleyFight(o,kind);
   if(a==='pl-go'){o.cool=8;G.encCool=3;if(kind==='lord'){addHonor(o.fac,2,true);changeRel(o,RELATION.letGo,'you let them go')}else repNear(o.x,o.y,-2);mood('mercy');closeDialog();log(kind==='lord'?'You let '+o.name+' ride away.':'You let the band go. The roads stay dangerous.');return}
   if(a==='pl-yield'){const y=Math.random()<yieldChance(o,kind);train('pers',y?6:2);if(y)return parleyYield();log((kind==='lord'?o.name:'The band')+' refuses to yield: '+yieldNo(o)+'.','bad');return parleyFight(o,kind)}
-  if(a==='pl-cage'&&kind==='band'){const n=cage(o.troops),gold=rint(5,15)+o.n*2;P.gold+=gold;P.renown+=2;bandGone(o);G.par=null;return notice('Prisoners',n+' of them are bound and marched with you'+(o.n>n?'; the rest are disarmed and chased off':'')+'. You take '+gold+' gold they had stolen.','good')}
+  if(a==='pl-cage'&&kind==='band'){lootStart();const n=cage(o.troops),gold=rint(5,15)+o.n*2;P.gold+=gold;P.renown+=2;
+    return yieldEnd(o,'Prisoners',n+' of them are bound and marched with you'+(o.n>n?'; the rest are disarmed and chased off':'')+'. You take '+gold+' gold they had stolen.',o.troops.length-n,true)}
   if(a==='pl-join'&&kind==='band'&&RecruitPick.room())return RecruitPick.open();
   if(a==='pl-pick'&&kind==='band'&&p.take){const [k,d]=String(arg).split(':');return RecruitPick.step(k,+d)}
   if(a==='pl-back'&&kind==='band')return parleyYield();
   if(a==='pl-take'&&kind==='band'&&p.take&&sum(p.take)>0&&RecruitPick.fits(p.take))return RecruitPick.take();
-  if(a==='pl-free'&&kind==='band'){P.renown+=1;bandGone(o);mood('mercy');G.par=null;return notice('Set free','You break their weapons and send them off. Some may find honest work; some will not.','good')}
+  if(a==='pl-free'&&kind==='band'){lootStart();P.renown+=1;mood('mercy');return yieldEnd(o,'Disarmed','You take their weapons and send them off. Some may find honest work; some will not.',o.troops.length)}
 }
 /* a bandit camp or hideout, from its page (sites.js Lair): parley as with a band. Pay them to break camp (tribute: a price a
    head of what you see, 12 gold), and they ride away, any bands sheltering there back on the road: no fight, no loot, no bounty.
@@ -80,14 +99,22 @@ function lairYield(s){const y=s.spied(),pw=y?s.power(s.all(y.list)):s.guess().pw
   const ok=Math.random()<yieldChance({power:()=>pw},'band'),own=y?y.list:s.foes();train('pers',ok?6:2);
   if(!ok){log((s.ld?s.ld.name:'Their chieftain')+' refuses to yield and draws steel.','bad');s.fight(true,own);return ''}
   G.siteSpy=Object.assign(G.siteSpy&&G.siteSpy.s===s?G.siteSpy:{s,ok:false},{yielded:s.all(own)});return 'They throw down their weapons.'}
-function lairFate(s,list,how){const ld=s.ld;s.ld=null;let m;
-  if(how==='cage'){const n=cage(list),gold=rint(5,15)+list.length*2;P.gold+=gold;P.renown+=2;if(ld)captureChief(ld);
-    m=n+' of them are bound and marched with you'+(list.length>n?'; the rest are disarmed and chased off':'')+'. You take '+gold+' gold they had stolen'+(ld?', and '+ld.name+' captive (hand him over for '+bountyOf(ld)+' gold: Hero, Party)':'')+'.'}
+// (their fate: as a band's, its end the same window (lootShow), the spoils a beaten camp's (yieldSpoils: ON_WIN camp's drop, its
+// chieftain's purse and its plunder: spoilsWon), those sent off disarmed; its chieftain your captive with the prisoners, his purse
+// with him; else he gets away. You have left its page (sites.js Lair site-fate))
+function lairFate(s,list,how){lootStart();const ld=s.ld,men=list.filter(u=>u!=='chief').length;let head,m,sent=men;
+  if(how==='cage'){const n=cage(list),gold=rint(5,15)+list.length*2;P.gold+=gold;P.renown+=2;sent=men-n;head='Prisoners';
+    m=n+' of them are bound and marched with you'+(men>n?'; the rest are disarmed and chased off':'')+'. You take '+gold+' gold they had stolen.'}
   else if(how==='join'&&partyRoom()>0){let k=0;for(const u of list)if(u!=='chief'&&partyRoom()>0&&partyRoster(P).canAdd(u)){P.add(u);k++}
-    const c=CONDUCT.takeBrigands;P.morale=clamp(P.morale-c.morale,0,100);FIDS.forEach(f=>addHonor(f,-c.honorAll,true));mood('cruel');chiefEscapes(ld);
-    m=k+' brigands join your band. Your honest soldiers grumble (morale −'+c.morale+'), and every realm thinks a little less of you (−'+c.honorAll+' honor).'}
-  else{P.renown+=1;mood('mercy');chiefEscapes(ld);m='You break their weapons and send them off. Some may find honest work; some will not.'}
-  G.siteSpy=null;lairGone(s,true);return m}
+    const c=CONDUCT.takeBrigands;P.morale=clamp(P.morale-c.morale,0,100);FIDS.forEach(f=>addHonor(f,-c.honorAll,true));mood('cruel');sent=men-k;head='New recruits';
+    m=k+' brigands join your band'+(men>k?'; the rest are disarmed and sent off':'')+'. Your honest soldiers grumble (morale −'+c.morale+'), and every realm thinks a little less of you (−'+c.honorAll+' honor).'}
+  else{P.renown+=1;mood('mercy');head='Disarmed';m='You take their weapons and send them off. Some may find honest work; some will not.'}
+  const caught=how==='cage'&&ld;if(ld&&!caught){chiefEscapes(ld);s.ld=null}
+  m+=yieldSpoils({kind:'camp',ref:s,list},sent);
+  if(caught){captureChief(ld);s.ld=null;m+=' '+chiefCaught(ld)}
+  G.siteSpy=null;lairGone(s,true);G.mode='dialog';lootShow('<h2>'+head+'</h2><p>'+m+'</p>',null,0,'cont')}
+// (a chieftain taken: what to do with him)
+const chiefCaught=ld=>'You take '+chiefLabel(ld)+' captive: hand '+pr(ld).him+' over for '+bountyOf(ld)+' gold, or let '+pr(ld).him+' go (Hero, Party).'
 // what happens when you reach a roaming party: a hostile one that fears you is cornered; else the fight it wants
 function meetBand(b){if(cornered(b,'band'))return parley(b,'band');startEncounter({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:b.kind||'bandits'})}
 onAct('pl-',parleyAct);

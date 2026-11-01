@@ -309,6 +309,7 @@ class BattleSetup{
   muster(){
     B=this.createState();
     if(this.playerOrder)B.playerOrder=this.playerOrder;
+    Dismount.muster();// (your riders with no horse on foot from the start: battle/dismount.js)
     if(B.btype)this.arrangeType();
     this.initialize();
   }

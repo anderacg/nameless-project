@@ -34,7 +34,8 @@ try{
  B=fresh(['militia','militia']);const h3=B.hero,tx=h3.x+80;B.units.filter(u=>u.team===1).forEach(u=>{u.x=tx+4;u.y=h3.y});G.mouse={x:tx,y:h3.y-6,in:true,type:'mouse'};
  t.castSkill('leap');tick(B,.45);G.mouse.in=false;ok(Math.abs(h3.x-tx)<3,'Leap Slam lands where you aim');ok(B.units.filter(u=>u.team===1&&u.hp>0).every(u=>u.stun>0)||B.units.filter(u=>u.team===1).some(u=>u.hp<=0),'and stuns enemies where it lands');end();
  // war cry and stagger
- B=fresh(['militia']);const ally=B.units.find(u=>u.team===0&&!u.hero);ally.x=B.hero.x+20;ally.y=B.hero.y;const foe=B.units.find(u=>u.team===1);
+ // (three militia again: each battle above ends (end) unwon, a defeat, and the men standing in it are lost with it)
+ P.troops={militia:3};B=fresh(['militia']);const ally=B.units.find(u=>u.team===0&&!u.hero);ally.x=B.hero.x+20;ally.y=B.hero.y;const foe=B.units.find(u=>u.team===1);
  t.castSkill('cry');ok(ally.buffT>0&&foe.stun>0,'War Cry inspires nearby troops and staggers nearby enemies');
  foe.cd=0;foe.x=B.hero.x+8;foe.y=B.hero.y;const hh=B.hero.hp;t.updateBattle(.05);ok(B.hero.hp===hh,'a staggered enemy cannot attack');
  const mul=t.matchup(ally.s,foe.s);foe.hp=foe.max;foe.inSlot=false;foe.dir=Math.atan2(ally.y-foe.y,ally.x-foe.x);t.hit(ally,foe,10);// (struck from its front: no flank bonus)

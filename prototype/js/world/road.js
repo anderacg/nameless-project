@@ -44,7 +44,7 @@ const roadLand=(x,y)=>new StoryPlace(x,y).landKind;
 // from it, ENC_BY: the owner's play-test 2, the gamblers played on the road; a scene spans a tile and more either way, so never
 // by its edge); open land off it; anywhere off a road and not by one; a wood's edge (open land with the trees behind or beside it,
 // none in front, so its camp shows; open land in the frost; not by a road); hills (or by the mountains); a bog; cover beside a road (engage.js coverAt);
-// a lure: beside a road as the wounded traveller lies, with woods or hills by it for the bandits to lie in;
+// a lure: beside a road as the wounded traveller lies, out of the trees himself, with woods behind him for the bandits to lie in (roadLie);
 // mud: by a road where it runs by water or a ford, or through a bog; a lord's wood: a wood's edge (no frost) on a holding's land
 // that has a lord (a realm's, or yours)
 // (each reads the tile's story place: story/storyplace.js StoryPlace, via story/context.js Story.at, its terrain, climate, land and cover at the tile's middle)
@@ -55,7 +55,18 @@ const ENC_ON={road:(tx,ty)=>Story.at(tx,ty).byRoad,byroad:roadBeside,open:(tx,ty
   bog:(tx,ty)=>{const p=Story.at(tx,ty);return p.terrain!==T_ROAD&&p.climate==='swamp'},cover:(tx,ty)=>{const p=Story.at(tx,ty);return p.by(T_ROAD,2)&&!!p.cover},
   mud:(tx,ty)=>{const p=Story.at(tx,ty);return p.byRoad&&(p.by(T_WATER,1)||p.by(T_FORD,2)||p.climate==='swamp')},
   lordwood:(tx,ty)=>{const p=Story.at(tx,ty);return p.woodsEdge&&p.climate!=='frost'&&!!p.owned},
-  lure:(tx,ty)=>{const p=Story.at(tx,ty);return roadBeside(tx,ty)&&(p.by(T_FOREST,2)||p.by(T_HILL,1))}};
+  lure:(tx,ty)=>{const x=(tx+.5)*TILE,y=(ty+.5)*TILE;return roadBeside(tx,ty)&&!hiddenAt(x,y)&&!!roadLie(x,y)}};
+/* where an ambush's band lies hidden (ENC_TUNE.lure woods, hide, arc, rays): the tree line nearest (x, y) within woods px on its
+   side away from the road (straight away from the nearest road tile, or from you with none, within arc rad either way, rays a
+   side), the way there clear of water and rock; and hide px into the trees past it, as far as they go. {x, y (where they lie),
+   ex, ey (the tree line)}; none: null */
+function roadLie(x,y){const L=ENC_TUNE.lure,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),n=ENC_BY+1;let rx=P.x,ry=P.y,bd=Infinity,best=null;
+  for(let j=-n;j<=n;j++)for(let i=-n;i<=n;i++){if(tAt(tx+i,ty+j)!==T_ROAD)continue;const cx=(tx+i+.5)*TILE,cy=(ty+j+.5)*TILE,d=Math.hypot(cx-x,cy-y);if(d<bd){bd=d;rx=cx;ry=cy}}
+  const a0=Math.atan2(y-ry,x-rx),wood=(d,ux,uy)=>passable(terrAt(x+ux*d,y+uy*d))&&hiddenAt(x+ux*d,y+uy*d);
+  for(let k=0;k<=L.rays;k++)for(const s of k?[1,-1]:[1]){const a=a0+s*k*L.arc/L.rays,ux=Math.cos(a),uy=Math.sin(a);
+    for(let d=2;d<=L.woods&&(!best||d<best.d);d+=2){if(!passable(terrAt(x+ux*d,y+uy*d)))break;if(!hiddenAt(x+ux*d,y+uy*d))continue;
+      let h=d;while(h<d+L.hide&&wood(h+2,ux,uy))h+=2;best={d,x:x+ux*h,y:y+uy*h,ex:x+ux*d,ey:y+uy*d};break}}
+  return best&&{x:best.x,y:best.y,ex:best.ex,ey:best.ey}}
 
 /* ---------- how one ends: nothing ends while you can see it (owner, 2026-10-19). Its time up out of your sight, it ends there
    (its trace, if any); in your sight, it ends its kind's way (its ends, else its behaviour's: story/happening.js Encounter ends),

@@ -57,7 +57,7 @@ const samePair=(it,d)=>it.detail.a===d.a&&it.detail.b===d.b;
 const fellBy=d=>!d.by?'the '+facN(d.fac):d.fac&&d.fac!=='player'?d.by+' in the name of the '+facN(d.fac):d.by;
 const NEWS_KINDS={
   // (a wandering trainer where he teaches now, and where next: world/trainers.js; heard anywhere)
-  trainer:{w:6,wide:true,apart:true,same:(it,d)=>it.detail.id===d.id,say:[d=>'A '+d.lv.toLowerCase()+' of '+d.roles.toLowerCase()+', '+d.name+', is teaching at '+d.town+'; '+d.town+' will not keep him long: he goes on to '+d.next+'.',
+  trainer:{w:6,wide:true,apart:true,same:(it,d)=>it.detail.id===d.id,say:[d=>'A '+d.lv.toLowerCase()+' of '+d.roles.toLowerCase()+', '+d.name+', is teaching at '+d.town+'; '+d.town+' will not keep '+pr(d.name).him+' long: '+pr(d.name).he+' goes on to '+d.next+'.',
     d=>'They say '+d.name+', a '+d.lv.toLowerCase()+' of '+d.roles.toLowerCase()+', drills soldiers at '+d.town+' these days, and '+d.next+' after.']},
   fell:{w:10,say:[(d,s)=>d.town+' has fallen to '+fellBy(d)+(d.sacked?', and was sacked':'')+', '+s.when+'.',
     (d,s)=>'They say '+fellBy(d)+' took '+d.town+' '+s.when+(d.sacked?' and put it to the torch':'')+'.']},

@@ -35,8 +35,9 @@ Kit.suite(({ok,info})=>{
  t.selectGroup(bow);t.setOrder('withdraw');t.bhudTop();ok(b.groups[bow].order==='withdraw','the W order withdraws at once, no preview first');
  ok(/battle ends for you/.test(strip().textContent),'with everyone on the way out the HUD says the battle ends once they are off the field');
  L.exit();
- // a world battle of several armies: the circle's edge, and the rest fight on
- {t.WORLD_BATTLE.on=true;t.EXITS.on=true;G.paused=false;G.speed=1;P.fac='vale';P.hostile={};P.troops={hum_foot:8,hum_bow:6};const home=Kit.goHome('Ashford');Kit.goTo(home.x+400,home.y+350);const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);for(let y=ty-30;y<=ty+30;y++)for(let x=tx-30;x<=tx+30;x++){const i=y*t.MW+x;t.tiles[i]=t.T_OPEN;t.WM.edge[i]=0}
+ // a world battle of several armies: the circle's edge, and the rest fight on (a beast near a fight rides in by chance and never
+ // by a holding since JOIN_RULES, 2026-10-30; Wardenhall is near: here the wolves surely do)
+ {Object.assign(t.JOIN_RULES.beast,{chance:1,near:0});t.WORLD_BATTLE.on=true;t.EXITS.on=true;G.paused=false;G.speed=1;P.fac='vale';P.hostile={};P.troops={hum_foot:8,hum_bow:6};const home=Kit.goHome('Ashford');Kit.goTo(home.x+400,home.y+350);const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);for(let y=ty-30;y<=ty+30;y++)for(let x=tx-30;x<=tx+30;x++){const i=y*t.MW+x;t.tiles[i]=t.T_OPEN;t.WM.edge[i]=0}
   const band=t.asParty({kind:'bandits',troops:Array(10).fill('militia'),x:P.x+25,y:P.y,cool:0});t.bandits.push(band);W.monsters=[t.asMonster({id:'wolf',n:4,lv:1,x:P.x+10,y:P.y+22,hx:P.x+10,hy:P.y+22,t:0,a:0,cool:0})];
   G.enc={kind:'party',ref:band,list:band.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,surprise:true});const w=t.B,a=w.world;for(let i=0;i<30;i++)t.updateBattle(1/30);
   ok(!!w.sides?.active,'(a battle of several armies)');const id=t.playerGroups().find(g=>t.grpUnits(g).some(u=>u.hp>0&&!u.left));t.selectGroup(id);t.withdrawView.hover=true;t.bhudTop();

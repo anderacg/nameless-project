@@ -120,16 +120,16 @@
     yard(C){piece(C,'cottage',[-12,-14],0,{lv:1,cut:['prop']});piece(C,'cottage',[14,8],3,{lv:C.d.chance(.5)?2:1,cut:['prop']});piece(C,'well',[-14,14],0);
       C.Q.parts.push({k:'bed',name:'b1',u:[-6,4],v:[8,22]},{k:'bed',name:'b2',u:[-28,-22],v:[2,10]});dry(C,'yw',[[-30,28],[30,28],[30,-29],[-30,-29],[-30,28]],[[-4,4,0]],3)},
     // a farmstead: the house, the stone byre with its pen, hay stored under high eaves, terraced beds held by stone, a cart
-    farmstead(C){piece(C,'cottage',[-14,-16],0,{lv:2,cut:['prop']});piece(C,'barn',[14,-12],0,{cut:['prop']});haybarn(C,[-18,12],0);piece(C,'cart',[4,16],0);P(C,'trough',[0,2]);
-      C.Q.parts.push({k:'bed',name:'f1',u:[-6,28],v:[20,29]},{k:'bed',name:'f2',u:[6,28],v:[10,17]});dry(C,'tw',[[-6,19],[28,19]],null,2);dry(C,'tv',[[6,9],[28,9]],null,2)},
+    farmstead(C){piece(C,'cottage',[-17,-21],0,{lv:2,cut:['prop']});piece(C,'barn',[22,6],0,{cut:['prop']});haybarn(C,[-6,14],0);piece(C,'cart',[-22,4],0);P(C,'trough',[-2,-4]);
+      C.Q.parts.push({k:'bed',name:'f1',u:[-6,28],v:[21,29]},{k:'bed',name:'f2',u:[6,28],v:[14,18]});dry(C,'tw',[[-6,20],[28,20]],null,2);dry(C,'tv',[[6,13],[28,13]],null,2)},
     // a smithy yard: the forge hall to the street, an ore cart on its rails, coal; the smith's house behind, a woodpile, barrels
-    smithy(C){piece(C,'smithy',[-8,14],0);piece(C,'cottage',[14,-16],0,{lv:2,cut:['prop']});made(C,[16,16],0,Q=>{Q.rails('r',-8,8,0,true);Q.prop('minecart',[0,0],1,1.5)});piece(C,'barrels',[-22,-18],0);P(C,'coal',[-2,-6]);piece(C,'woodpile',[24,4],0)},
+    smithy(C){piece(C,'smithy',[-12,14],0);piece(C,'cottage',[16,-16],0,{lv:2,cut:['prop']});made(C,[16,16],0,Q=>{Q.rails('r',-8,8,0,true);Q.prop('minecart',[0,0],1,1.5)});piece(C,'barrels',[-22,-18],0);P(C,'coal',[-2,-6]);piece(C,'woodpile',[24,4],0)},
     // an inn: its alehouse of two storeys on the street (granite and timber, its sign and lantern), the stable across the yard, a
     // well, a cart
-    inn(C){made(C,[-6,18],0,Q=>{const dw=Q.home('inn','inn',2);khouse(Q,{w:30,d:14,z:11,up:7,form:'gable',rise:9,dw,door:.5,doorKind:'DoorKarn2'+km(Q.o).dec,wins:3,vents:[[10,-3],[-10,-3]]});Q.dec('h.S','Sign',.75,7);Q.dec('h.S','Lamp',.3,6)});
-      kstable(C,[10,-18],0);piece(C,'well',[-22,-14],0);piece(C,'cart',[24,6],0);P(C,'barrel',[-20,4]);P(C,'barrel',[-17,6])},
+    inn(C){made(C,[-14,18],0,Q=>{const dw=Q.home('inn','inn',2);khouse(Q,{w:30,d:14,z:11,up:7,form:'gable',rise:9,dw,door:.5,doorKind:'DoorKarn2'+km(Q.o).dec,wins:3,vents:[[10,-3],[-10,-3]]});Q.dec('h.S','Sign',.75,7);Q.dec('h.S','Lamp',.3,6)});
+      kstable(C,[16,-20],0);piece(C,'well',[-22,-14],0);piece(C,'cart',[24,6],0);P(C,'barrel',[-20,4]);P(C,'barrel',[-17,6])},
     // a rune shrine, its close walled in stone with rune stones, the keeper's house
-    chapel(C){piece(C,'chapel',[-12,-8],0,{cut:['prop']});piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});dry(C,'gw',[[2,28],[28,28],[28,4],[2,4],[2,28]],[[12,18,0]],3);
+    chapel(C){piece(C,'chapel',[-15,6],0,{cut:['prop']});piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});dry(C,'gw',[[2,28],[28,28],[28,4],[2,4],[2,28]],[[12,18,0]],3);
       made(C,[15,16],0,Q=>{const M=km(Q.o);for(const [u,v] of [[-8,-6],[0,-6],[8,-6],[-8,4],[8,4]])runestone(Q,'r'+u+v,[u,v],7,M);brazier(Q,'b',[0,3],M)})},
     // a market: the market hall (an arcade of granite under slate), stalls before it, a well, an ore cart, crates and barrels
     market(C){made(C,[0,-14],0,Q=>{const M=km(Q.o),dw=Q.home('market','trade');Q.box('mpl',[-15,15],[-9,9],[0,2],M.stone,{dw,top:true});Q.box('mh',[-14,14],[-8,8],[0,11],M.stone,{dw});kroof(Q,'mh','hip','u',8);
@@ -137,30 +137,30 @@
       piece(C,'stall',[-22,6],3);piece(C,'stall',[22,6],1);piece(C,'stall',[-8,12],0);piece(C,'stall',[8,12],0);piece(C,'well',[0,24],0);
       made(C,[-20,24],0,Q=>Q.prop('minecart',[0,0],0,1.5));piece(C,'crates',[16,24],0);piece(C,'barrels',[26,20],0)},
     // a mill: the watermill on its race, a granary, sacks, a cart
-    mill(C){piece(C,'watermill',[-8,12],0);piece(C,'granary',[16,-16],0,{cut:['prop']});P(C,'sacks',[14,4]);piece(C,'cart',[-20,-18],0)},
+    mill(C){piece(C,'watermill',[-12,12],0);piece(C,'granary',[16,-16],0,{cut:['prop']});P(C,'sacks',[14,4]);piece(C,'cart',[-20,-18],0)},
     // a lumber yard: the shed of stacked logs, the woodcutter's house, stumps, a woodpile, a cart
-    lumber(C){piece(C,'lumbershed',[-6,14],0);piece(C,'cottage',[14,-18],0,{lv:1,cut:['prop']});P(C,'stump',[-22,-14]);P(C,'stump',[-14,-24]);piece(C,'woodpile',[22,10],0);piece(C,'cart',[-20,-4],0)},
+    lumber(C){piece(C,'lumbershed',[-12,14],0);piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});P(C,'stump',[-22,-14]);P(C,'stump',[-14,-24]);piece(C,'woodpile',[22,10],0);piece(C,'cart',[-20,-4],0)},
     // a mine: the mine head in the rock, the miners' house, ore carts on rails, spoil, barrels
-    mine(C){piece(C,'minehead',[-6,6],0);piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});made(C,[16,16],0,Q=>{Q.rails('r',-10,10,0,true);Q.prop('minecart',[-4,0],1,1.5);Q.prop('minecart',[5,0],1,1.5)});P(C,'spoil',[-24,22]);piece(C,'barrels',[-24,-20],0)},
+    mine(C){piece(C,'minehead',[-10,6],0);piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});made(C,[16,16],0,Q=>{Q.rails('r',-10,10,0,true);Q.prop('minecart',[-4,0],1,1.5);Q.prop('minecart',[5,0],1,1.5)});P(C,'spoil',[-24,22]);piece(C,'barrels',[-24,-20],0)},
     // a quarry: the crane over cut blocks before a face of rock, a house, a cart of stone
     quarry(C){C.Q.parts.push({k:'tower',name:'rk',round:true,c:[-12,-20],r:12,z:[0,10],wall:rkOf(C.o),roof:{form:'cone',rise:8,mat:rkOf(C.o),o:0,lip:0,moss:mossOf(C.o)*.8},rough:.6,rs:C.spec.seed|0});piece(C,'crane',[-4,8],0);
       piece(C,'cottage',[18,-16],0,{lv:1,cut:['prop']});P(C,'block',[-22,18]);P(C,'block',[-16,24],1);P(C,'block',[-24,24]);piece(C,'cart',[18,18],0)},
     // a port: a granite quay along the water, mooring posts and a crane arm on its pier, two fishers' houses, nets, barrels
     fishery(C){made(C,[0,16],0,Q=>{const M=km(Q.o),dw=Q.home('quay','work');Q.bed([-32,32],[4,16],'water');Q.box('q',[-30,30],[-2,4],[0,2],M.stone,{dw,top:true});Q.box('pr',[4,12],[4,14],[0,2],M.stone,{dw,top:true});Q.dec('q.S','Hatch',.2,0);
         for(const a of [-20,-6,20])Q.box('mp'+a,[a,a+2],[1,3],[2,6],'timber',{top:true});Q.beam('cm',[10,8,0],[10,8,13],'timber');Q.beam('cj',[10,8,12],[10,14,13],'timber');Q.box('cr',[9.5,10.5],[13,14],[6,12],'rope',{thin:true});Q.box('cb',[9,11],[12.5,14.5],[4,6],'plank',{top:true})});
-      piece(C,'fisherhut',[-14,-14],0,{cut:['prop']});piece(C,'fisherhut',[14,-16],0,{cut:['prop']});P(C,'nets',[-2,-4]);piece(C,'barrels',[-24,6],0)},
+      piece(C,'fisherhut',[-14,-17],0,{cut:['prop']});piece(C,'fisherhut',[14,3],0,{cut:['prop']});P(C,'nets',[-2,-4]);piece(C,'barrels',[-24,6],0)},
     // a pasture's steading: the stone byre, a paddock walled in stone with its trough, hay stored under high eaves
-    pasture(C){piece(C,'barn',[-14,-12],0,{cut:['prop']});dry(C,'pd',[[2,28],[30,28],[30,-8],[2,-8],[2,28]],[[6,12,3]],4);P(C,'trough',[16,10]);haybarn(C,[-16,16],0)},
+    pasture(C){piece(C,'barn',[-12,-18],0,{cut:['prop']});dry(C,'pd',[[2,28],[30,28],[30,-8],[2,-8],[2,28]],[[6,12,3]],4);P(C,'trough',[16,10]);haybarn(C,[-20,20],0)},
     // a brewery: the brewhouse (granite and timber, copper vent pipes over its kettles), its malt kiln under a slate cone, casks
     brewery(C){made(C,[-8,14],0,Q=>{const M=km(Q.o),dw=Q.home('brewery','work',2),h=khouse(Q,{w:26,d:14,z:11,up:7,rise:8,dw,door:.4,doorKind:'DoorKarn2'+M.dec,wins:3});for(const [i,u] of [-6,4].entries())vent(Q,'vp'+i,[u,-3],h.z-2,h.z+(h.flat?9:h.rise+6),dw);
         Q.round('klb',[18,-4],6,[0,3],M.stone,{form:'lid',mat:M.stone},{dw});Q.round('kl',[18,-4],5,[0,12],M.stone,M.flat?{form:'lid',mat:M.stone}:{form:'cone',rise:7,mat:Q.o.roofMat,o:1},{dw});vent(Q,'kv',[18,-4],12,22,dw);Q.dec('kl.S','DoorKarn'+M.dec,.5,3)});
       piece(C,'granary',[16,-16],0,{cut:['prop']});piece(C,'barrels',[-20,-12],0);piece(C,'barrels',[-24,-22],0);P(C,'barrel',[22,8]);P(C,'barrel',[26,10])},
     // a granary yard: two granaries on their loading bridges, a cart, sacks
-    granary(C){piece(C,'granary',[-14,-12],0);piece(C,'granary',[14,-16],0,{cut:['prop']});piece(C,'cart',[4,20],0);P(C,'sacks',[-16,20])},
+    granary(C){piece(C,'granary',[-16,-17],0);piece(C,'granary',[16,5],0,{cut:['prop']});piece(C,'cart',[4,20],0);P(C,'sacks',[-16,20])},
     // a workshop yard: the store with its crane arm, a house, crates, a cart
-    workshop(C){piece(C,'warehouse',[-6,12],0);piece(C,'cottage',[14,-18],0,{lv:1,cut:['prop']});piece(C,'crates',[-22,-16],0);piece(C,'cart',[22,12],0)},
+    workshop(C){piece(C,'warehouse',[-12,12],0);piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});piece(C,'crates',[-22,-16],0);piece(C,'cart',[22,12],0)},
     // a camp (the camp tier): the shared tents round their fire, and the Clans' kit by it: a portable anvil, an ore cart
-    camp(C,base){base(C);P(C,'anvil',[-11,2],0,1.5);made(C,[11,1],0,Q=>Q.prop('minecart',[0,0],1,1.5))},
+    camp(C,base){base(C);P(C,'anvil',[-12,-3],0,1.5);made(C,[11,12],0,Q=>Q.prop('minecart',[0,0],1,1.5))},
     // a town quarter (128): streets of Clans' houses both sides of two lanes, a square with its well and braziers, gardens behind
     quarter(C){krow(C,-62,-8,60,0);krow(C,8,62,60,0);krow(C,-62,-8,-4,0);krow(C,8,62,-4,0);krow(C,-62,-8,-40,0);krow(C,8,62,-40,0);
       piece(C,'well',[0,14],0);piece(C,'cart',[-18,24],0);piece(C,'barrels',[20,24],0);P(C,'bench',[-6,30],1);made(C,[0,0],0,Q=>{const M=km(Q.o);brazier(Q,'b0',[-6,6],M);brazier(Q,'b1',[6,6],M)});

@@ -19,8 +19,9 @@ try{
  const TW=t.TOWNS,pick=[t.townBy('Ashford')];
  for(const f of [...['village','town','castle','city'].map(k=>z=>z.kind===k),...['dwarf','elf','orc'].map(r=>z=>z.races[0]===r)]){const z=TW.find(z=>f(z)&&!pick.includes(z));if(z)pick.push(z)}
  const at=z=>{P.x=z.x;P.y=z.y+40;P.tx=P.ty=null;G.chase=null};
- // (every spot seen first, so each look finds the fog as the save keeps it)
- for(const z of pick){at(z);t.reveal()}
+ // (every spot seen first, so each look finds the fog as the save keeps it: by your army's every man (fog.js Sight, the army-wide
+ // sight of 2026-11-01), so its march formed round you there first, as a look's first frame forms it (march.js MarchArmy))
+ for(const z of pick){at(z);t.MarchArmy.of(P);t.reveal()}
  // each spot by day, its fades settled from nothing (frames 50 ms apart), the view's pixels at the last
  const look=()=>{W.folk=[];W.ships=[];G.mode='world';G.modal=false;return pick.map((z,k)=>{at(z);G.clock=.3*t.DAY;D.al.clear();D.cov.clear();D.t=0;now=1e7+k*1e4;
    for(let i=0;i<12;i++){now+=50;Math.random=t.seeded(9100+k);t.drawWorld()}Math.random=r0;return t.ctx.getImageData(0,0,t.VW,t.VH).data})};

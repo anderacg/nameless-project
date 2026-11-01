@@ -87,11 +87,55 @@ function dragFiles(f,n,seg,space=B?.world?WORLD_BATTLE.sprite:1){const F=FORMS[f
   if(F.col)return Math.max(1,Math.min(Math.ceil(n/F.cw),Math.round((seg/(F.gx*space)+1)/(F.cw+1))));return Math.max(1,Math.min(n,Math.round(seg/(F.gx*space))+1))}
 function formPlan(x0,y0,x1,y1){
   const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed),L=Math.hypot(x1-x0,y1-y0);if(!gs.length||L<FORM_DRAG)return[];
+  if(gs.length>1&&keepFormOn())return GroupBlock.of(gs).lineAt(x0,y0,x1,y1);// (keep formation: the line is the block's new front)
   const ux=(x1-x0)/L,uy=(y1-y0)/L;
   // (its front on the left of the drag, as in Total War: dragged down they face right, up left, left to right up, right to left down)
   const face=Math.atan2(-ux,uy),tot=gs.reduce((a,g)=>a+grpUnits(g).length,0);let s=0;
   return gs.map(g=>{const n=grpUnits(g).length,seg=L*n/tot,c=s+seg/2;s+=seg;
     return{g,...(g==='hero'?{hero:true}:{}),ax:clamp(x0+ux*c,8,BW-8),ay:clamp(y0+uy*c,fieldTop(),fieldBot()),face,files:g==='hero'?null:dragFiles(B.groups[g].form||'line',n,seg)}});
+}
+/* keep formation (the order bar's toggle, Shift+K, on by default: commands.js toggleKeepForm): two or more groups sent as one
+   block, as Total War's formation lock. The block: its centre (the groups' places, ax/ay, so men lagging behind do not drag it),
+   its facing (theirs, averaged) and each group's part in it (fwd: ahead of the centre, lat: to its right, rel: its own facing off
+   the block's). A right-click turns it toward where it is sent (further than turn px; nearer, it keeps its facing); a drag makes
+   the line its new front: the groups within rank px of its front share the line by their numbers, as a drag does; the rest keep
+   their files and their places behind, spread as the front is and set back (or up) as its depth changed, the gap behind its back
+   rank kept. turn, rank: at the
+   desktop field's scale (a world battle's: WORLD_BATTLE.sprite times) */
+const KEEPFORM={turn:40,rank:24};
+const keepFormOn=()=>typeof prefGet==='function'&&!!prefGet('keepform');
+class GroupBlock{
+  // at: a group's place and facing ({x, y, face}; its ax, ay, face by default; a Shift-queue's, its last waypoint's)
+  constructor(gs,at){at=at||(g=>{const gr=B.groups[g];return{x:gr.ax,y:gr.ay,face:gr.face||0}});
+    const P=gs.map(g=>({g,...at(g)})),n=P.length||1,s=P.reduce((a,p)=>a+Math.sin(p.face),0),c=P.reduce((a,p)=>a+Math.cos(p.face),0);
+    this.x=P.reduce((a,p)=>a+p.x,0)/n;this.y=P.reduce((a,p)=>a+p.y,0)/n;this.face=Math.hypot(s,c)>1e-6?Math.atan2(s,c):P[0]?P[0].face:0;
+    const ca=Math.cos(this.face),sa=Math.sin(this.face);
+    this.parts=P.map(p=>{const dx=p.x-this.x,dy=p.y-this.y;return{g:p.g,fwd:dx*ca+dy*sa,lat:dy*ca-dx*sa,rel:p.face-this.face}})}
+  static of(gs,at){return new GroupBlock(gs,at)}
+  static get sp(){return B&&B.world?WORLD_BATTLE.sprite:1}
+  // its facing marching to (x,y): toward it, or as it is when that is near
+  faceTo(x,y){return Math.hypot(x-this.x,y-this.y)>KEEPFORM.turn*GroupBlock.sp?Math.atan2(y-this.y,x-this.x):this.face}
+  // each group's place with the block's centre at (x,y), facing face: [{g, ax, ay, face}]
+  placeAt(x,y,face){const ca=Math.cos(face),sa=Math.sin(face);
+    return GroupBlock.fit(this.parts.map(p=>({g:p.g,ax:x+p.fwd*ca-p.lat*sa,ay:y+p.fwd*sa+p.lat*ca,face:face+p.rel})))}
+  // a line dragged from (x0,y0) to (x1,y1) as its front, facing the left of the drag (formPlan's plan: {g, hero, ax, ay, face, files})
+  lineAt(x0,y0,x1,y1){
+    const L=Math.hypot(x1-x0,y1-y0),ux=(x1-x0)/L,uy=(y1-y0)/L,face=Math.atan2(-ux,uy),ca=Math.cos(face),sa=Math.sin(face),sp=GroupBlock.sp;
+    const top=Math.max(...this.parts.map(p=>p.fwd)),front=this.parts.filter(p=>p.fwd>=top-KEEPFORM.rank*sp).sort((a,b)=>a.lat-b.lat),tot=front.reduce((a,p)=>a+grpUnits(p.g).length,0);
+    // (a group's slots files wide, facing ahead: how far back of its place they reach, and their sides)
+    const box=(g,files)=>{const S=g==='hero'?[[0,0]]:formSlots(B.groups[g].form||'line',grpUnits(g).length,0,files,sp);return{back:-Math.min(...S.map(s=>s[0])),lo:Math.min(...S.map(s=>s[1])),hi:Math.max(...S.map(s=>s[1]))}};
+    const out=[],tag=g=>g==='hero'?{hero:true}:{};let s=0,deeper=-Infinity,lo=Infinity,hi=-Infinity;
+    for(const p of front){const g=p.g,n=grpUnits(g).length,seg=L*n/tot,c=s+seg/2,files=g==='hero'?null:dragFiles(B.groups[g].form||'line',n,seg),was=box(g,B.groups[g].files);s+=seg;
+      deeper=Math.max(deeper,box(g,files).back-was.back);lo=Math.min(lo,p.lat+was.lo);hi=Math.max(hi,p.lat+was.hi);out.push({g,...tag(g),ax:x0+ux*c,ay:y0+uy*c,face,files})}
+    // (the rest: as far behind the front as they were, plus what it gained (or lost) in depth; their sides spread as its width changed)
+    const mx=(x0+x1)/2,my=(y0+y1)/2,mid=(lo+hi)/2,k=hi-lo>1?L/(hi-lo):1;
+    for(const p of this.parts)if(!front.includes(p)){const f=p.fwd-top-deeper,l=(p.lat-mid)*k;out.push({g:p.g,...tag(p.g),ax:mx+f*ca-l*sa,ay:my+f*sa+l*ca,face:face+p.rel,files:B.groups[p.g].files})}
+    return GroupBlock.fit(out)}
+  // on the field; deploying, the block moved whole into your zone as far as it fits, then each group into it (deploy.js inZone)
+  static fit(ps){
+    if(B.deploy&&ps.length){const Z=deployZone(),by=(v,a,b)=>{const lo=Math.min(...v),hi=Math.max(...v);return hi-lo>b-a?(a+b-lo-hi)/2:lo<a?a-lo:hi>b?b-hi:0};
+      const dx=by(ps.map(p=>p.ax),Z.x0,Z.x1),dy=by(ps.map(p=>p.ay),Z.y0,Z.y1);for(const p of ps){const q=inZone(p.ax+dx,p.ay+dy);p.ax=q.x;p.ay=q.y}}
+    for(const p of ps){p.ax=clamp(p.ax,8,BW-8);p.ay=clamp(p.ay,fieldTop(),fieldBot())}return ps}
 }
 // World ghosts scale with the battle sprites and their slot spacing.
 // the ghost of a dragged line: each soldier's slot, faint, and an arrow the way they will face. On a phone or a small window

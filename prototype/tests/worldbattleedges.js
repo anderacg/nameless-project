@@ -5,8 +5,14 @@ Kit.suite(({ok,info})=>{
  const h=Kit.goHome('Ashford');Kit.goTo(h.x+120,h.y+100);P.troops={hum_foot:4};t.frame();
  const enemy=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x+70,y:P.y,cool:0,n:2});t.bandits.push(enemy);
  // Rings are real world draw entities, with transforms and opacity restored after each army.
- let ents=[];t.marchDraw(ents,P,G.cam);const arcs=[],ctx=t.ctx,arc=ctx.arc;try{ctx.arc=function(...a){arcs.push(a);return arc.apply(this,a)};ents[0].f()}finally{ctx.arc=arc}
- ok(arcs.length===2&&arcs[0][2]===t.marchOuter(P)&&arcs[1][2]===t.marchOuter(P)+t.WORLD_BATTLE.interaction,'every drawn army has an outer circle and interaction ring at its actual world radius');
+ // (the owner, 2026-11-01: each army's ring the outline of its men's ground, march.js MarchOutline: its outer line and its dashed one,
+ // interaction px out, drawn round its men, every man inside; with MARCH_RING off, its circles at its world radius)
+ let ents=[];t.marchDraw(ents,P,G.cam);const arcs=[],strokes=[],ctx=t.ctx,arc=ctx.arc,stroke=ctx.stroke;try{ctx.arc=function(...a){arcs.push(a);return arc.apply(this,a)};ctx.stroke=function(...a){strokes.push(ctx.getLineDash().length);return stroke.apply(this,a)};ents[0].f()}finally{ctx.arc=arc;ctx.stroke=stroke}
+ {const A=t.MARCH_ARMIES.get(P),L=A.ring,I=t.WORLD_BATTLE.interaction,o=L&&L.out,pts=k=>{const r=[];for(let i=0;i<o[k].at[o[k].n];i++)r.push([o[k].pts[2*i],o[k].pts[2*i+1]]);return r},a=o?pts(0):[],b=o?pts(1):[];
+  const off=b.length&&a.length?Math.min(...b.map(([x,y])=>Math.min(...a.map(([u,v])=>Math.hypot(x-u,y-v))))):0;
+  ok(!arcs.length&&strokes.length===2&&!strokes[0]&&strokes[1]&&o[0].n>=1&&o[1].n>=1&&A.units.every(u=>L.inside(u.x-P.x,u.y-P.y))&&off>=I*.6,'every drawn army has its outline round its men and its dashed line '+off.toFixed(1)+' px out of it at least (interaction '+I+': a lower level of the same field, about so far), every man inside');
+  t.MARCH_RING.on=false;const e2=[],arcs2=[];t.marchDraw(e2,P,G.cam);try{ctx.arc=function(...a){arcs2.push(a);return arc.apply(this,a)};e2[0].f()}finally{ctx.arc=arc;t.MARCH_RING.on=true}
+  ok(arcs2.length===2&&arcs2[0][2]===t.marchOuter(P)&&arcs2[1][2]===t.marchOuter(P)+I,'the outline off: its outer circle and interaction ring at its actual world radius')}
  const before={x:G.cam.x,y:G.cam.y,scale:t.VS};G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});const b=t.B,a=b.world;b.paused=true;
  ok(!t.LOADING.on&&G.mode==='battle','talk-to-fight completes in place without opening a battle loading screen');
  t.frame();ok(G.cam.x===before.x&&G.cam.y===before.y&&t.VS===before.scale&&t.CVS===t.VS,'live world drawing retains the exact world viewport and native resolution');

@@ -12,13 +12,13 @@
    rate a second (sees) and passes by; unnoticed when it comes within meet px, it is waylaid: a map fight (fights.js) in which
    the ambusher fights fight times as hard for fightFor of its length. ---------- */
 const WAYLAY={band:.01,lord:.002,share:.25,wait:[3,6],lordWait:[1,2],look:6,road:2,meet:26,spring:40,odds:.7,
-  spot:{trees:.45,rate:.2,scout:.12,hurry:.5},
+  spot:{trees:.45,rate:.2,scout:.12},
   see:{patrol:110,lord:90,cparty:90,band:95,caravan:80},sees:{patrol:1,lord:.6,cparty:.6,band:.5,caravan:.3},fight:1.5,fightFor:.3};
 class Waylay{
   static of(o){return o.waylay||null}
   static hidden(o){return !!o.waylay&&!o.waylay.seen}
   // your sight sources, each {x, y, r: its reach into the trees, k: its rate a second} (your band now; a scouting pet or a rider of yours later)
-  static sources(){const S=WAYLAY.spot;return [{x:P.x,y:P.y,r:vis()*S.trees,k:(S.rate+S.scout*skill('scout'))*(G.hurry?S.hurry:1)}]}
+  static sources(){const S=WAYLAY.spot;return [{x:P.x,y:P.y,r:vis()*S.trees,k:S.rate+S.scout*skill('scout')}]}
   // (noticed in d s at rate k a second)
   static notices(k,d){return Math.random()<1-Math.exp(-k*d)}
   // (a forest tile beside a road, nearest it within look tiles: its middle; none: null)

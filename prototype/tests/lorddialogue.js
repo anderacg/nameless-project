@@ -1,6 +1,6 @@
 'use strict';
 // Lord identities are earned through a meeting or chosen information; opening and refreshing an audience never spreads gossip.
-Kit.suite(({ok})=>{
+Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P,W=t.W,K=t.KNOWLEDGE,q=Kit.q;
  window.requestAnimationFrame=()=>0;
  const start=()=>{Kit.begin('soldier',23);Kit.clear();Kit.world({town:null});P.hostile={};W.news=undefined};
@@ -40,5 +40,14 @@ Kit.suite(({ok})=>{
  t.act('lord-leave');K.reset();a.inside=at.name;G.town={ref:at};G.scene={};G.mode='scene';t.lordMeet(a);
  ok(G.mode==='scene'&&K.knowsLord(a)&&!K.knowsLord(b),'an audience in the streets initially discovers only its speaker');
  q('[data-act="lr-lords"]').click();ok(G.mode==='scene'&&K.knowsLord(b),'the explicit social topic also works for a lord holding court');
+ // (the owner, 2026-11-01: "talked to lord, the lord conversation make you back to the holding screen ... the right panel when you
+ // click at action buttons there are no response") a lord's work taken at his audience in a holding's hall: back in its window, the
+ // audience over, its buttons answering
  G.scene=null;G.town=null;G.enc=null;Kit.world();
+ {const town=t.TOWNS.find(x=>x.owner&&!t.hostileTo(x.owner)&&(x.kind==='town'||x.kind==='city'))||t.TOWNS[0],l=W.lords.find(x=>!x.dead&&x.fac===town.owner)||W.lords[0];
+  Object.assign(l,{inside:town.name,x:town.x,y:town.y,state:'rest',tgt:town.name});t.enterTown(town);t.lordMeet(l);const qb=q('[data-act="qb-take"]');
+  if(!qb)info('no work offered by '+l.name);else{qb.click();ok(G.mode==='town'&&!G.enc&&!!G.town,'his work taken at his audience in '+town.name+': back in its window, the audience over (mode '+G.mode+')');
+   const tab=[...document.querySelectorAll('#panel [data-act="tab"]')].find(b=>b.dataset.arg&&b.dataset.arg!==G.town.tab);if(tab){tab.click();const was=G.town.tab,b=[...document.querySelectorAll('#panel [data-act]')].find(b=>b.dataset.act!=='tab'&&!/leave|close|back|scene|siege|sy-/.test(b.dataset.act)),h0=document.getElementById('panel').innerHTML;
+    if(b){b.click();ok(document.getElementById('panel').innerHTML!==h0||G.mode!=='town'||G.town?.tab!==was,'and its buttons answer: '+b.dataset.act)}}}
+  G.town=null;G.enc=null;t.toWorld?.();Kit.world()}
 });

@@ -5,23 +5,24 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,ST=t.ST;try{localStorage.clear()}catch(e){}t.act('begin','soldier');G.quietEvents=true;
  const same=(a,b)=>['hp','dmg','spd','reach','range','cd'].every(k=>Math.abs((a[k]||0)-(b[k]||0))<1e-9);
- // the kinds
+ // the kinds (hum_spear is the Shield Men since the troop tree, 2026-10-31: was the Man-at-Arms)
  {const a=t.troopOf('hum_spear'),b=t.troopOf('hum_spear');ok(a===b&&a instanceof t.Troop&&a instanceof t.Unit&&!a.isChar,'a Troop is one object for every soldier of its kind');
-  ok(a.key==='hum_spear'&&a.name==='Man-at-Arms'&&a.race==='human'&&a.stats()===ST.hum_spear&&a.tags.includes('spear')&&a.abilities().includes('brace'),'its key, name, race, numbers (its data), tags and abilities')}
+  ok(a.key==='hum_spear'&&a.name==='Shield Men'&&a.race==='human'&&a.stats()===ST.hum_spear&&a.tags.includes('spear')&&a.abilities().includes('brace'),'its key, name, race, numbers (its data), tags and abilities')}
  P.comps={brann:{ap:0,role:''}};const c=t.compInit('brann'),L=W.lords[0],ch=t.newChief('bandits',4);
  const H=t.charOf(P),C=t.charOf(c,'brann'),Lc=t.charOf(L),Cc=t.charOf(ch);
  ok([H,C,Lc,Cc].every(x=>x instanceof t.Character&&x instanceof t.Unit&&x.isChar)&&[H,C,Lc,Cc].map(x=>x.role).join()==='hero,companion,lord,chieftain','your hero, a companion, a lord and a chieftain: each a Character, in its role');
  ok(t.charOf(P)===H&&t.leaderOf(L)===Lc,'one Character per person (and leaderOf is the same)');
  ok(H.key==='hero'&&C.key==='brann'&&Lc.key===t.lordUnit(L)&&Cc.key==='chief','each fights as its own kind ('+[H,C,Lc,Cc].map(x=>x.key).join(', ')+')');
  ok(H.name==='you'&&C.name==='Brann'&&Lc.name===L.name&&Cc.name===ch.name,'and has its name');
- // the numbers: the same as before the Units (each kind's own way, for now)
- const env=t.battleEnv(false);
- ok(same(H.fieldStats(env,0,1),t.envStats(t.heroStats(),P.race,env)),'your hero’s numbers: from your level, attributes and gear, on the ground');
- ok(same(C.fieldStats(env,0,1),t.envStats(t.compStats('brann'),ST.brann.race,env)),'a companion’s: from its level and gear');
- {const b=t.envStats(Lc.base(),Lc.race,env),lv=3,sc={...b,hp:Math.round(b.hp*(1+.2*(lv-1))),dmg:b.dmg*(1+.12*(lv-1))};
+ // the numbers: the same as before the Units (each kind's own way, for now), every fighter's health FIELD_HP times his own on the
+ // field since fa23bde ("battles longer and steadier": field)
+ const env=t.battleEnv(false),field=s=>({...s,hp:s.hp*t.FIELD_HP});
+ ok(same(H.fieldStats(env,0,1),field(t.envStats(t.heroStats(),P.race,env))),'your hero’s numbers: from your level, attributes and gear, on the ground');
+ ok(same(C.fieldStats(env,0,1),field(t.envStats(t.compStats('brann'),ST.brann.race,env))),'a companion’s: from its level and gear');
+ {const b=field(t.envStats(Lc.base(),Lc.race,env)),lv=3,sc={...b,hp:Math.round(b.hp*(1+.2*(lv-1))),dmg:b.dmg*(1+.12*(lv-1))};
   ok(same(Lc.fieldStats(env,1,lv),sc)&&same(Lc.base(),t.charStats(Lc)),'a lord\u2019s: his own (charStats), on the ground, at the encounter\u2019s level')}
  ok(same(Cc.stats(),t.charStats(Cc))&&Cc.stats().hp>ST.chief.hp,'a chieftain\u2019s: his own, tougher than a plain chief');
- {const k='orc_grunt',b=t.envStats(ST[k],'orc',env);ok(same(t.troopOf(k).fieldStats(env,1,2),{...b,hp:Math.round(b.hp*1.2),dmg:b.dmg*1.12}),'a troop’s: its kind’s, at the encounter’s level')}
+ {const k='orc_grunt',b=field(t.envStats(ST[k],'orc',env));ok(same(t.troopOf(k).fieldStats(env,1,2),{...b,hp:Math.round(b.hp*1.2),dmg:b.dmg*1.12}),'a troop’s: its kind’s, at the encounter’s level')}
  // a battle: every soldier from its Unit
  {P.troops={hum_spear:3,hum_bow:2};G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia','militia']};t.startBattle({enemies:['militia','militia'],tournament:false});const B=t.B;
   ok(B.units.every(u=>u.unit instanceof t.Unit&&u.unit.key===u.type),'in battle, every soldier links to its Unit, and fights as its kind');

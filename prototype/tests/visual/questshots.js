@@ -16,7 +16,7 @@ window.RUN=()=>{
  // ---- a wounded traveller taken home, his family heard: the trail under way
  const story=()=>{const D=t.kindOf('encounter','traveller'),pick=l=>String(t.ROAD_ENC.traveller.acts.findIndex(c=>c.label===l));t.WOUNDED.ander.p=0;
   for(const z of [ash,...t.TOWNS]){Kit.world();Kit.clear();W.road=null;P.quests=[];P.troops={hum_levy:6};G.clock=t.DAY*.4;Kit.goHome(z);const p=t.roadSpot(D.on,0,D.near),e=p&&t.roadSpawn('traveller',p[0],p[1]);if(!e)continue;
-   t.roadMeet(e);t.act('enc-do','0');t.act('enc-do',pick('Take him home'));t.act('enc-leave');const th=W.story.threads.on.find(x=>x.k==='wounded');if(!th)continue;
+   t.roadMeet(e);t.act('enc-do','0');t.act('enc-do',pick('Escort home'));t.act('enc-leave');const th=W.story.threads.on.find(x=>x.k==='wounded');if(!th)continue;
    Kit.world();t.Quest.as(P.quests.find(x=>x.id===th.wait.id)).reached();t.act('thr-do','0');Kit.world();return th}};
  const jobs=()=>{Kit.goHome(ash);P.troops={hum_spear:8,hum_bow:6};const qb=t.makeQuest('bounty',ash);t.acceptQuest(qb);let qc=null;for(let k=0;k<10&&!qc;k++)qc=t.makeQuest('courier',ash);t.acceptQuest(qc);
   const qs=t.makeQuest('supply',ash);t.acceptQuest(qs);t.invAdd('good',qs.good,qs.n);P.jobs={Ashford:{day:G.day,list:[t.makeQuest('bounty',ash),t.makeQuest('troops',ash)]}};return {qb,qc,qs}};

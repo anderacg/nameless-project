@@ -1,7 +1,7 @@
 'use strict';
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();G.msgs=[];P.bsta=100;
- const before=document.getElementById('log').textContent;t.setHurry(true);t.setHurry(false);ok(G.msgs.length===0,'Hurry and walking feedback do not enter Journal history');
+ const before=document.getElementById('log').textContent;ok(G.msgs.length===0,'walking feedback does not enter Journal history');
  ok(document.getElementById('log').textContent===before,'walk and run changes are silent on screen as well');
  t.setByRoad(true);t.setByRoad(false);ok(G.msgs.length===0,'route toggles remain screen-only');
  const hear=t.KNOWLEDGE.hear;let heard=0;try{t.KNOWLEDGE.hear=()=>heard++;t.log('An operational confirmation.','','system');t.log('Another order.','','action');t.toast('A direct control confirmation.');ok(!heard&&!G.msgs.length,'system and action feedback cannot create Journal entries or knowledge')}finally{t.KNOWLEDGE.hear=hear}

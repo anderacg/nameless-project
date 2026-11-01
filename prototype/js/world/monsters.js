@@ -16,8 +16,8 @@ class Monster extends Party{
   here(){return W.monsters.includes(this)}
   meet(){startMonster(this)}
   // in sight: a mythic one from afar (it flies over everything), the rest as anyone, nearer in woods and hills
-  inView(V){return MONSTERS[this.id].mythic?this.fromYou()<V*1.6:spotted(this,V)}
-  pick(at){at.add(this,11,6)}
+  inView(V){return MONSTERS[this.id].mythic?yourSight(V).sees(this.x,this.y,1.6):spotted(this,V)}
+  pick(at){at.add(this,11,6);at.army?.(this)}// (marched man by man: on any of them or inside its outline too, world.js pickAt army)
   // its figure (a mythic one in flight, its wings beating, bobbing, drawn over what it flies above; the rest a walk of
   // PX.MAP_STEPS frames to a body length walked: render.js stepOf), its count and level by how it means to fight
   draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;if(WORLD_BATTLE.on){marchDraw(ents,this,cam);return}const m=this,M=MONSTERS[m.id],Y=M.mythic;
@@ -26,7 +26,7 @@ class Monster extends Party{
       ctx.fillStyle='rgba(0,0,0,.3)';if(Y)ctx.fillRect(sx-8,sy-1,16,3);else ctx.fillRect(sx-Math.max(2,(s.cw>>1)-1),sy-1,Math.max(4,s.cw-2),2);
       ctx.save();ctx.translate(sx,sy-lift);if(Y?m.dir<0:faceDir(m)<0)ctx.scale(-1,1);ctx.drawImage(s,-(w>>1),-s.height+2);ctx.restore();
       if(!Y)txt((m.n>1?m.n+' ':'')+'Lv'+m.lv,sx,sy-h,STANCE_COL[M.aggro||stance(monPower(m))==='afraid'?stance(monPower(m)):'wary'],'center')}})}
-  mapDot(V){const Y=MONSTERS[this.id].mythic;return this.fromYou()<V?[Y?'#ff7a30':'#c58af0',Y?2:1]:null}
+  mapDot(V){const Y=MONSTERS[this.id].mythic;return yourSight(V).sees(this.x,this.y)?[Y?'#ff7a30':'#c58af0',Y?2:1]:null}
   tip(){const M=MONSTERS[this.id];return '<b>'+(M.n||this.id)+(this.n>1?' ×'+this.n:'')+'</b><small>Level '+this.lv+tipOdds(monPower(this))+'</small><span class="act">Click: fight</span>'}
   // as one side of a fight on the map (fights.js), the face every party there shows: its fighters (n of its kind), its strength
   // (monPower; in a fight, its fighters at its level), its name, no realm; it loses its fighters one by one (n goes down)
@@ -74,17 +74,21 @@ const BEAST_MIND={think(m,d,hide){
     if(inFight(m))return false;// (fighting on the map: fights.js)
     if(MONSTERS[m.id].mythic)return roamMythic(m,d);
     const A=WORLD_SCALE.ai,M=MONSTERS[m.id],prey=TravelAwareness.target(m)||P,dx=prey.x-m.x,dy=prey.y-m.y,dist=Math.hypot(dx,dy);m.cool=Math.max(0,m.cool-d);
-    // (how it means to fight you weighed only while you are in its sight: out of it, it wanders whatever it thinks of you)
-    const see=TravelAwareness.sees(m)?travelDetection(m).range:0,pw=monPower(m),st=dist<see?stance(pw,m):null,hunt=M.aggro&&Math.hypot(prey.x-m.hx,prey.y-m.hy)<A.lairHunt;
-    if(m.cool>0||!stanceMove(m,st,dist,dx,dy,see,moveStep(26*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){m.t-=d;if(m.t<=0){const R=monRng();m.t=2+R.next()*4;m.a=R.next()*6.283}
+    // (how it means to fight you weighed only while you are in its sight: out of it, it wanders whatever it thinks of you; but
+    // afraid of you and remembering you (engage.js fearOf) it keeps away, just after a fight too, not back to its lair past you)
+    const see=TravelAwareness.sees(m)?travelDetection(m).range:0,pw=monPower(m),at=stance(pw,m),fear=fearOf(m,at),st=dist<see||fear?at:null,hunt=M.aggro&&Math.hypot(prey.x-m.hx,prey.y-m.hy)<A.lairHunt;
+    if(m.cool>0&&!fear||!stanceMove(m,st,dist,dx,dy,see,moveStep(26*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){m.t-=d;if(m.t<=0){const R=monRng();m.t=2+R.next()*4;m.a=R.next()*6.283}
       // wander, but stay near the lair
       const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>A.lairLeash)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),moveStep(10,d))}
     // a band it meets: it falls on them, and they fight back (a fight on the map)
     {const b=beastMeets(m);if(b){startFight([asMonster(m)],[b]);return false}}
     // (on you: a hunter when it is the stronger; one that waits to be hunted (a boar, a bear) when cornered, you right on it and
     // not far the stronger, the owner 2026-10-31: "make them charge when cornered")
-    {const at=stance(monPower(m),m);if((M.aggro?at==='attack':at!=='afraid')&&TravelAwareness.sees(m)&&dist<(WORLD_BATTLE.on?worldBattleReach(m):10)&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}}
-    return false}};
+    {if((M.aggro?at==='attack':at!=='afraid')&&TravelAwareness.sees(m)&&dist<(WORLD_BATTLE.on?worldBattleReach(m):10)&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}}
+    return false},
+  // far from you (the far tier, worldobject.js): a beast holds by its lair (doc/WORLD_DESIGN.md §3.5: it wanders only near you); a
+  // mythic one roams on, as a mid one thinks
+  farStep(m,d,x,k){return MONSTERS[m.id].mythic?lodMid(this,m,k,d,x):false}};
 // the party a beast falls on: one it meets, out of any fight; a band always, any other (a lord's army, a watch, a caravan, a
 // companion's party) when the beast dares it (DEFEND.dare); neither of them set out by a quest, nor a mythic beast (it ravages
 // armies its own way: roamMythic)
@@ -94,13 +98,20 @@ const beastDares=(m,o)=>o.mapKind==='band'||monPower(m)>=o.power()*DEFEND.dare;
 // (the first such in the parties' order; while the beasts move, from a grid of where they stand, which answers as the scan of
 // them all does: Spatial.index. One set in a fight meanwhile is out of the reckoning wherever it stands)
 let BAND_GRID=null;
-const beastMeets=m=>m.cool<=0&&fightsOnMap(m)&&(BAND_GRID?BAND_GRID.within(m.x,m.y,DEFEND.meet):beastPrey()).find(b=>!b.qid&&!b.fight&&!b.gone&&!b.dead&&!b.inside&&b.troops.length&&Math.hypot(b.x-m.x,b.y-m.y)<DEFEND.meet&&beastDares(m,b))||null;
+// (the prey where beasts think, for the frame: from the chunk grid (worldobject.js lodBox, DEFEND.meet wider), in beastPrey's
+// order (its kinds in turn, each in its list's); box: where a beast may ask it, null everywhere (the tiers off: every prey, as
+// ever). One asking from beyond it is answered by the scan)
+const PREY_RANK=(T=>({[T.band]:0,[T.lord]:1,[T.patrol]:2,[T.caravan]:3,[T.cparty]:4}))(LOD_TAG);
+function beastPreyGrid(){const b=lodBox(DEFEND.meet+WORLD_LOD.lag),box=lodBox(0);if(!b)return Object.assign(Spatial.index(beastPrey(),64),{box:null});
+  const G=lodGrid(),R=o=>PREY_RANK[G.tag.get(o)],L=G.box(b[0],b[1],b[2],b[3],[]).filter(o=>R(o)!=null&&!(G.tag.get(o)===LOD_TAG.lord&&(o.dead||o.inside)));
+  L.sort((a,c)=>R(a)-R(c)||G.ord.get(a)-G.ord.get(c));return Object.assign(Spatial.index(L,64),{box})}
+const beastMeets=m=>m.cool<=0&&fightsOnMap(m)&&(BAND_GRID&&lodIn(BAND_GRID.box,m.x,m.y)?BAND_GRID.within(m.x,m.y,DEFEND.meet):beastPrey()).find(b=>!b.qid&&!b.fight&&!b.gone&&!b.dead&&!b.inside&&b.troops.length&&Math.hypot(b.x-m.x,b.y-m.y)<DEFEND.meet&&beastDares(m,b))||null;
 // beaten in a fight on the map: cut down as it flees (DEFEND.rout of the pack, rounded up: a lone beast dies), and those left
 // break off, wounded, and slink back to its lair
 function beastRouted(m){m.fight=null;m.n=Math.max(0,m.n-Math.ceil(m.n*DEFEND.rout));m.pw=0;const near=Math.hypot(m.x-P.x,m.y-P.y)<vis()*1.5,nm=MONSTERS[m.id].n.toLowerCase(),many=/s$/.test(nm);
   if(m.n<=0){W.monsters=W.monsters.filter(x=>x!==m);if(near)log('The '+nm+(many?' are':' is')+' slain near '+Spatial.nearestHolding(m.x,m.y).name+'.');return}
   m.cool=6;m.a=Math.atan2(m.hy-m.y,m.hx-m.x);m.t=3;if(near)log('The '+nm+(many?' break off and slink':' breaks off and slinks')+' away.')}
-function updateMonsters(d){BAND_GRID=Spatial.index(beastPrey(),64);try{return lodEach(W.monsters,BEAST_MIND,d,hiddenAt(P.x,P.y)?.55:1)}finally{BAND_GRID=null}}
+function updateMonsters(d){BAND_GRID=beastPreyGrid();try{return lodEach(W.monsters,BEAST_MIND,d,hiddenAt(P.x,P.y)?.55:1)}finally{BAND_GRID=null}}
 function startMonster(m){const M=MONSTERS[m.id];startEncounter({kind:'monster',ref:m,lv:m.lv,list:Array(m.n).fill(M.unit)})}
 // roll trophies and gear for a won monster fight, into the bag (the victory panel lists them with the rest of the spoils)
 function monsterLoot(m,slain){

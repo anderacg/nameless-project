@@ -17,10 +17,13 @@ let VS=1,CVS=1;
    Resolution, ui.js: Full none, Balanced 2, Fast 1.5). The game's art is whole pixels, so a canvas of fewer pixels shown at the
    window's size (pixelated, style.css) looks the same, its text a little coarser, and draws in a fraction of the time on a phone
    (at 3, Balanced fills 4/9 of the pixels, Fast 1/4) */
-const RENDER={cap:2,fps:60};
+// gpu: the screen's canvas left to the GPU (no willReadFrequently; Ashmark.html?gpu=1). Off by default: measured headless on a
+// desktop GPU (doc/WORLD_DESIGN.md §3.5, "The frame's cost"), a GPU screen fed by the software canvases the frame is built in was
+// no faster, and every layer moved to the GPU was slower; for trying on a phone
+const RENDER={cap:2,fps:60,gpu:/[?&]gpu=1/.test(location.search)};
 const dprOf=()=>Math.min(window.devicePixelRatio||1,RENDER.cap);
 // ctx: the context drawn into; the world map's ground and buildings go into a canvas of game pixels first (render.js drawWorld)
-const cv=$('#game');let ctx=cv.getContext('2d', { willReadFrequently: true });const ctx0=ctx;
+const cv=$('#game');let ctx=cv.getContext('2d',{willReadFrequently:!RENDER.gpu});const ctx0=ctx;
 cv.width=VW;cv.height=VH;ctx.imageSmoothingEnabled=false;
 // the battlefield: BW x BH, set as a battle starts by its size (setup.js FIELD_SIZES); with sizes off (the older test suites) today's
 // field, FIELD_H high and as wide as the screen's shape asks (FIELD_W). In a battle the canvas runs at BVW x BVH (FIELD_H field px
@@ -71,7 +74,7 @@ const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 const DAY_SECONDS=180,NIGHT_AT=.5;
 const WORLD_PACE=.4,BATTLE_PACE=.6,HERO_PACE=.85;
 // the world's time controls (D23): 1x, 2x and 4x (keys 1-3), and Travel fast (key 4, the top bar's 8×), 8x till you change the
-// speed (the owner, 2026-10-22: back on the bar; Hurry, the band's own pace, is on the action ring and key R: world/supply.js)
+// speed (the owner, 2026-10-22: back on the bar)
 const SPEEDS=[1,2,4],TRAVEL_FAST=8;
 // the developer console's cheats (ui/developer.js): your band's map speed × speed (world.js bandPace); noNeeds: no hunger, thirst
 // or stamina drain, nor their tolls on your hero (world/supply.js). Runtime only, never saved; off unless a test sets them

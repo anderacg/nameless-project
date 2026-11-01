@@ -40,31 +40,75 @@ const classN=s=>s.mounted&&s.range?'Missile cavalry':tagsOf(s).includes('shield'
 function unitCard(k,from){
   const s=ST[k];return cardHtml({key:k,s,name:s.n,sub:'Tier '+s.tier+(s.race?' · '+RACES[s.race].n:''),from:from&&ST[from],fromN:from&&ST[from]&&ST[from].n,
     abil:unitAbilities(s),foot:(HIRE[k]?'Hire '+hireCost(k)+'g · ':'')+(UP_FROM(k)?'Train '+trainCost(k)+'g · ':'')+'Upkeep '+(soldierPay(k)+(s.mounted?BAND_PAY.mounted:0))+'g a day'})}
+/* growth (the owner, 2026-11-01: "the unit detail should show which stat they grow from the original"): a troop group or a
+   character now against its original, and what grew it, in the order a battle gives it. A troop group: its kind's own numbers (ST),
+   then your talents (tHp, tDmg: as Unit.fieldStats), its rank (proficiency on damage and health, its ladder's reach and range
+   and their mastery: battle/rankskills.js rankUnit, rankUp) and its upgrades (world/buffs.js Buffs). A character: the one formula
+   on its record stripped (its kind at its level and race; your hero's background bonus kept), then its attributes, disciplines,
+   talents and gear given back in turn, the last its numbers now (c.stats()); then its upgrades. Each step its numbers (unitNumbers).
+   statGrowth(x) → {s: its numbers now, stats: {id: {base, now, parts: [[label, n]]}}}: a part what one source added; a number
+   its original has not (a bow's range on a swordsman) shows no growth */
+const growNums=s=>Object.fromEntries(unitNumbers(s).map(r=>[r[0],r[2]]));
+function statGrowth(x){
+  const steps=x&&x.isChar?charGrowth(x):troopGrowth(x),nums=steps.map(([l,s])=>[l,growNums(s)]),base=nums[0][1],stats={};
+  for(const [id,now] of Object.entries(nums[nums.length-1][1])){if(base[id]==null)continue;const parts=[];
+    for(let i=1;i<nums.length;i++){const a=nums[i-1][1][id],b=nums[i][1][id];if(a!=null&&b!=null&&Math.abs(b-a)>1e-6)parts.push([nums[i][0],b-a])}
+    stats[id]={base:base[id],now,parts}}
+  return {s:steps[steps.length-1][1],stats}}
+// (a troop group's steps: [label, numbers]; g its roster record, or its wounded's)
+function troopGrowth(g){
+  const k=g.type,out=[['',ST[k]]],step=(label,s)=>{if(s!==out[out.length-1][1])out.push([label,s]);return s};let s=ST[k];
+  if(tm('tHp')||tm('tDmg'))s=step('Talents',{...s,hp:Math.round(s.hp*(1+tm('tHp'))),dmg:s.dmg*(1+tm('tDmg'))});
+  const p=rankProf(g),dr=(g.picks||[]).filter(x=>x==='drill').length,picks=[...(g.picks||[]),...(g.keptPicks||[])],up=(r,key)=>r.up&&r.up[key]?picks.filter(x=>x===r.id).length*r.up[key]:0;
+  if(p>0)s=step('Rank '+rankOf(g)+(dr?' · '+dr+' drill'+(dr>1?'s':''):''),{...s,dmg:s.dmg*(1+p),hp:Math.round(s.hp*(1+p))});
+  for(const r of rankRungs(g,null)){if(r.reach)s=step(r.n,{...s,reach:(s.reach||11)*(r.reach+up(r,'reach'))});if(r.range&&s.range)s=step(r.n,{...s,range:s.range*(r.range+up(r,'range'))})}
+  for(const b of Buffs.list(g.id))s=step(BUFFS[b.id].n,Buffs.apply(s,[b],k));
+  return out}
+// (a character's steps: the same formula on a view of its record, each source given back in turn)
+const GROW_SOURCES=[['Attributes',['attr']],['Skills',['sk']],['Talents',['tree','perks']],['Gear',['gear']]];
+function charGrowth(c){
+  const now=c.stats(),hero=c.role==='hero',o=hero?P:c.o,rec={attr:{str:0,agi:0,int:0,cha:0},sk:Object.fromEntries(Object.entries(o.sk||{}).map(([k,v])=>[k,{...v,lv:0}])),tree:(o.tree||[]).filter(id=>id==='start'),perks:[],gear:{}};
+  const view=r=>{if(hero)return Object.assign(Object.create(P),r).heroStats();const v=Object.create(c);v.o={...o,...r};return v.base()};
+  const out=[['',view(rec)]];GROW_SOURCES.forEach(([label,keys],i)=>{for(const k of keys)rec[k]=o[k];out.push([label,i<GROW_SOURCES.length-1?view(rec):now])});
+  const id=hero?'hero':c.role==='companion'?'comp_'+c.id:null;let s=now;
+  if(id)for(const b of Buffs.list(id)){const n=Buffs.apply(s,[b],c.key);if(n!==s)out.push([BUFFS[b.id].n,s=n])}
+  return out}
+// (a part's amount as the card says it: a blow's share of the original, a charge's points, else the number)
+const growPart=(id,n,base)=>(n>0?'+':'−')+(id==='atk'||id==='shot'?Math.round(Math.abs(n)/(base||1)*100)+'%':id==='chg'?Math.round(Math.abs(n))+'%':Math.round(Math.abs(n)*10)/10);
 // a character's card (a companion, a lord, a chieftain; your hero): its own numbers, its traits and the skills it casts
 function charCard(c){
-  const s=c.stats(),A=c.actives().map(id=>[ABILITIES[id].n,abilityText(id,s)]);
-  return cardHtml({key:c.key,hero:c.role==='hero',s,name:htmlText(cap1(c.role==='hero'?(P.name||'You'):c.role==='lord'?lordName(c.o):c.name)),sub:'Level '+c.lv+' · '+c.roleName+(c.race?' · '+RACES[c.race].n:''),
+  const g=statGrowth(c),s=g.s,A=c.actives().map(id=>[ABILITIES[id].n,abilityText(id,s)]);
+  return cardHtml({key:c.key,hero:c.role==='hero',s,grow:g.stats,name:htmlText(cap1(c.role==='hero'?(P.name||'You'):c.role==='lord'?lordName(c.o):c.name)),sub:'Level '+c.lv+' · '+c.roleName+(c.race?' · '+RACES[c.race].n:''),
     abil:unitAbilities(s),skills:A,foot:c.role==='companion'?'Upkeep 2g a day':''})}
 /* the card (the owner, 2026-10-28: as Total War: Warhammer III's): its picture, name and class, its damage type and armour; its
    strength (fit of a group's ten, hurt) and rank (training or experience to the next); its numbers as bars against the best of
-   every troop type, now (now: {id: value}) beside its own, a red end what lowers it, a green one what raises it (▲▼ against
-   the troop it trains from); its buttons under its name; its traits and skills as chips, what it is strong and weak against, its upkeep.
-   o: key, s, name, sub, hero, from, fromN, now, strength {fit, max, hurt}, rank and meters ({label, v, max, tip}: a hero's stamina
-   and mana), abil, skills, foot, footTip, acts */
+   every troop type: its original and what grew it since (grow: statGrowth's stats; the gain in the grown colour, its sources in
+   the tip and in a line under them), and now (now: {id: value}) beside that, a red end what lowers it, a green one what raises it
+   (▲▼ against the troop it trains from); its buttons under its name; its traits and skills as chips, what it is strong and weak
+   against, its upkeep.
+   o: key, s, name, sub, hero, from, fromN, grow, now, strength {fit, max, hurt}, rank and meters ({label, v, max, tip}: a hero's
+   stamina and mana), abil, skills, foot, footTip, acts */
 class UnitCard{
   constructor(o){Object.assign(this,o)}
   static pct(v,m){return Math.round(clamp(v/(m||1),0,1)*1000)/10}
-  bar([id,lab,v,show,d],M,F){const now=this.now&&this.now[id]!=null?this.now[id]:v,dv=F&&F[id]!=null?v-F[id]:null,a=UnitCard.pct(Math.min(v,now),M[id]),b=UnitCard.pct(Math.max(v,now),M[id]),fmt=x=>id==='chg'?'+'+Math.round(x)+'%':Math.round(x);
-    const tip=d+(now!==v?' · now '+fmt(now)+' (its own '+fmt(v)+')':''),val=now!==v?'<span class="'+(now<v?'bad':'good')+'">'+fmt(now)+'</span>'+(id==='hp'?' / '+fmt(v):''):show;
-    return '<div class="uc-stat" title="'+htmlText(tip)+'"><span class="uc-l">'+lab+'</span><span class="uc-bar"><i style="width:'+Math.max(a,4)+'%"></i>'+(b>a?'<i class="'+(now<v?'dn':'up')+'" style="left:'+a+'%;width:'+(b-a)+'%"></i>':'')+'</span><span class="uc-v">'+val+
-      (dv?' <b class="'+(dv>0?'good':'bad')+'">'+(dv>0?'▲':'▼')+'</b>':'')+'</span></div>'}
+  // (a number's bar: its original (grow: statGrowth's), what grew it since in the grown colour (gr; lost: lo), then its state now
+  // (now) over that, red what lowers it (striped over growth, so both show), green what raises it)
+  bar([id,lab,v,show,d],M,F){const g=this.grow&&this.grow[id],o=g?g.base:v,now=this.now&&this.now[id]!=null?this.now[id]:v,dv=F&&F[id]!=null?v-F[id]:null,p=x=>UnitCard.pct(x,M[id]),fmt=x=>id==='chg'?'+'+Math.round(x)+'%':Math.round(x);
+    const own=Math.max(p(Math.min(o,v)),4),seg=(cls,a,b)=>b>a?'<i class="'+cls+'" style="left:'+a+'%;width:'+(b-a)+'%"></i>':'',grown=v>o?seg('gr',own,Math.max(p(v),own+2)):v<o?seg('lo',p(v),p(o)):'';
+    const tip=d+(g&&g.parts.length?' · original '+fmt(o)+': '+g.parts.map(([l,n])=>l+' '+growPart(id,n,o)).join(' · '):'')+(now!==v?' · now '+fmt(now)+' (its own '+fmt(v)+')':'');
+    const val=now!==v?'<span class="'+(now<v?'bad':'good')+'">'+fmt(now)+'</span>'+(id==='hp'?' / '+fmt(v):''):v!==o?'<span class="gr">'+show+'</span>':show;
+    return '<div class="uc-stat" data-stat="'+id+'" title="'+htmlText(tip)+'"><span class="uc-l">'+lab+'</span><span class="uc-bar"><i style="width:'+own+'%"></i>'+grown+
+      (now<v?seg('dn'+(v>o?' over':''),p(now),p(v)):seg('up',p(v),p(now)))+'</span><span class="uc-v">'+val+(dv?' <b class="'+(dv>0?'good':'bad')+'">'+(dv>0?'▲':'▼')+'</b>':'')+'</span></div>'}
+  // (what grew it, in a line under its numbers, a phone having no tooltips: each source once, gains first)
+  growHtml(){const G=this.grow;if(!G)return '';const by=[...new Set(Object.values(G).flatMap(g=>g.parts.filter(([,n])=>n>0).map(([l])=>l)))];
+    return by.length?'<p class="uc-grow"><i aria-hidden="true"></i>Grown by '+by.map(htmlText).join(' · ')+'</p>':''}
   strengthHtml(){const S=this.strength;if(!S)return '';const fit=UnitCard.pct(S.fit,S.max),hurt=UnitCard.pct(S.fit+S.hurt,S.max)-fit;
     return '<div class="uc-strength" title="'+htmlText(S.tip||'Fit men of the group’s '+S.max+(S.hurt?'; '+S.hurt+' wounded, out of the fighting till they heal':''))+'"><span class="uc-bar"><i style="width:'+fit+'%"></i>'+(hurt>0?'<i class="dn" style="left:'+fit+'%;width:'+hurt+'%"></i>':'')+'</span><span>'+S.fit+' / '+S.max+(S.hurt?' · '+S.hurt+' hurt':'')+'</span></div>'}
   meter(R,cls){return '<div class="uc-rank'+(cls||'')+'" title="'+htmlText(R.tip||R.label)+'"><span class="uc-l">'+htmlText(R.label)+'</span><span class="uc-bar"><i style="width:'+UnitCard.pct(R.v,R.max)+'%"></i></span><span class="uc-v">'+(R.val!=null?htmlText(R.val):R.max?Math.round(R.v)+' / '+R.max:'—')+'</span></div>'}
   rankHtml(){return (this.rank?this.meter(this.rank):'')+(this.meters||[]).map(m=>this.meter(m,' uc-meter')).join('')}
   html(){const s=this.s,M=ucMax(),F=this.from?Object.fromEntries(unitNumbers(this.from).map(r=>[r[0],r[2]])):null,vs=vsInfo(s),chips=(l,cls)=>l.map(([n,d])=>'<span class="uc-ab'+(cls||'')+'" title="'+htmlText(d)+'" tabindex="0">'+n+'</span>').join('');
     return '<div class="ucard-x" data-unit="'+this.key+'"><div class="uc-head"><img class="uc-pic" src="'+(this.pic||portrait(this.key,this.hero))+'" alt=""><canvas class="uc-pic uc-anim" width="120" height="120" hidden data-spr="'+this.key+'"'+(this.hero?' data-hero="1"':'')+'></canvas><div class="uc-name"><strong>'+this.name+'</strong><small>'+this.sub+'</small><small>'+glyphSVG(this.hero?'hero':iconOfType(this.key),14)+' '+classN(s)+' · <span class="uc-type" title="Its damage type, and the armour it wears">'+DMG[dtOf(s)].n+(isMagical(dtOf(s))?' (magic)':'')+' · '+ARMOR[armorOf(s)].n+'</span></small>'+(this.fromN?'<small class="uc-from">▲▼ against '+this.fromN+'</small>':'')+'<button class="btn sm uc-sprbtn" type="button" data-act="uc-sprite" data-arg="'+this.key+'" aria-pressed="false">View sprite</button></div></div>'+(this.acts?'<div class="uc-acts">'+this.acts+'</div>':'')+
-      this.strengthHtml()+this.rankHtml()+'<div class="uc-stats">'+unitNumbers(s).map(r=>this.bar(r,M,F)).join('')+'</div>'+
+      this.strengthHtml()+this.rankHtml()+'<div class="uc-stats">'+unitNumbers(s).map(r=>this.bar(r,M,F)).join('')+'</div>'+this.growHtml()+
       (this.abil.length||this.skills?.length?'<div class="uc-abs">'+chips(this.abil)+chips(this.skills||[],' sk')+'</div>':'')+
       '<div class="uc-vs"><span class="good">✔ Strong vs</span> '+(vs.strong.join(', ')||'—')+'<br><span class="bad">✖ Weak vs</span> '+(vs.weak.join(', ')||'—')+'</div>'+
       (this.foot?'<div class="uc-foot"><span'+(this.footTip?' title="'+htmlText(this.footTip)+'"':'')+'>'+this.foot+'</span></div>':'')+'</div>'}

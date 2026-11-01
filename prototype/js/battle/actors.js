@@ -142,6 +142,7 @@ class Actor extends Fighter{
     if(u.wind&&this.winding(dt))return;// (a hard attack wound up: he stands till it lands, attacks.js)
     if(u.rout){u.shot=null;return routStep(u,dt)}// (broken: it runs for its edge, morale.js)
     if(withdrawing(u)){u.shot=null;return withdrawStep(u,dt)}// (withdrawn: it leaves the field, morale.js)
+    if(u.remount&&Dismount.going(this,dt))return;// (on foot, going back to his horse: dismount.js)
     u.inSlot=false;
     // its target: the enemy its group was set on (right-click), else the nearest
     // (Melee Mode, his group's: a shooter puts his bow away and is a fighter: his melee damage, a sword's reach; he shoots nothing)
@@ -232,8 +233,12 @@ class Actor extends Fighter{
     // (there, or (his place in rock, or past a cliff no way leads over) at the end of his way toward it: terrain.js steerTo)
     const W=u.wy,e=W&&!W.p.ok&&W.p.length&&W.gc===routeIx(W.g,x,y)?W.p[W.p.length-1]:null;
     if(pd<=LOST.near||e&&Math.hypot(e[0]-u.x,e[1]-u.y)<=LOST.near){u.spdNow=0;g.hold();return}
-    const w=steerDir(u,x,y),mx=w?w[0]:px/pd,my=w?w[1]:py/pd,tm=tiredMul(u),wk=walking(g)||staOf(u)<FATIGUE.runMin,spd=(wk?Math.min(s.spd,g.pace||s.spd)*MARCH.walk:s.spd)*tm.spd*formPace(u)*abilitySpeed(u);
-    if(PHYSICS.on){physAct(u,g,null,dt,true,mx,my,spd,pd-LOST.near,{s,tm,spurred:false});u.run=0}else{const sp=spd*dt*(u.slow>0?.5:1)*(u.buffT>0?1.25:1)*groundMul(u,mx,my);u.x+=mx*sp;u.y+=my*sp;u.spdNow=spd;ownStep(u);if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=0;}
+    this.march(g,s,x,y,LOST.near,dt)}
+  // his own way to (x, y) at his group's pace, round what blocks it, to stop arr px short of it: to where a lost target was, back to
+  // his horse (dismount.js)
+  march(g,s,x,y,arr,dt){
+    const u=this.u,px=x-u.x,py=y-u.y,pd=Math.hypot(px,py)||1,w=steerDir(u,x,y),mx=w?w[0]:px/pd,my=w?w[1]:py/pd,tm=tiredMul(u),wk=walking(g)||staOf(u)<FATIGUE.runMin,spd=(wk?Math.min(s.spd,g.pace||s.spd)*MARCH.walk:s.spd)*tm.spd*formPace(u)*abilitySpeed(u);
+    if(PHYSICS.on){physAct(u,g,null,dt,true,mx,my,spd,pd-arr,{s,tm,spurred:false});u.run=0}else{const sp=spd*dt*(u.slow>0?.5:1)*(u.buffT>0?1.25:1)*groundMul(u,mx,my);u.x+=mx*sp;u.y+=my*sp;u.spdNow=spd;ownStep(u);if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=0;}
     fatigueStep(u,dt,true,wk,false,false)}
 }
 // a character (a lord, a chieftain, a companion): their turn their mind's (charmind.js), sent at a foe by you they go for him;

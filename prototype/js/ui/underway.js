@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- under way (the owner, 2026-10-30: "staying should be more compact and use less space, at a corner of the screen; a
    panel that groups all the special actions"): on the world map, under the minimap, one small box of what your band is doing
-   that lasts (recruiting volunteers, or the chance to; staying in a holding, in camp or making for it, following, by road, hurrying, a siege or a raid of yours), each a
+   that lasts (recruiting volunteers, or the chance to; staying in a holding, in camp or making for it, following, by road, a siege or a raid of yours), each a
    line and its one way out. Each kind a row of UNDERWAY: on() its state (falsy: not shown), its icon (cls: uw-live, a pulse while it runs), line and
    button (off: why it cannot be pressed now, shown in its tooltip). ---------- */
 const UNDERWAY=[
@@ -13,14 +13,16 @@ const UNDERWAY=[
   {k:'pitch',on:()=>!P.camp&&G.pitch,ico:'fire',line:()=>'<b>Making camp</b>',title:()=>'Your band makes for clear ground to camp',btn:['uw-pitch','Stop']},
   {k:'follow',on:()=>G.follow,ico:'shoe',line:f=>'<b>'+followName(f.o,true)+'</b>',title:f=>'Following '+followName(f.o)+': your band keeps after it at a distance (any other order ends it)',btn:['uw-follow','Stop']},
   {k:'road',on:()=>P.byRoad,ico:'map',line:()=>'<b>By road</b>',title:()=>'Every way you go keeps to the roads and tracks when one is within '+ROAD_GO.near+' tiles (B)',btn:['uw-road','Off']},
-  {k:'hurry',on:()=>G.hurry,ico:'speed',line:()=>'<b>Hurrying</b>',title:()=>'A forced march: faster, at a cost in stamina',btn:['uw-hurry','Stop']},
   {k:'siege',on:()=>P.siege&&townBy(P.siege.town),ico:'ladder',line:t=>'<b>'+t.name+'</b> · siege, day '+P.siege.days,title:t=>'Your band besieges '+t.name,btn:['uw-siege','Open']},
   {k:'raid',on:()=>P.raid&&townBy(P.raid.town),ico:'axe',line:t=>'<b>'+t.name+'</b> · raid '+Math.min(100,Math.round(P.raid.t/RAID_TIME*100))+'%',title:t=>'Your band plunders '+t.name,btn:['uw-siege','Open']},
 ];
 const UW={el:null};
-// (where it stands: under the minimap, its right edge the minimap's, clear of a phone's notch)
-function uwPlace(el,host){if(!WM)return;const r=worldMiniRect(),c=cv.getBoundingClientRect(),h=host.getBoundingClientRect(),k=c.width/VW;
-  el.style.top=Math.round(c.top-h.top+(r.y+r.h)*k+6)+'px';el.style.right=Math.max(safeInsets().r+4,Math.round(h.right-c.left-(r.x+r.w)*k))+'px'}
+// (where it stands: just under the minimap's frame (render.js drawMapFrame, UW_FRAME game px round its map), as wide as it, its
+// edges the frame's (the owner, 2026-11-01: "the ui is a bit off"), never narrower than UW_MIN px; clear of a phone's notch)
+const UW_FRAME=2,UW_MIN=168;
+function uwPlace(el,host){if(!WM)return;const r=worldMiniRect(),c=cv.getBoundingClientRect(),h=host.getBoundingClientRect(),k=c.width/VW,f=UW_FRAME;
+  el.style.top=Math.round(c.top-h.top+(r.y+r.h+f)*k+4)+'px';el.style.right=Math.max(safeInsets().r+4,Math.round(h.right-c.left-(r.x+r.w+f)*k))+'px';
+  el.style.width=Math.max(UW_MIN,Math.round((r.w+2*f)*k))+'px'}
 // each HUD tick (render.js updateHUD): drawn afresh only when what it shows has changed
 function underwayHUD(){
   let el=UW.el;const host=document.querySelector('.hudlayer');if(!host)return;
@@ -35,7 +37,6 @@ onAct('uw-',a=>{
   else if(a==='uw-pitch'){G.pitch=null;P.tx=P.ty=null}
   else if(a==='uw-follow'&&G.follow)followItem(G.follow.o).run();
   else if(a==='uw-road')setByRoad(false);
-  else if(a==='uw-hurry')setHurry(false);
   else if(a==='uw-vgo')volunteerStart();
   else if(a==='uw-vstop')volunteerStop();
   if(G.mode==='town'&&(a==='uw-vgo'||a==='uw-vstop'))renderTown();

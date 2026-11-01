@@ -189,24 +189,24 @@
   /* the Vale's clusters (the League's where it has none of its own) */
   const VC={
     // a farmstead: the farmhouse, the long thatched barn, a raised grain bin, grain stacks, field rows in a fence, a cart, a trough
-    farmstead(C){const L=C.o.look;piece(C,'cottage',[-13,-15],0,{lv:2,bare:true});piece(C,'barn',[15,-12],0,{bare:true});
-      made(C,[-26,4],0,Q=>bin(Q,'gb',0,0,C.o.roofMat));made(C,[2,8],0,Q=>{stack(Q,'s0',0,0,3);stack(Q,'s1',7,4,2.6)});
+    farmstead(C){const L=C.o.look;piece(C,'cottage',[-17,-22],0,{lv:2,bare:true});piece(C,'barn',[14,-3],0,{bare:true});
+      made(C,[-26,4],0,Q=>bin(Q,'gb',0,0,C.o.roofMat));made(C,[-6,-6],0,Q=>{stack(Q,'s0',0,0,3);stack(Q,'s1',7,4,2.6)});
       for(let v=13;v<28;v+=4)C.Q.parts.push({k:'bed',name:'f'+v,u:[-29,-6],v:[v,v+2.5],topMat:'crop'});
-      C.Q.parts.push({k:'fence',name:'ff',pts:[[-31,11],[-31,29],[-4,29],[-4,11]],h:4,mat:'plank'});piece(C,'cart',[18,16],0);P(C,'trough',[8,-1]);
-      if(L.flat)made(C,[24,4],0,Q=>palm(Q,'pm',0,0,10,C.spec.seed|0))},
+      C.Q.parts.push({k:'fence',name:'ff',pts:[[-31,11],[-31,29],[-4,29],[-4,11]],h:4,mat:'plank'});piece(C,'cart',[18,16],0);P(C,'trough',[-2,6]);
+      if(L.flat)made(C,[27,22],0,Q=>palm(Q,'pm',0,0,10,C.spec.seed|0))},
     // an inn: its house of two storeys on the street (the sign on its bracket, a lantern, a striped awning), the stable across the
     // yard, a well, a cart, a trough
-    inn(C){const L=C.o.look;made(C,[-6,18],0,Q=>{const dw=Q.home('inn','inn',2);house(Q,{w:30,d:14,st:2,form:'hip',rise:8,dw,door:.5,doorKind:L.door2,wins:3,chim:false,pick:['WinF',L.win]});
+    inn(C){const L=C.o.look;made(C,[-14,18],0,Q=>{const dw=Q.home('inn','inn',2);house(Q,{w:30,d:14,st:2,form:'hip',rise:8,dw,door:.5,doorKind:L.door2,wins:3,chim:false,pick:['WinF',L.win]});
         chimney(Q,[10,-2],18,29);Q.dec('h.S',L.sign,.68,10);Q.dec('h.S','Lamp',.34,7);awning(Q,'aw',-14,-6,7,9,C.d.pick(L.awnings),3)});
-      stable(C,[12,-18],0);piece(C,'well',[-22,-14],0);piece(C,'cart',[22,4],0);P(C,'trough',[-4,-6])},
+      stable(C,[16,-20],0);piece(C,'well',[-22,-14],0);piece(C,'cart',[22,4],0);P(C,'trough',[-4,-6])},
     // a market: stalls under the culture's awnings round a square, its fountain and the civic marker; carts, crates and casks
     market(C){piece(C,'stall',[-18,-18],0);piece(C,'stall',[0,-22],0);piece(C,'stall',[18,-18],0);piece(C,'stall',[-22,4],3);piece(C,'stall',[22,4],1);
       made(C,[0,2],0,Q=>{Q.round('fb',[0,0],5,[0,2],'stone',{form:'water'});Q.round('fp',[0,0],1.3,[0,6],'stone',{form:'lid',mat:'gold'});marker(Q,'mk',-9,6)});
       piece(C,'cart',[-14,22],0);piece(C,'crates',[14,22],0);piece(C,'barrels',[2,24],0)},
     // a fishery (the Vale's coast): the fish store, the tax house of stone with the banner, a pier into the water, a boat, nets, casks
-    fishery(C){const L=C.o.look;C.Q.parts.push({k:'bed',name:'sea',u:[-31,31],v:[13,31],topMat:'water'});piece(C,'fisherhut',[-14,-14],0,{cut:['prop']});
-      made(C,[14,-14],0,Q=>{const dw=Q.home('taxhouse','trade');house(Q,{w:16,d:12,z:12,wall:L.fort,roof:L.roof,dw,door:.5,wins:2,chim:false,rise:6});Q.dec('h.S',L.banner,.15,2);Q.dec('h.S',L.banner,.85,2)});
-      made(C,[0,0],0,Q=>{pier(Q,'pr',-4,2,8,30);boat(Q,'bt',10,22,10,false)});P(C,'nets',[-24,8]);P(C,'nets',[24,4],1);piece(C,'barrels',[-6,4],0)},
+    fishery(C){const L=C.o.look;C.Q.parts.push({k:'bed',name:'sea',u:[-31,31],v:[13,31],topMat:'water'});piece(C,'fisherhut',[-17,-10],0,{cut:['prop']});
+      made(C,[16,-24],0,Q=>{const dw=Q.home('taxhouse','trade');house(Q,{w:16,d:12,z:12,wall:L.fort,roof:L.roof,dw,door:.5,wins:2,chim:false,rise:6});Q.dec('h.S',L.banner,.15,2);Q.dec('h.S',L.banner,.85,2)});
+      made(C,[0,0],0,Q=>{pier(Q,'pr',-4,2,8,30);boat(Q,'bt',10,22,10,false)});P(C,'nets',[-24,8]);P(C,'nets',[24,4],1);piece(C,'barrels',[6,-6],0)},
     // a camp: tents round the fire, crates, the culture's flag (the game's) over it
     camp(C,base){base(C);C.Q.flag=true}
   };
@@ -295,9 +295,9 @@
       piece(C,'stall',[-20,0],3);piece(C,'stall',[20,0],1);piece(C,'stall',[-8,8],0);piece(C,'stall',[8,8],0);piece(C,'barrels',[-20,22],0);piece(C,'barrels',[-12,24],0);
       made(C,[18,22],0,Q=>amphorae(Q,'am',0,0));piece(C,'cart',[4,24],0)},
     // an inn: the arcaded tavern's house with its sign, its stable, casks stacked by the door, an awning
-    inn(C){const L=C.o.look;made(C,[-6,18],0,Q=>{const dw=Q.home('inn','inn',2);house(Q,{w:30,d:14,st:2,form:'hip',rise:8,dw,door:.5,doorKind:L.door2,wins:0,chim:false});
+    inn(C){const L=C.o.look;made(C,[-14,18],0,Q=>{const dw=Q.home('inn','inn',2);house(Q,{w:30,d:14,st:2,form:'hip',rise:8,dw,door:.5,doorKind:L.door2,wins:0,chim:false});
         for(const a of [.14,.3,.7,.86])Q.dec('h.S','Arch',a,0);for(const a of [.2,.5,.8])Q.dec('h.S',L.win,a,13);Q.dec('h.S',L.sign,.42,10);awning(Q,'aw',-14,-2,7,9,'awningB',3)});
-      stable(C,[12,-18],0);piece(C,'barrels',[22,4],0);piece(C,'barrels',[-22,-8],0);P(C,'trough',[-4,-6])}
+      stable(C,[16,-20],0);piece(C,'barrels',[22,4],0);piece(C,'barrels',[-22,-8],0);P(C,'trough',[-4,-6])}
   };
 
   // every type and cluster dressed by its culture's look last (its own plan or the generic)

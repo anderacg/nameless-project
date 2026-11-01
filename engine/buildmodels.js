@@ -452,22 +452,22 @@
       P(C,'trough',[-2,0]);C.Q.parts.push({k:'bed',name:'f1',u:[-30,-14],v:[20,29]},{k:'fence',name:'yf',pts:[[-30,6],[-30,28],[-12,28]],h:4})}},
     // a smithy yard: the forge to the street (the culture's swap: the dwarves' forge), its glow; the smith's cottage behind, a
     // woodpile, barrels
-    smithy:{role:'smithy',make:C=>{piece(C,'smithy',[-8,16],0);piece(C,'cottage',[14,-16],0,{lv:2,cut:['prop']});piece(C,'woodpile',[20,14],0);piece(C,'barrels',[-22,-18],0)}},
+    smithy:{role:'smithy',make:C=>{piece(C,'smithy',[-12,16],0);piece(C,'cottage',[16,-16],0,{lv:2,cut:['prop']});piece(C,'woodpile',[20,14],0);piece(C,'barrels',[-22,-18],0)}},
     // an inn: its house of two storeys on the street, the sign and lantern by the door; the stable across the yard, a well, a cart
     inn:{role:'inn',ground:'cobble',make:C=>{made(C,[-6,18],0,Q=>{const dw=Q.home('inn','inn',2);house(Q,{w:30,d:14,st:2,form:'hip',rise:8,dw,door:.5,doorKind:'Door2',wins:3,chim:[10,-2],pick:['WinF','WinS']});Q.dec('h.S','Sign',.68,10);Q.dec('h.S','Lamp',.34,7)});
       stable(C,[12,-18],0);piece(C,'well',[-22,-14],0);piece(C,'cart',[22,4],0)}},
     // a chapel, its graveyard of headstones in a fence, the priest's cottage
-    chapel:{role:'chapel',make:C=>{piece(C,'chapel',[-12,-8],0,{cut:['prop']});piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});
+    chapel:{role:'chapel',make:C=>{piece(C,'chapel',[-14,4],0,{cut:['prop']});piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});
       C.Q.parts.push({k:'fence',name:'gf',pts:[[2,28],[28,28],[28,4],[2,4],[2,28]],h:4,gates:[[12,18,0]]});for(const [u,v] of [[7,10],[13,10],[19,10],[7,19],[19,19],[24,14]])P(C,'headstone',[u,v])}},
     // a market: stalls round a square with its well, carts, crates and barrels
     market:{role:'market',ground:'cobble',make:C=>{piece(C,'stall',[-18,-18],0);piece(C,'stall',[0,-22],0);piece(C,'stall',[18,-18],0);piece(C,'stall',[-22,4],3);piece(C,'stall',[22,4],1);
       piece(C,'well',[0,2],0);piece(C,'cart',[-14,22],0);piece(C,'crates',[14,22],0);piece(C,'barrels',[2,24],0)}},
     // a mill: the watermill on its race, a granary, sacks and a cart
-    mill:{role:'mill',make:C=>{piece(C,'watermill',[-8,12],0);piece(C,'granary',[16,-16],0,{cut:['prop']});P(C,'sacks',[14,4]);piece(C,'cart',[-20,-18],0)}},
+    mill:{role:'mill',make:C=>{piece(C,'watermill',[-12,12],0);piece(C,'granary',[16,-16],0,{cut:['prop']});P(C,'sacks',[14,4]);piece(C,'cart',[-20,-18],0)}},
     // a lumber camp: the shed of stacked logs, the woodcutter's cottage, stumps, a woodpile, a cart
-    lumber:{role:'lumber',make:C=>{piece(C,'lumbershed',[-6,14],0);piece(C,'cottage',[14,-18],0,{lv:1,cut:['prop']});P(C,'stump',[-22,-14]);P(C,'stump',[-14,-24]);piece(C,'woodpile',[22,10],0);piece(C,'cart',[-20,-4],0)}},
+    lumber:{role:'lumber',make:C=>{piece(C,'lumbershed',[-12,14],0);piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});P(C,'stump',[-22,-14]);P(C,'stump',[-14,-24]);piece(C,'woodpile',[22,10],0);piece(C,'cart',[-20,-4],0)}},
     // a mine: the mine head, the miners' hut, spoil, barrels
-    mine:{role:'mine',make:C=>{piece(C,'minehead',[-6,8],0);piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});P(C,'spoil',[22,14]);piece(C,'barrels',[-24,-20],0)}},
+    mine:{role:'mine',make:C=>{piece(C,'minehead',[-10,8],0);piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});P(C,'spoil',[22,14]);piece(C,'barrels',[-24,-20],0)}},
     // a quarry: the crane over cut blocks before a face of rock, a hut, a cart of stone
     quarry:{role:'quarry',make:C=>{C.Q.parts.push({k:'tower',name:'rk',round:true,c:[-12,-20],r:12,z:[0,10],wall:'rock',roof:{form:'cone',rise:8,mat:'rock',o:0,lip:0,moss:C.o.env==='desert'?0:.3},rough:.6,rs:C.spec.seed|0});piece(C,'crane',[-4,8],0);
       piece(C,'cottage',[18,-16],0,{lv:1,cut:['prop']});P(C,'block',[-22,18]);P(C,'block',[-16,24],1);piece(C,'cart',[18,18],0)}},
@@ -478,16 +478,16 @@
     // a brewery: the brewhouse of two storeys, its granary, barrels stacked
     brewery:{role:'brewery',make:C=>{made(C,[-8,16],0,Q=>{const dw=Q.home('brewery','work',2);house(Q,{w:26,d:14,st:2,rise:8,dw,door:.4,doorKind:'Door2',wins:3,chim:[8,-2]})});piece(C,'granary',[16,-16],0,{cut:['prop']});piece(C,'barrels',[18,14],0);piece(C,'barrels',[-20,-16],0)}},
     // a granary yard: two granaries, sacks, a cart
-    granary:{role:'granary',make:C=>{piece(C,'granary',[-14,-12],0);piece(C,'granary',[14,-16],0,{cut:['prop']});piece(C,'cart',[2,18],0);P(C,'sacks',[-16,18])}},
+    granary:{role:'granary',make:C=>{piece(C,'granary',[-16,-18],0);piece(C,'granary',[16,8],0,{cut:['prop']});piece(C,'cart',[-14,18],0);P(C,'sacks',[2,22])}},
     // a workshop yard: the warehouse, a cottage, crates, a cart
-    workshop:{role:'workshop',ground:'cobble',make:C=>{piece(C,'warehouse',[-6,14],0);piece(C,'cottage',[14,-18],0,{lv:1,cut:['prop']});piece(C,'crates',[-22,-16],0);piece(C,'cart',[22,12],0)}},
+    workshop:{role:'workshop',ground:'cobble',make:C=>{piece(C,'warehouse',[-12,14],0);piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});piece(C,'crates',[-22,-16],0);piece(C,'cart',[22,12],0)}},
     // a town quarter (128): rows of houses both sides of two lanes, a square with its well in the middle, gardens and sheds behind
     quarter:{role:'housing',ground:'cobble',make:C=>{row(C,-62,-8,60,0);row(C,8,62,60,0);row(C,-62,-8,-4,0);row(C,8,62,-4,0);row(C,-62,-8,-40,0);row(C,8,62,-40,0);
       piece(C,'well',[0,14],0);piece(C,'cart',[-18,24],0);piece(C,'barrels',[20,24],0);P(C,'bench',[-6,30],1);C.Q.parts.push({k:'bed',name:'g1',u:[-60,-40],v:[-28,-18]},{k:'bed',name:'g2',u:[30,58],v:[-28,-18]})}},
     // camps: a bandits' camp (32: one or two tents round a fire, crates or a barrel, a log to sit on), a hideout (64: three tents and
     // their gear round the fire in a ring of spiked stakes, its way in at the front) and travellers (32: a tent, their wagon, the fire)
-    camp:{role:'camp',make:C=>{const two=C.d.chance(.5);piece(C,'tent',[two?-7:0,-8],0);if(two)piece(C,'tent',[8,-6],0);fire(C,[0,6]);P(C,C.d.pick(['crate','barrel','sacks']),[9,8]);P(C,'logs',[-8,9],0,1)}},
-    hideout:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-14,-12],0);piece(C,'tent',[14,-14],0);piece(C,'tent',[0,-22],0);fire(C,[0,6]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
+    camp:{role:'camp',make:C=>{const two=C.d.chance(.5);piece(C,'tent',[two?-7:0,-9],0);if(two)piece(C,'tent',[8,2],0);fire(C,[two?-4:0,6]);P(C,C.d.pick(['crate','barrel','sacks']),two?[-12,1]:[9,8]);P(C,'logs',[-8,11],0,1)}},
+    hideout:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-16,-20],0);piece(C,'tent',[16,-20],0);piece(C,'tent',[0,-8],0);fire(C,[0,6]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
       const e=29,b=27;for(const [n,u,v] of [['pN',[-e,e],[-b-3,-b-1]],['pW',[-e,-e+2],[-b-3,b]],['pE',[e-2,e],[-b-3,b]],['pS0',[-e,-6],[b-2,b]],['pS1',[6,e],[b-2,b]]])C.Q.parts.push({k:'box',name:n,u,v,z:[0,8],wall:'stakes',top:true,topMat:'log'})}},
     travelers:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-6,-9],0);piece(C,'wagon',[6,8],0);fire(C,[-7,8])}}
   };

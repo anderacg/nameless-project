@@ -11,6 +11,8 @@ class House extends WorldObject{
   get meetsAnyTime(){return true}
   get holding(){return this.#t}
   get lot(){return this.#l}
+  // (reached where your army's ring touches its lot: march.js ringReach)
+  reachRadius(){return boxReach(this,lotBox(this.#l))}
   meet(){houseMeet(this)}
   pick(at){}// (with its holding's lots, in their order: pickOn)
   pickOn(at,t,l){at.box(this,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,0)}

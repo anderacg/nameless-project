@@ -38,7 +38,7 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
   ok(times.every(s=>parseFloat(s.split(' ')[1])<400),'the sketch is quick at every size: '+times.join(', ')+' (under 400 ms in the test browser)')}
  // ---- the New game page: a past leads to the world's settings
  t.act('menu','new');const cards=[...document.querySelectorAll('#panel [data-act="begin"]')].map(b=>b.dataset.arg);
- ok(cards.length===7&&cards.every(a=>/^world:/.test(a)),'New game: seven pasts; each opens the world\'s settings first (D30)');
+ ok(cards.length===8&&cards.every(a=>/^world:/.test(a)),'New game: eight pasts (The Nobody\'s since 46be83f); each opens the world\'s settings first (D30)');
  // ---- the screen
  t.act('race','dwarf');t.act('begin','world:hedge');
  {const nb=[...document.querySelectorAll('#panel .nav [data-nav]')].map(b=>b.dataset.nav+':'+b.textContent);

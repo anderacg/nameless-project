@@ -31,7 +31,7 @@ const WOUNDED={wait:24,home:{min:6,max:30,near:3,estate:3},refuse:1,escort:{rep:
    companion's; story: met only in his story (no town: world/companions.js compTown), and in the tavern where he wanders once
    lost to you (story/wounded.js Wanderer: a card of his own) */
 ST.ander={n:'Ander',hp:84,dmg:12,spd:50,reach:16,range:0,cd:.75,tier:3,tags:['shock']};
-Object.defineProperty(COMPS,'ander',{enumerable:false,configurable:true,writable:true,value:{n:'Ander The Fallen',short:'Ander',race:'human',story:true,
+Object.defineProperty(COMPS,'ander',{enumerable:false,configurable:true,writable:true,value:{n:'Ander The Fallen',short:'Ander',gender:'m',race:'human',story:true,
   d:'A veteran sellsword, scarred, in a dark cloak. Likes a hard fight won; hates running and cruelty.',react:{win:1,flee:-2,cruel:-2,mercy:1,kind:1}}});
 // the checks a story's choice may name (story/forms.js), shaped as data/encounters.js ENC_STAT's ({base, parts: [[stat or skill, per
 // point]], cap}); their odds on the button read by Insight

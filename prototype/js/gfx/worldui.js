@@ -117,13 +117,16 @@ function wuiSync(now){WUI.now=now;WUI.fx=WUI.fx.filter(f=>(now-f.t)/1000<(f.k===
    of a holding its smallest lot under the point (px, py), else its gate; a site's picture; anything else a square round its
    ring), from where a click answers on it (WorldObject pick) */
 function wuiBox(o,px,py){let b=null,f=null,inb=null,gate=null;const u=(x0,y0,x1,y1)=>{b=b?[Math.min(b[0],x0),Math.min(b[1],y0),Math.max(b[2],x1),Math.max(b[3],y1)]:[x0,y0,x1,y1]};
-  const at={x:o.x,y:o.y,V:1e9,add:(q,r,dy)=>{if(q!==o)return;const h=Math.round(r*.7),y=q.y-(dy||0);u(q.x-h,y-h,q.x+h,y+h)},
+  // (an army picked by its men, as world.js pickAt picks it: round all its men's figures as drawn, a caravan's cart with them)
+  const A=marchPicked(o),men=!!(A&&MARCH_RING.on&&A.ring);
+  const at={x:o.x,y:o.y,V:1e9,army:q=>q===o&&men,add:(q,r,dy)=>{if(q!==o)return;const h=Math.round(r*.7),y=q.y-(dy||0);u(q.x-h,y-h,q.x+h,y+h)},
     box:(q,x0,y0,x1,y1)=>{if(q!==o)return;u(x0,y0,x1,y1);if(!gate){gate=[x0,y0,x1,y1];return}if(px>=x0&&px<x1&&py>=y0&&py<y1&&(!inb||(x1-x0)*(y1-y0)<(inb[2]-inb[0])*(inb[3]-inb[1])))inb=[x0,y0,x1,y1]},
     camp:(q,sp)=>{if(q!==o)return;const x0=q.x-sp.ax,y0=q.y+8-sp.ay;u(x0,y0,x0+sp.width,y0+sp.height)},
     fig:(q,s,x0,y0,flip)=>{if(q!==o)return;const k=opaqueBox(s),L=flip?x0+s.width-1-k[2]:x0+k[0];f=[L,y0+k[1],L+k[2]-k[0]+1,y0+k[3]+1]}};
   o.pick(at);if(!b&&!f&&o.town){const t=townBy(o.town);if(t)t.pick(at)}
+  if(men){const q=A.figBox();f=f?[Math.min(f[0],q[0]),Math.min(f[1],q[1]),Math.max(f[2],q[2]),Math.max(f[3],q[3])]:[q[0],q[1],q[2],q[3]]}
   // (a party's host behind its leader, as render.js drawHost lays it: three abreast, a rank each 4 px back)
-  if(f&&o.look){const L=o.look(),k=hostSize(o.size);if(k){const fd=L.dir<0?-1:1,X=o.x-(L.rider&&!L.bandit?fd*4:0),Y=o.y+2,a=X-fd*6,z=X-fd*(8+(Math.ceil(k/3)-1)*4);
+  else if(f&&o.look){const L=o.look(),k=hostSize(o.size);if(k){const fd=L.dir<0?-1:1,X=o.x-(L.rider&&!L.bandit?fd*4:0),Y=o.y+2,a=X-fd*6,z=X-fd*(8+(Math.ceil(k/3)-1)*4);
     f=[Math.min(f[0],Math.min(a,z)-4),Math.min(f[1],Y-17),Math.max(f[2],Math.max(a,z)+4),Math.max(f[3],Y+3)]}}
   b=f||inb||gate||b;if(!b)return null;
   // (a mover's box where he is drawn: whole pixels from his place to 1/VS px, render.js subOf)
@@ -169,7 +172,7 @@ function wuiBrackets(x0,y0,x1,y1,col,a,p,g){const w=x1-x0,h=y1-y0;
 // WUI_FOOT.gap px, a left then a right, each WUI_FOOT.side px off the way's middle on its side and turned along it; their phase by
 // the clock, over a pair's stride, so a print keeps its side as they march); drawn out from you over WUI_K.draw s when it is
 // new; faint the first px from you; none on land never seen
-function wuiTrail(cam,now,rm){const w=WUI.way,D=WUI.dots,FT=WUI.feet;D.length=0;FT.length=0;if(!w||w.n<2)return;const F=WUI_FOOT,s0=WUI.s,end=w.S[w.n-1]-(WUI.tgt?10:6),gp=F.gap*(G.hurry?1.5:1),ph=rm?0:(now/1000*WUI_K.march*hurryPace())%(2*gp),col=WUI.tgt?WUI_K.col[wuiKind(WUI.tgt.o)]:WUI_K.col.gold;
+function wuiTrail(cam,now,rm){const w=WUI.way,D=WUI.dots,FT=WUI.feet;D.length=0;FT.length=0;if(!w||w.n<2)return;const F=WUI_FOOT,s0=WUI.s,end=w.S[w.n-1]-(WUI.tgt?10:6),gp=F.gap,ph=rm?0:(now/1000*WUI_K.march)%(2*gp),col=WUI.tgt?WUI_K.col[wuiKind(WUI.tgt.o)]:WUI_K.col.gold;
   const reach=rm?1e9:s0+(now-w.t0)/1000/WUI_K.draw*(end-s0+20);let n=0;
   for(let k=Math.ceil((s0+3-ph)/gp),s=k*gp+ph;s<end&&s<reach&&n<400;k++,s+=gp){const [x,y]=wuiPt(w,s),[ax,ay]=wuiPt(w,s-F.look),[bx,by]=wuiPt(w,s+F.look),l=Math.hypot(bx-ax,by-ay)||1,ux=(bx-ax)/l,uy=(by-ay)/l,left=!(k&1),sd=left?-F.side:F.side;
     // (seen where it is drawn: a point rounded over a tile's edge into the dark is not)
@@ -229,7 +232,7 @@ function wuiRoadUnder(cam,now,rm){const V=vis();for(const e of roadList()){if(!e
 function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.enc,bang=wuiArrow('bang',col),p=rm?1:(1+Math.sin(now/1000*5))/2,bob=rm?0:Math.round(p*2);
   for(const e of roadList()){if(!e.marked()||e.D.silent&&!e.inView(V))continue;const b=e.box(),x=Math.round(wuiX((b[0]+b[2])/2,cam)),top=Math.floor(wuiY(b[1],cam)),y=wuiY(e.y,cam);
     if(x>=0&&x<=VW&&top>=4&&y<=VH){const by=top-2-bob;ctx.globalAlpha=.75+.25*p;wuiPut(bang,x,by,bang.cx,bang.tip);ctx.globalAlpha=1;
-      if(e.D.call&&e.inView(V)){let t0=ROAD_SAY.get(e);if(t0==null)ROAD_SAY.set(e,t0=now);const q=(now-t0)/1000;if(q<ENC_LIFE.say){ctx.globalAlpha=Math.min(1,(ENC_LIFE.say-q)*2);txt(e.D.call,x,by-bang.tip-3,'#fff2c8','center');ctx.globalAlpha=1}}
+      if(e.D.call&&e.inView(V)){let t0=ROAD_SAY.get(e);if(t0==null)ROAD_SAY.set(e,t0=now);const q=(now-t0)/1000;if(q<ENC_LIFE.say){ctx.globalAlpha=Math.min(1,(ENC_LIFE.say-q)*2);txt(prFill(e.D.call,null),x,by-bang.tip-3,'#fff2c8','center');ctx.globalAlpha=1}}
       continue}
     const mx=12,my=24,cx=VW/2,cy=VH/2,dx=x-cx,dy=(top+y)/2-cy,k=Math.min((cx-mx)/Math.max(1e-6,Math.abs(dx)),(cy-my)/Math.max(1e-6,Math.abs(dy))),ax=Math.round(cx+dx*k),ay=Math.round(cy+dy*k),a=Math.atan2(dy,dx),ux=Math.cos(a),uy=Math.sin(a);
     const d=(Math.round((a+Math.PI)/(Math.PI/8))%16+16)%16,sx=Math.round(ax+ux*WAVE.src),sy=Math.round(ay+uy*WAVE.src),nA=rm?2:WAVE.arcs;

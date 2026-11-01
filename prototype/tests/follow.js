@@ -22,7 +22,10 @@ Kit.suite(({ok,info})=>{
  try{
   const L=lord();if(!L){ok(false,'no lord with two holdings far apart');return}
   // ---- a click on him: his ring, at him; Esc closes it; a press elsewhere closes it; a double click approaches
-  {press(L.x,L.y-4);const l1=labels(),r=ring()&&ring().el.getBoundingClientRect(),c=cl(L.x,L.y-6),at=r&&Math.hypot(r.left-c.clientX,r.top-c.clientY);
+  // (at him as the ring keeps itself on the screen, ring.js open: since the armies' rings grew, 2026-10-30, he stands out of reach
+  // near the fixed view's bottom edge, and the ring rises a little)
+  {press(L.x,L.y-4);const l1=labels(),r=ring()&&ring().el.getBoundingClientRect(),c=cl(L.x,L.y-6),S=document.getElementById('screen').getBoundingClientRect(),R=t.RING.r,
+    kept={x:S.left+t.clamp(c.clientX-S.left,R+36,Math.max(R+36,S.width-R-36)),y:S.top+t.clamp(c.clientY-S.top,R+30,Math.max(R+30,S.height-R-40))},at=r&&Math.hypot(r.left-kept.x,r.top-kept.y);
    ok(l1==='Meet,Follow,Look'&&G.chase==null&&P.tx==null&&at<2,'a click on a lord (not hostile): his ring opens at him ('+l1+'), nothing done yet');
    Kit.key('Escape','Escape');ok(!ring()&&G.chase==null&&P.tx==null&&!G.follow,'Esc closes it, doing nothing');
    press(L.x,L.y-4);press(L.x+60,L.y+60);ok(!ring()&&G.chase==null&&P.tx==null,'a press elsewhere closes it, doing nothing (no travel)');
@@ -35,7 +38,7 @@ Kit.suite(({ok,info})=>{
   // ---- Follow: he marches home, you trail him
   {press(L.x,L.y-4);const n0=said.length,b=[...document.querySelectorAll('.aring .ar-btn')].find(x=>x.textContent==='Follow');b.click();
    ok(G.follow&&G.follow.o===L&&!G.chase&&msgs(n0).includes('You follow '+t.lordName(L)+' at a distance'),'Follow: your band follows him ('+msgs(n0)+')');
-   const ds=[],gs=[];let mode=G.mode,met=false;for(let f=0;f<700&&G.follow;f++){t.updateWorld(.05);if(G.mode!=='world'){mode=G.mode;met=true;break}if(f>=80){ds.push(Math.hypot(P.x-L.x,P.y-L.y));if(P.tx!=null)gs.push(Math.hypot(P.tx-L.x,P.ty-L.y))}}
+   const ds=[],gs=[];let mode=G.mode,met=false;for(let f=0;f<700&&G.follow;f++){t.updateWorld(.05);if(G.mode!=='world'){mode=G.mode;met=true;break}if(f>=80){ds.push(Math.hypot(P.x-L.x,P.y-L.y));if(P.tx!=null){const g=t.MARCH_ARMIES.get(L),q=t.MARCH_MOVE.menCentre&&g?{x:g.gx,y:g.gy}:L;gs.push(Math.hypot(P.tx-q.x,P.ty-q.y))}}}// (the point behind him where his march goes, his guide: march.js menCentre)
    const srt=a=>[...a].sort((x,y)=>x-y),med=a=>srt(a)[a.length>>1],T=F.trail*TL;
    ok(!met&&G.follow&&ds.length>=600&&Math.min(...ds)>=F.near*TL-4&&Math.abs(med(ds)-T)<=10,'over '+ds.length+' moments he marches on and you trail him, never meeting him: '+Math.min(...ds).toFixed(1)+' to '+Math.max(...ds).toFixed(1)+' px apart, '+med(ds).toFixed(1)+' most ('+F.trail+' tiles: '+T+' px)'+(met?' (met: '+mode+')':''));
    ok(gs.length>500&&Math.abs(med(gs)-T)<=4&&Math.max(...gs)<=T+1,'each moment you make for a point '+T+' px behind him on his way ('+med(gs).toFixed(1)+' px from him most, at most '+Math.max(...gs).toFixed(1)+')');

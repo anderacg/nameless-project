@@ -93,9 +93,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
   {const arm=[Gp('hum_foot',20),Gp('hum_bow',12),Gp('hum_knight',6,'wedge')],B=lab(arm,arm,{ground:{hills:[{x:.5,y:.5,r:110,top:1,cliff:true,ramps:[180]}],woods:[],seed:3},morale:false,ai:false}),h=B.terrain.recipe.hills[0];
    const mg=t.playerGroups().map(id=>B.groups[id]),fg=Object.values(B.groups).filter(q=>q.foe),at=[[h.x+20,h.y],[h.x-25,h.y-20],[h.x-30,h.y+30]];
    mg.forEach((g,i)=>{place(g,at[i][0],at[i][1]);g.units.forEach(u=>{u.s={...u.s,spd:0};u.hp=u.max=u.max*3})});fg.forEach((g,i)=>place(g,t.BW-120,h.y-80+i*80,Math.PI));B.cmdT=0;
-   // (420 s: their riders strike and ride clear (commander.js CavalryRide) rather than die in the press, so the last of them, against
-   // men who cannot move, lasts longer than he did, 110 s)
-   ev('checkBattleOver=__cbo');let first=null,s=0;while(!L.session.result&&B.t<420&&s++<5600){L.step(30);if(first==null&&B.units.some(u=>u.team===1&&u.hp>0&&t.levelAt(u.x,u.y)>=1))first=B.t}
+   // (900 s: their riders strike and ride clear (commander.js CavalryRide) rather than die in the press, so the last of them, against
+   // men who cannot move, lasts longer than he did, 110 s; since 2026-10-29 they rest between charges (CAVALRY_RIDE rested,
+   // restMax), longer still: about 500 s; since 2026-11-01 a charge's end always moves them off (battlecontrol.js standAt), so
+   // each ride clear takes them out of the press, about 630 s)
+   ev('checkBattleOver=__cbo');let first=null,s=0;while(!L.session.result&&B.t<900&&s++<8400){L.step(30);if(first==null&&B.units.some(u=>u.team===1&&u.hp>0&&t.levelAt(u.x,u.y)>=1))first=B.t}
    ok(first!=null&&first<45&&!!L.session.result,'your army on a sheer top, the AI attacking: round by the ramp, its first man up at '+(first!=null?Math.round(first)+' s':'never')+', '+(L.session.result||'unfinished at '+Math.round(B.t)+' s'));ev('checkBattleOver=()=>{}')}
   ev('TERRAIN.on='+TR0);
   {const B=lab([Gp('hum_foot',10),Gp('hum_knight',6)],[Gp('orc_grunt',12)],{morale:false}),mg=t.playerGroups().map(id=>B.groups[id]),e=theirs(B);mg.forEach((g,i)=>place(g,520,240+i*120,0));place(e,600,300,Math.PI);e.charge({run:true});go(B,3);
@@ -105,8 +107,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
    g.attackMove(goal.x,goal.y);let engaged=false;go(B,60,()=>{if(g.hasTarget&&g.amove&&g.amove.at)engaged=true},()=>!g.amove&&Math.hypot(g.centre().x-goal.x,g.centre().y-goal.y)<20);
    ok(engaged&&!e.units.length&&!g.amove&&Math.hypot(g.centre().x-goal.x,g.centre().y-goal.y)<20,'an attack-move past a foe: it turns on him, beats him, marches on and arrives ('+B.t.toFixed(1)+' s)')}
   // ======== reduced motion: no jolt of the view
-  {const mm=window.matchMedia;window.matchMedia=q=>({matches:/reduce/.test(q),media:q,addListener(){},removeListener(){}});let jolt=0,view=0;
-   try{const r=charge('militia');jolt=r.B.jolt?r.B.jolt.a:0;view=t.shakeView(true)?1:0}finally{window.matchMedia=mm}
+  // (reducedMotion itself replaced: the browser is asked once, vfx.js REDUCED_Q, since 2026-10-29)
+  {const rm=window.reducedMotion;window.reducedMotion=()=>true;let jolt=0,view=0;
+   try{const r=charge('militia');jolt=r.B.jolt?r.B.jolt.a:0;view=t.shakeView(true)?1:0}finally{window.reducedMotion=rm}
    const r=charge('militia');ok(t.reducedMotion&&!jolt&&!view&&r.B.jolt&&r.B.jolt.a>0,'a big charge jolts the view ('+(r.B.jolt?r.B.jolt.a.toFixed(1):0)+' px), never with reduced motion asked for')}
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{if(window.__cbo)ev('checkBattleOver=__cbo');if(L.active)L.exit()}
  const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);

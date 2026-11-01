@@ -70,7 +70,7 @@ Kit.suite(({ok})=>{
   t.act('sk-close');ok(G.mode==='char'&&G.char==='roster'&&t.partyView().sel==='hero'&&q('.fb-hero-detail'),'and Back returns to the hero’s card');
   t.act('party-select','comp_brann');t.act('cm-tree');ok(G.mode==='skills'&&G.skWho==='brann'&&navBack().textContent==='Back to Brann','a companion’s Skills: its own tree');
   t.act('sk-close');ok(G.mode==='char'&&t.compShown()&&G.compSel==='brann','and Back returns to its card');
-  t.act('party-select',foot.id);t.act('party-path',foot.id);{const d=q('.fb-inspector').textContent;ok(t.partyView().path&&/Rank and path/.test(d)&&d.includes(t.ST.hum_sword.n)&&d.includes('Rally (Y)')&&/Traits/.test(d)&&sub(),'a troop group’s Skills: its rank and path, its battle orders and traits')}
+  t.act('party-select',foot.id);t.act('party-path',foot.id);{const d=q('.fb-inspector').textContent;ok(t.partyView().path&&/Rank and path/.test(d)&&d.includes(t.ST[t.UP.hum_foot[0]].n)&&d.includes('Rally (Y)')&&/Traits/.test(d)&&sub(),'a troop group’s Skills: its rank and path, its battle orders and traits')}
   t.act('party-path',foot.id);t.act('party-select',knight.id);t.act('party-path',knight.id);{const d=q('.fb-inspector').textContent;ok(d.includes('Spur (U)')&&/upgrades no further/.test(d),'a rider’s: Spur, and the top of its path')}
   t.act('party-back');ok(!t.partyView().path&&q('.fb-inspector .ucard-x'),'Back leaves the path');
   // ---- Army skills

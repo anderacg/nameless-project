@@ -16,7 +16,8 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   f=fixture(8,8);u=f.a[7];r=t.resolveOf(u);r.mor=-1;tick(f,.01);/* (breaking) */
   f.b.sel=testGroup('inf');t.setOrderUI();ok(document.getElementById('bInfo').textContent.includes('Breaking:')&&document.querySelector('[data-grp="'+testGroup('inf')+'"]').textContent.includes('breaking'),'HUD distinguishes pending morale breaking from withdrawal');
   f=fixture(8,8);u=f.a[7];r=t.resolveOf(u);r.mor=1;f.a[0].leader={};kill(f.a[0]);ok(r.mor<0,'leader death keeps its serious uncapped shock');tick(f,.21);ok(r.routed,'leader loss can cause a rapid collapse');
-  f=fixture();u=f.a[99];r=t.resolveOf(u);f.a.slice(0,40).forEach(kill);m=r.mor;f.a[40].leader={};kill(f.a[40]);ok(m-r.mor>=t.MORALE.lead,'leader shock is not reduced by heavy earlier casualties');
+  // (the leader's fall is MORALE.lead x GROUP_RESOLVE.grit since fa23bde, "battles longer and steadier")
+  f=fixture();u=f.a[99];r=t.resolveOf(u);f.a.slice(0,40).forEach(kill);m=r.mor;f.a[40].leader={};kill(f.a[40]);ok(m-r.mor>=t.MORALE.lead*t.GROUP_RESOLVE.grit-1e-9,'leader shock is not reduced by heavy earlier casualties');
   f=fixture(8,8);u=f.a[7];u.dir=0;u.inSlot=false;const src={x:u.x-20,y:u.y};m=u.mor;const dmg=t.flankMul(u,src);let same=true;for(let i=0;i<20;i++)same=same&&t.flankMul(u,src)===dmg;ok(same,'repeated rear hits retain their damage multiplier');ok(m-u.mor<10,'many same-moment rear hits cannot pile up repeated positional panic');
   f.b.t+=.6;m=u.mor;t.flankMul(u,src);ok(u.mor<m,'positional panic can recur after its cooldown');
   f=fixture(8,8);u=f.a[7];r=t.resolveOf(u);r.mor=-1;f.e.forEach(q=>q.x=900);tick(f,1);ok(r.mor>0&&!r.routed,'safe soldiers can regain morale before a pending break');

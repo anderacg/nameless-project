@@ -1,6 +1,7 @@
 'use strict';
 /* ---------- names: your hero's and your band's (the owner, 2026-10-23; their numbers and words: data/names.js) ----------
-   Chosen on the New game page (ui.js showTitle: nameFields, each with Random; left empty, the default), given as the game starts
+   Chosen on the New game page (ui.js showTitle: nameFields, each with Random; left empty, the default; and there, your hero a man
+   or a woman: P.gender, kept only for a woman, as the names, so a save without it is a man's: core/pronouns.js), given as the game starts
    (session.js startGame: nameStart) and changed later from the party card (its band name opens the Names window). Kept as
    P.name and P.band only once chosen: a game with none stores neither (the world's fingerprint W7 hashes the save), and a save
    without them shows the defaults. Plain text: whatever shows them puts them through htmlText */
@@ -9,22 +10,25 @@ const cleanName=s=>String(s??'').replace(/[\u0000-\u001f\u007f]/g,'').replace(/\
 // your band's name (NAMING.band while you have given it none); your hero's ('' while none)
 const bandName=()=>P.band||NAMING.band;
 const heroName=()=>P.name||'';
-// random names: a folk name of the race with a byname; a band's, one of its forms filled from its words (the places by race)
+// random names: a folk name of the race (a man's or a woman's, as your hero is) with a byname; a band's, one of its forms filled
+// from its words (the places by race)
 const namePick=a=>a[Math.floor(Math.random()*a.length)];
-function randomHeroName(race){return cleanName(namePick(FOLK_NAMES[race]||FOLK_NAMES.human)+' '+namePick(SWORD_BYNAMES))}
+function randomHeroName(race,g){const N=FOLK_NAMES[race]||FOLK_NAMES.human,own=N.filter(n=>!g||genderOf(n)===g);return cleanName(namePick(own.length?own:N)+' '+namePick(SWORD_BYNAMES))}
 function randomBandName(race){const W=BAND_WORDS,pl=W.place[race]||W.place.human;
   return cleanName(namePick(BAND_FORMS).replace(/\w+/g,w=>w==='the'?'The':w==='adj'?namePick(W.adj):w==='noun'?namePick(W.noun):namePick(pl)))}
 // the names typed on the New game page (kept while you go to the New world screen and back; taken, and cleared, as the game
 // starts); nameDraft: those of the page or window open now
-const NEW_NAMES={hero:'',band:''};
+const NEW_NAMES={hero:'',band:'',gender:'m'};
 let nameDraft=NEW_NAMES;
 // the two fields, each with Random (draft: the names they edit)
 function nameFields(draft){nameDraft=draft;
   const f=(k,label,ph)=>'<label class="nm-field"><span>'+label+'</span><span class="nm-line"><input data-name="'+k+'" type="text" maxlength="'+NAMING.max+'" autocomplete="off" spellcheck="false" value="'+htmlText(draft[k])+'" placeholder="'+htmlText(ph)+'">'+
     '<button class="btn sm" type="button" data-act="nm-random" data-arg="'+k+'">Random</button></span></label>';
-  return '<div class="nm-fields">'+f('hero','Hero name','Unnamed')+f('band','Band name',NAMING.band)+'</div>'}
+  // (the New game page's: your hero a man or a woman)
+  const g=draft===NEW_NAMES?'<div class="nm-field"><span>Your hero</span><span class="nm-line" role="group" aria-label="Your hero">'+[['m','Man'],['f','Woman']].map(([k,n])=>'<button class="btn sm'+(draft.gender===k?' on':'')+'" type="button" data-act="nm-gender" data-arg="'+k+'" aria-pressed="'+(draft.gender===k)+'">'+n+'</button>').join('')+'</span></div>':'';
+  return '<div class="nm-fields">'+f('hero','Hero name','Unnamed')+f('band','Band name',NAMING.band)+g+'</div>'}
 // (the game begun: the page's names become your hero's and your band's; the page's cleared)
-function nameStart(){for(const [k,f] of [['hero','name'],['band','band']]){const v=cleanName(NEW_NAMES[k]);if(v)P[f]=v;NEW_NAMES[k]=''}}
+function nameStart(){for(const [k,f] of [['hero','name'],['band','band']]){const v=cleanName(NEW_NAMES[k]);if(v)P[f]=v;NEW_NAMES[k]=''}if(NEW_NAMES.gender==='f')P.gender='f'}
 /* the Names window (the party card's band name): both names, each with Random; the bar: Back (nothing changed) on the left,
    Save on the right; Esc goes Back, Enter in a field saves. A name left empty goes back to its default (stored as none) */
 function openNames(){if(!openOver('names','<div class="top"><h2>Names</h2><span class="muted">Your band and your hero</span></div><div class="nm-win">'+nameFields({hero:P.name||'',band:P.band||''})+
@@ -34,7 +38,8 @@ function saveNames(){const was=bandName();for(const [k,f] of [['hero','name'],['
   closeOver();if(bandName()!==was)log('Your band is now '+htmlText(bandName())+'.','good');updateHUD(true)}
 onAct('nm-',(a,arg)=>{
   if(a==='nm-open'){if(G.mode==='world'&&!G.modal)openNames();return}
-  if(a==='nm-random'&&(arg==='hero'||arg==='band')){const race=G.mode==='title'?G.race||'human':P.race,v=arg==='hero'?randomHeroName(race):randomBandName(race);
+  if(a==='nm-gender'&&(arg==='m'||arg==='f')&&nameDraft===NEW_NAMES){NEW_NAMES.gender=arg;for(const b of panel.querySelectorAll('[data-act="nm-gender"]')){const on=b.dataset.arg===arg;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)}return}
+  if(a==='nm-random'&&(arg==='hero'||arg==='band')){const race=G.mode==='title'?G.race||'human':P.race,v=arg==='hero'?randomHeroName(race,G.mode==='title'?NEW_NAMES.gender:genderOf(P)):randomBandName(race);
     nameDraft[arg]=v;const i=panel.querySelector('[data-name="'+arg+'"]');if(i)i.value=v;return}
   if(G.mode!=='names')return;
   if(a==='nm-back')closeOver();else if(a==='nm-save')saveNames()});

@@ -13,7 +13,12 @@ try{
  // plays a little differently from a later one, at HEAD too: tests/visual/battleperf.js), fingerprinted as at HEAD 2c90bef
  const fp=()=>{let h=2166136261;const mix=v=>{h=Math.imul(h^(v|0),16777619)>>>0};for(const u of t.B.units){mix(u.x*1e6);mix(u.y*1e6);mix(u.hp*1e3);mix(u.rout?1:0)}return h.toString(16)};
  const run=(ground,on)=>{ev('TERRAIN.on='+on);G.mode='world';G.modal=false;L.start({leftGroups:[{type:'hum_foot',count:12},{type:'hum_bow',count:8},{type:'hum_knight',count:6,form:'wedge'}],rightGroups:[{type:'dw_clan',count:12},{type:'dw_sling',count:8},{type:'hum_knight',count:6,form:'wedge'}],deploy:false,ai:true,paused:true,morale:true,seed:9,terrain:'forest',ground});t.B.paused=false;for(let f=0;f<300&&!L.session.result;f++)t.updateBattle(1/60);const r=fp();L.exit();return r};
- {const first=run('none',false),HEAD_FP='6b1cc863';ok(first===HEAD_FP||t.BW!==960,'terrain off: the page’s first lab battle plays as at HEAD (fingerprint '+first+(t.BW!==960?'; field '+t.BW+' px wide, HEAD’s was taken at 960':'')+')')}
+ // (re-recorded 2026-11-01, on purpose, at the sweep fix after the night of 2026-10-31: every move since 6b1cc863, found commit by
+ // commit on the first-parent history: 8a9eab7 armour has a value (>fcee5cf3), 9167b37 blocks, parries and dodges (>57b6d64b),
+ // bbefddd proficiency by rank (>2961751b), fa23bde battles longer (>e69782cb, 803bd3a's); then the night's troop tree (the human
+ // kinds' stats: hum_foot, hum_bow, hum_knight fight here): >a9786be6. Checked: with data/units.js, races.js, matchups.js and
+ // world/holding.js as at 803bd3a it is e69782cb again. Was 6b1cc863)
+ {const first=run('none',false),HEAD_FP='a9786be6';ok(first===HEAD_FP||t.BW!==960,'terrain off: the page’s first lab battle plays as at HEAD (fingerprint '+first+(t.BW!==960?'; field '+t.BW+' px wide, HEAD’s was taken at 960':'')+')')}
  ev('TERRAIN.on=true');
  const gridHash=T=>{let h=2166136261;const mix=v=>{h=Math.imul(h^(v&255),16777619)>>>0};for(const a of [T.kind,T.lvl,T.up])for(const v of a)mix(v);return h.toString(16)};
  // ---- generation: same place, same field; never Math.random

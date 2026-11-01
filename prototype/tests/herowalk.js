@@ -12,7 +12,7 @@ try{
  // (a spot you may stand on by holding h, and why not)
  const bad=(h,x,y)=>{const [tx,ty]=tileOf(x,y),k=t.tAt(tx,ty);return k===t.T_WATER?'water':k===t.T_FORD?'a ford':k===t.T_MOUNT?'peaks':t.lotOf(tx,ty)?'a lot':!t.Router.reach(h,{x,y})?'cut off':Math.hypot(tx-h.tx,ty-h.ty-2)>t.GATE.r?'far':''};
  // (the march alone, frame by frame (no road encounter, no meeting but the one walked to): you reach (x, y), stop, or n frames pass)
- const march=(n,until)=>Kit.frames(n,.05,dt=>{t.marchStep(dt*t.WORLD_PACE);t.arriveStep()},until);
+ const march=(n,until)=>Kit.frames(n,.05,dt=>{if(!t.marchStep(dt*t.WORLD_PACE))t.arriveStep()},until);// (a march that meets something ends the frame, as Systems.frame's)
  const go=(x,y,n)=>{P.tx=x;P.ty=y;P.stuck=0;G.chase=null;return march(n||1500,()=>P.tx==null||G.mode!=='world')};
  const start=()=>{Kit.clear();Kit.world({encCool:99});G.quietEvents=true;t.setSpeed(1);P.troops={hum_levy:4};P.bsta=100};
  // ---- where a new game puts you: the world under test (the classic world)
@@ -48,10 +48,12 @@ try{
      ok(w0&&w1!==w0&&w1.v===t.WAYV&&t.WAYV!==v0&&!over,'the '+c.kind+' shut: the way is laid again at once, not over it ('+Math.round(w1.S[w1.n-1])+' px'+(w1.ok?'':', no way there')+')')}
     finally{t.Router.close(xi,false);P.tx=null;t.WUI.way=null}}}
   if(!done)info('no crossing with its way blocked to draw')}
- // ---- to a holding across a river (a click on it: the chase), the way round by a crossing
+ // ---- to a holding across a river (a click on it: the chase), the way round by a crossing (from beyond where your army reaches it:
+ // your ring and its town, march.js ringReach)
+ const reachAt=(h,x,y)=>{const px=P.x,py=P.y;P.x=x;P.y=y;try{return t.worldBattleReach(h)}finally{P.x=px;P.y=py}};
  {let tried=0,met=0;const miss=[];for(const h of t.TOWNS){if(tried>=3)break;let a=null;
    for(let r=10;r<=24&&!a;r+=2)for(let k=0;k<16&&!a;k++){const x=h.x+Math.cos(k*Math.PI/8)*r*TILE,y=h.y+Math.sin(k*Math.PI/8)*r*TILE,[tx,ty]=tileOf(x,y);
-    if(t.tAt(tx,ty)!==t.T_OPEN||!t.Router.reach(h,{x,y})||t.clearLine(x,y,h.x,h.y))continue;let wet=false;for(let s=1;s<20;s++){if(t.terrAt(x+(h.x-x)*s/20,y+(h.y-y)*s/20)===t.T_WATER)wet=true}if(wet)a=[x,y]}
+    if(t.tAt(tx,ty)!==t.T_OPEN||!t.Router.reach(h,{x,y})||t.clearLine(x,y,h.x,h.y)||r*TILE<=reachAt(h,x,y)+2*TILE)continue;let wet=false;for(let s=1;s<20;s++){if(t.terrAt(x+(h.x-x)*s/20,y+(h.y-y)*s/20)===t.T_WATER)wet=true}if(wet)a=[x,y]}
    if(!a)continue;tried++;start();Kit.goTo(a[0],a[1]);G.lastTown=null;G.chase=h;P.tx=h.x;P.ty=h.y;P.stuck=0;march(3000,()=>G.mode!=='world'||!G.chase);
    if(G.mode!=='world'&&G.lastTown===h)met++;else miss.push(h.name+' from '+tileOf(...a)+': stopped '+Math.round(Math.hypot(P.x-h.x,P.y-h.y))+' px off');t.hidePanel();G.town=null;G.bes=null;G.mode='world'}
   ok(tried>=2&&met===tried,'a click on a holding across a river: your band goes round by a crossing and reaches it ('+met+' of '+tried+')'+(miss.length?': '+miss.join('; '):''))}

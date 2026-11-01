@@ -1,4 +1,5 @@
 'use strict';
+window.PHONE=true;// (run in a phone's window, 844 x 390 with touch: tests/run-tests.ps1)
 Kit.suite(({ok})=>{
  const t=T,G=t.G;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();G.paused=true;t.updateHUD(true);t.frame();
  // (a phone’s layout: run it in a phone-sized window, as 844 x 390 with touch)
