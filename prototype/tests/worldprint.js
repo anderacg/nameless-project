@@ -385,7 +385,16 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  room off its walls, so they stand a little elsewhere. Only the first spot's two views moved (c9c1d9ac 56f76e49 to 63b9fd07
 //  19472329); the other four held. W7, W8, B2 and the five sums held. Proof: every PATHS switch off gives 3755c2ed again. Was W6
 //  3755c2ed)
-const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'3d4ee001',W4:'2bf73f82',W5:'0b1fd5be',W6:'c12fc40c',W7:'13f8aeb3',W8:'bd7d9103',B2:'db4c9cc7'};
+// (W6, W7, W8 re-recorded 2026-11-02, on purpose: holdings' walls solid and an army routing as one (the owner: "the holding walls is
+//  not correct because the unit can walk through it"; "should the pathfinder calculated as a whole group first then make the unit
+//  move together?"; battle/route.js PATHS.holding, PATHS.corridor; world/router.js holdShut), and columns that keep steady (the
+//  owner: "if your army cannot form a column it'll keep reorganize and try to form the column", "for player army it should not auto
+//  change formation if enemy is near"; world/marchstyles.js TRAVEL_STYLES.steady, yourChoice). W6: your men at the first spot, by
+//  Ashford's citadel, now stand off its solid walls (PATHS.holding false gives c12fc40c again). W7, W8: every walker's way round the
+//  holdings' walls to their gates, the armies' men by their corridors, the columns' switches held (each of PATHS.holding,
+//  PATHS.corridor and steady with yourChoice off still moves both; all of them off, and MARCH_MOVE.formGiveUp, gives 13f8aeb3 and
+//  bd7d9103 again; formGiveUp alone moves neither). W1-W5, B2 and the sums held. Were W6 c12fc40c, W7 13f8aeb3, W8 bd7d9103)
+const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'3d4ee001',W4:'2bf73f82',W5:'0b1fd5be',W6:'6add129d',W7:'3b34118e',W8:'9a9b8841',B2:'db4c9cc7'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

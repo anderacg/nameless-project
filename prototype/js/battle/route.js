@@ -25,8 +25,17 @@ const ROUTE={unit:16,budget:4096,cache:64,deep:false,near:16,dist:8};
    solid by their ground plan (march.js marchFootings), not their picture's foot. smooth also mends a way whose goal moved, where
    one of its points still reaches it straight, rather than search it afresh.
    reach: cells out the clearance is measured; past: cells of cost the field is made past the last cell it was wanted for; move:
-   cells its goal moves before a field is made again; look: cells down the field a body looks for the farthest it walks to straight */
-const PATHS={clear:true,flow:true,smooth:true,slide:true,footing:true,reach:4,past:6,move:6,look:8,stuck:.8,back:3,near:12};
+   cells its goal moves before a field is made again; look: cells down the field a body looks for the farthest it walks to straight.
+   corridor (the owner, 2026-11-02: "why some of unit decided to move away from army not follow their comrades when there's an
+   obstacle blocked, should the pathfinder calculated as a whole group first then make the unit move together?"): the group first,
+   then its men. An army's way through its ground (march.js MarchArmy corridor: from its rear by its guide along the guide's own way,
+   each leg searched with its widest body's room) is the way its blocked men follow, their fields seeded along it (routeFlowWay: off
+   it each step off times dearer), not from one point, so their slope leads into it and on down it, never round the far side of what
+   it goes round; a man's own way taken only while it keeps within stray px of it, else its field; a place on a building's footing pulled in
+   toward it (its side of the wall: pull). All on the march; halted, its men fan out to their places as before. In battle a group's field seeded along its way (terrain.js groupFlow). Off: as before.
+   holding: a holding's centre solid on its walls' ground, its gate open (march.js holdFooting), its tiles shut to the world's ways
+   (router.js holdShut), reached at its gate (holding.js reachRadius); off: its picture's foot, as before */
+const PATHS={clear:true,flow:true,smooth:true,slide:true,footing:true,corridor:true,pull:true,holding:true,reach:4,past:6,move:6,look:8,stuck:.8,back:3,near:12,stray:24,off:3};
 // (the 8 steps in TDX's order: E SE S SW W NW N NE)
 const ROUTE_DC=[1,1,0,-1,-1,-1,0,1],ROUTE_DR=[0,1,1,1,0,-1,-1,-1];
 // an open grid of C×R cells of cs px
@@ -240,6 +249,29 @@ function routeFlow(g,x,y,need,want,F){
     const c=i%C,r=(i-c)/C,ci=cost[i]||g.lo;
     for(let d=0;d<8;d++){const c2=c+ROUTE_DC[d],r2=r+ROUTE_DR[d];if(c2<0||r2<0||c2>=C||r2>=R)continue;const j=r2*C+c2;if(done[j]===st||!(mv[j]&1<<((d+4)&7)))continue;
       const ng=fi+(d&1?SQ:1)*(ci+(cost[j]||g.lo));if(seen[j]!==st){seen[j]=st;Fv[j]=ng;W.h[j]=0;hp[size]=j;routeUp(W,size);size++}else if(ng<Fv[j]){Fv[j]=ng;routeUp(W,pos[j])}}}
+  F.lim=size?lim:Infinity;ROUTE_N.flow++;return F}
+/* (PATHS.corridor) a field along a way on grid g (pts: [x, y] field px, its start first: an army's corridor, a group's way): from each
+   cell the cost of reaching the way, PATHS.off times a step's (routeSearch's), and on along it to its end (back: to its start), each
+   cell it crosses seeded with the way left from there (px at a step's cost, 2·g.lo a cell); none from a shut cell. A cell short of
+   need's room, or shut, reached but not gone through; made out till every cell of want is reached and PATHS.past cells' cost more.
+   F as routeFlow's (x, y: the way's end, t its cell; F reused), and S: the way left at the cell each cell's cost leads in at (S[a]
+   less than S[b]: a leads in further on) */
+function routeFlowWay(g,pts,need,want,F,back){
+  routePrep(g);if(need)routeRoom(g);const C=g.C,R=g.R,N=C*R,cs=g.cs;if(!F||!F.D||F.D.length!==N)F={D:new Float32Array(N)};if(!F.S||F.S.length!==N)F.S=new Float32Array(N);const D=F.D,S=F.S;D.fill(Infinity);
+  const n=pts.length,e=back?pts[0]:pts[n-1];F.g=g;F.v=g.v;F.x=e[0];F.y=e[1];F.need=need;F.n=0;F.lim=Infinity;F.t=-1;
+  const W=routeWs(N),Fv=W.f,Sv=W.g,hp=W.hp,pos=W.pos,seen=W.seen,done=W.done,mk=W.mk,st=W.st,mv=g.mv,cost=g.cost,cl=g.cl,cm=g.cm,SQ=Math.SQRT2,K=PATHS.off,u=2*g.lo/cs;
+  // (its cells and the way left from each, from its end back)
+  let L=0;for(let i=1;i<n;i++)L+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);let size=0,s=0;
+  const seed=(x,y,left)=>{const i=routeIx(g,x,y);if(!cost[i])return;const v=left*u;if(F.t<0)F.t=i;if(seen[i]!==st){seen[i]=st;Fv[i]=v;Sv[i]=v;W.h[i]=0;hp[size]=i;routeUp(W,size);size++}else if(v<Fv[i]){Fv[i]=v;Sv[i]=v;routeUp(W,pos[i])}};
+  for(let k=0;k<n;k++){const a=back?pts[k]:pts[n-1-k];if(!k){seed(a[0],a[1],0);continue}const b=back?pts[k-1]:pts[n-k],l=Math.hypot(a[0]-b[0],a[1]-b[1]),m=Math.max(1,Math.ceil(l*2/cs));
+    for(let j=1;j<=m;j++){const f=j/m;seed(b[0]+(a[0]-b[0])*f,b[1]+(a[1]-b[1])*f,s+l*f)}s+=l}
+  if(F.t<0)return F;let left=0;if(want)for(const w of want)if(w>=0&&w<N&&mk[w]!==st){mk[w]=st;left++}let lim=Infinity;
+  while(size){const i=hp[0];if(--size){hp[0]=hp[size];routeDown(W,0,size)}if(done[i]===st)continue;done[i]=st;const fi=Fv[i];if(fi>lim)break;D[i]=fi;S[i]=Sv[i];F.n++;
+    if(left&&mk[i]===st&&--left===0)lim=fi+PATHS.past*2*g.lo*K;
+    if(!cost[i]||need&&cl[i]<(cm[i]<need?cm[i]:need))continue;
+    const c=i%C,r=(i-c)/C,ci=cost[i]||g.lo;
+    for(let d=0;d<8;d++){const c2=c+ROUTE_DC[d],r2=r+ROUTE_DR[d];if(c2<0||r2<0||c2>=C||r2>=R)continue;const j=r2*C+c2;if(done[j]===st||!(mv[j]&1<<((d+4)&7)))continue;
+      const ng=fi+K*(d&1?SQ:1)*(ci+(cost[j]||g.lo));if(seen[j]!==st){seen[j]=st;Fv[j]=ng;Sv[j]=Sv[i];W.h[j]=0;hp[size]=j;routeUp(W,size);size++}else if(ng<Fv[j]){Fv[j]=ng;Sv[j]=Sv[i];routeUp(W,pos[j])}}}
   F.lim=size?lim:Infinity;ROUTE_N.flow++;return F}
 /* (PATHS.flow) where a body of r at (x,y) makes for down field F: the farthest of the next PATHS.look cells down it (each step to the
    neighbour nearest its goal, by none short of his room unless he stands in one) a straight line reaches with his room (lineBody;

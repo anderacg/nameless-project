@@ -28,8 +28,10 @@ class HoldingObject extends WorldObject{
   // ringReach); its houses and estates apart, each reached at its own lot (houses.js, estates.js reachRadius): walking up to a house or
   // a farm meets that, not the holding (the owner, 2026-11-01: "the holding interaction should be separated from estate buildings
   // and houses"). Its siege's and raid's leashes past this reach (world.js marchStep, siege.js). Its gate is part of it (the owner,
-  // 2026-11-01): its centre's lot and its gate's tile, one box (holdingGate)
+  // 2026-11-01): its centre's lot and its gate's tile, one box (holdingGate). Its walls solid (PATHS.holding, battle/route.js: the
+  // owner, 2026-11-02), at its gate alone: a tile each way round its point (in its front wall's gate) and its gate's tile, one box
   reachRadius(){const c=Layout.of(this).centre();if(!c)return REACH;const b=lotBox(c),g=holdingGate(this,c),h=TILE/2;
+    if(PATHS.holding&&c.st!=='ruined'){const y=(c.y+c.n)*TILE;return boxReach(this,{x0:Math.min(this.x-TILE,g.x-h),y0:y-TILE,x1:Math.max(this.x+TILE,g.x+h),y1:Math.max(y+TILE,g.y+h)})}
     return boxReach(this,{x0:Math.min(b.x0,g.x-h),y0:Math.min(b.y0,g.y-h),x1:Math.max(b.x1,g.x+h),y1:Math.max(b.y1,g.y+h)})}
   draw(ents,cam,V){holdingEnts(this,ents,cam,V)}
   mapDot(V){return seenTile(this.tx,this.ty)?[this._memCol||facCol(this),3]:null}// (its colour as you last saw it)

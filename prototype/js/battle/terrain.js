@@ -1304,7 +1304,7 @@ class TerrainRoutes{
     let cx=0,cy=0;for(const u of m){cx+=u.x;cy+=u.y}cx/=m.length;cy/=m.length;
     if(W&&W.gc===gc&&W.v===gr.v&&W.who===who&&W.mv===g.mvId&&!(W.cut&&Math.hypot(W.end[0]-cx,W.end[1]-cy)<ROUTE_UNIT.reach*3))return W;
     const sh=grpShape(g.id),half=sh?Math.min(ROUTE_UNIT.half,sh.files*(FORMS[g.form]||FORMS.line).gx/2):ROUTE_UNIT.r,p=routePath(gr,cx,cy,g.ax,g.ay,{r:half,need:PATHS.clear?Math.max(...m.map(routeBody)):0});
-    return g.way={p,id:++ROUTE_UNIT.n,gc,v:gr.v,who,mv:g.mvId,ok:p.ok,cut:p.cut,end:p.length?p[p.length-1]:[g.ax,g.ay]}}
+    return g.way={p,id:++ROUTE_UNIT.n,gc,v:gr.v,who,mv:g.mvId,ok:p.ok,cut:p.cut,end:p.length?p[p.length-1]:[g.ax,g.ay],from:[cx,cy]}}
   /* an advancing group's place walking on at (x,y) (battlecontrol.js step) while the straight way there is not clear: along the way
      round from the place (a unit vector, WAYON reused; [0,0] waiting), going on only while its men are within ROUTE_UNIT.lead px of
      it, or after ROUTE_UNIT.wait s (g.awT): so they come up to a ramp's foot together and go up it as one, not strung out after a
@@ -1330,9 +1330,14 @@ class TerrainRoutes{
     return this.steerTo(u,q[0],q[1],gr,1)||q}
   /* (PATHS.flow) group g's field on grid gr (its men of kind who, bodies of half r) toward (x, y), where its way ends (route.js
      routeFlow): kept on it for each kind, made when one of its men cannot walk straight to his point on its way, again when that end
-     moves PATHS.move cells or the grid's version moves; made out till every one of its men is reached */
-  groupFlow(g,gr,who,r,x,y){const M=g.flows||(g.flows={}),F0=M[who];if(F0&&F0.g===gr&&F0.v===gr.v&&F0.need===r&&Math.hypot(F0.x-x,F0.y-y)<=PATHS.move*gr.cs)return F0;
-    const F=routeFlow(gr,x,y,r,g.units.map(u=>routeIx(gr,u.x,u.y)),F0&&F0.g===gr?F0:null);F.cap=gr.wcap||255;F.id=ROUTE_N.flow;return M[who]=F}
+     moves PATHS.move cells or the grid's version moves; made out till every one of its men is reached. PATHS.corridor (the owner,
+     2026-11-02: "calculated as a whole group first then make the unit move together"): seeded along its way (from where it was laid,
+     route.js routeFlowWay), not from its end, so one pushed off it is led back into it and on down it, through the gap it takes;
+     made again as before (its end moved PATHS.move cells, the grid changed), along its way then */
+  groupFlow(g,gr,who,r,x,y){const M=g.flows||(g.flows={}),F0=M[who],W=PATHS.corridor&&g.way&&g.way.from?g.way:null;
+    if(F0&&F0.g===gr&&F0.v===gr.v&&F0.need===r&&(W?F0.wid!=null:F0.wid==null)&&Math.hypot((W?F0.ex:F0.x)-x,(W?F0.ey:F0.y)-y)<=PATHS.move*gr.cs)return F0;
+    const want=g.units.map(u=>routeIx(gr,u.x,u.y)),F=W?routeFlowWay(gr,[W.from,...W.p],r,want,F0&&F0.g===gr?F0:null,false):routeFlow(gr,x,y,r,want,F0&&F0.g===gr?F0:null);
+    F.wid=W?W.id:null;F.ex=x;F.ey=y;F.cap=gr.wcap||255;F.id=ROUTE_N.flow;return M[who]=F}
   // (the point a soldier going down field F makes for (route.js routeFlowAim): kept for him (ROUTE_AIM) till he changes cell or it is
   // made again)
   flowAim(u,F){const g=F.g,c=routeIx(g,u.x,u.y);let A=ROUTE_AIM.get(u);if(!A)ROUTE_AIM.set(u,A={id:-1,c:-1,p:[0,0]});

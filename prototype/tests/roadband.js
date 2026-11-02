@@ -54,7 +54,7 @@ Kit.suite(({ok,info})=>{
   ok(nm===T2.length,'and regionAt calls it a track (Track, Swamp track…: '+nm+' of '+T2.length+')')}
  // ---- by road: two holdings with a road between, the straight line over swamp
  const pairs=[];for(const r of t.WM.roads){if(!r.a||!r.b||r.est)continue;const h1=t.townBy(r.a),h2=t.townBy(r.b);if(!h1||!h2)continue;const d=Math.hypot(h1.x-h2.x,h1.y-h2.y);if(d<15*TL||d>45*TL)continue;
-  let s=0;for(let i=0;i<=40;i++)if(t.climAt(h1.x+(h2.x-h1.x)*i/40,h1.y+(h2.y-h1.y)*i/40)==='swamp')s++;if(s>=12)pairs.push([h1,h2,s/41])}
+  let s=0;for(let i=0;i<=40;i++)if(t.climAt(h1.x+(h2.x-h1.x)*i/40,h1.y+(h2.y-h1.y)*i/40)==='swamp')s++;if(s>=12&&t.clearLine(t.gateSpot(h1).x,t.gateSpot(h1).y,t.gateSpot(h2).x,t.gateSpot(h2).y))pairs.push([h1,h2,s/41])}// (the straight line between their gates open: no holding's walls across it, router.js holdShut, so the plain way goes by it)
  pairs.sort((a,b)=>b[2]-a[2]);
  const onShare=w=>w.X.filter((x,i)=>t.regionAt(x,w.Y[i]).road).length/w.n;
  const march=n=>Kit.frames(n,.05,dt=>t.marchStep(dt*t.WORLD_PACE),()=>P.tx==null||G.mode!=='world');

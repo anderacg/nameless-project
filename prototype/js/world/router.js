@@ -19,12 +19,12 @@
 // each walker's way, found once for each target and kept aside (never saved: wayTravel); a new world forgets them all
 let ROUTES=new WeakMap();
 onWorld(()=>{ROUTES=new WeakMap()});
-// is the straight line from (x0,y0) to (x1,y1) open ground all the way
-function clearLine(x0,y0,x1,y1){const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/4);for(let i=1;i<=n;i++){const k=i/n;if(!passable(terrAt(x0+(x1-x0)*k,y0+(y1-y0)*k)))return false}return true}
+// is the straight line from (x0,y0) to (x1,y1) open ground all the way (a holding's walls shut: holdShut)
+function clearLine(x0,y0,x1,y1){holdShut();const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/4);for(let i=1;i<=n;i++){const k=i/n,x=x0+(x1-x0)*k,y=y0+(y1-y0)*k;if(!passable(terrAt(x,y))||SHUT&&SHUT[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]&2)return false}return true}
 // the tiles to pass from one point to another by the cheapest way, searched within a box round both (pad tiles); null if none;
 // rm: off the roads x rm (a road keeper's)
 function findPath(x0,y0,x1,y1,pad,rm){
-  pad=pad||16;const sx=Math.floor(x0/TILE),sy=Math.floor(y0/TILE),gx=Math.floor(x1/TILE),gy=Math.floor(y1/TILE);if(sx===gx&&sy===gy)return[];
+  holdShut();pad=pad||16;const sx=Math.floor(x0/TILE),sy=Math.floor(y0/TILE),gx=Math.floor(x1/TILE),gy=Math.floor(y1/TILE);if(sx===gx&&sy===gy)return[];
   if(!passable(tAt(gx,gy)))return null;
   const bx=Math.max(0,Math.min(sx,gx)-pad),by=Math.max(0,Math.min(sy,gy)-pad),bw=Math.min(MW,Math.max(sx,gx)+pad+1)-bx,bh=Math.min(MH,Math.max(sy,gy)+pad+1)-by;
   const N=bw*bh,g=new Float64Array(N).fill(Infinity),from=new Int32Array(N).fill(-1),heap=[],L=(x,y)=>(y-by)*bw+(x-bx);
@@ -33,7 +33,7 @@ function findPath(x0,y0,x1,y1,pad,rm){
   const h=(x,y)=>Math.hypot(x-gx,y-gy)/1.3,s0=L(sx,sy),goal=L(gx,gy);g[s0]=0;push(s0,h(sx,sy));
   while(heap.length){const [,i]=pop();if(i===goal)break;const x=bx+i%bw,y=by+((i/bw)|0);
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<bx||ny<by||nx>=bx+bw||ny>=by+bh)continue;
-      const t=tiles[ny*MW+nx];if(!passable(t)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])))continue;
+      const t=tiles[ny*MW+nx];if(!passable(t)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])||SHUT&&(SHUT[y*MW+nx]&2||SHUT[ny*MW+x]&2)))continue;// (no corner of a holding's walls cut: holdShut)
       const sp=t===T_ROAD?1.3:Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]]),j=L(nx,ny),nd=g[i]+(dx&&dy?1.414:1)/sp*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1);
       if(nd<g[j]){g[j]=nd;from[j]=i;push(j,nd+h(nx,ny))}}}
   if(!isFinite(g[goal]))return null;
@@ -59,15 +59,26 @@ const wayTile=p=>{const h=p instanceof Holding,tx=h?p.tx:Math.floor(p.x/TILE),ty
 const gateGoal=(t,dx)=>({x:t.x+(dx||0),y:t.y+12,tw:t});
 const Router={
   flee(o,threat,step){return EscapeStamina.flee(o,threat,step)},
-  travel(o,goal,step){return wayTravel(o,goal,step)},
+  // (its way kept marked with the goal and where the step left it: Router.ahead. Yours by road on a trip too short for a column
+  // (marchstyles.js TRAVEL_STYLES.steady, TravelStyle long): the plain way from where you stand, no road keeping, so a click a little
+  // way along the road walks there, not back to the road's nearest node first; the way drawn ahead of you, gfx/worldui.js wuiWay's walker, too)
+  travel(o,goal,step){if(goal.road===ROAD_GO.keep&&(o===P||!(o instanceof WorldObject))&&TRAVEL_STYLES.steady&&!TravelStyle.long(P))goal={x:goal.x,y:goal.y};
+    const ok=wayTravel(o,goal,step),r=ROUTES.get(o);if(r){r.gx=goal.x;r.gy=goal.y;r.ax=o.x;r.ay=o.y}return ok},
   reach(a,b){const L=landPieces(),i=wayTile(a),j=wayTile(b);return i>=0&&j>=0&&L[i]>=0&&L[i]===L[j]},
   // (the graph's days at WAY.pace, by the pace asked)
   days(a,b,pace){return wayDays(a,b)*WAY.pace/(pace||MAP_BASE)},
   // (its edges in closed, its tiles shut to the searches, the chunks they lie in and the pair cache made afresh, every walker's way
   // found again)
   close(xi,shut){const G=WM.graph,c=WM.crossings[xi];if(!c)return;G.closed[xi]=shut?1:0;SHUT=SHUT||new Uint8Array(MW*MH);
-    for(const i of c.tiles){SHUT[i]=shut?1:0;G.chunk.delete(wayChunkOf(G,i))}PAIRS.clear();WAYV++},
-  stats(){return{...WAYS}}
+    for(const i of c.tiles){SHUT[i]=SHUT[i]&2|(shut?1:0);G.chunk.delete(wayChunkOf(G,i))}PAIRS.clear();WAYV++},
+  // (the holdings' walls read again now, holdShut)
+  holdings(){holdShut(true)},
+  stats(){return{...WAYS}},
+  // (the way o is on, ahead of it: the points it makes for in turn, world px [[x, y], ...] (its leg's tiles' middles from the one it
+  // makes for, then its goal), at most n; null unless its last step was by its way and left it where it stands (within 1 px of x, y:
+  // a march's guide), not on a ferry's water. march.js MarchArmy corridor)
+  ahead(o,x=o.x,y=o.y,n=16){const r=ROUTES.get(o);if(!r||r.v!==WAYV||!r.legs||r.gx==null||!(Math.hypot(r.ax-x,r.ay-y)<=1))return null;const out=[];
+    if(r.path&&r.path.ferry==null)for(let i=r.pi;i<r.path.length&&out.length<n-1;i++)out.push(wayCentre(r.path[i]));out.push([r.gx,r.gy]);return out}
 };
 
 /* ---------- the way graph (doc/WORLD_DESIGN.md §3.6, §15.2.1), the world's (WM.graph), built by the
@@ -156,13 +167,38 @@ function buildWayGraph(g){
 // the way graph charted again for the world in use (lots.js: its estates' tracks laid or taken up), its crossings shut as they were
 function wayRechart(){const G=WM.graph;WM.graph=buildWayGraph({map:WM,holdings:TOWNS,camps:CAMP_SPOTS});if(WM.graph.closed.length===G.closed.length)WM.graph.closed.set(G.closed);WAYN=null;PAIRS.clear();WAYV++}
 // ---- the router on the graph (the world in use: WM.graph)
-// what it keeps: the tiles shut (a byte a tile: Router.close; null while none is), the graph's nodes by tile (WAYN), the pair
+// what it keeps: the tiles shut (a byte a tile, bit 1 a crossing shut: Router.close; bit 2 a holding's walls: holdShut; null while
+// none is), the graph's nodes by tile (WAYN), the pair
 // cache (PAIRS), its counts (WAYS, Router.stats) and the ways' version (WAYV: a walker's way found under another is found again)
 let SHUT=null,WAYN=null,WAYV=0;const PAIRS=new Map(),WAYS={queries:0,hits:0,graphMs:0,localMs:0,smooths:0,smoothMs:0};
 onWorld(m=>{SHUT=null;WAYN=null;PAIRS.clear();WAYV++;if(m.graph){m.graph.chunk.clear();m.graph.closed.fill(0)}});
 const wayNodes=()=>WAYN||(WAYN=new Map(Array.from(WM.graph.tile,(t,v)=>[t,v])));
 const wayChunkOf=(G,i)=>((i/MW|0)/G.cs|0)*G.cols+((i%MW)/G.cs|0);
 const wayOpen=i=>passable(tiles[i])&&!(SHUT&&SHUT[i]);
+// (open but for a holding's walls: the map's march grids, which shut the walls by their footings: march.js MarchGround)
+const wayLand=i=>passable(tiles[i])&&!(SHUT&&SHUT[i]&1);
+/* a holding's walls (PATHS.holding, battle/route.js; the owner, 2026-11-02: "the holding walls is not correct because the unit can
+   walk through it"): the tiles of each holding's centre whose middle its footing covers (march.js lotFooting, holdFooting: its walls'
+   ground, its gate open) shut to every way over the land (SHUT's bit 2: wayOpen, findPath, wayLine, clearLine, the chunks' tables),
+   so every walker goes round its walls to its gate; its own tile, its gate (its ways' node, its roads' end), stays open, and a road's
+   leg over its tiles is no way (wayHeld). Read again at most once a frame (WORLD_LOD.n; now: at once), and only what changed: a
+   centre laid out again, moved, ruined or rebuilt, its walls raised (its picture: structures.js lotSprite); a change shuts or
+   opens its tiles, makes their chunks' tables and the pair cache afresh and bumps WAYV (every walker's way found again). Off: none
+   shut, as before */
+const HOLD_SHUT={n:-1,at:new Map(),held:null};
+onWorld(()=>{HOLD_SHUT.n=-1;HOLD_SHUT.at.clear();HOLD_SHUT.held=null});
+function holdShut(now){const H=HOLD_SHUT;if(!now&&H.n===WORLD_LOD.n)return;H.n=WORLD_LOD.n;const G=WM.graph;if(!G||!TOWNS.length)return;let moved=false;
+  for(const t of TOWNS){const c=PATHS.holding&&t.lots?t.lots.find(l=>l.k==='centre'&&l.st!=='ruined')||null:null,s=c?lotSprite(t,c):null,k=H.at.get(t);
+    if(k?k.c===c&&k.s===s&&(!c||k.x===c.x&&k.y===c.y&&k.n===c.n):!c)continue;
+    if(k)for(const i of k.tiles){SHUT[i]&=1;G.chunk.delete(wayChunkOf(G,i))}
+    const tiles=[];if(c){const F=lotFooting(t,c);SHUT=SHUT||new Uint8Array(MW*MH);
+      for(let y=c.y;y<c.y+c.n;y++)for(let x=c.x;x<c.x+c.n;x++){const px=(x+.5)*TILE,py=(y+.5)*TILE;if(x>=0&&y>=0&&x<MW&&y<MH&&!(x===t.tx&&y===t.ty)&&F.some(r=>px>=r.x&&px<r.x+r.w&&py>=r.y&&py<r.y+r.h)){const i=y*MW+x;tiles.push(i);SHUT[i]|=2;G.chunk.delete(wayChunkOf(G,i))}}}
+    H.at.set(t,{c,s,x:c&&c.x,y:c&&c.y,n:c&&c.n,tiles});moved=true}
+  if(moved){H.held=null;PAIRS.clear();WAYV++}}
+// (does graph edge e, a road's, run over a holding's walls: a tile of it shut so, but its two ends (a road ends at its holding's
+// node); kept by edge till they change)
+function wayHeld(G,e){const H=HOLD_SHUT;if(!SHUT||G.leg[e*3]<0)return false;if(!H.held||H.held.g!==G){H.held=new Int8Array(G.to.length).fill(-1);H.held.g=G}let v=H.held[e];
+  if(v<0){const p=WM.roads[G.leg[e*3]].path,a=G.leg[e*3+1],b=G.leg[e*3+2];v=0;for(let q=Math.min(a,b)+1;q<Math.max(a,b);q++)if(SHUT[p[q]]&2){v=1;break}H.held[e]=v}return v===1}
 // a binary heap of (key, value) pairs on typed arrays, the least key first (the router's searches)
 class WayHeap{
   constructor(){this.k=new Float64Array(1024);this.v=new Int32Array(1024);this.n=0}
@@ -179,12 +215,12 @@ function wayLocal(s,x0,y0,x1,y1,rev){const bw=x1-x0,D=new Float64Array(bw*(y1-y0
   if(sx<x0||sy<y0||sx>=x1||sy>=y1)return D;const q0=(sy-y0)*bw+sx-x0;D[q0]=0;H.push(0,q0);
   while(H.n){const d=H.top,q=H.pop();if(d>D[q])continue;const x=x0+q%bw,y=y0+((q/bw)|0),i=y*MW+x;if(q!==q0&&!wayOpen(i))continue;
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<x0||ny<y0||nx>=x1||ny>=y1)continue;const j=ny*MW+nx;
-      if(!wayOpen(j)&&!NO.has(j)||dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])))continue;
+      if(!wayOpen(j)&&!NO.has(j)||dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])||SHUT&&(SHUT[y*MW+nx]&2||SHUT[ny*MW+x]&2)))continue;
       const k=rev?i:j,c=d+(dx&&dy?1.414:1)*wayStep(tiles[k],climate[k]),r=(ny-y0)*bw+nx-x0;if(c<D[r]){D[r]=c;H.push(c,r)}}}
   return D}
 // (a chunk's table: its nodes (ids) and the days between each two inside it (d, k x k), made on demand, kept for this graph's
 // lifetime: at most one per chunk. A fixed LRU thrashes when a large search visits more chunks than it holds.)
-function wayChunk(G,c){let T=G.chunk.get(c);if(T)return T;
+function wayChunk(G,c){let T=G.chunk.get(c);if(T)return T;holdShut();T=G.chunk.get(c);if(T)return T;
   const ids=G.cnode.subarray(G.coff[c],G.coff[c+1]),k=ids.length,d=new Float32Array(k*k),cx=c%G.cols,cy=(c-cx)/G.cols,x0=cx*G.cs,y0=cy*G.cs,x1=Math.min(MW,x0+G.cs),y1=Math.min(MH,y0+G.cs),DPT=wayDay();
   for(let a=0;a<k;a++){const D=wayLocal(G.tile[ids[a]],x0,y0,x1,y1,false);for(let b=0;b<k;b++){const t=G.tile[ids[b]];d[a*k+b]=D[((t/MW|0)-y0)*(x1-x0)+t%MW-x0]*DPT}}
   T={ids,d};G.chunk.set(c,T);return T}
@@ -206,14 +242,14 @@ function wayGraph(G,A,B,gt,rm){rm=rm||1;const n=G.n,S=WAYA&&WAYA.g.length>=n?WAY
   H.n=0;for(const [v,c] of A)relax(-1,v,c,-2);let best=Infinity,bv=-1;
   while(H.n){if(H.top>=best)break;const u=H.pop();if(S.done[u]===st)continue;S.done[u]=st;const gu=S.g[u];
     if(B.has(u)&&gu+B.get(u)<best){best=gu+B.get(u);bv=u}
-    for(let e=G.off[u];e<G.off[u+1];e++){const k=G.ek[e];if(k===3||k===4||G.xing[e]>=0&&G.closed[G.xing[e]])continue;relax(u,G.to[e],gu+G.cost[e]*(k===5?rm:1),e)}
+    for(let e=G.off[u];e<G.off[u+1];e++){const k=G.ek[e];if(k===3||k===4||G.xing[e]>=0&&G.closed[G.xing[e]]||k<2&&wayHeld(G,e))continue;relax(u,G.to[e],gu+G.cost[e]*(k===5?rm:1),e)}
     const T=wayChunk(G,wayChunkOf(G,G.tile[u])),ids=T.ids,k=ids.length,a=ids.indexOf(u);
     for(let b=0;b<k;b++){const c=T.d[a*k+b];if(b!==a&&c<Infinity)relax(u,ids[b],gu+c*rm,-1)}}
   if(bv<0)return null;const nodes=[],via=[];for(let v=bv;v>=0;v=S.from[v]){nodes.push(v);via.push(S.via[v])}
   return{cost:best,nodes:nodes.reverse(),via:via.reverse()}}
 // (the graph's way from tile s to tile g (gn: g's node, when it must end there: a holding's gate), the pair cache first between
 // two single nodes (a road keeper's, rm, apart); counted in Router.stats)
-function wayRoute(G,s,g,gn,rm){const t0=performance.now(),A=wayEnds(G,s,false),B=new Map(gn!=null?[[gn,0]]:wayEnds(G,g,true)),t1=performance.now();WAYS.localMs+=t1-t0;WAYS.queries++;
+function wayRoute(G,s,g,gn,rm){holdShut();const t0=performance.now(),A=wayEnds(G,s,false),B=new Map(gn!=null?[[gn,0]]:wayEnds(G,g,true)),t1=performance.now();WAYS.localMs+=t1-t0;WAYS.queries++;
   if(!A.length||!B.size)return null;let r=null;
   if(A.length===1&&B.size===1){const [a,ca]=A[0],[b,cb]=[...B][0],k=(a*G.n+b)+':'+rm,c=PAIRS.get(k);if(c){WAYS.hits++;PAIRS.delete(k);PAIRS.set(k,c);r={cost:ca+c.g+cb,nodes:c.nodes,via:c.via}}}
   if(!r&&(r=wayGraph(G,A,B,g,rm))){const a=r.nodes[0],b=r.nodes[r.nodes.length-1];PAIRS.set((a*G.n+b)+':'+rm,{g:r.cost-A.find(q=>q[0]===a)[1]-B.get(b),nodes:r.nodes,via:r.via});if(PAIRS.size>WAY.pairs)PAIRS.delete(PAIRS.keys().next().value)}
@@ -296,7 +332,7 @@ function wayStraight(r,o,goal){let p=r.path;if(p.ferry!=null||r.legs[r.li-1].k==
 // to straight. Straightened, a walker setting off for a tile more than 1.5 tiles off, or moved since its last step (pushed off
 // its way: a fight, a shove), with the line there not clear finds its way again from where it is, once (WAYRE: the walker doing so)
 let WAYRE=null;
-function wayTravel(o,goal,step){
+function wayTravel(o,goal,step){holdShut();
   const dd=Math.hypot(goal.x-o.x,goal.y-o.y),straight=()=>{walk(o,goal.x-o.x,goal.y-o.y,Math.min(dd,step));return true};if(dd<=1)return true;
   if(goal.tw&&dd<TILE*1.6)return straight();
   const gt=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE),rm=wayKeep(goal);let r=ROUTES.get(o);
@@ -312,7 +348,7 @@ function wayTravel(o,goal,step){
   return true}
 // (the days from a to b at WAY.pace, Router.days: within WAY.near tiles its tiles' costs, else the graph's;
 // Infinity when there is no way)
-function wayDays(a,b){const s=wayTile(a),g=wayTile(b);if(s<0||g<0)return Infinity;if(s===g)return 0;if(!Router.reach(a,b))return Infinity;
+function wayDays(a,b){holdShut();const s=wayTile(a),g=wayTile(b);if(s<0||g<0)return Infinity;if(s===g)return 0;if(!Router.reach(a,b))return Infinity;
   const sx=s%MW,gx=g%MW,[x0,y0]=wayCentre(s),[x1,y1]=wayCentre(g);
   if(Math.max(Math.abs(sx-gx),Math.abs((s-sx)/MW-(g-gx)/MW))<=WAY.near){const p=findPath(x0,y0,x1,y1);if(p)return wayCost(s,p)}
   const r=wayRoute(WM.graph,s,g,b instanceof Holding?wayNodes().get(g):null);return r?r.cost:Infinity}

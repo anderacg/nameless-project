@@ -99,7 +99,9 @@ Kit.suite(({ok,info})=>{
   // measured 11-13.3 px off the road's line over repeated runs (the shoulder 6), at worst about 17; the bound sh+8, not sh+6)
   // (places within .5 px of the road band: men keep their room off houses by the road (battle/route.js PATHS), which shifts the
   // column's middle, and with it its guide's trail, a fraction of a pixel; the owner, 2026-11-01: paths round obstacles)
-  ok(looks>40&&bend>=3&&places<=.5&&med<=4&&p95<=sh+8&&worst<=sh+12,'a column by road bends with it: its places on the road\'s band as drawn ('+places.toFixed(1)+' px); its farthest man a look '+med.toFixed(1)+' px past it most, '+p95.toFixed(1)+' in 95% of looks (its shoulder '+sh+' px), at worst '+worst.toFixed(1)+' ('+bendWorst.toFixed(1)+' over '+bend+' bends)');
+  // (within 1.5 px: out of its gate along a holding's walls, now solid (battle/route.js PATHS.holding; the owner, 2026-11-02: "the
+  // holding walls is not correct because the unit can walk through it"), its men keep their room off them too: off, .5 as before)
+  ok(looks>40&&bend>=3&&places<=(t.PATHS.holding?1.5:.5)&&med<=4&&p95<=sh+8&&worst<=sh+12,'a column by road bends with it: its places on the road\'s band as drawn ('+places.toFixed(1)+' px); its farthest man a look '+med.toFixed(1)+' px past it most, '+p95.toFixed(1)+' in 95% of looks (its shoulder '+sh+' px), at worst '+worst.toFixed(1)+' ('+bendWorst.toFixed(1)+' over '+bend+' bends)');
   const ms=a=>a.reduce((s,v)=>s+v,0)/Math.max(1,a.length);
   ok(f0!=null&&formFrames>=8&&fast.length>=4&&ms(slow)<ms(fast)*.85,'forming up takes time: '+formFrames+' frames ('+(formFrames*.05).toFixed(2)+' s) from its lanes into its column, the army slower meanwhile ('+ms(slow).toFixed(2)+' px a frame for '+ms(fast).toFixed(2)+' formed)');
   ok(same&&looks>0,'its trail, its places and its targets the same buffers all the way (no allocation growth)');
@@ -107,14 +109,15 @@ Kit.suite(({ok,info})=>{
   {const w2=way(h1,h2);t.setByRoad(false);Style.forget(P);t.worldGo(w2.to.x,w2.to.y);let wl=-Infinity;for(let f=0;f<600&&P.tx!=null&&G.mode==='world';f++){t.updateWorld(.05);const a=t.MARCH_ARMIES.get(P);if(f>100&&f%10===0&&a)wl=Math.max(wl,...a.units.map(u=>offBand(u.x,u.y)))}
    info('the same way in your lanes (By road off): the farthest man '+wl.toFixed(1)+' px past the band')}
   // ---- detected: a band on the road ahead, in your sight (Scouting 10: your scouts out ahead, P.sight): your column takes its
-  // lanes before it meets you
-  {const w3=way(h1,h2),sk=P.skill;P.skill=k=>k==='scout'?10:sk.call(P,k);P.troops={hum_levy:12};let f=0;for(;f<400&&P.tx!=null&&G.mode==='world'&&!(t.MARCH_ARMIES.get(P)?.col&&!t.MARCH_ARMIES.get(P).forming&&f>60);f++)t.updateWorld(.05);
+  // lanes before it meets you, with TRAVEL_STYLES.yourChoice off (on, the owner's 2026-11-02: your By road alone decides yours, an
+  // AI army's as here: tests/corridor.js)
+  {const w3=way(h1,h2),sk=P.skill,yc=TS.yourChoice;TS.yourChoice=false;P.skill=k=>k==='scout'?10:sk.call(P,k);P.troops={hum_levy:12};let f=0;for(;f<400&&P.tx!=null&&G.mode==='world'&&!(t.MARCH_ARMIES.get(P)?.col&&!t.MARCH_ARMIES.get(P).forming&&f>60);f++)t.updateWorld(.05);
    let k=0,bd=Infinity;for(let i=0;i<w3.n;i++){const d=Math.hypot(w3.X[i]-P.x,w3.Y[i]-P.y);if(d<bd){bd=d;k=i}}const q=pick(w3,w3.at[k]+TS.alert+140);
    const b=t.asParty({kind:'bandits',ld:t.newChief('bandits',2),troops:Array(30).fill('militia'),x:q.x,y:q.y,cool:0,t:999,idle:true});t.bandits.push(b);G.encCool=0;const was=t.MARCH_ARMIES.get(P)?.col;
    let seen=-1,at=0,n=0;for(;n<1500&&G.mode==='world'&&!G.enc;n++){t.updateWorld(.05);if(seen<0&&!Style.column(P)){seen=n;at=Math.hypot(b.x-P.x,b.y-P.y)}}const A=t.MARCH_ARMIES.get(P);
    info('a band on the road: seen '+Math.round(at)+' px off (your sight '+Math.round(t.vis())+'), after '+seen+' frames; met '+Math.round(Math.hypot(b.x-P.x,b.y-P.y))+' px off, after '+n);
    ok(was&&seen>=0&&G.enc&&A&&!A.col&&!A.forming,'your column detects a band on the road ahead ('+TS.alert+' px of its ring, in your sight): it takes its lanes and stands formed before they meet ('+(seen>=0?seen:'never')+' then '+n+' frames)');
-   Kit.world({encCool:99});t.bandits.length=0;P.troops={hum_foot:20};P.skill=sk}
+   Kit.world({encCool:99});t.bandits.length=0;P.troops={hum_foot:20};P.skill=sk;TS.yourChoice=yc}
  }
  // ---- ambushed: lying in wait in the trees by the road, unseen; it meets your column strung out
  {let at=null,w=null,from=null;

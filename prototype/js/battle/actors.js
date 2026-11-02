@@ -87,6 +87,18 @@ const LOST={near:10};
    foe), as in Total War; once there, he fights whatever comes to him. Hold where they stand is no move: they keep fighting.
    RELOCATE.near: close enough to his place; RELOCATE.max: he gives up getting there after this long (a place he cannot reach) */
 const RELOCATE={near:6,max:8};
+/* (world/march.js MARCH_MOVE.formGiveUp; the owner, 2026-11-02: "the unit can try to get into a formation but after 5 secs or xxx
+   cooldown timer then it just stop trying and stand there", "this will apply to all formations in marching or in battle") a man
+   making for his place in his group (relocating, or keeping his slot) at (x, y) who has come no nearer it by FORM_TRY.gain px in
+   MARCH_MOVE.formTry s while his group stood (its place moving more than FORM_TRY.still px a frame: on the move, none counted; his
+   slot shared out anew meanwhile his new one's distance) gives up: he stands where he is, in his group, counted in his slot
+   (u.inSlot), till it is ordered anew or takes a new form (FORM_SLOT), or its place moves MARCH_MOVE.formMove px from where it was (his
+   group moving on), or the fight begins after its muster (B.muster), so none is left behind. It takes the place of RELOCATE.max (a relocation's whole time). A foe in reach he fights
+   all the same. Off: as before */
+const FORM_TRY={gain:2,still:.5},FORM_SLOT=Symbol('formSlot');// (FORM_SLOT: each man's watch, a key of his no record reads)
+function slotGiveUp(u,g,x,y,dt){if(!MARCH_MOVE.formGiveUp)return false;const d=Math.hypot(x-u.x,y-u.y),ph=!!B.muster?.active;let f=u[FORM_SLOT];
+  if(!f||f.m!==g.mvId||f.f!==g.form||f.p!==ph||f.gave&&Math.hypot(g.ax-f.x,g.ay-f.y)>MARCH_MOVE.formMove)u[FORM_SLOT]=f={m:g.mvId,f:g.form,p:ph,x:g.ax,y:g.ay,d,t:0,gave:false};if(f.gave)return true;
+  const moved=Math.hypot(g.ax-f.x,g.ay-f.y)>FORM_TRY.still;f.x=g.ax;f.y=g.ay;if(moved||d<f.d-FORM_TRY.gain){f.d=d;f.t=0;return false}if((f.t+=dt)<MARCH_MOVE.formTry)return false;f.gave=true;return true}
 const relocating=(u,g,tgt)=>!!(g&&g.mvId&&u.mvId!==g.mvId&&g.order==='hold'&&!(tgt===undefined?g.tgt:tgt));// (tgt: g.tgt, already read)
 /* ---------- a soldier's moment (Actor, class wave E3): one for each soldier (Actor.of(u), kept aside, holding nothing but its
    man; his moment's notes stay on him: his shot, target, the foe he brushes past, the one he turns on in the press, his stuck
@@ -194,12 +206,12 @@ class Actor extends Fighter{
       let wx=sx,wy=sy,via=false;const TR=B.terrain;if(TR&&TR.blocky){const w=slotWay(u,g,sx,sy);if(w){wx=w[0];wy=w[1];via=!w.at}}else if(TR&&TR.has.water){const w=crossWay(u,sx,sy);if(w){wx=w[0];wy=w[1]}}
       const engage=order==='withdraw'||g.firm||g.form==='circle'||unitFlag(u,'shieldWall')?0:28;// (a circle's men never step out after a foe: formations.js)
       if(reloc){const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);if(u.relocFor!==g.mvId){u.relocFor=g.mvId;u.relocT=0}u.relocT+=dt;
-        if((pd>RELOCATE.near||via)&&u.relocT<RELOCATE.max){mv=true;mx=px/pd;my=py/pd;if(!via)arr=pd}else{u.mvId=g.mvId;u.relocT=0;u.inSlot=true}}
+        if((pd>RELOCATE.near||via)&&(MARCH_MOVE.formGiveUp?!slotGiveUp(u,g,sx,sy,dt):u.relocT<RELOCATE.max)){mv=true;mx=px/pd;my=py/pd;if(!via)arr=pd}else{u.mvId=g.mvId;u.relocT=0;u.inSlot=true}}
       else if(t&&!s.range&&held){}
       else if(t&&!s.range&&engage&&Math.hypot(t.x-sx,t.y-sy)<engage&&!holdsBank(u,t)&&!wayBarred(u,t)){mv=true;mx=dx/d;my=dy/d;chase=true;round(t.x,t.y)}// (not down off a bank into the water after him, nor round a cliff: terrain.js)
       else if(s.range&&t&&de<=reach&&!onTheMove(s)&&!g.backing&&!(g.cease&&!gt)){}// (a foe in reach: they keep their ground and shoot, not step to their exact place: attacking first)
       else{const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);const going=g.going;// (its place on the move: battlecontrol.js step)
-        if(pd>(u.slotted&&!going?7:2)||via&&pd>.5){mv=true;mx=px/pd;my=py/pd;u.slotted=false;if(!via&&!going)arr=pd}else{u.inSlot=true;u.slotted=true;if(ringed(u))u.face=Math.cos(ringFace(u))>=0?1:-1}}// (in its slot: it faces the formation's way (a circle's man outward), and stays till pushed clearly out)
+        if((pd>(u.slotted&&!going?7:2)||via&&pd>.5)&&!slotGiveUp(u,g,sx,sy,dt)){mv=true;mx=px/pd;my=py/pd;u.slotted=false;if(!via&&!going)arr=pd}else{u.inSlot=true;u.slotted=true;if(ringed(u))u.face=Math.cos(ringFace(u))>=0?1:-1}}// (in its slot: it faces the formation's way (a circle's man outward), and stays till pushed clearly out)
     }else{
       if(s.range){if(d>s.range||!u.inRng&&d>s.range*.97){mv=true;mx=dx/d;my=dy/d;u.inRng=false;round(t.x,t.y)}else{u.inRng=true;if(d<28){mv=true;mx=-dx/d;my=-dy/d;back=true}}}
       else if(!held){mv=true;mx=dx/d;my=dy/d;if(B.terrain&&B.terrain.blocky)round(t.x,t.y);else if(B.terrain&&B.terrain.has.water){const w=crossWay(u,t.x,t.y);if(w){const qx=w[0]-u.x,qy=w[1]-u.y,ql=Math.hypot(qx,qy)||1;mx=qx/ql;my=qy/ql}}}// (a charge goes over a bridge or ford when that beats wading, terrain.js)

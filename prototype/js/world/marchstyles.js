@@ -119,19 +119,50 @@ class MarchStyle{
    step): over once form of its men stand within place px of their places, or after most s; meanwhile its guide goes slow of the way it is moved, [into a column, out of one: one that has seen a foe all but halts
    to deploy]; lordKeep: a lord on a trip of more than long px keeps to the roads a little, off them a tile costing that many times
    as much (router.js wayKeep, as your By road's ROAD_GO.keep), so his column gets the road's pace (brains.js LordBrain way); 1: as
-   before ---------- */
+   before.
+   steady (the owner, 2026-11-02: "when travel by road, if you point to a specific path and if your army cannot form a column it'll
+   keep reorganize and try to form the column"): a foe near, seen at alert px, is gone only past alert × clear; a style switched
+   holds hold s (its march's time) before it switches back, but a foe newly near breaks a column at once; a column whose forming ran
+   out of time (most) with more than stuck of its men blocked short of their places (no straight way: a building, water) gives up,
+   its formation kept retry s before it tries again. Hold and retry only for an army marched man by man (one far off is seen re-form by none).
+   A trip shorter than trip × its column's length (TravelStyle len) and margin px (long) keeps its column (the owner, 2026-11-02:
+   "you just form a column even though it's a short trip, just fix the reforming logic bug"), but yours goes there the plain way,
+   not by the roads' nearest node behind it (router.js Router.travel). steady false: as before.
+   yourChoice (the owner, 2026-11-02: "for player army it should not auto change formation if enemy is near since player can toggle
+   on and off himself"): yours by your By road alone, a foe near or seen none of its business (a battle still deploys it from where
+   it stands; an ambush still springs on it as it is); every other army forms up near a foe as above. Off: yours too, as before ---------- */
 const TRAVEL_STYLES={on:true,every:6,long:400,near:160,alert:150,menSight:true,lordKeep:1.1,sample:8,share:.35,
+  steady:true,trip:1.5,margin:40,clear:1.25,hold:3,retry:8,stuck:.25,yourChoice:true,
   column:{width:6,rank:1.6,crumb:3,leap:40,cart:34,form:.8,place:4,most:3,slow:[.6,.15],look:4,lag:18,glide:2,about:-.7},
   kinds:{caravan:'always',lord:'far',patrol:'beat',you:'byRoad',cparty:'far',band:null,monster:null}};
-// (each army's decision: {n: the frame it was made, col, k and k2: its trip then})
+// (each army's decision: {n: the frame it was made, col, k and k2: its trip then; steady: foe (one near when last asked), at (its
+// march's time it last switched), until (no column before), a (its march then), sw (its switches, counted for the tests)})
 const TRAVEL_SEEN=new WeakMap();
 class TravelStyle{
   // whether o marches in a column now
-  static column(o){const T=TRAVEL_STYLES;if(!T.on||!o||B)return false;let c=TRAVEL_SEEN.get(o);if(!c)TRAVEL_SEEN.set(o,c={n:-Infinity,col:false,k:null,k2:null});
-    const n=WORLD_LOD.n;if(this.trip(o,c)||n-c.n>=T.every||n<c.n){c.n=n;c.col=this.decide(o)}return c.col}
+  static column(o){const T=TRAVEL_STYLES;if(!T.on||!o||B)return false;let c=TRAVEL_SEEN.get(o);if(!c)TRAVEL_SEEN.set(o,c={n:-Infinity,col:false,k:null,k2:null,foe:false,at:-Infinity,until:-Infinity,a:null,sw:0});
+    const n=WORLD_LOD.n,nt=this.trip(o,c);if(nt||n-c.n>=T.every||n<c.n){c.n=n;const was=c.col;c.col=T.steady?this.steady(o,c):this.decide(o);if(c.col!==was)c.sw++}return c.col}
   // (decided afresh when next asked)
   static forget(o){TRAVEL_SEEN.delete(o)}
-  static decide(o){const r=TRAVEL_STYLES.kinds[o===P?'you':o.mapKind];return !!r&&!o.dead&&!o.gone&&!o.inside&&!inFight(o)&&this[r](o)&&!this.threat(o)}
+  static decide(o){const r=TRAVEL_STYLES.kinds[o===P?'you':o.mapKind];return !!r&&!o.dead&&!o.gone&&!o.inside&&!inFight(o)&&this[r](o)&&!this.foe(o)}
+  // (a foe that makes it form up: threat's, but never for yours while yourChoice (your By road decides); al: as threat's)
+  static foe(o,al){return !(o===P&&TRAVEL_STYLES.yourChoice)&&this.threat(o,al)}
+  // (steady: decide's answer held as above)
+  static steady(o,c){const T=TRAVEL_STYLES,r=T.kinds[o===P?'you':o.mapKind],a=MARCH_ARMIES.get(o)||null,was=c.col;if(a!==c.a){c.a=a;c.at=c.until=-Infinity}
+    const t=a?a.time:null,base=!!r&&!o.dead&&!o.gone&&!o.inside&&!inFight(o)&&this[r](o),foe=base&&this.foe(o,c.foe?T.alert*T.clear:T.alert);c.foe=foe;
+    let want=base&&!foe&&!(t!=null&&t<c.until);
+    if(want!==was&&t!=null&&t-c.at<T.hold&&!(was&&foe))want=was;if(want!==was&&t!=null)c.at=t;return want}
+  // (its column's length, px: as made (marchLayout), else its men 2 abreast at their bodies' ranks)
+  static len(o){const L=MARCH_LAYOUTS.get(o)?.column;if(L)return L.len;const C=TRAVEL_STYLES.column,k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;let s=marchCentrePiece(o)?C.cart:0;
+    for(const g of partyRoster(o).groups)s+=g.count/2*C.rank*marchBodyOf(g.type)*k;return s}
+  // (the straight way left to where o goes: yours to your goal, a lord's or a companion's to his holding (or you), a caravan's to
+  // its market's gate, a patrol's to its beat's stop; null when it goes nowhere)
+  static left(o){const m=o.mapKind,t=o===P?(P.tx!=null?{x:P.tx,y:P.ty}:null):m==='lord'?townBy(o.tgt):m==='cparty'?(o.order==='return'?P:o.order==='stay'?townBy(o.base):null):m==='caravan'?townBy(o.to):m==='patrol'&&o.wx!=null?{x:o.wx,y:o.wy}:null;
+    return t?Math.hypot(t.x-o.x,t.y-o.y):null}
+  // (a trip long enough for its column: yours shorter goes the plain way, router.js Router.travel)
+  static long(o){const T=TRAVEL_STYLES,l=this.left(o);return l==null||l>=this.len(o)*T.trip+T.margin}
+  // (steady: o's column given up, its forming run out with its men blocked: its formation till its march's time until)
+  static giveUp(o,a){const T=TRAVEL_STYLES,c=TRAVEL_SEEN.get(o);if(!T.steady||!c)return;c.a=a;c.until=a.time+T.retry;c.at=a.time;if(c.col)c.sw++;c.col=false;c.n=WORLD_LOD.n}
   // (what its trip is: true when that changed since it was decided)
   static trip(o,c){const m=o.mapKind,k=o===P?!!P.byRoad:m==='lord'?o.tgt:m==='cparty'?o.order:m==='caravan'?o.to:o.hunt,k2=o===P?G.byRoad:o.state;
     if(k===c.k&&k2===c.k2)return false;c.k=k;c.k2=k2;return true}
@@ -153,17 +184,18 @@ class TravelStyle{
     for(let k=0;k<17;k++){const r=k?k>8?R:R/2:0,a=k*Math.PI/4,h=landHold(o.x+Math.cos(a)*r,o.y+Math.sin(a)*r);if(h&&h.owner&&h.owner!==f&&atWar(f,h.owner))return true}return false}
   // (a foe it has detected: your army, hostile to it, that it sees or fears (engage.js fearSeen); any other its men see (menSight:
   // marched man by man, its march), else within alert px)
-  static threat(o){if(o!==P&&!P.stay&&armyRelation(o,P)<0&&(TravelAwareness.sees(o)||fearSeen(o)))return true;
+  // (al: the px a foe is seen at, alert; steady, one seen gone only past alert × clear)
+  static threat(o,al=TRAVEL_STYLES.alert){if(o!==P&&!P.stay&&armyRelation(o,P)<0&&(TravelAwareness.sees(o)||fearSeen(o)))return true;
     const a=TRAVEL_STYLES.menSight?marchMen(o):null;
-    return this.foeIn(o,W.lords,a)||this.foeIn(o,bandits,a)||this.foeIn(o,W.patrols,a)||this.foeIn(o,W.caravans,a)||this.foeIn(o,W.monsters,a)||this.foeIn(o,cparties(),a)}
+    return this.foeIn(o,W.lords,a,al)||this.foeIn(o,bandits,a,al)||this.foeIn(o,W.patrols,a,al)||this.foeIn(o,W.caravans,a,al)||this.foeIn(o,W.monsters,a,al)||this.foeIn(o,cparties(),a,al)}
   // (one of list hostile to o that it can see: to yours, in your sight (worldobject.js spotted); to any other, none lying in wait
   // (waylay.js); a beast only one that falls on armies. Its ring (march.js marchOuter: where they would meet) within an eye of its
   // men (a: its march; fog.js armySight, each alert px times his kind's share, made only once one is near enough to ask), else within
   // alert px of its ring)
-  static foeIn(o,list,a=null){const T=TRAVEL_STYLES,R=T.alert+marchOuter(o),F=a?marchOuter(o)+T.alert*sightMost()+T.alert:R+T.alert;
+  static foeIn(o,list,a=null,al=TRAVEL_STYLES.alert){const R=al+marchOuter(o),F=a?marchOuter(o)+al*sightMost()+al:R+al;
     for(let p of list){if(p===o||p.dead||p.gone||p.inside||p.fight||Math.abs(p.x-o.x)>F||Math.abs(p.y-o.y)>F)continue;
       if(list===W.monsters){p=asMonster(p);const M=MONSTERS[p.id];if(!M||!(M.aggro||M.mythic))continue}
-      if((a||Math.hypot(p.x-o.x,p.y-o.y)<=R+marchOuter(p))&&armyRelation(o,p)<0&&(o===P?spotted(p):!p.waylay)&&(!a||armySight(a,T.alert).sees(p.x,p.y,1,marchOuter(p))))return true}
+      if((a||Math.hypot(p.x-o.x,p.y-o.y)<=R+marchOuter(p))&&armyRelation(o,p)<0&&(o===P?spotted(p):!p.waylay)&&(!a||armySight(a,al).sees(p.x,p.y,1,marchOuter(p))))return true}
     return false}
 }
 /* a guide's trail (as a host leader's crumbs, hosts.js, kept in numbers: nothing made as it grows): a point each crumb px it goes,
