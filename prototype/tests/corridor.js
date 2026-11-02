@@ -177,5 +177,12 @@ Kit.suite(({ok,info})=>{
  {sw({corridor:false});const S=scene({hum_foot:30},[[8,-4,'centre']]),n0=t.MARCH_COR.n;for(let i=0;i<600;i++){P.x+=.4;S.a.step(D)}const made=t.MARCH_COR.n-n0,cor=S.a.cor;S.done();back();
   ok(!made&&!cor,'corridor off: no corridor made, its men down the old fields ('+made+')')}
  {sw({steady:false,yourChoice:false});const {l}=lordAt(true),r=Style.column(l)===Style.decide(l);back();ok(r,'steady and yourChoice off: a column as decide gives it, as before')}
+ // (a corridor leg of no length ending where none stands (a point inside the citadel's walls): it stays, and returns; it stepped in
+ // place for ever before, the game frozen (found 2026-11-02 following a lord: march.js MarchArmy#corridor))
+ {Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:1e9});t.WORLD_BATTLE.on=true;G.mode='world';const h=t.townBy('Ashford');Kit.goTo(h.x,h.y+60);P.troops={hum_foot:12};t.MARCH_ARMIES.delete(P);
+  const A=t.MarchArmy.of(P);for(let i=0;i<30;i++)A.step(1/30);const nav=A.ground;let w=null;
+  for(let y=h.y-80;y<h.y+20&&!w;y+=2)for(let x=h.x-80;x<h.x+80&&!w;x+=2)if(nav.contains({x,y},8)&&!nav.stand({x,y}))w=[x,y];
+  let ran=false;if(w){A.cor=null;const c=A.corridor(nav,w[0],w[1],1,0,0,0,[[w[0],w[1]]]);ran=!!c&&Array.isArray(c.pts)}
+  ok(w&&ran,'a corridor of no length ending in the walls: made, returned (no freeze)')}
  }finally{back();if(t.BattleLab.active)t.BattleLab.exit();G.mode='world'}
 });

@@ -52,13 +52,15 @@ function horseSprite(L){const key='hz'+L.mount+(L.mountC||'')+L.team+(L.barded?'
    turns it about his feet), body: him lying, ax, ay: his feet in it; wk: the weapon he dropped; mount: his mount standing, down:
    lying */
 const CORPSES=new WeakMap(),BEAST_FALL={troll:'over',spider:'back',scorpion:'back',slime:'melt'};
+// (whose mount each lying one is, for its deaths: horseDeathOf)
+const DOWN_LOOK=new WeakMap();
 /* the beasts and monsters (engine/beasts.js PX.beast): the people's style, side-on, in a power-of-two cell (the dragon 64, a troll
    or a wyrm 32, a slime 16, the rest 32), feet on its bottom row; three variants; the poses as the people's (BEAST_POSES: 0-1
    standing, 2-5 walking, 15-18 running, 6-8 the attack, 9-11 the dragon's breath) and lying dead (PX.BEAST_DEAD). One of yours
    (team 0) wears the side's blue; a wild one nothing. Cached by kind, side, variant and pose (the climbs walk, the other blows
    strike) */
 const BEAST_POSES=PX.BEAST_POSES;
-const beastPoseOf=(type,p)=>p===PX.BEAST_DEAD?p:p>=19?2+(p-19)%4:p>=12&&p<=14?p-6:p>=9&&p<=11&&type!=='dragon'?p-3:p;
+const beastPoseOf=(type,p)=>p>=PX.BEAST_DEAD?p:p>=19?2+(p-19)%4:p>=12&&p<=14?p-6:p>=9&&p<=11&&type!=='dragon'?p-3:p;
 function beastSprite(type,team,v,pose){v=(v||0)%3;pose=beastPoseOf(type,pose||0);const k='bst'+type+(team?1:0)+v+'p'+pose;
   return spr[k]||(spr[k]=cellOf(PX.beast(type,{v,pose,team:team?1:0})))}
 // a beast's pose now: striking (or breathing fire, winding up a spit), running or walking as it moves, leaping (a pounce), breathing
@@ -80,20 +82,113 @@ function corpseOf(u){
   if(ST[u.type]&&ST[u.type].beast)c={beast:base,down:actorSprite(u,PX.BEAST_DEAD),how:BEAST_FALL[u.type]||'side'};
   else{const L=unitLook(u),wk=heldWeapon(L),g=pgrid(24,20);drawFigure(g,{...L,mount:null,weapon:wk?null:L.weapon},4,3,-1,null,-1);const lie=pturn(g);poutline(g);poutline(lie);
     c={stand:pcanvas(g),body:pcanvas(lie),ax:2,ay:12,wk,team:L.team};
-    if(L.mount){const m=pgrid(32,32),d=pgrid(32,22);drawMount(m,L,-1);drawMountDown(d,L);poutline(m);poutline(d);c.mount=pcanvas(m);c.down=pcanvas(d)}}
+    if(L.mount){const m=pgrid(32,32),d=pgrid(32,22);drawMount(m,L,-1);drawMountDown(d,L);poutline(m);poutline(d);c.mount=pcanvas(m);c.down=pcanvas(d);DOWN_LOOK.set(c.down,L)}}
   CORPSES.set(base,c);return c}
 /* one knocked down, not dead (render.js drawDowned): him falling and lying as the fallen do, but his weapon kept in his hand (the
    owner, 2026-11-01: "draw a weapon from start to finish"), GEAR.room rows over him for it (top); his corpse's (corpseOf) when he
    holds none apart. Kept by his body, apart from the corpse's record (the battle keeps that) */
 const DOWNED=new WeakMap();
-function downedOf(u){const c=corpseOf(u);if(!c.wk)return c;const base=actorSprite(u,0,true);let d=DOWNED.get(base);if(d)return d;
+function downedOf(u){const c=corpseOf(u);if(!c.wk)return DEATHS.on&&ST[u.type]?.wildlife?wildDeath(u,c,deathMap(u),'belly'):c;const base=actorSprite(u,0,true);let d=DOWNED.get(base);if(d)return d;
   const L=unitLook(u),R=GEAR.room,g=pgrid(24,20+R);drawFigure(g,{...L,mount:null},4,3+R,-1,null,-1);const lie=pturn(g);poutline(g);poutline(lie);
   d={stand:pcanvas(g),body:pcanvas(lie),ax:c.ax,ay:c.ay,top:R};DOWNED.set(base,d);return d}
+/* ---------- the ways to die (the owner, 2026-11-03: "make sure all sprites has correct dead sprite and more variant of dead
+   sprite"). Each kind has its deaths and their weights, one picked by a hash of the fallen's id (deathPick: never Math.random, so
+   a battle's dice stay as they were); each drawn from the living figures turned, flipped and re-cut, crisp, in their own colours
+   and outline. man: face, face down, his head the way he faced (corpseOf's); back, on his back, his head behind him; curl, on his
+   side, his knees drawn up, his head bowed; knees, fallen to his knees, slumped forward; flung, on his back, an arm flung past his
+   head. His shield lies by him, his helm or hat (hats) rolls off for a share of them (helm), his weapon drops by him (vfx.js).
+   rider: thrown clear of his mount (a man's death of his own), draped across it (face down) or pinned under it (on his back);
+   mount: on its side, legs out, or down on its belly, its legs folded (mountDown: a wolf as a wolf, a stag with its antlers; a
+   horse killed under its rider by where it lies, horseDeathOf). beast: its kind's
+   deaths (engine/beasts.js PX.BEAST_DEATHS), these their weights (1 if left out); wild: the hunt's game (critters.js
+   CRITTER_DEATHS). fall: how a beast goes down into each (vfx.js drawBody; a kind's own first, 'kind.name'; else pressed low).
+   on false: corpseOf's one corpse for every one, as before (the fingerprints' proof) ---------- */
+const DEATHS={on:true,man:{face:3,back:3,curl:2,knees:2,flung:2},helm:.35,hats:['cap','kettle','great','plume','horned','straw','wizard'],
+  rider:{clear:3,across:2,under:2},mount:{side:3,belly:2},
+  beast:{side:3,back:2,slump:2,wing:2,curl:3,splay:2,limp:2,melt:3,burst:2,sag:2,over:3,flung:2,flat:3,belly:2,arch:2},wild:{back:3,belly:2,slump:2},
+  fall:{back:'back','troll.back':'tip',over:'over',flung:'over',melt:'melt',burst:'melt',sag:'melt'},
+  // blood by kind (the owner, 2026-11-03: "make sure that not all monsters have red blood"; drawn only): a kind's (blood), its pool's
+  // tones middle to edge and a fleck in it (gore; vfx.js poolSprite); red (GORE.col) for the rest, people, horses, wolves, bears,
+  // boars and the game; none, no pool, for the undead and the made (dust and chips: vfx.js undead); slime, a puddle of its own coat
+  blood:{spider:'ichor',scorpion:'ichor',slime:'slime',troll:'murk',wyrm:'fire',dragon:'fire'},
+  gore:{ichor:{col:['#3e4a10','#5e7018','#86a028']},murk:{col:['#1e2a1a','#2e3a22','#44502c']},fire:{col:['#4a1008','#7a240c','#b04416'],fleck:'#f0a040'}}};
+// (one's blood: {key, col, fleck}, or null: none)
+function bloodOf(u){const n=DEATHS.blood[u.type]||(undead(u)?'none':'red');if(n==='none')return null;
+  if(n==='slime'){const v=(u.v||0)%3,R=PX.ramp(PX._beastKit.KINDS.slime.coats[v]);return{key:'slime'+v,col:[R[3],R[2],R[1]]}}
+  return DEATHS.gore[n]?{key:n,...DEATHS.gore[n]}:{key:'red',col:GORE.col}}
+// (a name of table W by its weight, by a hash of id and salt: each choice its own salt)
+function deathPick(id,W,salt){let s=0;for(const k in W)s+=W[k];let r=PX.hash(id|0,salt,7177)*s;for(const k in W)if((r-=W[k])<0)return k;return Object.keys(W)[0]}
+// (the grid turned a quarter the other way: what stood up now lies on its back, its head to the left)
+function pturnL(g){const r=pgrid(g.h,g.w);for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=g.p[y*g.w+x];if(c)r.p[(g.w-1-x)*r.w+y]=c}return r}
+// (g's pixels each moved by f(x, y): [dx, dy] (null: left out), in order, into a grid w x h)
+function pmove(g,f,w=g.w,h=g.h){const r=pgrid(w,h);for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=g.p[y*g.w+x],d=c&&f(x,y);if(d)pset(r,x+d[0],y+d[1],c)}return r}
+// (a's pixels where b's differ, a grid of their own a pixel round them: a piece of gear lifted off a figure; null if none)
+function pdiff(a,b){let x0=1e9,y0=1e9,x1=-1,y1=-1;const on=(x,y)=>{const c=a.p[y*a.w+x];return c&&c!==b.p[y*a.w+x]};
+  for(let y=0;y<a.h;y++)for(let x=0;x<a.w;x++)if(on(x,y)){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}
+  if(x1<0)return null;const r=pgrid(x1-x0+3,y1-y0+3);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(on(x,y))pset(r,x-x0+1,y-y0+1,a.p[y*a.w+x]);return r}
+// (his look, kept apart from him: unitLook keeps it on him, where the fight's records would show it)
+const DEATH_LOOK=new WeakMap(),deathLook=u=>u.look?unitLook(u):DEATH_LOOK.get(u)||(DEATH_LOOK.set(u,unitLook({...u})),DEATH_LOOK.get(u));
+const DEATH_SPR=new WeakMap(),deathMap=u=>{const b=actorSprite(u,0,true);let m=DEATH_SPR.get(b);if(!m)DEATH_SPR.set(b,m={});return m};
+/* one's death: what vfx.js drawBody draws him by. corpseOf's record when DEATHS is off; else his death's, kept by his body and
+   death: name, blood (bloodOf); a beast's beast, down, how (its fall); a man's stand, body, ax, ay as corpseOf's, fall (over, back or knees), wk, wd
+   (the side his weapon drops: 1 ahead of him, -1 behind), bits ([canvas, x, y]: his shield, his helm, lying by him), pool ([x, y]:
+   his blood's middle); a rider's mount, down, ride and at (where he lies from his mount's middle) */
+function deathOf(u){const c=corpseOf(u);if(!DEATHS.on)return c;const id=u.id|0,S=ST[u.type]||{},m=deathMap(u);
+  if(S.wildlife)return wildDeath(u,c,m,deathPick(id,DEATHS.wild,1));
+  if(S.beast){const names=PX.BEAST_DEATHS[u.type]||['side'],how=deathPick(id,Object.fromEntries(names.map(n=>[n,DEATHS.beast[n]??1])),1);
+    return m[how]||(m[how]={beast:c.beast,down:actorSprite(u,PX.BEAST_DEAD+names.indexOf(how)),how:DEATHS.fall[u.type+'.'+how]||DEATHS.fall[how]||'side',name:how,blood:bloodOf(u)})}
+  const L=deathLook(u),ride=c.mount?deathPick(id,DEATHS.rider,2):null,lie=ride&&deathPick(id,DEATHS.mount,3),how=ride==='across'?'face':ride==='under'?'back':deathPick(id,DEATHS.man,1),
+    helm=DEATHS.hats.includes(L.helm)&&PX.hash(id,4,7177)<DEATHS.helm,k=how+(helm?'h':'')+(ride?ride+lie:'');
+  return m[k]||(m[k]=Object.assign(manDeath(c,L,how,helm,ride,lie),{blood:bloodOf(u)}))}
+// (a horse killed under its rider, who fought on (battle/dismount.js): on its side or its belly by a hash of where it lies, a
+// wolf as a wolf (mountDown); null if it is not a rider's)
+const HORSE_DEATH=new WeakMap();
+function horseDeathOf(c){const S=c.sp,L=DOWN_LOOK.get(S.down);if(!L)return null;const lie=deathPick(Math.round(c.x)*7+Math.round(c.y)*3,DEATHS.mount,3);
+  let m=HORSE_DEATH.get(S.down);if(!m)HORSE_DEATH.set(S.down,m={});return m[lie]||(m[lie]={...S,down:lie==='side'&&L.mount==='horse'?S.down:mountDown(L,lie),name:lie})}
+// (the game's: its figure dead in its own cell, at the battle's twice)
+function wildDeath(u,c,m,how){if(m[how])return m[how];const s=critterDead(ST[u.type].wildlife,how),b=c.beast;
+  return m[how]={beast:b,down:mkc(b.width,b.height,g=>g.drawImage(s,(b.width>>1)-s.width,b.height-s.height*2,s.width*2,s.height*2)),how:how==='back'?'back':'side',name:how,blood:bloodOf(u)}}
+// (where a man's gear lies by him, by his death: [x, y] from his feet (the side he faced ahead): his shield, his helm, and (arms
+// flung) the bow or staff he held)
+const DEATH_BITS={face:[[5,6],[19,1]],back:[[-5,6],[-19,1]],curl:[[6,-8],[16,4]],knees:[[-7,0],[9,0]],flung:[[5,6],[-19,4],[3,-10]]};
+function manDeath(c,L,how,helm,ride,lie){
+  const sh=L.short?1:0,B={...L,mount:null,weapon:c.wk?null:L.weapon,shield:null,offShield:null,...(helm?{helm:'bare'}:{})},
+    fig=(o,style,atk,cut)=>{const g=pgrid(24,20);drawFigure(g,o,4,3,-1,style,atk,cut);return g},g0=fig(B,null,-1);
+  let body,ax=2,ay=12,wd=1,pool=[7,3],fall='over';
+  if(how==='back'||how==='flung'){body=pturnL(how==='flung'?fig({...B,weapon:null,held:'sword'},'thrust',1):g0);ax=17;ay=16;wd=-1;pool=[-7,3];fall='back'}
+  // (curled: his head bowed a pixel, laid down, his legs drawn up under him: his thighs toward his front, his shins and feet back)
+  else if(how==='curl'){const Lc=lettersOf(B);body=pturn(pmove(g0,(x,y)=>y>=16-sh?null:y<10?[1,0]:[0,0]));
+    for(const [x,y,k] of [[4,15,'L'],[5,15,'M'],[4,16,'L'],[5,16,'M'],[3,17,'L'],[4,17,'M'],[2,17,'F'],[2,16,'F']])pset(body,x,y,Lc[k])}
+  // (to his knees: what is above his belt two rows lower, bent forward over them, his head hung; his knees and feet on the ground)
+  else if(how==='knees'){const Lc=lettersOf(B),gy=17-sh;body=pmove(fig(B,null,-1,12-sh),(x,y)=>{const t=y-3;return[t<7?3:t<10?2:t<12?1:0,2+(t<7?2:t<10?1:0)]});
+    for(let x=9;x<=13;x++)pset(body,x,gy,x<12?Lc.L:Lc.M);pset(body,7,gy,Lc.F);pset(body,8,gy,Lc.F);ax=12;ay=18;pool=[4,2];fall='knees'}
+  else body=pturn(g0);
+  // (his shield and his helm off him, each lying on its side)
+  const bits=[],at=DEATH_BITS[how],piece=(o,turn,i)=>{const p=pdiff(fig(o,null,-1),g0);if(!p)return;const q=turn?pturn(p):pmove(p,(x,y)=>[0,p.h-1-2*y]);poutline(q);bits.push([pcanvas(q),...at[i]])};
+  if(shieldLook(L))piece({...B,shield:L.shield,offShield:L.offShield},true,0);if(helm)piece({...B,helm:L.helm},false,1);
+  if(how==='flung'&&B.weapon){const p=pdiff(g0,fig({...B,weapon:null},null,-1));if(p){const q=pturn(p);poutline(q);bits.push([pcanvas(q),...at[2]])}}
+  poutline(body);const r={stand:c.stand,body:pcanvas(body),ax,ay,wk:c.wk,team:c.team,fall,wd,bits,pool,name:how+(helm?' helm':'')};
+  if(ride)Object.assign(r,{mount:c.mount,down:lie==='side'&&L.mount==='horse'?c.down:mountDown(L,lie),ride,at:{clear:[9,8],across:[-4,-8],under:[-2,0]}[ride],name:r.name+'|'+ride+'|'+lie});
+  return r}
+/* (a mount down, lie: side, on its side, its legs out, or belly, on its belly, its legs folded under it. A horse or a stag: people.js
+   drawMountDown, a stag's antlers on the ground by its head; on its belly its legs cut short under it, set down on the ground. The
+   rest (a ram, a wolf, a warg): its own standing figure laid down, its head sunk to its back, its legs out stiff or folded away.
+   The size of drawMountDown's, its ground on the same row) */
+function mountDown(L,lie){const G=19,belly=lie==='belly';let d;
+  if(horseArt(L.mount)){d=pgrid(32,22);drawMountDown(d,L);if(belly)d=pmove(d,(x,y)=>y>15?null:[0,4]);
+    if(L.mount==='stag')for(const [x,y] of [[27,12],[26,11],[28,11],[25,10],[29,10],[24,9]])pset(d,x,y+(belly?4:0),PPAL.cloth[0])}
+  else{const m=pgrid(32,32);drawMount(m,L,-1);const n=y=>{let k=0;for(let x=0;x<32;x++)if(m.p[y*32+x])k++;return k};
+    let bel=31,top=0,hd=0;while(bel>0&&!n(bel))bel--;while(bel>0&&n(bel)<=10)bel--;while(top<bel&&n(top)<=12)top++;while(hd<top&&!n(hd))hd++;
+    const sink=Math.max(0,top-hd-3),lift=belly?0:2;d=pmove(m,(x,y)=>y>bel?null:[0,G-lift-bel+(y<top?sink:0)],32,22);
+    // (its legs: stiff stubs from its belly, out behind and ahead; or a hoof showing at each end)
+    const at=[];for(let x=0;x<32;x++)if(m.p[(bel+1)*32+x]&&!m.p[(bel+1)*32+x-1])at.push(x);
+    for(const x of at){const s=x<16?-1:1;if(belly){pset(d,x,G,'#27272c');continue}const c=m.p[(bel+2)*32+x];pset(d,x,G-1,c);pset(d,x+1,G-1,c);pset(d,x+s,G,'#27272c');pset(d,x+1+s,G,'#27272c')}}
+  poutline(d);return pcanvas(d)}
 // which pose a fighter shows now: striking just after an attack, striding while moving, breathing while still
 /* the sprites a battle will need, made a little each frame before they are first shown (WARM.budget ms a frame, during the
    deployment and the opening): every body of every kind, side and look on the field, standing, breathing, walking and
    running, and their weapons at every angle. A pose first drawn mid-fight would otherwise cost a hitch */
-// (the beasts' poses in a queue of their own, b, made after the rest)
+// (the beasts' poses in a queue of their own, b, made after the rest; last of all each one's own death, deathOf, by his id)
 const WARM={q:[],b:[],budget:4};
 function warmBattle(units){
   WARM.q=[];WARM.b=[];const seen=new Set(),late=[];
@@ -105,7 +200,7 @@ function warmBattle(units){
     if(u.hero&&unarmed())for(let p=FIST_POSE;p<FIST_POSE+12;p++)WARM.q.push(()=>actorSprite(u,p,true));// (bare hands: the fists' blows)
     // (and last, how he lies when he falls, and the weapon he drops: vfx.js drawCorpses)
     late.push(()=>corpseOf(u));if(u.s.range&&!u.s.magic){for(const p of [0,2,3,4,5,6,7,8])late.push(()=>actorSprite(u,p,true,true));const sk=pal(L.skin)[1],kw='sword'+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)late.push(()=>weaponSprite('sword',L.team,sk,i))}}if(w)for(const i of [0,1,WEAPON_STEPS-1,WEAPON_STEPS/2,WEAPON_STEPS/2+1])late.push(()=>weaponSprite(w,L.team,PPAL.wood[2],i))}
-  WARM.q.push(...late)}
+  WARM.q.push(...late);if(DEATHS.on)for(const u of units)WARM.b.push(()=>deathOf(u))}
 function warmStep(){const t0=performance.now();while((WARM.q.length||WARM.b.length)&&performance.now()-t0<WARM.budget)(WARM.q.length?WARM.q:WARM.b).shift()()}
 // a soldier's look (what unitSprite draws him from), for the weapon in his hand
 // a shooter's sidearm: a short sword, on the weapon layer

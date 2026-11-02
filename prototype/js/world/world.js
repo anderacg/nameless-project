@@ -88,7 +88,7 @@ function clickAt(wx,wy){
   return approach(o);
 }
 // (what you clicked on, or picked Approach for on its ring (ui/input.js worldApproach): met if you are touching it, else chased)
-function approach(o){if(o.mapKind==='critter'&&o.wild&&o.inView(vis()))return hunt(o);if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;P.tx=o.x;P.ty=o.y;P.stuck=0;return false}
+function approach(o){if(o.mapKind==='critter'&&o.wild&&o.inView(vis()))return hunt(o);if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;{const q=marchMeetAt(o);P.tx=q.x;P.ty=q.y}P.stuck=0;return false}
 /* ---------- Follow (the owner, 2026-10-23: "add new Action called 'Follow' which can be used when you click at the other unit in
    the world map"): your band shadows a party, keeping after it at a distance, never closing in to meet or fight it (a chase,
    G.chase, does). G.follow: {o: the party, crumbs: where it has walked, a point each FOLLOW.crumb px, the oldest FOLLOW.trail tiles
@@ -133,12 +133,14 @@ function followWatch(){Host.watch();const F=G.follow;if(!F)return;const o=F.o;
 // (your goal this moment: the point FOLLOW.trail tiles behind it along its crumbs (those older dropped), else that far from it on
 // your side; within FOLLOW.near tiles of it, where you stand. It: where it stands, a column's middle, not its head (march.js
 // marchPoint)
-function followStep(){const F=G.follow,c=F.crumbs,l=c[c.length-1],T=FOLLOW.trail*TILE;if(F.host){const s=Host.yourSlot(F.o);P.tx=s.x;P.ty=s.y;return}
+// (FOLLOW.trail tiles behind its ring's edge, not its middle (the owner, 2026-11-02: "meet, follow, it'll focus on the center"):
+// its ring, marched man by man, added; MARCH_MOVE.meetEdge off: behind its middle)
+function followStep(){const F=G.follow,c=F.crumbs,l=c[c.length-1],T=FOLLOW.trail*TILE+(MARCH_MOVE.meetEdge&&marchLive(F.o)?marchOuter(F.o):0);if(F.host){const s=Host.yourSlot(F.o);P.tx=s.x;P.ty=s.y;return}
   if(F.wait){const g=F.wait;P.tx=g.x;P.ty=g.y+TILE*FOLLOW.trail;return}// (waiting at the gate of the holding it went into)
   const o=marchPoint(F.o);if(Math.hypot(o.x-l[0],o.y-l[1])>=FOLLOW.crumb)c.push([o.x,o.y]);
   let s=0,px=o.x,py=o.y,tx=null,ty=null;for(let i=c.length-1;i>=0;i--){const [x,y]=c[i],d=Math.hypot(x-px,y-py);if(s+d>=T&&d>0){const q=(T-s)/d;tx=px+(x-px)*q;ty=py+(y-py)*q;c.splice(0,i);break}s+=d;px=x;py=y}
   const d=Math.hypot(P.x-o.x,P.y-o.y);if(tx==null){tx=d>T?o.x+(P.x-o.x)/d*T:P.x;ty=d>T?o.y+(P.y-o.y)/d*T:P.y}
-  if(d<FOLLOW.near*TILE){tx=P.x;ty=P.y}P.tx=tx;P.ty=ty}
+  if(d<FOLLOW.near*TILE+T-FOLLOW.trail*TILE){tx=P.x;ty=P.y}P.tx=tx;P.ty=ty}
 // (the ring's item for o: Stop following (lit) while you follow it, or anything with o not one to follow; Follow for one to
 // follow; none else)
 const followItem=o=>Host.follows(o)?{icon:'shoe',label:'Stop following',active:true,run:()=>{Host.leave(G.day<Host.under.until);Host.paused=false;followStop('',true)}}
@@ -292,7 +294,8 @@ function marchStep(d){
   // (a chase ends when what you chase is gone or not worth it: WorldObject here, chaseable; reached, it is met, unless you just
   // fought and it would fight you: meetsAnyTime)
   if(G.follow)followStep();
-  if(G.chase){const o=G.chase;if(!objKind(o)||!o.chaseable())G.chase=null;else{P.tx=o.x;P.ty=o.y;
+  if(G.chase){const o=G.chase;if(!objKind(o)||!o.chaseable())G.chase=null;else{const q=marchMeetAt(o);P.tx=q.x;P.ty=q.y;// (its near edge: march.js)
+
     if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o)&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return true}}}
   if(P.tx!=null){
     const aim=marchAim(P.tx,P.ty),dx=aim.x-P.x,dy=aim.y-P.y,dist=Math.hypot(dx,dy);// (your army's head on your goal: march.js)

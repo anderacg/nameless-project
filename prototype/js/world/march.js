@@ -95,6 +95,22 @@ function marchPlaceGap(o,r){const a=marchLive(P);if(!a)return null;const I=WORLD
   let v=Math.hypot(dx,dy);if(v<=r+I){v=Infinity;for(const u of a.units){if(u.dead)continue;const d=Math.hypot(u.x+ax-o.x,u.y+ay-o.y)-marchDisc(u);if(d<v)v=d}}return v-r-I}
 // (px from x, y to your army's nearest man's disc, marched man by man (marchLive); else to your middle: where one walking up hails
 // you, an ambush springs: story/encounter.js)
+// (where your army makes for to meet o (world.js approach, a chase): its man nearest you, the near edge of its army, not its middle
+// (the owner, 2026-11-02: "I interact with other army, like meet, follow, it'll focus on the center"); not marched man by man, or
+// MARCH_MOVE.meetEdge off: its point. One answer, written afresh)
+const MARCH_MEET={x:0,y:0};
+function marchMeetAt(o){const M=MARCH_MEET,a=MARCH_MOVE.meetEdge&&o!==P&&marchLive(o);M.x=o.x;M.y=o.y;if(!a)return M;const dx=o.x-a.x,dy=o.y-a.y;let b=Infinity;
+  for(const u of a.units){if(u.dead)continue;const d=Math.hypot(u.x+dx-P.x,u.y+dy-P.y);if(d<b){b=d;M.x=u.x+dx;M.y=u.y+dy}}return M}
+// (in a column on the march (the caller's: never a crowd standing, nor a formation), the comrade just ahead of a marcher in his file, walking his way (within MARCH_MOVE.follow.look px past their bodies, beside him
+// by less than their bodies, facing within 60 degrees of it): he keeps pace behind him, his speed at most the comrade's (none if he
+// stands) and gain a second for each px past their bodies and gap, rather than halting at him for want of a sidestep (the owner,
+// 2026-11-02: "the unit will walk a bit, then stop, then walk again"). null: none such (follow off), the sidesteps as before)
+const MARCH_LEAD={cap:0,v:null};
+function marchLead(u,want,friends,ru){const F=MARCH_MOVE.follow;if(!F)return null;const c=Math.cos(want),s=Math.sin(want);let best=null,bd=Infinity;
+  for(const v of friends){if(v===u||v.dead)continue;const dx=v.x-u.x,dy=v.y-u.y,along=dx*c+dy*s,need=(ru+marchBody(v))/2;
+    if(along<=0||along>need+F.gap+F.look||Math.abs(dy*c-dx*s)>need*.9||Math.cos((v.hd??want)-want)<.5)continue;if(along<bd){bd=along;best=v}}
+  if(!best)return null;const go=best.rest||!best.walking?0:best.vel||0;if(go<F.moving)return null;// (one standing or barely moving: stepped round, as before)
+  MARCH_LEAD.v=best;MARCH_LEAD.cap=Math.max(0,go+(bd-(ru+marchBody(best))/2-F.gap)*F.gain);return MARCH_LEAD}
 function marchNear(x,y){const a=marchLive(P);if(!a)return Math.hypot(x-P.x,y-P.y);const ax=P.x-a.x,ay=P.y-a.y;let v=Infinity;for(const u of a.units){if(u.dead)continue;const d=Math.hypot(u.x+ax-x,u.y+ay-y)-marchDisc(u);if(d<v)v=d}return v}
 // (you arrive at x, y, your march's point there (world.js marchStep): menCentre, when your men's middle is within MARCH_MOVE.arrive
 // px of it, or your men stand in their places (a spot they cannot all stand round); not marched man by man, at once.
@@ -231,7 +247,7 @@ function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDete
    for a column too */
 // formGiveUp, formTry, formMove, formGain: a man short of his place, no nearer it by formGain px in formTry s, stands where he is, till its guide goes formMove px
 // or it is ordered anew (MarchArmy formWatch; the owner, 2026-11-02); off: they try on, as before
-const MARCH_MOVE={formGiveUp:true,formTry:5,formMove:8,formGain:2,cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,1,2,0],road:1.45,jam:1.5,cadence:9,body:1,leash:[4,.6],menCentre:true,lead:[4,.6],wide:192,arrive:2,headArrive:true,arriveWait:3,footing:true,
+const MARCH_MOVE={formGiveUp:true,formTry:5,formMove:8,formGain:2,cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,1,2,0],road:1.45,jam:1.5,cadence:9,body:1,leash:[4,.6],menCentre:true,lead:[4,.6],wide:192,arrive:2,meetEdge:true,follow:{look:6,gap:1.5,gain:4,moving:2},headArrive:true,arriveWait:3,footing:true,
   about:{on:true,cos:-.7,leg:200,halt:.6,pass:6,side:1.2,look:16,slow:.7,most:20,loop:{on:true,gap:10,end:0,pace:.8,ease:1,margin:2}}};
 /* (the owner, 2026-11-01: "how about making a ring like freeform based on the area?") the ring drawn round an army is the outline
    of the ground its men stand on: each man a soft disc (his body and pad px; a caravan's wagon one too), their fields summed on a
@@ -740,10 +756,13 @@ class MarchArmy{
       if(u.hd==null){u.hd=u.dir??want;u.vel=0}let way=null;
       // (round a friend, the side he took last, while he still goes round: no flip from one side to the other)
       const sides=u.side?MARCH_MOVE.sidestep.filter(o=>!o||Math.sign(o)===u.side):MARCH_MOVE.sidestep;
+      // (a comrade just ahead in his file, walking his way: he keeps pace behind him (marchLead: his speed capped, the way found as
+      // ever), so he never comes up on him to be stopped)
+      const lead=col&&moved>.001?marchLead(u,want,friends,ru):null;
       for(const off of sides){const a=want+off,p={x:u.x+Math.cos(a)*probe,y:u.y+Math.sin(a)*probe};if(nav.clear(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<(ru+marchBody(v))/2&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){way=a;break}}
       // (the army standing, he hemmed in by his own side a while (blocked, or only stepping round them), well short of his place: he
       // squeezes through, the parting pass below making room; the army marching, after MARCH_MOVE.jam s of it: a crowd in a ford)
-      u.side=way!=null&&way!==want?Math.sign(Math.atan2(Math.sin(way-want),Math.cos(way-want))):0;let cap=top;if(way===want)u.stuck=Math.max(0,(u.stuck||0)-d/2);else if(way!=null)u.stuck=(u.stuck||0)+d/2;else{u.stuck=(u.stuck||0)+d;}u.squeeze=u.stuck>=(moved<=.001?MARCH_MOVE.squeeze[0]:MARCH_MOVE.jam)&&gd>MARCH_MOVE.squeeze[2];if(u.squeeze){way=want;cap=top*MARCH_MOVE.squeeze[1]}
+      u.side=way!=null&&way!==want?Math.sign(Math.atan2(Math.sin(way-want),Math.cos(way-want))):0;let cap=top;if(way===want)u.stuck=Math.max(0,(u.stuck||0)-d/2);else if(way!=null)u.stuck=(u.stuck||0)+d/2;else{u.stuck=(u.stuck||0)+d;}u.squeeze=u.stuck>=(moved<=.001?MARCH_MOVE.squeeze[0]:MARCH_MOVE.jam)&&gd>MARCH_MOVE.squeeze[2];if(u.squeeze){way=want;cap=top*MARCH_MOVE.squeeze[1]}else if(lead)cap=Math.min(cap,lead.cap)
       const df=way==null?0:Math.atan2(Math.sin(way-u.hd),Math.cos(way-u.hd)),rate=K.turn0+(K.turn-K.turn0)*Math.min(1,u.vel/Math.max(1e-6,top));u.hd+=clamp(df,-rate*d,rate*d);
       const off=Math.atan2(Math.sin((way??want)-u.hd),Math.cos((way??want)-u.hd)),tgt=way==null?0:Math.min(cap*Math.max(0,Math.cos(off))**2,Math.sqrt(2*top/K.t*.6*l));
       u.vel=clamp(tgt,u.vel-top/K.t*d*1.6,u.vel+top/K.t*d);if(!(u.vel>1e-4)){u.vel=0;continue}
@@ -817,7 +836,8 @@ class MarchArmy{
     for(let i=1;i<W.length;i++){const a=pts[pts.length-1];let b=W[i];const out=!inn(b);
       if(out){const c=W[i-1];let lo=0,hi=1;if(!inn(c))break;for(let k=0;k<20;k++){const f=(lo+hi)/2;if(inn([c[0]+(b[0]-c[0])*f,c[1]+(b[1]-c[1])*f]))lo=f;else hi=f}b=[c[0]+(b[0]-c[0])*lo,c[1]+(b[1]-c[1])*lo]}
       // (a point of it on ground none stands on (a house the world's ways know nothing of) carried on through, the way it goes)
-      if(!nav.stand({x:b[0],y:b[1]})){const l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,ux=(b[0]-a[0])/l,uy=(b[1]-a[1])/l;for(let s=g.cs;;s+=g.cs){const q=[b[0]+ux*s,b[1]+uy*s];if(!inn(q))break;if(nav.stand({x:q[0],y:q[1]})){b=q;break}}}
+      // (a leg of no length has no way to go on: it stays (else it stepped in place for ever, the game frozen); at most a grid's width)
+      if(!nav.stand({x:b[0],y:b[1]})){const l=Math.hypot(b[0]-a[0],b[1]-a[1]);if(l>1e-6){const ux=(b[0]-a[0])/l,uy=(b[1]-a[1])/l,most=(g.C+g.R)*g.cs;for(let s=g.cs;s<=most;s+=g.cs){const q=[b[0]+ux*s,b[1]+uy*s];if(!inn(q))break;if(nav.stand({x:q[0],y:q[1]})){b=q;break}}}}
       for(const [x,y] of routePath(g,a[0]-nav.x,a[1]-nav.y,b[0]-nav.x,b[1]-nav.y,{need:r}))pts.push([x+nav.x,y+nav.y]);if(out)break}
     // (string-pulled across its legs, its room kept: no spur where a leg met the next)
     {const q=[pts[0]];for(let a=0;a<pts.length-1;){let k=a+1;while(k<pts.length-1&&lineBody(g,pts[a][0]-nav.x,pts[a][1]-nav.y,pts[k+1][0]-nav.x,pts[k+1][1]-nav.y,255,r))k++;q.push(pts[k]);a=k}pts.length=0;pts.push(...q)}

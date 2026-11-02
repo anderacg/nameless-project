@@ -169,9 +169,19 @@ function drawMapFrame(r){ctx.save();ctx.fillStyle=MAP_FRAME.edge;ctx.fillRect(r.
 // screen at any map zoom (zk, core.js MAPZOOM); s: its pixels a tile (drawWorld draws it here, the full map's tap reads it)
 function worldMiniRect(){const zk=MAPZOOM.k(),s=112*zk/MW,w=Math.round(MW*s),h=Math.round(MH*s);return{x:VW-w-Math.round(6*zk),y:Math.round(6*zk),w,h,s}}
 const faceDir=o=>{let f=FACE.get(o);if(!f)FACE.set(o,f={x:o.x,d:o.x>P.x?-1:1});if(Math.abs(o.x-f.x)>.05){f.d=o.x>f.x?1:-1;f.x=o.x}return o.fight&&o.dir?o.dir:f.d};
+/* the map's camera following your army (the owner, 2026-11-02: on a short walk "the camera will snap"): not locked on its point,
+   which starts and stops with your men, but eased after it: within dead px of the screen's middle it stands still (a few steps
+   move no map), past that it glides on over ease s (real time) to keep it so near; a leap of more than snap px (a gate, a load, a
+   battle's end) is gone to at once. on false, or the tests' fixed view (FIXED_VIEW) unless a test asks (force): locked, as before.
+   Drawn only: the camera is the frame's, never the world's */
+const CAM_FOLLOW={on:true,force:false,dead:6,ease:.25,snap:120,x:NaN,y:NaN,t:0,out:{x:0,y:0}};
+function camFollow(px,py){const F=CAM_FOLLOW,o=F.out,now=performance.now()/1000,dt=Math.min(.1,Math.max(0,now-F.t));F.t=now;
+  if(!F.on||FIXED_VIEW&&!F.force||!(Math.abs(F.x-px)<F.snap&&Math.abs(F.y-py)<F.snap)){F.x=px;F.y=py}
+  else{const dx=px-F.x,dy=py-F.y,d=Math.hypot(dx,dy);if(d>F.dead){const k=1-Math.exp(-dt/F.ease),m=(d-F.dead)*k;F.x+=dx/d*m;F.y+=dy/d*m}}
+  o.x=F.x;o.y=F.y;return o}
 function drawWorld(){
   // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
-  reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){C.x=snapV(clamp(P.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(P.y-VH/2,0,MH*TILE-VH));}
+  reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){const F=camFollow(P.x,P.y);C.x=snapV(clamp(F.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(F.y-VH/2,0,MH*TILE-VH));}
   const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
   // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
   ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)

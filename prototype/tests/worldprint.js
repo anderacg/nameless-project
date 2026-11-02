@@ -394,7 +394,20 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  holdings' walls to their gates, the armies' men by their corridors, the columns' switches held (each of PATHS.holding,
 //  PATHS.corridor and steady with yourChoice off still moves both; all of them off, and MARCH_MOVE.formGiveUp, gives 13f8aeb3 and
 //  bd7d9103 again; formGiveUp alone moves neither). W1-W5, B2 and the sums held. Were W6 c12fc40c, W7 13f8aeb3, W8 bd7d9103)
-const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'3d4ee001',W4:'2bf73f82',W5:'0b1fd5be',W6:'6add129d',W7:'3b34118e',W8:'9a9b8841',B2:'db4c9cc7'};
+// (W7, W8 re-recorded 2026-11-02, on purpose: a marcher in a column keeps pace behind the comrade walking just ahead of him
+//  (march.js marchLead, MARCH_MOVE.follow; the owner: "the unit will walk a bit, then stop, then walk again"), and meeting or
+//  following another army aims at its edge (marchMeetAt, meetEdge), so the lords' columns and parties stand elsewhere. Checked:
+//  MARCH_MOVE.follow null and meetEdge false give W7 3b34118e and W8 9a9b8841 again; the rest held. Were W7 3b34118e, W8 9a9b8841)
+// (W6 re-recorded 2026-11-02, on purpose: the horse drawn as a horse (the owner: "can you fix the mounts sprites? i mean the horse
+//  legs", "make sure to make it look like horse"; gfx/people.js HORSE_ART): its shape, its legs and its gaits, the mounted men and
+//  riders in view at the first two spots. Proof: HORSE_ART.on false gives 6add129d again; W1-W5, W7, W8, B2 and the sums held. Was W6 6add129d)
+// (W6 re-recorded 2026-11-03, on purpose: the horse's legs a px longer, its gathered gallop mended, and a horse's neck and one
+//  head in every frame (the owner: "a second pass for leggier horses", a little longer only, then "dont you think the head seems
+//  weird?", "the head when running is too small", "not too square"; gfx/people.js HORSE_ART.leg 1 and HORSE_ART.sized, the
+//  rider sunk a px into the saddle so he sits where he did): the mounted men and horses in view at the first two spots (36e19f5c
+//  5eb4083d bb7282c6 de574bd3 to 771304cb 50b850b3 a679b1ed 3a8cf2c7; the third spot's held). Proof: HORSE_ART.tall false gives 5d0472ad again; W1-W5, W7,
+//  W8, B2 and the sums held. Was W6 5d0472ad)
+const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'3d4ee001',W4:'2bf73f82',W5:'0b1fd5be',W6:'08300b7e',W7:'b30568ab',W8:'c8a7a09f',B2:'db4c9cc7'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

@@ -57,11 +57,14 @@ function shakeView(bat){
   if(!bat){G.shake=0;return null}// (only a battle shakes: a blow's shake left over must never shake the map)
   if(!shakeOn()||!screenFx())return null;const a=Math.max(B.paused?0:G.shake/2,joltAmp())*(B.world?SHAKE.world:1);if(a<.5)return null;
   return{x:Math.round(Math.sin(now*SHAKE.hz)*a),y:Math.round(Math.cos(now*SHAKE.hz*1.3)*a)}}
-// one falls: the body tips over (drawCorpses), lies, and bleeds; a puff of dust. Its weapon drops beside it
+// one falls: the body tips over (drawCorpses), lies, and bleeds; a puff of dust. Its weapon drops beside it. DEATH_OF: who lies
+// there, for his death (sprites.js deathOf; kept apart from the corpse, whose fields stay as they were); deathFor: his death, kept
+const DEATH_OF=new WeakMap(),DEATH_REC=new WeakMap();
+const deathFor=c=>{let V=DEATH_REC.get(c);if(!V&&DEATH_OF.has(c))DEATH_REC.set(c,V=deathOf(DEATH_OF.get(c)));return V||null};
 function vfxDeath(t,corpse){
   if(!B)return;vfx({k:'fall',x:t.x,y:t.y,life:GORE.fall+.1,corpse});
   if(corpse){const S=corpseOf(t),big=!!(S.beast||S.mount);Object.assign(corpse,{sp:S,face:t.face||1,td:B.t,dry:undead(t),pool:big?rnd(8,11):rnd(6,8.5),seed:Math.random()*4|0,
-    wi:S.wk?[0,1,WEAPON_STEPS-1,WEAPON_STEPS/2,WEAPON_STEPS/2+1][Math.random()*5|0]:0,wx:rnd(3,10),wy:rnd(1,4),skin:PPAL.wood[2]})}
+    wi:S.wk?[0,1,WEAPON_STEPS-1,WEAPON_STEPS/2,WEAPON_STEPS/2+1][Math.random()*5|0]:0,wx:rnd(3,10),wy:rnd(1,4),skin:PPAL.wood[2]});DEATH_OF.set(corpse,t)}
   for(let i=0;i<5;i++){const b=rnd(0,6.283),v=rnd(10,40);vfx({k:'dust',x:t.x,y:t.y-1,vx:Math.cos(b)*v,vy:Math.sin(b)*v*.4,r:rnd(2,3),grow:8,life:rnd(.4,.7),col:'190,176,140'})}}
 /* ---------- the fallen and their blood. A man falls (GORE.fall seconds, turning about his feet), lies where he fell with his
    weapon dropped by him, and bleeds a pool that spreads for GORE.pool seconds; then he is painted into the field's own layer
@@ -91,24 +94,26 @@ function goreLayer(){if(!B.gore){B.gore=new GoreLayer(BW,BH);B.goreOn=BLOOD.on}r
 function splat(x,y){if(!B||!BLOOD.on)return;const X=Math.round(x),Y=Math.round(y),col=GORE.col[Math.random()*3|0],p=[[X,Y]];
   if(Math.random()<.7)p.push([X+(Math.random()<.5?-1:1),Y]);if(Math.random()<.4)p.push([X,Y+(Math.random()<.5?-1:1)]);
   goreLayer().each(X-1,Y-1,X+1,Y+1,g=>{g.fillStyle=col;g.globalAlpha=.55;for(const [a,b] of p)g.fillRect(a,b,1,1);g.globalAlpha=1})}
-// a pool r pixels across (flattened: the ground seen at a slant), ragged at its edge; a few shapes, made once each
+// a pool r pixels across (flattened: the ground seen at a slant), ragged at its edge; a few shapes, made once each. bl: its kind's
+// blood (sprites.js bloodOf: its tones, a fleck), red if none given
 const POOLS={};
-function poolSprite(r,seed){const key=r+'_'+seed;if(POOLS[key])return POOLS[key];const ry=Math.max(1,r*.5),h=seed*2.4+1,H=Math.ceil(ry);
+function poolSprite(r,seed,bl){const red=!bl||bl.key==='red',key=r+'_'+seed+(red?'':'_'+bl.key),C=red?GORE.col:bl.col;if(POOLS[key])return POOLS[key];const ry=Math.max(1,r*.5),h=seed*2.4+1,H=Math.ceil(ry);
   return POOLS[key]=mkc(r*2+3,H*2+3,g=>{for(let y=-H-1;y<=H+1;y++)for(let x=-r-1;x<=r+1;x++){
-    const d=Math.hypot(x/(r+.5),y/(ry+.5)),n=Math.sin(x*1.7+h)*Math.cos(y*2.3+h*.3)*.18;if(d>1+n)continue;g.fillStyle=d<.45?GORE.col[0]:d<.8?GORE.col[1]:GORE.col[2];g.fillRect(x+r+1,y+H+1,1,1)}})}
+    const d=Math.hypot(x/(r+.5),y/(ry+.5)),n=Math.sin(x*1.7+h)*Math.cos(y*2.3+h*.3)*.18;if(d>1+n)continue;g.fillStyle=bl&&bl.fleck&&d<.8&&(x*5+y*3+seed)%7===0?bl.fleck:d<.45?C[0]:d<.8?C[1]:C[2];g.fillRect(x+r+1,y+H+1,1,1)}})}
 // one of the fallen on g: q, how far through his fall (0-1); k, how far his pool has spread (0-1)
 /* how a man falls (the owner, 2026-10-30: "more ways to fall"; drawn only, from where he lies): over (forward, head the way he
    faced), back (over backwards, he lies the other way), knees (to his knees, then over); his weapon flung from his hand as he goes,
    turning, to where it lands (fly: its arc, px high, turns over its flight) */
 const FALLS=['over','back','knees'],FALL_FLY={h:9,turns:1.5};
 const fallOf=c=>c.fall||(c.fall=FALLS[(Math.round(c.x)*7+Math.round(c.y)*3)%3]);
-function drawBody(g,c,q,k){const S=c.sp,X=Math.round(c.x),Y=Math.round(c.y),how=S.beast||S.mount?'over':fallOf(c),bk=how==='back'?-1:1;if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
-  if(k>0&&BLOOD.on&&!c.dry){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed),px=S.beast?0:S.mount?2*c.face:7*c.face*bk,py=S.beast||S.mount?2:3;g.globalAlpha=.85;g.drawImage(p,X+px-(p.width>>1),Y+py-(p.height>>1));g.globalAlpha=1}
+function drawBody(g,c,q,k){const V=DEATHS.on?c.sp?.horse?horseDeathOf(c):deathFor(c):null;if(V&&!V.beast&&!V.horse)return drawFallen(g,c,V,q,k);const S=V||c.sp,X=Math.round(c.x),Y=Math.round(c.y),how=S.beast||S.mount?'over':fallOf(c),bk=how==='back'?-1:1;if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
+  const bl=V?V.blood===undefined?{key:'red'}:V.blood:undefined;// (his kind's blood: sprites.js bloodOf; null none)
+  if(k>0&&BLOOD.on&&(V?bl:!c.dry)){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed,bl),px=S.beast?0:S.mount?2*c.face:7*c.face*bk,py=S.beast||S.mount?2:3;g.globalAlpha=.85;g.drawImage(p,X+px-(p.width>>1),Y+py-(p.height>>1));g.globalAlpha=1}
   g.save();g.translate(X,Y);if(c.face<0)g.scale(-1,1);
   // (a beast, a mount: slumped low where it stood; its rider thrown forward of it)
   if(S.beast){const sp=S.beast,w=sp.width,h=sp.height,x0=-Math.floor(w/2),Q=q*q;
     if(S.down&&q>=.6)g.drawImage(S.down,x0,-h+2);// (down: lying dead, engine/beasts.js)
-    else if(S.how==='over'){g.rotate(Q*Math.PI/2);g.drawImage(sp,x0,-h+2)}
+    else if(S.how==='over'||S.how==='tip'){g.rotate((S.how==='tip'?-1:1)*Q*Math.PI/2);g.drawImage(sp,x0,-h+2)}// (tip: over backwards)
     else if(S.how==='back'){const s=1-1.7*Q;if(s<0)g.translate(0,Math.round((h-2)*s*.5));g.scale(1,Math.abs(s)<.05?.05:s);g.drawImage(sp,x0,-h+2)}
     else{const s=1-(S.how==='melt'?.75:.5)*Q;g.drawImage(sp,x0,Math.round((-h+2)*s),w,Math.max(1,Math.round(h*s)))}}
   else{if(S.mount){if(q<1){const m=S.mount,s=1-.5*q*q;g.drawImage(m,-16,Math.round(1-31*s),32,Math.max(1,Math.round(32*s)))}else g.drawImage(S.down,-16,-19);g.translate(4,7)}
@@ -116,6 +121,21 @@ function drawBody(g,c,q,k){const S=c.sp,X=Math.round(c.x),Y=Math.round(c.y),how=
     if(S.wk){const F=FALL_FLY,w0=q>=1?c.wi:(c.wi+Math.round(q*F.turns*WEAPON_STEPS))%WEAPON_STEPS,w=weaponSprite(S.wk,S.team,c.skin,w0),x=q>=1?c.wx:3+(c.wx-3)*q,y=q>=1?c.wy:-9+(c.wy+9)*q-F.h*Math.sin(Math.PI*q);g.drawImage(w,Math.round(x)-w.R,Math.round(y)-w.R)}// (flung as he falls)
     if(q<1){g.translate(0,1);if(how==='knees'){const a=q<.5?0:((q-.5)/.5)**2,s=q<.5?1-.28*q/.5:.72;g.rotate(a*Math.PI/2);g.scale(1,s)}else g.rotate(bk*q*q*Math.PI/2);g.drawImage(S.stand,-12,-18)}
     else{if(bk<0)g.scale(-1,1);g.drawImage(S.body,-S.ax,1-S.ay)}}
+  g.restore();if(B?.world)g.restore()}
+/* one of the fallen as his death says (sprites.js deathOf): he goes down into it (over: forward; back: over backwards; knees: to
+   his knees, there to stay), his weapon flung the side it drops (wd), his shield and his helm by him once he lies; a rider's mount
+   sinks (on its side or its belly) and he lies clear of it, across it or pinned under it (at: from its middle) */
+function drawFallen(g,c,V,q,k){const X=Math.round(c.x),Y=Math.round(c.y),M=V.mount,at=M?V.at:[0,0],f=c.face;fallOf(c);
+  if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
+  if(k>0&&BLOOD.on&&V.blood){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed,V.blood);g.globalAlpha=.85;g.drawImage(p,X+(at[0]+V.pool[0])*f-(p.width>>1),Y+at[1]+V.pool[1]-(p.height>>1));g.globalAlpha=1}
+  g.save();g.translate(X,Y);if(f<0)g.scale(-1,1);
+  const mount=()=>{if(q<1){const s=1-.5*q*q;g.drawImage(M,-16,Math.round(1-31*s),32,Math.max(1,Math.round(32*s)))}else g.drawImage(V.down,-16,-19)};
+  if(M&&V.ride!=='under')mount();
+  g.save();g.translate(at[0],at[1]);
+  if(V.wk){const F=FALL_FLY,w0=q>=1?c.wi:(c.wi+Math.round(q*F.turns*WEAPON_STEPS))%WEAPON_STEPS,w=weaponSprite(V.wk,V.team,c.skin,w0),wx=c.wx*V.wd,x=q>=1?wx:3+(wx-3)*q,y=q>=1?c.wy:-9+(c.wy+9)*q-F.h*Math.sin(Math.PI*q);g.drawImage(w,Math.round(x)-w.R,Math.round(y)-w.R)}
+  if(q<1&&!(V.fall==='knees'&&q>=.5)){g.translate(0,1);if(V.fall==='knees')g.scale(1,1-.28*q/.5);else g.rotate((V.fall==='back'?-1:1)*q*q*Math.PI/2);g.drawImage(V.stand,-12,-18)}
+  else{if(q>=1)for(const [s,x,y] of V.bits)g.drawImage(s,x-(s.width>>1),y-(s.height>>1));g.drawImage(V.body,-V.ax,1-V.ay)}
+  g.restore();if(M&&V.ride==='under')mount();
   g.restore();if(B?.world)g.restore()}
 // all of them: the settled painted into the layer once (into each of its tiles the body reaches), and the layer drawn; those still
 // falling or bleeding drawn as they are

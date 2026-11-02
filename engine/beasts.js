@@ -8,7 +8,9 @@
 // never Math.random.
 // PX.beast(kind, {v, pose, team}) -> canvas (c.fh: the figure's height over its feet, for the health bar). Poses as the people's:
 // 0-1 standing (breathing), 2-5 walking, 15-18 running, 6-8 the attack (wind up, strike, follow through: a bite, a claw, a slam,
-// a spit), 9-11 the second attack (the dragon's breath; the rest the first again), 19-26 the walk; PX.BEAST_DEAD lying dead.
+// a spit), 9-11 the second attack (the dragon's breath; the rest the first again), 19-26 the walk; PX.BEAST_DEAD lying dead, and
+// PX.BEAST_DEAD + i each of its other deaths (PX.BEAST_DEATHS[kind] names them: a beast on four legs on its side, on its back or
+// slumped forward; a spider on its back, curled or splayed; a slime melted, burst or sagging; ...).
 // team 0 (your side): a collar or a band in the side's blue on a beast that fights for you; a wild one (team 1) wears nothing.
 // PX.beastMap(kind, f): the world map's figure (the dragon flying, its own smaller figure, wings up, then level: f 0-1; the rest
 // their own small figures, PX.MAP_BEASTS, walking: f 0 to PX.MAP_STEPS-1, 0 standing). PX.mapLegs(A, B, f): a figure's walk
@@ -88,7 +90,7 @@
     return m}
 
   /* the frame: what a pose asks of the body. act: idle, walk, run, atk, alt, dead; i: its step */
-  function act(pose){if(pose===DEAD)return['dead',0];if(pose<=1)return['idle',pose];if(pose<=5)return['walk',pose-2];if(pose<=8)return['atk',pose-6];
+  function act(pose){if(pose>=DEAD)return['dead',pose-DEAD];if(pose<=1)return['idle',pose];if(pose<=5)return['walk',pose-2];if(pose<=8)return['atk',pose-6];
     if(pose<=11)return['alt',pose-9];if(pose<=14)return['atk',pose-12];if(pose<=18)return['run',pose-15];return['walk',(pose-19)%4]}
   /* a four-legged gait: legs [far hind, far fore, near hind, near fore] each [dx, lift]; bob (the body's rise, negative up); head
      [dx, dy]; jaw (open 0-2); tail (-1 down .. 1 up); paw (the near fore raised for a blow: 0-2); wing (fold, up, mid, down) */
@@ -138,13 +140,18 @@
       if(H.fang){put(g,sx+sl-2,my,'#efe8d8');put(g,sx+1,my+F.jaw-1,'#d8d0bc')}}
     put(g,sx+sl-1,sy,Dk[3]);// (the nose)
     if(H.ear)H.ear(g,hx,hy,F);
-    put(g,Math.round(hx+(H.ex??1)),Math.round(hy-1+(H.ey||0)),F.dead?C[3]:H.eye||'#e8c050');
+    put(g,Math.round(hx+(H.ex??1)),Math.round(hy-1+(H.ey||0)),F.dead||F.shut?C[3]:H.eye||'#e8c050');
     if(H.more)H.more(g,hx,hy,F,sx,sy);
     return{hx,hy}}
-  /* a beast lying dead, side-on: the body low on the ground, its legs out stiff toward you, the head flat ahead */
-  function quadDead(g,S,o){const F=gait('idle',0),lay={...S,belly:2,back:[S.back[0]-S.belly+2,S.back[1]-S.belly+2],legs:[S.legs[0],S.legs[1],0],fore:S.fore?[S.fore[0],S.fore[1],0]:null,pawUp:0,
-      head:S.head?{...S.head,y:S.head.h/2+1,x:S.head.x+2}:null,wing:S.wing?(g,F,P,far)=>S.wing(g,{...F,wing:'down'},P,far):null};
-    F.dead=true;F.legs=[[-2,0],[2,0],[-3,0],[3,0]];F.tail=-1;return quad(g,lay,F,o)}
+  /* a beast lying dead, side-on (how: which of its deaths, PX.BEAST_DEATHS): side, the body low on the ground, its legs out stiff
+     toward you, the head flat ahead; back, the standing figure turned over, its legs curled in the air, its eye shut; slump, its
+     rump still up on folded hind legs, its chest and head down on the ground; wing (a winged one), on its side, its far wing raised */
+  const QUAD_DEATHS=['side','back','slump'],WING_DEATHS=['side','wing','slump'];
+  function quadDead(g,S,o,how){
+    if(how==='back')return onBack(g,s=>quad(s,{...S,pawUp:0},{...gait('idle',0),legs:[[2,3],[-1,2],[3,3],[-2,2]],tail:1,shut:true},o));
+    const F=gait('idle',0),sl=how==='slump',lay={...S,belly:2,back:[sl?S.back[0]-1:S.back[0]-S.belly+2,S.back[1]-S.belly+(sl?1:2)],legs:[S.legs[0],S.legs[1],0],fore:S.fore?[S.fore[0],S.fore[1],0]:null,pawUp:0,
+      head:S.head?{...S.head,y:S.head.h/2+1,x:S.head.x+(sl?3:2)}:null,wing:S.wing?(g,F,P,far)=>S.wing(g,{...F,wing:'down'},P,far):null};
+    F.dead=true;F.raise=how==='wing';F.legs=sl?[[2,0],[-1,0],[2,0],[-1,0]]:[[-2,0],[2,0],[-3,0],[3,0]];F.tail=-1;return quad(g,lay,F,o)}
   // (one that falls on its back: the standing figure turned over, its legs in the air, lying on the ground)
   function onBack(g,draw){const s=grid(g.w,g.h);draw(s);let lo=0,hi=g.h;for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(at(s,x,y)){hi=Math.min(hi,y);lo=Math.max(lo,y)}
     const Y=g.h-2;for(let y=hi;y<=lo;y++)for(let x=0;x<g.w;x++){const c=at(s,x,y);if(c)putR(g,x,Y-(y-hi),c)}}
@@ -164,7 +171,7 @@
         tail:(g,x,y,F)=>{const m=mask(),up=F.tail,ty=Math.min(g.h-3,y+5-up*3);m.limb(x+1,y,x-3,y+1-up,3,2).limb(x-3,y+1-up,x-5,ty,2,2);shade(g,m,C);put(g,x-5,ty,Lb[0])},
         marks:(g,b,F,o,P)=>{for(const [x,y] of b.pts())if(x>=P.sho&&y>=P.top[1]+3&&b.has(x,y+1))put(g,x,y,Lb[x>P.sho+1?1:2])},
         collar:(g,P)=>{for(let y=P.top[1];y<=P.top[1]+3;y++)put(g,P.sho+2,y,TEAM[y===P.top[1]?0:1])}};
-      return F.dead?quadDead(g,S,o):quad(g,S,F,o)}};
+      return F.dead?quadDead(g,S,o,F.how):quad(g,S,F,o)}};
   // a dire boar: heavy and low, a high bristled shoulder, the head carried low, tusks; brown, dark or grizzled
   KINDS.boar={W:30,H:18,coats:['#5e4636','#4e3e38','#6e5a48'],
     gait(a,i){const F=gait(a,i);if(a==='atk'||a==='alt'){F.head=[[-1,1],[3,-1],[2,0]][i];F.paw=0}return F},
@@ -177,7 +184,7 @@
         // (the bristles: a dark crest along the back, standing up in tufts)
         mane:(g,F,P)=>{for(let x=P.hip-1;x<=P.sho+1;x++){const ty=P.top[0]+Math.round((P.top[1]-P.top[0])*(x-P.hip)/(P.sho-P.hip))-(x>P.sho-4?2:0);put(g,x,ty,Dk[1]);if(x%2===0)put(g,x,ty-1,Dk[2])}},
         collar:(g,P)=>{for(let y=P.top[1];y<=P.top[1]+4;y++)put(g,P.sho+2,y,TEAM[y===P.top[1]?0:1])}};
-      return F.dead?quadDead(g,S,o):quad(g,S,F,o)}};
+      return F.dead?quadDead(g,S,o,F.how):quad(g,S,F,o)}};
   // a cave bear: bigger than a horse in the body, the shoulder hump, thick pillar legs, a short muzzle; it swipes with a paw
   KINDS.bear={W:32,H:22,coats:['#6a4c36','#58463a','#7a6650'],
     draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Dk=R('#3a2c26'),M=R(['#9a7a5a','#8a7462','#a89070'][v]);
@@ -186,7 +193,7 @@
           ear:(g,x,y)=>{put(g,x-2,y-3,C[1]);put(g,x-1,y-3,C[2]);put(g,x-2,y-4,C[2])}},
         tail:(g,x,y)=>{put(g,x,y+1,C[2]);put(g,x+1,y+1,C[1])},
         collar:(g,P)=>{for(let y=P.top[1]-1;y<=P.top[1]+4;y++)put(g,P.sho+2,y,TEAM[y<P.top[1]+1?0:1])}};
-      return F.dead?quadDead(g,S,o):quad(g,S,F,o)}};
+      return F.dead?quadDead(g,S,o,F.how):quad(g,S,F,o)}};
   // a tiger: long and low, big paws, the tail long; striped, a pale belly and cheeks; it pounces with a paw
   KINDS.tiger={W:32,H:18,coats:['#c27a3e','#b06a38','#c89058'],
     draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Lb=R('#e4d8bc'),Dk=R('#3e302e'),st='#3a2c2c';
@@ -198,33 +205,36 @@
         // (the stripes: dark bars down the back and flanks, where the seed puts them)
         marks:(g,b,F,o,P)=>{for(let k=0;k<6;k++){const x0=P.hip-3+k*3+(hash(o.v,k,7)>.5?1:0),n=2+Math.floor(hash(o.v,k,9)*3);for(let j=0;j<n;j++){const x=x0+(j>1?1:0),y=P.top[0]+(k>3?0:0)+j+(x>P.sho-2?-1:0);if(b.has(x,y)&&y<P.bel-1)put(g,x,y,st)}}},
         collar:(g,P)=>{for(let y=P.top[1];y<=P.top[1]+3;y++)put(g,P.sho+2,y,TEAM[y===P.top[1]?0:1])}};
-      return F.dead?quadDead(g,S,o):quad(g,S,F,o)}};
+      return F.dead?quadDead(g,S,o,F.how):quad(g,S,F,o)}};
   // a griffin: a lion's hindquarters, an eagle's head, breast, forelegs and wings (folded up its back, spread to run and to strike)
-  KINDS.griffin={W:32,H:25,coats:['#b8905a','#c09a5a','#8a7a66'],
+  KINDS.griffin={W:32,H:25,coats:['#b8905a','#c09a5a','#8a7a66'],deaths:WING_DEATHS,
     draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Wc=R(['#8a6a48','#7a5e44','#6a6058'][v]),Wh=R('#e2dacb'),Dk=R('#4a3a30'),Yl=R('#c8a04a');
       const S={Y:g.h-2,hip:8,sho:18,back:[9,11],belly:5,ry:4,rh:4,rc:4.5,cx:1,legs:[2,1,1],fore:[1,1,0],foreC:Yl,C,D:Dk,paw:0,pawUp:4,claws:2,
         tail:(g,x,y,F)=>{const m=mask(),up=F.tail;m.limb(x+1,y,x-3,y+2-up,1,1).limb(x-3,y+2-up,x-4,Math.min(g.h-4,y+5-up*2),1,1);flat(g,m,C,2);put(g,x-4,Math.min(g.h-3,y+6-up*2),Dk[1]);put(g,x-5,Math.min(g.h-3,y+6-up*2),Dk[2])},
-        wing:(g,F,P,far)=>wing(g,P.sho-2+(far?2:0),P.top[1]+1-(far?1:0),F.dead?'down':F.wing,[12,11],Wc,{far}),
+        wing:(g,F,P,far)=>wing(g,P.sho-2+(far?2:0),P.top[1]+1-(far?1:0),F.dead?(F.raise&&far?'mid':'down'):F.wing,[12,11],Wc,{far}),
         neck:(g,F,P,o)=>{const hx=P.sho+(F.dead?6:4)+F.head[0]+P.lx,hy=F.dead?P.Y-3:P.Y-15+P.b+F.head[1],n=mask();n.poly([[P.sho-3,P.top[1]],[hx-2,hy-2],[hx+2,hy+1],[P.sho+3,P.bel]]);shade(g,n,Wh,{cx:P.sho,cy:hy,rx:5,ry:7});
           const hd=mask().ell(hx,hy,2.6,2.4);shade(g,hd,Wh);for(const [x,y] of [[hx-3,hy-2],[hx-4,hy-1],[hx-4,hy-3]])put(g,x,y,Wh[1]);
           const bx=Math.round(hx+2),by=Math.round(hy-1);put(g,bx,by,Yl[0]);put(g,bx+1,by,Yl[1]);put(g,bx+2,by+1,Yl[2]);put(g,bx+1,by+1,Yl[2]);
           if(F.jaw){put(g,bx,by+1,'#3a2430');put(g,bx,by+2,Yl[2]);put(g,bx+1,by+2,Yl[3])}else put(g,bx,by+1,Yl[1]);
-          put(g,Math.round(hx),by,F.dead?Wh[3]:'#c88a30');return{hx,hy}},
+          put(g,Math.round(hx),by,F.dead||F.shut?Wh[3]:'#c88a30');return{hx,hy}},
         collar:(g,P,h)=>{for(let y=Math.round(h.hy)+2;y<=Math.round(h.hy)+4;y++)put(g,Math.round(h.hx)-1+(y-Math.round(h.hy)-2),y,TEAM[1])}};
-      return F.dead?quadDead(g,S,o):quad(g,S,F,o)}};
+      return F.dead?quadDead(g,S,o,F.how):quad(g,S,F,o)}};
 
   // a giant spider: wide and low, eight long legs arched over a round body; it rears and strikes, or spits its web
   KINDS.spider={W:32,H:19,coats:['#3e3646','#4a3c32','#3a4238'],
-    draw(g,F,o){if(F.dead)return onBack(g,s=>this.body(s,{a:'idle',i:0},o,true));this.body(g,F,o)},
+    // (dead, PX.BEAST_DEATHS: on its back, legs up; curled, its legs drawn in over it; splayed flat, its legs out on the ground)
+    deaths:['back','curl','splay'],
+    draw(g,F,o){if(F.dead&&!F.i)return onBack(g,s=>this.body(s,{a:'idle',i:0},o,true));this.body(g,F,o)},
     body(g,F,o,dead){const v=o.v%3,C=R(this.coats[v]),Y=g.h-2,a=F.a,i=F.i,b=a==='walk'||a==='run'?(i%2?-1:0):0,rear=a==='atk'||a==='alt'?[1,3,1][i]:0;
-      const cx=19,cy=Y-4+b-rear,ax=10,ay=Y-6+b;
+      const dv=F.dead?F.i:0,cx=19,cy=dv?Y-2-(dv===1?1:0):Y-4+b-rear,ax=10,ay=dv?Y-3-(dv===1?1:0):Y-6+b;
       // (the legs: four a side, far and near, each up to a knee high over the body and down to its foot, the hind two back and the
       // fore two ahead; walking, they lift in turn; rearing, the first pair up)
       const leg=(k,near)=>{const sx=cx-2+k,sy=cy,f=near?0:1,step=a==='walk'||a==='run'?((k+(near?1:0)+i)%2?1:-1)*(a==='run'?2:1):0,lift=step>0?1:0,
-          raise=k===3&&rear?rear+2:0,kx=sx+[-6,-3,3,6][k]+f,ky=Y-(near?10:11)-raise+b,fx=sx+[-12,-7,4,7][k]+f+step,fy=Y-lift-raise*2,m=mask();
+          raise=k===3&&rear?rear+2:0,kx=sx+(dv===1?[-4,-2,1,3]:[-6,-3,3,6])[k]+f,ky=dv===1?cy-5-f:dv===2?Y-4-f:Y-(near?10:11)-raise+b,
+          fx=sx+(dv===1?[-2,-1,0,1]:dv===2?[-14,-9,5,8]:[-12,-7,4,7])[k]+f+step,fy=dv===1?cy-2:dv===2?Y:Y-lift-raise*2,m=mask();
         m.limb(sx,sy,kx,ky,1,1).limb(kx,ky,fx,fy,1,1);flat(g,m,C,near?1:3,near?2:3);if(near)put(g,kx,ky,C[0])};
       for(let k=0;k<4;k++)leg(k,false);
-      const ab=mask().ell(ax,ay,6,4.5),ce=mask().ell(cx,cy,3.5,2.6);shade(g,ab,C);shade(g,ce,C);
+      const ab=mask().ell(ax,ay,6,dv?3.2:4.5),ce=mask().ell(cx,cy,3.5,dv?2:2.6);shade(g,ab,C);shade(g,ce,C);
       // (its mark: an hourglass in red on the abdomen; its eyes, a cluster at the front; fangs, out when it strikes)
       const mk=['#8a3a44','#a8823a','#7a3a3a'][v];put(g,ax-1,ay-3,mk);put(g,ax,ay-2,mk);put(g,ax-1,ay-1,mk);put(g,ax,ay,mk);put(g,ax-1,ay-2,mk);
       put(g,cx+2,cy-2,'#c8505a');put(g,cx+3,cy-1,'#c8505a');put(g,cx+1,cy-2,'#9a3a44');
@@ -233,23 +243,32 @@
       if(o.team===0){put(g,ax+2,ay-4,TEAM[0]);put(g,ax+3,ay-4,TEAM[1]);put(g,ax+3,ay-3,TEAM[2])}}};
   // a giant scorpion: low and segmented, two claws held out, its tail curled over the back to sting
   KINDS.scorpion={W:30,H:21,coats:['#a87a4a','#8a6a4a','#b4925e'],
-    draw(g,F,o){if(F.dead)return onBack(g,s=>this.body(s,{a:'idle',i:0},o));this.body(g,F,o)},
-    body(g,F,o){const v=o.v%3,C=R(this.coats[v]),Dk=R('#4a3428'),Y=g.h-2,a=F.a,i=F.i,b=a==='walk'||a==='run'?(i%2?-1:0):0,st=a==='atk'||a==='alt'?i:-1;
+    // (dead, PX.BEAST_DEATHS: on its back, legs up; limp, its tail flat on the ground behind, its claws down; curled, its tail
+    // coiled tight over its back, its claws drawn in)
+    deaths:['back','limp','curl'],
+    draw(g,F,o){if(F.dead&&!F.i)return onBack(g,s=>this.body(s,{a:'idle',i:0},o));this.body(g,F,o)},
+    body(g,F,o){const v=o.v%3,C=R(this.coats[v]),Dk=R('#4a3428'),Y=g.h-2,a=F.a,i=F.i,b=a==='walk'||a==='run'?(i%2?-1:0):0,st=a==='atk'||a==='alt'?i:-1,dv=F.dead?F.i:0;
       const leg=(k,near)=>{const x=9+k*2.5,step=a==='walk'||a==='run'?((k+i+(near?1:0))%2?1:-1):0,m=mask();m.limb(x,Y-3+b,x+(k<2?-2:1)+step,Y-4+b,1,1).limb(x+(k<2?-2:1)+step,Y-4+b,x+(k<2?-3:2)+step,Y-(step>0?1:0),1,1);flat(g,m,C,near?2:3,3)};
       for(let k=0;k<4;k++)leg(k,false);
       // the tail: five segments from the rump up over the back to the sting; striking, it whips forward over the head
-      const T=st<0?[[8,Y-4],[5,Y-8],[6,Y-12],[10,Y-14],[13,Y-12]]:[[[8,Y-4],[4,Y-8],[4,Y-13],[8,Y-16],[11,Y-15]],[[8,Y-4],[6,Y-9],[10,Y-14],[15,Y-14],[19,Y-11]],[[8,Y-4],[5,Y-9],[8,Y-13],[12,Y-14],[16,Y-12]]][st];
+      const T=dv===1?[[9,Y-3],[7,Y-5],[4,Y-5],[3,Y-3],[5,Y-1]]:dv===2?[[8,Y-4],[5,Y-7],[7,Y-10],[11,Y-10],[12,Y-7]]:st<0?[[8,Y-4],[5,Y-8],[6,Y-12],[10,Y-14],[13,Y-12]]:[[[8,Y-4],[4,Y-8],[4,Y-13],[8,Y-16],[11,Y-15]],[[8,Y-4],[6,Y-9],[10,Y-14],[15,Y-14],[19,Y-11]],[[8,Y-4],[5,Y-9],[8,Y-13],[12,Y-14],[16,Y-12]]][st];
       const tp=T.map(([x,y],k)=>[x,y+b,[2.2,2,1.8,1.6,1.2][k]]);const tm=tube(g,tp,C);for(const [x,y] of tm.pts())if((x*3+y*2)%5===0&&tm.has(x,y-1)&&tm.has(x+1,y))put(g,x,y,C[2]);
       const [sx,sy]=T[4];put(g,sx+1,sy+1+b,Dk[1]);put(g,sx+2,sy+2+b,Dk[2]);put(g,sx+1,sy+2+b,Dk[2]);
       const body=mask().ell(13,Y-3.5+b,6.5,2.6).ell(18,Y-4+b,3,2.2);shade(g,body,C);for(let x=9;x<=18;x+=3)for(let y=Y-6+b;y<=Y-2+b;y++)if(body.has(x,y)&&body.has(x,y-1))put(g,x,y,C[2]);
       // the claws: an arm forward to the pincer, its fingers open as it strikes
-      const cl=(near)=>{const ox=near?0:-1,oy=near?0:-1,px=24+(st===1?1:0)+ox,py=Y-5+b+oy,m=mask();m.limb(19,Y-4+b+oy,21+ox,Y-6+b+oy,1,1).limb(21+ox,Y-6+b+oy,px-1,py,1,1);flat(g,m,C,near?1:3,near?2:3);
+      const cl=(near)=>{const ox=near?0:-1,oy=near?0:-1,px=(dv===2?22:dv===1?25:24+(st===1?1:0))+ox,py=(dv===1?Y-2:dv===2?Y-4:Y-5+b)+oy,m=mask();m.limb(19,Y-4+b+oy,21+ox,Y-6+b+oy,1,1).limb(21+ox,Y-6+b+oy,px-1,py,1,1);flat(g,m,C,near?1:3,near?2:3);
         const p=mask().ell(px+.5,py+.5,1.8,1.4);shade(g,p,C,{dk:near?0:1});put(g,px+2,py-1,C[near?1:3]);put(g,px+3,py-1,C[near?2:3]);put(g,px+2,py+1,C[near?2:3]);if(st===1||st===0)put(g,px+2,py,'#3a2430')};
       cl(false);for(let k=0;k<4;k++)leg(k,true);cl(true);put(g,20,Y-5+b,'#2c2430');
       if(o.team===0){put(g,12,Y-6+b,TEAM[0]);put(g,13,Y-6+b,TEAM[1]);put(g,14,Y-6+b,TEAM[1])}}};
   // a bog slime: a blob that squashes and stretches as it hops; it rears up and spits
-  KINDS.slime={W:16,H:16,coats:['#6a9e4a','#5e9a72','#8e9e4a'],
+  // (dead, PX.BEAST_DEATHS: melted flat; burst, a thin splash and its drops thrown round it; sagging, a lump gone soft, its sides
+  // run out, its eyes shut)
+  KINDS.slime={W:16,H:16,coats:['#6a9e4a','#5e9a72','#8e9e4a'],deaths:['melt','burst','sag'],
     draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Y=g.h-2,a=F.a,i=F.i;
+      if(F.dead&&i===1){const m=mask().ell(8,Y-.2,7,1.1);shade(g,m,C);put(g,7,Y,C[2]);put(g,9,Y-1,C[2]);put(g,4,Y-1,C[0]);
+        for(const [x,y] of [[2,Y-3],[13,Y-3],[6,Y-4],[11,Y-5],[4,Y-6]])put(g,x,y,C[y<Y-4?0:1]);return}
+      if(F.dead&&i===2){const m=mask().ell(8,Y-1.4,5.4,2.6).ell(8,Y-.4,7,1.2);for(const [x,y] of m.pts())if(y>Y)m.s.delete(K(x,y));shade(g,m,C);
+        put(g,5,Y-3,'#eef4d8');put(g,6,Y-3,C[0]);put(g,9,Y-2,'#2c2430');put(g,10,Y-2,'#2c2430');put(g,12,Y-2,'#2c2430');put(g,7,Y-1,C[2]);return}
       if(F.dead){const m=mask().ell(8,Y-.5,7,1.6);shade(g,m,C);put(g,5,Y-1,C[0]);return}
       const sq=a==='idle'?[0,.5][i]:a==='walk'||a==='run'?[0,-1,.5,-1][i]:[-1.5,1,.5][i],up=a==='run'&&i%2?2:0,rx=5.6+sq*.5,ry=4.5-sq*.7,cx=8+(a==='atk'||a==='alt'?[-.5,.5,0][i]:0);
       const m=mask().ell(cx,Y-ry+.5-up,rx,ry);for(const [x,y] of m.pts())if(y>Y)m.s.delete(K(x,y));if(!up)for(const [x,y] of m.pts())if(y===Y-1)m.add(x,Y);shade(g,m,C);
@@ -261,7 +280,10 @@
       if(o.team===0){put(g,Math.round(cx),Math.round(Y-ry*2-up)+1,TEAM[1]);put(g,Math.round(cx)+1,Math.round(Y-ry*2-up)+1,TEAM[2])}}};
   // a troll: twice a man's height, hunched, long-armed, a small head thrust forward with a big nose and tusks; a club it slams down
   KINDS.troll={W:32,H:32,coats:['#6c7c5e','#6e7066','#5e7268'],
-    draw(g,F,o){if(F.dead){const s=grid(g.w,g.h);this.body(s,{a:'idle',i:0,dead:true},o);const r=turn(s);let lo=0,x0=1e9,x1=-1;for(let y=0;y<r.h;y++)for(let x=0;x<r.w;x++)if(at(r,x,y)){lo=Math.max(lo,y);x0=Math.min(x0,x);x1=Math.max(x1,x)}
+    // (dead, PX.BEAST_DEATHS: over on its face, turned a quarter; on its back, the other way; face down, its club arm flung out
+    // past its head)
+    deaths:['over','back','flung'],
+    draw(g,F,o){if(F.dead){const s=grid(g.w,g.h);this.body(s,{a:F.i===2?'atk':'idle',i:0,dead:true},o);let r=turn(s);if(F.i===1)r=turn(turn(r));let lo=0,x0=1e9,x1=-1;for(let y=0;y<r.h;y++)for(let x=0;x<r.w;x++)if(at(r,x,y)){lo=Math.max(lo,y);x0=Math.min(x0,x);x1=Math.max(x1,x)}
         for(let y=0;y<r.h;y++)for(let x=0;x<r.w;x++){const c=at(r,x,y);if(c)putR(g,x-x0+PAD+((this.W-(x1-x0+1))>>1),y+(g.h-2-lo),c)}snap(g,g.h-2);return}this.body(g,F,o)},
     body(g,F,o){const v=o.v%3,C=R(this.coats[v]),Lc=R('#6a4e36'),Wd=R('#7a5a3a'),Y=g.h-2,a=F.a,i=F.i,mv=a==='walk'||a==='run',b=mv&&i%2?-1:0,
         st=a==='atk'||a==='alt'?i:-1,sw=mv?[2,0,-2,0][i]*(a==='run'?1.5:1):0;
@@ -287,15 +309,18 @@
       shade(g,am,C);put(g,hn[0],hn[1],C[2]);
       if(o.team===0){put(g,el[0],el[1]-1,TEAM[0]);put(g,el[0]+1,el[1]-1,TEAM[1]);put(g,el[0],el[1],TEAM[1]);put(g,el[0]+1,el[1],TEAM[2])}}};
   // a sand wyrm: a great serpent risen out of its coils, its neck reared, a frilled head; it strikes down with its jaws
-  KINDS.wyrm={W:32,H:32,coats:['#a8804e','#9a7650','#b08c5e'],
+  // (dead, PX.BEAST_DEATHS: stretched flat; rolled belly up in a wave, its pale belly to the sky; arched, its back humped as it
+  // died, its head down on the ground ahead)
+  KINDS.wyrm={W:32,H:32,coats:['#a8804e','#9a7650','#b08c5e'],deaths:['flat','belly','arch'],
     draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Lb=R('#d8c08a'),Dk=R('#4e3a2a'),Y=g.h-2,a=F.a,i=F.i,dead=!!F.dead,mv=a==='walk'||a==='run';
       const w=mv?(a==='run'?2:1)*(i%2?1:-1):0,sw=a==='idle'&&i?1:0,st=a==='atk'||a==='alt'?i:-1;
       const hd=dead?[26,Y-2]:st<0?[23,Y-23+sw]:[[19,Y-25],[26,Y-13],[25,Y-17]][st],nk=dead?[19,Y-3]:st<0?[18,Y-17+sw]:[[15,Y-17],[21,Y-14],[20,Y-15]][st];
       const P=[[2,Y-1,.8],[6,Y-2+w,1.8],[11,Y-3-w,3],[16,Y-4+w,4],[20,Y-6,4.4],[nk[0],nk[1],3.8],[hd[0]-3,hd[1]+1,3]];
-      if(dead)P.splice(4,1,[20,Y-3,3.4]);
-      const tm=tube(g,P,C,{L:Lb,belly:[1,1]});for(const [x,y] of tm.pts())if((x+2*y)%4===0&&tm.has(x+1,y)&&tm.has(x,y-1)&&at(g,x+OX,y)!==Lb[1]&&at(g,x+OX,y)!==Lb[2])put(g,x,y,C[2]);
+      if(dead)P.splice(4,1,[20,Y-3,3.4]);const up=dead&&i===1;
+      if(up)P.splice(1,4,[6,Y-3,1.8],[11,Y-2,3],[15,Y-4,3.4],[20,Y-2,3.4]);if(dead&&i===2)P.splice(1,4,[6,Y-2,1.8],[10,Y-5,3],[14,Y-8,3.6],[19,Y-6,3.6]);
+      const tm=tube(g,P,C,{L:Lb,belly:up?[0,-1]:[1,1]});for(const [x,y] of tm.pts())if((x+2*y)%4===0&&tm.has(x+1,y)&&tm.has(x,y-1)&&at(g,x+OX,y)!==Lb[1]&&at(g,x+OX,y)!==Lb[2])put(g,x,y,C[2]);
       // (spines down its back: dark, on the side away from the light)
-      for(let k=2;k<P.length-1;k++){const [x,y,r]=P[k];put(g,x-Math.round(r*.5),y-Math.round(r)-1,Dk[1]);if(k>3)put(g,x-Math.round(r)-1,y-Math.round(r*.5),Dk[2])}
+      for(let k=2;k<P.length-1&&!up;k++){const [x,y,r]=P[k];put(g,x-Math.round(r*.5),y-Math.round(r)-1,Dk[1]);if(k>3)put(g,x-Math.round(r)-1,y-Math.round(r*.5),Dk[2])}
       const [hx,hy]=hd,hm=mask().ell(hx-1,hy,4.2,3).rect(hx,hy-1,5,3);shade(g,hm,C);
       const jaw=st===1?2:st===2?1:0;if(jaw){for(let x=hx;x<hx+4;x++){put(g,x,hy+1,'#3a2430');if(jaw>1)put(g,x,hy+2,'#6a3038')}for(let x=hx-1;x<hx+3;x++)put(g,x,hy+1+jaw,Lb[2]);put(g,hx+3,hy+1,'#efe8d8');put(g,hx+1,hy+jaw,'#efe8d8')}
       put(g,hx+3,hy-1,Dk[2]);put(g,hx,hy-1,dead?C[3]:'#e06048');
@@ -314,7 +339,7 @@
     if(fly){F={...F,legs:[[-2*k,2*k],[-k,2*k],[-2*k,2*k],[-k,2*k]],bob:-k}}
     S.tail=(g,x,y,F,P)=>{const up=F.tail*k,T=[[x+2,y+1,D.tw[0]],...D.tl.map(([dx,dy],j)=>[x+dx,P.Y+dy-up*(j+1)*.5+(F.dead?3:0),D.tw[j+1]])];tube(g,T,C,{L:Lb,belly:[0,1]});
       const [tx,ty]=T[T.length-1];for(const [dx,dy] of [[-1,0],[-1,-1],[-1,1]])put(g,tx+dx,ty+dy,Dk[1])};
-    S.wing=(g,F,P,far)=>{const mode=F.dead?'down':fly?(F.i%2?'mid':'up'):breath?['up','mid','mid'][F.i]:F.wing;wing(g,P.sho-3*k+(far?3*k:0),P.top[1]+k-(far?2*k:0),mode,D.ws,C,{far,membrane:Mb,claw:bone})};
+    S.wing=(g,F,P,far)=>{const mode=F.dead?(F.raise&&far?'mid':'down'):fly?(F.i%2?'mid':'up'):breath?['up','mid','mid'][F.i]:F.wing;wing(g,P.sho-3*k+(far?3*k:0),P.top[1]+k-(far?2*k:0),mode,D.ws,C,{far,membrane:Mb,claw:bone})};
     S.marks=(g,b,F,o,P)=>{for(let x=P.hip-3*k;x<=P.sho;x+=2*k){const ty=P.top[0]+Math.round((P.top[1]-P.top[0])*(x-P.hip)/(P.sho-P.hip))-1;put(g,x,ty,Dk[1]);if(k>1){put(g,x+1,ty,Dk[2]);put(g,x,ty-1,Dk[2])}}};
     S.neck=(g,F,P)=>{const hh=F.dead?[P.sho+D.hd[0]+2*k,P.Y-D.hh/2-1]:breath?[[P.sho+D.hd[0]-3*k,P.Y-D.hd[1]-3*k],[P.sho+D.hd[0]-k,P.Y-7*k],[P.sho+D.hd[0]-k,P.Y-8*k]][F.i]:[P.sho+D.hd[0]+Math.min(1,F.head[0])*k,P.Y-D.hd[1]+F.head[1]*k+P.b];
       const [hx,hy]=hh,mid=F.dead?[P.sho+(hx-P.sho)*.5,P.Y-4*k]:breath&&F.i?[P.sho+5*k,P.top[1]-k]:[P.sho+3*k,Math.min(P.top[1]-5*k,hy+4*k)];
@@ -328,26 +353,28 @@
         if(breath&&F.i>0){const fx=sx+sl,fy=my+(jaw>>1);for(let j=0;j<Math.min((F.i===1?4:2)*k,D.W-3-fx);j++){put(g,fx+j,fy,j<2?'#ffe8a0':'#f0a040');if(j>1)put(g,fx+j,fy-1+(j%2),'#e86a30')}}}
       put(g,sx+sl-1,Math.round(hy-sd/2+k*.5),Dk[3]);
       // (horns swept back, a brow, a burning eye)
-      put(g,Math.round(hx+k),Math.round(hy-1),F.dead?C[3]:'#f0d048');if(k>1){put(g,Math.round(hx+k+1),Math.round(hy-1),F.dead?C[3]:'#e8a030');put(g,Math.round(hx+k-1),Math.round(hy-2),C[3]);put(g,Math.round(hx+k),Math.round(hy-2),C[3])}
+      put(g,Math.round(hx+k),Math.round(hy-1),F.dead||F.shut?C[3]:'#f0d048');if(k>1){put(g,Math.round(hx+k+1),Math.round(hy-1),F.dead||F.shut?C[3]:'#e8a030');put(g,Math.round(hx+k-1),Math.round(hy-2),C[3]);put(g,Math.round(hx+k),Math.round(hy-2),C[3])}
       return{hx,hy}};
     S.collar=(g,P)=>{for(let y=P.top[1]+k;y<=P.bel;y++)for(let j=0;j<k;j++)put(g,P.sho-2*k+j,y,TEAM[y===P.top[1]+k?0:1+(j>0?1:0)])};
-    return F.dead?quadDead(g,S,o):quad(g,S,F,o)}
-  KINDS.dragon={W:64,H:60,alt:true,draw(g,F,o){return dragon(g,F,o,DRAGON.big)}};
+    return F.dead?quadDead(g,S,o,F.how):quad(g,S,F,o)}
+  KINDS.dragon={W:64,H:60,alt:true,deaths:WING_DEATHS,draw(g,F,o){return dragon(g,F,o,DRAGON.big)}};
   const DRAKE={W:32,H:30,draw(g,F,o){return dragon(g,F,o,DRAGON.small)}};
 
   /* ---------- the figure ---------- */
   const fhOf={};
   PX.BEAST_KINDS=Object.keys(KINDS);
+  // (each kind's deaths, its dead poses PX.BEAST_DEAD + i: its own, or a four-legged beast's, QUAD_DEATHS)
+  PX.BEAST_DEATHS=Object.fromEntries(PX.BEAST_KINDS.map(k=>[k,KINDS[k].deaths||QUAD_DEATHS]));
   // (drawn with room round it (PAD), outlined, then cut to the kind's canvas: K.W x K.H, its x shifted by K.dx; PX._beastFit says
   // how much room each kind's poses take)
   const PAD=16;
   function raw(K,o,fly){const pose=o.pose||0,[a,i]=act(pose),g=grid(K.W+2*PAD,K.H+PAD),v=(o.v||0)>>>0;
-    const F=a==='dead'?{a,i,dead:true}:(K.gait||gait)(a==='alt'&&!K.alt?'atk':a,i);if(a==='alt'&&K.alt)F.a='alt';
+    const F=a==='dead'?{a,i,dead:true,how:(K.deaths||QUAD_DEATHS)[i]}:(K.gait||gait)(a==='alt'&&!K.alt?'atk':a,i);if(a==='alt'&&K.alt)F.a='alt';
     OX=PAD+(K.dx||0);try{K.draw(g,F,{v,team:o.team,fly})}finally{OX=0}
     // (nothing below the ground: the bottom row is the outline's)
     g.p.fill(null,(g.h-1)*g.w);outline(g);return g}
   function figure(K,kind,o,fly){const r=raw(K,o,fly),g=grid(K.W,K.H);for(let y=0;y<K.H;y++)for(let x=0;x<K.W;x++)g.p[y*K.W+x]=r.p[(y+PAD)*r.w+x+PAD];return g}
-  PX._beastFit=kind=>{const K=kind==='drake'?DRAKE:KINDS[kind];let a=1e9,b=1e9,c=-1e9,pa,pb,pc;for(const pose of kind==='drake'?[15,16]:[...PX.BEAST_POSES,DEAD])for(const v of [0,1,2])for(const team of [0,1]){const r=raw(K,{pose,v,team},kind==='drake');
+  PX._beastFit=kind=>{const K=kind==='drake'?DRAKE:KINDS[kind];let a=1e9,b=1e9,c=-1e9,pa,pb,pc;for(const pose of kind==='drake'?[15,16]:[...PX.BEAST_POSES,DEAD,DEAD+1,DEAD+2])for(const v of [0,1,2])for(const team of [0,1]){const r=raw(K,{pose,v,team},kind==='drake');
     for(let y=0;y<r.h;y++)for(let x=0;x<r.w;x++)if(r.p[y*r.w+x]){if(x-PAD<a)a=x-PAD,pa=pose;if(x-PAD>c)c=x-PAD,pc=pose;if(y-PAD<b)b=y-PAD,pb=pose}}return{kind,W:K.W,H:K.H,left:a+'@'+pa,right:c+'@'+pc,top:b+'@'+pb,ok:a>=0&&c<K.W&&b>=0}};
   PX.beast=(kind,o)=>{o=o||{};const K=KINDS[kind];if(!K)return null;const c=canvas(figure(K,kind,o));
     if(fhOf[kind]==null){const g0=figure(K,kind,{v:0,team:1,pose:0});let t=g0.h;for(let y=0;y<g0.h&&t===g0.h;y++)for(let x=0;x<g0.w;x++)if(at(g0,x,y)){t=y;break}fhOf[kind]=g0.h-t}

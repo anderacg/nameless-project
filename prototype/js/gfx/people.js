@@ -265,7 +265,8 @@ const WPN={sword:[6,'steel','guard'],great:[9,'steel','guard'],dagger:[4,'steel'
   hoe:[10,'wood','hoe'],pick:[8,'wood','pick'],crook:[12,'wood','crook'],rod:[13,'wood','rod']};// (workers' tools: the world map, folk.js)
 const SWING={swing:[[-3,-4,-125],[1,-1,-5],[0,1,55]],thrust:[[-2,-1,-8],[2,-1,0],[0,-1,0]],overhead:[[-2,-6,-95],[0,-5,-35],[1,0,70]]};
 const POLE_SWING=[[-1,-2,-40],[1,-1,-2],[0,0,25]],WPN_REST={lance:-62,rod:-55,hoe:-75,pick:-75};
-// mounts: a horse (and its kin) seen from the side in a 32×32 cell, a rider's lower body hidden in it; walk 0-3 gallops
+// mounts: a horse (and its kin) seen from the side in a 32×32 cell, a rider's lower body hidden in it; walk 0-3 gallops (the
+// horse and the stag are HORSE_ART's now, below; this the ram's, and the horse's with HORSE_ART.on false)
 const MOUNT_T=[
   '..........................yy....',
   '.........................yHHy...',
@@ -291,8 +292,153 @@ const WOLF_T=[
   '........HHHHHHHHHHHHHHHHd.......',
   '........dHHHHHHHHHHHHHdd........',
   '.........dddddddddddddd.........'];
+/* the horse (the owner, 2026-11-02: "can you fix the mounts sprites? i mean the horse legs", then "make sure to make it look like
+   horse"; doc/references' gallops: silhouette first, the body high in the suspension and low at the landing, the tail a frame
+   behind the hip, the rider a frame behind the horse): a horse's shape, an arched neck and a wedge head, a deep chest, rounded
+   quarters, the tail from the croup, and legs that bend (a forearm, knee and cannon before; a gaskin and a hock angled back
+   behind; a fetlock, a hoof), the near pair lighter. body: its two shapes, standing and running (the neck stretched out), rows
+   from y0-2; tails: cell px at rest; each frame (idle 0-1, a four-beat walk 0-3: far hind, far fore, near hind, near fore
+   lifted in turn; a gallop 4-7: reaching, the push off, gathered off the ground, the hind landing): bob the body's rise, head
+   the head's against it (x from headX, its rows to headY), the tail's shape, rider his seat against the saddle (a frame
+   behind), and the legs (far hind, near hind, far fore, near fore) [hip dx, knee or hock dx, h, fetlock dx, h, hoof dx, h] from
+   hips, h px above the ground. A horse and a stag (its antlers on its ears: ears, from the old head's); a ram and a wolf keep
+   their own. down: the fallen horse, its legs' joints [x, y] from its top. on false: the old horse, pixel for pixel.
+   Two builds (the owner, 2026-11-03: "a second pass for leggier horses", then a little longer only, +1): first, the first
+   pass's (tall false; y0: the body's row; top: its rows' first against y0; ground: the hooves' row from y0; seat: the rider's
+   row against it); sized, the same horse on legs leg px longer, with its own gallop and, from the owner's photos ("the head when
+   running is too small", "not too square"), a thick neck rising at about 45° from the shoulders (lower and forward at the
+   gallop), a maned crest, and one head in every frame: head, a long wedge hung from the poll (two ears pricked forward, the eye
+   high, a rounded jowl over a dark jaw, narrowing to a rounded muzzle and its nostril), its top left at poll [x, y from y0] by
+   shape, moved by the frame's head (horseBuild) */
+const HORSE_ART={on:true,tall:true,hoof:'#3d3f4b',
+  leg:1,sized:{sink:1,top:-3,headX:32,headY:0,ears:{stand:[-3,-4],run:[-2,-2]},poll:{stand:[23,-3],run:[24,-1]},head:[
+    '.yy....',
+    '.mHh...',
+    'HHkHh..',
+    'HHHHh..',
+    '.dHHHh.',
+    '...dHh.',
+    '....dHk'],
+  body:{stand:[
+    '',
+    '',
+    '.....................mm.........',
+    '....................mmH.........',
+    '...................mHHH.........',
+    '..................mHHHHd........',
+    '.................mHHHHHd........',
+    '................mHHHHHHd........',
+    '.......hhhh....mHHHHHHHd........',
+    '......hHHHhhhhhhHHHHHHHHd.......',
+    '......hHHHHHHHHHHHHHHHHd........',
+    '......HHHHHHHHHHHHHHHHd.........',
+    '......dHHHddddddddHHdd..........'],run:[
+    '',
+    '',
+    '',
+    '......................mmm.......',
+    '...................mmmHH........',
+    '.................mmHHHHH........',
+    '................mHHHHHHd........',
+    '................mHHHHHHd........',
+    '.......hhhh....mHHHHHHHd........',
+    '......hHHHhhhhhhHHHHHHHHd.......',
+    '......hHHHHHHHHHHHHHHHHd........',
+    '......HHHHHHHHHHHHHHHHd.........',
+    '......dHHHddddddddHHdd..........']},
+  gallop:[
+    {bob:0,body:'run',head:-1,tail:'up',rider:-1,legs:[[-1,-4,4,-6,3,-7,3],[0,-3,3,-5,1,-6,0],[2,5,4,7,3,8,2],[1,2,3,4,1,5,0]]},
+    {bob:-1,body:'run',head:0,tail:'mid',rider:1,legs:[[0,-2,4,-1,2,0,2],[1,-2,4,-1,2,0,2],[0,-1,3,-2,2,-3,2],[0,-1,3,-2,1,-3,0]]},
+    {bob:-2,body:'run',head:1,tail:'low',rider:1,legs:[[0,-2,5,1,2,3,1],[1,-1,5,3,2,5,1],[1,2,7,-1,6,-3,5],[0,2,6,0,5,-2,4]]},
+    {bob:-1,body:'run',head:0,tail:'mid',rider:-1,legs:[[0,-2,3,-1,1,-1,0],[1,-1,3,2,1,3,0],[1,3,4,3,2,2,2],[1,3,4,4,2,5,2]]}]},
+  first:{y0:14,ground:16,seat:0,top:-2,hips:[12,10,18,20],thick:2,headX:23,headY:6,ears:{stand:[-4,-2],run:[-2,0]},
+  body:{stand:[
+    '.....................y.y........',
+    '....................mHhH........',
+    '...................mHHHhH.......',
+    '...................mHHHkHh......',
+    '..................mHHHHHHHh.....',
+    '..................mHHH..HHHh....',
+    '.................mHHHH...HHHh...',
+    '.......hhhh.....mHHHHH....dd....',
+    '......hHHHhhhhhhHHHHHH..........',
+    '......hHHHHHHHHHHHHHHHd.........',
+    '......HHHHHHHHHHHHHHHHd.........',
+    '......dHHHddddddddHHdd..........'],run:[
+    '',
+    '',
+    '.......................y.y......',
+    '.....................mmHhHh.....',
+    '...................mmHHHHkHhh...',
+    '.................mmHHHHHHHHHHh..',
+    '................mHHHHHHH...ddd..',
+    '.......hhhh....mHHHHHHH.........',
+    '......hHHHhhhhhhHHHHHHd.........',
+    '......hHHHHHHHHHHHHHHHd.........',
+    '......HHHHHHHHHHHHHHHHd.........',
+    '......dHHHddddddddHHdd..........']},
+  tails:{hang:[[5,20],[5,21],[4,22],[4,23],[4,24],[5,25]],sway:[[5,20],[5,21],[4,22],[4,23],[3,24],[3,25]],
+    up:[[5,20],[4,19],[3,19],[2,20],[1,20],[1,21]],mid:[[5,20],[4,20],[3,21],[2,21],[2,22],[1,23]],low:[[5,20],[4,21],[3,22],[3,23],[2,24],[2,25]]},
+  idle:[{bob:0,tail:'hang',legs:[[0,-2,3,-1,1,-1,0],[0,-2,3,-1,1,-1,0],[0,0,3,0,1,0,0],[0,0,3,0,1,0,0]]}],
+  walk:[
+    {bob:0,tail:'hang',legs:[[0,-1,4,0,3,1,2],[0,-2,3,-1,1,-1,0],[0,-1,3,-1,1,-2,0],[0,1,3,1,1,2,0]]},
+    {bob:-1,tail:'hang',legs:[[0,-1,3,0,1,1,0],[0,-3,3,-3,1,-4,0],[0,1,3,0,2,-1,2],[0,0,3,0,1,0,0]]},
+    {bob:0,tail:'sway',legs:[[0,-2,3,-1,1,-1,0],[0,-1,4,0,3,1,2],[0,1,3,1,1,2,0],[0,-1,3,-1,1,-2,0]]},
+    {bob:-1,tail:'sway',legs:[[0,-3,3,-3,1,-4,0],[0,-1,3,0,1,1,0],[0,0,3,0,1,0,0],[0,1,3,0,2,-1,2]]}],
+  gallop:[
+    {bob:0,body:'run',head:-1,tail:'up',rider:-1,legs:[[-1,-4,4,-6,3,-7,3],[0,-3,3,-5,1,-6,0],[2,5,4,7,3,8,2],[1,2,3,4,1,5,0]]},
+    {bob:-1,body:'run',head:0,tail:'mid',rider:1,legs:[[0,-2,4,-1,2,0,2],[1,-2,4,-1,2,0,2],[0,-1,3,-2,2,-3,2],[0,-1,3,-2,1,-3,0]]},
+    {bob:-2,body:'run',head:1,tail:'low',rider:1,legs:[[0,-1,5,2,3,3,2],[1,0,4,3,2,4,1],[1,3,4,1,2,0,2],[0,2,5,0,3,-1,3]]},
+    {bob:-1,body:'run',head:0,tail:'mid',rider:-1,legs:[[0,-2,3,-1,1,-1,0],[1,-1,3,2,1,3,0],[1,3,4,3,2,2,2],[1,3,4,4,2,5,2]]}],
+  down:{body:[
+    '.......hhhhhhhhhhh..............',
+    '.....hhHHHHHHHHHHHhh............',
+    '...mmHHHHHHHHHHHHHHHhmm.........',
+    '..m..HHHHHHHHHHHHHHHHHHmmh......',
+    '..m..dHHHHHHHHHHHHHHHHHHHHHHhy..',
+    '......dHHHHHHHHHHHddHHHHkHHHHHh.',
+    '........ddddddddd....ddddddddd..'],
+    legs:[[[8,5],[5,7],[4,9],[3,10]],[[11,6],[9,8],[7,9],[6,10]],[[17,6],[19,7],[21,8],[22,9]],[[19,6],[21,8],[20,9],[21,10]]],thick:7}}};
+const horseArt=kind=>HORSE_ART.on&&(kind==='horse'||kind==='stag');
+/* the build drawn: tall false, the first pass's; else sized: the first pass's with its own gallop (gathered, the fore legs
+   folded back under the chest and the hind reaching forward, as the references' suspension), its legs HORSE_ART.leg px longer
+   (the body and the saddle that much higher, the rider sunk up to sink px into it so he rises a px less (+1: not at all); each
+   joint's height x (8 + leg) / 8, so the knees, hocks and gaits keep their shape; the tail with the croup, a hanging one as much
+   longer; the fallen one's legs as much longer). Made once a length */
+const HORSE_BUILDS={};
+function horseBuild(){const A=HORSE_ART;return !A.tall?A.first:HORSE_BUILDS[A.leg]||(HORSE_BUILDS[A.leg]=sizedHorse(A.first,A.sized,A.leg))}
+function sizedHorse(S,Z,n){const k=(8+n)/8,legs=F=>({...F,legs:F.legs.map(l=>l.map((v,i)=>i&&!(i&1)?Math.round(v*k):v))}),
+    tail=P=>{const t=P.map(([x,y])=>[x,y-n]),e=t[t.length-1];if(e[1]-t[0][1]<4)return t;for(let i=1;i<=n;i++)t.push([e[0],e[1]+i]);return t},
+    reach=P=>P.map(([x,y],i)=>i?[Math.round(P[0][0]+(x-P[0][0])*k),Math.min(11,Math.round(P[0][1]+(y-P[0][1])*k))]:[x,y]);
+  return{...S,top:Z.top,body:Z.body,head:Z.head,poll:Z.poll,headX:Z.headX,headY:Z.headY,ears:Z.ears,y0:S.y0-n,ground:S.ground+n,seat:Math.max(0,Math.min(n,Z.sink)),idle:S.idle.map(legs),walk:S.walk.map(legs),gallop:Z.gallop.map(legs),
+    tails:Object.fromEntries(Object.entries(S.tails).map(([k,P])=>[k,tail(P)])),down:{...S.down,legs:S.down.legs.map(reach)}}}
+// (a horse's leg: its hip, knee (or hock), fetlock and hoof, [x, y] each, drawn by set; near: the lighter; 2 px thick to row
+// thickTo, the second px to side; a fetlock and a hoof)
+function horseLeg(set,P,C,near,thickTo,side){const c=near?C[1]:C[2];
+  for(let s=0;s<3;s++){const [x0,y0]=P[s],[x1,y1]=P[s+1],n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0),1);
+    for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n,y=y0+(y1-y0)*i/n;set(x,y,c);if(!s&&Math.round(y)<=thickTo)set(x+side,y,c)}}
+  set(P[2][0],P[2][1],near?C[2]:C[3]);set(P[3][0],P[3][1],HORSE_ART.hoof)}
+// (its letters' colours: coat light, mid and shade, the mane, an eye)
+const horseCols=(C,Mn)=>({H:C[1],h:C[0],d:C[2],y:C[2],m:Mn[2],k:'#27272c'});
+// a horse standing, walking or galloping (HORSE_ART), in the cell by ps; returns the rider's seat row (drawMount's)
+function drawHorse(ps,o,walk,C,Mn,Tm){const A=horseBuild(),y0=A.y0,F=walk>=4?A.gallop[(walk-4)%4]:walk>=0?A.walk[walk%4]:A.idle[0],bob=F.bob,shape=F.body||'stand',col=horseCols(C,Mn),on=new Set();
+  // the legs behind the body, the far pair first: from the hip, inside it, to the hoof
+  for(const i of [0,2,1,3]){const L=F.legs[i],h=A.hips[i],G=y0+A.ground;horseLeg(ps,[[h+L[0],y0+8+bob],[h+L[1],G-L[2]],[h+L[3],G-L[4]],[h+L[5],G-L[6]]],C,i%2===1,y0+9+bob+A.thick,i<2?-1:1)}
+  // the body (its rows from y0+top; the first pass's head on it, moved by the frame's head), then its own head hung at its poll
+  const paint=(rows,X,Y,dh)=>rows.forEach((r,y)=>[...r].forEach((c,x)=>{const k=col[c];if(!k)return;const yy=Y+y+bob+dh(x,y);ps(X+x,yy,k);on.add(X+x+','+yy)}));
+  paint(A.body[shape],0,y0+A.top,(x,y)=>x>=A.headX&&y<=A.headY?F.head||0:0);
+  if(A.head){const [hx,hy]=A.poll[shape];paint(A.head,hx,y0+hy,()=>F.head||0)}
+  A.tails[F.tail].forEach(([x,y],i)=>ps(x,y+bob,Mn[i?2:1]));
+  if(o.mount==='stag'){const [ex,ey]=A.ears[shape];for(const [x,y] of [[25,-1],[24,-2],[26,-2],[23,-3],[27,-3],[28,0],[29,-1]])ps(x+ex,y0+y+ey+bob+(shape==='run'?F.head||0:0),PPAL.cloth[0])}
+  // barded: the side's colour over its body; else a saddle (and, no one in it, a cloth under it, its pommel, cantle and stirrup)
+  if(o.barded){for(let x=6;x<=21;x++)[Tm[0],PPAL.gold[1],Tm[2],x%2?Tm[3]:Tm[2]].forEach((c,k)=>{const y=y0+6+k+bob;if(on.has(x+','+y))ps(x,y,c)})}
+  else{if(o.saddled)for(let x=10;x<=16;x++){ps(x,y0+7+bob,Tm[1]);ps(x,y0+8+bob,Tm[2]);ps(x,y0+9+bob,x%2?Tm[3]:Tm[2])}
+    for(let x=11;x<=15;x++)ps(x,y0+6+bob,PPAL.leather[x<13?0:1])}
+  if(o.saddled){ps(11,y0+5+bob,PPAL.leather[0]);ps(15,y0+5+bob,PPAL.leather[1]);ps(13,y0+10+bob,'#27272c');ps(13,y0+11+bob,'#27272c')}
+  return y0+A.seat+bob+(F.rider||0)}
 function drawMount(g,o,walk,dx=0,dy=0){const ps=(x,y,c)=>pset(g,x+dx,y+dy,c);// (dx, dy: the cell's corner in g)
   const kind=o.mount,C=pal(kind==='horse'?o.mountC||'horse':kind==='stag'?'stag':kind==='ram'?'wool':kind),Mn=pal(kind==='ram'?'wool':kind==='wolf'||kind==='warg'?kind:'dark'),Tm=pal(o.team);
+  if(horseArt(kind))return drawHorse(ps,o,walk,C,Mn,Tm)+dy;
   const gal=walk>=4,y0=kind==='ram'?16:14,legs=kind==='ram'?3:5,bob=gal?[0,-1,-2,-1][walk-4]:walk===1||walk===3?-1:0;
   const wolf=kind==='wolf'||kind==='warg';(wolf?WOLF_T:MOUNT_T).forEach((r,y)=>[...r].forEach((c,x)=>{const col={H:C[1],h:C[0],d:C[2],y:C[2],m:Mn[2]}[c];if(col)ps(x,y0+y+bob,col)}));
   if(wolf)ps(28,y0+5+bob,o.team==='red'?'#ffdc04':'#ffdc04');
@@ -322,6 +468,13 @@ const LIE_T=[
   '........ddddddddddddd....ddddd..'];
 function drawMountDown(g,o){
   const kind=o.mount,C=pal(kind==='horse'?o.mountC||'horse':kind==='stag'?'stag':kind==='ram'?'wool':kind),Mn=pal(kind==='ram'?'wool':kind==='wolf'||kind==='warg'?kind:'dark'),Tm=pal(o.team),y0=9;
+  // (a horse: HORSE_ART's, its legs as a standing one's, out toward you; its cloth over its body, or its saddle)
+  if(horseArt(kind)){const D=horseBuild().down,col=horseCols(C,Mn),on=new Set(),ps=(x,y,c)=>pset(g,x,y0+y,c);
+    for(const i of [0,2,1,3])horseLeg(ps,D.legs[i],C,i%2===1,D.thick,i<2?-1:1);
+    D.body.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c]){ps(x,y,col[c]);on.add(x+','+y)}}));
+    if(o.barded){for(let x=6;x<=19;x++)[Tm[0],PPAL.gold[1],x%2?Tm[3]:Tm[2]].forEach((c,k)=>{if(on.has(x+','+(2+k)))ps(x,2+k,c)})}
+    else for(let x=10;x<=14;x++)ps(x,1,PPAL.leather[x<12?0:1]);
+    return}
   LIE_T.forEach((r,y)=>[...r].forEach((c,x)=>{const col={H:C[1],h:C[0],d:C[2],y:C[2],m:Mn[2]}[c];if(col)pset(g,x,y0+y,col)}));
   // (the legs: the hind pair out behind, the fore pair out ahead, each ending in a hoof)
   for(const [x,dx] of [[8,-1],[11,-1],[19,1],[22,1]]){for(let k=0;k<4;k++){pset(g,x+dx*k,y0+6+k,k<2?C[2]:C[3]);pset(g,x+1+dx*k,y0+6+k,C[2])}pset(g,x+dx*4,y0+10,'#27272c');pset(g,x+1+dx*4,y0+10,'#27272c')}
