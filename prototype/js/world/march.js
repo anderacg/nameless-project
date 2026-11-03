@@ -448,6 +448,12 @@ function siteFooting(s){const sp=siteSprite(s);if(!sp._ft)sp._ft=modelFooting(si
 // (every footing in the box x0..x1, y0..y1, world px: the lots standing there (not ruins, fields nor pastures), the sites you know of)
 const marchFootings=(x0,y0,x1,y1)=>TOWNS.flatMap(t=>(t.lots||[]).filter(l=>l.st!=='ruined'&&l.k!=='field'&&l.k!=='pasture'&&l.x*TILE<x1&&l.y*TILE<y1&&(l.x+l.n)*TILE>x0&&(l.y+l.n)*TILE>y0).flatMap(l=>lotFooting(t,l)))
   .concat((W.sites||[]).filter(s=>s.known&&s.known()&&s.x>x0-96&&s.x<x1+96&&s.y>y0-96&&s.y<y1+96).flatMap(siteFooting));
+// (what those footings are made of, in the box: each lot there, its state and its picture (structures.js lotSprite, the same one
+// till it changes: its stage, level, walls, facing, a ruin), each site near, its picture while you know it; a grid made over them
+// is stale when any differs (MarchGround fresh: a building raised, finished or burnt, a site found, change no world version))
+function marchBlocksSig(x0,y0,x1,y1){const out=[];
+  for(const t of TOWNS)for(const l of t.lots||[])if(l.x*TILE<x1&&l.y*TILE<y1&&(l.x+l.n)*TILE>x0&&(l.y+l.n)*TILE>y0)out.push(l,l.st,l.st==='ruined'||l.k==='field'||l.k==='pasture'?null:lotSprite(t,l));
+  for(const s of W.sites||[])if(s.x>x0-96&&s.x<x1+96&&s.y>y0-96&&s.y<y1+96)out.push(s,s.known&&s.known()?siteSprite(s):null);return out}
 // (a slid step, route.js routeSlide's: reused)
 const MARCH_SLIDE=[0,0];
 // (PATHS.corridor: the corridors made so far, each one's id; px from x, y to polyline pts (world px); whether man u's way p (its
@@ -460,7 +466,7 @@ class MarchGround{
     const r=marchOuter(o),chunk=MARCH_MOVE.chunk,cs=MARCH_MOVE.cell,fly=o.mapKind==='monster'&&MONSTERS[o.id]?.mythic?.fly;this.fly=!!fly;
     this.x=Math.max(0,Math.floor((Math.min(o.x-r,...units.map(u=>u.x))-pad)/chunk)*chunk);this.y=Math.max(0,Math.floor((Math.min(o.y-r,...units.map(u=>u.y))-pad)/chunk)*chunk);
     const x1=Math.min(MW*TILE,Math.ceil((Math.max(o.x+r,...units.map(u=>u.x))+pad)/chunk)*chunk),y1=Math.min(MH*TILE,Math.ceil((Math.max(o.y+r,...units.map(u=>u.y))+pad)/chunk)*chunk);
-    const g=this.grid=routeGrid(Math.max(1,Math.ceil((x1-this.x)/cs)),Math.max(1,Math.ceil((y1-this.y)/cs)),cs);this.version=WAYV;this.blocks=(PATHS.footing?marchFootings:marchFootprints)(this.x,this.y,x1,y1).filter(b=>b.x<x1&&b.y<y1&&b.x+b.w>this.x&&b.y+b.h>this.y);
+    const g=this.grid=routeGrid(Math.max(1,Math.ceil((x1-this.x)/cs)),Math.max(1,Math.ceil((y1-this.y)/cs)),cs);this.version=WAYV;this.x1=x1;this.y1=y1;this.sig=marchBlocksSig(this.x,this.y,x1,y1);this.blocks=(PATHS.footing?marchFootings:marchFootprints)(this.x,this.y,x1,y1).filter(b=>b.x<x1&&b.y<y1&&b.x+b.w>this.x&&b.y+b.h>this.y);
     // (a ferry's way over the water: the cells within cs of its line; PATHS.clear, two cs, so a body has its room on it)
     const fw=cs*(PATHS.clear?2:1),ferries=WM.crossings.filter((c,i)=>c.kind==='ferry'&&!WM.graph?.closed[i]).map(c=>{const [x,y]=wayCentre(c.i),[tx,ty]=wayCentre(c.j);return{x,y,tx,ty}}).filter(f=>Math.max(f.x,f.tx)>=this.x-fw&&Math.min(f.x,f.tx)<=x1+fw&&Math.max(f.y,f.ty)>=this.y-fw&&Math.min(f.y,f.ty)<=y1+fw);
     // (the cells a building's footing reaches into: each block laid on the grid once, its cells those whose box it overlaps)
@@ -472,6 +478,9 @@ class MarchGround{
       if(!fly&&WM.has(tx,ty)){const edge=WM.edge[k];if(x%TILE<cs&&edge&4)g.wall[i]|=4;if(x%TILE>TILE-cs&&edge&1)g.wall[i]|=1;if(y%TILE<cs&&edge&8)g.wall[i]|=8;if(y%TILE>TILE-cs&&edge&2)g.wall[i]|=2}
     }
   }
+  // (still true to the land: no world version since (terrain, a crossing shut, a holding's walls: router.js WAYV) and its buildings and
+  // sites as they were (marchBlocksSig))
+  fresh(){if(this.version!==WAYV)return false;const a=this.sig,b=marchBlocksSig(this.x,this.y,this.x1,this.y1);if(a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true}
   local(p){return{x:p.x-this.x,y:p.y-this.y}}
   world(p){return{x:p.x+this.x,y:p.y+this.y}}
   contains(p,pad=0){const g=this.grid;return p.x>=this.x+pad&&p.y>=this.y+pad&&p.x<this.x+g.C*g.cs-pad&&p.y<this.y+g.R*g.cs-pad}
@@ -647,7 +656,7 @@ class MarchArmy{
     // (below), at a halt)
     this.since+=moved;if(this.turned){this.leg+=moved;if((!AF.loop.on||!col)&&(this.leg>=AF.leg||moved<=.001&&(this.still||0)+d>=AF.halt))this.reorderStart(col)}
     if(jump){this.ground=new MarchGround(o,[]);this.fillOff=null;this.turned=false;this.reorder=null}
-    if(!this.ground||this.ground.version!==WAYV||this.time>=(this.refresh||0)||!this.ground.covers(o,marchOuter(o)+8)||!jump&&this.units.some(u=>!this.ground.covers(u,8))){this.ground=new MarchGround(o,jump?[]:this.units,C&&this.split?MARCH_MOVE.wide:MARCH_MOVE.pad);this.refresh=this.time+MARCH_MOVE.refresh}
+    if(!this.ground||!this.ground.fresh()||this.time>=(this.refresh||0)||!this.ground.covers(o,marchOuter(o)+8)||!jump&&this.units.some(u=>!this.ground.covers(u,8))){this.ground=new MarchGround(o,jump?[]:this.units,C&&this.split?MARCH_MOVE.wide:MARCH_MOVE.pad);this.refresh=this.time+MARCH_MOVE.refresh}
     // (menCentre: men on ground their middle's does not reach in its box (across a river, the bridge or the ford past its edge: a
     // battle's end), its box made MARCH_MOVE.wide px wider round them, so their way round is in it, while they are so)
     let reach=this.ground.reachable(o);if(C){const g=this.ground,off=this.units.some(u=>!u.dead&&!reach[routeIx(g.grid,u.x-g.x,u.y-g.y)]);if(off&&!this.split){this.split=true;this.ground=new MarchGround(o,this.units,MARCH_MOVE.wide);this.refresh=this.time+MARCH_MOVE.refresh;reach=this.ground.reachable(o)}else if(!off)this.split=false}
