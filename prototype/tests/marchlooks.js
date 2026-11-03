@@ -13,7 +13,8 @@ Kit.suite(({ok})=>{
  const expected=t.mkc(Math.ceil(base.width*k),Math.ceil(base.height*k),g=>g.drawImage(base,0,0,base.width*k,base.height*k));
  ok(pixels(actual)===pixels(expected),'lord leader uses the battle character kind at marching scale and faction tint');
  {const L={id:1,row:'leader',type:t.charOf(lord).key,character:true,x:20,y:20,walking:false},oldDraw=t.ctx.drawImage,drawn=[];try{t.ctx.drawImage=s=>drawn.push(s);t.drawMarcher(L,lord,{x:0,y:0})}finally{t.ctx.drawImage=oldDraw}
-  ok(drawn.length===1&&pixels(drawn[0])===pixels(base),'a lord marches in his army (his place in it: march.js), drawn by the full battle sprite without pre-shrinking pixels')}
+  const bare=t.unitSprite(t.charOf(lord).key,0,false,0,0,true,false,lord.look().col),held=t.mapHeld(t.marchLook(L,lord),bare,false);
+  ok(drawn.length===(held?2:1)&&drawn.some(x=>pixels(x)===pixels(bare))&&(!held||drawn.includes(held.w)),'a lord marches in his army (his place in it: march.js), drawn by the full battle sprite without pre-shrinking pixels: his body bare, his weapon apart in his hand, as in battle (the owner, 2026-11-03)')}
  const fig=t.partyFig(lord,lord.look(),0);
  ok(fig.s===actual&&Math.abs(lord.headY()-Math.min(...Array.from({length:t.PEOPLE_STEPS},(_,f)=>{const q=t.partyFig(lord,lord.look(),f);return q.y+t.opaqueBox(q.s)[1]})))<=1,'leader picking and banner height follow the displayed battle sprite');
 });

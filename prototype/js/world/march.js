@@ -166,6 +166,9 @@ const MARCH_CART=[[-9,12],[4,10],[13,7]];
 const marchCart=(o,at=o)=>{const d=o.dir<0?-1:1;return MARCH_CART.map(([x,r])=>({x:at.x+d*x,y:at.y,r,fixed:true}))};
 // The battle's full sprites at its world scale, with weapons included and movement-driven poses (bare: the melee weapon left
 // off, drawn apart: a flag's spear, gfx/marchgear.js).
+// (his look, as his sprite's: sprites.js spriteLook, kept on him)
+function marchLook(u,o){const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',col=o.look().col;
+  if(!u.mLook||u.mLookC!==col){u.mLook=spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col);u.mLookC=col}return u.mLook}
 function marchSprite(u,o,pose,bare){
   const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',lead=hero||u.row==='leader';
   return unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(u.walking?2+(Math.floor((u.stepT||0)*MARCH_MOVE.cadence)+u.id)%4:0),!!bare,false,o.look().col);
@@ -192,8 +195,9 @@ function drawMarcher(u,o,cam){
   // (what he carries besides, gfx/marchgear.js: his army's flag (on a spear of its own, his body bare; else at his back, before
   // his body), a torch after dark)
   subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
-  const s=marchSprite(u,o,I?.pose,G.bare),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2;
-  ctx.save();ctx.translate(x,y);ctx.scale(sx,k);G.back(s,bx,by);ctx.drawImage(s,bx,by);G.front(s,bx,by);ctx.restore();
+  // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld; none for a flag-bearer, nor a beast)
+  const s=marchSprite(u,o,I?.pose,true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H=G.bare||S.beast?null:mapHeld(marchLook(u,o),s,u.walking);
+  ctx.save();ctx.translate(x,y);ctx.scale(sx,k);G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);G.front(s,bx,by);ctx.restore();
 }
 // (the owner, 2026-10-31: "the army ring speed is based on the overall unit speed so it can keep centered") its rings drawn on the
 // middle its men make (MarchArmy mid: each man's spot less his place in it, their median), so they go as the men go, and settle

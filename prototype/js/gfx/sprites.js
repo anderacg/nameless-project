@@ -26,6 +26,9 @@ const FLINCH_POSE=41,LOOK_POSE=42,SHIFT_POSE=43,LIFE_POSES={41:'flinch',42:'look
 // his hand: weapons.js, sidearmLook)
 // (afoot: a rider off his horse, on his own feet, his lance in his hand: battle/dismount.js)
 // (your hero's and a companion's key: their gear's, but a melee weapon's when it is held apart: one body for every sword)
+// (a figure's look, as unitSprite draws it: its kind's, a companion's gear on him, his side's cloth, tint (a world army's colour)
+// over it; the map's marchers' weapons drawn apart read it: weapons.js mapHeld)
+function spriteLook(type,team,hero,v,tint){const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null,L0=allyLook(lookOf(type,team===2?0:team,hero,hero?0:(v||0)%6,COMPS[type]?type:'',cg),team);return tint?{...L0,team:tint}:L0}
 function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
   // a companion wears what you gave them: their weapon, armour and helm show (cg)
   const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null;
@@ -35,7 +38,7 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
   v=hero?0:(v||0)%6;pose=pose||0;const wk=(w,melee)=>bare&&melee?'m':w||'',key=type+team+(hero?'h'+P.race+wk(P.gear.weapon,heroKind()==='melee'&&!unarmed())+(P.gear.body||'')+(P.gear.head||'')+(P.gear.offhand||''):'')+(cg?'g'+wk(cg.weapon,cg.weapon&&(ITEMS[cg.weapon].kind||'melee')==='melee')+(cg.body||'')+(cg.head||'')+(cg.offhand||''):'')+'v'+v+'p'+pose+(bare?'b':'')+(arm?'s':'')+(afoot?'f':'')+(tint?'c'+tint:'');
   {const c=bare?spr[key]:FIGURES.get(key);if(c)return c}
   // soldiers, your hero and companions: the template figures (people.js)
-  const cid=COMPS[type]?type:'',L0=allyLook(lookOf(type,team===2?0:team,hero,v,cid,cg),team),L={...L0,...(tint?{team:tint}:{}),...(arm?{weapon:null,slung:WPN[L0.weapon]?null:L0.weapon}:{}),...(afoot?{mount:null}:{})};
+  const L0=spriteLook(type,team,hero,v,tint),L={...L0,...(arm?{weapon:null,slung:WPN[L0.weapon]?null:L0.weapon}:{}),...(afoot?{mount:null}:{})};
   // (a rider's bare body in a blow is the body standing: its weapon is drawn apart, so one sprite serves all nine blow frames; on
   // foot, each frame his own: people.js BLOW_RIG)
   if(bare&&pose>=6&&pose<=14&&heldWeapon(L)&&L.mount){const k0=key.replace('p'+pose+'b','p0b');return spr[key]=spr[k0]||(spr[k0]=cellOf(peopleSprite(L,0,true)))}

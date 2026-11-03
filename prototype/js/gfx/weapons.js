@@ -66,6 +66,13 @@ function holdOf(u,k){
   if(u.nearW)return kind==='pole'||kind==='lance'?[aim,1,0]:[H.guard,0,0];
   const moving=u.spdNow>0||(u.movF||0)>0;if(!moving)return[H.rest,0,0];
   u.runW=u.spdNow>u.s.spd*.75||u.runW&&u.spdNow>u.s.spd*.6;const running=u.runW;return running?[kind==='pole'||kind==='lance'?H.run+aim*.3:H.run,0,kind==='pole'?0:-1]:[H.march,0,0]}
+// on the map (world/march.js drawMarcher): his weapon apart from his body, as in battle (the owner, 2026-11-03: "make a weapon
+// sprite to look separated from the horse"), held at rest or on the march (HOLD: no blow nor foe there); its picture and corner
+// from his sprite's, and whether it goes behind his body; null for none
+function mapHeld(L,sp,walking){
+  const k=heldWeapon(L);if(!k||!sp.hand)return null;const kind=k==='lance'?'lance':POLE(k)?'pole':k==='great'||k==='bigaxe'||k==='hammer'?'heavy':'blade',deg=HOLD[kind][walking?'march':'rest'];
+  const i=((Math.round(deg/360*WEAPON_STEPS)%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,w=weaponSprite(k,L.team,pal(L.skin)[1],i),a=(i/WEAPON_STEPS*360+180)%360-180,x=sp.hand[0]-w.R,y=sp.hand[1]-w.R;
+  return{w,x,y,back:a>GEAR.behind[0]&&a<GEAR.behind[1]&&peeks(sp,w,x,y)}}
 // draw it, in the fighter's own (already turned) frame: (bx, by) is where his sprite's corner went
 // (the weapon turns toward how he should hold it, WEAPON_TURN degrees a second, never snapping: a man whose state flickers from
 // one frame to the next, a step and a halt as he settles in his place, would otherwise show his weapon at two angles at once.
