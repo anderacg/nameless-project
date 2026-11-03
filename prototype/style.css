@@ -1256,6 +1256,8 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 }
 /* Developer overlay is separate from game panels: opening it freezes, but never replaces, the underlying screen. */
 /* (a small tab at the middle of the right edge, clear of the time bar, the minimap, the cards and the dock; ` or F2 opens the tools too) */
+/* the frame timings (ui/frameprof.js): a readout at the top, never in the way of a tap */
+.frameprof{position:fixed;top:calc(4px + var(--sa-t));left:50%;transform:translateX(-50%);z-index:10001;max-width:calc(100vw - 16px);padding:4px 8px;background:rgba(0,0,0,.78);color:#e8e0c8;font:11px/1.35 monospace;white-space:pre;overflow:hidden;pointer-events:none;border:1px solid var(--line)}
 #dev-console{position:fixed;inset:0;z-index:10002;background:#0009;padding:clamp(8px,3vw,32px);overflow:auto;color:#e4e9ef;font:14px/1.5 monospace}
 #dev-console[hidden],#dev-lab-bar[hidden]{display:none}
 .dev-window{max-width:850px;margin:auto;padding:18px;border:1px solid #8e7955;background:#101922;box-shadow:0 12px 60px #000b}

@@ -64,15 +64,18 @@ const Systems={
   frame(d,dt){
     if(this.slices.length)this.drain(false);
     for(const s of this.of('frame')){
-      if(s.frame(d,dt)&&s.ends)return true;
+      if(this.run(s,'frame',()=>s.frame(d,dt))&&s.ends)return true;
     }
     return false;
   },
   hour(h){
-    for(const s of this.of('hour'))s.hour(h);
+    for(const s of this.of('hour'))this.run(s,'hour',()=>s.hour(h));
   },
   day(){
     if(this.slices.length)this.drain(true);
-    for(const s of this.of('day'))s.day();
-  }
+    for(const s of this.of('day'))this.run(s,'day',()=>s.day());
+  },
+  // (one system's run: timed while the frame timings are on, ui/frameprof.js; else as it is)
+  timer:null,
+  run(s,phase,f){return this.timer?this.timer(s.name+(phase==='frame'?'':' ('+phase+')'),f):f()}
 };

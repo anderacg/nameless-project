@@ -101,7 +101,8 @@ function toggleMute(){prefSet('mute',!prefGet('mute'));if(G.mode==='title'){if(G
 // a Settings button: data-act names the setting, data-arg its new value (on/off, or a speed; econmode: the realm economy,
 // economy.js; sound: on/off; volmaster, volmusic, volsfx: a volume 0–1), and the page redraws; false if the action is no setting
 function settingAct(a,arg){
-  if(a==='dev-open'){DevConsole.show();return true}// (Settings → Developer tools: what the old DEV tab opened, developer.js)
+  if(a==='dev-open'){DevConsole.show();return true}
+  if(a==='dev-perf'){toast(FrameProf.toggle());if(G.mode==='esc')escSettings();else showTitle('settings');return true}// (the frame timings, ui/frameprof.js)// (Settings → Developer tools: what the old DEV tab opened, developer.js)
   if(a==='res')prefSet('res',arg);else if(a==='fps')prefSet('fps',+arg);else if(a==='econmode')setEconMode(arg);else if(a==='bspeed')setBattleSpeed(+arg,true);else if(['grid','blood','hpbars','bdeploy','bpause','guide','bfog','ambient','bshake'].includes(a))prefSet(a,arg==='on');
   else if(a==='opaths'||a==='bfx')prefSet(a,arg);else if(a==='mapzoom')prefSet('mapzoom',+arg||0);
   else if(a==='sound')prefSet('mute',arg==='off');else if(VOLUMES.some(([k])=>k===a))prefSet(a,+arg);else return false;
@@ -161,7 +162,7 @@ function settingsPage(){
     VOLUMES.map(([k,n])=>{const cur=prefGet(k),near=VOL_STEPS.reduce((a,x)=>Math.abs(x-cur)<Math.abs(a-cur)?x:a);return '<div class="lab">'+n+'</div><div class="tabs" role="group" aria-label="'+n+'">'+VOL_STEPS.map(x=>'<button class="btn sm'+(x===near?' on':'')+'" type="button" data-act="'+k+'" data-arg="'+x+'" aria-pressed="'+(x===near)+'">'+Math.round(x*100)+'%</button>').join('')+'</div>'}).join('')+
     '<p class="muted">Music and sound effects, all made as you play (nothing to download). Shift+M turns the sound off and on anywhere.</p>'+
     '<div class="lab">Controls</div><p class="muted">'+CONTROLS+'</p>'+
-    '<div class="lab">Developer tools</div><div class="btns"><button class="btn" type="button" data-act="dev-open">Open developer tools</button></div><p class="muted">The console and the battle test bench (also ` or F2).</p>';
+    '<div class="lab">Developer tools</div><div class="btns"><button class="btn" type="button" data-act="dev-open">Open developer tools</button><button class="btn'+(FRAMEPROF.on?' on':'')+'" type="button" data-act="dev-perf" aria-pressed="'+FRAMEPROF.on+'">Frame timings</button></div><p class="muted">The console and the battle test bench (also ` or F2).</p>';
 }
 /* the title: the main menu (ui/mainmenu.js: New Campaign, Continue, Settings, Quit, and Load game, Wiki), and its pages as windows
    over its scene: New game, Load game, Settings (settingAct), the farewell (exit) */

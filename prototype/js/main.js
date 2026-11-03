@@ -9,6 +9,7 @@ function loop(now){
   if(now-last<650/RENDER.fps){requestAnimationFrame(loop);return}
   const dt=Math.min(.05,(now-last)/1000);last=now;
   fastWatch();// (Travel fast: back to 1x when anything calls for you: world.js)
+  const t0=FRAMEPROF.on?performance.now():0;// (the frame timings: ui/frameprof.js)
   if(!DevConsole.opened){
     if(G.mode==='battle'&&B)updateBattle(heroBeat(dt));// (a crit's or a kill's beat of slow motion: gfx/herofx.js)
     else if(G.mode==='scene')updateScene(dt);
@@ -21,7 +22,7 @@ function loop(now){
   G.hudT+=dt;if(G.hudT>.25&&WM){G.hudT=0;try{updateHUD();if(G.mode==='battle'){updateSkillBar();if(B&&(hudCards=!hudCards))setOrderUI();else bhudAbilities()}}catch(e){setTimeout(()=>{throw e})}}
   audioWatch();// (the music follows the scene; a town, a meeting, a new day, a battle's start are heard: music.js)
   // (the main menu draws its own scene, never the world: ui/mainmenu.js; anything else, the game's frame)
-  MainMenu.frame(now);if(G.mode!=='title')frame();requestAnimationFrame(loop);
+  const t1=FRAMEPROF.on?performance.now():0;MainMenu.frame(now);if(G.mode!=='title')frame();if(FRAMEPROF.on)FrameProf.frame(t1-t0,performance.now()-t1);requestAnimationFrame(loop);
 }
 // the page opens on the main menu (ui/mainmenu.js) with no world: a new campaign or a load makes one (session.js begin, save.js
 // loadGame). The tests and the wiki make the classic world at load (worldmap.js): laid out here as it first stands (session.js worldFirst)
