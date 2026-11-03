@@ -98,8 +98,10 @@ function physBacked(t,a){
 /* thrown back by dv px/s along a; down a moment if it may (down: false never; true, or the footing it must beat: a number, ×
    what fells him) and it is hard enough (physFells); a rider, out of the saddle (battle/dismount.js Dismount.throws) */
 function physThrow(t,a,dv,down){
-  if(!(dv>0)||t.hp<=0)return;t.kx=(t.kx||0)+Math.cos(a)*dv;t.ky=(t.ky||0)+Math.sin(a)*dv;if(!down)return;const res=down===true?1:down;
+  if(!(dv>0)||t.hp<=0)return;t.kx=(t.kx||0)+Math.cos(a)*dv;t.ky=(t.ky||0)+Math.sin(a)*dv;physReel(t,a,dv);if(!down)return;const res=down===true?1:down;
   if(physFells(t,dv,res))physFall(t,dv);else if(Dismount.throws(t,dv,res))Dismount.down(t,'thrown')}
+// (a throw hard enough to rock him (STAGGER.reel.min of what fells him): when, how hard (0-1), which way; drawn only: gfx/stagger.js)
+function physReel(t,a,dv){const k=dv/(PHYSICS.hit.down*physMass(t));if(k>=STAGGER.reel.min){t.reelAt=B.t;t.reelK=Math.min(1,k);t.reelA=a}}
 /* the one rule for going down: thrown hard enough for his weight (dv over PHYSICS.hit.down × his mass, × res: his footing; heavy
    men stand firmer), never a rider or a big one, nor one down already; with movesets (movesets.js; not MOVESETS.old) nor one
    rolling clear, nor one up again within MOVESETS.grace s */

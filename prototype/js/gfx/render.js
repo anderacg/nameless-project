@@ -299,8 +299,10 @@ function drawUnit(u){
   const dq=physDownPose(u);if(dq!=null){drawDowned(u,x,y-z,dq);u.plx=u.x;u.ply=u.y}else{const distance=u.plx!=null?Math.hypot(u.x-u.plx,u.y-u.ply):0,step=distance>.02;if(B.world)u.walkPhase=(u.walkPhase||0)+distance/(WALK.foot*B.world.scale);u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?beastPose(u,moved):procPose(u,moved);
     // (on a hill's slope (the ground's climbState): walking or running up, bent forward on short slow steps; down, leaning on long ones)
     if(cl&&!beast&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
+    // (rocked by a throw: leaning back from it, a step or two back, flinching: gfx/stagger.js)
+    const rl=!beast&&!u.s.mounted?Stagger.reel(u):null;
     // (struck, a flinch; standing about, now and then a glance back or the weight shifted: from his id and the battle's time, drawn only)
-    if(!beast&&!u.s.mounted&&!cl){if(u.hitAt!=null&&B.t-u.hitAt<BODY_LIFE.flinch&&(pose<6||pose>=15&&pose<=18))pose=FLINCH_POSE;else if(pose<2&&!moved){const ip=idleLife(u.id,B.t,'foot').pose;if(ip!=null)pose=ip}}
+    if(!beast&&!u.s.mounted&&!cl){if((u.hitAt!=null&&B.t-u.hitAt<BODY_LIFE.flinch||rl)&&(pose<6||pose>=15&&pose<=18))pose=FLINCH_POSE;else if(pose<2&&!moved){const ip=idleLife(u.id,B.t,'foot').pose;if(ip!=null)pose=ip}}
     const sp=beast?actorSprite(u,pose):actorSprite(u,pose,true,!!u.inMelee);
     // (a beast's blow: its pose, and a short lunge with it; its steps bob in its frames)
     let [bx,sa]=stateShake(u),bo=0;if(beast&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(2*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))
@@ -308,10 +310,10 @@ function drawUnit(u){
     // blow blocked, a step back; struck, a flinch back, a heavy wound a stagger; a blow of his own, a lunge into it (battle/duel.js))
     const dk=Defence.now(u),dp=dk?Math.sin((B.t-u.defAt)/DEFENCE.anim*Math.PI):0,side=dk==='dodge'&&u.defV==='side';
     if(dk==='dodge'&&!side)bx-=Math.round(2*dp);if(side)bo+=Math.round((u.id&1?2:-2)*dp);if(dk==='block'&&u.defV==='push')bx-=Math.round(2*dp);if(hit)bx-=1;
-    const sg=u.stagAt!=null&&B.t-u.stagAt<.3?Math.sin((B.t-u.stagAt)/.3*Math.PI):0;if(sg)bx-=Math.round(2*sg);
+    const sg=u.stagAt!=null&&B.t-u.stagAt<.3?Math.sin((B.t-u.stagAt)/.3*Math.PI):0;if(sg)bx-=Math.round(2*sg);if(rl){bx+=rl.dx;bo+=rl.dy}
     if(!moved&&!dk&&!hit&&!sg&&!(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)){const I=idleLife(u.id,B.t,beast?'beast':u.s.mounted?'mount':'foot');bx+=I.dx}// (standing: a horse's toss, a beast's sway)
     if(!beast&&DUEL.on&&u.atkLook&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx+=Math.round((u.atkLook==='bash'?2.5:1.5)*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI));
-    ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(spinFace(u,dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLeanDrawn(u,16)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg;if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */ctx.globalAlpha=(ghost?.55:1)*sa;
+    ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(spinFace(u,dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLeanDrawn(u,16)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg+(rl?rl.lean:0);if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */ctx.globalAlpha=(ghost?.55:1)*sa;
     // (his weapon in his hand behind his body or in front of it: weapons.js heldNow, figures.js GEAR.behind)
     const X=-Math.floor(sp.width/2)+bx,Y=-sp.height+2,hw=!beast&&heldNow(u,u.inMelee?sidearmLook(u):unitLook(u),sp);if(hw&&hw.back)ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);
     const fb=!beast&&battleFlag(u),fw=fb?battleWave(u,moved):0;if(fb)battleFlagBack(u,fb,sp,X,Y,fw);// (his army's flag: marchgear.js)
@@ -335,7 +337,7 @@ function drawUnit(u){
 }
 // one knocked down (physics.js physDownPose: q 0 standing to 1 lying): he goes over as the fallen do (vfx.js drawBody), lies, and
 // gets up, his weapon still in his hand (sprites.js downedOf); a beast pressed low, then on its side
-function drawDowned(u,x,y,q){const c=downedOf(u);ctx.save();ctx.translate(Math.round(x),Math.round(y));if(u.face<0)ctx.scale(-1,1);
+function drawDowned(u,x,y,q){const c=downedOf(u);if(STAGGER.on&&!c.beast){Stagger.draw(u,c,x,y);return}ctx.save();ctx.translate(Math.round(x),Math.round(y));if(u.face<0)ctx.scale(-1,1);
   if(c.beast){const sp=c.beast,w=sp.width,h=sp.height,x0=-Math.floor(w/2);if(c.down&&q>=.6)ctx.drawImage(c.down,x0,-h+2);else{const k=1-.5*q*q;ctx.drawImage(sp,x0,Math.round((-h+2)*k),w,Math.max(1,Math.round(h*k)))}}
   else if(q<1){ctx.translate(0,1);ctx.rotate(q*q*Math.PI/2);ctx.drawImage(c.stand,-12,-18-(c.top||0))}else ctx.drawImage(c.body,-c.ax,1-c.ay);
   ctx.restore()}
