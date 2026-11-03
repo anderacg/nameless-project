@@ -622,13 +622,14 @@ class MarchArmy{
     if(this.fillDue||turned){this.fillFace=this.face;this.fillT=S.every;this.refill(targets,this.fillDue,!!col);this.fillDue=false}
     else if(this.fillT<=0&&moved>.001){this.fillT=S.every;this.refill(targets,false,!!col)}}
   // ---- its grid (MarchGround), its lifetime alone (a code review, 2026-11-03: made apart from the step, as it was): made afresh on a
-  // jump (no men in it); made again when the land under it changed (fresh), its timer is up, or the army or one of its men stands off
-  // it; menCentre (C): men on ground its middle's does not reach in its box (across a river, the bridge or the ford past its edge: a
+  // jump (no men in it); made again when the land under it changed (fresh), the army or one of its men stands off it, or, while
+  // any of its men is still making for his place, its timer is up (MARCH_MOVE.refresh: an army settled, every man at rest in his
+  // place or given up, keeps its grid; a code review found standing armies making theirs again every 2 s); menCentre (C): men on ground its middle's does not reach in its box (across a river, the bridge or the ford past its edge: a
   // battle's end), its box made MARCH_MOVE.wide px wider round them, so their way round is in it, while they are so (split). Returns
   // what its middle reaches
   groundStep(o,jump,C){
     if(jump)this.ground=new MarchGround(o,[]);
-    if(!this.ground||!this.ground.fresh()||this.time>=(this.refresh||0)||!this.ground.covers(o,marchOuter(o)+8)||!jump&&this.units.some(u=>!this.ground.covers(u,8))){this.ground=new MarchGround(o,jump?[]:this.units,C&&this.split?MARCH_MOVE.wide:MARCH_MOVE.pad);this.refresh=this.time+MARCH_MOVE.refresh}
+    if(!this.ground||!this.ground.fresh()||this.time>=(this.refresh||0)&&this.units.some(u=>!u.dead&&!u.rest)||!this.ground.covers(o,marchOuter(o)+8)||!jump&&this.units.some(u=>!this.ground.covers(u,8))){this.ground=new MarchGround(o,jump?[]:this.units,C&&this.split?MARCH_MOVE.wide:MARCH_MOVE.pad);this.refresh=this.time+MARCH_MOVE.refresh}
     let reach=this.ground.reachable(o);if(C){const g=this.ground,off=this.units.some(u=>!u.dead&&!reach[routeIx(g.grid,u.x-g.x,u.y-g.y)]);if(off&&!this.split){this.split=true;this.ground=new MarchGround(o,this.units,MARCH_MOVE.wide);this.refresh=this.time+MARCH_MOVE.refresh;reach=this.ground.reachable(o)}else if(!off)this.split=false}
     return reach}
   step(d,sync=true,bounds=null,inside=null){
