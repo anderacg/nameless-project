@@ -322,7 +322,9 @@ function heroWay(o,tx,ty,step){const rd=byRoadTo(tx,ty);
 function heroStep(dx,dy,dist,step){
   const x0=P.x,gx=P.x+dx,gy=P.y+dy,r=heroWay(P,gx,gy,step);if(r===2&&P.x!==x0)P.dir=P.x>x0?1:-1;if(r>=0)return r>0;
   const W=HERO_WAY;if(!(Math.hypot(W.x-gx,W.y-gy)<=1)){W.x=gx;W.y=gy;W.d=dist}// (a new goal, or the first: NaN)
-  if(!walk(P,dx,dy,step))return false;const nd=Math.hypot(gx-P.x,gy-P.y);if(nd>=W.d-step*.25)return false;W.d=nd;return true}
+  // (no way the router knows: a straight step, never onto a crossing shut (a bridge closed), as the router keeps off it: router.js
+  // crossingOpen; a code review, 2026-11-03)
+  if(!walk(P,dx,dy,step,crossingOpen))return false;const nd=Math.hypot(gx-P.x,gy-P.y);if(nd>=W.d-step*.25)return false;W.d=nd;return true}
 /* by road (the owner, 2026-10-23: "a road snap in the action ring, to make the pathfinder prefer moving by road"; then "By road
    mode should be a toggle: the pathfinder always uses roads for travelling (if any are near)"): a mode, P.byRoad (true while on;
    absent, off: saved with you, a new hero's off). While it is on, every way you go (a click, Travel here, a chase, Hurry here)

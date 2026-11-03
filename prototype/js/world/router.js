@@ -19,8 +19,9 @@
 // each walker's way, found once for each target and kept aside (never saved: wayTravel); a new world forgets them all
 let ROUTES=new WeakMap();
 onWorld(()=>{ROUTES=new WeakMap()});
-// is the straight line from (x0,y0) to (x1,y1) open ground all the way (a holding's walls shut: holdShut)
-function clearLine(x0,y0,x1,y1){holdShut();const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/4);for(let i=1;i<=n;i++){const k=i/n,x=x0+(x1-x0)*k,y=y0+(y1-y0)*k;if(!passable(terrAt(x,y))||SHUT&&SHUT[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]&2)return false}return true}
+// is the straight line from (x0,y0) to (x1,y1) open ground all the way (a holding's walls shut: holdShut; a crossing shut, Router.close:
+// as the tile searches keep off both, a code review, 2026-11-03, found a closed bridge crossed by the straight line)
+function clearLine(x0,y0,x1,y1){holdShut();const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/4);for(let i=1;i<=n;i++){const k=i/n,x=x0+(x1-x0)*k,y=y0+(y1-y0)*k;if(!passable(terrAt(x,y))||SHUT&&SHUT[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]&3)return false}return true}
 // the tiles to pass from one point to another by the cheapest way, searched within a box round both (pad tiles); null if none;
 // rm: off the roads x rm (a road keeper's)
 function findPath(x0,y0,x1,y1,pad,rm){
@@ -177,6 +178,8 @@ const wayChunkOf=(G,i)=>((i/MW|0)/G.cs|0)*G.cols+((i%MW)/G.cs|0);
 const wayOpen=i=>passable(tiles[i])&&!(SHUT&&SHUT[i]);
 // (open but for a holding's walls: the map's march grids, which shut the walls by their footings: march.js MarchGround)
 const wayLand=i=>passable(tiles[i])&&!(SHUT&&SHUT[i]&1);
+// (a point not on a crossing shut: Router.close; world.js heroStep's own straight step)
+const crossingOpen=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return !(SHUT&&tx>=0&&ty>=0&&tx<MW&&ty<MH&&SHUT[ty*MW+tx]&1)};
 /* a holding's walls (PATHS.holding, battle/route.js; the owner, 2026-11-02: "the holding walls is not correct because the unit can
    walk through it"): the tiles of each holding's centre whose middle its footing covers (march.js lotFooting, holdFooting: its walls'
    ground, its gate open) shut to every way over the land (SHUT's bit 2: wayOpen, findPath, wayLine, clearLine, the chunks' tables),
