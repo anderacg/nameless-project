@@ -621,6 +621,16 @@ class MarchArmy{
   fillStep(targets,d,moved,col){const S=SLOTFILL.march,turned=!col&&Math.abs(Math.atan2(Math.sin(this.face-this.fillFace),Math.cos(this.face-this.fillFace)))>=S.turn;this.fillT-=d;
     if(this.fillDue||turned){this.fillFace=this.face;this.fillT=S.every;this.refill(targets,this.fillDue,!!col);this.fillDue=false}
     else if(this.fillT<=0&&moved>.001){this.fillT=S.every;this.refill(targets,false,!!col)}}
+  // ---- its grid (MarchGround), its lifetime alone (a code review, 2026-11-03: made apart from the step, as it was): made afresh on a
+  // jump (no men in it); made again when the land under it changed (fresh), its timer is up, or the army or one of its men stands off
+  // it; menCentre (C): men on ground its middle's does not reach in its box (across a river, the bridge or the ford past its edge: a
+  // battle's end), its box made MARCH_MOVE.wide px wider round them, so their way round is in it, while they are so (split). Returns
+  // what its middle reaches
+  groundStep(o,jump,C){
+    if(jump)this.ground=new MarchGround(o,[]);
+    if(!this.ground||!this.ground.fresh()||this.time>=(this.refresh||0)||!this.ground.covers(o,marchOuter(o)+8)||!jump&&this.units.some(u=>!this.ground.covers(u,8))){this.ground=new MarchGround(o,jump?[]:this.units,C&&this.split?MARCH_MOVE.wide:MARCH_MOVE.pad);this.refresh=this.time+MARCH_MOVE.refresh}
+    let reach=this.ground.reachable(o);if(C){const g=this.ground,off=this.units.some(u=>!u.dead&&!reach[routeIx(g.grid,u.x-g.x,u.y-g.y)]);if(off&&!this.split){this.split=true;this.ground=new MarchGround(o,this.units,MARCH_MOVE.wide);this.refresh=this.time+MARCH_MOVE.refresh;reach=this.ground.reachable(o)}else if(!off)this.split=false}
+    return reach}
   step(d,sync=true,bounds=null,inside=null){
     if(!(d>0))return;const o=this.owner,C=MARCH_MOVE.menCentre,ox0=o.x,oy0=o.y;if(Math.hypot(o.x-this.x,o.y-this.y)>MARCH_MOVE.teleport){MARCH_ARMIES.delete(o);MarchArmy.of(o);return}
     if(sync)this.sync();this.time+=d;
@@ -655,11 +665,8 @@ class MarchArmy{
     // (turned: its own order back once it has gone leg px the new way, or its guide has stood halt s; a column's by its loop instead
     // (below), at a halt)
     this.since+=moved;if(this.turned){this.leg+=moved;if((!AF.loop.on||!col)&&(this.leg>=AF.leg||moved<=.001&&(this.still||0)+d>=AF.halt))this.reorderStart(col)}
-    if(jump){this.ground=new MarchGround(o,[]);this.fillOff=null;this.turned=false;this.reorder=null}
-    if(!this.ground||!this.ground.fresh()||this.time>=(this.refresh||0)||!this.ground.covers(o,marchOuter(o)+8)||!jump&&this.units.some(u=>!this.ground.covers(u,8))){this.ground=new MarchGround(o,jump?[]:this.units,C&&this.split?MARCH_MOVE.wide:MARCH_MOVE.pad);this.refresh=this.time+MARCH_MOVE.refresh}
-    // (menCentre: men on ground their middle's does not reach in its box (across a river, the bridge or the ford past its edge: a
-    // battle's end), its box made MARCH_MOVE.wide px wider round them, so their way round is in it, while they are so)
-    let reach=this.ground.reachable(o);if(C){const g=this.ground,off=this.units.some(u=>!u.dead&&!reach[routeIx(g.grid,u.x-g.x,u.y-g.y)]);if(off&&!this.split){this.split=true;this.ground=new MarchGround(o,this.units,MARCH_MOVE.wide);this.refresh=this.time+MARCH_MOVE.refresh;reach=this.ground.reachable(o)}else if(!off)this.split=false}
+    if(jump){this.fillOff=null;this.turned=false;this.reorder=null}
+    let reach=this.groundStep(o,jump,C);
     // (each man his march pace; menCentre: the army's own step this moment, at least that, at most road times it: its step how far
     // its guide went over the time since it last moved, at most a mid tier's moment (worldobject.js WORLD_LOD: such a one steps
     // every few frames, its whole step at once). Without: the army's step, its road with it, a leap past it no march)
