@@ -146,7 +146,9 @@ function routePath(g,ax,ay,bx,by,o={}){
   // (an open straight line over the cheapest ground: no search)
   if(t===t0&&(need?lineBody:lineClear)(g,ax,ay,bx,by,g.lo,r))return res([[bx,by]],true,false,0);
   const s0=s;if(!cost[s]&&!g.mv[s]){s=routeNear(g,s);if(s<0)return res([],false,false,0)}
-  const key=(s*N+t)*(need?128:1)+(need?Math.min(127,Math.round(need*4)):0),hit=o.cache!==false&&g.memo.get(key);let P,L,end,cut=false,n=0;
+  // (the cache's key: the cells, and the room kept in quarter px (1-127; 0 only for none): the same for every query, so no pair
+  // with room and another without share one, as they could (a code review, 2026-11-03); its smoothing (r) is done after, on any)
+  const key=(s*N+t)*128+(need?Math.max(1,Math.min(127,Math.round(need*4))):0),hit=o.cache!==false&&g.memo.get(key);let P,L,end,cut=false,n=0;
   if(hit){P=hit.p;L=P.length;end=P[L-1]}
   else{L=routeSearch(g,s,t,o.budget??routeBudget(g),need);const S=ROUTE_WS;P=S.path;end=S.end;cut=S.cut;n=S.n;
     if(o.cache!==false&&!cut){if(g.memo.size>=ROUTE.cache)g.memo.delete(g.memo.keys().next().value);g.memo.set(key,{p:P.slice(0,L)})}}
