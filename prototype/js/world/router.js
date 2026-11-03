@@ -198,6 +198,11 @@ function holdShut(now){const H=HOLD_SHUT;if(!now&&H.n===WORLD_LOD.n)return;H.n=W
       for(let y=c.y;y<c.y+c.n;y++)for(let x=c.x;x<c.x+c.n;x++){const px=(x+.5)*TILE,py=(y+.5)*TILE;if(x>=0&&y>=0&&x<MW&&y<MH&&!(x===t.tx&&y===t.ty)&&F.some(r=>px>=r.x&&px<r.x+r.w&&py>=r.y&&py<r.y+r.h)){const i=y*MW+x;tiles.push(i);SHUT[i]|=2;G.chunk.delete(wayChunkOf(G,i))}}}
     H.at.set(t,{c,s,x:c&&c.x,y:c&&c.y,n:c&&c.n,tiles});moved=true}
   if(moved){H.held=null;PAIRS.clear();WAYV++}}
+// (every holding's walls read while the game loads, each centre's picture and footing made in turn (cached on its lot: structures.js
+// lotSprite, march.js lotFooting), then holdShut at once: its last step (session.js begin, save.js loadGame), so the first frame on
+// the map no longer makes them all (a code review's measure, 2026-11-03: a lord's first step took 3.4 s))
+function* holdShutWarm(){const cs=TOWNS.map(t=>[t,PATHS.holding&&t.lots?t.lots.find(l=>l.k==='centre'&&l.st!=='ruined'):null]).filter(x=>x[1]);
+  for(let i=0;i<cs.length;i++){lotFooting(cs[i][0],cs[i][1]);yield (i+1)/cs.length}holdShut(true)}
 // (does graph edge e, a road's, run over a holding's walls: a tile of it shut so, but its two ends (a road ends at its holding's
 // node); kept by edge till they change)
 function wayHeld(G,e){const H=HOLD_SHUT;if(!SHUT||G.leg[e*3]<0)return false;if(!H.held||H.held.g!==G){H.held=new Int8Array(G.to.length).fill(-1);H.held.g=G}let v=H.held[e];
