@@ -137,10 +137,13 @@ function lineBody(g,ax,ay,bx,by,cap=255,r=0){return PATHS.clear&&r>0?routeWalk(g
    the cells of the way while lineClear allows it and crosses no cell dearer than those it skips. o: {budget (cells expanded at
    most: ROUTE.budget), r (the half-width a leg keeps clear, px), cache (false: no cache)}. The array carries ok (the goal
    reached), cut (the budget ran out first: part of the way, toward the goal; re-path from its end), n (cells expanded: 0 from
-   a straight line or the cache). o.need: a body's room (px, PATHS.clear): no cell short of it gone through (routeSearch), and
+   a straight line or the cache), clamped (the goal was off the grid: the way to the nearest point on it). o.need: a body's room (px, PATHS.clear): no cell short of it gone through (routeSearch), and
    (PATHS.smooth) its legs keep it */
 function routePath(g,ax,ay,bx,by,o={}){
-  routePrep(g);const need=PATHS.clear&&o.need>0?o.need:0,C=g.C,cs=g.cs,N=C*g.R,cost=g.cost,r=PATHS.smooth&&need>(o.r||0)?need:o.r||0,t0=routeIx(g,bx,by),t=routeNear(g,t0),res=(p,ok,cut,n)=>{p.ok=ok;p.cut=cut;p.n=n;return p};
+  // (a goal off the grid: the nearest point on it, said so (clamped); a code review, 2026-11-03: its cell was taken at the edge,
+  // but a straight line could end the way at the goal itself, off the grid)
+  const X=g.C*g.cs-.01,Y=g.R*g.cs-.01,clamped=bx<0||by<0||bx>X||by>Y;if(clamped){bx=bx<0?0:bx>X?X:bx;by=by<0?0:by>Y?Y:by}
+  routePrep(g);const need=PATHS.clear&&o.need>0?o.need:0,C=g.C,cs=g.cs,N=C*g.R,cost=g.cost,r=PATHS.smooth&&need>(o.r||0)?need:o.r||0,t0=routeIx(g,bx,by),t=routeNear(g,t0),res=(p,ok,cut,n)=>{p.ok=ok;p.cut=cut;p.n=n;p.clamped=clamped;return p};
   let s=routeIx(g,ax,ay);
   if(t<0)return res([],false,false,0);
   // (an open straight line over the cheapest ground: no search)

@@ -519,7 +519,8 @@ class MarchGround{
   }
   reachable(p){const a=this.local(p),i=routeNear(this.grid,routeIx(this.grid,a.x,a.y));if(this.root!==i){this.root=i;this.reach=routeFlood(this.grid,i)}return this.reach}
   island(p){const q=this.local(p),i=routeNear(this.grid,routeIx(this.grid,q.x,q.y));this.islands||=[];let reach=this.islands.find(r=>r[i]);if(!reach){reach=routeFlood(this.grid,i);this.islands.push(reach)}return reach}
-  path(a,b){const p=routePath(this.grid,a.x-this.x,a.y-this.y,b.x-this.x,b.y-this.y,{need:this.body(a)});return p.map(([x,y])=>({x:x+this.x,y:y+this.y}))}
+  // (in world px; its ok, cut, n and clamped kept, routePath's: none reached and the search's budget run out are told apart)
+  path(a,b){const p=routePath(this.grid,a.x-this.x,a.y-this.y,b.x-this.x,b.y-this.y,{need:this.body(a)}),q=p.map(([x,y])=>({x:x+this.x,y:y+this.y}));q.ok=p.ok;q.cut=p.cut;q.n=p.n;q.clamped=p.clamped;return q}
   /* (PATHS.flow) the field toward (x, y) (world px) for bodies of half r (route.js routeFlow), one kept for each r and side (0 its
      front, 1 its rear: MarchArmy step), its room kept to each aim's end (strict: routeFlowAim): made again when the grid's version
      moves, its goal moves PATHS.move cells, or one of want (world points) is where it was not made out to; made: the fields made on
