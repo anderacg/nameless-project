@@ -30,6 +30,21 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   B.units[1].reelAt=B.t;B.units[1].reelK=1;B.units[1].reelA=Math.PI;for(let i=0;i<5;i++){B.t+=1/60;t.drawBattle()}
   u.down=u.downFor=1;for(let i=0;i<5;i++){B.t+=1/60;u.down-=1/60;t.drawBattle()}u.down=0;
   ok(!ERR.length,'a frame with a rocked man and a downed one draws'+(ERR.length?': '+ERR[0]:''))}
+ L.exit();
+ // ======== riders, beasts and monsters (the owner: "add all three")
+ L.start({leftGroups:[{type:'hum_knight',count:2}],rightGroups:[{type:'wolf',count:2},{type:'boar',count:1},{type:'troll',count:1}],morale:false,deploy:false,paused:true,ai:false,seed:4});
+ {const B=t.B,kn=B.units.find(x=>x.type==='hum_knight'),wf=B.units.find(x=>x.type==='wolf'),tr=B.units.find(x=>x.type==='troll'),bo=B.units.find(x=>x.type==='boar');
+  const throwAt=(x,f)=>{x.reelAt=null;t.physThrow(x,x.face<0?0:Math.PI,t.PHYSICS.hit.down*f,false);B.t+=.1;return t.Stagger.reel(x)};
+  {const r=throwAt(kn,2);ok(r&&r.lean<0,'a rider struck hard is rocked back in the saddle, his mount rearing ('+r.lean.toFixed(2)+')')}
+  {const r=throwAt(tr,1.5);ok(r&&r.dx<0,'a troll never goes down, but a heavy blow makes it recoil, lurching back ('+r.dx+' px)');tr.reelAt=null;t.physThrow(tr,0,t.PHYSICS.hit.down*.3,false);ok(tr.reelAt==null,'a light one it shrugs off')}
+  const ways=new Set();for(const x of [wf,bo])for(let i=0;i<40;i++){x.id=2000+i;x.stgWay=null;x.downFor=x.down=1;ways.add(St.way(x))}
+  ok(['low','skid','tumble','roll'].every(w=>ways.has(w))&&[...ways].every(w=>w in S.beasts.light||w in S.beasts.mid),'a beast goes down its own ways: '+[...ways].join(', '));
+  const cx=t.ctx,dif=new Set();let bad=0;wf.reelA=wf.face<0?0:Math.PI;
+  for(const way of ['low','skid','tumble','roll']){const fr=[];for(const s of [0,.1,.2,.3,.5,.9,1.1]){cx.save();cx.setTransform(1,0,0,1,0,0);cx.clearRect(0,0,64,64);wf.stgWay=way;wf.stgS=B.t-s;wf.downFor=1.2;wf.down=Math.max(.001,1.2-s);
+    try{St.draw(wf,t.downedOf(wf),32,40)}catch(e){bad++;o.push('EXC '+way+' '+e.message)}fr.push(Array.from(cx.getImageData(0,0,64,64).data).join());cx.restore()}dif.add(fr[2])}
+  wf.down=0;wf.stgWay=null;ok(!bad&&dif.size===4,'each drawn through its fall and up again; each its own ('+dif.size+' different mid-fall)');
+  kn.reelAt=tr.reelAt=B.t;kn.reelK=tr.reelK=1;wf.down=wf.downFor=1;for(let i=0;i<5;i++){B.t+=1/60;wf.down-=1/60;t.drawBattle()}wf.down=0;
+  ok(!ERR.length,'a frame with a rearing rider, a recoiling troll and a downed wolf draws'+(ERR.length?': '+ERR[0]:''))}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{Math.random=random;if(L.active)L.exit()}
  const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
 };
