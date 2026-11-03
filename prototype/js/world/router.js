@@ -364,20 +364,23 @@ function wayDays(a,b){holdShut();const s=wayTile(a),g=wayTile(b);if(s<0||g<0)ret
 function wayCost(s,p){let c=0,a=s;for(const k of p){const d=a%MW!==k%MW&&(a/MW|0)!==(k/MW|0)?1.414:1;c+=d*wayStep(tiles[k],climate[k]);a=k}return c*wayDay()}
 
 
-/* Escape routes stay committed around obstacles instead of alternating local steering angles. */
-const FLEE_ROUTE={radius:12,depth:24,look:3,rethink:3,cost:.12};
+/* Escape routes stay committed around obstacles instead of alternating local steering angles. A search that finds no way (a dead
+   end whose way out lies past its radius) is kept wait of its steps, so none searches every moment, then made again grow times at
+   most, each twice as far (its radius and depth); a way found, or the threat or ground changed, and it starts again at its own
+   size (a code review, 2026-11-03: a failed one was kept for ever, the fleer standing in the dead end) */
+const FLEE_ROUTE={radius:12,depth:24,look:3,rethink:3,cost:.12,wait:30,grow:2};
 class FleeRoutes{
   static paths=new WeakMap();
   static clear(a,b){return wayRay(a.x,a.y,b.x,b.y,i=>i>=0&&wayOpen(i))}
-  static plan(o,threat){
-    const start=wayTile(o),sx=start%MW,sy=Math.floor(start/MW),seen=new Map([[start,{prev:-1,depth:0}]]),q=[start],base=Math.hypot(o.x-threat.x,o.y-threat.y);
+  static plan(o,threat,k=0){
+    const start=wayTile(o),sx=start%MW,sy=Math.floor(start/MW),seen=new Map([[start,{prev:-1,depth:0}]]),q=[start],base=Math.hypot(o.x-threat.x,o.y-threat.y),RAD=FLEE_ROUTE.radius<<k,DEP=FLEE_ROUTE.depth<<k;
     let best=start,score=TILE*.5;
     for(let h=0;h<q.length;h++){
       const k=q[h],x=k%MW,y=Math.floor(k/MW),depth=seen.get(k).depth;
-      if(depth>=FLEE_ROUTE.depth)continue;
+      if(depth>=DEP)continue;
       for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
         if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy,j=ny*MW+nx;
-        if(nx<0||ny<0||nx>=MW||ny>=MH||Math.abs(nx-sx)>FLEE_ROUTE.radius||Math.abs(ny-sy)>FLEE_ROUTE.radius||seen.has(j)||!wayOpen(j))continue;
+        if(nx<0||ny<0||nx>=MW||ny>=MH||Math.abs(nx-sx)>RAD||Math.abs(ny-sy)>RAD||seen.has(j)||!wayOpen(j))continue;
         if(dx&&dy&&(!wayOpen(y*MW+nx)||!wayOpen(ny*MW+x)))continue;
         const [px,py]=wayCentre(j);if(k===start&&!this.clear(o,{x:px,y:py}))continue;
         seen.set(j,{prev:k,depth:depth+1});q.push(j);
@@ -386,16 +389,18 @@ class FleeRoutes{
       }
     }
     const path=[];for(let k=best;k!==start;k=seen.get(k).prev)path.push(k);
-    return{path:path.reverse(),at:0,threat:{x:threat.x,y:threat.y},x:o.x,y:o.y,v:WAYV};
+    return{path:path.reverse(),at:0,threat:{x:threat.x,y:threat.y},x:o.x,y:o.y,v:WAYV,k,waited:0};
   }
   static step(o,threat,step){
     if(!(step>0)||!Number.isFinite(step)||!Number.isFinite(threat.x)||!Number.isFinite(threat.y)||wayTile(o)<0)return false;
-    let r=this.paths.get(o);
+    let r=this.paths.get(o),k=0;
+    // (none found: waited out, made again a size larger)
+    if(r&&!r.path.length&&++r.waited>=FLEE_ROUTE.wait){k=Math.min(FLEE_ROUTE.grow,r.k+1);this.paths.delete(o);r=null}
     if(r&&(r.v!==WAYV||Math.hypot(o.x-r.x,o.y-r.y)>1||Math.hypot(threat.x-r.threat.x,threat.y-r.threat.y)>FLEE_ROUTE.rethink*TILE)){this.paths.delete(o);r=null}
     if(!r){
       const dx=o.x-threat.x,dy=o.y-threat.y,d=Math.hypot(dx,dy),ux=d?dx/d:1,uy=d?dy/d:0,look=Math.max(step,FLEE_ROUTE.look*TILE);
       if(this.clear(o,{x:o.x+ux*look,y:o.y+uy*look}))return this.move(o,o.x+ux*step,o.y+uy*step);
-      r=this.plan(o,threat);this.paths.set(o,r);
+      r=this.plan(o,threat,k);this.paths.set(o,r);
     }
     let moved=false,left=step;
     for(let n=0;n<64&&left>0&&r.at<r.path.length;n++){
