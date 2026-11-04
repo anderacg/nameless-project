@@ -510,7 +510,14 @@ function frame(){
    Hungry, Cold, In camp: on hover, why); gold, food and drink in days at the current rate, furs in or near the frost or when
    carried, troops, power and pace as icon chips (what runs short is red); where you are and whom you serve. Your hero's health
    and mana are in the Hero window (C) and the battle. The top bar: the day and the time */
+// the left panel's group at the bottom left (the owner, 2026-11-04: "a level up button at the bottom left corner ... like a square
+// box and animated in blinking"): its one notice now, talent points to spend after a level up (P.tp), a square that blinks till
+// they are spent; a click opens your Skills (as K). None: the group hidden
+function lvBox(){const el=$('#lgroup');if(!el)return;const n=P.tp||0,sig=String(n);if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.hidden=!n;
+  el.innerHTML=n?'<button class="lvup" type="button" title="Level up: '+n+' talent point'+(n>1?'s':'')+' to spend (K)" aria-label="Level up: '+n+' talent point'+(n>1?'s':'')+' to spend">'+icon('skills',22)+'<b>+'+n+'</b><small>Level up</small></button>':''}
+{const g=document.getElementById('lgroup');if(g)g.addEventListener('click',e=>{if(e.target.closest('.lvup'))document.getElementById('skillBtn')?.click()})}
 function updateHUD(force){
+  lvBox();
   const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=bandFitness(),fp=Math.round(F.pct),mo=Math.round(P.morale),lh=landHold(P.x,P.y),sp=bandPace();
   const bar=(v,cls,txt,title)=>'<div class="bar '+cls+'" title="'+title+'"><i style="width:'+Math.max(0,Math.min(100,Math.round(v)))+'%"></i><em>'+txt+'</em></div>';
   const chip=(ic,val,title,warn,cls)=>'<span class="chip'+(warn?' warn':'')+'" title="'+title+'">'+icon(ic,14)+'<span'+(cls?' class="'+cls+'"':'')+'>'+val+'</span></span>';
@@ -525,7 +532,7 @@ function updateHUD(force){
   const who=RACES[P.race].n+' '+(BGS[P.bg]?BGS[P.bg].n:'');
   setHtml(el,'<div class="pc-head"><img class="pc-pic" src="'+portrait('hero',true)+'" alt=""><div class="pc-who"><button class="pc-band" type="button" data-act="nm-open" title="'+htmlText(bandName())+': rename your band and your hero">'+htmlText(bandName())+'</button>'+
       '<small title="'+htmlText((heroName()?heroName()+', ':'')+who)+' · Level '+P.level+' · '+rankName()+'">'+htmlText(heroName()||who)+' · Lv '+P.level+' · '+rankName()+'</small></div>'+
-      (P.tp?'<span class="pc-pts" title="Talent points to spend (K)">+'+P.tp+'</span>':'')+'</div>'+
+'</div>'+
     '<div class="bars">'+bar(fp,'fit'+(fp<50?' low':''),'Fitness<b>'+fp+'%</b>',fitTip)+bar(mo,'mor'+(mo<30?' low':''),'Morale<b>'+mo+'%</b>',moTip)+
       bar(P.bsta,'sta '+S.st,'Stamina'+arrow+'<b>'+(word?word+' · ':'')+Math.round(P.bsta)+'%</b>',staTip)+'</div>'+
     (S.fill!=null?'<div class="pc-fill" title="Filling your waterskins: '+S.fill+'%. Any order stops it; you keep what is in."><i style="width:'+S.fill+'%"></i><em>Filling waterskins<b>'+S.fill+'%</b></em></div>':'')+

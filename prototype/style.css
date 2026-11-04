@@ -325,7 +325,17 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-band:focus-visible{color:#fff;text-decoration:underline;text-decoration-color:var(--trim);outline:none}@media (hover:hover){.pc-band:hover{color:#fff;text-decoration:underline;text-decoration-color:var(--trim);outline:none}}
 .pc-who small{display:block;font-size:var(--fs-sm);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pc-pts{font-size:var(--fs-xs);font-weight:700;color:var(--accent-ink);background:var(--accent);padding:2px 6px;border-radius:var(--r-sm)}
+/* the left panel's group at the bottom left: a level up's square, blinking till its points are spent (render.js lvBox); the
+   messages move over beside it while it shows */
+.lgroup{position:absolute;left:var(--e-l);bottom:var(--e-b);pointer-events:auto}
+.lgroup[hidden]{display:none}
+.lvup{width:58px;height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0;background:var(--hud-face);border:2px solid var(--accent);border-radius:var(--r-md);box-shadow:var(--float);color:var(--accent);font:700 var(--fs-md)/1 Arial,sans-serif;cursor:pointer;animation:lvup-blink 1.2s ease-in-out infinite}
+.lvup small{font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg)}
+.lvup:hover,.lvup:focus-visible{background:var(--accent);color:var(--accent-ink)}.lvup:hover small,.lvup:focus-visible small{color:var(--accent-ink)}
+@keyframes lvup-blink{0%,100%{border-color:var(--accent);box-shadow:var(--float),0 0 0 0 rgba(240,200,90,0)}50%{border-color:var(--trim-hi);box-shadow:var(--float),0 0 14px 3px rgba(240,200,90,.65)}}
+@media (prefers-reduced-motion:reduce){.lvup{animation:none}}
+.screen:not([data-mode="world"]) .lgroup{display:none}
+.screen[data-mode="world"] .hudlayer:has(.lgroup:not([hidden])) .toasts{left:calc(var(--e-l) + 68px)}
 .pcard .bars{display:grid;gap:3px;margin:0 0 7px}
 .pcard .bar{position:relative;width:100%;max-width:none;height:14px;margin:0;background:var(--field);border:1px solid var(--line);border-radius:var(--r-sm)}
 .pcard .bar i{display:block;height:100%}
@@ -1436,6 +1446,7 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .screen.mobile-world #stats{display:none;top:auto;bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 8px);left:var(--e-l);right:var(--e-r);width:auto;max-height:calc(100% - var(--e-t) - var(--e-b) - var(--mobile-hud-height,108px) - 16px);overflow:auto;z-index:16}
 .screen.mobile-world.party-open #stats{display:block}
 .screen.mobile-world .toasts{bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 12px);width:min(75%,380px)}
+.screen.mobile-world .lgroup{bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 12px)}.screen.mobile-world.party-open .lgroup{display:none}
 .screen.mobile-world.party-open .toasts,.screen.mobile-world:has(#worldSpeedChoices:not([hidden])) .toasts{display:none}
 .screen.mobile-controls .overlay:has(.fb-gm){align-items:flex-end;padding:0}
 .screen.mobile-controls .panel:has(.fb-gm){width:100%;height:min(620px,85%);max-height:calc(100% - var(--e-t));border-radius:12px 12px 0 0;border:1px solid var(--trim);padding:0;padding-bottom:var(--sa-b)}
