@@ -39,13 +39,14 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
     B.head.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c]&&t.pget(g,hx+x,B.y0+hy+y+F.bob+(F.head||0))!==col[c])bad.push(w+': '+x+','+y)}))}
    const L=B.head.length,Wd=Math.max(...B.head.map(r=>r.length)),deep=B.head.map(r=>r.replace(/\./g,'').length);
    ok(!bad.length&&Object.keys(B.poll).join()===Object.keys(B.body).join(),'one head ('+Wd+'x'+L+' px, '+Math.max(...deep)+' px across at the jowl to '+deep[L-1]+' at the muzzle) drawn the same in all 9 frames, at each shape\'s poll'+at+(bad.length?' ('+bad.slice(0,5).join('; ')+')':''))}
-  // ---- the legs n px longer under the same body; the rider sunk a px into the saddle, so up n-1 px, his hands, back and height with him
+  // ---- the legs n px longer under the same body; the rider up n px on it (no longer sunk a px into the saddle), his hands, back and
+  // height with him
   {const legs=tall=>{A.tall=tall;const g=t.pgrid(32,32);t.drawMount(g,bay,-1);A.tall=true;const col=[];for(let y=0;y<32;y++)if(t.pget(g,14,y))col.push(y);const top=col[0],belly=col[col.length-1];return{deep:belly-top+1,leg:30-belly}};
    const s=legs(true),o=legs(false);info('standing: the body '+o.deep+' px deep on '+o.leg+' px of leg (the first pass), now '+s.deep+' on '+s.leg+at);
    ok(s.leg===o.leg+n&&s.deep===o.deep,'the legs '+s.leg+' px under the same body ('+s.deep+' px deep; the first pass\'s legs '+o.leg+')'+at)}
   {const seat=w=>t.drawMount(t.pgrid(32,32),bay,w,3,5),W=[-1,0,1,2,3,4,5,6,7];A.tall=false;const old=W.map(seat);A.tall=true;const nw=W.map(seat);
-   info('the seat by frame, the first pass '+old.join(' ')+', now '+nw.join(' ')+at);ok(nw.every((y,i)=>y===old[i]-(n-1)),'the rider '+(n-1)+' px higher in every frame (sunk a px into the saddle), a frame behind the horse as before'+at)}
-  {const riders=tall=>{A.tall=tall;clear();const r=KINDS.slice(0,6).flatMap(k=>POSES.map(p=>t.unitSprite(k,0,false,1,p)));A.tall=true;return r},o=riders(false),s=riders(true),bad=[],d=n-1;
+   info('the seat by frame, the first pass '+old.join(' ')+', now '+nw.join(' ')+at);ok(nw.every((y,i)=>y===old[i]-n),'the rider '+n+' px higher in every frame (on the saddle, no longer sunk into it: the owner, 2026-11-04), a frame behind the horse as before'+at)}
+  {const riders=tall=>{A.tall=tall;clear();const r=KINDS.slice(0,6).flatMap(k=>POSES.map(p=>t.unitSprite(k,0,false,1,p)));A.tall=true;return r},o=riders(false),s=riders(true),bad=[],d=n;
    s.forEach((c,i)=>{const p=o[i];for(const k of ['hand','back','free'])if(p[k]&&(!c[k]||c[k][0]!==p[k][0]||c[k][1]!==p[k][1]-d))bad.push(k+' '+i);if(c.ch!==p.ch+d||c.width!==p.width)bad.push('fh '+i+': '+p.ch+'>'+c.ch)});
    info('a rider\'s height (fh) standing '+o[0].ch+' to '+s[0].ch+', at most '+Math.max(...o.map(c=>c.ch))+' to '+Math.max(...s.map(c=>c.ch))+at);
    ok(!bad.length,'his hand (lance, sword, bow), back (the flags) and free hand '+d+' px up with the seat, his height (bars, labels) '+d+' px more, in the same cell'+at+(bad.length?' ('+bad.slice(0,6).join('; ')+')':''))}
@@ -66,7 +67,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // (FIRST re-recorded 2026-11-04, on purpose: the owner, "make sure the leg when walking or running is correct and fix the extra
  // dots in the outer line": every horse's legs drawn edge to edge, the near one 2 px, the far one 1 px a pixel apart (people.js
  // horseLeg), and its tail joined edge to edge, both builds; was 5bf21915)
- const OLD='fd8736e5',FIRST='d5440a64';
+ // (OLD and FIRST re-recorded again 2026-11-04, on purpose: the owner, the rider "a bit low", "show more of him": every rider's
+ // seated leg drawn over the cloth, his thigh, knee, shin and foot outlined (people.js RIDER_LEG), whatever the horse; was
+ // fd8736e5 and d5440a64)
+ const OLD='765cc6c3',FIRST='c2d7d437';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

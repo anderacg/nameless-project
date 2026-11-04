@@ -311,7 +311,7 @@ const WOLF_T=[
    high, a rounded jowl over a dark jaw, narrowing to a rounded muzzle and its nostril), its top left at poll [x, y from y0] by
    shape, moved by the frame's head (horseBuild) */
 const HORSE_ART={on:true,tall:true,hoof:'#3d3f4b',
-  leg:1,sized:{sink:1,top:-3,headX:32,headY:0,ears:{stand:[-3,-4],run:[-2,-2]},poll:{stand:[23,-3],run:[24,-1]},head:[
+  leg:1,sized:{sink:0,top:-3,headX:32,headY:0,ears:{stand:[-3,-4],run:[-2,-2]},poll:{stand:[23,-3],run:[24,-1]},head:[
     '.yy....',
     '.mHh...',
     'HHkHh..',
@@ -486,6 +486,8 @@ function drawMountDown(g,o){
   if(o.barded){for(let x=6;x<=21;x++){pset(g,x,y0+2,Tm[0]);pset(g,x,y0+3,Tm[1]);pset(g,x,y0+4,x%2?Tm[3]:Tm[2])}for(let x=6;x<=21;x++)pset(g,x,y0+3,PPAL.gold[1])}
   else for(let x=10;x<=14;x++)pset(g,x,y0+1,PPAL.leather[x<12?0:1]);
 }
+// (a rider's seated leg, facing right: [x, y from the seat row, its letter: L leg, M its shade, F his foot])
+const RIDER_LEG=[[11,6,'L'],[12,6,'L'],[13,6,'L'],[14,6,'L'],[12,7,'M'],[13,7,'M'],[14,7,'L'],[14,8,'L'],[14,9,'L'],[14,10,'F'],[15,10,'F']];
 /* the sprite: a figure on foot in a 24×19 frame (the man at 4, 3), or a rider on its mount in 32×32, its gear on it (figures.js
    FigureRig), laid in a grid GEAR.room px wider each way and taller, outlined round it all, cut to the frame grown only where the
    gear reaches past it (a pike, a lance, a blade raised), so nothing is cut off; then placed in its power-of-two cell (sprites.js
@@ -499,8 +501,12 @@ function peopleSprite(o,pose,bare){
   if(bare&&heldWeapon(o))o={...o,weapon:null,held:heldWeapon(o)};if(pose===DEF_POSE||pose===DEF_LOW)o={...o,guardUp:pose===DEF_LOW?'low':true};
   const R=GEAR.room;
   if(o.mount){const g=pgrid(32+2*R,32+R),top=drawMount(g,o,walk,R,R),A=drawFigure(g,{...o,shield:null,offShield:null},6+R,top-6,-1,style,atk,12);
-    // the rider's leg down the mount's side
-    const Lc=lettersOf(o);pset(g,11+R,top+7,Lc.L);pset(g,11+R,top+8,Lc.L);pset(g,11+R,top+9,Lc.F);return FigureRig.frame(g,R,32,A,32-(top-R-6),false)}
+    // the rider's leg down the mount's side (the owner, 2026-11-04: the rider looked low, "show more of him"): his thigh forward
+    // from the hip over the cloth, the knee, the shin down the horse's side and his foot, outlined on its own so it reads
+    // against the cloth (RIDER_LEG: [x, y from the seat row, letter] each)
+    const Lc=lettersOf(o),leg=RIDER_LEG.map(([x,y,k])=>[x+R,top+y,Lc[k]]),on=new Set(leg.map(([x,y])=>x+','+y));
+    for(const [x,y] of leg)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const k=(x+dx)+','+(y+dy);if(!on.has(k)){on.add(k);pset(g,x+dx,y+dy,PEOPLE_OUT)}}
+    for(const [x,y,c] of leg)pset(g,x,y,c);return FigureRig.frame(g,R,32,A,32-(top-R-6),false)}
   const g=pgrid(24+2*R,19+R),A=drawFigure(g,o,4+R,3+R,walk,style,atk);return FigureRig.frame(g,R,24,A,o.short?15:16,!!o.held&&(blow||pose===FLINCH_POSE));
 }
 
