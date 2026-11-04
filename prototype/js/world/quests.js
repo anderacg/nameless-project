@@ -231,6 +231,38 @@ const Quiet={
 const LEAD={r:4,grow:1.5,max:14,ask:25};
 const causeOf=(it,t)=>!it?'':it.k==='caravan'?'They robbed a caravan'+(it.detail.from?' out of '+it.detail.from:'')+' on day '+it.day+'.':it.k==='raid'?'They raided '+(it.detail.town||t.name)+' on day '+it.day+'.':
   it.k==='beast'?'Seen by the fields on day '+it.day+'.':it.k==='siege'?'The siege on day '+it.day+' cut its roads.':'Seen in the lands of '+t.name+' since day '+it.day+'.';
+// (a band out of the nearest hideout or camp of t (the site's own when given), n strong, working t's roads (haunt); marked qid,
+// called name, with more of its record (carry: a captive); null when there is none: the bounty's, a story's band, a rescue's)
+function bandOut(t,n,name,qid,site,more){
+  const s=site&&!site.cleared?site:Troubles.lairs(t)[0];
+  if(!s)return null;
+  const r=questRng(),x=s.x+r.int(-12,12),y=s.y+r.int(10,18),kind=climAt(x,y)==='desert'?'raiders':climAt(x,y)==='swamp'?'bog':'bandits';
+  const list=Rng.use('quests',()=>makeEnemies(n,false,kind)),ld=Rng.use('quests',()=>newChief(kind,2+Math.floor(G.day/20))),h=spotNear(t,...BOUNTY.haunt)||{x:t.x,y:t.y};
+  const b=asParty({x,y,n,kind,list,t:0,a:0,idle:false,cool:0,qid,name,ld,haunt:{x:Math.round(h.x),y:Math.round(h.y)},...(more||{})});
+  bandits.push(b);
+  return b;
+}
+// (a band that troubles t, unmarked, marked qid and called name if it has none; else one out of its nearest hideout)
+function bandFor(t,n,name,qid,more){
+  const b=Troubles.bands(t).find(o=>!o.qid);
+  if(b){b.qid=qid;b.name=b.name||name;if(more)Object.assign(b,more);return b}
+  return bandOut(t,n,name,qid,null,more);
+}
+// (a pack of mon (none: any) by t's fields, unmarked, marked qid; else one of mon (none: of its land) moved into a spot of its
+// habitat there (by its fields, else within PACK_FAR tiles); null when no such beast lives there)
+const PACK_FAR=26;// (no habitat by its fields: as far as this many tiles, where such beasts live)
+function packFor(t,mon,n,lv,qid){
+  const m=Troubles.packs(t).find(o=>!o.qid&&(!mon||o.id===mon));
+  if(m){m.qid=qid;return m}
+  if(Quiet.is(t,'beast'))return null;
+  const ids=mon?[mon]:Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic&&(MONSTERS[id].where.includes(t.clim)||MONSTERS[id].where.includes('forest')&&t.clim==='grass'));
+  if(!ids.length||!MONSTERS[ids[0]])return null;
+  const id=mon||questRng().pick(ids),M=MONSTERS[id],fit=(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)),p=spotNear(t,7,TROUBLE.folds,fit)||spotNear(t,7,PACK_FAR,fit);
+  if(!p)return null;
+  const o=asMonster({id,x:p.x,y:p.y,hx:p.x,hy:p.y,lv,n:n||Math.max(...M.count),t:0,a:0,cool:0,qid});
+  W.monsters.push(o);
+  return o;
+}
 class BountyQuest extends JobQuest{
   setup(t){
     const b=Troubles.bands(t).find(x=>!x.qid),lair=Troubles.lairs(t)[0];
@@ -264,15 +296,12 @@ class BountyQuest extends JobQuest{
       this.markLead(b);
       return;
     }
-    const s=this.site!=null&&W.sites[this.site]&&!W.sites[this.site].cleared?W.sites[this.site]:Troubles.lairs(t)[0];
-    if(!s)return false;
-    const r=questRng(),x=s.x+r.int(-12,12),y=s.y+r.int(10,18),kind=climAt(x,y)==='desert'?'raiders':climAt(x,y)==='swamp'?'bog':'bandits';
-    const list=Rng.use('quests',()=>makeEnemies(this.n,false,kind)),ld=Rng.use('quests',()=>newChief(kind,2+Math.floor(G.day/20))),h=spotNear(t,...BOUNTY.haunt)||{x:t.x,y:t.y};
-    bandits.push(asParty({x,y,n:this.n,kind,list,t:0,a:0,idle:false,cool:0,qid:this.id,name:this.band,ld,haunt:{x:Math.round(h.x),y:Math.round(h.y)}}));
-    this.chief=ld.name;
-    this.x=x;
-    this.y=y;
-    this.markLead({x,y});
+    const o=bandOut(t,this.n,this.band,this.id,this.site!=null?W.sites[this.site]:null);
+    if(!o)return false;
+    this.chief=o.ld.name;
+    this.x=o.x;
+    this.y=o.y;
+    this.markLead(o);
   }
   get leads(){
     return true;

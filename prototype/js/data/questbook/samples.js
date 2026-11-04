@@ -2,7 +2,7 @@
 /* ---------- data: the questbook's first entries (data/questbook/book.js: their shape) ---------- */
 Object.assign(QUESTBOOK,{
   // (a tavern's: a visit, a choice with a check, a band to beat)
-  millers_debt:{title:'The miller’s debt',ico:'gold',giver:{by:'tavern',name:'The miller',pic:'folk',at:{kind:['village','town']}},when:{level:1},once:true,
+  millers_debt:{title:'The miller’s debt',ico:'gold',giver:{by:'tavern',name:'The miller',pic:'folk',at:{kind:['village','town']}},when:{level:1,threat:'band'},once:true,
     text:'The miller of {town} owes the Red Vipers more than he can pay. They have promised to burn his mill.',
     steps:{
       start:{goal:'visit',to:{town:'{town}',lot:'house'},title:'Hear the miller out',note:'See the miller at his house in {town}.',say:'He shows you their mark, cut deep into his door.',next:'what'},
@@ -15,7 +15,7 @@ Object.assign(QUESTBOOK,{
       talked:{end:{reward:{rep:4,honor:2,xp:40},say:'The miller can hardly believe it.'}},
       won:{end:{reward:{gold:60,rep:6,xp:80},say:'The Vipers will trouble no one again.'}}}},
   // (a notice board's: one step, goods to bring)
-  poorhouse_grain:{title:'Bread for the poorhouse',ico:'sack',giver:{by:'board',at:{kind:['town','city']}},cool:20,
+  poorhouse_grain:{title:'Bread for the poorhouse',ico:'sack',giver:{by:'board',at:{kind:['town','city']}},when:{short:'grain'},cool:20,
     text:'The poorhouse of {town} has run out of grain. Bring them some.',
     steps:{start:{goal:'deliver',to:{town:'{town}',lot:'house'},give:{grain:10},title:'Bread for the poorhouse',note:'Bring 10 grain to the poorhouse in {town}.',say:'The sisters bless you.',days:12,reward:{gold:40,rep:4}}}},
   // (a lord's: carry his word to another holding of his realm)
@@ -23,7 +23,7 @@ Object.assign(QUESTBOOK,{
     text:'{lord} wants a word carried to {lord.his} steward, quickly and quietly.',
     steps:{start:{goal:'visit',to:{pick:'realm'},title:'Carry {lord}’s word',note:'Carry {lord}’s word to {to}.',say:'The steward reads it, and burns it.',days:8,reward:{gold:30,rel:5,honor:2}}}},
   // (the road's: a page first, a check, a beast hunt)
-  shepherds_wolves:{title:'The shepherd’s wolves',ico:'sheep',giver:{by:'road',name:'A shepherd',pic:'folk'},cool:30,
+  shepherds_wolves:{title:'The shepherd’s wolves',ico:'sheep',giver:{by:'road',name:'A shepherd',pic:'folk'},when:{threat:'beast'},cool:30,
     text:'A shepherd waves you down: something has been taking his flock at night.',
     steps:{
       start:{title:'The shepherd’s flock',text:'“Three ewes this week,” he says. “Tracks as big as my hand.”',note:'Hear the shepherd out.',choose:[

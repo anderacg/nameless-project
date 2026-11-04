@@ -376,14 +376,13 @@ class HeldQuest extends StepQuest{
 }
 for(const type of ['band:beaten','site:cleared','battle:ended'])worldOn(type,d=>HeldQuest.heard(type,d));
 /* beat a band (spec: {band (its name; none: one of BAND_NAMES), n (its size; none: 4–6 and more with the days), title, text, prize,
-   say, days}): set near its holding, as a bounty's (world/quests.js BountyQuest); broken by you (band:beaten): beaten; gone to
-   ground everywhere, broken by another: over (gone) */
+   say, days}): the band that troubles its holding, as a bounty's (world/quests.js bandFor: one there, else one out of its
+   nearest hideout; none, it cannot be begun); broken by you (band:beaten): beaten; gone to ground everywhere, broken by another:
+   over (gone) */
 class BandQuest extends StepQuest{
   setup(t,lord,s){this.band=s.band||questRng().pick(BAND_NAMES);this.n=s.n||questRng().int(4,6)+Math.floor(G.day/12);this.giver=t.name;
     this.title=s.title||'Break the '+this.band;this.text=s.text||'Find the '+this.band+' near '+t.name+' and break them.';this.takes(s)}
-  begin(t){const p=spotNear(t,8,16);if(!p)return false;const kind=climAt(p.x,p.y)==='desert'?'raiders':climAt(p.x,p.y)==='swamp'?'bog':'bandits';
-    const list=Rng.use('quests',()=>makeEnemies(this.n,false,kind)),ld=Rng.use('quests',()=>newChief(kind,2+Math.floor(G.day/20)));
-    bandits.push(asParty({x:p.x,y:p.y,n:this.n,kind,list,t:0,a:0,idle:true,cool:0,qid:this.id,name:this.band,ld}));this.x=p.x;this.y=p.y}
+  begin(t){const b=bandFor(t,this.n,this.band,this.id);if(!b)return false;this.band=b.name||this.band;this.x=b.x;this.y=b.y}
   seek(){const b=bandits.find(x=>x.qid===this.id)||Quest.quarry(this.id)[0];return b?{x:b.x,y:b.y,name:'the '+this.band}:null}
   get deed(){return 'band:beaten'}
   hits(d){return d.band?.qid===this.id}
@@ -391,14 +390,14 @@ class BandQuest extends StepQuest{
   todo(){return 'Break the '+this.band+'.'}
   lapse(){if(!Quest.quarry(this.id).some(o=>!o.gone))return this.over('gone','gone');super.lapse()}
 }
-/* hunt beasts (spec: {mon (a MONSTERS id; none: of its holding's lands), n, title, text, prize, say, days}): set near its holding,
-   as a beast hunt's (world/quests.js BeastQuest); slain by you (monster:slain): slain; gone: over (gone) */
+/* hunt beasts (spec: {mon (a MONSTERS id; none: of its holding's lands), n, title, text, prize, say, days}): the pack by its
+   holding's fields, as a beast hunt's (world/quests.js packFor: one there, else one moved into its habitat there; none, it cannot
+   be begun); slain by you (monster:slain): slain; gone: over (gone) */
 class BeastsQuest extends StepQuest{
   setup(t,lord,s){const ids=Object.keys(MONSTERS).filter(id=>MONSTERS[id].where.includes(t.clim)||MONSTERS[id].where.includes('forest')&&t.clim==='grass');
-    this.mon=s.mon||(ids.length?questRng().pick(ids):'wolf');const M=MONSTERS[this.mon];if(!M)return false;this.n=s.n||Math.max(...M.count);this.lv=monLevel(questRng())+1;this.giver=t.name;
+    this.mon=s.mon||(ids.length?questRng().pick(ids):'wolf');if(s.mon)this.monSet=true;const M=MONSTERS[this.mon];if(!M)return false;this.n=s.n||Math.max(...M.count);this.lv=monLevel(questRng())+1;this.giver=t.name;
     this.title=s.title||'Hunt the '+M.n.toLowerCase();this.text=s.text||cap1(M.n.toLowerCase())+' prowl near '+t.name+'. Hunt them down.';this.takes(s)}
-  begin(t){const M=MONSTERS[this.mon],p=spotNear(t,6,14,(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)))||spotNear(t,6,14);if(!p)return false;
-    W.monsters.push(asMonster({id:this.mon,x:p.x,y:p.y,hx:p.x,hy:p.y,lv:this.lv,n:this.n,t:0,a:0,cool:0,qid:this.id}));this.x=p.x;this.y=p.y}
+  begin(t){const m=packFor(t,this.monSet?this.mon:null,this.n,this.lv,this.id);if(!m)return false;this.mon=m.id;this.n=m.n;this.x=m.x;this.y=m.y}
   seek(){const m=W.monsters.find(x=>x.qid===this.id);return m?{x:m.x,y:m.y,name:MONSTERS[this.mon].n.toLowerCase()}:null}
   get deed(){return 'monster:slain'}
   hits(d){return d.monster?.qid===this.id}

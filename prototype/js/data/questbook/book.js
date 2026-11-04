@@ -4,7 +4,8 @@
    Object.assign(QUESTBOOK, {...}) (one <script> tag in Ashmark.html and wiki.html, after this one). An entry:
      title, ico (its pages' icon), cat ('side'; 'main' for the main story);
      giver: {by (a giver: board, tavern, lord, road; Questbook.givers), name, pic (portrait kind), at (conditions on its place)};
-     when (conditions on you; story/questbook.js Questbook.conds), once (once a game), cool (days before it is offered again);
+     when (conditions on you, and on the world near it: threat 'band' or 'beast', news (a kind), short (a good): story/forms.js;
+     story/questbook.js Questbook.conds), once (once a game), cool (days before it is offered again);
      text: its offer; {town} {realm} {lord} {you} are filled in from where it was offered;
      first: its first step (none: 'start', else the first written); steps {id: step}, each one of:
        a goal {goal (a goal: visit, deliver, clear, beat, hunt, escort; Questbook.goals), its fields (to, give, band, n, mon,

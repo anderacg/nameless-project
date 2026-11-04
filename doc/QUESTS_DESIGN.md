@@ -3,7 +3,10 @@
 The owner, 2026-11-04: "Right now the chain quest and quest are barebones and look unnatural in many ways like why spawn
 bandits/monster near the holding for hunting quest. Can you use your game quest design skills and design the quest properly?"
 
-Status: **design, not built.** Decisions D1–D8 (§12) wait on the owner.
+Status: **built** (2026-11-04), Q1–Q8 below, but for two kinds of §5 (the caravan escort, the missing). The owner's answers:
+D1 both (a target that is there first; when none, the world makes one as it would, never beside the holding); D2 yes; D3 yes, more
+givers to come (a row each); D4 yes; D5 mostly yes, by the giver; D6 all four chains; D7 old saves not kept for this change; D8 the
+quests' own stream.
 
 ## 1. What is wrong now
 
@@ -276,7 +279,7 @@ Each step is its own patch, behaviour-preserving first where it refactors; tests
 | Q3 | **The job kinds rewritten on causes** (§5.1–5.4, 5.7, 5.8): no spawns; offered only while the cause holds; text names the cause; the board shows givers | `world/quests.js`, `ui/questwindow.js` | `tests/quests.js` updated, `tests/questcauses.js` |
 | Q4 | **Leads:** the ageing circle, rumours and tracking sharpen it | `world/quests.js`, `ui/questmarks` in `quests.js` | `tests/questleads.js` |
 | Q5 | **Turns and marks** (§7, §9) | `world/quests.js`, `world/caravans.js` (fear), `world/news.js` (the safe-road line) | `tests/questmarks.js` |
-| Q6 | **New kinds:** the letter (real), the caravan escort, the missing, the war's two | `world/quests.js`, `world/letters.js`, `world/escort.js` | one suite each |
+| Q6 | **New kinds:** the letter (real), the war's two (built); the caravan escort and the missing (not yet) | `world/quests.js`, `world/letters.js`, `world/escort.js` | one suite each |
 | Q7 | **Chains:** the four in §8, one at a time | `story/chains/*.js` (new, as `story/wounded.js`) | one suite each |
 | Q8 | **The questbook's goals and conditions** find real targets (§8) | `story/questbook.js`, `data/questbook/samples.js` | `tests/questbook.js` updated |
 

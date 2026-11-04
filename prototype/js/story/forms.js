@@ -90,9 +90,9 @@ class Stories{
   static held(st,th){const m=th.memory,t=townBy(m.town)||P,at=st.held||(m.held&&m.held.k?'memory':'lair');
     if(typeof at==='object')return at;if(at==='memory')return m.held&&m.held.k&&m.held.k!=='none'?{...m.held}:null;
     if(at==='holding'){const h=Spatial.nearest(TOWNS.filter(x=>!x.gone&&x.owner&&x.owner!=='player'&&x.owner!==m.fac&&x.owner!==P.fac),t.x,t.y);return h?{k:'holding',town:h.name,fac:h.owner}:null}
-    if(at==='band'){const p=spotNear(t,8,16);if(!p)return null;const kind=climAt(p.x,p.y)==='desert'?'raiders':climAt(p.x,p.y)==='swamp'?'bog':'bandits',n=st.size||questRng().int(4,6),cap='st:'+th.i;
-      const b=asParty({x:p.x,y:p.y,n,kind,list:Rng.use('quests',()=>makeEnemies(n,false,kind)),t:0,a:0,idle:true,cool:0,ld:Rng.use('quests',()=>newChief(kind,2+Math.floor(G.day/20))),carry:[{cap,n:this.fill(st.n||'the captive',th)}]});
-      bandits.push(b);return {k:'band',cap,kind,chief:b.ld?.name||''}}
+    if(at==='band'){const n=st.size||questRng().int(4,6),cap='st:'+th.i,h=t.T?t:Spatial.nearestHolding(t.x,t.y);if(!h)return null;
+      const b=bandOut(h,n,null,undefined,null,{carry:[{cap,n:this.fill(st.n||'the captive',th)}]});if(!b)return null;delete b.qid;
+      return {k:'band',cap,kind:b.kind,chief:b.ld?.name||''}}
     const s=LairQuest.near(st.near||t,st.band);return s?{k:'lair',site:s.i,sseed:s.seed,lair:s.name,kind:s.bandKind}:null}
   // (a kill's lord: named, or an enemy: of a realm at war with its realm (none: hostile to you), the nearest free one)
   static target(st,th){const m=th.memory,t=townBy(m.town)||P,free=W.lords.filter(l=>!l.dead&&!l.gone&&!l.held);
@@ -144,6 +144,12 @@ defineCond('done',(v)=>Thread.once('book:'+v)!=null||Thread.once(v)!=null);
 defineCond('comp',(v)=>compsInBand().includes(v),v=>(COMPS[v]?.short||v)+' must ride with you');
 defineCond('approve',(v,c)=>(P.comps[c.comp]?.ap??-99)>=v,v=>'Approval '+v);
 defineCond('gold',(v)=>P.gold>=v,v=>'You need '+v+'g');
+// (on the world near the place: what troubles it, world/troubles.js: a band there or a hideout to come out of (threat 'band'), a
+// pack by its fields (threat 'beast'), talk of a kind near it in the last days (news), a good it is short of (short))
+const condTown=c=>c.town&&townBy(c.town)||c.x!=null&&Spatial.nearestHolding(c.x,c.y)||null;
+defineCond('threat',(v,c)=>{const t=condTown(c);if(!t)return false;return v==='band'?Troubles.bands(t).length>0||Troubles.lairs(t).length>0:Troubles.packs(t).length>0},v=>v==='band'?'No band troubles this place':'No beasts trouble this place');
+defineCond('news',(v,c)=>{const t=condTown(c);return !!t&&Troubles.news(t,[].concat(v)).length>0});
+defineCond('short',(v,c)=>{const t=condTown(c);return !!t&&Troubles.short(t).includes(v)});
 // (a story begun: its deadline from today; ended with a key its kind resumes at: picked up again there, with its memory)
 worldOn('thread:ended',d=>{const th=d?.e,at=th?.kind?.resume?.[d.how];if(at)Thread.start(th.k,th.memory,at)});
 Systems.add({name:'deadlines',order:{day:214},day:()=>Stories.day()});
