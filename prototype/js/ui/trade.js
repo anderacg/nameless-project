@@ -7,8 +7,9 @@
    hands till Confirm: your sales first (room for what you buy), then your buys, each as the old buttons did it (its price moving
    unit by unit, your standing and Trading); the bargain's prices are quoted as they would go (economy.js quote).
    Each row and line its item's picture (its kind's icon, ico). TradeDeal: the bargain (G.town.deal: {sell: {good: n}, buy: {good: n}, own: [bag slot], quiver: {id: n}, skin: n}; never
-   saved), its lines, totals and why it cannot be struck; TradeScreen: the page. Verbs (town.js Market): deal (kind:key, the qty
-   more), undeal (kind:key, the qty less; all of a thing of yours), deal-clear, deal-ok ---------- */
+   saved), its lines, totals and why it cannot be struck, a haggle (economy.js TRADE_TERMS, tradeTerms: your standing and a
+   haggle in every good's price); TradeScreen: the page, your terms in the bargain. Verbs (town.js Market): deal (kind:key, the qty
+   more), undeal (kind:key, the qty less; all of a thing of yours), deal-clear, deal-ok, deal-haggle ---------- */
 class TradeDeal{
   constructor(o){Object.assign(this,{sell:{},buy:{},own:[],quiver:{},skin:0},o||{})}
   static of(){const T=G.town;if(!T)return new TradeDeal();if(!(T.deal instanceof TradeDeal))T.deal=new TradeDeal(T.deal);return T.deal}
@@ -49,6 +50,11 @@ class TradeDeal{
     const full=Object.entries(this.buy).find(([g,n])=>goodRoom(g)+(this.sell[g]||0)<n);
     return full?BAG_FULL:'';
   }
+  // (a haggle: once a visit, a bargain worth TRADE_TERMS.min or more; why not: '' when you may)
+  haggleWhy(t){const T=this.totals(t);if(G.town.haggle)return G.town.haggle==='won'?'You have their best price':'They will not haggle again today';return T.get+T.pay<TRADE_TERMS.min?'Only over a bargain of '+TRADE_TERMS.min+' gold or more':''}
+  haggle(t){if(this.haggleWhy(t))return '';const k='chk:haggle';ENC_STAT[k]=ENC_STAT[k]||QUEST_CHECKS.haggle;const won=rngOf('road').chance(statOdds(k));
+    G.town.haggle=won?'won':'lost';train('trade',TRADE_TERMS.xp);
+    const line=won?'You haggle them down: '+Math.round(TRADE_TERMS.haggle*100)+'% better on every good today.':'The merchants will not be beaten down, and sour: '+Math.round(TRADE_TERMS.annoy*100)+'% worse for the rest of your visit.';log(line,won?'good':'bad');return line}
   // struck: your sales, then your buys; what came of it, in a line
   confirm(t){
     if(this.why(t))return '';
@@ -93,9 +99,15 @@ const TradeScreen={
     return '<div class="lab lab-qty"><span>Move</span>'+railQty(q,'qty')+'</div>'+side('sell','You sell')+side('buy','You buy')+
       '<div class="tr-sum"><div><span>They pay you</span><b class="gold">'+T.get+'g</b></div><div><span>You pay them</span><b class="gold">'+T.pay+'g</b></div>'+
       '<div class="tr-net"><span>Balance</span><b class="'+(T.net<0?'bad':'good')+'">'+(T.net<0?'−':'+')+Math.abs(T.net)+'g</b></div><div><span>Your gold</span><b>'+P.gold+'g → '+T.after+'g</b></div></div>'+
+      this.terms(t,D)+
       '<div class="tr-acts">'+railBtn('deal-clear','','Clear',D.empty?'Nothing to clear':'')+'<button class="btn primary" type="button" data-act="deal-ok" data-arg=""'+(why?' disabled title="'+htmlText(why)+'"':'')+'>Confirm</button></div>'+
       (why&&!D.empty?'<p class="bad tr-why">'+why+'.</p>':'');
   },
+  // (your terms here: your standing, a haggle, and the button to try one)
+  terms(t,D){const m=tradeTerms(t),pc=v=>(v>=0?'+':'−')+Math.abs(Math.round(v*100))+'%',st=standingAt(t),hw=D.haggleWhy(t),k='chk:haggle';ENC_STAT[k]=ENC_STAT[k]||QUEST_CHECKS.haggle;
+    return '<div class="tr-terms"><div><span>Your standing here ('+(st>=0?'+':'')+st+')</span><b class="'+(m.stand<0?'bad':'good')+'">'+(m.stand?'buy '+pc(-m.stand)+' · sell '+pc(m.stand):'no favour')+'</b></div>'+
+      (m.haggle?'<div><span>'+(m.haggle>0?'Haggled':'They are sour')+'</span><b class="'+(m.haggle<0?'bad':'good')+'">buy '+pc(-m.haggle)+' · sell '+pc(m.haggle)+'</b></div>':'')+
+      (G.town.haggle?'':'<div class="tr-haggle">'+railBtn('deal-haggle','','Haggle',hw)+'<small>'+statRead(k,{vague:'you cannot tell your odds',what:'to beat them down'})+'</small></div>')+'</div>'},
   html(t){
     const D=TradeDeal.of(),q=G.town.qty||1,I=playerInventory,scarce=Object.keys(GOODS).filter(g=>marketState(t,g)==='shortage');
     return '<p class="muted tr-head">The merchants of '+t.name+(scarce.length?' · <span class="bad">short of '+scarce.slice(0,3).map(g=>GOODS[g].n.toLowerCase()).join(', ')+'</span>':' · prices fair')+' · your bag '+I.used+' / '+I.size+(I.over?' · <span class="bad">'+I.over+' over: burdened</span>':'')+'</p>'+

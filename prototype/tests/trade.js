@@ -23,6 +23,15 @@ Kit.suite(({ok})=>{
  // ---- struck
  {const g0=P.gold,n0=t.goodN('grain'),h0=t.goodN(g),T0=D().totals(ash),want=D().buy[g];t.act('deal-ok');
   ok(D().empty&&t.goodN('grain')===n0-5&&t.goodN(g)===h0+want&&!P.inv.some(x=>x&&x.k==='val')&&P.gold===g0+T0.net,'Confirm: sold, bought, the chalice gone, '+(T0.net>=0?'+':'')+T0.net+' gold as the bargain said')}
+ // ---- your terms: your standing, and a haggle once a visit
+ {t.TradeDeal.clear();const g2=Object.keys(t.GOODS).filter(k=>(ash.stock[k]||0)>=10&&t.ITEM_KINDS.good.catId({id:k})).sort((a,b)=>t.nextBuy(ash,b)-t.nextBuy(ash,a))[0],w=window.standingAt,at=v=>{window.standingAt=()=>v;return [t.goodsQuote(ash,g2,10,true),t.goodsQuote(ash,g2,10,false)]};
+  try{const lo=at(-50),mid=at(0),hi=at(100);ok(hi[0]<mid[0]&&mid[0]<lo[0]&&hi[1]>mid[1]&&mid[1]>lo[1],'your standing in the price: ten bought for '+hi[0]+' / '+mid[0]+' / '+lo[0]+'g, sold for '+hi[1]+' / '+mid[1]+' / '+lo[1]+'g (high, none, low)');
+   window.standingAt=()=>100;t.renderTown();ok(/Your standing here \(\+100\)/.test(q('.tr-terms').textContent)&&/buy −6% · sell \+6%/.test(q('.tr-terms').textContent),'the bargain says so: '+q('.tr-terms').textContent)}finally{window.standingAt=w}
+  t.renderTown();ok(q('[data-act="deal-haggle"]').disabled,'a haggle only over a bargain worth '+t.TRADE_TERMS.min+' gold or more');
+  t.act('qty','30');t.act('deal','b:'+g);t.act('qty','1');const p0=t.goodsQuote(ash,g,10,true);Kit.stubStream('road',0,()=>t.act('deal-haggle'));
+  ok(G.town.haggle==='won'&&t.goodsQuote(ash,g,10,true)<p0&&/Haggled/.test(q('.tr-terms').textContent)&&!q('[data-act="deal-haggle"]'),'haggled (a check won): every good better (ten for '+p0+' → '+t.goodsQuote(ash,g,10,true)+'g), no second try');
+  G.town.haggle=null;Kit.stubStream('road',.9999,()=>t.act('deal-haggle'));ok(G.town.haggle==='lost'&&t.goodsQuote(ash,g,10,true)>p0,'lost: they sour, worse for the rest of the visit (ten for '+t.goodsQuote(ash,g,10,true)+'g)');
+  t.act('leave');t.enterTown(ash);t.act('tab','trade');ok(!G.town.haggle,'a new visit, a new haggle')}
  // ---- clear
  {t.act('deal','s:grain');t.act('deal-clear');ok(D().empty,'Clear: empty')}
  t.toWorld();Kit.clear();

@@ -134,7 +134,7 @@ const byCategory=(list,catOf,row)=>Object.keys(ITEM_CATS).map(c=>{const xs=list.
 class Market extends Place{
   constructor(id){
     super(id,{n:'Market square',short:'Market',ico:'stall',verbs:{buy:'buy',sell:'sell','sell-loot':'sellOwn','sell-item':'sellOwn','sell-own':'sellOwn','market-quiver':'buyQuiver','skin-buy':'buySkins',
-      deal:'deal',undeal:'deal','deal-clear':'dealClear','deal-ok':'dealOk'}});
+      deal:'deal',undeal:'deal','deal-clear':'dealClear','deal-ok':'dealOk','deal-haggle':'dealHaggle'}});
   }
   // its page: the trading screen, your pack, the bargain and the merchants' stalls (ui/trade.js)
   body(t){
@@ -147,6 +147,7 @@ class Market extends Place{
   }
   dealClear(){TradeDeal.clear()}
   dealOk(arg,t){const line=TradeDeal.of().confirm(t);if(line)toast(line,'gold')}
+  dealHaggle(arg,t){const line=TradeDeal.of().haggle(t);if(line)toast(line,G.town.haggle==='won'?'good':'bad')}
   // goods (g:n): bought, your standing up a little; sold, Trading learned and your standing up
   buy(arg,t){
     const [g,nStr]=arg.split(':');let n=+nStr;

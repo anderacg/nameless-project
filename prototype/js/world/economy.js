@@ -65,8 +65,9 @@ class Economy{
     const r=(this.t.stock[g]||0)/this.target(g);
     return r<.35?'shortage':r>1.8?'surplus':''}
   // what one unit costs you to buy, and fetches you to sell
-  buyPrice(g){return Math.max(1,Math.ceil(this.price(g)*spreadBuy()))}
-  sellPrice(g){return Math.max(1,Math.floor(this.price(g)*spreadSell()))}
+  // (yours: the market's price, your Trading, and your terms here: your standing, a haggle, tradeTerms)
+  buyPrice(g){const m=tradeTerms(this.t);return Math.max(1,Math.ceil(this.price(g)*spreadBuy()*(1-m.stand-m.haggle)))}
+  sellPrice(g){const m=tradeTerms(this.t);return Math.max(1,Math.floor(this.price(g)*spreadSell()*(1+m.stand+m.haggle)))}
 
   /* the day */
   // how much of its estates' work its people can staff (half while they are afraid to go out)
@@ -211,6 +212,13 @@ function econDay(){
 
 /* trading with a holding's market: each unit changes its stock, and so the next unit's price (Economy buy, sell) */
 const spreadBuy=()=>1.08*(1-.015*skill('trade')),spreadSell=()=>.92*(1+.01*skill('trade'));
+/* your terms at a holding's market (the owner, 2026-11-04: the price "based on bargaining skill and relationship as well"): your
+   standing there (reputation.js standingAt, from lo to hi) worth up to stand of a good's price, better buying and selling both
+   (worse under 0); and a haggle, once a visit, on a bargain of min gold or more (QUEST_CHECKS.haggle: Trading and Charisma, the
+   road's stream): won, haggle better; lost, the merchants sour, annoy worse for the rest of the visit (G.town.haggle: 'won' or
+   'lost'). Goods only (the market's things of yours keep their kinds' prices) */
+const TRADE_TERMS={stand:.06,lo:-50,hi:100,haggle:.05,annoy:.03,min:60,xp:6};
+const tradeTerms=t=>{const T=TRADE_TERMS,s=clamp(standingAt(t),T.lo,T.hi)/100*T.stand,h=G.town&&G.town.ref===t?G.town.haggle:null;return{stand:s,haggle:h==='won'?T.haggle:h==='lost'?-T.annoy:0}};
 const buyGoods=(t,g,n)=>Economy.of(t).buy(g,n);
 const sellGoods=(t,g,n)=>Economy.of(t).sell(g,n);
 const nextBuy=(t,g)=>Economy.of(t).buyPrice(g),nextSell=(t,g)=>Economy.of(t).sellPrice(g),goodsQuote=(t,g,n,buying)=>Economy.of(t).quote(g,n,buying);
