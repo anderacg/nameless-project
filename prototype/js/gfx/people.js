@@ -487,7 +487,7 @@ function drawMountDown(g,o){
   else for(let x=10;x<=14;x++)pset(g,x,y0+1,PPAL.leather[x<12?0:1]);
 }
 // (a rider's seated leg, facing right: [x, y from the seat row, its letter: L leg, M its shade, F his foot])
-const RIDER_LEG=[[11,6,'L'],[12,6,'L'],[13,6,'L'],[14,6,'L'],[12,7,'M'],[13,7,'M'],[14,7,'L'],[14,8,'L'],[14,9,'L'],[14,10,'F'],[15,10,'F']];
+const RIDER_LEG=[[11,6,'L'],[12,6,'L'],[13,6,'L'],[12,7,'M'],[13,7,'L'],[13,8,'L'],[13,9,'F'],[14,9,'F']];// (the owner: "too long and too square": a short thigh, the shin slanting from the knee, a small boot)
 /* the sprite: a figure on foot in a 24×19 frame (the man at 4, 3), or a rider on its mount in 32×32, its gear on it (figures.js
    FigureRig), laid in a grid GEAR.room px wider each way and taller, outlined round it all, cut to the frame grown only where the
    gear reaches past it (a pike, a lance, a blade raised), so nothing is cut off; then placed in its power-of-two cell (sprites.js

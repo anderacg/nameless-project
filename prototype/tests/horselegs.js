@@ -69,8 +69,8 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // horseLeg), and its tail joined edge to edge, both builds; was 5bf21915)
  // (OLD and FIRST re-recorded again 2026-11-04, on purpose: the owner, the rider "a bit low", "show more of him": every rider's
  // seated leg drawn over the cloth, his thigh, knee, shin and foot outlined (people.js RIDER_LEG), whatever the horse; was
- // fd8736e5 and d5440a64)
- const OLD='765cc6c3',FIRST='c2d7d437';
+ // fd8736e5 and d5440a64; then the leg shorter and slanted, the owner: "too long and too square", was 765cc6c3 and c2d7d437)
+ const OLD='5ee78211',FIRST='7ada482b';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');
