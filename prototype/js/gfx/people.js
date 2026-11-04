@@ -119,7 +119,7 @@ function lookOf(type,team,hero,v,cid,cg){
   const o={race,skin:R.skin[v%R.skin.length],hair:L.hair||R.hair[v%R.hair.length],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,
     beard:L.beard||(R.beard?(L.hair||R.hair[v%R.hair.length]):race==='human'&&!hero&&v%3===1&&!L.robe?R.hair[v%R.hair.length]:null),
     helm:L.helm,hood:L.hood,outer:L.outer==='skin'?R.skin[v%R.skin.length]:L.outer,inner:L.inner||'dark',team:team?'red':'blue',weapon:L.weapon,shield:L.shield,
-    robe:L.robe,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar};
+    robe:L.robe,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar,armor:st?armorOf(st):'none'};
   if(L.plain){o.helm=race==='orc'&&PLAIN_HELM[v]==='hood'?'bare':PLAIN_HELM[v];o.outer=PLAIN_CLOTH[v]}
   if(o.mount==='horse')o.mountC=L.barded?'horseW':['horse','chestnut','horseB','horse','horseG','chestnut'][v];
   // your hero: your race, your weapon, your armour and helm as you wear them
@@ -128,7 +128,9 @@ function lookOf(type,team,hero,v,cid,cg){
     if(hk==='ranged')o.weapon=hw&&(hw.base==='crossbow'||hw.shot?.flat)?'xbow':'bow';else if(hk==='magic')o.weapon='staff';
     else if(hero&&unarmed())o.weapon=null;// (bare hands: combat.js FISTS)
     else if(hw)o.weapon=hw.base==='spear'||hw.tag==='spear'?'spear':hw.base==='warhammer'||hw.icon==='club'?'hammer':hw.base==='dagger'||hw.icon==='dagger'?'dagger':hw.base==='axe'||hw.icon==='axe'?'axe':hw.base==='great'||hw.base==='greatsword'?'great':'sword';
-    const body=hero?P.gear.body:cg&&cg.body,head=hero?P.gear.head:cg&&cg.head;
+    const body=hero?P.gear.body:cg&&cg.body,head=hero?P.gear.head:cg&&cg.head,lg=hero?P.gear.legs:cg&&cg.legs,ft=hero?P.gear.feet:cg&&cg.feet;
+    // (what is worn on the legs and the feet: a rider's seated leg shows them, RIDER_LEG)
+    if(lg&&ITEMS[lg]&&ITEMS[lg].col)o.legsC=ITEMS[lg].col;if(ft&&ITEMS[ft]&&ITEMS[ft].col)o.feetC=ITEMS[ft].col;
     if(body&&ITEMS[body]&&ITEMS[body].col)o.outer=ITEMS[body].col;if(head&&ITEMS[head]&&ITEMS[head].col){o.helm=hero?'crown':'kettle';o.helmC=ITEMS[head].col}
     // (a shield in the off hand shows, slung on his arm: drawn only, offShield (his kind's o.shield is what CharacterMind reads))
     const off=hero?P.gear.offhand:cg&&cg.offhand,oi=off&&ITEMS[off];if(oi&&oi.icon==='shield')o.offShield=oi.col||'wood'}
@@ -487,6 +489,15 @@ function drawMountDown(g,o){
   else for(let x=10;x<=14;x++)pset(g,x,y0+1,PPAL.leather[x<12?0:1]);
 }
 // (a rider's seated leg, facing right: [x, y from the seat row, its letter: L leg, M its shade, F his foot])
+// (its colours by what he wears (the owner, 2026-11-04: "can the legs differ, like chain mail or different boots"): greaves and
+// boots of yours or a companion's in their own metal's colours (legsC, feetC); else by his armour: plate, steel greaves (a lit
+// thigh) and sabatons; mail, chain links (two shades in a check) and iron-shod boots; hide, fur leggings; leather or none, his
+// leggings (o.legs) and leather boots)
+function riderLegCol(o,k,x,y){const a=o.armor,P=PPAL;
+  if(k==='F'){const f=o.feetC?pal(o.feetC):a==='plate'?P.steel:a==='mail'?P.iron:P.leather;return f[x%2?1:2]}
+  const L=o.legsC?pal(o.legsC):a==='plate'?P.steel:a==='mail'?P.iron:a==='hide'?P.fur:pal(o.legs||'leather');
+  if(!o.legsC&&a==='mail')return L[(x+y)%2?1:2];
+  return k==='M'?L[2]:a==='plate'&&y===6?L[0]:L[1]}
 const RIDER_LEG=[[11,6,'L'],[12,6,'L'],[13,6,'L'],[12,7,'M'],[13,7,'L'],[13,8,'L'],[13,9,'F'],[14,9,'F']];// (the owner: "too long and too square": a short thigh, the shin slanting from the knee, a small boot)
 /* the sprite: a figure on foot in a 24×19 frame (the man at 4, 3), or a rider on its mount in 32×32, its gear on it (figures.js
    FigureRig), laid in a grid GEAR.room px wider each way and taller, outlined round it all, cut to the frame grown only where the
@@ -504,7 +515,7 @@ function peopleSprite(o,pose,bare){
     // the rider's leg down the mount's side (the owner, 2026-11-04: the rider looked low, "show more of him"): his thigh forward
     // from the hip over the cloth, the knee, the shin down the horse's side and his foot, outlined on its own so it reads
     // against the cloth (RIDER_LEG: [x, y from the seat row, letter] each)
-    const Lc=lettersOf(o),leg=RIDER_LEG.map(([x,y,k])=>[x+R,top+y,Lc[k]]),on=new Set(leg.map(([x,y])=>x+','+y));
+    const leg=RIDER_LEG.map(([x,y,k])=>[x+R,top+y,riderLegCol(o,k,x,y)]),on=new Set(leg.map(([x,y])=>x+','+y));
     for(const [x,y] of leg)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const k=(x+dx)+','+(y+dy);if(!on.has(k)){on.add(k);pset(g,x+dx,y+dy,PEOPLE_OUT)}}
     for(const [x,y,c] of leg)pset(g,x,y,c);return FigureRig.frame(g,R,32,A,32-(top-R-6),false)}
   const g=pgrid(24+2*R,19+R),A=drawFigure(g,o,4+R,3+R,walk,style,atk);return FigureRig.frame(g,R,24,A,o.short?15:16,!!o.held&&(blow||pose===FLINCH_POSE));

@@ -69,8 +69,9 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // horseLeg), and its tail joined edge to edge, both builds; was 5bf21915)
  // (OLD and FIRST re-recorded again 2026-11-04, on purpose: the owner, the rider "a bit low", "show more of him": every rider's
  // seated leg drawn over the cloth, his thigh, knee, shin and foot outlined (people.js RIDER_LEG), whatever the horse; was
- // fd8736e5 and d5440a64; then the leg shorter and slanted, the owner: "too long and too square", was 765cc6c3 and c2d7d437)
- const OLD='5ee78211',FIRST='7ada482b';
+ // fd8736e5 and d5440a64; then the leg shorter and slanted, the owner: "too long and too square", was 765cc6c3 and c2d7d437; then
+ // the leg by what he wears, "chain mail or different boots" (people.js riderLegCol), was 5ee78211 and 7ada482b)
+ const OLD='e109237f',FIRST='325b1149';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');
@@ -81,4 +82,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  {const L={mount:'horse',mountC:'horse',team:'blue'},bad=[];for(const w of [-1,0,1,2,3,4,5,6,7]){const g=t.pgrid(34,32);t.drawMount(g,L,w);const at=(x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h&&g.p[y*g.w+x];
    for(let y=Math.floor(g.h*.55);y<g.h;y++)for(let x=0;x<g.w;x++)if(at(x,y)&&!(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))bad.push(w+':'+x+','+y)}
   ok(!bad.length,'every frame\'s legs whole: no pixel on its own'+(bad.length?' ('+bad.slice(0,6).join(' ')+')':''))}
+ // ---- the rider's leg by what he wears (the owner, 2026-11-04: "can the legs differ, like chain mail or different boots"): plate,
+ // mail and leather each their own; your greaves and boots their own metal's
+ {const col=(L,k,x,y)=>t.riderLegCol(L,k,x,y),pl=col({armor:'plate'},'L',12,7),ml=[col({armor:'mail'},'L',12,7),col({armor:'mail'},'L',13,7)],le=col({armor:'leather'},'L',12,7);
+  ok(pl!==le&&!ml.includes(le)&&ml[0]!==ml[1]&&col({armor:'plate'},'F',13,9)!==col({armor:'leather'},'F',13,9),'plate greaves and sabatons, chain mail in two shades, leather leggings and boots: each its own');
+  const keep={...t.P.gear},gr=Object.keys(t.ITEMS).find(k=>t.ITEMS[k].slot==='legs'&&t.ITEMS[k].col),bt=Object.keys(t.ITEMS).find(k=>t.ITEMS[k].slot==='feet'&&t.ITEMS[k].col);
+  try{t.P.gear.legs=gr;t.P.gear.feet=bt;const H=t.lookOf('hum_knight',0,true,0);ok(H.legsC===t.ITEMS[gr].col&&H.feetC===t.ITEMS[bt].col&&col(H,'L',12,7)===t.pal(t.ITEMS[gr].col)[1],'your greaves and boots on your seated leg, in their metal\'s colours ('+t.ITEMS[gr].n+', '+t.ITEMS[bt].n+')')}finally{Object.assign(t.P.gear,keep)}}
 });
