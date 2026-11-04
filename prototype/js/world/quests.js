@@ -312,6 +312,9 @@ class BountyQuest extends JobQuest{
   quarryName(){
     return 'the '+this.band;
   }
+  aim(){
+    return 'Break the '+this.band;
+  }
   // (on the map, or gone to ground in a camp: its quarry, story/quest.js)
   seek(){
     const h=this.lair!=null&&W.sites[this.lair];
@@ -416,6 +419,9 @@ class BeastQuest extends JobQuest{
   }
   quarryName(){
     return 'the '+MONSTERS[this.mon].n.toLowerCase();
+  }
+  aim(){
+    return 'Slay '+this.quarryName()+' at the folds';
   }
   // (paid: its fields quiet of beasts a while, QUEST_MARKS)
   pay(where){
@@ -1209,11 +1215,23 @@ function offerRow(q,act,arg){
   return '<div class="row'+(lock?' locked':'')+'"><div class="info"><strong>'+title+(lock?' <span class="qw-st locked">'+QUEST_STATES.locked+'</span>':'')+'</strong>'+who+'<small>'+(why?'<span class="qw-cause">'+htmlText(why)+'</span> ':'')+text+'</small>'+questFactsHtml(q)+'</div>'+
     '<div class="acts"><button class="btn sm" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(lock?' disabled title="'+htmlText(q.needs().filter(n=>!n.met).map(n=>n.what).join('; '))+'"':'')+'>Accept</button></div></div>';
 }
+// (a quest of yours reported here, in full: who gave it and why, the true thing it is about, its words, its steps (done ticked,
+// the one to do now in bold, where it is from you), its facts (taken, timing, where it is turned in, its reward, less if late);
+// Report or Hand over, greyed with why while it is not ready)
+function hereRow(q){
+  q=Quest.as(q);
+  const g=q.person,who=g?'<small class="qw-who">'+htmlText(g.name+', the '+g.n)+': “'+htmlText(GIVERS[g.role].why)+'”</small>':'',why=q.causeLine?q.causeLine():'';
+  const st=q.steps(),now=st.findIndex(([,d])=>!d),steps='<ol class="qw-steps">'+st.map(([x,d],i)=>'<li'+(d?' class="good"':i===now?' class="now"':'')+'>'+x+'</li>').join('')+'</ol>';
+  const f=questFacts(q).filter(([k])=>!(g&&k==='Given by')),at=f.findIndex(([k])=>k==='Reward');f.splice(at<0?f.length:at,0,['Steps',steps]);
+  const ready=questReady(q),hand=q.handsOver,off=ready?'':' disabled title="'+htmlText(hand?'You have '+q.progress():'Not done yet: '+q.todo())+'"';
+  return '<div class="row"><div class="info"><strong>'+htmlText(q.title)+(ready?' <span class="qw-st done">Ready</span>':'')+'</strong>'+who+
+    (why?'<small class="qw-cause">'+htmlText(why)+'</small>':'')+(q.text?'<small>'+htmlText(q.text)+'</small>':'')+'<dl class="qfacts">'+f.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl></div>'+
+    '<div class="acts"><button class="btn sm" type="button" data-act="q-turnin" data-arg="'+q.id+'"'+off+'>'+(hand?'Hand over':'Report')+'</button></div></div>';
+}
 // the notice board: your quests to report here, then the work offered (none for you a while after you gave up one of theirs)
 function jobsBody(t){
   const here=P.quests.filter(q=>canReportAt(q,t)),offers=jobsAt(t),n=Quest.jobs(),shut=QuestShut.of({home:t.name});
-  const row=(title,sub,acts)=>'<div class="row"><div class="info"><strong>'+title+'</strong>'+sub+'</div><div class="acts">'+acts+'</div></div>';
-  return '<div class="lab">Your quests here</div>'+(here.length?here.map(q=>row(q.title,'<small>'+questProgress(q)+' · '+Quest.as(q).rewardLine()+'</small>','<button class="btn sm" type="button" data-act="q-turnin" data-arg="'+q.id+'"'+(questReady(q)?'':' disabled')+'>'+(Quest.as(q).handsOver?'Hand over':'Report')+'</button>')).join(''):'<p class="muted">None.</p>')+
+  return '<div class="lab">Your quests here</div>'+(here.length?here.map(hereRow).join(''):'<p class="muted">None.</p>')+
     '<div class="lab" style="margin-top:6px">Work offered · you hold '+n+' job'+(n===1?'':'s')+'</div>'+
     (shut?'<p class="bad">'+QuestShut.line({home:t.name},shut)+'.</p>':'')+
     NoticeBoard.html(t,offers);// (a cork board, its papers pinned: ui/noticeboard.js; the questbook's among them: story/questbook.js)
