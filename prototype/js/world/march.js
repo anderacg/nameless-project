@@ -251,7 +251,7 @@ function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDete
    for a column too */
 // formGiveUp, formTry, formMove, formGain: a man short of his place, no nearer it by formGain px in formTry s, stands where he is, till its guide goes formMove px
 // or it is ordered anew (MarchArmy formWatch; the owner, 2026-11-02); off: they try on, as before
-const MARCH_MOVE={formGiveUp:true,formTry:5,formMove:8,formGain:2,cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,1,2,0],road:1.45,jam:1.5,cadence:9,body:1,leash:[4,.6],menCentre:true,lead:[4,.6],wide:192,arrive:2,meetEdge:true,follow:{look:6,gap:1.5,gain:4,moving:2},headArrive:true,arriveWait:3,footing:true,
+const MARCH_MOVE={slit:8,formGiveUp:true,formTry:5,formMove:8,formGain:2,cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,1,2,0],road:1.45,jam:1.5,cadence:9,body:1,leash:[4,.6],menCentre:true,lead:[4,.6],wide:192,arrive:2,meetEdge:true,follow:{look:6,gap:1.5,gain:4,moving:2},headArrive:true,arriveWait:3,footing:true,
   about:{on:true,cos:-.7,leg:200,halt:.6,pass:6,side:1.2,look:16,slow:.7,most:20,loop:{on:true,gap:10,end:0,pace:.8,ease:1,margin:2}}};
 /* (the owner, 2026-11-01: "how about making a ring like freeform based on the area?") the ring drawn round an army is the outline
    of the ground its men stand on: each man a soft disc (his body and pad px; a caravan's wagon one too), their fields summed on a
@@ -477,7 +477,14 @@ class MarchGround{
       g.cost[i]=open&&!shut[i]?ROUTE.unit:0;
       if(!fly&&WM.has(tx,ty)){const edge=WM.edge[k];if(x%TILE<cs&&edge&4)g.wall[i]|=4;if(x%TILE>TILE-cs&&edge&1)g.wall[i]|=1;if(y%TILE<cs&&edge&8)g.wall[i]|=8;if(y%TILE>TILE-cs&&edge&2)g.wall[i]|=2}
     }
+    if(!fly&&MARCH_MOVE.slit)this.shutSlits(Math.floor(MARCH_MOVE.slit/cs));
   }
+  // (a slit at a building's footing (shut on both sides, a footing one of them) no more than n cells across, along a row or a
+  // column: shut too, so no man walks into a gap between two houses too narrow to walk out of (the owner, 2026-11-04: "unit seems
+  // to stuck if building is built like this"): MARCH_MOVE.slit)
+  shutSlits(n){const g=this.grid,f=this.foot,run=(at,len)=>{for(let k=0,s=-1;k<=len;k++){const i=k<len?at(k):-1,open=i>=0&&g.cost[i]>0;
+      if(open){if(s<0)s=k;continue}if(s>0&&i>=0&&k-s<=n&&(f[i]||f[at(s-1)]))for(let j=s;j<k;j++){g.cost[at(j)]=0;f[at(j)]=1}s=-1}};
+    for(let r=0;r<g.R;r++)run(c=>r*g.C+c,g.C);for(let c=0;c<g.C;c++)run(r=>r*g.C+c,g.R)}
   // (still true to the land: no world version since (terrain, a crossing shut, a holding's walls: router.js WAYV) and its buildings and
   // sites as they were (marchBlocksSig))
   fresh(){if(this.version!==WAYV)return false;const a=this.sig,b=marchBlocksSig(this.x,this.y,this.x1,this.y1);if(a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true}

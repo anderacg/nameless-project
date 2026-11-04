@@ -407,7 +407,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  rider sunk a px into the saddle so he sits where he did): the mounted men and horses in view at the first two spots (36e19f5c
 //  5eb4083d bb7282c6 de574bd3 to 771304cb 50b850b3 a679b1ed 3a8cf2c7; the third spot's held). Proof: HORSE_ART.tall false gives 5d0472ad again; W1-W5, W7,
 //  W8, B2 and the sums held. Was W6 5d0472ad)
-const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'3d4ee001',W4:'2bf73f82',W5:'0b1fd5be',W6:'08300b7e',W7:'b30568ab',W8:'c8a7a09f',B2:'db4c9cc7'};
+// (W8 re-recorded 2026-11-04, on purpose: a slit between two buildings narrower than a man is shut on the march's grid (march.js
+//  MarchGround shutSlits, MARCH_MOVE.slit; the owner: "unit seems to stuck if building is built like this", Ashford's guards
+//  stuck in the gap by its smithy), so the patrols and lords by a holding walk round it. Proof: MARCH_MOVE.slit 0 gives c8a7a09f
+//  again; W1-W5, W7, B2 and the sums held. W6, failing before this (f6ec2a06), moves with it to 3b1b4245 (men drawn where they now
+//  stand); not re-recorded here. Was W8 c8a7a09f)
+const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'3d4ee001',W4:'2bf73f82',W5:'0b1fd5be',W6:'08300b7e',W7:'b30568ab',W8:'d229693c',B2:'db4c9cc7'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
