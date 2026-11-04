@@ -14,6 +14,7 @@ Kit.suite(({ok})=>{
  const world=()=>Kit.world({town:null,encCool:0});
  const win=()=>{army();t.act('auto');t.act('cont');done();world()};
  t.act('begin','soldier');W.critters=[];W.lords.forEach(l=>{l.x=-999;l.y=-999});
+ t.QUEST_MARKS.band=t.QUEST_MARKS.beast=0;// (a job's marks, its holding quiet a while, are tested in tests/questmarks.js: here a job may be offered again at once)
  P.renown=100;P.level=3;// (enough for every kind's needs: what a job requires is tested below, the quest model)
  const ash=t.townBy('Ashford'),near=x=>{W.lords.forEach(l=>{if(l.state==='siege')l.state='rest'});P.x=x.x;P.y=x.y+5;P.tx=null;world();G.encCool=99;G.lastTown=null};// lift any siege so the gates open; no roaming band may catch you at the gate
  // (the troubles a hunt and reinforcements need, world/troubles.js: deer grazing near, a garrison short)
@@ -29,7 +30,7 @@ Kit.suite(({ok})=>{
  // bounty
  world();const qb=t.makeQuest('bounty',ash);t.acceptQuest(qb);const band=t.bandits.find(b=>b.qid===qb.id);
  ok(band&&band.n===qb.n&&(qb.site==null?Math.hypot(band.x-ash.x,band.y-ash.y)<t.TROUBLE.land*t.TILE:Math.hypot(band.x-t.W.sites[qb.site].x,band.y-t.W.sites[qb.site].y)<2*t.TILE),'a bounty marks a real band: one troubling Ashford, or one out of the nearest hideout (the '+qb.band+', '+qb.n+')');
- const goal=t.questGoal(qb);ok(goal&&goal.x===band.x,'the quest points at the band');
+ const goal=t.questGoal(qb);ok(goal&&(goal.x===band.x||goal.x===Math.round(band.x)&&goal.r>0),'the quest points at the band (where it was last seen: a lead, tests/questleads.js)');
  t.startEncounter({kind:'party',ref:band,n:band.n,list:band.troops.slice(),band:band.kind});win();ok(qb.done&&!t.bandits.includes(band),'breaking the band finishes the deed');
  const g0=P.gold,r0=t.repAt('Ashford');near(ash);t.updateWorld(.01);ok(G.town&&G.town.tab==='jobs','entering with a quest to report opens the Jobs tab');
  t.act('q-turnin',String(qb.id));ok(!P.quests.includes(qb)&&P.gold>=g0+qb.reward.gold&&t.repAt('Ashford')>r0,'reporting pays '+qb.reward.gold+' gold and reputation');

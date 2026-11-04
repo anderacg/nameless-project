@@ -126,6 +126,7 @@ Kit.suite(({ok,info})=>{
   ok(I.load({k:'nope'})===null&&I.load({k:ids[0]}) instanceof I,'an incident\'s record loads as one of its class; one whose kind is gone, as nothing');
   ok(nDid>=all.length*2&&!bad.length,'every incident comes somewhere, and befalls you as its outcome says, its line and tone logged, over at once ('+nDid+' runs, every race, both ways of a roll)'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
  // ================= the Quest kinds (story/quest.js; the jobs, world/quests.js), every one
+ t.QUEST_MARKS.band=t.QUEST_MARKS.beast=0;// (a job's marks, its holding quiet a while, are tested in tests/questmarks.js: here a job may be offered again at once)
  {const SH='quest',Q=t.Quest,all=K.all(SH),ids=all.map(k=>k.id),bad=[];Kit.world();Kit.clear();
   ok(ids.join()==='bounty,beast,clear,supply,hunt,courier,troops,lordkill,raid,escort'&&all.every(k=>k.cls&&k.cls.prototype instanceof Q&&t.kindOf(SH,k.id)===k),'the job kinds: registered once each, each a subclass of Quest ('+all.map(k=>k.cls.name).join(', ')+')');
   // (every realm at war with every other, so a lord has war work; a lord's kinds are made by a lord)

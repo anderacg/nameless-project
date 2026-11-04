@@ -90,6 +90,8 @@ const NEWS_KINDS={
   toll:{w:3,say:[(d,s)=>'Men in the '+facN(d.fac)+'’s colours were taking a false toll '+s.road+'. Their ringleader hangs in '+(d.town||'the town')+'.',
     (d,s)=>'Beware “the lord’s men” at a barrier '+s.road+': false toll-men, they say, though one was caught '+s.when+'.']},
   trace:{w:3,say:[(d,s)=>({body:'A traveller was found dead by the road '+s.where+', '+s.when+'.',wreck:'A burnt wagon lies '+s.road+'. Raiders, they say.',cart:'Someone left a cart stuck in the mud '+s.road+', '+s.when+'.'})[d.t]||'Something bad happened '+s.road+'.']},
+  // (a quest's mark, world/quests.js QUEST_MARKS: a band broken, a pack slain for a holding; its lands quieter)
+  quiet:{w:4,say:[(d,s)=>'The lands of '+d.town+' are quieter: '+d.who+' saw to '+d.what+' '+s.when+'.',(d,s)=>'They say '+d.what+' trouble '+d.town+' no more: '+d.who+' saw to it '+s.when+'.']},
   // (Ander The Fallen wandering the taverns, story/wounded.js Wanderer: far, every tavern but his tells it)
   ander:{w:8,far:true,say:[(d,s)=>'A scarred sellsword in a dark cloak, Ander they call him, came to drink in the tavern of '+d.town+' '+s.when+'. He did not look like a man who wanted company.',
     (d,s)=>'They say Ander the Fallen is in '+d.town+', sitting alone in its tavern with his back to the wall. He came '+s.when+'.']}

@@ -186,8 +186,14 @@ class JobQuest extends Quest{
   get reportsBack(){
     return true;
   }
-  // ---- the day's check: never failed for time; closed when the world has ended it
+  // ---- the day's check: never failed for time; closed when the world has ended it; its holding changed hands, the new lords
+  // honour it (its realm theirs now, said once: Q5)
   lapse(){
+    const t=!this.lord&&townBy(this.home);
+    if(t&&!t.gone&&t.owner&&t.owner!==this.fac){
+      this.fac=t.owner;
+      log(this.home+' has changed hands; the '+(FACS[t.owner]?FACS[t.owner].n:'new lords')+' will honour '+this.title+'.','gold','story',this.journalKey);
+    }
     if(!this.done&&this.gone())this.close();
   }
   gone(){
@@ -212,6 +218,15 @@ class JobQuest extends Quest{
 // one marked once taken; none there, a band out of the nearest hideout or camp takes to its roads (as the world's bands come
 // out of theirs), working them (haunt); no hideout near either, no bounty. Done when you break it (in a fight, or it gives up)
 const BOUNTY={haunt:[5,12],near:3};
+/* ---- what a job leaves (doc/QUESTS_DESIGN.md §9, Q5): paid, a bounty's or a beast hunt's holding is quiet of that trouble for
+   QUEST_MARKS days (W.quiet[town][kind]: no band out of a hideout, no pack moving in, for a job there; the real ones still
+   come), and the talk says so (news.js quiet); a hunt's meat goes into its stores ---------- */
+const QUEST_MARKS={band:20,beast:20};
+const Quiet={
+  until(t,k){return ((W.quiet||{})[t.name]||{})[k]||0},
+  is(t,k){return G.day<this.until(t,k)},
+  set(t,k,what){((W.quiet||(W.quiet={}))[t.name]||(W.quiet[t.name]={}))[k]=G.day+QUEST_MARKS[k];newsRecord('quiet',t,{town:t.name,who:bandName(),what})}
+};
 // a lead's circle: r tiles when fresh, growing grow tiles a day to max; ask: tiles from a holding its talk knows of the quarry
 const LEAD={r:4,grow:1.5,max:14,ask:25};
 const causeOf=(it,t)=>!it?'':it.k==='caravan'?'They robbed a caravan'+(it.detail.from?' out of '+it.detail.from:'')+' on day '+it.day+'.':it.k==='raid'?'They raided '+(it.detail.town||t.name)+' on day '+it.day+'.':
@@ -226,7 +241,7 @@ class BountyQuest extends JobQuest{
       this.ly=Math.round(b.y);
       this.band=b.name||questRng().pick(BAND_NAMES);
       this.cause=causeOf(Troubles.news(t,['caravan','raid','band'])[0],t)||'Seen in the lands of '+t.name+'.';
-    }else if(lair){
+    }else if(lair&&!Quiet.is(t,'band')){
       this.site=lair.i;
       this.n=questRng().int(4,6)+Math.floor(G.day/12);
       this.band=questRng().pick(BAND_NAMES);
@@ -270,6 +285,8 @@ class BountyQuest extends JobQuest{
   }
   // (on the map, or gone to ground in a camp: its quarry, story/quest.js)
   seek(){
+    const h=this.lair!=null&&W.sites[this.lair];
+    if(h&&this.hideOf()===h)return {x:h.x,y:h.y,name:'the '+this.band+' at the '+h.name};
     const b=this.target();
     if(!b)return null;
     const s=this.spot();
@@ -287,9 +304,28 @@ class BountyQuest extends JobQuest{
   get deedWord(){
     return 'broken';
   }
+  // (a turn, Q5: gone to ground in a hideout or camp: the place it shelters, found, marked; said once)
+  hideOf(){
+    return W.sites.find(s=>(s.bands||[]).some(b=>b.qid===this.id))||null;
+  }
+  lapse(){
+    const h=!this.done&&this.hideOf();
+    if(h&&this.lair!==h.i){
+      this.lair=h.i;
+      h.seen=true;
+      log('The '+this.band+' have gone to ground at the '+h.name+'.','gold','story',this.journalKey);
+    }else if(!h&&this.lair!=null)delete this.lair;
+    super.lapse();
+  }
+  // (paid: its holding quiet of bands a while, QUEST_MARKS)
+  pay(where){
+    super.pay(where);
+    const t=townBy(this.home);
+    if(t&&!this.lord)Quiet.set(t,'band','the '+this.band);
+  }
   // (broken by another: none of its quarry is left anywhere)
   gone(){
-    return super.gone()||!Quest.quarry(this.id).some(o=>!o.gone);
+    return super.gone()||!Quest.quarry(this.id).some(o=>!o.gone)&&!this.hideOf();
   }
   goneWhy(){
     return super.gone()?super.goneWhy():'Someone else broke the '+this.band+'.';
@@ -308,6 +344,7 @@ class BeastQuest extends JobQuest{
       this.my=Math.round(m.hy??m.y);
       this.cause=causeOf(Troubles.news(t,['beast'])[0],t)||'Their lair lies '+Math.round(qTiles({x:this.mx,y:this.my},t))+' tiles '+compass(this.mx-t.x,this.my-t.y)+' of the fields.';
     }else{
+      if(Quiet.is(t,'beast'))return false;
       const c=t.clim,ids=Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic&&(MONSTERS[id].where.includes(c)||MONSTERS[id].where.includes('forest')&&c==='grass'));
       if(!ids.length)return false;
       this.mon=questRng().pick(ids);
@@ -349,6 +386,12 @@ class BeastQuest extends JobQuest{
   }
   quarryName(){
     return 'the '+MONSTERS[this.mon].n.toLowerCase();
+  }
+  // (paid: its fields quiet of beasts a while, QUEST_MARKS)
+  pay(where){
+    super.pay(where);
+    const t=townBy(this.home);
+    if(t&&!this.lord)Quiet.set(t,'beast','the '+MONSTERS[this.mon].n.toLowerCase());
   }
   seek(){
     const m=this.target();
@@ -445,6 +488,14 @@ class SupplyQuest extends JobQuest{
   aim(){
     return 'Bring '+this.n+' '+GOODS[this.good].n.toLowerCase()+' to '+this.home;
   }
+  // (a turn, Q5: its stores filled by others: closed, a share paid)
+  gone(){
+    const t=townBy(this.home);
+    return super.gone()||!!t&&Troubles.fill(t,this.good)>=1;
+  }
+  goneWhy(){
+    return super.gone()?super.goneWhy():this.home+' has its '+GOODS[this.good].n.toLowerCase()+' again.';
+  }
   handOver(){
     goodTake(this.good,this.n);
     const ht=townBy(this.home);
@@ -488,7 +539,7 @@ class HuntQuest extends JobQuest{
     return 'Bring '+this.n+' '+(this.mat?'deer hides':'meat')+' to '+this.home;
   }
   handOver(){
-    if(!this.mat)return goodTake('meat',this.n);
+    if(!this.mat){goodTake('meat',this.n);const t=townBy(this.home);if(t){ensureEcon(t);t.stock.meat=(t.stock.meat||0)+this.n}return}
     let n=this.n;
     for(let i=0;i<P.inv.length&&n;i++){
       const s=P.inv[i];
@@ -582,6 +633,14 @@ class TroopsQuest extends JobQuest{
   }
   aim(){
     return 'Hand over '+this.n+' troops of tier '+this.tier+' or better at '+this.home;
+  }
+  // (a turn, Q5: its garrison filled by others: closed, a share paid)
+  gone(){
+    const t=townBy(this.home);
+    return super.gone()||!!t&&(t.gar||0)>=(t.T.gar||0);
+  }
+  goneWhy(){
+    return super.gone()?super.goneWhy():'The garrison of '+this.home+' is full again.';
   }
   handOver(t){
     let n=this.n;
