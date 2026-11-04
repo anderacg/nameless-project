@@ -20,7 +20,7 @@ try{
  // a full bag
  empty();for(let i=0,n=t.invCap()+t.BAG.maxOver;i<n;i++)t.invAdd('gear',t.gearId('ring',0),1);ok(t.goodRoom('grain')===0&&t.invAdd('good','grain',5)===0,'a bag at its limit holds no more goods');
  const ash=t.townBy('Ashford');G.mode='world';G.modal=false;G.lastTown=null;P.gold=1000;t.enterTown(ash);t.act('tab','trade');
- ok(document.querySelector('[data-act="buy"][data-arg="grain:1"]').disabled,'Buy is disabled with the bag at its limit');
+ t.act('deal','b:grain');{const c=document.querySelector('[data-act="deal-ok"]');ok(c&&c.disabled&&c.title===t.BAG_FULL,'the bargain cannot be struck with the bag at its limit')}t.act('deal-clear');
  P.inv[0]=null;t.act('buy','grain:5');ok(t.goodN('grain')===5,'buying fills a free slot');
  const g0=P.gold;t.act('sell','grain:5');ok(t.goodN('grain')===0&&P.gold>g0&&!P.inv[0],'selling empties it');
  ok(!/data-act="sell-item" data-arg="0"/.test(panel()),'goods are not listed again under your inventory');t.act('leave');done();

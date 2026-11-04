@@ -125,6 +125,12 @@ class Economy{
       P.gold-=p;spent+=p;t.stock[g]--;invAdd('good',g,1);got++}
     if(got&&isFood(g)&&this.foodDays()<3){addRep(t.name,-got/2,true);log('The people of '+t.name+' watch you carry off food they need.','bad')}
     return{got,spent}}
+  // what n of a good would cost you (buying) or bring you (selling) now, each unit moving its price as a sale would; nothing
+  // changes (its stock is put back): the trading screen's bargain (ui/trade.js)
+  quote(g,n,buying){
+    const t=this.t;this.ensure();const s0=t.stock[g]||0;let sum=0;
+    for(let i=0;i<n;i++){if(buying&&(t.stock[g]||0)<1)break;sum+=buying?this.buyPrice(g):this.sellPrice(g);t.stock[g]=(t.stock[g]||0)+(buying?-1:1)}
+    t.stock[g]=s0;return sum}
   // you sell up to n of a good: what you sold and earned
   sell(g,n){
     const t=this.t;this.ensure();let sold=0,earned=0;
@@ -207,7 +213,7 @@ function econDay(){
 const spreadBuy=()=>1.08*(1-.015*skill('trade')),spreadSell=()=>.92*(1+.01*skill('trade'));
 const buyGoods=(t,g,n)=>Economy.of(t).buy(g,n);
 const sellGoods=(t,g,n)=>Economy.of(t).sell(g,n);
-const nextBuy=(t,g)=>Economy.of(t).buyPrice(g),nextSell=(t,g)=>Economy.of(t).sellPrice(g);
+const nextBuy=(t,g)=>Economy.of(t).buyPrice(g),nextSell=(t,g)=>Economy.of(t).sellPrice(g),goodsQuote=(t,g,n,buying)=>Economy.of(t).quote(g,n,buying);
 
 const projectNeed=w=>w.k==='wall'?WALL_MAT[w.lv]:ESTATE_MAT(w.k,w.lv);
 const matsLacking=(t,mats)=>Economy.of(t).lacking(mats);

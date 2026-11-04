@@ -32,7 +32,7 @@ try{
  t.act('lt-all');ok(vals()>=1,'taken');t.act('cont');Kit.done({world:true});
  // sold at the market
  const ash=t.townBy('Ashford');G.lastTown=null;Kit.world();t.enterTown(ash);t.act('tab','trade');
- {const i=P.inv.findIndex(s=>s&&s.k==='val'),s=P.inv[i],g0=P.gold,p=K.fetches(s,ash);ok(/From your inventory/.test(Kit.panel())&&Kit.q('[data-act="sell-own"][data-arg="'+i+'"]'),'the market lists them to sell');
+ {const i=P.inv.findIndex(s=>s&&s.k==='val'),s=P.inv[i],g0=P.gold,p=K.fetches(s,ash);ok(/Your pack/.test(Kit.panel())&&Kit.q('[data-act="deal"][data-arg="o:'+i+'"]'),'the market lists them in your pack, to sell');
   t.act('sell-own',String(i));ok(P.gold===g0+p&&!P.inv[i],'sold: +'+p+' gold for '+s.n)}
  t.act('leave');Kit.done({world:true});
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

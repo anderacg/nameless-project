@@ -175,7 +175,7 @@ try{
   t.act('sup-fill',h.name);ok(t.goodN('water')===k&&!t.goodN('skin_empty'),'and fills them at once ('+t.goodN('water')+' full, the band of 6 wanting 12)');Kit.world({town:null})}
  // ---- the market sells them too
  reset();{const h=Kit.goHome();bag({});P.gold=500;Kit.world();t.enterTown(h);t.act('tab','trade');const p=t.GOODS.skin_empty.base;
-  {const row=Kit.qa('#panel .row').find(x=>/^Empty waterskin/.test(x.textContent));let c=row;while(c&&!(c.classList&&c.classList.contains('lab-cat')))c=c.previousElementSibling;
+  {const row=Kit.qa('#panel .tr-theirs .tr-row').find(x=>/^Empty waterskin/.test(x.textContent));let c=row;while(c&&!(c.classList&&c.classList.contains('lab-cat')))c=c.previousElementSibling;
    ok(row&&c&&c.textContent==='Water','the market lists empty waterskins under '+(c&&c.textContent))}
   t.act('skin-buy','3');ok(t.goodN('skin_empty')===3&&P.gold===500-3*p,'and sells them at '+p+'g each (3 for '+3*p+')');Kit.world({town:null})}
  // ---- a recruit brings an empty waterskin; losing men takes none

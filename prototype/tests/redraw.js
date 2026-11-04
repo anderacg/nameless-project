@@ -5,9 +5,9 @@
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,q=s=>document.querySelector('#panel '+s);window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();P.gold=2000;
  const town=t.TOWNS.find(x=>x.T.tabs.includes('trade')&&!t.hostileTo(x.owner));t.enterTown(town);t.act('tab','trade');
- const buy=[...document.querySelectorAll('#panel [data-act="buy"]')].find(b=>!b.disabled),g=buy.dataset.arg.split(':')[0],n0=t.goodN(g),row=buy.closest('.row');
- buy.click();ok(buy.isConnected&&t.goodN(g)>n0,'the market’s Buy: done, and the very same button still there');
- ok(row.textContent.includes('×'+t.goodN(g)),'its row says what you have now (×'+t.goodN(g)+')');
+ const buy=[...document.querySelectorAll('#panel [data-act="deal"][data-arg^="b:"]')].find(b=>!b.disabled),g=buy.dataset.arg.split(':')[1],s0=town.stock[g],row=buy.closest('.tr-row');
+ buy.click();ok(buy.isConnected&&t.TradeDeal.of().buy[g]===1,'the market’s Buy: into the bargain, and the very same button still there');
+ ok(row.querySelector('.tr-n').textContent===String(s0-1),'its row says what is left to buy ('+(s0-1)+')');
  const body=q('.rwbody');t.act('tab','recruit');ok(q('.rwbody')&&q('.rec-rows'),'another place: drawn afresh');
  G.mode='world';t.hidePanel();t.updateHUD(true);const card=document.querySelector('#stats .pc-band'),day=document.querySelector('#wday span');t.updateHUD();t.updateHUD();
  ok(card&&card.isConnected&&day.isConnected,'the party card and the day, drawn again unchanged: not written again (their buttons kept)');

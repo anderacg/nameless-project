@@ -55,10 +55,10 @@ try{
  const ash=t.townBy('Ashford'),last=toastLast;t.ensureEcon(ash);Object.assign(ash.stock,{iron:40,copper:10,tin:10,timber:40,grain:50,arrows:200});
  t.W.shops=t.W.shops||{};delete t.W.shops[ash.name];P.rep[ash.name]=90;ash.vol=5;
  {G.town=null;const g0=P.gold,n0=t.goodN('grain'),r=t.act('buy','grain:1');ok(r===undefined&&P.gold===g0&&t.goodN('grain')===n0,'outside a town a town action does nothing')}
- t.enterTown(ash);t.act('tab','trade');ok(G.mode==='town'&&G.town.tab==='trade'&&/data-act="buy"/.test(panel()),'tab: the trade tab');
- {const n0=t.goodN('grain'),g0=P.gold;t.act('qty','5');t.act('buy','grain:5');const f=document.activeElement;ok(t.goodN('grain')===n0+5&&P.gold<g0,'buy: 5 grain for '+(g0-P.gold)+'g');
-  ok(f&&f.dataset.act==='buy'&&f.dataset.arg==='grain:5','the window redraws with the focus on the button pressed');
-  const g1=P.gold;t.act('sell','grain:5');ok(t.goodN('grain')===n0&&P.gold>g1,'sell: 5 grain for '+(P.gold-g1)+'g')}
+ t.enterTown(ash);t.act('tab','trade');ok(G.mode==='town'&&G.town.tab==='trade'&&/data-act="deal"/.test(panel()),'tab: the trade tab');
+ {const n0=t.goodN('grain'),g0=P.gold;t.act('qty','5');t.act('deal','b:grain');const f=document.activeElement;t.act('deal-ok');ok(t.goodN('grain')===n0+5&&P.gold<g0,'buy: 5 grain for '+(g0-P.gold)+'g');
+  ok(f&&f.dataset.act==='deal'&&f.dataset.arg==='b:grain','the window redraws with the focus on the button pressed');
+  const g1=P.gold;t.act('deal','s:grain');t.act('deal-ok');ok(t.goodN('grain')===n0&&P.gold>g1,'sell: 5 grain for '+(P.gold-g1)+'g')}
  {const gid=t.gearId(Object.keys(t.BASES)[0],0);t.invAdd('gear',gid,1);const i=P.inv.findIndex(x=>x&&x.k==='gear'&&x.id===gid),g=t.itemPrice(gid),g0=P.gold;t.act('sell-item',String(i));
   ok(P.gold===g0+g&&!P.inv[i]&&last()==='You sell the '+t.ITEMS[gid].n+' for '+g+' gold.','sell-item: '+last())}
  {const m=Object.keys(t.MATS)[0];t.invAdd('mat',m,2);const i=P.inv.findIndex(x=>x&&x.k==='mat'&&x.id===m),n=P.inv[i].n,g=t.matPrice(m)*n,g0=P.gold;t.act('sell-loot',String(i));

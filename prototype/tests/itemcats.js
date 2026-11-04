@@ -45,10 +45,10 @@ try{
  // ---- the market: by category, no arrows, quivers, what you carry by category (no quest item)
  empty();P.gold=5000;t.invAdd('val','chalice',1);t.invAdd('mat','pelt',2);t.ITEM_KINDS.quest.give('heirloom',null);
  const ash=t.townBy('Ashford');Kit.world();G.lastTown=null;t.enterTown(ash);t.act('tab','trade');
- const heads=Kit.qa('.lab-cat').map(e=>e.textContent),w=['Food','Water','Resource','Trade good','Valuable'].map(n=>heads.indexOf(n));
+ const heads=Kit.qa('.tr-theirs .lab-cat').map(e=>e.textContent),w=['Food','Water','Resource','Trade good','Valuable'].map(n=>heads.indexOf(n));
  ok(w.every((v,i)=>v>=0&&(!i||v>w[i-1]))&&!/>Arrows</.test(Kit.panel())&&!/>Bolts</.test(Kit.panel()),'the market\'s goods under their categories ('+heads.join(', ')+'), no arrows nor bolts');
  ok(/Worn quiver/.test(Kit.panel())&&/Hunter’s quiver · 30 bronze arrows/.test(Kit.panel())&&!/Soldier’s quiver/.test(Kit.panel()),'its quivers: the worn ones and the hunter\'s (a soldier\'s at the smith)');
- const sellRow=n=>Kit.qa('[data-act="sell-own"]').find(b=>b.closest('.row').textContent.includes(n));
+ const sellRow=n=>Kit.qa('[data-act="deal"][data-arg^="o:"]').find(b=>b.closest('.tr-row').textContent.includes(n));
  ok(sellRow('Gold chalice')&&sellRow('Wolf Pelt')&&!/Family heirloom/.test(Kit.panel()),'your things to sell, by category: the chalice, the pelts; never the heirloom');
  {const g0=P.gold,i=at('val','chalice'),p=t.ITEM_KINDS.val.fetches(P.inv[i],ash);t.act('sell-own',String(i));ok(P.gold===g0+p&&at('val','chalice')<0,'Sell: a valuable sold for its price there (+'+p+')')}
  t.act('leave');Kit.done({world:true});

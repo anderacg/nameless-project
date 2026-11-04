@@ -32,8 +32,8 @@ try{
  // the market: buying past the bag's size, refused at the limit with why
  empty();P.gold=9000;fill(I.size);const ash=t.townBy('Ashford');Kit.world();G.lastTown=null;t.enterTown(ash);t.act('tab','trade');t.ensureEcon(ash);ash.stock.cloth=200;
  const g0=t.goodN('cloth');t.act('buy','cloth:5');ok(t.goodN('cloth')===g0+5&&I.over===1,'the market sells you cloth past your bag\'s size (into an overflow slot)');
- t.invAdd('mat','pelt',t.STACK*14);t.act('tab','trade');const btn=Kit.qa('[data-act="buy"]').find(b=>/^cloth:/.test(b.dataset.arg));
- ok(I.over===B.maxOver&&t.goodRoom('iron')===0&&Kit.qa('[data-act="buy"]').some(b=>b.disabled&&b.title===t.BAG_FULL),'at the limit its Buy is greyed: "'+t.BAG_FULL+'"');
+ t.invAdd('mat','pelt',t.STACK*14);t.act('tab','trade');t.act('deal','b:iron');const ok2=Kit.q('[data-act="deal-ok"]');
+ ok(I.over===B.maxOver&&t.goodRoom('iron')===0&&ok2&&ok2.disabled&&ok2.title===t.BAG_FULL,'at the limit the bargain\'s Confirm is greyed: "'+t.BAG_FULL+'"');t.act('deal-clear');
  t.act('leave');Kit.done({world:true});
  // the loot screen: what you cannot carry stays on the ground
  empty();fill(I.size+B.maxOver);t.lootStart();t.invAdd('gear',t.gearId('sword',2),1);t.invAdd('mat','pelt',3);t.lootShow('<h2>Victory</h2>',null,0,'cont');

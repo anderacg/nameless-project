@@ -124,32 +124,29 @@ function definePlace(id,spec){
 // (the place a verb is for: the one you are in first (a verb every place has, as buying an upgrade: Place#act), else the one that has it)
 const placeActing=a=>{const cur=G.town&&PLACES[G.town.tab];return cur&&cur.handles(a)?cur:Object.values(PLACES).find(p=>p.handles(a))||null};
 
-/* the market square: its goods by category (bought and sold one unit at a time, each moving the price; a holding's old arrows are
-   none), empty waterskins at their base price among the Water (world/supply.js skinsBuy; no market stocks them), its quivers, and
-   what you carry to sell, by category (what its category lets you sell: a quest item never) */
+/* the market square: a trading screen (ui/trade.js): your pack on the left, the merchants' stalls on the right, the bargain between,
+   struck on Confirm; its goods by category (bought and sold one unit at a time, each moving the price; a holding's old arrows are
+   none), empty waterskins at their base price (world/supply.js skinsBuy; no market stocks them), its quivers, and what you carry
+   to sell, by category (what its category lets you sell: a quest item never). The old verbs (buy, sell, sell-own: at once) are
+   kept for the console and the tests */
 // (a market's goods, and your things, grouped: each category's rows under its name, in ITEM_CATS's order)
 const byCategory=(list,catOf,row)=>Object.keys(ITEM_CATS).map(c=>{const xs=list.filter(x=>catOf(x)===c);return xs.length?'<div class="lab lab-cat">'+ITEM_CATS[c].n+'</div>'+xs.map(row).join(''):''}).join('');
 class Market extends Place{
   constructor(id){
-    super(id,{n:'Market square',short:'Market',ico:'stall',verbs:{buy:'buy',sell:'sell','sell-loot':'sellOwn','sell-item':'sellOwn','sell-own':'sellOwn','market-quiver':'buyQuiver','skin-buy':'buySkins'}});
+    super(id,{n:'Market square',short:'Market',ico:'stall',verbs:{buy:'buy',sell:'sell','sell-loot':'sellOwn','sell-item':'sellOwn','sell-own':'sellOwn','market-quiver':'buyQuiver','skin-buy':'buySkins',
+      deal:'deal',undeal:'deal','deal-clear':'dealClear','deal-ok':'dealOk'}});
   }
+  // its page: the trading screen, your pack, the bargain and the merchants' stalls (ui/trade.js)
   body(t){
-    const goodCat=k=>ITEM_KINDS.good.catId({id:k});
-    ensureEcon(t);const q=G.town.qty||1,goods=[...Object.keys(GOODS).filter(k=>goodCat(k)&&((t.stock[k]||0)>0||goodN(k)>0||needOf(t,k)>.05)),SKIN.empty];
-    const scarce=goods.filter(g=>marketState(t,g)==='shortage'),I=playerInventory;
-    let body=railCards([{pic:personPic('merchant',t.races[0]),name:'The merchants',role:'Stalls of '+t.name,facts:[scarce.length>1?[scarce.length+' goods scarce','bad']:scarce.length?['Short of '+GOODS[scarce[0]].n.toLowerCase(),'bad']:'Prices fair','Your bag '+I.used+' / '+I.size+' slots',I.over?[I.over+' over: burdened','bad']:''],
-      note:'Every unit you buy or sell moves the price.'}])+'<div class="lab lab-qty"><span>Goods</span>'+railQty(q,'qty')+'</div>'+byCategory(goods,goodCat,k=>{
-      if(k===SKIN.empty){const p=GOODS[k].base;return railRow(GOODS[k].n,p+'g each · holds one person’s day of water, filled free at a well or the water’s edge',railBtn('skin-buy',q,'Buy',P.gold<p*q?'Not enough gold':goodRoom(k)<q?BAG_FULL:''),'×'+goodN(k))}
-      const p=buyP(t,k),s=sellP(t,k),room=goodRoom(k),n=goodN(k),st=t.stock[k]||0,ms=marketState(t,k);
-      return railRow(GOODS[k].n+(ms?' <span class="'+(ms==='shortage'?'bad':'good')+'" style="font-size:12px">'+cap1(ms)+'</span>':''),'Buy '+p+'g · Sell '+s+'g · '+st+' in the market · '+GOODS[k].stack+' per slot',
-        railBtn('buy',k+':'+q,'Buy',P.gold<p*q?'Not enough gold':room<q?BAG_FULL:st<q?'The market has '+st:'')+railBtn('sell',k+':'+q,'Sell',n<q?'You have '+n:''),'×'+n)});
-    body+=quiverRows(t,'trade','market-quiver');
-    // (your things a market buys: not goods, sold above by the unit; a letter on its own page, world/letters.js)
-    const own=P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k!=='good'&&(itemCat(x)||{}).sell);
-    if(own.length)body+='<div class="lab" style="margin-top:6px">From your inventory</div>'+byCategory(own,([x])=>itemKind(x).catId(x),([x,i])=>{const K=itemKind(x),g=K.fetches(x,t),c=K.colour(x);
-      return '<div class="row"><div class="info"><strong'+(c?' style="color:'+c+'"':'')+'>'+K.name(x)+'</strong><small>'+(x.k==='gear'?SLOTS[ITEMS[x.id].slot]+' · '+ITEMS[x.id].d:K.cat(x).n+' · '+K.price(x,t)+'g each')+'</small></div>'+(x.n>1?'<span class="own">×'+x.n+'</span>':'')+'<div class="acts">'+railBtn('sell-own',i,'Sell')+'</div><span class="own gold">'+g+'g</span></div>'});
-    return body;
+    return TradeScreen.html(t);
   }
+  // (the bargain: a row moved in, the qty of it (deal), or back out (undeal); cleared; struck)
+  deal(arg,t,a){
+    const s=String(arg),i=s.indexOf(':'),kind=s.slice(0,i),key=s.slice(i+1),D=TradeDeal.of(),n=G.town.qty||1;
+    if(a==='deal')D.add(t,kind,key,n);else D.sub(kind,key,n);
+  }
+  dealClear(){TradeDeal.clear()}
+  dealOk(arg,t){const line=TradeDeal.of().confirm(t);if(line)toast(line,'gold')}
   // goods (g:n): bought, your standing up a little; sold, Trading learned and your standing up
   buy(arg,t){
     const [g,nStr]=arg.split(':');let n=+nStr;

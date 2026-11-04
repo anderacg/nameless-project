@@ -32,7 +32,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     // ---- each place opens its window, Back returns to the overview
     let bad=[];for(const k of places){t.act('tab',k);const on=q('.rail-i.on');if(G.town.tab!==k||h2()!==t.PLACES[k].n||!on||on.dataset.arg!==k||!q('.nav [data-nav="back"]'))bad.push(k+':'+h2());t.act('tab','home');if(G.town.tab!==null)bad.push(k+' back')}
     ok(!bad.length,'every place opens its own window (its name in the header, chosen on the rail, Back at the bottom left) and Back returns'+(bad.length?': '+bad.join(', '):''));
-    t.act('tab','trade');ok(/data-act="buy"/.test(panel())&&q('.rwin .top .rw-gold')&&/Ashford/.test(q('.rw-h .muted').textContent),'the Market window: the trade rows, the town\'s name and your gold in its header');
+    t.act('tab','trade');ok(/data-act="deal"/.test(panel())&&q('.rwin .top .rw-gold')&&/Ashford/.test(q('.rw-h .muted').textContent),'the Market window: the trade rows, the town\'s name and your gold in its header');
     t.act('tab','tavern');ok(/Lodgings/.test(panel())&&!/data-act="tourney"/.test(panel())&&!/data-act="contract"/.test(panel()),'the Tavern: lodgings and rumours (the lists and the contract have places of their own)');
     ok(qa('.rwbody .rcard').length>=1&&qa('.rwbody .rcard').every(c=>c.querySelector('.rc-pic')&&c.querySelector('.rc-id strong'))&&q('.rwbody .rcard [data-act="sy-stay"],.rwbody .rcard [data-act="sy-leave"]')&&!/sy-food/.test(panel()),'the Tavern\'s people are cards: the innkeeper with Stay, no food (that is the market\'s) ('+qa('.rwbody .rcard .rc-id strong').map(e=>e.textContent).join(', ')+')');
     {const id=Object.keys(t.COMPS).find(c=>!P.comps[c]),c0=t.COMPS[id].town;t.COMPS[id].town='Ashford';t.renderTown();const card=q('.rwbody .rcard [data-act="hire-comp"][data-arg="'+id+'"]');card&&(card.__c=card.closest('.rcard'));
@@ -52,16 +52,17 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     {const cs=qa('.rwbody .rec-rows .rec-row[data-act="rec-pick"]');ok(cs.length===ash.races.flatMap(r=>ash.hires(r)).length&&cs.every(c=>c.querySelector('.rec-pic img').getAttribute('src').startsWith('art/portrait/game/')&&/\d+ men/.test(c.textContent)&&/\d+g/.test(c.textContent)&&c.querySelector('[data-act="rec-unit"]'))&&/\d+ willing/.test(q('.rec-top').textContent)&&/units \d+ \/ \d+/.test(q('.rec-top').textContent),
       'the Barracks\' recruits: a row each, portrait, cost and how many; the willing over them ('+cs.map(c=>c.querySelector('.rec-txt strong').textContent.trim()).join('; ')+')');
       const k=cs[1]&&cs[1].dataset.arg;if(k){cs[1].click();ok(G.town.pick===k&&q('.rwbody .rec-row.sel').dataset.arg===k,'a click on a row picks it for its unit card')}}
-    // the market's ×1 / ×5: one toggle for the window, its Buy and Sell take that many
-    t.act('tab','trade');{const one=qa('.rwbody .row [data-act="buy"]');ok(q('.rwbody .qty')&&one.length>3&&one.every(b=>b.textContent==='Buy'&&/:1$/.test(b.dataset.arg))&&!qa('.rwbody .row .btn').some(b=>/Buy 5|Sell 5/.test(b.textContent)),'the Market: Buy and Sell, short, with a ×1 / ×5 toggle (×1 now)');
-      q('.qty [data-arg="5"]').click();const n0=t.goodN('grain');ok(G.town.qty===5&&qa('.rwbody .row [data-act="buy"]').every(b=>/:5$/.test(b.dataset.arg))&&q('.qty [data-arg="5"]').classList.contains('on'),'×5: every Buy and Sell takes five');
-      q('.rwbody .row [data-act="buy"][data-arg="grain:5"]').click();ok(t.goodN('grain')===n0+5,'and Buy buys five, as the old Buy 5 did');
-      {const f=q('.qty .qty-n');f.value='12';f.dispatchEvent(new Event('change',{bubbles:true}));const n1=t.goodN('grain');
-       ok(G.town.qty===12&&qa('.rwbody .row [data-act="buy"]').every(b=>/:12$/.test(b.dataset.arg))&&q('.qty .qty-n.on')&&!q('.qty .btn.on'),'an amount typed (12): every Buy and Sell takes twelve');
-       q('.rwbody .row [data-act="sell"][data-arg="grain:12"]').click();ok(t.goodN('grain')===n1-12||n1<12,'and Sell sells twelve');
+    // the market: the trading screen, your pack | the bargain | the merchants; ×1 / ×5 or typed moves that many into the bargain;
+    // nothing changes hands till Confirm (ui/trade.js)
+    t.act('tab','trade');{const D=()=>t.TradeDeal.of();ok(q('.rwbody .tr .tr-mine')&&q('.rwbody .tr .tr-mid')&&q('.rwbody .tr .tr-theirs')&&q('.tr-mid .qty')&&qa('.tr-theirs [data-act="deal"][data-arg^="b:"]').length>3,'the Market: your pack, the bargain and the merchants side by side, a ×1 / ×5 toggle');
+      q('.qty [data-arg="5"]').click();const n0=t.goodN('grain'),g0=P.gold;q('.tr-theirs [data-act="deal"][data-arg="b:grain"]').click();
+      ok(G.town.qty===5&&D().buy.grain===5&&t.goodN('grain')===n0&&P.gold===g0&&/Grain ×5/.test(q('.tr-mid').textContent),'×5: a Buy puts five in the bargain, and nothing changes hands yet');
+      q('[data-act="deal-ok"]').click();ok(t.goodN('grain')===n0+5&&P.gold<g0&&D().empty,'Confirm: the bargain struck, five grain yours ('+(g0-P.gold)+'g)');
+      {const f=q('.qty .qty-n');f.value='12';f.dispatchEvent(new Event('change',{bubbles:true}));const n1=t.goodN('grain');q('.tr-mine [data-act="deal"][data-arg="s:grain"]').click();
+       ok(G.town.qty===12&&D().sell.grain===Math.min(12,n1),'an amount typed (12): twelve to sell in the bargain');q('[data-act="deal-clear"]').click();ok(D().empty&&t.goodN('grain')===n1,'Clear: the bargain empty, nothing sold');
        t.act('qty','0');ok(G.town.qty===1,'none or less: one');t.act('qty','5000');ok(G.town.qty===t.QTY_MAX,'too many: '+t.QTY_MAX)}
       t.act('qty','1')}
-    t.act('tab','trade');ok(q('.rwbody .rcard img.rc-pic')&&qa('.rwbody .row [data-act="buy"]').length>3&&!q('.rwbody .rcard [data-act="buy"]'),'the Market: its merchants as a card, the goods as rows');
+    t.act('tab','trade');ok(/The merchants of Ashford/.test(q('.rwbody').textContent)&&qa('.tr-theirs .tr-row').length>3,'the Market: the merchants\' stalls as rows');
     t.act('tab','smith');ok(q('.rwbody .rcard img.rc-pic')&&/The smith/.test(q('.rwbody .rcard').textContent),'the Smithy: the smith as a card');t.act('tab','stable');ok(/The stablemaster/.test(q('.rwbody .rcard').textContent),'the Stable: the stablemaster');
     {const g0=P.gold,id=t.stableStock(ash).find(k=>t.canBuyMount(ash,k));t.act('tab','stable');P.gear.mount=null;t.act('buy-mount',id);ok(P.gear.mount===id&&P.gold<g0&&G.town.tab==='stable','actions work as before (a mount bought in the Stable window)')}
     // ---- Esc steps back; the way out leaves
@@ -83,8 +84,8 @@ b=q('.rwbody'),r=q('.rail'),s=scr.getBoundingClientRect(),pr=p.getBoundingClient
       const nav=q('.rwin>.nav').getBoundingClientRect(),pr=q('#panel').getBoundingClientRect();
       ok(!fits.length&&nav.bottom<=pr.bottom+.5,'at 844 x 390 every window fits: a slim rail ('+Math.round(q('.rail').getBoundingClientRect().width)+' px), nothing scrolls sideways, the bottom bar on screen'+(fits.length?': '+fits.join('; '):''));
       // rows stack on a narrow screen: the name and its line, then the buttons on a line of their own, wide enough to tap
-      {t.act('tab','trade');q('#panel').style.animation='none';const r=q('.rwbody .row'),i=r.querySelector('.info').getBoundingClientRect(),a=r.querySelector('.acts').getBoundingClientRect(),bs=[...r.querySelectorAll('.acts .btn')].map(b=>b.getBoundingClientRect());
-        ok(a.top>=i.bottom-1&&a.width>=r.getBoundingClientRect().width*.8&&bs.every(b=>b.height>=39&&b.width>=80),'at 844 × 390 a Market row stacks: its buttons on their own line, full width ('+bs.map(b=>Math.round(b.width)+'×'+Math.round(b.height)).join(', ')+')')}
+      {t.act('tab','trade');q('#panel').style.animation='none';const ps=['.tr-mine','.tr-mid','.tr-theirs'].map(k=>q(k).getBoundingClientRect()),bs=qa('.tr-row .btn').map(b=>b.getBoundingClientRect());
+        ok(ps[0].right<=ps[1].left+1&&ps[1].right<=ps[2].left+1&&q('.rwbody').scrollWidth<=q('.rwbody').clientWidth+1&&bs.every(b=>b.height>=34),'at 844 × 390 the Market\'s three side by side, nothing sideways, its buttons tappable ('+ps.map(r=>Math.round(r.width)).join(' / ')+'; sw '+q('.rwbody').scrollWidth+'/'+q('.rwbody').clientWidth+'; h '+Math.min(...bs.map(b=>Math.round(b.height)))+'; '+ps.map(r=>Math.round(r.left)+'-'+Math.round(r.right)).join(' ')+')')}
       ok(getComputedStyle(q('.rail-i .ri-n')).display==='none'&&getComputedStyle(q('.rail-i .ri-s')).display!=='none'&&!q('.rail-i small'),'the slim rail shows icons with short names');
       // the cards wrap into a grid: one or two a row on a phone, inside the window, nothing sideways
       {const bad=[];for(const k of ['tavern','recruit','hall','trade']){t.act('tab',k);q('#panel').style.animation='none';const b=q('.rwbody').getBoundingClientRect();
@@ -96,7 +97,7 @@ b=q('.rwbody'),r=q('.rail'),s=scr.getBoundingClientRect(),pr=p.getBoundingClient
       const p=q('#panel').getBoundingClientRect(),r=q('.rail').getBoundingClientRect(),w=q('.rwin').getBoundingClientRect(),cs=qa('.rwbody .rcard').map(c=>c.getBoundingClientRect());
       ok(r.width>=p.width-2&&r.height<130&&w.top>=r.bottom-1&&w.width>=p.width-2&&q('.rail').scrollWidth>=q('.rail').clientWidth&&new Set(cs.map(c=>Math.round(c.left))).size===1&&q('.rwbody').scrollWidth<=q('.rwbody').clientWidth+1,
         'at 420 × 900 the rail is a strip along the top ('+Math.round(r.width)+' × '+Math.round(r.height)+'), the window the full width, one card a row');
-      t.act('tab','trade');q('#panel').style.animation='none';const rw=q('.rwbody .row'),ii=rw.querySelector('.info').getBoundingClientRect(),aa=rw.querySelector('.acts').getBoundingClientRect();ok(aa.top>=ii.bottom-1&&q('.rwbody').scrollWidth<=q('.rwbody').clientWidth+1,'and a Market row stacks, nothing sideways');
+      t.act('tab','trade');q('#panel').style.animation='none';const mid=q('.tr-mid').getBoundingClientRect(),mine=q('.tr-mine').getBoundingClientRect();ok(mid.bottom<=mine.top+1&&q('.rwbody').scrollWidth<=q('.rwbody').clientWidth+1,'and the Market: the bargain over your pack and the merchants, nothing sideways ('+Math.round(mid.bottom)+'/'+Math.round(mine.top)+' sw '+q('.rwbody').scrollWidth+'/'+q('.rwbody').clientWidth+')');
       q('#panel').style.animation='';t.act('leave');scr.style.cssText=css;world()}
     // ---- your holding: its walls, houses and estates down the rail, each with its window
     ash.owner='player';ash.lastOwner='player';ash.sacked=ash.raided=ash.turmoil=0;t.ensureEcon(ash);world();t.enterTown(ash);
