@@ -11,9 +11,9 @@ const QUEST_REWARD={gold:['gold','Gold'],bonus:['gold','A friend\'s bonus'],xp:[
 const QuestReward={el:null,list:[],
   // a quest paid: its title and its rewards
   add(title,items){items=items.filter(x=>x&&x[1]!==0&&x[1]!==null);if(!items.length)return;this.list.push({title,items});this.show()},
-  // (a job's: its gold, a friend's bonus, experience, renown, reputation, honor, regard)
+  // (a job's: its gold, a friend's bonus, experience, renown, reputation, honor, regard, a giver's goods)
   job(title,r){const K=QUEST_REWARD,it=(k,n,where)=>n?[K[k][0],n,K[k][1],where]:null;
-    this.add(title,[it('gold',r.gold),it('bonus',r.bonus,r.giver),it('xp',r.xp),it('renown',r.renown),r.at&&it('rep',r.rep,r.at),it('honor',r.honor,FACS[r.fac]?.n),it('rel',r.rel,r.giver)])},
+    this.add(title,[it('gold',r.gold),it('bonus',r.bonus,r.giver),it('xp',r.xp),it('renown',r.renown),r.at&&it('rep',r.rep,r.at),it('honor',r.honor,FACS[r.fac]?.n),it('rel',r.rel,r.giver),r.goods&&GOODS[r.goods[0]]&&['good:'+r.goods[0],r.goods[1],GOODS[r.goods[0]].n]])},
   // (a story's or a step's: its outcome o and what came of it, res; only what you gain)
   outcome(title,o,res){const K=QUEST_REWARD,it=(k,n,where)=>n>0?[K[k][0],n,K[k][1],where]:null,out=[];
     if(o.gold)out.push(it('gold',Outcome.amount(o.gold)));

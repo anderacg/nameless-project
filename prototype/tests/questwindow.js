@@ -27,7 +27,7 @@ Kit.suite(({ok,info})=>{
  const qb=t.makeQuest('bounty',ash);t.acceptQuest(qb);
  let qc=null;for(let k=0;k<10&&!qc;k++)qc=t.makeQuest('courier',ash);t.acceptQuest(qc);
  const lord=W.lords.find(l=>l.fac===ash.owner&&!l.dead),ql=t.makeQuest('bounty',ash,lord);t.acceptQuest(ql);
- P.level=1;const offT=t.makeQuest('troops',ash),offB=t.makeQuest('bounty',ash);P.jobs={Ashford:{day:G.day,list:[offB,offT]}};
+ P.level=1;ash.gar=Math.min(ash.gar,ash.T.gar-5);const offT=t.makeQuest('troops',ash),offB=t.makeQuest('bounty',ash);P.jobs={Ashford:{day:G.day,list:[offB,offT]}};
  const esc=()=>Kit.key('Escape','Escape'),facts=()=>Object.fromEntries(qa('.qw-detail .qfacts dt').map(dt=>[dt.textContent,dt.nextElementSibling.textContent]));
  const rowOf=k=>q('.qw-row[data-arg="'+k+'"]'),tabBtn=k=>q('.qw-tabs [data-arg="'+k+'"]');
  // ---- the tabs; a story listed once, in Side, with its objective
@@ -54,7 +54,7 @@ Kit.suite(({ok,info})=>{
  P.level=3;t.act('qw-tab','job');ok(!rowOf('oAshford:1').classList.contains('locked')&&/Available/.test(rowOf('oAshford:1').textContent),'level 3: available');
  // a bounty: given by, taken, no timing, report at its holding, its steps (where the band was last seen, 0 / 1 broken), its reward
  t.act('qw-sel','q'+qb.id);
- {const f=facts();ok(q('.qw-detail h3').textContent===qb.title&&/Job/.test(q('.qw-meta').textContent)&&f['Given by'].startsWith('Ashford (')&&f.Taken==='Day '+d0&&f.Timing==='No time limit'&&f['Turn in']==='At Ashford'&&/gold/.test(f.Reward),
+ {const f=facts();ok(q('.qw-detail h3').textContent===qb.title&&/Job/.test(q('.qw-meta').textContent)&&/, the .+ of Ashford$/.test(f['Given by'])&&f.Taken==='Day '+d0&&f.Timing==='No time limit'&&f['Turn in']==='At Ashford'&&/gold/.test(f.Reward),
    'a bounty in full: given by '+f['Given by']+' · taken '+f.Taken+' · '+f.Timing+' · turn in '+f['Turn in']+' · '+f.Reward);
   ok(/^Bounty: the .+, last seen \d+ tiles [a-z]+; 0 \/ 1 broken/.test(f.Steps)&&/Then report back at Ashford/.test(f.Steps)&&q('.qw-detail [data-act="qw-abandon"]'),'its steps: '+f.Steps+'; a job: Abandon')}
  // a courier: its best-by day, later pays less; paid on arrival

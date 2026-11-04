@@ -66,6 +66,9 @@ class LordBrain extends Brain{
 // a bandit band: hunts you if it is the stronger, flees if it is not, wanders otherwise, and shelters in a camp by night. Afraid of
 // your army and remembering it (engage.js fearOf), it runs from it, just after a fight too (its cool-down), or by night into a camp
 // your army is neither at nor across the way to (campNear); never into your army to reach its own
+// (a band that works a stretch of road (haunt: a bounty's band out of its hideout, world/quests.js): further than HAUNT.r tiles
+// from it, it heads back that way when it picks its way)
+const HAUNT={r:8};
 class BandBrain extends Brain{
   think(b,d,night){
     if(inFight(b))return false;
@@ -74,7 +77,7 @@ class BandBrain extends Brain{
     const st=stance(b.power(),b),fear=fearOf(b,st),home=night&&campNear(b,fear),sp=moveStep(partySpeed(b,b.troops),d);
     if(fear&&home||b.cool>0&&!fear||!stanceMove(b,st,v.d,v.dx,v.dy,TravelAwareness.sees(b)?travelDetection(b).range:0,sp,true)){
       if(home){const s=fear?sp*.85:moveStep(16,d);Router.travel(b,home,s)||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),s));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
-      else if(!(b.lootGo&&FieldLootQuest.seek(b,d))){b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(12,d))}}
+      else if(!(b.lootGo&&FieldLootQuest.seek(b,d))){b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3;if(b.haunt&&Math.hypot(b.haunt.x-b.x,b.haunt.y-b.y)>HAUNT.r*TILE)b.a=Math.atan2(b.haunt.y-b.y,b.haunt.x-b.x)}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(12,d))}}
     if(this.canMeet(b,v.d)){meetBand(b);return true}
     return false;
   }

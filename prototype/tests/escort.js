@@ -54,7 +54,7 @@ Kit.suite(({ok,info})=>{
   {fresh();const q6=E.start(spec());t.Quest.as(q6).abandon();ok(!P.quests.length&&q6.fate==='left'&&G.msgs.some(m=>/You set the refugee family down/.test(m.m)),'abandoned: set down by the road (fate left)')}
   // ---- the limits: three at once, beside four jobs
   {fresh();const qs=[0,1,2].map(()=>E.start(spec()));ok(qs.every(Boolean)&&!!E.why()&&!E.start(spec())&&E.list().length===3,'three passengers at once; a fourth refused ('+E.why()+')');
-   P.quests=[];for(const k of ['supply','hunt','troops','courier'])Kit.seeded(9,()=>t.acceptQuest(t.makeQuest(k,ash)));const jobs=P.quests.length;
+   P.quests=[];ash.gar=ash.T.gar-5;{const d=Object.keys(t.CRITTERS).find(k=>t.CRITTERS[k].mat&&t.CRITTERS[k].mat[0]==='hide'&&!t.CRITTERS[k].live);t.W.critters.push({id:d,x:ash.x+150,y:ash.y+60,hx:ash.x+150,hy:ash.y+60,n:3,dir:1,cool:0})}/* (what a hunt and reinforcements need: world/troubles.js) */for(const k of ['supply','hunt','troops','courier'])Kit.seeded(9,()=>t.acceptQuest(t.makeQuest(k,ash)));const jobs=P.quests.length;
    ok(jobs===4&&!!E.start(spec())&&t.Quest.jobs()===4,'with four jobs taken (the limit), an escort is taken all the same: it is no job')}
   // ---- a job offered at a holding (no spec): a traveller to another holding
   {fresh();const o=Kit.seeded(3,()=>t.makeQuest('escort',ash));ok(o&&o.who==='traveller'&&o.to.k==='holding'&&o.to.town!=='Ashford'&&o.reward.gold>0&&o.prize.rep[0]==='Ashford'&&Object.keys(o.reward).join()==='gold,rep,honor,xp','offered at Ashford: a traveller to '+(o&&o.to.name)+', '+(o&&o.reward.gold)+' gold there')}

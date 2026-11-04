@@ -238,11 +238,13 @@ class Quest extends Happening{
     const at=this.lord?where:this.home;
     if(r.rep&&at)addRep(at,r.rep,true);
     if(r.honor)addHonor(this.fac,r.honor,true);
+    // (a giver who pays partly in goods: from the holding's stock to you, world/givers.js)
+    if(r.goods&&GOODS[r.goods[0]]){const ht=townBy(this.home);if(ht&&ht.stock)ht.stock[r.goods[0]]=Math.max(0,(ht.stock[r.goods[0]]||0)-r.goods[1]);invAdd('good',r.goods[0],r.goods[1])}
     P.quests=P.quests.filter(x=>x!==this);
     log('Quest complete: '+this.title+'. +'+gold+' gold'+(r.rep?', +'+r.rep+' reputation':'')+(r.honor?', +'+r.honor+' honor':'')+'.','good','story',this.journalKey);
     this.announceEnd('paid');
     // (what it gave, in the window in the middle of the screen: ui/questreward.js)
-    if(typeof QuestReward!=='undefined')QuestReward.job(this.title,{gold,bonus,xp:r.xp,renown,rep:r.rep,at,honor:r.honor,fac:this.fac,rel:giver?RELATION.jobDone:0,giver:giver?.name});
+    if(typeof QuestReward!=='undefined')QuestReward.job(this.title,{gold,bonus,xp:r.xp,renown,rep:r.rep,at,honor:r.honor,fac:this.fac,rel:giver?RELATION.jobDone:0,giver:giver?.name,goods:r.goods});
   }
   // (the gold it pays now: its reward's; a late job's less, world/quests.js)
   earned(){

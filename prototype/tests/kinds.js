@@ -129,6 +129,8 @@ Kit.suite(({ok,info})=>{
  {const SH='quest',Q=t.Quest,all=K.all(SH),ids=all.map(k=>k.id),bad=[];Kit.world();Kit.clear();
   ok(ids.join()==='bounty,beast,clear,supply,hunt,courier,troops,lordkill,raid,escort'&&all.every(k=>k.cls&&k.cls.prototype instanceof Q&&t.kindOf(SH,k.id)===k),'the job kinds: registered once each, each a subclass of Quest ('+all.map(k=>k.cls.name).join(', ')+')');
   // (every realm at war with every other, so a lord has war work; a lord's kinds are made by a lord)
+  // (game grazing by every holding: a hunt is offered only where it does, world/troubles.js)
+  {const d=Object.keys(t.CRITTERS).find(k=>t.CRITTERS[k].mat&&t.CRITTERS[k].mat[0]==='hide'&&!t.CRITTERS[k].live);for(const h of t.TOWNS)W.critters.push({id:d,x:h.x+150,y:h.y+60,hx:h.x+150,hy:h.y+60,n:3,dir:1,cool:0})}
   const facs=Object.keys(t.FACS).filter(f=>f!=='player');for(const a of facs)for(const b of facs)if(a<b)W.rel[t.rk(a,b)]={s:'war',since:G.day};W.lords.forEach(l=>{l.dead=false});
   // (the deed's own event, for one taken: what it waits for, found on the map)
   const own={'band:beaten':q=>({band:t.bandits.find(b=>b.qid===q.id)}),'monster:slain':q=>({monster:W.monsters.find(m=>m.qid===q.id)}),'site:cleared':q=>({site:W.sites[q.site]}),'lord:beaten':q=>({lord:W.lords.find(l=>l.name===q.target)}),'holding:razed':q=>({town:t.townBy(q.village)})};
@@ -138,7 +140,7 @@ Kit.suite(({ok,info})=>{
    if(!q){bad.push(k+' (no offer anywhere)');continue}
    // (a job's timing its own: a timed kind's days, an untimed one's none; a kind not a job, an escort, its days as ever)
    const job=q instanceof t.JobQuest,dated=!job||q.timed;
-   if(!(q instanceof D.cls)||q.kind!==D||q.type!==k||Object.keys(q.reward).join()!=='gold,rep,honor,xp'||!q.title||!q.text||(dated?!(q.days>0):q.days!=null))bad.push(k+' (its offer)');
+   if(!(q instanceof D.cls)||q.kind!==D||q.type!==k||!/^gold,rep,honor,xp(,goods)?$/.test(Object.keys(q.reward).join())||!q.title||!q.text||(dated?!(q.days>0):q.days!=null))bad.push(k+' (its offer)');
    // (taken: on your list, numbered, its due day, where it points, how far along)
    P.quests=[];const n0=P.qid||0;if(!Kit.seeded(12,()=>q.accept())){bad.push(k+' (not taken)');continue}
    if(P.quests[0]!==q||q.id!==n0+1||(dated?q.due!==G.day+q.days:q.due!=null)||job&&q.taken!==G.day||q.done!==false||typeof q.progress()!=='string')bad.push(k+' (taken)');

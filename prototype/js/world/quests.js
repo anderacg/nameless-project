@@ -32,6 +32,25 @@ function spotNear(t,lo,hi,ok){
    and its giver's trust: QuestShut), unmet, it is locked; given up (abandon), it costs by its size (penalty: QUEST_ABANDON) and
    its giver gives you no work for a while. */
 class JobQuest extends Quest{
+  // (who at the holding gave it: world/givers.js, by its key; a lord's none)
+  get person(){
+    return this.who?Givers.byKey(this.who):null;
+  }
+  givenBy(){
+    const g=this.person;
+    return g?Givers.label(g):super.givenBy();
+  }
+  // (the true thing it is about, in a line: troubles.js, news.js)
+  causeLine(){
+    return this.cause||'';
+  }
+  // (a giver who pays partly in goods: that share of its gold in the holding's goods, Givers.goods)
+  static purse(q,g,t){
+    const k=Givers.goods(g,q.reward.gold,t);
+    if(!k)return;
+    q.reward.gold=Math.round(q.reward.gold*g.pays);
+    q.reward.goods=k;
+  }
   // (the lord who gave it, if one did)
   giverLord(){
     return this.lord&&W.lords.find(l=>l.name===this.giver)||null;
@@ -44,6 +63,8 @@ class JobQuest extends Quest{
       const R=JOB_NEED[k],have=R.have(this);
       if(have!=null)out.push({k,what:R.what(this,n)+' (yours: '+signedNum(have)+')',met:have>=n});
     }
+    const g=this.person,gn=g&&GIVER_REGARD.needs[this.type];
+    if(gn!=null)out.push({k:'regard',what:g.name+'’s regard '+signedNum(gn)+' (yours: '+signedNum(Givers.regard(g))+')',met:Givers.regard(g)>=gn});
     const s=QuestShut.of(this);
     if(s)out.push({k:'shut',what:QuestShut.line(this,s),met:false});
     return out;
@@ -58,7 +79,12 @@ class JobQuest extends Quest{
   }
   abandon(){
     QuestShut.set(this);
+    Givers.change(this.person,GIVER_REGARD.left);
     super.abandon();
+  }
+  pay(where){
+    super.pay(where);
+    Givers.change(this.person,GIVER_REGARD.done);
   }
   get timed(){
     return false;
@@ -130,24 +156,52 @@ class JobQuest extends Quest{
   }
 }
 /* ---------- the job kinds: one class each (on JobQuest), its own rules only ---------- */
-// a bounty: a band of its own name near the holding; done when you break it (in a fight, or it gives up to you)
+// a bounty: a band that really troubles the holding (troubles.js: in its lands, or the talk of a caravan robbed or a raid), the
+// one marked once taken; none there, a band out of the nearest hideout or camp takes to its roads (as the world's bands come
+// out of theirs), working them (haunt); no hideout near either, no bounty. Done when you break it (in a fight, or it gives up)
+const BOUNTY={haunt:[5,12],near:3};
+const causeOf=(it,t)=>!it?'':it.k==='caravan'?'They robbed a caravan'+(it.detail.from?' out of '+it.detail.from:'')+' on day '+it.day+'.':it.k==='raid'?'They raided '+(it.detail.town||t.name)+' on day '+it.day+'.':
+  it.k==='beast'?'Seen by the fields on day '+it.day+'.':it.k==='siege'?'The siege on day '+it.day+' cut its roads.':'Seen in the lands of '+t.name+' since day '+it.day+'.';
 class BountyQuest extends JobQuest{
   setup(t){
-    this.band=questRng().pick(BAND_NAMES);
-    this.n=questRng().int(4,6)+Math.floor(G.day/12);
+    const b=Troubles.bands(t).find(x=>!x.qid),lair=Troubles.lairs(t)[0];
+    if(b){
+      this.chief=b.ld?b.ld.name:'';
+      this.n=b.troops.length;
+      this.lx=Math.round(b.x);
+      this.ly=Math.round(b.y);
+      this.band=b.name||questRng().pick(BAND_NAMES);
+      this.cause=causeOf(Troubles.news(t,['caravan','raid','band'])[0],t)||'Seen in the lands of '+t.name+'.';
+    }else if(lair){
+      this.site=lair.i;
+      this.n=questRng().int(4,6)+Math.floor(G.day/12);
+      this.band=questRng().pick(BAND_NAMES);
+      this.cause='A band out of the '+lair.name+', '+Math.round(qTiles(lair,t))+' tiles '+compass(lair.x-t.x,lair.y-t.y)+', has taken to the roads by '+t.name+'.';
+    }else return false;
     this.title='Bounty: the '+this.band;
-    this.text='The '+this.band+', a band of about '+this.n+', have been robbing travellers near '+t.name+'. Find them and break them.';
+    this.text=(this.chief?this.chief+' and the ':'The ')+this.band+', about '+this.n+' strong, prey on the roads near '+t.name+'. Find them and break them.';
     this.pays(50+14*this.n,8,3,20+5*this.n);
   }
+  // (the band it named, if it is still about; else any that troubles the holding; else one out of the hideout)
   begin(t){
-    const p=spotNear(t,8,16);
-    if(!p)return false;
-    const kind=climAt(p.x,p.y)==='desert'?'raiders':climAt(p.x,p.y)==='swamp'?'bog':'bandits';
-    // (its fighters and its chief made from the jobs' stream too)
-    const list=Rng.use('quests',()=>makeEnemies(this.n,false,kind)),ld=Rng.use('quests',()=>newChief(kind,2+Math.floor(G.day/20)));
-    bandits.push(asParty({x:p.x,y:p.y,n:this.n,kind,list,t:0,a:0,idle:true,cool:0,qid:this.id,name:this.band,ld}));
-    this.x=p.x;
-    this.y=p.y;
+    let b=null;
+    if(this.site==null)b=bandits.find(o=>!o.qid&&!o.gone&&!o.fight&&(this.chief?o.ld&&o.ld.name===this.chief:Math.hypot(o.x-this.lx,o.y-this.ly)<TROUBLE.land*TILE))||Troubles.bands(t).find(o=>!o.qid);
+    if(b){
+      b.qid=this.id;
+      b.name=b.name||this.band;
+      this.band=b.name;
+      this.x=b.x;
+      this.y=b.y;
+      return;
+    }
+    const s=this.site!=null&&W.sites[this.site]&&!W.sites[this.site].cleared?W.sites[this.site]:Troubles.lairs(t)[0];
+    if(!s)return false;
+    const r=questRng(),x=s.x+r.int(-12,12),y=s.y+r.int(10,18),kind=climAt(x,y)==='desert'?'raiders':climAt(x,y)==='swamp'?'bog':'bandits';
+    const list=Rng.use('quests',()=>makeEnemies(this.n,false,kind)),ld=Rng.use('quests',()=>newChief(kind,2+Math.floor(G.day/20))),h=spotNear(t,...BOUNTY.haunt)||{x:t.x,y:t.y};
+    bandits.push(asParty({x,y,n:this.n,kind,list,t:0,a:0,idle:false,cool:0,qid:this.id,name:this.band,ld,haunt:{x:Math.round(h.x),y:Math.round(h.y)}}));
+    this.chief=ld.name;
+    this.x=x;
+    this.y=y;
   }
   // (on the map, or gone to ground in a camp: its quarry, story/quest.js)
   seek(){
@@ -174,26 +228,49 @@ class BountyQuest extends JobQuest{
     return super.gone()?super.goneWhy():'Someone else broke the '+this.band+'.';
   }
 }
-// a beast hunt: bigger beasts of the holding's lands, set near it; done when they are slain
+// beasts at the folds: a pack whose lair lies by the holding's fields (troubles.js packs), the one marked once taken; none, a pack of
+// the land's (where such beasts live: a spot of its habitat by its fields, else none) has moved in. Done when they are slain
 class BeastQuest extends JobQuest{
   setup(t){
-    const c=t.clim,ids=Object.keys(MONSTERS).filter(id=>MONSTERS[id].where.includes(c)||MONSTERS[id].where.includes('forest')&&c==='grass');
-    if(!ids.length)return false;
-    this.mon=questRng().pick(ids);
+    const m=Troubles.packs(t).find(x=>!x.qid&&MONSTERS[x.id]);
+    if(m){
+      this.mon=m.id;
+      this.n=m.n;
+      this.lv=m.lv;
+      this.mx=Math.round(m.hx??m.x);
+      this.my=Math.round(m.hy??m.y);
+      this.cause=causeOf(Troubles.news(t,['beast'])[0],t)||'Their lair lies '+Math.round(qTiles({x:this.mx,y:this.my},t))+' tiles '+compass(this.mx-t.x,this.my-t.y)+' of the fields.';
+    }else{
+      const c=t.clim,ids=Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic&&(MONSTERS[id].where.includes(c)||MONSTERS[id].where.includes('forest')&&c==='grass'));
+      if(!ids.length)return false;
+      this.mon=questRng().pick(ids);
+      const M=MONSTERS[this.mon],p=spotNear(t,7,TROUBLE.folds,(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)));
+      if(!p)return false;
+      this.n=Math.max(M.count[0],M.count[1]);
+      this.lv=monLevel(questRng())+1;
+      this.mx=Math.round(p.x);
+      this.my=Math.round(p.y);
+      this.stage=true;
+      this.cause='Tracks and torn fleeces: something has made its lair '+Math.round(qTiles(p,t))+' tiles '+compass(p.x-t.x,p.y-t.y)+' of '+t.name+'.';
+    }
     const M=MONSTERS[this.mon];
-    this.n=Math.max(M.count[0],M.count[1]);
-    this.lv=monLevel(questRng())+1;
-    this.title='Beast hunt: '+M.n.toLowerCase();
-    this.text=cap1(M.n.toLowerCase())+' have been killing livestock outside '+t.name+'. They are bigger than most. Kill them.';
+    this.title='Beasts at the folds: '+M.n.toLowerCase();
+    this.text=cap1(M.n.toLowerCase())+' have been taking livestock outside '+t.name+'. Kill them.';
     this.pays(40+M.xp*this.n*.9,8,2,0);
   }
-  // (where they would live, else anywhere near)
+  // (the pack it named, if it is still there; else the one that moved in, at its lair)
   begin(t){
-    const M=MONSTERS[this.mon],p=spotNear(t,6,14,(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)))||spotNear(t,6,14);
-    if(!p)return false;
-    W.monsters.push(asMonster({id:this.mon,x:p.x,y:p.y,hx:p.x,hy:p.y,lv:this.lv,n:this.n,t:0,a:0,cool:0,qid:this.id}));
-    this.x=p.x;
-    this.y=p.y;
+    const m=!this.stage&&W.monsters.find(o=>!o.qid&&o.id===this.mon&&o.n>0&&Math.hypot((o.hx??o.x)-this.mx,(o.hy??o.y)-this.my)<BOUNTY.near*TILE)||Troubles.packs(t).find(o=>!o.qid&&o.id===this.mon);
+    if(m){
+      m.qid=this.id;
+      this.x=m.x;
+      this.y=m.y;
+      return;
+    }
+    if(this.mx==null)return false;
+    W.monsters.push(asMonster({id:this.mon,x:this.mx,y:this.my,hx:this.mx,hy:this.my,lv:this.lv,n:this.n,t:0,a:0,cool:0,qid:this.id}));
+    this.x=this.mx;
+    this.y=this.my;
   }
   seek(){
     const m=W.monsters.find(x=>x.qid===this.id);
@@ -215,12 +292,15 @@ class BeastQuest extends JobQuest{
     return super.gone()?super.goneWhy():'Someone else killed the '+MONSTERS[this.mon].n.toLowerCase()+'.';
   }
 }
-// a clearance: the nearest lair or camp that troubles the holding, marked on your map; done when it is cleared
+// a clearance: the nearest lair or camp, marked on your map, while what comes out of it troubles the holding (troubles.js: its
+// bands, or the talk of robberies and raids; a beast's cave, its packs by the fields); done when it is cleared
 class ClearQuest extends JobQuest{
   setup(t){
-    const s=W.sites.filter(x=>x.clearJob&&!x.cleared&&qTiles(x,t)<35).sort((a,b)=>qTiles(a,t)-qTiles(b,t))[0];
+    const T=Troubles,bands=T.bands(t).length>0||T.news(t,['caravan','raid','band']).length>0,beasts=T.packs(t).length>0;
+    const s=W.sites.filter(x=>x.clearJob&&!x.cleared&&qTiles(x,t)<35&&(x instanceof Lair?bands:beasts)).sort((a,b)=>qTiles(a,t)-qTiles(b,t))[0];
     if(!s)return false;
     this.site=s.i;
+    this.cause=s instanceof Lair?causeOf(T.news(t,['caravan','raid','band'])[0],t)||'Its bands go to ground there.':'The beasts by the fields come out of it.';
     this.title='Clear the '+s.name;
     this.text='The '+s.name+' to the '+compass(s.x-t.x,s.y-t.y)+' troubles '+t.name+'. Clear it out.';
     this.pays(130,10,3,40);
@@ -254,7 +334,9 @@ class ClearQuest extends JobQuest{
     return super.gone()?super.goneWhy():s?'Someone else cleared the '+s.name+'.':'The place is gone.';
   }
 }
-// a supply run: a lasting good the holding is short of, handed over into its stock
+// a supply run: a lasting good the holding is short of, handed over into its stock; its days by how long its stock lasts
+// (SUPPLY_JOB.days: from min, the emptier the sooner, up to max), paid by its price there (× price) at the least as before
+const SUPPLY_JOB={days:[5,16,20],price:1.25};
 class SupplyQuest extends JobQuest{
   get timed(){
     return true;
@@ -265,10 +347,11 @@ class SupplyQuest extends JobQuest{
     if(!goods.length)return false;
     this.good=goods[questRng().int(0,Math.min(1,goods.length-1))];
     this.n=questRng().int(8,15);
-    this.days=10;
+    this.days=clamp(Math.round(SUPPLY_JOB.days[0]+Troubles.fill(t,this.good)*SUPPLY_JOB.days[2]),SUPPLY_JOB.days[0],SUPPLY_JOB.days[1]);
+    this.cause=causeOf(Troubles.news(t,['caravan','siege','raid'])[0],t)||'Its stores of '+GOODS[this.good].n.toLowerCase()+' run low.';
     this.title='Supply run: '+GOODS[this.good].n.toLowerCase();
     this.text=t.name+' is short of '+GOODS[this.good].n.toLowerCase()+'. Bring '+this.n+' here.';
-    this.pays(GOODS[this.good].base*this.n*1.6,8,2,15);
+    this.pays(Math.max(GOODS[this.good].base*1.6,marketPrice(t,this.good)*SUPPLY_JOB.price)*this.n,8,2,15);
   }
   get handsOver(){
     return true;
@@ -291,15 +374,21 @@ class SupplyQuest extends JobQuest{
     }
   }
 }
-// a hunt: deer hides for the tanner, or meat for a feast, handed over
+// a hunt: hides for the tanner (always his; an innkeeper's never; else 2 in 5), or meat for the table, handed over; offered only where game
+// that gives them lives near (troubles.js game), named, and where
 class HuntQuest extends JobQuest{
-  setup(t){
-    const hides=questRng().chance(.4);
+  setup(t,lord,spec){
+    const g=spec&&Givers.byKey(spec.who),herds=Troubles.game(t),hideHerd=herds.find(c=>CRITTERS[c.id].mat&&CRITTERS[c.id].mat[0]==='hide');
+    const hides=!!hideHerd&&(g&&g.role==='tanner'||!(g&&g.role==='innkeeper')&&questRng().chance(.4)),c=hides?hideHerd:herds.find(c=>CRITTERS[c.id].meat>0);
+    if(!c||g&&g.role==='tanner'&&!hides)return false;
+    const K=CRITTERS[c.id];
     this.mat=hides?'hide':null;
     this.good=hides?null:'meat';
+    this.game=c.id;
     this.n=hides?questRng().int(3,5):questRng().int(12,20);
-    this.title=hides?'Hides for the tanner':'Meat for the feast';
-    this.text=hides?'The tanner of '+t.name+' wants '+this.n+' deer hides.':t.name+' is holding a feast and needs '+this.n+' meat.';
+    this.cause=cap1(K.n.toLowerCase())+' graze '+Math.round(qTiles(c,t))+' tiles '+compass(c.x-t.x,c.y-t.y)+' of '+t.name+'.';
+    this.title=hides?'Hides for the tanner':'Meat for the table';
+    this.text=hides?'The tanner of '+t.name+' wants '+this.n+' '+K.one+' hides.':t.name+' wants '+this.n+' meat for its tables.';
     this.pays(hides?this.n*28:this.n*13,8,1,15);
   }
   get handsOver(){
@@ -343,6 +432,7 @@ class CourierQuest extends JobQuest{
     const d=questRng().pick(dest);
     this.to=d.name;
     this.days=Math.ceil(qTiles(d,t)/8)+5;
+    this.cause='The steward has word for '+d.name+' that will not wait for the next rider.';
     this.title='Letter for '+d.name;
     this.text='Carry a sealed letter from '+this.giver+' to '+d.name+', '+Math.round(qTiles(d,t))+' tiles to the '+compass(d.x-t.x,d.y-t.y)+'. You are paid on arrival.';
     this.pays(25+qTiles(d,t)*1.6,5,2,15);
@@ -385,11 +475,15 @@ class CourierQuest extends JobQuest{
     this.pay(t.name);
   }
 }
-// reinforcements: troops of a tier or better handed over to the garrison (the greenest that qualify first)
+// reinforcements: troops of a tier or better handed over to the garrison (the greenest that qualify first); offered only while
+// its garrison is thin (troubles.js garrison: below its kind's, or a siege or a raid thinned it)
 class TroopsQuest extends JobQuest{
   setup(t){
-    this.n=questRng().int(3,5);
+    const g=Troubles.garrison(t);
+    if(!g.thin)return false;
+    this.n=clamp(g.low,2,5);
     this.tier=2;
+    this.cause=g.hurt?'The fighting cost the garrison '+g.low+' men.':'The garrison is '+g.low+' men short.';
     this.title='Reinforce '+t.name;
     this.text='The garrison of '+t.name+' is thin. Hand over '+this.n+' troops of tier 2 or better.';
     this.pays(45*this.n,6,8,25);
@@ -545,12 +639,16 @@ const QuestShut={
   },
 };
 /* making offers */
-const makeQuest=(type,t,lord)=>Quest.make(type,t,lord);
+// (g: who at the holding gives it, world/givers.js; none: the first there who gives that kind; a lord's none)
+const makeQuest=(type,t,lord,g)=>{if(!lord&&!g)g=Givers.for(t,type);const q=Quest.make(type,t,lord,g?{who:g.key}:undefined);if(q&&g){q.who=g.key;JobQuest.purse(q,g,t)}return q};
+// the board: each giver there (in a turn the jobs' stream picks) offers one of their kinds whose trouble is true, up to JOB_OFFERS
+// different kinds; nothing true, nothing offered (none: its board says so)
 function jobsAt(t){
   P.jobs=P.jobs||{};const j=P.jobs[t.name];
-  if(!j||Clock.daysSince(j.day)>=JOB_REFRESH){const list=[],kinds=t.T.jobs.slice();
-    for(let k=0;k<12&&list.length<JOB_OFFERS;k++){const q=makeQuest(questRng().pick(kinds),t);if(q&&!list.some(o=>o.type===q.type))list.push(q)}
-    P.jobs[t.name]={day:G.day,list}}
+  if(!j||Clock.daysSince(j.day)>=JOB_REFRESH){const list=[],r=questRng(),gs=Givers.of(t).map(g=>[r.next(),g]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+    for(const g of gs){if(list.length>=JOB_OFFERS)break;const kinds=g.jobs.map(k=>[r.next(),k]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+      for(const k of kinds){if(list.some(o=>o.type===k))continue;const q=makeQuest(k,t,null,g);if(q){list.push(q);break}}}
+    P.jobs[t.name]={day:G.day,list,none:!list.length}}
   return P.jobs[t.name].list;
 }
 // a lord's job: war work if his faction is at war (raids only for those who serve him), else a bounty or a beast near his lands
@@ -623,7 +721,7 @@ const QuestTrack={
 worldOn('quest:ended',d=>{if(d&&d.e)QuestTrack.drop('q'+d.e.id)});
 worldOn('thread:ended',d=>{if(d&&d.e)QuestTrack.drop('t'+d.e.i)});
 /* panels */
-const rewardText=r=>'<span class="gold">'+r.gold+' gold</span>'+(r.rep?' · +'+r.rep+' reputation':'')+(r.honor?' · +'+r.honor+' honor':'')+(r.xp?' · '+r.xp+' XP':'');
+const rewardText=r=>'<span class="gold">'+r.gold+' gold</span>'+(r.goods&&GOODS[r.goods[0]]?' · '+r.goods[1]+' '+GOODS[r.goods[0]].n.toLowerCase():'')+(r.rep?' · +'+r.rep+' reputation':'')+(r.honor?' · +'+r.honor+' honor':'')+(r.xp?' · '+r.xp+' XP':'');
 // a quest's facts, [label, html] each: who gave it, the day taken, its timing, where it is turned in, its reward (a late one's
 // pay now); an offer's the same before you take it, and what it requires that you lack (its giver's trust aside: QuestShut's
 // line, said once where its offers are)
@@ -644,7 +742,8 @@ const questFactsHtml=q=>'<dl class="qfacts">'+questFacts(q).map(([k,v])=>'<dt>'+
 function offerRow(q,act,arg){
   q=Quest.as(q);
   const lock=q.state==='locked',target=q.type==='lordkill'&&W.lords.find(l=>l.name===q.target),title=target?q.title.split(target.name).join(lordName(target)):q.title,text=target?q.text.split(target.name).join(lordName(target)):q.text;
-  return '<div class="row'+(lock?' locked':'')+'"><div class="info"><strong>'+title+(lock?' <span class="qw-st locked">'+QUEST_STATES.locked+'</span>':'')+'</strong><small>'+text+'</small>'+questFactsHtml(q)+'</div>'+
+  const g=q.person,who=g?'<small class="qw-who">'+htmlText(g.name+', the '+g.n)+': “'+htmlText(GIVERS[g.role].why)+'”</small>':'',why=q.causeLine?q.causeLine():'';
+  return '<div class="row'+(lock?' locked':'')+'"><div class="info"><strong>'+title+(lock?' <span class="qw-st locked">'+QUEST_STATES.locked+'</span>':'')+'</strong>'+who+'<small>'+(why?'<span class="qw-cause">'+htmlText(why)+'</span> ':'')+text+'</small>'+questFactsHtml(q)+'</div>'+
     '<div class="acts"><button class="btn sm" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(lock?' disabled title="'+htmlText(q.needs().filter(n=>!n.met).map(n=>n.what).join('; '))+'"':'')+'>Accept</button></div></div>';
 }
 // the notice board: your quests to report here, then the work offered (none for you a while after you gave up one of theirs)
@@ -654,7 +753,7 @@ function jobsBody(t){
   return '<div class="lab">Your quests here</div>'+(here.length?here.map(q=>row(q.title,'<small>'+questProgress(q)+' · '+Quest.as(q).rewardLine()+'</small>','<button class="btn sm" type="button" data-act="q-turnin" data-arg="'+q.id+'"'+(questReady(q)?'':' disabled')+'>'+(Quest.as(q).handsOver?'Hand over':'Report')+'</button>')).join(''):'<p class="muted">None.</p>')+
     '<div class="lab" style="margin-top:6px">Work offered · you hold '+n+' job'+(n===1?'':'s')+'</div>'+
     (shut?'<p class="bad">'+QuestShut.line({home:t.name},shut)+'.</p>':'')+
-    (offers.length?offers.map((q,i)=>offerRow(q,'q-accept',i)).join(''):'<p class="muted">No more work this week.</p>')+Questbook.rows(t);// (the questbook's: story/questbook.js)
+    (offers.length?offers.map((q,i)=>offerRow(q,'q-accept',i)).join(''):'<p class="muted">'+(P.jobs[t.name]&&P.jobs[t.name].none?'Nothing troubles '+t.name+' these days.':'No more work this week.')+'</p>')+Questbook.rows(t);// (the questbook's: story/questbook.js)
 }
 // town actions (from the town screen) and log actions (from the character screen)
 function questAct(a,arg,t){
