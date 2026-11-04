@@ -317,8 +317,8 @@ const HORSE_ART={on:true,tall:true,hoof:'#3d3f4b',
     'HHkHh..',
     'HHHHh..',
     '.dHHHh.',
-    '...dHh.',
-    '....dHk'],
+    '...dHk.',
+    '....dHh'],
   body:{stand:[
     '',
     '',
@@ -414,10 +414,14 @@ function sizedHorse(S,Z,n){const k=(8+n)/8,legs=F=>({...F,legs:F.legs.map(l=>l.m
     tails:Object.fromEntries(Object.entries(S.tails).map(([k,P])=>[k,tail(P)])),down:{...S.down,legs:S.down.legs.map(reach)}}}
 // (a horse's leg: its hip, knee (or hock), fetlock and hoof, [x, y] each, drawn by set; near: the lighter; 2 px thick to row
 // thickTo, the second px to side; a fetlock and a hoof)
-function horseLeg(set,P,C,near,thickTo,side){const c=near?C[1]:C[2];
+// (the owner, 2026-11-04: "make sure the legs when walking or running are correct, and fix the extra dots in the outer line": a
+// near leg 2 px thick its whole length, the far one 1 px and darker, a pixel apart from it so a pair reads as two legs; each
+// line stepped edge to edge (never only corner to corner, which the outline broke into dots), its hoof as wide)
+function horseLeg(set,P,C,near,thickTo,side){const c=near?C[1]:C[2],dot=(x,y,k)=>{set(x,y,k);if(near)set(x+side,y,k)};
+  let px=null,py=null;
   for(let s=0;s<3;s++){const [x0,y0]=P[s],[x1,y1]=P[s+1],n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0),1);
-    for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n,y=y0+(y1-y0)*i/n;set(x,y,c);if(!s&&Math.round(y)<=thickTo)set(x+side,y,c)}}
-  set(P[2][0],P[2][1],near?C[2]:C[3]);set(P[3][0],P[3][1],HORSE_ART.hoof)}
+    for(let i=0;i<=n;i++){const x=Math.round(x0+(x1-x0)*i/n),y=Math.round(y0+(y1-y0)*i/n);if(px!=null&&x!==px&&y!==py)dot(px,y,c);dot(x,y,c);px=x;py=y}}
+  dot(P[2][0],P[2][1],near?C[2]:C[3]);dot(P[3][0],P[3][1],HORSE_ART.hoof)}
 // (its letters' colours: coat light, mid and shade, the mane, an eye)
 const horseCols=(C,Mn)=>({H:C[1],h:C[0],d:C[2],y:C[2],m:Mn[2],k:'#27272c'});
 // a horse standing, walking or galloping (HORSE_ART), in the cell by ps; returns the rider's seat row (drawMount's)
@@ -428,7 +432,8 @@ function drawHorse(ps,o,walk,C,Mn,Tm){const A=horseBuild(),y0=A.y0,F=walk>=4?A.g
   const paint=(rows,X,Y,dh)=>rows.forEach((r,y)=>[...r].forEach((c,x)=>{const k=col[c];if(!k)return;const yy=Y+y+bob+dh(x,y);ps(X+x,yy,k);on.add(X+x+','+yy)}));
   paint(A.body[shape],0,y0+A.top,(x,y)=>x>=A.headX&&y<=A.headY?F.head||0:0);
   if(A.head){const [hx,hy]=A.poll[shape];paint(A.head,hx,y0+hy,()=>F.head||0)}
-  A.tails[F.tail].forEach(([x,y],i)=>ps(x,y+bob,Mn[i?2:1]));
+  // (its tail: each point joined to the last by an edge, never only a corner, the outline's dots: the owner, 2026-11-04)
+  A.tails[F.tail].forEach(([x,y],i,T)=>{if(i){const [px,py]=T[i-1];if(px!==x&&py!==y)ps(px,y+bob,Mn[2])}ps(x,y+bob,Mn[i?2:1])});
   if(o.mount==='stag'){const [ex,ey]=A.ears[shape];for(const [x,y] of [[25,-1],[24,-2],[26,-2],[23,-3],[27,-3],[28,0],[29,-1]])ps(x+ex,y0+y+ey+bob+(shape==='run'?F.head||0:0),PPAL.cloth[0])}
   // barded: the side's colour over its body; else a saddle (and, no one in it, a cloth under it, its pommel, cantle and stirrup)
   if(o.barded){for(let x=6;x<=21;x++)[Tm[0],PPAL.gold[1],Tm[2],x%2?Tm[3]:Tm[2]].forEach((c,k)=>{const y=y0+6+k+bob;if(on.has(x+','+y))ps(x,y,c)})}

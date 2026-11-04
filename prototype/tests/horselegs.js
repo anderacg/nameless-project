@@ -63,10 +63,18 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
   ok(a===t.unitSprite('hum_knight',0,false,1,16)&&h===t.horseSprite(L)&&t.figHorse('chestnut',3)===t.figHorse('chestnut',3)&&on===off&&t.horseBuild()===t.horseBuild(),'each made once and kept by its look and pose, in its cell as before (a rider '+a.width+', a horse '+h.width+'), the build once a length')}
  // ---- the switches: on false, the pre-horse pixels exactly; tall false, the first pass's (both recorded before the change); each
  // length its own
- const OLD='fd8736e5',FIRST='5bf21915';
+ // (FIRST re-recorded 2026-11-04, on purpose: the owner, "make sure the leg when walking or running is correct and fix the extra
+ // dots in the outer line": every horse's legs drawn edge to edge, the near one 2 px, the far one 1 px a pixel apart (people.js
+ // horseLeg), and its tail joined edge to edge, both builds; was 5bf21915)
+ const OLD='fd8736e5',FIRST='d5440a64';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');
   ok(first===FIRST,'HORSE_ART.tall false: the first pass\'s horses, pixel for pixel ('+first+', recorded '+FIRST+')');
   ok(new Set([off,first,...by]).size===5,'HORSE_ART.leg: each length its own horse (+0: the first pass\'s, its gathered frame mended)')}
- clear()});
+ clear() // ---- no loose pixels (the owner, 2026-11-04: "fix the extra dots in the outer line"): in every frame, every pixel of its legs
+ // touches another by an edge, never only by a corner
+ {const L={mount:'horse',mountC:'horse',team:'blue'},bad=[];for(const w of [-1,0,1,2,3,4,5,6,7]){const g=t.pgrid(34,32);t.drawMount(g,L,w);const at=(x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h&&g.p[y*g.w+x];
+   for(let y=Math.floor(g.h*.55);y<g.h;y++)for(let x=0;x<g.w;x++)if(at(x,y)&&!(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))bad.push(w+':'+x+','+y)}
+  ok(!bad.length,'every frame\'s legs whole: no pixel on its own'+(bad.length?' ('+bad.slice(0,6).join(' ')+')':''))}
+});
