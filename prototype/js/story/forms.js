@@ -82,7 +82,7 @@ class Stories{
     if(q?.to?.name)th.memory.to=q.to.name;return r}
   // (a goal's place: {town (filled), lot}, a spot {x, y, name}, or pick: 'realm' (another holding of its realm) or 'any' (another
   // not hostile to you), the nearest)
-  static place(to,th){const m=th.memory;if(!to)return {town:m.town};if(to.town)return {town:this.fill(to.town,th),lot:to.lot,i:to.i??th.i};if(to.x!=null)return to;
+  static place(to,th){const m=th.memory;if(!to)return {town:m.town};if(to.town)return {town:this.fill(to.town,th),lot:to.lot,i:to.i??th.i,...(to.name?{name:this.fill(to.name,th)}:{})};if(to.x!=null)return to;
     const from=townBy(m.town)||P,pool=TOWNS.filter(t=>!t.gone&&t.name!==m.town&&!hostileTo(t.owner)&&(to.pick!=='realm'||t.owner===m.fac));const t=Spatial.nearest(pool,from.x,from.y);return t?{town:t.name,lot:to.lot,i:th.i}:null}
   // (who holds a rescue's captive (world/captives.js carryOff's record): given (an object), the one the story remembers (memory.held,
   // the default when there is one), a band set near (band), the nearest hideout (lair), or the prison of the nearest holding of
@@ -150,6 +150,9 @@ const condTown=c=>c.town&&townBy(c.town)||c.x!=null&&Spatial.nearestHolding(c.x,
 defineCond('threat',(v,c)=>{const t=condTown(c);if(!t)return false;return v==='band'?Troubles.bands(t).length>0||Troubles.lairs(t).length>0:Troubles.packs(t).length>0},v=>v==='band'?'No band troubles this place':'No beasts trouble this place');
 defineCond('news',(v,c)=>{const t=condTown(c);return !!t&&Troubles.news(t,[].concat(v)).length>0});
 defineCond('short',(v,c)=>{const t=condTown(c);return !!t&&Troubles.short(t).includes(v)});
+// (a poor holding: its prosperity under STORY_POOR; the owner, 2026-11-04: a poorhouse's need "at poor village or city")
+const STORY_POOR=40;
+defineCond('poor',(v,c)=>{const t=condTown(c);return !!t&&((t.pros||0)<STORY_POOR)===!!v},v=>v?'This place is not poor':'This place is poor');
 // (a story begun: its deadline from today; ended with a key its kind resumes at: picked up again there, with its memory)
 worldOn('thread:ended',d=>{const th=d?.e,at=th?.kind?.resume?.[d.how];if(at)Thread.start(th.k,th.memory,at)});
 Systems.add({name:'deadlines',order:{day:214},day:()=>Stories.day()});

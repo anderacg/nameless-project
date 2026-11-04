@@ -43,7 +43,18 @@ Kit.suite(({ok})=>{
  // ---- the givers: a tavern's card, a board's row, a lord's reply, the road
  reset();{const town=t.TOWNS.find(x=>x.T.tabs.includes('tavern')&&(x.kind==='village'||x.kind==='town'));Kit.goHome(town);t.enterTown(town);t.act('tab','tavern');
   ok(/The miller/.test(panel())&&document.querySelector('[data-act="qb-take"][data-arg="millers_debt"]'),'a tavern of '+town.name+': the miller’s card');t.act('qb-take','millers_debt');ok(!!live('millers_debt')&&!document.querySelector('[data-arg="millers_debt"]'),'taken: under way, offered no more');t.toWorld()}
- reset();{const town=t.TOWNS.find(x=>x.kind==='town'||x.kind==='city');t.enterTown(town);t.act('tab','jobs');ok(document.querySelector('[data-act="qb-take"][data-arg="poorhouse_grain"]'),'the notice board of '+town.name+': bread for the poorhouse');t.toWorld()}
+ reset();{const town=t.TOWNS.find(x=>x.kind==='town'||x.kind==='city'),p0=town.pros,has=()=>!!document.querySelector('[data-act="qb-take"][data-arg="poorhouse_grain"]');
+  town.pros=20;t.enterTown(town);t.act('tab','jobs');ok(has(),'the notice board of '+town.name+', poor (prosperity 20): bread for the poorhouse');t.toWorld();
+  town.pros=80;t.enterTown(town);t.act('tab','jobs');ok(!has(),'prosperous (80): none (the owner, 2026-11-04: "at poor village or city")');t.toWorld();town.pros=p0}
+ // ---- the poorhouse's grain handed over at its door: walking up to it is not enough; its page's Deliver, greyed till you carry it
+ reset();{const th=begin('poorhouse_grain'),q=P.quests.find(x=>x.id===th.wait.id),Qq=t.Quest.as(q),town=t.townBy(q.to.town);
+  ok(Qq.byHand&&q.to.name==='the poorhouse of '+town.name&&/hand it over at its door/.test(Qq.todo()),'to the poorhouse of '+town.name+', by your hand: '+Qq.todo());
+  P.inv=P.inv.map(()=>null);t.invAdd('good','grain',10);P.x=q.to.x;P.y=q.to.y;t.Steps.frame();ok(P.quests.includes(q),'at its door with the grain: not handed over by itself');
+  const l=town.lots.find(l=>l.k==='house'&&Math.hypot(t.lotMid(l).x-q.to.x,t.lotMid(l).y-q.to.y)<1),h=t.housePick(town,l);
+  t.goodTake('grain',10);t.houseMeet(h);let b=document.querySelector('[data-act="house-give"]');
+  ok(b&&b.disabled&&/You carry 0 \/ 10 grain/.test(b.textContent)&&/The poorhouse/.test(document.getElementById('panel').textContent),'its page: The poorhouse, Deliver 10 grain greyed: "'+(b&&b.querySelector('.rka-why')?.textContent)+'"');t.act('house-close');
+  t.invAdd('good','grain',10);t.houseMeet(h);b=document.querySelector('[data-act="house-give"]');ok(b&&!b.disabled,'carrying it: Deliver');b.click();
+  ok(!P.quests.includes(q)&&t.goodN('grain')===0,'delivered at its door: the grain handed over, the quest done')}
  reset();{const l=W.lords.find(x=>!x.dead),r=Q.replies(l);ok(r.some(x=>x.arg==='lords_word@'+l.id),'a lord’s talk: ask about work');t.act('qb-take','lords_word@'+l.id);const th=live('lords_word');ok(th&&th.memory.lord===l.name&&!!th.memory.to,'taken from '+l.name+': carry his word to '+th?.memory?.to)}
  reset();{const t0=t.Spatial.nearestHolding(P.x,P.y),id=Object.keys(t.MONSTERS).find(k=>!t.MONSTERS[k].mythic);W.monsters.push(t.asMonster({id,x:t0.x+120,y:t0.y,hx:t0.x+120,hy:t0.y,lv:1,n:2,t:0,a:0,cool:0}));/* (beasts by the fields: the shepherd's trouble, threat 'beast') */G.quietEvents=false;try{Kit.stubStream('quests',0,()=>Q.day())}finally{G.quietEvents=true}ok(!!live('shepherds_wolves')&&G.mode==='story','on the road: the shepherd waves you down, his page');Kit.world()}
  // ---- once a game; again after its cool days

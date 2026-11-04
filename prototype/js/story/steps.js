@@ -137,7 +137,7 @@ class StepQuest extends Quest{
     const ls=to.lot?(t.lots||[]).filter(l=>l.k===to.lot&&l.st!=='ruined'):[];
     if(!ls.length)return {k:'holding',town:t.name,x:t.x,y:t.y,name:t.name};
     const l=ls[Math.abs(to.i|0)%ls.length],m=lotMid(l),house=to.lot==='house';
-    return {k:house?'house':'estate',town:t.name,lot:to.lot,x:Math.round(m.x),y:Math.round(m.y),name:house?'a house in '+t.name:ESTATES[to.lot].n+' of '+t.name};
+    return {k:house?'house':'estate',town:t.name,lot:to.lot,x:Math.round(m.x),y:Math.round(m.y),name:to.name?to.name+' of '+t.name:house?'a house in '+t.name:ESTATES[to.lot].n+' of '+t.name,...(to.name?{label:to.name}:{})};
   }
 }
 /* go there (spec: {to, title, text, prize, say, days}): arrived */
@@ -176,11 +176,18 @@ class DeliverQuest extends VisitQuest{
   ready(){
     return Object.entries(this.give).every(([g,n])=>goodN(g)>=n);
   }
+  // (to a house: handed over at its door, by your hand, on its page (ui/house.js); else on arrival)
+  get byHand(){
+    return this.to.k==='house';
+  }
   near(){
-    return this.ready()&&super.near();
+    return !this.byHand&&this.ready()&&super.near();
   }
   arrive(t){
-    if(this.ready())super.arrive(t);
+    if(!this.byHand&&this.ready())super.arrive(t);
+  }
+  todo(){
+    return this.byHand?'Bring '+this.what()+' to '+this.to.name+', and hand it over at its door.':super.todo();
   }
   reached(){
     for(const [g,n] of Object.entries(this.give))goodTake(g,n);
