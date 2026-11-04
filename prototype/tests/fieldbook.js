@@ -44,7 +44,7 @@ Kit.suite(({ok})=>{
   army();fit('Army');const card=q('.fb-unit'),viewport=q('.fb-unit-grid'),cr=card.getBoundingClientRect(),vr=viewport.getBoundingClientRect();ok(vr.height>=80&&cr.width>=44,'Army cards have usable space at '+w+' × '+h);
   t.act('party-select',a.id);ok(qa('.fb-inspector-acts .btn').map(b=>b.textContent).join()==='Manage Group,Development'&&qa('.fb-inspector-acts .btn').every(inside)&&!q('.fb-actions'),'Army actions (Manage Group, Development: Reinforce gone in e429a13) are in the group’s page, on screen, at '+w+' × '+h);
   world();t.openComp('brann');fit('Companion');
-  world();t.openInv();fit('Inventory');ok(qa('.fb-item-actions .btn').every(inside),'item actions stay pinned at '+w+' × '+h);t.act('inv-view','equipment');const rings=qa('.fb-equipment .ring');
+  world();t.openInv();{const k=P.inv.findIndex(x=>x);if(k>=0)t.act('inv-sel',String(k))}fit('Inventory');ok(qa('.fb-item-actions .btn').every(inside),'item actions stay pinned at '+w+' × '+h);t.act('inv-sel',String(P.inv.findIndex(x=>x)));t.act('inv-view','equipment');const rings=qa('.fb-equipment .ring');
   const targets=rings.map(e=>e.getBoundingClientRect()),overlap=targets.some((a,i)=>targets.slice(i+1).some(b=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top));
   ok(rings.length===10&&(w>760&&h>520||w<651||G.invView==='equipment')&&!overlap&&targets.every(r=>r.width>=44&&r.height>=44),'ten ring targets are separate and at least 44px at '+w+' × '+h);
   world();t.openSkills('talents');fit('Skills');ok(qa('.fb-node-actions .btn').every(inside),'Learn or Unlearn stays on screen at '+w+' × '+h);

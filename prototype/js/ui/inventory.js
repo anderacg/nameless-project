@@ -40,7 +40,8 @@ const selGear=()=>{const k=G.invSel;if(k==null||String(k).startsWith('eq:'))retu
 function slotHtml(s,key,label,cls){
   const sel=String(G.invSel)===String(key),K=s&&itemKind(s),rc=s?K.colour(s):'',c=s&&K.cat(s);
   const name=s?K.title(s):label;
-  return '<button class="slot'+(s?'':' empty')+(cls?' '+cls:'')+(c&&!c.drop?' bound':'')+(sel?' sel':'')+'" type="button" data-act="inv-sel" data-arg="'+key+'" draggable="'+(!!s)+'" aria-pressed="'+sel+'" aria-label="'+name+'" title="'+name+'"'+(rc?' style="--rc:'+rc+'"':'')+'>'+
+  const find=String(key).startsWith('eq:')?'':Finder.attrs('inv',s?name+' '+(c?c.n:''):'');// (the bag's search: ui/invtools.js)
+  return '<button class="slot'+(s?'':' empty')+(cls?' '+cls:'')+(c&&!c.drop?' bound':'')+(sel?' sel':'')+'" type="button" data-act="inv-sel" data-arg="'+key+'" draggable="false" aria-pressed="'+sel+'" aria-label="'+name+'" title="'+name+'"'+(rc?' style="--rc:'+rc+'"':'')+find+'>'+
     (s?'<span data-icon="'+s.k+':'+s.id+'"></span>'+(s.n>1?'<b class="cnt">'+s.n+'</b>':''):String(key).startsWith('eq:')?'<small>'+label+'</small>':'')+'</button>';
 }
 const eqHtml=(key,label,cls)=>slotHtml(P.gear[key]?{k:'gear',id:P.gear[key],n:1}:null,'eq:'+key,label,cls||'eq');
@@ -87,18 +88,20 @@ function renderInv(){
  const group=(title,keys)=>'<div class="fb-eq-group"><small>'+title+'</small><div class="fb-eq-grid">'+keys.map(place).join('')+'</div></div>';
  const equipment='<section class="fb-pane fb-equipment" aria-label="Equipment"><div class="fb-pane-head"><h3>Equipment</h3>'+fbIcon('hero')+'</div><div class="fb-scroll" data-fb-scroll="equipment">'+group('WORN',EQUIP.filter(k=>!k.startsWith('ring')&&!MOUNT_KEYS.includes(k)))+group('RINGS · TEN SEPARATE SLOTS',EQUIP.filter(k=>k.startsWith('ring')))+group('MOUNT · '+(mountDef()?mountDef().n:'ON FOOT'),MOUNT_KEYS)+'<div class="fb-stat-grid">'+fbStat('wounded','Health',hs.hp)+fbStat('power','Damage',Math.round(hs.dmg))+'</div></div></section>';
  const labels={all:['bag','All'],equip:['sword','Gear'],supplies:['food','Supply'],goods:['crate','Goods'],trophies:['gold','Loot'],quest:['scroll','Quest']};
- const bag='<section class="fb-pane fb-bag" aria-label="Bag"><div class="fb-bag-categories" role="tablist" aria-label="Item categories">'+BAG_TABS.map(([k,l])=>'<button class="btn sm'+(tab===k?' on':'')+'" type="button" role="tab" aria-selected="'+(tab===k)+'" tabindex="'+(tab===k?0:-1)+'" aria-label="'+l+'" data-act="inv-tab" data-arg="'+k+'">'+fbIcon(labels[k][0])+labels[k][1]+'</button>').join('')+'</div><div class="invcap'+(over?' over':'')+'" title="'+used+' of '+size+' slots'+(over?', '+over+' past them (at most '+BAG.maxOver+')':'')+'" role="meter" aria-label="Bag slots used" aria-valuenow="'+used+'" aria-valuemin="0" aria-valuemax="'+Math.max(size,used)+'"><i style="width:'+Math.min(100,100*used/size)+'%"></i></div>'+(tab==='supplies'?suppliesLine():'')+'<div class="fb-scroll" data-fb-scroll="bag:'+tab+'"><div class="invgrid">'+P.inv.map((rec,i)=>tab!=='all'&&(!rec||(itemCat(rec)||{}).tab!==tab)?'':slotHtml(rec,i,i<size?'Empty slot':'Overflow slot',i>=size?'over':'')).join('')+'</div></div><div class="fb-bag-footer"><span>'+used+' / '+size+' slots'+(over?' · <b class="bad">'+over+' overflow · pace −'+Math.round((1-I.burden())*100)+'%</b>':'')+'</span>'+fbBtn('inv-sort',null,fbIcon('bag')+' Sort')+'</div></section>';
+ const bag='<section class="fb-pane fb-bag" aria-label="Bag"><div class="fb-bag-categories" role="tablist" aria-label="Item categories">'+BAG_TABS.map(([k,l])=>'<button class="btn sm'+(tab===k?' on':'')+'" type="button" role="tab" aria-selected="'+(tab===k)+'" tabindex="'+(tab===k?0:-1)+'" aria-label="'+l+'" data-act="inv-tab" data-arg="'+k+'">'+fbIcon(labels[k][0])+labels[k][1]+'</button>').join('')+'</div><div class="invcap'+(over?' over':'')+'" title="'+used+' of '+size+' slots'+(over?', '+over+' past them (at most '+BAG.maxOver+')':'')+'" role="meter" aria-label="Bag slots used" aria-valuenow="'+used+'" aria-valuemin="0" aria-valuemax="'+Math.max(size,used)+'"><i style="width:'+Math.min(100,100*used/size)+'%"></i></div>'+(tab==='supplies'?suppliesLine():'')+'<div class="fb-bag-find">'+Finder.html('inv','Search your bag')+'</div><div class="fb-scroll" data-fb-scroll="bag:'+tab+'"><p class="muted find-none" data-find-none="inv" hidden>Nothing in your bag by that name.</p><div class="invgrid">'+P.inv.map((rec,i)=>tab!=='all'&&(!rec||(itemCat(rec)||{}).tab!==tab)?'':slotHtml(rec,i,i<size?'Empty slot':'Overflow slot',i>=size?'over':'')).join('')+'</div></div><div class="fb-bag-footer"><span>'+used+' / '+size+' slots'+(over?' · <b class="bad">'+over+' overflow · pace −'+Math.round((1-I.burden())*100)+'%</b>':'')+'</span>'+fbBtn('inv-sort',null,fbIcon('bag')+' Sort')+'</div></section>';
  const views='<div class="fb-inv-views">'+fbTabs([['bag','Bag'],['equipment','Equipment']],G.invView||'bag','inv-view','Inventory pages')+'</div>';
- const body='<div class="fb-inventory">'+views+'<div class="fb-inv-work '+(G.invView==='equipment'?'equipment ':'')+(G.invMore?'expanded':'')+'">'+equipment+bag+invItemPanel()+'</div></div>';
- fbShow('Inventory',fbIcon('gold')+' '+P.gold+' gold'+(over?' · <span class="bad">Pace −'+Math.round((1-I.burden())*100)+'%</span>':''),'',body,fbMenu(G.invMore?['inv-back',null,'Back']:G.invArmy?['party-equipment-back',null,'Back to Army']:null),['inv-close',null,'Back to map'],'fb-inv');fillIcons();
+ const body='<div class="fb-inventory">'+views+'<div class="fb-inv-work '+(G.invView==='equipment'?'equipment ':'')+(G.invSel!=null?'picked ':'')+(G.invMore?'expanded':'')+'">'+equipment+bag+invItemPanel()+'</div></div>';
+ fbShow('Inventory',fbIcon('gold')+' '+P.gold+' gold'+(over?' · <span class="bad">Pace −'+Math.round((1-I.burden())*100)+'%</span>':''),'',body,fbMenu(G.invMore?['inv-back',null,'Back']:G.invArmy?['party-equipment-back',null,'Back to Army']:null),['inv-close',null,'Back to map'],'fb-inv');fillIcons();Finder.apply();GearCompare.hide();
 }
 function invAct(a,arg){
   if(!a.startsWith('inv-'))return false;
-  if(a==='inv-close'){G.invArmy=false;G.mode='world';hidePanel();return true}
+  if(a==='inv-close'){G.invArmy=false;G.mode='world';GearCompare.close();GearCompare.hide();hidePanel();return true}
   if(G.mode!=='inv')return true;
   const key=arg!=null&&!String(arg).startsWith('eq:')&&a!=='inv-unequip'&&a!=='inv-tab'?+arg:arg;
   if(a!=='inv-drop')G.invArm=null;
-  if(a==='inv-sel'){G.invSel=String(G.invSel)===String(key)?null:key;G.invMore=false}
+  if(a==='inv-sel'){G.invSel=String(G.invSel)===String(key)?null:key;G.invMore=false;
+    // (a piece tapped on a touch screen: its comparison as a popup too, ui/invtools.js)
+    if(SlotDrag.ptr==='touch'&&G.invSel!=null&&!String(G.invSel).startsWith('eq:')&&P.inv[G.invSel]&&P.inv[G.invSel].k==='gear'){updateHUD(true);renderInv();GearCompare.popup(G.invSel);return true}}
   else if(a==='inv-view'){G.invView=arg;G.invMore=false}
   else if(a==='inv-more')G.invMore=!G.invMore;
   else if(a==='inv-back')G.invMore=false;
@@ -113,11 +116,7 @@ function invAct(a,arg){
   const again=panel.querySelector('[data-act="'+a+'"][data-arg="'+arg+'"]:not([disabled])')||panel.querySelector('.slot.sel');if(again)again.focus({preventScroll:true});
   return true;
 }
-// drag and drop between slots; double-click wears a bag item or takes off a worn one
-panel.addEventListener('dragstart',e=>{const b=e.target.closest('.slot');if(!b||G.mode!=='inv')return;e.dataTransfer.setData('text/plain',b.dataset.arg);e.dataTransfer.effectAllowed='move'});
-panel.addEventListener('dragover',e=>{if(G.mode==='inv'&&e.target.closest('.slot'))e.preventDefault()});
-panel.addEventListener('drop',e=>{const b=e.target.closest('.slot');if(!b||G.mode!=='inv')return;e.preventDefault();
-  const f=e.dataTransfer.getData('text/plain'),t=b.dataset.arg,num=x=>x.startsWith('eq:')?x:+x;invMove(num(f),num(t));G.invSel=num(t);G.invArm=null;updateHUD(true);renderInv()});
+// drag and drop between slots, with a mouse or a finger: ui/invtools.js SlotDrag; double-click wears a bag item or takes off a worn one
 panel.addEventListener('dblclick',e=>{const b=e.target.closest('.slot');if(!b||G.mode!=='inv')return;const k=b.dataset.arg;
   if(k.startsWith('eq:')){if(P.gear[k.slice(3)])invAct('inv-unequip',k.slice(3))}else if(P.inv[+k]&&P.inv[+k].k==='gear')invAct('inv-equip',k);else if(P.inv[+k]&&P.inv[+k].k==='letter')act('ltr-open',P.inv[+k].id)});
 onAct('inv-',invAct);

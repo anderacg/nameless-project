@@ -77,9 +77,11 @@ class TradeDeal{
 }
 const TradeScreen={
   // (a pane's row: its name, its facts, how many, and its button)
+  // (a list's category headings, for the search: hidden with all their rows, ui/invtools.js Finder)
+  heads(h){return h.split('<div class="lab lab-cat">').join('<div class="lab lab-cat" data-find-head="trade">')},
   // (an item's picture: its kind's icon, drawn by loot.js fillIcons once the window is up; ic: 'kind:id')
   ico(ic){return '<span class="tr-ico"><span data-icon="'+ic+'"></span></span>'},
-  row(name,facts,n,act,arg,label,why,ic){return '<div class="tr-row">'+this.ico(ic)+'<div class="tr-info"><strong>'+name+'</strong><small>'+facts+'</small></div><span class="tr-n">'+n+'</span>'+railBtn(act,arg,label,why)+'</div>'},
+  row(name,facts,n,act,arg,label,why,ic){return '<div class="tr-row"'+Finder.attrs('trade',String(name).replace(/<[^>]*>/g,''))+'>'+this.ico(ic)+'<div class="tr-info"><strong>'+name+'</strong><small>'+facts+'</small></div><span class="tr-n">'+n+'</span>'+railBtn(act,arg,label,why)+'</div>'},
   mine(t,D,q){
     const goodCat=k=>ITEM_KINDS.good.catId({id:k}),gs=Object.keys(GOODS).filter(k=>goodCat(k)&&goodN(k)>0);
     let h=byCategory(gs,goodCat,k=>{const l=D.left(t,'s',k);return this.row(GOODS[k].n,nextSell(t,k)+'g each',l,'deal','s:'+k,'<span class="tr-w">Sell </span>›',l<1?'All in the bargain':'','good:'+k)});
@@ -117,8 +119,9 @@ const TradeScreen={
   html(t){
     const D=TradeDeal.of(),q=G.town.qty||1,I=playerInventory,scarce=Object.keys(GOODS).filter(g=>marketState(t,g)==='shortage');
     return '<p class="muted tr-head">The merchants of '+t.name+(scarce.length?' · <span class="bad">short of '+scarce.slice(0,3).map(g=>GOODS[g].n.toLowerCase()).join(', ')+'</span>':' · prices fair')+' · your bag '+I.used+' / '+I.size+(I.over?' · <span class="bad">'+I.over+' over: burdened</span>':'')+'</p>'+
-      '<div class="tr"><section class="tr-pane tr-mine"><h3>Your pack</h3>'+this.mine(t,D,q)+'</section>'+
+      '<div class="tr-find">'+Finder.html('trade','Search goods and items')+'</div>'+
+      '<div class="tr" data-find-scope><section class="tr-pane tr-mine"><h3>Your pack</h3>'+this.heads(this.mine(t,D,q))+'<p class="muted find-none" data-find-none="trade" hidden>None by that name.</p></section>'+
       '<section class="tr-mid"><h3>The bargain</h3>'+this.bargain(t,D,q)+'</section>'+
-      '<section class="tr-pane tr-theirs"><h3>The merchants</h3>'+this.theirs(t,D,q)+'</section></div>';
+      '<section class="tr-pane tr-theirs"><h3>The merchants</h3>'+this.heads(this.theirs(t,D,q))+'</section></div>';
   },
 };

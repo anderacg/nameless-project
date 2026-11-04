@@ -545,7 +545,7 @@ function renderTown(){
   // else its buttons go to the conversation still open (the owner, 2026-11-01: "the right panel ... no response"))
   if(G.mode==='dialog'){G.enc=null;G.mode='town'}
   const t=G.town.ref,p=townPlace(t,G.town.tab);
-  KNOWLEDGE.watch();showTown(t,p?p.page(t):townOverview(t));G.town.greet=null;fillIcons();// (items' pictures, where a page has them: the market's, ui/trade.js)
+  KNOWLEDGE.watch();showTown(t,p?p.page(t):townOverview(t));G.town.greet=null;fillIcons();Finder.apply();// (items' pictures, where a page has them: the market's, ui/trade.js)
 }
 // (a quest to report here: straight to the Notices, Back to the overview; else the overview; the crier's proclamations that
 // have reached it: news.js proclaimAt)
