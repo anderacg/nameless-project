@@ -102,10 +102,11 @@ class Gear extends ItemKind{
     if(I.slot==='weapon'||I.slot==='offhand'&&I.icon!=='shield')return 'weapon';
     return MOUNT_KEYS.includes(I.slot)?'mount':'armour'}
   worth(s){return ITEMS[s.id].v}
-  // a market pays a little more, and a smith asks a little less, the better your Trading
-  price(s){return Math.round(ITEMS[s.id].v*(.6+.01*skill('trade')))}
+  // a market pays a little more, and a smith asks a little less, the better your Trading, and your standing in the holding you
+  // are in (itemTerms)
+  price(s){return Math.round(ITEMS[s.id].v*(.6+.01*skill('trade'))*itemTerms(false))}
   fetches(s){return this.price(s)}
-  cost(s){return Math.round(ITEMS[s.id].v*(1.2-.01*skill('trade')))}
+  cost(s){return Math.round(ITEMS[s.id].v*(1.2-.01*skill('trade'))*itemTerms(true))}
   slot(s){return ITEMS[s.id].slot}
   stats(s){return ITEMS[s.id].m}
   colour(s){return RARITY[ITEMS[s.id].r]}
@@ -226,7 +227,7 @@ class Trophy extends ItemKind{
   catId(s){return 'trophy'}
   stack(id){return STACK}
   worth(s){return MATS[s.id].v}
-  price(s){return Math.round(MATS[s.id].v*(.75+.01*skill('trade')))}
+  price(s){return Math.round(MATS[s.id].v*(.75+.01*skill('trade'))*itemTerms(false))}
   title(s){return this.name(s)+', '+s.n+' trophies'}
   sold(s){return s.n+' '+this.name(s).toLowerCase()+(s.n>1?'s':'')}
   // a sorted bag: the dearest first, the bigger stack first
@@ -244,7 +245,7 @@ class Valuable extends ItemKind{
   catId(s){return 'valuable'}
   stack(id){return VALUE.stack}
   worth(s){return VALUABLES[s.id].v}
-  price(s,t){return Math.round(VALUABLES[s.id].v*(VALUE.sell+VALUE.trade*skill('trade'))*(t&&VALUE.kind[t.kind]||1))}
+  price(s,t){return Math.round(VALUABLES[s.id].v*(VALUE.sell+VALUE.trade*skill('trade'))*(t&&VALUE.kind[t.kind]||1)*itemTerms(false))}
   colour(s){return RARITY[VALUABLES[s.id].r]}
   title(s){return this.name(s)+(s.n>1?', '+s.n:'')+', '+VALUABLES[s.id].r+' valuable'}
   some(s){return s.n>1?s.n+' × '+this.name(s).toLowerCase():'the '+this.name(s).toLowerCase()}

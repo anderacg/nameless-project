@@ -216,8 +216,12 @@ const spreadBuy=()=>1.08*(1-.015*skill('trade')),spreadSell=()=>.92*(1+.01*skill
    standing there (reputation.js standingAt, from lo to hi) worth up to stand of a good's price, better buying and selling both
    (worse under 0); and a haggle, once a visit, on a bargain of min gold or more (QUEST_CHECKS.haggle: Trading and Charisma, the
    road's stream): won, haggle better; lost, the merchants sour, annoy worse for the rest of the visit (G.town.haggle: 'won' or
-   'lost'). Goods only (the market's things of yours keep their kinds' prices) */
+   'lost'). The things a holding's merchants buy and sell (gear, mounts, quivers, trophies, valuables) by your standing too
+   (itemTerms), never by a haggle */
 const TRADE_TERMS={stand:.06,lo:-50,hi:100,haggle:.05,annoy:.03,min:60,xp:6};
+// (a thing's price with your standing in the holding you are in, its merchants' (G.town): × this, buying or selling; out of a
+// holding, ×1. Your standing only: a haggle is the market's goods')
+const itemTerms=buying=>{const t=G.town&&G.town.ref;if(!t||!t.T)return 1;const m=tradeTerms(t);return buying?1-m.stand:1+m.stand};
 const tradeTerms=t=>{const T=TRADE_TERMS,s=clamp(standingAt(t),T.lo,T.hi)/100*T.stand,h=G.town&&G.town.ref===t?G.town.haggle:null;return{stand:s,haggle:h==='won'?T.haggle:h==='lost'?-T.annoy:0}};
 const buyGoods=(t,g,n)=>Economy.of(t).buy(g,n);
 const sellGoods=(t,g,n)=>Economy.of(t).sell(g,n);

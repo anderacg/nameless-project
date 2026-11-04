@@ -21,10 +21,16 @@ class TradeDeal{
     if(kind==='b'){ensureEcon(t);return (t.stock[key]||0)-(this.buy[key]||0)}
     return Infinity;
   }
+  // (a thing moved in: what is on the other side of the bargain of the same thing taken back first (buying grain you are selling
+  // only sells less), the rest added; the owner: "it should deduct the one that the player first")
   add(t,kind,key,n){
-    if(kind==='o'){const i=+key;if(P.inv[i]&&!this.own.includes(i))this.own.push(i);return}
-    if(kind==='k'){this.skin+=n;return}
-    if(kind==='q'){this.quiver[key]=(this.quiver[key]||0)+1;return}
+    if(kind==='o'){const i=+key,x=P.inv[i];if(!x||this.own.includes(i))return;if(this.quiver[x.id]>0){this.sub('q',x.id,1);return}this.own.push(i);return}
+    if(kind==='k'){if(this.sell[SKIN.empty]>0){const k=Math.min(n,this.sell[SKIN.empty]);this.sub('s',SKIN.empty,k);n-=k}if(n>0)this.skin+=n;return}
+    if(kind==='q'){const i=this.own.find(j=>P.inv[j]&&P.inv[j].id===key);if(i!=null){this.sub('o',i);return}this.quiver[key]=(this.quiver[key]||0)+1;return}
+    const other=kind==='s'?this.buy:this.sell,back=Math.min(n,other[key]||0);
+    if(back>0){this.sub(kind==='s'?'b':'s',key,back);n-=back}
+    if(kind==='s'&&key===SKIN.empty&&this.skin>0){const k=Math.min(n,this.skin);this.skin-=k;n-=k}
+    if(n<=0)return;
     const m=kind==='s'?this.sell:this.buy,k=Math.min(n,this.left(t,kind,key));if(k>0)m[key]=(m[key]||0)+k;
   }
   sub(kind,key,n){

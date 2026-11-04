@@ -23,6 +23,15 @@ Kit.suite(({ok})=>{
  // ---- struck
  {const g0=P.gold,n0=t.goodN('grain'),h0=t.goodN(g),T0=D().totals(ash),want=D().buy[g];t.act('deal-ok');
   ok(D().empty&&t.goodN('grain')===n0-5&&t.goodN(g)===h0+want&&!P.inv.some(x=>x&&x.k==='val')&&P.gold===g0+T0.net,'Confirm: sold, bought, the chalice gone, '+(T0.net>=0?'+':'')+T0.net+' gold as the bargain said')}
+ // ---- the same thing both ways: what is on the other side taken back first (the owner: "it should deduct the one that the
+ // player first")
+ {t.TradeDeal.clear();t.act('qty','5');t.act('deal','s:grain');t.act('qty','3');t.act('deal','b:grain');ok(D().sell.grain===2&&!D().buy.grain,'selling five grain, then buying three: you only sell two');
+  t.act('qty','4');t.act('deal','b:grain');ok(!D().sell.grain&&D().buy.grain===2,'buying four more: the two you were selling taken back, two bought');
+  t.act('qty','3');t.act('deal','s:grain');ok(D().sell.grain===1&&!D().buy.grain,'and selling three: the two you were buying taken back, one sold');t.act('qty','1');t.TradeDeal.clear()}
+ // ---- your standing in the price of things too (gear, trophies, valuables), in a holding only
+ {const w=window.standingAt,gid=t.gearId(Object.keys(t.BASES)[0],0),K=t.ITEM_KINDS,at=v=>{window.standingAt=()=>v;return [K.gear.cost({id:gid}),K.gear.price({id:gid}),K.mat.price({id:'pelt'})]};
+  try{const lo=at(-50),hi=at(100);ok(hi[0]<lo[0]&&hi[1]>lo[1]&&hi[2]>lo[2],'things by your standing: a piece of gear '+hi[0]+' / '+lo[0]+'g to buy, '+hi[1]+' / '+lo[1]+'g to sell; a pelt '+hi[2]+' / '+lo[2]+'g (high, low)');
+   const town=G.town;G.town=null;const out=at(100);G.town=town;window.standingAt=()=>-50;const out2=[K.gear.cost({id:gid})];G.town=null;const out3=K.gear.cost({id:gid});G.town=town;ok(out[0]===out3,'out of a holding, no standing in it: as ever')}finally{window.standingAt=w}}
  // ---- your terms: your standing, and a haggle once a visit
  {t.TradeDeal.clear();const g2=Object.keys(t.GOODS).filter(k=>(ash.stock[k]||0)>=10&&t.ITEM_KINDS.good.catId({id:k})).sort((a,b)=>t.nextBuy(ash,b)-t.nextBuy(ash,a))[0],w=window.standingAt,at=v=>{window.standingAt=()=>v;return [t.goodsQuote(ash,g2,10,true),t.goodsQuote(ash,g2,10,false)]};
   try{const lo=at(-50),mid=at(0),hi=at(100);ok(hi[0]<mid[0]&&mid[0]<lo[0]&&hi[1]>mid[1]&&mid[1]>lo[1],'your standing in the price: ten bought for '+hi[0]+' / '+mid[0]+' / '+lo[0]+'g, sold for '+hi[1]+' / '+mid[1]+' / '+lo[1]+'g (high, none, low)');
