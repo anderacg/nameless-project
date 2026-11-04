@@ -322,6 +322,7 @@ class BountyQuest extends JobQuest{
     super.pay(where);
     const t=townBy(this.home);
     if(t&&!this.lord)Quiet.set(t,'band','the '+this.band);
+    Chains.bounty(this);// (its chief got away: The chief who ran, story/chains.js)
   }
   // (broken by another: none of its quarry is left anywhere)
   gone(){
@@ -392,6 +393,7 @@ class BeastQuest extends JobQuest{
     super.pay(where);
     const t=townBy(this.home);
     if(t&&!this.lord)Quiet.set(t,'beast','the '+MONSTERS[this.mon].n.toLowerCase());
+    Chains.beast(this);// (a cave near: Something bigger, story/chains.js)
   }
   seek(){
     const m=this.target();
@@ -492,6 +494,10 @@ class SupplyQuest extends JobQuest{
   gone(){
     const t=townBy(this.home);
     return super.gone()||!!t&&Troubles.fill(t,this.good)>=1;
+  }
+  pay(where){
+    super.pay(where);
+    Chains.supply(this);// (its caravan robbed: The empty larder, story/chains.js)
   }
   goneWhy(){
     return super.gone()?super.goneWhy():this.home+' has its '+GOODS[this.good].n.toLowerCase()+' again.';

@@ -86,7 +86,7 @@ class Letter extends ItemKind{
   // out of the bag
   drop(L){const i=this.slotOf(L.id);if(i>=0)P.inv[i]=null;G.ltr.done=1}
   // Break the seal: you read it; its news on your map (the place it names, or round the holding it names) and in your log
-  read(L){L.seal=0;const t=townBy(L.tgt),s=this.site(L);let on='';
+  read(L){L.seal=0;if(L.job)Chains.letter(L);/* (a courier's that orders an attack: A sealed hand, story/chains.js) */const t=townBy(L.tgt),s=this.site(L);let on='';
     if(s&&!s.seen){s.seen=true;on=' The '+s.label+' is on your map now.'}else if(t){this.reveal(t.x,t.y);on=' '+L.tgt+' is marked on your map.'}
     log('A letter of the '+this.facName(L.fac)+': '+this.text(L));return 'You break the seal and read it.'+on}
   reveal(x,y){const S=seenArr(),r=ENC_TUNE.letter.reveal,cx=Math.floor(x/TILE),cy=Math.floor(y/TILE);
