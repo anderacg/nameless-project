@@ -128,13 +128,15 @@ Kit.suite(({ok,info})=>{
  // ================= the Quest kinds (story/quest.js; the jobs, world/quests.js), every one
  t.QUEST_MARKS.band=t.QUEST_MARKS.beast=0;// (a job's marks, its holding quiet a while, are tested in tests/questmarks.js: here a job may be offered again at once)
  {const SH='quest',Q=t.Quest,all=K.all(SH),ids=all.map(k=>k.id),bad=[];Kit.world();Kit.clear();
-  ok(ids.join()==='bounty,beast,clear,supply,hunt,courier,troops,lordkill,raid,escort'&&all.every(k=>k.cls&&k.cls.prototype instanceof Q&&t.kindOf(SH,k.id)===k),'the job kinds: registered once each, each a subclass of Quest ('+all.map(k=>k.cls.name).join(', ')+')');
+  ok(ids.join()==='bounty,beast,clear,supply,hunt,courier,troops,lordkill,raid,relieve,scout,escort'&&all.every(k=>k.cls&&k.cls.prototype instanceof Q&&t.kindOf(SH,k.id)===k),'the job kinds: registered once each, each a subclass of Quest ('+all.map(k=>k.cls.name).join(', ')+')');
   // (every realm at war with every other, so a lord has war work; a lord's kinds are made by a lord)
   // (game grazing by every holding: a hunt is offered only where it does, world/troubles.js)
   {const d=Object.keys(t.CRITTERS).find(k=>t.CRITTERS[k].mat&&t.CRITTERS[k].mat[0]==='hide'&&!t.CRITTERS[k].live);for(const h of t.TOWNS)W.critters.push({id:d,x:h.x+150,y:h.y+60,hx:h.x+150,hy:h.y+60,n:3,dir:1,cool:0})}
   const facs=Object.keys(t.FACS).filter(f=>f!=='player');for(const a of facs)for(const b of facs)if(a<b)W.rel[t.rk(a,b)]={s:'war',since:G.day};W.lords.forEach(l=>{l.dead=false});
+  // (a holding under siege, for a lord's relief: world/quests.js RelieveQuest)
+  {const h=t.TOWNS.find(z=>z.owner&&z.owner!=='player'&&W.lords.some(l=>l.fac===z.owner)),by=W.lords.find(l=>l.fac!==h.owner);by.state='siege';by.tgt=h.name;by.x=h.x+20;by.y=h.y}
   // (the deed's own event, for one taken: what it waits for, found on the map)
-  const own={'band:beaten':q=>({band:t.bandits.find(b=>b.qid===q.id)}),'monster:slain':q=>({monster:W.monsters.find(m=>m.qid===q.id)}),'site:cleared':q=>({site:W.sites[q.site]}),'lord:beaten':q=>({lord:W.lords.find(l=>l.name===q.target)}),'holding:razed':q=>({town:t.townBy(q.village)})};
+  const own={'band:beaten':q=>({band:t.bandits.find(b=>b.qid===q.id)}),'monster:slain':q=>({monster:W.monsters.find(m=>m.qid===q.id)}),'site:cleared':q=>({site:W.sites[q.site]}),'lord:beaten':q=>({lord:W.lords.find(l=>l.name===(q.besieger||q.target))}),'holding:razed':q=>({town:t.townBy(q.village)})};
   const ended=[],fn=ev=>ended.push(ev.e);t.worldOn('quest:ended',fn);
   try{for(const D of all){const k=D.id;let q=null,home=null;
    for(const h of t.TOWNS){for(const l of [null,...W.lords.filter(l=>!l.dead)]){try{q=Kit.seeded(11,()=>t.makeQuest(k,h,l))}catch(x){q=null}if(q){home=h;break}}if(q)break}

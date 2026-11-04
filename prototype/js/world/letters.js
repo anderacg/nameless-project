@@ -116,13 +116,13 @@ class Letter extends ItemKind{
     return '<div class="lab">Your letters</div>'+ls.map(L=>railRow((L.seal?'Sealed':'Opened')+' letter of the '+this.facName(L.fac),!this.giveWhy(L,t)?'Addressed here: deliver it to the lord.':'The '+FACS[t.owner].n+' is at war with its sender: they would buy it.',railBtn('ltr-open',L.id+':town','Show it'))).join('')}
 }
 const LETTER=ITEM_KINDS.letter=new Letter();
-// (its verbs: Choices, story/choice.js; need: why not here)
+// (its verbs: Choices, story/choice.js; need: why not here; a courier's letter (job) is delivered on arrival: world/quests.js)
 const LETTER_VERBS=Choice.list([
   {icon:'scroll',label:'Break the seal',when:L=>!!L.seal,facts:()=>['you read it','it then sells and delivers for less'],tip:'Read what it says: its news goes on your map and in your log.',run:L=>LETTER.read(L)},
   {icon:'gold',label:'Sell it to a rival',need:L=>LETTER.sellWhy(L,LETTER.here()),tip:'A realm at war with its sender pays for what it says.',
     out:L=>{const x=ENC_TUNE.letter,h=LETTER.here(),g=LETTER.fetchOf(L,x.sell);
       return{gold:g,rep:[h&&h.name,x.rep.sell],call:()=>LETTER.drop(L),say:()=>'The steward of '+h.name+' pays '+g+' gold for the '+LETTER.facName(L.fac)+'’s letter'+(L.seal?', its seal unbroken':'')+'.'}}},
-  {icon:'house',label:'Deliver it',also:L=>L.seen?['they know you robbed the rider']:[],
+  {icon:'house',label:'Deliver it',when:L=>!L.job,also:L=>L.seen?['they know you robbed the rider']:[],
     need:L=>LETTER.giveWhy(L,LETTER.here()),ask:L=>L.seen?'Word of the robbery came ahead of you: they know who took it from their rider. Deliver it anyway?':null,tip:'Hand it to the lord it is addressed to, as if you found it on the road.',
     out:L=>{const x=ENC_TUNE.letter,h=LETTER.here(),drop=()=>LETTER.drop(L);
       if(L.seen)return{call:drop,rep:[h&&h.name,-x.rep.seen],say:()=>'The lord of '+h.name+' takes the letter, and his eyes narrow: word came ahead of you that you robbed his rider. (reputation −'+x.rep.seen+')'};

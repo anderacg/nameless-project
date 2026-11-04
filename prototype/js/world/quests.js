@@ -552,7 +552,9 @@ class HuntQuest extends JobQuest{
     }
   }
 }
-// a courier: a sealed letter to a holding that is not hostile to you, paid on arrival there
+// a courier: a sealed letter to a holding that is not hostile to you, paid on arrival there (a real one: opened, it pays
+// COURIER.opened of its gold)
+const COURIER={opened:.5};
 class CourierQuest extends JobQuest{
   get timed(){
     return true;
@@ -568,10 +570,21 @@ class CourierQuest extends JobQuest{
     this.text='Carry a sealed letter from '+this.giver+' to '+d.name+', '+Math.round(qTiles(d,t))+' tiles to the '+compass(d.x-t.x,d.y-t.y)+'. You are paid on arrival.';
     this.pays(25+qTiles(d,t)*1.6,5,2,15);
   }
-  begin(){
+  // (taken: the real letter in your bag, a Quest item (world/letters.js): what its realm writes, as a rider's would, addressed
+  // to the holding it goes to; read, sold or burnt, as any letter: read, it is paid less; gone from your bag, the job fails)
+  begin(t){
     const d=townBy(this.to);
     this.x=d.x;
     this.y=d.y;
+    if(!t||!t.owner||!FACS[t.owner])return;
+    const L=LETTER.make({fac:t.owner,home:t.name,x:t.x,y:t.y,i:'q'+this.id});
+    Object.assign(L,{from:t.name,to:d.name,toFac:d.owner,seen:0,job:this.id});
+    this.letter=L.id;
+    playerInventory.put({k:'letter',id:L.id,n:1,L},true);
+  }
+  carried(){
+    const i=this.letter?LETTER.slotOf(this.letter):-1;
+    return i>=0?P.inv[i].L:null;
   }
   seek(){
     const t=townBy(this.to);
@@ -579,6 +592,14 @@ class CourierQuest extends JobQuest{
   }
   todo(){
     return 'Deliver to '+this.to+'.';
+  }
+  lapse(){
+    if(this.letter&&!this.done&&!this.carried())return this.fail('You no longer carry the letter.');
+    super.lapse();
+  }
+  earned(){
+    const L=this.carried();
+    return Math.round(super.earned()*(L&&!L.seal?COURIER.opened:1));
   }
   aim(){
     return 'Carry the letter to '+this.to;
@@ -602,8 +623,12 @@ class CourierQuest extends JobQuest{
   }
   arrive(t){
     if(this.to!==t.name)return;
-    addRep(t.name,3,true);
+    const L=this.carried();
+    if(this.letter&&!L)return;
+    if(L&&!L.seal)log('The lord of '+t.name+' frowns at the broken seal.','bad','story',this.journalKey);
+    addRep(t.name,L&&!L.seal?1:3,true);
     this.pay(t.name);
+    if(L)P.inv[LETTER.slotOf(L.id)]=null;
   }
 }
 // reinforcements: troops of a tier or better handed over to the garrison (the greenest that qualify first); offered only while
@@ -732,6 +757,92 @@ class RaidQuest extends JobQuest{
     return super.gone()?super.goneWhy():v&&!v.gone?this.village+' is the '+FACS[this.fac].n+'’s own now.':this.village+' is no more.';
   }
 }
+// a lord's war work: a holding of his realm under siege relieved (its besieger beaten by you); closed once the siege is over
+class RelieveQuest extends JobQuest{
+  setup(t,lord){
+    const h=TOWNS.filter(x=>x.owner===this.fac&&!x.gone&&besieged(x)).sort((a,b)=>qTiles(a,lord)-qTiles(b,lord))[0];
+    if(!h)return false;
+    const by=W.lords.find(l=>!l.dead&&l.state==='siege'&&l.tgt===h.name);
+    if(!by)return false;
+    this.town=h.name;
+    this.besieger=by.name;
+    this.cause=by.name+' of the '+FACS[by.fac].n+' has laid siege to '+h.name+'.';
+    this.title='Relieve '+h.name;
+    this.text=lord.name+' wants the siege of '+h.name+' broken: beat '+by.name+' before its walls.';
+    this.pays(220,0,14,70);
+  }
+  begin(){
+    const h=townBy(this.town);
+    this.x=h.x;
+    this.y=h.y;
+  }
+  seek(){
+    const h=townBy(this.town);
+    return h?{x:h.x,y:h.y,name:h.name}:null;
+  }
+  get deed(){
+    return 'lord:beaten';
+  }
+  hits(d){
+    return d.lord&&d.lord.tgt===this.town&&atWar(d.lord.fac,this.fac);
+  }
+  get deedWord(){
+    return 'relieved';
+  }
+  gone(){
+    const h=townBy(this.town);
+    return super.gone()||!h||!!h.gone||!besieged(h);
+  }
+  goneWhy(){
+    return super.gone()?super.goneWhy():'The siege of '+this.town+' is over.';
+  }
+}
+// a lord's war work: an enemy lord's army found in the field (a lead: where it was last heard of) and reported; done once seen
+class ScoutQuest extends JobQuest{
+  setup(t,lord){
+    const foes=W.lords.filter(o=>!o.dead&&!o.gone&&!o.inside&&atWar(this.fac,o.fac)&&o.troops&&o.troops.length);
+    if(!foes.length)return false;
+    const f=foes.sort((a,b)=>qTiles(a,lord)-qTiles(b,lord))[0];
+    this.foeName=f.name;
+    this.cause='Word is '+f.name+' of the '+FACS[f.fac].n+' is in the field with '+f.troops.length+' men.';
+    this.title='Find '+f.name+'’s army';
+    this.text=lord.name+' wants to know where '+f.name+'’s army is, and how strong. Find it, and report.';
+    this.pays(110,0,6,40);
+  }
+  begin(){
+    const f=this.foe();
+    if(!f)return false;
+    this.markLead(f);
+  }
+  foe(){
+    return W.lords.find(x=>x.name===this.foeName&&!x.dead&&!x.gone)||null;
+  }
+  get leads(){
+    return true;
+  }
+  target(){
+    return this.foe();
+  }
+  quarryName(){
+    return this.foeName+'’s army';
+  }
+  seek(){
+    const f=this.foe();
+    if(!f)return null;
+    const s=this.spot();
+    if(!s&&this.found&&!this.done)this.finish();
+    return s?{...s,name:this.foeName}:{x:f.x,y:f.y,name:this.foeName};
+  }
+  get deedWord(){
+    return 'found';
+  }
+  gone(){
+    return super.gone()||!this.foe();
+  }
+  goneWhy(){
+    return super.gone()?super.goneWhy():this.foeName+' is gone from the field.';
+  }
+}
 // the kinds (the holdings' boards name theirs: data/holdings.js jobs; lords give lordkill, raid, bounty and beast: lordJob)
 defineKinds('quest',{},{
   bounty:{cls:BountyQuest},
@@ -743,6 +854,8 @@ defineKinds('quest',{},{
   troops:{cls:TroopsQuest},
   lordkill:{cls:LordkillQuest},
   raid:{cls:RaidQuest},
+  relieve:{cls:RelieveQuest},
+  scout:{cls:ScoutQuest},
 });
 // their deeds heard on the bus (core/bus.js): a band beaten, a beast slain, a site cleared, a lord beaten, a holding razed
 Quest.listen();
@@ -792,7 +905,7 @@ function jobsAt(t){
 }
 // a lord's job: war work if his faction is at war (raids only for those who serve him), else a bounty or a beast near his lands
 function lordJob(l){
-  const t=Spatial.nearest(fiefsOf(l.fac).length?fiefsOf(l.fac):TOWNS,l.x,l.y);const kinds=enemiesOf(l.fac).length?(P.fac===l.fac?['lordkill','raid']:['lordkill']):['bounty','beast'];
+  const t=Spatial.nearest(fiefsOf(l.fac).length?fiefsOf(l.fac):TOWNS,l.x,l.y);const kinds=enemiesOf(l.fac).length?(P.fac===l.fac?['lordkill','raid','relieve','scout']:['lordkill','relieve','scout']):['bounty','beast'];
   for(let k=0;k<6;k++){const q=makeQuest(questRng().pick(kinds),t,l);if(q)return q}return null;
 }
 /* taking a quest, where it points, how far along it is, reporting and failing: the quest's own (story/quest.js); the names
