@@ -6,7 +6,7 @@
    button moves the amount chosen (the qty: ×1, ×5 or typed) into the bargain; − in the bargain takes it back. Nothing changes
    hands till Confirm: your sales first (room for what you buy), then your buys, each as the old buttons did it (its price moving
    unit by unit, your standing and Trading); the bargain's prices are quoted as they would go (economy.js quote).
-   TradeDeal: the bargain (G.town.deal: {sell: {good: n}, buy: {good: n}, own: [bag slot], quiver: {id: n}, skin: n}; never
+   Each row and line its item's picture (its kind's icon, ico). TradeDeal: the bargain (G.town.deal: {sell: {good: n}, buy: {good: n}, own: [bag slot], quiver: {id: n}, skin: n}; never
    saved), its lines, totals and why it cannot be struck; TradeScreen: the page. Verbs (town.js Market): deal (kind:key, the qty
    more), undeal (kind:key, the qty less; all of a thing of yours), deal-clear, deal-ok ---------- */
 class TradeDeal{
@@ -34,11 +34,11 @@ class TradeDeal{
   // (its lines, each {side: 'sell' or 'buy', kind, key, n, name, gold})
   lines(t){
     const L=[];
-    for(const [g,n] of Object.entries(this.sell))L.push({side:'sell',kind:'s',key:g,n,name:GOODS[g].n,gold:goodsQuote(t,g,n,false)});
-    for(const i of this.own){const x=P.inv[i];if(x)L.push({side:'sell',kind:'o',key:i,n:x.n||1,name:itemKind(x).name(x),gold:itemKind(x).fetches(x,t)})}
-    for(const [g,n] of Object.entries(this.buy))L.push({side:'buy',kind:'b',key:g,n,name:GOODS[g].n,gold:goodsQuote(t,g,n,true)});
-    if(this.skin)L.push({side:'buy',kind:'k',key:'skin',n:this.skin,name:GOODS[SKIN.empty].n,gold:GOODS[SKIN.empty].base*this.skin});
-    for(const [id,n] of Object.entries(this.quiver))L.push({side:'buy',kind:'q',key:id,n,name:ITEM_KINDS.quiver.title({id}),gold:gearPrice(id)*n});
+    for(const [g,n] of Object.entries(this.sell))L.push({side:'sell',kind:'s',key:g,n,name:GOODS[g].n,gold:goodsQuote(t,g,n,false),ic:'good:'+g});
+    for(const i of this.own){const x=P.inv[i];if(x)L.push({side:'sell',kind:'o',key:i,n:x.n||1,name:itemKind(x).name(x),gold:itemKind(x).fetches(x,t),ic:x.k+':'+x.id})}
+    for(const [g,n] of Object.entries(this.buy))L.push({side:'buy',kind:'b',key:g,n,name:GOODS[g].n,gold:goodsQuote(t,g,n,true),ic:'good:'+g});
+    if(this.skin)L.push({side:'buy',kind:'k',key:'skin',n:this.skin,name:GOODS[SKIN.empty].n,gold:GOODS[SKIN.empty].base*this.skin,ic:'good:'+SKIN.empty});
+    for(const [id,n] of Object.entries(this.quiver))L.push({side:'buy',kind:'q',key:id,n,name:ITEM_KINDS.quiver.title({id}),gold:gearPrice(id)*n,ic:'quiver:'+id});
     return L;
   }
   totals(t){const L=this.lines(t),get=L.filter(l=>l.side==='sell').reduce((a,l)=>a+l.gold,0),pay=L.filter(l=>l.side==='buy').reduce((a,l)=>a+l.gold,0);return{get,pay,net:get-pay,after:P.gold+get-pay}}
@@ -65,29 +65,31 @@ class TradeDeal{
 }
 const TradeScreen={
   // (a pane's row: its name, its facts, how many, and its button)
-  row(name,facts,n,act,arg,label,why){return '<div class="tr-row"><div class="tr-info"><strong>'+name+'</strong><small>'+facts+'</small></div><span class="tr-n">'+n+'</span>'+railBtn(act,arg,label,why)+'</div>'},
+  // (an item's picture: its kind's icon, drawn by loot.js fillIcons once the window is up; ic: 'kind:id')
+  ico(ic){return '<span class="tr-ico"><span data-icon="'+ic+'"></span></span>'},
+  row(name,facts,n,act,arg,label,why,ic){return '<div class="tr-row">'+this.ico(ic)+'<div class="tr-info"><strong>'+name+'</strong><small>'+facts+'</small></div><span class="tr-n">'+n+'</span>'+railBtn(act,arg,label,why)+'</div>'},
   mine(t,D,q){
     const goodCat=k=>ITEM_KINDS.good.catId({id:k}),gs=Object.keys(GOODS).filter(k=>goodCat(k)&&goodN(k)>0);
-    let h=byCategory(gs,goodCat,k=>{const l=D.left(t,'s',k);return this.row(GOODS[k].n,nextSell(t,k)+'g each',l,'deal','s:'+k,'<span class="tr-w">Sell </span>›',l<1?'All in the bargain':'')});
+    let h=byCategory(gs,goodCat,k=>{const l=D.left(t,'s',k);return this.row(GOODS[k].n,nextSell(t,k)+'g each',l,'deal','s:'+k,'<span class="tr-w">Sell </span>›',l<1?'All in the bargain':'','good:'+k)});
     const own=P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k!=='good'&&(itemCat(x)||{}).sell);
     if(own.length)h+=byCategory(own,([x])=>itemKind(x).catId(x),([x,i])=>{const K=itemKind(x),c=K.colour(x),on=D.own.includes(i);
-      return this.row('<span'+(c?' style="color:'+c+'"':'')+'>'+K.name(x)+'</span>',K.fetches(x,t)+'g',x.n>1?'×'+x.n:'','deal','o:'+i,'<span class="tr-w">Sell </span>›',on?'In the bargain':'')});
+      return this.row('<span'+(c?' style="color:'+c+'"':'')+'>'+K.name(x)+'</span>',K.fetches(x,t)+'g',x.n>1?'×'+x.n:'','deal','o:'+i,'<span class="tr-w">Sell </span>›',on?'In the bargain':'',x.k+':'+x.id)});
     return h||'<p class="muted">You carry nothing they would buy.</p>';
   },
   theirs(t,D,q){
     const goodCat=k=>ITEM_KINDS.good.catId({id:k});ensureEcon(t);
     const gs=[...Object.keys(GOODS).filter(k=>goodCat(k)&&k!==SKIN.empty&&((t.stock[k]||0)>0||needOf(t,k)>.05)),SKIN.empty];
-    let h=byCategory(gs,goodCat,k=>{if(k===SKIN.empty)return this.row(GOODS[k].n,GOODS[k].base+'g each · filled free at a well','','deal','k:skin','‹<span class="tr-w"> Buy</span>','');
+    let h=byCategory(gs,goodCat,k=>{if(k===SKIN.empty)return this.row(GOODS[k].n,GOODS[k].base+'g each · filled free at a well','','deal','k:skin','‹<span class="tr-w"> Buy</span>','','good:'+k);
       const l=D.left(t,'b',k),ms=marketState(t,k);
-      return this.row(GOODS[k].n+(ms?' <span class="'+(ms==='shortage'?'bad':'good')+'">'+cap1(ms)+'</span>':''),nextBuy(t,k)+'g each',l,'deal','b:'+k,'‹<span class="tr-w"> Buy</span>',l<1?'The market has none left':'')});
+      return this.row(GOODS[k].n+(ms?' <span class="'+(ms==='shortage'?'bad':'good')+'">'+cap1(ms)+'</span>':''),nextBuy(t,k)+'g each',l,'deal','b:'+k,'‹<span class="tr-w"> Buy</span>',l<1?'The market has none left':'','good:'+k)});
     const qs=quiverStock(t,'trade');
-    if(qs.length)h+='<div class="lab lab-cat">Quivers</div>'+qs.map(id=>this.row('<span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEM_KINDS.quiver.title({id})+'</span>',gearPrice(id)+'g','','deal','q:'+id,'‹<span class="tr-w"> Buy</span>','')).join('');
+    if(qs.length)h+='<div class="lab lab-cat">Quivers</div>'+qs.map(id=>this.row('<span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEM_KINDS.quiver.title({id})+'</span>',gearPrice(id)+'g','','deal','q:'+id,'‹<span class="tr-w"> Buy</span>','','quiver:'+id)).join('');
     return h;
   },
   // the bargain: each side's lines (− takes one back), the totals, your gold before and after, Confirm and Clear
   bargain(t,D,q){
     const L=D.lines(t),T=D.totals(t),why=D.why(t),side=(s,word)=>{const ls=L.filter(l=>l.side===s);
-      return '<div class="lab">'+word+'</div>'+(ls.length?ls.map(l=>'<div class="tr-line"><span>'+l.name+(l.n>1?' ×'+l.n:'')+'</span><b class="gold">'+l.gold+'g</b>'+railBtn('undeal',l.kind+':'+l.key,'−','')+'</div>').join(''):'<p class="muted">—</p>')};
+      return '<div class="lab">'+word+'</div>'+(ls.length?ls.map(l=>'<div class="tr-line">'+this.ico(l.ic)+'<span>'+l.name+(l.n>1?' ×'+l.n:'')+'</span><b class="gold">'+l.gold+'g</b>'+railBtn('undeal',l.kind+':'+l.key,'−','')+'</div>').join(''):'<p class="muted">—</p>')};
     return '<div class="lab lab-qty"><span>Move</span>'+railQty(q,'qty')+'</div>'+side('sell','You sell')+side('buy','You buy')+
       '<div class="tr-sum"><div><span>They pay you</span><b class="gold">'+T.get+'g</b></div><div><span>You pay them</span><b class="gold">'+T.pay+'g</b></div>'+
       '<div class="tr-net"><span>Balance</span><b class="'+(T.net<0?'bad':'good')+'">'+(T.net<0?'−':'+')+Math.abs(T.net)+'g</b></div><div><span>Your gold</span><b>'+P.gold+'g → '+T.after+'g</b></div></div>'+

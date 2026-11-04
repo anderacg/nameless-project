@@ -8,12 +8,14 @@ Kit.suite(({ok})=>{
  const ash=t.townBy('Ashford'),q=Kit.q,qa=Kit.qa,D=()=>t.TradeDeal.of();P.gold=500;P.inv=P.inv.map(()=>null);t.invAdd('good','grain',10);t.invAdd('val','chalice',1);
  Kit.goHome(ash);t.enterTown(ash);t.act('tab','trade');t.ensureEcon(ash);const g=Object.keys(t.GOODS).find(k=>(ash.stock[k]||0)>10&&k!=='grain'&&t.ITEM_KINDS.good.catId({id:k}));
  ok(q('.tr-mine h3')&&/Your pack/.test(q('.tr-mine').textContent)&&/The bargain/.test(q('.tr-mid').textContent)&&/The merchants/.test(q('.tr-theirs').textContent),'three side by side: your pack, the bargain, the merchants');
+ ok(qa('.tr-row').length>3&&qa('.tr-row').every(r=>r.querySelector('.tr-ico canvas')),'each row with its item\'s picture');
  // ---- into the bargain: nothing changes hands, the market's stock and prices as they were
  {const s0=ash.stock[g],p0=t.nextBuy(ash,g),g0=P.gold,n0=t.goodN('grain');t.act('qty','5');t.act('deal','s:grain');t.act('deal','b:'+g);t.act('qty','1');
   ok(D().sell.grain===5&&D().buy[g]===5&&ash.stock[g]===s0&&t.nextBuy(ash,g)===p0&&P.gold===g0&&t.goodN('grain')===n0,'five of each into the bargain: nothing changed hands, the market as it was');
   const L=D().lines(ash),b=L.find(l=>l.key===g),s=L.find(l=>l.key==='grain');ok(b.gold===t.goodsQuote(ash,g,5,true)&&b.gold>=p0*5&&s.gold===t.goodsQuote(ash,'grain',5,false),'each line quoted as it would go, the price moving unit by unit ('+b.gold+'g for 5 '+g+')');
   const T0=D().totals(ash);ok(T0.after===P.gold+s.gold-b.gold&&q('.tr-sum').textContent.includes(P.gold+'g → '+T0.after+'g'),'the totals, and your gold before and after: '+P.gold+'g → '+T0.after+'g');
   t.act('undeal','b:'+g);ok(D().buy[g]===4,'− takes one back')}
+ ok(qa('.tr-mid .tr-line').every(l=>l.querySelector('.tr-ico canvas')),'and each line of the bargain');
  // ---- your things too
  {const i=P.inv.findIndex(x=>x&&x.k==='val');t.act('deal','o:'+i);t.act('deal','o:'+i);ok(D().own.length===1&&qa('.tr-mid .tr-line').some(l=>/chalice/i.test(l.textContent)),'a thing of yours into the bargain (once)')}
  // ---- can't pay: greyed
