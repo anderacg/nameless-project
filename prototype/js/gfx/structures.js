@@ -64,25 +64,38 @@ function holdingEnts(t,ents,cam,V){
         // outside your sight: the building as you last saw it (fog.js), or nothing if you never saw its ground
         if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);ctx.drawImage(m,X,Y-N);depthPic(m,X,Y-N);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(col,X+m.flag[0],Y-N+m.flag[1],t.seed);txt(t.name,Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),'#a8a496','center')}return}
         const s=lotSprite(t,l),w=t.work&&(t.work.lot?t.work.lot===l.id:t.work.k===l.k||t.work.k==='wall'&&l.k==='centre'),p=w?workProg(t):0;l._mem=s;l._memSt=l.st;
-        if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed);else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed)}
+        if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed,t.races?.[0]);else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed,t.races?.[0])}
         if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
         if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(col,X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N)}
         if(ESTATES[l.k]){const m=lotMid(l);if(Math.hypot(m.x-P.x,m.y-P.y)<60)txt(ESTATES[l.k].n,Math.round(m.x-cam.x),Y+8,'#c8c2ae','center')}}});
       if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)});
       if(l.k==='pasture'&&l.st==='built'&&live)penEnts(t,ents,cam)}// (its herd, inside its fence: critters.js)
 }
-// a building site: what is built so far (from the ground up, as the work goes on) behind scaffolding, a worker on the planks
-// hammering; for an upgrade (full) the building stands whole with scaffolding against its side
-function drawSite(s,X,Y,N,p,full,seed){
-  const now=performance.now(),top=Math.round(N*.82),h=full?N:Math.max(2,Math.round(top*p));
+/* a building site: what is built so far (from the ground up, as the work goes on) behind scaffolding; for an upgrade (full) the
+   building stands whole with scaffolding against its side. Its crew, of the holding's people (race), by the site's size
+   (SITE.crew): builders on the planks, each walking to a spot (SITE.spots along it, by a hash), hammering there SITE.swings
+   overhead blows (the soldiers' frames, people.js), a spark at each strike, then on to the next; one more on the ground
+   carrying planks in and going back for more (the owner, 2026-11-04: "add all three"). Off the battle's figures (figsOn), the
+   one small builder as before. Drawn only, from the clock and the site's seed */
+const SITE={walk:1.2,swing:.42,swings:3,spots:5,crew:[[16,1,0],[32,1,1],[999,2,1]],carry:5};
+function drawSite(s,X,Y,N,p,full,seed,race){
+  const now=performance.now(),top=Math.round(N*.82),h=full?N:Math.max(2,Math.round(top*p));race=race||'human';
   if(!full&&h>0)ctx.drawImage(s,0,N-h,N,h,X,Y-h,N,h);
   const x0=full?X+(N>>1):X+1,x1=X+N-2,poles=full?[x0,x1]:N>16?[x0,X+(N>>1),x1]:[x0,x1];
   for(const px of poles){rect(ctx,'#1a1512',px-1,Y-top-1,3,top+1);rect(ctx,'#8a6a42',px,Y-top,1,top)}
   for(let y=Y-4;y>Y-top;y-=6){rect(ctx,'#1a1512',x0-1,y-1,x1-x0+3,3);rect(ctx,'#a07e54',x0,y,x1-x0+1,1)}
-  // the worker: walks the plank at the height reached, swings his hammer, a spark now and then
-  const ly=full?Y-Math.round(top/2):Math.max(Y-top+2,Y-h-1),span=x1-x0-4,wx=x0+2+Math.round((Math.sin(now/900+seed)*.5+.5)*span),f=Math.floor(now*PEOPLE_STEPS/720)%PEOPLE_STEPS,ws=workerSprite('builder',f,'human',seed%4);
-  if(figsOn())drawFig(figWorker('builder','human',seed%4,figPose(f,true)),wx,ly,1);else ctx.drawImage(ws,wx-8,ly-14);// (a battle figure, as the map's people: people.js MAP_FIGS)
-  if(Math.floor(now/180+seed)%7===0)rect(ctx,'#ffe090',wx+4,ly-8,1,1);
+  const ly=full?Y-Math.round(top/2):Math.max(Y-top+2,Y-h-1),span=Math.max(1,x1-x0-4);
+  if(!figsOn()){const wx=x0+2+Math.round((Math.sin(now/900+seed)*.5+.5)*span),f=Math.floor(now*PEOPLE_STEPS/720)%PEOPLE_STEPS;
+    ctx.drawImage(workerSprite('builder',f,race,seed%4),wx-8,ly-14);if(Math.floor(now/180+seed)%7===0)rect(ctx,'#ffe090',wx+4,ly-8,1,1);return}
+  const S=SITE,[,nb,carry]=S.crew.find(c=>N<=c[0]),T=S.walk+S.swings*S.swing,spot=(i,n)=>x0+2+Math.round(hash(n,seed+i*977,31)*span);
+  for(let i=0;i<nb;i++){/* a builder: walking to his spot, then hammering there */
+    const t=now/1000+(seed%97)*.37+i*1.9,n=Math.floor(t/T),c=t-n*T,a=spot(i,n-1),b=spot(i,n),y=i?Math.min(Y-2,ly+6):ly;let x,pose,face=b>=a?1:-1;
+    if(c<S.walk){x=Math.round(a+(b-a)*c/S.walk);pose=b===a?0:figPose(Math.floor(c*6),true)}
+    else{x=b;const q=(c-S.walk)/S.swing,f=Math.floor((q%1)*3);pose=12+f;if(f===1&&(q%1)<.45)rect(ctx,'#ffe090',x+face*5,y-9,1,1)}
+    drawFig(figWorker('builder',race,(seed+i)%4,pose),x,y,face)}
+  if(carry){/* the plank carrier: in from the side, loaded, and back out for more */
+    const t=now/1000+(seed%53)*.41,L=S.carry,n=Math.floor(t/L),c=(t-n*L)/L,inw=n%2===0,sx=X-6,ex=X+(N>>1),x=Math.round(inw?sx+(ex-sx)*c:ex+(sx-ex)*c);
+    drawFig(figWorker('builder',race,(seed+3)%4,figPose(Math.floor(t*6),true),inw),x,Y+1,inw?1:-1)}
 }
 // placing a building by hand: its ghost under the pointer, its tiles green where it may stand and red where not
 function drawPlace(cam){

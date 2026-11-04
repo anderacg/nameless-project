@@ -546,7 +546,7 @@ function drawMapBody(g,o,ox,oy,walk,cut){
 }
 // a load carried on the back (the left of a figure facing right): a sack, a churn, logs, a basket or a sack of ore
 const LOADS={farmer:['sack','#ece4cc'],herder:['churn','#d8dce4'],woodcutter:['logs','#9a6436'],miner:['sack','#7a808e'],fisher:['basket','#a8804e'],quarry:['sack','#a8a49a'],pack:['pack','#8a6a44'],
-  bundle:['bundle','#8a7458']};// (bundle: a refugee's blanket rolled over his shoulders, a sack under it: MAP_FIGS only)
+  bundle:['bundle','#8a7458'],builder:['planks','#b08a58']};// (builder: planks over his shoulder, a building site's carrier: structures.js drawSite)// (bundle: a refugee's blanket rolled over his shoulders, a sack under it: MAP_FIGS only)
 function drawMapLoad(set,job){const L=LOADS[job]||LOADS.farmer,R=rampOf(L[1]);
   if(L[0]==='logs'){set(-1,2,'#e8c890');set(-1,3,R[0]);set(-1,4,R[2]);set(-1,5,'#c8a070');return}
   set(-1,3,R[0]);set(-1,4,R[1]);set(-1,5,R[2]);

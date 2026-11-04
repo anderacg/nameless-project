@@ -125,7 +125,8 @@ class MapLoad extends FigureGear{
    colour, d shade, k deep (its ramp), e end grain, r a cord, f a fish. A lute (a bard's) across his front, its neck up and ahead */
 const LOAD_ART={sack:[1,['..rr.','.hHH.','hHHHd','hHHHd','hHHdd','.ddk.']],churn:[2,['.hhH.','.kkk.','.hHd.','.hHd.','.kkk.','.hHd.','.ddk.']],
   logs:[3,['.eee.','.HdH.','.HdH.','.rrr.','.HdH.','.HdH.','.ddd.']],basket:[1,['.ff..','hHdHd','HdHdH','hHdHd','.kkk.']],
-  pack:[3,['.hhH.','.dddd','hHHHd','hHrHd','hHHHd','hHHHd','.kkkk']],bundle:[1,['.hHHHd','.dHHdk','..hHd.','..hHd.','..ddk.']]};
+  pack:[3,['.hhH.','.dddd','hHHHd','hHrHd','hHHHd','hHHHd','.kkkk']],bundle:[1,['.hHHHd','.dHHdk','..hHd.','..hHd.','..ddk.']],
+  planks:[4,['..eH','.eHd','eHd.','Hd..','eHHd','.eHd','..eH']]};
 class BackLoad extends FigureGear{
   constructor(job){super('load','back');this.job=job}
   draw(set,o,p){const [k,col]=LOADS[this.job]||LOADS.farmer,[lift,rows]=LOAD_ART[k],R=rampOf(col),C={h:R[0],H:R[1],d:R[2],k:R[3],e:'#e8c890',r:'#6a4a2a',f:'#9ab8c8'};
