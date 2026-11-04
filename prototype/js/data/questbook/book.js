@@ -3,7 +3,8 @@
    QUESTBOOK: the entries, by id (unique across the folder); every other file of data/questbook adds its own with
    Object.assign(QUESTBOOK, {...}) (one <script> tag in Ashmark.html and wiki.html, after this one). An entry:
      title, ico (its pages' icon), cat ('side'; 'main' for the main story);
-     giver: {by (a giver: board, tavern, lord, road; Questbook.givers), name, pic (portrait kind), at (conditions on its place)};
+     giver: {by (a giver: board, tavern, lord, road; Questbook.givers), name, pic (portrait kind), where (a board's: where to find
+       its poster, said on the notice), at (conditions on its place)};
      when (conditions on you, and on the world near it: threat 'band' or 'beast', news (a kind), short (a good): story/forms.js;
      story/questbook.js Questbook.conds), once (once a game), cool (days before it is offered again);
      text: its offer; {town} {realm} {lord} {you} are filled in from where it was offered;

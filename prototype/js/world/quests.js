@@ -489,8 +489,9 @@ class ClearQuest extends JobQuest{
   }
 }
 // a supply run: a lasting good the holding is short of, handed over into its stock; its days by how long its stock lasts
-// (SUPPLY_JOB.days: from min, the emptier the sooner, up to max), paid by its price there (× price) at the least as before
-const SUPPLY_JOB={days:[5,16,20],price:1.25};
+// (SUPPLY_JOB.days: from min, the emptier the sooner, up to max), paid by its price there (× price) at the least as before;
+// as many as about worth gold of it buys at its price there (8–15 of a cheap good, least of a dear one: silver, wine)
+const SUPPLY_JOB={days:[5,16,20],price:1.25,worth:240,least:2};
 class SupplyQuest extends JobQuest{
   get timed(){
     return true;
@@ -500,7 +501,7 @@ class SupplyQuest extends JobQuest{
     const goods=Object.keys(GOODS).filter(g=>!GOODS[g].spoil&&!GOODS[g].ammo&&needOf(t,g)>.05).sort((a,b)=>(t.stock[a]||0)/targetStock(t,a)-(t.stock[b]||0)/targetStock(t,b));
     if(!goods.length)return false;
     this.good=goods[questRng().int(0,Math.min(1,goods.length-1))];
-    this.n=questRng().int(8,15);
+    this.n=Math.max(SUPPLY_JOB.least,Math.min(questRng().int(8,15),Math.round(SUPPLY_JOB.worth/Math.max(1,marketPrice(t,this.good)))));
     this.days=clamp(Math.round(SUPPLY_JOB.days[0]+Troubles.fill(t,this.good)*SUPPLY_JOB.days[2]),SUPPLY_JOB.days[0],SUPPLY_JOB.days[1]);
     this.cause=causeOf(Troubles.news(t,['caravan','siege','raid'])[0],t)||'Its stores of '+GOODS[this.good].n.toLowerCase()+' run low.';
     this.title='Supply run: '+GOODS[this.good].n.toLowerCase();
@@ -1040,7 +1041,7 @@ function jobsBody(t){
   return '<div class="lab">Your quests here</div>'+(here.length?here.map(q=>row(q.title,'<small>'+questProgress(q)+' · '+Quest.as(q).rewardLine()+'</small>','<button class="btn sm" type="button" data-act="q-turnin" data-arg="'+q.id+'"'+(questReady(q)?'':' disabled')+'>'+(Quest.as(q).handsOver?'Hand over':'Report')+'</button>')).join(''):'<p class="muted">None.</p>')+
     '<div class="lab" style="margin-top:6px">Work offered · you hold '+n+' job'+(n===1?'':'s')+'</div>'+
     (shut?'<p class="bad">'+QuestShut.line({home:t.name},shut)+'.</p>':'')+
-    (offers.length?offers.map((q,i)=>offerRow(q,'q-accept',i)).join(''):'<p class="muted">'+(P.jobs[t.name]&&P.jobs[t.name].none?'Nothing troubles '+t.name+' these days.':'No more work this week.')+'</p>')+Questbook.rows(t);// (the questbook's: story/questbook.js)
+    NoticeBoard.html(t,offers);// (a cork board, its papers pinned: ui/noticeboard.js; the questbook's among them: story/questbook.js)
 }
 // town actions (from the town screen) and log actions (from the character screen)
 function questAct(a,arg,t){

@@ -1068,6 +1068,27 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .qw-detail{min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:10px;padding:10px 2px 10px 16px;scrollbar-width:thin}
 .qw-detail h3{font-size:var(--fs-xl);line-height:1.2;color:var(--accent)}
 .qw-text{color:var(--fg-2)}
+/* ---- The notice board (ui/noticeboard.js): a cork board in a wooden frame, each offer a paper pinned to it, tilted its own way
+   (--tilt), its shade its own (--paper); a locked one faded and stamped; on a phone two papers a row */
+.nb{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px 14px;align-items:start;padding:18px 14px;margin:6px 0 4px;border-radius:4px;
+  background-color:#9a6a3c;background-image:radial-gradient(circle at 20% 30%,rgba(255,220,170,.12) 0 2px,transparent 3px),radial-gradient(circle at 70% 60%,rgba(60,30,10,.22) 0 1.5px,transparent 2.5px);background-size:14px 14px,11px 11px;
+  box-shadow:inset 0 0 0 7px #5a3a1e,inset 0 0 0 9px #3a2412,inset 0 0 30px rgba(0,0,0,.45)}
+.nb-note{position:relative;display:flex;flex-direction:column;gap:5px;padding:18px 12px 10px;border-radius:2px;background:var(--paper,#efe4c8);color:#2a2118;
+  font-size:var(--fs-sm);line-height:1.35;box-shadow:0 4px 7px rgba(0,0,0,.45);transform:rotate(var(--tilt,0deg))}
+.nb-note::before{content:'';position:absolute;top:6px;left:50%;width:11px;height:11px;margin-left:-5px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#ff9a8a,#b8302a 60%,#5a1410);box-shadow:0 2px 2px rgba(0,0,0,.55)}
+.nb-note h4{font-size:var(--fs-md);line-height:1.2;color:#1e1710}
+.panel .nb-note p{margin:0;max-width:none;color:#2a2118}
+.nb-note .gold{color:#8a5a00;font-weight:700}
+.nb-kind{font-size:var(--fs-xs);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8a3a20}
+.panel .nb-cause{font-style:italic;color:#6a3e14}
+.nb-pay{padding-top:5px;border-top:1px dashed #b49c70}
+.panel .nb-small{font-size:var(--fs-xs);color:#5a4a38}
+.panel .nb-ask{font-style:italic;color:#3e3022}
+.panel .nb-stamp{align-self:flex-start;padding:2px 6px;border:2px solid #a8281e;border-radius:3px;color:#a8281e;font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;transform:rotate(-3deg)}
+.nb-note .btn{align-self:flex-end;margin-top:2px}
+.nb-note.locked{opacity:.72;filter:saturate(.4)}
+.nb-empty{grid-column:1/-1;max-width:280px;justify-self:center;text-align:center}
 /* an offer's giver and the true thing it is about (world/givers.js, world/troubles.js) */
 .qw-who{display:block;color:var(--fg-2);font-style:italic}
 .qw-cause{color:var(--accent)}

@@ -15,10 +15,12 @@ const Givers={
   },
   of(t){
     if(!t||!t.T)return [];
-    const race=(t.races&&t.races[0])||'human',N=FOLK_NAMES[race]||FOLK_NAMES.human;
+    const race=(t.races&&t.races[0])||'human',N=FOLK_NAMES[race]||FOLK_NAMES.human,used=new Set();
     return Object.entries(GIVERS).filter(([,G0])=>this.fits(t,G0.at)).map(([role,G0])=>{
-      const h=folkHash(t.name+':'+role);
-      return{role,key:t.name+':'+role,n:G0.n,name:N[h%N.length],race,jobs:G0.jobs,why:G0.why,pays:G0.pays,town:t.name};
+      let i=folkHash(t.name+':'+role)%N.length;
+      for(let k=0;k<N.length&&used.has(N[i]);k++)i=(i+1)%N.length;// (no two of a holding's givers share a name)
+      used.add(N[i]);
+      return{role,key:t.name+':'+role,n:G0.n,name:N[i],race,jobs:G0.jobs,why:G0.why,pays:G0.pays,town:t.name};
     });
   },
   for(t,type){

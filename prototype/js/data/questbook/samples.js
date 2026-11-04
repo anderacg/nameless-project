@@ -15,7 +15,7 @@ Object.assign(QUESTBOOK,{
       talked:{end:{reward:{rep:4,honor:2,xp:40},say:'The miller can hardly believe it.'}},
       won:{end:{reward:{gold:60,rep:6,xp:80},say:'The Vipers will trouble no one again.'}}}},
   // (a notice board's: one step, goods to bring)
-  poorhouse_grain:{title:'Bread for the poorhouse',ico:'sack',giver:{by:'board',at:{kind:['town','city']}},when:{short:'grain'},cool:20,
+  poorhouse_grain:{title:'Bread for the poorhouse',ico:'sack',giver:{by:'board',name:'Sister Maud',where:'the poorhouse',at:{kind:['town','city']}},when:{short:'grain'},cool:20,
     text:'The poorhouse of {town} has run out of grain. Bring them some.',
     steps:{start:{goal:'deliver',to:{town:'{town}',lot:'house'},give:{grain:10},title:'Bread for the poorhouse',note:'Bring 10 grain to the poorhouse in {town}.',say:'The sisters bless you.',days:12,reward:{gold:40,rep:4}}}},
   // (a lord's: carry his word to another holding of his realm)

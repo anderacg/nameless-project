@@ -75,7 +75,7 @@ Kit.suite(({ok})=>{
  ok(P.quests.length===6&&t.Quest.jobs()===6&&(()=>{try{t.QUEST_MAX;return false}catch(e){return true}})(),'no cap: six jobs held at once (QUEST_MAX is gone)');
  P.jobs={};near(ash);t.updateWorld(.01);t.act('tab','jobs');
  ok(/you hold 6 jobs/.test(Kit.text())&&!/\d+ \/ 4/.test(Kit.text())&&Kit.qa('[data-act="q-accept"]').length===2&&Kit.qa('[data-act="q-accept"]').every(b=>!b.disabled),'the board: a plain count, two offers, none greyed');
- ok(Kit.qa('.row .qfacts').length===2&&/Given by/.test(Kit.text())&&/Turn in/.test(Kit.text())&&/(No time limit|Best by day \d+ \(\d+ days? left\); later pays less)/.test(Kit.text()),'each offer shows who gives it, its timing and where it is turned in, before you accept');
+ ok(Kit.qa('.nb .nb-note').length>=2&&Kit.qa('.nb-note .nb-ask').every(e=>/^Ask (for .+ at |at the lord’s hall)/.test(e.textContent))&&/Turn in at/.test(Kit.text())&&/(No time limit|Best by day \d+ \(\d+ days? left\); later pays less)/.test(Kit.text()),'each offer a paper pinned on the board: who posted it and where to find them, its timing and where it is turned in, before you accept');
  t.act('leave');done();
  // no fail by time: a bounty, a hunt and reinforcements have no timing; forty days on they are still yours
  world();P.quests=[];const d0=G.day,untimed=['bounty','hunt','troops'].map(k=>{const q=t.makeQuest(k,ash);t.acceptQuest(q);return q});
@@ -128,11 +128,11 @@ Kit.suite(({ok})=>{
   const qf=t.makeQuest('hunt',ash);t.acceptQuest(qf);qf.fail('Gone.');ok(lastArch().k==='q'+qf.id&&lastArch().state==='failed'&&/reputation in Ashford −\d+/.test(lastArch().got),'failed: its cost kept ('+lastArch().got+')')}
  // ---- a board's locked offer: greyed, with what it requires; its Accept off, refused; then available
  {P.level=1;const qt=t.makeQuest('troops',ash),qb=t.makeQuest('bounty',ash);P.jobs={Ashford:{day:G.day,list:[qb,qt]}};
-  near(ash);t.updateWorld(.01);t.act('tab','jobs');const rows=Kit.qa('.row').filter(r=>r.querySelector('[data-act="q-accept"]')),lk=rows.find(r=>r.classList.contains('locked'));
-  ok(rows.length===2&&lk&&lk.querySelector('[data-act="q-accept"]').disabled&&/Locked/.test(lk.textContent)&&/Requires/.test(lk.textContent)&&/level 3 \(yours: 1\)/.test(lk.textContent)&&!rows[0].classList.contains('locked'),'the board: the locked offer shown greyed, "Requires level 3 (yours: 1)", its Accept off');
+  near(ash);t.updateWorld(.01);t.act('tab','jobs');const rows=Kit.qa('.nb-note').filter(r=>r.querySelector('[data-act="q-accept"]')),lk=rows.find(r=>r.classList.contains('locked'));
+  ok(rows.length===2&&lk&&lk.querySelector('[data-act="q-accept"]').disabled&&/Requires/.test(lk.querySelector('.nb-stamp')?.textContent||'')&&/level 3 \(yours: 1\)/.test(lk.textContent)&&!rows[0].classList.contains('locked'),'the board: the locked offer shown greyed, "Requires level 3 (yours: 1)", its Accept off');
   t.act('q-accept','1');ok(!P.quests.length&&t.jobsAt(ash).length===2,'and refused when asked');
   P.level=3;t.act('tab','jobs');ok(!Kit.qa('.row.locked').length&&Kit.qa('[data-act="q-accept"]').every(b=>!b.disabled),'level 3: available, nothing greyed');
-  const st=window.standingAt;window.standingAt=()=>-20;try{t.act('tab','jobs');ok(Kit.qa('.row.locked').length===2&&/standing −10 at Ashford \(yours: −20\)/.test(Kit.text()),'standing under −10 at Ashford: every offer there locked, so it says')}finally{window.standingAt=st}
+  const st=window.standingAt;window.standingAt=()=>-20;try{t.act('tab','jobs');ok(Kit.qa('.nb-note.locked').length===2&&/standing −10 at Ashford \(yours: −20\)/.test(Kit.text()),'standing under −10 at Ashford: every offer there locked, so it says')}finally{window.standingAt=st}
   t.act('leave');done()}
  // ---- abandoning a holding's job: its cost by its size, and no work from it for three days (the board says so), saved
  {world();P.quests=[];const q=t.makeQuest('bounty',ash);t.acceptQuest(q);const K=t.QUEST_ABANDON,n=Math.min(K.max,Math.max(K.min,Math.round(K.rep*q.reward.rep+q.reward.gold/K.gold))),r0=t.repAt('Ashford');
@@ -141,7 +141,7 @@ Kit.suite(({ok})=>{
   Kit.q('.qw-ask [data-act="q-abandon"]').click();t.act('quests-close');
   ok(!P.quests.length&&t.repAt('Ashford')===r0-n&&P.shut.Ashford.until===G.day+K.shut&&P.shut.Ashford.what===q.title&&lastArch().state==='abandoned'&&lastArch().got==='reputation in Ashford −'+n,'given up: −'+n+' reputation at Ashford (its reward '+q.reward.gold+' gold, +'+q.reward.rep+'), no work there till day '+P.shut.Ashford.until+', archived abandoned');
   near(ash);t.updateWorld(.01);t.act('tab','jobs');
-  ok(new RegExp('No work for you here until day '+(G.day+3)+' \\(you gave up their '+q.title+'\\)').test(Kit.text())&&Kit.qa('.row.locked').length===t.jobsAt(ash).length&&Kit.qa('[data-act="q-accept"]').every(b=>b.disabled),'the board: "No work for you here until day '+(G.day+3)+' (you gave up their …)", its offers greyed');
+  ok(new RegExp('No work for you here until day '+(G.day+3)+' \\(you gave up their '+q.title+'\\)').test(Kit.text())&&Kit.qa('.nb-note.locked').length===t.jobsAt(ash).length&&Kit.qa('[data-act="q-accept"]').every(b=>b.disabled),'the board: "No work for you here until day '+(G.day+3)+' (you gave up their …)", its offers greyed');
   t.act('q-accept','0');ok(!P.quests.length,'and none taken');t.act('leave');done();
   t.saveGame();P.shut=null;t.act('load');ok(P.shut&&P.shut.Ashford&&P.shut.Ashford.until===G.day+3,'saved and loaded');
   G.day+=3;t.questDay();near(ash);t.updateWorld(.01);t.act('tab','jobs');ok(!('shut' in P)&&!/No work for you here/.test(Kit.text())&&!Kit.qa('.row.locked').length,'three days on: work again, the field gone');t.act('leave');done()}
