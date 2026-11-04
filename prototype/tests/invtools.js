@@ -38,6 +38,18 @@ Kit.suite(({ok})=>{
  {const vis=!!q('.slot[data-arg="eq:weapon"]').offsetParent,b=vis?q('.slot[data-arg="eq:weapon"]'):qa('.invgrid .slot:not(.empty)')[0],e=qa('.invgrid .slot.empty')[0],from=b.dataset.arg,to=+e.dataset.arg;b.scrollIntoView({block:'nearest'});e.scrollIntoView({block:'nearest'});const r=b.getBoundingClientRect(),s=e.getBoundingClientRect(),D=t.SlotDrag,was=vis?null:P.inv[+from];
   D.arm(b,r.left+5,r.top+5,true);ok(!D.on,'a finger on it: not yet (a swipe still scrolls)');D.move(r.left+6,r.top+6);D.start(r.left+6,r.top+6);D.move(s.left+10,s.top+10);D.drop();
   ok(vis?!P.gear.weapon||P.gear.weapon!==wp[1]:P.inv[to]===was&&!P.inv[+from],vis?'held, then onto the bag: taken off ('+(P.gear.weapon||'nothing worn')+')':'held, then onto another bag slot: moved')}
+ // ======== a right click: quick actions
+ {t.act('inv-view','bag');const i=P.inv.findIndex(x=>x&&x.k==='gear'),b=q('.slot[data-arg="'+i+'"]'),r=b.getBoundingClientRect(),id=P.inv[i].id;
+  b.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,clientX:r.left+5,clientY:r.top+5}));const m=document.querySelector('.slot-menu'),labels=m?[...m.querySelectorAll('button')].map(x=>x.textContent):[];
+  ok(m&&labels.some(l=>/^(Equip|Swap)$/.test(l))&&labels.includes('Drop')&&labels.includes('Sort bag'),'a right click on a piece: its quick actions ('+labels.join(', ')+')');
+  window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true}));ok(!document.querySelector('.slot-menu')&&G.mode==='inv','Esc closes it, the inventory still open');
+  b.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,clientX:r.left+5,clientY:r.top+5}));[...document.querySelectorAll('.slot-menu button')].find(x=>/^(Equip|Swap)$/.test(x.textContent)).click();
+  ok(P.gear.weapon===id&&!document.querySelector('.slot-menu'),'Equip on it: worn');
+  const e=q('.slot[data-arg="eq:weapon"]');if(e&&e.offsetParent){const s=e.getBoundingClientRect();e.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,clientX:s.left+5,clientY:s.top+5}));
+   const u=[...document.querySelectorAll('.slot-menu button')].find(x=>x.textContent==='Unequip');ok(!!u,'on a worn piece: Unequip');u.click();ok(P.gear.weapon!==id,'taken off')}
+  const g=P.inv.findIndex(x=>x&&x.k==='mat'),c=q('.slot[data-arg="'+g+'"]'),cr=c.getBoundingClientRect(),n0=P.inv[g]&&P.inv[g].n;c.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,clientX:cr.left+5,clientY:cr.top+5}));
+  [...document.querySelectorAll('.slot-menu button')].find(x=>x.textContent==='Drop').click();const again=[...document.querySelectorAll('.slot-menu button')].find(x=>x.textContent==='Drop for good?');ok(again&&P.inv[g]&&P.inv[g].n===n0,'Drop asks once more on the menu');
+  again.click();ok(!P.inv[g]&&!document.querySelector('.slot-menu'),'and drops it')}
  // ======== the market's search
  {t.act('inv-close');const ash=t.townBy('Ashford');Kit.goHome(ash);t.enterTown(ash);t.act('tab','trade');type('trade','grain');const rows=shown('.tr .tr-row');
   ok(rows.length>=1&&rows.every(r=>/grain/i.test(r.textContent))&&shown('.tr-theirs [data-find-head]').length>=1&&shown('.tr-theirs [data-find-head]').length<qa('.tr-theirs [data-find-head]').length,'the market\'s search: both panes, only what matches, the other headings hidden');

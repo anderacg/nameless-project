@@ -1099,6 +1099,10 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 @container ovl (max-height:520px){.panel .fb-shell .fb-inv-views{padding:2px 8px}.panel .fb-shell .fb-inv-views>.btn{min-height:30px;padding:3px 8px}
   .panel .fb-shell .fb-bag-categories>.btn{flex-direction:row;gap:4px;min-height:28px;padding:2px 4px}.panel .fb-shell .fb-bag-find{padding:3px 4px 0}.panel .fb-shell .fb-bag-find .find{min-height:28px}
   .panel .fb-bag-find .find input{padding:3px 0}.panel .fb-shell .fb-bag-footer{padding:2px 6px}.panel .fb-shell .fb-bag-footer .btn{min-height:28px;padding:3px 8px}}
+.slot-menu{position:fixed;z-index:80;min-width:150px;display:flex;flex-direction:column;padding:4px;border:1px solid var(--trim);border-radius:6px;background:#18130d;box-shadow:0 8px 20px rgba(0,0,0,.65)}
+.slot-menu .sm-i{all:unset;box-sizing:border-box;padding:7px 12px;border-radius:4px;font-size:var(--fs-sm);color:var(--fg);cursor:pointer}
+.slot-menu .sm-i:hover:not([disabled]),.slot-menu .sm-i:focus-visible{background:rgba(215,179,107,.18);color:#fff0c7}
+.slot-menu .sm-i[disabled]{color:var(--muted);cursor:default}.slot-menu .sm-i.danger{color:#e89a8a}
 .slot-ghost{position:fixed;z-index:70;width:44px;height:44px;margin:-22px 0 0 -22px;display:flex;align-items:center;justify-content:center;border:2px solid var(--trim-hi);border-radius:6px;background:rgba(24,19,13,.9);box-shadow:0 6px 14px rgba(0,0,0,.6);pointer-events:none}
 .slot.dragging{opacity:.4}.slot.drop-over{outline:2px solid var(--trim-hi);outline-offset:1px}
 /* ---- The trading screen (ui/trade.js): your pack | the bargain | the merchants, side by side; on a narrow window (a phone) the

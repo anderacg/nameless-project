@@ -120,3 +120,40 @@ panel.addEventListener('touchend',e=>{const D=SlotDrag;if(D.on){e.preventDefault
 panel.addEventListener('touchcancel',()=>SlotDrag.end());
 // (the click a drag ends with does nothing)
 panel.addEventListener('click',e=>{if(SlotDrag.ate&&e.target.closest&&e.target.closest('.slot')){e.stopPropagation();e.preventDefault()}},true);
+/* ---------- a right click on a slot (the owner, 2026-11-04: "right click for quick actions like equip"): a small menu by the
+   pointer of what that thing can do there: a piece in the bag Equip (Swap), Off hand, Drop; a worn one Unequip; a letter Read;
+   any other thing Drop where it may be dropped; and Sort the bag. Drop asks once more on the menu itself. Its choices are the
+   inventory's own verbs (inventory.js invAct); greyed ones say why. Closed by a choice, a click elsewhere, Esc or a scroll */
+const SlotMenu={
+  el:null,arm:null,
+  items(k){
+    const eq=String(k).startsWith('eq:'),out=[];
+    if(eq){const key=k.slice(3);if(P.gear[key])out.push(['inv-unequip',key,'Unequip',invFree()?'':'Your bag is full']);return out.concat([['inv-sort',null,'Sort bag','']])}
+    const s=P.inv[+k];if(!s)return [['inv-sort',null,'Sort bag','']];const K=itemKind(s);
+    if(s.k==='gear'){const why=K.verb('equip').why(+k);out.push(['inv-equip',k,P.gear[targetKey(s.id)]?'Swap':'Equip',why||'']);if(K.verb('off').shown(+k))out.push(['inv-off',k,P.gear.offhand?'Swap off hand':'Off hand',K.verb('off').why(+k)||''])}
+    if(s.k==='letter')out.push(['ltr-open',s.id,'Read','']);
+    if(K.verb('drop')&&K.verb('drop').shown(+k))out.push(['inv-drop',k,this.arm===String(k)?'Drop for good?':'Drop','']);
+    return out.concat([['inv-sort',null,'Sort bag','']]);
+  },
+  open(k,x,y){
+    this.close(true);GearCompare.hide();const el=document.createElement('div');el.className='slot-menu';el.setAttribute('role','menu');el.dataset.k=k;
+    el.innerHTML=this.items(k).map(([a,arg,l,why])=>'<button type="button" role="menuitem" class="sm-i'+(a==='inv-drop'?' danger':'')+'" data-sm="'+a+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+htmlText(why)+'"':'')+'>'+l+'</button>').join('');
+    el.addEventListener('click',e=>{const b=e.target.closest('[data-sm]');if(!b||b.disabled)return;e.stopPropagation();this.choose(b.dataset.sm,b.dataset.arg)});
+    document.body.appendChild(el);this.el=el;const w=el.offsetWidth,h=el.offsetHeight;el.style.left=Math.max(4,Math.min(x,innerWidth-w-4))+'px';el.style.top=Math.max(4,Math.min(y,innerHeight-h-4))+'px';
+    const f=el.querySelector('button:not([disabled])');if(f)f.focus({preventScroll:true});
+  },
+  choose(a,arg){
+    const k=this.el&&this.el.dataset.k;
+    if(a==='inv-drop'&&this.arm!==String(k)){this.arm=String(k);const r=this.el.getBoundingClientRect();this.open(k,r.left,r.top);return}
+    this.close();
+    if(a==='inv-drop'){G.invArm=+k;invAct('inv-drop',String(k));return}
+    if(a==='ltr-open'){act('ltr-open',arg);return}
+    invAct(a,arg);
+  },
+  close(keep){if(this.el)this.el.remove();this.el=null;if(!keep)this.arm=null},
+  esc(){return this.el?this.el:null},
+};
+panel.addEventListener('contextmenu',e=>{const b=e.target.closest&&e.target.closest('.fb-inv .slot[data-arg]');if(!b||G.mode!=='inv')return;e.preventDefault();SlotMenu.open(b.dataset.arg,e.clientX,e.clientY)});
+addEventListener('mousedown',e=>{if(SlotMenu.el&&!SlotMenu.el.contains(e.target))SlotMenu.close()},true);
+addEventListener('wheel',()=>SlotMenu.close(),{passive:true});
+addEventListener('keydown',e=>{if(e.key==="Escape"&&SlotMenu.el){e.stopImmediatePropagation();e.preventDefault();SlotMenu.close()}},true);
