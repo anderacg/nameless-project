@@ -223,11 +223,12 @@ function lordThink(l){
   l.state='patrol';l.tgt=own[rint(0,own.length-1)].name;
 }
 // you beat a lord's army: a bounty from your employer, a broken siege, and honor with his enemies (from ON_WIN)
-function lordWon(l,res){
+// (take: he is yours to ransom; not (your army all down: resolution.js armyDown), he gets away and rides home to raise another)
+function lordWon(l,res,take=true){
   let txt='';worldEmit('lord:routed',{lord:l});if(l.state==='siege'&&townBy(l.tgt))worldEmit('siege:broken',{town:townBy(l.tgt),lord:l});// (the bus: news.js)
   if(P.fac&&atWar(P.fac,l.fac)){res.gold+=40;P.renown+=5;txt+=' Your employer adds a 40 gold bounty.'}
   if(l.state==='siege'){const st=townBy(l.tgt);if(st&&!hostileTo(st.owner)){addRep(st.name,10,true);if(st.owner!=='player')addHonor(st.owner,8,true);lordsInside(st).forEach(o=>changeRel(o,RELATION.breakSiege,'you broke the siege of '+st.name));txt+=' You break the siege of '+st.name+'. Its people cheer you in.'}}
-  rippleRel(l,RELATION.beatThem,'you beat them in battle');worldEmit('lord:beaten',{lord:l});captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom '+pr(l).him+' or let '+pr(l).him+' go (Hero, Party).';
+  rippleRel(l,RELATION.beatThem,'you beat them in battle');worldEmit('lord:beaten',{lord:l});if(take){captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom '+pr(l).him+' or let '+pr(l).him+' go (Hero, Party).'}else{defeatLord(l);txt+=getsAway(l.name)}
   FIDS.filter(f=>atWar(f,l.fac)).forEach(f=>addHonor(f,5));addHonor(l.fac,-10);
   return txt;
 }

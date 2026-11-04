@@ -709,6 +709,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .battle-report thead th{font-size:12px;color:var(--muted);white-space:nowrap}
 .battle-report small{display:block;font-size:12px;font-weight:normal;color:var(--muted)}
 .battle-report .army-report{margin-bottom:6px}.army-report tr.mine th:first-child{color:#cfe0ff}
+.army-report .army-score{color:var(--fg-2)}.army-report .army-score b{color:var(--accent)}
 .army-report .army-flag{display:inline-block;width:14px;height:14px;margin-right:6px;border-radius:2px;vertical-align:-2px;font-size:10px;line-height:14px;text-align:center;color:#111}
 .battle-report .battle-rewards{font-size:var(--fs-base);margin:4px 0 14px}.battle-rewards b{color:var(--fg)}
 @media(max-height:500px){.battle-report .army-report th,.battle-report .army-report td{padding:5px 6px}}

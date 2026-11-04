@@ -140,15 +140,15 @@ class BattleSides{
   const e=this.enc,credit=this.records.find(r=>r.owner===P),kills=credit?.kills||[],saved=heal(lost,groups);for(const g of groups)if(g.count)partyRoster(P).remove(g.type,g.count,g.id);
   // (the owner, 2026-10-30: won, "the split shared based on army performance"; lost or withdrawn, "no reward beside exp": only the
   // experience your army earned, its kills', BATTLE_SPOILS.lostXp of them)
-  const sh=b.win?this.shares():null,mine=sh?.get(credit)||0,spoils=sh?[...sh.keys()].flatMap(r=>r.kills):[];gainXp(kills.length*(b.win?8:BATTLE_SPOILS.lostXp));
-  if(b.win){let gold=0;for(const k of spoils)if(!ST[k].beast)gold+=rint(2,6);gold=Math.round(gold*mine*(1+tm('loot')));P.gold+=gold;P.renown+=Math.round(spoils.length*mine);takePrisoners(spoils.slice(0,Math.round(spoils.length*mine)));
+  const down=noneTake(b,e),sh=b.win?this.shares():null,mine=sh?.get(credit)||0,spoils=sh?[...sh.keys()].flatMap(r=>r.kills):[];gainXp(kills.length*(b.win?8:BATTLE_SPOILS.lostXp));
+  if(b.win){let gold=0;for(const k of spoils)if(!ST[k].beast)gold+=rint(2,6);gold=Math.round(gold*mine*(1+tm('loot')));P.gold+=gold;P.renown+=Math.round(spoils.length*mine);if(!down)takePrisoners(spoils.slice(0,Math.round(spoils.length*mine)));
    for(const r of this.records)if(r.owner.mapKind==='monster'&&r.playerKills.length)monsterLoot(r.owner,r.playerKills)}
   if(b.win)for(const r of this.records){if(r.owner===P||!r.joined||this.survivors(r).length||!r.playerKills.length)continue;const o=r.owner;
-   if(o.mapKind==='lord'&&r.playerLeader){spoilsWon({kind:'lord',ref:o});const res={gold:0,fame:0};lordWon(o,res);P.gold+=res.gold||0;r.handled=true}
+   if(o.mapKind==='lord'&&r.playerLeader){spoilsWon({kind:'lord',ref:o});const res={gold:0,fame:0};lordWon(o,res,!down);P.gold+=res.gold||0;r.handled=true}
    else if(o.mapKind==='caravan'&&r.playerKills.length>=r.start/2){if(e.kind==='caravan'&&o===e.ref&&e.seize)o.seize();else o.loot();r.handled=true}
-   else if(o.mapKind==='band'&&o.ld&&r.playerLeader){spoilsWon({kind:'party',ref:o});captureChief(o.ld);o.ld=null}
+   else if(o.mapKind==='band'&&o.ld&&r.playerLeader){spoilsWon({kind:'party',ref:o});if(down)chiefEscapes(o.ld);else captureChief(o.ld);o.ld=null}
   }
-  this.continueFight();let heading=b.win?'Victory':b.retreat?'Withdrawn':'Defeat',detail=(b.byAllies?'Your army fell, but '+(b.units.some(u=>u.team!==0&&u.hp>0&&this.relation(0,u.team)>0)?'your allies':'the others')+' held the field. ':'')+'Your army defeated '+kills.length+' foes. '+(b.win?'The spoils are shared by each army’s part in the fight: yours '+Math.round(mine*100)+'%.':'You keep only what your men learned.');
+  this.continueFight();let heading=b.win?'Victory':b.retreat?'Withdrawn':'Defeat',detail=(b.byAllies?'Your army fell, but '+(b.units.some(u=>u.team!==0&&u.hp>0&&this.relation(0,u.team)>0)?'your allies':'the others')+' held the field. ':'')+'Your army defeated '+kills.length+' foes. '+(b.win?'The spoils are shared by each army’s part in the fight: yours '+Math.round(mine*100)+'%.'+(down&&spoils.length?NONE_TAKEN:''):'You keep only what your men learned.');
   if(b.win){this.thanks();
    // (as a battle of two gives (resolution.js conclude, engage.js reinfAfter): the holding near the fight thinks better of you, and a
    // common enemy cleared on a realm's land with its men beside you, that realm more)

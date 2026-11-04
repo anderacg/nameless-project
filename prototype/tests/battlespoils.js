@@ -5,10 +5,10 @@
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,W=t.W,rnd=Math.random;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;
  const town=t.TOWNS.find(h=>h.owner&&h.owner!=='player'),fac=town.owner;
- const fight=()=>{Kit.world();P.hostile={};P.fac=null;Kit.goTo(town.x,town.y);t.Captivity.held=null;t.Captivity.scattered=[];P.prisoners={};
+ const fight=(act=true)=>{Kit.world();P.hostile={};P.fac=null;Kit.goTo(town.x,town.y);t.Captivity.held=null;t.Captivity.scattered=[];P.prisoners={};
   const guard=t.asParty({pt:true,home:town.name,fac,x:P.x+16,y:P.y,troops:Array(12).fill('hum_foot'),cool:0}),band=t.asParty({kind:'bandits',x:P.x+20,y:P.y,troops:Array(8).fill('militia')});
   const e={kind:'party',ref:band,list:band.troops.slice(),allies:[],foes:[],mine:true};G.enc=e;W.lords=[];W.patrols=[guard];W.monsters=[];t.bandits.length=0;t.bandits.push(band);P.troops={hum_foot:3};
-  t.startBattle({enemies:e.list,tournament:false});const b=t.B;for(let i=0;i<40&&!b.units.some(u=>u.sourceArmy?.src===guard||u.sourceArmy===guard);i++)b.world.reinforce(.5);b.sides.activate();
+  t.startBattle({enemies:e.list,tournament:false});const b=t.B;for(let i=0;i<40&&!b.units.some(u=>u.sourceArmy?.src===guard||u.sourceArmy===guard);i++)b.world.reinforce(.5);if(act)b.sides.activate();
   const S=b.sides,me=S.records.find(r=>r.owner===P),watch=S.byOwner.get(guard),foe=S.records.find(r=>r.owner===band);return {b,S,me,watch,foe}};
  const tally=()=>({gold:P.gold,renown:P.renown,xp:t.ArmyReport.tally().xp,pr:t.prisonerCount()});
  try{
@@ -21,7 +21,16 @@ Kit.suite(({ok})=>{
   // ======== your army fell, your allies won: your share for your part before you fell
   {const {b,S,me,watch}=fight();me.damage=20;watch.damage=80;me.kills=['militia'];watch.kills=Array(7).fill('militia');for(const u of b.units)if(u.team===0)u.hp=0;
    for(const u of b.units)if(t.battleEnemy(0,u))u.hp=0;t.checkBattleOver();ok(b.over&&b.win&&b.byAllies,'(your army down, the watch beats the bandits)');const a=tally();t.finishBattle();const z=tally();
-   ok(z.gold>a.gold&&/yours 20%/.test(document.getElementById('panel').innerHTML),'won by your allies: still your share for your part before you fell (20%, +'+(z.gold-a.gold)+' gold)');t.act('cont');t.hidePanel()}
+   const pn=document.getElementById('panel').innerHTML;ok(z.gold>a.gold&&/yours 20%/.test(pn),'won by your allies: still your share for your part before you fell (20%, +'+(z.gold-a.gold)+' gold)');
+   ok(z.pr===0&&!t.captives().some(c=>c.k==='chief')&&/no prisoners are taken/.test(pn),'your army all down: no prisoners, no chieftain taken (the owner, 2026-11-04), and the report says so');
+   const sc=[...document.querySelectorAll('#panel .army-score')].map(x=>x.textContent);ok(sc.length>=2&&/Score 20 · 20% of the spoils/.test(sc[0])&&sc.some(x=>/Score 80 · 80% of the spoils/.test(x))&&/the harm each army did its foes/.test(pn),'each army\'s performance score on the report, and its share: '+sc.join(' | '));t.act('cont');t.hidePanel()}
+  // ======== the same, settled as a battle of two (its sides never set loose: resolution.js conclude, as the owner's screenshot)
+  {const {b,me,watch}=fight(false);me.damage=20;watch.damage=80;for(const u of b.units)if(u.team===0&&(u.hero||u.sourceArmy===P))u.hp=0;for(const u of b.units)if(t.battleEnemy(0,u))u.hp=0;b.slain=Array(6).fill('militia');b.kills=6;t.checkBattleOver();
+   const ld=G.enc.ref.ld=t.newChief('bandits',2),a=tally();ok(b.over&&b.win&&!b.sides.active&&t.armyDown(b),'(a battle of two, your army down, the watch beside you wins it)');t.finishBattle();const z=tally(),pn=document.getElementById('panel').innerHTML;
+   ok(z.pr===0&&!t.captives().some(c=>c.k==='chief')&&/no prisoners are taken/.test(pn)&&(!ld||new RegExp('gets away').test(pn)),'there too: no prisoners, '+(ld?'its chieftain gets away':'no chieftain'));t.act('cont');t.hidePanel()}
+  // ======== a man of yours still standing: prisoners as ever
+  {const {b}=fight(false);for(const u of b.units)if(t.battleEnemy(0,u))u.hp=0;b.slain=Array(6).fill('militia');b.kills=6;t.checkBattleOver();ok(!t.armyDown(b),'(your army still standing)');window.Math.random=()=>.5;try{t.finishBattle()}finally{window.Math.random=rnd}
+   ok(t.prisonerCount()>0||t.captives().some(c=>c.k==='chief'),'still standing: you take prisoners as ever ('+t.prisonerCount()+')');t.act('cont');t.hidePanel()}
   // ======== lost: the experience only
   {const {b,me,watch}=fight();me.damage=30;me.kills=Array(3).fill('militia');for(const u of b.units)if(u.team===0||u.team===watch.team)u.hp=0;t.checkBattleOver();ok(b.over&&!b.win,'(you and the watch beaten)');
    const a=tally();window.Math.random=()=>.99;try{t.finishBattle()}finally{window.Math.random=rnd}const z=tally(),pn=document.getElementById('panel').innerHTML;

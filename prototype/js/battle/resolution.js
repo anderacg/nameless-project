@@ -8,6 +8,15 @@ function heal(lost,groups){
   for(const row of rows){const k=row.type,n=row.count;total+=n;for(let i=n;i>0;i--){if(Math.random()<ch){lost[k]--;row.count--;saved++;row.saved=(row.saved||0)+1}else if(ST[k]&&!ST[k].beast&&Math.random()<wc){P.wounded[k]=(P.wounded[k]||0)+1;hurt++;row.wounded=(row.wounded||0)+1;if(row.id){const wg=P.woundedGroups||(P.woundedGroups=[]),g=wg.find(g=>g.id===row.id&&g.type===k);if(g)g.count++;else wg.push({id:row.id,type:k,count:1})}}}}
   train('med',total*2);if(hurt)log(hurt+' of your fallen live, wounded: they ride with the band until they heal.','gold','war');return saved;
 }
+// (your army all down at its end: your hero and every man of yours fallen, none standing nor withdrawn alive; the owner,
+// 2026-11-04: "if your army is all downed I think you should not take a prisoner", unless a quest asks for one taken (a quest's
+// takesAlive(e); none does yet). No prisoners, no captive: a chieftain or a lord gets away. The spoils, experience and renown
+// are shared by each army's part as ever)
+function armyDown(b){return !!b&&!b.units.some(u=>u.team===0&&(u.hero||u.sourceArmy===P)&&u.hp>0)}
+const takesAlive=e=>P.quests.some(q=>Quest.as(q).takesAlive?.(e));
+const noneTake=(b,e)=>armyDown(b)&&!takesAlive(e);
+const NONE_TAKEN=' With none of your army left standing, no prisoners are taken.';
+const getsAway=n=>' '+cap1(n)+' gets away while your men lie on the field.';
 function takePrisoners(slain){
   let n=0;const pool=slain.filter(k=>ST[k].tier<4&&!ST[k].beast),want=Math.round(pool.length*.35);
   while(n<want&&pool.length&&prisonerCount()<prisonCap()){const k=pool.splice(rint(0,pool.length-1),1)[0];P.prisoners[k]=(P.prisoners[k]||0)+1;n++}
@@ -34,11 +43,13 @@ function battleMood(base,why){
    battle gave (or took), from the campaign as it was (mark) to as it is (since) */
 class ArmyReport{
  constructor(b){this.armies=ArmyReport.armies(b);this.mark=ArmyReport.tally()}
- static row(name,stance,colour,us,kills){return {name,stance,colour,start:us.length,fallen:us.filter(u=>u.hp<=0&&!u.left).length,withdrew:us.filter(u=>u.left&&!u.rout).length,
+ // (score: its performance, the harm it did its foes (sides.js damage); share: won, its part of the spoils by it (shares); none
+ // where the field kept no sides)
+ static row(name,stance,colour,us,kills,score=null,share=null){return {name,stance,colour,score,share,start:us.length,fallen:us.filter(u=>u.hp<=0&&!u.left).length,withdrew:us.filter(u=>u.left&&!u.rout).length,
   fled:us.filter(u=>u.rout&&(u.hp>0||u.left)).length,standing:us.filter(u=>u.hp>0&&!u.left&&!u.rout).length,kills}}
  static armies(b){const S=b.sides,fought=u=>!u.waiting,row=ArmyReport.row;
-  if(S){const me=S.records.find(r=>r.owner===P),stance=r=>r===me?'Your army':S.pair(me,r)>0?'Ally':S.pair(me,r)<0?'Hostile':'Neutral';
-   return S.records.filter(r=>r.joined).sort((x,y)=>(y===me)-(x===me)).map(r=>row(r===me?bandName():S.label(r),stance(r),S.colour(r.team),b.units.filter(u=>r.groups.includes(u.grp)&&fought(u)),r.kills.length))}
+  if(S){const me=S.records.find(r=>r.owner===P),stance=r=>r===me?'Your army':S.pair(me,r)>0?'Ally':S.pair(me,r)<0?'Hostile':'Neutral',sh=b.win&&me?S.shares():null;
+   return S.records.filter(r=>r.joined).sort((x,y)=>(y===me)-(x===me)).map(r=>row(r===me?bandName():S.label(r),stance(r),S.colour(r.team),b.units.filter(u=>r.groups.includes(u.grp)&&fought(u)),r.kills.length,Math.round(r.damage),sh&&sh.has(r)?sh.get(r):null))}
   const mine=b.units.filter(u=>u.team===0&&fought(u)&&!(u.grp&&b.groups[u.grp]?.ally)),allies=b.units.filter(u=>u.team===0&&fought(u)&&u.grp&&b.groups[u.grp]?.ally),foes=b.units.filter(u=>u.team!==0&&fought(u));
   return [row(bandName(),'Your army',SIDE.own.ui,mine,b.kills||0),...(allies.length?[row('Allies','Ally',SIDE.ally.ui,allies,0)]:[]),row('Enemy','Hostile',SIDE.foe.ui,foes,b.units.filter(u=>u.team===0&&fought(u)&&u.hp<=0&&!u.left).length)]}
  // (your hero's experience all told: every level's and the present one's, so a level gained in between counts whole)
@@ -100,10 +111,10 @@ class BattleResolution{
       if(big)res.gold+=25;if(auto)res.gold=Math.floor(res.gold*.8);res.gold=Math.round(res.gold*(1+tm('loot')));
       P.renown+=Math.ceil(kills*(big?1.5:1)*reinfRenown(e));const moodLine=battleMood(4,'victory');gainXp(kills*8+(big?30:0));
       if(troopCount()>0)train('lead',3+kills*.5);train('tact',auto?6:2);
-      const taken=takePrisoners(slain),drop=O.drop&&O.drop();
+      const down=noneTake(this.battle,e),taken=down?0:takePrisoners(slain),drop=O.drop&&O.drop();res.down=down;if(down&&slain.some(k=>!ST[k].beast))bounty+=NONE_TAKEN;
       if(drop&&!invAdd('gear',drop,1))log(BAG_FULL+'. You leave a '+ITEMS[drop].n+' behind.','bad');
       bounty+=spoilsWon(e);// (valuables: a lord's or chieftain's purse, a camp's plunder: captives.js)
-      {const c=(e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld;if(c){captureChief(c);e.ref.ld=null;bounty+=' You take '+chiefLabel(c)+' captive: hand '+pr(c).him+' over for '+bountyOf(c)+' gold, or let '+pr(c).him+' go (Hero, Party).'}}
+      {const c=(e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld;if(c&&down){chiefEscapes(c);e.ref.ld=null;bounty+=getsAway(chiefLabel(c))}else if(c){captureChief(c);e.ref.ld=null;bounty+=' You take '+chiefLabel(c)+' captive: hand '+pr(c).him+' over for '+bountyOf(c)+' gold, or let '+pr(c).him+' go (Hero, Party).'}}
       bounty=(O.won(e,slain,res)||'')+bounty;
       bounty+=reinfCut(e,res,this.battle?.sides);// (the lords and watches beside you take their share of the gold, and of the renown: engage.js)
       P.gold+=res.gold;
