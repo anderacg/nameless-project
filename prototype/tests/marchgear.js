@@ -35,7 +35,9 @@ Kit.suite(({ok,info})=>{
    t.MARCH_LAYOUTS.delete(lord);A.key='';A.sync();ok(flagIds(A)===was,'and when its men are matched to its rows again (MarchArmy sync)')}
   // ---- drawing: each man's pictures, in order (MARCH_FLAGS: the gear's)
   const VW=t.VW,VH=t.VH,cam={x:Math.round(lord.x-VW/2),y:Math.round(lord.y-VH/2)},gear=()=>new Set(t.MARCH_FLAGS.values());
-  const drawn=u=>{const out=[];window.eval('LIGHTQ=[]');t.ctx.drawImage=function(s,...a){out.push(s);return img0.call(this,s,...a)};try{window.drawMarcher(u,lord,cam)}finally{t.ctx.drawImage=img0}return out};
+  // (his weapon, held apart from his body since 2026-11-03 (weapons.js mapHeld), is no gear: left out)
+  const held=u=>t.mapHeld(t.marchLook(u,lord),window.marchSprite(u,lord,undefined,true),u.walking)?.w;
+  const drawn=u=>{const out=[],w=held(u);window.eval('LIGHTQ=[]');t.ctx.drawImage=function(s,...a){if(s!==w)out.push(s);return img0.call(this,s,...a)};try{window.drawMarcher(u,lord,cam)}finally{t.ctx.drawImage=img0}return out};
   const dark=on=>{G.clock=on?t.DAY*.75:t.DAY*.3};
   window.idleLife=()=>({pose:null,dx:0});for(const u of A.units)u.walking=false;dark(false);
   {const R=roles(A),spear=groups(A).find(g=>g[0].type===H.spear),bow=groups(A).find(g=>g[0].type===H.ranged),cav=groups(A).find(g=>g[0].type===H.cav);
@@ -43,7 +45,7 @@ Kit.suite(({ok,info})=>{
    ok(R.get(fs).pole===t.lookOf(H.spear,0,false,0).weapon&&!R.get(fb).pole,'a spearman\'s flag is on his spear ('+R.get(fs).pole+'), a bowman\'s at his back');
    const a=drawn(fs);
    ok(a.length===2&&a[0]===window.marchSprite(fs,lord,undefined,true)&&a[0]!==window.marchSprite(fs,lord)&&gear().has(a[1])&&a[1].R>t.WPN[R.get(fs).pole][0]+4,'the spearman: his body bare, then his longer spear with the flag on it, over him');
-   const b=drawn(fb);ok(b.length===2&&gear().has(b[0])&&b[0].ax!=null&&b[1]===window.marchSprite(fb,lord),'the bowman: the flag on his back first, then his body over it');
+   const b=drawn(fb);ok(b.length===2&&gear().has(b[0])&&b[0].ax!=null&&b[1]===window.marchSprite(fb,lord,undefined,true),'the bowman: the flag on his back first, then his body over it');
    const c=drawn(fc),cp=!!R.get(fc).pole;ok(c.length===2&&(cp?gear().has(c[1])&&c[1].R:gear().has(c[0])&&c[0].ax!=null),'a rider flies one too ('+(cp?'on his lance':'at his back')+')');
    ok(drawn(plain).length===1,'a man with neither: his body alone');
    const s=window.marchSprite(fb,lord);ok(s.free&&s.back&&s.hand&&s.free[0]<s.hand[0]&&s.back[1]<s.free[1],'a marcher\'s figure keeps its free hand and its back by its weapon hand ('+s.free+' / '+s.back+' / '+s.hand+')')}
@@ -57,7 +59,7 @@ Kit.suite(({ok,info})=>{
    dark(true);const night=drawn(u),L=t.LIGHTQ[0],x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y);
    ok(night.length===day.length+1&&gear().has(night[night.length-1])&&t.LIGHTQ.length===1&&Math.abs(L.x-x)<=8&&L.y<y-3&&L.y>y-20,'at night a torch in his hand, drawn over him, its light at its flame over his feet ('+[L?.x-x,L?.y-y]+')');
    const n=A.units.reduce((s,u)=>s+(R.get(u).torch?1:0),0);let lights=0;for(const v of A.units){drawn(v);lights+=t.LIGHTQ.length}ok(lights===n,'every torch is lit, and only those ('+lights+')');
-   const far={x:cam.x+5000,y:cam.y};window.eval('LIGHTQ=[]');let out=0;t.ctx.drawImage=function(){out++};try{for(const v of A.units)window.drawMarcher(v,lord,far)}finally{t.ctx.drawImage=img0}
+   const far={x:cam.x+5000,y:cam.y};window.eval('LIGHTQ=[]');let out=0,w=null;t.ctx.drawImage=function(s){if(s!==w)out++};try{for(const v of A.units){w=held(v);window.drawMarcher(v,lord,far)}}finally{t.ctx.drawImage=img0}
    ok(out===A.units.length&&!t.LIGHTQ.length,'a man off the screen shows no gear')}
   // ---- an army of shields: one torch all the same
   {const B=set(lord,{[H.spear]:15}),R=roles(B),n=B.units.filter(u=>R.get(u).torch).length;
