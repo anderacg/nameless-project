@@ -311,7 +311,8 @@ const WOLF_T=[
    running is too small", "not too square"), a thick neck rising at about 45° from the shoulders (lower and forward at the
    gallop), a maned crest, and one head in every frame: head, a long wedge hung from the poll (two ears pricked forward, the eye
    high, a rounded jowl over a dark jaw, narrowing to a rounded muzzle and its nostril), its top left at poll [x, y from y0] by
-   shape, moved by the frame's head (horseBuild) */
+   shape, moved by the frame's head (horseBuild); its muzzle (the owner, 2026-11-04: "the horse nose is a bit weird") one even
+   front over two rows, the nostril a pixel inside it, the lower lip no further out than the rest: no beak in the outline */
 const HORSE_ART={on:true,tall:true,hoof:'#3d3f4b',
   leg:1,sized:{sink:0,top:-3,headX:32,headY:0,ears:{stand:[-3,-4],run:[-2,-2]},poll:{stand:[23,-3],run:[24,-1]},head:[
     '.yy....',
@@ -319,8 +320,8 @@ const HORSE_ART={on:true,tall:true,hoof:'#3d3f4b',
     'HHkHh..',
     'HHHHh..',
     '.dHHHh.',
-    '...dHk.',
-    '....dHh'],
+    '..dHHkh',
+    '...dHHd'],
   body:{stand:[
     '',
     '',
