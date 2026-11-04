@@ -389,7 +389,7 @@ class BeastQuest extends JobQuest{
     }
     const M=MONSTERS[this.mon];
     this.title='Beasts at the folds: '+M.n.toLowerCase();
-    this.text=cap1(M.n.toLowerCase())+' have been taking livestock outside '+t.name+'. Kill them.';
+    this.text=(this.n>1?cap1(M.n.toLowerCase())+' have':'A '+M.n.toLowerCase()+' has')+' been taking livestock outside '+t.name+'. Kill '+(this.n>1?'them':'it')+'.';
     this.pays(40+M.xp*this.n*.9,8,2,0);
   }
   // (the pack it named, if it is still there; else the one that moved in, at its lair)

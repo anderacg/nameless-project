@@ -10,14 +10,15 @@
    crier's. NOTICE: the kinds' words, the tilts, the parchments' shades, the trades that seal theirs; style.css "The notice
    board" ---------- */
 const NOTICE={kinds:{bounty:'Wanted',clear:'A bounty',beast:'Beware',hunt:'Sought',supply:'Sought',courier:'A rider sought',troops:'Men-at-arms sought',book:'Hear ye'},
-  tilt:[-1.6,1.1,-.5,1.7,-1.1,.6],paper:['#ead9b0','#e2cf9f','#efe0bc'],seal:['captain','steward']};
+  tilt:[-1.6,1.1,-.5,1.7,-1.1,.6],paper:['#d9c49a','#cdb685','#ddca9f'],seal:['captain','steward']};
 const NoticeBoard={
   // (who to see: the giver, by name, trade and place; none: the holding's hall)
   ask(q){
     const g=q.person,G0=g&&GIVERS[g.role];
     return g?'Seek out '+g.name+' the '+g.n+' at '+(G0.where||'the hall')+'.':'Seek out the steward at the hall of '+q.home+'.';
   },
-  look(i,k){return ' style="--tilt:'+NOTICE.tilt[i%NOTICE.tilt.length]+'deg;--paper:'+NOTICE.paper[(i+k.length)%NOTICE.paper.length]+'"'},
+  // (its tilt, its shade and where its stain sits: by its place and kind, no draw)
+  look(i,k){const h=folkHash(k+':'+i);return ' style="--tilt:'+NOTICE.tilt[i%NOTICE.tilt.length]+'deg;--paper:'+NOTICE.paper[(i+k.length)%NOTICE.paper.length]+';--fx:'+(15+h%70)+'%;--fy:'+(20+(h>>>8)%60)+'%"'},
   // (a job's paper; i its place on the board)
   note(q,i){
     q=Quest.as(q);
