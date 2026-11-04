@@ -19,7 +19,10 @@ Kit.suite(({ok})=>{
  // ======== a card by the mouse
  {const i=P.inv.findIndex(x=>x&&x.id===wp[0]),b=q('.slot[data-arg="'+i+'"]'),r=b.getBoundingClientRect();b.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerType:'mouse',clientX:r.left+5,clientY:r.top+5}));
   const tip=document.querySelector('.gc-tip');ok(tip&&!tip.hidden&&tip.textContent.includes(t.ITEMS[wp[0]].n),'the mouse over a piece: its comparison by the pointer');
-  q('.slot[data-arg="'+P.inv.findIndex(x=>x&&x.k==='good')+'"]').dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerType:'mouse'}));ok(tip.hidden,'over grain: none')}
+  q('.slot[data-arg="'+P.inv.findIndex(x=>x&&x.k==='good')+'"]').dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerType:'mouse'}));ok(tip.hidden,'over grain: none');
+  t.SlotDrag.ptr='mouse';t.act('inv-sel',String(i));const r2=q('.slot[data-arg="'+i+'"]').getBoundingClientRect(),tr=tip.getBoundingClientRect();
+  ok(!q('.gc-pop')&&!tip.hidden&&tip.textContent.includes(t.ITEMS[wp[0]].n)&&tr.width<=240&&(Math.abs(tr.left-r2.right)<12||Math.abs(tr.right-r2.left)<12),'a click with a mouse: no popup, a small box ('+Math.round(tr.width)+' px) beside the piece, staying while it is picked');
+  t.act('inv-sel',String(i));ok(tip.hidden,'unpicked: gone')}
  // ======== a popup for a tap
  {const i=P.inv.findIndex(x=>x&&x.id===wp[0]);t.SlotDrag.ptr='touch';t.act('inv-sel',String(i));const pop=q('.gc-pop');
   ok(pop&&/Compare/.test(pop.textContent)&&pop.querySelector('[data-act="gc-equip"]'),'a tap on a piece: the comparison as a popup, Equip on it');

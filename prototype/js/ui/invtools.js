@@ -5,8 +5,9 @@
      (each thing's words in its data-find; a category's heading hidden with all its rows); kept in G.find[key] and put back after
      every redraw (Finder.apply, called by the inventory and the town windows);
    - GearCompare: a piece against what it would replace, side by side: each one's picture, name, rarity and every stat, the
-     difference marked better or worse (html(id)); shown as a card by the pointer over a bag piece (a mouse), and as a popup
-     over the window when a piece is tapped on a touch screen (popup: Equip, Off hand, Close; Esc closes it);
+     difference marked better or worse (html(id)); with a mouse, a small box beside the bag piece the pointer is over, else
+     beside the one picked (no window of its own); on a touch screen, a popup over the window when a piece is tapped (popup:
+     Equip, Off hand, Close; Esc closes it);
    - SlotDrag: dragging a bag slot or a worn one onto another, with a mouse or a finger (a long press, SLOT_DRAG.hold ms, so a
      swipe still scrolls): a ghost of it follows you, the slot under it lit; let go on a slot, the inventory's own move (invMove:
      wear, take off, swap, stack). The click after a drag is swallowed ---------- */
@@ -42,17 +43,26 @@ const GearCompare={
     return '<div class="gc"><div class="gc-head">'+this.card(cur,'Equipped')+'<span class="gc-vs">vs</span>'+this.card(id,'Selected')+'</div>'+
       '<table class="gc-stats"><tbody>'+(rows.length?rows.map(([n,x,y,b])=>'<tr><td>'+x+'</td><th>'+n+'</th><td class="'+(b==null?'':b?'good':'bad')+'">'+y+(b==null?'':b?' ▲':' ▼')+'</td></tr>').join(''):'<tr><td colspan="3" class="muted">No stats to compare.</td></tr>')+'</tbody></table></div>';
   },
-  // ---- a card by the pointer, over a bag piece (a mouse)
+  // ---- a small box beside a bag piece (a mouse: the owner, 2026-11-04: "on PC a small box alongside the weapon, no new window"):
+  // beside the one the pointer is over, else beside the one picked (it stays while it is picked)
   tip:null,
-  hover(e){
-    if(G.mode!=='inv'||e.pointerType==='touch'||SlotDrag.on)return this.hide();
-    const b=e.target.closest&&e.target.closest('.slot[data-arg]'),k=b&&b.dataset.arg,s=k!=null&&!k.startsWith('eq:')&&P.inv[+k];
-    if(!s||s.k!=='gear')return this.hide();
+  at(b,k){
+    const s=P.inv[+k];if(!b||!s||s.k!=='gear')return this.hide();
     if(!this.tip){this.tip=document.createElement('div');this.tip.className='gc-tip';document.body.appendChild(this.tip)}
     if(this.tip.dataset.k!==k){this.tip.innerHTML=this.html(s.id);this.tip.dataset.k=k;fillIcons(this.tip)}
-    const r=b.getBoundingClientRect(),w=this.tip.offsetWidth||240,h=this.tip.offsetHeight||160,x=r.right+8+w>innerWidth?r.left-8-w:r.right+8,y=Math.min(innerHeight-h-6,Math.max(6,r.top-10));
-    this.tip.style.left=Math.max(6,x)+'px';this.tip.style.top=y+'px';this.tip.hidden=false;
+    this.tip.hidden=false;const r=b.getBoundingClientRect(),w=this.tip.offsetWidth,h=this.tip.offsetHeight,x=r.right+6+w>innerWidth?r.left-6-w:r.right+6,y=Math.min(innerHeight-h-6,Math.max(6,r.top));
+    this.tip.style.left=Math.max(6,x)+'px';this.tip.style.top=y+'px';
   },
+  // (the picked one, if it is a bag piece and you use a mouse)
+  pinned(){const k=G.invSel;if(G.mode!=='inv'||SlotDrag.ptr==='touch'||k==null||String(k).startsWith('eq:'))return null;const b=panel.querySelector('.fb-inv .slot[data-arg="'+k+'"]');return b&&b.offsetParent?b:null},
+  hover(e){
+    if(G.mode!=='inv'||e.pointerType==='touch'||SlotDrag.on)return this.hide();
+    const b=e.target.closest&&e.target.closest('.fb-inv .invgrid .slot[data-arg]'),s=b&&P.inv[+b.dataset.arg];
+    if(s&&s.k==='gear')return this.at(b,b.dataset.arg);
+    this.rest();
+  },
+  // (back beside the picked one, or none)
+  rest(){const b=this.pinned();if(b)this.at(b,b.dataset.arg);else this.hide()},
   hide(){if(this.tip){this.tip.hidden=true;this.tip.dataset.k=''}},
   // ---- a popup over the window, for a piece tapped on a touch screen: its comparison and its verbs
   popup(i){
@@ -74,7 +84,7 @@ onAct('gc-',(a,arg)=>{GearCompare.close();if(a==='gc-equip')invAct('inv-equip',a
 panel.addEventListener('pointermove',e=>GearCompare.hover(e));
 // (how you last pressed on the window: a touch opens a piece's comparison as a popup, inventory.js)
 panel.addEventListener('pointerdown',e=>{SlotDrag.ptr=e.pointerType},true);
-panel.addEventListener('pointerleave',()=>GearCompare.hide());
+panel.addEventListener('pointerleave',()=>GearCompare.rest());
 const SlotDrag={
   on:false,ptr:'mouse',src:null,ghost:null,over:null,timer:0,x0:0,y0:0,ate:false,
   slotAt(x,y){const e=document.elementFromPoint(x,y);return e&&e.closest&&e.closest('#panel .fb-inv .slot[data-arg]')},
