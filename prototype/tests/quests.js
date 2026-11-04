@@ -75,7 +75,7 @@ Kit.suite(({ok})=>{
  ok(P.quests.length===6&&t.Quest.jobs()===6&&(()=>{try{t.QUEST_MAX;return false}catch(e){return true}})(),'no cap: six jobs held at once (QUEST_MAX is gone)');
  P.jobs={};near(ash);t.updateWorld(.01);t.act('tab','jobs');
  ok(/you hold 6 jobs/.test(Kit.text())&&!/\d+ \/ 4/.test(Kit.text())&&Kit.qa('[data-act="q-accept"]').length===2&&Kit.qa('[data-act="q-accept"]').every(b=>!b.disabled),'the board: a plain count, two offers, none greyed');
- ok(Kit.qa('.nb .nb-note').length>=2&&Kit.qa('.nb-note .nb-ask').every(e=>/^Ask (for .+ at |at the lord’s hall)/.test(e.textContent))&&/Turn in at/.test(Kit.text())&&/(No time limit|Best by day \d+ \(\d+ days? left\); later pays less)/.test(Kit.text()),'each offer a paper pinned on the board: who posted it and where to find them, its timing and where it is turned in, before you accept');
+ ok(Kit.qa('.nb .nb-note').length>=2&&Kit.qa('.nb-note .nb-ask').every(e=>/^Seek out .+ at /.test(e.textContent))&&/Return to Ashford/.test(Kit.text())&&/(No time limit|Best by day \d+ \(\d+ days? left\); later pays less)/.test(Kit.text()),'each offer a paper pinned on the board: who posted it and where to find them, its timing and where it is turned in, before you accept');
  t.act('leave');done();
  // no fail by time: a bounty, a hunt and reinforcements have no timing; forty days on they are still yours
  world();P.quests=[];const d0=G.day,untimed=['bounty','hunt','troops'].map(k=>{const q=t.makeQuest(k,ash);t.acceptQuest(q);return q});
