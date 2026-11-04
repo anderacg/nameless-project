@@ -56,7 +56,7 @@ Kit.suite(({ok,info})=>{
  t.act('qw-sel','q'+qb.id);
  {const f=facts();ok(q('.qw-detail h3').textContent===qb.title&&/Job/.test(q('.qw-meta').textContent)&&/, the .+ of Ashford$/.test(f['Given by'])&&f.Taken==='Day '+d0&&f.Timing==='No time limit'&&f['Turn in']==='At Ashford'&&/gold/.test(f.Reward),
    'a bounty in full: given by '+f['Given by']+' · taken '+f.Taken+' · '+f.Timing+' · turn in '+f['Turn in']+' · '+f.Reward);
-  ok(/^Bounty: the .+, last seen \d+ tiles [a-z]+; 0 \/ 1 broken/.test(f.Steps)&&/Then report back at Ashford/.test(f.Steps)&&q('.qw-detail [data-act="qw-abandon"]'),'its steps: '+f.Steps+'; a job: Abandon')}
+  ok(/^Bounty: the .+, last seen \d+ tiles [a-z]+(, within \d+ tiles of there \(day \d+\))?; 0 \/ 1 broken/.test(f.Steps)&&/Then report back at Ashford/.test(f.Steps)&&q('.qw-detail [data-act="qw-abandon"]'),'its steps: '+f.Steps+'; a job: Abandon')}
  // a courier: its best-by day, later pays less; paid on arrival
  t.act('qw-sel','q'+qc.id);
  {const f=facts();ok(f.Timing==='Best by day '+qc.due+' ('+qc.days+' days left); later pays less'&&f['Turn in']==='Paid on arrival at '+qc.to&&/Carry the letter to /.test(f.Steps)&&!/report back/.test(f.Steps),'a courier: '+f.Timing+' · '+f['Turn in'])}

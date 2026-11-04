@@ -40,6 +40,61 @@ class JobQuest extends Quest{
     const g=this.person;
     return g?Givers.label(g):super.givenBy();
   }
+  /* ---- a lead (doc/QUESTS_DESIGN.md §6, Q4): a kind whose quarry moves (leads) is not pinned till you have found it. Taken, you
+     know where it was then (lead {x, y, day, r}); the circle grows LEAD.grow tiles a day (to LEAD.max) as the word ages. It is
+     sharpened by the talk at a holding within LEAD.ask tiles of it (hear: where it is now), and by your tracking inside the
+     circle (an hour's check, QUEST_CHECKS.track: its tracks, a tight circle where it is); found once you see it (its own sight
+     rule, inView), then followed as before. Plain fields, saved with it */
+  get leads(){
+    return false;
+  }
+  target(){
+    return null;
+  }
+  markLead(o,r){
+    this.lead={x:Math.round(o.x),y:Math.round(o.y),day:G.day,r:r??LEAD.r};
+  }
+  leadR(){
+    const L=this.lead;
+    return L?Math.min(LEAD.max,L.r+LEAD.grow*Math.max(0,G.day-L.day)):0;
+  }
+  // (where to look: the lead's circle, {x, y, r tiles}; found, seen or none: null)
+  spot(){
+    if(!this.leads||this.found||!this.lead)return null;
+    const o=this.target();
+    if(o&&!o.gone&&o.inView&&o.inView(vis())){
+      this.found=true;
+      log('You have found '+this.quarryName()+'.','gold','story',this.journalKey);
+      return null;
+    }
+    this.track(o);
+    return {x:this.lead.x,y:this.lead.y,r:this.leadR()};
+  }
+  quarryName(){
+    return 'them';
+  }
+  track(o){
+    if(!o||o.gone)return;
+    const h=Math.floor(Clock.hours()),L=this.lead;
+    if(this.trk===h||Math.hypot(P.x-L.x,P.y-L.y)>this.leadR()*TILE)return;
+    this.trk=h;
+    const k='chk:track';
+    ENC_STAT[k]=ENC_STAT[k]||QUEST_CHECKS.track;
+    if(!questRng().chance(statOdds(k)))return;
+    this.markLead(o,LEAD.r/2);
+    log('You find the tracks of '+this.quarryName()+': fresh, and close.','gold','story',this.journalKey);
+  }
+  // (at a holding: what they say there of it, if it is near)
+  hear(t){
+    if(!this.leads||this.found||this.done)return;
+    const o=this.target();
+    if(!o||o.gone||qTiles(o,t)>LEAD.ask)return;
+    this.markLead(o);
+    log('In '+t.name+' they say '+this.quarryName()+' were seen '+Math.round(qTiles(o,t))+' tiles '+compass(o.x-t.x,o.y-t.y)+' of here.','gold','story',this.journalKey);
+  }
+  where(g){
+    return g&&g.r?'last seen '+questWay(g)+', within '+Math.round(g.r)+' tiles of there (day '+this.lead.day+')':questWay(g);
+  }
   // (the true thing it is about, in a line: troubles.js, news.js)
   causeLine(){
     return this.cause||'';
@@ -122,9 +177,6 @@ class JobQuest extends Quest{
   aim(){
     return this.title;
   }
-  where(g){
-    return questWay(g);
-  }
   tally(){
     return this.handsOver?this.progress():(this.done?1:0)+' / 1 '+this.deedWord;
   }
@@ -160,6 +212,8 @@ class JobQuest extends Quest{
 // one marked once taken; none there, a band out of the nearest hideout or camp takes to its roads (as the world's bands come
 // out of theirs), working them (haunt); no hideout near either, no bounty. Done when you break it (in a fight, or it gives up)
 const BOUNTY={haunt:[5,12],near:3};
+// a lead's circle: r tiles when fresh, growing grow tiles a day to max; ask: tiles from a holding its talk knows of the quarry
+const LEAD={r:4,grow:1.5,max:14,ask:25};
 const causeOf=(it,t)=>!it?'':it.k==='caravan'?'They robbed a caravan'+(it.detail.from?' out of '+it.detail.from:'')+' on day '+it.day+'.':it.k==='raid'?'They raided '+(it.detail.town||t.name)+' on day '+it.day+'.':
   it.k==='beast'?'Seen by the fields on day '+it.day+'.':it.k==='siege'?'The siege on day '+it.day+' cut its roads.':'Seen in the lands of '+t.name+' since day '+it.day+'.';
 class BountyQuest extends JobQuest{
@@ -192,6 +246,7 @@ class BountyQuest extends JobQuest{
       this.band=b.name;
       this.x=b.x;
       this.y=b.y;
+      this.markLead(b);
       return;
     }
     const s=this.site!=null&&W.sites[this.site]&&!W.sites[this.site].cleared?W.sites[this.site]:Troubles.lairs(t)[0];
@@ -202,11 +257,23 @@ class BountyQuest extends JobQuest{
     this.chief=ld.name;
     this.x=x;
     this.y=y;
+    this.markLead({x,y});
+  }
+  get leads(){
+    return true;
+  }
+  target(){
+    return bandits.find(x=>x.qid===this.id)||Quest.quarry(this.id)[0]||null;
+  }
+  quarryName(){
+    return 'the '+this.band;
   }
   // (on the map, or gone to ground in a camp: its quarry, story/quest.js)
   seek(){
-    const b=bandits.find(x=>x.qid===this.id)||Quest.quarry(this.id)[0];
-    return b?{x:b.x,y:b.y,name:(b.ld?b.ld.name+' and ':'')+'the '+this.band}:null;
+    const b=this.target();
+    if(!b)return null;
+    const s=this.spot();
+    return s?{...s,name:'the '+this.band}:{x:b.x,y:b.y,name:(b.ld?b.ld.name+' and ':'')+'the '+this.band};
   }
   get deed(){
     return 'band:beaten';
@@ -215,7 +282,7 @@ class BountyQuest extends JobQuest{
     return d.band.qid===this.id;
   }
   where(g){
-    return 'last seen '+questWay(g);
+    return g.r?super.where(g):'last seen '+questWay(g);
   }
   get deedWord(){
     return 'broken';
@@ -265,16 +332,29 @@ class BeastQuest extends JobQuest{
       m.qid=this.id;
       this.x=m.x;
       this.y=m.y;
+      this.markLead(m);
       return;
     }
     if(this.mx==null)return false;
     W.monsters.push(asMonster({id:this.mon,x:this.mx,y:this.my,hx:this.mx,hy:this.my,lv:this.lv,n:this.n,t:0,a:0,cool:0,qid:this.id}));
     this.x=this.mx;
     this.y=this.my;
+    this.markLead({x:this.mx,y:this.my});
+  }
+  get leads(){
+    return true;
+  }
+  target(){
+    return W.monsters.find(x=>x.qid===this.id)||null;
+  }
+  quarryName(){
+    return 'the '+MONSTERS[this.mon].n.toLowerCase();
   }
   seek(){
-    const m=W.monsters.find(x=>x.qid===this.id);
-    return m?{x:m.x,y:m.y,name:MONSTERS[this.mon].n.toLowerCase()}:null;
+    const m=this.target();
+    if(!m)return null;
+    const s=this.spot();
+    return s?{...s,name:MONSTERS[this.mon].n.toLowerCase()}:{x:m.x,y:m.y,name:MONSTERS[this.mon].n.toLowerCase()};
   }
   get deed(){
     return 'monster:slain';
@@ -674,7 +754,7 @@ function questDay(){
 }
 // arriving at a holding: couriers deliver
 function questArrive(t){
-  for(const q of P.quests.slice())Quest.as(q).arrive(t);
+  for(const q of P.quests.slice()){const Q=Quest.as(q);Q.arrive(t);if(Q.hear)Q.hear(t)}
 }
 /* the one you track (P.track: 'q' and a quest's id, or 't' and a story's number; none tracked: no field, so a save without one
    is as it was): its quest (a story's: the quest its step waits on) and that quest's goal; untracked once it ends */
@@ -792,6 +872,8 @@ function drawQuestMarks(cam){
   const t=performance.now()/300,M=QUEST_MARK,bob=Math.round(Math.sin(t)*2);
   for(const q of P.quests){const Q=Quest.as(q),on=QuestTrack.on(Q),g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round(g.y-cam.y);
     if(sx<-10||sy<-10||sx>VW+10||sy>VH+10){if(on)questEdgeMark(sx,sy,t);continue}
+    // (a lead: its circle, dashed, a ? at its middle: where to look, Q4)
+    if(g.r){ctx.save();ctx.strokeStyle=on?M.on:M.col;ctx.globalAlpha=on?.8:.5;ctx.setLineDash([4,3]);ctx.lineWidth=1;ctx.beginPath();ctx.arc(sx,sy,g.r*TILE,0,6.283);ctx.stroke();ctx.restore();txt('?',sx,sy-4+bob,on?M.on:M.col,'center');continue}
     if(on)questBrackets(sx,sy,t);
     if(Q.homeMark())continue;
     txt(q.done||questReady(q)?'?':'!',sx,sy-24+bob,on?M.on:M.col,'center')}
