@@ -879,6 +879,179 @@ class ScoutQuest extends JobQuest{
     return super.gone()?super.goneWhy():this.foeName+' is gone from the field.';
   }
 }
+// a caravan to see through (a merchant: doc/QUESTS_DESIGN.md §5.6): offered only while the talk of the holding is of a caravan
+// taken on its roads (news 'caravan', TROUBLE.fresh days). Taken, a real one leaves its gate for a holding not hostile to you,
+// CONVOY_JOB.min–max tiles off, its goods off the holding's stock, marked (qid); the band that troubles the holding, if one does,
+// works its road (haunt: the way's middle). Reaching its gate with you within CONVOY_JOB.near tiles of it: paid there; taken on
+// the road, or there without you: failed (Convoy.heard)
+const CONVOY_JOB={min:10,max:40,near:8,load:12,guards:2};
+class ConvoyQuest extends JobQuest{
+  setup(t){
+    const it=Troubles.news(t,['caravan'])[0];
+    if(!it||!t.owner)return false;
+    const ds=TOWNS.filter(o=>o!==t&&!o.gone&&!hostileTo(o.owner)&&!(o.owner&&atWar(o.owner,t.owner))&&!besieged(o)&&qTiles(o,t)>=CONVOY_JOB.min&&qTiles(o,t)<=CONVOY_JOB.max);
+    if(!ds.length)return false;
+    const d=questRng().pick(ds),n=Math.round(qTiles(d,t));
+    this.to=d.name;
+    this.cause='A caravan'+(it.detail.from?' out of '+it.detail.from:'')+' was taken on the road on day '+it.day+'.';
+    this.title='Guard a caravan to '+d.name;
+    this.text='A caravan of '+t.name+' leaves for '+d.name+', '+n+' tiles to the '+compass(d.x-t.x,d.y-t.y)+'. Ride with it and see it safe to its gate. You are paid there.';
+    this.pays(40+n*2.2,8,2,20+n);
+  }
+  // (taken: the caravan out of its gate, its goods the holding's most worth (none in stock: grain); the band works its road)
+  begin(t){
+    const d=townBy(this.to);
+    if(!t||!d)return false;
+    ensureEcon(t);
+    const g=Object.keys(t.stock).filter(k=>GOODS[k]&&!GOODS[k].ammo&&(t.stock[k]||0)>=4).sort((a,b)=>t.stock[b]*GOODS[b].base-t.stock[a]*GOODS[a].base)[0],n=g?Math.min(CONVOY_JOB.load,Math.floor(t.stock[g]/2)):0;
+    if(n)t.stock[g]-=n;
+    const c=asParty({cv:true,fac:t.owner,from:t.name,to:d.name,x:t.x,y:t.y+14,goods:n?{[g]:n}:{grain:CONVOY_JOB.load},guards:CONVOY_JOB.guards+(t.T.guards||0),cool:0,dir:1,qid:this.id});
+    W.caravans.push(c);
+    const b=Troubles.bands(t).find(o=>!o.qid);
+    if(b)b.haunt={x:Math.round((t.x+d.x)/2),y:Math.round((t.y+d.y)/2)};
+    this.x=c.x;
+    this.y=c.y;
+  }
+  caravan(){
+    return W.caravans.find(c=>c.qid===this.id&&!c.gone)||null;
+  }
+  seek(){
+    const c=this.caravan();
+    return c?{x:c.x,y:c.y,name:'the caravan to '+this.to}:null;
+  }
+  todo(){
+    return 'See the caravan safe to '+this.to+'.';
+  }
+  aim(){
+    return 'See the caravan safe to '+this.to;
+  }
+  tally(){
+    return '';
+  }
+  reportLine(){
+    return 'Paid on arrival at '+this.to;
+  }
+  get reportsBack(){
+    return false;
+  }
+  // (there, taken or robbed by you: the caravan's end, heard on the bus)
+  static heard(type,d){
+    const c=d&&d.caravan;
+    if(!c||c.qid==null)return;
+    for(const q of P.quests.slice()){
+      if(q.type!=='convoy'||q.done||q.id!==c.qid)continue;
+      const Q=Quest.as(q),at=d.to?d.to.name:Q.to;
+      if(type!=='caravan:arrived')Q.fail(type==='caravan:robbed'?'You robbed the caravan yourself.':'The caravan was taken on the road.');
+      else if(Math.hypot(P.x-c.x,P.y-c.y)>CONVOY_JOB.near*TILE)Q.fail('The caravan reached '+at+' without you.');
+      else{log('The caravan rolls in at the gate of '+at+'. The merchant’s factor there pays you.','gold','story',Q.journalKey);Q.pay(at)}
+    }
+  }
+  gone(){
+    return super.gone()||!this.caravan();
+  }
+  goneWhy(){
+    return super.gone()?super.goneWhy():'The caravan turned back.';
+  }
+}
+for(const type of ['caravan:arrived','caravan:beaten','caravan:robbed'])worldOn(type,d=>ConvoyQuest.heard(type,d));
+// the missing (a priest, a family: §5.9): one of the holding's people really taken. A band that beats a caravan carries off one
+// of its people (caravan:beaten: captives.js carry, {cap, n, home, day, as}, named by the holding's folk and the cap's hash, no
+// draw). Offered while a band (roving, or sheltering in a camp or hideout) carries one of the holding's; the band a lead, as a
+// bounty's; freed when you break it (band:beaten: on the road, or clearing the camp it shelters in), then home with you: report
+// there. Its band broken by another, or gone: closed
+const MISSING_JOB={as:['drover','carter','merchant’s boy','caravan guard']};
+const Missing={
+  take(b,c){
+    const t=townBy(c.from);
+    if(!b||!t)return;
+    const N=FOLK_NAMES[(t.races&&t.races[0])||'human']||FOLK_NAMES.human,cap='tk:'+c.from+':'+G.day+':'+Math.round(c.x)+','+Math.round(c.y),h=folkHash(cap);
+    (b.carry=b.carry||[]).push({cap,n:N[h%N.length],home:t.name,day:G.day,as:MISSING_JOB.as[(h>>>8)%MISSING_JOB.as.length]});
+  },
+  // (t's people carried off: each {b, c}, the band that carries one and its carry)
+  of(t){
+    const out=[];
+    for(const b of bandits.concat(...W.sites.map(s=>s.bands||[])))for(const c of b.carry||[])if(c.home===t.name)out.push({b,c});
+    return out;
+  },
+};
+worldOn('caravan:beaten',d=>{if(d&&d.band&&d.caravan&&!d.caravan.mine)Missing.take(d.band,d.caravan)});
+class MissingQuest extends JobQuest{
+  setup(t){
+    const f=Missing.of(t).find(x=>!P.quests.some(q=>q.cap===x.c.cap));
+    if(!f)return false;
+    const {b,c}=f;
+    this.cap=c.cap;
+    this.pn=c.n;
+    this.band=b.name?'the '+b.name:b.ld?b.ld.name+'’s band':'the band';
+    this.cause='Bandits took '+c.n+', a '+c.as+' of '+t.name+', when they beat a caravan on the road on day '+c.day+'.';
+    this.title='Find '+c.n;
+    this.text=c.n+' was carried off by '+this.band+'. Break them, and bring '+c.n+' home to '+t.name+'.';
+    this.pays(70+8*((b.troops&&b.troops.length)||5),10,2,35);
+  }
+  begin(){
+    const b=this.holder();
+    if(!b)return false;
+    this.x=b.x;
+    this.y=b.y;
+    if(bandits.includes(b))this.markLead(b);
+  }
+  // (the band that carries them, roving or sheltering; the camp or hideout it shelters in)
+  holder(){
+    return bandCarrying(this.cap);
+  }
+  site(){
+    return W.sites.find(s=>(s.bands||[]).some(b=>carries(b,this.cap)))||null;
+  }
+  get leads(){
+    return true;
+  }
+  target(){
+    const b=this.holder();
+    return b&&bandits.includes(b)?b:null;
+  }
+  quarryName(){
+    return this.band;
+  }
+  seek(){
+    const s=this.site();
+    if(s){
+      s.seen=true;
+      return {x:s.x,y:s.y,name:this.band+' at the '+s.name};
+    }
+    const b=this.target();
+    if(!b)return null;
+    const sp=this.spot();
+    return sp?{...sp,name:this.band}:{x:b.x,y:b.y,name:this.band};
+  }
+  todo(){
+    return 'Break '+this.band+' and free '+this.pn+'.';
+  }
+  aim(){
+    return 'Free '+this.pn+' from '+this.band;
+  }
+  get deed(){
+    return 'band:beaten';
+  }
+  hits(d){
+    return carries(d.band,this.cap);
+  }
+  get deedWord(){
+    return 'freed';
+  }
+  // (freed: they ride home with you, said in its done line)
+  finish(){
+    uncarry(this.holder(),this.cap);
+    this.done=true;
+    Quest.unmark(this.id);
+    log('Quest done: '+this.title+'. You free '+this.pn+', who rides with you, home to '+this.home+'. Report there.','gold','story',this.journalKey);
+  }
+  gone(){
+    return super.gone()||!this.done&&!this.holder();
+  }
+  goneWhy(){
+    return super.gone()?super.goneWhy():'No one knows what became of '+this.pn+'.';
+  }
+}
 // the kinds (the holdings' boards name theirs: data/holdings.js jobs; lords give lordkill, raid, bounty and beast: lordJob)
 defineKinds('quest',{},{
   bounty:{cls:BountyQuest},
@@ -892,6 +1065,8 @@ defineKinds('quest',{},{
   raid:{cls:RaidQuest},
   relieve:{cls:RelieveQuest},
   scout:{cls:ScoutQuest},
+  convoy:{cls:ConvoyQuest},
+  missing:{cls:MissingQuest},
 });
 // their deeds heard on the bus (core/bus.js): a band beaten, a beast slain, a site cleared, a lord beaten, a holding razed
 Quest.listen();

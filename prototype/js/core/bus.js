@@ -24,7 +24,9 @@
    | siege:broken     | {town, lord}            | world/realms.js (lordWon, resolveSiege), fights.js      | news (relieved)   |
    | lord:routed      | {lord}                  | his army broken: world/realms.js lordWon, fights.js     | news (lord)       |
    | caravan:robbed   | {caravan}               | you took it: world/caravans.js loot                     | news (caravan)    |
-   | caravan:beaten   | {caravan, lord, band}   | taken on the map (the winners' lord, band): fights.js   | news (caravan)    |
+   | caravan:beaten   | {caravan, lord, band}   | taken on the map (the winners' lord, band): fights.js   | news (caravan),   |
+   |                  |                         |                                                         | quests (missing)  |
+   | caravan:arrived  | {caravan, to}           | a realm's at its gate: world/caravans.js arrive         | quests (convoy)   |
    | fight:ended      | {fight, won, lost}      | a battle on the map: world/fights.js endFight           | news (fight, band)|
    | trace:left       | {e, trace}              | an encounter's trace: story/happening.js drop           | news (trace)      |
    | land:threat      | {town, foe}             | a beast or band on its land: world/defence.js           | news (beast, band)|

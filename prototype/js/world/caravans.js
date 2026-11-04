@@ -82,7 +82,7 @@ class CaravanParty extends Party{
   rollGuards(){const f=this.fac==='player'?null:this.fac;return f?armyOf(f,this.guards):Array(this.guards).fill('militia')}
   look(){return{col:caravanCol(this),dir:this.dir||1,moving:!this.idle,seed:0,label:'Caravan',labelCol:hostileTo(this.fac)?'#ff9a90':'#e8d8a0'}}
   // where it is bound (CaravanBrain): true when it is done there (a realm's unloads; yours ends a leg: endLeg)
-  arrive(to){if(this.mine)return this.endLeg(to);caravanArrive(this,to);return true}
+  arrive(to){if(this.mine)return this.endLeg(to);caravanArrive(this,to);worldEmit('caravan:arrived',{caravan:this,to});return true}
 
   /* meeting a caravan: trade, toll, attack or seize */
   // what its merchants charge and pay: the going rate where they came from, a little either way

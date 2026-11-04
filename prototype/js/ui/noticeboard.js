@@ -9,7 +9,7 @@
    an iron nail, or sealed in red wax when a man of the holding's own (seal: its giver's trade) put his name to it; the words a
    crier's. NOTICE: the kinds' words, the tilts, the parchments' shades, the trades that seal theirs; style.css "The notice
    board" ---------- */
-const NOTICE={kinds:{bounty:'Wanted',clear:'A bounty',beast:'Beware',hunt:'Sought',supply:'Sought',courier:'A rider sought',troops:'Men-at-arms sought',book:'Hear ye'},
+const NOTICE={kinds:{bounty:'Wanted',clear:'A bounty',beast:'Beware',hunt:'Sought',supply:'Sought',courier:'A rider sought',troops:'Men-at-arms sought',convoy:'Guards wanted',missing:'Missing',book:'Hear ye'},
   tilt:[-1.6,1.1,-.5,1.7,-1.1,.6],paper:['#d9c49a','#cdb685','#ddca9f'],seal:['captain','steward']};
 const NoticeBoard={
   // (who to see: the giver, by name, trade and place; none: the holding's hall)

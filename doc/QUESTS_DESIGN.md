@@ -3,7 +3,7 @@
 The owner, 2026-11-04: "Right now the chain quest and quest are barebones and look unnatural in many ways like why spawn
 bandits/monster near the holding for hunting quest. Can you use your game quest design skills and design the quest properly?"
 
-Status: **built** (2026-11-04), Q1–Q8 below, but for two kinds of §5 (the caravan escort, the missing). The owner's answers:
+Status: **built** (2026-11-04), Q1–Q8 below, every kind of §5 (the caravan escort and the missing built last, 2026-11-04). The owner's answers:
 D1 both (a target that is there first; when none, the world makes one as it would, never beside the holding); D2 yes; D3 yes, more
 givers to come (a row each); D4 yes; D5 mostly yes, by the giver; D6 all four chains; D7 old saves not kept for this change; D8 the
 quests' own stream.
@@ -149,6 +149,8 @@ Each kind is offered only while its cause holds. Its target is the cause's own o
 - **Mark:** the deal or the march happens or is spoilt by what you did.
 
 ### 5.6 A caravan to see through (a merchant)
+- **As built:** the cause is any caravan taken on the holding's roads lately (news `caravan`); the caravan is made when you take the job
+  and paid at its gate if you are within 8 tiles of it.
 - **Cause:** a caravan leaving on a road with robbery news in the last `ESCORT.fresh` days.
 - **Target:** that caravan (a real one, `world/caravans.js`), its road and its goal. An escort as `world/escort.js` does for a
   person.
@@ -166,6 +168,8 @@ Each kind is offered only while its cause holds. Its target is the cause's own o
 - **Mark:** its lands are quiet for a while (the den's quiet, a hideout's return time).
 
 ### 5.9 The missing (the priest, a family)
+- **As built:** the one taken is a caravan's man that a band carried off when it beat the caravan (`caravan:beaten`); held by that
+  band, roving or in its camp, and freed when you break it. A lord's man held in a prison is not yet a cause.
 - **Cause:** someone really taken: a traveller or a caravan's people held at a hideout (captivity), a lord's man held in a prison.
 - **Target:** the hideout or prison where they are held. The Wounded Traveller's rescue step (`story/wounded.js`) is the model.
 
@@ -279,7 +283,7 @@ Each step is its own patch, behaviour-preserving first where it refactors; tests
 | Q3 | **The job kinds rewritten on causes** (§5.1–5.4, 5.7, 5.8): no spawns; offered only while the cause holds; text names the cause; the board shows givers | `world/quests.js`, `ui/questwindow.js` | `tests/quests.js` updated, `tests/questcauses.js` |
 | Q4 | **Leads:** the ageing circle, rumours and tracking sharpen it | `world/quests.js`, `ui/questmarks` in `quests.js` | `tests/questleads.js` |
 | Q5 | **Turns and marks** (§7, §9) | `world/quests.js`, `world/caravans.js` (fear), `world/news.js` (the safe-road line) | `tests/questmarks.js` |
-| Q6 | **New kinds:** the letter (real), the war's two (built); the caravan escort and the missing (not yet) | `world/quests.js`, `world/letters.js`, `world/escort.js` | one suite each |
+| Q6 | **New kinds:** the letter (real), the war's two, the caravan escort (`convoy`) and the missing (all built) | `world/quests.js`, `world/letters.js`, `world/caravans.js` | `tests/questkinds2.js`, `tests/questkinds3.js` |
 | Q7 | **Chains:** the four in §8, one at a time | `story/chains/*.js` (new, as `story/wounded.js`) | one suite each |
 | Q8 | **The questbook's goals and conditions** find real targets (§8) | `story/questbook.js`, `data/questbook/samples.js` | `tests/questbook.js` updated |
 

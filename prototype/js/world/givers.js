@@ -11,6 +11,7 @@ const Givers={
   fits(t,at){
     if(at.kind&&!at.kind.includes(t.kind))return false;
     if(at.estate&&!(bldLv(t,at.estate)>0))return false;
+    if(at.temple&&!t.T.temple)return false;
     return !(at.walls&&wallOf(t)<at.walls);
   },
   of(t){
