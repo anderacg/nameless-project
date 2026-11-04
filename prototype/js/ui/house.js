@@ -1,7 +1,8 @@
 'use strict';
 /* ---------- a house's page (world/houses.js House; the frame of PAGE_SCREEN: its header, its banner (the house on its ground),
    what it is, its actions, its bottom bar): its kind, its households and people, its state, its holding's homes; your quests
-   that lead to it; Visit its holding, Back to map ---------- */
+   that lead to it, and a delivery's Deliver; Back to map (no Visit: its holding is a place of its own on the map, the owner,
+   2026-11-04) ---------- */
 function houseMeet(o){if(!o?.holding)return;G.house=o;G.mode='dialog';P.tx=null;G.chase=null;showHouse()}
 function showHouse(){const o=G.house,t=o.holding,l=o.lot,s=lotSprite(t,l),qs=o.quests(),name=qs.find(q=>q.to.label)?.to.label;
   // (a delivery to this house: handed over here, at its door: story/steps.js DeliverQuest byHand)
@@ -13,6 +14,6 @@ function showHouse(){const o=G.house,t=o.holding,l=o.lot,s=lotSprite(t,l),qs=o.q
     banner:{key:'house:'+t.name+':'+l.id+':'+l.st,x:o.x,y:cy,ps,alt:o.kindN()+' in '+t.name},
     body:state+pageFacts([l.st==='built'?o.households()+' household'+(o.households()>1?'s':'')+', about '+o.people()+' people':'',t.name+': '+pop+' people, homes for '+homes])+
       (qs.length?'<div class="lab">Your quests here</div>'+qs.map(q=>'<p class="gold">'+htmlText(q.title)+'<small class="muted"> · '+htmlText(q.todo?q.todo():'')+'</small></p>').join(''):''),
-    acts:[...give,{act:'house-town',icon:'house',label:'Visit '+t.name,facts:['walk to its gate']}],close:['house-close',null,'Back to map']},'house:'+l.id)}
-onAct('house-',(a,arg)=>{const o=G.house;G.house=null;hidePanel();G.mode='world';if(a==='house-town'&&o?.holding)worldApproach(o.holding);
-  else if(a==='house-give'){const q=P.quests.find(x=>x.id===+arg),Q=q&&Quest.as(q);if(Q&&Q.byHand&&Q.ready())Q.reached()}});
+    acts:give,close:['house-close',null,'Back to map']},'house:'+l.id)}
+onAct('house-',(a,arg)=>{G.house=null;hidePanel();G.mode='world';
+  if(a==='house-give'){const q=P.quests.find(x=>x.id===+arg),Q=q&&Quest.as(q);if(Q&&Q.byHand&&Q.ready())Q.reached()}});

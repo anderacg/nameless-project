@@ -12,7 +12,7 @@ Kit.suite(({ok})=>{
  // ======== its page
  t.interact(o);const pn=()=>document.getElementById('panel'),txt=()=>pn().textContent;
  ok(G.house===o&&/A house of Ashford/.test(txt())&&new RegExp(o.households()+' household').test(txt())&&/homes for \d+/.test(txt())&&pn().querySelector('.pg-banner'),'its page: '+o.kindN()+', '+o.households()+' households, about '+o.people()+' people, Ashford\'s homes, its picture');
- ok(pn().querySelector('[data-act="house-town"]')&&pn().querySelector('[data-act="house-close"]'),'Visit Ashford, and Back to map');
+ ok(!pn().querySelector('[data-act="house-town"]')&&pn().querySelector('[data-act="house-close"]'),'Back to map, no Visit Ashford (the owner, 2026-11-04: the holding is its own place)');
  t.act('house-close');ok(G.mode==='world'&&!G.house,'Back to map: closed');
  // ======== a quest that leads to it
  {const q=t.Quest.make('visit',ash,null,{to:{town:ash.name,lot:'house',i:0},title:'See the widow',text:'Call on her.'});q.accept();const h=t.pickAt(q.to.x,q.to.y-4);
