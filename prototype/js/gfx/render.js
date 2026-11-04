@@ -196,9 +196,10 @@ function drawWorld(){
   drawParties(ents,cam,V);// lords, bands, patrols and your companions' parties (each party draws itself: parties.js)
   for(const m of W.monsters)asMonster(m).draw(ents,cam,V);
   drawHerds(ents,cam,V);// (a pasture's herd: one animal on each worked field tile; the rest as herds: critters.js)
-  if(P.raid)ents.push({y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
-  if(P.siege)ents.push({y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
-  if(P.camp){if(WORLD_BATTLE.on&&!B?.world)marchCircle(ents,P,cam);ents.push(bandCampEnt(cam));}// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
+  // (your siege camp, raid and camp: not while a battle is fought on the map round you (B.world): its men stand there instead)
+  if(P.raid&&!B?.world)ents.push({y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
+  if(P.siege&&!B?.world)ents.push({y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
+  if(P.camp&&!B?.world){if(WORLD_BATTLE.on)marchCircle(ents,P,cam);ents.push(bandCampEnt(cam));}// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
   // (you, not while you camp: on foot, a step each WALK.foot px you walk; mounted, your horse on the same feet, a step each WALK.ride px; your host behind, as a lord's: drawParties)
   // (marching: you are one of your army, in your own place in it: march.js)
   if(!P.stay&&!P.camp&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam)}
