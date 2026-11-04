@@ -2,7 +2,7 @@
 // The notice board (ui/noticeboard.js; the owner, 2026-11-04: "a board like an actual board screen with papers pinned"; "how
 // do you know who to see if they don't say who the poster is"): a cork board, each offer a paper pinned to it, tilted its own
 // way; each says who posted it and where to find them (a giver by name, trade and place; a questbook notice its own); a locked
-// one stamped with what it asks; an empty board one paper saying why; it fits the screen.
+// one stamped with what it asks; an empty board bare; it fits the screen.
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,W=t.W;Kit.begin('soldier',19);Kit.world();Kit.clear();
  const ash=t.townBy('Ashford'),q=Kit.q,qa=Kit.qa;ash.gar=ash.T.gar-5;
@@ -21,7 +21,7 @@ Kit.suite(({ok})=>{
  {P.level=1;const qt=t.makeQuest('troops',ash);P.jobs={Ashford:{day:G.day,list:[qt]}};open();const n=q('.nb-note.locked');
   ok(n&&/Requires level 3/.test(n.querySelector('.nb-stamp').textContent)&&n.querySelector('[data-act="q-accept"]').disabled,'a locked one faded, stamped "'+(n&&n.querySelector('.nb-stamp').textContent)+'", its Accept off')}
  // ---- empty
- {P.jobs={Ashford:{day:G.day,list:[],none:true}};open();ok(q('.nb-empty')&&/Nothing troubles Ashford these days/.test(q('.nb-empty').textContent),'nothing on it: one paper says why')}
+ {P.jobs={Ashford:{day:G.day,list:[],none:true}};open();const b=q('.nb');const book=b.querySelectorAll('.nb-note').length;ok(b&&q('.nb-plaque')&&!b.querySelector('.nb-empty')&&!b.querySelector('[data-act="q-accept"]')&&(book||b.classList.contains('bare'))&&b.getBoundingClientRect().height>=200,'no work: no paper saying so, the board '+(book?'with only the questbook\'s '+book:'bare')+' under its plaque ('+Math.round(b.getBoundingClientRect().height)+' px tall)')}
  // ---- your quests here, in full: who gave it and why, its cause, its words, its steps (the one to do now in bold), its facts;
  // Report greyed with why till it is done
  {P.jobs={};P.level=5;P.quests=[];open();const j=t.jobsAt(ash).find(x=>t.Quest.as(x).state==='available');t.acceptQuest(j);open();

@@ -1,11 +1,11 @@
 'use strict';
 /* ---------- the quest tracker (the owner, 2026-10-30: "a quest tracking tab at the left-hand side, opposite the map, for quick
    access like RPG games"; a new quest's note "pops up below that tracking tab and disappears by itself after 5 secs, with an
-   animation to show the time running out"). On the world map, under your band card (a phone: at the top left, the card hidden):
+   animation to show the time running out"; 2026-11-04: 5 secs more, and a small close button). On the world map, under your band card (a phone: at the top left, the card hidden):
    the quests you track (world/quests.js QuestTrack.list), each its title, what to do now and which way; a click opens it in your
    Quests; the one marked on the map in gold. Each quest you take shows its note below it for QTRACK.show s, its bar running down (several taken at once: their notes stacked, at most QTRACK.stack, the oldest first; the owner, 2026-10-30): Track adds it
-   to the tracker and marks it, × lets it go, as the time does. ---------- */
-const QTRACK={show:5,fade:.3,gap:8,stack:3};
+   to the tracker and marks it, its × (in its top corner) lets it go, as the time does. ---------- */
+const QTRACK={show:10,fade:.3,gap:8,stack:3};
 const QT={el:null,pops:[]};
 // (a tracked one's lines: its title, what to do, the way to it)
 function qtLines(k){
@@ -28,7 +28,7 @@ function questTrackHUD(){
   el.hidden=!on;if(!on){if(el.dataset.sig){el.innerHTML='';el.dataset.sig=''}return}qtPlace(el);
   const rows=ks.map(k=>{const L=qtLines(k);return '<button type="button" class="qt-row'+(k===P.track?' on':'')+'" data-act="qt-open" data-arg="'+k+'" title="Open it in your Quests"><b>'+htmlText(L.title)+'</b><small>'+htmlText(L.todo)+'</small>'+(L.way?'<em>'+htmlText(L.way)+'</em>':'')+'</button>'}).join('');
   const going=p=>now>p.until-QTRACK.fade;
-  const pop=p=>'<div class="qt-pop'+(going(p)?' going':'')+'" role="status" data-k="'+p.k+'"><span class="qt-new">New quest</span><b>'+htmlText(p.title)+'</b><div class="qt-btns"><button type="button" class="btn sm primary" data-act="qt-track" data-arg="'+p.k+'">Track</button><button type="button" class="btn sm" data-act="qt-hide" data-arg="'+p.k+'" aria-label="Not now">×</button></div><div class="qt-bar"><i style="animation-duration:'+QTRACK.show+'s"></i></div></div>';
+  const pop=p=>'<div class="qt-pop'+(going(p)?' going':'')+'" role="status" data-k="'+p.k+'"><button type="button" class="qt-x" data-act="qt-hide" data-arg="'+p.k+'" aria-label="Close" title="Close">×</button><span class="qt-new">New quest</span><b>'+htmlText(p.title)+'</b><div class="qt-btns"><button type="button" class="btn sm primary" data-act="qt-track" data-arg="'+p.k+'">Track</button></div><div class="qt-bar"><i style="animation-duration:'+QTRACK.show+'s"></i></div></div>';
   const html=(rows?'<div class="qt-list"><div class="qt-head">Quests</div>'+rows+'</div>':'')+(ps.length?'<div class="qt-pops">'+ps.map(pop).join('')+'</div>':''),sig=html.replace(/ going/g,'')+ps.map(p=>going(p)?'g':'').join('');
   if(el.dataset.sig===sig)return;
   // (each note's bar keeps running as the rest is drawn afresh: a note already shown is kept as it was)

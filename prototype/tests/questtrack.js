@@ -10,6 +10,7 @@ Kit.suite(({ok})=>{
  const take=s=>{const q=Kit.seeded(s,()=>t.makeQuest('bounty',ash));Kit.seeded(s+1,()=>q.accept());t.updateHUD(true);return q};
  t.updateHUD(true);ok(!tr()||tr().hidden,'nothing tracked, nothing taken: no tracker');
  const q1=take(5);ok(pop()&&pop().textContent.includes(q1.title)&&pop().querySelector('[data-act="qt-track"]')&&pop().querySelector('[data-act="qt-hide"]'),'a quest taken: its note under the tracker, with Track and ×');
+ {const x=pop().querySelector('.qt-x'),r=x&&x.getBoundingClientRect(),pr=pop().getBoundingClientRect();ok(t.QTRACK.show===10&&x&&x.dataset.act==='qt-hide'&&(!pr.width||r.width<=24&&r.right>pr.right-12&&r.top<pr.top+12),'its × small, in its top corner; shown '+t.QTRACK.show+' s (the owner, 2026-11-04: 5 more)')}
  {const bar=pop().querySelector('.qt-bar i'),cs=getComputedStyle(bar);ok(cs.animationName==='qt-run'&&parseFloat(cs.animationDuration)===t.QTRACK.show,'its bar runs down over '+t.QTRACK.show+' s')}
  {const s=document.getElementById('stats').getBoundingClientRect(),r=tr().getBoundingClientRect();ok(r.top>=s.bottom&&Math.abs(r.left-s.left)<2,'under your band card, at its left edge')}
  {const pn=performance.now;let now=pn.call(performance)+(t.QTRACK.show+.5)*1000;performance.now=()=>now;try{t.updateHUD(true)}finally{performance.now=pn}ok(!pop()&&(!tr()||tr().hidden),'after '+t.QTRACK.show+' s it is gone by itself; nothing tracked: no tracker')}

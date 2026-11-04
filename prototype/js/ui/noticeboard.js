@@ -4,8 +4,8 @@
    tilted a little each its own way, its corner of colour its kind's. A paper: what it is (its kind's word), its title, the true
    thing it is about (world/troubles.js; its title less what its kind's word says already), its words, its reward, its timing and where it is turned in, and who posted it and where
    to find them (world/givers.js: "Seek out Jory the merchant at the market square"; a questbook's: its giver's name and where,
-   data/questbook/), then Accept (Take it). Locked, it is faded, stamped with what it asks of you. Nothing on it: one paper says
-   why. Its look (the owner: "make it medieval time"): an oak board under a carved plaque, each notice a ragged parchment held by
+   data/questbook/), then Accept (Take it). Locked, it is faded, stamped with what it asks of you. Nothing on it: the bare board (the
+   owner, 2026-11-04: "just make a blank board"). Its look (the owner: "make it medieval time"): an oak board under a carved plaque, each notice a ragged parchment held by
    an iron nail, or sealed in red wax when a man of the holding's own (seal: its giver's trade) put his name to it; the words a
    crier's. NOTICE: the kinds' words, the tilts, the parchments' shades, the trades that seal theirs; style.css "The notice
    board" ---------- */
@@ -41,8 +41,7 @@ const NoticeBoard={
   // the board: its jobs (none: a paper saying why), then the questbook's
   html(t,offers){
     const book=Questbook.offers('board',Stories.ctx({town:t.name})),n=offers.length;
-    const none=n?'':'<div class="nb-note nb-empty"'+this.look(0,'none')+'><h4>'+(P.jobs[t.name]&&P.jobs[t.name].none?'Nothing troubles '+htmlText(t.name)+' these days.':'No more work this week.')+'</h4><p>No notice is posted. Come back in a few days.</p></div>';
-    const h=offers.map((q,i)=>this.note(q,i)).join('')+none+book.map((id,i)=>this.book(id,t,n+i+1)).join('');
-    return '<div class="nb"><div class="nb-plaque">Notices of '+htmlText(t.name)+'</div>'+h+'</div>';
+    const h=offers.map((q,i)=>this.note(q,i)).join('')+book.map((id,i)=>this.book(id,t,n+i+1)).join('');
+    return '<div class="nb'+(h?'':' bare')+'"><div class="nb-plaque">Notices of '+htmlText(t.name)+'</div>'+h+'</div>';
   },
 };
