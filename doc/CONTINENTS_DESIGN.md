@@ -1,7 +1,7 @@
 # Several continents and bigger worlds: design
 
-**Status:** design only, 2026-10-22, for the owner's review. Nothing here is built. Written against `main` at f538fa7.
-**Starts:** after agents R, S, T and U merge (they are changing `world/worldgen.js`, `world/worldplace.js`, `gfx/worldart.js` and `data/world.js` now). Phase C0 (the refactors) is the first step.
+**Status:** design, revised 2026-11-05 with the owner's answers (below). Nothing is built yet. First written 2026-10-22 against f538fa7; the agents R–U it waited on have long merged, and today's hand-made map is gone (the generated **Classic** world, `WM` seed `classic`, took its place).
+**Starts:** phase C0 (the refactors, §6), now.
 **Readers:** the owner, and the developer agents who will build it.
 **Measured or estimated:** every number marked *measured* comes from headless Chrome on the owner's PC, 2026-10-22, at f538fa7 with `-Gen`: `tests/visual/worldscale.js -Seed 2` (Huge), and a throw-away probe (not in the tree) that ran the same steps at Huge, Vast and Immense with `WORLD_LIMITS` raised at run time. Everything else is an *estimate*, and says so.
 
@@ -12,6 +12,14 @@
 4. **Bigger sizes:** **Vast** (about 1536 × 1152 tiles) and **Immense** (about 2048 × 1536), **on every device**, phones included. This overturns D1 ("one continent") and D44's cap (Huge, 786,432 tiles).
 5. **Later, not now:** more peoples and realms. The design keeps realms and peoples open to any number.
 6. **Today's hand-made map is being retired.** This design is for the generated world only.
+
+**The owner's answers (2026-11-05)**, fixed; they change decisions 1 and 4 above:
+1. **Your own ship too**, not only passage. Passage at ports comes first (C4); your own ship next (C5, §7a): buy one at a shipwright, crew it, and sail where you like, ports or any beach.
+2. **How you sail: as recommended.** Passage is an automatic voyage along its lane (8×, Skip to arrival). Your own ship you steer yourself, across open sea, as you walk on land.
+3. **Continents at every size we have today** (Normal, Large, Huge, and Custom within today's limits). **Vast and Immense wait** (§4 stays as their design, out of this plan's phases).
+4. **The other continents are harder** (§7b): a shore far from where you began is an end-game you grow into, its wilds and its gates stronger. **Classic stays one continent** (Coasts at Normal, unchanged).
+
+§9's other questions keep their recommended defaults unless the owner says otherwise.
 
 ---
 
@@ -541,12 +549,26 @@ Each is behaviour-preserving: the battle prints, `rts -Seed 1,2,44`, `aishare`, 
 
 ---
 
-## 7. Phases and effort
+## 7. Phases and effort (revised 2026-11-05)
 
-All start **after agents R, S, T and U merge**. Up to 5 agents at once, split by files. "Prints" means G-prints, the battle prints, `rts` and `aishare`.
+Built by the coordinator in order, each phase committed, tested and playable on its own. "Prints" means `worldprint -Seed 1`, the battle prints, `rts` and `aishare`, plus the G-prints (§6).
 
-| Phase | Scope | Files (owned) | After | Effort | Prints |
-|---|---|---|---|---|---|
+| Phase | Scope | After | Size | Prints |
+|---|---|---|---|---|
+| **C0. Refactors** (§6) | C0.1 `Landmass` record and `massAt`; C0.2 the land plan; C0.3 placement per landmass; C0.5 the router's options and edge table; C0.6 `sameMass` where a party must walk; C0.7 `shipRoute`; C0.9 any number of realms. (C0.4 and C0.8 wait for Vast and Immense) | — | M | Hold |
+| **C1. Several landmasses** (§1) | Land choices **Continents** and **Archipelago** at Normal, Large, Huge and Custom; plates, straits, the checks; the sketch; the Land chips | C0 | M | Hold (one-landmass settings unchanged) |
+| **C2. Placement across landmasses** (§2) | Realms by suitability on every landmass, a capital per continent, beachheads, ports per landmass and realm, roads and camps per landmass, hamlets on the empty ones, the humble start on your people's landmass | C1 | M–L | Hold on one landmass |
+| **C3. Sea lanes and the router** (§3.1–3.2) | The lanes stage, edge kind 6, `Router.days` with the sea, the landmass days table; trade ships on lanes | C0 | M | Graph counts move: "lane edges" |
+| **C4. Passage** (§3.3–3.8) | `SEA`, the **Harbour** (outside the walls: a gate that refuses you still sells passage, §2.2 of START_AND_GATES), the voyage (8×, Skip), supply, storms, pirates (auto-resolved), landings, the save | C3 | L | Hold |
+| **C5. Your own ship** (§7a) | The shipwright, ship kinds, crew and hold, steering at sea, beaching anywhere, the ship left moored, upkeep, storms and pirates for it, the save | C4 | L | Hold |
+| **C6. Harder far shores** (§7b) | A landmass's **tier** from where you began; stronger wilds, lairs and gates there, better pay and spoils; the full map's provinces read it | C2 | S–M | Hold (one landmass: tier 0 everywhere) |
+| **C7. The AI across the sea** (§3.9) | Lords' expeditions, relief by sea, caravans by days, wars across the sea | C3, C2 | L | `worldsim` re-baselined: "targets by travel days" |
+| **C8. Battles at the coast** (§5) | Coast, port and landing fields; a deck fight for pirates later | C1 | M | Battle prints hold |
+| *Later* | Vast and Immense (§4, the old C6) | — | L | — |
+
+**Playable after each:** C1 the new shapes (holdings on the largest landmass only, the chips marked "later"); C2 realms everywhere, no crossing yet; C3 trade ships on the lanes; C4 you sail by passage, the chips lose their mark; C5 your own ship; C6 the far shores are an end-game; C7 lords and caravans sail; C8 battles on the beach.
+
+---|---|---|---|---|---|
 | **C0. Refactors** (§6) | C0.1–C0.9; `tests/genprint.js` first | as §6 | R–U merged | **M** (5–6 sessions) | Hold |
 | **C1. Several landmasses** (§1) | Plates, channels, the checks and relaxing; Land choices Continents and Archipelago; per-landmass climate pieces, rivers and ranges; the sketch and counts line; the Land chips | `worldgen.js`, `worldsettings.js` (choices), `ui/worldsetup.js`, its `style.css` section, `tests/landmasses.js` | C0 | **M** | Hold (one-landmass settings unchanged) |
 | **C2. Placement across landmasses** (§2) | Candidates per landmass, capitals per continent, beachheads, ports per landmass and realm, roads and camps per landmass, balance by setting, wild landmasses | `worldplace.js`, `tests/worldplace.js` (cases), `tests/worldsanity.js` | C1 | **M–L** | Hold on one landmass |
@@ -576,6 +598,71 @@ All start **after agents R, S, T and U merge**. Up to 5 agents at once, split by
 - **C5:** lords and caravans sail; wars cross the sea.
 - **C6:** Vast and Immense.
 - **C7:** battles at the coast.
+
+---
+
+## 7a. Your own ship (C5)
+
+### 7a.1 Getting one
+
+- **The shipwright** at a port with a shipyard (`bldLv(t,'port')≥2`, or any city port): a place on the holding's rail beside the Harbour, outside the walls with it. One page (the frame rule): the ships for sale, the chosen one's facts, **Buy** on the bar's right.
+- **Kinds** (one table, `SHIPS` in `data/sea.js`, numbers to tune in play):
+
+| Kind | Price | Crew (min) | Hold (men + horses) | Cargo slots | Speed (tiles an hour) | Hull | Notes |
+|---|---|---|---|---|---|---|---|
+| Cog | 600 | 6 | 30 | 8 | 3.0 | 60 | the first ship; any port's yard |
+| Hulk | 1,400 | 10 | 60 | 20 | 2.4 | 90 | slow, a trader's |
+| Galley | 2,000 | 20 rowers | 50 | 6 | 4.0 (2× in a calm) | 70 | fast, coasts only: no deep sea |
+| Carrack | 3,600 | 14 | 90 | 16 | 3.2 | 140 | city yards only, renown 30 |
+
+- **One ship at a time** in v1 (a fleet is later: the record is a list, `P.ships`, so it can grow).
+- **Crew:** sailors hired at the Harbour (a troop type, `sailor`, tier 1, weak on land, paid as troops). The crew does not take party slots; under its minimum the ship moves at half speed and storms hurt more. Your band rides as its passengers (up to the hold).
+
+### 7a.2 Sailing it
+
+- **Boarding:** at a port's harbour, or where you left it moored (walk onto its marker). Aboard, you are the ship on the map: the same click-to-move and keys as on land, over **water only** (`Router` with `{sea:true, ship}`: water tiles, no rivers narrower than 3 tiles, galleys off deep water). Time runs as on land, no 8×.
+- **Landing:** click a shore tile beside water: the band steps ashore, the ship stays **moored** there (a marker on the map, `moored:{x,y}`); click it to board again. Any beach of any landmass, with or without a port, so a far shore can be reached without anyone's leave.
+- **At sea:** sight ×1.25, food and drink as on land (no forage at sea), storms (a day's roll at sea: lose hull, cargo, a crewman; blown some tiles off course), pirates (an encounter kind at sea: fight auto-resolved in v1, pay, or outrun them by speed and Scouting).
+- **Cargo:** the hold carries goods beyond your bag (its slots): a trader's way between landmasses' markets.
+- **Upkeep:** the crew's pay daily; the hull mends in a port (gold by the damage). Hull at 0: it sinks; you wash ashore on the nearest beach with what you carried on you, the cargo lost.
+- **Moored and away:** a ship left at a wild beach for more than `SHIPS.adrift` days (14) may be stolen (a small daily chance), at a port never.
+
+### 7a.3 Saves and the map
+
+- `P.ships`: `[{kind, name, hull, crew, cargo:[...], at:'port:<name>'|{x,y}, aboard}]`, default `[]` (`Saves.add`). A save aboard loads aboard.
+- The full map marks your ship (moored or where you sail) and its name; the Harbour's greyed "Your ships" row (§3.6) becomes real: board, repair, hire crew.
+
+### 7a.4 What it does not do in v1
+
+No sea battles in the world-battle sense (pirates are auto-resolved; the deck fight is C8's hook); no fleet; your ship carries no lord's army; no blockades.
+
+---
+
+## 7b. Harder far shores (C6)
+
+The owner (2026-11-05): the other continents are harder, an end-game. On one landmass nothing changes.
+
+### 7b.1 A landmass's tier
+
+- At a new game, each landmass gets a **tier** from the one you begin on (the humble start's hamlet): your own **0**; the others by sea days from it, the nearest **1**, the farther **2** (Archipelago: islands within a day's sail of yours share its tier). Kept in `W.massTier` (saved, default `{}`: all 0).
+- **Why from where you began, not by fixed land:** every past starts on its people's landmass, so "far" always means far from you. The realms' own armies are **not** scaled: they stay as the generator made them, so the wars between realms stay fair.
+
+### 7b.2 What a tier changes (`FAR_SHORE` in `data/world.js`)
+
+| | Tier 1 | Tier 2 |
+|---|---|---|
+| Beasts and monsters (level, pack size) | +2 levels, ×1.3 | +4 levels, ×1.6 |
+| Bandit bands and hideouts (size, troop tier) | ×1.3, +1 tier on a third | ×1.6, +1 tier on two thirds |
+| Gates (renown and honour needed, `GATES`) | ×1.5 | ×2 |
+| Lords' audiences (`LORD_AUDIENCE`) | ×1.5 | ×2 |
+| Jobs' pay and the spoils of the wild | ×1.4 | ×1.8 |
+| Hamlets' welcome | as home | as home (somewhere safe to land) |
+
+The provinces' danger (`Provinces.danger`) reads the stronger wilds by itself, so a far shore's provinces show **dangerous** or **deadly** on the map until you are strong enough: the soft lock of the gates, at the scale of a continent. Setting sail for a deadly one warns you once a day, as on land.
+
+### 7b.3 Tests
+
+`tests/farshores.js`: tiers from the start (yours 0, others 1–2; one landmass all 0); a far beast's level and a band's size by tier; a far gate's need ×; pay ×; the provinces' danger higher on a far shore; saved.
 
 ---
 
@@ -627,7 +714,7 @@ Each has a recommended default.
 | Q12 | Holdings at Vast and Immense? | **Defaults 100 and 132, maxima 300 and 400** (by Coasts' land; fewer with Continents and Archipelago) |
 | Q13 | Wild landmasses: founding sites there? | **Yes** (Phase 4b: a frontier colony across the sea); hamlets with Phase 4 |
 | Q14 | Should the dragon's lair prefer an uninhabited landmass? | **Yes**, when one of 6,000 tiles or more exists |
-| Q15 | Classic? | **Stays Coasts at Normal**, unchanged |
+| Q15 | Classic? | **Stays Coasts at Normal**, unchanged (the owner, 2026-11-05: yes) |
 
 ---
 
