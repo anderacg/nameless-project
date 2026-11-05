@@ -386,7 +386,10 @@ function tracksUp(m){const L=EST_TRACKS.get(m);if(!L)return;
   for(let k=L.length-1;k>=0;k--){const r=L[k];r.laid.forEach((i,j)=>{m.kind[i]=r.was[j];m.feat[i]=r.fe[j]})}m.roads=m.roads.filter(r=>!r.est);EST_TRACKS.delete(m);if(m===WM)wayRechart()}
 // (the tracks laid: the way graph charted again with them (router.js wayRechart) and the land reckoned again over them (territory.js
 // computeLand: a holding's claim reckoned again later, at a capture, would run along them while the rest did not))
-function tracksDone(){wayRechart();computeLand()}
+// (every track laid: each mine and quarry with rock to one side turns its back to it again, as the land lies under all of them now:
+// a track laid later, or a later holding's works, may have left one facing its first track)
+function rockFaces(){for(const t of TOWNS)for(const l of t.lots||[]){const y=rockYaw(l);if(y!=null&&y!==l.yaw){l.yaw=y;relot(l)}}}
+function tracksDone(){rockFaces();wayRechart();computeLand()}
 // (the tiles under a line through points pts (tiles), 8-connected and thin: as worldplace.js genRoads lays its roads)
 function lineTiles(pts){const T=[];
   for(let k=1;k<pts.length;k++){const [ax,ay]=pts[k-1],[bx,by]=pts[k],st=Math.max(1,Math.ceil(Math.hypot(bx-ax,by-ay)*4));

@@ -34,7 +34,7 @@ const DELIVER={from:.375,to:.575,stop:[1.5,3.5],grace:.02};// (afternoon to dusk
 // the hours of field work (the morning and midday, to the first delivery), the share of workers out on a day (each by his id and
 // the day), their pace (px), how long they stop at a stop of their round and at its work (a tree, the rock, the pier's end), how
 // far from the estate their round may go (tiles), and how many spots one works just outside the door
-const FIELD={from:.07,to:DELIVER.from,out:.6,speed:26,carry:.7,hurry:37,pause:[1.5,5],work:[3,6],reach:4,spots:[2,3]};
+const FIELD={from:.07,to:DELIVER.from,out:.6,speed:26,carry:.7,hurry:37,pause:[1.5,5],work:[3,6],reach:4,spots:[2,3],stall:2};
 /* each worker is someone: id (his holding, estate and number there), a name and a look (v) of his people, seeded from that id
    (FOLK_COUNT: how many each estate has had, this session; never saved). Recruited where he works (workerRecruit), he leaves his
    estate a pair of hands short (t.lost[k]: the days the gaps fill again) until someone new moves in, REFILL_DAYS later */
@@ -173,7 +173,11 @@ function fieldRest(f){const R=f.plan.R,w=f.plan.loop[f.si].w;f.wait=w[0]+R()*(w[
 function fieldStep(f,d,fast,s=moveStep(fast?FIELD.hurry:FIELD.speed*(f.load?FIELD.carry:1),d)){const p=f.wp[0],dx=p.x-f.x,dy=p.y-f.y,dd=Math.hypot(dx,dy);
   if(Math.abs(dx)>.2)f.dir=dx>0?1:-1;f.moving=true;
   if(dd<=s){WALKED.set(f,(WALKED.get(f)||0)+dd);f.x=p.x;f.y=p.y;f.wp.shift();if(p.i>=0)f.si=p.i;return true}
-  if(f.plan.pier||!walk(f,dx,dy,s,f.plan.pens&&((x,y)=>!inPen(f.plan.pens,x,y,1)))){WALKED.set(f,(WALKED.get(f)||0)+s);f.x+=dx/dd*s;f.y+=dy/dd*s}return false}
+  // (sliding along a fence or a wall, or to and fro by it, and come no nearer his stop than he has been for FIELD.stall s: he steps
+  // straight for it, as one barred does. f.fb: the nearest he has come to it, f.fst: how long since)
+  if(f.fp!==p){f.fp=p;f.fb=dd;f.fst=0}
+  if(f.fst>FIELD.stall||f.plan.pier||!walk(f,dx,dy,s,f.plan.pens&&((x,y)=>!inPen(f.plan.pens,x,y,1)))){WALKED.set(f,(WALKED.get(f)||0)+s);f.x+=dx/dd*s;f.y+=dy/dd*s}
+  const nd=Math.hypot(p.x-f.x,p.y-f.y);if(nd<f.fb-.5){f.fb=nd;f.fst=0}else f.fst+=d;return false}
 // at work out of doors: home by his round and in at the door when the hours end, his day is inside or danger comes; else stop to
 // stop, carrying what he got from a stop to the next
 function fieldWork(t,f,d,now){const pl=f.plan,risk=fieldDanger(t,f);
