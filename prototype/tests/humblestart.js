@@ -23,6 +23,8 @@ Kit.suite(({ok,info})=>{
     seen.push(k+' '+h.name+' ('+h.kind+(h.owner?' of the '+t.FACS[h.owner].n:', free')+', '+far.toFixed(1)+' days from a capital)');
     ok(kindOk&&atGate&&rep&&bed&&camps&&hides&&far>=X.off-.01,wname+' '+k+': begins at '+h.name+', a '+h.kind+(whoOk?'':' (its row’s place found none: a fallback)')+', '+far.toFixed(1)+' days from the nearest capital, no bandit camp or hideout within '+X.camp+' tiles; known there (reputation '+(P.rep[h.name]||0)+'), a bed for nothing');
     ok(/\S/.test(line)&&line.includes(h.name),wname+' '+k+': its own first line names it: “'+line.replace(/<[^>]+>/g,'').slice(0,120)+'”');
+    {const S=t.seenArr(),V=t.vis()*1.5/t.TILE;let far=0;for(let i=0;i<S.length;i++)if(S[i]){const x=i%t.MW,y=(i-x)/t.MW;if(Math.hypot(x+.5-P.x/t.TILE,y+.5-P.y/t.TILE)>V+2)far++}
+     ok(!far&&t.TOWNS.filter(o=>o!==h&&t.seenTile(o.tx,o.ty)).every(o=>Math.hypot(o.x-P.x,o.y-P.y)<=t.vis()*1.5+32),wname+' '+k+': nothing known past your sight ('+far+' tiles beyond it), the next holding found, not shown')}
     if(k==='nobody')ok(h.kind==='hamlet'&&!h.owner,wname+': a Nobody wakes in a natural hamlet, the free folk’s ('+h.name+')');
    }
    info(wname+': '+seen.join('; '));

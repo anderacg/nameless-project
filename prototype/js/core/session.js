@@ -81,7 +81,7 @@ function startGame(k,b){
   startDraws(own,()=>{W.sites=genSites()});fogReset();if(!own)Rng.newGame();startDraws(own,initCritters);
   // (where your past begins: a hamlet or a small village by its reason, world/start.js StartPlace; none fits, your people's capital)
   const S=StartPlace.pick(k),home=S?S.t:capitalOf(P.race);P.home=home.name;if(b.rep)P.rep[home.name]=b.rep;
-  if(S){P.rep[home.name]=Math.max(P.rep[home.name]||0,HUMBLE_START.rep);KNOWLEDGE.holding(S.next);revealDisk(S.next.x,S.next.y,HUMBLE_START.reveal)}
+  if(S)P.rep[home.name]=Math.max(P.rep[home.name]||0,HUMBLE_START.rep);// (nothing past what you see revealed: the owner, 2026-11-05)
   heroAtGate(home);G.mode='world';G.lastTown=home;// (in front of its gate, on land: world.js gateSpot)
   startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);
     for(let i=0,n=Math.round(density(WM).monsterStart*spawnMul('monsters'));i<n;i++)spawnMonster(true)});

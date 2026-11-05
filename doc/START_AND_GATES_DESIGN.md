@@ -61,7 +61,7 @@ For the pasts that begin in a realm's village, "far" is 1 day or more from its c
 
 ### 1.3 What it gives you
 
-- **A place that is yours, a little.** The hamlet knows you: reputation +10 there (others 0), a bed at its house for nothing, its reeve's name in your first line. Only its surroundings are known on your map: the hamlet, its road, and the first holding the road reaches (`KNOWLEDGE`); the rest is fog.
+- **A place that is yours, a little.** The hamlet knows you: reputation +10 there (others 0), a bed at its house for nothing, its reeve's name in your first line. Only what you see is known on your map: the rest is fog, the next holding too (the owner, 2026-11-05: "the map should not reveal what we still not discover").
 - **A first line that says so:** "You wake in Elderwell, a hamlet of free folk far from any lord's hall, with nothing but the clothes you stand in."
 - **A first reason to leave:** the opening story's first contract (OPENING_STORY_DESIGN §1, "Work for a stranger") given by the hamlet's reeve, its cart lost on the road to the nearest village. With that story not built yet: one hamlet job ready on its board (a beast at the herds, or a letter to the next village).
 - **Your band from nothing:** the hamlet hires a few melee volunteers (its `hires`), so your first men are the hamlet's own.

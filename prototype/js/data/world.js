@@ -76,8 +76,8 @@ const sightMost=()=>{const S=SIGHT_KIND;return Math.max(S.char,S.foot,S.shoot,S.
 // the fair place's rules: no bandit camp or hideout within camp tiles, no wild region within wild; a
 // realm's village or bigger within next days, a road joining them; near's reach (castle and town in days, woods: wood within woodsR
 // tiles a share woods of them, stones within stones tiles, road: a great road within road tiles of the gate); your welcome there
-// (rep), and the next holding's ground seen round it (reveal px)
-const HUMBLE_START={on:true,off:.25,camp:25,wild:15,next:2,castle:2,town:[.5,3],woods:.3,woodsR:6,stones:15,road:2,rep:10,reveal:80,jitter:.35};
+// (rep). Nothing beyond your sight is revealed (the owner, 2026-11-05: "the map should not reveal what we still not discover")
+const HUMBLE_START={on:true,off:.25,camp:25,wild:15,next:2,castle:2,town:[.5,3],woods:.3,woodsR:6,stones:15,road:2,rep:10,jitter:.35};
 // places you must earn (doc/START_AND_GATES_DESIGN.md §2; the owner, 2026-11-05: soft locks, "all depends on situations"): on
 // (the harness turns it off), by kind what opens a holding to you: renown, or honour with its realm (a castle: honour only); a
 // hamlet's or a village's always. Always open: your own, your service's, your home, a holding a quest of yours takes you to, a
