@@ -78,6 +78,15 @@ const sightMost=()=>{const S=SIGHT_KIND;return Math.max(S.char,S.foot,S.shoot,S.
 // tiles a share woods of them, stones within stones tiles, road: a great road within road tiles of the gate); your welcome there
 // (rep), and the next holding's ground seen round it (reveal px)
 const HUMBLE_START={on:true,off:.25,camp:25,wild:15,next:2,castle:2,town:[.5,3],woods:.3,woodsR:6,stones:15,road:2,rep:10,reveal:80,jitter:.35};
+// places you must earn (doc/START_AND_GATES_DESIGN.md §2; the owner, 2026-11-05: soft locks, "all depends on situations"): on
+// (the harness turns it off), by kind what opens a holding to you: renown, or honour with its realm (a castle: honour only); a
+// hamlet's or a village's always. Always open: your own, your service's, your home, a holding a quest of yours takes you to, a
+// pass for it (G2). Sealed by a quest: shut whatever you are (Gates.seal)
+const GATES={on:true,town:{renown:10,honor:10},city:{renown:30,honor:25},castle:{honor:20}};
+// a lord's audience (the owner: "when you want to meet certain lords you may require some renown or other stats"): a great lord
+// (renown great or more) hears you with renown need x his, or honour honor with his realm, or his regard rel for you, or in his
+// realm's service, or on his work (a quest of his or about him)
+const LORD_AUDIENCE={on:true,great:32,need:.5,honor:15,rel:20};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18},daily:{bandits:1,monsters:3,critters:3}},

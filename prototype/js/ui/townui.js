@@ -9,7 +9,9 @@
 // the places a holding has on its rail, in its order (their ids: town.js PLACES): its tabs, the hall where a lord holds court
 // (towns and castles, or any holding with a lord inside), the lists where it holds tournaments (an attack on the whole holding:
 // on its overview)
-const townPlaces=t=>Object.values(PLACES).filter(p=>p.rail&&p.at(t)).map(p=>p.id);
+// (outside its walls, refused at its gate: its market alone, world/gates.js)
+const outsideWalls=t=>!!(G.town&&G.town.ref===t&&G.town.outside);
+const townPlaces=t=>Object.values(PLACES).filter(p=>p.rail&&p.at(t)&&(!outsideWalls(t)||p.id==='trade')).map(p=>p.id);
 const shut=t=>Place.closed(t);
 // a quest of yours to report here (the Notice board's dot on the rail); the companions waiting in its tavern
 const questHere=t=>P.quests.some(q=>canReportAt(q,t)&&questReady(q));
@@ -25,6 +27,7 @@ function townOverview(t){
   const notes=[besieged(t)&&['bad','Under siege.'],Timed.of(t).has('sacked')&&['bad','Sacked: ruined for '+Timed.of(t).daysLeft('sacked')+' more days.'],!Timed.of(t).has('sacked')&&Timed.of(t).has('raided')&&['bad','Raided: ruined for '+Timed.of(t).daysLeft('raided')+' more days.'],
     Timed.of(t).has('turmoil')&&['gold','In turmoil after changing hands.'],t.stock&&foodDays(t)<3&&['bad','Hungry: food for '+foodDays(t)+' days.'],
     ls.length&&['', 'Lords inside: '+ls.map(l=>lordName(l)+' and '+l.troops.length+' soldiers').join(', ')+'.'],
+    outsideWalls(t)&&['gold','Outside the walls: only the market is open to you.'],
     P.stay&&P.stay.town===t.name&&['good','Your band is staying here.'],
     questHere(t)&&['gold','A quest of yours is ready to report at the Notice board.'],
     compsHere(t).length&&['gold','In the Tavern: '+compsHere(t).map(id=>COMPS[id].n).join(' and ')+' for hire.'],

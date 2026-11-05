@@ -543,7 +543,7 @@ function townAct(a,arg,t){
 // place has: the tavern)
 function townPlace(t,tab){
   if(!tab)return null;
-  const p=PLACES[tab]||PLACES.tavern;
+  const p=PLACES[tab]||PLACES.tavern;if(outsideWalls(t)&&p.id!=='trade')return null;
   return p.opens(t)?p:null;
 }
 function renderTown(){

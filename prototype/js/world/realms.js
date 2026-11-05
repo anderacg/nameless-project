@@ -297,6 +297,8 @@ function worldDay(){
 function lordMeet(l,topic){
   KNOWLEDGE.sight(l);
   if(hostileTo(l.fac)&&!lordSpares(l))return cornered(l,'lord')?parley(l,'lord'):startEncounter({kind:'lord',ref:l,list:l.troops.slice()});
+  // (a great lord who will not see you yet: his steward's word, world/gates.js)
+  if(!topic&&!(G.enc&&G.enc.kind==='lord'&&G.enc.ref===l)){const g=Gates.audience(l);if(!g.ok)return Gates.showSteward(l,g)}
   const talk=['dialog','scene'].includes(G.mode)&&G.enc&&G.enc.kind==='lord'&&G.enc.ref===l&&G.enc.talk||{};
   G.enc={kind:'lord',ref:l,talk};G.mode=l.inside&&G.scene?'scene':'dialog';P.tx=null;
   // (the talk: story/conversation.js; its answers kept on the visit's talk, said once each)
