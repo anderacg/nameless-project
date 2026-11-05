@@ -105,11 +105,12 @@ const Kit={
   },
   // the test field by holding h (the march and click suites': open land 240, 200 px off Ashford's gate), [x, y]: that spot while no
   // holding's lots lie within 12 tiles of it and its ground is open within 5, else the nearest such spot round it, 2 tiles a step (the hamlets' tracks, 2026-11-04,
-  // moved Wardenhall's farm onto the old one)
-  field(h){
+  // moved Wardenhall's farm onto the old one); east, ns: the lots kept that many tiles off it east and north and south (a suite whose
+  // scene runs farther: tests/paths.js)
+  field(h,east=14,ns=12){
     const t=T,TILE=t.TILE,x0=h.x+240,y0=h.y+200,bare=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);
-      if(!t.WM.has(tx-14,ty-14)||!t.WM.has(tx+14,ty+14))return false;for(let j=-5;j<=5;j++)for(let i=-5;i<=5;i++)if(t.tAt(tx+i,ty+j)!==t.T_OPEN)return false;
-      return t.TOWNS.every(z=>(z.lots||[]).every(l=>l.x+l.n<tx-12||l.x>tx+14||l.y+l.n<ty-12||l.y>ty+12))};
+      if(!t.WM.has(tx-14,ty-Math.max(14,ns))||!t.WM.has(tx+Math.max(14,east),ty+Math.max(14,ns)))return false;for(let j=-5;j<=5;j++)for(let i=-5;i<=5;i++)if(t.tAt(tx+i,ty+j)!==t.T_OPEN)return false;
+      return t.TOWNS.every(z=>(z.lots||[]).every(l=>l.x+l.n<tx-12||l.x>tx+east||l.y+l.n<ty-ns||l.y>ty+ns))};
     if(bare(x0,y0))return [x0,y0];
     for(let r=1;r<=30;r++)for(let k=0;k<8*r;k++){const a=k/(8*r)*6.2832,x=x0+Math.cos(a)*r*2*TILE,y=y0+Math.sin(a)*r*2*TILE;if(bare(x,y))return [x,y]}
     return [x0,y0];

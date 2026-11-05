@@ -92,10 +92,10 @@ try{
   // ---- on screen at 1x (a 16-px tile, 1 tile some 250 m): a band on foot (you and ten levies), an all-mounted band (you on a riding
   // horse, ten knights), on each ground; each exactly today's pace x (.4 / .6) x .68, and near the doc's targets (§10.2: a people
   // with no ground of its own here, a dwarf off his hills; a human is 10% faster on roads and open grass, so 10% over them)
-  // (a road's spot on a straight run of great road, ten tiles east and west, a track to a hamlet aside; every spot 200 px clear of the holdings, a hamlet's among them)
+  // (a road's spot on a straight run of great road, seven tiles east and west, a track to a hamlet aside; every spot 200 px clear of the holdings, a hamlet's among them)
   const great=new Set();for(const r of t.WM.roads)if(r.kind==='road'&&!r.est)for(const i of r.path)great.add(i);
   const spot=(tt,cl,k=0)=>{let n=0;for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++){if(t.tAt(tx,ty)!==tt||t.tAt(tx+1,ty)!==tt||t.climAt((tx+.5)*16,(ty+.5)*16)!==cl||t.climAt((tx+1.5)*16,(ty+.5)*16)!==cl)continue;
-    if(tt===t.T_ROAD&&![-3,-2,-1,0,1,2,3,4,5,6].every(a=>great.has(ty*t.MW+tx+a)))continue;
+    if(tt===t.T_ROAD&&![-2,-1,0,1,2,3,4].every(a=>great.has(ty*t.MW+tx+a)))continue;
     if(t.TOWNS.some(h=>Math.hypot(h.x-(tx+.5)*16,h.y-(ty+.5)*16)<(h.owner?60:200)))continue;if(n++===k)return [(tx+.5)*16,(ty+.5)*16]}return null};
   const grounds={open:spot(t.T_OPEN,'grass'),road:spot(t.T_ROAD,'grass'),forest:spot(t.T_FOREST,'grass'),hills:spot(t.T_HILL,'grass'),swamp:spot(t.T_OPEN,'swamp')};
   // (the pace's formula, exact, a moment after a teleport (a step there first, so the band's ground is the spot's, not the last spot's): with world battles off, the army's position its own step; on, it is its men's
@@ -113,7 +113,10 @@ try{
     const w=(want[who]||{})[g];if(w&&Math.abs(v/S.travel/w[0]-1)>w[1])bad.push(who+' '+g+' '+(v/S.travel).toFixed(2)+' px/s at the base, off the doc\'s '+w[0]+' by '+Math.round((v/S.travel/w[0]-1)*100)+'%');
     if(who==='human foot'&&g!=='open'&&g!=='road')continue;rows.push(who+' '+g+' '+v.toFixed(1)+' px/s ('+today.toFixed(1)+' before), '+kmDay(v).toFixed(0)+' km a day')}}
   // (the owner, 2026-11-01: the army is where its men are) its men marching keep its pace on open ground
-  if(t.WORLD_BATTLE.on&&grounds.open){P.race='dwarf';P.gear.mount=null;P.troops={hum_levy:10};P.x=grounds.open[0];P.y=grounds.open[1];const want=t.MAP_BASE*t.travelMul()*t.WORLD_PACE*S.move*S.travel,v=march(grounds.open);ok(Math.abs(v/want-1)<=.06,'your men marching on open ground keep the pace: '+v.toFixed(2)+' px/s (the formula '+want.toFixed(2)+')')}
+  // (its spot open grass 30 tiles east, 2 either side: the 4 s of its march on that ground alone)
+  const runOpen=(()=>{for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-44;tx++){let ok=true;for(let b=-2;b<=2&&ok;b++)for(let a=0;a<=30&&ok;a++)if(t.tAt(tx+a,ty+b)!==t.T_OPEN||t.climAt((tx+a+.5)*16,(ty+b+.5)*16)!=='grass')ok=false;
+    if(ok&&!t.TOWNS.some(h=>Math.hypot(h.x-(tx+15)*16,h.y-(ty+.5)*16)<15*16+200))return [(tx+.5)*16,(ty+.5)*16]}return grounds.open})();
+  if(t.WORLD_BATTLE.on&&runOpen){P.race='dwarf';P.gear.mount=null;P.troops={hum_levy:10};P.x=runOpen[0];P.y=runOpen[1];const want=t.MAP_BASE*t.travelMul()*t.WORLD_PACE*S.move*S.travel,v=march(runOpen);ok(Math.abs(v/want-1)<=.06,'your men marching on open ground keep the pace: '+v.toFixed(2)+' px/s (the formula '+want.toFixed(2)+')')}
   P.gear.mount=null;P.troops={};
   info('on screen at 1x: '+rows.join('; '));
   ok(!bad.length&&rows.length>=12,'every ground, on foot and mounted: today\'s pace x .4/.6 x .68 x travel exactly, the base near the doc\'s targets (on foot within 5% of 8.9 open, 11.6 road, 5.3 forest; mounted within 8% of 13.3 and 17.3)'+(bad.length?': '+bad.join('; '):''));

@@ -260,18 +260,18 @@ function* genHoldings(g){
 /* ---------- the free folk's hamlets (doc/WORLD_DESIGN.md §6.3, §8.9; the owner, 2026-11-04: "implement the hamlet and small
    villages, natural hamlet or village"), stage 7b: once the realms' holdings stand (their checks passed), in the land past every
    holding's reach (its kind's reach and margin more: no realm's), on a site a holding could stand on, the best of a draw by
-   its ground: by a river (within river tiles, never on its bank: bank tiles or more off it, its road onto a bridge's ramp straight), the water, the woods or the hills (the trade its note names: fishing, woodcutters',
+   its ground: by a river (within river tiles, never on its bank: more than bank tiles off it, its gate's road clear of a bridge's ramp; no water by its gate, the road's end there), the water, the woods or the hills (the trade its note names: fishing, woodcutters',
    mining, else farming). How many: the size's base (base, by area) x the Hamlets setting (mult), at most one a fringe tiles of
    such land; each PLACE_GAP from the holdings and from each other. A village share of them a small free village, the rest
    hamlets; their people the nearest holding's first; no realm (realm null: the free folk). Their data as a holding's, after the
    realms' in g.holdings (a retry drops the last try's first), so the roads join them ---------- */
-const PLACE_HAMLET={base:[[143360,24],[286720,45],[786432,100]],mult:{none:0,few:.5,normal:1,many:1.6},fringe:900,village:.25,margin:3,river:12,bank:3,step:2};
+const PLACE_HAMLET={base:[[143360,24],[286720,45],[786432,100]],mult:{none:0,few:.5,normal:1,many:1.6},fringe:900,village:.25,margin:3,river:12,bank:6,step:2};
 function* genHamlets(g){
   const m=g.map,W=m.w,H=m.h,K=m.kind,F=g.work.place,R=g.rng('hamlets',g.attempt),X=PLACE_HAMLET,own=g.holdings=g.holdings.filter(h=>h.realm);
   m.freeHoldings=[];const want=Math.round(areaTable(X.base,W*H)*(X.mult[g.s.hamlets]??1));if(!want||!F){yield 1;return}
   const free=(x,y)=>own.every(h=>{const r=HOLDING_TYPES[h.kind].reach+X.margin;return(h.tx-x)*(h.tx-x)+(h.ty-y)*(h.ty-y)>r*r});
   const site=i=>{const x=i%W,y=(i-x)/W;if(x<4||y<4||x>=W-5||y>=H-5||F.conn[i]!==F.main)return false;
-    if(F.dR[i]<=X.bank)return false;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const k=K[i+a+b*W];if(k===T_WATER||k===T_MOUNT||k===T_FORD)return false}return placeDry(m,i)};
+    if(F.dR[i]<=X.bank)return false;for(let b=-1;b<=2;b++)for(let a=-1;a<=1;a++){const k=K[i+a+b*W];if(k===T_WATER||k===T_MOUNT||k===T_FORD)return false}return placeDry(m,i)};
   const C=[];let fringe=0;
   for(let y=4;y<H-4;y+=X.step){for(let x=4;x<W-4;x+=X.step){const i=y*W+x;if(K[i]===T_WATER||K[i]===T_MOUNT||!free(x,y))continue;fringe+=X.step*X.step;if(!site(i))continue;
       const v=(F.dR[i]<=X.river?.6:0)+(F.dW[i]<=3?.4:0)+(F.dF[i]<=2||F.dM[i]<=6?.25:0)+R()*.8;C.push([v,i])}
@@ -397,9 +397,10 @@ function placeLords(R,n){if(n<=4)return null;const used=new Set(PLACE_REALMS.fla
    x4 in a wild region, x0.8-1.25 by a noise (so a road wanders as the land leads it), +1.5 a terrace climbed or
    descended; peaks, water (but straight across, below) and cliff edges closed */
 const PLACE_ROAD={hm:1,pull:40,slack:1.04,round:[6,3,1.5,.75],xing:{bridge:[2,8,12],ford:[1.5,4],ferry:[2,16],reuse:.5}};
-// (a holding's centre as lots.js lays it (centreBox): a village's hall 2 x 2, any other's 4 x 4, its bottom row on the holding's
-// tile, its gate the tile below: {x, y, n})
-const placeBox=h=>{const n=h.kind==='village'?2:4;return{x:h.tx-(n>>1),y:h.ty-n+1,n}};
+// (a holding's centre as lots.js lays it (centreBox): 4 x 4 for every kind (a village's 64 px centre too: it was taken as 2 x 2, and
+// a bridge's track laid over the rest of a free village's was taken up under it, lots.js roadsToGates, its end left at the water),
+// its bottom row on the holding's tile, its gate the tile below: {x, y, n})
+const placeBox=h=>({x:h.tx-2,y:h.ty-3,n:4});
 // (the last roads stage's numbers, for the tests: roads searched, ms in all and the most for one, tiles searched, searches that
 // left their box for the whole map, the stretches of river where no crossing can be made: bare, and the holdings' own crossings:
 // holdXing laid, holdBare the rivers by a holding none could be made over, 'holding river'; the bridges' ends no road reaches:

@@ -19,7 +19,7 @@ Kit.suite(({ok,info})=>{
  // (your army of troops on cleared open ground, Ashford's house lots copied where lay puts them ([tile dx, dy, lot kind]: about
  // the army's start), its march formation its style's)
  const scene=(troops,lay,water=[])=>{Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
-  const h=Kit.goHome('Ashford');Kit.goTo(...Kit.field(h));P.troops={...troops};delete P.army.march;
+  const h=Kit.goHome('Ashford');Kit.goTo(...Kit.field(h,46,26));/* (no lot in the ground the scene clears, 44 tiles east, 24 either side) */P.troops={...troops};delete P.army.march;
   const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE);for(let y=ty-24;y<=ty+24;y++)for(let x=tx-24;x<=tx+44;x++)if(t.WM.has(x,y)){const i=y*t.MW+x;t.WM.kind[i]=t.T_OPEN;t.WM.edge[i]=0;t.WM.elev[i]=64}
   for(const [x,y] of water)t.WM.kind[(ty+y)*t.MW+tx+x]=t.T_WATER;
   const town=t.townBy('Ashford'),src=k=>town.lots.find(l=>l.st==='built'&&(l.type===k||l.k===k))||town.lots.find(l=>l.k==='house'),lots=lay.map(([dx,dy,k],i)=>({...src(k||'house'),x:tx+dx,y:ty+dy,id:'pathlot'+i,_ft:null}));
@@ -77,8 +77,9 @@ Kit.suite(({ok,info})=>{
   if(!odd)ok(false,'an L-shaped, towered or clustered building among the lots');else{
    // (the ground with it and without it (its lot taken out a moment): cells wholly in its footing shut that were open, cells wholly out
    // of it, in its box, as they were; a cell part in, part out, shut: a building's edge reaches into it)
-   const X=odd.l.x*TILE,Y=odd.l.y*TILE;Kit.goTo(X+odd.s.width/2,Y+odd.s.height+40);const nav=new t.MarchGround(P,[]),g=nav.grid;
-   const at=odd.town.lots.indexOf(odd.l);odd.town.lots.splice(at,1);const g0=new t.MarchGround(P,[]).grid;odd.town.lots.splice(at,0,odd.l);let shutIn=0,cellsIn=0,openOut=0,cellsOut=0;
+   // (its footing alone: a slit between it and a neighbour shut too is march.js shutSlits', MARCH_MOVE.slit, left out here: tests/marchslit.js)
+   const X=odd.l.x*TILE,Y=odd.l.y*TILE;Kit.goTo(X+odd.s.width/2,Y+odd.s.height+40);const sl=t.MARCH_MOVE.slit;t.MARCH_MOVE.slit=0;const nav=new t.MarchGround(P,[]),g=nav.grid;
+   const at=odd.town.lots.indexOf(odd.l);odd.town.lots.splice(at,1);const g0=new t.MarchGround(P,[]).grid;odd.town.lots.splice(at,0,odd.l);t.MARCH_MOVE.slit=sl;let shutIn=0,cellsIn=0,openOut=0,cellsOut=0;
    const inF=(x,y)=>odd.f.some(r=>x>=X+r.x&&x<X+r.x+r.w&&y>=Y+r.y&&y<Y+r.y+r.h);
    for(let r=0;r<g.R;r++)for(let c=0;c<g.C;c++){const x0=nav.x+c*g.cs,y0=nav.y+r*g.cs,i=r*g.C+c;if(x0<X+odd.x0||x0+g.cs>X+odd.x1||y0<Y+odd.y0||y0+g.cs>Y+odd.y1||!g0.cost[i])continue;let all=true,none=true;
     for(let y=y0;y<y0+g.cs;y++)for(let x=x0;x<x0+g.cs;x++){const k=inF(x+.5,y+.5);all&&=k;none&&=!k}if(all){cellsIn++;if(!g.cost[i])shutIn++}if(none){cellsOut++;if(g.cost[i])openOut++}}

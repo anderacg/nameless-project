@@ -18,8 +18,11 @@ const lotAdd=(t,l)=>Layout.of(t).add(l);// (the old names: Layout add, drop, bel
 const lotDrop=(t,l)=>Layout.of(t).drop(l);
 // rebuild the grid from every holding's lots (after a load)
 // the tiles no building may take: the bandits' camps
-// a bandit camp's 2 x 2 tiles (its own, the one right of it and the two behind) and a tile round them
-function occReserve(){for(const c of CAMP_SPOTS)for(let j=-2;j<=1;j++)for(let i=-1;i<=2;i++)if(!OCC[(c.ty+j)*MW+c.tx+i])OCC[(c.ty+j)*MW+c.tx+i]=-2}
+// a bandit camp's 2 x 2 tiles (its own, the one right of it and the two behind) and a tile round them; and every holding's centre
+// (centreBox), its own centre laid over it: a neighbour laid first keeps off it, its lots and its estates' tracks (a hamlet stands
+// just past a holding's reach, worldplace.js genHamlets: an estate's track ran through Brookford's yard)
+function occReserve(){for(const c of CAMP_SPOTS)for(let j=-2;j<=1;j++)for(let i=-1;i<=2;i++)if(!OCC[(c.ty+j)*MW+c.tx+i])OCC[(c.ty+j)*MW+c.tx+i]=-2;
+  for(const t of TOWNS){const b=centreBox(t);for(let y=b.y;y<b.y+b.n;y++)for(let x=b.x;x<b.x+b.n;x++)if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-2}}
 // bandits keep their distance from the estates: no estate's building or field within BANDIT_GAP tiles of a bandit camp or hideout
 // (estates avoid the camps and hideouts there are; hideouts are placed after the estates and avoid them, sites.js)
 const BANDIT_GAP=8;
@@ -305,7 +308,9 @@ class Layout{
     // then the works outside
     for(const k of Object.keys(ESTATES))if(!INNER.includes(k)&&bldLv(t,k)&&!this.estateLot(k,R))t.bld[k]=0;
     // and the tracks to them
-    this.laying=false;this.tracks();t._spots=null}
+    // (a new world's, laid out in TOWNS' order: every holding's once the last stands, as a load lays them (occRebuild), so a
+    // track keeps off a neighbour's lots laid after it: a hamlet just past a holding's estates, worldplace.js genHamlets)
+    this.laying=false;t._spots=null;if(TOWNS.some(o=>!o.lots))return;if(t===TOWNS[TOWNS.length-1]&&!WM.roads.some(r=>r.est)){for(const o of TOWNS)Layout.of(o).tracks(true);tracksDone()}else this.tracks()}
   // the tracks to its outer estates no way comes near, the nearest its gate first (estTrack); the last
   // holding's done (a new world's holdings are laid out in TOWNS' order), the graph and the land reckoned with them (tracksDone).
   // more: others are to come (a save's lots put back: occRebuild)
@@ -404,6 +409,10 @@ function lotClear([ax,ay],[bx,by]){const n=Math.max(1,Math.ceil(Math.hypot(bx-ax
 // lotClear)
 function softClear(l){for(let t=0;t<2;t++){const o=[l[0],l[1]];for(let j=2;j<l.length;j+=2){const a=l[j-2],b=l[j-1],c=l[j],d=l[j+1];o.push(a*.75+c*.25,b*.75+d*.25,a*.25+c*.75,b*.25+d*.75)}o.push(l[l.length-2],l[l.length-1]);l=o}
   for(let j=2;j<l.length;j+=2)if(!lotClear([l[j-2],l[j-1]],[l[j],l[j+1]]))return false;return true}
+// (a track's line from tile to tile, as the art rounds it (softClear) off every lot and field; else each leg pinned near its ends, 15%
+// in, so its corners are rounded only that much: the Sunreach house a city's track's corner cut across)
+function tight(pts,door){if(softClear([...pts,...door].flat()))return pts;const o=[pts[0]];
+  for(let k=1;k<pts.length;k++){const [ax,ay]=pts[k-1],[bx,by]=pts[k];o.push([ax+(bx-ax)*.15,ay+(by-ay)*.15],[ax+(bx-ax)*.85,ay+(by-ay)*.85],pts[k])}return o}
 function estTrack(t,l){
   const K=tiles,Fe=WM.feat,C=LOT_TRACK,n=l.n,fx=l.x+(n>>1),fy=l.y+n,xy=i=>[i%MW,(i-i%MW)/MW],cen=i=>[i%MW+.5,(i-i%MW)/MW+.5];
   const way=i=>{const [x,y]=xy(i);return K[i]===T_ROAD&&!(Fe[i]&32)&&walkTo(t,x,y)},free=i=>{const [x,y]=xy(i),k=K[i];return x>0&&y>0&&x<MW-1&&y<MH-1&&passable(k)&&k!==T_ROAD&&k!==T_FORD&&!OCC[i]&&DEP_AT[i]<0&&walkTo(t,x,y)};// (never over a vein or a fishing ground: resources.js)
@@ -418,9 +427,9 @@ function estTrack(t,l){
   const own=[];lotTiles(l,(x,y)=>own.push(y*MW+x));for(const [x,y] of l.plots||[])own.push(y*MW+x);const mine=new Set(own);
   for(const o of own)for(const s of [MW,-1,1,-MW]){const i=o+s,q=L(i),[x,y]=xy(i);if(q<0||!free(i))continue;const c=C.side*(Math.abs(x-fx)+Math.abs(y-fy));if(c<D[q]){D[q]=c;H.push(c,i)}}
   let to=-1,best=Infinity;
-  // (never from a way beside or behind the centre, in the yard the art leads a road's end round to the gate (worldart.js gateLead,
-  // GENART.yard): it would be painted round the centre's corners, over the lots there)
-  const cb=centreBox(t),yd=GENART.yard+.5,besideCentre=i=>{const x=i%MW+.5,y=(i-i%MW)/MW+.5;return x>=cb.x-yd&&x<=cb.x+cb.n+yd&&y>=cb.y-yd&&y<cb.y+cb.n};
+  // (never from a way beside or behind the centre, nor before it but at its gate, in the yard the art leads a road's end round to
+  // the gate (worldart.js gateLead, GENART.yard): it would be painted round the centre's corners, over the lots there)
+  const cb=centreBox(t),yd=GENART.yard+.5,besideCentre=i=>{const x=i%MW+.5,y=(i-i%MW)/MW+.5;return x>=cb.x-yd&&x<=cb.x+cb.n+yd&&y>=cb.y-yd&&y<=cb.y+cb.n+yd&&i!==(t.ty+1)*MW+t.tx};
   while(H.n&&H.top<best){const d=H.top,i=H.pop(),q=L(i);if(d>D[q])continue;if(way(i)){if(besideCentre(i))continue;const v=d+Math.min(G[q],C.cut);if(v<best){best=v;to=i}continue}
     for(const [dx,dy] of DIR8){const j=i+dx+dy*MW,r=L(j);if(r<0||!(free(j)||way(j))||!step(i,j))continue;const k=K[j],c=d+(k===T_FOREST?C.wood:k===T_HILL?C.hill:1)*(dx&&dy?1.4142:1);if(c<D[r]){D[r]=c;fr[r]=i;H.push(c,j)}}}
   if(to<0)return null;const P=[];for(let i=to;i>=0;i=fr[L(i)])P.push(i);
@@ -430,7 +439,7 @@ function estTrack(t,l){
   for(let a=0;a<P.length-1;){let b=a+1;for(let e=a+2;e<P.length&&e<=a+C.pull;e++)if(ok(lineTiles([cen(P[a]),cen(P[e])]),!a)&&lotClear(cen(P[a]),cen(P[e])))b=e;V.push(b);a=b}
   const S=lineTiles(V.map(k=>cen(P[k]))),e=P[P.length-1],[ex,ey]=xy(e),o=[MW,-1,1,-MW].map(s=>e+s).find(i=>mine.has(i)),door=[ex===fx&&ey===fy?[l.x+n/2,l.y+n]:[ex+.5+(o%MW-ex)/2,ey+.5+((o-o%MW)/MW-ey)/2]],
     T=S[0]===P[0]&&S[S.length-1]===e&&ok(S,true)&&softClear([...V.map(k=>cen(P[k])),...door].flat())?S:P,
-    line=[...(T===S?V.map(k=>cen(P[k])):P.map(cen)),...door].flat();
+    line=[...(T===S?V.map(k=>cen(P[k])):tight(P.map(cen),door)),...door].flat();
   // laid, kept, marked on the painted roads
   const r={laid:T.slice(1),was:[],fe:[]};for(const i of r.laid){r.was.push(K[i]);r.fe.push(Fe[i]);K[i]=T_ROAD;Fe[i]=Fe[i]&~64|128}
   // (the building turned to its track, where the track comes to it and not to its fields; a mine or a quarry keeps its back to the rock)

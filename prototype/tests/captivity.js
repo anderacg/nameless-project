@@ -81,7 +81,7 @@ Kit.suite(({ok})=>{
   // (your realm may pay while you wait)
   {const f=t.FIDS[0];P.fac=f;t.addHonor(f,40-t.honorWith(f),true);const q=caged();P.fac=f;window.Math.random=()=>0;t.act('held-wait');window.Math.random=rnd;ok(!C.held&&/pay for you/.test(panel()),'your realm pays for you while you wait');t.act('dlg-ok');P.fac=null}
   // (a save made in the cage keeps the cage)
-  {caged();window.Math.random=rnd;const s=JSON.stringify(C.save());C.held=null;C.load(JSON.parse(s));ok(C.held?.prison?.day===1,'a save in the cage keeps the cage');t.hidePanel();G.mode='world';G.modal=false;C.hour();ok(/In their cage/i.test(panel()),'loaded: back in their cage');C.held=null;t.hidePanel()}
+  {caged();window.Math.random=rnd;const s=JSON.stringify(C.save());C.held=null;C.load(JSON.parse(s));ok(C.held?.prison?.day===1,'a save in the cage keeps the cage');t.hidePanel();G.mode='world';G.modal=false;C.hour();ok(/<h2>In (their cage|the pit)<\/h2>/i.test(panel()),'loaded: back in their cage (a camp\'s or a hideout\'s pit, by the band\'s nearest site)');C.held=null;t.hidePanel()}
   // ---- the traits (phase 4): Slippery, Silver Tongue, Old Soldier
   setup();{const e={list:Array(6).fill('militia')},c={k:'band',name:'the bandits'},TR=X.traits,ch=C.escapeChance(e),pc=C.persuadeChance(c),rs=C.ransomOf(c),q={help:0,guard:0},bc=C.breakChance(q);
    P.perks=['slippery'];ok(Math.abs(C.escapeChance(e)-ch-TR.slippery.escape)<1e-9&&C.breakChance(q)>bc,'Slippery: +'+Math.round(TR.slippery.escape*100)+'% to get away, an easier break-out');

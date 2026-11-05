@@ -30,7 +30,7 @@ try{
  // more (the checks below set things there, P.x + 1.05 x your sight, and woods hide them: Encounter inView, spotted)
  const far=(tx,ty)=>t.TOWNS.every(z=>Math.hypot(z.tx-tx,z.ty-ty)>10);
  // (the test spot has a holding near enough for the kinds that want one, the lost child's home: within the law's reach less 2 tiles)
- const nearOne=(tx,ty)=>t.TOWNS.some(z=>Math.hypot(z.tx-tx,z.ty-ty)<t.WORLD_SCALE.law.eventNear-2);
+ const nearOne=(tx,ty)=>t.TOWNS.some(z=>z.owner&&Math.hypot(z.tx-tx,z.ty-ty)<t.WORLD_SCALE.law.eventNear-2)&&!!t.landHold((tx+.5)*TILE,(ty+.5)*TILE)?.owner;// (a realm's: a toll wants a realm's land, not a hamlet's free folk's)
  const around=(tx,ty,r,f)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(!f(t.tAt(tx+i,ty+j)))return false;return true};
  const pond=new Set([...(t.WM.ponds||[]),...(t.WM.oases||[])].flatMap(o=>o.tiles||[o.i])),around2=(tx,ty,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(!t.passable(t.tAt(tx+i,ty+j))&&!pond.has((ty+j)*t.MW+tx+i))return false;return true};
  const Vt=Math.ceil(t.vis()/t.visMulAt(t.P.x,t.P.y)*1.35/TILE),bare=(tx,ty)=>{for(let j=-1;j<=1;j++)for(let i=0;i<=Vt;i++)if(t.tAt(tx+i,ty+j)===t.T_FOREST)return false;return true};
