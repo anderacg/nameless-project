@@ -12,6 +12,21 @@ const BGS={
   nobody:{n:'Nobody',weapon:null,d:'Nothing but the clothes you stand in, a few coins and a crust for the road. You fight with your bare hands. Unarmed and Athletics.',gold:5,cargo:{grain:3},troops:{},bonus:0,attr:{},sk:{fist:2,athl:1}},
   apprentice:{n:'Runaway apprentice',weapon:'wand',d:'A wand, 55 gold and a quick wit. Intellect and Medicine.',gold:55,cargo:{grain:6},troops:{},bonus:0,attr:{int:1,agi:1},sk:{spell:1,med:1}}
 };
+// where a past begins and why (doc/START_AND_GATES_DESIGN.md §1.1; the owner, 2026-11-05: "start from nothing: you spawn in a
+// small hamlet far away", every past, each its reason; a Nobody in a natural hamlet): at, whose (free: the free folk's; realm: a
+// realm's; any); kinds, the holdings it may be; near, what it lies by (castle, road, woods, town, stones: a shrine or ruins); away:
+// the farthest there is from the capitals, your own people's most (HUMBLE_START.off from every capital at least, for all); line,
+// the first line ({h} the place, {c} what it lies by)
+const PAST_START={
+  nobody:{at:'free',kinds:['hamlet'],away:true,line:'You wake in {h}, a hamlet of free folk far from any lord\u2019s hall. They found you on the road with nothing and took you in.'},
+  soldier:{at:'realm',kinds:['village'],near:'castle',line:'Paid off after the last campaign, you were left at {h}, the nearest village to {c}. Your sword is all the pay you kept.'},
+  guard:{at:'any',kinds:['village'],near:'road',line:'The caravan you guarded broke up at {h}, and your pay went with it. The road goes on without you.'},
+  woodcutter:{at:'any',kinds:['hamlet','village'],near:'woods',line:'The timber camp you worked for has shut for the season. {h}, by the woods, is where they let you go.'},
+  exile:{at:'free',kinds:['hamlet','village'],away:true,line:'Cast out of your own lands, you came to {h}, where no lord asks questions.'},
+  apprentice:{at:'any',kinds:['village','hamlet'],near:'town',line:'You ran from your master in {c}. {h} is as far as your coins took you.'},
+  hedge:{at:'any',kinds:['hamlet','village'],near:'stones',line:'The old stones near {h} called to you, and here you are.'},
+  merchant:{at:'realm',kinds:['village'],near:'road',line:'Your family\u2019s cart lost a wheel and its goods on the road. You limped into {h} with what was left, to start again.'}
+};
 const ATTRS={str:['Strength','Health and damage'],agi:['Agility','Attack speed, footspeed and stamina'],int:['Intellect','Mana, and faster Tactics and Medicine'],cha:['Charisma','Party size, hire costs, Leadership and Trade']};
 // disciplines: every one starts at 0 and rises only by doing what it names (state.js train); each gives more of that. A race
 // or background gives a knack (P.apt): its disciplines are learned faster, never higher to start

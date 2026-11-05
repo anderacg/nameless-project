@@ -71,6 +71,13 @@ const sightMost=()=>{const S=SIGHT_KIND;return Math.max(S.char,S.foot,S.shoot,S.
    classic seed, now 21); caves, ruins and shrines about 1.5 x the base on the classic seed ("ok 1.5": its land 3.19 x the
    base's, ^.35), growing gently past it. The owner, 2026-10-23: the hideouts deep in the wilds, by the wild land, about half the
    land's (61 on the classic seed, now 30). The generated classic seed grows as any world */
+// the humble start (doc/START_AND_GATES_DESIGN.md §1.2; world/start.js StartPlace): on (the harness turns it off: the older suites
+// start at the capital's gate), off: days' march at least from every capital (the classic map's farthest hamlet some .7 days off);
+// the fair place's rules: no bandit camp or hideout within camp tiles, no wild region within wild; a
+// realm's village or bigger within next days, a road joining them; near's reach (castle and town in days, woods: wood within woodsR
+// tiles a share woods of them, stones within stones tiles, road: a great road within road tiles of the gate); your welcome there
+// (rep), and the next holding's ground seen round it (reveal px)
+const HUMBLE_START={on:true,off:.25,camp:25,wild:15,next:2,castle:2,town:[.5,3],woods:.3,woodsR:6,stones:15,road:2,rep:10,reveal:80,jitter:.35};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18},daily:{bandits:1,monsters:3,critters:3}},

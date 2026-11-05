@@ -419,7 +419,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  as a load lays them, a holding's lots walked to on foot with no ferry, a hamlet's estates on its own bank, a spur left in a
 //  centre's ring opened). Proof for the generator: the sums below. Were W1 21d9cb5a, W2 975f62a1, W3 3d4ee001, W4 2bf73f82,
 //  W5 0b1fd5be, W6 08300b7e, W7 b30568ab, W8 d229693c, B2 db4c9cc7)
-const EXPECT={W1:'93537e2b',W2:'264a7c7f',W3:'ac2aba75',W4:'fbefe32d',W5:'414df094',W6:'a8409953',W7:'6683fb0e',W8:'05f25f36',B2:'905b24f3'};
+// (W7 and B2 re-recorded 2026-11-05, on purpose: the humble start (doc/START_AND_GATES_DESIGN.md §1): every save keeps where you
+//  began (P.home: your people's capital here, the harness's HUMBLE_START off). Proof: without the field both as before; W1-W6, W8
+//  and the sums held. Were W7 6683fb0e, B2 905b24f3)
+const EXPECT={W1:'93537e2b',W2:'264a7c7f',W3:'ac2aba75',W4:'fbefe32d',W5:'414df094',W6:'a8409953',W7:'f54cb046',W8:'05f25f36',B2:'33568fdf'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

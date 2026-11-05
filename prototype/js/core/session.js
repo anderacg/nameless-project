@@ -79,13 +79,15 @@ function startGame(k,b){
   // (a generated world but the classic one: its first sites, herds, bands and beasts from its seed, seededStart)
   const own=seededStart();useWorld(WM);initWorld();if(own)Rng.reset();
   startDraws(own,()=>{W.sites=genSites()});fogReset();if(!own)Rng.newGame();startDraws(own,initCritters);
-  const home=capitalOf(P.race);if(b.rep)P.rep[home.name]=b.rep;
+  // (where your past begins: a hamlet or a small village by its reason, world/start.js StartPlace; none fits, your people's capital)
+  const S=StartPlace.pick(k),home=S?S.t:capitalOf(P.race);P.home=home.name;if(b.rep)P.rep[home.name]=b.rep;
+  if(S){P.rep[home.name]=Math.max(P.rep[home.name]||0,HUMBLE_START.rep);KNOWLEDGE.holding(S.next);revealDisk(S.next.x,S.next.y,HUMBLE_START.reveal)}
   heroAtGate(home);G.mode='world';G.lastTown=home;// (in front of its gate, on land: world.js gateSpot)
   startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);
     for(let i=0,n=Math.round(density(WM).monsterStart*spawnMul('monsters'));i<n;i++)spawnMonster(true)});
   if(own)Rng.newGame();
   // (named: the hero and the band in the first line; the band's name only once you gave it one)
-  hidePanel();G.msgs=[];log('You ride out of '+home.name+' alone, as '+(P.name?htmlText(P.name)+', ':'')+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. '+
+  hidePanel();G.msgs=[];if(S)log(S.line+' '+(P.band?htmlText(P.band)+' is you alone for now: ':'')+'Win fame around here and the locals will follow you.');else log('You ride out of '+home.name+' alone, as '+(P.name?htmlText(P.name)+', ':'')+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. '+
     (P.band?htmlText(P.band)+' is you alone for now: win fame around here and the locals will follow you.':'Win fame around here and the locals will follow you.'));updateHint();updateHUD(true);
 }
 // the land you are about to see, painted now, inside the loading steps, not in the first frame: the chunks under the view the

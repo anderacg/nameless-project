@@ -1,9 +1,19 @@
 # A humble start, and places you must earn: design
 
-**Status:** design only, 2026-11-05, for the owner's review. Nothing here is built.
+**Status:** 2026-11-05: §1, the humble start (phase S1), built (`world/start.js`, `tests/humblestart.js`); the gates (G1-G3) next.
 **The owner's asks (2026-11-05):**
 1. "Make a background more meaningful, like start from nothing: you spawn in a small hamlet far away."
 2. "Split map loading between chunks, so that some area may be locked. E.g. bigger cities may require some requirements."
+
+**The owner's decisions (2026-11-05)**, fixed:
+1. **Every past starts in a hamlet or village, with its own reason for being there.** A Nobody wakes in a natural hamlet (one of the free folk's) far away; the others come to a hamlet or small village by their past (§1.1).
+2. **Soft locks:** the land stays open; places and people refuse you until you have earned them.
+3. **What is locked depends on the place:** some by their standing (cities, castles), some by danger (strong enemies about), some by quests.
+4. **Lords too:** meeting some lords needs renown or other stats.
+5. **Breaking in is in:** bribes and slipping in at night.
+6. **Provinces on the map now** (G3), with their danger.
+
+The rest of this document is written to those decisions.
 
 ---
 
@@ -23,26 +33,31 @@
 
 ## 1. A humble start: you begin in a far hamlet
 
-### 1.1 Who starts there
+### 1.1 Who starts there, and why
 
-A past says where it begins (`BGS[k].start`):
+Every past begins in a hamlet or a small village (`BGS[k].start`), each for its own reason, told in the first line:
 
-| Past | Begins at | Why |
+| Past | Begins at | Its reason (the first line, in short) |
 |---|---|---|
-| **Nobody** | **a far hamlet** | nothing to your name: a stranger nobody sent for |
-| Woodcutter, Exile, Hedge Mage | a far hamlet (or village) of the free folk | the edges of the world are theirs |
-| Soldier, Guard, Apprentice, Merchant | your people's capital, as today | they come from the realm's own service and trade |
+| **Nobody** | a **natural hamlet** (the free folk's), as far from the realms as any | you woke there with nothing; they took you in |
+| Soldier | a realm's village near one of its castles | discharged after the last campaign, you were paid off and left at the nearest village |
+| Guard | a village on a great road | the caravan you guarded broke up here; your pay with it |
+| Woodcutter | a hamlet or village by deep woods | the timber camp you worked for closed for the winter |
+| Exile | a natural hamlet far from your people's realm | cast out of your own lands, you came where no lord asks questions |
+| Apprentice | a village a day or more from a town | you ran from your master in the town; this is as far as your money took you |
+| Hedge mage | a hamlet near a shrine or ruins | the old stones called you here |
+| Merchant | a village on a trade road | your family's cart lost a wheel and its goods on the road; you are here to start again |
 
-*Alternative (one switch, simpler):* a **Start** choice on the New game page for every past: **Capital** or **Far hamlet**, the past's own the default. Recommended: the table above as the default, the switch to override it.
+Each past's knack stays as it is. A past whose place cannot be found (no such village on the map) takes the next row's kind, then any far hamlet, then any village; then its people's capital, as today.
 
 ### 1.2 Which hamlet
 
 Chosen once a new game is made, from the world's free hamlets (`WM.freeHoldings`), the best by:
-- **far**: at least 2 days' march from every realm capital (Router days), the farther the better;
+- **far**: a quarter day's march at least from every realm capital (`HUMBLE_START.off`; on the classic map the farthest hamlet is some 0.7 days off), and for a Nobody or an Exile the farthest there is;
 - **your people's** first: its folk your race, else any;
 - **fair** (as the settler start's rules, WORLD_DESIGN §7.5): no bandit camp or hideout within 25 tiles; no wild region within 15; a road out of it; a realm's village or town within 2 days, so there is somewhere to go next.
 
-No hamlet fits (Hamlets None, or a crowded map): the farthest **village** from the capitals; then the capital, as today.
+For the pasts that begin in a realm's village, "far" is 1 day or more from its capital, not 2. No place fits: the fallbacks in §1.1.
 
 ### 1.3 What it gives you
 
@@ -83,6 +98,13 @@ So this design is about the second. **Recommendation: soft locks, not walls.** T
 
 Every number is in one table (`GATES` in `data/world.js`) so it is easy to tune.
 
+**Locked by the situation** (the owner: "all depends on situations"), on top of a place's standing:
+- **Danger:** a holding whose land holds a strong lord's army or beasts far above your level turns you back with a warning, not a wall ("Raiders of the Iron Jaws hold the road to Granitegate: few your size come back"); you may go on regardless. Shown on the map as the province's danger (§2.3).
+- **A quest:** a holding sealed by a story (quarantine, a siege's aftermath, a hunted man inside) opens when the quest says (`t.sealed`, saved, default none).
+- **War:** a realm at war with your service keeps its holdings shut to you (as today, `foeAt`).
+
+**Lords too** (the owner: "when you want to meet certain lords you may require some renown or other stats"): a realm's ruler and its great lords hear you only once you have the standing (`LORD_AUDIENCE`: a ruler renown 40 or honour 30 with the realm, a great lord renown 20 or honour 15, others always). Until then: their steward's word ("My lord does not see every sellsword") and what you need. A summons in a quest, or a letter of introduction, lets you in.
+
 **A pass** is earned, not ground for:
 - a **letter of introduction** from a reeve or innkeeper after a job well done (a new reward; `world/letters.js` keeps letters today), naming one town or city;
 - a **writ** bought from a town's steward with gold and some reputation;
@@ -92,7 +114,7 @@ A pass is kept in `P.passes` (holding name → day given; default `{}`). The rea
 
 **Breaking in is possible, and costs:** bribing a gate-warden (gold, a chance by Persuasion, honour lost if caught), or slipping in at night (Scouting; caught: arrested, `world/captivity.js`). These are choices on the gate's page, not exploits.
 
-### 2.3 Regions on the map (optional, phase G3)
+### 2.3 Provinces on the map (phase G3, wanted now)
 
 To make "areas" visible as well as places: the map's **provinces**, each realm's land round its city, named, with a small lock on the map and the province's gate shown (its city's requirement). A province is the holdings' land (`world/territory.js` already claims it per holding), grouped by the city or capital it falls under: no new map structure.
 
@@ -120,7 +142,7 @@ Medium. `Holding#admits(P)` → `{ok, why, need}` and the gate page in `ui/town.
 | **S1** | The humble start (§1): pasts' starts, the far hamlet, fairness, the first line, Home, known places, tests | small |
 | **G1** | City and castle gates (§2.2, §2.4) with renown, honour and rank; the gate page; the lock on the map | medium |
 | **G2** | Passes: letters of introduction, writs, guild tokens; bribes and slipping in | medium |
-| **G3** | Provinces on the map, and the wild regions' danger marks (§2.3) | medium, optional |
+| **G3** | Provinces on the map, and their danger (§2.3) | medium |
 
 S1 can be built and played on its own. G1 is useful alone too (renown and honour already exist); G2 makes it fair for a nobody with neither.
 

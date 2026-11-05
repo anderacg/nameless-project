@@ -8,7 +8,7 @@
 const STAY_FREE=30,STAY_BASE=5;
 const stayMen=()=>troopCount()+woundedN()+compsInBand().length;
 const stayCost=()=>STAY_BASE+Math.ceil(stayMen()/2);
-const stayFree=t=>t.owner==='player'||!!P.fac&&t.owner===P.fac||standingAt(t)>=STAY_FREE;
+const stayFree=t=>t.owner==='player'||!!P.fac&&t.owner===P.fac||standingAt(t)>=STAY_FREE||t.name===P.home;// (where you began, a bed for nothing: world/start.js)
 const worldTime=()=>Clock.worldTime();// (clock.js)
 const stayTown=()=>P.stay&&townBy(P.stay.town);
 // why you may not stay here ('' if you may)
