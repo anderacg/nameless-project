@@ -131,7 +131,7 @@ Kit.suite(({ok,info})=>{
   // ---- saved and loaded mid-encounter
   {fresh();const z=t.TOWNS.find(realm);Kit.goHome(z);const R=t.roadSt(),mk=(k,x)=>{for(let i=0;i<10;i++){const e=t.roadSpawn(k,P.x+30+i*24,P.y+x);if(e)return e}return null};
    const c=mk('campfire',0),h=mk('herbalist',20),o=mk('toll',-20);
-   if(c){c.read=1;c.searched=1;c.seen=1}if(h){h.learned=1}if(o){o.known=1;o.talked=1;o.fee=33}
+   if(c){c.read=1;c.searched=1;c.seen=1}if(h){h.learned=1}if(o){o.known=1;o.talked=1;o.fee=33;o.real=false}/* (false toll-men, seen through: the lord's own by a draw were never reported) */
    G.mode='world';G.modal=false;const snap=JSON.stringify(W.road);t.saveGame(true);W.road=null;t.loadGame();
    const back=k=>t.roadList().find(x=>x.k===k);
    ok(c&&o&&JSON.stringify(W.road)===snap&&t.roadList().every(x=>x instanceof t.Encounter),'saved and loaded as they were, mid-way (the tracks read and the ashes searched; '+(h?'she has taught you; ':'')+'the toll seen through, talked up to 33 gold)');

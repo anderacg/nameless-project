@@ -23,7 +23,7 @@ Kit.suite(({ok})=>{
   const q2=t.makeQuest('relieve',ash,lord);q2.accept();foe.state='rest';t.questDay();ok(!P.quests.includes(q2),'the siege over without you: closed');P.quests=[]}
  // ======== a lord's: find an army
  {foe.state='march';foe.inside=null;foe.x=ash.x+900;foe.y=ash.y+300;P.x=ash.x-1500;P.y=ash.y-1500;const q=t.makeQuest('scout',ash,lord);
-  ok(q&&q.foeName&&q.cause.includes(q.foeName),lord.name+' wants '+(q&&q.foeName)+'’s army found');q.accept();
+  ok(q&&q.foeName&&(t.KNOWLEDGE.knowsLord(q.foe())?q.cause.includes(q.foeName):!q.title.includes(q.foeName)),lord.name+' wants '+(q&&q.foeName)+'’s army found (its lord named once known: '+q.title+')');q.accept();ok(q.title.includes(q.foeName)&&t.KNOWLEDGE.knowsLord(q.foe()),'taken, the work names him and you know him: '+q.title);
   const g=t.questGoal(q);ok(g&&g.r>0&&!q.done,'a lead: where it was last heard of');
   const f=q.foe();P.x=f.x+20;P.y=f.y;t.questGoal(q);ok(q.found&&q.done,'seen: found, done; report back');P.quests=[]}
  Kit.clear();

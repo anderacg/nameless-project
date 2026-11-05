@@ -21,9 +21,9 @@ const lotDrop=(t,l)=>Layout.of(t).drop(l);
 // a bandit camp's 2 x 2 tiles (its own, the one right of it and the two behind) and a tile round them; and every holding's centre
 // (centreBox), its own centre laid over it: a neighbour laid first keeps off it, its lots and its estates' tracks (a hamlet stands
 // just past a holding's reach, worldplace.js genHamlets: an estate's track ran through Brookford's yard), and the ground before its
-// gate, 3 tiles across and 2 out from the gate's own: its way out (Mossdell's was walled in by its own lots)
+// gate, 3 tiles across on the gate's row and the one out from it: its way out (Mossdell's was walled in by its own lots)
 function occReserve(){for(const c of CAMP_SPOTS)for(let j=-2;j<=1;j++)for(let i=-1;i<=2;i++)if(!OCC[(c.ty+j)*MW+c.tx+i])OCC[(c.ty+j)*MW+c.tx+i]=-2;
-  for(const t of TOWNS){const b=centreBox(t);for(let y=b.y;y<b.y+b.n+3;y++)for(let x=y<b.y+b.n?b.x:t.tx-1;x<(y<b.y+b.n?b.x+b.n:t.tx+2);x++)if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-2}}
+  for(const t of TOWNS){const b=centreBox(t);for(let y=b.y;y<b.y+b.n+2;y++)for(let x=y<b.y+b.n?b.x:t.tx-1;x<(y<b.y+b.n?b.x+b.n:t.tx+2);x++)if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-2}}
 // bandits keep their distance from the estates: no estate's building or field within BANDIT_GAP tiles of a bandit camp or hideout
 // (estates avoid the camps and hideouts there are; hideouts are placed after the estates and avoid them, sites.js)
 const BANDIT_GAP=8;

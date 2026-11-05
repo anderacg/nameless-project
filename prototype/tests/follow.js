@@ -26,7 +26,7 @@ Kit.suite(({ok,info})=>{
   // near the fixed view's bottom edge, and the ring rises a little)
   {press(L.x,L.y-4);const l1=labels(),r=ring()&&ring().el.getBoundingClientRect(),c=cl(L.x,L.y-6),S=document.getElementById('screen').getBoundingClientRect(),R=t.RING.r,
     kept={x:S.left+t.clamp(c.clientX-S.left,R+36,Math.max(R+36,S.width-R-36)),y:S.top+t.clamp(c.clientY-S.top,R+30,Math.max(R+30,S.height-R-40))},at=r&&Math.hypot(r.left-kept.x,r.top-kept.y);
-   ok(l1==='Meet,Follow,Look'&&G.chase==null&&P.tx==null&&at<2,'a click on a lord (not hostile): his ring opens at him ('+l1+'), nothing done yet');
+   ok(l1==='Meet,Follow,Look'&&G.chase==null&&P.tx==null&&at<6,/* (6 px, was 2, 2026-11-05: at his army as drawn, its men's middle a few px off his point: 4) */'a click on a lord (not hostile): his ring opens at him ('+l1+'), nothing done yet');
    Kit.key('Escape','Escape');ok(!ring()&&G.chase==null&&P.tx==null&&!G.follow,'Esc closes it, doing nothing');
    press(L.x,L.y-4);press(L.x+60,L.y+60);ok(!ring()&&G.chase==null&&P.tx==null,'a press elsewhere closes it, doing nothing (no travel)');
    // (a press elsewhere soon after: still closes only)

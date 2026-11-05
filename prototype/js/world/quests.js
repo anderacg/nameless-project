@@ -845,15 +845,20 @@ class ScoutQuest extends JobQuest{
     const foes=W.lords.filter(o=>!o.dead&&!o.gone&&!o.inside&&atWar(this.fac,o.fac)&&o.troops&&o.troops.length);
     if(!foes.length)return false;
     const f=foes.sort((a,b)=>qTiles(a,lord)-qTiles(b,lord))[0];
-    this.foeName=f.name;
-    this.cause='Word is '+f.name+' of the '+FACS[f.fac].n+' is in the field with '+f.troops.length+' men.';
-    this.title='Find '+f.name+'’s army';
-    this.text=lord.name+' wants to know where '+f.name+'’s army is, and how strong. Find it, and report.';
+    this.foeName=f.name;this.words(f,lord.name);
     this.pays(110,0,6,40);
+  }
+  // (its words: a lord you have not met named only once you take the work, his realm's army till then: knowledge.js)
+  words(f,by){
+    const n=KNOWLEDGE.knowsLord(f)?f.name:null,who=n?n+'’s army':'a '+FACS[f.fac].n+' army';this.by=by||this.by;
+    this.cause='Word is '+(n?n+' of the '+FACS[f.fac].n:'a lord of the '+FACS[f.fac].n)+' is in the field with '+f.troops.length+' men.';
+    this.title='Find '+who;
+    this.text=this.by+' wants to know where '+who+' is, and how strong. Find it, and report.';
   }
   begin(){
     const f=this.foe();
     if(!f)return false;
+    KNOWLEDGE.lord(f);this.words(f);
     this.markLead(f);
   }
   foe(){
