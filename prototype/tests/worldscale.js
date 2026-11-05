@@ -92,12 +92,15 @@ try{
   // ---- on screen at 1x (a 16-px tile, 1 tile some 250 m): a band on foot (you and ten levies), an all-mounted band (you on a riding
   // horse, ten knights), on each ground; each exactly today's pace x (.4 / .6) x .68, and near the doc's targets (§10.2: a people
   // with no ground of its own here, a dwarf off his hills; a human is 10% faster on roads and open grass, so 10% over them)
+  // (a road's spot on a straight run of great road, ten tiles east and west, a track to a hamlet aside; every spot 200 px clear of the holdings, a hamlet's among them)
+  const great=new Set();for(const r of t.WM.roads)if(r.kind==='road'&&!r.est)for(const i of r.path)great.add(i);
   const spot=(tt,cl,k=0)=>{let n=0;for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++){if(t.tAt(tx,ty)!==tt||t.tAt(tx+1,ty)!==tt||t.climAt((tx+.5)*16,(ty+.5)*16)!==cl||t.climAt((tx+1.5)*16,(ty+.5)*16)!==cl)continue;
-    if(t.TOWNS.some(h=>Math.hypot(h.x-(tx+.5)*16,h.y-(ty+.5)*16)<60))continue;if(n++===k)return [(tx+.5)*16,(ty+.5)*16]}return null};
+    if(tt===t.T_ROAD&&![-3,-2,-1,0,1,2,3,4,5,6].every(a=>great.has(ty*t.MW+tx+a)))continue;
+    if(t.TOWNS.some(h=>Math.hypot(h.x-(tx+.5)*16,h.y-(ty+.5)*16)<(h.owner?60:200)))continue;if(n++===k)return [(tx+.5)*16,(ty+.5)*16]}return null};
   const grounds={open:spot(t.T_OPEN,'grass'),road:spot(t.T_ROAD,'grass'),forest:spot(t.T_FOREST,'grass'),hills:spot(t.T_HILL,'grass'),swamp:spot(t.T_OPEN,'swamp')};
-  // (the pace's formula, exact, a moment after a teleport: with world battles off, the army's position its own step; on, it is its men's
+  // (the pace's formula, exact, a moment after a teleport (a step there first, so the band's ground is the spot's, not the last spot's): with world battles off, the army's position its own step; on, it is its men's
   // middle (march.js menCentre), the teleport's snap in that moment: the march's own pace below, steady, march)
-  const speed=([x,y])=>{const wb=t.WORLD_BATTLE.on;t.WORLD_BATTLE.on=false;try{P.x=x;P.y=y;P.dir=1;P.tx=x+60;P.ty=y;G.chase=null;const x0=P.x,y0=P.y;t.updateWorld(.05);const px=Math.hypot(P.x-x0,P.y-y0)/.05;P.tx=null;return px}finally{t.WORLD_BATTLE.on=wb}};
+  const speed=([x,y])=>{const wb=t.WORLD_BATTLE.on;t.WORLD_BATTLE.on=false;try{for(let k=0;k<2;k++){P.x=x;P.y=y;P.dir=1;P.tx=x+60;P.ty=y;G.chase=null;if(!k)t.updateWorld(.05)}const x0=P.x,y0=P.y;t.updateWorld(.05);const px=Math.hypot(P.x-x0,P.y-y0)/.05;P.tx=null;return px}finally{t.WORLD_BATTLE.on=wb}};
   // (the march's own pace: your men marching on open ground, 2 s to form and gather speed, then 2 s measured)
   const march=([x,y])=>{P.x=x;P.y=y;P.dir=1;G.chase=null;t.MarchArmy.of(P).sync();P.tx=x+400;P.ty=y;for(let i=0;i<40;i++)t.updateWorld(.05);const x0=P.x,y0=P.y;for(let i=0;i<40;i++)t.updateWorld(.05);const px=Math.hypot(P.x-x0,P.y-y0)/2;P.tx=null;return px};
   P.gear.mount=null;P.sk.ride.lv=0;P.sk.athl.lv=0;P.perks=[];P.comps={};P.wounded={};P.morale=60;P.hp=t.vitals()[0];(0,eval)('BAND=freshBand()');P.bsta=100;// (the pace by ground alone: fresh, not Parched or Tired after the day above, world/supply.js)

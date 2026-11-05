@@ -86,9 +86,11 @@ function worldLand(m){if(m._land==null)Object.defineProperty(m,'_land',{value:m.
 // built or lost in play moves nothing), kept as the land is; a world not in: the base
 function worldPorts(m){if(m._ports==null){if(m!==WM)return DENSITY.grow.ports;Object.defineProperty(m,'_ports',{value:TOWNS.filter(t=>bldLv(t,'port')).length,configurable:true})}return m._ports}
 // a world's road (DENSITY.grow roads): the tiles of the roads between its holdings, each once, a great road's 1, a track's
-// grow.track, never an estate's (lots.js estTrack: laid later, a worker's way); counted again as its roads change (none: 0)
+// grow.track, never an estate's (lots.js estTrack: laid later, a worker's way), nor a track to a hamlet of the free folk's (its
+// own folk's way, no travelled road: worldplace.js genHamlets); counted again as its roads change (none: 0)
 function worldRoads(m){const R=m.roads||[],n=R.filter(r=>!r.est).length;if(m._roads&&m._roads.n===n)return m._roads.v;const w=new Map();
-  for(const r of R)if(!r.est){const v=r.kind==='road'?1:DENSITY.grow.track;for(const i of r.path)if(!(w.get(i)>=v))w.set(i,v)}
+  const F=m.freeHoldings||[],free=name=>F.includes(name);
+  for(const r of R)if(!r.est&&!free(r.a)&&!free(r.b)){const v=r.kind==='road'?1:DENSITY.grow.track;for(const i of r.path)if(!(w.get(i)>=v))w.set(i,v)}
   let v=0;for(const x of w.values())v+=x;Object.defineProperty(m,'_roads',{value:{n,v},configurable:true,writable:true});return v}
 // a world's wild land (DENSITY.grow wild): its land far from every holding and road (world/sites.js wildLand, where the hideouts
 // stand), the world in's; a world not in: the base

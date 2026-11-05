@@ -612,6 +612,8 @@
     paint(S,x0,y0,w,h,v){const ts=this.ts,x1=x0+w,y1=y0+h;for(let ty=(y0/ts)|0;ty<=((y1-1)/ts|0);ty++)for(let tx=(x0/ts)|0;tx<=((x1-1)/ts|0);tx++){const t=ty*this.C+tx,f=this.f[t];if(!f)continue;
       const X0=Math.max(x0,tx*ts),X1=Math.min(x1,(tx+1)*ts),Y1=Math.min(y1,(ty+1)*ts);
       for(let y=Math.max(y0,ty*ts);y<Y1;y++){const row=f===1?this.all:this.m[this.o[t]+y-ty*ts],o=(y-y0)*w-x0;if(row)for(let x=X0;x<X1;x++)if(row>>(x-tx*ts)&1)S[o+x]=v}}}
+    // (its rows' store cut to what it holds, once it is filled: it doubles as it grows)
+    fit(){const n=Math.max(1,this.n)*this.ts;if(this.m.length>n)this.m=this.m.slice(0,n);return this}
     copy(){const k=new PX.TileMask(this.C,this.R,this.ts);k.f.set(this.f);k.o.set(this.o);k.m=this.m.slice();k.n=this.n;return k}
     get bytes(){return this.f.length*5+this.m.length*2}
     static of(B,C,R,ts){const k=new PX.TileMask(C,R,ts),W=C*ts;if(B)for(let i=0;i<B.length;i++)if(B[i])k.fill(i%W,(i/W)|0,1,1);return k}// (from a byte a pixel)
@@ -712,6 +714,7 @@
       if(wa(0,-1))keep.fill(X,Y,ts,3);if(wa(0,1))keep.fill(X,Y+ts-3,ts,3);if(wa(-1,0))keep.fill(X,Y,3,ts);if(wa(1,0))keep.fill(X+ts-3,Y,3,ts);
       // (round shores, spec.round: a corner with water on both sides of it, where the curved water reaches into the land, kept too)
       if(spec.round)for(const [a,b] of [[-1,-1],[1,-1],[-1,1],[1,1]])if(wa(a,0)&&wa(0,b))keep.fill(a<0?X:X+ts-6,b<0?Y:Y+ts-6,6,6)}
+    keep.fit();
     // (the tiles by water or a bridge (one of the 8 round it), where a curved shore (spec.wet) may reach in past the beach: nothing
     // stands on it there)
     const NW=new Uint8Array(C*R);for(let ty=0;ty<R;ty++)for(let tx=0;tx<C;tx++){for(let b=-1;b<=1&&!NW[ty*C+tx];b++)for(let a=-1;a<=1;a++){const x=tx+a,y=ty+b;if(x>=0&&y>=0&&x<C&&y<R&&(K[y*C+x]===KIND.water||K[y*C+x]===KIND.ford||bridge(x,y))){NW[ty*C+tx]=1;break}}}

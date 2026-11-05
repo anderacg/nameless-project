@@ -73,8 +73,8 @@ Kit.suite(({ok,info})=>{
    ok(!threat,'a band within '+TS.alert+' px of him: his battle style')}
   L.x=-9999;L.y=-9999;Style.forget(L)}
  // ---- a curved road: the column bends with it; forming up takes time; its buffers kept
- const pairs=[];for(const r of t.WM.roads){if(!r.a||!r.b||r.est)continue;const h1=t.townBy(r.a),h2=t.townBy(r.b);if(!h1||!h2)continue;const d=Math.hypot(h1.x-h2.x,h1.y-h2.y);if(d>18*t.TILE&&d<40*t.TILE)pairs.push([h1,h2,d])}
- pairs.sort((a,b)=>a[2]-b[2]);
+ const pairs=[];for(const r of t.WM.roads){if(!r.a||!r.b||r.est)continue;const h1=t.townBy(r.a),h2=t.townBy(r.b);if(!h1||!h2||!h1.owner||!h2.owner)continue;const d=Math.hypot(h1.x-h2.x,h1.y-h2.y);if(d>18*t.TILE&&d<40*t.TILE)pairs.push([h1,h2,d])}
+ pairs.sort((a,b)=>a[2]-b[2]);// (between the realms' holdings: a hamlet's track, the free folk's own way, aside)
  const way=(h1,h2,road=true)=>{Kit.clear();Kit.world({encCool:99});G.clock=t.DAY*.3;const s1=t.gateSpot(h1),s2=t.gateSpot(h2);Kit.goTo(s1.x,s1.y);G.lastTown=h1;G.chase=null;P.stuck=0;t.setByRoad(road);t.MARCH_ARMIES.delete(P);Style.forget(P);
   t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w=t.WUI.way;if(!w||!w.ok)return null;const at=[0];for(let i=1;i<w.n;i++)at.push(at[i-1]+Math.hypot(w.X[i]-w.X[i-1],w.Y[i]-w.Y[i-1]));return{X:w.X,Y:w.Y,n:w.n,at,to:s2}};
  const pick=(w,s)=>{let i=0;while(i<w.n-1&&w.at[i]<s)i++;return{x:w.X[i],y:w.Y[i],i}};

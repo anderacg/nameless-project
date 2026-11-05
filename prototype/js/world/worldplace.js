@@ -260,21 +260,21 @@ function* genHoldings(g){
 /* ---------- the free folk's hamlets (doc/WORLD_DESIGN.md §6.3, §8.9; the owner, 2026-11-04: "implement the hamlet and small
    villages, natural hamlet or village"), stage 7b: once the realms' holdings stand (their checks passed), in the land past every
    holding's reach (its kind's reach and margin more: no realm's), on a site a holding could stand on, the best of a draw by
-   its ground: by a river (within river tiles), the water, the woods or the hills (the trade its note names: fishing, woodcutters',
+   its ground: by a river (within river tiles, never on its bank: bank tiles or more off it, its road onto a bridge's ramp straight), the water, the woods or the hills (the trade its note names: fishing, woodcutters',
    mining, else farming). How many: the size's base (base, by area) x the Hamlets setting (mult), at most one a fringe tiles of
    such land; each PLACE_GAP from the holdings and from each other. A village share of them a small free village, the rest
    hamlets; their people the nearest holding's first; no realm (realm null: the free folk). Their data as a holding's, after the
    realms' in g.holdings (a retry drops the last try's first), so the roads join them ---------- */
-const PLACE_HAMLET={base:[[143360,24],[286720,45],[786432,100]],mult:{none:0,few:.5,normal:1,many:1.6},fringe:900,village:.25,margin:3,river:12,step:2};
+const PLACE_HAMLET={base:[[143360,24],[286720,45],[786432,100]],mult:{none:0,few:.5,normal:1,many:1.6},fringe:900,village:.25,margin:3,river:12,bank:3,step:2};
 function* genHamlets(g){
   const m=g.map,W=m.w,H=m.h,K=m.kind,F=g.work.place,R=g.rng('hamlets',g.attempt),X=PLACE_HAMLET,own=g.holdings=g.holdings.filter(h=>h.realm);
-  const want=Math.round(areaTable(X.base,W*H)*(X.mult[g.s.hamlets]??1));if(!want||!F){yield 1;return}
+  m.freeHoldings=[];const want=Math.round(areaTable(X.base,W*H)*(X.mult[g.s.hamlets]??1));if(!want||!F){yield 1;return}
   const free=(x,y)=>own.every(h=>{const r=HOLDING_TYPES[h.kind].reach+X.margin;return(h.tx-x)*(h.tx-x)+(h.ty-y)*(h.ty-y)>r*r});
   const site=i=>{const x=i%W,y=(i-x)/W;if(x<4||y<4||x>=W-5||y>=H-5||F.conn[i]!==F.main)return false;
-    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const k=K[i+a+b*W];if(k===T_WATER||k===T_MOUNT||k===T_FORD)return false}return placeDry(m,i)};
+    if(F.dR[i]<=X.bank)return false;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const k=K[i+a+b*W];if(k===T_WATER||k===T_MOUNT||k===T_FORD)return false}return placeDry(m,i)};
   const C=[];let fringe=0;
   for(let y=4;y<H-4;y+=X.step){for(let x=4;x<W-4;x+=X.step){const i=y*W+x;if(K[i]===T_WATER||K[i]===T_MOUNT||!free(x,y))continue;fringe+=X.step*X.step;if(!site(i))continue;
-      const v=(F.dR[i]<=X.river?.6:0)+(F.dW[i]<=3||F.dR[i]<=2?.4:0)+(F.dF[i]<=2||F.dM[i]<=6?.25:0)+R()*.8;C.push([v,i])}
+      const v=(F.dR[i]<=X.river?.6:0)+(F.dW[i]<=3?.4:0)+(F.dF[i]<=2||F.dM[i]<=6?.25:0)+R()*.8;C.push([v,i])}
     if(g.tick())yield .6*y/H}
   C.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);
   const n=Math.min(want,Math.floor(fringe/X.fringe)),P=[];
@@ -287,6 +287,7 @@ function* genHamlets(g){
     if(h.kind==='village'&&c==='swamp')d.style='stilt';
     d.mod=placeMod(m,F,d,h.i,R);d.note=placeNote(m,F,d,h.i).replace(/^An? /,'A free ').replace(' village ',h.kind==='hamlet'?' hamlet ':' village ');
     g.holdings.push(d);placeOpenUnder(m,K,d)}
+  m.freeHoldings=P.length?g.holdings.filter(h=>!h.realm).map(h=>h.name):[];// (the free folk's, by name: data/world.js worldRoads)
   yield 1}
 /* (a holding's centre on dry ground (the owner's play-test, 2026-10-22: a brook ran through a town past its castle and between its
    houses): no water (a river of any width, a stream) and no brook (worldgen.js genBrook) in its centre's box (placeBox: a town's
