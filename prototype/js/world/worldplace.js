@@ -397,10 +397,9 @@ function placeLords(R,n){if(n<=4)return null;const used=new Set(PLACE_REALMS.fla
    x4 in a wild region, x0.8-1.25 by a noise (so a road wanders as the land leads it), +1.5 a terrace climbed or
    descended; peaks, water (but straight across, below) and cliff edges closed */
 const PLACE_ROAD={hm:1,pull:40,slack:1.04,round:[6,3,1.5,.75],xing:{bridge:[2,8,12],ford:[1.5,4],ferry:[2,16],reuse:.5}};
-// (a holding's centre as lots.js lays it (centreBox): 4 x 4 for every kind (a village's 64 px centre too: it was taken as 2 x 2, and
-// a bridge's track laid over the rest of a free village's was taken up under it, lots.js roadsToGates, its end left at the water),
-// its bottom row on the holding's tile, its gate the tile below: {x, y, n})
-const placeBox=h=>({x:h.tx-2,y:h.ty-3,n:4});
+// (a holding's centre as lots.js lays it (centreBox): a village's hall 2 x 2, any other's 4 x 4, its bottom row on the holding's
+// tile, its gate the tile below: {x, y, n})
+const placeBox=h=>{const n=h.kind==='village'?2:4;return{x:h.tx-(n>>1),y:h.ty-n+1,n}};
 // (the last roads stage's numbers, for the tests: roads searched, ms in all and the most for one, tiles searched, searches that
 // left their box for the whole map, the stretches of river where no crossing can be made: bare, and the holdings' own crossings:
 // holdXing laid, holdBare the rivers by a holding none could be made over, 'holding river'; the bridges' ends no road reaches:

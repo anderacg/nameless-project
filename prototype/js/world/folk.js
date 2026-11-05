@@ -177,7 +177,7 @@ function fieldStep(f,d,fast,s=moveStep(fast?FIELD.hurry:FIELD.speed*(f.load?FIEL
   // straight for it, as one barred does, onto ground he can walk. f.fb: the nearest he has come to it, f.fst: how long since)
   if(f.fp!==p){f.fp=p;f.fb=dd;f.fst=0}
   const go=()=>{const x=f.x+dx/dd*s,y=f.y+dy/dd*s;return passable(tAt(Math.floor(x/TILE),Math.floor(y/TILE)))};
-  if(f.plan.pier||f.fst>FIELD.stall&&go()||!walk(f,dx,dy,s,f.plan.pens&&((x,y)=>!inPen(f.plan.pens,x,y,1)))&&go()){WALKED.set(f,(WALKED.get(f)||0)+s);f.x+=dx/dd*s;f.y+=dy/dd*s}
+  if(f.plan.pier||f.fst>FIELD.stall&&go()||!walk(f,dx,dy,s,f.plan.pens&&((x,y)=>!inPen(f.plan.pens,x,y,1)))){WALKED.set(f,(WALKED.get(f)||0)+s);f.x+=dx/dd*s;f.y+=dy/dd*s}
   const nd=Math.hypot(p.x-f.x,p.y-f.y);if(nd<f.fb-.5){f.fb=nd;f.fst=0}else f.fst+=d;return false}
 // at work out of doors: home by his round and in at the door when the hours end, his day is inside or danger comes; else stop to
 // stop, carrying what he got from a stop to the next
