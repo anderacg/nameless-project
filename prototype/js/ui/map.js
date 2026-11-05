@@ -46,6 +46,10 @@ function fullMapMarks(ppt){const F=FULLMAP,at=(x,y)=>'left:'+(x*ppt).toFixed(1)+
   for(const t of TOWNS){if(!seenTile(t.tx,t.ty))continue;const k=F.kinds[t.kind]?t.kind:'village',T=HOLDING_TYPES[t.kind];
     h+='<span class="fm-h" style="'+at(t.tx+.5,t.ty+.5)+'" title="'+htmlText(t.name+', '+t.label+(t.owner?' of the '+FACS[t.owner].n:''))+'"><i class="fm-k '+k+'" style="--c:'+(t._memCol||facCol(t))+'"></i>'+
       (ppt>=F.names||T&&T.tier>=3?'<b>'+htmlText(t.name)+'</b>':'')+'</span>'}
+  // (the provinces: at each seat (its name the holding's own, under it) its danger and a lock where it refuses you; the province's
+  // name and what makes it so in its tooltip: world/provinces.js)
+  if(PROVINCE.on)for(const p of Provinces.all()){const s=p.seat;if(!seenTile(s.tx,s.ty))continue;const d=Provinces.danger(p),lock=GATES.on&&!Gates.admits(s).ok;
+    h+='<span class="fm-prov lv'+d.lv+'" style="'+at(s.tx+.5,s.ty-2.5)+'" title="'+htmlText(p.name+' ('+p.holdings.length+' holdings): '+d.word+(d.what.length?' ('+d.what.join(', ')+')':'')+(lock?'. Its gate refuses you: '+Gates.admits(s).need.join(', or '):''))+'">'+d.word+(lock?' <i class="fm-lock"></i>':'')+'</span>'}
   for(const m of questMapMarks())h+='<i class="fm-q'+(m.on?' on':'')+'" style="'+at(m.x/TILE,m.y/TILE)+'" title="'+htmlText(m.title)+(m.on?' (tracked)':'')+'"></i>';
   for(const m of rumourMarks())if(rumourFade(m)>0)h+='<b class="fm-r" style="'+at(m.x/TILE,m.y/TILE)+';'+fmRumour()+'" title="'+htmlText('A rumour (day '+m.day+'): '+m.t)+'">?</b>';
   return h+'<span class="fm-you" style="'+at(P.x/TILE,P.y/TILE)+'" title="You"></span>'}
@@ -54,6 +58,7 @@ function fullMapLegend(){const F=FULLMAP,cr=WM.crossings||[],it=(i,n)=>'<li>'+i+
   const fs=Object.keys(FACS).filter(f=>TOWNS.some(t=>t.owner===f)).map(f=>it(sw(landCol(f)),FACS[f].n)).concat(TOWNS.some(t=>!t.owner)?[it(sw(landCol(null)),'No realm')]:[]);
   return '<aside class="fm-leg" aria-label="Legend">'+sec('Realms',fs)+sec('Holdings',Object.keys(F.kinds).filter(k=>TOWNS.some(t=>(F.kinds[t.kind]?t.kind:'village')===k)).map(k=>it('<i class="fm-k '+k+'" style="--c:#d8d0b8"></i>',F.kinds[k])))+
     sec('Rivers',WM.rivers&&WM.rivers.length?[1,2,3].map(w=>it(sw(F.river[w]),F.riverN[w])):[])+sec('Crossings',['bridge','ford','ferry'].filter(k=>cr.some(x=>x.kind===k)).map(k=>it('<i class="fm-x '+k+'"></i>',cap1(k))))+
+    sec('Provinces',!PROVINCE.on?[]:PROVINCE.words.map((w,i)=>it('<span class="fm-prov lv'+i+'" style="position:static;transform:none">'+w+'</span>',['nothing on its land your army need fear','something to watch','strong enough to beat you','far stronger than you'][i]))).concat(GATES.on?[it('<i class="fm-lock"></i>','Its seat refuses you')]:[])+
     sec('Map',[it('<i class="fm-you"></i>','You'),...(P.quests.length?[it('<i class="fm-q"></i>','Quest')]:[]),...(P.track?[it('<i class="fm-q on"></i>','Tracked quest')]:[]),...(rumourMarks().some(m=>rumourFade(m)>0)?[it('<b class="fm-r" style="'+fmRumour()+'">?</b>','Rumour')]:[]),it(sw(F.road),'Road'),it(sw(F.unknown),'Unexplored')])+'</aside>'}
 // the scale it opens at in a view of the room the window gives it (fullMapFit), and the zoom one step in or out (dir), about
 // tile point at (else the view's middle)

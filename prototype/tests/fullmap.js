@@ -123,7 +123,7 @@ Kit.suite(({ok,info})=>{
       localStorage.setItem(t.slotKey('5'),JSON.stringify(sv));t.loadGame('5');localStorage.removeItem(t.slotKey('5'));
     }finally{window.runSteps=run0}
     const [a,b,c]=seen,eq=(x,y)=>x&&x.join(' · ')===y.join(' · ');
-    ok(a&&a[0]==='Forging the world…'&&eq(a[1],[...stages,'Drawing borders','Peopling the land','Painting the first lands']),'a new world: "'+(a&&a[0])+'" '+(a&&a[1].join(' · ')));
-    ok(b&&b[0]==='Forging the world…'&&eq(b[1],['Peopling the land','Painting the first lands']),'the world in, again: '+(b&&b[1].join(' · ')));
-    ok(c&&c[0]==='Returning to Fmone…'&&eq(c[1],['Reading the save',...stages,'Restoring holdings and parties','Painting the land']),'a save from another world: "'+(c&&c[0])+'" '+(c&&c[1].join(' · ')))}
+    ok(a&&a[0]==='Forging the world…'&&eq(a[1],[...stages,'Drawing borders','Peopling the land','Painting the first lands','Raising the walls']),'a new world: "'+(a&&a[0])+'" '+(a&&a[1].join(' · ')));
+    ok(b&&b[0]==='Forging the world…'&&eq(b[1],['Peopling the land','Painting the first lands','Raising the walls']),'the world in, again: '+(b&&b[1].join(' · ')));
+    ok(c&&c[0]==='Returning to Fmone…'&&eq(c[1],['Reading the save',...stages,'Restoring holdings and parties','Painting the land','Raising the walls'])/* (the walls' step since the holdings' walls went solid: loading.js holdShutWarm) */,'a save from another world: "'+(c&&c[0])+'" '+(c&&c[1].join(' · ')))}
 });
