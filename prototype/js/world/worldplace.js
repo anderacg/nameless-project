@@ -663,12 +663,12 @@ function placeHoldXing(m,F,X,h,gate,boxed,Hd,shut){
     placeCross(m,F,X,best.i,best.j,best.tiles,best.kind,false,Hd,r>=0?r:null);PLACE_STATS.holdXing++;left.add(r)}}
 // (the tiles walked to from tile s within r of it (the larger of dx, dy): 4 ways over walkable ground, and over ferries (its tiles
 // steps); bank: its own bank, none of a crossing's tiles nor a ferry; shut: tiles not entered (the holdings' centres and the ring
-// round them: the ground a track can take, stage 8). {x0, y0, n, R}: R the steps to each tile of the box n x n
+// round them: the ground a track can take, stage 8); foot: no ferry, as folk on foot go. {x0, y0, n, R}: R the steps to each tile of the box n x n
 // from (x0, y0), plus 1 (0 not walked to); placeWalkAt (walked to) and placeWalkSteps (how far: -1 not) read it. The generator's
 // (a holding's rivers) and lots.js's (a holding's lots on ground its people walk to, not far round))
-function placeWalk(m,s,r,bank,shut){
+function placeWalk(m,s,r,bank,shut,foot){
   const W=m.w,K=m.kind,sx=s%W,sy=(s-sx)/W,x0=sx-r,y0=sy-r,n=2*r+1,R=new Uint16Array(n*n),q=[],fx=new Map(),cx=new Set();
-  for(const c of m.crossings){if(bank)for(const i of c.tiles)cx.add(i);else if(c.kind==='ferry'){fx.set(c.i,c.j);fx.set(c.j,c.i)}}
+  for(const c of m.crossings){if(bank)for(const i of c.tiles)cx.add(i);else if(c.kind==='ferry'&&!foot){fx.set(c.i,c.j);fx.set(c.j,c.i)}}
   const go=(x,y,d)=>{if(x<x0||y<y0||x>=x0+n||y>=y0+n||!m.has(x,y))return;const k=(y-y0)*n+x-x0,i=y*W+x;if(R[k]||!passable(K[i])||cx.has(i)||shut&&shut[i])return;R[k]=d;q.push(i)};
   go(sx,sy,1);
   for(let a=0;a<q.length;a++){const i=q[a],x=i%W,y=(i-x)/W,d=R[(y-y0)*n+x-x0]+1;go(x+1,y,d);go(x-1,y,d);go(x,y+1,d);go(x,y-1,d);

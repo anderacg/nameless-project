@@ -126,8 +126,10 @@ function fieldPlan(t,f){
   // (a herder round the pens' fence: their corners and sides; where some of it is no ground to walk, to and fro along the rest)
   else if(f.k==='pasture'&&fs.length){const xs=fs.map(c=>c[0]),ys=fs.map(c=>c[1]),x0=Math.min(...xs)*TILE-2,x1=(Math.max(...xs)+1)*TILE+1,y0=Math.min(...ys)*TILE-1,y1=(Math.max(...ys)+1)*TILE+2,mx=(x0+x1)/2,my=(y0+y1)/2;
     const ring=[[x0,y0],[mx,y0],[x1,y0],[x1,my],[x1,y1],[mx,y1],[x0,y1],[x0,my]].map(([x,y],i)=>({...stop(x,y,i%2?FIELD.pause:[.5,1.5]),ok:passable(terrAt(x,y))&&Math.hypot(x-p.x,y-p.y)<=far}));
-    if(ring.every(s=>s.ok)){pl.ping=false;const k=rk*4+Math.floor(R()*2);for(let i=0;i<8;i++)loop.push(ring[(k+i)%8])}
-    else{let best=[],run=[];for(const s of ring.concat(ring))if(s.ok){run.push(s);if(run.length>best.length&&run.length<=8)best=run.slice()}else run=[];best.forEach(s=>loop.push(s))}
+    // (and each leg to the next on ground he can walk: the fence's line may run along the water by them, Pearlbay's)
+    const leg=ring.map((s,i)=>{const q=ring[(i+1)%8];return clearLine(s.x,s.y,q.x,q.y)});
+    if(ring.every(s=>s.ok)&&leg.every(Boolean)){pl.ping=false;const k=rk*4+Math.floor(R()*2);for(let i=0;i<8;i++)loop.push(ring[(k+i)%8])}
+    else{let best=[],run=[];for(let j=0;j<16;j++){const s=ring[j%8];if(s.ok&&(!run.length||leg[(j+7)%8])){run.push(s);if(run.length>best.length&&run.length<=8)best=run.slice()}else run=s.ok?[s]:[]}best.forEach(s=>loop.push(s))}
     if(!loop.length)loop.push(front())}
   else{const n=FIELD.spots[0]+Math.floor(R()*(FIELD.spots[1]-FIELD.spots[0]+1));for(let i=0;i<n;i++)loop.push(front())}
   // (home: the stop nearest the door, a herder's one he reaches from it clear of the pens by a pixel)
