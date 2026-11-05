@@ -5,7 +5,7 @@
 // middle unless placed); the rings and a beast's marker on the middle; after a fight the middle where the survivors stand
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
- const home=Kit.goHome('Ashford');Kit.goTo(home.x+240,home.y+200);const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);
+ const home=Kit.goHome('Ashford');Kit.goTo(...Kit.field(home));const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);
  for(let y=ty-20;y<=ty+20;y++)for(let x=tx-20;x<=tx+25;x++)if(t.WM.has(x,y)){const i=y*t.MW+x;t.WM.kind[i]=t.T_OPEN;t.WM.edge[i]=0;t.WM.elev[i]=64}
  const monster=n=>t.asMonster({id:'wolf',n,lv:1,x:P.x+25,y:P.y,hx:P.x+25,hy:P.y,cool:0});
  const lone=monster(1),single=t.MarchArmy.of(lone);ok(single.units.length===1&&!single.units[0].pivot&&single.rows[0].x===0&&single.rows[0].y===0,'a lone creature marches to its army\'s middle, none of it pinned there');

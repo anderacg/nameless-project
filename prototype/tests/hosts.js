@@ -41,7 +41,7 @@ Kit.suite(({ok})=>{
  // ======== phase 2: lords
  t.cpOrder('brann','return');t.cpOrder('elske','return');for(let i=0;i<80;i++){t.BRAINS.cparty.think(t.compInit('brann').party||{troops:[]},.05)}P.comps={};
  const f=t.FIDS[0],g=t.FIDS.find(x=>x!==f),k=t.FIDS.find(x=>x!==f&&x!==g),rel=(a,b,s)=>{W.rel[t.rk(a,b)]={s,since:G.day}};
- const lordOf=fac=>{const l=W.lords.find(x=>x.fac===fac&&!x.dead&&!x.follow);Object.assign(l,{x:P.x+30,y:P.y,inside:null,fight:null,state:'rest',dead:false,troops:Array(10).fill('hum_foot')});return l};
+ const lordOf=fac=>{const l=W.lords.find(x=>x.fac===fac&&!x.dead&&!x.follow)||W.lords.find(x=>x.fac===fac&&!x.follow&&!x.gone);Object.assign(l,{x:P.x+30,y:P.y,inside:null,fight:null,state:'rest',dead:false,troops:Array(10).fill('hum_foot')});return l};
  P.fac=f;const L=lordOf(f),N=lordOf(g);t.Relations.change(N,-t.relWith(N),'test');
  ok(t.Host.friend(L)&&!t.Host.friend(N)&&t.Host.askWhy(L)===''&&/know you well enough/.test(t.Host.askWhy(N)),'who may march with you: your realm’s lord, not a stranger');
  {const r=t.relWith(N);t.Relations.change(N,30,'test');ok(t.Host.friend(N),'a friend of another realm may');t.Relations.change(N,r-t.relWith(N),'test')}

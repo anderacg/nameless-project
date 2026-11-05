@@ -19,7 +19,7 @@ Kit.suite(({ok,info})=>{
   G.enc={kind:'party',ref:{cool:0},list:['militia','militia']};t.startBattle({enemies:['militia','militia'],deploy:false});const Bt=t.B;if(Bt.ready||Bt.deploy)t.beginFight();Bt.paused=false;for(let i=0;i<3;i++)t.updateBattle(.02);
   for(const u of Bt.units)t.buffUnit(u);/* (as battle.js battleStep does each soldier once, after his rank) */const ua=Bt.units.find(u=>u.team===0&&u.sourceGroupId===a.id),ub=Bt.units.find(u=>u.team===0&&u.sourceGroupId===b2.id),e=Bt.units.find(u=>u.team===1);
   ok(ua&&ub&&Math.abs(ua.s.dmg/ub.s.dmg-1.2)<.01&&ua.s.av===t.armorValue(ub.s)+10&&e.s.av==null,'in battle the upgraded group\'s men hit 20% harder, wear 10 more armour; the other group and the foe as they were');
-  ok(Bt.hero.s.av>0,'your hero his own');Bt.over=true;Bt.endT=0;t.updateBattle(.01);if(t.B)t.finishBattle();t.hidePanel();G.mode='world';G.modal=false;
+  ok(Bt.hero.s.av>0,'your hero his own');/* (won outright, no man lost: what follows is the groups as they were) */for(const u of Bt.units)if(u.team!==0)u.hp=0;t.checkBattleOver();Bt.endT=0;t.updateBattle(.01);if(t.B)t.finishBattle();t.hidePanel();G.mode='world';G.modal=false;
   // (refills pay for it; merged: only what both had; upgraded into a mounted kind: kept, idle)
   ok(B.perMan(a.id)===6&&!B.perMan(b2.id),'a new man in it pays 6g for its upgrades, none in the other');
   r.merge(b2.id,a.id);ok(!B.has(a.id,'_blades'),'two merged: only the upgrades both had');B.buy(ash,'smith',a.id,'_blades');

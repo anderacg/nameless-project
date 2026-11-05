@@ -6,7 +6,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W;t.act('begin','soldier');G.quietEvents=true;W.monsters=[];W.critters=[];t.bandits.length=0;G.clock=t.DAY*.3;
  const open=(()=>{for(let ty=10;ty<t.MH-10;ty++)for(let tx=10;tx<t.MW-10;tx++)if(t.tAt(tx,ty)===t.T_OPEN&&t.climAt((tx+.5)*16,(ty+.5)*16)==='grass')return [(tx+.5)*16,(ty+.5)*16]})();
- const forest=(()=>{for(let ty=10;ty<t.MH-10;ty++)for(let tx=10;tx<t.MW-10;tx++)if(t.tAt(tx,ty)===t.T_FOREST&&t.climAt((tx+.5)*16,(ty+.5)*16)==='grass')return [(tx+.5)*16,(ty+.5)*16]})();
+ const forest=(()=>{for(let ty=10;ty<t.MH-10;ty++)for(let tx=10;tx<t.MW-10;tx++)if(t.tAt(tx,ty)===t.T_FOREST&&t.climAt((tx+.5)*16,(ty+.5)*16)==='grass'&&[-2,-1,0,1,2].every(j=>[-2,-1,0,1,2].every(i=>t.tAt(tx+i,ty+j)===t.T_FOREST)))return [(tx+.5)*16,(ty+.5)*16]})();// (deep in a wood: its tiles all round it trees)
  P.x=open[0];P.y=open[1];P.gear.mount=null;P.sk.ride.lv=0;P.sk.athl.lv=0;P.perks=[];P.comps={};P.wounded={};
  P.troops={hum_levy:10};const foot=t.bandPace();
  P.troops={hum_levy:8,hum_knight:2};const mixed=t.bandPace();

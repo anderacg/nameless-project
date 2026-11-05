@@ -9,7 +9,7 @@ Kit.suite(({ok,info})=>{
  const t=T,P=t.P,J=t.MARCH_MOVE.jam,STALL=J*2+.5;
  function begin(troops){
   Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
-  const h=Kit.goHome('Ashford');Kit.goTo(h.x+240,h.y+200);P.troops=troops;delete P.army.march;
+  const h=Kit.goHome('Ashford');Kit.goTo(...Kit.field(h));P.troops=troops;delete P.army.march;
   const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);for(let y=ty-20;y<=ty+20;y++)for(let x=tx-20;x<=tx+30;x++)if(t.WM.has(x,y)){const i=y*t.MW+x;t.WM.kind[i]=t.T_OPEN;t.WM.edge[i]=0;t.WM.elev[i]=64}
   return t.MarchArmy.of(P);
  }

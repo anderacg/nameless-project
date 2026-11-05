@@ -13,7 +13,7 @@ Kit.suite(({ok,info})=>{
  const t=T,P=t.P,AF=t.MARCH_MOVE.about,AL=AF.loop,TS=t.TRAVEL_STYLES,Style=t.TravelStyle,you=TS.kinds.you,on0=AF.on,loop0={...AL},D=1/30;
  function begin(troops,col){
   TS.kinds.you=col?'always':you;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:1e9});t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
-  const h=Kit.goHome('Ashford');Kit.goTo(h.x+240,h.y+200);P.troops=troops;P.comps={};P.bsta=100;P.tx=null;delete P.army.march;delete P.army.column;t.setByRoad(false);
+  const h=Kit.goHome('Ashford');Kit.goTo(...Kit.field(h));P.troops=troops;P.comps={};P.bsta=100;P.tx=null;delete P.army.march;delete P.army.column;t.setByRoad(false);
   const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);for(let y=ty-30;y<=ty+30;y++)for(let x=tx-50;x<=tx+50;x++)if(t.WM.has(x,y)){const i=y*t.MW+x;t.WM.kind[i]=t.T_OPEN;t.WM.edge[i]=0;t.WM.elev[i]=64}
   Style.forget(P);t.MARCH_ARMIES.delete(P);return t.MarchArmy.of(P)}
  const pace=()=>t.moveStep(t.marchPace(P),D);

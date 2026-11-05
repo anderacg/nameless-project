@@ -66,7 +66,9 @@ Kit.suite(({ok,info})=>{
  // ---- your own army: inside your outline, on ground, a click travels; held, the map's ring (Travel here); a lord's outline over
  // yours, your man nearer: ground
  {const Y=t.MARCH_ARMIES.get(P);Y.ring=new t.MarchOutline();Y.ring.update(Y);
-  const own=scan(around(Y),(x,y)=>{const h=hit(Y,x,y);return h&&h.kind==='outline'},2);const picked=own.filter(([x,y])=>t.pickAt(x,y));
+  // (a building or place under the pointer is picked as ever: since the free folk's hamlets, an estate of Wardenhall's lies here)
+  const place=o=>!!o&&['estate','house','holding','site'].includes(o.mapKind);
+  const own=scan(around(Y),(x,y)=>{const h=hit(Y,x,y);return h&&h.kind==='outline'&&!place(t.pickAt(x,y))},2);const picked=own.filter(([x,y])=>t.pickAt(x,y));
   ok(own.length&&!picked.length,'inside your own outline: nothing picked (ground) at '+own.length+' points ('+picked.length+' were)');
   const [gx,gy]=own[own.length>>1];P.tx=null;G.chase=null;press(gx,gy);
   ok(!ringOn()&&P.tx!=null&&Math.abs(P.tx-gx)<1.5&&Math.abs(P.ty-gy)<1.5,'clicked there: you travel there ('+(P.tx??-1).toFixed(0)+','+(P.ty??-1).toFixed(0)+' for '+gx+','+gy+')');P.tx=null;
@@ -74,7 +76,7 @@ Kit.suite(({ok,info})=>{
   ok(open&&items.includes('Travel here'),'held there: the map\'s ring, as today ('+items.join(', ')+')');
   const ya=Y.box(),la=A.box();move(lord,ya[2]-la[0]-16,(ya[1]+ya[3]-la[1]-la[3])/2);const pts=scan([ya[0]-10,ya[1]-30,ya[2]+30,ya[3]+10],(x,y)=>!ring(lord,x,y)).map(([x,y])=>({x,y,a:hit(A,x,y),m:hit(Y,x,y),p:t.pickAt(x,y)}));
   const mineN=pts.filter(q=>q.a&&q.a.kind==='outline'&&q.m&&(q.m.kind==='figure'||q.m.d<q.a.d)),mw=mineN.filter(q=>q.p===lord);
-  const his=pts.filter(q=>q.a&&q.a.kind==='outline'&&q.m&&q.m.kind==='outline'&&q.a.d<q.m.d),hw=his.filter(q=>q.p!==lord);
+  const his=pts.filter(q=>q.a&&q.a.kind==='outline'&&q.m&&q.m.kind==='outline'&&q.a.d<q.m.d&&!place(q.p)),hw=his.filter(q=>q.p!==lord);
   ok(mineN.length&&!mw.length&&his.length&&!hw.length,'a lord\'s outline over yours (off his small ring): your man nearer, ground ('+mineN.length+' points, '+mw.length+' the lord); his nearer, the lord ('+his.length+', '+hw.length+' not)');
   move(lord,x0-70-lord.x,y0-lord.y)}
  // ---- a phone's tap: a little slack round his men and his outline

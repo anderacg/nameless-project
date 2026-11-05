@@ -1,7 +1,7 @@
 'use strict';
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;t.prefSet('bpause',false);
- const home=Kit.goHome('Ashford');Kit.goTo(home.x+240,home.y+200);P.troops={hum_spear:8,hum_knight:5};
+ const home=Kit.goHome('Ashford');Kit.goTo(...Kit.field(home));P.troops={hum_spear:8,hum_knight:5};
  // Open fixture ground makes saved slot positions exact rather than obstacle-adjusted.
  const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);for(let y=ty-12;y<=ty+12;y++)for(let x=tx-12;x<=tx+12;x++){const i=y*t.MW+x;t.tiles[i]=t.T_OPEN;t.WM.edge[i]=0}
  const roster=t.partyRoster(P),foot=roster.groups.find(g=>g.type==='hum_spear'),cav=roster.groups.find(g=>g.type==='hum_knight');foot.files=1;cav.form='wedge';P.army.march={[foot.id]:{x:12,y:9,face:.5},[cav.id]:{x:-10,y:-12,face:-.4}};

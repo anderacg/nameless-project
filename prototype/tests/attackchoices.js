@@ -1,7 +1,7 @@
 'use strict';
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,W=t.W,A=t.TravelAwareness;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;P.troops={hum_foot:5};P.comps={};P.camp=null;
- const home=Kit.goHome('Ashford');Kit.goTo(home.x+240,home.y+200);
+ const home=Kit.goHome('Ashford');Kit.goTo(...Kit.field(home));
  const enemy=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x+65,y:P.y,cool:0});t.bandits.push(enemy);
  const reset=()=>{window.eval('B=null');Kit.world();A.reset();enemy.x=P.x+65;delete enemy.fight;enemy.dead=false;enemy.inside=null};
  const encounter=(extra={})=>{t.startEncounter({kind:'party',ref:enemy,list:enemy.troops.slice(),mine:true,allies:[],foes:[],...extra});return G.enc};
