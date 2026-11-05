@@ -254,12 +254,12 @@ const Outcome={
       },
       text:v=>COMPS[v.id].short+' joins your band',
     },
-    // band: a band of raiders set on the map (world.js spawnBandit; res.band, it)
+    // band: word of the nearest band about, ENC_TUNE.warning.band tiles at most (res.band, it; none: null). No band is made for it (was: a
+    // new band anywhere on the map, every time)
     band:{
       apply(v,ctx,res){
-        const n=bandits.length;
-        spawnBandit(false);
-        res.band=bandits.length>n&&bandits[bandits.length-1];
+        const b=Spatial.nearest(bandits.filter(o=>!o.gone),P.x,P.y);
+        res.band=b&&Math.hypot(b.x-P.x,b.y-P.y)<=ENC_TUNE.warning.band*TILE?b:null;
       },
       text:()=>'word of a band',
     },

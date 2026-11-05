@@ -55,11 +55,12 @@ const Wounded={
     const L=WOUNDED.names[e.race]||WOUNDED.names.human;
     return L[e.seed%L.length];
   },
-  // his family's place (by his seed, no draw: one of the nearest holdings not hostile to you WOUNDED.home off, a house or an estate)
+  // his family's place (by his seed, no draw: one of the nearest holdings not against you WOUNDED.home off that you can reach, a
+  // house or an estate; none such, the nearest not against you)
   homeOf(e){
     if(e.home)return e.home;
-    const H=WOUNDED.home,ok=t=>!hostileTo(t.owner),d=t=>Math.hypot(t.x-e.x,t.y-e.y)/TILE;
-    const near=TOWNS.filter(t=>ok(t)&&d(t)>=H.min&&d(t)<=H.max).sort((a,b)=>d(a)-d(b)).slice(0,H.near);
+    const H=WOUNDED.home,ok=t=>!t.gone&&!foeAt(t),d=t=>Math.hypot(t.x-e.x,t.y-e.y)/TILE;
+    const near=TOWNS.filter(t=>ok(t)&&d(t)>=H.min&&d(t)<=H.max&&Router.reach(e,t)).sort((a,b)=>d(a)-d(b)).slice(0,H.near);
     const t=near.length?near[e.seed%near.length]:Spatial.nearestHolding(e.x,e.y,ok)||Spatial.nearestHolding(e.x,e.y);
     const es=(t.lots||[]).filter(l=>ESTATES[l.k]&&l.st!=='ruined');
     return e.seed%H.estate===0&&es.length?{town:t.name,lot:es[e.seed%es.length].k,i:e.seed}:{town:t.name,lot:'house',i:e.seed};

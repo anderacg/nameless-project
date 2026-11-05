@@ -57,6 +57,8 @@ const ENC_SHEEP={n:[3,4],r:[40,80],shy:26,hours:3,rep:1,good:1,all:{rep:2,morale
 const ENC_TUNE={wagon:{gold:15},traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5,10]},hunters:{xp:15,meat:3,furs:2},mud:{sp:20,hours:1,rep:3,give:[2,4],goods:[3,5],coins:[3,8]},thief:{purse:[20,40],reward:10,rep:4,honor:3},poacher:{see:1.15,scout:.1,rep:3,bounty:10,meat:4,price:8},
   funeral:{n:[3,5],honor:2,morale:4},wedding:{morale:10,hours:2,gift:25,rep:5},beggar:{gold:[5,10,20],honor:[1,2,3]},messenger:{purse:[8,16]},
   child:{rep:6,morale:5,late:3},refugees:{grain:4,renown:1,late:1},
+  // (a caravan saved: the merchant's thanks, gold [from, to], rep in the nearest holding not against you, honour with its realm)
+  caravan:{gold:[20,40],rep:4,honor:2},
   pilgrims:{n:[2,4],morale:8,rep:3,walk:1,alms:20,almsMorale:12,xp:25,coins:12,coinsMorale:8},
   lure:{w:.5,night:1.6,wild:1.4,bandit:.3,bands:3,near:400,cap:1.6,warn:3,count:5,woods:40,hide:12,arc:1.2,rays:4,scare:{max:6,base:.2,lead:.06,cha:.05,lo:.05,hi:.85}},
   letter:{stale:[5,10],worth:[30,45],kind:{army:1.4,attack:1.3,deal:1.1,news:.6},w:{army:1,attack:1,deal:.7,news:.8},sell:1.2,deliver:.8,opened:.5,old:.15,
@@ -74,8 +76,10 @@ const ENC_TUNE={wagon:{gold:15},traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5
      back: false ones back off when your power is this × theirs; seize: × theirs to take their ringleader; refuse, fight: honor and
      rep lost with the real ones' realm and holding; report: the ringleader handed to the reeve: gold, rep, honor; late: rep lost
      when he gets away) */
+  // (the shepherd's warning: of the nearest band within band tiles, none made for it)
+  warning:{band:40},
   campfire:{w:1.2,night:1.4,again:5,who:{bandits:.35,patrol:.25,travellers:.25,beasts:.15},n:{bandits:[4,7],patrol:[4,6],travellers:[2,4],beasts:[3,6]},go:[120,220],
-    read:6,min:3,wait:2,surprise:.6,rest:{hours:2,back:{bandits:.5,beasts:.35,patrol:.25,travellers:.25},food:3,morale:4,kind:3},
+    read:6,min:3,wait:2,surprise:.6,rest:{hours:2,back:{bandits:.5,beasts:.35,patrol:.25,travellers:.25},food:3,morale:4,kind:3,rob:15},
     ash:{find:{bandits:.7,travellers:.6,patrol:.5,beasts:.4},gold:[5,15],gear:.12,trap:{bandits:.4,beasts:0,patrol:.1,travellers:.1},sp:15}},
   herbalist:{w:1.2,hurt:1.5,again:5,price:8,mend:4,tonic:12,gather:{hours:2,rep:3,free:2,surv:4},learn:{hours:2,win:12,lose:4,xp:20},rob:{gold:[6,14],mend:2,honor:4,rep:6,morale:3}},
   toll:{w:1.2,again:6,real:.3,n:[3,5],fee:{base:10,per:1,max:60},see:3,talk:1.5,back:1.5,seize:2,refuse:{honor:4,rep:4},fight:{honor:10,rep:8},report:{gold:25,rep:5,honor:3,late:2}}};

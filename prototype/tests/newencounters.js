@@ -62,6 +62,8 @@ Kit.suite(({ok,info})=>{
     return{r,h:t.roadNow()-h,full:P.sp===max,fd:fd-t.foodN(),m:P.morale-m,enc:G.enc}});
    {const a=rest('travellers',.99);ok(Math.abs(a.h-TU.campfire.rest.hours)<1e-6&&a.full&&of(a.r).join()==='done','Rest a while, nobody comes: '+a.h+' hours, stamina back; done')}
    {const a=rest('bandits',.01);ok(a.enc&&a.enc.road===a.r&&a.enc.btype&&a.enc.btype.hid===1,'bandits come back while you rest: their trap (an ambush you cannot flee)');t.act('flee');Kit.world();t.updateRoad(.05);ok(of(a.r).length===1,'ended once ('+of(a.r)+')')}
+   {const tr=P.troops;let a;const r0=t.ENC_TUNE.campfire.rest;try{a=(()=>{const r=meet('campfire',x=>setWho(x,'bandits'));P.troops={hum_levy:1};P.gold=100;const g=P.gold,fd=t.foodN();(0,eval)('CHEAT.noNeeds=true');try{pick(2,.01)}finally{(0,eval)('CHEAT.noNeeds=false')}return{r,enc:G.enc,g:g-P.gold,fd:fd-t.foodN()}})()}finally{P.troops=tr}
+    ok(!a.enc&&a.g===r0.rob&&a.fd===r0.food&&/Too few to fight/.test(panel())&&of(a.r).join()==='done','too few men ('+t.ENC_TUNE.campfire.min+' needed) when the bandits come back: you run, robbed of '+a.g+' gold and '+a.fd+' food, no trap you cannot leave');Kit.world()}
    {const a=rest('beasts',.01);ok(a.fd===TU.campfire.rest.food&&a.m===-TU.campfire.rest.morale&&of(a.r).join()==='done','beasts come back: −'+a.fd+' food, morale '+a.m)}
    {const a=rest('patrol',.01);ok(a.m===TU.campfire.rest.kind&&a.full&&/shares the fire/.test(panel()),'a patrol comes back: it shares the fire (morale +'+a.m+')')}
    {const r=meet('campfire',x=>setWho(x,'bandits')),p0=stats(Z,()=>t.campBack(r)),p1=stats({...Z,scout:5,lead:3},()=>t.campBack(r));
@@ -140,5 +142,14 @@ Kit.suite(({ok,info})=>{
   // ---- the frame: Esc follows the bottom bar; a phone in landscape
   {const e=meet('toll',null,realm);t.onEscape();ok(G.mode==='world'&&!G.road,'Esc on its page: Turn back, the way out on the right');e.over();ok(of(e).join()==='left','turned back from, it ends once: left');
    const f=meet('campfire');pick(3,[.99,.99]);ok(qa('.nav button').length>=1&&q('.nav [data-nav="close"]'),'after a choice its bottom bar is still there');t.onEscape();ok(G.mode==='world','and Esc leaves it')}
+  // ---- the road's sense (the owner, 2026-11-05: "revisit all encounters"): a caravan saved thanks you; soldiers of a realm at war
+  // with you ask you to no game; no toll on your liege's land
+  {const e=spawn('caravan');P.troops={[U]:8};const g=P.gold;t.asEncounter(e).finish('won');const X=t.ENC_TUNE.caravan;
+   ok(P.gold-g>=X.gold[0]&&P.gold-g<=X.gold[1]&&t.G.msgs.some(m=>/caravan’s master/.test(m.m)),'a caravan saved: its master’s thanks, '+(P.gold-g)+' gold');
+   const e2=spawn('caravan'),g2=P.gold;t.asEncounter(e2).finish('lost');ok(P.gold===g2,'lost: no thanks')}
+  {const z=t.TOWNS.find(o=>realm(o)&&o.kind!=='hamlet'),R=t.realmOf(z.owner);let r;R.hostile=()=>true;try{r=t.ROAD_ENC.gamblers.setup({x:z.x,y:z.y,seed:1})}finally{delete R.hostile}
+  ok(r===false,'gamblers of a realm at war with you: none');
+   fresh();Kit.goHome(z);const f0=P.fac;P.fac=z.owner;let a,b;try{a=t.tollSetup({x:z.x,y:z.y,seed:2});b=t.ROAD_ENC.toll.ok({isDay:true,owned:z})}finally{P.fac=f0}
+   ok(a===false&&!b,'in the '+t.FACS[z.owner].n+'’s service: no toll of theirs on their land')}
  }finally{t.worldOff('encounter:ended',e1);t.worldOff('encounter:fought',e2);fresh()}
 });

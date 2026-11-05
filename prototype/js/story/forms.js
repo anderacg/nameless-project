@@ -81,9 +81,9 @@ class Stories{
   static quest(kind,st,th,more){const r=Thread.starters.quest.start({quest:kind,town:st.town,spec:{...this.spec(st,th),...more,...(st.spec||{})}},th),q=r&&P.quests.find(x=>x.id===r.id);
     if(q?.to?.name)th.memory.to=q.to.name;return r}
   // (a goal's place: {town (filled), lot}, a spot {x, y, name}, or pick: 'realm' (another holding of its realm) or 'any' (another
-  // not hostile to you), the nearest)
+  // not hostile to you), the nearest some way off)
   static place(to,th){const m=th.memory;if(!to)return {town:m.town};if(to.town)return {town:this.fill(to.town,th),lot:to.lot,i:to.i??th.i,...(to.name?{name:this.fill(to.name,th)}:{})};if(to.x!=null)return to;
-    const from=townBy(m.town)||P,pool=TOWNS.filter(t=>!t.gone&&t.name!==m.town&&!hostileTo(t.owner)&&(to.pick!=='realm'||t.owner===m.fac));const t=Spatial.nearest(pool,from.x,from.y);return t?{town:t.name,lot:to.lot,i:th.i}:null}
+    const from=townBy(m.town)||P,pool=TOWNS.filter(t=>!t.gone&&t.name!==m.town&&!hostileTo(t.owner)&&(to.pick!=='realm'||t.owner===m.fac)),far=pool.filter(t=>Math.hypot(t.x-from.x,t.y-from.y)>=ESCORT.trip.min*TILE&&Router.reach(from,t));const t=Spatial.nearest(far,from.x,from.y)||Spatial.nearest(pool,from.x,from.y);return t?{town:t.name,lot:to.lot,i:th.i}:null}// (the nearest some way off, ESCORT.trip.min tiles: not the next holding over, the owner's 2-tile case; none such, the nearest)
   // (who holds a rescue's captive (world/captives.js carryOff's record): given (an object), the one the story remembers (memory.held,
   // the default when there is one), a band set near (band), the nearest hideout (lair), or the prison of the nearest holding of
   // another realm (holding))

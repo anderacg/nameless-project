@@ -29,7 +29,7 @@ Kit.suite(({ok})=>{
  // ======== a hunt's meat
  {Kit.clear();P.quests=[];const d=Object.keys(t.CRITTERS).find(k=>!t.CRITTERS[k].live&&t.CRITTERS[k].meat>0);W.critters.push({id:d,x:ash.x+150,y:ash.y+60,hx:ash.x+150,hy:ash.y+60,n:3,dir:1,cool:0});
   let q=null;for(let k=0;k<20&&!(q&&!q.mat);k++)q=t.makeQuest('hunt',ash,null,t.Givers.of(ash).find(g=>g.role==='innkeeper'));
-  if(q&&!q.mat){q.accept();P.inv=P.inv.map(()=>null);t.invAdd('good','meat',q.n);t.ensureEcon(ash);const m0=ash.stock.meat||0;q.turnIn(ash);ok((ash.stock.meat||0)===m0+q.n,'a hunt\'s meat goes into Ashford\'s stores (+'+q.n+')')}
+  if(q&&!q.mat){q.accept();P.inv=P.inv.map(()=>null);t.invAdd('good','meat',q.n);ok(q.have()===0,'meat bought or carried is not hunted: the job counts none ('+q.have()+')');t.worldEmit('meat:hunted',{n:q.n});t.ensureEcon(ash);const m0=ash.stock.meat||0;q.turnIn(ash);ok((ash.stock.meat||0)===m0+q.n,'a hunt\'s meat goes into Ashford\'s stores (+'+q.n+')')}
   else ok(true,'(no innkeeper at Ashford)')}
  P.quests=[];Kit.clear();
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));

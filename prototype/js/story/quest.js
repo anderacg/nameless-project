@@ -99,14 +99,22 @@ class Quest extends Happening{
   }
   accept(){
     if(this.full())return false;
+    // (an offer whose need has passed since it went up (a good restocked, a garrison filled, a siege over): no work, and no share
+    // of its pay for nothing; needless() is a kind's own, false by default)
+    if(this.needless()){log('No one needs that done any more: '+this.title+'.','muted','story');return false}
+    const id0=this.id,tk=this.taken;
     this.id=P.qid=(P.qid||0)+1;
     this.stamp();
     this.done=false;
-    if(this.begin(townBy(this.home))===false)return false;
+    if(this.begin(townBy(this.home))===false){this.id=id0;this.taken=tk;return false}// (it could not start: the offer as it was, still to take)
     P.quests.push(this);
     log(('New quest: '+this.title+'. '+this.takenLine()).trim(),'gold','story',this.journalKey);
     worldEmit('quest:new',{q:this});// (its note under the tracker: ui/questtrack.js)
     return true;
+  }
+  // (its need passed before it is taken: false, a kind's own says)
+  needless(){
+    return false;
   }
   // (taken: its due day; its words for it in the line)
   stamp(){

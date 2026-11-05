@@ -202,7 +202,7 @@ class DeliverQuest extends VisitQuest{
    day's tick: cleared by another or gone, the nearest of its band within STEP.retarget tiles instead, else over (gone) */
 class LairQuest extends StepQuest{
   setup(t,lord,s){
-    const own=s&&s.site!=null?W.sites.find(x=>x.i===s.site):null,lair=own&&own instanceof Lair&&!own.cleared?own:s&&LairQuest.near(s.near||t,s.band);
+    const own=s&&s.site!=null?W.sites.find(x=>x.i===s.site):null,lair=own&&(own instanceof Lair||own instanceof Cave)&&!own.cleared?own:s&&LairQuest.near(s.near||t,s.band);// (a cave given, as a chain's beast's: it, not the nearest hideout)
     if(!lair)return false;
     this.band=s.band||lair.band;
     this.bind(lair);
@@ -389,7 +389,8 @@ for(const type of ['band:beaten','site:cleared','battle:ended'])worldOn(type,d=>
 class BandQuest extends StepQuest{
   setup(t,lord,s){this.band=s.band||questRng().pick(BAND_NAMES);this.n=s.n||questRng().int(4,6)+Math.floor(G.day/12);this.giver=t.name;
     this.title=s.title||'Break the '+this.band;this.text=s.text||'Find the '+this.band+' near '+t.name+' and break them.';this.takes(s)}
-  begin(t){const b=bandFor(t,this.n,this.band,this.id);if(!b)return false;this.band=b.name||this.band;this.x=b.x;this.y=b.y}
+  // (the band found another than it named: its words follow it)
+  begin(t){const b=bandFor(t,this.n,this.band,this.id);if(!b)return false;const was=this.band;this.band=b.name||this.band;if(was!==this.band){this.title=this.title.split(was).join(this.band);this.text=this.text.split(was).join(this.band)}this.x=b.x;this.y=b.y}
   seek(){const b=bandits.find(x=>x.qid===this.id)||Quest.quarry(this.id)[0];return b?{x:b.x,y:b.y,name:'the '+this.band}:null}
   get deed(){return 'band:beaten'}
   hits(d){return d.band?.qid===this.id}
@@ -401,10 +402,12 @@ class BandQuest extends StepQuest{
    holding's fields, as a beast hunt's (world/quests.js packFor: one there, else one moved into its habitat there; none, it cannot
    be begun); slain by you (monster:slain): slain; gone: over (gone) */
 class BeastsQuest extends StepQuest{
-  setup(t,lord,s){const ids=Object.keys(MONSTERS).filter(id=>MONSTERS[id].where.includes(t.clim)||MONSTERS[id].where.includes('forest')&&t.clim==='grass');
+  setup(t,lord,s){const ids=Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic&&(MONSTERS[id].where.includes(t.clim)||MONSTERS[id].where.includes('forest')&&t.clim==='grass'));
     this.mon=s.mon||(ids.length?questRng().pick(ids):'wolf');if(s.mon)this.monSet=true;const M=MONSTERS[this.mon];if(!M)return false;this.n=s.n||Math.max(...M.count);this.lv=monLevel(questRng())+1;this.giver=t.name;
-    this.title=s.title||'Hunt the '+M.n.toLowerCase();this.text=s.text||cap1(M.n.toLowerCase())+' prowl near '+t.name+'. Hunt them down.';this.takes(s)}
-  begin(t){const m=packFor(t,this.monSet?this.mon:null,this.n,this.lv,this.id);if(!m)return false;this.mon=m.id;this.n=m.n;this.x=m.x;this.y=m.y}
+    this.title=s.title||'Hunt the '+M.n.toLowerCase();this.text=s.text||cap1(M.n.toLowerCase())+' prowl near '+t.name+'. Hunt them down.';this.ownWords=!!(s.title||s.text);this.takes(s)}
+  // (the pack found another kind than it named: its own words follow it, a story's left as written)
+  begin(t){const m=packFor(t,this.monSet?this.mon:null,this.n,this.lv,this.id);if(!m)return false;const was=this.mon;this.mon=m.id;this.n=m.n;this.x=m.x;this.y=m.y;
+    if(was!==this.mon&&!this.ownWords){const M=MONSTERS[this.mon],tn=townBy(this.giver);this.title='Hunt the '+M.n.toLowerCase();this.text=cap1(M.n.toLowerCase())+' prowl near '+(tn?tn.name:this.giver)+'. Hunt them down.'}}
   seek(){const m=W.monsters.find(x=>x.qid===this.id);return m?{x:m.x,y:m.y,name:MONSTERS[this.mon].n.toLowerCase()}:null}
   get deed(){return 'monster:slain'}
   hits(d){return d.monster?.qid===this.id}

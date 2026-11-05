@@ -8,7 +8,9 @@ class Gates{
   // (open to you whatever its kind: yours, your service's, your home, a quest of yours takes you there)
   static ownWay(t){
     if(t.owner==='player'||P.fac&&t.owner===P.fac||t.name===P.home)return 'yours';
-    if(P.quests.some(q=>q.home===t.name||canReportAt(q,t)))return 'quest';
+    // (a quest of yours that sends you there: its own holding, where it is reported (a lord's: only the holding it names, not every one
+    // of his realm's), or its place)
+    if(P.quests.some(q=>q.home===t.name||!q.lord&&canReportAt(q,t)||[q.to,q.town,q.village].some(n=>n===t.name||n&&n.town===t.name)))return 'quest';
     return null}
   // a holding's gate: {ok, why, need}
   static admits(t){

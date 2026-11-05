@@ -62,7 +62,9 @@ class JobQuest extends Quest{
   spot(){
     if(!this.leads||this.found||!this.lead)return null;
     const o=this.target();
-    if(o&&!o.gone&&o.inView&&o.inView(vis())){
+    // (in sight; or resting inside a holding (off the map, never in view), that holding in your sight)
+    const inn=o&&!o.gone&&o.inside&&townBy(o.inside);
+    if(o&&!o.gone&&(o.inView&&o.inView(vis())||inn&&Math.hypot(inn.x-P.x,inn.y-P.y)<=vis())){
       this.found=true;
       log('You have found '+this.quarryName()+'.','gold','story',this.journalKey);
       return null;
@@ -190,19 +192,22 @@ class JobQuest extends Quest{
   // honour it (its realm theirs now, said once: Q5)
   lapse(){
     const t=!this.lord&&townBy(this.home);
-    if(t&&!t.gone&&t.owner&&t.owner!==this.fac){
+    if(t&&!t.gone&&t.owner&&t.owner!==this.fac&&!hostileTo(t.owner)){
       this.fac=t.owner;
       log(this.home+' has changed hands; the '+(FACS[t.owner]?FACS[t.owner].n:'new lords')+' will honour '+this.title+'.','gold','story',this.journalKey);
     }
     if(!this.done&&this.gone())this.close();
   }
+  // (over: its giver's realm fallen, or turned on you; its holding gone, or held by a realm hostile to you: you could never report
+  // there)
   gone(){
-    if(this.lord)return !!W.dead[this.fac];
+    if(this.lord)return !!W.dead[this.fac]||hostileTo(this.fac);
     const h=townBy(this.home);
-    return !h||!!h.gone;
+    return !h||!!h.gone||!!h.owner&&hostileTo(h.owner);
   }
   goneWhy(){
-    return this.lord?'The '+FACS[this.fac].n+' has fallen.':this.home+' is no more.';
+    const h=!this.lord&&townBy(this.home);
+    return this.lord?(W.dead[this.fac]?'The '+FACS[this.fac].n+' has fallen.':'The '+FACS[this.fac].n+' is your enemy now.'):!h||h.gone?this.home+' is no more.':this.home+' is held by your enemies now.';
   }
   close(){
     const g=Math.round(this.reward.gold*QUEST_CLOSED.gold);
@@ -288,6 +293,8 @@ class BountyQuest extends JobQuest{
     let b=null;
     if(this.site==null)b=bandits.find(o=>!o.qid&&!o.gone&&!o.fight&&(this.chief?o.ld&&o.ld.name===this.chief:Math.hypot(o.x-this.lx,o.y-this.ly)<TROUBLE.land*TILE))||Troubles.bands(t).find(o=>!o.qid);
     if(b){
+      // (another band than it named, its chief another: its words follow the band marked)
+      const was=this.chief,now=b.ld&&b.ld.name||null;if(was&&now!==was){this.chief=now;if(now)this.text=this.text.split(was).join(now)}
       b.qid=this.id;
       b.name=b.name||this.band;
       this.band=b.name;
@@ -406,6 +413,8 @@ class BeastQuest extends JobQuest{
       return;
     }
     if(this.mx==null)return false;
+    // (the pack it named already another's work (a neighbour's board): no second pack at its lair)
+    if(W.monsters.some(o=>o.qid&&o.id===this.mon&&Math.hypot((o.hx??o.x)-this.mx,(o.hy??o.y)-this.my)<BOUNTY.near*TILE)){log('Someone has already taken that work.','muted','story');return false}
     W.monsters.push(asMonster({id:this.mon,x:this.mx,y:this.my,hx:this.mx,hy:this.my,lv:this.lv,n:this.n,t:0,a:0,cool:0,qid:this.id}));
     this.x=this.mx;
     this.y=this.my;
@@ -455,6 +464,10 @@ class BeastQuest extends JobQuest{
 // a clearance: the nearest lair or camp, marked on your map, while what comes out of it troubles the holding (troubles.js: its
 // bands, or the talk of robberies and raids; a beast's cave, its packs by the fields); done when it is cleared
 class ClearQuest extends JobQuest{
+  // (its need read off the world: passed before it is taken, no work: story/quest.js accept)
+  needless(){
+    return this.gone();
+  }
   setup(t){
     const T=Troubles,bands=T.bands(t).length>0||T.news(t,['caravan','raid','band']).length>0,beasts=T.packs(t).length>0;
     const s=W.sites.filter(x=>x.clearJob&&!x.cleared&&qTiles(x,t)<35&&(x instanceof Lair?bands:beasts)).sort((a,b)=>qTiles(a,t)-qTiles(b,t))[0];
@@ -499,6 +512,10 @@ class ClearQuest extends JobQuest{
 // as many as about worth gold of it buys at its price there (8–15 of a cheap good, least of a dear one: silver, wine)
 const SUPPLY_JOB={days:[5,16,20],price:1.25,worth:240,least:2};
 class SupplyQuest extends JobQuest{
+  // (its need read off the world: passed before it is taken, no work: story/quest.js accept)
+  needless(){
+    return this.gone();
+  }
   get timed(){
     return true;
   }
@@ -567,9 +584,10 @@ class HuntQuest extends JobQuest{
   get handsOver(){
     return true;
   }
-  // (what you carry of it)
+  // (what you carry of it: the hides; the meat you have hunted since you took it, as much of it as you still carry (bought meat
+  // counts for nothing: its hunts' tally, got))
   have(){
-    return this.mat?invCount('mat',this.mat):goodN('meat');
+    return this.mat?invCount('mat',this.mat):Math.min(goodN('meat'),this.got||0);
   }
   ready(){
     return this.have()>=this.n;
@@ -578,7 +596,7 @@ class HuntQuest extends JobQuest{
     return this.have()+' / '+this.n+' '+(this.mat?'hides':'meat');
   }
   aim(){
-    return 'Bring '+this.n+' '+(this.mat?'deer hides':'meat')+' to '+this.home;
+    return 'Bring '+this.n+' '+(this.mat?(CRITTERS[this.game]?CRITTERS[this.game].one+' ':'')+'hides':'hunted meat')+' to '+this.home;
   }
   handOver(){
     if(!this.mat){goodTake('meat',this.n);const t=townBy(this.home);if(t){ensureEcon(t);t.stock.meat=(t.stock.meat||0)+this.n}return}
@@ -594,6 +612,8 @@ class HuntQuest extends JobQuest{
     }
   }
 }
+// (the meat you hunt, on every meat job you carry: its tally)
+worldOn('meat:hunted',d=>{for(const q of P.quests)if(q.type==='hunt'&&!q.mat&&!q.done)q.got=(q.got||0)+d.n});
 // a courier: a sealed letter to a holding that is not hostile to you, paid on arrival there (a real one: opened, it pays
 // COURIER.opened of its gold)
 const COURIER={opened:.5};
@@ -602,7 +622,8 @@ class CourierQuest extends JobQuest{
     return true;
   }
   setup(t){
-    const dest=TOWNS.filter(o=>o!==t&&!hostileTo(o.owner)&&qTiles(o,t)>18&&qTiles(o,t)<60);
+    // (never to the sender's enemies, nor into a siege)
+    const dest=TOWNS.filter(o=>o!==t&&!o.gone&&!hostileTo(o.owner)&&!(o.owner&&t.owner&&atWar(o.owner,t.owner))&&!besieged(o)&&qTiles(o,t)>18&&qTiles(o,t)<60);
     if(!dest.length)return false;
     const d=questRng().pick(dest);
     this.to=d.name;
@@ -621,6 +642,9 @@ class CourierQuest extends JobQuest{
     if(!t||!t.owner||!FACS[t.owner])return;
     const L=LETTER.make({fac:t.owner,home:t.name,x:t.x,y:t.y,i:'q'+this.id});
     Object.assign(L,{from:t.name,to:d.name,toFac:d.owner,seen:0,job:this.id});
+    // (its words as they fit where it goes: a realm's war orders to its own holding (and not about the holding itself), an alliance
+    // to the realm it is offered; else the news of the sender's holding)
+    if((L.kind==='army'||L.kind==='attack')&&(d.owner!==t.owner||L.tgt===d.name)||L.kind==='deal'&&L.with!==d.owner)Object.assign(L,{kind:'news',site:null});
     this.letter=L.id;
     playerInventory.put({k:'letter',id:L.id,n:1,L},true);
   }
@@ -656,12 +680,14 @@ class CourierQuest extends JobQuest{
   get reportsBack(){
     return false;
   }
+  // (over: its holding gone, or held by your enemies, the letter never to be given there)
   gone(){
     const d=townBy(this.to);
-    return super.gone()||!d||!!d.gone;
+    return super.gone()||!d||!!d.gone||!!d.owner&&hostileTo(d.owner);
   }
   goneWhy(){
-    return super.gone()?super.goneWhy():this.to+' is no more.';
+    const d=townBy(this.to);
+    return super.gone()?super.goneWhy():d&&!d.gone?this.to+' is held by your enemies now.':this.to+' is no more.';
   }
   arrive(t){
     if(this.to!==t.name)return;
@@ -676,6 +702,10 @@ class CourierQuest extends JobQuest{
 // reinforcements: troops of a tier or better handed over to the garrison (the greenest that qualify first); offered only while
 // its garrison is thin (troubles.js garrison: below its kind's, or a siege or a raid thinned it)
 class TroopsQuest extends JobQuest{
+  // (its need read off the world: passed before it is taken, no work: story/quest.js accept)
+  needless(){
+    return this.gone();
+  }
   setup(t){
     const g=Troubles.garrison(t);
     if(!g.thin)return false;
@@ -722,6 +752,10 @@ class TroopsQuest extends JobQuest{
 }
 // a lord's war work: one of the enemy's lords beaten in the field (by you, or yielding to you)
 class LordkillQuest extends JobQuest{
+  // (its need read off the world: passed before it is taken, no work: story/quest.js accept)
+  needless(){
+    return this.gone();
+  }
   setup(t,lord){
     const foes=W.lords.filter(o=>!o.dead&&atWar(this.fac,o.fac));
     if(!foes.length)return false;
@@ -751,17 +785,22 @@ class LordkillQuest extends JobQuest{
   get deedWord(){
     return 'beaten';
   }
-  // (gone for good: his realm fallen)
+  // (gone for good: his realm fallen; or a prisoner, or at peace with them now)
   gone(){
     const l=W.lords.find(x=>x.name===this.target);
-    return super.gone()||!l||!!l.gone;
+    return super.gone()||!l||!!l.gone||!!l.held||!atWar(this.fac,l.fac);
   }
   goneWhy(){
-    return super.gone()?super.goneWhy():this.target+' is gone from the field for good.';
+    const l=W.lords.find(x=>x.name===this.target);
+    return super.gone()?super.goneWhy():l&&!l.gone&&l.held?this.target+' is a prisoner now.':l&&!l.gone&&!atWar(this.fac,l.fac)?'The war with the '+FACS[l.fac].n+' is over.':this.target+' is gone from the field for good.';
   }
 }
 // a lord's war work for his own vassals: the nearest unwalled enemy village raided to the ground
 class RaidQuest extends JobQuest{
+  // (its need read off the world: passed before it is taken, no work: story/quest.js accept)
+  needless(){
+    return this.gone();
+  }
   setup(t,lord){
     const vs=TOWNS.filter(v=>!walled(v)&&atWar(this.fac,v.owner));
     if(!vs.length)return false;
@@ -789,18 +828,22 @@ class RaidQuest extends JobQuest{
   get deedWord(){
     return 'raided';
   }
-  // (gone: no more, or his realm's own now)
+  // (gone: no more, his realm's own now, or no enemy of his: peace made)
   gone(){
     const v=townBy(this.village);
-    return super.gone()||!v||!!v.gone||v.owner===this.fac;
+    return super.gone()||!v||!!v.gone||v.owner===this.fac||!atWar(this.fac,v.owner);
   }
   goneWhy(){
     const v=townBy(this.village);
-    return super.gone()?super.goneWhy():v&&!v.gone?this.village+' is the '+FACS[this.fac].n+'’s own now.':this.village+' is no more.';
+    return super.gone()?super.goneWhy():v&&!v.gone&&v.owner===this.fac?this.village+' is the '+FACS[this.fac].n+'’s own now.':v&&!v.gone?'The war with '+this.village+'’s lords is over.':this.village+' is no more.';
   }
 }
 // a lord's war work: a holding of his realm under siege relieved (its besieger beaten by you); closed once the siege is over
 class RelieveQuest extends JobQuest{
+  // (its need read off the world: passed before it is taken, no work: story/quest.js accept)
+  needless(){
+    return this.gone();
+  }
   setup(t,lord){
     const h=TOWNS.filter(x=>x.owner===this.fac&&!x.gone&&besieged(x)).sort((a,b)=>qTiles(a,lord)-qTiles(b,lord))[0];
     if(!h)return false;
@@ -1244,7 +1287,7 @@ function jobsBody(t){
 // town actions (from the town screen) and log actions (from the character screen)
 function questAct(a,arg,t){
   if(!a.startsWith('q-'))return false;
-  if(a==='q-accept'&&t){const list=jobsAt(t),q=list[+arg];if(q&&Quest.as(q).state==='available'&&acceptQuest(q))list.splice(+arg,1)}
+  if(a==='q-accept'&&t){const list=jobsAt(t),q=list[+arg];if(q&&Quest.as(q).state==='available'&&(acceptQuest(q)||Quest.as(q).needless()))list.splice(+arg,1)}// (taken, or its need passed: off the board)
   else if(a==='q-turnin'&&t){const q=questBy(+arg);if(q&&canReportAt(q,t)){if(q.done&&!Quest.as(q).handsOver)payQuest(q,t.name);else turnIn(q,t)}}
   // (only a job may be given up: never a main or side quest, nor a story's stage)
   else if(a==='q-abandon'){const q=questBy(+arg);if(q&&Quest.as(q).abandonable)Quest.as(q).abandon()}

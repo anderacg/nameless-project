@@ -20,7 +20,7 @@ const STEP={retarget:40,keep:12,
    ransom, the gold his gaolers ask at a lord's holding (a traveller's, Ander's: a known sword fetches more); wander: Ander, once
    lost to you, moves to another tavern every days [from, to] (by a hash of the world, no draw), and joins you there for price
    gold (or once you finish the job); names: his, by his people (his seed picks) */
-const WOUNDED={wait:24,home:{min:6,max:30,near:3,estate:3},refuse:1,escort:{rep:3,late:4,morale:5},reward:{rep:8,renown:2,gold:60},
+const WOUNDED={wait:24,home:{min:14,max:60,near:3,estate:3},/* (home 14-60 tiles off, was 6-30, 2026-11-05: as every road escort, ESCORT.trip) */refuse:1,escort:{rep:3,late:4,morale:5},reward:{rep:8,renown:2,gold:60},
   ander:{p:.01,lv:4,ap:3,attr:{str:4,agi:4,int:0,cha:1}},rescue:{home:2,ransom:{traveller:80,ander:150}},wander:{days:[3,5],price:300},
   names:{human:['Oswin','Hal','Wendel','Godric','Aldo','Bram','Cole','Edric'],dwarf:['Borin','Thrain','Brokk','Gunnar','Harald','Korrin'],
     elf:['Aelin','Sylvar','Ithel','Thalion','Faen','Caelum'],orc:['Grub','Mokra','Azga','Thrak','Ragh','Durz']}};

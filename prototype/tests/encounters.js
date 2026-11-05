@@ -257,7 +257,10 @@ try{
   world();if(to)t.enterTown(to);ok(q&&!P.quests.length&&q.fate==='arrived'&&t.goodN('grain')===g0+4&&P.renown===r1+1,'entering '+(q&&q.to.name)+': they leave you 4 grain, renown +1');G.town=null;world();
   const f0=t.foodN();meet('refugees');pickA(1);ok(t.foodN()===f0-3,'Give food: −3 food');world()}
  // the shepherd
- {const b0=t.bandits.length,s0=P.sk.scout.xp+P.sk.scout.lv*1e4;meet('warning');pickA(0);ok(t.bandits.length===b0+1&&P.sk.scout.xp+P.sk.scout.lv*1e4>s0&&/raiders on the move to the/.test(panel()),'Listen: he tells of a band and which way it is');world()}
+ {const near=()=>t.bandits.filter(b=>!b.gone&&Math.hypot(b.x-P.x,b.y-P.y)<=t.ENC_TUNE.warning.band*t.TILE);
+  const b0=t.bandits.length,s0=P.sk.scout.xp+P.sk.scout.lv*1e4,had=near().length;meet('warning');pickA(0);
+  ok(t.bandits.length===b0&&P.sk.scout.xp+P.sk.scout.lv*1e4>s0&&(had?/raiders on the move to the/:/no one has seen them this way/).test(panel()),'Listen: he tells of the nearest band there is and which way it is ('+had+' within '+t.ENC_TUNE.warning.band+' tiles), and makes none');world()
+  const bs=t.bandits.splice(0);try{meet('warning');pickA(0);ok(/no one has seen them this way/.test(panel())&&!t.bandits.length,'no band near: only a rumour, and none made')}finally{t.bandits.push(...bs)};world()}
 
  // ======== phase 2: the eight new kinds (their numbers: ENC_TUNE; the chase and the catch, shared: ENC_CATCH)
  const TU=t.ENC_TUNE,CA=t.ENC_CATCH,logsSince=n=>G.msgs.slice(n).map(m=>m.m).join(' | '),cleanBag=()=>{P.inv=Array(t.INV_SIZE).fill(null)};
