@@ -412,7 +412,14 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  stuck in the gap by its smithy), so the patrols and lords by a holding walk round it. Proof: MARCH_MOVE.slit 0 gives c8a7a09f
 //  again; W1-W5, W7, B2 and the sums held. W6, failing before this (f6ec2a06), moves with it to 3b1b4245 (men drawn where they now
 //  stand); not re-recorded here. Was W8 c8a7a09f)
-const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'3d4ee001',W4:'2bf73f82',W5:'0b1fd5be',W6:'08300b7e',W7:'b30568ab',W8:'d229693c',B2:'db4c9cc7'};
+// (all nine re-recorded 2026-11-05, on purpose: the hamlets (doc/WORLD_DESIGN.md §6.3; the owner, "implement the hamlet and small
+//  villages", the classic world to have them too): the classic seed's 24 free hamlets and villages, their roads, lots and estates
+//  (W1-W3), the land and the world they share (W4-W6), the play on it (W7, W8) and the save (B2); and the lots' rules mended on it
+//  (lots.js: every centre and the ground before each gate kept clear, a new world's estate tracks laid once every holding stands,
+//  as a load lays them, a holding's lots walked to on foot with no ferry, a hamlet's estates on its own bank, a spur left in a
+//  centre's ring opened). Proof for the generator: the sums below. Were W1 21d9cb5a, W2 975f62a1, W3 3d4ee001, W4 2bf73f82,
+//  W5 0b1fd5be, W6 08300b7e, W7 b30568ab, W8 d229693c, B2 db4c9cc7)
+const EXPECT={W1:'93537e2b',W2:'264a7c7f',W3:'ac2aba75',W4:'fbefe32d',W5:'414df094',W6:'a8409953',W7:'6683fb0e',W8:'05f25f36',B2:'905b24f3'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -463,7 +470,11 @@ const EXPECT={W1:'21d9cb5a',W2:'975f62a1',W3:'3d4ee001',W4:'2bf73f82',W5:'0b1fd5
 //  of 110 tiles (PLACE_CLEAR, was 80) for its 64 px centre. Checked: with it back at 80 all five as before (Large s1 never moved).
 //  Were classic efa9e400, Normal s1 f9e8cbcf, s2 be89157c, s3 5d829885)
 // (all five re-recorded 2026-10-30, on purpose: the woods' glades, GEN_GLADE; the generator's stages before 9b as before)
-const SUMS={classic:'c2e6ebf4','Normal s1':'7de4f831','Normal s2':'994d7cb0','Normal s3':'d0b32a24','Large s1':'03a19dc7'};
+// (all five re-recorded 2026-11-05, on purpose: the hamlets, the generator's stage 7b (worldplace.js genHamlets), at Normal in
+//  every preset and the classic world. Checked: with the Hamlets setting None the generator makes what it made before them (Normal s1
+//  at None 1a9d3280 on 244e94c, before the hamlets, and now; the setting is part of the sum, so None is not the old Normal's value).
+//  Were classic c2e6ebf4, Normal s1 7de4f831, s2 994d7cb0, s3 d0b32a24, Large s1 03a19dc7)
+const SUMS={classic:'313f5680','Normal s1':'c05c2a0b','Normal s2':'71336fed','Normal s3':'88b17161','Large s1':'66607a42'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

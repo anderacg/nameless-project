@@ -24,7 +24,7 @@ Kit.suite(({ok})=>{
  near(ash);t.updateWorld(.01);t.act('tab','jobs');ok(G.mode==='town'&&/Work offered/.test(panel())&&document.querySelectorAll('[data-act="q-accept"]').length===2,'Ashford offers two jobs');
  const first=JSON.stringify(t.jobsAt(ash).map(q=>q.title));t.act('leave');done();G.day+=2;ok(JSON.stringify(t.jobsAt(ash).map(q=>q.title))===first,'offers stay for the week');
  G.day+=6;t.jobsAt(ash);ok(P.jobs.Ashford.day===G.day,'and refresh after 7 days');
- ok(t.TOWNS.every(x=>t.jobsAt(x).length>0),'every holding has work');
+ ok(t.TOWNS.filter(x=>x.owner).every(x=>t.jobsAt(x).length>0),'every realm\'s holding has work (a hamlet\'s board may stand blank: its few kinds of work, by what is near)');
  // accept through the panel
  near(ash);t.updateWorld(.01);t.act('tab','jobs');t.act('q-accept','0');ok(P.quests.length===1&&t.jobsAt(ash).length===1,'accepting takes the job off the board');t.act('leave');done();P.quests=[];
  // bounty
