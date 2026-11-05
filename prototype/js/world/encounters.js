@@ -258,7 +258,8 @@ defineKinds('encounter',{trigger:'travelHour'},{
       {icon:'eye',label:'Join the hunt',also:()=>[statHelps('hunt')],tip:'Ride with them after deer. Survival, Hunting and Archery bring home more.',
         out:()=>{const x=ENC_TUNE.hunters,h=roadHaul();return{xp:x.xp,train:['scout',8],goods:h.furs?{meat:h.meat,furs:h.furs}:{meat:h.meat},say:r=>'A good chase. (+'+x.xp+' XP, '+r.goods.meat+' meat'+(r.goods.furs?', '+r.goods.furs+' furs':'')+')'}}}]},
   child:{n:'Lost child',ico:'people',w:1,ok:(c=storyCtx())=>!!c.nearHold,on:'road',beh:'approach',call:'Please, help me!',hear:'A child is crying on the road to the {d}.',tip:'A child alone',
-    setup:e=>{const t=nearHold();e.to=t.name;e.race=t.races[0]},
+    // (her home a hamlet or a village some way off, ESCORT.trip: she wandered far; none, the holding by you)
+    setup:e=>{const h=nearHold(),t=Escort.farPlace({x:e.x,y:e.y},o=>(o.kind==='hamlet'||o.kind==='village')&&!hostileTo(o.owner))||h;e.to=t.name;e.race=t.races[0]},
     scene:()=>[['walk','child',0,0]],
     text:e=>'A lost child sits crying by the road. She says she lives in '+e.to+'.',
     left:()=>'She trudges off toward home.',
@@ -295,7 +296,7 @@ defineKinds('encounter',{trigger:'travelHour'},{
     text:()=>'Refugee farmers on the road with all they own on a cart, a child at their heels.',
     left:()=>'They trudge on.',
     acts:[{icon:'troops',label:'Escort them',need:()=>Escort.why(),also:()=>['safe passage'],tip:'They ride with you to a holding that will take them in; they thank you there.',
-        out:e=>({passenger:roadEscort(e,'refugees'),gone:true,say:r=>r.escort?'The family falls in behind your band, bound for '+r.escort.to.name+', '+Escort.way(r.escort)+'.':'They will not come with you.'})},
+        when:e=>!!roadEscort(e,'refugees'),out:e=>({passenger:roadEscort(e,'refugees'),gone:true,say:r=>r.escort?'The family falls in behind your band, bound for '+r.escort.to.name+', '+Escort.way(r.escort)+'.':'They will not come with you.'})},
       {icon:'food',label:'Give food',need:()=>foodN()<3&&'You have no food to spare.',out:()=>({food:-3,renown:1,morale:3,mood:'kind',say:'They eat their first warm meal in days and bless your name.'})},ROAD_FLED]},
   warning:{n:'Shepherd’s warning',ico:'sheep',w:1,ok:()=>true,on:'open',beh:'approach',call:'Raiders about!',hear:'A shepherd waves to you from the {d}.',tip:'A shepherd and his flock',
     scene:()=>[['worker','herder',0,0],['beast','sheep',-8,1,{v:0}],['beast','sheep',-13,-2,{v:3}],['beast','sheep',-6,-3,{v:5}]],
@@ -534,12 +535,12 @@ function roadCatchHorse(e){const id='m_'+e.mk;train('ride',4);
   if(roadRng().chance(catchOdds())){e.gone=1;e.finish('caught');if(!P.gear.mount){P.gear.mount=id;fitInv();return'You take the reins and swing into the saddle: the '+ITEMS[id].n+' is yours.'}
     const g=itemPrice(id);P.gold+=g;return'You take the reins, and sell the '+ITEMS[id].n+' on for '+g+' gold.'}
   e.beh='bolt';e.finish('escaped');return'It shies, rears and bolts. Gone.'}
-/* the escorts (world/escort.js): the lost child to her family's house in her holding (one of its houses, by her seed: no draw),
-   the refugees to the nearest holding at least ENC_TUNE.refugees.min tiles off that is not hostile to you (else the nearest);
-   their thanks on arrival (ENC_TUNE child, refugees: prize) */
+/* the escorts (world/escort.js): the lost child to her family's house in her holding (one of its houses, by her seed: no draw;
+   her holding some way off, child setup), the refugees to the nearest holding not hostile to you ESCORT.trip tiles off (none: they
+   ask no escort); their thanks on arrival (ENC_TUNE child, refugees: prize) */
 function roadEscort(e,who){const x=ENC_TUNE[who==='child'?'child':'refugees'],at={x:e.x,y:e.y};
   if(who==='child')return{who,to:{town:e.to,lot:'house',i:e.seed},prize:{rep:[e.to,x.rep],morale:x.morale},forfeit:{rep:[e.to,-x.late]},at};
-  const ok=t=>!hostileTo(t.owner),far=t=>Math.hypot(t.x-e.x,t.y-e.y)>=x.min*TILE,t=Spatial.nearestHolding(e.x,e.y,t=>ok(t)&&far(t))||Spatial.nearestHolding(e.x,e.y,ok)||Spatial.nearestHolding(e.x,e.y);
+  const t=Escort.farPlace(at,o=>!hostileTo(o.owner));if(!t)return null;// (none far enough that will take them in: no escort, roadEscorts)
   return{who,to:{town:t.name},prize:{goods:{grain:x.grain},renown:x.renown},forfeit:{renown:-x.late},at}}
 /* the parts of another (pk: its i), never coming on their own (no trigger): a stray sheep of the shepherd's (its class, Stray:
    it grazes, and trots off from you within ENC_SHEEP.shy; once you help him, ride into it, within catchReach, and it is back
@@ -644,5 +645,5 @@ function tollFightFacts(e){const x=ENC_TUNE.toll.fight,hurt='honour with the '+F
 function tollFight(e){const x=ENC_TUNE.toll.fight;
   return{...(e.real?{honor:[e.fac,-x.honor],rep:[e.home,-x.rep]}:{}),fight:{amb:true,edge:false},say:e.real?'You fall on the '+FACS[e.fac].n+'’s toll-men.':'You fall on them. They fight like the bandits they are.'}}
 // (Report them: the ringleader to the reeve of the holding whose lord they claimed; the bounty and the news there)
-function tollReport(e){const x=ENC_TUNE.toll.report,at={x:Math.round(e.x),y:Math.round(e.y)};
-  return{who:'impostor',to:{town:e.home},prize:{gold:x.gold,rep:[e.home,x.rep],honor:[e.fac,x.honor],news:['toll',at,{fac:e.fac,town:e.home}]},forfeit:{rep:[e.home,-x.late]},at}}
+function tollReport(e){const x=ENC_TUNE.toll.report,at={x:Math.round(e.x),y:Math.round(e.y)},far=Escort.farPlace(at,o=>o.owner===e.fac),home=far?far.name:e.home;// (a reeve of the realm they claimed some way off: ESCORT.trip; none, this land's)
+  return{who:'impostor',to:{town:home},prize:{gold:x.gold,rep:[home,x.rep],honor:[e.fac,x.honor],news:['toll',at,{fac:e.fac,town:home}]},forfeit:{rep:[home,-x.late]},at}}

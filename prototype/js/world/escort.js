@@ -112,6 +112,11 @@ const Escort={
     const at=s.at||P;
     return s.days||Math.ceil(Math.hypot(to.x-at.x,to.y-at.y)/TILE/ESCORT.pace)+ESCORT.slack;
   },
+  // (a road escort's place: the nearest holding that ok() passes, reachable from at by land, ESCORT.trip min-max tiles off; or null)
+  farPlace(at,ok){
+    const T=ESCORT.trip;let best=null,bd=Infinity;
+    for(const t of TOWNS){if(t.gone||!ok(t))continue;const d=Math.hypot(t.x-at.x,t.y-at.y)/TILE;if(d<T.min||d>T.max||d>=bd||!Router.reach(at,t))continue;bd=d;best=t}
+    return best},
   // a traveller of t asks to be seen to a holding not hostile to you, offer.min–max tiles off (the jobs' stream: the offer's draw)
   offer(t){
     const O=ESCORT.offer,ps=TOWNS.filter(o=>o!==t&&!hostileTo(o.owner)&&qTiles(o,t)>=O.min&&qTiles(o,t)<=O.max);

@@ -56,7 +56,7 @@ const ENC_WALK={min:64,wind:.75,far:400};
 const ENC_SHEEP={n:[3,4],r:[40,80],shy:26,hours:3,rep:1,good:1,all:{rep:2,morale:3}};
 const ENC_TUNE={wagon:{gold:15},traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5,10]},hunters:{xp:15,meat:3,furs:2},mud:{sp:20,hours:1,rep:3,give:[2,4],goods:[3,5],coins:[3,8]},thief:{purse:[20,40],reward:10,rep:4,honor:3},poacher:{see:1.15,scout:.1,rep:3,bounty:10,meat:4,price:8},
   funeral:{n:[3,5],honor:2,morale:4},wedding:{morale:10,hours:2,gift:25,rep:5},beggar:{gold:[5,10,20],honor:[1,2,3]},messenger:{purse:[8,16]},
-  child:{rep:6,morale:5,late:3},refugees:{grain:4,renown:1,min:8,late:1},
+  child:{rep:6,morale:5,late:3},refugees:{grain:4,renown:1,late:1},
   pilgrims:{n:[2,4],morale:8,rep:3,walk:1,alms:20,almsMorale:12,xp:25,coins:12,coinsMorale:8},
   lure:{w:.5,night:1.6,wild:1.4,bandit:.3,bands:3,near:400,cap:1.6,warn:3,count:5,woods:40,hide:12,arc:1.2,rays:4,scare:{max:6,base:.2,lead:.06,cha:.05,lo:.05,hi:.85}},
   letter:{stale:[5,10],worth:[30,45],kind:{army:1.4,attack:1.3,deal:1.1,news:.6},w:{army:1,attack:1,deal:.7,news:.8},sell:1.2,deliver:.8,opened:.5,old:.15,
@@ -86,7 +86,9 @@ const ENC_TUNE={wagon:{gold:15},traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5
    victors), left (abandoned: set down)); offer: a traveller's escort offered at a holding (a job of its own, or a thread's
    step): his place min–max tiles off, gold + per a tile, rep in the giver's holding; forfeit: reputation lost at its place
    when one fails, unless its spec says */
-const ESCORT={max:3,pace:8,slack:2,reach:{holding:36,lot:24},forfeit:4,
+// trip: an escort met on the road goes min-max tiles from where it begins (the owner, 2026-11-05: an escort "within 2 grid far the
+// destination is already there"), the nearest such holding that will have it (Escort.farPlace)
+const ESCORT={max:3,pace:8,slack:2,reach:{holding:36,lot:24},forfeit:4,trip:{min:14,max:60},
   who:{child:{n:'the lost child',ico:'people',eat:.25,say:{arrive:'You bring her to her family’s door in {town}. Her mother weeps for joy.',late:'She slips away to find her own way home to {town}.'}},
     refugees:{n:'the refugee family',ico:'people',eat:.75,say:{arrive:'The refugee family is safe in {town}. They press the last of their grain on you.',late:'Tired of waiting, the refugees leave your band to find {town} alone.'}},
     traveller:{n:'a traveller',ico:'people',eat:.25},
