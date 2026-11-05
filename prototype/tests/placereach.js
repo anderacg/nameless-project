@@ -32,9 +32,11 @@ Kit.suite(({ok,info})=>{
  {t.act('site-leave');t.hidePanel();G.mode='world';G.modal=false;t.updateSites();ok(G.lastSite===camp,'standing where your army reached it, the camp you left is still the one you left');
    const away=offAt(camp,t.worldBattleReach(camp)+t.REACH+20);if(away){P.x=away[0];P.y=away[1];t.updateSites();ok(G.lastSite===null,'well away from it, forgotten')}}
  // a friendly holding opens when your army's ring reaches its walls
- {reset();P.troops={...big};P.hostile={};const ring=t.marchInteractRadius(P),hs=t.TOWNS.filter(h=>h.owner&&!t.hostileTo(h.owner)&&t.Layout.of(h).centre())/* (a realm's: a free folk's hamlet or village aside) */.sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y));
-  let h=null,far=null;for(const x of hs){const b=t.lotBox(t.Layout.of(x).centre()),r=Math.max(b.x1-b.x0,b.y1-b.y0)+ring+40;far=offAt(x,r);if(far){h=x;break}}
-  if(!h)info('no friendly holding with open ground round it');else{const b=t.lotBox(t.Layout.of(h).centre());Kit.goTo(far[0],far[1]);t.approach(h);ok(G.chase===h,'a friendly holding clicked from afar: your army walks there');G.encCool=1e3;walk(1600);
+ {reset();P.troops={...big};P.hostile={};const ring=t.marchInteractRadius(P),hs=t.TOWNS.filter(h=>!t.hostileTo(h.owner)&&t.Layout.of(h).centre()).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y));
+  // (measured from its town as reached, its footprint: holding.js reachRadius; a hamlet's houses and estates lie a way off its centre)
+  const fpOf=x=>{const f=t.Layout.of(x).footprint();return f?{x0:f.x0,y0:f.y0,x1:f.x1,y1:f.y1}:t.lotBox(t.Layout.of(x).centre())};
+  let h=null,far=null;for(const x of hs){const b=fpOf(x),r=Math.hypot(Math.max(x.x-b.x0,b.x1-x.x),Math.max(x.y-b.y0,b.y1-x.y))+ring+40;far=offAt(x,r);if(far){h=x;break}}
+  if(!h)info('no friendly holding with open ground round it');else{const b=fpOf(h);Kit.goTo(far[0],far[1]);t.approach(h);ok(G.chase===h,'a friendly holding clicked from afar: your army walks there');G.encCool=1e3;walk(1600);
    const d=boxDist(b,P.x,P.y);ok(G.mode==='town'&&G.town&&G.town.ref===h,'and it opens as your ring reaches its walls ('+G.mode+')');
    ok(d>0&&d<=ring+8&&Math.hypot(P.x-h.x,P.y-h.y)>t.REACH+20,'your army halts outside '+h.name+': its middle '+Math.round(d)+' px off the town, its ring '+Math.round(ring)+' px')}
   // at war with you, a holding is reached at its gate as before (its siege's leash is measured from there)
