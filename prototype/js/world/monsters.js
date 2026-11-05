@@ -56,10 +56,11 @@ function spawnMonster(initial){
   const R=monRng();
   let r=R.next()*ids.reduce((a,id)=>a+wt(id),0),id=ids[0];for(const f of ids){r-=wt(f);if(r<=0){id=f;break}}
   const M=MONSTERS[id];
-  // (in the wilds; after 200 tries, its ground not found there, at a land's far edge: lairLand)
+  // (in the wilds, far from every holding (monsterHold px: the owner, 2026-11-05, "monsters should spawn far away from holdings"; half
+  // that after 300 tries); after 200 tries, its ground not found there, at a land's far edge: lairLand)
   for(let k=0;k<400;k++){
-    const x=R.int(2,MW-3)*TILE+8,y=R.int(2,MH-3)*TILE+8,tags=habitatAt(x,y);
-    if(!M.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.monster[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.monsterHold)||!lairLand(x,y,k>=200))continue;
+    const x=R.int(2,MW-3)*TILE+8,y=R.int(2,MH-3)*TILE+8,tags=habitatAt(x,y),hold=WORLD_SCALE.spawn.monsterHold*(k>=300?.5:1);
+    if(!M.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.monster[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<hold)||!lairLand(x,y,k>=200))continue;
     W.monsters.push(asMonster({id,x,y,hx:x,hy:y,lv:monLevel(R),n:R.int(M.count[0],M.count[1]),t:0,a:0,cool:0}));return;
   }
 }
@@ -73,6 +74,8 @@ function monsterDay(){const D=density(WM);for(let k=0;k<D.daily.monsters;k++)if(
 const BEAST_MIND={think(m,d,hide){
     if(inFight(m))return false;// (fighting on the map: fights.js)
     if(MONSTERS[m.id].mythic)return roamMythic(m,d);
+    const x0=m.x,y0=m.y,wild0=!landHold(x0,y0);try{return BEAST_MIND.move(m,d,hide)}finally{beastKeepsOut(m,x0,y0,wild0)}},
+  move(m,d,hide){
     const A=WORLD_SCALE.ai,M=MONSTERS[m.id],prey=TravelAwareness.target(m)||P,dx=prey.x-m.x,dy=prey.y-m.y,dist=Math.hypot(dx,dy);m.cool=Math.max(0,m.cool-d);
     // (how it means to fight you weighed only while you are in its sight: out of it, it wanders whatever it thinks of you; but
     // afraid of you and remembering you (engage.js fearOf) it keeps away, just after a fight too, not back to its lair past you)
@@ -89,6 +92,9 @@ const BEAST_MIND={think(m,d,hide){
   // far from you (the far tier, worldobject.js): a beast holds by its lair (doc/WORLD_DESIGN.md §3.5: it wanders only near you); a
   // mythic one roams on, as a mid one thinks
   farStep(m,d,x,k){return MONSTERS[m.id].mythic?lodMid(this,m,k,d,x):false}};
+// a beast keeps off the holdings' land (the owner, 2026-11-05: "they tend to avoid holding territories"): a step from the wilds onto a
+// holding's land taken back, and it turns for its lair; one on such land already walks off it as it will (a lair at a land's rim)
+function beastKeepsOut(m,x0,y0,wild0){if(!wild0||(m.x===x0&&m.y===y0)||!landHold(m.x,m.y))return;m.x=x0;m.y=y0;m.a=Math.atan2(m.hy-m.y,m.hx-m.x);m.t=2}
 // the party a beast falls on: one it meets, out of any fight; a band always, any other (a lord's army, a watch, a caravan, a
 // companion's party) when the beast dares it (DEFEND.dare); neither of them set out by a quest, nor a mythic beast (it ravages
 // armies its own way: roamMythic)

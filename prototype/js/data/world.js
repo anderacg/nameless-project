@@ -31,7 +31,7 @@ const WORLD_SCALE={
   // nearer a holding or any of its built estates than away (outlaws lurk out on a land's reaches, by the roads); a beast makes
   // its lair in the wilds, on no holding's land, or, its kind's ground not found there this time, within rim tiles of a land's
   // edge and away from every holding and estate (monsters.js lairLand)
-  spawn:{bandit:[220,260],monster:[180,240],monsterHold:64,mythic:200,critter:[120,200],critterHold:56,away:120,rim:3},
+  spawn:{bandit:[220,260],monster:[180,240],monsterHold:256,mythic:200,critter:[120,200],critterHold:56,away:120,rim:3},
   // trade and work (tiles): realm caravans' range and their cost of distance, where refugees go, a holding's veins and its own
   econ:{caravanNear:10,caravanFar:90,caravanCost:150,refuge:70,resRange:10,homeRange:24},
   // deeds and who hears of them (tiles): field deeds and road events count for a holding this near, a sack angers those this near

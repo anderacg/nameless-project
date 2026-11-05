@@ -65,7 +65,8 @@ const wuiPut=(c,x,y,px,py)=>ctx.drawImage(c,x-px,y-py);
    on clockwise; a pixel edge round it in the dark at WUI_FOOT.edge, its toe's tip lit. gap: px from one print to the next along
    the way (a left, then a right); side: px each sits off the way's middle; look: px before and after it the way's heading is read
    over. Its middle at (cx, cy) in the picture */
-const WUI_FOOT={gap:8,side:2,look:4,dirs:8,edge:.55,N:['##.','###','###','...','.##','.##'],NE:['...##','..###','..##.','.....','##...']};
+// (shorter, 2026-11-05, the owner: "make footprint a bit shorter, currently look like a line": 4 px long, 10 apart, was 6 and 8)
+const WUI_FOOT={gap:10,side:2,look:4,dirs:8,edge:.55,N:['##.','###','...','.##'],NE:['..##','.##.','....','#...']};
 function wuiFoot(d,left,col){const key='f'+d+(left?'l':'r')+col;let c=WUIP.get(key);if(c)return c;const F=WUI_FOOT,o=d%2,B=o?F.NE:F.N,bw=B[0].length,bh=B.length;let p=[];
   B.forEach((r,y)=>{for(let x=0;x<bw;x++)if(r[x]==='#')p.push([x-(bw-1)/2,y-(bh-1)/2])});
   if(left)p=p.map(([x,y])=>o?[-y,-x]:[-x,y]);for(let k=((d-6-o)/2%4+4)%4;k>0;k--)p=p.map(([x,y])=>[-y,x]);
