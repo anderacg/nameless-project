@@ -64,7 +64,7 @@ try{
   P.x=fx-10;P.y=fy+30;frames(1);const bolt=h.st;frames(6);
   ok(sat&&bolt==='bolt'&&Math.hypot(h.x-P.x,h.y-P.y)>10+5,'a hare sits, and bolts from your band as it comes near ('+bolt+', '+Math.round(d0)+' px off before)');[L.x,L.y,L.inside]=keep;park()}
  // ---- fireflies: at night, in a wood only near you, never by day
- {const woods=finds((x,y)=>tAt(x,y)===t.T_FOREST&&cl(x,y)==='grass'&&away(x,y),3,[hx,hy],4);let wood=null,by=null;
+ {const woods=finds((x,y)=>tAt(x,y)===t.T_FOREST&&cl(x,y)==='grass'&&away(x,y),3,[hx,hy],8);let wood=null,by=null;/* (up to 8 woods, was 4, 2026-11-05: the 4 nearest Ashford saw no firefly born) */
   // (the first of the woods near Ashford where fireflies are born in the frames: so few a night, one wood may see none)
   for(const w of woods){const [x,y]=mid(w);night();at(x,y);by=births(200);wood=w;if(by.glow)break}
   if(!wood)ok(true,'(no wood on this map)');else{const [x,y]=mid(wood),V=t.vis(),far=__amb.filter(b=>b[0]==='glow'&&b[5]===t.T_FOREST&&b[4]>=V*A.glow.near);

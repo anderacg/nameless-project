@@ -16,7 +16,9 @@ Kit.suite(({ok,info})=>{
  const boxDist=(b,x,y)=>Math.hypot(Math.max(b.x0-x,0,x-b.x1),Math.max(b.y0-y,0,y-b.y1));
  const big={hum_foot:60,hum_bow:30},small={hum_foot:2};
  P.troops={...big};const ringBig=t.marchInteractRadius(P);P.troops={...small};const ringSmall=t.marchInteractRadius(P);
- const camp=t.camps().find(c=>offAt(c,ringBig+60)&&offAt(c,ringSmall+60))||t.camps()[0];camp.cleared=false;camp.bands=[];camp.seen=true;
+ // (a camp on open ground, 5 tiles round: one in the woods halts a small army a little short, 2026-11-05)
+ const openAt=s=>{const tx=s.x/TILE|0,ty=s.y/TILE|0;for(let j=-5;j<=5;j++)for(let i=-5;i<=5;i++)if(t.tAt(tx+i,ty+j)!==t.T_OPEN&&t.tAt(tx+i,ty+j)!==t.T_ROAD)return false;return true};
+ const camp=t.camps().find(c=>openAt(c)&&offAt(c,ringBig+60)&&offAt(c,ringSmall+60))||t.camps().find(c=>offAt(c,ringBig+60)&&offAt(c,ringSmall+60))||t.camps()[0];camp.cleared=false;camp.bands=[];camp.seen=true;
  ok(camp.reachRadius()>=0&&t.worldBattleReach(camp)===t.marchInteractRadius(P)+camp.reachRadius()&&t.worldBattleReach(camp)>t.REACH,'a place is reached from your army\'s ring: its reach your ring and its footprint toward you ('+Math.round(t.worldBattleReach(camp))+' px for a band of 2)');
  // a big army: a click on the camp halts it at its ring's edge, and the camp opens; the hero never walks in
  const go=(troops,label)=>{reset();P.troops={...troops};const ring=t.marchInteractRadius(P),far=offAt(camp,ring+60);if(!far){info(label+': no open ground in a line '+Math.round(ring+60)+' px off the camp');return null}
@@ -30,7 +32,7 @@ Kit.suite(({ok,info})=>{
  {t.act('site-leave');t.hidePanel();G.mode='world';G.modal=false;t.updateSites();ok(G.lastSite===camp,'standing where your army reached it, the camp you left is still the one you left');
    const away=offAt(camp,t.worldBattleReach(camp)+t.REACH+20);if(away){P.x=away[0];P.y=away[1];t.updateSites();ok(G.lastSite===null,'well away from it, forgotten')}}
  // a friendly holding opens when your army's ring reaches its walls
- {reset();P.troops={...big};P.hostile={};const ring=t.marchInteractRadius(P),hs=t.TOWNS.filter(h=>!t.hostileTo(h.owner)&&t.Layout.of(h).centre()).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y));
+ {reset();P.troops={...big};P.hostile={};const ring=t.marchInteractRadius(P),hs=t.TOWNS.filter(h=>h.owner&&!t.hostileTo(h.owner)&&t.Layout.of(h).centre())/* (a realm's: a free folk's hamlet or village aside) */.sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y));
   let h=null,far=null;for(const x of hs){const b=t.lotBox(t.Layout.of(x).centre()),r=Math.max(b.x1-b.x0,b.y1-b.y0)+ring+40;far=offAt(x,r);if(far){h=x;break}}
   if(!h)info('no friendly holding with open ground round it');else{const b=t.lotBox(t.Layout.of(h).centre());Kit.goTo(far[0],far[1]);t.approach(h);ok(G.chase===h,'a friendly holding clicked from afar: your army walks there');G.encCool=1e3;walk(1600);
    const d=boxDist(b,P.x,P.y);ok(G.mode==='town'&&G.town&&G.town.ref===h,'and it opens as your ring reaches its walls ('+G.mode+')');
