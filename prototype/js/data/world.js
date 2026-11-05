@@ -87,6 +87,13 @@ const GATES={on:true,town:{renown:10,honor:10},city:{renown:30,honor:25},castle:
 // (renown great or more) hears you with renown need x his, or honour honor with his realm, or his regard rel for you, or in his
 // realm's service, or on his work (a quest of his or about him)
 const LORD_AUDIENCE={on:true,great:32,need:.5,honor:15,rel:20};
+// the ways past a gate (G2): a letter of introduction (a reeve's or innkeeper's work done, to the nearest town or city that refuses
+// you within letter tiles) or a guild token (a merchant's, a city's first); a writ bought at the gate (gold by kind; your standing
+// there writ.rep at least); a bribe (gold by kind; odds base + Persuasion x pers + Charisma x cha; failed, caught by caught: honour
+// and reputation lost, the gate barred to such ways ban days); slipping in at night (odds by Scouting and Agility; caught: a fine,
+// a share of your gold, reputation and honour lost, barred ban days). A bribe's or a night's way in lasts the visit (a day)
+const GATE_WAYS={letter:80,writ:{town:60,city:160,rep:0},bribe:{town:25,city:60,castle:120,base:.3,pers:.05,cha:.04,caught:.5,honor:3,rep:5,ban:3},
+  slip:{base:.25,scout:.05,agi:.04,fine:.5,honor:5,rep:10,ban:3}};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18},daily:{bandits:1,monsters:3,critters:3}},

@@ -245,6 +245,8 @@ class Quest extends Happening{
     this.announceEnd('paid');
     // (what it gave, in the window in the middle of the screen: ui/questreward.js)
     if(typeof QuestReward!=='undefined')QuestReward.job(this.title,{gold,bonus,xp:r.xp,renown,rep:r.rep,at,honor:r.honor,fac:this.fac,rel:giver?RELATION.jobDone:0,giver:giver?.name,goods:r.goods});
+    // (a reeve's word for you at a gate that refuses you, a merchant's token: world/gates.js)
+    if(typeof Gates!=='undefined')Gates.reward(this);
   }
   // (the gold it pays now: its reward's; a late job's less, world/quests.js)
   earned(){

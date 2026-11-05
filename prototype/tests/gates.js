@@ -38,6 +38,29 @@ Kit.suite(({ok,info})=>{
    ok(G.enc&&G.enc.kind==='steward'&&/steward/.test(text())&&/renown 20/.test(text()),'a great lord (renown 40) will not see you yet: his steward’s word, and what you need');t.act('gt-steward');ok(G.mode==='world'&&!G.enc,'Leave');
    P.renown=20;Kit.world();t.lordMeet(l);ok(G.enc&&G.enc.kind==='lord','renown 20 (half his): he hears you');Kit.world();P.renown=0;
    l.renown=10;t.lordMeet(l);ok(G.enc&&G.enc.kind==='lord','a lesser lord: always');Kit.world();l.renown=r0}
+  // ---- G2: the ways past a gate
+  {const odds0=t.Gates.odds,c0=t.GATE_WAYS.bribe.caught;P.passes={};P.gateBan={};P.renown=0;
+   try{
+    // (a letter of introduction: a reeve's work done, to the nearest town or city that would refuse you)
+    const v=t.TOWNS.find(h=>h.kind==='village'&&h.owner),q={who:v.name+':reeve',get person(){return t.Givers.byKey(this.who)}};t.Gates.reward(q);
+    const got=Object.keys(P.passes),to=t.townBy(got[0]);
+    ok(got.length===1&&P.passes[got[0]].kind==='letter'&&['town','city'].includes(to.kind)&&t.Gates.admits(to).ok,'a reeve\u2019s work done: a letter of introduction to '+(to&&to.name)+', whose gate now opens to you');
+    P.passes={};t.Gates.reward({who:v.name+':captain'});ok(!Object.keys(P.passes).length,'a captain\u2019s work: no letter');
+    // (a writ)
+    P.gold=500;near(city);t.approachHolding(city);ok(/Buy a writ/.test(text()),'its gate offers a writ for gold');const g0=P.gold;t.act('gt-writ');
+    ok(G.mode==='town'&&G.town.ref===city&&!G.town.outside&&P.gold===g0-t.GATE_WAYS.writ.city&&t.Gates.admits(city).ok,'bought: '+t.GATE_WAYS.writ.city+' gold, and the city is open to you from now on');t.act('leave');P.passes={};
+    // (a bribe: paid and let in for the day; refused; caught and marked)
+    t.Gates.odds=()=>1;near(city);t.approachHolding(city);t.act('gt-bribe');ok(G.mode==='town'&&G.town.ref===city&&P.passes[city.name].until===G.day,'a bribe that works: in, for the day');t.act('leave');P.passes={};
+    t.Gates.odds=()=>0;t.GATE_WAYS.bribe.caught=1;const h0=t.honorWith(city.owner);near(city);t.approachHolding(city);t.act('gt-bribe');
+    ok(G.mode==='gate'&&/briber/.test(text())&&t.honorWith(city.owner)===h0-t.GATE_WAYS.bribe.honor&&t.Gates.barred(city)&&document.querySelector('[data-act="gt-bribe"]').disabled,'caught bribing: honour lost, marked, the ways barred for some days');
+    t.act('gt-leave');P.gateBan={};t.GATE_WAYS.bribe.caught=c0;
+    // (slipping in by night)
+    G.clock=t.DAY*.3;near(city);t.approachHolding(city);ok(document.querySelector('[data-act="gt-slip"]').disabled,'by day you cannot slip in');t.act('gt-leave');
+    G.clock=t.DAY*.8;t.Gates.odds=()=>1;near(city);t.approachHolding(city);t.act('gt-slip');ok(G.mode==='town'&&G.town.ref===city,'by night: you slip in');t.act('leave');P.passes={};
+    t.Gates.odds=()=>0;const gd=P.gold;near(city);t.approachHolding(city);t.act('gt-slip');ok(G.mode==='gate'&&/fine/.test(text())&&P.gold<gd&&t.Gates.barred(city),'caught at the wall: a fine of half your gold, marked');t.act('gt-leave');
+    // (saved)
+    P.passes={[town.name]:{kind:'writ',day:G.day}};t.saveGame(true);P.passes={};t.loadGame();ok(P.passes[town.name]&&P.passes[town.name].kind==='writ'&&t.Gates.barred(city),'saved and loaded: your passes, and the gates that know your face');
+   }finally{t.Gates.odds=odds0;t.GATE_WAYS.bribe.caught=c0;P.passes={};P.gateBan={};G.clock=t.DAY*.3}}
   // ---- the map's lock
   {Kit.goTo(city.x,city.y+60);let err=null;try{t.drawWorld()}catch(e){err=e}ok(!err&&!t.Gates.admits(city).ok,'the map draws a refused holding’s lock')}
   // ---- off: as before

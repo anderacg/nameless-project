@@ -425,7 +425,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W7 and B2 re-recorded 2026-11-05, on purpose: the gates (doc/START_AND_GATES_DESIGN.md §2): every save keeps the holdings a quest
 //  has sealed (the save piece sealed, world/gates.js: none here). Proof: without the piece both as before; the rest held. Were W7
 //  f54cb046, B2 33568fdf)
-const EXPECT={W1:'93537e2b',W2:'264a7c7f',W3:'ac2aba75',W4:'fbefe32d',W5:'414df094',W6:'a8409953',W7:'1a98e730',W8:'05f25f36',B2:'3de81ea5'};
+// (W7 and B2 re-recorded 2026-11-05, on purpose: the ways past a gate (doc/START_AND_GATES_DESIGN.md §2.2, G2): every save keeps your
+//  passes and the gates that know your face (P.passes, P.gateBan: none here). Proof: without the two fields both as before; the
+//  rest held. Were W7 1a98e730, B2 3de81ea5)
+const EXPECT={W1:'93537e2b',W2:'264a7c7f',W3:'ac2aba75',W4:'fbefe32d',W5:'414df094',W6:'a8409953',W7:'9e363d9f',W8:'05f25f36',B2:'7bbd9370'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
