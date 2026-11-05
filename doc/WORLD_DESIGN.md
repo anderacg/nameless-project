@@ -565,6 +565,8 @@ Entering logs a line; the HUD names the region.
 
 ### 6.3 Natural villages (hamlets)
 
+**Status: built 2026-11-04 (phase H1):** the kind, the generator's stage (§8.9: `worldplace.js` `genHamlets`; a quarter of them small free villages), the free folk's window and what attacking them costs. **Not yet:** the politics below (bands raiding them, realms annexing them, Offer protection) and their trade-flavoured jobs.
+
 A new holding kind, `hamlet` (a `HOLDING_TYPES` entry, `class Hamlet extends Village`), reusing lots, estates, economy and the window.
 
 | Field | Value |

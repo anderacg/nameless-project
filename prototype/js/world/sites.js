@@ -431,16 +431,16 @@ class Lair extends Site{
 }
 /* where a hideout stands (the owner, 2026-10-23: "bandit and raider hideouts should spawn far away from holdings, mostly found in
    wilderness areas"): on the wild land (wildLand), far tiles or more from every holding and road from every road, track and
-   ford (an estate's too); of draw tiles drawn from it, one on clear ground and wild (wildGround) first. Wild: woods, hills or
+   ford (an estate's too), a hamlet's hamlet tiles (its few folk keep them back less far); of draw tiles drawn from it, one on clear ground and wild (wildGround) first. Wild: woods, hills or
    peaks rough of the tiles within near of it (a clearing in the wilds), or deep in the swamp or the desert (its climate deep
    tiles out every way). Another hideout 20 tiles off at least (SITE_GAP). How many: by the wild land (data/world.js DENSITY) */
-const HIDEOUT_PLACE={far:22,road:8,draw:48,near:10,rough:.2,deep:6};
+const HIDEOUT_PLACE={far:22,hamlet:12,road:8,draw:48,near:10,rough:.2,deep:6};
 // the wild land of the world in: at (a byte a tile: 1 on it), list (its tiles), n; kept on the map till its holdings or roads
 // change (an estate's track laid or lifted: as data/world.js worldRoads; never on its lists or hashes)
 function wildLand(){const m=WM,R=m.roads||[],key=TOWNS.length+' '+R.length+' '+R.reduce((n,r)=>n+r.path.length,0);if(m._wild&&m._wild.key===key)return m._wild;
   const H=HIDEOUT_PLACE,at=new Uint8Array(MW*MH),stamp=(x,y,r)=>{for(let j=1-r;j<r;j++)for(let i=1-r;i<r;i++)if(i*i+j*j<r*r&&x+i>=0&&y+j>=0&&x+i<MW&&y+j<MH)at[(y+j)*MW+x+i]=2};
   for(let i=0;i<at.length;i++)if(tiles[i]===T_ROAD||tiles[i]===T_FORD)stamp(i%MW,(i-i%MW)/MW,H.road);
-  for(const t of TOWNS)stamp(t.tx,t.ty,H.far);
+  for(const t of TOWNS)stamp(t.tx,t.ty,t.T.tier<=1?H.hamlet:H.far);// (a hamlet's few folk keep the wilds back less far)
   const list=[];for(let i=0;i<at.length;i++){if(at[i]){at[i]=0;continue}const k=tiles[i];if(k===T_OPEN||k===T_FOREST||k===T_HILL){at[i]=1;list.push(i)}}
   Object.defineProperty(m,'_wild',{value:{key,at,list,n:list.length},configurable:true,writable:true});return m._wild}
 // (a clearing in the wilds, or deep in the swamp or the desert: HIDEOUT_PLACE)

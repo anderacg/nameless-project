@@ -55,17 +55,17 @@ try{
  const once=pn(),R1=t.genWorld(t.classicSettings()),ms=pn()-once;Math.random=r0;
  info('the classic world in '+ms.toFixed(0)+' ms; by stage (ms): '+times.join(', '));
  ok(ms<=4000,'the classic world (Normal) generates within 4 s here ('+ms.toFixed(0)+' ms)');
- ok(J(steps.map(s=>s.id))===J(t.GEN_STAGES.map(s=>s.id))&&steps.every((s,k)=>s.label===t.GEN_STAGES[k].label&&s.w>0)&&J(steps.map(s=>s.id))===J(['land','elev','climate','rivers','forest','ponds','regions','holdings','roads','sites','glades','graph']),
-  'genWorldSteps: the eleven stages in order, each with its label and weight ('+steps.map(s=>s.label).join(' · ')+')');
+ ok(J(steps.map(s=>s.id))===J(t.GEN_STAGES.map(s=>s.id))&&steps.every((s,k)=>s.label===t.GEN_STAGES[k].label&&s.w>0)&&J(steps.map(s=>s.id))===J(['land','elev','climate','rivers','forest','ponds','regions','holdings','hamlets','roads','sites','glades','graph']),
+  'genWorldSteps: the twelve stages in order (the hamlets after the holdings), each with its label and weight ('+steps.map(s=>s.label).join(' · ')+')');
  ok(!back&&fr.length>=10,'each stage yields its share done, 0-1, never going back ('+fr.length+' yields)');
  ok(!calls,'generating draws no Math.random ('+calls+' calls)');
  {const m=R1.map,s=t.classicSettings();
-  ok(shape.every(k=>k in R1)&&Object.keys(R1).length===shape.length&&Array.isArray(R1.hamlets)&&!R1.hamlets.length&&Array.isArray(R1.sacred)&&R1.lair===null&&!!R1.graph&&R1.graph.n>0&&R1.graph===R1.map.graph&&R1.lords===null,'genWorld returns {'+Object.keys(R1).join(', ')+'} (no hamlets, sacred places or lair yet; the way graph built: router.js buildWayGraph)');
+  ok(shape.every(k=>k in R1)&&Object.keys(R1).length===shape.length&&Array.isArray(R1.hamlets)&&R1.hamlets.length>0&&R1.hamlets.every(n=>R1.holdings.some(h=>h.name===n&&!h.realm))&&Array.isArray(R1.sacred)&&R1.lair===null&&!!R1.graph&&R1.graph.n>0&&R1.graph===R1.map.graph&&R1.lords===null,'genWorld returns {'+Object.keys(R1).join(', ')+'} (no hamlets, sacred places or lair yet; the way graph built: router.js buildWayGraph)');
   ok(m instanceof t.WorldMap&&m.gen==='ashmark-1'&&m.classic===true&&m.salt===0&&m.w===448&&m.h===320&&m.seed==='CLASSIC'&&m.seedNum===t.seedNum('CLASSIC')&&J(m.settings)===J(s)&&layersOk(m),
    'its map: ashmark-1, classic, salt 0, 448 x 320, seed CLASSIC ('+m.seedNum+'), its settings clamped, every layer ('+t.MAP_LAYERS.join(' ')+') at w x h');
   ok(['rivers','basins','crossings','roads','regions','cliffs'].every(k=>Array.isArray(m[k]))&&m.rivers===R1.rivers&&m.crossings===R1.crossings&&m.regions===R1.regions&&m.rivers.every(r=>(r.path.length>=8||m.rivers.some(v=>r.path.includes(v.mouth)))&&r.path.every(i=>m.kind[i]===t.T_WATER||m.kind[i]===t.T_ROAD||m.kind[i]===t.T_FORD)&&(m.kind[r.mouth]===t.T_WATER||(m.river[r.mouth]&3)>0||(m.feat[r.mouth]&2)>0)&&(m.river[r.path[0]]&3)>0)
    &&m.crossings.every(c=>['bridge','ford','ferry'].includes(c.kind)&&c.tiles.every(i=>m.kind[i]===(c.kind==='ford'?t.T_FORD:c.kind==='ferry'?t.T_WATER:t.T_ROAD))),'its lists: '+m.rivers.length+' rivers ('+m.rivers.map(r=>r.name+' '+r.path.length+' tiles, width '+r.width).join('; ')+'), each 8 tiles or more (or shorter, with another running into it) and water to its mouth (a tributary’s mouth on its river, maybe under a ford or bridge, as a mouth on a lake); '+m.crossings.length+' crossings ('+['bridge','ford'].map(k=>m.crossings.filter(c=>c.kind===k).length+' '+k+'s').join(', ')+'), '+m.roads.length+' roads, '+m.basins.length+' basins, '+m.cliffs.length+' escarpment candidates');
-  ok(R1.holdings.length===37&&R1.holdings.every((h,k)=>h.name===t.CLASSIC_PLACES[k].name&&h.realm===t.CLASSIC_PLACES[k].realm&&m.has(h.tx,h.ty)&&t.passable(m.kind[h.ty*m.w+h.tx]))&&R1.camps.length>=8&&R1.camps.every(c=>m.has(c.tx,c.ty)&&t.passable(m.kind[c.ty*m.w+c.tx])),
+  ok(R1.holdings.filter(h=>h.realm).length===37&&R1.holdings.slice(0,37).every((h,k)=>h.name===t.CLASSIC_PLACES[k].name&&h.realm===t.CLASSIC_PLACES[k].realm&&m.has(h.tx,h.ty)&&t.passable(m.kind[h.ty*m.w+h.tx]))&&R1.camps.length>=8&&R1.camps.every(c=>m.has(c.tx,c.ty)&&t.passable(m.kind[c.ty*m.w+c.tx])),
    'the 37 classic holdings, in order with their data, and '+R1.camps.length+' camps, each on walkable ground');
   ok(t.GEN_STAGES.every(st=>R1.tries[st.id]>=1)&&Array.isArray(R1.relaxed),'tries: '+t.GEN_STAGES.map(st=>st.id+' '+R1.tries[st.id]).join(', ')+'; relaxed: '+(R1.relaxed.join('; ')||'nothing'));
   ok(m.sum===m.checksum(R1.holdings)&&m.sum>0&&res.map.sum===m.sum,'WM.sum is its checksum ('+m.sum.toString(16)+'), and the steps run apart make the same world (the same sum twice in a page)');
@@ -107,7 +107,7 @@ try{
  // other seeds, other sizes: the same settings twice the same world, other seeds others
  {const a=pn(),A=t.genWorld({preset:'normal',seed:'redwater'}),B=t.genWorld({preset:'normal',seed:'redwater'}),Cw=t.genWorld({preset:'normal',seed:'bluewater'}),b=pn(),L=t.genWorld({preset:'large',seed:'redwater'}),c=pn(),L2=t.genWorld({preset:'large',seed:'redwater'});
   ok(A.map.sum===B.map.sum&&A.map.sum!==Cw.map.sum&&A.map.salt===t.seedNum('redwater')&&!A.map.classic,'Normal seed redwater twice: one world ('+A.map.sum.toString(16)+'); bluewater another ('+Cw.map.sum.toString(16)+'); a generated world\'s salt is its seed');
-  ok(L.map.w===640&&L.map.h===448&&layersOk(L.map)&&L.holdings.length===L.map.settings.holdings&&L.map.sum!==A.map.sum&&L2.map.sum===L.map.sum,'Large: 640 x 448, every layer at that size, its holdings placed; twice one world ('+L.map.sum.toString(16)+')');
+  ok(L.map.w===640&&L.map.h===448&&layersOk(L.map)&&L.holdings.filter(h=>h.realm).length===L.map.settings.holdings&&L.map.sum!==A.map.sum&&L2.map.sum===L.map.sum,'Large: 640 x 448, every layer at that size, its holdings placed; twice one world ('+L.map.sum.toString(16)+')');
   info('Normal in '+((b-a)/3).toFixed(0)+' ms (of 3), Large in '+(c-b).toFixed(0)+' ms')}
  // ---- the terrain (stages 1-6) on 8 seeds at Normal: land 60-80%, each climate 6% of the land at least, D41's high ground within
  // its targets (of the hill tiles: rises 50-70%, steep 25-40%, cliffed 5-12%), escarpment candidates; and each map setting moving
@@ -171,12 +171,12 @@ try{
   {const empty=['season','region','deep','cliff'];ok(fresh.every(k=>k in S)&&empty.every(k=>S[k]===null),'its BattleSite has the new fields, the world’s filled, '+empty.join(', ')+' empty for now ('+fresh.join(', ')+')')}}
  // ---- installWorld, then a new game on it; the three Router calls answer
  {Math.random=t.seeded(9001);const R=t.genWorld(t.classicSettings()),m=t.installWorld(R);
-  ok(t.WM===m&&t.MW===448&&t.MH===320&&t.tiles===m.kind&&t.TOWNS.length===37&&t.CAMP_SPOTS.length===R.camps.length&&t.DEPOSITS.length>0,'installWorld puts it in: the map in use, its 37 holdings, '+R.camps.length+' camps and '+t.DEPOSITS.length+' deposits');
+  ok(t.WM===m&&t.MW===448&&t.MH===320&&t.tiles===m.kind&&t.TOWNS.length===R.holdings.length&&t.TOWNS.filter(h=>t.HOME[h.name]).length===37&&t.CAMP_SPOTS.length===R.camps.length&&t.DEPOSITS.length>0,'installWorld puts it in: the map in use, its 37 holdings and '+(R.holdings.length-37)+' of the free folk, '+R.camps.length+' camps and '+t.DEPOSITS.length+' deposits');
   t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();
   const home=t.capitalOf(P.race);
-  ok(t.WM===m&&P.x>0&&P.y>0&&P.x<m.w*t.TILE&&P.y<m.h*t.TILE&&Math.abs(P.x-t.gateSpot(home).x)<1&&W.sites.length>0&&t.bandits.length>0&&W.monsters.length>0&&t.TOWNS.every(h=>h.owner),'a new game on it: you at '+home.name+' (its gate: world.js gateSpot), '+W.sites.length+' sites, '+t.bandits.length+' bands, '+W.monsters.length+' beasts, every holding held');
+  ok(t.WM===m&&P.x>0&&P.y>0&&P.x<m.w*t.TILE&&P.y<m.h*t.TILE&&Math.abs(P.x-t.gateSpot(home).x)<1&&W.sites.length>0&&t.bandits.length>0&&W.monsters.length>0&&t.TOWNS.every(h=>!!h.owner===!!t.HOME[h.name]),'a new game on it: you at '+home.name+' (its gate: world.js gateSpot), '+W.sites.length+' sites, '+t.bandits.length+' bands, '+W.monsters.length+' beasts, every holding held');
   const reach=t.TOWNS.slice(1).filter(h=>t.Router.reach(t.TOWNS[0],h)).length,d=t.Router.days(t.TOWNS[0],t.TOWNS[1]),o2={x:P.x,y:P.y};let go=true;for(let k=0;k<30&&go;k++)go=t.Router.travel(o2,t.gateGoal(t.TOWNS[1]),3);
-  ok(reach===36&&isFinite(d)&&d>0&&go===true&&(o2.x!==P.x||o2.y!==P.y),'the Router answers: every holding reachable from '+t.TOWNS[0].name+' ('+reach+' of 36), '+t.TOWNS[1].name+' '+d.toFixed(1)+' days off, a walker on its way there');
+  ok(reach===t.TOWNS.length-1&&isFinite(d)&&d>0&&go===true&&(o2.x!==P.x||o2.y!==P.y),'the Router answers: every holding reachable from '+t.TOWNS[0].name+' ('+reach+' of '+(t.TOWNS.length-1)+'), '+t.TOWNS[1].name+' '+d.toFixed(1)+' days off, a walker on its way there');
   for(let f=0;f<60;f++)t.updateWorld(.05);ok(true,'the world runs a few seconds on it')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 finally{Math.random=r0}

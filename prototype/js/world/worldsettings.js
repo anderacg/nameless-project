@@ -3,7 +3,8 @@
    clamped first (normSettings), and the clamped settings are what is stored (WM.settings, the save's world.map) and hashed
    (settingsKey, in WM.sum): the same settings and seed make the same world, byte for byte, in every browser. normSettings never
    reads the device (Huge on a phone is the New game screen's note, not a clamp), so one code makes one world everywhere.
-   Settings later phases show (hamlets, sacred, wild, sites, start) are stored, clamped and hashed now, and read by nothing yet.
+   Settings later phases show (sacred, wild, sites, start) are stored, clamped and hashed now, and read by nothing yet; hamlets
+   are read by the generator's hamlets stage (worldplace.js genHamlets).
    Seeded and isolated as the generator is (§8.1): no Math.random, no rnd, rint or pick, no Math.hypot, sin, cos, exp, pow, log
    or atan2 (tests/structure.js reads this file's text) ---------- */
 // the keys, in their order (settingsKey's)

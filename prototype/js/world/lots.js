@@ -71,7 +71,7 @@ function roadPaint(){
    (ESTATE_LOT: a type or a cluster kind; the culture's own in place of a type, look.swap: the Clans' forge) */
 const FAC_CULTURE={vale:'vale',karn:'karn',sylvan:'sylvan',horde:'ashgor',salt:'league'};
 const holdingCulture=t=>FAC_CULTURE[HOME[t.name]]||PX.CULTURE_OF[t.races[0]]||'vale';
-const LOT_TIER={village:'village',town:'town',city:'city',castle:'castle'};
+const LOT_TIER={hamlet:'hamlet',village:'village',town:'town',city:'city',castle:'castle'};
 const HOUSES={vale:{village:['cottage','cottage','townhouse'],town:['townhouse','townhouse','cottage']},
   league:{village:['cottage','townhouse','cottage'],town:['townhouse','townhouse','townhouse']},
   karn:{village:['stonehall','cottage','cottage'],town:['stonehall','townhouse','stonehall']},
@@ -81,7 +81,7 @@ const HOUSES={vale:{village:['cottage','cottage','townhouse'],town:['townhouse',
 const ESTATE_LOT={farm:['farmstead','cottage'],pasture:['barn'],lumber:['lumbershed'],mine:['minehead'],quarry:['crane'],port:['fisherhut'],workshop:['warehouse'],smithy:['smithy'],brewery:['brewery'],granary:['granary'],market:['market']};
 // how many people a household is (a house holds 2-4: its model's homes, lotHouseholds; what one house of one tile held before the
 // owner's scale), and each centre's own room
-const HOUSING={household:10,centre:{village:30,keep:40,citadel:60}};
+const HOUSING={household:10,centre:{yard:10,village:30,keep:40,citadel:60}};
 // the estates whose buildings stand inside a holding (and its walls); the rest work the land outside
 const INNER=['workshop','smithy','brewery','granary','market'];
 // a lot's tiles a side: its type's cell or its cluster's (PX.MODEL_SIZES); a city's citadel is a capital's, 128 (buildmodels.js cellOf)
@@ -298,9 +298,10 @@ class Layout{
     // the buildings of its inner estates by the centre (a market or a brewery's yard a 64 px cell: before the houses take the room)
     for(const k of INNER)if(bldLv(t,k)&&!this.estateLot(k,R))t.bld[k]=0;// no room: the holding has no such estate
     // houses round them: enough for its people (the centre houses some), a few to spare; then, one still short of room for them clears
-    // plots in the woods (a village deep in them, its clearing crossed by its roads)
+    // plots in the woods (a village deep in them, its clearing crossed by its roads); still short, its houses a little further out
+    // (2 tiles past its ring: a road through its ring, as a hamlet's track may lay one)
     const pop=t.pop||t.T.pop0;let room=this.housing(),tries=0;
-    for(const [g,want] of [['open',pop*1.1],['forest',pop]])for(tries=0;room<want&&tries++<t.T.tries;){const type=typeFor(t,'house',R),n=lotSize(type),p=lotSpot(t,n,g,1,t.T.ring,R,{gap:'row',jit:.8});if(!p)continue;this.add({k:'house',type,x:p[0],y:p[1],n,lv:1,seed:Math.floor(R()*1e6),st:'built'});room=this.housing()}
+    for(const [g,want,ring] of [['open',pop*1.1,t.T.ring],['forest',pop,t.T.ring],['open',pop,t.T.ring+2]])for(tries=0;room<want&&tries++<t.T.tries;){const type=typeFor(t,'house',R),n=lotSize(type),p=lotSpot(t,n,g,1,ring,R,{gap:'row',jit:.8});if(!p)continue;this.add({k:'house',type,x:p[0],y:p[1],n,lv:1,seed:Math.floor(R()*1e6),st:'built'});room=this.housing()}
     // then the works outside
     for(const k of Object.keys(ESTATES))if(!INNER.includes(k)&&bldLv(t,k)&&!this.estateLot(k,R))t.bld[k]=0;
     // and the tracks to them

@@ -113,7 +113,7 @@ class Letter extends ItemKind{
       '<div class="btns"><button class="btn sm primary" type="button" data-act="ltr-open" data-arg="'+L.id+'">Look it over</button></div>'}
   // (a holding's overview: the letters you carry that it would take: addressed here, or a rival's here would buy)
   townHtml(t){const ls=P.inv.filter(s=>s&&s.k==='letter').map(s=>s.L).filter(L=>!this.giveWhy(L,t)||!this.sellWhy(L,t));if(!ls.length)return '';
-    return '<div class="lab">Your letters</div>'+ls.map(L=>railRow((L.seal?'Sealed':'Opened')+' letter of the '+this.facName(L.fac),!this.giveWhy(L,t)?'Addressed here: deliver it to the lord.':'The '+FACS[t.owner].n+' is at war with its sender: they would buy it.',railBtn('ltr-open',L.id+':town','Show it'))).join('')}
+    return '<div class="lab">Your letters</div>'+ls.map(L=>railRow((L.seal?'Sealed':'Opened')+' letter of the '+this.facName(L.fac),!this.giveWhy(L,t)?'Addressed here: deliver it to the lord.':'The '+(FACS[t.owner]?FACS[t.owner].n:'folk here')+' '+(FACS[t.owner]?'is':'are')+' at war with its sender: they would buy it.',railBtn('ltr-open',L.id+':town','Show it'))).join('')}
 }
 const LETTER=ITEM_KINDS.letter=new Letter();
 // (its verbs: Choices, story/choice.js; need: why not here; a courier's letter (job) is delivered on arrival: world/quests.js)

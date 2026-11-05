@@ -14,6 +14,11 @@ const ruined=t=>t.ruined();
 // a fief pays its taxes (people x tax rate x prosperity) and market dues; its land feeds it through the economy
 const fiefIncome=t=>t.fiefIncome();
 const playerFiefs=()=>TOWNS.filter(t=>t.owner==='player');
+// (whom you fight at holding t: its realm, or, a free folk's (no realm: a hamlet), its folk themselves while they remember you
+// attacked them (t.angry: the day they forgive it); and what its holder is called)
+const FREE_FOE={days:60,honor:3,rep:40};
+const foeAt=t=>t.owner?hostileTo(t.owner):(t.angry||0)>G.day;
+const holderN=t=>t.owner&&FACS[t.owner]?'the '+FACS[t.owner].n:'the free folk of '+t.name;
 const fiefCap=t=>t.garCap();
 const siegeDefenders=t=>t.defenders();
 // the defenders who fell in a fight at the walls you did not win (n of them): the garrison and each lord's men inside, by their
@@ -48,18 +53,21 @@ function joinHtml(t){const fs=joinFacs(t);if(!fs.length)return '';const no=troop
 // your raid in progress
 function showRaid(t){
   const r=myRaid(t);G.bes=t;G.mode='besiege';
-  showPanel('<div class="top"><h2>Raiding '+t.name+'</h2><span class="muted">'+Math.round(r.t/RAID_TIME*100)+'% plundered</span></div><p>Your band is emptying barns and driving off the herds. Stay close until it is done, or take what you have and go. The '+FACS[t.owner].n+' may send help.</p>'+
+  showPanel('<div class="top"><h2>Raiding '+t.name+'</h2><span class="muted">'+Math.round(r.t/RAID_TIME*100)+'% plundered</span></div><p>Your band is emptying barns and driving off the herds. Stay close until it is done, or take what you have and go. '+cap1(holderN(t))+(t.owner?' may send help.':' fight for their homes.')+'</p>'+
     '<div class="btns"><button class="btn primary" type="button" data-act="sg-wait">Keep raiding</button><button class="btn" type="button" data-act="sg-stopraid">Stop and leave with what you have</button></div>');
 }
 // arriving at a holding: its gates, a siege or a blockade
-function approachHolding(t){if(hostileTo(t.owner))openSiege(t);else if(closedNow(t))showBlockade(t);else{G.lastTown=t;enterTown(t)}}
+function approachHolding(t){if(foeAt(t))openSiege(t);else if(closedNow(t))showBlockade(t);else{G.lastTown=t;enterTown(t)}}
 function showSiege(msg){
   const t=G.bes;if(myRaid(t))return showRaid(t);const f=FACS[t.owner],s=mySiege(t),village=!walled(t),def=siegeDefenders(t),lv=siegeLv(t),ep=rating(def.list,lv),pp=partyPower(),r=ep/Math.max(1,pp);
   const threat=r<.6?'<span class="good">Easy</span>':r<1?'<span class="gold">Even</span>':r<1.5?'<span class="bad">Risky</span>':'<span class="bad">Deadly</span>';
   const btn=(act,label,why,primary)=>'<button class="btn'+(primary?' primary':'')+'" type="button" data-act="'+act+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+(why?' · '+why:'')+'</button>';
-  let body='<p class="muted">Held by the <span style="color:'+f.col+'">'+f.n+'</span>. Garrison '+t.gar+(def.lords.length?', and '+def.lords.map(l=>lordName(l)).join(' and ')+' with '+def.lords.reduce((a,l)=>a+l.troops.length,0)+' soldiers':'')+'.'+
+  let body='<p class="muted">'+(f?'Held by the <span style="color:'+f.col+'">'+f.n+'</span>':'Held by no realm: its free folk')+'. '+(f?'Garrison ':'Militia ')+t.gar+(def.lords.length?', and '+def.lords.map(l=>lordName(l)).join(' and ')+' with '+def.lords.reduce((a,l)=>a+l.troops.length,0)+' soldiers':'')+'.'+
     (wallOf(t)?' '+WALL_N[wallOf(t)]+' make every defender as strong as level '+lv+'.':' It has no walls.')+'</p><p>Defenders\' power <strong>'+ep+'</strong> vs yours <strong>'+pp+'</strong> · threat <strong>'+threat+'</strong></p>',btns='';
-  if(!hostileTo(t.owner)){
+  if(!t.owner&&!foeAt(t)){
+    body+='<p>The free folk of '+t.name+' are no one’s subjects. Attacking them costs '+FREE_FOE.honor+' honor with every realm, and they will not forget it.</p>';
+    btns=btn('sg-declare','Attack '+t.name,'');
+  }else if(!foeAt(t)){
     body+='<p>The '+f.n+' is not your enemy. Attacking '+t.name+' makes them hostile for 60 days and costs 20 honor with them.</p>'+(P.fac===t.owner?'<p class="bad">You serve the '+f.n+'. You cannot attack your employer\'s holdings.</p>':'');
     btns=btn('sg-declare','Attack '+t.name,P.fac===t.owner?'Your employer':'');
   }else if(village){
@@ -77,7 +85,7 @@ function showSiege(msg){
     body+=joinHtml(t);
   }
   // (its prison, from outside the walls: world/prisons.js)
-  if(hostileTo(t.owner)){const n=Prisons.of(t.name).length+Prisons.quests(t).length;btns+=btn('sg-prison','The prison'+(n?' ('+n+' held)':''))}
+  if(t.owner&&hostileTo(t.owner)){const n=Prisons.of(t.name).length+Prisons.quests(t).length;btns+=btn('sg-prison','The prison'+(n?' ('+n+' held)':''))}
   showPanel('<div class="top"><h2>'+(s?'Siege of ':'')+t.name+'</h2><span class="muted">'+cap1(t.label)+' · '+P.gold+' gold</span></div>'+body+(msg?'<p class="gold">'+msg+'</p>':'')+
     '<div class="btns">'+btns+'</div>'+(s?'':nav(null,['sg-leave',null,'Leave'])));
 }
@@ -97,8 +105,9 @@ function siegeAct(a,arg){
   if((a==='sg-join'||a==='sg-join-auto')&&joinFacs(t).includes(arg)&&troopCount()>=3){
     if(!hostileTo(t.owner)){Timed.of(P,'hostile').extend(t.owner,60);addHonor(t.owner,-20,true);log('You join the '+FACS[arg].n+' against '+t.name+'. The '+FACS[t.owner].n+' is now hostile.','bad','war')}
     startAssault(t,'siege',a==='sg-join-auto',arg);return true}
+  if(a==='sg-declare'&&!t.owner){t.angry=G.day+FREE_FOE.days;FIDS.forEach(g=>addHonor(g,-FREE_FOE.honor,true));log('You turn your band against the free folk of '+t.name+'. Every realm thinks less of you.','bad','war');showSiege();return true}
   if(a==='sg-declare'&&P.fac!==t.owner){Timed.of(P,'hostile').extend(t.owner,60);addHonor(t.owner,-20);log('You turn your band against '+t.name+'. The '+FACS[t.owner].n+' is now hostile.','bad','war');showSiege();return true}
-  if(!hostileTo(t.owner))return true;
+  if(!foeAt(t))return true;
   if(a==='sg-camp'&&walled(t)&&troopCount()>=5){P.siege={town:t.name,days:0};log('You make camp outside '+t.name+'. The siege begins.','gold','war');
     W.lords.forEach(l=>{if(!l.dead&&l.fac===t.owner&&l.state!=='siege')lordThink(l)});showSiege();return true}
   if(a==='sg-lift'){P.siege=null;log('You lift the siege of '+t.name+'.',undefined,'war');G.mode='world';hidePanel();return true}
@@ -124,6 +133,7 @@ function siegeWon(e){
 }
 // the militia is beaten: the plundering starts, and the village's people and lords know who is doing it
 function startRaid(t){
+  if(!t.owner){P.raid={town:t.name,t:0};t.gar=0;P.siege=null;addRep(t.name,-FREE_FOE.rep,true);return ' The militia of '+t.name+' is broken. Your band starts plundering; it takes half a day, and you must stay close. Reputation there −'+FREE_FOE.rep+'.'}
   P.raid={town:t.name,t:0};t.gar=0;P.siege=null;addRep(t.name,-25,true);addHonor(t.owner,-10,true);FIDS.forEach(g=>{if(g!==t.owner)addHonor(g,-2,true)});
   W.lords.forEach(l=>{if(!l.dead&&l.fac===t.owner&&l.state!=='siege')lordThink(l)});
   return ' The militia of '+t.name+' is broken. Your band starts plundering; it takes half a day, and you must stay close. Reputation there −25, honor with the '+FACS[t.owner].n+' −10.';
@@ -150,10 +160,10 @@ function finishRaid(t,f){
 function showCapture(){
   const t=G.capture;G.mode='capture';const f=FACS[t.owner],lead=P.fac||G.capWith,emp=lead&&FACS[lead],led=!P.fac&&!!G.capWith,loot=Math.round(t.T.sack*(1+G.day/50));
   const opt=(act,title,sub)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div><div class="acts"><button class="btn sm" type="button" data-act="'+act+'">Choose</button></div></div>';
-  showPanel('<div class="top"><h2>'+t.name+' has fallen</h2><span class="muted">'+cap1(t.label)+' of the '+f.n+'</span></div><p>Your soldiers hold the gates. The people of '+t.name+' wait to learn what you will do.</p>'+
+  showPanel('<div class="top"><h2>'+t.name+' has fallen</h2><span class="muted">'+cap1(t.label)+(f?' of the '+f.n:' of the free folk')+'</span></div><p>Your soldiers hold the gates. The people of '+t.name+' wait to learn what you will do.</p>'+
     opt('cap-peace',emp?'Take it in peace for the '+emp.n:'Take it in peace and rule it','No looting. Other factions respect your restraint (+3 honor). '+(emp?(led?'The '+emp.n+', who led the siege, pays you and it becomes their fief.':'Your employer rewards you and it becomes their fief.'):'It becomes your fief: about '+taxOf(t)+' gold a day in taxes, but every faction hostile to you will want it.'))+
     opt('cap-sack',emp?'Sack it, then hand it over':'Sack it, then rule it','About '+loot+' gold and goods. Reputation there −40 and −10 in nearby holdings, −6 honor with every faction. The town lies ruined for 20 days.')+
-    opt('cap-leave','Sack it and leave','Take the loot and go. The '+f.n+' keeps a ruined, empty '+t.label+'.')+
+    opt('cap-leave','Sack it and leave','Take the loot and go. '+cap1(holderN(t))+(f?' keeps':' keep')+' a ruined, empty '+t.label+'.')+
     (emp?opt('cap-keep','Keep it for yourself',led?'The '+emp.n+' led the siege and will resent it: −15 honor with them.':'Break your contract with the '+emp.n+': −30 honor with them, and they turn hostile for 30 days.'):''));
 }
 function captureAct(a){
@@ -161,13 +171,13 @@ function captureAct(a){
   const t=G.capture;if(G.mode!=='capture'||!t)return true;
   const prev=t.owner,sack=a==='cap-sack'||a==='cap-leave',lines=[];
   G.capture=null;P.siege=null;breach(t);P.renown+=t.T.renown;
-  if(prev!=='player'){Timed.of(P,'hostile').extend(prev,60);addHonor(prev,-15,true)}
+  if(prev&&prev!=='player'){Timed.of(P,'hostile').extend(prev,60);addHonor(prev,-15,true)}
   if(sack){const loot=Math.round(t.T.sack*(1+G.day/50));P.gold+=loot;P.morale=clamp(P.morale+12,0,100);
     let got=sackStock(t,.5,.3,true);
     addRep(t.name,-40,true);TOWNS.forEach(o=>{if(o!==t&&Math.hypot(o.x-t.x,o.y-t.y)<WORLD_SCALE.law.siegeOutrage*TILE)addRep(o.name,-10,true)});FIDS.forEach(g=>addHonor(g,-6,true));
     Timed.of(t).set('sacked',20);const burnt=burnEstates(t,2);lines.push('You sack '+t.name+': '+loot+' gold and '+got+(burnt.length?'. Your soldiers burn its '+burnt.join(' and '):'')+'. Word spreads of what you did.');mood('ransom')}
   else{addRep(t.name,-5,true);FIDS.forEach(g=>{if(g!==prev)addHonor(g,3,true)});lines.push('You spare '+t.name+'. Even your enemies speak of your restraint.')}
-  if(a==='cap-leave'){t.gar=1;lines.push('You leave the '+t.label+' to the '+FACS[prev].n+', empty and burning.');worldEvent({involved:true,was:false,news:['raid',t,{town:t.name}]})}// (sacked, not taken: talk of a raid, yours)
+  if(a==='cap-leave'){t.gar=1;lines.push('You leave the '+t.label+' to '+(prev&&FACS[prev]?'the '+FACS[prev].n:'its folk')+', empty and burning.');worldEvent({involved:true,was:false,news:['raid',t,{town:t.name}]})}// (sacked, not taken: talk of a raid, yours)
   else{
     const lead=P.fac||G.capWith;let to=lead&&a!=='cap-keep'?lead:'player';
     if(a==='cap-keep'&&!P.fac&&G.capWith){addHonor(G.capWith,-15,true);lines.push('You keep it for yourself. The '+FACS[G.capWith].n+', who led the siege, will not forget it.')}
@@ -178,7 +188,7 @@ function captureAct(a){
     // (your conquest proclaimed: your band named as the taker, in the name of the realm it goes to; yours, so heard already)
     worldEvent({involved:true,was:false,news:['fell',t,{town:t.name,fac:to,by:bandName(),sacked:sack?1:0}]});
     W.lords.forEach(o=>{if(!o.dead&&o.tgt===t.name)lordThink(o)});
-    if(prev!=='player'&&!fiefsOf(prev).length)fallFaction(prev,t,true);
+    if(prev&&prev!=='player'&&!fiefsOf(prev).length)fallFaction(prev,t,true);
   }
   G.capWith=null;
   lines.forEach(l=>log(l,'gold'));

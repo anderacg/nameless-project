@@ -67,7 +67,7 @@ class Holding extends HoldingObject{
   // its first day: its realm, garrison and peace, its estates and economy (its lots: layout.init); a generated world's economy
   // setting (doc/WORLD_DESIGN.md §4.1) on its first stocks (realms.js ECON_STOCK: poor or rich)
   setUp(){
-    this.owner=this.lastOwner=HOME[this.name];this.gar=this.T.gar;this.sacked=this.raided=this.turmoil=0;this.grow=GROW0;
+    this.owner=this.lastOwner=HOME[this.name]||null;this.gar=this.T.gar;this.sacked=this.raided=this.turmoil=0;this.grow=GROW0;
     this.buildings.init();
     this.econ.init();
     const e=WM.settings&&ECON_STOCK[WM.settings.economy];if(e)for(const g in this.stock)this.stock[g]=Math.round(this.stock[g]*e)}
@@ -142,11 +142,13 @@ class Holding extends HoldingObject{
   static fromRec(o){return makeHolding(o[3].base).loadRec(o)}
 }
 class Village extends Holding{}
+// (a hamlet: a small village of the free folk, as a village is)
+class Hamlet extends Village{}
 class Town extends Holding{}
 class City extends Town{}
 // a castle lodges only those it knows: it is a garrison, not an inn
 class Castle extends Holding{takesGuests(free){return !!free}}
-const HOLDING_CLASS={village:Village,town:Town,city:City,castle:Castle};
+const HOLDING_CLASS={hamlet:Hamlet,village:Village,town:Town,city:City,castle:Castle};
 // make a plain holding one of its kind (and again when its kind changes)
 function holdingOf(t,kind){if(kind)t.kind=kind;if(!HOLDING_TYPES[t.kind])throw new Error('No kind of holding called '+t.kind);Object.setPrototypeOf(t,HOLDING_CLASS[t.kind].prototype);return t}
 

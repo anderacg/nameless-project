@@ -18,10 +18,12 @@ try{
    hid.length+' hideouts by the wild land ('+wl.n+' tiles of '+L+' land, the base '+g.wild+'), '+(r*100).toFixed(0)+'% of the '+was+' the land gave');
   const other={kind:new Uint8Array(100),roads:[]};ok(t.worldWild(other)===g.wild&&t.density(other).sites.hideout===C.sites.hideout,'a world not in counts the base\'s wild land ('+g.wild+'): the base\'s '+C.sites.hideout+' hideouts')}
  // ---- where: far from every holding and road, on the wild land, off the estates and lots
- const holdD=s=>Math.min(...t.TOWNS.map(w=>Math.hypot(w.tx-s.tx,w.ty-s.ty)));
+ // (past every holding by its keep-clear: a realm's H.far, a hamlet's H.hamlet; the distance past it, plus H.far, so far's
+ // own is the mark)
+ const holdD=s=>Math.min(...t.TOWNS.map(w=>Math.hypot(w.tx-s.tx,w.ty-s.ty)-(w.T.tier<=1?H.hamlet:H.far)+H.far));
  const roadD=s=>{let b=Infinity;const R=40;for(let j=-R;j<=R;j++)for(let i=-R;i<=R;i++){const k=t.tAt(s.tx+i,s.ty+j);if((k===t.T_ROAD||k===t.T_FORD)&&s.tx+i>=0&&s.ty+j>=0&&s.tx+i<MW&&s.ty+j<t.MH)b=Math.min(b,Math.hypot(i,j))}return b};
  const hd=hid.map(holdD),rd=hid.map(roadD);
- ok(hd.every(d=>d>=H.far)&&rd.every(d=>d>=H.road)&&hid.every(s=>wl.at[s.ty*MW+s.tx]===1&&t.Hideout.ground(s.tx,s.ty)),'every hideout '+H.far+' tiles or more from every holding (the nearest '+Math.min(...hd).toFixed(1)+') and '+H.road+' from every road, track and ford (the nearest '+Math.min(...rd).toFixed(1)+'), on the wild land');
+ ok(hd.every(d=>d>=H.far)&&rd.every(d=>d>=H.road)&&hid.every(s=>wl.at[s.ty*MW+s.tx]===1&&t.Hideout.ground(s.tx,s.ty)),'every hideout '+H.far+' tiles or more from every holding ('+H.hamlet+' from a hamlet; the nearest, as a realm\'s, '+Math.min(...hd).toFixed(1)+') and '+H.road+' from every road, track and ford (the nearest '+Math.min(...rd).toFixed(1)+'), on the wild land');
  ok(hid.every(s=>t.Hideout.clear(s.tx,s.ty)&&t.Hideout.fits(s.tx,s.ty)),'on clear ground, nothing built there, off the estates ('+t.BANDIT_GAP+' tiles)');
  {const q=a=>{a=a.slice().sort((x,y)=>x-y);return [0,.25,.5,.75,1].map(f=>a[Math.min(a.length-1,Math.floor(f*a.length))]).map(v=>v<99?v.toFixed(1):'over 40').join(' / ')};
   info('tiles to the nearest holding (least / quarter / middle / three quarters / most): '+q(hd)+'; to the nearest road: '+q(rd))}

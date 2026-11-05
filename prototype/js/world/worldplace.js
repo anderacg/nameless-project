@@ -48,7 +48,7 @@ const PLACE_PEOPLE={vale:'human',karn:'dwarf',sylvan:'elf',horde:'orc',salt:'lea
 const PLACE_SHARE={vale:8,karn:7,sylvan:7,horde:7,salt:8};
 const PLACE_REALMS=Object.keys(PLACE_SHARE);
 // the least distance (tiles) between two kinds (§8.8; capitals: PLACE.cap x the map's diagonal)
-const PLACE_GAP={city:{town:30,castle:30,village:24},town:{town:26,castle:24,village:20},castle:{castle:24,village:18},village:{village:16}};
+const PLACE_GAP={city:{town:30,castle:30,village:24,hamlet:18},town:{town:26,castle:24,village:20,hamlet:16},castle:{castle:24,village:18,hamlet:16},village:{village:16,hamlet:14},hamlet:{hamlet:12}};
 const placeGap=(a,b)=>PLACE_GAP[a]&&PLACE_GAP[a][b]||PLACE_GAP[b]&&PLACE_GAP[b][a]||0;
 /* the numbers: reach (a new holding within this of its realm's own), cap (capitals apart, x the diagonal), skew (capitals' nearest
    rivals within this share of their mean), suit (a capital's least liking), day (tiles: a day's travel, for a fair start), land
@@ -257,6 +257,37 @@ function* genHoldings(g){
   g.work.like={};for(const h of out)if(h.kind==='city')g.work.like[h.name]=placeSuit(m,F,PLACE_PEOPLE[h.realm],h.ty*W+h.tx);
   for(const h of out)placeOpenUnder(m,K,h);
   yield 1}
+/* ---------- the free folk's hamlets (doc/WORLD_DESIGN.md §6.3, §8.9; the owner, 2026-11-04: "implement the hamlet and small
+   villages, natural hamlet or village"), stage 7b: once the realms' holdings stand (their checks passed), in the land past every
+   holding's reach (its kind's reach and margin more: no realm's), on a site a holding could stand on, the best of a draw by
+   its ground: by a river (within river tiles), the water, the woods or the hills (the trade its note names: fishing, woodcutters',
+   mining, else farming). How many: the size's base (base, by area) x the Hamlets setting (mult), at most one a fringe tiles of
+   such land; each PLACE_GAP from the holdings and from each other. A village share of them a small free village, the rest
+   hamlets; their people the nearest holding's first; no realm (realm null: the free folk). Their data as a holding's, after the
+   realms' in g.holdings (a retry drops the last try's first), so the roads join them ---------- */
+const PLACE_HAMLET={base:[[143360,24],[286720,45],[786432,100]],mult:{none:0,few:.5,normal:1,many:1.6},fringe:900,village:.25,margin:3,river:12,step:2};
+function* genHamlets(g){
+  const m=g.map,W=m.w,H=m.h,K=m.kind,F=g.work.place,R=g.rng('hamlets',g.attempt),X=PLACE_HAMLET,own=g.holdings=g.holdings.filter(h=>h.realm);
+  const want=Math.round(areaTable(X.base,W*H)*(X.mult[g.s.hamlets]??1));if(!want||!F){yield 1;return}
+  const free=(x,y)=>own.every(h=>{const r=HOLDING_TYPES[h.kind].reach+X.margin;return(h.tx-x)*(h.tx-x)+(h.ty-y)*(h.ty-y)>r*r});
+  const site=i=>{const x=i%W,y=(i-x)/W;if(x<4||y<4||x>=W-5||y>=H-5||F.conn[i]!==F.main)return false;
+    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const k=K[i+a+b*W];if(k===T_WATER||k===T_MOUNT||k===T_FORD)return false}return placeDry(m,i)};
+  const C=[];let fringe=0;
+  for(let y=4;y<H-4;y+=X.step){for(let x=4;x<W-4;x+=X.step){const i=y*W+x;if(K[i]===T_WATER||K[i]===T_MOUNT||!free(x,y))continue;fringe+=X.step*X.step;if(!site(i))continue;
+      const v=(F.dR[i]<=X.river?.6:0)+(F.dW[i]<=3||F.dR[i]<=2?.4:0)+(F.dF[i]<=2||F.dM[i]<=6?.25:0)+R()*.8;C.push([v,i])}
+    if(g.tick())yield .6*y/H}
+  C.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);
+  const n=Math.min(want,Math.floor(fringe/X.fringe)),P=[];
+  for(const [,i] of C){if(P.length>=n)break;const x=i%W,y=(i-x)/W,kind=R()<X.village?'village':'hamlet',d2=h=>(h.tx-x)*(h.tx-x)+(h.ty-y)*(h.ty-y);
+    if(own.some(h=>d2(h)<placeGap(h.kind,kind)*placeGap(h.kind,kind))||P.some(h=>d2(h)<placeGap(h.kind,kind)*placeGap(h.kind,kind)))continue;P.push({tx:x,ty:y,kind,i})}
+  yield .8;
+  const used=new Set(own.map(h=>h.name));
+  for(const h of P){const near=own.reduce((a,o)=>(o.tx-h.tx)*(o.tx-h.tx)+(o.ty-h.ty)*(o.ty-h.ty)<(a.tx-h.tx)*(a.tx-h.tx)+(a.ty-h.ty)*(a.ty-h.ty)?o:a,own[0]);
+    const races=[near.races[0]],c=CLIMS[m.clim[h.i]],d={name:placeName(R,races[0],used),realm:null,races,kind:h.kind,clim:c,tx:h.tx,ty:h.ty,seed:g.holdings.length+1};
+    if(h.kind==='village'&&c==='swamp')d.style='stilt';
+    d.mod=placeMod(m,F,d,h.i,R);d.note=placeNote(m,F,d,h.i).replace(/^An? /,'A free ').replace(' village ',h.kind==='hamlet'?' hamlet ':' village ');
+    g.holdings.push(d);placeOpenUnder(m,K,d)}
+  yield 1}
 /* (a holding's centre on dry ground (the owner's play-test, 2026-10-22: a brook ran through a town past its castle and between its
    houses): no water (a river of any width, a stream) and no brook (worldgen.js genBrook) in its centre's box (placeBox: a town's
    4 x 4, its bottom row on tile i); a river may pass by it, and a brook by it is cut back at stage 10 (genHoldBrooks). The classic
@@ -278,7 +309,7 @@ function placeEven(m,F,Hd,N){if(Hd.length<N)return false;const K=m.kind.slice(),
    Cleared as stage 8 begins (genRoads: the roads run through it), once stage 7's checks have chosen the holdings, which it would
    move; its noise salted from the roads' first stream, so every try clears alike. The art blends the forest's floor into it
    (gfx/worldart.js). PLACE_STATS.clear: the holdings cleared */
-const PLACE_CLEAR={village:110,castle:90,town:170,city:240,rough:.35,scale:4,spill:3};// (village 110, was 80: stage 3 of the building redesign, room for its 64 px centre and 32 px houses; more clearing took the woods its lumber camp works too far off)
+const PLACE_CLEAR={hamlet:60,village:110,castle:90,town:170,city:240,rough:.35,scale:4,spill:3};// (village 110, was 80: stage 3 of the building redesign, room for its 64 px centre and 32 px houses; more clearing took the woods its lumber camp works too far off)
 function placeClear(m,h,salt){
   const W=m.w,K=m.kind,C=PLACE_CLEAR,ring=HOLDING_TYPES[h.kind].ring,r=ring+C.spill,need=C[h.kind],L=[];let have=0;
   for(let y=h.ty-r;y<=h.ty+r;y++)for(let x=h.tx-r;x<=h.tx+r;x++){if(!m.has(x,y))continue;const i=y*W+x,k=K[i],d=Math.sqrt((x-h.tx)*(x-h.tx)+(y-h.ty+1)*(y-h.ty+1));
@@ -483,7 +514,7 @@ function* genRoads(g){
   const d2=(a,b)=>(Hd[a].tx-Hd[b].tx)*(Hd[a].tx-Hd[b].tx)+(Hd[a].ty-Hd[b].ty)*(Hd[a].ty-Hd[b].ty),pairs=new Set(),key=(a,b)=>a<b?a*4096+b:b*4096+a;
   {const inT=[0],is=new Uint8Array(n);is[0]=1;while(inT.length<n){let best=null;for(const a of inT)for(let b=0;b<n;b++)if(!is[b]&&(!best||d2(a,b)<best[2]))best=[a,b,d2(a,b)];pairs.add(key(best[0],best[1]));inT.push(best[1]);is[best[1]]=1}}
   for(let a=0;a<n;a++)Hd.map((h,b)=>b).filter(b=>b!==a).sort((u,v)=>d2(a,u)-d2(a,v)||u-v).slice(0,2).forEach(b=>pairs.add(key(a,b)));
-  const big=h=>h.kind!=='village',list=[...pairs].map(p=>[Math.floor(p/4096),p%4096]).map(([a,b])=>({a,b,great:big(Hd[a])&&big(Hd[b]),d:d2(a,b)})).sort((p,q)=>q.great-p.great||p.d-q.d||p.a-q.a||p.b-q.b);
+  const big=h=>h.kind!=='village'&&h.kind!=='hamlet'&&!!h.realm,list=[...pairs].map(p=>[Math.floor(p/4096),p%4096]).map(([a,b])=>({a,b,great:big(Hd[a])&&big(Hd[b]),d:d2(a,b)})).sort((p,q)=>q.great-p.great||p.d-q.d||p.a-q.a||p.b-q.b);
   // (the least-cost way from tile a to tile b: in their box, padded by 12 tiles and 0.4 of their distance, else over the whole map)
   const find=(a,b,great)=>{const [ax,ay]=xy(a),[bx,by]=xy(b),pad=12+Math.round(Math.sqrt((ax-bx)*(ax-bx)+(ay-by)*(ay-by))*.4);
     return search(a,b,great,[Math.max(0,Math.min(ax,bx)-pad),Math.max(0,Math.min(ay,by)-pad),Math.min(W-1,Math.max(ax,bx)+pad),Math.min(H-1,Math.max(ay,by)+pad)])||PLACE_STATS.whole++>=0&&search(a,b,great,[0,0,W-1,H-1])};

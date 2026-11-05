@@ -29,6 +29,11 @@ try{
  const find=(f,r=0,from=null)=>{let best=null,bd=1e9;for(let y=r+3;y<MH-r-3;y+=1)for(let x=r+3;x<MW-r-3;x+=1){if(!f(x,y))continue;let all=true;for(let j=-r;j<=r&&all;j++)for(let i=-r;i<=r;i++)if(!f(x+i,y+j)){all=false;break}
    if(!all)continue;const d=from?Math.hypot(x-from[0],y-from[1]):0;if(d<bd){bd=d;best=[x,y];if(!from)return best}}return best};
  const mid=p=>[(p[0]+.5)*TILE,(p[1]+.5)*TILE];
+ // (up to n tiles each 10 apart whose square of r passes f, nearest to from first)
+ const finds=(f,r,from,n)=>{const out=[];for(let k=0;k<n;k++){const p=find((x,y)=>f(x,y)&&out.every(q=>Math.hypot(q[0]-x,q[1]-y)>10),r,from);if(!p)break;out.push(p)}return out};
+ // (out in the wild: no holding's land, no road by it, as a creature's home is (gfx/ambient.js ambHomes); the woods and the
+ // sea shores (gulls: ambCoast) nearest Ashford, the first of them that shows its life in the frames)
+ const away=(x,y)=>!t.landHold((x+.5)*TILE,(y+.5)*TILE)&&!t.nearTile(x,y,t.T_ROAD,2);
  // ---- the switch, as the other drawn-only switches
  ok(Object.getOwnPropertyDescriptor(A,'on').get&&t.PREFS.ambient.def===true,'Ambient life is a setting (PREFS ambient), on by default; AMBIENT.on its view');
  // ---- by day, in the fields by a holding
@@ -59,8 +64,10 @@ try{
   P.x=fx-10;P.y=fy+30;frames(1);const bolt=h.st;frames(6);
   ok(sat&&bolt==='bolt'&&Math.hypot(h.x-P.x,h.y-P.y)>10+5,'a hare sits, and bolts from your band as it comes near ('+bolt+', '+Math.round(d0)+' px off before)');[L.x,L.y,L.inside]=keep;park()}
  // ---- fireflies: at night, in a wood only near you, never by day
- {const wood=find((x,y)=>tAt(x,y)===t.T_FOREST&&cl(x,y)==='grass',3);
-  if(!wood)ok(true,'(no wood on this map)');else{const [x,y]=mid(wood);night();at(x,y);const by=births(200),V=t.vis(),far=__amb.filter(b=>b[0]==='glow'&&b[5]===t.T_FOREST&&b[4]>=V*A.glow.near);
+ {const woods=finds((x,y)=>tAt(x,y)===t.T_FOREST&&cl(x,y)==='grass'&&away(x,y),3,[hx,hy],4);let wood=null,by=null;
+  // (the first of the woods near Ashford where fireflies are born in the frames: so few a night, one wood may see none)
+  for(const w of woods){const [x,y]=mid(w);night();at(x,y);by=births(200);wood=w;if(by.glow)break}
+  if(!wood)ok(true,'(no wood on this map)');else{const [x,y]=mid(wood),V=t.vis(),far=__amb.filter(b=>b[0]==='glow'&&b[5]===t.T_FOREST&&b[4]>=V*A.glow.near);
    ok(by.glow>0&&!by.fly&&!by.peck&&!by.flock&&!by.gull&&!by.squirrel,'at night in a wood: fireflies, no butterflies, no birds, no squirrels ('+show(by)+')');
    ok(!far.length,'the wood’s fireflies only near you (within '+A.glow.near+' of your sight: '+far.length+' farther)');
    day();const by2=births(150);ok(!by2.glow,'by day in the wood: no fireflies ('+show(by2)+')');
@@ -70,12 +77,13 @@ try{
   if(!fr)ok(true,'(no frost on this map)');else{const [x,y]=mid(fr);day();at(x,y);const by=births(200);
    ok(!by.fly&&t.ambWeather()==='snow'&&t.ambMul('flock')===A.snow,'in the frost, the snow falling: no butterflies, birds '+A.snow+'× ('+show(by)+')')}}
  // ---- gulls and fish by the water; none inland
- {const shore=find((x,y)=>tAt(x,y)!==t.T_WATER&&tAt(x,y)!==t.T_MOUNT&&cl(x,y)==='grass'&&tAt(x+2,y)===t.T_WATER&&tAt(x+3,y)===t.T_WATER&&tAt(x+4,y)===t.T_WATER,0);
-  if(!shore)ok(true,'(no shore on this map)');else{const [x,y]=mid(shore);day();at(x,y);const by=births(250),bad=__amb.filter(b=>(b[0]==='gull'||b[0]==='fish')&&b[5]!==t.T_WATER);
+ {const shores=finds((x,y)=>away(x,y)&&away(x+4,y)&&t.ambCoast((x+3.5)*TILE,(y+.5)*TILE)&&tAt(x,y)!==t.T_WATER&&tAt(x,y)!==t.T_MOUNT&&cl(x,y)==='grass'&&tAt(x+2,y)===t.T_WATER&&tAt(x+3,y)===t.T_WATER&&tAt(x+4,y)===t.T_WATER,0,[hx,hy],6);let shore=null,by=null;
+  for(const w of shores){const [x,y]=mid(w);day();at(x,y);by=births(250);shore=w;if(by.gull&&by.fish)break}
+  if(!shore)ok(true,'(no shore on this map)');else{const [x,y]=mid(shore),bad=__amb.filter(b=>(b[0]==='gull'||b[0]==='fish')&&b[5]!==t.T_WATER);
    ok(by.gull>0&&by.fish>0&&!bad.length,'by the shore: gulls and fish jumping, all over the water ('+show(by)+')')}
   // (fields with no water within sight: since stage 3's bigger lots the nearest fields to Ashford's gate lie by its river)
   const dry=(x,y)=>{for(let b=-9;b<=9;b++)for(let a=-9;a<=9;a++)if(tAt(x+a,y+b)===t.T_WATER)return false;return true},inl=find((x,y)=>tAt(x,y)===t.T_OPEN&&cl(x,y)==='grass'&&!t.ambLot(x,y)&&dry(x,y),0,[hx,hy])||field;
-  const [x,y]=mid(inl);at(x,y);const by=births(200);ok(!by.gull&&!by.fish,'inland in the fields: no gulls, no fish ('+show(by)+')')}
+  {const [x,y]=mid(inl);at(x,y);const by=births(200);ok(!by.gull&&!by.fish,'inland in the fields: no gulls, no fish ('+show(by)+')')}}
  // ---- crows: by ruins, a trace on the road, a fight; none without
  {const R=W.sites.find(s=>s.type==='ruins');
   if(!R)ok(true,'(no ruins on this map)');else{R.seen=true;day();at(R.x+20,R.y+20);const by=births(120),cr=AV.list.filter(e=>e.k==='crow');

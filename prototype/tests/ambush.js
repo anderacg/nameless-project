@@ -10,7 +10,8 @@ Kit.suite(({ok,info})=>{
  W.lords=[];W.patrols=[];W.monsters=[];W.caravans=[];t.bandits.length=0;G.clock=t.DAY*.3;P.troops={hum_levy:6};P.gold=500;P.sk.scout.lv=0;t.invAdd('good','grain',10);
  const R=()=>t.roadSt(),pickA=i=>t.act('enc-do',String(i)),world=()=>{Kit.world({road:null,chase:null,encCool:0});P.tx=null},logsSince=n=>G.msgs.slice(n).map(m=>m.m).join(' | ');
  const far=(tx,ty)=>t.TOWNS.every(z=>Math.hypot(z.tx-tx,z.ty-ty)>10);
- const find=f=>{for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++)if(f(tx,ty))return{tx,ty,x:(tx+.5)*TILE,y:(ty+.5)*TILE};return null};
+ // (30 tiles in from the map's edge: a battle by it keeps its field's woods (none past the edge))
+ const find=f=>{for(let ty=30;ty<t.MH-30;ty++)for(let tx=30;tx<t.MW-30;tx++)if(f(tx,ty))return{tx,ty,x:(tx+.5)*TILE,y:(ty+.5)*TILE};return null};
  // (woods within r px of a point; the road tile nearest a point, its middle)
  const woodsBy=(x,y,r)=>{for(let j=-r;j<=r;j+=2)for(let i=-r;i<=r;i+=2)if(Math.hypot(i,j)<=r&&t.hiddenAt(x+i,y+j))return true;return false};
  const roadAt=(x,y)=>{let b=Infinity,r=null;const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);for(let j=-6;j<=6;j++)for(let i=-6;i<=6;i++){if(t.tAt(tx+i,ty+j)!==t.T_ROAD)continue;const q=[(tx+i+.5)*TILE,(ty+j+.5)*TILE],d=Math.hypot(q[0]-x,q[1]-y);if(d<b){b=d;r=q}}return r};
@@ -49,6 +50,8 @@ Kit.suite(({ok,info})=>{
    {const s=JSON.parse(JSON.stringify(e.save()));ok(dist(s.lie,e.lie)<1e-9&&dist(s.edge,e.edge)<1e-9,'saved with its band’s hiding place')}}
   // ---- sprung: the battle opens with them in the trees where they lay
   {P.sk.scout.lv=0;const e=lureAt(),bait=[e.x,e.y];t.roadMeet(e);pickA(0);const b=G.enc&&G.enc.ref;
+   // (a band of blades, as a lure's band most often is: a band with bows holds and shoots, its own AI's choice)
+   if(b){b.tc={militia:6};b.changed();G.enc.list=b.troops.slice()}
    ok(G.enc?.btype?.kind==='ambush'&&b&&dist([b.x,b.y],e.lie)<1,'sprung: their band stands where it lay hidden, not beside him');
    t.act('fight');const B=t.B;
    if(!B||!B.world)ok(false,'a battle on the map');
@@ -56,12 +59,14 @@ Kit.suite(({ok,info})=>{
     const f0=foes(),m0=mid(f0),inWood=f0.filter(u=>t.hiddenAt(...wp(u))).length,side=(m0[0]-bait[0])*(e.lie[0]-bait[0])+(m0[1]-bait[1])*(e.lie[1]-bait[1]),d0=dist(m0,hero());
     info('ambushers: '+f0.length+', in the trees '+inWood+', their middle '+Math.round(dist(m0,e.lie))+' px from where they lay, '+Math.round(d0)+' px from you');
     ok(f0.length&&inWood>=f0.length/2&&side>0&&dist(m0,e.lie)<=L.woods,'the battle opens with them in the trees on the woods’ side ('+inWood+' of '+f0.length+' in the trees), your army caught off guard');
+    // (where each stood at the start, and you: those who came out of the trees, how much nearer they are)
+    const mine=()=>B.units.filter(u=>u.team===0&&u.hp>0&&!u.left),at0=new Map(f0.map(u=>[u,wp(u)])),h0=mid(mine());
     const first=new Map();for(const u of f0)if(t.seenBy(0,u))first.set(u,wp(u));
     for(let i=0;i<300&&!B.over&&first.size<f0.length;i++){t.updateBattle(.05);for(const u of foes())if(!first.has(u)&&t.seenBy(0,u))first.set(u,wp(u))}
-    const seen=[...first.values()],fe=seen.length?Math.max(...seen.map(p=>dist(p,e.edge))):Infinity,m1=foes().length?mid(foes()):hero(),d1=dist(m1,hero());
+    const seen=[...first.values()],fe=seen.length?Math.max(...seen.map(p=>dist(p,e.edge))):Infinity,out=foes().filter(u=>first.has(u)&&!t.ST[u.type].range),m1=out.length?mid(out):h0,d1=dist(m1,mid(mine())),mo=out.length?[out.reduce((a,u)=>a+at0.get(u)[0],0)/out.length,out.reduce((a,u)=>a+at0.get(u)[1],0)/out.length]:m0,d0o=dist(mo,h0);
     info('first seen: '+seen.length+' of '+f0.length+', each within '+Math.round(fe)+' px of the tree line; their middle '+Math.round(d0)+' → '+Math.round(d1)+' px from you');
     ok(seen.length&&fe<=L.woods,'they are first seen coming out of the trees, at the woods’ edge (within '+Math.round(fe)+' px of the tree line)');
-    ok(d1<d0,'and come at you');
+    ok(d1<d0o,'and those out of the trees with blades come at your army (its middle; the bows stand and shoot: '+Math.round(d0o)+' → '+Math.round(d1)+' px)');
     B.over=true;B.win=true;B.endT=0;t.updateBattle(.01);Kit.done({cont:true,world:true})}}
   world();
   // ---- warned, called out: they stand at the tree line; the fight there

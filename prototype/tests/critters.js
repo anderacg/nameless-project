@@ -54,7 +54,7 @@ try{
  const stag={crit:true,id:'stag',x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,n:1,t:0,a:0,dir:1,tire:0,cool:0};W.critters=[stag];G.chase=stag;t.updateWorld(.05);ok(P.tx===stag.x||G.chase===stag,'clicking a critter chases it');G.chase=null;P.tx=null;
  // livestock
  // (a holding with a pasture and its herd: Ashford, else the first that has them (a generated world lays its estates its own way))
- W.critters=[];t.initCritters();empty();P.gold=500;const ash=[t.townBy('Ashford'),...t.TOWNS].find(x=>x&&t.fieldsOf(x,'pasture')&&t.herdOf(x)),cow=t.herdOf(ash);cow.id='cow';cow.n=4;cow.x=P.x=ash.x+60;cow.y=P.y=ash.y+40;cow.cool=0;G.mode='world';G.modal=false;G.encCool=0;t.hidePanel();
+ W.critters=[];t.initCritters();empty();P.gold=500;const ash=[t.townBy('Ashford'),...t.TOWNS].find(x=>x&&t.fieldsOf(x,'pasture')&&t.herdOf(x)),cow=t.herdOf(ash),kind0=cow.id;cow.id='cow';cow.n=4;cow.x=P.x=ash.x+60;cow.y=P.y=ash.y+40;cow.cool=0;G.mode='world';G.modal=false;G.encCool=0;t.hidePanel();
  // (a pasture's herd is only to be seen: walking into it opens nothing, a click on its fields picks the pasture, whose herders trade;
  // clicked from beside the fields: a pasture may lie farther from its holding than you see)
  t.updateCritters(.01);ok(G.mode==='world'&&cow.decor,'walking into a pasture\'s herd opens nothing (it is only to be seen)');
@@ -77,6 +77,7 @@ try{
   cow.id='sheep';ok(t.penSpots(ash,0).length===Math.min(9,2*t.fieldsOf(ash,'pasture').tiles.length),'two sheep to a fenced tile');cow.id='cow';cow.n=4}
  {const lv=t.bldLv(ash,'pasture');ash.bld.pasture=0;ok(!t.penSpots(ash,0).length,'a pasture pulled down or burnt to nothing shows no herd anywhere');ash.bld.pasture=lv}
  // save
+ cow.id=kind0;// (its own kind again: a holding's herd is its land's, made again on loading)
  G.mode='world';t.saveGame();const snap=JSON.stringify(W.critters.map(c=>[c.id,c.n,c.home||'']));W.critters=[];t.act('load');ok(JSON.stringify(W.critters.map(c=>[c.id,c.n,c.home||'']))===snap,'critters survive a reload');
  // sprites and icons
  const blank=Object.keys(t.CRITTERS).filter(k=>{const c=t.critterSprite(k),px=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;let n=0;for(let j=3;j<px.length;j+=4)if(px[j])n++;return n<15});

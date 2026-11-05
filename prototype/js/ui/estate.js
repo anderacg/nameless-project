@@ -64,10 +64,10 @@ function estateDeeds(t,k){const E=ESTATES[k],lv=bldLv(t,k),emp=P.fac&&P.fac===t.
       w?'<p class="muted" style="font-size:13px">Builders are busy with '+(w.k==='wall'?'the walls':w.k==='house'?'a house':'the '+ESTATES[w.k].n.toLowerCase())+' for '+Math.max(1,w.done-G.day)+' more days. One project at a time.</p>':'')+
       railKeyActions(estateDeedList(t,k),lv>=cap?'At its best: level '+lv+' of '+cap+'.':'Built with gold and materials from '+t.name+'’s stock.')}
   if(!lv||emp)return '';
-  const g=estateGuards(t,k),c=countsOf(g),host=hostileTo(t.owner),pb=CONDUCT.plunderEstate,bn=CONDUCT.burnEstate;
+  const g=estateGuards(t,k),c=countsOf(g),host=foeAt(t),pb=CONDUCT.plunderEstate,bn=CONDUCT.burnEstate;
   return '<div class="lab">Raid it</div>'+railCards([{pic:portrait(g[0]),name:'Its guards',role:'Watching the '+E.n.toLowerCase()+' of '+t.name,n:g.length,facts:Object.keys(c).map(u=>c[u]+' × '+ST[u].n),
       note:g.length+' guards watch it (power '+rating(g)+' vs your '+partyPower()+').'}])+
-    railKeyActions(estateDeedList(t,k),'Caught or fighting, '+(host?'you are already the '+FACS[t.owner].n+'’s enemy':'the '+FACS[t.owner].n+' turns hostile ('+pb.hostile+'–'+bn.hostile+' days)')+'. Each asks you first.');
+    railKeyActions(estateDeedList(t,k),'Caught or fighting, '+(host?'you are already '+holderN(t)+'’s enemy':holderN(t)+(t.owner?' turns':' turn')+' hostile ('+pb.hostile+'–'+bn.hostile+' days)')+'. Each asks you first.');
 }
 // the estate's deeds: {icon, label, facts, act, arg, why, tip, ask (it cannot be undone: a confirm first, estateAsk), go (the act
 // its Confirm sends)}: your own, build up or pull down; someone else's, sabotage, plunder, burn
@@ -76,11 +76,11 @@ function estateDeedList(t,k){const E=ESTATES[k],lv=bldLv(t,k);
     return [cap&&lv<cap&&{icon:'house',label:lv?'Upgrade':'Place',act:'fief-build',arg:k,facts:[c+'g · '+workDays(t,lv+1)+' days','to level '+(lv+1),matsText(mats)],tip:(lv?'Upgrade':'Place')+' the '+E.n.toLowerCase()+': '+mt0(t,mats),
         why:w?'Already building':!lv&&!needsMet(t,k)?'Needs '+needsText(k):P.gold<c?'Not enough gold':short.length?'Short of '+short.join(', '):''},
       lv&&{icon:'axe',label:'Pull down',act:'es-ask',arg:'demolish',go:['fief-demolish',k],facts:['+'+Math.floor(bldCost(k,Math.max(1,lv))/2)+'g back','gone for good'],tip:'Pull the '+E.n.toLowerCase()+' down: half its last level’s cost back; it is gone for good'}].filter(Boolean)}
-  const g=estateGuards(t,k),no=troopCount()<3?'Need 3 troops':'',host=hostileTo(t.owner),pb=CONDUCT.plunderEstate,bn=CONDUCT.burnEstate;
+  const g=estateGuards(t,k),no=troopCount()<3?'Need 3 troops':'',host=foeAt(t),pb=CONDUCT.plunderEstate,bn=CONDUCT.burnEstate;
   return [{icon:'moon',label:'Sabotage',act:'es-ask',arg:'sabotage',go:['es-sabotage'],facts:[Math.round(sabotageChance(t,k)*100)+'% unseen','idle '+(3+2*lv)+' days'],why:sabotaged(t,k)?'Already wrecked':'',
       tip:'Sabotage it: slip in and wreck its work, so it makes nothing for '+(3+2*lv)+' days. Unseen, only rumour follows you (reputation −'+CONDUCT.sabotageEstate.rep+'); caught, you fight its guards and pay as for a plunder. Night, Scouting and Agility help; a big band and a big estate make it harder.'},
     {icon:'bag',label:'Plunder',act:'es-ask',arg:'plunder',go:['es-plunder'],facts:['fight '+g.length+' guards','reputation −'+pb.rep+' · honor −'+pb.honor],why:no,
-      tip:'Plunder its stores: fight the guards and take what the estate made for '+t.name+': reputation there −'+pb.rep+', honor −'+pb.honor+(host?'':', and the '+FACS[t.owner].n+' turns hostile for '+pb.hostile+' days')+'.'},
+      tip:'Plunder its stores: fight the guards and take what the estate made for '+t.name+': reputation there −'+pb.rep+', honor −'+pb.honor+(host?'':', and '+holderN(t)+(t.owner?' turns':' turn')+' hostile for '+pb.hostile+' days')+'.'},
     {icon:'fire',label:'Burn',act:'es-ask',arg:'burn',go:['es-burn'],facts:['fight '+g.length+' guards','down a level · reputation −'+bn.rep],why:no,
       tip:'Burn it: fight the guards, take what it made and burn it: it drops a level; reputation −'+bn.rep+', honor −'+bn.honor+(host?'':', hostile for '+bn.hostile+' days')+'; its people may leave.'}]}
 // a deed that cannot be undone asks first (window.js railConfirm): what it does and costs; Confirm sends its act, Back the overview

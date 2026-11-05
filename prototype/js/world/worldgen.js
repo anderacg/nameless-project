@@ -20,7 +20,7 @@
 // (an integer hash of two 32-bit numbers: the stages' streams)
 function genHash(a,b){let h=Math.imul((a>>>0)^0x9e3779b9,0x85ebca6b)^(b>>>0);h=Math.imul(h^h>>>16,0x7feb352d);h=Math.imul(h^h>>>15,0x846ca68b);return(h^h>>>16)>>>0}
 // each stage's stream: its own, isolated (a stage's retry, attempt + 1, draws another)
-const STAGE_SALT={land:1,elev:2,climate:3,rivers:4,forest:5,regions:6,holdings:7,roads:8,sites:9,graph:10,ponds:11};
+const STAGE_SALT={land:1,elev:2,climate:3,rivers:4,forest:5,regions:6,holdings:7,roads:8,sites:9,graph:10,ponds:11,hamlets:12};
 const genRng=(n,stage,attempt)=>seeded(genHash(n,STAGE_SALT[stage]*64+(attempt|0)));
 // (a noise salt drawn from a stream: map.js noise and fbm take it)
 const genSalt=R=>Math.floor(R()*0x3fffffff);
@@ -103,6 +103,7 @@ const GEN_STAGES=[
   {id:'ponds',label:'Springs and oases',w:40,run:g=>genPonds(g),check:g=>genRiverCheck(g.map,true)},
   {id:'regions',label:'Wild lands',w:1,run:g=>genRegions(g)},
   {id:'holdings',label:'Founding holdings',w:250,run:g=>genHoldings(g)},
+  {id:'hamlets',label:'Settling hamlets',w:30,run:g=>genHamlets(g)},
   {id:'roads',label:'Laying roads',w:500,run:g=>genRoads(g)},
   {id:'sites',label:'Placing camps',w:50,run:g=>genCamps(g)},
   {id:'glades',label:'Glades in the woods',w:20,run:g=>genGladeStage(g)},
@@ -838,7 +839,7 @@ function* genRegions(g){g.map.region.fill(0);g.map.regions=[];yield 1}
 function* genGraph(g){const m=g.map;g.tidied=g.tidied||{ponds:0,graph:0,brooks:0};g.tidied.graph=yield* genPatchTidy(g,[T_OPEN,T_FOREST,T_HILL,T_MOUNT],[T_OPEN,T_FOREST,T_HILL]);
   g.tidied.brooks=genHoldBrooks(m,g.holdings);
   for(let i=0;i<m.w*m.h;i++)if(genBrook(m,i)&&!genFed(m,i)&&!genSourced(m,i))genCutBrook(m,i);m.graph=buildWayGraph(g);yield .5;m.sum=m.checksum(g.holdings);g.work=null;
-  return{map:m,holdings:g.holdings,camps:g.camps,lords:g.lords,hamlets:[],sacred:[],lair:null,regions:m.regions,rivers:m.rivers,crossings:m.crossings,graph:m.graph,tries:g.tries,relaxed:g.relaxed,tidied:g.tidied}}
+  return{map:m,holdings:g.holdings,camps:g.camps,lords:g.lords,hamlets:g.holdings.filter(h=>!h.realm).map(h=>h.name),sacred:[],lair:null,regions:m.regions,rivers:m.rivers,crossings:m.crossings,graph:m.graph,tries:g.tries,relaxed:g.relaxed,tidied:g.tidied}}
 /* (the brooks through the holdings (the owner's play-test, 2026-10-22: "small streams should not cross a holding or an estate"):
    each brook tile within a holding's ring and GEN_HOLD_BROOK.margin more (HOLDING_TYPES' ring, from the middle of its centre's
    front, as lots.js lays its houses) cut, and with it every brook upstream of it, back to their springs outside: its line ends

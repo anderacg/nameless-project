@@ -190,7 +190,7 @@ class Tavern extends Place{
       // (the rumours: real news near here, two new a day (news.js), heard as you come in and kept while you stay: G.town.news;
       // then the standing talk of the realm: its wars, the camps, the most wanted, a mythic beast abroad)
       '<div class="lab">Rumours</div>'+rumourHtml(G.town.news||(G.town.news=rumourFrom(rumourSource('tavern',t.name,t,{from:'the tavern of '+t.name}))))+intelHtml(t)+
-      '<div class="lab">Talk of the realm</div><p class="muted">'+(enemiesOf(t.owner).length?'The '+f.n+' is at war with the '+enemiesOf(t.owner).map(g=>FACS[g].n).join(' and the ')+'.':'The '+f.n+' is at peace.')+'</p>'+'<p class="muted">Bandit camps sit near '+[...new Set(camps().filter(c=>!c.cleared).map(c=>Spatial.nearestHolding(c.x,c.y).name))].join(', ')+'.'+(mostWanted(1).map(w=>' The most wanted is '+chiefLabel(w.c)+(w.near?', last seen near '+w.near.name:'')+': '+bountyOf(w.c)+' gold on '+pr(w.c).his+' head.').join(''))+(mythicNews('was seen')?' '+mythicNews('was seen'):'')+'</p>';
+      '<div class="lab">Talk of the realm</div><p class="muted">'+(!f?'No realm rules '+t.name+': its free folk keep their own counsel.':enemiesOf(t.owner).length?'The '+f.n+' is at war with the '+enemiesOf(t.owner).map(g=>FACS[g].n).join(' and the ')+'.':'The '+f.n+' is at peace.')+'</p>'+'<p class="muted">Bandit camps sit near '+[...new Set(camps().filter(c=>!c.cleared).map(c=>Spatial.nearestHolding(c.x,c.y).name))].join(', ')+'.'+(mostWanted(1).map(w=>' The most wanted is '+chiefLabel(w.c)+(w.near?', last seen near '+w.near.name:'')+': '+bountyOf(w.c)+' gold on '+pr(w.c).his+' head.').join(''))+(mythicNews('was seen')?' '+mythicNews('was seen'):'')+'</p>';
   }
   // the ransom broker: which prisoners, in a picker first (window.js); then all of them, or kind:n,… from it
   ransomPick(arg,t){
@@ -368,7 +368,7 @@ class Hall extends Place{
   }
   // towns and castles have one; a village only while a lord is inside
   at(t){
-    return t.kind!=='village'||lordsInside(t).length>0;
+    return !!t.owner&&(t.kind!=='village'||lordsInside(t).length>0);
   }
   body(t){
     const f=FACS[t.owner],ls=lordsInside(t),sw=g=>'<span style="color:'+FACS[g].col+'">'+FACS[g].n+'</span>',b=c=>railBtn(c===this.signing?'contract':'end-contract',null,c.label,c.why(t));
@@ -451,10 +451,10 @@ onAct('st-',storesAct);
 
 /* the walls and garrison, at every holding: everyone who would defend it, how well, and for how long; in your own fief its
    soldiers (siege.js garrisonBody; their fief- orders are the steward's). A plain entry */
-definePlace('garrison',{n:'Walls & garrison',short:'Walls',ico:'tower',at:t=>true,body:t=>garrisonBody(t)});
+definePlace('garrison',{n:'Walls & garrison',short:'Walls',ico:'tower',at:t=>t.T.wallMax>0,body:t=>garrisonBody(t)});
 /* the prison, at every holding (world/prisons.js Prisons, doc/PRISONS_DESIGN.md §5): who is held there, and what you can do for
    them (its verbs pz-); yours or your realm's, your own prisoners and the captives you lock up. A plain entry */
-definePlace('prison',{n:'Prison',ico:'prisoners',at:t=>true,dot:t=>Prisons.dot(t),body:t=>Prisons.body(t),handles:a=>a.startsWith('pz-'),act:(a,arg,t)=>Prisons.act(a,arg,t)});
+definePlace('prison',{n:'Prison',ico:'prisoners',at:t=>!!t.owner,dot:t=>Prisons.dot(t),body:t=>Prisons.body(t),handles:a=>a.startsWith('pz-'),act:(a,arg,t)=>Prisons.act(a,arg,t)});
 
 /* the steward's office, in your own fief: its people, taxes, stores, land and income (siege.js fiefBody), or one of its
    buildings (G.town.bld: townui.js bldBody). Every fief- order (the garrison's, the buildings', the economy's) is its own
@@ -493,13 +493,19 @@ class SiegeCamp extends Place{
   body(t){
     const f=FACS[t.owner];const def=siegeDefenders(t),lv=siegeLv(t),ep=rating(def.list,lv),pp=partyPower(),r=ep/Math.max(1,pp);
     return '<div class="lab">Attack '+t.name+'</div><p>Garrison '+t.gar+(def.lords.length?', with '+def.lords.map(l=>lordName(l)).join(' and ')+' inside':'')+'. '+(!walled(t)?''+(wallOf(t)?WALL_N[wallOf(t)]+': its militia fights as level '+lv+'. ':'It has no walls. ')+'You can raid it or seize it.':WALL_N[wallOf(t)]+' make every defender as strong as level '+lv+'. You will need a siege camp: ladders take '+LADDER_DAYS+' days, a ram '+RAM_DAYS+'.')+'</p>'+
-      '<p class="'+(hostileTo(t.owner)?'muted':'bad')+'">'+(hostileTo(t.owner)?'The '+f.n+' is already your enemy.':'Attacking makes the '+f.n+' hostile to you for 60 days and costs 20 honor with them.')+'</p>'+
+      '<p class="'+(foeAt(t)?'muted':'bad')+'">'+this.cost(t)+'</p>'+
       railKeyActions([{icon:'ladder',label:'Attack',act:'siege-ask',facts:[(r<.6?'Easy':r<1?'Even':r<1.5?'Risky':'Deadly')+' · power '+ep+' vs '+pp,walled(t)?'a siege camp: ladders '+LADDER_DAYS+' days':'raid or seize it'],tip:'Leave the gates and plan an attack'}]);
+  }
+  // (what attacking costs: its realm's anger, or, a free folk's, honour with every realm (siege.js FREE_FOE))
+  cost(t){
+    const f=FACS[t.owner];
+    if(foeAt(t))return cap1(holderN(t))+(f?' is':' are')+' already your enemy.';
+    return f?'Attacking makes the '+f.n+' hostile to you for 60 days and costs 20 honor with them.':'The free folk of '+t.name+' are no one’s subjects: attacking them costs '+FREE_FOE.honor+' honor with every realm.';
   }
   // it cannot be undone: a confirm first (window.js railConfirm); Confirm plans it
   ask(arg,t){
     const def=siegeDefenders(t),ep=rating(def.list,siegeLv(t)),pp=partyPower(),f=FACS[t.owner];
-    railConfirm({title:'Attack '+t.name+'?',sub:cap1(t.label)+' of the '+f.n,text:hostileTo(t.owner)?'The '+f.n+' is already your enemy.':'<span class="bad">Attacking makes the '+f.n+' hostile to you for 60 days and costs 20 honor with them.</span>',
+    railConfirm({title:'Attack '+t.name+'?',sub:cap1(t.label)+(f?' of the '+f.n:' of the free folk'),text:foeAt(t)?this.cost(t):'<span class="bad">'+this.cost(t)+'</span>',
       facts:['Defenders’ power '+ep+' vs yours '+pp,'Garrison '+t.gar+(def.lords.length?', with '+def.lords.map(l=>lordName(l)).join(' and ')+' inside':''),walled(t)?'You will need a siege camp: ladders take '+LADDER_DAYS+' days.':'You can raid it or seize it.'],confirm:['plan-siege',null,'Plan the attack'],back:['tab','home','Back']});
     return Place.AWAY;
   }

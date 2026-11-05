@@ -15,6 +15,8 @@ function wrong(t,c){
   if(c.morale){P.morale=clamp(P.morale-c.morale,0,100);cost.push('morale −'+c.morale)}
   // (its realm: honour, its lords' regard, hostility: realms.js Realm.wronged)
   if(t.owner&&t.owner!=='player')realmOf(t.owner).wronged(t,c,cost);
+  // (a free folk's (no realm): the folk themselves remember it, hostile a while (siege.js foeAt))
+  else if(!t.owner&&c.hostile){t.angry=Math.max(t.angry||0,G.day+c.hostile);cost.push('the free folk of '+t.name+' hostile '+c.hostile+' days')}
   return cost.join(', ');
 }
 // frightened workers run home and keep away: half the holding's output for a few days

@@ -16,6 +16,12 @@
 // herds: livestock grazes round it · rural: farms first, few trades · fort: a stockpile and no market or workshops ·
 // scene: its walkable streets (SCENES) · temple: a priest in its streets · smoke: chimneys that smoke
 const HOLDING_TYPES={
+  // (a hamlet: the free folk's (no realm: doc/WORLD_DESIGN.md §6.3), a yard at its heart, a few homes and one estate, a militia
+  // of three, no walls, no watch out on its land; grows into a village)
+  hamlet:{n:'hamlet',tier:1,next:['village'],centre:{_:'hamlet'},pop0:30,popCap:70,store:80,gar:3,patrol:{size:0,keep:0},wall0:0,wallMax:0,estMax:1,
+    reach:6,growMax:3,ring:6,tries:40,needs:{food:5,cloth:.3,timber:.5,tools:.2,ale:.3},wants:{},jobs:['beast','hunt'],
+    sack:40,income:4,handover:30,renown:5,guards:0,tabs:['recruit','trade','jobs','tavern'],hires:['melee'],
+    mounts:['any'],herds:true,rural:true,smoke:1},
   village:{n:'village',tier:2,next:['town'],centre:{_:'village'},pop0:60,popCap:140,store:150,gar:6,patrol:{size:3,keep:2},wall0:0,wallMax:1,estMax:2,
     reach:10,growMax:7,ring:9,tries:60,needs:{food:5,cloth:.4,timber:.6,tools:.3,ale:.4},wants:{},jobs:['bounty','beast','hunt','hunt'],
     sack:80,income:8,handover:60,renown:10,guards:0,tabs:['recruit','trade','stable','jobs','tavern'],hires:['melee','shield'],

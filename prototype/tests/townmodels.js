@@ -15,8 +15,9 @@ Kit.suite(({ok,info})=>{
   function ESTATES_SIZE(l){return !!t.ESTATES[l.k]}
   ok(!bad.length,'every building at the owner\'s scale, on its own cell: '+Object.entries(by).map(([k,s])=>k+' '+[...s].sort((a,b)=>a-b).join('/')).join(', ')+(bad.length?': '+bad.slice(0,6).join('; '):''))}
  // ---- culture by the founding realm, not the owner
- {const bad=TW.filter(z=>t.holdingCulture(z)!==({vale:'vale',karn:'karn',sylvan:'sylvan',horde:'ashgor',salt:'league'})[t.HOME[z.name]]),cs=new Set(TW.map(t.holdingCulture));
-  ok(!bad.length&&cs.size===5,'each holding builds in its founding realm\'s culture (vale, karn, sylvan, the Horde\'s ashgor, the Salt League\'s league: '+[...cs].join(', ')+')'+(bad.length?': not '+bad.map(z=>z.name).join(', '):''));
+ // (the free folk's, no realm's: their people's culture, PX.CULTURE_OF)
+ {const bad=TW.filter(z=>t.holdingCulture(z)!==(t.HOME[z.name]?({vale:'vale',karn:'karn',sylvan:'sylvan',horde:'ashgor',salt:'league'})[t.HOME[z.name]]:t.PX.CULTURE_OF[z.races[0]]||'vale')),cs=new Set(TW.map(t.holdingCulture));
+  ok(!bad.length&&cs.size===5,'each holding builds in its founding realm\'s culture, a free folk\'s in its people\'s (vale, karn, sylvan, the Horde\'s ashgor, the Salt League\'s league: '+[...cs].join(', ')+')'+(bad.length?': not '+bad.map(z=>z.name).join(', '):''));
   const z=TW.find(q=>t.HOME[q.name]==='karn'),c=t.lotCentre(z),o0=z.owner,cu0=t.lotModel(z,c).culture;
   try{z.owner='horde';c._s=null;const cu1=t.lotModel(z,c).culture,s1=t.lotSprite(z,c);ok(cu0==='karn'&&cu1==='karn'&&s1.width===c.n*TL,'a captured holding keeps its builders\' culture ('+z.name+', taken by the Horde: '+cu1+'); its owner flies the banners')}finally{z.owner=o0;c._s=null}}
  // ---- households

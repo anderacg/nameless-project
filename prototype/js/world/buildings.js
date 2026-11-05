@@ -41,6 +41,8 @@ class Buildings{
   init(){
     const t=this.t,R=seeded(t.seed*131+7),m=t.mod||{},b={},v=!!t.T.rural,c=!!t.T.fort;
     const set=(k,lv)=>{b[k]=Math.min(this.cap(k),Math.max(0,lv))};
+    // (a hamlet: its field and the one estate of its trade, by its prices: woods, ore, a port's water, else a pasture)
+    if(t.T.tier<=1){set('farm',1);const k=m.timber<=.8?'lumber':m.iron<=.85?'mine':t.style==='port'?'port':'pasture';set(k,1);if(!b[k])set('pasture',1);t.bld=b;t.wall=t.T.wall0;t.work=null;return}
     set('farm',v?2:1+(m.grain<=.8?1:0));set('pasture',v?1:R()<.4?1:0);
     set('lumber',m.timber<=.75?2:R()<.5?1:0);set('mine',m.iron<=.8?2:resHas(t,'ore').some(g=>GOODS[g].base>=60)?1:R()<.4?1:0);
     set('port',t.style==='port'?2:R()<.3?1:0);set('workshop',c?0:m.cloth<=.85||m.furs<=.8?1+(v?0:1):0);set('market',c?0:v?0:1);
@@ -56,7 +58,7 @@ class Buildings{
     const t=this.t;
     if(!t.bld)this.init();
     if(t.work){if(t.besieged())t.work.done++;else if(G.day>=t.work.done)this.finish()}
-    if(t.owner==='player'||t.work||t.besieged()||t.ruined()||Math.random()>.05)return;
+    if(t.owner==='player'||!t.owner||t.work||t.besieged()||t.ruined()||Math.random()>.05)return;// (the free folk start none: they grow by their people)
     // what to build: walls on the frontier, then whatever the holding is shortest of
     const front=TOWNS.some(o=>o!==t&&atWar(t.owner,o.owner)&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<WORLD_SCALE.war.front);
     // a full holding builds a house first (its people have nowhere else to go)

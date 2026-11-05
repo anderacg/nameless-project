@@ -16,7 +16,7 @@ try{
  const keysOf=h=>Object.keys(h).concat(...Object.values(h).filter(v=>v&&typeof v==='object'&&!Array.isArray(v)).map(Object.keys));
  ok(made.every((h,i)=>JSON.stringify(h,keysOf(h))===JSON.stringify(TOWNS[i],keysOf(h))&&Object.getPrototypeOf(h)===Object.getPrototypeOf(TOWNS[i])&&h!==TOWNS[i]),'makeHolding makes each the very holding the page loaded: its kind, its prices, its point');
  ok(J(CP)===cp0,'and leaves the data as it was');
- ok(TOWNS.every((h,i)=>!('realm' in h)&&t.HOME[h.name]===CP[i].realm),'a place\'s realm goes into HOME, not onto the holding');
+ ok(TOWNS.every((h,i)=>!('realm' in h)&&(t.HOME[h.name]||null)===(i<CP.length?CP[i].realm:null)&&(i<CP.length||!SRC[i].realm)),'a place\'s realm goes into HOME, not onto the holding (the free folk\'s hamlets, after the 37, none)');
  {const a=t.townBy('Ashford'),k=t.townBy('Karn Hold'),e=t.townBy('Elderglen');
   const A=SRC.find(d=>d.name==='Ashford');
   ok(a.x===A.tx*TILE&&a.y===(A.ty+1)*TILE+2&&k.mod.bolts===.7&&e.mod.arrows===.7&&a.mod.arrows===1.1&&typeof a.mod.cheese==='number','points at the gate, arrows cheap among elves, bolts among dwarves, food by who lives there')}
@@ -52,6 +52,6 @@ try{
   ok(!t.fiefsOf('player').includes(h)&&J(seen)==='["add:Ashford 2","gone:Ashford 2"]','it is no longer yours, and they are told once that it is gone')}
  // a world's holdings, made again in place
  {const keep=TOWNS.slice();t.setHoldings(SRC);
-  ok(t.TOWNS===TOWNS&&TOWNS.length===37&&TOWNS.every((z,i)=>J(z)===J(made[i])&&z!==keep[i])&&!('Ashford 2' in t.HOME)&&t.HOME.Ashford==='vale','setHoldings fills TOWNS in place with fresh holdings from the data, and HOME with their realms alone')}
+  ok(t.TOWNS===TOWNS&&TOWNS.length===SRC.length&&TOWNS.every((z,i)=>J(z)===J(made[i])&&z!==keep[i])&&!('Ashford 2' in t.HOME)&&t.HOME.Ashford==='vale','setHoldings fills TOWNS in place with fresh holdings from the data, and HOME with their realms alone')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

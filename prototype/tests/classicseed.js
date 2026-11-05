@@ -9,7 +9,7 @@
 // INFO: each holding's distance from its anchor.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,J=JSON.stringify;
 try{
- const r=t.genWorld(t.classicSettings()),m=r.map,W=m.w,H=m.h,K=m.kind,Hd=r.holdings,P=t.CLASSIC_PLACES,A=t.classicAnchors();
+ const r=t.genWorld(t.classicSettings()),m=r.map,W=m.w,H=m.h,K=m.kind,Hd=r.holdings.filter(h=>h.realm),P=t.CLASSIC_PLACES,A=t.classicAnchors();
  const at=n=>Hd.find(h=>h.name===n),ti=h=>h.ty*W+h.tx,xy=i=>[i%W,(i-i%W)/W],far=(a,b)=>Math.max(Math.abs(a.tx-b.tx),Math.abs(a.ty-b.ty)),clim=i=>t.CLIMS[m.clim[i]],pc=v=>Math.round(v*100)+'%';
  // (a share of the land tiles in a box, or round (x, y) from r0 to r1 tiles, where is(i) holds)
  const share=(x0,y0,x1,y1,is,ring)=>{let n=0,k=0;[x0,y0,x1,y1]=[x0,y0,x1,y1].map(Math.round);for(let y=Math.max(0,y0);y<Math.min(H,y1);y++)for(let x=Math.max(0,x0);x<Math.min(W,x1);x++){const i=y*W+x;
@@ -96,7 +96,7 @@ try{
   {const Rd=t.placeReach(m,Hm[0].ty*W+Hm[0].tx,false),cut=Hm.filter(h=>!Rd[h.ty*W+h.tx]);ok(!cut.length&&!g.work.roadFail.length,'made-up land: every holding reachable by its roads'+(cut.length?': not '+cut.map(h=>h.name).join(', '):''))}}
  // ---- the world in use, when it is the generated classic world
  if(t.WM.classic){t.act('begin','soldier');
-  ok(t.TOWNS.length===37&&t.TOWNS.every((z,k)=>z.name===P[k].name&&z.tx===Hd[k].tx&&z.ty===Hd[k].ty),'the world in use: TOWNS the 37 in their order, on these tiles');
+  ok(t.TOWNS.length===r.holdings.length&&t.TOWNS.slice(0,37).every((z,k)=>z.name===P[k].name&&z.tx===Hd[k].tx&&z.ty===Hd[k].ty),'the world in use: TOWNS the 37 in their order, on these tiles (the free folk\'s hamlets after them)');
   const ports=t.TOWNS.filter(z=>P.some(p=>p.name===z.name&&p.realm==='salt'&&p.style==='port')),id=t.waterIds(),dk=ports.map(z=>t.dockOf(z)),w=dk.map(d=>d?id[d.ty*t.MW+d.tx]:-1);
   ok(ports.length===5&&w.every(v=>v>=0&&v===w[0]),'the world in use: the League’s ports’ docks on one sea, for its ships ('+ports.map((z,k)=>z.name+' '+(w[k]>=0?'#'+w[k]:'no dock')).join(', ')+')')}
 }catch(e){o.push('EXC '+e.message+' '+(e.stack||'').split('\n').slice(0,3).join(' | '))}

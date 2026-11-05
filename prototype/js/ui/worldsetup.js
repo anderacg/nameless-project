@@ -27,7 +27,7 @@ const WS_SET=[['hamlets','Hamlets',{none:'None',few:'Few',normal:'Normal',many:'
   ['monsters','Monsters',{calm:'Calm',normal:'Normal',deadly:'Deadly'}],['bandits','Bandits',{few:'Few',normal:'Normal',many:'Many'}],
   ['economy','Economy',{poor:'Poor',normal:'Normal',rich:'Rich'}],['sites','Founding sites',{few:'Few',normal:'Normal',many:'Many'}],
   ['start','Start',{wanderer:'Wanderer',settler:'Settler'}]];
-const WS_LATER=['hamlets','sacred','wild','sites','start'];
+const WS_LATER=['sacred','wild','sites','start'];
 const WS_PRESET={classic:['Classic','The world of Ashmark, the same for everyone. Only monsters, bandits and your start can change.'],
   normal:['Normal','A new world at Normal size, every setting at its default.'],large:['Large','A wider world: more room, more holdings.'],
   huge:['Huge','The largest world. Sparse until later phases fill it.'],frontier:['Wild Frontier','Large and cold, rugged and wet: few holdings, deadly beasts, many bandits, rich land.'],

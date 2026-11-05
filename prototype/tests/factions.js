@@ -5,7 +5,7 @@ try{
  const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
  const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
  t.act('begin','soldier');
- ok(t.TOWNS.length===37&&t.TOWNS.filter(x=>x.kind==='castle').length===9,'37 holdings incl 9 castles');
+ ok(t.TOWNS.filter(x=>x.owner).length===37&&t.TOWNS.filter(x=>x.kind==='castle').length===9,'37 realm holdings incl 9 castles (the free folk\'s hamlets besides)');
  ok(['vale','karn','sylvan','horde'].every(f=>new Set(t.fiefsOf(f).flatMap(x=>x.races)).size===1)&&t.FACS.salt.races.length===3,'four single-race kingdoms and one mixed league');
  ok(W.lords.length===20&&Object.values(W.rel).filter(r=>r.s==='war').length===1,'20 lords, one war at the start');
  // fix diplomacy so the checks below don't depend on the random starting war

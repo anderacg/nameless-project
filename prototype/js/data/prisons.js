@@ -7,6 +7,7 @@
    walls: a holding's break-out odds less per level of its walls (world/buildings.js wallOf); garrison: less per man of its
    garrison (t.gar), at most garMax. */
 const PRISONS={
+  hamlet:{name:'Lock-up',brk:.16,bribe:.6,watch:0,holds:2,men:6},
   village:{name:'Lock-up',brk:.12,bribe:.7,watch:0,holds:3,men:10},
   town:{name:'Jail',brk:.04,bribe:1,watch:0,holds:6,men:20},
   city:{name:'Prison',brk:0,bribe:1.4,watch:1,holds:12,men:40},

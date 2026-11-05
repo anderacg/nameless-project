@@ -50,8 +50,9 @@ try{
  // ---- walls are the centre's fortification: no wall pieces on the map, nothing blocks travel
  ok(TW.every(z=>{const c=t.lotCentre(z);t.lotSprite(z,c);return !z.lots.some(l=>l.k==='wall')&&c._fort===t.wallOf(z)}),'every holding’s walls are its centre’s fortification (no wall pieces stand on the map)');
  {const z=TW.find(q=>t.wallOf(q)>=2),c=t.lotCentre(z),s0=t.lotSprite(z,c);t.breach(z);const s1=t.lotSprite(z,c);ok(c._fort===t.wallOf(z)&&s1!==s0,'a breach lowers it, and the centre is drawn with its lower walls ('+t.WALL_N[t.wallOf(z)]+')')}
- {const nf=TW.filter(z=>!t.lotSprite(z,t.lotCentre(z)).flag),more=TW.filter(z=>z.lots.some(l=>l.k!=='centre'&&t.lotSprite(z,l).flag));
-  ok(!nf.length&&!more.length,'every holding flies one flag, from its centre'+(nf.length?' (none at '+nf.map(z=>z.name).join(', ')+')':'')+(more.length?' (more at '+more.map(z=>z.name).join(', ')+')':''))}
+ // (a hamlet's yard flies none: no realm's, the free folk's; tests/hamlets.js)
+ {const nf=TW.filter(z=>z.kind!=='hamlet'&&!t.lotSprite(z,t.lotCentre(z)).flag),more=TW.filter(z=>z.lots.some(l=>l.k!=='centre'&&t.lotSprite(z,l).flag)||z.kind==='hamlet'&&t.lotSprite(z,t.lotCentre(z)).flag);
+  ok(!nf.length&&!more.length,'every holding but a hamlet flies one flag, from its centre; a hamlet none'+(nf.length?' (none at '+nf.map(z=>z.name).join(', ')+')':'')+(more.length?' (more at '+more.map(z=>z.name).join(', ')+')':''))}
  // ---- placing by hand
  const ash=t.townBy('Ashford');ash.owner='player';t.ensureEcon(ash);ash.work=null;ash.stock.timber=200;ash.stock.tools=40;ash.stock.stone=200;P.gold=5000;
  const k=['brewery','workshop','granary','smithy','market','farm','pasture'].find(e=>!t.bldLv(ash,e)&&t.needsMet(ash,e)&&t.bldCap(ash,e));

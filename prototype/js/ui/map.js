@@ -17,7 +17,7 @@ const FULLMAP={zooms:[.5,1,2,3,4,6],wide:640,open:4,ppt:1,pics:{},drag:null,ms:0
   // (the rivers by width (1 a brook, 2 a river, 3 a great river), the realms' tint and border strength, the unexplored land)
   river:['','#8cc0ec','#4f8fd6','#2a5fae'],riverN:['','Brook','River','Great river'],tint:.38,edge:.8,unknown:'#141116',road:'#b89b62',
   // (the holdings' marks by kind; another kind is marked as a village; names shown at FULLMAP.names px a tile, or from tier 3)
-  kinds:{city:'City',town:'Town',castle:'Castle',village:'Village'},names:2};
+  kinds:{city:'City',town:'Town',castle:'Castle',village:'Village',hamlet:'Hamlet'},names:2};
 // (a rumour's "?": its look, inline)
 const fmRumour=()=>'color:'+RUMOUR_COL+';font:700 12px/1 Arial,sans-serif;text-shadow:0 0 2px #000,0 1px 1px #000',FM_RGB={},fmRgb=c=>FM_RGB[c]||(FM_RGB[c]=[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)]);
 /* the picture: map m at 1 px per k tiles, from its tile data, what you have seen (seen: a byte a tile) and the land (land: an index

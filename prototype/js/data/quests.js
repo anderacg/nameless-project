@@ -24,13 +24,13 @@ const QUEST_ARCHIVE={keep:60};
    kinds they give, world/quests.js), why (what they care about, said on their offers), pays (gold: a share of a job's gold they
    pay, the rest in goods of the holding's (GIVER_PAY)). A holding has every one whose at fits, in this order. To add one: a row */
 const GIVERS={
-  reeve:{where:'the reeve’s house',n:'reeve',at:{kind:['village']},jobs:['beast','bounty','hunt','missing'],why:'The village is mine to keep.',pays:.5},
+  reeve:{where:'the reeve’s house',n:'reeve',at:{kind:['village','hamlet']},jobs:['beast','bounty','hunt','missing'],why:'The village is mine to keep.',pays:.5},
   herder:{where:'the pasture',n:'herder',at:{estate:'pasture'},jobs:['beast'],why:'Every ewe lost is a winter lost.',pays:.4},
   captain:{where:'the watch house',n:'captain of the watch',at:{walls:1},jobs:['bounty','clear','troops'],why:'The roads are the watch’s to keep.',pays:1},
   steward:{where:'the lord’s hall',n:'steward',at:{kind:['town','city','castle']},jobs:['supply','courier','troops'],why:'The stores answer to me.',pays:1},
   merchant:{where:'the market square',n:'merchant',at:{estate:'market'},jobs:['supply','bounty','convoy'],why:'My caravans go out on those roads.',pays:1},
   tanner:{where:'the tanners’ yard',n:'tanner',at:{estate:'workshop'},jobs:['hunt'],why:'No hides, no leather.',pays:.7},
-  innkeeper:{where:'the tavern',n:'innkeeper',at:{kind:['village','town','city']},jobs:['hunt'],why:'A full table keeps the tavern full.',pays:.6},
+  innkeeper:{where:'the tavern',n:'innkeeper',at:{kind:['hamlet','village','town','city']},jobs:['hunt'],why:'A full table keeps the tavern full.',pays:.6},
   priest:{where:'the temple',n:'priest',at:{temple:true},jobs:['missing'],why:'Every soul of this parish is in my keeping.',pays:.8}};
 // what a giver who pays partly in goods pays the rest in: the first of these the holding has in stock, as many as that gold buys
 const GIVER_PAY=['cheese','grain','ale','cloth','furs','tools'];

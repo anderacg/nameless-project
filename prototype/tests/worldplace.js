@@ -14,13 +14,13 @@ try{
  const worlds=[['classic',t.classicSettings()],['Normal redwater',{preset:'normal',seed:'redwater'}],['Normal bluewater',{preset:'normal',seed:'bluewater'}],['Large redwater',{preset:'large',seed:'redwater',holdings:55}],
   ['saltwell',t.parseWorldCode('ASH1-X-2V40O9HH-saltwell')]];// (Large at More, 55 holdings: a world with lords of its own, D10; saltwell: the owner's play-test 2 world, Huge, whose roads ran into the river)
  const R={};for(const [k,s] of worlds)R[k]=gen(s);
- for(const [name] of worlds){const r=R[name],m=r.map,W=m.w,H=m.h,K=m.kind,Hd=r.holdings,ti=h=>h.ty*W+h.tx,d2=(a,b)=>(a.tx-b.tx)*(a.tx-b.tx)+(a.ty-b.ty)*(a.ty-b.ty),cl=m.classic,sw=name==='saltwell';
+ for(const [name] of worlds){const r=R[name],m=r.map,W=m.w,H=m.h,K=m.kind,Hd=r.holdings,Hr=Hd.filter(h=>h.realm),ti=h=>h.ty*W+h.tx,d2=(a,b)=>(a.tx-b.tx)*(a.tx-b.tx)+(a.ty-b.ty)*(a.ty-b.ty),cl=m.classic,sw=name==='saltwell';
   info(name+': '+Object.keys(r.ms).map(k=>k+' '+r.ms[k].toFixed(0)).join(', ')+' ms; '+r.stats.roads+' roads, '+(r.stats.ms/Math.max(1,r.stats.roads)).toFixed(1)+' ms a road (most '+r.stats.max.toFixed(1)+'); tries '+t.GEN_STAGES.slice(6,9).map(s=>s.id+' '+r.tries[s.id]).join(', ')+'; relaxed: '+(r.relaxed.join('; ')||'nothing'));
   // ---- the holdings
-  const fewer=r.relaxed.filter(x=>/one fewer/.test(x)).length,N=m.settings.holdings-fewer*5,q=t.placeQuota(N),by=f=>Hd.filter(h=>h.realm===f),caps=t.PLACE_REALMS.map(f=>by(f).find(h=>h.kind==='city'));
-  if(cl)ok(Hd.length===37&&Hd.every((h,k)=>{const p=t.CLASSIC_PLACES[k],a={...p},b={...h};delete a.tx;delete a.ty;delete b.tx;delete b.ty;return J(a)===J(b)}),name+': the 37 classic holdings in TOWNS order, their data whole');
-  else ok(Hd.length===N&&t.PLACE_REALMS.every(f=>by(f).length===q[f]&&by(f).filter(h=>h.kind==='city').length===1),name+': '+Hd.length+' holdings ('+m.settings.holdings+' asked'+(fewer?', '+fewer+' fewer a realm':'')+'), by realm '+t.PLACE_REALMS.map(f=>by(f).length).join('/')+', a city each; kinds '+['city','town','castle','village'].map(k=>Hd.filter(h=>h.kind===k).length+' '+k).join(', '));
-  if(cl){const A=t.classicAnchors(),far=Hd.filter((h,k)=>Math.max(Math.abs(h.tx-A[k].tx),Math.abs(h.ty-A[k].ty))>4);info(name+': '+(37-far.length)+' of 37 within 4 tiles of their anchors'+(far.length?' (not: '+far.map(h=>h.name).join(', ')+')':''))}
+  const fewer=r.relaxed.filter(x=>/one fewer/.test(x)).length,N=m.settings.holdings-fewer*5,q=t.placeQuota(N),by=f=>Hr.filter(h=>h.realm===f),caps=t.PLACE_REALMS.map(f=>by(f).find(h=>h.kind==='city'));
+  if(cl)ok(Hr.length===37&&Hr.every((h,k)=>{const p=t.CLASSIC_PLACES[k],a={...p},b={...h};delete a.tx;delete a.ty;delete b.tx;delete b.ty;return J(a)===J(b)}),name+': the 37 classic holdings in TOWNS order, their data whole');
+  else ok(Hr.length===N&&t.PLACE_REALMS.every(f=>by(f).length===q[f]&&by(f).filter(h=>h.kind==='city').length===1),name+': '+Hr.length+' holdings ('+m.settings.holdings+' asked'+(fewer?', '+fewer+' fewer a realm':'')+'), by realm '+t.PLACE_REALMS.map(f=>by(f).length).join('/')+', a city each; kinds '+['city','town','castle','village'].map(k=>Hd.filter(h=>h.kind===k).length+' '+k).join(', '));
+  if(cl){const A=t.classicAnchors(),far=Hr.filter((h,k)=>Math.max(Math.abs(h.tx-A[k].tx),Math.abs(h.ty-A[k].ty))>4);info(name+': '+(37-far.length)+' of 37 within 4 tiles of their anchors'+(far.length?' (not: '+far.map(h=>h.name).join(', ')+')':''))}
   else{const near=[];for(let a=0;a<Hd.length;a++)for(let b=a+1;b<Hd.length;b++){const A=Hd[a],B=Hd[b],g=A.kind==='city'&&B.kind==='city'?.3*Math.sqrt(W*W+H*H):t.placeGap(A.kind,B.kind);if(d2(A,B)<g*g)near.push(A.name+'-'+B.name)}
    (sw?m=>info(m+' (its generator gave up on the capitals: kept, the play-test’s world as it was)'):m=>ok(!near.length,m))(name+': the spacing table holds between every two holdings, capitals '+(.3*Math.sqrt(W*W+H*H)).toFixed(0)+' tiles apart (0.3 x the diagonal)'+(near.length?': '+near.slice(0,4).join(', '):''))}
   ok(new Set(Hd.map(h=>h.name)).size===Hd.length&&Hd.every(h=>h.name&&h.note&&h.races.length&&(h.kind==='castle'||h.mod&&Object.keys(h.mod).length===6)),name+': unique names, each with its races, note and (but castles) prices: '+Hd.slice(0,3).map(h=>h.name+' ('+h.note+')').join(' '));
@@ -185,15 +185,16 @@ try{
  // laid on the open desert 18-34 tiles from an orc holding, as stage 7 begins (m.oases, as worldgen.js makes them): the orcs like
  // the land round it more, and a holding stands within its radius and PLACE_OASIS.near of it; with none, none there. The first
  // of the first 3 such spots (8 tiles apart) where it does (where the realms grow is drawn: one spot may miss by chance)
- {const base=R['Normal redwater'],m0=base.map,W=m0.w,H0=base.holdings,orc=H0.filter(h=>h.realm==='horde'),O=t.PLACE_OASIS,e=2+O.near,spots=[];
+ // (on the seed with no hamlets: the realms' placing alone, no hamlet's track moving the spots)
+ {const base=gen({preset:'normal',seed:'redwater',hamlets:'none'}),m0=base.map,W=m0.w,H0=base.holdings.filter(h=>h.realm),orc=H0.filter(h=>h.realm==='horde'),O=t.PLACE_OASIS,e=2+O.near,spots=[];
   for(let y=10;y<m0.h-10&&spots.length<3;y+=2)for(let x=10;x<W-10&&spots.length<3;x+=2){const i=y*W+x;if(m0.clim[i]!==t.CLIM.desert||spots.some(([u,v])=>Math.hypot(u-x,v-y)<8))continue;let ok2=true;
    for(let b=-e-1;b<=e+1&&ok2;b++)for(let a=-e-1;a<=e+1&&ok2;a++){const j=(y+b)*W+x+a;if(m0.kind[j]===t.T_WATER||m0.kind[j]===t.T_MOUNT||m0.kind[j]===t.T_ROAD||m0.kind[j]===t.T_FORD||m0.clim[j]!==t.CLIM.desert)ok2=false}
    const d=Math.min(...H0.map(h=>Math.hypot(h.tx-x,h.ty-y))),dorc=Math.min(...orc.map(h=>Math.hypot(h.tx-x,h.ty-y)));if(ok2&&d>e+6&&dorc>=18&&dorc<=34)spots.push([x,y])}
   if(!spots.length)info('a big oasis: no open desert on Normal redwater to lay one on');
   for(const [k,spot] of spots.entries()){const gh=window.genHoldings,[ox,oy]=spot,c=oy*W+ox;let r=null;
    window.genHoldings=function*(g){const m=g.map,T=[];for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(a*a+b*b<=5){const i=c+a+b*W;m.kind[i]=t.T_WATER;m.feat[i]|=2;T.push(i)}m.oases=[{i:c,r:2,big:true,tiles:T}];return yield* gh(g)};
-   try{r=gen({preset:'normal',seed:'redwater'})}finally{window.genHoldings=gh}
-   const near=Hs=>Hs.filter(h=>Math.hypot(h.tx-ox,h.ty-oy)<=e+1),drew=near(r.holdings).length>0&&!near(H0).length&&!r.relaxed.some(x=>/^holdings/.test(x));
+   try{r=gen({preset:'normal',seed:'redwater',hamlets:'none'})}finally{window.genHoldings=gh}
+   const near=Hs=>Hs.filter(h=>Math.hypot(h.tx-ox,h.ty-oy)<=e+1),drew=near(r.holdings.filter(h=>h.realm)).length>0&&!near(H0).length&&!r.relaxed.some(x=>/^holdings/.test(x));
    if(!drew&&k<spots.length-1){info('a big oasis at '+ox+','+oy+' drew no holding this time: the next spot');continue}
    ok(drew,'a big oasis on the desert at '+ox+','+oy+' draws a holding beside it: '+near(r.holdings).map(h=>h.name+' ('+h.realm+' '+h.kind+')').join(', ')+' (none there without it); the stage’s checks passed ('+r.tries.holdings+' tries)');break}}
  // ---- deposits and first stocks by the economy setting; lords from WM.lords
