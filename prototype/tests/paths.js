@@ -19,7 +19,7 @@ Kit.suite(({ok,info})=>{
  // (your army of troops on cleared open ground, Ashford's house lots copied where lay puts them ([tile dx, dy, lot kind]: about
  // the army's start), its march formation its style's)
  const scene=(troops,lay,water=[])=>{Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
-  const h=Kit.goHome('Ashford');Kit.goTo(...Kit.field(h,46,26));/* (no lot in the ground the scene clears, 44 tiles east, 24 either side) */P.troops={...troops};delete P.army.march;
+  const h=Kit.goHome('Ashford');Kit.goTo(...Kit.field(h,52,32));/* (the fewest lots in the ground the scene clears, 44 tiles east, 24 either side) */P.troops={...troops};delete P.army.march;
   const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE);for(let y=ty-24;y<=ty+24;y++)for(let x=tx-24;x<=tx+44;x++)if(t.WM.has(x,y)){const i=y*t.MW+x;t.WM.kind[i]=t.T_OPEN;t.WM.edge[i]=0;t.WM.elev[i]=64}
   for(const [x,y] of water)t.WM.kind[(ty+y)*t.MW+tx+x]=t.T_WATER;
   const town=t.townBy('Ashford'),src=k=>town.lots.find(l=>l.st==='built'&&(l.type===k||l.k===k))||town.lots.find(l=>l.k==='house'),lots=lay.map(([dx,dy,k],i)=>({...src(k||'house'),x:tx+dx,y:ty+dy,id:'pathlot'+i,_ft:null}));

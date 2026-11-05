@@ -20,9 +20,10 @@ const lotDrop=(t,l)=>Layout.of(t).drop(l);
 // the tiles no building may take: the bandits' camps
 // a bandit camp's 2 x 2 tiles (its own, the one right of it and the two behind) and a tile round them; and every holding's centre
 // (centreBox), its own centre laid over it: a neighbour laid first keeps off it, its lots and its estates' tracks (a hamlet stands
-// just past a holding's reach, worldplace.js genHamlets: an estate's track ran through Brookford's yard)
+// just past a holding's reach, worldplace.js genHamlets: an estate's track ran through Brookford's yard), and the ground before its
+// gate, 3 tiles across and 2 out from the gate's own: its way out (Mossdell's was walled in by its own lots)
 function occReserve(){for(const c of CAMP_SPOTS)for(let j=-2;j<=1;j++)for(let i=-1;i<=2;i++)if(!OCC[(c.ty+j)*MW+c.tx+i])OCC[(c.ty+j)*MW+c.tx+i]=-2;
-  for(const t of TOWNS){const b=centreBox(t);for(let y=b.y;y<b.y+b.n;y++)for(let x=b.x;x<b.x+b.n;x++)if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-2}}
+  for(const t of TOWNS){const b=centreBox(t);for(let y=b.y;y<b.y+b.n+3;y++)for(let x=y<b.y+b.n?b.x:t.tx-1;x<(y<b.y+b.n?b.x+b.n:t.tx+2);x++)if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-2}}
 // bandits keep their distance from the estates: no estate's building or field within BANDIT_GAP tiles of a bandit camp or hideout
 // (estates avoid the camps and hideouts there are; hideouts are placed after the estates and avoid them, sites.js)
 const BANDIT_GAP=8;
@@ -46,6 +47,10 @@ function roadsToGates(){
     for(const [ex,ey] of ends){const prev=new Int32Array(MW*MH).fill(-1),s=ey*MW+ex,e=gy*MW+gx,q=[s];prev[s]=s;let h=0;
       while(h<q.length){const j=q[h++];if(j===e)break;const x=j%MW,y=(j/MW)|0;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,k=ny*MW+nx;if(nx<1||ny<1||nx>=MW-1||ny>=MH-1||prev[k]>=0||inBox(nx,ny)||!passable(tiles[k])||DEP_AT[k]>=0)continue;prev[k]=j;q.push(k)}}
       if(prev[e]>=0)for(let j=e;j!==s;j=prev[j])tiles[j]=T_ROAD}
+    // (an end left a spur in the ring round it, one road beside it at most, its way on taken up under the centre: opened again (but
+    // the gate and a crossing's own tiles): Linwell's, a bridge's track stopping at the water by it)
+    const X=new Set(WM.crossings.flatMap(c=>[c.i,c.j,...c.tiles])),deg=(x,y)=>{let n=0;for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++)if((i||j)&&tiles[(y+j)*MW+x+i]===T_ROAD)n++;return n};
+    for(let more=true;more;){more=false;for(const [ex,ey] of ends){const i=ey*MW+ex;if(tiles[i]===T_ROAD&&!X.has(i)&&!(ex===gx&&ey===gy)&&deg(ex,ey)<=1){tiles[i]=T_OPEN;more=true}}}
   });
 }
 function occRebuild(){roadsToGates();tracksUp(WM);ROAD_PAINT=null;OCC.fill(0);for(const k in LOT)delete LOT[k];for(const t of TOWNS)if(t.lots){t.lots=t.lots.filter(l=>l.k!=='wall');const c=t.lots.find(l=>l.k==='centre');if(!c||t.tx<c.x||t.tx>=c.x+c.n||t.ty<c.y||t.ty>=c.y+c.n||c.type!==typeFor(t,'centre',Math.random))t.lots=null}// (older layouts are laid out again)

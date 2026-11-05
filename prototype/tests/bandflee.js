@@ -17,7 +17,9 @@ Kit.suite(({ok,info})=>{
  // (an open spot r px from x, y with a clear line to it)
  const spot=(x,y,r)=>{for(let k=0;k<16;k++){const a=k*Math.PI/8,sx=x+r*Math.cos(a),sy=y+r*Math.sin(a);if(t.passable(t.terrAt(sx,sy))&&t.clearLine(sx,sy,x,y))return{x:sx,y:sy}}return{x:x+r,y}};
  const band=(n,x,y,kind='militia')=>{const b=t.asParty({kind:'bandits',troops:Array(n).fill(kind),x,y,cool:0,t:9,a:0,idle:true});t.bandits.length=0;t.bandits.push(b);return b};
- const all=t.camps(),c=all.find(s=>!s.cleared)||all[0],c2=all.find(s=>s!==c),keep=all.map(s=>[s,s.cleared,s.x,s.y,s.bands]);
+ // (the first camp on open ground, 5 tiles round: a camp in the woods slows the flight these measure, 2026-11-05)
+ const openAt=s=>{const tx=s.x/16|0,ty=s.y/16|0;for(let j=-5;j<=5;j++)for(let i=-5;i<=5;i++)if(t.tAt(tx+i,ty+j)!==t.T_OPEN&&t.tAt(tx+i,ty+j)!==t.T_ROAD)return false;return true};
+ const all=t.camps(),c=all.find(s=>!s.cleared&&openAt(s))||all.find(s=>!s.cleared)||all[0],c2=all.find(s=>s!==c),keep=all.map(s=>[s,s.cleared,s.x,s.y,s.bands]);
  try{
   for(const s of all){s.cleared=s!==c;s.bands=[]}strong();
   const night=()=>{G.clock=t.DAY*.6},day=()=>{G.clock=t.DAY*.3};

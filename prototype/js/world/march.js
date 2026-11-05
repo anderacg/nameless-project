@@ -128,9 +128,13 @@ const MARCH_AIM={x:0,y:0,key:null,f:0,m:0};
 // (TRAVEL_STYLES.steady; the owner, 2026-11-02: "just fix the reforming logic bug": a short click along the road turned your column's
 // head back down its own file, and it re-formed round its middle again and again) your column sent to a spot on its own file, behind
 // its head and before its tail (MarchColumn along): its head on by as far as the spot is from its middle, so its middle stands there,
-// none turning back (the spot ahead of its middle); behind its middle, it stands (its file is on the spot already)
+// none turning back (the spot ahead of its middle); behind its middle, it stands (its file is on the spot already). Only a spot by
+// its file (marchByFile): a goal far off behind its head, the road setting out away from it, is no such
+// spot (2026-11-05: an army leaving Mossdell for Willowmere stood still at once)
+// (a spot by a column's file: within 24 px of its trail's line, to its side (MarchColumn along: lat))
+const marchByFile=(c,x,y)=>{c.along(x,y);return Math.abs(c.lat)<=24};
 function marchAim(tx,ty){const A=MARCH_AIM,a=MARCH_MOVE.headArrive&&!G.chase&&!G.follow&&!G.pitch&&marchLive(P);A.x=tx;A.y=ty;if(!a)return A;
-  if(a.col&&TRAVEL_STYLES.steady){const c=a.colOf();if(c&&c.nv>1&&(tx-c.vx[0])*(c.vx[0]-c.vx[1])+(ty-c.vy[0])*(c.vy[0]-c.vy[1])<0){const s=c.along(tx,ty);
+  if(a.col&&TRAVEL_STYLES.steady){const c=a.colOf();if(c&&c.nv>1&&marchByFile(c,tx,ty)&&(tx-c.vx[0])*(c.vx[0]-c.vx[1])+(ty-c.vy[0])*(c.vy[0]-c.vy[1])<0){const s=c.along(tx,ty);
     if(s<c.len){if(s<=c.mid){A.x=P.x+tx-a.wx;A.y=P.y+ty-a.wy}else{A.x=P.x;A.y=P.y}}}return A}
   if(a.col||!a.rows)return A;
   const dx=tx-P.x,dy=ty-P.y,l=Math.hypot(dx,dy);if(l<1e-6)return A;const f=Math.atan2(dy,dx);

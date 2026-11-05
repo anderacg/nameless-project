@@ -113,9 +113,10 @@ Kit.suite(({ok,info})=>{
   const now=give({}),old=give({steady:false});info('a lord\'s column that cannot form: given up '+now.gave.toFixed(1)+' s after it began, a column tried again '+now.again.toFixed(1)+' s later; today given up '+(old.gave<0?'never':old.gave.toFixed(1)+' s'));
   ok(!now.col0&&now.gave>0&&now.again>=TS.retry-.2&&old.gave<0,'a column whose men cannot form gives up ('+now.gave.toFixed(1)+' s after it began), its formation for '+TS.retry+' s ('+now.again.toFixed(1)+' s) before it tries again; today it tries on')}
  // ---- yours by road: a short click along the road, a click behind, a foe near
- const {segs:S}=t.artRoadSegs();
- const stretch=len=>{for(let q=0;q<S.length;q+=5){const a=S[q],b=S[q+1],L=Math.hypot(S[q+2]-a,S[q+3]-b);if(L<4)continue;const hx=(S[q+2]-a)/L,hy=(S[q+3]-b)/L;
-   for(let s=0;s<=L;s+=8){const x=a+hx*s,y=b+hy*s;if(t.TOWNS.some(q=>Math.hypot(q.x-x,q.y-y)<200))continue;let good=true;for(let k=-len;k<=len&&good;k+=4){const X=x+hx*k,Y=y+hy*k;if((t.RoadBand.at(X,Y)&63)<63||!t.passable(t.terrAt(X,Y)))good=false}
+ const {segs:S,est:SE}=t.artRoadSegs();
+ // (a road between holdings, no lot within 6 tiles of it: an estate's track aside, and the buildings its men would keep their room off)
+ const stretch=len=>{for(let q=0;q<S.length;q+=5){if(SE[q/5])continue;const a=S[q],b=S[q+1],L=Math.hypot(S[q+2]-a,S[q+3]-b);if(L<4)continue;const hx=(S[q+2]-a)/L,hy=(S[q+3]-b)/L;
+   for(let s=0;s<=L;s+=8){const x=a+hx*s,y=b+hy*s;if(t.TOWNS.some(q=>Math.hypot(q.x-x,q.y-y)<200||(q.lots||[]).some(l=>Math.hypot((l.x+l.n/2)*TILE-x,(l.y+l.n/2)*TILE-y)<200+6*TILE)))continue;let good=true;for(let k=-len;k<=len&&good;k+=4){const X=x+hx*k,Y=y+hy*k;if((t.RoadBand.at(X,Y)&63)<63||!t.passable(t.terrAt(X,Y)))good=false}
     if(good)return{x,y,hx,hy}}}return null};
  const Q=stretch(200);
  if(!Q)info('no straight road found');else{
