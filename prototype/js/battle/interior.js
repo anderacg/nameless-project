@@ -205,7 +205,7 @@ class InteriorSetup extends BattleSetup{
     foes.sort((x,y)=>w(y)-w(x)).forEach((g,i)=>{const m=R[order[i%order.length]],same=Math.floor(i/order.length);put(g,m.x+(same?-m.rx*.35:m.rx*.1),m.y+(same?m.ry*.3*(same%2?1:-1):0),Math.PI)})}
 }
 // (inside, the foes wait in their chambers until they see you: Commander#typeHolds, PackMind.think)
-const insideHolds=team=>!!B&&!!B.inside&&team!==0;
+const insideHolds=team=>!!B&&(!!B.inside||!!B.holds)&&team!==0;// (B.holds: a siege's defenders at their posts, battle/siegeworks.js)
 // (a group roused, and roused it stays: one of its own hurt, or a foe it sees within INTERIOR.notice px of one of its own; then its
 // captain orders it as anywhere)
 function insideRoused(g){if(g.roused)return true;const m=grpUnits(g.id),N=INTERIOR.notice;

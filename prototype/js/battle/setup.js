@@ -282,7 +282,7 @@ class BattleSetup{
   present(){
     G.mode='battle';hidePanel();if(LOADING.sync)bbar.hidden=false;else B.hudWait=true;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();
     if(!B.world){for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));}
-    toast((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD&&!this.tarena&&!B.inside?' '+BFIELD.n+' field.':''));
+    toast((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD&&!this.tarena&&!B.inside&&!B.works?' '+BFIELD.n+' field.':''));
     if(B.btype)typeSay();
   }
   // (the world where it is fought: its BattleSite (worldmap.js), all the battle reads of the world; yours, none for a tournament; the
@@ -353,4 +353,4 @@ function typeSay(){const bt=B.btype;if(!bt)return;const mine=bt.kind==='bridge'?
   toast(txt,k==='caught'?'bad':k==='wait'?'good':'');battleEvent('btype',{text:t,team:k==='caught'?1:0})}
 // Compatibility entry point used by encounters, tournaments, sieges, tests and other callers: the start in steps (a failure shows
 // itself: its error view)
-function startBattle(opts){if(!opts.tournament&&G.enc)alignReinforcements(G.enc);new (!opts.tournament&&!opts.sandbox&&Interior.on(G.enc)?InteriorSetup:worldBattleEligible(opts)?WorldBattleSetup:BattleSetup)(opts).start().catch(()=>{})}// (inside a cave or a ruin's cellars: battle/interior.js)
+function startBattle(opts){if(!opts.tournament&&G.enc)alignReinforcements(G.enc);new (!opts.tournament&&!opts.sandbox&&Interior.on(G.enc)?InteriorSetup:!opts.tournament&&!opts.sandbox&&SiegeWorks.on(G.enc)?SiegeSetup:worldBattleEligible(opts)?WorldBattleSetup:BattleSetup)(opts).start().catch(()=>{})}// (inside a cave, a ruin's cellars or a hideout: battle/interior.js; against a holding's walls: battle/siegeworks.js)

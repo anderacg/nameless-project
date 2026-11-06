@@ -386,6 +386,7 @@ class BattleTerrain{
     if(spec.ambush){plan=FieldPlan.ambush(spec,W);plan.H=H;T=BattleTerrain.raster(W,plan,seed)}// (an ambush's own, over anything else: setup.js ambushLayout)
     else if(spec.explicit){plan=FieldPlan.explicit(spec.explicit,W,H);Object.assign(plan,{W,top,bot});T=BattleTerrain.raster(W,plan,seed)}
     else if(spec.interior&&spec.interior.plan){plan=spec.interior.plan(W,H,top,bot);T=BattleTerrain.raster(W,plan,seed)}// (a fight inside: its rock all round, battle/interior.js)
+    else if(spec.siege&&spec.siege.plan){plan=spec.siege.plan(W,H,top,bot);T=BattleTerrain.raster(W,plan,seed)}// (an assault on a holding's walls: battle/siegeworks.js)
     else{for(let k=0;k<TERRAIN.tries&&!T;k++){tries=k+1;const p=riv(FieldPlan.recipe(spec.recipe,seeded((seed+Math.imul(k,0x9E3779B1))>>>0),W,top,bot,spec.oasis,!!spec.river,X),k),t=BattleTerrain.raster(W,p,seed);if(t.fair(W,top,bot,p.rivers,p.hills).ok){plan=p;T=t}}
       // (a held bridge's river is never dropped: it is the battle; a dense field's woods go next to last)
       if(!T){plan=riv(FieldPlan.recipe(spec.recipe,seeded(seed),W,top,bot,spec.oasis,!!spec.river,X),0);
@@ -465,6 +466,8 @@ class BattleTerrain{
     if(plan.hills.some(h=>h.cliff))for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=r*C+c,L=lvl[i],h=L?plan.hills[own[i]]:null;if(!h||!h.cliff)continue;
       for(let q=0;q<4;q++){const c2=c+DC[q],r2=r+DR[q];if(c2<0||r2<0||c2>=C||r2>=R)continue;const j=r2*C+c2;if(lvl[j]>=L||inRamp(h,(c+.5+DC[q]*.5)*cs,(r+.5+DR[q]*.5)*cs))continue;
         wall=wall||new Uint8Array(N);wall[j]|=1<<((q+2)&3);if(!h.oneway)wall[i]|=1<<q}}
+    // (a siege's wall (battle/siegeworks.js): its walk raised, its faces cliffs but at the ladders and stairs, towers and the gate rock)
+    if(plan.siege){rockH=rockH||new Uint8Array(N);wall=plan.siege.lay(kind,lvl,C,R,wall||new Uint8Array(N),rockH)}
     const T=new BattleTerrain({cs,C,R,kind,lvl,up});if(plan.zone)T.zone=plan.zone;if(wall)T.wall=wall;if(rockH)T.rockH=rockH;if(steep)T.steep=steep;if(built)T.built=built;if(plan.dense||plan.ways)T.layDense(plan);return T}
   /* (World Phase 2b: what stands by the fight laid on the cells (FieldPlan#planBuilt's P.built): a Uint8Array (TBUILT's index), or
      null when nothing could stand. Only on flat ground (level 0) off water and rock; a building whole or not at all; woods and marsh

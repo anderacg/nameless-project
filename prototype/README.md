@@ -213,6 +213,8 @@ js/ui/march.js         the Army window's March formation tab: Field (drag your g
 js/battle/sides.js    BattleSides: per-army relationships, reinforcement budgets, participation rewards and continued NPC fights
 js/battle/interior.js fights inside (INTERIOR, InteriorLayout, InteriorArt, Interior, InteriorSetup): caves, ruins' cellars and hideouts
                       fought on a rock-walled ground of their own; who goes in (the page), the dark, the foes waiting in their chambers
+js/battle/siegeworks.js a siege's walls on the field (SIEGE_WALL, SiegeWorks, SiegeArt, SiegeSetup): the wall-walk, towers, the gate
+                      and the ram, the ladders, the defenders at their posts
 js/battle/            engage.js (going into a fight: power and stance, allies joining, the battle type, flight, auto-resolve, outcomes by kind: ON_WIN), parley.js (cornered parties; RecruitPick: you choose who of a band that yielded joins yours, as many as your groups hold; yieldEnd, yieldSpoils: a yield's spoils window), setup.js (BattleSetup, field
                       and unit construction), worldbattle.js (WorldBattleSetup, the fixed world area, actual-position march handoff, forming up (BattleMuster, BATTLE_MUSTER.max s at most), reachable escape paths, local fog clearing, arrivals and regrouping), resolution.js (BattleResolution, field results and campaign settlement),
                       battle.js (shared group defaults and frame orchestration), actors.js (each soldier's moment and his targeting: Actor, CharActor, HeroActor),
@@ -1082,6 +1084,8 @@ Disengaging units remain vulnerable and still do not strike. An uncontested exit
 **A hideout's camp:** its bandits in squads of `INTERIOR.squad` through the chambers; a stake palisade across the way in, a gap to pass (`palAt`, solid on the cells); tents, bedrolls and a fire a chamber, each fire's light showing whoever stands in it to both sides (`B.lights`, `battlefog.js fogGrid`); the chieftain's tent and the plunder in the deepest.
 
 **Switch:** `INTERIOR.on` (on in the game; `tests/harness.js` turns it off, so the older suites keep the field). Tests: `tests/interiors.js`.
+
+**Siege walls** (the owner, 2026-11-06: "real siege walls, now"; `battle/siegeworks.js`): the assault on a walled holding (`SiegeWorks.on`: kind `siege`, `wallOf` > 0) goes to `SiegeSetup`. Its wall (`SiegeWorks`, laid on the cells by `BattleTerrain.raster` `plan.siege`): a wall-walk `SIEGE_WALL.lv` levels up (palisade 1, stone and great 2), its outer face a cliff but at the ladders, its inner one but at the stairs; towers and the shut gate rock. The ram (built by `RAM_DAYS`): your foot at the gate take `SIEGE_WALL.ram` a second each (`SiegeWorks#step`, from `battleStep`); broken (`breach`), the gate's cells open, the ways and sight made again, every defender roused. The defenders' shooters on the wall-walk, foot behind the gate, the rest in the yard, holding till roused (`B.holds`, interior.js `insideRoused`); everyone on foot. Painted by `SiegeArt` over the climate's ground. Villages and raids keep the open field. `SIEGE_WALL.on` (off in the harness). Tests: `tests/siegewalls.js`.
 
 ## Developer console and battle laboratory
 

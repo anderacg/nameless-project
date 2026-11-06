@@ -131,6 +131,7 @@ function battleStep(rt,world){
     jostle(dt);
     keepOffObstacles(was);if(PHYSICS.on)physPost(was,dt);// (one who ran into a wall stops: physics.js)
     updateProjectiles(dt);
+    if(B.works)B.works.step(dt);// (a siege's gate under the ram: battle/siegeworks.js)
     sightStep();// (who sees whom, every SIGHT.every s: hidden in woods or behind a rise, out of sight in the fog, terrain.js; nothing with neither)
     moraleTick(dt);if(B.opts.sandbox&&BattleLab.active)BattleLab.sampleMorale();// (morale.js)
     checkBattleOver();
