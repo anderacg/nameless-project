@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Paper dolls</title>
+<style>body{margin:0;padding:16px;background:#101014;color:#e8e4d8;font:14px Arial,sans-serif}h2{font-size:15px;margin:18px 0 6px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.cell{text-align:center;font-size:11px;color:#a8a498}canvas{image-rendering:pixelated;display:block}</style></head>
+<body>
+<h1 style="font-size:18px">Paper dolls (engine/doll.js): a base body, then parts by slot</h1>
+<p>URL options: <code>?z=6</code> zoom, <code>&amp;team=red</code> the side's colour.</p>
+<div id="out"></div>
+<script src="pixel.js"></script>
+<script src="doll.js"></script>
+<script>
+// the preview: every race in every uniform; the base bodies; the parts one by one; the poses
+const Q=new URLSearchParams(location.search),Z=+Q.get('z')||6,TEAM=Q.get('team')||'blue',O=document.getElementById('out'),DL=PX.DOLL;
+const big=(cv,lab)=>{const c=document.createElement('canvas');c.width=cv.width*Z;c.height=cv.height*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(cv,0,0,c.width,c.height);
+  const d=document.createElement('div');d.className='cell';d.append(c,lab||'');return d};
+const row=(title,items)=>{const h=document.createElement('h2');h.textContent=title;const r=document.createElement('div');r.className='row';items.forEach(i=>r.append(i));O.append(h,r)};
+row('Base bodies',Object.keys(DL.RACES).map(r=>big(PX.doll({race:r,style:'bald',beard:false,weapon:null}),r)));
+for(const race of Object.keys(DL.RACES))row('Uniforms: '+race,Object.keys(DL.UNIFORMS).map((u,i)=>big(PX.doll({race,uniform:u,team:TEAM,hair:['brown','blond','black','ginger'][i%4],style:i%3?'short':'long',seed:i}),u)));
+row('Hair',[['short','brown'],['long','blond'],['tail','black'],['bald','brown'],['short','ginger'],['long','grey']].map(([s,h])=>big(PX.doll({style:s,hair:h,uniform:'peasant',weapon:null}),s+' '+h)));
+row('On the head',['hood','cap','kettle','great','coif'].map(p=>big(PX.doll({uniform:[['hose','grey'],['boots','leather'],['shirt','linen'],[p,p==='hood'?'green':'steel']],weapon:null}),p)));
+row('Walking (four frames)',[0,1,2,3].map(f=>big(PX.doll({uniform:'spearman',team:TEAM,pose:'walk',frame:f}),'frame '+f)));
+</script>
+</body></html>

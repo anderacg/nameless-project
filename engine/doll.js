@@ -1,0 +1,163 @@
+'use strict';
+/* ---------- PX engine: paper-doll figures (the owner, 2026-11-06: "a base body skeleton, then gear or each component added to the
+   body by parts: hairstyle, equipment, clothes, different uniforms"). A figure is a base body (its skeleton: which part of the body
+   each pixel is, and how lit) and the parts laid over it in their slots' order, each colouring the body's regions it covers in its
+   material's tones by the body's own shading, or adding pixels of its own round an anchor (hair, a hood, a cloak's sides); its
+   weapon and shield from the hands. No outline: the edge is each part's darkest tone (the style the owner chose: a small head, the
+   arms hanging and flaring to the hands at the hips, an A stance, muted cloth, dark straps, a shadow underfoot). Plain script;
+   everything on window.PX ---------- */
+(function(PX){
+  /* the skeleton, 9 wide, 15 rows over a shadow row; each row its regions and its shading (0 lit ... 3 the edge):
+     s scalp, f face, n neck and shoulders, c chest, b belly, u upper arm, l forearm, h hand, p hips, t thigh, k shin, o foot.
+     Its left half is his right (the picture's left: the weapon hand), its right his left (the shield hand) */
+  const SKEL=[
+    ['...sss...','...012...'],
+    ['...ffs...','...002...'],
+    ['...ffs...','...102...'],
+    ['..nnnnn..','..30103..'],
+    ['.ucccccu.','.3000013.'],
+    ['.ucccccu.','.1000023.'],
+    ['.ubbbbbul','.03000323'],
+    ['llbbbbbll','320000332'],
+    ['hlppppplh','301010132'],
+    ['hhttttthh','323000332'],
+    ['.httttt.h','.030300.2'],
+    ['..ttttt..','..30300..'],
+    ['..kk.kkk.','..30.303.'],
+    ['..kk..kk.','..31..33.'],
+    ['...o...o.','...3...3.']];
+  // the cell: the skeleton at (OX, OY) in a W x H picture (room for a weapon either side and a hood or a helm's crest above)
+  const D={W:17,H:19,OX:4,OY:2};
+  // the races: their skin's tones, and how the skeleton changes (drop: rows taken out, dup: rows doubled, wide: the torso a pixel
+  // wider each side; hair and beard by default)
+  const RACES={human:{skin:'skin'},elf:{skin:'elf',dup:[12],ears:true},dwarf:{skin:'dwarf',drop:[5,12],beard:true},orc:{skin:'orc',wide:true,tusk:true}};
+  /* the materials, each four tones: lit, mid, shade, edge (muted, as the owner's reference) */
+  const MAT={
+    skin:['#f9b488','#e28852','#c67749','#a5623e'],elf:['#f8d8c8','#e8b8a4','#c8968a','#9a7068'],dwarf:['#f4b090','#d88a68','#b86a50','#8a4a38'],
+    orc:['#a8c070','#86a050','#647a3a','#465a28'],
+    linen:['#e0e0c7','#b5b5a1','#8c8c7c','#6b6b5f'],buff:['#c8b070','#a08a52','#7a6a3a','#56482a'],leather:['#a06a3a','#7a4b22','#5a3416','#3a220e'],
+    wool:['#9a8a6a','#76684c','#564a34','#3a3222'],grey:['#9a9a8c','#78786c','#58584e','#3c3c34'],
+    mail:['#b8bcb4','#8e928a','#6a6e66','#4a4e48'],steel:['#d8dce0','#a8b0b8','#7a8490','#525a66'],iron:['#8a8e96','#6a6e76','#4e525a','#34383e'],
+    blue:['#6a8cc0','#4a6c9e','#34507a','#24385a'],red:['#c8564a','#a23c34','#7a2a24','#521a16'],green:['#7a944c','#5a7236','#405426','#2a3818'],
+    white:['#e8e8dc','#c8c8b8','#a0a090','#787868'],black:['#5a5a62','#404048','#2c2c34','#1c1c22'],purple:['#8a6a9a','#6a4a7a','#4e345c','#34223e'],
+    gold:['#f0c860','#c89a30','#9a7020','#6a4a14'],wood:['#a07040','#7a5028','#5a3818','#3a240e'],
+    // hair
+    brown:['#8a5a30','#6a4020','#4a2a14','#341c0c'],blond:['#ffea73','#fac110','#c89010','#8a6008'],black_h:['#4a4a52','#34343a','#24242a','#18181c'],
+    ginger:['#e8803a','#c05a20','#8a3a14','#5a240c'],greyh:['#e0e0d8','#b8b8b0','#909088','#686860']};
+  const HAIR_MAT={brown:'brown',blond:'blond',black:'black_h',ginger:'ginger',grey:'greyh',white:'greyh'};
+  // the shadow underfoot: its navy, and darker under each foot
+  const SHADOW=['#000037','#1f2303'];
+  /* the parts, by slot, in the order they are laid on (a later slot over an earlier):
+     cover: the body's regions it colours (rows: only rows from..to of the skeleton, by the skeleton's own row numbers); shape: its
+     own pixels, rows of [region-free letters] round an anchor: 'head' (the scalp's top left) or 'body' (the skeleton's top left),
+     each letter a shade (0-3) or '.'; dark: its tones a step darker; mottle: a share of its pixels a tone lighter or darker (cloth
+     worn and patched, as the reference); line: a dark line of its own (a strap from shoulder to hip, a belt across the hips) */
+  const SLOTS=['legs','boots','shirt','tunic','tabard','belt','strap','cloak','hair','beard','head'];
+  const PARTS={
+    // legs: hose or trousers, breeches to the knee
+    // (a loincloth when nothing else covers his hips)
+    loin:{slot:'legs',cover:'p',dark:1},
+    hose:{slot:'legs',cover:'tk',mottle:.2},breeches:{slot:'legs',cover:'t',mottle:.2},
+    // feet
+    boots:{slot:'boots',cover:'o',rows:[13,14],extra:'k',dark:1},shoes:{slot:'boots',cover:'o',dark:1},
+    // the body: a shirt (sleeves to the wrist or the elbow), a tunic to mid-thigh, a robe to the feet, a coat of mail
+    shirt:{slot:'shirt',cover:'ncbul',mottle:.15},vest:{slot:'shirt',cover:'cb',mottle:.15},
+    tunic:{slot:'tunic',cover:'ncbulpt',rows:[3,11],mottle:.25},robe:{slot:'tunic',cover:'ncbulptk',rows:[3,14],mottle:.25},
+    mail:{slot:'tunic',cover:'ncbulpt',rows:[3,10],mottle:.4},
+    // a uniform's front: a tabard in the side's colour over the chest and down the thighs, its sleeves left to what is under it
+    tabard:{slot:'tabard',cover:'cbpt',rows:[4,11],cols:[2,6],mottle:.15},
+    // a belt across the hips (its buckle in the middle), a strap from the right shoulder to the left hip
+    belt:{slot:'belt',line:'belt'},strap:{slot:'strap',line:'strap'},sash:{slot:'belt',line:'sash'},
+    // a cloak: over the shoulders and arms, falling behind to the knees either side
+    cloak:{slot:'cloak',cover:'nul',rows:[3,8],shape:{at:'body',rows:['.........','.........','.........','.........','3.......3','2.......2','2.......2','3.......3','.........','3.......3','.........','.........']},mottle:.2},
+    // hair: short (the scalp), long (to the shoulders), a tail, none; a beard over the jaw
+    short:{slot:'hair',cover:'s'},long:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','.2..2','.3..3']}},
+    tail:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','....3','....3']}},bald:{slot:'hair'},
+    beard:{slot:'beard',shape:{at:'head',rows:['.....','.....','.12..','.23..']}},
+    // the head: a hood (over the scalp, round the face, onto the shoulders), a cap, a kettle helm (its brim), a great helm (face and
+    // all), a coif of mail
+    hood:{slot:'head',cover:'s',shape:{at:'head',rows:['.12..','0...2','1...3','2...3']},mottle:.15},
+    cap:{slot:'head',cover:'s'},kettle:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0112.']}},
+    great:{slot:'head',cover:'sf',shape:{at:'head',rows:['.012.']},slit:true},coif:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0...2','1...3']}}};
+  // the uniforms: their parts and each one's material ('team': the side's colour; 'hair': the figure's own), a weapon and a shield
+  const UNIFORMS={
+    peasant:{parts:[['breeches','wool'],['shoes','leather'],['shirt','linen'],['vest','wool'],['sash','leather']],weapon:'club'},
+    militia:{parts:[['hose','grey'],['boots','leather'],['shirt','linen'],['vest','leather'],['sash','red']],weapon:'club'},
+    spearman:{parts:[['hose','grey'],['boots','leather'],['mail','mail'],['tabard','team'],['belt','leather'],['kettle','steel']],weapon:'spear'},
+    swordsman:{parts:[['hose','grey'],['boots','leather'],['mail','mail'],['tabard','team'],['belt','leather'],['coif','mail']],weapon:'sword',shield:'team'},
+    archer:{parts:[['breeches','leather'],['boots','leather'],['shirt','buff'],['tunic','green'],['belt','leather'],['strap','leather'],['hood','green']],weapon:'bow'},
+    knight:{parts:[['hose','iron'],['boots','iron'],['mail','steel'],['tabard','team'],['belt','leather'],['cloak','team'],['great','steel']],weapon:'sword',shield:'team'},
+    monk:{parts:[['shoes','leather'],['robe','wool'],['belt','leather'],['hood','wool']],weapon:'staff'},
+    mage:{parts:[['shoes','leather'],['robe','purple'],['sash','gold'],['hood','purple']],weapon:'staff'}};
+  // the weapons, from the weapon hand (his right, the picture's left): a line of its own pixels (wood, its head), behind the body
+  // where it crosses him (the reference: a spear across the back, low left to high right); a shield on the other arm
+  const WEAPONS={
+    spear:{behind:true,pts:[[-3,4],[-2,3],[-1,2],[0,1],[1,0],[2,-1],[3,-2],[4,-3],[5,-4],[6,-5],[7,-6],[8,-7]],head:[[9,-8],[9,-9]],mat:'wood',hm:'steel'},
+    staff:{behind:false,pts:[[-1,4],[-1,3],[-1,2],[-1,1],[-1,0],[-1,-1],[-1,-2],[-1,-3],[-1,-4],[-1,-5],[-1,-6],[-1,-7]],head:[[0,-8],[-1,-8],[-2,-8],[-2,-7]],mat:'wood',hm:'wood'},
+    sword:{behind:false,pts:[[0,1]],head:[[-1,2],[-1,3],[-1,4],[-1,5]],mat:'leather',hm:'steel'},
+    club:{behind:false,pts:[[0,1],[-1,2]],head:[[-1,3],[-2,3],[-2,4]],mat:'wood',hm:'wood'},
+    bow:{behind:false,off:true,pts:[[1,-4],[2,-3],[2,-2],[2,-1],[2,0],[2,1],[2,2],[2,3],[1,4]],head:[[1,-3],[1,-2],[1,-1],[1,0],[1,1],[1,2],[1,3]],mat:'wood',hm:'linen'}};
+  /* the poses: idle, and a walk of four frames (the reference's figures face us: the legs step by lifting a foot, the arms swing a
+     pixel), each a list of moves [regions, side ('R' his right / 'L' his left / ''), dx, dy, rows from] */
+  const POSES={idle:[[]],walk:[[],[['ko','L',0,-1,12],['h','R',0,1,0]],[],[['ko','R',0,-1,12],['h','L',0,1,0]]],
+    // a blow: the weapon arm raised and forward
+    strike:[[['lh','R',-1,-2,6]]]};
+
+  const pick=(r,i)=>r[Math.max(0,Math.min(3,i))];
+  // the skeleton for a race, as cells {x, y, r (region), s (shade), side}
+  function skeleton(race){const R=RACES[race]||RACES.human,out=[],cells=[];
+    SKEL.forEach((r,i)=>{if(R.drop&&R.drop.includes(i))return;out.push([r,i]);if(R.dup&&R.dup.includes(i))out.push([r,i])});
+    // (wide: the middle column doubled from the shoulders to the thighs, his left half a pixel further out)
+    out.forEach(([[rg,sh],row],y)=>{const w=R.wide&&row>=3&&row<=11;for(let x=0;x<rg.length;x++){if(rg[x]==='.')continue;const c={x:w&&x>4?x+1:x,y,row,r:rg[x],s:+sh[x],side:x<4?'R':x>4?'L':''};cells.push(c);
+      if(w&&x===4)cells.push({...c,x:5,side:'L'})}});
+    return{cells,rows:out.length,oy:D.H-1-out.length}}
+  // its rows by the skeleton's own numbering (a dwarf's shorter body keeps the rows' meaning)
+  const inRows=(c,p)=>!p.rows||c.row<0||c.row>=p.rows[0]&&c.row<=p.rows[1];
+
+  /* a figure: spec {race, skin, hair (colour), style (hair style), beard, uniform (a name or a list of [part, material]), team (a
+     material), weapon, shield, pose, frame, seed}. Returns its picture (D.W x D.H) with anchors {hand, off, head, feet} */
+  PX.doll=spec=>{const race=spec.race||'human',R=RACES[race]||RACES.human,seed=spec.seed|0,U=typeof spec.uniform==='string'?UNIFORMS[spec.uniform]:spec.uniform?{parts:spec.uniform}:null;
+    const S=skeleton(race),ox=D.OX,oy=S.oy,G=new Array(D.W*D.H).fill(null),put=(x,y,c)=>{if(x>=0&&y>=0&&x<D.W&&y<D.H&&c)G[y*D.W+x]=c};
+    // (the pose: each cell moved)
+    const moves=((POSES[spec.pose]||POSES.idle)[(spec.frame|0)%((POSES[spec.pose]||POSES.idle).length)])||[];
+    const at=c=>{let x=c.x,y=c.y;for(const [rg,sd,dx,dy,from] of moves)if(rg.includes(c.r)&&(!sd||c.side===sd)&&c.row>=from){x+=dx;y+=dy}return[ox+x,oy+y]};
+    const mat=m=>MAT[m==='team'?spec.team||'blue':m==='hair'?HAIR_MAT[spec.hair]||'brown':m]||MAT.grey;
+    const noise=(x,y,k)=>PX.hash(x,y,seed*31+k);
+    // the parts in their slots' order: the uniform's, then the figure's own hair and beard (under a hood or a helm)
+    const parts=[];for(const [n,m] of (U?U.parts:[]))if(PARTS[n])parts.push({...PARTS[n],name:n,m});
+    if(!parts.some(p=>p.cover&&p.cover.includes('p')||p.slot==='legs'))parts.push({...PARTS.loin,name:'loin',m:'linen'});
+    const style=spec.style||'short';if(PARTS[style])parts.push({...PARTS[style],name:style,m:'hair'});if(spec.beard??R.beard)parts.push({...PARTS.beard,name:'beard',m:'hair'});
+    parts.sort((a,b)=>SLOTS.indexOf(a.slot)-SLOTS.indexOf(b.slot));
+    const headCover=parts.some(p=>p.slot==='head'&&p.cover&&p.cover.includes('s')),slit=parts.some(p=>p.slit);
+    // the weapon behind him first, then the body: skin, then each part over the regions it covers
+    const hands=S.cells.filter(c=>c.r==='h'),hR=hands.filter(c=>c.side==='R').sort((a,b)=>b.y-a.y)[0],hL=hands.filter(c=>c.side==='L').sort((a,b)=>b.y-a.y)[0];
+    const hand=hR?at(hR):[ox,oy+9],off=hL?at(hL):[ox+8,oy+9],W=WEAPONS[spec.weapon===undefined?U&&U.weapon:spec.weapon];
+    const weapon=front=>{if(!W||W.behind===front)return;const [hx,hy]=W.off?off:hand;for(const [dx,dy] of W.pts)put(hx+dx,hy+dy,pick(MAT[W.mat],1));for(const [dx,dy] of W.head||[])put(hx+dx,hy+dy,pick(MAT[W.hm],0))};
+    weapon(false);
+    for(const c of S.cells){const [x,y]=at(c);let col=pick(mat(R.skin||'skin'),c.s);
+      for(const p of parts){if(!p.cover||!p.cover.includes(c.r)||!inRows(c,p)||p.cols&&(c.x<p.cols[0]||c.x>p.cols[1]))continue;if(p.slot==='hair'&&headCover)continue;
+        let s=c.s+(p.dark|0);if(p.mottle&&noise(x,y,p.slot.length)<p.mottle)s+=noise(x,y,7)<.5?1:-1;col=pick(mat(p.m),s)}
+      if(slit&&c.r==='f'&&c.row===1)col=pick(MAT.black,3);
+      put(x,y,col)}
+    // the parts' own pixels round their anchors: the head's (the scalp's top left) or the body's
+    const scalp=S.cells.filter(c=>c.r==='s'),hx=scalp.length?Math.min(...scalp.map(c=>at(c)[0])):ox+2,hy=scalp.length?Math.min(...scalp.map(c=>at(c)[1])):oy;
+    for(const p of parts){if(!p.shape||p.slot==='hair'&&headCover)continue;const [ax,ay]=p.shape.at==='head'?[hx-1,hy]:[ox,oy];
+      p.shape.rows.forEach((row,j)=>[...row].forEach((ch,i)=>{if(ch==='.')return;const x=ax+i,y=ay+j;let s=+ch;if(p.mottle&&noise(x,y,9)<p.mottle)s+=1;put(x,y,pick(mat(p.m),s))}))}
+    // the lines: a belt across the hips (a buckle), a sash, a strap from his right shoulder to his left hip
+    for(const p of parts){if(!p.line)continue;const M=mat(p.m),hips=S.cells.filter(c=>c.r==='p'),py=hips.length?at(hips[0])[1]:oy+8;
+      if(p.line==='belt'||p.line==='sash'){for(const c of hips){const [x,y]=at(c);put(x,y,pick(M,c.x===4&&p.line==='belt'?0:2+(c.x===2||c.x===6?1:0)))}if(p.line==='belt')put(ox+4,py,pick(MAT.gold,1))}
+      else{const top=[ox+2,oy+3+(S.rows<15?-1:0)];for(let k=0;k<=5;k++)put(top[0]+Math.round(k*.8),top[1]+k,pick(M,k&1?3:2))}}
+    // his race's own: an elf's ears, an orc's tusks (over a bare head only)
+    if(R.ears&&!headCover){put(hx-1,hy+1,pick(mat(R.skin),2))}if(R.tusk)put(hx+1,hy+2,'#f0ecd8');
+    // the shield on his left arm, the weapon in front
+    // (a shield: its face in its colour inside an iron rim, a boss in the middle; four wide, five tall, its point down)
+    if(spec.shield??(U&&U.shield)){const M=mat(spec.shield||U.shield),E=MAT.iron;const [sx,sy]=off;
+      for(let j=-4;j<=1;j++)for(let i=-1;i<=2;i++){if(j===1&&(i<0||i>1))continue;const rim=i===-1||i===2||j===-4||j===1;put(sx+i,sy+j,rim?pick(E,i===2||j===1?3:1):pick(M,i===0?0:1))}put(sx+1,sy-2,pick(MAT.steel,0))}
+    weapon(true);
+    // the shadow underfoot
+    const feet=S.cells.filter(c=>c.r==='o').map(at),fy=feet.length?Math.max(...feet.map(f=>f[1]))+1:D.H-1;
+    for(let x=ox+1;x<=ox+8;x++)if(!G[fy*D.W+x])put(x,fy,feet.some(f=>f[0]===x)?SHADOW[1]:SHADOW[0]);
+    const cv=PX.canvas(D.W,D.H,g=>{const im=g.createImageData(D.W,D.H),o=im.data;G.forEach((c,i)=>{if(!c)return;o[i*4]=parseInt(c.slice(1,3),16);o[i*4+1]=parseInt(c.slice(3,5),16);o[i*4+2]=parseInt(c.slice(5,7),16);o[i*4+3]=255});g.putImageData(im,0,0)});
+    cv.anchors={hand,off,head:[hx,hy],feet:[ox+4,fy]};return cv};
+  PX.DOLL={D,SKEL,RACES,MAT,SLOTS,PARTS,UNIFORMS,WEAPONS,POSES,HAIR_MAT};
+})(window.PX=window.PX||{});
