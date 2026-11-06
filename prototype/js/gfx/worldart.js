@@ -54,6 +54,8 @@ function worldArtPlan(){
   const tramples=[];
   for(const t of TOWNS){mark(t.tx*TILE,t.ty*TILE,TILE,TILE);mark(t.x-12,t.y-14,24,24);// its gate, where you arrive
     for(const l of t.lots||[]){mark(l.x*TILE-2,l.y*TILE-2,l.n*TILE+4,l.n*TILE+4);for(const [x,y] of l.plots||[])mark(x*TILE,y*TILE,TILE,TILE)}}
+  // (nor along a holding's walls or fence: their line and a tile either side, so they stand clear of the woods, world/townwalls.js)
+  for(const t of TOWNS)TownWall.clearOf(t,mark);
   for(const c of CAMP_SPOTS){tramples.push([c.x+8,c.y+4,14,7,.5]);mark(c.x-24,c.y-40,64,64)}
   for(const t of TOWNS){const sp=bldSpots(t);for(const k in sp){const p=sp[k];if(k==='lumber'||k==='mine')tramples.push([p.x,p.y+3,9,5,.4])}}
   const P={clear,dep,tramples};

@@ -203,6 +203,7 @@ function holdShut(now){const H=HOLD_SHUT;if(!now&&H.n===WORLD_LOD.n)return;H.n=W
     if(k)for(const i of k.tiles){SHUT[i]&=~4;G.chunk.delete(wayChunkOf(G,i))}
     const tiles=r?(cl?r.shut.concat(r.gates):r.shut):[];if(r){SHUT=SHUT||new Uint8Array(MW*MH);for(const i of tiles){SHUT[i]|=4;G.chunk.delete(wayChunkOf(G,i))}TownWall.evict(tiles)}
     if(k)for(const [o,q] of H.ring)if(o!==t&&q)for(const i of q.tiles)SHUT[i]|=4;
+    if((k&&k.r)!==r)TownWall.repaint(r||k.r);// (its line clear of the woods: world/townwalls.js)
     H.ring.set(t,r?{r,closed:cl,tiles}:null);moved=true}
   if(moved){H.held=null;PAIRS.clear();WAYV++}}
 // (every holding's walls read while the game loads, each centre's picture and footing made in turn (cached on its lot: structures.js

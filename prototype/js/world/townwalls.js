@@ -13,8 +13,8 @@
    out from the outermost lot or field; gate: the tiles opened either side of a road's; merge: gates this near
    (tiles) one; alarm: an army at war with it marching on it this near (tiles), or you its foe outside its walls, shuts its gates;
    camp: its besiegers' camp this far out of a gate (tiles); towers: a tower every so many tiles of a stone wall's stretch; h: the wall's height by the walls (px:
-   none, palisade, stone, great); top: its walk's depth (px); tower: a tower's rise over the wall (px) */
-const TOWN_WALL={on:true,fh:6,reach:14,pad:1,gate:1,merge:3,towers:7,alarm:16,camp:3,h:[0,10,13,16],top:6,tower:7};
+   none, palisade, stone, great); top: its walk's depth (px); tower: a tower's rise over the wall (px); clear: the tiles either side of its line kept clear of the woods; fh: a fence's height (px) */
+const TOWN_WALL={on:true,fh:6,clear:1,reach:14,pad:1,gate:1,merge:3,towers:7,alarm:16,camp:3,h:[0,10,13,16],top:6,tower:7};
 /* (the owner, 2026-11-06: "the wall may be based on the holdings as well, if very poor they may start from none; think it like an
    upgrade") a fence: a wattle fence round a holding with no walls (fenceOf: t.fence once set), the first step before a palisade,
    drawn and blocking as a wall is but no wall in a fight (no siege, no defender's level). At the start (fenceStart), by what it
@@ -74,6 +74,11 @@ class TownWall{
     const [x,y]=best,c=TOWN_WALL.camp,dx=x===r.x0?-c:x===r.x1?c:0,dy=y===r.y0?-c:y===r.y1?c:0;return{x:(x+.5+dx)*TILE,y:(y+.5+dy)*TILE}}
   // (its colour on the full map and the minimap: stone, a palisade's timber, a fence's wattle)
   static mapCol(t){const L=wallOf(t);return L>=2?'#e4ddd0':L===1?'#b06a3c':'#c8a06a'}
+  // (the ground its walls keep clear of trees and growth: their line and TOWN_WALL.clear tiles either side, its gates too; mark(x, y, w, h) in px)
+  static clearOf(t,mark){const r=TownWall.of(t);if(!r)return;const c=TOWN_WALL.clear;for(const i of r.shut.concat(r.gates)){const x=i%MW,y=(i-x)/MW;mark((x-c)*TILE,(y-c)*TILE,(2*c+1)*TILE,(2*c+1)*TILE)}}
+  // (a ring raised or changed (router.js holdShut): its band kept clear on the painter's plan, and its chunks painted again)
+  static repaint(r){if(!r||typeof WorldArt==='undefined')return;const A=WorldArt,c=TOWN_WALL.clear;if(A.plan)for(const i of r.shut.concat(r.gates)){const x=i%MW,y=(i-x)/MW;A.plan.clear.fill((x-c)*TILE,(y-c)*TILE,(2*c+1)*TILE,(2*c+1)*TILE)}
+    const a=PX.WN_APRON+TILE*(c+1);A.forget(r.x0*TILE-a,r.y0*TILE-a,(r.x1+1)*TILE+a,(r.y1+1)*TILE+a)}
   // (is tile (tx, ty) one of a ring's walls: SHUT's bit 4, router.js)
   static at(tx,ty){return !!SHUT&&tx>=0&&ty>=0&&tx<MW&&ty<MH&&(SHUT[ty*MW+tx]&4)>0}
   // its walls among the buildings: each piece by its feet, as you have seen its ground
