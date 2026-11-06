@@ -21,7 +21,7 @@ let ROUTES=new WeakMap();
 onWorld(()=>{ROUTES=new WeakMap()});
 // is the straight line from (x0,y0) to (x1,y1) open ground all the way (a holding's walls shut: holdShut; a crossing shut, Router.close:
 // as the tile searches keep off both, a code review, 2026-11-03, found a closed bridge crossed by the straight line)
-function clearLine(x0,y0,x1,y1){holdShut();const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/4);for(let i=1;i<=n;i++){const k=i/n,x=x0+(x1-x0)*k,y=y0+(y1-y0)*k;if(!passable(terrAt(x,y))||SHUT&&SHUT[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]&3)return false}return true}
+function clearLine(x0,y0,x1,y1){holdShut();const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/4);for(let i=1;i<=n;i++){const k=i/n,x=x0+(x1-x0)*k,y=y0+(y1-y0)*k;if(!passable(terrAt(x,y))||SHUT&&SHUT[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]&7)return false}return true}
 // the tiles to pass from one point to another by the cheapest way, searched within a box round both (pad tiles); null if none;
 // rm: off the roads x rm (a road keeper's)
 function findPath(x0,y0,x1,y1,pad,rm){
@@ -34,7 +34,7 @@ function findPath(x0,y0,x1,y1,pad,rm){
   const h=(x,y)=>Math.hypot(x-gx,y-gy)/1.3,s0=L(sx,sy),goal=L(gx,gy);g[s0]=0;push(s0,h(sx,sy));
   while(heap.length){const [,i]=pop();if(i===goal)break;const x=bx+i%bw,y=by+((i/bw)|0);
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<bx||ny<by||nx>=bx+bw||ny>=by+bh)continue;
-      const t=tiles[ny*MW+nx];if(!passable(t)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])||SHUT&&(SHUT[y*MW+nx]&2||SHUT[ny*MW+x]&2)))continue;// (no corner of a holding's walls cut: holdShut)
+      const t=tiles[ny*MW+nx];if(!passable(t)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])||SHUT&&(SHUT[y*MW+nx]&6||SHUT[ny*MW+x]&6)))continue;// (no corner of a holding's walls cut, its centre's or its ring's: holdShut)
       const sp=t===T_ROAD?1.3:Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]]),j=L(nx,ny),nd=g[i]+(dx&&dy?1.414:1)/sp*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1);
       if(nd<g[j]){g[j]=nd;from[j]=i;push(j,nd+h(nx,ny))}}}
   if(!isFinite(g[goal]))return null;
@@ -177,9 +177,9 @@ const wayNodes=()=>WAYN||(WAYN=new Map(Array.from(WM.graph.tile,(t,v)=>[t,v])));
 const wayChunkOf=(G,i)=>((i/MW|0)/G.cs|0)*G.cols+((i%MW)/G.cs|0);
 const wayOpen=i=>passable(tiles[i])&&!(SHUT&&SHUT[i]);
 // (open but for a holding's walls: the map's march grids, which shut the walls by their footings: march.js MarchGround)
-const wayLand=i=>passable(tiles[i])&&!(SHUT&&SHUT[i]&1);
+const wayLand=i=>passable(tiles[i])&&!(SHUT&&SHUT[i]&5);// (a town's ring of walls shut to them too: world/townwalls.js)
 // (a point not on a crossing shut: Router.close; world.js heroStep's own straight step)
-const crossingOpen=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return !(SHUT&&tx>=0&&ty>=0&&tx<MW&&ty<MH&&SHUT[ty*MW+tx]&1)};
+const crossingOpen=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return !(SHUT&&tx>=0&&ty>=0&&tx<MW&&ty<MH&&SHUT[ty*MW+tx]&5)};// (nor a town's ring of walls: world/townwalls.js)
 /* a holding's walls (PATHS.holding, battle/route.js; the owner, 2026-11-02: "the holding walls is not correct because the unit can
    walk through it"): the tiles of each holding's centre whose middle its footing covers (march.js lotFooting, holdFooting: its walls'
    ground, its gate open) shut to every way over the land (SHUT's bit 2: wayOpen, findPath, wayLine, clearLine, the chunks' tables),
@@ -188,15 +188,21 @@ const crossingOpen=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);ret
    centre laid out again, moved, ruined or rebuilt, its walls raised (its picture: structures.js lotSprite); a change shuts or
    opens its tiles, makes their chunks' tables and the pair cache afresh and bumps WAYV (every walker's way found again). Off: none
    shut, as before */
-const HOLD_SHUT={n:-1,at:new Map(),held:null};
-onWorld(()=>{HOLD_SHUT.n=-1;HOLD_SHUT.at.clear();HOLD_SHUT.held=null});
+const HOLD_SHUT={n:-1,at:new Map(),ring:new Map(),held:null};
+onWorld(()=>{HOLD_SHUT.n=-1;HOLD_SHUT.at.clear();HOLD_SHUT.ring.clear();HOLD_SHUT.held=null});
 function holdShut(now){const H=HOLD_SHUT;if(!now&&H.n===WORLD_LOD.n)return;H.n=WORLD_LOD.n;const G=WM.graph;if(!G||!TOWNS.length)return;let moved=false;
   for(const t of TOWNS){const c=PATHS.holding&&t.lots?t.lots.find(l=>l.k==='centre'&&l.st!=='ruined')||null:null,s=c?lotSprite(t,c):null,k=H.at.get(t);
     if(k?k.c===c&&k.s===s&&(!c||k.x===c.x&&k.y===c.y&&k.n===c.n):!c)continue;
-    if(k)for(const i of k.tiles){SHUT[i]&=1;G.chunk.delete(wayChunkOf(G,i))}
+    if(k)for(const i of k.tiles){SHUT[i]&=~2;G.chunk.delete(wayChunkOf(G,i))}
     const tiles=[];if(c){const F=lotFooting(t,c);SHUT=SHUT||new Uint8Array(MW*MH);
       for(let y=c.y;y<c.y+c.n;y++)for(let x=c.x;x<c.x+c.n;x++){const px=(x+.5)*TILE,py=(y+.5)*TILE;if(x>=0&&y>=0&&x<MW&&y<MH&&!(x===t.tx&&y===t.ty)&&F.some(r=>px>=r.x&&px<r.x+r.w&&py>=r.y&&py<r.y+r.h)){const i=y*MW+x;tiles.push(i);SHUT[i]|=2;G.chunk.delete(wayChunkOf(G,i))}}}
     H.at.set(t,{c,s,x:c&&c.x,y:c&&c.y,n:c&&c.n,tiles});moved=true}
+  // (its ring of walls (world/townwalls.js: bit 4), shut or opened as it changes, every other ring's kept)
+  for(const t of TOWNS){const r=TownWall.of(t),k=H.ring.get(t)||null;if(k===r)continue;
+    if(k)for(const i of k.shut){SHUT[i]&=~4;G.chunk.delete(wayChunkOf(G,i))}
+    if(r){SHUT=SHUT||new Uint8Array(MW*MH);for(const i of r.shut){SHUT[i]|=4;G.chunk.delete(wayChunkOf(G,i))}TownWall.evict(r.shut)}
+    if(k)for(const [o,q] of H.ring)if(o!==t&&q)for(const i of q.shut)SHUT[i]|=4;
+    H.ring.set(t,r);moved=true}
   if(moved){H.held=null;PAIRS.clear();WAYV++}}
 // (every holding's walls read while the game loads, each centre's picture and footing made in turn (cached on its lot: structures.js
 // lotSprite, march.js lotFooting), then holdShut at once: its last step (session.js begin, save.js loadGame), so the first frame on
@@ -206,7 +212,7 @@ function* holdShutWarm(){const cs=TOWNS.map(t=>[t,PATHS.holding&&t.lots?t.lots.f
 // (does graph edge e, a road's, run over a holding's walls: a tile of it shut so, but its two ends (a road ends at its holding's
 // node); kept by edge till they change)
 function wayHeld(G,e){const H=HOLD_SHUT;if(!SHUT||G.leg[e*3]<0)return false;if(!H.held||H.held.g!==G){H.held=new Int8Array(G.to.length).fill(-1);H.held.g=G}let v=H.held[e];
-  if(v<0){const p=WM.roads[G.leg[e*3]].path,a=G.leg[e*3+1],b=G.leg[e*3+2];v=0;for(let q=Math.min(a,b)+1;q<Math.max(a,b);q++)if(SHUT[p[q]]&2){v=1;break}H.held[e]=v}return v===1}
+  if(v<0){const p=WM.roads[G.leg[e*3]].path,a=G.leg[e*3+1],b=G.leg[e*3+2];v=0;for(let q=Math.min(a,b)+1;q<Math.max(a,b);q++)if(SHUT[p[q]]&6){v=1;break}H.held[e]=v}return v===1}// (nor over a town's ring of walls: world/townwalls.js)
 // a binary heap of (key, value) pairs on typed arrays, the least key first (the router's searches)
 class WayHeap{
   constructor(){this.k=new Float64Array(1024);this.v=new Int32Array(1024);this.n=0}

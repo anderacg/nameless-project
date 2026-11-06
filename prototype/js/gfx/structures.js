@@ -70,6 +70,7 @@ function holdingEnts(t,ents,cam,V){
         if(ESTATES[l.k]){const m=lotMid(l);if(Math.hypot(m.x-P.x,m.y-P.y)<60)txt(ESTATES[l.k].n,Math.round(m.x-cam.x),Y+8,'#c8c2ae','center')}}});
       if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)});
       if(l.k==='pasture'&&l.st==='built'&&live)penEnts(t,ents,cam)}// (its herd, inside its fence: critters.js)
+  TownWall.ents(t,ents,cam);// (its ring of walls: world/townwalls.js)
 }
 /* a building site: what is built so far (from the ground up, as the work goes on) behind scaffolding; for an upgrade (full) the
    building stands whole with scaffolding against its side. Its crew, of the holding's people (race), by the site's size
