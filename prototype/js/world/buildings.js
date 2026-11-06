@@ -128,7 +128,7 @@ class Buildings{
   build(k,at){
     const t=this.t;
     if(t.work)return;
-    if(k==='fence'){if(fenceOf(t)||wallOf(t)>0||P.gold<FENCE.gold||t.econ.lacking(FENCE.mats).length)return;P.gold-=FENCE.gold;t.econ.take(FENCE.mats);t.work={k,lv:1,done:G.day+Math.max(1,Math.ceil(FENCE.days/this.speed())),start:G.day};log('Work starts on a fence round '+t.name+'.');return}
+    if(k==='fence'){if(!TOWN_WALL.on||fenceOf(t)||wallOf(t)>0||P.gold<FENCE.gold||t.econ.lacking(FENCE.mats).length)return;P.gold-=FENCE.gold;t.econ.take(FENCE.mats);t.work={k,lv:1,done:G.day+Math.max(1,Math.ceil(FENCE.days/this.speed())),start:G.day};log('Work starts on a fence round '+t.name+'.');return}
     if(k==='wall'){const n=wallOf(t)+1;if(n>t.T.wallMax||P.gold<WALL_COST[n]||t.econ.lacking(WALL_MAT[n]).length)return;P.gold-=WALL_COST[n];t.econ.take(WALL_MAT[n]);this.start(k,n);log('Masons start on '+WALL_N[n].toLowerCase()+' at '+t.name+'.');return}
     if(!ESTATES[k])return;at=at||null;const lv=bldLv(t,k);if(lv>=this.cap(k)||!lv&&!this.needsMet(k))return;
     const c=bldCost(k,lv+1),mats=ESTATE_MAT(k,lv+1);if(P.gold<c||t.econ.lacking(mats).length)return;

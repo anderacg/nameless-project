@@ -46,7 +46,10 @@ The assault on a walled holding (palisade, stone or great walls) is fought again
 | Rules | The wall is the battle terrain's levels, cliffs and rock: routes, sight (the yard hidden behind the wall), high ground (archers reach farther, blows land harder from above) and the ways off the field obey it |
 | Look | `SiegeArt` (improved 2026-11-06, the owner: "improve the sprites in siege"), in the holding's culture (its arena's stone or timber): the wall's sloped foot, a walk of flagstones (a palisade's logs with lit points and a plank walk), merlons each with its face, the inner lip, a soft shadow; towers standing (props sorted with the soldiers: raised tops, crenellated, faces of courses with arrow slits, the holder's banner); a cobbled passage (a palisade's earth); studded doors and a portcullis that crack under the ram, splinters once broken; ladders with rails and rungs; a covered ram on wheels whose head swings as your men work it |
 
-## 5. Walls round holdings on the map (built)
+## 5. Walls round holdings on the map (built; off for now)
+
+The owner, 2026-11-06: "remove the walls for now". `TOWN_WALL.on` is false: no rings, fences, gates or cleared woods on the map, and no "Build a fence" on the estate's page. A holding's wall level still counts (sieges, its defenders, the siege field's wall). The code and `tests/townwalls.js` (which turns it on) stay, so one flag brings them back. Forts, the towns' hall and market and one citadel a realm stay.
+
 
 The owner (2026-11-06): "make a wall for holding or estates": drawn **and blocking**, the estates **inside the town wall**.
 

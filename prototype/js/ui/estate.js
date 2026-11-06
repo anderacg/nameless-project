@@ -127,9 +127,9 @@ function estateRow(t,k){
   const wl=wallOf(t),wn=wl+1,wc=WALL_COST[wn];
   const mt=(mats)=>{const l=matsLacking(t,mats);return ' Needs '+matsText(mats)+(l.length?' (short: '+l.join(', ')+')':'')+'.'};
   // (no walls: its fence first, an upgrade of its own, world/townwalls.js FENCE; then the palisade)
-  if(k==='wall'&&!wl&&!fenceOf(t))return row('Fortification: None','Not even a fence. A wattle fence round '+t.name+' keeps out strays and makes all who come in use its gates.'+mt(FENCE.mats),
+  if(TOWN_WALL.on&&k==='wall'&&!wl&&!fenceOf(t))return row('Fortification: None','Not even a fence. A wattle fence round '+t.name+' keeps out strays and makes all who come in use its gates.'+mt(FENCE.mats),
       b('fence','Build a fence '+FENCE.gold+'g · '+workDays(t,FENCE.days)+' days',busy?'Already building':P.gold<FENCE.gold?'Not enough gold':matsLacking(t,FENCE.mats).length?'Not enough materials in stock':''));
-  if(k==='wall')return row('Fortification: '+(wl?WALL_N[wl]:'A fence')+(wl<t.T.wallMax?'':' (best)'),'Defenders fight as level '+(1+wl)+'; sieges by lords take '+(2+wl)+' days; garrison up to '+fiefCap(t)+'.'+(wl<t.T.wallMax?' Next: '+WALL_N[wn]+'.'+mt(WALL_MAT[wn]):''),
+  if(k==='wall')return row('Fortification: '+(wl||!fenceOf(t)?WALL_N[wl]:'A fence')+(wl<t.T.wallMax?'':' (best)'),'Defenders fight as level '+(1+wl)+'; sieges by lords take '+(2+wl)+' days; garrison up to '+fiefCap(t)+'.'+(wl<t.T.wallMax?' Next: '+WALL_N[wn]+'.'+mt(WALL_MAT[wn]):''),
       wl<t.T.wallMax?b('wall','Fortify '+wc+'g · '+workDays(t,wn)+' days',busy?'Already building':P.gold<wc?'Not enough gold':matsLacking(t,WALL_MAT[wn]).length?'Not enough materials in stock':''):'');
   // houses: the room they give, a new one placed by hand, an old one pulled down
   if(k==='house'){const hs=(t.lots||[]).filter(l=>l.k==='house'),hc=HOUSE_COST,why=busy?'Already building':P.gold<hc.gold?'Not enough gold':matsLacking(t,hc.mats).length?'Not enough materials in stock':'';

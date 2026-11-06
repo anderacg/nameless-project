@@ -14,7 +14,9 @@
    (tiles) one; alarm: an army at war with it marching on it this near (tiles), or you its foe outside its walls, shuts its gates;
    camp: its besiegers' camp this far out of a gate (tiles); towers: a tower every so many tiles of a stone wall's stretch; h: the wall's height by the walls (px:
    none, palisade, stone, great); top: its walk's depth (px); tower: a tower's rise over the wall (px); clear: the tiles either side of its line kept clear of the woods; fh: a fence's height (px) */
-const TOWN_WALL={on:true,fh:6,clear:1,cut:2,reach:14,pad:1,gate:1,merge:5,towers:7,alarm:16,camp:3,h:[0,10,13,16],top:6,tower:7};
+// (on false, the owner 2026-11-06: "remove the walls for now": no rings, fences, gates or woods cleared on the map; the walls'
+// levels still count in sieges and their fields)
+const TOWN_WALL={on:false,fh:6,clear:1,cut:2,reach:14,pad:1,gate:1,merge:5,towers:7,alarm:16,camp:3,h:[0,10,13,16],top:6,tower:7};
 /* (the owner, 2026-11-06: "the wall may be based on the holdings as well, if very poor they may start from none; think it like an
    upgrade") a fence: a wattle fence round a holding with no walls (fenceOf: t.fence once set), the first step before a palisade,
    drawn and blocking as a wall is but no wall in a fight (no siege, no defender's level). At the start (fenceStart), by what it
@@ -22,7 +24,7 @@ const TOWN_WALL={on:true,fh:6,clear:1,cut:2,reach:14,pad:1,gate:1,merge:5,towers
    realm's or the free folk's grows one by itself once it prospers (pros, by daily chance a day, gold and mats from its stock);
    yours you build in its Fortification (gold, mats, days) */
 const FENCE={start:{town:8,village:6,hamlet:3.5},salt:4411,pros:65,daily:.05,gold:30,mats:{timber:12},days:2};
-const fenceOf=t=>t.fence!=null?t.fence:TownWall.fenceStart(t);
+const fenceOf=t=>!TOWN_WALL.on?0:t.fence!=null?t.fence:TownWall.fenceStart(t);
 const RINGS=new WeakMap();
 class TownWall{
   // (what changes it: the walls, the lots there are and those in ruins)

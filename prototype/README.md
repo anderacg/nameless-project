@@ -211,7 +211,7 @@ js/world/             the campaign map and everything on it
 js/ui/march.js         the Army window's March formation tab: Field (drag your groups and your hero round the army's middle) and
                        By road (ColumnEditor: your column's order, dragged or tapped along its preview), each Apply, Reset, Discard
 js/battle/sides.js    BattleSides: per-army relationships, reinforcement budgets, participation rewards and continued NPC fights
-js/world/townwalls.js walls round holdings on the map (TOWN_WALL, TownWall): the ring round a walled holding and its estates
+js/world/townwalls.js walls round holdings on the map (TOWN_WALL, TownWall; off for now, TOWN_WALL.on false): the ring round a walled holding and its estates
                       (an octagon, its corners cut by diagonal walls),
                       gates where roads cross, shut on the router's layer (SHUT bit 4), drawn among the buildings; its gates
                       shut to its foes (shutTo), its besiegers' camp outside a gate (camp); a fence round hamlets
