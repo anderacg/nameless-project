@@ -52,12 +52,13 @@ Kit.suite(({ok,info})=>{
       s.x=f.x;s.y=f.y}}
     for(const f of W.folk)if(f.home===tw.name&&(f.st!=='in'||f.done!==day)){late++;lateOf.add(tw.name);if(bad.length<4)bad.push(tw.name+' '+f.k+' '+f.st)}}}
   const ms=performance.now()-a0;
+  // (a hamlet's spot on its own bank only, as lotSpot keeps it: ownBank)
   {const [R0,S0]=t.LOT_FAR,miss=[],none=[];let n=0;
    for(const z of t.TOWNS){if(!(z._want&&z._want.lumber))continue;n++;if(t.bldLv(z,'lumber')&&t.lotAt(z,'lumber'))continue;
     const w=t.lotWalk(z).all,k=t.lotSize(t.ESTATE_LOT.lumber),wb=t.wallBox(z);let spot=null,wood=false;
     for(let y=z.ty-1-R0;y<=z.ty-1+R0&&!spot;y++)for(let x=z.tx-R0;x<=z.tx+R0&&!spot;x++){const d=Math.hypot(x+k/2-.5-z.tx,y+k/2-.5-(z.ty-1));if(d<3||d>R0)continue;
      if(t.tAt(x,y)===t.T_FOREST&&t.walkTo(z,x,y))wood=true;
-     if(wb&&x+k>wb.x0-1&&x<=wb.x1+1&&y+k>wb.y0-1&&y<=wb.y1+1||!t.lotFits(z,x,y,k,'lumber',true)||t.nearBandits(x+k/2-.5,y+k/2-.5,t.BANDIT_GAP+k/2)||!t.lotWalks(z,x,y,k)||d>12&&t.placeWalkSteps(w,x+(k>>1),y+k-1)>S0)continue;spot=[x,y]}
+     if(wb&&x+k>wb.x0-1&&x<=wb.x1+1&&y+k>wb.y0-1&&y<=wb.y1+1||!t.lotFits(z,x,y,k,'lumber',true)||t.nearBandits(x+k/2-.5,y+k/2-.5,t.BANDIT_GAP+k/2)||!t.lotWalks(z,x,y,k)||z.T.tier===1&&!t.ownBank(z,x+(k>>1),y+(k>>1))||d>12&&t.placeWalkSteps(w,x+(k>>1),y+k-1)>S0)continue;spot=[x,y]}
     if(spot)miss.push(z.name+' (a spot at '+spot.join(',')+')');else if(wood)none.push(z.name)}
    if(none.length)info(name+': lumber camps wanted with woods near but no spot for one (the woods in the town’s yard, on another’s land, too few trees together, far round or past '+S0+' steps, by bandits): '+none.join(', '));
    ok(!miss.length,name+': every holding that wants a lumber camp ('+n+') and has a spot for one has one'+(miss.length?': not '+miss.join(', '):''))}
