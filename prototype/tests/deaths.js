@@ -60,7 +60,9 @@ Kit.suite(({ok,info})=>{const t=T,L=t.BattleLab,D=t.DEATHS,random=Math.random;
    for(const k of kinds){const m=ALL.get(k);if(!t.corpseOf(unit(k,1)).mount)continue;
     for(const [n,u] of m){const V=t.deathOf(u),[,ride,lie]=n.split('|');seen.add(ride+'|'+lie);if(!V.mount||!V.down||!box(V.down))bad.push(k+' '+n+' no mount');
      const w=draw(u,true),wo=t.mkc(2*G,2*G,g=>{const c={x:G,y:G,team:1,face:1,sp:t.corpseOf(u),td:0,dry:true,pool:7,seed:1,wi:3,wx:7,wy:2,skin:t.PPAL.wood[2]};t.drawFallen(g,c,{...V,mount:null,at:[0,0]},1,0)});
-     if(box(w)[2]-box(w)[0]<=box(wo)[2]-box(wo)[0])bad.push(k+' '+n+' mount not drawn')}}
+     // (its mount drawn: more of the picture filled than him alone (2026-11-06: by its pixels, not its width: he is thrown to his own
+     //  place by the mount, and a doll's narrower body may lie as wide as the mount does))
+     const fill=s=>{const d=data(s);let n=0;for(let i=3;i<d.length;i+=4)if(d[i])n++;return n};if(fill(w)<=fill(wo)+40)bad.push(k+' '+n+' mount not drawn')}}
    ok(!bad.length&&seen.size===6,'every rider\'s mount drawn by him, all six ways ('+[...seen].join(', ')+')'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
   {const L0=t.unitLook(unit('orc_wolf',1)),k0=D.on;D.on=false;const before=t.corpseOf(unit('orc_wolf',1)).down;D.on=k0;
    const side=[...ALL.get('orc_wolf')].map(([n,u])=>t.deathOf(u)).find(V=>V.ride&&/side$/.test(V.name));

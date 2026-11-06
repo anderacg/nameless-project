@@ -10,7 +10,9 @@ Kit.suite(({ok,info})=>{
  // ---- the base bodies
  const races=Object.keys(DL.RACES),bodies=races.map(r=>PX.doll({race:r,style:'bald',beard:false}));
  ok(bodies.every(b=>b.width===W&&b.height===H&&count(b)>80),'a base body for every race ('+races.join(', ')+'), '+W+' × '+H+': '+bodies.map(count).join(', ')+' pixels');
- ok(count(bodies[races.indexOf('dwarf')])<count(bodies[0])&&count(bodies[races.indexOf('orc')])>count(bodies[0]),'a dwarf shorter, an orc broader than a man');
+ const hb=b=>{const d=px(b);let y0=H,y1=-1,x0=W,x1=-1;for(let i=3;i<d.length;i+=4)if(d[i]){const x=(i>>2)%W,y=(i>>2)/W|0;y0=Math.min(y0,y);y1=Math.max(y1,y);x0=Math.min(x0,x);x1=Math.max(x1,x)}return[x1-x0+1,y1-y0+1]};
+ const [mw,mh]=hb(bodies[0]),[dw,dh]=hb(bodies[races.indexOf('dwarf')]),[ow]=hb(bodies[races.indexOf('orc')]);
+ ok(dh<mh&&dw>mw&&ow>mw,'a dwarf shorter and broader ('+dw+' × '+dh+'), an orc broader ('+ow+') than a man ('+mw+' × '+mh+')');
  // ---- every uniform on every race in every pose, whole and inside its cell
  const bad=[];let n=0;for(const race of races)for(const u of Object.keys(DL.UNIFORMS))for(const [pose,L] of Object.entries(DL.POSES))for(let f=0;f<L.length;f++){n++;
    try{const cv=PX.doll({race,uniform:u,pose,frame:f,team:'red'});if(count(cv)<70)bad.push(race+' '+u+' '+pose+f+' '+count(cv))}catch(e){bad.push(race+' '+u+' '+pose+f+': '+e.message)}}

@@ -32,7 +32,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;Kit.begin('soldier');
  for(const coat of ['horse','chestnut'])for(const p of [0,3])add('horse '+coat+' p'+p,t.figHorse(coat,p),'horse');
  const bad=[],sizes={};
  for(const [name,s,how] of kinds){const q=look(s),why=[];
-   if(!s.dense)why.push('not dense');if(!cell(s))why.push('cell '+s.width+'x'+s.height);if(!/blood/.test(name)&&(q.out<MF.out[0]-.08||q.out>MF.out[1]+.08))why.push('outline '+q.out.toFixed(2));// (a pool of blood has no outline)
+   if(!s.dense)why.push('not dense');if(!cell(s))why.push('cell '+s.width+'x'+s.height);if(!/blood|^rider|^horse/.test(name)&&(q.out<MF.out[0]-.08||q.out>MF.out[1]+.08))why.push('outline '+q.out.toFixed(2));// (a pool of blood has no outline; a rider and a horse keep the mounts' outline, 2026-11-06: those on foot are paper dolls, unoutlined)
    if(s.height-1-q.bottom>1)why.push('feet '+(s.height-1-q.bottom)+' over the bottom');
    if(how==='foot'&&(!inR(q.h,MF.h,2)||!inR(q.w,MF.w,3)))why.push(q.w+'x'+q.h);
    if(how==='ride'&&(!inR(q.h,MR.h,2)||!inR(q.w,MR.w,3)))why.push(q.w+'x'+q.h);

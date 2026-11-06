@@ -29,8 +29,8 @@
   // the cell: the skeleton at (OX, OY) in a W x H picture (room for a weapon either side and a hood or a helm's crest above)
   const D={W:17,H:19,OX:4,OY:2};
   // the races: their skin's tones, and how the skeleton changes (drop: rows taken out, dup: rows doubled, wide: the torso a pixel
-  // wider each side; hair and beard by default)
-  const RACES={human:{skin:'skin'},elf:{skin:'elf',dup:[12],ears:true},dwarf:{skin:'dwarf',drop:[5,12],beard:true},orc:{skin:'orc',wide:true,tusk:true}};
+  // wider each side; hair and beard by default): a dwarf a row shorter and broader, as the game's template had him
+  const RACES={human:{skin:'skin'},elf:{skin:'elf',dup:[12],ears:true},dwarf:{skin:'dwarf',drop:[12],wide:true,beard:true},orc:{skin:'orc',wide:true,tusk:true}};
   /* the materials, each four tones: lit, mid, shade, edge (muted, as the owner's reference) */
   const MAT={
     skin:['#f9b488','#e28852','#c67749','#a5623e'],elf:['#f8d8c8','#e8b8a4','#c8968a','#9a7068'],dwarf:['#f4b090','#d88a68','#b86a50','#8a4a38'],
@@ -78,7 +78,9 @@
     // all), a coif of mail
     hood:{slot:'head',cover:'s',shape:{at:'head',rows:['.12..','0...2','1...3','2...3']},mottle:.15},
     cap:{slot:'head',cover:'s'},kettle:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0112.']}},
-    great:{slot:'head',cover:'sf',shape:{at:'head',rows:['.012.']},slit:true},coif:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0...2','1...3']}}};
+    great:{slot:'head',cover:'sf',shape:{at:'head',rows:['.012.']},slit:true},
+    // (a bandage round the brow: one tended on the road)
+    bandage:{slot:'head',shape:{at:'head',rows:['.....','.001.']}},coif:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0...2','1...3']}}};
   // the uniforms: their parts and each one's material ('team': the side's colour; 'hair': the figure's own), a weapon and a shield
   const UNIFORMS={
     peasant:{parts:[['breeches','wool'],['shoes','leather'],['shirt','linen'],['vest','wool'],['sash','leather']],weapon:'club'},
@@ -117,18 +119,21 @@
   const inRows=(c,p)=>!p.rows||c.row<0||c.row>=p.rows[0]&&c.row<=p.rows[1];
 
   /* a figure: spec {race, skin, hair (colour), style (hair style), beard, uniform (a name or a list of [part, material]), team (a
-     material), weapon, shield, pose, frame, seed, bare}. Returns its picture (D.W x D.H) with anchors {hand, off, head, feet} and its
+     material), weapon, shield, pose, frame, seed, bare, ramps, noShadow, drop, moves}. Returns its picture (D.W x D.H) with anchors {hand, off, head, feet} and its
      gear (each piece: slot, kind, the anchor it hangs from and where, behind or before him), drawn apart (PX.dollGear); bare: the
      body alone, its gear left to whoever draws it (the battle turns a weapon through its blow), else laid on at its anchors */
   PX.doll=spec=>{const race=spec.race||'human',R=RACES[race]||RACES.human,seed=spec.seed|0,U=typeof spec.uniform==='string'?UNIFORMS[spec.uniform]:spec.uniform?{parts:spec.uniform}:null;
     const S=skeleton(race),ox=D.OX,oy=S.oy,G=new Array(D.W*D.H).fill(null),put=(x,y,c)=>{if(x>=0&&y>=0&&x<D.W&&y<D.H&&c)G[y*D.W+x]=c};
     // (the pose: each cell moved)
-    const moves=((POSES[spec.pose]||POSES.idle)[(spec.frame|0)%((POSES[spec.pose]||POSES.idle).length)])||[];
+    // (moves: the caller's own, after the pose's: a glance back, the weight shifted)
+    const moves=(((POSES[spec.pose]||POSES.idle)[(spec.frame|0)%((POSES[spec.pose]||POSES.idle).length)])||[]).concat(spec.moves||[]);
     const at=c=>{let x=c.x,y=c.y;for(const [rg,sd,dx,dy,from] of moves)if(rg.includes(c.r)&&(!sd||c.side===sd)&&c.row>=from){x+=dx;y+=dy}return[ox+x,oy+y]};
-    const mat=m=>MAT[m==='team'?spec.team||'blue':m==='hair'?HAIR_MAT[spec.hair]||'brown':m]||MAT.grey;
+    // (a material by name: the caller's own ramps first (ramps: name -> four tones, a game's palette), then MAT)
+    const Rm=spec.ramps||{},mat=m=>{const k=m==='team'?spec.team||'blue':m==='hair'?(Rm[spec.hair]?spec.hair:HAIR_MAT[spec.hair]||'brown'):m;return Rm[k]||MAT[k]||MAT.grey};
     const noise=(x,y,k)=>PX.hash(x,y,seed*31+k);
     // the parts in their slots' order: the uniform's, then the figure's own hair and beard (under a hood or a helm)
-    const parts=[];for(const [n,m] of (U?U.parts:[]))if(PARTS[n])parts.push({...PARTS[n],name:n,m});
+    // (each [part, material, overrides]: a part's own numbers changed for this figure, dark: its tones a step darker)
+    const parts=[];for(const [n,m,x] of (U?U.parts:[]))if(PARTS[n])parts.push({...PARTS[n],...(x||{}),name:n,m});
     if(!parts.some(p=>p.cover&&p.cover.includes('p')||p.slot==='legs'))parts.push({...PARTS.loin,name:'loin',m:'linen'});
     const style=spec.style||'short';if(PARTS[style])parts.push({...PARTS[style],name:style,m:'hair'});if(spec.beard??R.beard)parts.push({...PARTS.beard,name:'beard',m:'hair'});
     parts.sort((a,b)=>SLOTS.indexOf(a.slot)-SLOTS.indexOf(b.slot));
@@ -142,11 +147,13 @@
     if(shk)gear.push({slot:'shield',kind:'shield',mat:shk==='team'?spec.team||'blue':shk,anchor:'off',at:off,behind:false});
     const lay=behind=>{if(spec.bare)return;for(const q of gear){if(q.behind!==behind)continue;for(const [dx,dy,c] of gearPx(q.kind,q.mat))put(q.at[0]+dx,q.at[1]+dy,c)}};
     lay(true);
-    for(const c of S.cells){const [x,y]=at(c);let col=pick(mat(R.skin||'skin'),c.s);
+    // (drop: regions of a side left off ([regions, side] each: an arm drawn apart in a blow); tones: what its sleeve and hand are)
+    const dropped=c=>(spec.drop||[]).some(([rg,sd])=>rg.includes(c.r)&&(!sd||c.side===sd)),tones={};
+    for(const c of S.cells){const [x,y]=at(c);let col=pick(mat(spec.skin||R.skin||'skin'),c.s);
       for(const p of parts){if(!p.cover||!p.cover.includes(c.r)||!inRows(c,p)||p.cols&&(c.x<p.cols[0]||c.x>p.cols[1]))continue;if(p.slot==='hair'&&headCover)continue;
         let s=c.s+(p.dark|0);if(p.mottle&&noise(x,y,p.slot.length)<p.mottle)s+=noise(x,y,7)<.5?1:-1;col=pick(mat(p.m),s)}
       if(slit&&c.r==='f'&&c.row===1)col=pick(MAT.black,3);
-      put(x,y,col)}
+      if(c.side==='R'&&!tones[c.r])tones[c.r]=col;if(!dropped(c))put(x,y,col)}
     // the parts' own pixels round their anchors: the head's (the scalp's top left) or the body's
     const scalp=S.cells.filter(c=>c.r==='s'),hx=scalp.length?Math.min(...scalp.map(c=>at(c)[0])):ox+2,hy=scalp.length?Math.min(...scalp.map(c=>at(c)[1])):oy;
     for(const p of parts){if(!p.shape||p.slot==='hair'&&headCover)continue;const [ax,ay]=p.shape.at==='head'?[hx-1,hy]:[ox,oy];
@@ -156,14 +163,14 @@
       if(p.line==='belt'||p.line==='sash'){for(const c of hips){const [x,y]=at(c);put(x,y,pick(M,c.x===4&&p.line==='belt'?0:2+(c.x===2||c.x===6?1:0)))}if(p.line==='belt')put(ox+4,py,pick(MAT.gold,1))}
       else{const top=[ox+2,oy+3+(S.rows<15?-1:0)];for(let k=0;k<=5;k++)put(top[0]+Math.round(k*.8),top[1]+k,pick(M,k&1?3:2))}}
     // his race's own: an elf's ears, an orc's tusks (over a bare head only)
-    if(R.ears&&!headCover){put(hx-1,hy+1,pick(mat(R.skin),2))}if(R.tusk)put(hx+1,hy+2,'#f0ecd8');
+    if(R.ears&&!headCover){put(hx-1,hy+1,pick(mat(spec.skin||R.skin),2))}if(R.tusk)put(hx+1,hy+2,'#f0ecd8');
     // the gear before him: the shield on his left arm, a weapon in front
     lay(false);
     // the shadow underfoot
     const feet=S.cells.filter(c=>c.r==='o').map(at),fy=feet.length?Math.max(...feet.map(f=>f[1]))+1:D.H-1;
-    for(let x=ox+1;x<=ox+8;x++)if(!G[fy*D.W+x])put(x,fy,feet.some(f=>f[0]===x)?SHADOW[1]:SHADOW[0]);
+    if(!spec.noShadow)for(let x=ox+1;x<=ox+8;x++)if(!G[fy*D.W+x])put(x,fy,feet.some(f=>f[0]===x)?SHADOW[1]:SHADOW[0]);
     const cv=PX.canvas(D.W,D.H,g=>{const im=g.createImageData(D.W,D.H),o=im.data;G.forEach((c,i)=>{if(!c)return;o[i*4]=parseInt(c.slice(1,3),16);o[i*4+1]=parseInt(c.slice(3,5),16);o[i*4+2]=parseInt(c.slice(5,7),16);o[i*4+3]=255});g.putImageData(im,0,0)});
-    cv.anchors={hand,off,head:[hx,hy],feet:[ox+4,fy]};cv.gear=gear;return cv};
+    cv.anchors={hand,off,head:[hx,hy],feet:[ox+4,fy]};cv.gear=gear;cv.tones=tones;cv.rows=S.rows;cv.oy=oy;return cv};
   /* a piece of gear, apart from the body: its pixels [dx, dy, colour] from its grip (a weapon's hand, a shield's arm). A weapon
      (WEAPONS): its shaft or grip in its wood or leather, its head in its metal; a shield: its face in its colour (m) inside an iron
      rim, a boss in the middle, four wide and six tall, its point down */

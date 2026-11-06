@@ -28,7 +28,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
  {const px=c=>{const d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;let h=0;for(let i=0;i<d.length;i+=4)h=(h*31+d[i]+d[i+1]*3+d[i+2]*7+d[i+3])|0;return h};
   const poses=[0,1,2,3,4,5,6,7,8].map(p=>px(t.unitSprite('spearman',0,false,1,p)));ok(new Set(poses).size>=7,'a soldier has '+new Set(poses).size+' distinct poses: breathing, striding and striking');
   const s0=t.unitSprite('militia',1,false,2,0),d0=s0.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s0.width,s0.height).data;let dark=0;for(let i=0;i<d0.length;i+=4)if(d0[i+3]>150&&d0[i]<40&&d0[i+1]<40&&d0[i+2]<50)dark++;
-  ok(s0.width===32&&s0.cw===24&&s0.ch===16&&dark>20,'soldiers are the 16-pixel template figures with their dark navy outline (a 24-pixel canvas, room for a weapon, in its 32-pixel cell; '+s0.ch+' tall)');
+  // (2026-11-06: paper dolls, engine/doll.js and dollfigs.js: the body unoutlined, its gear outlined on its own)
+  {const L=t.lookOf('militia',1,false,2),b=t.peopleSprite({...L,weapon:null,shield:null},0),db=b.getContext('2d').getImageData(0,0,b.width,b.height).data;let nb=0;for(let i=0;i<db.length;i+=4)if(db[i+3]&&db[i]===0x1a&&db[i+1]===0x1c&&db[i+2]===0x26)nb++;
+   ok(s0.width===32&&s0.cw===24&&s0.ch===16&&t.dollable(L)&&!nb&&dark>0,'soldiers are paper dolls (a 24-pixel canvas, room for a weapon, in its 32-pixel cell; '+s0.ch+' tall): the body unoutlined, its gear outlined ('+dark+' px)')}
   const w=t.whiteOf(s0),wd=w.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w.width,w.height).data;let white=0,any=0;for(let i=0;i<wd.length;i+=4)if(wd[i+3]){any++;if(wd[i]===255&&wd[i+1]===255)white++}ok(any&&white===any,'a struck fighter flashes white');
   const m=t.worldCv().getContext('2d', { willReadFrequently: true }).getImageData(t.townBy('Ashford').x-200,t.townBy('Ashford').y-200,400,400).data,cols=new Set();for(let i=0;i<m.length;i+=16)cols.add(m[i]>>3<<10|m[i+1]>>3<<5|m[i+2]>>3);
   ok(cols.size>40,'the world map is painted in '+cols.size+' shades around Ashford');

@@ -103,9 +103,10 @@ const pal=k=>Array.isArray(k)?k:PPAL[k]||(typeof k==='string'&&k[0]==='#'?rampOf
 const pgrid=(w,h)=>({w,h,p:new Array(w*h).fill(null)});
 const pset=(g,x,y,c)=>{x=Math.round(x);y=Math.round(y);if(x>=0&&y>=0&&x<g.w&&y<g.h)g.p[y*g.w+x]=c||null};
 const pget=(g,x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h?g.p[y*g.w+x]:null;
-function poutline(g){const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!pget(g,x,y)&&(pget(g,x-1,y)||pget(g,x+1,y)||pget(g,x,y-1)||pget(g,x,y+1)))o.push([x,y]);for(const [x,y] of o)pset(g,x,y,PEOPLE_OUT)}
+// (a paper doll's body (g.body: its pixels, dollfigs.js) wears no outline: only what is not the body is outlined)
+function poutline(g){const o=[],B=g.body,on=(x,y)=>!!pget(g,x,y)&&!(B&&B.has(y*g.w+x));for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!pget(g,x,y)&&(on(x-1,y)||on(x+1,y)||on(x,y-1)||on(x,y+1)))o.push([x,y]);for(const [x,y] of o)pset(g,x,y,PEOPLE_OUT)}
 // (the grid turned a quarter clockwise, pixel for pixel: what stood up now lies, head to the right)
-function pturn(g){const r=pgrid(g.h,g.w);for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=g.p[y*g.w+x];if(c)r.p[x*r.w+(g.h-1-y)]=c}return r}
+function pturn(g){const r=pgrid(g.h,g.w);if(g.body)r.body=new Set();for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=g.p[y*g.w+x];if(!c)continue;const j=x*r.w+(g.h-1-y);r.p[j]=c;if(g.body&&g.body.has(y*g.w+x))r.body.add(j)}return r}
 // (g's part from (x0, y0), w × h, as a grid of its own; ptop: g's first row with a pixel, g.h if none)
 const pcrop=(g,x0,y0,w,h)=>{const r=pgrid(w,h);for(let y=0;y<h;y++)for(let x=0;x<w;x++)r.p[y*w+x]=pget(g,x0+x,y0+y);return r};
 const ptop=g=>{const i=g.p.findIndex(c=>c);return i<0?g.h:Math.floor(i/g.w)};
@@ -149,9 +150,10 @@ const STRIDE_RUN=[[3,10,2,11],[5,8,5,9],[4,9,3,11],[6,7,6,8]],RUN_BOB=[0,-2,0,-1
 // climbing a slope (walk 8-11): bent forward, short steps, the front knee lifted every other frame, a small bob; descending (walk
 // 12-15): the head forward, long steps, sinking a little (render.js picks them from the ground's climbState)
 const STRIDE_CLIMB=[[5,8,5,9],[5,9,5,10],[5,8,5,9],[4,9,4,10]],CLIMB_BOB=[0,-1,0,0],STRIDE_DESC=[[4,9,3,10],[5,8,5,9],[3,10,3,11],[6,8,6,8]],DESC_BOB=[0,0,1,0];
-/* a figure into grid g at (ox, oy): its body, then its gear from the body's anchors (figures.js FigureRig). walk: -1 or 0-3; atk:
+/* a figure into grid g at (ox, oy): its body (on foot a paper doll: dollfigs.js), then its gear from the body's anchors (figures.js
+   FigureRig). walk: -1 or 0-3; atk:
    -1 or 0-2 with style; cut: only the rows down to it (a rider). Returns its anchors (drawFigureBody's) */
-function drawFigure(g,o,ox,oy,walk,style,atk,cut){const A=drawFigureBody(g,o,ox,oy,walk,style,atk,cut);FigureRig.dress(g,o,A,style,atk);return A}
+function drawFigure(g,o,ox,oy,walk,style,atk,cut){if(dollable(o))return drawDollFigure(g,o,ox,oy,walk,style,atk,cut);const A=drawFigureBody(g,o,ox,oy,walk,style,atk,cut);FigureRig.dress(g,o,A,style,atk);return A}
 /* a figure's body into grid g at (ox, oy): the template, its legs, cape, beard, helm and limbs, no gear. Returns its anchors, in
    g's pixels (its gear is drawn from them: figures.js): hand, the weapon hand (weapons.js holds a weapon there); off, the shield
    arm (a shield slung there, its top left); guard, a shield raised before him, over his front (its top left); back, between the
@@ -682,7 +684,7 @@ function figCarrier(type,v,tint,job,pose){return figKeep('mca'+type+v+tint+job+'
    the ground); lying: the standing figure turned a quarter, head to the right, as the battle's fallen are (sprites.js corpseOf);
    blood: in a pool of it (FIG_BLOOD: [colour, x, y, w, h] in a 16 cell's px, as the map's was, grown to its own) */
 const FIG_KNEEL=2,FIG_BLOOD=[['#5a1414',3,13,10,1],['#6e1a18',1,14,14,1],['#8a2a22',5,14,5,1],['#5a1414',3,15,10,1]];
-function figKneel(key,race,v){return figKeep('mrk'+key+race+v,()=>{const L=ENC_LOOK[key](race,v),R=GEAR.room,g=pgrid(24+2*R,19+R),sh=L.short?1:0,ox=4+R,gy=3+R+14-sh;
+function figKneel(key,race,v){return figKeep('mrk'+key+race+v,()=>{const L=ENC_LOOK[key](race,v),R=GEAR.room,g=pgrid(24+2*R,19+R),sh=L.short?1:0,ox=4+R,gy=3+R+14-sh+(dollable(L)?DOLL_FIGS.dy:0);// (a doll's knees on the row its outline would have taken)
   const A=drawFigure(g,L,ox,3+R+FIG_KNEEL,-1,null,-1,12-sh);
   if(!L.robe){const Lc=lettersOf(L);pset(g,ox+11,gy-1,Lc.L);pset(g,ox+11,gy,Lc.M);pset(g,ox+12,gy,Lc.F);pset(g,ox+2,gy,Lc.F);pset(g,ox+1,gy,Lc.F)}
   return cellOf(FigureRig.frame(g,R,24,A,16-FIG_KNEEL-sh,false))})}
