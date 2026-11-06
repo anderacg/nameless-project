@@ -94,7 +94,9 @@
   const WEAPONS={
     spear:{behind:true,pts:[[-3,4],[-2,3],[-1,2],[0,1],[1,0],[2,-1],[3,-2],[4,-3],[5,-4],[6,-5],[7,-6],[8,-7]],head:[[9,-8],[9,-9]],mat:'wood',hm:'steel'},
     staff:{behind:false,pts:[[-1,4],[-1,3],[-1,2],[-1,1],[-1,0],[-1,-1],[-1,-2],[-1,-3],[-1,-4],[-1,-5],[-1,-6],[-1,-7]],head:[[0,-8],[-1,-8],[-2,-8],[-2,-7]],mat:'wood',hm:'wood'},
-    sword:{behind:false,pts:[[0,1]],head:[[-1,2],[-1,3],[-1,4],[-1,5]],mat:'leather',hm:'steel'},
+    // (a sword held low and out from him, the owner 2026-11-06: tilted 30-45 degrees: its pommel over the hand, a guard across the
+    //  blade, the blade down and away, 37 degrees from upright)
+    sword:{behind:false,pts:[[1,-1],[-1,0],[0,1]],head:[[-1,1],[-2,2],[-2,3],[-3,4]],mat:'iron',hm:'steel'},
     club:{behind:false,pts:[[0,1],[-1,2]],head:[[-1,3],[-2,3],[-2,4]],mat:'wood',hm:'wood'},
     bow:{behind:false,off:true,pts:[[1,-4],[2,-3],[2,-2],[2,-1],[2,0],[2,1],[2,2],[2,3],[1,4]],head:[[1,-3],[1,-2],[1,-1],[1,0],[1,1],[1,2],[1,3]],mat:'wood',hm:'linen'}};
   /* the poses: idle, and a walk of four frames (the reference's figures face us: the legs step by lifting a foot, the arms swing a
