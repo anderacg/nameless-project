@@ -103,8 +103,13 @@ const pal=k=>Array.isArray(k)?k:PPAL[k]||(typeof k==='string'&&k[0]==='#'?rampOf
 const pgrid=(w,h)=>({w,h,p:new Array(w*h).fill(null)});
 const pset=(g,x,y,c)=>{x=Math.round(x);y=Math.round(y);if(x>=0&&y>=0&&x<g.w&&y<g.h)g.p[y*g.w+x]=c||null};
 const pget=(g,x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h?g.p[y*g.w+x]:null;
-// (a paper doll's body (g.body: its pixels, dollfigs.js) wears no outline: only what is not the body is outlined)
-function poutline(g){const o=[],B=g.body,on=(x,y)=>!!pget(g,x,y)&&!(B&&B.has(y*g.w+x));for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!pget(g,x,y)&&(on(x-1,y)||on(x+1,y)||on(x,y-1)||on(x,y+1)))o.push([x,y]);for(const [x,y] of o)pset(g,x,y,PEOPLE_OUT)}
+// (a paper doll's body (g.body: its pixels, dollfigs.js) wears no outline: only what is not the body is outlined. With the dolls'
+// edge (DOLL_FIGS.edge, the owner's reference: no outline anywhere), the rest wears none either: its own pixels at its silhouette's
+// edge a shade darker (DOLL_FIGS.edgeK), the body's untouched: a figure with a doll's body (g.body), or a mount drawn alone (g.edge))
+function poutline(g){const B=g.body,on=(x,y)=>!!pget(g,x,y)&&!(B&&B.has(y*g.w+x));
+  if(DOLL_FIGS.on&&DOLL_FIGS.edge&&(B||g.edge)){const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(!on(x,y))continue;if(!pget(g,x-1,y)||!pget(g,x+1,y)||!pget(g,x,y-1)||!pget(g,x,y+1))e.push([x,y])}
+    for(const [x,y] of e){const c=pget(g,x,y);if(c&&c[0]==='#'&&c.length===7)pset(g,x,y,PX.shade(c,DOLL_FIGS.edgeK))}return}
+  const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!pget(g,x,y)&&(on(x-1,y)||on(x+1,y)||on(x,y-1)||on(x,y+1)))o.push([x,y]);for(const [x,y] of o)pset(g,x,y,PEOPLE_OUT)}
 // (the grid turned a quarter clockwise, pixel for pixel: what stood up now lies, head to the right)
 function pturn(g){const r=pgrid(g.h,g.w);if(g.body)r.body=new Set();for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=g.p[y*g.w+x];if(!c)continue;const j=x*r.w+(g.h-1-y);r.p[j]=c;if(g.body&&g.body.has(y*g.w+x))r.body.add(j)}return r}
 // (g's part from (x0, y0), w × h, as a grid of its own; ptop: g's first row with a pixel, g.h if none)
@@ -519,7 +524,7 @@ function peopleSprite(o,pose,bare){
     // from the hip over the cloth, the knee, the shin down the horse's side and his foot, outlined on its own so it reads
     // against the cloth (RIDER_LEG: [x, y from the seat row, letter] each)
     const leg=RIDER_LEG.map(([x,y,k])=>[x+R,top+y,riderLegCol(o,k,x,y)]),on=new Set(leg.map(([x,y])=>x+','+y));
-    for(const [x,y] of leg)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const k=(x+dx)+','+(y+dy);if(!on.has(k)){on.add(k);pset(g,x+dx,y+dy,PEOPLE_OUT)}}
+    if(!(DOLL_FIGS.on&&DOLL_FIGS.edge&&g.body))for(const [x,y] of leg)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const k=(x+dx)+','+(y+dy);if(!on.has(k)){on.add(k);pset(g,x+dx,y+dy,PEOPLE_OUT)}}
     for(const [x,y,c] of leg)pset(g,x,y,c);return FigureRig.frame(g,R,32,A,32-(top-R-6),false)}
   const g=pgrid(24+2*R,19+R),A=drawFigure(g,o,4+R,3+R,walk,style,atk);return FigureRig.frame(g,R,24,A,o.short?15:16,!!o.held&&(blow||pose===FLINCH_POSE));
 }
@@ -676,7 +681,7 @@ function figWorker(job,race,v,pose,carry){v=(v||0)%4;race=race||'human';return f
 function figRefugee(v,race,pose){v=(v||0)%4;race=race||'human';return figKeep('mrf'+v+race+'p'+pose,()=>figOf({...refugeeLook(v,race),load:'bundle'},pose))}
 function figRoad(key,race,v,pose){return figKeep('mrp'+key+race+v+'p'+pose,()=>figOf(ENC_LOOK[key](race,v),pose))}
 function figRider(key,race,v,col,coat,pose){return figKeep('mrr'+key+race+v+col+coat+'p'+pose,()=>figOf({...ENC_LOOK[key](race,v),team:col||'leather',mount:'horse',mountC:coat||'horse'},pose))}
-function figHorse(coat,pose){return figKeep('mrh'+coat+'p'+pose,()=>{const g=pgrid(32,32);drawMount(g,{mount:'horse',mountC:coat,team:'red',saddled:true},pose>=2?pose-2:-1);poutline(g);return cellOf(pcanvas(g))})}
+function figHorse(coat,pose){return figKeep('mrh'+coat+'p'+pose,()=>{const g=pgrid(32,32);g.edge=true;drawMount(g,{mount:'horse',mountC:coat,team:'red',saddled:true},pose>=2?pose-2:-1);poutline(g);return cellOf(pcanvas(g))})}
 // a worker on the march's map carrying his load to his holding (folk.js): his trade's battle kind (type, v) in his holding's
 // cloth (tint), his tool left behind
 function figCarrier(type,v,tint,job,pose){return figKeep('mca'+type+v+tint+job+'p'+pose,()=>figOf({...lookOf(type,0,false,v%6),team:tint,weapon:null,load:job},pose))}

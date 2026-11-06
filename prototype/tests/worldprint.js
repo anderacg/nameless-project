@@ -475,7 +475,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  Proof: 259032c gives it again. Was W6 cc1f4852)
 // (W6 re-recorded 2026-11-06, on purpose: a paper doll's weapon heads (weapons.js drawBlade thin: a spearhead's socket and leaf, a
 //  sword's lit point and pommel), so the figures in its picture change. Proof: 2d27006 gives it again. Was W6 548e8fda)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'2e40b15c',W6:'d2dd984e',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
+// (W6 re-recorded 2026-11-06, on purpose: riders paper dolls, mounts with no outline, their edges a shade darker, a doll's
+//  spearhead on its shaft's last pixels; the figures in its picture change. Proof: b4d4bf1 gives it again. Was W6 d2dd984e)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'2e40b15c',W6:'42e6d237',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

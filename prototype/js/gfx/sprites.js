@@ -52,7 +52,7 @@ const actorSprite=(u,pose,bare,arm)=>unitSprite(u.type,u.worldSide??spriteTeam(u
 /* a horse no one rides (battle/dismount.js Horse): its rider's mount standing, saddled, a cloth of its side's colour under the
    saddle (people.js drawMount: saddled); in a rider's cell, its feet where his were. Cached by its look */
 function horseSprite(L){const key='hz'+L.mount+(L.mountC||'')+L.team+(L.barded?'b':'');if(spr[key])return spr[key];
-  const g=pgrid(32,32);drawMount(g,{...L,saddled:true},-1);poutline(g);return spr[key]=cellOf(pcanvas(g))}
+  const g=pgrid(32,32);g.edge=true;drawMount(g,{...L,saddled:true},-1);poutline(g);return spr[key]=cellOf(pcanvas(g))}
 /* the fallen (vfx.js drawCorpses): a man flat where he fell, head the way he faced, turned a quarter pixel for pixel so he stays
    crisp; a rider thrown from his mount, which lies low beside him; a beast slumped where it stood. stand: him upright (his fall
    turns it about his feet), body: him lying, ax, ay: his feet in it; wk: the weapon he dropped; mount: his mount standing, down:
@@ -88,7 +88,7 @@ function corpseOf(u){
   if(ST[u.type]&&ST[u.type].beast)c={beast:base,down:actorSprite(u,PX.BEAST_DEAD),how:BEAST_FALL[u.type]||'side'};
   else{const L=unitLook(u),wk=heldWeapon(L),g=pgrid(24,20);drawFigure(g,{...L,mount:null,weapon:wk?null:L.weapon},4,3,-1,null,-1);const lie=pturn(g);poutline(g);poutline(lie);
     c={stand:pcanvas(g),body:pcanvas(lie),ax:2,ay:12,wk,team:L.team};
-    if(L.mount){const m=pgrid(32,32),d=pgrid(32,22);drawMount(m,L,-1);drawMountDown(d,L);poutline(m);poutline(d);c.mount=pcanvas(m);c.down=pcanvas(d);DOWN_LOOK.set(c.down,L)}}
+    if(L.mount){const m=pgrid(32,32),d=pgrid(32,22);m.edge=d.edge=true;drawMount(m,L,-1);drawMountDown(d,L);poutline(m);poutline(d);c.mount=pcanvas(m);c.down=pcanvas(d);DOWN_LOOK.set(c.down,L)}}
   CORPSES.set(base,c);return c}
 /* one knocked down, not dead (render.js drawDowned): him falling and lying as the fallen do, but his weapon kept in his hand (the
    owner, 2026-11-01: "draw a weapon from start to finish"), GEAR.room rows over him for it (top); his corpse's (corpseOf) when he

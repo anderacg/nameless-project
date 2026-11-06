@@ -34,12 +34,12 @@ function drawBlade(set,hx,hy,deg,k,Tm,skin,len=WPN[k][0],thin=false){
   if(head==='guard'){shaft.slice(1).forEach(([x,y])=>set(x,y,M[0]));set(hx-s,hy+c,PPAL.gold[1]);set(hx+s,hy-c,PPAL.gold[2]);
     // (thin: its edge a tone darker down the blade's far side, its point lit, a pommel behind the hand)
     if(thin){shaft.slice(1,-1).forEach(([x,y],j)=>{if(j&1)set(x,y,M[1])});set(tx,ty,'#ffffff');set(Math.round(hx-c),Math.round(hy-s),PPAL.gold[2])}}
-  // (a spearhead: thin (a paper doll's), its socket, a leaf of steel three pixels long, a pixel either side of it where it widens;
-  //  else its tip two pixels)
+  // (a spearhead: thin (a paper doll's), on the shaft's last pixels (its length as it was): its socket, a leaf of steel three pixels
+  //  long, a pixel either side of it where it widens; else its tip two pixels)
   const P=(t,n)=>[Math.round(tx+c*t-s*n),Math.round(ty+s*t+c*n)];
-  if(head==='tip'&&thin){set(...P(0,0),M[2]);set(...P(1,0),M[1]);set(...P(2,0),M[1]);set(...P(3,0),M[0]);set(...P(1,-1),M[2]);set(...P(1,1),M[2])}
+  if(head==='tip'&&thin){set(...P(-3,0),M[2]);set(...P(-2,0),M[1]);set(...P(-1,0),M[1]);set(...P(0,0),M[0]);set(...P(-2,-1),M[2]);set(...P(-2,1),M[2])}
   else if(head==='tip'){set(tx,ty,M[1]);set(tx+c,ty+s,M[0])}
-  if(head==='pennant'&&thin){set(...P(0,0),M[2]);set(...P(1,0),M[1]);set(...P(2,0),M[0]);set(...P(1,-1),M[2]);set(...P(1,1),M[2]);set(tx-s,ty+c,Tm[1]);set(tx-s*2,ty+c*2,Tm[2])}
+  if(head==='pennant'&&thin){set(...P(-2,0),M[2]);set(...P(-1,0),M[1]);set(...P(0,0),M[0]);set(...P(-1,-1),M[2]);set(...P(-1,1),M[2]);set(tx-s,ty+c,Tm[1]);set(tx-s*2,ty+c*2,Tm[2])}
   else if(head==='pennant'){set(tx,ty,M[0]);set(tx-s,ty+c,Tm[1]);set(tx-s*2,ty+c*2,Tm[2]);set(tx-s-c,ty+c-s,Tm[1])}
   if(head==='axe'||head==='bigaxe'){for(let i=1;i<=(head==='bigaxe'?3:2);i++){set(tx-s*i,ty+c*i,M[1]);set(tx-s*i-c,ty+c*i-s,M[2])}if(head==='bigaxe')for(let i=1;i<=2;i++)set(tx+s*i,ty-c*i,M[1])}
   if(head==='hammer'){for(let i=-1;i<=1;i++){set(tx-s*i,ty+c*i,M[1]);set(tx-s*i-c,ty+c*i-s,M[2])}}
