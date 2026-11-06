@@ -30,7 +30,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   const s0=t.unitSprite('militia',1,false,2,0),d0=s0.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s0.width,s0.height).data;let dark=0;for(let i=0;i<d0.length;i+=4)if(d0[i+3]>150&&d0[i]<40&&d0[i+1]<40&&d0[i+2]<50)dark++;
   // (2026-11-06: paper dolls, engine/doll.js and dollfigs.js: the body unoutlined, its gear outlined on its own)
   {const L=t.lookOf('militia',1,false,2),b=t.peopleSprite({...L,weapon:null,shield:null},0),db=b.getContext('2d').getImageData(0,0,b.width,b.height).data;let nb=0;for(let i=0;i<db.length;i+=4)if(db[i+3]&&db[i]===0x1a&&db[i+1]===0x1c&&db[i+2]===0x26)nb++;
-   ok(s0.width===32&&s0.cw===24&&s0.ch===16&&t.dollable(L)&&!nb&&dark>0,'soldiers are paper dolls (a 24-pixel canvas, room for a weapon, in its 32-pixel cell; '+s0.ch+' tall): the body unoutlined, its gear outlined ('+dark+' px)')}
+   ok(s0.width===32&&s0.cw===24&&s0.ch===16&&t.dollable(L)&&!nb,'soldiers are paper dolls (a 24-pixel canvas, room for a weapon, in its 32-pixel cell; '+s0.ch+' tall): unoutlined, body and gear, as the owner\'s reference')}
   const w=t.whiteOf(s0),wd=w.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w.width,w.height).data;let white=0,any=0;for(let i=0;i<wd.length;i+=4)if(wd[i+3]){any++;if(wd[i]===255&&wd[i+1]===255)white++}ok(any&&white===any,'a struck fighter flashes white');
   const m=t.worldCv().getContext('2d', { willReadFrequently: true }).getImageData(t.townBy('Ashford').x-200,t.townBy('Ashford').y-200,400,400).data,cols=new Set();for(let i=0;i<m.length;i+=16)cols.add(m[i]>>3<<10|m[i+1]>>3<<5|m[i+2]>>3);
   ok(cols.size>40,'the world map is painted in '+cols.size+' shades around Ashford');
@@ -75,7 +75,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   world2();P.troops={hum_spear:1,hum_foot:1};t.startBattle({enemies:['militia'],tournament:false});const B=t.B,sp=B.units.find(u=>u.type==='hum_spear'),sw=B.units.find(u=>u.type==='hum_foot');
   const st=(u,k)=>t.holdOf(u,k)[0];[sp,sw].forEach(u=>{u.tgt=null;u.atkAt=null;u.stun=0;u.spdNow=0});
   const restS=st(sp,'spear'),restW=st(sw,'sword');sp.spdNow=sp.s.spd;sw.spdNow=sw.s.spd;const runS=st(sp,'spear'),runW=st(sw,'sword');sw.spdNow=sw.s.spd*.55;const marchW=st(sw,'sword');
-  ok(restS<-80&&Math.abs(runS)<20,'a spear: upright at rest, levelled in a charge ('+restS+' \u2192 '+runS+')');
+  // (2026-11-06: a paper doll's spear across his back at rest, its tip up and forward, as the owner's reference)
+  ok(restS<-45&&restS>-80&&Math.abs(runS)<20,'a spear: across his back at rest, levelled in a charge ('+restS+' \u2192 '+runS+')');
   ok(restW>40&&marchW<-100&&runW<-100,'a sword: point down at rest, on the shoulder on the march, raised up and back in a charge ('+restW+', '+marchW+', '+runW+')');
   sp.spdNow=sw.spdNow=0;sp.tgt={x:sp.x+18,y:sp.y+8,hp:1,s:{}};sw.tgt={x:sw.x+18,y:sw.y,hp:1,s:{}};ok(st(sp,'spear')>0&&st(sp,'spear')<35&&st(sw,'sword')<0&&st(sw,'sword')>-70,'a foe close by: the spear points at him, the sword comes up in guard');
   sw.atkStyle='swing';const at=f=>{sw.atkAt=B.t-f*t.ATK_ANIM;return st(sw,'sword')};const a0=at(.05),a1=at(.42),a2=at(.6);ok(a0<a1&&a1<a2&&a0<-100&&a2>30&&at(.2)===a0,'a blow: a wind-up held a moment, then a fast strike from raised behind to down in front ('+[a0,a1,a2].map(Math.round).join(' \u2192 ')+')');

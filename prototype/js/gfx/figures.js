@@ -45,8 +45,11 @@ class FigureGear{
 // battle's is (weapons.js drawBlade), the tip flashing as it strikes
 class HandWeapon extends FigureGear{
   constructor(k){super('main','hand');this.k=k}
+  // (a paper doll's pole at rest goes across his back, behind him, as the owner's reference carries it)
+  behindNow(o,p){return DOLL_FIGS.on&&dollable(o)&&POLE(this.k)&&this.k!=='lance'&&!(p.atk>=0&&p.style)}
   draw(set,o,p){const k=this.k,blow=p.atk>=0&&!!p.style,t=blow&&(POLE(k)&&k!=='lance'&&p.style==='swing'?POLE_SWING:SWING[p.style]||SWING.swing)[p.atk];
-    const tip=drawBlade(set,t?t[0]:0,t?t[1]:0,t?t[2]:WPN_REST[k]??-90,k,pal(o.team),pal(o.skin)[1]);if(blow&&p.atk===1)set(tip[0],tip[1],'#ffffff')}
+    const kind=k==='lance'?'lance':POLE(k)?'pole':k==='great'||k==='bigaxe'||k==='hammer'?'heavy':'blade',doll=dollable(o),rest=doll&&!WPN_REST[k]?holdTab(kind,o).rest:WPN_REST[k]??-90;
+    const tip=drawBlade(set,t?t[0]:0,t?t[1]:0,t?t[2]:rest,k,pal(o.team),pal(o.skin)[1],undefined,doll);if(blow&&p.atk===1)set(tip[0],tip[1],'#ffffff')}
 }
 // a shooter's weapon in the hand, by the body's frame: swing, the loose (drawn, the flash, at rest); thrust, the draw (half, full,
 // held at full, the tip catching the light); overhead, the reload (a bow's hand back to the quiver and an arrow nocked; a crossbow
@@ -149,13 +152,15 @@ class FigureRig{
   // only where the body and what is already behind it are not; then in front, the nearest last
   static dress(g,o,A,style,atk){const G=FigureRig.gearOf(o,A.map),p={style,atk,sh:A.sh||0,ly:A.ly,cut:A.cut};
     const put=(x,X,Y,under)=>x.draw(under?(i,j,c)=>{if(!pget(g,Math.round(X+i),Math.round(Y+j)))pset(g,X+i,Y+j,c)}:(i,j,c)=>pset(g,X+i,Y+j,c),o,p);
-    for(let i=G.length-1;i>=0;i--)if(G[i].layer<0)put(G[i],A[G[i].at][0],A[G[i].at][1],true);
-    for(const x of G)if(x.layer>0)put(x,A[x.at][0],A[x.at][1],false)}
+    const lay=x=>x.behindNow&&x.behindNow(o,p)?-1:x.layer;
+    for(let i=G.length-1;i>=0;i--)if(lay(G[i])<0)put(G[i],A[G[i].at][0],A[G[i].at][1],true);
+    for(const x of G)if(lay(x)>0)put(x,A[x.at][0],A[x.at][1],false)}
   /* the finished picture: g outlined round all it holds, cut to its frame (w wide, about g's middle less R each side; down to g's
      bottom from R in), grown each way only as far as its pixels reach past it, evenly about the frame's middle so its feet stay the
      cell's bottom middle (sprites.js cellOf); A: the body's anchors in g (people.js drawFigureBody), of which the picture keeps
      hand (the weapon hand), free (the off hand) and back (FIG_ANCHORS); fh: the figure's height (its bars and labels); rig */
-  static frame(g,R,w,A,fh,rig){poutline(g);let x0=g.w,x1=-1;const top=Math.min(R,ptop(g));
+  // (a paper doll and its gear unoutlined, as the owner's reference: dollfigs.js)
+  static frame(g,R,w,A,fh,rig){if(!g.body)poutline(g);let x0=g.w,x1=-1;const top=Math.min(R,ptop(g));
     for(let i=0;i<g.p.length;i++)if(g.p[i]){const x=i%g.w;if(x<x0)x0=x;if(x>x1)x1=x}
     const cx=R+(w>>1),half=Math.max(w>>1,cx-x0,x1+1-cx),c=pcanvas(pcrop(g,cx-half,top,2*half,g.h-top));c.fh=fh;for(const k of FIG_ANCHORS)c[k]=[A[k][0]-(cx-half),A[k][1]-top];c.rig=rig;return c}
 }

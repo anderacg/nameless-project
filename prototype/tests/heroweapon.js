@@ -26,7 +26,8 @@ Kit.suite(({ok,info})=>{
     try{Object.assign(u,{x:W/2,y:H-6,plx:W/2,ply:H-6,face:f,hitAt:null,stun:0,spdNow:p>=15?u.s.spd*.9:p>=2&&p<=5?u.s.spd*.5:0,movF:0,z:0,wIdx:null,tgt:null,
       atkAt:p>=6&&p<=14?B.t-t.ATK_ANIM*((p-6)%3+.5)/3:null,atkStyle:p>=12?'overhead':p>=9?'thrust':'swing'});t.drawUnit(u)}finally{setCtx(k)}};
   const sprite=mk=>c=>{const s=mk(),k=t.WORLD_BATTLE.sprite/t.WORLD_BATTLE.scale*2,g=c.getContext('2d');g.save();g.translate(W/2,H-4);g.scale(k,k);g.drawImage(s,-(s.width>>1),-s.height+2);g.restore()};
-  const POSES=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,41,42,43],MIN=4;
+  // (MIN: 3 since 2026-11-06, a paper doll's weapon a thin unoutlined line, 3 px of a sword past his raised shield)
+  const POSES=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,41,42,43],MIN=3;
   const all=(label,cells)=>{const bad=cells.map(([n,d])=>[n,seen(d)]).filter(([n,v])=>v<MIN);ok(!bad.length,label+(bad.length?': none seen in '+bad.map(([n,v])=>n+' ('+v+')').join(', '):''));return bad};
   const P0={...P.gear};
   for(const b of ['sword','spear','greatsword','warhammer','bow','crossbow','staff']){P.gear.weapon='g_'+b+'_2';P.gear.offhand=null;h.look=null;h.side=null;

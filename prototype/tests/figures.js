@@ -10,7 +10,8 @@ Kit.suite(({ok})=>{
  const isOut=(d,i)=>d[i]===OUT[0]&&d[i+1]===OUT[1]&&d[i+2]===OUT[2];
  // ---- nothing cut off, the feet where they were
  {const L=k=>t.lookOf(k,0,false,0,'',null),fig=t.unitSprite('hum_pike',0,false,0,0),body=t.unitSprite('hum_pike',0,false,0,0,true),b=t.opaqueBox(fig),bb=t.opaqueBox(body);
-  ok(fig.height-b[1]>19&&b[3]===bb[3]&&b[3]===fig.height-1,'a pike stands its full length over the old 24 x 19 frame ('+(fig.height-b[1])+' rows), the feet on the cell\'s bottom row as the body\'s');
+  // (2026-11-06: a paper doll's pike across his back, its tip up and forward: it reaches past the old frame's top or its side)
+  ok((fig.height-b[1]>16||b[2]-b[0]>bb[2]-bb[0]+8)&&b[3]===bb[3]&&b[3]===fig.height-1,'a pike reaches its full length past the old 24 x 19 frame ('+(fig.height-b[1])+' rows, '+(b[2]-b[0]+1)+' wide), the feet on the cell\'s bottom row as the body\'s');
   const lance=t.unitSprite('hum_knight',0,false,0,10),lb=t.opaqueBox(lance);ok(lb[2]-(lance.width>>1)>16,'a rider\'s lance levelled in a thrust reaches past his 32-px frame ('+(lb[2]-(lance.width>>1))+' px before his middle)');
   const m=t.unitSprite('militia',1,false,2,0);ok(m.width===32&&m.cw===24&&m.ch===16,'a figure whose gear fits keeps its frame (24 wide, 16 high in a 32 cell)');
   const mids=['hum_spear','hum_pike','hum_bow','dw_axe','elf_blade'].every(k=>{const a=t.unitSprite(k,0,false,0,0),c=t.unitSprite(k,0,false,0,0,true);return a.width===c.width||Math.abs(a.hand[0]-a.width/2-(c.hand[0]-c.width/2))<1});
@@ -24,7 +25,7 @@ Kit.suite(({ok})=>{
   ok(t.GEAR.layer.shield<0&&t.GEAR.layer.quiver<0&&t.GEAR.layer.main>0&&t.GEAR.layer.guard>0,'one table says it (GEAR.layer)')}
  // ---- what a unit carries
  {const arm=t.unitSprite('hum_bow',0,false,0,0,true,true),bare=t.unitSprite('hum_bow',0,false,0,0,true);ok(px(arm).join()!==px(bare).join()&&t.opaqueBox(arm)[0]<t.opaqueBox(t.unitSprite('hum_bow',0,false,0,0,true,false))[0]+1,'an archer in melee mode has his bow on his back');
-  const off=t.unitSprite('hum_knight',0,false,0,0,false,false,null,true),ob=t.opaqueBox(off);ok(off.height-ob[1]>19&&!t.unitLook({type:'hum_knight',team:0,v:0,afoot:true}).mount,'a rider off his horse carries his lance, as long as it is');
+  const off=t.unitSprite('hum_knight',0,false,0,0,false,false,null,true),ob=t.opaqueBox(off);/* (>18 since 2026-11-06: a paper doll's lance unoutlined, a row less over it) */ok(off.height-ob[1]>18&&!t.unitLook({type:'hum_knight',team:0,v:0,afoot:true}).mount,'a rider off his horse carries his lance, as long as it is');
   const it=Object.keys(t.ITEMS).find(k=>t.ITEMS[k].icon==='shield'),w0=P.gear.offhand;const h0=px(t.unitSprite('hero',0,true,0,0)).join();P.gear.offhand=it;
   try{const L=t.lookOf('hero',0,true,0);ok(px(t.unitSprite('hero',0,true,0,0)).join()!==h0&&L.offShield&&!L.shield,'a shield in your hero\'s off hand shows on his arm (drawn only: offShield, the look\'s shield the AI reads untouched)')}finally{P.gear.offhand=w0}}
  // ---- the finished figures' LRU
