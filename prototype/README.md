@@ -212,7 +212,8 @@ js/ui/march.js         the Army window's March formation tab: Field (drag your g
                        By road (ColumnEditor: your column's order, dragged or tapped along its preview), each Apply, Reset, Discard
 js/battle/sides.js    BattleSides: per-army relationships, reinforcement budgets, participation rewards and continued NPC fights
 js/world/townwalls.js walls round holdings on the map (TOWN_WALL, TownWall): the ring round a walled holding and its estates,
-                      gates where roads cross, shut on the router's layer (SHUT bit 4), drawn among the buildings
+                      gates where roads cross, shut on the router's layer (SHUT bit 4), drawn among the buildings; its gates
+                      shut to its foes (shutTo), its besiegers' camp outside a gate (camp)
 js/battle/interior.js fights inside (INTERIOR, InteriorLayout, InteriorArt, Interior, InteriorSetup): caves, ruins' cellars and hideouts
                       fought on a rock-walled ground of their own; who goes in (the page), the dark, the foes waiting in their chambers
 js/battle/siegeworks.js a siege's walls on the field (SIEGE_WALL, SiegeWorks, SiegeArt, SiegeSetup): the wall-walk, towers, the gate

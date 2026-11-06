@@ -30,7 +30,9 @@ class HoldingObject extends WorldObject{
   // and houses"). Its siege's and raid's leashes past this reach (world.js marchStep, siege.js). Its gate is part of it (the owner,
   // 2026-11-01): its centre's lot and its gate's tile, one box (holdingGate). Its walls solid (PATHS.holding, battle/route.js: the
   // owner, 2026-11-02), at its gate alone: a tile each way round its point (in its front wall's gate) and its gate's tile, one box
-  reachRadius(){const c=Layout.of(this).centre();if(!c)return REACH;const b=lotBox(c),g=holdingGate(this,c),h=TILE/2;
+  // (its gates shut to you (world/townwalls.js): met before the gate you come to, its camp, not at its keep)
+  meetPoint(){return HOLD_SHUT.ring.get(this)?.closed?TownWall.camp(this,P):null}
+  reachRadius(){const c=Layout.of(this).centre();if(!c)return REACH;const q=this.meetPoint();if(q){const h=TILE*1.5;return boxReach(this,{x0:Math.min(this.x,q.x)-h,y0:Math.min(this.y,q.y)-h,x1:Math.max(this.x,q.x)+h,y1:Math.max(this.y,q.y)+h})}const b=lotBox(c),g=holdingGate(this,c),h=TILE/2;
     if(PATHS.holding&&c.st!=='ruined'){const y=(c.y+c.n)*TILE;return boxReach(this,{x0:Math.min(this.x-TILE,g.x-h),y0:y-TILE,x1:Math.max(this.x+TILE,g.x+h),y1:Math.max(y+TILE,g.y+h)})}
     return boxReach(this,{x0:Math.min(b.x0,g.x-h),y0:Math.min(b.y0,g.y-h),x1:Math.max(b.x1,g.x+h),y1:Math.max(b.y1,g.y+h)})}
   draw(ents,cam,V){holdingEnts(this,ents,cam,V)}

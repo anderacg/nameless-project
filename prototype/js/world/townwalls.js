@@ -11,9 +11,10 @@
    walls, as before ---------- */
 /* TOWN_WALL, the one table. on; reach: a lot farther from the holding's tile than this (tiles) stays outside; pad: the ring's tiles
    out from the outermost lot or field; gate: the tiles opened either side of a road's; merge: gates this near
-   (tiles) one; towers: a tower every so many tiles of a stone wall's stretch; h: the wall's height by the walls (px:
+   (tiles) one; alarm: an army at war with it marching on it this near (tiles), or you its foe outside its walls, shuts its gates;
+   camp: its besiegers' camp this far out of a gate (tiles); towers: a tower every so many tiles of a stone wall's stretch; h: the wall's height by the walls (px:
    none, palisade, stone, great); top: its walk's depth (px); tower: a tower's rise over the wall (px) */
-const TOWN_WALL={on:true,reach:14,pad:1,gate:1,merge:3,towers:7,h:[0,10,13,16],top:6,tower:7};
+const TOWN_WALL={on:true,reach:14,pad:1,gate:1,merge:3,towers:7,alarm:16,camp:3,h:[0,10,13,16],top:6,tower:7};
 const RINGS=new WeakMap();
 class TownWall{
   // (what changes it: the walls, the lots there are and those in ruins)
@@ -47,10 +48,23 @@ class TownWall{
   static evict(shut){const S=new Set(shut),W2=typeof W!=='undefined'?W:{},who=[P,...(W2.lords||[]),...(W2.caravans||[]),...bandits,...(W2.refugees||[]),...(W2.monsters||[]),...(W2.critters||[]),...(W2.patrols||[]),...(W2.folk||[])];
     for(const o of who){if(!o||o.x==null)continue;const tx=Math.floor(o.x/TILE),ty=Math.floor(o.y/TILE);if(!S.has(ty*MW+tx))continue;
       for(let r=1;r<6;r++){let done=false;for(let j=-r;j<=r&&!done;j++)for(let i=-r;i<=r;i++){const x=tx+i,y=ty+j;if(Math.max(Math.abs(i),Math.abs(j))!==r||!passable(tAt(x,y))||S.has(y*MW+x)||TownWall.at(x,y))continue;o.x=(x+.5)*TILE;o.y=(y+.5)*TILE;done=true;break}if(done)break}}}
+  /* (the owner, 2026-11-06: gates shut to its foes) its gates shut: while it is besieged (a lord's siege, yours), an army at war with
+     it marches on it within TOWN_WALL.alarm tiles, or you, its foe, stand outside its walls that near; then no one passes (holdShut
+     shuts its gates too), and its besiegers camp outside a gate (camp) */
+  static shutTo(t){const r=TownWall.of(t);if(!r)return false;if(t.besiegers().length||mySiege(t))return true;const A=TOWN_WALL.alarm*TILE,near=o=>Math.hypot(o.x-t.x,o.y-t.y)<A;
+    if(t.owner&&W.lords.some(l=>!l.dead&&!l.inside&&l.tgt===t.name&&l.state==='march'&&atWar(l.fac,t.owner)&&near(l)))return true;
+    const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE),inside=tx>r.x0&&tx<r.x1&&ty>r.y0&&ty<r.y1;return foeAt(t)&&near(P)&&!inside}
+  // (where its besiegers camp: TOWN_WALL.camp tiles out of the gate nearest from (an army, you); null with no walls or no gate)
+  static camp(t,from){const r=TownWall.of(t);if(!r||!r.gates.length)return null;let best=null,bd=Infinity;
+    for(const i of r.gates){const x=i%MW,y=(i-x)/MW,d=Math.hypot((x+.5)*TILE-from.x,(y+.5)*TILE-from.y);if(d<bd){bd=d;best=[x,y]}}
+    const [x,y]=best,c=TOWN_WALL.camp,dx=x===r.x0?-c:x===r.x1?c:0,dy=y===r.y0?-c:y===r.y1?c:0;return{x:(x+.5+dx)*TILE,y:(y+.5+dy)*TILE}}
   // (is tile (tx, ty) one of a ring's walls: SHUT's bit 4, router.js)
   static at(tx,ty){return !!SHUT&&tx>=0&&ty>=0&&tx<MW&&ty<MH&&(SHUT[ty*MW+tx]&4)>0}
   // its walls among the buildings: each piece by its feet, as you have seen its ground
   static ents(t,ents,cam){const r=TownWall.of(t);if(!r)return;const L=wallOf(t),S=TownWall.look(t),H=TOWN_WALL.h[L];
+    // (its gates shut: their doors across them)
+    if(HOLD_SHUT.ring.get(t)?.closed)for(const i of r.gates){const x=i%MW,y=(i-x)/MW;if(!seenTile(x,y))continue;const X=x*TILE-cam.x,foot=(y+1)*TILE,Y=foot-cam.y;if(X<-24||X>VW+24||Y<-4||Y-H-40>VH)continue;
+      const s=TownWall.sprite(S,L,y===r.y0||y===r.y1?'dh':'dv');ents.push({y:foot-1,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}
     for(const p of r.parts){const X=p.x*TILE-cam.x,foot=(p.y+1)*TILE,Y=foot-cam.y;if(X<-24||X>VW+24||Y<-4||Y-H-40>VH)continue;if(!seenTile(p.x,p.y))continue;
       const s=TownWall.sprite(S,L,p.k);ents.push({y:foot-1,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}}
   // (its culture's colours: stone for stone and great walls (its arena's, a stone culture's, else the Vale's), timber for a palisade)
@@ -60,7 +74,7 @@ class TownWall{
      merlons over its face; 'v' one down, its walk between two parapets raised over its tile, its face at its foot; 'c' and 't' a
      tower, wider and taller, crenellated, an arrow slit in its face. A palisade's of stakes, its towers of timber */
   static sprite(S,L,k){const key='twall'+S.cul+L+k;if(spr[key])return spr[key];const X=TOWN_WALL,H=X.h[L],T=X.top,stake=L<=1,C=stake?S.wood:S.stone,cv=TownWall.piece(C,H,T,k,stake);return spr[key]=cv}
-  static piece(C,H,T,k,stake){let W,Hh,ax;if(k==='h'){W=16;Hh=H+T;ax=0}else if(k==='v'){W=8;Hh=16+H;ax=-4}else{W=20;Hh=16+H+TOWN_WALL.tower;ax=2}
+  static piece(C,H,T,k,stake){if(k==='dh'||k==='dv')return TownWall.doors(C,H,T,k,stake);let W,Hh,ax;if(k==='h'){W=16;Hh=H+T;ax=0}else if(k==='v'){W=8;Hh=16+H;ax=-4}else{W=20;Hh=16+H+TOWN_WALL.tower;ax=2}
     const cv=mkcv(W,Hh),g=cv.getContext('2d');cv.ax=ax;
     if(k==='h'){// (its face below, the walk over it, merlons along its top)
       for(let y=0;y<H;y++)for(let x=0;x<W;x++){const row=y>>2,c=stake?(x%3===0?C[3]:x%3===1?C[0]:C[1]):(y%4===0||(x+(row&1)*4)%8===0)?C[2]:C[1];g.fillStyle=c;g.fillRect(x,T+y,1,1)}
@@ -77,4 +91,8 @@ class TownWall{
       rect(g,C[3],0,0,W,fy);rect(g,stake?C[2]:C[1],1,1,W-2,fy-2);rect(g,C[2],4,4,W-8,fy-8);
       if(stake){for(let x=0;x<W;x+=2)rect(g,x%4?C[1]:C[0],x,0,2,3)}else{for(let x=0;x<W;x+=5){rect(g,C[0],x,0,3,3);rect(g,C[2],x,3,3,1)}for(let y=0;y<fy;y+=5){rect(g,C[0],0,y,2,3);rect(g,C[0],W-2,y,2,3)}}}
     return cv}
+  // (a shut gate: its doors of studded planks across a stretch (dh), or their edge down one (dv), a dark arch over them)
+  static doors(C,H,T,k,stake){const across=k==='dh',W=across?16:8,Hh=across?H+T:16+H,cv=mkcv(W,Hh),g=cv.getContext('2d');cv.ax=across?0:-4;
+    const P2=['#3a2410','#6a4428','#8a5a34'],y0=across?T:16;rect(g,'#14100c',0,across?0:0,W,across?T:16);for(let x=0;x<W;x+=4){rect(g,P2[1],x,y0,3,H);rect(g,P2[2],x,y0,1,H)}rect(g,'#3a3a40',0,y0+2,W,1);rect(g,'#3a3a40',0,y0+H-4,W,1);
+    for(let x=1;x<W;x+=4)rect(g,'#c8c8d0',x,y0+H/2,1,1);rect(g,P2[0],0,y0+H-1,W,1);return cv}
 }

@@ -48,7 +48,8 @@ class LordBrain extends Brain{
       // from him (the owner, 2026-11-01: "same goes for all entity"; engage.js safeRefuge))
       {const f=hostile&&fearOf(l,st)||dread;if(f&&l.state!=='siege'&&!safeRefuge(l,{x:t.x,y:t.y+12},f)){const alt=Spatial.nearest(fiefsOf(l.fac).filter(h=>h!==t&&safeRefuge(l,{x:h.x,y:h.y+12},f)),l.x,l.y);
         if(!alt){Router.flee(l,f,moveStep(26*mul,d));return false}l.tgt=alt.name;t=alt}}
-      const tx=t.x+(l.state==='siege'?(l.id.endsWith('0')?-16:16):0),ty=t.y+12,dd=Math.hypot(tx-l.x,ty-l.y);
+      // (a walled holding it marches on to take: its camp outside a gate, world/townwalls.js; else before its keep's gate)
+      const cp=atWar(l.fac,t.owner)&&TownWall.camp(t,l),tx=(cp?cp.x:t.x)+(l.state==='siege'?(l.id.endsWith('0')?-16:16):0),ty=cp?cp.y:t.y+12,dd=Math.hypot(tx-l.x,ty-l.y);
       if(dd>4){const step=moveStep(26*mul,d);if(dread)EscapeStamina.run(l,dread,step,n=>Router.travel(l,{x:tx,y:ty,tw:t},n),true);else Router.travel(l,this.way(l,tx,ty,t),step)}
       else if(l.state==='march'){
         if(atWar(l.fac,t.owner)){l.state='siege';l.sd=0;worldEmit('siege:laid',{town:t,lord:l});

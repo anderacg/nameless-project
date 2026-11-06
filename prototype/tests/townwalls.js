@@ -30,6 +30,19 @@ Kit.suite(({ok,info})=>{
   // (the world runs on: after two days no one stands in a wall)
   {Kit.world();const n=Kit.frames(900,.2),movers=[...t.W.lords.filter(l=>!l.dead&&!l.inside),...t.W.caravans||[],...t.bandits,...(t.W.refugees||[])];
    const stuck=movers.filter(o=>t.TownWall.at(Math.floor(o.x/TL),Math.floor(o.y/TL)));ok(!stuck.length,'after '+n+' frames of the world, none of '+movers.length+' parties stands in a wall'+(stuck.length?': '+stuck.slice(0,3).map(o=>o.name||o.kind).join(', '):''))}
+  // ---- shut to its foes (the owner, 2026-11-06): besieged, its gates shut too, no way in; its besiegers camp outside a gate;
+  // you, its foe, met at that gate; lifted, open again
+  {Kit.world();const L=t.W.lords.find(l=>!l.dead&&l.fac!==h.owner),s0={st:L.state,tgt:L.tgt,x:L.x,y:L.y};t.Router.holdings();ok(!t.TownWall.shutTo(h),'at peace: its gates open');
+   L.state='siege';L.tgt=h.name;t.Router.holdings();const cp=t.TownWall.camp(h,{x:(r.x0-8)*TL,y:h.y}),cx=Math.floor(cp.x/TL),cy=Math.floor(cp.y/TL);
+   ok(t.TownWall.shutTo(h)&&r.gates.every(i=>t.SHUT[i]&4),'besieged: every gate shut ('+r.gates.length+' tiles)');
+   ok(!t.findPath((r.x0-6)*TL,(r.y0+r.y1)/2*TL,h.x,h.y+12,40),'no way in while it is shut');
+   ok(!(cx>=r.x0&&cx<=r.x1&&cy>=r.y0&&cy<=r.y1)&&t.findPath((r.x0-6)*TL,(r.y0+r.y1)/2*TL,cp.x,cp.y,40),'its besiegers’ camp outside a gate, reached from outside');
+   const e=[];Kit.goTo(cp.x,cp.y);t.reveal();t.TownWall.ents(h,e,{x:P.x-t.VW/2,y:P.y-t.VH/2});const e0=e.length;t.HOLD_SHUT.ring.get(h).closed=false;const e1=[];t.TownWall.ents(h,e1,{x:P.x-t.VW/2,y:P.y-t.VH/2});t.HOLD_SHUT.ring.get(h).closed=true;
+   ok(e0>e1.length,'its gates drawn shut, their doors across them ('+(e0-e1.length)+' in view)');
+   const mp=h.meetPoint();ok(mp&&!(Math.floor(mp.x/TL)>r.x0&&Math.floor(mp.x/TL)<r.x1&&Math.floor(mp.y/TL)>r.y0&&Math.floor(mp.y/TL)<r.y1),'riding at it now: you are met before a gate, outside its walls');
+   Object.assign(L,{state:s0.st,tgt:s0.tgt});t.Router.holdings();ok(!t.TownWall.shutTo(h)&&r.gates.every(i=>!(t.SHUT[i]&4)),'the siege lifted: its gates open again');
+   t.Timed.of(P,'hostile').extend(h.owner,60);Kit.goTo((r.x0-4)*TL,(r.y0+r.y1)/2*TL);t.Router.holdings();ok(t.TownWall.shutTo(h),'you its foe at its walls: shut to you');
+   Kit.goTo(h.x,h.y+20);t.Router.holdings();ok(!t.TownWall.shutTo(h),'but not on one already inside them (you may still get out)');t.Timed.of(P,'hostile').clear?.(h.owner);Kit.world()}
   // ---- off
   {X.on=false;t.Router.holdings();ok(!t.TownWall.of(h)&&r.shut.every(i=>!(t.SHUT[i]&4)),'off: no walls, none shut')}
  }finally{X.on=on0;t.Router.holdings()}

@@ -58,5 +58,6 @@ The owner (2026-11-06): "make a wall for holding or estates": drawn **and blocki
 | No wall | On water and peaks (already impassable), or a tile another holding's building stands on |
 | Blocking | The router's layer (`SHUT` bit 4): every way (`findPath`, the chunk tables, straight lines, road legs over a wall are no way), every walker (`walk`), every march (`wayLand`), your own straight step; whoever stands on a wall as it rises steps off it |
 | Look | Standing pieces sorted with the buildings: a stretch across (its walk and merlons over its face), one down (its walk between parapets), towers at the corners, either side of each gate and every 7 tiles of stone; a palisade's stakes and timber towers; in the holding's culture; drawn where you have seen their ground |
+| Shut to its foes | (the owner, 2026-11-06, "Yes") While it is besieged (a lord's siege, yours), while an army at war with it marches on it within 16 tiles, or while you, its foe, stand outside its walls that near, its gates shut too: no one passes. Its besiegers camp 3 tiles outside the gate nearest them; riding at it, you are met at that gate. Lifted, the gates open again |
 | Saves | Never saved: made from the lots |
 | Switch | `TOWN_WALL.on` (off in the harness, so the older suites keep the map as it was) |

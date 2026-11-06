@@ -198,11 +198,12 @@ function holdShut(now){const H=HOLD_SHUT;if(!now&&H.n===WORLD_LOD.n)return;H.n=W
       for(let y=c.y;y<c.y+c.n;y++)for(let x=c.x;x<c.x+c.n;x++){const px=(x+.5)*TILE,py=(y+.5)*TILE;if(x>=0&&y>=0&&x<MW&&y<MH&&!(x===t.tx&&y===t.ty)&&F.some(r=>px>=r.x&&px<r.x+r.w&&py>=r.y&&py<r.y+r.h)){const i=y*MW+x;tiles.push(i);SHUT[i]|=2;G.chunk.delete(wayChunkOf(G,i))}}}
     H.at.set(t,{c,s,x:c&&c.x,y:c&&c.y,n:c&&c.n,tiles});moved=true}
   // (its ring of walls (world/townwalls.js: bit 4), shut or opened as it changes, every other ring's kept)
-  for(const t of TOWNS){const r=TownWall.of(t),k=H.ring.get(t)||null;if(k===r)continue;
-    if(k)for(const i of k.shut){SHUT[i]&=~4;G.chunk.delete(wayChunkOf(G,i))}
-    if(r){SHUT=SHUT||new Uint8Array(MW*MH);for(const i of r.shut){SHUT[i]|=4;G.chunk.delete(wayChunkOf(G,i))}TownWall.evict(r.shut)}
-    if(k)for(const [o,q] of H.ring)if(o!==t&&q)for(const i of q.shut)SHUT[i]|=4;
-    H.ring.set(t,r);moved=true}
+  // (its gates too while they are shut to its foes: TownWall.shutTo)
+  for(const t of TOWNS){const r=TownWall.of(t),cl=!!r&&TownWall.shutTo(t),k=H.ring.get(t)||null;if(k?k.r===r&&k.closed===cl:!r)continue;
+    if(k)for(const i of k.tiles){SHUT[i]&=~4;G.chunk.delete(wayChunkOf(G,i))}
+    const tiles=r?(cl?r.shut.concat(r.gates):r.shut):[];if(r){SHUT=SHUT||new Uint8Array(MW*MH);for(const i of tiles){SHUT[i]|=4;G.chunk.delete(wayChunkOf(G,i))}TownWall.evict(tiles)}
+    if(k)for(const [o,q] of H.ring)if(o!==t&&q)for(const i of q.tiles)SHUT[i]|=4;
+    H.ring.set(t,r?{r,closed:cl,tiles}:null);moved=true}
   if(moved){H.held=null;PAIRS.clear();WAYV++}}
 // (every holding's walls read while the game loads, each centre's picture and footing made in turn (cached on its lot: structures.js
 // lotSprite, march.js lotFooting), then holdShut at once: its last step (session.js begin, save.js loadGame), so the first frame on

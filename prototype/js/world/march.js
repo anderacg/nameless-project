@@ -99,7 +99,8 @@ function marchPlaceGap(o,r){const a=marchLive(P);if(!a)return null;const I=WORLD
 // (the owner, 2026-11-02: "I interact with other army, like meet, follow, it'll focus on the center"); not marched man by man, or
 // MARCH_MOVE.meetEdge off: its point. One answer, written afresh)
 const MARCH_MEET={x:0,y:0};
-function marchMeetAt(o){const M=MARCH_MEET,a=MARCH_MOVE.meetEdge&&o!==P&&marchLive(o);M.x=o.x;M.y=o.y;if(!a)return M;const dx=o.x-a.x,dy=o.y-a.y;let b=Infinity;
+// (a holding whose gates are shut: met before them, world/townwalls.js)
+function marchMeetAt(o){const M=MARCH_MEET,q=o.meetPoint&&o.meetPoint();if(q){M.x=q.x;M.y=q.y;return M}const a=MARCH_MOVE.meetEdge&&o!==P&&marchLive(o);M.x=o.x;M.y=o.y;if(!a)return M;const dx=o.x-a.x,dy=o.y-a.y;let b=Infinity;
   for(const u of a.units){if(u.dead)continue;const d=Math.hypot(u.x+dx-P.x,u.y+dy-P.y);if(d<b){b=d;M.x=u.x+dx;M.y=u.y+dy}}return M}
 // (in a column on the march (the caller's: never a crowd standing, nor a formation), the comrade just ahead of a marcher in his file, walking his way (within MARCH_MOVE.follow.look px past their bodies, beside him
 // by less than their bodies, facing within 60 degrees of it): he keeps pace behind him, his speed at most the comrade's (none if he
