@@ -180,6 +180,7 @@ class Cave extends Site{
       acts:[this.scoutDeed(),{icon:'cave',label:'Enter',act:'site-ask',facts:[y?'power '+this.power(y.lv)+' vs '+partyPower():insightLv()===2?'power about '+this.power(this.lvAbout)+' vs '+partyPower():'what lairs there: unknown',!this.within&&'a chest'],tip:'Go in and fight whatever lairs there. It asks you first.'}],
       note:'Whatever lairs here fights harder than in the open.'}}
   act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const y=this.spied(),{U,n}=this.lair;
+    if(a==='site-ask'&&INTERIOR.on){Interior.show(this,y&&y.lv);return true}// (who goes in with you: battle/interior.js)
     if(a==='site-ask'){railConfirm({title:'Enter the '+this.name+'?',sub:this.T.n,text:y?n+' × '+U.n.toLowerCase()+' (level '+y.lv+') wait in the dark. Once inside, you fight.':'Something lairs in the dark. Once inside, you fight.',
       facts:[y?'Power '+this.power(y.lv)+' vs your '+partyPower():'You do not know what you will meet'],confirm:['site-fight',null,'Enter'],back:['site-tab','home','Back']});return true}
     if(a==='site-fight'){G.site=null;caveFight(this,y&&y.lv);return true}return false}
@@ -319,7 +320,7 @@ class Ruins extends Site{
   lore(){const y=G.siteSpy;return y&&y.s===this&&y.ok&&y.id?y:null}
   loreTried(){const y=G.siteSpy;return !!(y&&y.s===this&&y.lore)}
   guardRoll(){const id=caveMonster(this.x,this.y);return{id,n:MONSTERS[id].count[1]+1,lv:monLevel()+1}}
-  guardFight(g,sealed){G.site=null;this.id=g.id;this.lv=g.lv;startEncounter({kind:'cave',ref:this,lv:g.lv,list:Array(g.n).fill(MONSTERS[g.id].unit),sealed:sealed||null})}
+  guardFight(g,sealed){G.site=null;this.id=g.id;this.lv=g.lv;startEncounter({kind:'cave',ref:this,lv:g.lv,list:Array(g.n).fill(MONSTERS[g.id].unit),sealed:sealed||null,inside:Interior.pick()})}
   // searching: woken (unless you hear them first: stirs, or go unheard), the fight at once; else the chest or the old lore
   search(done){const r=Math.random(),wake=this.stirs||r<RUIN.wake;
     if(wake&&!this.stirs&&Math.random()<awareChance()){this.stirs=true;train('scout',3);return done('Something stirs below… Your scouts hear it first: whatever guards the treasure is waking. Search anyway, or leave.')}
@@ -398,7 +399,7 @@ class Lair extends Site{
   spyLine(){const l=this.all(this.spied().list);return 'Your scouts crawl back unseen: '+l.length+' of them, power '+this.power(l)+'.'}
   alarm(){log('A sentry shouts: your scouts are seen. They come out for you!','bad');this.fight(false)}
   // the fight (mine: you started it, and may still call it off), its own fighters as scouted, or rolled now as walking in did
-  fight(mine,own){G.site=null;G.youAttack=mine;this.attack(own)}
+  fight(mine,own,inside){G.site=null;G.youAttack=mine;this.attack(own,inside)}
   page(r,step){const s=this,y=s.spied(),g=s.guess(),ld=s.ld,band=LAIR_SAY[s.bandKind];
     if(s.cleared)return{body:'<p>The '+s.T.n.toLowerCase()+' lies empty: cold fires and trampled ground.'+(s.back>G.day?' Others will gather here again in '+Math.max(1,s.back-G.day)+' days.':'')+'</p>'};
     const yl=G.siteSpy&&G.siteSpy.s===s&&G.siteSpy.yielded;
@@ -421,6 +422,7 @@ class Lair extends Site{
       acts:[s.scoutDeed(),{icon:'attack',label:'Attack',act:'site-ask',facts:[y?'power '+pw+' vs '+partyPower():insight(['what waits inside: unknown',lk[0].replace('They look ',''),'power about '+pw+' vs '+partyPower()],'know their strength')],tip:'Storm it: its fighters, its chieftain and any band sheltering there. It asks you first.'},
         {icon:'truce',label:'Parley',act:'site-tab',arg:'parley',facts:['pay them off','or make them yield'],tip:'Talk: pay them to break camp, or, if they fear you, demand their surrender.'}]}}
   act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const s=this,y=s.spied();
+    if(a==='site-ask'&&INTERIOR.on&&s instanceof Hideout){Interior.show(s);return true}// (a hideout is stormed inside: who goes in with you, battle/interior.js)
     if(a==='site-ask'){const g=s.guess(),all=y&&s.all(y.list);railConfirm({title:'Attack the '+s.T.n.toLowerCase()+'?',sub:s.name,text:'You storm it: '+(all?all.length+' fighters':roughly(g.n)+' of them, as far as you can tell')+', their chieftain at their head.',
       facts:[all?'Power '+s.power(all)+' vs your '+partyPower():insight(['You cannot tell how strong they are',looks(g.pw/Math.max(1,partyPower()))[0],'Power about '+g.pw+' vs your '+partyPower()],'know their strength'),'You may still call it off before the first blow'],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
     if(a==='site-attack'){s.fight(true,y&&y.list);return true}
@@ -470,7 +472,8 @@ class Hideout extends Lair{
   // its raiders and chieftain (makeEnemies, as startEncounter makes them from n), and the fight with them
   foes(){return makeEnemies(this.garrison(),true,this.band)}
   garrison(){return rint(...this.tune.foes)+Math.floor(G.day/15)}
-  attack(own){startEncounter(own?{kind:'camp',ref:this,n:own.length-1,list:own,band:this.band}:{kind:'camp',ref:this,n:this.garrison(),band:this.band})}
+  // (inside: who goes in with you, battle/interior.js; none chosen, the best of your band)
+  attack(own,inside){const I={inside:inside||Interior.pick()};startEncounter(own?{kind:'camp',ref:this,n:own.length-1,list:own,band:this.band,...I}:{kind:'camp',ref:this,n:this.garrison(),band:this.band,...I})}
   // (its plunder: the gold x tune's, and maybe another piece of gear)
   plunder(res){const T=this.tune;res.gold=Math.round(res.gold*T.gold);if(!T.gear||Math.random()>=T.gear)return '';const id=randomGear(0,gearTop());
     return invAdd('gear',id,1)?' Among their plunder: a <span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEMS[id].n+'</span>.':' '+BAG_FULL+'. You leave a '+ITEMS[id].n+' behind.'}
@@ -642,9 +645,10 @@ function valuablesFound(where,who){
   return said.length?' '+(where==='lord'||where==='chief'?pr(who).His+' purse holds ':where==='camp'?'Among their plunder: ':'Among the gold: ')+said.join(', ')+'.':' '+BAG_FULL+': you leave their valuables.';
 }
 // (lv: its level as your scouts saw it; else rolled now)
-function caveFight(s,lv){
+// (inside: who went in with you, battle/interior.js Interior.pick; none chosen, the best of your band)
+function caveFight(s,lv,inside){
   const M=MONSTERS[s.id];s.lv=lv||monLevel()+1;
-  startEncounter({kind:'cave',ref:s,lv:s.lv,list:Array(M.count[1]+1).fill(M.unit)});
+  startEncounter({kind:'cave',ref:s,lv:s.lv,list:Array(M.count[1]+1).fill(M.unit),inside:inside||Interior.pick()});
 }
 
 /* the window (window.js): a page (PAGE_SCREEN: the site's page, G.siteTab a step inside it), or the site's areas down the rail,

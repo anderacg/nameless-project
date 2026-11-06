@@ -18,7 +18,7 @@
 const FIELD_SIZES={on:true,order:['small','big','large','vlarge','huge'],
   small:{n:'Small',w:960,h:544,back:32,depth:288,band:0},big:{n:'Big',w:1280,h:720,back:96,depth:320,band:0},
   large:{n:'Large',w:1792,h:1008,back:256,depth:352,band:760},vlarge:{n:'Very large',w:2400,h:1344,back:512,depth:384,band:840},
-  huge:{n:'Huge',w:3200,h:1792,back:832,depth:416,band:920},tourney:{n:'Arena',w:448,h:256,back:57,depth:64,band:0},
+  huge:{n:'Huge',w:3200,h:1792,back:832,depth:416,band:920},tourney:{n:'Arena',w:448,h:256,back:57,depth:64,band:0},cave:{n:'Cave',w:1280,h:720,back:32,depth:200,band:0},
   heads:[60,150,300,600],types:{bridge:['big','large'],ambush:['small','big']}};
 let BFIELD=null;
 // (the size for a battle of heads soldiers on world tile r (its BattleSite: t, c; none for a tournament), of battle type kind)
@@ -282,7 +282,7 @@ class BattleSetup{
   present(){
     G.mode='battle';hidePanel();if(LOADING.sync)bbar.hidden=false;else B.hudWait=true;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();
     if(!B.world){for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));}
-    toast((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD&&!this.tarena?' '+BFIELD.n+' field.':''));
+    toast((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD&&!this.tarena&&!B.inside?' '+BFIELD.n+' field.':''));
     if(B.btype)typeSay();
   }
   // (the world where it is fought: its BattleSite (worldmap.js), all the battle reads of the world; yours, none for a tournament; the
@@ -353,4 +353,4 @@ function typeSay(){const bt=B.btype;if(!bt)return;const mine=bt.kind==='bridge'?
   toast(txt,k==='caught'?'bad':k==='wait'?'good':'');battleEvent('btype',{text:t,team:k==='caught'?1:0})}
 // Compatibility entry point used by encounters, tournaments, sieges, tests and other callers: the start in steps (a failure shows
 // itself: its error view)
-function startBattle(opts){if(!opts.tournament&&G.enc)alignReinforcements(G.enc);new (worldBattleEligible(opts)?WorldBattleSetup:BattleSetup)(opts).start().catch(()=>{})}
+function startBattle(opts){if(!opts.tournament&&G.enc)alignReinforcements(G.enc);new (!opts.tournament&&!opts.sandbox&&Interior.on(G.enc)?InteriorSetup:worldBattleEligible(opts)?WorldBattleSetup:BattleSetup)(opts).start().catch(()=>{})}// (inside a cave or a ruin's cellars: battle/interior.js)

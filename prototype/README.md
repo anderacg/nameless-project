@@ -211,6 +211,8 @@ js/world/             the campaign map and everything on it
 js/ui/march.js         the Army window's March formation tab: Field (drag your groups and your hero round the army's middle) and
                        By road (ColumnEditor: your column's order, dragged or tapped along its preview), each Apply, Reset, Discard
 js/battle/sides.js    BattleSides: per-army relationships, reinforcement budgets, participation rewards and continued NPC fights
+js/battle/interior.js fights inside (INTERIOR, InteriorLayout, InteriorArt, Interior, InteriorSetup): caves, ruins' cellars and hideouts
+                      fought on a rock-walled ground of their own; who goes in (the page), the dark, the foes waiting in their chambers
 js/battle/            engage.js (going into a fight: power and stance, allies joining, the battle type, flight, auto-resolve, outcomes by kind: ON_WIN), parley.js (cornered parties; RecruitPick: you choose who of a band that yielded joins yours, as many as your groups hold; yieldEnd, yieldSpoils: a yield's spoils window), setup.js (BattleSetup, field
                       and unit construction), worldbattle.js (WorldBattleSetup, the fixed world area, actual-position march handoff, forming up (BattleMuster, BATTLE_MUSTER.max s at most), reachable escape paths, local fog clearing, arrivals and regrouping), resolution.js (BattleResolution, field results and campaign settlement),
                       battle.js (shared group defaults and frame orchestration), actors.js (each soldier's moment and his targeting: Actor, CharActor, HeroActor),
@@ -1066,6 +1068,20 @@ Disengaging units remain vulnerable and still do not strike. An uncontested exit
 **Switches:** `FIELD_SIZES.on` and `EXITS.on` (both on in the game); `tests/harness.js` turns them off so the older suites keep today's field and the two edges. Tests: `tests/fieldsize.js` (choice, lab key, zones, camera and small map, grids, painting a huge field, exits and blocked edges, a rout and a withdrawal, the escaped counted, an AI battle at each size to the end, timings at 400 and 800 soldiers).
 
 **Cost** (headless, no GPU): simulation 2.7–3.3 ms/frame at 400 soldiers and 7–9 ms at 800 at every size; drawing the whole field 9–10 ms at 400 and 17–23 ms at 800 (zoomed in, less). A huge field paints its ground in about 0.35 s (arena) + 0.15–0.25 s (terrain); each full-field canvas is 22 MB there (arena, ground, blood; the shooters' reach when shown).
+
+## Fights inside (2026-11-06)
+
+**What** (the owner: "small fights in caves", hideouts "inside with more camp detail", up to 8 go in; `battle/interior.js`, doc/INTERIORS_DESIGN.md): a cave's beasts, a ruin's guardians and a hideout's bandits are fought inside, on the `cave` field (1280×720), not on the field outside. `startBattle` hands such an encounter (`Interior.on`: kind `cave`, or `camp` at a `Hideout`) to `InteriorSetup`, a `BattleSetup` on its own ground.
+
+**The ground:** `InteriorLayout` (seeded by the place: the same each visit) lays chambers joined by passages (one loop at times) and a mouth from the west edge; a cave's ragged, a ruin's cellars square-cut (`cellar`), a hideout a cave with its camp (`hideout`; in ruins, `den`). Its rock is the battle terrain's rock (`plan.interior` in `BattleTerrain.raster`), so routes, steering, sight, missiles and the ways off the field obey it; the mouth is the one way out. Every chamber is reached from the mouth on the cells (`joined`, else the next seed). Painted once by `InteriorArt` (stone floor, wall faces, stalagmites, bones; a cellar's flags and crates; the deepest's chest; daylight at the mouth), as the tournament arena paints its own ground.
+
+**Going in:** the cave's Enter and a hideout's Attack open the page (`Interior.show`: a row a companion or group, − and +, at most `INTERIOR.men`; Back, Enter, Esc). Only those chosen fight (`createUnits` keeps them); the rest wait outside and cannot fall, auto-resolved too (`Interior.losses`). No one rides (`Dismount.down`). Scouts seen, or guardians woken, take the best of your band (`Interior.pick`).
+
+**The dark:** the fog of war is always on inside, each man seeing `INTERIOR.sight` of his range (`B.sightK`), the unseen darker (`B.dark`), drawn as plain dark, a wall seen with the floor before it. The foes wait in their chambers until roused (`insideRoused`: a foe they see within `notice` px, or one of theirs hurt; until then their captain gives them no orders), the strongest (a chieftain) in the deepest.
+
+**A hideout's camp:** its bandits in squads of `INTERIOR.squad` through the chambers; a stake palisade across the way in, a gap to pass (`palAt`, solid on the cells); tents, bedrolls and a fire a chamber, each fire's light showing whoever stands in it to both sides (`B.lights`, `battlefog.js fogGrid`); the chieftain's tent and the plunder in the deepest.
+
+**Switch:** `INTERIOR.on` (on in the game; `tests/harness.js` turns it off, so the older suites keep the field). Tests: `tests/interiors.js`.
 
 ## Developer console and battle laboratory
 

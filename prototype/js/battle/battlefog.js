@@ -23,7 +23,7 @@ const FOG={char:280,big:1.5,high:.25,cell:16,fade:.3,dark:.58,col:[10,14,24],sof
 Object.defineProperty(FOG,'on',{get:()=>prefGet('bfog'),set:v=>{PREFS.bfog.v=!!v},enumerable:true});
 for(const k of ['foot','shoot','mounted'])Object.defineProperty(FOG,k,{get:()=>Math.round(FOG.char*SIGHT_KIND[k]),enumerable:true});
 // (a viewer's sight range by his kind (sightShare: a scout's farther); a scout scouting ahead sees farther still: unitabilities.js abilitySight)
-function fogRange(u){if(u.hero||u.leader||u.comp)return FOG.char;return Math.round(Math.round(FOG.char*sightShare(u.type,u.s))*abilitySight(u))}
+function fogRange(u){const k=B&&B.sightK||1;if(u.hero||u.leader||u.comp)return Math.round(FOG.char*k);return Math.round(Math.round(FOG.char*sightShare(u.type,u.s))*abilitySight(u)*k)}// (inside, × B.sightK: battle/interior.js)
 /* each side's sight (sightStep, fog on): S.fog {C, R, cs, vis: {team: Uint8Array}, rng, src: {team: [{x, y, r, lv, i}]}}. live:
    the living; uc, ul: each one's cell and level */
 function fogGrid(S,T,live,uc,ul,teams){
@@ -33,6 +33,8 @@ function fogGrid(S,T,live,uc,ul,teams){
   const once=new Set();
   for(let k=0;k<live.length;k++){const u=live[k];if(u.rout||u.left||!G.src[u.team])continue;const r=fogRange(u),i=uc[k],key=(i*1024+r)*8+u.team;if(once.has(key))continue;once.add(key);
     const s={x:(i%C+.5)*cs,y:(Math.floor(i/C)+.5)*cs,r,lv:ul[k],i};G.src[u.team].push(s);fogMark(G,T,u.team,s)}
+  // (a fire's light (B.lights: a hideout's, battle/interior.js): whoever stands in it is seen by both sides, as far as its light reaches unhidden)
+  if(B.lights)for(const L of B.lights){const i=clamp(Math.floor(L.y/cs),0,R-1)*C+clamp(Math.floor(L.x/cs),0,C-1),s={x:(i%C+.5)*cs,y:(Math.floor(i/C)+.5)*cs,r:L.r,lv:0,i};for(const t of teams){G.src[t].push(s);fogMark(G,T,t,s)}}
   return G}
 // (one viewer's disc: every cell within his range (by the height between) marked in range, and seen unless the ground hides it)
 function fogMark(G,T,t,s){
@@ -93,8 +95,9 @@ function fogView(){
   const G=B.fog&&B.sight&&B.sight.fog;if(!G||!G.vis[0])return null;let O=B.fogView;const vis=G.vis[0];
   if(!O||O.N!==G.N){O=B.fogView={N:G.N,C:G.C,R:G.R,cs:G.cs,a:new Float32Array(G.N),lt:0,f:-1};for(let i=0;i<G.N;i++)O.a[i]=vis[i]?0:1;O.cv=mkc(G.C,G.R,()=>{});O.img=O.cv.getContext('2d', { willReadFrequently: true }).createImageData(G.C,G.R);O.dirty=true}
   const now=performance.now(),st=O.lt?Math.min(.1,(now-O.lt)/1000)/FOG.fade:1;O.lt=now;let ch=O.dirty;
-  for(let i=0;i<G.N;i++){const to=vis[i]?0:1,a=O.a[i];if(a!==to){O.a[i]=Math.abs(to-a)<=st+1e-4?to:a<to?a+st:a-st;ch=true}}
-  if(ch){const d=O.img.data,[r,g,b]=FOG.col,A=fogSoft(O);for(let i=0;i<G.N;i++){const p=i*4;d[p]=r;d[p+1]=g;d[p+2]=b;d[p+3]=Math.round(A[i]*FOG.dark*255)}O.cv.getContext('2d', { willReadFrequently: true }).putImageData(O.img,0,0);O.dirty=false}
+  const SO=B.inside&&B.terrain&&B.terrain.solid,C0=G.C,lit=i=>vis[i]||!!SO&&SO[i]===1&&(vis[i-1]||vis[i+1]||vis[i+C0]||vis[i-C0]);// (inside, a wall seen by the floor before it: battle/interior.js)
+  for(let i=0;i<G.N;i++){const to=lit(i)?0:1,a=O.a[i];if(a!==to){O.a[i]=Math.abs(to-a)<=st+1e-4?to:a<to?a+st:a-st;ch=true}}
+  if(ch){const d=O.img.data,[r,g,b]=FOG.col,A=fogSoft(O);for(let i=0;i<G.N;i++){const p=i*4;d[p]=r;d[p+1]=g;d[p+2]=b;d[p+3]=Math.round(A[i]*(B.dark||FOG.dark)*255)}O.cv.getContext('2d', { willReadFrequently: true }).putImageData(O.img,0,0);O.dirty=false}
   return O}
 // (its edge softened: the cells' alphas blurred [1 2 1] across and down, FOG.soft times, the field's edge held)
 function fogSoft(O){const {C,R,N}=O,a=O.s||(O.s=new Float32Array(N)),b=O.t||(O.t=new Float32Array(N));a.set(O.a);
@@ -102,11 +105,13 @@ function fogSoft(O){const {C,R,N}=O,a=O.s||(O.s=new Float32Array(N)),b=O.t||(O.t
     for(let r=0;r<R;r++){const o=r*C,u=(r?r-1:0)*C,w=(r<R-1?r+1:r)*C;for(let c=0;c<C;c++)a[o+c]=(b[u+c]+2*b[o+c]+b[w+c])/4}}
   return a}
 function fogDraw(){const O=fogView();if(!O||!O.s)return;
+  // (inside: the dark itself, no mist drifting in it: battle/interior.js)
+  if(B.inside){ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(O.cv,0,0,O.C*O.cs,O.R*O.cs);ctx.restore();return}
   // (over the field in view, its edge mist and wisps drifting in it (gfx/mist.js mistFog), from the cells' softened strength
   // (fogSoft), half a cell a cell; drawn up in one step)
   const v=camView(),x0=Math.max(0,v.x),y0=Math.max(0,v.y),x1=Math.min(O.C*O.cs,v.x+v.w),y1=Math.min(O.R*O.cs,v.y+v.h);if(x1<=x0||y1<=y0)return;
   const {C,R,cs}=O,S=O.s,at=(x,y)=>{let u=x/cs-.5,v=y/cs-.5;u=u<0?0:u>C-1?C-1:u;v=v<0?0:v>R-1?R-1:v;const a=Math.min(C-2,u|0),b=Math.min(R-2,v|0),fx=u-a,fy=v-b,i=b*C+a,p=S[i],q=S[i+1],r=S[i+C],w=S[i+C+1];return p+(q-p)*fx+(r-p+(w-r-q+p)*fx)*fy};
-  const E=mistFog(O.edge||(O.edge={}),x0,y0,x1-x0,y1-y0,cs/2,4,[{s:at,flat:mistFlat(O.fl||(O.fl={}),S,C,R,cs,x0,y0,x1,y1),a:FOG.dark,col:FOG.col,m:FOG.dark}]);
+  const E=mistFog(O.edge||(O.edge={}),x0,y0,x1-x0,y1-y0,cs/2,4,[{s:at,flat:mistFlat(O.fl||(O.fl={}),S,C,R,cs,x0,y0,x1,y1),a:B.dark||FOG.dark,col:FOG.col,m:B.dark||FOG.dark}]);
   ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='low';ctx.drawImage(E.comp,0,0,E.cw,E.ch,E.gx,E.gy,E.cw*E.k,E.ch*E.k);ctx.restore()}
 // (the small map, rect r: the same fog over its ground)
 function fogMiniField(r){const O=B.fog&&B.fogView;if(!O)return;ctx.save();ctx.imageSmoothingEnabled=true;ctx.drawImage(O.cv,r.x,r.y,O.C*O.cs*r.w/BW,O.R*O.cs*r.h/BH);ctx.restore()}

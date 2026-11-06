@@ -966,6 +966,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .pk-n{min-width:5ch;text-align:center;font-variant-numeric:tabular-nums;align-self:center}
 .pk-tick.on{border-color:var(--accent);color:var(--accent)}
 .panel .pk-total{margin:0;font-size:var(--fs-lg)}.pk-total b{color:var(--accent)}
+/* who goes in with you (battle/interior.js Interior.show): a row a companion or group, its name and kind, − count + */
+.in-list{display:flex;flex-direction:column;gap:4px;max-height:52vh;overflow:auto}.in-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:36px;padding:2px 4px;border-bottom:1px solid var(--line-2)}
+.in-n{min-width:0;overflow:hidden;text-overflow:ellipsis}.in-n .muted{font-size:var(--fs-sm)}.in-q{display:inline-flex;align-items:center;gap:6px;flex:none}.in-q b{min-width:3ch;text-align:center;font-variant-numeric:tabular-nums}.in-q .btn{min-width:36px;min-height:32px}
 /* a window's ×1 / ×5 quantity toggle (window.js railQty): the Buy and Sell under it take that many */
 .qty{display:inline-flex;gap:0;align-self:flex-start}.qty .btn{border-radius:0;min-width:46px}.qty .btn:first-child{border-radius:var(--r-sm) 0 0 var(--r-sm)}.qty .btn:last-child{border-radius:0 var(--r-sm) var(--r-sm) 0}
 .qty .btn.on{background:var(--accent);color:#1a1408;border-color:var(--accent)}

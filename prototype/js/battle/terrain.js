@@ -385,6 +385,7 @@ class BattleTerrain{
     const X={H,zone:spec.zone||terrainZone(W,H),edges:spec.edges,road:spec.road,elven:spec.elven,forest:spec.forest,frost:spec.frost,layout:spec.layout,pond:spec.pond,...(RV&&RV.w?{rh:BattleRiver.half(RV)}:{})};
     if(spec.ambush){plan=FieldPlan.ambush(spec,W);plan.H=H;T=BattleTerrain.raster(W,plan,seed)}// (an ambush's own, over anything else: setup.js ambushLayout)
     else if(spec.explicit){plan=FieldPlan.explicit(spec.explicit,W,H);Object.assign(plan,{W,top,bot});T=BattleTerrain.raster(W,plan,seed)}
+    else if(spec.interior&&spec.interior.plan){plan=spec.interior.plan(W,H,top,bot);T=BattleTerrain.raster(W,plan,seed)}// (a fight inside: its rock all round, battle/interior.js)
     else{for(let k=0;k<TERRAIN.tries&&!T;k++){tries=k+1;const p=riv(FieldPlan.recipe(spec.recipe,seeded((seed+Math.imul(k,0x9E3779B1))>>>0),W,top,bot,spec.oasis,!!spec.river,X),k),t=BattleTerrain.raster(W,p,seed);if(t.fair(W,top,bot,p.rivers,p.hills).ok){plan=p;T=t}}
       // (a held bridge's river is never dropped: it is the battle; a dense field's woods go next to last)
       if(!T){plan=riv(FieldPlan.recipe(spec.recipe,seeded(seed),W,top,bot,spec.oasis,!!spec.river,X),0);
@@ -433,6 +434,8 @@ class BattleTerrain{
       const put=(i,d)=>{kind[i]=TKIND.rock;rockH[i]=Math.max(rockH[i],1,Math.min(255,Math.round(p.h*(1-.45*Math.min(1,d)))))};
       for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const x=(c+.5)*cs,y=(r+.5)*cs,d=Math.hypot(x-p.x,y-p.y)/p.r*(1+.4*(noise(x/32,y/32,ns+90+k*5)-.5));if(d<1)put(r*C+c,d)}
       put(clamp(Math.floor(p.y/cs),0,R-1)*C+clamp(Math.floor(p.x/cs),0,C-1),0)});
+    // (inside (battle/interior.js): rock wherever its layout is not open, two levels high)
+    if(plan.interior){const S=plan.interior.solid(C,R,cs);rockH=rockH||new Uint8Array(N);for(let i=0;i<N;i++)if(S[i]){kind[i]=TKIND.rock;rockH[i]=2}}
     // (rivers over all: deep water (or ford, frozen or a stream), crossings' rows ford or bridge, level 0; a crossing's mouths cleared)
     for(const v of plan.rivers||[]){const sp0=new Int16Array(R).fill(-1),sp1=new Int16Array(R).fill(-1);let lo=1e9,hi=-1e9;
       for(let r=0;r<R;r++){const y=(r+.5)*cs,m=v.path[r],xc=v.crossings.find(c=>y>=c.y0&&y<c.y1),K=xc?(xc.kind==='bridge'?TKIND.bridge:TKIND.ford):v.deep?TKIND.deep:TKIND.ford;
