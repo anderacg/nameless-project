@@ -504,6 +504,9 @@ function segBand(S,k,x,y,wf){const a=S[k],b=S[k+1],vx=S[k+2]-a,vy=S[k+3]-b,g=S[k
 function roadAt(P,x,y){if(x<0||y<0||x>=MW*TILE||y>=MH*TILE)return -99;const t=(y>>4)*MW+(x>>4),S=P.segs,R=ROAD_REACH(),wf=laneW(P.lane,x,y);let s=-99;
   for(let p=P.ST[t];p<P.ST[t+1];p++){const k=P.SI[p],v=segBand(S,k,x,y,S[k+4]<2?wf:0);if(BD[1]<=R&&v>s)s=v}
   const f=P.fd[t];if(f){const v=fordBand(P,f,x,y);if(v>s)s=v}return s}
+// (the owner, 2026-11-06: "roads look like straight lines with a transparent middle"): how much its middle is mottled, the noise
+// past which a rut shows (in stretches), a track's crown grassed in tufts (share of its pixels)
+const ROADLOOK={mottle:.55,rut:.42,tuft:.22};
 function* artGenRoads(P,D,x0,y0,w,h){const S=P.segs,K=P.wk,B=P.box,G=GENART,RD=GENART.road,V=GENART.verge,R=ROAD_REACH(),SC=new Float32Array(w*h).fill(-99),DL=new Float32Array(w*h),KF=new Uint8Array(w*h);
   // (a lane in or by the window: its pixels by segBand)
   let LN=false;for(let ty=Math.max(0,(y0>>4)-1);ty<=Math.min(MH-1,((y0+h-1)>>4)+1)&&!LN;ty++)for(let tx=Math.max(0,(x0>>4)-1);tx<=Math.min(MW-1,((x0+w-1)>>4)+1);tx++)if(P.lane[ty*MW+tx]){LN=true;break}
@@ -519,8 +522,13 @@ function* artGenRoads(P,D,x0,y0,w,h){const S=P.segs,K=P.wk,B=P.box,G=GENART,RD=G
     const q4=((y>>4)-ty0)*LW+(x>>4)-tx0,fx=(x&15)/16,fy=(y&15)/16;for(let k=0;k<3;k++){const A=CVG[k],a=A[q4],b=A[q4+1],cc=A[q4+LW],d=A[q4+LW+1];cv[k]=a+(b-a)*fx+(cc-a)*fy+(a-b-cc+d)*fx*fy}
     const RC=roadPal(cv,RP4),q=o*4,cur=[D[q],D[q+1],D[q+2]];let c;
     if(s<=0){if(hs(x,y,57)<.25+.4*(-s/V))continue;c=mixc(cur,RC[3],.42*(1+s/V))}
-    else if(s<=1.1)c=KF[o]?RC[0]:mixc(RC[1],RC[0],.4);
-    else{const dl=DL[o];c=RC[1];if(KF[o]?Math.abs(dl-1.6)<.5:Math.abs(dl-1.05)<.42)c=mixc(c,RC[0],.45);else if(!KF[o]&&dl<.55)c=mixc(c,cur,.5);
+    // (its edge broken, not a ruled line: dark where the noise says, else the road's own tone eased into it)
+    else if(s<=1.1){const e=hs(x>>1,y>>1,61);c=e<(KF[o]?.55:.35)?mixc(RC[1],RC[0],KF[o]?.8:.55):mixc(RC[1],cur,.25)}
+    // (its middle worn earth, mottled lighter and darker by a soft noise; ruts in broken stretches; a track's crown a little grassed,
+    //  in tufts, never see-through; stones and pebbles)
+    else{const dl=DL[o],m=wnoise2(x/9,y/9,63)-.5,R=ROADLOOK;c=m>0?mixc(RC[1],RC[2],m*R.mottle):mixc(RC[1],RC[0],-m*R.mottle*.6);
+      if((KF[o]?Math.abs(dl-1.6)<.5:Math.abs(dl-1.05)<.42)&&wnoise2(x/5,y/5,64)>R.rut)c=mixc(c,RC[0],.4);
+      else if(!KF[o]&&dl<.55&&hs(x>>1,y>>1,65)<R.tuft)c=mixc(c,cur,.55);
       const ph=hs(x,y,58);if(ph<.025)c=RC[2];else if(ph>.98)c=RC[0]}
     D[q]=c[0];D[q+1]=c[1];D[q+2]=c[2]}}
   const ok=(x,y)=>{if(x<x0||y<y0||x>=x0+w||y>=y0+h)return false;const i=(y>>4)*MW+(x>>4);return!K[i]&&B[i]!==1};

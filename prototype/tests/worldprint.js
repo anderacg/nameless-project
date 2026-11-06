@@ -461,7 +461,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  a pixel or two, so the woods
 //  grow otherwise round the holdings: the pictures, and what reads the woods as painted (the parties' ways, the save). Proof: aecf343,
 //  these alone back, gives all five again. Were W5 14ec3130, W6 e7a48c56, W7 5bb3e27d, W8 a63c35d9, B2 58769e81)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'796f4221',W6:'5b7a8487',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
+// (W5, W6 re-recorded 2026-11-06, on purpose: the roads painted as worn earth (the owner: "straight lines with a transparent middle"):
+//  their middle mottled earth, a track's crown grassed only in tufts, ruts in stretches, their edge broken (worldart.js ROADLOOK).
+//  Proof: 81bc537, this alone back, gives both again. Were W5 796f4221, W6 5b7a8487)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'2e40b15c',W6:'33e6041d',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
