@@ -20,6 +20,7 @@ Kit.suite(({ok,info})=>{
  const L=H.flatMap(z=>t.lotLanes(z,near).map(p=>({z,p})));
  const onRoad=L.every(({p})=>near(...p[p.length-1])[2]<1),clear=L.every(({p})=>p.slice(1,-1).every(([x,y])=>!t.OCC[Math.floor(y/t.TILE)*t.MW+Math.floor(x/t.TILE)]));
  ok(L.length>20&&onRoad&&clear,L.length+' lanes from doors standing back from the road, each ending on it, none across a lot or field');
- ok(L.every(({p})=>p.length-2<=X.lane.max+1),'each at most '+X.lane.max+' tiles');
+ ok(L.every(({p})=>p.slice(1).reduce((a,q,j)=>a+Math.hypot(q[0]-p[j][0],q[1]-p[j][1]),0)<=(X.lane.max+2)*t.TILE*1.42),'each at most '+X.lane.max+' tiles');
+ ok(L.every(({p})=>p.slice(2).every((q,j)=>{const a=p[j],b=p[j+1],u=[b[0]-a[0],b[1]-a[1]],v=[q[0]-b[0],q[1]-b[1]],n=Math.hypot(...u)*Math.hypot(...v);return Math.hypot(...u)<1||Math.hypot(...v)<1||(u[0]*v[0]+u[1]*v[1])/n>.5})),'each bends gently: no right angle along it');
  info(JSON.stringify({houses:houses.length,by,nooks:nooks.length,lanes:L.length}));
 });

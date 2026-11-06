@@ -47,16 +47,18 @@ const mkcv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h
 // climates' covers (coverOf: the desert's, the swamp's and the frost's snow, snowCover); the land's nature's (PX.worldNaturePlan)
 function worldArtPlan(){
   const clear=new PX.TileMask(MW,MH,TILE),mark=(x,y,w,h)=>clear.fill(x|0,y|0,w,h);
+  // (a round patch kept clear, never a square: rows of a rounded box rx x ry round (cx, cy), its rim ragged by a pixel or two)
+  const blob=(cx,cy,rx,ry)=>{for(let dy=-ry;dy<=ry;dy++){const a=Math.abs(dy)/ry,w=Math.round(rx*Math.pow(Math.max(0,1-a*a*a*a),1/4)-hs(cx+dy*7,cy+dy,23)*2);if(w>0)clear.fill(Math.round(cx-w),Math.round(cy+dy),2*w+1,1)}};
   const dep=new Uint8Array(MW*MH);for(let i=0;i<MW*MH;i++)dep[i]=tiles[i]===T_WATER?9:0;
   for(let pass=1;pass<=4;pass++)for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const i=y*MW+x;if(dep[i]!==9)continue;
     for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+a,ny=y+b;if(nx<0||ny<0||nx>=MW||ny>=MH)continue;const n=dep[ny*MW+nx];if(n===pass-1&&(pass>1||tiles[ny*MW+nx]!==T_WATER)){dep[i]=pass;break}}}
   // nothing grows under a holding's buildings and fields (lots.js), at its gate, in a camp or on an estate's plots
   const tramples=[];
-  for(const t of TOWNS){mark(t.tx*TILE,t.ty*TILE,TILE,TILE);mark(t.x-12,t.y-14,24,24);// its gate, where you arrive
-    for(const l of t.lots||[]){mark(l.x*TILE-2,l.y*TILE-2,l.n*TILE+4,l.n*TILE+4);for(const [x,y] of l.plots||[])mark(x*TILE,y*TILE,TILE,TILE)}}
+  for(const t of TOWNS){mark(t.tx*TILE,t.ty*TILE,TILE,TILE);blob(t.x,t.y-2,14,14);// its gate, where you arrive
+    for(const l of t.lots||[]){const N=l.n*TILE,r=Math.round(N*.56+5);mark(l.x*TILE,l.y*TILE,N,N);blob((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE,r,r);for(const [x,y] of l.plots||[])mark(x*TILE,y*TILE,TILE,TILE)}}
   // (nor along a holding's walls or fence: their line and a tile either side, so they stand clear of the woods, world/townwalls.js)
   for(const t of TOWNS)TownWall.clearOf(t,mark);
-  for(const c of CAMP_SPOTS){tramples.push([c.x+8,c.y+4,14,7,.5]);mark(c.x-24,c.y-40,64,64)}
+  for(const c of CAMP_SPOTS){tramples.push([c.x+8,c.y+4,14,7,.5]);blob(c.x+8,c.y-8,34,34)}
   for(const t of TOWNS){const sp=bldSpots(t);for(const k in sp){const p=sp[k];if(k==='lumber'||k==='mine')tramples.push([p.x,p.y+3,9,5,.4])}}
   const P={clear,dep,tramples};
   P.cover={desert:coverOf('desert'),swamp:coverOf('swamp'),frost:snowCover()};P.snow=P.cover.frost;
@@ -69,7 +71,7 @@ function worldArtPlan(){
     tramples.push([Math.round((l.x+l.n/2)*TILE+f[0]*Y.lean),Math.round((l.y+l.n/2)*TILE+f[1]*Y.lean),Math.round(r),Math.round(r*.9),Y.amt])}}
   // (the lanes from its doors to the road as drawn, worn into the ground and kept clear, lots.js lotLanes)
   {const L=LOT_STREET.lane,near=(x,y)=>artRoadNear(P,x,y);for(const t of TOWNS)for(const p of lotLanes(t,near))for(let j=1;j<p.length;j++){const [ax,ay]=p[j-1],[bx,by]=p[j],n=Math.max(1,Math.ceil(Math.hypot(bx-ax,by-ay)/L.step));
-    for(let s=0;s<n;s++){const x=Math.round(ax+(bx-ax)*s/n),y=Math.round(ay+(by-ay)*s/n);tramples.push([x,y,L.r,L.r,L.amt]);mark(x-4,y-4,9,9)}}}
+    for(let s=0;s<n;s++){const x=Math.round(ax+(bx-ax)*s/n),y=Math.round(ay+(by-ay)*s/n);tramples.push([x,y,L.r,L.r,L.amt]);blob(x,y,5,5)}}}
   // (its brooks, the water as drawn, the trees' ecotone, the roads through woods and every road's band (a
   //  road's tile its own: the lanes, brooks beside roads), the oases and ponds (ringOf), the mountains' fields (their kinds))
   P.nature=PX.worldNaturePlan({W:MW*TILE,H:MH*TILE,C:MW,R:MH,ts:TILE,kind:tiles,clim:climate,clear,seed:7,snow:P.snow,cover:{desert:P.cover.desert,swamp:P.cover.swamp},flow:WM.flow,river:WM.river,water:WATER_RGB,wet:(x,y)=>wpx(P.wk,x,y)===1,round:true,eco:ecoLean(),

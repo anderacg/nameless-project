@@ -242,12 +242,21 @@ const LOT_FAR=[18,22];
    every lot on a yard of worn earth a little wider than it (yard: pad px round it), the land's own dirt there, so a cluster's
    ground between its buildings and a house's way to the road are one trodden ground, fading into the land at its rim */
 const LOT_STREET={front:3,nook:{hamlet:1,village:3,fort:2,town:6,city:8,castle:3},nooks:{rural:['woodpile','cart','haystack','well','barrels'],town:['stall','stall','cart','well','barrels','crates']},
-  lane:{max:12,step:2,r:4,amt:.8,on:10},yard:{pad:7,amt:.8,lean:4}};
+  lane:{max:12,step:2,r:4,amt:.8,on:10,wander:2},yard:{pad:7,amt:.8,lean:4}};
 // (a lot's door: the tile before the middle of its face, by its facing: S 0, W 2, N 4, E 6)
 const lotDoor=l=>{const n=l.n,h=n>>1,y=l.yaw|0;return y===2?[l.x-1,l.y+h]:y===4?[l.x+h,l.y-1]:y===6?[l.x+n,l.y+h]:[l.x+h,l.y+n]};
 // (the lanes of holding t: from each house's and inner work's door standing back from the road (near(x, y): the road as drawn nearest
 // a pixel, [px, py, d], gfx/worldart.js artRoadNear), from its front (else a side, else its back), the shortest way over free land, round every lot and field, to a tile the road
 // passes through, LOT_STREET.lane.max tiles at most, and on to the road; each a list of points (px), from its door's face)
+// (a lane's steps: the 4 ways and the diagonals, a diagonal only between two free tiles; its corners cut twice, Chaikin's way, its
+// ends kept, three times: a bend, never a right angle)
+const LANE_STEPS=[[0,1],[1,0],[-1,0],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+const laneSoft=p=>{
+  // (first a point where it turns back on itself dropped, the way cut straight across)
+  for(let j=1;j<p.length-1;){const u=[p[j][0]-p[j-1][0],p[j][1]-p[j-1][1]],v=[p[j+1][0]-p[j][0],p[j+1][1]-p[j][1]],m=Math.hypot(...u)*Math.hypot(...v);if(m&&(u[0]*v[0]+u[1]*v[1])/m<-.2)p.splice(j,1);else j++}
+  for(let k=0;k<3;k++){if(p.length<3)break;const o=[p[0]];for(let j=1;j<p.length;j++){const [a,b]=p[j-1],[c,d]=p[j];if(j>1)o.push([a*.75+c*.25,b*.75+d*.25]);if(j<p.length-1)o.push([a*.25+c*.75,b*.25+d*.75])}o.push(p[p.length-1]);p=o}
+  // (and a wander of a pixel or two across it, none at its ends: trodden, never ruled)
+  const W=LOT_STREET.lane.wander;return p.map(([x,y],j)=>{if(!j||j===p.length-1)return[x,y];const a=p[j-1],b=p[j+1],dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1,w=(Math.sin(x*.21+y*.17)+Math.sin(x*.07-y*.11))*W*.5*Math.min(1,j/8,(p.length-1-j)/8);return[x-dy/L*w,y+dx/L*w]})};
 function lotLanes(t,near){const M=LOT_STREET.lane.max,on=LOT_STREET.lane.on,out=[];
   const c=i=>[(i%MW+.5)*TILE,((i-i%MW)/MW+.5)*TILE],free=([x,y])=>x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x]&&passable(tiles[y*MW+x]);
   for(const l of t.lots||[]){if(l.st==='ruined'||!(l.k==='house'||INNER.includes(l.k)))continue;
@@ -255,10 +264,10 @@ function lotLanes(t,near){const M=LOT_STREET.lane.max,on=LOT_STREET.lane.on,out=
     const yw0=l.yaw|0,face=[yw0,(yw0+2)%8,(yw0+6)%8,(yw0+4)%8].map(yaw=>({yaw,d:lotDoor({x:l.x,y:l.y,n:l.n,yaw})})).find(o=>free(o.d));if(!face)continue;
     const d0=face.d[1]*MW+face.d[0];if(near(...c(d0))[2]<=on)continue;
     const from=new Map([[d0,-1]]);let q=[d0],end=-1;
-    for(let s=0;s<M&&q.length&&end<0;s++){const nq=[];for(const i of q){const x=i%MW,y=(i-x)/MW;for(const [a,b] of [[0,1],[1,0],[-1,0],[0,-1]]){const X=x+a,Y=y+b,j=Y*MW+X;if(X<0||Y<0||X>=MW||Y>=MH||from.has(j)||OCC[j]||!passable(tiles[j])||brookAt(X,Y))continue;
+    for(let s=0;s<M&&q.length&&end<0;s++){const nq=[];for(const i of q){const x=i%MW,y=(i-x)/MW;for(const [a,b] of LANE_STEPS){const X=x+a,Y=y+b,j=Y*MW+X;if(X<0||Y<0||X>=MW||Y>=MH||from.has(j)||OCC[j]||!passable(tiles[j])||brookAt(X,Y)||a&&b&&(OCC[y*MW+X]||OCC[Y*MW+x]))continue;
       from.set(j,i);if(near(...c(j))[2]<=TILE*.6){end=j;break}nq.push(j)}if(end>=0)break}q=nq}
-    if(end<0)continue;const p=[];for(let i=end;i>=0;i=from.get(i))p.push(c(i));p.reverse();const r=near(...p[p.length-1]);p.push([r[0],r[1]]);
-    const yw=face.yaw,f=yw===2?[l.x*TILE,(l.y+l.n/2)*TILE]:yw===4?[(l.x+l.n/2)*TILE,l.y*TILE]:yw===6?[(l.x+l.n)*TILE,(l.y+l.n/2)*TILE]:[(l.x+l.n/2)*TILE,(l.y+l.n)*TILE];p.unshift(f);out.push(p)}
+    if(end<0)continue;let p=[];for(let i=end;i>=0;i=from.get(i))p.push(c(i));p.reverse();const r=near(...p[p.length-1]);p.push([r[0],r[1]]);
+    const yw=face.yaw,f=yw===2?[l.x*TILE,(l.y+l.n/2)*TILE]:yw===4?[(l.x+l.n/2)*TILE,l.y*TILE]:yw===6?[(l.x+l.n)*TILE,(l.y+l.n/2)*TILE]:[(l.x+l.n/2)*TILE,(l.y+l.n)*TILE];p.unshift(f);out.push(laneSoft(p))}
   return out}
 // (how near the road as painted lies to an n x n lot at x, y: tiles off its edge, 0 beside it; 9 none within 2)
 function lotRoadBy(x,y,n){const RB=roadPaint();let b=9;for(let j=-2;j<n+2;j++)for(let i=-2;i<n+2;i++){if(i>=0&&i<n&&j>=0&&j<n)continue;const X=x+i,Y=y+j;if(X<0||Y<0||X>=MW||Y>=MH||!RB[Y*MW+X])continue;b=Math.min(b,Math.max(i<0?-i-1:i>=n?i-n:0,j<0?-j-1:j>=n?j-n:0))}return b}
