@@ -14,7 +14,7 @@
    (tiles) one; alarm: an army at war with it marching on it this near (tiles), or you its foe outside its walls, shuts its gates;
    camp: its besiegers' camp this far out of a gate (tiles); towers: a tower every so many tiles of a stone wall's stretch; h: the wall's height by the walls (px:
    none, palisade, stone, great); top: its walk's depth (px); tower: a tower's rise over the wall (px); clear: the tiles either side of its line kept clear of the woods; fh: a fence's height (px) */
-const TOWN_WALL={on:true,fh:6,clear:1,reach:14,pad:1,gate:1,merge:3,towers:7,alarm:16,camp:3,h:[0,10,13,16],top:6,tower:7};
+const TOWN_WALL={on:true,fh:6,clear:1,reach:14,pad:1,gate:1,merge:5,towers:7,alarm:16,camp:3,h:[0,10,13,16],top:6,tower:7};
 /* (the owner, 2026-11-06: "the wall may be based on the holdings as well, if very poor they may start from none; think it like an
    upgrade") a fence: a wattle fence round a holding with no walls (fenceOf: t.fence once set), the first step before a palisade,
    drawn and blocking as a wall is but no wall in a fight (no siege, no defender's level). At the start (fenceStart), by what it
@@ -40,16 +40,31 @@ class TownWall{
     const loop=[];for(let x=x0;x<x1;x++)loop.push([x,y0]);for(let y=y0;y<y1;y++)loop.push([x1,y]);for(let x=x1;x>x0;x--)loop.push([x,y1]);for(let y=y1;y>y0;y--)loop.push([x0,y]);
     const n=loop.length,own=new Set(t.lots.map(l=>l.id)),kind=new Array(n).fill('w');
     loop.forEach(([x,y],j)=>{if(x<0||y<0||x>=MW||y>=MH){kind[j]='-';return}const k=tiles[y*MW+x],o=occAt(x,y);
-      if(!passable(k))kind[j]='-';else if((k===T_ROAD||k===T_FORD)&&TownWall.crosses(x,y,x0,y0,x1,y1))kind[j]='g';else if(o>0&&!own.has(o))kind[j]='-'});
+      if(!passable(k))kind[j]='-';else if(k===T_FORD&&TownWall.crosses(x,y,x0,y0,x1,y1))kind[j]='g';else if(o>0&&!own.has(o))kind[j]='-'});
+    // (the gates where its roads pass through it (the owner, 2026-11-06: "a gate and wall realistically matched with the roads"): along
+    // each road's own path, a stretch of it on the ring come in from outside and going on inside (or the other way): its gate the
+    // tile it steps through by, so the road runs straight through the gate; a road only running along the wall makes none)
+    const idx=new Map(loop.map(([x,y],j)=>[y*MW+x,j])),out=(x,y)=>x<x0||x>x1||y<y0||y>y1,side=i=>{const x=i%MW,y=(i-x)/MW;return out(x,y)?1:idx.has(i)?0:-1};
+    for(const rd of WM.roads||[]){const P2=rd.path;for(let k=0;k<P2.length;){if(side(P2[k])!==0){k++;continue}let e=k;while(e+1<P2.length&&side(P2[e+1])===0)e++;
+      const a=k>0?side(P2[k-1]):0,b=e+1<P2.length?side(P2[e+1]):0;if(a&&b&&a!==b){const j=idx.get(b<0?P2[e]:P2[k]);if(kind[j]!=='-')kind[j]='g'}k=e+1}}
+    if(!kind.includes('g'))loop.forEach(([x,y],j)=>{if(kind[j]==='w'&&tAt(x,y)===T_ROAD&&TownWall.crosses(x,y,x0,y0,x1,y1))kind[j]='g'});// (no road's path through it: as a road's tiles cross it)
     // (gates near each other one: the wall between them open)
     for(let j=0;j<n;j++)if(kind[j]==='g')for(let d=2;d<=X.merge;d++){const q=(j+d)%n;if(kind[q]==='g'){for(let e=1;e<d;e++)if(kind[(j+e)%n]==='w')kind[(j+e)%n]='o';break}}
     // (each gate a tile wider either side; none on the ring: one below the centre, on its bottom stretch)
     if(!kind.includes('g')){const j=loop.findIndex(([x,y])=>y===y1&&x===t.tx);if(j>=0&&kind[j]==='w')kind[j]='g'}
     const g0=kind.map(k=>k==='g');for(let j=0;j<n;j++)if(g0[j])for(let d=1;d<=X.gate;d++)for(const q of [(j+d)%n,(j-d+n)%n])if(kind[q]==='w')kind[q]='o';
-    const corner=(x,y)=>(x===x0||x===x1)&&(y===y0||y===y1),parts=[],shut=[],gates=[],L=wallOf(t);
-    loop.forEach(([x,y],j)=>{const i=y*MW+x;if(kind[j]==='g'||kind[j]==='o'){gates.push(i);return}if(kind[j]!=='w')return;
-      const gate=[(j+1)%n,(j-1+n)%n].some(q=>kind[q]==='g'||kind[q]==='o'),k=corner(x,y)?'c':gate||L>1&&j%X.towers===0?'t':y===y0||y===y1?'h':'v';parts.push({i,x,y,k});shut.push(i)});
-    return{x0,y0,x1,y1,parts,shut,gates}}
+    const corner=(x,y)=>(x===x0||x===x1)&&(y===y0||y===y1),parts=[],shut=[],gates=[],arches=[],L=wallOf(t),open=q=>kind[q]==='g'||kind[q]==='o';
+    // (its towers: at its corners and either side of each gate; on a stone wall's long stretches one every X.towers tiles, never within
+    // 3 of another)
+    const tw=new Array(n).fill(false);loop.forEach(([x,y],j)=>{if(kind[j]==='w'&&(corner(x,y)||open((j+1)%n)||open((j-1+n)%n)))tw[j]=true});
+    if(L>1)for(let j=0;j<n;j++){if(kind[j]!=='w'||tw[j]||j%X.towers)continue;let near=false;for(let d=-3;d<=3&&!near;d++)if(d&&(tw[(j+d+n)%n]||open((j+d+n)%n)))near=true;if(!near)tw[j]=true}
+    loop.forEach(([x,y],j)=>{const i=y*MW+x;if(open(j)){gates.push(i);return}if(kind[j]!=='w')return;
+      const k=corner(x,y)?'c':tw[j]?'t':y===y0||y===y1?'h':'v';parts.push({i,x,y,k});shut.push(i)});
+    // (each gate's arch: its run of open tiles along a stretch across (over the road a gateway in the wall's face) or down (the walk
+    // bridged over it), each tile its place in the run (p of w))
+    for(let j=0;j<n;j++){if(!open(j)||open((j-1+n)%n))continue;const run=[];let q=j;while(open(q)&&run.length<n){run.push(q);q=(q+1)%n}
+      run.forEach((r,p)=>{const [x,y]=loop[r];arches.push({i:y*MW+x,x,y,k:y===y0||y===y1?'ah':'av',p,w:run.length})})}
+    return{x0,y0,x1,y1,parts,shut,gates,arches}}
   // (a fence at the start: a hamlet or village with no walls, its estates' levels and up to 2 more by a hash of its place at FENCE.start's by its kind)
   static fenceStart(t){const S=FENCE.start[t.kind];if(wallOf(t)>0||S==null)return 0;const B=t.bld?Object.values(t.bld).reduce((a,v)=>a+(v||0),0):0;return B+2*hash(t.tx,t.ty,FENCE.salt)>=S?1:0}
   // (its day (world/buildings.js Buildings day): its fence as it started kept; one with none grows one as it prospers, but yours)
@@ -85,7 +100,10 @@ class TownWall{
   static ents(t,ents,cam){const r=TownWall.of(t);if(!r)return;const L=wallOf(t),S=TownWall.look(t),H=TOWN_WALL.h[L]||TOWN_WALL.fh;
     // (its gates shut: their doors across them)
     if(HOLD_SHUT.ring.get(t)?.closed)for(const i of r.gates){const x=i%MW,y=(i-x)/MW;if(!seenTile(x,y))continue;const X=x*TILE-cam.x,foot=(y+1)*TILE,Y=foot-cam.y;if(X<-24||X>VW+24||Y<-4||Y-H-40>VH)continue;
-      const s=TownWall.sprite(S,L,y===r.y0||y===r.y1?'dh':'dv');ents.push({y:foot-1,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}
+      const s=TownWall.sprite(S,L,y===r.y0||y===r.y1?'dh':'dv');ents.push({y:foot-2,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}
+    // (its gateways over the roads: walls' arches, never a fence's)
+    if(L>0)for(const a of r.arches||[]){if(!seenTile(a.x,a.y))continue;const X=a.x*TILE-cam.x,foot=(a.y+1)*TILE,Y=foot-cam.y;if(X<-24||X>VW+24||Y<-4||Y-H-40>VH)continue;
+      const s=TownWall.archPic(S,L,a.k,a.p,a.w);ents.push({y:foot-1,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}
     for(const p of r.parts){const X=p.x*TILE-cam.x,foot=(p.y+1)*TILE,Y=foot-cam.y;if(X<-24||X>VW+24||Y<-4||Y-H-40>VH)continue;if(!seenTile(p.x,p.y))continue;
       const s=TownWall.sprite(S,L,p.k);ents.push({y:foot-1,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}}
   // (its culture's colours: stone for stone and great walls (its arena's, a stone culture's, else the Vale's), timber for a palisade)
@@ -118,6 +136,16 @@ class TownWall{
       rect(g,C[3],0,0,W,fy);rect(g,stake?C[2]:C[1],1,1,W-2,fy-2);rect(g,C[2],4,4,W-8,fy-8);
       if(stake){for(let x=0;x<W;x+=2)rect(g,x%4?C[1]:C[0],x,0,2,3)}else{for(let x=0;x<W;x+=5){rect(g,C[0],x,0,3,3);rect(g,C[2],x,3,3,1)}for(let y=0;y<fy;y+=5){rect(g,C[0],0,y,2,3);rect(g,C[0],W-2,y,2,3)}}}
     return cv}
+  /* (a gateway's piece, the p-th of w tiles: across, the wall's walk and merlons over its face and an arch cut through it the run's
+     width (its jambs and voussoirs lit, the passage's shade under it); down, the walk carried over the road on its lintel) */
+  static archPic(S,L,k,p,w){const key='tarch'+S.cul+L+k+p+'/'+w;if(spr[key])return spr[key];const X=TOWN_WALL,H=X.h[L],T=X.top,stake=L<=1,C=stake?S.wood:S.stone;
+    if(k==='av'){const cv=mkcv(8,16+4),g=cv.getContext('2d');cv.ax=-4;for(let y=0;y<16;y++){rect(g,y%4?C[1]:C[2],2,y,4,1);rect(g,C[0],0,y,2,1);rect(g,C[2],6,y,2,1)}rect(g,C[3],0,16,8,2);rect(g,'rgba(10,12,18,.35)',0,18,8,2);return spr[key]=cv}
+    const cv=mkcv(16,H+T),g=cv.getContext('2d');cv.ax=0;const W2=w*16,x0=p*16,rx=W2/2-3,cx=W2/2,top=Math.max(3,H-Math.round(rx*.9));
+    for(let y=0;y<H;y++)for(let x=0;x<16;x++){const gx=x0+x,dx=(gx+.5-cx)/rx,dy=(y+.5-top)/(H-top),hole=Math.abs(gx+.5-cx)<rx&&(y>=top+rx*.5||dx*dx+((y+.5-(top+rx*.5))/(rx*.5))**2<1);
+      if(hole)continue;const edge=Math.abs(gx+.5-cx)<rx+2;const row=y>>2,c=stake?(gx%3===0?C[3]:gx%3===1?C[0]:C[1]):edge?(y%3===0?C[2]:C[0]):(y%4===0||(gx+(row&1)*4)%8===0)?C[2]:C[1];g.fillStyle=c;g.fillRect(x,T+y,1,1)}
+    rect(g,C[3],0,T+H-1,16,1);if(stake){for(let x=0;x<16;x+=3){rect(g,C[0],x,T-3,2,3);rect(g,C[1],x,T-1,2,1)}rect(g,C[2],0,T-1,16,1)}
+    else{rect(g,C[1],0,2,16,T-2);rect(g,C[2],0,T-1,16,1);for(let x=0;x<16;x+=4){rect(g,C[0],x,0,3,3);rect(g,C[2],x,3,3,1)}}
+    return spr[key]=cv}
   // (a shut gate: its doors of studded planks across a stretch (dh), or their edge down one (dv), a dark arch over them)
   static doors(C,H,T,k,stake){const across=k==='dh',W=across?16:8,Hh=across?H+T:16+H,cv=mkcv(W,Hh),g=cv.getContext('2d');cv.ax=across?0:-4;
     const P2=['#3a2410','#6a4428','#8a5a34'],y0=across?T:16;rect(g,'#14100c',0,across?0:0,W,across?T:16);for(let x=0;x<W;x+=4){rect(g,P2[1],x,y0,3,H);rect(g,P2[2],x,y0,1,H)}rect(g,'#3a3a40',0,y0+2,W,1);rect(g,'#3a3a40',0,y0+H-4,W,1);
