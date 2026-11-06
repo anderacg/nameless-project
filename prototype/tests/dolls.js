@@ -43,5 +43,13 @@ Kit.suite(({ok,info})=>{
   ok(B1===B2&&grey&&B1.chans.includes('team')&&B1.chans.includes('skin'),'one grey base for every side ('+B1.chans.join(', ')+')');
   ok(px(p).join()!==px(q).join()&&count(p)===count(q),'painted from any palette: the same figure, its colours its own (green for red)');
   const L0=T.lookOf('hum_spear',0,false,1,'',null),L1=T.lookOf('hum_spear',1,false,1,'',null);ok(PX.dollBase(T.dollSpec(L0,'idle',0))===PX.dollBase(T.dollSpec(L1,'idle',0)),'the game’s two sides share his base, painted in each one’s colours')}
+ // ---- holding a weapon near a foe (the owner, 2026-11-06: "bracing spear will adjust their pose to grip a spear and hold the shield
+ // to the front"): a pikeman braced, both arms forward, his hand before him; a great weapon gripped in both; a shield-bearer's
+ // battle pose behind his shield
+ {const pk=T.lookOf('hum_pike',0,false,0),a0=T.peopleSprite(pk,0,true),a1=T.peopleSprite(pk,T.BRACE_POSE,true),pd=px(a0).join()!==px(a1).join();
+  ok(pd&&a1.hand[0]>a0.hand[0],'a pikeman braced: both arms forward to his pole, his hand before him ('+a0.hand[0]+' → '+a1.hand[0]+')');
+  const hv=Object.keys(T.ST).find(k=>{try{return ['great','bigaxe','hammer'].includes(T.lookOf(k,0,false,0).weapon)}catch(e){return false}});
+  if(hv){const L=T.lookOf(hv,0,false,0);ok(px(T.peopleSprite(L,T.GRIP_POSE,true)).join()!==px(T.peopleSprite(L,0,true)).join(),'a great weapon gripped in both hands ('+hv+')')}
+  const u={s:{range:0},nearW:true,mount:null,type:'hum_spear',team:0,v:0},sp=T.unitLook(u);ok(T.shieldLook(sp)&&T.procPose({...u,atkAt:null,shot:null},false)===T.DEF_POSE,'a spearman near a foe braces behind his shield, raised before him')}
  info(JSON.stringify({races:races.length,uniforms:Object.keys(DL.UNIFORMS).length,parts:Object.keys(DL.PARTS).length,figures:n}));
 });

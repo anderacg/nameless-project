@@ -19,7 +19,10 @@ function cellOf(src){const n=CELLS.find(s=>s>=src.width&&s>=src.height)||Math.ma
 // 29-40 bare hands (combat.js FISTS), three frames each: a jab, a cross (hook), a kick, a grapple (FIST_STYLES from FIST_POSE)
 const ATK_BASE={swing:6,thrust:9,overhead:12,jab:29,hook:32,kick:35,grapple:38},DEF_POSE=27,DEF_LOW=28,FIST_POSE=29,FIST_STYLES=['jab','hook','kick','grapple'];
 // 41 struck (a flinch), 42 a glance back, 43 the weight shifted (render.js picks them: drawn only)
-const FLINCH_POSE=41,LOOK_POSE=42,SHIFT_POSE=43,LIFE_POSES={41:'flinch',42:'look',43:'shift'};
+// 44 braced, both hands on his pole levelled before him (a pike, a spear with no shield); 45 both hands on a great weapon in guard
+// (the owner, 2026-11-06: "bracing spear will adjust their pose to grip a spear and hold the shield to the front"; a shield-bearer
+// braces behind it: DEF_POSE)
+const FLINCH_POSE=41,LOOK_POSE=42,SHIFT_POSE=43,BRACE_POSE=44,GRIP_POSE=45,LIFE_POSES={41:'flinch',42:'look',43:'shift',44:'brace',45:'grip'};
 // bare: in battle, a soldier's melee weapon is drawn apart (weapons.js); the sprite leaves it off, the body and the rest of its
 // gear kept by pose in spr (figures.js); else the finished figure, its weapon on it, kept in FIGURES (an LRU: the map, the cards)
 // (arm: a shooter in melee mode: his bow put away, slung on his back (figures.js SlungBow), his body bare for the sidearm drawn in
@@ -199,7 +202,7 @@ function warmBattle(units){
     for(const p of [0,1,2,3,4,5,15,16,17,18])WARM.q.push(()=>actorSprite(u,p,true));
     const L=unitLook(u),w=heldWeapon(L);
     if(w){const sk=pal(L.skin)[1],kw=w+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)WARM.q.push(()=>weaponSprite(w,L.team,sk,i))}}
-    for(const p of [6,7,8,9,10,11,12,13,14,FLINCH_POSE,LOOK_POSE,SHIFT_POSE])WARM.q.push(()=>actorSprite(u,p,true));
+    for(const p of [6,7,8,9,10,11,12,13,14,FLINCH_POSE,LOOK_POSE,SHIFT_POSE,DEF_POSE,BRACE_POSE,GRIP_POSE])WARM.q.push(()=>actorSprite(u,p,true));
     if(u.hero&&unarmed())for(let p=FIST_POSE;p<FIST_POSE+12;p++)WARM.q.push(()=>actorSprite(u,p,true));// (bare hands: the fists' blows)
     // (and last, how he lies when he falls, and the weapon he drops: vfx.js drawCorpses)
     late.push(()=>corpseOf(u));if(u.s.range&&!u.s.magic){for(const p of [0,2,3,4,5,6,7,8])late.push(()=>actorSprite(u,p,true,true));const sk=pal(L.skin)[1],kw='sword'+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)late.push(()=>weaponSprite('sword',L.team,sk,i))}}if(w)for(const i of [0,1,WEAPON_STEPS-1,WEAPON_STEPS/2,WEAPON_STEPS/2+1])late.push(()=>weaponSprite(w,L.team,PPAL.wood[2],i))}
@@ -225,6 +228,9 @@ function procPose(u,moved){
   if(u.s.range&&!u.inMelee&&u.cd>0&&u.atkAt!=null&&!moved)return ATK_BASE.overhead+Math.floor((B.t-u.atkAt)*5)%3;
   // (running: the run, faster; walking: the walk)
   if(moved){const phase=B.world?u.walkPhase||0:null;return u.spdNow>u.s.spd*.75?15+Math.floor(phase??B.t*14+(u.v||0))%4:2+Math.floor(phase??B.t*9+(u.v||0))%4}
+  // (standing near a foe, his weapon toward him (weapons.js holdOf: nearW): behind his shield raised before him, or braced with both
+  //  hands on a pole, or gripping a great weapon in both)
+  if(u.nearW&&!u.s.range){const L=unitLook(u),k=heldWeapon(L);if(k&&!L.mount){if(shieldLook(L))return DEF_POSE;if(POLE(k)&&k!=='lance')return BRACE_POSE;if(k==='great'||k==='bigaxe'||k==='hammer')return GRIP_POSE}}
   // (standing: breathing, slow, each on his own rhythm)
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0;
 }
