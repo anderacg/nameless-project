@@ -26,13 +26,15 @@ function dollParts(o){const T={dark:1},P=[],out=o.outer||'leather',arm=o.armor||
   if(o.cape)P.push(['cloak',o.cape===true?'team':o.cape]);
   const h=o.helm==='hood'?['hood',o.hood||'olive']:DOLL_HELM[o.helm];if(h)P.push(h);
   return P}
-// its doll's spec: race, skin, hair, beard, parts, the side's colour, pose; every colour the game's own (pal: a name, a ramp or a
-// '#rrggbb' a world army's tint), each by a key into ramps; seed: by the man himself (not what he carries), so each variant is its
-// own and his gear never changes him
-function dollSpec(o,pose,frame,moves){const R=Object.assign({},PPAL);let n=0;const key=m=>{if(typeof m==='string'&&PPAL[m])return m;const k='_'+(n++);R[k]=pal(m);return k};
-  const parts=dollParts(o).map(([p,m,x])=>[p,m==='team'?'team':key(m),x]),seed=[...JSON.stringify(['race','skin','hair','beard','outer','inner','armor','legs','team','helm','hood','cape','robe','v'].map(k=>o[k]))].reduce((a,c)=>(a*31+c.charCodeAt(0))|0,7);
-  return{race:o.race||'human',skin:key(o.skin||'skin'),hair:key(o.hair||'brown'),style:o.shortHair===false?'long':'short',beard:!!o.beard,uniform:parts,team:key(o.team||'blue'),
-    seed,ramps:R,bare:true,noShadow:true,weapon:null,shield:null,pose,frame,moves}}
+// its doll's spec: race, skin, hair, beard, parts, the side's colour, pose. Its colours are channels painted at the last (engine/doll.js
+// PX.dollBase, dollPaint): every material by its own name (a ramp or a '#rrggbb', a world army's tint, by its JSON), painted through
+// the game's palette (pal); so one base serves every side and tint. seed: by the man himself (his race, skin and hair, his kit's shapes;
+// never his side's colours, nor what he carries), so each variant is its own, every side shares his base, and his gear never changes him
+const dollChan=m=>typeof m==='string'?m:JSON.stringify(m),dollRamp=n=>{try{return pal(n[0]==='['?JSON.parse(n):n)}catch(e){return null}};
+function dollSpec(o,pose,frame,moves){const parts=dollParts(o).map(([p,m,x])=>[p,m==='team'?'team':dollChan(m),x]);
+  const seed=[...JSON.stringify([o.race,o.skin,o.hair,o.beard,o.armor,o.helm,!!o.cape,!!o.robe,o.v,o.shortHair])].reduce((a,c)=>(a*31+c.charCodeAt(0))|0,7);
+  return{race:o.race||'human',skin:dollChan(o.skin||'skin'),hair:dollChan(o.hair||'brown'),style:o.shortHair===false?'long':'short',beard:!!o.beard,uniform:parts,team:dollChan(o.team||'blue'),
+    seed,ramp:dollRamp,bare:true,noShadow:true,weapon:null,shield:null,pose,frame,moves}}
 // (the poses' own moves on the doll, by the template's walks and styles: [regions, side, dx, dy, from row]; the doll's dx is mirrored
 // (dollfigs draws it facing right): +1 is back. lean: running and climbing, the head and shoulders forward; a breath: the head down a
 // pixel; struck (flinch), the head and body back; a glance back (look), the head; the weight shifted (shift), all above the legs)

@@ -36,5 +36,12 @@ Kit.suite(({ok,info})=>{
  const [fx,fy]=sp.anchors.feet;ok(!outl.length&&at(sp,fx,fy)==='#000037','no outline (its edges its own darkest tones), a shadow underfoot');
  // ---- poses: the walk's frames differ
  const w=[0,1,2,3].map(f=>px(PX.doll({uniform:'militia',pose:'walk',frame:f})).join());ok(w[0]!==w[1]&&w[1]!==w[3],'a walk of four frames, its steps differing');
+ // ---- the grayscale base (the owner, 2026-11-06: "base sprites grayscale, so we can dynamically change colours"): one base for every
+ // side, its pixels channels and tones, painted from any palette; the game's two sides one base
+ {const sp=u=>({uniform:'spearman',team:u}),B1=PX.dollBase(sp('red')),B2=PX.dollBase(sp('blue')),g=px(B1.grey);let grey=true;for(let i=0;i<g.length;i+=4)if(g[i+3]&&(g[i]!==g[i+1]||g[i+1]!==g[i+2]))grey=false;
+  const p=PX.dollPaint(B1,n=>n==='team'?DL.MAT.green:DL.MAT[n]||DL.MAT.grey),q=PX.doll(sp('red'));
+  ok(B1===B2&&grey&&B1.chans.includes('team')&&B1.chans.includes('skin'),'one grey base for every side ('+B1.chans.join(', ')+')');
+  ok(px(p).join()!==px(q).join()&&count(p)===count(q),'painted from any palette: the same figure, its colours its own (green for red)');
+  const L0=T.lookOf('hum_spear',0,false,1,'',null),L1=T.lookOf('hum_spear',1,false,1,'',null);ok(PX.dollBase(T.dollSpec(L0,'idle',0))===PX.dollBase(T.dollSpec(L1,'idle',0)),'the game’s two sides share his base, painted in each one’s colours')}
  info(JSON.stringify({races:races.length,uniforms:Object.keys(DL.UNIFORMS).length,parts:Object.keys(DL.PARTS).length,figures:n}));
 });
