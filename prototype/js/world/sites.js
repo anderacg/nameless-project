@@ -422,7 +422,7 @@ class Lair extends Site{
       acts:[s.scoutDeed(),{icon:'attack',label:'Attack',act:'site-ask',facts:[y?'power '+pw+' vs '+partyPower():insight(['what waits inside: unknown',lk[0].replace('They look ',''),'power about '+pw+' vs '+partyPower()],'know their strength')],tip:'Storm it: its fighters, its chieftain and any band sheltering there. It asks you first.'},
         {icon:'truce',label:'Parley',act:'site-tab',arg:'parley',facts:['pay them off','or make them yield'],tip:'Talk: pay them to break camp, or, if they fear you, demand their surrender.'}]}}
   act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const s=this,y=s.spied();
-    if(a==='site-ask'&&INTERIOR.on&&s instanceof Hideout){Interior.show(s);return true}// (a hideout is stormed inside: who goes in with you, battle/interior.js)
+    if(a==='site-ask'&&INTERIOR.on&&s instanceof Hideout&&(s.tunnel||s.within)){Interior.show(s);return true}// (a bandit lair, or a den in ruins, is stormed inside: who goes in with you, battle/interior.js)
     if(a==='site-ask'){const g=s.guess(),all=y&&s.all(y.list);railConfirm({title:'Attack the '+s.T.n.toLowerCase()+'?',sub:s.name,text:'You storm it: '+(all?all.length+' fighters':roughly(g.n)+' of them, as far as you can tell')+', their chieftain at their head.',
       facts:[all?'Power '+s.power(all)+' vs your '+partyPower():insight(['You cannot tell how strong they are',looks(g.pw/Math.max(1,partyPower()))[0],'Power about '+g.pw+' vs your '+partyPower()],'know their strength'),'You may still call it off before the first blow'],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
     if(a==='site-attack'){s.fight(true,y&&y.list);return true}
@@ -456,6 +456,8 @@ function wildGround(tx,ty){const H=HIDEOUT_PLACE,c=climate[ty*MW+tx];let n=0,r=0
    chieftain, richer plunder; ruin, bandits in searched ruins (within): as a hideout was. size0: how many its look counts on;
    foes: [from, to] (+1 every 15 days); chief: its chieftain's level [from, to]; gold: its plunder's gold x; gear: the chance
    of another piece of gear past a camp's (4 in 5; the den's 1.5 x: 1.2 a fight) */
+// (a bandit lair: the share of hideouts that are (salt: its hash's), the hills or peaks within r tiles of it that make its mouth a cave; its type's words)
+const HIDEOUT_LAIR={share:.45,salt:7171,r:3,hills:4,names:{bandits:'Bandit lair',raiders:'Raider tunnels',bog:'Bog raider warren'},T:{n:'Bandit lair',ico:'cave',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, dug in underground, their plunder deep in its tunnels.'}};
 const HIDEOUT_BAND={den:{size0:8,foes:[7,9],chief:[2,5],gold:1.5,gear:.4},ruin:{size0:6,foes:[5,7],chief:[1,3],gold:1,gear:0}};
 class Hideout extends Lair{
   static ground(tx,ty){return wildLand().at[ty*MW+tx]===1}
@@ -466,7 +468,15 @@ class Hideout extends Lair{
     for(let k=0;k<HIDEOUT_PLACE.draw&&bs<3;k++){const i=L[rint(0,L.length-1)],tx=i%MW,ty=(i-tx)/MW,c=this.clear(tx,ty),sc=c?wildGround(tx,ty)?3:2:1;if(sc>bs){bs=sc;best=[tx,ty]}}
     return best}
   get tune(){return HIDEOUT_BAND[this.within?'ruin':'den']}
-  setup(sites,clim){this.band=clim==='desert'?'raiders':clim==='swamp'?'bog':'bandits';this.name=HIDEOUT_NAMES[this.band];this.ld=newChief(this.band,this.newLv(),sites)}
+  /* (the owner, 2026-11-06: two kinds of hideout) a bandit hideout, a camp of tents in a ring of stakes, fought on the map as a
+     camp; or a bandit lair (HIDEOUT_LAIR.share of them, by a hash of its tile: no draw, never saved), its mouth a cave in the
+     hillside where hills or peaks stand by it, else a timbered tunnel dug into the ground, fought inside (battle/interior.js) */
+  get lairLook(){if(this.within||hash(this.tx,this.ty,HIDEOUT_LAIR.salt)>=HIDEOUT_LAIR.share)return null;let n=0;
+    const r=HIDEOUT_LAIR.r;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const k=tAt(this.tx+i,this.ty+j);if(k===T_HILL||k===T_MOUNT)n++}return n>=HIDEOUT_LAIR.hills?'cave':'tunnel'}
+  get tunnel(){return !!this.lairLook}
+  get T(){return this.tunnel?HIDEOUT_LAIR.T:SITE_TYPES[this.type]}
+  // (a lair its own name: HIDEOUT_LAIR.names)
+  setup(sites,clim){this.band=clim==='desert'?'raiders':clim==='swamp'?'bog':'bandits';this.name=(this.tunnel?HIDEOUT_LAIR.names:HIDEOUT_NAMES)[this.band];this.ld=newChief(this.band,this.newLv(),sites)}
   newLv(){return rint(...this.tune.chief)}
   get size0(){return this.tune.size0}
   // its raiders and chieftain (makeEnemies, as startEncounter makes them from n), and the fight with them

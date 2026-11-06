@@ -137,7 +137,7 @@ class InteriorArt{
    then your best foot, then the rest, INTERIOR.men in all), what that band is worth, the page that chooses (Inside: the cave's
    Enter; Back to its page, Enter to fight) ---------- */
 class Interior{
-  static on(e){return INTERIOR.on&&!!e&&(e.kind==='cave'||e.kind==='camp'&&e.ref instanceof Hideout)}
+  static on(e){return INTERIOR.on&&!!e&&(e.kind==='cave'||e.kind==='camp'&&e.ref instanceof Hideout&&(e.ref.tunnel||!!e.ref.within))}// (a hideout's camp of tents is fought on the map; a bandit lair, or a den in ruins, inside)
   static styleOf(e){const r=e&&e.ref,cel=r instanceof Ruins||r&&r.within;return r instanceof Hideout?cel?'den':'hideout':cel?'cellar':'cave'}
   static seedOf(e){const r=e&&e.ref||{};return Math.floor(hash(Math.floor(r.x||0),Math.floor(r.y||0),911+(r.cyc||0))*4294967296)>>>0}
   // (your troop groups by who should go first: foot before riders and shooters, the better tier first)

@@ -24,9 +24,11 @@ Every battle but caves, ruin guardians, sieges, raids, tournaments and the Battl
 | Foes | Wait in their chambers until roused (a foe seen within 180 px, or hurt); the strongest deepest, with the chest |
 | Look | `InteriorArt`: its own floor, wall faces, stalagmites and bones; a cellar's flags and crates; daylight at the mouth |
 
-## 3. Hideouts (built)
+## 3. Hideouts and bandit lairs (built)
 
-A cave's shape (in ruins, cellars), with the camp in it: bandits in squads of 3 through the chambers, a palisade across the way in with a gap, tents, bedrolls, a fire in each chamber whose light shows whoever stands in it to both sides, and the chieftain's tent with the plunder in the deepest.
+The owner (2026-11-06): two kinds. A **bandit hideout** is a camp of tents in a ring of stakes (its camp sprite), fought on the map as a camp with your whole band, as before. A **bandit lair** (`HIDEOUT_LAIR.share`, 45% of them, by a hash of the tile: no new draw, never saved) is drawn as a cave's mouth where hills or peaks stand within 3 tiles, else as a timbered tunnel dug into the ground, with the band's banner; it has its own name (Bandit lair, Raider tunnels, Bog raider warren) and is fought inside. Bandits in ruins (a den) are fought in its cellars.
+
+Inside a lair: a cave's shape (in ruins, cellars), with the camp in it: bandits in squads of 3 through the chambers, a palisade across the way in with a gap, tents, bedrolls, a fire in each chamber whose light shows whoever stands in it to both sides, and the chieftain's tent with the plunder in the deepest.
 
 ## 4. Siege walls (built)
 

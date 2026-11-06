@@ -248,9 +248,15 @@ function siteCanvas(m,ax,ay){const N=m.cell,cv=mkc(N,N,g=>{g.drawImage(m.img,0,0
 // a camp of kind (bandit, hideout, travelers) and seed i, in climate c (the grass unless said)
 function campSprite(i,kind,c){c=c||'grass';const k='camp'+i+(kind||'')+c;if(spr[k])return spr[k];
   const m=PX.clusterModel({kind:SITE_KIND[kind||'bandit'],seed:i*131+7,env:c,snow:c==='frost'?1:0}),n=m.cell/TILE;return spr[k]=siteCanvas(m,TILE/2+TILE*((n>>1)-1),m.cell)}
+// (a bandit lair: a cave's outcrop round its mouth, or a timbered tunnel's head (sites.js Hideout lairLook), bones before it and the band's banner on a pole, on its tile as a hideout stands)
+function lairSprite(s,c){const look=s.lairLook,k='lair'+look+s.seed+c;if(spr[k])return spr[k];const m=PX.buildingModel({type:look==='cave'?'cave':'minehead',seed:s.seed,env:c,snow:c==='frost'?1:0});
+  const cv=siteCanvas(m,m.cell/2,m.cell),g=cv.getContext('2d'),N=m.cell,x=Math.round(N*.78),y=N-4;
+  g.fillStyle='#3a2a1a';g.fillRect(x,y-18,2,18);g.fillStyle='#8a2a22';g.fillRect(x+2,y-18,8,6);g.fillStyle='#5a1a16';g.fillRect(x+2,y-12,8,1);
+  g.fillStyle='#d8d0bc';g.fillRect(Math.round(N*.3),y-2,4,1);g.fillRect(Math.round(N*.36),y-1,2,2);cv.flag=null;return spr[k]=cv}
 function siteSprite(s){s=siteOf(s);// (plain data too)
   const c=climAt(s.x,s.y);if(s instanceof BanditCamp)return campSprite(s.seed,'bandit',c);// a bandit camp: the big camp, as the siege camp is drawn
-  if(SITE_KIND[s.type])return campSprite(s.seed,s.type,c);
+  if(SITE_KIND[s.type]&&!s.tunnel)return campSprite(s.seed,s.type,c);
+  if(s.tunnel)return lairSprite(s,c);// (a bandit lair: a tunnel's mouth in the hillside, their banner by it)
   // (its foot on its tile's bottom edge, 8 below the site's point (the tile's middle); a cave's point is its mouth, in front of its
   // tile (CAVE_MOUTH below the tile's bottom edge). A site of 32 px (a cave, ruins) its middle over its tile's, half a tile over each
   // side; where a road or a building is there, on whole tiles instead: its own and the one beside it with fewer (the right first),

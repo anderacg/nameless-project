@@ -432,7 +432,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  spawn far away from holdings. And they tend to avoid holding territories": WORLD_SCALE.spawn.monsterHold 256 px, was 64;
 //  monsters.js beastKeepsOut), so the beasts lair and walk elsewhere. Proof: monsterHold 64 and beastKeepsOut off give all three
 //  again; the rest held. Were W7 9e363d9f, W8 05f25f36, B2 7bbd9370)
-const EXPECT={W1:'93537e2b',W2:'264a7c7f',W3:'ac2aba75',W4:'fbefe32d',W5:'414df094',W6:'a8409953',W7:'46f8b18a',W8:'065d57eb',B2:'254d8a0a'};
+// (W7 and B2 re-recorded 2026-11-06, on purpose: two kinds of hideout (the owner: "bandit hideout using camp sprite and bandit
+//  lairs that may look like tunnel or cave"): HIDEOUT_LAIR.share of the hideouts are bandit lairs, by a hash of their tile, named
+//  and drawn as one (a cave's mouth or a dug tunnel). Proof: share 0 gives both again; the rest held. Were W7 46f8b18a, B2 254d8a0a)
+const EXPECT={W1:'93537e2b',W2:'264a7c7f',W3:'ac2aba75',W4:'fbefe32d',W5:'414df094',W6:'a8409953',W7:'e9783bae',W8:'065d57eb',B2:'e9d35de0'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

@@ -44,9 +44,16 @@ Kit.suite(({ok,info})=>{
   // ---- a ruin's guardians: its cellars
   {const ru=W.sites.find(s=>s instanceof t.Ruins);if(ru){Kit.world();Kit.goTo(ru.x,ru.y+30);ru.guardFight(ru.guardRoll?ru.guardRoll():{id:'wolf',n:3,lv:1});t.act('fight');const b=B();
     ok(b&&b.inside==='cellar'&&b.interior.X.box,'a ruin’s guardians: fought in its cellars, square-cut');t.B=null;t.fieldDone();Kit.world()}}
-  // ---- a hideout: inside, its camp: squads, the palisade and its gap, the fires' light, the chieftain deepest
-  {const h=W.sites.find(s=>s instanceof t.Hideout&&!s.within&&!s.cleared);Kit.world();Kit.goTo(h.x,h.y+30);h.enter();t.act('site-ask');
-   ok(/Into the /.test(Kit.panel())&&/palisade/.test(Kit.text()),'a hideout’s Attack: who goes in with you');t.act('in-go');t.act('fight');const b=B(),L=b.interior;
+  // ---- two kinds of hideout (the owner, 2026-11-06): a camp of tents, fought on the map as before; a bandit lair (a cave's mouth
+  // or a dug tunnel), fought inside
+  {const H=W.sites.filter(s=>s instanceof t.Hideout&&!s.within),camp=H.find(s=>!s.tunnel),lairs=H.filter(s=>s.tunnel);
+   ok(camp&&lairs.length&&lairs.length<H.length&&lairs.every(s=>/lair|tunnels|warren/i.test(s.name)&&s.T.n==='Bandit lair')&&!/lair/i.test(camp.name),'two kinds: '+(H.length-lairs.length)+' hideouts (tents), '+lairs.length+' bandit lairs ('+lairs.filter(s=>s.lairLook==='cave').length+' caves, '+lairs.filter(s=>s.lairLook==='tunnel').length+' tunnels)');
+   const rec=JSON.parse(JSON.stringify(lairs[0]));const back=t.siteOf(rec);ok(back.tunnel&&back.name===lairs[0].name,'a lair kept by its place: the same after a save');
+   Kit.world();Kit.goTo(camp.x,camp.y+30);camp.enter();t.act('site-ask');ok(!/Into the /.test(Kit.panel())&&/Attack the/.test(Kit.text()),'a hideout’s Attack: its confirm, the whole band');t.act('site-attack');
+   ok(G.enc&&G.enc.kind==='camp'&&!t.Interior.on(G.enc),'fought as a camp, not inside');Kit.world();G.enc=null}
+  // ---- a bandit lair: inside, its camp: squads, the palisade and its gap, the fires' light, the chieftain deepest
+  {const h=W.sites.find(s=>s instanceof t.Hideout&&s.tunnel&&!s.cleared);Kit.world();Kit.goTo(h.x,h.y+30);h.enter();t.act('site-ask');
+   ok(/Into the /.test(Kit.panel())&&/palisade/.test(Kit.text()),'a bandit lair’s Attack: who goes in with you');t.act('in-go');t.act('fight');const b=B(),L=b.interior;
    ok(b&&b.inside==='hideout'&&L.pal&&b.lights&&b.lights.length===L.rooms.length-1,'its fight inside: a palisade, a fire a chamber past the first ('+(b.lights||[]).length+')');
    const T2=b.terrain,p=L.pal,at=(x,y)=>T2.solid[t.tIx(T2,x,y)];ok(at(p.x-p.uy*(L.X.gap/2+12),p.y+p.ux*(L.X.gap/2+12))===1&&at(p.x,p.y)===0&&L.joined(t.TERRAIN.cs),'the palisade bars the way but for its gap');
    ok(Object.values(b.groups).filter(g=>g.team===1&&g.role!=='hero').every(g=>t.grpUnits(g.id).length<=X.squad),'its men in squads of '+X.squad+' or fewer');

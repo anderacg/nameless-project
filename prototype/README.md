@@ -1081,7 +1081,7 @@ Disengaging units remain vulnerable and still do not strike. An uncontested exit
 
 **The dark:** the fog of war is always on inside, each man seeing `INTERIOR.sight` of his range (`B.sightK`), the unseen darker (`B.dark`), drawn as plain dark, a wall seen with the floor before it. The foes wait in their chambers until roused (`insideRoused`: a foe they see within `notice` px, or one of theirs hurt; until then their captain gives them no orders), the strongest (a chieftain) in the deepest.
 
-**A hideout's camp:** its bandits in squads of `INTERIOR.squad` through the chambers; a stake palisade across the way in, a gap to pass (`palAt`, solid on the cells); tents, bedrolls and a fire a chamber, each fire's light showing whoever stands in it to both sides (`B.lights`, `battlefog.js fogGrid`); the chieftain's tent and the plunder in the deepest.
+**Two kinds of hideout** (the owner, 2026-11-06): a bandit hideout (tents in a ring of stakes) is fought on the map as a camp, as before; a bandit lair (`Hideout#tunnel`, `lairLook`: `HIDEOUT_LAIR.share` of them by a hash of the tile, a cave's mouth by hills or peaks, else a dug tunnel; `gfx/structures.js lairSprite`; its own name, set as it is made) is fought inside. **A lair's camp:** its bandits in squads of `INTERIOR.squad` through the chambers; a stake palisade across the way in, a gap to pass (`palAt`, solid on the cells); tents, bedrolls and a fire a chamber, each fire's light showing whoever stands in it to both sides (`B.lights`, `battlefog.js fogGrid`); the chieftain's tent and the plunder in the deepest.
 
 **Switch:** `INTERIOR.on` (on in the game; `tests/harness.js` turns it off, so the older suites keep the field). Tests: `tests/interiors.js`.
 
