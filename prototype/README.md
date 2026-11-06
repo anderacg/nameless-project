@@ -245,7 +245,7 @@ js/gfx/               worldart.js (the painted map), sprites.js (generated sprit
                       tourney.js (the arena: a tournament's small ring, TourneyArena, TOURNEY_ARENA; its crowd: TourneyCrowd),
                       encounterscene.js (the road encounters' figures and props: EncounterScene, ENC_SCENE),
                       structures.js (placed buildings as models: lotModel, lotSprite, lotYard, lotsAhead; estates' ground, camps
-                      and sites as models, flags), render.js (world and battle drawing, the armies' labels, HUD), stagger.js (the ways to be knocked down and rocked),
+                      and sites as models, flags), render.js (world and battle drawing, the armies' labels, HUD; the outline engine: outlineOf, a ring of one colour round any picture's silhouette, unitHighlight: your selected soldiers ringed gold, your group under the pointer white, a foe you point at red), stagger.js (the ways to be knocked down and rocked),
                       depth.js (what stands in front of a figure on the map, and its fade), vfx.js (battle effects), worldui.js (the map's
                       pointer marks, the crossed swords over a party you go to attack (wuiSwords), route trail (the way your hero walks: heroWay, the router's round water, as footprints: wuiFoot) and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
                       tracks.js (the tracks' prints, turned the way each band went, on the ground under all that stands: drawTracks),
