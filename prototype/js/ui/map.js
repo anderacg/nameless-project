@@ -38,6 +38,8 @@ function fullMapPic(m,k,seen,land,towns){
   for(let y=0,o=0;y<h;y++)for(let x=0;x<w;x++,o++){const p=o*4;if(!sn[o]){d[p]=un[0];d[p+1]=un[1];d[p+2]=un[2];continue}const f=own[o];if(f<0)continue;
     const l=x>0?own[o-1]:-1,r=x<w-1?own[o+1]:-1,u=y>0?own[o-w]:-1,b=y<h-1?own[o+w]:-1,a=l>=0&&l!==f||r>=0&&r!==f||u>=0&&u!==f||b>=0&&b!==f?F.edge:F.tint,c=facs[f];
     d[p]+=(c[0]-d[p])*a;d[p+1]+=(c[1]-d[p+1])*a;d[p+2]+=(c[2]-d[p+2])*a}
+  // (the holdings' walls and fences where you have seen them, a pixel each piece, its colour by its kind: world/townwalls.js)
+  for(const t of towns){const r=TownWall.of(t);if(!r)continue;const c=fmRgb(TownWall.mapCol(t));for(const q of r.parts){if(!seen[q.i])continue;const p=(Math.floor(q.y/k)*w+Math.floor(q.x/k))*4;d[p]=c[0];d[p+1]=c[1];d[p+2]=c[2]}}
   const cv=mkc(w,h,g=>g.putImageData(img,0,0));F.ms=performance.now()-t0;return cv}
 // the marks over it at ppt px a tile: the crossings and holdings on land you have seen (each its name and kind on hover), your
 // quests' goals (the tracked one the strongest), the rumours' "?" (the rumour on hover), and you

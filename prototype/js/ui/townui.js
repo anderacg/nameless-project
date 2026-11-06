@@ -36,7 +36,7 @@ function townOverview(t){
     PLACES.tourney.at(t)&&['gold','The lists: a tournament today, 10 gold to enter.']].filter(Boolean);
   return '<p class="muted">'+cap1(an(t.label))+' of the '+(f?'<span style="color:'+f.col+'">'+f.n+'</span>':'free folk')+'. '+t.note+'</p>'+
     '<div class="loot-stats tstats">'+[['Held by',f?'<span style="color:'+f.col+'">'+(t.owner==='player'?'You':f.n)+'</span>':'—'],['Folk',t.races.map(r=>RACES[r].n).join(', ')],['People',(t.pop||0)],['Prosperity',Math.round(t.pros||0)+'%'],
-      ['Garrison',t.gar+(ls.length?' + '+ls.length+' lord'+(ls.length>1?'s':''):'')],['Walls',WALL_N[wallOf(t)]],['Food',fd==null?'—':fd+' days',fd!=null&&fd<3?'bad':''],['Your standing',st,st>=REP_NEED[1]?'gold':'']].map(x=>cell(...x)).join('')+'</div>'+
+      ['Garrison',t.gar+(ls.length?' + '+ls.length+' lord'+(ls.length>1?'s':''):'')],['Walls',wallOf(t)||!fenceOf(t)?WALL_N[wallOf(t)]:'A fence'],['Food',fd==null?'—':fd+' days',fd!=null&&fd<3?'bad':''],['Your standing',st,st>=REP_NEED[1]?'gold':'']].map(x=>cell(...x)).join('')+'</div>'+
     (notes.length?'<div class="lab">Today</div><ul class="tnotes">'+notes.map(([c,s])=>'<li'+(c?' class="'+c+'"':'')+'>'+s+'</li>').join('')+'</ul>':'')+letterTownHtml(t)+
     '<p class="muted" style="font-size:13px">'+(resText(t)?'Its land yields '+resText(t)+'. ':'')+'Estates: '+estateLine(t)+'.</p>'+
     (G.town.inScene?'':'<div class="btns">'+(hasScene(t)?'<button class="btn" type="button" data-act="scene-enter">'+SCENES[t.T.scene].hint+'</button>':'')+(P.stay&&P.stay.town===t.name?'<button class="btn" type="button" data-act="sy-leave">Leave '+t.label+'</button>':stayBtn(t))+'</div>')+
@@ -53,7 +53,7 @@ const bldShort=k=>k==='workshop'?'Weavers':k==='lumber'?'Wood':bldName(k).split(
 function bldStatus(t,k){
   const w=t.work,pct=()=>'building '+Math.round(workProg(t)*100)+'%';
   if(w&&w.k===k)return [pct(),'gold'];
-  if(k==='wall')return [WALL_N[wallOf(t)],''];
+  if(k==='wall')return [wallOf(t)||!fenceOf(t)?WALL_N[wallOf(t)]:'A fence',''];
   if(k==='house'){const n=(t.lots||[]).filter(l=>l.k==='house').length;return housingFull(t)?[n+' · full','bad']:[n+' · room for '+housing(t),'']}
   const lv=bldLv(t,k),M=MAKE[k]||{},out=(t.last&&t.last.out)||{};
   if(!lv)return bldCap(t,k)?[needsMet(t,k)?'not built':'needs '+needsText(k),'']:['no land',''];
@@ -92,7 +92,7 @@ function bldWorks(t,k,here){
 function bldBuild(t,k){
   const w=t.work;let h='';
   if(w&&w.k===k)h+='<p class="gold" style="font-size:13px">Done in '+Math.max(1,w.done-G.day)+' days'+(besieged(t)?' (stopped by the siege)':'')+'.</p>';
-  else if(w)h+='<p class="muted" style="font-size:13px">Builders are busy with '+(w.k==='wall'?'the walls':w.k==='house'?'a house':'the '+ESTATES[w.k].n.toLowerCase())+' for '+Math.max(1,w.done-G.day)+' more days. One project at a time.</p>';
+  else if(w)h+='<p class="muted" style="font-size:13px">Builders are busy with '+(w.k==='wall'?'the walls':w.k==='fence'?'a fence':w.k==='house'?'a house':'the '+ESTATES[w.k].n.toLowerCase())+' for '+Math.max(1,w.done-G.day)+' more days. One project at a time.</p>';
   return h+'<div class="lab">'+(k==='wall'?'Fortify':k==='house'?'Build':'Build, upgrade or pull down')+'</div>'+estateRow(t,k);
 }
 

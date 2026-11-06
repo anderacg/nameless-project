@@ -58,6 +58,7 @@ class Buildings{
     const t=this.t;
     if(!t.bld)this.init();
     if(t.work){if(t.besieged())t.work.done++;else if(G.day>=t.work.done)this.finish()}
+    TownWall.fenceDay(t);// (its fence, kept or grown: world/townwalls.js)
     if(t.owner==='player'||!t.owner||t.work||t.besieged()||t.ruined()||Math.random()>.05)return;// (the free folk start none: they grow by their people)
     // what to build: walls on the frontier, then whatever the holding is shortest of
     const front=TOWNS.some(o=>o!==t&&atWar(t.owner,o.owner)&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<WORLD_SCALE.war.front);
@@ -80,6 +81,7 @@ class Buildings{
   finish(){
     const t=this.t,w=t.work;t.work=null;
     if(w.k==='house'){this.houseDone(w);if(t.owner==='player')log('A new house stands in '+t.name+'.','good');return}
+    if(w.k==='fence'){t.fence=1;if(t.owner==='player')log('A fence now rings '+t.name+'.','good');return}
     if(w.k==='wall')t.wall=Math.min(t.T.wallMax,wallOf(t)+1);else t.bld[w.k]=Math.min(this.cap(w.k),bldLv(t,w.k)+1);
     t.layout.sync();
     if(t.owner==='player')log((w.k==='wall'?'The centre of '+t.name+' is fortified: '+WALL_N[t.wall].toLowerCase():'The '+ESTATES[w.k].n.toLowerCase()+' of '+t.name+' reaches level '+t.bld[w.k])+'.','good')}
@@ -126,6 +128,7 @@ class Buildings{
   build(k,at){
     const t=this.t;
     if(t.work)return;
+    if(k==='fence'){if(fenceOf(t)||wallOf(t)>0||P.gold<FENCE.gold||t.econ.lacking(FENCE.mats).length)return;P.gold-=FENCE.gold;t.econ.take(FENCE.mats);t.work={k,lv:1,done:G.day+Math.max(1,Math.ceil(FENCE.days/this.speed())),start:G.day};log('Work starts on a fence round '+t.name+'.');return}
     if(k==='wall'){const n=wallOf(t)+1;if(n>t.T.wallMax||P.gold<WALL_COST[n]||t.econ.lacking(WALL_MAT[n]).length)return;P.gold-=WALL_COST[n];t.econ.take(WALL_MAT[n]);this.start(k,n);log('Masons start on '+WALL_N[n].toLowerCase()+' at '+t.name+'.');return}
     if(!ESTATES[k])return;at=at||null;const lv=bldLv(t,k);if(lv>=this.cap(k)||!lv&&!this.needsMet(k))return;
     const c=bldCost(k,lv+1),mats=ESTATE_MAT(k,lv+1);if(P.gold<c||t.econ.lacking(mats).length)return;
