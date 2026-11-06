@@ -259,7 +259,7 @@ function drawWorld(){
   // each its own dot (WorldObject mapDot), layer by layer (MAP_LAYER; in a layer, as worldObjects lists them): the holdings and
   // sites you know of, then the beasts, parties and caravans in sight over them
   // (the holdings' walls and fences you have seen: each ring's outline, world/townwalls.js)
-  ctx.lineWidth=1;for(const t of TOWNS){const r=TownWall.of(t);if(!r||!r.parts.some(q=>seenTile(q.x,q.y)))continue;ctx.strokeStyle=TownWall.mapCol(t);ctx.strokeRect(Math.round(mx+r.x0*MS)+.5,Math.round(my+r.y0*MS)+.5,Math.max(1,Math.round((r.x1-r.x0)*MS)),Math.max(1,Math.round((r.y1-r.y0)*MS)))}
+  ctx.lineWidth=1;for(const t of TOWNS){const r=TownWall.of(t);if(!r||!r.parts.some(q=>seenTile(q.x,q.y)))continue;ctx.strokeStyle=TownWall.mapCol(t);ctx.beginPath();TownWall.outline(r).forEach(([x,y],k)=>{const px=Math.round(mx+(x+.5)*MS)+.5,py=Math.round(my+(y+.5)*MS)+.5;if(k)ctx.lineTo(px,py);else ctx.moveTo(px,py)});ctx.closePath();ctx.stroke()}
   mapDots(V,(o,d)=>{if(!B?.world?.hides(o))dot(o.x,o.y,d[0],d[1])});
   drawQuestDots(dot);// (the quests' goals, the tracked one the strongest: world/quests.js)
   for(const m of rumourMarks())if(rumourFade(m)>0)dot(m.x,m.y,RUMOUR_COL,2);

@@ -17,7 +17,12 @@ Kit.suite(({ok,info})=>{
   const roadsIn=r.gates.filter(i=>t.tiles[i]===t.T_ROAD||t.tiles[i]===t.T_FORD);ok(roadsIn.length>0,'a gate where a road crosses it');
   {const T2=t.TOWNS.filter(z=>t.wallOf(z)>0&&t.TownWall.of(z)),onPath=new Set((t.WM.roads||[]).flatMap(rd=>rd.path));
    const bad=T2.filter(z=>{const q=t.TownWall.of(z);return q.gates.length&&!q.gates.some(i=>onPath.has(i))});ok(!bad.length,'every walled holding’s gates on a road’s own path through its wall ('+T2.length+' holdings'+(bad.length?'; not: '+bad.map(z=>z.name).join(', '):'')+')');
-   ok(T2.every(z=>{const q=t.TownWall.of(z);return q.arches.length===q.gates.length}),'each gate tile under its gateway’s arch or bridge')}
+   ok(T2.every(z=>{const q=t.TownWall.of(z);return q.arches.length===q.gates.length}),'each gate tile under its gateway’s arch or bridge');
+   // (diagonal walls, the owner 2026-11-06: its corners cut, an octagon; closed all round, even to a step corner to corner)
+   const oct=T2.filter(z=>t.TownWall.of(z).c>0),leak=T2.filter(z=>{const q=t.TownWall.of(z),M=t.MW,wall=new Set(q.shut.concat(q.gates)),seen=new Set(),st=[[q.x0-1,q.y0-1]];
+     while(st.length){const [x,y]=st.pop(),i=y*M+x;if(x<q.x0-1||y<q.y0-1||x>q.x1+1||y>q.y1+1||seen.has(i)||wall.has(i)||!t.passable(t.tiles[i]))continue;seen.add(i);if(x===z.tx&&y===z.ty+1)return true;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(dx||dy)st.push([x+dx,y+dy])}return false});
+   ok(oct.length&&oct.every(z=>{const q=t.TownWall.of(z);return !t.TownWall.inside(q,q.x0,q.y0)&&!t.TownWall.inside(q,q.x1,q.y1)&&t.TownWall.inside(q,z.tx,z.ty+1)&&q.diags.length<=4*q.c}),'its corners cut by diagonal walls: '+oct.length+' of '+T2.length+' rings octagons ('+oct.map(z=>t.TownWall.of(z).c).join(', ')+' tiles deep)');
+   ok(!leak.length,'every ring closed, even corner to corner: from outside, its middle reached only through a gate'+(leak.length?'; not: '+leak.map(z=>z.name).join(', '):''))}
   // (the way in: by a gate, never over a wall; a straight walk into the wall stops at it)
   {const out={x:(r.x0-6)*TL,y:(r.y0+r.y1)/2*TL},p=t.findPath(out.x,out.y,h.x,h.y+12,30);ok(p&&p.some(i=>r.gates.includes(i))&&!p.some(i=>r.shut.includes(i)),'the way in from outside ('+(p&&p.length)+' tiles): by a gate, over no wall');
    const w=r.parts.filter(q=>q.k==='h'&&q.y===r.y1).sort((a,b)=>Math.min(...r.gates.map(i=>Math.abs(i%t.MW-b.x)))-Math.min(...r.gates.map(i=>Math.abs(i%t.MW-a.x))))[0],o={x:(w.x+.5)*TL,y:(w.y+2.5)*TL};for(let k=0;k<80;k++)t.walk(o,0,-1,1);ok(Math.floor(o.y/TL)>w.y,'walking straight at the wall: stopped before it ('+Math.floor(o.y/TL)+' vs the wall’s row '+w.y+')')}
