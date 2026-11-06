@@ -73,3 +73,14 @@ function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
 const DOLL_GRIP={brace:{fore:[[8,5],[10,7],[11,9]],rear:[[4,5],[5,7],[7,9]]},grip:{fore:[[8,5],[9,7],[10,8]],rear:[[4,5],[6,7],[9,9]]}};
 // a figure as a doll: its body, then its gear from the body's anchors (figures.js FigureRig.dress)
 function drawDollFigure(g,o,ox,oy,walk,style,atk,cut){const A=drawDollBody(g,o,ox,oy,walk,style,atk,cut);FigureRig.dress(g,o,A,style,atk);return A}
+// the beasts and monsters in the same style (engine/beasts.js: no outline, their own edge darker) and at their real size beside the
+// dolls (PX.BEAST_SIZE: a wolf about a third a man's height at the shoulder, a boar, a bear, a tiger; the monsters as they are)
+if(window.PX&&PX.beast){PX.BEAST_EDGE=DOLL_FIGS.on&&DOLL_FIGS.edge;Object.assign(PX.BEAST_SIZE,DOLL_FIGS.on?{wolf:.6,boar:.6,bear:.75,tiger:.65}:{})}
+// (a picture drawn with the navy outline (people.js PEOPLE_OUT), in the dolls' style: its outline taken off, the pixels it ran round a
+// shade darker (DOLL_FIGS.edgeK) where they meet it; its size and feet as before but for the outline's row)
+function deOutline(src){const w=src.width,h=src.height,d=src.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h),a=d.data,O=[0x1a,0x1c,0x26],out=new Uint8Array(w*h);
+  for(let i=0;i<w*h;i++)if(a[i*4+3]&&a[i*4]===O[0]&&a[i*4+1]===O[1]&&a[i*4+2]===O[2])out[i]=1;
+  const k=DOLL_FIGS.edgeK,e=[];for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!a[i*4+3]||out[i])continue;if([[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>{const X=x+dx,Y=y+dy;return X<0||Y<0||X>=w||Y>=h||out[Y*w+X]||!a[(Y*w+X)*4+3]}))e.push(i)}
+  for(let i=0;i<w*h;i++)if(out[i])a[i*4+3]=0;for(const i of e){a[i*4]=Math.round(a[i*4]*k);a[i*4+1]=Math.round(a[i*4+1]*k);a[i*4+2]=Math.round(a[i*4+2]*k)}
+  // (its feet down a row, onto the bottom row the outline under them took)
+  return mkc(w,h,g=>{const c=mkc(w,h,q=>q.putImageData(d,0,0));g.drawImage(c,0,1)})}

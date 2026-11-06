@@ -60,7 +60,11 @@
   // a flat part (a limb seen edge on): t0 its tone, the bottom pixel t1
   function flat(g,m,Rp,t0,t1){for(const [x,y] of m.pts())put(g,x,y,Rp[!m.has(x,y+1)&&t1!=null?t1:t0])}
   // (nothing may touch the canvas's edge, where no outline could go round it: such a pixel becomes the outline)
-  function outline(g){for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(at(g,x,y)&&(x===0||y===0||x===g.w-1||y===g.h-1))put(g,x,y,OUT);const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!at(g,x,y)&&(at(g,x-1,y)||at(g,x+1,y)||at(g,x,y-1)||at(g,x,y+1)))o.push([x,y]);for(const [x,y] of o)put(g,x,y,OUT)}
+  // (PX.BEAST_EDGE: no outline, the silhouette's own edge a tone darker instead: PX.shade by BEAST_EDGE_K)
+  PX.BEAST_EDGE=false;PX.BEAST_EDGE_K=.68;
+  // (edge: the battle's figure, raw: the map's keep their outline; the side's colours (TEAM) never darkened)
+  function outline(g,edge){if(edge){const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=at(g,x,y);if(c&&c!==OUT&&!TEAM.includes(c)&&(!at(g,x-1,y)||!at(g,x+1,y)||!at(g,x,y-1)||!at(g,x,y+1)))e.push([x,y,c])}for(const [x,y,c] of e)putR(g,x,y,PX.shade(c,PX.BEAST_EDGE_K));return}
+  for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(at(g,x,y)&&(x===0||y===0||x===g.w-1||y===g.h-1))put(g,x,y,OUT);const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!at(g,x,y)&&(at(g,x-1,y)||at(g,x+1,y)||at(g,x,y-1)||at(g,x,y+1)))o.push([x,y]);for(const [x,y] of o)put(g,x,y,OUT)}
   function canvas(g){const c=PX.canvas(g.w,g.h),x=c.getContext('2d', { willReadFrequently: true }),id=x.createImageData(g.w,g.h),d=id.data,mem={};
     for(let i=0;i<g.p.length;i++){const col=g.p[i];if(!col)continue;const v=mem[col]||(mem[col]=h2r(col));d[i*4]=v[0];d[i*4+1]=v[1];d[i*4+2]=v[2];d[i*4+3]=255}x.putImageData(id,0,0);return c}
   // (a grid turned a quarter clockwise, pixel for pixel: what stood up now lies, its head to the right)
@@ -108,7 +112,14 @@
      back]; pawUp (how high a blow lifts the near fore: 0 for a biter); head {x, y (its middle, from the shoulder and the ground), w,
      h, snout [length, depth], sy, M (the muzzle's ramp), ear, more}; neck (its own, instead); tail, marks, collar, wing: their own;
      C the coat ramp, L the belly's, D the dark (paws, nose) */
-  function quad(g,S,F,o){
+  /* (a kind's real size: its body's numbers times PX.BEAST_SIZE[kind] (the owner, 2026-11-06: "fit with the current sprites
+     scale": a wolf about a third a man's height at the shoulder), rounded, a limb at least a pixel; its feet on the ground as before,
+     its middle where it was (mid), so its tail and head stay inside its canvas) */
+  PX.BEAST_SIZE={};
+  const scaleS=(S,k)=>{if(!k||k===1)return S;const r=v=>Math.max(1,Math.round(v*k)),o={...S},mid=Math.round((S.hip+S.sho)*(1-k)/2);for(const n of ['hip','sho','belly'])o[n]=r(S[n]);o.hip+=mid;o.sho+=mid;for(const n of ['ry','rh','rc'])o[n]=Math.max(1.5,S[n]*k);
+    o.back=S.back.map(r);o.legs=S.legs.map((v,i)=>i===2?Math.round(v*k):Math.max(1,Math.round(v*k)));if(S.fore)o.fore=S.fore.map((v,i)=>i===2?Math.round(v*k):Math.max(1,Math.round(v*k)));if(S.hump)o.hump=S.hump.map(r);
+    if(S.pawUp)o.pawUp=Math.max(1,Math.round(S.pawUp*k));if(S.head){const h=S.head;o.head={...h,x:Math.round(h.x*k),y:r(h.y),w:Math.max(3,Math.round(h.w*k)),h:Math.max(3,Math.round(h.h*k)),snout:h.snout&&h.snout.map(r)}}return o};
+  function quad(g,S,F,o){S=scaleS(S,PX.BEAST_SIZE[o.kind]);
     const Y=S.Y,b=F.bob,lx=F.lean?1:0,hip=S.hip,sho=S.sho+lx,top=[Y-S.back[0]+b,Y-S.back[1]+b],bel=Y-S.belly+b,C=S.C,Dk=S.D,P={Y,b,lx,hip,sho,top,bel};
     // (a leg: from its root under the body to its foot on the ground (lift: raised), a hind one bent back at the hock)
     const leg=(i,near)=>{const fore=i%2===1,[dx,lift]=F.legs[i]||[0,0],up=fore&&near&&S.pawUp?[0,S.pawUp,Math.ceil(S.pawUp/2)][F.paw]||0:0,rx=(fore?sho:hip)+(near?0:-1),ry=bel-1,
@@ -362,7 +373,7 @@
 
   /* ---------- the figure ---------- */
   const fhOf={};
-  PX.BEAST_KINDS=Object.keys(KINDS);
+  PX.BEAST_KINDS=Object.keys(KINDS);for(const k of PX.BEAST_KINDS)KINDS[k].kind=k;
   // (each kind's deaths, its dead poses PX.BEAST_DEAD + i: its own, or a four-legged beast's, QUAD_DEATHS)
   PX.BEAST_DEATHS=Object.fromEntries(PX.BEAST_KINDS.map(k=>[k,KINDS[k].deaths||QUAD_DEATHS]));
   // (drawn with room round it (PAD), outlined, then cut to the kind's canvas: K.W x K.H, its x shifted by K.dx; PX._beastFit says
@@ -370,9 +381,10 @@
   const PAD=16;
   function raw(K,o,fly){const pose=o.pose||0,[a,i]=act(pose),g=grid(K.W+2*PAD,K.H+PAD),v=(o.v||0)>>>0;
     const F=a==='dead'?{a,i,dead:true,how:(K.deaths||QUAD_DEATHS)[i]}:(K.gait||gait)(a==='alt'&&!K.alt?'atk':a,i);if(a==='alt'&&K.alt)F.a='alt';
-    OX=PAD+(K.dx||0);try{K.draw(g,F,{v,team:o.team,fly})}finally{OX=0}
-    // (nothing below the ground: the bottom row is the outline's)
-    g.p.fill(null,(g.h-1)*g.w);outline(g);return g}
+    OX=PAD+(K.dx||0);try{K.draw(g,F,{v,team:o.team,fly,kind:K.kind})}finally{OX=0}
+    // (nothing below the ground: the bottom row is the outline's; with PX.BEAST_EDGE (no outline: its own edge a shade darker, the
+    //  paper dolls' style) the figure a row down, its feet on the bottom row)
+    g.p.fill(null,(g.h-1)*g.w);outline(g,PX.BEAST_EDGE);if(PX.BEAST_EDGE){g.p.copyWithin(g.w,0,(g.h-1)*g.w);g.p.fill(null,0,g.w)}return g}
   function figure(K,kind,o,fly){const r=raw(K,o,fly),g=grid(K.W,K.H);for(let y=0;y<K.H;y++)for(let x=0;x<K.W;x++)g.p[y*K.W+x]=r.p[(y+PAD)*r.w+x+PAD];return g}
   PX._beastFit=kind=>{const K=kind==='drake'?DRAKE:KINDS[kind];let a=1e9,b=1e9,c=-1e9,pa,pb,pc;for(const pose of kind==='drake'?[15,16]:[...PX.BEAST_POSES,DEAD,DEAD+1,DEAD+2])for(const v of [0,1,2])for(const team of [0,1]){const r=raw(K,{pose,v,team},kind==='drake');
     for(let y=0;y<r.h;y++)for(let x=0;x<r.w;x++)if(r.p[y*r.w+x]){if(x-PAD<a)a=x-PAD,pa=pose;if(x-PAD>c)c=x-PAD,pc=pose;if(y-PAD<b)b=y-PAD,pb=pose}}return{kind,W:K.W,H:K.H,left:a+'@'+pa,right:c+'@'+pc,top:b+'@'+pb,ok:a>=0&&c<K.W&&b>=0}};

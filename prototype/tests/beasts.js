@@ -19,15 +19,16 @@ try{
    if(c.height!==n||![8,16,32,64].includes(n))bad.push(k+' '+p+' '+c.width+'x'+c.height);}
   ok(!bad.length&&size.dragon===64&&size.troll===32&&size.wyrm===32&&size.slime===16&&size.wolf===32,'every pose in a power-of-two cell: '+kinds.map(k=>k+' '+size[k]).join(', ')+(bad.length?' — not: '+bad.slice(0,4).join('; '):''));
   // (the feet: the lowest coloured row is the one over the outline at the bottom, in every pose; drawn at y - height + 2 they stand on y)
-  const off=[];for(const k of kinds)for(const p of poses){const c=t.unitSprite(k,1,false,0,p),d=data(c),n=c.width;let low=-1;
-   for(let y=n-1;y>=0&&low<0;y--)for(let x=0;x<n;x++){const i=(y*n+x)*4;if(d[i+3]&&!isOut(d,i)){low=y;break}}if(p>=15&&p<=18?low<n-5||low>n-2:low!==n-2)off.push(k+' '+p+' ('+low+')')}
-  ok(!off.length,'every pose stands on the unit’s point: its feet on the cell’s row n−2, the outline under them (running, it may leave the ground a little)'+(off.length?': '+off.slice(0,5).join(', '):''));
+  // (FB: the feet's row from the bottom: 2 over the outline; 1 in the paper dolls' style, no outline: PX.BEAST_EDGE, 2026-11-06)
+  const FB=PX.BEAST_EDGE?1:2;const off=[];for(const k of kinds)for(const p of poses){const c=t.unitSprite(k,1,false,0,p),d=data(c),n=c.width;let low=-1;
+   for(let y=n-1;y>=0&&low<0;y--)for(let x=0;x<n;x++){const i=(y*n+x)*4;if(d[i+3]&&!isOut(d,i)){low=y;break}}if(p>=15&&p<=18?low<n-3-FB||low>n-FB:low!==n-FB)off.push(k+' '+p+' ('+low+')')}
+  ok(!off.length,'every pose stands on the unit’s point: its feet on the cell’s row n−'+FB+(FB===2?', the outline under them':', the bottom (no outline)')+' (running, it may leave the ground a little)'+(off.length?': '+off.slice(0,5).join(', '):''));
   // (c.ch: the figure's own height for the health bar: the standing figure's top, within the cell; the same in every pose)
   const ch=[];for(const k of kinds){const c=t.unitSprite(k,1,false,0,0),d=data(c),n=c.width;let top=n;for(let y=0;y<n&&top===n;y++)for(let x=0;x<n;x++)if(d[(y*n+x)*4+3]){top=y;break}
    if(c.ch!==n-top||poses.some(p=>t.unitSprite(k,1,false,0,p).ch!==c.ch))ch.push(k+' '+c.ch+'/'+(n-top))}
   ok(!ch.length,'each one’s height (c.ch) is its standing figure’s, the same in every pose: '+kinds.map(k=>k+' '+t.unitSprite(k,1,false,0,0).ch).join(', ')+(ch.length?' — off: '+ch.join(', '):''));
   // (its foot on the ground about the unit's size: the big ones (their reach 12 further) wide, the rest a soldier's to a horse's)
-  const span=k=>{const c=t.unitSprite(k,1,false,0,0),d=data(c),n=c.width,y=n-2;let a=n,b=-1;for(let x=0;x<n;x++){const i=(y*n+x)*4;if(d[i+3]&&!isOut(d,i)){a=Math.min(a,x);b=Math.max(b,x)}}return b-a+1};
+  const span=k=>{const c=t.unitSprite(k,1,false,0,0),d=data(c),n=c.width,y=n-FB;let a=n,b=-1;for(let x=0;x<n;x++){const i=(y*n+x)*4;if(d[i+3]&&!isOut(d,i)){a=Math.min(a,x);b=Math.max(b,x)}}return b-a+1};
   const sp=Object.fromEntries(kinds.map(k=>[k,span(k)])),wide=kinds.filter(k=>t.ST[k].big?sp[k]<12||sp[k]>40:sp[k]<4||sp[k]>26);
   ok(!wide.length,'where each stands is about its size on the field (the feet’s span): '+kinds.map(k=>k+' '+sp[k]).join(', ')+(wide.length?' — off: '+wide.join(', '):''))}
  // ---- the outline: dark navy round the silhouette, and only there (taken off, the figure's own pixels outlined again give it back
@@ -35,9 +36,11 @@ try{
  {const bad=[];let n=0;for(const k of kinds)for(const team of [0,1])for(const v of [0,1,2])for(const p of poses){const c=t.unitSprite(k,team,false,v,p),d=data(c),W=c.width,H=c.height;n++;
    const fig=(x,y)=>{if(x<0||y<0||x>=W||y>=H)return false;const i=(y*W+x)*4;return d[i+3]>0&&!isOut(d,i)};let why='';
    for(let y=0;y<H&&!why;y++)for(let x=0;x<W;x++){const i=(y*W+x)*4;if(d[i+3]&&d[i+3]!==255){why='half-clear';break}
+     // (the paper dolls' style: no outline at all, the figure's own edge darker: PX.BEAST_EDGE)
+     if(PX.BEAST_EDGE){if(isOut(d,i)){why='the outline\u2019s colour at '+x+','+y;break}continue}
      const rim=!fig(x,y)&&(fig(x-1,y)||fig(x+1,y)||fig(x,y-1)||fig(x,y+1));if(rim!==!!isOut(d,i)){why=(rim?'an edge not outlined':'the outline\u2019s colour inside')+' at '+x+','+y;break}}
    if(why&&!bad.some(b=>b.startsWith(k+' ')))bad.push(k+' v'+v+' pose '+p+' '+why)}
-  ok(!bad.length,'the dark navy outline runs round every silhouette and nowhere inside it, true pixels only ('+n+' sprites)'+(bad.length?': '+bad.join('; '):''))}
+  ok(!bad.length,(PX.BEAST_EDGE?'no outline anywhere (the paper dolls\' style), true pixels only (':'the dark navy outline runs round every silhouette and nowhere inside it, true pixels only (')+n+' sprites)'+(bad.length?': '+bad.join('; '):''))}
  // ---- variants: three, seeded (the same each time, never Math.random), v and v+3 alike
  {const px=c=>Array.from(data(c)).join(),mr=Math.random;let calls=0;Math.random=()=>{calls++;return mr()};const fresh={},again={};
   try{for(const k of kinds){fresh[k]=[0,1,2].map(v=>px(PX.beast(k,{v,pose:0,team:1})));again[k]=px(PX.beast(k,{v:1,pose:0,team:1}))}}finally{Math.random=mr}

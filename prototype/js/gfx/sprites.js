@@ -36,7 +36,11 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
   // a companion wears what you gave them: their weapon, armour and helm show (cg)
   const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null;
   // (a beast or a monster: its own figure (engine/beasts.js), one of three variants, its poses: beastSprite)
-  if(ST[type]?.wildlife){const id=ST[type].wildlife,f=pose>=2?pose%PX.MAP_STEPS:0,key='hunt:'+id+':'+f;if(spr[key])return spr[key];const s=critterSprite(id,f),c=mkc(s.width*2,s.height*2,g=>g.drawImage(s,0,0,s.width*2,s.height*2));c.cw=s.cw*2;c.ch=s.ch*2;return spr[key]=c;}
+  // (wildlife hunted: the map's own animal; with the paper dolls at its real size beside them (the owner, 2026-11-06: "fit with the
+  //  current sprites scale"), its outline taken off and its own edge darkened, as theirs (deOutline); else doubled)
+  if(ST[type]?.wildlife){const id=ST[type].wildlife,f=pose>=2?pose%PX.MAP_STEPS:0,key='hunt:'+id+':'+f;if(spr[key])return spr[key];const s=critterSprite(id,f);
+    if(DOLL_FIGS.on&&DOLL_FIGS.edge){const c=deOutline(s);c.cw=s.cw;c.ch=s.ch;return spr[key]=c}
+    const c=mkc(s.width*2,s.height*2,g=>g.drawImage(s,0,0,s.width*2,s.height*2));c.cw=s.cw*2;c.ch=s.ch*2;return spr[key]=c;}
   if(ST[type]&&ST[type].beast)return beastSprite(type,team===2?0:team,v,pose);
   v=hero?0:(v||0)%6;pose=pose||0;const wk=(w,melee)=>bare&&melee?'m':w||'',key=type+team+(hero?'h'+P.race+wk(P.gear.weapon,heroKind()==='melee'&&!unarmed())+(P.gear.body||'')+(P.gear.head||'')+(P.gear.offhand||''):'')+(cg?'g'+wk(cg.weapon,cg.weapon&&(ITEMS[cg.weapon].kind||'melee')==='melee')+(cg.body||'')+(cg.head||'')+(cg.offhand||''):'')+'v'+v+'p'+pose+(bare?'b':'')+(arm?'s':'')+(afoot?'f':'')+(tint?'c'+tint:'');
   {const c=bare?spr[key]:FIGURES.get(key);if(c)return c}
