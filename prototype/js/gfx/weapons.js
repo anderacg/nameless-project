@@ -31,9 +31,16 @@ function drawBlade(set,hx,hy,deg,k,Tm,skin,len=WPN[k][0],thin=false){
   // (its butt below the hand: a pole's 3 px; a paper doll's, held across his back, 8, so it shows by his far leg as the reference's)
   line(hx,hy,a+Math.PI,POLE(k)&&k!=='javelin'?(thin&&k!=='lance'?8:3):1,W[2]);const shaft=line(hx,hy,a,len,col);
   const [tx,ty]=shaft[shaft.length-1];
-  if(head==='guard'){shaft.slice(1).forEach(([x,y])=>set(x,y,M[0]));set(hx-s,hy+c,PPAL.gold[1]);set(hx+s,hy-c,PPAL.gold[2])}
-  if(head==='tip'){set(tx,ty,M[1]);set(tx+c,ty+s,M[0])}
-  if(head==='pennant'){set(tx,ty,M[0]);set(tx-s,ty+c,Tm[1]);set(tx-s*2,ty+c*2,Tm[2]);set(tx-s-c,ty+c-s,Tm[1])}
+  if(head==='guard'){shaft.slice(1).forEach(([x,y])=>set(x,y,M[0]));set(hx-s,hy+c,PPAL.gold[1]);set(hx+s,hy-c,PPAL.gold[2]);
+    // (thin: its edge a tone darker down the blade's far side, its point lit, a pommel behind the hand)
+    if(thin){shaft.slice(1,-1).forEach(([x,y],j)=>{if(j&1)set(x,y,M[1])});set(tx,ty,'#ffffff');set(Math.round(hx-c),Math.round(hy-s),PPAL.gold[2])}}
+  // (a spearhead: thin (a paper doll's), its socket, a leaf of steel three pixels long, a pixel either side of it where it widens;
+  //  else its tip two pixels)
+  const P=(t,n)=>[Math.round(tx+c*t-s*n),Math.round(ty+s*t+c*n)];
+  if(head==='tip'&&thin){set(...P(0,0),M[2]);set(...P(1,0),M[1]);set(...P(2,0),M[1]);set(...P(3,0),M[0]);set(...P(1,-1),M[2]);set(...P(1,1),M[2])}
+  else if(head==='tip'){set(tx,ty,M[1]);set(tx+c,ty+s,M[0])}
+  if(head==='pennant'&&thin){set(...P(0,0),M[2]);set(...P(1,0),M[1]);set(...P(2,0),M[0]);set(...P(1,-1),M[2]);set(...P(1,1),M[2]);set(tx-s,ty+c,Tm[1]);set(tx-s*2,ty+c*2,Tm[2])}
+  else if(head==='pennant'){set(tx,ty,M[0]);set(tx-s,ty+c,Tm[1]);set(tx-s*2,ty+c*2,Tm[2]);set(tx-s-c,ty+c-s,Tm[1])}
   if(head==='axe'||head==='bigaxe'){for(let i=1;i<=(head==='bigaxe'?3:2);i++){set(tx-s*i,ty+c*i,M[1]);set(tx-s*i-c,ty+c*i-s,M[2])}if(head==='bigaxe')for(let i=1;i<=2;i++)set(tx+s*i,ty-c*i,M[1])}
   if(head==='hammer'){for(let i=-1;i<=1;i++){set(tx-s*i,ty+c*i,M[1]);set(tx-s*i-c,ty+c*i-s,M[2])}}
   // (a tool's head, across the haft at its end: px, py the way across, forward)
@@ -43,6 +50,17 @@ function drawBlade(set,hx,hy,deg,k,Tm,skin,len=WPN[k][0],thin=false){
   if(head==='crook'){set(tx+c,ty+s,W[1]);set(tx+c+px,ty+s+py,W[1]);set(tx+px*2,ty+py*2,W[1]);set(tx+px*2-c,ty+py*2-s,W[2])}
   if(head==='rod'){for(let i=1;i<=5;i++)set(tx,ty+i,'#d8dce4')}
   set(hx,hy,skin);return[tx+c,ty+s]}
+/* a missile in flight, pixel for pixel at the nearest of MISSILE_STEPS angles (the owner, 2026-11-06: "the spearhead, the arrow
+   head"): its shaft, its head (an arrow's: a steel point and two barbs behind it; a javelin's: a leaf-shaped blade), an arrow's
+   fletching; ax: its middle in its picture. MISSILE: each kind's [shaft from, to], head [from, to], barbs at, fletching, colours */
+const MISSILE_STEPS=16,MISSILE={arrow:{shaft:[-4,2],head:[3,4],barb:3,fletch:[-5,-4],wood:'#c8a878',steel:['#eef0f4','#a8b0bc','#6e7682'],feather:'#e8e2d0'},
+  javelin:{shaft:[-6,3],head:[4,6],barb:4,fletch:null,wood:'#9a6a3a',steel:['#eef0f4','#a8b0bc','#6e7682']}},MISSILE_PICS={};
+function missileSprite(kind,ang){const S=MISSILE_STEPS,i=((Math.round(ang/(2*Math.PI)*S)%S)+S)%S,key=kind+i;if(MISSILE_PICS[key])return MISSILE_PICS[key];
+  const M=MISSILE[kind],R=9,g=pgrid(2*R+1,2*R+1),a=i/S*2*Math.PI,c=Math.cos(a),s=Math.sin(a),at=(t,n,col)=>pset(g,R+Math.round(c*t-s*n),R+Math.round(s*t+c*n),col);
+  for(let t=M.shaft[0];t<=M.shaft[1];t++)at(t,0,M.wood);
+  if(M.fletch)for(let t=M.fletch[0];t<=M.fletch[1];t++){at(t,-1,M.feather);at(t,1,M.feather)}
+  for(let t=M.head[0];t<=M.head[1];t++)at(t,0,t===M.head[1]?M.steel[0]:M.steel[1]);at(M.barb,-1,M.steel[2]);at(M.barb,1,M.steel[2]);
+  const cv=pcanvas(g);cv.ax=R;return MISSILE_PICS[key]=cv}
 // how he holds it now: [angle (degrees, 0 forward, -90 up), hand dx, hand dy] by what he is doing
 const HOLD={
   // at rest, on the march, in a charge, in guard near a foe, stunned, a parry (raised across before him: battle/defence.js) and
