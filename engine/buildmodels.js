@@ -232,9 +232,10 @@
       Q.lift=o.stilts?4:0;const door=d.pick([.3,.5,.7]),h=house(Q,{w,d:dd,form,dw,door,chim:lv>=2?true:undefined,pick:lv>=2?['WinF','WinS']:['Win','WinS']});
       if(lv>=3){if(form==='gable')dormer(Q,'dm',h.u,h.v,h.z,d.pick([-4,4]));else if(form==='front')Q.dec('h.S','Win',.5,h.z+2,true)}stilts(Q,h.u,h.v);
       const p=d.pick(['barrel','woodpile','crate','barrel','']),at=door;if(p)Q.prop(p,[(at>.5?-1:1)*(w/2-2.5),dd/2+2.5],p==='woodpile'?0:1);Q.lift=0},
-    // a townhouse: two storeys, the upper jettied out over the lower (a timber frame), its gable to the street or along it; deep
+    // a townhouse: two storeys, the upper jettied out over the lower front and back alike (a timber frame; one side only read as a
+    // storey shifted a pixel when it stood side on, the owner 2026-11-06), its gable to the street or along it; deep
     townhouse(Q,o){const d=o.d,w=16,dd=14,dw=Q.home('townhouse','home',2),K=o.look.townhouse,wall=K.upper||o.wall,front=d.chance(.6),lo=K.lower||(wall==='daub'?'stone':wall);
-      Q.box('lo',[-w/2,w/2],[-dd/2,dd/2],[0,11],lo,{dw});Q.box('h',[-w/2,w/2],[-dd/2,dd/2+1],[11,17],wall,{dw,frame:o.look.frame});
+      Q.box('lo',[-w/2,w/2],[-dd/2,dd/2],[0,11],lo,{dw});Q.box('h',[-w/2,w/2],[-dd/2-1,dd/2+1],[11,17],wall,{dw,frame:o.look.frame});
       Q.roof('h','gable',front?'v':'u',front?7:6,o.roofMat,{lip:1,ov:1});Q.chim([w/2-3,-dd/2+3],15,front?24:23,3);
       const da=d.pick([.28,.72]);Q.dec('lo.S','Door',da);Q.dec('lo.S',d.pick(['Win','WinF']),1-da,2);Q.dec('h.S','WinS',.25,1);Q.dec('h.S','WinS',.75,1);if(front)Q.dec('h.S','Win',.5,8,true);
       Q.dec('lo.N','Door',.5);Q.dec('h.N','Win',.5,1);for(const k of ['E','W'])for(const a of [.3,.7]){Q.dec('h.'+k,'Win',a,1);Q.dec('lo.'+k,'Win',a,3)}},

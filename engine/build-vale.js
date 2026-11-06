@@ -98,7 +98,7 @@
     // a townhouse: a pale stone ground floor, the upper of framed plaster jettied over it, its gable to the street or along it; the
     // blue door, a royal banner beside it or the shield in the street gable; a brick chimney
     townhouse(Q,o){const d=o.d,L=o.look,K=L.townhouse,w=16,dd=14,dw=Q.home('townhouse','home',2),front=d.chance(.6),wall=K.upper||o.wall,lo=K.lower||'stone';
-      Q.box('lo',[-w/2,w/2],[-dd/2,dd/2],[0,11],lo,{dw});Q.box('h',[-w/2,w/2],[-dd/2,dd/2+1],[11,18],wall,{dw,frame:L.frame});
+      Q.box('lo',[-w/2,w/2],[-dd/2,dd/2],[0,11],lo,{dw});Q.box('h',[-w/2,w/2],[-dd/2-1,dd/2+1],[11,18],wall,{dw,frame:L.frame});
       Q.roof('h','gable',front?'v':'u',front?8:6,o.roofMat,{lip:1,ov:1});chimney(Q,[w/2-3,-dd/2+3],16,front?26:24);
       const da=d.pick([.28,.72]);Q.dec('lo.S',L.door,da);Q.dec('lo.S',front?L.win:L.banner,1-da,front?3:2);Q.dec('h.S',L.win,.25,1);Q.dec('h.S',L.win,.75,1);if(front)Q.dec('h.S',L.plaque,.5,8,true);
       Q.dec('lo.N',L.door,.5);Q.dec('h.N',L.win,.5,1);for(const k of ['E','W'])for(const a of [.3,.7]){Q.dec('h.'+k,'Win',a,1);Q.dec('lo.'+k,'Win',a,3)}},

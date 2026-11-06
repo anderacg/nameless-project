@@ -44,7 +44,7 @@
   const brazier=(Q,n,c,M)=>Q.round(n,c,1.6,[0,3],M.stone,{form:'lid',mat:'ember'});
 
   /* a Clans' house: a battered plinth, walls of the stone (z), an upper storey of dark timber framed (up px; jetty: out over the
-     street), a steep slate roof ('gable' along its front, 'front' its gable to the front, 'hip'), buttresses at its corners, small
+     street and the back alike, so it stands true side on), a steep slate roof ('gable' along its front, 'front' its gable to the front, 'hip'), buttresses at its corners, small
      chimney vents, an iron-banded door under a lintel, small warm windows. The desert: red sandstone, a flat roof behind a parapet
      and a terrace stepped back over it, a deep shaded doorway; the swamp: a raised stone footing. s: {n, c, w, d, z, up, jetty, form,
      rise, dw, door, doorKind, wins, vents ([[u, v], ...]), butt, back ('door'), footing (false: none)} */
@@ -55,7 +55,7 @@
     if(ft){Q.box(n+'ft',[u[0]-2,u[1]+2],[v[0]-2,v[1]+2],[0,ft],M.base,{dw,top:true});const x=u[0]+at*w;Q.box(n+'fs',[x-3,x+3],[v[1]+2,v[1]+4],[0,ft/2],M.base,{dw,top:true});Q.lift+=ft}
     Q.box(n+'pl',[u[0]-1,u[1]+1],[v[0]-1,v[1]+1],[0,pl],M.base,{dw,top:true});
     Q.box(n,u,v,[0,z1],M.stone,{dw});
-    if(s.up)Q.box(top,u,[v[0],v[1]+(s.jetty&&!M.flat?1:0)],[z1,z2],M.flat?M.stone:M.upper,{dw,frame:M.flat?null:'timber'});
+    if(s.up)Q.box(top,u,[v[0]-(s.jetty&&!M.flat?1:0),v[1]+(s.jetty&&!M.flat?1:0)],[z1,z2],M.flat?M.stone:M.upper,{dw,frame:M.flat?null:'timber'});
     if(form==='flat'){Q.roof(top,'flat',null,0,M.stone,{parapet:2,pmat:M.cap});
       // (a terrace stepped back over its rear half, flat behind its own parapet)
       const tw=Math.max(8,w-8);Q.box(n+'t',[cu-tw/2,cu+tw/2],[v[0]+1,cv],[z2,z2+6],M.stone,{dw});Q.roof(n+'t','flat',null,0,M.stone,{parapet:2,pmat:M.cap});Q.dec(n+'t.S','WinKarn'+M.dec,.5,1)}
