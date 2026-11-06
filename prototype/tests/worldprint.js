@@ -452,7 +452,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  W4 7caa9d3b, W5 7606b637, W6 3627d2a4, W7 1db84b36, W8 b3ff4495, B2 8a52874f)
 // (W5, W6 re-recorded 2026-11-06, on purpose: a townhouse jettied front and back alike, so the towns' pictures change. Proof: the
 //  one-sided jetty gives both again. Were W5 32f76f9f, W6 ec28b2c6)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'dd631ed3',W6:'6e990bb2',W7:'5bb3e27d',W8:'a63c35d9',B2:'58769e81'};
+// (W6 re-recorded 2026-11-06, on purpose: no long line of one colour on the buildings (engine/model.js breakRuns). Proof: RUNS.len
+//  999 gives it again. Was W6 6e990bb2)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'dd631ed3',W6:'de8a1345',W7:'5bb3e27d',W8:'a63c35d9',B2:'58769e81'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

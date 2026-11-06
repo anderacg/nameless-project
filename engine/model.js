@@ -468,6 +468,16 @@
       g.putImageData(im,0,0)});
     c.info={dist,path:P,beds:C,D};return c}
 
+  /* no long line of one colour (the owner, 2026-11-06: "a very large line that happens to be mono colour"): a run of more than
+     RUNS.len pixels alike in the body, across or down, broken every RUNS.step pixels (by the pixel's hash, from RUNS.at) by a shade
+     lighter or darker (RUNS.k), never on the outline */
+  const RUNS={len:6,step:4,at:2,k:.08};PX.MODEL_RUNS=RUNS;
+  const breakRuns=(D,body,N,sd)=>{const X=RUNS,same=(i,j)=>D[i]===D[j]&&D[i+1]===D[j+1]&&D[i+2]===D[j+2],done=new Uint8Array(N*N),
+      hsh=(x,y)=>{let h=(x*374761393+y*668265263+sd*2147483647)|0;h=(h^(h>>>13))*1274126177|0;return(h^(h>>>16))>>>0},
+      shade=(c,x,y)=>{if(done[c])return;done[c]=1;const f=1+(hsh(x,y)&1?X.k:-X.k),i=c*4;for(let k=0;k<3;k++)D[i+k]=Math.max(0,Math.min(255,Math.round(D[i+k]*f)))};
+    for(const across of [true,false])for(let a=0;a<N;a++){let s=0;for(let b=1;b<=N;b++){const c0=across?a*N+s:s*N+a,c=across?a*N+b:b*N+a;
+      if(b<N&&body[c]===1&&body[c0]===1&&same(c0*4,c*4))continue;
+      const L=b-s;if(L>X.len&&body[c0]===1){const o=X.at+hsh(across?s:a,across?a:s)%X.step;for(let k=o;k<L-1;k+=X.step){const p=s+k;shade(across?a*N+p:p*N+a,across?p:a,across?a:p)}}s=b}}};
   PX.model=spec=>{const t0=performance.now(),N=spec.cell||16,fit=N-2,sd=spec.seed|0;
     // the scale: the first of the fit's choices whose points fit the cell (in every facing of spec.fitYaws, so a building turned is
     // the same building at the same scale); then drawn, and smaller again if its pixels do not
@@ -493,6 +503,7 @@
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=(y*N+x)*4;if(body[y*N+x]||!D[i+3]||emp(x-1,y)||emp(x+1,y)||emp(x,y-1)||emp(x,y+1))continue;
       const j=[[x,y+1],[x-1,y],[x+1,y],[x,y-1]].find(([u,v])=>body[v*N+u]);if(!j)continue;if([[x,y+1],[x-1,y],[x+1,y],[x,y-1]].some(([u,v])=>fine[v*N+u])){gap[y*N+x]=1;continue}const c=j[1]*N+j[0],k=c*4;D[i]=D[k];D[i+1]=D[k+1];D[i+2]=D[k+2];body[y*N+x]=1;
       for(const a of ['fi','u','v','z','b','ch','m'])I[a][y*N+x]=I[a][c]}
+    breakRuns(D,body,N,sd);
     g.putImageData(im,0,0);
     // (what each pixel is, for the tests: 0 empty, 1 the body, 2 low and flat (fences), 3 the outline, 4 the navy gap in an open frame)
     const mask=new Uint8Array(N*N);for(let i=0;i<N*N;i++)mask[i]=body[i]?body[i]:gap[i]?4:D[i*4+3]?3:0;
