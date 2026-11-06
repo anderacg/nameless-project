@@ -5,6 +5,7 @@
 // shield on the other arm, no outline, a shadow underfoot.
 Kit.suite(({ok,info})=>{
  const PX=T.PX,DL=PX.DOLL,{W,H}=DL.D,px=cv=>cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data,hex=(d,i)=>'#'+[d[i],d[i+1],d[i+2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+ const at2=(cv,x,y)=>{const d=cv.getContext('2d').getImageData(x,y,1,1).data;return d[3]?hex(d,0):null};
  const at=(cv,x,y)=>{const d=px(cv),i=(y*W+x)*4;return d[i+3]?hex(d,i):null},count=cv=>{const d=px(cv);let n=0;for(let i=3;i<d.length;i+=4)if(d[i])n++;return n};
  // ---- the base bodies
  const races=Object.keys(DL.RACES),bodies=races.map(r=>PX.doll({race:r,style:'bald',beard:false}));
@@ -24,6 +25,10 @@ Kit.suite(({ok,info})=>{
  // ---- equipment from the anchors: the weapon from the hand, the shield on the other arm
  const sp=PX.doll({uniform:'spearman'}),noW=PX.doll({uniform:'spearman',weapon:null});ok(count(sp)>count(noW),'a weapon drawn from the hand: the spear '+(count(sp)-count(noW))+' pixels');
  const sh=PX.doll({uniform:'swordsman'}),[ox,oy]=sh.anchors.off;ok(DL.MAT.iron.includes(at(sh,ox-1,oy-2)),'the shield on his other arm, in its iron rim');
+ // ---- gear drawn apart: the body bare has none of it, each piece its own picture with its grip, laid on at its anchor
+ {const full=PX.doll({uniform:'swordsman',team:'red'}),bare=PX.doll({uniform:'swordsman',team:'red',bare:true}),g=full.gear,sw=PX.dollGear('sword'),shd=PX.dollGear('shield','red');
+  ok(g.length===2&&g.some(q=>q.slot==='weapon'&&q.kind==='sword'&&q.anchor==='hand')&&g.some(q=>q.slot==='shield'&&q.anchor==='off')&&count(bare)<count(full)-8,'his gear apart from his body: a sword from his hand, a shield on his arm; bare, the body alone ('+count(bare)+' of '+count(full)+' pixels)');
+  ok(sw&&sw.ax!=null&&shd&&shd.width===4&&DL.MAT.red.includes(at2(shd,1,2)),'each piece its own picture, its grip marked (sword '+sw.width+' × '+sw.height+', shield '+shd.width+' × '+shd.height+')')}
  // ---- the style: no outline, a shadow underfoot
  const outl=[];for(const b of [b0,sp,sh,hood])for(let i=0,d=px(b);i<d.length;i+=4)if(d[i+3]&&hex(d,i)==='#1a1c26')outl.push(i);
  const [fx,fy]=sp.anchors.feet;ok(!outl.length&&at(sp,fx,fy)==='#000037','no outline (its edges its own darkest tones), a shadow underfoot');

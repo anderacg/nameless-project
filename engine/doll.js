@@ -115,7 +115,9 @@
   const inRows=(c,p)=>!p.rows||c.row<0||c.row>=p.rows[0]&&c.row<=p.rows[1];
 
   /* a figure: spec {race, skin, hair (colour), style (hair style), beard, uniform (a name or a list of [part, material]), team (a
-     material), weapon, shield, pose, frame, seed}. Returns its picture (D.W x D.H) with anchors {hand, off, head, feet} */
+     material), weapon, shield, pose, frame, seed, bare}. Returns its picture (D.W x D.H) with anchors {hand, off, head, feet} and its
+     gear (each piece: slot, kind, the anchor it hangs from and where, behind or before him), drawn apart (PX.dollGear); bare: the
+     body alone, its gear left to whoever draws it (the battle turns a weapon through its blow), else laid on at its anchors */
   PX.doll=spec=>{const race=spec.race||'human',R=RACES[race]||RACES.human,seed=spec.seed|0,U=typeof spec.uniform==='string'?UNIFORMS[spec.uniform]:spec.uniform?{parts:spec.uniform}:null;
     const S=skeleton(race),ox=D.OX,oy=S.oy,G=new Array(D.W*D.H).fill(null),put=(x,y,c)=>{if(x>=0&&y>=0&&x<D.W&&y<D.H&&c)G[y*D.W+x]=c};
     // (the pose: each cell moved)
@@ -131,9 +133,13 @@
     const headCover=parts.some(p=>p.slot==='head'&&p.cover&&p.cover.includes('s')),slit=parts.some(p=>p.slit);
     // the weapon behind him first, then the body: skin, then each part over the regions it covers
     const hands=S.cells.filter(c=>c.r==='h'),hR=hands.filter(c=>c.side==='R').sort((a,b)=>b.y-a.y)[0],hL=hands.filter(c=>c.side==='L').sort((a,b)=>b.y-a.y)[0];
-    const hand=hR?at(hR):[ox,oy+9],off=hL?at(hL):[ox+8,oy+9],W=WEAPONS[spec.weapon===undefined?U&&U.weapon:spec.weapon];
-    const weapon=front=>{if(!W||W.behind===front)return;const [hx,hy]=W.off?off:hand;for(const [dx,dy] of W.pts)put(hx+dx,hy+dy,pick(MAT[W.mat],1));for(const [dx,dy] of W.head||[])put(hx+dx,hy+dy,pick(MAT[W.hm],0))};
-    weapon(false);
+    const hand=hR?at(hR):[ox,oy+9],off=hL?at(hL):[ox+8,oy+9];
+    // (its gear, each piece apart (PX.dollGear): which, from which anchor, behind him or before him; laid on here only when not bare)
+    const wk=spec.weapon===undefined?U&&U.weapon:spec.weapon,shk=spec.shield??(U&&U.shield),gear=[];
+    if(WEAPONS[wk])gear.push({slot:'weapon',kind:wk,anchor:WEAPONS[wk].off?'off':'hand',at:WEAPONS[wk].off?off:hand,behind:!!WEAPONS[wk].behind});
+    if(shk)gear.push({slot:'shield',kind:'shield',mat:shk==='team'?spec.team||'blue':shk,anchor:'off',at:off,behind:false});
+    const lay=behind=>{if(spec.bare)return;for(const q of gear){if(q.behind!==behind)continue;for(const [dx,dy,c] of gearPx(q.kind,q.mat))put(q.at[0]+dx,q.at[1]+dy,c)}};
+    lay(true);
     for(const c of S.cells){const [x,y]=at(c);let col=pick(mat(R.skin||'skin'),c.s);
       for(const p of parts){if(!p.cover||!p.cover.includes(c.r)||!inRows(c,p)||p.cols&&(c.x<p.cols[0]||c.x>p.cols[1]))continue;if(p.slot==='hair'&&headCover)continue;
         let s=c.s+(p.dark|0);if(p.mottle&&noise(x,y,p.slot.length)<p.mottle)s+=noise(x,y,7)<.5?1:-1;col=pick(mat(p.m),s)}
@@ -149,15 +155,21 @@
       else{const top=[ox+2,oy+3+(S.rows<15?-1:0)];for(let k=0;k<=5;k++)put(top[0]+Math.round(k*.8),top[1]+k,pick(M,k&1?3:2))}}
     // his race's own: an elf's ears, an orc's tusks (over a bare head only)
     if(R.ears&&!headCover){put(hx-1,hy+1,pick(mat(R.skin),2))}if(R.tusk)put(hx+1,hy+2,'#f0ecd8');
-    // the shield on his left arm, the weapon in front
-    // (a shield: its face in its colour inside an iron rim, a boss in the middle; four wide, five tall, its point down)
-    if(spec.shield??(U&&U.shield)){const M=mat(spec.shield||U.shield),E=MAT.iron;const [sx,sy]=off;
-      for(let j=-4;j<=1;j++)for(let i=-1;i<=2;i++){if(j===1&&(i<0||i>1))continue;const rim=i===-1||i===2||j===-4||j===1;put(sx+i,sy+j,rim?pick(E,i===2||j===1?3:1):pick(M,i===0?0:1))}put(sx+1,sy-2,pick(MAT.steel,0))}
-    weapon(true);
+    // the gear before him: the shield on his left arm, a weapon in front
+    lay(false);
     // the shadow underfoot
     const feet=S.cells.filter(c=>c.r==='o').map(at),fy=feet.length?Math.max(...feet.map(f=>f[1]))+1:D.H-1;
     for(let x=ox+1;x<=ox+8;x++)if(!G[fy*D.W+x])put(x,fy,feet.some(f=>f[0]===x)?SHADOW[1]:SHADOW[0]);
     const cv=PX.canvas(D.W,D.H,g=>{const im=g.createImageData(D.W,D.H),o=im.data;G.forEach((c,i)=>{if(!c)return;o[i*4]=parseInt(c.slice(1,3),16);o[i*4+1]=parseInt(c.slice(3,5),16);o[i*4+2]=parseInt(c.slice(5,7),16);o[i*4+3]=255});g.putImageData(im,0,0)});
-    cv.anchors={hand,off,head:[hx,hy],feet:[ox+4,fy]};return cv};
+    cv.anchors={hand,off,head:[hx,hy],feet:[ox+4,fy]};cv.gear=gear;return cv};
+  /* a piece of gear, apart from the body: its pixels [dx, dy, colour] from its grip (a weapon's hand, a shield's arm). A weapon
+     (WEAPONS): its shaft or grip in its wood or leather, its head in its metal; a shield: its face in its colour (m) inside an iron
+     rim, a boss in the middle, four wide and six tall, its point down */
+  function gearPx(kind,m){const o=[];
+    if(kind==='shield'){const M=MAT[m]||MAT.blue,E=MAT.iron;for(let j=-4;j<=1;j++)for(let i=-1;i<=2;i++){if(j===1&&(i<0||i>1))continue;const rim=i===-1||i===2||j===-4||j===1;o.push([i,j,rim?pick(E,i===2||j===1?3:1):pick(M,i===0?0:1)])}o.push([1,-2,pick(MAT.steel,0)]);return o}
+    const W=WEAPONS[kind];if(!W)return o;for(const [dx,dy] of W.pts)o.push([dx,dy,pick(MAT[W.mat],1)]);for(const [dx,dy] of W.head||[])o.push([dx,dy,pick(MAT[W.hm],0)]);return o}
+  // the same as its own picture: ax, ay its grip in it (the game draws it from the hand anchor, and turns it through a blow)
+  PX.dollGear=(kind,m)=>{const P=gearPx(kind,m);if(!P.length)return null;const x0=Math.min(...P.map(p=>p[0])),y0=Math.min(...P.map(p=>p[1])),x1=Math.max(...P.map(p=>p[0])),y1=Math.max(...P.map(p=>p[1]));
+    const cv=PX.canvas(x1-x0+1,y1-y0+1,g=>{for(const [x,y,c] of P){g.fillStyle=c;g.fillRect(x-x0,y-y0,1,1)}});cv.ax=-x0;cv.ay=-y0;cv.behind=kind!=='shield'&&!!(WEAPONS[kind]||{}).behind;return cv};
   PX.DOLL={D,SKEL,RACES,MAT,SLOTS,PARTS,UNIFORMS,WEAPONS,POSES,HAIR_MAT};
 })(window.PX=window.PX||{});
