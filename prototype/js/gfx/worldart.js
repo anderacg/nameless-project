@@ -64,6 +64,9 @@ function worldArtPlan(){
   //  to bank and up each bank: fordTrack)
   artGenPlan(P,mark);{const F=GENART.ford,hw=Math.ceil(F.tw)+2;for(const [ax,ay,bx,by] of P.fords){const L=Math.hypot(bx-ax,by-ay),ux=(bx-ax)/L,uy=(by-ay)/L;
     for(let s=-F.run;s<=L+F.run;s+=2)mark(Math.round(ax+ux*s)-hw,Math.round(ay+uy*s)-hw,2*hw+1,2*hw+1)}}
+  // (each lot on its yard of worn earth, the land's dirt, a little wider than it (LOT_STREET.yard), under its model's own yard)
+  {const Y=LOT_STREET.yard,F=[[0,1],[-1,0],[0,-1],[1,0]];for(const t of TOWNS)for(const l of t.lots||[]){const N=l.n*TILE,r=N/2+Y.pad,f=F[((l.yaw|0)>>1)&3];
+    tramples.push([Math.round((l.x+l.n/2)*TILE+f[0]*Y.lean),Math.round((l.y+l.n/2)*TILE+f[1]*Y.lean),Math.round(r),Math.round(r*.9),Y.amt])}}
   // (the lanes from its doors to the road as drawn, worn into the ground and kept clear, lots.js lotLanes)
   {const L=LOT_STREET.lane,near=(x,y)=>artRoadNear(P,x,y);for(const t of TOWNS)for(const p of lotLanes(t,near))for(let j=1;j<p.length;j++){const [ax,ay]=p[j-1],[bx,by]=p[j],n=Math.max(1,Math.ceil(Math.hypot(bx-ax,by-ay)/L.step));
     for(let s=0;s<n;s++){const x=Math.round(ax+(bx-ax)*s/n),y=Math.round(ay+(by-ay)*s/n);tramples.push([x,y,L.r,L.r,L.amt]);mark(x-4,y-4,9,9)}}}

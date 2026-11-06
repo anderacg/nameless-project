@@ -238,9 +238,11 @@ const LOT_FAR=[18,22];
 /* its streets (the owner, 2026-11-06: "the buildings actually connected to the road, if there's a lot of space the smaller ones"):
    a house drawn to the road (front: off its score within 1 tile of a road as painted, half within 2), the gaps along its streets
    filled with small things a tile each (nook: a stall, a cart, a woodpile...; per kind, by the road only), and a lane trodden from
-   each door that stands back from the road to it (lane: up to max tiles round the lots, drawn as worn ground, gfx/worldart.js) */
+   each door that stands back from the road to it (lane: up to max tiles round the lots, drawn as worn ground, gfx/worldart.js);
+   every lot on a yard of worn earth a little wider than it (yard: pad px round it), the land's own dirt there, so a cluster's
+   ground between its buildings and a house's way to the road are one trodden ground, fading into the land at its rim */
 const LOT_STREET={front:3,nook:{hamlet:1,village:3,fort:2,town:6,city:8,castle:3},nooks:{rural:['woodpile','cart','haystack','well','barrels'],town:['stall','stall','cart','well','barrels','crates']},
-  lane:{max:12,step:2,r:3,amt:.8,on:10}};
+  lane:{max:12,step:2,r:4,amt:.8,on:10},yard:{pad:7,amt:.8,lean:4}};
 // (a lot's door: the tile before the middle of its face, by its facing: S 0, W 2, N 4, E 6)
 const lotDoor=l=>{const n=l.n,h=n>>1,y=l.yaw|0;return y===2?[l.x-1,l.y+h]:y===4?[l.x+h,l.y-1]:y===6?[l.x+n,l.y+h]:[l.x+h,l.y+n]};
 // (the lanes of holding t: from each house's and inner work's door standing back from the road (near(x, y): the road as drawn nearest
