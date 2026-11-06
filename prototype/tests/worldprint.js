@@ -445,7 +445,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  roads round them and the save change. Proof: no forts (PLACE_FORT per 0, big 999, the five villages again) gives all nine and the
 //  five sums again. Were W1 93537e2b, W2 264a7c7f, W3 d7f57400, W4 fbefe32d, W5 077d5587, W6 a8409953, W7 d8c679f9, W8 1d159ce7,
 //  B2 394b7a5e)
-const EXPECT={W1:'8dc0ec99',W2:'8e3ee885',W3:'e5fc35f5',W4:'7caa9d3b',W5:'7606b637',W6:'3627d2a4',W7:'1db84b36',W8:'b3ff4495',B2:'8a52874f'};
+// (W1, W3-W8 and B2 re-recorded 2026-11-06, on purpose: a holding's streets (the owner: "the buildings actually connected to the
+//  road, if there's a lot of space the smaller ones"): its houses drawn to the road, small things a tile each along its streets
+//  (nook lots), lanes worn from its doors to the road (lots.js LOT_STREET), so its lots, its picture and the save change; the
+//  generator's sums held. Proof: LOT_STREET front 0, no nooks, lane max 0 gives all eight again. Were W1 8dc0ec99, W3 e5fc35f5,
+//  W4 7caa9d3b, W5 7606b637, W6 3627d2a4, W7 1db84b36, W8 b3ff4495, B2 8a52874f)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'32f76f9f',W6:'ec28b2c6',W7:'5bb3e27d',W8:'a63c35d9',B2:'58769e81'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

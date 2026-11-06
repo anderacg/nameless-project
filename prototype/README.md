@@ -157,6 +157,7 @@ js/world/             the campaign map and everything on it
   buildings.js          what a holding has built: its Buildings (estates' levels, walls, projects; its day)
   estates.js            each Estate (fields, guards, sabotage, its day's work) and the spoils of raiding one; its window is ui/estate.js
   lots.js               placed buildings on the grid: a holding's Layout (its lots), the grid's searches, placing by hand;
+                        its streets (LOT_STREET: houses drawn to the road, small things along it, lanes from doors, tests/streets.js);
                         each lot a model's cell (lotSize: PX.MODEL_SIZES; centres by tier, centreN), its culture by the
                         realm it was founded under (holdingCulture, FAC_CULTURE), its houses (HOUSES), estates (ESTATE_LOT),
                         households (lotHouseholds, HOUSING), land (lotEnv, holdingEnv) and facing (lotYaw: to its street);

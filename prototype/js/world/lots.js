@@ -100,6 +100,7 @@ const centreN=t=>{const c=centreOf(t);return c.capital?128/TILE:lotSize(c.type||
 const lotPeople=(t,l)=>t.races.length>1&&l.seed%4===0?t.races[1]:t.races[0];
 const typeFor=(t,k,R)=>{const cu=holdingCulture(t);if(k==='centre'){const c=centreOf(t);return c.type||c.kind}
   if(k==='house'){const H=HOUSES[cu]||HOUSES.vale,h=H[t.kind==='town'||t.kind==='city'?'town':'village'];return h[Math.floor(R()*h.length)]}
+  if(k==='nook'){const N=LOT_STREET.nooks[t.T.rural?'rural':'town'];return N[Math.floor(R()*N.length)]}
   return estateTypes(t,k)[0]};
 const estateTypes=(t,k)=>{const L=PX.MODEL_LOOK[holdingCulture(t)];return ESTATE_LOT[k].map(e=>L&&L.swap[e]||e)};
 /* the model a lot is drawn from (engine/buildmodels.js): its centre's by its holding's tier (with its walls, wallOf), a type's
@@ -221,7 +222,7 @@ function lotFits(t,x,y,n,rule,gap){
     const L=LAND[Y*MW+X];if(L>=0&&L!==ti)return false}
   // a free tile between it and any other building or place of work (the town's own, gap 'row', its houses and the workshops,
   // smithies, breweries, granaries and markets among them, may stand side by side in its streets; never against the centre)
-  if(gap)for(let j=-1;j<=n;j++)for(let i=-1;i<=n;i++){if(i>=0&&i<n&&j>=0&&j<n)continue;const id=occAt(x+i,y+j),o=id>0&&LOT[id];if(o&&!(gap==='row'&&(o.k==='house'||INNER.includes(o.k)))&&!(o.plots||[]).some(p=>p[0]===x+i&&p[1]===y+j))return false}
+  if(gap)for(let j=-1;j<=n;j++)for(let i=-1;i<=n;i++){if(i>=0&&i<n&&j>=0&&j<n)continue;const id=occAt(x+i,y+j),o=id>0&&LOT[id];if(o&&!(gap==='row'&&(o.k==='house'||o.k==='nook'||INNER.includes(o.k)))&&!(o.plots||[]).some(p=>p[0]===x+i&&p[1]===y+j))return false}
   // a house cleared in the woods: two wooded tiles in and round it; a place of work: what its land holds (landFits)
   if(rule==='forest'&&woods(x,y,n)<2||E&&!landFits(t,x,y,n,rule))return false;
   for(let j=-LOT_BROOK;j<n+LOT_BROOK;j++)for(let i=-LOT_BROOK;i<n+LOT_BROOK;i++)if(brookAt(x+i,y+j))return false;
@@ -234,6 +235,31 @@ function lotFits(t,x,y,n,rule,gap){
 // out) with no place within rmax looks on out to LOT_FAR[0] tiles, its door at most LOT_FAR[1] steps from the gate
 // (4 ways: its workers home on time; the owner's play-test 4: Redspire's lumber camp, its woods past 12 tiles along its own bank)
 const LOT_FAR=[18,22];
+/* its streets (the owner, 2026-11-06: "the buildings actually connected to the road, if there's a lot of space the smaller ones"):
+   a house drawn to the road (front: off its score within 1 tile of a road as painted, half within 2), the gaps along its streets
+   filled with small things a tile each (nook: a stall, a cart, a woodpile...; per kind, by the road only), and a lane trodden from
+   each door that stands back from the road to it (lane: up to max tiles round the lots, drawn as worn ground, gfx/worldart.js) */
+const LOT_STREET={front:3,nook:{hamlet:1,village:3,fort:2,town:6,city:8,castle:3},nooks:{rural:['woodpile','cart','haystack','well','barrels'],town:['stall','stall','cart','well','barrels','crates']},
+  lane:{max:12,step:2,r:3,amt:.8,on:10}};
+// (a lot's door: the tile before the middle of its face, by its facing: S 0, W 2, N 4, E 6)
+const lotDoor=l=>{const n=l.n,h=n>>1,y=l.yaw|0;return y===2?[l.x-1,l.y+h]:y===4?[l.x+h,l.y-1]:y===6?[l.x+n,l.y+h]:[l.x+h,l.y+n]};
+// (the lanes of holding t: from each house's and inner work's door standing back from the road (near(x, y): the road as drawn nearest
+// a pixel, [px, py, d], gfx/worldart.js artRoadNear), from its front (else a side, else its back), the shortest way over free land, round every lot and field, to a tile the road
+// passes through, LOT_STREET.lane.max tiles at most, and on to the road; each a list of points (px), from its door's face)
+function lotLanes(t,near){const M=LOT_STREET.lane.max,on=LOT_STREET.lane.on,out=[];
+  const c=i=>[(i%MW+.5)*TILE,((i-i%MW)/MW+.5)*TILE],free=([x,y])=>x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x]&&passable(tiles[y*MW+x]);
+  for(const l of t.lots||[]){if(l.st==='ruined'||!(l.k==='house'||INNER.includes(l.k)))continue;
+    // (its front, else a side, else its back: the first face with free ground before it)
+    const yw0=l.yaw|0,face=[yw0,(yw0+2)%8,(yw0+6)%8,(yw0+4)%8].map(yaw=>({yaw,d:lotDoor({x:l.x,y:l.y,n:l.n,yaw})})).find(o=>free(o.d));if(!face)continue;
+    const d0=face.d[1]*MW+face.d[0];if(near(...c(d0))[2]<=on)continue;
+    const from=new Map([[d0,-1]]);let q=[d0],end=-1;
+    for(let s=0;s<M&&q.length&&end<0;s++){const nq=[];for(const i of q){const x=i%MW,y=(i-x)/MW;for(const [a,b] of [[0,1],[1,0],[-1,0],[0,-1]]){const X=x+a,Y=y+b,j=Y*MW+X;if(X<0||Y<0||X>=MW||Y>=MH||from.has(j)||OCC[j]||!passable(tiles[j])||brookAt(X,Y))continue;
+      from.set(j,i);if(near(...c(j))[2]<=TILE*.6){end=j;break}nq.push(j)}if(end>=0)break}q=nq}
+    if(end<0)continue;const p=[];for(let i=end;i>=0;i=from.get(i))p.push(c(i));p.reverse();const r=near(...p[p.length-1]);p.push([r[0],r[1]]);
+    const yw=face.yaw,f=yw===2?[l.x*TILE,(l.y+l.n/2)*TILE]:yw===4?[(l.x+l.n/2)*TILE,l.y*TILE]:yw===6?[(l.x+l.n)*TILE,(l.y+l.n/2)*TILE]:[(l.x+l.n/2)*TILE,(l.y+l.n)*TILE];p.unshift(f);out.push(p)}
+  return out}
+// (how near the road as painted lies to an n x n lot at x, y: tiles off its edge, 0 beside it; 9 none within 2)
+function lotRoadBy(x,y,n){const RB=roadPaint();let b=9;for(let j=-2;j<n+2;j++)for(let i=-2;i<n+2;i++){if(i>=0&&i<n&&j>=0&&j<n)continue;const X=x+i,Y=y+j;if(X<0||Y<0||X>=MW||Y>=MH||!RB[Y*MW+X])continue;b=Math.min(b,Math.max(i<0?-i-1:i>=n?i-n:0,j<0?-j-1:j>=n?j-n:0))}return b}
 // (the middle of a holding's centre, in tiles as a lot's middle is reckoned: x + n/2 - .5)
 const centreMid=t=>{const b=centreBox(t);return[b.x+b.n/2-.5,b.y+b.n/2-.5]};
 function lotSpot(t,n,rule,rmin,rmax,R,o){
@@ -243,7 +269,7 @@ function lotSpot(t,n,rule,rmin,rmax,R,o){
     if(!lotFits(t,x,y,n,rule,o.gap===undefined?true:o.gap))continue;
     if(o.estate&&nearBandits(x+n/2-.5,y+n/2-.5,BANDIT_GAP+n/2+(o.fields?3:0)))continue;// (its fields reach 3 tiles out)
     // (its chance drawn before the walk is asked of it: a layout with every spot walked to stays as it was)
-    let s=d+R()*(o.jit||1.6);if(!lotWalks(t,x,y,n)||o.steps&&placeWalkSteps(lotWalk(t).all,x+(n>>1),y+n-1)>o.steps)continue;if(!ownBank(t,x+(n>>1),y+(n>>1))){if(t.T.tier===1)continue;s+=LOT_BANK}/* (a hamlet's on its own bank: Elderbough's farm stood over a lake's ford, its folk round by the roads) */if(o.sea&&!seaShore(x,y,n))s+=LOT_SEA;
+    let s=d+R()*(o.jit||1.6);if(o.front){const f=lotRoadBy(x,y,n);if(o.street&&f>0)continue;if(f<=1)s-=LOT_STREET.front*(f?.5:1)}if(!lotWalks(t,x,y,n)||o.steps&&placeWalkSteps(lotWalk(t).all,x+(n>>1),y+n-1)>o.steps)continue;if(!ownBank(t,x+(n>>1),y+(n>>1))){if(t.T.tier===1)continue;s+=LOT_BANK}/* (a hamlet's on its own bank: Elderbough's farm stood over a lake's ford, its folk round by the roads) */if(o.sea&&!seaShore(x,y,n))s+=LOT_SEA;
     // o.fields: an estate that works fields: only where its first level's fields fit, and the more room the better
     if(o.fields){const m=fieldsFor(t,{x,y,n},o.fields).length;if(m<PLOTS_AT[o.fields](1))continue;s+=(PLOTS[o.fields]-m)*1.2}
     if(s<bs){bs=s;best=[x,y]}}
@@ -311,7 +337,9 @@ class Layout{
     // plots in the woods (a village deep in them, its clearing crossed by its roads); still short, its houses a little further out
     // (2 tiles past its ring: a road through its ring, as a hamlet's track may lay one)
     const pop=t.pop||t.T.pop0;let room=this.housing(),tries=0;
-    for(const [g,want,ring] of [['open',pop*1.1,t.T.ring],['forest',pop,t.T.ring],['open',pop,t.T.ring+2]])for(tries=0;room<want&&tries++<t.T.tries;){const type=typeFor(t,'house',R),n=lotSize(type),p=lotSpot(t,n,g,1,ring,R,{gap:'row',jit:.8});if(!p)continue;this.add({k:'house',type,x:p[0],y:p[1],n,lv:1,seed:Math.floor(R()*1e6),st:'built'});room=this.housing()}
+    for(const [g,want,ring] of [['open',pop*1.1,t.T.ring],['forest',pop,t.T.ring],['open',pop,t.T.ring+2]])for(tries=0;room<want&&tries++<t.T.tries;){const type=typeFor(t,'house',R),n=lotSize(type),p=lotSpot(t,n,g,1,ring,R,{gap:'row',jit:.8,front:true});if(!p)continue;this.add({k:'house',type,x:p[0],y:p[1],n,lv:1,seed:Math.floor(R()*1e6),st:'built'});room=this.housing()}
+    // the gaps along its streets: a small thing a tile each by the road (LOT_STREET.nook)
+    for(let i=0,N=LOT_STREET.nook[t.kind]|0;i<N;i++){const p=lotSpot(t,1,'open',1,t.T.ring,R,{gap:'row',jit:.8,front:true,street:true});if(!p)break;this.add({k:'nook',type:typeFor(t,'nook',R),x:p[0],y:p[1],n:1,lv:1,seed:Math.floor(R()*1e6),st:'built'})}
     // then the works outside
     for(const k of Object.keys(ESTATES))if(!INNER.includes(k)&&bldLv(t,k)&&!this.estateLot(k,R))t.bld[k]=0;
     // and the tracks to them
@@ -328,7 +356,7 @@ class Layout{
   // the box round its inner lots: the town, which fields and outer works keep clear of
   innerBox(){
     let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
-    for(const l of this.list)if(l.k==='centre'||l.k==='house'||INNER.includes(l.k)){x0=Math.min(x0,l.x);y0=Math.min(y0,l.y);x1=Math.max(x1,l.x+l.n-1);y1=Math.max(y1,l.y+l.n-1)}
+    for(const l of this.list)if(l.k==='centre'||l.k==='house'||l.k==='nook'||INNER.includes(l.k)){x0=Math.min(x0,l.x);y0=Math.min(y0,l.y);x1=Math.max(x1,l.x+l.n-1);y1=Math.max(y1,l.y+l.n-1)}
     return x1<x0?null:{x0,y0,x1,y1}}
   // the town in world px (innerBox): the footprint your army reaches it at (holding.js reachRadius); null, none laid out yet
   footprint(){const b=this.innerBox();return b&&{x0:b.x0*TILE,y0:b.y0*TILE,x1:(b.x1+1)*TILE,y1:(b.y1+1)*TILE}}

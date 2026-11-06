@@ -64,6 +64,9 @@ function worldArtPlan(){
   //  to bank and up each bank: fordTrack)
   artGenPlan(P,mark);{const F=GENART.ford,hw=Math.ceil(F.tw)+2;for(const [ax,ay,bx,by] of P.fords){const L=Math.hypot(bx-ax,by-ay),ux=(bx-ax)/L,uy=(by-ay)/L;
     for(let s=-F.run;s<=L+F.run;s+=2)mark(Math.round(ax+ux*s)-hw,Math.round(ay+uy*s)-hw,2*hw+1,2*hw+1)}}
+  // (the lanes from its doors to the road as drawn, worn into the ground and kept clear, lots.js lotLanes)
+  {const L=LOT_STREET.lane,near=(x,y)=>artRoadNear(P,x,y);for(const t of TOWNS)for(const p of lotLanes(t,near))for(let j=1;j<p.length;j++){const [ax,ay]=p[j-1],[bx,by]=p[j],n=Math.max(1,Math.ceil(Math.hypot(bx-ax,by-ay)/L.step));
+    for(let s=0;s<n;s++){const x=Math.round(ax+(bx-ax)*s/n),y=Math.round(ay+(by-ay)*s/n);tramples.push([x,y,L.r,L.r,L.amt]);mark(x-4,y-4,9,9)}}}
   // (its brooks, the water as drawn, the trees' ecotone, the roads through woods and every road's band (a
   //  road's tile its own: the lanes, brooks beside roads), the oases and ponds (ringOf), the mountains' fields (their kinds))
   P.nature=PX.worldNaturePlan({W:MW*TILE,H:MH*TILE,C:MW,R:MH,ts:TILE,kind:tiles,clim:climate,clear,seed:7,snow:P.snow,cover:{desert:P.cover.desert,swamp:P.cover.swamp},flow:WM.flow,river:WM.river,water:WATER_RGB,wet:(x,y)=>wpx(P.wk,x,y)===1,round:true,eco:ecoLean(),
@@ -161,7 +164,7 @@ class ClimMix{
 const palAt=(CM,WL,q,fx,fy)=>{const k=CM.at(q,fx,fy);return k>=0?WL[k]:CM.pal(WL)};
 // a trampled patch [cx, cy, rx, ry, amount] over the window: worn ground, ragged at its edge, never on water (the water as drawn,
 // wpx: a bridge's water, a curved shore's)
-function trample(P,D,x0,y0,w,h,[cx,cy,rx,ry,amt]){for(let yy=-ry;yy<=ry;yy++)for(let xx=-rx;xx<=rx;xx++){const x=cx+xx,y=cy+yy;if(x<x0||y<y0||x>=x0+w||y>=y0+h)continue;
+function trample(P,D,x0,y0,w,h,[cx,cy,rx,ry,amt]){if(cx+rx<x0||cy+ry<y0||cx-rx>=x0+w||cy-ry>=y0+h)return;for(let yy=-ry;yy<=ry;yy++)for(let xx=-rx;xx<=rx;xx++){const x=cx+xx,y=cy+yy;if(x<x0||y<y0||x>=x0+w||y>=y0+h)continue;
   const d=(xx*xx)/(rx*rx)+(yy*yy)/(ry*ry),edge=1-hs(x,y,17)*.35;if(d>edge||tiles[(y>>4)*MW+(x>>4)]===T_WATER||wpx(P.wk,x,y))continue;const o=((y-y0)*w+x-x0)*4,dc=DIRT[CLIMS[climate[(y>>4)*MW+(x>>4)]]],k=amt*(d>edge-.25?.5:1)*(.75+hs(x,y,18)*.25);
   D[o]+=(dc[0]-D[o])*k;D[o+1]+=(dc[1]-D[o+1])*k;D[o+2]+=(dc[2]-D[o+2])*k}}
 /* ---------- fields: a farm's plots, their crops (gfx/structures.js estateGround draws each plot through farmPlot) ---------- */
@@ -287,6 +290,10 @@ function artGenPlan(P,mark){const N=MW*MH,K=P.wk=new Uint8Array(N),Rv=WM.river,F
     for(let y=Math.max(0,Math.min(ay,by)-1);y<=Math.min(MH-1,Math.max(ay,by)+1);y++)for(let x=Math.max(0,Math.min(ax,bx)-1);x<=Math.min(MW-1,Math.max(ax,bx)+1);x++)FD[y*MW+x]=FL.length}}
 // the generated world's roads as painted, for what must keep off them (lots.js roadPaint): mark(x, y, w, h) for each square kept
 // clear along their lines (artGenPlan's band and margin)
+// (the point of the road as drawn nearest pixel (x, y) and how far: [px, py, d], d 1e9 with none near; its tile's segments, P.ST)
+function artRoadNear(P,x,y){const S=P.segs,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);let b=[0,0,1e9];if(tx<0||ty<0||tx>=MW||ty>=MH)return b;const t=ty*MW+tx;
+  for(let p=P.ST[t];p<P.ST[t+1];p++){const k=P.SI[p],a=S[k],c=S[k+1],e=S[k+2],f=S[k+3],vx=e-a,vy=f-c,L=vx*vx+vy*vy,u=L?Math.max(0,Math.min(1,((x-a)*vx+(y-c)*vy)/L)):0,px=a+vx*u,py=c+vy*u,d=Math.hypot(x-px,y-py);if(d<b[2])b=[px,py,d]}
+  return b}
 function artRoadMarks(mark){artGenPlan({tramples:[]},mark)}
 // the generated world's roads as drawn, for their speed (world/roadband.js): {segs: artGenPlan's segments, est: 1 for each of an
 // estate's track (WM.roads' est), else 0}
