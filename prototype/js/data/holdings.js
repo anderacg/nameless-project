@@ -26,7 +26,8 @@ const HOLDING_TYPES={
     reach:10,growMax:7,ring:9,tries:60,needs:{food:5,cloth:.4,timber:.6,tools:.3,ale:.4},wants:{},jobs:['bounty','beast','hunt','hunt'],
     sack:80,income:8,handover:60,renown:10,guards:0,tabs:['recruit','trade','stable','jobs','tavern'],hires:['melee','shield'],
     mounts:['any'],herds:true,rural:true,smoke:2},
-  town:{n:'town',tier:3,next:['city','castle'],centre:{_:'citadel'},pop0:200,popCap:420,store:320,gar:16,patrol:{size:6,keep:6},wall0:2,wallMax:3,estMax:3,
+  // (a town (the owner, 2026-11-06: only castles, forts and cities walled; one citadel a realm): open, its hall and market at its heart)
+  town:{n:'town',tier:3,next:['city','castle'],centre:{_:'townhall'},pop0:200,popCap:420,store:320,gar:16,patrol:{size:6,keep:6},wall0:0,wallMax:0,estMax:3,
     reach:15,growMax:10,ring:10,tries:60,needs:{food:5,cloth:1,timber:.8,tools:.5,ale:.8,spice:.5,iron:.3},wants:{copper:.15,tin:.08,silver:.12,gold:.05,gems:.05,pearls:.03},
     jobs:['bounty','supply','courier','clear','beast'],sack:300,income:25,handover:150,renown:25,guards:2,
     tabs:['recruit','trade','smith','stable','jobs','tavern'],hires:['melee','shield','ranged'],train:true,tourney:true,broker:true,contract:true,

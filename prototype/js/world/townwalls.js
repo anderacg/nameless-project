@@ -21,7 +21,7 @@ const TOWN_WALL={on:true,fh:6,clear:1,reach:14,pad:1,gate:1,merge:5,towers:7,ala
    has: its estates' levels and up to 2 by a hash of its place (start: the score for one, by its kind; salt); poor ones none. Later an upgrade: a
    realm's or the free folk's grows one by itself once it prospers (pros, by daily chance a day, gold and mats from its stock);
    yours you build in its Fortification (gold, mats, days) */
-const FENCE={start:{village:6,hamlet:3.5},salt:4411,pros:65,daily:.05,gold:30,mats:{timber:12},days:2};
+const FENCE={start:{town:8,village:6,hamlet:3.5},salt:4411,pros:65,daily:.05,gold:30,mats:{timber:12},days:2};
 const fenceOf=t=>t.fence!=null?t.fence:TownWall.fenceStart(t);
 const RINGS=new WeakMap();
 class TownWall{

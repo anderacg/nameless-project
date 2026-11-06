@@ -48,8 +48,8 @@ Kit.suite(({ok,info})=>{
    Kit.goTo(h.x,h.y+20);t.Router.holdings();ok(!t.TownWall.shutTo(h),'but not on one already inside them (you may still get out)');t.Timed.of(P,'hostile').clear?.(h.owner);Kit.world()}
   // ---- fences (the owner, 2026-11-06: by the holding, the very poor none, an upgrade): at the start a fence round the better-off
   // hamlets and villages, none round the poorest; grown as one prospers; yours built in its Fortification; saved; on the full map and minimap
-  {Kit.world();const small=t.TOWNS.filter(z=>z.T.tier<=2&&t.wallOf(z)===0),fenced=small.filter(z=>t.fenceOf(z)),bare=small.filter(z=>!t.fenceOf(z));
-   ok(fenced.length&&bare.length&&fenced.every(z=>t.TownWall.of(z))&&bare.every(z=>!t.TownWall.of(z))&&t.TOWNS.filter(z=>z.T.tier>2).every(z=>!t.fenceOf(z)),'at the start: '+fenced.length+' hamlets and villages fenced, '+bare.length+' too poor for one');
+  {Kit.world();const small=t.TOWNS.filter(z=>t.wallOf(z)===0),fenced=small.filter(z=>t.fenceOf(z)),bare=small.filter(z=>!t.fenceOf(z));
+   ok(fenced.length&&bare.length&&fenced.every(z=>t.TownWall.of(z))&&bare.every(z=>!t.TownWall.of(z))&&t.TOWNS.filter(z=>t.wallOf(z)>0).every(z=>!t.fenceOf(z)),'at the start: '+fenced.length+' hamlets, villages and towns fenced, '+bare.length+' too poor for one; none where there are walls');
    const rich=s=>s.reduce((a,z)=>a+Object.values(z.bld||{}).reduce((b,v)=>b+(v||0),0),0)/Math.max(1,s.length);ok(rich(fenced)>rich(bare),'the fenced the better off (their estates '+rich(fenced).toFixed(1)+' a holding against '+rich(bare).toFixed(1)+')');
    const f=t.TownWall.of(fenced[0]);ok(f&&f.shut.every(i=>t.SHUT[i]&4)&&f.gates.length,'a fence blocks as a wall does, gates at its roads');
    const z=bare.find(o=>o.owner&&o.owner!=='player')||bare[0],R0=t.rngOf('fences');z.pros=95;z.econ.ensure&&z.econ.ensure();z.stock.timber=50;let d=0;for(;d<400&&!z.fence;d++)t.TownWall.fenceDay(z);

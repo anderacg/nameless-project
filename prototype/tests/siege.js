@@ -11,7 +11,8 @@ try{
  t.act('begin','soldier');W.critters=[];W.sites=[];W.monsters=[];t.bandits.length=0;G.quietEvents=true;
  const quiet=()=>{W.lords=[];};
  // pick a town and a castle of factions that are not yours
- const town=t.TOWNS.find(x=>x.kind==='town'&&x.owner==='karn'),castle=t.TOWNS.find(x=>x.kind==='castle'&&x.owner==='sylvan'),vil=t.TOWNS.find(x=>x.kind==='village'&&x.owner==='horde');
+ // (towns stand open since 2026-11-06 (only castles, forts and cities walled): this one given stone walls, as towns had, for the siege's camp, ladders and ram)
+ const town=t.TOWNS.find(x=>x.kind==='town'&&x.owner==='karn');town.wall=2;const castle=t.TOWNS.find(x=>x.kind==='castle'&&x.owner==='sylvan'),vil=t.TOWNS.find(x=>x.kind==='village'&&x.owner==='horde');
  const at=x=>{P.x=x.x;P.y=x.y+5;P.tx=null;G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;G.encCool=0};
  quiet();army();
  // attacking a friendly holding

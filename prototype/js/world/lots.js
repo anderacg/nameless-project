@@ -89,7 +89,7 @@ const HOUSES={vale:{village:['cottage','cottage','townhouse'],town:['townhouse',
 const ESTATE_LOT={farm:['farmstead','cottage'],pasture:['barn'],lumber:['lumbershed'],mine:['minehead'],quarry:['crane'],port:['fisherhut'],workshop:['warehouse'],smithy:['smithy'],brewery:['brewery'],granary:['granary'],market:['market']};
 // how many people a household is (a house holds 2-4: its model's homes, lotHouseholds; what one house of one tile held before the
 // owner's scale), and each centre's own room
-const HOUSING={household:10,centre:{yard:10,village:30,keep:40,citadel:60}};
+const HOUSING={household:10,centre:{yard:10,village:30,townhall:50,keep:40,citadel:60}};
 // the estates whose buildings stand inside a holding (and its walls); the rest work the land outside
 const INNER=['workshop','smithy','brewery','granary','market'];
 // a lot's tiles a side: its type's cell or its cluster's (PX.MODEL_SIZES); a city's citadel is a capital's, 128 (buildmodels.js cellOf)

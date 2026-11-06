@@ -23,7 +23,7 @@ try{
  ok(TW.every(x=>Object.keys(x.bld).every(k=>x.bld[k]<=t.bldCap(x,k))),'no estate where the land has no room for it');
  const ports=TW.filter(x=>x.style==='port');ok(ports.length&&ports.every(x=>x.bld.port),'port towns have ports ('+ports.filter(x=>x.bld.port).map(x=>x.name).join(', ')+')');
  ok(TW.filter(x=>x.kind==='village').every(x=>x.bld.farm>0||!t.canHave(x,'farm')),'villages farm');
- ok(t.wallOf(t.townBy('Highmoor'))===3&&t.wallOf(t.townBy('Ashford'))===3&&t.wallOf(t.townBy('Oakhurst'))===2&&t.wallOf(t.townBy('Thornwick'))===0,'castles and cities start with great walls, towns stone, villages none');
+ ok(t.wallOf(t.townBy('Highmoor'))===3&&t.wallOf(t.townBy('Ashford'))===3&&t.wallOf(t.townBy('Oakhurst'))===0&&t.wallOf(t.townBy('Thornwick'))===0,'castles and cities start with great walls, towns and villages none (2026-11-06: towns stand open)');
  const n=TW.reduce((a,x)=>a+t.bldTotal(x),0);ok(n>TW.length*3,n+' estate levels across Ashmark');
  // prices: estates make their goods cheaper
  const ash=t.townBy('Ashford');const g0=ash.bld.farm;ash.bld.farm=0;const o0=t.produce(ash,null).grain||0;ash.bld.farm=3;const o3=t.produce(ash,null).grain||0;ash.bld.farm=g0;

@@ -80,7 +80,7 @@
       crane:[32,0],ruins:[32,0],cave:[32,0],
       tavern:[64,0],church:[64,0],longhouse:[64,4],keep:[64,0],gatehouse:[64,0],village:[64,0],citadel:[64,0]},
     clusters:{row:64,yard:64,farmstead:64,smithy:64,inn:64,chapel:64,market:64,mill:64,lumber:64,mine:64,quarry:64,fishery:64,pasture:64,brewery:64,granary:64,workshop:64,
-      quarter:128,camp:32,travelers:32,hideout:64}};
+      quarter:128,camp:32,travelers:32,hideout:64,townhall:64}};
   /* the shared proportions (W4): a storey's walls (px: the door's 9 and its lintel's 3, then 7 a storey up), a roof's rise by its
      span (about 45°: never taller than the walls but on a church or in the frost); plans about square, their depth at least three
      quarters of their width (the side views as wide as the front), but for the long and thin (PX.MODEL_LONG: the side its gable) */
@@ -460,6 +460,9 @@
     chapel:{role:'chapel',make:C=>{piece(C,'chapel',[-14,4],0,{cut:['prop']});piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});
       C.Q.parts.push({k:'fence',name:'gf',pts:[[2,28],[28,28],[28,4],[2,4],[2,28]],h:4,gates:[[12,18,0]]});for(const [u,v] of [[7,10],[13,10],[19,10],[7,19],[19,19],[24,14]])P(C,'headstone',[u,v])}},
     // a market: stalls round a square with its well, carts, crates and barrels
+    // a town's heart (the owner, 2026-11-06: one citadel a realm, its capital's): its hall at the back, flying its lord's flag, market
+    // stalls and a well on the cobbles before it
+    townhall:{role:'centre',ground:'cobble',flag:true,make:C=>{piece(C,'townhouse',[0,-14],0);piece(C,'stall',[-20,8],0);piece(C,'stall',[20,8],0);piece(C,'well',[0,14],0);piece(C,'barrels',[-12,22],0);piece(C,'crates',[12,22],0)}},
     market:{role:'market',ground:'cobble',make:C=>{piece(C,'stall',[-18,-18],0);piece(C,'stall',[0,-22],0);piece(C,'stall',[18,-18],0);piece(C,'stall',[-22,4],3);piece(C,'stall',[22,4],1);
       piece(C,'well',[0,2],0);piece(C,'cart',[-14,22],0);piece(C,'crates',[14,22],0);piece(C,'barrels',[2,24],0)}},
     // a mill: the watermill on its race, a granary, sacks and a cart
@@ -502,7 +505,7 @@
 
   /* a holding's centre by its tier (camp 0 ... city or castle): the generic (PX.MODEL_CENTRES: a type or a cluster kind, and options
      for its spec), else its culture's (centres) */
-  const CENTRES={camp:{kind:'camp'},hamlet:{kind:'yard'},village:{type:'village'},town:{type:'citadel'},city:{type:'citadel',capital:true},castle:{type:'keep'}};PX.MODEL_CENTRES=CENTRES;
+  const CENTRES={camp:{kind:'camp'},hamlet:{kind:'yard'},village:{type:'village'},town:{kind:'townhall'},city:{type:'citadel',capital:true},castle:{type:'keep'}};PX.MODEL_CENTRES=CENTRES;
   PX.centreModel=spec=>{const c=ownOf(cultureOf(spec),'centres',spec.tier)||CENTRES[spec.tier];if(!c)throw new Error('no centre for '+spec.tier);
     const s=Object.assign({},spec,c);return c.kind?PX.clusterModel(s):PX.buildingModel(s)};
 

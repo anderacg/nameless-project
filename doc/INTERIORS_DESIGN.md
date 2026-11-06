@@ -52,7 +52,7 @@ The owner (2026-11-06): "make a wall for holding or estates": drawn **and blocki
 
 | Part | As built |
 |---|---|
-| Who | Every holding with walls (palisade, stone or great: `wallOf` > 0); raised or razed with them (a village fortified gets one) |
+| Who | Every holding with walls (palisade, stone or great: `wallOf` > 0): since 2026-11-06 (the owner: "only castle, fort, city should have wall"; one citadel a realm) only castles, cities (and forts, to come); towns stand open, their heart a hall and market (`townhall`, was a citadel), and like villages and hamlets may have a fence |
 | The ring | A rectangle a tile out round its centre, houses, estates and their fields (those within 14 tiles of its own tile) |
 | Gates | (matched with the roads, the owner, 2026-11-06) Where a road's own path passes through the ring (from outside, on along it a while if it must, then in), its gate the tile the road steps through by; a ford crossing it too; a tile wider either side; gates within 5 tiles one; a road only running along the wall makes none; none at all: one below the centre. Each gateway drawn over the road: on a stretch across, an arch cut through the wall's face the run's width (the road through it, the doors in it when shut); on a stretch down, the walk bridged over it. Towers either side, at the corners, and on stone every 7 tiles but never within 3 of another or a gate |
 | No wall | On water and peaks (already impassable), or a tile another holding's building stands on |
