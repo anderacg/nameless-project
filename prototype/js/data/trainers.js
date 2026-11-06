@@ -8,7 +8,7 @@
 const TRAINERS={week:5,
   levels:['Journeyman','Expert','Master'],cap:[2,4,5],xp:[15,25,35],gold:[20,40,70],upgrade:2,
   roles:{spear:'Spear',foot:'Infantry',bow:'Bow',xbow:'Crossbow',caster:'Caster',cav:'Cavalry',horsebow:'Horse archer'},
-  at:{town:[1,1,2],city:[2,2,3],castle:[2,2,3]},
+  at:{town:[1,1,2],city:[2,2,3],castle:[2,2,3],fort:[1,2,2]},
   // (wandering trainers (phase 4): how many, their levels (masters rare), how long they stay at a holding (days), how far they go next)
   wander:{levels:[3,3,2,2,2],stay:[3,6]},
   // (a companion's roles by his look; your hero's with Drillmaster)

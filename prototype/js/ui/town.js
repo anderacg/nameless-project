@@ -430,8 +430,8 @@ class Storehouse extends Place{
   body(t){
     ensureEcon(t);const own=t.owner==='player',cap=Math.round(storeCap(t)),gs=Object.keys(GOODS).filter(g=>(t.stock[g]||0)>=1||own&&goodN(g)>0);
     const b=(act,g,n,label,no)=>'<button class="btn sm" type="button" data-act="'+act+'" data-arg="'+g+':'+n+'"'+(no?' disabled':'')+'>'+label+'</button>';
-    return '<div class="lab">Stores · '+gs.filter(g=>(t.stock[g]||0)>=1).length+' goods · room for '+cap+' of each</div><p class="muted" style="font-size:13px">'+(own?'Your castle’s stockpile. Put goods in for safe keeping or take out what you need. Nothing is bought or sold here.':
-      'The castle’s stockpile. A castle has no market: nothing here is for sale. Take '+t.name+', and its stores are yours to keep or plunder.')+'</p>'+
+    return '<div class="lab">Stores · '+gs.filter(g=>(t.stock[g]||0)>=1).length+' goods · room for '+cap+' of each</div><p class="muted" style="font-size:13px">'+(own?'Your '+t.T.n+'’s stockpile. Put goods in for safe keeping or take out what you need. Nothing is bought or sold here.':
+      'The '+t.T.n+'’s stockpile. A '+t.T.n+' has no market: nothing here is for sale. Take '+t.name+', and its stores are yours to keep or plunder.')+'</p>'+
       (gs.length?gs.map(g=>{const st=Math.floor(t.stock[g]||0),n=goodN(g);return '<div class="row"><div class="info"><strong>'+GOODS[g].n+'</strong><small>'+st+' in store'+(own?' · you carry '+n:'')+'</small></div>'+
         (own?'<div class="acts">'+b('st-put',g,5,'Store 5',n<1||st>=cap)+b('st-put',g,'all','Store all',n<1||st>=cap)+b('st-take',g,5,'Take 5',st<1||goodRoom(g)<1)+b('st-take',g,'all','Take all',st<1||goodRoom(g)<1)+'</div>':'')+'</div>'}).join('')
         :'<p class="muted">The stores are empty.</p>');

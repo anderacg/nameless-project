@@ -81,7 +81,7 @@ class Prisons{
   static breakChance(key){const k=this.kind(key)||{brk:0,watch:0},X=PRISON.brk;return clamp(X.base+(P.attr?.agi||0)*X.agi+skill('athl')*X.athl+k.brk-(k.watch||0)*X.watch,.05,.85)}
   static odds(ch){return insight(['you cannot tell your odds',ch>=.5?'a fair chance':'a long chance','about '+Math.round(ch*100)+'%'],'know the odds')}
   static body(t){const key=t.name,k=this.kind(key),mine=this.mine(t),list=this.of(key),qs=this.quests(t),i=r=>list.indexOf(r);
-    const head='<p class="muted">'+(k?'The '+k.name+' of '+t.name+': '+['its keepers a few men of the '+t.T.n,'kept by the watch','kept by a strong guard','kept by the garrison'][Math.max(0,['village','town','city','castle'].indexOf(t.kind))]+'. ':'')+
+    const head='<p class="muted">'+(k?'The '+k.name+' of '+t.name+': '+['its keepers a few men of the '+t.T.n,'kept by the watch','kept by a strong guard','kept by the garrison'][Math.max(0,['village','town','city','castle'].indexOf(t.kind==='fort'?'castle':t.kind))]+'. ':'')+
       (list.filter(r=>r.k!=='men').length)+' of '+(k?.holds||0)+' cells taken'+(mine&&k?.men?', '+(k.men-this.menRoom(key))+' of '+k.men+' places for soldiers':'')+'.</p>';
     const theirs=list.filter(r=>r.keep!=='player'),yours=list.filter(r=>r.keep==='player');
     const cards=[...qs.map(q=>({pic:personPic('folk',t.races?.[0]||'human',1),name:cap1(q.pn),role:q.title,facts:[[q.price+'g asked','gold']],note:q.say('gaol')||'Held here until someone pays.',

@@ -82,7 +82,7 @@ const HUMBLE_START={on:true,off:.25,camp:25,wild:15,next:2,castle:2,town:[.5,3],
 // (the harness turns it off), by kind what opens a holding to you: renown, or honour with its realm (a castle: honour only); a
 // hamlet's or a village's always. Always open: your own, your service's, your home, a holding a quest of yours takes you to, a
 // pass for it (G2). Sealed by a quest: shut whatever you are (Gates.seal)
-const GATES={on:true,town:{renown:10,honor:10},city:{renown:30,honor:25},castle:{honor:20}};
+const GATES={on:true,town:{renown:10,honor:10},city:{renown:30,honor:25},castle:{honor:20},fort:{honor:10}};
 // a lord's audience (the owner: "when you want to meet certain lords you may require some renown or other stats"): a great lord
 // (renown great or more) hears you with renown need x his, or honour honor with his realm, or his regard rel for you, or in his
 // realm's service, or on his work (a quest of his or about him)
@@ -96,7 +96,7 @@ const LORD_AUDIENCE={on:true,great:32,need:.5,honor:15,rel:20};
 // holdings; a bandits' lair as lair power), its danger by their strength over yours (levels: watchful, dangerous, deadly at
 // least), its words; a warning on setting out for one of warn or worse
 const PROVINCE={on:true,reach:12,lair:60,levels:[.3,.8,1.6],words:['calm','watchful','dangerous','deadly'],warn:3};
-const GATE_WAYS={letter:80,writ:{town:60,city:160,rep:0},bribe:{town:25,city:60,castle:120,base:.3,pers:.05,cha:.04,caught:.5,honor:3,rep:5,ban:3},
+const GATE_WAYS={letter:80,writ:{town:60,city:160,rep:0},bribe:{town:25,city:60,castle:120,fort:70,base:.3,pers:.05,cha:.04,caught:.5,honor:3,rep:5,ban:3},
   slip:{base:.25,scout:.05,agi:.04,fine:.5,honor:5,rep:10,ban:3}};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,

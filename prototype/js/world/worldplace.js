@@ -48,7 +48,7 @@ const PLACE_PEOPLE={vale:'human',karn:'dwarf',sylvan:'elf',horde:'orc',salt:'lea
 const PLACE_SHARE={vale:8,karn:7,sylvan:7,horde:7,salt:8};
 const PLACE_REALMS=Object.keys(PLACE_SHARE);
 // the least distance (tiles) between two kinds (§8.8; capitals: PLACE.cap x the map's diagonal)
-const PLACE_GAP={city:{town:30,castle:30,village:24,hamlet:18},town:{town:26,castle:24,village:20,hamlet:16},castle:{castle:24,village:18,hamlet:16},village:{village:16,hamlet:14},hamlet:{hamlet:12}};
+const PLACE_GAP={city:{town:30,castle:30,fort:24,village:24,hamlet:18},fort:{fort:16,castle:18,town:20,village:16,hamlet:14},town:{town:26,castle:24,village:20,hamlet:16},castle:{castle:24,village:18,hamlet:16},village:{village:16,hamlet:14},hamlet:{hamlet:12}};
 const placeGap=(a,b)=>PLACE_GAP[a]&&PLACE_GAP[a][b]||PLACE_GAP[b]&&PLACE_GAP[b][a]||0;
 /* the numbers: reach (a new holding within this of its realm's own), cap (capitals apart, x the diagonal), skew (capitals' nearest
    rivals within this share of their mean), suit (a capital's least liking), day (tiles: a day's travel, for a fair start), land
@@ -242,6 +242,7 @@ function* genHoldings(g){
         if(top)P.push({f,kind,i:top.i})}
       if(g.tick())yield .5+.4*P.length/N}
     if(pass>=PLACE.regrow-1||placeEven(m,F,P.map(h=>({tx:h.i%W,ty:(h.i-h.i%W)/W,kind:h.kind,realm:h.f})),N))break}
+    placeForts(P,h=>h.f,(a,b)=>d2(a.i,b.i));
     // their data: realm, races, style, name, prices and note
     const used=new Set(),ports={};
     for(const h of P){const [tx,ty]=xy(h.i),pp=PLACE_PEOPLE[h.f],c=CLIMS[m.clim[h.i]],water=placePort(m,F,h.i)>=0;
@@ -310,7 +311,7 @@ function placeEven(m,F,Hd,N){if(Hd.length<N)return false;const K=m.kind.slice(),
    Cleared as stage 8 begins (genRoads: the roads run through it), once stage 7's checks have chosen the holdings, which it would
    move; its noise salted from the roads' first stream, so every try clears alike. The art blends the forest's floor into it
    (gfx/worldart.js). PLACE_STATS.clear: the holdings cleared */
-const PLACE_CLEAR={hamlet:60,village:110,castle:90,town:170,city:240,rough:.35,scale:4,spill:3};// (village 110, was 80: stage 3 of the building redesign, room for its 64 px centre and 32 px houses; more clearing took the woods its lumber camp works too far off)
+const PLACE_CLEAR={hamlet:60,village:110,fort:80,castle:90,town:170,city:240,rough:.35,scale:4,spill:3};// (village 110, was 80: stage 3 of the building redesign, room for its 64 px centre and 32 px houses; more clearing took the woods its lumber camp works too far off)
 function placeClear(m,h,salt){
   const W=m.w,K=m.kind,C=PLACE_CLEAR,ring=HOLDING_TYPES[h.kind].ring,r=ring+C.spill,need=C[h.kind],L=[];let have=0;
   for(let y=h.ty-r;y<=h.ty+r;y++)for(let x=h.tx-r;x<=h.tx+r;x++){if(!m.has(x,y))continue;const i=y*W+x,k=K[i],d=Math.sqrt((x-h.tx)*(x-h.tx)+(y-h.ty+1)*(y-h.ty+1));
@@ -327,6 +328,16 @@ function placeKinds(f,n){
   for(const k of ks){const v=(n-1)*C.filter(p=>p.kind===k).length/C.length;want[k]=Math.floor(v);t+=want[k];rem.push([v-want[k],k])}
   rem.sort((a,b)=>b[0]-a[0]||ks.indexOf(a[1])-ks.indexOf(b[1]));for(let k=0;t<n-1;k++,t++)want[rem[k%3][1]]++;
   const had={town:0,castle:0,village:0};for(let k=0;k<n-1;k++){const nx=ks.filter(q=>had[q]<want[q]).sort((a,b)=>had[a]/want[a]-had[b]/want[b]||ks.indexOf(a)-ks.indexOf(b))[0];had[nx]++;out.push(nx)}
+  return out}
+/* (its frontier forts, the owner 2026-11-06: "a new fort kind", a small walled fort on its realm's border): each realm's villages
+   nearest a rival realm's holding made forts, PLACE_FORT.per a realm, one more past PLACE_FORT.big holdings, each PLACE_FORT.gap
+   tiles from another of its forts (never a stilt village; the classic world's are in its own data, places.js); by distance alone (no draw: the stream as it was). H: the
+   holdings, fOf: one's realm, d2: two's distance squared, in tiles; the forts made */
+const PLACE_FORT={per:1,big:8,gap:30};
+function placeForts(H,fOf,d2){const X=PLACE_FORT,out=[];
+  for(const f of PLACE_REALMS){const own=H.filter(h=>fOf(h)===f),n=X.per+(own.length>X.big?1:0),made=[];
+    const vs=own.filter(h=>h.kind==='village'&&h.style!=='stilt').map(h=>[Math.min(...H.filter(o=>fOf(o)!==f).map(o=>d2(o,h))),H.indexOf(h),h]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+    for(const [,,h] of vs){if(made.length>=n)break;if(made.some(o=>d2(o,h)<X.gap*X.gap))continue;h.kind='fort';made.push(h)}out.push(...made)}
   return out}
 // (a people's suitable tiles (walkable, liked .4 or more; the League's any not frost or desert) within PLACE.landR of (x, y),
 // every 3rd tile counted for 9; how many a capital needs: PLACE.land at Normal's area, x1.5 at Large's, x2.4 at Huge's)
@@ -378,6 +389,7 @@ function placeNote(m,F,d,i){
     cheap=d.mod?Object.keys(d.mod).filter(k=>d.mod[k]<=.85).sort((a,b)=>d.mod[a]-d.mod[b]).slice(0,2).map(k=>GOODS[k].n):[],
     list=cheap.length?cheap[0]+(cheap[1]?' and '+cheap[1].toLowerCase():'')+(cheap.length>1?' are':' is')+' cheap here.':'Fair prices on everything.';
   if(d.kind==='castle')return 'A'+(/^[aeiou]/i.test(w)?'n ':' ')+w+' keep '+where+'. Hires '+(p==='orc'?'wolf riders':'mounted troops')+'.';
+  if(d.kind==='fort')return 'A'+(/^[aeiou]/i.test(w)?'n ':' ')+w+' frontier fort '+where+'. Hires spearmen and archers.';
   if(d.kind==='city')return 'The '+w+' capital '+where+'. '+list;
   if(d.kind==='town')return 'A'+(/^[aeiou]/i.test(w)?'n ':' ')+w+' market town '+where+'. '+list;
   const trade=d.style==='port'||d.style==='stilt'?'fishing':F.dM[i]<=6?'mining':F.dF[i]<=2?'woodcutters’':'farming';

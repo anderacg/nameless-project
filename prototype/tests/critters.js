@@ -32,7 +32,7 @@ try{
  const kinds=new Set();for(let i=0;i<300;i++){W.critters=[];t.spawnCritter(true);if(W.critters[0])kinds.add(W.critters[0].id)}
  ok(['rabbit','deer','stag','ibex','reindeer','hare','gazelle','fowl'].every(k=>kinds.has(k)),'every wild kind turns up somewhere');
  W.critters=[];t.initCritters();
- ok(herds.length===t.TOWNS.filter(x=>x.kind!=='castle').length&&herds.every(c=>{const z=t.townBy(c.home);return c.pen?t.PASTURE_HERD[t.pastureLand(z)].includes(c.id):t.LIVESTOCK[z.races[0]].includes(c.id)}),'every village and town has a herd: a pasture’s of its land’s animals (workplaces), else of its people’s livestock');
+ ok(herds.length===t.TOWNS.filter(x=>x.T.herds).length&&herds.every(c=>{const z=t.townBy(c.home);return c.pen?t.PASTURE_HERD[t.pastureLand(z)].includes(c.id):t.LIVESTOCK[z.races[0]].includes(c.id)}),'every village and town has a herd: a pasture’s of its land’s animals (workplaces), else of its people’s livestock');
  // fleeing and tiring
  const deer={crit:true,id:'deer',x:0,y:0,hx:0,hy:0,n:3,t:0,a:0,dir:1,tire:0,cool:0};const spot=W.critters.find(c=>!c.home);deer.x=deer.hx=spot.x;deer.y=deer.hy=spot.y;
  W.critters=[deer];P.x=deer.x-30;P.y=deer.y;G.mode='world';G.modal=false;G.encCool=0;t.hidePanel();t.TravelAwareness.notice(t.asHerd(deer));// (it has seen you: game flees what it has noticed, worldobject.js TravelAwareness)

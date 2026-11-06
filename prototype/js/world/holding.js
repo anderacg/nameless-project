@@ -151,7 +151,9 @@ class Town extends Holding{}
 class City extends Town{}
 // a castle lodges only those it knows: it is a garrison, not an inn
 class Castle extends Holding{takesGuests(free){return !!free}}
-const HOLDING_CLASS={hamlet:Hamlet,village:Village,town:Town,city:City,castle:Castle};
+// (a fort: a castle's garrison, smaller)
+class Fort extends Castle{}
+const HOLDING_CLASS={hamlet:Hamlet,village:Village,fort:Fort,town:Town,city:City,castle:Castle};
 // make a plain holding one of its kind (and again when its kind changes)
 function holdingOf(t,kind){if(kind)t.kind=kind;if(!HOLDING_TYPES[t.kind])throw new Error('No kind of holding called '+t.kind);Object.setPrototypeOf(t,HOLDING_CLASS[t.kind].prototype);return t}
 

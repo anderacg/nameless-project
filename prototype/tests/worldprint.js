@@ -439,7 +439,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  citadel a realm): a town's centre its hall and market (the townhall cluster, was a citadel) and no walls (wall0 0, was 2), so its
 //  lots, its picture, its sieges and the save change. Proof: the town's old centre and walls give all five again; the rest held. Were
 //  W3 ac2aba75, W5 414df094, W7 e9783bae, W8 065d57eb, B2 e9d35de0)
-const EXPECT={W1:'93537e2b',W2:'264a7c7f',W3:'d7f57400',W4:'fbefe32d',W5:'077d5587',W6:'a8409953',W7:'d8c679f9',W8:'1d159ce7',B2:'394b7a5e'};
+// (all nine re-recorded 2026-11-06, on purpose: the fort kind (the owner: "only castle, fort, city should have wall", "a new fort
+//  kind"): each realm's village nearest a rival's made a small walled fort (worldplace.js placeForts), the classic world's five in its
+//  own data (places.js: Coldmarch, Frosthelm, Gullhaven, Thistledown, Dustfang), so the holdings' kinds, lots, walls, garrisons,
+//  roads round them and the save change. Proof: no forts (PLACE_FORT per 0, big 999, the five villages again) gives all nine and the
+//  five sums again. Were W1 93537e2b, W2 264a7c7f, W3 d7f57400, W4 fbefe32d, W5 077d5587, W6 a8409953, W7 d8c679f9, W8 1d159ce7,
+//  B2 394b7a5e)
+const EXPECT={W1:'8dc0ec99',W2:'8e3ee885',W3:'e5fc35f5',W4:'7caa9d3b',W5:'7606b637',W6:'3627d2a4',W7:'1db84b36',W8:'b3ff4495',B2:'8a52874f'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -494,7 +500,9 @@ const EXPECT={W1:'93537e2b',W2:'264a7c7f',W3:'d7f57400',W4:'fbefe32d',W5:'077d55
 //  every preset and the classic world. Checked: with the Hamlets setting None the generator makes what it made before them (Normal s1
 //  at None 1a9d3280 on 244e94c, before the hamlets, and now; the setting is part of the sum, so None is not the old Normal's value).
 //  Were classic c2e6ebf4, Normal s1 7de4f831, s2 994d7cb0, s3 d0b32a24, Large s1 03a19dc7)
-const SUMS={classic:'313f5680','Normal s1':'c05c2a0b','Normal s2':'71336fed','Normal s3':'88b17161','Large s1':'66607a42'};
+// (all five re-recorded 2026-11-06, on purpose: the forts (above). Proof: no forts gives all five again. Were classic 313f5680,
+//  Normal s1 c05c2a0b, s2 71336fed, s3 88b17161, Large s1 66607a42)
+const SUMS={classic:'376eb788','Normal s1':'0620ac51','Normal s2':'8d537d0c','Normal s3':'3c103cb4','Large s1':'1a0f554e'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

@@ -22,7 +22,7 @@ class Gates{
     if(g.renown!=null){if(P.renown>=g.renown)return{ok:true};need.push('renown '+g.renown+' (you have '+P.renown+')')}
     if(g.honor!=null&&t.owner&&FACS[t.owner]){if(hon>=g.honor)return{ok:true};need.push('honour '+g.honor+' with the '+FACS[t.owner].n+' (you have '+hon+')')}
     need.push('a pass (a letter of introduction, a guild token or a writ)','a quest that takes you there');
-    return{ok:false,why:t.kind==='castle'?'No one enters without the lord’s leave.':'The gate-wardens look you over and send you on.',need}}
+    return{ok:false,why:t.kind==='castle'||t.kind==='fort'?'No one enters without the lord’s leave.':'The gate-wardens look you over and send you on.',need}}
   // a lord's audience: {ok, why, need}
   static audience(l){
     const X=LORD_AUDIENCE;if(!X.on)return{ok:true};

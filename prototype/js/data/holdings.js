@@ -1,5 +1,5 @@
 'use strict';
-/* ---------- data: the kinds of holding. Everything that differs between a village, a town, a city and a castle lives in its
+/* ---------- data: the kinds of holding. Everything that differs between a village, a fort, a town, a city and a castle lives in its
    entry here and is read through the holding itself (t.T, t.label, t.has(tab), ...). To add a kind: give it an entry, a
    class in world/holding.js (or reuse one), and holdings of that kind in places.js. ---------- */
 // tier / next: its step on the growth path (camp 0 … city or castle 4) and the kinds it may grow into (holdingOf(t, next); nothing
@@ -37,6 +37,13 @@ const HOLDING_TYPES={
     jobs:['bounty','supply','courier','clear','beast','supply'],sack:450,income:40,handover:250,renown:40,guards:3,
     tabs:['recruit','trade','smith','stable','jobs','tavern'],hires:['melee','shield','ranged'],train:true,tourney:true,broker:true,contract:true,
     mounts:['any','town','castle','local'],herds:true,scene:'town',temple:true,smoke:4},
+  // (a fort (the owner, 2026-11-06: "a new fort kind", between village and castle): a small walled post on its realm's frontier,
+  // a palisade at the start, its tower and barracks at its heart, few people, a strong garrison, stores and no market)
+  fort:{n:'fort',tier:3,next:['castle'],centre:{_:'fort'},pop0:40,popCap:90,store:140,gar:12,patrol:{size:5,keep:4},wall0:1,wallMax:2,estMax:1,
+    reach:12,growMax:6,ring:7,tries:50,needs:{food:5,cloth:.4,timber:.6,tools:.4,iron:.4,ale:.4},wants:{arrows:1.5,bolts:.8},
+    jobs:['troops','bounty','clear'],sack:100,income:8,handover:110,renown:18,guards:1,
+    tabs:['recruit','stores','stable','jobs'],hires:['melee','shield','ranged'],
+    mounts:['any','town'],fort:true,smoke:2},
   castle:{n:'castle',tier:4,next:[],centre:{_:'keep'},pop0:80,popCap:170,store:220,gar:18,patrol:{size:8,keep:6},wall0:3,wallMax:3,estMax:2,
     reach:18,growMax:10,ring:9,tries:60,needs:{food:5,cloth:.5,timber:.6,tools:.6,iron:.6,ale:.5},wants:{copper:.15,tin:.08,silver:.04,arrows:3,bolts:1.5},
     jobs:['troops','courier','bounty','clear'],sack:200,income:15,handover:200,renown:30,guards:2,

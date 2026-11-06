@@ -11,6 +11,7 @@ const PRISONS={
   village:{name:'Lock-up',brk:.12,bribe:.7,watch:0,holds:3,men:10},
   town:{name:'Jail',brk:.04,bribe:1,watch:0,holds:6,men:20},
   city:{name:'Prison',brk:0,bribe:1.4,watch:1,holds:12,men:40},
+  fort:{name:'Stockade',brk:.02,bribe:1.2,watch:1,holds:4,men:16},
   castle:{name:'Dungeon',brk:-.03,bribe:1.8,watch:1,holds:8,men:30},
   camp:{name:'Cage',brk:.06,bribe:.7,watch:0,beat:1.5,holds:3,men:0},
   hideout:{name:'The pit',brk:.06,bribe:.7,watch:0,holds:3,men:0},

@@ -20,6 +20,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  every people builds in its own culture's kit now)
 // (2026-10-31, re-recorded: the clusters re-laid so their buildings stand apart, none hidden behind another (the owner: "some
 //  clustered builds are a bit off"): every cluster moved, here and in each culture's block; no type changed)
+// (2026-11-06, recorded: two new clusters, nothing else changed: a town's hall and market (townhall: "towns stand open", no citadel
+//  but the capital's) and a fort's tower and barracks (fort: the new fort kind), here and in each culture's block)
 const EXPECT={
  cottage:'34c8560b',townhouse:'985f15f5',fisherhut:'cfe62d10',chapel:'8335688f',stall:'be576182',tower:'8faee54b',yurt:'0beeeb0e',
  longhouse:'f0c49654',tavern:'870e76f7',smithy:'afb5e62c',church:'736c2d01',barn:'af2bc89c',granary:'68d26177',windmill:'984bad07',
@@ -32,7 +34,7 @@ const EXPECT={
  'cluster:chapel':'bd1cf1e5','cluster:market':'705f852c','cluster:mill':'d082ecfc','cluster:lumber':'7bc293fa',
  'cluster:mine':'77f315d5','cluster:quarry':'5a296bc3','cluster:fishery':'8746f605','cluster:pasture':'db5354fa',
  'cluster:brewery':'02bf8a7a','cluster:granary':'c76bc411','cluster:workshop':'03a13feb','cluster:quarter':'dd437ff9',
- 'cluster:camp':'f8873a38','cluster:hideout':'f47bc138','cluster:travelers':'eaa68ba2'};
+ 'cluster:camp':'f8873a38','cluster:hideout':'f47bc138','cluster:travelers':'eaa68ba2','cluster:townhall':'4df56b37','cluster:fort':'4e3596dc'};
 // (K0, 2026-10-22: recorded at the split into the cultures' files, every culture on the generic plans with its own style table)
 // each culture's own block, which only its own file changes: re-record only that block (its INFO line 'culture <name>: ...')
 const EXPECT_CULTURE={
@@ -47,7 +49,7 @@ const EXPECT_CULTURE={
   'cluster:mill':'d4626708','cluster:lumber':'5a8b0fa8','cluster:mine':'0fb338c2','cluster:quarry':'89113cf7',
   'cluster:fishery':'72f739d8','cluster:pasture':'6238788d','cluster:brewery':'9b9d55ee','cluster:granary':'ceab9fb2',
   'cluster:workshop':'8e14a8f7','cluster:quarter':'557bb477','cluster:camp':'5914d294','cluster:hideout':'90734492',
-  'cluster:travelers':'9285ed08'},
+  'cluster:travelers':'9285ed08','cluster:townhall':'63561f90','cluster:fort':'c69c811b'},
  // league (build-vale.js, on the Vale’s)
  league:{cottage:'e0026d14',townhouse:'54b6ec8c',fisherhut:'3171fded',chapel:'a071ef69',stall:'b97d1b36',tower:'d67dff0f',
   longhouse:'0205715c',tavern:'773217b3',smithy:'782a69a4',church:'113afed9',barn:'c47dd297',granary:'ff10e0bd',windmill:'ce28f19b',
@@ -59,7 +61,7 @@ const EXPECT_CULTURE={
   'cluster:mill':'d09e6e45','cluster:lumber':'b38862bb','cluster:mine':'8b46d150','cluster:quarry':'d8843b0f',
   'cluster:fishery':'d40a528b','cluster:pasture':'8a408352','cluster:brewery':'995a7b67','cluster:granary':'47b227b0',
   'cluster:workshop':'8a235b6c','cluster:quarter':'ef485628','cluster:camp':'0bc4120e','cluster:hideout':'796dff8c',
-  'cluster:travelers':'a90bdc68'},
+  'cluster:travelers':'a90bdc68','cluster:townhall':'162df19a','cluster:fort':'ebc4761b'},
  // karn (build-karn.js)
  karn:{cottage:'4a425d36',townhouse:'4ed98e54',fisherhut:'75f3aa32',chapel:'6730e8c0',stall:'d2669600',tower:'159eaa4f',
   longhouse:'645104ab',tavern:'41b29164',smithy:'b5a540bf',church:'01009c2e',barn:'3279f39a',granary:'8dd0c3ed',windmill:'304bfc7c',
@@ -71,7 +73,7 @@ const EXPECT_CULTURE={
   'cluster:market':'8d15f7aa','cluster:mill':'8b4f7532','cluster:lumber':'f1c983e3','cluster:mine':'3cbcfc3c',
   'cluster:quarry':'b8b139f1','cluster:fishery':'63f144d9','cluster:pasture':'1b480749','cluster:brewery':'492ac2e6',
   'cluster:granary':'d9f653dd','cluster:workshop':'582027f8','cluster:quarter':'329dbbe1','cluster:camp':'5f4b8162',
-  'cluster:hideout':'b94812fc','cluster:travelers':'f3676546'},
+  'cluster:hideout':'b94812fc','cluster:travelers':'f3676546','cluster:townhall':'b75ece35','cluster:fort':'aab3d672'},
  // ashgor (build-ashgor.js)
  ashgor:{cottage:'3a1e865e',townhouse:'6978b5f3',fisherhut:'5de9645b',chapel:'ca6bb9f2',stall:'47a4e4b4',tower:'a422859b',yurt:'cc0d22e8',
   longhouse:'33d0cacf',tavern:'768aa82f',smithy:'8c663b65',church:'e491ffb2',barn:'37974e76',granary:'ef556cc3',windmill:'84a9398b',
@@ -83,7 +85,7 @@ const EXPECT_CULTURE={
   'cluster:inn':'dfe97c9a','cluster:chapel':'b3b3ba44','cluster:market':'a261803a','cluster:mill':'440b3742',
   'cluster:lumber':'a1bd2eaf','cluster:mine':'424f2488','cluster:quarry':'a44189fd','cluster:fishery':'3630ce0b',
   'cluster:pasture':'cf0cf9df','cluster:brewery':'b82bf1a4','cluster:granary':'84f0fc52','cluster:workshop':'7c7671c0',
-  'cluster:quarter':'f3ca8c30','cluster:camp':'f80ef739','cluster:hideout':'cbeeb71d','cluster:travelers':'5d9537d5'},
+  'cluster:quarter':'f3ca8c30','cluster:camp':'f80ef739','cluster:hideout':'cbeeb71d','cluster:travelers':'5d9537d5','cluster:townhall':'9192ea8e','cluster:fort':'194d81fa'},
  // sylvan (build-sylvan.js)
  sylvan:{cottage:'2866254a',townhouse:'86862f92',fisherhut:'20f14781',chapel:'7a7c2819',stall:'f9301b85',tower:'63d61cbb',
   longhouse:'a584e630',tavern:'1a1c5129',smithy:'64119c77',church:'d3974598',barn:'7d29fefb',granary:'36e3d966',windmill:'5cf78eae',
@@ -95,7 +97,7 @@ const EXPECT_CULTURE={
   'cluster:chapel':'c803a1d3','cluster:market':'3b048768','cluster:mill':'a2cc2e12','cluster:lumber':'b1922baf',
   'cluster:mine':'8b63da12','cluster:quarry':'e4c72230','cluster:fishery':'b4e086e1','cluster:pasture':'b2b02b35',
   'cluster:brewery':'44a4308f','cluster:granary':'379e9c9c','cluster:workshop':'005e9bf6','cluster:quarter':'a9d7e778',
-  'cluster:camp':'de1c77c6','cluster:hideout':'36e5d6f9','cluster:travelers':'f49cda9b'}
+  'cluster:camp':'de1c77c6','cluster:hideout':'36e5d6f9','cluster:travelers':'f49cda9b','cluster:townhall':'33bd46bf','cluster:fort':'5d3b1907'}
 };
 try{
  const px=c=>c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data,P=['human','dwarf','elf','orc'],FRONT=PX.MODEL_FRONT,SZ=PX.MODEL_SIZES.types,OBJ=PX.MODEL_OBJECTS;
@@ -250,10 +252,10 @@ try{
   ok(!lg.length,'the culture, not the people, chooses the building: a Salt League holding builds alike whether its people are human, elf or orc'+(lg.length?': '+lg.join(', '):''));
   const fs=PX.clusterModel({kind:'smithy',culture:'karn',seed:2}).buildings.map(d=>d.kind),hs=PX.clusterModel({kind:'smithy',culture:'vale',seed:2}).buildings.map(d=>d.kind);
   ok(fs.includes('forge')&&!hs.includes('forge'),'a culture builds its own in place of another in its clusters (look.swap): the Clans\' smithy yard has the forge ('+fs.join(', ')+'), the Vale\'s its smithy');
-  const T0={camp:['kind','camp'],hamlet:['kind','yard'],village:['type','village'],town:['type','citadel'],city:['type','citadel'],castle:['type','keep']},cz=[];
+  const T0={camp:['kind','camp'],hamlet:['kind','yard'],village:['type','village'],fort:['kind','fort'],town:['kind','townhall'],city:['type','citadel'],castle:['type','keep']},cz=[];
   for(const [tier,[k,v]] of Object.entries(T0)){const m=PX.centreModel({tier,people:'dwarf',seed:2,fort:2});if(m[k]!==v||m.culture!=='karn')cz.push(tier)}
   const cap=PX.centreModel({tier:'city',culture:'vale',seed:2});
-  ok(!cz.length&&cap.cell===128,'a holding\'s centre by its tier (PX.centreModel): a camp and a hamlet\'s yard, a village, a town\'s citadel, a city\'s at 128, a castle\'s keep'+(cz.length?': '+cz.join(', '):''));
+  ok(!cz.length&&cap.cell===128,'a holding\'s centre by its tier (PX.centreModel): a camp and a hamlet\'s yard, a village, a fort\'s tower and barracks, a town\'s hall and market, a city\'s citadel at 128, a castle\'s keep'+(cz.length?': '+cz.join(', '):''));
   // (last: a culture registered here, built on the Clans: its own type, its plans wrapping the generic, its cluster, its centre)
   const reg=PX.registerBuildStyle('k0test',{from:'karn',look:{roof:'thatch',village:{goods:['crate','crate']}},
     own:{types:{k0hut:{cell:32,dwellings:2,look:{wall:null},plan(Q,o){const dw=Q.home('k0hut');PX.planKit.house(Q,{w:16,d:14,dw,wall:o.look.k0hut.wall||o.wall})}}}},

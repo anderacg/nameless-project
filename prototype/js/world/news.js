@@ -35,7 +35,7 @@ const NEWS={keep:60,days:6,merge:1,radius:360,markDays:3,off:28,at:70,band:65,ag
 // holding (the roads join them); wild: its tiles a day over the land (to anywhere off the holdings, from the nearest holding the
 // wave has, or straight from where it happened, the sooner); lag: the days more a holding of that kind waits (no crier of its
 // own); days: how long one is kept (NEWS.keep counts only the rest)
-const PROCLAIM={on:true,kinds:['war','peace','ally','realm','fell'],tiles:60,wild:15,lag:{village:1.5,castle:.5},days:20};
+const PROCLAIM={on:true,kinds:['war','peace','ally','realm','fell'],tiles:60,wild:15,lag:{village:1.5,fort:1,castle:.5},days:20};
 // common talk's vagueness: on; a level (0 to max) as heard, a level for every tiles tiles from you and every days days of its
 // age; inflate: how much a level swells its numbers (× 1 + inflate × level)
 const NEWS_VAGUE={on:true,tiles:40,days:2,max:3,inflate:.5};

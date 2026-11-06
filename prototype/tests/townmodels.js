@@ -69,7 +69,8 @@ Kit.suite(({ok,info})=>{
   ok(n>20&&!bad.length,'the estates\' flat ground ('+n+') lays nothing under their buildings: no square of soil or logs, the model\'s yard is theirs'+(bad.length?': '+bad.slice(0,5).join('; '):''))}
  // ---- sites and camps: their models, their fires and flags
  {const want={cave:32,ruins:32,shrine:16,camp:32,hideout:64,travelers:32},bad=[],seen=new Set();
-  for(const s of W.sites){const sp=t.siteSprite(s),N=want[s.type];seen.add(s.type);if(sp.width!==N||!sp.gr||!sp.sh)bad.push(s.type+' '+sp.width);if(['camp','hideout','travelers'].includes(s.type)&&(!sp.fire||!sp.flag))bad.push(s.type+' fire/flag')}
+  // (a bandit lair (the owner, 2026-11-06): a cave's mouth or a minehead, 32, its banner painted on)
+  for(const s of W.sites){const sp=t.siteSprite(s),N=s.tunnel?32:want[s.type];seen.add(s.type);if(sp.width!==N||!sp.gr||!sp.sh)bad.push(s.type+' '+sp.width);if(['camp','hideout','travelers'].includes(s.type)&&!s.tunnel&&(!sp.fire||!sp.flag))bad.push(s.type+' fire/flag')}
   ok(!bad.length&&seen.size>=5,'every site and camp its model ('+[...seen].map(k=>k+' '+want[k]).join(', ')+' px), its yard and shadow, a camp\'s fire (its flame at marks.fire) and flag'+(bad.length?': '+bad.slice(0,6).join('; '):''))}
  // ---- the old hand-drawn art retired
  {const scripts=[...document.querySelectorAll('script[src]')].map(s=>s.getAttribute('src'));

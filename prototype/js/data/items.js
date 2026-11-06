@@ -35,7 +35,7 @@ const VALUABLES={
   chalice:{n:'Gold chalice',v:190,r:'rare',icon:'jar',col:'#e8b94a',d:'A temple’s cup, heavy with gold.'},
   relic:{n:'Old relic',v:280,r:'epic',icon:'charm',col:'#c58af0',d:'A saint’s token in a silver case. Collectors pay a fortune.'}
 };
-const VALUE={stack:5,sell:.6,trade:.01,kind:{hamlet:.75,village:.85,town:1,city:1.25,castle:1}};
+const VALUE={stack:5,sell:.6,trade:.01,kind:{hamlet:.75,village:.85,town:1,city:1.25,castle:1,fort:.9}};
 /* where they are found (world/sites.js valuablesFound, from the stream 'valuables'): p, the chance of any; n, how many [lo, hi];
    r, the rarities found there (each by its weight in VALUE_RARITY) */
 const VALUE_FINDS={cave:{p:.5,n:[1,2],r:['common','rare']},ruin:{p:.8,n:[1,2],r:['common','rare','epic']},camp:{p:.6,n:[1,3],r:['common','rare']},
