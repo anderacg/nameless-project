@@ -267,7 +267,7 @@ function banditSprite(f){f=(f||0)%PEOPLE_STEPS;const k='bd'+f;return FIGURES.get
    light and in shade as it turns away (BANNER.fold), the hem along its top lit and its foot in shade; its fly end waves (the
    device's columns stay flat, so it reads); the device in the middle of the field, light on a dark field and dark on a light one,
    ringed in the field's deepest shade so it stays clear zoomed out (a pennant's the device in small: BANNER_DEV's every other row
-   and column); the people's outline round it all (people.js). f: the flutter (0, 1), the folds half a fold along.
+   and column); outlined inside as every figure is (people.js poutline, the edge kept). f: the flutter (0, 1), the folds half a fold along.
    BANNER: the grid (w, h), the cloth's top and the pole's foot (rows; a caravan's top: trade), each shape's cloth [w, h], the folds
    across it (fold) and where its fly end begins to wave (fly, columns) */
 const BANNER={w:16,h:24,top:4,foot:22,trade:10,cloth:{banner:[11,9],rag:[11,9],pennant:[12,8],trade:[7,4]},fold:2.2,fly:8};
@@ -300,7 +300,7 @@ function bannerSprite(b,f){f=f?1:0;const key='bn'+b.k+b.col+b.dev+f;if(spr[key])
   // the pole, its foot darker; the finial: a collar, a knob, a point
   for(let y=top;y<=N.foot;y++)s(2,y,y>N.foot-4?Wd[2]:Wd[1]);s(2,top-1,G[2]);s(1,top-2,G[2]);s(2,top-2,G[0]);s(3,top-2,G[1]);s(2,top-3,G[0]);
   bannerCloth(s,3,top,b,f,N.cloth,1,N);
-  poutline(g);const c=cellOf(pcanvas(g)),n=c.width;c.px=(n>>1)-(N.w>>1)+2;c.py=n-N.h+N.foot;c.lx=c.px+1+(cw>>1);return spr[key]=c}
+  g.edge=true;poutline(g);const c=cellOf(pcanvas(g)),n=c.width;c.px=(n>>1)-(N.w>>1)+2;c.py=n-N.h+N.foot;c.lx=c.px+1+(cw>>1);return spr[key]=c}
 /* pre-rendered world map: ground colors per climate, then terrain on top; mini: the minimap's colour of each kind of tile (T_OPEN
    ... T_FORD, map.js) */
 const PAL={

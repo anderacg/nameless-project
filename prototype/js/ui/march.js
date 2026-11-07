@@ -43,7 +43,7 @@ function marchFlagOf(row,i){const L=lookOf(row.type,0,false,i%6,'',null);return 
 // (a figure's flag into g, its sprite's corner at bx, by drawn k times: the back flag before his body, the spear's after it)
 function marchFlagDraw(g,f,bx,by,k,front){const F=f.flag,b=F&&P.banner();if(!b||typeof b!=='object')return;
   if(front&&F.pole&&f.s.hand){const c=poleFlagSprite(F.pole,b,F.skin,0);g.drawImage(c,bx+(f.s.hand[0]-c.R)*k,by+(f.s.hand[1]-c.R)*k,c.width*k,c.height*k)}
-  else if(!front&&F.back&&f.s.back){const c=backFlagSprite(b,0);g.drawImage(c,bx+(f.s.back[0]-c.ax)*k,by+(f.s.back[1]-c.ay)*k,c.width*k,c.height*k)}}
+  else if(!front&&F.back&&f.s.back){const c=battleBackFlag(b,0);g.drawImage(c,bx+(f.s.back[0]-c.ax)*k,by+(f.s.back[1]-c.ay)*k,c.width*k,c.height*k)}}
 // (a row's man i with his flag, if he flies one (flags: marchFlagMen's))
 const marchMan=(row,i,flags)=>{const flag=flags.has(i)?marchFlagOf(row,i):null;return{s:marchFigure(row,i,flag?.pole),flag}};
 function marchPreviewFigures(row,scale){

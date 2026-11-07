@@ -47,9 +47,9 @@ Kit.suite(({ok,info})=>{
    const a=drawn(fs);
    // (2026-11-07, the owner: "the same sprites as battle", "check the flags": his own spear drawn as in battle, longer, the battle's
    // cloth under its head)
-   ok(a.length===3&&a[0]===window.marchSprite(fs,lord,undefined,true)&&a[0]!==window.marchSprite(fs,lord)&&a[1].R>t.WPN[R.get(fs).pole][0]+4&&gear().has(a[2])&&a[2]===t.clothSprite(lord.banner(),0),'the spearman: his body bare, then his longer spear and the battle\'s cloth on it, over him');
+   ok(a.length===2&&a[0]===window.marchSprite(fs,lord,undefined,true)&&a[0]!==window.marchSprite(fs,lord)&&a[1].R>t.WPN[R.get(fs).pole][0]+4&&gear().has(a[1])&&a[1]===t.poleFlagSprite(R.get(fs).pole,lord.banner(),R.get(fs).kit.skin,0),'the spearman: his body bare, then his longer spear with the battle\'s cloth on it (poleFlagSprite), over him');
    const b=drawn(fb);ok(b.length===2&&gear().has(b[0])&&b[0].ax!=null&&b[1]===window.marchSprite(fb,lord,undefined,true),'the bowman: the flag on his back first, then his body over it');
-   const c=drawn(fc),cp=!!R.get(fc).pole;ok(cp?c.length===3&&c[1].R&&gear().has(c[2]):c.length===2&&gear().has(c[0])&&c[0].ax!=null,'a rider flies one too ('+(cp?'on his lance':'at his back')+')');
+   const c=drawn(fc),cp=!!R.get(fc).pole;ok(cp?c.length===2&&c[1].R&&gear().has(c[1]):c.length===2&&gear().has(c[0])&&c[0].ax!=null,'a rider flies one too ('+(cp?'on his lance':'at his back')+')');
    ok(drawn(plain).length===1,'a man with neither: his body alone');
    const s=window.marchSprite(fb,lord);ok(s.free&&s.back&&s.hand&&s.free[0]<s.hand[0]&&s.back[1]<s.free[1],'a marcher\'s figure keeps its free hand and its back by its weapon hand ('+s.free+' / '+s.back+' / '+s.hand+')')}
   // ---- torches: after dark, in a free hand
@@ -80,7 +80,7 @@ Kit.suite(({ok,info})=>{
   // ---- kept: each picture drawn once
   {dark(true);for(const u of A.units)drawn(u);const n=t.MARCH_FLAGS.size,pics=gear();for(const u of A.units)drawn(u);
    ok(n>0&&t.MARCH_FLAGS.size===n&&[...t.MARCH_FLAGS.values()].every(c=>pics.has(c)),'every flag and torch picture is drawn once and kept ('+n+')');
-   const b=lord.banner(),f=t.poleFlagSprite('spear',b,'#f3bfad',0);ok(f===t.poleFlagSprite('spear',b,'#f3bfad',0)&&f!==t.poleFlagSprite('spear',b,'#f3bfad',1)&&t.backFlagSprite(b,0)===t.backFlagSprite(b,0)&&t.torchSprite('#f3bfad',0)===t.torchSprite('#f3bfad',0),'by angle step, banner, skin and wave');
+   const b=lord.banner(),f=t.poleFlagSprite('spear',b,'#f3bfad',0);ok(f===t.poleFlagSprite('spear',b,'#f3bfad',0)&&f!==t.poleFlagSprite('spear',b,'#f3bfad',1)&&t.battleBackFlag(b,0)===t.battleBackFlag(b,0)&&t.torchSprite('#f3bfad',0)===t.torchSprite('#f3bfad',0),'by angle step, banner, skin and wave');
    const w=t.weaponSprite('spear','blue','#f3bfad',24,20);ok(w.R===24&&w!==t.weaponSprite('spear','blue','#f3bfad',24)&&t.weaponSprite('spear','blue','#f3bfad',24).R===t.WPN.spear[0]+4,'a weapon drawn at a length of its own, kept apart from its usual one')}
  }finally{t.ctx.drawImage=img0;window.drawMarcher=draw0;window.marchSprite=sprite0;window.idleLife=life0;Object.assign(M,keep);G.clock=clock}
  // ---- in battle too (the owner, 2026-11-01: "the flag should be at the battle as well?"): a share of each group, its own army's
@@ -101,7 +101,7 @@ Kit.suite(({ok,info})=>{
    // (the owner, 2026-11-07: "the flag on unit still has outline": none, as the figures; its cloth on the spear's own tip (poleTip))
    {const navy=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;for(let i=0;i<d.length;i+=4)if(d[i+3]&&d[i]===0x1a&&d[i+1]===0x1c&&d[i+2]===0x26)return true;return false};
     const hw=t.heldNow(sp,t.unitLook(sp),t.actorSprite(sp)),tip=hw&&t.poleTip(hw.w);
-    ok(![t.clothSprite(b,0),t.backFlagSprite(b,0),t.battleBackFlag(b,0),t.poleFlagSprite('spear',b,'#f3bfad',0),t.torchSprite('#f3bfad',0)].some(navy)&&tip&&Math.hypot(...tip)>6,'no outline on a flag, a pole or a torch; the cloth hung from the spear’s own tip ('+tip+')');
+    ok(![t.clothSprite(b,0),t.flagSprite(b,0),t.flagSprite({k:'rag',col:'#2a1e14',dev:'skull'},1),t.bannerSprite(b,0),t.battleBackFlag(b,0),t.poleFlagSprite('spear',b,'#f3bfad',0),t.torchSprite('#f3bfad',0)].some(navy)&&tip&&Math.hypot(...tip)>6,'no outline on a flag (a spear’s, a back pole’s, a holding’s or a site’s on the map, an army’s banner), a pole or a torch; the cloth hung from the spear’s own tip ('+tip+')');
     // (the owner, 2026-11-07: "not too square and big enough to be distinctive": the army cards' banner in small, wider than tall,
     // the device in its field; a flag man's spear drawn longer, so his cloth flies over his head)
     const c=t.clothSprite(b,0),Q=t.BATTLE_BANNER,[cw,ch]=Q.cloth[b.k]||Q.cloth.banner;

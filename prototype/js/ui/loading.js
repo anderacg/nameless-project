@@ -46,7 +46,7 @@ const TIPS=['Hover anything on the map to see what it is and how strong it is ag
   'Companions wait in their own towns until you find them.','Sacking a holding fills your purse; taking one earns renown.'];
 // the overlay (made when first needed, over the whole screen)
 function loadingEl(){const L=LOADING;if(L.el)return L.el;const el=document.createElement('div');el.className='loading';el.hidden=true;
-  el.innerHTML='<div class="lwin" role="dialog" aria-live="polite"><div class="ltop"><canvas class="lflag" width="9" height="13"></canvas><h2></h2></div>'+
+  el.innerHTML='<div class="lwin" role="dialog" aria-live="polite"><div class="ltop"><canvas class="lflag" width="14" height="18"></canvas><h2></h2></div>'+
     '<div class="lbar"><i></i></div><p class="lstep"></p><p class="ltip"></p><div class="lmore"></div><div class="btns nav"></div></div>';
   el.addEventListener('click',e=>{const b=e.target.closest('[data-ld]');if(b)loadingAct(b.dataset.ld)});
   (document.getElementById('screen')||document.body).appendChild(el);return L.el=el}
@@ -80,8 +80,8 @@ function loadingTick(){const L=LOADING;if(!L.on)return;const now=performance.now
   if(L.view==='bar'&&now-L.tipAt>=L.tip){L.tipAt=now;L.tipI++;L.el.querySelector('.ltip').textContent=TIPS[L.tipI%TIPS.length]}
   loadingFrame()}
 // a frame while it is open (render.js frame() calls it in loading mode, and draws nothing else): the flag flutters
-function loadingFrame(){const L=LOADING;if(!L.on||!L.shownAt||typeof flagSprite!=='function')return;const c=L.el.querySelector('.lflag'),f=Math.floor(performance.now()/220)%3;if(c._f===f)return;
-  const s=flagSprite(FACS.player.col,f),g=c.getContext('2d');c._f=f;if(c.width!==s.width||c.height!==s.height){c.width=s.width;c.height=s.height}g.clearRect(0,0,c.width,c.height);g.drawImage(s,0,0)}
+function loadingFrame(){const L=LOADING;if(!L.on||!L.shownAt||typeof flagSprite!=='function')return;const c=L.el.querySelector('.lflag'),f=Math.floor(performance.now()/400)%2;if(c._f===f)return;
+  const s=flagSprite({k:'banner',col:FACS.player.col,dev:'crown'},f),g=c.getContext('2d');c._f=f;if(c.width!==s.width||c.height!==s.height){c.width=s.width;c.height=s.height}g.clearRect(0,0,c.width,c.height);g.drawImage(s,0,0)}
 // its buttons: Copy error; Keep waiting (the bar again, the stall clock from now); the way back (the run called off)
 function loadingAct(k){const L=LOADING;
   // (where the clipboard is shut, the error is selected to copy by hand)

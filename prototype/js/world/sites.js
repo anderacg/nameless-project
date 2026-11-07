@@ -99,9 +99,9 @@ class Site extends WorldObject{
   page(r){return{body:this.about(r)}}
   // its banner on its page (window.js PageScreen banner): it as it stands on the map, its trampled ground, shadow, sprite, fire and
   // flag (render.js drawWorld's way), faded while it lies empty
-  view(){const s=this,sp=siteSprite(s),X=s.x-sp.ax,Y=s.y+8-sp.ay,on=!s.cleared,fl=sp.fire&&on&&campFlame(),fg=sp.flag&&on&&flagSprite(s.flagCol(),0);
+  view(){const s=this,sp=siteSprite(s),X=s.x-sp.ax,Y=s.y+8-sp.ay,on=!s.cleared,fl=sp.fire&&on&&campFlame(),fg=sp.flag&&on&&flagSprite(s.flag(),0);
     return{key:'site:'+s.type+':'+s.seed+':'+(s.kind??'')+':'+(on?1:0),x:s.x,y:s.y+8,alt:s.name,ps:[sp.gr&&[sp.gr,X,Y],sp.sh&&[sp.sh,X,Y,SHADOW.a],[sp,X,Y,on?1:.5],
-      fl&&[fl.img,X+sp.fire[0]-fl.ax,Y+sp.fire[1]-fl.ay],fg&&[fg,X+sp.flag[0]-1,Y+sp.flag[1]-12]].filter(Boolean)}}
+      fl&&[fl.img,X+sp.fire[0]-fl.ax,Y+sp.fire[1]-fl.ay],fg&&[fg,X+sp.flag[0]-fg.ax,Y+sp.flag[1]-fg.ay]].filter(Boolean)}}
   panel(r){return ''}
   act(a,arg,done){if(a==='site-scout'&&this.scouts&&!this.cleared){this.scout(done);return true}return false}
   /* scouting (a cave, a camp or a hideout: scouts), once a visit: a Scouting check (scoutChance). Seen, they come for you (alarm).
@@ -127,7 +127,8 @@ class Site extends WorldObject{
   lairWon(){const x=siteChest(this);clearPlace(this,this.T.respawn);return x}
   lairLost(e){}
   // on the map: its banner's colour, a banner of its own (travellers), clicked where (its yard under it: structures.js siteSprite gr)
-  flagCol(){return '#2a1e14'}
+  // (its flag on the map (structures.js flagSprite): an outlaw's black rag, its skull)
+  flag(){return{k:'rag',col:'#2a1e14',dev:'skull'}}
   banner(){return null}
   pickable(){return this.known()}
   pick(at){if(this.pickable())this.box(at.box,at.camp)}
@@ -139,7 +140,7 @@ class Site extends WorldObject{
   // on the minimap in its kind's colour (grey, cleared)
   inView(V){return this.known()}
   draw(ents,cam,V){if(!this.inView(V))return;const s=this;
-    const sp0=siteSprite(s);ents.push({st:true,y:s.y,sh:sp0.sh?[sp0.sh,Math.round(s.x-cam.x)-sp0.ax,Math.round(s.y-cam.y)+8-sp0.ay]:null,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),sp=siteSprite(s);if(sp.gr)ctx.drawImage(sp.gr,sx-sp.ax,sy+8-sp.ay);if(s.cleared)ctx.globalAlpha=.5;ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(!s.cleared)depthPic(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flagCol(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;
+    const sp0=siteSprite(s);ents.push({st:true,y:s.y,sh:sp0.sh?[sp0.sh,Math.round(s.x-cam.x)-sp0.ax,Math.round(s.y-cam.y)+8-sp0.ay]:null,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),sp=siteSprite(s);if(sp.gr)ctx.drawImage(sp.gr,sx-sp.ax,sy+8-sp.ay);if(s.cleared)ctx.globalAlpha=.5;ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(!s.cleared)depthPic(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;
       if(s.fromYou()<70)txt(s.name,sx,sy+12,s.cleared?'#9a958a':'#e4e0cf','center')}})}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
   tip(){return '<b>'+this.name+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?' · empty for now':'')+'</small><span class="act">Click: go there</span>'}
@@ -530,7 +531,8 @@ class TravellersCamp extends Site{
   get empties(){return false}
   day(){super.day();if(G.day>=this.until&&G.site!==this){const p=siteSpot('travelers',W.sites.filter(o=>o!==this),9);if(p){this.tx=p[0];this.ty=p[1];this.placed()}
     this.kind=rint(0,TRAVELERS.length-1);this.seed=rint(1,99999);this.seen=false;this.stockUp();if(G.lastSite===this)G.lastSite=null}}
-  flagCol(){return this.TR.col}
+  // (its flag: a travelling band's pennant in its colour, its people's device (figures.js SHIELD_ART))
+  flag(){return{k:'pennant',col:this.TR.col,dev:SHIELD_ART.dev[this.TR.race]||null}}
   banner(){return this.TR.col}
   box(box,camp){camp(this,siteSprite(this))}
   about(r){return '<p>'+this.TR.d+'</p><p class="muted">They break camp in '+Math.max(1,this.until-G.day)+' days.</p>'}

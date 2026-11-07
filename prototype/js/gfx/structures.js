@@ -39,10 +39,17 @@ function lotsAhead(V){const t0=performance.now();for(const t of TOWNS.filter(q=>
 function charred(src,seed){return mkc(src.width,src.height,g=>{g.drawImage(src,0,0);const d=g.getImageData(0,0,src.width,src.height),a=d.data;
   for(let i=0;i<a.length;i+=4){if(a[i+3]<255)continue;const k=(i>>2),h=hash(k%src.width,k/src.width|0,seed);const f=h<.08?.25:.45;a[i]=a[i]*f+30*(1-f)|0;a[i+1]=a[i+1]*f+24*(1-f)|0;a[i+2]=a[i+2]*f+20*(1-f)|0;if(h>.995){a[i]=232;a[i+1]=106;a[i+2]=42}}
   g.putImageData(d,0,0)})}
-// a flag waving on its pole (its own sprite: three frames), in its colour; drawn with the pole's foot at the point given
-function flagSprite(col,f){const k='fl'+col+f;if(spr[k])return spr[k];return spr[k]=outlined(mkc(7,11,g=>{rect(g,'#4a3020',0,1,1,10);rect(g,'#c8a040',0,0,1,1);
-  const wave=[[0,0,0,0,0],[0,0,1,1,0],[0,1,1,0,0]][f];for(let i=0;i<5;i++){rect(g,col,1+i,1+wave[i],1,3);rect(g,shade(col,1.25),1+i,1+wave[i],1,1);rect(g,shade(col,.7),1+i,3+wave[i],1,1)}}),'#1a1512')}
-const drawFlag=(col,x,y,seed)=>{const f=Math.floor(performance.now()/220+(seed||0))%3,s=flagSprite(col,f);ctx.drawImage(s,Math.round(x)-1,Math.round(y)-12)};
+/* a flag on its pole (the owner, 2026-11-07: "align flags in all places"): over a holding, a camp, a site and on the loading
+   screen, the same banner its men fly in battle (marchgear.js BATTLE_BANNER, sprites.js bannerCloth: its shape, folds, fly and
+   device) flying to the right from a pole FLAG_POLE px tall, a gilt knob atop; outlined inside as every figure is; b a banner
+   ({k, col, dev}), f its wave (0, 1); ax, ay: the pole's foot. drawFlag: it waving, its foot at (x, y) */
+const FLAG_POLE=15;
+function flagSprite(b,f){const k='fl'+b.k+b.col+b.dev+f;if(spr[k])return spr[k];const Q=BATTLE_BANNER,[cw]=Q.cloth[b.k]||Q.cloth.banner,h=FLAG_POLE,g=pgrid(cw+4,h+3),W=PPAL.wood;
+  for(let y=2;y<=h+1;y++)pset(g,1,y,W[y>h-2?2:1]);pset(g,1,1,PPAL.gold[1]);pset(g,1,0,PPAL.gold[0]);bannerCloth((x,y,c)=>pset(g,x,y,c),2,3,b,f,Q.cloth,1,Q);
+  g.edge=true;poutline(g);const c=pcanvas(g);c.ax=1;c.ay=h+1;return spr[k]=c}
+const drawFlag=(b,x,y,seed)=>{const s=flagSprite(b,Math.floor(performance.now()/400+(seed||0))%2);ctx.drawImage(s,Math.round(x)-s.ax,Math.round(y)-s.ay)};
+// (a holding's flag: its realm's banner and device, yours with the crown, none held a grey one)
+const holdingFlag=(t,col)=>({k:'banner',col,dev:t.owner==='player'?'crown':t.owner||null});
 // a camp's fire, its foot at (x, y): as it burns (fire.js fireCamp); FLAMES off, its flame through the engine's four frames
 const drawFire=(x,y,seed)=>{if(FLAMES.on){fireCamp(x,y,seed);return}const f=Math.floor(performance.now()/110+(seed||0))%4,s=spr['flm'+f]||(spr['flm'+f]=PX.flame(f));ctx.drawImage(s.img,Math.round(x)-s.ax,Math.round(y)-s.ay)};
 // the lots of every holding near the view: their fields flat on the ground, under everyone (their yards are painted in: townGround)
@@ -62,11 +69,11 @@ function holdingEnts(t,ents,cam,V){
       const live=inSight((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE),sm=live?l.st!=='building'&&lotSprite(t,l):(seenTile(l.x,l.y)||seenTile(l.x+l.n-1,l.y+l.n-1))&&(l._mem||lotSprite(t,l));
       ents.push({y:(l.y+l.n)*TILE-1,sh:sm&&sm.sh?[sm.sh,X,Y-N]:null,f:()=>{
         // outside your sight: the building as you last saw it (fog.js), or nothing if you never saw its ground
-        if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);ctx.drawImage(m,X,Y-N);depthPic(m,X,Y-N);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(col,X+m.flag[0],Y-N+m.flag[1],t.seed);txt(t.name,Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),'#a8a496','center')}return}
+        if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);ctx.drawImage(m,X,Y-N);depthPic(m,X,Y-N);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(holdingFlag(t,col),X+m.flag[0],Y-N+m.flag[1],t.seed);txt(t.name,Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),'#a8a496','center')}return}
         const s=lotSprite(t,l),w=t.work&&(t.work.lot?t.work.lot===l.id:t.work.k===l.k||t.work.k==='wall'&&l.k==='centre'),p=w?workProg(t):0;l._mem=s;l._memSt=l.st;
         if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed,t.races?.[0]);else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed,t.races?.[0])}
         if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
-        if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(col,X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N)}
+        if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(holdingFlag(t,col),X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N)}
         if(ESTATES[l.k]){const m=lotMid(l);if(Math.hypot(m.x-P.x,m.y-P.y)<60)txt(ESTATES[l.k].n,Math.round(m.x-cam.x),Y+8,'#c8c2ae','center')}}});
       if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)});
       if(l.k==='pasture'&&l.st==='built'&&live)penEnts(t,ents,cam)}// (its herd, inside its fence: critters.js)

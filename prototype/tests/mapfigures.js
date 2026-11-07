@@ -46,8 +46,10 @@ try{
   ok(beasts.every(q=>!(q.banner&&q.banner())&&!t.bannerAt(q,0)),'a beast, the dragon, a herd and refugees fly none');
   const sp=[];for(const [q] of want)for(const f of [0,1])sp.push([q.mapKind,look(t.bannerSprite(q.banner(),f)),t.bannerSprite(q.banner(),f)]);
   // (the owner, 2026-10-31: more detailed, its folds shaded, a finial, its device clear: a 32 cell, at most BANNER's grid)
-  const bb=sp.filter(([n,q,s])=>s.width!==32||q.h>t.BANNER.h||q.w>t.BANNER.w||q.inner||q.open);info('banners: '+sp.filter((x,i)=>!(i%2)).map(([n,q])=>n+' '+q.w+'x'+q.h).join(', '));
-  ok(!bb.length&&t.bannerSprite(L.banner(),0)!==t.bannerSprite(L.banner(),1),'each banner in a 32 cell, at most '+t.BANNER.w+' x '+t.BANNER.h+', outlined round the silhouette only, fluttering in two frames'+(bb.length?': '+bb.slice(0,3).map(([n,q])=>n+' '+q.w+'x'+q.h+' '+q.inner+'/'+q.open).join(', '):''));
+  // (2026-11-07, the owner: "align flags in all places": outlined inside as every figure is, no ring of the outline's colour)
+  const navyIn=s=>{const d=s.getContext('2d',{willReadFrequently:true}).getImageData(0,0,s.width,s.height).data;let n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]&&d[i]===OUT[0]&&d[i+1]===OUT[1]&&d[i+2]===OUT[2])n++;return n};
+  const bb=sp.filter(([n,q,s])=>s.width!==32||q.h>t.BANNER.h||q.w>t.BANNER.w||navyIn(s));info('banners: '+sp.filter((x,i)=>!(i%2)).map(([n,q])=>n+' '+q.w+'x'+q.h).join(', '));
+  ok(!bb.length&&t.bannerSprite(L.banner(),0)!==t.bannerSprite(L.banner(),1),'each banner in a 32 cell, at most '+t.BANNER.w+' x '+t.BANNER.h+', outlined inside (no ring), fluttering in two frames'+(bb.length?': '+bb.slice(0,3).map(([n,q,s])=>n+' '+q.w+'x'+q.h+' '+navyIn(s)).join(', '):''));
   // (drawn: none over any party now, the owner, 2026-11-01: "remove a floating banner, show the banner detail only when you
   // inspect them along with the detail window")
   t.bandits.length=0;W.lords.forEach(l=>{l.x=-9999;l.y=-9999});W.monsters=[];W.critters=[];W.caravans=[];W.refugees=[];W.folk=[];W.patrols=[];G.mode='world';G.modal=false;t.hidePanel();G.clock=t.DAY*.3;

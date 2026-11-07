@@ -508,7 +508,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-07, on purpose: the owner, "not bending like a soft object": a doll's head and body never moved against each
 //  other (no dip, lean or glance), only its limbs, a weapon's angle the same the whole walk (dollfigs.js DOLL_MOVES, doll.js
 //  POSES.walk, weapons.js DOLL_DROP): the marchers in its picture. Proof: 55f13f5 gives it again. Was W6 55f6206b)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'de3dcb10',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
+// (W6 again 2026-11-07, on purpose: the owner, "align flags use in all place. Camps, building": a holding's, a site's and a
+//  siege camp's flag the battle's banner on a pole, an army's map banner outlined inside (structures.js flagSprite, sprites.js
+//  bannerSprite): the towns' flags in its picture. Proof: 96b6711 gives it again. Was W6 de3dcb10)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'313ddf12',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

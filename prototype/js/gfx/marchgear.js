@@ -10,13 +10,12 @@
    the men without a flag first. Each picture drawn once and kept (MARCH_FLAGS); a man off the screen shows none. march.js
    drawMarcher draws them: marchGear, then back before his body and front after it ---------- */
 /* MARCH_GEAR, the one table. flags, torches: each on or off; flag, torch: the share of a group's men who carry one; pole: a
-   flag's spear by the weapon it stands for, [the weapon it is drawn as, its length]; cloth: a flag's [width, height] by the
-   banner's shape (k; at the map's half scale, outlined, 5 × 4 still shows two by two of its colour); hang: px from a spear's tip
-   to the cloth; back: the back flag's pole, h px tall, its foot up px below the shoulders; brand: the torch held [angle (degrees: 0 forward, -90 up), haft px]; light: its light's reach (px); fade: the
+   flag's spear by the weapon it stands for, [the weapon it is drawn as, its length] (the flags themselves the battle's:
+   BATTLE_BANNER); brand: the torch held [angle (degrees: 0 forward, -90 up), haft px]; light: its light's reach (px); fade: the
    darkness by which a torch is fully lit (it fades in as night falls, out before dawn); flutter: a flag's waves a second as he
    walks; cull: px past the screen's edge a man still shows his */
 const MARCH_GEAR={flags:true,torches:true,flag:.2,torch:.2,pole:{spear:['spear',15],pike:['pike',18],javelin:['javelin',14],lance:['spear',18]},
-  cloth:{banner:[5,4],rag:[5,4],pennant:[6,4],trade:[5,3]},hang:1,back:{h:14,up:3},brand:[-104,5],light:14,fade:.25,flutter:3,cull:40};
+  brand:[-104,5],light:14,fade:.25,flutter:3,cull:40};
 // (a marcher id's hash: his rank in his group)
 const marchHash=id=>{let h=Math.imul((id|0)^0x5bd1e995,0x9e3779b1);h^=h>>>15;h=Math.imul(h,0x85ebca6b);return(h^h>>>13)>>>0};
 // (of a group's n men, the share s: rounded, one at least)
@@ -44,28 +43,13 @@ function marchRoles(A){const G=MARCH_GEAR;let R=MARCH_ROLES.get(A.units);if(R&&R
    on his spear (by its angle's step, the army's banner, his skin, its wave), a back flag (by banner and wave) and a torch (by his
    skin and its flame's flicker) */
 const MARCH_FLAGS=new Map();
-// (a flag's cloth into g, hung from (x0, y0) and trailing back, to the left (he faces right): the banner's field (PX.ramp, as
-// bannerSprite), lit along its top, its foot and fly a shade darker; by its shape (a banner and a rag square, a rag's foot torn, a
-// pennant and a caravan's tapering to the fly); a banner's device a short bar in its middle, light on a dark field, dark on a
-// light one; f: waving, its fly a pixel up)
-function flagCloth(g,x0,y0,b,f){const [cw,ch]=MARCH_GEAR.cloth[b.k]||MARCH_GEAR.cloth.banner,R=PX.ramp(b.col),taper=b.k==='pennant'||b.k==='trade';
-  for(let i=0;i<cw;i++){const n=taper?ch-Math.round(i*(ch-1)/(cw-1)):b.k==='rag'?ch-[0,1,0,2][i%4]:ch,w=f&&i===cw-1?-1:0;
-    for(let r=0;r<n;r++)pset(g,x0-i,y0+r+w,R[r===0?0:r===n-1||i===cw-1?2:1])}
-  if(b.k!=='banner'||ch<4)return;const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?'#4a2226':'#f6eedc',x=x0-(cw>>1);
-  pset(g,x,y0+1,D);pset(g,x,y0+2,D)}
-// (the angle step of a spear's rest on the map (people.js WPN_REST, as figures.js HandWeapon holds it))
-const restStep=k=>((Math.round((WPN_REST[k]??-90)/360*WEAPON_STEPS))%WEAPON_STEPS+WEAPON_STEPS)%WEAPON_STEPS;
-// a spearman's flag: his spear MARCH_GEAR.pole long (weapons.js drawBlade), its cloth hung hang px under its head; round his hand
-// at the middle (R), as a weapon's
-function poleFlagSprite(k,b,skin,f){const [kind,len]=MARCH_GEAR.pole[k],i=restStep(k),key='fp'+kind+len+i+b.k+b.col+b.dev+skin+f;let c=MARCH_FLAGS.get(key);if(c)return c;
-  const R=len+4,g=pgrid(2*R+1,2*R+1),a=i/WEAPON_STEPS*2*Math.PI,h=len-1-MARCH_GEAR.hang;
-  flagCloth(g,Math.round(R+Math.cos(a)*h)-1,Math.round(R+Math.sin(a)*h),b,f);drawBlade((x,y,c)=>pset(g,x,y,c),R,R,i/WEAPON_STEPS*360,kind,PX.ramp(b.col),skin,len);
-  g.edge=true;poutline(g);c=pcanvas(g);c.R=R;MARCH_FLAGS.set(key,c);return c}
-// a flag at his back: its pole up from below his shoulders, a gilt knob atop, its cloth hung under it; ax, ay: the shoulders' point
-function backFlagSprite(b,f){const key='fb'+b.k+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;
-  const {h,up}=MARCH_GEAR.back,[cw]=MARCH_GEAR.cloth[b.k]||MARCH_GEAR.cloth.banner,g=pgrid(cw+3,h+3),x=cw+1,W=PPAL.wood;
-  for(let y=2;y<=h+1;y++)pset(g,x,y,W[y>h-2?2:1]);pset(g,x,1,PPAL.gold[1]);flagCloth(g,x-1,2,b,f);
-  g.edge=true;poutline(g);c=pcanvas(g);c.ax=x;c.ay=h+1-up;MARCH_FLAGS.set(key,c);return c}
+// a spearman's flag (the owner, 2026-11-07: "align flags in all places"): the battle's (BATTLE_BANNER): his spear held as at the
+// march (a doll's HOLD_DOLL.pole.march, else WPN_REST), BATTLE_BANNER.pole longer, its cloth (clothSprite) hung just under its
+// head (poleTip); round his hand at the middle (R), as a weapon's: on the map (MarchKit) and in the army screen's previews alike
+function poleFlagSprite(k,b,skin,f){const [kind]=MARCH_GEAR.pole[k]||['spear'],doll=DOLL_FIGS.on,deg=doll?HOLD_DOLL.pole.march:WPN_REST[kind]??-90,i=((Math.round(deg/360*WEAPON_STEPS))%WEAPON_STEPS+WEAPON_STEPS)%WEAPON_STEPS,
+    key='fp'+kind+i+(doll?1:0)+b.k+b.col+b.dev+skin+f;let c=MARCH_FLAGS.get(key);if(c)return c;
+  const w=weaponSprite(kind,'blue',skin,i,WPN[kind][0]+BATTLE_BANNER.pole,doll),[tx,ty]=poleTip(w),l=Math.hypot(tx,ty)||1,q=Math.max(0,l-2)/l,cl=clothSprite(b,f),R=w.R+cl.width+cl.height;
+  c=mkc(2*R+1,2*R+1,g=>{g.drawImage(w,R-w.R,R-w.R);g.drawImage(cl,Math.round(R+tx*q)-cl.ax,Math.round(R+ty*q)-cl.ay)});c.R=R;MARCH_FLAGS.set(key,c);return c}
 // a torch in his free hand: a short haft at MARCH_GEAR.brand's angle (a pixel line, its corners filled, as weapons.js drawBlade's),
 // its pitch-wrapped head, the flame over it: as it burns (fire.js: frame f of FLAMES.frames, unoutlined, its tips trailing lean px
 // as he walks), FLAMES off the old two frames (f 0, 1) swaying; round the hand at the middle (R); fx, fy: the flame's foot from the
@@ -93,9 +77,7 @@ class MarchKit{
   // head (clothSprite, poleTip))
   back(s,bx,by){if(!this.flag||this.bare||!s.back)return;const c=battleBackFlag(this.flag,this.wave());ctx.drawImage(c,bx+s.back[0]-c.ax,by+s.back[1]-c.ay)}
   front(s,bx,by){
-    if(this.bare&&s.hand){const [kind]=MARCH_GEAR.pole[this.r.pole]||['spear'],doll=DOLL_FIGS.on,deg=doll?HOLD_DOLL.pole.march:WPN_REST[kind]??-90,i=((Math.round(deg/360*WEAPON_STEPS))%WEAPON_STEPS+WEAPON_STEPS)%WEAPON_STEPS,
-        w=weaponSprite(kind,'blue',this.r.kit.skin,i,WPN[kind][0]+BATTLE_BANNER.pole,doll),[tx,ty]=poleTip(w),l=Math.hypot(tx,ty)||1,k=Math.max(0,l-2)/l,c=clothSprite(this.flag,this.wave()),hx=bx+s.hand[0],hy=by+s.hand[1];
-      ctx.drawImage(w,hx-w.R,hy-w.R);ctx.drawImage(c,Math.round(hx+tx*k)-c.ax,Math.round(hy+ty*k)-c.ay)}
+    if(this.bare&&s.hand){const c=poleFlagSprite(this.r.pole,this.flag,this.r.kit.skin,this.wave());ctx.drawImage(c,bx+s.hand[0]-c.R,by+s.hand[1]-c.R)}
     // (its torch: as it burns, its frame by the clock and his id (fire.js fireFrameAt), its flame trailing back as he walks; its
     // light at the flame's foot, with its pool on the ground at his feet (g))
     if(this.torch>0&&s.free){const on=FLAMES.on,c=on?torchSprite(this.r.kit.skin,fireFrameAt(fireTime(),this.u.id),this.u.walking?-FLAMES.lean:0):torchSprite(this.r.kit.skin,Math.floor(performance.now()/120+this.u.id)%2),a=ctx.globalAlpha,hx=bx+s.free[0],hy=by+s.free[1];

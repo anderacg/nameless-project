@@ -155,6 +155,7 @@ button,.btn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none
 .chip small{font-size:var(--fs-xs);font-weight:400;color:var(--muted)}
 .chip.warn{border-color:var(--danger)}.chip.warn>span{color:var(--danger);animation:blink 1s steps(2) infinite}
 .gico{display:inline-block;vertical-align:middle;image-rendering:pixelated;flex:none}
+.gflag{object-fit:contain}
 .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px 14px;min-width:0}
 .stat{display:flex;flex-direction:column;min-width:0}
 .stat.wide{grid-column:span 2}
@@ -192,7 +193,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   background:linear-gradient(180deg,#2c2320,var(--panel) 120px);border:1px solid var(--line-2);border-top:2px solid var(--trim);border-radius:var(--r-lg);box-shadow:var(--deep)}
 .loading .ltop{display:flex;align-items:center;gap:12px}
 .loading h2{margin:0;font-size:var(--fs-xl);line-height:1.15;color:var(--accent)}
-.loading .lflag{width:27px;height:39px;flex:none;image-rendering:pixelated}
+.loading .lflag{width:28px;height:36px;flex:none;image-rendering:pixelated}
 .loading .lbar{height:16px;padding:2px;border:2px solid var(--line-2);background:var(--shade)}
 .loading .lbar i{display:block;width:0;height:100%;background:var(--accent);box-shadow:inset 0 -4px 0 #b8892a}
 .loading p{margin:0}
