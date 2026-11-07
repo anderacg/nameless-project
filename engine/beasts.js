@@ -463,9 +463,16 @@
   // (drawn with room round it (PAD), outlined, then cut to the kind's canvas: K.W x K.H, its x shifted by K.dx; PX._beastFit says
   // how much room each kind's poses take)
   const PAD=16;
+  // (no pinholes: a gap of up to 3 px shut in by the figure, left where a head or a leg moved a pixel, takes the colour above it
+  // or beside it)
+  function fillHoles(g){const seen=new Uint8Array(g.w*g.h),q=[];for(let i=0;i<g.w*g.h;i++){if(seen[i]||g.p[i])continue;const R0=[];let open=false;q.push(i);seen[i]=1;
+      while(q.length){const j=q.pop(),x=j%g.w,y=(j/g.w)|0;R0.push(j);if(x===0||y===0||x===g.w-1||y===g.h-1)open=true;
+        for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=g.w||Y>=g.h)continue;const k=Y*g.w+X;if(!seen[k]&&!g.p[k]){seen[k]=1;q.push(k)}}}
+      if(!open&&R0.length<=3)for(const j of R0){const x=j%g.w,y=(j/g.w)|0;g.p[j]=at(g,x,y-1)||at(g,x-1,y)||at(g,x+1,y)||at(g,x,y+1)}}}
   function raw(K,o,fly){const pose=o.pose||0,[a,i]=act(pose),g=grid(K.W+2*PAD,K.H+PAD),v=(o.v||0)>>>0;
     const F=a==='dead'?{a,i,dead:true,how:(K.deaths||QUAD_DEATHS)[i]}:(K.gait||gait)(a==='alt'&&!K.alt?'atk':a,i);if(a==='alt'&&K.alt)F.a='alt';
     OX=PAD+(K.dx||0);try{K.draw(g,F,{v,team:o.team,fly,kind:K.kind})}finally{OX=0}
+    fillHoles(g);
     // (nothing below the ground: the bottom row is the outline's; with PX.BEAST_EDGE (no outline: its own edge a shade darker, the
     //  paper dolls' style) the figure a row down, its feet on the bottom row)
     g.p.fill(null,(g.h-1)*g.w);outline(g,PX.BEAST_EDGE);if(PX.BEAST_EDGE){g.p.copyWithin(g.w,0,(g.h-1)*g.w);g.p.fill(null,0,g.w)}return g}

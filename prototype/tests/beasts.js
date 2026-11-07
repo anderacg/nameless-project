@@ -10,6 +10,11 @@ try{
  const kinds=Object.keys(t.ST).filter(k=>t.ST[k].beast),poses=[...t.BEAST_POSES,PX.BEAST_DEAD];
  const data=c=>c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;
  const OUT=[0x1a,0x1c,0x26],isOut=(d,i)=>d[i+3]&&d[i]===OUT[0]&&d[i+1]===OUT[1]&&d[i+2]===OUT[2];
+ // ---- no pinholes (the owner, 2026-11-07: "fix any weird transparent pixel"): no clear pixel shut in on four sides, in any beast
+ // or monster, or any soldier, rider or mount (engine/beasts.js fillHoles, people.js pfillHoles)
+ {const hole=c=>{const w=c.width,h=c.height,d=data(c),on=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&d[(y*w+x)*4+3]>0;for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(!on(x,y)&&on(x-1,y)&&on(x+1,y)&&on(x,y-1)&&on(x,y+1))return x+','+y;return null},bad=[];
+  for(const k of Object.keys(t.ST))for(const p of [0,2,3,6,7,15,16])for(const tm of [0,1]){const c=t.unitSprite(k,tm,false,0,p),h=hole(c);if(h)bad.push(k+' '+p+' '+h)}
+  ok(!bad.length,'no pinholes: no clear pixel shut in by a figure, in any unit’s poses'+(bad.length?' ('+bad.length+': '+bad.slice(0,5).join('; ')+')':''))}
  // ---- every kind: the new figure, from the engine
  ok(kinds.length>=11&&kinds.every(k=>PX.BEAST_KINDS.includes(k)),kinds.length+' beasts and monsters, each a kind of the engine’s ('+kinds.join(', ')+')');
  ok(kinds.every(k=>t.unitSprite(k,1,false,0,0)===t.beastSprite(k,1,0,0)&&t.unitSprite(k,1,false,0,0).ch>0),'each fighter’s sprite is its new figure (unitSprite → beastSprite → PX.beast)');

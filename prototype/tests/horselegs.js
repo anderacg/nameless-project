@@ -76,7 +76,9 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // (both re-recorded 2026-11-07, on purpose: the owner, "fix wolf mount and dwarf mount": the wolf, the warg and the ram drawn by
  // hand (engine/beasts.js PX.mountArt), whatever the horse. Proof: PX.mountArt returning null gives both again. Were 7a98ba5d,
  // 6018605c)
- const OLD='3ee76635',FIRST='17984ae4';
+ // (and again 2026-11-07: the owner, "fix any weird transparent pixel": a pinhole of up to 3 px shut in by the figure filled
+ // (people.js pfillHoles). Proof: pfillHoles doing nothing gives both again. Were 3ee76635, 17984ae4)
+ const OLD='51d8201e',FIRST='854406d';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

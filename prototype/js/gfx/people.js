@@ -106,8 +106,14 @@ const pget=(g,x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h?g.p[y*g.w+x]:null;
 // (a paper doll's body (g.body: its pixels, dollfigs.js) wears no outline: only what is not the body is outlined. With the dolls'
 // edge (DOLL_FIGS.edge, the owner's reference: no outline anywhere), the rest wears none either: its own pixels at its silhouette's
 // edge a shade darker (DOLL_FIGS.edgeK), the body's untouched: a figure with a doll's body (g.body), or a mount drawn alone (g.edge))
+// (no pinholes (the owner, 2026-11-07: "fix any weird transparent pixel"): a gap of up to 3 px shut in by the figure, left where
+// two parts meet, takes the colour above it or beside it)
+function pfillHoles(g){const w=g.w,h=g.h,seen=new Uint8Array(w*h),q=[];for(let i=0;i<w*h;i++){if(seen[i]||g.p[i])continue;const R=[];let open=false;q.push(i);seen[i]=1;
+    while(q.length){const j=q.pop(),x=j%w,y=(j/w)|0;R.push(j);if(x===0||y===0||x===w-1||y===h-1)open=true;
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=w||Y>=h)continue;const k=Y*w+X;if(!seen[k]&&!g.p[k]){seen[k]=1;q.push(k)}}}
+    if(!open&&R.length<=3)for(const j of R){const x=j%w,y=(j/w)|0;g.p[j]=pget(g,x,y-1)||pget(g,x-1,y)||pget(g,x+1,y)||pget(g,x,y+1)}}}
 function poutline(g){const B=g.body,on=(x,y)=>!!pget(g,x,y)&&!(B&&B.has(y*g.w+x));
-  if(DOLL_FIGS.on&&DOLL_FIGS.edge&&(B||g.edge)){const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(!on(x,y))continue;if(!pget(g,x-1,y)||!pget(g,x+1,y)||!pget(g,x,y-1)||!pget(g,x,y+1))e.push([x,y])}
+  if(DOLL_FIGS.on&&DOLL_FIGS.edge&&(B||g.edge)){pfillHoles(g);const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(!on(x,y))continue;if(!pget(g,x-1,y)||!pget(g,x+1,y)||!pget(g,x,y-1)||!pget(g,x,y+1))e.push([x,y])}
     for(const [x,y] of e){const c=pget(g,x,y);if(c&&c[0]==='#'&&c.length===7)pset(g,x,y,PX.shade(c,DOLL_FIGS.edgeK))}return}
   const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!pget(g,x,y)&&(on(x-1,y)||on(x+1,y)||on(x,y-1)||on(x,y+1)))o.push([x,y]);for(const [x,y] of o)pset(g,x,y,PEOPLE_OUT)}
 // (the grid turned a quarter clockwise, pixel for pixel: what stood up now lies, head to the right)
