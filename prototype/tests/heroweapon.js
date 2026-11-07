@@ -9,7 +9,7 @@ window.ARENA=true;// (the battle screen's own field: tests/harness.js)
 // none (tests/visual/heroweapon.js draws the sheet)
 Kit.suite(({ok,info})=>{
  const t=T,P=t.P,G=t.G,keep={};const stub=(n,f)=>{if(!(n in keep))keep[n]=window[n];window[n]=f};
- const gearOf=t.FigureRig.gearOf,held=window.heldNow,FX=t.STATE_FX.on;
+ const gearOf=t.FigureRig.gearOf,held=window.heldNow,bowP=window.bowPic,FX=t.STATE_FX.on;
  try{
   window.requestAnimationFrame=()=>0;Kit.begin('soldier',3);
   G.mode='world';G.modal=false;t.hidePanel();P.troops={hum_foot:4};G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia','militia']};t.startBattle({enemies:G.enc.list,tournament:false});
@@ -22,7 +22,7 @@ Kit.suite(({ok,info})=>{
   // (his weapon's pixels as seen: draw(c) with it and without it)
   const seen=draw=>{const pic=w=>{off=!w;clear();const c=document.createElement('canvas');c.width=W;c.height=H;draw(c);return c};const no=pic(false),yes=pic(true);off=false;return diff(yes,no)};
   // (drawUnit for u in pose p facing f; dq: knocked down, how far)
-  const unit=(u,p,f,dq)=>c=>{const k=setCtx(c.getContext('2d'));stub('procPose',()=>p);stub('physDownPose',()=>dq??null);stub('heldNow',off?()=>null:held);
+  const unit=(u,p,f,dq)=>c=>{const k=setCtx(c.getContext('2d'));stub('procPose',()=>p);stub('physDownPose',()=>dq??null);stub('heldNow',off?()=>null:held);stub('bowPic',off?()=>{const e=document.createElement('canvas');e.width=e.height=1;e.R=0;return e}:bowP);// (a bowman's bow drawn apart, aimed: figures.js bowPic)
     try{Object.assign(u,{x:W/2,y:H-6,plx:W/2,ply:H-6,face:f,hitAt:null,stun:0,spdNow:p>=15?u.s.spd*.9:p>=2&&p<=5?u.s.spd*.5:0,movF:0,z:0,wIdx:null,tgt:null,
       atkAt:p>=6&&p<=14?B.t-t.ATK_ANIM*((p-6)%3+.5)/3:null,atkStyle:p>=12?'overhead':p>=9?'thrust':'swing'});t.drawUnit(u)}finally{setCtx(k)}};
   const sprite=mk=>c=>{const s=mk(),k=t.WORLD_BATTLE.sprite/t.WORLD_BATTLE.scale*2,g=c.getContext('2d');g.save();g.translate(W/2,H-4);g.scale(k,k);g.drawImage(s,-(s.width>>1),-s.height+2);g.restore()};

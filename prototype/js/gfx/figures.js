@@ -57,6 +57,7 @@ class HandWeapon extends FigureGear{
 class ShooterGear extends FigureGear{
   constructor(k){super('shooter','hand');this.k=k}
   draw(set,o,p){const k=this.k,atk=p.atk,draw=p.style==='thrust'&&atk>=0,reload=p.style==='overhead'&&atk>=0,skin=pal(o.skin)[1],W=PPAL.wood,M=PPAL.steel;
+    if((k==='bow'||k==='longbow')&&o.bowApart){set(0,-1,skin);return}// (drawn apart, to aim up and down: bowPic)
     if(k==='bow'||k==='longbow'){const L=k==='longbow'?5:4,pull=draw?[1,2,2][atk]:reload?0:atk===0?2:0;for(let y=-L;y<=L;y++)set(1-(Math.abs(y)>=L-1?1:0),y-1,W[1]);
       for(let y=-L+1;y<=L-1;y++)set(-(Math.abs(y)<2?pull:0),y-1,PPAL.white[1]);if(pull)for(let i=0;i<5;i++)set(-pull+i,-1,i===4?M[0]:W[2]);if(draw&&atk===2)set(5-pull,-1,'#ffffff');
       if(reload){const hd=[[-2,-3],[-3,-5],[-1,-1]][atk];set(hd[0],hd[1],skin);if(atk===2)for(let i=0;i<3;i++)set(i-1,-1,W[2])}
@@ -67,6 +68,25 @@ class ShooterGear extends FigureGear{
     if(k==='staff'){const lift=reload?0:draw?-1:atk===1?-2:atk===0?-1:0,gem=o.race==='dwarf'?PPAL.gold:o.race==='orc'?PPAL.forest:o.race==='elf'?PPAL.teal:PPAL.violet;
       for(let y=lift-8;y<=4;y++)set(0,y,W[1]);set(0,lift-9,gem[1]);set(0,lift-10,gem[0]);set(1,lift-9,gem[2]);if(atk===1){set(-1,lift-10,gem[0]);set(1,lift-11,'#ffffff')}set(0,0,skin)}}
 }
+/* a bow as its own picture (the owner, 2026-11-07: "make bows aim up and down too"): the same bow, string, arrow and hand as the
+   figure's (ShooterGear), its pixels turned about his hand to the shot's angle (BOW_AIM.steps degrees up, nearest), so he raises
+   it for a long shot or one up to higher ground and keeps it level for a near one or one down from above; drawn in battle over
+   his body (render.js drawUnit; the body drawn bowApart). style, atk: the frame's, as ShooterGear's; R: the hand at its middle */
+const BOW_AIM={on:true,steps:[0,15,30,45],k:2},BOW_PICS=new Map();
+// (level: the figure's own pixels exactly; tilted: its limb, string and arrow as lines turned about his hand and drawn whole, each
+// step edge to edge, so nothing breaks into dots)
+function bowPic(k,style,atk,deg,skin){const key=[k,style,atk,deg,skin].join('|');let c=BOW_PICS.get(key);if(c)return c;
+  const R=9,G=pgrid(2*R+1,2*R+1),W=PPAL.wood;
+  if(!deg){const g=new ShooterGear(k),S=pal('skin')[1];g.draw((x,y,col)=>pset(G,R+x,R+y,col===S?skin:col),{skin:'skin'},{style,atk})}
+  else{const a=deg*Math.PI/180,rot=([x,y])=>[R+Math.round(x*Math.cos(a)+y*Math.sin(a)),R+Math.round(-x*Math.sin(a)+y*Math.cos(a))];
+    const line=(p,q,col)=>{let [x0,y0]=rot(p);const [x1,y1]=rot(q);pset(G,x0,y0,col);while(x0!==x1||y0!==y1){const dx=x1-x0,dy=y1-y0;if(Math.abs(dx)>=Math.abs(dy))x0+=Math.sign(dx);else y0+=Math.sign(dy);pset(G,x0,y0,col)}};
+    const L=k==='longbow'?5:4,draw=style==='thrust'&&atk>=0,pull=draw?[1,2,2][atk]:style==='swing'&&atk===0?2:0;
+    line([0,-L-1],[1,-L+1],W[1]);line([1,-L+1],[1,L-3],W[1]);line([1,L-3],[0,L-1],W[1]);
+    line([0,-L],[-pull,-1],PPAL.white[1]);line([-pull,-1],[0,L-2],PPAL.white[1]);
+    if(pull){line([-pull,-1],[3-pull,-1],W[2]);line([4-pull,-1],[4-pull,-1],PPAL.steel[0])}
+    if(draw&&atk===2)line([5-pull,-1],[5-pull,-1],'#ffffff');if(style==='swing'&&atk===1)line([3,-1],[3,-1],PPAL.white[0]);
+    pset(G,R,R-1,skin)}
+  c=pcanvas(G);c.R=R;BOW_PICS.set(key,c);return c}
 /* a shield (the owner, 2026-11-07: "bigger shields with the army's device"): carried on his off arm before him, or raised to meet a
    blow (guard: before his chest; 'low': his legs); a heater of metal (steel, iron, silver, gold) or a round one of wood, its rim in its
    material lit from the top left, its field the side's colour, the device of his people on it (sprites.js BANNER_DEV: the Vale's, the

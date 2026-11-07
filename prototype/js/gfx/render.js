@@ -320,6 +320,16 @@ function reduced(fn){const c=ctx,d0=c.drawImage;c.drawImage=function(img,...a){i
 const GRIP_FIST=new Map();
 function drawGrip(sp,X,Y,L){if(!L||!dollable(L))return;const k=L.skin||'skin';let f=GRIP_FIST.get(k);if(!f){const P=pal(k);GRIP_FIST.set(k,f=mkc(1,2,g=>{g.fillStyle=P[0];g.fillRect(0,0,1,1);g.fillStyle=P[2];g.fillRect(0,1,1,1)}));f.fist=true}
   for(const h of [sp.hand,sp.hand2])if(h)ctx.drawImage(f,X+h[0],Y+h[1]-1)}
+/* a bowman's bow, drawn apart (figures.js bowPic): his bow, if one; the frame's part in a shot (the loose and the draw aimed, the
+   reload not); his aim, the shot's own launch angle at his mark (battle/projectiles.js arcRise: higher for a long shot or one up
+   to higher ground, flatter for a near one or one down from above), the nearest of BOW_AIM.steps (degrees up) */
+const bowOf=u=>{const w=unitLook(u).weapon;return w==='bow'||w==='longbow'?w:null};
+const bowFrame=p=>p>=6&&p<=8?{style:'swing',atk:p-6,aim:true}:p>=9&&p<=11?{style:'thrust',atk:p-9,aim:true}:p>=12&&p<=14?{style:'overhead',atk:p-12,aim:false}:{style:null,atk:-1,aim:false};
+function bowAim(u){const t=u.tgt;if(!t||t.hp<=0)return 0;const d=Math.hypot(t.x-u.x,t.y-u.y);if(d<1)return 0;
+  // (by the throw's rise, uncapped, so a far shot keeps rising though its arc's height is capped; BOW_AIM.k how steeply: 45 degrees
+  // only for a long shot)
+  const dh=(levelAt(u.x,u.y)-levelAt(t.x,t.y))*(PX.ROCK_PX||4),rise=Math.max(ARC_RISE.min,d*d/ARC_RISE.d2-dh*ARC_RISE.lvl),deg=Math.min(45,Math.atan(BOW_AIM.k*rise/d)*180/Math.PI);
+  return BOW_AIM.steps.reduce((b,s)=>Math.abs(s-deg)<Math.abs(b-deg)?s:b,0)}
 function drawUnit(u){if(B.world)return reduced(()=>drawUnitAt(u));return drawUnitAt(u)}
 function drawUnitAt(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
@@ -341,7 +351,9 @@ function drawUnitAt(u){
     const rl=Stagger.reel(u);
     // (struck, a flinch; standing about, now and then a glance back or the weight shifted: from his id and the battle's time, drawn only)
     if(!beast&&!u.s.mounted&&!cl){if((u.hitAt!=null&&B.t-u.hitAt<BODY_LIFE.flinch||rl)&&(pose<6||pose>=15&&pose<=18))pose=FLINCH_POSE;else if(pose<2&&!moved){const ip=idleLife(u.id,B.t,'foot').pose;if(ip!=null)pose=ip}}
-    const sp=beast?actorSprite(u,pose):actorSprite(u,pose,true,!!u.inMelee);
+    // (a bowman on foot: his bow drawn apart, aimed up for a long shot or one to higher ground (figures.js bowPic, bowAim))
+    const bowK=!beast&&!u.s.mounted&&!u.inMelee&&BOW_AIM.on?bowOf(u):null;
+    const sp=beast?actorSprite(u,pose):actorSprite(u,pose,bowK?'bow':true,!!u.inMelee);
     // (a beast's blow: its pose, and a short lunge with it; its steps bob in its frames)
     let [bx,sa]=stateShake(u),bo=0;if(beast&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(2*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))
     // (meeting a blow (battle/defence.js): turned to it; a dodge, a sway back on the spot, leaning away, or a step aside; a heavy
@@ -357,7 +369,7 @@ function drawUnitAt(u){
     const fb=!beast&&battleFlag(u),fw=fb?battleWave(u,moved):0;if(fb)battleFlagBack(u,fb,sp,X,Y,fw);// (his army's flag: marchgear.js)
     // (picked out: his rings first, round his body and his weapon, the pictures over them: outlineOf)
     {const hl=unitHighlight(u);if(hl){ctx.drawImage(outlineOf(sp,hl),X-1,Y-1);if(hw)ctx.drawImage(outlineOf(hw.w,hl),X+hw.x-1,Y+hw.y-1);if(hw&&hw.back)ctx.drawImage(hw.w,X+hw.x,Y+hw.y)}}
-    ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),X,Y);if(hw&&!hw.back){ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);if(!hit)drawGrip(sp,X,Y,unitLook(u))}if(fb)battleFlagFront(u,fb,hw,X,Y,fw);ctx.restore();
+    ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),X,Y);if(bowK&&sp.hand){const f=bowFrame(pose),bp=bowPic(bowK,f.style,f.atk,f.aim?bowAim(u):0,pal(unitLook(u).skin)[1]);ctx.drawImage(hit?whiteOf(bp):bp,X+sp.hand[0]-bp.R,Y+sp.hand[1]-bp.R)}if(hw&&!hw.back){ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);if(!hit)drawGrip(sp,X,Y,unitLook(u))}if(fb)battleFlagFront(u,fb,hw,X,Y,fw);ctx.restore();
     // (climbing: a little grit trickles down the slope behind him now and then; coming down, a puff at the heel: from his id and the
     // battle's time, drawn only)
     if(cl){const ph=(B.t*(cl==='up'?2.2:3)+((u.id||0)*.37))%1,dc=B.env.c==='frost'?'#e8eef4':B.env.c==='desert'?'#e6cc96':'#a8987a';

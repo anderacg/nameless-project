@@ -27,6 +27,12 @@ function worldMissileHit(a,from,arc=false,units=null,scale=WORLD_BATTLE.sprite){
   }
   if(best){a.x=from.x+dx*at;a.y=from.y+dy*at;if(arc)a.z=from.z+(a.z-from.z)*at}return best;
 }
+/* an arrow's rise (the owner, 2026-11-07: "long target or shooting to higher, arrows will lob; short target and shooting from higher,
+   the arrow will be straight"): over d px, its peak H px high, growing with the square of the distance (ARC_RISE.d2: point-blank
+   almost flat, a long one high, ARC_RISE.max at most), lower by ARC_RISE.lvl px for every px the shooter stands above his mark
+   and higher for every px below it (dh: his ground's height less his mark's), ARC_RISE.min at least */
+const ARC_RISE={d2:700,max:64,lvl:.5,min:1};
+const arcRise=(d,dh=0)=>clamp(Math.min(ARC_RISE.max,d*d/ARC_RISE.d2)-dh*ARC_RISE.lvl,ARC_RISE.min,ARC_RISE.max);
 const MISSILES=new WeakMap();
 class Missile{
   constructor(a){this.a=a}
