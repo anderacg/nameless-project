@@ -24,7 +24,12 @@ try{
  // stance (the AI braces its spears for a charge it sees coming: commander.js chargeIn), the lab counting a rank's morale. Checked:
  // with every step-2 switch off (RANKS.statsOnly, mastery5; KITS.brace, traits2, cap, keys2) it is 1ac65f8f again. Was 1ac65f8f)
  // (re-recorded 2026-11-01, on purpose: the melee hold (actors.js MELEE_HOLD: a man-sized fighter at his foe holds till the foe is 1 px past his reach (no further than he strikes), as a shooter keeps his range; a big beast wades on; the owner, 2026-11-01: "the fighter that I fight in battle map seems to move weird, jiggering left right"). Proof: MELEE_HOLD.on false gives fe102f34 again. Was fe102f34)
- {const first=run('none',false),HEAD_FP='f1fcd063';ok(first===HEAD_FP||t.BW!==960,'terrain off: the page’s first lab battle plays as at HEAD (fingerprint '+first+(t.BW!==960?'; field '+t.BW+' px wide, HEAD’s was taken at 960':'')+')')}
+ // (re-recorded 2026-11-07, on purpose, no battle rule moved: f1fcd063 was the recording window's own, the lab's field laid out from
+ // the screen (BVW and the HUD's measured field); this runner gives cbc8ada4, 8e44c86d, 7924f5cb, 16f3f128 at bc300c1 (where it was
+ // recorded) in 800 x 600, 1024 x 768, 1366 x 768 and 1920 x 1080 windows. Now pinned as battlesetup pins it (measureField 40..560,
+ // BVW 1000): bc300c1 and a56d001 give 190fa4f7 alike, in 800 x 600 and 1280 x 720. Was f1fcd063)
+ const m0=t.measureField,v0=[t.BVW,t.BVH];window.__tm0=m0;let first;try{ev('measureField=()=>({top:40,bot:560});BVW=1000;BVH=BH');first=run('none',false)}finally{ev('measureField=window.__tm0;BVW='+v0[0]+';BVH='+v0[1]);delete window.__tm0}
+ {const HEAD_FP='190fa4f7';ok(first===HEAD_FP||t.BW!==960,'terrain off: the page’s first lab battle plays as at HEAD (fingerprint '+first+(t.BW!==960?'; field '+t.BW+' px wide, HEAD’s was taken at 960':'')+')')}
  ev('TERRAIN.on=true');
  const gridHash=T=>{let h=2166136261;const mix=v=>{h=Math.imul(h^(v&255),16777619)>>>0};for(const a of [T.kind,T.lvl,T.up])for(const v of a)mix(v);return h.toString(16)};
  // ---- generation: same place, same field; never Math.random
