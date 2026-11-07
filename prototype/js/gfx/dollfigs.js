@@ -55,7 +55,9 @@ function dollSpec(o,pose,frame,moves){const parts=dollParts(o).map(([p,m,x])=>[p
 // shift of the head and shoulders, a breath his arms lifted a pixel from the shoulders, and a blow's body still: its arm and weapon
 // do it)
 const DOLL_MOVES={lean:[],breath:[['ulh','',0,-1,0]],flinch:[['sfncbulhptko','',1,0,0]],look:[],shift:[],
-  run:[[['ulh','R',0,-1,0]],[['ko','L',0,-1,11],['ulh','R',0,-1,0]],[['ulh','L',0,-1,0]],[['ko','R',0,-1,11],['ulh','L',0,-1,0]]],
+  // (a run: the walk's steps (engine/doll.js POSES.walk), its arms swung higher; no knee lifted on top of the walk's, which folded
+  // the leg back on itself (the owner, 2026-11-07: "make the leg not bending to the back too much"))
+  run:[[['ulh','R',0,-1,0]],[['ulh','R',0,-1,0]],[['ulh','L',0,-1,0]],[['ulh','L',0,-1,0]]],
   blow:[[],[],[]],
   // (kneeling (the owner, 2026-11-07: "kneeling looks like a line"), seen from before him as his reference's: his body down 2 rows;
   // his left knee on the ground, its thigh down to it, its shin and foot folded under it out of sight (DOLL_KNEEL_DROP); his right
