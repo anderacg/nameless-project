@@ -365,7 +365,7 @@ function drawUnitAt(u){
     if(!beast&&DUEL.on&&u.atkLook&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx+=Math.round((u.atkLook==='bash'?2.5:1.5)*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI));
     ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(spinFace(u,dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLeanDrawn(u,16)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg+(rl&&!u.s.mounted?rl.lean*Math.min(1,STAGGER.reel.leanPx/(STAGGER.reel.lean*(sp.ch||sp.height))):0);if(ln)ctx.transform(1,0,-ln,1,0,0)}if(rl&&u.s.mounted){const hk=-Math.round(sp.width*.22);ctx.translate(hk,0);ctx.rotate(rl.lean/STAGGER.reel.lean*STAGGER.reel.rear);ctx.translate(-hk,0)}/* (leaning into his run: physics.js) */ctx.globalAlpha=(ghost?.55:1)*sa;
     // (his weapon in his hand behind his body or in front of it: weapons.js heldNow, figures.js GEAR.behind)
-    const X=-Math.floor(sp.width/2)+bx,Y=-sp.height+2,hw=!beast&&heldNow(u,u.inMelee?sidearmLook(u):unitLook(u),sp);if(hw&&hw.back)ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);
+    const X=-Math.floor(sp.width/2)+bx,Y=-sp.height+2,hw=!beast&&heldNow(u,u.inMelee?sidearmLook(u):unitLook(u),sp,pose);if(hw&&hw.back)ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);
     const fb=!beast&&battleFlag(u),fw=fb?battleWave(u,moved):0;if(fb)battleFlagBack(u,fb,sp,X,Y,fw);// (his army's flag: marchgear.js)
     // (picked out: his rings first, round his body and his weapon, the pictures over them: outlineOf)
     {const hl=unitHighlight(u);if(hl){ctx.drawImage(outlineOf(sp,hl),X-1,Y-1);if(hw)ctx.drawImage(outlineOf(hw.w,hl),X+hw.x-1,Y+hw.y-1);if(hw&&hw.back)ctx.drawImage(hw.w,X+hw.x,Y+hw.y)}}

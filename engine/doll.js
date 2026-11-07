@@ -132,13 +132,14 @@
      straight under him, never spread (the owner, 2026-11-07: "make heroes walking animation leg not spread"), the far (L) heel
      up, his off hand swung back), then the pass (his body up again, that leg's knee lifted through), then the other contact (the
      near heel up, the off hand swung forward and up), and its pass.
-     His weapon hand held where it is through all of it, so his weapon keeps its angle and its room above the ground. His head and
+     His weapon hand goes down with him as each foot lands, so his weapon bobs with his step (the owner, 2026-11-07: "make weapon at
+     least shake or moving a bit with unit walking"; its swing: gfx/weapons.js WEAPON_SWAY). His head and
      body never move against each other; each a list of moves [regions, side ('R' his right / 'L' his left / ''), dx, dy, rows
      from] */
   const POSES={idle:[[]],walk:[
-      [['sfncbupt','',0,1,0],['lh','L',0,1,0],['o','L',0,-1,14],['h','L',1,0,0]],
+      [['sfncbupt','',0,1,0],['lh','',0,1,0],['o','L',0,-1,14],['h','L',1,0,0]],
       [['ko','L',0,-1,13]],
-      [['sfncbupt','',0,1,0],['lh','L',0,1,0],['o','R',0,-1,14],['h','L',-1,-1,0]],
+      [['sfncbupt','',0,1,0],['lh','',0,1,0],['o','R',0,-1,14],['h','L',-1,-1,0]],
       [['ko','R',0,-1,13]]],
     // a blow: the weapon arm raised and forward
     strike:[[['lh','R',-1,-2,6]]]};
