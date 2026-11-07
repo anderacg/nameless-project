@@ -88,9 +88,14 @@ class MarchKit{
     if(r.torch&&G.torches&&Clock.isNight)this.torch=Math.min(1,Clock.darkness()/G.fade);return this}
   // (a flag's wave: still while he stands, MARCH_GEAR.flutter a second as he walks)
   wave(){return this.u.walking?Math.floor((this.u.stepT||0)*MARCH_GEAR.flutter)%2:0}
-  back(s,bx,by){if(!this.flag||this.bare||!s.back)return;const c=backFlagSprite(this.flag,this.wave());ctx.drawImage(c,bx+s.back[0]-c.ax,by+s.back[1]-c.ay)}
+  // (the same flags as in battle (the owner, 2026-11-07: "the same sprites", "check the flags"): the battle's back pole and banner
+  // (battleBackFlag); a flag man's own spear drawn as in battle, a doll's hold and BATTLE_BANNER.pole longer, its cloth under its
+  // head (clothSprite, poleTip))
+  back(s,bx,by){if(!this.flag||this.bare||!s.back)return;const c=battleBackFlag(this.flag,this.wave());ctx.drawImage(c,bx+s.back[0]-c.ax,by+s.back[1]-c.ay)}
   front(s,bx,by){
-    if(this.bare&&s.hand){const c=poleFlagSprite(this.r.pole,this.flag,this.r.kit.skin,this.wave());ctx.drawImage(c,bx+s.hand[0]-c.R,by+s.hand[1]-c.R)}
+    if(this.bare&&s.hand){const [kind]=MARCH_GEAR.pole[this.r.pole]||['spear'],doll=DOLL_FIGS.on,deg=doll?HOLD_DOLL.pole.march:WPN_REST[kind]??-90,i=((Math.round(deg/360*WEAPON_STEPS))%WEAPON_STEPS+WEAPON_STEPS)%WEAPON_STEPS,
+        w=weaponSprite(kind,'blue',this.r.kit.skin,i,WPN[kind][0]+BATTLE_BANNER.pole,doll),[tx,ty]=poleTip(w),l=Math.hypot(tx,ty)||1,k=Math.max(0,l-2)/l,c=clothSprite(this.flag,this.wave()),hx=bx+s.hand[0],hy=by+s.hand[1];
+      ctx.drawImage(w,hx-w.R,hy-w.R);ctx.drawImage(c,Math.round(hx+tx*k)-c.ax,Math.round(hy+ty*k)-c.ay)}
     // (its torch: as it burns, its frame by the clock and his id (fire.js fireFrameAt), its flame trailing back as he walks; its
     // light at the flame's foot, with its pool on the ground at his feet (g))
     if(this.torch>0&&s.free){const on=FLAMES.on,c=on?torchSprite(this.r.kit.skin,fireFrameAt(fireTime(),this.u.id),this.u.walking?-FLAMES.lean:0):torchSprite(this.r.kit.skin,Math.floor(performance.now()/120+this.u.id)%2),a=ctx.globalAlpha,hx=bx+s.free[0],hy=by+s.free[1];

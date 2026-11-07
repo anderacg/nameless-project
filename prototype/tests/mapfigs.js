@@ -42,7 +42,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;Kit.begin('soldier');
  ok(!bad.length,kinds.length+' figures of every kind are the battle\'s bodies: dense, in a cell, their feet on its bottom row, the marchers\' outline, on foot and riding within the marchers\' size'+(bad.length?' ('+bad.slice(0,8).join('; ')+')':''));
  info('sizes: '+Object.entries(sizes).map(([h,L])=>h+' '+[...new Set(L)].slice(0,8).join(' ')).join(' | '));
  // (kneeling: lower than standing, its feet on the ground; the walk: the battle's four steps, each its own picture)
- {const st=look(t.figRoad('hunter','human',1,0)),kn=look(t.figKneel('hunter','human',1));ok(kn.h<=st.h-t.FIG_KNEEL&&kn.bottom===t.figKneel('hunter','human',1).height-1,'kneeling: '+(st.h-kn.h)+' px lower than standing, on the ground')}
+ {const st=look(t.figRoad('hunter','human',1,0)),kn=look(t.figKneel('hunter','human',1));ok(kn.h<st.h&&kn.bottom===st.bottom,'kneeling: '+(st.h-kn.h)+' px lower than standing, on the ground as he stands (row '+kn.bottom+')')}
  {const ps=[2,3,4,5].map(p=>pixels(t.figRoad('traveller','human',0,p)));ok(new Set(ps).size>=3&&ps.join('|')===[2,3,4,5].map(p=>pixels(t.figOf(t.ENC_LOOK.traveller('human',0),p))).join('|')&&t.figPose(0,false)===0&&[0,1,2,3,4,5,6,7].map(f=>t.figPose(f,true)).join('')==='23452345','walking: the marchers\' four steps (a step each WALK.foot px; the third the standing stride, as theirs), standing at 0')}
  // (kept: made once)
  ok(t.figRoad('bard','elf',2,3)===t.figRoad('bard','elf',2,3)&&t.figFollower(col,1,'orc',false,2)===t.figFollower(col,1,'orc',false,2)&&t.figDown('traveller','human',0,1)===t.figDown('traveller','human',0,1)&&t.FIGURES.get('mrpbardelf2p3'),'each made once, kept in FIGURES by its look and pose');

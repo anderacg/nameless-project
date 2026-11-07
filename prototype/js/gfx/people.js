@@ -121,16 +121,16 @@ function pjoin(g){const w=g.w,h=g.h,id=new Int32Array(w*h).fill(-1),C=[];for(let
   for(const P of C){if(P===main||P.length>8)continue;let best=null,bd=1e9;for(const j of P)for(const k of main){const d=Math.max(Math.abs(j%w-k%w),Math.abs((j/w|0)-(k/w|0)));if(d<bd){bd=d;best=[j,k]}}
     if(bd<=3){const [j,k]=best,c=g.p[j],x0=k%w,y0=k/w|0,x1=j%w,y1=j/w|0;for(let s=1;s<bd;s++){const x=Math.round(x0+(x1-x0)*s/bd),y=Math.round(y0+(y1-y0)*s/bd);if(!g.p[y*w+x]){g.p[y*w+x]=c;if(g.body)g.body.add(y*w+x)}}}
     else if(P.length<=2)for(const j of P)g.p[j]=null}}
-// (the blended outline (the owner, 2026-11-07: "the outline should blend with the sprite, a darker shade of it"): every clear pixel
-// beside the figure a deep shade of the pixels it borders (engine/pixel.js PX.rim, DOLL_FIGS.rimK dark), as the buildings' and
-// trees' are; under the feet, the picture's edge, none)
-// (natural, not square (the owner, 2026-11-07: "make sure the outline doesn't look too square"): a line a pixel thin (a shaft, a staff,
-// a tail's tip, a horn) left unringed, crisp as drawn; only an edge's own pixels outlined, never a corner's diagonal, so corners round
-// off; on the lit side (the top and left) the outline a lighter shade (rimLit) than on the shaded (rimK))
-function prim(g){const w=g.w,h=g.h,hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)],R=[],op=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&!!g.p[y*w+x],
-    thin=(x,y)=>!op(x-1,y)&&!op(x+1,y)||!op(x,y-1)&&!op(x,y+1);
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(g.p[y*w+x])continue;const L=[];let lit=false;for(const [u,v,l] of [[x-1,y,0],[x+1,y,1],[x,y-1,0],[x,y+1,1]]){if(!op(u,v)||thin(u,v))continue;const c=g.p[v*w+u];if(c&&c[0]==='#'&&c.length===7){L.push(hx(c));if(l)lit=true}}
-    if(L.length)R.push([y*w+x,PX.rim(L,lit?DOLL_FIGS.rimLit:DOLL_FIGS.rimK)])}
+// (the blended outline (the owner, 2026-11-07: "the outline should blend with the sprite, a darker shade of it"): a deep shade of
+// the figure's own colour (engine/pixel.js PX.rim, DOLL_FIGS.rimK dark))
+// (inside the figure, not round it (the owner, 2026-11-07: "a bit too big", "floating"): the figure's own edge pixels the outline,
+// so it is no bigger than drawn and stands where it stood; natural, not square: a line a pixel thin (a shaft, a staff, a tail's tip)
+// left as drawn, the lit side's edge (top, left) a lighter shade (rimLit) than the shaded side's (rimK); the picture's edge (feet on
+// its last row) no edge)
+function prim(g){const w=g.w,h=g.h,hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)],R=[],op=(x,y)=>x<0||y<0||x>=w||y>=h||!!g.p[y*w+x],
+    clr=(x,y)=>!op(x,y),thin=(x,y)=>clr(x-1,y)&&clr(x+1,y)||clr(x,y-1)&&clr(x,y+1);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const c=g.p[y*w+x];if(!c||c[0]!=='#'||c.length!==7||thin(x,y))continue;const lit=clr(x-1,y)||clr(x,y-1),dark=clr(x+1,y)||clr(x,y+1);
+    if(lit||dark)R.push([y*w+x,PX.rim([hx(c)],dark&&!lit?DOLL_FIGS.rimK:DOLL_FIGS.rimLit)])}
   for(const [i,c] of R)g.p[i]='#'+c.map(v=>v.toString(16).padStart(2,'0')).join('')}
 function poutline(g){const B=g.body,on=(x,y)=>!!pget(g,x,y)&&!(B&&B.has(y*g.w+x));
   if(DOLL_FIGS.on&&DOLL_FIGS.edge&&(B||g.edge)){pfillHoles(g);if(DOLL_FIGS.rim){prim(g);pfillHoles(g)}else{const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(!on(x,y))continue;if(!pget(g,x-1,y)||!pget(g,x+1,y)||!pget(g,x,y-1)||!pget(g,x,y+1))e.push([x,y])}
@@ -299,7 +299,7 @@ const WPN={sword:[6,'steel','guard'],great:[9,'steel','guard'],dagger:[4,'steel'
   spear:[12,'wood','tip'],pike:[15,'wood','tip'],javelin:[10,'wood','tip'],lance:[16,'wood','pennant'],
   hoe:[10,'wood','hoe'],pick:[8,'wood','pick'],crook:[12,'wood','crook'],rod:[13,'wood','rod']};// (workers' tools: the world map, folk.js)
 const SWING={swing:[[-3,-4,-125],[1,-1,-5],[0,1,55]],thrust:[[-2,-1,-8],[2,-1,0],[0,-1,0]],overhead:[[-2,-6,-95],[0,-5,-35],[1,0,70]]};
-const POLE_SWING=[[-1,-2,-40],[1,-1,-2],[0,0,25]],WPN_REST={lance:-62,rod:-55,hoe:-75,pick:-75};
+const POLE_SWING=[[-1,-2,-40],[1,-1,-2],[0,0,25]],WPN_REST={lance:-62,rod:-55,hoe:-75,pick:-75,crook:-82};// (a crook upright by him, a walking staff)
 // mounts: a horse (and its kin) seen from the side in a 32×32 cell, a rider's lower body hidden in it; walk 0-3 gallops (the
 // horse and the stag are HORSE_ART's now, below; this the ram's, and the horse's with HORSE_ART.on false)
 const MOUNT_T=[
@@ -730,9 +730,13 @@ function figCarrier(type,v,tint,job,pose){return figKeep('mca'+type+v+tint+job+'
    the ground); lying: the standing figure turned a quarter, head to the right, as the battle's fallen are (sprites.js corpseOf);
    blood: in a pool of it (FIG_BLOOD: [colour, x, y, w, h] in a 16 cell's px, as the map's was, grown to its own) */
 const FIG_KNEEL=2,FIG_BLOOD=[['#5a1414',3,13,10,1],['#6e1a18',1,14,14,1],['#8a2a22',5,14,5,1],['#5a1414',3,15,10,1]];
-function figKneel(key,race,v){return figKeep('mrk'+key+race+v,()=>{const L=ENC_LOOK[key](race,v),R=GEAR.room,g=pgrid(24+2*R,19+R),sh=L.short?1:0,ox=4+R,gy=3+R+14-sh+(dollable(L)?DOLL_FIGS.dy:0);// (a doll's knees on the row its outline would have taken)
+function figKneel(key,race,v){return figKeep('mrk'+key+race+v,()=>{const L=ENC_LOOK[key](race,v),R=GEAR.room,g=pgrid(24+2*R,19+R+(dollable(L)?1-DOLL_FIGS.dy:0)),sh=L.short?1:0,ox=4+R,gy=3+R+14-sh+(dollable(L)?DOLL_FIGS.dy:0);// (a doll's knees on the row his feet stand on, his grid as tall as his standing one's)
   const A=drawFigure(g,L,ox,3+R+FIG_KNEEL,-1,null,-1,12-sh);
   if(!L.robe){const Lc=lettersOf(L);pset(g,ox+11,gy-1,Lc.L);pset(g,ox+11,gy,Lc.M);pset(g,ox+12,gy,Lc.F);pset(g,ox+2,gy,Lc.F);pset(g,ox+1,gy,Lc.F)}
+  // (on the ground whatever he wears: a robe's hem, a short man's knees, set down on the row a standing doll's feet take, whatever
+  // his race: 3 + R + 15)
+  if(dollable(L)){let lo=-1;for(let i=0;i<g.p.length;i++)if(g.p[i])lo=Math.max(lo,(i/g.w)|0);const d=3+R+15+DOLL_FIGS.dy-lo;if(lo>=0&&d>0){g.p.copyWithin(d*g.w,0,g.p.length-d*g.w);g.p.fill(null,0,d*g.w);
+    if(g.body)g.body=new Set([...g.body].map(i=>i+d*g.w).filter(i=>i<g.p.length));for(const k of FIG_ANCHORS)if(A[k])A[k]=[A[k][0],A[k][1]+d]}}
   return cellOf(FigureRig.frame(g,R,24,A,16-FIG_KNEEL-sh,false))})}
 function figDown(key,race,v,blood){return figKeep('mrd'+key+race+v+(blood?'b':''),()=>{
   if(blood){const b=figDown(key,race,v),n=b.width,s=n/16,c=mkc(n,n,g=>{for(const [col,x,y,w,h] of FIG_BLOOD)rect(g,col,x*s,y*s,w*s,h*s);g.drawImage(b,0,-s)});c.cw=b.cw;c.ch=b.ch+s;return c}

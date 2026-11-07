@@ -63,15 +63,16 @@
   // (PX.BEAST_EDGE: no outline, the silhouette's own edge a tone darker instead: PX.shade by BEAST_EDGE_K)
   PX.BEAST_EDGE=false;PX.BEAST_EDGE_K=.68;
   // (edge: the battle's figure, raw: the map's keep their outline; the side's colours (TEAM) never darkened)
-  // (PX.BEAST_RIM: with PX.BEAST_EDGE, a blended outline round the figure, each pixel a deep shade of what it borders (PX.rim,
-  // BEAST_RIM_K dark), as the soldiers' and the buildings' are; the side's colours (TEAM) left out of it)
-  PX.BEAST_RIM=true;PX.BEAST_RIM_K=.5;
+  // (PX.BEAST_RIM: with PX.BEAST_EDGE, a blended outline inside the figure, its own edge pixels a deep shade of themselves (PX.rim,
+  // BEAST_RIM_K dark), as the soldiers' are: no bigger than drawn; the side's colours (TEAM) left out of it)
+  PX.BEAST_RIM=true;PX.BEAST_RIM_K=.62;
   // (natural, not square: a line a pixel thin (a tail's tip, a claw, a horn) unringed; an edge's own pixels only, corners rounding
   // off; the lit side (top, left) a lighter shade, BEAST_RIM_LIT)
-  PX.BEAST_RIM_LIT=.72;
-  function outline(g,edge){if(edge&&PX.BEAST_RIM){const R=[],hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)],thin=(x,y)=>!at(g,x-1,y)&&!at(g,x+1,y)||!at(g,x,y-1)&&!at(g,x,y+1);
-    for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(at(g,x,y))continue;const L=[];let lit=false;
-      for(const [u,v,l] of [[x-1,y,0],[x+1,y,1],[x,y-1,0],[x,y+1,1]]){const c=at(g,u,v);if(c&&c!==OUT&&!TEAM.includes(c)&&!thin(u,v)){L.push(hx(c));if(l)lit=true}}if(L.length)R.push([x,y,PX.rim(L,lit?PX.BEAST_RIM_LIT:PX.BEAST_RIM_K)])}
+  PX.BEAST_RIM_LIT=.86;
+  function outline(g,edge){if(edge&&PX.BEAST_RIM){const R=[],hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)],clr=(x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h&&!at(g,x,y),
+      thin=(x,y)=>clr(x-1,y)&&clr(x+1,y)||clr(x,y-1)&&clr(x,y+1);
+    for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=at(g,x,y);if(!c||c===OUT||TEAM.includes(c)||thin(x,y))continue;const lit=clr(x-1,y)||clr(x,y-1),dark=clr(x+1,y)||clr(x,y+1);
+      if(lit||dark)R.push([x,y,PX.rim([hx(c)],dark&&!lit?PX.BEAST_RIM_K:PX.BEAST_RIM_LIT)])}
     for(const [x,y,c] of R)putR(g,x,y,'#'+c.map(v=>v.toString(16).padStart(2,'0')).join(''));return}
     if(edge){const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=at(g,x,y);if(c&&c!==OUT&&!TEAM.includes(c)&&(!at(g,x-1,y)||!at(g,x+1,y)||!at(g,x,y-1)||!at(g,x,y+1)))e.push([x,y,c])}for(const [x,y,c] of e)putR(g,x,y,PX.shade(c,PX.BEAST_EDGE_K));return}
   for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(at(g,x,y)&&(x===0||y===0||x===g.w-1||y===g.h-1))put(g,x,y,OUT);const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!at(g,x,y)&&(at(g,x-1,y)||at(g,x+1,y)||at(g,x,y-1)||at(g,x,y+1)))o.push([x,y]);for(const [x,y] of o)put(g,x,y,OUT)}
@@ -351,7 +352,7 @@
     deaths:['back','curl','splay'],
     draw(g,F,o){if(F.dead&&!F.i)return onBack(g,s=>this.body(s,{a:'idle',i:0},o,true));this.body(g,F,o)},
     body(g,F,o,dead){const v=o.v%3,C=R(this.coats[v]),Y=g.h-2,a=F.a,i=F.i,b=a==='walk'||a==='run'?(i%2?-1:0):0,rear=a==='atk'||a==='alt'?[1,3,1][i]:0;
-      const dv=F.dead?F.i:0,cx=19,cy=dv?Y-2-(dv===1?1:0):Y-4+b-rear,ax=10,ay=dv?Y-3-(dv===1?1:0):Y-6+b;
+      const dv=F.dead?F.i:0,cx=19,cy=dv?Y-2:Y-4+b-rear,ax=10,ay=dv?Y-3:Y-6+b;
       // (the legs: four a side, far and near, each up to a knee high over the body and down to its foot, the hind two back and the
       // fore two ahead; walking, they lift in turn; rearing, the first pair up)
       const leg=(k,near)=>{const sx=cx-2+k,sy=cy,f=near?0:1,step=a==='walk'||a==='run'?((k+(near?1:0)+i)%2?1:-1)*(a==='run'?2:1):0,lift=step>0?1:0,
@@ -527,9 +528,9 @@
     const F=a==='dead'?{a,i,dead:true,how:(K.deaths||QUAD_DEATHS)[i]}:(K.gait||gait)(a==='alt'&&!K.alt?'atk':a,i);if(a==='alt'&&K.alt)F.a='alt';
     OX=PAD+(K.dx||0);try{K.draw(g,F,{v,team:o.team,fly,kind:K.kind})}finally{OX=0}
     if(!K.loose)joinLoose(g);fillHoles(g);
-    // (nothing below the ground: the bottom row is the outline's; with PX.BEAST_EDGE (no outline: its own edge a shade darker, the
-    //  paper dolls' style) the figure a row down, its feet on the bottom row)
-    g.p.fill(null,(g.h-1)*g.w);outline(g,PX.BEAST_EDGE);if(PX.BEAST_EDGE&&PX.BEAST_RIM)fillHoles(g);if(PX.BEAST_EDGE){g.p.copyWithin(g.w,0,(g.h-1)*g.w);g.p.fill(null,0,g.w)}return g}
+    // (nothing below the ground: its feet on the row over the bottom, where every figure stands (render.js drawUnit), the outline
+    //  inside it with PX.BEAST_RIM; with PX.BEAST_EDGE and no outline at all, a row down, its feet on the bottom row)
+    g.p.fill(null,(g.h-1)*g.w);outline(g,PX.BEAST_EDGE);if(PX.BEAST_EDGE&&PX.BEAST_RIM)fillHoles(g);else if(PX.BEAST_EDGE){g.p.copyWithin(g.w,0,(g.h-1)*g.w);g.p.fill(null,0,g.w)}return g}
   function figure(K,kind,o,fly){const r=raw(K,o,fly),g=grid(K.W,K.H);for(let y=0;y<K.H;y++)for(let x=0;x<K.W;x++)g.p[y*K.W+x]=r.p[(y+PAD)*r.w+x+PAD];return g}
   PX._beastFit=kind=>{const K=kind==='drake'?DRAKE:KINDS[kind];let a=1e9,b=1e9,c=-1e9,pa,pb,pc;for(const pose of kind==='drake'?[15,16]:[...PX.BEAST_POSES,DEAD,DEAD+1,DEAD+2])for(const v of [0,1,2])for(const team of [0,1]){const r=raw(K,{pose,v,team},kind==='drake');
     for(let y=0;y<r.h;y++)for(let x=0;x<r.w;x++)if(r.p[y*r.w+x]){if(x-PAD<a)a=x-PAD,pa=pose;if(x-PAD>c)c=x-PAD,pc=pose;if(y-PAD<b)b=y-PAD,pb=pose}}return{kind,W:K.W,H:K.H,left:a+'@'+pa,right:c+'@'+pc,top:b+'@'+pb,ok:a>=0&&c<K.W&&b>=0}};
@@ -571,7 +572,7 @@
   function mapBeast(kind,f){const T=MAPF[kind],K=KINDS[kind],rows=T.frames?T.frames[T.seq?T.seq[f%T.seq.length]:f%T.frames.length]:T.rows.concat(PX.mapLegs(T.legs[0],T.legs[1],f)),W=Math.max(...rows.map(r=>r.length)),g=grid(W+2,rows.length+2),
       C=R(T.c||K.coats[0]),S=R(T.c2||K.coats[0]),col={h:C[0],H:C[1],d:C[2],k:C[3],l:S[0],L:S[1],m:S[2],D:T.D||'#3a2c28',e:T.e||'#1a1410',w:'#e4dcc4',r:'#c0403a',...(T.x||{})};
     // (PX.BEAST_EDGE: no outline, its own edge darker, its feet on the bottom row)
-    const E=PX.BEAST_EDGE?1:0;rows.forEach((r,y)=>[...r].forEach((c,x)=>putR(g,x+1,y+1+E,col[c])));if(!T.frames)joinLoose(g);outline(g,PX.BEAST_EDGE);const c=canvas(g);c.fh=g.h-1;c.kind=kind;return c}
+    const E=PX.BEAST_EDGE&&!PX.BEAST_RIM?1:0;rows.forEach((r,y)=>[...r].forEach((c,x)=>putR(g,x+1,y+1+E,col[c])));if(!T.frames)joinLoose(g);outline(g,PX.BEAST_EDGE);const c=canvas(g);c.fh=g.h-1;c.kind=kind;return c}
   PX.MAP_BEASTS=Object.keys(MAPF);
   // the world map: the dragon on the wing (its own drake, wings up, then level: 32, it should look huge); the rest their own small
   // figures (MAPF), f their step (0 to PX.MAP_STEPS-1)

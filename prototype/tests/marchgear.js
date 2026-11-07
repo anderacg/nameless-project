@@ -44,9 +44,11 @@ Kit.suite(({ok,info})=>{
    const fs=spear.find(u=>R.get(u).flag),fb=bow.find(u=>R.get(u).flag),fc=cav.find(u=>R.get(u).flag),plain=bow.find(u=>!R.get(u).flag&&!R.get(u).torch);
    ok(R.get(fs).pole===t.lookOf(H.spear,0,false,0).weapon&&!R.get(fb).pole,'a spearman\'s flag is on his spear ('+R.get(fs).pole+'), a bowman\'s at his back');
    const a=drawn(fs);
-   ok(a.length===2&&a[0]===window.marchSprite(fs,lord,undefined,true)&&a[0]!==window.marchSprite(fs,lord)&&gear().has(a[1])&&a[1].R>t.WPN[R.get(fs).pole][0]+4,'the spearman: his body bare, then his longer spear with the flag on it, over him');
+   // (2026-11-07, the owner: "the same sprites as battle", "check the flags": his own spear drawn as in battle, longer, the battle's
+   // cloth under its head)
+   ok(a.length===3&&a[0]===window.marchSprite(fs,lord,undefined,true)&&a[0]!==window.marchSprite(fs,lord)&&a[1].R>t.WPN[R.get(fs).pole][0]+4&&gear().has(a[2])&&a[2]===t.clothSprite(lord.banner(),0),'the spearman: his body bare, then his longer spear and the battle\'s cloth on it, over him');
    const b=drawn(fb);ok(b.length===2&&gear().has(b[0])&&b[0].ax!=null&&b[1]===window.marchSprite(fb,lord,undefined,true),'the bowman: the flag on his back first, then his body over it');
-   const c=drawn(fc),cp=!!R.get(fc).pole;ok(c.length===2&&(cp?gear().has(c[1])&&c[1].R:gear().has(c[0])&&c[0].ax!=null),'a rider flies one too ('+(cp?'on his lance':'at his back')+')');
+   const c=drawn(fc),cp=!!R.get(fc).pole;ok(cp?c.length===3&&c[1].R&&gear().has(c[2]):c.length===2&&gear().has(c[0])&&c[0].ax!=null,'a rider flies one too ('+(cp?'on his lance':'at his back')+')');
    ok(drawn(plain).length===1,'a man with neither: his body alone');
    const s=window.marchSprite(fb,lord);ok(s.free&&s.back&&s.hand&&s.free[0]<s.hand[0]&&s.back[1]<s.free[1],'a marcher\'s figure keeps its free hand and its back by its weapon hand ('+s.free+' / '+s.back+' / '+s.hand+')')}
   // ---- torches: after dark, in a free hand

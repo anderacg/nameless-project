@@ -28,8 +28,9 @@ function drawBlade(set,hx,hy,deg,k,Tm,skin,len=WPN[k][0],thin=false){
     // (a diagonal step gets its corner filled: one solid staircase the outline goes round once, not a chain of corners; with the
     //  paper dolls, unoutlined, a clean line a pixel wide, corner to corner)
     if(q&&q[0]!==p[0]&&q[1]!==p[1]&&!thin){const f=Math.abs(ex-x0)>=Math.abs(ey-y0)?[p[0],q[1]]:[q[0],p[1]];set(f[0],f[1],cl);pts.push(f)}set(p[0],p[1],cl);pts.push(p)}return pts};
-  // (its butt below the hand: a pole's 3 px; a paper doll's, held across his back, 8, so it shows by his far leg as the reference's)
-  line(hx,hy,a+Math.PI,POLE(k)&&k!=='javelin'?(thin&&k!=='lance'?8:3):1,W[2]);const shaft=line(hx,hy,a,len,col);
+  // (its butt below the hand: a pole's 3 px; a paper doll's, held across his back, 5, so it shows by his far leg as the reference's
+  //  and never reaches under his feet, 2026-11-07: "make sure the sprite looks correct")
+  line(hx,hy,a+Math.PI,POLE(k)&&k!=='javelin'?(thin&&k!=='lance'?5:3):1,W[2]);const shaft=line(hx,hy,a,len,col);
   const [tx,ty]=shaft[shaft.length-1];
   if(head==='guard'){shaft.slice(1).forEach(([x,y])=>set(x,y,M[0]));set(hx-s,hy+c,PPAL.gold[1]);set(hx+s,hy-c,PPAL.gold[2]);
     // (thin: its edge a tone darker down the blade's far side, its point lit, a pommel behind the hand)
@@ -70,7 +71,10 @@ const HOLD={
 // (with the paper dolls, as the owner's reference holds them: a sword or an axe low at rest, 40 degrees off upright, a great one so
 //  too; a spear, a pike or a javelin across his back, its tip up and forward, 35 degrees off upright, at rest and on the march;
 //  POLE_BACK: the angles a pole goes behind him at)
-const HOLD_DOLL={blade:{...HOLD.blade,rest:50},heavy:{...HOLD.heavy,rest:50},pole:{...HOLD.pole,rest:-55,march:-60},lance:HOLD.lance},POLE_BACK=[-80,-30];
+// (a doll's blade walking and running as at rest, low before him (the owner, 2026-11-07: "the weapons seem shorter when walking":
+//  over the shoulder, behind him, the body hid most of it), a little higher at a run; a great weapon, too long to hold low, upright
+//  before him, its blade up and a little forward)
+const HOLD_DOLL={blade:{...HOLD.blade,rest:50,march:50,run:40},heavy:{...HOLD.heavy,rest:-72,march:-72,run:-60},pole:{...HOLD.pole,rest:-55,march:-60},lance:HOLD.lance},POLE_BACK=[-80,-30];
 // (d: the look, or whether he is a paper doll (a fighter's u.wDoll, heldNow); none: as the switch says)
 const holdTab=(kind,d)=>(d==null?DOLL_FIGS.on:typeof d==='object'?dollable(d):d)?HOLD_DOLL[kind]:HOLD[kind];
 // (behind him: the angles over his shoulder (GEAR.behind), or a pole across his back (a paper doll's))
@@ -99,7 +103,7 @@ function holdOf(u,k){
 // sprite to look separated from the horse"), held at rest or on the march (HOLD: no blow nor foe there); its picture and corner
 // from his sprite's, and whether it goes behind his body; null for none
 function mapHeld(L,sp,walking){
-  const k=heldWeapon(L);if(!k||!sp.hand)return null;const kind=k==='lance'?'lance':POLE(k)?'pole':k==='great'||k==='bigaxe'||k==='hammer'?'heavy':'blade',deg=holdTab(kind,L)[walking?'march':'rest'];
+  const k=heldWeapon(L);if(!k||!sp.hand)return null;const kind=k==='lance'?'lance':POLE(k)?'pole':k==='great'||k==='bigaxe'||k==='hammer'?'heavy':'blade',deg=groundClamp(holdTab(kind,L)[walking?'march':'rest'],WPN[k][0],sp,L);
   const i=((Math.round(deg/360*WEAPON_STEPS)%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,w=weaponSprite(k,L.team,pal(L.skin)[1],i,undefined,dollable(L)),a=(i/WEAPON_STEPS*360+180)%360-180,x=sp.hand[0]-w.R,y=sp.hand[1]-w.R;
   return{w,x,y,back:heldBack(k,a,L)&&peeks(sp,w,x,y)}}
 // draw it, in the fighter's own (already turned) frame: (bx, by) is where his sprite's corner went
@@ -117,8 +121,12 @@ function heldAngle(u,k){
 const HELD={w:null,x:0,y:0,back:false,k:null,i:0};// (k, i: the weapon and its angle's step: a flag's cloth at its tip, marchgear.js)
 // (a flag man's spear in battle drawn BATTLE_BANNER.pole longer, so his flag flies over his head (marchgear.js); else its own length)
 const flagPole=(u,k)=>POLE(k)&&B&&!B.over&&typeof battleFlag==='function'&&battleFlag(u)?WPN[k][0]+BATTLE_BANNER.pole:undefined;
+// (a doll's weapon never through the ground (the owner, 2026-11-07: "make sure the sprite looks correct"): pointing down, its tip a
+// pixel over the row his feet stand on (the picture's height less 2), however long it is: an axe low as a sword, not cut off)
+const downClamp=(deg,len,drop)=>{const a=((deg%360)+360)%360,s=Math.sin(a*Math.PI/180);if(s<=0||len*s<=drop)return deg;const m=Math.asin(Math.max(0,Math.min(1,drop/len)))*180/Math.PI;return a<=90?m:180-m};
+function groundClamp(deg,len,sp,o){return dollable(o)&&sp.hand?downClamp(deg,len,sp.height-3-sp.hand[1]):deg}
 function heldNow(u,o,sp){
-  const k=heldWeapon(o);if(!k||!sp.hand)return null;u.wDoll=dollable(o);const [deg,hx,hy]=heldAngle(u,k),dx=sp.rig?0:hx,dy=sp.rig?0:hy,f=deg/360*WEAPON_STEPS;// (rigged: the fist carries it, people.js BLOW_RIG)
+  const k=heldWeapon(o);if(!k||!sp.hand)return null;u.wDoll=dollable(o);const [deg0,hx,hy]=heldAngle(u,k),deg=groundClamp(deg0,WPN[k][0],sp,o),dx=sp.rig?0:hx,dy=sp.rig?0:hy,f=deg/360*WEAPON_STEPS;// (rigged: the fist carries it, people.js BLOW_RIG)
   // (the step drawn changes only when the angle is well past the middle between two: no flicker on the boundary)
   if(u.wIdx==null||Math.abs(((f-u.wIdx)%WEAPON_STEPS+WEAPON_STEPS*1.5)%WEAPON_STEPS-WEAPON_STEPS/2)>.8)u.wIdx=Math.round(f);
   const i=((u.wIdx%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,w=weaponSprite(k,o.team,pal(o.skin)[1],i,flagPole(u,k),dollable(o)),a=(i/WEAPON_STEPS*360+180)%360-180;

@@ -91,7 +91,11 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // 0f9504c gives both again. Were 8cfc6411, 5eb97e7c)
  // (both again 2026-11-07: the owner, "make sure the outline doesn't look too square": a lance's thin shaft unringed, corners left
  // open, the lit side's outline lighter (people.js prim, DOLL_FIGS.rimLit). Proof: 5ff3c16 gives both again. Were ed920d7, d3fa43ba)
- const OLD='74d82a6a',FIRST='bc05bb84';
+ // (both again 2026-11-07: the owner, "a bit too big", "floating", "the sprite should look correct": the outline inside the figure,
+ // no bigger than drawn; every figure's feet on the row it stands on; a doll's sword walking as at rest, a great weapon upright,
+ // none through the ground (people.js prim, dollfigs.js DOLL_FIGS.dy 0, weapons.js HOLD_DOLL, downClamp). Proof: 9243c05 gives both
+ // again. Were 74d82a6a, bc05bb84)
+ const OLD='dbfcc2e8',FIRST='48977866';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

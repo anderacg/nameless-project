@@ -201,10 +201,10 @@ const CRITTER_MAP={
 const critterCols=(D,T,R)=>({h:R[0],H:R[1],d:R[2],k:R[3],w:'#f4f0e8',e:'#1a1410',n:'#e8a0a0',b:'#e8b94a',y:'#d8963a',r:'#d83a2a',a:'#d8c8a0',o:'#a89a7a',s:D.spots||R[3],...(T.x||{})});
 function critterSprite(id,f){f=(f||0)%PX.MAP_STEPS;const k='cr'+id+f;if(spr[k])return spr[k];
   const D=CRITTERS[id],T=CRITTER_MAP[D.look||id],R=PX.ramp(D.col),rows=T.rows.concat(PX.mapLegs(T.legs[0],T.legs[1],f)),g=pgrid(Math.max(...rows.map(r=>r.length))+2,rows.length+2),col=critterCols(D,T,R);
-  // (the paper dolls' style (dollfigs.js DOLL_FIGS.edge): no outline, its own edge a shade darker, its feet on the bottom row the
-  // outline under them took)
-  const E=CRITTER_EDGE();if(E)g.edge=true;rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c])pset(g,x+1,y+1+E,col[c])}));poutline(g);return spr[k]=cellOf(pcanvas(g))}
-const CRITTER_EDGE=()=>DOLL_FIGS.on&&DOLL_FIGS.edge?1:0;
+  // (the paper dolls' style (dollfigs.js DOLL_FIGS.edge): its outline inside it (DOLL_FIGS.rim), its feet on the row over the
+  // picture's bottom as every figure's; with no outline at all, a row down (CRITTER_DROP))
+  const E=CRITTER_EDGE();if(E)g.edge=true;rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c])pset(g,x+1,y+1+CRITTER_DROP(),col[c])}));poutline(g);return spr[k]=cellOf(pcanvas(g))}
+const CRITTER_EDGE=()=>DOLL_FIGS.on&&DOLL_FIGS.edge?1:0,CRITTER_DROP=()=>CRITTER_EDGE()&&!DOLL_FIGS.rim?1:0;
 /* one killed in a hunt (sprites.js deathOf, CRITTER_DEATHS): back, on its back, its legs in the air; belly, down on its belly, its
    legs folded under it; slump, its rump up on its hind legs, its front and head sunk to the ground. Its eye shut; the same cell as
    it stood, its body on the bottom row */
@@ -213,6 +213,6 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
   const D=CRITTERS[id],T=CRITTER_MAP[D.look||id],legs=T.legs[0],body=T.rows.map(r=>r.replace('e','H')),W=Math.max(...T.rows.map(r=>r.length),...legs.map(r=>r.length)),col=critterCols(D,T,PX.ramp(D.col));
   // (its rows over the ground: slump sinks each column of its front half by its legs' height, what goes under the ground lost)
   const rows=how==='back'?body.concat(legs).reverse():how==='belly'?body:body.concat(legs),n=rows.length,g=pgrid(W+2,(how==='belly'?body.length:body.length+legs.length)+2);
-  const E=CRITTER_EDGE();if(E)g.edge=true;rows.forEach((r,y)=>[...r].forEach((c,x)=>{const dy=how==='slump'&&x>=W>>1?legs.length:0;if(col[c]&&y+dy<n)pset(g,x+1,y+1+dy+E,col[c])}));poutline(g);return spr[k]=cellOf(pcanvas(g))}
+  const E=CRITTER_EDGE();if(E)g.edge=true;rows.forEach((r,y)=>[...r].forEach((c,x)=>{const dy=how==='slump'&&x>=W>>1?legs.length:0;if(col[c]&&y+dy<n)pset(g,x+1,y+1+dy+CRITTER_DROP(),col[c])}));poutline(g);return spr[k]=cellOf(pcanvas(g))}
 // its work in the world's day and frame (core/systems.js)
 Systems.add({name:'herds',order:{day:80,frame:120},day:critterDay,frame:updateCritters,ends:true});

@@ -33,9 +33,9 @@ try{
   ok(!bad.length&&size.dragon===64&&size.troll===32&&size.wyrm===32&&size.slime===16&&size.wolf===32,'every pose in a power-of-two cell: '+kinds.map(k=>k+' '+size[k]).join(', ')+(bad.length?' — not: '+bad.slice(0,4).join('; '):''));
   // (the feet: the lowest coloured row is the one over the outline at the bottom, in every pose; drawn at y - height + 2 they stand on y)
   // (FB: the feet's row from the bottom: 2 over the outline; 1 in the paper dolls' style, no outline: PX.BEAST_EDGE, 2026-11-06)
-  const FB=PX.BEAST_EDGE?1:2;const off=[];for(const k of kinds)for(const p of poses){const c=t.unitSprite(k,1,false,0,p),d=data(c),n=c.width;let low=-1;
+  const FB=PX.BEAST_EDGE&&!PX.BEAST_RIM?1:2;const off=[];for(const k of kinds)for(const p of poses){const c=t.unitSprite(k,1,false,0,p),d=data(c),n=c.width;let low=-1;
    for(let y=n-1;y>=0&&low<0;y--)for(let x=0;x<n;x++){const i=(y*n+x)*4;if(d[i+3]&&!isOut(d,i)){low=y;break}}if(p>=15&&p<=18?low<n-3-FB||low>n-FB:low!==n-FB)off.push(k+' '+p+' ('+low+')')}
-  ok(!off.length,'every pose stands on the unit’s point: its feet on the cell’s row n−'+FB+(FB===2?', the outline under them':', the bottom (no outline)')+' (running, it may leave the ground a little)'+(off.length?': '+off.slice(0,5).join(', '):''));
+  ok(!off.length,'every pose stands on the unit’s point: its feet on the cell’s row n−'+FB+(FB===2?', the row every figure stands on':', the bottom (no outline)')+' (running, it may leave the ground a little)'+(off.length?': '+off.slice(0,5).join(', '):''));
   // (c.ch: the figure's own height for the health bar: the standing figure's top, within the cell; the same in every pose)
   const ch=[];for(const k of kinds){const c=t.unitSprite(k,1,false,0,0),d=data(c),n=c.width;let top=n;for(let y=0;y<n&&top===n;y++)for(let x=0;x<n;x++)if(d[(y*n+x)*4+3]){top=y;break}
    if(c.ch!==n-top||poses.some(p=>t.unitSprite(k,1,false,0,p).ch!==c.ch))ch.push(k+' '+c.ch+'/'+(n-top))}

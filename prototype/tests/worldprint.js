@@ -495,7 +495,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  a circlet, a wizard's hat, a skull): the figures in its picture. Proof: 0f9504c gives it again. Was W6 385930b9)
 // (W6 again 2026-11-07, on purpose: the figures' outline natural, not square: thin lines unringed, the lit side lighter (people.js
 //  prim, engine/beasts.js outline). Proof: 5ff3c16 gives it again. Was W6 d9a0271d)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'93f6a84f',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
+// (W6 again 2026-11-07, on purpose: the owner's audit of the battle and the map's figures: the outline inside each figure, every
+//  figure's feet on its row, the map's flags the battle's, weapons held as in battle and never through the ground, kneelers on the
+//  ground. Proof: 9243c05 gives it again. Was W6 93f6a84f)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'24abfcf2',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

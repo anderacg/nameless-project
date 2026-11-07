@@ -11,7 +11,7 @@ Kit.suite(({ok})=>{
  // ---- nothing cut off, the feet where they were
  {const L=k=>t.lookOf(k,0,false,0,'',null),fig=t.unitSprite('hum_pike',0,false,0,0),body=t.unitSprite('hum_pike',0,false,0,0,true),b=t.opaqueBox(fig),bb=t.opaqueBox(body);
   // (2026-11-06: a paper doll's pike across his back, its tip up and forward: it reaches past the old frame's top or its side)
-  ok((fig.height-b[1]>16||b[2]-b[0]>bb[2]-bb[0]+8)&&b[3]===bb[3]&&b[3]===fig.height-1,'a pike reaches its full length past the old 24 x 19 frame ('+(fig.height-b[1])+' rows, '+(b[2]-b[0]+1)+' wide), the feet on the cell\'s bottom row as the body\'s');
+  ok((fig.height-b[1]>16||b[2]-b[0]>bb[2]-bb[0]+8)&&b[3]===bb[3]&&b[3]===fig.height-2,'a pike reaches its full length past the old 24 x 19 frame ('+(fig.height-b[1])+' rows, '+(b[2]-b[0]+1)+' wide), the feet on the row every figure stands on (over the cell\'s bottom), as the body\'s, its butt above the ground');
   const lance=t.unitSprite('hum_knight',0,false,0,10),lb=t.opaqueBox(lance);ok(lb[2]-(lance.width>>1)>16,'a rider\'s lance levelled in a thrust reaches past his 32-px frame ('+(lb[2]-(lance.width>>1))+' px before his middle)');
   const m=t.unitSprite('militia',1,false,2,0);ok(m.width===32&&m.cw===24&&m.ch===16,'a figure whose gear fits keeps its frame (24 wide, 16 high in a 32 cell)');
   const mids=['hum_spear','hum_pike','hum_bow','dw_axe','elf_blade'].every(k=>{const a=t.unitSprite(k,0,false,0,0),c=t.unitSprite(k,0,false,0,0,true);return a.width===c.width||Math.abs(a.hand[0]-a.width/2-(c.hand[0]-c.width/2))<1});
@@ -26,7 +26,10 @@ Kit.suite(({ok})=>{
   {const d=px(sl),T=t.BANNER_DEV[t.SHIELD_ART.dev.human],lit=new Set();for(let i=0;i<d.length;i+=4)if(d[i+3]&&d[i]>230&&d[i+1]>220)lit.add(i);
    ok(same(bare,sl,Mb)>6&&T&&lit.size>=3,'a shield carried before his off arm: '+same(bare,sl,Mb)+' of his pixels covered, his people\'s device on it')}
   ok(same(bare,up)>4,'raised to meet a blow it is before him ('+same(bare,up)+' of his pixels covered)');
-  const A=t.lookOf('hum_bow',0,false,0,'',null),ab=t.peopleSprite({...A,weapon:null},0),aq=t.peopleSprite({...A,weapon:null,slung:'bow'},0);ok(same(ab,aq,bodyOf({...A,weapon:null}))===0&&px(ab).join()!==px(aq).join(),'a bow put away and its quiver hang on his back, behind him');
+  // (the layers drawn without the outline (DOLL_FIGS.rim off): inside the figure, a body pixel beside the quiver is no longer at
+  // its edge, so its shade would change though nothing covers it)
+  const A=t.lookOf('hum_bow',0,false,0,'',null),noRim=f=>{flush();D.rim=false;try{return f()}finally{D.rim=r0;flush()}},[ab,aq]=noRim(()=>[t.peopleSprite({...A,weapon:null},0),t.peopleSprite({...A,weapon:null,slung:'bow'},0)]);
+  ok(same(ab,aq)===0&&px(ab).join()!==px(aq).join(),'a bow put away and its quiver hang on his back, behind him');
   ok(t.GEAR.layer.shield>0&&t.GEAR.layer.quiver<0&&t.GEAR.layer.main>0&&t.GEAR.layer.guard>0,'one table says it (GEAR.layer)')}
  // ---- what a unit carries
  {const arm=t.unitSprite('hum_bow',0,false,0,0,true,true),bare=t.unitSprite('hum_bow',0,false,0,0,true);ok(px(arm).join()!==px(bare).join()&&t.opaqueBox(arm)[0]<t.opaqueBox(t.unitSprite('hum_bow',0,false,0,0,true,false))[0]+1,'an archer in melee mode has his bow on his back');
@@ -42,7 +45,8 @@ Kit.suite(({ok})=>{
  {G.mode='world';G.modal=false;t.hidePanel();P.troops={hum_foot:6,hum_spear:6};G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia','militia','militia','militia']};t.startBattle({enemies:G.enc.list,tournament:false});
   const B=t.B,sw=B.units.find(u=>u.type==='hum_foot'),sp=t.actorSprite(sw,0,true);sw.tgt=null;sw.atkAt=null;sw.stun=0;sw.spdNow=0;sw.wIdx=null;
   const rest=t.heldNow(sw,t.unitLook(sw),sp).back;sw.spdNow=sw.s.spd*.55;sw.wIdx=null;const mh=t.heldNow(sw,t.unitLook(sw),sp),march=mh.back,ma=(sw.wIdx/t.WEAPON_STEPS*360+180)%360-180;sw.spdNow=0;
-  ok(!rest&&!march&&ma>t.GEAR.behind[0]&&ma<t.GEAR.behind[1],'a sword at rest is drawn before him; on his shoulder on the march too, where behind him his body would hide it (weapons.js peeks)');
+  // (2026-11-07: a paper doll's sword walking as at rest, low before him, the whole of it showing (the owner: "shorter when walking"))
+  ok(!rest&&!march&&(t.DOLL_FIGS.on?ma>20&&ma<80:ma>t.GEAR.behind[0]&&ma<t.GEAR.behind[1]),t.DOLL_FIGS.on?'a sword at rest and on the march drawn before him, low, the whole of it showing ('+Math.round(ma)+' degrees)':'a sword at rest is drawn before him; on his shoulder on the march too, where behind him his body would hide it (weapons.js peeks)');
   t.HPBARS.on=false;const c=t.ctx,f0=c.fillRect,fills=[];try{c.fillRect=function(...a){fills.push(c.fillStyle);return f0.apply(this,a)};for(const u of B.units){u.plx=u.x;u.ply=u.y;t.drawUnit(u)}}finally{c.fillRect=f0}
   ok(!fills.includes('#e8b94a'),'no health bar over your hero or your companions (nor anyone) with the bars off');
   for(let i=0;i<30;i++)t.updateBattle(.03);t.drawBattle();const g=B.units.find(u=>u.team===1).grp;for(const u of B.units)if(u.grp===g)u.hp=Math.max(1,u.hp*.5);
