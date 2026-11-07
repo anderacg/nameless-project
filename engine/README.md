@@ -86,3 +86,8 @@ PX.registerBuildStyle('karn',{
 
 ## Loading
 In a page: `<script src="../engine/pixel.js"></script>`, then `buildkit.js`, then `pieces.js`, then `ground.js`, then `worldnature.js` (it reads `ground.js`'s `PX.GROUND_PAL`), then `beasts.js`, then `buildmodels.js`, then the cultures' styles (`build-vale.js`, `build-karn.js`, `build-ashgor.js`, `build-sylvan.js`: they register into it), then `model.js` (it reads `beasts.js`'s `PX.ramp`; the catalogue calls it only when asked).
+
+
+## Portrait generator workshop
+
+Open [face arts/portrait-workshop.html](face%20arts/portrait-workshop.html) for the current offline procedural portrait tool: 128 × 128 grayscale parts, independent layers, tinting, ears and race-specific generation. Editable sources and race compatibility rules are in [face arts/grayscale/](face%20arts/grayscale/README.md). Run `python "engine/face arts/build.py"` to rebuild the public workshop. The prior v3 matched-image study is kept as a labeled archive in the same folder.
