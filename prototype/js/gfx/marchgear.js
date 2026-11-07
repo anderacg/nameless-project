@@ -111,16 +111,29 @@ function battleFlag(u){if(!MARCH_GEAR.flags||!B||u.hero||u.comp||u.leader)return
     const men=B.units.filter(v=>v.grp===u.grp&&!v.hero&&!v.comp&&!v.leader&&!ST[v.type]?.beast&&!ST[v.type]?.wildlife).sort((a,b)=>marchHash(a.id)-marchHash(b.id)||a.id-b.id);
     men.slice(0,gearShare(men.length,MARCH_GEAR.flag)).forEach(v=>F.add(v))}
   if(!F.has(u))return null;const o=u.sourceArmy||(u.team===0&&!u.lord?P:null),b=o?.banner?.();return b&&typeof b==='object'?b:null}
-// (a flag's cloth alone, hung from (ax, ay): a spear's in battle)
-function clothSprite(b,f){const key='fc'+b.k+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;const [cw,ch]=MARCH_GEAR.cloth[b.k]||MARCH_GEAR.cloth.banner,g=pgrid(cw+2,ch+3);
-  flagCloth(g,cw,1,b,f);g.edge=true;poutline(g);c=pcanvas(g);c.ax=cw;c.ay=1;MARCH_FLAGS.set(key,c);return c}
+/* the battle's flags (the owner, 2026-11-07: "a flag attached to some units, not too square and big enough to be distinctive"): the
+   army cards' banner in small (sprites.js bannerCloth): a swallow-tailed banner, a rag, a pennant, its folds lit, its fly waving, the
+   army's device in its middle; cloth: each shape's [w, h]; fold, fly: its folds and where its fly begins to wave; notch: its
+   swallow tail's cut; back: a back
+   flag's pole (h px, up: its foot under his shoulders), tall enough that the cloth flies over his head; pole: how much longer a flag
+   man's spear is drawn, so his cloth flies over his head too (drawing only: his reach is his spear's) */
+const BATTLE_BANNER={cloth:{banner:[10,8],rag:[10,8],pennant:[11,7],trade:[7,4]},fold:1.2,fly:6,notch:2,back:{h:22,up:3},pole:7};
+// (a flag's cloth alone, hung from (ax, ay) by its first column, trailing back to the left: a spear's in battle)
+function clothSprite(b,f){const key='fc'+b.k+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;const Q=BATTLE_BANNER,[cw,ch]=Q.cloth[b.k]||Q.cloth.banner,g=pgrid(cw+2,ch+4);
+  bannerCloth((x,y,c)=>pset(g,x,y,c),cw,2,b,f,Q.cloth,-1,Q);g.edge=true;poutline(g);c=pcanvas(g);c.ax=cw+1;c.ay=2;MARCH_FLAGS.set(key,c);return c}
+// (a flag at his back in battle: a tall pole up from under his shoulders, a gilt knob atop, the banner hung under it; ax, ay: the
+// shoulders' point)
+function battleBackFlag(b,f){const key='fB'+b.k+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;
+  const Q=BATTLE_BANNER,{h,up}=Q.back,[cw]=Q.cloth[b.k]||Q.cloth.banner,g=pgrid(cw+3,h+4),x=cw+1,W=PPAL.wood;
+  for(let y=2;y<=h+1;y++)pset(g,x,y,W[y>h-2?2:1]);pset(g,x,1,PPAL.gold[1]);pset(g,x,0,PPAL.gold[0]);bannerCloth((X,Y,c)=>pset(g,X,Y,c),x-1,3,b,f,Q.cloth,-1,Q);
+  g.edge=true;poutline(g);c=pcanvas(g);c.ax=x;c.ay=h+1-up;MARCH_FLAGS.set(key,c);return c}
 // (its wave: still while he stands, MARCH_GEAR.flutter a second as he moves)
 const battleWave=(u,moved)=>moved?Math.floor(B.t*MARCH_GEAR.flutter+(u.id||0)*.37)%2:0;
 // (in drawUnit's frame: X, Y his sprite's corner; a spearman's flag is on his spear (battleFlagFront), not his back)
-function battleFlagBack(u,b,sp,X,Y,f){if(!sp.back||POLE(heldWeapon(unitLook(u))))return;const c=backFlagSprite(b,f);ctx.drawImage(c,X+sp.back[0]-c.ax,Y+sp.back[1]-c.ay)}
-// (the cloth hung MARCH_GEAR.hang px under the spear's head, found on the spear's own picture (poleTip): whatever its length and
+function battleFlagBack(u,b,sp,X,Y,f){if(!sp.back||POLE(heldWeapon(unitLook(u))))return;const c=battleBackFlag(b,f);ctx.drawImage(c,X+sp.back[0]-c.ax,Y+sp.back[1]-c.ay)}
+// (the cloth hung just under the spear's head, found on the spear's own picture (poleTip): whatever its length and
 // however it is drawn, thin or not, it hangs on the shaft (the owner, 2026-11-07: "the spear still has no flag attached"))
-function battleFlagFront(u,b,hw,X,Y,f){if(!hw||!POLE(hw.k))return;const [tx,ty]=poleTip(hw.w),l=Math.hypot(tx,ty)||1,k=Math.max(0,l-1-MARCH_GEAR.hang)/l,c=clothSprite(b,f);
+function battleFlagFront(u,b,hw,X,Y,f){if(!hw||!POLE(hw.k))return;const [tx,ty]=poleTip(hw.w),l=Math.hypot(tx,ty)||1,k=Math.max(0,l-2)/l,c=clothSprite(b,f);
   ctx.drawImage(c,Math.round(X+hw.x+hw.w.R+tx*k)-c.ax,Math.round(Y+hw.y+hw.w.R+ty*k)-c.ay)}
 // (a weapon picture's tip: its pixel farthest from the hand at its middle (R), kept on the picture)
 function poleTip(w){if(w.tip)return w.tip;const R=w.R,d=w.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w.width,w.height).data;let best=0,tip=[0,-1];

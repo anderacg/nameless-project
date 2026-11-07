@@ -115,11 +115,13 @@ function heldAngle(u,k){
 // (the weapon in his hand this frame, worked out once (HELD, one record, no allocation a frame): its picture, its corner from his
 // sprite's, and whether it goes behind his body (GEAR.behind); null for none. render.js drawUnit draws it before his body or after)
 const HELD={w:null,x:0,y:0,back:false,k:null,i:0};// (k, i: the weapon and its angle's step: a flag's cloth at its tip, marchgear.js)
+// (a flag man's spear in battle drawn BATTLE_BANNER.pole longer, so his flag flies over his head (marchgear.js); else its own length)
+const flagPole=(u,k)=>POLE(k)&&B&&!B.over&&typeof battleFlag==='function'&&battleFlag(u)?WPN[k][0]+BATTLE_BANNER.pole:undefined;
 function heldNow(u,o,sp){
   const k=heldWeapon(o);if(!k||!sp.hand)return null;u.wDoll=dollable(o);const [deg,hx,hy]=heldAngle(u,k),dx=sp.rig?0:hx,dy=sp.rig?0:hy,f=deg/360*WEAPON_STEPS;// (rigged: the fist carries it, people.js BLOW_RIG)
   // (the step drawn changes only when the angle is well past the middle between two: no flicker on the boundary)
   if(u.wIdx==null||Math.abs(((f-u.wIdx)%WEAPON_STEPS+WEAPON_STEPS*1.5)%WEAPON_STEPS-WEAPON_STEPS/2)>.8)u.wIdx=Math.round(f);
-  const i=((u.wIdx%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,w=weaponSprite(k,o.team,pal(o.skin)[1],i,undefined,dollable(o)),a=(i/WEAPON_STEPS*360+180)%360-180;
+  const i=((u.wIdx%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,w=weaponSprite(k,o.team,pal(o.skin)[1],i,flagPole(u,k),dollable(o)),a=(i/WEAPON_STEPS*360+180)%360-180;
   HELD.w=w;HELD.k=k;HELD.i=i;HELD.x=sp.hand[0]+Math.round(dx)-w.R;HELD.y=sp.hand[1]+Math.round(dy)-w.R;HELD.back=heldBack(k,a,o)&&peeks(sp,w,HELD.x,HELD.y);return HELD}
 // (a picture's alpha by pixel, read once)
 function alphaOf(c){if(c.alpha)return c.alpha;const d=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data,A=new Uint8Array(c.width*c.height);for(let i=0;i<A.length;i++)A[i]=d[i*4+3];return c.alpha=A}
