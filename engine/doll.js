@@ -76,10 +76,12 @@
     short:{slot:'hair',cover:'s'},long:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','.2..2','.3..3']}},
     tail:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','....3','....3']}},bald:{slot:'hair'},
     beard:{slot:'beard',shape:{at:'head',rows:['.....','.....','.12..','.23..']}},
-    // (a crop (the owner, 2026-11-07: "revise head"): fuller short hair, rounded over the top from a lower fringe before, out a
-    //  pixel behind to the nape, so his head is a head and not a strip; an eye on his face's front, looking the way he goes)
-    crop:{slot:'hair',cover:'s',shape:{at:'head',up:1,rows:['..12.','.0012','....2','....3']}},
-    eye:{slot:'beard',shape:{at:'head',rows:['.....','.3...']}},
+    // (a crop, seen from before him as his body is (the owner, 2026-11-07: "revise head", then "make the head look more forward"):
+    //  short hair over the top of his head, a short sideburn either side; his face its full width (face: the scalp's back column
+    //  skin, not hair) and two eyes)
+    crop:{slot:'hair',cover:'s',shape:{at:'head',up:1,rows:['.011.','2...2','3...3']}},
+    face:{slot:'beard',shape:{at:'head',rows:['.....','...1.','...1.']}},
+    eye:{slot:'beard',shape:{at:'head',rows:['.....','.3.3.']}},
     // the head: a hood (over the scalp, round the face, onto the shoulders), a cap, a kettle helm (its brim), a great helm (face and
     // all), a coif of mail
     hood:{slot:'head',cover:'s',shape:{at:'head',rows:['.12..','0...2','1...3','2...3']},mottle:.15},

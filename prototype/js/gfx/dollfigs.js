@@ -34,7 +34,7 @@ function dollParts(o){const T={dark:1},P=[],out=o.outer||'leather',arm=o.armor||
     else if(arm==='leather')P.push(['shirt',o.inner||'linen'],['tunic',out,o.sleeves?{cover:'cbpt'}:undefined],...tb,['belt','leather']);
     else P.push(['shirt','team',T],['vest',out],['belt','leather'])}
   if(o.cape)P.push(['cloak',o.cape===true?'team':o.cape]);
-  if(o.dollEye)P.push(['eye','black']);
+  if(o.dollEye)P.push(['face','skin'],['eye','black']);
   const h0=o.helm==='hood'?['hood',o.hood||'olive']:DOLL_HELM[o.helm],h=h0&&o.helmC?Array.isArray(h0[0])?[[h0[0][0],o.helmC],...h0.slice(1)]:[h0[0],o.helmC]:h0;if(h)Array.isArray(h[0])?P.push(...h):P.push(h);
   return P}
 // its doll's spec: race, skin, hair, beard, parts, the side's colour, pose. Its colours are channels painted at the last (engine/doll.js
