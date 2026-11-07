@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "headwearFit": {
     "type": "Open",
     "ears": "show",
@@ -24,7 +24,17 @@
     "marks": "none",
     "clothing": "gambeson",
     "headwear": "none",
-    "profile": "custom"
+    "profile": "custom",
+    "adjustments": {
+      "faceWidth": 0,
+      "jawWidth": 0,
+      "eyeSpacing": 0,
+      "eyeSize": 0,
+      "noseWidth": 0,
+      "mouthWidth": 0,
+      "earSize": 0,
+      "hairVolume": 0
+    }
   },
   "drawOrder": [
     {
