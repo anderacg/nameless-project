@@ -48,7 +48,7 @@ const roadBandN=()=>roadRng().int(5,7)+Math.floor(G.day/15);
 // (the encounter fought: off the map, encounter:fought; the battle carries it (road), so its end is the battle's: story/encounter.js.
 // An ambush's band stands where it lay hidden (roadLieOf), so the battle on the map opens with it coming out of the trees; else
 // where you are)
-function roadFight(e,amb,edge=amb){asEncounter(e).fought();G.road=null;const L=roadLieOf(e),x=L?L[0]:P.x,y=L?L[1]:P.y,k=amb?e.band||roadBand(P.x,P.y):'bandits',n=e.foes?e.foes.length:amb?roadBandN():e.n,b=asParty({x,y,dir:P.x>=x?1:-1,cool:0,n,kind:k,...(e.foes?{troops:e.foes.slice()}:{})});
+function roadFight(e,amb,edge=amb){asEncounter(e).fought();G.road=null;const L=roadLieOf(e),x=L?L[0]:P.x,y=L?L[1]:P.y,k=amb?e.band||roadBand(P.x,P.y):'bandits',n=e.foes?e.foes.length:amb?roadBandN():e.n,h=e.real&&townBy(e.home),b=asParty({x,y,dir:P.x>=x?1:-1,cool:0,n,kind:k,...(h?{flagB:holdingFlag(h,facCol(h)),colB:facCol(h)}:{}),...(e.foes?{troops:e.foes.slice()}:{})});// (a realm's real toll-men: their holding's flag and colours)
   startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),band:k,road:e,...(e.D&&e.D.vs?e.D.vs(e):{}),...(edge?{btype:{kind:'ambush',hid:1}}:{})})}
 /* the kinds: Encounter kinds (story/kinds.js defineKinds; their trigger 'travelHour', the pity timer's: ROAD_ENC is their view;
    a kind of its own class, cls: the shepherd). n, ico (its page's icon), w (weight; wf: × by your band), ok() (can it come here and now: today's event's rule), on
