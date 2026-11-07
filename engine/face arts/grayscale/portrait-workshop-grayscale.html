@@ -5,9 +5,13 @@
 .preset-label{display:block;font-size:12px;color:var(--gold);margin:2px 0 6px}#preset{margin-bottom:18px;border-color:#786b4e}
 
 .profile-picker{display:flex;gap:7px}.profile-picker button{flex:1;min-width:0;font-size:13px;padding:8px}.profile-picker button[aria-pressed=true]{background:#b49a68;color:#171b1c;border-color:#d1b47c;font-weight:700}.profile-hint{font-size:11px;line-height:1.5;margin:10px 0 17px;color:var(--muted)}
+
+/* Character creation and world-character studio. */
+.studio-section{margin-top:32px;padding-top:24px;border-top:1px solid var(--edge)}.studio-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}.studio-toolbar button{font-size:13px}.studio-toolbar label{font-size:12px}.studio-details{border:1px solid var(--edge);padding:12px;border-radius:6px;margin:15px 0}.studio-details summary{cursor:pointer;color:var(--gold);font-size:13px}.tuning-grid{display:grid;gap:12px;margin:15px 0}.tuning-row{display:grid;grid-template-columns:1fr 28px;align-items:center;gap:6px;font-size:12px}.tuning-row input[type=range]{width:100%;grid-column:1/-1;accent-color:var(--gold)}.tuning-row output{text-align:right;color:var(--gold)}.tuning-row .small{font-size:11px;grid-column:1/-1;justify-self:end}.lock-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.lock-chip{padding:7px 10px;border:1px solid var(--edge);border-radius:5px;font-size:12px}.portrait-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:18px}.portrait-choice{min-width:0;border:1px solid var(--edge);border-radius:6px;overflow:hidden;background:var(--panel)}.portrait-choice>button:first-child{display:block;padding:8px;width:100%;border:0;border-radius:0;text-align:left;min-height:0}.portrait-choice canvas{display:block;width:100%;height:auto;aspect-ratio:1;image-rendering:pixelated;background:radial-gradient(ellipse,#303936,#1c2423)}.portrait-choice span{display:block;margin:8px 1px 2px;font-size:11px;overflow-wrap:anywhere}.portrait-choice>button+button{width:100%;font-size:11px;border-width:1px 0 0;border-radius:0}.studio-two-column{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}.studio-panel{padding:18px;border:1px solid var(--edge);border-radius:7px;background:var(--panel);min-width:0}.studio-panel p{font-size:12px}.studio-panel>button{font-size:12px;margin:8px 5px 0 0}.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.compare-grid canvas{display:block;width:100%;height:auto;image-rendering:pixelated;aspect-ratio:1;border:1px solid var(--edge)}.compare-grid span{font-size:11px;color:var(--muted)}.reserved-player{display:flex;align-items:center;gap:14px}.reserved-player canvas{width:128px;max-width:45%;height:auto;aspect-ratio:1;image-rendering:pixelated;flex:none}.npc-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.npc-controls label{font-size:12px;color:var(--muted);display:grid;gap:5px}.preset-name{display:grid;gap:5px;min-width:160px;flex:1}.preset-name input{background:#111719;border:1px solid #49534d;border-radius:4px;color:var(--ink);min-height:44px;padding:8px;min-width:0;width:100%}button:disabled{opacity:.45;cursor:default}.studio-panel ul{font-size:12px;padding-left:18px}.studio-panel li{margin:8px 0}.studio-panel li button{font-size:11px;min-height:30px;padding:4px 8px}.studio-panel li.error{color:#e5b5a6}.studio-panel li.notice{color:#d9c28c}@media(max-width:900px){.portrait-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:600px){.portrait-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.studio-two-column{grid-template-columns:1fr}.npc-controls{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-panel{padding:14px}.studio-toolbar{gap:8px}.studio-toolbar button{font-size:12px;padding:9px 10px}.portrait-choice>button:first-child{padding:5px}.portrait-choice span{font-size:10px}.studio-toolbar .preset-name{flex-basis:100%}}
+.workspace{align-items:start}.portrait-panel{position:sticky;top:16px}#floating-face{display:none}#floating-face[hidden]{display:none}@media(max-width:760px){.portrait-panel{position:static}#floating-face:not([hidden]){display:block;position:fixed;right:12px;bottom:12px;width:88px;padding:5px;font-size:10px;z-index:20;border-color:var(--gold);box-shadow:0 3px 18px #0008}#floating-face canvas{width:76px;height:76px;display:block;image-rendering:pixelated;background:#252e2b}}
 </style></head>
 <body><main>
-<header><div class="eyebrow">ASHMARK <span>/</span> PORTRAIT WORKSHOP · MEDIEVAL STUDY</div><h1>A face, piece by piece.</h1><p>Medieval-inspired faces, clothing and headwear. Separate grayscale pieces, ready for your own colors.</p></header>
+<header><div class="eyebrow">ASHMARK <span>/</span> CHARACTER STUDIO · PLAYER & NPC RECIPES</div><h1>A face, piece by piece.</h1><p>Create a player, explore variations, and build distinct characters for your world. Every source part remains grayscale and editable.</p></header>
 <div class="workspace">
 <section class="portrait-panel" aria-label="Assembled portrait">
 <div class="panel-heading"><span class="eyebrow">ASSEMBLED PORTRAIT</span><div class="segments" aria-label="Portrait coloring"><button id="gray" aria-pressed="true">Grayscale</button><button id="color" aria-pressed="false">Tint preview</button></div></div>
@@ -20,13 +24,27 @@
 <div class="seed-row"><label for="seed">Texture seed</label><input id="seed" type="number" min="0" max="4294967295" value="23"></div>
 <div class="color-heading"><h3>Independent colors</h3><span id="color-hint">Enable tint preview to apply</span></div><div id="colors" class="colors"></div><p class="hint">Source layers stay grayscale. Tints change only the assembled preview; skin, hair and eyes keep their own shading.</p>
 </aside></div>
+<section class="studio-section" aria-label="Character creation and variations">
+<div class="section-heading"><div><div class="eyebrow">CHARACTER CREATION</div><h2>Keep what you like. Explore the rest.</h2></div><p>Locks apply to player variations. NPC generation uses its own face pool.</p></div>
+<div class="studio-toolbar"><button id="make-variations" class="primary">Show 12 variations</button><label class="check"><input id="vary-proportions" type="checkbox"> Vary proportions</label><button id="unlock-all">Unlock all</button><button id="race-palette">Use race colors</button></div>
+<details class="studio-details"><summary>Lock parts for variations</summary><div id="part-locks" class="lock-list"></div></details>
+<div id="variation-grid" class="portrait-grid" aria-label="Player variations"></div>
+<p id="studio-status" role="status" class="status">Choose parts above, then explore variations.</p>
+<div class="studio-two-column">
+<section class="studio-panel"><h2>Before and after</h2><p>Pin a version while you adjust the current face.</p><div class="compare-grid"><div><canvas id="compare-before" width="128" height="128" class="checker" aria-label="Pinned before portrait"></canvas><span id="before-label">Before · not pinned</span></div><div><canvas id="compare-after" width="128" height="128" class="checker" aria-label="Current after portrait"></canvas><span>Current</span></div></div><button id="pin-before">Pin current as Before</button><button id="inspect-parts">Check parts</button><ul id="inspection-results" aria-live="polite"></ul></section>
+<section class="studio-panel"><h2>Player face reservation</h2><p>Save the finished player before generating NPCs. Clothing, color, hair and age do not count as a different face.</p><div class="reserved-player"><canvas id="player-reference" width="128" height="128" class="checker" aria-label="Saved player portrait"></canvas><p id="player-label">No player saved yet.</p></div><button id="save-player" class="primary">Use current as player</button><button id="export-player">Export player recipe</button></section>
+</div></section>
+<section class="studio-section" aria-label="NPC generation"><div class="section-heading"><div><div class="eyebrow">WORLD CHARACTERS</div><h2>Lords, companions and townsfolk.</h2></div><p>NPCs must differ from the player in at least two core facial groups. Existing NPC faces are reserved too.</p></div>
+<div class="npc-controls"><label>Race<select id="npc-race"></select></label><label>Starting profile<select id="npc-profile"><option value="custom">Any profile</option><option value="male">Male</option><option value="female">Female</option></select></label><label>Role<select id="npc-role"></select></label><label>Generation<select id="npc-mode"><option value="mixed">Mixed</option><option value="random">Random</option><option value="preset">Preset only</option></select></label><label>Count<select id="npc-count"><option>1</option><option>2</option><option>4</option><option selected>8</option><option>12</option><option>16</option><option>32</option></select></label><label>World seed<input id="npc-seed" type="number" min="0" max="4294967295" value="1"></label></div>
+<div class="studio-toolbar"><button id="generate-npcs" class="primary" disabled>Generate NPCs</button><button id="export-npcs">Export roster JSON</button><button id="export-sheet">Export portrait sheet</button><button id="clear-npcs">Clear NPC preview</button></div><p id="npc-status" role="status" class="status">Save a player face to enable NPC generation.</p><div id="npc-grid" class="portrait-grid" aria-label="Generated NPCs"></div></section>
+<section class="studio-section" aria-label="Saved character presets"><div class="section-heading"><div><div class="eyebrow">YOUR COLLECTION</div><h2>Named presets and favorites.</h2></div><p>Saved presets can be used in NPC generation. The player face is always excluded.</p></div><div class="studio-toolbar"><label class="preset-name">Preset name<input id="preset-name" maxlength="64" placeholder="e.g. Northern captain"></label><label>Preset use<select id="preset-role"><option value="">Any role</option></select></label><button id="save-favorite" class="primary">Save favorite</button><button id="export-collection">Export collection</button><button id="import-collection">Load collection</button><input id="collection-file" type="file" accept="application/json,.json" hidden></div><p id="collection-status" class="status" role="status">Favorites are stored in this browser; export a copy to keep them with your game files.</p><div id="favorites-grid" class="portrait-grid" aria-label="Saved presets"></div></section>
 <section class="layer-section"><div class="section-heading"><div><div class="eyebrow">THE COMPONENTS</div><h2>Drawn apart. Aligned together.</h2></div><p>Tap a layer to inspect or export it. Checkboxes control the assembled face.</p></div><div id="layers" class="layers"></div></section>
 <section class="bottom-panel"><div><h2 id="layer-title">Inspect a layer</h2><p>Every part has the same canvas and origin. Hair is split behind and in front of the face so it overlaps correctly. The inspector magnifies small parts; exported layers keep their original canvas.</p><div class="actions wrap"><button id="download-layer">Export selected layer</button><button id="download-atlas">Export grayscale atlas</button></div></div><div class="inspection checker"><canvas id="inspection" width="128" height="128" aria-label="Selected grayscale layer"></canvas></div></section>
 <footer><div><strong>Keep the pieces editable.</strong><p>Export a portrait, or save its recipe and layer positions. This workshop runs offline and does not change the game.</p></div><div class="actions wrap"><button id="import-json">Load recipe</button><input id="recipe-file" type="file" accept="application/json,.json" hidden><button id="download-json">Save recipe + rig</button><button class="primary" id="download-portrait">Export portrait</button></div></footer>
 </main><script>/* Ashmark portrait study: independent grayscale layers, one shared face rig. No image assets. */
 (function (root) {
   'use strict';
-  const SIZE = 128, VERSION = 6;
+  const SIZE = 128, VERSION = 7;
   const OPTIONS = Object.freeze({
     race: ['human', 'dwarf', 'orc', 'elf'],
     face: ['oval', 'angular', 'broad', 'long', 'round', 'chiseled', 'heart', 'balanced', 'soft-oval', 'tapered', 'full-cheeked', 'narrow', 'youthful', 'soft-heart', 'strong-jaw', 'dwarven', 'orcish', 'elven', 'dwarf-square', 'orc-heavy', 'elf-high-cheek'],
@@ -59,7 +77,13 @@
     type:group,ears:group==='Enclosing'||group==='Draped'?'hide':'show',hair:group==='Open'?'show':group==='Enclosing'?'hide':group==='Draped'?'frame':'tuck',
     ...(group==='Caps and helmets'?{rim:kind==='kettle'?40:kind==='straw-hat'?38:kind==='nasal'?36:35}:{})
   })]))));
-  const DEFAULTS = Object.freeze({race:'human',ears:'normal',seed:23,face:'angular',hair:'pageboy',eyes:'calm',brows:'bold',nose:'straight',mouth:'neutral',beard:'stubble',age:'seasoned',marks:'none',clothing:'gambeson',headwear:'none',profile:'custom'});
+  const ADJUSTMENTS=Object.freeze({
+    faceWidth:{name:'Face width',min:-2,max:2},jawWidth:{name:'Jaw width',min:-2,max:2},
+    eyeSpacing:{name:'Eye spacing',min:-2,max:2},eyeSize:{name:'Eye size',min:-1,max:1},
+    noseWidth:{name:'Nose width',min:-2,max:2},mouthWidth:{name:'Mouth width',min:-2,max:2},
+    earSize:{name:'Ear size',min:-1,max:1},hairVolume:{name:'Hair volume',min:-1,max:1}
+  });
+  const DEFAULTS = Object.freeze({adjustments:Object.freeze(Object.fromEntries(Object.keys(ADJUSTMENTS).map(k=>[k,0]))),race:'human',ears:'normal',seed:23,face:'angular',hair:'pageboy',eyes:'calm',brows:'bold',nose:'straight',mouth:'neutral',beard:'stubble',age:'seasoned',marks:'none',clothing:'gambeson',headwear:'none',profile:'custom'});
   const PROFILES=Object.freeze(['male','female','custom']);
   const PROFILE_FEATURES={
     male:{face:'chiseled',hair:'waves',eyes:'clear',brows:'sculpted',nose:'straight',mouth:'gentle-smile',beard:'none'},
@@ -201,13 +225,16 @@
     g.save();g.translate(x,y);g.scale(direction,1);draw();g.restore();
   }
   // Every part receives this same rig. Replacements never guess their own absolute coordinates.
-  function rig(shape) {
-    const v = {oval:{w:22,jaw:14,chin:9,eye:10}, angular:{w:23,jaw:20,chin:11,eye:11}, broad:{w:27,jaw:22,chin:13,eye:12},long:{w:20,jaw:13,chin:8,eye:9,y:92},round:{w:26,jaw:18,chin:12,eye:11,y:86},chiseled:{w:24,jaw:20,chin:12,eye:11,y:87,cheek:57,jawY:79,eyeY:52,definition:1,softness:.15},heart:{w:23,jaw:13,chin:7,eye:11,y:86,cheek:57,eyeY:52,mouthY:74,noseY:63,definition:.15,softness:1},balanced:{w:23,jaw:16,chin:10,eye:11,y:88,cheek:58,eyeY:52,mouthY:75,definition:.4,softness:.6},'soft-oval':{w:23,jaw:15,chin:10,eye:11,y:88,cheek:58,softness:.85,definition:.2},tapered:{w:22,jaw:14,chin:9,eye:10,y:87,cheek:56,softness:.5,definition:.3},'full-cheeked':{w:26,jaw:19,chin:12,eye:11,y:87,cheek:59,softness:.8,definition:.1},narrow:{w:20,jaw:14,chin:9,eye:10,y:90,softness:.45,definition:.3},youthful:{w:23,jaw:15,chin:10,eye:11,y:86,cheek:57,eyeY:52,mouthY:74,noseY:63,softness:.9,definition:.1},'soft-heart':{w:24,jaw:14,chin:9,eye:11,y:87,cheek:57,eyeY:52,mouthY:75,noseY:64,softness:.9,definition:.25},'strong-jaw':{w:25,jaw:21,chin:12,eye:11,y:89,cheek:58,jawY:80,eyeY:52,mouthY:76,noseY:64,softness:.3,definition:.9},dwarven:{w:28,jaw:24,chin:15,eye:12,y:86,cheek:58,jawY:77,eyeY:52,mouthY:74,noseY:63,softness:.35,definition:.9},orcish:{w:29,jaw:25,chin:17,eye:12,y:90,cheek:59,jawY:80,eyeY:52,mouthY:77,noseY:64,softness:.2,definition:1},elven:{w:22,jaw:13,chin:8,eye:11,y:90,cheek:57,jawY:79,eyeY:52,mouthY:76,noseY:64,softness:.65,definition:.45},'dwarf-square':{w:29,jaw:25,chin:16,eye:12,y:87,cheek:58,jawY:78,eyeY:52,mouthY:75,noseY:63,softness:.2,definition:1},'orc-heavy':{w:30,jaw:26,chin:18,eye:12,y:91,cheek:59,jawY:81,eyeY:52,mouthY:78,noseY:65,softness:.15,definition:1},'elf-high-cheek':{w:22,jaw:13,chin:7,eye:11,y:90,cheek:55,jawY:79,eyeY:51,mouthY:75,noseY:63,softness:.5,definition:.7}}[shape];
+  function rig(shape,adjustments={}) {
+    const source = {oval:{w:22,jaw:14,chin:9,eye:10}, angular:{w:23,jaw:20,chin:11,eye:11}, broad:{w:27,jaw:22,chin:13,eye:12},long:{w:20,jaw:13,chin:8,eye:9,y:92},round:{w:26,jaw:18,chin:12,eye:11,y:86},chiseled:{w:24,jaw:20,chin:12,eye:11,y:87,cheek:57,jawY:79,eyeY:52,definition:1,softness:.15},heart:{w:23,jaw:13,chin:7,eye:11,y:86,cheek:57,eyeY:52,mouthY:74,noseY:63,definition:.15,softness:1},balanced:{w:23,jaw:16,chin:10,eye:11,y:88,cheek:58,eyeY:52,mouthY:75,definition:.4,softness:.6},'soft-oval':{w:23,jaw:15,chin:10,eye:11,y:88,cheek:58,softness:.85,definition:.2},tapered:{w:22,jaw:14,chin:9,eye:10,y:87,cheek:56,softness:.5,definition:.3},'full-cheeked':{w:26,jaw:19,chin:12,eye:11,y:87,cheek:59,softness:.8,definition:.1},narrow:{w:20,jaw:14,chin:9,eye:10,y:90,softness:.45,definition:.3},youthful:{w:23,jaw:15,chin:10,eye:11,y:86,cheek:57,eyeY:52,mouthY:74,noseY:63,softness:.9,definition:.1},'soft-heart':{w:24,jaw:14,chin:9,eye:11,y:87,cheek:57,eyeY:52,mouthY:75,noseY:64,softness:.9,definition:.25},'strong-jaw':{w:25,jaw:21,chin:12,eye:11,y:89,cheek:58,jawY:80,eyeY:52,mouthY:76,noseY:64,softness:.3,definition:.9},dwarven:{w:28,jaw:24,chin:15,eye:12,y:86,cheek:58,jawY:77,eyeY:52,mouthY:74,noseY:63,softness:.35,definition:.9},orcish:{w:29,jaw:25,chin:17,eye:12,y:90,cheek:59,jawY:80,eyeY:52,mouthY:77,noseY:64,softness:.2,definition:1},elven:{w:22,jaw:13,chin:8,eye:11,y:90,cheek:57,jawY:79,eyeY:52,mouthY:76,noseY:64,softness:.65,definition:.45},'dwarf-square':{w:29,jaw:25,chin:16,eye:12,y:87,cheek:58,jawY:78,eyeY:52,mouthY:75,noseY:63,softness:.2,definition:1},'orc-heavy':{w:30,jaw:26,chin:18,eye:12,y:91,cheek:59,jawY:81,eyeY:52,mouthY:78,noseY:65,softness:.15,definition:1},'elf-high-cheek':{w:22,jaw:13,chin:7,eye:11,y:90,cheek:55,jawY:79,eyeY:51,mouthY:75,noseY:63,softness:.5,definition:.7}}[shape];
+    const m=Object.fromEntries(Object.keys(ADJUSTMENTS).map(k=>[k,adjustments[k]||0]));
+    const v={...source,w:source.w+m.faceWidth,jaw:source.jaw+m.jawWidth,chin:source.chin+m.jawWidth*.5,eye:source.eye+m.eyeSpacing};
+    v.jaw=Math.max(v.chin+2,Math.min(v.w-2,v.jaw));v.eye=Math.max(8,Math.min(v.w-8,v.eye));
     const cx=64, top=24, cheekY=v.cheek||61, chinY=v.y||88;
     // Sample an elliptical cranium instead of a flat polygon across the scalp.
     const crown=Array.from({length:19},(_,i)=>{const t=Math.PI+i*Math.PI/18;return [cx+v.w*Math.cos(t),49+(49-top+3)*Math.sin(t)];});
     const outline=[...crown,[cx+v.w-2,cheekY+7],[cx+v.jaw,v.jawY||78],[cx+v.chin,chinY-2],[cx,chinY],[cx-v.chin,chinY-2],[cx-v.jaw,v.jawY||78],[cx-v.w+2,cheekY+7]];
-    return {cx,top,w:v.w,jaw:v.jaw,chin:v.chin,chinY,outline,definition:v.definition||0,softness:v.softness||0,eyes:[{x:cx-v.eye,y:v.eyeY||53},{x:cx+v.eye,y:v.eyeY||53}],nose:{x:cx,y:v.noseY||(shape==='long'?65:shape==='round'?63:64)},mouth:{x:cx,y:v.mouthY||(shape==='long'?78:shape==='round'?74:76)},brows:[{x:cx-v.eye,y:(v.eyeY||53)-5},{x:cx+v.eye,y:(v.eyeY||53)-5}]};
+    return {cx,top,eyeScale:1+m.eyeSize*.12,w:v.w,jaw:v.jaw,chin:v.chin,chinY,outline,definition:v.definition||0,softness:v.softness||0,eyes:[{x:cx-v.eye,y:v.eyeY||53},{x:cx+v.eye,y:v.eyeY||53}],nose:{x:cx,y:v.noseY||(shape==='long'?65:shape==='round'?63:64)},mouth:{x:cx,y:v.mouthY||(shape==='long'?78:shape==='round'?74:76)},brows:[{x:cx-v.eye,y:(v.eyeY||53)-5},{x:cx+v.eye,y:(v.eyeY||53)-5}]};
   }
   function clip(g,p,draw) {g.save();contour(g,p);g.clip();draw();g.restore();}
   function texture(g,r,box,count,lo,hi) {for(let i=0;i<count;i++){const x=box[0]+Math.floor(r()*box[2]),y=box[1]+Math.floor(r()*box[3]); rect(g,x,y,1+r()*2,1,lo+r()*(hi-lo));}}
@@ -215,7 +242,7 @@
   function ears(g,a,c) {
     const kind=c.ears;if(kind==='none')return;
     for(const side of [-1,1])featureFrame(g,a.cx+side*(a.w-1),0,side,()=>{
-      g.save();if(kind==='small')g.transform(.76,0,0,.8,0,11);else if(kind==='broad')g.transform(1.3,0,0,1,0,0);
+      g.save();const scale=1+c.adjustments.earSize*.13;g.translate(0,56);g.scale(scale,scale);g.translate(0,-56);if(kind==='small')g.transform(.76,0,0,.8,0,11);else if(kind==='broad')g.transform(1.3,0,0,1,0,0);
       const swept=kind==='elf-swept',long=kind==='elven-long'||swept,pointed=long||kind==='pointed'||kind==='orc';
       const path=()=>{
         g.beginPath();g.moveTo(-1,49);
@@ -398,7 +425,7 @@
   }
   function eyeForm(g,e,a,kind) {
     const forms={calm:[4.6,1.15,.1],keen:[4.5,.85,-.2],heavy:[4.8,.75,.1],wide:[4.7,1.65,.1],downturned:[4.6,1.1,.55],almond:[4.8,1.2,-.35],clear:[4.6,1.4,0],hooded:[4.9,1.05,.1],upturned:[4.8,1.4,-.65],'deep-set':[4.5,1.2,-.05],relaxed:[5,1.15,.25],round:[4.45,1.95,0],smiling:[4.9,1.05,-.3],focused:[4.55,.95,-.4],'soft-lidded':[4.9,1.5,-.18],'natural-wide':[4.75,1.8,.15],'deep-almond':[5,1.45,-.45],'human-steady':[4.85,1.35,-.08],'elf-slanted':[5.15,1.35,-.65]};
-    const [baseWidth,baseOpening,tilt]=forms[kind],w=baseWidth*1.15,open=baseOpening*1.6,dir=e.x<a.cx?1:-1,x=e.x+.5,y=e.y+.5;
+    const [baseWidth,baseOpening,tilt]=forms[kind],w=baseWidth*1.15*(a.eyeScale||1),open=baseOpening*1.6*(a.eyeScale||1),dir=e.x<a.cx?1:-1,x=e.x+.5,y=e.y+.5;
     g.beginPath();g.moveTo(x-dir*w,y+tilt);
     g.bezierCurveTo(x-dir*1.8,y-open,x+dir*1.7,y-open,x+dir*(w-.35),y+.1);
     g.bezierCurveTo(x+dir*1.7,y+open*.85,x-dir*1.8,y+open*.9,x-dir*w,y+tilt);
@@ -450,14 +477,15 @@
     }
   }
   const MOUTHS={neutral:[8,2.6,0,1,0],full:[9,4.1,0,1.5,0],stern:[8,2.1,.25,.8,0],thin:[7,1.6,0,.65,0],'slight-smile':[8.5,2.5,-.7,1,0],cupid:[8,3.5,0,2,0],'gentle-smile':[9,3,-.8,1.2,0],'reserved-smile':[7.3,2.2,-.5,.9,0],'broad-smile':[10,3.5,-1.6,1,1.8],parted:[8.3,3.2,0,1.1,1.4],'asymmetric-smile':[8.5,2.7,-.8,1.2,0],downturned:[8.2,2.6,1,1,0],pout:[7.5,4.6,.2,1.8,0],'thin-smile':[8.6,1.7,-1.3,.7,0],'soft-full':[8.2,3.9,-.15,1.4,0],'relaxed-bow':[8.6,3.1,.1,1.65,0],'small-tusks':[9.2,3,0,1.1,0],'heavy-tusks':[10,3.6,.2,1.3,0]};
+  function mouthForm(c){const form=[...MOUTHS[c.mouth]];form[0]+=c.adjustments.mouthWidth*.6;return form;}
   function mouthOpening(g,a,c) {
-    const [w,h,smile,bow,open]=MOUTHS[c.mouth],x=a.mouth.x,y=a.mouth.y;
+    const [w,h,smile,bow,open]=mouthForm(c),x=a.mouth.x,y=a.mouth.y;
     g.beginPath();g.moveTo(x-w+1,y+smile);
     g.bezierCurveTo(x-3,y+open*.1,x+3,y+open*.1,x+w-1,y+smile);
     g.bezierCurveTo(x+4,y+open+1,x-4,y+open+1,x-w+1,y+smile);g.closePath();
   }
   function mouth(g,a,c) {
-    const [w,h,smile,bow,open]=MOUTHS[c.mouth],x=a.mouth.x,y=a.mouth.y,asym=c.mouth==='asymmetric-smile'?.65:0;
+    const [w,h,smile,bow,open]=mouthForm(c),x=a.mouth.x,y=a.mouth.y,asym=c.mouth==='asymmetric-smile'?.65:0;
     g.fillStyle=gray(134);g.beginPath();g.moveTo(x-w,y+smile+asym);
     g.bezierCurveTo(x-5,y-bow-1,x-2,y-bow,x,y-.7);
     g.bezierCurveTo(x+2,y-bow,x+5,y-bow-1,x+w,y+smile-asym);
@@ -472,10 +500,10 @@
     g.restore();
   }
   function teeth(g,a,c) {
-    const form=MOUTHS[c.mouth];
+    const form=mouthForm(c);
     if(c.mouth==='small-tusks'||c.mouth==='heavy-tusks'){
       const big=c.mouth==='heavy-tusks',height=big?5.2:2.9;
-      for(const side of [-1,1])featureFrame(g,a.mouth.x+side*(big?6.8:6),a.mouth.y,side,()=>{
+      for(const side of [-1,1])featureFrame(g,a.mouth.x+side*((big?6.8:6)+c.adjustments.mouthWidth*.45),a.mouth.y,side,()=>{
         g.beginPath();g.moveTo(-1.3,2);g.bezierCurveTo(-1.5,-1,-.5,-height+1,1.6,-height);
         g.quadraticCurveTo(2.1,-height-.3,2,-height+.3);g.bezierCurveTo(.9,-height+2,1.4,-.5,1.4,1.6);
         g.quadraticCurveTo(.2,2.4,-1.3,2);g.closePath();g.fillStyle=gray(184);g.fill();
@@ -825,11 +853,12 @@
   function drawNose(g,a,c) {
     const x=a.nose.x+(c.nose==='crooked'?2:0),y=a.nose.y-(c.nose==='short'?1:0);
     const width={straight:5,broad:7,aquiline:5,button:4,crooked:5,slender:4,rounded:5.8,short:4.5,roman:5.5,'wide-tip':7,'soft-tip':4.8,'defined-tip':5.2,'orc-flat':8.3,'dwarf-bulb':8.1,'orc-broad':9.3}[c.nose];
+    const noseWidth=width+c.adjustments.noseWidth*.6;
     const bridge=c.nose==='slender'?1:c.nose==='soft-tip'?1.25:c.nose==='defined-tip'?1.7:c.nose==='wide-tip'?1.5:2,top=c.nose==='orc-flat'||c.nose==='orc-broad'?54:c.nose==='short'?53:c.nose==='soft-tip'?51:49,hook=c.nose==='aquiline'?1.5:0;
-    const outline=[[x-bridge,top],[x+bridge,top],[x+2.8,y-6],[x+width,y+hook],[x+width-1.5,y+3],[x,y+4],[x-width+1.5,y+3],[x-width,y],[x-2.5,y-5]];
+    const outline=[[x-bridge,top],[x+bridge,top],[x+2.8,y-6],[x+noseWidth,y+hook],[x+noseWidth-1.5,y+3],[x,y+4],[x-noseWidth+1.5,y+3],[x-noseWidth,y],[x-2.5,y-5]];
     surface(g,outline,(px,py)=>154+38*falloff(px,py,x-1,y-7,2.5,9)-30*falloff(px,py,x+3,y-5,2.3,8)+25*falloff(px,py,x-1,y,4,3)-25*falloff(px,py,x,y+4,7,2));
-    curve(g,[x-width+1,y+2,x-width+2,y+.4,x-3,y+1.7,x-2,y+2.8],70,.65);
-    curve(g,[x+1,y+2.8,x+2,y+1+hook,x+width-1,y+1+hook,x+width-1,y+2.8+hook],69,.65);
+    curve(g,[x-noseWidth+1,y+2,x-noseWidth+2,y+.4,x-3,y+1.7,x-2,y+2.8],70,.65);
+    curve(g,[x+1,y+2.8,x+2,y+1+hook,x+noseWidth-1,y+1+hook,x+noseWidth-1,y+2.8+hook],69,.65);
     if(c.nose==='rounded'){g.fillStyle=gray(194);g.beginPath();g.ellipse(x-.8,y+.3,2.4,1.7,0,0,Math.PI*2);g.fill();}
     if(c.nose==='dwarf-bulb')oval(g,x-.5,y+.6,3.7,2.1,182);
     if(c.nose==='orc-broad')curve(g,[x-6,y+.5,x-3,y-1,x+3,y-1,x+6,y+.5],155,1.5);
@@ -922,7 +951,7 @@
     if(id==='nose')return;
     if(id==='mouth') {
       relief(g,[[a.mouth.x-3,a.mouth.y+2,5,2,11],[a.mouth.x+5,a.mouth.y,4,3,-10]],c.seed,1);
-      const w=MOUTHS[c.mouth][0],edge=g.createLinearGradient(a.mouth.x-w,0,a.mouth.x+w,0);
+      const w=mouthForm(c)[0],edge=g.createLinearGradient(a.mouth.x-w,0,a.mouth.x+w,0);
       for(const [at,alpha] of [[0,0],[.09,.55],[.18,1],[.82,1],[.91,.55],[1,0]])edge.addColorStop(at,'rgba(255,255,255,'+alpha+')');
       g.save();g.globalCompositeOperation='destination-in';g.fillStyle=edge;g.fillRect(0,0,SIZE,SIZE);g.restore();
       return;
@@ -977,6 +1006,7 @@
     for(const key of Object.keys(OPTIONS)){if(key==='race')continue;const allowed=partsFor(c.race,key);if(!allowed.includes(c[key])){const fallback=RACE_FEATURES[c.race][key];c[key]=allowed.includes(fallback)?fallback:allowed.includes(DEFAULTS[key])?DEFAULTS[key]:allowed[0];}}
     if(PROFILES.includes(input.profile))c.profile=input.profile;
     if(Number.isFinite(input.seed))c.seed=Math.trunc(input.seed)>>>0;
+    c.adjustments=Object.fromEntries(Object.entries(ADJUSTMENTS).map(([key,range])=>{const value=input.adjustments?.[key];return [key,Number.isFinite(value)?Math.max(range.min,Math.min(range.max,Math.round(value))):0];}));
     return c;
   }
   function rasterize(c,steps=32,soft=false) {
@@ -1013,9 +1043,9 @@
     if(clear.length)g.putImageData(im,0,0);return c;
   }
   function build(input) {
-    const config=normalize(input),anchors=rig(config.face),layers={};
+    const config=normalize(input),anchors=rig(config.face,config.adjustments),layers={};
     const painters={ears,face:drawFace,clothing,armor,age,marks,nose:drawNose,brows,mouth,teeth,beard,eyelids,headwearBack:(g,a,c)=>headwear(g,a,c,true),headwearFront:(g,a,c)=>headwear(g,a,c,false),eyes:(g,a,c)=>naturalEyes(g,a,c,false),iris:(g,a,c)=>naturalEyes(g,a,c,true),hairBack:(g,a,c)=>hair(g,a,c,true),hairFront:(g,a,c)=>hair(g,a,c,false)};
-    for(const spec of LAYERS){const c=canvas(),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.lineCap='round';g.lineJoin='round';painters[spec.id](g,anchors,config);refineLayer(g,spec,anchors,config);layers[spec.id]=rasterize(c,32,spec.id==='brows'||spec.id==='mouth'||spec.id==='teeth'&&['small-tusks','heavy-tusks'].includes(config.mouth)||spec.id==='age'&&config.age==='mature'||spec.id==='beard'&&['stubble','close-beard','chin-bristle'].includes(config.beard));}
+    for(const spec of LAYERS){const c=canvas(),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.lineCap='round';g.lineJoin='round';g.save();if(spec.feature==='hair'){const v=config.adjustments.hairVolume;g.translate(anchors.cx,43);g.scale(1+v*.05,1+v*.04);g.translate(-anchors.cx,-43);}painters[spec.id](g,anchors,config);refineLayer(g,spec,anchors,config);g.restore();layers[spec.id]=rasterize(c,32,spec.id==='brows'||spec.id==='mouth'||spec.id==='teeth'&&['small-tusks','heavy-tusks'].includes(config.mouth)||spec.id==='age'&&config.age==='mature'||spec.id==='beard'&&['stubble','close-beard','chin-bristle'].includes(config.beard));}
     symmetricCoverage(layers.ears,64);
     for(const id of ['hairFront','hairBack','mouth','brows'])removeSpecks(layers[id]);
     for(const id of ['eyes','iris','eyelids',...(config.brows==='broken'?[]:['brows'])])symmetricCoverage(layers[id]);
@@ -1095,7 +1125,102 @@
     if(R()<.55)c.marks='none';
     return normalize(c);
   }
-  root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
+  function geometry(input){const c=normalize(input);return rig(c.face,c.adjustments);}
+  root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
+})(globalThis);
+</script><script>/* Character creation, structural face reservations and persistent NPC recipes. */
+(function(root){
+  'use strict';
+  const E=root.PortraitEngine;
+  const clone=value=>JSON.parse(JSON.stringify(value));
+  const ROLES=Object.freeze({
+    lord:{clothing:['brocade','embroidered-doublet','guild-doublet','rune-mail','leaf-mantle','plate','robe','velvet-bodice','hide-harness'],headwear:['circlet','coronet','heraldic-cap','forge-helm','warband','vine-diadem','none']},
+    guard:{clothing:['mail','gambeson','brigandine','rune-mail','hide-harness','leather'],headwear:['coif','round-helm','nasal','forge-helm','warband','none']},
+    villager:{clothing:['tunic','robe','linen-chemise','traveler-coat'],headwear:['cap','straw-hat','linen-wrap','none']},
+    wanderer:{clothing:['cloak','leather','traveler-coat','leaf-mantle','hide-harness'],headwear:['hood','headband','none']},
+    bandit:{clothing:['leather','fur','hide-harness','gambeson'],headwear:['hood','cap','warband','none']},
+    companion:{clothing:['cloak','guild-doublet','rune-mail','leaf-mantle','brigandine'],headwear:['headband','warband','vine-diadem','none']}
+  });
+  const PALETTES=Object.freeze({human:{skin:'#b88b69',hair:'#45372e',cloth:'#70464b'},dwarf:{skin:'#ad886e',hair:'#76543a',cloth:'#685746'},orc:{skin:'#718454',hair:'#302f25',lips:'#716b50',cloth:'#574c3d'},elf:{skin:'#c3ac98',hair:'#a18c60',cloth:'#526d65'}});
+  class GenerationError extends Error{constructor(code,message){super(message);this.name='GenerationError';this.code=code;}}
+  function hash(value){let n=2166136261;for(const c of String(value)){n^=c.charCodeAt(0);n=Math.imul(n,16777619);}return n>>>0;}
+  function stream(seed){let n=seed>>>0;return()=>{n+=0x6d2b79f5;let t=Math.imul(n^n>>>15,n|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
+  function configOf(value){return E.normalize(value?.config||value);}
+  function eyeFamily(eyes){if(['round','wide','natural-wide'].includes(eyes))return'open';if(['keen','focused','heavy'].includes(eyes))return'narrow';if(['hooded','deep-set'].includes(eyes))return'hooded';if(['almond','deep-almond','upturned','elf-slanted'].includes(eyes))return'almond';return'neutral';}
+  function faceTraits(value){const c=configOf(value),g=E.geometry(c);return{
+    face:[g.w,g.jaw,g.chin,g.chinY,g.definition,g.softness],
+    eyes:[eyeFamily(c.eyes),g.eyes[1].x-g.eyes[0].x,g.eyeScale],
+    nose:[c.nose,c.adjustments.noseWidth]
+  };}
+  function faceKey(value){return JSON.stringify(faceTraits(value));}
+  function faceDistance(a,b){const x=faceTraits(a),y=faceTraits(b);return Object.keys(x).filter(k=>JSON.stringify(x[k])!==JSON.stringify(y[k])).length;}
+  function distinctFromPlayer(a,b){const x=configOf(a),y=configOf(b);return faceDistance(x,y)>=2&&(x.face!==y.face||eyeFamily(x.eyes)!==eyeFamily(y.eyes)||x.nose!==y.nose);}
+  function variantKey(value){const c=configOf(value);return JSON.stringify([Object.keys(E.options).map(k=>c[k]),c.adjustments]);}
+  function countOf(value,fallback=12){const n=value===undefined?fallback:value;if(!Number.isInteger(n)||n<1||n>128)throw new GenerationError('INVALID_COUNT','Choose between 1 and 128 characters.');return n;}
+  function colorsFor(config,patch={}){const result={...E.colors,...PALETTES[config.race]};for(const key of Object.keys(E.colors))if(/^#[0-9a-f]{6}$/i.test(patch[key]))result[key]=patch[key];return result;}
+  function recipe(value){const config=configOf(value);return{version:E.version,config,colors:colorsFor(config,value?.colors||{}),colored:value?.colored!==false};}
+  function randomAdjustments(seed,strength=1){const R=stream(seed);return Object.fromEntries(Object.entries(E.adjustments).map(([k,r])=>[k,Math.max(r.min,Math.min(r.max,Math.floor(R()*(strength*2+1))-strength))]));}
+  function validateLocks(locks=[]){const valid=new Set([...Object.keys(E.options).filter(k=>k!=='race'),'adjustments',...Object.keys(E.adjustments).map(k=>'adjustments.'+k)]);for(const k of locks)if(!valid.has(k))throw new GenerationError('INVALID_LOCK','Unknown locked part: '+k);return new Set(locks);}
+  function variations({base,seed=1,count=12,locks=[],varyAdjustments=false}={}){
+    const c=configOf(base),n=countOf(count),held=validateLocks(locks),result=[],seen=new Set([variantKey(c)]);
+    for(let attempt=0;attempt<n*80&&result.length<n;attempt++){
+      const s=hash(seed+'/'+attempt),next=E.random(s,c.profile,c.race);next.adjustments=varyAdjustments?randomAdjustments(s^1237):clone(c.adjustments);
+      for(const k of held){if(k==='adjustments')next.adjustments=clone(c.adjustments);else if(k.startsWith('adjustments.'))next.adjustments[k.slice(12)]=c.adjustments[k.slice(12)];else next[k]=c[k];}
+      const q=E.normalize(next),key=variantKey(q);if(seen.has(key))continue;seen.add(key);result.push(q);
+    }
+    if(result.length!==n)throw new GenerationError('LOCKED_POOL_EXHAUSTED','The locked parts leave too few variations. Unlock more features or request fewer faces.');
+    return result;
+  }
+  function generateNPCs(options={}){
+    if(!options.player)throw new GenerationError('PLAYER_REQUIRED','Save a player face before generating NPCs.');
+    const player=configOf(options.player),n=countOf(options.count,8),race=options.race||player.race,profile=options.profile||'custom',mode=options.mode||'mixed',role=options.role||'lord',seed=Number.isFinite(options.seed)?options.seed>>>0:1;
+    if(!E.races.includes(race)||!E.profiles.includes(profile)||!['random','preset','mixed'].includes(mode)||!Object.hasOwn(ROLES,role))throw new GenerationError('INVALID_GENERATION_OPTIONS','Choose a supported race, profile, generation mode and role.');
+    const existing=options.existing||[],used=new Set([faceKey(player),...existing.map(faceKey)]),ids=new Set(existing.map(r=>r.id).filter(Boolean)),R=stream(seed),pick=values=>values[Math.floor(R()*values.length)];
+    const pool=[...E.presets,...(options.presets||[])].filter(p=>configOf(p).race===race&&(profile==='custom'||configOf(p).profile===profile)&&(Array.isArray(p.roles)?!p.roles.length||p.roles.includes(role):ROLES[role].clothing.includes(configOf(p).clothing))).map(p=>({name:String(p.name||'Saved preset').slice(0,80),recipe:recipe(p)}));
+    const result=[];let candidates=0;
+    function accept(config,source,preset){
+      const key=faceKey(config);if(used.has(key)||!distinctFromPlayer(config,player))return false;
+      const id=options.ids?.[result.length]||String(options.idPrefix||'npc-'+seed.toString(16))+'-'+(result.length+1);
+      if(typeof id!=='string'||!id.trim()||ids.has(id))throw new GenerationError('DUPLICATE_ID','Character IDs must be nonempty and unique.');
+      used.add(key);ids.add(id);result.push({id,role,source,sourcePreset:preset?.name||null,faceKey:key,config:E.normalize(config),colors:colorsFor(config,{...(preset?.recipe.colors||{}),...(options.colors||{})})});return true;
+    }
+    if(mode==='preset'){
+      const shuffled=pool.map(p=>({p,order:R()})).sort((a,b)=>a.order-b.order);for(const {p} of shuffled){accept(p.recipe.config,'preset',p);if(result.length===n)break;}
+      if(result.length<n)throw new GenerationError('PRESET_POOL_EXHAUSTED','Only '+result.length+' eligible distinct preset faces are available. Reduce the count or choose Mixed / Random.');
+      return result;
+    }
+    while(result.length<n&&candidates<n*100){
+      const attempt=candidates++,s=hash(seed+'/'+attempt);if(mode==='mixed'&&pool.length&&R()<.35){const p=pick(pool);if(accept(p.recipe.config,'preset',p))continue;}
+      const c=E.random(s,profile,race);c.adjustments=randomAdjustments(s^0x73c9);
+      for(const key of ['clothing','headwear']){const allowed=ROLES[role][key].filter(v=>E.partsFor(race,key).includes(v));if(allowed.length){const cultural={human:{clothing:['guild-doublet','brocade','embroidered-doublet'],headwear:['heraldic-cap','circlet']},dwarf:{clothing:['rune-mail'],headwear:['forge-helm']},orc:{clothing:['hide-harness'],headwear:['warband']},elf:{clothing:['leaf-mantle'],headwear:['vine-diadem','leaf-circlet']}}[race][key].filter(v=>allowed.includes(v));c[key]=pick(cultural.length&&R()<.65?cultural:allowed);}}
+      accept(E.normalize(c),'random');
+    }
+    if(result.length<n)throw new GenerationError('FACE_POOL_EXHAUSTED','Not enough distinct faces remain for this player and roster. Use fewer characters or broaden the race/preset pool.');
+    return result;
+  }
+  class Roster{
+    #player;#records;#images;
+    constructor({seed=1,player,characters=[]}={}){
+      if(!player)throw new GenerationError('PLAYER_REQUIRED','A roster needs the saved player recipe.');
+      this.seed=seed>>>0;this.#player=recipe(player);this.#records=new Map();this.#images=new Map();const keys=new Set([faceKey(this.#player)]);
+      for(const entry of characters){if(typeof entry?.id!=='string'||!entry.id.trim()||this.#records.has(entry.id))throw new GenerationError('DUPLICATE_ID','Saved character IDs must be unique.');const config=configOf(entry),key=faceKey(config);if(keys.has(key)||!distinctFromPlayer(config,this.#player))throw new GenerationError('SAVED_FACE_CONFLICT','A saved NPC conflicts with the player or another NPC.');keys.add(key);this.#records.set(entry.id,{...clone(entry),config,faceKey:key,colors:colorsFor(config,entry.colors)});}
+    }
+    get player(){return clone(this.#player);}
+    create({id,...options}={}){if(typeof id!=='string'||!id.trim())throw new GenerationError('INVALID_ID','Use the stable game character ID.');if(this.#records.has(id))return clone(this.#records.get(id));const record=generateNPCs({...options,count:1,ids:[id],seed:hash(this.seed+'/'+id),player:this.#player,existing:[...this.#records.values()]})[0];this.#records.set(id,record);return clone(record);}
+    get(id){const record=this.#records.get(id);return record?clone(record):null;}
+    portrait(id){const record=this.#records.get(id);if(!record)return null;if(!this.#images.has(id))this.#images.set(id,E.composite(E.build(record.config),{colors:record.colors}));return this.#images.get(id);}
+    export(){return clone({version:E.version,seed:this.seed,player:this.#player,characters:[...this.#records.values()]});}
+    static restore(saved){if(!saved||![7].includes(saved.version))throw new GenerationError('INVALID_ROSTER','Choose a version 7 character roster.');return new Roster(saved);}
+  }
+  function inspect(value){
+    const q=E.build(configOf(value)),issues=[],read=c=>c.getContext('2d').getImageData(0,0,E.size,E.size).data;
+    const skin=read(q.layers.face);for(const p of [...q.anchors.eyes,q.anchors.nose,q.anchors.mouth])if(!skin[(Math.round(p.y)*128+Math.round(p.x))*4+3])issues.push({part:'face',severity:'error',message:'A facial anchor falls outside the skin.'});
+    const eyes=read(q.layers.eyes),lids=read(q.layers.eyelids),iris=read(q.layers.iris),marks=read(q.layers.marks),age=read(q.layers.age);for(let i=3;i<eyes.length;i+=4){if(iris[i]&&(!eyes[i]||lids[i])){issues.push({part:'iris',severity:'error',message:'An iris crosses its lid or eye opening.'});break;}if((marks[i]||age[i])&&(eyes[i]||lids[i])){issues.push({part:'marks',severity:'error',message:'A skin overlay crosses an eye.'});break;}}
+    for(const id of ['hairFront','hairBack','mouth','brows']){const a=read(q.layers[id]);let isolated=0;for(let y=0;y<128;y++)for(let x=0;x<128;x++){if(!a[(y*128+x)*4+3])continue;let touches=false;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const xx=x+dx,yy=y+dy;if(xx>=0&&xx<128&&yy>=0&&yy<128&&a[(yy*128+xx)*4+3])touches=true;}if(!touches)isolated++;}if(isolated)issues.push({part:id,severity:'notice',message:isolated+' detached pixel(s); inspect this part at full size.'});}
+    const rule=E.headwearRules[q.config.headwear];if(rule.hair==='hide'){const vis=Object.fromEntries(E.order.map(s=>[s.id,s.feature!=='hair']));if(E.composite(q).toDataURL()!==E.composite(q,{visible:vis}).toDataURL())issues.push({part:'hair',severity:'error',message:'Hair protrudes through enclosing headwear.'});}
+    return issues;
+  }
+  root.PortraitCharacters=Object.freeze({roles:ROLES,palettes:PALETTES,GenerationError,hash,recipe,faceTraits,faceKey,faceDistance,distinctFromPlayer,variations,generateNPCs,Roster,inspect});
 })(globalThis);
 </script><script>(function () {
   'use strict';
@@ -1139,12 +1264,13 @@
     for(const profile of E.profiles)$('profile-'+profile).setAttribute('aria-pressed',String(state.config.profile===profile));
     const fit=E.headwearRules[state.config.headwear].hair;$('headwear-note').textContent={show:'Hair remains visible.',tuck:'Crown hair tucked under this headwear.',hide:'Hair and ears concealed by this headwear.',frame:'Hair stays within the veil; back hair and ears are covered.'}[fit];
     anchors();$('gray').setAttribute('aria-pressed',String(!state.colored));$('color').setAttribute('aria-pressed',String(state.colored));
-    $('preset').value=String(E.presets.findIndex(p=>Object.keys(state.config).every(k=>state.config[k]===E.normalize(p.config)[k]))).replace('-1','');for(const key of Object.keys(selectors))selectors[key].value=state.config[key];$('seed').value=state.config.seed;
+    $('preset').value=String(E.presets.findIndex(p=>JSON.stringify(state.config)===JSON.stringify(E.normalize(p.config)))).replace('-1','');for(const key of Object.keys(selectors))selectors[key].value=state.config[key];$('seed').value=state.config.seed;
     for(const s of E.order){checks[s.id].checked=state.visible[s.id];copy(state.portrait.layers[s.id],tiles[s.id].querySelector('canvas'));}
     inspect(state.selected);
     $('color-hint').textContent=state.colored?'Applied to preview only':'Enable tint preview to apply';
     $('status').textContent=state.colored?'Tinted composite · grayscale source layers preserved':'Grayscale composite · 32-value shading';
     window.portraitWorkshop=Object.freeze({state,render,engine:E});
+    document.dispatchEvent(new Event('portrait:change'));
   }
   function download(name,href){const a=document.createElement('a');a.download=name;a.href=href;document.body.append(a);a.click();a.remove();}
   function blob(name,text){const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));download(name,url);setTimeout(()=>URL.revokeObjectURL(url),1000);}
@@ -1181,8 +1307,63 @@
   $('download-portrait').onclick=()=>download('portrait-'+(state.colored?'tinted':'grayscale')+'.png',$('portrait').toDataURL('image/png'));
   $('download-atlas').onclick=()=>{const c=document.createElement('canvas');c.width=E.size*E.order.length;c.height=E.size;const g=c.getContext('2d');E.order.forEach((s,i)=>g.drawImage(state.portrait.layers[s.id],i*E.size,0));download('portrait-grayscale-atlas.png',c.toDataURL('image/png'));};
   $('import-json').onclick=()=>$('recipe-file').click();
-  $('recipe-file').onchange=async()=>{const f=$('recipe-file').files[0];if(!f)return;try{if(f.size>100000)throw Error('Recipe is too large');const r=JSON.parse(await f.text());if(![4,5,E.version].includes(r.version)||!r.config||typeof r.config!=='object')throw Error('Choose a version 4, 5 or 6 portrait recipe');state.config=E.normalize(r.config);for(const key of Object.keys(E.colors)){const color=r.colors?.[key];state.colors[key]=/^#[0-9a-f]{6}$/i.test(color)?color:E.colors[key];$('tint-'+key).value=state.colors[key];}for(const s of E.order)state.visible[s.id]=r.visible?.[s.id]!==false;state.colored=r.colored===true;render(true);}catch(e){$('status').textContent='Could not load recipe: '+e.message;}finally{$('recipe-file').value='';}};
+  $('recipe-file').onchange=async()=>{const f=$('recipe-file').files[0];if(!f)return;try{if(f.size>100000)throw Error('Recipe is too large');const r=JSON.parse(await f.text());if(![4,5,6,E.version].includes(r.version)||!r.config||typeof r.config!=='object')throw Error('Choose a version 4–7 portrait recipe');state.config=E.normalize(r.config);for(const key of Object.keys(E.colors)){const color=r.colors?.[key];state.colors[key]=/^#[0-9a-f]{6}$/i.test(color)?color:E.colors[key];$('tint-'+key).value=state.colors[key];}for(const s of E.order)state.visible[s.id]=r.visible?.[s.id]!==false;state.colored=r.colored===true;render(true);}catch(e){$('status').textContent='Could not load recipe: '+e.message;}finally{$('recipe-file').value='';}};
   $('download-json').onclick=()=>blob('portrait-recipe.json',JSON.stringify({version:E.version,size:E.size,config:state.config,headwearFit:E.headwearRules[state.config.headwear],colors:state.colors,colored:state.colored,visible:state.visible,anchors:state.portrait.anchors,drawOrder:E.order.map((s,i)=>({...s,frame:{x:i*E.size,y:0,width:E.size,height:E.size},origin:{x:0,y:0}}))},null,2));
   render(true);
+})();
+</script><script>/* Workshop controls for player creation, variations and world-character recipes. */
+(function(){
+  'use strict';
+  const W=window.portraitWorkshop,E=PortraitEngine,C=PortraitCharacters,$=id=>document.getElementById(id),KEY='ashmark.portraitStudio.v7';
+  const s={locks:new Set(),variations:[],npcs:[],favorites:[],player:null,before:null,busy:false};
+  const title=value=>value.split('-').map(v=>v.charAt(0).toUpperCase()+v.slice(1)).join(' ');
+  function status(text,id='studio-status'){$(id).textContent=text;}
+  function current(){return C.recipe({config:W.state.config,colors:W.state.colors,colored:W.state.colored});}
+  function requireComplete(){if(E.order.some(p=>W.state.visible[p.id]===false))throw new Error('Restore all layers before saving a character. Layer hiding is for inspection.');}
+  function apply(value){const r=C.recipe(value);W.state.config=r.config;W.state.colors=r.colors;W.state.colored=r.colored;for(const [key,color]of Object.entries(r.colors))$('tint-'+key).value=color;for(const p of E.order)W.state.visible[p.id]=true;W.render(true);}
+  function downloadJSON(name,data){const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  function collection(){return{type:'portrait-studio',version:1,engineVersion:E.version,current:current(),player:s.player,presets:s.favorites,characters:s.npcs,seed:Number($('npc-seed').value)||0,variations:s.variations,before:s.before,locks:[...s.locks],varyAdjustments:$('vary-proportions').checked,npcSettings:Object.fromEntries(['race','profile','role','mode','count'].map(k=>[k,$('npc-'+k).value]))};}
+  function persist(){try{localStorage.setItem(KEY,JSON.stringify(collection()));}catch(e){status('Browser storage is unavailable or full. Export the collection to keep your work.','collection-status');}}
+  function run(fn,id='studio-status'){try{fn();}catch(e){status(e.message,id);}}
+  const imageCache=new Map();let variationStamp='',npcStamp='',favoriteStamp='';
+  function portrait(value,colored=W.state.colored){const r=C.recipe(value),key=JSON.stringify([r.config,colored?r.colors:null]);if(!imageCache.has(key)){imageCache.set(key,E.composite(E.build(r.config),colored?{colors:r.colors}:{}));if(imageCache.size>192)imageCache.delete(imageCache.keys().next().value);}const out=document.createElement('canvas');out.width=out.height=128;out.getContext('2d').drawImage(imageCache.get(key),0,0);return out;}
+  function copy(source,target){const g=target.getContext('2d');g.clearRect(0,0,target.width,target.height);g.imageSmoothingEnabled=false;g.drawImage(source,0,0,target.width,target.height);}
+  function card(value,label,action){const article=document.createElement('article'),button=document.createElement('button'),text=document.createElement('span');article.className='portrait-choice';button.type='button';button.setAttribute('aria-label','Use '+label);text.textContent=label;button.append(portrait(value),text);button.onclick=action||(()=>apply(value));article.append(button);return article;}
+  function drawVariations(){const stamp=JSON.stringify([s.variations,W.state.colors,W.state.colored]);if(stamp===variationStamp)return;variationStamp=stamp;const target=$('variation-grid');target.replaceChildren();s.variations.forEach((config,i)=>target.append(card({config,colors:W.state.colors,colored:W.state.colored},'Variation '+(i+1),()=>{apply({config,colors:W.state.colors,colored:W.state.colored});status('Variation '+(i+1)+' selected.');})));}
+  function drawNPCs(){const stamp=JSON.stringify([s.npcs,W.state.colored]);if(stamp===npcStamp)return;npcStamp=stamp;const target=$('npc-grid');target.replaceChildren();s.npcs.forEach((r,i)=>target.append(card(r,title(r.role)+' '+(i+1)+(r.source==='preset'?' · preset':''),()=>{apply({...r,colored:W.state.colored});status('Editing '+r.id+'. The saved NPC recipe is unchanged until you generate/export a new record.');})));}
+  function drawFavorites(){const stamp=JSON.stringify([s.favorites,W.state.colored]);if(stamp===favoriteStamp)return;favoriteStamp=stamp;const target=$('favorites-grid');target.replaceChildren();for(const r of s.favorites){const item=card(r,r.name,()=>{apply(r);status('Loaded '+r.name+'.');}),remove=document.createElement('button');remove.type='button';remove.textContent='Remove';remove.setAttribute('aria-label','Remove '+r.name);remove.onclick=()=>{s.favorites=s.favorites.filter(p=>p.id!==r.id);persist();drawFavorites();};item.append(remove);target.append(item);}}
+  function update(){copy($('portrait'),$('compare-after'));for(const key of Object.keys(E.adjustments)){$('tune-'+key).value=W.state.config.adjustments[key];$('value-'+key).textContent=String(W.state.config.adjustments[key]);}for(const input of document.querySelectorAll('[data-lock]'))input.checked=s.locks.has(input.dataset.lock);$('generate-npcs').disabled=!s.player||s.busy;$('export-player').disabled=!s.player;if(s.player){copy(portrait(s.player,s.player.colored),$('player-reference'));$('player-label').textContent=title(s.player.config.race)+' player reserved. Hair, clothing, color and age cannot bypass the face check.';}drawVariations();drawNPCs();drawFavorites();}
+  // Sliders use the same bounded geometry controls as the game-facing engine.
+  const details=document.createElement('details');details.className='studio-details';const summary=document.createElement('summary');summary.textContent='Fine facial adjustments';details.append(summary);const sliders=document.createElement('div');sliders.className='tuning-grid';details.append(sliders);
+  for(const [key,range]of Object.entries(E.adjustments)){const row=document.createElement('div'),label=document.createElement('label'),output=document.createElement('output'),input=document.createElement('input'),lock=document.createElement('label'),check=document.createElement('input');row.className='tuning-row';label.htmlFor='tune-'+key;label.textContent=range.name;output.id='value-'+key;input.type='range';input.id='tune-'+key;input.min=range.min;input.max=range.max;input.step=1;input.value=0;input.oninput=()=>{W.state.config.adjustments[key]=Number(input.value);W.render(true);};check.type='checkbox';check.dataset.lock='adjustments.'+key;check.onchange=()=>{check.checked?s.locks.add(check.dataset.lock):s.locks.delete(check.dataset.lock);persist();};lock.className='check small';lock.append(check,document.createTextNode('Lock'));row.append(label,output,input,lock);sliders.append(row);}
+  const reset=document.createElement('button');reset.textContent='Reset proportions';reset.onclick=()=>{W.state.config.adjustments=Object.fromEntries(Object.keys(E.adjustments).map(k=>[k,0]));W.render(true);};details.append(reset);document.querySelector('.seed-row').before(details);
+  const lockNames={face:'Face',ears:'Ears',hair:'Hair',eyes:'Eyes',brows:'Brows',nose:'Nose',mouth:'Mouth',beard:'Facial hair',age:'Age',marks:'Marks',clothing:'Clothing',headwear:'Headwear',adjustments:'All proportions'};
+  for(const [key,name]of Object.entries(lockNames)){const label=document.createElement('label'),input=document.createElement('input');label.className='check lock-chip';input.type='checkbox';input.dataset.lock=key;input.onchange=()=>{input.checked?s.locks.add(key):s.locks.delete(key);update();persist();};label.append(input,document.createTextNode(name));$('part-locks').append(label);}
+  for(const race of E.races){const option=document.createElement('option');option.value=race;option.textContent=title(race);$('npc-race').append(option);}for(const role of Object.keys(C.roles)){const option=document.createElement('option');option.value=role;option.textContent=title(role);$('npc-role').append(option);const favoriteOption=option.cloneNode(true);$('preset-role').append(favoriteOption);}
+  $('make-variations').onclick=()=>run(()=>{s.variations=C.variations({base:W.state.config,seed:C.hash(W.state.config.seed+'/variations/'+Date.now()),count:12,locks:[...s.locks],varyAdjustments:$('vary-proportions').checked});drawVariations();persist();status('12 variations ready. Select a portrait to continue editing.');});
+  $('random').onclick=()=>run(()=>{const config=C.variations({base:W.state.config,seed:(W.state.config.seed+0x9e3779b9)>>>0,count:1,locks:[...s.locks],varyAdjustments:$('vary-proportions').checked})[0];apply({config,colors:W.state.colors,colored:W.state.colored});status('Randomized unlocked parts.');});
+  $('unlock-all').onclick=()=>{s.locks.clear();update();persist();status('All variation locks cleared.');};
+  $('race-palette').onclick=()=>{const colors={...E.colors,...C.palettes[W.state.config.race]};apply({config:W.state.config,colors,colored:true});};
+  $('pin-before').onclick=()=>{s.before={...current(),visible:{...W.state.visible}};copy($('portrait'),$('compare-before'));$('before-label').textContent='Before · pinned';persist();status('Before portrait pinned.');};
+  $('inspect-parts').onclick=()=>run(()=>{const issues=C.inspect(W.state.config),target=$('inspection-results');target.replaceChildren();if(!issues.length){const li=document.createElement('li');li.textContent='No detached pixels, facial-anchor or eye-overlap issues detected in the checked layers.';target.append(li);}for(const issue of issues){const li=document.createElement('li'),button=document.createElement('button');li.className=issue.severity;li.append(document.createTextNode(issue.message+' '));button.type='button';button.textContent='Inspect '+issue.part;button.onclick=()=>{const b=document.querySelector('[data-layer="'+issue.part+'"] .layer-art');if(b){b.click();$('inspection').scrollIntoView({block:'center',behavior:'smooth'});}};li.append(button);target.append(li);}});
+  $('save-player').onclick=()=>run(()=>{requireComplete();const next=current(),conflicts=s.npcs.filter(r=>!C.distinctFromPlayer(r,next));if(conflicts.length)throw new Error('This face is too close to '+conflicts.length+' NPC(s). Choose another face or clear the NPC preview first.');s.player=next;$('npc-race').value=next.config.race;persist();update();status('Player face reserved for all subsequent NPC generation.');status('Player saved. Choose a role and generation mode.','npc-status');});
+  $('export-player').onclick=()=>run(()=>{if(!s.player)throw new Error('Save a player first.');downloadJSON('player-portrait-v7.json',{...s.player,type:'player-portrait',faceKey:C.faceKey(s.player)});});
+  $('generate-npcs').onclick=()=>run(()=>{if(!s.player)throw new Error('Save a player face first.');const count=Number($('npc-count').value),seed=$('npc-seed').valueAsNumber;if(!Number.isInteger(seed)||seed<0||seed>4294967295)throw new Error('Use a whole world seed between 0 and 4294967295.');if(s.npcs.length+count>128)throw new Error('This preview holds 128 NPCs. Export or clear it before generating more.');const records=C.generateNPCs({player:s.player,existing:s.npcs,count,seed:C.hash(seed+'/'+s.npcs.length),idPrefix:'preview-'+seed+'-'+s.npcs.length,race:$('npc-race').value,profile:$('npc-profile').value,role:$('npc-role').value,mode:$('npc-mode').value,presets:s.favorites});s.npcs.push(...records);persist();drawNPCs();status(records.length+' NPCs added. All pass the player-face and duplicate-face checks.','npc-status');},'npc-status');
+  $('clear-npcs').onclick=()=>{s.npcs=[];persist();drawNPCs();status('NPC preview cleared. The reserved player is kept.','npc-status');};
+  $('export-npcs').onclick=()=>run(()=>{if(!s.player)throw new Error('Save a player first.');downloadJSON('character-roster-v7.json',{version:7,seed:Number($('npc-seed').value)||0,player:s.player,characters:s.npcs});},'npc-status');
+  $('export-sheet').onclick=()=>run(()=>{if(!s.npcs.length)throw new Error('Generate NPCs first.');const cols=Math.min(8,s.npcs.length),rows=Math.ceil(s.npcs.length/cols),canvas=document.createElement('canvas');canvas.width=cols*128;canvas.height=rows*128;const g=canvas.getContext('2d');s.npcs.forEach((r,i)=>g.drawImage(portrait(r,true),i%cols*128,Math.floor(i/cols)*128));const a=document.createElement('a');a.download='npc-portrait-sheet.png';a.href=canvas.toDataURL();a.click();},'npc-status');
+  $('save-favorite').onclick=()=>run(()=>{requireComplete();const name=$('preset-name').value.trim();if(!name)throw new Error('Give this preset a name.');if(s.favorites.length>=100)throw new Error('Export your collection before adding more than 100 presets.');const record={...current(),id:'preset-'+Date.now().toString(36)+'-'+s.favorites.length,name,roles:$('preset-role').value?[$('preset-role').value]:[]};s.favorites.push(record);persist();drawFavorites();status('Saved '+name+'. It is available to compatible NPC preset pools.','collection-status');},'collection-status');
+  $('export-collection').onclick=()=>downloadJSON('portrait-collection-v7.json',collection());
+  function loadCollection(data){if(!data||data.type!=='portrait-studio'||data.version!==1||!Array.isArray(data.presets)||!Array.isArray(data.characters)||data.presets.length>100||data.characters.length>128)throw new Error('Choose a portrait studio collection.');const presets=data.presets.map((p,i)=>({...C.recipe(p),id:typeof p.id==='string'?p.id:'loaded-'+i,name:String(p.name||'Saved preset').slice(0,64),roles:Array.isArray(p.roles)?p.roles.filter(r=>Object.hasOwn(C.roles,r)):[]}));const player=data.player?C.recipe(data.player):null;if(data.characters.length&&!player)throw new Error('An NPC collection needs its reserved player.');const characters=player?new C.Roster({player,seed:data.seed,characters:data.characters}).export().characters:[];s.favorites=presets;s.player=player;s.npcs=characters;s.variations=Array.isArray(data.variations)?data.variations.slice(0,12).map(c=>E.normalize(c)):[];const known=new Set([...document.querySelectorAll('[data-lock]')].map(i=>i.dataset.lock));s.locks=new Set(Array.isArray(data.locks)?data.locks.filter(k=>known.has(k)):[]);$('vary-proportions').checked=data.varyAdjustments===true;for(const key of ['race','profile','role','mode','count']){const input=$('npc-'+key),value=String(data.npcSettings?.[key]||'');if([...input.options].some(o=>o.value===value))input.value=value;}s.before=data.before?{...C.recipe(data.before),visible:Object.fromEntries(E.order.map(p=>[p.id,data.before.visible?.[p.id]!==false]))}:null;if(s.before){copy(E.composite(E.build(s.before.config),{colors:s.before.colored?s.before.colors:null,visible:s.before.visible}),$('compare-before'));$('before-label').textContent='Before · pinned';}else{$('compare-before').getContext('2d').clearRect(0,0,128,128);$('before-label').textContent='Before · pin a snapshot';}$('npc-seed').value=Number.isFinite(data.seed)?data.seed>>>0:1;if(data.current)apply(data.current);else update();status(player?s.npcs.length+' saved NPCs restored. Player reservation active.':'Save a player face to enable NPC generation.','npc-status');}
+  $('import-collection').onclick=()=>$('collection-file').click();
+  $('collection-file').onchange=async()=>{const f=$('collection-file').files[0];if(!f)return;try{if(f.size>2_000_000)throw new Error('Collection is too large.');loadCollection(JSON.parse(await f.text()));persist();status('Collection restored. Saved NPC faces were retained.','collection-status');}catch(e){status('Could not load collection: '+e.message,'collection-status');}finally{$('collection-file').value='';}};
+  const floating=document.createElement('button'),mini=document.createElement('canvas');floating.id='floating-face';floating.type='button';floating.hidden=true;floating.setAttribute('aria-label','Return to the live portrait');mini.width=mini.height=128;floating.append(mini,document.createTextNode('Live face'));floating.onclick=()=>document.querySelector('.stage').scrollIntoView({block:'center',behavior:'smooth'});document.body.append(floating);
+  let scrolling=false;function updateFloating(){const controls=document.querySelector('.controls-panel').getBoundingClientRect(),stage=document.querySelector('.stage').getBoundingClientRect();floating.hidden=!(controls.bottom>0&&controls.top<innerHeight&&stage.bottom<0);copy($('portrait'),mini);}
+  window.addEventListener('scroll',()=>{if(scrolling)return;scrolling=true;requestAnimationFrame(()=>{scrolling=false;updateFloating();});},{passive:true});window.addEventListener('resize',updateFloating);document.addEventListener('portrait:change',updateFloating);
+  document.addEventListener('portrait:change',update);
+  try{const saved=localStorage.getItem(KEY);if(saved)loadCollection(JSON.parse(saved));}catch(e){status('Stored collection could not be restored; import an exported copy if available.','collection-status');}
+  document.addEventListener('portrait:change',persist);
+  for(const id of ['vary-proportions','npc-seed','npc-race','npc-profile','npc-role','npc-mode','npc-count'])$(id).addEventListener('change',persist);
+  update();window.portraitStudio=Object.freeze({state:s,apply,current,collection,loadCollection,refresh:update});
 })();
 </script></body></html>

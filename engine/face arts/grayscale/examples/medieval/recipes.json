@@ -17,7 +17,17 @@
       "marks": "freckles",
       "clothing": "tunic",
       "headwear": "cap",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -38,7 +48,17 @@
       "marks": "scar",
       "clothing": "mail",
       "headwear": "coif",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -59,7 +79,17 @@
       "marks": "none",
       "clothing": "robe",
       "headwear": "circlet",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -80,7 +110,17 @@
       "marks": "scar",
       "clothing": "tunic",
       "headwear": "hood",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -101,7 +141,17 @@
       "marks": "none",
       "clothing": "robe",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -122,7 +172,17 @@
       "marks": "none",
       "clothing": "surcoat",
       "headwear": "nasal",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -143,7 +203,17 @@
       "marks": "pockmarks",
       "clothing": "gambeson",
       "headwear": "kettle",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -164,7 +234,17 @@
       "marks": "none",
       "clothing": "fur",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -185,7 +265,17 @@
       "marks": "none",
       "clothing": "robe",
       "headwear": "cap",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -206,7 +296,17 @@
       "marks": "freckles",
       "clothing": "robe",
       "headwear": "hood",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -227,7 +327,17 @@
       "marks": "scar",
       "clothing": "fur",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -248,7 +358,17 @@
       "marks": "none",
       "clothing": "surcoat",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -269,7 +389,17 @@
       "marks": "none",
       "clothing": "mail",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -290,7 +420,17 @@
       "marks": "none",
       "clothing": "gambeson",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -311,7 +451,17 @@
       "marks": "none",
       "clothing": "surcoat",
       "headwear": "circlet",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -332,7 +482,17 @@
       "marks": "none",
       "clothing": "robe",
       "headwear": "circlet",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -353,7 +513,17 @@
       "marks": "none",
       "clothing": "robe",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -374,7 +544,17 @@
       "marks": "freckles",
       "clothing": "fur",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -395,7 +575,17 @@
       "marks": "none",
       "clothing": "brocade",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -416,7 +606,17 @@
       "marks": "none",
       "clothing": "leather",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -437,7 +637,17 @@
       "marks": "none",
       "clothing": "brigandine",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -458,7 +668,17 @@
       "marks": "none",
       "clothing": "brocade",
       "headwear": "circlet",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -479,7 +699,17 @@
       "marks": "none",
       "clothing": "cloak",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -500,7 +730,17 @@
       "marks": "none",
       "clothing": "robe",
       "headwear": "veil",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -521,7 +761,17 @@
       "marks": "none",
       "clothing": "cloak",
       "headwear": "beret",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -542,7 +792,17 @@
       "marks": "none",
       "clothing": "leather",
       "headwear": "headband",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -563,7 +823,17 @@
       "marks": "none",
       "clothing": "brigandine",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -584,7 +854,17 @@
       "marks": "none",
       "clothing": "brocade",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -605,7 +885,17 @@
       "marks": "none",
       "clothing": "fur",
       "headwear": "fur-cap",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -626,7 +916,17 @@
       "marks": "none",
       "clothing": "cloak",
       "headwear": "wrapped-hood",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -647,7 +947,17 @@
       "marks": "none",
       "clothing": "doublet",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -668,7 +978,17 @@
       "marks": "none",
       "clothing": "plate",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -689,7 +1009,17 @@
       "marks": "none",
       "clothing": "tabard",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -710,7 +1040,17 @@
       "marks": "none",
       "clothing": "jerkin",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -731,7 +1071,17 @@
       "marks": "none",
       "clothing": "lamellar",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -752,7 +1102,17 @@
       "marks": "none",
       "clothing": "scale",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -773,7 +1133,17 @@
       "marks": "none",
       "clothing": "embroidered-robe",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -794,7 +1164,17 @@
       "marks": "none",
       "clothing": "traveler-coat",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -815,7 +1195,17 @@
       "marks": "none",
       "clothing": "brocade",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -836,7 +1226,17 @@
       "marks": "none",
       "clothing": "cloak",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -857,7 +1257,17 @@
       "marks": "none",
       "clothing": "ruffled-mail",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -878,7 +1288,17 @@
       "marks": "none",
       "clothing": "linen-chemise",
       "headwear": "draped-veil",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -899,7 +1319,17 @@
       "marks": "none",
       "clothing": "traveler-coat",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -920,7 +1350,17 @@
       "marks": "none",
       "clothing": "embroidered-doublet",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -941,7 +1381,17 @@
       "marks": "none",
       "clothing": "velvet-bodice",
       "headwear": "pearl-hood",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -962,7 +1412,17 @@
       "marks": "none",
       "clothing": "embroidered-doublet",
       "headwear": "leaf-circlet",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -983,7 +1443,17 @@
       "marks": "none",
       "clothing": "velvet-bodice",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1004,7 +1474,17 @@
       "marks": "none",
       "clothing": "cloak",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1025,7 +1505,17 @@
       "marks": "none",
       "clothing": "velvet-bodice",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1046,7 +1536,17 @@
       "marks": "none",
       "clothing": "leather",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1067,7 +1567,17 @@
       "marks": "none",
       "clothing": "embroidered-doublet",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1088,7 +1598,17 @@
       "marks": "none",
       "clothing": "brigandine",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1109,7 +1629,17 @@
       "marks": "none",
       "clothing": "cloak",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1130,7 +1660,17 @@
       "marks": "none",
       "clothing": "leather",
       "headwear": "none",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1151,7 +1691,17 @@
       "marks": "none",
       "clothing": "embroidered-robe",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1172,7 +1722,17 @@
       "marks": "none",
       "clothing": "guild-doublet",
       "headwear": "heraldic-cap",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1193,7 +1753,17 @@
       "marks": "none",
       "clothing": "rune-mail",
       "headwear": "forge-helm",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1214,7 +1784,17 @@
       "marks": "none",
       "clothing": "hide-harness",
       "headwear": "warband",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1235,7 +1815,17 @@
       "marks": "none",
       "clothing": "leaf-mantle",
       "headwear": "vine-diadem",
-      "profile": "male"
+      "profile": "male",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1256,7 +1846,17 @@
       "marks": "none",
       "clothing": "guild-doublet",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1277,7 +1877,17 @@
       "marks": "none",
       "clothing": "rune-mail",
       "headwear": "headband",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1298,7 +1908,17 @@
       "marks": "none",
       "clothing": "hide-harness",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   },
   {
@@ -1319,7 +1939,17 @@
       "marks": "none",
       "clothing": "leaf-mantle",
       "headwear": "none",
-      "profile": "female"
+      "profile": "female",
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      }
     }
   }
 ]

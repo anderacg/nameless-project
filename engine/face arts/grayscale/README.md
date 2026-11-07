@@ -1,8 +1,8 @@
-# Grayscale procedural portrait workshop v6
+# Grayscale procedural portrait workshop v7
 
 Open **portrait-workshop-grayscale.html** directly in a browser. It is entirely offline: no server, installation or PNG assets required. This standalone study is not installed in the game. The parent v3 image kit is unchanged.
 
-All artwork is drawn by JavaScript into separate transparent **128 × 128** canvases. Sources use 32 neutral grayscale values. Most layers use binary alpha; brows, lips, Mature skin lines, short beards and tusks retain eight edge-coverage levels so curved features do not become solid rectangular bars. Color is applied at runtime without altering source layers. Classic drawing detail has been removed; old v4/v5 recipes import into the current drawing style.
+All artwork is drawn by JavaScript into separate transparent **128 × 128** canvases. Sources use 32 neutral grayscale values. Most layers use binary alpha; brows, lips, Mature skin lines, short beards and tusks retain eight edge-coverage levels so curved features do not become solid rectangular bars. Color is applied at runtime without altering source layers. Classic drawing detail has been removed; old v4/v5/v6 recipes import into the current drawing style.
 
 ## Choices
 
@@ -75,7 +75,7 @@ const noElfBeard = PortraitEngine.normalize({race:'elf', beard:'full'}).beard; /
 
 Ears remain independent skin-tinted parts behind the face. Closed headwear and draped veils conceal them. Tusks use the neutral teeth layer, curve into tapered tips with soft edge coverage, and are protected from facial-hair overlap. All raw source parts remain grayscale and tintable.
 
-Version 6 recipes include the selected race and its compatible feature choices. Import accepts v4/v5 recipes, supplies Human/normal ear defaults when race/ears are missing, and normalizes incompatible racial combinations.
+Version 7 recipes include the selected race and its compatible feature choices. Import accepts v4/v5/v6 recipes, supplies Human/normal ear defaults when race/ears are missing, and normalizes incompatible racial combinations.
 
 ## Headwear fit types
 
@@ -124,9 +124,48 @@ Stubble uses a light continuous beard shadow with fine tonal grain; close beard 
 ## Editing and export
 
 - `portrait-engine.js`: part drawings, rig, variants, profiles, presets and tinting.
-- `workshop.js`, `index.html`, `style.css`: editable controls and presentation.
+- `portrait-generation.js`: player-face reservations, seeded generation, preset pools, persistent rosters and diagnostic checks.
+- `workshop.js`, `studio.js`, `index.html`, `style.css`: editable controls and presentation.
+- `character-tests.html`: focused character-generation and save/restore checks.
 - `build.py`: embeds those files into the standalone HTML; run `python build.py` after edits.
 - `tests.html`: focused checks for symmetry, alignment, distinct artwork, equipment clearance, independent layers, grayscale/alpha, tinting and deterministic generation.
 - `examples/`: optional current baseline PNGs and manifest; `examples/medieval/`: 63 preset PNGs and recipes. Historical comparison images elsewhere in this folder are not loaded by the engine.
 
-Exports include the assembled portrait, selected source layer, a **2304 × 128** grayscale atlas, and a v6 JSON recipe with colors, visibility, rig and layer order. Import accepts v4, v5 and v6 recipes; absent fields use current defaults. These are portrait recipes, not game saves.
+Exports include the assembled portrait, selected source layer, a **2304 × 128** grayscale atlas, and a v7 JSON recipe with colors, visibility, rig and layer order. Import accepts v4, v5, v6 and v7 recipes; absent fields use current defaults. These are portrait recipes, not game saves.
+
+
+## Character Studio controls
+
+Eight bounded integer adjustments tune face width, jaw width, eye spacing/size, nose width, mouth width, ear size and hair volume on the shared rig. Zero preserves the approved v6 drawings exactly. Older recipes receive zero adjustments. These are deliberately small changes to keep assembled parts aligned.
+
+Lock complete parts or individual adjustments before generating 12 variations. Race and starting profile stay fixed; proportion randomization is optional. Locks apply to player variations, not independent NPC generation. Pin a before snapshot, inspect individual source layers and use **Check parts** for detached-pixel, facial-anchor, iris/lid and overlay checks. These checks are diagnostics, not comprehensive artistic judgments.
+
+Save named favorites with an optional role tag. The collection contains the current recipe, player reservation, favorites, NPCs, variations, locks, comparison snapshot and generation settings. Browser storage restores it when available; export a JSON collection for a portable backup. NPC recipes and contact-sheet PNGs can also be exported separately. Hiding layers is for inspection; restore every layer before reserving a player or saving a favorite.
+
+## Game-facing character API
+
+Load `portrait-engine.js`, then `portrait-generation.js`. No workshop code or PNG files are needed at runtime. The runnable [integration example](examples/game-integration.html) imports a player recipe, creates eight lords, and exports/restores their world portrait data.
+
+```js
+const C = PortraitCharacters;
+// playerRecipe is the studio's exported player JSON.
+const roster = new C.Roster({seed: worldSeed, player: playerRecipe});
+const lord = roster.create({
+  id: 'lord-001', race: 'dwarf', profile: 'male', role: 'lord',
+  mode: 'mixed', presets: savedPresets
+});
+// Existing IDs return the saved recipe; drawing never rerolls the face.
+context.drawImage(roster.portrait(lord.id), x, y);
+const worldPortraitData = roster.export(); // Include this in the game save.
+const restored = C.Roster.restore(worldPortraitData);
+```
+
+Use stable game IDs for named lords, heroes, bandits and companions. Create the roster after player creation, then store its full export with the world save. Cache the roster rather than constructing it during draw calls. `get(id)` and `player` return copies; `portrait(id)` returns the cached canvas, which callers should treat as read-only. Seeds and the same creation order reproduce results. Collision rejection depends on the existing roster, so a seed alone is not a substitute for saved recipes. Keep IDs and recipes when loading a game or changing generation pools.
+
+`generateNPCs({player, existing, count, seed, race, profile, role, mode, presets})` is the batch interface (1–128 per call). Supported roles are lord, guard, villager, wanderer, bandit and companion. Random mode combines race-compatible features with bounded proportions and role-based equipment. Preset mode uses exact eligible faces; built-in presets are filtered by race, profile and role clothing, while user favorites can specify `roles: ['lord']` or `roles: []` for any role. Mixed mode combines both. All modes compare against the player and existing roster.
+
+The core identity uses actual face geometry, eye family/spacing/size and nose type/width. Player exclusion requires two differing core groups and at least one different major part; changing only sliders, seed, hair, beard, expression, skin marks, age, colors or equipment cannot bypass it. Exact core identities are unique within a roster; visual resemblance between different identities is still possible. A character creator that changes the player after world creation must revalidate the roster or regenerate conflicting NPCs. The studio refuses a conflicting new player reservation.
+
+Generation has finite retries and never silently falls back to a clone. Handle `GenerationError.code`, notably `PRESET_POOL_EXHAUSTED`, `FACE_POOL_EXHAUSTED`, `PLAYER_REQUIRED`, `DUPLICATE_ID` and `SAVED_FACE_CONFLICT`. Add more eligible presets or use Mixed/Random when a strict preset pool is too small. Imported v7 rosters are revalidated; v4–v6 individual portrait recipes remain accepted with zero adjustments. Studio collection format version 1 is separate from engine recipe/roster version 7.
+
+Source artwork remains 18 independent grayscale canvases with runtime tinting. Race palettes are editable defaults, not forced skin colors. These APIs prepare the tool for a future in-game creator and world generator; they do not replace production game portraits automatically.

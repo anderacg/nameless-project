@@ -40,12 +40,13 @@
     for(const profile of E.profiles)$('profile-'+profile).setAttribute('aria-pressed',String(state.config.profile===profile));
     const fit=E.headwearRules[state.config.headwear].hair;$('headwear-note').textContent={show:'Hair remains visible.',tuck:'Crown hair tucked under this headwear.',hide:'Hair and ears concealed by this headwear.',frame:'Hair stays within the veil; back hair and ears are covered.'}[fit];
     anchors();$('gray').setAttribute('aria-pressed',String(!state.colored));$('color').setAttribute('aria-pressed',String(state.colored));
-    $('preset').value=String(E.presets.findIndex(p=>Object.keys(state.config).every(k=>state.config[k]===E.normalize(p.config)[k]))).replace('-1','');for(const key of Object.keys(selectors))selectors[key].value=state.config[key];$('seed').value=state.config.seed;
+    $('preset').value=String(E.presets.findIndex(p=>JSON.stringify(state.config)===JSON.stringify(E.normalize(p.config)))).replace('-1','');for(const key of Object.keys(selectors))selectors[key].value=state.config[key];$('seed').value=state.config.seed;
     for(const s of E.order){checks[s.id].checked=state.visible[s.id];copy(state.portrait.layers[s.id],tiles[s.id].querySelector('canvas'));}
     inspect(state.selected);
     $('color-hint').textContent=state.colored?'Applied to preview only':'Enable tint preview to apply';
     $('status').textContent=state.colored?'Tinted composite · grayscale source layers preserved':'Grayscale composite · 32-value shading';
     window.portraitWorkshop=Object.freeze({state,render,engine:E});
+    document.dispatchEvent(new Event('portrait:change'));
   }
   function download(name,href){const a=document.createElement('a');a.download=name;a.href=href;document.body.append(a);a.click();a.remove();}
   function blob(name,text){const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));download(name,url);setTimeout(()=>URL.revokeObjectURL(url),1000);}
@@ -82,7 +83,7 @@
   $('download-portrait').onclick=()=>download('portrait-'+(state.colored?'tinted':'grayscale')+'.png',$('portrait').toDataURL('image/png'));
   $('download-atlas').onclick=()=>{const c=document.createElement('canvas');c.width=E.size*E.order.length;c.height=E.size;const g=c.getContext('2d');E.order.forEach((s,i)=>g.drawImage(state.portrait.layers[s.id],i*E.size,0));download('portrait-grayscale-atlas.png',c.toDataURL('image/png'));};
   $('import-json').onclick=()=>$('recipe-file').click();
-  $('recipe-file').onchange=async()=>{const f=$('recipe-file').files[0];if(!f)return;try{if(f.size>100000)throw Error('Recipe is too large');const r=JSON.parse(await f.text());if(![4,5,E.version].includes(r.version)||!r.config||typeof r.config!=='object')throw Error('Choose a version 4, 5 or 6 portrait recipe');state.config=E.normalize(r.config);for(const key of Object.keys(E.colors)){const color=r.colors?.[key];state.colors[key]=/^#[0-9a-f]{6}$/i.test(color)?color:E.colors[key];$('tint-'+key).value=state.colors[key];}for(const s of E.order)state.visible[s.id]=r.visible?.[s.id]!==false;state.colored=r.colored===true;render(true);}catch(e){$('status').textContent='Could not load recipe: '+e.message;}finally{$('recipe-file').value='';}};
+  $('recipe-file').onchange=async()=>{const f=$('recipe-file').files[0];if(!f)return;try{if(f.size>100000)throw Error('Recipe is too large');const r=JSON.parse(await f.text());if(![4,5,6,E.version].includes(r.version)||!r.config||typeof r.config!=='object')throw Error('Choose a version 4–7 portrait recipe');state.config=E.normalize(r.config);for(const key of Object.keys(E.colors)){const color=r.colors?.[key];state.colors[key]=/^#[0-9a-f]{6}$/i.test(color)?color:E.colors[key];$('tint-'+key).value=state.colors[key];}for(const s of E.order)state.visible[s.id]=r.visible?.[s.id]!==false;state.colored=r.colored===true;render(true);}catch(e){$('status').textContent='Could not load recipe: '+e.message;}finally{$('recipe-file').value='';}};
   $('download-json').onclick=()=>blob('portrait-recipe.json',JSON.stringify({version:E.version,size:E.size,config:state.config,headwearFit:E.headwearRules[state.config.headwear],colors:state.colors,colored:state.colored,visible:state.visible,anchors:state.portrait.anchors,drawOrder:E.order.map((s,i)=>({...s,frame:{x:i*E.size,y:0,width:E.size,height:E.size},origin:{x:0,y:0}}))},null,2));
   render(true);
 })();

@@ -1,0 +1,29 @@
+<!doctype html><meta charset="utf-8"><title>Character generation checks</title><pre id="out">Running…</pre><script src="portrait-engine.js"></script><script src="portrait-generation.js"></script><script>
+'use strict';
+const E=PortraitEngine,C=PortraitCharacters,lines=[];
+function ok(test,label){if(!test)throw Error(label);lines.push('PASS '+label);}
+function throwsCode(fn,code){try{fn();}catch(e){return e.code===code;}return false;}
+try{
+ const player=E.startProfile('male'),decorated={...player,seed:666,hair:'none',beard:'full',age:'elder',marks:'scar'};
+ ok(C.faceKey(player)===C.faceKey(decorated)&&!C.distinctFromPlayer(player,decorated),'hair, beard, age, marks and texture do not create a new face');
+ for(const race of E.races){const p=E.startRace(race),records=C.generateNPCs({player:p,race,count:32,seed:42}),keys=new Set();for(const record of records){if(!C.distinctFromPlayer(record,p)||keys.has(C.faceKey(record)))throw Error('Clone in '+race);keys.add(C.faceKey(record));for(const key of Object.keys(E.raceParts[race]))if(!E.partsFor(race,key).includes(record.config[key]))throw Error('Incompatible '+race+'/'+key);}ok(true,race+': 32 compatible NPCs exclude player and each other');ok(JSON.stringify(records)===JSON.stringify(C.generateNPCs({player:p,race,count:32,seed:42})),race+': seeded batch is reproducible');}
+ const variations=C.variations({base:player,count:12,seed:4,locks:['face','eyes','adjustments']});ok(variations.every(c=>c.face===player.face&&c.eyes===player.eyes&&JSON.stringify(c.adjustments)===JSON.stringify(player.adjustments)),'variation locks are respected');
+ ok(throwsCode(()=>C.variations({base:player,count:1,locks:[...Object.keys(E.options).filter(k=>k!=='race'),'adjustments']}),'LOCKED_POOL_EXHAUSTED'),'fully locked variations fail clearly');
+ ok(throwsCode(()=>C.generateNPCs({player,mode:'preset',count:128,race:'orc'}),'PRESET_POOL_EXHAUSTED'),'preset exhaustion fails instead of reusing faces');
+ ok(throwsCode(()=>C.generateNPCs({count:1}),'PLAYER_REQUIRED'),'NPC generation requires a player reservation');
+ ok(throwsCode(()=>C.generateNPCs({player,count:0}),'INVALID_COUNT'),'invalid counts rejected');
+ ok(throwsCode(()=>C.generateNPCs({player,role:'toString'}),'INVALID_GENERATION_OPTIONS'),'unknown roles rejected');
+ const roster=new C.Roster({seed:71,player:{config:player}}),first=roster.create({id:'lord-1',race:'human',role:'lord'}),image=roster.portrait('lord-1');const beforeMutation=JSON.stringify(roster.get('lord-1'));first.config.face='heart';ok(JSON.stringify(roster.get('lord-1'))===beforeMutation,'returned recipes do not mutate saved records');
+ ok(image===roster.portrait('lord-1'),'draw calls reuse the portrait canvas');
+ ok(JSON.stringify(roster.get('lord-1'))===JSON.stringify(roster.create({id:'lord-1',race:'orc'})),'existing character IDs never reroll');
+ const snapshot=JSON.parse(JSON.stringify(roster.export())),restored=C.Roster.restore(snapshot);ok(JSON.stringify(snapshot)===JSON.stringify(restored.export()),'world portrait save restores exactly');
+ ok(JSON.stringify(roster.create({id:'lord-2',race:'elf'}))===JSON.stringify(restored.create({id:'lord-2',race:'elf'})),'new character stays reproducible after restore');
+ const original=C.faceKey(restored.player),copy=restored.player;copy.config.face='round';ok(C.faceKey(restored.player)===original,'player reservation is returned as a copy');
+ const bad={...snapshot,characters:[{id:'clone',config:player}]};ok(throwsCode(()=>C.Roster.restore(bad),'SAVED_FACE_CONFLICT'),'saved player clones rejected');
+ const bounded=E.normalize({adjustments:{faceWidth:99,jawWidth:-99,eyeSize:NaN}});ok(bounded.adjustments.faceWidth===2&&bounded.adjustments.jawWidth===-2&&bounded.adjustments.eyeSize===0,'proportion input is bounded');
+ for(const race of E.races)for(const [key,range]of Object.entries(E.adjustments))for(const value of [range.min,range.max]){const c=E.normalize({...E.startRace(race),adjustments:{[key]:value}}),issues=C.inspect(c);if(issues.some(i=>i.severity==='error'))throw Error('Invalid tuned face '+race+'/'+key+'/'+value);}
+ ok(true,'all race slider endpoints keep facial anchors and eyes valid');
+ lines.push('DONE '+lines.length+' checks');
+}catch(e){lines.push('FAIL '+e.message);console.error(e);}
+document.getElementById('out').textContent=lines.join('\n');
+</script>

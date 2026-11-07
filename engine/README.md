@@ -90,4 +90,4 @@ In a page: `<script src="../engine/pixel.js"></script>`, then `buildkit.js`, the
 
 ## Portrait generator workshop
 
-Open [face arts/portrait-workshop.html](face%20arts/portrait-workshop.html) for the current offline procedural portrait tool: 128 × 128 grayscale parts, independent layers, tinting, ears and race-specific generation. Editable sources and race compatibility rules are in [face arts/grayscale/](face%20arts/grayscale/README.md). Run `python "engine/face arts/build.py"` to rebuild the public workshop. The prior v3 matched-image study is kept as a labeled archive in the same folder.
+Open [face arts/portrait-workshop.html](face%20arts/portrait-workshop.html) for Character Studio v7: player creation, locked variations, saved presets, persistent NPC rosters with player-face exclusion, and 128 × 128 grayscale parts, independent layers, tinting, ears and race-specific generation. Editable sources and race compatibility rules are in [face arts/grayscale/](face%20arts/grayscale/README.md). Run `python "engine/face arts/build.py"` to rebuild the public workshop. The prior v3 matched-image study is kept as a labeled archive in the same folder.
