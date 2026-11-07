@@ -137,11 +137,11 @@ function groundClamp(deg,len,sp,o){return dollable(o)&&sp.hand?downClamp(deg,len
    walking animations"): by the walk's or the run's four frames (contact, pass, contact, pass), the steps of its angle (WEAPON_STEPS,
    + down) it is turned from its hold: its head dipping a step as he comes up through each stride, behind his rise; its bob is his hand's own, going down with him as each foot lands (engine/doll.js
    POSES.walk). Only as he carries it (no foe at hand, no blow); a long one (a spear, a pike, a lance: pole) is not turned, a step
-   of its angle a long way at its head, but pushed a pixel forward and back with his stride (shift: px, + toward his front); none
-   in the saddle (his mount's gait carries him) */
+   of its angle a long way at its head, but pushed a pixel forward and back with his stride (shift: px, + toward his front). In the
+   saddle his hand bobs with his mount's gait already (its frames), the weapon still at a walk and moving so at a run */
 const WEAPON_SWAY={on:true,walk:[0,1,0,1],run:[1,0,1,0],shift:{walk:[0,1,0,-1],run:[1,0,-1,0]}};
-const swayOf=(step,run,k,L)=>!WEAPON_SWAY.on||step==null||step<0||L?.mount||POLE(k)?0:(run?WEAPON_SWAY.run:WEAPON_SWAY.walk)[step&3];
-const shiftOf=(step,run,k,L)=>!WEAPON_SWAY.on||step==null||step<0||L?.mount||!POLE(k)?0:(run?WEAPON_SWAY.shift.run:WEAPON_SWAY.shift.walk)[step&3];
+const swayOf=(step,run,k,L)=>!WEAPON_SWAY.on||step==null||step<0||L?.mount&&!run||POLE(k)?0:(run?WEAPON_SWAY.run:WEAPON_SWAY.walk)[step&3];
+const shiftOf=(step,run,k,L)=>!WEAPON_SWAY.on||step==null||step<0||L?.mount&&!run||!POLE(k)?0:(run?WEAPON_SWAY.shift.run:WEAPON_SWAY.shift.walk)[step&3];
 // (the battle's pose's stride: [frame 0-3, running], or null standing or striking)
 const poseStride=pose=>pose>=2&&pose<=5?[pose-2,false]:pose>=15&&pose<=18?[pose-15,true]:null;
 function heldNow(u,o,sp,pose){
