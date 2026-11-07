@@ -15,7 +15,7 @@ function drawHost(n,col,x,y,dir,wd,seed,race,band){
 // WALK: the map's walk cycles, n frames each (people.js, engine/beasts.js PX.beastMap, critters.js, caravans.js; 0 the standing
 // one), a frame each foot px walked on foot, each ride px riding: the strides of the old four-frame cycles cut by n/4, so the
 // same slow pace steps as far, in finer steps
-const STILL=new WeakMap(),STILL_MS=250,WALK={n:8,foot:1.25,ride:2,field:2};// (field: a battle's own field drawn 1:1, a step each WALK.foot × field px, about the foot's own travel in a step, as on the map's battles (× its scale): no floating, the owner, 2026-11-07: "the sprite seems like they are floating due to speed and animation is not aligned")
+const STILL=new WeakMap(),STILL_MS=250,WALK={n:8,foot:1.25,ride:2,field:2,step:1.6,cap:10};// (field: a battle's own field drawn 1:1, a step each WALK.foot × field px, × step (a long stride: a little longer than the foot's own travel, so a quick man's legs do not flicker; the owner, 2026-11-07: "it seems too fast"), at most cap frames a second; as on the map's battles (× its scale): no floating, the owner, 2026-11-07: "the sprite seems like they are floating due to speed and animation is not aligned")
 function mapStepping(o){const w=WALKED.get(o)||0,s=STILL.get(o),now=performance.now();if(!s||s.w!==w){STILL.set(o,{w,t:now});return !!s}return now-s.t<STILL_MS}
 const stepOf=(o,stride,n=WALK.n)=>mapStepping(o)?frameOf(o,stride,n):0;
 /* the world map at the screen's scale (core.js VS): the camera follows you to 1/VS of a game pixel (G.cam, what a click adds to),
@@ -344,7 +344,7 @@ function drawUnitAt(u){
   const hit=u.hitAt!=null&&B.t-u.hitAt<.09;
   // (moving: a step in the last few frames, so a man who stops and starts as he settles does not flicker between standing and walking)
   // (knocked down: over, lying, up again, physics.js)
-  const dq=physDownPose(u);if(dq!=null){drawDowned(u,x,y-z,dq);u.plx=u.x;u.ply=u.y}else{const distance=u.plx!=null?Math.hypot(u.x-u.plx,u.y-u.ply):0,step=distance>.02;u.walkPhase=(u.walkPhase||0)+distance/(WALK.foot*(B.world?B.world.scale:WALK.field));u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?beastPose(u,moved):procPose(u,moved);
+  const dq=physDownPose(u);if(dq!=null){drawDowned(u,x,y-z,dq);u.plx=u.x;u.ply=u.y}else{const distance=u.plx!=null?Math.hypot(u.x-u.plx,u.y-u.ply):0,step=distance>.02;{const dt=Math.max(0,B.t-(u.wpT??B.t));u.wpT=B.t;u.walkPhase=(u.walkPhase||0)+Math.min(distance/(WALK.foot*WALK.step*(B.world?B.world.scale:WALK.field)),dt*WALK.cap)}u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?beastPose(u,moved):procPose(u,moved);
     // (on a hill's slope (the ground's climbState): walking or running up, bent forward on short slow steps; down, leaning on long ones)
     if(cl&&!beast&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
     // (rocked by a throw: leaning back from it, a step or two back, flinching; a mount rearing on its hocks: gfx/stagger.js)

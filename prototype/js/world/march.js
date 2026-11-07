@@ -174,8 +174,8 @@ const marchCart=(o,at=o)=>{const d=o.dir<0?-1:1;return MARCH_CART.map(([x,r])=>(
 // (his look, as his sprite's: sprites.js spriteLook, kept on him)
 function marchLook(u,o){const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',col=o.look().col;
   if(!u.mLook||u.mLookC!==col){u.mLook=spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col);u.mLookC=col}return u.mLook}
-// (his stride's frame on the march, 0-3: by the way he has walked, a step each WALK.foot px, so his feet keep to the ground)
-const marcherStep=u=>(Math.floor((u.walk||0)/WALK.foot)+u.id)%4;
+// (his stride's frame on the march, 0-3: by the way he has walked, a step each WALK.foot × WALK.step px, so his feet keep to the ground)
+const marcherStep=u=>(Math.floor((u.walk||0)/(WALK.foot*WALK.step))+u.id)%4;
 function marchSprite(u,o,pose,bare){
   const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',lead=hero||u.row==='leader';
   return unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(u.walking?2+marcherStep(u):0),!!bare,false,o.look().col);
