@@ -455,8 +455,10 @@
       const [tx,ty]=T[T.length-1];for(const [dx,dy] of [[-1,0],[-1,-1],[-1,1]])put(g,tx+dx,ty+dy,Dk[1])};
     S.wing=(g,F,P,far)=>{const mode=F.dead?(F.raise&&far?'mid':'down'):fly?(F.i%2?'mid':'up'):breath?['up','mid','mid'][F.i]:F.wing;wing(g,P.sho-3*k+(far?3*k:0),P.top[1]+k-(far?2*k:0),mode,D.ws,C,{far,membrane:Mb,claw:bone})};
     S.marks=(g,b,F,o,P)=>{for(let x=P.hip-3*k;x<=P.sho;x+=2*k){const ty=P.top[0]+Math.round((P.top[1]-P.top[0])*(x-P.hip)/(P.sho-P.hip))-1;put(g,x,ty,Dk[1]);if(k>1){put(g,x+1,ty,Dk[2]);put(g,x,ty-1,Dk[2])}}};
-    S.neck=(g,F,P)=>{const hh=F.dead?[P.sho+D.hd[0]+2*k,P.Y-D.hh/2-1]:breath?[[P.sho+D.hd[0]-3*k,P.Y-D.hd[1]-3*k],[P.sho+D.hd[0]-k,P.Y-7*k],[P.sho+D.hd[0]-k,P.Y-8*k]][F.i]:[P.sho+D.hd[0]+Math.min(1,F.head[0])*k,P.Y-D.hd[1]+F.head[1]*k+P.b];
-      const [hx,hy]=hh,mid=F.dead?[P.sho+(hx-P.sho)*.5,P.Y-4*k]:breath&&F.i?[P.sho+5*k,P.top[1]-k]:[P.sho+3*k,Math.min(P.top[1]-5*k,hy+4*k)];
+    S.neck=(g,F,P)=>{const hh=F.dead?[P.sho+D.hd[0]+2*k,P.Y-D.hh/2-1]:breath?[[P.sho+D.hd[0]-2*k,P.Y-D.hd[1]-2*k],[P.sho+D.hd[0]+k,P.Y-D.hd[1]*.45],[P.sho+D.hd[0],P.Y-D.hd[1]*.5]][F.i]:[P.sho+D.hd[0]+Math.min(1,F.head[0])*k,P.Y-D.hd[1]+F.head[1]*k+P.b];
+      const [hx,hy]=hh,mid=F.dead?[P.sho+(hx-P.sho)*.5,P.Y-4*k]:breath&&F.i?[(P.sho-k+hx-D.hw/2+1)/2,Math.min(P.top[1]+3*k,hy)-k]:[P.sho+3*k,Math.min(P.top[1]-5*k,hy+4*k)];
+      // (breathing fire (the owner, 2026-11-07: "fix the dragon's head and neck, this is invalid anatomy"): the head lowered forward,
+      // out before its chest, the neck arched gently from the shoulders down to it; never folded back over itself)
       tube(g,[[P.sho-k,P.top[1]+3*k,D.neck[0]],[mid[0],mid[1],(D.neck[0]+D.neck[1])/2],[hx-D.hw/2+1,hy,D.neck[1]]],C,{L:Lb,belly:[1,1]});
       for(let j=0;j<=4;j++){const t=j/5,x=P.sho+(mid[0]-P.sho)*t*2-(t>.5?0:0),y=P.top[1]+(mid[1]-P.top[1])*Math.min(1,t*2);if(j<3)put(g,x-D.neck[0]*.3,y-D.neck[0]+1,Dk[1])}
       const hb=mask();hb.limb(hx-D.hw/4,hy-D.hh/2+1,hx-D.hw/2-3*k,hy-D.hh/2-2*k,k+1,1);if(k>1)hb.limb(hx-D.hw/2+1,hy-1,hx-D.hw/2-4*k,hy-k,2,1);flat(g,hb,R('#d8ccb0'),1,2);
