@@ -100,11 +100,11 @@ const GATE_WAYS={letter:80,writ:{town:60,city:160,rep:0},bribe:{town:25,city:60,
   slip:{base:.25,scout:.05,agi:.04,fine:.5,honor:5,rep:10,ban:3}};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
-    sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18},daily:{bandits:1,monsters:3,critters:3}},
+    sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}},
   grow:{land:32042,holdings:37,ports:9,roads:1680,track:.5,wild:37400,
     by:{bandits:['land',.8],camps:['land',1],monsterStart:['land',1],monsterCap:['land',1],critterStart:['land',1],critterCap:['land',1],
       caravans:['holdings',1],refugees:['holdings',1],ships:['ports',1],
-      sites:{cave:['land',.35],travelers:['roads',1],hideout:['wild',1],ruins:['land',.35],shrine:['land',.35]}},
+      sites:{cave:['land',.35],travelers:['roads',1],hideout:['wild',1],ruins:['land',.35],shrine:['land',.35],goblins:['wild',1]}},
     daily:{bandits:'bandits',monsters:'monsterCap',critters:'critterCap'}}
 };
 // a world's land: its tiles not water (a ford is water), counted once (kept off every list and hash, as WorldMap's _site)

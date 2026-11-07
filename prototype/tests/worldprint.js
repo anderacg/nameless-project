@@ -577,7 +577,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  wear robes", "knight sprite": the map's soldiers unmottled, the side's colour on the chest only, legs by the man, robes to the
 //  feet, knights in white surcoats (engine/doll.js LOOK, robe skirt; dollfigs.js DOLL_TABARD, DOLL_LEGS). Proof: 8aff7c3 gives
 //  3801ecd2 again. Was W6 3801ecd2)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'ff470268',W7:'a9857aab',W8:'f6fce34e',B2:'87554a09'};
+// (W7, W8 and B2 2026-11-07, on purpose: the owner, "goblin enemy should also be added, similar to bandits": goblin camps in the
+//  wilds and their warbands in the world and its save (data/goblins.js, world/goblins.js, sites.js GoblinCamp; their own stream, so
+//  W1-W6 hold). Proof: GOBLINS.on false gives a9857aab, f6fce34e, 87554a09 again. Were W7 a9857aab, W8 f6fce34e, B2 87554a09)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'ff470268',W7:'fe3e98ed',W8:'51660bc5',B2:'d9a285d0'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

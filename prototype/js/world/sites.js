@@ -10,7 +10,9 @@ const SITE_TYPES={
   travelers:{n:'Travellers',ico:'fire',col:'#78c474',d:'A camp on the road. Trade, hire sellswords, rest by the fire and hear news. They move on after a few days.'},
   hideout:{n:'Bandit hideout',ico:'sword',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, guarding their plunder.'},
   ruins:{n:'Ruins',ico:'ruin',col:'#e8d8a0',respawn:40,d:'Old treasure, found only once, and guardians that may wake. Once searched, others move in.'},
-  shrine:{n:'Shrine',ico:'altar',col:'#7fd8e8',d:'Pray once a week to recover and gain insight.'}
+  shrine:{n:'Shrine',ico:'altar',col:'#7fd8e8',d:'Pray once a week to recover and gain insight.'},
+  // (goblins' camps: placed only while GOBLINS.on, from their own random stream, so the world's Math.random is as it was: genSites)
+  goblins:{n:'Goblin camp',ico:'sword',col:GOBLINS.col,respawn:GOBLINS.respawn,d:GOBLINS.d,on:()=>GOBLINS.on,stream:'goblins'}
 };
 const CAVE_NAMES=['Wolfden','Bonehollow','Darkmaw','Echo Cave','Gloomhole','Dripstone Cave','Old Burrow','Frostmaw','Sunken Grotto','Ashpit','Howling Cave','Mossy Hollow','Black Cleft','Glittercave'];
 const RUIN_NAMES=['Fallen Tower','Old Watchfort','Sunken Temple','Broken Arch','Kingsgrave','Ruined Abbey','Lost Hall','Crumbled Keep','Elder Barrow','Shattered Gate'];
@@ -51,7 +53,7 @@ const scoutChance=()=>clamp(.4+.05*skill('scout')+.02*P.attr.agi+(darkness()>.5?
 // a rough count, and how strong they look against you, from outside (Lair guess)
 const roughly=n=>n<6?'a handful':n<10?'fewer than ten':n<14?'about a dozen':n<18?'fifteen or so':n<26?'about a score':'dozens';
 const looks=r=>r<.5?['They look far weaker than your band','good']:r<.8?['They look weaker than your band','good']:r<1.2?['They look about your match','gold']:r<1.8?['They look stronger than your band','bad']:['They look far too strong for you','bad'];
-const LAIR_SAY={bandits:'Bandits',raiders:'Desert raiders',bog:'Bog raiders'};
+const LAIR_SAY={bandits:'Bandits',raiders:'Desert raiders',bog:'Bog raiders',goblins:'Goblins'};
 class Site extends WorldObject{
   get mapKind(){return 'site'}
   here(){return W.sites.includes(this)}
@@ -382,6 +384,8 @@ class Lair extends Site{
   get emptyPage(){return true}
   get bandKind(){return this.band||'bandits'}
   returned(){this.ld=newChief(this.bandKind,this.newLv()+Math.floor(G.day/30))}
+  // whether band b may shelter here by night (world.js campNear): a bandit camp takes any band but goblins
+  shelters(b){return b.kind!=='goblins'}
   // a new chieftain's level (before the days add theirs); its plunder past every camp's (engage.js ON_WIN camp): none, a line
   // for the victory panel; what your scouts say of its loot (n: how many they saw)
   newLv(){return rint(1,3)}
@@ -579,17 +583,35 @@ class TravellersCamp extends Site{
     else if(a==='site-song'&&!s.special&&P.gold>=15){s.special=true;P.gold-=15;P.renown+=3;P.morale=clamp(P.morale+5,0,100);done('By the next town, children are singing of you. (+3 renown)')}
     return true}
 }
-const SITE_CLASS={camp:BanditCamp,cave:Cave,travelers:TravellersCamp,hideout:Hideout,ruins:Ruins,shrine:Shrine};
+/* a goblin camp (data/goblins.js GOBLINS): a hideout of the goblins' own, on the same wild land, never a tunnel; the Ashgor Horde's
+   yurts in a ring of stakes (structures.js SITE_CULTURE); a bigger, weaker garrison (GOBLINS.camp) under a boss, a pile of stolen
+   goods in its plunder; its own warbands (world/goblins.js) shelter in it by night and ride out from it */
+class GoblinCamp extends Hideout{
+  get lairLook(){return null}
+  get tune(){return GOBLINS.camp}
+  setup(sites){this.band='goblins';this.name=unusedName(GOBLINS.names,sites);this.ld=newChief('goblins',this.newLv(),sites)}
+  shelters(b){return b.camp===this.i}
+  // (stormed: its own, as scouted or rolled now, and its warbands sheltering in it tonight, as a bandit camp's: world.js campFight)
+  attack(own,inside){startEncounter({kind:'camp',ref:this,list:(own||this.foes()).concat(this.sheltering()),band:this.band,inside:inside||Interior.pick()})}
+  flag(){return{k:'rag',col:GOBLINS.col,dev:'skull'}}
+  // (a hideout's plunder, and their pile of stolen goods: one of GOBLINS.loot)
+  plunder(res){const L=GOBLINS.loot,g=L.goods[rint(0,L.goods.length-1)],n=invAdd('good',g,rint(L.n[0],L.n[1]));
+    return super.plunder(res)+(n?' In their pile of stolen goods: '+n+' '+GOODS[g].n.toLowerCase()+'.':'')}
+  lootSay(n){return super.lootSay(n)+', and a pile of stolen goods'}
+}
+const SITE_CLASS={camp:BanditCamp,cave:Cave,travelers:TravellersCamp,hideout:Hideout,ruins:Ruins,shrine:Shrine,goblins:GoblinCamp};
 // a site of its kind again (from a save)
 const siteOf=s=>{if(s instanceof Site)return s;Object.setPrototypeOf(s,SITE_CLASS[s.type].prototype);s.restore();return s};
 const camps=()=>W.sites.filter(s=>s instanceof BanditCamp);
+// the camps bands shelter in by night (world.js campNear, campEmpty): the bandit camps and the goblins' camps
+const nightCamps=()=>W.sites.filter(s=>s instanceof BanditCamp||s instanceof GoblinCamp);
 
 /* placement */
 // the least distance (tiles) between two kinds of site, past siteSpot's gap, never relaxed (the owner's play-test, 2026-10-22:
 // "too many pilgrim and wanderer camps"): a travellers' camp far from another, and from the outlaws' camps and hideouts (no
 // traders' fire beside a bandits' den; a bandit camp stands on its spot first, a hideout keeps the gap to the travellers before it);
 // a hideout far from another and from the bandit camps (the owner, 2026-10-23: deep in the wilds, each its own stretch of them)
-const SITE_GAP={travelers:{travelers:30,camp:16,hideout:16},hideout:{travelers:16,camp:16,hideout:20}};
+const SITE_GAP={travelers:{travelers:30,camp:16,hideout:16},hideout:{travelers:16,camp:16,hideout:20},goblins:{travelers:16,camp:16,hideout:16,goblins:20}};
 const siteGap=(a,b)=>SITE_GAP[a]&&SITE_GAP[a][b]||0;
 // a free tile for a site of this kind: reachable from the roads, on its ground, clear of holdings and other sites (the camps among
 // them; SITE_GAP's kinds farther); each try a tile its kind picks (Site pick)
@@ -617,7 +639,9 @@ function makeSite(type,tx,ty,sites){
 // a world's sites: a camp on each of its camp spots, then of each other kind as many as the world holds (density(WM), data/world.js)
 function genSites(){
   const sites=[],N=density(WM).sites;for(const c of CAMP_SPOTS)sites.push(makeSite('camp',c.tx,c.ty,sites));
-  for(const type of Object.keys(SITE_TYPES))if(!SITE_TYPES[type].spots)for(let n=0;n<(N[type]||0);n++){const p=siteSpot(type,sites,9);if(p)sites.push(makeSite(type,p[0],p[1],sites))}
+  // (a kind with a switch (on) only while it is on; one with its own stream (stream: core/rng.js) placed from it)
+  for(const type of Object.keys(SITE_TYPES)){const T=SITE_TYPES[type];if(T.spots||T.on&&!T.on())continue;
+    const place=()=>{for(let n=0;n<(N[type]||0);n++){const p=siteSpot(type,sites,9);if(p)sites.push(makeSite(type,p[0],p[1],sites))}};if(T.stream)Rng.use(T.stream,place);else place()}
   return sites;
 }
 

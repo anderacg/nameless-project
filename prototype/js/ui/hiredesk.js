@@ -40,7 +40,7 @@ class HireDesk{
     const S=this.src,ks=S.kinds,r=partyRoster(P),kind=s=>s.range?'ranged':s.mounted?'mounted':'melee';let pick=s.pick;if(!ks.includes(pick))pick=ks[0]||null;
     const units=ks.map(k=>{const st=ST[k],u=this.unit(k);
       return '<div class="rec-row'+(pick===k?' sel':'')+'" data-act="'+this.p+'pick" data-arg="'+k+'"><button class="rec-pic" type="button" data-act="'+this.p+'info" data-arg="'+k+'" aria-label="'+htmlText(st.n)+': its card"><img src="'+portrait(k)+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
-        '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(k),14)+' '+st.n+'</strong><small>Tier '+st.tier+(st.race?' · '+RACES[st.race].n:'')+' · '+kind(st)+' · <b>'+u.n+' men</b> · <b class="gold">'+u.cost+'g</b></small><small>'+S.line(k)+(u.why?' · <span class="bad">'+htmlText(u.why)+'</span>':'')+'</small></div>'+
+        '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(k),14)+' '+st.n+'</strong><small>Tier '+st.tier+(st.race?' · '+raceOf(st.race).n:'')+' · '+kind(st)+' · <b>'+u.n+' men</b> · <b class="gold">'+u.cost+'g</b></small><small>'+S.line(k)+(u.why?' · <span class="bad">'+htmlText(u.why)+'</span>':'')+'</small></div>'+
         '<div class="rec-step">'+this.btn('unit',k,'Recruit unit',u.why,u.why?'':' primary')+'</div></div>'}).join('');
     const gs=this.short(),fills=gs.map(g=>{const f=this.fill(g),n=unitSize(g.type),w=r.wounded(g.id);
       return '<div class="rec-row rec-refill"><div class="rec-txt"><strong>'+groupBadge(g,12)+' '+htmlText(armyGroupLabel(g.id))+'</strong><span class="rec-meter" aria-hidden="true"><i style="width:'+Math.round(g.count/n*100)+'%"></i><b style="width:'+Math.round(w/n*100)+'%"></b></span>'+

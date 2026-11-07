@@ -249,13 +249,15 @@ function drawShadows(list){let any=false;for(const e of list)if(e.sh){any=true;b
    (where it stands from its point: drawn at x - ax, y + 8 - ay), sh (its shadow), gr (its yard, its own shadow shaded into it, laid
    under it: sites move from game to game, so their yards are drawn, not painted in), fire (its flame's foot: marks.fire; drawFire),
    flag (its flag's foot: the model's, else a pole by its fire)} */
-const SITE_KIND={bandit:'camp',camp:'camp',hideout:'hideout',travelers:'travelers'};
+const SITE_KIND={bandit:'camp',camp:'camp',hideout:'hideout',travelers:'travelers',goblins:'hideout'};
+// (a camp built in a culture's style, by its kind: a goblin camp the Ashgor Horde's, its yurts in a ring of stakes; the rest the generic)
+const SITE_CULTURE={goblins:'ashgor'};
 function siteCanvas(m,ax,ay){const N=m.cell,cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0)});cv.ax=ax;cv.ay=ay;cv.sh=m.shadow;
   cv.gr=mkc(N,N,g=>{g.drawImage(m.ground,0,0);if(m.snow)g.drawImage(m.snow.ground,0,0);g.globalCompositeOperation='source-atop';g.globalAlpha=SHADOW.a;g.drawImage(m.shadow,0,0)});
   cv.fire=m.marks&&m.marks.fire||null;cv.flag=m.flag||(cv.fire&&[cv.fire[0]+7,cv.fire[1]+1]);return cv}
 // a camp of kind (bandit, hideout, travelers) and seed i, in climate c (the grass unless said)
 function campSprite(i,kind,c){c=c||'grass';const k='camp'+i+(kind||'')+c;if(spr[k])return spr[k];
-  const m=PX.clusterModel({kind:SITE_KIND[kind||'bandit'],seed:i*131+7,env:c,snow:c==='frost'?1:0}),n=m.cell/TILE;return spr[k]=siteCanvas(m,TILE/2+TILE*((n>>1)-1),m.cell)}
+  const m=PX.clusterModel({kind:SITE_KIND[kind||'bandit'],culture:SITE_CULTURE[kind],seed:i*131+7,env:c,snow:c==='frost'?1:0}),n=m.cell/TILE;return spr[k]=siteCanvas(m,TILE/2+TILE*((n>>1)-1),m.cell)}
 // (a bandit lair: a cave's outcrop round its mouth, or a timbered tunnel's head (sites.js Hideout lairLook), bones before it and the band's banner on a pole, on its tile as a hideout stands)
 function lairSprite(s,c){const look=s.lairLook,k='lair'+look+s.seed+c;if(spr[k])return spr[k];const m=PX.buildingModel({type:look==='cave'?'cave':'minehead',seed:s.seed,env:c,snow:c==='frost'?1:0});
   const cv=siteCanvas(m,m.cell/2,m.cell),g=cv.getContext('2d'),N=m.cell,x=Math.round(N*.78),y=N-4;

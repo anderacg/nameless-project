@@ -83,7 +83,7 @@ function startGame(k,b){
   const S=StartPlace.pick(k),home=S?S.t:capitalOf(P.race);P.home=home.name;if(b.rep)P.rep[home.name]=b.rep;
   if(S)P.rep[home.name]=Math.max(P.rep[home.name]||0,HUMBLE_START.rep);// (nothing past what you see revealed: the owner, 2026-11-05)
   heroAtGate(home);G.mode='world';G.lastTown=home;// (in front of its gate, on land: world.js gateSpot)
-  startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);
+  startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);goblinsStart();
     for(let i=0,n=Math.round(density(WM).monsterStart*spawnMul('monsters'));i<n;i++)spawnMonster(true)});
   if(own)Rng.newGame();
   // (named: the hero and the band in the first line; the band's name only once you gave it one)

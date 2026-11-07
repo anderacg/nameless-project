@@ -33,8 +33,10 @@ function stanceMove(o,st,dist,dx,dy,see,sp,canHunt){
   return false;
 }
 function playerList(){return ['hero',...Object.keys(P.comps),...P.list]}
-const BANDS={bandits:['Bandits ahead','raiders'],raiders:['Desert raiders','raiders'],bog:['Bog raiders','raiders']};
+// (each kind of band: the pre-battle page's title, what the scouts count; goblins a line of their own on meeting them)
+const BANDS={bandits:['Bandits ahead','raiders'],raiders:['Desert raiders','raiders'],bog:['Bog raiders','raiders'],goblins:['Goblin warband','goblins',GOBLINS.meet]};
 function makeEnemies(n,camp,band){
+  if(band==='goblins')return goblinList(n,camp);
   const a=[];
   for(let i=0;i<n;i++){const r=Math.random();if(Math.random()<.08){a.push(band==='raiders'||band==='bog'?'orc_shaman':'hedge');continue}
     if(band==='raiders')a.push(r<.4?'orc_thrower':r<.7?'militia':'orc_grunt');
@@ -208,7 +210,7 @@ function startEncounter(e){
       (finds?'<p class="muted">'+finds+'</p>':'')+hurt+'<p>'+vs+'</p>'+
       '<div class="btns">'+encounterAttackButtons(e)+'<button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>')}
   if(e.kind==='field')return showPanel('<h2>'+e.title+'</h2><p>You ride into the battle'+(e.allies.length?' beside '+e.allies.map(l=>l.name).join(', '):'')+'.</p>'+ground+hurt+'<p>'+vs+'</p><div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button><button class="btn" type="button" data-act="auto">Auto-resolve</button><button class="btn" type="button" data-act="flee">Leave them to it</button></div>');
-  showPanel('<h2>'+(e.title?e.title:lord?lord.name+' attacks':e.kind==='camp'?e.ref.name||'Bandit camp':band[0])+'</h2>'+(lord?'<p class="muted">An army of the <span style="color:'+f.col+'">'+f.n+'</span>.</p>':'')+'<p>Scouts count about <strong>'+encounterMainFighters(e)+'</strong> '+(e.word||'fighters')+(encounterMainFighters(e)>e.list.length?' including their leader':'')+'.'+ground+''+(inside?' You go in with <strong>'+(mine.length-1)+'</strong> of your band; the rest wait outside.':' You have <strong>'+P.fighters+'</strong> fighters, including yourself.')+'</p>'+typeHtml(e)+hurt+'<p>'+vs+'</p><div class="btns">'+encounterAttackButtons(e)+'<button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>');
+  showPanel('<h2>'+(e.title?e.title:lord?lord.name+' attacks':e.kind==='camp'?e.ref.name||'Bandit camp':band[0])+'</h2>'+(lord?'<p class="muted">An army of the <span style="color:'+f.col+'">'+f.n+'</span>.</p>':band[2]&&!e.title&&e.kind==='party'?'<p>'+band[2]+'</p>':'')+'<p>Scouts count about <strong>'+encounterMainFighters(e)+'</strong> '+(e.word||'fighters')+(encounterMainFighters(e)>e.list.length?' including their leader':'')+'.'+ground+''+(inside?' You go in with <strong>'+(mine.length-1)+'</strong> of your band; the rest wait outside.':' You have <strong>'+P.fighters+'</strong> fighters, including yourself.')+'</p>'+typeHtml(e)+hurt+'<p>'+vs+'</p><div class="btns">'+encounterAttackButtons(e)+'<button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>');
 }
 /* fleeing is a real escape. A fight you started (you rode at them, or you are storming, raiding or joining a battle) you can
    simply call off, as you can with a foe that is afraid of you. Otherwise it is a race: your band's speed on this ground (a big
@@ -258,7 +260,7 @@ const gearTop=()=>Math.min(MATERIALS.length-1,1+Math.floor(G.day/20));
 const clearPlace=(o,days)=>{o.cleared=true;o.back=G.day+days;pacify(o.x,o.y)};
 const ON_WIN={
   party:{drop:()=>Math.random()<.3?randomGear(0,gearTop()):null,won:e=>{worldEmit('band:beaten',{band:e.ref});bandits=bandits.filter(x=>x!==e.ref);return ''}},
-  camp:{big:true,fame:10,drop:()=>Math.random()<.8?randomGear(0,gearTop()):null,won:(e,slain,res)=>{worldEmit('site:cleared',{site:e.ref});(e.ref.bands||[]).forEach(b=>{worldEmit('band:beaten',{band:b});chiefEscapes(b.ld)});e.ref.bands=[];clearPlace(e.ref,10);return e.ref.plunder(res)}},
+  camp:{big:true,fame:10,drop:()=>Math.random()<.8?randomGear(0,gearTop()):null,won:(e,slain,res)=>{worldEmit('site:cleared',{site:e.ref});(e.ref.bands||[]).forEach(b=>{worldEmit('band:beaten',{band:b});chiefEscapes(b.ld)});e.ref.bands=[];clearPlace(e.ref,e.ref.T?.respawn||10);return e.ref.plunder(res)}},
   monster:{won:(e,slain,res)=>{const m=e.ref;worldEmit('monster:slain',{monster:m});W.monsters=W.monsters.filter(x=>x!==m);gainXp(monsterXp(m,slain));return monsterLoot(m,slain)+(MONSTERS[m.id].mythic?mythicSlain(m,res):'')}},
   cave:{won:(e,slain)=>{worldEmit('site:cleared',{site:e.ref});gainXp(monsterXp(e.ref,slain));return monsterLoot(e.ref,slain)+e.ref.lairWon()},lost:e=>e.ref.lairLost(e)},
   lord:{big:true,fame:0,drop:()=>Math.random()<.6?randomGear(1,gearTop()+1):null,won:(e,slain,res)=>lordWon(e.ref,res,!res.down)},

@@ -62,7 +62,7 @@ const CLIM_GROUND={frost:{foot:.85,mounted:.85,home:true,n:'In the snow (slowed)
 // (its speed × on climate c's ground, on world tile kind t: s his stats, home his homes)
 const climSpd=(s,home,c,t)=>{const G=t===T_FOREST||t===T_HILL?null:CLIM_GROUND[c];return !G||G.home&&home.includes(c)?1:s.mounted?G.mounted:G.foot};
 function envStats(s,race,env){
-  if(s.big)return s;const o={...s},home=race?RACES[race].home:s.home||[],c=env.c,t=env.t;
+  if(s.big)return s;const o={...s},home=race&&RACES[race]?RACES[race].home:s.home||[],c=env.c,t=env.t;
   if(t===T_FOREST||t===T_HILL){if(t===T_HILL&&s.range&&!env.terrain)o.range*=1.15}// (with terrain the hills earn it where they stand, D2: terrain.js)
   else if(c==='desert'){if(!s.range&&!home.includes('desert'))o.cd*=1.1}
   else{const k=climSpd(s,home,c,t);if(k!==1)o.spd*=k}

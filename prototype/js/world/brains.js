@@ -75,10 +75,10 @@ class BandBrain extends Brain{
     if(inFight(b))return false;
     const v=this.look(b);this.cool(b,d);
     if(b.waylay||!TravelAwareness.sees(b)&&Waylay.consider(b,d)){const r=Waylay.step(b,moveStep(partySpeed(b,b.troops),d),d);if(r==='met')return true;if(r)return false}// (lying in wait: waylay.js)
-    const st=stance(b.power(),b),fear=fearOf(b,st),home=night&&campNear(b,fear),sp=moveStep(partySpeed(b,b.troops),d);
+    const st=stance(b.power()*b.nerve,b),fear=fearOf(b,st),home=night&&campNear(b,fear),sp=moveStep(partySpeed(b,b.troops),d);
     if(fear&&home||b.cool>0&&!fear||!stanceMove(b,st,v.d,v.dx,v.dy,TravelAwareness.sees(b)?travelDetection(b).range:0,sp,true)){
       if(home){const s=fear?sp*.85:moveStep(16,d);Router.travel(b,home,s)||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),s));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
-      else if(!(b.lootGo&&FieldLootQuest.seek(b,d))){b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3;if(b.haunt&&Math.hypot(b.haunt.x-b.x,b.haunt.y-b.y)>HAUNT.r*TILE)b.a=Math.atan2(b.haunt.y-b.y,b.haunt.x-b.x)}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(12,d))}}
+      else if(!(b.lootGo&&FieldLootQuest.seek(b,d))){b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3;if(b.haunt&&Math.hypot(b.haunt.x-b.x,b.haunt.y-b.y)>b.hauntR*TILE)b.a=Math.atan2(b.haunt.y-b.y,b.haunt.x-b.x)}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(12,d))}}
     if(this.canMeet(b,v.d)){meetBand(b);return true}
     return false;
   }
@@ -182,7 +182,7 @@ const BRAINS={lord:new LordBrain(),band:new BandBrain(),cparty:new CompanionBrai
 /* each kind's moment, and then what the kind does together */
 function updateBands(d){
   // bands shelter in a camp at night (its site's bands, sites.js) and ride out at dawn
-  const night=Clock.isNight;if(!night)camps().forEach(campEmpty);const met=lodEach(bandits,BRAINS.band,d,night);
+  const night=Clock.isNight;if(!night)nightCamps().forEach(campEmpty);const met=lodEach(bandits,BRAINS.band,d,night);
   if(bandits.some(b=>b.gone))bandits=bandits.filter(b=>!b.gone);return met;
 }
 function updateLords(d){

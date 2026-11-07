@@ -7,3 +7,6 @@ const RACES={
   elf:{n:'Elf',d:'Keen-eyed. +1 Agility, +1 Intellect; learns Scouting fast. Moves through forest freely.',attr:{agi:1,int:1},sk:{scout:2},skin:'#f2dcc4',melee:'elf_glade',ranged:'elf_archer',horse:'elf_hart',shield:'elf_spear',mage:'elf_weaver',home:['forest']},
   orc:{n:'Orc',d:'Brutal. +2 Strength, −1 Charisma; learns One-Handed faster. Ignores desert heat and swamp.',attr:{str:2,cha:-1},sk:{oneh:1},skin:'#7aa35a',melee:'orc_grunt',ranged:'orc_thrower',horse:'orc_wolf',shield:'orc_shield',mage:'orc_shaman',home:['desert','swamp']}
 };
+// races no one plays, who only field troops (their looks: gfx/people.js RACE_LOOK); raceOf(r): a race of either table
+const WILD_RACES={goblin:{n:'Goblin',home:['forest','swamp']}};
+const raceOf=r=>RACES[r]||WILD_RACES[r]||null;

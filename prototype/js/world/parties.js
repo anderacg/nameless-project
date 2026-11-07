@@ -121,6 +121,10 @@ class BandParty extends Party{
   banner(){return this.flagB!==undefined?this.flagB:{k:'rag',col:BAND_FLAG[this.kind]||BAND_FLAG.bandits,dev:'skull'}}// (flagB null: none, a ruin's cultists or grave robbers: no army's)
   look(){const c=this.ld;return{col:this.colB||'#8a4a3a',bandit:true,dir:faceDir(this),moving:!this.idle,seed:Math.round(this.x)%97,label:(c?c.name.split(' ')[0]+' Lv'+c.lv+' · ':'')+this.fighters,labelCol:STANCE_COL[stance(this.power())]}}
   changed(){super.changed();if(this.tc)this.n=this.size;this.pw=0}
+  // its nerve: how bold it is (brains.js BandBrain: it judges you as if it had this share of its power); how far it strays from
+  // where it haunts (haunt) before it heads back, in tiles
+  get nerve(){return 1}
+  get hauntR(){return HAUNT.r}
   // its record in a save: on a generated world its numbers to a tenth, its strength made again (worldobject.js packs)
   toJSON(){if(!packs())return this;const {pw,...o}=this;return tenths(o)}
 }
@@ -251,7 +255,7 @@ class PlayerParty extends Party{
 }
 Object.setPrototypeOf(P,PlayerParty.prototype);
 // which kind a plain party is
-const partyClassOf=o=>o.gar?GarrisonParty:o.cid?CompanionParty:o.pt?PatrolParty:o.cv?CaravanParty:o.fac&&o.name?LordParty:BandParty;
+const partyClassOf=o=>o.gar?GarrisonParty:o.cid?CompanionParty:o.pt?PatrolParty:o.cv?CaravanParty:o.fac&&o.name?LordParty:o.kind==='goblins'?GoblinBand:BandParty;
 // make a party one of its kind: its own list of soldiers (or a save's counts) becomes its counts; a band with only its number
 // (n) musters its fighters here, once
 function asParty(o){

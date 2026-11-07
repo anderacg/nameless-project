@@ -2,6 +2,8 @@
 /* ---------- world ---------- */
 // a band takes to the roads away from where people live (the owner, 2026-10-19): never nearer a holding or any of its estates
 // than WORLD_SCALE.spawn.away; out on a land's reaches it may
+// the roving bandit bands (the goblins' warbands, world/goblins.js, kept apart: their camps send them)
+const roamers=()=>bandits.filter(b=>b.kind!=='goblins');
 function spawnBandit(initial,ld){// (ld: a chieftain coming back)
   for(let tries=0;tries<80;tries++){
     const x=rint(3,MW-4)*TILE+8,y=rint(3,MH-4)*TILE+8;
@@ -128,7 +130,7 @@ function followWatch(){Host.watch();const F=G.follow;if(!F)return;const o=F.o;
     // (inside a holding or a camp: you wait at its gate, once told; out again, on its trail)
     const t=o.inside?townBy(o.inside):null;if(t&&!F.wait){F.wait=t;toast(cap1(nm)+' rides into '+t.name+'. You wait outside.')}else if(!t)F.wait=null;return}
   const gone=!objKind(o)||o.dead||o.inside;
-  if(gone){const t=o.inside?townBy(o.inside):TOWNS.find(h=>Math.hypot(h.x-o.x,h.y-o.y)<30),c=!t&&camps().find(k=>Math.hypot(k.x-o.x,k.y-o.y)<30);
+  if(gone){const t=o.inside?townBy(o.inside):TOWNS.find(h=>Math.hypot(h.x-o.x,h.y-o.y)<30),c=!t&&nightCamps().find(k=>Math.hypot(k.x-o.x,k.y-o.y)<30);
     return followStop(t?cap1(nm)+' rides into '+t.name+'.':c?cap1(nm)+' slips into '+(c.name||'their camp')+'.':cap1(nm)+' is gone.',true)}
   if(!o.inView(vis()))return followStop('You lose sight of '+nm+'.',true)}
 // (your goal this moment: the point FOLLOW.trail tiles behind it along its crumbs (those older dropped), else that far from it on
@@ -150,7 +152,7 @@ const followItem=o=>Host.follows(o)?{icon:'shoe',label:'Stop following',active:t
 // (the day bar's tag while you follow: render.js updateHUD)
 // the camp a band heads for at night: the nearest that is not cleared, within reach, and safe from the army it fears (f: engage.js
 // fearOf, safeRefuge)
-const campNear=(b,f)=>{let best=null,bd=WORLD_SCALE.ai.bandCamp;for(const c of camps()){if(c.cleared)continue;const d=Math.hypot(c.x-b.x,c.y-b.y);if(d<bd&&safeRefuge(b,c,f)){bd=d;best=c}}return best};
+const campNear=(b,f)=>{let best=null,bd=WORLD_SCALE.ai.bandCamp;for(const c of nightCamps()){if(c.cleared||!c.shelters(b))continue;const d=Math.hypot(c.x-b.x,c.y-b.y);if(d<bd&&safeRefuge(b,c,f)){bd=d;best=c}}return best};
 // at dawn the bands in a camp ride out again
 function campEmpty(c){if(!c.bands||!c.bands.length)return;for(const b of c.bands){b.x=c.x+rint(-12,12);b.y=c.y+rint(10,18);b.cool=2;b.gone=false;bandits.push(b)}c.bands=[]}
 // attacking a camp: its own bandits and chieftain (own: as your scouts saw them; else rolled now: sites.js BanditCamp foes), and
@@ -262,7 +264,7 @@ function bandDay(){
   // (your band's morale drifts toward its troops' Morale, by their numbers: veterans keep their spirits, levies sag)
   {const st=bandNerve();if(st!=null)P.morale+=(st-P.morale)*PARTY_MOR.drift}
   P.morale=clamp(P.morale,Math.min(30,skill('lead')*3)+tm('morale'),100);
-  {const D=density(WM);for(let k=0;k<D.daily.bandits;k++)if(bandits.length<D.bandits&&Math.random()<.6)spawnBandit(false)}// (the world's: data/world.js)
+  {const D=density(WM);for(let k=0;k<D.daily.bandits;k++)if(roamers().length<D.bandits&&Math.random()<.6)spawnBandit(false)}// (the world's: data/world.js)
   if(P.renown>=250&&!G.rankSeen){G.rankSeen=1;log('Your name carries across Ashmark. A throne is within reach.','gold')}
   if(P.fac){P.gold+=troopCount();addHonor(P.fac,1,true)}
 }

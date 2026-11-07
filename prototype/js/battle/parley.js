@@ -7,7 +7,7 @@ const yieldChance=(o,kind)=>{const r=o.power()/Math.max(1,partyPower());return c
 function parley(o,kind){
   if(kind==='lord'&&W.lords.includes(o))KNOWLEDGE.sight(o);
   G.par={o,kind};G.mode='dialog';P.tx=null;G.chase=null;const lord=kind==='lord',n=lord?o.troops.length:o.n,ch=Math.round(yieldChance(o,kind)*100);
-  showPanel('<h2>'+(lord?o.name+' is cornered':'The '+(o.kind==='raiders'?'raiders':o.kind==='bog'?'bog raiders':'bandits')+' are cornered')+'</h2>'+
+  showPanel('<h2>'+(lord?o.name+' is cornered':'The '+(o.kind==='raiders'?'raiders':o.kind==='bog'?'bog raiders':o.kind==='goblins'?'goblins':'bandits')+' are cornered')+'</h2>'+
     '<p>They ran from you, but you have caught them. '+n+' '+(lord?'soldiers of the '+FACS[o.fac].n:'fighters')+' (power '+o.power()+') against your '+partyPower()+'.</p>'+
     '<p class="muted">Call on them to yield ('+insight(['you cannot tell whether they would','they '+(ch>=50?'may well':'might')+' yield','about '+ch+'% they do'],'know the odds')+'; if not, they fight), attack at once, or let them go.</p><div class="btns">'+
     dlgBtn('pl-yield',null,'Demand surrender',null,true)+dlgBtn('pl-fight',null,'Attack')+dlgBtn('pl-go',null,'Let them go')+'</div>'+
@@ -25,7 +25,7 @@ function parleyYield(){
   if(lord){lootStart();const ransom=80+5*list.length;P.gold+=ransom;rippleRel(o,RELATION.ransom,'you took their ransom');P.renown+=8;addHonor(o.fac,-5,true);FIDS.filter(f=>atWar(f,o.fac)).forEach(f=>addHonor(f,3,true));
     const n=cage(list),more=yieldSpoils({kind:'lord',ref:o,list},list.length-n);worldEmit('lord:beaten',{lord:o});defeatLord(o);G.par=null;mood('ransom');G.mode='dialog';
     return lootShow('<h2>'+o.name+' yields</h2><p>The sword is handed over, and '+ransom+' gold paid as ransom. '+(n?n+' of the soldiers become your prisoners; the rest are sent home unarmed.':'The soldiers are sent home unarmed.')+' Renown +8; the '+FACS[o.fac].n+' will not forget the shame (−5 honor).'+more+'</p>',null,0,'cont')}
-  G.mode='dialog';showPanel('<h2>They yield</h2><p>The '+(o.kind==='raiders'?'raiders':'bandits')+' throw down their weapons. What becomes of them?</p><div class="btns">'+
+  G.mode='dialog';showPanel('<h2>They yield</h2><p>The '+(o.kind==='raiders'?'raiders':o.kind==='goblins'?'goblins':'bandits')+' throw down their weapons. What becomes of them?</p><div class="btns">'+
     dlgBtn('pl-cage',null,'Take them prisoner ('+Math.min(list.length,prisonCap()-prisonerCount())+' fit)',prisonerCount()>=prisonCap()?'No room for prisoners':'',true)+
     dlgBtn('pl-join',null,'Take them into your band…',RecruitPick.room()?'':'Your band is full')+dlgBtn('pl-free',null,'Disarm them and let them go')+'</div>'+
     '<p class="muted">Brigands in your ranks lower morale and every realm\'s opinion of you. Setting them free is merciful, but the roads stay dangerous.</p>');
@@ -116,5 +116,5 @@ function lairFate(s,list,how){lootStart();const ld=s.ld,men=list.filter(u=>u!=='
 // (a chieftain taken: what to do with him)
 const chiefCaught=ld=>'You take '+chiefLabel(ld)+' captive: hand '+pr(ld).him+' over for '+bountyOf(ld)+' gold, or let '+pr(ld).him+' go (Hero, Party).'
 // what happens when you reach a roaming party: a hostile one that fears you is cornered; else the fight it wants
-function meetBand(b){if(cornered(b,'band'))return parley(b,'band');startEncounter({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:b.kind||'bandits'})}
+function meetBand(b){if(cornered(b,'band'))return parley(b,'band');startEncounter({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:b.kind||'bandits',word:b.word})}
 onAct('pl-',parleyAct);

@@ -92,6 +92,9 @@ const PEOPLE_LOOK={
   elf_phoenix:{helm:'great',outer:'gold',weapon:'spear',shield:'gold',cape:'teal'},elf_hartbow:{helm:'hood',hood:'forest',outer:'forest',weapon:'bow',mount:'stag'},
   orc_shield:{helm:'bare',outer:'leather',weapon:'axe',shield:'wood',plain:true},orc_warrior:{helm:'horned',outer:'rust',weapon:'axe',shield:'iron'},
   orc_black:{helm:'great',outer:'iron',weapon:'axe',shield:'iron',cape:true},orc_wolfbow:{helm:'bare',outer:'leather',weapon:'bow',mount:'wolf'},
+  // (goblins (the owner's reference): green hoods, leather; a knife and a round shield, a spear, a short bow, a chief in fur)
+  gob_stab:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'dagger',shield:'wood'},gob_spear:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'spear'},
+  gob_bow:{race:'goblin',helm:'hood',hood:'forest',outer:'leather',weapon:'bow'},gob_boss:{race:'goblin',helm:'hood',hood:'forest',outer:'fur',weapon:'bigaxe',shield:'wood'},
   mage:{helm:'wizard',outer:'violet',weapon:'staff',robe:true,beard:'grey',hair:'grey'},hedge:{helm:'hood',hood:'brown',outer:'cloth',weapon:'staff',robe:true}
 };
 // the plain troops' helms and cloth by variant (the rest wear their kind's)

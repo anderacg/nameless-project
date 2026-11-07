@@ -35,7 +35,7 @@ const NAMED_PORTRAITS={
   "griffin": "griffin.webp?v=d24cc600"
 };
 // the new kinds' paintings till their own are made (doc/TROOPS_DESIGN.md): the Lancer a Squire's, the Crossbowman an Arbalester's
-const PORTRAIT_LIKE={hum_lancer:'hum_squire',hum_crossbow:'hum_xbow'};
+const PORTRAIT_LIKE={hum_lancer:'hum_squire',hum_crossbow:'hum_xbow',gob_stab:'orc_shield',gob_spear:'orc_grunt',gob_bow:'orc_hunter',gob_boss:'orc_brute'};// (the goblins the orcs' until theirs are painted)
 class NamedPortraits{
   static of(key){if(!Object.hasOwn(NAMED_PORTRAITS,key)&&typeof lordListed==='function')key=lordListed(key);return Object.hasOwn(NAMED_PORTRAITS,key)?'art/portrait/game/'+NAMED_PORTRAITS[key]:''}// (a retitled lord by her listed name: data/factions.js)
   // (a troop's: its kind's painted portrait, data/unitportraits.js, after a named one)

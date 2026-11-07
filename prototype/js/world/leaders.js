@@ -56,7 +56,8 @@ class Chieftain extends Character{
 const CHIEF_NAMES={
   bandits:[['Grak','Morwen','Ulf','Brannoc','Sable','Hask','Vey','Tarn','Rook','Edda','Corvin','Maudlin'],['the Red','One-Eye','Knifehand','the Crow','Blackthorn','the Wolf','Ironjaw','the Grey','Quickfingers','Halfhand']],
   raiders:[['Zug','Krath','Ograk','Shaz','Durg','Mogra','Varz','Ishka'],['Sandfang','the Scorched','Skullsplitter','Dune-Runner','Sun-Eater','Bonegrin']],
-  bog:[['Slurk','Mire-Ma','Gubb','Nettle','Hagga','Wort'],['Bogtooth','the Drowned','Reedcutter','Leechmother','Mudjaw']]
+  bog:[['Slurk','Mire-Ma','Gubb','Nettle','Hagga','Wort'],['Bogtooth','the Drowned','Reedcutter','Leechmother','Mudjaw']],
+  goblins:[['Snik','Gribble','Nox','Skreet','Ratch','Muggle','Fizzik','Grot'],['Toecutter','the Sneak','Big-Ears','Knifewit','Pot-Licker','Rat-King']]
 };
 // (the chiefs' women, by their first names; the rest are men: core/pronouns.js)
 givenNames(Object.values(CHIEF_NAMES).map(N=>N[0]),['Morwen','Sable','Vey','Edda','Maudlin','Shaz','Mogra','Ishka','Mire-Ma','Nettle','Hagga']);
