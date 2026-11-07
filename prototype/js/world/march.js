@@ -194,7 +194,9 @@ function marchDraw(ents,o,cam){
   // (a beast's marker over its middle)
   const u0=army.units[0];if(u0&&o.mapKind==='monster')ents.push({y:o.y,f:()=>BANNERQ.push({o,marker:{h:marchSprite(u0,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})});return true;
 }
-function drawMarcher(u,o,cam){
+// (drawn small without losing its lines when zoomed out: render.js reduced)
+function drawMarcher(u,o,cam){return reduced(()=>drawMarcherAt(u,o,cam))}
+function drawMarcherAt(u,o,cam){
   // (standing: his fidgets, as in battle: render.js idleLife, on the real clock)
   const S=ST[u.type]||{},I=!u.walking?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
   // (what he carries besides, gfx/marchgear.js: his army's flag (on a spear of its own, his body bare; else at his back, before

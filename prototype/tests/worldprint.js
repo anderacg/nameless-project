@@ -498,7 +498,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-07, on purpose: the owner's audit of the battle and the map's figures: the outline inside each figure, every
 //  figure's feet on its row, the map's flags the battle's, weapons held as in battle and never through the ground, kneelers on the
 //  ground. Proof: 9243c05 gives it again. Was W6 93f6a84f)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'24abfcf2',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
+// (W6 again 2026-11-07, on purpose: the owner, "what's this?": a marcher drawn under a screen pixel a sprite pixel (this fixed
+//  view's scale) shrunk first, each pixel the opaque one nearest its block's middle, so his spear's shaft and his flag's pole stay
+//  whole (render.js mapPic, reduced). Proof: ca6ab67 gives it again. Was W6 24abfcf2)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'9b70e5df',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

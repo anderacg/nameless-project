@@ -8,7 +8,7 @@ Kit.suite(({ok,info})=>{
  const t=T,P=t.P,G=t.G,W=t.W,M=t.MARCH_GEAR,keep={...M},clock=G.clock,draw0=window.drawMarcher,sprite0=window.marchSprite,life0=window.idleLife,img0=t.ctx.drawImage;
  try{
   Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
-  const hooked=/marchGear/.test(String(draw0));info(hooked?'march.js drawMarcher carries the hook':'march.js drawMarcher without the hook: a stand-in');
+  const hooked=/marchGear/.test(String(draw0)+String(window.drawMarcherAt||''));info(hooked?'march.js drawMarcher carries the hook':'march.js drawMarcher without the hook: a stand-in');
   if(!hooked){
    window.marchSprite=function(u,o,pose,bare){const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',lead=hero||u.row==='leader';
     return t.unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(u.walking?2+(Math.floor((u.stepT||0)*t.MARCH_MOVE.cadence)+u.id)%4:0),!!bare,false,o.look().col)};
@@ -37,7 +37,7 @@ Kit.suite(({ok,info})=>{
   const VW=t.VW,VH=t.VH,cam={x:Math.round(lord.x-VW/2),y:Math.round(lord.y-VH/2)},gear=()=>new Set(t.MARCH_FLAGS.values());
   // (his weapon, held apart from his body since 2026-11-03 (weapons.js mapHeld), is no gear: left out)
   const held=u=>t.mapHeld(t.marchLook(u,lord),window.marchSprite(u,lord,undefined,true),u.walking)?.w;
-  const drawn=u=>{const out=[],w=held(u);window.eval('LIGHTQ=[]');t.ctx.drawImage=function(s,...a){if(s!==w)out.push(s);return img0.call(this,s,...a)};try{window.drawMarcher(u,lord,cam)}finally{t.ctx.drawImage=img0}return out};
+  const drawn=u=>{const out=[],w=held(u);window.eval('LIGHTQ=[]');t.ctx.drawImage=function(s,...a){const o=s&&s.src||s;if(o!==w)out.push(o);return img0.call(this,s,...a)};try{window.drawMarcher(u,lord,cam)}finally{t.ctx.drawImage=img0}return out};
   const dark=on=>{G.clock=on?t.DAY*.75:t.DAY*.3};
   window.idleLife=()=>({pose:null,dx:0});for(const u of A.units)u.walking=false;dark(false);
   {const R=roles(A),spear=groups(A).find(g=>g[0].type===H.spear),bow=groups(A).find(g=>g[0].type===H.ranged),cav=groups(A).find(g=>g[0].type===H.cav);
@@ -61,7 +61,7 @@ Kit.suite(({ok,info})=>{
    dark(true);const night=drawn(u),L=t.LIGHTQ[0],x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y);
    ok(night.length===day.length+1&&gear().has(night[night.length-1])&&t.LIGHTQ.length===1&&Math.abs(L.x-x)<=8&&L.y<y-3&&L.y>y-20,'at night a torch in his hand, drawn over him, its light at its flame over his feet ('+[L?.x-x,L?.y-y]+')');
    const n=A.units.reduce((s,u)=>s+(R.get(u).torch?1:0),0);let lights=0;for(const v of A.units){drawn(v);lights+=t.LIGHTQ.length}ok(lights===n,'every torch is lit, and only those ('+lights+')');
-   const far={x:cam.x+5000,y:cam.y};window.eval('LIGHTQ=[]');let out=0,w=null;t.ctx.drawImage=function(s){if(s!==w)out++};try{for(const v of A.units){w=held(v);window.drawMarcher(v,lord,far)}}finally{t.ctx.drawImage=img0}
+   const far={x:cam.x+5000,y:cam.y};window.eval('LIGHTQ=[]');let out=0,w=null;t.ctx.drawImage=function(s){if((s&&s.src||s)!==w)out++};try{for(const v of A.units){w=held(v);window.drawMarcher(v,lord,far)}}finally{t.ctx.drawImage=img0}
    ok(out===A.units.length&&!t.LIGHTQ.length,'a man off the screen shows no gear')}
   // ---- an army of shields: one torch all the same
   {const B=set(lord,{[H.spear]:15}),R=roles(B),n=B.units.filter(u=>R.get(u).torch).length;

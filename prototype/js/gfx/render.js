@@ -302,7 +302,20 @@ function hiliteNow(){const k=[B.sel,B.hov];if(HL_F===FIGURES.tick&&HL_S&&HL_K[0]
 function unitHighlight(u){if(B.over||u.hp<=0)return null;const H=hiliteNow();if(u.grp&&H.sel.has(u.grp))return HILITE.sel;
   if(u.team===0)return H.mine&&H.mine===u.grp?sideKey(u)==='ally'?SIDE.ally.ui:HILITE.hover:null;
   const f=H.foe;return f&&(f.grp?f.grp===u.grp:f===u)&&seenBy(0,u)?HILITE.foe:null}
-function drawUnit(u){
+/* small without losing lines (the owner, 2026-11-07: "what's this?": zoomed out, at a scale of less than a screen pixel a sprite
+   pixel, as the map's marchers and its battles draw their men (WORLD_BATTLE.sprite / scale), a 1-px shaft fell between the screen's
+   pixels and the spearhead and the flag floated): the picture shrunk first, each pixel the opaque one nearest its block's middle, so
+   a line a pixel thin is still whole, then drawn 1:1 (mapPic, kept by picture and scale; src: the picture it was made from). reduced(fn): fn's drawing so */
+const MAP_PICS=new WeakMap();
+function mapPic(img,e){let m=MAP_PICS.get(img);if(!m)MAP_PICS.set(img,m=new Map());const key=Math.round(e*1000);let c=m.get(key);if(c)return c;
+  const w=img.width,h=img.height,W=Math.max(1,Math.ceil(w*e)),H=Math.max(1,Math.ceil(h*e)),d=img.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;
+  c=mkc(W,H,g=>{const o=g.createImageData(W,H),D=o.data;for(let Y=0;Y<H;Y++)for(let X=0;X<W;X++){const x0=Math.floor(X/e),x1=Math.min(w,Math.ceil((X+1)/e)),y0=Math.floor(Y/e),y1=Math.min(h,Math.ceil((Y+1)/e)),cx=(X+.5)/e,cy=(Y+.5)/e;
+      let best=-1,bd=1e9;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const i=(y*w+x)*4;if(!d[i+3])continue;const dd=(x+.5-cx)**2+(y+.5-cy)**2;if(dd<bd){bd=dd;best=i}}
+      if(best>=0){const j=(Y*W+X)*4;D[j]=d[best];D[j+1]=d[best+1];D[j+2]=d[best+2];D[j+3]=d[best+3]}}g.putImageData(o,0,0)});c.src=img;m.set(key,c);return c}
+function reduced(fn){const c=ctx,d0=c.drawImage;c.drawImage=function(img,...a){if(a.length===2&&img&&img.getContext){const T=c.getTransform(),e=Math.hypot(T.a,T.b);if(e<.99&&e>.05)return d0.call(c,mapPic(img,e),a[0],a[1],img.width,img.height)}return d0.call(c,img,...a)};
+  try{return fn()}finally{c.drawImage=d0}}
+function drawUnit(u){if(B.world)return reduced(()=>drawUnitAt(u));return drawUnitAt(u)}
+function drawUnitAt(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
   const q=camPx(),big=u.s.big?2:1,s=actorSprite(u),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;
   if(B.world){const k=WORLD_BATTLE.sprite;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.translate(-x,-y)}
