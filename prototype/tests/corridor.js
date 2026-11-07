@@ -170,7 +170,10 @@ Kit.suite(({ok,info})=>{
     inSlot=g.units.filter(u=>u.inSlot||u[t.FORM_SLOT]?.gave).length}finally{window.slotWay=sw0}
    if(t.B===B){g.moveTo(cc*T.cs-160,cy*T.cs);const t2=B.t+15;while(B.t<t2&&t.B===B)t.updateBattle(1/60);if(t.B===B)after=g.units.filter(u=>Math.hypot(g.ax+(u.sx||0)-u.x,g.ay+(u.sy||0)-u.y)<16).length}
    if(L.active)L.exit();G.mode='world';back();return{late,all,inSlot,after,n}};
-  const now=bat({}),old=bat({formGiveUp:false});info('a group ordered to a line part on rock: now '+now.late+' moves in the last 3 s ('+now.all+' in all), '+now.inSlot+' of '+now.n+' counted in their slots, '+now.after+' formed after a new order; today '+old.late+' in the last 3 s');
+  // (the field pinned as battlesetup pins it (measureField 40..560, BVW 1000): its foe placed by the field's top stood within reach
+  //  of the rock in a 1280 x 720 window, so the men fought on (49 moves), and not in 800 x 600 nor 1920 x 1080)
+  const m0=t.measureField,v0=[t.BVW,t.BVH];window.__cm0=m0;let now,old;
+  try{(0,eval)('measureField=()=>({top:40,bot:560});BVW=1000;BVH=BH');now=bat({});old=bat({formGiveUp:false})}finally{(0,eval)('measureField=window.__cm0;BVW='+v0[0]+';BVH='+v0[1]);delete window.__cm0}info('a group ordered to a line part on rock: now '+now.late+' moves in the last 3 s ('+now.all+' in all), '+now.inSlot+' of '+now.n+' counted in their slots, '+now.after+' formed after a new order; today '+old.late+' in the last 3 s');
   ok(!now.late&&now.inSlot===now.n,'in battle, a group whose slots lie on rock: after '+M.formTry+' s no man moves ('+now.late+'), the group formed ('+now.inSlot+' of '+now.n+')');
   ok(now.after===now.n,'a new order moves them all: formed at their new places ('+now.after+' of '+now.n+'), none left behind');
   ok(old.late>0,'formGiveUp off: they push on at the rock, as before ('+old.late+' moves in the last 3 s)')}
