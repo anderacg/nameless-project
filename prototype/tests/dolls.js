@@ -40,7 +40,10 @@ Kit.suite(({ok,info})=>{
  {const top=c=>{const d=px(c),W=c.width;for(let i=0;i<d.length;i+=4)if(d[i+3])return Math.floor(i/4/W)},low=(c,x0,x1)=>{const d=px(c),W=c.width;let y=-1;for(let i=0;i<d.length;i+=4){const x=(i/4)%W;if(d[i+3]&&x>=x0&&x<x1&&hex(d,i)!=='#000037')y=Math.floor(i/4/W)}return y};
   const f=[0,1,2,3].map(k=>PX.doll({uniform:'militia',pose:'walk',frame:k,noShadow:true,weapon:null})),id=PX.doll({uniform:'militia',noShadow:true,weapon:null}),D=DL.D;
   // (2026-11-07, the owner: "not bending like a soft object": his head and body never moved against each other, only his limbs)
-  ok([0,1,2,3].every(k=>top(f[k])===top(id)),'the walk: his head and body still, the same in every step (only his legs and arms move)');
+  // (2026-11-07, the owner: "the walking animations is not realistic": all of him above the knees down a pixel as one as each
+  // step lands, up again on the pass; his head and body never apart: the same shape, only a row lower; its cloth's mottle by where it is)
+  {const rows=(c,y0,y1)=>{const d=px(c),W=c.width,r=[];for(let y=y0;y<y1;y++)r.push(Array.from(d.slice(y*W*4,(y+1)*W*4)).filter((v,i)=>i%4===3).map(v=>v?1:0).join(''));return r.join('|')},t0=top(id);
+   ok([1,3].every(k=>top(f[k])===t0)&&[0,2].every(k=>top(f[k])===t0+1&&rows(f[k],t0+1,t0+7)===rows(id,t0,t0+6)),'the walk: on each step all of him down a pixel as one (head and shoulders the same shape a row lower), up again on the pass')}
   ok(low(f[1],D.OX+5,D.W)<low(id,D.OX+5,D.W)&&low(f[3],0,D.OX+4)<low(id,0,D.OX+4),'and each leg in turn lifted through as it passes')}
  // ---- the grayscale base (the owner, 2026-11-06: "base sprites grayscale, so we can dynamically change colours"): one base for every
  // side, its pixels channels and tones, painted from any palette; the game's two sides one base

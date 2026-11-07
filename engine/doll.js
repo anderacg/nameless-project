@@ -108,11 +108,20 @@
     sword:{behind:false,pts:[[1,-1],[-1,0],[0,1]],head:[[-1,1],[-2,2],[-2,3],[-3,4]],mat:'iron',hm:'steel'},
     club:{behind:false,pts:[[0,1],[-1,2]],head:[[-1,3],[-2,3],[-2,4]],mat:'wood',hm:'wood'},
     bow:{behind:false,off:true,pts:[[1,-4],[2,-3],[2,-2],[2,-1],[2,0],[2,1],[2,2],[2,3],[1,4]],head:[[1,-3],[1,-2],[1,-1],[1,0],[1,1],[1,2],[1,3]],mat:'wood',hm:'linen'}};
-  /* the poses: idle, and a walk of four frames (the reference's figures face us; the owner, 2026-11-07: "more natural", then "not
-     bending like a soft object"): a step (the back heel up, the arm across from the leading leg swung forward whole from the
-     shoulder), then the pass (the swinging leg's knee and foot lifted through), the other side the same; his head and body never
-     moved against each other; each a list of moves [regions, side ('R' his right / 'L' his left / ''), dx, dy, rows from] */
-  const POSES={idle:[[]],walk:[[['o','L',0,-1,14],['ulh','L',0,-1,0]],[['ko','L',0,-1,12]],[['o','R',0,-1,14],['ulh','R',0,-1,0]],[['ko','R',0,-1,12]]],
+  /* the poses: idle, and a walk of four frames (the reference's figures face us; the owner, 2026-11-07: "more natural", "not
+     bending like a soft object", then "the walking animations is not realistic"), a stride along the way he goes (-x: the
+     picture is mirrored to face right): a contact (his weight landing: all of him above the knees down a pixel as one, his near
+     (R) leg reaching forward from the knee, its foot out ahead, the far (L) one back with its heel up, his off hand swung back),
+     then the pass (his body up again, the back leg's knee lifted through), then the other contact (the far foot ahead under its
+     knee, the near heel up, the off hand swung forward and up: the legs kept apart, never crossed into one blob), and its pass.
+     His weapon hand held where it is through all of it, so his weapon keeps its angle and its room above the ground. His head and
+     body never move against each other; each a list of moves [regions, side ('R' his right / 'L' his left / ''), dx, dy, rows
+     from] */
+  const POSES={idle:[[]],walk:[
+      [['sfncbupt','',0,1,0],['lh','L',0,1,0],['ko','R',-1,0,13],['o','R',-1,0,14],['ko','L',1,0,13],['o','L',0,-1,14],['h','L',1,0,0]],
+      [['ko','L',0,-1,13]],
+      [['sfncbupt','',0,1,0],['lh','L',0,1,0],['o','L',-1,0,14],['o','R',0,-1,14],['h','L',-1,-1,0]],
+      [['ko','R',0,-1,13]]],
     // a blow: the weapon arm raised and forward
     strike:[[['lh','R',-1,-2,6]]]};
 
