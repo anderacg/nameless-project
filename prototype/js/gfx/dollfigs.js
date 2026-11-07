@@ -28,6 +28,7 @@ const DOLL_HELM={bandana:['bandana','team'],pelt_wolf:['peltWolf','#c8c4b8'],pel
 // "distinguishable for each body part"): sides read by the chest, his arms and legs apart from it)
 // (each man's hose its own cloth by his hair and skin: six men of a kind told apart by their legs under their helms, now their cloth is no longer mottled)
 const DOLL_LEGS=['leather','dark','cloth'];
+const DOLL_REACH={k:.7,fist:.6};
 const DOLL_TABARD={rows:[4,8],coat:[4,10]};// (coat: a knight's surcoat (o.surcoat, its cloth), to his knees, a cross on it)
 function dollParts(o){const T={dark:1},P=[],out=o.outer||'leather',arm=o.armor||'none',metal=out==='iron'||out==='steel'||out[0]==='#'?out:o.outlaw?'iron':'steel';
   if(o.robe)P.push(['shoes','leather'],['robe',out],['sash','team',T]);
@@ -116,7 +117,9 @@ function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
     pset(g,x,y,'#'+[d[i],d[i+1],d[i+2]].map(v=>v.toString(16).padStart(2,'0')).join(''));if(x>=0&&y>=0&&x<g.w&&y<g.h)g.body.add(y*g.w+x)}}
   const [hx,hy]=cv.anchors.hand,[fx,fy]=cv.anchors.off;let hand=[ox+tx(hx)+1,oy+ty(hy)-DOLL_FIGS.dy],hand2=null;// (the weapon hand where the template held it, five rows over the picture's bottom)
   // (a blow: his weapon arm from the shoulder along the rig's joints in his sleeve, his fist the hand)
-  if(rig){const f=rig.fore,T=cv.tones,sl=T.u||T.l||PPAL.leather[1],sk=T.h||PPAL.skin[1],pts=[[8,7]].concat(f.map(([x,y])=>[x,y-(y>=9?sh:0)])).map(([x,y])=>[x,y+DOLL_FIGS.dy]);
+  // (reach: the joints drawn that share of the way out from his shoulder, so a blow's arm is as long as his arm at rest, which ends
+  //  at his hips (the owner, 2026-11-07: "the hand is too long"))
+  if(rig){const rk=FIST_STYLES.includes(style)?DOLL_REACH.fist:DOLL_REACH.k,f=rig.fore,T=cv.tones,sl=T.u||T.l||PPAL.leather[1],sk=T.h||PPAL.skin[1],pts=[[8,7]].concat(f.map(([x,y])=>[x,y-(y>=9?sh:0)])).map(([x,y])=>[8+Math.round((x-8)*rk),7+Math.round((y-7)*rk)+DOLL_FIGS.dy]);
     for(let k=1;k<pts.length;k++){const [ax,ay]=pts[k-1],[bx,by]=pts[k],n=Math.max(Math.abs(bx-ax),Math.abs(by-ay))||1;
       // (2 px thick (the owner, 2026-11-07: "a 2-px forearm"): a second pixel under it where it runs across, behind it where it runs
       // down; the hand at its end alone)
