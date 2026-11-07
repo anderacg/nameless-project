@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const E=PortraitEngine,$=id=>document.getElementById(id),names={race:'Race',ears:'Ear shape',face:'Face shape',hair:'Hairstyle',eyes:'Eyes',brows:'Eyebrows',nose:'Nose',mouth:'Mouth',beard:'Facial hair',age:'Age',marks:'Skin marks',clothing:'Clothing',headwear:'Headwear'};
+  const E=PortraitEngine,$=id=>document.getElementById(id),names={race:'Race',ears:'Ear shape',face:'Face shape',hair:'Hairstyle',eyes:'Eyes',brows:'Eyebrows',nose:'Nose',mouth:'Mouth',beard:'Facial hair',age:'Age',marks:'Skin marks',clothing:'Clothing / armor',headwear:'Headwear / helmet'};
   const state={config:{...E.defaults},colors:{...E.colors},colored:false,visible:Object.fromEntries(E.order.map(s=>[s.id,true])),selected:'hairFront',portrait:null};
   const selectors={},checks={},tiles={};
   function copy(src,target){const g=target.getContext('2d');g.clearRect(0,0,E.size,E.size);g.imageSmoothingEnabled=false;g.drawImage(src,0,0);}
@@ -55,7 +55,7 @@
     if(profile!=='custom')for(const spec of E.order)state.visible[spec.id]=true;
     render(true);
   };
-  E.presets.forEach((p,i)=>{const opt=document.createElement('option');opt.value=String(i);opt.textContent=p.name;$('preset').append(opt);});
+  const soldierGroup=document.createElement('optgroup');soldierGroup.label='Soldiers · infantry, archers & cavalry';E.presets.forEach((p,i)=>{const opt=document.createElement('option');opt.value=String(i);opt.textContent=p.name;(p.category==='soldier'?soldierGroup:$('preset')).append(opt);});$('preset').append(soldierGroup);
   $('preset').onchange=()=>{const p=E.presets[Number($('preset').value)];if($('preset').value===''||!p)return;state.config=E.normalize(p.config);for(const spec of E.order)state.visible[spec.id]=true;render(true);};
   for(const [key,values] of Object.entries(E.options)){
     const label=document.createElement('label'),select=document.createElement('select');select.id='feature-'+key;

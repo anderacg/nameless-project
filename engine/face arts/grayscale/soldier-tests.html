@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>Soldier equipment checks</title><pre id="out">Running…</pre><script src="portrait-engine.js"></script><script src="portrait-generation.js"></script><script>
+'use strict';
+const E=PortraitEngine,C=PortraitCharacters,lines=[];
+function ok(value,label){if(!value)throw Error(label);lines.push('PASS '+label);}
+function pixels(canvas){return canvas.getContext('2d').getImageData(0,0,128,128).data;}
+try{
+ ok(E.soldierPresets.length===12,'12 soldier presets');
+ const art=new Set(),faces=new Set();
+ for(const p of E.soldierPresets){const c=E.normalize(p.config);for(const key of Object.keys(E.options))if(p.config[key]!==undefined&&p.config[key]!==c[key])throw Error('Invalid soldier part '+p.name+'/'+key);const q=E.build(c);art.add(E.composite(q).toDataURL());faces.add(C.faceKey(c));if(C.inspect(c).some(i=>i.severity==='error'))throw Error('Invalid soldier face '+p.name);}
+ ok(art.size===12&&faces.size===12,'presets have distinct artwork and core faces');
+ let combinations=0;
+ for(const race of E.races)for(const face of E.partsFor(race,'face'))for(const helmet of E.soldierEquipment.helmets.filter(h=>E.partsFor(race,'headwear').includes(h))){
+  for(const tune of [-1,0,1]){const q=E.build({...E.startRace(race),face,headwear:helmet,adjustments:{faceWidth:tune*2,eyeSpacing:tune*2}}),a=pixels(q.layers.headwearFront);for(const eye of q.anchors.eyes)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(a[(Math.round(eye.y+dy)*128+Math.round(eye.x+dx))*4+3])throw Error('Helmet obstructs eye '+race+'/'+face+'/'+helmet);combinations++;}
+ }
+ ok(combinations>100,'helmets preserve eye clearance across compatible faces and proportion endpoints');
+ for(const race of E.races)for(const key of ['clothing','headwear']){const parts=(key==='clothing'?E.soldierEquipment.armor:E.soldierEquipment.helmets).filter(v=>E.partsFor(race,key).includes(v)),signatures=new Set();for(const part of parts){const q=E.build({...E.startRace(race),[key]:part});signatures.add(E.order.filter(s=>s.feature===key).map(s=>q.layers[s.id].toDataURL()).join('|'));for(const spec of E.order.filter(s=>s.feature===key)){const a=pixels(q.layers[spec.id]);for(let i=0;i<a.length;i+=4)if(a[i]!==a[i+1]||a[i]!==a[i+2]||![0,255].includes(a[i+3]))throw Error('Non-grayscale or invalid alpha '+part);}}if(signatures.size!==parts.length)throw Error('Duplicate equipment '+race+'/'+key);}
+ ok(true,'new equipment is distinct, grayscale and separately layered');
+ for(const race of E.races)for(const role of ['soldier','infantry','archer','cavalry']){const player=E.startRace(race),options={race,role,player,count:1,seed:123,mode:'preset'},preset=C.generateNPCs(options)[0];if(!C.distinctFromPlayer(preset,player)||!E.presets.some(p=>p.name===preset.sourcePreset))throw Error('Soldier preset generation '+race+'/'+role);const records=C.generateNPCs({...options,mode:'random',count:8});for(const record of records){if(!C.distinctFromPlayer(record,player)||!C.roles[role].clothing.includes(record.config.clothing)||!C.roles[role].headwear.includes(record.config.headwear))throw Error('Invalid random soldier '+race+'/'+role);}}
+ ok(true,'all four races support preset/random soldiers, infantry, archers and cavalry without player clones');
+ for(const helm of E.soldierEquipment.helmets){const race=helm.startsWith('dwarf')?'dwarf':helm.startsWith('orc')?'orc':helm.startsWith('elf')?'elf':'human',base=E.startRace(race),q=E.build({...base,headwear:helm,hair:'long'}),visible=Object.fromEntries(E.order.map(s=>[s.id,s.feature!=='hair'&&s.id!=='ears']));if(E.composite(q).toDataURL()!==E.composite(q,{visible}).toDataURL())throw Error('Hair or ear leakage '+helm);}
+ ok(true,'helmets conceal incompatible hair and ears');
+ const base=E.build(E.defaults),next=E.build({...E.defaults,clothing:'steel-cuirass',headwear:'open-bascinet'});ok(['face','eyes','nose','mouth'].every(id=>base.layers[id].toDataURL()===next.layers[id].toDataURL()),'equipping armor and helmets preserves face source layers');
+ lines.push('DONE '+lines.length+' checks');
+}catch(e){lines.push('FAIL '+e.message);console.error(e);}
+document.getElementById('out').textContent=lines.join('\n');
+</script>

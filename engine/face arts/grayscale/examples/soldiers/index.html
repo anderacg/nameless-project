@@ -1,0 +1,9 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Soldier portrait presets</title><style>
+*{box-sizing:border-box}body{margin:0;background:#19211f;color:#e4ded0;font:14px Arial}main{padding:26px;max-width:1130px;margin:auto}h1{font:28px Georgia;margin:0 0 8px}p{margin:0 0 20px;color:#abb7af}a{color:#d5c58e}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}.card{padding:10px;background:#2b3430;border:1px solid #4c5a51;min-width:0}.card canvas{display:block;width:100%;height:auto;image-rendering:pixelated}.card strong{display:block;margin:10px 0 5px;font-size:15px}.card small{display:block;color:#b6bdb3;line-height:1.4;font-size:12px;overflow-wrap:anywhere}@media(max-width:650px){main{padding:14px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style><main><h1>Soldiers · armor & helmets</h1><p>Actual procedural portraits · separate grayscale source layers · editable and tintable</p><div class="grid"></div><p style="margin-top:20px"><a href="../../portrait-workshop-grayscale.html">Back to Character Studio</a> · Select a soldier from the preset menu to edit every part.</p></main><script src="../../portrait-engine.js"></script><script src="../../portrait-generation.js"></script><script>
+const E=PortraitEngine,C=PortraitCharacters;
+for(let row=0;row<3;row++)for(let race=0;race<4;race++){
+ const preset=E.soldierPresets[race*3+row],card=document.createElement('article'),name=document.createElement('strong'),description=document.createElement('small'),config=E.normalize(preset.config),colors={...E.colors,...C.palettes[config.race],headwear:'#899294'};
+ card.className='card';name.textContent=preset.name;description.textContent=config.clothing+' / '+config.headwear;card.append(E.composite(E.build(config),{colors}),name,description);document.querySelector('.grid').append(card);
+}
+</script></html>

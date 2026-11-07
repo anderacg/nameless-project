@@ -19,10 +19,10 @@ All artwork is drawn by JavaScript into separate transparent **128 × 128** canv
 | Facial hair (including none) | 17 |
 | Age | 5 |
 | Skin marks (including none) | 9 |
-| Clothing | 26 |
-| Headwear (including none) | 27 |
+| Clothing | 33 |
+| Headwear (including none) | 33 |
 
-New hairstyles include curls, tousled hair, side parts, ponytails, high and low buns, half-up hair, a single braid, an undercut, a topknot and swept-back hair. Mouths include reserved, broad, asymmetric and thin smiles, parted lips and a pout. Additional headwear includes a beret, wrapped hood, headband, veil and fur cap. Each drawable-part option produces distinct source artwork. `gallery.html` shows 63 curated characters.
+New hairstyles include curls, tousled hair, side parts, ponytails, high and low buns, half-up hair, a single braid, an undercut, a topknot and swept-back hair. Mouths include reserved, broad, asymmetric and thin smiles, parted lips and a pout. Additional headwear includes a beret, wrapped hood, headband, veil and fur cap. Each drawable-part option produces distinct source artwork. `gallery.html` shows 75 curated characters.
 
 ## Facial shape and symmetry
 
@@ -129,7 +129,7 @@ Stubble uses a light continuous beard shadow with fine tonal grain; close beard 
 - `character-tests.html`: focused character-generation and save/restore checks.
 - `build.py`: embeds those files into the standalone HTML; run `python build.py` after edits.
 - `tests.html`: focused checks for symmetry, alignment, distinct artwork, equipment clearance, independent layers, grayscale/alpha, tinting and deterministic generation.
-- `examples/`: optional current baseline PNGs and manifest; `examples/medieval/`: 63 preset PNGs and recipes. Historical comparison images elsewhere in this folder are not loaded by the engine.
+- `examples/`: optional current baseline PNGs and manifest; `examples/medieval/`: 63 earlier preset PNGs and recipes, plus `examples/soldiers/` with the 12 soldier portraits. Historical comparison images elsewhere in this folder are not loaded by the engine.
 
 Exports include the assembled portrait, selected source layer, a **2304 × 128** grayscale atlas, and a v7 JSON recipe with colors, visibility, rig and layer order. Import accepts v4, v5, v6 and v7 recipes; absent fields use current defaults. These are portrait recipes, not game saves.
 
@@ -162,10 +162,28 @@ const restored = C.Roster.restore(worldPortraitData);
 
 Use stable game IDs for named lords, heroes, bandits and companions. Create the roster after player creation, then store its full export with the world save. Cache the roster rather than constructing it during draw calls. `get(id)` and `player` return copies; `portrait(id)` returns the cached canvas, which callers should treat as read-only. Seeds and the same creation order reproduce results. Collision rejection depends on the existing roster, so a seed alone is not a substitute for saved recipes. Keep IDs and recipes when loading a game or changing generation pools.
 
-`generateNPCs({player, existing, count, seed, race, profile, role, mode, presets})` is the batch interface (1–128 per call). Supported roles are lord, guard, villager, wanderer, bandit and companion. Random mode combines race-compatible features with bounded proportions and role-based equipment. Preset mode uses exact eligible faces; built-in presets are filtered by race, profile and role clothing, while user favorites can specify `roles: ['lord']` or `roles: []` for any role. Mixed mode combines both. All modes compare against the player and existing roster.
+`generateNPCs({player, existing, count, seed, race, profile, role, mode, presets})` is the batch interface (1–128 per call). Supported roles are lord, guard, villager, wanderer, bandit, companion, soldier, infantry, archer and cavalry. Random mode combines race-compatible features with bounded proportions and role-based equipment. Preset mode uses exact eligible faces; built-in presets are filtered by race, profile and role clothing, while user favorites can specify `roles: ['lord']` or `roles: []` for any role. Mixed mode combines both. All modes compare against the player and existing roster.
 
 The core identity uses actual face geometry, eye family/spacing/size and nose type/width. Player exclusion requires two differing core groups and at least one different major part; changing only sliders, seed, hair, beard, expression, skin marks, age, colors or equipment cannot bypass it. Exact core identities are unique within a roster; visual resemblance between different identities is still possible. A character creator that changes the player after world creation must revalidate the roster or regenerate conflicting NPCs. The studio refuses a conflicting new player reservation.
 
 Generation has finite retries and never silently falls back to a clone. Handle `GenerationError.code`, notably `PRESET_POOL_EXHAUSTED`, `FACE_POOL_EXHAUSTED`, `PLAYER_REQUIRED`, `DUPLICATE_ID` and `SAVED_FACE_CONFLICT`. Add more eligible presets or use Mixed/Random when a strict preset pool is too small. Imported v7 rosters are revalidated; v4–v6 individual portrait recipes remain accepted with zero adjustments. Studio collection format version 1 is separate from engine recipe/roster version 7.
 
 Source artwork remains 18 independent grayscale canvases with runtime tinting. Race palettes are editable defaults, not forced skin colors. These APIs prepare the tool for a future in-game creator and world generator; they do not replace production game portraits automatically.
+
+
+## Soldier presets and equipment
+
+The preset selector has a **Soldiers · infantry, archers & cavalry** group: three editable soldier recipes for each race (12 total). They include Vale foot soldier/bow guard/mounted knight, Dwarf shield guard/crossbow guard/mounted retainer, Orc war infantry/bow scout/mounted reaver, and Elf spear guard/longbow sentinel/mounted warden. These are portrait equipment archetypes; they do not add combat units or change game stats.
+
+Seven new armor choices are padded jack, leather with mail sleeves, coat of plates, steel cuirass, Dwarf iron guard, Orc lamellar and Elf leaf mail. Cloth/leather stays on the Clothing layer; metal stays on the Armor layer and its metal tint. The padded jack intentionally has no metal pixels. Cuirass and Dwarf iron guard include articulated shoulder plates; coat-of-plates rivets remain over a fabric covering. The racial sets are restricted to their intended race; shared armor works with every race.
+
+Six new face-revealing helmets are open bascinet, sallet, ridge helm, Dwarf guard helm, Orc war helm and Elf guard helm. Enclosing fit conceals hair and ears while preserving the chosen hairstyle in the recipe and raw exports. The face and facial features remain separate; these helmets leave eye anchors visible. Headwear retains its existing independent tint; choose a steel headwear tint to match armor, or another material color.
+
+`PortraitEngine.soldierPresets` exposes the 12 recipes and their role tags; `soldierEquipment.armor` and `.helmets` expose the new part names. `PortraitCharacters` accepts `role: 'soldier'`, `'infantry'`, `'archer'` or `'cavalry'` for random, preset and mixed generation. Preset pools respect those role tags, race compatibility and the player reservation. Random soldiers use the corresponding equipment pool while retaining independent facial generation. As with other presets, a sufficiently similar player face may exclude some choices; preset pools remain finite.
+
+```js
+const infantry = roster.create({id: 'guard-042', race: 'human', role: 'infantry'});
+const elfArcher = roster.create({id: 'archer-017', race: 'elf', role: 'archer'});
+```
+
+Open `soldier-tests.html` for focused checks of the added presets, eye clearance, layer independence, grayscale artwork, race rules and soldier NPC generation. `examples/soldiers/` contains current tinted PNG previews and editable recipes; runtime generation does not load them.
