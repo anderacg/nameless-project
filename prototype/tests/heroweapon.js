@@ -56,5 +56,11 @@ Kit.suite(({ok,info})=>{
    // (2026-11-07: a paper doll's sword as he walks low before him as at rest, all of it showing (the owner: "shorter when walking"))
    ok((t.DOLL_FIGS.on?a>-80&&a<-40:a>t.GEAR.behind[0]&&a<t.GEAR.behind[1])&&!hw.back,'your hero\'s sword as he walks ('+Math.round(a)+' degrees) is drawn before him, all of it showing');
    Object.assign(P.gear,P0);h.look=null;h.side=null}
+ // (sheathed off the field (the owner, 2026-11-07: "make weapon sheathing like pointing downward near the waist; only when non
+ //  battle"): on the map a swordsman's sword in its scabbard at his hip, slung down and back; a spearman's spear and a rider's lance
+ //  still in hand; in battle his sword drawn)
+ {const sh=k=>{const L=t.lookOf(k,1,false,0,'',null),sp=t.unitSprite(k,1,false,0,2,true);return t.mapHeld(L,sp,true,0)};
+  const sw=sh('hum_sword'),spr=sh('hum_spear'),kn=sh('hum_knight');
+  ok(sw&&sw.sheathed&&!sw.back&&t.SHEATH.deg>90&&t.SHEATH.deg<180&&spr&&!spr.sheathed&&(!kn||!kn.sheathed),'on the map a sword rides sheathed at his hip, slung down and back ('+t.SHEATH.deg+' degrees); a spear and a rider\'s lance in hand')}
  }finally{t.FigureRig.gearOf=gearOf;t.STATE_FX.on=FX;for(const n in keep)window[n]=keep[n]}
 });
