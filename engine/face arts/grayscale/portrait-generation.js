@@ -5,7 +5,11 @@
   const clone=value=>JSON.parse(JSON.stringify(value));
   const ROLES=Object.freeze({
     lord:{clothing:['brocade','embroidered-doublet','guild-doublet','rune-mail','leaf-mantle','plate','robe','velvet-bodice','hide-harness'],headwear:['circlet','coronet','heraldic-cap','forge-helm','warband','vine-diadem','none']},
-    guard:{clothing:['mail','gambeson','brigandine','rune-mail','hide-harness','leather'],headwear:['coif','round-helm','nasal','forge-helm','warband','none']},
+    soldier:{clothing:['padded-jack','leather-mail','coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail','gambeson'],headwear:['open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','kettle','coif']},
+    infantry:{clothing:['coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail'],headwear:['open-bascinet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','kettle']},
+    archer:{clothing:['padded-jack','leather-mail','gambeson','leather'],headwear:['kettle','ridge-helm','arming-cap','warband','vine-diadem','none']},
+    cavalry:{clothing:['steel-cuirass','coat-of-plates','dwarf-iron-guard','rune-mail','orc-lamellar','elf-leaf-mail','plate'],headwear:['sallet','open-bascinet','ridge-helm','dwarf-guard-helm','forge-helm','orc-war-helm','elf-guard-helm']},
+    guard:{clothing:['coat-of-plates','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail','gambeson','brigandine','rune-mail','hide-harness','leather'],headwear:['open-bascinet','dwarf-guard-helm','orc-war-helm','elf-guard-helm','coif','round-helm','nasal','forge-helm','warband','none']},
     villager:{clothing:['tunic','robe','linen-chemise','traveler-coat'],headwear:['cap','straw-hat','linen-wrap','none']},
     wanderer:{clothing:['cloak','leather','traveler-coat','leaf-mantle','hide-harness'],headwear:['hood','headband','none']},
     bandit:{clothing:['leather','fur','hide-harness','gambeson'],headwear:['hood','cap','warband','none']},
@@ -62,7 +66,7 @@
     while(result.length<n&&candidates<n*100){
       const attempt=candidates++,s=hash(seed+'/'+attempt);if(mode==='mixed'&&pool.length&&R()<.35){const p=pick(pool);if(accept(p.recipe.config,'preset',p))continue;}
       const c=E.random(s,profile,race);c.adjustments=randomAdjustments(s^0x73c9);
-      for(const key of ['clothing','headwear']){const allowed=ROLES[role][key].filter(v=>E.partsFor(race,key).includes(v));if(allowed.length){const cultural={human:{clothing:['guild-doublet','brocade','embroidered-doublet'],headwear:['heraldic-cap','circlet']},dwarf:{clothing:['rune-mail'],headwear:['forge-helm']},orc:{clothing:['hide-harness'],headwear:['warband']},elf:{clothing:['leaf-mantle'],headwear:['vine-diadem','leaf-circlet']}}[race][key].filter(v=>allowed.includes(v));c[key]=pick(cultural.length&&R()<.65?cultural:allowed);}}
+      for(const key of ['clothing','headwear']){const allowed=ROLES[role][key].filter(v=>E.partsFor(race,key).includes(v));if(allowed.length){const cultural={human:{clothing:['guild-doublet','brocade','embroidered-doublet'],headwear:['heraldic-cap','circlet']},dwarf:{clothing:['rune-mail','dwarf-iron-guard'],headwear:['forge-helm','dwarf-guard-helm']},orc:{clothing:['hide-harness','orc-lamellar'],headwear:['warband','orc-war-helm']},elf:{clothing:['leaf-mantle','elf-leaf-mail'],headwear:['vine-diadem','leaf-circlet','elf-guard-helm']}}[race][key].filter(v=>allowed.includes(v));c[key]=pick(cultural.length&&R()<.65?cultural:allowed);}}
       accept(E.normalize(c),'random');
     }
     if(result.length<n)throw new GenerationError('FACE_POOL_EXHAUSTED','Not enough distinct faces remain for this player and roster. Use fewer characters or broaden the race/preset pool.');

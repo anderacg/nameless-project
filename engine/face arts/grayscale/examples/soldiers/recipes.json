@@ -1,0 +1,554 @@
+[
+  {
+    "name": "Vale foot soldier",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "infantry",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "human",
+      "ears": "normal",
+      "seed": 1200,
+      "face": "strong-jaw",
+      "hair": "knight-crop",
+      "eyes": "focused",
+      "brows": "bold",
+      "nose": "straight",
+      "mouth": "stern",
+      "beard": "stubble",
+      "age": "mature",
+      "marks": "none",
+      "clothing": "coat-of-plates",
+      "headwear": "open-bascinet",
+      "profile": "male"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#b88b69",
+      "hair": "#45372e",
+      "iris": "#687f83",
+      "lips": "#9e7066",
+      "cloth": "#70464b",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  },
+  {
+    "name": "Vale bow guard",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "archer",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "human",
+      "ears": "normal",
+      "seed": 1201,
+      "face": "soft-oval",
+      "hair": "tied-back-waves",
+      "eyes": "deep-almond",
+      "brows": "full-soft",
+      "nose": "defined-tip",
+      "mouth": "reserved-smile",
+      "beard": "none",
+      "age": "young",
+      "marks": "none",
+      "clothing": "padded-jack",
+      "headwear": "kettle",
+      "profile": "female"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#b88b69",
+      "hair": "#45372e",
+      "iris": "#687f83",
+      "lips": "#9e7066",
+      "cloth": "#70464b",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  },
+  {
+    "name": "Vale mounted knight",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "cavalry",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "human",
+      "ears": "normal",
+      "seed": 1202,
+      "face": "chiseled",
+      "hair": "crew-cut",
+      "eyes": "human-steady",
+      "brows": "bold",
+      "nose": "roman",
+      "mouth": "thin",
+      "beard": "close-beard",
+      "age": "young",
+      "marks": "none",
+      "clothing": "steel-cuirass",
+      "headwear": "sallet",
+      "profile": "male"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#b88b69",
+      "hair": "#45372e",
+      "iris": "#687f83",
+      "lips": "#9e7066",
+      "cloth": "#70464b",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  },
+  {
+    "name": "Dwarf shield guard",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "infantry",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "dwarf",
+      "ears": "rounded",
+      "seed": 1203,
+      "face": "dwarf-square",
+      "hair": "forge-braids",
+      "eyes": "heavy",
+      "brows": "bold",
+      "nose": "dwarf-bulb",
+      "mouth": "stern",
+      "beard": "bound-beard",
+      "age": "mature",
+      "marks": "none",
+      "clothing": "dwarf-iron-guard",
+      "headwear": "dwarf-guard-helm",
+      "profile": "male"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#ad886e",
+      "hair": "#76543a",
+      "iris": "#687f83",
+      "lips": "#9e7066",
+      "cloth": "#685746",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  },
+  {
+    "name": "Dwarf crossbow guard",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "archer",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "dwarf",
+      "ears": "rounded",
+      "seed": 1204,
+      "face": "full-cheeked",
+      "hair": "braids",
+      "eyes": "clear",
+      "brows": "full-soft",
+      "nose": "rounded",
+      "mouth": "neutral",
+      "beard": "none",
+      "age": "young",
+      "marks": "none",
+      "clothing": "leather-mail",
+      "headwear": "ridge-helm",
+      "profile": "female"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#ad886e",
+      "hair": "#76543a",
+      "iris": "#687f83",
+      "lips": "#9e7066",
+      "cloth": "#685746",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  },
+  {
+    "name": "Dwarf mounted retainer",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "cavalry",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "dwarf",
+      "ears": "rounded",
+      "seed": 1205,
+      "face": "dwarven",
+      "hair": "cropped",
+      "eyes": "round",
+      "brows": "bold",
+      "nose": "broad",
+      "mouth": "thin",
+      "beard": "braided",
+      "age": "young",
+      "marks": "none",
+      "clothing": "rune-mail",
+      "headwear": "forge-helm",
+      "profile": "male"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#ad886e",
+      "hair": "#76543a",
+      "iris": "#687f83",
+      "lips": "#9e7066",
+      "cloth": "#685746",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  },
+  {
+    "name": "Orc war infantry",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "infantry",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "orc",
+      "ears": "orc",
+      "seed": 1206,
+      "face": "orc-heavy",
+      "hair": "war-crest",
+      "eyes": "focused",
+      "brows": "bold",
+      "nose": "orc-broad",
+      "mouth": "heavy-tusks",
+      "beard": "chin-bristle",
+      "age": "mature",
+      "marks": "none",
+      "clothing": "orc-lamellar",
+      "headwear": "orc-war-helm",
+      "profile": "male"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#718454",
+      "hair": "#302f25",
+      "iris": "#687f83",
+      "lips": "#716b50",
+      "cloth": "#574c3d",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  },
+  {
+    "name": "Orc bow scout",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "archer",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "orc",
+      "ears": "orc",
+      "seed": 1207,
+      "face": "strong-jaw",
+      "hair": "undercut",
+      "eyes": "deep-almond",
+      "brows": "full-soft",
+      "nose": "broad",
+      "mouth": "small-tusks",
+      "beard": "none",
+      "age": "young",
+      "marks": "none",
+      "clothing": "padded-jack",
+      "headwear": "warband",
+      "profile": "female"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#718454",
+      "hair": "#302f25",
+      "iris": "#687f83",
+      "lips": "#716b50",
+      "cloth": "#574c3d",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  },
+  {
+    "name": "Orc mounted reaver",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "cavalry",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "orc",
+      "ears": "orc",
+      "seed": 1208,
+      "face": "orcish",
+      "hair": "war-crest",
+      "eyes": "natural-wide",
+      "brows": "bold",
+      "nose": "crooked",
+      "mouth": "stern",
+      "beard": "stubble",
+      "age": "young",
+      "marks": "none",
+      "clothing": "orc-lamellar",
+      "headwear": "ridge-helm",
+      "profile": "male"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#718454",
+      "hair": "#302f25",
+      "iris": "#687f83",
+      "lips": "#716b50",
+      "cloth": "#574c3d",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  },
+  {
+    "name": "Elf spear guard",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "infantry",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "elf",
+      "ears": "elven-long",
+      "seed": 1209,
+      "face": "elf-high-cheek",
+      "hair": "braided-crown",
+      "eyes": "elf-slanted",
+      "brows": "tapered-natural",
+      "nose": "defined-tip",
+      "mouth": "neutral",
+      "beard": "none",
+      "age": "mature",
+      "marks": "none",
+      "clothing": "elf-leaf-mail",
+      "headwear": "elf-guard-helm",
+      "profile": "female"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#c3ac98",
+      "hair": "#a18c60",
+      "iris": "#687f83",
+      "lips": "#9e7066",
+      "cloth": "#526d65",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  },
+  {
+    "name": "Elf longbow sentinel",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "archer",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "elf",
+      "ears": "elven-long",
+      "seed": 1210,
+      "face": "narrow",
+      "hair": "tied-back-waves",
+      "eyes": "deep-almond",
+      "brows": "sculpted",
+      "nose": "soft-tip",
+      "mouth": "thin",
+      "beard": "none",
+      "age": "young",
+      "marks": "none",
+      "clothing": "leather-mail",
+      "headwear": "vine-diadem",
+      "profile": "male"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#c3ac98",
+      "hair": "#a18c60",
+      "iris": "#687f83",
+      "lips": "#9e7066",
+      "cloth": "#526d65",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  },
+  {
+    "name": "Elf mounted warden",
+    "category": "soldier",
+    "roles": [
+      "soldier",
+      "cavalry",
+      "guard"
+    ],
+    "config": {
+      "adjustments": {
+        "faceWidth": 0,
+        "jawWidth": 0,
+        "eyeSpacing": 0,
+        "eyeSize": 0,
+        "noseWidth": 0,
+        "mouthWidth": 0,
+        "earSize": 0,
+        "hairVolume": 0
+      },
+      "race": "elf",
+      "ears": "elven-long",
+      "seed": 1211,
+      "face": "elven",
+      "hair": "braids",
+      "eyes": "clear",
+      "brows": "tapered-natural",
+      "nose": "defined-tip",
+      "mouth": "reserved-smile",
+      "beard": "none",
+      "age": "young",
+      "marks": "none",
+      "clothing": "elf-leaf-mail",
+      "headwear": "open-bascinet",
+      "profile": "female"
+    },
+    "version": 7,
+    "colors": {
+      "skin": "#c3ac98",
+      "hair": "#a18c60",
+      "iris": "#687f83",
+      "lips": "#9e7066",
+      "cloth": "#526d65",
+      "metal": "#899294",
+      "headwear": "#899294"
+    }
+  }
+]

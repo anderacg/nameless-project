@@ -57,8 +57,8 @@
     beard: ['none', 'stubble', 'trimmed', 'full', 'forked', 'braided', 'goatee', 'moustache', 'short-boxed', 'rounded', 'tapered-beard', 'sideburns', 'walrus', 'close-beard', 'scruffy', 'bound-beard', 'chin-bristle'],
     age: ['young', 'mature', 'seasoned', 'elder', 'weathered'],
     marks: ['none', 'scar', 'freckles', 'pockmarks', 'beauty-mark', 'twin-scars', 'brow-scar', 'sunspots', 'weathering'],
-    clothing: ['tunic', 'gambeson', 'mail', 'surcoat', 'fur', 'robe', 'leather', 'cloak', 'brocade', 'brigandine', 'doublet', 'jerkin', 'tabard', 'scale', 'lamellar', 'plate', 'traveler-coat', 'embroidered-robe', 'linen-chemise', 'velvet-bodice', 'embroidered-doublet', 'ruffled-mail', 'guild-doublet', 'rune-mail', 'hide-harness', 'leaf-mantle'],
-    headwear: ['none', 'hood', 'coif', 'nasal', 'kettle', 'cap', 'circlet', 'beret', 'wrapped-hood', 'headband', 'veil', 'fur-cap', 'arming-cap', 'chaperon', 'straw-hat', 'feathered-cap', 'coronet', 'round-helm', 'turban', 'linen-wrap', 'draped-veil', 'pearl-hood', 'leaf-circlet', 'heraldic-cap', 'forge-helm', 'warband', 'vine-diadem']
+    clothing: ['tunic', 'gambeson', 'mail', 'surcoat', 'fur', 'robe', 'leather', 'cloak', 'brocade', 'brigandine', 'doublet', 'jerkin', 'tabard', 'scale', 'lamellar', 'plate', 'traveler-coat', 'embroidered-robe', 'linen-chemise', 'velvet-bodice', 'embroidered-doublet', 'ruffled-mail', 'guild-doublet', 'rune-mail', 'hide-harness', 'leaf-mantle', 'padded-jack', 'leather-mail', 'coat-of-plates', 'steel-cuirass', 'dwarf-iron-guard', 'orc-lamellar', 'elf-leaf-mail'],
+    headwear: ['none', 'hood', 'coif', 'nasal', 'kettle', 'cap', 'circlet', 'beret', 'wrapped-hood', 'headband', 'veil', 'fur-cap', 'arming-cap', 'chaperon', 'straw-hat', 'feathered-cap', 'coronet', 'round-helm', 'turban', 'linen-wrap', 'draped-veil', 'pearl-hood', 'leaf-circlet', 'heraldic-cap', 'forge-helm', 'warband', 'vine-diadem', 'open-bascinet', 'sallet', 'ridge-helm', 'dwarf-guard-helm', 'orc-war-helm', 'elf-guard-helm']
   });
   // Length describes the hair before it is tied or braided; bald is separate.
   const HAIR_GROUPS=Object.freeze({
@@ -70,7 +70,7 @@
   const HEADWEAR_GROUPS=Object.freeze({
     Open:Object.freeze(['none','headband','circlet','coronet','leaf-circlet','warband','vine-diadem']),
     'Caps and helmets':Object.freeze(['cap','nasal','kettle','beret','fur-cap','arming-cap','chaperon','straw-hat','feathered-cap','round-helm','turban','heraldic-cap','forge-helm']),
-    Enclosing:Object.freeze(['hood','coif','wrapped-hood','veil','linen-wrap','pearl-hood']),
+    Enclosing:Object.freeze(['hood','coif','wrapped-hood','veil','linen-wrap','pearl-hood','open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm']),
     Draped:Object.freeze(['draped-veil'])
   });
   const HEADWEAR_RULES=Object.freeze(Object.fromEntries(Object.entries(HEADWEAR_GROUPS).flatMap(([group,kinds])=>kinds.map(kind=>[kind,Object.freeze({
@@ -104,8 +104,8 @@
     mouth:{'small-tusks':['orc'],'heavy-tusks':['orc']},
     hair:{'knight-crop':['human'],'forge-braids':['dwarf'],'war-crest':['orc'],'braided-crown':['elf'],tonsure:['human','dwarf']},
     beard:{'bound-beard':['dwarf'],'chin-bristle':['orc']},
-    clothing:{'guild-doublet':['human'],'rune-mail':['dwarf'],'hide-harness':['orc'],'leaf-mantle':['elf']},
-    headwear:{'heraldic-cap':['human'],'forge-helm':['dwarf'],warband:['orc'],'vine-diadem':['elf']}
+    clothing:{'guild-doublet':['human'],'rune-mail':['dwarf'],'hide-harness':['orc'],'leaf-mantle':['elf'],'dwarf-iron-guard':['dwarf'],'orc-lamellar':['orc'],'elf-leaf-mail':['elf']},
+    headwear:{'heraldic-cap':['human'],'forge-helm':['dwarf'],warband:['orc'],'vine-diadem':['elf'],'dwarf-guard-helm':['dwarf'],'orc-war-helm':['orc'],'elf-guard-helm':['elf']}
   };
   const RACE_LIMITS={
     human:{face:['oval','angular','broad','long','round','chiseled','heart','balanced','soft-oval','tapered','full-cheeked','narrow','youthful','soft-heart','strong-jaw'],ears:['normal','small','rounded','broad','attached-lobe','none']},
@@ -116,6 +116,21 @@
   const RACE_PARTS=Object.freeze(Object.fromEntries(OPTIONS.race.map(race=>[race,Object.freeze(Object.fromEntries(Object.entries(OPTIONS).filter(([key])=>key!=='race').map(([key,values])=>[key,Object.freeze((RACE_LIMITS[race][key]||values).filter(value=>!EXCLUSIVE_PARTS[key]?.[value]||EXCLUSIVE_PARTS[key][value].includes(race)))])))])));
   function partsFor(race,key){return key==='race'?OPTIONS.race:(RACE_PARTS[race]||RACE_PARTS.human)[key]||[];}
   const COLORS = Object.freeze({skin:'#b88b69',hair:'#45372e',iris:'#687f83',lips:'#9e7066',cloth:'#70464b',metal:'#899294',headwear:'#656e63'});
+  const SOLDIER_EQUIPMENT=Object.freeze({armor:Object.freeze(["padded-jack", "leather-mail", "coat-of-plates", "steel-cuirass", "dwarf-iron-guard", "orc-lamellar", "elf-leaf-mail"]),helmets:Object.freeze(["open-bascinet", "sallet", "ridge-helm", "dwarf-guard-helm", "orc-war-helm", "elf-guard-helm"])});
+  const SOLDIER_PRESETS=Object.freeze([
+    {"name":"Vale foot soldier","category":"soldier","roles":["soldier","infantry","guard"],"config":{"race":"human","profile":"male","seed":1200,"face":"strong-jaw","hair":"knight-crop","eyes":"focused","brows":"bold","nose":"straight","mouth":"stern","beard":"stubble","age":"mature","marks":"none","clothing":"coat-of-plates","headwear":"open-bascinet"}},
+    {"name":"Vale bow guard","category":"soldier","roles":["soldier","archer","guard"],"config":{"race":"human","profile":"female","seed":1201,"face":"soft-oval","hair":"tied-back-waves","eyes":"deep-almond","brows":"full-soft","nose":"defined-tip","mouth":"reserved-smile","beard":"none","age":"young","marks":"none","clothing":"padded-jack","headwear":"kettle"}},
+    {"name":"Vale mounted knight","category":"soldier","roles":["soldier","cavalry","guard"],"config":{"race":"human","profile":"male","seed":1202,"face":"chiseled","hair":"crew-cut","eyes":"human-steady","brows":"bold","nose":"roman","mouth":"thin","beard":"close-beard","age":"young","marks":"none","clothing":"steel-cuirass","headwear":"sallet"}},
+    {"name":"Dwarf shield guard","category":"soldier","roles":["soldier","infantry","guard"],"config":{"race":"dwarf","profile":"male","seed":1203,"face":"dwarf-square","hair":"forge-braids","eyes":"heavy","brows":"bold","nose":"dwarf-bulb","mouth":"stern","beard":"bound-beard","age":"mature","marks":"none","clothing":"dwarf-iron-guard","headwear":"dwarf-guard-helm"}},
+    {"name":"Dwarf crossbow guard","category":"soldier","roles":["soldier","archer","guard"],"config":{"race":"dwarf","profile":"female","seed":1204,"face":"full-cheeked","hair":"braids","eyes":"clear","brows":"full-soft","nose":"rounded","mouth":"neutral","beard":"none","age":"young","marks":"none","clothing":"leather-mail","headwear":"ridge-helm"}},
+    {"name":"Dwarf mounted retainer","category":"soldier","roles":["soldier","cavalry","guard"],"config":{"race":"dwarf","profile":"male","seed":1205,"face":"dwarven","hair":"cropped","eyes":"round","brows":"bold","nose":"broad","mouth":"thin","beard":"braided","age":"young","marks":"none","clothing":"rune-mail","headwear":"forge-helm"}},
+    {"name":"Orc war infantry","category":"soldier","roles":["soldier","infantry","guard"],"config":{"race":"orc","profile":"male","seed":1206,"face":"orc-heavy","hair":"war-crest","eyes":"focused","brows":"bold","nose":"orc-broad","mouth":"heavy-tusks","beard":"chin-bristle","age":"mature","marks":"none","clothing":"orc-lamellar","headwear":"orc-war-helm"}},
+    {"name":"Orc bow scout","category":"soldier","roles":["soldier","archer","guard"],"config":{"race":"orc","profile":"female","seed":1207,"face":"strong-jaw","hair":"undercut","eyes":"deep-almond","brows":"full-soft","nose":"broad","mouth":"small-tusks","beard":"none","age":"young","marks":"none","clothing":"padded-jack","headwear":"warband"}},
+    {"name":"Orc mounted reaver","category":"soldier","roles":["soldier","cavalry","guard"],"config":{"race":"orc","profile":"male","seed":1208,"face":"orcish","hair":"war-crest","eyes":"natural-wide","brows":"bold","nose":"crooked","mouth":"stern","beard":"stubble","age":"young","marks":"none","clothing":"orc-lamellar","headwear":"ridge-helm"}},
+    {"name":"Elf spear guard","category":"soldier","roles":["soldier","infantry","guard"],"config":{"race":"elf","profile":"female","seed":1209,"face":"elf-high-cheek","hair":"braided-crown","eyes":"elf-slanted","brows":"tapered-natural","nose":"defined-tip","mouth":"neutral","beard":"none","age":"mature","marks":"none","clothing":"elf-leaf-mail","headwear":"elf-guard-helm"}},
+    {"name":"Elf longbow sentinel","category":"soldier","roles":["soldier","archer","guard"],"config":{"race":"elf","profile":"male","seed":1210,"face":"narrow","hair":"tied-back-waves","eyes":"deep-almond","brows":"sculpted","nose":"soft-tip","mouth":"thin","beard":"none","age":"young","marks":"none","clothing":"leather-mail","headwear":"vine-diadem"}},
+    {"name":"Elf mounted warden","category":"soldier","roles":["soldier","cavalry","guard"],"config":{"race":"elf","profile":"female","seed":1211,"face":"elven","hair":"braids","eyes":"clear","brows":"tapered-natural","nose":"defined-tip","mouth":"reserved-smile","beard":"none","age":"young","marks":"none","clothing":"elf-leaf-mail","headwear":"open-bascinet"}}
+  ]);
   const PRESETS = Object.freeze([
     {name:'Village levy',config:{profile:'male',seed:11,face:'round',hair:'pageboy',eyes:'wide',brows:'natural',nose:'button',mouth:'slight-smile',beard:'none',age:'young',marks:'freckles',clothing:'tunic',headwear:'cap'}},
     {name:'Company veteran',config:{profile:'male',seed:42,face:'angular',hair:'cropped',eyes:'keen',brows:'broken',nose:'crooked',mouth:'stern',beard:'stubble',age:'seasoned',marks:'scar',clothing:'mail',headwear:'coif'}},
@@ -179,7 +194,8 @@
     {"name":"Human court crafter","config":{"race":"human","profile":"female","seed":964,"face":"heart","ears":"small","hair":"knight-crop","eyes":"human-steady","brows":"soft","nose":"button","mouth":"soft-full","beard":"none","clothing":"guild-doublet","headwear":"none","age":"young","marks":"none"}},
     {"name":"Dwarf rune steward","config":{"race":"dwarf","profile":"female","seed":965,"face":"dwarven","ears":"rounded","hair":"forge-braids","eyes":"round","brows":"full-soft","nose":"dwarf-bulb","mouth":"gentle-smile","beard":"none","clothing":"rune-mail","headwear":"headband","age":"mature","marks":"none"}},
     {"name":"Orc war caller","config":{"race":"orc","profile":"female","seed":966,"face":"orcish","ears":"pointed","hair":"war-crest","eyes":"natural-wide","brows":"full-soft","nose":"orc-flat","mouth":"small-tusks","beard":"chin-bristle","clothing":"hide-harness","headwear":"none","age":"young","marks":"none"}},
-    {"name":"Elf grove envoy","config":{"race":"elf","profile":"female","seed":967,"face":"elven","ears":"elven-long","hair":"braided-crown","eyes":"elf-slanted","brows":"arched","nose":"soft-tip","mouth":"soft-full","beard":"none","clothing":"leaf-mantle","headwear":"none","age":"young","marks":"none"}}
+    {"name":"Elf grove envoy","config":{"race":"elf","profile":"female","seed":967,"face":"elven","ears":"elven-long","hair":"braided-crown","eyes":"elf-slanted","brows":"arched","nose":"soft-tip","mouth":"soft-full","beard":"none","clothing":"leaf-mantle","headwear":"none","age":"young","marks":"none"}},
+    ...SOLDIER_PRESETS
   ]);
   // Each source is independent. Headwear has two passes; mail has its own metal tint.
   const LAYERS = Object.freeze([
@@ -273,10 +289,91 @@
       return v+grain(Math.floor(px),Math.floor(py),c.seed)*1.5;
     });
   }
+  // Soldier cloth and metal stay on their existing independent tint channels.
+  function soldierClothing(g,a,c,body) {
+    if(!SOLDIER_EQUIPMENT.armor.includes(c.clothing))return false;
+    const padded=c.clothing==='padded-jack',leather=c.clothing==='leather-mail',orc=c.clothing==='orc-lamellar';
+    surface(g,body,(px,py)=>85+32*falloff(px,py,38,105,30,22)-23*falloff(px,py,96,118,24,24));
+    clip(g,body,()=>{
+      for(const side of [-1,1])curve(g,[64+side*18,97,64+side*22,103,64+side*24,114,64+side*33,125],side<0?139:53,1.5);
+      if(padded){
+        for(let x=12;x<125;x+=7)curve(g,[x,96,x-3,105,x-6,115,x-5,126],51,1);
+        for(let y=103;y<128;y+=7)curve(g,[7,y,41,y+3,87,y-2,123,y+3],133,.7);
+        for(const side of [-1,1])poly(g,[[64+side*13,98],[64+side*29,99],[64+side*25,112],[64+side*16,109]],106);
+      }else if(leather||orc){
+        for(const side of [-1,1])poly(g,[[64+side*17,97],[64+side*31,101],[64+side*34,125],[64+side*11,125]],leather?106:74);
+        curve(g,[39,100,52,108,72,117,92,125],156,3);
+      }
+      curve(g,[64,105,63,111,65,119,64,126],45,1.2);
+      if(c.clothing==='coat-of-plates')for(let y=106;y<126;y+=5)for(const side of [-1,1])curve(g,[64+side*11,y,64+side*20,y-1,64+side*27,y,64+side*29,y+1],54,.7);
+    });
+    line(g,COLLAR,139,1.2);return true;
+  }
+  function soldierArmor(g,a,c) {
+    const kind=c.clothing;if(!SOLDIER_EQUIPMENT.armor.includes(kind))return false;
+    const shoulder=side=>[[64+side*19,97],[64+side*32,98],[64+side*45,107],[64+side*52,119],[64+side*35,122],[64+side*25,111]];
+    if(kind==='padded-jack')return true;
+    if(kind==='leather-mail'){
+      for(const side of [-1,1])chain(g,shoulder(side),c);
+      oval(g,48,108,2,2.4,188);curve(g,[44,107,46,109,48,111,51,109],69,.8);return true;
+    }
+    if(kind==='coat-of-plates'){
+      for(const side of [-1,1]){chain(g,shoulder(side),c);for(let row=0;row<4;row++)for(let col=0;col<3;col++)oval(g,64+side*(10+col*7),106+row*6,1,1,181-row*3);}
+      curve(g,[50,100,56,104,73,104,78,100],165,2);return true;
+    }
+    if(kind==='orc-lamellar'){
+      const outline=[[43,99],[53,104],[76,104],[86,99],[104,125],[24,125]];
+      surface(g,outline,(x,y)=>85+35*falloff(x,y,43,106,30,25));clip(g,outline,()=>{
+        for(let row=0;row<4;row++)for(let x=29+(row%2)*3;x<103;x+=8){const y=102+row*7;poly(g,[[x-3,y],[x+3,y],[x+3,y+5],[x-2,y+6]],112);curve(g,[x-2,y+1,x-3,y+2,x-1,y+5,x+2,y+5],172,.7);for(const dx of [-1.5,1.5])oval(g,x+dx,y+1, .55,.65,47);}
+      });for(const side of [-1,1])curve(g,[64+side*17,99,64+side*19,103,64+side*23,108,64+side*29,112],164,2);return true;
+    }
+    if(kind==='elf-leaf-mail'){
+      chain(g,bodyOutline(c),c);for(const side of [-1,1])for(let i=0;i<3;i++){
+        const x=64+side*(22+i*8),y=103+i*4;
+        surface(g,[[x-side*8,y],[x,y-3],[x+side*9,y+4],[x+side*7,y+12],[x-side*5,y+8]],(px,py)=>116+42*falloff(px,py,x-3,y+1,7,8));
+        curve(g,[x-side*5,y+1,x,y+2,x+side*5,y+7,x+side*6,y+10],188,.8);
+      }return true;
+    }
+    const outline=[[46,98],[55,103],[73,103],[82,98],[93,109],[98,125],[29,125],[35,109]];
+    surface(g,outline,(x,y)=>97+79*falloff(x,y,51,109,17,22)-28*falloff(x,y,85,117,19,15));
+    clip(g,outline,()=>{curve(g,[64,104,61,111,64,119,64,127],199,1);for(const side of [-1,1])curve(g,[64+side*4,107,64+side*10,112,64+side*18,111,64+side*24,106],side<0?199:78,1.2);for(let y=119;y<129;y+=4)curve(g,[29,y,48,y-2,79,y-2,99,y],58,1);});
+    for(const side of [-1,1]){surface(g,shoulder(side),(x,y)=>107+63*falloff(x,y,38,105,26,17));for(let row=0;row<3;row++)curve(g,[64+side*23,100+row*4,64+side*30,104+row*4,64+side*40,103+row*4,64+side*46,111+row*4],row===0?192:72,1);}
+    if(kind==='dwarf-iron-guard')for(const side of [-1,1]){curve(g,[64+side*9,108,64+side*12,113,64+side*12,117,64+side*15,121],187,2);line(g,[[64+side*12,113],[64+side*17,111]],187,1);}
+    return true;
+  }
+  function soldierHelmet(g,a,c,back) {
+    const kind=c.headwear;if(!SOLDIER_EQUIPMENT.helmets.includes(kind))return false;
+    const x=a.cx,w=a.w+3,sallet=kind==='sallet',dwarf=kind==='dwarf-guard-helm',orc=kind==='orc-war-helm',elf=kind==='elf-guard-helm';
+    if(back){
+      if(sallet)surface(g,[[x-w,36],[x+w,36],[x+w+4,69],[x+w+9,83],[x+w-1,86],[x-w-4,80]],(px,py)=>91+42*falloff(px,py,x-w,53,20,38));
+      else if(dwarf||kind==='open-bascinet')chain(g,[[x-w,52],[x+w,52],[x+w+1,85],[x+36,104],[x+19,111],[x-19,111],[x-36,104],[x-w-1,85]],c);
+      return true;
+    }
+    const crown=dwarf?[[x-w,30],[x-w+4,22],[x-15,17],[x,15],[x+16,18],[x+w-2,25]]:orc?[[x-w,29],[x-w+5,21],[x-12,16],[x-3,11],[x+11,16],[x+w-3,25]]:elf?[[x-w+2,31],[x-w+8,20],[x-9,12],[x,5],[x+9,12],[x+w-6,24]]:sallet?[[x-w,32],[x-w+5,23],[x-13,16],[x+2,14],[x+17,18],[x+w-2,28]]:[[x-w,30],[x-w+7,18],[x-10,11],[x,9],[x+13,13],[x+w-4,23]];
+    const dome=[[x-w-1,45],...crown,[x+w+1,43],[x+w-4,48],[x+13,40],[x-12,40],[x-w+4,48]];
+    surface(g,dome,(px,py)=>104+83*falloff(px,py,x-10,24,w*.7,19)-35*falloff(px,py,x+w,40,13,26));
+    curve(g,[x-w+3,43,x-12,37,x+12,37,x+w-2,44],61,2);
+    curve(g,[x-w+3,41,x-12,35,x+12,35,x+w-2,42],204,1);
+    for(const side of [-1,1]){
+      const edge=x+side*(w-2),inner=x+side*(a.w-3);
+      const cheek=[[edge,43],[edge+side*4,48],[edge+side*2,71],[inner+side,81],[inner-side*3,77],[inner-side*2,65],[inner,54]];
+      surface(g,cheek,(px,py)=>side<0?140+28*falloff(px,py,edge,52,5,22):85+17*falloff(px,py,inner,53,6,24));
+      curve(g,[edge,45,edge+side,55,inner+side,69,inner,76],side<0?207:146,.8);
+      oval(g,edge,47,1.2,1.2,195);
+    }
+    if(sallet){curve(g,[x-w+1,40,x-10,32,x+12,32,x+w,40],116,4);curve(g,[x-w,38,x-10,30,x+12,30,x+w,38],200,1);}
+    if(dwarf){curve(g,[x-w+1,33,x-14,37,x+14,37,x+w-1,33],68,4);for(const dx of [-11,0,11])line(g,[[x+dx,21],[x+dx,29],[x+dx+3,26]],193,1.3);}
+    if(orc){curve(g,[x-w,33,x-12,39,x+12,39,x+w,33],58,4);for(const side of [-1,1]){curve(g,[x+side*2,11,x+side*6,20,x+side*8,27,x+side*9,34],side<0?189:135,2);oval(g,x+side*17,34,1.5,1.5,197);}curve(g,[x-7,16,x-2,11,x+4,11,x+8,17],65,2);}
+    if(elf){curve(g,[x,12,x-7,23,x-3,30,x,37],202,1.5);curve(g,[x,12,x+7,23,x+3,30,x,37],143,1);for(const side of [-1,1])curve(g,[x+side*2,34,x+side*8,29,x+side*17,27,x+side*21,24],184,1);}
+    if(kind==='ridge-helm')for(const side of [-1,1])curve(g,[x+side*2,12,x+side*2,21,x+side*3,30,x+side*3,36],side<0?216:61,1.5);
+    if(kind==='open-bascinet')curve(g,[x,10,x-2,20,x-1,29,x,35],207,1);
+    return true;
+  }
   function clothing(g,a,c) {
     const kind=c.clothing;
     const body=bodyOutline(c);
     poly(g,body,58);
+    if(soldierClothing(g,a,c,body))return;
     clip(g,body,()=>{
       poly(g,[[32,98],[46,95],[58,112],[64,125],[9,125],[20,109]],92);
       poly(g,[[83,96],[98,101],[115,115],[123,125],[68,125],[72,111]],72);
@@ -362,6 +459,7 @@
     });
   }
   function armor(g,a,c) {
+    if(soldierArmor(g,a,c))return;
     if(['scale','lamellar','plate'].includes(c.clothing)) {
       const outline=[[35,99],[47,97],[56,105],[72,105],[82,97],[96,101],[111,125],[17,125]];
       surface(g,outline,(px,py)=>99+58*falloff(px,py,49,104,29,23)-25*falloff(px,py,91,114,20,22));
@@ -751,7 +849,7 @@
   function headwear(g,a,c,back) {
     const kind=c.headwear,x=a.cx,w=a.w;
     if(kind==='none')return;
-    if(racialHeadwear(g,a,c,back)||referenceHeadwear(g,a,c,back)||addedHeadwear(g,a,c,back)||extraHeadwear(g,a,c,back))return;
+    if(soldierHelmet(g,a,c,back)||racialHeadwear(g,a,c,back)||referenceHeadwear(g,a,c,back)||addedHeadwear(g,a,c,back)||extraHeadwear(g,a,c,back))return;
     if(back) {
       if(kind==='hood'||kind==='coif') {
         const p=[[x-w-8,39],[x-w-5,20],[x-13,9],[x+13,10],[x+w+7,25],[x+w+10,60],[x+w+6,87],[x+39,107],[x-40,106],[x-w-8,80]];
@@ -1126,7 +1224,7 @@
     return normalize(c);
   }
   function geometry(input){const c=normalize(input);return rig(c.face,c.adjustments);}
-  root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
+  root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,soldierEquipment:SOLDIER_EQUIPMENT,soldierPresets:SOLDIER_PRESETS,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
 })(globalThis);
 </script><script>/* Character creation, structural face reservations and persistent NPC recipes. */
 (function(root){
@@ -1135,7 +1233,11 @@
   const clone=value=>JSON.parse(JSON.stringify(value));
   const ROLES=Object.freeze({
     lord:{clothing:['brocade','embroidered-doublet','guild-doublet','rune-mail','leaf-mantle','plate','robe','velvet-bodice','hide-harness'],headwear:['circlet','coronet','heraldic-cap','forge-helm','warband','vine-diadem','none']},
-    guard:{clothing:['mail','gambeson','brigandine','rune-mail','hide-harness','leather'],headwear:['coif','round-helm','nasal','forge-helm','warband','none']},
+    soldier:{clothing:['padded-jack','leather-mail','coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail','gambeson'],headwear:['open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','kettle','coif']},
+    infantry:{clothing:['coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail'],headwear:['open-bascinet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','kettle']},
+    archer:{clothing:['padded-jack','leather-mail','gambeson','leather'],headwear:['kettle','ridge-helm','arming-cap','warband','vine-diadem','none']},
+    cavalry:{clothing:['steel-cuirass','coat-of-plates','dwarf-iron-guard','rune-mail','orc-lamellar','elf-leaf-mail','plate'],headwear:['sallet','open-bascinet','ridge-helm','dwarf-guard-helm','forge-helm','orc-war-helm','elf-guard-helm']},
+    guard:{clothing:['coat-of-plates','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail','gambeson','brigandine','rune-mail','hide-harness','leather'],headwear:['open-bascinet','dwarf-guard-helm','orc-war-helm','elf-guard-helm','coif','round-helm','nasal','forge-helm','warband','none']},
     villager:{clothing:['tunic','robe','linen-chemise','traveler-coat'],headwear:['cap','straw-hat','linen-wrap','none']},
     wanderer:{clothing:['cloak','leather','traveler-coat','leaf-mantle','hide-harness'],headwear:['hood','headband','none']},
     bandit:{clothing:['leather','fur','hide-harness','gambeson'],headwear:['hood','cap','warband','none']},
@@ -1192,7 +1294,7 @@
     while(result.length<n&&candidates<n*100){
       const attempt=candidates++,s=hash(seed+'/'+attempt);if(mode==='mixed'&&pool.length&&R()<.35){const p=pick(pool);if(accept(p.recipe.config,'preset',p))continue;}
       const c=E.random(s,profile,race);c.adjustments=randomAdjustments(s^0x73c9);
-      for(const key of ['clothing','headwear']){const allowed=ROLES[role][key].filter(v=>E.partsFor(race,key).includes(v));if(allowed.length){const cultural={human:{clothing:['guild-doublet','brocade','embroidered-doublet'],headwear:['heraldic-cap','circlet']},dwarf:{clothing:['rune-mail'],headwear:['forge-helm']},orc:{clothing:['hide-harness'],headwear:['warband']},elf:{clothing:['leaf-mantle'],headwear:['vine-diadem','leaf-circlet']}}[race][key].filter(v=>allowed.includes(v));c[key]=pick(cultural.length&&R()<.65?cultural:allowed);}}
+      for(const key of ['clothing','headwear']){const allowed=ROLES[role][key].filter(v=>E.partsFor(race,key).includes(v));if(allowed.length){const cultural={human:{clothing:['guild-doublet','brocade','embroidered-doublet'],headwear:['heraldic-cap','circlet']},dwarf:{clothing:['rune-mail','dwarf-iron-guard'],headwear:['forge-helm','dwarf-guard-helm']},orc:{clothing:['hide-harness','orc-lamellar'],headwear:['warband','orc-war-helm']},elf:{clothing:['leaf-mantle','elf-leaf-mail'],headwear:['vine-diadem','leaf-circlet','elf-guard-helm']}}[race][key].filter(v=>allowed.includes(v));c[key]=pick(cultural.length&&R()<.65?cultural:allowed);}}
       accept(E.normalize(c),'random');
     }
     if(result.length<n)throw new GenerationError('FACE_POOL_EXHAUSTED','Not enough distinct faces remain for this player and roster. Use fewer characters or broaden the race/preset pool.');
@@ -1224,7 +1326,7 @@
 })(globalThis);
 </script><script>(function () {
   'use strict';
-  const E=PortraitEngine,$=id=>document.getElementById(id),names={race:'Race',ears:'Ear shape',face:'Face shape',hair:'Hairstyle',eyes:'Eyes',brows:'Eyebrows',nose:'Nose',mouth:'Mouth',beard:'Facial hair',age:'Age',marks:'Skin marks',clothing:'Clothing',headwear:'Headwear'};
+  const E=PortraitEngine,$=id=>document.getElementById(id),names={race:'Race',ears:'Ear shape',face:'Face shape',hair:'Hairstyle',eyes:'Eyes',brows:'Eyebrows',nose:'Nose',mouth:'Mouth',beard:'Facial hair',age:'Age',marks:'Skin marks',clothing:'Clothing / armor',headwear:'Headwear / helmet'};
   const state={config:{...E.defaults},colors:{...E.colors},colored:false,visible:Object.fromEntries(E.order.map(s=>[s.id,true])),selected:'hairFront',portrait:null};
   const selectors={},checks={},tiles={};
   function copy(src,target){const g=target.getContext('2d');g.clearRect(0,0,E.size,E.size);g.imageSmoothingEnabled=false;g.drawImage(src,0,0);}
@@ -1279,7 +1381,7 @@
     if(profile!=='custom')for(const spec of E.order)state.visible[spec.id]=true;
     render(true);
   };
-  E.presets.forEach((p,i)=>{const opt=document.createElement('option');opt.value=String(i);opt.textContent=p.name;$('preset').append(opt);});
+  const soldierGroup=document.createElement('optgroup');soldierGroup.label='Soldiers · infantry, archers & cavalry';E.presets.forEach((p,i)=>{const opt=document.createElement('option');opt.value=String(i);opt.textContent=p.name;(p.category==='soldier'?soldierGroup:$('preset')).append(opt);});$('preset').append(soldierGroup);
   $('preset').onchange=()=>{const p=E.presets[Number($('preset').value)];if($('preset').value===''||!p)return;state.config=E.normalize(p.config);for(const spec of E.order)state.visible[spec.id]=true;render(true);};
   for(const [key,values] of Object.entries(E.options)){
     const label=document.createElement('label'),select=document.createElement('select');select.id='feature-'+key;
