@@ -61,7 +61,7 @@ function routParty(o,winners){
   else{o.gone=true;W.caravans=W.caravans.filter(x=>x!==o);const lord=winners.find(w=>w.mapKind==='lord'),band=winners.find(w=>w.mapKind==='band');
     worldEmit('caravan:beaten',{caravan:o,lord,band});// (the bus: news.js)
     if(lord){const home=Spatial.nearest(fiefsOf(lord.fac),lord.x,lord.y);if(home){ensureEcon(home);for(const g in o.goods)home.stock[g]=(home.stock[g]||0)+o.goods[g]}}
-    else if(band)band.add('militia')// (it arms one more with the plunder)
+    else if(band)band.add(outlawOf('militia',Math.random()))// (it arms one more with the plunder)
     {const yours=o.mine?', one of yours':'';worldEvent({text:(lord?lord.name+' seizes':band?'Bandits plunder':'The enemy takes')+' a caravan of '+o.from+yours+'.',cls:o.mine||o.fac===P.fac?'bad':'',x:o.x,y:o.y,fac:[o.fac],mine:o.mine,heard:['caravan',o],noise:'battle',was:o.mine||o.fac===P.fac||near,
       seen:'You see '+(lord?lord.name+' seize':band?'bandits plunder':'the enemy take')+' a caravan of '+o.from+yours+'.',past:'a caravan of '+o.from+(o.mine?', one of yours,':'')+' was '+(lord?'seized by '+lord.name:band?'plundered by bandits':'taken by the enemy')})}}
 }

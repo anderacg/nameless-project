@@ -39,9 +39,10 @@ function makeEnemies(n,camp,band){
   if(band==='goblins')return goblinList(n,camp);
   const a=[];
   for(let i=0;i<n;i++){const r=Math.random();if(Math.random()<.08){a.push(band==='raiders'||band==='bog'?'orc_shaman':'hedge');continue}
-    if(band==='raiders')a.push(r<.4?'orc_thrower':r<.7?'militia':'orc_grunt');
-    else if(band==='bog')a.push(r<.4?'orc_grunt':r<.7?'orc_thrower':'militia');
-    else a.push(r<.42?'militia':r<.58?'orc_grunt':r<.8?'archer':'spearman')}
+    // (the band's own men: data/outlaws.js, the orc raiders' and the bog's men orcs as ever, their men of the road outlaws)
+    if(band==='raiders')a.push(r<.4?'orc_thrower':r<.7?outlawOf('militia',r):'orc_grunt');
+    else if(band==='bog')a.push(r<.4?'orc_grunt':r<.7?'orc_thrower':outlawOf('militia',r));
+    else a.push(outlawOf(r<.42?'militia':r<.58?'orc_grunt':r<.8?'archer':'spearman',r))}
   if(camp)a.push('chief');return a;
 }
 /* reinforcements (the owner, 2026-10-23: armies on neutral or better terms help; the numbers: REINF, data/factions.js). Who

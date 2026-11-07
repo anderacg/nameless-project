@@ -61,7 +61,7 @@ const RACE_LOOK={
 const PEOPLE_LOOK={
   militia:{helm:'cap',outer:'leather',weapon:'sword',plain:true},spearman:{helm:'kettle',outer:'steel',weapon:'spear',shield:'wood'},
   archer:{helm:'hood',hood:'olive',outer:'olive',weapon:'bow'},ranger:{helm:'hood',hood:'forest',outer:'forest',weapon:'longbow',cape:'forest'},
-  horse:{helm:'kettle',outer:'steel',weapon:'lance',mount:'horse'},chief:{helm:'horned',outer:'fur',weapon:'bigaxe',race:'human'},
+  horse:{helm:'kettle',outer:'steel',weapon:'lance',mount:'horse'},chief:{helm:'horned',outer:'fur',weapon:'bigaxe',race:'human',outlaw:'own'},
   brann:{helm:'bare',outer:'fur',weapon:'bigaxe',hair:'ginger',beard:'ginger'},elske:{helm:'bare',outer:'white',inner:'linen',weapon:'staff',robe:true,hair:'blond',hood:'white'},
   tavi:{helm:'hood',hood:'forest',outer:'forest',weapon:'bow',hair:'brown'},ander:{helm:'bare',outer:'dark',inner:'leather',weapon:'sword',cape:'dark',hair:'black',scar:true},
   hum_levy:{helm:'cap',outer:'leather',weapon:'spear',plain:true},hum_spear:{helm:'kettle',outer:'steel',weapon:'spear',shield:'wood'},
@@ -92,6 +92,11 @@ const PEOPLE_LOOK={
   elf_phoenix:{helm:'great',outer:'gold',weapon:'spear',shield:'gold',cape:'teal'},elf_hartbow:{helm:'hood',hood:'forest',outer:'forest',weapon:'bow',mount:'stag'},
   orc_shield:{helm:'bare',outer:'leather',weapon:'axe',shield:'wood',plain:true},orc_warrior:{helm:'horned',outer:'rust',weapon:'axe',shield:'iron'},
   orc_black:{helm:'great',outer:'iron',weapon:'axe',shield:'iron',cape:true},orc_wolfbow:{helm:'bare',outer:'leather',weapon:'bow',mount:'wolf'},
+  // (outlaws (data/outlaws.js; the owner: "bandits not to use the soldier sprites"): outlaw: dress by the man (OUTLAW_DRESS), his
+  //  side's colour on a headscarf or a sash; 'own': his own dress, a sash for a tabard (the chief))
+  band_looter:{helm:'bandana',outer:'cloth',weapon:'axe',outlaw:true},band_cutthroat:{helm:'hood',hood:'dark',outer:'dark',weapon:'sword',outlaw:true},
+  band_brigand:{helm:'bandana',outer:'leather',weapon:'axe',shield:'wood',outlaw:true},band_highway:{helm:'cap',outer:'leather',weapon:'spear',outlaw:true},
+  band_poacher:{helm:'hood',hood:'olive',outer:'olive',weapon:'bow',cape:'leather',outlaw:true},
   // (goblins (the owner's reference): green hoods, leather; a knife and a round shield, a spear, a short bow, a chief in fur)
   gob_stab:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'dagger',shield:'wood'},gob_spear:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'spear'},
   gob_bow:{race:'goblin',helm:'hood',hood:'forest',outer:'leather',weapon:'bow'},gob_boss:{race:'goblin',helm:'hood',hood:'forest',outer:'fur',weapon:'bigaxe',shield:'wood'},
@@ -153,6 +158,8 @@ function pcanvas(g){return mkc(g.w,g.h,x=>{for(let y=0;y<g.h;y++)for(let i=0;i<g
 // a soldier's whole look: its kind's, its race's, its variant's; the hero's and a companion's from their gear
 // (in the cold (the owner, 2026-11-07: "unit in winter area may use wolf or bear fur/equipments"): a wolf's or a bear's pelt over his
 // head by variant, a fur mantle on his shoulders; a helm of rank kept (keep), a cape of his own kept. sprites.js DRESS says when)
+// (an outlaw's dress by the man: his head (a headscarf in his side's colour, a hood, a cap, bare), his coat, his shirt, his hood's cloth)
+const OUTLAW_DRESS={helm:['bandana','hood','bare','bandana','cap','hood'],cloth:['leather','cloth','dark','fur','olive','rust'],inner:['linen','wool','dark'],hood:['dark','brown','olive']};
 const WINTER={on:true,keep:['great','plume','horned','wizard','crown','circlet','skull'],wolf:'#c8c4b8',bear:'#7a5236'};
 function winterLook(L,v){if(!WINTER.on)return L;const k=(v|0)%2?'bear':'wolf';return{...L,helm:WINTER.keep.includes(L.helm)?L.helm:'pelt_'+k,cape:L.cape||WINTER[k]}}
 function lookOf(type,team,hero,v,cid,cg){
@@ -163,6 +170,7 @@ function lookOf(type,team,hero,v,cid,cg){
     beard:L.beard||(R.beard?(L.hair||R.hair[v%R.hair.length]):race==='human'&&!hero&&v%3===1&&!L.robe?R.hair[v%R.hair.length]:null),
     helm:L.helm,hood:L.hood,outer:L.outer==='skin'?R.skin[v%R.skin.length]:L.outer,inner:L.inner||'dark',team:team?'red':'blue',weapon:L.weapon,shield:L.shield,
     robe:L.robe,surcoat:L.surcoat,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar,armor:hero?L.armor:st?armorOf(st):'none'};
+  if(L.outlaw==='own')o.outlaw=true;else if(L.outlaw){const D=OUTLAW_DRESS;o.outlaw=true;o.helm=D.helm[(v+D.helm.indexOf(L.helm)+6)%D.helm.length];o.outer=D.cloth[(v*5+1)%D.cloth.length];o.inner=D.inner[v%D.inner.length];if(o.helm==='hood')o.hood=D.hood[v%D.hood.length]}
   if(L.plain){o.helm=race==='orc'&&PLAIN_HELM[v]==='hood'?'bare':PLAIN_HELM[v];o.outer=PLAIN_CLOTH[v]}
   if(o.mount==='horse')o.mountC=L.barded?'horseW':['horse','chestnut','horseB','horse','horseG','chestnut'][v];
   // your hero: your race, your weapon, your armour and helm as you wear them

@@ -580,7 +580,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W7, W8 and B2 2026-11-07, on purpose: the owner, "goblin enemy should also be added, similar to bandits": goblin camps in the
 //  wilds and their warbands in the world and its save (data/goblins.js, world/goblins.js, sites.js GoblinCamp; their own stream, so
 //  W1-W6 hold). Proof: GOBLINS.on false gives a9857aab, f6fce34e, 87554a09 again. Were W7 a9857aab, W8 f6fce34e, B2 87554a09)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'ff470268',W7:'fe3e98ed',W8:'51660bc5',B2:'d9a285d0'};
+// (W7 and B2 again 2026-11-07, on purpose: the owner, "add more variations for bandits not to use the soldier knight sprites": the
+//  bands' men outlaws of their own kinds in the save (data/outlaws.js; the same rolls, so W8 holds). Proof: OUTLAWS.on false gives
+//  fe3e98ed and d9a285d0 again. Were W7 fe3e98ed, B2 d9a285d0)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'ff470268',W7:'30a2328c',W8:'51660bc5',B2:'3b944b30'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

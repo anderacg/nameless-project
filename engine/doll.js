@@ -99,6 +99,8 @@
     //  with the reference): a wolf's, its pricked ears and its muzzle over his brow; a bear's, rounder, its small ears)
     peltWolf:{slot:'head',cover:'s',shape:{at:'head',up:2,rows:['...0.','..01.','00112','0...2','1...3','2...3']}},
     peltBear:{slot:'head',cover:'s',shape:{at:'head',up:2,rows:['.0.1.','01112','01112','1...3','2...3']}},
+    // (a headscarf knotted at the back of his head, its two ends hanging: an outlaw's, after the owner's reference)
+    bandana:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','....1','....2']}},
     // (a cross on a surcoat, in the side's colour: a knight's, as the owner's crusader reference)
     cross:{slot:'belt',shape:{at:'body',rows:['.','.','.','.','....1','...111','....1','....1','....1']}},
     face:{slot:'beard',shape:{at:'head',rows:['.....','...1.','...1.']}},
