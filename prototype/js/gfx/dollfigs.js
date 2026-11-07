@@ -80,7 +80,10 @@ const DOLL_SHOOT={bow:{thrust:[[['lh','R',-1,-4,0],['lh','L',-3,-3,0]],[['lh','R
 const DOLL_LUNGE={swing:[[],[['o','R',-1,0,14],['o','L',0,-1,14]],[['o','R',-1,0,14]]],
   thrust:[[],[['ko','R',-1,0,13],['o','R',-1,0,14],['o','L',0,-1,14]],[['ko','R',-1,0,13],['o','R',-1,0,14]]],
   overhead:[[],[['sfncbupt','',0,1,0],['lh','L',0,1,0]],[['sfncbupt','',0,1,0],['lh','L',0,1,0]]]};
-const shootArms=(o,style,atk)=>{if(atk<0||o.held)return [];const k=o.weapon==='longbow'?'bow':o.weapon,T=DOLL_SHOOT[k];return T&&T[style]?T[style][atk]||[]:[]};
+// (his stance as he shoots, on foot (the owner, 2026-11-07: a side-on archer's stance): his front foot a pixel forward, his back foot set
+// a pixel behind him, braced, through the draw, the loose and the reload alike so his feet stay put between them)
+const DOLL_SHOOT_STANCE=[['o','R',-1,0,14],['o','L',1,0,14]];
+const shootArms=(o,style,atk)=>{if(atk<0||o.held)return [];const k=o.weapon==='longbow'?'bow':o.weapon,T=DOLL_SHOOT[k];if(!T)return [];const A=T[style]?T[style][atk]||[]:[];return o.mount?A:[...A,...DOLL_SHOOT_STANCE]};
 /* a figure's body as a doll into grid g at the template's (ox, oy): walk (-2 a breath, -1 standing, 0-15 the strides: walk,
    run, climb, descend, each its doll's step), style and atk (a blow's frame, its weapon arm along the rig). Its pixels are the
    body's (g.body: not outlined, figures.js FigureRig.frame); returns the template's anchors */
