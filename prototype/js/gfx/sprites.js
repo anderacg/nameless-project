@@ -31,7 +31,11 @@ const FLINCH_POSE=41,LOOK_POSE=42,SHIFT_POSE=43,BRACE_POSE=44,GRIP_POSE=45,LIFE_
 // (your hero's and a companion's key: their gear's, but a melee weapon's when it is held apart: one body for every sword)
 // (a figure's look, as unitSprite draws it: its kind's, a companion's gear on him, his side's cloth, tint (a world army's colour)
 // over it; the map's marchers' weapons drawn apart read it: weapons.js mapHeld)
-function spriteLook(type,team,hero,v,tint){const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null,L0=allyLook(lookOf(type,team===2?0:team,hero,hero?0:(v||0)%6,COMPS[type]?type:'',cg),team);return tint?{...L0,team:tint}:L0}
+// (what the weather asks of his dress: cold, in the frost (people.js winterLook); set by whoever draws him there, about the call:
+// a battle by its ground, a march by where it is)
+const DRESS={cold:false},coldAt=(x,y)=>WINTER.on&&typeof climAt==='function'&&climAt(x,y)==='frost';
+function dressed(cold,f){const k=DRESS.cold;DRESS.cold=!!cold;try{return f()}finally{DRESS.cold=k}}
+function spriteLook(type,team,hero,v,tint){const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null,L0=allyLook(lookOf(type,team===2?0:team,hero,hero?0:(v||0)%6,COMPS[type]?type:'',cg),team);const L1=DRESS.cold?winterLook(L0,v):L0;return tint?{...L1,team:tint}:L1}
 function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
   // a companion wears what you gave them: their weapon, armour and helm show (cg)
   const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null;
@@ -42,7 +46,7 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
     if(DOLL_FIGS.on&&DOLL_FIGS.edge)return spr[key]=s;
     const c=mkc(s.width*2,s.height*2,g=>g.drawImage(s,0,0,s.width*2,s.height*2));c.cw=s.cw*2;c.ch=s.ch*2;return spr[key]=c;}
   if(ST[type]&&ST[type].beast)return beastSprite(type,team===2?0:team,v,pose);
-  v=hero?0:(v||0)%6;pose=pose||0;const wk=(w,melee)=>bare&&melee?'m':w||'',key=type+team+(typeof Faces!=='undefined'?Faces.lookKey(hero,type):'')+(hero?'h'+P.race+wk(P.gear.weapon,heroKind()==='melee'&&!unarmed())+(P.gear.body||'')+(P.gear.head||'')+(P.gear.offhand||''):'')+(cg?'g'+wk(cg.weapon,cg.weapon&&(ITEMS[cg.weapon].kind||'melee')==='melee')+(cg.body||'')+(cg.head||'')+(cg.offhand||''):'')+'v'+v+'p'+pose+(bare==='bow'?'B':bare?'b':'')+(arm?'s':'')+(afoot?'f':'')+(tint?'c'+tint:'');
+  v=hero?0:(v||0)%6;pose=pose||0;const wk=(w,melee)=>bare&&melee?'m':w||'',key=type+team+(typeof Faces!=='undefined'?Faces.lookKey(hero,type):'')+(hero?'h'+P.race+wk(P.gear.weapon,heroKind()==='melee'&&!unarmed())+(P.gear.body||'')+(P.gear.head||'')+(P.gear.offhand||''):'')+(cg?'g'+wk(cg.weapon,cg.weapon&&(ITEMS[cg.weapon].kind||'melee')==='melee')+(cg.body||'')+(cg.head||'')+(cg.offhand||''):'')+'v'+v+'p'+pose+(bare==='bow'?'B':bare?'b':'')+(arm?'s':'')+(afoot?'f':'')+(tint?'c'+tint:'')+(DRESS.cold?'w':'');
   {const c=bare?spr[key]:FIGURES.get(key);if(c)return c}
   // soldiers, your hero and companions: the template figures (people.js)
   const L0=spriteLook(type,team,hero,v,tint),L={...L0,...(arm?{weapon:null,slung:WPN[L0.weapon]?null:L0.weapon}:{}),...(afoot?{mount:null}:{})};
@@ -52,7 +56,7 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
   const c=cellOf(peopleSprite(L,pose,bare));return bare?spr[key]=c:FIGURES.set(key,c);
 }
 // World combat retains the army's cloth and each marcher's appearance instead of repainting by battle side.
-const actorSprite=(u,pose,bare,arm)=>unitSprite(u.type,u.worldSide??spriteTeam(u),u.hero,u.v,pose,bare,arm,u.worldTint,u.afoot);
+const actorSprite=(u,pose,bare,arm)=>dressed(typeof B!=='undefined'&&B&&B.env&&B.env.c==='frost'&&WINTER.on,()=>unitSprite(u.type,u.worldSide??spriteTeam(u),u.hero,u.v,pose,bare,arm,u.worldTint,u.afoot));
 /* a horse no one rides (battle/dismount.js Horse): its rider's mount standing, saddled, a cloth of its side's colour under the
    saddle (people.js drawMount: saddled); in a rider's cell, its feet where his were. Cached by its look */
 function horseSprite(L){const key='hz'+L.mount+(L.mountC||'')+L.team+(L.barded?'b':'');if(spr[key])return spr[key];

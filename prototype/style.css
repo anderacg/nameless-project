@@ -348,9 +348,11 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .pcard .stat span span{display:inline}
 .pcard .stat.warn span{color:var(--danger);animation:blink 1s steps(2) infinite}
 
-/* the day bar (top middle): the day and the time, pause and speed; a hint under it */
+/* the day bar (top middle): the day and the time, the weather (its icon, its name after the time: world/weather.js), pause and
+   speed; a hint under it */
 .wtop{position:absolute;top:var(--e-t);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:4px 4px 4px 12px}
 .wday{display:flex;align-items:center;gap:7px;width:220px;font-size:var(--fs-lg);font-weight:700;white-space:nowrap}
+.wday:has(.wx){width:270px}.wday .wx{display:inline-flex;flex:none;font-style:normal}
 .wday span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wday b{font-size:var(--fs-2xs);letter-spacing:.09em;text-transform:uppercase;color:var(--accent);animation:blink 1.4s steps(2) infinite}
 .wday b.off{visibility:hidden;animation:none}
@@ -1318,7 +1320,7 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
   .pc-fill{height:9px;margin:-3px 0 5px}.pc-fill em{font-size:8px;line-height:7px}
   .pc-res{gap:3px;margin-bottom:0}.chip{font-size:var(--fs-sm);padding:1px 4px}
   .pc-line{display:none}
-  .wtop{padding:3px 3px 3px 9px;gap:6px}.wday{width:auto;font-size:var(--fs-base)}
+  .wtop{padding:3px 3px 3px 9px;gap:6px}.wday,.wday:has(.wx){width:auto;font-size:var(--fs-base)}
   .hint{display:none}
   .dock{gap:4px}.dockrow{gap:4px}
   .dbtn{min-width:44px;min-height:44px;padding:4px}

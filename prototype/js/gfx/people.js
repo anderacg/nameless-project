@@ -32,7 +32,7 @@ const PEOPLE_OUT='#1a1c26',PEOPLE_SCAR='#c06a5a';
 const PPAL={
   skin:['#edd1d6','#f3bfad','#de9e8c','#c58faa'],skinTan:['#f0c8a0','#d9a07a','#b87a58','#8e5a4a'],skinDark:['#c8906a','#a06a4a','#7a4a32','#5a3424'],
   elf:['#f6e6e6','#f0d0c8','#dcb0a8','#b8909a'],dwarf:['#f0c0a0','#e09a80','#c07868','#8e5050'],
-  orc:['#c8e888','#9ccc5a','#6a9a3a','#4a6a2a'],orcDark:['#a8c870','#7aa848','#527a30','#36541e'],orcGrey:['#b8c8a0','#8aa078','#62785a','#44543e'],
+  orc:['#c8e888','#9ccc5a','#6a9a3a','#4a6a2a'],goblin:['#d0d880','#a8b450','#78862e','#4e5a22'],goblinDark:['#b4c070','#8a9a44','#607028','#40481c'],orcDark:['#a8c870','#7aa848','#527a30','#36541e'],orcGrey:['#b8c8a0','#8aa078','#62785a','#44543e'],
   blond:['#faf8db','#f3e7a8','#dab580','#b3794d'],brown:['#cb804a','#a15735','#682a19','#4a1c10'],ginger:['#fea464','#fc6a08','#ba3900','#7e0e13'],
   black:['#67656d','#3d3f4b','#2e3038','#27272c'],grey:['#ffffff','#dacdc1','#b3a49a','#8f8685'],silver:['#ffffff','#e0e6ee','#abb6c4','#7e8896'],
   olive:['#ebe185','#beb050','#8e8e37','#5d6527'],teal:['#86f1d6','#4ddbc2','#30b3a7','#238585'],steel:['#ffffff','#abd5da','#6e95a9','#5a748d'],
@@ -52,7 +52,8 @@ const RACE_LOOK={
   human:{skin:['skin','skinTan','skin','skinDark','skin','skinTan'],hair:['brown','blond','black','ginger','brown','grey'],eye:PEOPLE_EYE},
   elf:{skin:['elf'],hair:['blond','silver','blond','brown','silver','blond'],eye:'#a8f0c8',ears:true},
   dwarf:{skin:['dwarf','skinTan','dwarf'],hair:['ginger','brown','black','grey','ginger','blond'],eye:PEOPLE_EYE,short:true,beard:true},
-  orc:{skin:['orc','orcDark','orcGrey'],hair:['black','black','brown','black','grey','black'],eye:'#ffdc04',tusk:true}
+  orc:{skin:['orc','orcDark','orcGrey'],hair:['black','black','brown','black','grey','black'],eye:'#ffdc04',tusk:true},
+  goblin:{skin:['goblin','goblinDark'],hair:['black','brown','black'],eye:'#ffdc04',short:true}
 };
 /* each kind's look: helm (cap, kettle, great, plume, horned, hood, wizard, crown, circlet, skull, bare), outer (the garment's
    material), inner, weapon (sword, great, dagger, axe, bigaxe, hammer, spear, pike, javelin, bow, longbow, xbow, sling, staff,
@@ -66,7 +67,7 @@ const PEOPLE_LOOK={
   hum_levy:{helm:'cap',outer:'leather',weapon:'spear',plain:true},hum_spear:{helm:'kettle',outer:'steel',weapon:'spear',shield:'wood'},
   hum_guard:{helm:'great',outer:'steel',weapon:'sword',shield:'steel'},hum_pike:{helm:'kettle',outer:'steel',weapon:'pike'},
   hum_bow:{helm:'hood',hood:'olive',outer:'leather',weapon:'bow',plain:true},hum_long:{helm:'hood',hood:'forest',outer:'forest',weapon:'longbow',cape:'forest'},
-  hum_squire:{helm:'kettle',outer:'steel',weapon:'lance',mount:'horse'},hum_knight:{helm:'plume',outer:'steel',weapon:'lance',mount:'horse',barded:true,cape:true},
+  hum_squire:{helm:'kettle',outer:'steel',weapon:'lance',mount:'horse'},hum_knight:{helm:'plume',outer:'steel',weapon:'lance',mount:'horse',barded:true,cape:true,surcoat:'linen'},
   dw_clan:{helm:'cap',outer:'leather',weapon:'axe',plain:true},dw_axe:{helm:'horned',outer:'steel',weapon:'axe'},
   dw_iron:{helm:'great',outer:'iron',weapon:'hammer',shield:'iron'},dw_berserk:{helm:'bare',outer:'skin',inner:'leather',weapon:'bigaxe'},
   dw_sling:{helm:'cap',outer:'leather',weapon:'sling',plain:true},dw_xbow:{helm:'kettle',outer:'steel',weapon:'xbow'},
@@ -83,7 +84,7 @@ const PEOPLE_LOOK={
   hum_mage:{helm:'wizard',outer:'violet',weapon:'staff',robe:true,beard:'grey',hair:'grey'},dw_rune:{helm:'horned',outer:'gold',weapon:'staff',robe:true},
   elf_weaver:{helm:'circlet',outer:'teal',weapon:'staff',robe:true},orc_shaman:{helm:'skull',outer:'fur',weapon:'staff',robe:true},
   hum_foot:{helm:'cap',outer:'cloth',weapon:'sword',shield:'wood',plain:true},hum_sword:{helm:'kettle',outer:'steel',weapon:'sword',shield:'steel'},
-  hum_sergeant:{helm:'plume',outer:'steel',weapon:'sword',shield:'steel',cape:true},hum_champ:{helm:'great',outer:'steel',weapon:'great'},
+  hum_sergeant:{helm:'plume',outer:'steel',weapon:'sword',shield:'steel',cape:true},hum_champ:{helm:'great',outer:'steel',weapon:'great',surcoat:'linen'},
   hum_xbow:{helm:'kettle',outer:'leather',weapon:'xbow'},hum_crossbow:{helm:'cap',outer:'leather',weapon:'xbow',plain:true},hum_lancer:{helm:'kettle',outer:'leather',weapon:'lance',mount:'horse'},hum_hbow:{helm:'hood',hood:'olive',outer:'leather',weapon:'bow',mount:'horse'},
   dw_shield:{helm:'cap',outer:'leather',weapon:'hammer',shield:'wood',plain:true},dw_hammer:{helm:'kettle',outer:'steel',weapon:'hammer',shield:'iron'},
   dw_longbeard:{helm:'great',outer:'gold',weapon:'hammer',shield:'gold',beard:'grey'},dw_thane:{helm:'horned',outer:'iron',weapon:'hammer',cape:true},
@@ -147,6 +148,10 @@ const ptop=g=>{const i=g.p.findIndex(c=>c);return i<0?g.h:Math.floor(i/g.w)};
 function pcanvas(g){return mkc(g.w,g.h,x=>{for(let y=0;y<g.h;y++)for(let i=0;i<g.w;i++){const c=g.p[y*g.w+i];if(c){x.fillStyle=c;x.fillRect(i,y,1,1)}}})}
 
 // a soldier's whole look: its kind's, its race's, its variant's; the hero's and a companion's from their gear
+// (in the cold (the owner, 2026-11-07: "unit in winter area may use wolf or bear fur/equipments"): a wolf's or a bear's pelt over his
+// head by variant, a fur mantle on his shoulders; a helm of rank kept (keep), a cape of his own kept. sprites.js DRESS says when)
+const WINTER={on:true,keep:['great','plume','horned','wizard','crown','circlet','skull'],wolf:'#c8c4b8',bear:'#7a5236'};
+function winterLook(L,v){if(!WINTER.on)return L;const k=(v|0)%2?'bear':'wolf';return{...L,helm:WINTER.keep.includes(L.helm)?L.helm:'pelt_'+k,cape:L.cape||WINTER[k]}}
 function lookOf(type,team,hero,v,cid,cg){
   const st=ST[type],race=hero?P.race:(st&&st.race)||(PEOPLE_LOOK[type]&&PEOPLE_LOOK[type].race)||'human',R=RACE_LOOK[race]||RACE_LOOK.human;
   let L=hero?{helm:'bare',outer:'leather',inner:'linen',armor:'leather',weapon:'sword'}:PEOPLE_LOOK[cid||type]||PEOPLE_LOOK[st&&st.look]||PEOPLE_LOOK.militia;
@@ -154,7 +159,7 @@ function lookOf(type,team,hero,v,cid,cg){
   const o={race,skin:R.skin[v%R.skin.length],hair:L.hair||R.hair[v%R.hair.length],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,
     beard:L.beard||(R.beard?(L.hair||R.hair[v%R.hair.length]):race==='human'&&!hero&&v%3===1&&!L.robe?R.hair[v%R.hair.length]:null),
     helm:L.helm,hood:L.hood,outer:L.outer==='skin'?R.skin[v%R.skin.length]:L.outer,inner:L.inner||'dark',team:team?'red':'blue',weapon:L.weapon,shield:L.shield,
-    robe:L.robe,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar,armor:hero?L.armor:st?armorOf(st):'none'};
+    robe:L.robe,surcoat:L.surcoat,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar,armor:hero?L.armor:st?armorOf(st):'none'};
   if(L.plain){o.helm=race==='orc'&&PLAIN_HELM[v]==='hood'?'bare':PLAIN_HELM[v];o.outer=PLAIN_CLOTH[v]}
   if(o.mount==='horse')o.mountC=L.barded?'horseW':['horse','chestnut','horseB','horse','horseG','chestnut'][v];
   // your hero: your race, your weapon, your armour and helm as you wear them

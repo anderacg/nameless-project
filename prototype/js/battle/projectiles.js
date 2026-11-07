@@ -40,10 +40,13 @@ class Missile{
   constructor(a){this.a=a}
   static of(a){const K=a.arc?ArcMissile:a.magic?MagicBolt:Bolt;let m=MISSILES.get(a);if(!m||m.constructor!==K)MISSILES.set(a,m=new K(a));return m}
   static fire(u,a,dmg,src,dist,opts){
+    // (rain, a storm, blowing snow or sand: a shot's aim off by up to W.aim radians, an arc's length W.spread times as scattered;
+    // data/weather.js battle, the field's weather: B.env.w)
+    const W=Weather.battle(B.env&&B.env.w);if(W&&W.aim&&!(opts&&opts.exact))a+=(Math.random()*2-1)*W.aim;
     const mag=!!src.magic,base={by:u,team:u.team,dmg,a,src,elf:src.race==='elf',web:src.ability==='web',tk:0};
     if(!mag&&!src.flat){
       if(opts&&opts.v){const gv=opts.v*Math.cos(opts.ang);B.arrows.push({...base,x:u.x,y:u.y,vx:Math.cos(a)*gv,vy:Math.sin(a)*gv,z:0,vz:opts.v*Math.sin(opts.ang),g:ARROW_G,t:0,life:9,arc:true});return}
-      const d0=clamp(dist||120,24,640),sp=opts&&opts.speed||ARC_SPEED*(.8+d0/250),sc=opts&&opts.sc!=null?opts.sc:src.race==='elf'?.03:.06,d=d0*(opts&&opts.exact?1:1-sc+Math.random()*sc*2),T=d/sp,H=arcRise(d,arcDh(u,u.x+Math.cos(a)*d,u.y+Math.sin(a)*d));
+      const d0=clamp(dist||120,24,640),sp=opts&&opts.speed||ARC_SPEED*(.8+d0/250),sc=(opts&&opts.sc!=null?opts.sc:src.race==='elf'?.03:.06)*(W&&W.spread||1),d=d0*(opts&&opts.exact?1:1-sc+Math.random()*sc*2),T=d/sp,H=arcRise(d,arcDh(u,u.x+Math.cos(a)*d,u.y+Math.sin(a)*d));
       B.arrows.push({...base,x:u.x,y:u.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,z:0,vz:4*H/T,g:8*H/T/T,T,H,t:0,life:9,arc:true});return}
     const v=mag?MAGIC_SPEED:BOLT_SPEED;
     B.arrows.push({...base,x:u.x,y:u.y-6*(B.world?WORLD_BATTLE.sprite:1),vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:mag?1.4:1.1,magic:mag,col:src.bolt||'#c58af0'});

@@ -16,8 +16,9 @@ const TRACKS={on:true,head:true,// (head: laid at a marched army's foremost man,
   cover:{open:1,hill:.6,forest:.3},
   // the hours a print lasts on open ground in clear weather, by its climate (the desert's wind fills them fast) …
   life:{grass:36,frost:30,desert:14,swamp:30},
-  // … and how many times faster the weather fills them (the frost's snow the fastest)
-  weather:{clear:1,rain:2,storm:2.5,snow:3},
+  // … and how many times faster the weather fills them (the frost's snow the fastest; a blizzard's and a sandstorm's faster still:
+  // data/weather.js, every kind)
+  weather:{clear:1,cloudy:1,fog:1,heat:1,rain:2,storm:2.5,snow:3,blizzard:5,sandstorm:5},
   // on a road (the owner, 2026-10-23): dust prints on a dirt road (a track between places, an estate's track), faint on a great
   // road's paving; how clear (0-1) and the hours they last, short (the traffic and the carts tread them out; the weather cuts them too)
   road:{ground:{dirt:.5,great:.3},life:{dirt:10,great:5}},

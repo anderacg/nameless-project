@@ -82,7 +82,7 @@ class StoryContext extends StoryPlace{
   rep(name){
     return repAt(name);
   }
-  // ---- the weather (gfx/ambient.js ambWeather: frost means snow)
+  // ---- the weather where you are (world/weather.js Weather, through gfx/ambient.js ambWeather: 'rain', 'storm', 'sandstorm'…)
   get weather(){
     return this.once('weather',()=>ambWeather());
   }

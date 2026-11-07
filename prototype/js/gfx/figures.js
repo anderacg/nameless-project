@@ -98,17 +98,24 @@ function bowPic(k,style,atk,deg,skin){const key=[k,style,atk,deg,skin].join('|')
    material lit from the top left, its field the side's colour, the device of his people on it (sprites.js BANNER_DEV: the Vale's, the
    Karn's, the Sylvan's, the Horde's, three by three), light on a dark field, dark on a light one. SHIELD_ART: the shapes (r rim,
    f field), from the anchor at their top left, and each people's device */
+// (in a blow (the owner, 2026-11-07: "why shield float with no hand grab it?"): the shield brought before his chest (at: 'guard',
+// back from it by SHIELD_HOLD.blow px), the sword arm striking over it; hung at his side, his far hand's knuckles over its rim (grip))
+const SHIELD_HOLD={on:true,blow:2,grip:true};
 const SHIELD_ART={heater:['rrrrr','rfffr','rfffr','rfffr','rfffr','.rfr.','..r..'],round:['.rrr.','rfffr','rfffr','rfffr','rfffr','.rrr.'],
   dev:{human:'vale',dwarf:'karn',elf:'sylvan',orc:'horde'}};
 class ShieldGear extends FigureGear{
   constructor(guard){super(guard?'guard':'shield',guard?'guard':'off');this.guard=guard}
   draw(set,o,p){const m=shieldLook(o),C=pal(m),Tm=pal(o.team),A=SHIELD_ART,rows=m==='wood'?A.round:A.heater,T=typeof BANNER_DEV!=='undefined'&&BANNER_DEV[A.dev[o.race||'human']],
       lum=Tm[1]&&Tm[1][0]==='#'?[1,3,5].reduce((a,i,k)=>a+parseInt(Tm[1].slice(i,i+2),16)*[.3,.59,.11][k],0)/255:.5,dv=lum>.6?'#3a2226':'#f4ecd8',
-      ox=this.guard?-1:-2,oy=this.guard?(this.guard==='low'?1:-1)-p.sh:-2-p.sh,W=rows[0].length;
+      fore=this.foreNow(p),ox=this.guard?-1:fore?-1-SHIELD_HOLD.blow:-2,oy=this.guard?(this.guard==='low'?1:-1)-p.sh:fore?-1-p.sh:-2-p.sh,W=rows[0].length;
     rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(c==='.')return;const edge=y===0||x===0||x===W-1||rows[y+1]?.[x]==='.'||!rows[y+1];
       set(ox+x,oy+y,c==='r'?C[y===0||x===0?0:edge&&x>=W-2?2:1]:Tm[x===1?0:x===W-2?2:1])}));
     // (the device three by three in the field's middle: the 5 x 5 one's every other row and column)
-    if(T)for(let j=0;j<3;j++)for(let i=0;i<3;i++)if(T[j*2]&&T[j*2][i*2]&&T[j*2][i*2]!=='.')set(ox+1+i,oy+1+j,dv)}
+    if(T)for(let j=0;j<3;j++)for(let i=0;i<3;i++)if(T[j*2]&&T[j*2][i*2]&&T[j*2][i*2]!=='.')set(ox+1+i,oy+1+j,dv)
+    // (his fist on its rim, on the side nearest his body, as he grips it hung at his side)
+    if(SHIELD_HOLD.on&&SHIELD_HOLD.grip&&!this.guard&&!fore)set(ox+W-1,oy+2,pal(o.skin)[1])}
+  foreNow(p){return SHIELD_HOLD.on&&!this.guard&&p.atk>=0&&!FIST_STYLES.includes(p.style)}
+  atNow(p){return this.foreNow(p)?'guard':this.at}
 }
 // a quiver on his back, slung close behind his shoulder, the most of it hidden by him, its arrows' fletching over it by his head; a crossbowman's bolt case at his hip
 class QuiverGear extends FigureGear{
@@ -193,8 +200,9 @@ class FigureRig{
     if(g.body&&A.hand){let fy=-1;for(const i of g.body)fy=Math.max(fy,(i/g.w)|0);p.drop=fy-A.hand[1]-1}
     const put=(x,X,Y,under)=>x.draw(under?(i,j,c)=>{if(!pget(g,Math.round(X+i),Math.round(Y+j)))pset(g,X+i,Y+j,c)}:(i,j,c)=>pset(g,X+i,Y+j,c),o,p);
     const lay=x=>x.behindNow&&x.behindNow(o,p)?-1:x.layer;
-    for(let i=G.length-1;i>=0;i--)if(lay(G[i])<0)put(G[i],A[G[i].at][0],A[G[i].at][1],true);
-    for(const x of G)if(lay(x)>0)put(x,A[x.at][0],A[x.at][1],false)}
+    const at=x=>A[x.atNow?x.atNow(p):x.at];
+    for(let i=G.length-1;i>=0;i--)if(lay(G[i])<0)put(G[i],at(G[i])[0],at(G[i])[1],true);
+    for(const x of G)if(lay(x)>0)put(x,at(x)[0],at(x)[1],false)}
   /* the finished picture: g outlined round all it holds, cut to its frame (w wide, about g's middle less R each side; down to g's
      bottom from R in), grown each way only as far as its pixels reach past it, evenly about the frame's middle so its feet stay the
      cell's bottom middle (sprites.js cellOf); A: the body's anchors in g (people.js drawFigureBody), of which the picture keeps

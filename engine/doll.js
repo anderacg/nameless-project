@@ -34,7 +34,10 @@
   // wider each side; hair and beard by default): a dwarf a row shorter and broader, as the game's template had him
   // (legs a row longer than the first cut, his hands at his hips (the owner, 2026-11-07: "the hand looks longer than legs"); seat: in
   //  the saddle, his legs by the horse's side, as they were, so a rider keeps his cell)
-  const RACES={human:{skin:'skin',dup:[12],seat:{dup:[]}},elf:{skin:'elf',dup:[12,13],ears:true,seat:{dup:[12]}},dwarf:{skin:'dwarf',wide:true,beard:true,seat:{drop:[12]}},orc:{skin:'orc',dup:[12],wide:true,tusk:true,seat:{dup:[]}}};
+  const RACES={human:{skin:'skin',dup:[12],seat:{dup:[]}},elf:{skin:'elf',dup:[12,13],ears:true,seat:{dup:[12]}},dwarf:{skin:'dwarf',wide:true,beard:true,seat:{drop:[12]}},orc:{skin:'orc',dup:[12],wide:true,tusk:true,seat:{dup:[]}},
+    // (a goblin (the owner, 2026-11-07, with the reference): small, a chest row and a thigh row short, his long ears out behind his head
+    //  and up, over a hood too)
+    goblin:{skin:'goblin',drop:[5,10],goblinEars:true,seat:{drop:[5]}}};
   /* the materials, each four tones: lit, mid, shade, edge (muted, as the owner's reference) */
   const MAT={
     skin:['#f9b488','#e28852','#c67749','#a5623e'],elf:['#f8d8c8','#e8b8a4','#c8968a','#9a7068'],dwarf:['#f4b090','#d88a68','#b86a50','#8a4a38'],
@@ -66,7 +69,7 @@
     boots:{slot:'boots',cover:'o',rows:[13,14],extra:'k',dark:1},shoes:{slot:'boots',cover:'o',dark:1},
     // the body: a shirt (sleeves to the wrist or the elbow), a tunic to mid-thigh, a robe to the feet, a coat of mail
     shirt:{slot:'shirt',cover:'ncbul',mottle:.15},vest:{slot:'shirt',cover:'cb',mottle:.15},
-    tunic:{slot:'tunic',cover:'ncbulpt',rows:[3,11],mottle:.25},robe:{slot:'tunic',cover:'ncbulptk',rows:[3,14],mottle:.25},
+    tunic:{slot:'tunic',cover:'ncbulpt',rows:[3,11],mottle:.25},robe:{slot:'tunic',cover:'ncbulptk',rows:[3,14],mottle:.25,skirt:true},
     mail:{slot:'tunic',cover:'ncbulpt',rows:[3,10],mottle:.4},
     // a uniform's front: a tabard in the side's colour over the chest and down the thighs, its sleeves left to what is under it
     tabard:{slot:'tabard',cover:'cbpt',rows:[4,11],cols:[2,6],mottle:.15},
@@ -92,6 +95,12 @@
     cropLong:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','.....','.....','2...2','3...3']}},
     cropBun:{slot:'hair',cover:'s',shape:{at:'head',up:1,rows:['..1..']}},
     beardF:{slot:'beard',shape:{at:'head',rows:['.....','.....','.121.','..2..']}},
+    // (a beast's pelt worn over the head, its fur down his back (the owner, 2026-11-07: "unit in winter area may use wolf or bear fur",
+    //  with the reference): a wolf's, its pricked ears and its muzzle over his brow; a bear's, rounder, its small ears)
+    peltWolf:{slot:'head',cover:'s',shape:{at:'head',up:2,rows:['...0.','..01.','00112','0...2','1...3','2...3']}},
+    peltBear:{slot:'head',cover:'s',shape:{at:'head',up:2,rows:['.0.1.','01112','01112','1...3','2...3']}},
+    // (a cross on a surcoat, in the side's colour: a knight's, as the owner's crusader reference)
+    cross:{slot:'belt',shape:{at:'body',rows:['.','.','.','.','....1','...111','....1','....1','....1']}},
     face:{slot:'beard',shape:{at:'head',rows:['.....','...1.','...1.']}},
     eye:{slot:'beard',shape:{at:'head',rows:['.....','.3.3.']}},
     // the head: a hood (over the scalp, round the face, onto the shoulders), a cap, a kettle helm (its brim), a great helm (face and
@@ -173,12 +182,15 @@
      its ramp: a game's palette) or ramps (name -> ramp), else MAT}. Returns its picture (D.W x D.H) with anchors {hand, off, head,
      feet}, its gear (each piece: slot, kind, the anchor it hangs from and where, behind or before him), drawn apart (PX.dollGear);
      bare: the body alone, its gear left to whoever draws it (the battle turns a weapon through its blow), else laid on */
+  // (the look (the owner, 2026-11-07: "avoid using too many shading to make unit sprite looks clean and distinguishable for each body
+  //  part"): mottle, a share of a part's own; tones, each of the skeleton's four shades as drawn (lit and mid as one, the shade, the edge))
+  const LOOK={mottle:0,tones:[0,1,2,3]};
   const BASES=new Map(),BASE_CAP=4000,GREY=['#c8c8c8','#9a9a9a','#6e6e6e','#464646'];
   const chanOf=m=>m==='team'||m==='hair'||m==='skin'?m:m;
   PX.dollBase=spec=>{const und=v=>v===undefined?'~':v,key=JSON.stringify([spec.race,spec.style,spec.beard,spec.beardStyle||null,spec.uniform,und(spec.weapon),und(spec.shield),spec.pose,spec.frame|0,spec.seed|0,!!spec.bare,!!spec.noShadow,spec.drop||null,spec.moves||null,!!spec.seat]);
     let B=BASES.get(key);if(B)return B;if(BASES.size>BASE_CAP)BASES.clear();
     const race=spec.race||'human',R=RACES[race]||RACES.human,seed=spec.seed|0,U=typeof spec.uniform==='string'?UNIFORMS[spec.uniform]:spec.uniform?{parts:spec.uniform}:null;
-    const S=skeleton(race,spec.seat),ox=D.OX,oy=S.oy,G=new Array(D.W*D.H).fill(null),put=(x,y,k,t)=>{if(x>=0&&y>=0&&x<D.W&&y<D.H&&k)G[y*D.W+x]=[k,Math.max(0,Math.min(3,t|0))]};
+    const S=skeleton(race,spec.seat),ox=D.OX,oy=S.oy,G=new Array(D.W*D.H).fill(null),put=(x,y,k,t)=>{if(x>=0&&y>=0&&x<D.W&&y<D.H&&k)G[y*D.W+x]=[k,LOOK.tones[Math.max(0,Math.min(3,t|0))]]};
     // (the pose: each cell moved; moves: the caller's own, after the pose's: a glance back, the weight shifted)
     const moves=(((POSES[spec.pose]||POSES.idle)[(spec.frame|0)%((POSES[spec.pose]||POSES.idle).length)])||[]).concat(spec.moves||[]);
     const at=c=>{let x=c.x,y=c.y;for(const [rg,sd,dx,dy,from] of moves)if(rg.includes(c.r)&&(!sd||c.side===sd)&&c.row>=from){x+=dx;y+=dy}return[ox+x,oy+y]};
@@ -203,19 +215,23 @@
     const dropped=c=>(spec.drop||[]).some(([rg,sd])=>rg.includes(c.r)&&(!sd||c.side===sd)),tones={};
     for(const c of S.cells){const [x,y]=at(c);let k='skin',t=c.s;
       for(const p of parts){if(!p.cover||!p.cover.includes(c.r)||!inRows(c,p)||p.cols&&(c.x<p.cols[0]||c.x>p.cols[1]))continue;if(p.slot==='hair'&&headCover)continue;
-        t=c.s+(p.dark|0);if(p.mottle&&noise(x,y,p.slot.length)<p.mottle)t+=noise(x,y,7)<.5?1:-1;k=p.m}
+        t=c.s+(p.dark|0);if(p.mottle&&noise(x,y,p.slot.length)<p.mottle*LOOK.mottle)t+=noise(x,y,7)<.5?1:-1;k=p.m}
       if(slit&&c.r==='f'&&c.row===1){k='black';t=3}
       if(c.side==='R'&&!tones[c.r])tones[c.r]=[k,Math.max(0,Math.min(3,t))];if(!dropped(c))put(x,y,k,t)}
+    // (a robe's skirt (the owner, 2026-11-07: "mage should wear robes as the reference"): whole from leg to leg down to his feet, its hem
+    //  a pixel wider each side on its last two rows and darker on the last)
+    for(const p of parts){if(!p.skirt)continue;const by=new Map();for(const c of S.cells){if(c.r!=='k'||dropped(c))continue;const [x,y]=at(c),r=by.get(y)||[x,x];by.set(y,[Math.min(r[0],x),Math.max(r[1],x)])}
+      const ys=[...by.keys()].sort((a,b)=>a-b),last=ys[ys.length-1];for(const y of ys){const [x0,x1]=by.get(y),f=y>=last-1?1:0;for(let x=x0-f;x<=x1+f;x++)put(x,y,p.m,y===last?2:x===x0-f||x===x1+f?2:1)}}
     // the parts' own pixels round their anchors: the head's (the scalp's top left) or the body's
     const scalp=S.cells.filter(c=>c.r==='s'),hx=scalp.length?Math.min(...scalp.map(c=>at(c)[0])):ox+2,hy=scalp.length?Math.min(...scalp.map(c=>at(c)[1])):oy;
     for(const p of parts){if(!p.shape||p.slot==='hair'&&headCover)continue;const [ax,ay0]=p.shape.at==='head'?[hx-1,hy]:[ox,oy],ay=ay0-(p.shape.up||0);
-      p.shape.rows.forEach((row,j)=>[...row].forEach((ch,i)=>{if(ch==='.')return;const x=ax+i,y=ay+j;let t=+ch;if(p.mottle&&noise(x,y,9)<p.mottle)t+=1;put(x,y,p.m,t)}))}
+      p.shape.rows.forEach((row,j)=>[...row].forEach((ch,i)=>{if(ch==='.')return;const x=ax+i,y=ay+j;let t=+ch;if(p.mottle&&noise(x,y,9)<p.mottle*LOOK.mottle)t+=1;put(x,y,p.m,t)}))}
     // the lines: a belt across the hips (a buckle), a sash, a strap from his right shoulder to his left hip
     for(const p of parts){if(!p.line)continue;const hips=S.cells.filter(c=>c.r==='p'),py=hips.length?at(hips[0])[1]:oy+8;
       if(p.line==='belt'||p.line==='sash'){for(const c of hips){const [x,y]=at(c);put(x,y,p.m,c.x===4&&p.line==='belt'?0:2+(c.x===2||c.x===6?1:0))}if(p.line==='belt')put(ox+4,py,'gold',1)}
       else{const top=[ox+2,oy+3+(S.rows<15?-1:0)];for(let k=0;k<=5;k++)put(top[0]+Math.round(k*.8),top[1]+k,p.m,k&1?3:2)}}
     // his race's own: an elf's ears, an orc's tusks (over a bare head only)
-    if(R.ears&&!headCover)put(hx-1,hy+1,'skin',2);if(R.tusk)put(hx+1,hy+2,'#f0ecd8',0);
+    if(R.ears&&!headCover)put(hx-1,hy+1,'skin',2);if(R.goblinEars){put(hx+3,hy+1,'skin',1);put(hx+4,hy+1,'skin',1);put(hx+4,hy,'skin',2)}if(R.tusk)put(hx+1,hy+2,'#f0ecd8',0);
     // the gear before him: the shield on his left arm, a weapon in front
     lay(false);
     // the shadow underfoot
@@ -245,5 +261,6 @@
   // shield's colour (a material or a spec's team), ramp: how to paint it (as PX.doll's)
   PX.dollGear=(kind,m,ramp)=>{const P=gearPx(kind,m);if(!P.length)return null;const R=ramp||rampFor({}),x0=Math.min(...P.map(p=>p[0])),y0=Math.min(...P.map(p=>p[1])),x1=Math.max(...P.map(p=>p[0])),y1=Math.max(...P.map(p=>p[1]));
     const cv=PX.canvas(x1-x0+1,y1-y0+1,g=>{for(const [x,y,k,t] of P){g.fillStyle=R(k)[t];g.fillRect(x-x0,y-y0,1,1)}});cv.ax=-x0;cv.ay=-y0;cv.behind=kind!=='shield'&&!!(WEAPONS[kind]||{}).behind;return cv};
-  PX.DOLL={D,SKEL,RACES,MAT,SLOTS,PARTS,UNIFORMS,WEAPONS,POSES,HAIR_MAT};
+  PX.dollClear=()=>BASES.clear();
+  PX.DOLL={D,SKEL,RACES,LOOK,MAT,SLOTS,PARTS,UNIFORMS,WEAPONS,POSES,HAIR_MAT};
 })(window.PX=window.PX||{});

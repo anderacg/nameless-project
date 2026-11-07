@@ -62,9 +62,9 @@ function ambR(){if(!AMBV.q)AMBV.q=((Date.now()%2147483647)^Math.imul(Math.round(
   const q=AMBV.q=AMBV.q+0x6d2b79f5|0;let z=Math.imul(q^q>>>15,1|q);z=z+Math.imul(z^z>>>7,61|z)^z;return ((z^z>>>14)>>>0)/4294967296}
 const ambIn=a=>a[0]+ambR()*(a[1]-a[0]);
 const ambInt=a=>Math.floor(a[0]+ambR()*(a[1]-a[0]+1));
-// the weather at a point (where you are, unless given; world/tracks.js reads it at a print): the map has none of its own yet but the snow falling in the frost (worldart.js drawEnv; a storm on
-// the road is a line in the log, incidents.js), so 'snow' there, else 'clear'; 'rain' and 'storm' are read too, for when it has them
-function ambWeather(x=P.x,y=P.y){return climAt(x,y)==='frost'?'snow':'clear'}
+// the weather at a point (where you are, unless given; world/tracks.js reads it at a print): the region's (world/weather.js Weather;
+// WEATHER.on off, the old way: 'snow' in the frost, else 'clear'); the birds and the tracks read its like (rain, storm or snow)
+function ambWeather(x=P.x,y=P.y){return Weather.at(x,y)}
 // (what stands on a tile, for the life on the ground: 0 nothing, 1 a lot's field, 2 a building or a camp's ground: lots.js OCC)
 function ambLot(tx,ty){const id=OCC?occAt(tx,ty):0;if(!id)return 0;const l=id>0&&LOT[id];if(!l)return 2;return tx>=l.x&&tx<l.x+l.n&&ty>=l.y&&ty<l.y+l.n?2:1}
 // (water with land within r tiles: a shore, a lake, a river)
@@ -139,7 +139,7 @@ function ambShadow(alt){const f=Math.max(0,Math.min(1,Clock.frac/NIGHT_AT));retu
 // may one of kind k be born at (x, y) now: in your sight, on its ground, at its hours, in its weather
 function ambientCan(k,x,y){
   if(!inSight(x,y))return false;
-  const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),t=tAt(tx,ty),c=climAt(x,y),w=ambWeather(),d=darkness(),near=f=>yourSight().sees(x,y,f);
+  const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),t=tAt(tx,ty),c=climAt(x,y),w=WEATHER.kinds[ambWeather()].like,d=darkness(),near=f=>yourSight().sees(x,y,f);
   if(k==='flock')return d<.35;
   if(k==='peck')return d<.35&&w!=='storm'&&ambHabitat(k,x,y)&&(t!==T_FOREST||near(AMBIENT.squirrel.near));
   if(k==='crow')return d<.6;
@@ -157,7 +157,7 @@ function ambientCan(k,x,y){
 // (how many of kind k, × its numbers and its rate: birds fewer in foul weather, all fewer with reducedMotion)
 // (the shared tame factor: fixed homes use a seeded check, so a quiet patch cannot be rerolled by moving the camera)
 const ambWild=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return !(landHold(x,y)||nearTile(tx,ty,T_ROAD,1))||ambR()<AMBIENT.tame};
-function ambMul(k){const w=ambWeather();let m=(reducedMotion()?AMBIENT.calm:1)*AMBIENT.density*(AMBIENT.hours[timeOfDay()]||1);if(AMB_BIRDS[k])m*=w==='storm'?AMBIENT.storm:w==='rain'?AMBIENT.rain:w==='snow'?AMBIENT.snow:1;return m}
+function ambMul(k){const w=WEATHER.kinds[ambWeather()].like;let m=(reducedMotion()?AMBIENT.calm:1)*AMBIENT.density*(AMBIENT.hours[timeOfDay()]||1);if(AMB_BIRDS[k])m*=w==='storm'?AMBIENT.storm:w==='rain'?AMBIENT.rain:w==='snow'?AMBIENT.snow:1;return m}
 // (whoever is about in the box, to scatter from)
 function ambFigures(x0,y0,x1,y1){const out=[],add=o=>{if(o&&o.x>=x0&&o.x<=x1&&o.y>=y0&&o.y<=y1)out.push(o)};
   if(!P.stay)add(P);for(const o of W.parties)if(!o.dead&&!o.inside)add(o);for(const f of W.folk||[])if(f.st!=='in'&&f.st!=='town')add(f);

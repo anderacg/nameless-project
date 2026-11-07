@@ -573,7 +573,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-07, on purpose: the owner, "no need darker shader if that area is only 1 px": a figure's edge only where it is
 //  3 px or more across (people.js prim), so legs, arms and a bow keep their colours. Proof: 8d1c9bf gives 8eca51db again. Was W6
 //  8eca51db)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'3801ecd2',W7:'a9857aab',W8:'f6fce34e',B2:'87554a09'};
+// (W6 again 2026-11-07, on purpose: the owner, "avoid using too many shading ... distinguishable for each body part", "mage should
+//  wear robes", "knight sprite": the map's soldiers unmottled, the side's colour on the chest only, legs by the man, robes to the
+//  feet, knights in white surcoats (engine/doll.js LOOK, robe skirt; dollfigs.js DOLL_TABARD, DOLL_LEGS). Proof: 8aff7c3 gives
+//  3801ecd2 again. Was W6 3801ecd2)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'ff470268',W7:'a9857aab',W8:'f6fce34e',B2:'87554a09'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

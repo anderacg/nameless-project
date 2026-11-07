@@ -138,7 +138,11 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // (re-recorded 2026-11-07, on purpose: the owner, "no need darker shader if that area is only 1 px": a rider's edge only where he is
  // 3 px or more across (people.js prim), his legs and arms keep their colours. Proof: 8d1c9bf gives e97e9b72 and 1f30aa again.
  // Were e97e9b72, 1f30aa)
- const OLD='e3391a73',FIRST='14c05120';
+ // (re-recorded 2026-11-07, on purpose: the owner, "avoid using too many shading to make unit sprite looks clean and distinguishable
+ // for each body part", "knight sprite": a rider's cloth unmottled (engine/doll.js LOOK.mottle 0), the side's colour on his chest
+ // only, his legs his own (dollfigs.js DOLL_TABARD, DOLL_LEGS), a knight's white surcoat and its cross (o.surcoat). Proof: 8aff7c3
+ // gives e3391a73 and 14c05120 again. Were e3391a73, 14c05120)
+ const OLD='bbef4eab',FIRST='54d1c294';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

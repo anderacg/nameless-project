@@ -34,6 +34,7 @@
    | encounter:fought | {e}                     | story/encounter.js (Encounter#fought)                    | (none yet)        |
    | battle:ended     | {enc, how}              | battle/resolution.js: won, lost, withdrawn, rundown      | encounters, escorts |
    | incident:ended   | {e}                     | story/incident.js                                       | (none yet)        |
+   | weather:changed  | {k, was, x, y}          | world/weather.js (the weather where you are, each hour) | (none yet)        |
    | quest:ended      | {e, how: paid or failed}| story/quest.js (paid or failed)                         | threads' steps    |
    | page:chosen      | {e, how}                | story/thread.js (a thread's page: the choice's how)     | threads' steps    |
    | thread:ended     | {e, how}                | story/thread.js (its last step ended: that step's key)  | (none yet)        |

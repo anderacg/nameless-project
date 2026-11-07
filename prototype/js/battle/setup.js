@@ -49,7 +49,9 @@ function battleEnv(tourney,S){
   const r=S||battleSiteAt(P.x,P.y),t=r.t===T_MOUNT||r.t===T_WATER?T_HILL:r.t,c=r.c;
   const text=t===T_FOREST?'Trees block movement and stop some arrows. Elves shoot through them.':t===T_HILL?'High ground: archers reach 15% farther.'
     :c==='frost'?'Snow slows everyone but dwarves and wolves.':c==='desert'?'The heat slows melee attacks, except for orcs and scorpions.':c==='swamp'?'Mud slows everyone and stalls cavalry charges. Orcs wade through.':'Open ground: cavalry rides 15% faster.';
-  return{c,t,name:r.name,text};
+  // (the weather there as it begins, w: world/weather.js; none while it is off)
+  const env={c,t,name:r.name,text};if(WEATHER.on)env.w=Weather.at(Number.isFinite(r.tx)?(r.tx+.5)*TILE:P.x,Number.isFinite(r.ty)?(r.ty+.5)*TILE:P.y);
+  return env;
 }
 /* the climate's ground (envStats, the field's; on a field at a climates' edge each soldier's where he stands: terrain.js speedFor):
    speed on foot and mounted (×1 at home there, when home), and the HUD's words for a group standing on it (terrain.js label). The
@@ -64,6 +66,8 @@ function envStats(s,race,env){
   if(t===T_FOREST||t===T_HILL){if(t===T_HILL&&s.range&&!env.terrain)o.range*=1.15}// (with terrain the hills earn it where they stand, D2: terrain.js)
   else if(c==='desert'){if(!s.range&&!home.includes('desert'))o.cd*=1.1}
   else{const k=climSpd(s,home,c,t);if(k!==1)o.spd*=k}
+  // (the weather's: everyone's pace, the shooters' reach; data/weather.js battle)
+  const w=Weather.battle(env.w);if(w){if(w.spd)o.spd*=w.spd;if(w.range&&o.range)o.range*=w.range}
   return o;
 }
 function placeObstacles(env,y0,y1){y0=y0==null?FIELD_EDGE.top:y0;y1=y1==null?BH-FIELD_EDGE.bot:y1;
@@ -203,7 +207,9 @@ class BattleSetup{
   createState(){
     const {units,hero,groups,env,opts}=this,FI=this.field,TR=this.TR;
     const st={units,hero,groups,env,arena:this.tarena||arenaFor(env.c),ftop:FI.top,fbot:FI.bot,obs:opts.tournament||TR?[]:placeObstacles(env,FI.top,FI.bot),sel:'all',rings:[],arrows:[],parts:[],floats:[],slashes:[],corpses:[],aim:0,blocking:false,touchBlock:false,mt:null,over:false,endT:0,kills:0,slain:[],lost:{},heroDown:false,opts,t:0};
-    if(TR)st.terrain=TR;if(this.painted)st.ground=this.painted;if(TR&&this.btype)st.btype=this.btype;if(this.fogOn())st.fog=true;if(BFIELD)st.fsize=BFIELD.key;return st;
+    if(TR)st.terrain=TR;if(this.painted)st.ground=this.painted;if(TR&&this.btype)st.btype=this.btype;if(this.fogOn())st.fog=true;if(BFIELD)st.fsize=BFIELD.key;
+    const w=Weather.battle(env.w);if(w&&w.sight)st.sightK=w.sight;// (each man's sight in the weather: battlefog.js fogRange)
+    return st;
   }
   // (fog of war: field battles, terrain or none, with the setting on; never a tournament, a siege or a raid: battlefog.js)
   fogOn(){const e=G.enc;return FOG.on&&!this.opts.tournament&&!this.opts.sandbox&&!(e&&['siege','raid','tourney'].includes(e.kind))}

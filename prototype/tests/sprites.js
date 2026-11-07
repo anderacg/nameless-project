@@ -83,7 +83,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
    ok(n.every(v=>v<=16)&&[0,10,30,50,100,-60].every(d=>t.CLEAN_DEG.includes(t.cleanDeg(d))),'a thin weapon always straight: drawn on 16 clean slopes ('+ks.map((k,j)=>k+' '+n[j]).join(', ')+' pictures of 32 angles)')}
   // (2026-11-07, the owner: "the weapons seem shorter when walking": a paper doll's sword walking as at rest, low before him, a
   // little higher at a run; else on the shoulder on the march, raised up and back in a charge)
-  ok(restW>40&&(t.DOLL_FIGS.on?marchW===restW&&runW>20&&runW<restW:marchW<-100&&runW<-100),'a sword: point down at rest, '+(t.DOLL_FIGS.on?'walking as at rest, a little higher at a run':'on the shoulder on the march, raised up and back in a charge')+' ('+restW+', '+marchW+', '+runW+')');
+  // (since 342888b (the owner: "when walk it touches the ground"): a doll's sword carried point up on the march and at a run, HOLD_DOLL)
+  ok(restW>40&&(t.DOLL_FIGS.on?marchW<0&&runW<0:marchW<-100&&runW<-100),'a sword: point down at rest, '+(t.DOLL_FIGS.on?'carried point up, off the ground, walking and at a run':'on the shoulder on the march, raised up and back in a charge')+' ('+restW+', '+marchW+', '+runW+')');
   sp.spdNow=sw.spdNow=0;sp.tgt={x:sp.x+18,y:sp.y+8,hp:1,s:{}};sw.tgt={x:sw.x+18,y:sw.y,hp:1,s:{}};ok(st(sp,'spear')>0&&st(sp,'spear')<35&&st(sw,'sword')<0&&st(sw,'sword')>-70,'a foe close by: the spear points at him, the sword comes up in guard');
   sw.atkStyle='swing';const at=f=>{sw.atkAt=B.t-f*t.ATK_ANIM;return st(sw,'sword')};const a0=at(.05),a1=at(.42),a2=at(.6);ok(a0<a1&&a1<a2&&a0<-100&&a2>30&&at(.2)===a0,'a blow: a wind-up held a moment, then a fast strike from raised behind to down in front ('+[a0,a1,a2].map(Math.round).join(' \u2192 ')+')');
   sp.atkStyle='thrust';sp.atkAt=B.t-.4*t.ATK_ANIM;ok(t.holdOf(sp,'spear')[1]>1,'a thrust drives the spear forward');

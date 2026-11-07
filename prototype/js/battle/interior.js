@@ -176,8 +176,8 @@ onAct('in-',(a,arg)=>{const I=G.inside;if(!I)return false;const k=I.k,r=partyRos
 class InteriorSetup extends BattleSetup{
   constructor(opts){super({...opts,deploy:false});const e=G.enc;this.style=Interior.styleOf(e);this.pick=e.inside||Interior.pick();this.seed=Interior.seedOf(e)}
   fieldSize(){return 'cave'}
-  // (its ground (the layout is made once the field's rows are measured: terrain); in the dark, on stone: no climate's rule)
-  groundSpec(){const E=this.env,w=this.style==='cellar'?'cellars':'cave';E.c='grass';E.t=T_OPEN;E.name=this.style==='cellar'?'Cellars':'Cave';
+  // (its ground (the layout is made once the field's rows are measured: terrain); in the dark, on stone: no climate's rule, no weather)
+  groundSpec(){const E=this.env,w=this.style==='cellar'?'cellars':'cave';E.c='grass';E.t=T_OPEN;delete E.w;E.name=this.style==='cellar'?'Cellars':'Cave';
     E.name=this.style==='hideout'||this.style==='den'?'Hideout':E.name;
     E.text=(this.style==='hideout'||this.style==='den'?'Their hideout: a palisade bars the way in but for its gap; their fires show whoever stands by them. ':this.style==='cellar'?'Dark cellars: ':'A dark cave: ')+'you see only a short way, the rock stops arrows, and the only way out is the way you came in.';return{interior:this.style,seed:this.seed,w}}
   // (only those who went in: you, the companions and the men chosen)

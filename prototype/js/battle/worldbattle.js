@@ -347,7 +347,8 @@ class WorldBattleSetup extends BattleSetup{
   terrain(){return this.TR=this.area.terrain()}
   *paint(){yield}
   canopy(){}
-  createState(){const b=super.createState();b.world=this.area;b.obs=[];b.fog=false;return b}
+  // (your sight here is the map's, the weather already in it: map.js visMulAt; no field's weather sight over it)
+  createState(){const b=super.createState();b.world=this.area;b.obs=[];b.fog=false;delete b.sightK;return b}
   initialize(){
     BVW=VW;BVH=VH;const deploy=this.opts.deploy;this.opts.deploy=false;try{super.initialize()}finally{this.opts.deploy=deploy}const a=this.area,e=G.enc,rows=marchRows(P),primary=e.ref?.src||e.ref;
     for(const [id,g] of Object.entries(B.groups)){const m=B.units.filter(u=>u.grp===id),first=m[0],source=first?.sourceArmy,anchor=g.player?a.starts[0]:source?.src||source;

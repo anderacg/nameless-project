@@ -23,17 +23,19 @@ const TRACK_NAMES={grass:'Track',frost:'Frozen track',desert:'Desert track',swam
 // track 2, else 0), as the HUD shows it; tile: the tile's own (the battle's site reads its tile: worldmap.js battleSite)
 function regionAt(x,y,tile){const t=terrAt(x,y),c=climAt(x,y),road=tile?0:RoadBand.on(x,y);return{t,c,name:road===2?TRACK_NAMES[c]:road?REGION_NAMES[c][T_ROAD]:REGION_NAMES[c][t],road}}
 // base travel speed for anyone; race only matters for the player's own party. On a road's band (world/roadband.js) its road's
-// speed, blended to the land's over its shoulder; a road's own tile its road's; a ford, water and the peaks by their tiles
+// speed, blended to the land's over its shoulder; a road's own tile its road's; a ford, water and the peaks by their tiles; all of it
+// times the weather's there (world/weather.js Weather.speed: rain and snow slower, a blizzard or a sandstorm much slower)
 function speedAt(x,y,race,extra){
   const t=terrAt(x,y),c=climAt(x,y);if(!passable(t))return 0;
-  const b=t===T_FORD?0:RoadBand.at(x,y);if(t===T_ROAD)return RoadBand.speed(b,race);
-  const home=(race?RACES[race].home:[]).concat(extra||[]);
+  const home=(race?RACES[race].home:[]).concat(extra||[]),w=Weather.speed(x,y,c,home);
+  const b=t===T_FORD?0:RoadBand.at(x,y);if(t===T_ROAD)return RoadBand.speed(b,race)*w;
   const tm=(t===T_FOREST&&home.includes('forest'))||(t===T_HILL&&home.includes('hills'))?1:SPEEDMUL[t];
   const cm=home.includes(c)?1:CLIMMUL[c];
   const land=Math.max(.35,tm*cm)*(race==='human'&&c==='grass'&&t===T_OPEN?1.1:1);
-  return b?Math.max(land,land+(RoadBand.speed(b,race)-land)*RoadBand.share(b)):land;
+  return (b?Math.max(land,land+(RoadBand.speed(b,race)-land)*RoadBand.share(b)):land)*w;
 }
-function visMulAt(x,y){const t=terrAt(x,y),c=climAt(x,y);return t===T_HILL?1.3:t===T_FOREST?.7:c==='swamp'?.8:c==='desert'?1.2:1}
+// (sight by the ground, times the weather's: fog, a blizzard or a sandstorm short)
+function visMulAt(x,y){const t=terrAt(x,y),c=climAt(x,y);return (t===T_HILL?1.3:t===T_FOREST?.7:c==='swamp'?.8:c==='desert'?1.2:1)*Weather.sight(x,y)}
 const hiddenAt=(x,y)=>terrAt(x,y)===T_FOREST;
 function nearWater(x,y,r){const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(tAt(tx+i,ty+j)===T_WATER&&tx+i>0&&ty+j>0&&tx+i<MW-1&&ty+j<MH-1)return true;return false}
 // move something stuck on water or a mountain (old saves, map changes) to the nearest open tile
