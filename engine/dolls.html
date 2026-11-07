@@ -17,7 +17,7 @@ const row=(title,items)=>{const h=document.createElement('h2');h.textContent=tit
 row('Base bodies',Object.keys(DL.RACES).map(r=>big(PX.doll({race:r,style:'bald',beard:false,weapon:null}),r)));
 for(const race of Object.keys(DL.RACES))row('Uniforms: '+race,Object.keys(DL.UNIFORMS).map((u,i)=>big(PX.doll({race,uniform:u,team:TEAM,hair:['brown','blond','black','ginger'][i%4],style:i%3?'short':'long',seed:i}),u)));
 row('Hair',[['short','brown'],['long','blond'],['tail','black'],['bald','brown'],['short','ginger'],['long','grey']].map(([s,h])=>big(PX.doll({style:s,hair:h,uniform:'peasant',weapon:null}),s+' '+h)));
-row('On the head',['hood','cap','kettle','great','coif'].map(p=>big(PX.doll({uniform:[['hose','grey'],['boots','leather'],['shirt','linen'],[p,p==='hood'?'green':'steel']],weapon:null}),p)));
+row('On the head',[['hood','green'],['cap','steel'],['kettle','steel'],['great','steel'],['coif','mail'],['circlet','gold'],['wizard','purple'],['skull','white']].map(([p,m])=>big(PX.doll({uniform:[['hose','grey'],['boots','leather'],['shirt','linen'],[p,m]],weapon:null}),p)).concat([[['great','steel'],['crest','red']],[['kettle','iron'],['horns','linen']]].map(h=>big(PX.doll({uniform:[['hose','grey'],['boots','leather'],['shirt','linen'],...h],weapon:null}),h.map(q=>q[0]).join('+')))));
 row('Gear apart: the body bare, then each piece on its own (its grip marked)',[big(PX.doll({uniform:'swordsman',team:TEAM,bare:true}),'swordsman, bare'),...['sword','spear','bow','staff','club'].map(k=>big(PX.dollGear(k),k)),big(PX.dollGear('shield',TEAM),'shield'),big(PX.doll({uniform:'swordsman',team:TEAM}),'laid on')]);
 row('Walking (four frames)',[0,1,2,3].map(f=>big(PX.doll({uniform:'spearman',team:TEAM,pose:'walk',frame:f}),'frame '+f)));
 </script>

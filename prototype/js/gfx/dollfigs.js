@@ -17,7 +17,10 @@ const DOLL_FIGS={on:true,riders:true,edge:true,edgeK:.68,rim:true,rimK:.55,dx:2,
 // whether a look is drawn as a doll
 const dollable=o=>DOLL_FIGS.on&&(!o.mount||DOLL_FIGS.riders)&&!!(window.PX&&PX.doll)&&DOLL_FIGS.races.includes(o.race||'human');
 // (a look's helm as the doll's head part and its material)
-const DOLL_HELM={cap:['cap','steel'],kettle:['kettle','steel'],great:['great','steel'],plume:['great','steel'],horned:['kettle','iron'],wizard:['hood','purple'],straw:['cap','cloth'],skull:['cap','white'],bandage:['bandage','linen']};
+// (each class its own outline (the owner, 2026-11-07: "distinct helmets"): a plume a great helm crested in the side's colour, a horned
+// helm its horns, a circlet gold round the brow, a wizard his tall hat, a shaman a skull; several parts a list)
+const DOLL_HELM={cap:['cap','steel'],kettle:['kettle','steel'],great:['great','steel'],plume:[['great','steel'],['crest','team']],horned:[['kettle','iron'],['horns','linen']],
+  wizard:['wizard','purple'],straw:['cap','cloth'],skull:['skull','white'],bandage:['bandage','linen'],circlet:['circlet','gold']};
 // a look's parts on the doll, in the game's materials ('team': the side's colour, a tone darker than the palette's lightest: T)
 function dollParts(o){const T={dark:1},P=[],out=o.outer||'leather',arm=o.armor||'none',metal=out==='iron'||out==='steel'?out:'steel';
   if(o.robe)P.push(['shoes','leather'],['robe',out],['sash','team',T]);
@@ -26,7 +29,7 @@ function dollParts(o){const T={dark:1},P=[],out=o.outer||'leather',arm=o.armor||
     else if(arm==='leather')P.push(['shirt',o.inner||'linen'],['tunic',out],['tabard','team',T],['belt','leather']);
     else P.push(['shirt','team',T],['vest',out],['belt','leather'])}
   if(o.cape)P.push(['cloak',o.cape===true?'team':o.cape]);
-  const h=o.helm==='hood'?['hood',o.hood||'olive']:DOLL_HELM[o.helm];if(h)P.push(h);
+  const h=o.helm==='hood'?['hood',o.hood||'olive']:DOLL_HELM[o.helm];if(h)Array.isArray(h[0])?P.push(...h):P.push(h);
   return P}
 // its doll's spec: race, skin, hair, beard, parts, the side's colour, pose. Its colours are channels painted at the last (engine/doll.js
 // PX.dollBase, dollPaint): every material by its own name (a ramp or a '#rrggbb', a world army's tint, by its JSON), painted through

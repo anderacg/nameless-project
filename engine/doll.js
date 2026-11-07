@@ -52,7 +52,7 @@
      own pixels, rows of [region-free letters] round an anchor: 'head' (the scalp's top left) or 'body' (the skeleton's top left),
      each letter a shade (0-3) or '.'; dark: its tones a step darker; mottle: a share of its pixels a tone lighter or darker (cloth
      worn and patched, as the reference); line: a dark line of its own (a strap from shoulder to hip, a belt across the hips) */
-  const SLOTS=['legs','boots','shirt','tunic','tabard','belt','strap','cloak','hair','beard','head'];
+  const SLOTS=['legs','boots','shirt','tunic','tabard','belt','strap','cloak','hair','beard','head','crest'];
   const PARTS={
     // legs: hose or trousers, breeches to the knee
     // (a loincloth when nothing else covers his hips)
@@ -80,7 +80,14 @@
     cap:{slot:'head',cover:'s'},kettle:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0112.']}},
     great:{slot:'head',cover:'sf',shape:{at:'head',rows:['.012.']},slit:true},
     // (a bandage round the brow: one tended on the road)
-    bandage:{slot:'head',shape:{at:'head',rows:['.....','.001.']}},coif:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0...2','1...3']}}};
+    bandage:{slot:'head',shape:{at:'head',rows:['.....','.001.']}},coif:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0...2','1...3']}},
+    // (each class its own outline (the owner, 2026-11-07): a gold circlet round the brow, the hair showing; a wizard's tall hat, its
+    //  brim; a skull worn as a cap; up: rows of its shape over the scalp's top)
+    circlet:{slot:'head',shape:{at:'head',rows:['.....','.012.']}},
+    wizard:{slot:'head',cover:'s',shape:{at:'head',up:3,rows:['..1..','.12..','.122.','01223']}},
+    skull:{slot:'head',cover:'s',shape:{at:'head',up:1,rows:['.001.','.....','.3.3.']}},
+    // (over a helm: a crest of plumes in the side's colour; a pair of horns, out either side)
+    crest:{slot:'crest',shape:{at:'head',up:2,rows:['...0.','.012.']}},horns:{slot:'crest',shape:{at:'head',up:1,rows:['0...0','1...1']}}};
   // the uniforms: their parts and each one's material ('team': the side's colour; 'hair': the figure's own), a weapon and a shield
   const UNIFORMS={
     peasant:{parts:[['breeches','wool'],['shoes','leather'],['shirt','linen'],['vest','wool'],['sash','leather']],weapon:'club'},
@@ -164,7 +171,7 @@
       if(c.side==='R'&&!tones[c.r])tones[c.r]=[k,Math.max(0,Math.min(3,t))];if(!dropped(c))put(x,y,k,t)}
     // the parts' own pixels round their anchors: the head's (the scalp's top left) or the body's
     const scalp=S.cells.filter(c=>c.r==='s'),hx=scalp.length?Math.min(...scalp.map(c=>at(c)[0])):ox+2,hy=scalp.length?Math.min(...scalp.map(c=>at(c)[1])):oy;
-    for(const p of parts){if(!p.shape||p.slot==='hair'&&headCover)continue;const [ax,ay]=p.shape.at==='head'?[hx-1,hy]:[ox,oy];
+    for(const p of parts){if(!p.shape||p.slot==='hair'&&headCover)continue;const [ax,ay0]=p.shape.at==='head'?[hx-1,hy]:[ox,oy],ay=ay0-(p.shape.up||0);
       p.shape.rows.forEach((row,j)=>[...row].forEach((ch,i)=>{if(ch==='.')return;const x=ax+i,y=ay+j;let t=+ch;if(p.mottle&&noise(x,y,9)<p.mottle)t+=1;put(x,y,p.m,t)}))}
     // the lines: a belt across the hips (a buckle), a sash, a strap from his right shoulder to his left hip
     for(const p of parts){if(!p.line)continue;const hips=S.cells.filter(c=>c.r==='p'),py=hips.length?at(hips[0])[1]:oy+8;

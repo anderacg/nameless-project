@@ -16,16 +16,18 @@ Kit.suite(({ok})=>{
   const m=t.unitSprite('militia',1,false,2,0);ok(m.width===32&&m.cw===24&&m.ch===16,'a figure whose gear fits keeps its frame (24 wide, 16 high in a 32 cell)');
   const mids=['hum_spear','hum_pike','hum_bow','dw_axe','elf_blade'].every(k=>{const a=t.unitSprite(k,0,false,0,0),c=t.unitSprite(k,0,false,0,0,true);return a.width===c.width||Math.abs(a.hand[0]-a.width/2-(c.hand[0]-c.width/2))<1});
   ok(mids,'the body\'s middle stays the cell\'s middle however far the gear reaches (its hand as far from it)')}
- // ---- layers: a slung shield and a quiver behind the body, a raised shield and the weapon in front
+ // ---- layers: a quiver behind the body; a shield on the off arm, a raised shield and the weapon in front
  {const L=t.lookOf('hum_spear',0,false,0,'',null),bare=t.peopleSprite({...L,weapon:null,shield:null},0),sl=t.peopleSprite({...L,weapon:null},0),up=t.peopleSprite({...L,weapon:null},t.DEF_POSE);
   // (his body: its pixels as drawn without the blended outline (DOLL_FIGS.rim off), whose shade follows whatever it borders: people.js prim)
   const flush=()=>{for(const k in t.spr)delete t.spr[k];t.FIGURES.map.clear()},D=t.DOLL_FIGS,r0=D.rim,bodyOf=o=>{flush();D.rim=false;try{return px(t.peopleSprite(o,0))}finally{D.rim=r0;flush()}};
   const same=(a,b,M)=>{const A=px(a),B=px(b);let cov=0;for(let i=0;i<A.length;i+=4)if(A[i+3]&&(!M||M[i+3])&&!isOut(A,i)&&(A[i]!==B[i]||A[i+1]!==B[i+1]||A[i+2]!==B[i+2]))cov++;return cov};
   const Mb=bodyOf({...L,weapon:null,shield:null});
-  ok(same(bare,sl,Mb)===0,'a shield slung on the far arm is behind him: not one pixel of his body is covered');
+  // (the owner, 2026-11-07: "bigger shields with the army's device": carried before his off arm, its device showing; was slung behind)
+  {const d=px(sl),T=t.BANNER_DEV[t.SHIELD_ART.dev.human],lit=new Set();for(let i=0;i<d.length;i+=4)if(d[i+3]&&d[i]>230&&d[i+1]>220)lit.add(i);
+   ok(same(bare,sl,Mb)>6&&T&&lit.size>=3,'a shield carried before his off arm: '+same(bare,sl,Mb)+' of his pixels covered, his people\'s device on it')}
   ok(same(bare,up)>4,'raised to meet a blow it is before him ('+same(bare,up)+' of his pixels covered)');
   const A=t.lookOf('hum_bow',0,false,0,'',null),ab=t.peopleSprite({...A,weapon:null},0),aq=t.peopleSprite({...A,weapon:null,slung:'bow'},0);ok(same(ab,aq,bodyOf({...A,weapon:null}))===0&&px(ab).join()!==px(aq).join(),'a bow put away and its quiver hang on his back, behind him');
-  ok(t.GEAR.layer.shield<0&&t.GEAR.layer.quiver<0&&t.GEAR.layer.main>0&&t.GEAR.layer.guard>0,'one table says it (GEAR.layer)')}
+  ok(t.GEAR.layer.shield>0&&t.GEAR.layer.quiver<0&&t.GEAR.layer.main>0&&t.GEAR.layer.guard>0,'one table says it (GEAR.layer)')}
  // ---- what a unit carries
  {const arm=t.unitSprite('hum_bow',0,false,0,0,true,true),bare=t.unitSprite('hum_bow',0,false,0,0,true);ok(px(arm).join()!==px(bare).join()&&t.opaqueBox(arm)[0]<t.opaqueBox(t.unitSprite('hum_bow',0,false,0,0,true,false))[0]+1,'an archer in melee mode has his bow on his back');
   const off=t.unitSprite('hum_knight',0,false,0,0,false,false,null,true),ob=t.opaqueBox(off);/* (>18 since 2026-11-06: a paper doll's lance unoutlined, a row less over it) */ok(off.height-ob[1]>18&&!t.unitLook({type:'hum_knight',team:0,v:0,afoot:true}).mount,'a rider off his horse carries his lance, as long as it is');
