@@ -179,12 +179,10 @@ function manDeath(c,L,how,helm,ride,lie){
   if(how==='flung'&&B.weapon){const p=pdiff(g0,fig({...B,weapon:null},null,-1));if(p){const q=pturn(p);if(dollable(B))q.edge=true;poutline(q);bits.push([pcanvas(q),...at[2]])}}
   // (his dying (the owner, 2026-11-07: "a dying sequence", after his knight sheet): struck, he staggers back (the flinch); then to his
   // knees, upright, his legs folded under him; then down into his death; in his own pictures, never the standing one turned)
-  // (kneeling: his body (without what he carries) down until it rests on the row his feet stood on, onto his folded thighs, his
-  // shins along the ground behind him in his boots' colour (a doll's own, at the back of his lowest row); the old figure's knee
-  // pixels else)
-  const lowOf=q=>{let lo=-1;for(let i=0;i<q.p.length;i++)if(q.p[i])lo=Math.max(lo,(i/q.w)|0);return lo},feet=lowOf(fig({...B,weapon:null},null,-1)),kd=Math.max(0,feet-lowOf(fig({...B,weapon:null},null,-1,12-sh))),stg=fig(B,'flinch',-1),kn=pmove(fig({...B,weapon:null},null,-1,12-sh),(x,y)=>[0,kd]);// (on his knees his weapon dropped)
-  if(!B.robe){const gy=17-sh;if(dollable(B)){const lo=feet;let x0=99;for(let x=0;x<kn.w;x++)if(pget(kn,x,lo))x0=Math.min(x0,x);
-      const c=pget(kn,x0,lo)||'#3a2a20';if(lo>=0&&x0<99)for(let k=1;k<=2;k++)pset(kn,x0-k,lo,c)}
+  // (kneeling: a doll in its own kneeling pose (one knee down, the other up, dollfigs.js DOLL_MOVES.kneel); the old figure his body
+  // (without what he carries) down until it rests on the row his feet stood on, its knee pixels drawn)
+  const lowOf=q=>{let lo=-1;for(let i=0;i<q.p.length;i++)if(q.p[i])lo=Math.max(lo,(i/q.w)|0);return lo},feet=lowOf(fig({...B,weapon:null},null,-1)),kd=Math.max(0,feet-lowOf(fig({...B,weapon:null},null,-1,12-sh))),stg=fig(B,'flinch',-1),kn0=dollable(B)?fig({...B,weapon:null},'kneel',-1):null,kn=kn0?pmove(kn0,(x,y)=>[0,feet-lowOf(kn0)]):pmove(fig({...B,weapon:null},null,-1,12-sh),(x,y)=>[0,kd]);// (on his knees his weapon dropped; a doll in its own kneeling pose (dollfigs.js DOLL_MOVES.kneel), set on the row his feet stood on)
+  if(!B.robe){const gy=17-sh;if(dollable(B)){}
     else{const Lc=lettersOf(B);pset(kn,15,gy-1,Lc.L);pset(kn,15,gy,Lc.M);pset(kn,16,gy,Lc.F);pset(kn,6,gy,Lc.F);pset(kn,5,gy,Lc.F)}}
   // (all of them in the dolls' style, their outline inside them, however they were moved or turned)
   const doll=dollable(B);for(const q of [stg,kn,body])if(doll)q.edge=true;poutline(stg);poutline(kn);

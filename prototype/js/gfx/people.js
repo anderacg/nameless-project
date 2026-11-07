@@ -731,11 +731,12 @@ function figCarrier(type,v,tint,job,pose){return figKeep('mca'+type+v+tint+job+'
    blood: in a pool of it (FIG_BLOOD: [colour, x, y, w, h] in a 16 cell's px, as the map's was, grown to its own) */
 const FIG_KNEEL=2,FIG_BLOOD=[['#5a1414',3,13,10,1],['#6e1a18',1,14,14,1],['#8a2a22',5,14,5,1],['#5a1414',3,15,10,1]];
 function figKneel(key,race,v){return figKeep('mrk'+key+race+v,()=>{const L=ENC_LOOK[key](race,v),R=GEAR.room,g=pgrid(24+2*R,19+R+(dollable(L)?1-DOLL_FIGS.dy:0)),sh=L.short?1:0,ox=4+R,gy=3+R+14-sh+(dollable(L)?DOLL_FIGS.dy:0);// (a doll's knees on the row his feet stand on, his grid as tall as his standing one's)
-  const A=drawFigure(g,L,ox,3+R+FIG_KNEEL,-1,null,-1,12-sh);
-  if(!L.robe){const Lc=lettersOf(L);pset(g,ox+11,gy-1,Lc.L);pset(g,ox+11,gy,Lc.M);pset(g,ox+12,gy,Lc.F);pset(g,ox+2,gy,Lc.F);pset(g,ox+1,gy,Lc.F)}
+  // (a doll in its own kneeling pose, one knee down and the other up (dollfigs.js DOLL_MOVES.kneel); the old figure cut at its knees)
+  const D=dollable(L),A=D?drawFigure(g,L,ox,3+R,-1,'kneel',-1):drawFigure(g,L,ox,3+R+FIG_KNEEL,-1,null,-1,12-sh);
+  if(!L.robe&&!D){const Lc=lettersOf(L);pset(g,ox+11,gy-1,Lc.L);pset(g,ox+11,gy,Lc.M);pset(g,ox+12,gy,Lc.F);pset(g,ox+2,gy,Lc.F);pset(g,ox+1,gy,Lc.F)}
   // (on the ground whatever he wears: a robe's hem, a short man's knees, set down on the row a standing doll's feet take, whatever
   // his race: 3 + R + 15)
-  if(dollable(L)){let lo=-1;for(let i=0;i<g.p.length;i++)if(g.p[i])lo=Math.max(lo,(i/g.w)|0);const d=3+R+15+DOLL_FIGS.dy-lo;if(lo>=0&&d>0){g.p.copyWithin(d*g.w,0,g.p.length-d*g.w);g.p.fill(null,0,d*g.w);
+  if(dollable(L)){let lo=-1;for(let i=0;i<g.p.length;i++)if(g.p[i])lo=Math.max(lo,(i/g.w)|0);const d=3+R+15+DOLL_FIGS.dy-lo;if(lo>=0&&d!==0){if(d>0){g.p.copyWithin(d*g.w,0,g.p.length-d*g.w);g.p.fill(null,0,d*g.w)}else{g.p.copyWithin(0,-d*g.w);g.p.fill(null,g.p.length+d*g.w)}
     if(g.body)g.body=new Set([...g.body].map(i=>i+d*g.w).filter(i=>i<g.p.length));for(const k of FIG_ANCHORS)if(A[k])A[k]=[A[k][0],A[k][1]+d]}}
   return cellOf(FigureRig.frame(g,R,24,A,16-FIG_KNEEL-sh,false))})}
 function figDown(key,race,v,blood){return figKeep('mrd'+key+race+v+(blood?'b':''),()=>{

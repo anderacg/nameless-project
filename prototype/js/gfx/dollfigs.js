@@ -48,7 +48,12 @@ const DOLL_MOVES={lean:[['sfn','',-1,0,0]],breath:[['sf','',0,1,0]],flinch:[['sf
   run:[[['h','R',0,-1,0]],[['ko','L',0,-1,11],['h','R',-1,0,0]],[['h','L',0,-1,0]],[['ko','R',0,-1,11],['h','L',-1,0,0]]],
   // (a blow's body (the owner's reference: the spear drawn back, then the weight thrown into it): wound up, the head and shoulders
   // back; striking, forward and down a pixel as the weight lands; following through, still forward)
-  blow:[[['sfn','',1,0,0]],[['sfn','',-1,0,0],['sfncbulhp','',0,1,0]],[['sfn','',-1,0,0]]]};
+  blow:[[['sfn','',1,0,0]],[['sfn','',-1,0,0],['sfncbulhp','',0,1,0]],[['sfn','',-1,0,0]]],
+  // (kneeling (the owner, 2026-11-07: "kneeling looks like a line"), seen from before him as his reference's: his body down 2 rows;
+  // his left knee on the ground, its thigh down to it, its shin and foot folded under it out of sight (DOLL_KNEEL_DROP); his right
+  // leg bent out to the side, its knee up, its shin and foot planted 2 px out, so it shows beside him)
+  kneel:[['sfncbulhp','',0,2,0],['t','L',0,3,0],['t','R',2,1,0],['ko','R',2,0,0]]};
+const DOLL_KNEEL_DROP=[['ko','L']];
 /* a figure's body as a doll into grid g at the template's (ox, oy): walk (-2 a breath, -1 standing, 0-15 the strides: walk,
    run, climb, descend, each its doll's step), style and atk (a blow's frame, its weapon arm along the rig). Its pixels are the
    body's (g.body: not outlined, figures.js FigureRig.frame); returns the template's anchors */
@@ -58,7 +63,7 @@ function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
   // (braced or gripping: both arms forward to the weapon, the near hand on it before him, the far one behind it along a pole levelled
   //  (brace) or just under the near one on a great weapon raised (grip): DOLL_GRIP)
   const two=DOLL_GRIP[style]||null;
-  const s=dollSpec(o,walk>=0?'walk':'idle',walk>=0?walk&3:0,moves);if(rig)s.drop=[['ulh','R']];if(two)s.drop=[['ulh','']];
+  const s=dollSpec(o,walk>=0?'walk':'idle',walk>=0?walk&3:0,moves);if(rig)s.drop=[['ulh','R']];if(two)s.drop=[['ulh','']];if(style==='kneel')s.drop=[...(s.drop||[]),...DOLL_KNEEL_DROP];
   const cv=PX.doll(s),D=PX.DOLL.D,sh=15-cv.rows,d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data,dx=DOLL_FIGS.dx;
   // (his body, mirrored: the doll's right (the picture's left) his near side, before him; cut: only the rows down to it, the
 // template's rows (a kneeler's: the doll a row lower, as its feet))
