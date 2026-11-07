@@ -126,10 +126,14 @@ function sheathSprite(k,team,skin){const key=k+team+skin;if(SHEATHS[key])return 
   else{for(let t=1;t<n;t++){const last=t===n-1;set(c*t,s*t,last?M[1]:Lt[t===1?0:1]);set(c*t-s,s*t+c,last?M[2]:Lt[3])}// (the scabbard two pixels wide over him, lit along its top, shaded under it; its chape steel)
     set(1,-1,G[0]);set(-1,1,G[2]);set(-c,-s,Lt[1]);set(-2*c,-2*s,G[1])}// (the guard across, the grip and pommel up and forward)
   const cv=pcanvas(g);cv.R=R;return SHEATHS[key]=cv}
+// (a spear or a pike sloped over his shoulder on the march (the owner, 2026-11-07: "make spearmen carry spears over the shoulder on the
+//  march"): from his hand its shaft back and up behind his shoulder, its head over and behind his head; on foot, walking, on the map only;
+//  a javelin, short, in hand as before)
+const SHOULDER={on:true,deg:-126,up:4};// (up: px slid up along its shaft, its butt ending at his hand (a doll's pole's is 5 px: drawBlade), never below it)
 function mapHeld(L,sp,walking,step){
   const k=heldWeapon(L);if(!k||!sp.hand)return null;
-  if(SHEATH.on&&SHEATH.kinds.includes(k)&&!L.mount&&dollable(L)){const w=sheathSprite(k,L.team,pal(L.skin)[1]);return{w,x:sp.hand[0]+SHEATH.at[0]-w.R,y:sp.hand[1]+SHEATH.at[1]-w.R,back:false,sheathed:true}}const kind=holdKind(k),deg=groundClamp(holdTab(kind,L)[walking?'march':'rest'],WPN[k][0],sp,L);
-  const i=((Math.round(deg/360*WEAPON_STEPS)%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,sw=walking?swayOf(step,false,L,k):null,w=weaponSprite(k,L.team,pal(L.skin)[1],i,undefined,dollable(L)),a=(i/WEAPON_STEPS*360+180)%360-180,x=sp.hand[0]-w.R+(sw?sw[0]:0),y=sp.hand[1]-w.R+(sw?sw[1]:0);
+  if(SHEATH.on&&SHEATH.kinds.includes(k)&&!L.mount&&dollable(L)){const w=sheathSprite(k,L.team,pal(L.skin)[1]);return{w,x:sp.hand[0]+SHEATH.at[0]-w.R,y:sp.hand[1]+SHEATH.at[1]-w.R,back:false,sheathed:true}}const kind=holdKind(k),sh=SHOULDER.on&&walking&&kind==='pole'&&k!=='javelin'&&!L.mount&&dollable(L),deg=sh?SHOULDER.deg:groundClamp(holdTab(kind,L)[walking?'march':'rest'],WPN[k][0],sp,L);
+  const i=((Math.round(deg/360*WEAPON_STEPS)%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,sw=walking?swayOf(step,false,L,k):null,w=weaponSprite(k,L.team,pal(L.skin)[1],i,undefined,dollable(L)),a=(i/WEAPON_STEPS*360+180)%360-180,up=sh?SHOULDER.up:0,ua=deg*Math.PI/180,x=sp.hand[0]-w.R+(sw?sw[0]:0)+Math.round(Math.cos(ua)*up),y=sp.hand[1]-w.R+(sw?sw[1]:0)+Math.round(Math.sin(ua)*up);
   return{w,x,y,back:heldBack(k,a,L)&&peeks(sp,w,x,y)}}
 // draw it, in the fighter's own (already turned) frame: (bx, by) is where his sprite's corner went
 // (the weapon turns toward how he should hold it, WEAPON_TURN degrees a second, never snapping: a man whose state flickers from
