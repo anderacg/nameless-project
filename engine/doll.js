@@ -68,9 +68,10 @@
     tabard:{slot:'tabard',cover:'cbpt',rows:[4,11],cols:[2,6],mottle:.15},
     // a belt across the hips (its buckle in the middle), a strap from the right shoulder to the left hip
     belt:{slot:'belt',line:'belt'},strap:{slot:'strap',line:'strap'},sash:{slot:'belt',line:'sash'},
-    // a cloak: over his back shoulder and arm, falling behind him to the knee on that side (the picture is mirrored to face right:
-    // his left (+x) is his back); the near arm his own sleeve (the owner, 2026-11-07: "too blocky": not a box round him)
-    cloak:{slot:'cloak',cover:'nul',rows:[3,8],cols:[5,8],shape:{at:'body',rows:['.........','.........','.........','.........','........3','........2','........2','........3','.........','........3','.........','.........']},mottle:.2},
+    // a cloak, seen from before him as it hangs behind him: a mantle over his shoulders (its collar and the tops of his arms), then
+    // only its edge, a pixel of cloth from his shoulder down behind his back arm (the picture is mirrored to face right: his left, +x, is his back)
+    // to a hem at the knee; his arms their own sleeves (the owner, 2026-11-07: "too blocky", "the cape is a square")
+    cloak:{slot:'cloak',cover:'nu',rows:[3,5],shape:{at:'body',rows:['..........','..........','..........','..........','........1.','........1.','.........2','.........2','.........2','.........2','.........3','........33']}},
     // hair: short (the scalp), long (to the shoulders), a tail, none; a beard over the jaw
     short:{slot:'hair',cover:'s'},long:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','.2..2','.3..3']}},
     tail:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','....3','....3']}},bald:{slot:'hair'},

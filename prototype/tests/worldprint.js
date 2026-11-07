@@ -522,7 +522,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-07, on purpose: the owner, "hero sprite looks weird", "too blocky and no need the crown": your hero in what he
 //  wears, a jerkin over linen sleeves, his cape behind him only, no crown; an item's colour shaded (people.js lookOf, dollfigs.js
 //  dollParts, engine/doll.js cloak): you in its picture. Proof: abf740f gives it again. Was W6 ab47f824)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'d1d8030e',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
+// (W6 again 2026-11-07, on purpose: the owner, "blue cape is a square": a cape a mantle and a hanging edge, never a block
+//  (engine/doll.js cloak): every caped man in its picture. Proof: 80b4972 gives it again. Was W6 d1d8030e)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'4a1df363',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
