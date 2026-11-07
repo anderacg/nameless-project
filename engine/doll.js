@@ -101,9 +101,11 @@
     sword:{behind:false,pts:[[1,-1],[-1,0],[0,1]],head:[[-1,1],[-2,2],[-2,3],[-3,4]],mat:'iron',hm:'steel'},
     club:{behind:false,pts:[[0,1],[-1,2]],head:[[-1,3],[-2,3],[-2,4]],mat:'wood',hm:'wood'},
     bow:{behind:false,off:true,pts:[[1,-4],[2,-3],[2,-2],[2,-1],[2,0],[2,1],[2,2],[2,3],[1,4]],head:[[1,-3],[1,-2],[1,-1],[1,0],[1,1],[1,2],[1,3]],mat:'wood',hm:'linen'}};
-  /* the poses: idle, and a walk of four frames (the reference's figures face us: the legs step by lifting a foot, the arms swing a
-     pixel), each a list of moves [regions, side ('R' his right / 'L' his left / ''), dx, dy, rows from] */
-  const POSES={idle:[[]],walk:[[],[['ko','L',0,-1,12],['h','R',0,1,0]],[],[['ko','R',0,-1,12],['h','L',0,1,0]]],
+  /* the poses: idle, and a walk of four frames (the reference's figures face us; the owner, 2026-11-07: "more natural", after his
+     knight sheet): a step (the body down a pixel as the weight lands, the back heel up, the arm across from the leading leg swung
+     forward, its hand up), then the pass (the swinging leg's knee and foot lifted through, the body back up), the other side the
+     same; each a list of moves [regions, side ('R' his right / 'L' his left / ''), dx, dy, rows from] */
+  const POSES={idle:[[]],walk:[[['sfncbulhp','',0,1,0],['o','L',0,-1,14],['h','L',0,-1,0]],[['ko','L',0,-1,12]],[['sfncbulhp','',0,1,0],['o','R',0,-1,14],['h','R',0,-1,0]],[['ko','R',0,-1,12]]],
     // a blow: the weapon arm raised and forward
     strike:[[['lh','R',-1,-2,6]]]};
 

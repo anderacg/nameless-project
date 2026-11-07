@@ -40,13 +40,16 @@ function dollSpec(o,pose,frame,moves){const parts=dollParts(o).map(([p,m,x])=>[p
 // (dollfigs draws it facing right): +1 is back. lean: running and climbing, the head and shoulders forward; a breath: the head down a
 // pixel; struck (flinch), the head and body back; a glance back (look), the head; the weight shifted (shift), all above the legs)
 const DOLL_MOVES={lean:[['sfn','',-1,0,0]],breath:[['sf','',0,1,0]],flinch:[['sfncbulhp','',1,0,0]],look:[['sf','',1,0,0]],shift:[['sfncbulhp','',1,0,0]],
-  run:[[],[['ko','L',0,-2,11],['h','R',-1,0,0]],[],[['ko','R',0,-2,11],['h','L',-1,0,0]]]};
+  run:[[['h','R',0,-1,0]],[['ko','L',0,-1,11],['h','R',-1,0,0]],[['h','L',0,-1,0]],[['ko','R',0,-1,11],['h','L',-1,0,0]]],
+  // (a blow's body (the owner's reference: the spear drawn back, then the weight thrown into it): wound up, the head and shoulders
+  // back; striking, forward and down a pixel as the weight lands; following through, still forward)
+  blow:[[['sfn','',1,0,0]],[['sfn','',-1,0,0],['sfncbulhp','',0,1,0]],[['sfn','',-1,0,0]]]};
 /* a figure's body as a doll into grid g at the template's (ox, oy): walk (-2 a breath, -1 standing, 0-15 the strides: walk,
    run, climb, descend, each its doll's step), style and atk (a blow's frame, its weapon arm along the rig). Its pixels are the
    body's (g.body: not outlined, figures.js FigureRig.frame); returns the template's anchors */
 function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
   const rig=atk>=0?(FIST_STYLES.includes(style)?FIST_RIG[style][atk]:o.held&&BLOW_RIG[style]?blowRig(o,style,atk):null):style==='flinch'?blowRig(o,'flinch',0):o.guardUp&&!shieldLook(o)&&!o.weapon?FIST_RIG.guard[0]:null;
-  const M=DOLL_MOVES,run=walk>=4&&walk<8,climb=walk>=8,moves=[...(run||climb?M.lean:[]),...(run?M.run[walk&3]:[]),...(walk===-2?M.breath:[]),...(M[style]&&!Array.isArray(M[style][0][0])?M[style]:[])];
+  const M=DOLL_MOVES,run=walk>=4&&walk<8,climb=walk>=8,moves=[...(run||climb?M.lean:[]),...(run?M.run[walk&3]:[]),...(walk===-2?M.breath:[]),...(atk>=0&&M.blow[atk]?M.blow[atk]:[]),...(M[style]&&!Array.isArray(M[style][0][0])?M[style]:[])];
   // (braced or gripping: both arms forward to the weapon, the near hand on it before him, the far one behind it along a pole levelled
   //  (brace) or just under the near one on a great weapon raised (grip): DOLL_GRIP)
   const two=DOLL_GRIP[style]||null;
