@@ -21,16 +21,20 @@
     ['llbbbbbll','320000332'],
     ['hlppppplh','301010132'],
     ['hhttttthh','323000332'],
-    ['.httttt.h','.030300.2'],
+    ['..ttttt..','..30300..'],
     ['..ttttt..','..30300..'],
     ['..kk.kkk.','..30.303.'],
     ['..kk..kk.','..31..33.'],
     ['...o...o.','...3...3.']];
+  // (in the saddle: the hands a row lower, at his thighs, as the first cut had them, so a rider and his weapon keep their pixels)
+  const SEAT_HANDS=['.httttt.h','.030300.2'];
   // the cell: the skeleton at (OX, OY) in a W x H picture (room for a weapon either side and a hood or a helm's crest above)
   const D={W:17,H:19,OX:4,OY:2};
   // the races: their skin's tones, and how the skeleton changes (drop: rows taken out, dup: rows doubled, wide: the torso a pixel
   // wider each side; hair and beard by default): a dwarf a row shorter and broader, as the game's template had him
-  const RACES={human:{skin:'skin'},elf:{skin:'elf',dup:[12],ears:true},dwarf:{skin:'dwarf',drop:[12],wide:true,beard:true},orc:{skin:'orc',wide:true,tusk:true}};
+  // (legs a row longer than the first cut, his hands at his hips (the owner, 2026-11-07: "the hand looks longer than legs"); seat: in
+  //  the saddle, his legs by the horse's side, as they were, so a rider keeps his cell)
+  const RACES={human:{skin:'skin',dup:[12],seat:{dup:[]}},elf:{skin:'elf',dup:[12,13],ears:true,seat:{dup:[12]}},dwarf:{skin:'dwarf',wide:true,beard:true,seat:{drop:[12]}},orc:{skin:'orc',dup:[12],wide:true,tusk:true,seat:{dup:[]}}};
   /* the materials, each four tones: lit, mid, shade, edge (muted, as the owner's reference) */
   const MAT={
     skin:['#f9b488','#e28852','#c67749','#a5623e'],elf:['#f8d8c8','#e8b8a4','#c8968a','#9a7068'],dwarf:['#f4b090','#d88a68','#b86a50','#8a4a38'],
@@ -151,8 +155,8 @@
 
   const pick=(r,i)=>r[Math.max(0,Math.min(3,i))];
   // the skeleton for a race, as cells {x, y, r (region), s (shade), side}
-  function skeleton(race){const R=RACES[race]||RACES.human,out=[],cells=[];
-    SKEL.forEach((r,i)=>{if(R.drop&&R.drop.includes(i))return;out.push([r,i]);if(R.dup&&R.dup.includes(i))out.push([r,i])});
+  function skeleton(race,seat){const R=RACES[race]||RACES.human,out=[],cells=[];
+    const Q=seat&&R.seat?{...R,...R.seat}:R;(seat?SKEL.map((r,i)=>i===10?SEAT_HANDS:r):SKEL).forEach((r,i)=>{if(Q.drop&&Q.drop.includes(i))return;out.push([r,i]);if(Q.dup&&Q.dup.includes(i))out.push([r,i])});
     // (wide: the middle column doubled from the shoulders to the thighs, his left half a pixel further out)
     out.forEach(([[rg,sh],row],y)=>{const w=R.wide&&row>=3&&row<=11;for(let x=0;x<rg.length;x++){if(rg[x]==='.')continue;const c={x:w&&x>4?x+1:x,y,row,r:rg[x],s:+sh[x],side:x<4?'R':x>4?'L':''};cells.push(c);
       if(w&&x===4)cells.push({...c,x:5,side:'L'})}});
@@ -171,10 +175,10 @@
      bare: the body alone, its gear left to whoever draws it (the battle turns a weapon through its blow), else laid on */
   const BASES=new Map(),BASE_CAP=4000,GREY=['#c8c8c8','#9a9a9a','#6e6e6e','#464646'];
   const chanOf=m=>m==='team'||m==='hair'||m==='skin'?m:m;
-  PX.dollBase=spec=>{const und=v=>v===undefined?'~':v,key=JSON.stringify([spec.race,spec.style,spec.beard,spec.beardStyle||null,spec.uniform,und(spec.weapon),und(spec.shield),spec.pose,spec.frame|0,spec.seed|0,!!spec.bare,!!spec.noShadow,spec.drop||null,spec.moves||null]);
+  PX.dollBase=spec=>{const und=v=>v===undefined?'~':v,key=JSON.stringify([spec.race,spec.style,spec.beard,spec.beardStyle||null,spec.uniform,und(spec.weapon),und(spec.shield),spec.pose,spec.frame|0,spec.seed|0,!!spec.bare,!!spec.noShadow,spec.drop||null,spec.moves||null,!!spec.seat]);
     let B=BASES.get(key);if(B)return B;if(BASES.size>BASE_CAP)BASES.clear();
     const race=spec.race||'human',R=RACES[race]||RACES.human,seed=spec.seed|0,U=typeof spec.uniform==='string'?UNIFORMS[spec.uniform]:spec.uniform?{parts:spec.uniform}:null;
-    const S=skeleton(race),ox=D.OX,oy=S.oy,G=new Array(D.W*D.H).fill(null),put=(x,y,k,t)=>{if(x>=0&&y>=0&&x<D.W&&y<D.H&&k)G[y*D.W+x]=[k,Math.max(0,Math.min(3,t|0))]};
+    const S=skeleton(race,spec.seat),ox=D.OX,oy=S.oy,G=new Array(D.W*D.H).fill(null),put=(x,y,k,t)=>{if(x>=0&&y>=0&&x<D.W&&y<D.H&&k)G[y*D.W+x]=[k,Math.max(0,Math.min(3,t|0))]};
     // (the pose: each cell moved; moves: the caller's own, after the pose's: a glance back, the weight shifted)
     const moves=(((POSES[spec.pose]||POSES.idle)[(spec.frame|0)%((POSES[spec.pose]||POSES.idle).length)])||[]).concat(spec.moves||[]);
     const at=c=>{let x=c.x,y=c.y;for(const [rg,sd,dx,dy,from] of moves)if(rg.includes(c.r)&&(!sd||c.side===sd)&&c.row>=from){x+=dx;y+=dy}return[ox+x,oy+y]};
