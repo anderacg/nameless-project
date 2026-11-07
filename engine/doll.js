@@ -80,7 +80,7 @@
     // to a hem at the knee; his arms their own sleeves (the owner, 2026-11-07: "too blocky", "the cape is a square")
     cloak:{slot:'cloak',cover:'nu',rows:[3,5],shape:{at:'body',rows:['..........','..........','..........','..........','........1.','........1.','.........2','.........2','.........2','.........2','.........3','........33']}},
     // hair: short (the scalp), long (to the shoulders), a tail, none; a beard over the jaw
-    short:{slot:'hair',cover:'s'},long:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','.2..2','.3..3']}},
+    short:{slot:'hair',cover:'s'},long:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','....2','...33']}},
     tail:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','....3','....3']}},bald:{slot:'hair'},
     beard:{slot:'beard',shape:{at:'head',rows:['.....','.....','.12..','.23..']}},
     // (a crop, seen from before him as his body is (the owner, 2026-11-07: "revise head", then "make the head look more forward"):
@@ -97,8 +97,8 @@
     beardF:{slot:'beard',shape:{at:'head',rows:['.....','.....','.121.','..2..']}},
     // (a beast's pelt worn over the head, its fur down his back (the owner, 2026-11-07: "unit in winter area may use wolf or bear fur",
     //  with the reference): a wolf's, its pricked ears and its muzzle over his brow; a bear's, rounder, its small ears)
-    peltWolf:{slot:'head',cover:'s',shape:{at:'head',up:2,rows:['...0.','..01.','00112','0...2','1...3','2...3']}},
-    peltBear:{slot:'head',cover:'s',shape:{at:'head',up:2,rows:['.0.1.','01112','01112','1...3','2...3']}},
+    peltWolf:{slot:'head',cover:'s',shape:{at:'head',up:2,rows:['...0.','..01.','00112','....2','....3','...23']}},
+    peltBear:{slot:'head',cover:'s',shape:{at:'head',up:2,rows:['.0.1.','01112','01112','....3','...23']}},
     // (a headscarf knotted at the back of his head, its two ends hanging: an outlaw's, after the owner's reference)
     bandana:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','....1','....2']}},
     // (a cross on a surcoat, in the side's colour: a knight's, as the owner's crusader reference)
@@ -107,18 +107,21 @@
     eye:{slot:'beard',shape:{at:'head',rows:['.....','.3.3.']}},
     // the head: a hood (over the scalp, round the face, onto the shoulders), a cap, a kettle helm (its brim), a great helm (face and
     // all), a coif of mail
-    hood:{slot:'head',cover:'s',shape:{at:'head',rows:['.12..','0...2','1...3','2...3']},mottle:.15},
+    // (open before the face, so it shows side-on as under a helm, never framed full-face nor with a pixel like an eye in it (the owner,
+    //  2026-11-07: "there should be no eyes and the head should look like others (facing a bit to the left or right not center)"): a
+    //  hood's peak over the brow, its cowl behind and under the chin; a coif, a pelt, long hair the same)
+    hood:{slot:'head',cover:'s',shape:{at:'head',rows:['112..','....2','....3','2..23']},mottle:.15},
     cap:{slot:'head',cover:'s'},kettle:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0112.']}},
     great:{slot:'head',cover:'sf',shape:{at:'head',rows:['.012.']},slit:true},
     // (a bandage round the brow: one tended on the road)
-    bandage:{slot:'head',shape:{at:'head',rows:['.....','.001.']}},coif:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0...2','1...3']}},
+    bandage:{slot:'head',shape:{at:'head',rows:['.....','.001.']}},coif:{slot:'head',cover:'s',shape:{at:'head',rows:['0....','....2','...23']}},
     // (each class its own outline (the owner, 2026-11-07): a gold circlet round the brow, the hair showing; a wizard's tall hat, its
     //  brim; a skull worn as a cap; up: rows of its shape over the scalp's top)
     circlet:{slot:'head',shape:{at:'head',rows:['.....','.012.']}},
     // (a crown: a gilt band on top of his hair, two points up from it)
     crown:{slot:'head',shape:{at:'head',up:2,rows:['.0.0.','.010.']}},
     wizard:{slot:'head',cover:'s',shape:{at:'head',up:3,rows:['..1..','.12..','.122.','01223']}},
-    skull:{slot:'head',cover:'s',shape:{at:'head',up:1,rows:['.001.','.....','.3.3.']}},
+    skull:{slot:'head',cover:'s',shape:{at:'head',up:1,rows:['.001.','0....']}},
     // (over a helm: a crest of plumes in the side's colour; a pair of horns, out either side)
     crest:{slot:'crest',shape:{at:'head',up:2,rows:['...0.','.012.']}},horns:{slot:'crest',shape:{at:'head',up:1,rows:['0...0','1...1']}}};
   // the uniforms: their parts and each one's material ('team': the side's colour; 'hair': the figure's own), a weapon and a shield
@@ -233,7 +236,7 @@
       if(p.line==='belt'||p.line==='sash'){for(const c of hips){const [x,y]=at(c);put(x,y,p.m,c.x===4&&p.line==='belt'?0:2+(c.x===2||c.x===6?1:0))}if(p.line==='belt')put(ox+4,py,'gold',1)}
       else{const top=[ox+2,oy+3+(S.rows<15?-1:0)];for(let k=0;k<=5;k++)put(top[0]+Math.round(k*.8),top[1]+k,p.m,k&1?3:2)}}
     // his race's own: an elf's ears, an orc's tusks (over a bare head only)
-    if(R.ears&&!headCover)put(hx-1,hy+1,'skin',2);if(R.goblinEars){put(hx+3,hy+1,'skin',1);put(hx+4,hy+1,'skin',1);put(hx+4,hy,'skin',2)}if(R.tusk)put(hx+1,hy+2,'#f0ecd8',0);
+    if(R.ears&&!headCover)put(hx+3,hy+1,'skin',1);// (an elf's ear behind his face, in his hair: before it, it read as a nose)if(R.goblinEars){put(hx+3,hy+1,'skin',1);put(hx+4,hy+1,'skin',1);put(hx+4,hy,'skin',2)}if(R.tusk)put(hx+1,hy+2,'#f0ecd8',0);
     // the gear before him: the shield on his left arm, a weapon in front
     lay(false);
     // the shadow underfoot

@@ -142,7 +142,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // for each body part", "knight sprite": a rider's cloth unmottled (engine/doll.js LOOK.mottle 0), the side's colour on his chest
  // only, his legs his own (dollfigs.js DOLL_TABARD, DOLL_LEGS), a knight's white surcoat and its cross (o.surcoat). Proof: 8aff7c3
  // gives e3391a73 and 14c05120 again. Were e3391a73, 14c05120)
- const OLD='bbef4eab',FIRST='54d1c294';
+ // (re-recorded 2026-11-07, on purpose: the owner, "there should be no eyes and the head should look like others (facing a bit to
+ // the left or right not center)": a hood, a coif, long hair and a pelt open before the face, an elf's ear behind it (engine/doll.js).
+ // Proof: 03bc563 gives bbef4eab and 54d1c294 again. Were bbef4eab, 54d1c294)
+ const OLD='98d19d75',FIRST='3c83a566';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

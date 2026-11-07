@@ -9,7 +9,8 @@ Kit.suite(({ok,info})=>{
  const at=(cv,x,y)=>{const d=px(cv),i=(y*W+x)*4;return d[i+3]?hex(d,i):null},count=cv=>{const d=px(cv);let n=0;for(let i=3;i<d.length;i+=4)if(d[i])n++;return n};
  // ---- the base bodies
  const races=Object.keys(DL.RACES),bodies=races.map(r=>PX.doll({race:r,style:'bald',beard:false}));
- ok(bodies.every(b=>b.width===W&&b.height===H&&count(b)>80),'a base body for every race ('+races.join(', ')+'), '+W+' × '+H+': '+bodies.map(count).join(', ')+' pixels');
+ // (more than 70 pixels: a goblin, small by design (2026-11-07), has some 80)
+ ok(bodies.every(b=>b.width===W&&b.height===H&&count(b)>70),'a base body for every race ('+races.join(', ')+'), '+W+' × '+H+': '+bodies.map(count).join(', ')+' pixels');
  const hb=b=>{const d=px(b);let y0=H,y1=-1,x0=W,x1=-1;for(let i=3;i<d.length;i+=4)if(d[i]){const x=(i>>2)%W,y=(i>>2)/W|0;y0=Math.min(y0,y);y1=Math.max(y1,y);x0=Math.min(x0,x);x1=Math.max(x1,x)}return[x1-x0+1,y1-y0+1]};
  const [mw,mh]=hb(bodies[0]),[dw,dh]=hb(bodies[races.indexOf('dwarf')]),[ow]=hb(bodies[races.indexOf('orc')]);
  ok(dh<mh&&dw>mw&&ow>mw,'a dwarf shorter and broader ('+dw+' × '+dh+'), an orc broader ('+ow+') than a man ('+mw+' × '+mh+')');

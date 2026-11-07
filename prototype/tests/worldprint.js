@@ -583,7 +583,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W7 and B2 again 2026-11-07, on purpose: the owner, "add more variations for bandits not to use the soldier knight sprites": the
 //  bands' men outlaws of their own kinds in the save (data/outlaws.js; the same rolls, so W8 holds). Proof: OUTLAWS.on false gives
 //  fe3e98ed and d9a285d0 again. Were W7 fe3e98ed, B2 d9a285d0)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'ff470268',W7:'30a2328c',W8:'51660bc5',B2:'3b944b30'};
+// (W6 again 2026-11-07, on purpose: the owner, "there should be no eyes and the head should look like others (facing a bit to the
+//  left or right not center)": hoods, coifs, long hair and pelts open before the face, an elf's ear behind it (engine/doll.js).
+//  Proof: 03bc563 gives ff470268 again. Was W6 ff470268)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'5479c8e1',W7:'30a2328c',W8:'51660bc5',B2:'3b944b30'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
