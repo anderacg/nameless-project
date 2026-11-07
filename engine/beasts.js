@@ -124,9 +124,13 @@
     // (a leg: from its root under the body to its foot on the ground (lift: raised), a hind one bent back at the hock)
     const leg=(i,near)=>{const fore=i%2===1,[dx,lift]=F.legs[i]||[0,0],up=fore&&near&&S.pawUp?[0,S.pawUp,Math.ceil(S.pawUp/2)][F.paw]||0:0,rx=(fore?sho:hip)+(near?0:-1),ry=bel-1,
       fx=rx+dx+(near?0:(fore?-1:1))+(up?2:0),fy=Y-lift-up,m=mask(),[w0,w1,hock]=fore&&S.fore?S.fore:S.legs,LC=fore&&S.foreC?S.foreC:C;
-      if(!fore&&hock){const kx=rx-hock+Math.round(dx/2),ky=Math.round((ry+fy)/2)+1;m.limb(rx,ry,kx,ky,w0,w1).limb(kx,ky,fx,fy,w1,w1)}else m.limb(rx,ry,fx,fy,w0,w1);
+      // (S.elbow: a foreleg bent as a great lizard's, the elbow back under the body and the forearm down and forward to the wrist;
+      // S.toes: a long foot on the ground ahead of the leg, its claws at the end)
+      if(fore&&S.elbow&&!up){const ex=rx-S.elbow+Math.round(dx/2),ey=Math.round(ry+(fy-ry)*.45);m.limb(rx,ry,ex,ey,w0,w0).limb(ex,ey,fx,fy,w0,w1)}
+      else if(!fore&&hock){const kx=rx-hock+Math.round(dx/2),ky=Math.round((ry+fy)/2)+1;m.limb(rx,ry,kx,ky,w0,w1).limb(kx,ky,fx,fy,w1,w1)}else m.limb(rx,ry,fx,fy,w0,w1);
+      for(let j=0;j<(S.toes||0);j++)m.add(fx+Math.ceil(w1/2)+j,fy);
       if(near){shade(g,m,LC,{noTop:true});for(const [x,y] of m.pts())if(y>=fy-(S.paw||0))put(g,x,y,Dk[y===fy?2:1])}else{flat(g,m,LC,3,3);for(const [x,y] of m.pts())if(y===fy)put(g,x,y,Dk[3])}
-      if(S.claws&&(near||S.claws>1))put(g,fx+Math.ceil(w1/2),fy,S.claws>1?'#d8d0bc':'#c8c0ac')};
+      if(S.claws&&(near||S.claws>1))put(g,fx+Math.ceil(w1/2)+(S.toes||0),fy,S.claws>1?'#d8d0bc':'#c8c0ac')};
     if(S.wing)S.wing(g,F,P,true);
     leg(0,false);leg(1,false);
     if(S.tail)S.tail(g,hip-2,top[0]+1,F,P);
@@ -445,7 +449,7 @@
     small:{W:32,H:30,hip:11,sho:19,back:[9,10],belly:5,ry:3.6,rh:4,rc:4.2,legs:[2,2,1],k:1,neck:[3,2],hd:[6,15],hw:5,hh:4,sn:[3,2],ws:[15,14],tl:[[-4,-3],[-6,-2],[-7,-3]],tw:[3,2,1.2,.8]}};
   function dragon(g,F,o,D){const v=o.v%3,C=R(['#9a3e36','#86363e','#a04e30'][v]),Lb=R('#d4b07a'),Mb=R(['#5e2a30','#4e2834','#6a3428'][v]),Dk=R('#3a2a2a'),k=D.k,bone='#e4dcc4';
     const breath=F.a==='alt',fly=o.fly;
-    const S={Y:g.h-2,hip:D.hip,sho:D.sho,back:D.back,belly:D.belly,ry:D.ry,rh:D.rh,rc:D.rc,cx:1,legs:D.legs,C,L:Lb,lb:k-1,D:Dk,paw:0,pawUp:0,claws:2};
+    const S={Y:g.h-2,hip:D.hip,sho:D.sho,back:D.back,belly:D.belly,ry:D.ry,rh:D.rh,rc:D.rc,cx:1,legs:[D.legs[0],D.legs[1],D.legs[2]+k],C,L:Lb,lb:k-1,D:Dk,paw:0,pawUp:0,claws:2,elbow:2*k,toes:k+1};
     if(fly){F={...F,legs:[[-2*k,2*k],[-k,2*k],[-2*k,2*k],[-k,2*k]],bob:-k}}
     S.tail=(g,x,y,F,P)=>{const up=F.tail*k,T=[[x+2,y+1,D.tw[0]],...D.tl.map(([dx,dy],j)=>[x+dx,P.Y+dy-up*(j+1)*.5+(F.dead?3:0),D.tw[j+1]])];tube(g,T,C,{L:Lb,belly:[0,1]});
       const [tx,ty]=T[T.length-1];for(const [dx,dy] of [[-1,0],[-1,-1],[-1,1]])put(g,tx+dx,ty+dy,Dk[1])};
@@ -458,7 +462,11 @@
       const hb=mask();hb.limb(hx-D.hw/4,hy-D.hh/2+1,hx-D.hw/2-3*k,hy-D.hh/2-2*k,k+1,1);if(k>1)hb.limb(hx-D.hw/2+1,hy-1,hx-D.hw/2-4*k,hy-k,2,1);flat(g,hb,R('#d8ccb0'),1,2);
       const [sl,sd]=D.sn,jaw=F.dead?0:breath?[0,2*k,2*k][F.i]:F.jaw*k,hm=mask().ell(hx,hy,D.hw/2,D.hh/2),sm=mask().rect(Math.round(hx+D.hw/2-2),Math.round(hy-sd/2+k*.5),sl,sd);shade(g,hm,C);shade(g,sm,C,{cx:hx,cy:hy-1,rx:D.hw/2+sl,ry:D.hh/2+1});
       const sx=Math.round(hx+D.hw/2-2),my=Math.round(hy+sd/2+k*.5);
-      if(jaw){for(let j=0;j<jaw;j++)for(let x=sx;x<sx+sl-(j?1:0);x++)put(g,x,my+j,j?'#6a3038':'#3a2430');for(let x=sx-k;x<sx+sl-1;x++)put(g,x,my+jaw,Lb[2]);for(let x=sx;x<sx+sl;x+=2)put(g,x,my,bone);
+      // (the mouth open as a wedge from the hinge (the owner, 2026-11-07: "do not make it too straight"): the lower jaw swung down,
+      // wider toward the tip; the throat dark, red within; teeth along both jaws)
+      if(jaw){const x0=sx-k,n=sl+k;for(let x=x0;x<x0+n;x++){const t=(x-x0+1)/n,op=Math.max(0,Math.round(jaw*t*1.2));
+          for(let j=0;j<op;j++)put(g,x,my+j,j===0||x<x0+2?'#3a2430':'#6a3038');put(g,x,my+op,Lb[2]);if(k>1)put(g,x,my+op+1,C[2]);
+          if(op>1&&(x-x0)%2===1){put(g,x,my,bone);put(g,x,my+op-1,bone)}}
         // (fire in its throat as it breathes)
         if(breath&&F.i>0){const fx=sx+sl,fy=my+(jaw>>1);for(let j=0;j<Math.min((F.i===1?4:2)*k,D.W-3-fx);j++){put(g,fx+j,fy,j<2?'#ffe8a0':'#f0a040');if(j>1)put(g,fx+j,fy-1+(j%2),'#e86a30')}}}
       put(g,sx+sl-1,Math.round(hy-sd/2+k*.5),Dk[3]);
