@@ -173,16 +173,23 @@
 
   /* ---------- the kinds ---------- */
   const KINDS={};
-  // a frost wolf: lean and long-legged, a little under a horse's height; grey, pale or dark, a lighter chest and throat
+  // a frost wolf (drawn by hand, the owner 2026-11-07: "fix wolf monster sprites"): lean and long-legged, its head carried level
+  // with its back, ears up, a pale throat and chest, a bushy tail; grey, pale or dark; about a third a man's height at the shoulder
   KINDS.wolf={W:30,H:20,coats:['#8a8e98','#a8a8a4','#6c707c'],
-    draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Lb=R(['#c4c4c0','#d8d4c8','#a8aab0'][v]);
-      const S={Y:g.h-2,hip:8,sho:16,back:[8,9],belly:5,ry:3.5,rh:4,rc:4,cx:1,legs:[2,1,1],C,D:R('#4a4a52'),paw:0,pawUp:0,
-        head:{x:5,y:10,w:6,h:5,snout:[3,2],sy:1,fang:true,M:Lb,ex:1,
-          ear:(g,x,y)=>{put(g,x-1,y-3,C[1]);put(g,x,y-3,C[1]);put(g,x-1,y-4,C[0]);put(g,x+1,y-3,C[2])}},
-        tail:(g,x,y,F)=>{const m=mask(),up=F.tail,ty=Math.min(g.h-3,y+5-up*3);m.limb(x+1,y,x-3,y+1-up,3,2).limb(x-3,y+1-up,x-5,ty,2,2);shade(g,m,C);put(g,x-5,ty,Lb[0])},
-        marks:(g,b,F,o,P)=>{for(const [x,y] of b.pts())if(x>=P.sho&&y>=P.top[1]+3&&b.has(x,y+1))put(g,x,y,Lb[x>P.sho+1?1:2])},
-        collar:(g,P)=>{for(let y=P.top[1];y<=P.top[1]+3;y++)put(g,P.sho+2,y,TEAM[y===P.top[1]?0:1])}};
-      return F.dead?quadDead(g,S,o,F.how):quad(g,S,F,o)}};
+    draw(g,F,o){const v=o.v%3;return handBeast(g,{top:11,far:1,legH:5,headDown:4,pawUp:0,pawOut:0,hind:[6,6,2,1,2],fore:[14,5,2,1,0],mouth:[18,5],collar:[15,2,6],headKeys:'lmn',
+      rows:['................a.a....',
+            '...............aAaA....',
+            '.....aaaaaaaaa.ABBBA...',
+            '...aabbbbbbbbbaBBeBBm..',
+            '...bbbbbbbbbbbbbBBBMMMn',
+            '...cbbbbbbbbbbblLCCMM..',
+            '....ccbbbbbbblll.......',
+            '.....cc...ccll.........'],
+      col:o=>{const C=R(this.coats[v]),L=R(['#c4c4c0','#d8d4c8','#a8aab0'][v]);return{a:C[0],b:C[1],c:C[2],d:C[3],A:C[0],B:C[1],C:C[2],m:L[0],M:L[1],l:L[1],L:L[0],n:'#26242a',e:'#e8c84a',E:C[3],D:R('#4a4a52')}},
+      legCol:(c,up,x,near,front)=>up===0?c.D[near?1:2]:near?(x===0?c.b:c.c):c.d,
+      // (its tail: bushy, out behind and down, up as it runs)
+      tail:(g,F,c,y)=>{const up=F.tail||0,y0=y(g.h-2-6),m=mask();m.limb(4,y0,1,y0+2-up,2,2).limb(1,y0+2-up,1,y0+4-up*2,2,1);for(const [x,yy] of m.pts())put(g,x,yy,m.has(x,yy-1)?m.has(x,yy+1)?c.b:c.c:c.a)},
+      jaw:(g,x,y,n)=>{for(let k=0;k<n;k++)for(let xx=x;xx<x+3-k;xx++)put(g,xx,y+k,k?'#6a3038':'#3a2430');put(g,x+2,y,'#efe8d8');put(g,x,y+n-1,'#d8d0bc')}},F,o)}};
   // a dire boar: heavy and low, a high bristled shoulder, the head carried low, tusks; brown, dark or grizzled
   KINDS.boar={W:30,H:18,coats:['#5e4636','#4e3e38','#6e5a48'],
     gait(a,i){const F=gait(a,i);if(a==='atk'||a==='alt'){F.head=[[-1,1],[3,-1],[2,0]][i];F.paw=0}return F},
