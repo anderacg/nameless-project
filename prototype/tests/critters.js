@@ -80,8 +80,13 @@ try{
  cow.id=kind0;// (its own kind again: a holding's herd is its land's, made again on loading)
  G.mode='world';t.saveGame();const snap=JSON.stringify(W.critters.map(c=>[c.id,c.n,c.home||'']));W.critters=[];t.act('load');ok(JSON.stringify(W.critters.map(c=>[c.id,c.n,c.home||'']))===snap,'critters survive a reload');
  // sprites and icons
- const blank=Object.keys(t.CRITTERS).filter(k=>{const c=t.critterSprite(k),px=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;let n=0;for(let j=3;j<px.length;j+=4)if(px[j])n++;return n<15});
+ const blank=Object.keys(t.CRITTERS).filter(k=>{const c=t.critterSprite(k),px=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;let n=0;for(let j=3;j<px.length;j+=4)if(px[j])n++;return n<(t.DOLL_FIGS.on&&t.DOLL_FIGS.edge?5:15)});
  ok(!blank.length,'every critter is drawn'+(blank.length?': blank '+blank:''));
+ // (the owner, 2026-11-07: "check if there is still outline left in sprites": in the dolls' style none on a herd's animal, standing
+ // or killed, nor on the map's beasts)
+ if(t.DOLL_FIGS.on&&t.DOLL_FIGS.edge){const navy=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;for(let i=0;i<d.length;i+=4)if(d[i+3]&&d[i]===0x1a&&d[i+1]===0x1c&&d[i+2]===0x26)return true;return false};
+  const pics=[...Object.keys(t.CRITTERS).flatMap(k=>[t.critterSprite(k,0),t.critterSprite(k,3),...['back','belly','slump'].map(h=>t.critterDead(k,h))]),...t.PX.MAP_BEASTS.map(k=>t.PX.beastMap(k,0))];
+  ok(!pics.some(navy),'no outline on an animal of the herds, standing or killed, nor on a beast on the map ('+pics.length+' pictures)')}
  // livestock: each herd stands where its kind can graze, stays there as it wanders, and pasture herds stay in their fence
  {W.critters=[];t.initCritters();const herds=W.critters.filter(c=>c.home),bad=herds.filter(c=>!t.grazeOk(c.id,c.hx,c.hy,c.pen));
   ok(herds.length>=10&&!bad.length,herds.length+' village herds, every one on ground its kind can graze'+(bad.length?': bad '+bad.map(c=>c.id+'@'+c.home).join(', '):''));

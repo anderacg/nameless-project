@@ -539,7 +539,8 @@
       if(st===2){if(xa===xb)row[xa]=ca;else if(r<n)row[Math.round((xa+xb)/2)]=ca}else row[st?xb:xa]=st?cb:ca});return row.join('')})};
   function mapBeast(kind,f){const T=MAPF[kind],K=KINDS[kind],rows=T.frames?T.frames[T.seq?T.seq[f%T.seq.length]:f%T.frames.length]:T.rows.concat(PX.mapLegs(T.legs[0],T.legs[1],f)),W=Math.max(...rows.map(r=>r.length)),g=grid(W+2,rows.length+2),
       C=R(T.c||K.coats[0]),S=R(T.c2||K.coats[0]),col={h:C[0],H:C[1],d:C[2],k:C[3],l:S[0],L:S[1],m:S[2],D:T.D||'#3a2c28',e:T.e||'#1a1410',w:'#e4dcc4',r:'#c0403a',...(T.x||{})};
-    rows.forEach((r,y)=>[...r].forEach((c,x)=>putR(g,x+1,y+1,col[c])));outline(g);const c=canvas(g);c.fh=g.h-1;c.kind=kind;return c}
+    // (PX.BEAST_EDGE: no outline, its own edge darker, its feet on the bottom row)
+    const E=PX.BEAST_EDGE?1:0;rows.forEach((r,y)=>[...r].forEach((c,x)=>putR(g,x+1,y+1+E,col[c])));outline(g,PX.BEAST_EDGE);const c=canvas(g);c.fh=g.h-1;c.kind=kind;return c}
   PX.MAP_BEASTS=Object.keys(MAPF);
   // the world map: the dragon on the wing (its own drake, wings up, then level: 32, it should look huge); the rest their own small
   // figures (MAPF), f their step (0 to PX.MAP_STEPS-1)

@@ -477,7 +477,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  sword's lit point and pommel), so the figures in its picture change. Proof: 2d27006 gives it again. Was W6 548e8fda)
 // (W6 re-recorded 2026-11-06, on purpose: riders paper dolls, mounts with no outline, their edges a shade darker, a doll's
 //  spearhead on its shaft's last pixels; the figures in its picture change. Proof: b4d4bf1 gives it again. Was W6 d2dd984e)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'2e40b15c',W6:'42e6d237',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
+// (W6 re-recorded 2026-11-07, on purpose: the owner's sprite notes of the day, the figures in its picture only: pinholes filled
+//  (people.js pfillHoles, 4c3b109), the walk's steps (doll.js POSES.walk, 374cc79), the horses' legs fuller (people.js horseLeg,
+//  a1a15d2), the marchers' flags with no outline (marchgear.js, 9df57b4); W1-W5, W7 and W8 held at each. Proof: ebb0794 gives it
+//  again. Was W6 42e6d237)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'2e40b15c',W6:'d2f79352',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

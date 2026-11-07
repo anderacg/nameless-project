@@ -61,15 +61,17 @@ try{
   // (his ring still picks him; out of sight, nothing does)
   ok(t.pickAt(L.x+6,L.y-4)===L,'his ring still picks him');L.x=P.x+t.vis()*1.5;ok(t.pickAt(L.x+6,L.y-4)!==L,'out of sight he answers no click');L.x=-9999}
  // ---- beasts, herds, the caravan and the ships: their sizes and cells
- {const sz={wolf:[9,6],boar:[9,6],bear:[11,8],tiger:[11,6],spider:[9,6],scorpion:[10,7],slime:[7,5],troll:[9,13],wyrm:[15,7],griffin:[12,9]},rows=[],bad=[];
+ // (E: the paper dolls' style (dollfigs.js DOLL_FIGS.edge, 2026-11-07): no outline, so each figure 2 px less each way and no ring to check)
+ {const E=t.DOLL_FIGS.on&&t.DOLL_FIGS.edge?2:0,ring=q=>!E&&(q.inner||q.open);
+  const sz={wolf:[9,6],boar:[9,6],bear:[11,8],tiger:[11,6],spider:[9,6],scorpion:[10,7],slime:[7,5],troll:[9,13],wyrm:[15,7],griffin:[12,9]},rows=[],bad=[];
   for(const id of Object.keys(t.MONSTERS)){const M=t.MONSTERS[id];for(const f of [0,1]){const s=t.monsterMapSprite(id,f),q=look(s),z=sz[M.unit];
     if(M.mythic){if(s.width!==32)bad.push(id+' cell '+s.width);continue}
-    if(!z||s.width!==(M.unit==='slime'?8:16)||Math.abs(q.w-z[0])>1||Math.abs(q.h-z[1])>1||q.inner||q.open)bad.push(id+' '+q.w+'x'+q.h+' in '+s.width+(q.inner||q.open?' outline '+q.inner+'/'+q.open:''));if(!f)rows.push(M.unit+' '+q.w+'x'+q.h)}}
+    if(!z||s.width!==(M.unit==='slime'?8:16)||Math.abs(q.w-z[0]+E)>1||Math.abs(q.h-z[1]+E)>1||ring(q))bad.push(id+' '+q.w+'x'+q.h+' in '+s.width+(q.inner||q.open?' outline '+q.inner+'/'+q.open:''));if(!f)rows.push(M.unit+' '+q.w+'x'+q.h)}}
   info('beasts: '+rows.join(', ')+'; the dragon in a 32 cell');
   ok(!bad.length&&rows.length>=10,'every beast on the map has its own small figure in a 16 cell (a slime in 8) at its size (the dragon its drake, 32: it should look huge)'+(bad.length?': '+bad.join('; '):''));
   ok(t.monsterMapSprite('wolf',0)!==t.unitSprite('wolf',1,false,0,2)&&t.monsterMapSprite('wolf',0)!==t.monsterMapSprite('wolf',1),'not the battle\'s figures, two steps each');
   const csz={cow:[11,7,16],sheep:[6,5,8],pig:[6,5,8],goat:[6,5,8],deer:[9,8,16],stag:[9,9,16],reindeer:[9,9,16],ibex:[9,8,16],gazelle:[9,8,16],hen:[6,5,8],rabbit:[6,5,8],hare:[6,5,8],fowl:[6,5,8],camel:[12,9,16],buffalo:[11,7,16],tamereindeer:[9,9,16]},cr=[],cb=[];
-  for(const id of Object.keys(t.CRITTERS))for(const f of [0,1]){const s=t.critterSprite(id,f),q=look(s),z=csz[id];if(!z||s.width!==z[2]||Math.abs(q.w-z[0])>1||Math.abs(q.h-z[1])>1||q.inner||q.open)cb.push(id+' '+q.w+'x'+q.h+' in '+s.width);if(!f)cr.push(id+' '+q.w+'x'+q.h)}
+  for(const id of Object.keys(t.CRITTERS))for(const f of [0,1]){const s=t.critterSprite(id,f),q=look(s),z=csz[id];if(!z||s.width!==z[2]||Math.abs(q.w-z[0]+E)>1||Math.abs(q.h-z[1]+E)>1||ring(q))cb.push(id+' '+q.w+'x'+q.h+' in '+s.width);if(!f)cr.push(id+' '+q.w+'x'+q.h)}
   info('herds: '+cr.join(', '));
   ok(!cb.length,'every animal of the herds at its size: a cow or a water buffalo 11 x 7 in 16, a camel 12 x 9, a sheep, pig or goat 6 x 5 in 8, deer and their kin some 9 x 8 in 16, a hen or a rabbit in 8'+(cb.length?': '+cb.join('; '):''));
   // (the caravan in the battle figures' style (the owner, 2026-11-01): at their density, a soldier 16 high, its cart a man and a half;
