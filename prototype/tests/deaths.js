@@ -78,7 +78,7 @@ Kit.suite(({ok,info})=>{const t=T,L=t.BattleLab,D=t.DEATHS,random=Math.random;
      notRed=k=>{const b=bl(k);return b===null||[...pool(b)].every(c=>!red.has(c))};
    const men=['hero','hum_foot','hum_knight','orc_grunt','brann','wolf','bear','boar','wild_deer'].every(k=>{const b=bl(k);return b&&b.key==='red'&&[...pool(b)].every(c=>red.has(c))});
    const ich=['spider','scorpion'].every(k=>bl(k).col.every(c=>{const [r,g]=rgb(c);return g>r})),murk=bl('troll').col.every(c=>{const [r,g,b]=rgb(c);return g>=r&&g>=b}),
-     fire=['wyrm','dragon'].every(k=>bl(k).fleck&&bl(k).key==='fire'),slime=[0,1,2].every(v=>{const b=t.deathOf({...unit('slime',1),v}).blood;return b.key==='slime'+v&&b.col.every(c=>{const [r,g]=rgb(c);return g>r})});
+     fire=['wyrm','dragon'].every(k=>bl(k).fleck&&bl(k).key==='fire'),slime=[0,1,2].every(v=>{const b=t.deathOf({...unit('slime',1),v}).blood;const R=t.PX.ramp(t.PX._beastKit.KINDS.slime.coats[v]);return b.key==='slime'+v&&b.col.every(c=>R.includes(c))});
    const undead=t.bloodOf({...unit('militia',3),s:{undead:true}})===null&&t.bloodOf({...unit('militia',3),type:'skeleton'})===null;
    ok(['spider','scorpion','slime','troll','wyrm','dragon'].every(notRed)&&ich&&murk&&fire&&slime,'not every monster bleeds red: spiders and scorpions a green-yellow ichor, a slime a puddle of its own coat, a troll a murky green, a wyrm and a dragon a dark hot orange with embers');
    ok(men&&undead,'people, horses, wolves, bears, boars and the game bleed red; the undead and the made not at all (dust)');
