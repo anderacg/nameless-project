@@ -93,7 +93,9 @@ function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
   const M=DOLL_MOVES,run=walk>=4&&walk<8,climb=walk>=8,moves=[...(run||climb?M.lean:[]),...(run?M.run[walk&3]:[]),...(walk===-2?M.breath:[]),...(atk>=0&&M.blow[atk]?M.blow[atk]:[]),...shootArms(o,style,atk),...lunge,...(M[style]&&M[style].length&&!Array.isArray(M[style][0][0])?M[style]:[])];
   // (braced or gripping: both arms forward to the weapon, the near hand on it before him, the far one behind it along a pole levelled
   //  (brace) or just under the near one on a great weapon raised (grip): DOLL_GRIP)
-  const two=DOLL_GRIP[style]||null;
+  // (a great weapon carried on the move, walking or running (the owner, 2026-11-07: "two-handed weapons on the march"): both hands on it as
+  //  in the grip, his legs his own: DOLL_CARRY2)
+  const two=DOLL_GRIP[style]||(DOLL_CARRY2.on&&walk>=0&&style==null&&atk<0&&!o.mount&&DOLL_CARRY2.kinds.includes(o.held)?DOLL_GRIP.grip:null);
   const s=dollSpec(o,walk>=0?'walk':'idle',walk>=0?walk&3:0,moves);if(rig)s.drop=[['ulh','R']];if(two)s.drop=[['ulh','']];if(style==='kneel')s.drop=[...(s.drop||[]),...DOLL_KNEEL_DROP];
   const cv=PX.doll(s),D=PX.DOLL.D,sh=15-cv.rows,d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data,dx=DOLL_FIGS.dx;
   // (his body, mirrored: the doll's right (the picture's left) his near side, before him; cut: only the rows down to it, the
@@ -117,6 +119,7 @@ function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
   return{hand,hand2,off:[ox+B.off[0],oy+B.off[1]+sh+Y],guard:[ox+B.guard[0],oy+gy+sh],back:[ox+B.back[0],oy+B.back[1]+sh+Y],free:[ox+tx(fx),oy+ty(fy)],sh,rig:!!rig}}
 // (the two-handed holds, in the template's place: each arm's joints from the shoulder, the last its hand: brace, a pole levelled before
 // him, the far hand four pixels back along it; grip, a great weapon up before him, the far hand under the near)
+const DOLL_CARRY2={on:true,kinds:['great','bigaxe','hammer']};
 const DOLL_GRIP={brace:{fore:[[8,5],[10,7],[11,9]],rear:[[4,5],[5,7],[7,9]]},grip:{fore:[[8,5],[9,7],[10,8]],rear:[[4,5],[6,7],[9,9]]}};
 // a figure as a doll: its body, then its gear from the body's anchors (figures.js FigureRig.dress)
 function drawDollFigure(g,o,ox,oy,walk,style,atk,cut){const A=drawDollBody(g,o,ox,oy,walk,style,atk,cut);FigureRig.dress(g,o,A,style,atk);return A}
