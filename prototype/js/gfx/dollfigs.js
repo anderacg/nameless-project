@@ -21,23 +21,28 @@ const dollable=o=>DOLL_FIGS.on&&(!o.mount||DOLL_FIGS.riders)&&!!(window.PX&&PX.d
 // (each class its own outline (the owner, 2026-11-07: "distinct helmets"): a plume a great helm crested in the side's colour, a horned
 // helm its horns, a circlet gold round the brow, a wizard his tall hat, a shaman a skull; several parts a list)
 const DOLL_HELM={cap:['cap','steel'],kettle:['kettle','steel'],great:['great','steel'],plume:[['great','steel'],['crest','team']],horned:[['kettle','iron'],['horns','linen']],
-  wizard:['wizard','purple'],straw:['cap','cloth'],skull:['skull','white'],bandage:['bandage','linen'],circlet:['circlet','gold']};
+  wizard:['wizard','purple'],straw:['cap','cloth'],skull:['skull','white'],bandage:['bandage','linen'],circlet:['circlet','gold'],crown:['crown','gold']};
 // a look's parts on the doll, in the game's materials ('team': the side's colour, a tone darker than the palette's lightest: T)
-function dollParts(o){const T={dark:1},P=[],out=o.outer||'leather',arm=o.armor||'none',metal=out==='iron'||out==='steel'?out:'steel';
+// (o.helmC: a worn helm's own colour, its first part in it; an armour's colour (a '#rrggbb', the item's) its mail's too)
+function dollParts(o){const T={dark:1},P=[],out=o.outer||'leather',arm=o.armor||'none',metal=out==='iron'||out==='steel'||out[0]==='#'?out:'steel';
   if(o.robe)P.push(['shoes','leather'],['robe',out],['sash','team',T]);
   else{P.push(['hose',o.legs||'leather'],['boots','leather']);
-    if(arm==='mail'||arm==='plate')P.push(['mail',metal],['tabard','team',T],['belt','leather']);
-    else if(arm==='leather')P.push(['shirt',o.inner||'linen'],['tunic',out],['tabard','team',T],['belt','leather']);
+    // (no tabard (o.tabard false: your hero, his cape your colour): his armour itself shows)
+    const tb=o.tabard===false?[]:[['tabard','team',T]];
+    if(arm==='mail'||arm==='plate')P.push(['mail',metal],...tb,['belt','leather']);
+    // (o.sleeves: a jerkin over the body only, his shirt's sleeves and collar showing (your hero: the owner, 2026-11-07, "too blocky"))
+    else if(arm==='leather')P.push(['shirt',o.inner||'linen'],['tunic',out,o.sleeves?{cover:'cbpt'}:undefined],...tb,['belt','leather']);
     else P.push(['shirt','team',T],['vest',out],['belt','leather'])}
   if(o.cape)P.push(['cloak',o.cape===true?'team':o.cape]);
-  const h=o.helm==='hood'?['hood',o.hood||'olive']:DOLL_HELM[o.helm];if(h)Array.isArray(h[0])?P.push(...h):P.push(h);
+  const h0=o.helm==='hood'?['hood',o.hood||'olive']:DOLL_HELM[o.helm],h=h0&&o.helmC?Array.isArray(h0[0])?[[h0[0][0],o.helmC],...h0.slice(1)]:[h0[0],o.helmC]:h0;if(h)Array.isArray(h[0])?P.push(...h):P.push(h);
   return P}
 // its doll's spec: race, skin, hair, beard, parts, the side's colour, pose. Its colours are channels painted at the last (engine/doll.js
 // PX.dollBase, dollPaint): every material by its own name (a ramp or a '#rrggbb', a world army's tint, by its JSON), painted through
 // the game's palette (pal); so one base serves every side and tint. seed: by the man himself (his race, skin and hair, his kit's shapes;
 // never his side's colours, nor what he carries), so each variant is its own, every side shares his base, and his gear never changes him
 const dollChan=m=>typeof m==='string'?m:JSON.stringify(m),dollRamp=n=>{try{return pal(n[0]==='['?JSON.parse(n):n)}catch(e){return null}};
-function dollSpec(o,pose,frame,moves){const parts=dollParts(o).map(([p,m,x])=>[p,m==='team'?'team':dollChan(m),x]);
+// (an item's '#rrggbb' its ramp of four tones (pal), never one flat colour: an armour and a helm shaded as the rest of him)
+function dollSpec(o,pose,frame,moves){const parts=dollParts(o).map(([p,m,x])=>[p,m==='team'?'team':dollChan(typeof m==='string'&&m[0]==='#'?pal(m):m),x]);
   const seed=[...JSON.stringify([o.race,o.skin,o.hair,o.beard,o.armor,o.helm,!!o.cape,!!o.robe,o.v,o.shortHair])].reduce((a,c)=>(a*31+c.charCodeAt(0))|0,7);
   return{race:o.race||'human',skin:dollChan(o.skin||'skin'),hair:dollChan(o.hair||'brown'),style:o.shortHair===false?'long':'short',beard:!!o.beard,uniform:parts,team:dollChan(o.team||'blue'),
     seed,ramp:dollRamp,bare:true,noShadow:true,weapon:null,shield:null,pose,frame,moves}}

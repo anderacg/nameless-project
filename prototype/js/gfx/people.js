@@ -146,12 +146,12 @@ function pcanvas(g){return mkc(g.w,g.h,x=>{for(let y=0;y<g.h;y++)for(let i=0;i<g
 // a soldier's whole look: its kind's, its race's, its variant's; the hero's and a companion's from their gear
 function lookOf(type,team,hero,v,cid,cg){
   const st=ST[type],race=hero?P.race:(st&&st.race)||(PEOPLE_LOOK[type]&&PEOPLE_LOOK[type].race)||'human',R=RACE_LOOK[race]||RACE_LOOK.human;
-  let L=hero?{helm:'crown',outer:'steel',weapon:'sword',cape:true}:PEOPLE_LOOK[cid||type]||PEOPLE_LOOK[st&&st.look]||PEOPLE_LOOK.militia;
+  let L=hero?{helm:'bare',outer:'leather',inner:'linen',armor:'leather',weapon:'sword',cape:true}:PEOPLE_LOOK[cid||type]||PEOPLE_LOOK[st&&st.look]||PEOPLE_LOOK.militia;
   L={...L};v=v||0;
   const o={race,skin:R.skin[v%R.skin.length],hair:L.hair||R.hair[v%R.hair.length],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,
     beard:L.beard||(R.beard?(L.hair||R.hair[v%R.hair.length]):race==='human'&&!hero&&v%3===1&&!L.robe?R.hair[v%R.hair.length]:null),
     helm:L.helm,hood:L.hood,outer:L.outer==='skin'?R.skin[v%R.skin.length]:L.outer,inner:L.inner||'dark',team:team?'red':'blue',weapon:L.weapon,shield:L.shield,
-    robe:L.robe,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar,armor:st?armorOf(st):'none'};
+    robe:L.robe,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar,armor:hero?L.armor:st?armorOf(st):'none'};
   if(L.plain){o.helm=race==='orc'&&PLAIN_HELM[v]==='hood'?'bare':PLAIN_HELM[v];o.outer=PLAIN_CLOTH[v]}
   if(o.mount==='horse')o.mountC=L.barded?'horseW':['horse','chestnut','horseB','horse','horseG','chestnut'][v];
   // your hero: your race, your weapon, your armour and helm as you wear them
@@ -163,10 +163,13 @@ function lookOf(type,team,hero,v,cid,cg){
     const body=hero?P.gear.body:cg&&cg.body,head=hero?P.gear.head:cg&&cg.head,lg=hero?P.gear.legs:cg&&cg.legs,ft=hero?P.gear.feet:cg&&cg.feet;
     // (what is worn on the legs and the feet: a rider's seated leg shows them, RIDER_LEG)
     if(lg&&ITEMS[lg]&&ITEMS[lg].col)o.legsC=ITEMS[lg].col;if(ft&&ITEMS[ft]&&ITEMS[ft].col)o.feetC=ITEMS[ft].col;
-    if(body&&ITEMS[body]&&ITEMS[body].col)o.outer=ITEMS[body].col;if(head&&ITEMS[head]&&ITEMS[head].col){o.helm=hero?'crown':'kettle';o.helmC=ITEMS[head].col}
+    // (the owner, 2026-11-07: "hero sprite looks weird": what he wears as it is: a mail or plate coat mail, a coat or vest a tunic, in the
+    // item's colour; a helm worn a helm in its colour; nothing worn, a leather jerkin, his head bare (the owner: "no need the crown"))
+    if(body&&ITEMS[body]&&ITEMS[body].col){const bi=ITEMS[body];o.outer=bi.col;o.armor=bi.base==='mail'||bi.icon==='plate'?'mail':'leather'}
+    if(head&&ITEMS[head]&&ITEMS[head].col){o.helm='kettle';o.helmC=ITEMS[head].col}
     // (a shield in the off hand shows, slung on his arm: drawn only, offShield (his kind's o.shield is what CharacterMind reads))
     const off=hero?P.gear.offhand:cg&&cg.offhand,oi=off&&ITEMS[off];if(oi&&oi.icon==='shield')o.offShield=oi.col||'wood'}
-  if(hero){o.cape=true;o.beard=null;o.hair=R.hair[0]}
+  if(hero){o.cape=true;o.beard=null;o.hair=R.hair[0];o.tabard=false;o.sleeves=true}
   return o;
 }
 // the letters' colours for a look

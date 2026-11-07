@@ -127,7 +127,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // both again. Were 64d8cf30, 6c25b61d)
  // (both again 2026-11-07: the owner, "add detail like furs, or shading to mounts": every mount's coat shaded down its body, a
  // wolf's, a warg's and a ram's in fur (people.js mountCoat, MOUNT_COAT). Proof: 4f6f01f gives both again. Were c75e1892, 8a943596)
- const OLD='fcd3587c',FIRST='2ab7d0ce';
+ // (both again 2026-11-07: the owner, "hero sprite looks weird", "too blocky and no need the crown": your hero riding in what he
+ // wears (a mail coat mail, a jerkin over linen sleeves, his cape behind him only, no crown), an item's colour shaded (people.js
+ // lookOf, dollfigs.js dollParts, engine/doll.js cloak). Proof: abf740f gives both again. Were fcd3587c, 2ab7d0ce)
+ const OLD='f92a987c',FIRST='7f8045c2';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');
