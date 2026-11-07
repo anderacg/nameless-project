@@ -119,4 +119,13 @@ Kit.suite(({ok,info})=>{const t=T,L=t.BattleLab,D=t.DEATHS,random=Math.random;
      const [st0,st1]=low(V.stand),[k0,k1]=low(V.kneel);if(px(V.stagger)===px(V.stand)||k0<=st0||k1!==st1)bad.push(k+' '+[st0,st1,k0,k1])}
    ok(!bad.length&&t.DYING.stagger<t.DYING.kneel&&t.DYING.kneel<1,'a man dies in frames: he staggers, kneels lower on the ground, then falls into his death (DYING '+JSON.stringify(t.DYING)+')'+(bad.length?' — '+bad.join('; '):''));
    const g=t.unitSprite('hum_champ',0,false,0,t.GRIP_POSE,true);ok(g.hand&&g.hand2&&(g.hand[0]!==g.hand2[0]||g.hand[1]!==g.hand2[1]),'a great weapon gripped in both hands: his far hand on the shaft too ('+g.hand+' / '+g.hand2+')')}
+  // ---- no navy outline on the dead (the owner, 2026-11-07: "the dead body still has an outer line, check all variants"): on no
+  // picture of his dying or his death, his shield and helm by him, his fallen mount, nor the weapon flung from his hand, a navy pixel
+  // on its silhouette's edge (a black horse's coat has the colour inside it, and on a leg a pixel thin, which the outline leaves as
+  // drawn)
+  {const rim=c=>{if(!c||!c.getContext)return 0;const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,A=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&d[(y*w+x)*4+3];let n=0;
+     for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;if(d[i+3]&&d[i]===0x1a&&d[i+1]===0x1c&&d[i+2]===0x26&&(!A(x-1,y)||!A(x+1,y)||!A(x,y-1)||!A(x,y+1))&&!(!A(x-1,y)&&!A(x+1,y)||!A(x,y-1)&&!A(x,y+1)))n++}return n},bad=new Set();let n=0;
+   for(const k of Object.keys(t.ST)){if(t.ST[k].beast||t.ST[k].wildlife)continue;for(let id=0;id<12;id++){const V=t.deathOf({type:k,id,team:id%2,v:id%3,s:t.ST[k]});n++;
+     for(const f of ['stand','stagger','kneel','body','mount','down'])if(rim(V[f]))bad.add(k+' '+f);for(const b of V.bits||[])if(rim(b[0]))bad.add(k+' bit');if(V.wk&&rim(t.weaponSprite(V.wk,V.team,'#f3bfad',3,undefined,t.DOLL_FIGS.on)))bad.add(k+' flung '+V.wk)}}
+   ok(!bad.size,'no navy outline on any death ('+n+' men\'s): his dying, his body, his shield and helm, his fallen mount, his flung weapon'+(bad.size?' — '+[...bad].slice(0,8).join(', '):''))}
  }finally{D.on=true;Math.random=random;if(L.active)L.exit()}});

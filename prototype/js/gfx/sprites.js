@@ -202,7 +202,8 @@ function mountDown(L,lie){const G=19,belly=lie==='belly';let d;
     // (its legs: stiff stubs from its belly, out behind and ahead; or a hoof showing at each end)
     const at=[];for(let x=0;x<32;x++)if(m.p[(bel+1)*32+x]&&!m.p[(bel+1)*32+x-1])at.push(x);
     for(const x of at){const s=x<16?-1:1;if(belly){pset(d,x,G,'#27272c');continue}const c=m.p[(bel+2)*32+x];pset(d,x,G-1,c);pset(d,x+1,G-1,c);pset(d,x+s,G,'#27272c');pset(d,x+1+s,G,'#27272c')}}
-  poutline(d);return pcanvas(d)}
+  // (its outline inside it as every figure's, however it was moved: people.js poutline)
+  if(DOLL_FIGS.on&&DOLL_FIGS.edge)d.edge=true;poutline(d);return pcanvas(d)}
 // which pose a fighter shows now: striking just after an attack, striding while moving, breathing while still
 /* the sprites a battle will need, made a little each frame before they are first shown (WARM.budget ms a frame, during the
    deployment and the opening): every body of every kind, side and look on the field, standing, breathing, walking and

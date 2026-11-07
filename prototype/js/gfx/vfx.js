@@ -105,7 +105,7 @@ function poolSprite(r,seed,bl){const red=!bl||bl.key==='red',key=r+'_'+seed+(red
 // one of the fallen on g: q, how far through his fall (0-1); k, how far his pool has spread (0-1)
 /* how a man falls (the owner, 2026-10-30: "more ways to fall"; drawn only, from where he lies): over (forward, head the way he
    faced), back (over backwards, he lies the other way), knees (to his knees, then over); his weapon flung from his hand as he goes,
-   turning, to where it lands (fly: its arc, px high, turns over its flight) */
+   turning, to where it lands (fly: its arc, px high, turns over its flight); a paper doll's thin, as he held it */
 const FALLS=['over','back','knees'],FALL_FLY={h:9,turns:1.5};
 const fallOf=c=>c.fall||(c.fall=FALLS[(Math.round(c.x)*7+Math.round(c.y)*3)%3]);
 function drawBody(g,c,q,k){const V=DEATHS.on?c.sp?.horse?horseDeathOf(c):deathFor(c):null;if(V&&!V.beast&&!V.horse)return drawFallen(g,c,V,q,k);const S=V||c.sp,X=Math.round(c.x),Y=Math.round(c.y),how=S.beast||S.mount?'over':fallOf(c),bk=how==='back'?-1:1;if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
@@ -120,7 +120,7 @@ function drawBody(g,c,q,k){const V=DEATHS.on?c.sp?.horse?horseDeathOf(c):deathFo
     else{const s=1-(S.how==='melt'?.75:.5)*Q;g.drawImage(sp,x0,Math.round((-h+2)*s),w,Math.max(1,Math.round(h*s)))}}
   else{if(S.mount){if(q<1){const m=S.mount,s=1-.5*q*q;g.drawImage(m,-16,Math.round(1-31*s),32,Math.max(1,Math.round(32*s)))}else g.drawImage(S.down,-16,-19);g.translate(4,7)}
     if(S.horse){g.restore();if(B?.world)g.restore();return}// (a horse killed under its rider, who fought on: battle/dismount.js)
-    if(S.wk){const F=FALL_FLY,w0=q>=1?c.wi:(c.wi+Math.round(q*F.turns*WEAPON_STEPS))%WEAPON_STEPS,w=weaponSprite(S.wk,S.team,c.skin,w0),x=q>=1?c.wx:3+(c.wx-3)*q,y=q>=1?c.wy:-9+(c.wy+9)*q-F.h*Math.sin(Math.PI*q);g.drawImage(w,Math.round(x)-w.R,Math.round(y)-w.R)}// (flung as he falls)
+    if(S.wk){const F=FALL_FLY,w0=q>=1?c.wi:(c.wi+Math.round(q*F.turns*WEAPON_STEPS))%WEAPON_STEPS,w=weaponSprite(S.wk,S.team,c.skin,w0,undefined,DOLL_FIGS.on),x=q>=1?c.wx:3+(c.wx-3)*q,y=q>=1?c.wy:-9+(c.wy+9)*q-F.h*Math.sin(Math.PI*q);g.drawImage(w,Math.round(x)-w.R,Math.round(y)-w.R)}// (flung as he falls)
     if(q<1){g.translate(0,1);if(how==='knees'){const a=q<.5?0:((q-.5)/.5)**2,s=q<.5?1-.28*q/.5:.72;g.rotate(a*Math.PI/2);g.scale(1,s)}else g.rotate(bk*q*q*Math.PI/2);g.drawImage(S.stand,-12,-18)}
     else{if(bk<0)g.scale(-1,1);g.drawImage(S.body,-S.ax,1-S.ay)}}
   g.restore();if(B?.world)g.restore()}
@@ -134,7 +134,7 @@ function drawFallen(g,c,V,q,k){const X=Math.round(c.x),Y=Math.round(c.y),M=V.mou
   const mount=()=>{if(q<1){const s=1-.5*q*q;g.drawImage(M,-16,Math.round(1-31*s),32,Math.max(1,Math.round(32*s)))}else g.drawImage(V.down,-16,-19)};
   if(M&&V.ride!=='under')mount();
   g.save();g.translate(at[0],at[1]);
-  if(V.wk){const F=FALL_FLY,w0=q>=1?c.wi:(c.wi+Math.round(q*F.turns*WEAPON_STEPS))%WEAPON_STEPS,w=weaponSprite(V.wk,V.team,c.skin,w0),wx=c.wx*V.wd,x=q>=1?wx:3+(wx-3)*q,y=q>=1?c.wy:-9+(c.wy+9)*q-F.h*Math.sin(Math.PI*q);g.drawImage(w,Math.round(x)-w.R,Math.round(y)-w.R)}
+  if(V.wk){const F=FALL_FLY,w0=q>=1?c.wi:(c.wi+Math.round(q*F.turns*WEAPON_STEPS))%WEAPON_STEPS,w=weaponSprite(V.wk,V.team,c.skin,w0,undefined,DOLL_FIGS.on),wx=c.wx*V.wd,x=q>=1?wx:3+(wx-3)*q,y=q>=1?c.wy:-9+(c.wy+9)*q-F.h*Math.sin(Math.PI*q);g.drawImage(w,Math.round(x)-w.R,Math.round(y)-w.R)}
   // (his dying in frames (DYING): staggering, then on his knees (none for a fall backwards), then his death, a pixel up as he lands)
   const D=DYING,fr=!V.stagger||q>=1?'dead':q<D.stagger?'stagger':V.fall!=='back'&&q<D.kneel?'kneel':'dead';
   if(fr==='stagger'||fr==='kneel'){g.translate(0,1);g.drawImage(fr==='stagger'?V.stagger:V.kneel,-12,-18)}
