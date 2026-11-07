@@ -73,7 +73,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // the leg by what he wears, "chain mail or different boots" (people.js riderLegCol), was 5ee78211 and 7ada482b)
  // (both re-recorded 2026-11-06, on purpose: riders paper dolls on their mounts, and every mount with no outline, its edge a shade
  // darker (dollfigs.js DOLL_FIGS.riders, edge). Proof: riders and edge off gives both again. Were e109237f, 325b1149)
- const OLD='7a98ba5d',FIRST='6018605c';
+ // (both re-recorded 2026-11-07, on purpose: the owner, "fix wolf mount and dwarf mount": the wolf, the warg and the ram drawn by
+ // hand (engine/beasts.js PX.mountArt), whatever the horse. Proof: PX.mountArt returning null gives both again. Were 7a98ba5d,
+ // 6018605c)
+ const OLD='3ee76635',FIRST='17984ae4';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

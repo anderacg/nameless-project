@@ -74,8 +74,9 @@ const DOLL_GRIP={brace:{fore:[[8,5],[10,7],[11,9]],rear:[[4,5],[5,7],[7,9]]},gri
 // a figure as a doll: its body, then its gear from the body's anchors (figures.js FigureRig.dress)
 function drawDollFigure(g,o,ox,oy,walk,style,atk,cut){const A=drawDollBody(g,o,ox,oy,walk,style,atk,cut);FigureRig.dress(g,o,A,style,atk);return A}
 // the beasts and monsters in the same style (engine/beasts.js: no outline, their own edge darker) and at their real size beside the
-// dolls (PX.BEAST_SIZE: a wolf about a third a man's height at the shoulder, a boar, a bear, a tiger; the monsters as they are)
-if(window.PX&&PX.beast){PX.BEAST_EDGE=DOLL_FIGS.on&&DOLL_FIGS.edge;Object.assign(PX.BEAST_SIZE,DOLL_FIGS.on?{wolf:.6,boar:.6,bear:.75,tiger:.65}:{})}
+// dolls (PX.BEAST_SIZE: a wolf about a third a man's height at the shoulder, a boar; the bear and the tiger drawn at their own
+// size, the monsters as they are)
+if(window.PX&&PX.beast){PX.BEAST_EDGE=DOLL_FIGS.on&&DOLL_FIGS.edge;Object.assign(PX.BEAST_SIZE,DOLL_FIGS.on?{wolf:.6,boar:.6}:{})}
 // (a picture drawn with the navy outline (people.js PEOPLE_OUT), in the dolls' style: its outline taken off, the pixels it ran round a
 // shade darker (DOLL_FIGS.edgeK) where they meet it; its size and feet as before but for the outline's row)
 function deOutline(src){const w=src.width,h=src.height,d=src.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h),a=d.data,O=[0x1a,0x1c,0x26],out=new Uint8Array(w*h);

@@ -196,27 +196,111 @@
         mane:(g,F,P)=>{for(let x=P.hip-1;x<=P.sho+1;x++){const ty=P.top[0]+Math.round((P.top[1]-P.top[0])*(x-P.hip)/(P.sho-P.hip))-(x>P.sho-4?2:0);put(g,x,ty,Dk[1]);if(x%2===0)put(g,x,ty-1,Dk[2])}},
         collar:(g,P)=>{for(let y=P.top[1];y<=P.top[1]+4;y++)put(g,P.sho+2,y,TEAM[y===P.top[1]?0:1])}};
       return F.dead?quadDead(g,S,o,F.how):quad(g,S,F,o)}};
-  // a cave bear: bigger than a horse in the body, the shoulder hump, thick pillar legs, a short muzzle; it swipes with a paw
-  KINDS.bear={W:32,H:22,coats:['#6a4c36','#58463a','#7a6650'],
-    draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Dk=R('#3a2c26'),M=R(['#9a7a5a','#8a7462','#a89070'][v]);
-      const S={Y:g.h-2,hip:7,sho:18,back:[11,12],belly:5,ry:5.5,rh:6,rc:6,cx:1,hump:[2,4,3],legs:[3,3,0],C,D:Dk,paw:1,pawUp:6,claws:1,
-        head:{x:5,y:9,w:6,h:5,snout:[3,3],sy:1,M,ex:0,ey:-1,eye:'#c8a040',fang:true,
-          ear:(g,x,y)=>{put(g,x-2,y-3,C[1]);put(g,x-1,y-3,C[2]);put(g,x-2,y-4,C[2])}},
-        tail:(g,x,y)=>{put(g,x,y+1,C[2]);put(g,x+1,y+1,C[1])},
-        collar:(g,P)=>{for(let y=P.top[1]-1;y<=P.top[1]+4;y++)put(g,P.sho+2,y,TEAM[y<P.top[1]+1?0:1])}};
-      return F.dead?quadDead(g,S,o,F.how):quad(g,S,F,o)}};
-  // a tiger: long and low, big paws, the tail long; striped, a pale belly and cheeks; it pounces with a paw
-  KINDS.tiger={W:32,H:18,coats:['#c27a3e','#b06a38','#c89058'],
-    draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Lb=R('#e4d8bc'),Dk=R('#3e302e'),st='#3a2c2c';
-      const S={Y:g.h-2,hip:9,sho:21,back:[8,9],belly:4,ry:3.5,rh:4.5,rc:4.5,cx:1,legs:[2,2,1],C,L:Lb,lb:0,D:Dk,paw:0,pawUp:4,claws:1,
-        head:{x:3,y:9,w:6,h:5,snout:[2,3],sy:1,M:Lb,ex:0,ey:-1,eye:'#d8c048',fang:true,
-          ear:(g,x,y)=>{put(g,x-1,y-3,C[1]);put(g,x-2,y-3,C[2])},more:(g,x,y)=>{put(g,x-1,y-2,st);put(g,x,y-2,st);put(g,x-2,y+1,Lb[1]);put(g,x-1,y+1,Lb[1])}},
-        tail:(g,x,y,F)=>{const up=F.tail,m=mask(),p=[[x+1,y],[x-3,y+1],[x-5,y+3-up],[x-6,y+1-up*2]];for(let i=0;i<3;i++)m.limb(p[i][0],p[i][1],p[i+1][0],p[i+1][1],2,2);shade(g,m,C);
-          for(const [px,py] of m.pts())if((px+py)%4===0)put(g,px,py,st);put(g,p[3][0],p[3][1],st)},
-        // (the stripes: dark bars down the back and flanks, where the seed puts them)
-        marks:(g,b,F,o,P)=>{for(let k=0;k<6;k++){const x0=P.hip-3+k*3+(hash(o.v,k,7)>.5?1:0),n=2+Math.floor(hash(o.v,k,9)*3);for(let j=0;j<n;j++){const x=x0+(j>1?1:0),y=P.top[0]+(k>3?0:0)+j+(x>P.sho-2?-1:0);if(b.has(x,y)&&y<P.bel-1)put(g,x,y,st)}}},
-        collar:(g,P)=>{for(let y=P.top[1];y<=P.top[1]+3;y++)put(g,P.sho+2,y,TEAM[y===P.top[1]?0:1])}};
-      return F.dead?quadDead(g,S,o,F.how):quad(g,S,F,o)}};
+  /* a big beast drawn by hand (the bear's and the tiger's: the owner, 2026-11-07: "redesign it", "use the reference and keep the
+     current style"): its body and head a pixel picture (D.rows, its letters' colours D.col: lower case the body, upper case and
+     D.headKeys the head, moved by the frame's head), side-on facing right, its top row D.top over the ground row Y; its legs drawn
+     to the frame from their roots (D.hind, D.fore: [x, the root's height, root width, foot width, the hock's way back]), the far
+     pair D.far behind and a tone darker, coloured down the leg by D.legCol; its tail (D.tail). The frame F (gait): legs [far
+     hind, far fore, near hind, near fore] each [dx, lift]; bob; head; jaw (D.jaw draws the open mouth); paw (the near fore raised
+     for a blow, D.pawUp high, D.pawOut ahead); dead: on its side (side: the body down D.legH, its legs out along the ground), on
+     its back (back: the standing figure turned over), slumped forward (slump: its rump up, its chest and head down) */
+  function handBeast(g,D,F,o){if(F.dead&&!F.legs)F={...gait('idle',0),...F};
+    if(F.dead&&F.how==='back')return onBack(g,s=>handBeast(s,D,{...gait('idle',0),legs:[[2,3],[-1,3],[3,3],[-2,3]],shut:true},o));
+    const Y=g.h-2,b=F.dead?0:F.bob,how=F.dead?F.how:null,mid=(D.hind[0]+D.fore[0])/2,
+      drop=x=>how==='side'?D.legH:how==='slump'?(x>mid+2?D.legH:x>mid-3?Math.round(D.legH*.6):1):0,col=D.col(o);
+    const leg=(i,near)=>{const fore=i%2===1,[x0,h,w0,w1,hock]=fore?D.fore:D.hind,[dx,lift]=F.legs[i]||[0,0],rx=x0-(near?0:D.far),ry=Y-h+b+drop(x0),
+        up=fore&&near&&F.paw?[0,D.pawUp,Math.ceil(D.pawUp/2)][F.paw]:0,out=fore&&near&&F.paw?[0,D.pawOut,D.pawOut+1][F.paw]:0;
+      let fx=rx+dx+out,fy=Y-lift-up;if(how==='side'){fx=rx+(fore?4:-4)+(near?0:1);fy=Y-(near?0:1)}if(how==='slump'&&fore){fx=rx+3;fy=Y}
+      const m=mask();if(!fore&&hock&&how!=='side'){const kx=rx-hock+Math.round(dx/2),ky=Math.round((ry+fy)/2)+1;m.limb(rx,ry,kx,ky,w0,w1).limb(kx,ky,fx,fy,w1,w1)}else m.limb(rx,ry,fx,fy,w0,w1);
+      // (its paw: a pixel longer ahead of the foot's row; raised for a blow, only its end the paw's colour)
+      const fr=m.pts().filter(q=>q[1]===fy).map(q=>q[0]);if(fr.length&&!up)m.add(Math.max(...fr)+1,fy);const [x1]=m.box();
+      for(const [x,y] of m.pts())put(g,x,y,D.legCol(col,up?(Math.hypot(x-fx,y-fy)<1.6?0:Math.hypot(x-fx,y-fy)<2.6?1:3):fy-y,x-x1,near,!m.has(x+1,y)))};
+    leg(0,false);leg(1,false);
+    if(D.tail)D.tail(g,F,col,y=>y+b+drop(4),how);
+    // (the head raised or lowered by the frame, a pixel at most, never moved off its neck)
+    const hd=[0,F.dead?D.headDown||0:Math.max(-1,Math.min(1,F.head[1]))],heads=new Set(D.headKeys||''),y0=Y-D.top,isHead=c=>c!==c.toLowerCase()||heads.has(c);
+    D.rows.forEach((r,j)=>[...r].forEach((c,i)=>{if(c==='.')return;const head=isHead(c);let k=c;
+      if(k==='e'&&(F.dead||F.shut))k='E';if(col[k])put(g,i,y0+j+b+drop(i)+(head?hd[1]:0),col[k])}));
+    if(F.jaw&&D.jaw)D.jaw(g,D.mouth[0]+hd[0],y0+D.mouth[1]+b+drop(D.mouth[0])+hd[1],F.jaw,col);
+    // (on your side: a collar in the side's blue round its neck, D.collar [x, from row, to row])
+    if(o.team===0&&D.collar){const [cx,r0,r1]=D.collar;for(let r=r0;r<=r1;r++)put(g,cx,y0+r+b+drop(cx),TEAM[r===r0?0:1])}
+    leg(2,true);leg(3,true)}
+  // a brown bear (after the owner's reference, 2026-11-07): heavy, the hump high over its shoulders, the head carried low and
+  // forward, a pale muzzle, small round ears, the coat shaggy (light strands along the back, a ragged fringe under the belly), the
+  // legs darker down to black paws; it swipes with a paw and roars
+  KINDS.bear={W:32,H:22,coats:['#7a4a2c','#5e4232','#8a5e3a'],
+    draw(g,F,o){const v=o.v%3;return handBeast(g,{top:12,far:2,legH:4,headDown:3,pawUp:6,pawOut:2,hind:[7,5,4,3,1],fore:[18,5,4,3,0],mouth:[25,8],collar:[21,3,7],
+      rows:['...............aa............',
+            '..........aaaabaabaa.........',
+            '.......aaabbabbbabbaa...AA...',
+            '.....aabbabbbbbabbbbabbAABA..',
+            '....abbbbbbbbbbbbbbbbbBBBBBA.',
+            '...abbbbbbbbbbbbbbbbbbBBBeBMm',
+            '...bbbbbbbbbbbbbbbbbbbcBBBMMn',
+            '...cbbbbbbbbbbbbbbbbbccCCCMM.',
+            '....cdbbcdcbbbbcdcbbcd.CCC...',
+            '.....d..d...d.d..d...........'],
+      col:o=>{const C=R(this.coats[v]),M=R(['#b08458','#9a8064','#b89068'][v]);return{a:C[0],b:C[1],c:C[2],d:C[3],A:C[0],B:C[1],C:C[2],m:M[0],M:M[1],n:'#1c1412',e:'#1c1210',E:C[3],D:R('#2e221e')}},
+      legCol:(c,up,x,near,front)=>up<=1?c.D[near?up?1:2:3]:near?(x===0?c.b:front?c.d:c.c):c.d,
+      tail:(g,F,c,y)=>{put(g,3,y(g.h-2-9),c.b);put(g,2,y(g.h-2-8),c.c)},
+      jaw:(g,x,y,n,c)=>{for(let k=0;k<n;k++)for(let xx=x;xx<x+4-k;xx++)put(g,xx,y+k,k?'#6a3038':'#3a2430');for(let xx=x-1;xx<x+3;xx++)put(g,xx,y+n,c.C);put(g,x+3,y,'#efe8d8');put(g,x+1,y+n-1,'#d8d0bc')}},F,o)}};
+  // a tiger: long and low, a deep chest, big paws, the tail long and ringed with a black tip; orange, black stripes down its back
+  // and flanks and round its legs, pale cheeks, throat and belly; it pounces with a paw
+  KINDS.tiger={W:32,H:18,coats:['#d4782e','#c06a2e','#d88a44'],
+    draw(g,F,o){const v=o.v%3;return handBeast(g,{top:11,far:2,legH:3,headDown:2,pawUp:4,pawOut:3,hind:[7,5,3,2,2],fore:[19,4,3,2,0],mouth:[25,6],collar:[20,2,6],headKeys:'lnew',
+      rows:['......................S..S....',
+            '.....................ABSBBA...',
+            '...aaaasaaaasaaasaaa.BBBsBBA..',
+            '..asbbbsbbbsbbbsbbbbaSBBeBBwn.',
+            '..bsbbbsbbbsbbbsbbbbLBBBwwww..',
+            '..bbsbbbsbbbbbsbbbsbLLLBwww...',
+            '..cbbbbbbbbbbbbbbbbbbLLLL.....',
+            '...ccllllllllllllllcc.........'],
+      col:o=>{const C=R(this.coats[v]),L=R('#ece2c8');return{a:C[0],b:C[1],c:C[2],d:C[3],s:'#2a1e1a',S:'#2a1e1a',A:C[0],B:C[1],C:C[2],l:L[1],L:L[0],w:'#f4eee0',n:'#8a4a42',e:'#e8c040',E:C[3],P:L}},
+      legCol:(c,up,x,near,front)=>up===0?c.P[near?1:2]:near?(up===3?c.s:x===0?c.a:front?c.c:c.b):up===3?c.s:c.c,
+      // (the tail: low from the rump, down in a long curve, its tip curled up; ringed, the tip black)
+      tail:(g,F,c,y,how)=>{const up=how?-1:F.tail,y0=y(g.h-2-7),P=[[3,y0],[1,y0+2-up],[0,y0+5-up*2],[1,y0+7-up*2],[2.5,y0+7-up*3]].map(([x,yy])=>[x,Math.min(g.h-2,yy)]),m=mask();
+        for(let i=0;i+1<P.length;i++)m.limb(P[i][0],P[i][1],P[i+1][0],P[i+1][1],i<1?2:1,1);for(const [x,yy] of m.pts())put(g,x,yy,(x*2+yy)%3===0?c.s:m.has(x,yy-1)?c.b:c.a);put(g,P[4][0],P[4][1],c.s);put(g,P[3][0],P[3][1],c.s)},
+      jaw:(g,x,y,n,c)=>{for(let k=0;k<n;k++)for(let xx=x;xx<x+4-k;xx++)put(g,xx,y+k,k?'#6a3038':'#3a2430');for(let xx=x-1;xx<x+3;xx++)put(g,xx,y+n,c.l);put(g,x+3,y,'#f4eee0');put(g,x+1,y+n-1,'#e4dccc')}},F,o)}};
+  /* the mounts drawn by hand as the bear and the tiger are (the owner, 2026-11-07: "fix wolf mount and dwarf mount"): a riding
+     wolf (and a warg, the same in its own darker coat) and the dwarves' mountain ram, in the rider's 32x32 cell, their feet on its
+     row 30; seat: the row of their back under the saddle. Their colours come from the game (pal: its coat ramp C, the second ramp
+     M: a wolf's pale chest, a ram's face), the side's outline by the game's own (people.js poutline) */
+  const MOUNT_ART={
+    wolf:{top:12,seat:2,far:2,legH:4,headDown:3,pawUp:0,pawOut:0,hind:[7,6,3,2,2],fore:[18,5,3,2,0],mouth:[26,9],
+      rows:['......................a..a.....',
+            '.....................aAaAA.....',
+            '.....aaaaaaaaaaaaaaaaABBBBA....',
+            '...aabbbbbbbbbbbbbbbaBBBeBBBm..',
+            '..abbbbbbbbbbbbbbbbbbbBBBBMMMn.',
+            '..bbbbbbbbbbbbbbbbbbbbCBBMMM...',
+            '..cbbbbbbbbbbbbbbbbbblLCCC.....',
+            '...ccbbbbbbbbbbbbbbllll........',
+            '....ccc.......cccll............'],
+      col:o=>{const C=o.pal.C,L=o.pal.M;return{a:C[0],b:C[1],c:C[2],d:C[3],A:C[0],B:C[1],C:C[2],m:L[0],M:L[1],l:L[1],L:L[0],n:'#1c1a20',e:'#ffdc04',E:C[3],D:o.pal.C}},
+      legCol:(c,up,x,near,front)=>up===0?c.d:near?(x===0?c.a:front?c.c:c.b):c.d,
+      // (its tail: bushy, out behind and down, raised as it runs)
+      tail:(g,F,c,y)=>{const up=F.tail||0,y0=y(g.h-2-10),m=mask();m.limb(3,y0,0,y0+3-up,3,2).limb(0,y0+3-up,0,y0+5-up*2,2,2);for(const [x,yy] of m.pts())put(g,x,yy,m.has(x,yy-1)?m.has(x,yy+1)?c.b:c.c:c.a)},
+      jaw:(g,x,y,n)=>{for(let k=0;k<n;k++)for(let xx=x;xx<x+3-k;xx++)put(g,xx,y+k,k?'#6a3038':'#3a2430');put(g,x+2,y,'#efe8d8')}},
+    ram:{top:12,seat:2,far:2,legH:5,headDown:4,pawUp:0,pawOut:0,hind:[7,6,3,2,1],fore:[18,6,3,2,0],mouth:[26,6],headKeys:'hHk',
+      rows:['.....................hhh......',
+            '....................hHkkh.....',
+            '....aaaaaaaaaaaaaaaaHk.Hh.....',
+            '..aababaabababaababbkHhFFF....',
+            '..babbbabbbabbbabbbbBkHFeFF...',
+            '..bbbbbbbbbbbbbbbbbbBBFFFFFn..',
+            '..cbcbbcbbcbbcbbcbbcCC..MM....',
+            '...cdccdccdccdccdcc...........'],
+      col:o=>{const C=o.pal.C,F=o.pal.M;return{a:C[0],b:C[1],c:C[2],d:C[3],A:C[0],B:C[1],C:C[2],F:F[1],M:F[2],h:'#c8b48a',H:'#a08a64',k:'#76644a',n:'#3a2c28',e:'#2a1e18',E:F[2],D:o.pal.C}},
+      legCol:(c,up,x,near,front)=>up===0?'#3a302a':up===1?c.M:near?(x===0?c.b:c.c):c.d,
+      tail:(g,F,c,y)=>{put(g,2,y(g.h-2-7),c.a);put(g,1,y(g.h-2-6),c.b)},
+      jaw:(g,x,y,n)=>{for(let xx=x;xx<x+3;xx++)put(g,xx,y,'#3a2430')}}};
+  // PX.mountArt(kind, walk, pal, down): its grid (w, h, p: colours) and its bob; walk -1 standing, 0-3 walking, 4-7 galloping;
+  // down: lying dead on its side (a 32x21 grid, its feet on row 19); null for a mount drawn otherwise (the horse's, the stag's)
+  PX.MOUNT_ART=Object.keys(MOUNT_ART);
+  PX.mountArt=(kind,walk,pal,down)=>{const D=MOUNT_ART[kind==='warg'?'wolf':kind];if(!D)return null;const g=grid(32,down?21:32),
+      F=down?{a:'dead',i:0,dead:true,how:'side'}:walk==null||walk<0?gait('idle',0):walk>=4?gait('run',(walk-4)%4):gait('walk',walk%4);
+    handBeast(g,D,F,{v:0,pal});return{g,bob:down?0:F.bob,seat:g.h-2-D.top+D.seat+(down?0:F.bob)}};
   // a griffin: a lion's hindquarters, an eagle's head, breast, forelegs and wings (folded up its back, spread to run and to strike)
   KINDS.griffin={W:32,H:25,coats:['#b8905a','#c09a5a','#8a7a66'],deaths:WING_DEATHS,
     draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Wc=R(['#8a6a48','#7a5e44','#6a6058'][v]),Wh=R('#e2dacb'),Dk=R('#4a3a30'),Yl=R('#c8a04a');

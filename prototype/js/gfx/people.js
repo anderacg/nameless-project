@@ -455,6 +455,15 @@ function drawMount(g,o,walk,dx=0,dy=0){const ps=(x,y,c)=>pset(g,x+dx,y+dy,c);// 
   const kind=o.mount,C=pal(kind==='horse'?o.mountC||'horse':kind==='stag'?'stag':kind==='ram'?'wool':kind),Mn=pal(kind==='ram'?'wool':kind==='wolf'||kind==='warg'?kind:'dark'),Tm=pal(o.team);
   if(horseArt(kind))return drawHorse(ps,o,walk,C,Mn,Tm)+dy;
   const gal=walk>=4,y0=kind==='ram'?16:14,legs=kind==='ram'?3:5,bob=gal?[0,-1,-2,-1][walk-4]:walk===1||walk===3?-1:0;
+  // (a wolf, a warg, a ram: drawn by hand, engine/beasts.js PX.mountArt; its saddle or barding only on its body)
+  const art=window.PX&&PX.mountArt&&PX.mountArt(kind,walk,{C,M:kind==='ram'?pal('#9a7a5a'):pal('wool')});
+  if(art){const on=new Set(),A=art.g,y1=art.seat-6;for(let y=0;y<A.h;y++)for(let x=0;x<A.w;x++){const c=A.p[y*A.w+x];if(c){ps(x,y,c);on.add(x+','+y)}}
+    const pb=(x,y,c)=>{if(on.has(x+','+y))ps(x,y,c)};
+    if(o.barded){for(let x=6;x<=20;x++){pb(x,y1+6,Tm[0]);pb(x,y1+7,PPAL.gold[1]);pb(x,y1+8,Tm[2]);pb(x,y1+9,x%2?Tm[3]:Tm[2])}}
+    else{if(o.saddled)for(let x=10;x<=16;x++){pb(x,y1+7,Tm[1]);pb(x,y1+8,Tm[2]);pb(x,y1+9,x%2?Tm[3]:Tm[2])}
+      for(let x=11;x<=15;x++)ps(x,y1+5,PPAL.leather[x<13?0:1])}
+    if(o.saddled){ps(11,y1+4,PPAL.leather[0]);ps(15,y1+4,PPAL.leather[1]);ps(13,y1+9,'#27272c');ps(13,y1+10,'#27272c')}
+    return y1+dy}
   const wolf=kind==='wolf'||kind==='warg';(wolf?WOLF_T:MOUNT_T).forEach((r,y)=>[...r].forEach((c,x)=>{const col={H:C[1],h:C[0],d:C[2],y:C[2],m:Mn[2]}[c];if(col)ps(x,y0+y+bob,col)}));
   if(wolf)ps(28,y0+5+bob,o.team==='red'?'#ffdc04':'#ffdc04');
   // legs: a gallop of four
@@ -490,6 +499,10 @@ function drawMountDown(g,o){
     if(o.barded){for(let x=6;x<=19;x++)[Tm[0],PPAL.gold[1],x%2?Tm[3]:Tm[2]].forEach((c,k)=>{if(on.has(x+','+(2+k)))ps(x,2+k,c)})}
     else for(let x=10;x<=14;x++)ps(x,1,PPAL.leather[x<12?0:1]);
     return}
+  const art=window.PX&&PX.mountArt&&PX.mountArt(kind,0,{C,M:kind==='ram'?pal('#9a7a5a'):pal('wool')},true);
+  if(art){const A=art.g,on=new Set();for(let y=0;y<A.h;y++)for(let x=0;x<A.w;x++){const c=A.p[y*A.w+x];if(c){pset(g,x,y,c);on.add(x+','+y)}}
+    const top=Math.min(...[...on].map(k=>+k.split(',')[1]));if(o.barded)for(let x=7;x<=19;x++){if(on.has(x+','+(top+1)))pset(g,x,top+1,Tm[1]);if(on.has(x+','+(top+2)))pset(g,x,top+2,PPAL.gold[1])}
+    else for(let x=10;x<=14;x++)if(on.has(x+','+top))pset(g,x,top,PPAL.leather[x<12?0:1]);return}
   LIE_T.forEach((r,y)=>[...r].forEach((c,x)=>{const col={H:C[1],h:C[0],d:C[2],y:C[2],m:Mn[2]}[c];if(col)pset(g,x,y0+y,col)}));
   // (the legs: the hind pair out behind, the fore pair out ahead, each ending in a hoof)
   for(const [x,dx] of [[8,-1],[11,-1],[19,1],[22,1]]){for(let k=0;k<4;k++){pset(g,x+dx*k,y0+6+k,k<2?C[2]:C[3]);pset(g,x+1+dx*k,y0+6+k,C[2])}pset(g,x+dx*4,y0+10,'#27272c');pset(g,x+1+dx*4,y0+10,'#27272c')}
