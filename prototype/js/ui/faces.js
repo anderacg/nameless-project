@@ -11,8 +11,8 @@
    and its realm's colour. FACES.on false, or the engine
    missing: the painted portraits and sprites as before (characterportraits.js).
    The figure matches the face (Faces.look): your hero's and a companion's hair on the battle doll as the portrait's (its length:
-   FACE_HAIR by the engine's hairGroups, a bun its own; its colour the portrait's), a beard if it has one, and a face seen from
-   before him (dollfigs.js: o.hairStyle, o.beardStyle, o.dollEye) ---------- */
+   FACE_HAIR by the engine's hairGroups, a bun its own; its colour the portrait's), a beard if it has one
+   (dollfigs.js: o.hairStyle, o.beardStyle; no eye, as every soldier) ---------- */
 const FACES={on:true,px:256,mode:'random'};
 // (the doll's hair by the portrait's: its length group, the tied-up styles a bun on top; no hair, none)
 const FACE_HAIR={Short:'crop',Medium:'cropMid',Long:'cropLong','No hair':'bald',bun:['high-bun','low-bun','topknot','braided-crown','war-crest']};
@@ -76,7 +76,7 @@ class Faces{
   // ---- the figure as the face: its hair (style, colour), its beard, its face from before him
   static look(rec){if(!rec)return null;const c=rec.config,G=PortraitEngine.hairGroups,grp=Object.keys(G).find(k=>G[k].includes(c.hair))||'Short',col=rec.colors.hair;
     const bearded=c.beard&&!['none','stubble','moustache','walrus','sideburns'].includes(c.beard);
-    return{hairStyle:FACE_HAIR.bun.includes(c.hair)?'cropBun':FACE_HAIR[grp],hair:col,beard:bearded?col:null,beardStyle:bearded?'beardF':null,dollEye:true}}
+    return{hairStyle:FACE_HAIR.bun.includes(c.hair)?'cropBun':FACE_HAIR[grp],hair:col,beard:bearded?col:null,beardStyle:bearded?'beardF':null}}// (no eye drawn on the figure: the owner, 2026-11-07)
 }
 Saves.add({key:'faces',order:365,save:()=>Faces.save(),load:v=>Faces.load(v)});
 onAct('fm-',(a,arg)=>{
