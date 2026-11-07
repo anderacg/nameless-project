@@ -146,7 +146,7 @@ function pcanvas(g){return mkc(g.w,g.h,x=>{for(let y=0;y<g.h;y++)for(let i=0;i<g
 // a soldier's whole look: its kind's, its race's, its variant's; the hero's and a companion's from their gear
 function lookOf(type,team,hero,v,cid,cg){
   const st=ST[type],race=hero?P.race:(st&&st.race)||(PEOPLE_LOOK[type]&&PEOPLE_LOOK[type].race)||'human',R=RACE_LOOK[race]||RACE_LOOK.human;
-  let L=hero?{helm:'bare',outer:'leather',inner:'linen',armor:'leather',weapon:'sword',cape:true}:PEOPLE_LOOK[cid||type]||PEOPLE_LOOK[st&&st.look]||PEOPLE_LOOK.militia;
+  let L=hero?{helm:'bare',outer:'leather',inner:'linen',armor:'leather',weapon:'sword'}:PEOPLE_LOOK[cid||type]||PEOPLE_LOOK[st&&st.look]||PEOPLE_LOOK.militia;
   L={...L};v=v||0;
   const o={race,skin:R.skin[v%R.skin.length],hair:L.hair||R.hair[v%R.hair.length],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,
     beard:L.beard||(R.beard?(L.hair||R.hair[v%R.hair.length]):race==='human'&&!hero&&v%3===1&&!L.robe?R.hair[v%R.hair.length]:null),
@@ -169,7 +169,8 @@ function lookOf(type,team,hero,v,cid,cg){
     if(head&&ITEMS[head]&&ITEMS[head].col){o.helm='kettle';o.helmC=ITEMS[head].col}
     // (a shield in the off hand shows, slung on his arm: drawn only, offShield (his kind's o.shield is what CharacterMind reads))
     const off=hero?P.gear.offhand:cg&&cg.offhand,oi=off&&ITEMS[off];if(oi&&oi.icon==='shield')o.offShield=oi.col||'wood'}
-  if(hero){o.cape=true;o.beard=null;o.hair=R.hair[0];o.tabard=false;o.sleeves=true}
+  // (no cape (the owner, 2026-11-07: "please remove cape"); his head a crop and an eye: "revise head")
+  if(hero){o.cape=false;o.beard=null;o.hair=R.hair[0];o.tabard=false;o.sleeves=true;o.hairStyle='crop';o.dollEye=true}
   return o;
 }
 // the letters' colours for a look
