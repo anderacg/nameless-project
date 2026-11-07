@@ -161,6 +161,9 @@ class MapLoad extends FigureGear{
 /* the map's people at the battle's density (people.js MAP_FIGS): a load on the back (o.load: a job's, LOADS), behind him from
    between his shoulders, its top lift rows over them; LOAD_ART its pixels, x from -4 (the body's back edge 0): h light, H its
    colour, d shade, k deep (its ramp), e end grain, r a cord, f a fish. A lute (a bard's) across his front, its neck up and ahead */
+// (a paper doll's load in against his back, its top at his shoulders, behind his body and his back arm, so it is worn on his back,
+// not carried beside him (the owner, 2026-11-07: "worker sprites has their item in the bag but it looks separated from their back"))
+const LOAD_AT={doll:[1,-1]};
 const LOAD_ART={sack:[1,['..rr.','.hHH.','hHHHd','hHHHd','hHHdd','.ddk.']],churn:[2,['.hhH.','.kkk.','.hHd.','.hHd.','.kkk.','.hHd.','.ddk.']],
   logs:[3,['.eee.','.HdH.','.HdH.','.rrr.','.HdH.','.HdH.','.ddd.']],basket:[1,['.ff..','hHdHd','HdHdH','hHdHd','.kkk.']],
   pack:[3,['.hhH.','.dddd','hHHHd','hHrHd','hHHHd','hHHHd','.kkkk']],bundle:[1,['.hHHHd','.dHHdk','..hHd.','..hHd.','..ddk.']],
@@ -168,7 +171,7 @@ const LOAD_ART={sack:[1,['..rr.','.hHH.','hHHHd','hHHHd','hHHdd','.ddk.']],churn
 class BackLoad extends FigureGear{
   constructor(job){super('load','back');this.job=job}
   draw(set,o,p){const [k,col]=LOADS[this.job]||LOADS.farmer,[lift,rows]=LOAD_ART[k],R=rampOf(col),C={h:R[0],H:R[1],d:R[2],k:R[3],e:'#e8c890',r:'#6a4a2a',f:'#9ab8c8'};
-    rows.forEach((row,y)=>[...row].forEach((c,x)=>{if(C[c])set(x-4,y-lift,C[c])}))}
+    const [ax,ay]=dollable(o)?LOAD_AT.doll:[0,0];rows.forEach((row,y)=>[...row].forEach((c,x)=>{if(C[c])set(x-4+ax,y-lift+ay,C[c])}))}
 }
 class LuteGear extends FigureGear{
   constructor(){super('main','hand')}

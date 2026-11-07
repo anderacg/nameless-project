@@ -161,7 +161,7 @@ function shipSprite(o){
   if(!big&&o.moored){// an oar shipped, slanting up over the gunwale to its blade at the bow; the net heaped in the stern
     for(let x=5;x<=10;x++)s(x,R-1-Math.floor((x-5)/3),Wo[1]);s(11,R-3,Wo[0]);s(12,R-3,Wo[0]);
     const Nt=[cvMix('#a89a78','#4a4a66',.15),cvMix('#7a6e58','#4a4a66',.25)];s(3,R-1,Nt[0]);s(4,R-1,Nt[1])}
-  poutline(g);const hull=pcanvas(g);
+  g.edge=true;poutline(g);const hull=pcanvas(g);// (edged in its own darker tones, not a black line: people.js poutline, g.edge)
   // the mast, its yard and the sail on it, striped (v: its stripes' width), billowing (shaded toward its foot and lee), a pennant
   let rig=null;
   if(big){const r=pgrid(n,n),q=(x,y,c)=>pset(r,x,y,c),Cl=o.col||'#a8483a',sw=v+2,
@@ -171,7 +171,7 @@ function shipSprite(o){
     // moored: the sail furled, bunched along the yard, a hint of its stripes in the folds
     if(o.moored)for(let y=15;y<=16;y++){for(let x=10+(y-15);x<=21-(y-15);x++){const st=Math.floor((x-10)/sw)%2;q(x,y,y===16?(st?Cv[4]:Cv[2]):st?Cv[3]:Cv[0])}}
     else for(let y=15;y<=23;y++){const e=y===23?1:0;for(let x=10+e;x<=21-e;x++){const st=Math.floor((x-10)/sw)%2,lee=x>19||y>21;q(x,y,st?(lee?Cv[4]:Cv[3]):(lee?Cv[2]:y<17?Cv[0]:Cv[1]))}}
-    poutline(r);rig=pcanvas(r)}
+    r.edge=true;poutline(r);rig=pcanvas(r)}
   // the crew: a sailor at the helm on the stern castle and one at the rail amidships, the fisherman in his boat: head and
   // shoulders over the side (people.js mapPerson, to the first row of the body); each [his head's middle, his last row, which]
   const look=k=>({...folkLook('folk','human',(o.seed|0)+k*7),robe:false,helm:k%2?'cap':'bare',helmC:'leather',weapon:null}),crew=big?[[6,R-4,0],[21,R-1,1]]:o.moored?[]:[[7,R-1,0]];

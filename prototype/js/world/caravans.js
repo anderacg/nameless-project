@@ -254,7 +254,7 @@ function caravanSprite(col,f,w,how){
   else{const F=K.gait(f?'walk':'idle',f?f-1:0);K.quad(g,oxShape(X,Y),F,{team:1});cvLine(g,x1+1,bb-1,sho,Y-A.shaft[0]+F.bob,Pl);
     // (the yoke on its neck before its withers, the shafts at it)
     for(let y=Y-A.yoke+F.bob;y<=Y-A.shaft[0]+F.bob;y++){s(sho+1,y,Wd[y===Y-A.yoke+F.bob?0:1]);s(sho+2,y,Wd[2])}}
-  poutline(g);let c=pcanvas(g);
+  g.edge=true;poutline(g);let c=pcanvas(g);// (edged in its own darker tones as the figures are (people.js poutline: g.edge), not a black line; the owner, 2026-11-07)
   // the drover at the ox's head, before it: a battle figure, walking as it walks
   if(!alone){const d=peopleSprite({...A.look,eye:PEOPLE_EYE,team:col},f?1+f:0),bg=c,H=Math.max(A.H,d.height);c=mkc(A.W,H,x=>{x.drawImage(bg,0,H-A.H);x.drawImage(d,A.drover-(d.width>>1),H-d.height)})}
   return spr[key]=cellOf(c);

@@ -132,7 +132,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // lookOf, dollfigs.js dollParts, engine/doll.js cloak). Proof: abf740f gives both again. Were fcd3587c, 2ab7d0ce)
  // (both again 2026-11-07: the owner, "blue cape is a square": a cape a mantle over the shoulders and a pixel of cloth hanging
  // behind the back arm to a hem, never a block (engine/doll.js cloak). Proof: 80b4972 gives both again. Were f92a987c, 7f8045c2)
- const OLD='57925876',FIRST='85a9c6b8';
+ // (re-recorded 2026-11-07, on purpose: the owner, "some world map sprites still has black outer line instead of darker shading colour":
+ // a picture ringed in PX.outline a shade of what it borders, never ink (engine/pixel.js), a dark body's a lighter shade (PX.RIM.dark).
+ // Proof: c58c542 gives 57925876 and 85a9c6b8 again. Were 57925876, 85a9c6b8)
+ const OLD='e97e9b72',FIRST='1f30aa';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

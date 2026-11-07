@@ -503,6 +503,8 @@
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=(y*N+x)*4;if(body[y*N+x]||!D[i+3]||emp(x-1,y)||emp(x+1,y)||emp(x,y-1)||emp(x,y+1))continue;
       const j=[[x,y+1],[x-1,y],[x+1,y],[x,y-1]].find(([u,v])=>body[v*N+u]);if(!j)continue;if([[x,y+1],[x-1,y],[x+1,y],[x,y-1]].some(([u,v])=>fine[v*N+u])){gap[y*N+x]=1;continue}const c=j[1]*N+j[0],k=c*4;D[i]=D[k];D[i+1]=D[k+1];D[i+2]=D[k+2];body[y*N+x]=1;
       for(const a of ['fi','u','v','z','b','ch','m'])I[a][y*N+x]=I[a][c]}
+    // (each outline pixel shaded again from the body as it now stands, the shut-in ones taken into it: a shade of what it borders)
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=(y*N+x)*4;if(body[y*N+x]||!D[i+3])continue;const L=[];for(const [u,v] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]])if(u>=0&&v>=0&&u<N&&v<N&&body[v*N+u]===1){const k=(v*N+u)*4;L.push([D[k],D[k+1],D[k+2]])}if(L.length){const c=PX.rim(L);D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2]}}
     breakRuns(D,body,N,sd);
     g.putImageData(im,0,0);
     // (what each pixel is, for the tests: 0 empty, 1 the body, 2 low and flat (fences), 3 the outline, 4 the navy gap in an open frame)

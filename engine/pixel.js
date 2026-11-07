@@ -19,8 +19,10 @@
      navy line but each outline pixel a deep shade of the body it borders (the mean of the body pixels beside it, times RIM.k, a
      touch of the old navy (RIM.navy) so the darks agree; k0: its own darkness instead); RIM.on false: the old navy everywhere. rgb:
      [r, g, b] triples */
-  PX.RIM={on:true,k:.5,navy:.18};
-  PX.rim=(L,k0)=>{const N=[0x1a,0x1c,0x26];if(!PX.RIM.on||!L.length)return N;const m=[0,1,2].map(c=>L.reduce((a,q)=>a+q[c],0)/L.length),{navy}=PX.RIM,k=k0??PX.RIM.k;return m.map((v,c)=>Math.round(v*k*(1-navy)+N[c]*navy))};
+  // (dark: by a dark body (its light under dark.lum, 0-1), the shade lighter (dark.k) and none of the navy, so it stays a shade of that
+  //  body, never black: dark timber, a shadowed wall; the owner, 2026-11-07: "black outer line instead of darker shading colour")
+  PX.RIM={on:true,k:.5,navy:.18,dark:{lum:.3,k:.72}};
+  PX.rim=(L,k0)=>{const N=[0x1a,0x1c,0x26];if(!PX.RIM.on||!L.length)return N;const m=[0,1,2].map(c=>L.reduce((a,q)=>a+q[c],0)/L.length),D=PX.RIM.dark,lum=(m[0]*.3+m[1]*.59+m[2]*.11)/255,dk=D&&lum<D.lum,navy=dk?0:PX.RIM.navy,k=k0??(dk?D.k:PX.RIM.k);return m.map((v,c)=>Math.round(v*k*(1-navy)+N[c]*navy))};
   PX.mix=(a,b,t)=>{const A=hex2(a),B=hex2(b);return rgb2(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t)};
 
   /* canvases */
@@ -39,7 +41,15 @@
     };return P;
   };
   // a 1-pixel outline around everything opaque (the same dark rim the characters wear); returns a new canvas 2px bigger
-  PX.outline=(src,col)=>{const c=PX.canvas(src.width+2,src.height+2),g=c.getContext('2d', { willReadFrequently: true }),m=PX.canvas(src.width,src.height),mg=m.getContext('2d', { willReadFrequently: true });
+  // (a picture ringed a pixel round: in col if given, else each ring pixel a deep shade of what it borders (PX.rim: the owner, 2026-11-07,
+  //  "some world map sprites still has black outer line instead of darker shading colour"); RIM.on false: the old ink)
+  PX.outline=(src,col)=>{const c=PX.canvas(src.width+2,src.height+2),g=c.getContext('2d', { willReadFrequently: true });
+    if(!col&&PX.RIM.on){g.drawImage(src,1,1);const W=c.width,H=c.height,im=g.getImageData(0,0,W,H),d=im.data,o=new Uint8ClampedArray(d);
+      for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=(y*W+x)*4;if(d[i+3])continue;const L=[];
+        for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=W||Y>=H)continue;const j=(Y*W+X)*4;if(d[j+3]>127)L.push([d[j],d[j+1],d[j+2]])}
+        if(!L.length)continue;const r=PX.rim(L);o[i]=r[0];o[i+1]=r[1];o[i+2]=r[2];o[i+3]=255}
+      im.data.set(o);g.putImageData(im,0,0);return c}
+    const m=PX.canvas(src.width,src.height),mg=m.getContext('2d', { willReadFrequently: true });
     mg.drawImage(src,0,0);mg.globalCompositeOperation='source-in';mg.fillStyle=col||'#1a1512';mg.fillRect(0,0,m.width,m.height);
     for(const [a,b] of [[0,1],[2,1],[1,0],[1,2]])g.drawImage(m,a,b);g.drawImage(src,1,1);return c};
 
