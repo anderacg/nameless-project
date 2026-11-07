@@ -314,6 +314,12 @@ function mapPic(img,e){let m=MAP_PICS.get(img);if(!m)MAP_PICS.set(img,m=new Map(
       if(best>=0){const j=(Y*W+X)*4;D[j]=d[best];D[j+1]=d[best+1];D[j+2]=d[best+2];D[j+3]=d[best+3]}}g.putImageData(o,0,0)});c.src=img;m.set(key,c);return c}
 function reduced(fn){const c=ctx,d0=c.drawImage;c.drawImage=function(img,...a){if(a.length===2&&img&&img.getContext){const T=c.getTransform(),e=Math.hypot(T.a,T.b);if(e<.99&&e>.05)return d0.call(c,mapPic(img,e),a[0],a[1],img.width,img.height)}return d0.call(c,img,...a)};
   try{return fn()}finally{c.drawImage=d0}}
+/* the hands on the grip (the owner, 2026-11-07: "hands that grip the shaft"): a doll's weapon drawn before him hid the hand that
+   held it; his fist (GRIP_FIST: two pixels of his skin, lit over shaded) laid back over it at his hand, and a two-handed hold's
+   far hand (hand2) on the shaft too */
+const GRIP_FIST=new Map();
+function drawGrip(sp,X,Y,L){if(!L||!dollable(L))return;const k=L.skin||'skin';let f=GRIP_FIST.get(k);if(!f){const P=pal(k);GRIP_FIST.set(k,f=mkc(1,2,g=>{g.fillStyle=P[0];g.fillRect(0,0,1,1);g.fillStyle=P[2];g.fillRect(0,1,1,1)}));f.fist=true}
+  for(const h of [sp.hand,sp.hand2])if(h)ctx.drawImage(f,X+h[0],Y+h[1]-1)}
 function drawUnit(u){if(B.world)return reduced(()=>drawUnitAt(u));return drawUnitAt(u)}
 function drawUnitAt(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
@@ -351,7 +357,7 @@ function drawUnitAt(u){
     const fb=!beast&&battleFlag(u),fw=fb?battleWave(u,moved):0;if(fb)battleFlagBack(u,fb,sp,X,Y,fw);// (his army's flag: marchgear.js)
     // (picked out: his rings first, round his body and his weapon, the pictures over them: outlineOf)
     {const hl=unitHighlight(u);if(hl){ctx.drawImage(outlineOf(sp,hl),X-1,Y-1);if(hw)ctx.drawImage(outlineOf(hw.w,hl),X+hw.x-1,Y+hw.y-1);if(hw&&hw.back)ctx.drawImage(hw.w,X+hw.x,Y+hw.y)}}
-    ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),X,Y);if(hw&&!hw.back)ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);if(fb)battleFlagFront(u,fb,hw,X,Y,fw);ctx.restore();
+    ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),X,Y);if(hw&&!hw.back){ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);if(!hit)drawGrip(sp,X,Y,unitLook(u))}if(fb)battleFlagFront(u,fb,hw,X,Y,fw);ctx.restore();
     // (climbing: a little grit trickles down the slope behind him now and then; coming down, a puff at the heel: from his id and the
     // battle's time, drawn only)
     if(cl){const ph=(B.t*(cl==='up'?2.2:3)+((u.id||0)*.37))%1,dc=B.env.c==='frost'?'#e8eef4':B.env.c==='desert'?'#e6cc96':'#a8987a';

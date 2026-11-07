@@ -33,7 +33,7 @@ class FigureCache{
 const FIGURES=new FigureCache(GEAR.cap);
 // (the anchors a finished figure keeps, where its body put them (people.js drawFigureBody): the weapon hand (weapons.js holds a
 // weapon there), the free hand and the back (a marcher's torch and flag: marchgear.js); sprites.js cellOf keeps them in its cell)
-const FIG_ANCHORS=['hand','free','back'];
+const FIG_ANCHORS=['hand','free','back','hand2'];// (hand2: a two-handed hold's far hand, on the shaft: render.js drawGrip)
 // a piece of gear: its slot (GEAR.layer) and the anchor it hangs from; draw(set, o, p) puts its pixels from the anchor, facing
 // right, for the look o and the pose p (style, atk: a blow's or a shot's frame; sh: a dwarf's row less; the map's ly, the legs' row,
 // and cut)
@@ -175,5 +175,5 @@ class FigureRig{
   static frame(g,R,w,A,fh,rig){const doll=g.body&&DOLL_FIGS.on&&DOLL_FIGS.edge;if(!g.body)poutline(g);else if(doll){pjoin(g);pfillHoles(g)}let x0=g.w,x1=-1;const top=Math.min(R,ptop(g));
     for(let i=0;i<g.p.length;i++)if(g.p[i]){const x=i%g.w;if(x<x0)x0=x;if(x>x1)x1=x}
     if(doll&&DOLL_FIGS.rim){prim(g);pfillHoles(g)}
-    const cx=R+(w>>1),half=Math.max(w>>1,cx-x0,x1+1-cx),c=pcanvas(pcrop(g,cx-half,top,2*half,g.h-top));c.fh=fh;for(const k of FIG_ANCHORS)c[k]=[A[k][0]-(cx-half),A[k][1]-top];c.rig=rig;return c}
+    const cx=R+(w>>1),half=Math.max(w>>1,cx-x0,x1+1-cx),c=pcanvas(pcrop(g,cx-half,top,2*half,g.h-top));c.fh=fh;for(const k of FIG_ANCHORS)if(A[k])c[k]=[A[k][0]-(cx-half),A[k][1]-top];c.rig=rig;return c}
 }

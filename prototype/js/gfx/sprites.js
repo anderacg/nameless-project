@@ -174,10 +174,21 @@ function manDeath(c,L,how,helm,ride,lie){
     for(let x=9;x<=13;x++)pset(body,x,gy,x<12?Lc.L:Lc.M);pset(body,7,gy,Lc.F);pset(body,8,gy,Lc.F);ax=12;ay=18;pool=[4,2];fall='knees'}
   else body=pturn(g0);
   // (his shield and his helm off him, each lying on its side)
-  const bits=[],at=DEATH_BITS[how],piece=(o,turn,i)=>{const p=pdiff(fig(o,null,-1),g0);if(!p)return;const q=turn?pturn(p):pmove(p,(x,y)=>[0,p.h-1-2*y]);poutline(q);bits.push([pcanvas(q),...at[i]])};
+  const bits=[],at=DEATH_BITS[how],piece=(o,turn,i)=>{const p=pdiff(fig(o,null,-1),g0);if(!p)return;const q=turn?pturn(p):pmove(p,(x,y)=>[0,p.h-1-2*y]);if(dollable(B))q.edge=true;poutline(q);bits.push([pcanvas(q),...at[i]])};
   if(shieldLook(L))piece({...B,shield:L.shield,offShield:L.offShield},true,0);if(helm)piece({...B,helm:L.helm},false,1);
-  if(how==='flung'&&B.weapon){const p=pdiff(g0,fig({...B,weapon:null},null,-1));if(p){const q=pturn(p);poutline(q);bits.push([pcanvas(q),...at[2]])}}
-  poutline(body);const r={stand:c.stand,body:pcanvas(body),ax,ay,wk:c.wk,team:c.team,fall,wd,bits,pool,name:how+(helm?' helm':'')};
+  if(how==='flung'&&B.weapon){const p=pdiff(g0,fig({...B,weapon:null},null,-1));if(p){const q=pturn(p);if(dollable(B))q.edge=true;poutline(q);bits.push([pcanvas(q),...at[2]])}}
+  // (his dying (the owner, 2026-11-07: "a dying sequence", after his knight sheet): struck, he staggers back (the flinch); then to his
+  // knees, upright, his legs folded under him; then down into his death; in his own pictures, never the standing one turned)
+  // (kneeling: his body (without what he carries) down until it rests on the row his feet stood on, onto his folded thighs, his
+  // shins along the ground behind him in his boots' colour (a doll's own, at the back of his lowest row); the old figure's knee
+  // pixels else)
+  const lowOf=q=>{let lo=-1;for(let i=0;i<q.p.length;i++)if(q.p[i])lo=Math.max(lo,(i/q.w)|0);return lo},feet=lowOf(fig({...B,weapon:null},null,-1)),kd=Math.max(0,feet-lowOf(fig({...B,weapon:null},null,-1,12-sh))),stg=fig(B,'flinch',-1),kn=pmove(fig({...B,weapon:null},null,-1,12-sh),(x,y)=>[0,kd]);// (on his knees his weapon dropped)
+  if(!B.robe){const gy=17-sh;if(dollable(B)){const lo=feet;let x0=99;for(let x=0;x<kn.w;x++)if(pget(kn,x,lo))x0=Math.min(x0,x);
+      const c=pget(kn,x0,lo)||'#3a2a20';if(lo>=0&&x0<99)for(let k=1;k<=2;k++)pset(kn,x0-k,lo,c)}
+    else{const Lc=lettersOf(B);pset(kn,15,gy-1,Lc.L);pset(kn,15,gy,Lc.M);pset(kn,16,gy,Lc.F);pset(kn,6,gy,Lc.F);pset(kn,5,gy,Lc.F)}}
+  // (all of them in the dolls' style, their outline inside them, however they were moved or turned)
+  const doll=dollable(B);for(const q of [stg,kn,body])if(doll)q.edge=true;poutline(stg);poutline(kn);
+  poutline(body);const r={stand:c.stand,stagger:pcanvas(stg),kneel:pcanvas(kn),body:pcanvas(body),ax,ay,wk:c.wk,team:c.team,fall,wd,bits,pool,name:how+(helm?' helm':'')};
   if(ride)Object.assign(r,{mount:c.mount,down:lie==='side'&&L.mount==='horse'?c.down:mountDown(L,lie),ride,at:{clear:[9,8],across:[-4,-8],under:[-2,0]}[ride],name:r.name+'|'+ride+'|'+lie});
   return r}
 /* (a mount down, lie: side, on its side, its legs out, or belly, on its belly, its legs folded under it. A horse or a stag: people.js

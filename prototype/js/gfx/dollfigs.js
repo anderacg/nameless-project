@@ -65,17 +65,20 @@ function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
   const tx=X=>8-(X-D.OX)+dx,ty=Y=>Y-cv.oy+sh+DOLL_FIGS.dy;g.body=g.body||new Set();
   for(let Y=0;Y<cv.height;Y++){if(cut!=null&&ty(Y)-DOLL_FIGS.dy>cut)continue;for(let X=0;X<cv.width;X++){const i=(Y*cv.width+X)*4;if(!d[i+3])continue;const x=ox+tx(X),y=oy+ty(Y);
     pset(g,x,y,'#'+[d[i],d[i+1],d[i+2]].map(v=>v.toString(16).padStart(2,'0')).join(''));if(x>=0&&y>=0&&x<g.w&&y<g.h)g.body.add(y*g.w+x)}}
-  const [hx,hy]=cv.anchors.hand,[fx,fy]=cv.anchors.off;let hand=[ox+tx(hx)+1,oy+ty(hy)-DOLL_FIGS.dy];// (the weapon hand where the template held it, five rows over the picture's bottom)
+  const [hx,hy]=cv.anchors.hand,[fx,fy]=cv.anchors.off;let hand=[ox+tx(hx)+1,oy+ty(hy)-DOLL_FIGS.dy],hand2=null;// (the weapon hand where the template held it, five rows over the picture's bottom)
   // (a blow: his weapon arm from the shoulder along the rig's joints in his sleeve, his fist the hand)
   if(rig){const f=rig.fore,T=cv.tones,sl=T.u||T.l||PPAL.leather[1],sk=T.h||PPAL.skin[1],pts=[[8,7]].concat(f.map(([x,y])=>[x,y-(y>=9?sh:0)])).map(([x,y])=>[x,y+DOLL_FIGS.dy]);
     for(let k=1;k<pts.length;k++){const [ax,ay]=pts[k-1],[bx,by]=pts[k],n=Math.max(Math.abs(bx-ax),Math.abs(by-ay))||1;
-      for(let j=0;j<=n;j++){const x=ox+Math.round(ax+(bx-ax)*j/n),y=oy+Math.round(ay+(by-ay)*j/n);pset(g,x,y,k===pts.length-1&&j===n?sk:sl);if(x>=0&&y>=0&&x<g.w&&y<g.h)g.body.add(y*g.w+x)}}
+      // (2 px thick (the owner, 2026-11-07: "a 2-px forearm"): a second pixel under it where it runs across, behind it where it runs
+      // down; the hand at its end alone)
+      const flat=Math.abs(bx-ax)>=Math.abs(by-ay);for(let j=0;j<=n;j++){const x=ox+Math.round(ax+(bx-ax)*j/n),y=oy+Math.round(ay+(by-ay)*j/n),end=k===pts.length-1&&j===n;pset(g,x,y,end?sk:sl);if(x>=0&&y>=0&&x<g.w&&y<g.h)g.body.add(y*g.w+x);
+        if(!end&&!(k===pts.length-1&&j>=n-1)){const x2=flat?x:x-1,y2=flat?y+1:y;if(!pget(g,x2,y2)||g.body.has(y2*g.w+x2)){pset(g,x2,y2,T.l?PX.shade(sl,.82):sl);if(x2>=0&&y2>=0&&x2<g.w&&y2<g.h)g.body.add(y2*g.w+x2)}}}}
     const e=pts[pts.length-1];hand=[ox+e[0],oy+e[1]]}
   if(two){const T=cv.tones,sl=T.u||T.l||PPAL.leather[1],sk=T.h||PPAL.skin[1],Y=DOLL_FIGS.dy,arm=(pts)=>{for(let k=1;k<pts.length;k++){const [ax,ay]=pts[k-1],[bx,by]=pts[k],n=Math.max(Math.abs(bx-ax),Math.abs(by-ay))||1;
       for(let j=0;j<=n;j++){const x=ox+Math.round(ax+(bx-ax)*j/n),y=oy+Math.round(ay+(by-ay)*j/n)+Y;pset(g,x,y,k===pts.length-1&&j===n?sk:sl);if(x>=0&&y>=0&&x<g.w&&y<g.h)g.body.add(y*g.w+x)}}};
-    arm(two.rear);arm(two.fore);const e=two.fore[two.fore.length-1];hand=[ox+e[0],oy+e[1]+Y-1]}
+    arm(two.rear);arm(two.fore);const e=two.fore[two.fore.length-1],r2=two.rear[two.rear.length-1];hand=[ox+e[0],oy+e[1]+Y-1];hand2=[ox+r2[0],oy+r2[1]+Y]}
   const gy=(o.guardUp==='low'?8:5)+DOLL_FIGS.dy,B=DOLL_FIGS,Y=B.dy;
-  return{hand,off:[ox+B.off[0],oy+B.off[1]+sh+Y],guard:[ox+B.guard[0],oy+gy+sh],back:[ox+B.back[0],oy+B.back[1]+sh+Y],free:[ox+tx(fx),oy+ty(fy)],sh,rig:!!rig}}
+  return{hand,hand2,off:[ox+B.off[0],oy+B.off[1]+sh+Y],guard:[ox+B.guard[0],oy+gy+sh],back:[ox+B.back[0],oy+B.back[1]+sh+Y],free:[ox+tx(fx),oy+ty(fy)],sh,rig:!!rig}}
 // (the two-handed holds, in the template's place: each arm's joints from the shoulder, the last its hand: brace, a pole levelled before
 // him, the far hand four pixels back along it; grip, a great weapon up before him, the far hand under the near)
 const DOLL_GRIP={brace:{fore:[[8,5],[10,7],[11,9]],rear:[[4,5],[5,7],[7,9]]},grip:{fore:[[8,5],[9,7],[10,8]],rear:[[4,5],[6,7],[9,9]]}};

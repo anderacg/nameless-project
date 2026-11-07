@@ -112,4 +112,11 @@ Kit.suite(({ok,info})=>{const t=T,L=t.BattleLab,D=t.DEATHS,random=Math.random;
   {const B=t.B;t.warmBattle(B.units);let n=0;while((t.WARM.q.length||t.WARM.b.length)&&n++<4000)t.warmStep();
    const u=B.units.find(x=>x.type==='hum_knight'),m=t.DEATH_SPR.get(t.actorSprite(u,0,true)),V=m&&Object.values(m);
    ok(!t.WARM.q.length&&!t.WARM.b.length&&V&&V.some(r=>r===t.deathOf(u)),'each one\'s own death made ahead, after the battle\'s other sprites (WARM.b)')}
+  // ---- his dying in frames (the owner, 2026-11-07: "a dying sequence"): he staggers, goes to his knees, then down into his death;
+  // each its own picture, the kneel lower than he stood and on the ground; a two-handed grip's far hand on the shaft (hand2)
+  {const low=c=>{const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data;let lo=-1,hi=h;for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]){lo=Math.max(lo,y);hi=Math.min(hi,y)}return[hi,lo]},px=c=>c.getContext('2d').getImageData(0,0,c.width,c.height).data.join();
+   const bad=[];for(const [k,id] of [['hum_spear',1],['hum_sword',2],['dw_axe',3],['elf_archer',5],['hum_mage',4]]){const V=t.deathOf({type:k,id,team:0,v:0,s:t.ST[k]});if(!V.stagger||!V.kneel){bad.push(k+' none');continue}
+     const [st0,st1]=low(V.stand),[k0,k1]=low(V.kneel);if(px(V.stagger)===px(V.stand)||k0<=st0||k1!==st1)bad.push(k+' '+[st0,st1,k0,k1])}
+   ok(!bad.length&&t.DYING.stagger<t.DYING.kneel&&t.DYING.kneel<1,'a man dies in frames: he staggers, kneels lower on the ground, then falls into his death (DYING '+JSON.stringify(t.DYING)+')'+(bad.length?' — '+bad.join('; '):''));
+   const g=t.unitSprite('hum_champ',0,false,0,t.GRIP_POSE,true);ok(g.hand&&g.hand2&&(g.hand[0]!==g.hand2[0]||g.hand[1]!==g.hand2[1]),'a great weapon gripped in both hands: his far hand on the shaft too ('+g.hand+' / '+g.hand2+')')}
  }finally{D.on=true;Math.random=random;if(L.active)L.exit()}});

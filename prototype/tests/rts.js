@@ -400,7 +400,7 @@ try{
  {const B=fight(['militia','militia']),e=B.units.find(u=>u.team===1),me=B.units.find(u=>u.team===0&&!u.hero);B.vfx=[];
   t.vfxHit(me,e,8);const k=n=>B.vfx.filter(p=>p.k===n).length;ok(k('spark')>=3&&k('glow')===1&&k('blood')>=1,'a blow: sparks off the steel, a flash, blood ('+k('spark')+' sparks)');
   const sp=B.vfx.find(p=>p.k==='spark'),x0=sp.x;t.vfxStep(.05);ok(sp.x!==x0,'they fly');for(let j=0;j<40;j++)t.vfxStep(.05);ok(k('spark')===0&&k('glow')===0&&k('blood')===0&&!!B.gore,'and fade, the blood landing as a splash on the field');
-  e.hp=1;t.hit(me,e,99);const cp=B.corpses[B.corpses.length-1];ok(e.hp<=0&&cp&&cp.wait&&B.vfx.some(p=>p.k==='fall'),'one struck down falls first');for(let j=0;j<12;j++)t.vfxStep(.05);ok(!cp.wait,'then lies where he fell');
+  e.hp=1;t.hit(me,e,99);const cp=B.corpses[B.corpses.length-1];ok(e.hp<=0&&cp&&cp.wait&&B.vfx.some(p=>p.k==='fall'),'one struck down falls first');for(let j=0;j<Math.ceil((t.GORE.fall+.15)/.05);j++)t.vfxStep(.05);ok(!cp.wait,'then lies where he fell (his dying, GORE.fall '+t.GORE.fall+' s, done)');
   B.slow=0;const cav={x:e.x-30,y:e.y,s:{...t.ST.horse},team:0,run:t.CHARGE.run},f2=B.units.find(u=>u.team===1&&u.hp>0);t.chargeMul(cav,f2);ok(B.vfx.some(p=>p.k==='shock')&&B.slow>0,'a charge strikes home: a shockwave of dust, and a moment of slow motion');
   const t0=B.t;t.updateBattle(.03);const slowStep=B.t-t0;B.slow=0;const t1=B.t;t.updateBattle(.03);ok(slowStep<(B.t-t1)*.6,'(the fight runs slower for that moment)');
   B.over=true;B.endT=0;t.B=null}

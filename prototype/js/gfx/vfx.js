@@ -71,7 +71,9 @@ function vfxDeath(t,corpse){
    (B.gore), once, and costs nothing more to show. Blood that lands leaves a splash in that layer too. BLOOD off (ui.js): no
    blood, and the layer is painted again without it. The undead and the made (skeletons, golems) do not bleed. ---------- */
 // (tile: the blood layer's tiles, px)
-const GORE={fall:.3,pool:2.5,col:['#4a0c0c','#68140f','#7e1c14'],tile:256};
+// (DYING: how far through his fall (q) each frame of a man's dying lasts: the stagger, to his knees, the landing a pixel up)
+const DYING={stagger:.25,kneel:.6,land:.75};
+const GORE={fall:.65,pool:2.5,col:['#4a0c0c','#68140f','#7e1c14'],tile:256};
 const undead=u=>!!(u&&(u.type==='slime'||u.s&&(u.s.undead||u.s.race==='undead')||/skel|ghoul|wraith|golem|zomb/.test(u.type||'')));
 /* the blood layer (B.gore, R16): by tiles of GORE.tile px, each made only where blood falls or one of the fallen is painted in, and
    kept for the battle (blood is never painted twice; the ground's tiles come and go apart from it). each(x0,y0,x1,y1,f): f(g) for
@@ -133,8 +135,10 @@ function drawFallen(g,c,V,q,k){const X=Math.round(c.x),Y=Math.round(c.y),M=V.mou
   if(M&&V.ride!=='under')mount();
   g.save();g.translate(at[0],at[1]);
   if(V.wk){const F=FALL_FLY,w0=q>=1?c.wi:(c.wi+Math.round(q*F.turns*WEAPON_STEPS))%WEAPON_STEPS,w=weaponSprite(V.wk,V.team,c.skin,w0),wx=c.wx*V.wd,x=q>=1?wx:3+(wx-3)*q,y=q>=1?c.wy:-9+(c.wy+9)*q-F.h*Math.sin(Math.PI*q);g.drawImage(w,Math.round(x)-w.R,Math.round(y)-w.R)}
-  if(q<1&&!(V.fall==='knees'&&q>=.5)){g.translate(0,1);if(V.fall==='knees')g.scale(1,1-.28*q/.5);else g.rotate((V.fall==='back'?-1:1)*q*q*Math.PI/2);g.drawImage(V.stand,-12,-18)}
-  else{if(q>=1)for(const [s,x,y] of V.bits)g.drawImage(s,x-(s.width>>1),y-(s.height>>1));g.drawImage(V.body,-V.ax,1-V.ay)}
+  // (his dying in frames (DYING): staggering, then on his knees (none for a fall backwards), then his death, a pixel up as he lands)
+  const D=DYING,fr=!V.stagger||q>=1?'dead':q<D.stagger?'stagger':V.fall!=='back'&&q<D.kneel?'kneel':'dead';
+  if(fr==='stagger'||fr==='kneel'){g.translate(0,1);g.drawImage(fr==='stagger'?V.stagger:V.kneel,-12,-18)}
+  else{if(q>=1)for(const [s,x,y] of V.bits)g.drawImage(s,x-(s.width>>1),y-(s.height>>1));g.drawImage(V.body,-V.ax,1-V.ay-(q<D.land?1:0))}
   g.restore();if(M&&V.ride==='under')mount();
   g.restore();if(B?.world)g.restore()}
 // all of them: the settled painted into the layer once (into each of its tiles the body reaches), and the layer drawn; those still
