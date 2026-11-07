@@ -77,14 +77,16 @@
     tail:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','....3','....3']}},bald:{slot:'hair'},
     beard:{slot:'beard',shape:{at:'head',rows:['.....','.....','.12..','.23..']}},
     // (a crop, seen from before him as his body is (the owner, 2026-11-07: "revise head", then "make the head look more forward"):
-    //  short hair over the top of his head, a short sideburn either side; his face its full width (face: the scalp's back column
+    //  his hair on his scalp, his head no bigger than any man's (the owner: "why it's bob?", "head too big": no hair beside his
+    //  face, nor above his head); his face its full width (face: the scalp's back column
     //  skin, not hair) and two eyes)
-    crop:{slot:'hair',cover:'s',shape:{at:'head',up:1,rows:['.011.','2...2','3...3']}},
-    // (and the lengths of the portraits' hair (prototype ui/faces.js FACE_HAIR): to the jaw (mid), past the shoulders (long), a bun
+    crop:{slot:'hair',cover:'s'},
+    // (and the lengths of the portraits' hair (prototype ui/faces.js FACE_HAIR), the head kept its size: falling behind his neck (mid),
+    //  on to his shoulders (long), a bun
     //  on top (bun); a beard seen from before him over his jaw and chin)
-    cropMid:{slot:'hair',cover:'s',shape:{at:'head',up:1,rows:['.011.','2...2','2...2','3...3']}},
-    cropLong:{slot:'hair',cover:'s',shape:{at:'head',up:1,rows:['.011.','2...2','2...2','2...2','3...3','3...3']}},
-    cropBun:{slot:'hair',cover:'s',shape:{at:'head',up:2,rows:['..1..','.011.','2...2','3...3']}},
+    cropMid:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','.....','.....','2...2']}},
+    cropLong:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','.....','.....','2...2','3...3']}},
+    cropBun:{slot:'hair',cover:'s',shape:{at:'head',up:1,rows:['..1..']}},
     beardF:{slot:'beard',shape:{at:'head',rows:['.....','.....','.121.','..2..']}},
     face:{slot:'beard',shape:{at:'head',rows:['.....','...1.','...1.']}},
     eye:{slot:'beard',shape:{at:'head',rows:['.....','.3.3.']}},
@@ -126,17 +128,17 @@
     bow:{behind:false,off:true,pts:[[1,-4],[2,-3],[2,-2],[2,-1],[2,0],[2,1],[2,2],[2,3],[1,4]],head:[[1,-3],[1,-2],[1,-1],[1,0],[1,1],[1,2],[1,3]],mat:'wood',hm:'linen'}};
   /* the poses: idle, and a walk of four frames (the reference's figures face us; the owner, 2026-11-07: "more natural", "not
      bending like a soft object", then "the walking animations is not realistic"), a stride along the way he goes (-x: the
-     picture is mirrored to face right): a contact (his weight landing: all of him above the knees down a pixel as one, his near
-     (R) leg reaching forward from the knee, its foot out ahead, the far (L) one back with its heel up, his off hand swung back),
-     then the pass (his body up again, the back leg's knee lifted through), then the other contact (the far foot ahead under its
-     knee, the near heel up, the off hand swung forward and up: the legs kept apart, never crossed into one blob), and its pass.
+     picture is mirrored to face right): a contact (his weight landing: all of him above the knees down a pixel as one, his legs
+     straight under him, never spread (the owner, 2026-11-07: "make heroes walking animation leg not spread"), the far (L) heel
+     up, his off hand swung back), then the pass (his body up again, that leg's knee lifted through), then the other contact (the
+     near heel up, the off hand swung forward and up), and its pass.
      His weapon hand held where it is through all of it, so his weapon keeps its angle and its room above the ground. His head and
      body never move against each other; each a list of moves [regions, side ('R' his right / 'L' his left / ''), dx, dy, rows
      from] */
   const POSES={idle:[[]],walk:[
-      [['sfncbupt','',0,1,0],['lh','L',0,1,0],['ko','R',-1,0,13],['o','R',-1,0,14],['ko','L',1,0,13],['o','L',0,-1,14],['h','L',1,0,0]],
+      [['sfncbupt','',0,1,0],['lh','L',0,1,0],['o','L',0,-1,14],['h','L',1,0,0]],
       [['ko','L',0,-1,13]],
-      [['sfncbupt','',0,1,0],['lh','L',0,1,0],['o','L',-1,0,14],['o','R',0,-1,14],['h','L',-1,-1,0]],
+      [['sfncbupt','',0,1,0],['lh','L',0,1,0],['o','R',0,-1,14],['h','L',-1,-1,0]],
       [['ko','R',0,-1,13]]],
     // a blow: the weapon arm raised and forward
     strike:[[['lh','R',-1,-2,6]]]};

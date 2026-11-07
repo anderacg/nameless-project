@@ -18,9 +18,14 @@ Kit.suite(({ok,info})=>{
  const lk=F.look(F.you()),o=t.lookOf('hero',0,true,0,'',null),cl=F.look(F.companion('brann')),oc=t.lookOf('brann',0,false,0,'brann',null);
  ok(o.hairStyle===lk.hairStyle&&o.hair===lk.hair&&(o.beard||null)===lk.beard&&oc.hairStyle===cl.hairStyle&&oc.hair===cl.hair,'your figure\'s hair and beard are your portrait\'s ('+lk.hairStyle+' '+lk.hair+'), a companion\'s its own');
  info('you: '+you.config.hair+' → '+lk.hairStyle+'; Brann: '+F.companion('brann').config.hair+' → '+cl.hairStyle);
- // (the New game page: the face maker)
- F.draft=null;const html=F.maker('dwarf','f'),d0=JSON.stringify(F.draft.rec);F.step('hair',1);const d1=JSON.stringify(F.draft.rec);F.step('hairC',1);const d2=JSON.stringify(F.draft.rec);
- ok(/fm-step/.test(html)&&/fm-pic/.test(html)&&F.draft.rec.config.race==='dwarf'&&d0!==d1&&d1!==d2,'the face maker: your race\'s face, a part and a colour stepped');
+ // (the New game page: the face maker, the workshop's controls: a list for each part, a colour picker for each tint, a slider for
+ // each proportion, a preset; each changes your face)
+ F.draft=null;const html=F.maker('dwarf','f'),E=t.PortraitEngine,r0=JSON.stringify(F.draft.rec);
+ const hairs=E.partsFor('dwarf','hair'),h1=hairs.find(v=>v!==F.draft.rec.config.hair);F.set('hair',h1);const r1=JSON.stringify(F.draft.rec);
+ F.tint('iris','#2a6a9a');const r2=JSON.stringify(F.draft.rec);F.adjust('jawWidth',2);const r3=JSON.stringify(F.draft.rec);
+ const parts=(html.match(/data-fm-part=/g)||[]).length,tints=(html.match(/type="color"/g)||[]).length,adjs=(html.match(/type="range"/g)||[]).length;
+ ok(/fm-pic/.test(html)&&parts>=10&&tints===7&&adjs===Object.keys(E.adjustments).length&&F.draft.rec.config.race==='dwarf'&&F.draft.rec.config.hair===h1&&F.draft.rec.colors.iris==='#2a6a9a'&&F.draft.rec.config.adjustments.jawWidth===2&&new Set([r0,r1,r2,r3]).size===4,
+   'the face maker: '+parts+' parts, '+tints+' colour pickers and '+adjs+' proportions, each changing your face');
  F.draft=null;
  // (switched off: the paintings again)
  t.FACES.on=false;try{ok(!/^data:/.test(t.lordPic(L))||!t.NamedPortraits.of(L.name),'FACES.on false: a lord\'s painting again')}finally{t.FACES.on=true}
