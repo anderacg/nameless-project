@@ -467,7 +467,7 @@ function horseLeg(set,P,C,near,thickTo,side){const w=s=>near?s===0?3:2:s<2?2:1,d
 // (its letters' colours: coat light, mid and shade, the mane, an eye)
 const horseCols=(C,Mn)=>({H:C[1],h:C[0],d:C[2],y:C[2],m:Mn[2],k:'#27272c'});
 // a horse standing, walking or galloping (HORSE_ART), in the cell by ps; returns the rider's seat row (drawMount's)
-function drawHorse(ps,o,walk,C,Mn,Tm){const A=horseBuild(),y0=A.y0,F=walk>=4?A.gallop[(walk-4)%4]:walk>=0?A.walk[walk%4]:A.idle[0],bob=F.bob,shape=F.body||'stand',col=horseCols(C,Mn),on=new Set();
+function drawHorse(ps,o,walk,C,Mn,Tm,get){const A=horseBuild(),y0=A.y0,F=walk>=4?A.gallop[(walk-4)%4]:walk>=0?A.walk[walk%4]:A.idle[0],bob=F.bob,shape=F.body||'stand',col=horseCols(C,Mn),on=new Set();
   // the legs behind the body, the far pair first: from the hip, inside it, to the hoof
   for(const i of [0,2,1,3]){const L=F.legs[i],h=A.hips[i],G=y0+A.ground;horseLeg(ps,[[h+L[0],y0+8+bob],[h+L[1],G-L[2]],[h+L[3],G-L[4]],[h+L[5],G-L[6]]],C,i%2===1,y0+9+bob+A.thick,i<2?-1:1)}
   // the body (its rows from y0+top; the first pass's head on it, moved by the frame's head), then its own head hung at its poll
@@ -476,6 +476,7 @@ function drawHorse(ps,o,walk,C,Mn,Tm){const A=horseBuild(),y0=A.y0,F=walk>=4?A.g
   if(A.head){const [hx,hy]=A.poll[shape];paint(A.head,hx,y0+hy,()=>F.head||0)}
   // (its tail: each point joined to the last by an edge, never only a corner, the outline's dots: the owner, 2026-11-04)
   A.tails[F.tail].forEach(([x,y],i,T)=>{if(i){const [px,py]=T[i-1];if(px!==x&&py!==y)ps(px,y+bob,Mn[2])}ps(x,y+bob,Mn[i?2:1])});
+  if(get)mountCoat((x,y,c)=>c?ps(x,y,c):on.has(x+','+y)?get(x,y):null,32,32,C,false);
   horseDetail(ps,on,mane,A,F,shape,C,Mn,Tm,o,y0+bob);
   // barded: the side's colour over its body; else a saddle (and, no one in it, a cloth under it, its pommel, cantle and stirrup)
   if(o.barded){const deep=HORSE_TACK.on&&A.poll,rows=deep?[Tm[1],PPAL.gold[1],Tm[1],Tm[1],Tm[2],Tm[2]]:[Tm[0],PPAL.gold[1],Tm[2],null];for(let x=6;x<=22;x++)rows.forEach((c,k)=>{const y=y0+6+k+bob;if(on.has(x+','+y))ps(x,y,c||(x%2?Tm[3]:Tm[2]))});
@@ -485,6 +486,19 @@ function drawHorse(ps,o,walk,C,Mn,Tm){const A=horseBuild(),y0=A.y0,F=walk>=4?A.g
     for(let x=11;x<=15;x++)ps(x,y0+6+bob,PPAL.leather[x<13?0:1]);if(tk&&o.mount!=='stag')for(let y=7;y<=9;y++)ps(15,y0+y+bob,PPAL.leather[2])}
   if(o.saddled){ps(11,y0+5+bob,PPAL.leather[0]);ps(15,y0+5+bob,PPAL.leather[1]);ps(13,y0+10+bob,'#27272c');ps(13,y0+11+bob,'#27272c')}
   return y0+A.seat+bob+(F.rider||0)}
+/* a mount's coat (the owner, 2026-11-07: "can you add detail like furs, or shading to mounts"): its main colour (C[1]) rounded
+   down each column's run of it on the body: its first row a sheen (C[1] toward C[0], MOUNT_COAT.sheen), its lower third a tone
+   toward the shade (shade), its foot a deeper one (deep); a run under 4 rows left flat. fur (a wolf's, a warg's, a ram's): the
+   shade's edge in tufts, every MOUNT_COAT.fur-th column (by a hash of x) a row higher and the next a row lower, so it hangs ragged,
+   and strands of fur two px long down its flank (strand), a run of 3 shaded already;
+   each tone a band or a tooth on one, never a lone pixel. px(x, y) its colour on the body (null off it), px(x, y, c) sets it */
+const MOUNT_COAT={on:true,sheen:.45,shade:.45,deep:.8,fur:3,strand:4};
+function mountCoat(px,w,h,C,fur){const T=MOUNT_COAT;if(!T.on)return;const c1=C[1],sh=PX.mix(c1,C[0],T.sheen),md=PX.mix(c1,C[2],T.shade),dp=PX.mix(c1,C[2],T.deep);
+  for(let x=0;x<w;x++)for(let y=0;y<h;y++){if(px(x,y)!==c1)continue;let e=y;while(e+1<h&&px(x,e+1)===c1)e++;const n=e-y+1;
+    if(n>=(fur?3:4)){const t=(x*7+3)%T.fur,b=e-Math.floor(n/3)+(fur?t===0?-1:t===1?1:0:0);for(let k=y;k<=e;k++){const c=k===y&&n>=5?sh:k===e?dp:k>=b?md:null;if(c)px(x,k,c)}
+      // (fur: a strand two px long, every MOUNT_COAT.strand-th column by its hash, dark from the shade up or light from the top down)
+      if(fur&&n>=4){const s=(x*5+1)%T.strand;if(s===0&&b-2>=y){px(x,b-1,md);px(x,b-2,md)}else if(s===2&&y+2<b){px(x,y+1,sh);px(x,y+2,sh)}}}
+    y=e}}
 /* a horse's detail (the owner, 2026-11-07: "make sure mount have more details. Current one looks really ugly"): its mane thick
    and in strands down the crest (a dark strand on the edge, a lighter one inside it every other row), the line of its flank and
    of its shoulder's back in shade; a horse's tack (HORSE_TACK: a bridle, the headstall down its cheek and the bit; a breast strap
@@ -509,11 +523,12 @@ function horseDetail(ps,on,mane,A,F,shape,C,Mn,Tm,o,Y){const T=HORSE_TACK,inBody
   for(const [x,y] of T.breast)put(x,Y+y,L);put(T.stud[0],Y+T.stud[1],PPAL.gold[1])}
 function drawMount(g,o,walk,dx=0,dy=0){const ps=(x,y,c)=>pset(g,x+dx,y+dy,c);// (dx, dy: the cell's corner in g)
   const kind=o.mount,C=pal(kind==='horse'?o.mountC||'horse':kind==='stag'?'stag':kind==='ram'?'fleece':kind),Mn=pal(kind==='ram'?'wool':kind==='wolf'||kind==='warg'?kind:'dark'),Tm=pal(o.team);
-  if(horseArt(kind))return drawHorse(ps,o,walk,C,Mn,Tm)+dy;
+  if(horseArt(kind))return drawHorse(ps,o,walk,C,Mn,Tm,(x,y)=>pget(g,x+dx,y+dy))+dy;
   const gal=walk>=4,y0=kind==='ram'?16:14,legs=kind==='ram'?3:5,bob=gal?[0,-1,-2,-1][walk-4]:walk===1||walk===3?-1:0;
   // (a wolf, a warg, a ram: drawn by hand, engine/beasts.js PX.mountArt; its saddle or barding only on its body)
   const art=window.PX&&PX.mountArt&&PX.mountArt(kind,walk,{C,M:kind==='ram'?pal('#9a7a5a'):pal('wool')});
-  if(art){const on=new Set(),A=art.g,y1=art.seat-6;for(let y=0;y<A.h;y++)for(let x=0;x<A.w;x++){const c=A.p[y*A.w+x];if(c){ps(x,y,c);on.add(x+','+y)}}
+  if(art){const on=new Set(),A=art.g,y1=art.seat-6,[b0,b1]=art.body;
+    mountCoat((x,y,c)=>{if(y<b0||y>b1)return null;if(c)A.p[y*A.w+x]=c;else return A.p[y*A.w+x]},A.w,A.h,C,true);for(let y=0;y<A.h;y++)for(let x=0;x<A.w;x++){const c=A.p[y*A.w+x];if(c){ps(x,y,c);on.add(x+','+y)}}
     const pb=(x,y,c)=>{if(on.has(x+','+y))ps(x,y,c)};
     if(o.barded){for(let x=6;x<=20;x++){pb(x,y1+6,Tm[0]);pb(x,y1+7,PPAL.gold[1]);pb(x,y1+8,Tm[2]);pb(x,y1+9,x%2?Tm[3]:Tm[2])}}
     else{const tk=HORSE_TACK.on;if(tk||o.saddled)for(let x=10;x<=16;x++){pb(x,y1+7,Tm[1]);pb(x,y1+8,Tm[2]);pb(x,y1+9,tk?Tm[3]:x%2?Tm[3]:Tm[2])}

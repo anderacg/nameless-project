@@ -35,11 +35,16 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
    ok(!bad.length,'every frame\'s hooves drawn at its joints, on the bottom row or at most 7 px over it'+at+(bad.length?' ('+bad.join('; ')+')':''))}
   // ---- one head in every frame (the owner: "the head when running is too small"): its pixels the same, standing, walking and
   // galloping, hung at its poll; only the neck under it changes
-  // (the bare head: its tack off, HORSE_TACK.on false)
-  {const col=t.horseCols(t.pal('horse'),t.pal('dark')),bad=[];t.HORSE_TACK.on=false;for(let w=-1;w<8;w++){const g=t.pgrid(32,32),F=frameOf(B,w),[hx,hy]=B.poll[F.body||'stand'];t.drawMount(g,bay,w);
-    B.head.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c]&&t.pget(g,hx+x,B.y0+hy+y+F.bob+(F.head||0))!==col[c])bad.push(w+': '+x+','+y)}))}t.HORSE_TACK.on=true;
+  // (the bare head: its tack and coat off, HORSE_TACK.on, MOUNT_COAT.on false)
+  {const col=t.horseCols(t.pal('horse'),t.pal('dark')),bad=[];t.HORSE_TACK.on=false;t.MOUNT_COAT.on=false;for(let w=-1;w<8;w++){const g=t.pgrid(32,32),F=frameOf(B,w),[hx,hy]=B.poll[F.body||'stand'];t.drawMount(g,bay,w);
+    B.head.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c]&&t.pget(g,hx+x,B.y0+hy+y+F.bob+(F.head||0))!==col[c])bad.push(w+': '+x+','+y)}))}t.HORSE_TACK.on=true;t.MOUNT_COAT.on=true;
    const L=B.head.length,Wd=Math.max(...B.head.map(r=>r.length)),deep=B.head.map(r=>r.replace(/\./g,'').length);
    ok(!bad.length&&Object.keys(B.poll).join()===Object.keys(B.body).join(),'one head ('+Wd+'x'+L+' px, '+Math.max(...deep)+' px across at the jowl to '+deep[L-1]+' at the muzzle) drawn the same in all 9 frames, at each shape\'s poll'+at+(bad.length?' ('+bad.slice(0,5).join('; ')+')':''))}
+  // ---- the coat (2026-11-07, the owner: "add detail like furs, or shading"): every mount's main colour shaded down its body in
+  // more tones than its ramp's (a sheen, a shade, a deeper foot), a wolf's in fur; MOUNT_COAT.on false: flat as before
+  {const tones=(m,on)=>{t.MOUNT_COAT.on=on;const g=t.pgrid(32,32);t.drawMount(g,{mount:m,team:'blue'},-1);t.MOUNT_COAT.on=true;return new Set(g.p.filter(Boolean)).size};
+   const more=['horse','stag','ram','wolf','warg'].map(m=>[m,tones(m,true)-tones(m,false)]);
+   ok(more.every(([,n])=>n>=2),'each mount shaded in more tones ('+more.map(([m,n])=>m+' +'+n).join(', ')+')')}
   // ---- no lone speck (2026-11-07, the owner: "check distort pixel"): in every mount's every frame, ridden, empty or barded, no
   // pixel set alone in a field of one other colour, but an eye
   {const eyes=new Set(['#27272c','#ffdc04','#2a1e18']),bad=[];for(const m of ['horse','stag','ram','wolf','warg'])for(const brd of [0,1])for(const sd of [0,1])for(let w=-1;w<8;w++){
@@ -120,7 +125,9 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // (both again 2026-11-07: the owner, "the mount portions still weird, check distort pixel": the body two rows deeper, a barded
  // horse's caparison to its belly, no reins or blotches, the stag's lyre of antlers, the ram's curls in arcs. Proof: f20888e gives
  // both again. Were 64d8cf30, 6c25b61d)
- const OLD='c75e1892',FIRST='8a943596';
+ // (both again 2026-11-07: the owner, "add detail like furs, or shading to mounts": every mount's coat shaded down its body, a
+ // wolf's, a warg's and a ram's in fur (people.js mountCoat, MOUNT_COAT). Proof: 4f6f01f gives both again. Were c75e1892, 8a943596)
+ const OLD='fcd3587c',FIRST='2ab7d0ce';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

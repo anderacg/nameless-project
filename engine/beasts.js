@@ -331,7 +331,7 @@
   PX.MOUNT_ART=Object.keys(MOUNT_ART);
   PX.mountArt=(kind,walk,pal,down)=>{const D=MOUNT_ART[kind==='warg'?'wolf':kind];if(!D)return null;const g=grid(32,down?21:32),
       F=down?{a:'dead',i:0,dead:true,how:'side'}:walk==null||walk<0?gait('idle',0):walk>=4?gait('run',(walk-4)%4):gait('walk',walk%4);
-    handBeast(g,D,F,{v:0,pal});return{g,bob:down?0:F.bob,seat:g.h-2-D.top+D.seat+(down?0:F.bob)}};
+    handBeast(g,D,F,{v:0,pal});const y0=g.h-2-D.top+(down?D.legH:F.bob);return{g,bob:down?0:F.bob,seat:g.h-2-D.top+D.seat+(down?0:F.bob),body:[y0,y0+D.rows.length-1]}};
   // a griffin: a lion's hindquarters, an eagle's head, breast, forelegs and wings (folded up its back, spread to run and to strike)
   KINDS.griffin={W:32,H:25,coats:['#b8905a','#c09a5a','#8a7a66'],deaths:WING_DEATHS,
     draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Wc=R(['#8a6a48','#7a5e44','#6a6058'][v]),Wh=R('#e2dacb'),Dk=R('#4a3a30'),Yl=R('#c8a04a');
