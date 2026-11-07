@@ -2,7 +2,8 @@
 /* ---------- the humble start (doc/START_AND_GATES_DESIGN.md §1; the owner, 2026-11-05: "start from nothing: you spawn in a small
    hamlet far away", every past with its own reason): where a new game puts you. StartPlace.pick(k) picks, for past k, a hamlet or
    a small village by its row of PAST_START (whose, which kinds, what it lies by, how far from the capitals), fair by HUMBLE_START
-   (no bandits or wild land close, a realm's holding a road away); {t: the place, c: what it lies by (a castle, a town), line: the
+   (no bandits or wild land close, a realm's holding a road away), among your own people's first (a holding of your race), then
+   anyone's; {t: the place, c: what it lies by (a castle, a town), line: the
    first line}, or null (HUMBLE_START off, or nowhere fits: your people's capital, as before). The draw that breaks ties is the
    'origin' content stream's (core/rng.js), its own, so one world and one game's number start alike and the start's other draws
    stay as they were ---------- */
@@ -26,16 +27,19 @@ class StartPlace{
     if(near==='road'){const g=(t.ty+1)*MW+t.tx,gx=t.tx,gy=t.ty+1;for(const r of WM.roads)if(r.kind==='road'&&!r.est)for(const i of r.path){const x=i%MW,y=(i-x)/MW;if(Math.abs(x-gx)<=X.road&&Math.abs(y-gy)<=X.road&&i!==g)return true}return null}
     return null}
   // (the places for a row: its kinds and whose, each with its days from the nearest capital and from your own)
-  static places(row,kinds,at){
+  // (ours: only your own people's: a holding of your race (the owner, 2026-11-07: "make the starting city align with race"))
+  static ours(t){return (t.races||[]).includes(P.race)}
+  static places(row,kinds,at,ours){
     const caps=this.capitals(),own=capitalOf(P.race);
-    return TOWNS.filter(t=>kinds.includes(t.kind)&&!t.gone&&(at==='free'?!t.owner:at==='realm'?!!t.owner:true)).map(t=>{
+    return TOWNS.filter(t=>kinds.includes(t.kind)&&!t.gone&&(!ours||this.ours(t))&&(at==='free'?!t.owner:at==='realm'?!!t.owner:true)).map(t=>{
       const ds=caps.filter(c=>Router.reach(t,c)).map(c=>Router.days(t,c));return{t,far:ds.length?Math.min(...ds):99,own:own&&Router.reach(t,own)?Router.days(t,own):99}})}
   // where past k begins
   static pick(k){
     if(!HUMBLE_START.on)return null;const row=PAST_START[k];if(!row)return null;
     const R=rngOf('origin'),tries=[[row.at,row.kinds,row.near],[row.at,row.kinds,null],['any',['hamlet'],null],['any',['village','hamlet'],null]];
-    for(const [at,kinds,near] of tries){let best=null,bs=-Infinity;
-      for(const p of this.places(row,kinds,at)){if(p.far<HUMBLE_START.off)continue;const c=this.by(p.t,near);if(!c)continue;const next=this.fair(p.t);if(!next)continue;
+    // (your own people's places first, each of the row's tries; then anyone's, as before)
+    for(const ours of [true,false])for(const [at,kinds,near] of tries){let best=null,bs=-Infinity;
+      for(const p of this.places(row,kinds,at,ours)){if(p.far<HUMBLE_START.off)continue;const c=this.by(p.t,near);if(!c)continue;const next=this.fair(p.t);if(!next)continue;
         const s=(row.away?Math.min(p.far,p.own)+p.own*.5:0)+R.next()*HUMBLE_START.jitter*(row.away?1:10);if(s>bs){bs=s;best={t:p.t,c:c===true?null:c,next}}}
       if(best){const c=best.c||best.next;best.line=row.line.replace('{h}',best.t.name).replace('{c}',c.name);return best}}
     return null}

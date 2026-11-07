@@ -169,11 +169,15 @@ function settingsPage(){
 function showTitle(screen){
   // (the main menu leaves the game behind: no Resume here; the pause menu (Esc) is where you resume)
   G.resume=null;G.mode='title';G.menu=screen||'main';G.race=G.race||'human';const sv=readSave(),back=nav(['menu','main','Back']);MainMenu.show();
-  if(G.menu==='new')return showPanel('<div class="top"><h2>New game</h2></div><div class="lab">Choose your race</div><div class="tabs" role="group" aria-label="Race">'+Object.keys(RACES).map(r=>'<button class="btn sm'+(G.race===r?' on':'')+'" type="button" data-act="race" data-arg="'+r+'" aria-pressed="'+(G.race===r)+'">'+RACES[r].n+'</button>').join('')+'</div><p class="muted">'+RACES[G.race].d+' Troops of your own race cost 15% less to hire.</p>'+
+  // (two pages (the owner, 2026-11-07: "the character creation may split between portrait and background"): your hero (race, names,
+  // face), then your past; Next keeps what you chose, the past's Back brings you to your hero again)
+  if(G.menu==='new')return showPanel('<div class="top"><h2>New game</h2><span class="muted">1 of 2 · Your hero</span></div><div class="lab">Choose your race</div><div class="tabs" role="group" aria-label="Race">'+Object.keys(RACES).map(r=>'<button class="btn sm'+(G.race===r?' on':'')+'" type="button" data-act="race" data-arg="'+r+'" aria-pressed="'+(G.race===r)+'">'+RACES[r].n+'</button>').join('')+'</div><p class="muted">'+RACES[G.race].d+' Troops of your own race cost 15% less to hire.</p>'+
     '<div class="lab">Name your hero and your band · or leave them for later</div>'+nameFields(NEW_NAMES)+// (ui/names.js)
     (typeof Faces!=='undefined'&&Faces.ok()?'<div class="lab">Your face · by your race, a man or a woman as your hero is</div>'+Faces.maker(G.race,NEW_NAMES.gender):'')+// (ui/faces.js)
+    nav(['menu','main','Back'],['menu','past','Next · your past']));
+  if(G.menu==='past')return showPanel('<div class="top"><h2>New game</h2><span class="muted">2 of 2 · Your past · '+RACES[G.race].n+(NEW_NAMES.hero?' · '+htmlText(cleanName(NEW_NAMES.hero)):'')+'</span></div>'+
     '<div class="lab">Choose your past · it decides your weapon · then your world</div><div class="cards origin-cards">'+Object.keys(BGS).map(k=>{const B0=BGS[k],w=B0.weapon?BASES[B0.weapon]:null;return '<button class="card origin-card" type="button" data-act="begin" data-arg="world:'+k+'">'+originArt(k)+'<strong>'+B0.n+'</strong><span class="gold">'+(w?w.n+' · '+(w.kind==='ranged'?'Ranged':w.kind==='magic'?'Magic':'Melee'):'Bare hands · Unarmed')+'</span><span>'+B0.d+'</span></button>'}).join('')+'</div>'+ 
-    (sv?'<p class="bad" style="font-size:13px">Starting a new game will replace your saved game when it next saves.</p>':'')+back);
+    (sv?'<p class="bad" style="font-size:13px">Starting a new game will replace your saved game when it next saves.</p>':'')+nav(['menu','hero','Back']));
   if(G.menu==='load')return showPanel('<div class="top"><h2>Load game</h2></div><div class="slots">'+slotRows('title')+'</div>'+(SAVE_SLOTS.some(oldSlot)?'<p class="muted">Saves made by an older version cannot be loaded (the world is made differently now): start a new game.</p>':'')+(sv?'':'<p class="muted">No saved game yet. The game saves itself each day and when you leave a town (Autosave); F6 saves at any time (Quick save); the menu (Esc) saves to a slot of your own.</p>')+back);
   if(G.menu==='settings')return showPanel(settingsPage()+back);
   if(G.menu==='exit')return showPanel('<h2 class="big">Ashmark</h2><p>Thanks for playing. You can close this tab now.</p>'+nav(['menu','main','Back to the menu']));
@@ -210,6 +214,7 @@ function menuAct(a,arg){
   if(arg==='wiki'){try{window.open('wiki.html','_blank')}catch(e){}return true}
   if(arg==='exit'){try{window.close()}catch(e){}showTitle('exit');return true}
   if(arg==='new')worldSetupFresh();// (each visit a fresh seed: worldsetup.js)
+  if(arg==='hero'){showTitle('new');const b=panel.querySelector('[data-act="race"].on');if(b)b.focus({preventScroll:true});return true}// (back from your past: your hero as you left him)
   showTitle(arg);const b=panel.querySelector('.card,button');if(b)b.focus({preventScroll:true});return true;
 }
 /* the game is over (the owner, 2026-10-22: your hero died on the road, of thirst, hunger, fever or frostbite: world/supply.js

@@ -9,7 +9,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,ev=s=>(0,eval)(s);
   t.act('begin','nobody');const B0=t.BGS.nobody;
   ok(P.bg==='nobody'&&!P.gear.weapon&&t.unarmed()&&P.gold===B0.gold&&P.gold<=10&&B0.cargo.grain>0&&B0.cargo.grain<=4&&!t.troopCount(),'the Nobody starts with no weapon, '+P.gold+' gold and a crust ('+B0.cargo.grain+' grain), no troops');
   ok(P.tree.includes('o_nobody')&&t.TREE.o_nobody.links.includes('start')&&t.TREE.o_nobody.links.includes('fist0'),'their origin on the tree joins the Crossroads and the brawler\'s chain');
-  t.showTitle('new');ok(/Nobody/.test(document.getElementById('panel').innerHTML)&&/Bare hands · Unarmed/.test(document.getElementById('panel').innerHTML),'a card of its own on the New game page: bare hands');t.hidePanel();
+  t.showTitle('past');ok(/Nobody/.test(document.getElementById('panel').innerHTML)&&/Bare hands · Unarmed/.test(document.getElementById('panel').innerHTML),'a card of its own on the New game page: bare hands');t.hidePanel();
   ok(t.meleeSk()==='fist'&&t.SKILLS.fist&&P.apt.fist>0,'their discipline is Unarmed, learned faster ('+P.apt.fist+')');
   // ======== the fists' numbers, against a sword
   const fist=t.heroStats();P.gear.weapon=t.gearId('sword',0);const sw=t.heroStats(),sk=t.meleeSk();P.gear.weapon=null;
@@ -27,7 +27,8 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,ev=s=>(0,eval)(s);
   {const H=t.Moveset.of(h).hard;ok(H&&H.grab&&H.n==='Grapple','the hero\'s hard attack with bare hands: the grapple ('+(H&&H.cd)+' s)');
    const e=foes[0],hp=e.hp;t.heroState().grab(e,H);ok(h.atkStyle==='grapple'&&e.hp<hp&&(e.stun>0||e.kx),'the grapple: seized and thrown, hurt and staggered');}
   // ======== the poses: twelve frames of fists, and the fists up to meet a blow
-  {const px=s=>{const c=s.getContext('2d').getImageData(0,0,s.width,s.height).data;let n=0;for(let i=3;i<c.length;i+=4)if(c[i])n++;return n},still=px(t.unitSprite('hero',0,true,0,0,false));let differ=0;
+  // (each frame's picture against standing's, pixel for pixel: a fist moves pixels, not always their count)
+  {const px=s=>s.width+'x'+s.height+':'+Array.from(s.getContext('2d').getImageData(0,0,s.width,s.height).data).join(),still=px(t.unitSprite('hero',0,true,0,0,false));let differ=0;
    for(let p=t.FIST_POSE;p<t.FIST_POSE+12;p++)if(px(t.unitSprite('hero',0,true,0,p,false))!==still)differ++;
    ok(differ>=10,differ+' of the 12 bare-handed frames differ from standing (a jab\'s arm out, a kick\'s leg up, a grapple\'s two hands)');
    ok(px(t.unitSprite('hero',0,true,0,t.DEF_POSE,false))!==still,'meeting a blow bare-handed: his fists up')}

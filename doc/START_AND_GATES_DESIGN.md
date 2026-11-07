@@ -1,6 +1,6 @@
 # A humble start, and places you must earn: design
 
-**Status:** 2026-11-05: §1, the humble start (phase S1), built (`world/start.js`, `tests/humblestart.js`); G1, the gates by standing, a quest's seal and the lords' audiences, built (`world/gates.js`, `tests/gates.js`); G2, the passes, bribes and slipping in, built (the same files); G3, the provinces and their danger, built (`world/provinces.js`, `tests/provinces.js`).
+**Status:** 2026-11-05: §1, the humble start (phase S1), built (`world/start.js`, `tests/humblestart.js`); 2026-11-07: the start among your own people's holdings first (`StartPlace.ours`); G1, the gates by standing, a quest's seal and the lords' audiences, built (`world/gates.js`, `tests/gates.js`); G2, the passes, bribes and slipping in, built (the same files); G3, the provinces and their danger, built (`world/provinces.js`, `tests/provinces.js`).
 **The owner's asks (2026-11-05):**
 1. "Make a background more meaningful, like start from nothing: you spawn in a small hamlet far away."
 2. "Split map loading between chunks, so that some area may be locked. E.g. bigger cities may require some requirements."

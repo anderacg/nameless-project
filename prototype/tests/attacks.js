@@ -123,7 +123,7 @@ try{
  t.act('begin','exile');ok(P.gear.weapon===t.gearId('bow',0)&&P.gear.quiver==='q_worn'&&!t.goodN('arrows'),'the Exiled archer starts with a bow and a worn quiver (20 arrows)');t.act('begin','soldier');
  // a past decides your weapon: seven pasts cover every weapon, and the Nobody's bare hands
  const wb=Object.values(t.BGS).map(b=>b.weapon);ok(wb.length===8&&['sword','spear','axe','bow','crossbow','staff','wand',null].every(b=>wb.includes(b)),'seven pasts, one for each weapon, and a Nobody\'s bare hands: '+wb.join(', '));
- t.showTitle('new');ok(!document.querySelector('[data-act="weapon"]')&&/Crossbow · Ranged/.test(document.getElementById('panel').innerHTML),'there is no weapon choice; each past shows its weapon');
+ t.showTitle('past');ok(!document.querySelector('[data-act="weapon"]')&&/Crossbow · Ranged/.test(document.getElementById('panel').innerHTML),'there is no weapon choice; each past shows its weapon');
  t.act('begin','merchant');ok(P.gear.weapon===t.gearId('crossbow',0)&&P.gear.quiver==='q_wornCase'&&t.heroShots()===20&&t.heroKind()==='ranged'&&t.heroStats().tags.includes('pierce'),'the Merchant’s child starts with a wooden crossbow and a worn bolt case (20 bolts)');
  const xb=t.heroShot();P.gear.weapon=t.gearId('bow',0);const bw=t.heroShot();ok(xb.mult>bw.mult&&xb.cd>bw.cd,'crossbows hit harder and slower than bows');
  P.gear.weapon=t.gearId('wand',0);const wd=t.heroShot();P.gear.weapon=t.gearId('staff',0);const sf=t.heroShot();ok(t.heroKind()==='magic'&&wd.mp<sf.mp&&wd.cd<sf.cd&&wd.mult<sf.mult,'wands are cheaper and faster than staves, but weaker');

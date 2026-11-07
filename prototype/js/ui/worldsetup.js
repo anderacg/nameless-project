@@ -124,7 +124,7 @@ function wsTyped(v){const S=WSETUP,c=parseWorldCode(v);if(c){S.typed=null;S.s=c;
 // (the seed field, read once more: empty, a fresh seed)
 function wsSeedNow(){const S=WSETUP;if(S.typed!=null&&!S.typed.trim()){S.s=normSettings({...S.s,seed:freshSeed()});S.typed=null}else S.typed=null}
 onAct('ws-',(a,arg)=>{const S=WSETUP;if(G.menu!=='world'||!S.s)return;const s=S.s,cl=s.preset==='classic',f='[data-act="'+a+'"]'+(arg!=null?'[data-arg="'+arg+'"]':'');
-  if(a==='ws-back'){clearTimeout(S.timer);return showTitle('new')}
+  if(a==='ws-back'){clearTimeout(S.timer);return showTitle('past')}
   if(a==='ws-forge'){clearTimeout(S.timer);wsSeedNow();return begin(S.past,S.s)}
   if(a==='ws-copy'){const c=worldCode(s);copyText(c).then(ok=>{if(G.menu!=='world')return;S.note=ok?'World code '+c+' copied.':'Could not copy it: the code is '+c+'.';wsRender(f)});return}
   if(a==='ws-adv'){S.adv=!S.adv;return wsRender(f)}

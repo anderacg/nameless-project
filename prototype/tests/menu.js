@@ -15,7 +15,8 @@ try{
  ok([...mm.querySelectorAll('.mm-more button')].map(b=>b.textContent).join()==='Wiki'&&/Ashmark/.test(mm.querySelector('.mm-title canvas').getAttribute('aria-label')),'under the buttons Wiki; the title drawn, named for readers');
  mm.querySelector('[data-mm="new"]').click();ok(G.menu==='new'&&mm.dataset.page==='new','New Campaign opens the New game page over the scene');t.act('menu','main');
  // new game
- t.act('menu','new');ok(G.menu==='new'&&document.querySelectorAll('[data-act="begin"]').length===8&&document.querySelectorAll('[data-act="race"]').length===4,'New game: four races and eight pasts');
+ t.act('menu','new');const races=document.querySelectorAll('[data-act="race"]').length,nextB=!!document.querySelector('#panel [data-act="menu"][data-arg="past"]');t.act('menu','past');
+ ok(races===4&&nextB&&G.menu==='past'&&document.querySelectorAll('[data-act="begin"]').length===8&&document.querySelector('#panel [data-act="menu"][data-arg="hero"]'),'New game: four races on your hero\'s page, Next to eight pasts on the next, Back to your hero');t.act('menu','hero');
  t.act('race','dwarf');ok(G.menu==='new'&&document.querySelector('[data-act="race"].on').dataset.arg==='dwarf','picking a race stays on the New game screen');
  t.act('menu','main');t.act('menu','new');t.act('race','human');t.act('begin','hedge');ok(G.mode==='world'&&P.gear.weapon===t.gearId('staff',0)&&P.gold===40,'the Hedge mage starts with a wooden staff and 40 gold');
  ok(Object.values(t.BGS).every(b=>b.gold<=110),'every past starts poor: '+Object.values(t.BGS).map(b=>b.n+' '+b.gold+'g').join(', '));

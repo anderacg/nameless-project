@@ -37,7 +37,7 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
   info('the sketch\'s time (the best of two; the target 150 ms): '+times.join(', '));
   ok(times.every(s=>parseFloat(s.split(' ')[1])<400),'the sketch is quick at every size: '+times.join(', ')+' (under 400 ms in the test browser)')}
  // ---- the New game page: a past leads to the world's settings
- t.act('menu','new');const cards=[...document.querySelectorAll('#panel [data-act="begin"]')].map(b=>b.dataset.arg);
+ t.act('menu','new');t.act('menu','past');const cards=[...document.querySelectorAll('#panel [data-act="begin"]')].map(b=>b.dataset.arg);
  ok(cards.length===8&&cards.every(a=>/^world:/.test(a)),'New game: eight pasts (The Nobody\'s since 46be83f); each opens the world\'s settings first (D30)');
  // ---- the screen
  t.act('race','dwarf');t.act('begin','world:hedge');
@@ -72,7 +72,7 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
   ok(J(S.s)===J(N({preset:'frontier',seed:'redwater'}))&&/World code read/.test(txt()),'a world code pasted in the seed: every setting from it (Wild Frontier, redwater)')}
  // Esc follows the bar: Back to the New game page; the choice kept
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));
- ok(G.menu==='new'&&S.s.preset==='frontier','Esc: Back to the New game page, the world\'s choice kept');
+ ok(G.menu==='past'&&S.s.preset==='frontier','Esc: Back to the New game\'s past page, the world\'s choice kept');
  // ---- forging the seed typed; a seeded start
  t.act('begin','world:soldier');t.act('ws-preset','normal');{const i=q('#wsSeed');i.value='s2';i.dispatchEvent(new Event('input',{bubbles:true}))}
  ok(!q('[data-act="ws-full"]')&&!q('[data-act="ws-reroll"]')&&!q('[data-act="ws-regen"]'),'no Reroll, Regenerate nor Full preview (the owner: Random is the seed’s own)');
