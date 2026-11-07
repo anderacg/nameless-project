@@ -66,10 +66,10 @@ const DOLL_MOVES={lean:[],breath:[['ulh','',0,-1,0]],flinch:[['sfncbulhptko','',
 const DOLL_KNEEL_DROP=[['ko','L']];
 /* a shooter's arms (the owner, 2026-11-07: "archers bow shooting position is not correct"): drawing a bow (the thrust frames:
    half, full, held), the bow arm raised to his shoulder and out toward his mark (his weapon hand, R: the bow on it, figures.js
-   ShooterGear), the drawing hand up by his cheek; the reload (the overhead frames), the bow arm still up, the other hand back to
+   ShooterGear), the drawing hand forward across him to his chin, the string back to it (figures.js BOW_PULL; the owner, 2026-11-07: "fix posture"); the reload (the overhead frames), the bow arm still up, the other hand back to
    the quiver over his shoulder and down to nock; a crossbow raised to his shoulder to aim (his other arm as it was: raised, it read as a stick), lowered to span it.
    [regions, side, dx, dy, from row] as DOLL_MOVES (dx mirrored: -1 forward) */
-const DOLL_SHOOT={bow:{thrust:[[['lh','R',-1,-2,0],['lh','L',-1,-2,0]],[['lh','R',-1,-3,0],['lh','L',-2,-4,0]],[['lh','R',-1,-3,0],['lh','L',-2,-4,0]]],
+const DOLL_SHOOT={bow:{thrust:[[['lh','R',-1,-4,0],['lh','L',-3,-3,0]],[['lh','R',-1,-4,0],['l','L',-2,-3,0],['h','L',-4,-4,0]],[['lh','R',-1,-4,0],['l','L',-2,-3,0],['h','L',-4,-4,0]]],
     overhead:[[['lh','R',-1,-2,0],['lh','L',0,-4,0]],[['lh','R',-1,-2,0],['lh','L',0,-5,0]],[['lh','R',-1,-2,0],['lh','L',-1,-3,0]]]},
   xbow:{thrust:[[['lh','R',-1,-2,0]],[['lh','R',-1,-2,0]],[['lh','R',-1,-2,0]]],overhead:[[],[],[]]}};
 /* a blow's weight (the owner, 2026-11-07: "make unit animations more realistic when battle"), in his legs and the drop of his weight,

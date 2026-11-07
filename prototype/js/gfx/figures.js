@@ -51,6 +51,12 @@ class HandWeapon extends FigureGear{
     const kind=k==='lance'?'lance':POLE(k)?'pole':k==='great'||k==='bigaxe'||k==='hammer'?'heavy':'blade',doll=dollable(o),rest0=doll&&!WPN_REST[k]?holdTab(kind,o).rest:WPN_REST[k]??-90,rest=doll&&p.drop!=null?downClamp(rest0,WPN[k][0],Math.min(DOLL_DROP,p.drop)):rest0;
     const tip=drawBlade(set,t?t[0]:0,t?t[1]:0,t?t[2]:rest,k,pal(o.team),pal(o.skin)[1],undefined,doll);if(blow&&p.atk===1)set(tip[0],tip[1],'#ffffff')}
 }
+/* a bow's string drawn back, by the body's frame (px behind the bow hand): the draw (nocked, full, held at full) to his draw hand at
+   his chin (dollfigs.js DOLL_SHOOT), the loose's wind-up; the arrow from the string to its head past the bow */
+const BOW_PULL={thrust:[3,4,4],swing:[2,0,0]};
+const bowPull=(style,atk)=>atk>=0&&BOW_PULL[style]?BOW_PULL[style][atk]||0:0;
+// (a straight line of pixels from one to another, each touching the last by an edge: a string drawn back, an arrow)
+function bowLine(set,x0,y0,x1,y1,col){set(x0,y0,col);while(x0!==x1||y0!==y1){const dx=x1-x0,dy=y1-y0;if(Math.abs(dx)>=Math.abs(dy))x0+=Math.sign(dx);else y0+=Math.sign(dy);set(x0,y0,col)}}
 // a shooter's weapon in the hand, by the body's frame: swing, the loose (drawn, the flash, at rest); thrust, the draw (half, full,
 // held at full, the tip catching the light); overhead, the reload (a bow's hand back to the quiver and an arrow nocked; a crossbow
 // tipped down and spanned; a sling's pouch filled; a staff at rest)
@@ -58,8 +64,8 @@ class ShooterGear extends FigureGear{
   constructor(k){super('shooter','hand');this.k=k}
   draw(set,o,p){const k=this.k,atk=p.atk,draw=p.style==='thrust'&&atk>=0,reload=p.style==='overhead'&&atk>=0,skin=pal(o.skin)[1],W=PPAL.wood,M=PPAL.steel;
     if((k==='bow'||k==='longbow')&&o.bowApart){set(0,-1,skin);return}// (drawn apart, to aim up and down: bowPic)
-    if(k==='bow'||k==='longbow'){const L=k==='longbow'?5:4,pull=draw?[1,2,2][atk]:reload?0:atk===0?2:0;for(let y=-L;y<=L;y++)set(1-(Math.abs(y)>=L-1?1:0),y-1,W[1]);
-      for(let y=-L+1;y<=L-1;y++)set(-(Math.abs(y)<2?pull:0),y-1,PPAL.white[1]);if(pull)for(let i=0;i<5;i++)set(-pull+i,-1,i===4?M[0]:W[2]);if(draw&&atk===2)set(5-pull,-1,'#ffffff');
+    if(k==='bow'||k==='longbow'){const L=k==='longbow'?5:4,pull=bowPull(p.style,atk);for(let y=-L;y<=L;y++)set(1-(Math.abs(y)>=L-1?1:0),y-1,W[1]);
+      bowLine(set,0,-L,-pull,-1,PPAL.white[1]);bowLine(set,-pull,-1,0,L-2,PPAL.white[1]);if(pull){bowLine(set,-pull,-1,1,-1,W[2]);set(2,-1,M[0])}if(draw&&atk===2)set(3,-1,'#ffffff');
       if(reload){const hd=[[-2,-3],[-3,-5],[-1,-1]][atk];set(hd[0],hd[1],skin);if(atk===2)for(let i=0;i<3;i++)set(i-1,-1,W[2])}
       if(atk===1&&!draw&&!reload)set(3,-1,PPAL.white[0]);set(0,-1,skin);return}
     if(k==='xbow'){if(reload){for(let i=0;i<5;i++)set(1,i-2,W[1]);for(let i=-2;i<=2;i++)set(1+i,3,M[1]);set(1,[1,0,-1][atk],skin);set(0,2,skin);return}
@@ -79,12 +85,12 @@ function bowPic(k,style,atk,deg,skin){const key=[k,style,atk,deg,skin].join('|')
   const R=9,G=pgrid(2*R+1,2*R+1),W=PPAL.wood;
   if(!deg){const g=new ShooterGear(k),S=pal('skin')[1];g.draw((x,y,col)=>pset(G,R+x,R+y,col===S?skin:col),{skin:'skin'},{style,atk})}
   else{const a=deg*Math.PI/180,rot=([x,y])=>[R+Math.round(x*Math.cos(a)+y*Math.sin(a)),R+Math.round(-x*Math.sin(a)+y*Math.cos(a))];
-    const line=(p,q,col)=>{let [x0,y0]=rot(p);const [x1,y1]=rot(q);pset(G,x0,y0,col);while(x0!==x1||y0!==y1){const dx=x1-x0,dy=y1-y0;if(Math.abs(dx)>=Math.abs(dy))x0+=Math.sign(dx);else y0+=Math.sign(dy);pset(G,x0,y0,col)}};
-    const L=k==='longbow'?5:4,draw=style==='thrust'&&atk>=0,pull=draw?[1,2,2][atk]:style==='swing'&&atk===0?2:0;
+    const line=(p,q,col)=>bowLine((x,y,c)=>pset(G,x,y,c),...rot(p),...rot(q),col);
+    const L=k==='longbow'?5:4,draw=style==='thrust'&&atk>=0,pull=bowPull(style,atk);
     line([0,-L-1],[1,-L+1],W[1]);line([1,-L+1],[1,L-3],W[1]);line([1,L-3],[0,L-1],W[1]);
     line([0,-L],[-pull,-1],PPAL.white[1]);line([-pull,-1],[0,L-2],PPAL.white[1]);
-    if(pull){line([-pull,-1],[3-pull,-1],W[2]);line([4-pull,-1],[4-pull,-1],PPAL.steel[0])}
-    if(draw&&atk===2)line([5-pull,-1],[5-pull,-1],'#ffffff');if(style==='swing'&&atk===1)line([3,-1],[3,-1],PPAL.white[0]);
+    if(pull){line([-pull,-1],[1,-1],W[2]);line([2,-1],[2,-1],PPAL.steel[0])}
+    if(draw&&atk===2)line([3,-1],[3,-1],'#ffffff');if(style==='swing'&&atk===1)line([3,-1],[3,-1],PPAL.white[0]);
     pset(G,R,R-1,skin)}
   c=pcanvas(G);c.R=R;BOW_PICS.set(key,c);return c}
 /* a shield (the owner, 2026-11-07: "bigger shields with the army's device"): carried on his off arm before him, or raised to meet a
@@ -104,12 +110,12 @@ class ShieldGear extends FigureGear{
     // (the device three by three in the field's middle: the 5 x 5 one's every other row and column)
     if(T)for(let j=0;j<3;j++)for(let i=0;i<3;i++)if(T[j*2]&&T[j*2][i*2]&&T[j*2][i*2]!=='.')set(ox+1+i,oy+1+j,dv)}
 }
-// a quiver on his back, its arrows' fletching over his shoulder; a crossbowman's bolt case at his hip
+// a quiver on his back, slung close behind his shoulder, the most of it hidden by him, its arrows' fletching over it by his head; a crossbowman's bolt case at his hip
 class QuiverGear extends FigureGear{
   constructor(k){super('quiver','back');this.k=k}
   draw(set,o,p){const L=PPAL.leather;if(this.k==='bolts'){for(let y=2;y<=4;y++){set(-1,y,L[1]);set(-2,y,L[2])}set(-1,1,PPAL.steel[1]);set(-2,1,PPAL.steel[2]);return}
-    for(let y=-1;y<=3;y++)set(-1,y,y<0?L[0]:L[1]);for(let y=0;y<=3;y++)set(-2,y,L[2]);set(0,-1,L[0]);set(0,0,L[2]);
-    const F=PPAL.linen;set(0,-2,F[0]);set(1,-2,F[1]);set(1,-3,F[0]);set(-1,-2,F[1])}
+    for(let y=-3;y<=1;y++){set(2,y,y===-3?L[0]:L[1]);set(1,y,L[2])}for(let y=2;y<=3;y++)set(3,y,L[2]);
+    const F=PPAL.linen;set(1,-4,F[0]);set(2,-4,F[1]);set(3,-4,F[0])}
 }
 // a bow put away across his back while he fights with his sidearm (sprites.js unitSprite: arm), a crossbow likewise
 class SlungBow extends FigureGear{
