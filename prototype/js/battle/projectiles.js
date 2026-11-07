@@ -30,8 +30,10 @@ function worldMissileHit(a,from,arc=false,units=null,scale=WORLD_BATTLE.sprite){
 /* an arrow's rise (the owner, 2026-11-07: "long target or shooting to higher, arrows will lob; short target and shooting from higher,
    the arrow will be straight"): over d px, its peak H px high, growing with the square of the distance (ARC_RISE.d2: point-blank
    almost flat, a long one high, ARC_RISE.max at most), lower by ARC_RISE.lvl px for every px the shooter stands above his mark
-   and higher for every px below it (dh: his ground's height less his mark's), ARC_RISE.min at least */
+   and higher for every px below it (dh: his ground's height less his mark's), ARC_RISE.min at least. An arrow loosed flies so (Missile.fire: its landing's ground), as his bow is aimed (render.js bowAim) */
 const ARC_RISE={d2:700,max:64,lvl:.5,min:1};
+// (his ground's height less the ground's where it falls, px: battle/terrain.js levelAt, PX.ROCK_PX a level; level ground 0)
+const arcDh=(u,x,y)=>typeof levelAt==='function'?(levelAt(u.x,u.y)-levelAt(x,y))*(PX.ROCK_PX||4):0;
 const arcRise=(d,dh=0)=>clamp(Math.min(ARC_RISE.max,d*d/ARC_RISE.d2)-dh*ARC_RISE.lvl,ARC_RISE.min,ARC_RISE.max);
 const MISSILES=new WeakMap();
 class Missile{
@@ -41,7 +43,7 @@ class Missile{
     const mag=!!src.magic,base={by:u,team:u.team,dmg,a,src,elf:src.race==='elf',web:src.ability==='web',tk:0};
     if(!mag&&!src.flat){
       if(opts&&opts.v){const gv=opts.v*Math.cos(opts.ang);B.arrows.push({...base,x:u.x,y:u.y,vx:Math.cos(a)*gv,vy:Math.sin(a)*gv,z:0,vz:opts.v*Math.sin(opts.ang),g:ARROW_G,t:0,life:9,arc:true});return}
-      const d0=clamp(dist||120,24,640),sp=opts&&opts.speed||ARC_SPEED*(.8+d0/250),sc=opts&&opts.sc!=null?opts.sc:src.race==='elf'?.03:.06,d=d0*(opts&&opts.exact?1:1-sc+Math.random()*sc*2),T=d/sp,H=Math.min(64,d*d/700);
+      const d0=clamp(dist||120,24,640),sp=opts&&opts.speed||ARC_SPEED*(.8+d0/250),sc=opts&&opts.sc!=null?opts.sc:src.race==='elf'?.03:.06,d=d0*(opts&&opts.exact?1:1-sc+Math.random()*sc*2),T=d/sp,H=arcRise(d,arcDh(u,u.x+Math.cos(a)*d,u.y+Math.sin(a)*d));
       B.arrows.push({...base,x:u.x,y:u.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,z:0,vz:4*H/T,g:8*H/T/T,T,H,t:0,life:9,arc:true});return}
     const v=mag?MAGIC_SPEED:BOLT_SPEED;
     B.arrows.push({...base,x:u.x,y:u.y-6*(B.world?WORLD_BATTLE.sprite:1),vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:mag?1.4:1.1,magic:mag,col:src.bolt||'#c58af0'});

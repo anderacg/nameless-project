@@ -12,6 +12,9 @@ Kit.suite(({ok,info})=>{
  const a0=aim(40),a1=aim(150),a2=aim(450);info('aim at 40, 150, 450 px: '+a0+'°, '+a1+'°, '+a2+'°');
  const hu=(dh)=>{u.tgt={x:200,y:0,hp:1};const L=t.levelAt;window.levelAt=(x,y)=>x>100?dh:0;try{return t.bowAim(u)}finally{window.levelAt=L}},hi=hu(4),lo=hu(-4);info('at 200 px, its mark 4 levels up '+hi+'°, 4 down '+lo+'°');
  ok(a0<a1&&a1<=a2&&a2===45&&hi>lo&&t.BOW_AIM.steps.includes(a2),'a near mark aimed low, a farther one higher, a far one at 45°; a mark up a hill higher, one below flatter');
+ // (and the arrow flies so: Missile.fire's height, its landing's ground below him or above him)
+ {const L=t.levelAt;window.__B0=t.B;(0,eval)('B={arrows:[]}');const u={x:0,y:0,team:0},H=dh=>{window.levelAt=(x,y)=>x>100?dh:0;try{t.B.arrows.length=0;t.Missile.fire(u,0,1,{},200,{exact:true});return t.B.arrows[0].H}finally{window.levelAt=L}};
+  try{const up=H(4),lv=H(0),dn=H(-4);ok(up>lv&&lv>dn,'an arrow loosed lobs higher up to a mark on higher ground ('+up.toFixed(1)+' px), level '+lv.toFixed(1)+', flatter down to one below ('+dn.toFixed(1)+')')}finally{(0,eval)('B=window.__B0');delete window.__B0}}
  // (each angle its own picture, the bow, string and arrow whole: every pixel touching another by an edge)
  const pics=t.BOW_AIM.steps.map(d=>t.bowPic('bow','thrust',1,d,'#f3bfad')),px=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data,W=c.width,on=(x,y)=>x>=0&&y>=0&&x<W&&y<c.height&&d[(y*W+x)*4+3]>0;
    let n=0,lone=0;for(let y=0;y<c.height;y++)for(let x=0;x<W;x++)if(on(x,y)){n++;if(!on(x-1,y)&&!on(x+1,y)&&!on(x,y-1)&&!on(x,y+1))lone++}return{n,lone,s:Array.from(d).join()}};
