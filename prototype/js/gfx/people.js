@@ -367,8 +367,10 @@ const HORSE_ART={on:true,tall:true,hoof:'#3d3f4b',
     '.......hhhh....mHHHHHHHd........',
     '......hHHHhhhhhhHHHHHHHd........',
     '......hHHHHHHHHHHHHHHHHd........',
-    '......HHHHHHHHHHHHHHHHd.........',
-    '......dHHHddddddddHHdd..........'],run:[
+    '......HHHHHHHHHHHHHHHHHd........',
+    '......HHHHHHHHHHHHHHHHHd........',
+    '......dHHHHHHHHHHHHHHHd.........',
+    '.......dHHHHddddddHHHd..........'],run:[
     '',
     '',
     '',
@@ -380,8 +382,10 @@ const HORSE_ART={on:true,tall:true,hoof:'#3d3f4b',
     '.......hhhh....mHHHHHHHd........',
     '......hHHHhhhhhhHHHHHHHd........',
     '......hHHHHHHHHHHHHHHHHd........',
-    '......HHHHHHHHHHHHHHHHd.........',
-    '......dHHHddddddddHHdd..........']},
+    '......HHHHHHHHHHHHHHHHHd........',
+    '......HHHHHHHHHHHHHHHHHd........',
+    '......dHHHHHHHHHHHHHHHd.........',
+    '.......dHHHHddddddHHHd..........']},
   gallop:[
     {bob:0,body:'run',head:-1,tail:'up',rider:-1,legs:[[-1,-4,4,-6,3,-7,3],[0,-3,3,-5,1,-6,0],[2,5,4,7,3,8,2],[1,2,3,4,1,5,0]]},
     {bob:-1,body:'run',head:0,tail:'mid',rider:1,legs:[[0,-2,4,-1,2,0,2],[1,-2,4,-1,2,0,2],[0,-1,3,-2,2,-3,2],[0,-1,3,-2,1,-3,0]]},
@@ -474,35 +478,34 @@ function drawHorse(ps,o,walk,C,Mn,Tm){const A=horseBuild(),y0=A.y0,F=walk>=4?A.g
   A.tails[F.tail].forEach(([x,y],i,T)=>{if(i){const [px,py]=T[i-1];if(px!==x&&py!==y)ps(px,y+bob,Mn[2])}ps(x,y+bob,Mn[i?2:1])});
   horseDetail(ps,on,mane,A,F,shape,C,Mn,Tm,o,y0+bob);
   // barded: the side's colour over its body; else a saddle (and, no one in it, a cloth under it, its pommel, cantle and stirrup)
-  if(o.barded){for(let x=6;x<=21;x++)[Tm[0],PPAL.gold[1],Tm[2],x%2?Tm[3]:Tm[2]].forEach((c,k)=>{const y=y0+6+k+bob;if(on.has(x+','+y))ps(x,y,c)})}
+  if(o.barded){const deep=HORSE_TACK.on&&A.poll,rows=deep?[Tm[1],PPAL.gold[1],Tm[1],Tm[1],Tm[2],Tm[2]]:[Tm[0],PPAL.gold[1],Tm[2],null];for(let x=6;x<=22;x++)rows.forEach((c,k)=>{const y=y0+6+k+bob;if(on.has(x+','+y))ps(x,y,c||(x%2?Tm[3]:Tm[2]))});
+    // (its hem dagged: every other pixel along its foot a shade deeper, a gilt point between)
+    if(deep)for(let x=6;x<=22;x++){let y=-1;for(let k=0;k<6;k++)if(on.has(x+','+(y0+6+k+bob)))y=y0+6+k+bob;if(y>=0)ps(x,y,x%3===0?PPAL.gold[2]:Tm[3])}}
   else{const tk=HORSE_TACK.on;if(tk||o.saddled)for(let x=10;x<=16;x++){ps(x,y0+7+bob,Tm[1]);ps(x,y0+8+bob,Tm[2]);ps(x,y0+9+bob,tk?Tm[3]:x%2?Tm[3]:Tm[2])}
     for(let x=11;x<=15;x++)ps(x,y0+6+bob,PPAL.leather[x<13?0:1]);if(tk&&o.mount!=='stag')for(let y=7;y<=9;y++)ps(15,y0+y+bob,PPAL.leather[2])}
   if(o.saddled){ps(11,y0+5+bob,PPAL.leather[0]);ps(15,y0+5+bob,PPAL.leather[1]);ps(13,y0+10+bob,'#27272c');ps(13,y0+11+bob,'#27272c')}
   return y0+A.seat+bob+(F.rider||0)}
 /* a horse's detail (the owner, 2026-11-07: "make sure mount have more details. Current one looks really ugly"): its mane thick
-   and in strands down the crest (a dark strand on the edge, a lighter one inside it every other row), its quarters and shoulder
-   rounded (a light patch on each, the line of the flank and of the shoulder's back in shade); a horse's tack (HORSE_TACK: a
-   bridle, the headstall down its cheek and the bit, the reins back to the withers; a breast strap to the chest, studded) and,
-   under the saddle, a cloth of the side's colour, its hem gilt, the girth over it (drawHorse); a stag's (no tack, its saddle
-   only) pale rump, throat and belly and a rack of antlers (HORSE_TACK.antlers: x, y from its poll, rising from its ears, each pixel joined by an edge, the beams darker, the tines
+   and in strands down the crest (a dark strand on the edge, a lighter one inside it every other row), the line of its flank and
+   of its shoulder's back in shade; a horse's tack (HORSE_TACK: a bridle, the headstall down its cheek and the bit; a breast strap
+   to the chest, studded; no reins, which read as a stick across the neck) and, under the saddle, a cloth of the side's colour,
+   the girth over it (drawHorse); barded, its caparison down to the belly (the body as deep as its legs are long: the owner,
+   2026-11-07, "the mount portions still weird"); a stag's (no tack, its saddle only) small lyre of antlers (HORSE_TACK.antlers: x, y from its poll, rising from its ears, each pixel joined by an edge, the beams darker, the tines
    bone); HORSE_TACK.on false: none of it, the cloth only under an empty saddle, the stag's old antlers. on: its body's pixels, Y:
    its body's row y0 as it bobs */
-const HORSE_TACK={on:true,strap:[[1,2],[1,3],[2,4],[3,5]],bit:[4,6],rein:[17,4],breast:[[19,7],[20,7],[21,8],[22,8]],stud:[21,8],steel:'#b8bcc8',
-  haunch:[[8,6],[9,6],[8,7]],shoulder:[[18,6],[19,6]],lines:[[11,7],[11,8],[17,7],[16,8]],
-  antlers:{beam:[[1,-1],[1,-2],[0,-2],[0,-3],[-1,-3],[-1,-4],[-1,-5],[-2,-5],[2,-1],[2,-2],[3,-2],[3,-3],[4,-3],[4,-4],[4,-5],[5,-5]],
-    tine:[[-2,-6],[-3,-6],[-2,-7],[0,-4],[0,-5],[5,-6],[6,-6],[5,-7],[3,-5],[3,-6]]},
-  pale:[[6,6],[6,7],[7,7],[22,6],[23,7]]};
+const HORSE_TACK={on:true,strap:[[1,2],[1,3],[2,4],[3,5]],bit:[4,6],breast:[[19,7],[20,7],[21,8],[22,8]],stud:[21,8],steel:'#b8bcc8',
+  lines:[[11,8],[11,9],[17,8],[16,9]],
+  antlers:{beam:[[1,-1],[1,-2],[0,-2],[0,-3],[-1,-3],[-1,-4],[2,-1],[2,-2],[3,-2],[3,-3],[4,-3],[4,-4]],tine:[[-1,-5],[0,-5],[4,-5],[3,-5]]},};
 function horseDetail(ps,on,mane,A,F,shape,C,Mn,Tm,o,Y){const T=HORSE_TACK,inBody=(x,y)=>on.has(x+','+y),put=(x,y,c)=>{if(inBody(x,y))ps(x,y,c)},stag=o.mount==='stag';
   if(!T.on){if(stag){const [ex,ey]=A.ears[shape];for(const [x,y] of [[25,-1],[24,-2],[26,-2],[23,-3],[27,-3],[28,0],[29,-1]])ps(x+ex,Y+y+ey+(shape==='run'?F.head||0:0),PPAL.cloth[0])}return}
   if(!stag)for(const [x,y] of mane){put(x+1,y,Mn[2]);if(y%2===0)put(x+2,y,Mn[1])}
-  for(const [x,y] of T.haunch)put(x,Y+y,C[0]);for(const [x,y] of T.shoulder)put(x,Y+y,C[0]);for(const [x,y] of T.lines)put(x,Y+y,C[2]);
+  for(const [x,y] of T.lines)put(x,Y+y,C[2]);
   // (a tail of strands: each point a pixel thicker toward the croup, a lighter strand along it)
   A.tails[F.tail].forEach(([x,y],i,P)=>{if(i&&i<P.length-1)ps(x+1,y+Y-A.y0,i%2?Mn[1]:Mn[2])});
   const [hx,hy]=A.poll?A.poll[shape]:[A.headX,A.headY],HY=Y+hy+(F.head||0);
-  if(stag){for(const [x,y] of T.pale)put(x,Y+y,PPAL.linen[1]);for(const [x,y] of T.antlers.beam)ps(hx+x,HY+y,PPAL.cloth[2]);for(const [x,y] of T.antlers.tine)ps(hx+x,HY+y,PPAL.cloth[0]);return}
+  if(stag){for(const [x,y] of T.antlers.beam)ps(hx+x,HY+y,PPAL.cloth[2]);for(const [x,y] of T.antlers.tine)ps(hx+x,HY+y,PPAL.cloth[0]);return}
   if(!A.poll)return;const L=PPAL.leather[2];for(const [x,y] of T.strap)put(hx+x,HY+y,L);
-  const [bx,by]=[hx+T.bit[0],HY+T.bit[1]],[rx,ry]=[T.rein[0],Y+T.rein[1]],n=Math.max(1,bx-rx);ps(bx,by,T.steel);
-  for(let i=1;i<n;i++)ps(bx-i,Math.round(by+(ry-by)*i/n),L);
+  ps(hx+T.bit[0],HY+T.bit[1],T.steel);
   for(const [x,y] of T.breast)put(x,Y+y,L);put(T.stud[0],Y+T.stud[1],PPAL.gold[1])}
 function drawMount(g,o,walk,dx=0,dy=0){const ps=(x,y,c)=>pset(g,x+dx,y+dy,c);// (dx, dy: the cell's corner in g)
   const kind=o.mount,C=pal(kind==='horse'?o.mountC||'horse':kind==='stag'?'stag':kind==='ram'?'fleece':kind),Mn=pal(kind==='ram'?'wool':kind==='wolf'||kind==='warg'?kind:'dark'),Tm=pal(o.team);

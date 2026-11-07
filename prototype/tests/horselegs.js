@@ -40,6 +40,12 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
     B.head.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c]&&t.pget(g,hx+x,B.y0+hy+y+F.bob+(F.head||0))!==col[c])bad.push(w+': '+x+','+y)}))}t.HORSE_TACK.on=true;
    const L=B.head.length,Wd=Math.max(...B.head.map(r=>r.length)),deep=B.head.map(r=>r.replace(/\./g,'').length);
    ok(!bad.length&&Object.keys(B.poll).join()===Object.keys(B.body).join(),'one head ('+Wd+'x'+L+' px, '+Math.max(...deep)+' px across at the jowl to '+deep[L-1]+' at the muzzle) drawn the same in all 9 frames, at each shape\'s poll'+at+(bad.length?' ('+bad.slice(0,5).join('; ')+')':''))}
+  // ---- no lone speck (2026-11-07, the owner: "check distort pixel"): in every mount's every frame, ridden, empty or barded, no
+  // pixel set alone in a field of one other colour, but an eye
+  {const eyes=new Set(['#27272c','#ffdc04','#2a1e18']),bad=[];for(const m of ['horse','stag','ram','wolf','warg'])for(const brd of [0,1])for(const sd of [0,1])for(let w=-1;w<8;w++){
+     const g=t.pgrid(32,32);t.drawMount(g,{mount:m,team:'blue',saddled:!!sd,barded:!!brd},w);g.edge=true;t.poutline(g);const at=(x,y)=>x>=0&&y>=0&&x<32&&y<32?g.p[y*32+x]:null;
+     for(let y=0;y<32;y++)for(let x=0;x<32;x++){const c=at(x,y),n=[at(x-1,y),at(x+1,y),at(x,y-1),at(x,y+1)];if(c&&!eyes.has(c)&&n.every(q=>q&&q===n[0]&&q!==c))bad.push(m+' '+w+': '+x+','+y)}}
+   ok(!bad.length,'no lone speck on any mount, but its eye'+(bad.length?' ('+bad.slice(0,5).join('; ')+')':''))}
   // ---- the detail (2026-11-07, the owner: "make sure mount have more details"): a steel bit, a studded breast strap, a cloth of
   // the side's colour under the saddle he sits in; none of it with HORSE_TACK.on false; a stag's rack joined to its head
   {const T=t.HORSE_TACK,draw=(L,w)=>{const g=t.pgrid(32,32);t.drawMount(g,L,w);return g},cl=t.pal(bay.team)[1],on=draw(bay,4);T.on=false;const off=draw(bay,4);T.on=true;
@@ -51,7 +57,8 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
   // height with him
   {const legs=tall=>{A.tall=tall;const g=t.pgrid(32,32);t.drawMount(g,bay,-1);A.tall=true;const col=[];for(let y=0;y<32;y++)if(t.pget(g,14,y))col.push(y);const top=col[0],belly=col[col.length-1];return{deep:belly-top+1,leg:30-belly}};
    const s=legs(true),o=legs(false);info('standing: the body '+o.deep+' px deep on '+o.leg+' px of leg (the first pass), now '+s.deep+' on '+s.leg+at);
-   ok(s.leg===o.leg+n&&s.deep===o.deep,'the legs '+s.leg+' px under the same body ('+s.deep+' px deep; the first pass\'s legs '+o.leg+')'+at)}
+   // (2026-11-07, the owner: "the mount portions still weird": the body two rows deeper, as deep as its legs are long)
+   ok(s.leg===o.leg+n-2&&s.deep===o.deep+2,'the legs '+s.leg+' px under a body 2 px deeper ('+s.deep+' px deep; the first pass\'s '+o.deep+' on legs '+o.leg+')'+at)}
   {const seat=w=>t.drawMount(t.pgrid(32,32),bay,w,3,5),W=[-1,0,1,2,3,4,5,6,7];A.tall=false;const old=W.map(seat);A.tall=true;const nw=W.map(seat);
    info('the seat by frame, the first pass '+old.join(' ')+', now '+nw.join(' ')+at);ok(nw.every((y,i)=>y===old[i]-n),'the rider '+n+' px higher in every frame (on the saddle, no longer sunk into it: the owner, 2026-11-04), a frame behind the horse as before'+at)}
   {const riders=tall=>{A.tall=tall;clear();const r=KINDS.slice(0,6).flatMap(k=>POSES.map(p=>t.unitSprite(k,0,false,1,p)));A.tall=true;return r},o=riders(false),s=riders(true),bad=[],d=n;
@@ -60,8 +67,8 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
    ok(!bad.length,'his hand (lance, sword, bow), back (the flags) and free hand '+d+' px up with the seat, his height (bars, labels) '+d+' px more, in the same cell'+at+(bad.length?' ('+bad.slice(0,6).join('; ')+')':''))}
   // ---- the barding over its body only; the fallen horse in its cell
   {const g=t.pgrid(32,32),L=t.lookOf('hum_knight',1,false,0,'',null),Tm=t.pal(L.team),y0=B.y0+6;t.drawMount(g,L,-1);const out=[];
-   for(let i=0;i<g.p.length;i++){const x=i%32,y=Math.floor(i/32);if(Tm.includes(g.p[i])&&(y<y0||y>y0+3||x<6||x>21))out.push(x+','+y)}
-   ok(!out.length&&g.p.filter(c=>Tm.includes(c)).length>30,'a knight\'s horse wears its side\'s cloth over its body, nowhere else'+at+(out.length?' ('+out.slice(0,6).join(' ')+')':''))}
+   for(let i=0;i<g.p.length;i++){const x=i%32,y=Math.floor(i/32);if(Tm.includes(g.p[i])&&(y<y0||y>y0+5||x<6||x>22))out.push(x+','+y)}
+   ok(!out.length&&g.p.filter(c=>Tm.includes(c)).length>30,'a knight\'s horse wears its side\'s cloth over its body down to its belly, nowhere else'+at+(out.length?' ('+out.slice(0,6).join(' ')+')':''))}
   {const d=t.pgrid(32,22);t.drawMountDown(d,looks[1]);let low=0;for(let i=0;i<d.p.length;i++)if(d.p[i])low=Math.max(low,Math.floor(i/32));ok(low<=20&&d.p.includes(A.hoof),'fallen: its legs out toward you, inside its 32x22 cell (to row '+low+')'+at)}}
  A.leg=LEG;
  // ---- a ram and a wolf as they were; kept, made once
@@ -110,7 +117,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // shoulder shaded, its bridle, reins and breast strap, a cloth and a girth under every saddle; the stag's rack; the ram's fleece in
  // curls, the wolf's dark saddle and pale chest (people.js horseDetail, HORSE_TACK, PPAL.fleece; engine/beasts.js MOUNT_ART).
  // Proof: 9b6a5bc gives both again. Were 46e9bc72, e36d264)
- const OLD='64d8cf30',FIRST='6c25b61d';
+ // (both again 2026-11-07: the owner, "the mount portions still weird, check distort pixel": the body two rows deeper, a barded
+ // horse's caparison to its belly, no reins or blotches, the stag's lyre of antlers, the ram's curls in arcs. Proof: f20888e gives
+ // both again. Were 64d8cf30, 6c25b61d)
+ const OLD='c75e1892',FIRST='8a943596';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');
