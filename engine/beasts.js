@@ -65,9 +65,13 @@
   // (edge: the battle's figure, raw: the map's keep their outline; the side's colours (TEAM) never darkened)
   // (PX.BEAST_RIM: with PX.BEAST_EDGE, a blended outline round the figure, each pixel a deep shade of what it borders (PX.rim,
   // BEAST_RIM_K dark), as the soldiers' and the buildings' are; the side's colours (TEAM) left out of it)
-  PX.BEAST_RIM=true;PX.BEAST_RIM_K=.55;
-  function outline(g,edge){if(edge&&PX.BEAST_RIM){const R=[],hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(at(g,x,y))continue;const L=[];
-      for(const [u,v] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]]){const c=at(g,u,v);if(c&&c!==OUT&&!TEAM.includes(c))L.push(hx(c))}if(L.length)R.push([x,y,PX.rim(L,PX.BEAST_RIM_K)])}
+  PX.BEAST_RIM=true;PX.BEAST_RIM_K=.5;
+  // (natural, not square: a line a pixel thin (a tail's tip, a claw, a horn) unringed; an edge's own pixels only, corners rounding
+  // off; the lit side (top, left) a lighter shade, BEAST_RIM_LIT)
+  PX.BEAST_RIM_LIT=.72;
+  function outline(g,edge){if(edge&&PX.BEAST_RIM){const R=[],hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)],thin=(x,y)=>!at(g,x-1,y)&&!at(g,x+1,y)||!at(g,x,y-1)&&!at(g,x,y+1);
+    for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(at(g,x,y))continue;const L=[];let lit=false;
+      for(const [u,v,l] of [[x-1,y,0],[x+1,y,1],[x,y-1,0],[x,y+1,1]]){const c=at(g,u,v);if(c&&c!==OUT&&!TEAM.includes(c)&&!thin(u,v)){L.push(hx(c));if(l)lit=true}}if(L.length)R.push([x,y,PX.rim(L,lit?PX.BEAST_RIM_LIT:PX.BEAST_RIM_K)])}
     for(const [x,y,c] of R)putR(g,x,y,'#'+c.map(v=>v.toString(16).padStart(2,'0')).join(''));return}
     if(edge){const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=at(g,x,y);if(c&&c!==OUT&&!TEAM.includes(c)&&(!at(g,x-1,y)||!at(g,x+1,y)||!at(g,x,y-1)||!at(g,x,y+1)))e.push([x,y,c])}for(const [x,y,c] of e)putR(g,x,y,PX.shade(c,PX.BEAST_EDGE_K));return}
   for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(at(g,x,y)&&(x===0||y===0||x===g.w-1||y===g.h-1))put(g,x,y,OUT);const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!at(g,x,y)&&(at(g,x-1,y)||at(g,x+1,y)||at(g,x,y-1)||at(g,x,y+1)))o.push([x,y]);for(const [x,y] of o)put(g,x,y,OUT)}

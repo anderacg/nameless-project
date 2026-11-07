@@ -79,9 +79,10 @@ try{
    drawn.clear();w.plx=w.x;w.ply=w.y;w.movF=0;w.atkAt=B.t-t.ATK_ANIM*.5;t.drawUnit(w);const striking=drawn.has(t.unitSprite('wolf',w.team,false,w.v,7));w.atkAt=null;
    drawn.clear();dr.plx=dr.x;dr.ply=dr.y;dr.movF=0;dr.br=3.5-.05;t.drawUnit(dr);const fire=drawn.has(t.unitSprite('dragon',dr.team,false,dr.v,9));dr.br=2;
    ok(walking&&striking&&fire,'and drawn so on the field: the walk as it moves, the strike as it attacks, the breath ('+[walking,striking,fire]+')')}finally{ctx.drawImage=orig}
-  // (the fallen: a beast drops to the ground and lies in its dead pose, lower than it stood)
+  // (the fallen: a beast drops to the ground and lies in its dead pose, no higher than it stood (a spider on its back, its legs
+  // up, may reach a pixel over its standing knees, which a thin line's missing outline leaves bare: 2026-11-07))
   const c=t.corpseOf(w),top=s=>{const d=data(s),n=s.width;for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(d[(y*n+x)*4+3])return y;return n};
-  ok(c.beast&&c.down&&c.down===t.unitSprite('wolf',w.team,false,w.v,PX.BEAST_DEAD)&&c.down.width===c.beast.width&&top(c.down)>top(c.beast)+2&&kinds.every(k=>top(t.unitSprite(k,1,false,0,PX.BEAST_DEAD))>=top(t.unitSprite(k,1,false,0,0))&&t.unitSprite(k,1,false,0,PX.BEAST_DEAD)!==t.unitSprite(k,1,false,0,0)),'a beast that falls lies dead in its own pose, low on the ground, in the same cell (vfx.js drawCorpses): '+kinds.map(k=>k+' '+top(t.unitSprite(k,1,false,0,0))+'\u2192'+top(t.unitSprite(k,1,false,0,PX.BEAST_DEAD))).join(', '));
+  ok(c.beast&&c.down&&c.down===t.unitSprite('wolf',w.team,false,w.v,PX.BEAST_DEAD)&&c.down.width===c.beast.width&&top(c.down)>top(c.beast)+2&&kinds.every(k=>top(t.unitSprite(k,1,false,0,PX.BEAST_DEAD))>=top(t.unitSprite(k,1,false,0,0))-1&&t.unitSprite(k,1,false,0,PX.BEAST_DEAD)!==t.unitSprite(k,1,false,0,0)),'a beast that falls lies dead in its own pose, low on the ground, in the same cell (vfx.js drawCorpses): '+kinds.map(k=>k+' '+top(t.unitSprite(k,1,false,0,0))+'\u2192'+top(t.unitSprite(k,1,false,0,PX.BEAST_DEAD))).join(', '));
   // (made ahead: the battle's warm-up lists every beast's poses)
   t.warmBattle(B.units);const nb=t.WARM.b.length;let n=0;while((t.WARM.q.length||t.WARM.b.length)&&n++<2000)t.warmStep();ok(nb>=2*poses.length&&!t.WARM.q.length&&!t.WARM.b.length&&['wolf','dragon'].every(k=>poses.every(p=>t.spr['bst'+k+'1'+(B.units.find(x=>x.type===k).v%3)+'p'+t.beastPoseOf(k,p)])),'their poses are made ahead with the rest of the battle’s sprites');
   B.over=true;B.endT=0;t.B=null;G.mode='world'}

@@ -13,7 +13,7 @@
 // template's outline under its feet took, the picture's last); the anchors the template kept on its own
 // (back: what he wears on his back, its top left, out behind him; off: the shield arm's shield, its top left; guard: a shield raised
 // before him, its left); races: those the doll has
-const DOLL_FIGS={on:true,riders:true,edge:true,edgeK:.68,rim:true,rimK:.55,dx:2,dy:1,back:[2,6],off:[1,8],guard:[8],races:['human','elf','dwarf','orc']};
+const DOLL_FIGS={on:true,riders:true,edge:true,edgeK:.68,rim:true,rimK:.5,rimLit:.72,dx:2,dy:1,back:[2,6],off:[1,8],guard:[8],races:['human','elf','dwarf','orc']};
 // whether a look is drawn as a doll
 const dollable=o=>DOLL_FIGS.on&&(!o.mount||DOLL_FIGS.riders)&&!!(window.PX&&PX.doll)&&DOLL_FIGS.races.includes(o.race||'human');
 // (a look's helm as the doll's head part and its material)

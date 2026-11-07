@@ -89,7 +89,9 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // (both again 2026-11-07: the owner, "bigger shields with the army's device, distinct helmets": a rider's shield before his off arm
  // with his people's device, a knight's helm crested, a horned helm's horns (figures.js ShieldGear, dollfigs.js DOLL_HELM). Proof:
  // 0f9504c gives both again. Were 8cfc6411, 5eb97e7c)
- const OLD='ed920d7',FIRST='d3fa43ba';
+ // (both again 2026-11-07: the owner, "make sure the outline doesn't look too square": a lance's thin shaft unringed, corners left
+ // open, the lit side's outline lighter (people.js prim, DOLL_FIGS.rimLit). Proof: 5ff3c16 gives both again. Were ed920d7, d3fa43ba)
+ const OLD='74d82a6a',FIRST='bc05bb84';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

@@ -124,9 +124,13 @@ function pjoin(g){const w=g.w,h=g.h,id=new Int32Array(w*h).fill(-1),C=[];for(let
 // (the blended outline (the owner, 2026-11-07: "the outline should blend with the sprite, a darker shade of it"): every clear pixel
 // beside the figure a deep shade of the pixels it borders (engine/pixel.js PX.rim, DOLL_FIGS.rimK dark), as the buildings' and
 // trees' are; under the feet, the picture's edge, none)
-function prim(g){const w=g.w,h=g.h,hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)],R=[];
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(g.p[y*w+x])continue;const L=[];for(const [u,v] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]]){const c=u>=0&&v>=0&&u<w&&v<h?g.p[v*w+u]:null;if(c&&c[0]==='#'&&c.length===7)L.push(hx(c))}
-    if(L.length)R.push([y*w+x,PX.rim(L,DOLL_FIGS.rimK)])}
+// (natural, not square (the owner, 2026-11-07: "make sure the outline doesn't look too square"): a line a pixel thin (a shaft, a staff,
+// a tail's tip, a horn) left unringed, crisp as drawn; only an edge's own pixels outlined, never a corner's diagonal, so corners round
+// off; on the lit side (the top and left) the outline a lighter shade (rimLit) than on the shaded (rimK))
+function prim(g){const w=g.w,h=g.h,hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)],R=[],op=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&!!g.p[y*w+x],
+    thin=(x,y)=>!op(x-1,y)&&!op(x+1,y)||!op(x,y-1)&&!op(x,y+1);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(g.p[y*w+x])continue;const L=[];let lit=false;for(const [u,v,l] of [[x-1,y,0],[x+1,y,1],[x,y-1,0],[x,y+1,1]]){if(!op(u,v)||thin(u,v))continue;const c=g.p[v*w+u];if(c&&c[0]==='#'&&c.length===7){L.push(hx(c));if(l)lit=true}}
+    if(L.length)R.push([y*w+x,PX.rim(L,lit?DOLL_FIGS.rimLit:DOLL_FIGS.rimK)])}
   for(const [i,c] of R)g.p[i]='#'+c.map(v=>v.toString(16).padStart(2,'0')).join('')}
 function poutline(g){const B=g.body,on=(x,y)=>!!pget(g,x,y)&&!(B&&B.has(y*g.w+x));
   if(DOLL_FIGS.on&&DOLL_FIGS.edge&&(B||g.edge)){pfillHoles(g);if(DOLL_FIGS.rim){prim(g);pfillHoles(g)}else{const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(!on(x,y))continue;if(!pget(g,x-1,y)||!pget(g,x+1,y)||!pget(g,x,y-1)||!pget(g,x,y+1))e.push([x,y])}
