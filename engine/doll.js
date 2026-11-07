@@ -80,6 +80,12 @@
     //  short hair over the top of his head, a short sideburn either side; his face its full width (face: the scalp's back column
     //  skin, not hair) and two eyes)
     crop:{slot:'hair',cover:'s',shape:{at:'head',up:1,rows:['.011.','2...2','3...3']}},
+    // (and the lengths of the portraits' hair (prototype ui/faces.js FACE_HAIR): to the jaw (mid), past the shoulders (long), a bun
+    //  on top (bun); a beard seen from before him over his jaw and chin)
+    cropMid:{slot:'hair',cover:'s',shape:{at:'head',up:1,rows:['.011.','2...2','2...2','3...3']}},
+    cropLong:{slot:'hair',cover:'s',shape:{at:'head',up:1,rows:['.011.','2...2','2...2','2...2','3...3','3...3']}},
+    cropBun:{slot:'hair',cover:'s',shape:{at:'head',up:2,rows:['..1..','.011.','2...2','3...3']}},
+    beardF:{slot:'beard',shape:{at:'head',rows:['.....','.....','.121.','..2..']}},
     face:{slot:'beard',shape:{at:'head',rows:['.....','...1.','...1.']}},
     eye:{slot:'beard',shape:{at:'head',rows:['.....','.3.3.']}},
     // the head: a hood (over the scalp, round the face, onto the shoulders), a cap, a kettle helm (its brim), a great helm (face and
@@ -157,7 +163,7 @@
      bare: the body alone, its gear left to whoever draws it (the battle turns a weapon through its blow), else laid on */
   const BASES=new Map(),BASE_CAP=4000,GREY=['#c8c8c8','#9a9a9a','#6e6e6e','#464646'];
   const chanOf=m=>m==='team'||m==='hair'||m==='skin'?m:m;
-  PX.dollBase=spec=>{const und=v=>v===undefined?'~':v,key=JSON.stringify([spec.race,spec.style,spec.beard,spec.uniform,und(spec.weapon),und(spec.shield),spec.pose,spec.frame|0,spec.seed|0,!!spec.bare,!!spec.noShadow,spec.drop||null,spec.moves||null]);
+  PX.dollBase=spec=>{const und=v=>v===undefined?'~':v,key=JSON.stringify([spec.race,spec.style,spec.beard,spec.beardStyle||null,spec.uniform,und(spec.weapon),und(spec.shield),spec.pose,spec.frame|0,spec.seed|0,!!spec.bare,!!spec.noShadow,spec.drop||null,spec.moves||null]);
     let B=BASES.get(key);if(B)return B;if(BASES.size>BASE_CAP)BASES.clear();
     const race=spec.race||'human',R=RACES[race]||RACES.human,seed=spec.seed|0,U=typeof spec.uniform==='string'?UNIFORMS[spec.uniform]:spec.uniform?{parts:spec.uniform}:null;
     const S=skeleton(race),ox=D.OX,oy=S.oy,G=new Array(D.W*D.H).fill(null),put=(x,y,k,t)=>{if(x>=0&&y>=0&&x<D.W&&y<D.H&&k)G[y*D.W+x]=[k,Math.max(0,Math.min(3,t|0))]};
@@ -169,7 +175,7 @@
     // (each [part, material, overrides]: a part's own numbers changed for this figure, dark: its tones a step darker)
     const parts=[];for(const [n,m,x] of (U?U.parts:[]))if(PARTS[n])parts.push({...PARTS[n],...(x||{}),name:n,m:chanOf(m)});
     if(!parts.some(p=>p.cover&&p.cover.includes('p')||p.slot==='legs'))parts.push({...PARTS.loin,name:'loin',m:'linen'});
-    const style=spec.style||'short';if(PARTS[style])parts.push({...PARTS[style],name:style,m:'hair'});if(spec.beard??R.beard)parts.push({...PARTS.beard,name:'beard',m:'hair'});
+    const style=spec.style||'short';if(PARTS[style])parts.push({...PARTS[style],name:style,m:'hair'});if(spec.beard??R.beard)parts.push({...PARTS[spec.beardStyle]||PARTS.beard,name:'beard',m:'hair'});
     parts.sort((a,b)=>SLOTS.indexOf(a.slot)-SLOTS.indexOf(b.slot));
     const headCover=parts.some(p=>p.slot==='head'&&p.cover&&p.cover.includes('s')),slit=parts.some(p=>p.slit);
     const hands=S.cells.filter(c=>c.r==='h'),hR=hands.filter(c=>c.side==='R').sort((a,b)=>b.y-a.y)[0],hL=hands.filter(c=>c.side==='L').sort((a,b)=>b.y-a.y)[0];

@@ -2,6 +2,8 @@
 // Named faces follow the person through allegiances, gear changes and captivity, not their troop type.
 Kit.suite(({ok})=>{
  const t=T;Kit.begin('soldier',23);Kit.clear();Kit.world({town:null});
+ // (the paintings, faces switched off (ui/faces.js FACES.on); with them on, the generated faces: below)
+ t.FACES.on=false;
  const names=t.FIDS.flatMap(f=>t.FACS[f].lords),lords=names.map(name=>t.lordPic({name,fac:t.FIDS.find(f=>t.FACS[f].lords.includes(name))}));
  ok(lords.every(s=>s.startsWith('art/portrait/game/'))&&new Set(lords).size===20,'the twenty founding lords have distinct authored portraits');
  const comps=['brann','elske','tavi','ander'].map(id=>t.portrait(id));
@@ -29,4 +31,11 @@ Kit.suite(({ok})=>{
  const card=t.railCard({pic:a,fac:'vale',name:'Lord Aldric',role:'Your prisoner'});
  ok(card.includes('src="'+a+'"')&&!card.includes('rc-em'),'prison cards display the individual face when both face and faction are supplied');
  const known=t.W.lords.find(l=>l.name==='Lord Aldric');if(known){t.KNOWLEDGE.lord(known);ok(t.lordsPage().includes(t.lordPic(known)),'the known-lords journal includes its individual portrait')}
+ // (2026-11-07, the owner: "the lords and named heroes, companion can also use generated portraits": with faces on, each its own
+ // generated face, kept through a change of allegiance (its cloth the new realm's colour), the battle's card the same face)
+ t.FACES.on=true;
+ {const L2=names.map(name=>t.lordPic({name,fac:t.FIDS.find(f=>t.FACS[f].lords.includes(name))})),C2=['brann','elske','tavi','ander'].map(id=>t.portrait(id));
+  ok(L2.every(s=>s.startsWith('data:image/png'))&&new Set(L2).size===20&&C2.every(s=>s.startsWith('data:image/png'))&&new Set(C2.concat(L2)).size===24,'with faces: the twenty lords and four companions each their own generated face');
+  const l2={name:'Lord Aldric',fac:'vale'},f0=JSON.stringify(t.Faces.lord(l2).config);l2.fac='karn';
+  ok(JSON.stringify(t.Faces.lord(l2).config)===f0&&t.TALK_PIC.lord(l2)===t.lordPic(l2)&&t.hudPic('brann')===t.portrait('brann'),'with faces: a lord keeps his face when his allegiance changes, dialogue and the battle\'s cards show the same faces')}
 });

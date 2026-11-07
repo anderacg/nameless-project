@@ -481,6 +481,13 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .nm-line{display:flex;align-items:center;gap:6px}
 .nm-line input{flex:1;min-width:0;min-height:var(--tap);padding:4px 10px;font:inherit;font-size:var(--fs-md);color:var(--fg);background:var(--shade);border:1px solid var(--line-2);border-radius:var(--r-sm)}
 .nm-line input:focus{border-color:var(--accent);outline:none}
+/* the face maker (the New game page: ui/faces.js): your portrait beside its rows, each a part or a colour stepped ‹ › */
+.face-maker{display:flex;gap:12px;align-items:flex-start;max-width:640px;margin-bottom:6px}
+.fm-pic{width:112px;height:112px;flex:none;image-rendering:pixelated;background:var(--shade);border:1px solid var(--line-2);border-radius:4px}
+.fm-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:2px 12px;flex:1;min-width:0;align-content:start}
+.fm-row{display:grid;grid-template-columns:76px auto 1fr auto;align-items:center;gap:4px;font-size:var(--fs-sm);color:var(--muted)}
+.fm-row b{color:var(--fg);font-weight:normal;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-height:430px){.fm-pic{width:84px;height:84px}}
 .nm-win{display:grid;gap:10px}.nm-win .nm-fields{grid-template-columns:minmax(0,1fr);max-width:520px;margin:0}
 /* the Hero window's own bars (character.js): your hero's health, stamina (the band's) and mana */
 .hvit{display:grid;gap:3px;margin-bottom:4px;max-width:420px}

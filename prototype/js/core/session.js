@@ -67,7 +67,7 @@ function begin(k,settings){
 const seededStart=()=>!WM.classic,startDraws=(own,fn)=>own?Rng.use('start',fn):fn();
 function startGame(k,b){
   resetSession();nameStart();P.bg=k;P.gold=b.gold;P.troops={...b.troops};P.bonus=b.bonus;// (the names typed on the New game page, if any: ui/names.js)
-  const rc=RACES[P.race=G.race||'human'];
+  const rc=RACES[P.race=G.race||'human'];if(typeof Faces!=='undefined')Faces.start();// (your face: the New game page's, or one drawn for you: ui/faces.js)
   for(const a in b.attr)P.attr[a]+=b.attr[a];for(const a in rc.attr)P.attr[a]=Math.max(1,P.attr[a]+rc.attr[a]);
   // every discipline starts at 0; your race and past give a knack: 25% faster learning per point (P.apt)
   for(const src of [b.sk,rc.sk])for(const s in src||{})P.apt[s]=(P.apt[s]||0)+.25*src[s];

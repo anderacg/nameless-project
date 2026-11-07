@@ -171,6 +171,8 @@ function lookOf(type,team,hero,v,cid,cg){
     const off=hero?P.gear.offhand:cg&&cg.offhand,oi=off&&ITEMS[off];if(oi&&oi.icon==='shield')o.offShield=oi.col||'wood'}
   // (no cape (the owner, 2026-11-07: "please remove cape"); his head a crop and an eye: "revise head")
   if(hero){o.cape=false;o.beard=null;o.hair=R.hair[0];o.tabard=false;o.sleeves=true;o.hairStyle='crop';o.dollEye=true}
+  // (your hero's and a companion's hair, beard and face as their portraits (ui/faces.js Faces.look))
+  const face=typeof Faces!=='undefined'&&Faces.ok()?hero?Faces.you():COMPS[cid]?Faces.companion(cid):null:null;if(face)Object.assign(o,Faces.look(face));
   return o;
 }
 // the letters' colours for a look

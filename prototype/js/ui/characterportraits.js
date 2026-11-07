@@ -48,4 +48,5 @@ class NamedPortraits{
       return peopleSprite({...L,mount:null,helm:['bare','cap','circlet','kettle'][(h>>>4)%4],hair:['brown','black','grey','ginger','blond'][(h>>>8)%5],weapon:null,shield:null},0)})
   }
 }
-const lordPic=l=>NamedPortraits.lord(l);
+// (a lord's: its face (ui/faces.js), while there are; else its painting, or its figure)
+const lordPic=l=>{const f=typeof Faces!=='undefined'&&Faces.ok()?Faces.lord(l):null;return f?Faces.pic(f):NamedPortraits.lord(l)};

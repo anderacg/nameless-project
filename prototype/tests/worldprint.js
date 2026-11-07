@@ -530,7 +530,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-07, on purpose: the owner, "make the head look more forward": your hero's head seen from before him, his hair over
 //  the top and a sideburn either side, his face its full width and two eyes (engine/doll.js crop, face, eye): you in its picture.
 //  Proof: a2c7152 gives it again. Was W6 2c2de2df)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'1c937eb8',W7:'0ad8975e',W8:'f6fce34e',B2:'484f767d'};
+// (W6, W7 and B2 again 2026-11-07, on purpose: the owner, "utilize the portrait generator ... the lords, named heroes, companions
+//  ... make hair style match with portraits": your face made as the game starts and kept in the save (its 'faces' key: W7, B2),
+//  your figure's hair and beard your face's (W6) (ui/faces.js). Proof: FACES.on false gives all three again. Were W6 1c937eb8,
+//  W7 0ad8975e, B2 484f767d)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'d453ae6d',W7:'c8d71a5e',W8:'f6fce34e',B2:'2bb96756'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

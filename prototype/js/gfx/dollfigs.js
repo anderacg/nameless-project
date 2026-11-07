@@ -45,7 +45,7 @@ const dollChan=m=>typeof m==='string'?m:JSON.stringify(m),dollRamp=n=>{try{retur
 // (an item's '#rrggbb' its ramp of four tones (pal), never one flat colour: an armour and a helm shaded as the rest of him)
 function dollSpec(o,pose,frame,moves){const parts=dollParts(o).map(([p,m,x])=>[p,m==='team'?'team':dollChan(typeof m==='string'&&m[0]==='#'?pal(m):m),x]);
   const seed=[...JSON.stringify([o.race,o.skin,o.hair,o.beard,o.armor,o.helm,!!o.cape,!!o.robe,o.v,o.shortHair])].reduce((a,c)=>(a*31+c.charCodeAt(0))|0,7);
-  return{race:o.race||'human',skin:dollChan(o.skin||'skin'),hair:dollChan(o.hair||'brown'),style:o.hairStyle||(o.shortHair===false?'long':'short'),beard:!!o.beard,uniform:parts,team:dollChan(o.team||'blue'),
+  return{race:o.race||'human',skin:dollChan(o.skin||'skin'),hair:dollChan(o.hair&&o.hair[0]==='#'?pal(o.hair):o.hair||'brown'),style:o.hairStyle||(o.shortHair===false?'long':'short'),beard:!!o.beard,beardStyle:o.beardStyle||null,uniform:parts,team:dollChan(o.team||'blue'),
     seed,ramp:dollRamp,bare:true,noShadow:true,weapon:null,shield:null,pose,frame,moves}}
 // (the poses' own moves on the doll, by the template's walks and styles: [regions, side, dx, dy, from row]; the doll's dx is mirrored
 // (dollfigs draws it facing right): +1 is back)
