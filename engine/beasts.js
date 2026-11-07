@@ -181,8 +181,8 @@
   // with its back, ears up, a pale throat and chest, a bushy tail; grey, pale or dark; about a third a man's height at the shoulder
   KINDS.wolf={W:30,H:20,coats:['#8a8e98','#a8a8a4','#6c707c'],
     draw(g,F,o){const v=o.v%3;return handBeast(g,{top:11,far:1,legH:5,headDown:4,pawUp:0,pawOut:0,hind:[6,6,2,1,2],fore:[14,5,2,1,0],mouth:[18,5],collar:[15,2,6],headKeys:'lmn',
-      rows:['................a.a....',
-            '...............aAaA....',
+      rows:['................A.A....',
+            '...............AAAA....',
             '.....aaaaaaaaa.ABBBA...',
             '...aabbbbbbbbbaBBeBBm..',
             '...bbbbbbbbbbbbbBBBMMMn',
@@ -279,8 +279,8 @@
      M: a wolf's pale chest, a ram's face), the side's outline by the game's own (people.js poutline) */
   const MOUNT_ART={
     wolf:{top:12,seat:2,far:2,legH:4,headDown:3,pawUp:0,pawOut:0,hind:[7,6,3,2,2],fore:[18,5,3,2,0],mouth:[26,9],
-      rows:['......................a..a.....',
-            '.....................aAaAA.....',
+      rows:['......................A..A.....',
+            '.....................AAAAA.....',
             '.....aaaaaaaaaaaaaaaaABBBBA....',
             '...aabbbbbbbbbbbbbbbaBBBeBBBm..',
             '..abbbbbbbbbbbbbbbbbbbBBBBMMMn.',
@@ -371,7 +371,7 @@
   // run out, its eyes shut)
   // (the owner, 2026-11-07: "fix slime sprite": teal, acid green or bog violet, so it stands off the grass; a glossy dome over a
   // puddle lip, a lit rim, its dark core seen through it, a white gloss)
-  KINDS.slime={W:16,H:16,coats:['#3e9e9a','#9ab83a','#8a62a8'],deaths:['melt','burst','sag'],
+  KINDS.slime={W:16,H:16,loose:true,coats:['#3e9e9a','#9ab83a','#8a62a8'],deaths:['melt','burst','sag'],
     draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Y=g.h-2,a=F.a,i=F.i;
       if(F.dead&&i===1){const m=mask().ell(8,Y-.2,7,1.1);shade(g,m,C);put(g,7,Y,C[2]);put(g,9,Y-1,C[2]);put(g,4,Y-1,C[0]);
         for(const [x,y] of [[2,Y-3],[13,Y-3],[6,Y-4],[11,Y-5],[4,Y-6]])put(g,x,y,C[y<Y-4?0:1]);return}
@@ -486,16 +486,26 @@
   // (drawn with room round it (PAD), outlined, then cut to the kind's canvas: K.W x K.H, its x shifted by K.dx; PX._beastFit says
   // how much room each kind's poses take)
   const PAD=16;
-  // (no pinholes: a gap of up to 3 px shut in by the figure, left where a head or a leg moved a pixel, takes the colour above it
-  // or beside it)
+  // (no pinholes: a gap of up to 3 px shut in by the figure, left where a head or a leg moved a pixel, takes the colour most of
+  // its neighbours share)
   function fillHoles(g){const seen=new Uint8Array(g.w*g.h),q=[];for(let i=0;i<g.w*g.h;i++){if(seen[i]||g.p[i])continue;const R0=[];let open=false;q.push(i);seen[i]=1;
       while(q.length){const j=q.pop(),x=j%g.w,y=(j/g.w)|0;R0.push(j);if(x===0||y===0||x===g.w-1||y===g.h-1)open=true;
         for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=g.w||Y>=g.h)continue;const k=Y*g.w+X;if(!seen[k]&&!g.p[k]){seen[k]=1;q.push(k)}}}
-      if(!open&&R0.length<=3)for(const j of R0){const x=j%g.w,y=(j/g.w)|0;g.p[j]=at(g,x,y-1)||at(g,x-1,y)||at(g,x+1,y)||at(g,x,y+1)}}}
+      if(!open&&R0.length<=3)for(const j of R0){const x=j%g.w,y=(j/g.w)|0;g.p[j]=common([at(g,x-1,y),at(g,x+1,y),at(g,x,y+1),at(g,x,y-1)])}}}
+  // (the colour most of them share: never an eye or a tooth copied, which stands alone)
+  const common=L=>{const n=new Map();let best=null,bn=0;for(const c of L)if(c){const k=(n.get(c)||0)+1;n.set(c,k);if(k>bn){bn=k;best=c}}return best};
+  // (nothing loose: a piece of up to 8 px cut off from the figure joined to it along the shortest way in its own colour when within
+  // 3 px, else, of 2 px or less, dropped; K.loose (the slime's splash) keeps its drops)
+  function joinLoose(g){const w=g.w,h=g.h,id=new Int32Array(w*h).fill(-1),C=[];for(let i=0;i<w*h;i++){if(id[i]>=0||!g.p[i])continue;const q=[i],P=[];id[i]=C.length;
+      while(q.length){const j=q.pop(),x=j%w,y=(j/w)|0;P.push(j);for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=w||Y>=h)continue;const k=Y*w+X;if(id[k]<0&&g.p[k]){id[k]=C.length;q.push(k)}}}C.push(P)}
+    if(C.length<2)return;const main=C.reduce((a,b)=>b.length>a.length?b:a);
+    for(const P of C){if(P===main||P.length>8)continue;let best=null,bd=1e9;for(const j of P)for(const k of main){const d=Math.max(Math.abs(j%w-k%w),Math.abs((j/w|0)-(k/w|0)));if(d<bd){bd=d;best=[j,k]}}
+      if(bd<=3){const [j,k]=best,c=g.p[j],x0=k%w,y0=k/w|0,x1=j%w,y1=j/w|0;for(let s=1;s<bd;s++){const x=Math.round(x0+(x1-x0)*s/bd),y=Math.round(y0+(y1-y0)*s/bd);if(!g.p[y*w+x])g.p[y*w+x]=c}}
+      else if(P.length<=2)for(const j of P)g.p[j]=null}}
   function raw(K,o,fly){const pose=o.pose||0,[a,i]=act(pose),g=grid(K.W+2*PAD,K.H+PAD),v=(o.v||0)>>>0;
     const F=a==='dead'?{a,i,dead:true,how:(K.deaths||QUAD_DEATHS)[i]}:(K.gait||gait)(a==='alt'&&!K.alt?'atk':a,i);if(a==='alt'&&K.alt)F.a='alt';
     OX=PAD+(K.dx||0);try{K.draw(g,F,{v,team:o.team,fly,kind:K.kind})}finally{OX=0}
-    fillHoles(g);
+    if(!K.loose)joinLoose(g);fillHoles(g);
     // (nothing below the ground: the bottom row is the outline's; with PX.BEAST_EDGE (no outline: its own edge a shade darker, the
     //  paper dolls' style) the figure a row down, its feet on the bottom row)
     g.p.fill(null,(g.h-1)*g.w);outline(g,PX.BEAST_EDGE);if(PX.BEAST_EDGE){g.p.copyWithin(g.w,0,(g.h-1)*g.w);g.p.fill(null,0,g.w)}return g}
@@ -540,7 +550,7 @@
   function mapBeast(kind,f){const T=MAPF[kind],K=KINDS[kind],rows=T.frames?T.frames[T.seq?T.seq[f%T.seq.length]:f%T.frames.length]:T.rows.concat(PX.mapLegs(T.legs[0],T.legs[1],f)),W=Math.max(...rows.map(r=>r.length)),g=grid(W+2,rows.length+2),
       C=R(T.c||K.coats[0]),S=R(T.c2||K.coats[0]),col={h:C[0],H:C[1],d:C[2],k:C[3],l:S[0],L:S[1],m:S[2],D:T.D||'#3a2c28',e:T.e||'#1a1410',w:'#e4dcc4',r:'#c0403a',...(T.x||{})};
     // (PX.BEAST_EDGE: no outline, its own edge darker, its feet on the bottom row)
-    const E=PX.BEAST_EDGE?1:0;rows.forEach((r,y)=>[...r].forEach((c,x)=>putR(g,x+1,y+1+E,col[c])));outline(g,PX.BEAST_EDGE);const c=canvas(g);c.fh=g.h-1;c.kind=kind;return c}
+    const E=PX.BEAST_EDGE?1:0;rows.forEach((r,y)=>[...r].forEach((c,x)=>putR(g,x+1,y+1+E,col[c])));if(!T.frames)joinLoose(g);outline(g,PX.BEAST_EDGE);const c=canvas(g);c.fh=g.h-1;c.kind=kind;return c}
   PX.MAP_BEASTS=Object.keys(MAPF);
   // the world map: the dragon on the wing (its own drake, wings up, then level: 32, it should look huge); the rest their own small
   // figures (MAPF), f their step (0 to PX.MAP_STEPS-1)

@@ -80,7 +80,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // (people.js pfillHoles). Proof: pfillHoles doing nothing gives both again. Were 3ee76635, 17984ae4)
  // (FIRST again 2026-11-07: the owner, "horse and stag mount some legs seem like a stick and too thin": the near leg 3 px over the
  // forearm and 2 below, the far one 2 to the fetlock (people.js horseLeg). Proof: the commit before gives it again. Was 854406d)
- const OLD='51d8201e',FIRST='1c22f79b';
+ // (both again 2026-11-07: the owner, "recheck any weird distorted pixels": a pinhole takes the colour most of its neighbours share,
+ // never an eye copied, and a loose piece of a figure is joined to it (people.js pfillHoles, pjoin). Proof: 8aaa2d8 gives both again.
+ // Were 51d8201e, 1c22f79b)
+ const OLD='11aacf6e',FIRST='8c06f885';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

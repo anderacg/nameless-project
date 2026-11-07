@@ -107,11 +107,20 @@ const pget=(g,x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h?g.p[y*g.w+x]:null;
 // edge (DOLL_FIGS.edge, the owner's reference: no outline anywhere), the rest wears none either: its own pixels at its silhouette's
 // edge a shade darker (DOLL_FIGS.edgeK), the body's untouched: a figure with a doll's body (g.body), or a mount drawn alone (g.edge))
 // (no pinholes (the owner, 2026-11-07: "fix any weird transparent pixel"): a gap of up to 3 px shut in by the figure, left where
-// two parts meet, takes the colour above it or beside it)
+// two parts meet, takes the colour most of its neighbours share (never an eye copied, which stands alone))
 function pfillHoles(g){const w=g.w,h=g.h,seen=new Uint8Array(w*h),q=[];for(let i=0;i<w*h;i++){if(seen[i]||g.p[i])continue;const R=[];let open=false;q.push(i);seen[i]=1;
     while(q.length){const j=q.pop(),x=j%w,y=(j/w)|0;R.push(j);if(x===0||y===0||x===w-1||y===h-1)open=true;
       for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=w||Y>=h)continue;const k=Y*w+X;if(!seen[k]&&!g.p[k]){seen[k]=1;q.push(k)}}}
-    if(!open&&R.length<=3)for(const j of R){const x=j%w,y=(j/w)|0;g.p[j]=pget(g,x,y-1)||pget(g,x-1,y)||pget(g,x+1,y)||pget(g,x,y+1)}}}
+    if(!open&&R.length<=3)for(const j of R){const x=j%w,y=(j/w)|0,n=new Map();let best=null,bn=0;for(const c of [pget(g,x-1,y),pget(g,x+1,y),pget(g,x,y+1),pget(g,x,y-1)])if(c){const k=(n.get(c)||0)+1;n.set(c,k);if(k>bn){bn=k;best=c}}g.p[j]=best}}}
+// (nothing loose (the owner, 2026-11-07: "recheck any weird distorted pixels"): a piece of up to 8 px cut off from the figure, a hand
+// or a far arm a pixel or two from its body, joined to it along the shortest way in the piece's own colour; one of 2 px or less
+// farther than 3 px away dropped)
+function pjoin(g){const w=g.w,h=g.h,id=new Int32Array(w*h).fill(-1),C=[];for(let i=0;i<w*h;i++){if(id[i]>=0||!g.p[i])continue;const q=[i],P=[];id[i]=C.length;
+    while(q.length){const j=q.pop(),x=j%w,y=(j/w)|0;P.push(j);for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=w||Y>=h)continue;const k=Y*w+X;if(id[k]<0&&g.p[k]){id[k]=C.length;q.push(k)}}}C.push(P)}
+  if(C.length<2)return;const main=C.reduce((a,b)=>b.length>a.length?b:a);
+  for(const P of C){if(P===main||P.length>8)continue;let best=null,bd=1e9;for(const j of P)for(const k of main){const d=Math.max(Math.abs(j%w-k%w),Math.abs((j/w|0)-(k/w|0)));if(d<bd){bd=d;best=[j,k]}}
+    if(bd<=3){const [j,k]=best,c=g.p[j],x0=k%w,y0=k/w|0,x1=j%w,y1=j/w|0;for(let s=1;s<bd;s++){const x=Math.round(x0+(x1-x0)*s/bd),y=Math.round(y0+(y1-y0)*s/bd);if(!g.p[y*w+x]){g.p[y*w+x]=c;if(g.body)g.body.add(y*w+x)}}}
+    else if(P.length<=2)for(const j of P)g.p[j]=null}}
 function poutline(g){const B=g.body,on=(x,y)=>!!pget(g,x,y)&&!(B&&B.has(y*g.w+x));
   if(DOLL_FIGS.on&&DOLL_FIGS.edge&&(B||g.edge)){pfillHoles(g);const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(!on(x,y))continue;if(!pget(g,x-1,y)||!pget(g,x+1,y)||!pget(g,x,y-1)||!pget(g,x,y+1))e.push([x,y])}
     for(const [x,y] of e){const c=pget(g,x,y);if(c&&c[0]==='#'&&c.length===7)pset(g,x,y,PX.shade(c,DOLL_FIGS.edgeK))}return}
