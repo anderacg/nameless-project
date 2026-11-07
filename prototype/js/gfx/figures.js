@@ -114,7 +114,7 @@ class ShieldGear extends FigureGear{
 class QuiverGear extends FigureGear{
   constructor(k){super('quiver','back');this.k=k}
   draw(set,o,p){const L=PPAL.leather;if(this.k==='bolts'){for(let y=2;y<=4;y++){set(-1,y,L[1]);set(-2,y,L[2])}set(-1,1,PPAL.steel[1]);set(-2,1,PPAL.steel[2]);return}
-    for(let y=-3;y<=1;y++){set(2,y,y===-3?L[0]:L[1]);set(1,y,L[2])}for(let y=2;y<=3;y++)set(3,y,L[2]);
+    for(let y=-3;y<=1;y++)set(2,y,y===-3?L[0]:L[1]);for(let y=2;y<=3;y++)set(3,y,L[2]);
     const F=PPAL.linen;set(1,-4,F[0]);set(2,-4,F[1]);set(3,-4,F[0])}
 }
 // a bow put away across his back while he fights with his sidearm (sprites.js unitSprite: arm), a crossbow likewise

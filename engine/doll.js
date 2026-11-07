@@ -136,11 +136,16 @@
      least shake or moving a bit with unit walking"; its swing: gfx/weapons.js WEAPON_SWAY). His head and
      body never move against each other; each a list of moves [regions, side ('R' his right / 'L' his left / ''), dx, dy, rows
      from] */
+  // (a stride (the owner, 2026-11-07: "make the left legs cross and go back, same with right leg. Just make it look like walking"):
+  //  a leg's foot F px forward of where it stands (- back), its thigh's foot a pixel of it, its knee and shin more, its foot all of
+  //  it (STRIDE_SPLIT: of F's 4, rows 11, 12-13, 14). His legs stand apart (the near leading), come together under him as they pass,
+  //  then cross, the far leg leading, the near one behind; -x is forward
+  const STRIDE_SPLIT={4:[1,2,1],2:[1,1,0],0:[0,0,0]},LEG=(sd,F)=>{const [a,b,c]=STRIDE_SPLIT[Math.abs(F)],k=-Math.sign(F);return F?[['tko',sd,k*a,0,11],['ko',sd,k*b,0,12],['o',sd,k*c,0,14]]:[]};
   const POSES={idle:[[]],walk:[
       [['sfncbupt','',0,1,0],['lh','',0,1,0],['o','L',0,-1,14],['h','L',1,0,0]],
-      [['ko','L',0,-1,13]],
-      [['sfncbupt','',0,1,0],['lh','',0,1,0],['o','R',0,-1,14],['h','L',-1,-1,0]],
-      [['ko','R',0,-1,13]]],
+      [...LEG('R',-2),...LEG('L',2),['ko','L',0,-1,13]],
+      [['sfncbupt','',0,1,0],['lh','',0,1,0],...LEG('R',-4),...LEG('L',4),['o','R',0,-1,14],['h','L',-1,-1,0]],
+      [...LEG('R',-2),...LEG('L',2),['ko','R',0,-1,13]]],
     // a blow: the weapon arm raised and forward
     strike:[[['lh','R',-1,-2,6]]]};
 
