@@ -135,7 +135,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // (re-recorded 2026-11-07, on purpose: the owner, "some world map sprites still has black outer line instead of darker shading colour":
  // a picture ringed in PX.outline a shade of what it borders, never ink (engine/pixel.js), a dark body's a lighter shade (PX.RIM.dark).
  // Proof: c58c542 gives 57925876 and 85a9c6b8 again. Were 57925876, 85a9c6b8)
- const OLD='e97e9b72',FIRST='1f30aa';
+ // (re-recorded 2026-11-07, on purpose: the owner, "no need darker shader if that area is only 1 px": a rider's edge only where he is
+ // 3 px or more across (people.js prim), his legs and arms keep their colours. Proof: 8d1c9bf gives e97e9b72 and 1f30aa again.
+ // Were e97e9b72, 1f30aa)
+ const OLD='e3391a73',FIRST='14c05120';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

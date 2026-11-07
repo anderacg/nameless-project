@@ -128,8 +128,11 @@ function pjoin(g){const w=g.w,h=g.h,id=new Int32Array(w*h).fill(-1),C=[];for(let
 // left as drawn, the lit side's edge (top, left) a lighter shade (rimLit) than the shaded side's (rimK); the picture's edge (feet on
 // its last row) no edge)
 function prim(g){const w=g.w,h=g.h,hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)],R=[],op=(x,y)=>x<0||y<0||x>=w||y>=h||!!g.p[y*w+x],
-    clr=(x,y)=>!op(x,y),thin=(x,y)=>clr(x-1,y)&&clr(x+1,y)||clr(x,y-1)&&clr(x,y+1);
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const c=g.p[y*w+x];if(!c||c[0]!=='#'||c.length!==7||thin(x,y))continue;const lit=clr(x-1,y)||clr(x,y-1),dark=clr(x+1,y)||clr(x,y+1);
+    clr=(x,y)=>!op(x,y),span=(x,y,dx,dy)=>{let n=1;for(let k=1;op(x-dx*k,y-dy*k)&&n<3;k++)n++;for(let k=1;op(x+dx*k,y+dy*k)&&n<3;k++)n++;return n};
+  // (an edge only where the figure is 3 px or more across it, so a part 1 or 2 px wide (a leg, an arm, a bow) keeps its own colours:
+  //  the owner, 2026-11-07, "no need darker shader if that area is only 1 px")
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const c=g.p[y*w+x];if(!c||c[0]!=='#'||c.length!==7)continue;const sx=span(x,y,1,0),sy=span(x,y,0,1);if(sx<2||sy<2)continue;const X=sx>=3,Y=sy>=3,
+    lit=X&&clr(x-1,y)||Y&&clr(x,y-1),dark=X&&clr(x+1,y)||Y&&clr(x,y+1);
     if(lit||dark)R.push([y*w+x,PX.rim([hx(c)],dark&&!lit?DOLL_FIGS.rimK:DOLL_FIGS.rimLit)])}
   for(const [i,c] of R)g.p[i]='#'+c.map(v=>v.toString(16).padStart(2,'0')).join('')}
 function poutline(g){const B=g.body,on=(x,y)=>!!pget(g,x,y)&&!(B&&B.has(y*g.w+x));
