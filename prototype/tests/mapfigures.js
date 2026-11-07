@@ -61,8 +61,9 @@ try{
   // (his ring still picks him; out of sight, nothing does)
   ok(t.pickAt(L.x+6,L.y-4)===L,'his ring still picks him');L.x=P.x+t.vis()*1.5;ok(t.pickAt(L.x+6,L.y-4)!==L,'out of sight he answers no click');L.x=-9999}
  // ---- beasts, herds, the caravan and the ships: their sizes and cells
- // (E: the paper dolls' style (dollfigs.js DOLL_FIGS.edge, 2026-11-07): no outline, so each figure 2 px less each way and no ring to check)
- {const E=t.DOLL_FIGS.on&&t.DOLL_FIGS.edge?2:0,ring=q=>!E&&(q.inner||q.open);
+ // (E: the paper dolls' style with no outline (dollfigs.js DOLL_FIGS.edge, rim false): each figure 2 px less each way; with the
+ // blended outline (rim) a pixel less high and wide than with the navy one (its feet on the bottom row, none under them); a ring of navy to check only with the navy one)
+ {const D=t.DOLL_FIGS,E=D.on&&D.edge?(D.rim?1:2):0,ring=q=>!(D.on&&D.edge)&&(q.inner||q.open);
   const sz={wolf:[9,6],boar:[9,6],bear:[11,8],tiger:[11,6],spider:[9,6],scorpion:[10,7],slime:[7,5],troll:[9,13],wyrm:[15,7],griffin:[12,9]},rows=[],bad=[];
   for(const id of Object.keys(t.MONSTERS)){const M=t.MONSTERS[id];for(const f of [0,1]){const s=t.monsterMapSprite(id,f),q=look(s),z=sz[M.unit];
     if(M.mythic){if(s.width!==32)bad.push(id+' cell '+s.width);continue}

@@ -18,10 +18,13 @@ Kit.suite(({ok})=>{
   ok(mids,'the body\'s middle stays the cell\'s middle however far the gear reaches (its hand as far from it)')}
  // ---- layers: a slung shield and a quiver behind the body, a raised shield and the weapon in front
  {const L=t.lookOf('hum_spear',0,false,0,'',null),bare=t.peopleSprite({...L,weapon:null,shield:null},0),sl=t.peopleSprite({...L,weapon:null},0),up=t.peopleSprite({...L,weapon:null},t.DEF_POSE);
-  const same=(a,b)=>{const A=px(a),B=px(b);let cov=0;for(let i=0;i<A.length;i+=4)if(A[i+3]&&!isOut(A,i)&&(A[i]!==B[i]||A[i+1]!==B[i+1]||A[i+2]!==B[i+2]))cov++;return cov};
-  ok(same(bare,sl)===0,'a shield slung on the far arm is behind him: not one pixel of his body is covered');
+  // (his body: its pixels as drawn without the blended outline (DOLL_FIGS.rim off), whose shade follows whatever it borders: people.js prim)
+  const flush=()=>{for(const k in t.spr)delete t.spr[k];t.FIGURES.map.clear()},D=t.DOLL_FIGS,r0=D.rim,bodyOf=o=>{flush();D.rim=false;try{return px(t.peopleSprite(o,0))}finally{D.rim=r0;flush()}};
+  const same=(a,b,M)=>{const A=px(a),B=px(b);let cov=0;for(let i=0;i<A.length;i+=4)if(A[i+3]&&(!M||M[i+3])&&!isOut(A,i)&&(A[i]!==B[i]||A[i+1]!==B[i+1]||A[i+2]!==B[i+2]))cov++;return cov};
+  const Mb=bodyOf({...L,weapon:null,shield:null});
+  ok(same(bare,sl,Mb)===0,'a shield slung on the far arm is behind him: not one pixel of his body is covered');
   ok(same(bare,up)>4,'raised to meet a blow it is before him ('+same(bare,up)+' of his pixels covered)');
-  const A=t.lookOf('hum_bow',0,false,0,'',null),ab=t.peopleSprite({...A,weapon:null},0),aq=t.peopleSprite({...A,weapon:null,slung:'bow'},0);ok(same(ab,aq)===0&&px(ab).join()!==px(aq).join(),'a bow put away and its quiver hang on his back, behind him');
+  const A=t.lookOf('hum_bow',0,false,0,'',null),ab=t.peopleSprite({...A,weapon:null},0),aq=t.peopleSprite({...A,weapon:null,slung:'bow'},0);ok(same(ab,aq,bodyOf({...A,weapon:null}))===0&&px(ab).join()!==px(aq).join(),'a bow put away and its quiver hang on his back, behind him');
   ok(t.GEAR.layer.shield<0&&t.GEAR.layer.quiver<0&&t.GEAR.layer.main>0&&t.GEAR.layer.guard>0,'one table says it (GEAR.layer)')}
  // ---- what a unit carries
  {const arm=t.unitSprite('hum_bow',0,false,0,0,true,true),bare=t.unitSprite('hum_bow',0,false,0,0,true);ok(px(arm).join()!==px(bare).join()&&t.opaqueBox(arm)[0]<t.opaqueBox(t.unitSprite('hum_bow',0,false,0,0,true,false))[0]+1,'an archer in melee mode has his bow on his back');

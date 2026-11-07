@@ -17,9 +17,10 @@
   PX.shade=(c,f)=>{const [r,g,b]=hex2(c);return f>1?rgb2(r+(255-r)*(f-1),g+(255-g)*(f-1),b+(255-b)*(f-1)):rgb2(r*f,g*f,b*f)};
   /* the outline's colour (the owner, 2026-11-07: "the outline should blend with the sprite, a darker colour or shade of it"): not one
      navy line but each outline pixel a deep shade of the body it borders (the mean of the body pixels beside it, times RIM.k, a
-     touch of the old navy (RIM.navy) so the darks agree); RIM.on false: the old navy everywhere. rgb: [r, g, b] triples */
+     touch of the old navy (RIM.navy) so the darks agree; k0: its own darkness instead); RIM.on false: the old navy everywhere. rgb:
+     [r, g, b] triples */
   PX.RIM={on:true,k:.5,navy:.18};
-  PX.rim=L=>{const N=[0x1a,0x1c,0x26];if(!PX.RIM.on||!L.length)return N;const m=[0,1,2].map(c=>L.reduce((a,q)=>a+q[c],0)/L.length),{k,navy}=PX.RIM;return m.map((v,c)=>Math.round(v*k*(1-navy)+N[c]*navy))};
+  PX.rim=(L,k0)=>{const N=[0x1a,0x1c,0x26];if(!PX.RIM.on||!L.length)return N;const m=[0,1,2].map(c=>L.reduce((a,q)=>a+q[c],0)/L.length),{navy}=PX.RIM,k=k0??PX.RIM.k;return m.map((v,c)=>Math.round(v*k*(1-navy)+N[c]*navy))};
   PX.mix=(a,b,t)=>{const A=hex2(a),B=hex2(b);return rgb2(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t)};
 
   /* canvases */

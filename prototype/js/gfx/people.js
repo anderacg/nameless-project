@@ -121,9 +121,16 @@ function pjoin(g){const w=g.w,h=g.h,id=new Int32Array(w*h).fill(-1),C=[];for(let
   for(const P of C){if(P===main||P.length>8)continue;let best=null,bd=1e9;for(const j of P)for(const k of main){const d=Math.max(Math.abs(j%w-k%w),Math.abs((j/w|0)-(k/w|0)));if(d<bd){bd=d;best=[j,k]}}
     if(bd<=3){const [j,k]=best,c=g.p[j],x0=k%w,y0=k/w|0,x1=j%w,y1=j/w|0;for(let s=1;s<bd;s++){const x=Math.round(x0+(x1-x0)*s/bd),y=Math.round(y0+(y1-y0)*s/bd);if(!g.p[y*w+x]){g.p[y*w+x]=c;if(g.body)g.body.add(y*w+x)}}}
     else if(P.length<=2)for(const j of P)g.p[j]=null}}
+// (the blended outline (the owner, 2026-11-07: "the outline should blend with the sprite, a darker shade of it"): every clear pixel
+// beside the figure a deep shade of the pixels it borders (engine/pixel.js PX.rim, DOLL_FIGS.rimK dark), as the buildings' and
+// trees' are; under the feet, the picture's edge, none)
+function prim(g){const w=g.w,h=g.h,hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)],R=[];
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(g.p[y*w+x])continue;const L=[];for(const [u,v] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]]){const c=u>=0&&v>=0&&u<w&&v<h?g.p[v*w+u]:null;if(c&&c[0]==='#'&&c.length===7)L.push(hx(c))}
+    if(L.length)R.push([y*w+x,PX.rim(L,DOLL_FIGS.rimK)])}
+  for(const [i,c] of R)g.p[i]='#'+c.map(v=>v.toString(16).padStart(2,'0')).join('')}
 function poutline(g){const B=g.body,on=(x,y)=>!!pget(g,x,y)&&!(B&&B.has(y*g.w+x));
-  if(DOLL_FIGS.on&&DOLL_FIGS.edge&&(B||g.edge)){pfillHoles(g);const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(!on(x,y))continue;if(!pget(g,x-1,y)||!pget(g,x+1,y)||!pget(g,x,y-1)||!pget(g,x,y+1))e.push([x,y])}
-    for(const [x,y] of e){const c=pget(g,x,y);if(c&&c[0]==='#'&&c.length===7)pset(g,x,y,PX.shade(c,DOLL_FIGS.edgeK))}return}
+  if(DOLL_FIGS.on&&DOLL_FIGS.edge&&(B||g.edge)){pfillHoles(g);if(DOLL_FIGS.rim){prim(g);pfillHoles(g)}else{const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(!on(x,y))continue;if(!pget(g,x-1,y)||!pget(g,x+1,y)||!pget(g,x,y-1)||!pget(g,x,y+1))e.push([x,y])}
+    for(const [x,y] of e){const c=pget(g,x,y);if(c&&c[0]==='#'&&c.length===7)pset(g,x,y,PX.shade(c,DOLL_FIGS.edgeK))}}return}
   const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!pget(g,x,y)&&(on(x-1,y)||on(x+1,y)||on(x,y-1)||on(x,y+1)))o.push([x,y]);for(const [x,y] of o)pset(g,x,y,PEOPLE_OUT)}
 // (the grid turned a quarter clockwise, pixel for pixel: what stood up now lies, head to the right)
 function pturn(g){const r=pgrid(g.h,g.w);if(g.body)r.body=new Set();for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=g.p[y*g.w+x];if(!c)continue;const j=x*r.w+(g.h-1-y);r.p[j]=c;if(g.body&&g.body.has(y*g.w+x))r.body.add(j)}return r}

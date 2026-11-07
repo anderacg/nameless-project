@@ -7,12 +7,13 @@
    game's as before, drawn apart from the body's anchors (figures.js FigureRig.dress) and outlined on its own; in a blow his weapon
    arm is drawn apart along the blow's rig (people.js BLOW_RIG, FIST_RIG), the hand where weapons.js holds the weapon. Riders keep
    the template for now (DOLL_FIGS.riders) ---------- */
-// on: soldiers on foot as dolls; riders: a rider's body above the saddle a doll too; edge: everything else drawn with no outline,
+// on: soldiers on foot as dolls; riders: a rider's body above the saddle a doll too; rim: round each figure a blended outline, a
+// deep shade (rimK) of what it borders (people.js prim), else edge: everything drawn with no outline,
 // its silhouette's own edge a shade darker (edgeK; people.js poutline); dx, dy: the doll's body over the template's columns and rows (dy 1: its feet on the row the
 // template's outline under its feet took, the picture's last); the anchors the template kept on its own
 // (back: what he wears on his back, its top left, out behind him; off: the shield arm's shield, its top left; guard: a shield raised
 // before him, its left); races: those the doll has
-const DOLL_FIGS={on:true,riders:true,edge:true,edgeK:.68,dx:2,dy:1,back:[2,6],off:[1,8],guard:[8],races:['human','elf','dwarf','orc']};
+const DOLL_FIGS={on:true,riders:true,edge:true,edgeK:.68,rim:true,rimK:.55,dx:2,dy:1,back:[2,6],off:[1,8],guard:[8],races:['human','elf','dwarf','orc']};
 // whether a look is drawn as a doll
 const dollable=o=>DOLL_FIGS.on&&(!o.mount||DOLL_FIGS.riders)&&!!(window.PX&&PX.doll)&&DOLL_FIGS.races.includes(o.race||'human');
 // (a look's helm as the doll's head part and its material)

@@ -63,7 +63,13 @@
   // (PX.BEAST_EDGE: no outline, the silhouette's own edge a tone darker instead: PX.shade by BEAST_EDGE_K)
   PX.BEAST_EDGE=false;PX.BEAST_EDGE_K=.68;
   // (edge: the battle's figure, raw: the map's keep their outline; the side's colours (TEAM) never darkened)
-  function outline(g,edge){if(edge){const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=at(g,x,y);if(c&&c!==OUT&&!TEAM.includes(c)&&(!at(g,x-1,y)||!at(g,x+1,y)||!at(g,x,y-1)||!at(g,x,y+1)))e.push([x,y,c])}for(const [x,y,c] of e)putR(g,x,y,PX.shade(c,PX.BEAST_EDGE_K));return}
+  // (PX.BEAST_RIM: with PX.BEAST_EDGE, a blended outline round the figure, each pixel a deep shade of what it borders (PX.rim,
+  // BEAST_RIM_K dark), as the soldiers' and the buildings' are; the side's colours (TEAM) left out of it)
+  PX.BEAST_RIM=true;PX.BEAST_RIM_K=.55;
+  function outline(g,edge){if(edge&&PX.BEAST_RIM){const R=[],hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(at(g,x,y))continue;const L=[];
+      for(const [u,v] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]]){const c=at(g,u,v);if(c&&c!==OUT&&!TEAM.includes(c))L.push(hx(c))}if(L.length)R.push([x,y,PX.rim(L,PX.BEAST_RIM_K)])}
+    for(const [x,y,c] of R)putR(g,x,y,'#'+c.map(v=>v.toString(16).padStart(2,'0')).join(''));return}
+    if(edge){const e=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=at(g,x,y);if(c&&c!==OUT&&!TEAM.includes(c)&&(!at(g,x-1,y)||!at(g,x+1,y)||!at(g,x,y-1)||!at(g,x,y+1)))e.push([x,y,c])}for(const [x,y,c] of e)putR(g,x,y,PX.shade(c,PX.BEAST_EDGE_K));return}
   for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(at(g,x,y)&&(x===0||y===0||x===g.w-1||y===g.h-1))put(g,x,y,OUT);const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!at(g,x,y)&&(at(g,x-1,y)||at(g,x+1,y)||at(g,x,y-1)||at(g,x,y+1)))o.push([x,y]);for(const [x,y] of o)put(g,x,y,OUT)}
   function canvas(g){const c=PX.canvas(g.w,g.h),x=c.getContext('2d', { willReadFrequently: true }),id=x.createImageData(g.w,g.h),d=id.data,mem={};
     for(let i=0;i<g.p.length;i++){const col=g.p[i];if(!col)continue;const v=mem[col]||(mem[col]=h2r(col));d[i*4]=v[0];d[i*4+1]=v[1];d[i*4+2]=v[2];d[i*4+3]=255}x.putImageData(id,0,0);return c}
@@ -266,7 +272,7 @@
       jaw:(g,x,y,n,c)=>{for(let k=0;k<n;k++)for(let xx=x;xx<x+4-k;xx++)put(g,xx,y+k,k?'#6a3038':'#3a2430');for(let xx=x-1;xx<x+3;xx++)put(g,xx,y+n,c.C);put(g,x+3,y,'#efe8d8');put(g,x+1,y+n-1,'#d8d0bc')}},F,o)}};
   // a tiger: long and low, a deep chest, big paws, the tail long and ringed with a black tip; orange, black stripes down its back
   // and flanks and round its legs, pale cheeks, throat and belly; it pounces with a paw
-  KINDS.tiger={W:32,H:18,coats:['#d4782e','#c06a2e','#d88a44'],
+  KINDS.tiger={W:32,H:18,dx:1,coats:['#d4782e','#c06a2e','#d88a44'],
     draw(g,F,o){const v=o.v%3;return handBeast(g,{top:11,far:2,legH:3,headDown:2,pawUp:4,pawOut:3,hind:[7,5,3,2,2],fore:[19,4,3,2,0],mouth:[25,6],collar:[20,2,6],headKeys:'lnew',
       rows:['......................S..S....',
             '.....................ABSBBA...',
@@ -519,7 +525,7 @@
     if(!K.loose)joinLoose(g);fillHoles(g);
     // (nothing below the ground: the bottom row is the outline's; with PX.BEAST_EDGE (no outline: its own edge a shade darker, the
     //  paper dolls' style) the figure a row down, its feet on the bottom row)
-    g.p.fill(null,(g.h-1)*g.w);outline(g,PX.BEAST_EDGE);if(PX.BEAST_EDGE){g.p.copyWithin(g.w,0,(g.h-1)*g.w);g.p.fill(null,0,g.w)}return g}
+    g.p.fill(null,(g.h-1)*g.w);outline(g,PX.BEAST_EDGE);if(PX.BEAST_EDGE&&PX.BEAST_RIM)fillHoles(g);if(PX.BEAST_EDGE){g.p.copyWithin(g.w,0,(g.h-1)*g.w);g.p.fill(null,0,g.w)}return g}
   function figure(K,kind,o,fly){const r=raw(K,o,fly),g=grid(K.W,K.H);for(let y=0;y<K.H;y++)for(let x=0;x<K.W;x++)g.p[y*K.W+x]=r.p[(y+PAD)*r.w+x+PAD];return g}
   PX._beastFit=kind=>{const K=kind==='drake'?DRAKE:KINDS[kind];let a=1e9,b=1e9,c=-1e9,pa,pb,pc;for(const pose of kind==='drake'?[15,16]:[...PX.BEAST_POSES,DEAD,DEAD+1,DEAD+2])for(const v of [0,1,2])for(const team of [0,1]){const r=raw(K,{pose,v,team},kind==='drake');
     for(let y=0;y<r.h;y++)for(let x=0;x<r.w;x++)if(r.p[y*r.w+x]){if(x-PAD<a)a=x-PAD,pa=pose;if(x-PAD>c)c=x-PAD,pc=pose;if(y-PAD<b)b=y-PAD,pb=pose}}return{kind,W:K.W,H:K.H,left:a+'@'+pa,right:c+'@'+pc,top:b+'@'+pb,ok:a>=0&&c<K.W&&b>=0}};
