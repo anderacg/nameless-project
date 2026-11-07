@@ -204,8 +204,9 @@ function drawMarcherAt(u,o,cam){
   // (what he carries besides, gfx/marchgear.js: his army's flag (on a spear of its own, his body bare; else at his back, before
   // his body), a torch after dark)
   subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
-  // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld; none for a flag-bearer, nor a beast)
-  const s=marchSprite(u,o,I?.pose,true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H=G.bare||S.beast?null:mapHeld(marchLook(u,o),s,u.walking,marcherStep(u));
+  // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld; a flag-bearer's (your hero's, carrying your banner)
+  // only if it is sheathed at his hip, his hands on the pole; none for a beast)
+  const s=marchSprite(u,o,I?.pose,true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,u.walking,marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
   ctx.save();ctx.translate(x,y);ctx.scale(sx,k);G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
 }
 // (the owner, 2026-10-31: "the army ring speed is based on the overall unit speed so it can keep centered") its rings drawn on the
