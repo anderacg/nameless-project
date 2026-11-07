@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ashmark · Grayscale portrait workshop</title><link rel="stylesheet" href="style.css"></head>
+<body><main>
+<header><div class="eyebrow">ASHMARK <span>/</span> PORTRAIT WORKSHOP · MEDIEVAL STUDY</div><h1>A face, piece by piece.</h1><p>Medieval-inspired faces, clothing and headwear. Separate grayscale pieces, ready for your own colors.</p></header>
+<div class="workspace">
+<section class="portrait-panel" aria-label="Assembled portrait">
+<div class="panel-heading"><span class="eyebrow">ASSEMBLED PORTRAIT</span><div class="segments" aria-label="Portrait coloring"><button id="gray" aria-pressed="true">Grayscale</button><button id="color" aria-pressed="false">Tint preview</button></div></div>
+<div class="stage checker"><canvas id="portrait" width="128" height="128" aria-label="Portrait assembled from independent grayscale layers"></canvas><canvas id="anchors" width="128" height="128" aria-hidden="true"></canvas></div>
+<div class="portrait-meta"><span id="summary">128 × 128 · separate transparent layers</span><label class="check"><input type="checkbox" id="show-anchors"> Show alignment</label></div>
+<div class="actions"><button class="primary" id="random">Random face</button><button id="blank">Blank face</button><button id="restore">Restore layers</button></div>
+<p id="status" class="status" role="status">Loading the drawing engine…</p>
+</section>
+<aside class="controls-panel"><div class="panel-heading"><h2>Build a character</h2><span class="badge">LIVE</span></div><span class="preset-label" id="profile-label">Starting profile</span><div class="profile-picker" role="group" aria-labelledby="profile-label"><button id="profile-male" type="button" aria-pressed="false">Male</button><button id="profile-female" type="button" aria-pressed="false">Female</button><button id="profile-custom" type="button" aria-pressed="true">Custom</button></div><p class="profile-hint">Sets starting features and random faces. Every part stays editable; Custom keeps your current face.</p><label class="preset-label" for="preset">Start from a character</label><select id="preset"><option value="">Custom character</option></select><div id="features" class="feature-controls"></div>
+<div class="seed-row"><label for="seed">Texture seed</label><input id="seed" type="number" min="0" max="4294967295" value="23"></div>
+<div class="color-heading"><h3>Independent colors</h3><span id="color-hint">Enable tint preview to apply</span></div><div id="colors" class="colors"></div><p class="hint">Source layers stay grayscale. Tints change only the assembled preview; skin, hair and eyes keep their own shading.</p>
+</aside></div>
+<section class="layer-section"><div class="section-heading"><div><div class="eyebrow">THE COMPONENTS</div><h2>Drawn apart. Aligned together.</h2></div><p>Tap a layer to inspect or export it. Checkboxes control the assembled face.</p></div><div id="layers" class="layers"></div></section>
+<section class="bottom-panel"><div><h2 id="layer-title">Inspect a layer</h2><p>Every part has the same canvas and origin. Hair is split behind and in front of the face so it overlaps correctly. The inspector magnifies small parts; exported layers keep their original canvas.</p><div class="actions wrap"><button id="download-layer">Export selected layer</button><button id="download-atlas">Export grayscale atlas</button></div></div><div class="inspection checker"><canvas id="inspection" width="128" height="128" aria-label="Selected grayscale layer"></canvas></div></section>
+<footer><div><strong>Keep the pieces editable.</strong><p>Export a portrait, or save its recipe and layer positions. This workshop runs offline and does not change the game.</p></div><div class="actions wrap"><button id="import-json">Load recipe</button><input id="recipe-file" type="file" accept="application/json,.json" hidden><button id="download-json">Save recipe + rig</button><button class="primary" id="download-portrait">Export portrait</button></div></footer>
+</main><script src="portrait-engine.js"></script><script src="workshop.js"></script></body></html>

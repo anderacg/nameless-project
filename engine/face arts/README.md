@@ -1,34 +1,19 @@
-# Matched portrait layers — one-face proof
+# Portrait generator v6
 
-Packaged in `engine/face arts/` on 2026-11-01. This is a standalone art tool; it does not replace the game's current portraits.
+Open **[portrait-workshop.html](portrait-workshop.html)** directly in a browser. It works offline and includes the full generator. `index.html` opens the same workshop when this folder is served.
 
-2026-10-30. This replaces the independently generated feature approach used in the previous prototype.
+The current generator draws independent grayscale **128 × 128** parts, assembles 18 layers, and supports runtime tinting, editable recipes, and Human, Dwarf, Orc and Elf generation. Race compatibility controls the selectors, random generation and recipe import. Headwear fits the selected hair and ears.
 
-Open `portrait-workshop.html` directly in a browser. It embeds every image and script, needs no server or network, and shows the rebuilt portrait beside its original master. The smaller `preview.html` loads the PNG files separately and can be served over HTTP.
+## Editable sources
 
-One coherent finished face was created first in the approved `hum_sword.png` portrait style. The eyes, brows, nose, mouth, beard and hair are copied from that exact master at their original coordinates. They are never independently resized, mirrored or repositioned. The lip and moustache fit therefore comes from the finished artwork itself.
+- [grayscale/README.md](grayscale/README.md): features, compatibility rules, runtime API and export format.
+- `grayscale/portrait-engine.js`: procedural part drawings and race rules.
+- `grayscale/workshop.js`, `index.html`, `style.css`: controls and layout.
+- `grayscale/tests.html`: portrait checks; `grayscale/gallery.html`: generated character examples.
+- `grayscale/examples/`: exported source layers, atlas, manifests and preset images. Runtime generation does not load these PNGs.
 
-## Contents
+Run `python build.py` here after editing the sources. It rebuilds the offline workshop and updates the main `portrait-workshop.html` entry. The workshop exposes `PortraitEngine`; it is a standalone engine tool.
 
-- `sources/master.png`: original generated finished portrait, preserved unchanged.
-- `sources/blank-reference.png`: matching featureless head used for the clean blank base.
-- `layers/base.png`: featureless base, with head, ears, neck and charcoal tunic.
-- `layers/planes.png`: shared skin shading and other common master pixels outside the feature regions. This support layer is necessary to reproduce the master exactly; it is not an additional face option.
-- `layers/eyes.png`, `brows.png`, `nose.png`, `mouth.png`, `beard.png`, `hair.png`: six transparent feature layers.
-- `layers/master.png`: the comparison reference after alpha cleanup.
-- `manifest.json`: canvas size and drawing order.
-- `regions.json`: exact feature partitions in master canvas coordinates.
-- `extract.html`: local Canvas extraction/check tool, served over HTTP when rebuilding.
-- `reconstruction-check.json`: measured reconstruction result.
-- `build.py`: standard-library packager; run `python build.py` after changing the PNGs or template.
-- `workshop.template.html`: source for the preview. The self-contained version embeds its art data.
+## Archived v3 study
 
-Every PNG uses the same **1254 × 1254 canvas** and draws at **(0, 0)**. Order: base, planes, nose, eyes, brows, mouth, beard, hair. Disable image smoothing. The original images contain faint near-transparent pixels and near-opaque alpha; extraction normalizes alpha >=128 to255 and lower alpha to0. The source files themselves are retained unchanged.
-
-The finished stack is **pixel-identical to the normalized master**, including the mouth/beard placement. The blank-base button hides the support shading and all features, showing a clean featureless head. Layer visibility controls inspect the extraction; hiding a feature is not a finished replacement design.
-
-This is **one matched face**, not a random portrait library. There are no independently generated replacement variants yet. The next step is to design alternatives against these same facial regions and shared lighting, then check combinations. Do not mix the old prototype's independent parts into this set.
-
-Validation: zero differing pixels in the complete reconstruction, each feature is a separate layer, blank/full controls and PNG download work, and a390px phone viewport has no horizontal overflow. No game behavior, saves or production portraits are changed. Nothing is pushed.
-
-The build script writes only to this kit folder, so moving it does not create or overwrite files in the parent engine directory.
+The old matched-image workshop is retained as **[portrait-workshop-v3-archive.html](portrait-workshop-v3-archive.html)**. Its PNGs, template, extraction tools and reconstruction data remain available. See [README-v3-archive.md](README-v3-archive.md); `python build-v3-archive.py` rebuilds only that archived entry.

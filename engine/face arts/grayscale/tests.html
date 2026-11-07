@@ -1,0 +1,78 @@
+<!doctype html><meta charset="utf-8"><title>Portrait layer checks</title><pre id="out">Running…</pre><script src="portrait-engine.js"></script><script>
+'use strict';
+const E=PortraitEngine,lines=[];
+function ok(value,label){if(!value)throw Error(label);lines.push('PASS '+label);}
+function data(c){return c.getContext('2d').getImageData(0,0,E.size,E.size).data;}
+function equal(a,b){return a.length===b.length&&a.every((v,i)=>v===b[i]);}
+function componentCount(p){const seen=new Set();let count=0;for(let i=0;i<16384;i++){if(!p[i*4+3]||seen.has(i))continue;count++;const q=[i];seen.add(i);for(let j=0;j<q.length;j++){const n=q[j],x=n%128,y=n>>7;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy,k=yy*128+xx;if(xx<0||xx>=128||yy<0||yy>=128||seen.has(k)||!p[k*4+3])continue;seen.add(k);q.push(k);}}}return count;}
+try {
+ const p=E.build(E.defaults),before=Object.fromEntries(E.order.map(s=>[s.id,p.layers[s.id].toDataURL()]));
+ for(const spec of E.order){const a=data(p.layers[spec.id]);ok(a.every((v,i)=>i%4!==0||a[i]===a[i+1]&&a[i]===a[i+2]),spec.id+': neutral grayscale');const levels=(['brows','mouth'].includes(spec.id)||spec.id==='age'&&p.config.age==='mature'||spec.id==='beard'&&['stubble','close-beard'].includes(p.config.beard))?Array.from({length:8},(_,i)=>Math.round(i*255/7)):[0,255];ok(a.every((v,i)=>i%4!==3||levels.includes(v)),spec.id+': expected pixel coverage');ok(a[3]===0,spec.id+': transparent canvas');}
+ const again=E.build(E.defaults);ok(E.order.every(s=>before[s.id]===again.layers[s.id].toDataURL()),'identical recipe gives identical pixels');
+ const hair=E.build({...E.defaults,hair:'cropped'});ok(['face','eyes','nose','mouth'].every(id=>before[id]===hair.layers[id].toDataURL()),'changing hair does not redraw different facial features');
+ const eyes=E.build({...E.defaults,eyes:'heavy'});ok(['face','hairFront','nose','mouth'].every(id=>before[id]===eyes.layers[id].toDataURL()),'changing eyes preserves other features');
+ let combinations=0;for(const race of E.races)for(const [feature,values] of Object.entries(E.raceParts[race]))for(const value of values){const q=E.build({...E.startRace(race),[feature]:value}),mask=data(q.layers.face);for(const a of [...q.anchors.eyes,q.anchors.nose,q.anchors.mouth])if(!mask[(a.y*E.size+a.x)*4+3])throw Error('Feature anchor outside '+race+'/'+q.config.face);combinations++;}ok(combinations>50,combinations+' compatible variants keep facial anchors on the face');
+ let distinct=true;
+ for(const race of E.races)for(const [feature,values] of Object.entries(E.raceParts[race])) {
+   const signatures=new Set(values.map(value=>{const q=E.build({...E.startRace(race),[feature]:value});return E.order.filter(spec=>spec.feature===feature).map(spec=>q.layers[spec.id].toDataURL()).join('|');}));
+   if(signatures.size!==values.length)throw Error('Duplicate artwork for '+race+'/'+feature);
+ }
+ ok(distinct,'every feature option produces distinct source artwork');
+ const signatures=new Set();
+ for(const preset of E.presets){const q=E.build(preset.config);signatures.add(E.composite(q).toDataURL());}
+ ok(signatures.size===E.presets.length&&signatures.size>=12,'all character presets are visually distinct');
+ for(const face of E.partsFor('human','face'))for(const headwear of E.partsFor('human','headwear')){const q=E.build({...E.defaults,face,headwear}),mask=data(q.layers.headwearFront);for(const eye of q.anchors.eyes)if(mask[(eye.y*128+eye.x)*4+3])throw Error(headwear+' hides pupil on '+face);}
+ ok(true,'all headwear leaves both pupil anchors visible on every face shape');
+ for(const face of E.partsFor('human','face'))for(const beard of ['trimmed','full','forked','braided','goatee','stubble','close-beard']){const q=E.build({...E.defaults,face,beard}),a=q.anchors.mouth;if(q.layers.beard.getContext('2d').getImageData(a.x,a.y,1,1).data[3])throw Error('Beard hides mouth: '+face+'/'+beard);}
+ ok(true,'beards keep the mouth anchor clear on every face shape');
+ const headwearKinds=Object.values(E.headwearGroups).flat();ok(headwearKinds.length===E.options.headwear.length&&new Set(headwearKinds).size===headwearKinds.length&&E.options.headwear.every(k=>E.headwearRules[k]),'each headwear has exactly one fit type');
+ for(const kind of E.headwearGroups.Enclosing){const none=E.build({...E.defaults,headwear:kind,hair:'none'});for(const hair of ['long','high-bun','loose-center-part']){const q=E.build({...E.defaults,headwear:kind,hair}),before=q.layers.hairFront.toDataURL();if(E.composite(q).toDataURL()!==E.composite(none).toDataURL())throw Error('Hair through enclosing gear '+kind+'/'+hair);if(before!==q.layers.hairFront.toDataURL())throw Error('Hair export changed');}}
+ ok(true,'enclosing headwear conceals hair while preserving source layers');
+ const veil=E.build({...E.defaults,headwear:'draped-veil',hair:'loose-center-part'}),veilBald=E.build({...E.defaults,headwear:'draped-veil',hair:'none'});ok(E.composite(veil).toDataURL()!==E.composite(veilBald).toDataURL(),'draped veil keeps the visible hairstyle');
+ const worn=E.build({...E.defaults,clothing:'mail',headwear:'coif'}),plain=E.build({...E.defaults,clothing:'tunic',headwear:'none'});
+ ok(['face','eyes','nose','mouth'].every(id=>worn.layers[id].toDataURL()===plain.layers[id].toDataURL()),'equipment does not change the underlying face or features');
+ for(const face of E.partsFor('human','face'))for(const eyes of E.partsFor('human','eyes')){const q=E.build({...E.defaults,face,eyes}),iris=data(q.layers.iris),opening=data(q.layers.eyes),lids=data(q.layers.eyelids);for(let i=3;i<iris.length;i+=4){if(iris[i]&&!opening[i])throw Error('Iris outside eye: '+face+'/'+eyes);if(iris[i]&&lids[i])throw Error('Iris over lid: '+face+'/'+eyes);}for(const e of q.anchors.eyes){let topIris=128,topLid=128;for(let y=40;y<63;y++)for(let x=e.x-1;x<=e.x+1;x++){if(iris[(y*128+x)*4+3])topIris=Math.min(topIris,y);if(lids[(y*128+x)*4+3])topLid=Math.min(topLid,y);}if(!(topLid<topIris&&topIris<63))throw Error('Lid not above iris: '+face+'/'+eyes);}}
+ ok(true,'all irises stay inside the eye opening and below the upper lid across every face and eye shape');
+ for(const face of E.partsFor('human','face'))for(const eyes of E.partsFor('human','eyes')){const q=E.build({...E.defaults,face,eyes});for(const id of ['eyes','iris'])if(componentCount(data(q.layers[id]))!==2)throw Error('Detached eye pixels: '+face+'/'+eyes+'/'+id);}
+ ok(true,'eye and iris layers contain two connected shapes without stray islands');
+ const grouped=Object.values(E.hairGroups).flat();ok(grouped.length===E.options.hair.length&&new Set(grouped).size===grouped.length&&grouped.every(v=>E.options.hair.includes(v)),'hair groups classify every hairstyle exactly once');
+ for(const face of E.partsFor('human','face')){const q=E.build({...E.defaults,face,hair:'tonsure'}),skin=data(q.layers.face),hair=data(q.layers.hairFront);if(componentCount(hair)!==1)throw Error('Disconnected tonsure ring on '+face);for(let i=3;i<hair.length;i+=4)if(hair[i]&&!skin[i])throw Error('Tonsure floats outside scalp on '+face);}
+ ok(true,'tonsure forms one connected ring attached to every scalp');
+ for(const face of E.partsFor('human','face'))for(const clothing of E.partsFor('human','clothing')){const q=E.build({...E.defaults,face,clothing,hair:'none',headwear:'none',beard:'none',age:'young',marks:'none'}),visible=Object.fromEntries(E.order.map(s=>[s.id,['face','clothing','armor'].includes(s.id)])),pixels=data(E.composite(q,{visible}));for(let y=q.anchors.chinY;y<115;y++)for(let x=60;x<=68;x++)if(!pixels[(y*128+x)*4+3])throw Error('Gap in neck/collar: '+face+'/'+clothing);}
+ ok(true,'neck and collar remain connected across all face shapes and outfits');
+ for(const race of E.races){const c=E.startRace(race,{...E.defaults,hair:'long',headwear:'coif'});ok(c.race===race&&c.hair==='long'&&c.headwear==='coif',race+' starter preserves hair and gear');ok(E.random(42,'male',race).race===race,race+' random keeps selected race');}
+ const earBase=E.build({...E.startRace('elf'),ears:'pointed'}),longEars=E.build({...E.startRace('elf'),ears:'elven-long'});ok(E.order.filter(s=>s.id!=='ears').every(s=>earBase.layers[s.id].toDataURL()===longEars.layers[s.id].toDataURL()),'ear selection preserves other source parts');
+ ok(E.normalize({face:'heart'}).race==='human'&&E.normalize({face:'heart'}).ears==='normal','old recipes receive Human / normal ear defaults');
+ for(const race of E.races)for(let seed=0;seed<12;seed++){const c=E.random(seed,'custom',race);for(const key of Object.keys(E.raceParts[race]))if(!E.partsFor(race,key).includes(c[key]))throw Error('Incompatible random '+race+'/'+key);}
+ ok(true,'all racial generators use their allowed parts');
+ ok(E.normalize({race:'elf',beard:'full'}).beard==='none'&&E.normalize({race:'human',mouth:'heavy-tusks'}).mouth!=='heavy-tusks','unsupported racial parts are replaced');
+ for(const face of E.partsFor('orc','face')){const q=E.build({race:'orc',face,beard:'chin-bristle'}),a=data(q.layers.beard),widths=[];for(let y=q.anchors.mouth.y;y<128;y++){let width=0;for(let x=0;x<128;x++)if(a[(y*128+x)*4+3])width++;if(width)widths.push(width);}if(!widths.length||widths[0]>=Math.max(...widths)||new Set(widths).size<3)throw Error('Rectangular chin bristle on '+face);}
+ ok(true,'Orc chin bristle has a rounded width profile');
+ for(const mouth of ['small-tusks','heavy-tusks']){const q=E.build({race:'orc',mouth,beard:'stubble'}),teeth=data(q.layers.teeth),hair=data(q.layers.beard);ok(teeth.some((v,i)=>i%4===3&&v),mouth+' renders teeth');for(let i=3;i<teeth.length;i+=4)if(teeth[i]&&hair[i])throw Error('Facial hair covers tusks');}
+ const original=E.normalize({...E.defaults,seed:91,age:'elder',clothing:'fur',headwear:'cap',marks:'scar'});
+ for(const profile of ['male','female']){const c=E.startProfile(profile,original);ok(c.profile===profile&&['seed','age','clothing','headwear','marks'].every(k=>c[k]===original[k]),profile+' starter preserves non-facial choices');}
+ const female=E.startProfile('female',original),custom=E.startProfile('custom',female);
+ ok(Object.keys(female).every(k=>k==='profile'||female[k]===custom[k]),'Custom preserves the current choices');
+ ok(E.normalize({...female,beard:'full'}).beard==='full','profile does not lock manual beard choices');
+ for(const profile of E.profiles){const c=E.random(42,profile);ok(c.profile===profile&&JSON.stringify(c)===JSON.stringify(E.random(42,profile)),'seeded random follows '+profile);}
+ ok(E.normalize({face:'heart'}).profile==='custom','recipes without a profile default to Custom');
+ for(const face of E.partsFor('human','face'))for(const brows of E.options.brows){if(brows==='broken')continue;const q=E.build({...E.defaults,face,brows}),pixels=data(q.layers.brows);for(let y=36;y<58;y++)for(let x=1;x<64;x++)if(pixels[(y*128+x)*4+3]!==pixels[(y*128+128-x)*4+3])throw Error('Brow orientation: '+face+'/'+brows);}
+ ok(true,'all undamaged eyebrow styles mirror correctly across all face shapes');
+ for(const face of E.partsFor('human','face'))for(const eyes of E.partsFor('human','eyes')){const q=E.build({...E.defaults,face,eyes});for(const id of ['eyes','iris','eyelids']){const pixels=data(q.layers[id]);for(let y=35;y<64;y++)for(let x=1;x<64;x++)if(pixels[(y*128+x)*4+3]!==pixels[(y*128+128-x)*4+3])throw Error('Eye symmetry: '+face+'/'+eyes+'/'+id);}}
+ ok(true,'eyelid and iris silhouettes are symmetric for every face and eye style');
+ ok(!('detail' in E.options)&&!('detail' in E.defaults),'Classic drawing detail removed');
+ const damaged=data(E.build({...E.defaults,brows:'broken'}).layers.brows),undamaged=data(E.build({...E.defaults,brows:'natural'}).layers.brows);let rightDamage=false;
+ for(let y=36;y<58;y++)for(let x=1;x<128;x++)if(damaged[(y*128+x)*4+3]!==undamaged[(y*128+x)*4+3]){if(x<64)throw Error('Damaged brow changed both sides');rightDamage=true;}
+ ok(rightDamage,'broken eyebrow retains its deliberate one-sided gap');
+ const mature=E.build({...E.defaults,age:'mature'}),skinLines=data(mature.layers.age);ok(skinLines.some((v,i)=>i%4===3&&v>0)&&skinLines.every((v,i)=>i%4!==3||v<=109),'Mature lines remain visible with gentle coverage');
+ for(const marks of E.options.marks){const q=E.build({...E.defaults,age:'mature',eyes:'round',marks}),mask=document.createElement('canvas');mask.width=mask.height=128;const g=mask.getContext('2d');for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){g.drawImage(q.layers.eyes,dx,dy);g.drawImage(q.layers.eyelids,dx,dy);}const m=data(mask),age=data(q.layers.age),a=data(q.layers.marks);for(let i=3;i<m.length;i+=4)if(m[i]&&(age[i]||a[i]))throw Error('Skin overlay covers eye: '+marks);}
+ ok(true,'skin overlays exclude the eye opening and upper lid with a safety margin');
+ const tinted=E.tint(p.layers.hairFront,'#2244aa'),a=data(p.layers.hairFront),b=data(tinted);ok(a.every((v,i)=>i%4!==3||v===b[i]),'tint preserves alpha');ok(b.some((v,i)=>i%4===0&&b[i+3]&&v!==b[i+2]),'tint changes visible RGB');ok(p.layers.hairFront.toDataURL()===before.hairFront,'tint leaves grayscale source untouched');
+ const manual=document.createElement('canvas');manual.width=manual.height=E.size;const g=manual.getContext('2d');for(const s of E.order)g.drawImage(p.layers[s.id],0,0);ok(equal(data(manual),data(E.composite(p))),'composite uses declared layer order');
+ let threw=false;try{E.tint(p.layers.face,'invalid')}catch(e){threw=true}ok(threw,'rejects invalid tint');
+ ok(JSON.stringify(E.random(42))===JSON.stringify(E.random(42)),'random recipes are reproducible');
+ const normalized=E.normalize({face:'bad',seed:NaN});ok(normalized.face===E.defaults.face&&normalized.seed===E.defaults.seed,'invalid recipes fall back safely');
+ lines.push('DONE '+lines.length+' checks');
+} catch(e){lines.push('FAIL '+e.message);console.error(e);}
+document.getElementById('out').textContent=lines.join('\n');
+</script>
