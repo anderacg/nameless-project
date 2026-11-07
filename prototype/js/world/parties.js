@@ -118,7 +118,7 @@ class BandParty extends Party{
   get brain(){return BRAINS.band}
   // (a tattered rag: red, a desert raider's ochre, a bog raider's green; flagB, colB: a fight's own men under their place's flag and
   //  colours (battle/setup.js: a camp's or a hideout's, sites.js flag; a realm's real toll-men, their holding's: encounters.js roadFight))
-  banner(){return this.flagB||{k:'rag',col:BAND_FLAG[this.kind]||BAND_FLAG.bandits,dev:'skull'}}
+  banner(){return this.flagB!==undefined?this.flagB:{k:'rag',col:BAND_FLAG[this.kind]||BAND_FLAG.bandits,dev:'skull'}}// (flagB null: none, a ruin's cultists or grave robbers: no army's)
   look(){const c=this.ld;return{col:this.colB||'#8a4a3a',bandit:true,dir:faceDir(this),moving:!this.idle,seed:Math.round(this.x)%97,label:(c?c.name.split(' ')[0]+' Lv'+c.lv+' · ':'')+this.fighters,labelCol:STANCE_COL[stance(this.power())]}}
   changed(){super.changed();if(this.tc)this.n=this.size;this.pw=0}
   // its record in a save: on a generated world its numbers to a tenth, its strength made again (worldobject.js packs)
