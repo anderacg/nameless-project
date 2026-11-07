@@ -11,7 +11,7 @@ try{
  const fight=list=>{P.troops={hum_spear:6,hum_bow:4};G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list};go({enemies:list,tournament:false});return t.B};
  // the battlefield: larger than the screen, seen whole (zoomed out), and the screen again after
  {const B=fight(['militia']),cvs=document.querySelector('canvas');t.frame();ok(t.BW>t.VW&&t.BH>t.VH&&cvs.width===t.BW&&cvs.height===t.BH&&B.arena.width===t.BW,'a battle is fought on a larger field ('+t.BW+'×'+t.BH+' against the screen’s '+t.VW+'×'+t.VH+'), seen whole');
-  ok(B.units.filter(u=>u.team===0).every(u=>u.x<t.BW*.25)&&B.units.filter(u=>u.team===1).every(u=>u.x>t.BW*.75),'each side starts at its own edge of the field');t.B.over=true;t.B.endT=0;t.B=null;G.mode='world';t.frame();ok(cvs.width===t.VW,'back on the map, the screen’s own size')}
+  ok(B.units.filter(u=>u.team===0).every(u=>u.x<t.BW*.25)&&B.units.filter(u=>u.team===1).every(u=>u.x>t.BW*.75),'each side starts at its own edge of the field');t.B.over=true;t.B.endT=0;t.B=null;G.mode='world';t.frame();ok(cvs.width===t.VW*t.VS,'back on the map, the screen’s own size (drawn at its own scale: render.js setRes, VW × VS = '+cvs.width+')')}
  // the battle's speed, and the tactical pause
  {const B=fight(['militia']);ok(B.speed===t.BSPEED.v&&!B.paused,'a battle starts at the speed set in Settings ('+B.speed+'×)');
   const e=B.units.find(u=>u.team===1),x0=e.x;t.setBattleSpeed(1);for(let i=0;i<5;i++)t.updateBattle(.03);const d1=Math.abs(e.x-x0),x1=e.x;
