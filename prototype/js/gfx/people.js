@@ -433,11 +433,13 @@ function sizedHorse(S,Z,n){const k=(8+n)/8,legs=F=>({...F,legs:F.legs.map(l=>l.m
 // (the owner, 2026-11-04: "make sure the legs when walking or running are correct, and fix the extra dots in the outer line": a
 // near leg 2 px thick its whole length, the far one 1 px and darker, a pixel apart from it so a pair reads as two legs; each
 // line stepped edge to edge (never only corner to corner, which the outline broke into dots), its hoof as wide)
-function horseLeg(set,P,C,near,thickTo,side){const c=near?C[1]:C[2],dot=(x,y,k)=>{set(x,y,k);if(near)set(x+side,y,k)};
+// (the owner, 2026-11-07: "some legs seem like a stick and too thin": the near leg 3 px over the forearm or gaskin and 2 below, the
+// far one 2 px down to the fetlock and 1 on the pastern; the hoof 2 wide; the shade on the leg's back edge)
+function horseLeg(set,P,C,near,thickTo,side){const w=s=>near?s===0?3:2:s<2?2:1,dot=(x,y,k,n,ks)=>{set(x,y,k);if(n>1)set(x+side,y,ks||k);if(n>2)set(x-side,y,near?C[0]:k)};
   let px=null,py=null;
-  for(let s=0;s<3;s++){const [x0,y0]=P[s],[x1,y1]=P[s+1],n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0),1);
-    for(let i=0;i<=n;i++){const x=Math.round(x0+(x1-x0)*i/n),y=Math.round(y0+(y1-y0)*i/n);if(px!=null&&x!==px&&y!==py)dot(px,y,c);dot(x,y,c);px=x;py=y}}
-  dot(P[2][0],P[2][1],near?C[2]:C[3]);dot(P[3][0],P[3][1],HORSE_ART.hoof)}
+  for(let s=0;s<3;s++){const [x0,y0]=P[s],[x1,y1]=P[s+1],n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0),1),c=near?C[1]:C[2],cs=near?C[2]:C[3];
+    for(let i=0;i<=n;i++){const x=Math.round(x0+(x1-x0)*i/n),y=Math.round(y0+(y1-y0)*i/n);if(px!=null&&x!==px&&y!==py)dot(px,y,c,w(s),cs);dot(x,y,c,w(s),cs);px=x;py=y}}
+  dot(P[2][0],P[2][1],near?C[2]:C[3],near?2:1);dot(P[3][0],P[3][1],HORSE_ART.hoof,2)}
 // (its letters' colours: coat light, mid and shade, the mane, an eye)
 const horseCols=(C,Mn)=>({H:C[1],h:C[0],d:C[2],y:C[2],m:Mn[2],k:'#27272c'});
 // a horse standing, walking or galloping (HORSE_ART), in the cell by ps; returns the rider's seat row (drawMount's)
