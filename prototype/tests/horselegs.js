@@ -35,10 +35,18 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
    ok(!bad.length,'every frame\'s hooves drawn at its joints, on the bottom row or at most 7 px over it'+at+(bad.length?' ('+bad.join('; ')+')':''))}
   // ---- one head in every frame (the owner: "the head when running is too small"): its pixels the same, standing, walking and
   // galloping, hung at its poll; only the neck under it changes
-  {const col=t.horseCols(t.pal('horse'),t.pal('dark')),bad=[];for(let w=-1;w<8;w++){const g=t.pgrid(32,32),F=frameOf(B,w),[hx,hy]=B.poll[F.body||'stand'];t.drawMount(g,bay,w);
-    B.head.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c]&&t.pget(g,hx+x,B.y0+hy+y+F.bob+(F.head||0))!==col[c])bad.push(w+': '+x+','+y)}))}
+  // (the bare head: its tack off, HORSE_TACK.on false)
+  {const col=t.horseCols(t.pal('horse'),t.pal('dark')),bad=[];t.HORSE_TACK.on=false;for(let w=-1;w<8;w++){const g=t.pgrid(32,32),F=frameOf(B,w),[hx,hy]=B.poll[F.body||'stand'];t.drawMount(g,bay,w);
+    B.head.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c]&&t.pget(g,hx+x,B.y0+hy+y+F.bob+(F.head||0))!==col[c])bad.push(w+': '+x+','+y)}))}t.HORSE_TACK.on=true;
    const L=B.head.length,Wd=Math.max(...B.head.map(r=>r.length)),deep=B.head.map(r=>r.replace(/\./g,'').length);
    ok(!bad.length&&Object.keys(B.poll).join()===Object.keys(B.body).join(),'one head ('+Wd+'x'+L+' px, '+Math.max(...deep)+' px across at the jowl to '+deep[L-1]+' at the muzzle) drawn the same in all 9 frames, at each shape\'s poll'+at+(bad.length?' ('+bad.slice(0,5).join('; ')+')':''))}
+  // ---- the detail (2026-11-07, the owner: "make sure mount have more details"): a steel bit, a studded breast strap, a cloth of
+  // the side's colour under the saddle he sits in; none of it with HORSE_TACK.on false; a stag's rack joined to its head
+  {const T=t.HORSE_TACK,draw=(L,w)=>{const g=t.pgrid(32,32);t.drawMount(g,L,w);return g},cl=t.pal(bay.team)[1],on=draw(bay,4);T.on=false;const off=draw(bay,4);T.on=true;
+   const st=draw({mount:'stag',team:'red'},-1),at=(x,y)=>x>=0&&y>=0&&x<st.w&&y<st.h&&st.p[y*st.w+x],i0=st.p.findIndex(c=>c),seen=new Set([i0]),q=[i0];
+   while(q.length){const i=q.pop(),x=i%st.w,y=(i-x)/st.w;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]])if(at(x+dx,y+dy)&&!seen.has((y+dy)*st.w+x+dx)){seen.add((y+dy)*st.w+x+dx);q.push((y+dy)*st.w+x+dx)}}
+   const loose=st.p.filter(c=>c).length-seen.size;
+   ok(on.p.includes(T.steel)&&on.p.includes(t.PPAL.gold[1])&&on.p.includes(cl)&&!off.p.includes(T.steel)&&!off.p.includes(cl)&&!loose,'a ridden horse its bit, breast strap and its side\'s cloth under the saddle, none with HORSE_TACK.on false; a stag in one piece, its antlers joined to its head ('+loose+' loose)')}
   // ---- the legs n px longer under the same body; the rider up n px on it (no longer sunk a px into the saddle), his hands, back and
   // height with him
   {const legs=tall=>{A.tall=tall;const g=t.pgrid(32,32);t.drawMount(g,bay,-1);A.tall=true;const col=[];for(let y=0;y<32;y++)if(t.pget(g,14,y))col.push(y);const top=col[0],belly=col[col.length-1];return{deep:belly-top+1,leg:30-belly}};
@@ -98,7 +106,11 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // (both again 2026-11-07: the owner, "the sword looks bending": a thin weapon drawn along the nearest of the slopes a line steps
  // evenly on, so a rider's lance and sword are straight at any angle (weapons.js cleanDeg). Proof: 6fd183f gives both again. Were
  // dbfcc2e8, 48977866)
- const OLD='46e9bc72',FIRST='e36d264';
+ // (both again 2026-11-07: the owner, "make sure mount have more details": every horse's mane in strands, its quarters and
+ // shoulder shaded, its bridle, reins and breast strap, a cloth and a girth under every saddle; the stag's rack; the ram's fleece in
+ // curls, the wolf's dark saddle and pale chest (people.js horseDetail, HORSE_TACK, PPAL.fleece; engine/beasts.js MOUNT_ART).
+ // Proof: 9b6a5bc gives both again. Were 46e9bc72, e36d264)
+ const OLD='64d8cf30',FIRST='6c25b61d';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

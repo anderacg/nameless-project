@@ -55,7 +55,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,L=t.BattleLab,D=t.DISMOUNT,ev=s=>(
   // ---- a riderless horse drawn: saddled, its side's cloth, among the living
   {const B=lab([Gp('hum_lancer',1)],[Gp('militia',1)]),u=mine(B).units[0];tame(B,u,500);mine(B).useAbility('dismount');const h=u.horse,sp=t.horseSprite(h.look);
    const px=sp.getContext('2d').getImageData(0,0,sp.width,sp.height).data,hex=i=>'#'+[px[i],px[i+1],px[i+2]].map(v=>v.toString(16).padStart(2,'0')).join(''),cols=new Set();for(let i=0;i<px.length;i+=4)if(px[i+3])cols.add(hex(i));
-   const cloth=t.pal(h.look.team)[1],g0=t.pgrid(32,32);t.drawMount(g0,h.look,-1);ok(cols.has(cloth.toLowerCase())&&!g0.p.includes(cloth),'the horse\'s picture: its side\'s cloth under the saddle (none on a mount under its rider)');
+   const cloth=t.pal(h.look.team)[1],g0=t.pgrid(32,32);t.drawMount(g0,h.look,-1);ok(cols.has(cloth.toLowerCase())&&g0.p.includes(cloth),'the horse\'s picture: its side\'s cloth under the saddle (and under its rider: 2026-11-07, the owner, "more details")');
    ok(t.battleEnts().includes(h),'among what stands on the field (render.js battleEnts)');
    let n=0;const d=h.draw;h.draw=function(){n++;return d.apply(this,arguments)};try{t.drawBattle()}finally{h.draw=d}ok(n===1,'drawn with the field (once; '+n+')')}
   if(L.active)L.exit();
