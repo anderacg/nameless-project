@@ -123,9 +123,10 @@ Kit.suite(({ok,info})=>{
    {const r=toll(false,{scout:TU.toll.see});P.troops={[U]:1};r.foes=t.makeEnemies(8,false,'bandits');stats({...Z,scout:TU.toll.see},()=>t.roadMeet(r));
     ok(/too many to seize/.test(panel()),'Report them: greyed while they are too many to seize');Kit.world();
     const s=toll(false,{scout:TU.toll.see});P.troops={[U]:40};const g0=P.gold;stats({...Z,scout:TU.toll.see},()=>{t.roadMeet(s);pick(5)});const qe=t.Escort.list()[0];
-    ok(qe&&qe.who==='impostor'&&qe.to.town===s.home&&s.gone&&of(s).join()==='done'&&P.gold===g0,'Report them: the ringleader bound, riding with you to the reeve of '+s.home+' (an escort); the rest scatter; done');
-    const n0=W.news?W.news.items.length:0,h0=t.honorWith(s.fac),r0=t.repAt(s.home);qe.pay();Kit.world();
-    ok(P.gold===g0+TU.toll.report.gold&&t.honorWith(s.fac)===h0+TU.toll.report.honor&&t.repAt(s.home)===r0+TU.toll.report.rep&&W.news.items.some(it=>it.k==='toll'&&it.detail.town===s.home)&&!t.Escort.list().length,'handed in: +'+TU.toll.report.gold+' gold, reputation +'+TU.toll.report.rep+', honour +'+TU.toll.report.honor+', and the news of it goes round');
+    // (to a reeve of the realm they claimed, some way off: encounters.js tollReport, Escort.farPlace, since 6eb5965)
+    const to=qe&&qe.to.town;ok(qe&&qe.who==='impostor'&&t.townBy(to)?.owner===s.fac&&s.gone&&of(s).join()==='done'&&P.gold===g0,'Report them: the ringleader bound, riding with you to the reeve of '+to+', a holding of the realm they claimed (an escort); the rest scatter; done');
+    const n0=W.news?W.news.items.length:0,h0=t.honorWith(s.fac),r0=t.repAt(to);qe.pay();Kit.world();
+    ok(P.gold===g0+TU.toll.report.gold&&t.honorWith(s.fac)===h0+TU.toll.report.honor&&t.repAt(to)===r0+TU.toll.report.rep&&W.news.items.some(it=>it.k==='toll'&&it.detail.town===to)&&!t.Escort.list().length,'handed in: +'+TU.toll.report.gold+' gold, reputation +'+TU.toll.report.rep+', honour +'+TU.toll.report.honor+', and the news of it goes round');
     const u=toll(true,{scout:TU.toll.see});stats({...Z,scout:TU.toll.see},()=>t.roadMeet(u));ok(!acts().includes('Report them'),'never the lord\'s own men');Kit.world()}}
   // ---- left be, and their time up: every ending once
   {const a=spawn('campfire');a.met=1;a.over();const b=spawn('toll',realm);G.clock+=(b.end-t.roadNow()+.1)*DAY/24;b.over();const c=spawn('herbalist');c.goOff();const cc=of(c).length;G.clock+=(c.end-t.roadNow()+.1)*DAY/24;c.over();
