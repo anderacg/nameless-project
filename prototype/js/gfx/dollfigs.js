@@ -64,12 +64,30 @@ const DOLL_MOVES={lean:[],breath:[['ulh','',0,-1,0]],flinch:[['sfncbulhptko','',
   // leg bent out to the side, its knee up, its shin and foot planted 2 px out, so it shows beside him)
   kneel:[['sfncbulhp','',0,2,0],['t','L',0,3,0],['t','R',2,1,0],['ko','R',2,0,0]]};
 const DOLL_KNEEL_DROP=[['ko','L']];
+/* a shooter's arms (the owner, 2026-11-07: "archers bow shooting position is not correct"): drawing a bow (the thrust frames:
+   half, full, held), the bow arm raised to his shoulder and out toward his mark (his weapon hand, R: the bow on it, figures.js
+   ShooterGear), the drawing hand up by his cheek; the reload (the overhead frames), the bow arm still up, the other hand back to
+   the quiver over his shoulder and down to nock; a crossbow raised to his shoulder to aim (his other arm as it was: raised, it read as a stick), lowered to span it.
+   [regions, side, dx, dy, from row] as DOLL_MOVES (dx mirrored: -1 forward) */
+const DOLL_SHOOT={bow:{thrust:[[['lh','R',-1,-2,0],['lh','L',-1,-2,0]],[['lh','R',-1,-3,0],['lh','L',-2,-4,0]],[['lh','R',-1,-3,0],['lh','L',-2,-4,0]]],
+    overhead:[[['lh','R',-1,-2,0],['lh','L',0,-4,0]],[['lh','R',-1,-2,0],['lh','L',0,-5,0]],[['lh','R',-1,-2,0],['lh','L',-1,-3,0]]]},
+  xbow:{thrust:[[['lh','R',-1,-2,0]],[['lh','R',-1,-2,0]],[['lh','R',-1,-2,0]]],overhead:[[],[],[]]}};
+/* a blow's weight (the owner, 2026-11-07: "make unit animations more realistic when battle"), in his legs and the drop of his weight,
+   his head and body never apart: a cut, his front foot stepping out and his back heel up as it lands; a thrust, a lunge, his front
+   leg reaching forward from the knee, the back heel up, held a frame; a chop, all of him above the knees sinking a pixel into it as
+   it falls, as a step lands. By the blow's three frames (wind up, strike, follow through); none for a rider (his mount stays)
+   nor a shooter (his own arms: DOLL_SHOOT) */
+const DOLL_LUNGE={swing:[[],[['o','R',-1,0,14],['o','L',0,-1,14]],[['o','R',-1,0,14]]],
+  thrust:[[],[['ko','R',-1,0,13],['o','R',-1,0,14],['o','L',0,-1,14]],[['ko','R',-1,0,13],['o','R',-1,0,14]]],
+  overhead:[[],[['sfncbupt','',0,1,0],['lh','L',0,1,0]],[['sfncbupt','',0,1,0],['lh','L',0,1,0]]]};
+const shootArms=(o,style,atk)=>{if(atk<0||o.held)return [];const k=o.weapon==='longbow'?'bow':o.weapon,T=DOLL_SHOOT[k];return T&&T[style]?T[style][atk]||[]:[]};
 /* a figure's body as a doll into grid g at the template's (ox, oy): walk (-2 a breath, -1 standing, 0-15 the strides: walk,
    run, climb, descend, each its doll's step), style and atk (a blow's frame, its weapon arm along the rig). Its pixels are the
    body's (g.body: not outlined, figures.js FigureRig.frame); returns the template's anchors */
 function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
+  const shooter=!o.held&&['bow','longbow','xbow','sling','staff'].includes(o.weapon),lunge=atk>=0&&!o.mount&&!shooter&&DOLL_LUNGE[style]?DOLL_LUNGE[style][atk]||[]:[];
   const rig=atk>=0?(FIST_STYLES.includes(style)?FIST_RIG[style][atk]:o.held&&BLOW_RIG[style]?blowRig(o,style,atk):null):style==='flinch'?blowRig(o,'flinch',0):o.guardUp&&!shieldLook(o)&&!o.weapon?FIST_RIG.guard[0]:null;
-  const M=DOLL_MOVES,run=walk>=4&&walk<8,climb=walk>=8,moves=[...(run||climb?M.lean:[]),...(run?M.run[walk&3]:[]),...(walk===-2?M.breath:[]),...(atk>=0&&M.blow[atk]?M.blow[atk]:[]),...(M[style]&&M[style].length&&!Array.isArray(M[style][0][0])?M[style]:[])];
+  const M=DOLL_MOVES,run=walk>=4&&walk<8,climb=walk>=8,moves=[...(run||climb?M.lean:[]),...(run?M.run[walk&3]:[]),...(walk===-2?M.breath:[]),...(atk>=0&&M.blow[atk]?M.blow[atk]:[]),...shootArms(o,style,atk),...lunge,...(M[style]&&M[style].length&&!Array.isArray(M[style][0][0])?M[style]:[])];
   // (braced or gripping: both arms forward to the weapon, the near hand on it before him, the far one behind it along a pole levelled
   //  (brace) or just under the near one on a great weapon raised (grip): DOLL_GRIP)
   const two=DOLL_GRIP[style]||null;

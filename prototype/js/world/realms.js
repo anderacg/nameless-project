@@ -108,9 +108,12 @@ class Realm{
   // ---- its holdings and lords; its peoples (those of its holdings, else its own) and an army of n raised from them
   fiefs(){return TOWNS.filter(t=>t.owner===this.id)}
   lords(){return W.lords.filter(l=>l.fac===this.id)}
+  // (its armies' peoples: those of its holdings who are its own (FACS races; the owner, 2026-11-07: "check battle map vs the
+  // actual faction sprites align": a dwarf town under the Salt League keeps its own guards, but the League's hosts are its elves,
+  // humans and orcs); none of them in its holdings, its own peoples)
   races(){
-    const rs=[...new Set(this.fiefs().flatMap(t=>t.races))];
-    return rs.length?rs:FACS[this.id].races;
+    const own=FACS[this.id].races,rs=[...new Set(this.fiefs().flatMap(t=>t.races))].filter(r=>own.includes(r));
+    return rs.length?rs:own;
   }
   army(n){
     const rs=this.races(),a=[],types=[];
