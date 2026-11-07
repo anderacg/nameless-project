@@ -42,13 +42,15 @@ function dollSpec(o,pose,frame,moves){const parts=dollParts(o).map(([p,m,x])=>[p
   return{race:o.race||'human',skin:dollChan(o.skin||'skin'),hair:dollChan(o.hair||'brown'),style:o.shortHair===false?'long':'short',beard:!!o.beard,uniform:parts,team:dollChan(o.team||'blue'),
     seed,ramp:dollRamp,bare:true,noShadow:true,weapon:null,shield:null,pose,frame,moves}}
 // (the poses' own moves on the doll, by the template's walks and styles: [regions, side, dx, dy, from row]; the doll's dx is mirrored
-// (dollfigs draws it facing right): +1 is back. lean: running and climbing, the head and shoulders forward; a breath: the head down a
-// pixel; struck (flinch), the head and body back; a glance back (look), the head; the weight shifted (shift), all above the legs)
-const DOLL_MOVES={lean:[['sfn','',-1,0,0]],breath:[['sf','',0,1,0]],flinch:[['sfncbulhp','',1,0,0]],look:[['sf','',1,0,0]],shift:[['sfncbulhp','',1,0,0]],
-  run:[[['h','R',0,-1,0]],[['ko','L',0,-1,11],['h','R',-1,0,0]],[['h','L',0,-1,0]],[['ko','R',0,-1,11],['h','L',-1,0,0]]],
-  // (a blow's body (the owner's reference: the spear drawn back, then the weight thrown into it): wound up, the head and shoulders
-  // back; striking, forward and down a pixel as the weight lands; following through, still forward)
-  blow:[[['sfn','',1,0,0]],[['sfn','',-1,0,0],['sfncbulhp','',0,1,0]],[['sfn','',-1,0,0]]],
+// (dollfigs draws it facing right): +1 is back)
+// (rigid, never soft (the owner, 2026-11-07: "the unit is not bending like a soft object"): no part of his head or body moved against
+// another, which at this size reads as the figure bending like rubber; only his limbs move (a leg lifted at the knee, a heel, a whole
+// arm swung from the shoulder) or the whole of him (struck, flinch: knocked back a pixel, feet and all). So no lean, glance or weight
+// shift of the head and shoulders, a breath his arms lifted a pixel from the shoulders, and a blow's body still: its arm and weapon
+// do it)
+const DOLL_MOVES={lean:[],breath:[['ulh','',0,-1,0]],flinch:[['sfncbulhptko','',1,0,0]],look:[],shift:[],
+  run:[[['ulh','R',0,-1,0]],[['ko','L',0,-1,11],['ulh','R',0,-1,0]],[['ulh','L',0,-1,0]],[['ko','R',0,-1,11],['ulh','L',0,-1,0]]],
+  blow:[[],[],[]],
   // (kneeling (the owner, 2026-11-07: "kneeling looks like a line"), seen from before him as his reference's: his body down 2 rows;
   // his left knee on the ground, its thigh down to it, its shin and foot folded under it out of sight (DOLL_KNEEL_DROP); his right
   // leg bent out to the side, its knee up, its shin and foot planted 2 px out, so it shows beside him)
@@ -59,7 +61,7 @@ const DOLL_KNEEL_DROP=[['ko','L']];
    body's (g.body: not outlined, figures.js FigureRig.frame); returns the template's anchors */
 function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
   const rig=atk>=0?(FIST_STYLES.includes(style)?FIST_RIG[style][atk]:o.held&&BLOW_RIG[style]?blowRig(o,style,atk):null):style==='flinch'?blowRig(o,'flinch',0):o.guardUp&&!shieldLook(o)&&!o.weapon?FIST_RIG.guard[0]:null;
-  const M=DOLL_MOVES,run=walk>=4&&walk<8,climb=walk>=8,moves=[...(run||climb?M.lean:[]),...(run?M.run[walk&3]:[]),...(walk===-2?M.breath:[]),...(atk>=0&&M.blow[atk]?M.blow[atk]:[]),...(M[style]&&!Array.isArray(M[style][0][0])?M[style]:[])];
+  const M=DOLL_MOVES,run=walk>=4&&walk<8,climb=walk>=8,moves=[...(run||climb?M.lean:[]),...(run?M.run[walk&3]:[]),...(walk===-2?M.breath:[]),...(atk>=0&&M.blow[atk]?M.blow[atk]:[]),...(M[style]&&M[style].length&&!Array.isArray(M[style][0][0])?M[style]:[])];
   // (braced or gripping: both arms forward to the weapon, the near hand on it before him, the far one behind it along a pole levelled
   //  (brace) or just under the near one on a great weapon raised (grip): DOLL_GRIP)
   const two=DOLL_GRIP[style]||null;

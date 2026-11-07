@@ -36,10 +36,11 @@ Kit.suite(({ok,info})=>{
  const [fx,fy]=sp.anchors.feet;ok(!outl.length&&at(sp,fx,fy)==='#000037','no outline (its edges its own darkest tones), a shadow underfoot');
  // ---- poses: the walk's frames differ
  const w=[0,1,2,3].map(f=>px(PX.doll({uniform:'militia',pose:'walk',frame:f})).join());ok(w[0]!==w[1]&&w[1]!==w[3],'a walk of four frames, its steps differing');
- // (the owner, 2026-11-07: "more natural": on each step the body down a pixel as the weight lands; on each pass a foot lifted through)
+ // (the owner, 2026-11-07: "more natural": on each pass a foot lifted through; the body rigid)
  {const top=c=>{const d=px(c),W=c.width;for(let i=0;i<d.length;i+=4)if(d[i+3])return Math.floor(i/4/W)},low=(c,x0,x1)=>{const d=px(c),W=c.width;let y=-1;for(let i=0;i<d.length;i+=4){const x=(i/4)%W;if(d[i+3]&&x>=x0&&x<x1&&hex(d,i)!=='#000037')y=Math.floor(i/4/W)}return y};
   const f=[0,1,2,3].map(k=>PX.doll({uniform:'militia',pose:'walk',frame:k,noShadow:true,weapon:null})),id=PX.doll({uniform:'militia',noShadow:true,weapon:null}),D=DL.D;
-  ok(top(f[0])===top(id)+1&&top(f[2])===top(id)+1&&top(f[1])===top(id)&&top(f[3])===top(id),'the walk: the body down a pixel as each step lands, up again as the leg passes');
+  // (2026-11-07, the owner: "not bending like a soft object": his head and body never moved against each other, only his limbs)
+  ok([0,1,2,3].every(k=>top(f[k])===top(id)),'the walk: his head and body still, the same in every step (only his legs and arms move)');
   ok(low(f[1],D.OX+5,D.W)<low(id,D.OX+5,D.W)&&low(f[3],0,D.OX+4)<low(id,0,D.OX+4),'and each leg in turn lifted through as it passes')}
  // ---- the grayscale base (the owner, 2026-11-06: "base sprites grayscale, so we can dynamically change colours"): one base for every
  // side, its pixels channels and tones, painted from any palette; the game's two sides one base

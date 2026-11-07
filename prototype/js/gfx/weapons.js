@@ -129,7 +129,10 @@ const flagPole=(u,k)=>POLE(k)&&B&&!B.over&&typeof battleFlag==='function'&&battl
 // (a doll's weapon never through the ground (the owner, 2026-11-07: "make sure the sprite looks correct"): pointing down, its tip a
 // pixel over the row his feet stand on (the picture's height less 2), however long it is: an axe low as a sword, not cut off)
 const downClamp=(deg,len,drop)=>{const a=((deg%360)+360)%360,s=Math.sin(a*Math.PI/180);if(s<=0||len*s<=drop)return deg;const m=Math.asin(Math.max(0,Math.min(1,drop/len)))*180/Math.PI;return a<=90?m:180-m};
-function groundClamp(deg,len,sp,o){return dollable(o)&&sp.hand?downClamp(deg,len,sp.height-3-sp.hand[1]):deg}
+// (the room under his hand taken as he stands (DOLL_DROP at most), never the swing of one step's: his weapon at one angle the whole
+// walk long, not jumping between two as his arm swings)
+const DOLL_DROP=3;
+function groundClamp(deg,len,sp,o){return dollable(o)&&sp.hand?downClamp(deg,len,Math.min(DOLL_DROP,sp.height-3-sp.hand[1])):deg}
 function heldNow(u,o,sp){
   const k=heldWeapon(o);if(!k||!sp.hand)return null;u.wDoll=dollable(o);const [deg0,hx,hy]=heldAngle(u,k),deg=groundClamp(deg0,WPN[k][0],sp,o),dx=sp.rig?0:hx,dy=sp.rig?0:hy,f=deg/360*WEAPON_STEPS;// (rigged: the fist carries it, people.js BLOW_RIG)
   // (the step drawn changes only when the angle is well past the middle between two: no flicker on the boundary)
