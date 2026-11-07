@@ -365,21 +365,29 @@
   // a bog slime: a blob that squashes and stretches as it hops; it rears up and spits
   // (dead, PX.BEAST_DEATHS: melted flat; burst, a thin splash and its drops thrown round it; sagging, a lump gone soft, its sides
   // run out, its eyes shut)
-  KINDS.slime={W:16,H:16,coats:['#6a9e4a','#5e9a72','#8e9e4a'],deaths:['melt','burst','sag'],
+  // (the owner, 2026-11-07: "fix slime sprite": teal, acid green or bog violet, so it stands off the grass; a glossy dome over a
+  // puddle lip, a lit rim, its dark core seen through it, a white gloss)
+  KINDS.slime={W:16,H:16,coats:['#3e9e9a','#9ab83a','#8a62a8'],deaths:['melt','burst','sag'],
     draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Y=g.h-2,a=F.a,i=F.i;
       if(F.dead&&i===1){const m=mask().ell(8,Y-.2,7,1.1);shade(g,m,C);put(g,7,Y,C[2]);put(g,9,Y-1,C[2]);put(g,4,Y-1,C[0]);
         for(const [x,y] of [[2,Y-3],[13,Y-3],[6,Y-4],[11,Y-5],[4,Y-6]])put(g,x,y,C[y<Y-4?0:1]);return}
       if(F.dead&&i===2){const m=mask().ell(8,Y-1.4,5.4,2.6).ell(8,Y-.4,7,1.2);for(const [x,y] of m.pts())if(y>Y)m.s.delete(K(x,y));shade(g,m,C);
         put(g,5,Y-3,'#eef4d8');put(g,6,Y-3,C[0]);put(g,9,Y-2,'#2c2430');put(g,10,Y-2,'#2c2430');put(g,12,Y-2,'#2c2430');put(g,7,Y-1,C[2]);return}
       if(F.dead){const m=mask().ell(8,Y-.5,7,1.6);shade(g,m,C);put(g,5,Y-1,C[0]);return}
-      const sq=a==='idle'?[0,.5][i]:a==='walk'||a==='run'?[0,-1,.5,-1][i]:[-1.5,1,.5][i],up=a==='run'&&i%2?2:0,rx=5.6+sq*.5,ry=4.5-sq*.7,cx=8+(a==='atk'||a==='alt'?[-.5,.5,0][i]:0);
-      const m=mask().ell(cx,Y-ry+.5-up,rx,ry);for(const [x,y] of m.pts())if(y>Y)m.s.delete(K(x,y));if(!up)for(const [x,y] of m.pts())if(y===Y-1)m.add(x,Y);shade(g,m,C);
-      // (its shine, its dark heart, its eyes on its front, a mouth open as it spits)
-      const tx=Math.round(cx-rx*.45),ty=Math.round(Y-ry*1.6-up);put(g,tx,ty,'#eef4d8');put(g,tx+1,ty,C[0]);put(g,tx,ty+1,C[0]);
-      put(g,Math.round(cx-1),Math.round(Y-ry*.6-up),C[2]);put(g,Math.round(cx),Math.round(Y-ry*.6-up),C[2]);
-      const ex=Math.round(cx+rx*.35),ey=Math.round(Y-ry*1.1-up);put(g,ex,ey,'#2c2430');put(g,ex+2,ey,'#2c2430');
+      const sq=a==='idle'?[0,.5][i]:a==='walk'||a==='run'?[0,-1,.5,-1][i]:[-1.5,1,.5][i],up=a==='run'&&i%2?2:0,rx=5.4+sq*.5,ry=4.6-sq*.7,cx=8+(a==='atk'||a==='alt'?[-.5,.5,0][i]:0),cy=Y-ry+.5-up;
+      // (a gumdrop: widening from its top to its widest on the ground; in the air, round)
+      const m=mask();if(up)m.ell(cx,cy,rx,ry);else{const top=Math.round(Y-2*ry+1);for(let y=top;y<=Y;y++){const u=(y-top+.5)/(Y-top+1),hw=(rx+.7)*Math.sqrt(1-(1-u)**2);
+        for(let x=Math.floor(cx-hw);x<=Math.ceil(cx+hw);x++)if(Math.abs(x+.5-cx)<=hw)m.add(x,y)}}
+      const [x0,y0,x1,y1]=m.box(),mid=PX.mix(C[1],C[0],.45),core=PX.mix(C[1],C[2],.6);
+      for(const [x,y] of m.pts()){const nx=(x+.5-cx)/rx,ny=(y+.5-cy)/ry,edgeL=!m.has(x-1,y)||!m.has(x,y-1),edgeR=!m.has(x+1,y)||!m.has(x,y+1);
+        // (the rim lit on the top and the left, shaded on the right and under it; inside, lighter toward the light; its core darker)
+        let c=C[1];if(y===y1)c=C[3];else if(edgeL&&nx<.3)c=C[0];else if(edgeR)c=C[2];else if(ny<-.25&&nx<.25)c=mid;
+        if(!edgeL&&!edgeR&&y<y1&&((x+.5-cx+.4)/(rx*.38))**2+((y+.5-(cy+ry*.45))/(ry*.26))**2<=1)c=core;put(g,x,y,c)}
+      // (its gloss, its eyes on its front, a mouth open as it spits)
+      const tx=Math.round(cx-rx*.5),ty=y0+1;put(g,tx,ty,'#f4fbf0');put(g,tx+1,ty,'#f4fbf0');put(g,tx,ty+1,C[0]);put(g,tx-1,ty+2,mid);
+      const ex=Math.round(cx+rx*.25),ey=Math.round(cy-ry*.1);put(g,ex,ey,'#1e1a24');put(g,ex+2,ey,'#1e1a24');put(g,ex,ey-1,'#e8f0e8');put(g,ex+2,ey-1,'#e8f0e8');
       if((a==='atk'||a==='alt')&&i===1){put(g,ex+1,ey+2,'#3a2430');put(g,ex+2,ey+2,'#3a2430');put(g,ex+3,ey+1,C[0])}
-      if(o.team===0){put(g,Math.round(cx),Math.round(Y-ry*2-up)+1,TEAM[1]);put(g,Math.round(cx)+1,Math.round(Y-ry*2-up)+1,TEAM[2])}}};
+      if(o.team===0){put(g,Math.round(cx),y0,TEAM[1]);put(g,Math.round(cx)+1,y0,TEAM[2])}}};
   // a troll: twice a man's height, hunched, long-armed, a small head thrust forward with a big nose and tusks; a club it slams down
   KINDS.troll={W:32,H:32,coats:['#6c7c5e','#6e7066','#5e7268'],
     // (dead, PX.BEAST_DEATHS: over on its face, turned a quarter; on its back, the other way; face down, its club arm flung out
