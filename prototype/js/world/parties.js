@@ -122,6 +122,19 @@ class BandParty extends Party{
   // its record in a save: on a generated world its numbers to a tenth, its strength made again (worldobject.js packs)
   toJSON(){if(!packs())return this;const {pw,...o}=this;return tenths(o)}
 }
+/* a holding's defenders in a fight for it (a siege, a raid: world/siege.js startAssault; the owner, 2026-11-07: "why raid in
+   holding have different flags and unit factions"): its own men under its own flag, the one over it on the map (structures.js
+   holdingFlag), in its realm's colours (worldbattle.js worldTint: forceRealm by faction), never a bandit band's rag; gar: its name.
+   Made for the fight only (battle/setup.js), never on the map */
+class GarrisonParty extends Party{
+  get mapKind(){return 'garrison'}
+  get town(){return townBy(this.gar)}
+  get faction(){return this.town?.owner||null}
+  here(){return false}
+  label(){return (this.town?.name||'The')+' garrison'}
+  banner(){const t=this.town;return t?holdingFlag(t,facCol(t)):null}
+  look(){const t=this.town;return{col:t?facCol(t):'#98a0ba',dir:-1,moving:false,seed:0,label:String(this.size)}}
+}
 // your own band: its counts are P.troops, as they always were (read everywhere as counts), and it changes the way every party
 // does (P.add, P.remove, P.size...). Its own troops shadow the list view; its list is built on asking. You are its brain.
 class PlayerParty extends Party{
@@ -236,7 +249,7 @@ class PlayerParty extends Party{
 }
 Object.setPrototypeOf(P,PlayerParty.prototype);
 // which kind a plain party is
-const partyClassOf=o=>o.cid?CompanionParty:o.pt?PatrolParty:o.cv?CaravanParty:o.fac&&o.name?LordParty:BandParty;
+const partyClassOf=o=>o.gar?GarrisonParty:o.cid?CompanionParty:o.pt?PatrolParty:o.cv?CaravanParty:o.fac&&o.name?LordParty:BandParty;
 // make a party one of its kind: its own list of soldiers (or a save's counts) becomes its counts; a band with only its number
 // (n) musters its fighters here, once
 function asParty(o){

@@ -7,6 +7,7 @@ function armyRelation(a,b){
  if(ak==='monster'||bk==='monster')return ak===bk&&a.id===b.id?1:-1;
  if(ak==='band'||bk==='band')return ak===bk&&(a.kind||'bandits')===(b.kind||'bandits')?1:-1;
  if(player(a)&&player(b))return 1;const fa=forceRealm(a),fb=forceRealm(b);
+ if(ak==='garrison'&&!fa||bk==='garrison'&&!fb)return player(a)||player(b)?-1:0;// (a free holding's men: against you, who fall on them; no one else's)
  if(player(a)||player(b)){const f=player(a)?fb:fa;return f==='player'?1:f&&hostileTo(f)?-1:f&&(f===P.fac||friendFac(f))?1:0}
  return fa&&fb?fa===fb||relOf(fa,fb).s==='ally'?1:atWar(fa,fb)?-1:0:0;
 }

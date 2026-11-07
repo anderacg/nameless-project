@@ -135,7 +135,7 @@ js/world/             the campaign map and everything on it
   holding.js            a holding: Holding and its kinds (Village, Town, City, Castle), on the map HoldingObject, and the factory
                         (makeHolding, setHoldings, TOWNS); what each kind has is data (data/holdings.js HOLDING_TYPES)
   parties.js            every party's soldiers as counts; its kind's class (look, sight, shelter); W.parties; your band (P: PlayerParty,
-                        with your numbers: size, room, food, sight, skills, gear, vitals)
+                        with your numbers: size, room, food, sight, skills, gear, vitals); a holding's defenders in a siege or a raid (GarrisonParty: its own flag and its realm's colours, never a bandit rag)
   brains.js             how each kind of party behaves on the map; the systems parties and patrol moves run them (updateParties: all at once)
   waylay.js             bands (often) and lords (rarely) lying in wait in the trees by a road; your sight sources spot them (WAYLAY)
   fieldloot.js          spoils left on the field: withdrawn or beaten with beasts holding it, the fight's spoils stay there (fieldSpoils, leaveFieldLoot; the pack's ground moved there), a side quest to take them back (FieldLootQuest, step kind 'fieldloot': there with no beast on the spot), a band near it may take them first (BandBrain, lootGo), gone in 5 days (FIELD_LOOT)

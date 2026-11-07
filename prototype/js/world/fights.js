@@ -57,6 +57,7 @@ function routParty(o,winners){
   else if(k==='band'){bandits=bandits.filter(x=>x!==o);chiefEscapes(o.ld)}// (its chieftain gets away)
   else if(k==='patrol')patrolBeaten(o);
   else if(k==='monster')beastRouted(o);
+  else if(k==='garrison')return;// (a holding's defenders: its fate is the siege's or the raid's, world/siege.js)
   else{o.gone=true;W.caravans=W.caravans.filter(x=>x!==o);const lord=winners.find(w=>w.mapKind==='lord'),band=winners.find(w=>w.mapKind==='band');
     worldEmit('caravan:beaten',{caravan:o,lord,band});// (the bus: news.js)
     if(lord){const home=Spatial.nearest(fiefsOf(lord.fac),lord.x,lord.y);if(home){ensureEcon(home);for(const g in o.goods)home.stock[g]=(home.stock[g]||0)+o.goods[g]}}
