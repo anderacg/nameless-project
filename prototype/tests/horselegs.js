@@ -95,7 +95,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // no bigger than drawn; every figure's feet on the row it stands on; a doll's sword walking as at rest, a great weapon upright,
  // none through the ground (people.js prim, dollfigs.js DOLL_FIGS.dy 0, weapons.js HOLD_DOLL, downClamp). Proof: 9243c05 gives both
  // again. Were 74d82a6a, bc05bb84)
- const OLD='dbfcc2e8',FIRST='48977866';
+ // (both again 2026-11-07: the owner, "the sword looks bending": a thin weapon drawn along the nearest of the slopes a line steps
+ // evenly on, so a rider's lance and sword are straight at any angle (weapons.js cleanDeg). Proof: 6fd183f gives both again. Were
+ // dbfcc2e8, 48977866)
+ const OLD='46e9bc72',FIRST='e36d264';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

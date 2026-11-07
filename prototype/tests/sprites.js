@@ -77,6 +77,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   const restS=st(sp,'spear'),restW=st(sw,'sword');sp.spdNow=sp.s.spd;sw.spdNow=sw.s.spd;const runS=st(sp,'spear'),runW=st(sw,'sword');sw.spdNow=sw.s.spd*.55;const marchW=st(sw,'sword');
   // (2026-11-06: a paper doll's spear across his back at rest, its tip up and forward, as the owner's reference)
   ok(restS<-45&&restS>-80&&Math.abs(runS)<20,'a spear: across his back at rest, levelled in a charge ('+restS+' \u2192 '+runS+')');
+  // (2026-11-07, the owner: "the sword looks bending": a thin weapon drawn only along the slopes a line steps evenly on, so its 32
+  // angles make at most 16 pictures, each straight; between them a kink would move as it turned)
+  {const px=c=>c.getContext('2d').getImageData(0,0,c.width,c.height).data.join(),ks=['sword','axe','spear','great'],n=ks.map(k=>new Set([...Array(t.WEAPON_STEPS).keys()].map(i=>px(t.weaponSprite(k,'blue','#f3bfad',i,undefined,true)))).size);
+   ok(n.every(v=>v<=16)&&[0,10,30,50,100,-60].every(d=>t.CLEAN_DEG.includes(t.cleanDeg(d))),'a thin weapon always straight: drawn on 16 clean slopes ('+ks.map((k,j)=>k+' '+n[j]).join(', ')+' pictures of 32 angles)')}
   // (2026-11-07, the owner: "the weapons seem shorter when walking": a paper doll's sword walking as at rest, low before him, a
   // little higher at a run; else on the shoulder on the march, raised up and back in a charge)
   ok(restW>40&&(t.DOLL_FIGS.on?marchW===restW&&runW>20&&runW<restW:marchW<-100&&runW<-100),'a sword: point down at rest, '+(t.DOLL_FIGS.on?'walking as at rest, a little higher at a run':'on the shoulder on the march, raised up and back in a charge')+' ('+restW+', '+marchW+', '+runW+')');

@@ -20,7 +20,12 @@ function weaponSprite(k,team,skin,i,len=WPN[k][0],thin=false){
   drawBlade((x,y,c)=>pset(g,x,y,c),R,R,deg,k,pal(team),skin,len,thin);if(!thin)poutline(g);const c=pcanvas(g);c.R=R;c.n=++WEAPON_N;return WEAPONS[key]=c}
 // a weapon's pixels from its hand (hx, hy) at deg (figures.js HandWeapon draws the same into a figure; a worker's tool's head too),
 // len px long (WPN's, or the item's own: a flag's spear); returns the point just past its tip (a blow's flash)
-function drawBlade(set,hx,hy,deg,k,Tm,skin,len=WPN[k][0],thin=false){
+// (a thin weapon always straight (the owner, 2026-11-07: "the sword looks bending"): drawn along the nearest of the 16 slopes a line
+// a pixel wide steps evenly on, flat, 1 in 2, 45 degrees, 2 in 1 and upright each way (CLEAN_DEG); between them its pixels step
+// unevenly and the blade looks bent, the kink moving as it turns)
+const CLEAN_DEG=[0,26.565,45,63.435].flatMap(a=>[0,90,180,270].map(q=>a+q));
+const cleanDeg=d=>{d=((d%360)+360)%360;let b=0,bd=1e9;for(const c of CLEAN_DEG){const e=Math.abs(((d-c+540)%360)-180);if(e<bd){bd=e;b=c}}return b};
+function drawBlade(set,hx,hy,deg,k,Tm,skin,len=WPN[k][0],thin=false){if(thin)deg=cleanDeg(deg);
   const [,mat,head]=WPN[k],W=PPAL.wood,M=PPAL.steel,col=mat==='steel'?M[1]:W[1],a=deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
   // (one pixel per step along the longer axis, so a slanted shaft is a single clean line, never two side by side)
   // (it returns its pixels: a blade's shine recolours the same ones, and a head sits on the shaft's own last pixel)
