@@ -64,6 +64,6 @@ Kit.suite(({ok,info})=>{
   // (a spearman on the march, his spear sloped over his shoulder behind him: SHOULDER; standing, and a javelin, in hand before him)
   {const L=t.lookOf('hum_spear',1,false,0,'',null),sp=t.unitSprite('hum_spear',1,false,0,3,true),wk=t.mapHeld(L,sp,true,1),st=t.mapHeld(L,sp,false,0);
    ok(wk&&wk.back&&st&&wk.w!==st.w&&wk.y<st.y,'on the march a spearman shoulders his spear, sloped behind him over his shoulder, higher than as he stands')}
-  ok(sw&&sw.sheathed&&!sw.back&&t.SHEATH.deg>90&&t.SHEATH.deg<180&&spr&&!spr.sheathed&&(!kn||!kn.sheathed),'on the map a sword rides sheathed at his hip, slung down and back ('+t.SHEATH.deg+' degrees); a spear and a rider\'s lance in hand')}
+  ok(!sw&&spr&&!spr.sheathed&&(!kn||!kn.sheathed),'on the map a sword is worn out of sight (SHEATH.show false: the owner\'s choice), a spear and a rider\'s lance in hand')}
  }finally{t.FigureRig.gearOf=gearOf;t.STATE_FX.on=FX;for(const n in keep)window[n]=keep[n]}
 });

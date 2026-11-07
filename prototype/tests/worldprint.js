@@ -564,7 +564,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  LOAD_AT), ships, carts and an encounter's horse edged in their own tones (g.edge), PX.outline a shade of what it borders, a dark
 //  body's outline a lighter shade of it and no navy (engine/pixel.js PX.RIM.dark), a building's outline shaded from its final body
 //  (engine/model.js). Proof: PX.RIM.dark null gives W5 c77905d4 again; c58c542 gives W6 780320e9. Were W5 c77905d4, W6 780320e9)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'4e6ff830',W7:'a9857aab',W8:'f6fce34e',B2:'87554a09'};
+// (W6 again 2026-11-07, on purpose: the owner chose a sword, a dagger or an axe worn out of sight on the map ("the hero sheathing weapon
+//  looks very confusing"; weapons.js SHEATH.show false): the map's swordsmen and your hero with none drawn. Proof: 25aa1fd gives 4e6ff830
+//  again. Was W6 4e6ff830)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'28bcc57a',W7:'a9857aab',W8:'f6fce34e',B2:'87554a09'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

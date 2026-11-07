@@ -113,18 +113,20 @@ function holdOf(u,k){
 // sprite to look separated from the horse"), held at rest or on the march (HOLD: no blow nor foe there); its picture and corner
 // from his sprite's, and whether it goes behind his body; null for none
 /* sheathed off the field (the owner, 2026-11-07: "make weapon sheathing like pointing downward near the waist; make it realistic; only
-   when non battle"): on the map a sword or a dagger hangs from his belt at his hip, its hilt up and forward under his hand, its
-   scabbard (leather two pixels wide, drawn over him, lit along its top, its chape steel) slung down and back across his thigh, its end past his back leg, as one is worn; a
-   one-handed axe hangs through his belt so, its head up at his hip. Spears, great weapons and shooters' arms stay in his hand; on
-   foot only (a rider's in his hand as before). In battle every weapon is drawn (heldNow). SHEATH: kinds, deg (the scabbard's slant:
-   90 down, 180 back), at (its hilt from his hand: dx, dy), long (px more than the blade, its hilt and chape) */
-const SHEATH={on:true,kinds:['sword','dagger','axe'],deg:108,at:[-1,-1],long:0},SHEATHS={};
+   when non battle", then "the hero sheathing weapon looks very confusing"): on the map a sword or a dagger hangs from his belt behind
+   him, its scabbard slung down and back so its end stands out past his hips and his back leg against the ground (the part over him
+   hidden by his body, nothing laid over his tunic), plain leather, its chape steel; a one-handed axe so, its haft. Spears, great
+   weapons and shooters' arms stay in his hand; on foot only (a rider's in his hand as before). In battle every weapon is drawn
+   (heldNow). SHEATH: kinds, deg (the slant: 90 down, 180 back), at (its top from his hand: dx, dy), long (px more than the blade) */
+// (show false (the owner, 2026-11-07, chose it: a sheath a few pixels big tangled with the body at the map's size): worn out of sight,
+// no weapon drawn on him off the field; show true: its scabbard behind his hip as below)
+const SHEATH={on:true,show:false,kinds:['sword','dagger','axe'],deg:150,at:[-5,-3],long:2},SHEATHS={};
 function sheathSprite(k,team,skin){const key=k+team+skin;if(SHEATHS[key])return SHEATHS[key];
   const n=WPN[k][0]+SHEATH.long,R=n+3,g=pgrid(2*R+1,2*R+1),a=SHEATH.deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a),
-    set=(x,y,col)=>pset(g,R+Math.round(x),R+Math.round(y),col),Lt=PPAL.leather,W=PPAL.wood,M=PPAL.steel,G=PPAL.gold;
-  if(k==='axe'){for(let t=1;t<n;t++)set(c*t,s*t,W[t&1?3:2]);set(0,0,W[1]);set(0,-1,M[1]);set(1,-1,M[0]);set(1,0,M[2])}// (its haft down and back, its head at his hip)
-  else{for(let t=1;t<n;t++){const last=t===n-1;set(c*t,s*t,last?M[1]:Lt[t===1?0:1]);set(c*t-s,s*t+c,last?M[2]:Lt[3])}// (the scabbard two pixels wide over him, lit along its top, shaded under it; its chape steel)
-    set(1,-1,G[0]);set(-1,1,G[2]);set(-c,-s,Lt[1]);set(-2*c,-2*s,G[1])}// (the guard across, the grip and pommel up and forward)
+    set=(x,y,col)=>pset(g,R+Math.round(x),R+Math.round(y),col),Lt=PPAL.leather,W=PPAL.wood,M=PPAL.steel;
+  // (one clean line, a staircase with its corners filled so it never breaks into dots; its last pixel the chape, or an axe's haft end)
+  let q=null;for(let t=0;t<n;t++){const x=Math.round(c*t),y=Math.round(s*t),last=t===n-1,col=k==='axe'?W[t&1?2:1]:last?M[1]:Lt[1];
+    if(q&&q[0]!==x&&q[1]!==y)set(q[0],y,k==='axe'?W[2]:Lt[2]);set(x,y,col);q=[x,y]}
   const cv=pcanvas(g);cv.R=R;return SHEATHS[key]=cv}
 // (a spear or a pike sloped over his shoulder on the march (the owner, 2026-11-07: "make spearmen carry spears over the shoulder on the
 //  march"): from his hand its shaft back and up behind his shoulder, its head over and behind his head; on foot, walking, on the map only;
@@ -132,7 +134,7 @@ function sheathSprite(k,team,skin){const key=k+team+skin;if(SHEATHS[key])return 
 const SHOULDER={on:true,deg:-126,up:4};// (up: px slid up along its shaft, its butt ending at his hand (a doll's pole's is 5 px: drawBlade), never below it)
 function mapHeld(L,sp,walking,step){
   const k=heldWeapon(L);if(!k||!sp.hand)return null;
-  if(SHEATH.on&&SHEATH.kinds.includes(k)&&!L.mount&&dollable(L)){const w=sheathSprite(k,L.team,pal(L.skin)[1]);return{w,x:sp.hand[0]+SHEATH.at[0]-w.R,y:sp.hand[1]+SHEATH.at[1]-w.R,back:false,sheathed:true}}const kind=holdKind(k),sh=SHOULDER.on&&walking&&kind==='pole'&&k!=='javelin'&&!L.mount&&dollable(L),deg=sh?SHOULDER.deg:groundClamp(holdTab(kind,L)[walking?'march':'rest'],WPN[k][0],sp,L);
+  if(SHEATH.on&&SHEATH.kinds.includes(k)&&!L.mount&&dollable(L)){if(!SHEATH.show)return null;const w=sheathSprite(k,L.team,pal(L.skin)[1]);return{w,x:sp.hand[0]+SHEATH.at[0]-w.R,y:sp.hand[1]+SHEATH.at[1]-w.R,back:true,sheathed:true}}const kind=holdKind(k),sh=SHOULDER.on&&walking&&kind==='pole'&&k!=='javelin'&&!L.mount&&dollable(L),deg=sh?SHOULDER.deg:groundClamp(holdTab(kind,L)[walking?'march':'rest'],WPN[k][0],sp,L);
   const i=((Math.round(deg/360*WEAPON_STEPS)%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,sw=walking?swayOf(step,false,L,k):null,w=weaponSprite(k,L.team,pal(L.skin)[1],i,undefined,dollable(L)),a=(i/WEAPON_STEPS*360+180)%360-180,up=sh?SHOULDER.up:0,ua=deg*Math.PI/180,x=sp.hand[0]-w.R+(sw?sw[0]:0)+Math.round(Math.cos(ua)*up),y=sp.hand[1]-w.R+(sw?sw[1]:0)+Math.round(Math.sin(ua)*up);
   return{w,x,y,back:heldBack(k,a,L)&&peeks(sp,w,x,y)}}
 // draw it, in the fighter's own (already turned) frame: (bx, by) is where his sprite's corner went
