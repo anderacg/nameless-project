@@ -126,9 +126,18 @@
       fx=rx+dx+(near?0:(fore?-1:1))+(up?2:0),fy=Y-lift-up,m=mask(),[w0,w1,hock]=fore&&S.fore?S.fore:S.legs,LC=fore&&S.foreC?S.foreC:C;
       // (S.elbow: a foreleg bent as a great lizard's, the elbow back under the body and the forearm down and forward to the wrist;
       // S.toes: a long foot on the ground ahead of the leg, its claws at the end)
-      if(fore&&S.elbow&&!up){const ex=rx-S.elbow+Math.round(dx/2),ey=Math.round(ry+(fy-ry)*.45);m.limb(rx,ry,ex,ey,w0,w0).limb(ex,ey,fx,fy,w0,w1)}
-      else if(!fore&&hock){const kx=rx-hock+Math.round(dx/2),ky=Math.round((ry+fy)/2)+1;m.limb(rx,ry,kx,ky,w0,w1).limb(kx,ky,fx,fy,w1,w1)}else m.limb(rx,ry,fx,fy,w0,w1);
-      for(let j=0;j<(S.toes||0);j++)m.add(fx+Math.ceil(w1/2)+j,fy);
+      // (S.talons (the dragon's, the owner 2026-11-07: "dragon feet should not be a straight line"): the leg ends at its ankle, its
+      // heel up off the ground; three toes from it, two spread forward and one back, only their tips on the ground, a gap between
+      // them, each tipped with a hooked claw)
+      const T=S.talons&&!up?S.talons:0,ay=fy-T;
+      if(fore&&S.elbow&&!up){const ex=rx-S.elbow+Math.round(dx/2),ey=Math.round(ry+(ay-ry)*.45);m.limb(rx,ry,ex,ey,w0,w0).limb(ex,ey,fx,ay,w0,w1)}
+      else if(!fore&&hock){const kx=rx-hock+Math.round(dx/2),ky=Math.round((ry+ay)/2)+1;m.limb(rx,ry,kx,ky,w0,w1).limb(kx,ky,fx,ay,w1,w1)}else m.limb(rx,ry,fx,ay,w0,w1);
+      const ty=fy-(T>1?1:0),tips=T?[[fx+3*T,ty,1],[fx+T,ty,1],[fx-T,ty,-1]]:[],toe=mask();for(const [tx] of tips)toe.limb(fx,ay,tx,ty,T>1?2:1,1);
+      if(!T)for(let j=0;j<(S.toes||0);j++)m.add(fx+Math.ceil(w1/2)+j,fy);
+      if(T){if(near)shade(g,m,LC,{noTop:true});else flat(g,m,LC,3,3);
+        // (the toes in the leg's own colour, lit along the top; each claw hooked from the toe's tip down to the ground)
+        for(const [x,y] of toe.pts())if(!m.has(x,y)||y>=ay)put(g,x,y,near?LC[toe.has(x,y-1)?1:0]:LC[toe.has(x,y-1)?2:1]);
+        for(const [tx,,d] of tips){if(T>1)put(g,tx,ty,near?'#cfc6ae':'#8a8474');put(g,tx+d,fy,near?'#e8e0c8':'#a8a090')}return}
       if(near){shade(g,m,LC,{noTop:true});for(const [x,y] of m.pts())if(y>=fy-(S.paw||0))put(g,x,y,Dk[y===fy?2:1])}else{flat(g,m,LC,3,3);for(const [x,y] of m.pts())if(y===fy)put(g,x,y,Dk[3])}
       if(S.claws&&(near||S.claws>1))put(g,fx+Math.ceil(w1/2)+(S.toes||0),fy,S.claws>1?'#d8d0bc':'#c8c0ac')};
     if(S.wing)S.wing(g,F,P,true);
@@ -449,7 +458,7 @@
     small:{W:32,H:30,hip:11,sho:19,back:[9,10],belly:5,ry:3.6,rh:4,rc:4.2,legs:[2,2,1],k:1,neck:[3,2],hd:[6,15],hw:5,hh:4,sn:[3,2],ws:[15,14],tl:[[-4,-3],[-6,-2],[-7,-3]],tw:[3,2,1.2,.8]}};
   function dragon(g,F,o,D){const v=o.v%3,C=R(['#9a3e36','#86363e','#a04e30'][v]),Lb=R('#d4b07a'),Mb=R(['#5e2a30','#4e2834','#6a3428'][v]),Dk=R('#3a2a2a'),k=D.k,bone='#e4dcc4';
     const breath=F.a==='alt',fly=o.fly;
-    const S={Y:g.h-2,hip:D.hip,sho:D.sho,back:D.back,belly:D.belly,ry:D.ry,rh:D.rh,rc:D.rc,cx:1,legs:[D.legs[0],D.legs[1],D.legs[2]+k],C,L:Lb,lb:k-1,D:Dk,paw:0,pawUp:0,claws:2,elbow:2*k,toes:k+1};
+    const S={Y:g.h-2,hip:D.hip,sho:D.sho,back:D.back,belly:D.belly,ry:D.ry,rh:D.rh,rc:D.rc,cx:1,legs:[D.legs[0],D.legs[1],D.legs[2]+k],C,L:Lb,lb:k-1,D:Dk,paw:0,pawUp:0,claws:2,elbow:2*k,toes:k+1,talons:k};
     if(fly){F={...F,legs:[[-2*k,2*k],[-k,2*k],[-2*k,2*k],[-k,2*k]],bob:-k}}
     S.tail=(g,x,y,F,P)=>{const up=F.tail*k,T=[[x+2,y+1,D.tw[0]],...D.tl.map(([dx,dy],j)=>[x+dx,P.Y+dy-up*(j+1)*.5+(F.dead?3:0),D.tw[j+1]])];tube(g,T,C,{L:Lb,belly:[0,1]});
       const [tx,ty]=T[T.length-1];for(const [dx,dy] of [[-1,0],[-1,-1],[-1,1]])put(g,tx+dx,ty+dy,Dk[1])};
