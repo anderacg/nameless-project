@@ -111,7 +111,7 @@
   const seal=(N,a,rgb)=>{const out=new Uint8Array(N*N),st=[];for(let i=0;i<N*N;i++){const x=i%N,y=(i/N)|0;if(a[i]!==1&&(x===0||y===0||x===N-1||y===N-1)){out[i]=1;st.push(i)}}
     while(st.length){const i=st.pop(),x=i%N,y=(i/N)|0;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const u=x+dx,v=y+dy,j=v*N+u;if(u>=0&&v>=0&&u<N&&v<N&&!out[j]&&a[j]!==1){out[j]=1;st.push(j)}}}
     for(let i=0;i<N*N;i++)if(a[i]!==1&&!out[i]){const x=i%N,y=(i/N)|0,j=[[1,0],[0,1],[-1,0],[0,-1]].map(([dx,dy])=>(y+dy)*N+x+dx).find(j=>j>=0&&j<N*N&&a[j]===1);if(j==null)continue;a[i]=1;rgb[i*3]=rgb[j*3];rgb[i*3+1]=rgb[j*3+1];rgb[i*3+2]=rgb[j*3+2]}};
-  const ring=(N,a,rgb)=>{seal(N,a,rgb);for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x;if(a[i])continue;if((x>0&&a[i-1]===1)||(x<N-1&&a[i+1]===1)||(y>0&&a[i-N]===1)||(y<N-1&&a[i+N]===1)){a[i]=2;rgb.set(NV,i*3)}}};
+  const ring=(N,a,rgb)=>{seal(N,a,rgb);for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x;if(a[i])continue;if((x>0&&a[i-1]===1)||(x<N-1&&a[i+1]===1)||(y>0&&a[i-N]===1)||(y<N-1&&a[i+N]===1)){a[i]=2;const L=[];for(const j of [x>0?i-1:-1,x<N-1?i+1:-1,y>0?i-N:-1,y<N-1?i+N:-1])if(j>=0&&a[j]===1)L.push([rgb[j*3],rgb[j*3+1],rgb[j*3+2]]);rgb.set(PX.rim(L),i*3)}}};
   const CACHE={};
   PX.worldNatureReset=()=>{for(const k in CACHE)delete CACHE[k]};// (the tests: draw them afresh)
   // leaf clumps [x,y,r], back to front (a pixel takes the last it lies in), each lit from its own upper left and the crown's (cx,cy,
@@ -523,7 +523,9 @@
       if(zq){const zb=zo(x,y+1);if(y+1<H&&zb&&!(S[q+ww]&8)&&(y+1+zb-1)-(y+zq-1)>5)put(q,CRc);continue}
       if(S[q]&128)continue;const zd=zo(x,y+1),zl=zo(x-1,y),zr=zo(x+1,y),zu=zo(x,y-1);let n=0;if(zd>2)n=zd+1;else if(zl>2)n=zl;else if(zr>2)n=zr;else if(zu>3)n=zu-1;
       if(n)OUT.push(q,n)}
-    for(let k=0;k<OUT.length;k+=2){const q=OUT[k];put(q,NV);S[q]=(S[q]&~7)|2|8;ZO[q]=Math.min(255,OUT[k+1])}
+    // (its outline a deep shade of the rock beside it, PX.rim; bit 8 marks it)
+    const rk=q=>[q-1,q+1,q-ww,q+ww].filter(j=>j>=0&&j<ww*w.h&&ZO[j]&&!(S[j]&8)).map(j=>[D[j*4],D[j*4+1],D[j*4+2]]),RC=OUT.map((q,k)=>k%2?null:PX.rim(rk(q)));
+    for(let k=0;k<OUT.length;k+=2){const q=OUT[k];put(q,RC[k]);S[q]=(S[q]&~7)|2|8;ZO[q]=Math.min(255,OUT[k+1])}
     return px}
   const runSteps=g=>{let r;while(!(r=g.next()).done);return r.value};
   // all the masses over a whole picture (o as above, with D, S, ZO, touch: a peak's sprite)
@@ -539,7 +541,7 @@
     cells.forEach(([i,j],k)=>{HT[j*G+i]=N*(k===0?(n===16?.5:.56):.3+.16*PX.hash(i,j,v+n))*(kind?Math.max(.6,PX.WORLD_MOUNTS[kind].h):1)});
     const D=new Uint8ClampedArray(N*N*4),S=new Uint8Array(N*N),ZO=new Uint8Array(N*N);
     massif({D,W:N,H:N,S,ZO,C:G,R:2,ts,ox,oy,h:(i,j)=>HT[j*G+i],clim:()=>clim,kind,seed:v*7+n+clim.length,shade:false,wob:Math.max(1.5,ts/16*5)});
-    const a=new Uint8Array(N*N),rgb=new Uint8Array(N*N*3);for(let i=0;i<N*N;i++)if(ZO[i]){const x=i%N,y=(i/N)|0,nav=D[i*4]===NV[0]&&D[i*4+1]===NV[1]&&D[i*4+2]===NV[2];if(!nav&&(x===0||x===N-1||y===0))continue;a[i]=nav?2:1;rgb[i*3]=D[i*4];rgb[i*3+1]=D[i*4+1];rgb[i*3+2]=D[i*4+2]}
+    const a=new Uint8Array(N*N),rgb=new Uint8Array(N*N*3);for(let i=0;i<N*N;i++)if(ZO[i]){const x=i%N,y=(i/N)|0,nav=!!(S[i]&8);if(!nav&&(x===0||x===N-1||y===0))continue;a[i]=nav?2:1;rgb[i*3]=D[i*4];rgb[i*3+1]=D[i*4+1];rgb[i*3+2]=D[i*4+2]}
     // (alone, the outline goes all round it, its foot too, as round any sprite)
     for(let i=0;i<N*N;i++)if(a[i]===2){const x=i%N,y=(i/N)|0;if(!((x>0&&a[i-1]===1)||(x<N-1&&a[i+1]===1)||(y>0&&a[i-N]===1)||(y<N-1&&a[i+N]===1)))a[i]=0}ring(N,a,rgb);
     return CACHE[key]=finish(N,a,rgb,N>>1,N-1,false)};
@@ -1021,7 +1023,7 @@
     yield;
     for(const [y,x,sp,cls,mine,lz,tn] of items){const N=sp.width,X0=x-sp.ax,Y0=y-(lz|0)-sp.ay,[i0,i1,j0,j1]=clip(N,X0,Y0),TC=tn>0?TLc.dark:TLc.light,ta=Math.abs(tn||0);if(!mine&&inI(X0,Y0,X0+N,Y0+N))out.cross.things++;for(let j=j0;j<j1;j++)for(let i=i0;i<i1;i++){const a=j*N+i,t=sp.a[a];if(!t)continue;const q=at(X0+i,Y0+j),o=q*4,low=S[q]&7;
         if(ZO[q]&&Y0+j+ZO[q]-1>y)continue;
-        if(t===2){if(low===cls)continue;D[o]=NV[0];D[o+1]=NV[1];D[o+2]=NV[2]}else{D[o]=sp.rgb[a*3];D[o+1]=sp.rgb[a*3+1];D[o+2]=sp.rgb[a*3+2];if(ta){D[o]+=(TC[0]-D[o])*ta;D[o+1]+=(TC[1]-D[o+1])*ta;D[o+2]+=(TC[2]-D[o+2])*ta}}S[q]=(S[q]&~15)|cls;ZO[q]=0;touch(q,S[q]&128?(CLR.at(X0+i,Y0+j)?3:4):cls===3&&nearWet(X0+i,Y0+j)?4:1)}
+        if(t===2){if(low===cls)continue;D[o]=sp.rgb[a*3];D[o+1]=sp.rgb[a*3+1];D[o+2]=sp.rgb[a*3+2]}else{D[o]=sp.rgb[a*3];D[o+1]=sp.rgb[a*3+1];D[o+2]=sp.rgb[a*3+2];if(ta){D[o]+=(TC[0]-D[o])*ta;D[o+1]+=(TC[1]-D[o+1])*ta;D[o+2]+=(TC[2]-D[o+2])*ta}}S[q]=(S[q]&~15)|cls;ZO[q]=0;touch(q,S[q]&128?(CLR.at(X0+i,Y0+j)?3:4):cls===3&&nearWet(X0+i,Y0+j)?4:1)}
       if(!(++n&127))yield}
     lap('stand');out.stand=standIndex(items,I,ZO,wx0,wy0,ww,wh);out.ms=performance.now()-t0;return out};
   /* the standing index of a window's inner rect I (what PX.worldNatureSteps hands back as stand, for the game's depth order:

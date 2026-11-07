@@ -1,6 +1,6 @@
 'use strict';
 // World nature: the world map's trees, woods, hills, mountain ranges and small things (engine/worldnature.js). Every generator's
-// sprite sits in a power-of-two box at whole pixels, its navy outline round its silhouette only; the looks are seeded (the same
+// sprite sits in a power-of-two box at whole pixels, its outline (a shade darker than its body) round its silhouette only; the looks are seeded (the same
 // again, and told apart by their shapes, not their colours alone); the map's woods, hills and ranges are painted with them; nothing
 // is painted on a road, a holding, an estate or water (but lily pads and floes); painting reads no Math.random and changes no map
 // data; the fen's sparse mangroves and the frost's snow blended into the grass (the owner's play-test, 2026-10-22); each climate's
@@ -21,19 +21,21 @@ try{
  const pow=[],soft=[],out=[],flat=[];
  for(const [n,s] of list){const N=s.width;(by[N]=by[N]||new Set()).add(n.split(' ')[0]);
    if(s.width!==s.height||![8,16,32,64].includes(N)||!Number.isInteger(s.ax)||!Number.isInteger(s.ay)||s.ax<0||s.ay<0||s.ax>=N||s.ay>=N)pow.push(n+' '+s.width+'x'+s.height);
-   const d=px(s),A=(x,y)=>x>=0&&y>=0&&x<N&&y<N&&d[(y*N+x)*4+3]===255,nav=(x,y)=>{const i=(y*N+x)*4;return d[i+3]===255&&d[i]===26&&d[i+1]===28&&d[i+2]===38},body=(x,y)=>A(x,y)&&!nav(x,y);
+   const d=px(s),A=(x,y)=>x>=0&&y>=0&&x<N&&y<N&&d[(y*N+x)*4+3]===255,nav=(x,y)=>{const i=(y*N+x)*4;return d[i+3]===255&&(s.a?s.a[y*N+x]===2:d[i]===26&&d[i+1]===28&&d[i+2]===38)},body=(x,y)=>A(x,y)&&!nav(x,y),lum=(x,y)=>{const i=(y*N+x)*4;return d[i]*.3+d[i+1]*.59+d[i+2]*.11};
    for(let i=3;i<d.length;i+=4)if(d[i]!==0&&d[i]!==255){soft.push(n);break}
    // (outside: every pixel reached from the box's edge without crossing the body)
    const OUT=new Uint8Array(N*N),st=[];for(let y=0;y<N;y++)for(let x=0;x<N;x++)if((x===0||y===0||x===N-1||y===N-1)&&!body(x,y)){OUT[y*N+x]=1;st.push(y*N+x)}
    while(st.length){const i=st.pop(),x=i%N,y=(i/N)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const u=x+a,v=y+b,j=v*N+u;if(u>=0&&v>=0&&u<N&&v<N&&!OUT[j]&&!body(u,v)){OUT[j]=1;st.push(j)}}}
    let bad=0;for(let y=0;y<N;y++)for(let x=0;x<N;x++){const nb=[[1,0],[-1,0],[0,1],[0,-1]];
      if(s.flat){if(nav(x,y))bad++;continue}
-     if(nav(x,y)){if(!nb.some(([a,b])=>body(x+a,y+b))||!OUT[y*N+x])bad++}// (beside the body and outside it: never inside it)
+     // (beside the body and outside it, never inside it; a shade darker than the body it borders (engine/pixel.js PX.rim: the owner,
+     // 2026-11-07, "the outline should blend with the sprite, a darker shade of it"))
+     if(nav(x,y)){const B=nb.filter(([a,b])=>body(x+a,y+b));if(!B.length||!OUT[y*N+x]||lum(x,y)>=B.reduce((m,[a,b])=>m+lum(x+a,y+b),0)/B.length)bad++}
      else if(!A(x,y)&&nb.some(([a,b])=>body(x+a,y+b)))bad++}// (no bare edge: every empty pixel beside the body is outline)
    if(bad)(s.flat?flat:out).push(n+' ('+bad+')')}
  ok(!pow.length,list.length+' nature sprites, each in a power-of-two box with its foot on a whole pixel: '+Object.keys(by).map(k=>k+'x'+k+' '+[...by[k]].join('/')).join(', ')+(pow.length?' — not: '+pow.slice(0,6).join(', '):''));
  ok(!soft.length,'every pixel of every nature sprite fully drawn or not at all'+(soft.length?': '+soft.slice(0,6).join(', '):''));
- ok(!out.length,'the standing ones (trees, bushes, stones, cacti, peaks, stooks, haystacks, fruit trees) wear the navy outline round their silhouette only: all round the body, never inside it'+(out.length?': '+out.slice(0,6).join(', '):''));
+ ok(!out.length,'the standing ones (trees, bushes, stones, cacti, peaks, stooks, haystacks, fruit trees) wear their outline round their silhouette only, a shade darker than the body it borders: all round the body, never inside it'+(out.length?': '+out.slice(0,6).join(', '):''));
  ok(!flat.length,'what lies on the ground (tufts, flowers, drifts, ripples, reeds, moss, pools, pads, floes, hills, a field’s crops) has no outline'+(flat.length?': '+flat.slice(0,6).join(', '):''));
  // ---- seeded: drawn afresh, every one the same; the variants of a kind told apart by their shapes
  {const keep=list.map(([n,s])=>[n,px(s).join()]);PX.worldNatureReset();const again=all(),diff=keep.filter(([n,h],i)=>again[i][0]!==n||px(again[i][1]).join()!==h).map(([n])=>n);
@@ -190,12 +192,14 @@ try{
      const b=x<9*ts?0:x<15*ts?1:2,o=(Math.round(y-md.ZR[k])*Wm+x)*4;warm[b]+=D[o]-D[o+2];n[b]++}
    const w=warm.map((s,i)=>s/Math.max(1,n[i]));
    const FO=[['forested',1]],P2=plan({grass:FO,frost:FO,desert:[['classic',1]],swamp:FO},cov),md2=paint(P2).md,d=[0,0,0];for(const q of md2.trees||[])d[q.x<9*ts?0:q.x<15*ts?1:2]++;
-   // (the foot: the rock's lowest px nearer the ground's colour under them than with PX.WN_MOUNT.foot off, on each side of the edge)
+   // (the foot: the rock's lowest px nearer the ground's colour under them than with PX.WN_MOUNT.foot off, on each side of the edge;
+   // 88%, was 95%, since 2026-11-07: the outline round the foot a shade of the blended rock beside it (PX.rim), not navy, so it
+   // changes with the foot too, not always toward the ground)
    const GR={grass:[['granite',1]],frost:[['granite',1]],desert:[['granite',1]],swamp:[['granite',1]]},r3=paint(plan(GR,cov)),F0=PX.WN_MOUNT.foot,fd=[0,0],fn=[0,0];
    PX.WN_MOUNT.foot=[0,0];let r4;try{r4=paint(plan(GR,cov))}finally{PX.WN_MOUNT.foot=F0}
    const gd=(D,o,g)=>Math.abs(D[o]-g[0])+Math.abs(D[o+1]-g[1])+Math.abs(D[o+2]-g[2]);
    for(let i=0;i<Wm*Hm;i++){const o=i*4;if(r3.D[o]===r4.D[o]&&r3.D[o+1]===r4.D[o+1]&&r3.D[o+2]===r4.D[o+2])continue;const sd=clim[((i/Wm/ts)|0)*C+((i%Wm)/ts|0)]?1:0;fn[sd]++;if(gd(r3.D,o,sd?GD:G0)<gd(r4.D,o,sd?GD:G0))fd[sd]++}
-   ok(mixed>pts*.1&&w[2]>w[1]+8&&w[1]>w[0]+8&&d[0]>d[1]&&d[1]>d[2]&&d[2]<d[0]*.15&&fn[0]>40&&fn[1]>40&&fd[0]>=fn[0]*.95&&fd[1]>=fn[1]*.95,'a range across a climate’s edge blends with both: its look mixed at '+mixed+' of '+pts+' points, warmer toward the desert (red over blue '+w.map(v=>v.toFixed(0)).join(' / ')+' grass, edge, desert), a forested look’s trees thinning out toward it ('+d.join(' / ')+'), its foot leaning to each side’s ground (nearer it at '+fd.join(' / ')+' of '+fn.join(' / ')+' foot pixels, grass / desert)')}
+   ok(mixed>pts*.1&&w[2]>w[1]+8&&w[1]>w[0]+8&&d[0]>d[1]&&d[1]>d[2]&&d[2]<d[0]*.15&&fn[0]>40&&fn[1]>40&&fd[0]>=fn[0]*.88&&fd[1]>=fn[1]*.88,'a range across a climate’s edge blends with both: its look mixed at '+mixed+' of '+pts+' points, warmer toward the desert (red over blue '+w.map(v=>v.toFixed(0)).join(' / ')+' grass, edge, desert), a forested look’s trees thinning out toward it ('+d.join(' / ')+'), its foot leaning to each side’s ground (nearer it at '+fd.join(' / ')+' of '+fn.join(' / ')+' foot pixels, grass / desert)')}
   // (painted a window at a time, the one picture: the trees standing across a window's edge too)
   {const FO=[['forested',1]],P=plan({grass:FO,frost:FO,desert:[['sandstone',1]],swamp:FO},cov),A=paint(P).D,B=ground(new Uint8ClampedArray(Wm*Hm*4)),AP=PX.WN_APRON;let bad=0;
    for(let Y=0;Y<Hm;Y+=96)for(let X=0;X<Wm;X+=96){const x0=Math.max(0,X-AP),y0=Math.max(0,Y-AP),w=Math.min(Wm,X+96+AP)-x0,h=Math.min(Hm,Y+96+AP)-y0,Dw=new Uint8ClampedArray(w*h*4);

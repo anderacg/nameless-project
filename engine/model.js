@@ -496,7 +496,7 @@
     const I={F,fi:new Int16Array(N*N).fill(-1),u:new Float32Array(N*N),v:new Float32Array(N*N),z:new Float32Array(N*N),b:new Uint8Array(N*N),ch:new Uint8Array(N*N),m:new Uint8Array(N*N)},
       take=(c,q)=>{I.fi[c]=R.fid[q];I.u[c]=R.SU[q];I.v[c]=R.SV[q];I.z[c]=R.SZ[q];I.b[c]=R.SB[q];I.ch[c]=R.SC[q];I.m[c]=R.SM[q]};
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=M||Y>=M)continue;const q=Y*M+X;if(A[q]){body[y*N+x]=FL[q]===1?2:1;fine[y*N+x]=FL[q]===2;gz[y*N+x]=GZ[q];const i=(y*N+x)*4;D[i]=col[q*3];D[i+1]=col[q*3+1];D[i+2]=col[q*3+2];D[i+3]=255;take(y*N+x,q)}}
-    for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(body[y*N+x])continue;if((x>0&&body[y*N+x-1]===1)||(x<N-1&&body[y*N+x+1]===1)||(y>0&&body[(y-1)*N+x]===1)||(y<N-1&&body[(y+1)*N+x]===1)){const i=(y*N+x)*4;D[i]=nv[0];D[i+1]=nv[1];D[i+2]=nv[2];D[i+3]=255}}
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(body[y*N+x])continue;if((x>0&&body[y*N+x-1]===1)||(x<N-1&&body[y*N+x+1]===1)||(y>0&&body[(y-1)*N+x]===1)||(y<N-1&&body[(y+1)*N+x]===1)){const i=(y*N+x)*4,L=[];for(const [u,v] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]])if(u>=0&&v>=0&&u<N&&v<N&&body[v*N+u]===1){const k=(v*N+u)*4;L.push([D[k],D[k+1],D[k+2]])}const c=PX.rim(L);D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2];D[i+3]=255}}
     // (an outline pixel shut in by the body and the outline, touching nothing empty, is part of the body: the outline lies round the
     // silhouette only, one pixel thick; but not between thin parts, where it is the gap of an open frame: a wheel's spokes, braces)
     const emp=(x,y)=>x<0||y<0||x>=N||y>=N||!D[(y*N+x)*4+3];

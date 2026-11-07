@@ -12,9 +12,9 @@ try{
    if(b.img.width!==N||b.img.height!==N||b.w!==N||b.ax!==0||b.ay!==N||b.clipped||b.tiles[0]!==N/16)bad.cell.push(id);
    // (b.mask: 0 empty, 1 the body, 2 low and flat (fences, beds, tufts), 3 the outline: every outline pixel navy and beside empty or flat
    // ground, no body pixel beside an empty one)
-   let soft=false,rim=false;const K=(x,y)=>x<0||y<0||x>=N||y>=N?0:b.mask[y*N+x],nb=(x,y)=>[K(x-1,y),K(x+1,y),K(x,y-1),K(x,y+1)];
+   let soft=false,rim=false;const K=(x,y)=>x<0||y<0||x>=N||y>=N?0:b.mask[y*N+x],nb=(x,y)=>[K(x-1,y),K(x+1,y),K(x,y-1),K(x,y+1)],L=(x,y)=>{const i=(y*N+x)*4;return a[i]*.3+a[i+1]*.59+a[i+2]*.11},dark=(x,y)=>{const B=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]].filter(([u,v])=>K(u,v)===1);return !B.length||L(x,y)<B.reduce((m,[u,v])=>m+L(u,v),0)/B.length};
    for(let y=0;y<N;y++)for(let x=0;x<N;x++){const al=a[(y*N+x)*4+3];if(al&&al!==255)soft=true;const k=K(x,y),i=(y*N+x)*4;
-     if(k===3&&(!(a[i]===0x1a&&a[i+1]===0x1c&&a[i+2]===0x26)||!nb(x,y).some(q=>q===0||q===2)))rim=true;if(k===4&&!(a[i]===0x1a&&a[i+1]===0x1c&&a[i+2]===0x26))rim=true;if(k===1&&nb(x,y).includes(0))rim=true}
+     if(k===3&&(!dark(x,y)||!nb(x,y).some(q=>q===0||q===2)))rim=true;if(k===4&&!dark(x,y))rim=true;if(k===1&&nb(x,y).includes(0))rim=true}
    if(soft)bad.soft.push(id);if(rim)bad.rim.push(id);
    const h=a.join(),b2=PX.model(sp);if(px(b2.img).join()!==h)bad.same.push(id);if(seen.has(h))bad.turn.push(id);seen.add(h);
    const s=px(b.shadow),gr=px(b.ground);for(let i=0;i<N*N;i++)if(s[i*4+3]&&a[i*4+3]||gr[i*4+3]&&gr[i*4+3]!==255){bad.shadow.push(id);break}
@@ -23,7 +23,7 @@ try{
    for(const [x,y] of b.windows.concat(b.door?[[b.door.x,b.door.y]]:[]))if(x<0||y<0||x>=N||y>=N){bad.marks.push(id);break}}}
  const L=(k,m)=>ok(!bad[k].length,m+(bad[k].length?': '+bad[k].slice(0,8).join(', '):''));
  L('cell',n+' models ('+PX.MODEL_SAMPLES.length+' samples x 8 directions): each exactly its cell, standing on its bottom row, nothing cut off');
- L('soft','every pixel opaque or empty');L('rim','the navy outline round the silhouette only');L('same','the same spec draws the same pixels');
+ L('soft','every pixel opaque or empty');L('rim','the outline round the silhouette only, a shade darker than the body it borders (engine/pixel.js PX.rim)');L('same','the same spec draws the same pixels');
  L('turn','each direction draws its own picture');L('shadow','the layers apart: the shadow (a mask, shaded once by the game) off the picture, the flat ground opaque, inside the cell');L('ground','a plot or cluster has its flat ground, never a square (never along a whole edge of the cell)');L('marks','the windows and the door it records lie in its cell');
  // house plots: 1-4 dwellings each, each with its footprint (inside the plot), its floor area and a door; a row plot's houses reach both
  // its sides (so plots side by side make one row)
