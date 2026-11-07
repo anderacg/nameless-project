@@ -2,7 +2,7 @@
 // Snapshot baseline reviewed for schema v2: persistent IDs, homogeneous formations, new deployment lanes and source-army links.
 // Behavioral assertions below are retained; old category-bucket fingerprints no longer describe this architecture.
 // Outcome fingerprints captured before extraction. No battle frames are simulated: each fixture supplies an explicit field result.
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,W=t.W,originalRandom=Math.random;
+window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,W=t.W,originalRandom=Math.random,measure0=t.measureField,view0=[t.BVW,t.BVH];
   // (monster_win re-recorded 2026-10-21 S4: story and content systems on named streams, seeded per world and per game (owner accepted once); the estates' sort keys drawn before sorting: a beast's loot is rolled on the 'monsters' stream (world/monsters.js
   // monsterLoot), not Math.random; with the streams switched back to Math.random it is c95d35c7 as before, and every other case is
   // unchanged)
@@ -85,7 +85,16 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // (field_win, field_loss, retreat_away, retreat_caught, carried_retreat, tournament_win, tournament_loss, lord_win, lord_loss, monster_win, auto_win, auto_loss, auto_resolve re-recorded 2026-11-05, on purpose: the humble start and the gates (doc/START_AND_GATES_DESIGN.md): the player
   // record in each outcome keeps where you began and your passes (P.home, P.passes, P.gateBan). Proof: without those three fields
   // every case as before. siege_win and siege_loss, off before this, left as they were. Were field_win 0d37e688, field_loss aa260156, retreat_away 4867ec61, retreat_caught 5c51db9e, carried_retreat 707eba56, tournament_win 1bbf7cc2, tournament_loss 5a36a1f2, lord_win 721eb73a, lord_loss 4394b737, monster_win 8955f5bd, auto_win 5fc239d6, auto_loss b242ccf5, auto_resolve c403e375)
-  const REC={field_win:'d1dd9289',field_loss:'e14c52c9',retreat_away:'55ca8d9a',retreat_caught:'c321881b',carried_retreat:'b213c483',tournament_win:'702de509',tournament_loss:'30f4e713',siege_win:'9b288156',siege_loss:'b5858ba5',lord_win:'10888265'/* (re-recorded 2026-11-01, on purpose: a lord you do not know changes his mind quietly (relations.js Relations.change; the owner: "I randomly get to know lords that I'm not even met yet"), so the beaten lord's “thinks less of you” is no longer in the log. Proof: that guard taken out gives fd9d15a9 again. Was fd9d15a9) */,lord_loss:'e7da89b6',monster_win:'2c6467d6',auto_win:'a86259d3',auto_loss:'0a818530',auto_resolve:'602d1af8'};
+  // (all 15 re-recorded 2026-11-07, on purpose, none for a battle rule. Found commit by commit on the first-parent history (each
+  //  snapshot's JSON dumped at each commit and compared): 72b3d9a (a fort kind) puts the forts among the holdings (towns: the list,
+  //  names and garrisons) and, with 2c86d20 (streets; field_win, lord_win, auto_win, auto_loss, auto_resolve), changes what begin
+  //  draws from the shared Math.random before the game's number (Rng.game), so the named streams start elsewhere: the bands' ranks
+  //  ('army ranks'), a beaten chief's purse and the spoils. 4a3a12b gives the 13 others as recorded, its snapshots differing from
+  //  d84458e's only in those fields. siege_win and siege_loss had been the runner's window's own: the siege field was laid out from
+  //  the screen (BVW and the HUD's measured field, never pinned here), so dbcb1a6 gives 9b288156 and b5858ba5 in an 800 x 600 or
+  //  1024 x 768 window and 1bac9edc, 2b9f1fc8 in a 1280 x 720 one; now pinned as battlesetup pins them (measureField 40..560, BVW
+  //  1000), and 800 x 600 and 1280 x 720 give the same, the 13 others as without the pin. Were field_win d1dd9289, field_loss e14c52c9, retreat_away 55ca8d9a, retreat_caught c321881b, carried_retreat b213c483, tournament_win 702de509, tournament_loss 30f4e713, siege_win 9b288156, siege_loss b5858ba5, lord_win 10888265, lord_loss e7da89b6, monster_win 2c6467d6, auto_win a86259d3, auto_loss 0a818530, auto_resolve 602d1af8)
+  const REC={field_win:'c5acbb5e',field_loss:'cb3eda21',retreat_away:'ccea1e61',retreat_caught:'d35b072c',carried_retreat:'e4a205b6',tournament_win:'fd77ee8e',tournament_loss:'eb9d8e3c',siege_win:'47b27e75',siege_loss:'5a66d4cf',lord_win:'0ce9187e'/* (re-recorded 2026-11-01, on purpose: a lord you do not know changes his mind quietly (relations.js Relations.change; the owner: "I randomly get to know lords that I'm not even met yet"), so the beaten lord's “thinks less of you” is no longer in the log. Proof: that guard taken out gives fd9d15a9 again. Was fd9d15a9) */,lord_loss:'03144917',monster_win:'aa3470a7',auto_win:'26124fc9',auto_loss:'391d6f2b',auto_resolve:'08b98dd6'};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];
@@ -114,6 +123,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       if(auto){if(name==='auto_resolve')t.autoResolve();else t.concludeEncounter(win,{hum_spear:2},4,true,e.list.slice(0,4))}
       else{
         if(tournament)G.town={ref:t.townBy('Ashford'),tab:'arena'};
+        // (the field's size and its measured top and bottom pinned, as battlesetup's: a siege's field was laid out from the window)
+        window.__brMeasure=measure0;(0,eval)('measureField=()=>({top:40,bot:560});BVW=1000;BVH=BH');
         t.startBattle({enemies:tournament?['chief']:e.list,tournament,lv:2});field=t.B;
         field.win=win;field.over=true;field.retreat=retreat;field.caught=retreat?1:0;field.withdrawn=retreat?8:0;
         field.kills=tournament?1:4;field.slain=tournament?['chief']:e.list.slice(0,4);field.lost={hum_spear:1};field.txp={hum_bow:7};field.fired=20;field.bestCombo=4;
@@ -152,6 +163,6 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
         ok(Math.abs(P.sp-want*spMax/100)<1e-9&&P.mp===3&&P.hp>=1,name+': hero condition carried back to campaign, the band’s stamina its side’s ('+(P.sp/spMax*100).toFixed(2)+' of '+side.length+' standing)')}
       if(tournament)ok(P.sp===12&&P.mp===3,name+': your hero comes out of the lists as she fought them');
     }
-  }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{Math.random=originalRandom}
+  }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{Math.random=originalRandom;if(window.__brMeasure){(0,eval)('measureField=window.__brMeasure');delete window.__brMeasure}(0,eval)('BVW='+view0[0]+';BVH='+view0[1])}
   const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
 };
