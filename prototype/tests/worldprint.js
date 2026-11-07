@@ -550,7 +550,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  (engine/doll.js LEG), a bowman's arms in at his sides (dollfigs.js DOLL_LEAN) and his quiver a pixel thin, a marcher's step by the
 //  way he has walked (march.js marcherStep: u.walk / WALK.foot), his weapon moved, not turned (weapons.js WEAPON_SWAY): the map's
 //  marchers in its picture. Proof: 097b588 gives d302d69f again. Was W6 d302d69f)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'850bb5fa',W7:'a9857aab',W8:'f6fce34e',B2:'87554a09'};
+// (W6 again 2026-11-07, on purpose: the owner, "some of the weapon is longer than it has to be if compared with spear, and when walk
+//  it touches the ground": a sword, a dagger, a one-handed axe and the great weapons shorter (people.js WPN), a one-handed axe carried
+//  head up (weapons.js holdKind: hafted): the map's soldiers in its picture. Proof: c4b5964 gives 850bb5fa again. Was W6 850bb5fa)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c77905d4',W6:'4e1d6cf1',W7:'a9857aab',W8:'f6fce34e',B2:'87554a09'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

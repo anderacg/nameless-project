@@ -301,7 +301,9 @@ function rigLimbs(g,o,ox,oy,R,sh,behind){const S=pal(o.skin),A=pal(o.outer),Lg=p
   if(!o.robe)leg(R.lead,Lg[1]);if(R.over)arm(R.rear,A[3]);arm(R.fore,A[2])}
 // the weapons in hand (figures.js HandWeapon, weapons.js drawBlade): [length, material, head]; upright at rest (but WPN_REST's), in
 // a blow swung from the hand at its frame's [hand dx, dy, angle] (SWING; a pole's swing POLE_SWING)
-const WPN={sword:[6,'steel','guard'],great:[9,'steel','guard'],dagger:[4,'steel','guard'],axe:[7,'wood','axe'],bigaxe:[9,'wood','bigaxe'],hammer:[7,'wood','hammer'],
+// (lengths beside his height and his spear's (the owner, 2026-11-07: "some of the weapon is longer than it has to be if compared with spear"):
+//  a sword or a one-handed axe under half a spear, a great weapon or a maul two thirds of one)
+const WPN={sword:[5,'steel','guard'],great:[8,'steel','guard'],dagger:[3,'steel','guard'],axe:[5,'wood','axe'],bigaxe:[8,'wood','bigaxe'],hammer:[7,'wood','hammer'],
   spear:[12,'wood','tip'],pike:[15,'wood','tip'],javelin:[10,'wood','tip'],lance:[16,'wood','pennant'],
   hoe:[10,'wood','hoe'],pick:[8,'wood','pick'],crook:[12,'wood','crook'],rod:[13,'wood','rod']};// (workers' tools: the world map, folk.js)
 const SWING={swing:[[-3,-4,-125],[1,-1,-5],[0,1,55]],thrust:[[-2,-1,-8],[2,-1,0],[0,-1,0]],overhead:[[-2,-6,-95],[0,-5,-35],[1,0,70]]};

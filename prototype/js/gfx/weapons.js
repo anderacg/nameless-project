@@ -79,13 +79,18 @@ const HOLD={
 // (a doll's blade walking and running as at rest, low before him (the owner, 2026-11-07: "the weapons seem shorter when walking":
 //  over the shoulder, behind him, the body hid most of it), a little higher at a run; a great weapon, too long to hold low, upright
 //  before him, its blade up and a little forward)
-const HOLD_DOLL={blade:{...HOLD.blade,rest:50,march:50,run:40},heavy:{...HOLD.heavy,rest:-72,march:-72,run:-60},pole:{...HOLD.pole,rest:-55,march:-60},lance:HOLD.lance},POLE_BACK=[-80,-30];
+// (a one-handed axe carried head up, as a great weapon is, a little forward (the owner, 2026-11-07: "when walk it touches the ground":
+//  held low its head hung under its haft to the ground); in a fight as a blade)
+// (a blade on the move point up before him, standing low at his side: walking, low, its point by the ground at each step)
+const HOLD_DOLL={blade:{...HOLD.blade,rest:50,march:-62,run:-55},hafted:{...HOLD.blade,rest:-62,march:-62,run:-55},heavy:{...HOLD.heavy,rest:-72,march:-72,run:-60},pole:{...HOLD.pole,rest:-55,march:-60},lance:HOLD.lance},POLE_BACK=[-80,-30];
 // (d: the look, or whether he is a paper doll (a fighter's u.wDoll, heldNow); none: as the switch says)
-const holdTab=(kind,d)=>(d==null?DOLL_FIGS.on:typeof d==='object'?dollable(d):d)?HOLD_DOLL[kind]:HOLD[kind];
+// (a weapon's kind of hold: a lance, a pole, a great one (heavy), a one-handed axe (hafted), a blade)
+const holdKind=k=>k==='lance'?'lance':POLE(k)?'pole':k==='great'||k==='bigaxe'||k==='hammer'?'heavy':k==='axe'?'hafted':'blade';
+const holdTab=(kind,d)=>(d==null?DOLL_FIGS.on:typeof d==='object'?dollable(d):d)?HOLD_DOLL[kind]:HOLD[kind]||HOLD.blade;
 // (behind him: the angles over his shoulder (GEAR.behind), or a pole across his back (a paper doll's))
 const heldBack=(k,a,o)=>a>GEAR.behind[0]&&a<GEAR.behind[1]||o&&dollable(o)&&POLE(k)&&k!=='lance'&&a>POLE_BACK[0]&&a<POLE_BACK[1];
 function holdOf(u,k){
-  const kind=k==='lance'?'lance':POLE(k)?'pole':k==='great'||k==='bigaxe'||k==='hammer'?'heavy':'blade',H=holdTab(kind,u.wDoll),t=u.tgt&&u.tgt.hp>0?u.tgt:null,f=u.face||1;
+  const kind=holdKind(k),H=holdTab(kind,u.wDoll),t=u.tgt&&u.tgt.hp>0?u.tgt:null,f=u.face||1;
   // the foe's direction as he sees it (he faces right in his own picture)
   const aim=t?clamp(Math.atan2(t.y-6-(u.y-6),Math.abs(t.x-u.x)+.01)*180/Math.PI,-40,35):0;
   if(u.stun>0)return[H.stun,0,1];
@@ -108,8 +113,8 @@ function holdOf(u,k){
 // sprite to look separated from the horse"), held at rest or on the march (HOLD: no blow nor foe there); its picture and corner
 // from his sprite's, and whether it goes behind his body; null for none
 function mapHeld(L,sp,walking,step){
-  const k=heldWeapon(L);if(!k||!sp.hand)return null;const kind=k==='lance'?'lance':POLE(k)?'pole':k==='great'||k==='bigaxe'||k==='hammer'?'heavy':'blade',deg=groundClamp(holdTab(kind,L)[walking?'march':'rest'],WPN[k][0],sp,L);
-  const i=((Math.round(deg/360*WEAPON_STEPS)%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,sw=walking?swayOf(step,false,L):null,w=weaponSprite(k,L.team,pal(L.skin)[1],i,undefined,dollable(L)),a=(i/WEAPON_STEPS*360+180)%360-180,x=sp.hand[0]-w.R+(sw?sw[0]:0),y=sp.hand[1]-w.R+(sw?sw[1]:0);
+  const k=heldWeapon(L);if(!k||!sp.hand)return null;const kind=holdKind(k),deg=groundClamp(holdTab(kind,L)[walking?'march':'rest'],WPN[k][0],sp,L);
+  const i=((Math.round(deg/360*WEAPON_STEPS)%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,sw=walking?swayOf(step,false,L,k):null,w=weaponSprite(k,L.team,pal(L.skin)[1],i,undefined,dollable(L)),a=(i/WEAPON_STEPS*360+180)%360-180,x=sp.hand[0]-w.R+(sw?sw[0]:0),y=sp.hand[1]-w.R+(sw?sw[1]:0);
   return{w,x,y,back:heldBack(k,a,L)&&peeks(sp,w,x,y)}}
 // draw it, in the fighter's own (already turned) frame: (bx, by) is where his sprite's corner went
 // (the weapon turns toward how he should hold it, WEAPON_TURN degrees a second, never snapping: a man whose state flickers from
@@ -131,22 +136,23 @@ const flagPole=(u,k)=>POLE(k)&&B&&!B.over&&typeof battleFlag==='function'&&battl
 const downClamp=(deg,len,drop)=>{const a=((deg%360)+360)%360,s=Math.sin(a*Math.PI/180);if(s<=0||len*s<=drop)return deg;const m=Math.asin(Math.max(0,Math.min(1,drop/len)))*180/Math.PI;return a<=90?m:180-m};
 // (the room under his hand taken as he stands (DOLL_DROP at most), never the swing of one step's: his weapon at one angle the whole
 // walk long, not jumping between two as his arm swings)
-const DOLL_DROP=3;
+const DOLL_DROP=2;// (2: its tip clear of the ground though his hand dips a pixel as each foot lands, the owner: "when walk it touches the ground")
 function groundClamp(deg,len,sp,o){return dollable(o)&&sp.hand?downClamp(deg,len,Math.min(DOLL_DROP,sp.height-3-sp.hand[1])):deg}
 /* a weapon carried on the move moves with his stride (the owner, 2026-11-07: "make weapon at least shake or moving a bit with unit
    walking animations", then "make weapon shift from up to down or left to right instead of changing the angle"): by the walk's or the
    run's four frames (contact, pass, contact, pass) it is moved, never turned: [dx, dy] px (+x toward his front, +y down), its own
    angle kept; besides, his hand goes down with him as each foot lands (engine/doll.js POSES.walk). Only as he carries it (no foe at
    hand, no blow); in the saddle his hand bobs with his mount's gait already (its frames), the weapon still at a walk, moved so at a run */
-const WEAPON_SWAY={on:true,walk:[[0,0],[1,-1],[0,0],[-1,-1]],run:[[1,-1],[0,0],[-1,-1],[0,0]]};
-const swayOf=(step,run,L)=>!WEAPON_SWAY.on||step==null||step<0||L?.mount&&!run?null:(run?WEAPON_SWAY.run:WEAPON_SWAY.walk)[step&3];
+// (pole: a spear's, a pike's, a lance's, a pixel higher all the walk long, its butt over the ground though his hand dips as he steps)
+const WEAPON_SWAY={on:true,walk:[[0,0],[1,-1],[0,0],[-1,-1]],run:[[1,-1],[0,0],[-1,-1],[0,0]],pole:{walk:[[0,-1],[1,-1],[0,-1],[-1,-1]],run:[[1,-1],[0,-1],[-1,-1],[0,-1]]}};
+const swayOf=(step,run,L,k)=>{if(!WEAPON_SWAY.on||step==null||step<0||L?.mount&&!run)return null;const T=k&&POLE(k)?WEAPON_SWAY.pole:WEAPON_SWAY;return (run?T.run:T.walk)[step&3]};
 // (the battle's pose's stride: [frame 0-3, running], or null standing or striking)
 const poseStride=pose=>pose>=2&&pose<=5?[pose-2,false]:pose>=15&&pose<=18?[pose-15,true]:null;
 function heldNow(u,o,sp,pose){
   const k=heldWeapon(o);if(!k||!sp.hand)return null;u.wDoll=dollable(o);const [deg0,hx,hy]=heldAngle(u,k),deg=groundClamp(deg0,WPN[k][0],sp,o),dx=sp.rig?0:hx,dy=sp.rig?0:hy,f=deg/360*WEAPON_STEPS;// (rigged: the fist carries it, people.js BLOW_RIG)
   // (the step drawn changes only when the angle is well past the middle between two: no flicker on the boundary)
   if(u.wIdx==null||Math.abs(((f-u.wIdx)%WEAPON_STEPS+WEAPON_STEPS*1.5)%WEAPON_STEPS-WEAPON_STEPS/2)>.8)u.wIdx=Math.round(f);
-  const st=!u.nearW&&!sp.rig?poseStride(pose):null,sw=st?swayOf(st[0],st[1],o):null;
+  const st=!u.nearW&&!sp.rig?poseStride(pose):null,sw=st?swayOf(st[0],st[1],o,k):null;
   const i=((u.wIdx%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,w=weaponSprite(k,o.team,pal(o.skin)[1],i,flagPole(u,k),dollable(o)),a=(i/WEAPON_STEPS*360+180)%360-180;
   HELD.w=w;HELD.k=k;HELD.i=i;HELD.x=sp.hand[0]+Math.round(dx)-w.R+(sw?sw[0]:0);HELD.y=sp.hand[1]+Math.round(dy)-w.R+(sw?sw[1]:0);HELD.back=heldBack(k,a,o)&&peeks(sp,w,HELD.x,HELD.y);return HELD}
 // (a picture's alpha by pixel, read once)

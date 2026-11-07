@@ -54,7 +54,7 @@ Kit.suite(({ok,info})=>{
    full.getContext('2d').fillRect(0,0,32,32);ok(t.peeks(bl,w,4,4)&&!t.peeks(full,w,4,4),'a weapon behind a body that hides it is drawn before it (peeks: '+t.GEAR.peek+' of it must show past the body)');
    P.gear.weapon='g_sword_2';h.look=null;h.side=null;clear();Object.assign(h,{tgt:null,atkAt:null,stun:0,wIdx:null,movF:6,spdNow:h.s.spd*.5});const sp=t.actorSprite(h,3,true),hw=t.heldNow(h,t.unitLook(h),sp),a=(h.wIdx/t.WEAPON_STEPS*360+180)%360-180;
    // (2026-11-07: a paper doll's sword as he walks low before him as at rest, all of it showing (the owner: "shorter when walking"))
-   ok((t.DOLL_FIGS.on?a>20&&a<80:a>t.GEAR.behind[0]&&a<t.GEAR.behind[1])&&!hw.back,'your hero\'s sword as he walks ('+Math.round(a)+' degrees) is drawn before him, all of it showing');
+   ok((t.DOLL_FIGS.on?a>-80&&a<-40:a>t.GEAR.behind[0]&&a<t.GEAR.behind[1])&&!hw.back,'your hero\'s sword as he walks ('+Math.round(a)+' degrees) is drawn before him, all of it showing');
    Object.assign(P.gear,P0);h.look=null;h.side=null}
  }finally{t.FigureRig.gearOf=gearOf;t.STATE_FX.on=FX;for(const n in keep)window[n]=keep[n]}
 });

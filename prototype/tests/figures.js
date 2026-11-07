@@ -46,7 +46,7 @@ Kit.suite(({ok})=>{
   const B=t.B,sw=B.units.find(u=>u.type==='hum_foot'),sp=t.actorSprite(sw,0,true);sw.tgt=null;sw.atkAt=null;sw.stun=0;sw.spdNow=0;sw.wIdx=null;
   const rest=t.heldNow(sw,t.unitLook(sw),sp).back;sw.spdNow=sw.s.spd*.55;sw.wIdx=null;const mh=t.heldNow(sw,t.unitLook(sw),sp),march=mh.back,ma=(sw.wIdx/t.WEAPON_STEPS*360+180)%360-180;sw.spdNow=0;
   // (2026-11-07: a paper doll's sword walking as at rest, low before him, the whole of it showing (the owner: "shorter when walking"))
-  ok(!rest&&!march&&(t.DOLL_FIGS.on?ma>20&&ma<80:ma>t.GEAR.behind[0]&&ma<t.GEAR.behind[1]),t.DOLL_FIGS.on?'a sword at rest and on the march drawn before him, low, the whole of it showing ('+Math.round(ma)+' degrees)':'a sword at rest is drawn before him; on his shoulder on the march too, where behind him his body would hide it (weapons.js peeks)');
+  ok(!rest&&!march&&(t.DOLL_FIGS.on?ma>-80&&ma<-40:ma>t.GEAR.behind[0]&&ma<t.GEAR.behind[1]),t.DOLL_FIGS.on?'a sword on the march drawn before him, point up and clear of the ground (the owner, 2026-11-07: "when walk it touches the ground"), the whole of it showing ('+Math.round(ma)+' degrees)':'a sword at rest is drawn before him; on his shoulder on the march too, where behind him his body would hide it (weapons.js peeks)');
   t.HPBARS.on=false;const c=t.ctx,f0=c.fillRect,fills=[];try{c.fillRect=function(...a){fills.push(c.fillStyle);return f0.apply(this,a)};for(const u of B.units){u.plx=u.x;u.ply=u.y;t.drawUnit(u)}}finally{c.fillRect=f0}
   ok(!fills.includes('#e8b94a'),'no health bar over your hero or your companions (nor anyone) with the bars off');
   for(let i=0;i<30;i++)t.updateBattle(.03);t.drawBattle();const g=B.units.find(u=>u.team===1).grp;for(const u of B.units)if(u.grp===g)u.hp=Math.max(1,u.hp*.5);

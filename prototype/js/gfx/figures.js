@@ -48,7 +48,7 @@ class HandWeapon extends FigureGear{
   // (a paper doll's pole at rest goes across his back, behind him, as the owner's reference carries it)
   behindNow(o,p){return DOLL_FIGS.on&&dollable(o)&&POLE(this.k)&&this.k!=='lance'&&!(p.atk>=0&&p.style)}
   draw(set,o,p){const k=this.k,blow=p.atk>=0&&!!p.style,t=blow&&(POLE(k)&&k!=='lance'&&p.style==='swing'?POLE_SWING:SWING[p.style]||SWING.swing)[p.atk];
-    const kind=k==='lance'?'lance':POLE(k)?'pole':k==='great'||k==='bigaxe'||k==='hammer'?'heavy':'blade',doll=dollable(o),rest0=doll&&!WPN_REST[k]?holdTab(kind,o).rest:WPN_REST[k]??-90,rest=doll&&p.drop!=null?downClamp(rest0,WPN[k][0],Math.min(DOLL_DROP,p.drop)):rest0;
+    const kind=holdKind(k),doll=dollable(o),rest0=doll&&!WPN_REST[k]?holdTab(kind,o).rest:WPN_REST[k]??-90,rest=doll&&p.drop!=null?downClamp(rest0,WPN[k][0],Math.min(DOLL_DROP,p.drop)):rest0;
     const tip=drawBlade(set,t?t[0]:0,t?t[1]:0,t?t[2]:rest,k,pal(o.team),pal(o.skin)[1],undefined,doll);if(blow&&p.atk===1)set(tip[0],tip[1],'#ffffff')}
 }
 /* a bow's string drawn back, by the body's frame (px behind the bow hand): the draw (nocked, full, held at full) to his draw hand at
