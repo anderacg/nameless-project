@@ -1327,13 +1327,14 @@ class TerrainRoutes{
   slotWay(u,g,sx,sy){
     const T=this.T,gr=T.route[routeWho(u.s)],W=g.way;if(!W)return null;let f=u.sf;
     if(!f||f[0]!==W.id||f[1]!==sx||f[2]!==sy){const A=W.ok?[g.ax,g.ay]:W.end,ox=sx-g.ax,oy=sy-g.ay;let q=A;
-      for(const k of [1,.8,.6,.4,.2]){const x=A[0]+ox*k,y=A[1]+oy*k;if(gr.cost[routeIx(gr,x,y)]&&lineClear(gr,A[0],A[1],x,y)&&lineClear(gr,x,y,A[0],A[1])){q=[x,y];break}}f=u.sf=[W.id,sx,sy,q[0],q[1]];f.at=[q[0],q[1]];f.at.at=true}
+      for(const k of [1,.8,.6,.4,.2]){const x=A[0]+ox*k,y=A[1]+oy*k;if(gr.cost[routeIx(gr,x,y)]&&lineClear(gr,A[0],A[1],x,y)&&lineClear(gr,x,y,A[0],A[1])){q=[x,y];break}}f=u.sf=[W.id,sx,sy,q[0],q[1]];f.at=[q[0],q[1]];f.at.home=true}// (home: his place itself, straight there; any other point a way round to it (actors.js via). Not .at: every array has that method)
     if(this.clearTo(u,gr,f[3],f[4],0))return f.at;
-    if(u.gwId!==W.id){u.gwId=W.id;u.gw=0;u.gwT=0}const q=this.wayNext(u,gr,W.p,u,'gw');if(!q)return f.at;
+    // (PATHS.flow: pushed off it, or too far from it to take it (a wide line's ends: wayNext none, PATHS.stray), down his group's field
+    //  toward where its way ends (groupFlow), not a search of his own, nor straight at his place over a cliff)
+    const flow=()=>{if(!PATHS.flow)return null;const F=this.groupFlow(g,gr,routeWho(u.s),routeNeedOf(u),W.ok?g.ax:W.end[0],W.ok?g.ay:W.end[1]);return this.flowAim(u,F)};
+    if(u.gwId!==W.id){u.gwId=W.id;u.gw=0;u.gwT=0}const q=this.wayNext(u,gr,W.p,u,'gw');if(!q)return flow()||f.at;
     if(this.clearTo(u,gr,q[0],q[1],1))return q;
-    // (PATHS.flow: pushed off it, down his group's field toward where its way ends (groupFlow), not a search of his own)
-    if(PATHS.flow){const F=this.groupFlow(g,gr,routeWho(u.s),routeNeedOf(u),W.ok?g.ax:W.end[0],W.ok?g.ay:W.end[1]),a=this.flowAim(u,F);if(a)return a}
-    return this.steerTo(u,q[0],q[1],gr,1)||q}
+    return flow()||this.steerTo(u,q[0],q[1],gr,1)||q}
   /* (PATHS.flow) group g's field on grid gr (its men of kind who, bodies of half r) toward (x, y), where its way ends (route.js
      routeFlow): kept on it for each kind, made when one of its men cannot walk straight to his point on its way, again when that end
      moves PATHS.move cells or the grid's version moves; made out till every one of its men is reached. PATHS.corridor (the owner,
