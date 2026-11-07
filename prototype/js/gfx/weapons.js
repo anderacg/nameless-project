@@ -114,16 +114,16 @@ function holdOf(u,k){
 // from his sprite's, and whether it goes behind his body; null for none
 /* sheathed off the field (the owner, 2026-11-07: "make weapon sheathing like pointing downward near the waist; make it realistic; only
    when non battle"): on the map a sword or a dagger hangs from his belt at his hip, its hilt up and forward under his hand, its
-   scabbard (dark leather, its chape steel) slung down and back across his thigh, its end past his back leg, as one is worn; a
+   scabbard (leather two pixels wide, drawn over him, lit along its top, its chape steel) slung down and back across his thigh, its end past his back leg, as one is worn; a
    one-handed axe hangs through his belt so, its head up at his hip. Spears, great weapons and shooters' arms stay in his hand; on
    foot only (a rider's in his hand as before). In battle every weapon is drawn (heldNow). SHEATH: kinds, deg (the scabbard's slant:
    90 down, 180 back), at (its hilt from his hand: dx, dy), long (px more than the blade, its hilt and chape) */
-const SHEATH={on:true,kinds:['sword','dagger','axe'],deg:135,at:[-1,-1],long:1},SHEATHS={};
+const SHEATH={on:true,kinds:['sword','dagger','axe'],deg:108,at:[-1,-1],long:0},SHEATHS={};
 function sheathSprite(k,team,skin){const key=k+team+skin;if(SHEATHS[key])return SHEATHS[key];
   const n=WPN[k][0]+SHEATH.long,R=n+3,g=pgrid(2*R+1,2*R+1),a=SHEATH.deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a),
     set=(x,y,col)=>pset(g,R+Math.round(x),R+Math.round(y),col),Lt=PPAL.leather,W=PPAL.wood,M=PPAL.steel,G=PPAL.gold;
   if(k==='axe'){for(let t=1;t<n;t++)set(c*t,s*t,W[t&1?3:2]);set(0,0,W[1]);set(0,-1,M[1]);set(1,-1,M[0]);set(1,0,M[2])}// (its haft down and back, its head at his hip)
-  else{for(let t=1;t<n;t++)set(c*t,s*t,t===n-1?M[1]:Lt[t===1?2:3]);// (the scabbard, its chape steel)
+  else{for(let t=1;t<n;t++){const last=t===n-1;set(c*t,s*t,last?M[1]:Lt[t===1?0:1]);set(c*t-s,s*t+c,last?M[2]:Lt[3])}// (the scabbard two pixels wide over him, lit along its top, shaded under it; its chape steel)
     set(1,-1,G[0]);set(-1,1,G[2]);set(-c,-s,Lt[1]);set(-2*c,-2*s,G[1])}// (the guard across, the grip and pommel up and forward)
   const cv=pcanvas(g);cv.R=R;return SHEATHS[key]=cv}
 function mapHeld(L,sp,walking,step){
