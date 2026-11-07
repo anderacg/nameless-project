@@ -93,3 +93,8 @@ In a page: `<script src="../engine/pixel.js"></script>`, then `buildkit.js`, the
 The game loads `face arts/grayscale/portrait-engine.js` and `portrait-generation.js` (after `doll.js`) for its generated faces: prototype `ui/faces.js`.
 
 Open [face arts/portrait-workshop.html](face%20arts/portrait-workshop.html) for Character Studio v7: player creation, locked variations, saved presets, persistent NPC rosters with player-face exclusion, and 128 × 128 grayscale parts, independent layers, tinting, ears and race-specific generation. Editable sources and race compatibility rules are in [face arts/grayscale/](face%20arts/grayscale/README.md). Run `python "engine/face arts/build.py"` to rebuild the public workshop. The prior v3 matched-image study is kept as a labeled archive in the same folder.
+
+
+## Character Sprite Studio
+
+Open [sprite arts/sprite-workshop.html](sprite%20arts/sprite-workshop.html) for the offline sprite editor: existing paper-doll parts, race and equipment controls, material tinting, game/base animation previews, seeded locked variations, recipe collections and native PNG sheets with attachment metadata. [sprite arts/README.md](sprite%20arts/README.md) describes the shared drawing scripts and integration API. Run `python "engine/sprite arts/build.py"` after shared graphics changes to refresh the standalone snapshot.
