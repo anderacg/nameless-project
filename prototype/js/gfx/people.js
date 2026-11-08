@@ -103,8 +103,11 @@ const PEOPLE_LOOK={
   //  "realistic"): a knife and a round shield, a short spear, a short bow, the boss in a pelt with a hand axe)
   gob_stab:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'dagger',shield:'wood'},gob_spear:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'javelin'},
   gob_bow:{race:'goblin',helm:'hood',hood:'forest',outer:'leather',weapon:'bow'},gob_boss:{race:'goblin',helm:'hood',hood:'forest',outer:'fur',weapon:'axe',shield:'wood'},
-  // (a goblin band's or camp's warchief: a hobgoblin, bareheaded so his ruddy face and long ears show, in a leather jerkin and a pelt
-  // (no knight's armour: the owner, 2026-11-08), his big axe and shield; sprites.js chiefLookType)
+  // (a goblin warband's leader (the owner, 2026-11-08: "replace the hobgoblin with the goblin leader, just make it look different from
+  // normal goblins"): a goblin, a skull for a helm, his side's cloak over a pelt, a crude blade, no shield; sprites.js chiefLookType)
+  gob_chief:{race:'goblin',helm:'skull',outer:'fur',cape:'team',weapon:'sword',lead:true},
+  // (a hobgoblin, kept for a special to come (the owner, 2026-11-08): bareheaded, his ruddy face and long ears, a leather jerkin and a
+  // pelt, his big axe and shield)
   hob_chief:{race:'hobgoblin',helm:'bare',outer:'leather',inner:'fur',cape:'fur',weapon:'bigaxe',shield:'wood',outlaw:'own'},
   mage:{helm:'wizard',outer:'violet',weapon:'staff',robe:true,beard:'grey',hair:'grey'},hedge:{helm:'hood',hood:'brown',outer:'cloth',weapon:'staff',robe:true}
 };
@@ -176,6 +179,9 @@ function lookOf(type,team,hero,v,cid,cg){
     beard:L.beard||(R.beard?(L.hair||R.hair[v%R.hair.length]):race==='human'&&!hero&&v%3===1&&!L.robe?R.hair[v%R.hair.length]:null),
     helm:L.helm,hood:L.hood,outer:L.outer==='skin'?R.skin[v%R.skin.length]:L.outer,inner:L.inner||'dark',team:team?'red':'blue',weapon:L.weapon,shield:L.shield,
     robe:L.robe,surcoat:L.surcoat,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar,armor:hero?L.armor:st?armorOf(st):'none'};
+  // (a goblin's own variants (the owner, 2026-11-08: "they might not wear a top, only leather bottoms"): every other one bare to the
+  // waist, his breeches leather or dark; a leader always clothed: dollfigs.js dollParts)
+  if(race==='goblin'&&!L.lead&&L.outer!=='fur'){o.bareTop=v%2===1;o.legs=v%3===0?'dark':'leather'}
   if(L.outlaw==='own')o.outlaw=true;else if(L.outlaw){const D=OUTLAW_DRESS;o.outlaw=true;o.helm=D.helm[(v+D.helm.indexOf(L.helm)+6)%D.helm.length];o.outer=D.cloth[(v*5+1)%D.cloth.length];o.inner=D.inner[v%D.inner.length];if(o.helm==='hood')o.hood=D.hood[v%D.hood.length]}
   if(L.plain){o.helm=race==='orc'&&PLAIN_HELM[v]==='hood'?'bare':PLAIN_HELM[v];o.outer=PLAIN_CLOTH[v]}
   if(o.mount==='horse')o.mountC=L.barded?'horseW':['horse','chestnut','horseB','horse','horseG','chestnut'][v];

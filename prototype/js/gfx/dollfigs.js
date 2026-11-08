@@ -35,7 +35,7 @@ function dollParts(o){const T={dark:1},P=[],out=o.outer||'leather',arm=o.armor||
   if(o.robe)P.push(['shoes','leather'],['robe',out],['sash','team',T]);
   // (a goblin: no soldier's kit (the owner, 2026-11-08: "goblins should not wear full armor, make them realistic"): barefoot, ragged
   //  breeches, a scrap of a vest (a pelt for the boss), bare arms, his side's colour only a rag knotted at his waist)
-  else if(o.race==='goblin')P.push(['hose',o.legs||'dark'],['vest',out==='fur'?'fur':'leather'],['sash','team',T],['belt','leather']);
+  else if(o.race==='goblin')P.push(['hose',o.legs||'dark'],...(o.bareTop?[]:[['vest',out==='fur'?'fur':'leather']]),['sash','team',T],['belt','leather']);// (bareTop: no top at all, his leather breeches only)
   else{P.push(['hose',o.legs||DOLL_LEGS[[...String(o.hair)+o.skin].reduce((a,c)=>a+c.charCodeAt(0),0)%DOLL_LEGS.length]],['boots','leather']);
     // (no tabard (o.tabard false: your hero, his cape your colour): his armour itself shows)
     const tb=o.tabard===false?[]:o.outlaw?[['sash','team',T]]:o.surcoat?[['tabard',o.surcoat,{rows:DOLL_TABARD.coat}],['cross','team',T]]:[['tabard','team',{...T,rows:DOLL_TABARD.rows}]];

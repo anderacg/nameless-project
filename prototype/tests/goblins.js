@@ -43,10 +43,15 @@ Kit.suite(({ok,info})=>{
  // side's colour a rag at the waist; crude arms of a goblin's size; no mail, the boss's a pelt)
  {const kit=k=>t.dollParts(t.lookOf(k,1,false,0)).map(p=>p[0]),G4=['gob_stab','gob_spear','gob_bow','gob_boss'];
   ok(G4.every(k=>{const P=kit(k);return!P.includes('tabard')&&!P.includes('mail')&&!P.includes('boots')&&!P.includes('shirt')&&P.includes('sash')})&&G4.every(k=>!['mail','plate'].includes(ST[k].armor))&&t.lookOf('gob_boss',1).weapon==='axe'&&t.lookOf('gob_spear',1).weapon!=='spear'&&!['iron','steel'].includes(t.lookOf('hob_chief',1).outer),
-   'goblins in rags (no tabard, mail, boots or sleeves; their colour a rag at the waist), no mail even on the boss, a hand axe and a short spear; their warchief in leather and fur')}
- // (its warchief a hobgoblin, not a man (the owner, 2026-11-08): the chief's look by his band, in battle and on the map; a goblin's long ears drawn)
- {const L=t.lookOf(t.chiefLookType('chief','goblins'),1,false,0),H=t.lookOf('chief',1,false,0),u={type:'chief',leader:{ref:B0[0].ld}},f=t.unitSprite('hob_chief',1,false,0,0,false,false),g=t.unitSprite('chief',1,false,0,0,false,false);
-  ok(B0[0].ld.band==='goblins'&&L.race==='hobgoblin'&&!L.short&&t.riderLook(u).race==='hobgoblin'&&H.race==='human'&&t.chiefLookType('chief','bandits')==='chief'&&f.height>=g.height-1&&t.leaderOf(B0[0].ld).roleName==='Warchief','a warband\'s warchief a hobgoblin (a man\'s height, ruddy, long-eared) in battle and on the map; a bandit chief still a man')}
+   'goblins in rags (no tabard, mail, boots or sleeves; their colour a rag at the waist), no mail even on the boss, a hand axe and a short spear; the hobgoblin (kept for later) in leather and fur')}
+ // (its warchief a goblin of his own look (the owner, 2026-11-08: "replace the hobgoblin with the goblin leader, just make it look
+ // different from normal goblins"; the hobgoblin kept for later), in battle and on the map; a bandit chief still a man)
+ {const L=t.lookOf(t.chiefLookType('chief','goblins'),1,false,0),Bs=t.lookOf('gob_boss',1,false,0),H=t.lookOf('chief',1,false,0),u={type:'chief',leader:{ref:B0[0].ld}};
+  ok(B0[0].ld.band==='goblins'&&L.race==='goblin'&&t.riderLook(u).race==='goblin'&&t.riderLook(u).helm===L.helm&&L.helm!==Bs.helm&&L.cape&&!Bs.cape&&L.weapon!==Bs.weapon&&H.race==='human'&&t.chiefLookType('chief','bandits')==='chief'&&t.leaderOf(B0[0].ld).roleName==='Warchief'&&t.lookOf('hob_chief',1).race==='hobgoblin',
+   'a warband\'s warchief a goblin of his own look ('+L.helm+' helm, a cloak, '+L.weapon+'; the boss '+Bs.helm+', '+Bs.weapon+'); a bandit chief still a man; the hobgoblin kept')}
+ // (some bare to the waist, only leather breeches: the owner, 2026-11-08)
+ {const kit=(k,v)=>t.dollParts(t.lookOf(k,1,false,v)).map(p=>p[0]),vs=[0,1,2,3,4,5],bare=vs.filter(v=>!kit('gob_stab',v).includes('vest'));
+  ok(bare.length>=2&&bare.length<=4&&vs.some(v=>kit('gob_stab',v).includes('vest'))&&kit('gob_boss',1).includes('vest')&&kit(t.chiefLookType('chief','goblins'),1).includes('vest'),'goblins in their variants: '+bare.length+' of 6 bare to the waist in breeches, the rest in a vest; the boss and the leader always clothed')}
  {const b=B0[0],L=b.look(),bn=b.banner(),d=b.mapDot({});ok(L.col===GB.col&&L.race==='goblin'&&bn.col===GB.col&&(!d||d[0]===GB.col)&&b.label()==='Goblin warband'&&b.nerve===GB.nerve&&b.hauntR===GB.leash,'under a green rag, of their race, called a goblin warband')}
  // timid: as strong as you, a bandit band hunts you, a warband only hangs back
  {Kit.clear();Kit.world({encCool:0});const gb=B0[0];P.troops={};let k=0;while(t.partyPower()<gb.power()&&k++<80)P.troops={hum_levy:k};

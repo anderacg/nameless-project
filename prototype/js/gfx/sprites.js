@@ -233,9 +233,9 @@ const sidearmLook=u=>u.side||(u.side={...unitLook(u),weapon:'sword'});
 const FOOT_LOOK=new WeakMap();
 function unitLook(u){const L=riderLook(u);if(!u.afoot)return L;let f=FOOT_LOOK.get(L);if(!f)FOOT_LOOK.set(L,f={...L,mount:null});return f}
 // (his look as he is made, a rider in the saddle: kept on him)
-// (the look a chief is drawn in, by his band: a goblin band's or camp's warchief a hobgoblin (people.js hob_chief), every other the
-// human chieftain)
-const chiefLookType=(type,band)=>type==='chief'&&band==='goblins'?'hob_chief':type;
+// (the look a chief is drawn in, by his band: a goblin band's or camp's leader a goblin of his own look (people.js gob_chief; the
+// hobgoblin, hob_chief, kept for later), every other the human chieftain)
+const chiefLookType=(type,band)=>type==='chief'&&band==='goblins'?'gob_chief':type;
 function riderLook(u){if(u.look)return u.look;const cg=COMPS[u.type]&&P.comps&&P.comps[u.type]&&P.comps[u.type].gear||null;const L=allyLook(lookOf(chiefLookType(u.type,u.leader?.ref?.band||u.leader?.band),u.worldSide??u.team,u.hero,u.hero?0:(u.v||0)%6,COMPS[u.type]?u.type:'',cg),u.worldSide??spriteTeam(u));return u.look=u.worldTint?{...L,team:u.worldTint}:L}
 // (your allies' men (team 2: battle.js spriteTeam) in their side's cloth, SIDE.ally.tabard)
 const allyLook=(L,team)=>team===2?{...L,team:SIDE.ally.tabard}:L;
