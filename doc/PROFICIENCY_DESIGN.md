@@ -2,122 +2,149 @@
 
 The owner, 2026-11-08:
 - "Change the name Discipline to Proficiency, Basic to Trait."
-- "I want to change the way how hero player progress. Right now we get an exp to unlock skills, instead the level progress will count towards Proficiency pool."
-- The skill page's order: 1. Proficiency, 2. Tree, 3. Trait, 4. Skill Bar.
-- "Design first."
+- The skill page: 1. Proficiency, 2. Tree, 3. Trait, 4. Skill Bar.
+- "Your proficiency grows as you do certain actions or doing something like the current system do. And the level progress will just based on your proficiency progress."
+- "A proficiency cap for each at 99 max then we calculate the level based on that. The hero, lords, companions will start at 0; companions or lords may grow their own way."
+- The combos now in Basics "should be unlocked via skill tree instead."
+- Old saves: "wipe old save for now". No switch back: "revamp to new".
 
-Status: **design, waiting for the owner's answers (§9). Nothing built.**
+Status: **decided (answers above and §8); being built.**
 
 ## 1. What exists today
 
 | Part | Where | How it grows |
 |---|---|---|
-| **Level** | `world/characters.js` `gainXp`, `LV_XP = level × 60` | Experience from battles, quests, finds. |
-| **Skill points** (`P.tp`) | `Character#levelled` | **One per level.** Spent on the Tree. |
-| **Tree** (passives, notables, keystones, active skills) | `data/tree.js`, `core/talents.js`, `ui/talents.js` | A node is bought with one skill point, next to one you have. Some nodes add levels to a discipline (`sk:{oneh:1}`) or attributes. |
-| **Disciplines** (18: One-Handed, Two-Handed, Blocking, Archery, Spellcraft, Unarmed, Athletics, Leadership, Tactics, Medicine, Engineering, Persuasion, Scouting, Riding, Woodcraft, Hunting, Survival, Trade, Stewardship) | `data/progression.js` `SKILLS`, `Character#train` | **By use only**, 0 to 10 (`SK_XP = (level+1) × 20`). A race's or past's *knack* (`P.apt`) makes one rise faster. A past starts a few at 1 or 2. |
-| **Basics** (Combo, Third Blow, Stunning or Crushing Finisher, Dodge Roll, Shove, Shield Bash) | `ui/talents.js` `SPECIAL` | Innate. The Third Blow comes at weapon discipline 3, and the finisher choice at 6. |
+| **Level** | `world/characters.js` `gainXp`, `LV_XP = level × 60` | Flat experience from battles, quests and finds. |
+| **Tree points** (`P.tp`) | `Character#levelled` | One per level. |
+| **Disciplines** (19) | `data/progression.js` `SKILLS`, `Character#train` | By use, 0 to 10 (`SK_XP = (level+1) × 20`). A knack (`P.apt`) makes one rise faster. A past starts a few at 1 or 2. |
+| **Basics** | `ui/talents.js` `SPECIAL` | Combo, Third Blow at weapon discipline 3, finisher choice at 6, Dodge Roll, Shove, Shield Bash. |
 | **Skill bar** | `ui/talents.js` | Ten slots for the active skills the Tree unlocked. |
 
-The page opens on **Tree**, and the tabs are Tree, Skill bar, Disciplines, Basics. Companions see only Tree and Skill bar.
+## 2. The model
 
-## 2. The change in one line
-
-**Experience → level → Proficiency points (a pool) → you raise the Proficiencies you choose → that raising also earns your Tree points.** Use no longer raises a proficiency by itself; you decide where your growth goes.
+**What you do → your Proficiencies rise (0 to 99) → their rising fills your level → each level gives one Tree point.**
 
 ## 3. Names
 
-- **Discipline → Proficiency** everywhere the player reads it: the tab, its help line, the level-up and "rose" messages, the loading tips, companion role notes ("grows with their proficiency"), the unit cards, the wiki and the README.
-- **Basic(s) → Trait(s)** the same way.
-- **Not renamed:** the battle stance called *Discipline* (hold ground, the F key: `battlehud.js`, `input.js`, `data/kits.js`). It's a different thing, a stance and not a skill. I'd keep its name; say if you want it renamed too.
-- Code names stay (`SKILLS`, `P.sk`, `SPECIAL`) so saves and tests keep working. Only the words on screen change.
+- **Discipline → Proficiency** and **Basics → Traits** wherever the player reads them: the tabs and help lines, the messages, the loading tips, companion notes, unit cards, the wiki and the README.
+- **Unchanged:**
+  - The battle stance "Discipline" (hold ground, F): the owner, "leave it alone".
+  - Code names (`SKILLS`, `P.sk`).
 
-## 4. Progression (the proposal)
+## 4. Proficiencies
 
-All numbers in one tunables table, `PROF` (`data/progression.js`).
+### 4.1 Growth
+- Each proficiency runs **0 to 99** (`PROF.max`).
+- It rises **by use, as now**: the existing `train(...)` calls stay.
+- **Pace:** reaching 99 takes about as much practice as reaching 10 does today. A level needs `PROF.xp0 + PROF.xpUp × level` practice, so early levels come quickly and later ones slowly.
+- **A knack** (your race's or past's) still makes its proficiency rise faster, as today.
 
-### 4.1 The pool
-- Each new level gives **`PROF.perLevel` = 3** Proficiency points (`P.pp`). A new hero starts with **`PROF.start` = 3**.
-- Points wait in the pool until spent. There is no time limit.
+### 4.2 What a level is worth
+- Every effect is measured in **power**: `skill(k) = level / PROF.per + Tree and gear bonuses`, with `PROF.per` = 9.9. So 99 gives today's 10, and every level in between counts a little; there are no steps of ten.
+- Tree nodes and gear keep their "+1 One-Handed" in power, worth 10 proficiency levels.
+- The descriptions read in levels: "+0.06 damage per level (+6 at 99)".
 
-### 4.2 Raising a proficiency
-- **One point raises a proficiency one level** (0 to 10, as today).
-- **A cap by your level:** no proficiency above **2 + level ÷ 2** (level 1: 2; level 6: 5; level 16: 10). This stops a new hero from putting everything into one proficiency at once, and it keeps a reason to level.
-- **A knack** (your race's or past's, today "learns faster") becomes **+1 to that proficiency's cap**. It still shows as "knack" on its row.
-- What your past gives today (e.g. a Veteran soldier's One-Handed 2, Leadership 1) stays: you start with those levels, free.
-- Tree nodes and gear still add on top (shown green, "+1"), as now. Those don't count against the cap.
+### 4.3 Where you start
+- **Everyone starts at 0** (the owner): your hero, companions, lords.
+- **A past's head start** (e.g. a Veteran's One-Handed) becomes a **free starting proficiency**:
+  - `PROF.pastPer` = 10 levels per point of today's bonus, so the Veteran starts at One-Handed 20.
+  - It **does not count toward your level**: every past begins at level 0.
 
-### 4.3 Use
-- **Use no longer raises proficiencies** for your hero. Today 38 places in the game call `train(...)`: hits landed, battles won, trade, travel and so on.
-- **Recommended:** keep those calls, but they give a little **experience** instead, so playing a way still helps you grow overall. Each call gives `PROF.useXp` × its amount, a small share. The player then decides where that growth goes.
+### 4.4 Battle and quest rewards
+Today's flat experience becomes practice (`PROF.reward`, the share of the old amount):
+- **A won battle:** the weapon proficiency your hero fought with, plus Leadership and Tactics.
+- **A lost battle, or one fled:** the same, smaller.
+- **A tournament:** your weapon and Athletics.
+- **A monster or lair slain:** your weapon.
+- **A quest:** trains what fits its kind (`QUEST_TRAIN`):
+  - Persuasion for talks, envoys and surrenders;
+  - Scouting for searches, rescues and missing people;
+  - Trade for deliveries and caravans;
+  - your weapon and Leadership for fights;
+  - Medicine for the sick.
+- **The hermit's lore, a ruin's carvings:** Scouting and Tactics.
 
-### 4.4 The Tree
-Today the Tree is paid from levels (one point a level). The owner's line moves level growth into the pool, so the Tree needs a new source. **Recommended:**
-- **Every `PROF.treeEvery` = 3 proficiency levels you raise earn one Tree point.** At 3 Proficiency points a level, that is one Tree point a level: the same pace as today, now earned through your choices.
-- **The Tree's deeper nodes ask for proficiency in their branch:**
-  - **Might:** One-Handed, Two-Handed, Blocking, Unarmed, Engineering.
-  - **Finesse:** Archery, Athletics, Riding, Woodcraft, Hunting, Scouting.
-  - **Arcana:** Spellcraft, Medicine, Tactics, Survival.
-  - **Command:** Leadership, Persuasion, Trade, Stewardship.
-- A **notable** needs 3 in its branch's best proficiency, and a **keystone** needs 6. A node that unlocks an **active skill** needs 2 in the proficiency it's built on: Whirlwind in Two-Handed or One-Handed, Rain of Arrows in Archery, Fireball in Spellcraft.
-- The node still costs one Tree point. The detail panel shows what a locked node needs ("Needs Spellcraft 3").
+## 5. Level from proficiency
 
-### 4.5 Traits
-- The Traits tab shows today's Basics (the combo and its upgrades, Dodge Roll, Shove, Shield Bash). The Third Blow still comes at weapon proficiency 3, and the finisher choice at 6, but now you reach those by spending.
-- **Proposed addition:** your **race's and past's traits**: the knacks, and what your race gives (an elf's forest pace, a dwarf's hill and frost, and so on). These are now spread across the race screen and tooltips, so the player would see all of them in one place.
+- **Progress** = the sum, over all proficiencies, of each one's level gained × its **weight** (`PROF.weight`), counting part of a level as its bar fills. So your level bar moves with every hit or sale.
+- **Starting levels from your past aren't counted.**
+- **Level n** needs `PROF.step × n(n+1)/2` progress (`step` = 30). Level 10 needs 1650. Every proficiency at 99, all weights 1, is 1881 × 99 / 9.9 = 18810, about level 35. Tuned in the table.
+- **Weights** (the owner: "go with your recommendations") make the proficiencies that rise very easily count less:
 
-## 5. The skill page
+  | Weight | Proficiencies |
+  |---|---|
+  | 1 | One-Handed, Two-Handed, Blocking, Archery, Spellcraft, Unarmed, Leadership, Tactics, Medicine, Engineering, Persuasion, Hunting |
+  | 0.8 | Riding, Woodcraft, Survival, Stewardship, Athletics |
+  | 0.6 | Scouting, Trade |
 
-Tabs in your order: **Proficiency · Tree · Trait · Skill bar**. It opens on **Proficiency** when you have points to spend, and otherwise on the tab you used last.
+- **Repeats:** the same cheap action again and again gives less. A proficiency's practice within the same in-game hour shrinks after `PROF.burst` uses (×0.5, then ×0.25). It recovers the next hour.
+- **Each new level** gives **one Tree point** (the owner: "1 per level"). The toast reads "Level 7: +1 tree point", with the proficiency that did it.
+- **No more flat experience.** `gainXp` for the hero and companions now trains (§4.4).
 
-- **Header:** "Skills · Level 7 · 4 proficiency points · 1 tree point".
-- **Proficiency tab** (rows grouped as on the Army page: Fighting, Command, The road, Trade and rule):
-  - **Each row:** name, level / cap (and "+1" from the Tree or gear), what the next level gives, the knack mark, and a **+** button.
-  - **A blocked +** says why: "At your cap: level 8 lifts it to 6".
-  - **Spending:** a point is spent at once. **Undo** works until you leave the page (a mistake isn't permanent), and there is no respec after that.
-  - **Under the list:** "3 more raised → 1 tree point".
-- **Tree tab:** as today, with each locked node's need. Points come from the Proficiency tab.
-- **Trait tab:** as in §4.5.
-- **Skill bar tab:** as today.
-- **Frame rule:** header, choices only, the bottom bar from `nav()` (Back to Army on the left, Back to map on the right), Esc follows the bar.
-- **Phone in landscape (844×390):** the rows and **+** buttons stay at least 40 px tall to tap.
-- **On the map:** the level-up toast reads "Level 7: +3 proficiency points". The Army button shows a dot while points wait.
+## 6. Companions and lords
 
-## 6. Companions, lords, chieftains
+- **Companions** level the same way as your hero (the owner: "based on yours"). They train their fighting proficiencies by use, plus their share of battle rewards. Their Skills window gets the same four tabs.
+- **Lords and chieftains** grow their own way (the owner: "yes"). They keep today's levelling: their experience by wins and time, and a level's Tree point spent at once by their class. Their proficiencies start at 0 and grow with their level, so a lord of level n has his class's proficiencies at about `PROF.lordPer × n`.
 
-- The same system as your hero: a companion has its own pool, cap and Tree points, and its Skills window shows the same four tabs. Today it has no Disciplines tab.
-- Lords and chieftains (AI-owned) spend their own points at once, by their class, as they spend Tree points today (`autoTree` → `autoProf`).
-- Troops are not affected. Their tiers and ranks stay as they are.
+## 7. The skill page
 
-## 7. Saves and old games
+Tabs, in the owner's order: **Proficiency · Tree · Trait · Skill bar**. It opens on Proficiency.
 
-No migration, as the house rule says. On load:
-- **New fields default:** `P.pp` = 0, `P.ppSpent` = 0.
-- **Proficiency levels** are kept as they are.
-- **Unspent Tree points** are kept.
-- **Old characters:** an old hero keeps his Tree. His next level starts giving points the new way.
+- **Header:** "Skills · Level 7 · 1 tree point".
+- **Proficiency:**
+  - **Top:** the level bar ("Level 7 · 61% to 8"). The proficiency that raised it most lately is named.
+  - **Rows**, grouped: Fighting, Command, The road, Trade and rule. Each shows its name, its level out of 99 with its bar, "+n" from the Tree and gear, the knack mark, what it does now, and its weight toward your level when that is under 1.
+- **Tree:** as today, plus the combo's nodes (§7.1).
+- **Trait:** the innate moves plus your race's and your past's traits, all in one place:
+  - Moves: the two-blow combo, Dodge Roll, Shove, Shield Bash.
+  - Race: an elf's forest pace, a dwarf's hills and frost, an orc's heat and swamp, a human's roads.
+  - Past: what it gave you, and its knack.
+- **Skill bar:** as today.
+- **Frame:** header, choices only, the bottom bar from `nav()`, Esc follows the bar. It works at phone landscape (844×390).
 
-## 8. What changes in code (estimate)
+### 7.1 The combo's upgrades on the Tree (the owner)
+- Today the Third Blow comes at weapon discipline 3, and the finisher choice at 6.
+- They become **Tree nodes**, off the Might spine, near Brute Force:
+  - **Third Blow** (an ability node: the combo ends in a third, heavier blow);
+  - then two exclusive **notables**, **Stunning Finisher** and **Crushing Finisher**. Taking one locks the other, as the choice does today.
+- The same for every weapon, as the combo is.
+- `COMBO_UP` and the finisher choice button go.
+
+## 8. The owner's answers
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | Battle and quest rewards | Turn them into practice (§4.4). |
+| 2 | Level from proficiency | Cap 99 each, level calculated from them. Everyone starts at 0. Companions and lords may grow their own way. |
+| 3 | Easy proficiencies | Weights and fewer repeats (§5). |
+| 4 | Ceiling | Answered by 99. |
+| 5 | Tree points | One per level. |
+| 6 | A past's head start | Free, and not counted toward level. |
+| 7 | Companions | The same as the hero. |
+| 8 | Lords and chieftains | Their own levelling. |
+| 9 | Trait tab | Moves plus race and past traits. The combos move to the Tree. |
+| 10 | The stance "Discipline" | Leave it alone. |
+| 11 | Old saves | Wipe them: a save from before is refused, with a notice, and a new game starts. |
+| 12 | Off switch | None: the new way only. |
+
+## 9. What changes in code
 
 | Change | Files |
 |---|---|
-| Renames on screen | `ui/talents.js`, `companionpage.js`, `unitcard.js`, `loading.js`, `character.js`, wiki, README |
-| `PROF` table; `Character#levelled` gives points; `#raise(k)`, `#capOf(k)`, Tree points from raising; `train` → experience | `data/progression.js`, `world/characters.js`, `core/state.js` |
-| Tree needs (by branch and kind) | `data/tree.js`, `core/talents.js` (`canTake`) |
-| The page: tab order, Proficiency rows, Trait tab | `ui/talents.js`, `style.css` |
-| AI spending (`autoProf`) | `world/characters.js`, lords, chieftains |
-| Saves (defaults) | `core/saves.js` |
-| Tests: a new `proficiency` suite (points per level, the cap, knack, Tree points from raising, Tree needs, Undo, companions, AI, save round trip); updated tests that expect use to raise a discipline or a level to give a Tree point | `tests/` |
-| Fingerprints: W7 / B2 (the save holds new fields) and W8 if lords spend differently. Re-recorded with reasons and the proof `PROF.on = false` (today's rules) | `tests/worldprint.js` |
+| `PROF` table; proficiency 0–99, its practice curve, power (`skill`), weights, repeats | `data/progression.js`, `world/characters.js` |
+| Level from proficiency progress; one Tree point per level; `gainXp` → practice for the hero and companions | `world/characters.js`, `battle/engage.js`, `resolution.js`, `sides.js`, `story/quest.js`, `outcome.js`, `world/sites.js`, `critters.js` |
+| Starting levels at 0; a past's free start; lords' proficiencies from their level | `core/state.js`, `world/leaders.js`, `world/companions.js` |
+| Combo upgrades as Tree nodes | `data/tree.js`, `battle/combat.js`, `core/talents.js` |
+| The page: tabs, Proficiency rows and level bar, Trait tab, renames | `ui/talents.js`, `companionpage.js`, `unitcard.js`, `loading.js`, `style.css`, wiki |
+| Old saves refused (version bump), with a notice | `core/save.js` |
+| Tests: a new `proficiency` suite (0–99, the curve, power, weights and repeats, level from progress, a Tree point a level, rewards as practice, the past's free start, combo nodes, companions, lords, an old save refused); suites that expect flat experience, levels or discipline numbers brought up to date | `tests/` |
+| Fingerprints: W7, W8 and B2 (the save and lords' levels) and the battle suites where heroes' numbers change. Re-recorded with reasons. The proof is the commit before. | `tests/worldprint.js` and others |
 
-Behind `PROF.on`: off gives today's rules exactly.
+## 10. Phases
 
-## 9. Questions for the owner
-
-1. **Tree points:** is "every 3 proficiency levels raised gives 1 Tree point" right (§4.4)? The alternatives are Tree points from levels as today (only proficiencies change), or no Tree points at all, with Tree nodes unlocked only by proficiency levels.
-2. **Use:** should using a proficiency still help? The recommendation is a little experience into your level (§4.3). The alternatives are no effect, or use as a discount on raising that proficiency.
-3. **The cap:** is 2 + level ÷ 2 (10 at level 16) right, or should there be no cap?
-4. **Points per level:** 3 a level, and 3 to start?
-5. **Trait tab:** show race and past traits there too, or only the innate moves?
-6. **The battle stance "Discipline":** keep its name?
-7. **Companions:** the same system, so they gain the Proficiency tab?
+1. **Names, tabs, the Trait tab.** Display only.
+2. **Proficiency 0–99 and power.** Every effect keeps today's strength at 99.
+3. **Level from proficiency, Tree points, rewards as practice, repeats.** Starting at 0, the past's free start.
+4. **Combo upgrades on the Tree.**
+5. **Companions and lords.**
+6. **Old saves refused; tests, fingerprints, docs.**
