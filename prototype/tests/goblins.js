@@ -39,6 +39,11 @@ Kit.suite(({ok,info})=>{
  ok(B0.length>=C.length&&B0.every(b=>b instanceof t.GoblinBand&&b.mapKind==='band'&&of(b)&&b.haunt.x===of(b).x&&Math.hypot(b.x-of(b).x,b.y-of(b).y)<=7*TILE),B0.length+' warbands set out ('+GB.bands+' a camp), each a few tiles from its camp, haunting it');
  ok(B0.every(b=>b.troops.every(k=>ST[k].race==='goblin')&&b.size>=GB.band[0]),'all goblins, '+GB.band.join('-')+' strong or more');
  {const avg=l=>l.reduce((a,b)=>a+b.size,0)/l.length,r=t.roamers();ok(avg(B0)>avg(r)&&r.every(b=>b.kind!=='goblins')&&r.length<=t.density(t.WM).bandits,'bigger than bandit bands ('+avg(B0).toFixed(1)+' to '+avg(r).toFixed(1)+'), and the bandits roam in their own numbers ('+r.length+')')}
+ // (no soldier's kit (the owner, 2026-11-08: "goblins should not wear full armor, make them realistic"): rags, bare arms and feet, the
+ // side's colour a rag at the waist; crude arms of a goblin's size; no mail, the boss's a pelt)
+ {const kit=k=>t.dollParts(t.lookOf(k,1,false,0)).map(p=>p[0]),G4=['gob_stab','gob_spear','gob_bow','gob_boss'];
+  ok(G4.every(k=>{const P=kit(k);return!P.includes('tabard')&&!P.includes('mail')&&!P.includes('boots')&&!P.includes('shirt')&&P.includes('sash')})&&G4.every(k=>!['mail','plate'].includes(ST[k].armor))&&t.lookOf('gob_boss',1).weapon==='axe'&&t.lookOf('gob_spear',1).weapon!=='spear'&&!['iron','steel'].includes(t.lookOf('hob_chief',1).outer),
+   'goblins in rags (no tabard, mail, boots or sleeves; their colour a rag at the waist), no mail even on the boss, a hand axe and a short spear; their warchief in leather and fur')}
  // (its warchief a hobgoblin, not a man (the owner, 2026-11-08): the chief's look by his band, in battle and on the map; a goblin's long ears drawn)
  {const L=t.lookOf(t.chiefLookType('chief','goblins'),1,false,0),H=t.lookOf('chief',1,false,0),u={type:'chief',leader:{ref:B0[0].ld}},f=t.unitSprite('hob_chief',1,false,0,0,false,false),g=t.unitSprite('chief',1,false,0,0,false,false);
   ok(B0[0].ld.band==='goblins'&&L.race==='hobgoblin'&&!L.short&&t.riderLook(u).race==='hobgoblin'&&H.race==='human'&&t.chiefLookType('chief','bandits')==='chief'&&f.height>=g.height-1&&t.leaderOf(B0[0].ld).roleName==='Warchief','a warband\'s warchief a hobgoblin (a man\'s height, ruddy, long-eared) in battle and on the map; a bandit chief still a man')}

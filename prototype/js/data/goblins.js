@@ -21,8 +21,9 @@ const GOBLINS={on:true,col:'#6f9a3a',band:[8,12],grow:12,bossAt:12,mix:[['gob_st
   warren:{on:true,banner:['#6f9a3a','#3f5a1e'],T:{n:'Goblin warren',ico:'cave',col:'#6f9a3a',respawn:20,d:'A goblin warren dug into the hillside. Many weak goblins packed in its burrows, their boss, and a pile of stolen goods deep inside.'}},
   meet:'Small green shapes in ragged hoods scurry through the brush, yelling and waving knives. They keep their distance until they are sure of you.'};
 // their troops: [id, name, tier, hp, dmg, spd, reach, range, cd, look, tags, armour, damage type]. The stabber's knife and small
-// round shield, the spearman's long spear, the archer's short bow, the boss's big blade
+// round shield, the spearman's short spear, the archer's short bow, the boss's hand axe in a pelt (no mail: the owner, 2026-11-08, "goblins
+// should not wear full armor")
 [['gob_stab','Goblin Stabber',1,16,4,44,9,0,.75,'militia',['shield'],'leather','pierce'],['gob_spear','Goblin Spearman',1,18,5,42,18,0,1,'spearman',['spear'],'leather','pierce'],
- ['gob_bow','Goblin Archer',1,13,4,42,0,340,1.5,'archer',[],'none','pierce'],['gob_boss','Goblin Boss',2,44,9,40,15,0,.95,'chief',['shock'],'mail','slash']
+ ['gob_bow','Goblin Archer',1,13,4,42,0,340,1.5,'archer',[],'none','pierce'],['gob_boss','Goblin Boss',2,44,9,40,15,0,.95,'chief',['shock'],'hide','slash']
 ].forEach(([id,n,tier,hp,dmg,spd,reach,range,cd,look,tags,armor,dt])=>{ST[id]={n,tier,hp,dmg,spd,reach,range,cd,look,race:'goblin',home:['forest','swamp'],charge:false,tags,armor,dt,morale:GOBLINS.morale}});
 ST.gob_bow.bow=true;ST.gob_boss.morale=GOBLINS.bossMorale;

@@ -99,12 +99,13 @@ const PEOPLE_LOOK={
   band_looter:{helm:'bandana',outer:'cloth',weapon:'axe',outlaw:true},band_cutthroat:{helm:'hood',hood:'dark',outer:'dark',weapon:'sword',outlaw:true},
   band_brigand:{helm:'bandana',outer:'leather',weapon:'axe',shield:'wood',outlaw:true},band_highway:{helm:'cap',outer:'leather',weapon:'spear',outlaw:true},
   band_poacher:{helm:'hood',hood:'olive',outer:'olive',weapon:'bow',cape:'leather',outlaw:true},
-  // (goblins (the owner's reference): green hoods, leather; a knife and a round shield, a spear, a short bow, a chief in fur)
-  gob_stab:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'dagger',shield:'wood'},gob_spear:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'spear'},
-  gob_bow:{race:'goblin',helm:'hood',hood:'forest',outer:'leather',weapon:'bow'},gob_boss:{race:'goblin',helm:'hood',hood:'forest',outer:'fur',weapon:'bigaxe',shield:'wood'},
-  // (a goblin band's or camp's warchief: a hobgoblin, bareheaded so his ruddy face and long ears show, in dark iron over leather, his
-  // big axe and shield (the owner, 2026-11-08); sprites.js chiefLookType)
-  hob_chief:{race:'hobgoblin',helm:'bare',outer:'iron',inner:'leather',weapon:'bigaxe',shield:'wood',outlaw:'own'},
+  // (goblins (the owner's reference): green hoods, rags (dollfigs.js dollParts); crude arms, a goblin's size (the owner, 2026-11-08:
+  //  "realistic"): a knife and a round shield, a short spear, a short bow, the boss in a pelt with a hand axe)
+  gob_stab:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'dagger',shield:'wood'},gob_spear:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'javelin'},
+  gob_bow:{race:'goblin',helm:'hood',hood:'forest',outer:'leather',weapon:'bow'},gob_boss:{race:'goblin',helm:'hood',hood:'forest',outer:'fur',weapon:'axe',shield:'wood'},
+  // (a goblin band's or camp's warchief: a hobgoblin, bareheaded so his ruddy face and long ears show, in a leather jerkin and a pelt
+  // (no knight's armour: the owner, 2026-11-08), his big axe and shield; sprites.js chiefLookType)
+  hob_chief:{race:'hobgoblin',helm:'bare',outer:'leather',inner:'fur',cape:'fur',weapon:'bigaxe',shield:'wood',outlaw:'own'},
   mage:{helm:'wizard',outer:'violet',weapon:'staff',robe:true,beard:'grey',hair:'grey'},hedge:{helm:'hood',hood:'brown',outer:'cloth',weapon:'staff',robe:true}
 };
 // the plain troops' helms and cloth by variant (the rest wear their kind's)
