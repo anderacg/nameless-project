@@ -598,6 +598,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-08, on purpose: the owner, "recheck whether all sprites is in the center": an army's label and banner over its
 //  men themselves, a middle man's place across and over the topmost near him, not its point at the front of its column (render.js
 //  armyHome, ARMY_TAG). Proof: d5c92c1 gives 3ab96f78 again. Was W6 3ab96f78)
+// (W6 again 2026-11-08, on purpose: the owner, "remove text on holding or places in the world map": no holding's name under it
+//  (structures.js holdingLabel). Proof: with holdingLabel as it was (99c96eb's) and everything else as now, it is 262a7159 again (the
+//  sites' new looks are not in its view). Was W6 262a7159)
 // (W7 and B2 again 2026-11-08, on purpose: the owner, "add goblin warrens near hills": the save holds the sites' names, and a
 //  goblin camp's is now in its own word (a warren among hills "X Warren", a camp "X Camp": sites.js GoblinCamp setup). Proof: with
 //  the old naming and GOBLINS.warren.on off both are as before (48736e1a, 68b4fcd8). Were W7 48736e1a, B2 68b4fcd8)
@@ -608,7 +611,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  changed: the save is v4, your hero starts at level 0 with a past's free start (P.sk0: a Veteran's One-Handed 20, Leadership 10),
 //  proficiency levels are stored ×9.9 and P.xp is the level's progress. The world itself held (W1-W6, W8). Proof: f357e21 gives
 //  30a2328c and 3b944b30 again. Were W7 30a2328c, B2 3b944b30)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'262a7159',W7:'e3e03768',W8:'51660bc5',B2:'a9339a6a'};
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'40af48fd',W7:'e3e03768',W8:'51660bc5',B2:'a9339a6a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

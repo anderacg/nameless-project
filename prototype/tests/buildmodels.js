@@ -34,6 +34,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (re-recorded 2026-11-07, on purpose, every type and cluster and each culture's block: the owner, "some world map sprites still has black
 // outer line instead of darker shading colour": an outline by a dark body a lighter shade of it and no navy (engine/pixel.js PX.RIM.dark),
 // and each outline pixel shaded again from the body as it finally stands (engine/model.js). Proof: PX.RIM.dark null gives the old values)
+// (ruins, shrine and cave re-recorded 2026-11-08, on purpose, in EXPECT and every culture's block: the owner, "add more variations for
+// caves, hideouts, places with more detail; currently stone pillars look not like stone pillar": each now one of four by its seed (a
+// colonnade of real columns: plinth, round shaft, capital; a tower stump; a temple's steps; standing stones of rough rock; a column
+// gate; a cairn; a cliff cave, a low mound, twin crags). Proof: 99c96eb (the commit before) gives the old values. Were ruins 885cc7fd,
+// shrine f895e57b, cave fdff66d2; in the blocks ruins 7aa41f18 (karn e883e3f3), shrine dd70f9ee (karn 7ef8af13), cave 77e05999)
 const EXPECT={
  cottage:'c717c437',townhouse:'7b502758',fisherhut:'a2aee8d4',chapel:'cd2df32c',stall:'6eb7d561',tower:'03bfab44',yurt:'36594b0f',
  longhouse:'30b74e16',tavern:'1b800d4c',smithy:'77415617',church:'38ecd5ee',barn:'08630463',granary:'cd6c5a5a',windmill:'2155a2cf',
@@ -41,7 +46,7 @@ const EXPECT={
  elfhall:'38a464b5',spire:'ccd4941a',stonehall:'a80a3a1d',forge:'d7b19dd3',keep:'d4a6330b',citadel:'68362cf6',well:'1096520f',
  tent:'d15bc6e2',wagon:'2424b086',minehead:'1ed8dab5',lumbershed:'112cd75d',crane:'2abc6693',village:'87adbad4',signpost:'2a61987d',
  cart:'e97f8277',haystack:'9200d375',woodpile:'45359b41',fence:'4ccfec38',crates:'a7e9b5ae',barrels:'3ad7ddab',chiefyurt:'d67eea69',
- warcamp:'80d397fe',horselines:'66f518c6',ruins:'885cc7fd',shrine:'f895e57b',cave:'fdff66d2','cluster:row':'3d5aff18',
+ warcamp:'80d397fe',horselines:'66f518c6',ruins:'c853f484',shrine:'67300cb8',cave:'ec8e0546','cluster:row':'3d5aff18',
  'cluster:yard':'545a9c22','cluster:farmstead':'f5d89844','cluster:smithy':'262ed909','cluster:inn':'49ec1061',
  'cluster:chapel':'37fc39b9','cluster:market':'9a22e744','cluster:mill':'22167dff','cluster:lumber':'fb92706d',
  'cluster:mine':'9708f757','cluster:quarry':'34531cc6','cluster:fishery':'6e45c232','cluster:pasture':'9750bdc5',
@@ -55,8 +60,8 @@ const EXPECT_CULTURE={
   longhouse:'3610222f',tavern:'cd7010fc',smithy:'ac438be0',church:'5d6b9a31',barn:'50116bd5',granary:'a194b9d3',windmill:'ac619f59',
   watermill:'0e78c1d1',warehouse:'02149647',gatehouse:'3e25f41e',keep:'c60e41a4',citadel:'507a28b7',well:'6783552a',tent:'191512ae',
   wagon:'955c0977',minehead:'5a8435fd',lumbershed:'dd88841b',crane:'f94ad491',village:'fcacabf7',signpost:'bb654083',
-  cart:'02a8a11d',haystack:'d6ad6a2d',woodpile:'8d644868',fence:'f1fa5cce',crates:'e0270c2f',barrels:'7cd2b2cf',ruins:'7aa41f18',
-  shrine:'dd70f9ee',cave:'77e05999','cluster:row':'e52188d0','cluster:yard':'64592c13','cluster:farmstead':'e89876d4',
+  cart:'02a8a11d',haystack:'d6ad6a2d',woodpile:'8d644868',fence:'f1fa5cce',crates:'e0270c2f',barrels:'7cd2b2cf',ruins:'2af98552',
+  shrine:'f9be341e',cave:'c32218f9','cluster:row':'e52188d0','cluster:yard':'64592c13','cluster:farmstead':'e89876d4',
   'cluster:smithy':'ba739393','cluster:inn':'704d1df0','cluster:chapel':'65d6627a','cluster:market':'f5bcee63',
   'cluster:mill':'e2d7f28d','cluster:lumber':'db83ae07','cluster:mine':'3b8ad5d0','cluster:quarry':'00e063cf',
   'cluster:fishery':'7e2160c0','cluster:pasture':'f78b3669','cluster:brewery':'62ab0ea5','cluster:granary':'eae001b5',
@@ -67,8 +72,8 @@ const EXPECT_CULTURE={
   longhouse:'3688c3a0',tavern:'c64d26a0',smithy:'fcff90ae',church:'83d14410',barn:'c192c7ae',granary:'a3ff0f50',windmill:'9d7d20d2',
   watermill:'0ba78dce',warehouse:'3967ff6d',gatehouse:'b6f6d2ee',keep:'7fa6bdc4',citadel:'4ca6593a',well:'b363d206',tent:'76a15df5',
   wagon:'955c0977',minehead:'5a8435fd',lumbershed:'f6af832d',crane:'b47e8321',village:'46dce4e3',signpost:'bb654083',
-  cart:'02a8a11d',haystack:'d6ad6a2d',woodpile:'8d644868',fence:'f1fa5cce',crates:'e0270c2f',barrels:'7cd2b2cf',ruins:'7aa41f18',
-  shrine:'dd70f9ee',cave:'77e05999','cluster:row':'3ad20ea3','cluster:yard':'0bc376a9','cluster:farmstead':'49c166a9',
+  cart:'02a8a11d',haystack:'d6ad6a2d',woodpile:'8d644868',fence:'f1fa5cce',crates:'e0270c2f',barrels:'7cd2b2cf',ruins:'2af98552',
+  shrine:'f9be341e',cave:'c32218f9','cluster:row':'3ad20ea3','cluster:yard':'0bc376a9','cluster:farmstead':'49c166a9',
   'cluster:smithy':'8ca6f80b','cluster:inn':'93824fcb','cluster:chapel':'01def04d','cluster:market':'6262ab70',
   'cluster:mill':'ed145892','cluster:lumber':'de6ca775','cluster:mine':'921274d2','cluster:quarry':'debac413',
   'cluster:fishery':'b07859c9','cluster:pasture':'6d7f7148','cluster:brewery':'311638c0','cluster:granary':'67f18ee5',
@@ -80,7 +85,7 @@ const EXPECT_CULTURE={
   watermill:'cc5adab6',warehouse:'6ee98dc6',gatehouse:'51b87e4a',stonehall:'8ae54ac3',forge:'50df4155',keep:'b43f45e9',
   citadel:'6218d45a',well:'d10aabb7',tent:'01425a48',wagon:'955c0977',minehead:'97c2850d',lumbershed:'a0805f5d',crane:'84f8d652',
   village:'fa010d4c',signpost:'bb654083',cart:'02a8a11d',haystack:'d6ad6a2d',woodpile:'8d644868',fence:'f1fa5cce',crates:'e0270c2f',
-  barrels:'7cd2b2cf',ruins:'e883e3f3',shrine:'7ef8af13',cave:'77e05999','cluster:row':'8594fa3c','cluster:yard':'f8c5368f',
+  barrels:'7cd2b2cf',ruins:'ce5c6722',shrine:'53f50efa',cave:'c32218f9','cluster:row':'8594fa3c','cluster:yard':'f8c5368f',
   'cluster:farmstead':'d1addc78','cluster:smithy':'76371991','cluster:inn':'d7230935','cluster:chapel':'663f7d41',
   'cluster:market':'c8427706','cluster:mill':'adfd9477','cluster:lumber':'72443993','cluster:mine':'c2dba931',
   'cluster:quarry':'1d4dfe1f','cluster:fishery':'95fd3d32','cluster:pasture':'0d93e809','cluster:brewery':'9fa0d2d7',
@@ -92,8 +97,8 @@ const EXPECT_CULTURE={
   watermill:'dd619c94',warehouse:'4fb3a613',gatehouse:'747f2d50',hidehall:'acbaa49f',watchtower:'5ba4907d',keep:'acf3cb64',
   citadel:'4d22d0cc',well:'b386ccec',tent:'e3e282dc',wagon:'955c0977',minehead:'b2c949e1',lumbershed:'785fdc3e',crane:'f7dbc37b',
   village:'6bfd2676',signpost:'bb654083',cart:'02a8a11d',haystack:'d6ad6a2d',woodpile:'8d644868',fence:'f1fa5cce',crates:'e0270c2f',
-  barrels:'7cd2b2cf',chiefyurt:'193beb04',warcamp:'d178a4bb',horselines:'0fa59747',ruins:'7aa41f18',shrine:'dd70f9ee',
-  cave:'77e05999','cluster:row':'0e2bc016','cluster:yard':'a0c1091a','cluster:farmstead':'4127e94d','cluster:smithy':'44ef81e3',
+  barrels:'7cd2b2cf',chiefyurt:'193beb04',warcamp:'d178a4bb',horselines:'0fa59747',ruins:'2af98552',shrine:'f9be341e',
+  cave:'c32218f9','cluster:row':'0e2bc016','cluster:yard':'a0c1091a','cluster:farmstead':'4127e94d','cluster:smithy':'44ef81e3',
   'cluster:inn':'7c3a8002','cluster:chapel':'cfd25a41','cluster:market':'02a010ac','cluster:mill':'0b7a3c55',
   'cluster:lumber':'8c1b3835','cluster:mine':'76ed9350','cluster:quarry':'3f9bfd1c','cluster:fishery':'6baf3e44',
   'cluster:pasture':'3951378e','cluster:brewery':'e55a7195','cluster:granary':'34aeda38','cluster:workshop':'b0f62e44',
@@ -104,7 +109,7 @@ const EXPECT_CULTURE={
   watermill:'a30fbe21',warehouse:'241143f2',gatehouse:'053baf50',treehouse:'cf4443c5',elfhall:'3ae15712',spire:'06686f77',
   keep:'4f7d0ba0',citadel:'71d43df6',well:'b3189de2',tent:'4f98f036',wagon:'c2be6684',minehead:'55a141ec',lumbershed:'ae9b6908',
   crane:'4baf8d3b',village:'0eb62ceb',signpost:'5a026d03',cart:'2b3d8bdf',haystack:'d6ad6a2d',woodpile:'8d644868',fence:'f1fa5cce',
-  crates:'e0270c2f',barrels:'7cd2b2cf',ruins:'7aa41f18',shrine:'dd70f9ee',cave:'77e05999','cluster:row':'c8bb1ba4',
+  crates:'e0270c2f',barrels:'7cd2b2cf',ruins:'2af98552',shrine:'f9be341e',cave:'c32218f9','cluster:row':'c8bb1ba4',
   'cluster:yard':'177335fc','cluster:farmstead':'bb97494d','cluster:smithy':'286701d2','cluster:inn':'7d25663f',
   'cluster:chapel':'dcbca3de','cluster:market':'b46789da','cluster:mill':'eaad4ba0','cluster:lumber':'c6c626e8',
   'cluster:mine':'7dc5267c','cluster:quarry':'13d17af3','cluster:fishery':'171f1c15','cluster:pasture':'08627b41',

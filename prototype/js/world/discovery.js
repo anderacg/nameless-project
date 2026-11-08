@@ -2,7 +2,7 @@
 /* ---------- discovery (the owner, 2026-11-08: "make a discovery feel more rewarding like when you visit somewhere you may not know
    the name right the way but once you near it then you'll have a text animation like You discovered xxxxxx") ----------
    A holding or a named site (a cave, ruins, a shrine, a hideout, a goblin camp: not a bandit or travellers' camp) is known by its
-   kind only ("Village", "Cave") until your band comes within DISCOVER.r tiles of it (DISCOVER.site for a site): then you learn its
+   kind only ("Village", "Cave": in its tip, its lands, the full map; the map itself has no names) until your band comes within DISCOVER.r tiles of it (DISCOVER.site for a site): then you learn its
    name, its title rises over the map (DiscoveryTitle), a line in the log and Scouting practice (DISCOVER.scout). What a game
    begins near (within DISCOVER.start tiles) is known from the start, without a title. Read: Discovery.named(o), Discovery.nameOf(o)
    (its name, or its kind while you do not know it). Saved (the keys found: 'h:' a holding's name, 's:' a site's number). With

@@ -20,7 +20,9 @@ Kit.suite(({ok})=>{
    ok(before.a===after.a&&before.e===after.e&&before.f===after.f&&c.globalAlpha===.7,'a '+align+' label restores camera and opacity for later map drawing');c.restore();
   }
   for(const s of ['Ålderbrook','Briarhurst','Pilgrims','Smithy','???','18','Agility +2'])ok(!ink(t.mapTxtPic(s,'#e4e0cf','center',3,1)).edge,'no glyph or outline clipping: '+s);
-  calls.length=0;t.frame();const labels=calls.filter(p=>p.img.deviceText);
+  // (a label over your band: no place has words on the map now (the owner, 2026-11-08), and this world is cleared of bands)
+  const raid0=t.P.raid;t.P.raid={t:0};
+  calls.length=0;t.frame();t.P.raid=raid0;const labels=calls.filter(p=>p.img.deviceText);
   ok(labels.length>0&&labels.every(p=>p.m.a===1&&p.m.d===1&&p.a.length===2),'a real world frame uses native pictures for queued map labels');
   ok(!t.txtPic('Army 18',null,'left').deviceText,'legacy battle/street label pictures keep their existing rendering path');
   ok(!calls.some(p=>!p.img.deviceText&&p.img.ox!=null),'the world frame does not enlarge the legacy 8px label pictures');

@@ -162,6 +162,11 @@
     Q.cut('sl',u-L-.5,v,z-L,rows,{w:'timber',b:'plank',c:'canvas'},{dv:3,top:false})}
   // a crag: lumps of rough rock (rough cones, never a dome), their crowns grassed but in the desert; scree at their foot
   const crag=(Q,n,c,r,z,rise,rk,moss,rs)=>Q.round(n,c,r,[0,z],rk,{form:'cone',rise,mat:rk,o:0,lip:0,moss},{rough:.7,rs});
+  // (a stone column (the owner, 2026-11-08: "stone pillars look not like stone pillar"): a square plinth, a round shaft, a square
+  // capital; broken, its shaft snapped short and mossed, no capital. r: the shaft's radius)
+  const column=(Q,n,c,h,st,broken,r=1.4)=>{const [x,y]=c,p=r+.9;Q.box(n+'b',[x-p,x+p],[y-p,y+p],[0,1.5],st,{top:true});
+    if(broken){Q.round(n+'s',c,r,[1.5,h],st,{form:'lid',mat:'moss'});return}
+    Q.round(n+'s',c,r,[1.5,h-1.5],st,{form:'lid',mat:st});Q.box(n+'c',[x-p,x+p],[y-p,y+p],[h-1.5,h],st,{top:true,topMat:'moss'})};
   // castle walls round the plan u0..u1, v0..v1 at fort 1 (a palisade of stakes, log towers at the corners), 2 (stone walls, round
   // towers) or 3 (taller, a tower halfway along each side); the gate on the middle of the front, its gatehouse; towers' roofs cones of
   // the culture's roof or flat; k the scale (2 a capital's)
@@ -194,10 +199,16 @@
       Q.box('wr',[-5.5,5.5],[-1.5,3.5],[7,8],'timber',{thin:true});Q.roof('wr','gable','u',2,o.roofMat,{o:0,ov:0});Q.box('wx',[-3.5,3.5],[.5,1.5],[5,6],'log',{top:true});Q.box('bk',[2,4],[3.5,5.5],[3,5],'iron',{top:true,topMat:'water'})},
     // a signpost: its post, two boards pointing ways, stones at its foot
     signpost(Q,o){Q.box('p',[-1,1],[-1,1],[0,11],'timber',{top:true});Q.cut('a',-5.5,1,5,['.bbbbbb....','bbbbbbb....','...........','....bbbbbb.','....bbbbbbb'],{b:'plank'},{dv:2});Q.prop('boulder',[2,2],0,1)},
-    // a shrine (a site's marker): standing stones round a glowing altar, or an obelisk
-    shrine(Q,o){const d=o.d,st=o.look.fieldstone;Q.role='shrine';
-      if(d.chance(.5)){for(const [a,b,h] of [[-5,-2,8],[5,-2,7],[-3,-5,9],[3,-5,8],[-5,3,6],[5,3,7]])Q.box('s'+a+b,[a-1,a+1],[b-1,b+1],[0,h],st,{top:true,topMat:'moss'});Q.box('al',[-2,2],[-1,2],[0,3],st,{top:true,topMat:o.glow})}
-      else{Q.square('ob',[0,0],4,[0,9],st,{form:'pyramid',rise:2,mat:o.glow,o:0});Q.box('al',[-4,4],[-4,4],[0,1],st,{top:true,topMat:'moss'})}},
+    // a shrine (a site's marker), one of four by its seed: a ring of rough standing stones round a glowing altar; an obelisk on a stepped plinth; a gate
+    // of two stone columns under a lintel, a stele glowing between them; a cairn of boulders round a glowing stone
+    shrine(Q,o){const d=o.d,st=o.look.fieldstone,rk={desert:'sandrock',swamp:'darkrock'}[o.env]||'rock',v=d.int(0,3);Q.role='shrine';
+      if(v===0){for(const [a,b,h] of [[-5.5,-1,8],[0,-5,11],[5.5,-1,9],[-3.5,4,5],[3.5,4.5,4]])Q.round('s'+a+b,[a,b],1.4,[0,h-1.5],rk,{form:'cone',rise:2,mat:o.env==='desert'?rk:'moss',o:0,lip:0},{rough:.6,rs:o.seed+Math.round(a*7+b)});
+        Q.box('al',[-2,2],[-1,2],[0,3],st,{top:true,topMat:o.glow})}
+      else if(v===1){Q.box('al',[-6.5,6.5],[-5.5,5.5],[0,1],st,{top:true,topMat:'moss'});Q.box('a2',[-4.5,4.5],[-3.5,3.5],[1,2],st,{top:true});Q.square('ob',[0,0],4,[2,11],st,{form:'pyramid',rise:2,mat:o.glow,o:0})}
+      else if(v===2){column(Q,'l',[-5,-1],11,st,false,.8);column(Q,'r',[5,-1],11,st,d.chance(.3),.8);Q.box('ln',[-6.5,6.5],[-2,0],[11,12],st,{top:true,topMat:'moss'});
+        Q.box('al',[-1.5,1.5],[-2,0],[0,6],st,{top:true,topMat:o.glow})}
+      else{for(const [a,b,k] of [[-4,-2,1.6],[4,-2,1.5],[-3,3,1.3],[3,3,1.4],[0,-4,1.7],[-5,1,1.1],[5,1,1.2]])Q.prop('boulder',[a,b],0,k);
+        Q.round('al',[0,0],2,[0,4],st,{form:'cone',rise:2,mat:o.glow,o:0,lip:0},{rough:.5,rs:o.seed})}},
     // a tent: a ridge tent of cloth (plain, red or blue), its gable and flap to the front, its poles' heads
     tent(Q,o){const d=o.d,c=d.pick(['canvas','canvas','canvasR','canvasB']),dw=Q.home('tent','home');
       Q.box('t',[-5.5,5.5],[-4.5,4.5],[0,2],c,{dw,keep:1});Q.roof('t','gable','v',7,c,{o:0,ov:0,lip:1,finial:1});Q.dec('t.S','Flap',.5,2,true);Q.prop('crate',[5.5,4.5],0,1)},
@@ -364,15 +375,39 @@
       Q.prop('block',[0,7],1,2);Q.prop('block',[-3.5,9.5],0,1.5);if(d.chance(.5))Q.prop('block',[4,11.5],0,1.2);Q.box('wn',[-1,3],[3,5],[0,3],'plank',{top:true});Q.box('wh',[0,2],[5,6],[1,4],'iron',{top:true})},
 
     // --- sites ---
-    // ruins: broken walls of stone round an old room, an arch standing in the tallest, their tops broken in steps, ivy, moss, blocks
-    ruins(Q,o){const d=o.d,st=o.look.fieldstone;Q.role='ruins';
+    /* ruins, one of four by its seed: broken walls of stone round an old room, an arch standing in the tallest, their tops broken in
+       steps; a colonnade, its columns standing under a lintel or snapped short, their fallen drums by them; a round tower's stump,
+       its door an arch, a broken ring of wall round it; an old temple's stepped platform, a gate of columns on it. Ivy, moss, blocks */
+    ruins(Q,o){const d=o.d,st=o.look.fieldstone,rk={desert:'sandrock',swamp:'darkrock'}[o.env]||'rock',v=d.int(0,3);Q.role='ruins';
+      if(v===1){Q.box('pf',[-12,12],[-9,7],[0,1.5],rk,{top:true});const full=[];
+        for(const [i,x] of [-8,0,8].entries())for(const [j,y] of [-5,3].entries()){const br=!(j===0&&i<2)&&d.chance(.6),h=br?d.int(4,9):14;if(!br&&j===0)full.push(x);column(Q,'c'+i+j,[x,y],h,st,br)}
+        if(full.length>1)Q.box('ln',[full[0]-2.5,full[full.length-1]+2.5],[-7,-3],[14,15.5],st,{top:true,topMat:'moss'});
+        Q.prop('block',[d.int(-9,9),9],1,1.5);Q.prop('block',[d.int(-9,9),10],0,1.2);Q.prop('boulder',[11,9],0,1.2);if(d.chance(.6))Q.dec('pf.S','Ivy',.2,0);return}
+      if(v===2){const h=d.int(13,17);Q.round('tw',[-2,-3],6.5,[0,h],st,{form:'lid',mat:'moss'});Q.dec('tw.S','Arch',.5,0);if(d.chance(.7))Q.dec('tw.S','Ivy',.8,4);
+        Q.box('w0',[5,11],[-6,-4],[0,d.int(4,7)],rk,{top:true,topMat:'moss'});Q.box('w1',[-11,-8],[2,8],[0,d.int(3,5)],rk,{top:true,topMat:'moss'});Q.box('w2',[6,9],[2,6],[0,2],rk,{top:true,topMat:'moss'});
+        Q.prop('block',[3,6],1,1.5);Q.prop('block',[-6,10],0,1.3);Q.prop('boulder',[10,9],0,1.4);return}
+      if(v===3){Q.box('s0',[-12,12],[-9,8],[0,2],rk,{top:true});Q.box('s1',[-9,9],[-8,4],[2,4],rk,{top:true});Q.box('s2',[-6,6],[-7,0],[4,6],rk,{top:true});
+        Q.lift=6;column(Q,'l',[-4,-4],10,st,false,1.2);column(Q,'r',[4,-4],10,st,d.chance(.4),1.2);Q.box('ln',[-6.5,6.5],[-5.5,-2.5],[10,11.5],st,{top:true,topMat:'moss'});Q.lift=0;
+        Q.prop('block',[-10,10],1,1.4);Q.prop('block',[8,10],0,1.2);Q.prop('boulder',[11,6],0,1.2);if(d.chance(.5))Q.dec('s0.S','Ivy',.8,0);return}
       const wall=(n,u,v,hs)=>{const L=u[1]-u[0]>v[1]-v[0],a0=L?u[0]:v[0],a1=L?u[1]:v[1],k=hs.length;hs.forEach((h,i)=>{const s=[a0+(a1-a0)*i/k,a0+(a1-a0)*(i+1)/k];Q.box(n+i,L?s:u,L?v:s,[0,h],st,{top:true,topMat:i%2?'moss':st})})};
       Q.box('a',[-10,2],[-8,-6],[0,d.int(14,16)],st,{top:true,topMat:'moss'});Q.dec('a.S','Arch',.45,0);Q.dec('a.N','Arch',.55,0);if(d.chance(.6))Q.dec('a.S','Ivy',.9,3);
       wall('b',[2,10],[-8,-6],[d.int(8,10),d.int(5,7),4]);wall('c',[-10,-8],[-6,8],[d.int(8,10),d.int(5,7),d.int(3,4)]);wall('e',[8,10],[-6,6],[d.int(5,7),3]);Q.box('f',[-8,-1],[6,8],[0,3],st,{top:true,topMat:'moss'});
       Q.prop('block',[3,4]);Q.prop('block',[-3,10],1,1.5);Q.prop('boulder',[10,9],0,1.5)},
     // a cave: a natural outcrop, rough lumps of rock (never a dome, an arch or symmetry), its uneven dark mouth in a jagged face, grass
     // and moss on its crown, scree at its foot; sandstone in the desert, dark rock in the swamp, grey granite (the frost's snow on it)
-    cave(Q,o){const d=o.d,rk={desert:'sandrock',swamp:'darkrock'}[o.env]||'rock',moss=o.env==='desert'?0:o.env==='swamp'?.5:.35,s=o.seed,L=d.chance(.5)?-1:1;Q.role='cave';
+    // (one of four by its seed: an outcrop; a tall cliff face hung with ivy, a crag jutting over its mouth; a low wide mound, its mouth
+    // a long dark slot; a mouth between twin crags, bones before it)
+    cave(Q,o){const d=o.d,rk={desert:'sandrock',swamp:'darkrock'}[o.env]||'rock',moss=o.env==='desert'?0:o.env==='swamp'?.5:.35,s=o.seed,L=d.chance(.5)?-1:1,v=d.int(0,3);Q.role='cave';
+      const scree=pts=>{for(const [a,b,k] of pts)Q.prop('boulder',[a*L,b],0,k);if(o.env==='swamp')Q.bed([-6,6],[10,14],'water')};
+      if(v===1){crag(Q,'m',[0,-8],13,12,6,rk,moss,s);crag(Q,'m2',[L*10,-5],6,7,5,rk,moss,s+1);Q.box('f0',[-9,9],[1,5],[0,11],rk,{top:true,topMat:moss?'moss':rk});
+        crag(Q,'ov',[L*-3,3],5,10,3,rk,moss,s+3);Q.dec('f0.S','Cave2',.6,0);if(moss)Q.dec('f0.S','Ivy',.85,5);if(moss)Q.dec('f0.S','Ivy',.15,6);
+        scree([[-10,7,1.3],[9,8,1.2],[-5,9,.8],[4,10,.7]]);return}
+      if(v===2){crag(Q,'m',[L*-2,-4],12,4,5,rk,moss,s);crag(Q,'m2',[L*8,-2],7,3,4,rk,moss,s+1);crag(Q,'m3',[-L*10,0],5,2,3,rk,moss,s+2);
+        Q.box('f0',[-7,7],[3,6],[0,5],rk,{top:true,topMat:moss?'moss':rk});Q.dec('f0.S','Cave2',.5,0);if(o.env!=='desert')Q.prop('stump',[L*9,6],0,1.2);
+        scree([[-9,8,1],[6,9,1.2],[0,10,.7],[11,5,.9]]);return}
+      if(v===3){crag(Q,'l',[-8,-4],7,9,8,rk,moss,s);crag(Q,'r',[8,-5],7.5,10,9,rk,moss,s+1);crag(Q,'b',[0,-9],7,8,6,rk,moss,s+2);
+        Q.box('f0',[-4,4],[1,5],[0,9],rk,{top:true,topMat:moss?'moss':rk});Q.dec('f0.S','Cave',.5,0);
+        for(const [a,b] of [[-3,8],[2,9],[4,7]])Q.prop('tusk',[a*L,b],a<0?1:0,1);scree([[-11,7,1.3],[11,8,1.2],[-6,10,.7]]);return}
       crag(Q,'m',[L*2,-6],10,7,10,rk,moss,s);crag(Q,'m2',[-L*8,-7],6,5,6,rk,moss,s+1);crag(Q,'m3',[L*9,-2],5.5,3,5,rk,moss,s+2);
       Q.box('f0',[-6,6],[3,7],[0,9],rk,{top:true});Q.box('c0',[-6,-2.5],[3,6.5],[9,11],rk,{top:true,topMat:moss?'moss':rk});Q.box('c1',[-1,4],[2.5,6],[9,12],rk,{top:true});Q.box('f1',[6,8],[2,6],[0,8],rk,{top:true});Q.box('f2',[-8,-6],[2,6],[0,6],rk,{top:true});
       Q.dec('f0.S',d.pick(['Cave','Cave2']),.5,0);Q.dec('f0.N','Cave2',.5,0);

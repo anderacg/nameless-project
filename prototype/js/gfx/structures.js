@@ -113,16 +113,15 @@ function drawPlace(cam){
   ctx.strokeStyle=ok?'#78dc6e':'#e65a50';ctx.lineWidth=1;ctx.strokeRect(X+.5,Y+.5,N-1,N-1);
   txt('Place the '+(pl.k==='house'?'house':ESTATES[pl.k].n.toLowerCase())+' of '+t.name+' · click to build · Esc to stop',VW/2,VH-8,'#e8b94a','center');
 }
-// over a holding's centre: its name, a warning while besieged, and the lords inside: a pip of each one's colours under the name
-// (their names when you are near). The holding flies one flag, its owner's, from its centre.
+// over a holding's centre, no words (the owner, 2026-11-08: "remove text on holding or places in the world map"; its name in its
+// tip): a warning while besieged, a padlock on a gate that will not have you, and the lords inside, a pip of each one's colours.
+// The holding flies one flag, its owner's, from its centre.
 function holdingLabel(t,cam,X,Y,N){
-  txt(Discovery.nameOf(t),Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),!Discovery.named(t)?'#9a958a':hostileTo(t.owner)?'#ff9a90':'#e4e0cf','center');// (a place you have not come near: its kind, grey: world/discovery.js)
-  // (a gate that will not have you yet: a small padlock under its name, world/gates.js)
-  if(GATES.on&&!Gates.admits(t).ok){const lx=Math.round(t.x-cam.x)-3,ly=Math.round(t.y+21-cam.y);ctx.save();ctx.fillStyle='#e8b94a';ctx.fillRect(lx,ly+3,7,5);ctx.fillRect(lx+1,ly,1,3);ctx.fillRect(lx+5,ly,1,3);ctx.fillRect(lx+1,ly,5,1);ctx.fillStyle='#2a2418';ctx.fillRect(lx+3,ly+5,1,2);ctx.restore()}
+  // (a gate that will not have you yet: a small padlock below its centre, world/gates.js)
+  if(GATES.on&&!Gates.admits(t).ok){const lx=Math.round(t.x-cam.x)-3,ly=Math.round(t.y+12-cam.y);ctx.save();ctx.fillStyle='#e8b94a';ctx.fillRect(lx,ly+3,7,5);ctx.fillRect(lx+1,ly,1,3);ctx.fillRect(lx+5,ly,1,3);ctx.fillRect(lx+1,ly,5,1);ctx.fillStyle='#2a2418';ctx.fillRect(lx+3,ly+5,1,2);ctx.restore()}
   if(besieged(t)&&Math.floor(performance.now()/400)%2)txt('!',X+(N>>1),Y-N-2,'#ff6a60','center');
-  const li=lordsInside(t),near=Math.hypot(t.x-P.x,t.y-P.y)<140;
-  if(!near)li.slice(0,4).forEach((l,i,a)=>{const px=Math.round(t.x-cam.x)-a.length*3+i*6+1,py=Math.round(t.y+19-cam.y);rect(ctx,'#1a1512',px-1,py-1,5,5);rect(ctx,FACS[l.fac].col,px,py,3,3)});
-  if(li.length&&near)txt(li.map(l=>lordName(l)+' '+l.troops.length).join(' · '),Math.round(t.x-cam.x),Math.round(t.y+25-cam.y),FACS[li[0].fac].col,'center');
+  const li=lordsInside(t),dy=GATES.on&&!Gates.admits(t).ok?22:14;
+  li.slice(0,4).forEach((l,i,a)=>{const px=Math.round(t.x-cam.x)-a.length*3+i*6+1,py=Math.round(t.y+dy-cam.y);rect(ctx,'#1a1512',px-1,py-1,5,5);rect(ctx,FACS[l.fac].col,px,py,3,3)});
 }
 
 /* estates: fields, pastures, pits and piers lie flat on the tiles they keep; their buildings are lots like any other */
