@@ -595,7 +595,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-08, on purpose: the owner, "the moving icon seems to not smooth attach to the army": your travel badges (cover,
 //  pace) and a band's marker put to the screen's own pixel as the figures under them, not whole game px (render.js). Proof:
 //  44bccf0 gives 397e9353 again. Was W6 397e9353)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'3ab96f78',W7:'30a2328c',W8:'51660bc5',B2:'3b944b30'};
+// (W6 again 2026-11-08, on purpose: the owner, "recheck whether all sprites is in the center": an army's label and banner over its
+//  men themselves, a middle man's place across and over the topmost near him, not its point at the front of its column (render.js
+//  armyHome, ARMY_TAG). Proof: d5c92c1 gives 3ab96f78 again. Was W6 3ab96f78)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'98a966f4',W7:'30a2328c',W8:'51660bc5',B2:'3b944b30'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

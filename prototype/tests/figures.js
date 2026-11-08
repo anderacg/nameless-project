@@ -56,7 +56,8 @@ Kit.suite(({ok})=>{
   B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);t.B=null;G.mode='world'}
  // ---- the army's tag (its label, the eye, your badges: the banner over it is gone, 2026-11-01) on its army's ring
  {const wb=t.WORLD_BATTLE.on;t.WORLD_BATTLE.on=true;try{Kit.world();t.frame();const a=t.MarchArmy.of(P),r=t.marchOuter(P);a.mid={x:P.x+r*.5,y:P.y+3};
-   const b=t.armyTagAt(P,null,{x:0,y:0}),c=t.MARCH_MOVE.menCentre&&a.units.some(u=>!u.dead)?(P.x===a.wx&&P.y===a.wy?P:a.centre()):a.mid;// (the army where its men are (march.js menCentre): its tag at its men's middle, where its outline is drawn round)
+   // (2026-11-08, the owner: "recheck whether all sprites is in the center": its tag over its men themselves, the middle of their spread, over the topmost)
+   const live=a.units.filter(u=>!u.dead),b=t.armyTagAt(P,null,{x:0,y:0}),c=(L=>{const X=L.map(u=>u.x).sort((p,q)=>p-q),n=X.length,x=X[(n-1)>>1],N=L.filter(u=>Math.abs(u.x-x)<=t.ARMY_TAG.near);return{x,y:Math.min(...(N.length?N:L).map(u=>u.y))}})(live);
    ok(Math.abs(b.c.x-c.x)<1e-6&&Math.abs(b.c.y-c.y)<1e-6&&b.x===t.snapV(c.x),'your army\'s tag stands over the middle your rings are drawn on');
-   a.mid={x:P.x+r*2,y:P.y};const f=t.armyTagAt(P,null,{x:0,y:0});ok(f.c===P&&f.x===t.snapV(P.x),'that middle out past the ring: over you, as the rings are')}finally{t.WORLD_BATTLE.on=wb}}
+   {const x0=P.x;P.x+=t.MARCH_MOVE.teleport+20;const f=t.armyTagAt(P,null,{x:0,y:0});P.x=x0;ok(f.x===t.snapV(x0+t.MARCH_MOVE.teleport+20),'its men left far behind (a jump across the map): over you')}}finally{t.WORLD_BATTLE.on=wb}}
 });

@@ -53,7 +53,15 @@ function bandMarkerAt(o,m,cam){
 const ARMY_HOME=new WeakMap();
 // (menCentre: the army is where its men are, its point written by its last step; put elsewhere since (a battle's end, the game
 // paused) its men's middle as they stand: march.js MarchArmy#centre)
-function armyHome(o){const a=WORLD_BATTLE.on&&MARCH_ARMIES.get(o);if(a&&MARCH_MOVE.menCentre&&a.units.some(u=>!u.dead)&&Math.hypot(o.x-a.x,o.y-a.y)<=MARCH_MOVE.teleport)return o.x===a.wx&&o.y===a.wy?o:a.centre();
+// (an army's label and banner over its men themselves (the owner, 2026-11-08: "recheck whether all sprites is in the center"): the
+// middle of them across (a middle man: a column's middle, one part of a split army, never the empty ground between), over the
+// topmost of those within near px of it (his feet: the label stands a head over them, armyTagAt); as smooth as they walk, no
+// easing; its point otherwise (marching, the front of its column: the label stood over its first man)
+const ARMY_TAG={on:true,near:40};
+function armyMen(o,a){const L=a.units.filter(u=>!u.dead),X=L.map(u=>u.x).sort((p,q)=>p-q),n=X.length,x=X[(n-1)>>1];let y=Infinity;
+  for(const u of L)if(Math.abs(u.x-x)<=ARMY_TAG.near&&u.y<y)y=u.y;if(y===Infinity)for(const u of L)if(u.y<y)y=u.y;return{x,y}}
+function armyHome(o){const a=WORLD_BATTLE.on&&MARCH_ARMIES.get(o);if(ARMY_TAG.on&&a&&a.units.some(u=>!u.dead)&&Math.hypot(o.x-a.x,o.y-a.y)<=MARCH_MOVE.teleport)return armyMen(o,a);
+  if(a&&MARCH_MOVE.menCentre&&a.units.some(u=>!u.dead)&&Math.hypot(o.x-a.x,o.y-a.y)<=MARCH_MOVE.teleport)return o.x===a.wx&&o.y===a.wy?o:a.centre();
   const m=a&&a.mid;if(!m)return o;let h=ARMY_HOME.get(a);if(!h||h.m!==m)ARMY_HOME.set(a,h={m,r:marchOuter(o)});return Math.hypot(m.x-o.x,m.y-o.y)<h.r?m:o}
 // (a party's tag on the screen (cam): x, y its label's middle and foot, top and right its label's, where the eye watching you
 // stands; label: [text, colour] or none)

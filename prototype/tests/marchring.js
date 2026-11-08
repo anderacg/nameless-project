@@ -73,10 +73,11 @@ Kit.suite(({ok,info})=>{
   // (a man a frame or two past its outline as he squeezes by a house of Ashford's: its houses where the hamlets' tracks left them)
   ok(!shut&&outl<=2&&!late&&far<lim+12,'Ashford: in by its north side, a stay, out at its gate: every man re-placed with his army, inside its outline ('+outl+' a frame past it), none on a building\'s feet ('+shut+'), the hero at most '+far.toFixed(1)+' px off its middle')}
  // ---- Ashford's market (the owner's: a lord's men blocked by its stalls, the ring round a centre they had left): marching through
+ const spreadTop=L=>{L=L.filter(u=>!u.dead);const X=L.map(u=>u.x).sort((p,q)=>p-q),n=X.length,x=X[(n-1)>>1],near=L.filter(u=>Math.abs(u.x-x)<=t.ARMY_TAG.near);return{x,y:Math.min(...(near.length?near:L).map(u=>u.y))}};// (the owner, 2026-11-08: "recheck whether all sprites is in the center": an army's label over its men, the middle of them across (median), over the topmost near it)
  {const h=t.townBy('Ashford'),lord=W.lords[0];lord.troops=Array(12).fill('hum_foot');lord.inside=null;lord.x=h.x-120;lord.y=h.y+30;t.MARCH_ARMIES.delete(lord);Kit.goTo(h.x-40,h.y+120);
   const B=t.MarchArmy.of(lord);let gl=0,shut=0,outl=0,banner=0;for(let i=0;i<360;i++){lord.x+=.35;B.step(1/30);const L=ring(B);L.update(B);gl=Math.max(gl,Math.hypot(B.gx-lord.x,B.gy-lord.y));
-   for(const u of B.units){if(!B.ground.open(u))shut++;if(!L.inside(u.x-lord.x,u.y-lord.y))outl++}const b=t.armyHome(lord);banner=Math.max(banner,Math.hypot(b.x-lord.x,b.y-lord.y))}
-  ok(gl<=lead(lord)+1e-6&&!shut&&!outl&&banner<1e-6,'a lord\'s army through Ashford\'s market: his guide at most '+gl.toFixed(1)+' px ahead of his men, every man inside his outline, none on the stalls, his banner at his men\'s middle')}
+   for(const u of B.units){if(!B.ground.open(u))shut++;if(!L.inside(u.x-lord.x,u.y-lord.y))outl++}const b=t.armyHome(lord),m=spreadTop(B.units);banner=Math.max(banner,Math.hypot(b.x-m.x,b.y-m.y))}
+  ok(gl<=lead(lord)+1e-6&&!shut&&!outl&&banner<1e-6,'a lord\'s army through Ashford\'s market: his guide at most '+gl.toFixed(1)+' px ahead of his men, every man inside his outline, none on the stalls, his banner over his men\'s middle')}
  // ---- a mid tier's steps: its whole step every few frames, the march every frame: its guide held to its men (in a column, its
  // guide its head, its point its middle, marchstyles.js MarchColumn: its men trailing their places at most its lag)
  {const lord=W.lords[1]||W.lords[0];lord.troops=Array(12).fill('hum_foot');lord.x=x0;lord.y=y0+20;lord.inside=null;t.MARCH_ARMIES.delete(lord);const B=t.MarchArmy.of(lord);for(let i=0;i<200;i++)B.step(1/30);
@@ -89,10 +90,10 @@ Kit.suite(({ok,info})=>{
  {const river=tx+4,ford=ty+8;for(let y=ty-14;y<=ty+14;y++)if(y!==ford)t.WM.kind[y*t.MW+river]=t.T_WATER;Kit.world({encCool:1e9});P.troops={hum_foot:12,hum_bow:6};A=fresh();for(let i=0;i<300;i++)A.step(1/30);const L=ring(A);L.update(A);
   const far=A.units.filter(u=>u.row!=='hero').slice(0,8);far.forEach((u,i)=>{u.x=(river+3)*TILE+(i%3)*6;u.y=y0+40+Math.floor(i/3)*6});const hero=A.units.find(u=>u.row==='hero');hero.x=(river-6)*TILE;hero.y=y0-30;
   A.units.filter(u=>!far.includes(u)&&u!==hero).slice(0,3).forEach(u=>u.dead=true);A.settle();const p=A.middleOf('hero',hero);P.x=p.x;P.y=p.y;A.x=P.x;A.y=P.y;L.update(A);
-  const live=A.units.filter(u=>!u.dead),smax=Math.max(...live.map(t.marchDisc))+K.merge+I+K.cell,c=A.centre(),b=t.armyHome(P);let inside=0,empty=0;
+  const live=A.units.filter(u=>!u.dead),smax=Math.max(...live.map(t.marchDisc))+K.merge+I+K.cell,c=spreadTop(live),b=t.armyHome(P);let inside=0,empty=0;
   for(let y=-150;y<=150;y+=3)for(let x=-150;x<=150;x+=3)if(L.inside(x,y)){inside++;if(!live.some(u=>Math.hypot(u.x-P.x-x,u.y-P.y-y)<smax))empty++}
   ok(live.every(u=>L.inside(u.x-P.x,u.y-P.y))&&inside>0&&!empty,'a battle\'s end by a river: every survivor inside an outline at once, both banks ('+L.out[0].n+' outlines), none of it round empty ground or the fallen ('+empty+' of '+inside+' points)');
-  ok(Math.hypot(b.x-c.x,b.y-c.y)<1e-6&&live.some(u=>Math.hypot(u.x-c.x,u.y-c.y)<40),'its tag (its label) at its men\'s middle, among them ('+c.x.toFixed(0)+','+c.y.toFixed(0)+')');
+  ok(Math.hypot(b.x-c.x,b.y-c.y)<1e-6&&live.some(u=>Math.hypot(u.x-c.x,u.y-c.y)<40),'its tag (its label) over its men\'s middle, among them ('+c.x.toFixed(0)+','+c.y.toFixed(0)+')');
   let one=-1,n0=0,last='';for(let i=0;i<1500&&one<0;i++){t.updateWorld(.05);const a=t.MARCH_ARMIES.get(P),R=ring(a);R.update(a);if(!i)n0=R.out[0].n;const off=Math.max(...a.units.map(u=>u.goal?Math.hypot(u.goal.x-u.x,u.goal.y-u.y):99));last=R.out[0].n+' outlines, a man '+off.toFixed(0)+' px off his place';
    if(R.out[0].n===1&&a.units.every(u=>R.inside(u.x-P.x,u.y-P.y))&&off<6)one=i*.05*t.WORLD_PACE}
   ok(n0>1&&one>=0&&one<30,'they gather through the ford, the outline following them, into one round their formation ('+n0+' outlines, then one after '+one.toFixed(1)+' s of the map\'s time; '+last+')');
@@ -108,10 +109,10 @@ Kit.suite(({ok,info})=>{
    for(const o of [P,...W.parties,...W.caravans,...W.monsters]){const a=t.MARCH_ARMIES.get(o);if(!a||!a.units.length||o!==P&&(o.dead||o.gone||o.inside||o.fight)||a.idle||o.x!==a.x||o.y!==a.y)continue;
     const L=ring(a),first=seen.get(a)!==L;seen.set(a,L);L.update(a);if(first)continue;const s=stats.get(key(o))||{n:0,out:0,worst:1e9,banner:0};s.n++;
     for(const u of a.units){const f=L.field(u.x-o.x,u.y-o.y);if(f<K.threshold)s.out++;s.worst=Math.min(s.worst,f)}
-    const b=t.armyHome(o);s.banner=Math.max(s.banner,Math.hypot(b.x-o.x,b.y-o.y));stats.set(key(o),s)}}}
+    const b=t.armyHome(o),m=spreadTop(a.units);s.banner=Math.max(s.banner,Math.hypot(b.x-m.x,b.y-m.y));stats.set(key(o),s)}}}
  G.speed=1;const all=[...stats.values()],men=all.reduce((n,s)=>n+s.n,0);info([...stats].map(([k,s])=>k+' '+s.n+(s.out?' ('+s.out+' out, field '+s.worst.toFixed(2)+')':'')).join('; '));
  ok(stats.size>=4&&men>2000&&all.every(s=>s.worst>=K.threshold*.5)&&all.reduce((n,s)=>n+s.out,0)<=men*.002,'every army of a natural world at 1, 2, 4 and 8x ('+stats.size+' kinds, '+men+' army moments): its men inside its outline (a man\'s own field at worst '+Math.min(...all.map(s=>s.worst)).toFixed(2)+' of '+K.threshold+')');
- ok(all.every(s=>s.banner<1e-6),'its label over its men\'s middle, where it is');
+ ok(all.every(s=>s.banner<1e-6),'its label over its men\'s middle, wherever they are');
  // (the owner, 2026-11-01: the caravan redrawn at the guards' scale, its guards stood on its ox and drover) a caravan's wagon, ox and
  // drover keep their room in its middle (march.js MARCH_CART): marching, no guard on any of them, its outline round them all
  {Kit.clear();const h=t.TOWNS[0];Kit.goTo(h.x+300,h.y+260);const c=t.asParty({x:P.x+60,y:P.y,cv:true,fac:'vale',troops:Array(8).fill('militia'),guards:8,from:h.name,to:h.name,goods:{},dir:1});t.W.caravans.push(c);
