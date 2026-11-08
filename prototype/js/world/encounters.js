@@ -7,16 +7,16 @@
 const diceLeft=e=>ENC_GAMBLE.hands-(e.hands||0);
 /* ---------- your stats on the road (their numbers: data/encounters.js ENC_STAT) (owner, 2026-10-19: stats only add to what anyone gets, up to a cap; a stat of 0 is today's
    odds or outcome, never worse). ENC_STAT, each check: {base (what anyone gets), parts: [[stat, per]…] (a stat: a discipline,
-   P.sk, or an attribute, str, agi, int, cha; a list of them: the highest counts), cap}. statOdds(k): base + Σ stat × per, at
+   P.sk, or what was an attribute, str, agi, int, cha: the best of its proficiencies, attrCheck; a list of them: the highest counts), cap}. statOdds(k): base + Σ stat × per, at
    most cap. A chance (horse: Catch it; dice: a hand won; mine: the tunnels hold, mineGear: gear deep inside; wisps: the
    treasure) or a share added on top (care: how well you tend the wounded traveller, 0–1, kept on him as e.care; push: of the
    stamina and time a cart takes, taken off; hunt, respect: × (1 + it) the haul, or the honour, reputation and morale given).
    statRead: a chance's Insight read (vague, rough or exact by Scouting); statHelps: the stats that help, by name; statParts:
    each stat's worth, for the wiki ---------- */
-const statOf=s=>Array.isArray(s)?Math.max(...s.map(statOf)):Math.max(0,s in P.attr?P.attr[s]:skill(s));
+const statOf=s=>Array.isArray(s)?Math.max(...s.map(statOf)):Math.max(0,ATTRS[s]?attrCheck(s):skill(s));
 const statOdds=k=>{const S=ENC_STAT[k];return Math.min(S.cap,S.parts.reduce((a,[s,p])=>a+p*statOf(s),S.base))};
 const statMore=(k,v)=>Math.round(v*(1+statOdds(k)));// (a share's worth on top of v)
-const statName=s=>Array.isArray(s)?s.map(statName).join(' or '):ATTRS[s]?ATTRS[s][0]:SKILLS[s].n;
+const statName=s=>Array.isArray(s)?s.map(statName).join(' or '):ATTRS[s]?ATTRS[s].profs.map(k=>SKILLS[k].n).join(' or '):SKILLS[s].n;
 function statHelps(k){const n=ENC_STAT[k].parts.map(([s])=>statName(s));return(n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]+' help':n[0]+(Array.isArray(ENC_STAT[k].parts[0][0])?' (the higher) helps':' helps'))}
 const statParts=k=>ENC_STAT[k].parts.map(([s,p])=>'+'+Math.round(p*1000)/10+'% '+(Array.isArray(s)||ATTRS[s]?'a point of ':'a level of ')+statName(s)).join(', ');
 // (o: vague, what (the words after a rough or exact chance), rough(p) and exact(p) (words of their own), more (its tooltip))
@@ -502,7 +502,7 @@ function roadLureW(){const x=ENC_TUNE.lure,nr=o=>Math.hypot(o.x-P.x,o.y-P.y)<x.n
   return Math.min(x.cap,x.w*(darkness()>0?x.night:1)*(landHold(P.x,P.y)?1:x.wild)*(1+x.bandit*Math.min(x.bands,n)))}
 const roadWarned=()=>skill('scout')>=ENC_TUNE.lure.warn;
 const roadLureOdds=e=>{const [w,c]=odds(rating(e.foes));return '<span class="'+c+'">'+w+'</span> odds'};
-const roadScare=()=>{const s=ENC_TUNE.lure.scare;return clamp(s.base+s.lead*skill('lead')+s.cha*P.attr.cha,s.lo,s.hi)};
+const roadScare=()=>{const s=ENC_TUNE.lure.scare;return clamp(s.base+s.lead*skill('lead')+s.cha*skill('pers'),s.lo,s.hi)};// (cha: Persuasion's, was Charisma's)
 function roadSpring(e){const w=Wounded.prOf(e),m='You kneel beside '+w.him+', and '+w.he+' grins. Bandits burst from the brush: an ambush!';return{log:[m,'bad'],fight:{amb:true},say:m}}
 // where an ambush's band stands as its fight begins: called out, at the tree line (edge); else where it lies hidden (lie); none
 // (one from before, the caravan's raiders): null
@@ -523,8 +523,8 @@ function roadNews(){const out=[],s=W.sites.filter(x=>!x.seen&&x.scoutable).sort(
    you would take to close on one dist px away at your normal pace (Infinity: never); the odds of a catch by hand (Riding, Agility);
    roadSprint: compatibility name; chasing grants no automatic speed bonus */
 const roadSprint=()=>1;
-const catchSpd=()=>ENC_SPD.run*Math.max(ENC_CATCH.lo,1-ENC_CATCH.agi*P.attr.agi);
-const catchReach=()=>ENC_CATCH.reach+ENC_CATCH.agiReach*P.attr.agi;
+const catchSpd=()=>ENC_SPD.run*Math.max(ENC_CATCH.lo,1-ENC_CATCH.agi*skill('athl'));// (agi: Athletics', was Agility's)
+const catchReach=()=>ENC_CATCH.reach+ENC_CATCH.agiReach*skill('athl');
 function catchHours(dist,who){const g=MAP_BASE*travelMul()*(P.morale<25?.8:1)-catchSpd()*(who?EscapeStamina.factor(who):1);return dist<=catchReach()?0:g>0?(dist-catchReach())/moveStep(g,Clock.hourSecs()):Infinity}
 const catchOdds=()=>statOdds('horse');
 // (the thief's Insight read: can you run him down, from here)

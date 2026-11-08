@@ -78,7 +78,7 @@ class Prisons{
   static quests(t){return P.quests.filter(q=>q.type==='held'&&q.held?.k==='holding'&&q.held.town===t.name).map(q=>Quest.as(q))}
   static dot(t){return this.quests(t).length>0||this.of(t.name).some(r=>r.k==='comp'||r.k==='lord'&&r.offer&&r.keep==='player')}
   static bribe(r,key){const k=this.kind(key)||{bribe:1,watch:0},X=PRISON.bribe;return{cost:Math.max(10,Math.round(this.ransomOf(r)*X.price*k.bribe/5)*5),ch:clamp(X.ch-(k.watch||0)*X.watch,.05,.9)}}
-  static breakChance(key){const k=this.kind(key)||{brk:0,watch:0},X=PRISON.brk;return clamp(X.base+(P.attr?.agi||0)*X.agi+skill('athl')*X.athl+k.brk-(k.watch||0)*X.watch,.05,.85)}
+  static breakChance(key){const k=this.kind(key)||{brk:0,watch:0},X=PRISON.brk;return clamp(X.base+skill('athl')*X.athl+k.brk-(k.watch||0)*X.watch,.05,.85)}
   static odds(ch){return insight(['you cannot tell your odds',ch>=.5?'a fair chance':'a long chance','about '+Math.round(ch*100)+'%'],'know the odds')}
   static body(t){const key=t.name,k=this.kind(key),mine=this.mine(t),list=this.of(key),qs=this.quests(t),i=r=>list.indexOf(r);
     const head='<p class="muted">'+(k?'The '+k.name+' of '+t.name+': '+['its keepers a few men of the '+t.T.n,'kept by the watch','kept by a strong guard','kept by the garrison'][Math.max(0,['village','town','city','castle'].indexOf(t.kind==='fort'?'castle':t.kind))]+'. ':'')+

@@ -3,7 +3,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,D=t.DevConsole,P=t.P,G=t.G,o=[],ok=(c,m)
 const rejects=(fn,label)=>{let failed=false;try{fn()}catch(e){failed=true}ok(failed,label)};
 try{
  t.begin('soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();P.comps.brann={ap:5,role:''};t.compInit('brann').lv=7;
- const player=JSON.stringify(P),game=JSON.stringify(G),world=JSON.stringify(t.W),refs={troops:P.troops,comps:P.comps,attr:P.attr,msgs:G.msgs},rng=Math.random,save=localStorage.getItem(t.slotKey('quick'));
+ const player=JSON.stringify(P),game=JSON.stringify(G),world=JSON.stringify(t.W),refs={troops:P.troops,comps:P.comps,sk:P.sk,msgs:G.msgs},rng=Math.random,save=localStorage.getItem(t.slotKey('quick'));
  const config={leftGroups:[{type:'hum_foot',count:8,name:'First <Guard>',form:'loose',files:4},{type:'hum_foot',count:6,name:'Second Guard'},{type:'hum_knight',count:6,form:'wedge'}],rightGroups:[{type:'hum_foot',count:7},{type:'hum_bow',count:5}],deploy:false,paused:true,ai:false,seed:9};
  const normalized=L.validate(config);ok(normalized.mode==='army'&&normalized.leftGroups.length===3&&normalized.leftGroups[1].form==='line','army configurations normalize defaults without merging duplicate types');
  const cloned=L.validate(config);cloned.leftGroups[0].count=1;ok(config.leftGroups[0].count===8,'validation returns independent group records');
@@ -32,7 +32,7 @@ try{
  L.step(3);ok(b.t>0&&b.paused,'multi-group simulation advances through normal stepping');
  const initial=JSON.stringify(L.last);D.applyBattleConfig({...config,leftGroups:[{type:'dragon',count:1}]});b.units[0].s.dmg=999;L.restart();
  ok(JSON.stringify(L.last)===initial&&t.B.units.length===32&&t.B.units[0].s.dmg!==999,'restart uses a deep original configuration, not edited draft or runtime stats');L.exit();
- ok(P.troops===refs.troops&&P.comps===refs.comps&&P.attr===refs.attr&&G.msgs===refs.msgs,'mixed-army exit restores campaign nested identities');
+ ok(P.troops===refs.troops&&P.comps===refs.comps&&P.sk===refs.sk&&G.msgs===refs.msgs,'mixed-army exit restores campaign nested identities');
  ok(JSON.stringify(P)===player&&JSON.stringify(G)===game&&JSON.stringify(t.W)===world&&Math.random===rng,'mixed battles and restarts restore campaign, world and random source exactly');
  const lastGood=JSON.stringify(L.last);rejects(()=>L.start({...config,deploy:true,leftGroups:[{type:'hum_foot',count:100,files:1}]}),'formations too deep for deployment fail with an explicit error');
  ok(!L.active&&JSON.stringify(P)===player&&JSON.stringify(G)===game&&JSON.stringify(L.last)===lastGood,'failed setup restores campaign and retains the last successful test');

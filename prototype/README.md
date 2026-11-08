@@ -889,6 +889,16 @@ The owner: "make each skill tree separated by proficiency"; "when you level up y
 - Fingerprints: W7, B2, the battle suites and `aishare` re-recorded (your record's fields, the others' trees, the level's numbers); with the others choosing no node and the old tp and level numbers, the old code and the new give the same. Free spending: W7 again (the lords' trees; with `autoTree` off, the same as before).
 - Tests: `talents`, `talentrules`, `levelbox`, `characters`, `proficiency`.
 
+### Skyrim's loop, no attributes (2026-11-08)
+
+doc/PROFICIENCY_DESIGN.md §11. The owner: "a scale like Skyrim: XP from quest, battle, etc. and from proficiency; a level a skill point for the trees"; no milestones, no top, smaller buffs, pasts at 15 at most, attributes into the trees' bonuses. This replaces the level from progress, the level's choice and the trees' own points above.
+- **Level** (`data/progression.js` `LEVEL`, `characters.js` `gainXp`, `addXp`, `xpNeed`): experience from deeds and from each level a proficiency reaches (that level's number); the next level 75 + 50 × level; a skill point each. Your damage +1 a level. The Proficiency tab shows the level, its XP and the points to spend; the level box (`lvBox`) the points.
+- **Points** (`core/talents.js` `points`): one pool, any tree, no milestone (a node grows from the tier below). **A node's strength** by its proficiency (`treeScale`: a quarter at 0, whole at 100, slowly more; slots and prisoners whole: `TREE_SCALE.whole`). The tree's rail shows its proficiency against 100; the node's pane how strong it is now.
+- **Proficiencies** have no top (`PROF.max` Infinity); their power `profPow` (6 at 100, 10 at 500); the old-top effects read them to 99 (`skillSafe`); the made ones' levels give their old power (`PROF.per` 16.7).
+- **Attributes gone:** past, race and nodes give their bonuses (`ATTRS[k].fx`, `attrMods`, `TREE.o_<past>`, `TREE.r_<race>`); a companion's own (`o.own`); `HERO_BASE` your hero's start; checks read the relevant proficiency (`ENC_STAT`, `QUEST_CHECKS`, `attrCheck` for a story's condition); the Character tab shows what the trees give (`ui/character.js` `treeTotals`).
+- **Pasts** at 15 at most (`PROF.pastPer` 7.5). **Lords** spend a point a level (`autoTree`: class nodes, else their strongest proficiency's tree); **companions** yours to spend, theirs while away.
+- Tests: `proficiency`, `talents`, `talentrules`, `characters`, `levelbox`, `progression`, `races`, `encounters`, `newencounters`, `leaders`.
+
 ## Bare hands and the Nobody (2026-10-29)
 
 The owner: "a new origin where you start from nothing" and "an unarmed attack: mostly a one hand punch, two hands to grapple, a kick"; only your hero for now.

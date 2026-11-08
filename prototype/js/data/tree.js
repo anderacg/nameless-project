@@ -1,18 +1,17 @@
 'use strict';
 /* ---------- data: the skill trees, one for each proficiency (the owner, 2026-11-08: "make each skill tree separated by proficiency";
    core/talents.js TalentService, ui/talents.js) ----------
-   A proficiency's tree is its milestones (TREE_AT: major, the fighting ones' and Leadership's; minor, the rest's), and at each a
-   choice of two nodes: as that proficiency reaches the milestone, you take one of the two (the other shut while you keep it; a
-   node unlearned for gold frees the choice again). No points: the proficiency itself opens them. Your level gives health,
-   stamina or mana instead (data/progression.js LEVEL_UP).
+   A proficiency's tree is its tiers, each two nodes, every node of a tier growing from both of the tier below. Your skill points
+   (one each level of yours: data/progression.js LEVEL) are spent on any tree's nodes (no milestone: the owner, 2026-11-08, Skyrim's
+   way), and what a node gives grows with its proficiency's level (treeScale: a quarter at 0, whole at 100, more past it).
    PROF_TREE[prof]: its tiers in order, each [a, b], a node [id, kind, name, effects, what it does] (no words: made from its effects,
    describeNode). Kinds: s small, n notable, k keystone (a big trade-off), a ability (unlocks or upgrades an active skill).
-   Effects (m): attr {str…} adds to attributes; sk {skill: levels in power}; perk: an old perk this node grants; unlock: an active
+   Effects (m): attr {str…}: what a point of that old attribute gave, as its bonuses (data/progression.js attrMods; attributes are
+   gone); learn: this proficiency learned faster; sk {skill: power}; perk: an old perk this node grants; unlock: an active
    skill; combo3: a third blow (the finisher) in your combo; fin: its finishing style (stun, push; a finisher brings the third blow).
    Stat keys: hp, hpPct, dmg, dmgPct, reach, cd (swing time, negative is faster), spd, crit, block, dr (less damage taken), regen,
    sp, spRegen, mp, mpPct, mpRegen, travel, vis, slots, tHp, tDmg, food, hire, train, prison, morale, loot, kick, fistPct, fistCd,
    grabCd, grabDown, and per ability: <id>R (radius), <id>Dmg, <id>Cost, <id>Cd, <id>Stun, <id>Dur; dodgeCost, dodgeCd. */
-const TREE_AT={major:[15,35,60,90],minor:[15,35,60]};
 const PROF_TREE={
   oneh:[
     [['oneh_third','a','Third Blow',{combo3:1},'Your combo ends in a finisher: a third, heavier blow.'],['oneh_str','s','Strength',{attr:{str:2}}]],
@@ -96,45 +95,38 @@ const PROF_TREE={
     [['stew_reeve','s','Reeve',{sk:{stew:1}}],['stew_order','s','Steward’s Order',{food:.05}]],
     [['stew_tax','s','Tax Collector',{sk:{stew:2}}],['stew_stores','s','Keeper of Stores',{food:.08}]],
     [['stew_lord','s','Lord’s Steward',{sk:{stew:3}}],['stew_pay','s','Garrison Pay',{tHp:.05}]]]};
-// (the major trees: four milestones; the rest three)
-const TREE_MAJOR=['oneh','twoh','archery','spell','fist','lead'];
-const treeAt=k=>TREE_AT[TREE_MAJOR.includes(k)?'major':'minor'];
-// a proficiency's points (the owner, 2026-11-08: "player can freely spend based on their preferences"): one each per levels of it (6
-// at 90), spent as you like on its tree's nodes whose milestone it has reached and that grow from a node learned on the tier below
-// (core/talents.js canTake): a big tree's 8 nodes, 6 points, so a choice still
-const TREE_PT={per:15};
-// a lord's or a chieftain's trees (they choose for themselves: characters.js autoTree) open as if each proficiency it has were per ×
-// its level, so a lord grows his trees as he grows (at 5: the 15 and 35 milestones, his first active skills; at 8 the 60s; at 12 the
-// keystones); its numbers are its own proficiencies'
-const AI_TREE={per:8};
-/* the nodes, by id: prof, its milestone (at), tier, the other of its pair (pair). Each past begins with its origin (a node of no
-   tree: its small head start); a companion, a lord or a chieftain with 'start' (nothing) */
+/* the nodes, by id: prof, tier, the other of its pair (pair). Each past begins with its origin (a node of no tree: its small head
+   start: what its old attributes gave, attr, as their bonuses); your race its own (r_<race>, never on P.tree: state.js tmOf, from
+   data/races.js attr); a companion, a lord or a chieftain with 'start' (nothing) */
 const TREE={start:{id:'start',n:'Start',t:'start',m:{},links:[],d:'Where a companion, a lord or a chieftain begins: nothing yet.'}};
 const ORIGINS={
-  soldier:{n:'Soldier',m:{attr:{str:1},hp:10}},
-  guard:{n:'Guard',m:{slots:1,block:.03}},
-  woodcutter:{n:'Woodcutter',m:{hp:8,sp:10}},
-  exile:{n:'Exile',m:{sk:{archery:1},vis:.05}},
-  apprentice:{n:'Apprentice',m:{mp:5,sp:5,sk:{med:1}}},
-  hedge:{n:'Hedge Mage',m:{mp:10,sk:{spell:1}}},
-  merchant:{n:'Merchant',m:{hire:.05,sk:{trade:1}}},
+  soldier:{n:'Soldier',m:{attr:{str:3},hp:10}},
+  guard:{n:'Guard',m:{attr:{str:1,cha:1},slots:1,block:.03}},
+  woodcutter:{n:'Woodcutter',m:{attr:{str:2},hp:8,sp:10}},
+  exile:{n:'Exile',m:{attr:{agi:2},sk:{archery:1},vis:.05}},
+  apprentice:{n:'Apprentice',m:{attr:{int:1,agi:1},mp:5,sp:5,sk:{med:1}}},
+  hedge:{n:'Hedge Mage',m:{attr:{int:2},mp:10,sk:{spell:1}}},
+  merchant:{n:'Merchant',m:{attr:{cha:2},hire:.05,sk:{trade:1}}},
   nobody:{n:'Nobody',m:{sp:10}}
 };
 const originOf=bg=>'o_'+(ORIGINS[bg]?bg:'soldier');
 (()=>{
-  for(const prof in PROF_TREE){const at=treeAt(prof);PROF_TREE[prof].forEach((pair,tier)=>pair.forEach(([id,t,n,m,d],i)=>{
-    TREE[id]={id,t,n,m,d:d||'',prof,at:at[tier],tier,pair:pair[1-i][0],links:[]}}))}
-  for(const bg in ORIGINS){const O=ORIGINS[bg];TREE['o_'+bg]={id:'o_'+bg,t:'origin',bg,n:O.n,m:O.m,links:[],d:''}}
+  for(const prof in PROF_TREE){PROF_TREE[prof].forEach((pair,tier)=>pair.forEach(([id,t,n,m,d],i)=>{
+    TREE[id]={id,t,n,m:nodeMods(m),d:d||'',prof,tier,pair:pair[1-i][0],links:[]}}))}
+  for(const bg in ORIGINS){const O=ORIGINS[bg];TREE['o_'+bg]={id:'o_'+bg,t:'origin',bg,n:O.n,m:nodeMods(O.m),links:[],d:''}}
+  for(const r in RACES)TREE['r_'+r]={id:'r_'+r,t:'race',n:RACES[r].n,m:nodeMods({attr:RACES[r].attr}),links:[],d:''}
   // describe the small nodes from their effects
   for(const id in TREE){const N=TREE[id];if(!N.d)N.d=(N.t==='origin'?'Where a '+N.n.toLowerCase()+' begins. ':'')+describeNode(N.m)}
 })();
+// (a node's effects with an old attribute's made into its bonuses, attr gone)
+function nodeMods(m){if(!m.attr)return m;const o={...m};delete o.attr;return attrMods(m.attr,o)}
 function describeNode(m){
   const L={hp:'+{} health',dmg:'+{} damage',reach:'+{} reach',sp:'+{} stamina',mp:'+{} mana',slots:'+{} unit slot',prison:'+{} prisoners',morale:'+{} minimum morale',
     hpPct:'{%} health',dmgPct:'{%} damage',cd:'{%} swing time',spd:'{%} battle speed',crit:'{%} crit chance',block:'{%} less blocked damage',dr:'{%} less damage taken',
     mpPct:'{%} mana',mpRegen:'{%} mana regeneration',spRegen:'{%} stamina regeneration',travel:'{%} travel speed',vis:'{%} vision',tHp:'{%} troop health',tDmg:'{%} troop damage',food:'{%} less food eaten',
     hire:'{%} cheaper hiring',train:'{%} cheaper training',loot:'{%} battle gold',fistCd:'{%} bare-handed swing time',regen:'+{} health per second'};
   const out=[];
-  if(m.attr)for(const a in m.attr)out.push('+'+m.attr[a]+' '+ATTRS[a][0]);
+  if(m.learn)out.push(Math.round(m.learn*100)+'% faster learning of this proficiency');
   if(m.sk)for(const k in m.sk)out.push('+'+m.sk[k]+' '+SKILLS[k].n);
   for(const k in L)if(m[k]){const v=m[k],pc=Math.round(v*100);out.push(L[k].replace('{}',v).replace('{%}',(pc>0?'+':'')+pc+'%'))}
   return out.join(', ')+'.';

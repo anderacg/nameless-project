@@ -53,7 +53,7 @@ class Estate extends WorldObject{
     const t=this.#t;
     t.sab=t.sab||{};t.sab[this.k]=G.day+3+2*bldLv(t,this.k)}
   // the chance of slipping in unseen
-  sabotageChance(){return clamp(.35+.03*skill('scout')+.02*P.attr.agi+(darkness()>.5?.2:0)-.06*bldLv(this.#t,this.k)-(partySize()>20?.1:0),.1,.9)}
+  sabotageChance(){return clamp(.35+.03*skill('scout')+.02*skill('athl')+(darkness()>.5?.2:0)-.06*bldLv(this.#t,this.k)-(partySize()>20?.1:0),.1,.9)}
 
   /* its guards (GUARDS): its own posts, less those fallen whose places are not filled yet, and some of the garrison when it stands
      near the walls */

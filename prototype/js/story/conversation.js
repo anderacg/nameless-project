@@ -62,7 +62,7 @@ class LordSpeaker extends Speaker{
     if(m.tried?.[id]===G.day)return 'Not again today';if(id==='favour')return v<0?pr(l).He+' does not like you enough':lendWhy(l);
     if(id==='threaten'&&partyPower()<l.power())return 'Your army is weaker';return ''}
   odds(id){const C=DIALOGUE.checks,X=C[id],l=this.o,pw=Math.max(0,partyPower()/Math.max(1,l.power())-1);
-    return clamp(X.base+(P.attr?.cha||0)*(X.cha||0)+skill('pers')*(X.pers||0)+P.renown*(X.renown||0)+honorWith(l.fac)*(X.honor||0)+relWith(l)*(X.rel||0)+Math.min(1,pw)*(X.power||0)+(X.temper[this.temper()]||0)+(has('silver')?CAPTIVITY.traits.silver:0),C.min,C.max)}
+    return clamp(X.base+skill('pers')*(X.pers||0)+P.renown*(X.renown||0)+honorWith(l.fac)*(X.honor||0)+relWith(l)*(X.rel||0)+Math.min(1,pw)*(X.power||0)+(X.temper[this.temper()]||0)+(has('silver')?CAPTIVITY.traits.silver:0),C.min,C.max)}
   outcome(id,won){const X=DIALOGUE.checks[id],o=won?X.win:X.lose,l=this.o,out={};if(!o)return out;
     if(o.gold)out.gold=Math.min(o.gold,treas(l.fac));if(o.rel)out.rel=[l,o.rel,'what you said to '+pr(l).him];if(o.honor)out.honor=[l.fac,o.honor];return out}
   replies(){const l=this.o,C=DIALOGUE.checks,read=p=>insight(['you cannot tell your odds',p>=.5?pr(l).he+' may well':'a long chance','about '+Math.round(p*100)+'%'],'know the odds');

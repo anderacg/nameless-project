@@ -68,13 +68,13 @@ class Captivity{
     return Math.min(X.max,X.base+(c.rel-X.rel)*X.per+Math.max(0,honorWith(c.fac))*X.honor)}
   // your chance to get away as the rout comes
   static escapeChance(e){const X=CAPTIVITY.escape,mounted=!!P.gear.mount,list=e.list||[],riders=list.length?list.filter(k=>ST[k]&&(ST[k].mounted||ST[k].beast)).length/list.length:0;
-    return clamp(X.base+(P.attr?.agi||0)*X.agi+skill(mounted?'ride':'athl')*X.skill+(mounted?X.mounted:0)+(Clock.isNight?X.night:0)+(hiddenAt(P.x,P.y)?X.cover:0)-riders*X.riders-(P.hp<vitals()[0]/2?X.hurt:0)+(has('slippery')?CAPTIVITY.traits.slippery.escape:0),X.min,X.max)}
+    return clamp(X.base+skill(mounted?'ride':'athl')*X.skill+(mounted?X.mounted:0)+(Clock.isNight?X.night:0)+(hiddenAt(P.x,P.y)?X.cover:0)-riders*X.riders-(P.hp<vitals()[0]/2?X.hurt:0)+(has('slippery')?CAPTIVITY.traits.slippery.escape:0),X.min,X.max)}
   // the defeat, as the battle is lost (resolution.js conclude): the words for the battle's page
   static defeat(e){const c=this.captor(e);
     if(!c){P.hp=Math.max(1,Math.min(P.hp,Math.round(vitals()[0]*CAPTIVITY.beast.hp)));return{how:'beast',text:'Left for dead among the fallen, you wake where you fell, badly hurt.'}}
     const ch=this.escapeChance(e);if(Math.random()<ch){const lose=Math.floor(P.gold*.25);P.gold-=lose;const o=e.ref;if(o&&Number.isFinite(o.x)){const dx=P.x-o.x,dy=P.y-o.y,l=Math.hypot(dx,dy)||1;walk(P,dx/l,dy/l,40)}
       const back=this.scatter();return{how:'escaped',text:'In the rout you slip away ('+Math.round(ch*100)+'% chance) and lose '+lose+' gold in the flight. Your soldiers scatter'+(back?': '+back+' of them may find you in the next days.':'.')}}
-    const away=compsInBand().filter(id=>{const o=compInit(id);return Math.random()<clamp(CAPTIVITY.escape.base+(o?.attr?.agi||0)*CAPTIVITY.escape.agi+(o?.perks?.includes('slippery')?CAPTIVITY.traits.slippery.escape:0),CAPTIVITY.escape.min,CAPTIVITY.escape.max)});
+    const away=compsInBand().filter(id=>{const o=compInit(id);return Math.random()<clamp(CAPTIVITY.escape.base+profPow(o?.sk?.athl?.lv||0)*CAPTIVITY.escape.agi+(o?.perks?.includes('slippery')?CAPTIVITY.traits.slippery.escape:0),CAPTIVITY.escape.min,CAPTIVITY.escape.max)});
     const war=this.atWar(c),l=this.lord(c),at=this.placeOf(c,war),s=at&&this.spot(at),h=this.held={...c,since:G.day,tried:[],away,with:compsInBand().filter(id=>!away.includes(id)),at,war,rel:l?relWith(l):0};h.ransom=this.ransomOf(h);if(s)this.put(s);
     const pk=this.prisonOf(h),where=pk?pk.title.replace(/^In t/,'t')+(s?.site?' at '+s.name:''):'their cage',cell=war||Math.random()<this.straight(c);
     if(cell)h.prison=this.jail(h,war?'A prisoner of war: the '+FACS[c.fac].n+' will not bargain with you, nor let you go while the war lasts.':c.k==='band'?'No talk of ransom: they bind your hands and throw you into '+where+'. Their ask comes later.':cap1(c.name)+' have no words for you: you are taken to '+where+'. Their ask comes later.');
@@ -83,7 +83,7 @@ class Captivity{
   static straight(c){const X=CAPTIVITY.straight,l=this.lord(c);return c.k==='broker'?0:clamp((X[c.k]||0)-(l?relWith(l)*X.rel:0),X.min,X.max)}
   static ransomOf(c,harsh=false){const X=CAPTIVITY.ransom;return Math.round((X.base+P.renown*X.renown+P.level*X.level)*(c.k==='band'?1:c.k==='broker'?CAPTIVITY.sold.price:X.lord)*(c.war?CAPTIVITY.war.price:1)*(harsh?X.harsh:1)*(has('oldsoldier')?CAPTIVITY.traits.oldsoldier.cost:1)/5)*5}
   static persuadeChance(c){const X=CAPTIVITY.persuade,l=this.lord(c),regard=l?relWith(l):0,honor=c.fac&&FACS[c.fac]?honorWith(c.fac):0;
-    return clamp(X.base+(P.attr?.cha||0)*X.cha+skill('pers')*X.pers+(c.k==='band'?P.renown*X.renown:honor*X.honor+regard*X.regard)-(c.fac&&hostileTo(c.fac)?X.war:0)+(has('silver')?CAPTIVITY.traits.silver:0),X.min,X.max)*(c.k==='broker'?CAPTIVITY.sold.persuade:1)}
+    return clamp(X.base+skill('pers')*X.pers+(c.k==='band'?P.renown*X.renown:honor*X.honor+regard*X.regard)-(c.fac&&hostileTo(c.fac)?X.war:0)+(has('silver')?CAPTIVITY.traits.silver:0),X.min,X.max)*(c.k==='broker'?CAPTIVITY.sold.persuade:1)}
   static realmPays(c){return !!P.fac&&P.fac!==c.fac&&FACS[P.fac]&&honorWith(P.fac)>=CAPTIVITY.realm.honor}
   static serves(c){return c.k==='band'||c.k==='broker'||!P.fac}
   // (how long they keep you in their cage: a broker less, waiting for a buyer)
@@ -112,7 +112,7 @@ class Captivity{
     if(a==='held-realm'&&this.realmPays(c)){const [lo,hi]=CAPTIVITY.realm.days,d=rint(lo,hi);Clock.passHours(d*24);return this.free('light','After '+d+' days the '+FACS[P.fac].n+' pay for you, and you are let go.',0,true)}
     if(a==='held-refuse'){c.prison=this.jail(c,'Their cage is cold, and the guards bored.');return this.cell()}}
   // ---- prison: today's page (the frame: its bar's way out is waiting a day)
-  static breakChance(q){const X=CAPTIVITY.prison.break;return clamp(X.base+(P.attr?.agi||0)*X.agi+skill('athl')*X.athl+q.help-q.guard*X.guard+(this.prisonOf(this.held)?.brk||0)+(has('slippery')?CAPTIVITY.traits.slippery.break:0)-(this.held?.k==='broker'?CAPTIVITY.sold.harder:0),X.min,X.max)}
+  static breakChance(q){const X=CAPTIVITY.prison.break;return clamp(X.base+skill('athl')*X.athl+q.help-q.guard*X.guard+(this.prisonOf(this.held)?.brk||0)+(has('slippery')?CAPTIVITY.traits.slippery.break:0)-(this.held?.k==='broker'?CAPTIVITY.sold.harder:0),X.min,X.max)}
   static bribe(q){const X=CAPTIVITY.prison.bribe;return{cost:Math.round((X.base+q.guard*X.guard)*(this.prisonOf(this.held)?.bribe||1)/5)*5,ch:clamp(X.ch-q.guard*X.step,.05,.9)}}
   // (no break-out in chains (after break.fails tries), nor too hurt (under break.hurt of your health: a day in the cage heals heal))
   static breakWhy(q){const X=CAPTIVITY.prison.break;return (q.fails||0)>=X.fails?'They keep you in chains now':P.hp<vitals()[0]*X.hurt?'Too hurt: rest a few days first':''}

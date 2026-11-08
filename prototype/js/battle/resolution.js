@@ -53,7 +53,7 @@ class ArmyReport{
   const mine=b.units.filter(u=>u.team===0&&fought(u)&&!(u.grp&&b.groups[u.grp]?.ally)),allies=b.units.filter(u=>u.team===0&&fought(u)&&u.grp&&b.groups[u.grp]?.ally),foes=b.units.filter(u=>u.team!==0&&fought(u));
   return [row(bandName(),'Your army',SIDE.own.ui,mine,b.kills||0),...(allies.length?[row('Allies','Ally',SIDE.ally.ui,allies,0)]:[]),row('Enemy','Hostile',SIDE.foe.ui,foes,b.units.filter(u=>u.team===0&&fought(u)&&u.hp<=0&&!u.left).length)]}
  // (your hero's experience all told: every level's and the present one's, so a level gained in between counts whole)
- static tally(){const h=leaderOf(P);const xp=h.profProgress();// (its growth all told: its proficiencies' progress, characters.js)
+ static tally(){const xp=HERO_XP_ALL(P.level,P.xp);// (its experience all told: characters.js)
   return {gold:P.gold,renown:P.renown,xp,prisoners:prisonerCount()}}
  since(){const n=ArmyReport.tally(),m=this.mark;return {gold:n.gold-m.gold,renown:n.renown-m.renown,xp:Math.round(n.xp-m.xp),prisoners:n.prisoners-m.prisoners}}// (experience a whole number: the owner, 2026-11-08)
  // (added to the report its settlement showed)

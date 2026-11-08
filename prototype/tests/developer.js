@@ -13,8 +13,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,D=t.DevCo
   t.act('begin','soldier');G.quietEvents=true;G.modal=false;t.hidePanel();G.mode='world';
   const gold=P.gold;D.execute('money 123');ok(P.gold===gold+123,'money adds to the current campaign');D.execute('money -23');ok(P.gold===gold+100,'negative money subtracts');
   rejects(()=>D.execute('money -99999999'),'gold cannot be made negative');rejects(()=>D.execute('money NaN'),'NaN money is rejected');
-  D.execute('set player.attr.agi 8');ok(P.attr.agi===8&&D.execute('get player.attr.agi')===8,'get and set follow existing nested scalar paths');
-  rejects(()=>D.execute('set player.attr {}'),'object replacement is rejected');rejects(()=>D.execute('set player.attr.agi "eight"'),'type-changing edits are rejected');
+  D.execute('set player.sk.athl.lv 8');ok(P.sk.athl.lv===8&&D.execute('get player.sk.athl.lv')===8,'get and set follow existing nested scalar paths');
+  rejects(()=>D.execute('set player.sk {}'),'object replacement is rejected');rejects(()=>D.execute('set player.sk.athl.lv "eight"'),'type-changing edits are rejected');
   rejects(()=>D.execute('set player.__proto__.polluted true'),'prototype traversal is rejected');rejects(()=>D.execute('set player.constructor.prototype.polluted true'),'constructor/prototype traversal is rejected');
   rejects(()=>D.execute('set game.mode "battle"'),'mode transitions cannot bypass the game through set');rejects(()=>D.execute('set player.gold 1e999'),'infinite values are rejected');
   rejects(()=>D.execute('set player.notAField 2'),'unknown fields cannot silently create state');rejects(()=>D.execute('javascript alert(1)'),'arbitrary code is not executed');
@@ -35,7 +35,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,D=t.DevCo
    D.execute('speed 2');D.execute('noNeeds on');ok(!/noNeeds|CHEAT/.test(JSON.stringify(t.worldSave())),'neither is in the save')}
   finally{C.speed=1;C.noNeeds=false}}
   D.show();const clock=G.clock;t.loop(t.last+16);ok(G.clock===clock,'main loop freezes world simulation while the console is open');D.close();
-  const playerRef=P,gameRef=G,originalTroops=P.troops,originalAttr=P.attr,originalMsgs=G.msgs,playerJSON=JSON.stringify(P),gameJSON=JSON.stringify(G),worldJSON=JSON.stringify(t.W),rng=Math.random;
+  const playerRef=P,gameRef=G,originalTroops=P.troops,originalAttr=P.sk,originalMsgs=G.msgs,playerJSON=JSON.stringify(P),gameJSON=JSON.stringify(G),worldJSON=JSON.stringify(t.W),rng=Math.random;
   const save0=localStorage.getItem(t.slotKey('quick'));L.start({left:'hum_bow',leftCount:3,right:'hum_foot',rightCount:2,ai:false,paused:true,seed:7,morale:false});
   ok(L.active&&G.mode==='battle'&&t.B.units.filter(u=>u.team===0).length===3&&t.B.units.filter(u=>u.team===1).length===2,'sandbox spawns precisely the two requested armies');
   ok(t.B.units.every(u=>!u.hero)&&t.B.hero.hp===0&&!t.B.units.includes(t.B.hero),'troop-only sandbox has no extra fighting hero');
@@ -50,7 +50,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,D=t.DevCo
   t.saveGame(false,'quick');ok(localStorage.getItem(t.slotKey('quick'))===save0,'sandbox cannot overwrite a campaign save');t.loadGame('quick');ok(t.B===b&&L.active,'loading cannot silently discard an active sandbox');
   D.execute('money 999');b.win=true;b.over=true;b.endT=0;t.finishBattle();ok(L.session.result==='Left side wins'&&t.B===b&&b.paused,'test completion freezes the field instead of campaign settlement');
   L.restart();ok(L.active&&t.B!==b&&t.B.units.length===5&&t.B.t===0&&!L.session.result,'restart rebuilds the same matchup from a clean fixture');
-  L.exit();ok(t.P===playerRef&&t.G===gameRef&&P.troops===originalTroops&&P.attr===originalAttr&&G.msgs===originalMsgs,'exit restores original campaign records and nested identities');
+  L.exit();ok(t.P===playerRef&&t.G===gameRef&&P.troops===originalTroops&&P.sk===originalAttr&&G.msgs===originalMsgs,'exit restores original campaign records and nested identities');
   ok(JSON.stringify(P)===playerJSON&&JSON.stringify(G)===gameJSON&&JSON.stringify(t.W)===worldJSON,'test stepping, cheats, finish and restart leave campaign state unchanged');ok(Math.random===rng,'sandbox restores the previous random generator');
   rejects(()=>L.start({left:'bad',right:'hum_foot'}),'unknown matchup units are rejected');rejects(()=>L.start({leftCount:101}),'excessive unit counts are rejected');rejects(()=>L.start({left:'hero',leftCount:2}),'duplicate heroes are rejected');
   ok(!L.active&&JSON.stringify(P)===playerJSON,'invalid test configuration is non-mutating');

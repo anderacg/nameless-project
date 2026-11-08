@@ -29,10 +29,12 @@ class Companion extends Character{
   get name(){return COMPS[this.id].short}
   // (what it was good at learned faster: a quarter more for each point of COMP_START)
   learn(k){return 1+.25*((COMP_START[this.id]||{})[k]||0)}
+  // a level: skill points (LEVEL.pts) you spend on its page, or it spends itself while away leading a party of its own (autoTree)
+  levelled(up){if(this.o.party)this.autoTree();this.grew(up)}
   // a perk to choose every third level, and news of each
   grew(up){
     const o=this.o;
-    for(let lv=o.lv-up+1;lv<=o.lv;lv++){if(lv%3===0)o.perkPend++;log(this.name+' reaches level '+lv+(lv%3===0?': a perk to choose (Hero, Party tab)':'')+'.','gold')}}
+    for(let lv=o.lv-up+1;lv<=o.lv;lv++){if(lv%3===0)o.perkPend++;log(this.name+' reaches level '+lv+': a skill point'+(lv%3===0?' and a perk to choose (Hero, Party tab)':'')+'.','gold')}}
   rose(k,lv){log(this.name+'’s '+COMP_SK[k]+' proficiency reaches '+lv+'.','gold')}
   // in your band: not away leading a party, not lying wounded
   inBand(){return !this.o.party&&!this.o.jail&&!(this.o.hurt>G.day+Clock.frac)}
@@ -56,8 +58,8 @@ function compJoin(id,o){
   P.comps[id]={ap:o&&o.ap||0,role:''};
   const c=compInit(id);
   // (one who joins grown, a story's (Ander): his level, and what he was good at as a free start, as a hero's past: sk0, not counted)
-  if(o&&o.lv){c.lv=o.lv;const S=COMP_START[id]||{};c.sk0={};for(const k in S)if(c.sk[k])c.sk[k].lv=c.sk0[k]=Math.min(SK_MADE,S[k]*PROF.per)}
-  if(o&&o.attr)c.attr={...o.attr};
+  if(o&&o.lv){c.lv=o.lv;const S=COMP_START[id]||{};c.sk0={};for(const k in S)if(c.sk[k])c.sk[k].lv=c.sk0[k]=Math.min(SK_MADE,Math.round(S[k]*PROF.per))}
+  if(o&&o.attr)c.own=attrMods(o.attr);// (his old attributes as their bonuses: state.js tmOf)
   log(COMPS[id].n+' joins your band as a companion.','gold');
   return c}
 // (the older names: the companion's methods)

@@ -203,23 +203,23 @@ class PlayerParty extends Party{
   gearSkill(k){return Object.values(this.gear).reduce((a,id)=>a+(id&&ITEMS[id].m.sk&&ITEMS[id].m.sk[k]||0),0)}
   // a discipline: as you trained it, with your companions' roles, your gear and your tree (charOf(P).skill: as trained only)
   // (as the effects made for the old top read it: its level to PROF.made, gear and tree on top)
-  skillSafe(k){return this.skill(k)-Math.max(0,this.sk[k].lv-PROF.made)/PROF.per}
-  skill(k){return this.sk[k].lv/PROF.per+this.roleBonus(k)+this.gearSkill(k)+this.treeSkill(k)}// (a proficiency's level in power: 99 the old 10, PROF.per)
-  // your hero's numbers in battle: her level, attributes, disciplines, gear and talents
+  skillSafe(k){const lv=this.sk[k].lv;return this.skill(k)-profPow(lv)+profPow(Math.min(lv,PROF.made))}
+  skill(k){return profPow(this.sk[k].lv)+this.roleBonus(k)+this.gearSkill(k)+this.treeSkill(k)}// (a proficiency's level in power: profPow)
+  // your hero's numbers in battle (HERO_BASE): her level, disciplines, gear and tree
   heroStats(){
     const tm=k=>this.treeMod(k),gm=k=>this.gearMod(k),melee=this.skill(meleeSk()),two=hybridTwo(),kind=heroKind(),fist=unarmed();// (bare hands: combat.js FISTS)
     return {n:'You',
-      hp:Math.round((50+LEVEL_UP.hp*lvPicked('hp')+4*this.attr.str+gm('hp'))*(1+tm('hpPct'))),
-      dmg:(8+2*this.level+this.bonus+this.attr.str*.5+melee*.6+gm('dmg'))*(1+tm('dmgPct'))*(two?1.2:1)*(fist?FISTS.dmg*(1+tm('fistPct')):1),
-      spd:(48+this.attr.agi*2)*(1+gm('spd')),
+      hp:Math.round((HERO_BASE.hp+gm('hp'))*(1+tm('hpPct'))),
+      dmg:(HERO_BASE.dmg+LEVEL.dmg*this.level+this.bonus+melee*.6+gm('dmg'))*(1+tm('dmgPct'))*(two?1.2:1)*(fist?FISTS.dmg*(1+tm('fistPct')):1),
+      spd:HERO_BASE.spd*(1+gm('spd')),
       reach:21+melee*.4+gm('reach')+(two?4:0)+(fist?FISTS.reach:0),
       range:heroRange(),magic:kind==='magic',
       dt:itemDt(this.gear.weapon)||(kind==='magic'?'arcane':'blunt'),armor:itemArmor(this.gear.body)||'none',race:this.race,
-      cd:.45*(1-this.attr.agi*.03)*(1+gm('cd'))*(fist?FISTS.cd*(1+tm('fistCd')):1),
+      cd:HERO_BASE.cd*(1+gm('cd'))*(fist?FISTS.cd*(1+tm('fistCd')):1),
       tags:Object.values(this.gear).map(id=>id&&ITEMS[id].tag).filter(Boolean)}}
   // stamina pays for physical effort, mana for skills
-  maxSP(){return 60+this.attr.agi*5+LEVEL_UP.sp*lvPicked('sp')+this.treeMod('sp')+4*this.skill('athl')}
-  maxMP(){return Math.round((30+this.attr.int*6+LEVEL_UP.mp*lvPicked('mp')+this.gearMod('mp'))*(1+this.treeMod('mpPct')))}
+  maxSP(){return HERO_BASE.sp+this.treeMod('sp')+4*this.skill('athl')}
+  maxMP(){return Math.round((HERO_BASE.mp+this.gearMod('mp'))*(1+this.treeMod('mpPct')))}
   /* health, stamina and mana persist between battles; null means full (a new hero or an old save). Returns their maxima. Your
      hero's stamina on the map is your band's (doc/SUPPLY_DESIGN.md §2): kept in sp, on her scale (maxSP); bsta reads and sets it as
      the band's, 0-100 (world/supply.js); it comes back by the hour there, not here */

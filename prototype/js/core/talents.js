@@ -7,21 +7,23 @@ class TalentService{
   has(id){return (this.owner.tree||[]).includes(id)}
   root(){const id=this.rules.root();return id&&this.has(id)?id:'start'}
   knows(id){const S=this.skillDef(id);return !!S&&(!S.learn||this.has(S.learn))}
-  // (a proficiency's tree, data/tree.js PROF_TREE: its points, one each TREE_PT.per levels of it, spent freely on its nodes; a node
-  // opens as the proficiency reaches its milestone and a node of the tier below is learned)
-  profLv(k){const s=this.owner.sk&&this.owner.sk[k],lv=s?s.lv:0;return s&&this.rules.ai&&this.rules.ai()?Math.max(lv,(this.owner.lv||0)*AI_TREE.per):lv}
-  reached(id){const N=this.node(id);return !!N&&!!N.prof&&this.profLv(N.prof)>=N.at}
+  /* the trees (data/tree.js PROF_TREE; the owner, 2026-11-08, Skyrim's way): skill points, LEVEL.pts each level of the character's,
+     spent on any tree's nodes; no milestone: a node opens once one of the tier below in its tree is learned (its first tier at once).
+     What a node gives grows with its proficiency's level (treeScale: state.js tmOf) */
+  profLv(k){const s=this.owner.sk&&this.owner.sk[k];return s?s.lv:0}
+  reached(id){const N=this.node(id);return !!N&&!!N.prof}
   // (its tier's nodes, of proficiency k; how many of them it has)
   trees(){return this.rules.trees?this.rules.trees():PROF_TREE}
   tierHas(k,t){const R=this.trees(),T=R[k]&&R[k][t];return T?T.filter(([id])=>this.has(id)).length:0}
-  // a proficiency's points: earned (its level ÷ TREE_PT.per), spent (its nodes learned), left
-  points(k){const T=this.trees()[k];if(!T)return{earned:0,spent:0,left:0};const earned=Math.floor(this.profLv(k)/TREE_PT.per),spent=T.flat().filter(([id])=>this.has(id)).length;return{earned,spent,left:Math.max(0,earned-spent)}}
-  canTake(id){const N=this.node(id);return !!N&&!this.has(id)&&!!N.prof&&this.reached(id)&&this.points(N.prof).left>0&&(N.tier===0||this.tierHas(N.prof,N.tier-1)>0)}
+  // its points: earned (its level × LEVEL.pts), spent (the trees' nodes it has; an origin is free), left
+  points(){const earned=Math.max(0,(this.owner.level??this.owner.lv??0)|0)*LEVEL.pts,spent=(this.owner.tree||[]).filter(id=>{const N=this.node(id);return N&&N.prof}).length;return{earned,spent,left:Math.max(0,earned-spent)}}
+  canTake(id){const N=this.node(id);return !!N&&!this.has(id)&&!!N.prof&&this.points().left>0&&(N.tier===0||this.tierHas(N.prof,N.tier-1)>0)}
   // (unlearned, nothing above it left hanging: the tier above learned only while another of this tier stays)
   canRefund(id){const N=this.node(id);return !!N&&!!N.prof&&this.has(id)&&(this.tierHas(N.prof,N.tier+1)===0||this.tierHas(N.prof,N.tier)>1)}
-  // what waits: a point for each proficiency with one left and a node it can take now (its key, once a point)
-  pending(prof){const o=[],R=this.trees();for(const k in R){if(prof&&k!==prof)continue;const left=this.points(k).left;if(left&&R[k].flat().some(([id])=>this.canTake(id)))for(let i=0;i<left;i++)o.push(k)}return o}
-  apply(id,sign){const N=this.node(id);if(!N)return false;const m=N.m,o=this.owner;if(m.attr)for(const a in m.attr)o.attr[a]=Math.max(this.rules.minAttribute,(o.attr[a]||0)+sign*m.attr[a]);return true}
+  // what waits: each point left while a node can be taken (the first tree with one, once a point); of one tree, prof: [prof] if it has one
+  pending(prof){const R=this.trees(),left=this.points().left;if(!left)return [];const can=k=>R[k].flat().some(([id])=>this.canTake(id));
+    if(prof)return R[prof]&&can(prof)?[prof]:[];const k=Object.keys(R).find(can);return k?Array(left).fill(k):[]}
+  apply(id){return !!this.node(id)}
   autoSlot(id){
     if(!this.knows(id))return -1;const o=this.owner;o.slots=o.slots||Array(this.rules.slotCount).fill(null);
     if(o.slots.includes(id))return o.slots.indexOf(id);const i=o.slots.indexOf(null);if(i>=0)o.slots[i]=id;return i;
@@ -60,7 +62,7 @@ class TalentService{
 }
 const TALENTS=new WeakMap();
 function talentsOf(o){
-  let service=TALENTS.get(o);if(!service){service=new TalentService(o,{nodes:TREE,skills:()=>HSKILLS,root:()=>o===P?o.origin:'start',minAttribute:o===P?1:0,slotCount:10,
+  let service=TALENTS.get(o);if(!service){service=new TalentService(o,{nodes:TREE,skills:()=>HSKILLS,root:()=>o===P?o.origin:'start',slotCount:10,
     wallet:P,refundCost:()=>15*P.level,ai:()=>['lord','chieftain'].includes(charRole(o)),effect:k=>tmOf(o,k),finisher:o===P?{styles:()=>FIN_STYLE,ready:()=>finReady()}:null});TALENTS.set(o,service)}return service;
 }
 // Shorthand commands also serve character AI; presentation stays outside the service itself.

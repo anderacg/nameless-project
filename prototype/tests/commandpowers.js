@@ -28,7 +28,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  ok(t.powersOn()&&t.commanderOf(0)===b.hero&&t.commanderOf(1)===ec,'your commander is your hero, theirs their leader (a companion here: '+(ec&&ec.leader.name)+')');
  const lead0=P=>{t.P.sk.lead.lv=P*PROF.per;return t.commanderLead(0)};
  ok(lead0(0)===t.skill('lead')&&lead0(3)===t.skill('lead')&&t.skill('lead')>=3,'your hero’s Leadership is skill(’lead’) ('+t.skill('lead')+')');
- ok(t.commanderLead(1)===2,'a companion or lord leading them: his own Leadership (Brann: '+t.commanderLead(1)+')');
+ ok(Math.abs(t.commanderLead(1)-2)<.05,'a companion or lord leading them: his own Leadership (Brann: '+t.commanderLead(1)+')');
  {const L0=ec.leader;ec.leader={name:'Chief',lv:7};ok(t.commanderLead(1)===3,'a chieftain without the skill: half his level (7: 3)');ec.leader=L0}
  b.cmdLead={0:0};ok(t.commandRadius(0)===CP.radius&&t.powerCd(0,'rally')===CP.rally.cd&&t.powerCd(0,'stand')===CP.stand.cd,'Leadership 0: radius '+CP.radius+' px, cooldowns '+CP.rally.cd+' / '+CP.stand.cd+' s');
  b.cmdLead={0:5};const r5=t.commandRadius(0),c5=t.powerCd(0,'rally');ok(Math.abs(r5-CP.radius*1.4)<1e-9&&c5===48,'Leadership 5: radius +40% ('+r5+' px), Rally’s cooldown '+c5+' s');

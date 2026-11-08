@@ -74,7 +74,7 @@ class StoryContext extends StoryPlace{
     return skill(k);
   }
   attr(k){
-    return P.attr[k];
+    return attrCheck(k);// (an old attribute: the best of its proficiencies, data/progression.js ATTRS)
   }
   honor(f){
     return honorWith(f);

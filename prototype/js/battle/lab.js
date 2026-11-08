@@ -92,7 +92,7 @@ const BattleLab={
   session:null,last:null,
   get active(){return !!this.session},
   presetKey:'ashmark.lab.presets.v1',
-  companion(id){return {ap:0,role:'',lv:1,xp:0,gear:{},sk:Object.fromEntries(Object.keys(COMP_SK).map(k=>[k,{lv:(COMP_START[id]?.[k]||0)*PROF.per,xp:0}])),perks:[],perkPend:0,party:null,hurt:0}},
+  companion(id){return {ap:0,role:'',lv:1,xp:0,gear:{},sk:Object.fromEntries(Object.keys(COMP_SK).map(k=>[k,{lv:Math.round((COMP_START[id]?.[k]||0)*PROF.per),xp:0}])),perks:[],perkPend:0,party:null,hurt:0}},
   eventLimit:5000,moraleLimit:3600,
   beginTelemetry(){
     const groups={};for(const [id,g] of Object.entries(B.groups)){const roster=B.units.filter(u=>u.grp===id).map(u=>({id:u.id,type:u.type,max:u.max}));groups[id]={id,side:g.team?'right':'left',name:g.name||id,role:g.role||null,roster,damageDealt:0,damageTaken:0,kills:0,events:[],morale:[],truncated:{events:0,morale:0}}}

@@ -104,16 +104,17 @@ const ENC_DICE=.48;// (a hand of bones won)
 const ENC_GAMBLE={hands:5,quit:100};
 /* your stats on the road (owner, 2026-10-19: stats only add to what anyone gets, up to a cap; a stat of 0 is today's odds or
    outcome, never worse; the checks: world/encounters.js statOdds) */
-const ENC_STAT={horse:{base:.25,parts:[['ride',.08],['agi',.04]],cap:.9},dice:{base:ENC_DICE,parts:[[['int','cha'],.015]],cap:.65},
-  mine:{base:.6,parts:[['surv',.04],['int',.01]],cap:.85},mineGear:{base:.4,parts:[['surv',.02],['int',.01]],cap:.55},wisps:{base:.5,parts:[['int',.025]],cap:.75},
-  care:{base:0,parts:[['med',.15],['int',.03]],cap:1},push:{base:0,parts:[['str',.05],['athl',.05]],cap:.6},
-  hunt:{base:0,parts:[['surv',.1],['hunt',.05],['archery',.05]],cap:1},respect:{base:0,parts:[['cha',.08]],cap:1},
+// (the owner, 2026-11-08: attributes gone, each check that read one reads the proficiency it is about instead: "go for relevant first")
+const ENC_STAT={horse:{base:.25,parts:[['ride',.08],['athl',.04]],cap:.9},dice:{base:ENC_DICE,parts:[[['tact','pers'],.015]],cap:.65},
+  mine:{base:.6,parts:[['surv',.04],['eng',.01]],cap:.85},mineGear:{base:.4,parts:[['surv',.02],['eng',.01]],cap:.55},wisps:{base:.5,parts:[['spell',.025]],cap:.75},
+  care:{base:0,parts:[['med',.15],['surv',.03]],cap:1},push:{base:0,parts:[['athl',.05],['eng',.05]],cap:.6},
+  hunt:{base:0,parts:[['surv',.1],['hunt',.05],['archery',.05]],cap:1},respect:{base:0,parts:[['pers',.08]],cap:1},
   // (the small encounters': reading a campfire's tracks; a share off the risk that whoever left comes back while you rest (watch)
   // and off a trap in the ashes (nimble); off the time you help the herbalist gather (forage); learning her craft; seeing
   // through a toll's men; talking your way past them; off what you pay her or them (haggle))
-  tracks:{base:.4,parts:[['scout',.1],['surv',.04]],cap:.95},watch:{base:0,parts:[['scout',.08],['lead',.04]],cap:.7},nimble:{base:0,parts:[['agi',.04],['scout',.05]],cap:.8},
-  forage:{base:0,parts:[['surv',.08],['hunt',.04]],cap:.5},herblore:{base:.3,parts:[['med',.08],['int',.03]],cap:.85},
-  writ:{base:.3,parts:[['scout',.1],['int',.03]],cap:.9},talk:{base:.25,parts:[['pers',.08],['cha',.04]],cap:.85},haggle:{base:0,parts:[['trade',.05]],cap:.4}};
+  tracks:{base:.4,parts:[['scout',.1],['surv',.04]],cap:.95},watch:{base:0,parts:[['scout',.08],['lead',.04]],cap:.7},nimble:{base:0,parts:[['athl',.04],['scout',.05]],cap:.8},
+  forage:{base:0,parts:[['surv',.08],['hunt',.04]],cap:.5},herblore:{base:.3,parts:[['med',.08],['wood',.03]],cap:.85},
+  writ:{base:.3,parts:[['scout',.1],['stew',.03]],cap:.9},talk:{base:.25,parts:[['pers',.08],['lead',.04]],cap:.85},haggle:{base:0,parts:[['trade',.05]],cap:.4}};
 const ENC_RAIDER='#4a2c26';// (raiders' rags: darker than any realm's colours, so a fight reads at a glance)
 // (pilgrims praying at a shrine: px under its point)
 const ENC_PRAY={dy:12};

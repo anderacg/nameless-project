@@ -1,7 +1,10 @@
 'use strict';
 /* ---------- the Army window (C; ui/partypage.js lays it out), your hero's sheet, perks, and the commands of the roster ---------- */
 function openChar(){if(G.mode!=='world'||G.modal)return;G.mode='char';const s=partyView();s.open=false;s.path=false;renderChar()}// (on a phone: the list first)
-function heroPage(c=P,comp=false){const perks=comp?COMP_PERKS:PERKS;return '<div class="fb-skills-summary fb-stat-grid">'+fbStat('skills','Choices waiting',(c===P?P.lvUp||0:0)+treePendingOf(c).length)+fbStat('book','Learned',c.tree.filter(id=>TREE[id]&&TREE[id].prof).length)+'</div><div class="lab">Attributes · raised on the skill trees</div><div class="fb-attributes">'+Object.keys(ATTRS).map((k,i)=>'<div>'+fbStat(['power','speed','book','banner'][i],ATTRS[k][0],c.attr[k])+'<p class="fb-attr-fx">'+(comp?CHAR_ATTR_FX[k]:ATTRS[k][1])+'</p>'+'</div>').join('')+'</div>'+(c.perks.length?'<div class="lab">Perks</div><div class="fb-attributes">'+c.perks.map(k=>'<div class="fb-note"><strong>'+perks[k].n+'</strong><p>'+perks[k].d+'</p></div>').join('')+'</div>':'')}
+// (the bonuses your tree gives, all told (with your past's and your race's): what attributes were, the owner, 2026-11-08)
+const TREE_TOTALS=[['hp','Health','+{}'],['sp','Stamina','+{}'],['mp','Mana','+{}'],['dmg','Damage','+{}'],['dmgPct','Damage','{%}'],['spd','Battle speed','{%}'],['cd','Swing time','{%}'],['dr','Damage taken','{%}'],['hire','Hiring','{%} cheaper']];
+const treeTotals=c=>TREE_TOTALS.map(([k,n,f])=>{const v=tmOf(c,k);if(Math.abs(v)<.005)return '';const pc=Math.round((k==='dr'?-v:v)*100);return '<span>'+n+' <b>'+f.replace('{}',+v.toFixed(1)).replace('{%}',(pc>0?'+':'')+pc+'%')+'</b></span>'}).filter(Boolean).join(' · ');
+function heroPage(c=P,comp=false){const perks=comp?COMP_PERKS:PERKS,T=talentsOf(c),tot=treeTotals(c);return '<div class="fb-skills-summary fb-stat-grid">'+fbStat('skills','Skill points to spend',T.points().left)+fbStat('book','Learned',c.tree.filter(id=>TREE[id]&&TREE[id].prof).length)+'</div><div class="lab">From the skill trees</div><p class="fb-attr-fx">'+(tot||'Nothing yet: each level, a skill point for any tree (Skills, K).')+'</p>'+(c.perks.length?'<div class="lab">Perks</div><div class="fb-attributes">'+c.perks.map(k=>'<div class="fb-note"><strong>'+perks[k].n+'</strong><p>'+perks[k].d+'</p></div>').join('')+'</div>':'')}
 // the window, its header the company muster (partypage.js partyHead): Roster, Army skills, Condition, Passengers (your quests are a
 // window of their own: ui/questwindow.js; the lords and realms the Journal's: ui/lordsrealms.js)
 function renderChar(){
@@ -55,8 +58,6 @@ function armyGroupLabel(id,r=partyRoster(P)){
   return r.nameOf(id)||(id==='hero'?(P.name||'Hero'):id.startsWith('comp_')?COMPS[id.slice(5)].n:ST[g?.type||w?.type]?.n||id);
 }
 
-// what an attribute does for a companion, a lord or a chieftain (characters.js Character.base)
-const CHAR_ATTR_FX={str:'+4 health and +0.5 damage a point',agi:'+2 speed and 3% faster blows a point',int:'Nothing in battle yet',cha:'Nothing in battle yet'};
 /* a companion: its card opened on the Army window's Roster (from the map or its party met), its detail beside
    the cards (ui/companionpage.js): level, stats, disciplines, perks, the gear you give them, and a party of your soldiers to lead */
 function openComp(id){if(!P.comps[id])return;if(G.mode!=='char'){if(G.modal||G.mode!=='world')return;G.mode='char'}G.char='roster';G.armyEdit=null;const s=partyView();s.sel='comp_'+id;s.open=true;s.path=false;compPick(id,true);renderChar()}

@@ -97,7 +97,7 @@ function recruitCaptive(i){
   const id='rc_'+(P.recN=(P.recN||0)+1),r=(P.recruits=P.recruits||{})[id]={n:c.k==='chief'?c.ld.name:c.name,kind:C.key,from:c.k,fac:c.k==='lord'?c.fac:null};
   registerRecruit(id,r);
   const sk={};for(const k in COMP_SK)sk[k]={lv:0,xp:0};for(const k in src.sk||{})sk[k]={...src.sk[k]};
-  P.comps[id]={ap:c.k==='chief'?-1:1,role:'',lv:C.lv,xp:0,sk,gear:{...src.gear},perks:[],perkPend:0,party:null,hurt:0,tree:src.tree.slice(),slots:src.slots.slice(),attr:{...src.attr},kit:2,grow:c.k==='chief'?'chieftain':'lord'};
+  P.comps[id]={ap:c.k==='chief'?-1:1,role:'',lv:C.lv,xp:0,sk,gear:{...src.gear},perks:[],perkPend:0,party:null,hurt:0,tree:src.tree.slice(),slots:src.slots.slice(),own:{...(src.own||{})},kit:2,grow:c.k==='chief'?'chieftain':'lord'};
   cs.splice(i,1);
   if(c.k==='lord'){const l=W.lords.find(x=>x.id===c.id);Object.assign(l,{gone:true,held:false,recruited:true,dead:true,back:1e9})}
   else for(const f of FIDS)if(!W.dead[f])addHonor(f,-RECRUIT.honor,true);
