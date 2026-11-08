@@ -122,28 +122,56 @@
       Q.box('rk',[-7,-5],[0,4],[0,7],'timber',{top:true,topMat:'iron'});Q.prop('barrel',[6,4],0,1.5)},
     // a smithy: an open-front oak shed (planks on a stone footing) under the roof, the forge glowing in it, a tall brick chimney at its
     // end; an awning on posts before it over its stock stacked in order (bar iron, crates, a cask); the anvil in the open
-    smithy(Q,o){const L=o.look,dw=Q.home('smithy','work');
+    // (2026-11-08, the owner: "improve the building sprites like holding, estate" as the sites: in three looks, by its dice) or a
+    // stone forge under a hip, its great stack through the ridge, a coal store leaning on its end, the quench trough and the anvil
+    // before it; or a farrier's: framed plaster, its gable to the street, the shoeing frame beside it and a grindstone
+    smithy(Q,o){const L=o.look,d=o.d,dw=Q.home('smithy','work'),v=d.int(0,2);
+      if(v===1){Q.box('f',[-9,7],[-8,5],[0,11],L.fort,{dw});Q.roof('f','hip','u',6,o.roofMat,{o:1});Q.dec('f.S','Forge',.45);Q.dec('f.N',L.door,.5);Q.dec('f.W',L.win,.5,3);Q.dec('f.W','Ivy',.2,0);
+        chimney(Q,[-1,-5],8,24,5);Q.box('cs',[7,12],[-6,3],[0,7],'plank',{foot:'stone',keep:1});Q.roof('cs','shed','u',2,o.roofMat,{o:1,ov:0,keep:1});Q.dec('cs.E','Hatch',.5,1);Q.dec('cs.S','Hatch',.5,1);
+        Q.prop('coal',[10,6]);Q.prop('anvil',[-4,8]);Q.prop('trough',[3,8.5],0,1.4);Q.prop('barrel',[-8,8.5],0,1.4);return}
+      if(v===2){Q.box('f',[-9,5],[-9,4],[0,11],'daub',{dw,frame:L.frame,foot:'stone'});Q.roof('f','gable','v',7,o.roofMat,{ov:1,lip:1});Q.dec('f.S','Forge',.5);Q.dec('f.N',L.door,.5);Q.dec('f.E',L.win,.5,3);Q.dec('f.W','Hatch',.5,4);
+        chimney(Q,[-6,-6],9,24,4);for(const [a,b] of [[7,-4],[12,-4],[7,2],[12,2]])Q.box('sf'+a+b,[a,a+1.5],[b,b+1.5],[0,7],'timber',{top:true});
+        for(const b of [-4,2])Q.box('sr'+b,[7,13.5],[b,b+1.5],[6,7],'timber',{top:true,thin:true});Q.wheel('gs',-12,5,3,2.5,'stone',2);Q.prop('anvil',[1,8]);Q.prop('crate',[-5,8],0,1.4);return}
       Q.box('f',[-12,6],[-8,3],[0,11],L.shed||'plank',{dw,foot:'stone'});Q.roof('f','gable','u',6,o.roofMat,{ov:1});Q.dec('f.S','Forge',.35);Q.dec('f.N',L.door,.5);Q.dec('f.W',L.win,.5,3);
       chimney(Q,[8.5,-3],0,22,5);Q.box('aw',[-1,6],[3,9],[9,10],'timber',{thin:true});Q.roof('aw','shed','u',2,o.roofMat,{o:1,ov:0});
       for(const a of [-1,4.5])Q.box('po'+a,[a,a+1.5],[7.5,9],[0,9],'timber',{top:true});
       Q.box('bi',[1,5],[4,6],[0,2],'iron',{top:true});Q.box('bi2',[1.5,4.5],[4,5.5],[2,3],'iron',{top:true});Q.prop('crate',[3,7.5],0,1.5);Q.prop('anvil',[-6,11]);Q.prop('barrel',[10,6],0,1.6)},
     // a barn (the farm): long, framed plaster on a stone footing under a deep thatch, its braced doors, hatches at the ends; grain
     // stacks beside it, field rows in a fence before it
-    barn(Q,o){const L=o.look,dw=Q.home('barn','store'),w=20,dd=15;
+    // (in three looks: the long thatched barn; a tall barn of planks, its gable and great doors to the front, a loft hatch and its
+    // hoist beam; or the long barn with an open cart shed leaning on its end and a raised grain bin)
+    barn(Q,o){const L=o.look,d=o.d,dw=Q.home('barn','store'),v=d.int(0,2);let w=20,dd=15;
+      if(v===1){w=18;dd=17;Q.box('b',[-w/2,w/2],[-dd/2,dd/2-2],[0,12],'plank',{dw,foot:'stone',frame:'timber'});Q.roof('b','gable','v',9,o.roofMat,{lip:2,ov:1});
+        Q.dec('b.S','Barn',.5);Q.dec('b.S','Hatch',.5,13,true);Q.dec('b.N',L.door,.5);for(const k of ['E','W'])for(const a of [.3,.7])Q.dec('b.'+k,'Hatch',a,5);
+        Q.box('hb',[-1,1],[dd/2-2,dd/2+1],[19,21],'timber',{top:true});Q.box('hr',[-.5,.5],[dd/2,dd/2+1],[14,19],'rope',{thin:true});Q.prop('hay',[-w/2-1,dd/2+1],0,1.2);stack(Q,'g0',w/2+2,dd/2-1,2.4);return}
+      if(v===2){w=18;Q.box('b',[-w/2+2,w/2+2],[-dd/2-1,dd/2-1],[0,11],L.barnWall||'daub',{dw,frame:L.frame,foot:'stone'});Q.roof('b','gable','u',8,o.roofMat,{lip:2,ov:1});
+        Q.dec('b.S','Barn',.6);Q.dec('b.N',L.door,.5);Q.dec('b.E','Hatch',.5,4);Q.box('ls',[-w/2-5,-w/2+2],[-dd/2,dd/2-2],[0,8],'plank',{foot:'stone',keep:1});Q.roof('ls','shed','u',3,o.roofMat,{o:1,ov:0,keep:1});Q.dec('ls.S','Hatch',.5,1);Q.dec('ls.W','Hatch',.5,2);
+        bin(Q,'gb',w/2+5,dd/2-2,o.roofMat);stack(Q,'g0',-w/2-2,dd/2+2,2.6);return}
       Q.box('b',[-w/2,w/2],[-dd/2-1,dd/2-1],[0,11],L.barnWall||'daub',{dw,frame:L.frame,foot:'stone'});Q.roof('b','gable','u',8,o.roofMat,{lip:2,ov:1});
       Q.dec('b.S','Barn',.5);Q.dec('b.N',L.door,.5);for(const k of ['E','W']){Q.dec('b.'+k,'Hatch',.5,4)}
       stack(Q,'g0',w/2-1,dd/2+3,2.8);stack(Q,'g1',w/2+3,dd/2-3,2.4);
       if(!o.bare){Q.bed([-w/2,-3],[dd/2+1,dd/2+3],'crop');Q.bed([-w/2,-3],[dd/2+4.5,dd/2+6.5],'crop');Q.fence([[-w/2-1,dd/2],[-w/2-1,dd/2+8],[-2,dd/2+8],[-2,dd/2]],null,4,'plank')}},
     // a granary: a tall plinth of pale stone, its blue door and the painted measure marks; the store above timber-framed, shuttered,
     // under a tile hip; a ramp of stone steps up to its loading door, guarded by a lantern and the shield
-    granary(Q,o){const L=o.look,dw=Q.home('granary','store'),w=16,dd=14,H=8;
+    // (in three looks: this, the store on its tall plinth; or the generic's: a store raised on staddle stones, or a round one under a
+    // cone, its sacks before its door; the Crown's shield on it either way)
+    granary(Q,o){const L=o.look,d=o.d;if(d.int(0,2)){PX.planKit.plans.granary(Q,o);const rd=Q.parts.some(p=>p.name==='g'&&p.round),sk=Q.parts.find(p=>p.type==='sacks');if(rd&&sk)sk.at=[5,8];Q.dec('g.S',L.plaque,.5,6,!rd);return}const dw=Q.home('granary','store'),w=16,dd=14,H=8;
       Q.box('pl',[-w/2,w/2],[-dd/2,dd/2],[0,H],L.fort,{dw});Q.box('g',[-w/2-1,w/2+1],[-dd/2-1,dd/2+1],[H,H+9],L.shed||'plank',{dw,frame:'timber'});Q.roof('g','hip','u',6,L.roof,{o:1});
       Q.dec('pl.S',L.door,.3);Q.dec('pl.S','MarkVale',.08,0);for(const k of ['E','W','N'])Q.dec('pl.'+k,'MarkVale',.5,1);
       Q.dec('g.S','Hatch',.2,2);Q.dec('g.S',L.plaque,.5,2);Q.dec('g.S','Door',.8,0);for(const k of ['E','W','N'])Q.dec('g.'+k,'Hatch',.5,2);
       for(let k=0;k<4;k++)Q.box('st'+k,[3,8],[dd/2,dd/2+(4-k)*1.5],[2*k,2*k+2],'plank',{top:true});Q.prop('lantern',[10,dd/2+3],0,1.5);Q.prop('sacks',[-5,dd/2+3],0,1.5)},
     // a workshop's store: framed plaster on a stone footing under tile, its double door, a loft with its hoist and a crate on the
     // rope; a brick chimney; an awning at its side over bolts and crates
-    warehouse(Q,o){const L=o.look,dw=Q.home('warehouse','store');Q.box('w',[-11,11],[-8,8],[0,12],o.wall==='stone'?'daub':o.wall,{dw,frame:L.frame,foot:'stone'});Q.roof('w','gable','u',7,o.roofMat,{ov:1});
+    // (in three looks: this; a stone store, its gable to the street, a loading dock of planks before its doors and a hoist beam out of
+    // its gable; or a framed store with a covered wagon bay on posts at its end)
+    warehouse(Q,o){const L=o.look,d=o.d,v=d.int(0,2),dw=Q.home('warehouse','store');
+      if(v===1){Q.box('w',[-9,9],[-9,6],[0,13],L.fort,{dw});Q.roof('w','gable','v',8,o.roofMat,{ov:1,lip:1});Q.dec('w.S',L.door2,.5);Q.dec('w.S','Hatch',.5,14,true);Q.dec('w.N',L.door,.5);
+        for(const k of ['E','W'])for(const a of [.3,.7])Q.dec('w.'+k,a<.5?'Hatch':L.win,a,5);Q.box('dk',[-6,6],[6,10],[0,2],'plank',{top:true});Q.box('hb',[-1,1],[5,9],[20,22],'timber',{top:true});
+        Q.box('hr',[-.5,.5],[7.5,8.5],[9,20],'rope',{thin:true});Q.box('hc',[-1.5,1.5],[6.5,9.5],[6,9],'plank',{top:true});Q.prop('crate',[-8,11],0,1.4);Q.prop('sacks',[8,11],0,1.4);return}
+      if(v===2){Q.box('w',[-12,4],[-8,6],[0,12],o.wall==='stone'?'daub':o.wall,{dw,frame:L.frame,foot:'stone'});Q.roof('w','gable','u',7,o.roofMat,{ov:1});Q.dec('w.S',L.door2,.4);Q.dec('w.S',L.win,.85,3);Q.dec('w.N',L.door,.5);
+        for(const k of ['E','W'])Q.dec('w.'+k,'Hatch',.5,4);chimney(Q,[-9,-4],11,22);for(const [a,b] of [[5,-7],[11.5,-7],[5,4],[11.5,4]])Q.box('bp'+a+b,[a,a+1.5],[b,b+1.5],[0,9],'timber',{top:true});
+        Q.box('br',[4,13],[-8,6],[9,10],'plank',{thin:true});Q.roof('br','shed','v',2,o.roofMat,{o:1,ov:0,keep:1});Q.prop('cart',[8.5,-1],1);Q.prop('barrel',[-9,9],0,1.4);Q.prop('crate',[0,9],0,1.4);return}
+      Q.box('w',[-11,11],[-8,8],[0,12],o.wall==='stone'?'daub':o.wall,{dw,frame:L.frame,foot:'stone'});Q.roof('w','gable','u',7,o.roofMat,{ov:1});
       Q.dec('w.S',L.door2,.3);Q.dec('w.S',L.win,.85,3);Q.dec('w.N',L.door,.5);for(const k of ['E','W'])for(const a of [.3,.7])Q.dec('w.'+k,a<.5?'Hatch':L.win,a,4);chimney(Q,[-8,-4],11,22);
       Q.box('lf',[2,8],[1,8],[11,17],'plank',{frame:'timber'});Q.roof('lf','gable','v',3,o.roofMat,{o:0,ov:1});Q.dec('lf.S','Hatch',.5,1);
       Q.box('ho',[4,6],[7,11],[16,18],'timber',{top:true});Q.box('rp',[4.5,5.5],[9.5,10.5],[10,16],'rope',{thin:true});Q.box('hc',[3.5,6.5],[8.5,11.5],[7,10],'plank',{top:true});

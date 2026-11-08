@@ -68,7 +68,7 @@ Kit.suite(({ok,info})=>{
    if(px)bad.push(z.name+' '+l.k+' '+px+' px')}
   ok(n>20&&!bad.length,'the estates\' flat ground ('+n+') lays nothing under their buildings: no square of soil or logs, the model\'s yard is theirs'+(bad.length?': '+bad.slice(0,5).join('; '):''))}
  // ---- sites and camps: their models, their fires and flags
- {const want={cave:32,ruins:32,shrine:16,camp:32,hideout:64,travelers:32},bad=[],seen=new Set();
+ {const want={cave:32,ruins:32,shrine:16,camp:32,hideout:64,travelers:32,goblins:64},bad=[],seen=new Set();// (a goblin camp drawn as a hideout, the Horde's: structures.js SITE_KIND; a warren in the hills its tunnel, 32)
   // (a bandit lair (the owner, 2026-11-06): a cave's mouth or a minehead, 32, its banner painted on)
   for(const s of W.sites){const sp=t.siteSprite(s),N=s.tunnel?32:want[s.type];seen.add(s.type);if(sp.width!==N||!sp.gr||!sp.sh)bad.push(s.type+' '+sp.width);if(['camp','hideout','travelers'].includes(s.type)&&!s.tunnel&&(!sp.fire||!sp.flag))bad.push(s.type+' fire/flag')}
   ok(!bad.length&&seen.size>=5,'every site and camp its model ('+[...seen].map(k=>k+' '+want[k]).join(', ')+' px), its yard and shadow, a camp\'s fire (its flame at marks.fire) and flag'+(bad.length?': '+bad.slice(0,6).join('; '):''))}

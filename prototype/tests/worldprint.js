@@ -617,7 +617,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  changed: the save is v4, your hero starts at level 0 with a past's free start (P.sk0: a Veteran's One-Handed 20, Leadership 10),
 //  proficiency levels are stored ×9.9 and P.xp is the level's progress. The world itself held (W1-W6, W8). Proof: f357e21 gives
 //  30a2328c and 3b944b30 again. Were W7 30a2328c, B2 3b944b30)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'deb9755d',W7:'e3e03768',W8:'51660bc5',B2:'a9339a6a'};
+// (W5 and W6 again 2026-11-08, on purpose: the owner, "improve the building sprites like holding, estate ... using the same concept":
+//  the Vale's smithy, barn, granary and warehouse and the generic chapel, windmill and watermill in three looks each (two for a
+//  watermill) by their dice (engine/build-vale.js, engine/buildmodels.js); the painted world (W5) and the map's views (W6) show
+//  them. Proof: only those two files and tests/buildmodels.js changed, and f69ca44 (the commit before) gives 3d518113 and deb9755d. Were
+//  W5 3d518113, W6 deb9755d)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'12d89c90',W6:'00eb5ca7',W7:'e3e03768',W8:'51660bc5',B2:'a9339a6a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

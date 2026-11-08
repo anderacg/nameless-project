@@ -255,7 +255,16 @@
       const h=house(Q,{w,d:dd,z:10,wall:'plank',rise:6,dw,door:.3,chim:false,wins:1});stilts(Q,h.u,h.v);Q.lift=0;
       for(const b of [-4,4])Q.beam('np'+b,[w/2+3,b,0],[w/2+3,b,8],'timber');Q.cut('nt',-3,w/2+2.5,1,['nnnnnnn','n.n.n.n','nnnnnnn','n.n.n.n','nnnnnnn','n.n.n.n','.nnnnn.'],{n:'net'},{alongV:true});Q.prop('barrel',[-w/2+2,dd/2+2.5],1)},
     // a chapel: its nave's gable and door to the front, a bellcote over it with its bell, the cross on top, lancets, small headstones
-    chapel(Q,o){const st=o.look.stone,dw=Q.home('chapel','worship');
+    // (2026-11-08, the owner: as the sites, in more looks: or a little square tower over its door under a pyramid, the cross on it; or
+    // its bellcote and a rounded apse at its back, a fenced yard of headstones before it; ivy on its stone)
+    chapel(Q,o){const st=o.look.stone,dw=Q.home('chapel','worship'),v=o.d.int(0,2);
+      if(v===1){Q.box('n',[-7,7],[-9,5],[0,11],st,{dw});Q.roof('n','gable','v',7,o.roofMat,{ov:1});Q.square('tw',[0,6],8,[0,21],st,{form:'pyramid',rise:5,mat:o.roofMat,o:1},{dw});cross(Q,'x',0,6,26);
+        Q.dec('tw.S','Door2',.5);Q.dec('tw.S','Lancet',.5,12);Q.dec('tw.E','Bell',.5,14);Q.dec('tw.W','Bell',.5,14);Q.dec('n.N','Lancet',.5,3);for(const k of ['E','W'])for(const a of [.3,.7])Q.dec('n.'+k,'Lancet',a,3);Q.dec('n.W','Ivy',.12,0);
+        Q.prop('headstone',[-9,9],0,1.3);Q.prop('headstone',[9,10],0,1.3);return}
+      if(v===2){Q.box('n',[-7,7],[-6,8],[0,11],st,{dw});Q.roof('n','gable','v',7,o.roofMat,{ov:1});Q.round('ap',[0,-6],5,[0,9],st,{form:'cone',rise:5,mat:o.roofMat,o:1},{dw});
+        Q.box('bc',[-2.5,2.5],[5,8],[13,18],st,{dw});Q.roof('bc','gable','v',2,o.roofMat,{o:0,ov:0});Q.dec('bc.S','Bell',.5,0);cross(Q,'x',0,6.5,19);
+        Q.dec('n.S','Door2',.5);Q.dec('n.S','Rose',.5,6,true);for(const k of ['E','W'])for(const a of [.25,.75])Q.dec('n.'+k,'Lancet',a,3);Q.dec('ap.N','Lancet',.5,3);Q.dec('n.E','Ivy',.85,0);
+        Q.fence([[-9,10],[-3,10]],null,2,'stone');Q.fence([[3,10],[9,10]],null,2,'stone');for(const u of [-11,11])Q.prop('headstone',[u,4],0,1.3);return}
       Q.box('n',[-7,7],[-8,8],[0,11],st,{dw});Q.roof('n','gable','v',7,o.roofMat,{ov:1});
       Q.box('bc',[-2.5,2.5],[2,5],[13,18],st,{dw});Q.roof('bc','gable','v',2,o.roofMat,{o:0,ov:0});Q.dec('bc.S','Bell',.5,0);cross(Q,'x',0,3.5,19);
       Q.dec('n.S','Door2',.5);Q.dec('n.S','Lancet',.15,3);Q.dec('n.S','Lancet',.85,3);Q.dec('n.N','Lancet',.5,3);for(const k of ['E','W'])for(const a of [.22,.5,.78])Q.dec('n.'+k,'Lancet',a,3);
@@ -281,11 +290,26 @@
       else{const st=o.look.silo;Q.round('g',[0,-1],7.5,[0,11],st,{form:'cone',rise:9,mat:o.roofMat,o:1},{dw});Q.round('gb',[0,-1],7.9,[0,1],'stone',null);
         Q.dec('g.S','Door',.5);Q.dec('g.E','Win',.5,5);Q.dec('g.W','Win',.5,5);Q.dec('g.N','Win',.5,5);Q.prop('sacks',[8,6])}},
     // a windmill: its round tower under a cap, the door at its foot, its four great sails on the front round the hub, cloth on a lattice
-    windmill(Q,o){const d=o.d,dw=Q.home('windmill','work'),wall=d.pick(['stone','whitewash','plank']);
+    // (in three looks: the round tower mill; a post mill, its planked body turning on a great post braced on four legs, its ladder
+    // and tail pole at the back; or a smock mill, a stone footing under a tall timber body and its cap, a gallery round it)
+    windmill(Q,o){const d=o.d,dw=Q.home('windmill','work'),v=d.int(0,2);
+      if(v===1){Q.box('pp',[-1,1],[-1,1],[0,7],'timber',{top:true});for(const [a,b] of [[-5,-5],[5,-5],[-5,5],[5,5]])Q.beam('lg'+a+b,[a,b,0],[a*.2,b*.2,5],'timber');
+        Q.box('m',[-5,5],[-5,4],[7,16],'plank',{dw,frame:'timber'});Q.roof('m','gable','v',5,o.roofMat,{ov:1,lip:1});Q.dec('m.S','Door',.5);Q.dec('m.E','Hatch',.5,3);Q.dec('m.W','Hatch',.5,3);Q.dec('m.N','Door',.5);
+        Q.beam('tp',[0,-5,8],[0,-11,1],'timber');Q.box('hub',[-1,1],[4,7],[12,14],'timber',{top:true});sails(Q,0,5.5,13,12);Q.prop('sacks',[-8,-6]);return}
+      if(v===2){Q.square('ft',[0,0],13,[0,4],'stone',{form:'flat',mat:'stone'},{dw});Q.round('m',[0,0],5.5,[4,15],'plank',{form:'cone',rise:5,mat:o.roofMat,o:1},{dw});
+        Q.round('gl',[0,0],7.5,[4,5],'timber',{form:'lid',mat:'plank'});Q.dec('ft.S','Door',.5);Q.dec('m.N','Win',.5,5);Q.dec('m.E','Win',.5,5);Q.dec('m.W','Win',.5,5);
+        Q.box('hub',[-1,1],[4.5,7.5],[12,14],'timber',{top:true});sails(Q,0,6,13,12);Q.prop('sacks',[-8,3]);return}
+      const wall=d.pick(['stone','whitewash','plank']);
       Q.round('m',[0,0],5.5,[0,14],wall,{form:'cone',rise:6,mat:o.roofMat,o:1},{dw});Q.dec('m.S','Door',.5);Q.dec('m.N','Win',.5,8);Q.dec('m.E','Win',.5,8);Q.dec('m.W','Win',.5,8);
       Q.box('hub',[-1,1],[4.5,7.5],[11,13],'timber',{top:true});sails(Q,0,6,12,12);Q.prop('sacks',[-7,1])},
     // a watermill: stone under the people's roof, its paddle wheel turning in the race before it
-    watermill(Q,o){const dw=Q.home('watermill','work');house(Q,{w:14,d:18,c:[-4,-2],z:11,rise:6,wall:'stone',dw,door:.25,wins:1,chim:[-8,-6]});
+    // (or its other look: a framed mill under its gable to the race, the wheel at its end in a timber-lined race, a sluice board and
+    // sacks at its door)
+    watermill(Q,o){const dw=Q.home('watermill','work');
+      if(o.d.int(0,1)){house(Q,{w:16,d:16,c:[-4,-3],z:12,form:'front',rise:7,wall:'daub',dw,door:.5,wins:1,chim:false});Q.bed([4,15],[-12,13],'water');
+        for(const u of [3,15])Q.box('rl'+u,[u,u+1],[-12,13],[0,2],'plank',{top:true,thin:true});Q.wheel('wh',9.5,-2,5,5,'plank',3);Q.box('sl',[3,16],[10,12],[0,3],'plank',{top:true});
+        Q.prop('sacks',[-9,8]);Q.prop('barrel',[0,8],0,1.4);return}
+      house(Q,{w:14,d:18,c:[-4,-2],z:11,rise:6,wall:'stone',dw,door:.25,wins:1,chim:[-8,-6]});
       Q.bed([-15,15],[8,13],'water');Q.wheel('wh',8,7,5,5,'plank',2)},
     // a warehouse: long planks on a stone footing, its great doors, a loft over them with its hatch and a hoist, a crate on the rope
     warehouse(Q,o){const dw=Q.home('warehouse','store');Q.box('w',[-11,11],[-8,8],[0,12],'plank',{dw,foot:'stone'});Q.roof('w','gable','u',7,o.roofMat,{ov:1});

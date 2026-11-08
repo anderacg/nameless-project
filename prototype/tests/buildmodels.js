@@ -44,43 +44,43 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // gate; a cairn; a cliff cave, a low mound, twin crags). Proof: 99c96eb (the commit before) gives the old values. Were ruins 885cc7fd,
 // shrine f895e57b, cave fdff66d2; in the blocks ruins 7aa41f18 (karn e883e3f3), shrine dd70f9ee (karn 7ef8af13), cave 77e05999)
 const EXPECT={
- cottage:'0ccdf9b1',townhouse:'fb9511de',fisherhut:'2d6d2bf1',chapel:'8615f3f7',stall:'48ec423e',tower:'6acd7ef2',yurt:'08467287',
- longhouse:'d3212831',tavern:'f53264e7',smithy:'dc3a87b5',church:'cc12a724',barn:'235496ea',granary:'ba0e3874',windmill:'043c63b5',
- watermill:'96104a8b',warehouse:'47968b6d',gatehouse:'086b156b',hidehall:'41d0edf5',watchtower:'fee9afe9',treehouse:'635e172d',
+ cottage:'0ccdf9b1',townhouse:'fb9511de',fisherhut:'2d6d2bf1',chapel:'762d3bbe',stall:'48ec423e',tower:'6acd7ef2',yurt:'08467287',
+ longhouse:'d3212831',tavern:'f53264e7',smithy:'75f35aaf',church:'cc12a724',barn:'84c77ab7',granary:'de56ef0e',windmill:'65d7585c',
+ watermill:'0d75b86e',warehouse:'e1d6564f',gatehouse:'086b156b',hidehall:'41d0edf5',watchtower:'fee9afe9',treehouse:'635e172d',
  elfhall:'c3176da7',spire:'b2b90839',stonehall:'3a7b6dc9',forge:'ca2badee',keep:'1b27855b',citadel:'2dd8a20d',well:'33e99b97',
  tent:'df76730a',wagon:'fdb79bc0',minehead:'422e6aa4',lumbershed:'ee90af33',crane:'797e027a',village:'669be472',signpost:'bc1b0551',
  cart:'8db7e550',haystack:'1e55c871',woodpile:'a63e45e5',fence:'4ccfec38',crates:'2ec14f27',barrels:'38164d9d',chiefyurt:'b2ed7c38',
  warcamp:'5ab3c989',horselines:'107a7786',ruins:'0aa26bed',shrine:'8479cf14',cave:'48639c12','cluster:row':'6310eca6',
- 'cluster:yard':'0fdcb778','cluster:farmstead':'8e1e68ef','cluster:smithy':'3d8aabd7','cluster:inn':'d5167dce',
- 'cluster:chapel':'9b6705ff','cluster:market':'66dac74d','cluster:mill':'94910791','cluster:lumber':'ac7479a1',
- 'cluster:mine':'f56a0cf6','cluster:quarry':'d4dc561e','cluster:fishery':'a64e77f9','cluster:pasture':'24589acd',
- 'cluster:brewery':'6232e690','cluster:granary':'cd4c7937','cluster:workshop':'98230efa','cluster:quarter':'467598b5',
+ 'cluster:yard':'0fdcb778','cluster:farmstead':'77f281a9','cluster:smithy':'3d8aabd7','cluster:inn':'d5167dce',
+ 'cluster:chapel':'d7239881','cluster:market':'66dac74d','cluster:mill':'21bd192f','cluster:lumber':'ac7479a1',
+ 'cluster:mine':'f56a0cf6','cluster:quarry':'d4dc561e','cluster:fishery':'a64e77f9','cluster:pasture':'4774fd4a',
+ 'cluster:brewery':'af57dd89','cluster:granary':'fa7f1ff9','cluster:workshop':'8739af5c','cluster:quarter':'467598b5',
  'cluster:camp':'cc3c4924','cluster:hideout':'22f8b99c','cluster:travelers':'a1abf71c','cluster:townhall':'2b66b7a9','cluster:fort':'12e702bf'};
 // (K0, 2026-10-22: recorded at the split into the cultures' files, every culture on the generic plans with its own style table)
 // each culture's own block, which only its own file changes: re-record only that block (its INFO line 'culture <name>: ...')
 const EXPECT_CULTURE={
  // vale (build-vale.js)
- vale:{cottage:'596a2542',townhouse:'493f1766',fisherhut:'cded18e1',chapel:'e2f0232a',stall:'34446497',tower:'392e5970',
-  longhouse:'150da3e0',tavern:'a2e66800',smithy:'b9f463bf',church:'5c23d20b',barn:'c3e9742d',granary:'a4aa770d',windmill:'15692259',
-  watermill:'ab76673f',warehouse:'aadc4117',gatehouse:'aea9c5e4',keep:'dc351a52',citadel:'31572182',well:'b9d0bf82',tent:'ae51fca4',
+ vale:{cottage:'596a2542',townhouse:'493f1766',fisherhut:'cded18e1',chapel:'e009cbba',stall:'34446497',tower:'392e5970',
+  longhouse:'150da3e0',tavern:'a2e66800',smithy:'5e056d49',church:'5c23d20b',barn:'2d350b53',granary:'4443b66b',windmill:'8649a830',
+  watermill:'7915c527',warehouse:'e5ea1bf1',gatehouse:'aea9c5e4',keep:'dc351a52',citadel:'31572182',well:'b9d0bf82',tent:'ae51fca4',
   wagon:'7f883ead',minehead:'e3a3c641',lumbershed:'3424207a',crane:'3684fe3d',village:'9b82ff3d',signpost:'6aa0a05a',
   cart:'28df91db',haystack:'a0645989',woodpile:'99d02398',fence:'f1fa5cce',crates:'b10eb20e',barrels:'2d8697bb',ruins:'14952244',
-  shrine:'021850c8',cave:'78ef68d1','cluster:row':'398f34f4','cluster:yard':'eb0ce1a9','cluster:farmstead':'edc70384',
-  'cluster:smithy':'6e78f707','cluster:inn':'c1fbac0c','cluster:chapel':'b8bf7a39','cluster:market':'0f6cea48',
-  'cluster:mill':'7c600240','cluster:lumber':'a08a2b30','cluster:mine':'ab2b3d72','cluster:quarry':'a323eb3b',
-  'cluster:fishery':'1cad2544','cluster:pasture':'899d875f','cluster:brewery':'8748b75c','cluster:granary':'473ffa4e',
-  'cluster:workshop':'055a9037','cluster:quarter':'aabf0a35','cluster:camp':'8e0c1bce','cluster:hideout':'266cc5ac',
+  shrine:'021850c8',cave:'78ef68d1','cluster:row':'398f34f4','cluster:yard':'eb0ce1a9','cluster:farmstead':'cc1ae121',
+  'cluster:smithy':'b5109198','cluster:inn':'c1fbac0c','cluster:chapel':'418271b7','cluster:market':'0f6cea48',
+  'cluster:mill':'66ecef12','cluster:lumber':'a08a2b30','cluster:mine':'ab2b3d72','cluster:quarry':'a323eb3b',
+  'cluster:fishery':'1cad2544','cluster:pasture':'343ffb06','cluster:brewery':'4b355125','cluster:granary':'5a88d6a1',
+  'cluster:workshop':'9a2b5a9d','cluster:quarter':'aabf0a35','cluster:camp':'8e0c1bce','cluster:hideout':'266cc5ac',
   'cluster:travelers':'6db648a9','cluster:townhall':'4a86be91','cluster:fort':'468efc26'},
  // league (build-vale.js, on the Vale’s)
- league:{cottage:'ac264369',townhouse:'40f9fb17',fisherhut:'10e0915a',chapel:'2d83e012',stall:'7a3166a8',tower:'4b3e2e96',
-  longhouse:'4e06b740',tavern:'6f8e047b',smithy:'69744288',church:'307a7d73',barn:'b75626f7',granary:'fdc46d73',windmill:'3154d2d4',
-  watermill:'d15dce0f',warehouse:'67233d64',gatehouse:'517ba774',keep:'3e85bdbb',citadel:'3f21cca9',well:'df8286cb',tent:'b51b91e2',
+ league:{cottage:'ac264369',townhouse:'40f9fb17',fisherhut:'10e0915a',chapel:'c2560107',stall:'7a3166a8',tower:'4b3e2e96',
+  longhouse:'4e06b740',tavern:'6f8e047b',smithy:'69744288',church:'307a7d73',barn:'2c5e5154',granary:'fdc46d73',windmill:'5d700f4b',
+  watermill:'5f57d598',warehouse:'67233d64',gatehouse:'517ba774',keep:'3e85bdbb',citadel:'3f21cca9',well:'df8286cb',tent:'b51b91e2',
   wagon:'7f883ead',minehead:'e3a3c641',lumbershed:'7c51be02',crane:'d1abb9f9',village:'b7c4d6b0',signpost:'6aa0a05a',
   cart:'28df91db',haystack:'a0645989',woodpile:'99d02398',fence:'f1fa5cce',crates:'b10eb20e',barrels:'2d8697bb',ruins:'14952244',
   shrine:'021850c8',cave:'78ef68d1','cluster:row':'5ee0baf0','cluster:yard':'54b1814f','cluster:farmstead':'a25296f7',
-  'cluster:smithy':'70966ffa','cluster:inn':'ff1ff1c6','cluster:chapel':'f4a90fbc','cluster:market':'aef268ad',
-  'cluster:mill':'1e8557ca','cluster:lumber':'6598c76e','cluster:mine':'66f50c5f','cluster:quarry':'dbab4436',
-  'cluster:fishery':'ce836676','cluster:pasture':'84d3ad51','cluster:brewery':'04aae1ff','cluster:granary':'da60ee7d',
+  'cluster:smithy':'70966ffa','cluster:inn':'ff1ff1c6','cluster:chapel':'0cb25743','cluster:market':'aef268ad',
+  'cluster:mill':'acda581c','cluster:lumber':'6598c76e','cluster:mine':'66f50c5f','cluster:quarry':'dbab4436',
+  'cluster:fishery':'ce836676','cluster:pasture':'ee68b8f5','cluster:brewery':'04aae1ff','cluster:granary':'da60ee7d',
   'cluster:workshop':'6139d9fa','cluster:quarter':'d8aed571','cluster:camp':'896e7cce','cluster:hideout':'a27af816',
   'cluster:travelers':'74b15e56','cluster:townhall':'73f644e4','cluster:fort':'5896a98e'},
  // karn (build-karn.js)
@@ -141,9 +141,12 @@ try{
      for(let k=0;k<N;k++){const [x,y]=[[k,0],[k,N-1],[0,k],[N-1,k]][e],on=d[(y*N+x)*4+3]>0;n+=on;run=on?run+1:0;best=Math.max(best,run)}
      if(full?n>=N:(best>N/4||n>N/2)){bad.edge.push(id+(full?' img':c===b.ground?' ground':' shadow')+' edge '+e);break}}}
    return a.join()};
+ const LOOKS=['shrine','ruins','cave','smithy','barn','granary','warehouse','chapel','windmill','watermill'];
  const t0=performance.now();let n=0;const plan=[],scl=[],front=[],share=[];
  for(const type of all){const N=SZ[type].cell,isB=N>=32&&!sites.includes(type);
-   for(const people of P)for(const seed of [1,2]){const seen=new Set(),sc=new Set();for(const yaw of yaws(type)){const id=type+'/'+people+'/'+seed+'/'+yaw,b=PX.buildingModel({type,people,seed,yaw,fort:2});n++;
+   // (the types in several looks by their dice (the sites, and since 2026-11-08 the smithy, barn, granary, warehouse, chapel,
+   // windmill, watermill): more seeds, so every look meets the rules)
+   for(const people of P)for(const seed of LOOKS.includes(type)?[1,2,3,4,5,6,7,8,9,10]:[1,2]){const seen=new Set(),sc=new Set();for(const yaw of yaws(type)){const id=type+'/'+people+'/'+seed+'/'+yaw,b=PX.buildingModel({type,people,seed,yaw,fort:2});n++;
      const h=look(b,id,N);if(seen.has(h))bad.turn.push(id);seen.add(h);sc.add([b.scale.u,b.scale.v,b.scale.z,b.scale.o].join());
      // the front view: a door seen, the walls in the door's column at least about a third of the building's height (but a windmill's, its
      // sails before its tower, and a watchtower's, its hut up on posts)
