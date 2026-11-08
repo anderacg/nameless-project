@@ -135,7 +135,7 @@ class HeroHands{
   // a blocked hit drains stamina; with none left the guard breaks and the hit lands in full
   guard(dm){
     const X=this,h=B.hero;if(X.sp<=0){B.floats.push({x:h.x,y:h.y-18,t:'Guard broken',life:.6,c:'#e8675f'});return false}
-    X.sp=Math.max(0,X.sp-dm*STAM.guard*(1-.03*skill('block')));X.spT=0;train('block',1);return true;
+    X.sp=Math.max(0,X.sp-dm*STAM.guard*(1-.03*skillSafe('block')));X.spT=0;train('block',1);return true;
   }
   // one hero blow on one enemy: matchup, crit, knockback, stagger, combo count
   hitFoe(e,mult,o){

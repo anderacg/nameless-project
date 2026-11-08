@@ -511,7 +511,7 @@ class BanditCamp extends Lair{
 }
 
 // travellers: a camp by the road; trade, sellswords, a fire, news; they move on after a few days
-const travPrice=g=>Math.max(2,Math.ceil(GOODS[g].base*1.1*(1-.015*skill('trade'))));
+const travPrice=g=>Math.max(2,Math.ceil(GOODS[g].base*1.1*(1-.015*skillSafe('trade'))));
 // (a sellsword a tier up costs his training too)
 const mercCost=(k,u)=>Math.round((hireCost(u||k)+(u&&u!==k?trainCost(k):0))*1.3);
 const SWORD_BYNAMES=['the Tall','Redhand','Ashfoot','the Quiet','Longstride','of the Marches','Two-Blades','the Grey','Stonefist','the Lucky','Crowfeather','Half-Ear'];

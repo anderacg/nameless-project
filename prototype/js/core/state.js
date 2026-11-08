@@ -41,7 +41,7 @@ const gearSkill=k=>P.gearSkill(k);
 // the ridden mount, and the ground it crosses at full speed
 const mountDef=()=>P.gear.mount?ITEMS[P.gear.mount]:null;
 const mountIgn=()=>mountDef()?mountDef().ign:[];
-const skill=k=>P.skill(k);
+const skill=k=>P.skill(k),skillSafe=k=>P.skillSafe(k);// (skillSafe: as the effects made for the old top read it: parties.js)
 const partyCap=()=>P.cap();
 const partyRoom=()=>P.room();
 const prisonCap=()=>P.prisonCap();

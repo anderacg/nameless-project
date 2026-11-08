@@ -11,12 +11,18 @@ try{
  ok(P.sk.oneh.lv===2*PROF.pastPer&&P.sk.lead.lv===PROF.pastPer&&P.sk.trade.lv===0,'a veteran starts at One-Handed '+P.sk.oneh.lv+' and Leadership '+P.sk.lead.lv+', the rest at 0');
  ok(H.profProgress()===0,'and the past’s start does not count toward the level');
  // power: level / PROF.per, 99 the old 10
- P.sk.archery={lv:PROF.max,xp:0};ok(Math.abs(t.skill('archery')-10)<1e-9,'Archery 99 is a power of 10 (as the old top)');
+ P.sk.archery={lv:99,xp:0};ok(Math.abs(t.skill('archery')-10)<1e-9,'Archery 99 is a power of 10 (as the old top)');
  P.sk.archery={lv:0,xp:0};
  // the curve: 0 to 99 takes about the old 0 to 10's practice
- let sum=0;for(let l=0;l<PROF.max;l++)sum+=t.SK_XP(l);ok(sum>2600&&sum<2900,'0 to 99 takes '+Math.round(sum)+' practice (2.5 times the 1100 it took before: the owner, 2026-11-08, "proficiency increase too fast")');
- // practice raises it to 99 and no further
- P.sk.med={lv:98,xp:0};H.train('med',999,true);ok(P.sk.med.lv===PROF.max&&P.sk.med.xp===0,'a proficiency stops at 99');P.sk.med={lv:0,xp:0};P.level=0;P.xp=0;P.lvUp=0;// (as new again: the level never falls by itself)
+ let sum=0;for(let l=0;l<99;l++)sum+=t.SK_XP(l);ok(sum>2600&&sum<2900,'0 to 99 takes '+Math.round(sum)+' practice (2.5 times the 1100 it took before: the owner, 2026-11-08, "proficiency increase too fast")');
+ // practice raises it past the old 99 (no top for now: the owner, 2026-11-08, "remove the proficiency cap for now, may be max at 9999"),
+ // to 9999 and no further; the effects made for the old top read it as 99 (skillSafe), the rest grow on
+ P.sk.med={lv:98,xp:0};H.train('med',999,true);const past=P.sk.med.lv;P.sk.med={lv:PROF.max-1,xp:0};H.train('med',1e9,true);
+ ok(PROF.max===9999&&past>99&&P.sk.med.lv===PROF.max&&P.sk.med.xp===0,'a proficiency rises past 99 ('+past+' from 98 with 999 practice) and stops at 9999');
+ {const was=P.sk.trade;P.sk.trade={lv:5000,xp:0};const buy=t.spreadBuy(),sell=t.spreadSell(),sh=(P.sk.surv=P.sk.surv||{lv:0,xp:0},P.sk.surv.lv=5000,t.survivalShare());P.sk.surv.lv=0;P.sk.trade=was;P.sk.archery={lv:5000,xp:0};const pw=t.skill('archery');P.sk.archery={lv:0,xp:0};
+  ok(buy>0&&sell>0&&sh>0&&Math.abs(t.skillSafe('trade')-t.skill('trade'))<1e-9&&pw>500,'at 5000 the effects made for the old top read it as 99: prices as at 99 ('+buy.toFixed(3)+', '+sell.toFixed(3)+'), Survival still needs food ('+sh.toFixed(2)+'), power grows on ('+Math.round(pw)+')')}
+ // (the characters made never start past the old top)
+ ok(t.SK_MADE===99&&Math.min(t.SK_MADE,30*t.PROF.per)===99,'a lord, chieftain, companion or past starts at no more than 99 (SK_MADE)');P.sk.med={lv:0,xp:0};P.level=0;P.xp=0;P.lvUp=0;// (as new again: the level never falls by itself)
  // level from progress, a choice (health, stamina or mana) a level
  const lv0=P.level,tp0=P.lvUp;H.train('tact',300,true);
  ok(P.level>lv0&&P.lvUp-tp0===P.level-lv0,'practising Tactics raises the level, a choice each (level '+P.level+', +'+(P.lvUp-tp0)+' choices)');

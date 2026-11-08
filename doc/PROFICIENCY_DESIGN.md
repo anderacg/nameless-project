@@ -34,7 +34,7 @@ Status: **built** (2026-11-08). Numbers in `PROF` (`data/progression.js`).
 ## 4. Proficiencies
 
 ### 4.1 Growth
-- Each proficiency runs **0 to 99** (`PROF.max`).
+- Each proficiency runs **0 to 99** (`PROF.max`). *(2026-11-08, the owner: no top for now, at most 9999. A made character still starts at no more than 99 (`PROF.made`), and the effects made for 99 (prices, Survival's food, Blocking's stamina, sight) read no further (`skillSafe`); the rest grow on.)*
 - It rises **by use, as now**: the existing `train(...)` calls stay.
 - **Pace:** reaching 99 takes about as much practice as reaching 10 does today. A level needs `PROF.xp0 + PROF.xpUp × level` practice (4 + 0.145 × level; 0 to 99 is 1099, as 0 to 10 was 1100), so early levels come quickly and later ones slowly.
 - **A knack** (your race's or past's) still makes its proficiency rise faster, as today.

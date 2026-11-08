@@ -211,7 +211,7 @@ function econDay(){
 }
 
 /* trading with a holding's market: each unit changes its stock, and so the next unit's price (Economy buy, sell) */
-const spreadBuy=()=>1.08*(1-.015*skill('trade')),spreadSell=()=>.92*(1+.01*skill('trade'));
+const spreadBuy=()=>1.08*(1-.015*skillSafe('trade')),spreadSell=()=>.92*(1+.01*skillSafe('trade'));
 /* your terms at a holding's market (the owner, 2026-11-04: the price "based on bargaining skill and relationship as well"): your
    standing there (reputation.js standingAt, from lo to hi) worth up to stand of a good's price, better buying and selling both
    (worse under 0); and a haggle, once a visit, on a bargain of min gold or more (QUEST_CHECKS.haggle: Trading and Charisma, the

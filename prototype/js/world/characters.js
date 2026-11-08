@@ -12,7 +12,7 @@
    by the Unit's fieldStats. ---------- */
 // (LV_XP: a lord's or chieftain's experience to his next level, as ever; SK_XP: practice from a proficiency's level to the next,
 // SK_MAX its top: data/progression.js PROF. Your hero's and a companion's level from their proficiencies: Character#relevel)
-const LV_XP=lv=>lv*60,SK_XP=lv=>PROF.xp0+PROF.xpUp*lv,SK_MAX=PROF.max;
+const LV_XP=lv=>lv*60,SK_XP=lv=>PROF.xp0+PROF.xpUp*lv,SK_MAX=PROF.max,SK_MADE=PROF.made;// (SK_MADE: the most a made one starts with)
 // (progress for level n, and the level a progress reaches; a proficiency's share at level L (part of the next as its bar fills))
 const PROF_NEED=n=>PROF.step*n*(n+1)/2,PROF_LEVEL=p=>Math.max(0,Math.floor((Math.sqrt(1+8*p/PROF.step)-1)/2)),PROF_TRI=L=>L*(L+1)/2;
 // every fighter's health in battle, × this (your hero's and a lord's own health come and go at it: battle/setup.js, resolution.js,
@@ -130,7 +130,7 @@ class Character extends Unit{
     const o=this.o;if(o.kit>=2){if(this.aiOwned&&AUTO_LV.get(o)!==this.lv){AUTO_LV.set(o,this.lv);this.autoTree()}return o}// (its level risen since: its trees' points spent)
     o.attr=o.attr||{str:0,agi:0,int:0,cha:0};o.gear=o.gear||{};o.perks=o.perks||[];o.sk=o.sk||{};
     const ai=this.aiOwned;
-    for(const k of FIGHT_SK.concat(ai&&this.cls()==='caster'?['spell']:[]))if(!o.sk[k])o.sk[k]={lv:ai?Math.min(SK_MAX,Math.floor(this.lv/3)*PROF.per):0,xp:0};// (a caster its Spellcraft too)
+    for(const k of FIGHT_SK.concat(ai&&this.cls()==='caster'?['spell']:[]))if(!o.sk[k])o.sk[k]={lv:ai?Math.min(SK_MADE,Math.floor(this.lv/3)*PROF.per):0,xp:0};// (a caster its Spellcraft too)
     // (its trees: one for each proficiency, each opened as that proficiency rises (data/tree.js); an older kit's attribute points gone)
     if(!o.tree){
       o.tree=['start'];o.slots=Array(10).fill(null);

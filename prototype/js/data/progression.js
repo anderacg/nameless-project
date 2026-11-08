@@ -56,7 +56,7 @@ const SKILLS={
   trade:{n:'Trade',a:'cha',d:'Better prices, about 1% per 10 levels, when you buy and sell. Rises with the gold you trade'},
   stew:{n:'Stewardship',a:'cha',d:'+3% taxes from your fiefs per 10 levels. Rises each day you hold fiefs'}
 };
-/* proficiencies (the owner, 2026-11-08; doc/PROFICIENCY_DESIGN.md): what were disciplines, now 0 to 99, each rising by use as before;
+/* proficiencies (the owner, 2026-11-08; doc/PROFICIENCY_DESIGN.md): what were disciplines, now from 0 (to 9999 for now), each rising by use as before;
    your level is worked out from them. max: a proficiency's top; per: levels to one point of power (what its effects read: skill(k),
    so 99 is the old 10); xp0, xpUp: practice to the next level, xp0 + xpUp × its level;
    step: progress to level n is step × n(n+1)/2, progress the sum over proficiencies of weight × L(L+1)/2 at its level L (part of a
@@ -66,7 +66,11 @@ const SKILLS={
    levels; pastPer: the levels a past gives free for each point of its old head start (P.sk0) */
 // (slowed 2.5x, 2026-11-08, the owner: "proficiency increase too fast": a small battle won gave about 3 levels of your weapon's and
 // Leadership at 20-30; now about 1.5. 0 to 99 about 2750 practice, was 1100; your level, worked out from them, follows. Was xp0 4, xpUp .145)
-const PROF={max:99,per:9.9,xp0:10,xpUp:.3625,step:50,burst:6,damp:[.5,.25],reward:.5,rose:10,pastPer:10,
+// (no top for now, 2026-11-08, the owner: "remove the proficiency cap for now, may be max at 9999": max 9999, was 99. made: the old top:
+// the most a made character starts with (a lord, a chieftain, a companion, a past), and as far as the effects made for it read a
+// proficiency (prices, Survival's food, Blocking's stamina, sight: skillSafe, its gear and tree on top as ever), past it they would turn
+// over (a price under nothing, a block that gives stamina back); the rest grow on with it)
+const PROF={max:9999,made:99,per:9.9,xp0:10,xpUp:.3625,step:50,burst:6,damp:[.5,.25],reward:.5,rose:10,pastPer:10,
   weight:{ride:.8,wood:.8,surv:.8,stew:.8,athl:.8,scout:.6,trade:.6}};
 // a level's choice (the owner, 2026-11-08: "when you level up you choose to upgrade health, stamina or magic"): each level one of
 // these, as much as this (parties.js heroStats, maxSP, maxMP; P.lvPick: how many of each, P.lvUp: the choices waiting); a level

@@ -119,7 +119,7 @@ function profBody(){
   // (your level's choices waiting: more health, stamina or mana, LEVEL_UP)
   const up=!who&&P.lvUp>0?'<div class="row fb-lvup"><div class="info"><strong>Level up · '+P.lvUp+' choice'+(P.lvUp>1?'s':'')+' waiting</strong><small>Each level: more health, stamina or mana. You have '+heroStats().hp+' health, '+P.maxSP()+' stamina, '+P.maxMP()+' mana.</small><div class="fb-lvup-picks">'+
     [['hp','hero','Health'],['sp','speed','Stamina'],['mp','book','Mana']].map(([k,ic,n])=>fbBtn('lv-pick',k,fbIcon(ic,22)+'<strong>+'+LEVEL_UP[k]+' '+n+'</strong>','','primary')).join('')+'</div></div></div>':'';
-  return head+up+'<p class="muted" style="font-size:13px">Proficiencies rise as you use them, to 99; each opens choices in its own skill tree. The trees and gear add to them.</p>'+PROF_GROUPS.map(([g,L])=>{const r=L.filter(k=>!keys||keys.includes(k)).map(row).join('');return r?'<div class="lab">'+g+'</div>'+r:''}).join('');
+  return head+up+'<p class="muted" style="font-size:13px">Proficiencies rise as you use them, with no top for now; each opens choices in its own skill tree. The trees and gear add to them.</p>'+PROF_GROUPS.map(([g,L])=>{const r=L.filter(k=>!keys||keys.includes(k)).map(row).join('');return r?'<div class="lab">'+g+'</div>'+r:''}).join('');
 }
 // the Skill trees tab: the shown one's tree, the main thing, and the chosen node; under it the switch between the proficiencies (the
 // owner, 2026-11-08: "the selection between proficiency should be at the bottom and have an arrow to click or swap between them. Or
