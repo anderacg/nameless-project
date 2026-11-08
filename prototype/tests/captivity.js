@@ -36,6 +36,13 @@ Kit.suite(({ok})=>{
    const lv=W.lords[0],r=t.Relations.withYou(lv);ok(C.straight({k:'lord',id:lv.id})<=X.straight.lord+.001,'a lord '+Math.round(C.straight({k:'lord',id:lv.id})*100)+'%, a realm\u2019s men '+Math.round(C.straight({k:'realm'})*100)+'%, a broker never ('+C.straight({k:'broker'})+')');C.held=null;t.hidePanel()}
   // ---- persuaded: a fine
   setup();b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});t.act('cont');roll(0);t.act('held-persuade');window.Math.random=rnd;ok(!C.held&&P.gold===400-Math.floor(400*X.persuade.fine),'persuaded: let go for a fine');t.act('dlg-ok');
+  // ---- where a band keeps you: a lair of its own kind, never a goblin camp for men (the owner, 2026-11-08: "I got captured by human
+  // bandit but then I was sent to goblin camp")
+  {const gc=W.sites.find(x=>x instanceof t.GoblinCamp&&!x.cleared),hl=W.sites.find(x=>x instanceof t.Lair&&!(x instanceof t.GoblinCamp)&&!x.cleared&&!x.within);
+   if(gc&&hl){const x0=hl.x,y0=hl.y,p0=[P.x,P.y];try{P.x=gc.x+t.TILE;P.y=gc.y;hl.x=gc.x+8*t.TILE;hl.y=gc.y;
+     const men=C.placeOf(C.captor({kind:'party',ref:{kind:'bandits'}})),gob=C.placeOf(C.captor({kind:'party',ref:{kind:'goblins'}})),at=C.placeOf(C.captor({kind:'camp',ref:gc}));
+     ok(men&&men.i===hl.i&&gob&&gob.i===gc.i&&at&&at.i===gc.i&&C.captor({kind:'camp',ref:gc}).band==='goblins','bandits take you to their own '+hl.name+', never the goblins\' '+gc.name+' a step nearer; goblins to theirs; taken at a camp, held there')}
+   finally{hl.x=x0;hl.y=y0;P.x=p0[0];P.y=p0[1]}}else ok(false,'a goblin camp and a bandits\' lair to test')}
   // ---- serving the band: days pass, their raids are yours
   setup();b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});t.act('cont');window.Math.random=rnd;{t.addHonor(t.FIDS[0],30,true);const d0=G.day,h0=t.honorWith(t.FIDS[0]),g0=gearN();t.act('held-serve');
    ok(!C.held&&G.day-d0>=X.serve.band[0]&&t.honorWith(t.FIDS[0])<h0&&P.gold===400&&gearN()===g0,'riding with the band: days pass, honour lost with every realm, your gold and gear kept (and no wages while you are held)');t.act('dlg-ok')}
@@ -91,7 +98,7 @@ Kit.suite(({ok})=>{
    ok(G.day-d0<=Math.ceil(X.serve.band[1]*TR.oldsoldier.serve),'and half the service ('+(G.day-d0)+' days)');t.act('dlg-ok');
    setup();P.perks=['oldsoldier'];const b2=band();roll(.99);lose({kind:'party',ref:b2,n:6,list:b2.troops.slice(),band:'bandits'});t.act('cont');const g1=gearN();t.act('held-pay');window.Math.random=rnd;
    ok(g1-gearN()===X.light[1]-1,'and a piece fewer from your bag ('+(g1-gearN())+')');t.act('dlg-ok');P.perks=[]}
-  {P.perks=[];const N=['slippery','silver','oldsoldier'].map(k=>Object.values(t.TREE).find(n=>n.m&&n.m.perk===k));ok(N.every(n=>n&&n.links.length),'each trait is a node in the hero’s tree: '+N.map(n=>n&&n.n).join(', '))}
+  {P.perks=[];const N=['slippery','silver','oldsoldier'].map(k=>Object.values(t.TREE).find(n=>n.m&&n.m.perk===k));ok(N.every(n=>n&&n.prof&&t.PROF_TREE[n.prof]),'each trait is a node of a proficiency\'s tree: '+N.map(n=>n&&n.n+' ('+t.SKILLS[n.prof].n+')').join(', '))}
   // ---- where they keep you, and where you come out
   {caged();ok(C.held.at===null||C.held.at.k==='site','a band takes you to a camp or hideout of theirs near, if there is one')}
   {setup();const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;const b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;
