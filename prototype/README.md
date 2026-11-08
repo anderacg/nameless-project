@@ -174,7 +174,7 @@ js/world/             the campaign map and everything on it
                         them: penWay when they hem his door in), carrying loads to the holding);
                         caravans (realms' and yours; drawn in the battle figures' style at their guards' size:
                         caravanSprite, CARAVAN_ART, drawCaravanArt)
-  companions.js         the Companion role: companions who grow as you do (level, gear, disciplines, perks) and lead
+  companions.js         the Companion role: companions who grow as you do (level, gear, proficiencies, perks) and lead
                         parties of your soldiers
   ships.js              fishing boats out to the fishing grounds by day; trade ships between ports on the same sea; on the
                         generated world boats sail only the navigable rivers, under their bridges' decks (shipUnder)
@@ -832,11 +832,22 @@ The owner: "change all unit icon to portrait and add a button to view unit in sp
 - **The sprite view** (`ui/unitcard.js` `SpriteView`): on the unit card, View sprite swaps the portrait for the unit's battle figure, standing, enlarged and in whole pixels (still for now: the owner). View portrait brings the portrait back.
 - Tests: `portraits`.
 
+## Proficiency (2026-11-08)
+
+doc/PROFICIENCY_DESIGN.md. The owner: "your proficiency grows as you do certain actions ... and the level progress will just based on your proficiency progress"; "a proficiency cap for each at 99".
+- **Proficiencies** (were disciplines; `SKILLS`, `P.sk`, numbers in `data/progression.js` `PROF`): 0 to 99 each, rising by use as before (`Character#train`; a level takes `SK_XP` = 4 + 0.145 × level). Their power is level / 9.9 (`trained`, `skill`), so 99 is the old 10; the Tree and gear add in power (+1 is ten levels). A past starts its own free (`PROF.pastPer` 10 a point, `P.sk0`), not counted toward your level.
+- **Level from them** (`Character#profProgress`, `relevel`): each proficiency's weight × L(L+1)/2 (`PROF.weight`: the easy ones count 0.8 or 0.6), less the past's start; level n needs 50 × n(n+1)/2 (`PROF_NEED`). Each level is a Tree point. The same practice past 6 uses in an hour gives half, past 12 a quarter (`PROF.burst`, `damp`).
+- **Rewards are practice** (`gainXp(n, kind)`, `REWARD_TRAIN`, `QUEST_TRAIN`): a battle trains your weapon, Leadership and Tactics; a tournament your weapon and Athletics; a quest what fits its kind. Companions grow the same way. Lords and chieftains (`aiOwned`) keep their experience levels; their proficiencies are about half their level in power (`realms.js` `lordStats`, `leaders.js` `newChief`).
+- **The combo's upgrades are Tree nodes** (`data/tree.js` `TREE_COMBO`): Third Blow off Brute Force, then Stunning or Crushing Finisher (`excl`: one shuts the other). `battle/combat.js` `comboBlows`, `heroFin`.
+- **The skill page** (`ui/talents.js`): Proficiency (the level bar, then each proficiency by group: `PROF_GROUPS`, `profBody`), Tree, Trait (your attack, the moves everyone has, your race and past: `HERO_TRAITS`, `traitBody`), Skill bar.
+- **Saves:** `SAVE_V` 4; older saves are refused.
+- Tests: `proficiency`.
+
 ## Bare hands and the Nobody (2026-10-29)
 
 The owner: "a new origin where you start from nothing" and "an unarmed attack: mostly a one hand punch, two hands to grapple, a kick"; only your hero for now.
 - **The Nobody** (`data/progression.js` `BGS.nobody`): no weapon, 5 gold and 3 grain, no troops, no attribute bonus; Unarmed and Athletics learned faster. Their origin (`data/tree.js` `ORIGINS.nobody`, +10 stamina) joins the Crossroads itself and the brawler's chain. A card of its own on the New game page.
-- **Unarmed** (`SKILLS.fist`): your hero's discipline with no weapon in either hand (`core/state.js` `unarmed`, `meleeSk`); it rises with each blow landed, and grows the combo as One-Handed does.
+- **Unarmed** (`SKILLS.fist`): your hero's proficiency with no weapon in either hand (`core/state.js` `unarmed`, `meleeSk`); it rises with each blow landed. The combo's third blow comes from the Tree, as for every weapon.
 - **The fists** (`battle/combat.js` `FISTS`): ×0.6 damage, −8 reach, ×0.75 swing time, blunt. The combo (`COMBOS.fists`) is a Jab, a Cross and a Kick, and each strikes only the nearest foe. The hard attack (`battle/movesets.js` `MOVESETS.hard.grapple`) is a Grapple: wound up, then the foe is seized in both hands and thrown (`HeroHands#grab`), staggered and perhaps knocked down.
 - **The look** (`gfx/people.js` `FIST_RIG`, `rigLimbs`; `gfx/sprites.js` poses 29–40 from `FIST_POSE`): a small rig, so the whole body moves. In each frame the head and the body move apart, and both arms (shoulder, elbow, fist) and both legs (hip, knee, foot) are drawn from their joints. The guard hand stays at the chin while the other strikes; the knees bend; the hips turn and the rear heel lifts on the cross, thrown with the rear hand across the body; the body leans back over the kick, and crouches, rears and bends over the grapple. Parrying bare-handed, both fists come up.
 - **The brawler's chain** (`TREE_FISTS`, nodes `fist0`–`fist3`, below Command, from the Nobody's origin or from Sage Counsel): Bare Knuckles (+15% unarmed damage, +1 Unarmed), Iron Shins (a harder kick, +8 health), Grappler (grapple 30% more often, a surer throw), Open Hand (keystone: +35% unarmed damage and 10% quicker, but 10% more damage taken).
@@ -1017,7 +1028,7 @@ doc/UNIT_KITS_DESIGN.md. **Step 1 built (2026-11-01): the refactor, the same gam
 - **Stances** (`STANCES`): a row of the order bar each, for the groups with a soldier who can: Pace (Q; its Charge and Walk buttons), Discipline (F: hold ground), Shooting (M: one cycle of Fire at will, Hold fire, Skirmish, Melee; its buttons pick one, pressed again Fire at will), Shield wall (B), Mounted (J: Dismount while any rider is up, else Mount; the two skills with their cooldowns till step 2). The flags under them are as before (`GRP_FLAGS`; `FLAG_N`, their words, from `STANCES`).
 - **Formations** (`FORMS`), as before.
 - **Traits** (`data/abilities.js` `TRAITS`; `ABILITIES` is the characters' skills, `HERO_SKILLS`, and the traits, one list as before).
-- **Skills** (`battle/unitabilities.js` `UNIT_SKILLS`, `UNIT_ABILITIES` its old name; `SKILLS` is your hero's disciplines): bursts with a cooldown, on the **skill bar**, three slots on **Z, X, C**, each selected group its own skill in each (`groupSlot`); its old letters (G, I, U, Y, O, N, P) quiet aliases.
+- **Skills** (`battle/unitabilities.js` `UNIT_SKILLS`, `UNIT_ABILITIES` its old name; `SKILLS` is your hero's proficiencies): bursts with a cooldown, on the **skill bar**, three slots on **Z, X, C**, each selected group its own skill in each (`groupSlot`); its old letters (G, I, U, Y, O, N, P) quiet aliases.
 - **Kits** (`KITS`: each kind's ladder, the rank each skill and perk comes at, `RANK_SKILLS` its old name; a kind with none has each skill its soldiers qualify for from rank 1).
 - **Commands** (`battle/commandpowers.js` `COMMANDS`, `COMMAND_POWERS` its old name): your hero's, Rally the Line (R) and Stand Fast! (S).
 

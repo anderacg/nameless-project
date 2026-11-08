@@ -238,7 +238,7 @@ const RUIN_OCC={
           {icon:'book',label:'Listen',act:'site-hermit',arg:'lore',facts:['lore of the old kings','+'+H.xp+' XP · '+H.lore+'g'],why:why||(P.gold<H.lore?'Not enough gold':''),tip:'Pay him to tell of the old kings. Once a visit.'}],note:'Once a visit: rumours or lore.'}},
     act:(s,o,a,arg,done)=>{const H=RUIN.hermit,y=G.siteSpy;if(a!=='site-hermit'||y&&y.s===s&&y.told)return false;const c=arg==='lore'?H.lore:H.rumour;if(P.gold<c)return true;
       P.gold-=c;G.siteSpy={s,told:true};
-      if(arg==='lore'){gainXp(H.xp);done('By his fire the hermit tells of the old kings and the wars that broke them. (+'+H.xp+' XP)');return true}
+      if(arg==='lore'){gainXp(H.xp,'lore');done('By his fire the hermit tells of the old kings and the wars that broke them. (+'+H.xp+' XP)');return true}
       const far=W.sites.filter(x=>!x.seen&&x.scoutable).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y))[0];if(far)far.seen=true;
       const it=rumourFrom(rumourSource('hermit',s.tx+','+s.ty,s)).today[0];// (and a rumour of the land round his ruin, one a day: news.js)
       done([far?'He tells of the '+far.label+' to the '+compass(far.x-s.x,far.y-s.y)+'. It is on your map now.':'',it?'He has heard: “'+rumourText(it)+'”':''].filter(Boolean).join(' ')||'He knows nothing you have not heard.');return true}},
@@ -331,7 +331,7 @@ class Ruins extends Site{
     delete this.stirs;this.looted=true;this.cleared=true;this.back=G.day+this.T.respawn;
     if(wake)return done('Soft-footed, your people slip past the guardians and lift a sealed chest from under their noses.'+siteChest(this));
     if(r<RUIN.chest)return done('Under a fallen slab you find a sealed chest.'+siteChest(this));
-    gainXp(30);P.renown+=2;done('No treasure, but the carvings tell of the old kings. You learn much. (+30 XP, +2 renown)')}
+    gainXp(30,'lore');P.renown+=2;done('No treasure, but the carvings tell of the old kings. You learn much. (+30 XP, +2 renown)')}
   // the guardians beaten (engage.js ON_WIN.cave): their treasure, for sure; left or beaten by them, it remembers them
   lairWon(){delete this.guard;delete this.stirs;this.looted=true;const x=' Beyond them lies the treasure.'+siteChest(this);clearPlace(this,this.T.respawn);return x}
   lairLost(e){if(!this.looted)this.guard={id:this.id,n:Math.max(1,e.list.length),lv:e.lv}}

@@ -11,7 +11,7 @@ Kit.suite(({ok})=>{
  // (a tab's Back goes to the Game Menu; a sub-page's to its parent)
  const menuBack=()=>{const b=navBack();return !!b&&b.dataset.act==='fb-menu'&&b.textContent==='Back'},sub=()=>{const b=navBack();return !!b&&b.dataset.act!=='fb-menu'};
  Kit.begin('soldier',31);Kit.clear();Kit.world();
- P.band='Iron <Band>';P.xp=30;P.gold=2000;P.sk.lead.lv=10;// all ten group slots (a new band starts at three)
+ P.band='Iron <Band>';P.xp=30;P.gold=2000;P.sk.lead.lv=10*PROF.per;// all ten group slots (a new band starts at three)
  P.comps={brann:{ap:5,role:'scout'},elske:{ap:5,role:'surgeon'},tavi:{ap:5,role:''}};const brann=t.compInit('brann');brann.lv=4;brann.xp=50;t.compInit('elske');const tavi=t.compInit('tavi');tavi.lv=3;
  const r=t.partyRoster(P);r.add('hum_foot',8);r.add('hum_knight',2);r.add('hum_levy',5);const foot=r.groups.find(g=>g.type==='hum_foot'),knight=r.groups.find(g=>g.type==='hum_knight');
  t.cpGive('tavi','hum_levy',3);ok(!!tavi.party,'Tavi leads a party of his own (away from the band)');
@@ -75,7 +75,7 @@ Kit.suite(({ok})=>{
   t.act('party-path',foot.id);t.act('party-select',knight.id);t.act('party-path',knight.id);{const d=q('.fb-inspector').textContent;ok(/Z Spur/.test(d)&&/upgrades no further/.test(d),'a rider’s: Spur, and the top of its path')}
   t.act('party-back');ok(!t.partyView().path&&q('.fb-inspector .ucard-x'),'Back leaves the path');
   // ---- Army skills
-  P.sk.trade.lv=3;t.act('char-tab','skills');
+  P.sk.trade.lv=3*PROF.per;t.act('char-tab','skills');
   {const v=k=>q('.fb-bskill-v[aria-label^="'+t.SKILLS[k].n+' "]'),row=k=>v(k).closest('.fb-bskill').textContent;
    ok(['lead','tact','med','scout','surv','trade'].every(k=>v(k)&&+v(k).textContent===t.skill(k)),'Army skills: Scouting, Leadership, Medicine, Trade, Survival, Tactics, each its band value');
    ok(row('trade').includes('You 3')&&row('scout').includes('Brann (Scout) +'+P.roleBonus('scout'))&&row('med').includes('Elske (Surgeon) +'+P.roleBonus('med')),'who gives each: you, and the companion in its role ('+row('scout').split('.')[0]+')');

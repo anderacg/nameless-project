@@ -5,7 +5,7 @@
 // his group's, no other; new men refilling a group pay for its upgrades; merged, only what both had; upgraded into another kind, kept,
 // idle where it no longer fits; saved; listed under its traits.
 Kit.suite(({ok,info})=>{
- const t=T,P=t.P,G=t.G,B=t.Buffs,X=t.BUFFS;Kit.begin('soldier',1);Kit.clear();Kit.world();P.sk.lead.lv=10;P.gold=1e5;
+ const t=T,P=t.P,G=t.G,B=t.Buffs,X=t.BUFFS;Kit.begin('soldier',1);Kit.clear();Kit.world();P.sk.lead.lv=10*PROF.per;P.gold=1e5;
  const ash=t.townBy('Ashford'),vil=t.TOWNS.find(x=>x.kind==='village'),r=t.partyRoster(P);P.troops={};P.rep[ash.name]=90;
  try{
   X._blades={n:'Tempered blades',d:'Better steel.',at:'smith',need:{tier:3},cost:6,who:{unit:'foot'},mods:{dmgPct:.2,armor:10}};X._shoes={n:'Iron shoes',at:'stable',cost:4,who:{unit:'mounted'},mods:{spdPct:.1}};

@@ -5,7 +5,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W;t.act('begin','soldier');G.quietEvents=true;
  ok(W.lords.every(l=>t.lordStats(l).lv>=2&&['lead','tact','med'].every(k=>l.sk[k]&&l.sk[k].lv>=0)),'every lord has a level and the disciplines of command (Leadership, Tactics, Medicine)');
- const l=W.lords[0];t.lordStats(l);const c0=t.lcapOf(l);l.lv+=2;const c1=t.lcapOf(l);l.sk.lead.lv+=3;const c2=t.lcapOf(l);
+ const l=W.lords[0];t.lordStats(l);const c0=t.lcapOf(l);l.lv+=2;const c1=t.lcapOf(l);l.sk.lead.lv+=3*PROF.per;const c2=t.lcapOf(l);
  ok(c1===c0+6&&c2===c1+3,'his army cap grows as yours does: +3 a level, +1 a level of Leadership ('+c0+' → '+c1+' → '+c2+')');
  // hiring from volunteers
  const h=t.TOWNS.find(z=>z.owner===l.fac);t.ensureEcon(h);W.treas[l.fac]=5000;Object.assign(l,{dead:false,inside:null,state:'rest',tgt:h.name,troops:['hum_levy'],x:h.x,y:h.y+14});
@@ -21,7 +21,7 @@ try{
  {const a=W.lords.find(x=>!x.dead);t.lordStats(a);const lv0=a.lv,xp0=a.xp+a.lv*1e4,ld=a.sk.lead.lv*1e4+a.sk.lead.xp;t.lordWins(a,30);
   ok(a.xp+a.lv*1e4>xp0&&a.sk.lead.lv*1e4+a.sk.lead.xp>ld,'a victory gives him experience and raises his Leadership');a.xp=a.lv*60-1;t.lordXp(a,5);ok(a.lv===lv0+1||a.lv>lv0,'enough experience and he reaches the next level ('+lv0+' → '+a.lv+')')}
  // tactics
- {const a=W.lords[0];a.sk.tact.lv=0;const m0=t.lordTac([a]);a.sk.tact.lv=6;ok(t.lordTac([a])>m0,'Tactics makes his army count for more in a fight (×'+t.lordTac([a]).toFixed(2)+')')}
+ {const a=W.lords[0];a.sk.tact.lv=0;const m0=t.lordTac([a]);a.sk.tact.lv=6*PROF.per;ok(t.lordTac([a])>m0,'Tactics makes his army count for more in a fight (×'+t.lordTac([a]).toFixed(2)+')')}
  // a unit he trains up keeps its men (realms.js lordRecruit: a levy of 7, after a refill, was once trained into Lancers, a mounted
  // unit of 6, and all 7 were lost): as yours, one full unit of its new kind goes, the rest stay, with a free unit slot; without one,
  // not that kind (the owner, 2026-11-01; the lancers first here, as a roll may pick them)

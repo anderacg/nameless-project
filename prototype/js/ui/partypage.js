@@ -34,8 +34,9 @@ function rankLine(g){const r=rankOf(g),need=rankNeed(g),x=Math.floor(rankXp(g));
 const rankMeter=L=>fbMeter('skills',L.label,L.v,Math.max(1,L.max)).replace(/<b>[^<]*<\/b>/,'<b>'+htmlText(L.val)+'</b>');
 const rankPips=g=>{const r=rankOf(g),m=masteryOf(g);return r?'<span class="rk-pips'+(m?' m'+(['bronze','silver','gold'].indexOf(RANKS.mastery.metal[m-1])+1):'')+'" aria-label="Rank '+r+' of '+RANKS.max+'">'+Array.from({length:RANKS.max},(_,i)=>'<i'+(i<r?' class="on"':'')+'></i>').join('')+'</span>':''};
 function rosterXp(id,u){
-  if(id==='hero')return{v:P.xp,max:LV_XP(P.level),txt:'Lv. '+P.level+' · '+Math.floor(P.xp)+' / '+LV_XP(P.level)+' XP'};
-  if(u.cid){const c=compInit(u.cid);return{v:c.xp,max:LV_XP(c.lv),txt:'Lv. '+c.lv+' · '+Math.floor(c.xp)+' / '+LV_XP(c.lv)+' XP'}}
+  // (your hero's and a companion's level from their proficiencies: its progress into the next, characters.js relevel)
+  if(id==='hero'){const h=leaderOf(P),n=h.xpNeed();return{v:P.xp,max:n,txt:'Lv. '+P.level+' · '+Math.round(100*P.xp/n)+'% to '+(P.level+1)}}
+  if(u.cid){const c=compInit(u.cid),h=compOf(u.cid),n=h.xpNeed();return{v:c.xp,max:n,txt:'Lv. '+c.lv+' · '+Math.round(100*c.xp/n)+'% to '+(c.lv+1)}}
   const g=u.g||(P.woundedGroups||[]).find(w=>w.id===id);return g?rankLine(g):{v:0,max:1,txt:''};
 }
 const partyUnitWage=u=>u.id==='hero'?0:u.cid?BAND_PAY.companion:(u.fit+u.wounded)*soldierPay(u.type)+(ST[u.type]?.mounted?u.fit*BAND_PAY.mounted:0);
@@ -172,7 +173,7 @@ const BAND_SKILL_ICON={lead:'banner',tact:'map',med:'wounded',eng:'tower',pers:'
 const ROLE_ICON={scout:'eye',surgeon:'wounded',quarter:'bag',guide:'map',trainer:'shield'};
 // who gives a skill: [who, how much], yours first
 function bandSkillFrom(k){const rid=k==='scout'?roleOf('scout'):k==='med'?roleOf('surgeon'):null,rb=P.roleBonus(k),g=P.gearSkill(k),t=P.treeSkill(k);
-  return [['You',P.sk[k].lv],...(rb?[[COMPS[rid].short+' ('+ROLES[k==='scout'?'scout':'surgeon']+')',rb]]:[]),...(g?[['Gear',g]]:[]),...(t?[['Skill tree',t]]:[])]}
+  return [['You',+(P.sk[k].lv/PROF.per).toFixed(1)],...(rb?[[COMPS[rid].short+' ('+ROLES[k==='scout'?'scout':'surgeon']+')',rb]]:[]),...(g?[['Gear',g]]:[]),...(t?[['Skill tree',t]]:[])]}
 // (Athletics on foot and Riding in the saddle also spare the band's stamina on the march: world/supply.js)
 function bandSkillNote(k){if(k!=='athl'&&k!=='ride')return '';const ride=mountedShare(bandSpeeds())>=.5,on=ride===(k==='ride');
   return '<small class="'+(on?'good':'muted')+'">On the march your band tires '+Math.round(Math.min(SUPPLY.skillCap,SUPPLY.skill*skill(k))*100)+'% less'+(on?' (it is '+(ride?'mostly mounted':'mostly on foot')+')':' when '+(k==='ride'?'mostly mounted':'mostly on foot'))+'.</small>'}

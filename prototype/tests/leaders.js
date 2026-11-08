@@ -1,6 +1,6 @@
 'use strict';
-// Leaders: the hero, lords, companions and bandit chieftains grow by one set of rules (a level from experience, level x 60 to
-// the next; disciplines by use, (level + 1) x 20). Chieftains are named, grow only by winning battles, harden their band,
+// Leaders: lords and bandit chieftains grow by experience (level x 60 to the next); your hero and companions by their
+// proficiencies (doc/PROFICIENCY_DESIGN.md). Chieftains are named, grow only by winning battles, harden their band,
 // carry a bounty that is yours when you hand them over, and the taverns talk of the most wanted.
 Kit.suite(({ok})=>{
  const t=T,G=t.G,P=t.P,W=t.W;Kit.begin();
@@ -8,12 +8,13 @@ Kit.suite(({ok})=>{
  // one rule for every kind
  const L=W.lords[0];t.lordStats(L);L.lv=1;L.xp=0;P.comps={brann:{ap:0,role:''}};const c=t.compInit('brann');c.lv=1;c.xp=0;
  const ch=t.newChief('bandits',1);t.bandits.push(t.asParty({x:-999,y:-999,n:4,kind:'bandits',list:['militia'],t:0,a:0,cool:0,ld:ch}));
- P.level=1;P.xp=0;const ups=[t.leaderOf(P),t.leaderOf(L),t.leaderOf(c,'brann'),t.leaderOf(ch)].map(x=>x.gainXp(59)+x.gainXp(1));
- ok(ups.every(u=>u===1)&&P.level===2&&L.lv===2&&c.lv===2&&ch.lv===2,'hero, lord, companion and chieftain all reach level 2 at 60 experience ('+ups.join(', ')+')');
+ const ups=[t.leaderOf(L),t.leaderOf(ch)].map(x=>x.gainXp(59)+x.gainXp(1));
+ ok(ups.every(u=>u===1)&&L.lv===2&&ch.lv===2,'a lord and a chieftain reach level 2 at 60 experience ('+ups.join(', ')+')');
+ {const H=t.leaderOf(P),C=t.leaderOf(c,'brann'),l0=P.level,c0=c.lv;H.train('tact',400,true);C.train('oneh',400,true);ok(P.level>l0&&c.lv>c0&&P.level===t.PROF_LEVEL(H.profProgress())&&c.lv===t.PROF_LEVEL(C.profProgress()),'your hero and a companion level by their proficiencies ('+l0+' \u2192 '+P.level+', '+c0+' \u2192 '+c.lv+')')}
  ok([t.leaderOf(P),t.leaderOf(L),t.leaderOf(c),t.leaderOf(ch)].map(x=>x.role).join()==='hero,lord,companion,chieftain'&&[P,L,c,ch].every(o=>t.charOf(o) instanceof t.Character&&t.charOf(o) instanceof t.Unit),'each one Character (a Unit), in its own role');
  {const s0=P.sk.lead.xp,l0=L.sk.lead.xp;t.train('lead',5);t.lordTrain(L,'lead',5);ok(P.sk.lead.xp-s0>L.sk.lead.xp-l0,'you learn faster than a lord, by your Charisma and your knacks')}
- {c.lv=2;c.xp=0;c.perkPend=0;t.compXp('brann',2*60+1);ok(c.lv===3&&c.perkPend===1,'a companion still earns a perk every third level')}
- {const tp=P.tp||0;t.gainXp(P.level*60);ok(P.tp===tp+1,'and you a skill point a level')}
+ {const C=t.leaderOf(c,'brann');for(const k in c.sk)c.sk[k]={lv:0,xp:0};c.lv=0;c.xp=0;c.perkPend=0;let n=0;while(c.lv<3&&n++<200)C.train('oneh',5,true);ok(c.lv===3&&c.perkPend===1,'a companion still earns a perk every third level ('+c.lv+', '+c.perkPend+')')}
+ {const tp=P.tp||0,l0=P.level,H=t.leaderOf(P);let n=0;while(P.level===l0&&n++<500)H.train('eng',5,true);ok(P.level===l0+1&&P.tp===tp+1,'and you a tree point a level')}
  // chieftains
  t.bandits.length=0;for(let i=0;i<6;i++)t.spawnBandit(true);const lairs=W.sites.filter(s=>s.type==='camp'||s.type==='hideout');
  ok(t.bandits.every(b=>b.ld&&b.ld.name)&&lairs.every(s=>s.ld&&s.ld.name),'every band, bandit camp and hideout has a named chieftain');

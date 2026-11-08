@@ -5,7 +5,7 @@
 Kit.suite(({ok})=>{
  const t=T,G=t.G,P=t.P,screen=document.getElementById('screen'),q=s=>t.panel.querySelector(s),qa=s=>[...t.panel.querySelectorAll(s)];
  window.requestAnimationFrame=()=>0;Kit.begin('soldier',31);Kit.clear();Kit.world();P.comps={brann:{ap:5,role:'scout'},elske:{ap:5,role:'surgeon'}};t.compInit('brann');t.compInit('elske');
- P.sk.lead.lv=4;const r=t.partyRoster(P);r.add('hum_foot',8);r.add('hum_bow',4);const foot=r.groups.find(g=>g.type==='hum_foot'),bow=r.groups.find(g=>g.type==='hum_bow'),ids=['hero','comp_brann',foot.id];
+ P.sk.lead.lv=4*PROF.per;const r=t.partyRoster(P);r.add('hum_foot',8);r.add('hum_bow',4);const foot=r.groups.find(g=>g.type==='hum_foot'),bow=r.groups.find(g=>g.type==='hum_bow'),ids=['hero','comp_brann',foot.id];
  const open=id=>{if(G.mode!=='char'){Kit.world();G.char='roster';t.openChar()}t.act('party-select',id);q('.fb-unit-inspector>.fb-scroll').scrollTop=0;return q('.fb-unit-inspector')};
  const stats=pane=>[...pane.querySelectorAll('.uc-stats .uc-stat')].map(e=>e.querySelector('.uc-l').textContent),stat=(pane,label)=>[...pane.querySelectorAll('.uc-stat,.uc-rank')].find(e=>e.querySelector('.uc-l').textContent===label);
  const tab=k=>q('[data-unit-tab="'+k+'"]'),scroll=()=>q('.fb-unit-inspector>.fb-scroll'),original=screen.style.cssText;
@@ -29,7 +29,7 @@ Kit.suite(({ok})=>{
  let pane=open('hero');P.mp=0;P.tp=0;P.attr.int=0;t.renderChar();pane=q('.fb-unit-inspector');
  t.act('army-edit','hero');ok(q('[data-act="army-auto-reinforce"]').disabled,'hero Auto Reinforce is disabled inside Manage Group');t.act('army-edit-close');pane=q('.fb-unit-inspector');
  ok(/^0 \//.test(stat(pane,'Mana').querySelector('.uc-v').textContent),'zero hero mana is a real value');
- ok([...tab('character').querySelectorAll('.fb-stat')].find(e=>/Skill points/.test(e.textContent))?.querySelector('strong').textContent==='0','zero skill points stay readable, on the Character tab');
+ ok([...tab('character').querySelectorAll('.fb-stat')].find(e=>/Tree points/.test(e.textContent))?.querySelector('strong').textContent==='0','zero skill points stay readable, on the Character tab');
  q('.fb-unit-actions [data-act="open-skills"]').click();ok(G.mode==='skills'&&!G.skWho,'hero Development opens the actual hero tree');t.act('sk-close');
  t.act('party-unit-tab','gear');ok(tab('gear')&&!/Empty/.test(tab('gear').textContent),'the Equipment tab lists only what he wears');t.act('party-equipment');ok(G.mode==='inv'&&G.invView==='equipment'&&q('[data-act="party-equipment-back"]'),'hero equipment opens the equipment view with Back to Army');
  t.act('party-equipment-back');ok(G.mode==='char'&&t.partyView().sel==='hero'&&tab('gear'),'Back to Army returns to the same hero, on his Equipment tab');

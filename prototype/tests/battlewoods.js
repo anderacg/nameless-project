@@ -9,7 +9,7 @@ Kit.suite(({ok,info})=>{
  for(let i=0;i<t.WM.kind.length&&at<0;i++){const x=i%t.MW,y=Math.floor(i/t.MW);if(x<25||x>t.MW-25||y<25||y>t.MH-25)continue;
   let ok2=true;for(let j=-2;j<=2&&ok2;j++)for(let k=-2;k<=2&&ok2;k++)if(!F(x+k,y+j))ok2=false;if(ok2&&t.WM.kind[(y+5)*t.MW+x]===t.T_OPEN)at=i}
  ok(at>=0,'(a wood to fight in)');if(at<0)return;
- const wx=(at%t.MW+.5)*t.TILE,wy=(Math.floor(at/t.MW)+.5)*t.TILE;Kit.goTo(wx,wy+5*t.TILE);P.troops={hum_foot:60};P.sk.lead.lv=20;
+ const wx=(at%t.MW+.5)*t.TILE,wy=(Math.floor(at/t.MW)+.5)*t.TILE;Kit.goTo(wx,wy+5*t.TILE);P.troops={hum_foot:60};P.sk.lead.lv=20*PROF.per;
  const enemy=t.asParty({kind:'bandits',troops:Array(60).fill('militia'),x:P.x+60,y:P.y,cool:0});G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[],foes:[],mine:true};
  t.startBattle({enemies:G.enc.list,tournament:false,deploy:false});const b=t.B;ok(b&&b.world,'a world battle');if(!b||!b.world)return;b.paused=true;
  const u=b.units.find(x=>x.team===0&&!x.hero),p=b.world.field({x:wx,y:wy});u.x=p.x;u.y=p.y;t.camCentre(u.x,u.y);

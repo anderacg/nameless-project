@@ -12,7 +12,7 @@ Kit.suite(({ok,info})=>{
  const fresh=()=>{Kit.world();Kit.clear();G.road=null;G.chase=null;G.enc=null;G.encAgain=null;G.encCool=0;W.road=null;P.quests=[];P.gold=500;P.morale=50;P.renown=5;P.troops={[U]:8};P.wounded={};P.woundedGroups=[];
   t.BAND.sick={};P.sp=t.vitals()[1];P.inv=Array(t.INV_SIZE).fill(null);t.invAdd('good','grain',20);G.clock=DAY*.4};
  // (stats set while fn runs: attributes and skill levels)
- const stats=(o,fn)=>{const a0={...P.attr},s0={};for(const k in o)if(k in P.attr)P.attr[k]=o[k];else{s0[k]=P.sk[k].lv;P.sk[k].lv=o[k]}try{return fn()}finally{Object.assign(P.attr,a0);for(const k in s0)P.sk[k].lv=s0[k]}};
+ const stats=(o,fn)=>{const a0={...P.attr},s0={};for(const k in o)if(k in P.attr)P.attr[k]=o[k];else{s0[k]=P.sk[k].lv;P.sk[k].lv=o[k]*PROF.per}try{return fn()}finally{Object.assign(P.attr,a0);for(const k in s0)P.sk[k].lv=s0[k]}};
  const Z={str:0,agi:0,int:0,cha:0,med:0,surv:0,hunt:0,scout:0,lead:0,pers:0,trade:0};
  // (one of a kind on its own ground near a holding (ok: that holding will do), else beside you there)
  const spawn=(k,ok)=>{const D=t.ROAD_ENC[k];for(const z of t.TOWNS){if(ok&&!ok(z))continue;fresh();Kit.goHome(z);const p=t.roadSpot(D.on,0,D.near),e=p&&t.roadSpawn(k,p[0],p[1]);if(e)return e}

@@ -168,7 +168,7 @@ function huntRewards(c,kills){
   const D=CRITTERS[c.id];
   const meat=invAdd('good','meat',kills*D.meat),got=[meat+' meat'];if(meat)worldEmit('meat:hunted',{n:meat});// (a meat job counts it: world/quests.js HuntQuest)
   if(D.mat){let m=0;for(let i=0;i<kills;i++)if(critRng().chance(D.mat[1]*(1+.05*skill('hunt'))))m++;if(m){const k=invAdd('mat',D.mat[0],m);if(k)got.push(k+' '+MATS[D.mat[0]].n.toLowerCase()+(k>1?'s':''))}}
-  gainXp(kills*D.xp);train('hunt',kills*3);
+  gainXp(kills*D.xp,'hunt');train('hunt',kills*3);
   log('You bring down '+(kills>1?kills+' '+D.n.toLowerCase():an(D.one))+': '+got.join(', ')+'.'+(meat<kills*D.meat?' Your bag is full, so you leave some meat.':''),'good');
   updateHUD(true);
 }

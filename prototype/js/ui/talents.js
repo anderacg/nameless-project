@@ -1,10 +1,11 @@
 'use strict';
-/* ---------- the Skills page: skill tree, skill bar, disciplines ---------- */
+/* ---------- the Skills page: proficiency, skill tree, traits, skill bar (the owner's order, 2026-11-08) ---------- */
 // Graph rules, spending, refunds and slot commands live in core/talents.js; this file presents their results.
 // One word for one thing: the Skill tree holds every passive, notable, keystone and active skill; you learn them with skill points
 // (one per level). Active skills go into the ten skill slots on the Skill bar: your hero uses them in battle when the moment is
-// right (battles are commanded, not played by hand: no keys). Disciplines rise as you use them. The special skills sit apart: the
-// basic moves everyone has, and the combo's upgrades, which come with practice in your weapon's discipline (SPECIAL).
+// right (battles are commanded, not played by hand: no keys). Proficiencies rise as you use them, and your level from them
+// (doc/PROFICIENCY_DESIGN.md). Traits sit apart: the moves everyone has, your race's and your past's (HERO_TRAITS); the combo's upgrades are
+// Tree nodes now (data/tree.js TREE_COMBO).
 // P.tree: learned node ids (your origin always; P.origin). P.tp: unspent skill points. P.slots: ten slot entries, an active skill id or null.
 // Every character has a tree of its own (o: its record, with tree, tp, slots and attr; yours is P): the ...Of functions work on any
 // record, the plain ones on yours. A companion, a lord or a chieftain starts from the crossroads ('start'); you from your origin.
@@ -24,7 +25,7 @@ const skSubj=()=>skWho()?compInit(skWho()):P;
 function openSkills(tab,who){
   if(who&&!P.comps[who])return;if(G.mode==='world'&&!G.modal)G.mode='char';if(G.mode!=='char')return;// (K from the map: the Army window, on your hero's)
   if(who)charKit(charOf(compInit(who),who));G.skWho=who||null;
-  G.mode='skills';G.skTab=tab||G.skTab||'talents';if(G.skWho&&['disciplines','basics'].includes(G.skTab))G.skTab='talents';const v=skPage();G.skSel=v.sel&&TREE[v.sel]?v.sel:treeRootOf(skSubj());G.tv=v.view||skFocusView(G.skSel);renderSkills()}// (each character keeps its own runtime selection and camera)
+  G.mode='skills';G.skTab=tab||G.skTab||'prof';if(!['prof','talents','traits','abilities'].includes(G.skTab))G.skTab='prof';const v=skPage();G.skSel=v.sel&&TREE[v.sel]?v.sel:treeRootOf(skSubj());G.tv=v.view||skFocusView(G.skSel);renderSkills()}// (each character keeps its own runtime selection and camera)
 const NODE_R={start:13,origin:15,s:9,n:13,k:16,a:12};
 const NODE_KIND=N=>({start:'Crossroads',origin:'Origin',s:'Passive',n:'Notable',k:'Keystone'}[N.t]||(N.m.unlock?'Active skill':'Skill upgrade'));
 // the whole tree, widened to the shape of the view box so zooming and panning map straight to the screen
@@ -53,45 +54,50 @@ function treeSvg(){
 }
 function nodeDetail(){
  const S=skSubj(),id=G.skSel,N=TREE[id];if(!N)return '';const have=treeHasOf(S,id),can=canTakeOf(S,id),root=id===treeRootOf(S),refund=talentsOf(S).quoteRefund(id),u=N.m.unlock;
- const why=N.t==='origin'?(have?'Your origin is permanent.':'Only your own origin can be learned.'):have?(root?'Your starting point.':refund.ok?'Unlearn returns one skill point.':refund.code==='gold'?'Not enough gold to unlearn.':'Other learned skills depend on this connection.'):S.tp<1?'No skill points. Gain one each level.':!can?'Learn a connected skill first.':'Costs 1 skill point.';
+ const why=N.t==='origin'?(have?'Your origin is permanent.':'Only your own origin can be learned.'):have?(root?'Your starting point.':refund.ok?'Unlearn returns one tree point.':refund.code==='gold'?'Not enough gold to unlearn.':'Other learned skills depend on this connection.'):S.tp<1?'No skill points. Gain one each level.':!can?'Learn a connected skill first.':'Costs 1 skill point.';
  const button=N.t==='origin'||root?'':have?fbBtn('tree-refund',id,'Unlearn · '+refundCost()+'g',refund.ok?'':why):fbBtn('tree-take',id,fbIcon('skills')+' Learn · 1 point',can?'':why,'primary');
  return '<aside class="fb-node-pane" aria-label="Selected skill"><div class="fb-node-copy" data-fb-scroll="node:'+id+'">'+fbIcon(skBranchIcon(N.br),30)+'<small>'+NODE_KIND(N)+(N.br&&N.br!=='hybrid'?' · '+TREE_BRANCHES.find(b=>b.k===N.br).n:'')+'</small><h3>'+N.n+'</h3><p>'+N.d+'</p><p class="'+(have?'good':'')+'">'+(have?'Learned · ':'')+why+'</p>'+(u&&S===P?fbDetails('Skill effects','<p>'+skillStats(u)+'.</p>'):'')+'</div><div class="fb-node-actions">'+button+'<p>'+S.tp+' points available · '+P.gold+' gold</p></div></aside>';
 }
-/* the special skills: not on the tree's paths (no point buys them). The basic moves everyone has from the start; the combo grows with
-   practice in the discipline of the weapon you fight with: a third blow, then the choice of its finishing style (one or the other) */
-const SPECIAL=[
-  {id:'combo',n:'Combo',d:()=>'Two blows in a row with a melee weapon; a third comes with practice.',have:()=>true},
-  {id:'combo3',n:'Third Blow',d:()=>'Your combo ends in a finisher: a third, heavier blow.',req:()=>SKILLS[meleeSk()].n+' '+COMBO_UP.third,have:()=>comboBlows()>=3},
-  {id:'fin_stun',n:'Stunning Finisher',d:()=>'The finisher stuns '+Math.round((FIN_STYLE.stun.stun-1)*100)+'% longer and barely pushes.',req:()=>SKILLS[meleeSk()].n+' '+COMBO_UP.fin+', then choose one',fin:'stun',have:()=>P.fin==='stun'},
-  {id:'fin_push',n:'Crushing Finisher',d:()=>'The finisher knocks foes far away, but does not stun.',req:()=>SKILLS[meleeSk()].n+' '+COMBO_UP.fin+', then choose one',fin:'push',have:()=>P.fin==='push'},
-  {id:'dodge',n:'Dodge Roll',d:()=>'A quick roll you cannot be hit in, away from trouble · '+dodgeCost()+' stamina · every '+dodgeCd().toFixed(1)+'s',have:()=>true},
-  {id:'shove',n:'Shove',d:()=>'With a bow: push back an enemy who reaches you and stagger them '+SHOVE.stun+'s · '+SHOVE.sp+' stamina',have:()=>true},
-  {id:'bash',n:'Shield Bash',d:()=>'With a shield: slam an enemy in front of you, stagger '+BASH.stun+'s, '+BASH.mult+'× damage · '+BASH.sp+' stamina',have:()=>true}
-];
-function specialBody(){
-  return '<div class="lab" style="margin-top:6px">Special skills · apart from the paths: the basic moves everyone has, and the combo, which grows as you practise your weapon</div><div class="specials">'+
-    SPECIAL.map(S=>{const have=S.have(),can=talentsOf(P).canChooseFinisher(S.fin);
-      return '<div class="spnode'+(have?' on':can?' open':'')+'"><strong>'+S.n+'</strong><small>'+S.d()+'</small>'+(have?'<small class="good">Learned</small>':can?'<button class="btn sm primary" type="button" data-act="sk-fin" data-arg="'+S.fin+'">Choose</button>':'<small class="muted">'+(S.req?S.req():'')+'</small>')+'</div>'}).join('')+'</div>';
+/* the traits (were Basics; the owner, 2026-11-08): the moves everyone has from the start, and what your race and your past are. The
+   combo's Third Blow and its finishers are Tree nodes now, off Brute Force (data/tree.js TREE_COMBO) */
+const HERO_TRAITS=[
+  {id:'combo',n:'Combo',d:()=>'Two blows in a row with a melee weapon; a third, the finisher, from the Third Blow on the skill tree (Might, by Brute Force).'},
+  {id:'dodge',n:'Dodge Roll',d:()=>'A quick roll you cannot be hit in, away from trouble · '+dodgeCost()+' stamina · every '+dodgeCd().toFixed(1)+'s'},
+  {id:'shove',n:'Shove',d:()=>'With a bow: push back an enemy who reaches you and stagger them '+SHOVE.stun+'s · '+SHOVE.sp+' stamina'},
+  {id:'bash',n:'Shield Bash',d:()=>'With a shield: slam an enemy in front of you, stagger '+BASH.stun+'s, '+BASH.mult+'× damage · '+BASH.sp+' stamina'}];
+// (the knacks: a race's and a past's proficiencies learned faster, P.apt)
+const knackText=apt=>Object.keys(apt||{}).filter(k=>apt[k]>0&&SKILLS[k]).map(k=>SKILLS[k].n+' +'+Math.round(apt[k]*100)+'%').join(', ');
+function traitBody(){
+  const S=skSubj(),who=skWho(),race=who?ST[who]&&ST[who].race:P.race,R=RACES[race]||RACES.human,B=!who&&BGS[P.bg],card=(n,d,cls)=>'<div class="spnode on'+(cls?' '+cls:'')+'"><strong>'+n+'</strong><small>'+d+'</small></div>';
+  return (who?'':'<div class="lab" style="margin-top:6px">Your attack · with the weapon in hand</div>'+heroAttackRow())+'<div class="lab" style="margin-top:6px">Moves · everyone has them from the start</div><div class="specials">'+HERO_TRAITS.filter(T=>who||T.id!=='combo').map(T=>card(T.n,T.d())).join('')+'</div>'+
+    '<div class="lab" style="margin-top:10px">Your people · '+htmlText(R.n)+'</div><div class="specials">'+card(R.n,htmlText(R.d))+'</div>'+
+    (B?'<div class="lab" style="margin-top:10px">Your past · '+htmlText(B.n)+'</div><div class="specials">'+card(B.n,htmlText(B.d))+(knackText(P.apt)?card('Knack','Learned faster: '+knackText(P.apt)+'.'):'')+'</div>':'');
 }
-// the Skill bar: the ten slots your hero uses in battle, the active skills you have learned, and the basic moves you can use now
+// the Skill bar: the ten slots your hero uses in battle and the active skills you have learned
 function skillSlotPick(i){
  const S=skSubj(),known=Object.keys(HSKILLS).filter(k=>knowsOf(S,k));
  fbChoose({title:'Skill slot '+(i+1),value:S.slots[i]||'',items:[{id:'',name:'Empty slot',sub:'No skill assigned',ico:'skills'},...known.map(k=>({id:k,name:HSKILLS[k].n,sub:HSKILLS[k].d,ico:'skills',note:S.slots.includes(k)&&S.slots[i]!==k?'Moves this skill from slot '+(S.slots.indexOf(k)+1)+'.':''}))],back:renderSkills,apply:k=>{talentsOf(S).assignSlot(i,k);renderSkills()},focus:'[data-act="sk-slot"][data-arg="'+i+'"]'});
 }
 function skillBarBody(){
  const S=skSubj(),known=Object.keys(HSKILLS).filter(k=>knowsOf(S,k));
- return '<div class="lab">Skill slots · used automatically in battle</div><div class="fb-slot-grid">'+SLOT_KEYS.map((k,i)=>{const id=S.slots[i];return fbBtn('sk-slot',i,'<small>'+(i+1)+'</small>'+fbIcon('skills',28)+'<strong>'+(id?HSKILLS[id].n:'Empty')+'</strong>','','fb-slot')}).join('')+'</div><div class="lab">Active skills</div>'+(known.length?known.map(id=>'<div class="row"><div class="info"><strong>'+HSKILLS[id].n+'</strong><small>'+HSKILLS[id].d+'</small>'+(S===P?'<small>'+skillStats(id)+'</small>':'')+'<small class="'+(S.slots.includes(id)?'gold':'muted')+'">'+(S.slots.includes(id)?'In slot '+(S.slots.indexOf(id)+1):'Not assigned · will not be used in battle')+'</small></div></div>').join(''):'<p>No active skills yet. Learn them on the Skill tree.</p>')+(S===P?fbDetails('Basic moves',heroAttackRow()+specialBody()):'');
+ return '<div class="lab">Skill slots · used automatically in battle</div><div class="fb-slot-grid">'+SLOT_KEYS.map((k,i)=>{const id=S.slots[i];return fbBtn('sk-slot',i,'<small>'+(i+1)+'</small>'+fbIcon('skills',28)+'<strong>'+(id?HSKILLS[id].n:'Empty')+'</strong>','','fb-slot')}).join('')+'</div><div class="lab">Active skills</div>'+(known.length?known.map(id=>'<div class="row"><div class="info"><strong>'+HSKILLS[id].n+'</strong><small>'+HSKILLS[id].d+'</small>'+(S===P?'<small>'+skillStats(id)+'</small>':'')+'<small class="'+(S.slots.includes(id)?'gold':'muted')+'">'+(S.slots.includes(id)?'In slot '+(S.slots.indexOf(id)+1):'Not assigned · will not be used in battle')+'</small></div></div>').join(''):'<p>No active skills yet. Learn them on the Skill tree.</p>');
 }
 // your hero's own attack with the weapon in hand: the combo, the shot or the cast, with its numbers
 function heroAttackRow(){
  const row=(name,stats,note)=>'<div class="row"><div class="info"><strong>'+name+'</strong><small>'+stats+'</small>'+(note?'<small>'+note+'</small>':'')+'</div></div>',CB=heroCombo();
- return heroKind()==='melee'?row('Combo','<span>'+CB.map(c=>c.n+' ×'+c.mult).join(' → ')+'</span>',CB.length<3?'<span class="muted">A third blow at '+SKILLS[meleeSk()].n+' '+COMBO_UP.third+'</span>':P.fin?'<span class="gold">'+(P.fin==='stun'?'Stunning':'Crushing')+' finisher</span>':finReady()?'<span class="gold">Choose its finishing style below</span>':'<span class="muted">Choose its finishing style at '+SKILLS[meleeSk()].n+' '+COMBO_UP.fin+'</span>')+(unarmed()?row('Grapple','Bare hands: now and then you seize the one before you and throw him, perhaps down · every '+Moveset.of({hero:true,s:{},type:'hero'}).hard.cd.toFixed(1)+'s'):'')
+ return heroKind()==='melee'?row('Combo','<span>'+CB.map(c=>c.n+' ×'+c.mult).join(' → ')+'</span>',CB.length<3?'<span class="muted">A third blow: Third Blow on the skill tree (Might, by Brute Force)</span>':heroFin()?'<span class="gold">'+(heroFin()==='stun'?'Stunning':'Crushing')+' finisher</span>':'<span class="muted">Its finishing style: Stunning or Crushing Finisher on the skill tree</span>')+(unarmed()?row('Grapple','Bare hands: now and then you seize the one before you and throw him, perhaps down · every '+Moveset.of({hero:true,s:{},type:'hero'}).hard.cd.toFixed(1)+'s'):'')
   :heroKind()==='ranged'?row('Shoot ('+ITEMS[P.gear.weapon].n.toLowerCase()+')',heroQuiverText()+'Your hero draws and looses at whoever is in range.')
   :row('Cast ('+ITEMS[P.gear.weapon].n.toLowerCase()+')','Magic bolts, '+heroShot().mult+'× damage, splash half to enemies beside the target, ignore armor and trees · '+heroShot().mp+' mana each · every '+heroShot().cd+'s');
 }
-function disciplinesBody(){
-  return '<p class="muted" style="font-size:13px">Disciplines rise as you use them. The skill tree and gear add to them.</p>'+Object.keys(SKILLS).map(k=>{const s=P.sk[k],b=skill(k)-s.lv,need=(s.lv+1)*20,pc=s.lv>=10?100:Math.round(s.xp/need*100);
-    return '<div class="row"><div class="info"><strong>'+SKILLS[k].n+(P.apt&&P.apt[k]?' <span class="good" style="font-size:12px">knack +'+Math.round(P.apt[k]*100)+'%</span>':'')+'</strong><small>'+SKILLS[k].d+' · grows faster with '+ATTRS[SKILLS[k].a][0]+'</small><div class="bar" role="progressbar" aria-label="'+SKILLS[k].n+' progress" aria-valuenow="'+pc+'"><i style="width:'+pc+'%"></i></div></div><span class="own">'+s.lv+(b?' <span class="good">+'+b+'</span>':'')+'</span></div>'}).join('');
+/* the Proficiency tab: your level and its bar (from your proficiencies, characters.js relevel), then each proficiency 0 to 99 with its
+   bar, what the tree and gear add, a knack, what it does, and its weight toward your level when that is less than whole */
+const PROF_GROUPS=[['Fighting',['oneh','twoh','block','archery','spell','fist','athl']],['Command',['lead','tact','med','eng','pers']],['The road',['scout','ride','wood','hunt','surv']],['Trade and rule',['trade','stew']]];
+function profBody(){
+  const S=skSubj(),who=skWho(),C=who?compOf(who):leaderOf(P),lvl=who?S.lv:P.level,need=C.xpNeed(),pc=Math.min(100,Math.round(100*(S.xp||0)/need)),keys=who?Object.keys(COMP_SK):null;
+  const head='<div class="row fb-prof-level"><div class="info"><strong>Level '+lvl+'</strong><small>Your level grows with your proficiencies: each one you raise fills it, the higher the more.</small><div class="bar" role="progressbar" aria-label="Level progress" aria-valuenow="'+pc+'"><i style="width:'+pc+'%"></i></div><small>'+pc+'% to level '+(lvl+1)+'</small></div></div>';
+  const row=k=>{const s=S.sk[k];if(!s)return '';const lv=s.lv,bonus=who?0:Math.round((skill(k)-lv/PROF.per)*PROF.per),pc2=lv>=PROF.max?100:Math.round(100*s.xp/SK_XP(lv)),apt=!who&&P.apt&&P.apt[k],w=PROF.weight[k];
+    return '<div class="row"><div class="info"><strong>'+SKILLS[k].n+(apt?' <span class="good" style="font-size:12px">knack +'+Math.round(apt*100)+'%</span>':'')+'</strong><small>'+SKILLS[k].d+(w!=null&&w<1?' · counts '+Math.round(w*100)+'% toward your level':'')+'</small><div class="bar" role="progressbar" aria-label="'+SKILLS[k].n+' progress" aria-valuenow="'+pc2+'"><i style="width:'+pc2+'%"></i></div></div><span class="own">'+lv+(bonus?' <span class="good">+'+bonus+'</span>':'')+'</span></div>'};
+  return head+'<p class="muted" style="font-size:13px">Proficiencies rise as you use them, to 99. The skill tree and gear add to them.</p>'+PROF_GROUPS.map(([g,L])=>{const r=L.filter(k=>!keys||keys.includes(k)).map(row).join('');return r?'<div class="lab">'+g+'</div>'+r:''}).join('');
 }
 function skTreeBody(){
  const mode=skPage().mode,tools='<div class="fb-tree-tools"><div>'+fbBtn('tree-focus',null,'My path')+fbBtn('tree-overview',null,'Paths')+fbBtn('tree-list',null,'List')+'</div><div>'+fbBtn('tree-zout',null,'<span aria-hidden="true">−</span><span class="fb-sr">Zoom out</span>')+fbBtn('tree-zin',null,'<span aria-hidden="true">+</span><span class="fb-sr">Zoom in</span>')+fbBtn('tree-fit',null,'Fit')+'</div></div>';
@@ -100,9 +106,9 @@ function skTreeBody(){
 }
 function skDrawView(){const sv=panel.querySelector('svg.tree');if(!sv)return;sv.setAttribute('viewBox',vbText(treeView()));const r=Math.max(23,22*treeView().w/Math.max(1,sv.getBoundingClientRect().width));sv.querySelectorAll('.fb-node-hit').forEach(e=>e.setAttribute('r',r))}
 function renderSkills(){
- const S=skSubj(),who=skWho(),tab=G.skTab,pts=S.tp+' skill point'+(S.tp===1?'':'s');
- const tabs=fbTabs([['talents',fbIcon('skills')+' Tree'],['abilities',fbIcon('sword')+' Skill bar'],...(who?[]:[['disciplines',fbIcon('book')+' Disciplines'],['basics',fbIcon('shield')+' Basics']])],tab,'sk-tab','Skills sections');
- const body=tab==='talents'?skTreeBody():'<div class="fb-scroll" data-fb-scroll="skills:'+tab+'">'+(tab==='abilities'?skillBarBody():tab==='basics'?specialBody():disciplinesBody())+'</div>';
+ const S=skSubj(),who=skWho(),tab=G.skTab,pts=S.tp+' tree point'+(S.tp===1?'':'s');
+ const tabs=fbTabs([['prof',fbIcon('book')+' Proficiency'],['talents',fbIcon('skills')+' Tree'],['traits',fbIcon('shield')+' Trait'],['abilities',fbIcon('sword')+' Skill bar']],tab,'sk-tab','Skills sections');// (the owner's order, 2026-11-08)
+ const body=tab==='talents'?skTreeBody():'<div class="fb-scroll" data-fb-scroll="skills:'+tab+'">'+(tab==='abilities'?skillBarBody():tab==='traits'?traitBody():profBody())+'</div>';
  fbShow(who?COMPS[who].short+'’s skills':'Skills','Level '+(who?S.lv:P.level)+' · '+pts,tabs,body,['sk-close',null,'Back to '+(who?COMPS[who].short:'Army')],['sk-map',null,'Back to map'],'fb-skills','Army · '+htmlText(bandName()));
  const sv=panel.querySelector('svg.tree');if(sv){const b=sv.getBoundingClientRect(),a=Math.max(.3,b.width/Math.max(1,b.height));if(Math.abs(a-skAspect())>.02){const v=treeView(),cy=v.y+v.h/2;G.skAspect=a;G.tv={...v,y:cy-v.w/a/2,h:v.w/a};sv.setAttribute('viewBox',vbText(G.tv))}}
  skDrawView();skPage().sel=G.skSel;skPage().view=G.tv?{...G.tv}:null;
@@ -117,7 +123,7 @@ function skillsAct(a,arg){
   if(a==='sk-map'){G.skWho=null;G.mode='world';hidePanel();return true}
   if(a==='sk-close'){const who=skWho(),s=partyView();G.skWho=null;G.mode='char';G.char='roster';G.armyEdit=null;s.sel=who?'comp_'+who:'hero';s.open=true;s.path=false;if(who)compPick(who);renderChar();return true}// (back to its card)
   if(G.mode!=='skills')return true;
-  if(a==='sk-tab'){if(['talents','abilities',...(skWho()?[]:['disciplines','basics'])].includes(arg))G.skTab=arg}
+  if(a==='sk-tab'){if(['prof','talents','traits','abilities'].includes(arg))G.skTab=arg}
   else if(a==='tree-sel'&&TREE[arg])G.skSel=arg;
   else if(a==='tree-list-sel'&&TREE[arg]){G.skSel=arg;skPage().mode='path';G.tv=skFocusView(arg)}
   else if(a==='tree-focus'){skPage().mode='path';G.tv=skFocusView(G.skSel||treeRootOf(skSubj()))}
@@ -130,8 +136,6 @@ function skillsAct(a,arg){
   else if(a==='tree-zin'){treeZoom(1/1.4);return true}
   else if(a==='tree-zout'){treeZoom(1.4);return true}
   else if(a==='tree-fit'){skPage().mode='path';G.tv=null}
-  // the combo's finishing style: chosen once, when your weapon's discipline is high enough
-  else if(a==='sk-fin'){if(talentsOf(P).chooseFinisher(arg).ok)log('Your combo now ends in a '+(arg==='stun'?'stunning':'crushing')+' finisher.','gold')}
   else if(a==='slot-set'){const [i,id]=String(arg).split(':');talentsOf(skSubj()).assignSlot(+i,id)}
   updateHUD(true);renderSkills();return true;
 }

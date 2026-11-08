@@ -5,7 +5,7 @@
 // hire at a large, prosperous holding. Every upgrade at a barracks for its price, a horse a man into a mounted kind (a knight's a war
 // horse), yours first; and an upgraded unit keeps the skills it learned, a foot drill off while it rides.
 Kit.suite(({ok})=>{
- const t=T,P=t.P,G=t.G,ST=t.ST,UP=t.UP;Kit.begin('soldier',1);Kit.clear();Kit.world();P.sk.lead.lv=10;P.gold=1e5;const r=t.partyRoster(P),ash=t.townBy('Ashford');P.troops={};P.rep[ash.name]=90;
+ const t=T,P=t.P,G=t.G,ST=t.ST,UP=t.UP;Kit.begin('soldier',1);Kit.clear();Kit.world();P.sk.lead.lv=10*PROF.per;P.gold=1e5;const r=t.partyRoster(P),ash=t.townBy('Ashford');P.troops={};P.rep[ash.name]=90;
  const pl=t.peasantLevy('human');
  ok(ST[pl].n==='Peasant Levy'&&ST[pl].tier===0&&t.unitSize(pl)===20&&['farmer','miner','fisher'].every(j=>t.UP[t.peasantKind('human',j)].join()===UP[pl].join()),'one Peasant Levy at the root (a unit of 20), whatever the trade');
  ok(UP[pl].join()==='hum_levy,hum_bow,hum_foot,hum_crossbow'&&ST.hum_levy.n==='Spearman'&&ST.hum_spear.n==='Shield Men','it trains into Spearman, Bowman, Footmen or Crossbowman; the Levy a Spearman, the Man-at-Arms the Shield Men');

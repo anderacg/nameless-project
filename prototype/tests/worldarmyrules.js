@@ -1,15 +1,15 @@
 'use strict';
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;
- P.troops={};P.comps={};P.army={nextId:1,groups:[]};P.sk.lead.lv=1;const r=t.partyRoster(P);
+ P.troops={};P.comps={};P.army={nextId:1,groups:[]};P.sk.lead.lv=1*PROF.per;const r=t.partyRoster(P);
  ok(r.groupLimit===3&&r.slots===1,'new army has three slots including its hero');
  // (whole units of their kind's size, data/units.js unitSize, since 2026-10-31: no more groups of ten)
  const F=t.unitSize('hum_foot'),Bw=t.unitSize('hum_bow');
  ok(r.add('hum_foot',F)===F&&r.add('hum_bow',Bw)===Bw&&r.slots===3,'two full units ('+F+' foot, '+Bw+' bowmen) fill the starting army');
  const snapshot=JSON.stringify(P.troops);ok(r.add('hum_foot')===0&&r.add('hum_knight',1,'new')===0&&JSON.stringify(P.troops)===snapshot,'full units and locked slots reject additions without changing soldiers');
- P.sk.lead.lv=3;ok(r.groupLimit===4&&r.add('hum_foot',4,'new')===4,'trained Leadership unlocks the next group slot');
+ P.sk.lead.lv=3*PROF.per;ok(r.groupLimit===4&&r.add('hum_foot',4,'new')===4,'trained Leadership unlocks the next group slot');
  const foot=r.groups.filter(g=>g.type==='hum_foot');ok(!r.merge(foot[1].id,foot[0].id),'merging cannot exceed a unit\'s size');
- P.sk.lead.lv=10;ok(r.groupLimit===10,'Leadership progression stops at ten army slots');
+ P.sk.lead.lv=10*PROF.per;ok(r.groupLimit===10,'Leadership progression stops at ten army slots');
  P.comps.brann={ap:0,role:''};t.compInit('brann');ok(r.slots===5,'a companion consumes one army slot');
  P.gold=10000;const holder={vol:100,pop:100,races:['human'],hires:()=>['hum_foot']},service=new t.RecruitmentService(P,{...t.recruitment.rules,canHire:()=>true}),gold=P.gold;
  ok(!service.hire(holder,'hum_foot',1,foot[0].id).ok&&P.gold===gold&&holder.vol===100,'hiring into a full group neither spends gold nor consumes volunteers');

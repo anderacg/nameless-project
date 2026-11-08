@@ -8,7 +8,7 @@ The owner, 2026-11-08:
 - The combos now in Basics "should be unlocked via skill tree instead."
 - Old saves: "wipe old save for now". No switch back: "revamp to new".
 
-Status: **decided (answers above and §8); being built.**
+Status: **built** (2026-11-08). Numbers in `PROF` (`data/progression.js`).
 
 ## 1. What exists today
 
@@ -36,13 +36,13 @@ Status: **decided (answers above and §8); being built.**
 ### 4.1 Growth
 - Each proficiency runs **0 to 99** (`PROF.max`).
 - It rises **by use, as now**: the existing `train(...)` calls stay.
-- **Pace:** reaching 99 takes about as much practice as reaching 10 does today. A level needs `PROF.xp0 + PROF.xpUp × level` practice, so early levels come quickly and later ones slowly.
+- **Pace:** reaching 99 takes about as much practice as reaching 10 does today. A level needs `PROF.xp0 + PROF.xpUp × level` practice (4 + 0.145 × level; 0 to 99 is 1099, as 0 to 10 was 1100), so early levels come quickly and later ones slowly.
 - **A knack** (your race's or past's) still makes its proficiency rise faster, as today.
 
 ### 4.2 What a level is worth
 - Every effect is measured in **power**: `skill(k) = level / PROF.per + Tree and gear bonuses`, with `PROF.per` = 9.9. So 99 gives today's 10, and every level in between counts a little; there are no steps of ten.
 - Tree nodes and gear keep their "+1 One-Handed" in power, worth 10 proficiency levels.
-- The descriptions read in levels: "+0.06 damage per level (+6 at 99)".
+- The descriptions read in tens of levels: "+0.6 damage per 10 levels".
 
 ### 4.3 Where you start
 - **Everyone starts at 0** (the owner): your hero, companions, lords.
@@ -68,7 +68,7 @@ Today's flat experience becomes practice (`PROF.reward`, the share of the old am
 
 - **Progress** = the sum, over all proficiencies, of each one's level gained × its **weight** (`PROF.weight`), counting part of a level as its bar fills. So your level bar moves with every hit or sale.
 - **Starting levels from your past aren't counted.**
-- **Level n** needs `PROF.step × n(n+1)/2` progress (`step` = 30). Level 10 needs 1650. Every proficiency at 99, all weights 1, is 1881 × 99 / 9.9 = 18810, about level 35. Tuned in the table.
+- **Level n** needs `PROF.step × n(n+1)/2` progress (`step` = 50), where a proficiency at level L gives `L(L+1)/2` × its weight. Level 10 needs 2750: one proficiency from 0 to about 74. Every proficiency at 99 (weights as below) is 17.2 × 4950 = 85140, about level 57.
 - **Weights** (the owner: "go with your recommendations") make the proficiencies that rise very easily count less:
 
   | Weight | Proficiencies |
@@ -84,7 +84,7 @@ Today's flat experience becomes practice (`PROF.reward`, the share of the old am
 ## 6. Companions and lords
 
 - **Companions** level the same way as your hero (the owner: "based on yours"). They train their fighting proficiencies by use, plus their share of battle rewards. Their Skills window gets the same four tabs.
-- **Lords and chieftains** grow their own way (the owner: "yes"). They keep today's levelling: their experience by wins and time, and a level's Tree point spent at once by their class. Their proficiencies start at 0 and grow with their level, so a lord of level n has his class's proficiencies at about `PROF.lordPer × n`.
+- **Lords and chieftains** grow their own way (the owner: "yes"). They keep today's levelling: their experience by wins and time, and a level's Tree point spent at once by their class. Their proficiencies start at 0 and grow with their level, so a lord of level n has his class's proficiencies at about 5 × n (half his level in power, as today).
 
 ## 7. The skill page
 

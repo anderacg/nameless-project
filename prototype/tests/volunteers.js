@@ -3,7 +3,7 @@
 // when you set up camp near holdings", replenishing "until max", affecting population; hire stays the instant way; their rate "ok",
 // "within territory", "tier 1 only or peasants", "refill existing groups only").
 Kit.suite(({ok})=>{
- const t=T,P=t.P,G=t.G,V=t.VOLUNTEERS,ash=t.townBy('Ashford');Kit.begin('soldier',1);Kit.clear();Kit.world();P.sk.lead.lv=10;
+ const t=T,P=t.P,G=t.G,V=t.VOLUNTEERS,ash=t.townBy('Ashford');Kit.begin('soldier',1);Kit.clear();Kit.world();P.sk.lead.lv=10*PROF.per;
  const r=t.partyRoster(P),kind=t.RACES.human.melee;P.troops={};r.add(kind,3,'new');r.add('hum_sword',3,'new');const foot=r.groups.find(g=>g.type===kind),sw=r.groups.find(g=>g.type==='hum_sword');
  const uw=()=>{t.frame();t.updateHUD(true);return document.getElementById('underway')},row=k=>uw()?.querySelector('[data-k="'+k+'"]');
  // ======== who will come

@@ -282,7 +282,7 @@ try{
  // combos and skills, on their own
  const ring=(B,n,r,spd)=>{const h=B.hero;B.units.filter(u=>u.team===1).forEach((u,i)=>{const a=i/n*6.283;u.x=h.x+Math.cos(a)*r;u.y=h.y+Math.sin(a)*r;u.cd=99;u.hp=u.max=9999;u.s={...u.s,spd:spd||0};const q=t.resolveOf(u);if(q)q.mor=1e9})};
  const run=(n,f)=>{for(let i=0;i<n&&t.B;i++){t.updateBattle(.03);if(f)f()}};
- P.tree=['start','might0','might1','might2','mighta0'];P.level=6;P.gear.weapon=t.gearId('sword',1);P.gear.offhand=null;P.sk[t.meleeSk()].lv=t.COMBO_UP.third;// (practised: all three blows of the combo)
+ P.tree=['start','might0','might1','might2','mighta0'];P.level=6;P.gear.weapon=t.gearId('sword',1);P.gear.offhand=null;P.tree.push('third');// (all three blows of the combo: Third Blow)
  {P.slots=Array(10).fill(null);const B=fight(['militia']);ring(B,1,14);const X=t.heroState();X.sp=999;const steps=new Set();run(200,()=>steps.add(X.step));
   ok([0,1,2].every(k=>steps.has(k)),'your hero swings the whole combo on their own: Slash, Sweep, Finisher ('+[...steps].filter(k=>k>=0).join(',')+')');if(t.B){t.B.over=true;t.B.endT=0;t.B=null}}
  {P.slots=Array(10).fill(null);const B=fight(['militia']);ring(B,1,14);const X=t.heroState();X.sp=0;const a0=B.hero.atkAt;let tired=0;run(60,()=>{X.sp=0;tired+=B.floats.filter(f=>/tired/i.test(f.t)).length;B.floats=[]});

@@ -7,7 +7,7 @@
 // Step 1's rules: run with unit kits step 2's switches off (Kit.kits(false): doc/UNIT_KITS_DESIGN.md §10.2), the proof they give
 // step 1 back; step 2's rules (ranks give stats only, the five mastery levels, Brace a stance, Lunge...): tests/kits2.js.
 Kit.suite(({ok})=>Kit.kits(false,()=>{
- const t=T,P=t.P,G=t.G,R=t.RANKS;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:0});P.sk.lead.lv=10;const r=t.partyRoster(P);P.troops={};
+ const t=T,P=t.P,G=t.G,R=t.RANKS;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:0});P.sk.lead.lv=10*PROF.per;const r=t.partyRoster(P);P.troops={};
  const grp=(k,n,rank)=>{r.add(k,n,'new');const g=r.groups.filter(x=>x.type===k).pop();t.rankGain(g,1e6);if(rank<R.max){t.rankReset(g);t.rankGain(g,R.xp[t.ST[k].tier].slice(0,rank-1).reduce((a,b)=>a+b,0))}return g};
  const sp1=grp('hum_spear',4,1),sp5=grp('hum_spear',4,5),bw1=grp('hum_bow',4,1),bw4=grp('hum_bow',4,4),cav=grp('hum_squire',3,1);
  ok([sp1,sp5,bw1,bw4,cav].map(t.rankOf).join()==='1,5,1,4,1','(groups at ranks 1, 5, 1, 4, 1)');

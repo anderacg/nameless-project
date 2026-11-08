@@ -141,7 +141,7 @@ const Outcome={
     },
     xp:{
       apply(v){
-        gainXp(v);
+        gainXp(v,'story');
       },
       text:v=>Outcome.signed(v)+' XP',
     },

@@ -13,7 +13,7 @@ try{
  const rolls=(vals,f)=>{const r0=Math.random,s=t.seeded(4242);let i=0;Math.random=()=>i<vals.length?vals[i++]:s();try{return f()}finally{Math.random=r0}};
  const done=()=>{if(G.mode!=='world'&&q('[data-act="cont"]'))t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);world()};
  const acts=()=>qa('.rwbody .rkact').map(b=>b.dataset.act+(b.dataset.arg&&b.dataset.arg!=='undefined'?'='+b.dataset.arg:'')+':'+b.dataset.rk).join();
- const scout=n=>{P.sk.scout.lv=n};
+ const scout=n=>{P.sk.scout.lv=n*PROF.per};
  t.act('begin','soldier');G.quietEvents=true;P.fac=null;P.hostile={};P.gold=5000;
 
  // ---- Insight: the same rule everywhere, by Scouting (0–1 vague, 2–4 rough, 5+ exact), a tooltip on what more would tell

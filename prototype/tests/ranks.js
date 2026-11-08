@@ -3,7 +3,7 @@
 // experience and climbs ranks 1 to 5 (a badge, its metal its tier); its rank stays whoever joins it (Total War); only at rank 5 it
 // upgrades, as a whole, and starts again at rank 1; peasants have no rank, a long grind to their first upgrade.
 Kit.suite(({ok})=>{
- const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();const r=t.partyRoster(P),R=t.RANKS;P.sk.lead.lv=10;// (room for groups)
+ const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();const r=t.partyRoster(P),R=t.RANKS;P.sk.lead.lv=10*PROF.per;// (room for groups)
  P.troops={hum_foot:6};const g=r.groups.find(x=>x.type==='hum_foot');
  ok(t.rankOf(g)===1&&t.rankXp(g)===0&&t.rankNeed(g)===R.xp[1][0],'a new group: rank 1, its next rank '+R.xp[1][0]+' experience away');
  // ======== the ladder

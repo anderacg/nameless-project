@@ -69,8 +69,9 @@ function startGame(k,b){
   resetSession();nameStart();P.bg=k;P.gold=b.gold;P.troops={...b.troops};P.bonus=b.bonus;// (the names typed on the New game page, if any: ui/names.js)
   const rc=RACES[P.race=G.race||'human'];if(typeof Faces!=='undefined')Faces.start();// (your face: the New game page's, or one drawn for you: ui/faces.js)
   for(const a in b.attr)P.attr[a]+=b.attr[a];for(const a in rc.attr)P.attr[a]=Math.max(1,P.attr[a]+rc.attr[a]);
-  // every discipline starts at 0; your race and past give a knack: 25% faster learning per point (P.apt)
+  // every proficiency starts at 0 but your past's, free (PROF.pastPer a point; sk0, not counted toward your level); your race and past give a knack: 25% faster learning per point (P.apt)
   for(const src of [b.sk,rc.sk])for(const s in src||{})P.apt[s]=(P.apt[s]||0)+.25*src[s];
+  for(const s in b.sk||{})if(P.sk[s])P.sk[s].lv=P.sk0[s]=Math.min(SK_MAX,PROF.pastPer*b.sk[s]);
   P.origin=originOf(k);P.tree=[P.origin];applyNode(P.origin,1);G.skSel=P.origin;
   // (your past's weapon: none for a nobody, bare hands, combat.js FISTS)
   P.gear.weapon=b.weapon?gearId(b.weapon,0):null;Object.assign(P.gear,b.gear);for(const g in b.cargo)invAdd('good',g,b.cargo[g]);

@@ -2,7 +2,7 @@
 window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 window.RUN=()=>{const t=T,P=t.P,G=t.G,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
- t.begin('soldier');G.quietEvents=true;P.gold=10000;P.renown=10000;P.sk.lead.lv=10;// (all ten group slots: a new band starts at three)
+ t.begin('soldier');G.quietEvents=true;P.gold=10000;P.renown=10000;P.sk.lead.lv=10*PROF.per;// (all ten group slots: a new band starts at three)
  const r=t.partyRoster(P),town=t.townBy('Ashford');P.rep[town.name]=100;town.vol=40;
  const type=t.RACES.human.melee;r.add(type,2,'new');r.add(type,2,'new');const a=r.groups[0],b=r.groups[1];
  G.recruitTarget=b.id;const gold=P.gold;t.recruitment.hire(town,type);

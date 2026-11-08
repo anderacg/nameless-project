@@ -176,7 +176,7 @@ class PlayerParty extends Party{
   cap(){return this.headcount()+partyRoster(this).room()}
   // room left: negative while over capacity (callers decide whether a transfer is allowed)
   room(){return this.cap()-this.headcount()}
-  prisonCap(){return 2+this.skill('lead')+(this.hasPerk('warden')?6:0)+this.treeMod('prison')}
+  prisonCap(){return 2+Math.floor(this.skill('lead'))+(this.hasPerk('warden')?6:0)+this.treeMod('prison')}
   // food a day: everyone, their horses and your prisoners, a quarter each; marching hard eats more, a quartermaster less
   eatPerDay(){
     const n=(this.headcount()+this.mountedCount()+this.prisonerCount()+1)/4;
@@ -202,7 +202,7 @@ class PlayerParty extends Party{
     return a+this.treeMod(k)}
   gearSkill(k){return Object.values(this.gear).reduce((a,id)=>a+(id&&ITEMS[id].m.sk&&ITEMS[id].m.sk[k]||0),0)}
   // a discipline: as you trained it, with your companions' roles, your gear and your tree (charOf(P).skill: as trained only)
-  skill(k){return this.sk[k].lv+this.roleBonus(k)+this.gearSkill(k)+this.treeSkill(k)}
+  skill(k){return this.sk[k].lv/PROF.per+this.roleBonus(k)+this.gearSkill(k)+this.treeSkill(k)}// (a proficiency's level in power: 99 the old 10, PROF.per)
   // your hero's numbers in battle: her level, attributes, disciplines, gear and talents
   heroStats(){
     const tm=k=>this.treeMod(k),gm=k=>this.gearMod(k),melee=this.skill(meleeSk()),two=hybridTwo(),kind=heroKind(),fist=unarmed();// (bare hands: combat.js FISTS)

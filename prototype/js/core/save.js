@@ -5,12 +5,12 @@
 const SAVE_SLOTS=['auto','quick','1','2','3','4','5'],SLOT_N={auto:'Autosave',quick:'Quick save'};
 const slotName=s=>SLOT_N[s]||'Slot '+s;
 const slotKey=s=>!s||s==='auto'?SAVE:SAVE+'.'+s;
-/* save v3 (doc/WORLD_DESIGN.md §9.3, D7, D8): world.map, the world's gen, settings and checksum (the world is made again from
+/* save v4 (v4: proficiencies 0 to 99, doc/PROFICIENCY_DESIGN.md; doc/WORLD_DESIGN.md §9.3, D7, D8): world.map, the world's gen, settings and checksum (the world is made again from
    them, never stored), then what play changed. A slot holds the save as plain JSON, or gzipped: a small plain header (v, at, the
    save line's fields, world.map: saveHead) beside its body z (gzip, base64), so the save list reads at once. Gzipped where the
    browser can (CompressionStream); plain under LOADING.sync (the tests: W7 hashes it) and where it cannot. Older saves are
    refused, never migrated (D7) */
-const SAVE_V=3,SAVE_ZIP=typeof CompressionStream==='function'&&typeof DecompressionStream==='function';
+const SAVE_V=4,SAVE_ZIP=typeof CompressionStream==='function'&&typeof DecompressionStream==='function';
 const OTHER_WORLD='This save was made in another world version; start a new game.';
 const slotRaw=s=>{try{return JSON.parse(localStorage.getItem(slotKey(s)))}catch(e){return null}};
 // a slot's save (or its header, when gzipped), if this version made it

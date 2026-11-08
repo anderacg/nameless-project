@@ -1,7 +1,7 @@
 'use strict';
 window.RUN=()=>{const t=T,P=t.P,G=t.G,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
- t.begin('soldier');G.quietEvents=true;P.gold=10000;P.renown=1000;P.comps.brann={ap:2,role:''};P.sk.lead.lv=10;// all ten slots; a group holds ten, fit and wounded
+ t.begin('soldier');G.quietEvents=true;P.gold=10000;P.renown=1000;P.comps.brann={ap:2,role:''};P.sk.lead.lv=10*PROF.per;// all ten slots; a group holds ten, fit and wounded
  const r=t.partyRoster(P);r.add('hum_foot',7);const a=r.groups[0];r.add('hum_bow',6);const bow=r.groups.find(g=>g.type==='hum_bow');
  P.wounded={hum_foot:3};P.woundedGroups=[{id:a.id,type:a.type,count:3}];
  const snap=()=>JSON.stringify({army:P.army,troops:P.troops,w:P.wounded,wg:P.woundedGroups}),before=snap();

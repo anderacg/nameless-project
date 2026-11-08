@@ -38,7 +38,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,q=s=>document.querySelector(s),car
  // ---- a new game with names
  newGame('Bran Redhand','The Grey Company');
  ok(P.name==='Bran Redhand'&&P.band==='The Grey Company'&&!t.NEW_NAMES.hero&&!t.NEW_NAMES.band,'names typed on the New game page: your hero’s and your band’s, the page’s cleared');
- ok(card().querySelector('.pc-band').textContent==='The Grey Company'&&card().querySelector('.pc-who small').textContent==='Bran Redhand · Lv 1 · '+t.rankName(),'on the card: '+card().querySelector('.pc-band').textContent+' / '+card().querySelector('.pc-who small').textContent);
+ ok(card().querySelector('.pc-band').textContent==='The Grey Company'&&card().querySelector('.pc-who small').textContent==='Bran Redhand · Lv '+P.level+' · '+t.rankName(),'on the card: '+card().querySelector('.pc-band').textContent+' / '+card().querySelector('.pc-who small').textContent);
  ok(/You ride out of .* alone, as Bran Redhand, a /.test(G.msgs[0].m)&&/The Grey Company is you alone for now/.test(G.msgs[0].m),'the first line names them ('+G.msgs[0].m+')');
  // ---- empty, spaces only: the defaults, nothing stored
  newGame('   ','');ok(!own('name')&&!own('band')&&card().querySelector('.pc-band').textContent===t.NAMING.band,'left empty (or spaces): the defaults, nothing stored');

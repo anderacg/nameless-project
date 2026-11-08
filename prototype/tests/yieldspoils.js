@@ -27,7 +27,7 @@ Kit.suite(({ok})=>{
    t.act('lt-take','0');ok(P.inv.some(s=>s&&s.k==='gear'),'a piece taken into your bag');
    t.act('lt-leave');ok(G.mode==='world'&&!G.loot&&!G.lootView,'Continue: back on the map')}
   // ======== prisoners: the stolen gold, renown +2, the prisoners; nothing on the pile with a bad roll: Continue, and Esc takes it
-  {P.prisoners={};P.sk.lead.lv=5;const b=yielded(3),g=P.gold,r=P.renown,xp=t.xpTotal();Kit.stub(.99,()=>t.act('pl-cage'));
+  {P.prisoners={};P.sk.lead.lv=5*PROF.per;const b=yielded(3),g=P.gold,r=P.renown,xp=t.xpTotal();Kit.stub(.99,()=>t.act('pl-cage'));
    ok(head()==='Prisoners'&&P.gold>g&&chip('Gold')==='+'+(P.gold-g)&&P.renown===r+2&&/^\+3/.test(chip('Prisoners')||''),'take them prisoner: "Prisoners", their stolen gold, renown +2 and the prisoners, in the window ('+chip('Gold')+' gold, '+chip('Prisoners')+')');
    ok(!gear()&&/No goods or gear/.test(Kit.panel())&&closeBtn()?.dataset.act==='cont'&&t.xpTotal()===xp,'no weapons to take this time (the drop missed): Continue only; no experience');
    Kit.key('Escape','Escape');ok(G.mode==='world'&&!G.loot,'Esc follows the bar: Continue, back on the map');
@@ -38,7 +38,7 @@ Kit.suite(({ok})=>{
    const b2=yielded(2,true),ld2=b2.ld,ex=W.exiles.length;Kit.stub(.99,()=>t.act('pl-free'));
    ok(W.exiles.length===ex+1&&W.exiles.some(x=>x.ld===ld2)&&!P.captives.some(c=>c.ld===ld2),'disarmed and let go, he gets away (back with a new band in a few days)');t.act('lt-leave')}
   // ======== recruits: the men, the morale and honor; those sent off leave their weapons
-  {P.sk.lead.lv=10;P.troops={hum_knight:4};P.wounded={};const b=yielded(5),m=P.morale,n0=t.troopCount(),xp=t.xpTotal();t.act('pl-join');ok(/Take them into your band/.test(Kit.panel()),'(choosing who joins)');
+  {P.sk.lead.lv=10*PROF.per;P.troops={hum_knight:4};P.wounded={};const b=yielded(5),m=P.morale,n0=t.troopCount(),xp=t.xpTotal();t.act('pl-join');ok(/Take them into your band/.test(Kit.panel()),'(choosing who joins)');
    t.act('pl-pick','militia:-1');t.act('pl-pick','militia:-1');const took=G.par.take.militia;Kit.stub(.01,()=>t.act('pl-take'));
    ok(head()==='New recruits'&&t.troopCount()===n0+took&&P.morale<m&&/the rest are disarmed and sent off/.test(Kit.text()),'into your band: "New recruits", '+took+' join, morale lower, the rest sent off');
    ok(gear()===1+Math.round((5-took)/A)&&t.xpTotal()===xp&&!t.bandits.includes(b),'the '+(5-took)+' sent off leave their weapons on the pile ('+gear()+'); no experience');
@@ -53,7 +53,7 @@ Kit.suite(({ok})=>{
    ok(c.cleared&&cleared===c&&W.exiles.some(x=>x.ld===ld)&&!c.ld&&W.exiles.length===ex+1,'the '+c.T.n.toLowerCase()+' lies empty (site:cleared heard), its chieftain gone to rebuild');
    t.act('lt-leave');ok(G.mode==='world'&&!G.loot,'Continue: back on the map')}
   // ======== a lord who yields: his ransom, renown and the shame as ever, in the same window, his army's weapons on the pile
-  {Kit.world();P.prisoners={};P.sk.lead.lv=2;const l=W.lords.find(x=>!x.dead);l.troops=Array(8).fill('hum_levy');P.hostile[l.fac]=G.day+20;const g=P.gold,r=P.renown,xp=t.xpTotal(),h=t.honorWith(l.fac);
+  {Kit.world();P.prisoners={};P.sk.lead.lv=2*PROF.per;const l=W.lords.find(x=>!x.dead);l.troops=Array(8).fill('hum_levy');P.hostile[l.fac]=G.day+20;const g=P.gold,r=P.renown,xp=t.xpTotal(),h=t.honorWith(l.fac);
    G.par={o:l,kind:'lord'};Kit.stub(.01,()=>t.act('pl-yield'));const pn=t.prisonerCount();
    ok(head()===l.name+' yields'&&G.lootView&&l.dead&&P.gold>=g+80&&P.renown===r+8&&chip('Renown')==='+8'&&t.honorWith(l.fac)<h,'a lord yields: "'+l.name+' yields", his ransom (+'+(P.gold-g)+' gold), renown +8, the honor it costs, in the end window');
    ok(gear()===1+Math.round((8-pn)/A)&&t.xpTotal()===xp,'the '+(8-pn)+' sent home unarmed leave their weapons ('+gear()+'); no experience');

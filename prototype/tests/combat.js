@@ -13,8 +13,8 @@ try{
  // tick keeps the enemies alive so timing checks never end the battle early
  const tick=(B,sec)=>{for(let i=0;i<Math.round(sec/.02);i++){if(!t.B)return;B.hero.hp=Math.max(B.hero.hp,B.hero.max*.5);if(B.hx&&!B.keepSp)B.hx.sp=Math.max(B.hx.sp,40);B.units.forEach(u=>{if(u.team===1&&u.hp>0)u.hp=u.max});t.updateBattle(.02)}};
  const end=()=>{const B=t.B;if(!B)return;B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
- // combo (practised enough for its third blow: the combo grows with the weapon's discipline)
- P.sk[t.meleeSk()].lv=t.COMBO_UP.third;let B=fresh(['chief','chief']);B.noMorale=true;B.units.filter(u=>u.team===1).forEach(u=>u.hp=u.max=9999);// (nobody routs or falls: the combo is what is tested)
+ // combo (all three blows: Third Blow from the Tree)
+ if(!P.tree.includes('third'))P.tree.push('third');let B=fresh(['chief','chief']);B.noMorale=true;B.units.filter(u=>u.team===1).forEach(u=>u.hp=u.max=9999);// (nobody routs or falls: the combo is what is tested)
  const X=()=>B.hx||t.heroState(),h=B.hero,steps=[];
  t.swing();steps.push(X().step);tick(B,.42);t.swing();steps.push(X().step);tick(B,.42);const e0=B.units.find(u=>u.team===1&&u.hp>0),hp0=e0.hp;t.swing();steps.push(X().step);
  ok(steps.join(',')==='0,1,2','three presses inside the window chain Slash → Sweep → Finisher ('+steps.join(',')+')');
@@ -64,10 +64,9 @@ try{
  {const on0=t.HPBARS.on;t.setHpBars(false);ok(!t.HPBARS.on&&localStorage.getItem('ashmark.hpbars')==='0','health bars can be turned off (and it is remembered)');
   document.getElementById('hpBtn').click();ok(t.HPBARS.on&&document.getElementById('hpBtn').classList.contains('on'),'the HP bars button turns them back on');
   t.showTitle('settings');ok(/Health bars in battle/.test(document.getElementById('panel').innerHTML),'Settings offers it too');t.hidePanel();t.setHpBars(on0)}
- // the combo grows with practice: two blows to begin with, a third at COMBO_UP.third, the finisher's style chosen at COMBO_UP.fin
- {const sk=P.sk[t.meleeSk()];P.fin=null;sk.lv=0;ok(t.heroCombo().length===2,'a new hero\u2019s combo: two blows');
-  sk.lv=t.COMBO_UP.third;const C3=t.heroCombo(),W=t.weaponCombo();ok(C3.length===3&&C3[2].mult<W[2].mult,'practised, a third: a finisher, weaker than it was ('+C3[2].mult+' against '+W[2].mult+')');
-  ok(!t.finReady(),'its style is not yours to choose yet');sk.lv=t.COMBO_UP.fin;ok(t.finReady(),'at '+t.COMBO_UP.fin+' it is');
-  P.fin='stun';const S=t.heroCombo()[2];P.fin='push';const Pu=t.heroCombo()[2];ok(S.stun>Pu.stun&&Pu.kb>S.kb&&Pu.stun===0,'stunning: a long stun, little push; crushing: a hard push, no stun');P.fin=null;sk.lv=0}
+ // the combo grows on the Tree: two blows to begin with, a third from Third Blow, then a finisher's style from one of two notables
+ {const tr=P.tree.slice(),drop=()=>{P.tree=P.tree.filter(id=>!['third','fin_stun','fin_push'].includes(id))};drop();ok(t.heroCombo().length===2,'a new hero\u2019s combo: two blows');
+  P.tree.push('third');const C3=t.heroCombo(),W=t.weaponCombo();ok(C3.length===3&&C3[2].mult<W[2].mult,'Third Blow: a third, a finisher, weaker than it was ('+C3[2].mult+' against '+W[2].mult+')');
+  P.tree.push('fin_stun');const S=t.heroCombo()[2];drop();P.tree.push('third','fin_push');const Pu=t.heroCombo()[2];ok(S.stun>Pu.stun&&Pu.kb>S.kb&&Pu.stun===0,'stunning: a long stun, little push; crushing: a hard push, no stun');P.tree=tr}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

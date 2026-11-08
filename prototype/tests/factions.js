@@ -15,7 +15,7 @@ try{
  P.troops.hum_levy=2;t.act('tab','recruit');t.act('rec-tab','train');ok(/Pikeman/.test(document.getElementById('panel').innerHTML)&&/Lancer/.test(document.getElementById('panel').innerHTML),'branching upgrade shown (Spearman: Pikeman or Lancer)');
  {const g=t.partyRoster(P).groups.find(x=>x.type==='hum_levy');t.rankGain(g,1e6);P.gold=Math.max(P.gold,1e4);t.act('rec-upgroup',g.id+':hum_pike');ok(P.troops.hum_pike===2&&!P.troops.hum_levy,'upgraded to pikemen (the group at rank '+t.RANKS.max+')')}
  // (a third group wants a step of Leadership: an army starts with room for 3, your hero's own one of them, army.js armyGroupLimit)
- P.sk.lead.lv=Math.max(P.sk.lead.lv,t.ARMY_GROUP.leadBase+1);t.act('hire','hum_levy');ok(P.troops.hum_levy===1,'hired race troop');
+ P.sk.lead.lv=Math.max(P.sk.lead.lv,(t.ARMY_GROUP.leadBase+1)*PROF.per);t.act('hire','hum_levy');ok(P.troops.hum_levy===1,'hired race troop');
  t.act('leave');done();
  const kh=t.townBy('Karn Hold');P.x=kh.x;P.y=kh.y+3;G.lastTown=null;G.encCool=99;t.updateWorld(.016);
  ok(G.mode==='besiege'&&/Make siege camp/.test(document.getElementById('panel').innerHTML),'a hostile holding opens the siege screen instead of its gates');t.act('sg-leave');

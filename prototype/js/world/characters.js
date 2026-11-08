@@ -10,7 +10,11 @@
      his own (captives.js recruitCaptive).
    In battle a soldier is a link to its Unit (u.unit) and its own state there (health, morale, stamina, place): every one is made
    by the Unit's fieldStats. ---------- */
-const LV_XP=lv=>lv*60,SK_XP=lv=>(lv+1)*20,SK_MAX=10;
+// (LV_XP: a lord's or chieftain's experience to his next level, as ever; SK_XP: practice from a proficiency's level to the next,
+// SK_MAX its top: data/progression.js PROF. Your hero's and a companion's level from their proficiencies: Character#relevel)
+const LV_XP=lv=>lv*60,SK_XP=lv=>PROF.xp0+PROF.xpUp*lv,SK_MAX=PROF.max;
+// (progress for level n, and the level a progress reaches; a proficiency's share at level L (part of the next as its bar fills))
+const PROF_NEED=n=>PROF.step*n*(n+1)/2,PROF_LEVEL=p=>Math.max(0,Math.floor((Math.sqrt(1+8*p/PROF.step)-1)/2)),PROF_TRI=L=>L*(L+1)/2;
 // every fighter's health in battle, × this (your hero's and a lord's own health come and go at it: battle/setup.js, resolution.js,
 // sides.js)
 const FIELD_HP=2;
@@ -62,16 +66,21 @@ class Character extends Unit{
   get lv(){return this.o.lv} set lv(v){this.o.lv=v}
   get xp(){return this.o.xp} set xp(v){this.o.xp=v}
   get sk(){return this.o.sk}
-  // a discipline as it has trained it, and with what its tree adds
+  // a proficiency as it has trained it, in power (its level ÷ PROF.per: 99 is the old discipline's 10), and with what its tree adds
   trained(k){
     const s=this.sk[k];
-    return s?s.lv:0}
+    return s?s.lv/PROF.per:0}
+  // (its level, 0 to 99)
+  profLv(k){const s=this.sk[k];return s?s.lv:0}
   skill(k){return this.trained(k)+treeSkOf(this.o,k)}
   learn(k){return 1}
-  // experience: returns the levels it gained
-  gainXp(n){
+  /* experience: a lord's or chieftain's (aiOwned) as ever, his level from it. Your hero's and a companion's level comes from their
+     proficiencies (the owner, 2026-11-08: "the level progress will just based on your proficiency progress"): what used to be
+     experience is practice, by the deed's kind (REWARD_TRAIN: a battle, a tournament, a beast, a quest's...). Returns the levels it gained */
+  gainXp(n,kind){
     if(!(n>0))return 0;
     this.kit();
+    if(!this.aiOwned){const lv=this.lv,w=this.weaponProf();for(const [k,f] of REWARD_TRAIN[kind]||REWARD_TRAIN.battle){const q=k==='weapon'?w:k;if(this.sk[q])this.train(q,n*PROF.reward*f,true)}return this.lv-lv}
     this.xp+=n;
     let up=0;
     while(this.xp>=LV_XP(this.lv)){this.xp-=LV_XP(this.lv);this.lv++;up++}
@@ -87,13 +96,25 @@ class Character extends Unit{
   // a lord or a chieftain spends its skill points itself, by its class, and wears gear of its level; one who rides with you
   // leaves its points to you (the Skills page, from its window)
   get aiOwned(){return false}
-  // a discipline used: it rises by its use, as fast as this character learns it (rose: news of a new level)
-  train(k,n){
+  /* a proficiency used: it rises by its use, as fast as this character learns it (rose: news of it every PROF.rose levels); the same
+     practised over and over within an hour, less (PROF.burst, damp; not a reward: whole); then, one whose level is its proficiencies',
+     its level again (relevel) */
+  train(k,n,whole){
     const s=this.sk[k];
     if(!s||s.lv>=SK_MAX||!(n>0))return;
+    if(!whole&&!this.aiOwned){const h=typeof Clock!=='undefined'?Math.floor(Clock.hours()):0,B=this.o.burst||(this.o.burst={}),b=B[k]&&B[k][0]===h?B[k]:(B[k]=[h,0]);b[1]++;
+      if(b[1]>2*PROF.burst)n*=PROF.damp[1];else if(b[1]>PROF.burst)n*=PROF.damp[0]}
     s.xp+=n*this.learn(k);
-    while(s.lv<SK_MAX&&s.xp>=SK_XP(s.lv)){s.xp-=SK_XP(s.lv);s.lv++;this.rose(k,s.lv)}
-    if(s.lv>=SK_MAX)s.xp=0}
+    while(s.lv<SK_MAX&&s.xp>=SK_XP(s.lv)){s.xp-=SK_XP(s.lv);s.lv++;if(s.lv%PROF.rose===0||s.lv===SK_MAX)this.rose(k,s.lv)}
+    if(s.lv>=SK_MAX)s.xp=0;
+    if(!this.aiOwned)this.relevel()}
+  // (its proficiencies' progress: each one's weight × L(L+1)/2 at its level and the part of the next it has, less a past's free start, sk0)
+  profProgress(){let p=0;const b=this.o.sk0||{};for(const k in this.sk){const s=this.sk[k],L=s.lv+(s.lv<SK_MAX?Math.min(1,s.xp/SK_XP(s.lv)):0);p+=(PROF.weight[k]??1)*(PROF_TRI(L)-PROF_TRI(b[k]||0))}return Math.max(0,p)}
+  // (its level from them: new levels a tree point each, levelled; xp, its progress into this level, and xpNeed, what the next takes)
+  relevel(){const p=this.profProgress(),n=PROF_LEVEL(p);this.xp=p-PROF_NEED(n);if(n>this.lv){const up=n-this.lv;this.lv=n;this.levelled(up)}}
+  xpNeed(){return this.aiOwned?LV_XP(this.lv):PROF_NEED(this.lv+1)-PROF_NEED(this.lv)}
+  // (the proficiency it fights with: its weapon's)
+  weaponProf(){const c=this.cls();return c==='archer'?'archery':c==='caster'?'spell':this.meleeSkill()}
   rose(k,lv){}
   // the learned skills in its slots (each character's own tree and slots; yours are P's)
   actives(){
@@ -108,7 +129,7 @@ class Character extends Unit{
     const o=this.o;if(o.kit>=2)return o;
     o.attr=o.attr||{str:0,agi:0,int:0,cha:0};o.gear=o.gear||{};o.perks=o.perks||[];o.sk=o.sk||{};
     const ai=this.aiOwned;
-    for(const k of FIGHT_SK)if(!o.sk[k])o.sk[k]={lv:ai?Math.min(SK_MAX,Math.floor(this.lv/3)):0,xp:0};
+    for(const k of FIGHT_SK)if(!o.sk[k])o.sk[k]={lv:ai?Math.min(SK_MAX,Math.floor(this.lv/3)*PROF.per):0,xp:0};
     // (a tree for each: a point a level, and one to start; an older kit's attribute points become tree points)
     if(!o.tree){
       o.tree=['start'];o.tp=(o.tp||0)+this.lv+1;o.slots=Array(10).fill(null);
@@ -208,9 +229,11 @@ class Hero extends Character{
   kit(){return this.o}
   levelled(up){
     P.tp=(P.tp||0)+up;
-    log('You reach level '+P.level+'. '+(up>1?up+' skill points':'A skill point')+' to spend.','gold')}
-  rose(k,lv){log(SKILLS[k].n+' rises to '+lv+'.','gold')}
+    log('You reach level '+P.level+'. '+(up>1?up+' tree points':'A tree point')+' to spend.','gold')}
+  rose(k,lv){log('Your '+SKILLS[k].n+' proficiency reaches '+lv+'.','gold')}
   meleeSkill(){return meleeSk()}
+  // (your fighting proficiency: your weapon's, a bow's Archery, a staff's Spellcraft)
+  weaponProf(){const k=heroKind();return k==='ranged'?'archery':k==='magic'?'spell':meleeSk()}
   hasPerk(p){return has(p)}
 }
 // the role a record plays: your hero (P), a chieftain, a lord (a realm and an army), else a companion (P.comps[id])

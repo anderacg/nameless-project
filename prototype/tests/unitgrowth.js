@@ -9,7 +9,7 @@ Kit.suite(({ok})=>{
  const open=id=>{Kit.world();G.char='roster';t.openChar();t.act('party-select',id);return q('.fb-inspector .ucard-x')};
  const stat=(c,id)=>c&&c.querySelector('.uc-stat[data-stat="'+id+'"]');
  try{
-  P.sk.lead.lv=10;P.troops={[spear]:10,[foot]:10};P.wounded={};P.woundedGroups=[];const r=t.partyRoster(P),gs=r.groups.find(g=>g.type===spear),gf=r.groups.find(g=>g.type===foot);
+  P.sk.lead.lv=10*PROF.per;P.troops={[spear]:10,[foot]:10};P.wounded={};P.woundedGroups=[];const r=t.partyRoster(P),gs=r.groups.find(g=>g.type===spear),gf=r.groups.find(g=>g.type===foot);
   ok(spear&&gs&&gf,'(a spear group and a foot group: '+spear+', '+foot+')');
   // ======== a fresh troop: its kind's own numbers, nothing grown
   {const g=t.statGrowth(gf);ok(Object.values(g.stats).every(x=>!x.parts.length&&x.now===x.base),'a fresh group: statGrowth finds nothing grown');

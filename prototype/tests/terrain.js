@@ -85,7 +85,7 @@ try{
  const gm=(u,p,mx=1,my=0)=>{at(u,p);return t.groundMul(u,mx,my)};
  ok(near(gm(foot,wood),TG.wood.spd.foot)&&near(gm(knight,wood),TG.wood.spd.mounted)&&near(gm(troll,wood),TG.wood.spd.big)&&near(gm(elf,wood),1),'woods: foot ×'+TG.wood.spd.foot+', riders and big ×'+TG.wood.spd.mounted+', elves ×1');
  // Woodcraft (a character's skill): your hero, a companion or a lord who has it is slowed less in the woods; troops never
- {const WC=t.WOODCRAFT,f=TG.wood.spd.foot,lv=P.sk.wood.lv;P.sk.wood.lv=5;const h={...foot,hero:true},c={...foot,unit:{isChar:true,skill:k=>k==='wood'?10:0}};
+ {const WC=t.WOODCRAFT,f=TG.wood.spd.foot,lv=P.sk.wood.lv;P.sk.wood.lv=5*PROF.per;const h={...foot,hero:true},c={...foot,unit:{isChar:true,skill:k=>k==='wood'?10:0}};
   const exp=n=>1-(1-f)*(1-Math.min(WC.cap,WC.per*n));
   ok(near(gm(h,wood),exp(5))&&near(gm(c,wood),exp(10))&&near(gm(foot,wood),f)&&near(gm(h,marsh),TG.marsh.spd.foot),'Woodcraft in the woods: your hero at 5 ×'+exp(5).toFixed(2)+', a character at 10 ×'+exp(10).toFixed(2)+', a troop ×'+f+' as ever; marsh as ever');
   P.sk.wood.lv=lv}

@@ -14,8 +14,10 @@ const COMP_LEAD={lv:2,ap:2};// who may lead a party: level 2 and trusting you
 // Ander) none: met only in his story
 const compTown=id=>{const C=COMPS[id],t=townBy(C.town);return t||C.story?t:capitalOf(C.race)};
 // (a bowman comes with his worn quiver)
-function compInit(id){const c=P.comps[id];if(!c)return null;if(c.lv)return c;
-  Object.assign(c,{lv:1,xp:0,gear:ST[id]&&ST[id].bow?{quiver:'q_worn'}:{},sk:{},perks:[],perkPend:0,party:null,hurt:0});for(const k in COMP_SK)c.sk[k]={lv:(COMP_START[id]||{})[k]||0,xp:0};return c}
+// (everyone starts at 0, the owner, 2026-11-08: level 0, every proficiency 0; what a companion was good at, COMP_START, is how fast
+// it learns it: Companion#learn)
+function compInit(id){const c=P.comps[id];if(!c)return null;if(c.sk&&c.gear)return c;
+  Object.assign(c,{lv:0,xp:0,gear:ST[id]&&ST[id].bow?{quiver:'q_worn'}:{},sk:{},perks:[],perkPend:0,party:null,hurt:0});for(const k in COMP_SK)c.sk[k]={lv:0,xp:0};return c}
 /* ---------- a companion: a Character (characters.js) over its record, P.comps[id]. It fights as its own kind (ST[id]), with the
    one formula's numbers; a perk to choose every third level; gear you give it in its seven slots (COMP_SLOTS); it may lead a
    party of your soldiers once it is level COMP_LEAD.lv and trusts you (ap) ---------- */
@@ -25,16 +27,18 @@ class Companion extends Character{
   get key(){return this.id}
   get race(){return ST[this.id].race}
   get name(){return COMPS[this.id].short}
+  // (what it was good at learned faster: a quarter more for each point of COMP_START)
+  learn(k){return 1+.25*((COMP_START[this.id]||{})[k]||0)}
   // a perk to choose every third level, and news of each
   grew(up){
     const o=this.o;
     for(let lv=o.lv-up+1;lv<=o.lv;lv++){if(lv%3===0)o.perkPend++;log(this.name+' reaches level '+lv+(lv%3===0?': a perk to choose (Hero, Party tab)':'')+'.','gold')}}
-  rose(k,lv){log(this.name+'’s '+COMP_SK[k]+' rises to '+lv+'.','gold')}
+  rose(k,lv){log(this.name+'’s '+COMP_SK[k]+' proficiency reaches '+lv+'.','gold')}
   // in your band: not away leading a party, not lying wounded
   inBand(){return !this.o.party&&!this.o.jail&&!(this.o.hurt>G.day+Clock.frac)}
   // leading a party: who may, and how many soldiers (its level, its Leadership as it trained it, the Captain perk)
   canLead(){return this.o.lv>=COMP_LEAD.lv&&this.o.ap>=COMP_LEAD.ap}
-  partyCap(){return 4+2*this.o.lv+this.trained('lead')+(this.hasPerk('captain')?4:0)}
+  partyCap(){return 4+2*this.o.lv+Math.floor(this.trained('lead'))+(this.hasPerk('captain')?4:0)}
   // gear: what fits a slot from your bag, and giving or taking it back
   equipment(){return new EquipmentService(this.o,playerInventory,{items:ITEMS,slots:COMP_SLOTS,slotType:slotOfKey,mountKeys:[],dualWield:false})}
   fits(slot){
@@ -59,7 +63,7 @@ function compJoin(id,o){
 const compSkill=(id,k)=>{const c=compOf(id);return c?c.trained(k):0};
 // (leaders.js: as every leader grows)
 function compTrain(id,k,n){const c=compOf(id);if(c)c.train(k,n)}
-function compXp(id,n){const c=compOf(id);if(c)c.gainXp(n)}
+function compXp(id,n,kind){const c=compOf(id);if(c)c.gainXp(n,kind)}
 const compHas=(id,p)=>{const c=compOf(id);return !!c&&c.hasPerk(p)};
 const compInBand=id=>{const c=compOf(id);return !!c&&c.inBand()};
 const compsInBand=()=>Object.keys(P.comps).filter(compInBand);

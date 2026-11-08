@@ -5,7 +5,7 @@
 // and horses for those who go only (core/recruitment.js quoteGroupTraining); the Barracks' button ("Train 6 of 15 into Lancers");
 // the same for lords (world/realms.js lordRecruit), skipped without room; saved and loaded.
 Kit.suite(({ok,info})=>{
- const t=T,G=t.G,ST=t.ST;Kit.begin('soldier',1);let P=t.P;Kit.clear();Kit.world();P.sk.lead.lv=10;P.gold=1e5;P.troops={};
+ const t=T,G=t.G,ST=t.ST;Kit.begin('soldier',1);let P=t.P;Kit.clear();Kit.world();P.sk.lead.lv=10*PROF.per;P.gold=1e5;P.troops={};
  let r=t.partyRoster(P),ash=t.townBy('Ashford');const S=t.recruitment,price=S.trainCost('hum_lancer');P.rep[ash.name]=90;ash.vol=100;
  const horses=n=>{P.inv=P.inv.map(()=>null);t.invAdd('gear','m_horse',n)},state=()=>JSON.stringify({gold:P.gold,troops:P.troops,army:P.army,inv:P.inv});
  // (a unit of n of a kind at its last rank, its mastery 700 and two picks)
@@ -30,7 +30,7 @@ Kit.suite(({ok,info})=>{
   G.quietEvents=true}
  const R=t.partyRoster(P),clear=()=>{for(const g of R.groups.slice())R.remove(g.type,g.count,g.id)};
  // ======== no free slot: refused, the button says so
- {clear();P.sk.lead.lv=10;P.gold=1e5;const g=grp('hum_levy',15);horses(6);while(R.slots<R.groupLimit)R.add('hum_bow',1,'new');
+ {clear();P.sk.lead.lv=10*PROF.per;P.gold=1e5;const g=grp('hum_levy',15);horses(6);while(R.slots<R.groupLimit)R.add('hum_bow',1,'new');
   const before=state(),res=S.trainGroup(ash,g.id,'hum_lancer');ok(!res.ok&&res.code==='slot'&&state()===before,'no free unit slot: refused, nothing changed');
   ok(t.recruitmentWhy(res).startsWith('No free unit slot'),'its reason: '+t.recruitmentWhy(res));
   const b=barracks().find(x=>/No free unit slot/.test(x.textContent));ok(b&&b.disabled&&!b.dataset.act,'the Barracks’ button: "No free unit slot", greyed');

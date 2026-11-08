@@ -7,7 +7,8 @@ class TalentService{
   has(id){return (this.owner.tree||[]).includes(id)}
   root(){const id=this.rules.root();return id&&this.has(id)?id:'start'}
   knows(id){const S=this.skillDef(id);return !!S&&(!S.learn||this.has(S.learn))}
-  canTake(id){const N=this.node(id);return !!N&&!this.has(id)&&this.owner.tp>0&&N.t!=='origin'&&N.links.some(n=>this.has(n))}
+  // (excl: a node that shuts another, as a finisher the other: TREE_COMBO)
+  canTake(id){const N=this.node(id);return !!N&&!this.has(id)&&this.owner.tp>0&&N.t!=='origin'&&N.links.some(n=>this.has(n))&&!(N.excl&&this.has(N.excl))}
   canRefund(id){
     const N=this.node(id),root=this.root();if(!N||id===root||N.t==='origin'||!this.has(id))return false;
     const keep=new Set(this.owner.tree.filter(x=>x!==id)),seen=new Set([root]),q=[root];

@@ -12,7 +12,7 @@ Kit.suite(({ok,info})=>{
  const run=(c,n)=>{for(let ty=6;ty<t.MH-6;ty++)for(let tx=6;tx<t.MW-n-6;tx++){let good=true;
    for(let k=0;k<n&&good;k++){const x=(tx+k+.5)*16,y=(ty+.5)*16;good=t.tAt(tx+k,ty)===t.T_OPEN&&t.climAt(x,y)===c&&t.trackGround(x,y)>0&&t.trackGround(x,y-8)>0&&t.trackGround(x,y+8)>0}
    if(good&&!t.TOWNS.some(h=>Math.hypot(h.x-(tx+.5)*16,h.y-(ty+.5)*16)<160))return {x:(tx+.5)*16,y:(ty+.5)*16}}return null};
- const lvTo=n=>{P.sk.scout.lv=0;P.sk.scout.lv=Math.max(0,n-t.skill('scout'))};
+ const lvTo=n=>{P.sk.scout.lv=0;P.sk.scout.lv=Math.max(0,n-t.skill('scout'))*PROF.per};
  const mine=()=>W.tracks.filter(x=>x.own);
  // ---- you leave prints as you walk; a band does too, its kind and size kept
  const grass=run('grass',16);ok(!!grass,'a run of open grass to walk on ('+(grass&&grass.x+','+grass.y)+')');

@@ -4,7 +4,7 @@
 // a trainer "expert in different types of unit"; his level caps the training; yours (a train trait) in your camp, otherwise gold
 // at a holding; "the player may need this trainer to upgrade some specific units").
 Kit.suite(({ok})=>{
- const t=T,P=t.P,G=t.G,X=t.TRAINERS;Kit.begin('soldier',1);Kit.clear();Kit.world();P.sk.lead.lv=10;const r=t.partyRoster(P),ash=t.townBy('Ashford');P.troops={};P.gold=2000;P.rep[ash.name]=90;
+ const t=T,P=t.P,G=t.G,X=t.TRAINERS;Kit.begin('soldier',1);Kit.clear();Kit.world();P.sk.lead.lv=10*PROF.per;const r=t.partyRoster(P),ash=t.townBy('Ashford');P.troops={};P.gold=2000;P.rep[ash.name]=90;
  const grp=(k,n)=>{r.add(k,n,'new');return r.groups.filter(x=>x.type===k).pop()};
  const sp=grp('hum_spear',5),bw=grp('hum_bow',5);
  ok(t.trainRole('hum_spear')==='spear'&&t.trainRole('hum_bow')==='bow'&&t.trainRole('hum_xbow')==='xbow'&&t.trainRole('hum_mage')==='caster'&&t.trainRole('hum_knight')==='cav'&&t.trainRole('hum_foot')==='foot','each kind its role');

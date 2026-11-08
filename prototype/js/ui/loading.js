@@ -39,7 +39,7 @@ const TIPS=['Hover anything on the map to see what it is and how strong it is ag
   'Lords win levels and renown from their battles, as you do.','A realm short of holdings rallies more soldiers to its lords.',
   'A lord resting in a holding stands with its garrison in any siege.','A holding\'s guards are drawn from its own people.',
   'Standing with a holding lets you hire better troops there.','Your own people trust you a little from the start.',
-  'Your race and your past give you a knack: those disciplines come faster.','Holdings you take for yourself fly the Free Banner.',
+  'Your race and your past give you a knack: those proficiencies come faster.','Holdings you take for yourself fly the Free Banner.',
   'In battle, right-click an enemy to attack it; double right-click to charge.','H, C and V: hold, charge and advance.',
   'Right-drag to lay out a line where you want it.','After a won battle you gather some of your arrows and bolts back.',
   'Workers from the estates bring their goods in through the afternoon and go home at dusk.','Herds graze round villages, towns and cities.',

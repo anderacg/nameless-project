@@ -103,7 +103,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       Math.random=t.seeded(1100+index);t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;t.BDEPLOY.on=false;t.BAUTO.on=false;
       // World generation depends on boot-time road/layout state. Supply explicit campaign inputs instead of snapshotting random bystanders.
       W.lords=[];W.sites=[];W.monsters=[];W.exiles=[];W.rel={};W.lrel={};W.treas={};t.bandits.length=0;t.TOWNS.forEach(h=>h.crime=null);Math.random=t.seeded(2100+index);
-      P.troops={hum_spear:6,hum_bow:3,hum_knight:2};P.comps={};P.gold=200;P.renown=30;P.morale=60;P.hp=25;P.sp=30;P.mp=8;P.sk.med={lv:3,xp:0};
+      P.troops={hum_spear:6,hum_bow:3,hum_knight:2};P.comps={};P.gold=200;P.renown=30;P.morale=60;P.hp=25;P.sp=30;P.mp=8;P.sk.med={lv:3*PROF.per,xp:0};
       P.prisoners={militia:2};P.captives=[{k:'chief',ld:t.newChief('bandits',2)}];P.gear.weapon=t.gearId('bow',1);P.gear.quiver='q_hunter';
       const band=t.asParty({kind:'bandits',troops:Array(name==='retreat_caught'?40:4).fill('militia'),x:P.x+8,y:P.y,cool:0,ld:t.newChief('bandits',2)});t.bandits.push(band);
       let e={kind:'party',ref:band,list:band.troops.slice(),allies:[],foes:[],mine:false},town=null,lord=null;

@@ -60,7 +60,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,L=t.BattleLab,D=t.DISMOUNT,ev=s=>(
    let n=0;const d=h.draw;h.draw=function(){n++;return d.apply(this,arguments)};try{t.drawBattle()}finally{h.draw=d}ok(n===1,'drawn with the field (once; '+n+')')}
   if(L.active)L.exit();
   // ---- your group's horses: after a fight, next time, a stable, refills, saved
-  {const r=t.partyRoster(P);P.troops={};P.comps={};P.gold=1e5;P.sk.lead.lv=10;r.add('hum_lancer',6,'new');const g=r.groups.find(x=>x.type==='hum_lancer'),id=g.id,gr=()=>t.partyRoster(t.P).groups.find(x=>x.id===id);
+  {const r=t.partyRoster(P);P.troops={};P.comps={};P.gold=1e5;P.sk.lead.lv=10*PROF.per;r.add('hum_lancer',6,'new');const g=r.groups.find(x=>x.type==='hum_lancer'),id=g.id,gr=()=>t.partyRoster(t.P).groups.find(x=>x.id===id);
    ok(g.horses==null&&t.groupHorses(g)===6,'a new unit of Lancers: a horse a man, nothing kept');
    const fight=()=>{G.mode='world';G.modal=false;G.enc={kind:'party',ref:{cool:0},list:['militia','militia']};t.startBattle({enemies:['militia','militia'],deploy:false});const Bt=t.B;if(Bt.ready||Bt.deploy)t.beginFight();Bt.paused=false;t.updateBattle(.02);return Bt};
    const end=Bt=>{Bt.over=true;Bt.win=true;Bt.endT=0;t.updateBattle(.01);if(t.B)t.finishBattle();t.hidePanel();G.mode='world';G.modal=false};

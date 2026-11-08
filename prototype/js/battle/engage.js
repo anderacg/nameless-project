@@ -249,7 +249,8 @@ function flee(){
   if(!od.leave)P.morale=clamp(P.morale-2,0,100);G.enc=null;G.mode='world';hidePanel();log(od.leave?'You leave them be.':'You get away.',undefined,'war');if(!od.leave)mood('flee');encLost(e);
 }
 // experience: yours (leaders.js), and your companions share what you learn
-function gainXp(n){leaderOf(P).gainXp(n);for(const id of compsInBand())compXp(id,n)}
+// (experience as practice for your hero and your companions by the deed's kind: characters.js gainXp, REWARD_TRAIN)
+function gainXp(n,kind){leaderOf(P).gainXp(n,kind);for(const id of compsInBand())compXp(id,n,kind)}
 function applyLosses(lost){return partyRoster(P).lose(lost)}
 function lossText(lost){const k=Object.keys(lost).filter(x=>lost[x]>0);return k.length?k.map(x=>lost[x]+' '+ST[x].n.toLowerCase()).join(', '):'none'}
 /* what winning brings: every fight pays gold per foe, renown, XP and morale; then each kind of encounter has its own outcome.
@@ -262,8 +263,8 @@ const clearPlace=(o,days)=>{o.cleared=true;o.back=G.day+days;pacify(o.x,o.y)};
 const ON_WIN={
   party:{drop:()=>Math.random()<.3?randomGear(0,gearTop()):null,won:e=>{worldEmit('band:beaten',{band:e.ref});bandits=bandits.filter(x=>x!==e.ref);return ''}},
   camp:{big:true,fame:10,drop:()=>Math.random()<.8?randomGear(0,gearTop()):null,won:(e,slain,res)=>{worldEmit('site:cleared',{site:e.ref});(e.ref.bands||[]).forEach(b=>{worldEmit('band:beaten',{band:b});chiefEscapes(b.ld)});e.ref.bands=[];clearPlace(e.ref,e.ref.T?.respawn||10);return e.ref.plunder(res)}},
-  monster:{won:(e,slain,res)=>{const m=e.ref;worldEmit('monster:slain',{monster:m});W.monsters=W.monsters.filter(x=>x!==m);gainXp(monsterXp(m,slain));return monsterLoot(m,slain)+(MONSTERS[m.id].mythic?mythicSlain(m,res):'')}},
-  cave:{won:(e,slain)=>{worldEmit('site:cleared',{site:e.ref});gainXp(monsterXp(e.ref,slain));return monsterLoot(e.ref,slain)+e.ref.lairWon()},lost:e=>e.ref.lairLost(e)},
+  monster:{won:(e,slain,res)=>{const m=e.ref;worldEmit('monster:slain',{monster:m});W.monsters=W.monsters.filter(x=>x!==m);gainXp(monsterXp(m,slain),'monster');return monsterLoot(m,slain)+(MONSTERS[m.id].mythic?mythicSlain(m,res):'')}},
+  cave:{won:(e,slain)=>{worldEmit('site:cleared',{site:e.ref});gainXp(monsterXp(e.ref,slain),'monster');return monsterLoot(e.ref,slain)+e.ref.lairWon()},lost:e=>e.ref.lairLost(e)},
   lord:{big:true,fame:0,drop:()=>Math.random()<.6?randomGear(1,gearTop()+1):null,won:(e,slain,res)=>lordWon(e.ref,res,!res.down)},
   caravan:{fame:0,won:e=>e.seize?e.ref.seize():e.ref.loot()},
   estate:{fame:0,won:e=>estateWon(e)},

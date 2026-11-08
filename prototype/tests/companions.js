@@ -7,7 +7,7 @@ try{
  const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');G.quietEvents=true;W.monsters=[];W.critters=[];t.bandits.length=0;
  P.comps={brann:{ap:0,role:''}};const c=t.compInit('brann');
- ok(c.lv===1&&c.sk.oneh.lv===3&&c.sk.lead.lv===2,'Brann joins at level 1 with the disciplines he brings (One-Handed 3, Leadership 2)');
+ ok(c.lv===0&&c.sk.oneh.lv===0&&c.sk.lead.lv===0,'Brann joins at level 0, his proficiencies at 0 (the owner: everyone starts at 0)');
  const s0=t.compStats('brann');ok(s0.hp>=t.ST.brann.hp&&s0.dmg>t.ST.brann.dmg,'his One-Handed already adds to his damage ('+t.ST.brann.dmg+' → '+s0.dmg+')');
  // shared experience, levels and perks
  t.gainXp(500);ok(c.lv>=3&&c.perkPend>=1,'he shares the experience you gain and levels up (level '+c.lv+', a perk to choose)');
@@ -46,7 +46,7 @@ try{
   t.startEncounter({kind:'party',ref:b,n:4,band:'bandits'});ok(G.enc&&G.enc.allies.some(a=>a.src===p),'near you, his party rides into your battles');t.act('flee');t.hidePanel();G.mode='world';G.modal=false}
  // coming back: only with room for his groups in your army (your group limit, army.js armyGroupLimit), else he keeps them and follows
  {const lv=P.sk.lead.lv,n1=p.troops.length,x0=p.x,y0=p.y;P.sk.lead.lv=0;p.x=P.x+5;p.y=P.y;t.cpOrder('brann','return');for(let k=0;k<5;k++)t.updateCParties(.1);
-  ok(c.party===p&&p.troops.length===n1&&p.order==='follow','told to come back with no room for his groups, he keeps his soldiers and follows you');P.sk.lead.lv=Math.max(lv,10);p.x=x0;p.y=y0}
+  ok(c.party===p&&p.troops.length===n1&&p.order==='follow','told to come back with no room for his groups, he keeps his soldiers and follows you');P.sk.lead.lv=Math.max(lv,10*PROF.per);p.x=x0;p.y=y0}
  t.cpOrder('brann','return');for(let k=0;k<120&&c.party;k++)t.updateCParties(.1);ok(!c.party&&P.troops.hum_levy>=4+n0,'told to come back, he rejoins you with his soldiers');
  // a broken party
  {c.ap=3;t.cpGive('brann','hum_levy',2);const q=c.party;// (fleeing above cost his trust: Brann hates running)

@@ -2,7 +2,7 @@
 window.RUN=()=>{const t=T,P=t.P,G=t.G,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),random=Math.random;
 try{
  const fixture=()=>{
-  Math.random=t.seeded(1831);t.begin('soldier');G.quietEvents=true;t.BDEPLOY.on=false;P.sk.med={lv:3,xp:0};
+  Math.random=t.seeded(1831);t.begin('soldier');G.quietEvents=true;t.BDEPLOY.on=false;P.sk.med={lv:3*PROF.per,xp:0};
   const r=t.partyRoster(P);r.add('hum_foot',6,'new');r.add('hum_foot',6,'new');const [a,b]=r.groups;// (two groups of six: a group holds ten at most now)
  r.rename(a.id,'First <Guard>');r.rename(b.id,'Second Guard');r.move(b.id,-1);
   P.wounded={hum_foot:2};P.woundedGroups=[{id:a.id,type:a.type,count:2}];

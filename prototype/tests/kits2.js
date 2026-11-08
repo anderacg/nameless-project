@@ -45,7 +45,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,L=t.BattleLab,R=t.RANKS,K=t.KITS,G
    R.ai=5;const B=lab([Gp('hum_spear',6)]),sg=B.groups[t.playerGroups()[0]],rec=t.battleRec(sg);Object.assign(rec,{mxp:2500,picks:['longReach','lungeUp']});B.paused=false;t.updateBattle(.01);
    ok(Math.abs(sg.units[0].s.reach/t.ST.hum_spear.reach-1.1)<.01&&t.rankDur(sg,'lunge')===t.UNIT_SKILLS.lunge.dur+1,'in battle: Long reach on his reach, Lunge+ on Lunge\'s time ('+t.rankDur(sg,'lunge')+' s)')}
   // ======== the pick window (the Army window): the menu, each option's effect in words
-  {G.mode='world';G.modal=false;t.hidePanel();P.sk.lead.lv=10;const r=t.partyRoster(P);r.add('hum_spear',5,'new');const g=r.groups.filter(x=>x.type==='hum_spear').pop();Object.assign(g,{rank:5,mxp:700});
+  {G.mode='world';G.modal=false;t.hidePanel();P.sk.lead.lv=10*PROF.per;const r=t.partyRoster(P);r.add('hum_spear',5,'new');const g=r.groups.filter(x=>x.type==='hum_spear').pop();Object.assign(g,{rank:5,mxp:700});
    G.char='roster';t.openChar();t.act('party-select',g.id);t.act('party-path',g.id);const pk=qa('.fb-mastery .fb-mpick'),tx=q('.fb-mastery')?.textContent||'';
    ok(pk.length===K.kinds.spear.menu.length&&/Expert|Adept/.test(tx)&&/Brace\+.*pushes move them 20% less/.test(tx),'Adept: the spear\'s menu, each option its effect ("Brace+: pushes move them 20% less") ('+pk.length+')');
    pk.find(b=>b.dataset.arg===g.id+':braceUp').click();t.act('party-select',g.id);t.act('party-path',g.id);

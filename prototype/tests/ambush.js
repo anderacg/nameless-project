@@ -41,7 +41,7 @@ Kit.suite(({ok,info})=>{
    ok(e.dir===(e.lie[0]>e.x?-1:1),'he lies facing the road, the woods behind him');
    ok(t.ENC_SCENE.lay(e,false).every(p=>p.k==='down')&&!t.bandits.length,'not drawn while hidden: only the “wounded man” on the map, no band about');
    // ---- Scouting's warning: at their real spot
-   const hint=lv=>{P.sk.scout.lv=lv;return t.ENC_SCENE.lay(e,false).filter(p=>p.k==='rustle')};
+   const hint=lv=>{P.sk.scout.lv=lv*PROF.per;return t.ENC_SCENE.lay(e,false).filter(p=>p.k==='rustle')};
    const h2=hint(2),h3=hint(3),h5=hint(5);
    ok(!h2.length&&h3.length===1&&h3[0].x===e.lie[0]&&h3[0].y===e.lie[1]&&!h3[0].o.v&&h5.length===1&&h5[0].o.v===1,'warned (Scouting '+L.warn+'): the brush moves where they really lie; at '+L.count+' a glint of steel there too; below, nothing');
    {const ents=[];e.seen=1;e.draw(ents,G.cam,t.vis());let err=null;try{for(const x of ents)x.f()}catch(x){err=x}ok(ents.some(x=>x.top)&&!err,'the rustle is drawn over the trees ('+ents.length+' pieces)'+(err?': '+err.message:''))}
@@ -70,10 +70,10 @@ Kit.suite(({ok,info})=>{
     B.over=true;B.win=true;B.endT=0;t.updateBattle(.01);Kit.done({cont:true,world:true})}}
   world();
   // ---- warned, called out: they stand at the tree line; the fight there
-  {P.sk.scout.lv=L.warn;const e=lureAt();e.foes=e.foes.concat(['militia','militia']);t.roadMeet(e);Kit.stubStream('road',.999,()=>pickA(3));
+  {P.sk.scout.lv=L.warn*PROF.per;const e=lureAt();e.foes=e.foes.concat(['militia','militia']);t.roadMeet(e);Kit.stubStream('road',.999,()=>pickA(3));
    const out=t.ENC_SCENE.lay(e,false).filter(p=>p.k==='soldier');ok(e.out&&out.length===3&&out.every(p=>dist([p.x,p.y],e.edge)<=10)&&!t.ENC_SCENE.lay(e,false).some(p=>p.k==='rustle'),'called out: three of them show themselves at the tree line, the rustle gone');
    pickA(4);const b=G.enc&&G.enc.ref;ok(b&&!G.enc.btype&&dist([b.x,b.y],e.edge)<1,'Fight them: the fight begins with them at the tree line');world()}
-  {P.sk.scout.lv=L.warn;const e=lureAt();t.roadMeet(e);pickA(2);const b=G.enc&&G.enc.ref;ok(b&&!G.enc.btype&&dist([b.x,b.y],e.lie)<1,'Approach ready: they break cover from where they lay');world();P.sk.scout.lv=0}
+  {P.sk.scout.lv=L.warn*PROF.per;const e=lureAt();t.roadMeet(e);pickA(2);const b=G.enc&&G.enc.ref;ok(b&&!G.enc.btype&&dist([b.x,b.y],e.lie)<1,'Approach ready: they break cover from where they lay');world();P.sk.scout.lv=0}
   // ---- left be: they slip away
   {const e=lureAt(),n0=G.msgs.length,b0=t.bandits.length;e.seen=1;const n=Math.hypot(e.x-e.lie[0],e.y-e.lie[1])||1,V=t.vis();Kit.goTo(e.x+(e.x-e.lie[0])/n*V*1.6,e.y+(e.y-e.lie[1])/n*V*1.6);
    for(let i=0;i<5&&!e.gone;i++)t.updateRoad(.05);

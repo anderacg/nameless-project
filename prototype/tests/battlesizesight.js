@@ -9,7 +9,7 @@ Kit.suite(({ok})=>{
  const enemy=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x+30,y:P.y}),enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[],foes:[],mine:true};
  const small=new t.WorldBattleArea(enc);ok(small.r>t.vis()&&small.r>t.marchOuter(P)+t.marchOuter(enemy),'battle radius is larger than march circles and uses sight as its baseline');
  enemy.troops=Array(70).fill('militia');const large=new t.WorldBattleArea(enc);ok(large.r>small.r&&large.fighters>small.fighters,'combined fighter count increases battlefield radius');enemy.troops=['militia','militia'];
- const scouting=P.sk.scout.lv;P.sk.scout.lv=10;const sight=new t.WorldBattleArea(enc);ok(sight.r>small.r,'greater actual Scouting sight produces a larger battlefield');P.sk.scout.lv=scouting;
+ const scouting=P.sk.scout.lv;P.sk.scout.lv=10*PROF.per;const sight=new t.WorldBattleArea(enc);ok(sight.r>small.r,'greater actual Scouting sight produces a larger battlefield');P.sk.scout.lv=scouting;
  ok(Math.hypot(P.x-small.x,P.y-small.y)+t.marchOuter(P)<=small.r&&Math.hypot(enemy.x-small.x,enemy.y-small.y)+t.marchOuter(enemy)<=small.r,'sight-based sizing still encloses both starting armies');
  G.enc=enc;t.startBattle({enemies:enc.list,tournament:false});const b=t.B,a=b.world,initial={x:a.x,y:a.y,r:a.r},anchor={x:P.x,y:P.y},eye=a.world(b.hero),ex=a.x-eye.x,ey=a.y-eye.y,ed=Math.hypot(ex,ey),far=ed>1?{x:a.x+ex/ed*(a.r-5),y:a.y+ey/ed*(a.r-5)}:{x:a.x+a.r-5,y:a.y};// (inside the edge, across the field from your hero)
  t.fogReset();a.view=null;t.reveal();ok(t.inSight(eye.x,eye.y)&&t.seenAt(eye.x,eye.y),'normal hero sight reveals nearby terrain');

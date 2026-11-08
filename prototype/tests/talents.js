@@ -27,7 +27,7 @@ try{
  ok(t.refundNode('might0')&&P.attr.str===s0,'and takes its Strength back');
  // effects
  const learn=list=>{P.tp+=list.length;list.forEach(id=>t.takeNode(id))};
- const d0=t.heroStats().dmg;learn(['might0','might1','might2']);ok(t.heroStats().dmg>d0*1.1&&t.skill('oneh')>=P.sk.oneh.lv+1,'Brute Force: +15% damage and +1 One-Handed');
+ const d0=t.heroStats().dmg;learn(['might0','might1','might2']);ok(t.heroStats().dmg>d0*1.1&&t.skill('oneh')>=P.sk.oneh.lv/PROF.per+1,'Brute Force: +15% damage and +1 One-Handed');
  ok(!t.knows('leap')&&t.knows('whirl'),'Whirlwind is known; Leap Slam must be learned');learn(['mighta0']);ok(t.knows('leap'),'Leap Slam learned');
  const l0=t.abil('leap');learn(['mighta1','mighta2']);const l1=t.abil('leap');ok(l1.r>l0.r&&l1.stun>l0.stun&&l1.cd<l0.cd,'Earthshaker and Quick Leap upgrade it ('+l0.cd+'s → '+l1.cd+'s)');
  learn(['start','finesse0','finesse1','finesse2','finessea0','finessea1','finessea2']);const w=t.abil('whirl');ok(w.r>1.3&&w.dmg>1.3&&w.mp<t.HSKILLS.whirl.mp,'Whirlwind: wider, harder, cheaper');
@@ -49,7 +49,7 @@ try{
  P.tp=1;t.act('tree-sel','arcana2');ok(/Field Surgeon/.test(panel())&&!document.querySelector('[data-act="tree-take"]').disabled,'selecting a node shows it, with Learn');
  t.act('tree-take','arcana2');ok(t.treeHas('arcana2')&&/Unlearn/.test(panel()),'learning it from the page');
  t.act('sk-tab','abilities');{const un=Object.keys(t.HSKILLS).filter(k=>!t.knows(k));ok(!/Not learned/.test(panel())&&un.length&&un.every(k=>!panel().includes('<strong>'+t.HSKILLS[k].n+'</strong>')),'the Skill bar lists only the active skills you have learned ('+un.length+' not learned, not shown)')}
- t.act('sk-tab','disciplines');ok(/One-Handed/.test(panel())&&/Scouting/.test(panel()),'Disciplines lists the skills you train by use');
+ t.act('sk-tab','prof');ok(/One-Handed/.test(panel())&&/Scouting/.test(panel()),'Proficiency lists the proficiencies you train by use');
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='char'&&t.partyView().sel==='hero','Escape follows its Back: the Army window, on your hero');
  if(document.querySelector('#panel .nav [data-nav="back"]:not([data-act="fb-menu"])'))window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));// (a small screen: its card's page, then the cards)
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='esc','and again: the Army window’s Back, the Game Menu');window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','then resumed');
@@ -66,7 +66,7 @@ try{
  learnAll();ok(ids2.every(t.knows)&&ids2.every(id=>P.slots.includes(id)),'learning skills puts them on free slots ('+P.slots.map(x=>x||'-').join(' ')+')');
  G.mode='world';G.modal=false;t.hidePanel();t.openSkills('abilities');t.act('sk-slot','0');t.act('fb-choice','fireball');t.act('fb-apply');
  ok(P.slots[0]==='fireball'&&P.slots.filter(x=>x==='fireball').length===1,'the Skill bar puts Fireball on slot 1 (and takes it off its old slot)');
- ok(/Skill slots/.test(panel())&&/Basic moves/.test(panel())&&/Dodge Roll/.test(panel())&&!/press 1 to 0|Right-click|Space ·|F ·/.test(panel())&&document.querySelectorAll('[data-act="sk-slot"]').length===10&&!document.getElementById('panel').querySelector('select'),'the Skill bar shows ten touch slots, learned skills and basic moves, without dropdowns');t.act('sk-close');
+ ok(/Skill slots/.test(panel())&&!/press 1 to 0|Right-click|Space ·|F ·/.test(panel())&&document.querySelectorAll('[data-act="sk-slot"]').length===10&&!document.getElementById('panel').querySelector('select'),'the Skill bar shows ten touch slots and learned skills, without dropdowns');t.act('sk-close');
  // each new skill in battle
  P.troops={hum_spear:4};P.gear.weapon=t.gearId('bow',2);P.gear.quiver='q_master';const fight=()=>{G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia','militia','militia']};t.startBattle({enemies:G.enc.list,tournament:false});t.beginFight();const B=t.B;
    B.units.filter(u=>u.team===1).forEach((u,i)=>{u.x=B.hero.x+18;u.y=B.hero.y+(i-1)*8;u.cd=99;u.s={...u.s,spd:0}});B.aim=0;const X=t.heroState();X.sp=999;X.mp=999;return B};
@@ -86,7 +86,7 @@ try{
  B=fight();key('0');ok(B.hx.leap||B.hx.cds.leap>0,'key 0 casts slot 10 (Leap Slam)');B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // disciplines: four new ones that rise with use
  ok(['archery','spell','athl','eng'].every(k=>t.SKILLS[k]&&P.sk[k]),'new disciplines: Archery, Spellcraft, Athletics, Engineering');
- const spA=t.maxSP();P.sk.athl.lv+=2;ok(t.maxSP()===spA+8,'Athletics adds stamina');const mp0=t.abil('fireball').mp;P.sk.spell.lv+=5;ok(t.abil('fireball').mp<mp0,'Spellcraft makes spells cheaper');
+ const spA=t.maxSP();P.sk.athl.lv+=2*PROF.per;ok(t.maxSP()===spA+8,'Athletics adds stamina');const mp0=t.abil('fireball').mp;P.sk.spell.lv+=5*PROF.per;ok(t.abil('fireball').mp<mp0,'Spellcraft makes spells cheaper');
  B=fight();const ax=t.heroState();const ath=P.sk.athl.xp+P.sk.athl.lv*1000;t.dodge();ok(P.sk.athl.xp+P.sk.athl.lv*1000>ath,'dodging trains Athletics');B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // unlearning an active skill takes it off its slot
  P.gold=99999;const leaf=['commandc1','commandc2'].find(x=>t.treeHas(x)&&t.canRefund(x));if(leaf)t.refundNode(leaf);ok(t.refundNode('commandc1')||true,'');const okR=t.canRefund('commandc0')&&t.refundNode('commandc0');ok(!okR||!P.slots.includes('banner'),'unlearning War Banner takes it off its slot');
@@ -97,19 +97,17 @@ try{
  const bgs=Object.keys(t.BGS);ok(bgs.every(b=>TR['o_'+b]&&TR['o_'+b].t==='origin'),'every past has an origin on the tree: '+bgs.map(b=>TR['o_'+b].n).join(', '));
  const res={};for(const b of bgs){t.act('begin',b);res[b]=P.tree.slice()}ok(bgs.every(b=>res[b].length===1&&res[b][0]==='o_'+b),'a new hero starts with only their own origin learned');
  ok(TR.o_soldier.links.join()==='might0'&&TR.o_hedge.links.join()==='arcana0'&&TR.o_guard.links.length===2&&TR.o_merchant.links.includes('command0')&&TR.o_merchant.links.includes('arcana0'),'pure pasts start on one path, mixed pasts between two');
- t.act('begin','hedge');ok(P.origin==='o_hedge'&&t.skill('spell')>=P.sk.spell.lv+1,'the Hedge mage origin adds Spellcraft');
+ t.act('begin','hedge');ok(P.origin==='o_hedge'&&t.skill('spell')>=P.sk.spell.lv/PROF.per+1,'the Hedge mage origin adds Spellcraft');
  P.tp=5;ok(t.canTake('arcana0')&&!t.canTake('might0')&&!t.canTake('o_soldier'),'a Hedge mage grows from Arcana, and can never learn another past’s origin');
  t.takeNode('arcana0');t.takeNode('start');ok(t.canTake('might0'),'through the Crossroads every path opens up');P.gold=9999;ok(!t.canRefund('o_hedge')&&!t.canRefund('arcana0')&&t.canRefund('start'),'your origin cannot be unlearned, nor anything that links it to the rest');
  t.act('begin','soldier');
  // attributes are read-only now
  G.mode='world';G.modal=false;t.hidePanel();t.openChar();ok(!document.querySelector('[data-act="spend"]')&&/raised on the skill tree/.test(panel()),'your hero’s card shows attributes without + buttons');t.act('char-close');
  t.frame();
- // the special skills: under the tree, apart from its paths
- {G.mode='world';G.modal=false;t.hidePanel();P.fin=null;const sk=P.sk[t.meleeSk()];sk.lv=0;t.openSkills('basics');
-  ok(/Special skills/.test(panel())&&/Dodge Roll/.test(panel())&&/Shove/.test(panel())&&/Shield Bash/.test(panel())&&/Third Blow/.test(panel()),'the special skills: the basic moves and the combo\u2019s path');
-  ok(!document.querySelector('[data-act="sk-fin"]'),'the finisher is not yours to choose yet');sk.lv=t.COMBO_UP.fin;t.renderSkills();
-  ok(document.querySelectorAll('[data-act="sk-fin"]').length===2,'practised enough, choose one of two finishers');t.act('sk-fin','push');ok(P.fin==='push'&&!document.querySelector('[data-act="sk-fin"]'),'chosen once: crushing');
-  t.act('sk-fin','stun');ok(P.fin==='push','and it stays chosen');P.fin=null;sk.lv=0;t.act('sk-close')}
+ // the Trait page: the moves everyone has, your attack and the way to the combo's third blow on the Tree
+ {G.mode='world';G.modal=false;t.hidePanel();t.openSkills('traits');
+  ok(/Dodge Roll/.test(panel())&&/Shove/.test(panel())&&/Shield Bash/.test(panel())&&/Third Blow/.test(panel()),'the Trait page: the basic moves and the combo\u2019s path');
+  ok(!document.querySelector('[data-act="sk-fin"]'),'no finisher button: the finishers are on the Tree');t.act('sk-close')}
  // shove with a bow, shield bash with a shield, neither otherwise
  {const g0=P.gear.weapon;ok(t.shoveKind()===(t.grip()==='shield'?'bash':t.isBow()?'shove':null),'shove needs a bow, shield bash a shield ('+t.shoveKind()+')');P.gear.weapon=g0}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

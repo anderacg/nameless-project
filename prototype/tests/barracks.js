@@ -5,7 +5,7 @@
 // too few willing for a unit, they can only refill; on a phone a unit's card opens over the list and Back returns to it.
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,screen=document.getElementById('screen'),orig=screen.style.cssText,q=s=>document.querySelector('#panel '+s);window.requestAnimationFrame=()=>0;
- Kit.begin('soldier',1);Kit.clear();Kit.world();P.gold=5000;P.sk.lead.lv=6;const W=window.matchMedia,r=t.partyRoster(P);
+ Kit.begin('soldier',1);Kit.clear();Kit.world();P.gold=5000;P.sk.lead.lv=6*PROF.per;const W=window.matchMedia,r=t.partyRoster(P);
  try{screen.style.cssText=orig+';width:844px;height:390px';window.matchMedia=()=>({matches:true});
   const town=t.TOWNS.find(x=>x.T.tabs.includes('recruit')&&!t.hostileTo(x.owner)&&t.townBy(x.name));P.rep[town.name]=100;town.vol=80;t.enterTown(town);t.act('tab','recruit');
   ok(!q('[data-act="rec-add"]')&&!q('.rec-n')&&!q('[data-act="rec-fill"]')&&!q('[data-act="rec-groups"]')&&q('[data-act="rec-unit"]'),'whole units only: no counters, no Fill band, no group picker');

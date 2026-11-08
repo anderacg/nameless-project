@@ -1,7 +1,7 @@
 'use strict';
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
- const t=T,P=t.P,G=t.G;t.begin('soldier');G.quietEvents=true;P.sk.lead.lv=10;// Leadership opens all ten slots (a new band starts at three); a group holds ten
+ const t=T,P=t.P,G=t.G;t.begin('soldier');G.quietEvents=true;P.sk.lead.lv=10*PROF.per;// Leadership opens all ten slots (a new band starts at three); a group holds ten
  const r=t.partyRoster(P);P.add('hum_foot',7);const first=r.groups[0];r.add('hum_foot',3,'new');const second=r.groups.find(g=>g!==first&&g.type==='hum_foot');
  ok(first.count===7&&second.count===3&&first.id!==second.id,'a second unit of the same kind: its own identity');
  ok(P.troops.hum_foot===10&&r.slots===3,'count view unchanged; hero consumes one of ten slots');
@@ -25,7 +25,7 @@ try{
   ok(t.readSlot('2')===null&&t.oldSlot('2')&&P.gold===-5&&G.mode==='title','a v2 save is refused, not loaded: the game stays as it was');
   t.showTitle('load');ok(/Made by an older version: start a new game/.test(document.getElementById('panel').innerHTML),'the save list says it was made by an older version: start a new game');P.gold=g;G.mode='world';t.hidePanel()}
  // A compact battle with duplicate infantry and duplicate archers, plus a separate companion.
- t.begin('soldier');G.quietEvents=true;P.sk.lead.lv=10;P.add('hum_foot',6);const a=r.groups[0];r.add('hum_foot',6,'new');const b=r.groups.find(g=>g!==a&&g.type==='hum_foot');P.add('hum_bow',4);const c=r.groups.find(g=>g.type==='hum_bow');r.add('hum_bow',4,'new');const d=r.groups.find(g=>g!==c&&g.type==='hum_bow');P.comps.brann={ap:0,role:''};
+ t.begin('soldier');G.quietEvents=true;P.sk.lead.lv=10*PROF.per;P.add('hum_foot',6);const a=r.groups[0];r.add('hum_foot',6,'new');const b=r.groups.find(g=>g!==a&&g.type==='hum_foot');P.add('hum_bow',4);const c=r.groups.find(g=>g.type==='hum_bow');r.add('hum_bow',4,'new');const d=r.groups.find(g=>g!==c&&g.type==='hum_bow');P.comps.brann={ap:0,role:''};
  t.startBattle({enemies:Array(12).fill('hum_foot'),deploy:false});const B=t.B,gs=t.playerGroups(),aid='p_'+a.id,bid='p_'+b.id;
  ok(gs.length===6&&gs.includes('comp_brann'),'hero, companion and each troop formation get independent battle cards');
  ok(Object.values(B.groups).every(g=>new Set(t.grpUnits(g.id).map(u=>u.type)).size===1),'every battle group is homogeneous');

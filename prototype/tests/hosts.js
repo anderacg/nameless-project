@@ -6,7 +6,7 @@
 // HOSTS.gap px between them (Host#back), so the checks read each army against its own place and the gaps between rings.
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,W=t.W,X=t.HOSTS;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:1e9});t.GUIDE.on=false;
- const ash=Kit.goHome('Ashford');P.troops={hum_levy:20};P.sk.lead.lv=10;
+ const ash=Kit.goHome('Ashford');P.troops={hum_levy:20};P.sk.lead.lv=10*PROF.per;
  // (o's place back in its host (Host#back) against how far behind its leader it is; the gap between two armies' rings)
  const back=o=>t.Host.of(o).back(o),ring=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)-t.marchOuter(a)-t.marchOuter(b);
  for(const id of ['brann','elske']){P.comps[id]={ap:5,role:''};const c=t.compInit(id);c.lv=Math.max(c.lv,t.COMP_LEAD.lv);c.ap=5;t.cpGive(id,'hum_levy',4)}

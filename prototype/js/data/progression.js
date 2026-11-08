@@ -28,33 +28,49 @@ const PAST_START={
   merchant:{at:'realm',kinds:['village'],near:'road',line:'Your family\u2019s cart lost a wheel and its goods on the road. You limped into {h} with what was left, to start again.'}
 };
 const ATTRS={str:['Strength','Health and damage'],agi:['Agility','Attack speed, footspeed and stamina'],int:['Intellect','Mana, and faster Tactics and Medicine'],cha:['Charisma','Party size, hire costs, Leadership and Trade']};
-// disciplines: every one starts at 0 and rises only by doing what it names (state.js train); each gives more of that. A race
-// or background gives a knack (P.apt): its disciplines are learned faster, never higher to start
+// proficiencies (were disciplines): every one starts at 0 and rises only by doing what it names (state.js train); each gives more of
+// that. A race or background gives a knack (P.apt): its proficiencies are learned faster, never higher to start
+// (what each does, by proficiency level: power is level / PROF.per, so "per 10 levels" is a point of power)
 const SKILLS={
   // fighting
-  oneh:{n:'One-Handed',a:'str',d:'+0.6 damage and +0.4 reach per level with a one-handed grip (sword, axe, dagger, a spear with a shield). Rises with each hit you land one-handed'},
-  twoh:{n:'Two-Handed',a:'str',d:'+0.6 damage and +0.4 reach per level with a two-handed grip (greatsword, warhammer, a spear in both hands). Rises with each hit you land two-handed'},
-  block:{n:'Blocking',a:'str',d:'Blocked hits deal 1% less damage and guarding costs 3% less stamina per level. Rises with each hit you block'},
-  archery:{n:'Archery',a:'agi',d:'Your arrows and bolts hit 4% harder per level. Rises with each one that hits'},
-  spell:{n:'Spellcraft',a:'int',d:'Spells hit 4% harder and cost 2% less mana per level. Rises as you cast'},
-  fist:{n:'Unarmed',a:'str',d:'+0.6 damage per level with your bare hands (no weapon in either hand): punches, kicks and throws. Rises with each blow you land unarmed'},
-  athl:{n:'Athletics',a:'agi',d:'+4 stamina per level. Rises as you sprint and dodge'},
+  oneh:{n:'One-Handed',a:'str',d:'+0.6 damage and +0.4 reach per 10 levels with a one-handed grip (sword, axe, dagger, a spear with a shield). Rises with each hit you land one-handed'},
+  twoh:{n:'Two-Handed',a:'str',d:'+0.6 damage and +0.4 reach per 10 levels with a two-handed grip (greatsword, warhammer, a spear in both hands). Rises with each hit you land two-handed'},
+  block:{n:'Blocking',a:'str',d:'Blocked hits deal 1% less damage and guarding costs 3% less stamina per 10 levels. Rises with each hit you block'},
+  archery:{n:'Archery',a:'agi',d:'Your arrows and bolts hit 4% harder per 10 levels. Rises with each one that hits'},
+  spell:{n:'Spellcraft',a:'int',d:'Spells hit 4% harder and cost 2% less mana per 10 levels. Rises as you cast'},
+  fist:{n:'Unarmed',a:'str',d:'+0.6 damage per 10 levels with your bare hands (no weapon in either hand): punches, kicks and throws. Rises with each blow you land unarmed'},
+  athl:{n:'Athletics',a:'agi',d:'+4 stamina per 10 levels. Rises as you sprint and dodge'},
   // command
-  lead:{n:'Leadership',a:'cha',d:'+1 unit slot per trained level above 2 (3 starting slots, 10 maximum), +1 prisoner and +3 to the floor under morale per level. Rises with each battle your troops win'},
-  tact:{n:'Tactics',a:'int',d:'Auto-resolved battles go 5% better per level. Rises with each battle you win, most when you auto-resolve'},
-  med:{n:'Medicine',a:'int',d:'7% per level that a fallen troop survives, and you heal 3% more a day. Rises as you tend your fallen'},
-  eng:{n:'Engineering',a:'int',d:'10% a day per level that a siege camp gains an extra day of work. Rises each day of a siege'},
-  pers:{n:'Persuasion',a:'cha',d:'Cornered foes are 3% likelier per level to yield. Rises each time you demand a surrender'},
+  lead:{n:'Leadership',a:'cha',d:'+1 unit slot per 10 levels above 20 (3 starting slots, 10 maximum), +1 prisoner and +3 to the floor under morale per 10 levels. Rises with each battle your troops win'},
+  tact:{n:'Tactics',a:'int',d:'Auto-resolved battles go 5% better per 10 levels. Rises with each battle you win, most when you auto-resolve'},
+  med:{n:'Medicine',a:'int',d:'7% per 10 levels that a fallen troop survives, and you heal 3% more a day. Rises as you tend your fallen'},
+  eng:{n:'Engineering',a:'int',d:'10% a day per 10 levels that a siege camp gains an extra day of work. Rises each day of a siege'},
+  pers:{n:'Persuasion',a:'cha',d:'Cornered foes are 3% likelier per 10 levels to yield. Rises each time you demand a surrender'},
   // the road
-  scout:{n:'Scouting',a:'agi',d:'+8 map vision per level, and a better read of people and places before you act: at 2 a rough one (how they look, roughly how many), at 5 the numbers and the odds. Rises as you travel and spot new places'},
-  ride:{n:'Riding',a:'agi',d:'+2% travel speed per level while mounted. Rises as you ride'},
-  wood:{n:'Woodcraft',a:'agi',d:'Woods slow your band 6% less per level on the map (with Pathfinder, less again), and you yourself in battle. Rises as you travel through woods'},
-  hunt:{n:'Hunting',a:'agi',d:'An extra kill every 3 levels and 5% more hides per level when you hunt. Rises with each beast you bring down'},
-  surv:{n:'Survival',a:'int',d:'Frost, desert and swamp cost your band 6% less per level, and swamp fever strikes less often. Rises each day you camp in harsh land'},
+  scout:{n:'Scouting',a:'agi',d:'+8 map vision per 10 levels, and a better read of people and places before you act: at 20 a rough one (how they look, roughly how many), at 50 the numbers and the odds. Rises as you travel and spot new places'},
+  ride:{n:'Riding',a:'agi',d:'+2% travel speed per 10 levels while mounted. Rises as you ride'},
+  wood:{n:'Woodcraft',a:'agi',d:'Woods slow your band 6% less per 10 levels on the map (with Pathfinder, less again), and you yourself in battle. Rises as you travel through woods'},
+  hunt:{n:'Hunting',a:'agi',d:'An extra kill every 30 levels and 5% more hides per 10 levels when you hunt. Rises with each beast you bring down'},
+  surv:{n:'Survival',a:'int',d:'Frost, desert and swamp cost your band 6% less per 10 levels, and swamp fever strikes less often. Rises each day you camp in harsh land'},
   // trade and rule
-  trade:{n:'Trade',a:'cha',d:'Better prices, about 1% per level, when you buy and sell. Rises with the gold you trade'},
-  stew:{n:'Stewardship',a:'cha',d:'+3% taxes from your fiefs per level. Rises each day you hold fiefs'}
+  trade:{n:'Trade',a:'cha',d:'Better prices, about 1% per 10 levels, when you buy and sell. Rises with the gold you trade'},
+  stew:{n:'Stewardship',a:'cha',d:'+3% taxes from your fiefs per 10 levels. Rises each day you hold fiefs'}
 };
+/* proficiencies (the owner, 2026-11-08; doc/PROFICIENCY_DESIGN.md): what were disciplines, now 0 to 99, each rising by use as before;
+   your level is worked out from them. max: a proficiency's top; per: levels to one point of power (what its effects read: skill(k),
+   so 99 is the old 10); xp0, xpUp: practice to the next level, xp0 + xpUp × its level (to 99 about as much as to 10 before);
+   step: progress to level n is step × n(n+1)/2, progress the sum over proficiencies of weight × L(L+1)/2 at its level L (part of a
+   level as its bar fills); weight: the easy ones count less toward your level (1 if not named); burst, damp: a proficiency practised
+   more than burst times in one hour gets damp[0] of it, past twice that damp[1], till the next hour; reward: practice for each point
+   of the experience a deed used to give, by kind (REWARD_TRAIN), 'weapon' your fighting proficiency; rose: a message every so many
+   levels; pastPer: the levels a past gives free for each point of its old head start (P.sk0) */
+const PROF={max:99,per:9.9,xp0:4,xpUp:.145,step:50,burst:6,damp:[.5,.25],reward:.5,rose:10,pastPer:10,
+  weight:{ride:.8,wood:.8,surv:.8,stew:.8,athl:.8,scout:.6,trade:.6}};
+const REWARD_TRAIN={battle:[['weapon',.6],['lead',.2],['tact',.2]],tourney:[['weapon',.7],['athl',.3]],monster:[['weapon',1]],hunt:[['hunt',1]],
+  fight:[['weapon',.6],['lead',.4]],talk:[['pers',1]],search:[['scout',1]],trade:[['trade',1]],command:[['lead',1]],lore:[['scout',.5],['tact',.5]],story:[['pers',.5],['scout',.5]]};
+// (a quest's kind of practice, by its class: what doing it is)
+const QUEST_TRAIN={CourierQuest:'trade',SupplyQuest:'trade',StashQuest:'trade',FieldLootQuest:'trade',ScoutQuest:'search',VisitQuest:'search',MissingQuest:'search',
+  HuntQuest:'hunt',TroopsQuest:'command',RelieveQuest:'command'};
 const PERKS={
   shieldwall:{n:'Shieldwall',d:'Blocked hits deal only 10% damage.'},
   bloodlust:{n:'Bloodlust',d:'Your swings crit twice as often.'},

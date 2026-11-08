@@ -56,6 +56,12 @@ const TREE_FISTS={from:['o_nobody','h_arcana_command'],nodes:[
   ['n','Iron Shins',{kick:.4,hp:8},'Your kick lands 40% harder and throws them back farther. +8 health.',-275,132],
   ['n','Grappler',{grabCd:.3,grabDown:.2},'You grapple 30% more often, and a throw puts them down more surely.',-337,172],
   ['k','Open Hand',{fistPct:.35,fistCd:-.1,dr:-.1},'Bare-handed blows land 35% harder and 10% quicker, but you take 10% more damage.',-398,214]]};
+// the combo's upgrades (the owner, 2026-11-08: the combos that were Basics "should be unlocked via skill tree instead"): off Brute
+// Force, the Third Blow, then one of two finishers (excl: taking one shuts the other): its stun long, or its push far
+const TREE_COMBO={from:'might2',nodes:[
+  ['third','a','Third Blow',{combo3:1},'Your combo ends in a finisher: a third, heavier blow.',52,-138,null,[1,0]],
+  ['fin_stun','n','Stunning Finisher',{fin:'stun'},'The finisher stuns 60% longer and barely pushes. Shuts Crushing Finisher.',30,-164,'fin_push',[-1,0]],
+  ['fin_push','n','Crushing Finisher',{fin:'push'},'The finisher knocks foes far away, but does not stun. Shuts Stunning Finisher.',74,-164,'fin_stun',[1,0]]]};
 // build the nodes with positions: spines run out from the centre; side chains branch off the 3rd and 5th spine node
 // The middle is the Crossroads, a node like any other that joins the four paths. Each past starts from its own origin
 // on a ring around the Crossroads (at), joined to the first node of its path or, between two paths, of both (to); already learned, with a small bonus.
@@ -89,6 +95,7 @@ const originOf=bg=>'o_'+(ORIGINS[bg]?bg:'soldier');
   for(const bg in ORIGINS){const O=ORIGINS[bg],id='o_'+bg,[x,y]=O.at;
     TREE[id]={id,t:'origin',bg,n:O.n,m:O.m,x,y,br:null,links:[],d:'',lab:Math.abs(x)>90?[Math.sign(x),0]:[0,Math.sign(y)]};O.to.forEach(n=>link(id,n))}
   for(const f of TREE_FISTS.from)link(f,'fist0');
+  for(const [id,t,n,m,d,x,y,excl,lab] of TREE_COMBO.nodes){TREE[id]={id,t,n,m,x,y,br:'might',links:[],d,lab,excl:excl||null};link(id==='third'?TREE_COMBO.from:'third',id)}
   // describe the small nodes from their effects
   for(const id in TREE){const N=TREE[id];if(!N.d)N.d=(N.t==='origin'?'Where a '+N.n.toLowerCase()+' begins. ':N.t==='start'?'Joins the four paths. ':'')+describeNode(N.m)}
 })();

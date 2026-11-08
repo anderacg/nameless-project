@@ -22,7 +22,7 @@ const COMBOS={
   phalanx:Object.assign([CW('Jab','thrust',.95,9,.3,5,{wid:4}),CW('Jab','thrust',.95,9,.3,5,{wid:4}),CW('Drive','thrust',1.6,14,.55,20,{wid:5,stun:.4,...CFIN})],{sp:.9})
 };
 /* bare hands (the owner, 2026-10-29: "mostly a one hand punch, two hands to grapple, a kick"): your hero with no weapon in either
-   hand (core/state.js unarmed) fights with fists, Unarmed their discipline: × dmg, + reach, × the swing time (FISTS, and the
+   hand (core/state.js unarmed) fights with fists, Unarmed their proficiency: × dmg, + reach, × the swing time (FISTS, and the
    talents' fistPct); the combo a jab, a cross and a kick (each strikes only the nearest in it: one; the kick harder with the
    talents' kick), the hard attack a grapple (movesets.js MOVESETS.hard.grapple: wound up, the one before you seized in both hands
    and thrown, perhaps down; grab: its push and stagger). Only your hero, for now */
@@ -31,13 +31,15 @@ COMBOS.fists=Object.assign([CW('Jab','thrust',.8,0,.2,3,{wid:4,w:2,one:true,look
   CW('Kick','thrust',1.5,4,.42,22,{wid:5,stun:.5,one:true,look:'kick',...CFIN,shake:2})],{sp:.6});
 const COMBO_WINDOW=.75,DODGE_CD=1.1;
 const isHammer=m=>m.base==='warhammer'||m.icon==='club';
-/* the combo grows with practice in the discipline of the weapon you fight with (One-Handed or Two-Handed): two blows to begin
-   with; a third, the finisher, at COMBO_UP.third; and at COMBO_UP.fin you choose its style (P.fin): stunning (a long stun, a
-   small push) or crushing (a hard push, no stun). Until then the finisher is a weaker one (FIN_BASE). */
-const COMBO_UP={third:3,fin:6},FIN_BASE={mult:.85,stun:.5,kb:.6},FIN_STYLE={stun:{mult:.9,stun:1.6,kb:.4},push:{mult:.9,stun:0,kb:1.9}};
-const comboBlows=()=>skill(meleeSk())>=COMBO_UP.third?3:2;
-const finReady=()=>skill(meleeSk())>=COMBO_UP.fin;
-function heroCombo(){const C=weaponCombo(),n=comboBlows(),F=FIN_STYLE[P.fin]||FIN_BASE,K=C===COMBOS.fists?1+P.treeMod('kick'):1;// (the kick: the talents')
+/* the combo: two blows to begin with; a third, the finisher, from the Third Blow on the Tree, and its style from one of two
+   notables there: stunning (a long stun, a small push) or crushing (a hard push, no stun). Until then the finisher is a weaker
+   one (FIN_BASE). */
+const FIN_BASE={mult:.85,stun:.5,kb:.6},FIN_STYLE={stun:{mult:.9,stun:1.6,kb:.4},push:{mult:.9,stun:0,kb:1.9}};
+// (the combo's upgrades are Tree nodes now, the owner, 2026-11-08: the Third Blow, then a finisher's style, data/tree.js TREE_COMBO)
+const comboBlows=()=>treeHas('third')?3:2;
+const finReady=()=>treeHas('third');
+const heroFin=()=>treeHas('fin_stun')?'stun':treeHas('fin_push')?'push':null;
+function heroCombo(){const C=weaponCombo(),n=comboBlows(),F=FIN_STYLE[heroFin()]||FIN_BASE,K=C===COMBOS.fists?1+P.treeMod('kick'):1;// (the kick: the talents')
   const out=C.slice(0,n).map((c,i)=>i<2?c:{...c,mult:+(c.mult*F.mult*K).toFixed(2),stun:+((c.stun||.4)*F.stun).toFixed(2),kb:Math.round(c.kb*F.kb*K)});return Object.assign(out,{sp:C.sp})}
 function weaponCombo(){if(unarmed())return COMBOS.fists;const m=mainI(),g=grip();if(g==='dual')return COMBOS.dual;if(!m)return COMBO;if(m.base==='dagger'||m.icon==='dagger')return COMBOS.dagger;
   if(m.base==='spear'||m.tag==='spear')return g==='two'?COMBOS.thrust:COMBOS.phalanx;if(isHammer(m))return COMBOS.hammer;if(m.hand==='two')return COMBOS.heavy;if(m.base==='axe')return COMBOS.axe;return COMBO}

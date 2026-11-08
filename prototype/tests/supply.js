@@ -46,7 +46,7 @@ try{
  bag({grain:60,ale:20});ok(near(rate(true),-S.march),'on ale: the drain at its rate (ale and liquor lift morale as they come in: tests/itemcats.js)');
  bag({grain:60,liquor:20,water:20});ok(near(rate(true),-S.march),'water first, liquor kept (cheapest first)');
  t.BAND.liquor=true;ok(near(rate(true),-S.march)&&t.drinkNext(t.supplyLand())==='liquor','liquor first, as you choose: at its rate too');t.BAND.liquor=false;
- bag({water:200,grain:60});P.sk.athl.lv=5;ok(near(rate(true),-S.march*(1-S.skill*5)),'Athletics 5 on foot: −'+Math.round(S.skill*500)+'%');P.sk.athl.lv=0;
+ bag({water:200,grain:60});P.sk.athl.lv=5*PROF.per;ok(near(rate(true),-S.march*(1-S.skill*5)),'Athletics 5 on foot: −'+Math.round(S.skill*500)+'%');P.sk.athl.lv=0;
  P.troops={hum_knight:6};P.gear.mount='m_horse';ok(near(rate(true),-S.march*S.mounted),'a band mostly mounted: ×'+S.mounted);P.troops={hum_levy:5};P.gear.mount=null;
  at('frost');{const r0=rate(true);bag({water:200,grain:60,furs:t.P.furNeed()});const r1=rate(true);
   ok(near(r0,-S.march*S.rough*(1+S.cold))&&near(r1,-S.march*S.rough),'the frost: snow is rough ground, and short of furs it drains ×'+(1+S.cold)+' more ('+r0+' without furs, '+r1+' with)')}

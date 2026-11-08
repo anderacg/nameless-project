@@ -75,7 +75,7 @@ try{
   t.act('end-contract');ok(P.fac===null&&last()==='You end your contract with the '+f+'.','end-contract: '+last())}
  {P.prisoners={militia:2};const v=t.ransomValue(),g0=P.gold;t.act('ransom');ok(v>0&&P.gold===g0+v&&!Object.keys(P.prisoners).length&&last()==='The broker pays '+v+' gold for 2 prisoners.','ransom: '+last())}
  t.act('leave');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
- {P.sk.lead.lv=9;const cid='brann',ct=t.townBy(t.COMPS[cid].town);G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(ct);t.act('tab','tavern');t.act('hire-comp',cid);ok(!!P.comps[cid],'hire-comp: '+t.COMPS[cid].n+' joins');
+ {P.sk.lead.lv=9*PROF.per;const cid='brann',ct=t.townBy(t.COMPS[cid].town);G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(ct);t.act('tab','tavern');t.act('hire-comp',cid);ok(!!P.comps[cid],'hire-comp: '+t.COMPS[cid].n+' joins');
   t.act('leave');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}
  {const tw=t.TOWNS.find(x=>x.T.tourney);G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(tw);t.act('tab','tavern');P.gold=100;t.act('tourney');ok(P.gold===90&&t.B&&t.B.opts.tournament,'tourney: 10 gold and into the lists')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{SP.setItem=si;SP.getItem=gi}

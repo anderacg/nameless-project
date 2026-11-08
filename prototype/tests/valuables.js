@@ -12,7 +12,7 @@ try{
  ok(Object.keys(V).length>=5&&Object.values(V).every(v=>v.v>0&&t.RARITY[v.r]&&v.icon&&v.d)&&K.stack('ring')===5,Object.keys(V).length+' valuables ('+Object.values(V).map(v=>v.n).join(', ')+'), 5 to a slot');
  empty();ok(t.invAdd('val','ring',7)===7&&P.inv.filter(Boolean).length===2&&t.itemCat(P.inv[0]).n==='Valuable'&&/Gold ring/.test(K.title(P.inv[0])),'they stack 5 to a slot, of the category Valuable');
  {const r={k:'val',id:'chalice',n:1},city=t.townBy('Ashford'),town=t.townBy('Oakhurst'),vil=t.townBy('Thornwick'),tr=P.sk.trade.lv;
-  P.sk.trade.lv=0;const pc=K.price(r,city),pt=K.price(r,town),pv=K.price(r,vil);P.sk.trade.lv=5;const p5=K.price(r,city);P.sk.trade.lv=tr;
+  P.sk.trade.lv=0;const pc=K.price(r,city),pt=K.price(r,town),pv=K.price(r,vil);P.sk.trade.lv=5*PROF.per;const p5=K.price(r,city);P.sk.trade.lv=tr;
   ok(pc>pt&&pt>pv&&p5>pc&&pc===Math.round(V.chalice.v*t.VALUE.sell*t.VALUE.kind.city),'a market pays more in a city ('+pc+') than a town ('+pt+') or a village ('+pv+'), more with Trading ('+p5+' at 5)')}
  // ---- where they are found: from their own stream
  const r0=Math.random;let drew=0;Math.random=()=>{drew++;return r0()};

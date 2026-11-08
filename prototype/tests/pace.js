@@ -21,10 +21,10 @@ try{
  P.wounded={hum_levy:6};ok(t.bandPace()<p0,'carrying the wounded slows you ('+t.bandPace().toFixed(2)+')');P.wounded={};
  {const m=t.vitals();P.hp=m[0]*.2;ok(t.bandPace()<p0,'so does your own wound');P.hp=m[0]}
  // what speeds you
- P.sk.athl.lv=8;ok(t.bandPace()>p0,'Athletics quickens you on foot');P.sk.athl.lv=0;
+ P.sk.athl.lv=8*PROF.per;ok(t.bandPace()>p0,'Athletics quickens you on foot');P.sk.athl.lv=0;
  P.perks=['forced'];ok(t.bandPace()>p0&&t.eatPerDay()>(P.perks=[],t.eatPerDay()),'Forced March: faster, hungrier');P.perks=[];
  P.comps={tavi:{ap:0,role:'guide'}};t.compInit('tavi');ok(t.bandPace()>p0,'a Guide finds the quick ways');P.comps={};
- P.troops={hum_knight:10};P.gear.mount='m_courser';P.sk.ride.lv=10;P.perks=['forced'];P.gear.boots=null;ok(t.bandPace()<=1.8,'never more than 1.8× ('+t.bandPace().toFixed(2)+')');P.perks=[];P.sk.ride.lv=0;P.gear.mount=null;
+ P.troops={hum_knight:10};P.gear.mount='m_courser';P.sk.ride.lv=10*PROF.per;P.perks=['forced'];P.gear.boots=null;ok(t.bandPace()<=1.8,'never more than 1.8× ('+t.bandPace().toFixed(2)+')');P.perks=[];P.sk.ride.lv=0;P.gear.mount=null;
  // the realms: same rules
  {const L=W.lords[0];L.x=open[0];L.y=open[1];const a=t.partySpeed(L,Array(20).fill('hum_levy')),b=t.partySpeed(L,Array(20).fill('hum_knight'));ok(b>a*1.3,'a lord’s cavalry outpaces his infantry ('+a.toFixed(0)+' → '+b.toFixed(0)+')')}
  // cavalry runs infantry down in the open; the woods save you
@@ -32,7 +32,7 @@ try{
   G.mode='world';G.modal=false;t.startEncounter({kind:'lord',ref:L,list:L.troops.slice(),foes:[],allies:[]});const f1=t.fleeOdds(G.enc);P.x=forest[0];P.y=forest[1];L.x=P.x+8;L.y=P.y;const f2=t.fleeOdds(G.enc);
   ok(f1.ch===0&&f2.ch>0,'on open ground you cannot outrun a host of knights on foot ('+(f1.why||f1.ch)+'); in the woods you may ('+Math.round(f2.ch*100)+'%)');t.hidePanel();G.mode='world';G.modal=false;P.hostile={}}
  // the wounded: some of the fallen live, and heal (the band is its 10 survivors: the healed need room in its groups, ARMY_GROUP)
- {P.troops={hum_levy:10};P.sk.med.lv=5;const lost={hum_levy:10};const r=Math.random;let i=0;Math.random=()=>(i++%2?.99:.01);t.heal(lost);Math.random=r;
+ {P.troops={hum_levy:10};P.sk.med.lv=5*PROF.per;const lost={hum_levy:10};const r=Math.random;let i=0;Math.random=()=>(i++%2?.99:.01);t.heal(lost);Math.random=r;
   ok(t.woundedN()>0&&t.partySize()===20-0+0||t.woundedN()>0,'some of the fallen live, wounded ('+t.woundedN()+')');const w0=t.woundedN();P.x=t.TOWNS[0].x;P.y=t.TOWNS[0].y+20;t.woundedDay();ok(t.woundedN()<w0,'and heal day by day, faster near a friendly holding')}
  // riders at the walls
  {const z=t.TOWNS.find(q=>q.kind==='castle');P.troops={hum_knight:4};G.enc={kind:'siege',ref:z,list:['militia'],lv:2};if(!t.wallOf(z))z.wall=2;t.startBattle({enemies:['militia'],tournament:false,lv:2});const u=t.B.units.find(x=>x.type==='hum_knight');

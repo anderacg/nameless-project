@@ -53,7 +53,8 @@ class ArmyReport{
   const mine=b.units.filter(u=>u.team===0&&fought(u)&&!(u.grp&&b.groups[u.grp]?.ally)),allies=b.units.filter(u=>u.team===0&&fought(u)&&u.grp&&b.groups[u.grp]?.ally),foes=b.units.filter(u=>u.team!==0&&fought(u));
   return [row(bandName(),'Your army',SIDE.own.ui,mine,b.kills||0),...(allies.length?[row('Allies','Ally',SIDE.ally.ui,allies,0)]:[]),row('Enemy','Hostile',SIDE.foe.ui,foes,b.units.filter(u=>u.team===0&&fought(u)&&u.hp<=0&&!u.left).length)]}
  // (your hero's experience all told: every level's and the present one's, so a level gained in between counts whole)
- static tally(){const h=leaderOf(P);let xp=h.xp;for(let l=1;l<h.lv;l++)xp+=LV_XP(l);return {gold:P.gold,renown:P.renown,xp,prisoners:prisonerCount()}}
+ static tally(){const h=leaderOf(P);const xp=h.profProgress();// (its growth all told: its proficiencies' progress, characters.js)
+  return {gold:P.gold,renown:P.renown,xp,prisoners:prisonerCount()}}
  since(){const n=ArmyReport.tally(),m=this.mark;return {gold:n.gold-m.gold,renown:n.renown-m.renown,xp:n.xp-m.xp,prisoners:n.prisoners-m.prisoners}}
  // (added to the report its settlement showed)
  present(){const V=G.lootView;if(!V?.report)return;V.report.armies=this.armies;V.report.rewards=this.since();renderLoot()}
@@ -91,7 +92,7 @@ class BattleResolution{
     this.wallsFell=b.units.filter(u=>u.team===1&&u.hp<=0&&!u.leader&&String(u.grp||'').startsWith('e0_')).length;// (the walls' own men slain: siege.js siegeFallen)
     B=null;fieldDone();updateHint();// (the field back to today's height: setup.js)
     if(o.tournament){
-      let html;if(win){P.gold+=45;P.renown+=6;gainXp(25);if(G.town)addRep(G.town.ref.name,8);html='<h2>Champion</h2><p>The crowd chants your name. You take <strong class="gold">45 gold</strong> and gain renown.</p>';log('You win the tournament.','good')}
+      let html;if(win){P.gold+=45;P.renown+=6;gainXp(25,'tourney');if(G.town)addRep(G.town.ref.name,8);html='<h2>Champion</h2><p>The crowd chants your name. You take <strong class="gold">45 gold</strong> and gain renown.</p>';log('You win the tournament.','good')}
       else{html='<h2>Beaten</h2><p>The champion takes your entry fee and sends you off with a bruised pride.</p>';log('You lose the tournament.','bad')}
       lootShow(html,null,0,'back-town');return;
     }

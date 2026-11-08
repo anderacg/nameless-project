@@ -11,7 +11,7 @@ const ARMY_GROUP={start:3,leadBase:2};
 const groupHorses=(g,o=P)=>g.horses??g.count+partyRoster(o).wounded(g.id);
 // (its men, fit and wounded, without one)
 const horsesShort=(g,o=P)=>g.horses==null?0:Math.max(0,g.count+partyRoster(o).wounded(g.id)-g.horses);
-const armyGroupLimit=o=>o===P?clamp(ARMY_GROUP.start+Math.max(0,(P.sk?.lead?.lv||0)-ARMY_GROUP.leadBase)+(P.treeMod?P.treeMod('slots'):0),1,ARMY_LIMIT):o?.unitSlots?o.unitSlots():ARMY_LIMIT;
+const armyGroupLimit=o=>o===P?clamp(ARMY_GROUP.start+Math.max(0,Math.floor((P.sk?.lead?.lv||0)/PROF.per)-ARMY_GROUP.leadBase)+(P.treeMod?P.treeMod('slots'):0),1,ARMY_LIMIT):o?.unitSlots?o.unitSlots():ARMY_LIMIT;
 class ArmyRoster extends TroopRoster{
   get reserved(){return this.rules.reserved?this.rules.reserved():0}
   get groupLimit(){return armyGroupLimit(this.owner)}

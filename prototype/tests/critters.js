@@ -44,7 +44,7 @@ try{
  const hunted=c=>{c.cool=0;Kit.world();t.hunt(c);t.act('hunt-start');const b=t.B;if(!b||!b.hunt)return null;t.setAuto(true,true);let i=0;
    for(;t.B===b&&i<3000;i++){t.updateBattle(.05);if(t.B===b&&b.hunt.animals.every(u=>u.hp<=0||u.left))b.hunt.end()}if(t.B===b)b.hunt.end();t.setAuto(false,true);
    const meat=(G.loot&&G.loot.pile||[]).filter(q=>q.k==='good'&&q.id==='meat').reduce((n,q)=>n+q.n,0),kills=b.kills;if(G.loot)t.act('lt-all');Kit.done({world:true});return{b,kills,meat,hunters:b.units.filter(u=>!u.team).length}};
- empty();P.troops={hum_bow:8};P.sk.hunt.lv=3;deer.x=deer.hx=P.x+20;deer.y=deer.hy=P.y;deer.n=3;deer.tire=0;deer.escapeSta=undefined;
+ empty();P.troops={hum_bow:8};P.sk.hunt.lv=3*PROF.per;deer.x=deer.hx=P.x+20;deer.y=deer.hy=P.y;deer.n=3;deer.tire=0;deer.escapeSta=undefined;
  const h=hunted(deer),killed=h?h.kills:0;
  ok(h&&killed>=1&&h.meat===killed*t.CRITTERS.deer.meat&&t.goodN('meat')===h.meat,'8 bows and Hunting 3 bring down '+killed+' deer for '+(h?h.meat:0)+' meat (carried off: '+t.goodN('meat')+')');
  ok(killed<3?W.critters.includes(deer)&&deer.n===3-killed:!W.critters.includes(deer),'a herd hunted out is gone, the rest of one stay on the map ('+(W.critters.includes(deer)?deer.n+' left':'gone')+')');

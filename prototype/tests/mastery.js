@@ -6,7 +6,7 @@
 // Step 1's rules: run with unit kits step 2's switches off (Kit.kits(false): doc/UNIT_KITS_DESIGN.md §10.2), the proof they give
 // step 1 back; step 2's rules (ranks give stats only, the five mastery levels, Brace a stance, Lunge...): tests/kits2.js.
 Kit.suite(({ok})=>Kit.kits(false,()=>{
- const t=T,P=t.P,G=t.G,R=t.RANKS,M=R.mastery;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:0});P.sk.lead.lv=10;const r=t.partyRoster(P);P.troops={};
+ const t=T,P=t.P,G=t.G,R=t.RANKS,M=R.mastery;Kit.begin('soldier',1);Kit.clear();Kit.world({encCool:0});P.sk.lead.lv=10*PROF.per;const r=t.partyRoster(P);P.troops={};
  const grp=(k,n)=>{r.add(k,n,'new');return r.groups.filter(x=>x.type===k).pop()},full=k=>R.xp[t.ST[k].tier].reduce((a,b)=>a+b,0);
  // ======== mastery: the last rank's experience
  const sp=grp('hum_spear',5);t.rankGain(sp,full('hum_spear'));ok(t.rankOf(sp)===R.max&&t.masteryOf(sp)===0&&t.masteryXp(sp)===0,'rank '+R.max+', no mastery yet: a steel badge');

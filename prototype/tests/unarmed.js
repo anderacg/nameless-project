@@ -16,7 +16,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,ev=s=>(0,eval)(s);
   ok(sk==='oneh'&&fist.dmg<sw.dmg&&fist.reach<sw.reach&&fist.cd<sw.cd&&fist.dt==='blunt','fists hit softer ('+fist.dmg.toFixed(1)+' vs '+sw.dmg.toFixed(1)+'), reach shorter ('+fist.reach+' vs '+sw.reach+'), swing quicker ('+fist.cd.toFixed(2)+' vs '+sw.cd.toFixed(2)+' s), blunt');
   ok(t.weaponCombo()===t.COMBOS.fists&&t.COMBOS.fists.map(c=>c.n).join()==='Jab,Cross,Kick'&&t.COMBOS.fists.every(c=>c.one&&c.look),'the combo: a jab, a cross and a kick, each with its own look');
   // ======== in battle: each blow strikes one, trains Unarmed and shows its pose
-  ev('MANUAL_HERO=true');P.level=5;P.troops={militia:2};P.comps={};P.sk.fist.lv=t.COMBO_UP.third;G.mouse.in=false;P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;
+  ev('MANUAL_HERO=true');P.level=5;P.troops={militia:2};P.comps={};if(!P.tree.includes('third'))P.tree.push('third');G.mouse.in=false;P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;
   G.enc={kind:'party',ref:{cool:0},list:['chief','chief']};t.startBattle({enemies:['chief','chief'],tournament:false});t.beginFight();
   const B=t.B,h=B.hero,foes=B.units.filter(u=>u.team===1);B.noMorale=true;foes.forEach((u,i)=>{u.x=h.x+12+i*2;u.y=h.y;u.cd=9;u.hp=u.max=9999});B.units.filter(u=>u.team===0&&!u.hero).forEach(u=>{u.x=10;u.y=30});B.aim=0;
   const tick=s=>{for(let i=0;i<Math.round(s/.02);i++){if(!t.B)return;h.hp=Math.max(h.hp,h.max*.5);B.hx&&(B.hx.sp=Math.max(B.hx.sp,40));foes.forEach(u=>u.hp=u.max);t.updateBattle(.02)}};

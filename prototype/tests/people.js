@@ -63,10 +63,10 @@ try{
  fix(.01);t.act('pl-yield');unfix();ok(/throw down/.test(panel()),'it may yield');const pc=t.prisonerCount();t.act('pl-cage');
  ok(t.prisonerCount()===pc+2&&!t.bandits.includes(b),'and its fighters become your prisoners ('+pc+' → '+t.prisonerCount()+', cap '+t.prisonCap()+')');t.act('lt-leave');// (a yield ends in the spoils' window: parley.js yieldEnd)
  const b2={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','spearman'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b2));world();t.meetBand(b2);fix(.01);t.act('pl-yield');unfix();
- P.wounded={};P.sk.lead.lv=10;// (the wounded from earlier take room in the band; and two new kinds need two new groups: army.js armyGroupLimit)
+ P.wounded={};P.sk.lead.lv=10*PROF.per;// (the wounded from earlier take room in the band; and two new kinds need two new groups: army.js armyGroupLimit)
  const tc2=t.troopCount(),hh=t.honorWith(t.FIDS[0]);t.act('pl-join');ok(/Take them into your band/.test(panel())&&/Take 2/.test(panel()),'or join your band: you choose who, all who fit chosen to begin with');t.act('pl-take');ok(t.troopCount()===tc2+2&&t.honorWith(t.FIDS[0])<hh,'and they join, at a cost to your honor');t.act('lt-leave');
  // (choosing who joins: as many as your band's groups hold, the rest sent off; nobody dropped unseen)
- {P.sk.lead.lv=t.ARMY_GROUP.leadBase;P.troops={hum_knight:9};P.wounded={};const r=t.partyRoster(P);while(r.groupLimit-r.slots<1)P.sk.lead.lv++;const free=r.groupLimit-r.slots;// (one free group: your companions hold slots too)
+ {P.sk.lead.lv=t.ARMY_GROUP.leadBase*PROF.per;P.troops={hum_knight:9};P.wounded={};const r=t.partyRoster(P);while(r.groupLimit-r.slots<1)P.sk.lead.lv+=PROF.per;const free=r.groupLimit-r.slots;// (one free group: your companions hold slots too)
   
   const b4={x:P.x+5,y:P.y,n:5,kind:'bandits',list:['militia','militia','spearman','spearman','spearman'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b4));world();t.meetBand(b4);fix(.01);t.act('pl-yield');unfix();
   t.act('pl-join');const take=()=>G.par.take,plus=k=>document.querySelector('[data-act="pl-pick"][data-arg="'+k+':1"]');

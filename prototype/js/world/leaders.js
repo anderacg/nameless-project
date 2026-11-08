@@ -69,7 +69,7 @@ const chiefHolder=c=>bandits.find(b=>b.ld===c)||W.sites.find(s=>s.ld===c)||null;
 function newChief(band,lv,also){
   const N=CHIEF_NAMES[band]||CHIEF_NAMES.bandits,taken=new Set([...allChiefs(),...(also||[]).map(o=>o.ld).filter(Boolean)].map(c=>c.name));let name='';
   for(let k=0;k<30&&(!name||taken.has(name));k++)name=N[0][rint(0,N[0].length-1)]+' '+N[1][rint(0,N[1].length-1)];
-  lv=Math.max(1,lv|0);return{k:'chief',name,band,lv,xp:0,wins:0,sk:Object.fromEntries(CHIEF_SK.map(k=>[k,{lv:Math.min(SK_MAX,Math.floor(lv/2)),xp:0}]))};
+  lv=Math.max(1,lv|0);return{k:'chief',name,band,lv,xp:0,wins:0,sk:Object.fromEntries(CHIEF_SK.map(k=>[k,{lv:Math.min(SK_MAX,Math.floor(lv/2)*PROF.per),xp:0}]))};
 }
 const bountyOf=c=>c?10+15*c.lv:0;
 const chiefLabel=c=>c.name+' (level '+c.lv+')';

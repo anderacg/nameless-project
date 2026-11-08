@@ -239,7 +239,7 @@ class Quest extends Happening{
       }
       changeRel(giver,RELATION.jobDone,'you did their work');
     }
-    gainXp(r.xp);
+    gainXp(r.xp,REWARD_TRAIN[QUEST_TRAIN[this.constructor.name]]?QUEST_TRAIN[this.constructor.name]:'fight');// (practice by what the quest was: data/progression.js QUEST_TRAIN)
     const renown=this.lord?4:2;
     P.renown+=renown;
     // (a lord's: where you were paid; none, his realm holding nothing: no holding's reputation)

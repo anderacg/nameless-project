@@ -307,7 +307,7 @@ try{
   // a click on him, far off: his page at once
   goHome();const f=t.roadSpawn('thief',P.x+V+10,P.y);f.x=P.x+70;f.y=P.y+4;f.seen=1;t.frame();const b=f.box();t.clickAt((b[0]+b[2])/2,(b[1]+b[3])/2);ok(G.chase===f,'a click on him sends you after him');t.updateWorld(.05);
   ok(G.mode==='road'&&G.road===f&&acts().join('|')==='Chase'&&q('.nav [data-nav="close"]').textContent==='Let go'&&q('.pg-banner'),'and his page opens at once, though he is out of reach: Chase, or Let go');
-  P.sk.scout.lv=5;t.showRoad();ok(/you would close on him in|cannot catch him/.test(panel()),'Insight (Scouting 5): whether you can run him down, in hours');P.sk.scout.lv=0;
+  P.sk.scout.lv=5*PROF.per;t.showRoad();ok(/you would close on him in|cannot catch him/.test(panel()),'Insight (Scouting 5): whether you can run him down, in hours');P.sk.scout.lv=0;
   // Chase: you go after him on the map at a sprint; quick on your feet, you have him
   P.attr.agi=10;const g0=P.gold;pickA(0);ok(G.mode==='world'&&G.chase===f&&f.chase>t.roadNow()&&!G.modal,'Chase: off his page and after him on the map');
   let i=0;for(;i<3000&&G.mode==='world'&&!f.gone;i++)t.updateWorld(.05);
@@ -327,7 +327,7 @@ try{
  // ---- the poacher: in a lord's wood, he runs if he sees you first (Scouting); Turn him in, Buy the meat
  {t.WORLD_BATTLE.on=false;goHome();P.sk.scout.lv=0;let V0=t.vis();const e=t.roadSpawn('poacher',P.x+V0*1.05,P.y);frames(1);ok(!e.seen&&e.beh==='flee'&&e.spooked,'Scouting 0: he sees you first (at '+(D('poacher').wary()).toFixed(2)+'× your sight) and runs');
   const d0=e.fromYou();frames(40);ok(e.fromYou()>d0+3,'away from you, into the trees');frames(3000);ok(e.gone&&!e.met,'and is gone');
-  goHome();P.sk.scout.lv=3;V0=t.vis();const s=t.roadSpawn('poacher',P.x+V0*1.05,P.y);frames(1);ok(s.beh==='stay'&&!s.spooked,'Scouting 3 ('+(D('poacher').wary()).toFixed(2)+'× your sight): he has not seen you');
+  goHome();P.sk.scout.lv=3*PROF.per;V0=t.vis();const s=t.roadSpawn('poacher',P.x+V0*1.05,P.y);frames(1);ok(s.beh==='stay'&&!s.spooked,'Scouting 3 ('+(D('poacher').wary()).toFixed(2)+'× your sight): he has not seen you');
   P.x=s.x-V0*.95;frames(1);ok(s.seen&&s.beh==='stay','you see him first: he stays, caught red-handed');P.x=s.x-V0*.5;frames(5);ok(s.beh==='stay'&&!s.gone,'and does not run as you come');P.sk.scout.lv=0;
   ok(t.ENC_SCENE.pics(s).length===2,'a hunter with a deer lying dead');
   world();const p=meet('poacher'),r0=t.repAt(p.home),g0=P.gold;pickA(0);ok(t.repAt(p.home)===r0+TU.poacher.rep&&P.gold===g0+TU.poacher.bounty,'Turn him in: reputation in '+p.home+' +'+TU.poacher.rep+', a '+TU.poacher.bounty+'-gold bounty');world();
@@ -352,11 +352,11 @@ try{
  // ---- the runaway horse: bolts as you come, then stops to graze; Catch it (a Riding check, its odds read by Insight)
  {goHome();P.gear.mount=null;const e=t.roadSpawn('horse',P.x+V*.45,P.y),d0=e.fromYou();frames(1);ok(e.fled&&!e.calm,'the runaway horse bolts as you come');
   let i=0;for(;i<2000&&!e.calm;i++)t.updateRoad(.05);ok(e.calm&&e.ran>=e.stop&&e.fromYou()>d0+e.stop*.7,'runs '+Math.round(e.ran)+' px, then stops to graze');const x=e.x,y=e.y;frames(200);ok(e.x===x&&e.y===y&&!e.gone,'and grazes where it stopped, as you come');
-  t.roadMeet(e);P.sk.scout.lv=5;t.showRoad();ok(new RegExp(Math.round(t.catchOdds()*100)+'% to catch it').test(panel()),'Insight (Scouting 5): the odds of a catch ('+Math.round(t.catchOdds()*100)+'%)');P.sk.scout.lv=0;
+  t.roadMeet(e);P.sk.scout.lv=5*PROF.per;t.showRoad();ok(new RegExp(Math.round(t.catchOdds()*100)+'% to catch it').test(panel()),'Insight (Scouting 5): the odds of a catch ('+Math.round(t.catchOdds()*100)+'%)');P.sk.scout.lv=0;
   stub(0,()=>pickA(0));ok(P.gear.mount==='m_'+e.mk&&e.gone&&/is yours/.test(panel()),'Catch it, the check made: the '+t.ITEMS['m_'+e.mk].n+' is yours');world();
   const g0=P.gold,h=meet('horse');stub(0,()=>pickA(0));ok(P.gold===g0+t.itemPrice('m_'+h.mk)&&P.gear.mount==='m_'+e.mk,'with a mount already (the '+t.ITEMS['m_'+e.mk].n+' caught, as the land there breeds): its worth in gold ('+t.itemPrice('m_'+h.mk)+')');world();P.gear.mount=null;
   const b=meet('horse');stub(.99,()=>pickA(0));ok(b.beh==='bolt'&&!b.gone&&/bolts/.test(panel()),'missed: it bolts');world();const bd=b.fromYou();frames(40);ok(b.fromYou()>bd+5,'at a run');frames(3000);ok(b.gone,'and is gone');
-  P.attr.agi=2;P.sk.ride.lv=0;const o0=t.catchOdds();P.sk.ride.lv=5;const o1=t.catchOdds();P.sk.ride.lv=0;ok(o1>o0,'Riding makes a catch likelier ('+Math.round(o0*100)+'% → '+Math.round(o1*100)+'%)');
+  P.attr.agi=2;P.sk.ride.lv=0;const o0=t.catchOdds();P.sk.ride.lv=5*PROF.per;const o1=t.catchOdds();P.sk.ride.lv=0;ok(o1>o0,'Riding makes a catch likelier ('+Math.round(o0*100)+'% → '+Math.round(o1*100)+'%)');
   const ds=findT2((tx,ty)=>t.climAt((tx+.5)*TILE,(ty+.5)*TILE)==='desert');ok(!ds||t.roadMount({x:ds.x,y:ds.y})==='camel','the mount of the region: a horse here, a camel in the desert')}
 
  // ---- the beggar: walks up to you; Give 5, 10 or 20 gold (honor), or Ignore
@@ -399,8 +399,8 @@ try{
   const c=findT((tx,ty)=>t.tAt(tx,ty)===t.T_ROAD&&t.coverAt((tx+.5)*TILE,(ty+.5)*TILE)==='forest'&&far(tx,ty));ok(!!c,'a road through a wood');at(c[0],c[1]);P.troops={hum_levy:6};
   ok(t.ROAD_ENC.ambush.ok(),'the ambush can come where there is cover');ev('TERRAIN.on=false');ok(!t.ROAD_ENC.ambush.ok(),'never without battle terrain');ev('TERRAIN.on=true');
   // (25 px off: well inside your sight even should it stand among the trees, which hide one past 0.45 of it; still short of its spring)
-  P.sk.scout.lv=1;const e=t.roadSpawn('ambush',P.x+25,P.y);frames(1);ok(!e.inView(t.vis())&&!e.seen&&!e.marked()&&t.pickAt(e.x,e.y-4)!==e,'Scouting 1: unseen, unmarked, nothing to click');
-  P.sk.scout.lv=2;frames(1);ok(e.inView(t.vis())&&e.seen&&e.marked()&&G.msgs.slice(-3).some(m=>/movement in the trees/.test(m.m)),'Scouting 2: “movement in the trees”, marked ('+[e.inView(t.vis()),!!e.seen,e.marked(),G.mode,(G.msgs.slice(-1)[0]||{}).m].join(' · ')+')');P.sk.scout.lv=0;
+  P.sk.scout.lv=1*PROF.per;const e=t.roadSpawn('ambush',P.x+25,P.y);frames(1);ok(!e.inView(t.vis())&&!e.seen&&!e.marked()&&t.pickAt(e.x,e.y-4)!==e,'Scouting 1: unseen, unmarked, nothing to click');
+  P.sk.scout.lv=2*PROF.per;frames(1);ok(e.inView(t.vis())&&e.seen&&e.marked()&&G.msgs.slice(-3).some(m=>/movement in the trees/.test(m.m)),'Scouting 2: “movement in the trees”, marked ('+[e.inView(t.vis()),!!e.seen,e.marked(),G.mode,(G.msgs.slice(-1)[0]||{}).m].join(' · ')+')');P.sk.scout.lv=0;
   P.x=e.x-30;P.y=e.y;frames(1);ok(G.mode==='world','not yet sprung at 30 px');P.x=e.x-10;frames(1);ok(G.mode==='road'&&G.road===e&&!q('.nav [data-nav="close"]')&&!t.escDismiss(),'passing it, it springs: a forced choice, no Leave');
   pickA(0);ok(G.enc&&G.enc.btype&&G.enc.btype.kind==='ambush'&&G.enc.btype.hid===1&&/Ambush!/.test(panel()),'Close up and fight: the ambush battle');t.act('flee');world();
   at(c[0],c[1]);P.gold=100;t.invAdd('good','grain',10);const f0=t.foodN(),m0=P.morale=50,g=t.roadSpawn('ambush',P.x+10,P.y);t.roadMeet(g);pickA(1);ok(P.gold===85&&t.foodN()===f0-4&&P.morale===46&&g.gone&&q('.nav [data-nav="close"]'),'Cut the baggage loose: −4 food, −15 gold, morale −4; then Leave');world();ev('TERRAIN.on=false')}
@@ -424,22 +424,22 @@ try{
   ok(lu.foes.length>=5&&lu.foes.length<=7+Math.floor(G.day/15)&&['bandits','raiders','bog'].includes(lu.band),'bandits hide near: a band the size of an ambush’s ('+lu.foes.length+' '+lu.band+')');
   // Insight: below 3, his page is the real one's; at 3 the brush moves; at 5 how many and the odds
   const pg=e=>{t.roadMeet(e);const h=[q('.rwin h2').textContent,q('.rwbody>p').textContent,(q('.pg-facts')||{}).innerHTML,acts().join('|'),(q('.nav [data-nav="close"]')||{}).textContent].join(' ¦ ');world();return h};
-  for(const lv of [0,2]){P.sk.scout.lv=lv;const a=pg(lu),b=pg(tr);ok(a===b,'Scouting '+lv+': his page reads exactly as the real one’s ('+a.replace(/<[^>]+>/g,'').slice(0,140)+'…)')}
-  P.sk.scout.lv=3;{const a=pg(lu);ok(/something moves in the brush behind (him|her)/.test(a)&&!/lie in wait/.test(a)&&/Approach ready\|Call them out ¦/.test(a),'Scouting 3: “something moves in the brush behind him”; Approach ready, Call them out, Leave')}
-  P.sk.scout.lv=5;{const a=pg(lu);ok(new RegExp(lu.foes.length+' bandits lie in wait: .*odds').test(a),'Scouting 5: how many and the odds ('+(a.match(/\d+ bandits lie in wait[^<]*<span[^>]*>[^<]*<\/span>[^<]*/)||[''])[0].replace(/<[^>]+>/g,'')+')')}
+  for(const lv of [0,2]){P.sk.scout.lv=lv*PROF.per;const a=pg(lu),b=pg(tr);ok(a===b,'Scouting '+lv+': his page reads exactly as the real one’s ('+a.replace(/<[^>]+>/g,'').slice(0,140)+'…)')}
+  P.sk.scout.lv=3*PROF.per;{const a=pg(lu);ok(/something moves in the brush behind (him|her)/.test(a)&&!/lie in wait/.test(a)&&/Approach ready\|Call them out ¦/.test(a),'Scouting 3: “something moves in the brush behind him”; Approach ready, Call them out, Leave')}
+  P.sk.scout.lv=5*PROF.per;{const a=pg(lu);ok(new RegExp(lu.foes.length+' bandits lie in wait: .*odds').test(a),'Scouting 5: how many and the odds ('+(a.match(/\d+ bandits lie in wait[^<]*<span[^>]*>[^<]*<\/span>[^<]*/)||[''])[0].replace(/<[^>]+>/g,'')+')')}
   P.sk.scout.lv=0;
   // its choices
   const lure=(set)=>{const e=lureAt(10);if(set)set(e);t.roadMeet(e);return e};
   t.invAdd('good','grain',10);{const e=lure(),n=e.foes.length,f0=t.foodN();pickA(0);
    ok(G.enc&&G.enc.btype&&G.enc.btype.kind==='ambush'&&G.enc.btype.hid===1&&G.enc.list.length===n&&[...G.enc.list].sort().join()===[...e.foes].sort().join()&&e.gone&&t.foodN()===f0&&/Ambush!/.test(panel()),'Scouting 0, Tend his wounds: the ambush springs, their '+n+' with the ambush’s edge');t.act('flee');world()}
   {const e=lure(),g0=P.gold;pickA(1);ok(q('#panel.confirm')&&P.gold===g0,'Take his purse asks first, as the real one’s');sure();ok(G.enc&&G.enc.btype&&G.enc.btype.kind==='ambush'&&P.gold===g0,'and springs the ambush');t.act('flee');world()}
-  P.sk.scout.lv=3;
+  P.sk.scout.lv=3*PROF.per;
   {const e=lure();pickA(2);ok(G.enc&&!G.enc.btype&&G.enc.list.length===e.foes.length&&e.gone,'warned, Approach ready: the fight, without their ambush edge');t.act('flee');world()}
   {const e=lure(e=>{e.foes=e.foes.concat(['militia','militia'])});stub(0,()=>pickA(3));ok(e.out&&!e.gone&&!G.enc&&G.mode==='road'&&acts().join('|')==='Fight them'&&q('.nav [data-nav="close"]')&&new RegExp(e.foes.length+' bandits rise from the brush').test(panel()),'Call them out ('+e.foes.length+', too many to scare): they show themselves; Fight them, or Leave');
    ok(t.ENC_SCENE.lay(e,true).filter(p=>p.k==='soldier').length===3&&t.ENC_SCENE.lay(e,true).some(p=>p.k==='stand'),'on the map, the “wounded man” on his feet and the bandits out of the trees behind him');
    pickA(4);ok(G.enc&&!G.enc.btype&&G.enc.list.length===e.foes.length,'Fight them: no ambush edge');t.act('flee');world()}
   {const e=lure();stub(.999,()=>pickA(3));t.act('enc-leave');ok(G.mode==='world'&&e.out&&!e.gone&&/You ride on/.test(G.msgs[G.msgs.length-1].m),'called out, Leave: you ride on, they watch you go');world()}
-  {P.sk.lead.lv=5;P.attr.cha=6;const e=lure(e=>{e.foes=e.foes.slice(0,5)}),c=t.roadScare();stub(0,()=>pickA(3));ok(e.gone&&e.done&&!G.enc&&!qa('.rwbody .rkact').length&&/melt back into the woods/.test(panel()),'a small band ('+e.foes.length+') may be scared off by your Leadership and Charisma ('+Math.round(c*100)+'%): they melt back into the woods');world();P.sk.lead.lv=0;P.attr.cha=2}
+  {P.sk.lead.lv=5*PROF.per;P.attr.cha=6;const e=lure(e=>{e.foes=e.foes.slice(0,5)}),c=t.roadScare();stub(0,()=>pickA(3));ok(e.gone&&e.done&&!G.enc&&!qa('.rwbody .rkact').length&&/melt back into the woods/.test(panel()),'a small band ('+e.foes.length+') may be scared off by your Leadership and Charisma ('+Math.round(c*100)+'%): they melt back into the woods');world();P.sk.lead.lv=0;P.attr.cha=2}
   {const e=lure();t.act('enc-leave');ok(G.mode==='world'&&/^You leave (him to his|her to her) fate\.$/.test(G.msgs[G.msgs.length-1].m),'Leave: you leave him (or her) to his fate')}
   P.sk.scout.lv=0;
   // left be: the bandits move on, no body; the word on the road
@@ -470,7 +470,7 @@ try{
   // the witness, when you rob him: who was near, less by Scouting and the night
   {goHome();R().on=[];const m=t.roadSpawn('messenger',P.x+20,P.y),W0=TL.witness,farT=(x,y)=>Math.min(...t.TOWNS.filter(z=>!z.gone).map(z=>Math.hypot(z.x-x,z.y-y)));
    {let bx=P.x,by=P.y;for(const r of [20,40])for(let a=0;a<16;a++){const x=P.x+Math.cos(a*Math.PI/8)*r,y=P.y+Math.sin(a*Math.PI/8)*r;if(farT(x,y)>farT(bx,by)){bx=x;by=y}}m.x=bx;m.y=by}P.sk.scout.lv=0;G.clock=t.DAY*.3;const p0=t.letterWitness(m);
-   W.caravans.push({x:m.x+30,y:m.y});const p1=t.letterWitness(m);W.caravans.length=0;G.clock=t.DAY*.75;const pn=t.letterWitness(m);G.clock=t.DAY*.3;P.sk.scout.lv=5;const ps=t.letterWitness(m);P.sk.scout.lv=0;
+   W.caravans.push({x:m.x+30,y:m.y});const p1=t.letterWitness(m);W.caravans.length=0;G.clock=t.DAY*.75;const pn=t.letterWitness(m);G.clock=t.DAY*.3;P.sk.scout.lv=5*PROF.per;const ps=t.letterWitness(m);P.sk.scout.lv=0;
    const A2=t.townBy('Ashford');at(A2.x+60,A2.y+60);R().on=[];const mh=t.roadSpawn('messenger',P.x+20,P.y),ph=t.letterWitness(mh);
    ok(Math.abs(p0-W0.base)<1e-9&&Math.abs(p1-(W0.base+W0.per))<1e-9&&Math.abs(pn-W0.base*W0.night)<1e-9&&Math.abs(ps-W0.base*(1-5*W0.scout))<1e-9&&ph>=W0.base+W0.hold-1e-9,
      'the witness roll: '+Math.round(p0*100)+'% alone on the road, '+Math.round(p1*100)+'% with a caravan near, '+Math.round(pn*100)+'% by night, '+Math.round(ps*100)+'% at Scouting 5, '+Math.round(ph*100)+'% by a holding');
@@ -559,7 +559,7 @@ try{
   {goHome();R().on=[];const e=t.roadSpawn('mine',P.x+40,P.y);e.seen=1;past(e,30);frames(50);ok(!e.gone&&!e.left,'the collapsed mine: never gone while you see it');away(e);frames(1);ok(e.gone,'gone once out of your sight')}
   {const e=lureAt(40);e.seen=1;const n0=G.msgs.length;past(e,30);frames(50);ok(!e.gone&&!/Word on the road/.test(logsSince(n0)),'the lure: the “wounded man” stays while you see him');
    away(e);frames(1);ok(e.gone&&!nTr('body')&&/Word on the road/.test(logsSince(n0)),'out of your sight, the bandits move on (no body), word gets round')}
-  {ev('TERRAIN.on=true');goHome();R().on=[];P.sk.scout.lv=2;const e=t.roadSpawn('ambush',P.x+40,P.y);frames(1);past(e,30);frames(50);ok(e.inView(t.vis())&&!e.gone,'the ambush, seen (Scouting 2): still there past its time');away(e);frames(1);ok(e.gone,'gone once out of your sight');
+  {ev('TERRAIN.on=true');goHome();R().on=[];P.sk.scout.lv=2*PROF.per;const e=t.roadSpawn('ambush',P.x+40,P.y);frames(1);past(e,30);frames(50);ok(e.inView(t.vis())&&!e.gone,'the ambush, seen (Scouting 2): still there past its time');away(e);frames(1);ok(e.gone,'gone once out of your sight');
    P.sk.scout.lv=0;goHome();R().on=[];const f=t.roadSpawn('ambush',P.x+40,P.y);past(f);frames(1);ok(f.gone,'unseen (Scouting 0): it moves on at its time');ev('TERRAIN.on=false')}
   // ---- the caravan under attack: plays out before you: the raiders ride off, the burnt wagon left
   {goHome();R().on=[];const e=t.roadSpawn('caravan',P.x+60,P.y);e.seen=1;const x0=e.x;past(e);frames(1);const wr=R().on.find(x=>x.trace&&x.k==='wreck');
@@ -577,7 +577,7 @@ try{
  // more raises it, up to its cap, never past it and never under today's; the horse's odds as they were; the Insight read (Scouting
  // 0, 3, 5); each check's outcome; Tend his wounds always heals, its care (e.care) rising with Medicine
  {const S=t.ENC_STAT,Z={str:0,agi:0,int:0,cha:0,med:0,surv:0,hunt:0,archery:0,athl:0,ride:0,scout:0,lead:0,pers:0,trade:0},HI={str:30,agi:30,int:30,cha:30,med:20,surv:20,hunt:20,archery:20,athl:20,ride:20,scout:20,lead:20,pers:20,trade:20};
-  const stats=(o,fn)=>{const a0={...P.attr},s0={};for(const k in o)if(k in P.attr)P.attr[k]=o[k];else{s0[k]=P.sk[k].lv;P.sk[k].lv=o[k]}try{return fn()}finally{Object.assign(P.attr,a0);for(const k in s0)P.sk[k].lv=s0[k]}};
+  const stats=(o,fn)=>{const a0={...P.attr},s0={};for(const k in o)if(k in P.attr)P.attr[k]=o[k];else{s0[k]=P.sk[k].lv;P.sk[k].lv=o[k]*PROF.per}try{return fn()}finally{Object.assign(P.attr,a0);for(const k in s0)P.sk[k].lv=s0[k]}};
   // (the stories' checks share ENC_STAT (story/forms.js Stories.check, 'chk:…'): today's is their base, the rest held to the same rules)
   const TODAY={horse:.25,dice:.48,mine:.6,mineGear:.4,wisps:.5,care:0,push:0,hunt:0,respect:0,tracks:.4,watch:0,nimble:0,forage:0,herblore:.3,writ:.3,talk:.25,haggle:0,
    ...Object.fromEntries(Object.keys(S).filter(k=>k.startsWith('chk:')).map(k=>[k,S[k].base]))},ks=Object.keys(S),odds=o=>stats(o,()=>ks.map(k=>t.statOdds(k)));
