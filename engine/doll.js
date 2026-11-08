@@ -78,7 +78,9 @@
     // a cloak, seen from before him as it hangs behind him: a mantle over his shoulders (its collar and the tops of his arms), then
     // only its edge, a pixel of cloth from his shoulder down behind his back arm (the picture is mirrored to face right: his left, +x, is his back)
     // to a hem at the knee; his arms their own sleeves (the owner, 2026-11-07: "too blocky", "the cape is a square")
-    cloak:{slot:'cloak',cover:'nu',rows:[3,5],shape:{at:'body',rows:['..........','..........','..........','..........','........1.','........1.','.........2','.........2','.........2','.........2','.........3','........33']}},
+    // (over his far arm from the shoulder to the elbow, then two pixels wide, so it touches him whatever that arm does: walking, his arm swung forward, it
+    //  had hung a pixel clear of him (the owner, 2026-11-07: "recheck whether the body composition still match"))
+    cloak:{slot:'cloak',cover:'nu',rows:[3,5],shape:{at:'body',rows:['..........','..........','..........','..........','.......11.','.......111','.......122','.......222','.......222','........22','........23','........33']}},
     // hair: short (the scalp), long (to the shoulders), a tail, none; a beard over the jaw
     short:{slot:'hair',cover:'s'},long:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','....2','...33']}},
     tail:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','....3','....3']}},bald:{slot:'hair'},
@@ -207,7 +209,8 @@
     const style=spec.style||'short';if(PARTS[style])parts.push({...PARTS[style],name:style,m:'hair'});if(spec.beard??R.beard)parts.push({...PARTS[spec.beardStyle]||PARTS.beard,name:'beard',m:'hair'});
     parts.sort((a,b)=>SLOTS.indexOf(a.slot)-SLOTS.indexOf(b.slot));
     const headCover=parts.some(p=>p.slot==='head'&&p.cover&&p.cover.includes('s')),slit=parts.some(p=>p.slit);
-    const hands=S.cells.filter(c=>c.r==='h'),hR=hands.filter(c=>c.side==='R').sort((a,b)=>b.y-a.y)[0],hL=hands.filter(c=>c.side==='L').sort((a,b)=>b.y-a.y)[0];
+    const hands=S.cells.filter(c=>c.r==='h'),hR=hands.filter(c=>c.side==='R').sort((a,b)=>b.y-a.y||b.x-a.x)[0],hL=hands.filter(c=>c.side==='L').sort((a,b)=>b.y-a.y)[0];
+    // (the weapon hand: the lowest hand cell, the inner one of the two in its row, where the hand was before the arms ended at the hips)
     const hand=hR?at(hR):[ox,oy+9],off=hL?at(hL):[ox+8,oy+9];
     // (its gear, each piece apart (PX.dollGear): which, from which anchor, behind him or before him; laid on here only when not bare)
     const wk=spec.weapon===undefined?U&&U.weapon:spec.weapon,shk=spec.shield??(U&&U.shield),gear=[];

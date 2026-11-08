@@ -145,7 +145,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // (re-recorded 2026-11-07, on purpose: the owner, "there should be no eyes and the head should look like others (facing a bit to
  // the left or right not center)": a hood, a coif, long hair and a pelt open before the face, an elf's ear behind it (engine/doll.js).
  // Proof: 03bc563 gives bbef4eab and 54d1c294 again. Were bbef4eab, 54d1c294)
- const OLD='98d19d75',FIRST='3c83a566';
+ // (re-recorded 2026-11-08, on purpose: the owner, "recheck whether the body composition still match with the new sprites": the
+ // weapon hand the inner of the hand's two cells, as it stood before the arms ended at the hips; a cape over the far arm to the
+ // elbow, never a pixel clear of him (engine/doll.js). Proof: 212b5c7 gives 98d19d75 and 3c83a566 again. Were 98d19d75, 3c83a566)
+ const OLD='cccbf9dd',FIRST='c560a3b2';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

@@ -101,7 +101,10 @@ const shootArms=(o,style,atk)=>{if(atk<0||o.held)return leanArms(o,atk);const k=
    body's (g.body: not outlined, figures.js FigureRig.frame); returns the template's anchors */
 function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
   const shooter=!o.held&&['bow','longbow','xbow','sling','staff'].includes(o.weapon),lunge=atk>=0&&!o.mount&&!shooter&&DOLL_LUNGE[style]?DOLL_LUNGE[style][atk]||[]:[];
-  const rig=atk>=0?(FIST_STYLES.includes(style)?FIST_RIG[style][atk]:o.held&&BLOW_RIG[style]?blowRig(o,style,atk):null):style==='flinch'?blowRig(o,'flinch',0):o.guardUp&&!shieldLook(o)&&!o.weapon?FIST_RIG.guard[0]:null;
+  // (a blow with the weapon on him (the map's and the cards' whole figures, not only the battle's bare ones): his arm the rig's as well,
+  //  the weapon in the fist it ends in (figures.js HandWeapon): else no arm struck and the weapon hung in the air beside him)
+  const held=o.held||(atk>=0&&WPN[o.weapon]?o.weapon:null);
+  const rig=atk>=0?(FIST_STYLES.includes(style)?FIST_RIG[style][atk]:held&&BLOW_RIG[style]?blowRig({...o,held},style,atk):null):style==='flinch'?blowRig(o,'flinch',0):o.guardUp&&!shieldLook(o)&&!o.weapon?FIST_RIG.guard[0]:null;
   const M=DOLL_MOVES,run=walk>=4&&walk<8,climb=walk>=8,moves=[...(run||climb?M.lean:[]),...(run?M.run[walk&3]:[]),...(walk===-2?M.breath:[]),...(atk>=0&&M.blow[atk]?M.blow[atk]:[]),...shootArms(o,style,atk),...lunge,...(M[style]&&M[style].length&&!Array.isArray(M[style][0][0])?M[style]:[])];
   // (braced or gripping: both arms forward to the weapon, the near hand on it before him, the far one behind it along a pole levelled
   //  (brace) or just under the near one on a great weapon raised (grip): DOLL_GRIP)

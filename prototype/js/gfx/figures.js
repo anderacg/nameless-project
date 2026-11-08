@@ -42,14 +42,15 @@ class FigureGear{
   draw(set,o,p){}
 }
 // a weapon in the hand (people.js WPN): upright at rest (WPN_REST's slant), in a blow at its frame's angle (SWING), drawn as the
-// battle's is (weapons.js drawBlade), the tip flashing as it strikes
+// battle's is (weapons.js drawBlade), the tip flashing as it strikes; a doll's blow its grip in his fist where the rig ends (p.rig),
+// as the battle's heldNow, never SWING's push out from it (it stood clear of the hand once the arms ended at the hips)
 class HandWeapon extends FigureGear{
   constructor(k){super('main','hand');this.k=k}
   // (a paper doll's pole at rest goes across his back, behind him, as the owner's reference carries it)
   behindNow(o,p){return DOLL_FIGS.on&&dollable(o)&&POLE(this.k)&&this.k!=='lance'&&!(p.atk>=0&&p.style)}
   draw(set,o,p){const k=this.k,blow=p.atk>=0&&!!p.style,t=blow&&(POLE(k)&&k!=='lance'&&p.style==='swing'?POLE_SWING:SWING[p.style]||SWING.swing)[p.atk];
     const kind=holdKind(k),doll=dollable(o),rest0=doll&&!WPN_REST[k]?holdTab(kind,o).rest:WPN_REST[k]??-90,rest=doll&&p.drop!=null?downClamp(rest0,WPN[k][0],Math.min(DOLL_DROP,p.drop)):rest0;
-    const tip=drawBlade(set,t?t[0]:0,t?t[1]:0,t?t[2]:rest,k,pal(o.team),pal(o.skin)[1],undefined,doll);if(blow&&p.atk===1)set(tip[0],tip[1],'#ffffff')}
+    const off=t&&!(doll&&p.rig),tip=drawBlade(set,off?t[0]:0,off?t[1]:0,t?t[2]:rest,k,pal(o.team),pal(o.skin)[1],undefined,doll);if(blow&&p.atk===1)set(tip[0],tip[1],'#ffffff')}
 }
 /* a bow's string drawn back, by the body's frame (px behind the bow hand): the draw (nocked, full, held at full) to his draw hand at
    his chin (dollfigs.js DOLL_SHOOT), the loose's wind-up; the arrow from the string to its head past the bow */
@@ -196,7 +197,7 @@ class FigureRig{
   // its gear into grid g from the body's anchors A (people.js drawFigureBody, drawMapBody): behind it first, the nearest first, each
   // only where the body and what is already behind it are not; then in front, the nearest last
   // (drop: for a doll, how far below his hand his feet stand, so a weapon held low stops over the ground: weapons.js downClamp)
-  static dress(g,o,A,style,atk){const G=FigureRig.gearOf(o,A.map),p={style,atk,sh:A.sh||0,ly:A.ly,cut:A.cut};
+  static dress(g,o,A,style,atk){const G=FigureRig.gearOf(o,A.map),p={style,atk,sh:A.sh||0,ly:A.ly,cut:A.cut,rig:!!A.rig};
     if(g.body&&A.hand){let fy=-1;for(const i of g.body)fy=Math.max(fy,(i/g.w)|0);p.drop=fy-A.hand[1]-1}
     const put=(x,X,Y,under)=>x.draw(under?(i,j,c)=>{if(!pget(g,Math.round(X+i),Math.round(Y+j)))pset(g,X+i,Y+j,c)}:(i,j,c)=>pset(g,X+i,Y+j,c),o,p);
     const lay=x=>x.behindNow&&x.behindNow(o,p)?-1:x.layer;
