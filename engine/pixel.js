@@ -23,6 +23,13 @@
   //  body, never black: dark timber, a shadowed wall; the owner, 2026-11-07: "black outer line instead of darker shading colour")
   PX.RIM={on:true,k:.5,navy:.18,dark:{lum:.3,k:.72}};
   PX.rim=(L,k0)=>{const N=[0x1a,0x1c,0x26];if(!PX.RIM.on||!L.length)return N;const m=[0,1,2].map(c=>L.reduce((a,q)=>a+q[c],0)/L.length),D=PX.RIM.dark,lum=(m[0]*.3+m[1]*.59+m[2]*.11)/255,dk=D&&lum<D.lum,navy=dk?0:PX.RIM.navy,k=k0??(dk?D.k:PX.RIM.k);return m.map((v,c)=>Math.round(v*k*(1-navy)+N[c]*navy))};
+  /* a building's outline (the owner, 2026-11-08: "the outer line should be darker shading not completely black"): the mean of the body
+     it borders times BUILD_RIM.k (dark.k by a dark body), no navy, and never darker than BUILD_RIM.floor (0-255 of its light): a deep
+     shade of the wall, the roof or the rock, not ink. SEAM: the line between two parts inside it (model.js): the part behind k darker,
+     where it lies more than eps further back (or level with it, the one below or right) */
+  PX.BUILD_RIM={on:true,k:.66,dark:.8,floor:48};PX.SEAM={on:true,k:.66,eps:.75};
+  PX.buildRim=L=>{const R=PX.BUILD_RIM;if(!R.on)return PX.rim(L);const m=[0,1,2].map(c=>L.reduce((a,q)=>a+q[c],0)/L.length),lum=m[0]*.3+m[1]*.59+m[2]*.11,
+    o=m.map(v=>v*(lum<PX.RIM.dark.lum*255?R.dark:R.k)),ol=o[0]*.3+o[1]*.59+o[2]*.11,f=ol<R.floor&&ol>0?Math.max(1,Math.min(R.floor/ol,.9*lum/ol)):1;return o.map(v=>Math.round(Math.min(255,v*f)))};
   PX.mix=(a,b,t)=>{const A=hex2(a),B=hex2(b);return rgb2(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t)};
 
   /* canvases */

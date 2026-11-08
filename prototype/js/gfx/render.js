@@ -305,21 +305,17 @@ const figTop=(L,o=P)=>Math.min(...[...Array(PEOPLE_STEPS).keys()].map(f=>{const 
 // every party in sight, one way (Party.draw: its host, its leader's figure, a torch on a night watch, its label)
 function drawParties(ents,cam,V){for(const o of W.parties)o.draw(ents,cam,V)}
 /* the outline engine (the owner, 2026-11-06: "an outline for unit highlights, selections, or to focus"): any picture's ring of one
-   pixel round its opaque pixels in a colour, kept by picture and colour (outlineOf: a canvas 2 px bigger, the ring alone); a unit's
-   highlight (unitHighlight: selected, pointed at, a foe you point at) drawn as its rings round his body and his weapon under them, so
-   it runs round his whole silhouette. HILITE: the colours */
-const HILITE={sel:'#ffe08a',hover:'#ffffff',foe:'#ff6a5a'},OUTLINES=new WeakMap();
+   pixel round its opaque pixels in a colour, kept by picture and colour (outlineOf: a canvas 2 px bigger, the ring alone). No longer
+   a selection's (the owner, 2026-11-08: "remove unit outer highlight, instead make that as a buff effect for certain skills"): a man
+   lifted by a war cry, a banner, standing firm or a rally glows round his whole silhouette in its colour, pulsing (unitGlow,
+   vfx.js STATE_FX: the same as his rings), drawn as his rings round his body and his weapon under them */
+const OUTLINES=new WeakMap();
 function outlineOf(pic,col){let m=OUTLINES.get(pic);if(!m)OUTLINES.set(pic,m=new Map());let c=m.get(col);if(c)return c;
   const w=pic.width,h=pic.height,a=pic.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data,on=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&a[(y*w+x)*4+3]>0;
   c=mkc(w+2,h+2,g=>{g.fillStyle=col;for(let y=-1;y<=h;y++)for(let x=-1;x<=w;x++)if(!on(x,y)&&(on(x-1,y)||on(x+1,y)||on(x,y-1)||on(x,y+1)))g.fillRect(x+1,y+1,1,1)});m.set(col,c);return c}
-// (whom you have picked out: his group selected, his group under your pointer, a foe you point at and can see; null for none)
-// (worked out once a frame, FIGURES' frame count, again if the selection or the pointer changes: the groups selected, your group
-// under the pointer, the foe under it)
-let HL_F=-1,HL_K=null,HL_S=null;
-function hiliteNow(){const k=[B.sel,B.hov];if(HL_F===FIGURES.tick&&HL_S&&HL_K[0]===k[0]&&HL_K[1]===k[1])return HL_S;HL_F=FIGURES.tick;HL_K=k;const h=B.hov,m=h?rtsUnitAt(h.x,h.y,0):null,f=h&&!m?rtsUnitAt(h.x,h.y,1):null;return HL_S={sel:new Set(selGroups()),mine:m&&m.grp||null,foe:f}}
-function unitHighlight(u){if(B.over||u.hp<=0)return null;const H=hiliteNow();if(u.grp&&H.sel.has(u.grp))return HILITE.sel;
-  if(u.team===0)return H.mine&&H.mine===u.grp?sideKey(u)==='ally'?SIDE.ally.ui:HILITE.hover:null;
-  const f=H.foe;return f&&(f.grp?f.grp===u.grp:f===u)&&seenBy(0,u)?HILITE.foe:null}
+// (his buff's glow: the colour of what lifts him now (a rally's flare first), or null)
+function unitGlow(u){if(B.over||u.hp<=0||!STATE_FX.on)return null;const rs=stateRings(u),r=resolveOf(u),m=r&&STATE_MARKS.get(r);
+  if(m&&m.rally!=null&&B.t-m.rally<STATE_FX.flare)rs.unshift(STATE_FX.col.rally);return rs.length?'rgb('+rs[0]+')':null}
 /* small without losing lines (the owner, 2026-11-07: "what's this?": zoomed out, at a scale of less than a screen pixel a sprite
    pixel, as the map's marchers and its battles draw their men (WORLD_BATTLE.sprite / scale), a 1-px shaft fell between the screen's
    pixels and the spearhead and the flag floated): the picture shrunk first, each pixel the opaque one nearest its block's middle, so
@@ -387,7 +383,7 @@ function drawUnitAt(u){
     const X=-Math.floor(sp.width/2)+bx,Y=-sp.height+2,hw=!beast&&heldNow(u,u.inMelee?sidearmLook(u):unitLook(u),sp,pose);if(hw&&hw.back)ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);
     const fb=!beast&&battleFlag(u),fw=fb?battleWave(u,moved):0;if(fb)battleFlagBack(u,fb,sp,X,Y,fw);// (his army's flag: marchgear.js)
     // (picked out: his rings first, round his body and his weapon, the pictures over them: outlineOf)
-    {const hl=unitHighlight(u);if(hl){ctx.drawImage(outlineOf(sp,hl),X-1,Y-1);if(hw)ctx.drawImage(outlineOf(hw.w,hl),X+hw.x-1,Y+hw.y-1);if(hw&&hw.back)ctx.drawImage(hw.w,X+hw.x,Y+hw.y)}}
+    {const hl=unitGlow(u);if(hl){ctx.save();ctx.globalAlpha=.55+.35*Math.sin(performance.now()/1000/STATE_FX.pulse*6.283+(u.id||0)*.13);ctx.drawImage(outlineOf(sp,hl),X-1,Y-1);if(hw)ctx.drawImage(outlineOf(hw.w,hl),X+hw.x-1,Y+hw.y-1);ctx.restore();if(hw&&hw.back)ctx.drawImage(hw.w,X+hw.x,Y+hw.y)}}
     ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),X,Y);if(bowK&&sp.hand){const f=bowFrame(pose),bp=bowPic(bowK,f.style,f.atk,f.aim?bowAim(u):0,pal(unitLook(u).skin)[1]);ctx.drawImage(hit?whiteOf(bp):bp,X+sp.hand[0]-bp.R,Y+sp.hand[1]-bp.R)}if(hw&&!hw.back){ctx.drawImage(hit?whiteOf(hw.w):hw.w,X+hw.x,Y+hw.y);if(!hit)drawGrip(sp,X,Y,unitLook(u))}if(fb)battleFlagFront(u,fb,hw,X,Y,fw);ctx.restore();
     // (climbing: a little grit trickles down the slope behind him now and then; coming down, a puff at the heel: from his id and the
     // battle's time, drawn only)

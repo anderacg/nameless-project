@@ -413,10 +413,10 @@
       if(!dk)[mat,t]=texel(f,u,f.vo?v+f.vo:v,b,sd);
       SM[q]=MATI[mat];const c=RP[mat][Math.max(0,Math.min(3,t))];col[q*3]=c[0];col[q*3+1]=c[1];col[q*3+2]=c[2];A[q]=1;DEC[q]=dk;FL[q]=f.flat?1:f.fine?2:0;
       if(f.cls==='wall'&&!f.flat&&PT[q*3+2]<1)GZ[q]=step?2:1}
-    return{F,G,M,ox,oy,col,A,DEC,FL,GZ,yaw,N,base,beds,fid,SU,SV,SZ,SB,SC,SM}
+    return{F,G,M,ox,oy,col,A,DEC,FL,GZ,yaw,N,base,beds,fid,SU,SV,SZ,SB,SC,SM,DP:depth}
   }
   // a pixel's colour and what it is, taken from another's
-  const like=(R,q,j)=>{R.col.copyWithin(q*3,j*3,j*3+3);R.fid[q]=R.fid[j];R.SU[q]=R.SU[j];R.SV[q]=R.SV[j];R.SZ[q]=R.SZ[j];R.SB[q]=R.SB[j];R.SC[q]=R.SC[j];R.SM[q]=R.SM[j];R.FL[q]=R.FL[j]};
+  const like=(R,q,j)=>{R.col.copyWithin(q*3,j*3,j*3+3);R.fid[q]=R.fid[j];R.SU[q]=R.SU[j];R.SV[q]=R.SV[j];R.SZ[q]=R.SZ[j];R.SB[q]=R.SB[j];R.SC[q]=R.SC[j];R.SM[q]=R.SM[j];R.FL[q]=R.FL[j];if(R.DP)R.DP[q]=R.DP[j]};
   // the silhouette's spurs off and notches in, orphan pixels into their surroundings (decals kept)
   // (each pass judged on the silhouette as it was before it, so a fill never runs on through an open frame: a headframe, a wheel)
   function clean(R){const {M,A,col,DEC}=R;let S=A;const at=(x,y)=>x>=0&&y>=0&&x<M&&y<M?S[y*M+x]:0,nb=(x,y)=>at(x-1,y)+at(x+1,y)+at(x,y-1)+at(x,y+1);
@@ -493,18 +493,26 @@
     const {M,A,col,DEC,FL,GZ,F}=R,cw=bx.x1-bx.x0+1,dx=bx.x0-1-Math.floor((fit-cw)/2),dy=bx.y1-(N-2);
     // the picture: the body and its navy outline round it (not round what lies low and flat: fences, beds), cropped to the cell
     const img=PX.canvas(N,N),g=img.getContext('2d', { willReadFrequently: true }),im=g.createImageData(N,N),D=im.data,body=new Uint8Array(N*N),fine=new Uint8Array(N*N),gap=new Uint8Array(N*N),gz=new Uint8Array(N*N),nv=hx(NAVY);
-    const I={F,fi:new Int16Array(N*N).fill(-1),u:new Float32Array(N*N),v:new Float32Array(N*N),z:new Float32Array(N*N),b:new Uint8Array(N*N),ch:new Uint8Array(N*N),m:new Uint8Array(N*N)},
-      take=(c,q)=>{I.fi[c]=R.fid[q];I.u[c]=R.SU[q];I.v[c]=R.SV[q];I.z[c]=R.SZ[q];I.b[c]=R.SB[q];I.ch[c]=R.SC[q];I.m[c]=R.SM[q]};
+    const I={F,fi:new Int16Array(N*N).fill(-1),u:new Float32Array(N*N),v:new Float32Array(N*N),z:new Float32Array(N*N),b:new Uint8Array(N*N),ch:new Uint8Array(N*N),m:new Uint8Array(N*N),dp:new Float32Array(N*N)},
+      take=(c,q)=>{I.dp[c]=R.DP?R.DP[q]:0;I.fi[c]=R.fid[q];I.u[c]=R.SU[q];I.v[c]=R.SV[q];I.z[c]=R.SZ[q];I.b[c]=R.SB[q];I.ch[c]=R.SC[q];I.m[c]=R.SM[q]};
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=M||Y>=M)continue;const q=Y*M+X;if(A[q]){body[y*N+x]=FL[q]===1?2:1;fine[y*N+x]=FL[q]===2;gz[y*N+x]=GZ[q];const i=(y*N+x)*4;D[i]=col[q*3];D[i+1]=col[q*3+1];D[i+2]=col[q*3+2];D[i+3]=255;take(y*N+x,q)}}
-    for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(body[y*N+x])continue;if((x>0&&body[y*N+x-1]===1)||(x<N-1&&body[y*N+x+1]===1)||(y>0&&body[(y-1)*N+x]===1)||(y<N-1&&body[(y+1)*N+x]===1)){const i=(y*N+x)*4,L=[];for(const [u,v] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]])if(u>=0&&v>=0&&u<N&&v<N&&body[v*N+u]===1){const k=(v*N+u)*4;L.push([D[k],D[k+1],D[k+2]])}const c=PX.rim(L);D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2];D[i+3]=255}}
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(body[y*N+x])continue;if((x>0&&body[y*N+x-1]===1)||(x<N-1&&body[y*N+x+1]===1)||(y>0&&body[(y-1)*N+x]===1)||(y<N-1&&body[(y+1)*N+x]===1)){const i=(y*N+x)*4,L=[];for(const [u,v] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]])if(u>=0&&v>=0&&u<N&&v<N&&body[v*N+u]===1){const k=(v*N+u)*4;L.push([D[k],D[k+1],D[k+2]])}const c=PX.buildRim(L);D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2];D[i+3]=255}}
     // (an outline pixel shut in by the body and the outline, touching nothing empty, is part of the body: the outline lies round the
     // silhouette only, one pixel thick; but not between thin parts, where it is the gap of an open frame: a wheel's spokes, braces)
     const emp=(x,y)=>x<0||y<0||x>=N||y>=N||!D[(y*N+x)*4+3];
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=(y*N+x)*4;if(body[y*N+x]||!D[i+3]||emp(x-1,y)||emp(x+1,y)||emp(x,y-1)||emp(x,y+1))continue;
       const j=[[x,y+1],[x-1,y],[x+1,y],[x,y-1]].find(([u,v])=>body[v*N+u]);if(!j)continue;if([[x,y+1],[x-1,y],[x+1,y],[x,y-1]].some(([u,v])=>fine[v*N+u])){gap[y*N+x]=1;continue}const c=j[1]*N+j[0],k=c*4;D[i]=D[k];D[i+1]=D[k+1];D[i+2]=D[k+2];body[y*N+x]=1;
-      for(const a of ['fi','u','v','z','b','ch','m'])I[a][y*N+x]=I[a][c]}
+      for(const a of ['fi','u','v','z','b','ch','m','dp'])I[a][y*N+x]=I[a][c]}
     // (each outline pixel shaded again from the body as it now stands, the shut-in ones taken into it: a shade of what it borders)
-    for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=(y*N+x)*4;if(body[y*N+x]||!D[i+3])continue;const L=[];for(const [u,v] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]])if(u>=0&&v>=0&&u<N&&v<N&&body[v*N+u]===1){const k=(v*N+u)*4;L.push([D[k],D[k+1],D[k+2]])}if(L.length){const c=PX.rim(L);D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2]}}
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=(y*N+x)*4;if(body[y*N+x]||!D[i+3])continue;const L=[];for(const [u,v] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]])if(u>=0&&v>=0&&u<N&&v<N&&body[v*N+u]===1){const k=(v*N+u)*4;L.push([D[k],D[k+1],D[k+2]])}if(L.length){const c=PX.buildRim(L);D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2]}}
+    // (seams (the owner, 2026-11-08: "inside the structure itself it looks like merging together, sometimes I cannot tell what is this
+    // part"): where two parts meet inside the silhouette, the pixel of the one further back a shade darker (PX.SEAM.k), a line between
+    // them as the outline is round them: a column's plinth, shaft and capital, a roof and its wall, a boulder before a crag)
+    if(PX.SEAM.on){const S=PX.SEAM,part=c=>{const f=F[I.fi[c]];return f?f.part||f.name:null},mk=[];
+      for(let y=0;y<N;y++)for(let x=0;x<N;x++){const c=y*N+x;if(body[c]!==1||x<1||y<1||x>=N-1||y>=N-1||body[c-1]!==1||body[c+1]!==1||body[c-N]!==1||body[c+N]!==1)continue;const pc=part(c);if(!pc)continue;// (inside only: never by the outline, which stays the darkest)
+        for(const [u,v] of [[x,y-1],[x-1,y],[x+1,y],[x,y+1]]){if(u<0||v<0||u>=N||v>=N)continue;const n=v*N+u;if(body[n]!==1)continue;const pn=part(n);
+          if(pn&&pn!==pc&&(I.dp[c]<I.dp[n]-S.eps||Math.abs(I.dp[c]-I.dp[n])<=S.eps&&(v<y||u<x))){mk.push(c);break}}}
+      for(const c of mk){const i=c*4;D[i]=Math.round(D[i]*S.k);D[i+1]=Math.round(D[i+1]*S.k);D[i+2]=Math.round(D[i+2]*S.k)}}
     breakRuns(D,body,N,sd);
     g.putImageData(im,0,0);
     // (what each pixel is, for the tests: 0 empty, 1 the body, 2 low and flat (fences), 3 the outline, 4 the navy gap in an open frame)

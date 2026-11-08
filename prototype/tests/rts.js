@@ -232,10 +232,11 @@ try{
   t.selectGroup('all');t.rtsOrder(520,330);const lnAll=spy(()=>t.drawOrderLines());ok(lnAll>=ln*2,'with All selected too: a line for every group ('+lnAll+')');
   const e=B.units.find(u=>u.team===1);t.selectGroup(testGroup('inf'));t.rtsOrder(e.x,e.y-6);ok(spy(()=>t.drawOrderLines())>0&&B.groups[testGroup('inf')].tgt===e,'and to the enemy you set them on');
   B.hov={x:e.x,y:e.y-6};ok(spy(()=>t.drawSelection())>rings,'pointing at an enemy rings it red');
-  // the outline engine (render.js outlineOf, unitHighlight): a ring round a picture's silhouette, a picked-out unit's colour
-  {const me=t.grpUnits(testGroup('inf'))[0],sp=t.actorSprite(me),o=t.outlineOf(sp,t.HILITE.sel),d=o.getContext('2d').getImageData(0,0,o.width,o.height).data,cols=new Set();let n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]){n++;cols.add(d[i]+','+d[i+1]+','+d[i+2])}
-   ok(o.width===sp.width+2&&o.height===sp.height+2&&n>10&&cols.size===1&&t.outlineOf(sp,t.HILITE.sel)===o,'an outline: a ring of one colour round the picture, 2 px bigger, kept ('+n+' px)');
-   const foe=t.unitHighlight(e);t.selectGroup(testGroup('inf'));B.hov=null;ok(t.unitHighlight(me)===t.HILITE.sel&&t.unitHighlight(e)===null&&foe===(t.seenBy(0,e)?t.HILITE.foe:null),'outlined: your selected soldiers in gold, the foe you point at in red, none else')}B.hov=null;t.frame();B.over=true;B.endT=0;t.B=null}
+  // the outline engine (render.js outlineOf, unitGlow): a ring round a picture's silhouette, a buff's colour (no longer a selection's)
+  {const me=t.grpUnits(testGroup('inf'))[0],sp=t.actorSprite(me),o=t.outlineOf(sp,'#ffe08a'),d=o.getContext('2d').getImageData(0,0,o.width,o.height).data,cols=new Set();let n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]){n++;cols.add(d[i]+','+d[i+1]+','+d[i+2])}
+   ok(o.width===sp.width+2&&o.height===sp.height+2&&n>10&&cols.size===1&&t.outlineOf(sp,'#ffe08a')===o,'an outline: a ring of one colour round the picture, 2 px bigger, kept ('+n+' px)');
+   const S0=t.STATE_FX.on;t.STATE_FX.on=true;t.selectGroup(testGroup('inf'));B.hov=null;const sel=t.unitGlow(me),b0=me.buffT;me.buffT=5;const cry=t.unitGlow(me);me.buffT=b0;t.STATE_FX.on=S0;
+   ok(sel===null&&t.unitGlow(e)===null&&cry==='rgb('+t.STATE_FX.col.cry+')','no glow for a selection or a foe you point at; a war cry\u2019s man glows in its colour ('+cry+')')}B.hov=null;t.frame();B.over=true;B.endT=0;t.B=null}
  // the camera (Phase 4): zoom and pan
  {const B=fight(['militia']);B.units.forEach(u=>{u.cd=99;u.s={...u.s,spd:0}});const C=B.cam;
   ok(C&&C.z===1&&C.x===0&&C.y===0,'a battle starts with the whole field in view');
