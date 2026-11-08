@@ -1,7 +1,7 @@
 'use strict';
 // Approved wolf art; the old renderer remains in place for every other creature.
 (function(PX){
-  const A=PX.WOLF_ART,BASE=400,cache=new Map(),masters=new Map(),maps=new Map(),mounts=new Map();
+  const A=PX.WOLF_ART,BASE=400,RIDER_X=2,cache=new Map(),masters=new Map(),maps=new Map(),mounts=new Map();
   const pose=(clip,frame)=>{const c=A.clips[clip]||A.clips.idle;return BASE+c[0]+Math.max(0,Math.min(c[1]-1,Math.floor(frame||0)))};
   const sample=(clip,seconds)=>{const c=A.clips[clip];return pose(clip,Math.floor(Math.max(0,seconds)*1000/c[2])%c[1])};
   function index(p){
@@ -50,9 +50,9 @@
         g.p[Y*32+X]=c;
       }
       // The saddle follows the real back, not a fixed height above a moving body.
-      const spine=[];for(let x=11;x<=16;x++)for(let y=10;y<30;y++)if(g.p[y*32+x]){spine.push(y);break}spine.sort((a,b)=>a-b);
+      const spine=[];for(let x=11+RIDER_X;x<=16+RIDER_X;x++)for(let y=10;y<30;y++)if(g.p[y*32+x]){spine.push(y);break}spine.sort((a,b)=>a-b);
       const seat=down?19:spine[Math.floor(spine.length/2)]||21;
-      saved={g,bob:down?0:seat-21,seat,body:[down?12:seat,down?19:seat+5]};mounts.set(key,saved);
+      saved={g,riderX:RIDER_X,bob:down?0:seat-21,seat,body:[down?12:seat,down?19:seat+5]};mounts.set(key,saved);
     }
     return{...saved,g:{...saved.g,p:saved.g.p.slice()}};
   }
@@ -67,7 +67,7 @@
     return sample('idle',phase);
   }
   const beast=PX.beast,beastMap=PX.beastMap,mountArt=PX.mountArt;
-  PX.wolf=Object.freeze({pose,sample,render,map,live,mount,clips:A.clips,first:BASE});
+  PX.wolf=Object.freeze({pose,sample,render,map,live,mount,riderX:RIDER_X,clips:A.clips,first:BASE});
   PX.beast=(kind,o)=>kind==='wolf'?render(o||{}):beast(kind,o);
   PX.beastMap=(kind,f)=>kind==='wolf'?map(f):beastMap(kind,f);
   PX.mountArt=(kind,walk,pal,down)=>kind==='wolf'||kind==='warg'?mount(kind,walk,pal,down):mountArt(kind,walk,pal,down);
