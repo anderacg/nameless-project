@@ -47,7 +47,7 @@ try{
   t.compXp('brann',400,'battle');ok(C.lv>0&&C.o.tp>=C.lv,'a companion levels by their proficiencies, a tree point each (level '+C.lv+')')}
  else ok(false,'a companion to test');
  // lords grow their own way
- const l=t.W.lords.find(x=>x.sk&&x.sk.lead&&x.lv>0);
+ const l=t.W.lords.find(x=>!x.dead);if(l)t.lordStats(l);
  ok(!!l&&Math.abs(l.sk.lead.lv/PROF.per-Math.floor(l.lv/2))<=1.001,'a lord’s Leadership follows his level ('+(l?l.lv+' → '+l.sk.lead.lv:'none')+')');
  // the skill page: Proficiency, Tree, Trait, Skill bar
  G.mode='world';G.modal=false;t.hidePanel();t.openChar();t.openSkills();
@@ -62,4 +62,4 @@ try{
  localStorage.setItem(t.slotKey('quick'),JSON.stringify({v:3,at:1,P:{army:{}},world:{v:3,map:{}}}));ok(!t.readSlot('quick')&&t.oldSlot('quick'),'a save from before is refused');
  localStorage.removeItem(t.slotKey('quick'));
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
-return o.join('\n')};
+const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

@@ -16,7 +16,7 @@ try{
  ok(!t.recruitment.quoteCompanion(t.townBy(t.COMPS.brann.town),'brann').ok,'companion recruitment cannot exceed the slot cap');
  const before=P.troops.hum_foot;ok(r.merge(r.groups[2].id,first.id)&&P.troops.hum_foot===before&&r.slots===9,'merge preserves headcount and frees a slot');
  P.gold=100000;P.renown=10000;G.mode='world';t.saveGame(true,'quick');const saved=JSON.parse(localStorage.getItem(t.slotKey('quick')));
- ok(saved.v===3&&saved.P.army.groups.some(g=>g.id===secondId),'current save serializes persistent duplicate IDs');
+ ok(saved.v===t.SAVE_V&&saved.P.army.groups.some(g=>g.id===secondId),'current save serializes persistent duplicate IDs');
  const ids=r.groups.map(g=>g.id).join();r.merge(secondId,first.id);t.loadGame('quick');
  ok(r.groups.map(g=>g.id).join()===ids,'save/load restores group boundaries and identities');
  localStorage.setItem(t.slotKey('1'),JSON.stringify({v:1,P:{troops:{hum_foot:2}}}));ok(t.readSlot('1')===null,'legacy saves are rejected, not migrated');
