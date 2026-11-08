@@ -318,18 +318,22 @@
       // (its tail: bushy, out behind and down, raised as it runs)
       tail:(g,F,c,y)=>{const up=F.tail||0,y0=y(g.h-2-10),m=mask();m.limb(5,y0,2,y0+3-up,3,2).limb(2,y0+3-up,2,y0+5-up*2,2,2);for(const [x,yy] of m.pts())put(g,x,yy,m.has(x,yy-1)?m.has(x,yy+1)?c.b:c.c:c.a)},
       jaw:(g,x,y,n)=>{for(let k=0;k<n;k++)for(let xx=x;xx<x+3-k;xx++)put(g,xx,y+k,k?'#6a3038':'#3a2430');put(g,x+2,y,'#efe8d8')}},
-    ram:{top:12,seat:2,far:2,legH:5,headDown:4,pawUp:0,pawOut:0,hind:[7,6,3,2,1],fore:[18,6,3,2,0],mouth:[26,6],headKeys:'hHk',
+    // (shorter in the leg and shaggier, 2026-11-08, the owner: "Ram leg should be shorter more fur": its legs two px shorter and a
+    //  px thicker, its fleece in curls (a light pair over a shaded pair, never a lone pixel), tufts along its back and a ragged fringe
+    //  hanging under its belly; the whole of it a px lower, its rider with it)
+    ram:{top:11,seat:2,far:2,legH:4,headDown:4,pawUp:0,pawOut:0,hind:[7,5,3,3,1],fore:[18,5,3,3,0],mouth:[26,6],headKeys:'hHk',
       rows:['.....................hhh......',
             '....................hHkkh.....',
-            '....aaaaaaaaaaaaaaaaHk.Hh.....',
-            '..aabaabaabaabaabaabkHhFFF....',
-            '..bbccbbccbbccbbccbbBkHFeFF...',
-            '..cbbbbccbbbbccbbbbcBBFFFFFn..',
-            '..ccbbccbbccbbccbbccCC..MM....',
-            '...cdccdccdccdccdcc...........'],
+            '...aa.aaa.aa.aaa.aa.Hk.Hh.....',
+            '..aaabaaabbaaabaaabbkHhFFF....',
+            '..bbaabbbbaabbbbaabbBkHFeFF...',
+            '..bbbccbbbbccbbbbccbBBFFFFFn..',
+            '..baabbbaabbbaabbbccCC..MM....',
+            '..cbccbbccbbbccbbccc..........',
+            '...cdcd.cdc.dcd.cdc...........'],
       col:o=>{const C=o.pal.C,F=o.pal.M;return{a:C[0],b:C[1],c:C[2],d:C[3],A:C[0],B:C[1],C:C[2],F:F[1],M:F[2],h:'#c8b48a',H:'#a08a64',k:'#76644a',n:'#3a2c28',e:'#2a1e18',E:F[2],D:o.pal.C}},
       legCol:(c,up,x,near,front)=>up===0?'#3a302a':up===1?c.M:near?(x===0?c.b:c.c):c.d,
-      tail:(g,F,c,y)=>{put(g,2,y(g.h-2-7),c.a);put(g,1,y(g.h-2-6),c.b)},
+      tail:(g,F,c,y)=>{put(g,2,y(g.h-2-6),c.a);put(g,1,y(g.h-2-5),c.b)},
       jaw:(g,x,y,n)=>{for(let xx=x;xx<x+3;xx++)put(g,xx,y,'#3a2430')}}};
   // PX.mountArt(kind, walk, pal, down): its grid (w, h, p: colours) and its bob; walk -1 standing, 0-3 walking, 4-7 galloping;
   // down: lying dead on its side (a 32x21 grid, its feet on row 19); null for a mount drawn otherwise (the horse's, the stag's)
