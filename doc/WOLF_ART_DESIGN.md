@@ -28,3 +28,5 @@ At birth, about 25% of wild wolf packs receive one alpha in place of an ordinary
 Wolf Riders, Wolf Archers and Warg Raiders now ride alpha-sized bodies. Their mount frame is 40 × 36 pixels, with a six-pixel rider/tack offset in that expanded frame and a saddle sampled from the actual back. Loose and fallen mounts use the same body size. Other mounts retain their existing dimensions and placement.
 
 Tests: `alphawolf` covers spawning, mixed rosters, persistence, map leadership, encounter rewards, combat stats and mount size. `wolfmount` checks the expanded frame and saddle contact. No fingerprint values are re-recorded.
+
+Detail refinement (2026-11-08): the combat masters have a tapered grey nose bridge, a compact black nose, triangular ears and an amber eye placed to survive half-scale sampling. Swept cheek fur joins a fuller pale throat; the flank shading is less patchy. These details follow all 108 poses, including the existing hinged jaws and folded-leg death. Alpha wolves and rider mounts inherit the same refined artwork.

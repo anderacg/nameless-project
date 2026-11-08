@@ -1625,3 +1625,5 @@ The approved wolf masters and timing data are in `engine/art/wolf/`. `wolf-data.
 The wolf mount adapter (`PX.wolf.mount` / `PX.mountArt`) supports the existing Wolf Rider, Wolf Archer and Warg Raider sprites, including loose saddled mounts and authored fallen poses. The saddle follows the moving back; templates are cloned before tack or barding is drawn.
 
 Alpha wolves (`alpha_wolf`) use every approved wolf animation at 125% size. Newly spawned wild packs have a 25% chance of one stronger leader replacing a regular wolf; its mixed roster, survival and rewards persist in saves. Wolf and warg riders use this larger body in a 40 × 36 mount frame, with centered tack and a saddle that follows the back. Tunables are in `data/monsters.js` (`WOLF_ALPHA`, `ST.alpha_wolf`); coverage is in `tests/alphawolf.js` and `tests/wolfmount.js`.
+
+Wolf detail refinement: tapered grey muzzles, black noses, readable amber eyes and swept cheek/throat fur now carry across combat animations, alpha leaders and their rider mounts. The native map walk and animation timing are unchanged.
