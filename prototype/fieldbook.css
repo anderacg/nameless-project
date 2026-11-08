@@ -165,8 +165,8 @@
 .tp-node.sel .tp-body{stroke:#fff;stroke-width:4}.tp-node:focus-visible{outline:none}.tp-node:focus-visible .tp-body{stroke:#fff}
 @media (hover:hover){.tp-node:hover .tp-body{stroke:#fff}.tp-node:hover .tp-aura{opacity:.5}}
 .tr-pane{display:flex;flex-direction:column;gap:6px;padding:12px;border-left:1px solid #4a4038;background:#1a1820cc;overflow:auto;min-height:0}
-.tr-pane small{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#9a907a}.tr-pane h3{margin:0;font:700 18px Arial,sans-serif;color:#f0ead8}
-.tr-pane p{margin:0;font-size:12px;line-height:1.35;color:#d8d0bc}.tr-pane .btn{align-self:flex-start}
+.tr-pane small{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#9a907a}.tr-pane h3{margin:0;font:700 18px Arial,sans-serif;color:#f0ead8}
+.tr-pane p{margin:0;font-size:14px;line-height:1.4;color:#d8d0bc}.tr-pane .btn{align-self:flex-start;font-size:14px}
 /* (shown anew: the root flares, the nodes fly out of it, the links and the rail draw after them) */
 .tr-svg.grow{animation:tr-in .3s ease-out both}
 .tr-svg.grow .tp-root{transform-box:fill-box;transform-origin:center;animation:tp-pop .4s cubic-bezier(.3,1.6,.6,1) both;animation-delay:var(--d,0s)}
@@ -189,8 +189,10 @@
 @media (prefers-reduced-motion:reduce){.tr-svg *,.tr-svg{animation:none!important}}
 .fb-lvup{border:1px solid #e8b94a;background:#2a2418}.fb-lvup-picks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .fb-lvup-picks .btn{display:flex;align-items:center;gap:6px}
-@container ovl (max-width:900px){.tr-stage{grid-template-columns:minmax(0,1fr) 180px}.tr-pane{padding:8px}.tr-pane h3{font-size:15px}}
-@container ovl (max-width:650px){.fb-skill-work.fb-trees{gap:6px;padding:0 6px 6px}.fb-tree-head small{font-size:10px}.fb-ts-now{min-width:0;padding:6px 10px;font-size:13px}.fb-tree-switch .btn.fb-ts-side{font-size:11px}}
-@container ovl (max-width:560px){.tr-stage{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}.tr-pane{border-left:0;border-top:1px solid #4a4038;max-height:38%}}
+@container ovl (max-width:900px){.tr-stage{grid-template-columns:minmax(0,1fr) 200px}.tr-pane{padding:8px}.tr-pane h3{font-size:16px}.tr-pane p{font-size:13px}}
+@container ovl (max-width:650px){.fb-skill-work.fb-trees{gap:6px;padding:0 6px 6px}.fb-tree-head small{font-size:10px}.fb-ts-now{min-width:0;padding:6px 10px;font-size:13px}.fb-tree-switch .btn.fb-ts-side{font-size:12px}}
+/* (an upright phone: the tree over the chosen node, the node's words as big as the page's, at most half the stage, scrolling) */
+@container ovl (max-width:560px){.tr-stage{display:flex;flex-direction:column}.tr-svg{flex:1 1 0;min-height:200px}.tr-pane{flex:0 1 auto;max-height:50%;border-left:0;border-top:1px solid #4a4038;padding:12px 14px;gap:8px}
+  .tr-pane small{font-size:12px}.tr-pane h3{font-size:20px}.tr-pane p{font-size:15px}.tr-pane .btn{align-self:stretch;justify-content:center;font-size:15px;min-height:40px}}
 @container ovl (max-height:430px){.fb-tree-switch{padding:3px 6px}.fb-tree-switch .btn{min-height:28px}}
 @container ovl (max-height:430px){.fb-tree-head{padding:4px 8px}.fb-tree-head small{display:none}}
