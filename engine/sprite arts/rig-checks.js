@@ -1,0 +1,29 @@
+/* Regression checks for pixel binding, hierarchy, authored parts and clip data. */
+(function(){
+ const R=SpriteRig,E=SpriteStudio,lines=[],ok=(v,name)=>{if(!v)throw Error(name);lines.push('PASS '+name);},pixels=c=>c.getContext('2d').getImageData(0,0,c.width,c.height).data,equal=(a,b)=>a.length===b.length&&a.every((v,i)=>v===b[i]);
+ try{
+  ok(E.defaults.eyes===false,'new characters retain the original faceless style');
+  for(const race of Object.keys(PX.DOLL.RACES)){const config=E.normalize({...E.defaults,race,eyes:false}),asset=R.normalize({config}),m=R.model(config),r=R.render(asset),c=document.createElement('canvas');c.width=17;c.height=19;const temp=document.createElement('canvas');temp.width=temp.height=r.image.width;for(const [id,layer]of Object.entries(r.layers))if(!id.includes(':'))temp.getContext('2d').drawImage(layer,0,0);c.getContext('2d').drawImage(temp,-Math.round(r.origin[0]),-Math.round(r.origin[1]));const raw=PX.dollPaint(m.B,k=>E.ramp(config,k));if(!equal(pixels(c),pixels(raw)))throw Error('Neutral rig changes source pixels: '+race);}
+  ok(true,'zero pose preserves the original body pixels for every current race');
+  const asset=R.fromEngine(E.defaults),model=R.model(asset.config),neutral=R.solve(model),turned=R.solve(model,{armR:{angle:90}}),a=neutral.handR,b=turned.handR,pivot=turned.armR;ok(Math.abs(Math.hypot(a.x-neutral.armR.x,a.y-neutral.armR.y)-Math.hypot(b.x-pivot.x,b.y-pivot.y))<1e-8&&Math.hypot(a.x-b.x,a.y-b.y)>1,'rotating an arm moves its hand through the parent chain without changing its length');
+  const image0=R.render(asset),image1=R.render(asset,{armR:{angle:45}});ok(image0.image.toDataURL()!==image1.image.toDataURL(),'joint edits deform actual sprite pixels');
+  const held=image1.gear.find(g=>g.slot==='weapon'),joint=image1.joints.handR;ok(held&&Math.abs(held.at[0]+image1.origin[0]-joint.x)<1e-8&&Math.abs(held.angle-joint.angle)<1e-8,'weapon attachment follows the animated hand and its rotation');
+  for(const weapon of E.weapons){const a=R.normalize({config:{...E.defaults,weapon}}),r=R.render(a,{armR:{angle:30}});if(!r.gear.some(g=>g.slot==='weapon'))throw Error('Missing rig weapon '+weapon);}
+  ok(true,'all selectable engine and game weapons are attached to the rig');
+  const p=R.part({id:'test',bone:'head',material:'team'});p.pixels[8*16+8]=0;const custom=R.normalize({...asset,parts:[p]}),customImage=R.render(custom);ok(Object.hasOwn(customImage.layers,'part:test')&&customImage.image.toDataURL()!==image0.image.toDataURL(),'painted grayscale parts render at their bone pivot');
+  const moved=R.render(custom,{head:{x:3}}),layer=customImage.layers['part:test'],layerMoved=moved.layers['part:test'];ok(layer.toDataURL()!==layerMoved.toDataURL(),'authored parts follow their bone independently of the original body');
+  const hidden=R.render({...asset,hidden:['head']});ok(!hidden.layers.head,'source bone pixels can be hidden to replace them with authored parts');
+  const q=R.pose({armR:{angle:999,x:999,y:-999},alien:{x:1}});ok(q.armR.angle===150&&q.armR.x===4&&q.armR.y===-4&&!q.alien,'invalid and excessive bone transforms are bounded');
+  const clip=R.clip({loop:false,interpolate:true,frames:[{duration:100,pose:{armR:{angle:0}}},{duration:100,pose:{armR:{angle:90}}}]}),sample=R.sample(clip,50);ok(sample.index===0&&Math.abs(sample.pose.armR.angle-45)<.01&&R.sample(clip,999).index===1,'clip timing, interpolation and non-looping completion are deterministic');
+  const mirrored=R.mirrored({armR:{angle:45,x:2,y:1}});ok(mirrored.armL.angle===-45&&mirrored.armL.x===-2&&mirrored.armL.y===1,'mirrored poses swap limbs and reflect local motion');
+  const before=R.render(custom),after=R.render(custom,{}, {left:true}),width=before.image.width;for(const [id,j]of Object.entries(before.joints))if(after.joints[id].x!==width-1-j.x)throw Error('Mirror skeleton mismatch '+id);ok(true,'mirrored sprite and skeleton use the same coordinates');const gear=before.gear.find(g=>g.slot==='weapon'),mirrorGear=after.gear.find(g=>g.slot==='weapon');ok(gear&&mirrorGear.frameAt[0]===width-1-gear.frameAt[0],'mirrored equipment metadata matches its reflected attachment');
+  const saved=JSON.parse(JSON.stringify(custom));ok(JSON.stringify(saved)===JSON.stringify(R.read(saved)),'project JSON preserves source recipe, parts, hidden pixels and clips');
+  let rejected=false;try{R.read({});}catch(e){rejected=true;}ok(rejected,'unrelated JSON is rejected rather than resetting a project');
+  const walk=asset.clips.findIndex(c=>c.id==='walk'),sheet=R.sheet(asset,walk);ok(sheet.manifest.frames.length===PX.DOLL.POSES.walk.length&&sheet.manifest.frames.every(f=>f.duration===150&&f.anchors.hand&&f.joints.handR),'clip sheet includes source pose, frame timing, bones and attachment metadata');
+  for(let i=0;i<sheet.manifest.frames.length;i++){const cell=sheet.manifest.frames[i],frame=R.render(asset,asset.clips[walk].frames[i].pose),cv=document.createElement('canvas');cv.width=cv.height=cell.width;cv.getContext('2d').drawImage(frame.image,(cell.width-frame.image.width)/2,(cell.height-frame.image.height)/2);const actual=sheet.image.getContext('2d').getImageData(cell.x,cell.y,cell.width,cell.height).data;if(!equal(pixels(cv),actual))throw Error('Clip sheet pixels differ from a rendered keyframe.');}
+  ok(true,'clip PNG cells match independently rendered keyframes exactly');
+  const gray=R.render(custom,{armR:{angle:30}},{grayscale:true}),data=pixels(gray.image);ok(data.every((v,i)=>i%4!==0||v===data[i+1]&&v===data[i+2])&&data.every((v,i)=>i%4!==3||v===0||v===255),'animated skin and authored parts retain grayscale and binary alpha');
+  lines.push('DONE '+lines.length+' checks');
+ }catch(e){lines.push('FAIL '+e.message);console.error(e);}
+ document.getElementById('out').textContent=lines.join('\n');window.rigCheckResults=lines;
+})();

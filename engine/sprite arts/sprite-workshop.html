@@ -3,9 +3,20 @@
 
 /* Keep the live sprite reachable while editing on a phone. */
 #live-mini{position:fixed;right:14px;bottom:14px;z-index:5;padding:5px 8px;background:#15241ef5;border-color:var(--gold);font-size:11px;box-shadow:0 3px 15px #0009}#live-mini[hidden]{display:none}#live-mini canvas{width:80px;height:80px;margin:auto}@media(min-width:851px){#live-mini{display:none}}
+
+/* Bone animation and pixel-part authoring. */
+.rig-workspace{display:grid;grid-template-columns:minmax(280px,1fr) minmax(300px,1fr);gap:24px;align-items:start}.rig-canvas-wrap{border:1px solid var(--line);border-radius:6px;overflow:hidden}#rig-canvas{width:100%;height:auto;touch-action:none;cursor:crosshair}.rig-timeline{display:flex;gap:7px;overflow:auto;padding:8px 0;max-width:100%}.rig-timeline button{flex:none;min-width:55px;min-height:50px;padding:6px}.rig-timeline .selected{border-color:var(--gold);background:#4e4a2b}.rig-adjustments input{display:block;width:100%;min-height:30px;padding:0}.rig-adjustments output{float:right;color:var(--gold)}#rig-part-canvas{max-width:100%;width:256px;height:auto;touch-action:none;border:1px solid var(--line);cursor:crosshair}#rig-brushes button{min-width:38px;padding:7px}.brush-selected{outline:2px solid var(--gold)}#rig-status{color:var(--gold)}#rig-studio button:disabled{opacity:.45;cursor:default}@media(max-width:850px){.rig-workspace{grid-template-columns:1fr}.rig-canvas-wrap{max-width:520px;margin:auto}.rig-workspace .fields{grid-template-columns:1fr 1fr}}
+
+header nav a{display:inline-block;color:var(--gold);border:1px solid var(--line);border-radius:5px;padding:10px 14px;text-decoration:none}html{scroll-behavior:smooth}#rig-studio,#appearance{scroll-margin-top:14px}
 </style></head><body><main>
-<header><div class="eyebrow">ASHMARK / SPRITE STUDIO</div><h1>A character, pixel by pixel.</h1><p>Build with the current paper-doll parts. Preview the engine base or the game’s finished figure, then keep the editable recipe.</p></header>
-<div class="workspace"><section class="preview panel"><div class="heading"><h2>Live character</h2><label class="inline"><input id="gray" type="checkbox"> Grayscale</label></div><div id="stage" class="checker"><canvas id="preview" width="32" height="32" aria-label="Live sprite preview"></canvas></div><p id="dimensions" class="muted"></p><div class="toolbar"><label>Preview<select id="renderer"><option value="game">Game figure</option><option value="base">Engine base + gear</option></select></label><label>Facing<select id="facing"><option value="right">Right / native game view</option><option value="left">Left / mirrored</option></select></label></div><div class="toolbar"><label>Animation<select id="pose"></select></label><button id="play">Pause</button><button id="step">Next frame</button><label>FPS<input id="fps" type="number" min="1" max="16" value="6"></label></div><div id="frames" class="frames" aria-label="Animation frame selector"></div><div class="toolbar"><label class="inline"><input id="anchors" type="checkbox"> Show anchors</label><label class="inline"><input id="grid" type="checkbox"> Pixel grid</label><label>Zoom<select id="zoom"><option value="6">6×</option><option value="8">8×</option><option value="10" selected>10×</option><option value="12">12×</option></select></label></div><p class="muted">Game view uses the current figure, combat-pose, weapon and outline scripts. Base view keeps the original 17 × 19 cell; separate gear can extend its frame. Left/right views are mirrored, not eight directions.</p></section>
+<header><div class="eyebrow">ASHMARK / SPRITE STUDIO</div><h1>Characters, parts and motion.</h1><p>Create sprites from the current game code, bind new pixel parts to bones, and author animation clips. Keep the original faceless art style.</p><nav class="toolbar"><a href="#rig-studio">Skeleton & animation</a><a href="#appearance">Appearance & equipment</a></nav></header>
+<section class="panel section" id="rig-studio"><div class="heading"><div><div class="eyebrow">RIG & ANIMATION CREATION</div><h2>Build motion from the skeleton.</h2></div><div class="toolbar"><button id="rig-new">New rig from appearance</button><button id="rig-undo">Undo</button><button id="rig-redo">Redo</button></div></div><p class="muted">Select or drag a joint. Its bound sprite pixels, clothing and attached gear move with it. Draw your own parts and save complete animation projects.</p>
+<div class="rig-workspace"><div><div class="rig-canvas-wrap checker"><canvas id="rig-canvas" width="512" height="512" aria-label="Interactive sprite skeleton; select a bone below or drag a joint"></canvas></div><div class="toolbar"><button id="rig-play">Play clip</button><button id="rig-previous">Previous</button><button id="rig-next">Next</button><label>View<select id="rig-view"><option value="32">Close</option><option value="48" selected>Normal</option><option value="64">Wide</option><option value="128">Full frame</option></select></label><label class="inline"><input id="rig-show" type="checkbox" checked>Skeleton</label><label class="inline"><input id="rig-onion" type="checkbox">Previous ghost</label><label class="inline"><input id="rig-left" type="checkbox">Mirror preview</label></div><p id="rig-readout" class="muted"></p><div id="rig-timeline" class="rig-timeline"></div></div>
+<div><div class="fields"><label>Animation clip<select id="rig-clip"></select></label><label>Clip name<input id="rig-clip-name" maxlength="64"></label></div><div class="toolbar"><button id="rig-add-clip">New clip</button><button id="rig-delete-clip">Delete clip</button><button id="rig-import-walk">Add engine walk</button></div><div class="toolbar"><label>Frame duration (ms)<input id="rig-duration" type="number" min="50" max="2000" step="10"></label><label class="inline"><input id="rig-loop" type="checkbox" checked>Loop</label><label class="inline"><input id="rig-interpolate" type="checkbox">Interpolate poses</label></div><div class="toolbar"><button id="rig-add-frame">Duplicate frame</button><button id="rig-delete-frame">Delete frame</button><button id="rig-mirror-pose">Mirror pose</button><button id="rig-reset-pose">Reset pose</button></div>
+<h3>Selected bone</h3><label>Bone<select id="rig-bone"></select></label><div class="rig-adjustments"><label>Angle <output id="rig-angle-value"></output><input id="rig-angle" type="range" min="-150" max="150" step="5"></label><label>Local X <output id="rig-x-value"></output><input id="rig-x" type="range" min="-4" max="4" step="1"></label><label>Local Y <output id="rig-y-value"></output><input id="rig-y" type="range" min="-4" max="4" step="1"></label></div><label class="inline"><input id="rig-hide-bone" type="checkbox">Hide original pixels on this bone</label><p class="muted">Local adjustments inherit the parent’s rotation. The original game animation previews above remain available for comparison.</p>
+<details id="rig-parts-panel"><summary>Create a bone-attached pixel part</summary><label>Part<select id="rig-part"></select></label><div class="toolbar"><button id="rig-add-part">New part</button><button id="rig-delete-part">Delete part</button></div><div class="fields"><label>Part name<input id="rig-part-name" maxlength="64"></label><label>Attach to bone<select id="rig-part-bone"></select></label><label>Material<select id="rig-part-material"></select></label><label>Local X<input id="rig-part-x" type="number" min="-12" max="12"></label><label>Local Y<input id="rig-part-y" type="number" min="-12" max="12"></label></div><div class="toolbar"><label class="inline"><input id="rig-part-behind" type="checkbox">Behind body</label><label class="inline"><input id="rig-part-visible" type="checkbox" checked>Visible</label></div><div id="rig-brushes" class="toolbar" aria-label="Part brush tones"></div><canvas id="rig-part-canvas" width="256" height="256" aria-label="16 by 16 pixel part editor"></canvas><p class="muted">16 × 16 transparent source. The cross marks its bone pivot. Paint four grayscale tones; the material supplies runtime colors.</p><button id="rig-clear-part">Clear part</button><button id="rig-part-export">Export source part PNG</button></details>
+</div></div><p id="rig-status" role="status">Original sprite artwork, editable skeleton and pixel parts. Projects are saved separately from game appearance recipes.</p><div class="toolbar"><button id="rig-export" class="primary">Save rig project</button><button id="rig-import">Load rig project</button><input id="rig-file" type="file" accept=".json,application/json" hidden><button id="rig-export-frame">Export posed PNG</button><button id="rig-export-sheet">Export clip PNG</button><button id="rig-export-meta">Clip metadata JSON</button></div></section>
+<div class="workspace" id="appearance"><section class="preview panel"><div class="heading"><h2>Live character</h2><label class="inline"><input id="gray" type="checkbox"> Grayscale</label></div><div id="stage" class="checker"><canvas id="preview" width="32" height="32" aria-label="Live sprite preview"></canvas></div><p id="dimensions" class="muted"></p><div class="toolbar"><label>Preview<select id="renderer"><option value="game">Game figure</option><option value="base">Engine base + gear</option></select></label><label>Facing<select id="facing"><option value="right">Right / native game view</option><option value="left">Left / mirrored</option></select></label></div><div class="toolbar"><label>Animation<select id="pose"></select></label><button id="play">Pause</button><button id="step">Next frame</button><label>FPS<input id="fps" type="number" min="1" max="16" value="6"></label></div><div id="frames" class="frames" aria-label="Animation frame selector"></div><div class="toolbar"><label class="inline"><input id="anchors" type="checkbox"> Show anchors</label><label class="inline"><input id="grid" type="checkbox"> Pixel grid</label><label>Zoom<select id="zoom"><option value="6">6×</option><option value="8">8×</option><option value="10" selected>10×</option><option value="12">12×</option></select></label></div><p class="muted">Game view uses the current figure, combat-pose, weapon and outline scripts. Base view keeps the original 17 × 19 cell; separate gear can extend its frame. Left/right views are mirrored, not eight directions.</p></section>
 <section class="panel controls"><div class="heading"><h2>Character & equipment</h2><button id="reset">Reset</button></div><label>Starting preset<select id="preset"></select></label><div class="fields" id="identity"></div><h3>Parts by slot</h3><p class="muted">A lock keeps that part and material when making variations.</p><div id="parts"></div><details><summary>Material colors · four tones</summary><p class="muted">Edit a shared material or a character channel. Source pixels retain their grayscale tone index.</p><label>Channel / material<select id="tint-channel"></select></label><div id="tones" class="tones"></div><button id="reset-tint">Restore this material</button></details><div class="toolbar"><label>Seed<input id="seed" type="number" min="0" max="4294967295" value="23"></label><button id="random">Randomize unlocked</button></div></section></div>
 <section class="panel section"><div class="heading"><div><div class="eyebrow">EXPLORE COMBINATIONS</div><h2>Keep the parts you like.</h2></div><div class="toolbar"><button id="variations" class="primary">Make 12 variations</button><button id="unlock">Unlock all</button></div></div><p id="status" role="status">Choose a preset or change a part to begin.</p><div id="variation-grid" class="portrait-grid"></div></section>
 <section class="panel section"><div class="heading"><div><div class="eyebrow">INSPECT THE SOURCE</div><h2>Body, gear and material masks.</h2></div><label>Inspect<select id="layer"></select></label></div><div class="inspection-row"><canvas id="inspection" class="checker" width="32" height="32" aria-label="Selected source layer"></canvas><div><p id="layer-note"></p><button id="export-layer">Export selected layer PNG</button><button id="export-index">Export indexed source JSON</button><p class="muted">Material masks contain visible body pixels; hidden garment artwork is not reconstructed. Gear exports are separate from the body. Source inspection always uses the engine base.</p></div></div></section>
@@ -104,16 +115,23 @@
     ['llbbbbbll','320000332'],
     ['hlppppplh','301010132'],
     ['hhttttthh','323000332'],
-    ['.httttt.h','.030300.2'],
+    ['..ttttt..','..30300..'],
     ['..ttttt..','..30300..'],
     ['..kk.kkk.','..30.303.'],
     ['..kk..kk.','..31..33.'],
     ['...o...o.','...3...3.']];
+  // (in the saddle: the hands a row lower, at his thighs, as the first cut had them, so a rider and his weapon keep their pixels)
+  const SEAT_HANDS=['.httttt.h','.030300.2'];
   // the cell: the skeleton at (OX, OY) in a W x H picture (room for a weapon either side and a hood or a helm's crest above)
   const D={W:17,H:19,OX:4,OY:2};
   // the races: their skin's tones, and how the skeleton changes (drop: rows taken out, dup: rows doubled, wide: the torso a pixel
   // wider each side; hair and beard by default): a dwarf a row shorter and broader, as the game's template had him
-  const RACES={human:{skin:'skin'},elf:{skin:'elf',dup:[12],ears:true},dwarf:{skin:'dwarf',drop:[12],wide:true,beard:true},orc:{skin:'orc',wide:true,tusk:true}};
+  // (legs a row longer than the first cut, his hands at his hips (the owner, 2026-11-07: "the hand looks longer than legs"); seat: in
+  //  the saddle, his legs by the horse's side, as they were, so a rider keeps his cell)
+  const RACES={human:{skin:'skin',dup:[12],seat:{dup:[]}},elf:{skin:'elf',dup:[12,13],ears:true,seat:{dup:[12]}},dwarf:{skin:'dwarf',wide:true,beard:true,seat:{drop:[12]}},orc:{skin:'orc',dup:[12],wide:true,tusk:true,seat:{dup:[]}},
+    // (a goblin (the owner, 2026-11-07, with the reference): small, a chest row and a thigh row short, his long ears out behind his head
+    //  and up, over a hood too)
+    goblin:{skin:'goblin',drop:[5,10],goblinEars:true,seat:{drop:[5]}}};
   /* the materials, each four tones: lit, mid, shade, edge (muted, as the owner's reference) */
   const MAT={
     skin:['#f9b488','#e28852','#c67749','#a5623e'],elf:['#f8d8c8','#e8b8a4','#c8968a','#9a7068'],dwarf:['#f4b090','#d88a68','#b86a50','#8a4a38'],
@@ -145,7 +163,7 @@
     boots:{slot:'boots',cover:'o',rows:[13,14],extra:'k',dark:1},shoes:{slot:'boots',cover:'o',dark:1},
     // the body: a shirt (sleeves to the wrist or the elbow), a tunic to mid-thigh, a robe to the feet, a coat of mail
     shirt:{slot:'shirt',cover:'ncbul',mottle:.15},vest:{slot:'shirt',cover:'cb',mottle:.15},
-    tunic:{slot:'tunic',cover:'ncbulpt',rows:[3,11],mottle:.25},robe:{slot:'tunic',cover:'ncbulptk',rows:[3,14],mottle:.25},
+    tunic:{slot:'tunic',cover:'ncbulpt',rows:[3,11],mottle:.25},robe:{slot:'tunic',cover:'ncbulptk',rows:[3,14],mottle:.25,skirt:true},
     mail:{slot:'tunic',cover:'ncbulpt',rows:[3,10],mottle:.4},
     // a uniform's front: a tabard in the side's colour over the chest and down the thighs, its sleeves left to what is under it
     tabard:{slot:'tabard',cover:'cbpt',rows:[4,11],cols:[2,6],mottle:.15},
@@ -154,9 +172,13 @@
     // a cloak, seen from before him as it hangs behind him: a mantle over his shoulders (its collar and the tops of his arms), then
     // only its edge, a pixel of cloth from his shoulder down behind his back arm (the picture is mirrored to face right: his left, +x, is his back)
     // to a hem at the knee; his arms their own sleeves (the owner, 2026-11-07: "too blocky", "the cape is a square")
-    cloak:{slot:'cloak',cover:'nu',rows:[3,5],shape:{at:'body',rows:['..........','..........','..........','..........','........1.','........1.','.........2','.........2','.........2','.........2','.........3','........33']}},
+    // (a small cape (the owner, 2026-11-08: "for the unit sprites that have cape, make sure it just a small pixel and look like cape,
+    //  it should not attach and look solid"): fastened at his neck, a pixel's fall behind his far shoulder and down his back, its hem
+    //  a pixel wider and darker at the knee; joined to him only at the neck and shoulder (corner to corner as his arm swings), never
+    //  a block over his arm)
+    cloak:{slot:'cloak',cover:'n',rows:[3,3],shape:{at:'body',rows:['..........','..........','..........','..........','.......1..','........1.','........2.','........2.','........2.','........2.','........23','..........']}},
     // hair: short (the scalp), long (to the shoulders), a tail, none; a beard over the jaw
-    short:{slot:'hair',cover:'s'},long:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','.2..2','.3..3']}},
+    short:{slot:'hair',cover:'s'},long:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','....2','...33']}},
     tail:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','....2','....3','....3']}},bald:{slot:'hair'},
     beard:{slot:'beard',shape:{at:'head',rows:['.....','.....','.12..','.23..']}},
     // (a crop, seen from before him as his body is (the owner, 2026-11-07: "revise head", then "make the head look more forward"):
@@ -171,22 +193,33 @@
     cropLong:{slot:'hair',cover:'s',shape:{at:'head',rows:['.....','.....','.....','2...2','3...3']}},
     cropBun:{slot:'hair',cover:'s',shape:{at:'head',up:1,rows:['..1..']}},
     beardF:{slot:'beard',shape:{at:'head',rows:['.....','.....','.121.','..2..']}},
+    // (a beast's pelt worn over the head, its fur down his back (the owner, 2026-11-07: "unit in winter area may use wolf or bear fur",
+    //  with the reference): a wolf's, its pricked ears and its muzzle over his brow; a bear's, rounder, its small ears)
+    peltWolf:{slot:'head',cover:'s',shape:{at:'head',up:2,rows:['...0.','..01.','00112','....2','....3','...23']}},
+    peltBear:{slot:'head',cover:'s',shape:{at:'head',up:2,rows:['.0.1.','01112','01112','....3','...23']}},
+    // (a headscarf knotted at the back of his head, its two ends hanging: an outlaw's, after the owner's reference)
+    bandana:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','....1','....2']}},
+    // (a cross on a surcoat, in the side's colour: a knight's, as the owner's crusader reference)
+    cross:{slot:'belt',shape:{at:'body',rows:['.','.','.','.','....1','...111','....1','....1','....1']}},
     face:{slot:'beard',shape:{at:'head',rows:['.....','...1.','...1.']}},
     eye:{slot:'beard',shape:{at:'head',rows:['.....','.3.3.']}},
     // the head: a hood (over the scalp, round the face, onto the shoulders), a cap, a kettle helm (its brim), a great helm (face and
     // all), a coif of mail
-    hood:{slot:'head',cover:'s',shape:{at:'head',rows:['.12..','0...2','1...3','2...3']},mottle:.15},
+    // (open before the face, so it shows side-on as under a helm, never framed full-face nor with a pixel like an eye in it (the owner,
+    //  2026-11-07: "there should be no eyes and the head should look like others (facing a bit to the left or right not center)"): a
+    //  hood's peak over the brow, its cowl behind and under the chin; a coif, a pelt, long hair the same)
+    hood:{slot:'head',cover:'s',shape:{at:'head',rows:['112..','....2','....3','2..23']},mottle:.15},
     cap:{slot:'head',cover:'s'},kettle:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0112.']}},
     great:{slot:'head',cover:'sf',shape:{at:'head',rows:['.012.']},slit:true},
     // (a bandage round the brow: one tended on the road)
-    bandage:{slot:'head',shape:{at:'head',rows:['.....','.001.']}},coif:{slot:'head',cover:'s',shape:{at:'head',rows:['.....','0...2','1...3']}},
+    bandage:{slot:'head',shape:{at:'head',rows:['.....','.001.']}},coif:{slot:'head',cover:'s',shape:{at:'head',rows:['0....','....2','...23']}},
     // (each class its own outline (the owner, 2026-11-07): a gold circlet round the brow, the hair showing; a wizard's tall hat, its
     //  brim; a skull worn as a cap; up: rows of its shape over the scalp's top)
     circlet:{slot:'head',shape:{at:'head',rows:['.....','.012.']}},
     // (a crown: a gilt band on top of his hair, two points up from it)
     crown:{slot:'head',shape:{at:'head',up:2,rows:['.0.0.','.010.']}},
     wizard:{slot:'head',cover:'s',shape:{at:'head',up:3,rows:['..1..','.12..','.122.','01223']}},
-    skull:{slot:'head',cover:'s',shape:{at:'head',up:1,rows:['.001.','.....','.3.3.']}},
+    skull:{slot:'head',cover:'s',shape:{at:'head',up:1,rows:['.001.','0....']}},
     // (over a helm: a crest of plumes in the side's colour; a pair of horns, out either side)
     crest:{slot:'crest',shape:{at:'head',up:2,rows:['...0.','.012.']}},horns:{slot:'crest',shape:{at:'head',up:1,rows:['0...0','1...1']}}};
   // the uniforms: their parts and each one's material ('team': the side's colour; 'hair': the figure's own), a weapon and a shield
@@ -234,8 +267,8 @@
 
   const pick=(r,i)=>r[Math.max(0,Math.min(3,i))];
   // the skeleton for a race, as cells {x, y, r (region), s (shade), side}
-  function skeleton(race){const R=RACES[race]||RACES.human,out=[],cells=[];
-    SKEL.forEach((r,i)=>{if(R.drop&&R.drop.includes(i))return;out.push([r,i]);if(R.dup&&R.dup.includes(i))out.push([r,i])});
+  function skeleton(race,seat){const R=RACES[race]||RACES.human,out=[],cells=[];
+    const Q=seat&&R.seat?{...R,...R.seat}:R;(seat?SKEL.map((r,i)=>i===10?SEAT_HANDS:r):SKEL).forEach((r,i)=>{if(Q.drop&&Q.drop.includes(i))return;out.push([r,i]);if(Q.dup&&Q.dup.includes(i))out.push([r,i])});
     // (wide: the middle column doubled from the shoulders to the thighs, his left half a pixel further out)
     out.forEach(([[rg,sh],row],y)=>{const w=R.wide&&row>=3&&row<=11;for(let x=0;x<rg.length;x++){if(rg[x]==='.')continue;const c={x:w&&x>4?x+1:x,y,row,r:rg[x],s:+sh[x],side:x<4?'R':x>4?'L':''};cells.push(c);
       if(w&&x===4)cells.push({...c,x:5,side:'L'})}});
@@ -252,12 +285,15 @@
      its ramp: a game's palette) or ramps (name -> ramp), else MAT}. Returns its picture (D.W x D.H) with anchors {hand, off, head,
      feet}, its gear (each piece: slot, kind, the anchor it hangs from and where, behind or before him), drawn apart (PX.dollGear);
      bare: the body alone, its gear left to whoever draws it (the battle turns a weapon through its blow), else laid on */
+  // (the look (the owner, 2026-11-07: "avoid using too many shading to make unit sprite looks clean and distinguishable for each body
+  //  part"): mottle, a share of a part's own; tones, each of the skeleton's four shades as drawn (lit and mid as one, the shade, the edge))
+  const LOOK={mottle:0,tones:[0,1,2,3]};
   const BASES=new Map(),BASE_CAP=4000,GREY=['#c8c8c8','#9a9a9a','#6e6e6e','#464646'];
   const chanOf=m=>m==='team'||m==='hair'||m==='skin'?m:m;
-  PX.dollBase=spec=>{const und=v=>v===undefined?'~':v,key=JSON.stringify([spec.race,spec.style,spec.beard,spec.beardStyle||null,spec.uniform,und(spec.weapon),und(spec.shield),spec.pose,spec.frame|0,spec.seed|0,!!spec.bare,!!spec.noShadow,spec.drop||null,spec.moves||null]);
+  PX.dollBase=spec=>{const und=v=>v===undefined?'~':v,key=JSON.stringify([spec.race,spec.style,spec.beard,spec.beardStyle||null,spec.uniform,und(spec.weapon),und(spec.shield),spec.pose,spec.frame|0,spec.seed|0,!!spec.bare,!!spec.noShadow,spec.drop||null,spec.moves||null,!!spec.seat]);
     let B=BASES.get(key);if(B)return B;if(BASES.size>BASE_CAP)BASES.clear();
     const race=spec.race||'human',R=RACES[race]||RACES.human,seed=spec.seed|0,U=typeof spec.uniform==='string'?UNIFORMS[spec.uniform]:spec.uniform?{parts:spec.uniform}:null;
-    const S=skeleton(race),ox=D.OX,oy=S.oy,G=new Array(D.W*D.H).fill(null),put=(x,y,k,t)=>{if(x>=0&&y>=0&&x<D.W&&y<D.H&&k)G[y*D.W+x]=[k,Math.max(0,Math.min(3,t|0))]};
+    const S=skeleton(race,spec.seat),ox=D.OX,oy=S.oy,G=new Array(D.W*D.H).fill(null),put=(x,y,k,t)=>{if(x>=0&&y>=0&&x<D.W&&y<D.H&&k)G[y*D.W+x]=[k,LOOK.tones[Math.max(0,Math.min(3,t|0))]]};
     // (the pose: each cell moved; moves: the caller's own, after the pose's: a glance back, the weight shifted)
     const moves=(((POSES[spec.pose]||POSES.idle)[(spec.frame|0)%((POSES[spec.pose]||POSES.idle).length)])||[]).concat(spec.moves||[]);
     const at=c=>{let x=c.x,y=c.y;for(const [rg,sd,dx,dy,from] of moves)if(rg.includes(c.r)&&(!sd||c.side===sd)&&c.row>=from){x+=dx;y+=dy}return[ox+x,oy+y]};
@@ -269,7 +305,8 @@
     const style=spec.style||'short';if(PARTS[style])parts.push({...PARTS[style],name:style,m:'hair'});if(spec.beard??R.beard)parts.push({...PARTS[spec.beardStyle]||PARTS.beard,name:'beard',m:'hair'});
     parts.sort((a,b)=>SLOTS.indexOf(a.slot)-SLOTS.indexOf(b.slot));
     const headCover=parts.some(p=>p.slot==='head'&&p.cover&&p.cover.includes('s')),slit=parts.some(p=>p.slit);
-    const hands=S.cells.filter(c=>c.r==='h'),hR=hands.filter(c=>c.side==='R').sort((a,b)=>b.y-a.y)[0],hL=hands.filter(c=>c.side==='L').sort((a,b)=>b.y-a.y)[0];
+    const hands=S.cells.filter(c=>c.r==='h'),hR=hands.filter(c=>c.side==='R').sort((a,b)=>b.y-a.y||b.x-a.x)[0],hL=hands.filter(c=>c.side==='L').sort((a,b)=>b.y-a.y)[0];
+    // (the weapon hand: the lowest hand cell, the inner one of the two in its row, where the hand was before the arms ended at the hips)
     const hand=hR?at(hR):[ox,oy+9],off=hL?at(hL):[ox+8,oy+9];
     // (its gear, each piece apart (PX.dollGear): which, from which anchor, behind him or before him; laid on here only when not bare)
     const wk=spec.weapon===undefined?U&&U.weapon:spec.weapon,shk=spec.shield??(U&&U.shield),gear=[];
@@ -282,19 +319,23 @@
     const dropped=c=>(spec.drop||[]).some(([rg,sd])=>rg.includes(c.r)&&(!sd||c.side===sd)),tones={};
     for(const c of S.cells){const [x,y]=at(c);let k='skin',t=c.s;
       for(const p of parts){if(!p.cover||!p.cover.includes(c.r)||!inRows(c,p)||p.cols&&(c.x<p.cols[0]||c.x>p.cols[1]))continue;if(p.slot==='hair'&&headCover)continue;
-        t=c.s+(p.dark|0);if(p.mottle&&noise(x,y,p.slot.length)<p.mottle)t+=noise(x,y,7)<.5?1:-1;k=p.m}
+        t=c.s+(p.dark|0);if(p.mottle&&noise(x,y,p.slot.length)<p.mottle*LOOK.mottle)t+=noise(x,y,7)<.5?1:-1;k=p.m}
       if(slit&&c.r==='f'&&c.row===1){k='black';t=3}
       if(c.side==='R'&&!tones[c.r])tones[c.r]=[k,Math.max(0,Math.min(3,t))];if(!dropped(c))put(x,y,k,t)}
+    // (a robe's skirt (the owner, 2026-11-07: "mage should wear robes as the reference"): whole from leg to leg down to his feet, its hem
+    //  a pixel wider each side on its last two rows and darker on the last)
+    for(const p of parts){if(!p.skirt)continue;const by=new Map();for(const c of S.cells){if(c.r!=='k'||dropped(c))continue;const [x,y]=at(c),r=by.get(y)||[x,x];by.set(y,[Math.min(r[0],x),Math.max(r[1],x)])}
+      const ys=[...by.keys()].sort((a,b)=>a-b),last=ys[ys.length-1];for(const y of ys){const [x0,x1]=by.get(y),f=y>=last-1?1:0;for(let x=x0-f;x<=x1+f;x++)put(x,y,p.m,y===last?2:x===x0-f||x===x1+f?2:1)}}
     // the parts' own pixels round their anchors: the head's (the scalp's top left) or the body's
     const scalp=S.cells.filter(c=>c.r==='s'),hx=scalp.length?Math.min(...scalp.map(c=>at(c)[0])):ox+2,hy=scalp.length?Math.min(...scalp.map(c=>at(c)[1])):oy;
     for(const p of parts){if(!p.shape||p.slot==='hair'&&headCover)continue;const [ax,ay0]=p.shape.at==='head'?[hx-1,hy]:[ox,oy],ay=ay0-(p.shape.up||0);
-      p.shape.rows.forEach((row,j)=>[...row].forEach((ch,i)=>{if(ch==='.')return;const x=ax+i,y=ay+j;let t=+ch;if(p.mottle&&noise(x,y,9)<p.mottle)t+=1;put(x,y,p.m,t)}))}
+      p.shape.rows.forEach((row,j)=>[...row].forEach((ch,i)=>{if(ch==='.')return;const x=ax+i,y=ay+j;let t=+ch;if(p.mottle&&noise(x,y,9)<p.mottle*LOOK.mottle)t+=1;put(x,y,p.m,t)}))}
     // the lines: a belt across the hips (a buckle), a sash, a strap from his right shoulder to his left hip
     for(const p of parts){if(!p.line)continue;const hips=S.cells.filter(c=>c.r==='p'),py=hips.length?at(hips[0])[1]:oy+8;
       if(p.line==='belt'||p.line==='sash'){for(const c of hips){const [x,y]=at(c);put(x,y,p.m,c.x===4&&p.line==='belt'?0:2+(c.x===2||c.x===6?1:0))}if(p.line==='belt')put(ox+4,py,'gold',1)}
       else{const top=[ox+2,oy+3+(S.rows<15?-1:0)];for(let k=0;k<=5;k++)put(top[0]+Math.round(k*.8),top[1]+k,p.m,k&1?3:2)}}
     // his race's own: an elf's ears, an orc's tusks (over a bare head only)
-    if(R.ears&&!headCover)put(hx-1,hy+1,'skin',2);if(R.tusk)put(hx+1,hy+2,'#f0ecd8',0);
+    if(R.ears&&!headCover)put(hx+3,hy+1,'skin',1);// (an elf's ear behind his face, in his hair: before it, it read as a nose)if(R.goblinEars){put(hx+3,hy+1,'skin',1);put(hx+4,hy+1,'skin',1);put(hx+4,hy,'skin',2)}if(R.tusk)put(hx+1,hy+2,'#f0ecd8',0);
     // the gear before him: the shield on his left arm, a weapon in front
     lay(false);
     // the shadow underfoot
@@ -324,7 +365,8 @@
   // shield's colour (a material or a spec's team), ramp: how to paint it (as PX.doll's)
   PX.dollGear=(kind,m,ramp)=>{const P=gearPx(kind,m);if(!P.length)return null;const R=ramp||rampFor({}),x0=Math.min(...P.map(p=>p[0])),y0=Math.min(...P.map(p=>p[1])),x1=Math.max(...P.map(p=>p[0])),y1=Math.max(...P.map(p=>p[1]));
     const cv=PX.canvas(x1-x0+1,y1-y0+1,g=>{for(const [x,y,k,t] of P){g.fillStyle=R(k)[t];g.fillRect(x-x0,y-y0,1,1)}});cv.ax=-x0;cv.ay=-y0;cv.behind=kind!=='shield'&&!!(WEAPONS[kind]||{}).behind;return cv};
-  PX.DOLL={D,SKEL,RACES,MAT,SLOTS,PARTS,UNIFORMS,WEAPONS,POSES,HAIR_MAT};
+  PX.dollClear=()=>BASES.clear();
+  PX.DOLL={D,SKEL,RACES,LOOK,MAT,SLOTS,PARTS,UNIFORMS,WEAPONS,POSES,HAIR_MAT};
 })(window.PX=window.PX||{});
 
 </script><script>
@@ -473,7 +515,11 @@ const FLINCH_POSE=41,LOOK_POSE=42,SHIFT_POSE=43,BRACE_POSE=44,GRIP_POSE=45,LIFE_
 // (your hero's and a companion's key: their gear's, but a melee weapon's when it is held apart: one body for every sword)
 // (a figure's look, as unitSprite draws it: its kind's, a companion's gear on him, his side's cloth, tint (a world army's colour)
 // over it; the map's marchers' weapons drawn apart read it: weapons.js mapHeld)
-function spriteLook(type,team,hero,v,tint){const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null,L0=allyLook(lookOf(type,team===2?0:team,hero,hero?0:(v||0)%6,COMPS[type]?type:'',cg),team);return tint?{...L0,team:tint}:L0}
+// (what the weather asks of his dress: cold, in the frost (people.js winterLook); set by whoever draws him there, about the call:
+// a battle by its ground, a march by where it is)
+const DRESS={cold:false},coldAt=(x,y)=>WINTER.on&&typeof climAt==='function'&&climAt(x,y)==='frost';
+function dressed(cold,f){const k=DRESS.cold;DRESS.cold=!!cold;try{return f()}finally{DRESS.cold=k}}
+function spriteLook(type,team,hero,v,tint){const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null,L0=allyLook(lookOf(type,team===2?0:team,hero,hero?0:(v||0)%6,COMPS[type]?type:'',cg),team);const L1=DRESS.cold?winterLook(L0,v):L0;return tint?{...L1,team:tint}:L1}
 function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
   // a companion wears what you gave them: their weapon, armour and helm show (cg)
   const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null;
@@ -484,7 +530,7 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
     if(DOLL_FIGS.on&&DOLL_FIGS.edge)return spr[key]=s;
     const c=mkc(s.width*2,s.height*2,g=>g.drawImage(s,0,0,s.width*2,s.height*2));c.cw=s.cw*2;c.ch=s.ch*2;return spr[key]=c;}
   if(ST[type]&&ST[type].beast)return beastSprite(type,team===2?0:team,v,pose);
-  v=hero?0:(v||0)%6;pose=pose||0;const wk=(w,melee)=>bare&&melee?'m':w||'',key=type+team+(typeof Faces!=='undefined'?Faces.lookKey(hero,type):'')+(hero?'h'+P.race+wk(P.gear.weapon,heroKind()==='melee'&&!unarmed())+(P.gear.body||'')+(P.gear.head||'')+(P.gear.offhand||''):'')+(cg?'g'+wk(cg.weapon,cg.weapon&&(ITEMS[cg.weapon].kind||'melee')==='melee')+(cg.body||'')+(cg.head||'')+(cg.offhand||''):'')+'v'+v+'p'+pose+(bare==='bow'?'B':bare?'b':'')+(arm?'s':'')+(afoot?'f':'')+(tint?'c'+tint:'');
+  v=hero?0:(v||0)%6;pose=pose||0;const wk=(w,melee)=>bare&&melee?'m':w||'',key=type+team+(typeof Faces!=='undefined'?Faces.lookKey(hero,type):'')+(hero?'h'+P.race+wk(P.gear.weapon,heroKind()==='melee'&&!unarmed())+(P.gear.body||'')+(P.gear.head||'')+(P.gear.offhand||''):'')+(cg?'g'+wk(cg.weapon,cg.weapon&&(ITEMS[cg.weapon].kind||'melee')==='melee')+(cg.body||'')+(cg.head||'')+(cg.offhand||''):'')+'v'+v+'p'+pose+(bare==='bow'?'B':bare?'b':'')+(arm?'s':'')+(afoot?'f':'')+(tint?'c'+tint:'')+(DRESS.cold?'w':'');
   {const c=bare?spr[key]:FIGURES.get(key);if(c)return c}
   // soldiers, your hero and companions: the template figures (people.js)
   const L0=spriteLook(type,team,hero,v,tint),L={...L0,...(arm?{weapon:null,slung:WPN[L0.weapon]?null:L0.weapon}:{}),...(afoot?{mount:null}:{})};
@@ -494,7 +540,7 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
   const c=cellOf(peopleSprite(L,pose,bare));return bare?spr[key]=c:FIGURES.set(key,c);
 }
 // World combat retains the army's cloth and each marcher's appearance instead of repainting by battle side.
-const actorSprite=(u,pose,bare,arm)=>unitSprite(u.type,u.worldSide??spriteTeam(u),u.hero,u.v,pose,bare,arm,u.worldTint,u.afoot);
+const actorSprite=(u,pose,bare,arm)=>dressed(typeof B!=='undefined'&&B&&B.env&&B.env.c==='frost'&&WINTER.on,()=>unitSprite(u.type,u.worldSide??spriteTeam(u),u.hero,u.v,pose,bare,arm,u.worldTint,u.afoot));
 /* a horse no one rides (battle/dismount.js Horse): its rider's mount standing, saddled, a cloth of its side's colour under the
    saddle (people.js drawMount: saddled); in a rider's cell, its feet where his were. Cached by its look */
 function horseSprite(L){const key='hz'+L.mount+(L.mountC||'')+L.team+(L.barded?'b':'');if(spr[key])return spr[key];
@@ -916,7 +962,7 @@ const PEOPLE_OUT='#1a1c26',PEOPLE_SCAR='#c06a5a';
 const PPAL={
   skin:['#edd1d6','#f3bfad','#de9e8c','#c58faa'],skinTan:['#f0c8a0','#d9a07a','#b87a58','#8e5a4a'],skinDark:['#c8906a','#a06a4a','#7a4a32','#5a3424'],
   elf:['#f6e6e6','#f0d0c8','#dcb0a8','#b8909a'],dwarf:['#f0c0a0','#e09a80','#c07868','#8e5050'],
-  orc:['#c8e888','#9ccc5a','#6a9a3a','#4a6a2a'],orcDark:['#a8c870','#7aa848','#527a30','#36541e'],orcGrey:['#b8c8a0','#8aa078','#62785a','#44543e'],
+  orc:['#c8e888','#9ccc5a','#6a9a3a','#4a6a2a'],goblin:['#d0d880','#a8b450','#78862e','#4e5a22'],goblinDark:['#b4c070','#8a9a44','#607028','#40481c'],orcDark:['#a8c870','#7aa848','#527a30','#36541e'],orcGrey:['#b8c8a0','#8aa078','#62785a','#44543e'],
   blond:['#faf8db','#f3e7a8','#dab580','#b3794d'],brown:['#cb804a','#a15735','#682a19','#4a1c10'],ginger:['#fea464','#fc6a08','#ba3900','#7e0e13'],
   black:['#67656d','#3d3f4b','#2e3038','#27272c'],grey:['#ffffff','#dacdc1','#b3a49a','#8f8685'],silver:['#ffffff','#e0e6ee','#abb6c4','#7e8896'],
   olive:['#ebe185','#beb050','#8e8e37','#5d6527'],teal:['#86f1d6','#4ddbc2','#30b3a7','#238585'],steel:['#ffffff','#abd5da','#6e95a9','#5a748d'],
@@ -936,7 +982,8 @@ const RACE_LOOK={
   human:{skin:['skin','skinTan','skin','skinDark','skin','skinTan'],hair:['brown','blond','black','ginger','brown','grey'],eye:PEOPLE_EYE},
   elf:{skin:['elf'],hair:['blond','silver','blond','brown','silver','blond'],eye:'#a8f0c8',ears:true},
   dwarf:{skin:['dwarf','skinTan','dwarf'],hair:['ginger','brown','black','grey','ginger','blond'],eye:PEOPLE_EYE,short:true,beard:true},
-  orc:{skin:['orc','orcDark','orcGrey'],hair:['black','black','brown','black','grey','black'],eye:'#ffdc04',tusk:true}
+  orc:{skin:['orc','orcDark','orcGrey'],hair:['black','black','brown','black','grey','black'],eye:'#ffdc04',tusk:true},
+  goblin:{skin:['goblin','goblinDark'],hair:['black','brown','black'],eye:'#ffdc04',short:true}
 };
 /* each kind's look: helm (cap, kettle, great, plume, horned, hood, wizard, crown, circlet, skull, bare), outer (the garment's
    material), inner, weapon (sword, great, dagger, axe, bigaxe, hammer, spear, pike, javelin, bow, longbow, xbow, sling, staff,
@@ -944,13 +991,13 @@ const RACE_LOOK={
 const PEOPLE_LOOK={
   militia:{helm:'cap',outer:'leather',weapon:'sword',plain:true},spearman:{helm:'kettle',outer:'steel',weapon:'spear',shield:'wood'},
   archer:{helm:'hood',hood:'olive',outer:'olive',weapon:'bow'},ranger:{helm:'hood',hood:'forest',outer:'forest',weapon:'longbow',cape:'forest'},
-  horse:{helm:'kettle',outer:'steel',weapon:'lance',mount:'horse'},chief:{helm:'horned',outer:'fur',weapon:'bigaxe',race:'human'},
+  horse:{helm:'kettle',outer:'steel',weapon:'lance',mount:'horse'},chief:{helm:'horned',outer:'fur',weapon:'bigaxe',race:'human',outlaw:'own'},
   brann:{helm:'bare',outer:'fur',weapon:'bigaxe',hair:'ginger',beard:'ginger'},elske:{helm:'bare',outer:'white',inner:'linen',weapon:'staff',robe:true,hair:'blond',hood:'white'},
   tavi:{helm:'hood',hood:'forest',outer:'forest',weapon:'bow',hair:'brown'},ander:{helm:'bare',outer:'dark',inner:'leather',weapon:'sword',cape:'dark',hair:'black',scar:true},
   hum_levy:{helm:'cap',outer:'leather',weapon:'spear',plain:true},hum_spear:{helm:'kettle',outer:'steel',weapon:'spear',shield:'wood'},
   hum_guard:{helm:'great',outer:'steel',weapon:'sword',shield:'steel'},hum_pike:{helm:'kettle',outer:'steel',weapon:'pike'},
   hum_bow:{helm:'hood',hood:'olive',outer:'leather',weapon:'bow',plain:true},hum_long:{helm:'hood',hood:'forest',outer:'forest',weapon:'longbow',cape:'forest'},
-  hum_squire:{helm:'kettle',outer:'steel',weapon:'lance',mount:'horse'},hum_knight:{helm:'plume',outer:'steel',weapon:'lance',mount:'horse',barded:true,cape:true},
+  hum_squire:{helm:'kettle',outer:'steel',weapon:'lance',mount:'horse'},hum_knight:{helm:'plume',outer:'steel',weapon:'lance',mount:'horse',barded:true,cape:true,surcoat:'linen'},
   dw_clan:{helm:'cap',outer:'leather',weapon:'axe',plain:true},dw_axe:{helm:'horned',outer:'steel',weapon:'axe'},
   dw_iron:{helm:'great',outer:'iron',weapon:'hammer',shield:'iron'},dw_berserk:{helm:'bare',outer:'skin',inner:'leather',weapon:'bigaxe'},
   dw_sling:{helm:'cap',outer:'leather',weapon:'sling',plain:true},dw_xbow:{helm:'kettle',outer:'steel',weapon:'xbow'},
@@ -967,7 +1014,7 @@ const PEOPLE_LOOK={
   hum_mage:{helm:'wizard',outer:'violet',weapon:'staff',robe:true,beard:'grey',hair:'grey'},dw_rune:{helm:'horned',outer:'gold',weapon:'staff',robe:true},
   elf_weaver:{helm:'circlet',outer:'teal',weapon:'staff',robe:true},orc_shaman:{helm:'skull',outer:'fur',weapon:'staff',robe:true},
   hum_foot:{helm:'cap',outer:'cloth',weapon:'sword',shield:'wood',plain:true},hum_sword:{helm:'kettle',outer:'steel',weapon:'sword',shield:'steel'},
-  hum_sergeant:{helm:'plume',outer:'steel',weapon:'sword',shield:'steel',cape:true},hum_champ:{helm:'great',outer:'steel',weapon:'great'},
+  hum_sergeant:{helm:'plume',outer:'steel',weapon:'sword',shield:'steel',cape:true},hum_champ:{helm:'great',outer:'steel',weapon:'great',surcoat:'linen'},
   hum_xbow:{helm:'kettle',outer:'leather',weapon:'xbow'},hum_crossbow:{helm:'cap',outer:'leather',weapon:'xbow',plain:true},hum_lancer:{helm:'kettle',outer:'leather',weapon:'lance',mount:'horse'},hum_hbow:{helm:'hood',hood:'olive',outer:'leather',weapon:'bow',mount:'horse'},
   dw_shield:{helm:'cap',outer:'leather',weapon:'hammer',shield:'wood',plain:true},dw_hammer:{helm:'kettle',outer:'steel',weapon:'hammer',shield:'iron'},
   dw_longbeard:{helm:'great',outer:'gold',weapon:'hammer',shield:'gold',beard:'grey'},dw_thane:{helm:'horned',outer:'iron',weapon:'hammer',cape:true},
@@ -975,6 +1022,14 @@ const PEOPLE_LOOK={
   elf_phoenix:{helm:'great',outer:'gold',weapon:'spear',shield:'gold',cape:'teal'},elf_hartbow:{helm:'hood',hood:'forest',outer:'forest',weapon:'bow',mount:'stag'},
   orc_shield:{helm:'bare',outer:'leather',weapon:'axe',shield:'wood',plain:true},orc_warrior:{helm:'horned',outer:'rust',weapon:'axe',shield:'iron'},
   orc_black:{helm:'great',outer:'iron',weapon:'axe',shield:'iron',cape:true},orc_wolfbow:{helm:'bare',outer:'leather',weapon:'bow',mount:'wolf'},
+  // (outlaws (data/outlaws.js; the owner: "bandits not to use the soldier sprites"): outlaw: dress by the man (OUTLAW_DRESS), his
+  //  side's colour on a headscarf or a sash; 'own': his own dress, a sash for a tabard (the chief))
+  band_looter:{helm:'bandana',outer:'cloth',weapon:'axe',outlaw:true},band_cutthroat:{helm:'hood',hood:'dark',outer:'dark',weapon:'sword',outlaw:true},
+  band_brigand:{helm:'bandana',outer:'leather',weapon:'axe',shield:'wood',outlaw:true},band_highway:{helm:'cap',outer:'leather',weapon:'spear',outlaw:true},
+  band_poacher:{helm:'hood',hood:'olive',outer:'olive',weapon:'bow',cape:'leather',outlaw:true},
+  // (goblins (the owner's reference): green hoods, leather; a knife and a round shield, a spear, a short bow, a chief in fur)
+  gob_stab:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'dagger',shield:'wood'},gob_spear:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'spear'},
+  gob_bow:{race:'goblin',helm:'hood',hood:'forest',outer:'leather',weapon:'bow'},gob_boss:{race:'goblin',helm:'hood',hood:'forest',outer:'fur',weapon:'bigaxe',shield:'wood'},
   mage:{helm:'wizard',outer:'violet',weapon:'staff',robe:true,beard:'grey',hair:'grey'},hedge:{helm:'hood',hood:'brown',outer:'cloth',weapon:'staff',robe:true}
 };
 // the plain troops' helms and cloth by variant (the rest wear their kind's)
@@ -1012,8 +1067,11 @@ function pjoin(g){const w=g.w,h=g.h,id=new Int32Array(w*h).fill(-1),C=[];for(let
 // left as drawn, the lit side's edge (top, left) a lighter shade (rimLit) than the shaded side's (rimK); the picture's edge (feet on
 // its last row) no edge)
 function prim(g){const w=g.w,h=g.h,hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)],R=[],op=(x,y)=>x<0||y<0||x>=w||y>=h||!!g.p[y*w+x],
-    clr=(x,y)=>!op(x,y),thin=(x,y)=>clr(x-1,y)&&clr(x+1,y)||clr(x,y-1)&&clr(x,y+1);
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const c=g.p[y*w+x];if(!c||c[0]!=='#'||c.length!==7||thin(x,y))continue;const lit=clr(x-1,y)||clr(x,y-1),dark=clr(x+1,y)||clr(x,y+1);
+    clr=(x,y)=>!op(x,y),span=(x,y,dx,dy)=>{let n=1;for(let k=1;op(x-dx*k,y-dy*k)&&n<3;k++)n++;for(let k=1;op(x+dx*k,y+dy*k)&&n<3;k++)n++;return n};
+  // (an edge only where the figure is 3 px or more across it, so a part 1 or 2 px wide (a leg, an arm, a bow) keeps its own colours:
+  //  the owner, 2026-11-07, "no need darker shader if that area is only 1 px")
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const c=g.p[y*w+x];if(!c||c[0]!=='#'||c.length!==7)continue;const sx=span(x,y,1,0),sy=span(x,y,0,1);if(sx<2||sy<2)continue;const X=sx>=3,Y=sy>=3,
+    lit=X&&clr(x-1,y)||Y&&clr(x,y-1),dark=X&&clr(x+1,y)||Y&&clr(x,y+1);
     if(lit||dark)R.push([y*w+x,PX.rim([hx(c)],dark&&!lit?DOLL_FIGS.rimK:DOLL_FIGS.rimLit)])}
   for(const [i,c] of R)g.p[i]='#'+c.map(v=>v.toString(16).padStart(2,'0')).join('')}
 function poutline(g){const B=g.body,on=(x,y)=>!!pget(g,x,y)&&!(B&&B.has(y*g.w+x));
@@ -1028,6 +1086,12 @@ const ptop=g=>{const i=g.p.findIndex(c=>c);return i<0?g.h:Math.floor(i/g.w)};
 function pcanvas(g){return mkc(g.w,g.h,x=>{for(let y=0;y<g.h;y++)for(let i=0;i<g.w;i++){const c=g.p[y*g.w+i];if(c){x.fillStyle=c;x.fillRect(i,y,1,1)}}})}
 
 // a soldier's whole look: its kind's, its race's, its variant's; the hero's and a companion's from their gear
+// (in the cold (the owner, 2026-11-07: "unit in winter area may use wolf or bear fur/equipments"): a wolf's or a bear's pelt over his
+// head by variant, a fur mantle on his shoulders; a helm of rank kept (keep), a cape of his own kept. sprites.js DRESS says when)
+// (an outlaw's dress by the man: his head (a headscarf in his side's colour, a hood, a cap, bare), his coat, his shirt, his hood's cloth)
+const OUTLAW_DRESS={helm:['bandana','hood','bare','bandana','cap','hood'],cloth:['leather','cloth','dark','fur','olive','rust'],inner:['linen','wool','dark'],hood:['dark','brown','olive']};
+const WINTER={on:true,keep:['great','plume','horned','wizard','crown','circlet','skull'],wolf:'#c8c4b8',bear:'#7a5236'};
+function winterLook(L,v){if(!WINTER.on)return L;const k=(v|0)%2?'bear':'wolf';return{...L,helm:WINTER.keep.includes(L.helm)?L.helm:'pelt_'+k,cape:L.cape||WINTER[k]}}
 function lookOf(type,team,hero,v,cid,cg){
   const st=ST[type],race=hero?P.race:(st&&st.race)||(PEOPLE_LOOK[type]&&PEOPLE_LOOK[type].race)||'human',R=RACE_LOOK[race]||RACE_LOOK.human;
   let L=hero?{helm:'bare',outer:'leather',inner:'linen',armor:'leather',weapon:'sword'}:PEOPLE_LOOK[cid||type]||PEOPLE_LOOK[st&&st.look]||PEOPLE_LOOK.militia;
@@ -1035,7 +1099,8 @@ function lookOf(type,team,hero,v,cid,cg){
   const o={race,skin:R.skin[v%R.skin.length],hair:L.hair||R.hair[v%R.hair.length],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,
     beard:L.beard||(R.beard?(L.hair||R.hair[v%R.hair.length]):race==='human'&&!hero&&v%3===1&&!L.robe?R.hair[v%R.hair.length]:null),
     helm:L.helm,hood:L.hood,outer:L.outer==='skin'?R.skin[v%R.skin.length]:L.outer,inner:L.inner||'dark',team:team?'red':'blue',weapon:L.weapon,shield:L.shield,
-    robe:L.robe,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar,armor:hero?L.armor:st?armorOf(st):'none'};
+    robe:L.robe,surcoat:L.surcoat,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar,armor:hero?L.armor:st?armorOf(st):'none'};
+  if(L.outlaw==='own')o.outlaw=true;else if(L.outlaw){const D=OUTLAW_DRESS;o.outlaw=true;o.helm=D.helm[(v+D.helm.indexOf(L.helm)+6)%D.helm.length];o.outer=D.cloth[(v*5+1)%D.cloth.length];o.inner=D.inner[v%D.inner.length];if(o.helm==='hood')o.hood=D.hood[v%D.hood.length]}
   if(L.plain){o.helm=race==='orc'&&PLAIN_HELM[v]==='hood'?'bare':PLAIN_HELM[v];o.outer=PLAIN_CLOTH[v]}
   if(o.mount==='horse')o.mountC=L.barded?'horseW':['horse','chestnut','horseB','horse','horseG','chestnut'][v];
   // your hero: your race, your weapon, your armour and helm as you wear them
@@ -1054,7 +1119,7 @@ function lookOf(type,team,hero,v,cid,cg){
     // (a shield in the off hand shows, slung on his arm: drawn only, offShield (his kind's o.shield is what CharacterMind reads))
     const off=hero?P.gear.offhand:cg&&cg.offhand,oi=off&&ITEMS[off];if(oi&&oi.icon==='shield')o.offShield=oi.col||'wood'}
   // (no cape (the owner, 2026-11-07: "please remove cape"); his head a crop and an eye: "revise head")
-  if(hero){o.cape=false;o.beard=null;o.hair=R.hair[0];o.tabard=false;o.sleeves=true;o.hairStyle='crop';o.dollEye=true}
+  if(hero){o.cape=false;o.beard=null;o.hair=R.hair[0];o.tabard=false;o.sleeves=true;o.hairStyle='crop'}// (no eye: as every soldier, the owner, 2026-11-07: "I don't want eyes")
   // (your hero's and a companion's hair, beard and face as their portraits (ui/faces.js Faces.look))
   const face=typeof Faces!=='undefined'&&Faces.ok()?hero?Faces.you():COMPS[cid]?Faces.companion(cid):null:null;if(face)Object.assign(o,Faces.look(face));
   return o;
@@ -1729,14 +1794,15 @@ class FigureGear{
   draw(set,o,p){}
 }
 // a weapon in the hand (people.js WPN): upright at rest (WPN_REST's slant), in a blow at its frame's angle (SWING), drawn as the
-// battle's is (weapons.js drawBlade), the tip flashing as it strikes
+// battle's is (weapons.js drawBlade), the tip flashing as it strikes; a doll's blow its grip in his fist where the rig ends (p.rig),
+// as the battle's heldNow, never SWING's push out from it (it stood clear of the hand once the arms ended at the hips)
 class HandWeapon extends FigureGear{
   constructor(k){super('main','hand');this.k=k}
   // (a paper doll's pole at rest goes across his back, behind him, as the owner's reference carries it)
   behindNow(o,p){return DOLL_FIGS.on&&dollable(o)&&POLE(this.k)&&this.k!=='lance'&&!(p.atk>=0&&p.style)}
   draw(set,o,p){const k=this.k,blow=p.atk>=0&&!!p.style,t=blow&&(POLE(k)&&k!=='lance'&&p.style==='swing'?POLE_SWING:SWING[p.style]||SWING.swing)[p.atk];
     const kind=holdKind(k),doll=dollable(o),rest0=doll&&!WPN_REST[k]?holdTab(kind,o).rest:WPN_REST[k]??-90,rest=doll&&p.drop!=null?downClamp(rest0,WPN[k][0],Math.min(DOLL_DROP,p.drop)):rest0;
-    const tip=drawBlade(set,t?t[0]:0,t?t[1]:0,t?t[2]:rest,k,pal(o.team),pal(o.skin)[1],undefined,doll);if(blow&&p.atk===1)set(tip[0],tip[1],'#ffffff')}
+    const off=t&&!(doll&&p.rig),tip=drawBlade(set,off?t[0]:0,off?t[1]:0,t?t[2]:rest,k,pal(o.team),pal(o.skin)[1],undefined,doll);if(blow&&p.atk===1)set(tip[0],tip[1],'#ffffff')}
 }
 /* a bow's string drawn back, by the body's frame (px behind the bow hand): the draw (nocked, full, held at full) to his draw hand at
    his chin (dollfigs.js DOLL_SHOOT), the loose's wind-up; the arrow from the string to its head past the bow */
@@ -1785,17 +1851,24 @@ function bowPic(k,style,atk,deg,skin){const key=[k,style,atk,deg,skin].join('|')
    material lit from the top left, its field the side's colour, the device of his people on it (sprites.js BANNER_DEV: the Vale's, the
    Karn's, the Sylvan's, the Horde's, three by three), light on a dark field, dark on a light one. SHIELD_ART: the shapes (r rim,
    f field), from the anchor at their top left, and each people's device */
+// (in a blow (the owner, 2026-11-07: "why shield float with no hand grab it?"): the shield brought before his chest (at: 'guard',
+// back from it by SHIELD_HOLD.blow px), the sword arm striking over it; hung at his side, his far hand's knuckles over its rim (grip))
+const SHIELD_HOLD={on:true,blow:2,grip:true};
 const SHIELD_ART={heater:['rrrrr','rfffr','rfffr','rfffr','rfffr','.rfr.','..r..'],round:['.rrr.','rfffr','rfffr','rfffr','rfffr','.rrr.'],
   dev:{human:'vale',dwarf:'karn',elf:'sylvan',orc:'horde'}};
 class ShieldGear extends FigureGear{
   constructor(guard){super(guard?'guard':'shield',guard?'guard':'off');this.guard=guard}
   draw(set,o,p){const m=shieldLook(o),C=pal(m),Tm=pal(o.team),A=SHIELD_ART,rows=m==='wood'?A.round:A.heater,T=typeof BANNER_DEV!=='undefined'&&BANNER_DEV[A.dev[o.race||'human']],
       lum=Tm[1]&&Tm[1][0]==='#'?[1,3,5].reduce((a,i,k)=>a+parseInt(Tm[1].slice(i,i+2),16)*[.3,.59,.11][k],0)/255:.5,dv=lum>.6?'#3a2226':'#f4ecd8',
-      ox=this.guard?-1:-2,oy=this.guard?(this.guard==='low'?1:-1)-p.sh:-2-p.sh,W=rows[0].length;
+      fore=this.foreNow(p),ox=this.guard?-1:fore?-1-SHIELD_HOLD.blow:-2,oy=this.guard?(this.guard==='low'?1:-1)-p.sh:fore?-1-p.sh:-2-p.sh,W=rows[0].length;
     rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(c==='.')return;const edge=y===0||x===0||x===W-1||rows[y+1]?.[x]==='.'||!rows[y+1];
       set(ox+x,oy+y,c==='r'?C[y===0||x===0?0:edge&&x>=W-2?2:1]:Tm[x===1?0:x===W-2?2:1])}));
     // (the device three by three in the field's middle: the 5 x 5 one's every other row and column)
-    if(T)for(let j=0;j<3;j++)for(let i=0;i<3;i++)if(T[j*2]&&T[j*2][i*2]&&T[j*2][i*2]!=='.')set(ox+1+i,oy+1+j,dv)}
+    if(T)for(let j=0;j<3;j++)for(let i=0;i<3;i++)if(T[j*2]&&T[j*2][i*2]&&T[j*2][i*2]!=='.')set(ox+1+i,oy+1+j,dv)
+    // (his fist on its rim, on the side nearest his body, as he grips it hung at his side)
+    if(SHIELD_HOLD.on&&SHIELD_HOLD.grip&&!this.guard&&!fore)set(ox+W-1,oy+2,pal(o.skin)[1])}
+  foreNow(p){return SHIELD_HOLD.on&&!this.guard&&p.atk>=0&&!FIST_STYLES.includes(p.style)}
+  atNow(p){return this.foreNow(p)?'guard':this.at}
 }
 // a quiver on his back, slung close behind his shoulder, the most of it hidden by him, its arrows' fletching over it by his head; a crossbowman's bolt case at his hip
 class QuiverGear extends FigureGear{
@@ -1876,12 +1949,13 @@ class FigureRig{
   // its gear into grid g from the body's anchors A (people.js drawFigureBody, drawMapBody): behind it first, the nearest first, each
   // only where the body and what is already behind it are not; then in front, the nearest last
   // (drop: for a doll, how far below his hand his feet stand, so a weapon held low stops over the ground: weapons.js downClamp)
-  static dress(g,o,A,style,atk){const G=FigureRig.gearOf(o,A.map),p={style,atk,sh:A.sh||0,ly:A.ly,cut:A.cut};
+  static dress(g,o,A,style,atk){const G=FigureRig.gearOf(o,A.map),p={style,atk,sh:A.sh||0,ly:A.ly,cut:A.cut,rig:!!A.rig};
     if(g.body&&A.hand){let fy=-1;for(const i of g.body)fy=Math.max(fy,(i/g.w)|0);p.drop=fy-A.hand[1]-1}
     const put=(x,X,Y,under)=>x.draw(under?(i,j,c)=>{if(!pget(g,Math.round(X+i),Math.round(Y+j)))pset(g,X+i,Y+j,c)}:(i,j,c)=>pset(g,X+i,Y+j,c),o,p);
     const lay=x=>x.behindNow&&x.behindNow(o,p)?-1:x.layer;
-    for(let i=G.length-1;i>=0;i--)if(lay(G[i])<0)put(G[i],A[G[i].at][0],A[G[i].at][1],true);
-    for(const x of G)if(lay(x)>0)put(x,A[x.at][0],A[x.at][1],false)}
+    const at=x=>A[x.atNow?x.atNow(p):x.at];
+    for(let i=G.length-1;i>=0;i--)if(lay(G[i])<0)put(G[i],at(G[i])[0],at(G[i])[1],true);
+    for(const x of G)if(lay(x)>0)put(x,at(x)[0],at(x)[1],false)}
   /* the finished picture: g outlined round all it holds, cut to its frame (w wide, about g's middle less R each side; down to g's
      bottom from R in), grown each way only as far as its pixels reach past it, evenly about the frame's middle so its feet stay the
      cell's bottom middle (sprites.js cellOf); A: the body's anchors in g (people.js drawFigureBody), of which the picture keeps
@@ -1911,25 +1985,33 @@ class FigureRig{
 // while it had no outline); the anchors the template kept on its own
 // (back: what he wears on his back, its top left, out behind him; off: the shield arm's shield, its top left; guard: a shield raised
 // before him, its left); races: those the doll has
-const DOLL_FIGS={on:true,riders:true,edge:true,edgeK:.68,rim:true,rimK:.62,rimLit:.86,dx:2,dy:0,back:[2,6],off:[1,8],guard:[8],races:['human','elf','dwarf','orc']};
+const DOLL_FIGS={on:true,riders:true,edge:true,edgeK:.68,rim:true,rimK:.62,rimLit:.86,dx:2,dy:0,back:[2,6],off:[1,8],guard:[8],races:['human','elf','dwarf','orc','goblin']};
 // whether a look is drawn as a doll
 const dollable=o=>DOLL_FIGS.on&&(!o.mount||DOLL_FIGS.riders)&&!!(window.PX&&PX.doll)&&DOLL_FIGS.races.includes(o.race||'human');
 // (a look's helm as the doll's head part and its material)
 // (each class its own outline (the owner, 2026-11-07: "distinct helmets"): a plume a great helm crested in the side's colour, a horned
 // helm its horns, a circlet gold round the brow, a wizard his tall hat, a shaman a skull; several parts a list)
-const DOLL_HELM={cap:['cap','steel'],kettle:['kettle','steel'],great:['great','steel'],plume:[['great','steel'],['crest','team']],horned:[['kettle','iron'],['horns','linen']],
+const DOLL_HELM={bandana:['bandana','team'],pelt_wolf:['peltWolf','#c8c4b8'],pelt_bear:['peltBear','#7a5236'],cap:['cap','steel'],kettle:['kettle','steel'],great:['great','steel'],plume:[['great','steel'],['crest','team']],horned:[['kettle','iron'],['horns','linen']],
   wizard:['wizard','purple'],straw:['cap','cloth'],skull:['skull','white'],bandage:['bandage','linen'],circlet:['circlet','gold'],crown:['crown','gold']};
 // a look's parts on the doll, in the game's materials ('team': the side's colour, a tone darker than the palette's lightest: T)
 // (o.helmC: a worn helm's own colour, its first part in it; an armour's colour (a '#rrggbb', the item's) its mail's too)
-function dollParts(o){const T={dark:1},P=[],out=o.outer||'leather',arm=o.armor||'none',metal=out==='iron'||out==='steel'||out[0]==='#'?out:'steel';
+// (a tabard to his hips, his thighs his own; a jerkin with no sleeves of its own, his shirt's showing (the owner, 2026-11-07:
+// "distinguishable for each body part"): sides read by the chest, his arms and legs apart from it)
+// (each man's hose its own cloth by his hair and skin: six men of a kind told apart by their legs under their helms, now their cloth is no longer mottled)
+const DOLL_LEGS=['leather','dark','cloth'];
+const DOLL_REACH={k:.7,fist:.6};
+const DOLL_TABARD={rows:[4,8],coat:[4,10]};// (coat: a knight's surcoat (o.surcoat, its cloth), to his knees, a cross on it)
+function dollParts(o){const T={dark:1},P=[],out=o.outer||'leather',arm=o.armor||'none',metal=out==='iron'||out==='steel'||out[0]==='#'?out:o.outlaw?'iron':'steel';
   if(o.robe)P.push(['shoes','leather'],['robe',out],['sash','team',T]);
-  else{P.push(['hose',o.legs||'leather'],['boots','leather']);
+  else{P.push(['hose',o.legs||DOLL_LEGS[[...String(o.hair)+o.skin].reduce((a,c)=>a+c.charCodeAt(0),0)%DOLL_LEGS.length]],['boots','leather']);
     // (no tabard (o.tabard false: your hero, his cape your colour): his armour itself shows)
-    const tb=o.tabard===false?[]:[['tabard','team',T]];
+    const tb=o.tabard===false?[]:o.outlaw?[['sash','team',T]]:o.surcoat?[['tabard',o.surcoat,{rows:DOLL_TABARD.coat}],['cross','team',T]]:[['tabard','team',{...T,rows:DOLL_TABARD.rows}]];
     if(arm==='mail'||arm==='plate')P.push(['mail',metal],...tb,['belt','leather']);
     // (o.sleeves: a jerkin over the body only, his shirt's sleeves and collar showing (your hero: the owner, 2026-11-07, "too blocky"))
-    else if(arm==='leather')P.push(['shirt',o.inner||'linen'],['tunic',out,o.sleeves?{cover:'cbpt'}:undefined],...tb,['belt','leather']);
-    else P.push(['shirt','team',T],['vest',out],['belt','leather'])}
+    else if(arm==='leather')P.push(['shirt',o.inner||'linen'],['tunic',out,o.sleeves!==false?{cover:'cbpt'}:undefined],...tb,['belt','leather']);
+    // (unarmoured: his sleeves his shirt's, the side's colour on his body only, so his arms read apart from it (the owner, 2026-11-07:
+    //  "distinguishable for each body part"))
+    else P.push(['shirt',o.inner||'linen'],['vest',out],...(tb.length?tb:[['tabard','team',T]]),['belt','leather'])}
   if(o.cape)P.push(['cloak',o.cape===true?'team':o.cape]);
   if(o.dollEye)P.push(['face','skin'],['eye','black']);
   const h0=o.helm==='hood'?['hood',o.hood||'olive']:DOLL_HELM[o.helm],h=h0&&o.helmC?Array.isArray(h0[0])?[[h0[0][0],o.helmC],...h0.slice(1)]:[h0[0],o.helmC]:h0;if(h)Array.isArray(h[0])?P.push(...h):P.push(h);
@@ -1990,14 +2072,17 @@ const shootArms=(o,style,atk)=>{if(atk<0||o.held)return leanArms(o,atk);const k=
    body's (g.body: not outlined, figures.js FigureRig.frame); returns the template's anchors */
 function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
   const shooter=!o.held&&['bow','longbow','xbow','sling','staff'].includes(o.weapon),lunge=atk>=0&&!o.mount&&!shooter&&DOLL_LUNGE[style]?DOLL_LUNGE[style][atk]||[]:[];
-  const rig=atk>=0?(FIST_STYLES.includes(style)?FIST_RIG[style][atk]:o.held&&BLOW_RIG[style]?blowRig(o,style,atk):null):style==='flinch'?blowRig(o,'flinch',0):o.guardUp&&!shieldLook(o)&&!o.weapon?FIST_RIG.guard[0]:null;
+  // (a blow with the weapon on him (the map's and the cards' whole figures, not only the battle's bare ones): his arm the rig's as well,
+  //  the weapon in the fist it ends in (figures.js HandWeapon): else no arm struck and the weapon hung in the air beside him)
+  const held=o.held||(atk>=0&&WPN[o.weapon]?o.weapon:null);
+  const rig=atk>=0?(FIST_STYLES.includes(style)?FIST_RIG[style][atk]:held&&BLOW_RIG[style]?blowRig({...o,held},style,atk):null):style==='flinch'?blowRig(o,'flinch',0):o.guardUp&&!shieldLook(o)&&!o.weapon?FIST_RIG.guard[0]:null;
   const M=DOLL_MOVES,run=walk>=4&&walk<8,climb=walk>=8,moves=[...(run||climb?M.lean:[]),...(run?M.run[walk&3]:[]),...(walk===-2?M.breath:[]),...(atk>=0&&M.blow[atk]?M.blow[atk]:[]),...shootArms(o,style,atk),...lunge,...(M[style]&&M[style].length&&!Array.isArray(M[style][0][0])?M[style]:[])];
   // (braced or gripping: both arms forward to the weapon, the near hand on it before him, the far one behind it along a pole levelled
   //  (brace) or just under the near one on a great weapon raised (grip): DOLL_GRIP)
   // (a great weapon carried on the move, walking or running (the owner, 2026-11-07: "two-handed weapons on the march"): both hands on it as
   //  in the grip, his legs his own: DOLL_CARRY2)
   const two=DOLL_GRIP[style]||(DOLL_CARRY2.on&&walk>=0&&style==null&&atk<0&&!o.mount&&DOLL_CARRY2.kinds.includes(o.held)?DOLL_GRIP.grip:null);
-  const s=dollSpec(o,walk>=0?'walk':'idle',walk>=0?walk&3:0,moves);if(rig)s.drop=[['ulh','R']];if(two)s.drop=[['ulh','']];if(style==='kneel')s.drop=[...(s.drop||[]),...DOLL_KNEEL_DROP];
+  const s=dollSpec(o,walk>=0?'walk':'idle',walk>=0?walk&3:0,moves);if(o.mount)s.seat=true;if(rig)s.drop=[['ulh','R']];if(two)s.drop=[['ulh','']];if(style==='kneel')s.drop=[...(s.drop||[]),...DOLL_KNEEL_DROP];
   const cv=PX.doll(s),D=PX.DOLL.D,sh=15-cv.rows,d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data,dx=DOLL_FIGS.dx;
   // (his body, mirrored: the doll's right (the picture's left) his near side, before him; cut: only the rows down to it, the
 // template's rows (a kneeler's: the doll a row lower, as its feet))
@@ -2006,7 +2091,9 @@ function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
     pset(g,x,y,'#'+[d[i],d[i+1],d[i+2]].map(v=>v.toString(16).padStart(2,'0')).join(''));if(x>=0&&y>=0&&x<g.w&&y<g.h)g.body.add(y*g.w+x)}}
   const [hx,hy]=cv.anchors.hand,[fx,fy]=cv.anchors.off;let hand=[ox+tx(hx)+1,oy+ty(hy)-DOLL_FIGS.dy],hand2=null;// (the weapon hand where the template held it, five rows over the picture's bottom)
   // (a blow: his weapon arm from the shoulder along the rig's joints in his sleeve, his fist the hand)
-  if(rig){const f=rig.fore,T=cv.tones,sl=T.u||T.l||PPAL.leather[1],sk=T.h||PPAL.skin[1],pts=[[8,7]].concat(f.map(([x,y])=>[x,y-(y>=9?sh:0)])).map(([x,y])=>[x,y+DOLL_FIGS.dy]);
+  // (reach: the joints drawn that share of the way out from his shoulder, so a blow's arm is as long as his arm at rest, which ends
+  //  at his hips (the owner, 2026-11-07: "the hand is too long"))
+  if(rig){const rk=FIST_STYLES.includes(style)?DOLL_REACH.fist:DOLL_REACH.k,f=rig.fore,T=cv.tones,sl=T.u||T.l||PPAL.leather[1],sk=T.h||PPAL.skin[1],pts=[[8,7]].concat(f.map(([x,y])=>[x,y-(y>=9?sh:0)])).map(([x,y])=>[8+Math.round((x-8)*rk),7+Math.round((y-7)*rk)+DOLL_FIGS.dy]);
     for(let k=1;k<pts.length;k++){const [ax,ay]=pts[k-1],[bx,by]=pts[k],n=Math.max(Math.abs(bx-ax),Math.abs(by-ay))||1;
       // (2 px thick (the owner, 2026-11-07: "a 2-px forearm"): a second pixel under it where it runs across, behind it where it runs
       // down; the hand at its end alone)
@@ -2021,7 +2108,7 @@ function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
 // (the two-handed holds, in the template's place: each arm's joints from the shoulder, the last its hand: brace, a pole levelled before
 // him, the far hand four pixels back along it; grip, a great weapon up before him, the far hand under the near)
 const DOLL_CARRY2={on:true,kinds:['great','bigaxe','hammer']};
-const DOLL_GRIP={brace:{fore:[[8,5],[10,7],[11,9]],rear:[[4,5],[5,7],[7,9]]},grip:{fore:[[8,5],[9,7],[10,8]],rear:[[4,5],[6,7],[9,9]]}};
+const DOLL_GRIP={brace:{fore:[[8,5],[10,7],[12,9]],rear:[[4,5],[5,7],[7,9]]},grip:{fore:[[8,5],[9,7],[10,8]],rear:[[4,5],[6,7],[9,9]]}};
 // a figure as a doll: its body, then its gear from the body's anchors (figures.js FigureRig.dress)
 function drawDollFigure(g,o,ox,oy,walk,style,atk,cut){const A=drawDollBody(g,o,ox,oy,walk,style,atk,cut);FigureRig.dress(g,o,A,style,atk);return A}
 // the beasts and monsters in the same style (engine/beasts.js: no outline, their own edge darker) and at their real size beside the
@@ -2144,23 +2231,29 @@ function holdOf(u,k){
 // sprite to look separated from the horse"), held at rest or on the march (HOLD: no blow nor foe there); its picture and corner
 // from his sprite's, and whether it goes behind his body; null for none
 /* sheathed off the field (the owner, 2026-11-07: "make weapon sheathing like pointing downward near the waist; make it realistic; only
-   when non battle"): on the map a sword or a dagger hangs from his belt at his hip, its hilt up and forward under his hand, its
-   scabbard (leather two pixels wide, drawn over him, lit along its top, its chape steel) slung down and back across his thigh, its end past his back leg, as one is worn; a
-   one-handed axe hangs through his belt so, its head up at his hip. Spears, great weapons and shooters' arms stay in his hand; on
-   foot only (a rider's in his hand as before). In battle every weapon is drawn (heldNow). SHEATH: kinds, deg (the scabbard's slant:
-   90 down, 180 back), at (its hilt from his hand: dx, dy), long (px more than the blade, its hilt and chape) */
-const SHEATH={on:true,kinds:['sword','dagger','axe'],deg:108,at:[-1,-1],long:0},SHEATHS={};
+   when non battle", then "the hero sheathing weapon looks very confusing"): on the map a sword or a dagger hangs from his belt behind
+   him, its scabbard slung down and back so its end stands out past his hips and his back leg against the ground (the part over him
+   hidden by his body, nothing laid over his tunic), plain leather, its chape steel; a one-handed axe so, its haft. Spears, great
+   weapons and shooters' arms stay in his hand; on foot only (a rider's in his hand as before). In battle every weapon is drawn
+   (heldNow). SHEATH: kinds, deg (the slant: 90 down, 180 back), at (its top from his hand: dx, dy), long (px more than the blade) */
+// (show false (the owner, 2026-11-07, chose it: a sheath a few pixels big tangled with the body at the map's size): worn out of sight,
+// no weapon drawn on him off the field; show true: its scabbard behind his hip as below)
+const SHEATH={on:true,show:false,kinds:['sword','dagger','axe'],deg:150,at:[-5,-3],long:2},SHEATHS={};
 function sheathSprite(k,team,skin){const key=k+team+skin;if(SHEATHS[key])return SHEATHS[key];
   const n=WPN[k][0]+SHEATH.long,R=n+3,g=pgrid(2*R+1,2*R+1),a=SHEATH.deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a),
-    set=(x,y,col)=>pset(g,R+Math.round(x),R+Math.round(y),col),Lt=PPAL.leather,W=PPAL.wood,M=PPAL.steel,G=PPAL.gold;
-  if(k==='axe'){for(let t=1;t<n;t++)set(c*t,s*t,W[t&1?3:2]);set(0,0,W[1]);set(0,-1,M[1]);set(1,-1,M[0]);set(1,0,M[2])}// (its haft down and back, its head at his hip)
-  else{for(let t=1;t<n;t++){const last=t===n-1;set(c*t,s*t,last?M[1]:Lt[t===1?0:1]);set(c*t-s,s*t+c,last?M[2]:Lt[3])}// (the scabbard two pixels wide over him, lit along its top, shaded under it; its chape steel)
-    set(1,-1,G[0]);set(-1,1,G[2]);set(-c,-s,Lt[1]);set(-2*c,-2*s,G[1])}// (the guard across, the grip and pommel up and forward)
+    set=(x,y,col)=>pset(g,R+Math.round(x),R+Math.round(y),col),Lt=PPAL.leather,W=PPAL.wood,M=PPAL.steel;
+  // (one clean line, a staircase with its corners filled so it never breaks into dots; its last pixel the chape, or an axe's haft end)
+  let q=null;for(let t=0;t<n;t++){const x=Math.round(c*t),y=Math.round(s*t),last=t===n-1,col=k==='axe'?W[t&1?2:1]:last?M[1]:Lt[1];
+    if(q&&q[0]!==x&&q[1]!==y)set(q[0],y,k==='axe'?W[2]:Lt[2]);set(x,y,col);q=[x,y]}
   const cv=pcanvas(g);cv.R=R;return SHEATHS[key]=cv}
+// (a spear or a pike sloped over his shoulder on the march (the owner, 2026-11-07: "make spearmen carry spears over the shoulder on the
+//  march"): from his hand its shaft back and up behind his shoulder, its head over and behind his head; on foot, walking, on the map only;
+//  a javelin, short, in hand as before)
+const SHOULDER={on:true,deg:-126,up:4};// (up: px slid up along its shaft, its butt ending at his hand (a doll's pole's is 5 px: drawBlade), never below it)
 function mapHeld(L,sp,walking,step){
   const k=heldWeapon(L);if(!k||!sp.hand)return null;
-  if(SHEATH.on&&SHEATH.kinds.includes(k)&&!L.mount&&dollable(L)){const w=sheathSprite(k,L.team,pal(L.skin)[1]);return{w,x:sp.hand[0]+SHEATH.at[0]-w.R,y:sp.hand[1]+SHEATH.at[1]-w.R,back:false,sheathed:true}}const kind=holdKind(k),deg=groundClamp(holdTab(kind,L)[walking?'march':'rest'],WPN[k][0],sp,L);
-  const i=((Math.round(deg/360*WEAPON_STEPS)%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,sw=walking?swayOf(step,false,L,k):null,w=weaponSprite(k,L.team,pal(L.skin)[1],i,undefined,dollable(L)),a=(i/WEAPON_STEPS*360+180)%360-180,x=sp.hand[0]-w.R+(sw?sw[0]:0),y=sp.hand[1]-w.R+(sw?sw[1]:0);
+  if(SHEATH.on&&SHEATH.kinds.includes(k)&&!L.mount&&dollable(L)){if(!SHEATH.show)return null;const w=sheathSprite(k,L.team,pal(L.skin)[1]);return{w,x:sp.hand[0]+SHEATH.at[0]-w.R,y:sp.hand[1]+SHEATH.at[1]-w.R,back:true,sheathed:true}}const kind=holdKind(k),sh=SHOULDER.on&&walking&&kind==='pole'&&k!=='javelin'&&!L.mount&&dollable(L),deg=sh?SHOULDER.deg:groundClamp(holdTab(kind,L)[walking?'march':'rest'],WPN[k][0],sp,L);
+  const i=((Math.round(deg/360*WEAPON_STEPS)%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS,sw=walking?swayOf(step,false,L,k):null,w=weaponSprite(k,L.team,pal(L.skin)[1],i,undefined,dollable(L)),a=(i/WEAPON_STEPS*360+180)%360-180,up=sh?SHOULDER.up:0,ua=deg*Math.PI/180,x=sp.hand[0]-w.R+(sw?sw[0]:0)+Math.round(Math.cos(ua)*up),y=sp.hand[1]-w.R+(sw?sw[1]:0)+Math.round(Math.sin(ua)*up);
   return{w,x,y,back:heldBack(k,a,L)&&peeks(sp,w,x,y)}}
 // draw it, in the fighter's own (already turned) frame: (bx, by) is where his sprite's corner went
 // (the weapon turns toward how he should hold it, WEAPON_TURN degrees a second, never snapping: a man whose state flickers from
@@ -2224,9 +2317,9 @@ function drawHeld(u,o,sp,bx,by,flash){const h=heldNow(u,o,sp);if(h)ctx.drawImage
  const poses={idle:[0],walk:[2,3,4,5],run:[15,16,17,18],swing:[6,7,8],thrust:[9,10,11],overhead:[12,13,14]};
  const basePoses={idle:[0],walk:[0,1,2,3],strike:[0]};
  const animations=renderer=>renderer==='base'?basePoses:poses;
- const defaults={race:'human',style:'crop',beard:false,beardStyle:'beardF',skin:'skin',hair:'brown',team:'blue',eyes:true,seed:23,weapon:'sword',shield:'blue',uniform:copy(D.UNIFORMS.swordsman.parts),ramps:{}};
+ const defaults={race:'human',style:'crop',beard:false,beardStyle:'beardF',skin:'skin',hair:'brown',team:'blue',eyes:false,seed:23,weapon:'sword',shield:'blue',uniform:copy(D.UNIFORMS.swordsman.parts),ramps:{}};
  function material(v,f='linen'){return materials.includes(v)||hex(v)?v:f;}
- function normalize(input={}){const v=input?.config||input?.spec||input||{},c={...defaults,uniform:[],ramps:{}};c.race=pick(Object.keys(D.RACES),v.race,'human');c.style=pick(hair,v.style,'crop');c.beard=typeof v.beard==='boolean'?v.beard:c.race==='dwarf';c.beardStyle=pick(beards,v.beardStyle,'beardF');c.skin=material(v.skin,D.RACES[c.race].skin);c.hair=material(v.hair,'brown');c.team=material(v.team,'blue');c.eyes=v.eyes!==false;c.seed=Number.isFinite(v.seed)?Math.trunc(v.seed)>>>0:23;c.weapon=pick(weapons,v.weapon,null);c.shield=v.shield?material(v.shield,'blue'):null;
+ function normalize(input={}){const v=input?.config||input?.spec||input||{},c={...defaults,uniform:[],ramps:{}};c.race=pick(Object.keys(D.RACES),v.race,'human');c.style=pick(hair,v.style,'crop');c.beard=typeof v.beard==='boolean'?v.beard:c.race==='dwarf';c.beardStyle=pick(beards,v.beardStyle,'beardF');c.skin=material(v.skin,D.RACES[c.race].skin);c.hair=material(v.hair,'brown');c.team=material(v.team,'blue');c.eyes=v.eyes===true;c.seed=Number.isFinite(v.seed)?Math.trunc(v.seed)>>>0:23;c.weapon=pick(weapons,v.weapon,null);c.shield=v.shield?material(v.shield,'blue'):null;
   const source=Array.isArray(v.uniform)?v.uniform:typeof v.uniform==='string'?D.UNIFORMS[v.uniform]?.parts:defaults.uniform;
   for(const row of source||[]){if(!Array.isArray(row)||!D.PARTS[row[0]]||!slots.includes(D.PARTS[row[0]].slot))continue;const entry=[row[0],material(row[1])],x=row[2];if(x&&typeof x==='object'){const patch={};if(typeof x.cover==='string'&&/^[sfncbulhptko]*$/.test(x.cover))patch.cover=x.cover;if(Number.isFinite(x.dark))patch.dark=Math.max(-3,Math.min(3,x.dark|0));if(Number.isFinite(x.mottle))patch.mottle=Math.max(0,Math.min(1,x.mottle));for(const k of ['rows','cols'])if(Array.isArray(x[k])&&x[k].length===2&&x[k].every(Number.isInteger))patch[k]=x[k].map(n=>Math.max(0,Math.min(20,n)));if(Object.keys(patch).length)entry.push(patch);}c.uniform=c.uniform.filter(q=>D.PARTS[q[0]].slot!==D.PARTS[entry[0]].slot);c.uniform.push(entry);}
   for(const [key,value]of Object.entries(v.ramps||{}))if((materials.includes(key)||hex(key))&&Array.isArray(value)&&value.length===4&&value.every(hex))c.ramps[key]=value.map(s=>s.toLowerCase());return c;
@@ -2263,6 +2356,59 @@ function drawHeld(u,o,sp,bx,by,flash){const h=heldNow(u,o,sp);if(h)ctx.drawImage
 })(globalThis);
 
 </script><script>
+/* Pixel-skinning rig and authored animation assets around the current PX skeleton. */
+(function(root){
+ 'use strict';
+ const E=SpriteStudio,D=PX.DOLL,clone=v=>JSON.parse(JSON.stringify(v)),clamp=(v,a,b,f=0)=>Number.isFinite(v)?Math.max(a,Math.min(b,v)):f;
+ const bones=[['pelvis',null],['chest','pelvis'],['head','chest'],['armR','chest'],['forearmR','armR'],['handR','forearmR'],['thighR','pelvis'],['shinR','thighR'],['footR','shinR'],['armL','chest'],['forearmL','armL'],['handL','forearmL'],['thighL','pelvis'],['shinL','thighL'],['footL','shinL']].map(([id,parent])=>({id,parent}));
+ const ids=new Set(bones.map(b=>b.id)),gray=['#c8c8c8','#9a9a9a','#6e6e6e','#464646'];
+ function owner(c){if('sf'.includes(c.r))return'head';if('ncb'.includes(c.r))return'chest';if(c.r==='p')return'pelvis';const side=c.side||'R';return({u:'arm',l:'forearm',h:'hand',t:'thigh',k:'shin',o:'foot'}[c.r]||'chest')+side;}
+ function model(input){const config=E.normalize(input),B=PX.dollBase(E.spec(config,'idle',0)),R=D.RACES[config.race]||D.RACES.human,rows=[],cells=[];
+  D.SKEL.forEach((row,i)=>{if(R.drop?.includes(i))return;rows.push([row,i]);if(R.dup?.includes(i))rows.push([row,i]);});const oy=D.D.H-1-rows.length;
+  rows.forEach(([[regions,shade],row],y)=>{const wide=R.wide&&row>=3&&row<=11;for(let x=0;x<regions.length;x++){if(regions[x]==='.')continue;const c={x:D.D.OX+(wide&&x>4?x+1:x),y:oy+y,row,r:regions[x],side:x<4?'R':x>4?'L':'',tone:+shade[x]};cells.push(c);if(wide&&x===4)cells.push({...c,x:D.D.OX+5,side:'L'});}});
+  const groups=Object.fromEntries(bones.map(b=>[b.id,cells.filter(c=>owner(c)===b.id)])),mean=a=>a.reduce((n,x)=>n+x,0)/Math.max(1,a.length),rest={};
+  for(const b of bones){let group=groups[b.id];if(!group.length)group=groups[b.parent]||cells;const top=Math.min(...group.map(c=>c.y)),upper=group.filter(c=>c.y===top);rest[b.id]=[mean(upper.map(c=>c.x)),top];}
+  rest.pelvis=[mean(groups.pelvis.map(c=>c.x)),mean(groups.pelvis.map(c=>c.y))];rest.chest=[rest.pelvis[0],Math.min(...groups.chest.map(c=>c.y))];rest.head=[B.anchors.head[0]+1,B.anchors.head[1]+2];
+  for(const side of ['R','L']){const h=side==='R'?B.anchors.hand:B.anchors.off;rest['hand'+side]=[...h];}
+  const exact=new Map(cells.map(c=>[c.x+','+c.y,owner(c)])),skin=[];
+  for(let i=0;i<B.K.length;i++){if(!B.K[i])continue;const x=i%D.D.W,y=Math.floor(i/D.D.W),bone=exact.get(x+','+y)||owner(cells.reduce((best,c)=>Math.hypot(c.x-x,c.y-y)<Math.hypot(best.x-x,best.y-y)?c:best,cells[0]));skin.push({x,y,bone,channel:B.chans[B.K[i]-1],tone:B.T[i]});}
+  return{config,B,rest,cells,groups,skin};
+ }
+ function pose(value={}){const out={};for(const b of bones){const p=value?.[b.id];if(!p)continue;out[b.id]={angle:clamp(p.angle,-150,150),x:Math.round(clamp(p.x,b.id==='pelvis'?-8:-4,b.id==='pelvis'?8:4)),y:Math.round(clamp(p.y,b.id==='pelvis'?-8:-4,b.id==='pelvis'?8:4))};}return out;}
+ const rotate=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return[p[0]*c-p[1]*s,p[0]*s+p[1]*c];};
+ function solve(m,input={}){const p=pose(input),out={};for(const b of bones){const q=p[b.id]||{},r=m.rest[b.id],parent=b.parent?out[b.parent]:null,origin=b.parent?m.rest[b.parent]:r,offset=rotate([r[0]-origin[0]+(q.x||0),r[1]-origin[1]+(q.y||0)],parent?.angle||0);out[b.id]={x:(parent?.x??r[0])+offset[0],y:(parent?.y??r[1])+offset[1],angle:(parent?.angle||0)+(q.angle||0)*Math.PI/180};}return out;}
+ function transform(m,world,bone,x,y){const r=m.rest[bone],w=world[bone],p=rotate([x-r[0],y-r[1]],w.angle);return[w.x+p[0],w.y+p[1]];}
+ function pixelLine(a,b,put){let x=Math.round(a[0]),y=Math.round(a[1]);const xx=Math.round(b[0]),yy=Math.round(b[1]),dx=Math.abs(xx-x),dy=-Math.abs(yy-y),sx=x<xx?1:-1,sy=y<yy?1:-1;let err=dx+dy;for(let n=0;n<512;n++){if(x===xx&&y===yy)break;const e=2*err;if(e>=dy){err+=dy;x+=sx;}if(e<=dx){err+=dx;y+=sy;}if(x!==xx||y!==yy)put(x,y);}}
+ function part(value={},i=0){return{id:String(value.id||'part-'+i).slice(0,64),name:String(value.name||'Custom part').slice(0,64),bone:ids.has(value.bone)?value.bone:'head',material:E.materials.includes(value.material)?value.material:'team',behind:value.behind===true,visible:value.visible!==false,x:Math.round(clamp(value.x,-12,12)),y:Math.round(clamp(value.y,-12,12)),pixels:Array.from({length:256},(_,n)=>Number.isInteger(value.pixels?.[n])&&value.pixels[n]>=0&&value.pixels[n]<=3?value.pixels[n]:-1)};}
+ function frame(value={}){return{duration:Math.round(clamp(value.duration,50,2000,150)),pose:pose(value.pose)};}
+ function clip(value={},i=0){return{id:String(value.id||'clip-'+i).slice(0,64),name:String(value.name||'Animation').slice(0,64),loop:value.loop!==false,interpolate:value.interpolate===true,frames:(Array.isArray(value.frames)&&value.frames.length?value.frames:[{}]).slice(0,64).map(frame)};}
+ function normalize(value={}){if(value?.type&&value.type!=='ashmark-rig-project')throw Error('Choose a rig project.');if(value?.version&&value.version!==1)throw Error('Unsupported rig project version.');const config=E.normalize(value.config||E.presets[0].config);return{type:'ashmark-rig-project',version:1,config,hidden:[...new Set((Array.isArray(value.hidden)?value.hidden:[]).filter(b=>ids.has(b)))],parts:(Array.isArray(value.parts)?value.parts:[]).slice(0,32).map(part),clips:(Array.isArray(value.clips)&&value.clips.length?value.clips:[{id:'idle',name:'Idle',frames:[{}]}]).slice(0,16).map(clip)};}
+ function fromEngine(input){const m=model(input),clips=Object.entries(D.POSES).map(([id,frames])=>({id,name:'Engine '+id,loop:id!=='strike',frames:frames.map(moves=>{const deltas={};for(const b of bones){const cells=m.groups[b.id],all=cells.map(c=>moves.reduce((d,[r,side,x,y,from])=>r.includes(c.r)&&(!side||c.side===side)&&c.row>=from?[d[0]+x,d[1]+y]:d,[0,0]));deltas[b.id]=all.length?[all.reduce((n,d)=>n+d[0],0)/all.length,all.reduce((n,d)=>n+d[1],0)/all.length]:[0,0];}return{duration:150,pose:Object.fromEntries(bones.map(b=>{const d=deltas[b.id],p=b.parent?deltas[b.parent]:[0,0];return[b.id,{angle:0,x:Math.round(d[0]-p[0]),y:Math.round(d[1]-p[1])}];}))};})}));return normalize({config:input,clips});}
+ function mix(a,b,t){const out={};for(const bone of bones){const x=a?.[bone.id]||{},y=b?.[bone.id]||{};out[bone.id]={angle:(x.angle||0)+((y.angle||0)-(x.angle||0))*t,x:(x.x||0)+((y.x||0)-(x.x||0))*t,y:(x.y||0)+((y.y||0)-(x.y||0))*t};}return out;}
+ function sample(input,ms=0){const c=clip(input),total=c.frames.reduce((n,f)=>n+f.duration,0);let t=c.loop?((ms%total)+total)%total:Math.max(0,Math.min(total-.001,ms)),i=0;while(i<c.frames.length-1&&t>=c.frames[i].duration)t-=c.frames[i++].duration;const f=c.frames[i],next=c.frames[i+1]||(c.loop?c.frames[0]:f);return{index:i,pose:c.interpolate?pose(mix(f.pose,next.pose,t/f.duration)):pose(f.pose),duration:total};}
+ function mirrored(input){const p=pose(input),out={};for(const [id,v]of Object.entries(p)){const other=id.endsWith('R')?id.slice(0,-1)+'L':id.endsWith('L')?id.slice(0,-1)+'R':id;out[other]={angle:-v.angle,x:-v.x,y:v.y};}return out;}
+ function render(input,inputPose={},options={}){const asset=normalize(input),m=model(asset.config),world=solve(m,inputPose),hidden=new Set(asset.hidden),layers=new Map(),byPosition=new Map(m.skin.map(p=>[p.x+','+p.y,p])),paint=(material,tone)=>options.grayscale?gray[tone]:E.ramp(m.config,material)[tone],put=(layer,x,y,color)=>{if(!layers.has(layer))layers.set(layer,new Map());layers.get(layer).set(Math.round(x)+','+Math.round(y),color);};
+  for(const p of m.skin){if(hidden.has(p.bone))continue;const point=transform(m,world,p.bone,p.x,p.y),color=paint(p.channel,p.tone);put(p.bone,...point,color);for(const [dx,dy]of [[1,0],[0,1]]){const other=byPosition.get((p.x+dx)+','+(p.y+dy));if(other&&!hidden.has(other.bone)&&(other.bone===p.bone||bones.find(b=>b.id===other.bone).parent===p.bone||bones.find(b=>b.id===p.bone).parent===other.bone)){const target=transform(m,world,other.bone,other.x,other.y);pixelLine(point,target,(x,y)=>put(p.bone,x,y,color));}}}
+  for(const p of asset.parts){if(!p.visible)continue;for(let n=0;n<256;n++){if(p.pixels[n]<0)continue;const q=rotate([n%16-8+p.x,Math.floor(n/16)-8+p.y],world[p.bone].angle);put((p.behind?'back:':'part:')+p.id,world[p.bone].x+q[0],world[p.bone].y+q[1],paint(p.material,p.pixels[n]));}}
+  const gear=[];for(const g of m.B.gear){const bone=g.anchor==='off'?'handL':'handR',image=PX.dollGear(g.kind,g.mat,k=>options.grayscale?gray:E.ramp(m.config,k));if(!image)continue;const pixels=image.getContext('2d').getImageData(0,0,image.width,image.height).data,id=(g.behind?'back:':'gear:')+g.slot;for(let n=0;n<image.width*image.height;n++){if(!pixels[n*4+3])continue;const d=rotate([n%image.width-image.ax,Math.floor(n/image.width)-image.ay],world[bone].angle),color='#'+[0,1,2].map(k=>pixels[n*4+k].toString(16).padStart(2,'0')).join('');put(id,world[bone].x+d[0],world[bone].y+d[1],color);}gear.push({slot:g.slot,bone,at:[world[bone].x,world[bone].y],angle:world[bone].angle});}
+  if(m.config.weapon&&!m.B.gear.some(g=>g.slot==='weapon')){
+   const k=m.config.weapon,piece=WPN[k]?new HandWeapon(k):new ShooterGear(k),bone='handR',points=[],look={race:m.config.race,team:E.ramp(m.config,'team'),skin:E.ramp(m.config,'skin')};piece.draw((x,y,color)=>points.push([x,y,color]),look,{style:null,atk:-1,sh:0,drop:12});
+   for(const [x,y,color]of points){const p=rotate([x,y],world[bone].angle);let col=color;if(options.grayscale){const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16)),v=Math.round(rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722).toString(16).padStart(2,'0');col='#'+v+v+v;}put('gear:weapon',world[bone].x+p[0],world[bone].y+p[1],col);}gear.push({slot:'weapon',bone,at:[world[bone].x,world[bone].y],angle:world[bone].angle});
+  }
+  const rootPoint=m.rest.pelvis,points=[...layers.values()].flatMap(l=>[...l.keys()].map(k=>k.split(',').map(Number))).concat(Object.values(world).map(w=>[w.x,w.y]));let radius=16;for(const p of points)radius=Math.max(radius,Math.abs(p[0]-rootPoint[0])+3,Math.abs(p[1]-rootPoint[1])+3);const size=Math.max(64,2**Math.ceil(Math.log2(radius*2))),origin=[size/2-rootPoint[0],size/2-rootPoint[1]],canvas=document.createElement('canvas');canvas.width=canvas.height=size;const ctx=canvas.getContext('2d'),outLayers={};
+  const front=['footL','shinL','thighL','armL','forearmL','handL','pelvis','chest','head','thighR','shinR','footR','armR','forearmR','handR'];const order=[...[...layers.keys()].filter(k=>k.startsWith('back:')),...front,...[...layers.keys()].filter(k=>k.startsWith('part:')||k.startsWith('gear:'))];
+  for(const id of order){if(!layers.has(id))continue;const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');for(const [key,color]of layers.get(id)){const [x,y]=key.split(',').map(Number);g.fillStyle=color;g.fillRect(Math.round(x+origin[0]),Math.round(y+origin[1]),1,1);}outLayers[id]=c;ctx.drawImage(c,0,0);}
+  for(const g of gear)g.frameAt=[g.at[0]+origin[0],g.at[1]+origin[1]];
+  const joints=Object.fromEntries(bones.map(b=>[b.id,{x:world[b.id].x+origin[0],y:world[b.id].y+origin[1],angle:world[b.id].angle,parent:b.parent}])),anchors={hand:[joints.handR.x,joints.handR.y],off:[joints.handL.x,joints.handL.y],head:[joints.head.x,joints.head.y],feet:[(joints.footR.x+joints.footL.x)/2,Math.max(joints.footR.y,joints.footL.y)+1],root:[size/2,size/2]};
+  if(options.left){const mirror=c=>{const out=document.createElement('canvas');out.width=out.height=size;const g=out.getContext('2d');g.save();g.translate(size,0);g.scale(-1,1);g.drawImage(c,0,0);g.restore();return out;};const image=mirror(canvas);for(const [id,c]of Object.entries(outLayers))outLayers[id]=mirror(c);for(const joint of Object.values(joints)){joint.x=size-1-joint.x;joint.angle=-joint.angle;}for(const p of Object.values(anchors))p[0]=size-1-p[0];for(const g of gear){g.frameAt[0]=size-1-g.frameAt[0];g.angle=-g.angle;}return{image,layers:outLayers,joints,anchors,origin,model:m,gear,left:true};}
+  return{image:canvas,layers:outLayers,joints,anchors,origin,model:m,gear,left:false};
+ }
+ function sheet(input,clipIndex=0,options={}){const asset=normalize(input),c=asset.clips[clipIndex];if(!c)throw Error('Select an animation clip.');const frames=c.frames.map(f=>render(asset,f.pose,options)),size=Math.max(...frames.map(f=>f.image.width)),columns=Math.min(8,frames.length),canvas=document.createElement('canvas');canvas.width=columns*size;canvas.height=Math.ceil(frames.length/columns)*size;const ctx=canvas.getContext('2d'),manifest={type:'ashmark-rig-sheet',version:1,clip:c.name,loop:c.loop,interpolate:c.interpolate,frameSize:size,project:asset,left:options.left===true,grayscale:options.grayscale===true,frames:[]};frames.forEach((f,i)=>{const dx=(size-f.image.width)/2,dy=(size-f.image.height)/2,x=i%columns*size,y=Math.floor(i/columns)*size;ctx.drawImage(f.image,x+dx,y+dy);manifest.frames.push({x,y,width:size,height:size,duration:c.frames[i].duration,pose:pose(c.frames[i].pose),gear:f.gear.map(g=>({slot:g.slot,bone:g.bone,at:[g.frameAt[0]+dx,g.frameAt[1]+dy],angle:g.angle})),anchors:Object.fromEntries(Object.entries(f.anchors).map(([k,p])=>[k,[p[0]+dx,p[1]+dy]])),joints:Object.fromEntries(Object.entries(f.joints).map(([k,j])=>[k,{...j,x:j.x+dx,y:j.y+dy}]))});});return{image:canvas,manifest};}
+ function read(value){if(value?.type!=='ashmark-rig-project'||value.version!==1||!value.config||!Array.isArray(value.clips)||!value.clips.length||value.clips.length>16||!Array.isArray(value.parts)||value.parts.length>32)throw Error('Choose a Sprite Rig project (version 1).');if(value.clips.some(c=>!Array.isArray(c.frames)||!c.frames.length||c.frames.length>64))throw Error('Each clip needs 1 to 64 keyframes.');const out=normalize(value);for(const key of ['clips','parts'])if(new Set(out[key].map(v=>v.id)).size!==out[key].length)throw Error('Duplicate '+key+' IDs in project.');return out;}
+ root.SpriteRig=Object.freeze({version:1,bones,model,pose,solve,transform,part,frame,clip,normalize,fromEngine,sample,mirrored,render,sheet,read});
+})(globalThis);
+
+</script><script>
 /* Character controls, playback and portable recipes. */
 (function(){
  'use strict';
@@ -2277,7 +2423,7 @@ function drawHeld(u,o,sp,bx,by,flash){const h=heldNow(u,o,sp);if(h)ctx.drawImage
  function download(name,blob){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
  function json(name,data){download(name,new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));}
  function png(name,canvas){canvas.toBlob(blob=>{if(blob)download(name,blob);else status('PNG export failed.','export-status');});}
- function snapshot(){return{type:'ashmark-sprite-collection',version:1,current:E.recipe(s.config),locks:[...s.locks],variations:s.variations,favorites:s.favorites,view:{renderer:s.renderer,pose:s.pose,left:s.left,gray:s.gray,zoom:s.zoom,fps:s.fps}};}
+ function snapshot(){return{type:'ashmark-sprite-collection',version:1,current:E.recipe(s.config),locks:[...s.locks],variations:s.variations,favorites:s.favorites,rig:window.spriteRigEditor?.snapshot()||null,view:{renderer:s.renderer,pose:s.pose,left:s.left,gray:s.gray,zoom:s.zoom,fps:s.fps}};}
  function persist(){try{localStorage.setItem(KEY,JSON.stringify(snapshot()));}catch(e){status('Browser storage is unavailable or full. Export a collection to keep your work.');}}
  function apply(c){s.config=E.normalize(c);if(s.config.weapon==='club'&&s.renderer==='game'){s.renderer='base';status('Club uses the engine base preview.');}s.frame=0;sync();rebuild();persist();}
  function setPart(slot,part,material){s.config.uniform=s.config.uniform.filter(p=>PX.DOLL.PARTS[p[0]].slot!==slot);if(part)s.config.uniform.push([part,material]);s.config=E.normalize(s.config);rebuild();persist();}
@@ -2296,7 +2442,7 @@ function drawHeld(u,o,sp,bx,by,flash){const h=heldNow(u,o,sp);if(h)ctx.drawImage
  function sync(){const sequences=E.animations(s.renderer);if(!Object.hasOwn(sequences,s.pose))s.pose='idle';options($('pose'),Object.keys(sequences));for(const [key]of Object.entries(identity)){const input=$('field-'+key);if(![...input.options].some(o=>o.value===s.config[key])){const opt=document.createElement('option');opt.value=s.config[key];opt.textContent=s.config[key];input.append(opt);}input.value=s.config[key];}for(const slot of E.slots){const row=s.config.uniform.find(p=>PX.DOLL.PARTS[p[0]].slot===slot);$('part-'+slot).value=row?.[0]||'';const input=$('material-'+slot),value=row?.[1]||'linen';if(![...input.options].some(o=>o.value===value)){const opt=document.createElement('option');opt.value=opt.textContent=value;input.append(opt);}input.value=value;}$('field-weapon').value=s.config.weapon||'';$('field-shield').value=s.config.shield||'';$('beard').value=s.config.beard?s.config.beardStyle:'none';$('eyes').checked=s.config.eyes;$('seed').value=s.config.seed;$('renderer').value=s.renderer;$('pose').value=s.pose;$('facing').value=s.left?'left':'right';$('gray').checked=s.gray;$('zoom').value=s.zoom;$('fps').value=s.fps;for(const box of document.querySelectorAll('[data-lock]'))box.checked=s.locks.has(box.dataset.lock);const preset=E.presets.find(p=>JSON.stringify(p.config)===JSON.stringify(s.config));$('preset').value=preset?.id||'';tintControls();}
  function paint(){const r=frames[s.frame]||frames[0];if(!r)return;copy(r.image,$('preview'));if(mini)copy(r.image,mini);const canvas=$('preview'),g=canvas.getContext('2d');canvas.style.width=canvas.width*s.zoom+'px';canvas.style.height=canvas.height*s.zoom+'px';if(s.grid){g.strokeStyle='#9fba9544';g.lineWidth=.08;for(let i=0;i<=canvas.width;i++){g.beginPath();g.moveTo(i,0);g.lineTo(i,canvas.height);g.stroke();}for(let i=0;i<=canvas.height;i++){g.beginPath();g.moveTo(0,i);g.lineTo(canvas.width,i);g.stroke();}}if(s.anchors){for(const [i,[name,p]]of Object.entries(r.anchors).entries()){g.fillStyle=['#ffd862','#5de2d7','#ec8aaa','#b7e47e'][i%4];g.fillRect(p[0],p[1],1,1);} }$('dimensions').textContent=canvas.width+' × '+canvas.height+' export frame · '+(r.renderer==='game'?'Game figure':'17 × 19 engine source')+' · frame '+(s.frame+1)+' / '+frames.length+(r.notice?' · '+r.notice:'');for(const [i,button]of [...$('frames').children].entries())button.classList.toggle('active',i===s.frame);baseFrame=render(s.config,{renderer:'base',frame:s.frame});inspect();drawn=s.frame;}
  function inspect(){if(!baseFrame)return;const key=$('layer').value,layer=baseFrame.layers[key];if(layer)copy(layer,$('inspection'));$('layer-note').textContent=key.startsWith('channel:')?'Visible body pixels using “'+key.slice(8)+'”. This mask shares the body’s origin and frame.':key==='body'?'Assembled body and clothing, without hand-held gear. Hair under covered headwear remains in the recipe.':'Separate '+key+' at its attachment position in the base frame.';}
- function rebuild(){const preset=E.presets.find(p=>JSON.stringify(p.config)===JSON.stringify(s.config));$('preset').value=preset?.id||'';const sequences=E.animations(s.renderer);if(!Object.hasOwn(sequences,s.pose))s.pose='idle';options($('pose'),Object.keys(sequences));$('pose').value=s.pose;frames=Array.from({length:sequences[s.pose].length},(_,frame)=>render(s.config,{frame}));s.frame%=frames.length;$('frames').replaceChildren();frames.forEach((r,i)=>{const button=document.createElement('button'),canvas=document.createElement('canvas');copy(r.image,canvas);button.setAttribute('aria-label','Select frame '+(i+1));button.append(canvas);button.onclick=()=>{s.playing=false;$('play').textContent='Play';s.frame=i;paint();};$('frames').append(button);});baseFrame=render(s.config,{renderer:'base',frame:s.frame});const selected=$('layer').value;options($('layer'),Object.keys(baseFrame.layers));if(baseFrame.layers[selected])$('layer').value=selected;paint();inspect();tintControls();}
+ function rebuild(){const preset=E.presets.find(p=>JSON.stringify(p.config)===JSON.stringify(s.config));$('preset').value=preset?.id||'';const sequences=E.animations(s.renderer);if(!Object.hasOwn(sequences,s.pose))s.pose='idle';options($('pose'),Object.keys(sequences));$('pose').value=s.pose;frames=Array.from({length:sequences[s.pose].length},(_,frame)=>render(s.config,{frame}));s.frame%=frames.length;$('frames').replaceChildren();frames.forEach((r,i)=>{const button=document.createElement('button'),canvas=document.createElement('canvas');copy(r.image,canvas);button.setAttribute('aria-label','Select frame '+(i+1));button.append(canvas);button.onclick=()=>{s.playing=false;$('play').textContent='Play';s.frame=i;paint();};$('frames').append(button);});baseFrame=render(s.config,{renderer:'base',frame:s.frame});const selected=$('layer').value;options($('layer'),Object.keys(baseFrame.layers));if(baseFrame.layers[selected])$('layer').value=selected;paint();inspect();tintControls();document.dispatchEvent(new CustomEvent('sprite:change',{detail:{config:s.config}}));}
  $('layer').onchange=inspect;
  for(const id of ['renderer','pose','facing','gray','zoom','fps'])$(id).onchange=()=>{s.renderer=$('renderer').value;s.pose=$('pose').value;s.left=$('facing').value==='left';s.gray=$('gray').checked;s.zoom=Number($('zoom').value);s.fps=Math.max(1,Math.min(16,Number($('fps').value)||6));s.frame=0;rebuild();drawCollections();persist();};
  for(const id of ['anchors','grid'])$(id).onchange=()=>{s[id]=$(id).checked;paint();};
@@ -2309,7 +2455,7 @@ function drawHeld(u,o,sp,bx,by,flash){const h=heldNow(u,o,sp);if(h)ctx.drawImage
  function card(config,name,choose,remove){const card=document.createElement('article'),button=document.createElement('button'),canvas=document.createElement('canvas'),text=document.createElement('span');card.className='sprite-card';copy(render(config,{pose:'idle',frame:0}).image,canvas);text.textContent=name;button.append(canvas,text);button.onclick=choose;card.append(button);if(remove){const del=document.createElement('button');del.className='remove';del.textContent='Remove';del.onclick=remove;card.append(del);}return card;}
  function drawCollections(){$('variation-grid').replaceChildren();s.variations.forEach((c,i)=>$('variation-grid').append(card(c,'Variation '+(i+1),()=>apply(c))));$('favorites').replaceChildren();s.favorites.forEach((p,i)=>$('favorites').append(card(p.config,p.name,()=>apply(p.config),()=>{s.favorites.splice(i,1);drawCollections();persist();})));}
  $('save-favorite').onclick=()=>run(()=>{const name=$('name').value.trim();if(!name)throw Error('Give the preset a name.');if(s.favorites.length>=80)throw Error('The collection holds 80 favorites. Export or remove a preset first.');s.favorites.push({name,config:E.normalize(s.config)});drawCollections();persist();status('Saved '+name+'.');});
- function load(data){if(data?.type!=='ashmark-sprite-collection'||data.version!==1||!Array.isArray(data.favorites)||data.favorites.length>80||!Array.isArray(data.variations)||data.variations.length>12)throw Error('Choose a Sprite Studio collection.');const config=E.read(data.current),favorites=data.favorites.map(p=>({name:String(p.name||'Saved sprite').slice(0,64),config:E.normalize(p.config)})),variations=data.variations.map(E.normalize),valid=new Set([...E.slots,'style','hair','skin','team','beard','weapon','shield']);s.config=config;s.favorites=favorites;s.variations=variations;s.locks=new Set((Array.isArray(data.locks)?data.locks:[]).filter(k=>valid.has(k)));s.renderer=['game','base'].includes(data.view?.renderer)?data.view.renderer:'game';s.pose=Object.hasOwn(E.animations(s.renderer),data.view?.pose)?data.view.pose:'walk';s.left=data.view?.left===true;s.gray=data.view?.gray===true;s.zoom=[6,8,10,12].includes(data.view?.zoom)?data.view.zoom:10;s.fps=Math.max(1,Math.min(16,Number(data.view?.fps)||6));s.frame=0;sync();rebuild();drawCollections();}
+ function load(data){if(data?.type!=='ashmark-sprite-collection'||data.version!==1||!Array.isArray(data.favorites)||data.favorites.length>80||!Array.isArray(data.variations)||data.variations.length>12)throw Error('Choose a Sprite Studio collection.');if(data.rig)SpriteRig.read(data.rig);const config=E.read(data.current),favorites=data.favorites.map(p=>({name:String(p.name||'Saved sprite').slice(0,64),config:E.normalize(p.config)})),variations=data.variations.map(E.normalize),valid=new Set([...E.slots,'style','hair','skin','team','beard','weapon','shield']);s.config=config;s.favorites=favorites;s.variations=variations;s.locks=new Set((Array.isArray(data.locks)?data.locks:[]).filter(k=>valid.has(k)));s.renderer=['game','base'].includes(data.view?.renderer)?data.view.renderer:'game';s.pose=Object.hasOwn(E.animations(s.renderer),data.view?.pose)?data.view.pose:'walk';s.left=data.view?.left===true;s.gray=data.view?.gray===true;s.zoom=[6,8,10,12].includes(data.view?.zoom)?data.view.zoom:10;s.fps=Math.max(1,Math.min(16,Number(data.view?.fps)||6));s.frame=0;sync();rebuild();drawCollections();if(data.rig){if(window.spriteRigEditor)window.spriteRigEditor.load(data.rig);else window.spritePendingRig=data.rig;}}
  function fileInput(id,action,max=2_000_000){$(id).onchange=async()=>{try{const file=$(id).files[0];if(!file)return;if(file.size>max)throw Error('This JSON file is too large.');action(JSON.parse(await file.text()));persist();status('Loaded successfully.');}catch(e){status(e.message);}finally{$(id).value='';}};}
  $('import-recipe').onclick=()=>$('recipe-file').click();fileInput('recipe-file',v=>apply(E.read(v)));$('import-collection').onclick=()=>$('collection-file').click();fileInput('collection-file',load);$('export-collection').onclick=()=>json('sprite-collection.json',snapshot());$('export-recipe').onclick=()=>json('sprite-recipe.json',E.recipe(s.config));
  $('export-frame').onclick=()=>png('sprite-'+s.renderer+'-'+s.pose+'-'+s.frame+'.png',frames[s.frame].image);
@@ -2322,6 +2468,66 @@ function drawHeld(u,o,sp,bx,by,flash){const h=heldNow(u,o,sp);if(h)ctx.drawImage
  const floating=document.createElement('button');floating.id='live-mini';floating.type='button';floating.hidden=true;floating.setAttribute('aria-label','Return to live sprite');mini=document.createElement('canvas');copy(frames[s.frame].image,mini);floating.append(mini,document.createTextNode('Live sprite'));floating.onclick=()=>$('stage').scrollIntoView({block:'center',behavior:'smooth'});document.body.append(floating);let scrolling=false;function floatState(){const control=document.querySelector('.controls').getBoundingClientRect();floating.hidden=!(innerWidth<=850&&$('stage').getBoundingClientRect().bottom<0&&control.bottom>0&&control.top<innerHeight);}window.addEventListener('scroll',()=>{if(scrolling)return;scrolling=true;requestAnimationFrame(()=>{scrolling=false;floatState();});},{passive:true});window.addEventListener('resize',floatState);
  function tick(now){if(s.playing&&!document.hidden&&now-last>=1000/s.fps){last=now;s.frame=(s.frame+1)%frames.length;if(drawn!==s.frame)paint();}requestAnimationFrame(tick);}requestAnimationFrame(tick);
  window.spriteWorkshop=Object.freeze({state:s,apply,snapshot,load,render,rebuild});
+})();
+
+</script><script>
+/* Bone selection, keyframes, grayscale part painting and portable rig projects. */
+(function(){
+ 'use strict';
+ const R=SpriteRig,W=spriteWorkshop,$=id=>document.getElementById(id),KEY='ashmark.spriteRig.v1',copy=v=>JSON.parse(JSON.stringify(v));
+ const s={asset:R.fromEngine(W.state.config),clip:0,frame:0,bone:'chest',part:0,brush:1,playing:false,time:0,last:0,view:48,left:false,ghost:false,show:true},undo=[],redo=[];let busy=false,rendered=null,pending=null,drag=null,paintDrag=null,lastDraw=-1;
+ const currentClip=()=>s.asset.clips[s.clip],currentFrame=()=>currentClip().frames[s.frame],selectedPart=()=>s.asset.parts[s.part];
+ function message(text){$('rig-status').textContent=text;}
+ function safe(fn){try{fn();}catch(e){s.playing=false;$('rig-play').textContent='Play clip';message(e.message);}}
+ function checkpoint(){const value=JSON.stringify(s.asset);if(undo.at(-1)!==value){undo.push(value);if(undo.length>60)undo.shift();}redo.length=0;}
+ function projectData(){return{...copy(s.asset),editor:{clip:s.clip,frame:s.frame,bone:s.bone,part:s.part,view:s.view,left:s.left,ghost:s.ghost,show:s.show}};}
+ function persist(){try{localStorage.setItem(KEY,JSON.stringify(projectData()));}catch(e){message('Browser storage is unavailable or full. Save the rig project to keep your edits.');}}
+ function resetTime(){s.playing=false;s.time=0;s.last=0;$('rig-play').textContent='Play clip';}
+ function edit(fn){checkpoint();resetTime();fn();s.asset=R.normalize(s.asset);persist();sync();draw();}
+ function list(select,values,value){select.replaceChildren();for(const [id,name]of values){const o=document.createElement('option');o.value=id;o.textContent=name;select.append(o);}select.value=value;}
+ function sync(){const c=currentClip(),f=currentFrame();list($('rig-clip'),s.asset.clips.map((c,i)=>[String(i),c.name]),String(s.clip));$('rig-clip-name').value=c.name;$('rig-duration').value=f.duration;$('rig-loop').checked=c.loop;$('rig-interpolate').checked=c.interpolate;list($('rig-bone'),R.bones.map(b=>[b.id,b.id+(b.parent?' ← '+b.parent:' (root)')]),s.bone);
+  const pose=f.pose[s.bone]||{};for(const key of ['angle','x','y']){$('rig-'+key).value=pose[key]||0;$('rig-'+key+'-value').textContent=String(pose[key]||0);}for(const k of ['x','y']){$('rig-'+k).min=s.bone==='pelvis'?-8:-4;$('rig-'+k).max=s.bone==='pelvis'?8:4;}$('rig-hide-bone').checked=s.asset.hidden.includes(s.bone);
+  $('rig-timeline').replaceChildren();c.frames.forEach((f,i)=>{const b=document.createElement('button');b.textContent=(i+1)+' · '+f.duration+'ms';b.className=i===s.frame?'selected':'';b.setAttribute('aria-label','Keyframe '+(i+1));b.onclick=()=>{resetTime();s.frame=i;persist();sync();draw();};$('rig-timeline').append(b);});$('rig-delete-frame').disabled=c.frames.length===1;$('rig-add-frame').disabled=c.frames.length>=64;$('rig-delete-clip').disabled=s.asset.clips.length===1;$('rig-add-clip').disabled=s.asset.clips.length>=16;$('rig-undo').disabled=!undo.length;$('rig-redo').disabled=!redo.length;
+  list($('rig-part'),s.asset.parts.map((p,i)=>[String(i),p.name]),String(s.part));const p=selectedPart();for(const id of ['rig-part-name','rig-part-bone','rig-part-material','rig-part-x','rig-part-y','rig-part-behind','rig-part-visible','rig-delete-part','rig-clear-part'])$(id).disabled=!p;if(p){$('rig-part-name').value=p.name;$('rig-part-bone').value=p.bone;$('rig-part-material').value=p.material;$('rig-part-x').value=p.x;$('rig-part-y').value=p.y;$('rig-part-behind').checked=p.behind;$('rig-part-visible').checked=p.visible;}drawPart();
+ }
+ function draw(override){rendered=R.render(s.asset,override||currentFrame().pose,{left:s.left});const canvas=$('rig-canvas'),ctx=canvas.getContext('2d'),scale=canvas.width/s.view,start=(rendered.image.width-s.view)/2;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=false;
+  if(s.ghost&&currentClip().frames.length>1){const prev=currentClip().frames[(s.frame+currentClip().frames.length-1)%currentClip().frames.length],ghost=R.render(s.asset,prev.pose,{left:s.left}),offset=(ghost.image.width-s.view)/2;ctx.save();ctx.globalAlpha=.2;ctx.drawImage(ghost.image,offset,offset,s.view,s.view,0,0,canvas.width,canvas.height);ctx.restore();}
+  ctx.drawImage(rendered.image,start,start,s.view,s.view,0,0,canvas.width,canvas.height);
+  if(s.show){ctx.lineWidth=1.5;for(const b of R.bones){const p=rendered.joints[b.id],q=rendered.joints[b.parent];if(q){ctx.strokeStyle=b.id===s.bone?'#ffdf76':'#7bcec9bb';ctx.beginPath();ctx.moveTo((q.x-start+.5)*scale,(q.y-start+.5)*scale);ctx.lineTo((p.x-start+.5)*scale,(p.y-start+.5)*scale);ctx.stroke();}}for(const [id,p]of Object.entries(rendered.joints)){ctx.fillStyle=id===s.bone?'#ffe075':'#76e4d5';ctx.strokeStyle='#13201c';ctx.beginPath();ctx.arc((p.x-start+.5)*scale,(p.y-start+.5)*scale,id===s.bone?5:3.5,0,Math.PI*2);ctx.fill();ctx.stroke();}}
+  $('rig-readout').textContent=currentClip().name+' · keyframe '+(s.frame+1)+'/'+currentClip().frames.length+' · '+s.bone+' · '+rendered.image.width+' × '+rendered.image.height+' export canvas';lastDraw=s.frame;
+ }
+ function point(event,canvas){const r=canvas.getBoundingClientRect();return[(event.clientX-r.left)/r.width*canvas.width,(event.clientY-r.top)/r.height*canvas.height];}
+ $('rig-canvas').onpointerdown=event=>safe(()=>{if(s.left){message('Turn off Mirror preview to edit joints.');return;}resetTime();const p=point(event,$('rig-canvas')),scale=$('rig-canvas').width/s.view,start=(rendered.image.width-s.view)/2;let best=s.bone,distance=18;for(const [id,q]of Object.entries(rendered.joints)){const d=Math.hypot(p[0]-(q.x-start+.5)*scale,p[1]-(q.y-start+.5)*scale);if(d<distance){distance=d;best=id;}}if(distance===18){message('Select a joint or choose a bone below to edit.');return;}s.bone=best;checkpoint();const pose=currentFrame().pose[best]||{x:0,y:0,angle:0},parent=rendered.joints[rendered.joints[best].parent];drag={id:event.pointerId,point:p,pose:copy(pose),angle:parent?.angle||0};$('rig-canvas').setPointerCapture(event.pointerId);sync();draw();});
+ $('rig-canvas').onpointermove=event=>{if(!drag)return;safe(()=>{const p=point(event,$('rig-canvas')),k=s.view/$('rig-canvas').width,dx=(p[0]-drag.point[0])*k,dy=(p[1]-drag.point[1])*k,a=drag.angle;currentFrame().pose[s.bone]=R.pose({[s.bone]:{...drag.pose,x:drag.pose.x+dx*Math.cos(a)+dy*Math.sin(a),y:drag.pose.y-dx*Math.sin(a)+dy*Math.cos(a)}})[s.bone];draw();const q=currentFrame().pose[s.bone];for(const key of ['x','y']){$('rig-'+key).value=q[key];$('rig-'+key+'-value').textContent=q[key];}});};
+ for(const type of ['pointerup','pointercancel'])$('rig-canvas')['on'+type]=()=>{if(drag){drag=null;persist();sync();draw();}};
+ for(const key of ['angle','x','y']){const input=$('rig-'+key);input.onpointerdown=()=>{pending=JSON.stringify(s.asset);resetTime();};input.onfocus=()=>{pending=JSON.stringify(s.asset);};input.oninput=()=>safe(()=>{resetTime();currentFrame().pose[s.bone]=R.pose({[s.bone]:{...currentFrame().pose[s.bone],[key]:Number(input.value)}})[s.bone];$('rig-'+key+'-value').textContent=input.value;draw();});input.onchange=()=>{if(pending&&pending!==JSON.stringify(s.asset)){undo.push(pending);if(undo.length>60)undo.shift();redo.length=0;}pending=null;persist();sync();};}
+ $('rig-bone').onchange=()=>{s.bone=$('rig-bone').value;persist();sync();draw();};$('rig-hide-bone').onchange=()=>edit(()=>{s.asset.hidden=s.asset.hidden.filter(id=>id!==s.bone);if($('rig-hide-bone').checked)s.asset.hidden.push(s.bone);});
+ $('rig-clip').onchange=()=>{resetTime();s.clip=Number($('rig-clip').value);s.frame=0;persist();sync();draw();};$('rig-clip-name').onchange=()=>edit(()=>{currentClip().name=$('rig-clip-name').value.trim()||'Animation';});$('rig-duration').onchange=()=>edit(()=>{currentFrame().duration=Number($('rig-duration').value);});for(const [id,key]of [['rig-loop','loop'],['rig-interpolate','interpolate']])$(id).onchange=()=>edit(()=>{currentClip()[key]=$(id).checked;});
+ $('rig-add-clip').onclick=()=>edit(()=>{if(s.asset.clips.length>=16)throw Error('This project holds 16 clips.');s.asset.clips.push(R.clip({id:'clip-'+Date.now(),name:'New animation',frames:[{pose:copy(currentFrame().pose)}]}));s.clip=s.asset.clips.length-1;s.frame=0;});$('rig-delete-clip').onclick=()=>{if(s.asset.clips.length>1)edit(()=>{s.asset.clips.splice(s.clip,1);s.clip=Math.max(0,s.clip-1);s.frame=0;});};
+ $('rig-import-walk').onclick=()=>safe(()=>edit(()=>{if(s.asset.clips.length>=16)throw Error('This project holds 16 clips.');const walk=R.fromEngine(s.asset.config).clips.find(c=>c.id==='walk');s.asset.clips.push({...walk,id:'walk-'+Date.now(),name:'Engine walk study'});s.clip=s.asset.clips.length-1;s.frame=0;}));
+ $('rig-add-frame').onclick=()=>{if(currentClip().frames.length<64)edit(()=>{currentClip().frames.splice(s.frame+1,0,copy(currentFrame()));s.frame++;});};$('rig-delete-frame').onclick=()=>{if(currentClip().frames.length>1)edit(()=>{currentClip().frames.splice(s.frame,1);s.frame=Math.max(0,s.frame-1);});};$('rig-mirror-pose').onclick=()=>edit(()=>{currentFrame().pose=R.mirrored(currentFrame().pose);});$('rig-reset-pose').onclick=()=>edit(()=>{currentFrame().pose={};});
+ $('rig-previous').onclick=()=>{resetTime();s.frame=(s.frame+currentClip().frames.length-1)%currentClip().frames.length;persist();sync();draw();};$('rig-next').onclick=()=>{resetTime();s.frame=(s.frame+1)%currentClip().frames.length;persist();sync();draw();};$('rig-play').onclick=()=>{s.playing=!s.playing;s.time=currentClip().frames.slice(0,s.frame).reduce((n,f)=>n+f.duration,0);s.last=0;$('rig-play').textContent=s.playing?'Pause clip':'Play clip';if(!s.playing)persist();};
+ for(const [id,key]of [['rig-show','show'],['rig-onion','ghost'],['rig-left','left']])$(id).onchange=()=>{s[key]=$(id).checked;persist();draw();};$('rig-view').onchange=()=>{s.view=Number($('rig-view').value);persist();draw();};
+ $('rig-undo').onclick=()=>{if(!undo.length)return;redo.push(JSON.stringify(s.asset));s.asset=R.normalize(JSON.parse(undo.pop()));resetTime();s.clip=Math.min(s.clip,s.asset.clips.length-1);s.frame=Math.min(s.frame,currentClip().frames.length-1);s.part=Math.min(s.part,Math.max(0,s.asset.parts.length-1));busy=true;try{W.apply(s.asset.config);}finally{busy=false;}persist();sync();draw();};$('rig-redo').onclick=()=>{if(!redo.length)return;undo.push(JSON.stringify(s.asset));s.asset=R.normalize(JSON.parse(redo.pop()));resetTime();s.clip=Math.min(s.clip,s.asset.clips.length-1);s.frame=Math.min(s.frame,currentClip().frames.length-1);s.part=Math.min(s.part,Math.max(0,s.asset.parts.length-1));busy=true;try{W.apply(s.asset.config);}finally{busy=false;}persist();sync();draw();};
+ list($('rig-part-bone'),R.bones.map(b=>[b.id,b.id]),'head');list($('rig-part-material'),SpriteStudio.materials.map(m=>[m,m]),'team');
+ for(const tone of [0,1,2,3,-1]){const button=document.createElement('button');button.textContent=tone<0?'Erase':['Light','Mid','Shade','Edge'][tone];button.dataset.tone=tone;button.onclick=()=>{s.brush=tone;for(const b of $('rig-brushes').children)b.classList.toggle('brush-selected',b===button);};if(tone===s.brush)button.className='brush-selected';$('rig-brushes').append(button);}
+ function drawPart(){const c=$('rig-part-canvas'),g=c.getContext('2d'),p=selectedPart(),tones=['#c8c8c8','#9a9a9a','#6e6e6e','#464646'];g.clearRect(0,0,256,256);for(let y=0;y<16;y++)for(let x=0;x<16;x++){g.fillStyle=(x+y)%2?'#26352e':'#304138';g.fillRect(x*16,y*16,16,16);const t=p?.pixels[y*16+x];if(t>=0){g.fillStyle=tones[t];g.fillRect(x*16,y*16,16,16);}}g.strokeStyle='#83b4a944';g.lineWidth=1;for(let i=0;i<=16;i++){g.beginPath();g.moveTo(i*16,0);g.lineTo(i*16,256);g.stroke();g.beginPath();g.moveTo(0,i*16);g.lineTo(256,i*16);g.stroke();}g.strokeStyle='#e7c666';g.beginPath();g.moveTo(128,122);g.lineTo(128,134);g.moveTo(122,128);g.lineTo(134,128);g.stroke();}
+ $('rig-add-part').onclick=()=>safe(()=>edit(()=>{if(s.asset.parts.length>=32)throw Error('This project holds 32 custom parts.');s.asset.parts.push(R.part({id:'part-'+Date.now(),name:'New pixel part',bone:s.bone,material:'team'}));s.part=s.asset.parts.length-1;$('rig-parts-panel').open=true;}));$('rig-delete-part').onclick=()=>{if(selectedPart())edit(()=>{s.asset.parts.splice(s.part,1);s.part=Math.max(0,s.part-1);});};$('rig-part').onchange=()=>{s.part=Number($('rig-part').value);persist();sync();draw();};
+ for(const [id,key,type]of [['rig-part-name','name','text'],['rig-part-bone','bone','text'],['rig-part-material','material','text'],['rig-part-x','x','number'],['rig-part-y','y','number'],['rig-part-behind','behind','bool'],['rig-part-visible','visible','bool']])$(id).onchange=()=>{if(selectedPart())edit(()=>{selectedPart()[key]=type==='bool'?$(id).checked:type==='number'?Number($(id).value):$(id).value;});};
+ function paintPixel(event){const p=selectedPart();if(!p)return;const [px,py]=point(event,$('rig-part-canvas')),x=Math.floor(px/16),y=Math.floor(py/16);if(x<0||y<0||x>=16||y>=16)return;const to=[x,y],put=(x,y)=>{if(x>=0&&y>=0&&x<16&&y<16)p.pixels[y*16+x]=s.brush;};if(paintDrag){const [a,b]=paintDrag,n=Math.max(Math.abs(x-a),Math.abs(y-b));for(let i=0;i<=n;i++)put(Math.round(a+(x-a)*i/(n||1)),Math.round(b+(y-b)*i/(n||1)));}else put(x,y);paintDrag=to;drawPart();draw();}
+ $('rig-part-canvas').onpointerdown=e=>{if(!selectedPart()){message('Create a part before painting.');return;}checkpoint();resetTime();$('rig-part-canvas').setPointerCapture(e.pointerId);paintDrag=null;paintPixel(e);};$('rig-part-canvas').onpointermove=e=>{if(e.buttons&&paintDrag)paintPixel(e);};for(const name of ['pointerup','pointercancel'])$('rig-part-canvas')['on'+name]=()=>{paintDrag=null;persist();sync();};$('rig-clear-part').onclick=()=>{if(selectedPart())edit(()=>{selectedPart().pixels.fill(-1);});};
+ function download(name,value){const url=URL.createObjectURL(value),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+ function json(name,value){download(name,new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));}
+ function png(name,canvas){canvas.toBlob(blob=>{if(blob)download(name,blob);});}
+ function load(data){const next=R.read(data);busy=true;try{resetTime();s.asset=next;const v=data.editor||{};s.clip=Number.isInteger(v.clip)&&v.clip>=0&&v.clip<s.asset.clips.length?v.clip:0;s.frame=Number.isInteger(v.frame)&&v.frame>=0&&v.frame<currentClip().frames.length?v.frame:0;s.part=Number.isInteger(v.part)&&v.part>=0&&v.part<s.asset.parts.length?v.part:0;s.bone=R.bones.some(b=>b.id===v.bone)?v.bone:'chest';s.view=[32,48,64,128].includes(v.view)?v.view:48;s.left=v.left===true;s.ghost=v.ghost===true;s.show=v.show!==false;$('rig-view').value=s.view;$('rig-left').checked=s.left;$('rig-onion').checked=s.ghost;$('rig-show').checked=s.show;undo.length=redo.length=0;W.apply(next.config);}finally{busy=false;}persist();sync();draw();message('Rig project restored, including its source recipe, parts and animation clips.');}
+ $('rig-new').onclick=()=>edit(()=>{s.asset=R.fromEngine(W.state.config);s.clip=s.frame=s.part=0;s.bone='chest';message('New rig created from the current appearance. Undo restores the previous project.');});
+ $('rig-part-export').onclick=()=>{const p=selectedPart();if(!p){message('Create or select a part first.');return;}const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d'),tones=['#c8c8c8','#9a9a9a','#6e6e6e','#464646'];for(let n=0;n<256;n++)if(p.pixels[n]>=0){g.fillStyle=tones[p.pixels[n]];g.fillRect(n%16,Math.floor(n/16),1,1);}png('rig-pixel-part.png',c);};
+ $('rig-export').onclick=()=>json('sprite-rig-project.json',projectData());$('rig-import').onclick=()=>$('rig-file').click();$('rig-file').onchange=async()=>{try{const file=$('rig-file').files[0];if(!file)return;if(file.size>3_000_000)throw Error('Rig project is too large.');load(JSON.parse(await file.text()));}catch(e){message('Could not load project: '+e.message);}finally{$('rig-file').value='';}};
+ $('rig-export-frame').onclick=()=>png('rig-pose.png',R.render(s.asset,currentFrame().pose,{left:s.left}).image);$('rig-export-sheet').onclick=()=>safe(()=>{png('rig-clip.png',R.sheet(s.asset,s.clip,{left:s.left}).image);message('Clip PNG exported. Save the matching metadata for frame timing, bones and anchors.');});$('rig-export-meta').onclick=()=>safe(()=>json('rig-clip.json',R.sheet(s.asset,s.clip,{left:s.left}).manifest));
+ document.addEventListener('sprite:change',e=>{if(busy)return;s.asset.config=SpriteStudio.normalize(e.detail.config);persist();draw();});
+ let stored=null;try{stored=localStorage.getItem(KEY);}catch(e){}try{if(window.spritePendingRig){load(window.spritePendingRig);delete window.spritePendingRig;}else if(stored)load(JSON.parse(stored));}catch(e){message('Stored rig could not be restored. Import a saved project if available.');}sync();draw();
+ function tick(time){if(s.playing&&!document.hidden){if(s.last)s.time+=Math.min(time-s.last,100);s.last=time;const sample=R.sample(currentClip(),s.time);s.frame=sample.index;if(currentClip().interpolate||lastDraw!==s.frame){draw(sample.pose);for(const [i,b]of [...$('rig-timeline').children].entries())b.classList.toggle('selected',i===s.frame);}if(!currentClip().loop&&s.time>=sample.duration){resetTime();sync();draw();}}else s.last=0;requestAnimationFrame(tick);}requestAnimationFrame(tick);
+ window.spriteRigEditor=Object.freeze({state:s,snapshot:projectData,load,draw,refresh:()=>{sync();draw();}});
 })();
 
 </script>
