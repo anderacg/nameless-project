@@ -97,7 +97,8 @@ function bowPic(k,style,atk,deg,skin){const key=[k,style,atk,deg,skin].join('|')
 /* a shield (the owner, 2026-11-07: "bigger shields with the army's device"): carried on his off arm before him, or raised to meet a
    blow (guard: before his chest; 'low': his legs); a heater of metal (steel, iron, silver, gold) or a round one of wood, its rim in its
    material lit from the top left, its field the side's colour, the device of his people on it (sprites.js BANNER_DEV: the Vale's, the
-   Karn's, the Sylvan's, the Horde's, three by three), light on a dark field, dark on a light one. SHIELD_ART: the shapes (r rim,
+   Karn's, the Sylvan's, the Horde's, three by three), in the field's own lightest shade on a dark field, its deepest on a light one
+   (2026-11-08, the owner: "what is a weird beige spot on the shield?": in cream it filled the field as a blot). SHIELD_ART: the shapes (r rim,
    f field), from the anchor at their top left, and each people's device */
 // (in a blow (the owner, 2026-11-07: "why shield float with no hand grab it?"): the shield brought before his chest (at: 'guard',
 // back from it by SHIELD_HOLD.blow px), the sword arm striking over it; hung at his side, his far hand's knuckles over its rim (grip))
@@ -107,7 +108,7 @@ const SHIELD_ART={heater:['rrrrr','rfffr','rfffr','rfffr','rfffr','.rfr.','..r..
 class ShieldGear extends FigureGear{
   constructor(guard){super(guard?'guard':'shield',guard?'guard':'off');this.guard=guard}
   draw(set,o,p){const m=shieldLook(o),C=pal(m),Tm=pal(o.team),A=SHIELD_ART,rows=m==='wood'?A.round:A.heater,T=typeof BANNER_DEV!=='undefined'&&BANNER_DEV[A.dev[o.race||'human']],
-      lum=Tm[1]&&Tm[1][0]==='#'?[1,3,5].reduce((a,i,k)=>a+parseInt(Tm[1].slice(i,i+2),16)*[.3,.59,.11][k],0)/255:.5,dv=lum>.6?'#3a2226':'#f4ecd8',
+      lum=Tm[1]&&Tm[1][0]==='#'?[1,3,5].reduce((a,i,k)=>a+parseInt(Tm[1].slice(i,i+2),16)*[.3,.59,.11][k],0)/255:.5,dv=lum>.6?Tm[3]:Tm[0],
       fore=this.foreNow(p),ox=this.guard?-1:fore?-1-SHIELD_HOLD.blow:-2,oy=this.guard?(this.guard==='low'?1:-1)-p.sh:fore?-1-p.sh:-2-p.sh,W=rows[0].length;
     rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(c==='.')return;const edge=y===0||x===0||x===W-1||rows[y+1]?.[x]==='.'||!rows[y+1];
       set(ox+x,oy+y,c==='r'?C[y===0||x===0?0:edge&&x>=W-2?2:1]:Tm[x===1?0:x===W-2?2:1])}));
