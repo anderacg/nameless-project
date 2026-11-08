@@ -650,7 +650,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W7 again 2026-11-08, on purpose: the owner, "player can freely spend based on their preferences": a tree's points (one each 15
 //  levels of its proficiency) spent freely, so the lords and chieftains spend theirs as they like (characters.js autoTree) and the save
 //  after its days holds their trees. Proof: with autoTree off, abaceed and this give the same W7 (2fea3867). Was W7 bbaa5061)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'b1ff7a76',W7:'541432df',W8:'1d99079f',B2:'72712154'};
+// (W7 again 2026-11-08, on purpose: the owner, "remove the log when you travel cross to the region or territory": no line in the log
+//  crossing a border (world/territory.js landWatch), and the save holds the log. Proof: only landWatch changed; 22ef21a gives 541432df.
+//  Was W7 541432df)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'b1ff7a76',W7:'1c0d683b',W8:'1d99079f',B2:'72712154'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

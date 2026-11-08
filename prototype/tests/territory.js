@@ -33,8 +33,8 @@ try{
  v.owner='player';v.lastOwner='player';v.sacked=v.raided=v.turmoil=0;ok(t.fiefIncome(v)===t.taxOf(v)&&t.fiefIncome(v)>0,'a fief pays its taxes: '+t.fiefIncome(v)+' gold a day');
  G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(v);t.act('tab','fief');ok(/rules \d+ tiles of land/.test(document.getElementById('panel').innerHTML),'the Fief tab shows its land');t.act('leave');
  // crossing a border
- G.landFac=undefined;G.landLogAt=0;P.x=-50;P.y=-50;t.landWatch();P.x=v.x;P.y=v.y;G.landLogAt=-1e9;t.landWatch();
- ok(G.landFac==='player'&&/your own lands/.test(document.getElementById('log').textContent),'crossing into your land says so');
+ G.landFac=undefined;P.x=-50;P.y=-50;t.landWatch();const n0=G.msgs.length;P.x=v.x;P.y=v.y;t.landWatch();
+ ok(G.landFac==='player'&&G.msgs.length===n0&&!/your own lands|cross into the lands/.test(document.getElementById('log').textContent),'crossing into your land: kept, no line in the log (the owner, 2026-11-08)');
  t.updateHUD(true);ok(new RegExp(v.name+' lands').test(document.getElementById('stats').innerHTML),'the HUD names whose land you stand on');
  // drawing
  t.frame();ok(true,'borders and the minimap tint draw');
