@@ -41,7 +41,7 @@ Kit.suite(({ok})=>{
   // ======== a companion: the same, by its record
   {const id=Object.keys(t.COMPS).find(k=>ST[k]);if(id&&!P.comps[id])t.compJoin(id,{lv:4,attr:{str:3,agi:2,int:0,cha:0}});const c=id&&t.compOf(id);
    if(c){c.o.gear.body=t.gearId('mail',1);const g=t.statGrowth(c),H=g.stats.hp,now=c.stats();
-    ok(H.parts.some(([l])=>l==='Attributes')&&H.parts.some(([l])=>l==='Gear')&&H.now===now.hp,'a companion ('+t.COMPS[id].n+'): health grown by Attributes and Gear, now its own ('+H.base+' → '+H.now+')');
+    ok(!H.parts.some(([l])=>l==='Attributes')&&H.parts.some(([l])=>l==='Gear')&&H.now===now.hp,'a companion ('+t.COMPS[id].n+'): health grown by Gear (no attributes), now its own ('+H.base+' → '+H.now+')');
     const card=open('comp_'+id);ok(card&&stat(card,'hp')?.querySelector('i.gr'),'and its card shows it')}
    else ok(false,'a companion to look at')}
   // ======== a troop card with no group (the barracks): no growth

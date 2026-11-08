@@ -59,7 +59,7 @@ Kit.suite(({ok})=>{
    ok(val(xp(foot.id))==='10/'+t.RANKS.xp[1][1]&&txt(foot.id)==='Trained · rank 2 · 10 / '+t.RANKS.xp[1][1],'a troop group’s: its rank and the way to the next ('+txt(foot.id)+')');
    ok(txt(knight.id)==='Elite · rank 5 · Legend · full'&&val(xp(knight.id))==='1/1','a group at its last rank, its mastery full: Legend ('+txt(knight.id)+')')}
   // ---- opening each kind
-  t.act('party-select','hero');{const d=q('.fb-hero-detail');const c=d&&d.querySelector('.ucard-x');ok(c&&/raised on the skill tree/.test(d.innerHTML)&&/Health/.test(c.querySelector('.uc-stats').textContent)&&new RegExp('To level '+(P.level+1)).test(c.textContent)&&/Stamina/.test(c.textContent)&&c.querySelector('[data-act="army-edit"][data-arg="hero"]'),'the hero’s card: its numbers, experience, stamina and mana, Manage; its Character tab (attributes, perks)')}
+  t.act('party-select','hero');{const d=q('.fb-hero-detail');const c=d&&d.querySelector('.ucard-x');ok(c&&/From the skill trees/.test(d.innerHTML)&&/Health/.test(c.querySelector('.uc-stats').textContent)&&new RegExp('To level '+(P.level+1)).test(c.textContent)&&/Stamina/.test(c.textContent)&&c.querySelector('[data-act="army-edit"][data-arg="hero"]'),'the hero’s card: its numbers, experience, stamina and mana, Manage; its Character tab (what the trees give, perks)')}
   t.act('party-select','comp_brann');{const d=q('.fb-comp-detail');ok(d&&t.compShown()&&G.compSel==='brann'&&!qa('.fb-comp-detail [data-act="party-comp-tab"]').length&&d.querySelector('[data-act="party-unit-tab"][data-arg="gear"]')&&d.querySelector('[data-act="party-unit-tab"][data-arg="role"]')&&new RegExp('To level '+(P.comps.brann.lv+1)).test(d.querySelector('.ucard-x').textContent),'a companion’s card: the shared card, Equipment and Role tabs, its experience to the next level');
    t.act('party-unit-tab','gear');ok(q('.fb-comp-detail [data-unit-tab="gear"] .fb-gear-rows'),'its Equipment tab');t.act('party-unit-tab','role');ok(q('.fb-comp-detail [data-unit-tab="role"]'),'its Role tab');t.act('party-unit-tab','character');
    t.act('party-comp-tab','gear');ok(q('.fb-gear-rows')&&G.compTab==='gear','its Equipment');t.act('party-comp-tab','orders');ok(q('.fb-order-buttons')&&q('[data-cp-transfer="give"]'),'its Orders');t.act('party-comp-tab','overview');
@@ -67,7 +67,7 @@ Kit.suite(({ok})=>{
   t.act('party-select',foot.id);{const d=q('.fb-inspector');ok(d&&!d.classList.contains('fb-person-detail')&&d.querySelector('.uc-strength')&&/[Rr]ank \d/.test(d.querySelector('.uc-rank').textContent)&&d.querySelector('[data-act="army-edit"]')&&!d.querySelector('[data-act="party-unit-tab"]'),'a troop group’s card: its strength, rank and Manage Group (no tabs)');
    t.act('army-edit',foot.id);ok(q('[data-army-editor="'+foot.id+'"]')&&!q('[data-act="army-split-exact"]')&&q('[data-act="party-merge"]'),'and Manage group (rename, order, merge; no split)');t.act('army-edit-close')}
   // ---- each card's Skills
-  t.act('party-select','hero');t.act('open-skills');ok(G.mode==='skills'&&!G.skWho&&q('svg.tree')&&navBack().textContent==='Back to Army'&&navClose().textContent==='Back to map','the hero’s Skills: your tree, Back to Army');
+  t.act('party-select','hero');t.act('open-skills');ok(G.mode==='skills'&&!G.skWho&&q('svg.tr-svg')&&navBack().textContent==='Back to Army'&&navClose().textContent==='Back to map','the hero’s Skills: your tree, Back to Army');
   t.act('sk-close');ok(G.mode==='char'&&G.char==='roster'&&t.partyView().sel==='hero'&&q('.fb-hero-detail'),'and Back returns to the hero’s card');
   t.act('party-select','comp_brann');t.act('cm-tree');ok(G.mode==='skills'&&G.skWho==='brann'&&navBack().textContent==='Back to Brann','a companion’s Skills: its own tree');
   t.act('sk-close');ok(G.mode==='char'&&t.compShown()&&G.compSel==='brann','and Back returns to its card');
@@ -97,7 +97,7 @@ Kit.suite(({ok})=>{
    t.act('ct-free','0');ok(!t.captives().length&&!lord.held&&G.mode==='char'&&G.char==='passengers'&&/Captives \(0\)/.test(p.textContent),'Let go frees the lord, as before');
    t.act('char-tab','roster')}
   // ---- K, C and the Menu
-  world();Kit.key('KeyK','k');ok(G.mode==='skills'&&!G.skWho&&q('svg.tree')&&navBack().textContent==='Back to Army','K: the Army window, on your hero’s Skills');
+  world();Kit.key('KeyK','k');ok(G.mode==='skills'&&!G.skWho&&q('svg.tr-svg')&&navBack().textContent==='Back to Army','K: the Army window, on your hero’s Skills');
   esc();ok(G.mode==='char'&&t.partyView().sel==='hero','Esc follows its Back: the Army window, on your hero');
   if(sub()){esc();ok(G.mode==='char'&&!t.partyView().open,'on a small screen (the tests’ own), Esc next goes back to the cards')}
   esc();ok(G.mode==='esc'&&G.esc.page==='menu','then its Back: the Game Menu');esc();ok(G.mode==='world','and one more Esc resumes');
@@ -122,7 +122,7 @@ Kit.suite(({ok})=>{
     t.act('party-select','comp_brann');fits('Companion '+at);ok(shown(q('.fb-comp-detail [data-act="cm-tree"]')),'Companion '+at+': its Skills in reach');
     t.act('party-select',foot.id);ok(w>650?shown(q('.fb-collection'))&&shown(q('.fb-inspector'))&&menuBack():!shown(q('.fb-collection'))&&shown(q('.fb-inspector'))&&sub(),'Troops '+at+': '+(w>650?'the cards and the group side by side':'the group as a page'));fits('Troops '+at);
     for(const tab of ['skills','condition','passengers']){t.act('char-tab',tab);fits(tab+' '+at)}
-    world();Kit.key('KeyK','k');ok(qa('.nav .btn').every(inside)&&shown(q('svg.tree')),'Skills '+at+': its tree and bar fit');world();
+    world();Kit.key('KeyK','k');ok(qa('.nav .btn').every(inside)&&shown(q('svg.tr-svg')),'Skills '+at+': its tree and bar fit');world();
    }
    // ---- one bottom bar and one scrolling area a page, its last control in reach: Condition, the Roster, a troop group and its Training
    const reach=(sc,el,label)=>{sc.scrollTop=sc.scrollHeight;const s=sc.getBoundingClientRect(),b=el.getBoundingClientRect();ok(b.height>0&&b.top>=s.top-1&&b.bottom<=s.bottom+1&&inside(el),label+': its last control scrolls fully into view')};

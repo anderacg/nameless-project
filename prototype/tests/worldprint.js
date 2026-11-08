@@ -656,7 +656,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-08, on purpose: the owner, "the map show on the worldmap should be a zoomed in version of new map": the minimap
 //  a piece of the full map's parchment round the screen's middle, its holdings and places as sprites (gfx/render.js MINIMAP,
 //  drawMiniMap). Proof: with MINIMAP.on false every hash (W1-W8, B2) is as before. Was W6 b1ff7a76)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'fa66e427',W7:'1c0d683b',W8:'1d99079f',B2:'72712154'};
+// (W7 and B2 again 2026-11-08, on purpose: the owner, Skyrim's loop (doc/PROFICIENCY_DESIGN.md §11): your level from experience, a skill
+//  point a level on any tree, no milestone; a node's strength by its proficiency; proficiencies' power smaller and no top; attributes gone
+//  into their bonuses; pasts at 15 at most; lords and chieftains a point a level, spent on their strongest proficiency's tree. The save
+//  holds your record (attr, lvUp, lvPick gone) and everyone's trees and numbers. W1-W6 and W8 hold. No one switch puts the old rules
+//  back. Were W7 1c0d683b, B2 72712154)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'fa66e427',W7:'e8ae4ea7',W8:'1d99079f',B2:'f37cd778'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

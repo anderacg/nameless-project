@@ -40,7 +40,7 @@ try{
  // ---- Woodcraft: in a wood its slowing cut 6% a level (up to 60%); none on open ground; it rises as you travel the woods;
  // a save made before it gets it at 0
  {P.x=forest[0];P.y=forest[1];P.tx=null;P.gear.mount=null;P.troops={hum_levy:4};P.perks=P.perks.filter(k=>k!=='path');P.race='human';
-  const W0=t.WOODCRAFT,sk=P.sk.wood,base=t.speedAt(P.x,P.y,'human')||1;sk.lv=0;const f0=t.travelMul();sk.lv=5*PROF.per;const f5=t.travelMul();sk.lv=20*PROF.per;const f20=t.travelMul();
+  const W0=t.WOODCRAFT,sk=P.sk.wood,base=t.speedAt(P.x,P.y,'human')||1;const lvOfPow=v=>v<=t.PROF.lin*t.PROF.k?v/t.PROF.k:t.PROF.lin*Math.exp((v-t.PROF.lin*t.PROF.k)/t.PROF.log);sk.lv=0;const f0=t.travelMul();sk.lv=lvOfPow(5);const f5=t.travelMul();sk.lv=lvOfPow(20);const f20=t.travelMul();
   const exp=lv=>1-(1-base)*(1-Math.min(W0.cap,W0.per*lv));
   ok(base<1&&Math.abs(f5/f0-exp(5)/base)<1e-9&&Math.abs(f20/f0-exp(20)/base)<1e-9&&f20>f5&&f5>f0,'Woodcraft in a wood: '+f0.toFixed(3)+' at 0, '+f5.toFixed(3)+' at 5, '+f20.toFixed(3)+' at 20 (capped at '+W0.cap*100+'% less slowing)');
   P.x=open[0];P.y=open[1];sk.lv=0;const o0=t.travelMul();sk.lv=10;ok(t.travelMul()===o0,'on open ground it does nothing');sk.lv=0;

@@ -898,6 +898,7 @@ doc/PROFICIENCY_DESIGN.md §11. The owner: "a scale like Skyrim: XP from quest, 
 - **Attributes gone:** past, race and nodes give their bonuses (`ATTRS[k].fx`, `attrMods`, `TREE.o_<past>`, `TREE.r_<race>`); a companion's own (`o.own`); `HERO_BASE` your hero's start; checks read the relevant proficiency (`ENC_STAT`, `QUEST_CHECKS`, `attrCheck` for a story's condition); the Character tab shows what the trees give (`ui/character.js` `treeTotals`).
 - **Pasts** at 15 at most (`PROF.pastPer` 7.5). **Lords** spend a point a level (`autoTree`: class nodes, else their strongest proficiency's tree); **companions** yours to spend, theirs while away.
 - Tests: `proficiency`, `talents`, `talentrules`, `characters`, `levelbox`, `progression`, `races`, `encounters`, `newencounters`, `leaders`.
+- Fingerprints: W7, B2, the battle suites (actorrules 23, attackrules 26, battleresolution 15, battlesetup 10) and `aishare` re-recorded with the reason (your record, everyone's numbers and trees; no battle rule changed); W1-W6, W8 and `rts` hold.
 
 ## Bare hands and the Nobody (2026-10-29)
 

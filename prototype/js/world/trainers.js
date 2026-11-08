@@ -43,9 +43,9 @@ Systems.add({name:'trainers',order:{day:212},day:trainersDay});
 function trainerMeet(tr){if(tr.own)return;(P.trainersMet||(P.trainersMet={}))[tr.id]={name:tr.name,roles:tr.roles,level:tr.level,at:tr.wander?tr.at:tr.town,wander:!!tr.wander,day:G.day,met:true}}
 function trainerHeard(d){const w=(W.wanderers||[]).find(x=>x.id===d.id);if(!w)return;const M=P.trainersMet||(P.trainersMet={}),o=M[w.id];
   M[w.id]={name:w.name,roles:w.roles,level:w.level,at:d.town,next:d.next,wander:true,day:G.day,met:!!o?.met}}
-// yours: your hero with Drillmaster (his level by Leadership), a companion as Trainer (by his level), each his roles
+// yours: your hero with Drillmaster (his level by Leadership's: its level ÷ 10, a master at 100), a companion as Trainer (by his level), each his roles
 function ownTrainers(){const out=[],lv=n=>clamp(1+Math.floor(n/5),1,3);
-  if(has('drill'))out.push({id:'hero',own:true,name:'You',roles:TRAINERS.hero,level:lv(skill('lead'))});
+  if(has('drill'))out.push({id:'hero',own:true,name:'You',roles:TRAINERS.hero,level:lv(P.sk.lead.lv/10)});
   const c=roleOf('trainer');if(c){const o=compInit(c);out.push({id:'comp_'+c,own:true,name:COMPS[c].short||COMPS[c].n,roles:TRAINERS.look[COMPS[c].look]||['foot'],level:lv(o.lv||1)})}
   return out}
 // a lesson's price (yours: free), and why it cannot be given now ('' when it can)

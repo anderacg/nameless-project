@@ -20,7 +20,7 @@ Kit.suite(({ok})=>{
  t.act('party-role');t.act('fb-choice','surgeon');t.act('fb-apply');ok(P.comps.brann.role==='surgeon'&&!P.comps.elske.role,'Apply transfers the occupied company role once');
  const gear=JSON.stringify({inv:P.inv,gear:P.comps.brann.gear});t.act('party-comp-tab','gear');t.act('party-gear','weapon');t.act('fb-cancel');ok(JSON.stringify({inv:P.inv,gear:P.comps.brann.gear})===gear,'cancelling equipment choices preserves every item');
  world();t.openSkills('talents');t.act('tree-prof','oneh');const tree=P.tree.slice(),node=q('.tp-node[data-arg="oneh_third"]');node.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));ok(P.tree.join()===tree.join(),'double tapping a skill never learns it');
- t.act('tree-take','oneh_third');ok(P.tree.length===tree.length+1&&P.tree.includes('oneh_third'),'the explicit Learn command learns exactly one');
+ P.level=Math.max(P.level,3);t.act('tree-prof','oneh');t.act('tree-take','oneh_third');ok(P.tree.length===tree.length+1&&P.tree.includes('oneh_third'),'the explicit Learn command learns exactly one');
  P.sk.oneh.lv=Math.max(P.sk.oneh.lv,35);t.act('tree-take','oneh_whirl');t.act('sk-tab','abilities');const slots=P.slots.slice();t.act('sk-slot','1');t.act('fb-choice','whirl');t.act('fb-cancel');ok(P.slots.join()===slots.join(),'cancelling a skill-slot choice leaves the bar intact');
  t.act('sk-slot','1');t.act('fb-choice','whirl');t.act('fb-apply');ok(P.slots[1]==='whirl'&&P.slots.filter(x=>x==='whirl').length===1,'slot Apply moves an existing skill instead of duplicating it');
  t.act('sk-tab','talents');t.act('tree-prof','lead');t.act('sk-close');t.openSkills('talents');ok(G.skTree==='lead'&&q('[data-act="tree-prof"].on')?.dataset.arg==='lead','reopening keeps the tree you looked at');
