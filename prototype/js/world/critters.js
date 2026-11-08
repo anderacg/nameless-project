@@ -173,29 +173,32 @@ function huntRewards(c,kills){
   updateHUD(true);
 }
 /* sprites: the animals on the world map's scale (doc/WORLD_DESIGN.md §10.1: a person stands 10 high there, a house 16): a cow 9 × 5
-   inside its outline (a water buffalo the same, its horns swept back), a camel 10 × 7 (its hump and neck), a deer 7 × 6 (a stag or
-   a reindeer with its antlers over that), a sheep, a pig or a goat 4 × 3, a hen, a rabbit, a hare or a fowl 4 × 3; drawn pixel by
-   pixel, side-on facing right, in its colour's hue-shifted ramp (engine PX.ramp:
+   inside its outline (a water buffalo 10 × 5, its horns swept back), a camel 10 × 7 (its hump and neck), a deer 8 × 7 (a stag or a
+   reindeer with its antlers over that), a sheep, a pig or a goat 7 × 4 or 5, a rabbit 6 × 5, a hare 7 × 6, a hen or a fowl 5 × 5
+   or 6; drawn pixel by pixel, side-on facing right, in its colour's hue-shifted ramp (engine PX.ramp:
    h its light, H the coat, d its shade, k darker; w white, e eye, n nose, b beak, y legs, r comb, a antler, o horn, s spots, f a
    face), with the people's outline (people.js), each in the smallest power-of-two cell it fits (8, 16: sprites.js cellOf). rows:
    the body over the legs; legs: two steps (under it, then apart), walked in PX.MAP_STEPS frames (engine/beasts.js PX.mapLegs; f 0
    standing: a walk to a body length walked, critters.js draw) */
 const CRITTER_MAP={
-  cow:{rows:['......ow.','.hhhshhHe','dHsHHHHHn','.dHHHHHd.'],legs:[['.kH..kH..'],['k.H.k..H.']]},
-  sheep:{x:{f:'#4a423c'},rows:['hhh.','HHHf'],legs:[['.f.f'],['f.f.']]},
-  pig:{rows:['hhh.','dHHn'],legs:[['.k.k'],['k.k.']]},
-  goat:{rows:['.hho','dHHe'],legs:[['.k.k'],['k.k.']]},
-  deer:{rows:['.....hd','.....He','whhhhHn','.dHHHd.'],legs:[['.kH.kH.','.kH.kH.'],['.kH.kH.','k.H.k.H']]},
-  stag:{rows:['....a.a','.....a.','.....He','whhhhHn','.dHHHd.'],legs:[['.kH.kH.','.kH.kH.'],['.kH.kH.','k.H.k.H']]},
-  reindeer:{rows:['....a.a','....aa.','.....He','dhhhhwn','.dHHHw.'],legs:[['.kH.kH.','.kH.kH.'],['.kH.kH.','k.H.k.H']]},
-  ibex:{rows:['....oo.','.....oe','dhhhhHk','.dHHHd.'],legs:[['.kH.kH.','.kH.kH.'],['.kH.kH.','k.H.k.H']]},
-  gazelle:{rows:['.....o.','.....He','dhhhhHn','.kkkkd.'],legs:[['.kH.kH.','.kH.kH.'],['.kH.kH.','k.H.k.H']]},
-  rabbit:{rows:['..h.','whHe'],legs:[['.dd.'],['d..d']]},
-  hare:{rows:['..hd','whHe'],legs:[['.dd.'],['d..d']]},
-  hen:{rows:['d.r.','dhHb'],legs:[['.y.y'],['y.y.']]},
+  // (more detail, 2026-11-08, the owner: "change wildlife sprites as well to have more detail": each its marks at this scale: a cow's
+  //  patches and horns, a sheep's fleece and dark face, a pig's snout and curled tail, a goat's horns and beard, a rabbit's ears and
+  //  white scut, a hen's comb and tail, a deer's ears, neck and white rump, antlers branched, a gazelle's flank stripe)
+  cow:{rows:['.......o.','.hhhshhHe','dHsHHHsHn','.dHHsHHd.'],legs:[['.kH..kH..'],['k.H.k..H.']]},
+  sheep:{x:{f:'#4a423c'},rows:['.hhhh..','hhHhHHf','hHHHHff','.dHHd..'],legs:[['.f..f'],['f..f.']]},
+  pig:{rows:['.hhhhh.','dHHHHHe','.dHHHHn'],legs:[['.k..k.'],['k..k..']]},
+  goat:{rows:['....o..','...oHe.','dhhhHHn','.dHHH.w'],legs:[['.k..k.'],['k..k..']]},
+  deer:{rows:['.....d.d','.....hHe','....hHHn','whhhhHH.','.dHHHHd.'],legs:[['.kH..kH.','.kH..kH.'],['.kH..kH.','k.H.k..H']]},
+  stag:{rows:['...a.a.a','....aa..','.....hHe','....hHHn','whhhhHH.','.dHHHHd.'],legs:[['.kH..kH.','.kH..kH.'],['.kH..kH.','k.H.k..H']]},
+  reindeer:{rows:['...a.a.a','...aaa..','.....hHe','....wHHn','dhhhwwH.','.dHHHHd.'],legs:[['.kH..kH.','.kH..kH.'],['.kH..kH.','k.H.k..H']]},
+  ibex:{rows:['....oo..','...o.hHe','.....HHk','dhhhhHH.','.dHHHHd.'],legs:[['.kH..kH.','.kH..kH.'],['.kH..kH.','k.H.k..H']]},
+  gazelle:{rows:['......o.','.....oHe','.....HHn','whhhhhH.','.kkkkkd.'],legs:[['.kH..kH.','.kH..kH.'],['.kH..kH.','k.H.k..H']]},
+  rabbit:{rows:['....hd','....hd','.hhhHe','whHHHn'],legs:[['.d..d.'],['d..d..']]},
+  hare:{rows:['.....k','.....k','....hd','.hhhhHe','whHHHHn'],legs:[['.d...d.'],['d...d..']]},
+  hen:{rows:['...r.','d..hb','dhhH.','.dHH.'],legs:[['.y.y.'],['y..y.']]},
   camel:{rows:['....h...he','...hHh..Hn','.hhHHHh.H.','dHHHHHHHH.','.dHHHHHd..'],legs:[['..kH..kH..','..kH..kH..'],['..kH..kH..','.k.H.k..H.']]},
-  buffalo:{x:{n:'#2a2628'},rows:['.....ooo.','.hhhhhhHe','dHHHHHHHn','.dHHHHHd.'],legs:[['.kH..kH..'],['k.H.k..H.']]},
-  fowl:{rows:['..hH','dhHb'],legs:[['.y.y'],['y.y.']]}
+  buffalo:{x:{n:'#2a2628'},rows:['......oo..','..hhhhhoHe','.hHHHHHHHn','dHHHHHHHd.'],legs:[['.hd...hd..'],['h.d..h..d.']]},
+  fowl:{rows:['...He','...Hb','d.hH.','dhhHH','.dHH.'],legs:[['.y.y.'],['y..y.']]}
 };
 // (its colours by CRITTER_MAP's letters)
 const critterCols=(D,T,R)=>({h:R[0],H:R[1],d:R[2],k:R[3],w:'#f4f0e8',e:'#1a1410',n:'#e8a0a0',b:'#e8b94a',y:'#d8963a',r:'#d83a2a',a:'#d8c8a0',o:'#a89a7a',s:D.spots||R[3],...(T.x||{})});

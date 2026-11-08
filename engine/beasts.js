@@ -245,7 +245,7 @@
       const m=mask();if(!fore&&hock&&how!=='side'){const kx=rx-hock+Math.round(dx/2),ky=Math.round((ry+fy)/2)+1;m.limb(rx,ry,kx,ky,w0,w1).limb(kx,ky,fx,fy,w1,w1)}else m.limb(rx,ry,fx,fy,w0,w1);
       // (its paw: a pixel longer ahead of the foot's row; raised for a blow, only its end the paw's colour)
       const fr=m.pts().filter(q=>q[1]===fy).map(q=>q[0]);if(fr.length&&!up)m.add(Math.max(...fr)+1,fy);const [x1]=m.box();
-      for(const [x,y] of m.pts())put(g,x,y,D.legCol(col,up?(Math.hypot(x-fx,y-fy)<1.6?0:Math.hypot(x-fx,y-fy)<2.6?1:3):fy-y,x-x1,near,!m.has(x+1,y)))};
+      for(const [x,y] of m.pts())put(g,x,y,D.legCol(col,up?(Math.hypot(x-fx,y-fy)<1.6?0:Math.hypot(x-fx,y-fy)<2.6?1:4):fy-y,x-x1,near,!m.has(x+1,y)))};// (a raised leg past its paw 4: no row of a standing leg's, so never a tiger's black ring: the owner, 2026-11-08, "recheck the tiger")
     leg(0,false);leg(1,false);
     if(D.tail)D.tail(g,F,col,y=>y+b+drop(4),how);
     // (the head raised or lowered by the frame, a pixel at most, never moved off its neck)
@@ -277,16 +277,19 @@
       jaw:(g,x,y,n,c)=>{for(let k=0;k<n;k++)for(let xx=x;xx<x+4-k;xx++)put(g,xx,y+k,k?'#6a3038':'#3a2430');for(let xx=x-1;xx<x+3;xx++)put(g,xx,y+n,c.C);put(g,x+3,y,'#efe8d8');put(g,x+1,y+n-1,'#d8d0bc')}},F,o)}};
   // a tiger: long and low, a deep chest, big paws, the tail long and ringed with a black tip; orange, black stripes down its back
   // and flanks and round its legs, pale cheeks, throat and belly; it pounces with a paw
-  KINDS.tiger={W:32,H:18,dx:1,coats:['#d4782e','#c06a2e','#d88a44'],
-    draw(g,F,o){const v=o.v%3;return handBeast(g,{top:11,far:2,legH:3,headDown:2,pawUp:4,pawOut:3,hind:[7,5,3,2,2],fore:[19,4,3,2,0],mouth:[25,6],collar:[20,2,6],headKeys:'lnew',
-      rows:['......................S..S....',
-            '.....................ABSBBA...',
-            '...aaaasaaaasaaasaaa.BBBsBBA..',
-            '..asbbbsbbbsbbbsbbbbaSBBeBBwn.',
-            '..bsbbbsbbbsbbbsbbbbLBBBwwww..',
-            '..bbsbbbsbbbbbsbbbsbLLLBwww...',
-            '..cbbbbbbbbbbbbbbbbbbLLLL.....',
-            '...ccllllllllllllllcc.........'],
+  // (rechecked 2026-11-08, the owner: "recheck the tiger sprites": its body two columns shorter and a pixel higher on longer legs,
+  //  its pale belly only under its chest (a white line the length of it read as a stripe floating under it), a raised paw's leg its
+  //  own colour (it was the stripes' black, a block on its chest as it struck))
+  KINDS.tiger={W:32,H:19,dx:1,coats:['#d4782e','#c06a2e','#d88a44'],
+    draw(g,F,o){const v=o.v%3;return handBeast(g,{top:12,far:2,legH:4,headDown:2,pawUp:4,pawOut:3,hind:[7,6,3,2,2],fore:[17,5,3,2,0],mouth:[23,6],collar:[18,2,6],headKeys:'lnew',
+      rows:['....................S..S......',
+            '...................ABSBBA.....',
+            '...aasaaasaaasaaaa.BBBsBBA....',
+            '..abbsbbbsbbbsbbbbaSBBeBBwn...',
+            '..bbbbsbbbsbbbsbbbLBBBwwww....',
+            '..bbbbsbbbsbbbsbbbLLLBwww.....',
+            '..cbbbbbbbbbbbbbbbbLLLL.......',
+            '...cccccccccccclllcc..........'],
       col:o=>{const C=R(this.coats[v]),L=R('#ece2c8');return{a:C[0],b:C[1],c:C[2],d:C[3],s:'#2a1e1a',S:'#2a1e1a',A:C[0],B:C[1],C:C[2],l:L[1],L:L[0],w:'#f4eee0',n:'#8a4a42',e:'#e8c040',E:C[3],P:L}},
       legCol:(c,up,x,near,front)=>up===0?c.P[near?1:2]:near?(up===3?c.s:x===0?c.a:front?c.c:c.b):up===3?c.s:c.c,
       // (the tail: low from the rump, down in a long curve, its tip curled up; ringed, the tip black)
@@ -298,20 +301,22 @@
      row 30; seat: the row of their back under the saddle. Their colours come from the game (pal: its coat ramp C, the second ramp
      M: a wolf's pale chest, a ram's face), the side's outline by the game's own (people.js poutline) */
   const MOUNT_ART={
-    wolf:{top:12,seat:2,far:2,legH:4,headDown:3,pawUp:0,pawOut:0,hind:[7,6,3,2,2],fore:[18,5,3,2,0],mouth:[26,9],
-      rows:['......................A..A.....',
-            '.....................AAAAA.....',
-            '.....acccccccccccccaaABBBBA....',
-            '...aaccccbbbbbbbbbbbaBBBeBBBm..',
-            '..abbbbbabbbbbabbbbbbbBBBBMMMn.',
-            '..bbbbbbbbbbbbbbbbbbbbCBBMMM...',
-            '..cbbbbbbbbbbbbbbbllllLCCC.....',
-            '...ccbbbbbbbbbbbbllllll........',
-            '....ccc.......cccll............'],
+    // (shortened 2026-11-08, the owner: "make mount like wolf or warg a bit more shorter": its body four columns shorter, the whole
+    //  of it two to the right, so it stands under its rider's middle as before)
+    wolf:{top:12,seat:2,far:2,legH:4,headDown:3,pawUp:0,pawOut:0,hind:[9,6,3,2,2],fore:[16,5,3,2,0],mouth:[24,9],
+      rows:['....................A..A.......',
+            '...................AAAAA.......',
+            '.......acccccccccaaABBBBA......',
+            '.....aaccccbbbbbbbaBBBeBBBm....',
+            '....abbbbbababbbbbbbBBBBMMMn...',
+            '....bbbbbbbbbbbbbbbbCBBMMM.....',
+            '....cbbbbbbbbbbbllllLCCC.......',
+            '.....ccbbbbbbbbllllll..........',
+            '......ccc...cccll..............'],
       col:o=>{const C=o.pal.C,L=o.pal.M;return{a:C[0],b:C[1],c:C[2],d:C[3],A:C[0],B:C[1],C:C[2],m:L[0],M:L[1],l:L[1],L:L[0],n:'#1c1a20',e:'#ffdc04',E:C[3],D:o.pal.C}},
       legCol:(c,up,x,near,front)=>up===0?c.d:near?(x===0?c.a:front?c.c:c.b):c.d,
       // (its tail: bushy, out behind and down, raised as it runs)
-      tail:(g,F,c,y)=>{const up=F.tail||0,y0=y(g.h-2-10),m=mask();m.limb(3,y0,0,y0+3-up,3,2).limb(0,y0+3-up,0,y0+5-up*2,2,2);for(const [x,yy] of m.pts())put(g,x,yy,m.has(x,yy-1)?m.has(x,yy+1)?c.b:c.c:c.a)},
+      tail:(g,F,c,y)=>{const up=F.tail||0,y0=y(g.h-2-10),m=mask();m.limb(5,y0,2,y0+3-up,3,2).limb(2,y0+3-up,2,y0+5-up*2,2,2);for(const [x,yy] of m.pts())put(g,x,yy,m.has(x,yy-1)?m.has(x,yy+1)?c.b:c.c:c.a)},
       jaw:(g,x,y,n)=>{for(let k=0;k<n;k++)for(let xx=x;xx<x+3-k;xx++)put(g,xx,y+k,k?'#6a3038':'#3a2430');put(g,x+2,y,'#efe8d8')}},
     ram:{top:12,seat:2,far:2,legH:5,headDown:4,pawUp:0,pawOut:0,hind:[7,6,3,2,1],fore:[18,6,3,2,0],mouth:[26,6],headKeys:'hHk',
       rows:['.....................hhh......',
