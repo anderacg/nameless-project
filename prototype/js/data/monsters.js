@@ -10,6 +10,9 @@ Object.assign(ST,{
   wyrm:{n:'Sand Wyrm',tier:4,hp:650,dmg:24,spd:28,reach:24,range:0,cd:1.6,beast:true,big:true},
   griffin:{n:'Griffin',tier:3,hp:170,dmg:16,spd:72,reach:12,range:0,cd:.9,charge:true,beast:true,ability:'pounce'}
 });
+// One larger leader may replace an ordinary wolf; the pack's total headcount is unchanged.
+const WOLF_ALPHA={unit:'alpha_wolf',chance:.25,xp:25};
+ST.alpha_wolf={...ST.wolf,n:'Alpha Wolf',tier:2,hp:52,dmg:10,reach:12};
 // where: climates for open ground, 'forest' or 'hills' for those tiles. aggro monsters hunt you; the rest wait to be hunted.
 const MONSTERS={
   wolf:{n:'Wolf pack',unit:'wolf',count:[4,6],where:['frost'],w:3,aggro:true,xp:10,mat:'pelt',gear:[['fangdagger',.06],['fangcharm',.06]],d:'Fast and hungry. Their pelts keep a band warm.'},

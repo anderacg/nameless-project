@@ -119,7 +119,7 @@ function drawBody(g,c,q,k){const V=DEATHS.on?c.sp?.horse?horseDeathOf(c):deathFo
     else if(S.how==='over'||S.how==='tip'){g.rotate((S.how==='tip'?-1:1)*Q*Math.PI/2);g.drawImage(sp,x0,-h+2)}// (tip: over backwards)
     else if(S.how==='back'){const s=1-1.7*Q;if(s<0)g.translate(0,Math.round((h-2)*s*.5));g.scale(1,Math.abs(s)<.05?.05:s);g.drawImage(sp,x0,-h+2)}
     else{const s=1-(S.how==='melt'?.75:.5)*Q;g.drawImage(sp,x0,Math.round((-h+2)*s),w,Math.max(1,Math.round(h*s)))}}
-  else{if(S.mount){if(q<1){const m=S.mount,s=1-.5*q*q;g.drawImage(m,-16,Math.round(1-31*s),32,Math.max(1,Math.round(32*s)))}else g.drawImage(S.down,-16,-19);g.translate(4,7)}
+  else{if(S.mount){if(q<1){const m=S.mount,s=1-.5*q*q;g.drawImage(m,-Math.floor(m.width/2),Math.round(1-(m.height-1)*s),m.width,Math.max(1,Math.round(m.height*s)))}else g.drawImage(S.down,-Math.floor(S.down.width/2),3-S.down.height);g.translate(4,7)}
     if(S.horse){g.restore();if(B?.world)g.restore();return}// (a horse killed under its rider, who fought on: battle/dismount.js)
     if(S.wk){const F=FALL_FLY,w0=q>=1?c.wi:(c.wi+Math.round(q*F.turns*WEAPON_STEPS))%WEAPON_STEPS,w=weaponSprite(S.wk,S.team,c.skin,w0,undefined,DOLL_FIGS.on),x=q>=1?c.wx:3+(c.wx-3)*q,y=q>=1?c.wy:-9+(c.wy+9)*q-F.h*Math.sin(Math.PI*q);g.drawImage(w,Math.round(x)-w.R,Math.round(y)-w.R)}// (flung as he falls)
     if(q<1){g.translate(0,1);if(how==='knees'){const a=q<.5?0:((q-.5)/.5)**2,s=q<.5?1-.28*q/.5:.72;g.rotate(a*Math.PI/2);g.scale(1,s)}else g.rotate(bk*q*q*Math.PI/2);g.drawImage(S.stand,-12,-18)}
@@ -132,7 +132,7 @@ function drawFallen(g,c,V,q,k){const X=Math.round(c.x),Y=Math.round(c.y),M=V.mou
   if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
   if(k>0&&BLOOD.on&&V.blood){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed,V.blood);g.globalAlpha=.85;g.drawImage(p,X+(at[0]+V.pool[0])*f-(p.width>>1),Y+at[1]+V.pool[1]-(p.height>>1));g.globalAlpha=1}
   g.save();g.translate(X,Y);if(f<0)g.scale(-1,1);
-  const mount=()=>{if(q<1){const s=1-.5*q*q;g.drawImage(M,-16,Math.round(1-31*s),32,Math.max(1,Math.round(32*s)))}else g.drawImage(V.down,-16,-19)};
+  const mount=()=>{if(q<1){const s=1-.5*q*q;g.drawImage(M,-Math.floor(M.width/2),Math.round(1-(M.height-1)*s),M.width,Math.max(1,Math.round(M.height*s)))}else g.drawImage(V.down,-Math.floor(V.down.width/2),3-V.down.height)};
   if(M&&V.ride!=='under')mount();
   g.save();g.translate(at[0],at[1]);
   if(V.wk){const F=FALL_FLY,w0=q>=1?c.wi:(c.wi+Math.round(q*F.turns*WEAPON_STEPS))%WEAPON_STEPS,w=weaponSprite(V.wk,V.team,c.skin,w0,undefined,DOLL_FIGS.on),wx=c.wx*V.wd,x=q>=1?wx:3+(wx-3)*q,y=q>=1?c.wy:-9+(c.wy+9)*q-F.h*Math.sin(Math.PI*q);g.drawImage(w,Math.round(x)-w.R,Math.round(y)-w.R)}

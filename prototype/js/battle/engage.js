@@ -9,7 +9,7 @@ const partyPower=()=>rating(playerList());
 // stance: how a roaming party judges you from its power against yours
 const ATTACK_AT=.8,FLEE_AT=.5,STANCE_COL={attack:'#ff9a90',wary:'#e8d8a0',afraid:'#78c474'};
 const stance=(pw,observer=null)=>{const r=pw/Math.max(1,observer?TravelAwareness.power(observer):partyPower());return r>=ATTACK_AT?'attack':r>=FLEE_AT?'wary':'afraid'};
-const monPower=m=>m.pw||(m.pw=rating(Array(m.n).fill(MONSTERS[m.id].unit),m.lv));
+const monPower=m=>m.pw||(m.pw=rating(monsterTroops(m),m.lv));
 /* fear (the owner, 2026-11-01: bands that fled your army walked back into it to reach their camp): one afraid of your army keeps
    away from it while it remembers it (fearSeen: a group of yours it saw within TRAVEL_GROUPS.memory, TravelAwareness), in its
    sight or not, straight away from your army's middle (armyMid); and it takes refuge only where your army is neither at nor across
@@ -207,7 +207,7 @@ function startEncounter(e){
   const vm=vitals(),hurt=reinfHtml(e)+(P.hp<vm[0]*.6?'<p class="bad">You are wounded: '+Math.round(P.hp)+' / '+vm[0]+' health. Rest at an inn or travel to recover.</p>':''),cls=ratio<.6?'good':ratio<1?'gold':'bad',vs='Your power <strong>'+(inside?rating(mine):partyPower())+'</strong> vs <strong>'+rating(e.list,e.lv)+'</strong> · threat <strong class="'+cls+'">'+threat+'</strong>',lord=e.kind==='lord'&&e.ref,f=lord&&FACS[lord.fac];
   if(e.kind==='monster'||e.kind==='cave'){const M=MONSTERS[e.ref.id],u=ST[M.unit],Y=M.mythic;
     const finds=[M.mat&&'Trophy: '+MATS[M.mat].n+'.',M.gear.length&&'Rare finds: '+M.gear.map(([it])=>'<span style="color:'+RARITY[ITEMS[it].r]+'">'+ITEMS[it].n+'</span>').join(', ')+'.',Y&&Y.hoard&&'It guards a hoard of about '+Y.hoard.gold+' gold.'].filter(Boolean).join(' ');
-    return showPanel('<h2>'+(Y?Y.title:(e.kind==='cave'?e.ref.name+': ':'')+M.n+' <span class="muted">· level '+e.lv+'</span>')+'</h2><p>'+M.d+'</p><p>'+e.list.length+' × '+u.n+' ('+u.hp+' hp'+(e.lv>1?', stronger with level':'')+'). '+vsLine(u)+(inside?'. You go in with <strong>'+(mine.length-1)+'</strong> of your band; the rest wait outside.</p>':'. You have <strong>'+P.fighters+'</strong> fighters.</p>')+ground+typeHtml(e)+
+    return showPanel('<h2>'+(Y?Y.title:(e.kind==='cave'?e.ref.name+': ':'')+M.n+' <span class="muted">· level '+e.lv+'</span>')+'</h2><p>'+M.d+'</p><p>'+(e.ref.id==='wolf'&&e.list.includes(WOLF_ALPHA.unit)?Object.entries(countsOf(e.list)).map(([k,n])=>n+' × '+ST[k].n+' ('+ST[k].hp+' hp)').join(', '):e.list.length+' × '+u.n+' ('+u.hp+' hp'+(e.lv>1?', stronger with level':'')+')')+'. '+vsLine(u)+(inside?'. You go in with <strong>'+(mine.length-1)+'</strong> of your band; the rest wait outside.</p>':'. You have <strong>'+P.fighters+'</strong> fighters.</p>')+ground+typeHtml(e)+
       (finds?'<p class="muted">'+finds+'</p>':'')+hurt+'<p>'+vs+'</p>'+
       '<div class="btns">'+encounterAttackButtons(e)+'<button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>')}
   if(e.kind==='field')return showPanel('<h2>'+e.title+'</h2><p>You ride into the battle'+(e.allies.length?' beside '+e.allies.map(l=>l.name).join(', '):'')+'.</p>'+ground+hurt+'<p>'+vs+'</p><div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button><button class="btn" type="button" data-act="auto">Auto-resolve</button><button class="btn" type="button" data-act="flee">Leave them to it</button></div>');

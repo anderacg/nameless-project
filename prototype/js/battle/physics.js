@@ -16,7 +16,7 @@
 const PHYSICS={on:true,
   // mass: a man on foot by his armour (×heavy for heavy troops); a mount adds horse; beasts by kind, else beast (big: big)
   mass:{none:1,leather:1.1,mail:1.3,plate:1.55,hide:1.2,heavy:1.1,horse:3.2,beast:1.3,big:7,
-    kinds:{wolf:.9,spider:.8,slime:1,boar:1.6,tiger:2,griffin:2.5,bear:4,troll:7,wyrm:10,dragon:20}},
+    kinds:{wolf:.9,alpha_wolf:1.4,spider:.8,slime:1,boar:1.6,tiger:2,griffin:2.5,bear:4,troll:7,wyrm:10,dragon:20}},
   // how each kind moves: acc (px/s² speeding up), brake (px/s² slowing), turn (rad/s at full speed), turn0 (at a standstill).
   // heavy: plate or heavy foot; light: beasts under light; big: big ones, and any as heavy as heavyAt
   kinds:{foot:{acc:150,brake:260,turn:7,turn0:9},heavy:{acc:75,brake:200,turn:5,turn0:7},cav:{acc:90,brake:100,turn:2.2,turn0:6},

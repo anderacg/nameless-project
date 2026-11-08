@@ -39,7 +39,7 @@ const MARCH_STYLES={gap:8,margin:4,wrap:3,
 function marchRace(groups){const n={};let all=0,raced=0;for(const g of groups){all+=g.count;const k=ST[g.type]?.race;if(k){n[k]=(n[k]||0)+g.count;raced+=g.count}}
   if(!raced||raced*2<all)return null;const top=Object.keys(n).sort((a,b)=>n[b]-n[a])[0];return n[top]>=raced*.6?top:'mixed'}
 // (a row's place in a style: its leader (a band's chief among its troops too), a beast, else its battle class)
-const marchRole=(row,o)=>{if(row.character||o.ld&&row.type==='chief')return 'leader';const S=ST[row.type];return !S?'foot':S.beast||S.big?'beast':unitClass(S)};
+const marchRole=(row,o)=>{if(row.character||o.ld&&row.type==='chief'||o.mapKind==='monster'&&o.id==='wolf'&&row.type===WOLF_ALPHA.unit)return 'leader';const S=ST[row.type];return !S?'foot':S.beast||S.big?'beast':unitClass(S)};
 // (whether form f suits a row's men: FORMS who; a wedge WEDGE.min riders at least, a pack two; a leader in a line)
 const marchFormOk=(row,f)=>{const F=FORMS[f];return !!F&&(!F.who||!!ST[row.type]&&FORM_WHO[F.who]({s:ST[row.type]}))&&(!F.wedge||row.count>=WEDGE.min)&&(!F.pack||row.count>1)&&(!row.character||f==='line')};
 // (a group's half depth and half width as it stands facing the army's way, its bodies included: world px)

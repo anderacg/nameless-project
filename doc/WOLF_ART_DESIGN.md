@@ -12,8 +12,19 @@ The `wolf` test covers assets, actual game-scale pixel integrity, timing, all de
 
 ## Mounted wolf — implemented
 
-`PX.mountArt` routes wolves and wargs to `PX.wolf.mount`. The approved idle, walk and run frames are centered inside the existing 32-pixel mount cell, recolored through the mount palettes, and given a saddle seat that follows the actual back. The normal rider drawing supplies the saddle, side cloth, barding, seated legs, bow and weapons. Mutable grids are cloned per draw so gear colors cannot leak between riders. Wargs retain their darker coat. Loose mounts, dismounted wolves and fallen mounts use the same art; the side and belly fallbacks use the authored folded-leg death and lying-down frame. No mount item, movement rule or stat changes.
+`PX.mountArt` routes wolves and wargs to `PX.wolf.mount`. The approved idle, walk and run frames are centered inside the mount cell, recolored through the mount palettes, and given a saddle seat that follows the actual back. The normal rider drawing supplies the saddle, side cloth, barding, seated legs, bow and weapons. Mutable grids are cloned per draw so gear colors cannot leak between riders. Wargs retain their darker coat. Loose mounts, dismounted wolves and fallen mounts use the same art; the side and belly fallbacks use the authored folded-leg death and lying-down frame. No mount item, movement rule or stat changes.
 
 The `wolfmount` and `figurepieces` suites check rider anchors, walking/running variants, saddle contact, grid isolation and connected composition. `dismount`, `sprites`, `deaths` and `actorrules` check behavior and compatibility.
 
-Rider alignment: wolf and warg riders, seated legs, saddles, cloth, barding and stirrups share a two-pixel forward offset toward the center of the back. Saddle height is sampled at that new location. Other mount types keep their previous placement.
+Rider alignment: wolf and warg riders, seated legs, saddles, cloth, barding and stirrups share a forward offset toward the center of the back. Saddle height is sampled at that new location. Other mount types keep their previous placement.
+
+
+## Alpha wolves — implemented
+
+An `alpha_wolf` is 25% larger than the regular wolf, using every approved animation and all three death sequences with nearest-neighbor pixels. Its base health is 52 and damage 10, versus 26 and 6 for a regular wolf. It uses wolf pack tactics, frost/fire resistances and a heavier body mass.
+
+At birth, about 25% of wild wolf packs receive one alpha in place of an ordinary wolf. The alpha occupies the leader position in the map formation. Pack counts, encounter strength, survivor lists, wolf pelts and XP include its actual unit type. The saved `alpha` flag preserves a living leader and clears when it dies; loading or adding ordinary wolves cannot bring it back. Existing packs stay as saved. Alpha selection is derived from the seeded lair location without advancing either RNG stream.
+
+Wolf Riders, Wolf Archers and Warg Raiders now ride alpha-sized bodies. Their mount frame is 40 × 36 pixels, with a six-pixel rider/tack offset in that expanded frame and a saddle sampled from the actual back. Loose and fallen mounts use the same body size. Other mounts retain their existing dimensions and placement.
+
+Tests: `alphawolf` covers spawning, mixed rosters, persistence, map leadership, encounter rewards, combat stats and mount size. `wolfmount` checks the expanded frame and saddle contact. No fingerprint values are re-recorded.
