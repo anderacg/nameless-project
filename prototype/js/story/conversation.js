@@ -79,7 +79,7 @@ class LordSpeaker extends Speaker{
     if(o.gold)W.treas[l.fac]=Math.max(0,treas(l.fac)-o.gold);Outcome.apply(o,{});const d=Outcome.describe(o);if(d)cv.say('<span class="muted">'+d+'</span>',true);
     if(id==='threaten')m.threat=G.day;else if(!won&&id!=='follow')m.slight=G.day;updateHUD(true);lordMeet(l)}
   facts(){const l=this.o,f=FACS[l.fac],st=hostileTo(l.fac)?'Your realms are at odds, but '+l.name+' will not draw on a friend.':P.fac===l.fac?'You serve the '+f.n+'.':P.fac?'Your employer is at '+(relOf(P.fac,l.fac).s==='ally'?'alliance':'peace')+' with them.':'They have no quarrel with you.';
-    return '<p class="muted">Level '+lordStats(l).lv+' · renown '+(l.renown||0)+' · Leadership '+lordSkill(l,'lead')+' · Tactics '+lordSkill(l,'tact')+' · Medicine '+lordSkill(l,'med')+' · leads up to '+lcapOf(l)+'.</p><p>'+st+'</p>'}
+    return '<p class="muted">Level '+lordStats(l).lv+' · renown '+(l.renown||0)+' · Leadership '+Math.round(lordSkill(l,'lead')*PROF.per)+' · Tactics '+Math.round(lordSkill(l,'tact')*PROF.per)+' · Medicine '+Math.round(lordSkill(l,'med')*PROF.per)+' · leads up to '+lcapOf(l)+'.</p><p>'+st+'</p>'}
   body(talk){const l=this.o,f=FACS[l.fac],free=P.fac===l.fac||l.inside;
     return relHtml(l,!talk?.lords)+(l.inside?'<p class="muted">Holding court in '+l.inside+', with '+l.troops.length+' soldiers quartered alongside the garrison.</p>':'')+lordJobHtml(l)+
       '<div class="btns">'+(free?'':'<button class="btn" type="button" data-act="lord-attack">Attack</button>')+'</div>'+(free?'':'<p class="muted">Attacking makes the '+f.n+' hostile to you for 20 days.</p>')}

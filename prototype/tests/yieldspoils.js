@@ -45,18 +45,18 @@ Kit.suite(({ok})=>{
    t.act('lt-leave');ok(G.mode==='world'&&!G.loot,'Continue: back on the map')}
   // ======== a camp or hideout that yields (sites.js Lair site-fate, parley.js lairFate): the page left for the same window
   {const c=W.sites.find(s=>s instanceof t.Lair);c.cleared=false;c.seen=true;c.returned();c.bands=[];const ld=c.ld,ex=W.exiles.length;let cleared=null;t.worldOn('site:cleared',d=>{cleared=d.site});
-   Kit.world();P.troops={hum_knight:40,hum_long:30};P.inv=P.inv.map(()=>null);const xp=t.xpTotal(),r=P.renown;t.enterSite(c);t.act('site-tab','parley');Kit.stub(0,()=>t.act('site-yield'));
+   Kit.world();P.troops={hum_knight:40,hum_long:30};P.inv=P.inv.map(()=>null);const xp=t.xpTotal(),r=P.renown,tc=P.sk.tact.lv*1e3+P.sk.tact.xp;t.enterSite(c);t.act('site-tab','parley');Kit.stub(0,()=>t.act('site-yield'));
    ok(G.siteTab==='yield'&&G.siteSpy?.yielded,'(the '+c.T.n.toLowerCase()+' yields)');const men=G.siteSpy.yielded.filter(u=>u!=='chief').length;
    Kit.stub(.01,()=>t.act('site-fate','free'));
    ok(head()==='Disarmed'&&!G.site&&G.lootView&&G.mode==='dialog'&&P.renown===r+1&&chip('Renown')==='+1','let go: the page left for the end window, "Disarmed", renown +1');
-   ok(gear()===1+Math.round(men/A)&&t.xpTotal()===xp,'their weapons on the pile ('+gear()+' for '+men+': a beaten camp\'s drop, once more every '+A+'); no experience');
+   ok(gear()===1+Math.round(men/A)&&P.sk.tact.lv*1e3+P.sk.tact.xp===tc,'their weapons on the pile ('+gear()+' for '+men+': a beaten camp\'s drop, once more every '+A+'); no battle\u2019s practice');
    ok(c.cleared&&cleared===c&&W.exiles.some(x=>x.ld===ld)&&!c.ld&&W.exiles.length===ex+1,'the '+c.T.n.toLowerCase()+' lies empty (site:cleared heard), its chieftain gone to rebuild');
    t.act('lt-leave');ok(G.mode==='world'&&!G.loot,'Continue: back on the map')}
   // ======== a lord who yields: his ransom, renown and the shame as ever, in the same window, his army's weapons on the pile
-  {Kit.world();P.prisoners={};P.sk.lead.lv=2*PROF.per;const l=W.lords.find(x=>!x.dead);l.troops=Array(8).fill('hum_levy');P.hostile[l.fac]=G.day+20;const g=P.gold,r=P.renown,xp=t.xpTotal(),h=t.honorWith(l.fac);
+  {Kit.world();P.prisoners={};P.sk.lead.lv=2*PROF.per;const l=W.lords.find(x=>!x.dead);l.troops=Array(8).fill('hum_levy');P.hostile[l.fac]=G.day+20;const g=P.gold,r=P.renown,xp=t.xpTotal(),h=t.honorWith(l.fac),tc=P.sk.tact.lv*1e3+P.sk.tact.xp;
    G.par={o:l,kind:'lord'};Kit.stub(.01,()=>t.act('pl-yield'));const pn=t.prisonerCount();
    ok(head()===l.name+' yields'&&G.lootView&&l.dead&&P.gold>=g+80&&P.renown===r+8&&chip('Renown')==='+8'&&t.honorWith(l.fac)<h,'a lord yields: "'+l.name+' yields", his ransom (+'+(P.gold-g)+' gold), renown +8, the honor it costs, in the end window');
-   ok(gear()===1+Math.round((8-pn)/A)&&t.xpTotal()===xp,'the '+(8-pn)+' sent home unarmed leave their weapons ('+gear()+'); no experience');
+   ok(gear()===1+Math.round((8-pn)/A)&&P.sk.tact.lv*1e3+P.sk.tact.xp===tc,'the '+(8-pn)+' sent home unarmed leave their weapons ('+gear()+'); no battle\u2019s practice');
    t.act('lt-leave');ok(G.mode==='world'&&!G.loot,'Continue: back on the map')}
   // ======== a quest's hooks: band:beaten still heard
   {let heard=null;t.worldOn('band:beaten',d=>{heard=d.band});const b=yielded(2);Kit.stub(.99,()=>t.act('pl-free'));ok(heard===b,'a yield still tells the world the band is broken (band:beaten: bounties, a captive it held)');t.act('lt-leave')}

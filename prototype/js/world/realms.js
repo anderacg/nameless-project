@@ -164,7 +164,7 @@ const nearestOf=(o,list)=>Spatial.nearest(list,o.x,o.y);// (the old name: core/s
    (+1 for a lord's bearing), and a realm short of holdings rallies 4 more for each it lacks. Lords from older saves are filled in */
 const LORD_SK=['lead','tact','med'];
 function lordStats(l){if(l.lv)return l;l.lv=rint(2,6);l.xp=0;l.renown=l.lv*8;l.sk={};for(const k of LORD_SK)l.sk[k]={lv:Math.min(SK_MAX,(Math.floor(l.lv/2)+rint(0,1))*PROF.per),xp:0};return l}
-const lordSkill=(l,k)=>{const s=lordStats(l).sk[k];return s?s.lv:0};
+const lordSkill=(l,k)=>{const s=lordStats(l).sk[k];return s?s.lv/PROF.per:0};// (in power: a level ÷ PROF.per)
 function lordTrain(l,k,n){leaderOf(l).train(k,n)}
 function lordXp(l,n){leaderOf(l).gainXp(n)}// (leaders.js Lord)
 // a lord's hiring (doRealms, realms.js): men a unit slot (his slots: lcapOf over it, parties.js LordParty unitSlots), men refilled a unit a

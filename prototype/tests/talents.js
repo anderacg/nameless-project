@@ -17,7 +17,7 @@ try{
  ok(Object.values(t.PERKS).length&&Object.keys(t.PERKS).every(p=>ids.some(id=>TR[id].m.perk===p)),'every old perk is a notable');
  // points
  ok(P.tp===0&&P.tree.length===1,'a new hero has no points and only the Origin');
- P.xp=0;t.gainXp(60*1+60*2);ok(P.level===3&&P.tp===2,'two levels give two points');
+ {const H=t.leaderOf(P),l0=P.level;let k=0;while(P.level<l0+2&&k++<500)H.train('eng',5,true);ok(P.level===l0+2&&P.tp===2,'two levels (from practice) give two points')}
  ok(!t.takeNode('might2'),'a node not touching yours cannot be taken');
  const s0=P.attr.str,h0=t.heroStats().hp;ok(t.takeNode('might0')&&P.attr.str===s0+2&&t.heroStats().hp>h0,'Strength talent: +2 Strength, more health');
  ok(t.takeNode('might1')&&P.tp===0&&!t.takeNode('might2'),'no points, no talents');
@@ -44,7 +44,7 @@ try{
  // keystone trade-off
  const hpA=t.heroStats().hp,capA=t.partyCap();learn(['finesse3','finesse4','finesse5','finesse6']);ok(t.heroStats().hp>hpA*1.2&&t.partyCap()<capA,'Lone Wolf: more health, fewer followers');
  // the page
- G.mode='world';G.modal=false;t.hidePanel();window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyK',key:'k'}));ok(G.mode==='skills'&&document.querySelector('svg.tree'),'K opens the Skills page with the tree');
+ G.mode='world';G.modal=false;t.hidePanel();window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyK',key:'k'}));t.act('sk-tab','talents');ok(G.mode==='skills'&&document.querySelector('svg.tree'),'K opens the Skills page; the Tree tab shows the tree');
  ok(document.querySelectorAll('.tnode').length===ids.length,'every node is drawn');
  P.tp=1;t.act('tree-sel','arcana2');ok(/Field Surgeon/.test(panel())&&!document.querySelector('[data-act="tree-take"]').disabled,'selecting a node shows it, with Learn');
  t.act('tree-take','arcana2');ok(t.treeHas('arcana2')&&/Unlearn/.test(panel()),'learning it from the page');

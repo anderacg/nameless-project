@@ -126,7 +126,7 @@ Kit.suite(({ok,info})=>{
    Kit.meet({kind:'camp',ref:s,n:4,band:s.band});Kit.seeded(5,()=>t.concludeEncounter(true,{},0,true,[]));Kit.done({cont:true,world:true});there(step());
    ok(pageHas('Ander The Fallen','Ride with me')&&!pageHas('Accept their thanks'),'back at his sister’s: Ride with me');ok(save(),'saved and loaded at the end');frame();
    const z=live();t.act('thr-do','1');const c=P.comps.ander;
-   ok(c&&c.lv===WD.ander.lv&&c.attr.str===WD.ander.attr.str&&c.attr.agi===WD.ander.attr.agi&&t.compInBand('ander')&&t.compSkill('ander','lead')===3&&ends(z).join()==='joins'&&!P.troops.ander,'he joins as a companion (not a troop): level '+c.lv+', Strength '+c.attr.str+', Agility '+c.attr.agi+', Leadership 3');
+   ok(c&&c.lv===WD.ander.lv&&c.attr.str===WD.ander.attr.str&&c.attr.agi===WD.ander.attr.agi&&t.compInBand('ander')&&Math.abs(t.compSkill('ander','lead')-3)<1e-9&&ends(z).join()==='joins'&&!P.troops.ander,'he joins as a companion (not a troop): level '+c.lv+', Strength '+c.attr.str+', Agility '+c.attr.agi+', Leadership 3');
    ok(t.rating(['ander'])>t.rating([U])*2,'a veteran: his power '+t.rating(['ander']));
    // (never twice: the chance at its fullest, and no second Ander comes; the command refuses; kept through a save)
    ok(/^ERR .*never twice/.test(x('ander'))&&!t.Wounded.anderFree(),'never twice: the command refuses');

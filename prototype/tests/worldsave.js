@@ -26,8 +26,8 @@ try{
   info('after a ride of 1600 px, '+k+' tiles known: the fog is '+str.length+' chars (as bits '+bits+')')}
  // ---- v3: the world it was made in, the round trip
  fresh();play(200);const s0=save('quick'),d0=JSON.parse(s0);
- ok(d0.v===3&&d0.world.v===3&&d0.world.map.gen===t.WM.gen&&J(d0.world.map.settings)===J(t.WM.settings)&&d0.world.map.sum===t.WM.sum&&J(d0.world.edits)==='[]'&&!d0.z&&d0.P.army,
-  'a save is v3: world.map is the world\'s gen, settings and checksum ('+d0.world.map.gen+', '+d0.world.map.sum+'), edits empty; plain JSON under LOADING.sync');
+ ok(d0.v===t.SAVE_V&&d0.world.v===t.SAVE_V&&d0.world.map.gen===t.WM.gen&&J(d0.world.map.settings)===J(t.WM.settings)&&d0.world.map.sum===t.WM.sum&&J(d0.world.edits)==='[]'&&!d0.z&&d0.P.army,
+  'a save is v'+t.SAVE_V+': world.map is the world\'s gen, settings and checksum ('+d0.world.map.gen+', '+d0.world.map.sum+'), edits empty; plain JSON under LOADING.sync');
  ok(!('kind' in d0.world.map)&&s0.length<400000,'the map itself is never saved ('+kb(s0.length)+')');
  // (compared after a load: a load drops what play kept for itself, as a party's power: pw)
  t.loadGame('quick');const s1=save('quick');t.loadGame('quick');
@@ -71,7 +71,7 @@ try{
   // (the game as it stands now, saved plain and gzipped at once: the page's frames go on between awaits)
   LD.sync=true;plain=save('3');LD.sync=false;const p=t.saveGame(true,'2');ok(p instanceof Promise&&!!t.SAVING,'with CompressionStream a save is written gzipped, a moment later (a Promise)');await p;
   const h=JSON.parse(raw('2'));
-  ok(t.SAVE_ZIP&&h.v===3&&h.z&&h.P.level===P.level&&h.P.gold===P.gold&&!h.P.army&&J(h.world.map)===J(JSON.parse(plain).world.map)&&!h.world.own&&J(t.readSlot('2'))===J(h),
+  ok(t.SAVE_ZIP&&h.v===t.SAVE_V&&h.z&&h.P.level===P.level&&h.P.gold===P.gold&&!h.P.army&&J(h.world.map)===J(JSON.parse(plain).world.map)&&!h.world.own&&J(t.readSlot('2'))===J(h),
    'the slot: a plain header (v, at, the save line\'s fields, world.map) beside the gzipped body; listed at once ('+kb(raw('2').length)+' against '+kb(plain.length)+' plain)');
   ok(t.saveLine({...h,at:0})===t.saveLine({...JSON.parse(plain),at:0}),'its save line is the plain save\'s: '+t.saveLine(h));
   P.gold=-7;t.loadGame('2');await LD.task;
