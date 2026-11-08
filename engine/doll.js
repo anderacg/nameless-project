@@ -249,7 +249,9 @@
     if(R.ears&&!headCover)put(hx+3,hy+1,'skin',1);// (an elf's ear behind his face, in his hair: before it, it read as a nose)
     // (a goblin's long ears out behind his head and up, over a hood too; an orc's tusk: both were commented out by a // on this line
     // from d909f51 to 2026-11-08)
-    if(R.goblinEars){put(hx+3,hy+1,'skin',1);put(hx+4,hy+1,'skin',1);put(hx+4,hy,'skin',2)}if(R.tusk)put(hx+1,hy+2,'#f0ecd8',0);
+    // (since 2026-11-08, his reference: the ear long, out behind his head at his eyes' height, its tip turned up; a hooked nose before
+    //  his face)
+    if(R.goblinEars){put(hx+3,hy+1,'skin',1);put(hx+4,hy+1,'skin',1);put(hx+5,hy+1,'skin',2);put(hx+5,hy,'skin',2);put(hx-1,hy+2,'skin',1)}if(R.tusk)put(hx+1,hy+2,'#f0ecd8',0);
     // the gear before him: the shield on his left arm, a weapon in front
     lay(false);
     // the shadow underfoot

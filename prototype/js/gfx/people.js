@@ -101,7 +101,7 @@ const PEOPLE_LOOK={
   band_poacher:{helm:'hood',hood:'olive',outer:'olive',weapon:'bow',cape:'leather',outlaw:true},
   // (goblins (the owner's reference): green hoods, rags (dollfigs.js dollParts); crude arms, a goblin's size (the owner, 2026-11-08:
   //  "realistic"): a knife and a round shield, a short spear, a short bow, the boss in a pelt with a hand axe)
-  gob_stab:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'dagger',shield:'wood'},gob_spear:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'javelin'},
+  gob_stab:{race:'goblin',helm:'bare',outer:'leather',weapon:'cleaver',shield:'plank'},gob_spear:{race:'goblin',helm:'bare',outer:'leather',weapon:'javelin'},
   gob_bow:{race:'goblin',helm:'hood',hood:'forest',outer:'leather',weapon:'bow'},gob_boss:{race:'goblin',helm:'hood',hood:'forest',outer:'fur',weapon:'axe',shield:'wood'},
   // (a goblin warband's leader (the owner, 2026-11-08: "replace the hobgoblin with the goblin leader, just make it look different from
   // normal goblins"): a goblin, a skull for a helm, his side's cloak over a pelt, a crude blade, no shield; sprites.js chiefLookType)
@@ -181,7 +181,7 @@ function lookOf(type,team,hero,v,cid,cg){
     robe:L.robe,surcoat:L.surcoat,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar,armor:hero?L.armor:st?armorOf(st):'none'};
   // (a goblin's own variants (the owner, 2026-11-08: "they might not wear a top, only leather bottoms"): every other one bare to the
   // waist, his breeches leather or dark; a leader always clothed: dollfigs.js dollParts)
-  if(race==='goblin'&&!L.lead&&L.outer!=='fur'){o.bareTop=v%2===1;o.legs=v%3===0?'dark':'leather'}
+  if(race==='goblin'){o.hairStyle='bald';if(!L.lead&&L.outer!=='fur'){o.bareTop=v%2===1;o.legs=v%3===0?'dark':'leather'}}// (and bald, as his reference)
   if(L.outlaw==='own')o.outlaw=true;else if(L.outlaw){const D=OUTLAW_DRESS;o.outlaw=true;o.helm=D.helm[(v+D.helm.indexOf(L.helm)+6)%D.helm.length];o.outer=D.cloth[(v*5+1)%D.cloth.length];o.inner=D.inner[v%D.inner.length];if(o.helm==='hood')o.hood=D.hood[v%D.hood.length]}
   if(L.plain){o.helm=race==='orc'&&PLAIN_HELM[v]==='hood'?'bare':PLAIN_HELM[v];o.outer=PLAIN_CLOTH[v]}
   if(o.mount==='horse')o.mountC=L.barded?'horseW':['horse','chestnut','horseB','horse','horseG','chestnut'][v];
@@ -337,7 +337,7 @@ function rigLimbs(g,o,ox,oy,R,sh,behind){const S=pal(o.skin),A=pal(o.outer),Lg=p
 // a blow swung from the hand at its frame's [hand dx, dy, angle] (SWING; a pole's swing POLE_SWING)
 // (lengths beside his height and his spear's (the owner, 2026-11-07: "some of the weapon is longer than it has to be if compared with spear"):
 //  a sword or a one-handed axe under half a spear, a great weapon or a maul two thirds of one)
-const WPN={sword:[5,'steel','guard'],great:[8,'steel','guard'],dagger:[3,'steel','guard'],axe:[5,'wood','axe'],bigaxe:[8,'wood','bigaxe'],hammer:[7,'wood','hammer'],
+const WPN={sword:[5,'steel','guard'],great:[8,'steel','guard'],dagger:[3,'steel','guard'],cleaver:[4,'steel','cleaver'],axe:[5,'wood','axe'],bigaxe:[8,'wood','bigaxe'],hammer:[7,'wood','hammer'],
   spear:[12,'wood','tip'],pike:[15,'wood','tip'],javelin:[10,'wood','tip'],lance:[16,'wood','pennant'],
   hoe:[10,'wood','hoe'],pick:[8,'wood','pick'],crook:[12,'wood','crook'],rod:[13,'wood','rod']};// (workers' tools: the world map, folk.js)
 const SWING={swing:[[-3,-4,-125],[1,-1,-5],[0,1,55]],thrust:[[-2,-1,-8],[2,-1,0],[0,-1,0]],overhead:[[-2,-6,-95],[0,-5,-35],[1,0,70]]};

@@ -49,6 +49,8 @@ function drawBlade(set,hx,hy,deg,k,Tm,skin,len=WPN[k][0],thin=false){if(thin)deg
   else if(head==='pennant'){set(tx,ty,M[0]);set(tx-s,ty+c,Tm[1]);set(tx-s*2,ty+c*2,Tm[2]);set(tx-s-c,ty+c-s,Tm[1])}
   if(head==='axe'||head==='bigaxe'){for(let i=1;i<=(head==='bigaxe'?3:2);i++){set(tx-s*i,ty+c*i,M[1]);set(tx-s*i-c,ty+c*i-s,M[2])}if(head==='bigaxe')for(let i=1;i<=2;i++)set(tx+s*i,ty-c*i,M[1])}
   if(head==='hammer'){for(let i=-1;i<=1;i++){set(tx-s*i,ty+c*i,M[1]);set(tx-s*i-c,ty+c*i-s,M[2])}}
+  // (a goblin's cleaver (his reference): a crude broad blade, its edge steel, its back a rusty dark, a notch near its tip)
+  if(head==='cleaver'){const b=shaft.slice(1);b.forEach(([x,y],j)=>{set(x,y,M[j===b.length-1?2:1]);if(j<b.length-1||b.length<3)set(Math.round(x-s),Math.round(y+c),j===1?M[2]:'#6e5040')});set(hx,hy,W[2])}
   // (a tool's head, across the haft at its end: px, py the way across, forward)
   const px=-s,py=c;
   if(head==='hoe'){set(tx+px,ty+py,M[2]);set(tx+px*2,ty+py*2,M[1]);set(tx+px*2-c,ty+py*2-s,M[1])}

@@ -42,8 +42,8 @@ Kit.suite(({ok,info})=>{
  // (no soldier's kit (the owner, 2026-11-08: "goblins should not wear full armor, make them realistic"): rags, bare arms and feet, the
  // side's colour a rag at the waist; crude arms of a goblin's size; no mail, the boss's a pelt)
  {const kit=k=>t.dollParts(t.lookOf(k,1,false,0)).map(p=>p[0]),G4=['gob_stab','gob_spear','gob_bow','gob_boss'];
-  ok(G4.every(k=>{const P=kit(k);return!P.includes('tabard')&&!P.includes('mail')&&!P.includes('boots')&&!P.includes('shirt')&&P.includes('sash')})&&G4.every(k=>!['mail','plate'].includes(ST[k].armor))&&t.lookOf('gob_boss',1).weapon==='axe'&&t.lookOf('gob_spear',1).weapon!=='spear'&&!['iron','steel'].includes(t.lookOf('hob_chief',1).outer),
-   'goblins in rags (no tabard, mail, boots or sleeves; their colour a rag at the waist), no mail even on the boss, a hand axe and a short spear; the hobgoblin (kept for later) in leather and fur')}
+  ok(G4.every(k=>{const P=kit(k);return!P.includes('tabard')&&!P.includes('mail')&&!P.includes('boots')&&!P.includes('shirt')&&P.includes('loin')})&&t.lookOf('gob_stab',1).weapon==='cleaver'&&t.lookOf('gob_stab',1).shield==='plank'&&t.lookOf('gob_stab',1).hairStyle==='bald'&&G4.every(k=>!['mail','plate'].includes(ST[k].armor))&&t.lookOf('gob_boss',1).weapon==='axe'&&t.lookOf('gob_spear',1).weapon!=='spear'&&!['iron','steel'].includes(t.lookOf('hob_chief',1).outer),
+   'goblins as their reference (no tabard, mail, boots or sleeves; a fur loincloth, bald, a cleaver and a plank shield), no mail even on the boss, a hand axe and a short spear; the hobgoblin (kept for later) in leather and fur')}
  // (its warchief a goblin of his own look (the owner, 2026-11-08: "replace the hobgoblin with the goblin leader, just make it look
  // different from normal goblins"; the hobgoblin kept for later), in battle and on the map; a bandit chief still a man)
  {const L=t.lookOf(t.chiefLookType('chief','goblins'),1,false,0),Bs=t.lookOf('gob_boss',1,false,0),H=t.lookOf('chief',1,false,0),u={type:'chief',leader:{ref:B0[0].ld}};

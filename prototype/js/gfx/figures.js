@@ -104,14 +104,16 @@ function bowPic(k,style,atk,deg,skin){const key=[k,style,atk,deg,skin].join('|')
 // back from it by SHIELD_HOLD.blow px), the sword arm striking over it; hung at his side, his far hand's knuckles over its rim (grip))
 const SHIELD_HOLD={on:true,blow:2,grip:true};
 const SHIELD_ART={heater:['rrrrr','rfffr','rfffr','rfffr','rfffr','.rfr.','..r..'],round:['.rrr.','rfffr','rfffr','rfffr','rfffr','.rrr.'],
+  // (a goblin's (his reference): planks lashed together, uneven at the top, two iron bands across, no device)
+  plank:['r.rr','rffr','rbbr','rffr','rffr','rbbr','rr.r'],
   dev:{human:'vale',dwarf:'karn',elf:'sylvan',orc:'horde'}};
 class ShieldGear extends FigureGear{
   constructor(guard){super(guard?'guard':'shield',guard?'guard':'off');this.guard=guard}
-  draw(set,o,p){const m=shieldLook(o),C=pal(m),Tm=pal(o.team),A=SHIELD_ART,rows=m==='wood'?A.round:A.heater,T=typeof BANNER_DEV!=='undefined'&&BANNER_DEV[A.dev[o.race||'human']],
+  draw(set,o,p){const m=shieldLook(o),plank=m==='plank',C=plank?PPAL.wood:pal(m),Tm=plank?PPAL.wood:pal(o.team),A=SHIELD_ART,rows=plank?A.plank:m==='wood'?A.round:A.heater,T=!plank&&typeof BANNER_DEV!=='undefined'&&BANNER_DEV[A.dev[o.race||'human']],
       lum=Tm[1]&&Tm[1][0]==='#'?[1,3,5].reduce((a,i,k)=>a+parseInt(Tm[1].slice(i,i+2),16)*[.3,.59,.11][k],0)/255:.5,dv=lum>.6?Tm[3]:Tm[0],
       fore=this.foreNow(p),ox=this.guard?-1:fore?-1-SHIELD_HOLD.blow:-2,oy=this.guard?(this.guard==='low'?1:-1)-p.sh:fore?-1-p.sh:-2-p.sh,W=rows[0].length;
     rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(c==='.')return;const edge=y===0||x===0||x===W-1||rows[y+1]?.[x]==='.'||!rows[y+1];
-      set(ox+x,oy+y,c==='r'?C[y===0||x===0?0:edge&&x>=W-2?2:1]:Tm[x===1?0:x===W-2?2:1])}));
+      set(ox+x,oy+y,c==='b'?PPAL.iron[y%2?1:2]:c==='r'?C[y===0||x===0?plank?1:0:edge&&x>=W-2?2:plank?2:1]:plank?C[x%2?1:2]:Tm[x===1?0:x===W-2?2:1])}));
     // (the device three by three in the field's middle: the 5 x 5 one's every other row and column)
     if(T)for(let j=0;j<3;j++)for(let i=0;i<3;i++)if(T[j*2]&&T[j*2][i*2]&&T[j*2][i*2]!=='.')set(ox+1+i,oy+1+j,dv)
     // (his fist on its rim, on the side nearest his body, as he grips it hung at his side)
