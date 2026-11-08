@@ -582,13 +582,13 @@ function frame(){
    and mana are in the Hero window (C) and the battle. The top bar: the day and the time */
 // the left panel's group at the bottom left (the owner, 2026-11-04: "a level up button at the bottom left corner ... like a square
 // box and animated in blinking"): its one notice now, what a level and your proficiencies leave you to choose (P.lvUp: health,
-// stamina or mana; treePending: a milestone of a proficiency's tree), a square that blinks till they are chosen; a click opens your
+// stamina or mana; treePending: a proficiency's tree's points to spend), a square that blinks till they are chosen; a click opens your
 // Skills (as K) on the level's choice, else the tree that waits. None: the group hidden
 function lvBox(){const el=$('#lgroup');if(!el)return;const lv=P.lvUp||0,t=typeof treePending==='function'?treePending().length:0,n=lv+t,sig=lv+'/'+t;if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.hidden=!n;
-  const what=(lv?lv+' level choice'+(lv>1?'s':''):'')+(lv&&t?' and ':'')+(t?t+' skill tree choice'+(t>1?'s':''):'');
+  const what=(lv?lv+' level choice'+(lv>1?'s':''):'')+(lv&&t?' and ':'')+(t?t+' skill point'+(t>1?'s':''):'');
   el.innerHTML=n?'<button class="lvup" type="button" title="'+what+' waiting (K)" aria-label="'+what+' waiting">'+icon('skills',22)+'<b>+'+n+'</b><small>'+(lv?'Level up':'New skill')+'</small></button>':''}
 {const g=document.getElementById('lgroup');if(g)g.addEventListener('click',e=>{if(!e.target.closest('.lvup'))return;if(G.mode==='skills')return;const t=!(P.lvUp>0)&&treePending()[0];
-  if(t){G.skTree=TREE[t].prof;openSkills('talents')}else openSkills('prof')})}
+  if(t){G.skTree=t;openSkills('talents')}else openSkills('prof')})}
 function updateHUD(force){
   lvBox();
   const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=bandFitness(),fp=Math.round(F.pct),mo=Math.round(P.morale),lh=landHold(P.x,P.y),sp=bandPace();

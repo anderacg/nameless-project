@@ -99,6 +99,10 @@ const PROF_TREE={
 // (the major trees: four milestones; the rest three)
 const TREE_MAJOR=['oneh','twoh','archery','spell','fist','lead'];
 const treeAt=k=>TREE_AT[TREE_MAJOR.includes(k)?'major':'minor'];
+// a proficiency's points (the owner, 2026-11-08: "player can freely spend based on their preferences"): one each per levels of it (6
+// at 90), spent as you like on its tree's nodes whose milestone it has reached and that grow from a node learned on the tier below
+// (core/talents.js canTake): a big tree's 8 nodes, 6 points, so a choice still
+const TREE_PT={per:15};
 // a lord's or a chieftain's trees (they choose for themselves: characters.js autoTree) open as if each proficiency it has were per ×
 // its level, so a lord grows his trees as he grows (at 5: the 15 and 35 milestones, his first active skills; at 8 the 60s; at 12 the
 // keystones); its numbers are its own proficiencies'

@@ -103,8 +103,8 @@ try{
  ok(foe.x>fx0+6&&foe.max-foe.hp<hb2.s.dmg*.45&&foe.hp<foe.max,'right-click shoves: knocks back, barely hurts ('+Math.round(foe.max-foe.hp)+' damage)');
  const sx0=X2.sp;press(2,foe.x,foe.y);ok(X2.sp===sx0,'the shove has a short cooldown');
  // the Hawkeye talent shows the path
- ok(t.TREE.finesseb2&&t.TREE.finesseb2.m.perk==='guide'&&t.TREE.finesseb2.br==='finesse','Hawkeye sits on the Finesse (Agility) path');
- ok(!t.has('guide'),'without it there is no path guide');P.tree.push('finesseb2');ok(t.has('guide'),'learning Hawkeye turns the guide on');t.drawBattle();P.tree=P.tree.filter(x=>x!=='finesseb2');
+ ok(t.TREE.arch_hawk&&t.TREE.arch_hawk.m.perk==='guide'&&t.TREE.arch_hawk.prof==='archery','Hawkeye sits in the Archery tree');
+ ok(!t.has('guide'),'without it there is no path guide');P.tree.push('arch_hawk');ok(t.has('guide'),'learning Hawkeye turns the guide on');t.drawBattle();P.tree=P.tree.filter(x=>x!=='arch_hawk');
  P.gear.weapon=t.gearId('crossbow',1);ok(!t.isBow(),'crossbows shoot at once, no drawing');B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();P.gear.weapon=t.gearId('sword',0);G.mouse.in=false;
  }finally{Math.random=r0}}
  // shots: your quiver's (doc/ITEMS_DESIGN.md §2b), none left means no shot, nothing gathered after a win; troops have quivers

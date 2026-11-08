@@ -127,7 +127,7 @@ class Character extends Unit{
      seven slots (COMP_SLOTS) and perks. A newcomer has grown on its own until now: its tree along its class's path, and (one
      that chooses for itself) the disciplines and gear of its level */
   kit(){
-    const o=this.o;if(o.kit>=2){if(this.aiOwned)this.autoTree();return o}// (its level may have risen since: a milestone more)
+    const o=this.o;if(o.kit>=2){if(this.aiOwned&&AUTO_LV.get(o)!==this.lv){AUTO_LV.set(o,this.lv);this.autoTree()}return o}// (its level risen since: its trees' points spent)
     o.attr=o.attr||{str:0,agi:0,int:0,cha:0};o.gear=o.gear||{};o.perks=o.perks||[];o.sk=o.sk||{};
     const ai=this.aiOwned;
     for(const k of FIGHT_SK.concat(ai&&this.cls()==='caster'?['spell']:[]))if(!o.sk[k])o.sk[k]={lv:ai?Math.min(SK_MAX,Math.floor(this.lv/3)*PROF.per):0,xp:0};// (a caster its Spellcraft too)
@@ -147,11 +147,12 @@ class Character extends Unit{
     if(s.range||w&&w.kind==='ranged'||!w&&/bow|sling/.test(L.weapon||''))return 'archer';
     if(s.mounted)return 'rider';
     return t.includes('shield')||t.includes('heavy')||o.gear&&o.gear.offhand?'guardian':'warrior'}
-  // it chooses for itself: each milestone its proficiencies have reached, the node its class favours (CLASS_PICK: a pair's second
-  // when it names it), else the first of the pair
+  // it chooses for itself: each point its trees have, on the node its class favours (CLASS_PICK) if it can take one, else the lowest it can
+  // (a tier's first before its second)
   autoTree(){
     const o=this.o,want=CLASS_PICK[this.cls()]||[];if(!o.tree)return;
-    for(const a of treePendingOf(o)){const b=TREE[a].pair;takeNodeOf(o,want.includes(b)?b:a,true)}}
+    for(let k=0;k<64;k++){const open=Object.keys(PROF_TREE).flatMap(p=>PROF_TREE[p].flat().map(([id])=>id)).filter(id=>canTakeOf(o,id));if(!open.length)break;
+      const id=open.find(id=>want.includes(id))||open.sort((a,b)=>TREE[a].tier-TREE[b].tier)[0];if(!takeNodeOf(o,id,true))break}}
   // a lord's or chieftain's gear: of a tier by its level (one every three), a weapon of its people (outfitWeapons), armour and a
   // helm; better gear replaces worse
   outfit(){
@@ -199,9 +200,11 @@ class Character extends Unit{
     return s}
 }
 const FIGHT_SK=['oneh','twoh','archery'];
+// (the level a lord's or chieftain's trees were last spent at: kit, not saved)
+const AUTO_LV=new WeakMap();
 // health and damage against its kind's: [at level 0, more each level] (a recruit keeps the rate it had: o.grow)
 const CHAR_GROW={companion:{hp:[.9,.1],dmg:[.93,.07]},lord:{hp:[1.3,.08],dmg:[.95,.04]},chieftain:{hp:[1.3,.08],dmg:[.95,.04]}};
-// the nodes each class takes over the other of their pair (the rest: the pair's first)
+// the nodes each class takes first when it can (the rest: the lowest it can)
 const CLASS_PICK={warrior:['oneh_dash','twoh_quake','oneh_duel'],guardian:['block_guard','twoh_hide','lead_bearer'],rider:['ride_charge','oneh_dash'],
   archer:['arch_marks','arch_hands','arch_eagle'],caster:['spell_nova','spell_flow','spell_study']};
 // the weapons (and a shield) a lord wears, by his people

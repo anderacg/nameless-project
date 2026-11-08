@@ -1,8 +1,8 @@
 'use strict';
 /* ---------- the Skills page: proficiency, skill trees, traits, skill bar (the owner's order, 2026-11-08) ---------- */
 // The rules live in core/talents.js; this file presents them. Each proficiency has a skill tree of its own (the owner, 2026-11-08:
-// "make each skill tree separated by proficiency"; data/tree.js PROF_TREE): as it reaches a milestone you take one of two nodes
-// there (passives, notables, keystones and the active skills). Active skills go into the ten slots on the Skill bar: your hero uses
+// "make each skill tree separated by proficiency"; data/tree.js PROF_TREE): its points, one each TREE_PT.per levels of it, spent as you
+// like on the nodes its milestones have opened (passives, notables, keystones and the active skills). Active skills go into the ten slots on the Skill bar: your hero uses
 // them in battle when the moment is right. Your level comes from your proficiencies (doc/PROFICIENCY_DESIGN.md) and each one is a
 // choice of more health, stamina or mana (data/progression.js LEVEL_UP), on the Proficiency tab. Traits sit apart: the moves
 // everyone has, your race's and your past's (HERO_TRAITS).
@@ -25,17 +25,47 @@ const skSubj=()=>skWho()?compInit(skWho()):P;
 function openSkills(tab,who){
   if(who&&!P.comps[who])return;if(G.mode==='world'&&!G.modal)G.mode='char';if(G.mode!=='char')return;// (K from the map: the Army window, on your hero's)
   if(who)charKit(charOf(compInit(who),who));G.skWho=who||null;
-  G.mode='skills';G.skTab=tab||G.skTab||'prof';if(!['prof','talents','traits','abilities'].includes(G.skTab))G.skTab='prof';renderSkills()}
+  G.mode='skills';G.skTab=tab||G.skTab||'prof';if(!['prof','talents','traits','abilities'].includes(G.skTab))G.skTab='prof';G.skGrow=true;renderSkills()}
 const NODE_KIND=N=>({origin:'Origin',s:'Passive',n:'Notable',k:'Keystone'}[N.t]||(N.m.unlock?'Active skill':'Skill upgrade'));
 // (the proficiencies whose trees it has: its own; the tree shown, G.skTree: one with a choice waiting, else your weapon's)
 const skProfs=S=>PROF_GROUPS.flatMap(g=>g[1]).filter(k=>S.sk&&S.sk[k]&&PROF_TREE[k]);
-function skTreeOf(S){const L=skProfs(S);if(L.includes(G.skTree))return G.skTree;const w=treePendingOf(S)[0];return w?TREE[w].prof:L.includes(S===P?leaderOf(P).weaponProf():'oneh')?(S===P?leaderOf(P).weaponProf():'oneh'):L[0]}
-// one node of a milestone: its kind, name and what it does; learned, open (take it), shut (its pair taken) or not yet
-function treeCard(S,id){
-  const N=TREE[id],have=treeHasOf(S,id),can=canTakeOf(S,id),shut=!have&&treeHasOf(S,N.pair),u=N.m.unlock,refund=talentsOf(S).quoteRefund(id);
-  const body='<small>'+NODE_KIND(N)+'</small><strong>'+N.n+'</strong><span>'+N.d+'</span>'+(u&&S===P?'<span class="muted">'+skillStats(u)+'.</span>':'');
-  return '<div class="fb-tcard'+(have?' on':can?' open':shut?' shut':'')+'">'+(have?'<div class="fb-tcard-body">'+body+'<em class="good">Learned</em></div>'+fbBtn('tree-refund',id,'Unlearn · '+refundCost()+'g',refund.ok?'':'gold','fb-tcard-undo')
-    :fbBtn('tree-take',id,body+'<em>'+(can?'Choose':shut?'The other is chosen':'At '+SKILLS[N.prof].n+' '+N.at)+'</em>',can?'':'shut','fb-tcard-body'))+'</div>'}
+function skTreeOf(S){const L=skProfs(S);if(L.includes(G.skTree))return G.skTree;const w=treePendingOf(S)[0];return w?w:L.includes(S===P?leaderOf(P).weaponProf():'oneh')?(S===P?leaderOf(P).weaponProf():'oneh'):L[0]}
+/* a proficiency's tree, drawn as one (the owner, 2026-11-08: "make the tree like a cool tree with animation switching between path"):
+   a trunk rising from the ground, a plaque at each milestone on it, a branch curving out to each node (left the tier's first, right
+   its second), leaves along them; a node learned glows on a lit branch, one it can take now pulses, one not yet is dark with its
+   milestone. Shown anew (another proficiency, the page opened: G.skGrow), the trunk draws itself up, the branches out, tier by tier,
+   and the nodes open (fieldbook.css "skill trees"); a node just learned (G.skJust) flares. TREE_ART: its numbers, in the view's units */
+const TREE_ART={w:420,h:380,trunk:210,ground:350,top:58,spread:[96,128],r:{s:15,n:19,k:22,a:19},bark:'#6b4a2e',barkHi:'#8a6440',lit:'#e8b94a',leaf:['#4f7a3a','#6b9a48','#3d6230']};
+const NODE_GLYPH={s:'•',n:'◆',k:'✸',a:'✦'};
+function treeSvg(S,k){
+  const A=TREE_ART,T=PROF_TREE[k],n=T.length,lv=talentsOf(S).profLv(k),ys=T.map((_,i)=>Math.round(A.ground-70-(A.ground-70-A.top)*(n>1?i/(n-1):0))),cx=A.trunk;
+  const grow=!!G.skGrow,del=(i,b)=>' style="--d:'+((grow?.15+i*.22+(b||0):0).toFixed(2))+'s"';
+  // the canopy: soft foliage behind the upper branches, swaying; a few leaves drifting down
+  const top=ys[n-1]-12,cy0=ys[n-1]+20;let svg=[[-110,30,62],[110,30,62],[-60,-18,70],[60,-18,70],[0,-34,78],[0,40,66]].map(([dx,dy,r],i)=>'<circle cx="'+(cx+dx)+'" cy="'+(cy0+dy)+'" r="'+r+'" class="tr-canopy" style="--s:'+(i%3)+'"/>').join('')+
+    [[-130,0],[40,1.6],[150,3.1],[-40,4.4]].map(([dx,t])=>'<g transform="translate('+(cx+dx)+' '+(cy0-20)+')"><path class="tr-fall" style="--t:'+t+'s" d="M0 0 q5 -7 11 -2 q-5 6 -11 2 Z"/></g>').join('')+'<ellipse cx="'+cx+'" cy="'+(A.ground+6)+'" rx="150" ry="16" class="tr-ground"/>'+[-120,-70,60,110].map(x=>'<path d="M'+(cx+x)+' '+(A.ground+2)+' l4 -9 l3 9 l4 -7 l2 7" class="tr-grass"/>').join('');
+  svg+='<path class="tr-trunk" pathLength="1"'+del(0,-.15)+' d="M'+(cx-18)+' '+A.ground+' C'+(cx-12)+' '+(A.ground-60)+' '+(cx-8)+' '+(top+80)+' '+(cx-3)+' '+top+' L'+(cx+3)+' '+top+' C'+(cx+8)+' '+(top+80)+' '+(cx+12)+' '+(A.ground-60)+' '+(cx+18)+' '+A.ground+' Z"/>';
+  svg+='<path class="tr-roots" d="M'+(cx-18)+' '+A.ground+' q-18 4 -30 10 M'+(cx+18)+' '+A.ground+' q18 4 30 10 M'+(cx-6)+' '+A.ground+' q-4 8 -12 14"/>';
+  // each tier: its plaque on the trunk, a branch to each node, leaves on it, the node
+  T.forEach((pair,i)=>{const y=ys[i],at=TREE[pair[0][0]].at,ok=lv>=at;
+    svg+='<g class="tr-plaque'+(ok?' on':'')+'"'+del(i)+'><rect x="'+(cx-17)+'" y="'+(y+18)+'" width="34" height="18" rx="4"/><text x="'+cx+'" y="'+(y+31)+'" text-anchor="middle">'+at+'</text></g>';
+    pair.forEach(([id],side)=>{const N=TREE[id],have=treeHasOf(S,id),can=canTakeOf(S,id),x=cx+(side?1:-1)*A.spread[i%2],dir=side?1:-1,by=y+16,mx=(cx+x)/2;
+      const d='M'+(cx+dir*4)+' '+(by+18)+' C'+(mx)+' '+(by+14)+' '+(x-dir*30)+' '+(y+30)+' '+x+' '+y;
+      svg+='<path class="tr-branch'+(have?' lit':'')+'" pathLength="1"'+del(i,.1)+' d="'+d+'"/>';
+      for(const f of [.35,.62])svg+='<path class="tr-leaf" transform="translate('+Math.round(cx+(x-cx)*f)+' '+Math.round(by+12-(by+12-y)*f*f-6)+') rotate('+(dir*(f>.5?-35:25))+')"'+del(i,.3)+' d="M0 0 q9 -13 21 -3 q-9 10 -21 3 Z" fill="'+A.leaf[(i+side+(f>.5?1:0))%3]+'"/>';
+      const r=A.r[N.t]||16,cls='tr-node '+(have?'have':can?'open':ok?'wait':'locked')+(G.skSel===id?' sel':'')+(G.skJust===id?' just':'');
+      const shape=N.t==='k'?'<rect x="'+(x-r)+'" y="'+(y-r)+'" width="'+2*r+'" height="'+2*r+'" rx="4" transform="rotate(45 '+x+' '+y+')" class="tr-body"/>':N.t==='a'?'<rect x="'+(x-r)+'" y="'+(y-r)+'" width="'+2*r+'" height="'+2*r+'" rx="8" class="tr-body"/>':'<circle cx="'+x+'" cy="'+y+'" r="'+r+'" class="tr-body"/>';
+      svg+='<g class="'+cls+'" data-act="tree-sel" data-arg="'+id+'" role="button" tabindex="0" aria-pressed="'+(G.skSel===id)+'" aria-label="'+htmlText(N.n)+' ('+(have?'learned':can?'can learn':'at '+SKILLS[k].n+' '+N.at)+')"'+del(i,.35)+'>'+
+        '<circle cx="'+x+'" cy="'+y+'" r="'+(r+9)+'" class="tr-halo"/>'+shape+'<text x="'+x+'" y="'+(y+5)+'" text-anchor="middle" class="tr-glyph">'+NODE_GLYPH[N.t]+'</text>'+
+        '<text x="'+x+'" y="'+(y+r+16)+'" text-anchor="middle" class="tr-name">'+htmlText(N.n)+'</text></g>'})});
+  return '<svg class="tr-svg'+(grow?' grow':'')+'" viewBox="0 0 '+A.w+' '+A.h+'" preserveAspectRatio="xMidYMid meet" role="group" aria-label="'+SKILLS[k].n+' skill tree">'+svg+'</svg>';
+}
+// the node chosen on the tree: what it does, its kind and milestone, Learn (a point) or Unlearn (gold), or why not yet
+function treeNodePane(S,k){
+  const id=G.skSel&&TREE[G.skSel]&&TREE[G.skSel].prof===k?G.skSel:null;if(!id)return '<aside class="tr-pane"><p class="muted">Choose a node on the tree to see it.</p></aside>';
+  const N=TREE[id],T=talentsOf(S),have=T.has(id),can=T.canTake(id),pts=T.points(k),u=N.m.unlock,refund=T.quoteRefund(id);
+  const why=have?(refund.ok?'':refund.code==='gold'?'Not enough gold to unlearn it.':'A node above grows from it: unlearn that first.'):!T.reached(id)?'Opens at '+SKILLS[k].n+' '+N.at+' (now '+T.profLv(k)+').':!pts.left?'No '+SKILLS[k].n+' points left: one each '+TREE_PT.per+' levels of it.':N.tier&&!T.tierHas(k,N.tier-1)?'Learn a node of the tier below first.':'';
+  return '<aside class="tr-pane"><small>'+NODE_KIND(N)+' · '+SKILLS[k].n+' '+N.at+'</small><h3>'+htmlText(N.n)+'</h3><p>'+N.d+'</p>'+(u&&S===P?'<p class="muted">'+skillStats(u)+'.</p>':'')+
+    (have?'<p class="good">Learned</p>'+fbBtn('tree-refund',id,'Unlearn · '+refundCost()+'g',refund.ok?'':'x'):fbBtn('tree-take',id,fbIcon('skills')+' Learn · 1 point',can?'':'x','primary'))+(why?'<p class="muted">'+why+'</p>':'')+'</aside>'}
 /* the traits (were Basics; the owner, 2026-11-08): the moves everyone has from the start, and what your race and your past are. The
    combo's Third Blow and its finishers are nodes of the weapons' trees (data/tree.js combo3, fin) */
 const HERO_TRAITS=[
@@ -80,13 +110,15 @@ function profBody(){
     [['hp','hero','Health'],['sp','speed','Stamina'],['mp','book','Mana']].map(([k,ic,n])=>fbBtn('lv-pick',k,fbIcon(ic,22)+'<strong>+'+LEVEL_UP[k]+' '+n+'</strong>','','primary')).join('')+'</div></div></div>':'';
   return head+up+'<p class="muted" style="font-size:13px">Proficiencies rise as you use them, to 99; each opens choices in its own skill tree. The trees and gear add to them.</p>'+PROF_GROUPS.map(([g,L])=>{const r=L.filter(k=>!keys||keys.includes(k)).map(row).join('');return r?'<div class="lab">'+g+'</div>'+r:''}).join('');
 }
-// the Skill trees tab: the proficiencies down the side (a choice waiting marked), the shown one's milestones, two nodes at each
+// the Skill trees tab: the proficiencies down the side (their points left marked), the shown one's tree, the chosen node
 function skTreeBody(){
- const S=skSubj(),k=skTreeOf(S),L=skProfs(S),lv=S.sk[k].lv,wait=treePendingOf(S);
- const side='<nav class="fb-tree-profs" aria-label="Proficiencies" data-fb-scroll="tree-profs:'+htmlText(skWho()||'hero')+'">'+L.map(p=>{const n=wait.filter(id=>TREE[id].prof===p).length;
-   return fbBtn('tree-prof',p,'<strong>'+SKILLS[p].n+'</strong><small>'+S.sk[p].lv+'</small>'+(n?'<b class="fb-tree-wait" title="A choice waiting">'+n+'</b>':''),'',p===k?'on':'')}).join('')+'</nav>';
- const tiers=PROF_TREE[k].map(([[a],[b]])=>{const at=TREE[a].at,ok=lv>=at;return '<section class="fb-tier'+(ok?' reached':'')+'"><h4><b>'+at+'</b>'+(ok?'':'<small>'+(at-lv)+' to go</small>')+'</h4><div class="fb-tier-pair">'+treeCard(S,a)+treeCard(S,b)+'</div></section>'}).join('');
- return '<div class="fb-skill-work fb-trees">'+side+'<section class="fb-tree-pane" aria-label="'+SKILLS[k].n+' skill tree"><div class="fb-tree-head"><strong>'+SKILLS[k].n+' · '+lv+'</strong><small>One of two at each milestone, as '+SKILLS[k].n+' reaches it. Unlearning one for gold frees its choice again.</small></div><div class="fb-scroll" data-fb-scroll="tree:'+htmlText((skWho()||'hero')+':'+k)+'">'+tiers+'</div></section></div>';
+ const S=skSubj(),k=skTreeOf(S),L=skProfs(S),T=talentsOf(S),pts=T.points(k);
+ const side='<nav class="fb-tree-profs" aria-label="Proficiencies" data-fb-scroll="tree-profs:'+htmlText(skWho()||'hero')+'">'+L.map(p=>{const n=T.pending(p).length;
+   return fbBtn('tree-prof',p,'<strong>'+SKILLS[p].n+'</strong><small>'+S.sk[p].lv+'</small>'+(n?'<b class="fb-tree-wait" title="Points to spend">'+n+'</b>':''),'',p===k?'on':'')}).join('')+'</nav>';
+ const out='<div class="fb-skill-work fb-trees">'+side+'<section class="fb-tree-pane" aria-label="'+SKILLS[k].n+' skill tree"><div class="fb-tree-head"><strong>'+SKILLS[k].n+' · '+T.profLv(k)+'</strong><small>'+
+   '<b class="'+(pts.left?'gold':'')+'">'+pts.left+' point'+(pts.left===1?'':'s')+' to spend</b> · '+pts.earned+' earned, one each '+TREE_PT.per+' levels · spend them as you like on what its milestones have opened</small></div>'+
+   '<div class="tr-stage">'+treeSvg(S,k)+treeNodePane(S,k)+'</div></section></div>';
+ G.skGrow=false;G.skJust=null;return out;
 }
 function renderSkills(){
  const S=skSubj(),who=skWho(),tab=G.skTab,n=(who?0:P.lvUp||0)+treePendingOf(S).length,pts=n?n+' choice'+(n>1?'s':'')+' waiting':'nothing to choose';
@@ -99,14 +131,17 @@ function skillsAct(a,arg){
   if(a==='sk-map'){G.skWho=null;G.mode='world';hidePanel();return true}
   if(a==='sk-close'){const who=skWho(),s=partyView();G.skWho=null;G.mode='char';G.char='roster';G.armyEdit=null;s.sel=who?'comp_'+who:'hero';s.open=true;s.path=false;if(who)compPick(who);renderChar();return true}// (back to its card)
   if(G.mode!=='skills')return true;
-  if(a==='sk-tab'){if(['prof','talents','traits','abilities'].includes(arg))G.skTab=arg}
-  else if(a==='tree-prof'&&PROF_TREE[arg])G.skTree=arg;
+  if(a==='sk-tab'){if(['prof','talents','traits','abilities'].includes(arg)){if(arg==='talents'&&G.skTab!=='talents')G.skGrow=true;G.skTab=arg}}
+  else if(a==='tree-prof'&&PROF_TREE[arg]){if(G.skTree!==arg)G.skGrow=true;G.skTree=arg;G.skSel=null}
+  else if(a==='tree-sel'&&TREE[arg])G.skSel=arg;
   else if(a==='sk-slot'){skillSlotPick(Number(arg));return true}
-  else if(a==='tree-take')takeNodeOf(skSubj(),arg);
+  else if(a==='tree-take'){if(takeNodeOf(skSubj(),arg)){G.skSel=arg;G.skJust=arg}}
   else if(a==='tree-refund')refundNodeOf(skSubj(),arg);
   else if(a==='lv-pick'&&!skWho())levelPick(arg);
   else if(a==='slot-set'){const [i,id]=String(arg).split(':');talentsOf(skSubj()).assignSlot(+i,id)}
   updateHUD(true);renderSkills();return true;
 }
 addEventListener('resize',()=>{if(G.mode==='skills'&&!FIELDBOOK.pick)renderSkills()});
+// (a node of the tree: Enter or Space chooses it, as a click)
+panel.addEventListener('keydown',e=>{const g=e.target.closest&&e.target.closest('.tr-node');if(!g||G.mode!=='skills'||!['Enter',' '].includes(e.key))return;e.preventDefault();e.stopPropagation();act('tree-sel',g.dataset.arg)});
 onAct('sk-',skillsAct);onAct('tree-',skillsAct);onAct('slot-',skillsAct);onAct('lv-',skillsAct);

@@ -47,8 +47,8 @@ try{
   B.over=true;B.endT=0;t.B=null}
  // the kit: every character but your hero has its own skill tree, fighting skills and gear; one formula for them all
  {const L2=W.lords.find(l=>l!==L)||L;for(const k of ['kit','tree','slots','attr','gear','gearT'])delete L2[k];L2.lv=7;L2.sk={lead:{lv:1,xp:0}};const c2=new t.Lord(L2);t.charKit(c2);
-  {const want=Object.keys(L2.sk).filter(k=>t.PROF_TREE[k]).reduce((n,k)=>n+t.treeAt(k).filter(a=>a<=7*t.AI_TREE.per).length,0);
-  ok(L2.tree.length===1+want&&!t.treePendingOf(L2).length,'a lord at 7 has grown his trees himself: each milestone his proficiencies reach as if '+t.AI_TREE.per+' × his level, chosen by a '+c2.cls()+' ('+L2.tree.slice(1).join(', ')+')')}
+  {const lv=7*t.AI_TREE.per,want=Object.keys(L2.sk).filter(k=>t.PROF_TREE[k]).reduce((n,k)=>n+Math.min(Math.floor(lv/t.TREE_PT.per),2*t.treeAt(k).filter(a=>a<=lv).length),0);
+  ok(L2.tree.length===1+want&&!t.treePendingOf(L2).length,'a lord at 7 has grown his trees himself: every point his proficiencies give, as if '+t.AI_TREE.per+' × his level, spent by a '+c2.cls()+' ('+L2.tree.slice(1).join(', ')+')')}
   ok(c2.actives().length>0,'its skills in his slots ('+c2.actives().join(', ')+')');
   ok(L2.gear.weapon===t.gearId(t.OUTFIT[c2.race][0],2)&&L2.gear.body===t.gearId('mail',2)&&L2.gear.head===t.gearId('helm',2),'and wears gear of his level (tier 2: '+[L2.gear.weapon,L2.gear.body,L2.gear.head].join(', ')+')');
   ok(t.FIGHT_SK.every(k=>L2.sk[k]&&Math.abs(L2.sk[k].lv-2*PROF.per)<1e-9),'and fights with the skills of his level (One-Handed, Two-Handed, Archery 2 in power)');
@@ -57,15 +57,15 @@ try{
  {P.comps={tavi:{ap:0,role:''},elske:{ap:0,role:''}};ok(t.charOf(t.compInit('tavi'),'tavi').cls()==='archer'&&t.charOf(t.compInit('elske'),'elske').cls()==='caster','Tavi grows as an archer, Elske as a caster')}
  {P.comps={brann:{ap:0,role:''}};const cb=t.compInit('brann');cb.lv=1;cb.xp=0;const cc=t.charOf(cb,'brann');t.charKit(cc);
   ok(same(t.compStats('brann'),t.charStats(cc)),'a companion\u2019s numbers are the same formula');
-  const n0=cb.tree.length;let k=0;while(cb.sk.oneh.lv<15&&k++<3000)cc.train('oneh',5,true);ok(cb.sk.oneh.lv>=15&&cb.tree.length===n0&&t.treePendingOf(cb).includes('oneh_third'),'with you, its One-Handed at its first milestone: a choice for you to make (it does not choose for itself)');
-  ok(t.takeNodeOf(cb,'oneh_str',true)&&!t.treePendingOf(cb).length,'you make it in its tree (Strength)');
+  const n0=cb.tree.length;let k=0;while(cb.sk.oneh.lv<15&&k++<3000)cc.train('oneh',5,true);ok(cb.sk.oneh.lv>=15&&cb.tree.length===n0&&t.treePendingOf(cb).includes('oneh'),'with you, its One-Handed at 15: a point for you to spend (it does not spend it itself)');
+  ok(t.takeNodeOf(cb,'oneh_str',true)&&!t.treePendingOf(cb).length,'you spend it in its tree (Strength)');
   const hb=t.charStats(cc).hp;cb.tree.push('block_skin');const ha=t.charStats(cc).hp;cb.tree.pop();ok(ha>hb,'and what its trees give shows in its numbers (Thick Skin: '+hb+' \u2192 '+ha+' health)')}
  // the window: a companion's card, its tree to grow (the Skills page, for it), its slots
- {P.comps={brann:{ap:0,role:''}};const cb=t.compInit('brann');cb.lv=3;cb.xp=0;t.charKit(t.charOf(cb,'brann'));cb.sk.oneh.lv=35;t.takeNodeOf(cb,'oneh_whirl',true);G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');const pn=()=>document.getElementById('panel');
+ {P.comps={brann:{ap:0,role:''}};const cb=t.compInit('brann');cb.lv=3;cb.xp=0;t.charKit(t.charOf(cb,'brann'));cb.sk.oneh.lv=45;t.takeNodeOf(cb,'oneh_third',true);t.takeNodeOf(cb,'oneh_whirl',true);G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');const pn=()=>document.getElementById('panel');
   ok((card=>card&&card.querySelectorAll('.ucard-x .uc-stats .uc-stat').length>=8&&card.querySelector('[data-unit-tab="character"]')&&/Whirlwind/.test(card.innerHTML))(pn().querySelector('.fb-comp-detail')),'a companion\u2019s window shows its card: its numbers, abilities and its skills');
-  const P0=P.tree.slice();cb.sk.oneh.lv=40;t.renderComp();t.act('party-comp-tab','skills');ok(/Choices waiting<\/span><strong>1<\/strong>/.test(pn().querySelector('.fb-skills-summary').innerHTML)&&pn().querySelector('.fb-unit-actions [data-act="cm-tree"]'),'its choices waiting (One-Handed 40, Whirlwind learned: one), and its trees to open');
+  const P0=P.tree.slice();cb.sk.oneh.lv=60;t.renderComp();t.act('party-comp-tab','skills');ok(/Choices waiting<\/span><strong>2<\/strong>/.test(pn().querySelector('.fb-skills-summary').innerHTML)&&pn().querySelector('.fb-unit-actions [data-act="cm-tree"]'),'its points to spend (One-Handed 60: four, two spent), and its trees to open');
   t.act('cm-tree');ok(G.mode==='skills'&&G.skWho==='brann'&&/Brann’s skills/.test(pn().innerHTML)&&/Back to Brann/.test(pn().innerHTML)&&!/Special skills/.test(pn().innerHTML),'the Skills page opens on Brann\u2019s own tree');
-  const nd=t.treePendingOf(cb)[0];t.act('tree-take',nd);ok(cb.tree.includes(nd)&&!t.treePendingOf(cb).length&&P.tree.join()===P0.join(),'learning there grows Brann\u2019s tree, not yours ('+nd+')');
+  const nd='oneh_dash';t.act('tree-take',nd);ok(cb.tree.includes(nd)&&t.treePendingOf(cb).length===1&&P.tree.join()===P0.join(),'learning there grows Brann\u2019s tree, not yours ('+nd+')');
   t.act('sk-tab','abilities');const PS=JSON.stringify(P.slots);t.act('slot-set','4:whirl');ok(cb.slots[4]==='whirl'&&JSON.stringify(P.slots)===PS,'its skill bar sets its own slots');
   t.act('sk-close');ok(G.mode==='char'&&t.compShown()&&/Brann the Wolf/.test(pn().innerHTML),'and Back returns to its card in the Army window');
   t.act('char-close');t.openSkills('talents');ok(!G.skWho&&/<h2>Skills<\/h2>/.test(pn().innerHTML),'your own Skills page is still yours');t.act('sk-close')}

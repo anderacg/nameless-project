@@ -28,7 +28,7 @@ Kit.suite(({ok,info})=>{
   t.startEncounter({kind:'party',ref:band,list:band.troops.slice(),allies:[],foes:[]});t.act('fight');const b=t.B;const e=muster(b);if(e)errs.push(e);
   t.beginFight();for(const u of b.units)if(u.team===1)u.hp=0;for(let i=0;i<300&&t.B===b;i++){const e=run(tick);if(e){errs.push(e);break}}if(G.mode!=='world')t.act('cont');Kit.done({world:{encCool:99}})}
  ok(!errs.length&&G.mode==='world','two fights won and back on the map'+(errs.length?': '+errs[0]:''));
- t.gainXp(450);P.sk.oneh.lv=Math.max(P.sk.oneh.lv,35);t.openSkills('talents');for(let k=0;k<10&&t.treePending().length;k++){const ids=t.treePending().flatMap(a=>[a,t.TREE[a].pair]),id=ids.find(id=>t.TREE[id].m.unlock)||ids[0];t.act('tree-take',id)}t.act('sk-close');t.act('char-close');
+ t.gainXp(450);P.sk.oneh.lv=Math.max(P.sk.oneh.lv,35);t.openSkills('talents');for(let k=0;k<10&&t.treePending().length;k++){const ids=Object.keys(t.TREE).filter(id=>t.canTakeOf(P,id)),id=ids.find(id=>t.TREE[id].m.unlock)||ids[0];if(!id)break;t.act('tree-take',id)}t.act('sk-close');t.act('char-close');
  const active=P.slots.filter(Boolean);ok(active.length&&G.mode==='world'&&!G.modal,'your hero levels up and learns an active skill, in a slot ('+active.join(', ')+'), the windows closed');
  column(road);const L=lordAt(40,20);t.startEncounter({kind:'lord',ref:L,list:L.troops.slice()});ok(G.mode==='dialog'&&/attacks/.test(Kit.text()),'a lord comes to attack you: his dialog');
  t.act('fight');let b=t.B,m=b?.muster;ok(m?.active&&G.mode==='battle'&&!G.modal,'Fight: a world battle, forming up ('+(m?m.entries.length:0)+' men)');

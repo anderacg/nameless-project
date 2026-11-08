@@ -6,7 +6,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
  (0,eval)('MANUAL_HERO=true');// (the manual control is set aside in play, RTS command: its mechanics are still tested here)
- t.act('begin','soldier');P.level=5;P.tree=['start','might0','might1','might2','mighta0','command0','command1','command2','commanda0'];P.slots=['whirl','leap','cry',...Array(7).fill(null)];P.troops={militia:3};P.comps={};G.mouse.in=false;
+ t.act('begin','soldier');P.level=5;P.tree=['start','oneh_whirl','twoh_leap','lead_cry'];P.slots=['whirl','leap','cry',...Array(7).fill(null)];P.troops={militia:3};P.comps={};G.mouse.in=false;
  // each test battle starts with a fully rested hero; persistence has its own suite
  const fresh=enemies=>{P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0},list:enemies.slice()};t.startBattle({enemies,tournament:false});t.beginFight();// (battles open waiting for Start Battle)
    const B=t.B,h=B.hero;B.units.filter(u=>u.team===1).forEach((u,i)=>{u.x=h.x+16+i*3;u.y=h.y+(i-1)*6;u.cd=9});B.units.filter(u=>u.team===0&&!u.hero).forEach(u=>{u.x=10;u.y=30});B.aim=0;return B};
@@ -14,7 +14,7 @@ try{
  const tick=(B,sec)=>{for(let i=0;i<Math.round(sec/.02);i++){if(!t.B)return;B.hero.hp=Math.max(B.hero.hp,B.hero.max*.5);if(B.hx&&!B.keepSp)B.hx.sp=Math.max(B.hx.sp,40);B.units.forEach(u=>{if(u.team===1&&u.hp>0)u.hp=u.max});t.updateBattle(.02)}};
  const end=()=>{const B=t.B;if(!B)return;B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
  // combo (all three blows: Third Blow from the Tree)
- if(!P.tree.includes('third'))P.tree.push('third');let B=fresh(['chief','chief']);B.noMorale=true;B.units.filter(u=>u.team===1).forEach(u=>u.hp=u.max=9999);// (nobody routs or falls: the combo is what is tested)
+ if(!P.tree.includes('oneh_third'))P.tree.push('oneh_third');let B=fresh(['chief','chief']);B.noMorale=true;B.units.filter(u=>u.team===1).forEach(u=>u.hp=u.max=9999);// (nobody routs or falls: the combo is what is tested)
  const X=()=>B.hx||t.heroState(),h=B.hero,steps=[];
  t.swing();steps.push(X().step);tick(B,.42);t.swing();steps.push(X().step);tick(B,.42);const e0=B.units.find(u=>u.team===1&&u.hp>0),hp0=e0.hp;t.swing();steps.push(X().step);
  ok(steps.join(',')==='0,1,2','three presses inside the window chain Slash → Sweep → Finisher ('+steps.join(',')+')');
@@ -57,16 +57,16 @@ try{
  t.buildSlotBar();t.updateSkillBar();ok(/15 MP · 20 SP/.test(document.querySelector('#slotbar [data-slot="0"]').title),'skill slot buttons list their costs (the hero’s bar: a unit’s skill buttons have data-slot too)');
  end();
  // level locks and UI
- const tr=P.tree;P.tree=['start','might0','might1'];B=fresh(['militia']);t.castSkill('leap');ok(B.hx.cds.leap===0&&B.floats.some(f=>/Learn Leap Slam/.test(f.t)),'Leap Slam is locked until learned on the tree');
- const sl=P.slots;P.slots=['whirl','leap',...Array(8).fill(null)];P.tree=['start','might0','might1'];t.buildSlotBar();t.updateSkillBar();const lb=document.querySelector('[data-slot="1"]'),wb=document.querySelector('[data-slot="0"]');ok(lb.disabled&&/not learned/.test(lb.textContent)&&!wb.disabled,'skill slot buttons show locks and readiness');P.tree=tr;P.slots=sl;
+ const tr=P.tree;P.tree=['start','oneh_whirl'];B=fresh(['militia']);t.castSkill('leap');ok(B.hx.cds.leap===0&&B.floats.some(f=>/Learn Leap Slam/.test(f.t)),'Leap Slam is locked until learned on the tree');
+ const sl=P.slots;P.slots=['whirl','leap',...Array(8).fill(null)];P.tree=['start','oneh_whirl'];t.buildSlotBar();t.updateSkillBar();const lb=document.querySelector('[data-slot="1"]'),wb=document.querySelector('[data-slot="0"]');ok(lb.disabled&&/not learned/.test(lb.textContent)&&!wb.disabled,'skill slot buttons show locks and readiness');P.tree=tr;P.slots=sl;
  t.frame();end();
  // health bars over every fighter, switched in Settings or by the HP bars button; the enemy count reads Enemy
  {const on0=t.HPBARS.on;t.setHpBars(false);ok(!t.HPBARS.on&&localStorage.getItem('ashmark.hpbars')==='0','health bars can be turned off (and it is remembered)');
   document.getElementById('hpBtn').click();ok(t.HPBARS.on&&document.getElementById('hpBtn').classList.contains('on'),'the HP bars button turns them back on');
   t.showTitle('settings');ok(/Health bars in battle/.test(document.getElementById('panel').innerHTML),'Settings offers it too');t.hidePanel();t.setHpBars(on0)}
  // the combo grows on the Tree: two blows to begin with, a third from Third Blow, then a finisher's style from one of two notables
- {const tr=P.tree.slice(),drop=()=>{P.tree=P.tree.filter(id=>!['third','fin_stun','fin_push'].includes(id))};drop();ok(t.heroCombo().length===2,'a new hero\u2019s combo: two blows');
-  P.tree.push('third');const C3=t.heroCombo(),W=t.weaponCombo();ok(C3.length===3&&C3[2].mult<W[2].mult,'Third Blow: a third, a finisher, weaker than it was ('+C3[2].mult+' against '+W[2].mult+')');
-  P.tree.push('fin_stun');const S=t.heroCombo()[2];drop();P.tree.push('third','fin_push');const Pu=t.heroCombo()[2];ok(S.stun>Pu.stun&&Pu.kb>S.kb&&Pu.stun===0,'stunning: a long stun, little push; crushing: a hard push, no stun');P.tree=tr}
+ {const tr=P.tree.slice(),drop=()=>{P.tree=P.tree.filter(id=>!['oneh_third','oneh_stun','oneh_push'].includes(id))};drop();ok(t.heroCombo().length===2,'a new hero\u2019s combo: two blows');
+  P.tree.push('oneh_third');const C3=t.heroCombo(),W=t.weaponCombo();ok(C3.length===3&&C3[2].mult<W[2].mult,'Third Blow: a third, a finisher, weaker than it was ('+C3[2].mult+' against '+W[2].mult+')');
+  P.tree.push('oneh_stun');const S=t.heroCombo()[2];drop();P.tree.push('oneh_third','oneh_push');const Pu=t.heroCombo()[2];ok(S.stun>Pu.stun&&Pu.kb>S.kb&&Pu.stun===0,'stunning: a long stun, little push; crushing: a hard push, no stun');P.tree=tr}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
