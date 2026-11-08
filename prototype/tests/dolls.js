@@ -45,8 +45,8 @@ Kit.suite(({ok,info})=>{
   // step lands, up again on the pass; his head and body never apart: the same shape, only a row lower; its cloth's mottle by where it is)
   {const rows=(c,y0,y1)=>{const d=px(c),W=c.width,r=[];for(let y=y0;y<y1;y++)r.push(Array.from(d.slice(y*W*4,(y+1)*W*4)).filter((v,i)=>i%4===3).map(v=>v?1:0).join(''));return r.join('|')},t0=top(id);
    ok([1,3].every(k=>top(f[k])===t0)&&[0,2].every(k=>top(f[k])===t0+1&&rows(f[k],t0+1,t0+7)===rows(id,t0,t0+6)),'the walk: on each step all of him down a pixel as one (head and shoulders the same shape a row lower), up again on the pass')}
-  // (2026-11-07, the owner: "make the left legs cross and go back, same with right leg": his feet apart as one lands, together
-  //  under him as they pass, crossed as the other lands (engine/doll.js LEG, STRIDE_SPLIT); a foot's row the lowest's)
+  // (2026-11-07, the owner: "make the left legs cross and go back, same with right leg": his feet apart as one lands, apart
+  //  as they pass (a knee lifted), side by side as the other lands (engine/doll.js LEG, STRIDE_SPLIT); a foot's row the lowest's)
   const feet=c=>{const d=px(c),W=c.width,y=low(c,0,W),xs=[];for(let x=0;x<W;x++){const i=(y*W+x)*4;if(d[i+3]&&hex(d,i)!=='#000037')xs.push(x)}return xs.length?xs[xs.length-1]-xs[0]+1:0};
   const fw=f.map(feet),fi=feet(id);
   ok(fw[1]<fi&&fw[3]<fi&&fw[2]>=fw[1]&&fw[0]>=fw[1],'and his legs scissor: apart as a foot lands, together under him as they pass, the other leading next (feet across '+fw.join(', ')+' px; standing '+fi+')')}
