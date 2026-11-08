@@ -603,7 +603,7 @@ const LIE_T=[
   '.....dHHHHHHHHHHHHHHHHHHHHHHHHh.',
   '......ddHHHHHHHHHHHHHHdddHHHHHHy',
   '........ddddddddddddd....ddddd..'];
-function drawMountDown(g,o){
+function drawMountDown(g,o,lie){
   const kind=o.mount,C=pal(kind==='horse'?o.mountC||'horse':kind==='stag'?'stag':kind==='ram'?'fleece':kind),Mn=pal(kind==='ram'?'wool':kind==='wolf'||kind==='warg'?kind:'dark'),Tm=pal(o.team),y0=9;
   // (a horse: HORSE_ART's, its legs as a standing one's, out toward you; its cloth over its body, or its saddle)
   if(horseArt(kind)){const D=horseBuild().down,col=horseCols(C,Mn),on=new Set(),ps=(x,y,c)=>pset(g,x,y0+y,c);
@@ -612,7 +612,7 @@ function drawMountDown(g,o){
     if(o.barded){for(let x=6;x<=19;x++)[Tm[0],PPAL.gold[1],x%2?Tm[3]:Tm[2]].forEach((c,k)=>{if(on.has(x+','+(2+k)))ps(x,2+k,c)})}
     else for(let x=10;x<=14;x++)ps(x,1,PPAL.leather[x<12?0:1]);
     return}
-  const art=window.PX&&PX.mountArt&&PX.mountArt(kind,0,{C,M:kind==='ram'?pal('#9a7a5a'):pal('wool')},true);
+  const art=window.PX&&PX.mountArt&&PX.mountArt(kind,0,{C,M:kind==='ram'?pal('#9a7a5a'):pal('wool')},lie==='belly'?'belly':true);
   if(art){const A=art.g,on=new Set();for(let y=0;y<A.h;y++)for(let x=0;x<A.w;x++){const c=A.p[y*A.w+x];if(c){pset(g,x,y,c);on.add(x+','+y)}}
     const top=Math.min(...[...on].map(k=>+k.split(',')[1]));if(o.barded)for(let x=7;x<=19;x++){if(on.has(x+','+(top+1)))pset(g,x,top+1,Tm[1]);if(on.has(x+','+(top+2)))pset(g,x,top+2,PPAL.gold[1])}
     else for(let x=10;x<=14;x++)if(on.has(x+','+top))pset(g,x,top,PPAL.leather[x<12?0:1]);return}

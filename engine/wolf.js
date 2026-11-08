@@ -1,7 +1,7 @@
 'use strict';
 // Approved wolf art; the old renderer remains in place for every other creature.
 (function(PX){
-  const A=PX.WOLF_ART,BASE=400,cache=new Map(),masters=new Map(),maps=new Map();
+  const A=PX.WOLF_ART,BASE=400,cache=new Map(),masters=new Map(),maps=new Map(),mounts=new Map();
   const pose=(clip,frame)=>{const c=A.clips[clip]||A.clips.idle;return BASE+c[0]+Math.max(0,Math.min(c[1]-1,Math.floor(frame||0)))};
   const sample=(clip,seconds)=>{const c=A.clips[clip];return pose(clip,Math.floor(Math.max(0,seconds)*1000/c[2])%c[1])};
   function index(p){
@@ -36,6 +36,26 @@
     g.putImageData(d,0,0);c.fh=32-(Math.floor(A.frames[A.clips.idle[0]][1]/2)+4);c.kind='wolf';cache.set(key,c);return c;
   }
   function map(frame){const f=((frame||0)%8+8)%8;if(!maps.has(f)){const c=decode(A.map.frames[f],A.map.palette,16,16);c.fh=11;c.kind='wolf';maps.set(f,c)}return maps.get(f)}
+  // The approved wolf under an existing rider: fresh grids keep tack and side colors local.
+  function mount(kind,walk,pal,down){
+    const step=walk==null||walk<0?-1:walk%8,key=JSON.stringify([kind,step,pal.C,pal.M,down||false]);let saved=mounts.get(key);
+    if(!saved){
+      const clip=down?down==='belly'?'lie_down':'death_back':step<0?'idle':step>=4?'run':'walk',frame=down?7:step<0?0:(step%4)*2;
+      const source=render({pose:pose(clip,frame),team:1,v:0}),rgba=source.getContext('2d').getImageData(0,0,48,32).data,g=PX._beastKit.grid(32,down?21:32),dy=down?-11:0;
+      const ramps=[['b9b9ae','92958d','696f6b','414a48'],['797f7a','59635f','424c4b','303b3b'],['eee6d2','d6d0bc','a8aa9b','777f76']],color=(r,g,b)=>'#'+[r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');
+      for(let y=0;y<32;y++)for(let x=8;x<40;x++){
+        const i=(y*48+x)*4;if(!rgba[i+3])continue;const X=x-8,Y=y+dy;if(Y<0||Y>=g.h)continue;
+        const hex=color(rgba[i],rgba[i+1],rgba[i+2]).slice(1);let c='#'+hex;
+        for(let r=0;r<ramps.length;r++){const tone=ramps[r].indexOf(hex);if(tone>=0)c=r===2?pal.M[tone]:pal.C[Math.min(3,tone+(r===1?1:0))]}
+        g.p[Y*32+X]=c;
+      }
+      // The saddle follows the real back, not a fixed height above a moving body.
+      const spine=[];for(let x=11;x<=16;x++)for(let y=10;y<30;y++)if(g.p[y*32+x]){spine.push(y);break}spine.sort((a,b)=>a-b);
+      const seat=down?19:spine[Math.floor(spine.length/2)]||21;
+      saved={g,bob:down?0:seat-21,seat,body:[down?12:seat,down?19:seat+5]};mounts.set(key,saved);
+    }
+    return{...saved,g:{...saved.g,p:saved.g.p.slice()}};
+  }
   function live(u,time,moved,attackTime){
     const phase=time+(u.id||0)*.037,age=u.atkAt==null?Infinity:time-u.atkAt;
     if((u.z||0)>1)return pose('run',3);
@@ -46,8 +66,9 @@
     if(phase%30>=20&&phase%30<21.12)return pose('snarl',Math.floor((phase%30-20)/1.12*8));
     return sample('idle',phase);
   }
-  const beast=PX.beast,beastMap=PX.beastMap;
-  PX.wolf=Object.freeze({pose,sample,render,map,live,clips:A.clips,first:BASE});
+  const beast=PX.beast,beastMap=PX.beastMap,mountArt=PX.mountArt;
+  PX.wolf=Object.freeze({pose,sample,render,map,live,mount,clips:A.clips,first:BASE});
   PX.beast=(kind,o)=>kind==='wolf'?render(o||{}):beast(kind,o);
   PX.beastMap=(kind,f)=>kind==='wolf'?map(f):beastMap(kind,f);
+  PX.mountArt=(kind,walk,pal,down)=>kind==='wolf'||kind==='warg'?mount(kind,walk,pal,down):mountArt(kind,walk,pal,down);
 })(window.PX=window.PX||{});

@@ -201,7 +201,8 @@ function manDeath(c,L,how,helm,ride,lie){
    rest (a ram, a wolf, a warg): its own standing figure laid down, its head sunk to its back, its legs out stiff or folded away.
    The size of drawMountDown's, its ground on the same row) */
 function mountDown(L,lie){const G=19,belly=lie==='belly';let d;
-  if(horseArt(L.mount)){d=pgrid(32,22);drawMountDown(d,L);if(belly)d=pmove(d,(x,y)=>y>15?null:[0,4]);
+  if(L.mount==='wolf'||L.mount==='warg'){d=pgrid(32,22);drawMountDown(d,L,lie)}
+  else if(horseArt(L.mount)){d=pgrid(32,22);drawMountDown(d,L);if(belly)d=pmove(d,(x,y)=>y>15?null:[0,4]);
     if(L.mount==='stag')for(const [x,y] of [[27,12],[26,11],[28,11],[25,10],[29,10],[24,9]])pset(d,x,y+(belly?4:0),PPAL.cloth[0])}
   else{const m=pgrid(32,32);drawMount(m,L,-1);const n=y=>{let k=0;for(let x=0;x<32;x++)if(m.p[y*32+x])k++;return k};
     let bel=31,top=0,hd=0;while(bel>0&&!n(bel))bel--;while(bel>0&&n(bel)<=10)bel--;while(top<bel&&n(top)<=12)top++;while(hd<top&&!n(hd))hd++;

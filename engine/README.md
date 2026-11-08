@@ -105,4 +105,6 @@ The approved striped tiger is in `engine/art/tiger/` (master sheet and timing me
 
 ## Wolf artwork
 
-The approved wolf masters and timing data are in `engine/art/wolf/`. `wolf-data.js` and `wolf.js`, loaded after the tiger renderer, replace wild/combat wolf sprites and provide the dedicated eight-frame map walk. Movement, corrected jaw animations and three authored death sequences use the new art. The folded-leg death rests sideways, matching the approved tiger. Wolf and warg mounts are unchanged.
+The approved wolf masters and timing data are in `engine/art/wolf/`. `wolf-data.js` and `wolf.js`, loaded after the tiger renderer, replace wild/combat wolf sprites and provide the dedicated eight-frame map walk. Movement, corrected jaw animations and three authored death sequences use the new art. The folded-leg death rests sideways, matching the approved tiger. Wolf and warg mounts use the same approved art, with the existing rider gear and darker warg coat.
+
+The wolf mount adapter (`PX.wolf.mount` / `PX.mountArt`) supports the existing Wolf Rider, Wolf Archer and Warg Raider sprites, including loose saddled mounts and authored fallen poses. The saddle follows the moving back; templates are cloned before tack or barding is drawn.

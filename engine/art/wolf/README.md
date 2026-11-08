@@ -8,4 +8,4 @@ Run `python engine/art/wolf/build.py` from the repository root with Pillow insta
 
 The game renders combat frames at half the master scale with nearest-neighbor pixels. A 64-pixel cell leaves transparent room around animated limbs; the wolf itself stays at the scale of the other animals and 16-pixel people. Three grey coats, allied collars and existing facing rules are preserved. Sit and lie-down clips remain available through `PX.wolf.pose` for tools; the game does not invent new rest mechanics.
 
-Only wild/combat wolves change. Wolf and warg mounts retain their own art. No combat statistics, AI rules, random draws or saved actor fields change.
+Wild/combat wolves and the existing wolf/warg mounts now share the approved wolf artwork. Riders, wolf archers, and darker wargs keep their existing gear and coat palettes. Saddles follow the actual back height; fallen mounts use the authored folded-leg and lying-down poses. No combat statistics, AI rules, random draws or saved actor fields change.

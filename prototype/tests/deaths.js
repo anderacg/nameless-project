@@ -66,7 +66,7 @@ Kit.suite(({ok,info})=>{const t=T,L=t.BattleLab,D=t.DEATHS,random=Math.random;
    ok(!bad.length&&seen.size===6,'every rider\'s mount drawn by him, all six ways ('+[...seen].join(', ')+')'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
   {const L0=t.unitLook(unit('orc_wolf',1)),k0=D.on;D.on=false;const before=t.corpseOf(unit('orc_wolf',1)).down;D.on=k0;
    const side=[...ALL.get('orc_wolf')].map(([n,u])=>t.deathOf(u)).find(V=>V.ride&&/side$/.test(V.name));
-   ok(L0.mount==='wolf'&&side&&key(side.down)!==key(before),'a wolf rider\'s wolf lies as a wolf (before: a horse\'s shape)')}
+   ok(L0.mount==='wolf'&&side&&key(side.down)===key(before)&&key(side.down)===key(t.mountDown(L0,'side'))&&key(side.down)!==key(t.corpseOf(unit('hum_knight',1)).down),'a wolf rider\'s mount uses the same approved wolf corpse with deaths on or off, never a horse')}
   // (a horse killed under its rider, who fought on (battle/dismount.js): its own kind, on its side or its belly by where it lies)
   {const hc=(k,x)=>{const c0=t.corpseOf(unit(k,1));return[c0,{x,y:G,team:1,face:1,sp:{mount:c0.mount,down:c0.down,horse:true},td:0,dry:true,pool:9,seed:1}]};
    const lies=new Set([...Array(20)].map((_,i)=>t.horseDeathOf(hc('hum_knight',G+i)[1]).name)),side=[...Array(20)].map((_,i)=>hc('hum_knight',G+i)).find(([,c])=>t.horseDeathOf(c).name==='side');
