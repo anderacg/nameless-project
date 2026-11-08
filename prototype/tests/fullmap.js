@@ -69,18 +69,27 @@ Kit.suite(({ok,info})=>{
       Kit.key('Escape','Escape');ok(G.mode==='esc','and Esc follows its Back to the Game Menu');Kit.key('Escape','Escape');ok(G.mode==='world','then resumes');q('#panel').style.animation=''}
     finally{scr.style.cssText=css0;world()}}
   // ---- the scale ----
-  world();press();const v=q('.fm-view'),F=t.FULLMAP,fit=Math.min(v.clientWidth/MW,v.clientHeight/MH),want=Math.max(MW>F.wide?.5:1,...F.zooms.filter(z=>z<=fit&&z<=F.open));
+  world();press();const v=q('.fm-view'),F=t.FULLMAP,fit=Math.min(v.clientWidth/MW,v.clientHeight/MH),want=Math.max(MW>F.wide?.5:1,Math.min(fit,F.open));
   const css=()=>{const b=q('.fm-pic').getBoundingClientRect();return [Math.round(b.width),Math.round(b.height)]};
-  ok(F.ppt===want&&css()[0]===MW*F.ppt&&css()[1]===MH*F.ppt,'it opens at '+F.ppt+' px a tile ('+css().join(' x ')+' in a view of '+v.clientWidth+' x '+v.clientHeight+'): the largest that fits, never under 1 at this size');
-  ok(!WM.settings||WM.settings.w!==448||F.ppt===1||fit>=2,'Normal opens at 1 px a tile (unless the window is twice its size)');
-  {const z0=F.ppt;q('[data-act="map-zoom"][data-arg="in"]').click();const z1=F.ppt;q('[data-act="map-zoom"][data-arg="out"]').click();
-    ok(z1>z0&&F.ppt===z0&&css()[0]===MW*z0,'+ zooms in ('+z0+' → '+z1+' px a tile) and − back');
+  // (2026-11-08, the owner: "make the map allow pinch for zoom in and out": any scale between the zooms' first and last; it opens filling the view)
+  ok(F.ppt===want&&css()[0]===Math.round(MW*F.ppt)&&css()[1]===Math.round(MH*F.ppt),'it opens at '+F.ppt.toFixed(2)+' px a tile ('+css().join(' x ')+' in a view of '+v.clientWidth+' x '+v.clientHeight+'): the whole map filling the view, never under 1 at this size');
+  ok(fit<1||Math.abs(css()[0]-v.clientWidth)<=1||Math.abs(css()[1]-v.clientHeight)<=1||F.ppt===F.open,'it fills the view, across or down');
+  {const z0=F.ppt,up=F.zooms.find(z=>z>z0+1e-6),dn=[...F.zooms].reverse().find(z=>z<up-1e-6);q('[data-act="map-zoom"][data-arg="in"]').click();const z1=F.ppt;q('[data-act="map-zoom"][data-arg="out"]').click();
+    ok(z1===up&&F.ppt===dn&&css()[0]===Math.round(MW*dn),'+ steps in to the next zoom ('+z0.toFixed(2)+' → '+z1+' px a tile) and − a step back out ('+F.ppt+')');
     t.fullMapShow(.5);const c=q('.fm-cv');ok(c.width===Math.ceil(MW/2)&&css()[0]===Math.ceil(MW/2),'under 1 px a tile the picture is made at 1 px per 2 tiles ('+c.width+' x '+c.height+'), as Huge opens');
     // a click on the map zooms in there
     const b=q('.fm-pic').getBoundingClientRect(),hx=Math.round(MW*.3),hy=Math.round(MH*.6),ev=(ty,x,y)=>v.dispatchEvent(new PointerEvent(ty,{bubbles:true,button:0,pointerType:'mouse',clientX:x,clientY:y}));
     ev('pointerdown',b.left+hx*.5,b.top+hy*.5);ev('pointerup',b.left+hx*.5,b.top+hy*.5);
     const sx=t.clamp(hx-v.clientWidth/2,0,v.scrollWidth-v.clientWidth),sy=t.clamp(hy-v.clientHeight/2,0,v.scrollHeight-v.clientHeight);
     ok(F.ppt===1&&Math.abs(v.scrollLeft-sx)<2&&Math.abs(v.scrollTop-sy)<2,'a click on the map zooms in to 1:1 there (scrolled to '+v.scrollLeft+','+v.scrollTop+' for tile '+hx+','+hy+')')}
+  // ---- a pinch zooms about the fingers' middle, a drag pans, the wheel zooms about the pointer (2026-11-08, the owner: "allow pinch
+  // for zoom in and out or drag")
+  {t.fullMapShow(1);const r=v.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,pe=(ty,id,x,y)=>v.dispatchEvent(new PointerEvent(ty,{bubbles:true,pointerId:id,pointerType:'touch',button:0,buttons:1,clientX:x,clientY:y}));
+   const tile=(x,y)=>{const b=q('.fm-pic').getBoundingClientRect();return [(x-b.left)/F.ppt,(y-b.top)/F.ppt]},t0=tile(cx,cy);
+   pe('pointerdown',11,cx-20,cy);pe('pointerdown',12,cx+20,cy);for(let i=1;i<=6;i++){pe('pointermove',11,cx-20-i*6,cy);pe('pointermove',12,cx+20+i*6,cy)}pe('pointerup',11,cx-56,cy);pe('pointerup',12,cx+56,cy);
+   const t1=tile(cx,cy),z1=F.ppt;ok(z1>2.5&&z1<3.5&&Math.hypot(t1[0]-t0[0],t1[1]-t0[1])<3&&G.mode==='fullmap','two fingers spread 2.8 times: '+z1.toFixed(2)+' px a tile, the land between them kept there (tile '+t0.map(Math.round)+' → '+t1.map(Math.round)+')');
+   const sl=v.scrollLeft;pe('pointerdown',13,cx,cy);for(let i=1;i<=4;i++)pe('pointermove',13,cx-i*10,cy);pe('pointerup',13,cx-40,cy);ok(F.ppt===z1&&Math.abs(v.scrollLeft-sl-40)<=1,'a finger dragged 40 px pans it 40 ('+(v.scrollLeft-sl)+'), no zoom');
+   v.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaY:-200,clientX:cx,clientY:cy}));ok(F.ppt>z1,'the wheel zooms in ('+F.ppt.toFixed(2)+')')}
   t.act('map-close');
   // ---- what it shows: holdings and crossings only where you have seen, the fog, realms and rivers in the legend ----
   const S=t.seenArr(),keep=S.slice();
@@ -90,6 +99,11 @@ Kit.suite(({ok,info})=>{
   t.act('map-close');S.fill(1);world();press();
   const xs=(WM.crossings||[]).length;
   ok(qa('.fm-pic .fm-h').length===t.TOWNS.length&&qa('.fm-pic .fm-x').length===xs&&/100% explored/.test(q('.fm-head .muted').textContent),'everything seen: every holding marked ('+qa('.fm-pic .fm-h').length+') and every crossing ('+xs+')');
+  // (2026-11-08, the owner: "use holding sprite or places sprite instead of dots or circle")
+  {const imgs=qa('.fm-pic .fm-h img.fm-s');ok(imgs.length===t.TOWNS.length&&imgs.every(i=>/^data:image\/png/.test(i.src))&&!qa('.fm-pic .fm-h .fm-k').length,'each holding drawn as its own centre building ('+imgs.length+' pictures), no dot');
+   const pl=t.Discovery.places().filter(s=>s instanceof t.Site),was=pl.map(s=>s.seen),cnt=()=>qa('.fm-pic .fm-st img.fm-s').length,n0=cnt();
+   try{pl.forEach(s=>s.seen=true);t.fullMapShow(t.FULLMAP.ppt);ok(n0===pl.filter((s,i)=>!s.scoutable||was[i]).length&&cnt()===pl.length&&cnt()>0,'each place found drawn as its sprite ('+cnt()+': caves, ruins, shrines, hideouts, goblin camps), none before you find it ('+n0+')')}
+   finally{pl.forEach((s,i)=>s.seen=was[i]);t.fullMapShow(t.FULLMAP.ppt)}}
   {const named=qa('.fm-h b').map(b=>b.textContent),cities=t.TOWNS.filter(h=>h.T.tier>=3).map(h=>h.name);ok(cities.every(n=>named.includes(n)),'the towns, cities and castles named on it ('+named.length+' names)')}
   {const leg=q('.fm-leg').textContent,owners=[...new Set(t.TOWNS.map(h=>h.owner).filter(Boolean))];
     ok(owners.every(f=>leg.includes(t.FACS[f].n))&&/You/.test(leg)&&/Unexplored/.test(leg)&&/Road/.test(leg),'the legend: every realm holding land ('+owners.length+'), you, roads, the unexplored');
