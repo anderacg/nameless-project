@@ -83,7 +83,7 @@ Today's flat experience becomes practice (`PROF.reward`, the share of the old am
 
 ## 6. Companions and lords
 
-- **Companions** level the same way as your hero (the owner: "based on yours"). They train their fighting proficiencies by use, plus their share of battle rewards. Their Skills window gets the same four tabs.
+- **Companions** level the same way as your hero (the owner: "based on yours"). One who joins grown in a story (Ander) keeps his level, and what he was good at is a free start, as a past's. They train their fighting proficiencies by use, plus their share of battle rewards. Their Skills window gets the same four tabs.
 - **Lords and chieftains** grow their own way (the owner: "yes"). They keep today's levelling: their experience by wins and time, and a level's Tree point spent at once by their class. Their proficiencies start at 0 and grow with their level, so a lord of level n has his class's proficiencies at about 5 × n (half his level in power, as today).
 
 ## 7. The skill page
