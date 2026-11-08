@@ -42,7 +42,8 @@ const BAND_MARKERS=new Map();
 function bandMarkerSprite(col){let s=BAND_MARKERS.get(col);if(!s){s=mkc(9,11,g=>{rect(g,col,0,0,9,9);rect(g,'#211b16',1,1,7,7);for(const [x,y] of [[2,3],[4,2],[6,3]])rect(g,'#efe2bb',x,y);rect(g,'#efe2bb',3,5,3,2);rect(g,col,4,9,1,2)});BAND_MARKERS.set(col,s)}return s}
 // Shared marker bounds include its native-resolution count, so nearby indicators leave both visible.
 function bandMarkerAt(o,m,cam){
-  const s=bandMarkerSprite(m.col),x=Math.round(o.x-cam.x)-4,y=Math.round(o.y-cam.y-m.h-BANNER_GAP-s.height),n=o.fighters??o.n;
+  const s=bandMarkerSprite(m.col),x=snapV(o.x)-cam.x-4,y=snapV(o.y)-cam.y-m.h-BANNER_GAP-s.height,// (to the screen's own pixel, as the band under it: snapV)
+    n=o.fighters??o.n;
   const count=n>1?mapTxtPic(String(n),m.col,'center',VS,dprOf()):null,right=Math.max(x+s.width,count?x+4+(count.width-count.ox+1)/VS:x+s.width);
   return{s,x,y,top:y,right};
 }
@@ -72,15 +73,18 @@ function drawTravelConcealment(cam){
   if(B||P.stay||!hiddenAt(P.x,P.y))return null;
   const e=heroTagAt(cam),k=e.k,size=TRAVEL_HIDE.size*k,x=e.right+TRAVEL_HIDE.gap*k,y=e.bottom-size;
   const s=TRAVEL_HIDE.s||(TRAVEL_HIDE.s=mkc(9,9,g=>{for(const [x,y,c] of badgePx('hidden'))rect(g,c,x,y)}));
-  ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size};
+  ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,snapV(x),snapV(y),size,size);ctx.restore();return{x,y,w:size,h:size};
 }
+// (both badges put to the screen's own pixel (snapV), as the figure under them and the eye beside them are (the owner, 2026-11-08:
+// "the moving icon seems to not smooth attach to the army"): rounded to whole game px, they stepped a game px at a time, several
+// screen px on a phone, while the army glided under them)
 // Pace shares the battle unit cards' walk/run badges, in a row after travel concealment.
 const TRAVEL_PACE={size:14,gap:4,cache:new Map()};
 function drawTravelPace(cam){
   if(B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;
   const e=heroTagAt(cam),kind='walk',k=e.k,size=TRAVEL_PACE.size*k,x=e.right+(TRAVEL_PACE.gap+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0))*k,y=e.bottom-size;
   let s=TRAVEL_PACE.cache.get(kind);if(!s){s=mkc(9,9,g=>{for(const [x,y,c] of badgePx(kind))rect(g,c,x,y)});TRAVEL_PACE.cache.set(kind,s)}
-  ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
+  ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,snapV(x),snapV(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
 }
 const STEALTH_EYE={size:18,player:18,gap:4,cache:new Map()};
 function stealthEyeSprite(exposure,col,width=18){

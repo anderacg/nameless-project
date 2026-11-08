@@ -19,5 +19,11 @@ Kit.suite(({ok})=>{
   P.stay={town:'Ashford'};ok(t.drawTravelPace(G.cam)===null,'sheltered armies show no travel pace badge');P.stay=null;
   window.eval('B={world:{}}');ok(t.drawTravelPace(G.cam)===null,'combat keeps its existing pace badges');window.eval('B=null');
   P.tx=null;G.hurry=false;ok(t.drawTravelPace(G.cam)===null,'arriving removes the pace badge');
+  // (the owner, 2026-11-08: "the moving icon seems to not smooth attach to the army": the badge put to the screen's own pixel, as the
+  // figure under it (snapV), so as your army walks on by fractions of a game px it keeps its place over him, never a game px behind)
+  {P.tx=P.x+80;P.ty=P.y;const VS=t.VS,base=P.x,offs=new Set();let fine=true;
+   for(let i=0;i<24;i++){P.x=base+i*.13;const e=t.heroTagAt(G.cam);calls.length=0;t.drawTravelPace(G.cam);const c=calls.find(a=>a[0]===t.TRAVEL_PACE.cache.get('walk'));if(!c)continue;
+     if(Math.abs(c[1]*VS-Math.round(c[1]*VS))>1e-6)fine=false;offs.add(Math.round((c[1]-e.right)*VS))}
+   P.x=base;ok(fine&&offs.size===1,'walking on by fractions of a pixel, the pace badge keeps the same place beside the figure under it, to the screen\'s own pixel (VS '+VS+', offsets '+[...offs].join(',')+')')}
  }finally{ctx.drawImage=draw;t.tiles[i]=old;P.stay=null;window.eval('B=null')}
 });
