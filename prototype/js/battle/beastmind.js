@@ -31,7 +31,7 @@
    Its counts for the tests and the lab, captainMem(ck).beast.n: bites, pull-backs, regroups, joins, dread, rushes, strikes
    (unseen: most of them hidden as they struck), dives */
 const BEAST_TACTICS={on:true,
-  kinds:{wolf:{way:'pack',size:[3,5]},boar:{way:'rush',size:[2,3]},bear:{way:'brute',size:[1,2]},troll:{way:'brute',size:[1,2]},dragon:{way:'brute',crowd:true},
+  kinds:{wolf:{way:'pack',size:[3,5]},alpha_wolf:{way:'pack',size:[3,5]},boar:{way:'rush',size:[2,3]},bear:{way:'brute',size:[1,2]},troll:{way:'brute',size:[1,2]},dragon:{way:'brute',crowd:true},
     tiger:{way:'ambush',strike:110,wait:20},spider:{way:'ambush'},scorpion:{way:'ambush',strike:110},wyrm:{way:'ambush',cover:0,strike:150,wait:8},griffin:{way:'swoop'},slime:{way:'blob'}},
   spread:60,close:70,
   pack:{ring:50,step:.8,at:.45,sides:[Math.PI,Math.PI/2,-Math.PI/2,Math.PI*.75,-Math.PI*.75],circleMax:3,recircle:2,bite:4,biteMax:7,back:60,backMax:2,shift:.9,hurt:.75,regroup:140,rest:3,press:50,gap:1.75,dread:6,

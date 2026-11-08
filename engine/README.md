@@ -98,3 +98,15 @@ Open [face arts/portrait-workshop.html](face%20arts/portrait-workshop.html) for 
 ## Character Sprite Studio
 
 Open [sprite arts/sprite-workshop.html](sprite%20arts/sprite-workshop.html) for the offline sprite and rig creator: editable animated skeletons, keyframes, bone-attached pixel parts, project files, and existing paper-doll parts, race and equipment controls, material tinting, game/base animation previews, seeded locked variations, recipe collections and native PNG sheets with attachment metadata. [sprite arts/README.md](sprite%20arts/README.md) describes the shared drawing scripts and integration API. Run `python "engine/sprite arts/build.py"` after shared graphics changes to refresh the standalone snapshot.
+
+## Tiger artwork
+
+The approved striped tiger is in `engine/art/tiger/` (master sheet and timing metadata). `tiger-data.js` and `tiger.js`, loaded after the beast engine, supply synchronous pixel frames for the game and wiki. Combat uses the new movement, attack, pounce, hurt and side-fall poses. The falling body is animated from its own frames, without scaling or spinning the standing sprite.
+
+## Wolf artwork
+
+The approved wolf masters and timing data are in `engine/art/wolf/`. `wolf-data.js` and `wolf.js`, loaded after the tiger renderer, replace wild/combat wolf sprites and provide the dedicated eight-frame map walk. Movement, corrected jaw animations and three authored death sequences use the new art. The folded-leg death rests sideways, matching the approved tiger. Wolf and warg mounts use the same approved art, with the existing rider gear and darker warg coat.
+
+The wolf mount adapter (`PX.wolf.mount` / `PX.mountArt`) supports the existing Wolf Rider, Wolf Archer and Warg Raider sprites, including loose saddled mounts and authored fallen poses. The saddle follows the moving back; templates are cloned before tack or barding is drawn.
+
+Alpha wolves (`alpha_wolf`) use every approved wolf animation at 125% size. Newly spawned wild packs have a 25% chance of one stronger leader replacing a regular wolf; its mixed roster, survival and rewards persist in saves. Wolf and warg riders use this larger body in a 40 × 36 mount frame, with centered tack and a saddle that follows the back. Tunables are in `data/monsters.js` (`WOLF_ALPHA`, `ST.alpha_wolf`); coverage is in `tests/alphawolf.js` and `tests/wolfmount.js`.
