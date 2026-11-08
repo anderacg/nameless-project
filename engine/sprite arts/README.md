@@ -114,3 +114,11 @@ Game previews temporarily supply the workshop's custom part specification to `do
 - `examples/index.html`: a generated four-race lineup using the same shared renderer.
 
 Run `python "engine/sprite arts/build.py"` from the repository root after editing the source or pulling changes to shared graphics files. The standalone HTML intentionally contains a snapshot of the scripts at build time; `index.html` loads live sources. The editable ZIP includes the required shared scripts at their original relative paths. No production game files are changed by this workshop.
+
+## Studio workspace
+
+The desktop layout keeps the searchable scene/library browser, canvas, properties and animation timeline in one window. Properties and scene lists scroll independently. The scene hierarchy selects existing bones and toggles their original pixels; custom parts open in Draw parts. Search filters the hierarchy or character presets. The toolbar fits the sprite into view and switches between checkerboard, dark and light backgrounds. Background preference is remembered locally.
+
+On phones and shorter screens, the timeline sits directly below the preview, properties follow below it, and Scene opens the browser. Undo/redo remain available in the project bar. Original rendering, rig transforms, facing synchronization and project formats are unchanged.
+
+`studio-shell.js` supplies the studio docks and scene navigation over the existing editor controllers; it is also embedded in the standalone build.
