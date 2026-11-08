@@ -80,6 +80,7 @@ function beastSprite(type,team,v,pose){v=(v||0)%3;pose=beastPoseOf(type,pose||0)
 // a beast's pose now: striking (or breathing fire, winding up a spit), running or walking as it moves, leaping (a pounce), breathing
 function beastPose(u,moved){
   if(u.type==='tiger'&&PX.tiger)return PX.tiger.live(u,B.t,moved,ATK_ANIM);
+  if(u.type==='wolf'&&PX.wolf)return PX.wolf.live(u,B.t,moved,ATK_ANIM);
   if(u.s.breath&&u.br!=null&&u.br>3.5-ATK_ANIM*1.5)return 9+Math.min(2,Math.floor((3.5-u.br)/(ATK_ANIM*1.5)*3));
   if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)return 6+Math.min(2,Math.floor((B.t-u.atkAt)/ATK_ANIM*3));
   if(u.shot)return 6;
@@ -94,7 +95,7 @@ function corpseOf(u){
   const base=actorSprite(u,0,true);let c=CORPSES.get(base);if(c)return c;
   // (a beast: it sinks as it falls (a troll over as a man does, a spider or a scorpion onto its back, a slime running flat, the rest
   // pressed low), then lies in its dead pose, down: engine/beasts.js)
-  if(ST[u.type]&&ST[u.type].beast)c={beast:base,down:actorSprite(u,PX.BEAST_DEAD),how:BEAST_FALL[u.type]||'side',...(u.type==='tiger'?{frames:Array.from({length:8},(_,i)=>actorSprite(u,PX.tiger.pose('death_back',i)))}:{})};
+  if(ST[u.type]&&ST[u.type].beast)c={beast:base,down:actorSprite(u,PX.BEAST_DEAD),how:BEAST_FALL[u.type]||'side',...(u.type==='tiger'?{frames:Array.from({length:8},(_,i)=>actorSprite(u,PX.tiger.pose('death_back',i)))}:u.type==='wolf'?{frames:Array.from({length:8},(_,i)=>actorSprite(u,PX.wolf.pose('death_side',i)))}:{})};
   else{const L=unitLook(u),wk=heldWeapon(L),g=pgrid(24,20);drawFigure(g,{...L,mount:null,weapon:wk?null:L.weapon},4,3,-1,null,-1);const lie=pturn(g);poutline(g);poutline(lie);
     c={stand:pcanvas(g),body:pcanvas(lie),ax:2,ay:12,wk,team:L.team};
     if(L.mount){const m=pgrid(32,32),d=pgrid(32,22);m.edge=d.edge=true;drawMount(m,L,-1);drawMountDown(d,L);poutline(m);poutline(d);c.mount=pcanvas(m);c.down=pcanvas(d);DOWN_LOOK.set(c.down,L)}}
@@ -152,7 +153,7 @@ function deathOf(u){const c=corpseOf(u);if(!DEATHS.on)return c;const id=u.id|0,S
   if(S.wildlife)return wildDeath(u,c,m,deathPick(id,DEATHS.wild,1));
   if(u.type==='tiger'&&c.frames)return{...c,name:'side',blood:bloodOf(u)};
   if(S.beast){const names=PX.BEAST_DEATHS[u.type]||['side'],how=deathPick(id,Object.fromEntries(names.map(n=>[n,DEATHS.beast[n]??1])),1);
-    return m[how]||(m[how]={beast:c.beast,down:actorSprite(u,PX.BEAST_DEAD+names.indexOf(how)),how:DEATHS.fall[u.type+'.'+how]||DEATHS.fall[how]||'side',name:how,blood:bloodOf(u)})}
+    return m[how]||(m[how]={beast:c.beast,down:actorSprite(u,PX.BEAST_DEAD+names.indexOf(how)),how:DEATHS.fall[u.type+'.'+how]||DEATHS.fall[how]||'side',name:how,blood:bloodOf(u),...(u.type==='wolf'?{frames:Array.from({length:8},(_,i)=>actorSprite(u,PX.wolf.pose('death_'+how,i)))}:{})})}
   const L=deathLook(u),ride=c.mount?deathPick(id,DEATHS.rider,2):null,lie=ride&&deathPick(id,DEATHS.mount,3),how=ride==='across'?'face':ride==='under'?'back':deathPick(id,DEATHS.man,1),
     helm=DEATHS.hats.includes(L.helm)&&PX.hash(id,4,7177)<DEATHS.helm,k=how+(helm?'h':'')+(ride?ride+lie:'');
   return m[k]||(m[k]=Object.assign(manDeath(c,L,how,helm,ride,lie),{blood:bloodOf(u)}))}

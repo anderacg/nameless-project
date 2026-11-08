@@ -27,10 +27,11 @@ try{
  ok(kinds.length>=11&&kinds.every(k=>PX.BEAST_KINDS.includes(k)),kinds.length+' beasts and monsters, each a kind of the engine’s ('+kinds.join(', ')+')');
  ok(kinds.every(k=>t.unitSprite(k,1,false,0,0)===t.beastSprite(k,1,0,0)&&t.unitSprite(k,1,false,0,0).ch>0),'each fighter’s sprite is its new figure (unitSprite → beastSprite → PX.beast)');
  ok((0,eval)('typeof dragonSprite')==='undefined'&&(0,eval)('typeof bigBeastSprite')==='undefined'&&t.beastSprite.length===4&&!/outlined\(|bigBeast|dragonSprite/.test(t.unitSprite.toString()+t.corpseOf.toString()),'the old beast, big-beast and dragon sprites are gone and nothing calls them');
+ // The approved wolf uses a 64px padded cell; its drawing stays at native game scale.
  // ---- cells: a power of two, the dragon 64, the big ones 32, the slime 16; feet on the row above the cell's bottom (its outline under)
  {const bad=[],size={};for(const k of kinds)for(const p of poses){const c=t.unitSprite(k,1,false,0,p),n=c.width;size[k]=n;
    if(c.height!==n||![8,16,32,64].includes(n))bad.push(k+' '+p+' '+c.width+'x'+c.height);}
-  ok(!bad.length&&size.dragon===64&&size.troll===32&&size.wyrm===32&&size.slime===16&&size.wolf===32,'every pose in a power-of-two cell: '+kinds.map(k=>k+' '+size[k]).join(', ')+(bad.length?' — not: '+bad.slice(0,4).join('; '):''));
+  ok(!bad.length&&size.dragon===64&&size.troll===32&&size.wyrm===32&&size.slime===16&&size.wolf===64,'every pose in a power-of-two cell: '+kinds.map(k=>k+' '+size[k]).join(', ')+(bad.length?' — not: '+bad.slice(0,4).join('; '):''));
   // (the feet: the lowest coloured row is the one over the outline at the bottom, in every pose; drawn at y - height + 2 they stand on y)
   // (FB: the feet's row from the bottom: 2 over the outline; 1 in the paper dolls' style, no outline: PX.BEAST_EDGE, 2026-11-06)
   const FB=PX.BEAST_EDGE&&!PX.BEAST_RIM?1:2;const off=[];for(const k of kinds)for(const p of poses){const c=t.unitSprite(k,1,false,0,p),d=data(c),n=c.width;let low=-1;
@@ -72,11 +73,11 @@ try{
   ok(w&&dr&&sp,'a battle with beasts and a dragon');
   B.t=10;w.atkAt=null;w.shot=null;w.z=0;w.spdNow=w.s.spd;const pr=t.beastPose(w,true);w.spdNow=w.s.spd*.5;const pw=t.beastPose(w,true),ps=t.beastPose(w,false);w.atkAt=B.t-t.ATK_ANIM*.5;const pa=t.beastPose(w,true);w.atkAt=null;w.z=6;const pj=t.beastPose(w,true);w.z=0;
   sp.shot={t:.1,aim:1};const pspit=t.beastPose(sp,false);sp.shot=null;dr.br=3.5-.1;const pb=t.beastPose(dr,false);dr.br=2;
-  ok(pr>=15&&pr<=18&&pw>=2&&pw<=5&&ps<=1&&pa===7&&pj===16&&pspit===6&&pb===9,'its pose: running fast, walking, breathing at rest, mid-blow, in a pounce, winding up a spit, breathing fire ('+[pr,pw,ps,pa,pj,pspit,pb].join(', ')+')');
+  ok(pr>=PX.wolf.pose('run',0)&&pr<=PX.wolf.pose('run',7)&&pw>=PX.wolf.pose('walk',0)&&pw<=PX.wolf.pose('walk',7)&&ps>=PX.wolf.pose('idle',0)&&ps<=PX.wolf.pose('idle',7)&&(pa>=PX.wolf.pose('bite',0)&&pa<=PX.wolf.pose('bite',7)||pa>=PX.wolf.pose('lunge',0)&&pa<=PX.wolf.pose('lunge',7))&&pj===PX.wolf.pose('run',3)&&pspit===6&&pb===9,'its pose: running fast, walking, breathing at rest, mid-blow, in a pounce, winding up a spit, breathing fire ('+[pr,pw,ps,pa,pj,pspit,pb].join(', ')+')');
   // (drawn: the pose's figure is the one put on the field)
   const ctx=t.ctx,orig=ctx.drawImage,drawn=new Set();ctx.drawImage=function(img,...a){drawn.add(img);return orig.call(ctx,img,...a)};
-  try{w.plx=w.x-1;w.ply=w.y;w.spdNow=w.s.spd*.5;w.hitAt=null;t.drawUnit(w);const walking=[...drawn].some(c=>[2,3,4,5].some(p=>c===t.unitSprite('wolf',w.team,false,w.v,p)));
-   drawn.clear();w.plx=w.x;w.ply=w.y;w.movF=0;w.atkAt=B.t-t.ATK_ANIM*.5;t.drawUnit(w);const striking=drawn.has(t.unitSprite('wolf',w.team,false,w.v,7));w.atkAt=null;
+  try{w.plx=w.x-1;w.ply=w.y;w.spdNow=w.s.spd*.5;w.hitAt=null;t.drawUnit(w);const walking=[...drawn].some(c=>Array.from({length:8},(_,i)=>PX.wolf.pose('walk',i)).some(p=>c===t.unitSprite('wolf',w.team,false,w.v,p)));
+   drawn.clear();w.plx=w.x;w.ply=w.y;w.movF=0;w.atkAt=B.t-t.ATK_ANIM*.5;t.drawUnit(w);const striking=drawn.has(t.unitSprite('wolf',w.team,false,w.v,PX.wolf.live(w,B.t,true,t.ATK_ANIM)));w.atkAt=null;
    drawn.clear();dr.plx=dr.x;dr.ply=dr.y;dr.movF=0;dr.br=3.5-.05;t.drawUnit(dr);const fire=drawn.has(t.unitSprite('dragon',dr.team,false,dr.v,9));dr.br=2;
    ok(walking&&striking&&fire,'and drawn so on the field: the walk as it moves, the strike as it attacks, the breath ('+[walking,striking,fire]+')')}finally{ctx.drawImage=orig}
   // (the fallen: a beast drops to the ground and lies in its dead pose, no higher than it stood (a spider on its back, its legs

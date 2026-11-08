@@ -1,0 +1,16 @@
+{
+  "name": "Wolf world-map walk",
+  "cell": {
+    "width": 16,
+    "height": 16
+  },
+  "anchor": {
+    "x": 8,
+    "y": 14
+  },
+  "columns": 8,
+  "frames": 8,
+  "frameDurationMs": 120,
+  "loop": true,
+  "facing": "right"
+}

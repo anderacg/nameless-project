@@ -102,3 +102,7 @@ Open [sprite arts/sprite-workshop.html](sprite%20arts/sprite-workshop.html) for 
 ## Tiger artwork
 
 The approved striped tiger is in `engine/art/tiger/` (master sheet and timing metadata). `tiger-data.js` and `tiger.js`, loaded after the beast engine, supply synchronous pixel frames for the game and wiki. Combat uses the new movement, attack, pounce, hurt and side-fall poses. The falling body is animated from its own frames, without scaling or spinning the standing sprite.
+
+## Wolf artwork
+
+The approved wolf masters and timing data are in `engine/art/wolf/`. `wolf-data.js` and `wolf.js`, loaded after the tiger renderer, replace wild/combat wolf sprites and provide the dedicated eight-frame map walk. Movement, corrected jaw animations and three authored death sequences use the new art. The folded-leg death rests sideways, matching the approved tiger. Wolf and warg mounts are unchanged.
