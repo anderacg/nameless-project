@@ -12,6 +12,10 @@ Fifteen hierarchical bones cover pelvis, chest, head, upper arms, forearms, hand
 
 The initial clips are adapted from `PX.DOLL.POSES` into per-bone offsets. They are editable rig studies, not promises of pixel-identical game animation: the game still has its own specialized pose, weapon and outline rules in the appearance preview. Add named clips, duplicate/delete keyframes, set each frame to 50–2000 ms, mirror poses, choose looping or one-shot playback and optionally interpolate poses. Coordinates snap to pixels; interpolation is off by default. Previous-frame onion skin and a skeleton overlay aid editing and are excluded from exports. Turn off mirrored preview before dragging joints.
 
+**Segment connection** controls gap filling per body segment. **Connected** retains the existing joint filler. **Separate** stops generated filler between that segment and both its parent and child segments, so moving or rotating it can leave a clear gap. **Connect all** and **Separate all** apply the setting across the rig. Segments still inherit their skeleton transforms; this is visual separation, not unparenting. Ordinary rasterization inside each rigid segment is retained. Painted custom parts and equipment already draw independently and do not grow body-joint filler.
+
+The project-level `separate` array stores the selected bone IDs and applies across its clips. Old projects without this field default to connected segments. Project save/load, collections, undo/redo and exported clip metadata preserve the selection.
+
 A project can hold 16 clips, 64 keyframes per clip and 32 authored parts. Undo/redo retains up to 60 project checkpoints. **New rig from appearance** makes a fresh rig from the selected character; Undo restores the previous project. Appearance changes update the rig's source character while retaining the animation and part library. Browser storage and project exports preserve the selected clip, frame, bone, part and view.
 
 ## Draw your own attached parts
