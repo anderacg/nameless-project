@@ -34,7 +34,7 @@ Status: **built** (2026-11-08). Numbers in `PROF` (`data/progression.js`).
 ## 4. Proficiencies
 
 ### 4.1 Growth
-- Each proficiency runs **0 to 99** (`PROF.max`).
+- Each proficiency runs **0 to 99** (`PROF.max`). *(2026-11-08, the owner: no top for now, at most 9999. A made character still starts at no more than 99 (`PROF.made`), and the effects made for 99 (prices, Survival's food, Blocking's stamina, sight) read no further (`skillSafe`); the rest grow on.)*
 - It rises **by use, as now**: the existing `train(...)` calls stay.
 - **Pace:** reaching 99 takes about as much practice as reaching 10 does today. A level needs `PROF.xp0 + PROF.xpUp × level` practice (4 + 0.145 × level; 0 to 99 is 1099, as 0 to 10 was 1100), so early levels come quickly and later ones slowly.
 - **A knack** (your race's or past's) still makes its proficiency rise faster, as today.
@@ -139,6 +139,14 @@ Tabs, in the owner's order: **Proficiency · Tree · Trait · Skill bar**. It op
 | Old saves refused (version bump), with a notice | `core/save.js` |
 | Tests: a new `proficiency` suite (0–99, the curve, power, weights and repeats, level from progress, a Tree point a level, rewards as practice, the past's free start, combo nodes, companions, lords, an old save refused); suites that expect flat experience, levels or discipline numbers brought up to date | `tests/` |
 | Fingerprints: W7, W8 and B2 (the save and lords' levels) and the battle suites where heroes' numbers change. Re-recorded with reasons. The proof is the commit before. | `tests/worldprint.js` and others |
+
+## 9b. Since built: a tree for each proficiency, and the level's choice (2026-11-08)
+
+The owner: "make each skill tree separated by proficiency"; "when you level up you choose to upgrade health, stamina or magic". This replaces §5's and §7's Tree point:
+- Each proficiency has its own tree (`data/tree.js` `PROF_TREE`): milestones (15, 35, 60, 90 for the fighting ones and Leadership; 15, 35, 60 for the rest), two nodes at each. Its points, one each 15 levels of it (`TREE_PT`), are spent freely on any node a milestone has opened that grows from the tier below (the owner: "freely spend based on their preferences"). Drawn as a tree that grows when shown.
+- Each level is a choice of +10 health, +10 stamina or +10 mana (`LEVEL_UP`); the level no longer adds these by itself.
+- Companions choose in their own trees; lords and chieftains choose for themselves, their trees opening as if their proficiencies were 8 × their level (`AI_TREE`).
+- The skill page's Tree tab is now Skill trees: the shown one's milestones the whole page, the proficiencies switched under it (‹ ›, or the list of them all from its name). See `prototype/README.md`, "Skill trees by proficiency".
 
 ## 10. Phases
 

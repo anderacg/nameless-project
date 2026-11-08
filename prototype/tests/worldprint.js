@@ -636,7 +636,27 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-08, on purpose: the owner, "what is a weird beige spot on the shield?": a shield's device in its field's own
 //  lightest (or deepest) shade, not cream (gfx/figures.js ShieldGear); the map's men carry theirs. Proof: only figures.js changed,
 //  and 06ed59d gives 2106977a. Was W6 2106977a)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'b1ff7a76',W7:'6c9e9789',W8:'51660bc5',B2:'a9339a6a'};
+// (W7, W8 again 2026-11-08, on purpose: the owner, "make sure that bandits and goblins are hostile to each other": a goblin
+//  warband and a bandit band ride each other down and fight on the map (world/brains.js BandBrain feud, data/goblins.js BAND_FEUD),
+//  so after 600 frames 91 bands are left, not 96, and the save after its days moves. B2 holds. Proof: with BAND_FEUD.on false they
+//  are 6c9e9789 and 51660bc5 again. Was W7 6c9e9789, W8 51660bc5)
+// (W7 again 2026-11-08, on purpose: the owner, "proficiency increase too fast": a proficiency's level takes 2.5 times the practice
+//  (data/progression.js PROF xp0 10, xpUp .3625), and the save after its days holds your proficiencies. Proof: with xp0 4, xpUp .145
+//  it is 37b3d70f again. Was W7 37b3d70f)
+// (W7 and B2 again 2026-11-08, on purpose: the owner, "make each skill tree separated by proficiency", and a level's choice of health,
+//  stamina or mana: the save holds your record (tp gone, lvUp and lvPick), the lords' and chieftains' trees (opened by their
+//  proficiencies now) and their numbers. Proof: with the others choosing no node, the old tp, the level's old numbers and its line,
+//  the old code and the new give the same W7 (4168edf3) and B2 (a9339a6a). Was W7 dd0ee495, B2 a9339a6a)
+// (W7 again 2026-11-08, on purpose: the owner, "player can freely spend based on their preferences": a tree's points (one each 15
+//  levels of its proficiency) spent freely, so the lords and chieftains spend theirs as they like (characters.js autoTree) and the save
+//  after its days holds their trees. Proof: with autoTree off, abaceed and this give the same W7 (2fea3867). Was W7 bbaa5061)
+// (W7 again 2026-11-08, on purpose: the owner, "remove the log when you travel cross to the region or territory": no line in the log
+//  crossing a border (world/territory.js landWatch), and the save holds the log. Proof: only landWatch changed; 22ef21a gives 541432df.
+//  Was W7 541432df)
+// (W6 again 2026-11-08, on purpose: the owner, "the map show on the worldmap should be a zoomed in version of new map": the minimap
+//  a piece of the full map's parchment round the screen's middle, its holdings and places as sprites (gfx/render.js MINIMAP,
+//  drawMiniMap). Proof: with MINIMAP.on false every hash (W1-W8, B2) is as before. Was W6 b1ff7a76)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'fa66e427',W7:'1c0d683b',W8:'1d99079f',B2:'72712154'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

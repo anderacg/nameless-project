@@ -7,14 +7,20 @@ class TalentService{
   has(id){return (this.owner.tree||[]).includes(id)}
   root(){const id=this.rules.root();return id&&this.has(id)?id:'start'}
   knows(id){const S=this.skillDef(id);return !!S&&(!S.learn||this.has(S.learn))}
-  // (excl: a node that shuts another, as a finisher the other: TREE_COMBO)
-  canTake(id){const N=this.node(id);return !!N&&!this.has(id)&&this.owner.tp>0&&N.t!=='origin'&&N.links.some(n=>this.has(n))&&!(N.excl&&this.has(N.excl))}
-  canRefund(id){
-    const N=this.node(id),root=this.root();if(!N||id===root||N.t==='origin'||!this.has(id))return false;
-    const keep=new Set(this.owner.tree.filter(x=>x!==id)),seen=new Set([root]),q=[root];
-    while(q.length){const c=q.pop();for(const n of this.rules.nodes[c].links)if(keep.has(n)&&!seen.has(n)){seen.add(n);q.push(n)}}
-    return seen.size===keep.size;
-  }
+  // (a proficiency's tree, data/tree.js PROF_TREE: its points, one each TREE_PT.per levels of it, spent freely on its nodes; a node
+  // opens as the proficiency reaches its milestone and a node of the tier below is learned)
+  profLv(k){const s=this.owner.sk&&this.owner.sk[k],lv=s?s.lv:0;return s&&this.rules.ai&&this.rules.ai()?Math.max(lv,(this.owner.lv||0)*AI_TREE.per):lv}
+  reached(id){const N=this.node(id);return !!N&&!!N.prof&&this.profLv(N.prof)>=N.at}
+  // (its tier's nodes, of proficiency k; how many of them it has)
+  trees(){return this.rules.trees?this.rules.trees():PROF_TREE}
+  tierHas(k,t){const R=this.trees(),T=R[k]&&R[k][t];return T?T.filter(([id])=>this.has(id)).length:0}
+  // a proficiency's points: earned (its level ÷ TREE_PT.per), spent (its nodes learned), left
+  points(k){const T=this.trees()[k];if(!T)return{earned:0,spent:0,left:0};const earned=Math.floor(this.profLv(k)/TREE_PT.per),spent=T.flat().filter(([id])=>this.has(id)).length;return{earned,spent,left:Math.max(0,earned-spent)}}
+  canTake(id){const N=this.node(id);return !!N&&!this.has(id)&&!!N.prof&&this.reached(id)&&this.points(N.prof).left>0&&(N.tier===0||this.tierHas(N.prof,N.tier-1)>0)}
+  // (unlearned, nothing above it left hanging: the tier above learned only while another of this tier stays)
+  canRefund(id){const N=this.node(id);return !!N&&!!N.prof&&this.has(id)&&(this.tierHas(N.prof,N.tier+1)===0||this.tierHas(N.prof,N.tier)>1)}
+  // what waits: a point for each proficiency with one left and a node it can take now (its key, once a point)
+  pending(prof){const o=[],R=this.trees();for(const k in R){if(prof&&k!==prof)continue;const left=this.points(k).left;if(left&&R[k].flat().some(([id])=>this.canTake(id)))for(let i=0;i<left;i++)o.push(k)}return o}
   apply(id,sign){const N=this.node(id);if(!N)return false;const m=N.m,o=this.owner;if(m.attr)for(const a in m.attr)o.attr[a]=Math.max(this.rules.minAttribute,(o.attr[a]||0)+sign*m.attr[a]);return true}
   autoSlot(id){
     if(!this.knows(id))return -1;const o=this.owner;o.slots=o.slots||Array(this.rules.slotCount).fill(null);
@@ -22,7 +28,7 @@ class TalentService{
   }
   take(id){
     if(!this.canTake(id))return {ok:false,code:'ineligible',id};
-    const o=this.owner;o.tree.push(id);o.tp--;this.apply(id,1);const unlock=this.rules.nodes[id].m.unlock;
+    const o=this.owner;o.tree.push(id);this.apply(id,1);const unlock=this.rules.nodes[id].m.unlock;
     return {ok:true,code:'learned',id,unlock,slot:unlock?this.autoSlot(unlock):-1};
   }
   refundCost(){return this.rules.refundCost()}
@@ -33,7 +39,7 @@ class TalentService{
   }
   refund(id){
     const result=this.quoteRefund(id);if(!result.ok)return result;const cost=result.cost;
-    const o=this.owner;this.rules.wallet.gold-=cost;o.tree=o.tree.filter(x=>x!==id);o.tp++;this.apply(id,-1);
+    const o=this.owner;this.rules.wallet.gold-=cost;o.tree=o.tree.filter(x=>x!==id);this.apply(id,-1);
     const unlock=this.rules.nodes[id].m.unlock;if(unlock)o.slots=(o.slots||[]).map(s=>s===unlock?null:s);
     return {ok:true,code:'refunded',id,cost,unlock};
   }
@@ -55,11 +61,12 @@ class TalentService{
 const TALENTS=new WeakMap();
 function talentsOf(o){
   let service=TALENTS.get(o);if(!service){service=new TalentService(o,{nodes:TREE,skills:()=>HSKILLS,root:()=>o===P?o.origin:'start',minAttribute:o===P?1:0,slotCount:10,
-    wallet:P,refundCost:()=>15*P.level,effect:k=>tmOf(o,k),finisher:o===P?{styles:()=>FIN_STYLE,ready:()=>finReady()}:null});TALENTS.set(o,service)}return service;
+    wallet:P,refundCost:()=>15*P.level,ai:()=>['lord','chieftain'].includes(charRole(o)),effect:k=>tmOf(o,k),finisher:o===P?{styles:()=>FIN_STYLE,ready:()=>finReady()}:null});TALENTS.set(o,service)}return service;
 }
 // Shorthand commands also serve character AI; presentation stays outside the service itself.
 const knowsOf=(o,id)=>talentsOf(o).knows(id),treeHasOf=(o,id)=>talentsOf(o).has(id),treeRootOf=o=>talentsOf(o).root();
 const canTakeOf=(o,id)=>talentsOf(o).canTake(id),canRefundOf=(o,id)=>talentsOf(o).canRefund(id);
+const treePendingOf=(o,prof)=>talentsOf(o).pending(prof),treePending=prof=>treePendingOf(P,prof);
 const knows=id=>knowsOf(P,id),treeHas=id=>treeHasOf(P,id),treeRoot=()=>treeRootOf(P),canTake=id=>canTakeOf(P,id),canRefund=id=>canRefundOf(P,id);
 const refundCost=()=>talentsOf(P).refundCost();
 const applyNodeOf=(o,id,sign)=>talentsOf(o).apply(id,sign),applyNode=(id,sign)=>applyNodeOf(P,id,sign);

@@ -96,7 +96,7 @@ const nearFrost=()=>[[0,0],[1,0],[-1,0],[0,1],[0,-1]].some(([i,j])=>climAt(P.x+i
 // the share of the furs you need that you lack (0: enough)
 function coldShare(){const need=P.furNeed(),have=goodN('furs');return need>have?(need-have)/need:0}
 // what you still pay of the land's price: Survival softens it
-const survivalShare=()=>1-.06*skill('surv');
+const survivalShare=()=>1-.06*skillSafe('surv');
 
 /* ---------- drink ---------- */
 // what your band drinks where it stands, in its order (the desert: water only; liquor first when you choose it); how much of it

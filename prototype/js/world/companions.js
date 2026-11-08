@@ -56,7 +56,7 @@ function compJoin(id,o){
   P.comps[id]={ap:o&&o.ap||0,role:''};
   const c=compInit(id);
   // (one who joins grown, a story's (Ander): his level, and what he was good at as a free start, as a hero's past: sk0, not counted)
-  if(o&&o.lv){c.lv=o.lv;const S=COMP_START[id]||{};c.sk0={};for(const k in S)if(c.sk[k])c.sk[k].lv=c.sk0[k]=Math.min(SK_MAX,S[k]*PROF.per)}
+  if(o&&o.lv){c.lv=o.lv;const S=COMP_START[id]||{};c.sk0={};for(const k in S)if(c.sk[k])c.sk[k].lv=c.sk0[k]=Math.min(SK_MADE,S[k]*PROF.per)}
   if(o&&o.attr)c.attr={...o.attr};
   log(COMPS[id].n+' joins your band as a companion.','gold');
   return c}

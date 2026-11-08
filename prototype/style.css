@@ -289,14 +289,16 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .ws-seed:focus{border-color:var(--trim-hi);outline:2px solid var(--accent);outline-offset:2px}.ws-seed:disabled{opacity:.55}
 .ws-code{font-size:var(--fs-md);color:var(--muted)}.ws-code b,.ws-page b{color:var(--accent);font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text;overflow-wrap:anywhere}
 .ws-num{display:inline-flex;align-items:center;gap:6px}.ws-num b{min-width:4ch;text-align:center;font-variant-numeric:tabular-nums}.ws-num .btn{min-width:32px;padding:3px 0}
-.ws-adv{align-self:flex-start}
+.ws-adv{align-self:stretch;display:flex;align-items:baseline;justify-content:flex-start;gap:8px;margin-top:6px}.ws-adv small{color:var(--muted);font-weight:normal}
+/* (Surprise me: a world of chance, apart from the world types by its dashed edge) */
+.ws-dice{border-style:dashed;flex:none}.ws-type{flex-wrap:nowrap;align-items:flex-start}.ws-type .muted{flex:1;margin:0}
 .ws-advs{display:flex;flex-direction:column;gap:6px;padding:8px 0 4px;border-top:1px solid var(--line)}
 .ws-row{display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;gap:10px}
-.ws-k{color:var(--fg-2);font-size:var(--fs-md)}.ws-k small{color:var(--faint)}
+.ws-k{color:var(--fg-2);font-size:var(--fs-md)}.ws-k small{color:var(--faint)}.ws-set .ws-k small{display:block;font-size:var(--fs-sm);line-height:1.25;margin-top:1px}
 .ws-view{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:12px;
   background:linear-gradient(135deg,#252125,#18161b);border:1px solid var(--line);box-shadow:inset 0 0 0 2px var(--shade);scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
 .ws-cv{display:block;width:auto;height:auto;max-width:100%;flex:none;align-self:flex-start;image-rendering:pixelated;background:var(--field);border:1px solid var(--line-2)}
-.ws-view p{margin:0;font-size:var(--fs-md)}.ws-counts{padding:8px 0;border-block:1px solid var(--line)}.ws-cap{font-size:var(--fs-sm)!important}.ws-counts{color:var(--fg)}
+.ws-view p{margin:0;font-size:var(--fs-md);flex:none}.ws-counts{padding:8px 0;border-block:1px solid var(--line)}.ws-cap{font-size:var(--fs-sm)!important}.ws-counts{color:var(--fg)}
 .ws-note{font-size:var(--fs-md)}
 .ws-page{display:flex;flex-direction:column;gap:6px}.ws-page .ws-row{grid-template-columns:150px minmax(0,1fr)}
 @media (max-width:1060px){.ws{grid-template-columns:minmax(0,1fr) 340px}}
@@ -460,8 +462,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 
 /* ---------- 6b. discovery (world/discovery.js DiscoveryTitle): "You discovered", a place's name and its kind over the map; it rises,
    its letters drawing together, holds and fades over --discover-ms; not over the windows, never in the way of a click ---------- */
-.discover{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:30;pointer-events:none;text-align:center;opacity:0;
-  display:flex;flex-direction:column;align-items:center;gap:2px;color:#f3e2b0;text-shadow:0 2px 0 #000,0 0 14px rgba(0,0,0,.85);white-space:nowrap}
+.discover{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;pointer-events:none;text-align:center;opacity:0;
+  display:flex;flex-direction:column;align-items:center;gap:2px;color:#f3e2b0;text-shadow:0 2px 0 #000,0 0 14px rgba(0,0,0,.85);white-space:nowrap;
+  padding:18px 56px;background:radial-gradient(ellipse at center,rgba(12,10,8,.78) 0,rgba(12,10,8,.5) 45%,transparent 72%)}
 .discover small{font-size:var(--fs-sm);letter-spacing:.35em;text-transform:uppercase;color:#d9c48a}
 .discover strong{font-size:34px;font-weight:700;letter-spacing:.06em}
 .discover span{font-size:var(--fs-sm);letter-spacing:.2em;text-transform:uppercase;color:#bfb28c}
@@ -469,12 +472,15 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .discover.on{animation:discover var(--discover-ms,4.2s) ease-out both}
 .discover.on strong{animation:discoverName var(--discover-ms,4.2s) ease-out both}
 .discover.on strong::after{animation:discoverLine var(--discover-ms,4.2s) ease-out both}
-@keyframes discover{0%{opacity:0;transform:translate(-50%,10px)}14%{opacity:1;transform:translate(-50%,0)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-6px)}}
+@keyframes discover{0%{opacity:0;transform:translate(-50%,calc(-50% + 10px))}14%{opacity:1;transform:translate(-50%,-50%)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,calc(-50% - 6px))}}
 @keyframes discoverName{0%{letter-spacing:.4em}22%{letter-spacing:.06em}100%{letter-spacing:.06em}}
 @keyframes discoverLine{0%,10%{width:0}35%,100%{width:110%}}
 @keyframes discoverStill{0%{opacity:0}10%,85%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.discover.on{animation-name:discoverStill}.discover.on strong{animation:none}.discover.on strong::after{animation:none;width:110%}}
-@media (max-width:900px){.discover{top:16%}.discover strong{font-size:24px}}
+@media (max-width:900px){.discover strong{font-size:24px}}
+/* (the middle of the screen, the owner, 2026-11-08: "the discover should be at center of the screen"; a phone on its side a little
+   higher, clear of the bars at its foot) */
+@media (max-height:520px){.discover{top:32%}}
 
 /* ---------- 6c. supplies ---------- */
 /* the band card's bars (render.js updateHUD), each its % at its end: fitness steel blue, red under half; morale violet, orange

@@ -36,9 +36,10 @@ const isHammer=m=>m.base==='warhammer'||m.icon==='club';
    one (FIN_BASE). */
 const FIN_BASE={mult:.85,stun:.5,kb:.6},FIN_STYLE={stun:{mult:.9,stun:1.6,kb:.4},push:{mult:.9,stun:0,kb:1.9}};
 // (the combo's upgrades are Tree nodes now, the owner, 2026-11-08: the Third Blow, then a finisher's style, data/tree.js TREE_COMBO)
-const comboBlows=()=>treeHas('third')?3:2;
-const finReady=()=>treeHas('third');
-const heroFin=()=>treeHas('fin_stun')?'stun':treeHas('fin_push')?'push':null;
+// (the third blow and its finishing style: a node of a weapon's tree, data/tree.js combo3, fin; the first finisher learned rules)
+const comboBlows=()=>tm('combo3')>0?3:2;
+const finReady=()=>tm('combo3')>0;
+const heroFin=()=>{const id=(P.tree||[]).find(n=>TREE[n]&&TREE[n].m.fin);return id?TREE[id].m.fin:null};
 function heroCombo(){const C=weaponCombo(),n=comboBlows(),F=FIN_STYLE[heroFin()]||FIN_BASE,K=C===COMBOS.fists?1+P.treeMod('kick'):1;// (the kick: the talents')
   const out=C.slice(0,n).map((c,i)=>i<2?c:{...c,mult:+(c.mult*F.mult*K).toFixed(2),stun:+((c.stun||.4)*F.stun).toFixed(2),kb:Math.round(c.kb*F.kb*K)});return Object.assign(out,{sp:C.sp})}
 function weaponCombo(){if(unarmed())return COMBOS.fists;const m=mainI(),g=grip();if(g==='dual')return COMBOS.dual;if(!m)return COMBO;if(m.base==='dagger'||m.icon==='dagger')return COMBOS.dagger;
@@ -134,7 +135,7 @@ class HeroHands{
   // a blocked hit drains stamina; with none left the guard breaks and the hit lands in full
   guard(dm){
     const X=this,h=B.hero;if(X.sp<=0){B.floats.push({x:h.x,y:h.y-18,t:'Guard broken',life:.6,c:'#e8675f'});return false}
-    X.sp=Math.max(0,X.sp-dm*STAM.guard*(1-.03*skill('block')));X.spT=0;train('block',1);return true;
+    X.sp=Math.max(0,X.sp-dm*STAM.guard*(1-.03*skillSafe('block')));X.spT=0;train('block',1);return true;
   }
   // one hero blow on one enemy: matchup, crit, knockback, stagger, combo count
   hitFoe(e,mult,o){
@@ -208,6 +209,7 @@ class HeroHands{
     const h=B.hero,S=HSKILLS[id];if(!h||h.hp<=0||this.busy())return;
     if(!knows(id)){B.floats.push({x:h.x,y:h.y-26,t:'Learn '+S.n+' on the skill tree',life:.9,c:'#98a0ba'});return}
     if(S.needs==='bow'&&(!isBow()||heroShotsLeft()<4)){B.floats.push({x:h.x,y:h.y-26,t:S.n+' needs a bow and 4 arrows',life:.9,c:'#98a0ba'});return}
+    {const w=Weather.skillBan(id,B.env&&B.env.w);if(w){B.floats.push({x:h.x,y:h.y-26,t:w,life:.9,c:'#98a0ba'});return}}// (the field's weather)
     castAbility(h,id);// (one cast for every caster: battle/abilities.js)
   }
   // called from your hero's moment with their own time step; returns true while a roll or leap owns the hero's movement
@@ -248,7 +250,7 @@ class HeroHands{
     const X=this;$('#swing').textContent={melee:'Attack',ranged:'Shoot',magic:'Cast'}[heroKind()]+(heroShots()!=null?' ('+heroShotsLeft()+')':'');
     // (your hero's own bar only: the units' skill bar has data-slot buttons too, battlehud.js; written over, it threw and froze the loop)
     document.querySelectorAll('#slotbar [data-slot]').forEach(b=>{const id=P.slots[+b.dataset.slot];if(!id)return;const A=abil(id),lock=!knows(id);b.disabled=lock||X.cds[id]>0;
-      b.textContent=SLOT_KEYS[+b.dataset.slot]+' '+A.n+(lock?' (not learned)':X.cds[id]>0?' '+Math.ceil(X.cds[id]):'');b.title=A.d+' Costs '+costText(A)+'.'});
+      b.textContent=SLOT_KEYS[+b.dataset.slot]+' '+A.n+(lock?' (not learned)':X.cds[id]>0?' '+Math.ceil(X.cds[id]):'');b.title=A.d+' Costs '+costText(A)+'.';const w=Weather.skillBan(id,B.env&&B.env.w);if(w&&!lock){b.disabled=true;b.title=w+'. '+b.title}});
     const db=document.querySelector('[data-skill="dodge"]');if(db){db.disabled=X.rollCd>0||X.sp<dodgeCost();db.textContent='F Dodge'+(X.rollCd>0?' '+X.rollCd.toFixed(1):'')}
   }
 }

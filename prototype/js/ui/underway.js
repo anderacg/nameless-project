@@ -21,9 +21,11 @@ const UW={el:null};
 // (where it stands: just under the minimap's frame (render.js drawMapFrame, UW_FRAME game px round its map), as wide as it, its
 // edges the frame's (the owner, 2026-11-01: "the ui is a bit off"), never narrower than UW_MIN px; clear of a phone's notch)
 const UW_FRAME=2,UW_MIN=168;
+// (no narrower than UW_MIN, nor wider than 40% of a narrow screen: a phone held upright; the minimap as wide, render.js worldMiniRect)
+const uwMin=()=>Math.min(UW_MIN,Math.floor(innerWidth*.4));
 function uwPlace(el,host){if(!WM)return;const r=worldMiniRect(),c=cv.getBoundingClientRect(),h=host.getBoundingClientRect(),k=c.width/VW,f=UW_FRAME;
   el.style.top=Math.round(c.top-h.top+(r.y+r.h+f)*k+4)+'px';el.style.right=Math.max(safeInsets().r+4,Math.round(h.right-c.left-(r.x+r.w+f)*k))+'px';
-  el.style.width=Math.max(UW_MIN,Math.round((r.w+2*f)*k))+'px'}
+  el.style.width=Math.max(uwMin(),Math.round((r.w+2*f)*k))+'px'}
 // each HUD tick (render.js updateHUD): drawn afresh only when what it shows has changed
 function underwayHUD(){
   let el=UW.el;const host=document.querySelector('.hudlayer');if(!host)return;

@@ -181,8 +181,8 @@ class PlayerParty extends Party{
   eatPerDay(){
     const n=(this.headcount()+this.mountedCount()+this.prisonerCount()+1)/4;
     return Math.ceil(n*(this.hasPerk('forced')?1.2:1)*(this.hasPerk('quarter')?.75:1)*(roleOf('quarter')?.75:1)*(1-this.treeMod('food')))}
-  // how far you see: your Scouting, the ground you stand on and your gear
-  sight(){const p=typeof worldEye==='function'?worldEye():this;return (110+8*this.skill('scout'))*visMulAt(p.x,p.y)*(1+this.gearMod('vis'))}
+  // how far you see: your Scouting (to the old top: skillSafe), the ground you stand on and your gear
+  sight(){const p=typeof worldEye==='function'?worldEye():this;return (110+8*this.skillSafe('scout'))*visMulAt(p.x,p.y)*(1+this.gearMod('vis'))}
   // what your skill tree gives (tmOf: any character's), and the disciplines it adds
   treeMod(k){return tmOf(this,k)}
   treeSkill(k){return treeSkOf(this,k)}
@@ -202,12 +202,14 @@ class PlayerParty extends Party{
     return a+this.treeMod(k)}
   gearSkill(k){return Object.values(this.gear).reduce((a,id)=>a+(id&&ITEMS[id].m.sk&&ITEMS[id].m.sk[k]||0),0)}
   // a discipline: as you trained it, with your companions' roles, your gear and your tree (charOf(P).skill: as trained only)
+  // (as the effects made for the old top read it: its level to PROF.made, gear and tree on top)
+  skillSafe(k){return this.skill(k)-Math.max(0,this.sk[k].lv-PROF.made)/PROF.per}
   skill(k){return this.sk[k].lv/PROF.per+this.roleBonus(k)+this.gearSkill(k)+this.treeSkill(k)}// (a proficiency's level in power: 99 the old 10, PROF.per)
   // your hero's numbers in battle: her level, attributes, disciplines, gear and talents
   heroStats(){
     const tm=k=>this.treeMod(k),gm=k=>this.gearMod(k),melee=this.skill(meleeSk()),two=hybridTwo(),kind=heroKind(),fist=unarmed();// (bare hands: combat.js FISTS)
     return {n:'You',
-      hp:Math.round((50+10*this.level+4*this.attr.str+gm('hp'))*(1+tm('hpPct'))),
+      hp:Math.round((50+LEVEL_UP.hp*lvPicked('hp')+4*this.attr.str+gm('hp'))*(1+tm('hpPct'))),
       dmg:(8+2*this.level+this.bonus+this.attr.str*.5+melee*.6+gm('dmg'))*(1+tm('dmgPct'))*(two?1.2:1)*(fist?FISTS.dmg*(1+tm('fistPct')):1),
       spd:(48+this.attr.agi*2)*(1+gm('spd')),
       reach:21+melee*.4+gm('reach')+(two?4:0)+(fist?FISTS.reach:0),
@@ -216,8 +218,8 @@ class PlayerParty extends Party{
       cd:.45*(1-this.attr.agi*.03)*(1+gm('cd'))*(fist?FISTS.cd*(1+tm('fistCd')):1),
       tags:Object.values(this.gear).map(id=>id&&ITEMS[id].tag).filter(Boolean)}}
   // stamina pays for physical effort, mana for skills
-  maxSP(){return 60+this.attr.agi*5+this.level*2+this.treeMod('sp')+4*this.skill('athl')}
-  maxMP(){return Math.round((30+this.attr.int*6+this.level*2+this.gearMod('mp'))*(1+this.treeMod('mpPct')))}
+  maxSP(){return 60+this.attr.agi*5+LEVEL_UP.sp*lvPicked('sp')+this.treeMod('sp')+4*this.skill('athl')}
+  maxMP(){return Math.round((30+this.attr.int*6+LEVEL_UP.mp*lvPicked('mp')+this.gearMod('mp'))*(1+this.treeMod('mpPct')))}
   /* health, stamina and mana persist between battles; null means full (a new hero or an old save). Returns their maxima. Your
      hero's stamina on the map is your band's (doc/SUPPLY_DESIGN.md §2): kept in sp, on her scale (maxSP); bsta reads and sets it as
      the band's, 0-100 (world/supply.js); it comes back by the hour there, not here */

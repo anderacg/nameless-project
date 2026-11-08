@@ -3,7 +3,7 @@
 const mkSkills=()=>Object.fromEntries(Object.keys(SKILLS).map(k=>[k,{lv:0,xp:0}]));
 const makeRuntimeState=()=>({mode:'title',modal:true,paused:false,speed:1,day:1,clock:0,cam:{x:0,y:0},mouse:{x:VW/2,y:VH/2,in:false,type:'mouse'},keys:{},encCool:0,lastTown:null,town:null,enc:null,scene:null,msgs:[],rankSeen:0,hudT:0,shake:0});
 const makePlayerState=()=>({x:0,y:0,tx:null,ty:null,gold:0,troops:{},army:{nextId:1,groups:[]},morale:100,renown:0,level:0,xp:0,sk0:{},bonus:0,stuck:0,dir:1,bg:'',home:null,passes:{},gateBan:{},
-  attr:{str:2,agi:2,int:2,cha:2},pts:0,sk:mkSkills(),apt:{},perks:[],perkPend:0,prisoners:{},comps:{},fac:null,hostile:{},race:'human',hp:null,sp:null,mp:null,tree:['start'],origin:null,tp:0,slots:Array(10).fill(null),quests:[],jobs:{},qid:0,rep:{},honor:{},gear:emptyGear(),inv:Array(INV_SIZE).fill(null),stay:null,fin:null,captives:[],wounded:{},woundedGroups:[],siege:null,raid:null,fiefWeek:0,recruits:{},recN:0});
+  attr:{str:2,agi:2,int:2,cha:2},pts:0,sk:mkSkills(),apt:{},perks:[],perkPend:0,prisoners:{},comps:{},fac:null,hostile:{},race:'human',hp:null,sp:null,mp:null,tree:['start'],origin:null,lvUp:0,lvPick:{hp:0,sp:0,mp:0},slots:Array(10).fill(null),quests:[],jobs:{},qid:0,rep:{},honor:{},gear:emptyGear(),inv:Array(INV_SIZE).fill(null),stay:null,fin:null,captives:[],wounded:{},woundedGroups:[],siege:null,raid:null,fiefWeek:0,recruits:{},recN:0});
 const G=makeRuntimeState(),P=makePlayerState();
 let bandits=[],B=null;
 
@@ -21,6 +21,11 @@ const tm=k=>P.treeMod(k);
 const treeSkOf=(o,k)=>typeof TREE==='undefined'?0:(o.tree||[]).reduce((a,id)=>a+(TREE[id]&&TREE[id].m.sk&&TREE[id].m.sk[k]||0),0);
 const treeSk=k=>P.treeSkill(k);
 const has=p=>P.hasPerk(p);
+// a level's choice (data/progression.js LEVEL_UP): how many times you took k (hp, sp, mp); take one now (false: none waiting)
+const lvPicked=k=>P.lvPick&&P.lvPick[k]||0;
+function levelPick(k){if(!(P.lvUp>0)||!LEVEL_UP[k])return false;P.lvPick={hp:0,sp:0,mp:0,...P.lvPick};P.lvPick[k]++;P.lvUp--;
+  if(k==='hp'&&P.hp!=null)P.hp+=LEVEL_UP.hp;else if(k==='sp'&&P.sp!=null)P.sp+=LEVEL_UP.sp;else if(k==='mp'&&P.mp!=null)P.mp+=LEVEL_UP.mp;P.vitals();
+  log('+'+LEVEL_UP[k]+' '+{hp:'health',sp:'stamina',mp:'mana'}[k]+'.','gold');return true}
 const roleOf=r=>Object.keys(P.comps).find(id=>P.comps[id].role===r);
 const roleBonus=k=>P.roleBonus(k);
 const gm=k=>P.gearMod(k);
@@ -36,7 +41,7 @@ const gearSkill=k=>P.gearSkill(k);
 // the ridden mount, and the ground it crosses at full speed
 const mountDef=()=>P.gear.mount?ITEMS[P.gear.mount]:null;
 const mountIgn=()=>mountDef()?mountDef().ign:[];
-const skill=k=>P.skill(k);
+const skill=k=>P.skill(k),skillSafe=k=>P.skillSafe(k);// (skillSafe: as the effects made for the old top read it: parties.js)
 const partyCap=()=>P.cap();
 const partyRoom=()=>P.room();
 const prisonCap=()=>P.prisonCap();

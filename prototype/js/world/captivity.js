@@ -49,7 +49,9 @@ class Captivity{
   // who would take you: a band, a lord, a realm's men; null: beasts (or no one)
   static captor(e){if(!e||['monster','cave','tourney','hunt'].includes(e.kind))return null;
     if(e.kind==='lord'&&e.ref)return{k:'lord',id:e.ref.id,fac:e.ref.fac,name:lordName(e.ref)};
-    if(e.kind==='party'||e.kind==='camp')return{k:'band',name:'the '+(e.ref?.kind==='raiders'?'raiders':e.ref?.kind==='bog'?'bog raiders':'bandits')};
+    // (a band: its kind (bandits, raiders, bog raiders, goblins), and taken at its camp, that camp)
+    if(e.kind==='party'||e.kind==='camp'){const site=e.kind==='camp'&&e.ref instanceof Lair?e.ref:null,band=site?site.bandKind:e.ref?.kind||'bandits';
+      return{k:'band',band,...(site?{site:{i:site.i,seed:site.seed}}:{}),name:'the '+(band==='raiders'?'raiders':band==='bog'?'bog raiders':band==='goblins'?'goblins':'bandits')}}
     const f=foeRealm(e);return f&&FACS[f]?{k:'realm',fac:f,name:'the men of the '+FACS[f].n}:null}
   static lord(c){return c?.k==='lord'?W.lords.find(l=>l.id===c.id)||null:null}
   // (taken at war: a lord or a realm's men at war with your realm)
@@ -182,7 +184,11 @@ class Captivity{
   static stripBag(n=Infinity){const ids=[];for(const s of P.inv.slice()){if(ids.length>=n)break;if(s&&s.k==='gear'){const id=s.id,k=playerInventory.take('gear',id,Math.min(s.n||1,n-ids.length));for(let i=0;i<k;i++)ids.push(id)}}return ids}
   // where they keep you and what they took: a camp or hideout of a band's within stash.near tiles, a holding of their realm (at war,
   // its nearest walled one); null: none
-  static placeOf(c,war=false){if(c.k==='band'){const l=Spatial.nearest(W.sites.filter(s=>s instanceof Lair&&!s.cleared&&!s.within&&Math.hypot(s.x-P.x,s.y-P.y)<=CAPTIVITY.stash.near*TILE),P.x,P.y);return l?{k:'site',i:l.i,seed:l.seed}:null}
+  // (a band's: the camp it took you at, else the nearest lair of its own kind, else of its own people: never a goblin camp for men's
+  // bands nor theirs for goblins; the owner, 2026-11-08, "captured by human bandit but then I was sent to goblin camp")
+  static placeOf(c,war=false){if(c.k==='band'){const band=c.band||'bandits',gob=band==='goblins',at=c.site&&W.sites.find(s=>s.i===c.site.i&&s.seed===c.site.seed&&!s.cleared);if(at)return{k:'site',i:at.i,seed:at.seed};
+      const near=W.sites.filter(s=>s instanceof Lair&&!s.cleared&&!s.within&&Math.hypot(s.x-P.x,s.y-P.y)<=CAPTIVITY.stash.near*TILE&&(s.bandKind==='goblins')===gob),
+        same=near.filter(s=>s.bandKind===band),l=Spatial.nearest(same.length?same:near,P.x,P.y);return l?{k:'site',i:l.i,seed:l.seed}:null}
     const own=TOWNS.filter(t=>t.owner===c.fac),walled=war?own.filter(t=>wallOf(t)>0):[],t=Spatial.nearest(walled.length?walled:own,P.x,P.y);return t?{k:'holding',town:t.name}:null}
   // (that place on the map now: {x, y, name, site | town}; null: gone)
   static spot(h){if(h.k==='site'){const s=W.sites.find(x=>x.i===h.i&&x.seed===h.seed);return s?{x:s.x,y:s.y,name:'the '+s.name,site:s}:null}const t=townBy(h.town);return t?{x:t.x,y:t.y,name:t.name,town:t}:null}

@@ -84,6 +84,22 @@ const Weather={
   battle(k){
     return k&&WEATHER.kinds[k]&&WEATHER.kinds[k].battle||null;
   },
+  // why skill id cannot be used in a field's weather k ('' when it can: WEATHER.skills); its damage there x
+  skillBan(id,k){
+    const S=k&&WEATHER.skills[id];return S&&S.no&&S.no[k]||'';
+  },
+  skillMul(id,k){
+    const S=k&&WEATHER.skills[id];return S&&S.mul&&S.mul[k]||1;
+  },
+  // what weather k does to a battle, in words (the pre-battle page, the field's line); '' for none
+  battleText(k){
+    const K=k&&WEATHER.kinds[k];if(!K)return '';const b=K.battle||{},L=[],pc=v=>Math.round(Math.abs(1-v)*100)+'%';
+    if(b.spd&&b.spd<1)L.push('everyone '+pc(b.spd)+' slower');if(b.range&&b.range<1)L.push('shots '+pc(b.range)+' shorter');
+    if(b.spread||b.aim)L.push('arrows scatter');if(b.sight&&b.sight<1)L.push('sight '+pc(b.sight)+' shorter');
+    for(const id in WEATHER.skills){const S=WEATHER.skills[id],n=(UNIT_SKILLS[id]||ABILITIES[id]||{}).n||id;
+      if(S.no&&S.no[k])L.push('no '+n.toLowerCase());else if(S.mul&&S.mul[k])L.push(n+' '+(S.mul[k]>1?'stronger':'weaker'))}
+    return L.length?this.name(k)+': '+L.join(', ')+'.':'';
+  },
   // the next front in region i: a neighbour's now and then (if it can come here), else one by the climate's weights
   next(i){
     const g=this.grid,R=rngOf('weather'),W=this.weights(g.c[i]),x=i%g.w,y=Math.floor(i/g.w);
@@ -118,6 +134,13 @@ const Weather={
     g.k[i]=WEATHER_KINDS.indexOf(k);
     g.u[i]=Clock.hourCount()+h;
     g.s[i]=-1e9;
+  },
+  // a new game's first sky where you stand (x, y): WEATHER.start, for its kind's hours (session.js startGame)
+  fair(x,y){
+    const k=WEATHER.start;
+    if(!WEATHER.on||!k||!WEATHER.kinds[k])return;
+    const H=WEATHER.kinds[k].hours;
+    this.set(x,y,k,rngOf('weather').int(H[0],H[1]));
   },
   // (in a save: the regions' kinds and ends; none while it is off or nothing was made yet)
   save(){

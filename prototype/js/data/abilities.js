@@ -1,20 +1,20 @@
 'use strict';
 /* ---------- data: abilities, one list for every unit (characters.js: Unit.traits, Unit.actives; battle/abilities.js uses them).
    kind 'active': cast in battle, paid in breath (sp) and mana (mp), then a cooldown (cd). Every character learns each on its own
-   skill tree (learn: its node) and puts it in a slot (characters.js). melee: not for a fighter with a bow; needs: 'bow' (and arrows); magic: spell power makes it stronger.
+   skill trees (learn: its node, in a proficiency's tree: data/tree.js PROF_TREE) and puts it in a slot (characters.js). melee: not for a fighter with a bow; needs: 'bow' (and arrows); magic: spell power makes it stronger.
    kind 'trait': what a unit is, always on: a troop's by its kind (has: from its numbers and tags), a monster's by its ability.
    d: what it does (a function where it reads the game's numbers). ---------- */
 const HERO_SKILLS={
-  whirl:{kind:'active',n:'Whirlwind',learn:'might1',melee:true,cd:6,mp:15,sp:20,d:'Spin and hit every enemy around you for 1.3× damage.'},
-  leap:{kind:'active',n:'Leap Slam',learn:'mighta0',melee:true,cd:9,mp:20,sp:25,d:'Leap onto a knot of enemies and stun every one where you land.'},
-  quake:{kind:'active',n:'Earthquake',learn:'mightc0',cd:12,mp:20,sp:20,d:'Slam the ground: hurt and stagger every enemy around you.'},
-  dash:{kind:'active',n:'Blade Dash',learn:'finessec0',melee:true,cd:7,mp:0,sp:25,d:'Dash toward your aim, cutting every enemy you pass. You cannot be hit while dashing.'},
-  volley:{kind:'active',n:'Rain of Arrows',learn:'finessec2',cd:14,mp:10,sp:15,needs:'bow',d:'Loose eight arrows that fall around your aim. Needs a bow and 4 arrows.'},
-  fireball:{kind:'active',n:'Fireball',learn:'arcanac0',cd:8,mp:25,sp:0,magic:true,d:'Hurl a ball of fire that bursts over a wide area. Ignores armor.'},
-  nova:{kind:'active',n:'Frost Nova',learn:'arcanac2',cd:14,mp:25,sp:0,magic:true,d:'A freezing burst: hurts and slows every enemy around you.'},
-  heal:{kind:'active',n:'Healing Light',learn:'arcanad0',cd:20,mp:30,sp:0,magic:true,d:'Mend 30% of your health, and 20% of your nearby troops’.'},
-  cry:{kind:'active',n:'War Cry',learn:'commanda0',cd:18,mp:30,sp:0,d:'Nearby troops hit 30% harder and move 25% faster for 6 seconds. Nearby enemies flinch.'},
-  banner:{kind:'active',n:'War Banner',learn:'commandc0',cd:24,mp:20,sp:10,d:'Plant your banner: troops near it take 25% less damage for 8 seconds.'}};
+  whirl:{kind:'active',n:'Whirlwind',learn:'oneh_whirl',melee:true,cd:6,mp:15,sp:20,d:'Spin and hit every enemy around you for 1.3× damage.'},
+  leap:{kind:'active',n:'Leap Slam',learn:'twoh_leap',melee:true,cd:9,mp:20,sp:25,d:'Leap onto a knot of enemies and stun every one where you land.'},
+  quake:{kind:'active',n:'Earthquake',learn:'twoh_quake',cd:12,mp:20,sp:20,d:'Slam the ground: hurt and stagger every enemy around you.'},
+  dash:{kind:'active',n:'Blade Dash',learn:'oneh_dash',melee:true,cd:7,mp:0,sp:25,d:'Dash toward your aim, cutting every enemy you pass. You cannot be hit while dashing.'},
+  volley:{kind:'active',n:'Rain of Arrows',learn:'arch_volley',cd:14,mp:10,sp:15,needs:'bow',d:'Loose eight arrows that fall around your aim. Needs a bow and 4 arrows.'},
+  fireball:{kind:'active',n:'Fireball',learn:'spell_fireball',cd:8,mp:25,sp:0,magic:true,d:'Hurl a ball of fire that bursts over a wide area. Ignores armor.'},
+  nova:{kind:'active',n:'Frost Nova',learn:'spell_nova',cd:14,mp:25,sp:0,magic:true,d:'A freezing burst: hurts and slows every enemy around you.'},
+  heal:{kind:'active',n:'Healing Light',learn:'med_heal',cd:20,mp:30,sp:0,magic:true,d:'Mend 30% of your health, and 20% of your nearby troops’.'},
+  cry:{kind:'active',n:'War Cry',learn:'lead_cry',cd:18,mp:30,sp:0,d:'Nearby troops hit 30% harder and move 25% faster for 6 seconds. Nearby enemies flinch.'},
+  banner:{kind:'active',n:'War Banner',learn:'lead_banner',cd:24,mp:20,sp:10,d:'Plant your banner: troops near it take 25% less damage for 8 seconds.'}};
 /* the traits (doc/UNIT_KITS_DESIGN.md §4): what a unit is, always on, several a unit: a troop's by its kind (has: from its numbers
    and tags), a monster's by its ability; first on its unit card (battle/unitkit.js UnitKit traits). A troop type may add or take
    one away (ST[type].traits: an id, or '-' and an id). Anti-cavalry and Anti-large (§4, KITS.traits2): mul, against riders and

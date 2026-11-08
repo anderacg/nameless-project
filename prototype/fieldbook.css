@@ -121,3 +121,78 @@
   .fb-army>.fb-head .fb-muster-meters{grid-column:auto;padding:3px 6px;gap:2px 8px}.fb-army>.fb-head .fb-muster-note{display:none}
   .fb-army>.fb-head .fb-meter>div:first-child{font-size:9px;flex-wrap:nowrap}.fb-army>.fb-head .fb-meter b{font-size:10px}
 }
+
+/* ---------- skill trees, one for each proficiency (ui/talents.js skTreeBody, treeSvg; the owner, 2026-11-08: "not an actual tree but
+   a tree node path with more cool animation"): the proficiencies down the side (a gold count of points to spend), the shown one as a
+   path of nodes (tp-*): its root at the foot, a rail of its level, links learned gold with light flowing up them, links open dashed
+   and flickering, nodes hexagons (a keystone a diamond, an active ringed with a turning ring). Shown anew (.grow) the nodes fly out
+   of the root (--fx, --fy) and the links draw after them, row by row (--d); a node just learned bursts. None of it with reduced
+   motion. The level's choice on the Proficiency tab (fb-lvup) ---------- */
+/* (the tree the whole page; the switch between the proficiencies under it: ‹ the one before, this one (its list), the one after ›) */
+.fb-skill-work.fb-trees{grid-template-columns:minmax(0,1fr)}
+.fb-tree-switch{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;padding:6px 8px;border-top:1px solid #705b37;background:linear-gradient(#2a2216,#1a1610);flex:none}
+.fb-tree-switch .btn{display:flex;align-items:center;gap:6px;min-height:34px;white-space:nowrap;min-width:0}
+.fb-tree-switch .btn.fb-ts-side{background:transparent;border-color:transparent;box-shadow:none;color:#8f8672;font-size:12px;overflow:hidden;padding:4px 2px}.fb-ts-side span{overflow:hidden;text-overflow:ellipsis;opacity:.55}
+.fb-tree-switch .fb-ts-side.prev{justify-content:flex-end}.fb-tree-switch .fb-ts-side.next{justify-content:flex-start}.fb-ts-side:hover span{opacity:1;color:#e8dcc0}
+.fb-ts-ar{font:700 22px/1 Arial,sans-serif;font-style:normal;color:#e8b94a;flex:none}
+.fb-ts-now{grid-column:2;justify-content:center;font-size:14px;padding:6px 14px;min-width:150px}.fb-ts-now strong{font-weight:700;color:#f0ead8}.fb-ts-now small{color:#b8ae94}
+.fb-ts-more{font-style:normal;color:#b8ae94}.fb-ts-more.wait{color:#e8b94a}
+.tr-stage{position:relative}
+.fb-tree-list{position:absolute;left:8px;right:8px;bottom:6px;max-height:calc(100% - 12px);overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px;padding:8px;border:1px solid #967744;background:#16130ef2;box-shadow:0 6px 24px #000a;z-index:5;animation:tr-in .15s ease-out both}
+.fb-tree-list[hidden]{display:none}
+.fb-tree-list .btn{display:flex;flex-direction:row;align-items:center;gap:6px;text-align:left;font-size:12px;padding:6px 8px}
+.fb-tree-list .btn strong{flex:1;min-width:0;font-weight:700}.fb-tree-list .btn small{color:#b8ae94}
+.fb-tree-wait{min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#e8b94a;color:#1a1408;font-size:11px;display:inline-grid;place-items:center}
+.fb-tree-head{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-bottom:1px solid #705b37;flex:none}
+.fb-tree-head strong{font-size:16px;color:#f0ead8}.fb-tree-head small{color:#b8ae94;font-size:12px}.fb-tree-head b.gold{color:#e8b94a}
+.tr-stage{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 230px;background:radial-gradient(ellipse at 54% 92%,#3a2c18 0,#1c1a22 50%,#121218 100%)}
+.tr-svg{display:block;width:100%;height:100%;min-height:0}
+.tp-mote{fill:#e8d8a0;opacity:.15;animation:tp-twinkle 4s ease-in-out infinite;animation-delay:var(--t,0s)}
+.tp-rail{stroke:#3a3428;stroke-width:6;stroke-linecap:round}.tp-railfill{stroke:url(#tpRail);stroke-width:6;stroke-linecap:round;filter:drop-shadow(0 0 4px #e8b94a88)}
+.tp-railhead{fill:#fff0c0;filter:drop-shadow(0 0 5px #ffe08a)}.tp-raillv{font:700 13px Arial,sans-serif;fill:#ffe08a}
+.tp-mark line{stroke:#5a5040;stroke-width:2}.tp-mark text{font:700 12px Arial,sans-serif;fill:#7a7060}.tp-mark.on line{stroke:#e8b94a}.tp-mark.on text{fill:#e8b94a}
+.tp-link{fill:none;stroke:#34323e;stroke-width:3}.tp-link.lit{stroke:#c89a3a;stroke-width:4;filter:drop-shadow(0 0 3px #e8b94a99)}
+.tp-link.open{stroke:#e8b94a;stroke-width:2.5;stroke-dasharray:.04 .03;animation:tp-march 1.2s linear infinite}
+.tp-flow{fill:none;stroke:#fff3c8;stroke-width:3;stroke-linecap:round;stroke-dasharray:.06 .94;animation:tp-flow 1.8s linear infinite;animation-delay:var(--t,0s);filter:drop-shadow(0 0 4px #ffe08a)}
+.tp-rootbody{fill:#3a2c18;stroke:#e8b94a;stroke-width:3}.tp-roottext{font:700 14px Arial,sans-serif;fill:#ffe08a}
+.tp-node{cursor:pointer}.tp-body{stroke-width:3}.tp-aura{opacity:0}.tp-burst{fill:none;stroke:none}
+.tp-glyph{font:700 14px Arial,sans-serif;pointer-events:none}.tp-name{font:700 12px Arial,sans-serif;fill:#d8d0bc;paint-order:stroke;stroke:#121218;stroke-width:4px;pointer-events:none}
+.tp-ring{fill:none;stroke:#6a5a3a;stroke-width:2;stroke-dasharray:4 5;transform-box:fill-box;transform-origin:center;animation:tp-spin 9s linear infinite}
+.tp-node.locked .tp-body{fill:#1a1a22;stroke:#34323e}.tp-node.locked .tp-glyph{fill:#46445a}.tp-node.locked .tp-name{fill:#5a586a}.tp-node.locked .tp-ring{stroke:#2a2a34;animation:none}
+.tp-node.wait .tp-body{fill:#24202a;stroke:#8a7448}.tp-node.wait .tp-glyph{fill:#a8946a}
+.tp-node.open .tp-body{fill:#3a2e18;stroke:#e8b94a}.tp-node.open .tp-glyph{fill:#ffe08a}.tp-node.open .tp-aura{animation:tp-pulse 1.6s ease-in-out infinite}.tp-node.open .tp-ring{stroke:#e8b94a}
+.tp-node.have .tp-body{fill:#e8b94a;stroke:#fff0c0;filter:drop-shadow(0 0 7px #e8b94acc)}.tp-node.have .tp-glyph{fill:#3a2810}.tp-node.have .tp-name{fill:#ffe9b0}.tp-node.have .tp-aura{opacity:.6}.tp-node.have .tp-ring{stroke:#ffe08a;animation-duration:4s}
+.tp-node.sel .tp-body{stroke:#fff;stroke-width:4}.tp-node:focus-visible{outline:none}.tp-node:focus-visible .tp-body{stroke:#fff}
+@media (hover:hover){.tp-node:hover .tp-body{stroke:#fff}.tp-node:hover .tp-aura{opacity:.5}}
+.tr-pane{display:flex;flex-direction:column;gap:6px;padding:12px;border-left:1px solid #4a4038;background:#1a1820cc;overflow:auto;min-height:0}
+.tr-pane small{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#9a907a}.tr-pane h3{margin:0;font:700 18px Arial,sans-serif;color:#f0ead8}
+.tr-pane p{margin:0;font-size:14px;line-height:1.4;color:#d8d0bc}.tr-pane .btn{align-self:flex-start;font-size:14px}
+/* (shown anew: the root flares, the nodes fly out of it, the links and the rail draw after them) */
+.tr-svg.grow{animation:tr-in .3s ease-out both}
+.tr-svg.grow .tp-root{transform-box:fill-box;transform-origin:center;animation:tp-pop .4s cubic-bezier(.3,1.6,.6,1) both;animation-delay:var(--d,0s)}
+.tr-svg.grow .tp-node{animation:tp-fly .55s cubic-bezier(.2,.9,.3,1.15) both;animation-delay:var(--d,0s)}
+.tr-svg.grow .tp-link{stroke-dasharray:1;animation:tp-draw .5s ease-out both;animation-delay:var(--d,0s)}
+.tr-svg.grow .tp-link.open{animation:tp-draw .5s ease-out both,tp-march 1.2s linear .8s infinite;animation-delay:var(--d,0s),.9s}
+.tr-svg.grow .tp-railfill{stroke-dasharray:1;animation:tp-draw .9s ease-out both;animation-delay:var(--d,0s)}
+.tp-node.just .tp-burst{stroke:#fff0c0;stroke-width:3;transform-box:fill-box;transform-origin:center;animation:tp-burst .7s ease-out both}
+.tp-node.just .tp-body{animation:tp-pop .45s cubic-bezier(.3,1.8,.6,1) both;transform-box:fill-box;transform-origin:center}
+@keyframes tp-fly{from{opacity:0;transform:translate(var(--fx,0),var(--fy,0)) scale(.25)}to{opacity:1;transform:none}}
+@keyframes tp-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes tp-pop{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+@keyframes tp-flow{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes tp-march{from{stroke-dashoffset:.07}to{stroke-dashoffset:0}}
+@keyframes tp-pulse{0%,100%{opacity:.1}50%{opacity:.75}}
+@keyframes tp-spin{to{transform:rotate(360deg)}}
+@keyframes tp-twinkle{0%,100%{opacity:.08}50%{opacity:.4}}
+@keyframes tp-burst{from{opacity:1;transform:scale(.5)}to{opacity:0;transform:scale(2)}}
+@keyframes tr-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.tr-svg *,.tr-svg{animation:none!important}}
+.fb-lvup{border:1px solid #e8b94a;background:#2a2418}.fb-lvup-picks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.fb-lvup-picks .btn{display:flex;align-items:center;gap:6px}
+@container ovl (max-width:900px){.tr-stage{grid-template-columns:minmax(0,1fr) 200px}.tr-pane{padding:8px}.tr-pane h3{font-size:16px}.tr-pane p{font-size:13px}}
+@container ovl (max-width:650px){.fb-skill-work.fb-trees{gap:6px;padding:0 6px 6px}.fb-tree-head small{font-size:10px}.fb-ts-now{min-width:0;padding:6px 10px;font-size:13px}.fb-tree-switch .btn.fb-ts-side{font-size:12px}}
+/* (an upright phone: the tree over the chosen node, the node's words as big as the page's, at most half the stage, scrolling) */
+@container ovl (max-width:560px){.tr-stage{display:flex;flex-direction:column}.tr-svg{flex:1 1 0;min-height:200px}.tr-pane{flex:0 1 auto;max-height:50%;border-left:0;border-top:1px solid #4a4038;padding:12px 14px;gap:8px}
+  .tr-pane small{font-size:12px}.tr-pane h3{font-size:20px}.tr-pane p{font-size:15px}.tr-pane .btn{align-self:stretch;justify-content:center;font-size:15px;min-height:40px}}
+@container ovl (max-height:430px){.fb-tree-switch{padding:3px 6px}.fb-tree-switch .btn{min-height:28px}}
+@container ovl (max-height:430px){.fb-tree-head{padding:4px 8px}.fb-tree-head small{display:none}}

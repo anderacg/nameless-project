@@ -182,7 +182,38 @@ function drawMapFrame(r){ctx.save();ctx.fillStyle=MAP_FRAME.edge;ctx.fillRect(r.
   ctx.fillStyle=MAP_FRAME.light;ctx.fillRect(r.x-2,r.y-2,r.w+4,1);ctx.fillStyle=MAP_FRAME.bg;ctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2);ctx.restore()}
 // the minimap's rectangle on the screen, in game pixels: the top right corner, 112 wide at any map size, the same size on the
 // screen at any map zoom (zk, core.js MAPZOOM); s: its pixels a tile (drawWorld draws it here, the full map's tap reads it)
-function worldMiniRect(){const zk=MAPZOOM.k(),s=112*zk/MW,w=Math.round(MW*s),h=Math.round(MH*s);return{x:VW-w-Math.round(6*zk),y:Math.round(6*zk),w,h,s}}
+// (on a real screen: kept clear of the screen's edge and a phone's notch as the HUD is (--edge and the safe insets, CSS px), and no
+// narrower than the panel under it (underway.js UW_MIN), so on a phone their edges meet (the owner, 2026-11-08: "the top right on
+// mobile is not well aligned"); the tests' fixed view as before)
+function worldMiniRect(){const zk=MAPZOOM.k();let s=112*zk/MW,mx=Math.round(6*zk),my=mx;
+  if(!FIXED_VIEW&&typeof safeInsets==='function'){const g=dprOf()/VS,I=safeInsets(),e=hudEdge();mx=Math.max(mx,Math.ceil((e+I.r)*g)+UW_FRAME);my=Math.max(my,Math.ceil((e+I.t)*g)+UW_FRAME);s=Math.max(s,(uwMin()*g-2*UW_FRAME)/MW)}// (its frame, UW_FRAME, outside its map)
+  const w=Math.round(MW*s),h=Math.round(MH*s);return{x:VW-w-mx,y:my,w,h,s}}
+/* the minimap a piece of the full map, zoomed in (the owner, 2026-11-08: "the map show on the worldmap should be a zoomed in version
+   of new map"): the parchment of ui/map.js (fullMapPic: the ink wash, realms, coasts, the bare paper where you never were, its
+   grain) cut round the screen's middle, tiles across (at least, else over x what the screen shows, never more than the map), the
+   holdings and places as their sprites (fmIcon, icon x the full map's sizes; the marks by the minimap's width, 112 px one), the screen's own view inked on it (view), you as on
+   the full map. Its picture: a box x as wide round the view, made again when the view leaves it, the realms change (landVer) or,
+   at most each refresh ms, what you have seen in it does. on false: the whole map as before (WorldArt.mini and its dark) */
+const MINIMAP={on:true,tiles:96,over:3,box:2,refresh:1000,icon:.42,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
+// what the minimap shows (its rectangle, worldMiniRect, and s its px a tile; ox, oy its top left tile, tw x th tiles of it),
+// round the screen's middle (cam: G.cam)
+function worldMiniView(cam=G.cam){const r=worldMiniRect();if(!MINIMAP.on)return{...r,ox:0,oy:0,tw:MW,th:MH};
+  const M=MINIMAP,tw=Math.min(MW,Math.max(M.tiles,VW/TILE*M.over)),s=r.w/tw,th=Math.min(MH,r.h/s),R=v=>Math.round(v*s)/s;
+  return{...r,s,tw,th,ox:R(clamp((cam.x+VW/2)/TILE-tw/2,0,MW-tw)),oy:R(clamp((cam.y+VH/2)/TILE-th/2,0,MH-th))}}
+// (its picture: v's box, kept while v stays in it)
+let MINI_PIC=null;
+function miniPic(v){const M=MINIMAP,c=MINI_PIC,S=seenArr(),now=performance.now(),bw=Math.min(MW,Math.ceil(v.tw*M.box)),bh=Math.min(MH,Math.ceil(v.th*M.box));landFresh();
+  const seenIn=b=>{let n=0;for(let y=b.y;y<b.y+b.h;y++){const o=y*MW;for(let x=b.x;x<b.x+b.w;x++)n+=S[o+x]}return n};
+  if(c&&c.m===WM&&c.S===S&&c.ver===landVer&&c.w===bw&&c.h===bh&&v.ox>=c.x&&v.oy>=c.y&&v.ox+v.tw<=c.x+bw&&v.oy+v.th<=c.y+bh){if(now-c.t<M.refresh)return c;c.t=now;const n=seenIn(c);if(n===c.n)return c}
+  const b={x:clamp(Math.floor(v.ox+v.tw/2-bw/2),0,MW-bw),y:clamp(Math.floor(v.oy+v.th/2-bh/2),0,MH-bh),w:bw,h:bh};
+  return MINI_PIC={...b,m:WM,S,ver:landVer,t:now,n:seenIn(b),cv:fullMapPic(WM,1,S,LAND,TOWNS,b)}}
+// (its paper's darkened edge at w x h, kept by its size)
+let MINI_EDGE=null;
+function miniEdge(w,h){if(MINI_EDGE&&MINI_EDGE.width===w&&MINI_EDGE.height===h)return MINI_EDGE;
+  return MINI_EDGE=mkc(w,h,g=>{const e=Math.max(3,Math.round(Math.min(w,h)*.12));for(const [x0,y0,x1,y1,x,y,W,H] of [[0,0,0,e,0,0,w,e],[0,h,0,h-e,0,h-e,w,e],[0,0,e,0,0,0,e,h],[w,0,w-e,0,w-e,0,e,h]]){const gr=g.createLinearGradient(x0,y0,x1,y1);gr.addColorStop(0,MINIMAP.edge);gr.addColorStop(1,'rgba(70,44,18,0)');g.fillStyle=gr;g.fillRect(x,y,W,H)}})}
+// (the HUD's edge, CSS px: style.css --edge, read once a size)
+let HUD_EDGE=null;const hudEdge=()=>HUD_EDGE??(HUD_EDGE=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--edge'))||8);
+addEventListener('resize',()=>{HUD_EDGE=null});
 const faceDir=o=>{let f=FACE.get(o);if(!f)FACE.set(o,f={x:o.x,d:o.x>P.x?-1:1});if(Math.abs(o.x-f.x)>.05){f.d=o.x>f.x?1:-1;f.x=o.x}return o.fight&&o.dir?o.dir:f.d};
 /* the map's camera following your army (the owner, 2026-11-02: on a short walk "the camera will snap"): not locked on its point,
    which starts and stops with your men, but eased after it: within dead px of the screen's middle it stands still (a few steps
@@ -272,6 +303,7 @@ function drawWorld(){
   ctx.restore();
   // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini, k = ceil(MW / 256); where it lies on the
   // screen: worldMiniRect)
+  if(MINIMAP.on){drawMiniMap(V);return}
   const zk=MAPZOOM.k(),{x:mx,y:my,w:mw,h:mh,s:MS}=worldMiniRect(),mk=Math.ceil(MW/256),dot=(x,y,col,s)=>{s=Math.max(1,Math.round(s*zk));rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s)};
   drawMapFrame({x:mx,y:my,w:mw,h:mh});ctx.drawImage(atSize(WorldArt.mini(mk),mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
   // each its own dot (WorldObject mapDot), layer by layer (MAP_LAYER; in a layer, as worldObjects lists them): the holdings and
@@ -283,6 +315,32 @@ function drawWorld(){
   for(const m of rumourMarks())if(rumourFade(m)>0)dot(m.x,m.y,RUMOUR_COL,2);
   if(B?.world){for(const u of B.units)if(u.hp>0&&seenBy(0,u)){const p=B.world.world(u);dot(p.x,p.y,u.hero?'#fff':sideCol(u,'ui'),u.hero?3:1)}}else dot(P.x,P.y,'#fff',3);
 }
+// the minimap as a piece of the full map (MINIMAP): drawn on its own canvas at the screen's own pixels (MINI_FACE), then laid on the
+// map whole (no picture resampled on the map: tests/mapzoom.js)
+let MINI_FACE=null;
+function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y:my,w:mw,h:mh,s:MS}=v,u=mw/112,pic=miniPic(v),T=ctx.getTransform(),K=Math.abs(T.a)||1,fw=Math.max(1,Math.round(mw*K)),fh=Math.max(1,Math.round(mh*K));
+  if(!MINI_FACE||MINI_FACE.width!==fw||MINI_FACE.height!==fh)MINI_FACE=mkc(fw,fh,()=>{});const g=MINI_FACE.getContext('2d'),X=x=>mx+(x/TILE-v.ox)*MS,Y=y=>my+(y/TILE-v.oy)*MS,
+    dot=(x,y,col,s)=>{s=Math.max(1,Math.round(s*zk));rect(g,col,Math.floor(X(x))-(s>>1),Math.floor(Y(y))-(s>>1),s,s)};
+  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,fw,fh);g.setTransform(fw/mw,0,0,fh/mh,-mx*fw/mw,-my*fh/mh);g.imageSmoothingEnabled=false;
+  g.drawImage(pic.cv,v.ox-pic.x,v.oy-pic.y,v.tw,v.th,mx,my,mw,mh);
+  // (the paper's grain, fixed to the land as it scrolls, and its darkened edge)
+  const pat=g.createPattern(fmGrain(),'repeat');pat.setTransform(new DOMMatrix([zk,0,0,zk,mx-v.ox*MS,my-v.oy*MS]));g.fillStyle=pat;g.fillRect(mx,my,mw,mh);g.drawImage(miniEdge(mw,mh),mx,my);
+  // (the holdings' walls and fences you have seen: each ring's outline, world/townwalls.js)
+  g.lineWidth=.6*u;for(const t of TOWNS){const r=TownWall.of(t);if(!r||!r.parts.some(q=>seenTile(q.x,q.y)))continue;g.strokeStyle=TownWall.mapCol(t);g.beginPath();TownWall.outline(r).forEach(([x,y],k)=>{const px=mx+(x+.5-v.ox)*MS,py=my+(y+.5-v.oy)*MS;if(k)g.lineTo(px,py);else g.moveTo(px,py)});g.closePath();g.stroke()}
+  // (the screen's own view, inked)
+  if(!B?.world){g.strokeStyle=M.view;g.lineWidth=.6*u;g.strokeRect(X(G.cam.x),Y(G.cam.y),VW/TILE*MS,VH/TILE*MS)}
+  // each its own mark (WorldObject mapDot), layer by layer (MAP_LAYER): a holding or a place its sprite (the full map's, a holding on
+  // its realm's colour), the rest their dots
+  const P0=TILE*8,in_=o=>o.x>=(v.ox*TILE-P0)&&o.y>=(v.oy*TILE-P0)&&o.x<=(v.ox+v.tw)*TILE+P0&&o.y<=(v.oy+v.th)*TILE+P0;
+  mapDots(V,(o,d)=>{if(B?.world?.hides(o)||!in_(o))return;const town=o.mapKind==='town',ic=(town||o.mapKind==='site')&&fmIcon(o);
+    if(!ic){dot(o.x,o.y,d[0],d[1]);return}const k=town?(FULLMAP.kinds[o.kind]?o.kind:'village'):'site',w=Math.max(4,FULLMAP.icon[k]*M.icon*u),h=w*ic.h/ic.w,cx=X(o.x),cy=Y(o.y);
+    if(town){g.fillStyle=o._memCol||facCol(o);g.globalAlpha=.8;g.beginPath();g.ellipse(cx,cy+h/2-u,w*.36,1.5*u,0,0,Math.PI*2);g.fill();g.globalAlpha=1}
+    g.drawImage(ic.cv,cx-w/2,cy-h/2,w,h)});
+  drawQuestDots(dot);// (the quests' goals, the tracked one the strongest: world/quests.js)
+  for(const m of rumourMarks())if(rumourFade(m)>0)dot(m.x,m.y,RUMOUR_COL,2);
+  if(B?.world){for(const un of B.units)if(un.hp>0&&seenBy(0,un)){const p=B.world.world(un);dot(p.x,p.y,un.hero?'#fff':sideCol(un,'ui'),un.hero?3:1)}}
+  else{const r=2.4*u;g.beginPath();g.arc(X(P.x),Y(P.y),r,0,Math.PI*2);g.fillStyle=M.you;g.fill();g.lineWidth=u;g.strokeStyle=M.ring;g.stroke();g.beginPath();g.arc(X(P.x),Y(P.y),r+u,0,Math.PI*2);g.lineWidth=.6*u;g.strokeStyle=M.ink;g.stroke()}
+  drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh)}
 // how long a unit holds its attack pose after it strikes
 const ATK_ANIM=.36;
 // the body's small life (drawUnit): a flinch for flinch s after a blow; standing (the owner, 2026-10-31: "idle animation for
@@ -581,11 +639,14 @@ function frame(){
    carried, troops, power and pace as icon chips (what runs short is red); where you are and whom you serve. Your hero's health
    and mana are in the Hero window (C) and the battle. The top bar: the day and the time */
 // the left panel's group at the bottom left (the owner, 2026-11-04: "a level up button at the bottom left corner ... like a square
-// box and animated in blinking"): its one notice now, talent points to spend after a level up (P.tp), a square that blinks till
-// they are spent; a click opens your Skills (as K). None: the group hidden
-function lvBox(){const el=$('#lgroup');if(!el)return;const n=P.tp||0,sig=String(n);if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.hidden=!n;
-  el.innerHTML=n?'<button class="lvup" type="button" title="Level up: '+n+' talent point'+(n>1?'s':'')+' to spend (K)" aria-label="Level up: '+n+' talent point'+(n>1?'s':'')+' to spend">'+icon('skills',22)+'<b>+'+n+'</b><small>Level up</small></button>':''}
-{const g=document.getElementById('lgroup');if(g)g.addEventListener('click',e=>{if(e.target.closest('.lvup'))document.getElementById('skillBtn')?.click()})}
+// box and animated in blinking"): its one notice now, what a level and your proficiencies leave you to choose (P.lvUp: health,
+// stamina or mana; treePending: a proficiency's tree's points to spend), a square that blinks till they are chosen; a click opens your
+// Skills (as K) on the level's choice, else the tree that waits. None: the group hidden
+function lvBox(){const el=$('#lgroup');if(!el)return;const lv=P.lvUp||0,t=typeof treePending==='function'?treePending().length:0,n=lv+t,sig=lv+'/'+t;if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.hidden=!n;
+  const what=(lv?lv+' level choice'+(lv>1?'s':''):'')+(lv&&t?' and ':'')+(t?t+' skill point'+(t>1?'s':''):'');
+  el.innerHTML=n?'<button class="lvup" type="button" title="'+what+' waiting (K)" aria-label="'+what+' waiting">'+icon('skills',22)+'<b>+'+n+'</b><small>'+(lv?'Level up':'New skill')+'</small></button>':''}
+{const g=document.getElementById('lgroup');if(g)g.addEventListener('click',e=>{if(!e.target.closest('.lvup'))return;if(G.mode==='skills')return;const t=!(P.lvUp>0)&&treePending()[0];
+  if(t){G.skTree=t;openSkills('talents')}else openSkills('prof')})}
 function updateHUD(force){
   lvBox();
   const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=bandFitness(),fp=Math.round(F.pct),mo=Math.round(P.morale),lh=landHold(P.x,P.y),sp=bandPace();

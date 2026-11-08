@@ -65,7 +65,7 @@ function camTick(){
 // the small map, in HUD pixels (VW×VH), and on the canvas
 // (below the time controls whatever the screen's scale: HUD_PX game pixels to a CSS pixel, core.js)
 const miniRect=()=>{const m=BCAM.mini,h=Math.round(m.w*BH/BW);return{x:VW-m.x-m.w,y:Math.max(m.y,Math.ceil(BCAM.miniBelow*HUD_PX)),w:m.w,h}};
-function miniHit(p){if(!B||!B.cam)return null;if(B.world){const r=worldMiniRect();return p.x>=r.x&&p.y>=r.y&&p.x<=r.x+r.w&&p.y<=r.y+r.h?B.world.field({x:(p.x-r.x)/r.s*TILE,y:(p.y-r.y)/r.s*TILE}):null}const r=miniRect(),V=bview(),sx=V.w/VW,sy=V.h/VH,x=p.x/sx,y=p.y/sy;
+function miniHit(p){if(!B||!B.cam)return null;if(B.world){const r=worldMiniView();return p.x>=r.x&&p.y>=r.y&&p.x<=r.x+r.w&&p.y<=r.y+r.h?B.world.field({x:((p.x-r.x)/r.s+r.ox)*TILE,y:((p.y-r.y)/r.s+r.oy)*TILE}):null}const r=miniRect(),V=bview(),sx=V.w/VW,sy=V.h/VH,x=p.x/sx,y=p.y/sy;
   if(x<r.x||x>r.x+r.w||y<r.y||y>r.y+r.h)return null;return{x:(x-r.x)/r.w*BW,y:(y-r.y)/r.h*BH}}
 // drawn in the HUD (its scale): the field (its fog: battlefog.js), every soldier a dot (but enemies your side does not see: terrain.js seenBy), the view a box
 function drawMiniField(){

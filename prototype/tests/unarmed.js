@@ -8,7 +8,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,ev=s=>(0,eval)(s);
   // ======== the Nobody: nothing but a little to survive on
   t.act('begin','nobody');const B0=t.BGS.nobody;
   ok(P.bg==='nobody'&&!P.gear.weapon&&t.unarmed()&&P.gold===B0.gold&&P.gold<=10&&B0.cargo.grain>0&&B0.cargo.grain<=4&&!t.troopCount(),'the Nobody starts with no weapon, '+P.gold+' gold and a crust ('+B0.cargo.grain+' grain), no troops');
-  ok(P.tree.includes('o_nobody')&&t.TREE.o_nobody.links.includes('start')&&t.TREE.o_nobody.links.includes('fist0'),'their origin on the tree joins the Crossroads and the brawler\'s chain');
+  ok(P.tree.includes('o_nobody')&&t.PROF_TREE.fist&&t.PROF_TREE.fist.length===t.treeAt('fist').length,'their origin, and the brawler\'s Unarmed tree to grow');
   t.showTitle('past');ok(/Nobody/.test(document.getElementById('panel').innerHTML)&&/Bare hands · Unarmed/.test(document.getElementById('panel').innerHTML),'a card of its own on the New game page: bare hands');t.hidePanel();
   ok(t.meleeSk()==='fist'&&t.SKILLS.fist&&P.apt.fist>0,'their discipline is Unarmed, learned faster ('+P.apt.fist+')');
   // ======== the fists' numbers, against a sword
@@ -16,7 +16,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,ev=s=>(0,eval)(s);
   ok(sk==='oneh'&&fist.dmg<sw.dmg&&fist.reach<sw.reach&&fist.cd<sw.cd&&fist.dt==='blunt','fists hit softer ('+fist.dmg.toFixed(1)+' vs '+sw.dmg.toFixed(1)+'), reach shorter ('+fist.reach+' vs '+sw.reach+'), swing quicker ('+fist.cd.toFixed(2)+' vs '+sw.cd.toFixed(2)+' s), blunt');
   ok(t.weaponCombo()===t.COMBOS.fists&&t.COMBOS.fists.map(c=>c.n).join()==='Jab,Cross,Kick'&&t.COMBOS.fists.every(c=>c.one&&c.look),'the combo: a jab, a cross and a kick, each with its own look');
   // ======== in battle: each blow strikes one, trains Unarmed and shows its pose
-  ev('MANUAL_HERO=true');P.level=5;P.troops={militia:2};P.comps={};if(!P.tree.includes('third'))P.tree.push('third');G.mouse.in=false;P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;
+  ev('MANUAL_HERO=true');P.level=5;P.troops={militia:2};P.comps={};if(!P.tree.includes('fist_third'))P.tree.push('fist_third');G.mouse.in=false;P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;
   G.enc={kind:'party',ref:{cool:0},list:['chief','chief']};t.startBattle({enemies:['chief','chief'],tournament:false});t.beginFight();
   const B=t.B,h=B.hero,foes=B.units.filter(u=>u.team===1);B.noMorale=true;foes.forEach((u,i)=>{u.x=h.x+12+i*2;u.y=h.y;u.cd=9;u.hp=u.max=9999});B.units.filter(u=>u.team===0&&!u.hero).forEach(u=>{u.x=10;u.y=30});B.aim=0;
   const tick=s=>{for(let i=0;i<Math.round(s/.02);i++){if(!t.B)return;h.hp=Math.max(h.hp,h.max*.5);B.hx&&(B.hx.sp=Math.max(B.hx.sp,40));foes.forEach(u=>u.hp=u.max);t.updateBattle(.02)}};
@@ -34,10 +34,10 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,ev=s=>(0,eval)(s);
    ok(px(t.unitSprite('hero',0,true,0,t.DEF_POSE,false))!==still,'meeting a blow bare-handed: his fists up')}
   B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
   // ======== the brawler's chain: its talents move the fists' numbers
-  {const d0=t.heroStats().dmg,c0=t.heroStats().cd,k0=t.heroCombo()[2].mult;P.tree.push('fist0','fist1','fist2','fist3');const d1=t.heroStats().dmg,c1=t.heroStats().cd,k1=t.heroCombo()[2].mult;
+  {const d0=t.heroStats().dmg,c0=t.heroStats().cd,k0=t.heroCombo()[2].mult;P.tree.push('fist_knuckles','fist_shins','fist_quick','fist_open');const d1=t.heroStats().dmg,c1=t.heroStats().cd,k1=t.heroCombo()[2].mult;
    ok(d1>d0*1.4&&c1<c0&&k1>k0,'Bare Knuckles and Open Hand: harder and quicker blows ('+d0.toFixed(1)+' → '+d1.toFixed(1)+'), Iron Shins a harder kick (×'+k0+' → ×'+k1+')');
-   P.gear.weapon=t.gearId('sword',0);const s1=t.heroStats();P.tree=P.tree.filter(id=>!id.startsWith('fist'));const s0=t.heroStats();P.gear.weapon=null;ok(s1.dmg===s0.dmg&&s1.cd===s0.cd,'with a weapon in hand the brawler\'s talents add nothing to its blows');
-   ok(['fist0','fist1','fist2','fist3'].every(id=>t.TREE[id].d&&t.TREE[id].br==='might')&&t.TREE.fist0.links.includes('h_arcana_command'),'four nodes, reached from the Nobody\'s origin or from Sage Counsel')}
+   P.gear.weapon=t.gearId('sword',0);const s1=t.heroStats();P.tree=P.tree.filter(id=>!['fist_knuckles','fist_shins','fist_quick','fist_open'].includes(id));const s0=t.heroStats();P.gear.weapon=null;ok(s1.dmg===s0.dmg&&s1.cd===s0.cd,'with a weapon in hand the brawler\'s talents add nothing to its blows');
+   ok(['fist_knuckles','fist_shins','fist_quick','fist_open'].every(id=>t.TREE[id].d&&t.TREE[id].prof==='fist'),'four nodes of the Unarmed tree')}
  }finally{ev('MANUAL_HERO=false');if(t.B){t.B.over=true;t.B.endT=0;t.updateBattle(.01)}}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

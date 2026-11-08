@@ -48,15 +48,23 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
  t.act('ws-preset','classic');
  {const s=S.s,dis=n=>q('[data-act="'+n.split(' ')[0]+'"]'+(n.split(' ')[1]?'[data-arg="'+n.split(' ')[1]+'"]':'')).disabled;
   ok(s.preset==='classic'&&s.seed==='CLASSIC'&&q('#wsSeed').disabled&&dis('ws-size large')&&dis('ws-dens more')&&dis('ws-random')&&!dis('ws-forge'),'Classic: its seed, size and holdings locked (greyed)');
-  t.act('ws-adv');const free=['monsters:deadly','bandits:many','start:settler'].every(a=>!dis('ws-set '+a)),locked=['wild:vast','climate:warm','economy:rich'].every(a=>dis('ws-set '+a));
+  const danger=['monsters:deadly','bandits:many'].every(a=>q('[data-act="ws-set"][data-arg="'+a+'"]'))&&!q('[data-act="ws-set"][data-arg="climate:warm"]');
+  t.act('ws-adv');const free=['monsters:deadly','bandits:many'].every(a=>!dis('ws-set '+a)),locked=['wild:vast','climate:warm','economy:rich'].every(a=>dis('ws-set '+a)),
+    later=['sacred:common','sites:many','start:settler'].every(a=>!q('[data-act="ws-set"][data-arg="'+a+'"]')),hints=/Beasts in the wilds/.test(txt())&&/More beasts at the start/.test(q('[data-arg="monsters:deadly"]').title);
   t.act('ws-set','monsters:deadly');t.act('ws-set','climate:warm');t.act('ws-size','huge');t.act('ws-hold','1');
-  ok(free&&locked&&S.s.preset==='classic'&&S.s.monsters==='deadly'&&S.s.climate==='temperate'&&S.s.w===448&&S.s.holdings===37,'Classic: only monsters, bandits and start stay open (§4.2); the rest refused');
-  t.wsPreview(true);ok(/holdings/.test(q('.ws-counts').textContent)&&/ringed/.test(q('.ws-cap').textContent),'its preview: '+q('.ws-cap').textContent+'; '+q('.ws-counts').textContent+'; '+q('.ws-time').textContent);
+  ok(free&&locked&&S.s.preset==='classic'&&S.s.monsters==='deadly'&&S.s.climate==='temperate'&&S.s.w===448&&S.s.holdings===37,'Classic: only monsters and bandits stay open (§4.2); the rest refused');
+  ok(danger&&later&&hints,'easier (the owner, 2026-11-08): Danger (monsters, bandits) shown unfolded, the land under More options; each setting its line of what it does, each choice its tip; the settings read by nothing yet (sacred places, founding sites, start) not shown');
+  // (no start marked: the owner, 2026-11-08, "map creation preview should not show or highlight the city you start"; the ring was white)
+  t.wsPreview(true);{const cv=q('.ws-cv'),d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data;let white=0;for(let i=0;i<d.length;i+=4)if(d[i]===255&&d[i+1]===255&&d[i+2]===255)white++;
+   ok(/holdings/.test(q('.ws-counts').textContent)&&!/ring|start/i.test(q('.ws-cap').textContent)&&!white,'its preview: '+q('.ws-cap').textContent+'; '+q('.ws-counts').textContent+'; '+q('.ws-time').textContent+'; no city ringed as your start ('+white+' ring pixels)')}
   t.act('ws-set','monsters:normal')}
  t.act('ws-preset','normal');
  {const s=S.s;ok(s.preset==='normal'&&s.seed&&s.seed!=='CLASSIC'&&s.holdings===27&&s.w===448&&!q('#wsSeed').disabled&&q('#wsSeed').value===s.seed,'Normal: a fresh seed ('+s.seed+'), 448 x 320, 27 holdings')}
  {t.act('ws-random');const k1=t.wsMapKey(S.s),before=S.pics[k1];await new Promise(r=>setTimeout(r,S.wait+100));
   ok(!before&&S.pics[k1]&&S.last===S.pics[k1]&&S.s.seed,'Random: a new seed ('+S.s.seed+'), the preview redrawn '+S.wait+' ms after the change, the last picture shown meanwhile')}
+ {const seen=new Set(),seeds=new Set();for(let i=0;i<12;i++){t.act('ws-surprise');seen.add(t.settingsKey({...S.s,seed:''}));seeds.add(S.s.seed)}
+  const s=S.s;ok(seen.size>=6&&seeds.size===12&&J(t.normSettings(s))===J(s)&&s.w<=640&&s.holdings>=25&&s.holdings<=t.maxHoldings(s)&&/A world of chance/.test(S.note),'Surprise me: a world of chance, its size (Normal or Large), holdings and every land and danger setting rolled, a fresh seed each time ('+seen.size+' mixes in 12)');
+  t.act('ws-preset','normal')}
  t.act('ws-size','large');ok(S.s.w===640&&S.s.h===448&&S.s.holdings===40&&S.s.preset==='large','a Large size at the normal density is the Large preset (40 holdings)');
  t.act('ws-dens','more');ok(S.s.holdings===55&&S.s.preset==='custom'&&q('[data-act="ws-dens"][data-arg="more"]').classList.contains('on'),'More: 55 holdings; touching a setting makes it Custom');
  t.act('ws-dens','fewer');t.act('ws-hold','1');ok(S.s.holdings===33&&!q('[data-act="ws-dens"].on'),'Fewer (32), then + one: 33, a number of its own');

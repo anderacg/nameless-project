@@ -7,12 +7,13 @@ const NO_TUNE={r:1,dmg:1,stun:0,dur:0};
 // a caster's kit for an ability: its state (breath, mana, cooldowns, a leap or dash under way), the ability as it casts it (its
 // tuning), how it strikes (your hero's blows can crit and train her), whether it can pay (keep: leave a little breath), and paying
 function kitOf(u,id){
-  if(u.hero){const X=heroState(),A=abil(id);return{u,st:X,A,sm:ABILITIES[id].magic?spellMul():1,hero:true,
+  const wx=Weather.skillMul(id,B.env&&B.env.w);// (the field's weather: a fireball weaker in the rain, data/weather.js WEATHER.skills)
+  if(u.hero){const X=heroState(),A=abil(id);return{u,st:X,A,sm:(ABILITIES[id].magic?spellMul():1)*wx,hero:true,
     strike:(e,m,o)=>heroHit(e,m,o||{}),
     can:keep=>X.sp>=A.sp+(keep&&A.sp?CHAR_AI.keepSp:0)&&X.mp>=A.mp,
     pay:()=>{if(!spend(A.sp,A.mp))return false;if(A.mp)train('spell',1.5);return true}}}
   const C=ChampionMind.stateOf(u),ch=u.unit&&u.unit.isChar?u.unit:null,sp=ch?ch.skill('spell'):0,A=ch?abilOf(ch.o,id,sp):{...ABILITIES[id],...NO_TUNE};
-  return{u,st:C,A,sm:ABILITIES[id].magic?1+.04*sp:1,hero:false,
+  return{u,st:C,A,sm:(ABILITIES[id].magic?1+.04*sp:1)*wx,hero:false,
     strike:(e,m,o)=>{o=o||{};hit(u,e,u.s.dmg*m,o.dt);if(o.kb)knock(e,u.x,u.y,o.kb);if(o.stun)stun(e,o.stun)},
     can:keep=>C.sp>=A.sp+(keep&&A.sp?CHAR_AI.keepSp:0)&&C.mp>=A.mp,
     pay:()=>{if(C.sp<A.sp||C.mp<A.mp)return false;C.sp-=A.sp;C.mp-=A.mp;if(A.sp)C.spT=0;return true}}}
@@ -52,7 +53,7 @@ const CAST={
 };
 // cast it: paid and cooled down, or false (your hero's own checks first: combat.js castSkill)
 function castAbility(u,id,at){
-  const K=kitOf(u,id);if(K.st.cds[id]>0||!K.pay())return false;K.st.cds[id]=K.A.cd;CAST[id](u,K,at);battleEvent('cast',{u,id,st:K.st});
+  const K=kitOf(u,id);if(K.st.cds[id]>0||Weather.skillBan(id,B.env&&B.env.w)||!K.pay())return false;K.st.cds[id]=K.A.cd;CAST[id](u,K,at);battleEvent('cast',{u,id,st:K.st});
   if(!K.hero&&!['cry','heal','banner'].includes(id))castSay(u,ABILITIES[id].n);return true}
 // a leap or a dash under way (your hero's and a champion's): true while it lasts
 function leapStep(u,st,dt){
@@ -92,7 +93,7 @@ function chooseAbility(u){
   const knot=r=>{let best=null,bn=0;for(const e of aim){const n=near(e.x,e.y,r,foes);if(n>bn){bn=n;best=e}}return best&&{x:best.x,y:best.y,n:bn}};
   const c={foes,mine,near,close,d,knot};
   for(const id of ABILITY_ORDER){if(!ids.includes(id))continue;const S=ABILITIES[id],K=kitOf(u,id);
-    if(K.st.cds[id]>0||!K.can(true)||S.melee&&hasBow(u)||S.needs==='bow'&&(!hasBow(u)||K.hero&&heroShotsLeft()<4))continue;
+    if(K.st.cds[id]>0||Weather.skillBan(id,B.env&&B.env.w)||!K.can(true)||S.melee&&hasBow(u)||S.needs==='bow'&&(!hasBow(u)||K.hero&&heroShotsLeft()<4))continue;
     const at=ABILITY_WHEN[id](u,K,c);if(!at)continue;const p=at===true?null:at;
     if(K.hero){if(p)CharacterMind.of(u).aimAt(p);castSkill(id);return K.st.cds[id]>0}
     return castAbility(u,id,p||{x:close.x,y:close.y})}

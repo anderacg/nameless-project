@@ -57,7 +57,8 @@ try{
  // ---- through the zoom: a click travels to the map's point under it; a party under the pointer is picked; the minimap's size
  const c=t.ctx,calls=[],unmarch=Kit.watchMarch(true);let rec=false;const di0=c.drawImage;c.drawImage=function(img,...a){if(rec&&!Kit.marching)calls.push([img,a,this.getTransform()]);return di0.apply(this,[img,...a])};/* (the marching armies, drawn smaller on purpose, left out: the map's own pixels; Kit.watchMarch) */
  const frame=()=>{calls.length=0;rec=true;try{t.frame()}finally{rec=false}};const isInt=v=>Math.abs(v-Math.round(v))<1e-4,EPS=1e-4;
- const miniW=()=>{const m=t.WorldArt.mini(Math.max(1,Math.round(t.MW/256)))._at,q=calls.find(([img])=>img===m);return q?[m.width*t.VS,q[2].e+q[2].a*q[1][0]]:null};
+ const miniW=()=>{if(t.MINIMAP.on){const m=t.MINI_FACE,q=calls.find(([img])=>img===m);return q?[q[1][2]*q[2].a,q[2].e+q[2].a*q[1][0]]:null}// (the minimap a piece of the full map, on its own canvas at the screen's pixels: render.js drawMiniMap)
+  const m=t.WorldArt.mini(Math.max(1,Math.round(t.MW/256)))._at,q=calls.find(([img])=>img===m);return q?[m.width*t.VS,q[2].e+q[2].a*q[1][0]]:null};
  try{
   const minis=[];
   for(const s of [Z.lo,s0,Z.hi]){t.act('mapzoom',String(s===s0?0:s));world();P.x=Math.floor(P.x)+.4;frame();const S=t.VS;minis.push(miniW());

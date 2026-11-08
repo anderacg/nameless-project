@@ -9,6 +9,8 @@ class GameSession{
     replace(this.runtime,makeRuntimeState());if(race)this.runtime.race=race;if(quiet!==undefined)this.runtime.quietEvents=quiet;
     // (a skill the save does not have yet, one added since: from 0)
     replace(this.player,{...makePlayerState(),...(savedPlayer||{}),...(savedPlayer&&savedPlayer.sk?{sk:{...mkSkills(),...savedPlayer.sk}}:{})});
+    // (a save from before the level's choice: every level a choice waiting, its trees' nodes of old gone)
+    if(savedPlayer&&savedPlayer.lvUp==null){this.player.lvUp=savedPlayer.level||0;this.player.tree=(this.player.tree||[]).filter(id=>typeof TREE==='undefined'||TREE[id]);delete this.player.tp}
     replace(this.world,makeWorldState());
   }
 }
@@ -71,8 +73,8 @@ function startGame(k,b){
   for(const a in b.attr)P.attr[a]+=b.attr[a];for(const a in rc.attr)P.attr[a]=Math.max(1,P.attr[a]+rc.attr[a]);
   // every proficiency starts at 0 but your past's, free (PROF.pastPer a point; sk0, not counted toward your level); your race and past give a knack: 25% faster learning per point (P.apt)
   for(const src of [b.sk,rc.sk])for(const s in src||{})P.apt[s]=(P.apt[s]||0)+.25*src[s];
-  for(const s in b.sk||{})if(P.sk[s])P.sk[s].lv=P.sk0[s]=Math.min(SK_MAX,PROF.pastPer*b.sk[s]);
-  P.origin=originOf(k);P.tree=[P.origin];applyNode(P.origin,1);G.skSel=P.origin;
+  for(const s in b.sk||{})if(P.sk[s])P.sk[s].lv=P.sk0[s]=Math.min(SK_MADE,PROF.pastPer*b.sk[s]);
+  P.origin=originOf(k);P.tree=[P.origin];applyNode(P.origin,1);
   // (your past's weapon: none for a nobody, bare hands, combat.js FISTS)
   P.gear.weapon=b.weapon?gearId(b.weapon,0):null;Object.assign(P.gear,b.gear);for(const g in b.cargo)invAdd('good',g,b.cargo[g]);
   // (a new game on the map: every system's world reset first, onWorld; the game's number for its random streams, core/rng.js,
@@ -86,7 +88,7 @@ function startGame(k,b){
   heroAtGate(home);G.mode='world';G.lastTown=home;// (in front of its gate, on land: world.js gateSpot)
   startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);goblinsStart();
     for(let i=0,n=Math.round(density(WM).monsterStart*spawnMul('monsters'));i<n;i++)spawnMonster(true)});
-  if(own)Rng.newGame();
+  if(own)Rng.newGame();Weather.fair(P.x,P.y);// (a clear sky over your start: data/weather.js WEATHER.start)
   // (named: the hero and the band in the first line; the band's name only once you gave it one)
   hidePanel();G.msgs=[];if(S)log(S.line+' '+(P.band?htmlText(P.band)+' is you alone for now: ':'')+'Win fame around here and the locals will follow you.');else log('You ride out of '+home.name+' alone, as '+(P.name?htmlText(P.name)+', ':'')+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. '+
     (P.band?htmlText(P.band)+' is you alone for now: win fame around here and the locals will follow you.':'Win fame around here and the locals will follow you.'));updateHint();updateHUD(true);

@@ -19,7 +19,7 @@ Kit.suite(({ok,info})=>{
  const icon=b.icons.find(i=>i.team===0);ok(icon&&Math.abs(icon.w*t.VS/(devicePixelRatio||1)-t.UICON.s*t.UICON.k)<.001,'group markers keep a stable screen size on the native world canvas');
  const original=t.marchDraw,seen=[];window.__marchDraw=original;window.marchDraw=(out,o,cam)=>{seen.push(o);return original(out,o,cam)};try{t.frame()}finally{window.marchDraw=original;delete window.__marchDraw}
  ok(!seen.includes(P)&&!seen.includes(enemy),'campaign army figures are hidden while their battle actors occupy the same world positions');
- const mini=t.worldMiniRect(),hit=t.miniHit({x:mini.x+mini.w/2,y:mini.y+mini.h/2}),world=a.world(hit);ok(Math.abs(world.x-t.MW*t.TILE/2)<.001&&Math.abs(world.y-t.MH*t.TILE/2)<.001,'the world minimap retains its world coordinates during combat');
+ const mini=t.worldMiniView(),hit=t.miniHit({x:mini.x+mini.w/2,y:mini.y+mini.h/2}),world=a.world(hit),mid={x:(mini.ox+mini.tw/2)*t.TILE,y:(mini.oy+mini.th/2)*t.TILE};ok(Math.abs(world.x-mid.x)<.001&&Math.abs(world.y-mid.y)<.001,'the world minimap retains its world coordinates during combat (its middle the tile it shows there: render.js worldMiniView)');
  const soldier=b.units.find(u=>u.team===1),group=b.groups[soldier.grp],hp=soldier.hp=11;group.resolve.worldReturns=t.WORLD_BATTLE.returns;group.resolve.routed=true;soldier.rout=true;
  // The second escape is final; it must not seed another rest/return cycle.
  const ex=a.exit({x:a.cx+a.radius,y:a.cy},t.WORLD_BATTLE.apron*.65*a.scale);soldier.x=ex.x;soldier.y=ex.y;a.escape(soldier,.01);

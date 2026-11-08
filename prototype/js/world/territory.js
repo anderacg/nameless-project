@@ -98,11 +98,10 @@ function pacify(x,y){
   if(!t)return null;const cap=growCap(t)+2;if((t.grow||0)>=cap)return t;
   t.grow=Math.min(cap,(t.grow||0)+1);if(t.owner==='player'||t.owner===P.fac)log('With the camp gone, settlers push out from '+t.name+'. Its lands grow.','good');return t;
 }
-// crossing a border: a line in the log when the realm underfoot changes
+// crossing a border: the realm underfoot kept (G.landFac); no line in the log (the owner, 2026-11-08: "remove the log when you travel
+// cross to the region or territory": whose land it is shows on the HUD, updateHUD)
 function landWatch(){
-  const t=landHold(P.x,P.y),o=t?t.owner:null;if(o===G.landFac)return;const first=G.landFac===undefined,now=performance.now();G.landFac=o;if(first||now-(G.landLogAt||-1e9)<4000)return;G.landLogAt=now;
-  if(!o)log('You leave settled land for the wilds.');
-  else log(o==='player'?'You enter your own lands ('+t.name+').':'You cross into the lands of the '+FACS[o].n+' ('+t.name+')'+(hostileTo(o)?': hostile ground.':'.'),hostileTo(o)?'bad':'');
+  const t=landHold(P.x,P.y),o=t?t.owner:null;if(o!==G.landFac)G.landFac=o;
 }
 
 /* its art: a faint tint over each realm, a strong line where realms meet, a faint one between holdings of one realm (LAND_EDGE).

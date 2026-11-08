@@ -92,6 +92,19 @@ Kit.suite(({ok,info})=>{
   const px=v=>Math.round(Math.round(v*10)/10),snap=()=>JSON.stringify([bands().map(b=>[px(b.x),px(b.y),b.size,b.camp,b.ld&&b.ld.name]),camps().map(s=>[s.name,s.tx,s.ty,s.cleared,s.back,s.ld&&s.ld.name])]);
   const s0=snap();t.saveGame(true,'quick');t.bandits.length=0;W.sites=[];t.loadGame('quick');
   ok(snap()===s0&&bands().every(b=>b instanceof t.GoblinBand)&&camps().every(s=>s instanceof t.GoblinCamp),'warbands and camps (cleared or not) come back from a save as they were, of their kinds')}
+ // ---- at feud with bandits (the owner, 2026-11-08: "Make sure that bandits and goblins are hostile to each other"): enemies in a
+ // fight; a warband rides down a weaker bandit band it sees and falls on it; a stronger one met at close quarters, fought all the same;
+ // two warbands friends; BAND_FEUD.on false: they pass by
+ {Kit.clear();const b=B0[0],c=of(b),X=t.BAND_FEUD;P.x=-9999;P.y=-9999;Kit.world({encCool:99});
+  const put=(o,x,y)=>{o.x=x;o.y=y;t.unstick(o);o.fight=null;o.cool=0;o.t=9;o.idle=true;o.waylay=null},band=(n,dx)=>{const o=t.asParty({x:c.x+3*TILE+dx,y:c.y,n,kind:'bandits',list:Array(n).fill('band_looter'),t:9,a:0,idle:true,cool:0});t.bandits.push(o);put(o,o.x,o.y);return o};
+  t.bandits.length=0;t.bandits.push(b,B0[1]);W.fights.length=0;put(b,c.x+3*TILE,c.y);const weak=band(3,60);
+  const rel=t.armyRelation(b,weak)<0&&t.armyRelation(weak,b)<0&&t.armyRelation(b,B0[1])>0&&t.armyRelation(weak,weak)>0;
+  X.on=false;const off=!t.BRAINS.band.feud(b,1);X.on=true;
+  const d0=Math.hypot(weak.x-b.x,weak.y-b.y);let k=0;while(!b.fight&&k++<200){t.BRAINS.band.think(b,.05,false)}
+  const f=t.fightOf(b),foe=f&&t.fightOpponents(f,f.sides.findIndex(s=>s.includes(b.uid)));
+  ok(rel&&off&&f&&foe.includes(weak),'a goblin warband and a bandit band are enemies (two warbands friends); a warband rides down a weaker band '+d0.toFixed(0)+' px off and falls on it ('+(k*.05).toFixed(1)+' s); off: it lets it be');
+  W.fights.length=0;t.bandits.length=0;t.bandits.push(b);put(b,c.x+3*TILE,c.y);const big=band(30,6);let g=null;for(let i=0;i<5&&!g;i++){t.BRAINS.band.think(b,.05,false);g=t.fightOf(b)}
+  ok(big.power()>b.power()&&g&&t.fightParties(g).includes(big),'a stronger bandit band met at close quarters ('+big.power().toFixed(0)+' power to the warband\'s '+b.power().toFixed(0)+'): they fight')}
  // ---- drawn
  {Kit.world();const s=camps()[0];s.seen=true;P.x=s.x+40;P.y=s.y;t.frame();ok(!ERR.length,'drawn on the map without a fault')}
 });
