@@ -15,7 +15,7 @@
 // (back: what he wears on his back, its top left, out behind him; off: the shield arm's shield, its top left (a pixel in since
 // 2026-11-08, the owner: "shield should come a bit closer": against his arm, not held off it); guard: a shield raised before him, its
 // left); races: those the doll has
-const DOLL_FIGS={on:true,riders:true,edge:true,edgeK:.68,rim:true,rimK:.62,rimLit:.86,dx:2,dy:0,back:[2,6],off:[2,8],guard:[8],races:['human','elf','dwarf','orc','goblin']};
+const DOLL_FIGS={on:true,riders:true,edge:true,edgeK:.68,rim:true,rimK:.62,rimLit:.86,dx:2,dy:0,back:[2,6],off:[2,8],guard:[8],races:['human','elf','dwarf','orc','goblin','hobgoblin']};
 // whether a look is drawn as a doll
 const dollable=o=>DOLL_FIGS.on&&(!o.mount||DOLL_FIGS.riders)&&!!(window.PX&&PX.doll)&&DOLL_FIGS.races.includes(o.race||'human');
 // (a look's helm as the doll's head part and its material)

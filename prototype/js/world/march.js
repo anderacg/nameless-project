@@ -180,7 +180,7 @@ const marcherStep=u=>(Math.floor((u.walk||0)/(WALK.foot*WALK.step))+u.id)%4;
 // MARCH_MOVE.stride; the owner, "leg stuck before going to idle". Drawn only: the march itself reads u.walking)
 const marchWalks=u=>!!u.walking&&!(u.tg&&Math.hypot(u.x-u.tg.x,u.y-u.tg.y)<MARCH_MOVE.home);
 function marchSprite(u,o,pose,bare){
-  const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',lead=hero||u.row==='leader';
+  const type=chiefLookType(u.character?u.type.replace(/^comp_/,''):u.type,o.ld?.band),hero=type==='hero',lead=hero||u.row==='leader';
   return dressed(coldAt(o.x,o.y),()=>unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(marchWalks(u)?2+marcherStep(u):0),!!bare,false,o.look().col));
 }
 // Leaders use the same character kind and equipment as battle; cached cells also serve map picking and banner height.

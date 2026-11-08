@@ -37,10 +37,13 @@
   const RACES={human:{skin:'skin',dup:[12],seat:{dup:[]}},elf:{skin:'elf',dup:[12,13],ears:true,seat:{dup:[12]}},dwarf:{skin:'dwarf',wide:true,beard:true,seat:{drop:[12]}},orc:{skin:'orc',dup:[12],wide:true,tusk:true,seat:{dup:[]}},
     // (a goblin (the owner, 2026-11-07, with the reference): small, a chest row and a thigh row short, his long ears out behind his head
     //  and up, over a hood too)
-    goblin:{skin:'goblin',drop:[5,10],goblinEars:true,seat:{drop:[5]}}};
+    goblin:{skin:'goblin',drop:[5,10],goblinEars:true,seat:{drop:[5]}},
+    // (a hobgoblin (the owner, 2026-11-08: a goblin band's warchief "should be hobgoblin not human"): a goblin grown to a man's height
+    //  and broad as an orc, his long ears, his own ruddy skin)
+    hobgoblin:{skin:'hobgoblin',dup:[12],wide:true,goblinEars:true,seat:{dup:[]}}};
   /* the materials, each four tones: lit, mid, shade, edge (muted, as the owner's reference) */
   const MAT={
-    skin:['#f9b488','#e28852','#c67749','#a5623e'],elf:['#f8d8c8','#e8b8a4','#c8968a','#9a7068'],dwarf:['#f4b090','#d88a68','#b86a50','#8a4a38'],
+    skin:['#f9b488','#e28852','#c67749','#a5623e'],hobgoblin:['#e0a070','#c47a48','#9a5630','#6a3820'],elf:['#f8d8c8','#e8b8a4','#c8968a','#9a7068'],dwarf:['#f4b090','#d88a68','#b86a50','#8a4a38'],
     orc:['#a8c070','#86a050','#647a3a','#465a28'],
     linen:['#e0e0c7','#b5b5a1','#8c8c7c','#6b6b5f'],buff:['#c8b070','#a08a52','#7a6a3a','#56482a'],leather:['#a06a3a','#7a4b22','#5a3416','#3a220e'],
     wool:['#9a8a6a','#76684c','#564a34','#3a3222'],grey:['#9a9a8c','#78786c','#58584e','#3c3c34'],
@@ -243,7 +246,10 @@
       if(p.line==='belt'||p.line==='sash'){for(const c of hips){const [x,y]=at(c);put(x,y,p.m,c.x===4&&p.line==='belt'?0:2+(c.x===2||c.x===6?1:0))}if(p.line==='belt')put(ox+4,py,'gold',1)}
       else{const top=[ox+2,oy+3+(S.rows<15?-1:0)];for(let k=0;k<=5;k++)put(top[0]+Math.round(k*.8),top[1]+k,p.m,k&1?3:2)}}
     // his race's own: an elf's ears, an orc's tusks (over a bare head only)
-    if(R.ears&&!headCover)put(hx+3,hy+1,'skin',1);// (an elf's ear behind his face, in his hair: before it, it read as a nose)if(R.goblinEars){put(hx+3,hy+1,'skin',1);put(hx+4,hy+1,'skin',1);put(hx+4,hy,'skin',2)}if(R.tusk)put(hx+1,hy+2,'#f0ecd8',0);
+    if(R.ears&&!headCover)put(hx+3,hy+1,'skin',1);// (an elf's ear behind his face, in his hair: before it, it read as a nose)
+    // (a goblin's long ears out behind his head and up, over a hood too; an orc's tusk: both were commented out by a // on this line
+    // from d909f51 to 2026-11-08)
+    if(R.goblinEars){put(hx+3,hy+1,'skin',1);put(hx+4,hy+1,'skin',1);put(hx+4,hy,'skin',2)}if(R.tusk)put(hx+1,hy+2,'#f0ecd8',0);
     // the gear before him: the shield on his left arm, a weapon in front
     lay(false);
     // the shadow underfoot

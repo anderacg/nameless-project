@@ -39,6 +39,9 @@ Kit.suite(({ok,info})=>{
  ok(B0.length>=C.length&&B0.every(b=>b instanceof t.GoblinBand&&b.mapKind==='band'&&of(b)&&b.haunt.x===of(b).x&&Math.hypot(b.x-of(b).x,b.y-of(b).y)<=7*TILE),B0.length+' warbands set out ('+GB.bands+' a camp), each a few tiles from its camp, haunting it');
  ok(B0.every(b=>b.troops.every(k=>ST[k].race==='goblin')&&b.size>=GB.band[0]),'all goblins, '+GB.band.join('-')+' strong or more');
  {const avg=l=>l.reduce((a,b)=>a+b.size,0)/l.length,r=t.roamers();ok(avg(B0)>avg(r)&&r.every(b=>b.kind!=='goblins')&&r.length<=t.density(t.WM).bandits,'bigger than bandit bands ('+avg(B0).toFixed(1)+' to '+avg(r).toFixed(1)+'), and the bandits roam in their own numbers ('+r.length+')')}
+ // (its warchief a hobgoblin, not a man (the owner, 2026-11-08): the chief's look by his band, in battle and on the map; a goblin's long ears drawn)
+ {const L=t.lookOf(t.chiefLookType('chief','goblins'),1,false,0),H=t.lookOf('chief',1,false,0),u={type:'chief',leader:{ref:B0[0].ld}},f=t.unitSprite('hob_chief',1,false,0,0,false,false),g=t.unitSprite('chief',1,false,0,0,false,false);
+  ok(B0[0].ld.band==='goblins'&&L.race==='hobgoblin'&&!L.short&&t.riderLook(u).race==='hobgoblin'&&H.race==='human'&&t.chiefLookType('chief','bandits')==='chief'&&f.height>=g.height-1&&t.leaderOf(B0[0].ld).roleName==='Warchief','a warband\'s warchief a hobgoblin (a man\'s height, ruddy, long-eared) in battle and on the map; a bandit chief still a man')}
  {const b=B0[0],L=b.look(),bn=b.banner(),d=b.mapDot({});ok(L.col===GB.col&&L.race==='goblin'&&bn.col===GB.col&&(!d||d[0]===GB.col)&&b.label()==='Goblin warband'&&b.nerve===GB.nerve&&b.hauntR===GB.leash,'under a green rag, of their race, called a goblin warband')}
  // timid: as strong as you, a bandit band hunts you, a warband only hangs back
  {Kit.clear();Kit.world({encCool:0});const gb=B0[0];P.troops={};let k=0;while(t.partyPower()<gb.power()&&k++<80)P.troops={hum_levy:k};

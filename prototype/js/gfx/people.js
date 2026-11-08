@@ -32,7 +32,7 @@ const PEOPLE_OUT='#1a1c26',PEOPLE_SCAR='#c06a5a';
 const PPAL={
   skin:['#edd1d6','#f3bfad','#de9e8c','#c58faa'],skinTan:['#f0c8a0','#d9a07a','#b87a58','#8e5a4a'],skinDark:['#c8906a','#a06a4a','#7a4a32','#5a3424'],
   elf:['#f6e6e6','#f0d0c8','#dcb0a8','#b8909a'],dwarf:['#f0c0a0','#e09a80','#c07868','#8e5050'],
-  orc:['#c8e888','#9ccc5a','#6a9a3a','#4a6a2a'],goblin:['#d0d880','#a8b450','#78862e','#4e5a22'],goblinDark:['#b4c070','#8a9a44','#607028','#40481c'],orcDark:['#a8c870','#7aa848','#527a30','#36541e'],orcGrey:['#b8c8a0','#8aa078','#62785a','#44543e'],
+  orc:['#c8e888','#9ccc5a','#6a9a3a','#4a6a2a'],goblin:['#d0d880','#a8b450','#78862e','#4e5a22'],hobgoblin:['#e8a878','#c87e4c','#9c5832','#6a3a22'],hobgoblinDark:['#d09060','#b06a3c','#844828','#58301a'],goblinDark:['#b4c070','#8a9a44','#607028','#40481c'],orcDark:['#a8c870','#7aa848','#527a30','#36541e'],orcGrey:['#b8c8a0','#8aa078','#62785a','#44543e'],
   blond:['#faf8db','#f3e7a8','#dab580','#b3794d'],brown:['#cb804a','#a15735','#682a19','#4a1c10'],ginger:['#fea464','#fc6a08','#ba3900','#7e0e13'],
   black:['#67656d','#3d3f4b','#2e3038','#27272c'],grey:['#ffffff','#dacdc1','#b3a49a','#8f8685'],silver:['#ffffff','#e0e6ee','#abb6c4','#7e8896'],
   olive:['#ebe185','#beb050','#8e8e37','#5d6527'],teal:['#86f1d6','#4ddbc2','#30b3a7','#238585'],steel:['#ffffff','#abd5da','#6e95a9','#5a748d'],
@@ -53,7 +53,9 @@ const RACE_LOOK={
   elf:{skin:['elf'],hair:['blond','silver','blond','brown','silver','blond'],eye:'#a8f0c8',ears:true},
   dwarf:{skin:['dwarf','skinTan','dwarf'],hair:['ginger','brown','black','grey','ginger','blond'],eye:PEOPLE_EYE,short:true,beard:true},
   orc:{skin:['orc','orcDark','orcGrey'],hair:['black','black','brown','black','grey','black'],eye:'#ffdc04',tusk:true},
-  goblin:{skin:['goblin','goblinDark'],hair:['black','brown','black'],eye:'#ffdc04',short:true}
+  goblin:{skin:['goblin','goblinDark'],hair:['black','brown','black'],eye:'#ffdc04',short:true},
+  // (a hobgoblin: a goblin band's warchief, a man's height, ruddy (engine/doll.js RACES.hobgoblin))
+  hobgoblin:{skin:['hobgoblin','hobgoblinDark'],hair:['black','black','brown'],eye:'#ffdc04'}
 };
 /* each kind's look: helm (cap, kettle, great, plume, horned, hood, wizard, crown, circlet, skull, bare), outer (the garment's
    material), inner, weapon (sword, great, dagger, axe, bigaxe, hammer, spear, pike, javelin, bow, longbow, xbow, sling, staff,
@@ -100,6 +102,9 @@ const PEOPLE_LOOK={
   // (goblins (the owner's reference): green hoods, leather; a knife and a round shield, a spear, a short bow, a chief in fur)
   gob_stab:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'dagger',shield:'wood'},gob_spear:{race:'goblin',helm:'hood',hood:'olive',outer:'leather',weapon:'spear'},
   gob_bow:{race:'goblin',helm:'hood',hood:'forest',outer:'leather',weapon:'bow'},gob_boss:{race:'goblin',helm:'hood',hood:'forest',outer:'fur',weapon:'bigaxe',shield:'wood'},
+  // (a goblin band's or camp's warchief: a hobgoblin, bareheaded so his ruddy face and long ears show, in dark iron over leather, his
+  // big axe and shield (the owner, 2026-11-08); sprites.js chiefLookType)
+  hob_chief:{race:'hobgoblin',helm:'bare',outer:'iron',inner:'leather',weapon:'bigaxe',shield:'wood',outlaw:'own'},
   mage:{helm:'wizard',outer:'violet',weapon:'staff',robe:true,beard:'grey',hair:'grey'},hedge:{helm:'hood',hood:'brown',outer:'cloth',weapon:'staff',robe:true}
 };
 // the plain troops' helms and cloth by variant (the rest wear their kind's)

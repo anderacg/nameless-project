@@ -29,7 +29,7 @@ class Lord extends Character{
    battles (won) */
 class Chieftain extends Character{
   get role(){return 'chieftain'}
-  get roleName(){return 'Chieftain'}
+  get roleName(){return this.o.band==='goblins'?'Warchief':'Chieftain'}
   get key(){return 'chief'}
   get race(){return null}
   get aiOwned(){return true}
@@ -40,7 +40,7 @@ class Chieftain extends Character{
   // word of him when his band is near
   grew(up){
     const o=this.holder();
-    if(o&&Math.hypot(o.x-P.x,o.y-P.y)<vis()*2)log('Word spreads of '+this.o.name+': the bandit chief grows bolder (level '+this.o.lv+', bounty '+this.bounty()+' gold).')}
+    if(o&&Math.hypot(o.x-P.x,o.y-P.y)<vis()*2)log('Word spreads of '+this.o.name+': the '+(this.o.band==='goblins'?'goblin warchief':'bandit chief')+' grows bolder (level '+this.o.lv+', bounty '+this.bounty()+' gold).')}
   // a battle his band won: experience by how many it beat
   won(foes){
     const c=this.o;
