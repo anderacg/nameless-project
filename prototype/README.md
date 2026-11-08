@@ -1359,13 +1359,20 @@ with Copy (`worldsettings.js` `worldCode`, `parseWorldCode`: `ASH1-<preset>-<eve
 size (or Custom: width and height with − and +), the holdings (Fewer, Normal, More: `HOLDING_DENSITY` times the area's default,
 27 / 40 / 66 at Normal / Large / Huge, More today's 37 / 55 / 90; or a number with − and +) and the Advanced fold-out (the rest,
 those later phases read marked later). Classic locks everything that changes the map; monsters, bandits and your start stay open.
-Every change is clamped at once, with a note when a limit moved a value. Right: the preview, your start city ringed: the quick
+Every change is clamped at once, with a note when a limit moved a value. Right: the preview (no city marked as your start): the quick
 sketch (`worldgen.js` `genSketch`: the real land field and climate noise at 256 points across, mountains, rivers and holdings
 approximate; about 70 ms at any size), redrawn 200 ms after a change, or the real map when it is made (the world in); no buttons there (the owner, 2026-10-22: Random is the seed's own, Enter in the seed redraws); the counts and the time it takes to forge here (measured once, kept in `localStorage`). A generated world but
 Classic starts as its seed says (`session.js` `seededStart`: its first sites, herds, bands and beasts with the game's number 0
 and Math.random the 'start' stream's), so one code starts one world; what happens in play stays random. The Game Menu's World
 button opens the World page (every setting, the world code with Copy, what it holds); a save's line reads "Redwater · Large ·
 seed redwater". Tests: `tests/worldsettings.js`; screenshots: `tests/visual/worldsetup.js` (`?test=visual/worldsetup&v=1`).
+Easier (2026-11-08; the owner: "Make the world building settings more easier. Improve ux for settings", "map creation preview should
+not show or highlight the city you start"): the left column runs easiest first: World type (the presets, and Surprise me: a world of
+chance, its size Normal or Large, its holdings and every land, people and danger setting rolled, a fresh seed), Size, Holdings,
+Danger (monsters and bandits, always shown), More options folded (`WS_GROUPS`: Land, People), and last Seed and sharing (the seed,
+Random, the world code with Copy, a line on what a code is for; its notes shown there). Each setting has a line of what it does
+and each choice a tip (`WS_HINT`). Sacred places, founding sites and start, which nothing reads yet, are no longer shown (kept in
+the world code at their preset's). The preview marks no holding as your start. The preview's caption no longer collapses on a phone.
 
 People menu removed (2026-10-24): Journal (J) owns known lords and realms; Army (C) owns companion management, and Quests (Q) owns jobs and their givers. The dock has no People button and P is unassigned. World sightings still update saved last-known reports; hall audiences return to the hall when left.
 
