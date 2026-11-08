@@ -72,7 +72,7 @@ const EXPECT_CULTURE={
   'cluster:workshop':'9a2b5a9d','cluster:quarter':'aabf0a35','cluster:camp':'8e0c1bce','cluster:hideout':'266cc5ac',
   'cluster:travelers':'6db648a9','cluster:townhall':'4a86be91','cluster:fort':'468efc26'},
  // league (build-vale.js, on the Vale’s)
- league:{cottage:'ac264369',townhouse:'40f9fb17',fisherhut:'10e0915a',chapel:'c2560107',stall:'7a3166a8',tower:'4b3e2e96',
+ league:{cottage:'ac264369',townhouse:'5dc0a33c',fisherhut:'10e0915a',chapel:'c2560107',stall:'7a3166a8',tower:'4b3e2e96',
   longhouse:'4e06b740',tavern:'6f8e047b',smithy:'69744288',church:'307a7d73',barn:'2c5e5154',granary:'fdc46d73',windmill:'5d700f4b',
   watermill:'5f57d598',warehouse:'67233d64',gatehouse:'517ba774',keep:'3e85bdbb',citadel:'3f21cca9',well:'df8286cb',tent:'b51b91e2',
   wagon:'7f883ead',minehead:'e3a3c641',lumbershed:'7c51be02',crane:'d1abb9f9',village:'b7c4d6b0',signpost:'6aa0a05a',
@@ -82,7 +82,7 @@ const EXPECT_CULTURE={
   'cluster:mill':'acda581c','cluster:lumber':'6598c76e','cluster:mine':'66f50c5f','cluster:quarry':'dbab4436',
   'cluster:fishery':'ce836676','cluster:pasture':'ee68b8f5','cluster:brewery':'04aae1ff','cluster:granary':'da60ee7d',
   'cluster:workshop':'6139d9fa','cluster:quarter':'d8aed571','cluster:camp':'896e7cce','cluster:hideout':'a27af816',
-  'cluster:travelers':'74b15e56','cluster:townhall':'73f644e4','cluster:fort':'5896a98e'},
+  'cluster:travelers':'74b15e56','cluster:townhall':'fada6cef','cluster:fort':'5896a98e'},
  // karn (build-karn.js)
  karn:{cottage:'8a5cd67f',townhouse:'da6d5f1f',fisherhut:'7fbeb008',chapel:'ea458768',stall:'f4079858',tower:'81c477b4',
   longhouse:'dd6027ed',tavern:'5462b3a2',smithy:'d5993b4b',church:'3869f8e0',barn:'8f2323ad',granary:'5e37c04b',windmill:'c2a31ead',
@@ -141,11 +141,12 @@ try{
      for(let k=0;k<N;k++){const [x,y]=[[k,0],[k,N-1],[0,k],[N-1,k]][e],on=d[(y*N+x)*4+3]>0;n+=on;run=on?run+1:0;best=Math.max(best,run)}
      if(full?n>=N:(best>N/4||n>N/2)){bad.edge.push(id+(full?' img':c===b.ground?' ground':' shadow')+' edge '+e);break}}}
    return a.join()};
- const LOOKS=['shrine','ruins','cave','smithy','barn','granary','warehouse','chapel','windmill','watermill'];
+ const LOOKS=['shrine','ruins','cave','smithy','barn','granary','warehouse','chapel','windmill','watermill','townhouse','elfhall','treehouse','lumbershed','yurt','hidehall','stonehall'];
  const t0=performance.now();let n=0;const plan=[],scl=[],front=[],share=[];
  for(const type of all){const N=SZ[type].cell,isB=N>=32&&!sites.includes(type);
    // (the types in several looks by their dice (the sites, and since 2026-11-08 the smithy, barn, granary, warehouse, chapel,
-   // windmill, watermill): more seeds, so every look meets the rules)
+   // windmill, watermill, and the cultures' townhouse, elf hall, treehouse, lumber shed, yurt, hide hall, stone hall): more seeds, so
+   // every look meets the rules)
    for(const people of P)for(const seed of LOOKS.includes(type)?[1,2,3,4,5,6,7,8,9,10]:[1,2]){const seen=new Set(),sc=new Set();for(const yaw of yaws(type)){const id=type+'/'+people+'/'+seed+'/'+yaw,b=PX.buildingModel({type,people,seed,yaw,fort:2});n++;
      const h=look(b,id,N);if(seen.has(h))bad.turn.push(id);seen.add(h);sc.add([b.scale.u,b.scale.v,b.scale.z,b.scale.o].join());
      // the front view: a door seen, the walls in the door's column at least about a third of the building's height (but a windmill's, its

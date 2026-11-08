@@ -248,7 +248,14 @@
       if(d.chance(.6))balcony(Q,'bc',-w/2+1,w/2-1,dd/2,12,L.trim);else Q.prop('washing',[(door<.5?1:-1)*(w/2+1),dd/2+3],1,1.4);stilts(Q,h.u,h.v);Q.lift=0;
       if(!o.bare&&L.flat)yard(Q,o,0,(door-.5)*w,dd/2,w);else if(!o.bare)Q.prop(d.pick(['barrel','crate']),[(door<.5?-1:1)*-(w/2-2),dd/2+2.5],0,1.4)},
     // a townhouse: three storeys narrow and tall, a low hip, a balcony on the middle floor, a shop's arch beside the door
-    townhouse(Q,o){const d=o.d,L=o.look,w=14,dd=14,dw=Q.home('townhouse','home',3),door=d.pick([.28,.72]);
+    // (2026-11-08, as the Vale's: in three looks, by its dice) or two storeys with its gable to the street, a shop's arch and its
+    // striped awning, shutters and a planter; or three under a hip with a little belvedere on the roof, a balcony and its lantern
+    townhouse(Q,o){const d=o.d,L=o.look,w=14,dd=14,dw=Q.home('townhouse','home',3),door=d.pick([.28,.72]),v=d.int(0,2);
+      if(v===1){const h=house(Q,{w,d:dd,st:2,form:'front',rise:8,dw,door,chim:false,wins:0,roof:L.roof});chimney(Q,[w/2-3,-dd/2+3],18,30);Q.dec('h.S','Arch',1-door,0);Q.dec('h.S',L.plaque,.5,h.z+1,true);
+        for(const a of [.27,.73])Q.dec('h.S','WinS',a,13);for(const k of ['E','W','N'])Q.dec('h.'+k,L.win,.5,13);Q.dec('h.N',L.win,.5,3);
+        awning(Q,'aw',(1-door)*w-w/2-4,(1-door)*w-w/2+4,dd/2,9,d.pick(L.awnings),3);Q.box('pf',[(door-.5)*w-2,(door-.5)*w+2],[dd/2,dd/2+1.5],[0,1.5],'valeClay',{top:true,topMat:'flower'});return}
+      if(v===2){house(Q,{w,d:dd,st:3,form:'hip',rise:7,dw,door,chim:false,wins:0,roof:L.roof});Q.square('bv',[0,-1],6,[26,34],o.wall,{form:'pyramid',rise:4,mat:L.roof,o:1},{dw});Q.dec('bv.S',L.win,.5,1);Q.dec('bv.E',L.win,.5,1);Q.dec('bv.W',L.win,.5,1);
+        Q.dec('h.S','Lamp',1-door,7);for(const z of [13,20]){for(const a of [.27,.73])Q.dec('h.S',z===20?'WinS':L.win,a,z);for(const k of ['E','W','N'])Q.dec('h.'+k,L.win,.5,z)}Q.dec('h.N',L.win,.5,3);balcony(Q,'bc',-w/2+1,w/2-1,dd/2,19,L.trim);return}
       house(Q,{w,d:dd,st:3,form:'hip',rise:7,dw,door,chim:false,wins:0,roof:L.roof});chimney(Q,[w/2-3,-dd/2+3],25,33);Q.dec('h.S','Arch',1-door,0);
       for(const z of [13,20]){for(const a of [.27,.73])Q.dec('h.S',L.win,a,z);for(const k of ['E','W','N'])Q.dec('h.'+k,L.win,.5,z)}Q.dec('h.N',L.win,.5,3);balcony(Q,'bc',-w/2+1,w/2-1,dd/2,12,L.trim)},
     // a granary: a long warehouse of sea stone on its raised quay, its gable to the water, teal cargo doors, a pulley beam out of the
