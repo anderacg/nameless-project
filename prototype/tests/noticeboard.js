@@ -12,6 +12,7 @@ Kit.suite(({ok})=>{
  {const notes=qa('.nb .nb-note'),jobs=notes.filter(n=>n.querySelector('[data-act="q-accept"]'));
   ok(q('.nb')&&/Notices of Ashford/.test(q('.nb-plaque').textContent)&&jobs.length===t.jobsAt(ash).length&&jobs.length>0,'the board: a paper for each offer ('+jobs.length+')');
   ok(new Set(notes.map(n=>n.style.getPropertyValue('--tilt'))).size>1,'tilted each its own way');
+  ok(notes.every(n=>/^[0-3]$/.test(n.dataset.tear)&&getComputedStyle(n).clipPath.startsWith('polygon')),'each torn its own way (data-tear: '+notes.map(n=>n.dataset.tear).join(',')+'; the owner, 2026-11-08: "more torn, not modern like paper")');
   ok(jobs.every((n,i)=>{const g=t.Quest.as(t.jobsAt(ash)[i]).person;return g&&n.querySelector('.nb-ask').textContent==='Seek out '+g.name+' the '+g.n+' at '+t.GIVERS[g.role].where+'.'}),'each says who posted it and where: '+jobs.map(n=>n.querySelector('.nb-ask').textContent).join(' | '));
   ok(jobs.every(n=>n.querySelector('.nb-kind')&&n.querySelector('.nb-pay')&&/For the deed/.test(n.textContent)),'its kind, its reward');
   const nm=t.Givers.of(ash).map(g=>g.name);ok(new Set(nm).size===nm.length,'no two of Ashford\'s givers share a name ('+nm.join(', ')+')')}

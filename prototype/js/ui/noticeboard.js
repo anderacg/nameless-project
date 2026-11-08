@@ -17,8 +17,8 @@ const NoticeBoard={
     const g=q.person,G0=g&&GIVERS[g.role];
     return g?'Seek out '+g.name+' the '+g.n+' at '+(G0.where||'the hall')+'.':'Seek out the steward at the hall of '+q.home+'.';
   },
-  // (its tilt, its shade and where its stain sits: by its place and kind, no draw)
-  look(i,k){const h=folkHash(k+':'+i);return ' style="--tilt:'+NOTICE.tilt[i%NOTICE.tilt.length]+'deg;--paper:'+NOTICE.paper[(i+k.length)%NOTICE.paper.length]+';--fx:'+(15+h%70)+'%;--fy:'+(20+(h>>>8)%60)+'%"'},
+  // (its tilt, its shade, where its stain sits and how it is torn (data-tear: style.css): by its place and kind, no draw)
+  look(i,k){const h=folkHash(k+':'+i);return ' data-tear="'+(h>>>16)%4+'" style="--tilt:'+NOTICE.tilt[i%NOTICE.tilt.length]+'deg;--paper:'+NOTICE.paper[(i+k.length)%NOTICE.paper.length]+';--fx:'+(15+h%70)+'%;--fy:'+(20+(h>>>8)%60)+'%"'},
   // (a job's paper; i its place on the board)
   note(q,i){
     q=Quest.as(q);
