@@ -352,8 +352,17 @@ Things in the world are plain data (so a save is plain JSON) read through a clas
   - On the map: travel × `speed` (`speedAt`; at home in the climate, half the loss) and sight × `sight` (`visMulAt`). In a battle (the
     weather where it is fought, `B.env.w`): pace and reach (`envStats`), arrows' aim and scatter (`Missile.fire`), each man's sight
     (`B.sightK`; in a battle on the map, the map's sight). No weather in caves and cellars, nor at a tournament.
-  - Drawn over the view (the map, under its labels; a battle, under its HUD): the sky's shade, falling rain, snow or sand, a haze,
-    lightning; fewer and slower, no lightning, with reduced motion. The day bar shows its icon and name.
+  - Drawn over the view, under the fog of war (2026-11-08, the owner: "make weathers under the fog"): on the map before
+    `drawWorldFog`, in a battle before its `fogDraw` (a battle on the map: over the field, under the HUD). The sky's shade, falling
+    rain, snow or sand, a haze in soft bands (`WeatherArt.band`), lightning; fewer and slower, no lightning, with reduced motion.
+    The day bar shows the season, its icon and name.
+  - **Seasons** (2026-11-08, the owner: "make it into a seasons"): the year's 120 days in four (`WEATHER.seasons`: spring, summer,
+    autumn, winter; a game begins in spring). Each weighs its climate's kinds (`mul`) and may add one (`add`: winter's snow on the
+    grass and in the swamps, summer's rain in the frost, winter's in the desert): `Weather.weights(c, d)`, `Weather.season(d)`; the
+    story's `context.season`.
+  - **Gradual** (the owner: "weather should gradually change not just so sudden"): drawn, the old weather fades out as the new fades
+    in over `WEATHER.ease` s (`WeatherArt.layers`); a new front builds to its strength over `WEATHER.build` hours
+    (`Weather.strength`: drawn only; its start kept in memory, not saved).
   - The road's incidents (`world/incidents.js`) in their weather only: storm, lightning (men hurt), flood (rain), blizzard,
     frostbite, sandstorm, lost (sandstorm), heat, a fine day (clear, grassland).
   - `WEATHER.on` off (the test suites' default, `tests/harness.js`): the old way (the frost's snow, clear elsewhere), nothing kept.

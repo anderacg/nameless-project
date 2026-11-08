@@ -18,9 +18,18 @@
 const WEATHER={on:true,
   // a region's side in tiles; how often a new front takes a neighbour's; the share of the loss a race at home in the climate feels
   cell:24,spread:.35,home:.5,
-  // seconds (real) the drawing eases from one weather to the next; the share of the particles drawn with reducedMotion, and their pace;
-  // the size (px) of a haze band's soft cloud, drawn up over the view (gfx/weather.js band)
-  ease:1.5,calm:.35,slow:.3,band:[64,32],
+  // seconds (real) the drawing eases from one weather to the next, the old fading out as the new fades in; the share of the particles
+  // drawn with reducedMotion, and their pace; the size (px) of a haze band's soft cloud, drawn up over the view (gfx/weather.js band);
+  // game hours a new front takes to build to its full strength (drawn: a shower before the rain, a haze before the fog)
+  ease:5,calm:.35,slow:.3,band:[64,32],build:1.5,
+  // the seasons (the owner, 2026-11-08: "make it into a seasons"), in the year's order, CLOCK.year days shared between them (a game
+  // begins in spring): n its name; mul each kind's chance x there; add more chance of a kind in a climate (winter's snow on the
+  // grass and in the swamps, summer's rain in the frost, winter's in the desert)
+  seasons:[
+    {k:'spring',n:'Spring',mul:{rain:1.4,storm:1.1,fog:1.2,clear:.9,snow:.6,blizzard:.4,heat:.5}},
+    {k:'summer',n:'Summer',mul:{clear:1.3,heat:2.2,storm:1.4,sandstorm:1.4,rain:.7,fog:.4,snow:.4,blizzard:.2},add:{frost:{rain:1.2}}},
+    {k:'autumn',n:'Autumn',mul:{rain:1.5,fog:1.8,cloudy:1.3,storm:1.1,clear:.8,heat:.3}},
+    {k:'winter',n:'Winter',mul:{snow:1.8,blizzard:1.8,fog:1.3,cloudy:1.2,clear:.8,rain:.5,storm:.4,heat:0,sandstorm:.7},add:{grass:{snow:1.6},swamp:{snow:.8,fog:.6},desert:{rain:.6}}}],
   // each climate's weights (a kind missing never comes there: no sandstorm in the frost, no blizzard in the desert)
   climates:{
     grass:{clear:5,cloudy:3,rain:2.5,storm:.8,fog:1.2},

@@ -56,11 +56,28 @@ Kit.suite(({ok,info})=>{
    ok(K.filter(k=>k!=='clear').every(k=>{const I=t.ICONS['wx_'+k];return I&&I.px.length===9&&I.px.every(r=>r.length===9&&[...r].every(ch=>ch==='.'||I.p[ch]))}),'each kind has its 9 × 9 icon')}
   // ---- drawn
   {const c=t.ctx,count=()=>{const d=c.getImageData(0,0,120,80).data;let n=0;for(let i=0;i<d.length;i+=4)if(d[i]+d[i+1]+d[i+2]>60)n++;return n};
-   const paint=(k,rm)=>{const r0=window.reducedMotion;if(rm)window.reducedMotion=()=>true;try{c.save();c.setTransform(1,0,0,1,0,0);c.fillStyle='#000';c.fillRect(0,0,120,80);const A=t.WeatherArt;A.k=k;A.a=1;A.last=0;A.draw(k,120,80);c.restore();return count()}finally{window.reducedMotion=r0}};
+   const paint=(k,rm)=>{const r0=window.reducedMotion;if(rm)window.reducedMotion=()=>true;try{c.save();c.setTransform(1,0,0,1,0,0);c.fillStyle='#000';c.fillRect(0,0,120,80);const A=t.WeatherArt;A.layers=[{k,a:1}];A.last=0;A.draw(k,120,80);c.restore();return count()}finally{window.reducedMotion=r0}};
    const rain=paint('rain'),calm=paint('rain',true),clear=paint('clear'),fog=paint('fog'),sand=paint('sandstorm');
    ok(rain>20&&clear===0&&fog>1000&&sand>1000,'drawn: rain streaks ('+rain+' px), a fog veil ('+fog+'), a sandstorm\'s haze ('+sand+'), nothing for a clear sky');
    ok(calm<rain,'with reduced motion, fewer drops ('+calm+' px against '+rain+')');
    WX.on=false;const off=paint('rain');WX.on=true;ok(off===0,'off: nothing drawn')}
+  // ---- seasons (the owner, 2026-11-08: "make it into a seasons"): a 120-day year in four, each weighing its climate's kinds
+  {const S=d=>Wx.season(d).k,gi=t.CLIMS.indexOf('grass'),fi=t.CLIMS.indexOf('frost');
+   ok(S(1)==='spring'&&S(30)==='spring'&&S(31)==='summer'&&S(61)==='autumn'&&S(91)==='winter'&&S(121)==='spring','the seasons turn every 30 days: spring, summer, autumn, winter, and spring again');
+   const gw=Wx.weights(gi,95),gs=Wx.weights(gi,40),fs=Wx.weights(fi,40),fw=Wx.weights(fi,95);
+   ok(gw.snow>0&&!(gs.snow>0)&&gs.clear>gw.clear&&fw.snow>fs.snow&&fs.rain>0&&!(Wx.weights(fi,95).rain>0),'winter brings snow to the grassland, summer more clear sky; the frost snows more in winter, and rains only in summer');
+   t.updateHUD(true);ok(new RegExp('Day '+G.day+' · '+Wx.season().n).test(Kit.q('#wday').textContent),'the day bar names the season ('+Kit.q('#wday').textContent.trim()+')')}
+  // ---- gradually: one weather fades out as the next fades in; a new front builds over WEATHER.build hours
+  {const A=t.WeatherArt,c=t.ctx;A.layers=[{k:'rain',a:1}];A.last=performance.now()/1000-.05;c.save();A.draw('fog',120,80);c.restore();
+   const r=A.layers.find(l=>l.k==='rain'),f=A.layers.find(l=>l.k==='fog');
+   ok(r&&f&&r.a<1&&r.a>.9&&f.a>0&&f.a<.1,'changing: the rain fading out ('+(r&&r.a.toFixed(3))+') as the fog fades in ('+(f&&f.a.toFixed(3))+'), over '+WX.ease+' s');
+   const g=Wx.cells(),i=Wx.cellAt(P.x,P.y),k0=g.k[i];let n=0;do{Wx.next(i);n++}while(g.k[i]===k0&&n<50);
+   const s0=Wx.strength(P.x,P.y);G.clock+=t.DAY/24*WX.build*.5;const s1=Wx.strength(P.x,P.y);G.clock+=t.DAY/24*WX.build;const s2=Wx.strength(P.x,P.y);
+   ok(s0<.05&&s1>.4&&s1<.6&&s2===1,'a new front builds: '+s0.toFixed(2)+' as it comes, '+s1.toFixed(2)+' half way, '+s2+' after '+WX.build+' hours');
+   Wx.set(P.x,P.y,'rain');ok(Wx.strength(P.x,P.y)===1,'one put there (a story’s, the tests’) is whole at once')}
+  // ---- under the fog of war: on the map drawn before the fog, in a battle before its fog
+  {const w=String(t.drawWorld),b=String(t.drawBattle);
+   ok(w.indexOf('WeatherArt.draw')>0&&w.indexOf('WeatherArt.draw')<w.indexOf('drawWorldFog(cam,V)')&&b.indexOf('WeatherArt.draw')<b.indexOf('fogDraw()'),'the weather is drawn under the fog of war, on the map and on a battle’s field')}
   // ---- in a battle
   {const env={c:'grass',t:t.T_OPEN},s=t.ST.hum_bow,a=t.envStats(s,'human',env),b=t.envStats(s,'human',{...env,w:'storm'}),W=WX.kinds.storm.battle;
    ok(Math.abs(b.spd-a.spd*W.spd)<1e-9&&Math.abs(b.range-a.range*W.range)<1e-9,'a storm on the field: pace ×'+W.spd+', reach ×'+W.range+' (a bowman '+a.range+' to '+b.range.toFixed(1)+')');

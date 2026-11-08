@@ -8,7 +8,7 @@
      when first read (StoryPlace, story/storyplace.js, which StoryContext extends). When (the Clock) and who (your band, renown, honour, skills: the accessors) are read live: they are
      cheap, and a choice or a wait may change them.
    - Story.at(tx, ty): the same where-part for any tile (at its middle), for the spot rules (road.js ENC_ON).
-   Nothing here draws Math.random or changes anything: it only reads. A new fact (the season) is one getter here. */
+   Nothing here draws Math.random or changes anything: it only reads. A new fact is one getter here (the season is one now). */
 class StoryContext extends StoryPlace{
   constructor(){
     super(P.x,P.y);
@@ -85,6 +85,10 @@ class StoryContext extends StoryPlace{
   // ---- the weather where you are (world/weather.js Weather, through gfx/ambient.js ambWeather: 'rain', 'storm', 'sandstorm'…)
   get weather(){
     return this.once('weather',()=>ambWeather());
+  }
+  // ---- the season (world/weather.js Weather.season: 'spring', 'summer', 'autumn', 'winter')
+  get season(){
+    return this.once('season',()=>Weather.season().k);
   }
 }
 const Story={

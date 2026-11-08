@@ -242,10 +242,11 @@ function drawWorld(){
   try{
   fogMem(low,cam,V);
   drawEnv(cam,V,1);
+  // the weather where you are (gfx/weather.js; in a battle on the map, over the field instead: drawBattle), under the fog: seen
+  // where you see, dim where you remember, none on land you have never seen (the owner, 2026-11-08)
+  if(!B?.world)WeatherArt.draw(ambWeather(),VW+1,VH+1,Weather.strength(P.x,P.y));
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
   drawWorldFog(cam,V);
-  // the weather where you are over it all (gfx/weather.js; in a battle on the map, over the field instead: drawBattle)
-  if(!B?.world)WeatherArt.draw(ambWeather(),VW+1,VH+1);
   }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
   // the tile grid and a building being placed lie over the fog
   if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
@@ -489,7 +490,7 @@ function drawBattle(){
   // bview), the HUD over it at the screen's scale
   if(B.cam)camTick();const Cz=B.cam?B.cam.z:1,V=bview();
   // (deploying, the battle's clock stands: who sees whom is reckoned on the real one as your men are placed, terrain.js)
-  if(sightOn()&&B.deploy){const n=performance.now(),S=B.sight;if(!S||!(n-(S.rt||0)<250)){sightStep(true);B.sight.rt=n}}ctx.fillStyle='#07090e';ctx.fillRect(0,0,V.w,V.h);if(B.world)B.world.base();ctx.save();if(B.cam){ctx.scale(Cz,Cz);const q=B.world?VS:V.k;ctx.translate(-Math.round(B.cam.x*Cz*q)/(Cz*q),-Math.round(B.cam.y*Cz*q)/(Cz*q))}
+  if(sightOn()&&B.deploy){const n=performance.now(),S=B.sight;if(!S||!(n-(S.rt||0)<250)){sightStep(true);B.sight.rt=n}}ctx.fillStyle='#07090e';ctx.fillRect(0,0,V.w,V.h);if(B.world)B.world.base();const scrT=ctx.getTransform();ctx.save();if(B.cam){ctx.scale(Cz,Cz);const q=B.world?VS:V.k;ctx.translate(-Math.round(B.cam.x*Cz*q)/(Cz*q),-Math.round(B.cam.y*Cz*q)/(Cz*q))}
   // (a field with terrain: its own ground, painted over the arena at the start and kept by tiles (engine/ground.js PX.BattleGround);
   // without, the arena by its own tiles (worldart.js paintArena); units, as ever, over it)
   if(B.world){B.world.draw();B.world.clipSight()}else drawLayer(B.terrain?B.ground||(B.ground=runGen(PX.battleGroundSteps({...B.terrain,climate:B.env.c,base:B.arena}))):B.arena.ground||B.arena);
@@ -528,6 +529,9 @@ function drawBattle(){
       ctx.restore();continue}
     if(a.magic){if(Math.random()<.6)vfx({k:'ember',x:a.x+rnd(-2,2),y:a.y+rnd(-2,2),vx:rnd(-12,12),vy:rnd(-12,6),life:rnd(.2,.4),col:a.col});const fl=Math.floor(performance.now()/80)%2;ctx.save();effectTransform(a.x,a.y);ctx.fillStyle=a.col;ctx.globalAlpha=.35;ctx.beginPath();ctx.arc(a.x,a.y,5+fl,0,7);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(a.x,a.y,2.5,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(Math.round(a.x)-1,Math.round(a.y)-1,2,2);ctx.restore();continue}ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));const k=B.world?WORLD_BATTLE.sprite:1;ctx.scale(k,k);{const m=missileSprite('arrow',a.a);ctx.drawImage(m,-m.ax,-m.ax)}ctx.restore()}
   ambientBattle();// (birds out of the trees as it begins, crows over the field once it is over: ambient.js)
+  // (the field's weather (gfx/weather.js), at the screen's scale, under the fog of war, as on the map; a battle on the map, whose
+  // fog is the map's, drawn under the field (worldbattle.js base), has it over the field instead, below)
+  if(!B.world){ctx.save();ctx.setTransform(scrT);ctx.scale(V.w/VW,V.h/VH);WeatherArt.draw(B.env&&B.env.w,VW,VH);ctx.restore()}
   if(!B.world)fogDraw();// (the fog of war over the field outside your side's sight: battlefog.js)
   const h=B.hero;
   // No persistent short aim arc; selected shooters already have the shared range fan.
@@ -543,7 +547,7 @@ function drawBattle(){
   drawFogGhosts();drawUnitIcons();drawGroupHealth();// (the fog's ghosts, where enemy groups were last seen; each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js; its health of what it began with, a bar standing by it: battlehud.js)
   // the HUD at the screen's scale over the zoomed-out field
   ctx.save();ctx.scale(V.w/VW,V.h/VH);
-  WeatherArt.draw(B.env&&B.env.w,VW,VH);// (the field's weather over it, under the HUD: gfx/weather.js)
+  if(B.world)WeatherArt.draw(B.env&&B.env.w,VW,VH);// (a battle on the map: its weather over the field, under the HUD)
   drawHeroHud();if(!B.world)drawMiniField();// (the small map of the field, top right: camera.js)
   if(B.over){txt(B.stalemate?'DISENGAGED':B.hunt?'HUNT OVER':B.retreat?'WITHDRAWN':B.win?'VICTORY':'DEFEAT',VW/2,VH/2,B.win?'#e8b94a':B.retreat?'#6fa8e0':'#e0605a','center')}
   ctx.restore();
@@ -616,9 +620,9 @@ function updateHUD(force){
       pace=travelMul()/Math.max(1e-6,bandPace()),tip='Your men stand on: '+M.names.map(([k,v])=>k+' '+v+' of '+M.n).join(', ')+' · their ground, pace ×'+pace.toFixed(2)+(M.n>1&&!P.byRoad&&M.road?'. By road (B): your men form a column on the road, at its full speed':'');
       return '<div class="pc-line" title="Where you are">'+icon('region',12)+'<span>'+regionAt(P.x,P.y).name+' · <span title="'+htmlText(tip)+'">'+htmlText(main)+part+'</span> · '})()+'<span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span></span></div>'+
     '<div class="pc-line" title="Renown and whom you serve">'+icon('renown',12)+'<span>'+P.renown+'</span>'+icon('banner',12)+'<span'+(P.fac?' style="color:'+FACS[P.fac].col+'"':'')+'>'+(P.fac?FACS[P.fac].n:'Independent')+'</span></div>');
-  // (the day and its time; the weather where you are by it, its icon in the sun's or moon's place: world/weather.js)
+  // (the day, its season and its time; the weather where you are by it, its icon in the sun's or moon's place: world/weather.js)
   const d=$('#wday');if(d){const w=WEATHER.on?ambWeather():null,K=w&&WEATHER.kinds[w],sky=icon(darkness()>.3?'moon':'sun',16);
-    setHtml(d,(K?'<i class="wx" title="Weather: '+Weather.name(w)+' · travel ×'+K.speed+' · sight ×'+K.sight+'">'+(w==='clear'?sky:icon('wx_'+w,16))+'</i>':sky)+'<span>Day '+G.day+' · '+timeOfDay()+(K?' · '+Weather.name(w):'')+'</span><b'+(G.paused?'':' class="off"')+'>Paused</b>')}
+    setHtml(d,(K?'<i class="wx" title="Weather: '+Weather.name(w)+' · travel ×'+K.speed+' · sight ×'+K.sight+'">'+(w==='clear'?sky:icon('wx_'+w,16))+'</i>':sky)+'<span>Day '+G.day+(K?' · '+Weather.season().n:'')+' · '+timeOfDay()+(K?' · '+Weather.name(w):'')+'</span><b'+(G.paused?'':' class="off"')+'>Paused</b>')}
   window.mobileWorldHud?.update(fp,mo,Math.round(P.bsta));
   const cb=$('#campBtn');if(cb){cb.classList.toggle('on',!!P.camp);cb.setAttribute('aria-pressed',String(!!P.camp))}
   questTrackHUD();// (the quests you track, under the band card as it now stands: ui/questtrack.js)

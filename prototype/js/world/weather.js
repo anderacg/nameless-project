@@ -6,7 +6,9 @@
    Readers: at(x, y) the kind there (ambient.js ambWeather is it: the birds, the tracks, the story's context.weather); speed and sight
    on the map (map.js speedAt, visMulAt); battle(k) the field's numbers (setup.js envStats, battleEnv; projectiles.js); set(x, y, k,
    h) a front put there (the tests). With WEATHER.on off: the old way (the frost's snow, clear elsewhere), nothing kept or saved.
-   As the weather where you are changes, its line (a toast) and 'weather:changed' on the bus. */
+   As the weather where you are changes, its line (a toast) and 'weather:changed' on the bus.
+   The seasons (season: by the day of the year) weigh each climate's kinds (weights); a front builds to its full strength over
+   WEATHER.build hours (strength: drawn only; s, each region's front's start, kept in memory, not saved: a loaded front is whole). */
 const Weather={
   grid:null,
   was:null,
@@ -16,7 +18,7 @@ const Weather={
   },
   // (the regions: their climate, the most of their tiles'; fronts not drawn yet)
   make(){
-    const C=WEATHER.cell,w=Math.ceil(MW/C),h=Math.ceil(MH/C),g={w,h,k:new Uint8Array(w*h),u:new Int32Array(w*h),c:new Uint8Array(w*h)},n=new Int32Array(CLIMS.length);
+    const C=WEATHER.cell,w=Math.ceil(MW/C),h=Math.ceil(MH/C),g={w,h,k:new Uint8Array(w*h),u:new Int32Array(w*h),c:new Uint8Array(w*h),s:new Float64Array(w*h).fill(-1e9)},n=new Int32Array(CLIMS.length);
     for(let cy=0;cy<h;cy++)for(let cx=0;cx<w;cx++){
       n.fill(0);
       for(let ty=cy*C;ty<Math.min(MH,cy*C+C);ty++)for(let tx=cx*C;tx<Math.min(MW,cx*C+C);tx++)n[climate[ty*MW+tx]]++;
@@ -39,8 +41,20 @@ const Weather={
     }
     return g;
   },
-  weights(c){
-    return WEATHER.climates[CLIMS[c]]||WEATHER.climates.grass;
+  // (climate c's kinds' chances this season (or day d's): its own, each x the season's mul, and the season's add for it)
+  weights(c,d){
+    const cl=WEATHER.climates[CLIMS[c]]?CLIMS[c]:'grass',W=WEATHER.climates[cl],S=this.season(d),A=S.add&&S.add[cl]||{},o={};
+    for(const k of new Set([...Object.keys(W),...Object.keys(A)]))o[k]=(W[k]||0)*(S.mul[k]??1)+(A[k]||0);
+    return o;
+  },
+  // the season today (or on day d): the year's CLOCK.year days shared between WEATHER.seasons in turn
+  season(d){
+    const L=WEATHER.seasons;return L[Math.min(L.length-1,Math.floor((Clock.dayOfYear(d)-1)/(CLOCK.year/L.length)))];
+  },
+  // how far the front at (x, y) has built, 0..1 (WEATHER.build hours from its start; drawn only)
+  strength(x,y){
+    if(!WEATHER.on)return 1;
+    const g=this.cells();return clamp((Clock.hours()-g.s[this.cellAt(x,y)])/WEATHER.build,0,1);
   },
   // (the region at (x, y))
   cellAt(x,y){
@@ -80,6 +94,7 @@ const Weather={
     }
     k=k||R.weighted(W)||'clear';
     const H=WEATHER.kinds[k].hours;
+    if(g.k[i]!==WEATHER_KINDS.indexOf(k))g.s[i]=Clock.hours();// (a new kind builds; the same again goes on as it was)
     g.k[i]=WEATHER_KINDS.indexOf(k);
     g.u[i]=Clock.hourCount()+R.int(H[0],H[1]);
   },
@@ -102,6 +117,7 @@ const Weather={
     const g=this.cells(),i=this.cellAt(x,y);
     g.k[i]=WEATHER_KINDS.indexOf(k);
     g.u[i]=Clock.hourCount()+h;
+    g.s[i]=-1e9;
   },
   // (in a save: the regions' kinds and ends; none while it is off or nothing was made yet)
   save(){

@@ -3,35 +3,36 @@
    Over the view (vw x vh px, in its own pixels): the sky's shade (dim), a haze over all with its drifting bands (veil: fog, a
    blizzard, a sandstorm), the falling rain, snow or blown sand (fall: streaks, or flakes that sway) and a storm's lightning (flash).
    The particles are a fixed set, none kept: each one's place from its number (hash, map.js) and the clock, so nothing is made a
-   frame. Eased from one weather to the next over WEATHER.ease s (fading the old out, then the new in). With reducedMotion: a share
-   of the particles (calm), slower (slow), no lightning. On the map over the land, the fog and the clouds (render.js drawWorld); in
-   a battle over the field, under its HUD (drawBattle: the field's weather, B.env.w, as the battle began). */
+   frame. Eased from one weather to the next over WEATHER.ease s, the old fading out as the new fades in (layers: each kind drawn
+   with its share), and the new as strong as its front has built (s: world/weather.js strength). With reducedMotion: a share of the
+   particles (calm), slower (slow), no lightning. On the map over the land and the clouds, under the fog of war (render.js
+   drawWorld); in a battle over the field, under its fog (drawBattle: the field's weather, B.env.w, as the battle began). */
 const WeatherArt={
-  k:'clear',
-  a:0,
+  layers:[],
   last:0,
-  // (the weather drawn now eased toward w; the clock in s)
+  // (the weather drawn now eased toward w: w's layer rising, the others falling away; the clock in s)
   step(w){
-    const now=performance.now()/1000,dt=Math.min(.1,Math.max(0,now-(this.last||now)));
+    const now=performance.now()/1000,dt=Math.min(.1,Math.max(0,now-(this.last||now))),L=this.layers,e=dt/WEATHER.ease;
     this.last=now;
-    if(w!==this.k){
-      this.a-=dt/WEATHER.ease;
-      if(this.a<=0){this.k=w;this.a=0}
-    }else this.a=Math.min(1,this.a+dt/WEATHER.ease);
+    if(!L.some(l=>l.k===w))L.push({k:w,a:0});
+    for(const l of L)l.a=l.k===w?Math.min(1,l.a+e):l.a-e;
+    this.layers=L.filter(l=>l.a>0||l.k===w);
     return now;
   },
-  // the weather w over a view vw x vh px
-  draw(w,vw,vh){
+  // the weather w over a view vw x vh px, s: how far its front has built (0..1)
+  draw(w,vw,vh,s=1){
     if(!WEATHER.on||!w)return;
-    const now=this.step(w),K=WEATHER.kinds[this.k],A=K&&K.art,a=this.a;
-    if(!A||a<=0)return;
-    const rm=reducedMotion(),t=rm?now*WEATHER.slow:now;
+    const now=this.step(w),rm=reducedMotion(),t=rm?now*WEATHER.slow:now;
     ctx.save();
     try{
-      if(A.dim)this.fill(A.dim,a,vw,vh);
-      if(A.veil)this.veil(A,a,t,vw,vh);
-      if(A.fall)this.fall(A.fall,a*(rm?WEATHER.calm:1),t,vw,vh);
-      if(A.flash&&!rm)this.flash(A.flash,a,now,vw,vh);
+      for(const l of this.layers){
+        const K=WEATHER.kinds[l.k],A=K&&K.art,sm=x=>x*x*(3-2*x),a=sm(Math.max(0,Math.min(1,l.a)))*(l.k===w?s:1);
+        if(!A||a<=0)continue;
+        if(A.dim)this.fill(A.dim,a,vw,vh);
+        if(A.veil)this.veil(A,a,t,vw,vh);
+        if(A.fall)this.fall(A.fall,a*(rm?WEATHER.calm:1),t,vw,vh);
+        if(A.flash&&!rm)this.flash(A.flash,a,now,vw,vh);
+      }
     }finally{ctx.restore()}
   },
   fill(c,a,vw,vh){
