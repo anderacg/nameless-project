@@ -288,7 +288,7 @@ class BattleSetup{
   present(){
     G.mode='battle';hidePanel();if(LOADING.sync)bbar.hidden=false;else B.hudWait=true;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();
     if(!B.world){for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));}
-    toast((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD&&!this.tarena&&!B.inside&&!B.works?' '+BFIELD.n+' field.':''));
+    toast((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD&&!this.tarena&&!B.inside&&!B.works?' '+BFIELD.n+' field.':'')+(this.opts.tournament?'':(t=>t?' '+t:'')(Weather.battleText(this.env.w))));
     if(B.btype)typeSay();
   }
   // (the world where it is fought: its BattleSite (worldmap.js), all the battle reads of the world; yours, none for a tournament; the

@@ -86,7 +86,15 @@ Kit.suite(({ok,info})=>{
     ok(B.env.w==='storm'&&B.sightK===W.sight,'a battle in a storm: the field\'s weather (B.env.w '+B.env.w+') and each man\'s sight ×'+B.sightK);
     const fire=()=>{B.arrows.length=0;t.Missile.fire(u,0,1,{race:'human'},300,{});const q=B.arrows[0];return Math.atan2(q.vy,q.vx)};
     const wild=[...Array(60)].map(fire),w0=B.env.w;B.env.w=null;const calm=[...Array(20)].map(fire);B.env.w=w0;B.arrows.length=0;
-    ok(Math.max(...wild.map(Math.abs))>W.aim/4&&wild.every(v=>Math.abs(v)<=W.aim+1e-9)&&calm.every(v=>v===0),'its arrows fly wide (aim off by up to '+W.aim+' rad: '+Math.max(...wild.map(Math.abs)).toFixed(3)+'), in clear weather true')}
+    ok(Math.max(...wild.map(Math.abs))>W.aim/4&&wild.every(v=>Math.abs(v)<=W.aim+1e-9)&&calm.every(v=>v===0),'its arrows fly wide (aim off by up to '+W.aim+' rad: '+Math.max(...wild.map(Math.abs)).toFixed(3)+'), in clear weather true')
+    // (skills in the weather: the owner, 2026-11-08, "rain affect fire arrow which cannot be used"; data/weather.js WEATHER.skills)
+    if(B.ready||B.deploy)t.beginFight();
+    const g=Object.values(B.groups).find(q=>q.team===0&&q.units.length),keep=window.groupHasAbility,why={};window.groupHasAbility=()=>true;
+    try{for(const k of ['rain','storm','snow','clear','fog',null]){B.env.w=k;why[k]=t.abilityWhyNot(g,'fire')}}finally{window.groupHasAbility=keep;B.env.w=w0}
+    ok(['rain','storm','snow'].every(k=>/pitch/.test(why[k]))&&['clear','fog',null].every(k=>!/pitch/.test(why[k])),'no fire arrows in the rain, a storm or snow ("'+why.rain+'"); in clear weather, fog or none they may');
+    const sm=k=>{B.env.w=k;const v=t.kitOf(B.hero,'fireball').sm;B.env.w=w0;return v},nv=k=>{B.env.w=k;const v=t.kitOf(B.hero,'nova').sm;B.env.w=w0;return v};
+    ok(Math.abs(sm('rain')/sm('clear')-WX.skills.fireball.mul.rain)<1e-9&&sm('heat')>sm('clear')&&nv('blizzard')>nv('clear')&&nv('heat')<nv('clear'),'a fireball '+Math.round((1-WX.skills.fireball.mul.rain)*100)+'% weaker in the rain, stronger in a heat wave; a frost nova stronger in a blizzard, weaker in the heat');
+    const tx=Wx.battleText('rain');ok(/no fire arrows/.test(tx)&&/Fireball weaker/.test(tx)&&/shorter/.test(tx)&&Wx.battleText('clear')==='','told before and as the battle starts: "'+tx+'"; nothing in clear weather')}
    finally{if(t.B){t.B.over=true;t.B.endT=0}Kit.world();t.WORLD_BATTLE.on=true}}
   // ---- saved and loaded
   {const g=Wx.cells(),sv=t.Saves.saveOf('weather').weather,k0=Array.from(g.k),u0=Array.from(g.u);

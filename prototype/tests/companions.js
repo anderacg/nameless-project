@@ -10,7 +10,7 @@ try{
  ok(c.lv===0&&c.sk.oneh.lv===0&&c.sk.lead.lv===0,'Brann joins at level 0, his proficiencies at 0 (the owner: everyone starts at 0)');
  const s0=t.compStats('brann');ok(s0.hp>=t.ST.brann.hp&&s0.dmg>t.ST.brann.dmg,'his One-Handed already adds to his damage ('+t.ST.brann.dmg+' → '+s0.dmg+')');
  // shared experience, levels and perks
- t.gainXp(500);ok(c.lv>=3&&c.perkPend>=1,'he shares the experience you gain and levels up (level '+c.lv+', a perk to choose)');
+ t.gainXp(1250);ok(c.lv>=3&&c.perkPend>=1,'he shares the experience you gain and levels up (level '+c.lv+', a perk to choose; 1250 experience: 2.5 times the 500 before proficiency slowed, 2026-11-08)');
  const s1=t.compStats('brann');ok(s1.hp>s0.hp&&s1.dmg>s0.dmg,'each level makes him stronger ('+s0.hp+' → '+s1.hp+' health)');
  G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');ok(G.mode==='char'&&t.compShown()&&/Choose|Stalwart/.test(document.getElementById('panel').innerHTML),'his card in the Army window offers the perk');
  t.act('cm-perk','stalwart');ok(c.perks.includes('stalwart')&&t.compStats('brann').hp>s1.hp,'Stalwart: more health');

@@ -14,7 +14,7 @@ try{
  P.sk.archery={lv:PROF.max,xp:0};ok(Math.abs(t.skill('archery')-10)<1e-9,'Archery 99 is a power of 10 (as the old top)');
  P.sk.archery={lv:0,xp:0};
  // the curve: 0 to 99 takes about the old 0 to 10's practice
- let sum=0;for(let l=0;l<PROF.max;l++)sum+=t.SK_XP(l);ok(sum>1000&&sum<1200,'0 to 99 takes '+Math.round(sum)+' practice (0 to 10 took 1100)');
+ let sum=0;for(let l=0;l<PROF.max;l++)sum+=t.SK_XP(l);ok(sum>2600&&sum<2900,'0 to 99 takes '+Math.round(sum)+' practice (2.5 times the 1100 it took before: the owner, 2026-11-08, "proficiency increase too fast")');
  // practice raises it to 99 and no further
  P.sk.med={lv:98,xp:0};H.train('med',999,true);ok(P.sk.med.lv===PROF.max&&P.sk.med.xp===0,'a proficiency stops at 99');P.sk.med={lv:0,xp:0};P.level=0;P.xp=0;P.tp=0;// (as new again: the level never falls by itself)
  // level from progress, a tree point a level

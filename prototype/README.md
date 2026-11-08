@@ -381,6 +381,13 @@ Things in the world are plain data (so a save is plain JSON) read through a clas
     how long each lasts, so in spring on the grass a third of games opened in rain or a storm and two in three under a grey sky. A new
     game now opens under a clear sky where you stand (`WEATHER.start`, `Weather.fair`, from `session.js` `startGame`) for a clear
     front's 6-14 hours; the other regions as drawn, and then the weather turns as ever. `WEATHER.start` null: as drawn.
+  - **Skills in the weather** (2026-11-08, the owner: "make weather effect battle and some of the skill such as rain affect fire arrow
+    which cannot be used"; `WEATHER.skills`, `Weather.skillBan`, `skillMul`): no Fire arrows in rain, a storm, snow or a blizzard (the
+    troops' skill refused with its reason: `unitabilities.js` `abilityWhyNot`, so the AI's captains never try it); a Fireball 30% weaker
+    in rain (40% in a storm, 15% in snow, 30% in a blizzard), 15% stronger in a heat wave; a Frost Nova 20% stronger in snow, 30% in a
+    blizzard, 25% weaker in the heat (`abilities.js` `kitOf`: your hero's and every champion's; one the weather forbids refused in
+    `castAbility`, `chooseAbility` and your skill bar). What the field's weather does is told on the pre-battle page and as the lines
+    meet (`Weather.battleText`), and named on the battle bar beside the ground.
   - The road's incidents (`world/incidents.js`) in their weather only: storm, lightning (men hurt), flood (rain), blizzard,
     frostbite, sandstorm, lost (sandstorm), heat, a fine day (clear, grassland).
   - `WEATHER.on` off (the test suites' default, `tests/harness.js`): the old way (the frost's snow, clear elsewhere), nothing kept.
@@ -863,7 +870,7 @@ The owner: "change all unit icon to portrait and add a button to view unit in sp
 ## Proficiency (2026-11-08)
 
 doc/PROFICIENCY_DESIGN.md. The owner: "your proficiency grows as you do certain actions ... and the level progress will just based on your proficiency progress"; "a proficiency cap for each at 99".
-- **Proficiencies** (were disciplines; `SKILLS`, `P.sk`, numbers in `data/progression.js` `PROF`): 0 to 99 each, rising by use as before (`Character#train`; a level takes `SK_XP` = 4 + 0.145 × level). Their power is level / 9.9 (`trained`, `skill`), so 99 is the old 10; the Tree and gear add in power (+1 is ten levels). A past starts its own free (`PROF.pastPer` 10 a point, `P.sk0`), not counted toward your level.
+- **Proficiencies** (were disciplines; `SKILLS`, `P.sk`, numbers in `data/progression.js` `PROF`): 0 to 99 each, rising by use as before (`Character#train`; a level takes `SK_XP` = 10 + 0.3625 × level: 2.5 times the 4 + 0.145 × level first set, the owner, 2026-11-08, "proficiency increase too fast": a small battle won now gives about 1.5 levels of your weapon's at 20-30 and 1 of Leadership, was 3.5 and 3; 0 to 99 about 2750 practice; your level follows). Their power is level / 9.9 (`trained`, `skill`), so 99 is the old 10; the Tree and gear add in power (+1 is ten levels). A past starts its own free (`PROF.pastPer` 10 a point, `P.sk0`), not counted toward your level.
 - **Level from them** (`Character#profProgress`, `relevel`): each proficiency's weight × L(L+1)/2 (`PROF.weight`: the easy ones count 0.8 or 0.6), less the past's start; level n needs 50 × n(n+1)/2 (`PROF_NEED`). Each level is a Tree point. The same practice past 6 uses in an hour gives half, past 12 a quarter (`PROF.burst`, `damp`).
 - **Rewards are practice** (`gainXp(n, kind)`, `REWARD_TRAIN`, `QUEST_TRAIN`): a battle trains your weapon, Leadership and Tactics; a tournament your weapon and Athletics; a quest what fits its kind. Companions grow the same way, from level 0; one who joins grown in a story (Ander, `compJoin`) keeps his level and gets what he was good at free (`sk0`). Lords and chieftains (`aiOwned`) keep their experience levels; their proficiencies are about half their level in power (`realms.js` `lordStats`, `leaders.js` `newChief`).
 - **The combo's upgrades are Tree nodes** (`data/tree.js` `TREE_COMBO`): Third Blow off Brute Force, then Stunning or Crushing Finisher (`excl`: one shuts the other). `battle/combat.js` `comboBlows`, `heroFin`.

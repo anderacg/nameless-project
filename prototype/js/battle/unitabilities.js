@@ -133,6 +133,7 @@ function abilityWhyNot(g,id){
   if(!groupHasAbility(g,id))return 'Not for this unit';
   if(A.morale&&(B.noMorale||!g.resolve))return 'Morale is off';
   const S=g.abil&&g.abil[id];if(S&&B.t<S.readyAt)return 'Ready in '+Math.ceil(S.readyAt-B.t-1e-9)+' s';
+  {const w=Weather.skillBan(id,B.env&&B.env.w);if(w)return w}// (the field's weather: data/weather.js WEATHER.skills)
   return A.can?A.can(g):'';
 }
 // one ability's state for a group: on (and how long left), cooling down (how long), and why it cannot be used now

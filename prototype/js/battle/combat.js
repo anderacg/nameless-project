@@ -208,6 +208,7 @@ class HeroHands{
     const h=B.hero,S=HSKILLS[id];if(!h||h.hp<=0||this.busy())return;
     if(!knows(id)){B.floats.push({x:h.x,y:h.y-26,t:'Learn '+S.n+' on the skill tree',life:.9,c:'#98a0ba'});return}
     if(S.needs==='bow'&&(!isBow()||heroShotsLeft()<4)){B.floats.push({x:h.x,y:h.y-26,t:S.n+' needs a bow and 4 arrows',life:.9,c:'#98a0ba'});return}
+    {const w=Weather.skillBan(id,B.env&&B.env.w);if(w){B.floats.push({x:h.x,y:h.y-26,t:w,life:.9,c:'#98a0ba'});return}}// (the field's weather)
     castAbility(h,id);// (one cast for every caster: battle/abilities.js)
   }
   // called from your hero's moment with their own time step; returns true while a roll or leap owns the hero's movement
@@ -248,7 +249,7 @@ class HeroHands{
     const X=this;$('#swing').textContent={melee:'Attack',ranged:'Shoot',magic:'Cast'}[heroKind()]+(heroShots()!=null?' ('+heroShotsLeft()+')':'');
     // (your hero's own bar only: the units' skill bar has data-slot buttons too, battlehud.js; written over, it threw and froze the loop)
     document.querySelectorAll('#slotbar [data-slot]').forEach(b=>{const id=P.slots[+b.dataset.slot];if(!id)return;const A=abil(id),lock=!knows(id);b.disabled=lock||X.cds[id]>0;
-      b.textContent=SLOT_KEYS[+b.dataset.slot]+' '+A.n+(lock?' (not learned)':X.cds[id]>0?' '+Math.ceil(X.cds[id]):'');b.title=A.d+' Costs '+costText(A)+'.'});
+      b.textContent=SLOT_KEYS[+b.dataset.slot]+' '+A.n+(lock?' (not learned)':X.cds[id]>0?' '+Math.ceil(X.cds[id]):'');b.title=A.d+' Costs '+costText(A)+'.';const w=Weather.skillBan(id,B.env&&B.env.w);if(w&&!lock){b.disabled=true;b.title=w+'. '+b.title}});
     const db=document.querySelector('[data-skill="dodge"]');if(db){db.disabled=X.rollCd>0||X.sp<dodgeCost();db.textContent='F Dodge'+(X.rollCd>0?' '+X.rollCd.toFixed(1):'')}
   }
 }

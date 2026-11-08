@@ -193,7 +193,7 @@ onAct('bt-',a=>{const e=G.enc;if(a==='bt-spring'&&e&&G.mode==='dialog'&&canSprin
 function startEncounter(e){
   if(e.mine==null)e.mine=!!G.youAttack;G.youAttack=false;if(e.lv==null&&e.ref&&e.ref.ld)e.lv=chiefLv(e.ref);// did you start it (you may call that off)? a chieftain's band fights at its level
   if(e.btype==null){const bt=battleTypeFor(e);if(bt)e.btype=bt}// (a battle type: none with terrain off)
-  e.list=e.list||makeEnemies(e.n,e.kind==='camp',e.band);const env=battleEnv(),ground='<p class="muted">Battleground: '+env.name+'. '+terrainEnvText(env,e.kind,e.btype)+'</p>',band=BANDS[e.band||'bandits'];G.enc=e;G.mode='dialog';P.tx=null;G.chase=null;
+  e.list=e.list||makeEnemies(e.n,e.kind==='camp',e.band);const env=battleEnv(),wx=Weather.battleText(env.w),ground='<p class="muted">Battleground: '+env.name+'. '+terrainEnvText(env,e.kind,e.btype)+(wx?' '+wx:'')+'</p>',band=BANDS[e.band||'bandits'];G.enc=e;G.mode='dialog';P.tx=null;G.chase=null;
   const given=!!e.allies;e.allies=e.allies||nearAllies(e);e.foes=e.foes||nearFoes(e);if(!given)Host.decide(e);// (the lords of your host: hosts.js)
   if(!given&&e.kind!=='tourney'){for(const p of cparties())if(!p.fight&&!p.inside&&(nearYou(p)<REINF.r||Host.joins(p)))e.allies.push(forceOf(p));// your companions' parties
     if(e.road&&e.road.k==='caravan')e.allies.push(guardsForce(e.road))}// (the caravan you ride to save: its own guards)

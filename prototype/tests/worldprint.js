@@ -640,7 +640,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  warband and a bandit band ride each other down and fight on the map (world/brains.js BandBrain feud, data/goblins.js BAND_FEUD),
 //  so after 600 frames 91 bands are left, not 96, and the save after its days moves. B2 holds. Proof: with BAND_FEUD.on false they
 //  are 6c9e9789 and 51660bc5 again. Was W7 6c9e9789, W8 51660bc5)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'b1ff7a76',W7:'37b3d70f',W8:'1d99079f',B2:'a9339a6a'};
+// (W7 again 2026-11-08, on purpose: the owner, "proficiency increase too fast": a proficiency's level takes 2.5 times the practice
+//  (data/progression.js PROF xp0 10, xpUp .3625), and the save after its days holds your proficiencies. Proof: with xp0 4, xpUp .145
+//  it is 37b3d70f again. Was W7 37b3d70f)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'b1ff7a76',W7:'dd0ee495',W8:'1d99079f',B2:'a9339a6a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

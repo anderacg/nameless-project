@@ -34,6 +34,14 @@ const WEATHER={on:true,
     {k:'summer',n:'Summer',mul:{clear:1.3,heat:2.2,storm:1.4,sandstorm:1.4,rain:.7,fog:.4,snow:.4,blizzard:.2},add:{frost:{rain:1.2}}},
     {k:'autumn',n:'Autumn',mul:{rain:1.5,fog:1.8,cloudy:1.3,storm:1.1,clear:.8,heat:.3}},
     {k:'winter',n:'Winter',mul:{snow:1.8,blizzard:1.8,fog:1.3,cloudy:1.2,clear:.8,rain:.5,storm:.4,heat:0,sandstorm:.7},add:{grass:{snow:1.6},swamp:{snow:.8,fog:.6},desert:{rain:.6}}}],
+  // the skills a field's weather touches (the owner, 2026-11-08: "make weather effect battle and some of the skill such as rain
+  // affect fire arrow which cannot be used"; world/weather.js skillBan, skillMul): no, the weathers it cannot be used in and why
+  // (a troop's skill: unitabilities.js abilityWhyNot; a hero's or a champion's: abilities.js); mul, its damage there x (a spell's:
+  // abilities.js kitOf). Ids: a troop's skill (fire: Fire arrows) or a character's (fireball, nova)
+  skills:{
+    fire:{no:{rain:'Too wet: the pitch will not light',storm:'Too wet: the pitch will not light',snow:'The snow puts out the pitch',blizzard:'The blizzard puts out the pitch'}},
+    fireball:{mul:{rain:.7,storm:.6,snow:.85,blizzard:.7,heat:1.15}},
+    nova:{mul:{snow:1.2,blizzard:1.3,heat:.75}}},
   // each climate's weights (a kind missing never comes there: no sandstorm in the frost, no blizzard in the desert)
   climates:{
     grass:{clear:5,cloudy:3,rain:2.5,storm:.8,fog:1.2},
