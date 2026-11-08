@@ -16,7 +16,7 @@ try{
  // the curve: 0 to 99 takes about the old 0 to 10's practice
  let sum=0;for(let l=0;l<PROF.max;l++)sum+=t.SK_XP(l);ok(sum>1000&&sum<1200,'0 to 99 takes '+Math.round(sum)+' practice (0 to 10 took 1100)');
  // practice raises it to 99 and no further
- P.sk.med={lv:98,xp:0};H.train('med',999,true);ok(P.sk.med.lv===PROF.max&&P.sk.med.xp===0,'a proficiency stops at 99');P.sk.med={lv:0,xp:0};
+ P.sk.med={lv:98,xp:0};H.train('med',999,true);ok(P.sk.med.lv===PROF.max&&P.sk.med.xp===0,'a proficiency stops at 99');P.sk.med={lv:0,xp:0};P.level=0;P.xp=0;P.tp=0;// (as new again: the level never falls by itself)
  // level from progress, a tree point a level
  const lv0=P.level,tp0=P.tp;H.train('tact',300,true);
  ok(P.level>lv0&&P.tp-tp0===P.level-lv0,'practising Tactics raises the level, a tree point each (level '+P.level+', +'+(P.tp-tp0)+' points)');
