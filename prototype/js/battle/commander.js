@@ -16,6 +16,13 @@ const FOE_CMD={think:.5,clash:70,behind:50,outgun:.8,volley:12,screen:20,replan:
 // chargeAt start no new charge, standing off cavRecover s at most (short: riders out of the fight get their breath back and come
 // again, so a long stand-off only drags a cavalry fight out); prey, preyShot: the cavalry's and the shooters' liking for a
 // wavering foe (under MORALE.waver)
+// (PATH_PLACE: the line's places along the walking way on ground that blocks (pathPlace); step: px between the spots tried for a
+// shooter's clear line)
+const PATH_PLACE={on:true,step:8};
+// (SIEGE_AI: a siege's assault (Commander#siege): ram, the share of the attacker's foot groups at the gate while it stands (the ram
+// built); files, theirs there; foot, a ladder's foot this far out from the wall (px); near, a group this near its spot is there (px))
+const nearestTo=(P,p)=>P.reduce((a,q)=>Math.hypot(q.x-p.x,q.y-p.y)<Math.hypot(a.x-p.x,a.y-p.y)?q:a,P[0]);
+const SIEGE_AI={on:true,ram:.5,files:2,foot:18,near:40};
 const UNIT_AI={pullAt:25,backAt:45,pullDist:90,maxRecover:15,chargeAt:40,cavRecover:4,prey:2,preyShot:1.5};
 /* AI tactics (every captain: the enemy, your allies, your army under the AI). Its shooters' posture (rangedMode, captainMem(ck).rmode):
    aggressive, they lead the army and open fire first, or safe, behind the infantry screen; charges begun from further off as
@@ -355,6 +362,37 @@ class Commander{
   gt(k){const q=this.mem;return tun(q&&TERRAIN_TEMPER[q.temper]||null,TERRAIN_AI,k)}
   // the ground a captain reads (B.terrain), or null: none, or TERRAIN_AI off (ck: the captain; the lab blinds one side here)
   ground(){return TERRAIN_AI.on&&B&&B.terrain||null}
+  /* (the owner, 2026-11-08: "make sure they order the unit based on available path", in caves, a lair's cellars, a fort): a place
+     gap px short of `to` measured along the walking way from `from` (route.js routePath on the foot grid), not along the straight
+     line: on ground that blocks (rock, walls) and only while that straight line is barred; see: a shooter's, the first point on
+     from there on to `to` with a clear line to it. null: open ground, or a straight way (the plan's own geometry stands) */
+  pathPlace(from,to,gap,see){const T=this.ground();if(!PATH_PLACE.on||!T||!T.blocky||!from||!to)return null;const gr=T.route&&T.route.foot;if(!gr)return null;
+    if(lineClear(gr,from.x,from.y,to.x,to.y,gr.wcap||255))return null;
+    const p=routePath(gr,from.x,from.y,to.x,to.y);if(!p.length)return null;const pts=[[from.x,from.y],...p],e=pts[pts.length-1];let acc=Math.hypot(e[0]-to.x,e[1]-to.y),at=null;
+    for(let i=pts.length-1;i>0&&!at;i--){const [ax,ay]=pts[i-1],[bx,by]=pts[i],l=Math.hypot(bx-ax,by-ay);if(acc+l>=gap){const k=l?(gap-acc)/l:0;at={x:bx+(ax-bx)*k,y:by+(ay-by)*k,i}}else acc+=l}
+    if(!at)at={x:from.x,y:from.y,i:1};
+    if(see)for(let i=at.i,x=at.x,y=at.y;i<pts.length;i++){const [bx,by]=pts[i],l=Math.hypot(bx-x,by-y),n=Math.max(1,Math.ceil(l/PATH_PLACE.step));
+      for(let j=0;j<=n;j++){const qx=x+(bx-x)*j/n,qy=y+(by-y)*j/n;if(lineClear(gr,qx,qy,to.x,to.y,255)&&!(T.blocksView&&T.blocksView({x:qx,y:qy},to)))return{x:qx,y:qy}}x=bx;y=by}
+    return{x:at.x,y:at.y}}
+  /* a siege's assault (battle/siegeworks.js; the owner, 2026-11-08: "a fort ... make sure they order the unit based on available
+     path"): its attacker's foot (yours under the AI) work the ram and climb the ladders, the only ways over a shut gate's wall: the
+     nearest SIEGE_AI.ram share of its foot groups to the gate's face, in SIEGE_AI.files files so every man of them is at the ram;
+     the rest spread over the ladders, each to the foot of its own (SIEGE_AI.foot px out from the wall), then at the nearest foe
+     up its ladder; its shooters as ever (their places along the way, pathPlace). The gate down: every group as ever, through it */
+  siege(N){const w=B.works;if(!SIEGE_AI.on||!w||w.open||this.team!==0||!N||!N.inf)return;
+    const live=id=>grpUnits(id).filter(u=>u.hp>0&&!u.rout&&!u.left),foot=N.inf.filter(id=>{const m=live(id);return m.length&&m.some(u=>!u.s.range)&&B.groups[id].order!=='withdraw'});if(!foot.length)return;
+    const cs=w.cs,ram={x:w.x0-SIEGE_WALL.ramR*.5,y:(w.gy0+w.gy1)/2},by=foot.map(id=>({id,C:centroid(live(id))})).sort((a,b)=>d2(a.C,ram)-d2(b.C,ram)),
+      nRam=w.ram?Math.max(1,Math.round(by.length*SIEGE_AI.ram)):0,foes=B.units.filter(u=>battleEnemy(0,u)&&u.hp>0&&!u.rout&&!u.left);
+    by.forEach((o,i)=>{const g=B.groups[o.id];
+      if(i<nRam){if(g.order!=='hold'||Math.hypot(g.ax-ram.x,g.ay-ram.y)>4)g.standAt(ram.x,ram.y);if((g.files||0)!==SIEGE_AI.files)g.setForm(g.form,{files:SIEGE_AI.files});return}
+      if(!w.ladders.length)return;const r=w.ladders[(i-nRam)%w.ladders.length],at={x:w.x0-SIEGE_AI.foot,y:(r+.5)*cs};
+      if(d2(o.C,at)>SIEGE_AI.near){if(!g.hasTarget&&(g.order!=='hold'||Math.hypot(g.ax-at.x,g.ay-at.y)>4))g.standAt(at.x,at.y)}
+      else if(!g.hasTarget&&foes.length){const e=foes.reduce((a,u)=>d2(u,at)<d2(a,at)?u:a);g.attack(e)}})}
+  // (of points P, the one nearest p: the army's middle on ground it stands on, not between two groups in the rock)
+  /* (going looking on ground that blocks: step px on along the walking way toward `to`, not a straight step into the rock) */
+  pathStep(from,to,step){const T=this.ground();if(!PATH_PLACE.on||!T||!T.blocky)return null;const gr=T.route&&T.route.foot;if(!gr||lineClear(gr,from.x,from.y,to.x,to.y,gr.wcap||255))return null;
+    const p=routePath(gr,from.x,from.y,to.x,to.y);if(!p.length)return null;let x=from.x,y=from.y,left=step;
+    for(const [bx,by] of p){const l=Math.hypot(bx-x,by-y);if(l>=left){const k=left/l;return{x:x+(bx-x)*k,y:y+(by-y)*k}}left-=l;x=bx;y=by}return{x,y}}
   /* a captain's temperament from its troops (characters aside): the race of 60% of those of a race, else mixed; none (null, the base)
      when under half its troops have a race (beasts, monsters, the generic levies) */
   temperFor(){const ids=new Set(Object.values(this.groups()).flat()),n={};let all=0;
@@ -397,7 +435,7 @@ class Commander{
     stallWatch();
   }
   // one think: its orders, then each group's pace, formation and front (finish)
-  think(){if(B.surprise?.holds(this.team))return;if(B.hunt&&this.team===0){B.hunt.orders(Object.values(this.groups()).flat().map(id=>B.groups[id]));return}const groups=B.sides?.active?this.groups():null,N=this.orders();if(groups)(this.tactics||(this.tactics=new ArmyTactics(this))).step(groups);this.finish(N)}
+  think(){if(B.surprise?.holds(this.team))return;if(B.hunt&&this.team===0){B.hunt.orders(Object.values(this.groups()).flat().map(id=>B.groups[id]));return}const groups=B.sides?.active?this.groups():null,N=this.orders();this.siege(N);if(groups)(this.tactics||(this.tactics=new ArmyTactics(this))).step(groups);this.finish(N)}
   // a captain's think: its posture, then each arm in turn on one reading of the battle (captainCtx); it hands back its groups (captainFinish's)
   orders(){
     // (ck: this captain's own memory (captainMem): your army's and your allies' are on one side but each its own)
@@ -476,9 +514,12 @@ class Commander{
   search(N){const team=this.team;
     const hid=B.units.filter(u=>battleEnemy(team,u)&&fighting(u));if(!hid.length)return;let x=0,y=0,c=0;for(const u of hid){const p=lastSeen(team,u);if(p){x+=p.x;y+=p.y;c++}}
     const Z=BFIELD&&fieldZone(1-team),far=B.world?{x:B.world.cx,y:B.world.cy}:{x:Z?(Z.x0+Z.x1)/2:team?BW*.15:BW*.85,y:(fieldTop()+fieldBot())/2},ids=Object.values(N).flat().filter(id=>B.groups[id]&&B.groups[id].order!=='withdraw'&&grpUnits(id).length);
-    if(B.fog&&!c){const C=ids.map(id=>B.groups[id].centre()),dir=team?-1:1,mx=C.reduce((a,p)=>a+p.x,0)/Math.max(1,C.length);
-      ids.forEach((id,i)=>{const g=B.groups[id],back=g.role==='arc'||g.role==='mag'?FOE_CMD.behind:0;g.standAt(clamp(mx+dir*(FOG.probe-back),BW*.1,BW*.9),C[i].y)});return}
-    ids.forEach((id,i)=>{const g=B.groups[id],C=g.centre();let at=c?{x:x/c,y:y/c}:far;if(Math.hypot(C.x-at.x,C.y-at.y)<FOE_CMD.moved*2)at=far;g.standAt(at.x,at.y+(i-(ids.length-1)/2)*FOE_CMD.screen*2)})}
+    if(B.fog&&!c){const C=ids.map(id=>B.groups[id].centre()),dir=team?-1:1,mx=C.reduce((a,p)=>a+p.x,0)/Math.max(1,C.length),mid=nearestTo(C,{x:mx,y:C.reduce((a,p)=>a+p.y,0)/Math.max(1,C.length)});
+      ids.forEach((id,i)=>{const g=B.groups[id],back=g.role==='arc'||g.role==='mag'?FOE_CMD.behind:0,q=this.pathStep(mid,far,FOG.probe-back);// (ground that blocks: on along the way toward their side from the army's middle, all of it together, pathStep)
+        if(q)g.standAt(q.x,q.y);else g.standAt(clamp(mx+dir*(FOG.probe-back),BW*.1,BW*.9),C[i].y)});return}
+    ids.forEach((id,i)=>{const g=B.groups[id],C=g.centre();let at=c?{x:x/c,y:y/c}:far;if(Math.hypot(C.x-at.x,C.y-at.y)<FOE_CMD.moved*2)at=far;
+      const q=this.ground()?.blocky&&PATH_PLACE.on&&!lineClear(this.ground().route.foot,C.x,C.y,at.x,at.y)?at:null;// (ground that blocks: to the spot itself, its way laid round the rock, not spread across into it)
+      if(q)g.standAt(q.x,q.y);else g.standAt(at.x,at.y+(i-(ids.length-1)/2)*FOE_CMD.screen*2)})}
   /* battle types (setup.js BTYPE; with none, null and false: every captain as ever). A bridge's holders defend while the river lies
      between the armies (TERRAIN_AI's river hold: their bank at the crossings, the bridge first), and wait there, no lull, idle
      shooters or search sending them over, till BTYPE.wait s pass with no blow struck; its takers always attack. An ambush's men
@@ -564,7 +605,7 @@ class Commander{
         // (only ever forward: a foe nearer than their reach is in reach already; they stand where they are, behind their frontline,
         // and pulling back from danger is Kite's (kiteFrom), when nobody covers them)
         const fwd=(want,from)=>from&&(want-from.x)*dir<0?from.x:want,grpOf_={arc,mag};
-        Q.plan={F:{x:F.x,y:F.y},t:B.t,dir,y,leads,x:Object.fromEntries(Object.entries(at).map(([k,r])=>[k,clamp(fwd(F.x-dir*r,grpOf_[k].length?centroid(grpOf_[k]):null),8,BW-8)])),inf:clamp(fwd(F.x-dir*(leads?front/FOE_CMD.reach+tun(T,X,'screenGap'):front-FOE_CMD.screen),inf.length?centroid(inf):null),8,BW-8)}}
+        Q.plan={F:{x:F.x,y:F.y},t:B.t,dir,y,leads,gap:{...at,inf:leads?front/FOE_CMD.reach+tun(T,X,'screenGap'):front-FOE_CMD.screen},x:Object.fromEntries(Object.entries(at).map(([k,r])=>[k,clamp(fwd(F.x-dir*r,grpOf_[k].length?centroid(grpOf_[k]):null),8,BW-8)])),inf:clamp(fwd(F.x-dir*(leads?front/FOE_CMD.reach+tun(T,X,'screenGap'):front-FOE_CMD.screen),inf.length?centroid(inf):null),8,BW-8)}}
       line=Q.plan}
     const aggr=leads&&!!line;
     // (on ground that blocks: how long its shooters have stood on the line with nobody in their reach (below a cliff, the foe set
@@ -701,7 +742,8 @@ class Commander{
     else if(clash||post==='attack'&&!threats.length&&inf.every(u=>u.s.range)||post==='attack'&&!wait&&grpSta(inf)>=X.fresh&&within(inf,tun(T,X,'footFar'))&&footCharge(inf)&&!(uphill&&uphill(inf)))go(send&&nearest(),()=>g.charge());
     // (attacking with archers: the infantry stands a little in front of them while they shoot (FOE_CMD.volley seconds of it), then
     // goes in; while they lead (rangedMode), a little behind them: the army's line)
-    else if(wait){if(stand)stand(g,line.inf,line.y+offset(id,'inf'),inf);else g.standAt(line.inf,line.y+offset(id,'inf'))}
+    else if(wait){const pp=this.pathPlace(centroid(inf),line.F,line.gap.inf,false);// (on ground that blocks, its screen's gap along the way: pathPlace)
+      if(pp)g.standAt(pp.x,pp.y);else if(stand)stand(g,line.inf,line.y+offset(id,'inf'),inf);else g.standAt(line.inf,line.y+offset(id,'inf'))}
     else if(post==='attack')go(send&&nearest(),()=>g.advance());
     else{// defend: a line between the archers and the enemy; on the ground, its front on a top's crest (or an elf wood's edge), or
       // on its bank at the crossings with a river between (holdAt)
@@ -762,7 +804,11 @@ class Commander{
       // (someone in their reach: they stay where they are, turn to him and shoot; only Kite moves them then)
       else if(threats.length||halt||!reachNone||!inf.length&&!line){if(!g.stand)g.stand={x:C.x,y:C.y};g.standAt(g.stand.x,g.stand.y)}
       else{g.stand=null;
-      if(line&&line.x[k]!=null){let x=line.x[k];if((x-C.x)*line.dir<0)x=C.x;// (forward only, from where they are now)
+      // (ground that blocks and the straight way barred (a cave's turns, a lair's cellars, a fort's walls): their reach short of
+      //  the foe along the walking way to him, where they see him: pathPlace)
+      const pp=line&&line.x[k]!=null&&reachNone?this.pathPlace(C,line.F,line.gap[k],true):null;
+      if(pp){if(perch)stand(g,pp.x,pp.y,armed);else g.standAt(pp.x,pp.y)}
+      else if(line&&line.x[k]!=null){let x=line.x[k];if((x-C.x)*line.dir<0)x=C.x;// (forward only, from where they are now)
         // (there, and still nobody in anyone's reach (the line's height or their ranks put them a little out: a short reach, a
         // spider's spit): the line steps on by what they lack, and stays that much nearer)
         if(reachNone&&Math.abs(C.x-x)<8){const short=Math.min(...armed.map(a=>Math.min(...foes.map(e=>d2(a,e)))-a.s.range));if(short>0){x+=line.dir*(short+4);line.x[k]=x}}

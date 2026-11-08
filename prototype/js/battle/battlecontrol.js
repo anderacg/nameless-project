@@ -98,7 +98,12 @@ class BattleControl{
   aiReset(){if(B.sides?.active)Commander.of(this.team).tactics?.states.delete(this.id);for(const k of AI_NOTES)delete this[k];this.phase=null;this.t=0;this.queue=[];this.amEnd()}
   // the AI's placing: stand at (x,y); a move (its men break off and go) when that is well away from where it last stood, or when
   // it ends a charge, its first stand too (else its men stay in the fight where they are: the owner, 2026-11-01)
-  standAt(x,y){if(this.resolve?.routed)return;const ends=this.order==='charge';if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
+  // (a place in rock, behind a wall or in a pillar (the owner, 2026-11-08: "order the unit based on available path"): moved to the
+  //  nearest point its men can walk to, the end of their way toward it (route.js routePath), so the group forms up on open ground
+  //  on its own side of the rock, whichever captain or click asked for it: commander.js PATH_PLACE)
+  standAt(x,y){if(this.resolve?.routed)return;const ends=this.order==='charge';if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}
+    if(PATH_PLACE.on&&B.terrain&&B.terrain.blocky&&B.terrain.route){const m=grpUnits(this.id).filter(u=>u.hp>0),gr=m.length&&B.terrain.route[groupWho(m)];
+      if(gr&&!gr.cost[routeIx(gr,x,y)]){const C=centroid(m),p=routePath(gr,C.x,C.y,x,y);if(p.length){x=p[p.length-1][0];y=p[p.length-1][1]}}}this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
     if(ends||this.lax==null||Math.hypot(this.ax-this.lax,this.ay-this.lay)>CAPT.move){if(ends||this.lax!=null)moveOrder(this.id);this.lax=this.ax;this.lay=this.ay}}
   // Set on an enemy formation, accepting its control or any member. Lone ungrouped foes remain valid targets.
   attack(e,o){if(this.resolve?.routed||!e||!battleEnemy(this.team,e))return;const prior=[this.targetGroupId,this.targetUnitId];this.tgt=e;if(!this.tgt){[this.targetGroupId,this.targetUnitId]=prior;return}o=o||{};breakWall(this.id);breakRing(this.id);this.queue=[];this.order='charge';if(o.run!=null)this.run=!!o.run}
