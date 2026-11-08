@@ -143,3 +143,24 @@ context.drawImage(frame.image, 0, 0);
 The browser updates project data and downloadable source, not files in the game repository. Adding the exported asset to game characters still requires an integration change. The original shared sprite generator and game artwork are not overwritten.
 
 `pixel-editor.js` owns the canvas painting tools and editable source panel. `rig-checks.js` includes source override, erased-pixel, bone attachment, normalization, JavaScript round-trip and sheet checks.
+
+## Native game asset library
+
+**Library** browses the existing game generators: troop and named-character looks, small world figures and workers, battle/world monsters, wildlife and livestock, melee weapon rotations, ranged weapons, shields, projectiles, mounts, world nature, cultural building foregrounds, props, fire and UI icons. Categories and search filter the catalog. Entries are generated on demand from the shared scripts, with native sizes and animation frames. Nature uses a representative shape; buildings use seed 37. These are editable source examples, not an enumeration of every possible seed, appearance variant, or complete generated scene.
+
+These assets use a **frame editor**, preserving quadrupeds and other creature shapes instead of giving them the humanoid skeleton. Pencil, Eraser and Pick edit the selected frame. The timeline switches frames; Animation selects idle, walk, attacks, deaths or rotations where available. Individual frame durations, mirrored display and attachment pivots remain editable. Humanoid bone/pose editing stays in the other workspaces.
+
+The project bar saves/opens the asset project while Library is active. Asset projects use `ashmark-sprite-asset` version 1 and are separate from humanoid rig projects. Frames retain their dimensions, RGBA palette, indexed pixels, timing, clip name and anchors. Opened drafts remain in memory during the session; browser storage restores the active asset only. Download each project you want to keep before closing the tool. PNG import accepts images up to 256 × 256 pixels without resizing. Projects may contain up to 64 frames and 1,048,576 source pixels in total.
+
+Frame PNG, complete sheet PNG, matching sheet metadata, editable JSON and JavaScript asset exports are available in the properties panel. Sheet cells share one size; metadata records native sizes, padding and reflected pivots. Source JSON can be edited and applied with validation and undo. Exports describe the edited asset; they do not overwrite the original procedural drawing functions or automatically change game characters.
+
+```js
+// Load the shared art dependencies and sprite-assets.js, then the exported asset.
+const asset = AshmarkSpriteAssets['monster:wolf'];
+const image = SpriteAssets.image(asset.frames[0], { left: asset.left });
+context.drawImage(image, 0, 0);
+```
+
+`sprite-assets.js` owns native catalog adapters, data validation, rendering and exports. `asset-editor.js` owns the frame editor, its history and library controls. `asset-tests.html` / `asset-checks.js` cover native pixel parity, pivots, mirrors, transparency, source round-trips, validation and mixed-size sheet alignment.
+
+`build.py` refreshes `catalog-unit-data.js` from the monster stat table, and `catalog-wildlife.js` from the game's wildlife data and drawing functions. The generated adapters keep the drawing code synchronized without loading world simulation systems. Rebuilding requires `prototype/js/data/monsters.js`, `prototype/js/data/critters.js`, and `prototype/js/world/critters.js` in addition to the scripts referenced by `index.html`; the complete editable kit includes those sources.
