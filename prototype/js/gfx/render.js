@@ -182,7 +182,15 @@ function drawMapFrame(r){ctx.save();ctx.fillStyle=MAP_FRAME.edge;ctx.fillRect(r.
   ctx.fillStyle=MAP_FRAME.light;ctx.fillRect(r.x-2,r.y-2,r.w+4,1);ctx.fillStyle=MAP_FRAME.bg;ctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2);ctx.restore()}
 // the minimap's rectangle on the screen, in game pixels: the top right corner, 112 wide at any map size, the same size on the
 // screen at any map zoom (zk, core.js MAPZOOM); s: its pixels a tile (drawWorld draws it here, the full map's tap reads it)
-function worldMiniRect(){const zk=MAPZOOM.k(),s=112*zk/MW,w=Math.round(MW*s),h=Math.round(MH*s);return{x:VW-w-Math.round(6*zk),y:Math.round(6*zk),w,h,s}}
+// (on a real screen: kept clear of the screen's edge and a phone's notch as the HUD is (--edge and the safe insets, CSS px), and no
+// narrower than the panel under it (underway.js UW_MIN), so on a phone their edges meet (the owner, 2026-11-08: "the top right on
+// mobile is not well aligned"); the tests' fixed view as before)
+function worldMiniRect(){const zk=MAPZOOM.k();let s=112*zk/MW,mx=Math.round(6*zk),my=mx;
+  if(!FIXED_VIEW&&typeof safeInsets==='function'){const g=dprOf()/VS,I=safeInsets(),e=hudEdge();mx=Math.max(mx,Math.ceil((e+I.r)*g)+UW_FRAME);my=Math.max(my,Math.ceil((e+I.t)*g)+UW_FRAME);s=Math.max(s,(uwMin()*g-2*UW_FRAME)/MW)}// (its frame, UW_FRAME, outside its map)
+  const w=Math.round(MW*s),h=Math.round(MH*s);return{x:VW-w-mx,y:my,w,h,s}}
+// (the HUD's edge, CSS px: style.css --edge, read once a size)
+let HUD_EDGE=null;const hudEdge=()=>HUD_EDGE??(HUD_EDGE=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--edge'))||8);
+addEventListener('resize',()=>{HUD_EDGE=null});
 const faceDir=o=>{let f=FACE.get(o);if(!f)FACE.set(o,f={x:o.x,d:o.x>P.x?-1:1});if(Math.abs(o.x-f.x)>.05){f.d=o.x>f.x?1:-1;f.x=o.x}return o.fight&&o.dir?o.dir:f.d};
 /* the map's camera following your army (the owner, 2026-11-02: on a short walk "the camera will snap"): not locked on its point,
    which starts and stops with your men, but eased after it: within dead px of the screen's middle it stands still (a few steps
