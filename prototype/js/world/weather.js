@@ -119,6 +119,13 @@ const Weather={
     g.u[i]=Clock.hourCount()+h;
     g.s[i]=-1e9;
   },
+  // a new game's first sky where you stand (x, y): WEATHER.start, for its kind's hours (session.js startGame)
+  fair(x,y){
+    const k=WEATHER.start;
+    if(!WEATHER.on||!k||!WEATHER.kinds[k])return;
+    const H=WEATHER.kinds[k].hours;
+    this.set(x,y,k,rngOf('weather').int(H[0],H[1]));
+  },
   // (in a save: the regions' kinds and ends; none while it is off or nothing was made yet)
   save(){
     const g=this.grid;

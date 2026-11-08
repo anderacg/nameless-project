@@ -106,5 +106,12 @@ Kit.suite(({ok,info})=>{
    Wx.set(P.x,P.y,'clear');const n1=G.msgs.length;fire('lightning');ok(G.msgs.length===n1,'and none under a clear sky');
    G.quietEvents=true}
  }finally{WX.on=false;Wx.reset();G.day=h0[0];G.clock=h0[1]}
+ // ---- a new game opens under a clear sky where you stand (the owner, 2026-11-08: "why always start with raining?"), the rest as drawn;
+ // WEATHER.start null: as drawn (a third of starts in rain or a storm in spring on the grass)
+ {const starts=n=>{const o=[];for(let i=0;i<n;i++){Kit.begin('soldier',100+i);const g=Wx.grid,j=Wx.cellAt(P.x,P.y);o.push([K[g.k[j]],g.u[j]-t.Clock.hourCount(),new Set(g.k).size])}return o};
+  WX.on=true;const s0=WX.start;let on,off;
+  try{on=starts(6);WX.start=null;off=starts(12)}finally{WX.start=s0;WX.on=false;Wx.reset();Kit.begin('soldier',1);Kit.world()}
+  const H=WX.kinds.clear.hours,wet=off.filter(o=>o[0]!=='clear').length;
+  ok(on.every(o=>o[0]==='clear'&&o[1]>=H[0]&&o[1]<=H[1]&&o[2]>1)&&wet>0,'a new game opens under a clear sky where you stand, for a clear front\'s '+H.join('-')+' hours ('+on.map(o=>o[1]+' h').join(', ')+'), the other regions as drawn; WEATHER.start null: as drawn ('+wet+' of 12 starts not clear: '+off.map(o=>o[0]).join(', ')+')')}
  ok(!ERR.length,'no errors on the page'+(ERR.length?': '+ERR.join('; '):''));
 });

@@ -22,6 +22,10 @@ const WEATHER={on:true,
   // drawn with reducedMotion, and their pace; the size (px) of a haze band's soft cloud, drawn up over the view (gfx/weather.js band);
   // game hours a new front takes to build to its full strength (drawn: a shower before the rain, a haze before the fog)
   ease:5,calm:.35,slow:.3,band:[64,32],build:1.5,
+  // the sky a new game opens under where you stand, for its kind's hours (the owner, 2026-11-08: "why always start with raining?": the
+  // first fronts are drawn by chance alone, so in spring on the grass a third of games began in rain or a storm and two in three under
+  // a grey sky); then the weather turns as ever. null: as drawn
+  start:'clear',
   // the seasons (the owner, 2026-11-08: "make it into a seasons"), in the year's order, CLOCK.year days shared between them (a game
   // begins in spring): n its name; mul each kind's chance x there; add more chance of a kind in a climate (winter's snow on the
   // grass and in the swamps, summer's rain in the frost, winter's in the desert)

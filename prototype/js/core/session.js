@@ -86,7 +86,7 @@ function startGame(k,b){
   heroAtGate(home);G.mode='world';G.lastTown=home;// (in front of its gate, on land: world.js gateSpot)
   startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);goblinsStart();
     for(let i=0,n=Math.round(density(WM).monsterStart*spawnMul('monsters'));i<n;i++)spawnMonster(true)});
-  if(own)Rng.newGame();
+  if(own)Rng.newGame();Weather.fair(P.x,P.y);// (a clear sky over your start: data/weather.js WEATHER.start)
   // (named: the hero and the band in the first line; the band's name only once you gave it one)
   hidePanel();G.msgs=[];if(S)log(S.line+' '+(P.band?htmlText(P.band)+' is you alone for now: ':'')+'Win fame around here and the locals will follow you.');else log('You ride out of '+home.name+' alone, as '+(P.name?htmlText(P.name)+', ':'')+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. '+
     (P.band?htmlText(P.band)+' is you alone for now: win fame around here and the locals will follow you.':'Win fame around here and the locals will follow you.'));updateHint();updateHUD(true);

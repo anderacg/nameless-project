@@ -377,6 +377,10 @@ Things in the world are plain data (so a save is plain JSON) read through a clas
   - **Gradual** (the owner: "weather should gradually change not just so sudden"): drawn, the old weather fades out as the new fades
     in over `WEATHER.ease` s (`WeatherArt.layers`); a new front builds to its strength over `WEATHER.build` hours
     (`Weather.strength`: drawn only; its start kept in memory, not saved).
+  - **A fair start** (2026-11-08, the owner: "why always start with raining?"): the first fronts are drawn by chance alone, not by
+    how long each lasts, so in spring on the grass a third of games opened in rain or a storm and two in three under a grey sky. A new
+    game now opens under a clear sky where you stand (`WEATHER.start`, `Weather.fair`, from `session.js` `startGame`) for a clear
+    front's 6-14 hours; the other regions as drawn, and then the weather turns as ever. `WEATHER.start` null: as drawn.
   - The road's incidents (`world/incidents.js`) in their weather only: storm, lightning (men hurt), flood (rain), blizzard,
     frostbite, sandstorm, lost (sandstorm), heat, a fine day (clear, grassland).
   - `WEATHER.on` off (the test suites' default, `tests/harness.js`): the old way (the frost's snow, clear elsewhere), nothing kept.
