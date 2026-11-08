@@ -43,5 +43,6 @@
  let appearanceSignature=JSON.stringify(s.asset),appearanceQueued=false;
  document.addEventListener('rig:saved',()=>{refreshSource();const key=JSON.stringify(s.asset);if(key===appearanceSignature)return;appearanceSignature=key;if((s.asset.pixelEdits.length||s.asset.parts.length||W.state.renderer==='edited')&&!appearanceQueued){appearanceQueued=true;requestAnimationFrame(()=>{appearanceQueued=false;refreshAppearance();});}});
 
+ window.spritePixelEditor=Object.freeze({draft:()=>dirty?sourceField.value:null,restoreDraft:value=>{if(typeof value==='string'){sourceField.value=value;dirty=true;}}});
  refreshSource();if(s.asset.pixelEdits.length)refreshAppearance();
 })();
