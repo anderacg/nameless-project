@@ -1,8 +1,22 @@
 # Character Sprite & Rig Studio
 
-Open **[sprite-workshop.html](sprite-workshop.html)** for the complete offline creator. The skeleton editor is first; **Appearance & equipment** jumps to the existing character generator.
+Open **[sprite-workshop.html](sprite-workshop.html)** for the complete offline creator. The creator is organized into **Character**, **Pose**, **Animate**, **Draw parts** and **Export** workspaces. Each workspace shows the relevant controls and keeps the live preview available.
 
 Load [examples/animated-hero.rig.json](examples/animated-hero.rig.json) with **Load rig project** for an editable wave animation and a bone-attached wrist cuff.
+
+## A simpler editing workflow
+
+1. **Character:** choose a preset, race, hairstyle and weapon. Optional colors, face details, clothing, material tuning, variations and favorites are in expandable sections. Continue to Pose when ready.
+2. **Pose:** tap a joint or choose a named body part, then rotate or move it. Arrow buttons move one pixel at a time; **Reset this part** clears only that part's local pose. Connected/Separate remains available beside the pose controls. Extra rig operations are under **More pose options**.
+3. **Animate:** select an animation, duplicate frames and edit their poses. The timeline shows sprite thumbnails and frame durations. Fast/Normal/Slow buttons set the selected frame's duration; repeat and smooth-between-frame options remain independent.
+4. **Draw parts:** an empty-state hint guides the first part. Material choices are grouped, brushes have grayscale swatches, and the pixel canvas supports keyboard focus for undo/redo.
+5. **Export:** save an editable project or native transparent PNGs. Timing/attachment JSON and legacy appearance/source exports are under **Animation data & source files**. The selected animation name and frame count are shown before export.
+
+The top **Save project / Open project** controls work from every workspace. Opening a rig project takes you to Pose. Workspaces use keyboard-accessible tabs and remember the last selection in this browser. On phones, navigation stays at the bottom and a small live-preview button brings you back to the sprite while editing farther down the page.
+
+Shortcuts: **Ctrl/Cmd+S** saves a project; **Ctrl/Cmd+Z** and **Ctrl/Cmd+Shift+Z** undo/redo rig edits outside text fields. **Space** plays/pauses in Character or Animate when focus is on the page or canvas; focused buttons and input controls retain their usual behavior. Paint strokes and joint drags produce one undo step per changed gesture, and unchanged field events do not add empty undo steps.
+
+The workspace layout and friendly body-part labels do not change the underlying bone IDs, project format, sprite renderer or animation math. The new UI needs no MCP server or external packages.
 
 ## Skeleton and animation authoring
 
@@ -43,7 +57,7 @@ const exportedClip = SpriteRig.sheet(project, 0);
 
 Rig canvases keep a common pelvis/root origin with space around the original body, growing to a larger power-of-two cell when required. The `root` anchor is the fixed bind-pose origin; `joints.pelvis` is the animated pelvis. Clip sheets align that origin at each cell's center, so a raised weapon or large part cannot recenter the character between frames. Each keyframe is exported once with its authored duration; interpolation remains an explicit runtime option. The preview's zoom, skeleton, ghost and editing grid are not in the exported pixels. Authored clip playback uses separate posed sprites and does not replace the live game's animation system automatically. Save projects and cache generated frames when integrating them into the game.
 
-`rig-engine.js` contains binding, hierarchy, forward transforms, skinning, sampling and exports. `rig-editor.js` contains the interactive editor and persistence. `rig-tests.html` / `rig-checks.js` cover source-pixel parity for all races, actual bone deformation, hierarchy/gear binding, authored parts, clip timing, mirrored poses, project validation and PNG/metadata alignment.
+`rig-engine.js` contains binding, hierarchy, forward transforms, skinning, sampling and exports. `rig-editor.js` contains the interactive editor and persistence. `studio-ui.js` organizes workspaces, keyboard navigation, lazy frame thumbnails and mobile preview helpers. `rig-tests.html` / `rig-checks.js` cover source-pixel parity for all races, actual bone deformation, hierarchy/gear binding, authored parts, clip timing, mirrored poses, project validation and PNG/metadata alignment.
 
 ---
 
@@ -93,7 +107,7 @@ Game previews temporarily supply the workshop's custom part specification to `do
 - `sprite-engine.js`: validated appearance recipes, palettes, renderer adapters, variations, masks and sheet metadata.
 - `rig-engine.js`, `rig-editor.js`: editable bone rigs, animation clips, part painting and project persistence.
 - `rig-tests.html`, `rig-checks.js`: focused skeletal authoring checks.
-- `workshop.js`, `index.html`, `style.css`: controls, playback, inspection, browser storage and downloads.
+- `workshop.js`, `studio-ui.js`, `index.html`, `style.css`: controls, focused workspaces, playback, inspection, browser storage and downloads.
 - `runtime.js`: tool-only environment for shared game graphics scripts.
 - `build.py`: bundles the repository's current source scripts into `sprite-workshop.html`.
 - `tests.html`, `checks.js`: focused pixel parity, material masks, mirrors/anchors, race/preset/pose rendering, locks, deterministic generation, recipe validation and sheet alignment checks.
