@@ -6,6 +6,9 @@
    fights on foot. His horse has its own health (Horse): a share of every hit on him lands on it (Dismount.share); killed, he falls
    and fights on foot to the end. On foot his stats are his kind's on foot (footOf: no charge, a man's pace), so his foot drills
    (Brace, the hedge of spears: rankskills.js) are his again; up again, as he rode (rideOf).
+   Thrown, his mount does as its kind does (DISMOUNT.temper; Horse#loose): a horse, a stag or a ram bolts away from the nearest
+   enemy and stands farther off, where he must walk to catch it; a wolf or a warg turns on the enemies near him, biting, and
+   comes back to his side when none is left near (Horse.step, battle.js battleStep).
    Set on him only when it first happens (u.horse, u.afoot, u.remount, u.mountT): a rider none of it befalls is as he ever was.
    Your groups' horses after the fight (settle, resolution.js), and the men without one on foot from the start (muster, setup.js)
    ---------- */
@@ -15,25 +18,48 @@ const isRider=u=>!!u&&!u.hero&&!u.comp&&!u.leader&&!!ST[u.type]?.mounted;
    no one rides it (B.horses: drawn with the living, render.js battleEnts; never in B.units, so nothing counts or strikes it; no kind,
    which the drawing reads as an obstacle's) */
 class Horse{
-  constructor(u){this.rider=u;this.team=u.team;this.breed=horseOf(u.type)||'m_horse';this.max=this.hp=DISMOUNT.hp[this.breed]??DISMOUNT.hp.m_horse;this.look=unitLook(u);this.x=u.x;this.y=u.y;this.face=u.face||1;this.dead=false}
+  constructor(u){this.rider=u;this.team=u.team;this.breed=horseOf(u.type)||'m_horse';this.max=this.hp=DISMOUNT.hp[this.breed]??DISMOUNT.hp.m_horse;this.look=unitLook(u);this.mount=this.look.mount||'horse';this.x=u.x;this.y=u.y;this.face=u.face||1;this.dead=false;this.way=null}
   // (his horse, made when first needed; null: none, a man who began on foot)
   static of(u){return u.horse===undefined?(u.horse=new Horse(u)):u.horse}
   // (those standing riderless)
   static get standing(){return B.horses||(B.horses=[])}
   get isHorse(){return true}
+  // (does it fight when its rider is thrown: a wolf, a warg; else it bolts)
+  get fights(){return DISMOUNT.temper[this.mount]==='fight'}
   // left standing where its rider stepped down or was thrown
-  stand(){const u=this.rider,L=Horse.standing;this.x=u.x;this.y=u.y;this.face=u.face||1;if(!L.includes(this))L.push(this)}
+  stand(){const u=this.rider,L=Horse.standing;this.x=u.x;this.y=u.y;this.face=u.face||1;this.way=null;this.mv=false;if(!L.includes(this))L.push(this)}
+  /* its rider thrown: it stands loose there, then a fighter turns on the enemy (way 'fight'), any other bolts (way 'bolt') away from
+     the nearest enemy (else the way its rider faced) to (tx, ty), far off within the field */
+  loose(){this.stand();if(this.fights){this.way='fight';this.bite=0;return}const u=this.rider,e=nearest(u),F=DISMOUNT.bolt,d=rnd(F.far[0],F.far[1]);
+    let a=e?Math.atan2(u.y-e.y,u.x-e.x):(u.face||1)>0?0:Math.PI;a+=rnd(-.5,.5);this.way='bolt';
+    this.tx=B.world?u.x+Math.cos(a)*d:clamp(u.x+Math.cos(a)*d,12,BW-12);this.ty=B.world?u.y+Math.sin(a)*d:clamp(u.y+Math.sin(a)*d,fieldTop()+4,fieldBot()-4)}
   // ridden again
-  ride(){const L=Horse.standing,i=L.indexOf(this);if(i>=0)L.splice(i,1)}
+  ride(){const L=Horse.standing,i=L.indexOf(this);if(i>=0)L.splice(i,1);this.way=null;this.mv=false}
+  // (a step of its own toward (x, y) at spd px/s, stopping within stop px of it: true when there)
+  toward(x,y,spd,stop,dt){const dx=x-this.x,dy=y-this.y,d=Math.hypot(dx,dy);this.mv=d>stop;if(!this.mv)return true;
+    const k=Math.min(1,spd*dt/d);this.x+=dx*k;this.y+=dy*k;if(Math.abs(dx)>.5)this.face=dx>0?1:-1;return false}
+  // a frame of a loose mount (Horse.step): bolting till it stands far off; fighting the enemies near its rider, else at his side
+  step(dt){if(this.dead||!this.way)return;if(this.lunge>0)this.lunge-=dt;
+    if(this.way==='bolt'){if(this.toward(this.tx,this.ty,DISMOUNT.bolt.spd,2,dt)){this.way=null;this.mv=false}return}
+    const F=DISMOUNT.fight,u=this.rider,ox=u.hp>0?u.x:this.x,oy=u.hp>0?u.y:this.y;let e=null,bd=DISMOUNT.near;
+    for(const o of B.units){if(o.hp<=0||o.left||!battleEnemy(o,this))continue;const d=Math.hypot(o.x-ox,o.y-oy);if(d<bd){bd=d;e=o}}
+    if(!e){if(u.hp>0)this.toward(u.x+(u.face||1)*-6,u.y,F.spd,3,dt);else this.mv=false;return}
+    const r=F.reach+(e.s.big?12:0);if(!this.toward(e.x,e.y,F.spd,r,dt))return;this.face=e.x>=this.x?1:-1;
+    if((this.bite-=dt)>0)return;this.bite=F.cd;this.lunge=.15;applyDmg(e,F.dmg[this.mount]??F.dmg.wolf,1,'pierce',u,false);
+    if(e.hp>0&&!e.s.range&&!(e.stun>0)&&this.hurt(meleeDmgOf(e.s)*F.back))this.die()}
+  // (every loose mount's frame: battle.js battleStep)
+  static step(dt){for(const h of Horse.standing.slice())h.step(dt)}
   // its share of a blow on its rider: true when that fells it (its rider then down with it: Dismount.down)
   hurt(n){if(this.dead)return false;this.hp-=n;return this.hp<=0}
   // it falls under its rider and lies there (vfx.js drawCorpses: a mount's body, no man in it)
-  die(){const u=this.rider,c=corpseOf(u);this.dead=true;this.hp=0;this.ride();
-    B.corpses.push({x:u.x,y:u.y,team:u.team,face:u.face||1,sp:{mount:c.mount,down:c.down,horse:true},td:B.t,dry:false,pool:rnd(8,11),seed:Math.random()*4|0})}
-  // standing saddled in its side's colour (sprites.js horseSprite), on the camera's pixels as the living are
-  draw(){const q=B.world?VS/B.world.scale:B.cam?camPx():1,x=Math.round(this.x*q)/q,y=Math.round(this.y*q)/q,sp=horseSprite(this.look);
+  die(){const u=this.rider,c=corpseOf(u),loose=Horse.standing.includes(this),x=loose?this.x:u.x,y=loose?this.y:u.y;this.dead=true;this.hp=0;this.ride();
+    B.corpses.push({x,y,team:u.team,face:loose?this.face:u.face||1,sp:{mount:c.mount,down:c.down,horse:true},td:B.t,dry:false,pool:rnd(8,11),seed:Math.random()*4|0})}
+  /* standing saddled in its side's colour (sprites.js horseSprite), on the camera's pixels as the living are; running, it bounds
+     (a hop a stride), and a bite lunges it forward */
+  draw(){const q=B.world?VS/B.world.scale:B.cam?camPx():1,hop=this.mv?Math.round(Math.abs(Math.sin(B.t*14))*2):0,ln=this.lunge>0?2*this.face:0,
+    x=Math.round((this.x+ln)*q)/q,y=Math.round(this.y*q)/q,sp=horseSprite(this.look);
     ctx.save();ctx.translate(x,y);if(B.world)ctx.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);
-    ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(0,0,9,2,0,0,6.283);ctx.fill();if(this.face<0)ctx.scale(-1,1);ctx.drawImage(sp,-(sp.width>>1),-sp.height+2);ctx.restore()}
+    ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(0,0,9,2,0,0,6.283);ctx.fill();if(this.face<0)ctx.scale(-1,1);ctx.drawImage(sp,-(sp.width>>1),-sp.height+2-hop);ctx.restore()}
 }
 // (his stats on foot, and back in the saddle: by the stats he has now, so a quiver run dry, his rank and upgrades stay his)
 const FOOT=new WeakMap(),RIDE=new WeakMap();
@@ -48,7 +74,7 @@ class Dismount{
   static rideOf(u){const s=u.s;if(RIDE.has(s))return RIDE.get(s);if(!s.ride)return s;const {ride,...r}=s;return{...r,mounted:true,spd:ride.spd,charge:ride.charge}}
   /* he steps down (how: 'order', his group's Dismount; 'thrown', by a charge or a hard blow; 'killed', his horse down under him; 'none', a
      man with no horse from the start): his horse left standing (or lying), he on foot; thrown or his horse killed, he falls */
-  static down(u,how){if(u.afoot)return;const h=how==='none'?(u.horse=null):Horse.of(u);if(how==='killed'){if(!h.dead)h.die()}else if(h)h.stand();
+  static down(u,how){if(u.afoot)return;const h=how==='none'?(u.horse=null):Horse.of(u);if(how==='killed'){if(!h.dead)h.die()}else if(how==='thrown')h.loose();else if(h)h.stand();
     u.s=Dismount.footOf(u);u.afoot=true;u.remount=how==='thrown'?'auto':null;u.mountT=0;u.run=0;u.vel=0;u.wind=null;u.shot=null;
     if(how==='thrown'||how==='killed')Dismount.fall(u,how==='killed'?'Horse down':'Unhorsed');Dismount.role(u)}
   // thrown: down a moment (stunned with physics off), his unit shaken, what befell him over him (say) and a puff of dust

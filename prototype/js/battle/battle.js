@@ -126,7 +126,7 @@ function battleStep(rt,world){
     if(MANUAL_HERO)updateHero(world?dt:rt*HERO_PACE);else if(B.hero)CharacterMind.of(B.hero).auto(world?dt:rt*HERO_PACE);for(const id in B.groups)B.groups[id].step(dt);command(dt);CharacterMind.command(dt);// (every group minds itself, then the captains give their orders: battlecontrol.js, commander.js)// (your hero fights on their own, as every character does: charmind.js; the enemy's captain: commander.js)
     for(const u of B.units){if(u.hp<=0)continue;if(u.kx||u.ky){u.x+=u.kx*dt;u.y+=u.ky*dt;if(Math.abs(u.kx)+Math.abs(u.ky)>60&&Math.random()<.4)vfx({k:'dust',x:u.x,y:u.y-1,vx:-u.kx*.1,vy:-u.ky*.05,r:2,grow:8,life:.4,col:'196,180,140'});const k=Math.pow(.004,dt);u.kx*=k;u.ky*=k;if(Math.abs(u.kx)+Math.abs(u.ky)<2)u.kx=u.ky=0}if(u.buffT>0)u.buffT-=dt;if(u.wardT>0)u.wardT-=dt}
     for(const u of B.units){if(u.hp<=0)continue;if(u.slow>0)u.slow-=dt;if(u.hero&&gm('regen'))u.hp=Math.min(u.max,u.hp+gm('regen')*dt)}
-    updateNonHeroActors(dt);
+    updateNonHeroActors(dt);if(B.horses?.length)Horse.step(dt);// (mounts loose of a thrown rider: bolting, or a warg biting: battle/dismount.js)
     // (soldiers jostle apart; those running off the field, withdrawn or routed, slip through their own side)
     jostle(dt);
     keepOffObstacles(was);if(PHYSICS.on)physPost(was,dt);// (one who ran into a wall stops: physics.js)

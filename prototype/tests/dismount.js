@@ -30,15 +30,27 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,L=t.BattleLab,D=t.DISMOUNT,ev=s=>(
   // ---- thrown (physics on): down, "Unhorsed"; up again on his own with no enemy near; fighting on foot with one near
   ev('PHYSICS.on=true');
   {const B=lab([Gp('hum_lancer',1)],[Gp('militia',1)]),u=mine(B).units[0],f=tame(B,u,500);
-   t.physThrow(u,0,200,true);
-   ok(u.afoot&&u.down>0&&t.physDownPose(u)!=null&&u.remount==='auto'&&B.floats.some(x=>x.t==='Unhorsed')&&t.B.horses.length===1,'a throw hard enough: out of the saddle, down a moment, "Unhorsed" over him, his horse left standing');
-   const up=go(B,8,()=>!u.afoot);ok(up&&!u.horse.dead&&!t.B.horses.length,'no enemy near: up again, back to his horse and into the saddle on his own ('+B.t.toFixed(1)+' s)');
+   const x0=u.x,y0=u.y,d0=Math.hypot(f.x-x0,f.y-y0);t.physThrow(u,0,200,true);const h=u.horse;
+   ok(u.afoot&&u.down>0&&t.physDownPose(u)!=null&&u.remount==='auto'&&B.floats.some(x=>x.t==='Unhorsed')&&t.B.horses.length===1&&h.way==='bolt','a throw hard enough: out of the saddle, down a moment, "Unhorsed" over him, his horse loose and bolting');
+   go(B,.6);const ran=Math.hypot(h.x-x0,h.y-y0);ok(ran>20&&Math.hypot(f.x-h.x,f.y-h.y)>d0&&h.mv,'the horse bolts, away from the enemy ('+Math.round(ran)+' px in .6 s)');
+   go(B,3,()=>!h.way);ok(!h.way&&Math.hypot(h.x-x0,h.y-y0)>=D.bolt.far[0]-4&&Math.hypot(h.x-x0,h.y-y0)<=D.bolt.far[1]+4,'and stands, '+Math.round(Math.hypot(h.x-x0,h.y-y0))+' px off ('+D.bolt.far.join('-')+')');
+   const up=go(B,14,()=>!u.afoot);ok(up&&!u.horse.dead&&!t.B.horses.length,'no enemy near: he walks after it and into the saddle on his own ('+B.t.toFixed(1)+' s)');
    go(B,2);f.x=u.x+16;f.y=u.y;t.physThrow(u,0,200,true);ok(u.afoot,'thrown again with an enemy at his side');
    go(B,4);ok(u.afoot&&u.remount==='auto'&&u.tgt===f,'an enemy near: he fights him on foot, his horse waiting');
-   f.x=u.x+600;const up2=go(B,10,()=>!u.afoot);ok(up2,'the enemy gone: back into the saddle');
+   f.x=u.x+600;const up2=go(B,16,()=>!u.afoot);ok(up2,'the enemy gone: back into the saddle');
    // (the commander's Mount: back to his horse whatever is near)
    go(B,2);f.x=u.x+16;f.y=u.y;t.physThrow(u,0,200,true);go(B,2);ok(u.afoot,'thrown once more, the enemy at his side');
-   ok(mine(B).useAbility('mount'),'Mount ordered');const up3=go(B,8,()=>!u.afoot);ok(up3&&Math.hypot(f.x-u.x,f.y-u.y)<D.near,'ordered to: mounted with the enemy still beside him')}
+   const fx=f.x,fy=f.y;ok(mine(B).useAbility('mount'),'Mount ordered');const up3=go(B,16,()=>!u.afoot);ok(up3&&Math.hypot(fx-u.horse.x,fy-u.horse.y)>D.near,'ordered to: after his horse and mounted, the enemy near him as he went')}
+  // ---- a wolf rider thrown: his wolf turns on the enemy beside him, bites, takes blows back, and comes to his side when it is gone
+  {const B=lab([Gp('orc_wolf',1)],[Gp('militia',1)]),u=mine(B).units[0],f=tame(B,u,16);f.cd=0;f.hp=f.max=200;const hp=f.hp;
+   t.physThrow(u,0,200,true);const h=u.horse;ok(u.afoot&&h.mount==='wolf'&&h.fights&&h.way==='fight','an orc wolf rider thrown: his wolf loose, to fight');
+   go(B,3);ok(f.hp<hp&&Math.hypot(h.x-f.x,h.y-f.y)<=D.fight.reach+2&&h.hp<h.max,'it goes for the man beside him and bites ('+(hp-f.hp)+' hurt), and takes blows back ('+Math.round(h.max-h.hp)+')');
+   f.x=u.x+600;const back=go(B,16,()=>!u.afoot);ok(back&&!h.dead&&!t.B.horses.length,'the enemy gone: it comes back to his side and he mounts it')}
+  {const B=lab([Gp('orc_warg',1)],[Gp('militia',1)]),u=mine(B).units[0],f=tame(B,u,16);f.cd=0;t.physThrow(u,0,200,true);const h=u.horse;h.hp=1;go(B,4,()=>h.dead);
+   ok(h.mount==='warg'&&h.dead&&B.corpses.some(c=>c.sp?.horse&&c.x===h.x&&c.y===h.y),'a warg fights too, and killed it lies where it fought')}
+  {const B=lab([Gp('dw_ram',1)],[Gp('militia',1)]),u=mine(B).units[0];tame(B,u,16);t.physThrow(u,0,200,true);ok(u.horse.mount==='ram'&&u.horse.way==='bolt','a dwarf\'s ram bolts as a horse does')}
+  {const B=lab([Gp('elf_hart',1)],[Gp('militia',1)]),u=mine(B).units[0];tame(B,u,16);t.physThrow(u,0,200,true);ok(u.horse.mount==='stag'&&u.horse.way==='bolt','so does an elf\'s stag')}
+  {const B=lab([Gp('hum_lancer',1)],[Gp('militia',1)]),u=mine(B).units[0];tame(B,u,500);mine(B).useAbility('dismount');go(B,1);ok(!u.horse.way&&!u.horse.mv,'stepped down at the order: his horse stands quiet')}
   {const B=lab([Gp('hum_lancer',1)],[Gp('troll',1)]),u=mine(B).units[0],tr=theirs(B).units[0];tame(B,u,14);
    t.physBlow(tr,u);ok(!u.afoot,'a troll\'s normal blow does not unhorse him');
    t.MOVESETS.hard.slam.down=1;t.physBlow(tr,u,t.MOVESETS.hard.slam);ok(u.afoot&&u.down>0,'its club slam (a hard attack) does')}
@@ -77,7 +89,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,L=t.BattleLab,D=t.DISMOUNT,ev=s=>(
    // (a stable: your spare horse first, the rest bought)
    const P2=t.P,town=t.TOWNS.find(x=>x.T?.tabs?.includes('stable')&&t.stableStock(x).includes('m_horse')&&t.canBuyMount(x,'m_horse')&&!t.recruitment.closed(x));
    if(!town)ok(false,'a holding whose stable sells riding horses');else{
-    P2.gold=1e5;t.invAdd('gear','m_horse',1);const gold=P2.gold,price=t.gearPrice('m_horse');G.mode='world';G.modal=false;t.hidePanel();t.enterTown(town);t.act('tab','stable');
+    P2.gold=1e5;t.invAdd('gear','m_horse',1);G.mode='world';G.modal=false;t.hidePanel();t.enterTown(town);t.act('tab','stable');const gold=P2.gold,price=t.gearPrice('m_horse');// (its price there: the town's own)
     ok(/Horses for your riders/.test(document.getElementById('panel').textContent),'the stable at '+town.name+': Horses for your riders');
     const b=document.querySelector('[data-act="buy-horses"][data-arg="'+id+'"]');ok(b&&!b.disabled,'a button to horse them');if(b)b.click();
     const g3=t.partyRoster(P2).groups.find(x=>x.id===id);ok(g3.horses==null&&t.horsesShort(g3)===0&&P2.gold===gold-price&&t.invCount('gear','m_horse')===0,'horsed: your spare one and one bought ('+(gold-P2.gold)+'g); all six ride again');
