@@ -269,7 +269,7 @@
         Q.box('hub',[-1,1],[4.5,7.5],[11,13],'iron',{top:true});sails(Q,0,6,12,12);Q.prop('sacks',[-8,2])},
       // a watermill: granite under slate beside its race, its wheel turning on an iron axle from the wall
       watermill(Q,o){const M=km(o),dw=Q.home('watermill','work');khouse(Q,{w:14,d:18,c:[-6,-2],z:11,rise:6,dw,door:.4,wins:1,vents:[[-9,-6]]});
-        Q.bed([-15,15],[9,14],'water');Q.box('ax',[1,7],[3,5],[5,6],'iron',{top:true});Q.wheel('wh',6,3,6,5,'plank',2);Q.prop('sacks',[8,-8],0,1.5)},
+        Q.bed([-15,15],[9,14],'water');Q.box('ax',[1,7],[3,5],[5,6],'iron',{top:true});Q.millWheel('wh',6,3,6,5,'plank',2);Q.prop('sacks',[8,-8],0,1.5)},
       // a warehouse (the workshop's store): long granite under slate, iron-banded double doors, a crane arm over the yard
       warehouse(Q,o){const M=km(o),dw=Q.home('warehouse','store');khouse(Q,{n:'w',w:22,d:14,c:[-3,-3],z:11,rise:6,dw,door:.35,doorKind:'DoorKarn2'+M.dec,wins:1,vents:[[-9,-5]]});
         Q.beam('cp',[11,5,0],[11,5,15],'timber');Q.beam('cj',[11,5,14],[11,11,14],'timber');Q.beam('cb',[11,5,9],[11,9,14],'timber');

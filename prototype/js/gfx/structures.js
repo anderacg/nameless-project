@@ -23,8 +23,13 @@ function lotSprite(t,l){
   const m=lotModel(t,l),N=m.cell;let cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0)});
   if(l.st==='ruined')cv=charred(cv,l.seed);
   if(l._gimg&&l._gimg!==m.img)relot(l);
-  cv.flag=m.flag;cv.sh=l._sh=m.shadow;l._st=l.st;l._lv=l.lv;l._fort=F;l._yw=l.yaw;return l._s=cv;
+  cv.flag=m.flag;cv.rot=l.st==='ruined'?null:m.rotors;cv.sh=l._sh=m.shadow;l._st=l.st;l._lv=l.lv;l._fort=F;l._yw=l.yaw;return l._s=cv;
 }
+/* a building's rotors over its picture at (X, Y), its corner (the owner, 2026-11-08: "draw mills separately from the building to
+   animate it"): a windmill's sails and a watermill's wheel turning (engine PX.ROTORS.spin turns a second, from the clock and its
+   seed); still (at its seed's angle) where it stands outside your sight, as you last saw it */
+function drawRotors(s,X,Y,seed,still){if(!s.rot)return;const t=still?0:performance.now()/1000;
+  for(const r of s.rot){const f=PX.rotorFrame(r,(seed||0)+t*PX.ROTORS.spin[r.kind]*Math.PI*2);ctx.drawImage(f.img,X+f.ox,Y+f.oy);depthPic(f.img,X+f.ox,Y+f.oy)}}
 // a lot's yard for the painted world (worldart.js townGround): its model's ground layer with its snow's over it, {d: RGBA, N, key:
 // its material (groundKey)}, kept with the model; the lot remembers which model it was painted from (_gimg)
 function lotYard(t,l){const m=lotModel(t,l),N=m.cell,h=m.snow||m.ground;l._gimg=m.img;
@@ -69,9 +74,9 @@ function holdingEnts(t,ents,cam,V){
       const live=inSight((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE),sm=live?l.st!=='building'&&lotSprite(t,l):(seenTile(l.x,l.y)||seenTile(l.x+l.n-1,l.y+l.n-1))&&(l._mem||lotSprite(t,l));
       ents.push({y:(l.y+l.n)*TILE-1,sh:sm&&sm.sh?[sm.sh,X,Y-N]:null,f:()=>{
         // outside your sight: the building as you last saw it (fog.js), or nothing if you never saw its ground
-        if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);ctx.drawImage(m,X,Y-N);depthPic(m,X,Y-N);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(holdingFlag(t,col),X+m.flag[0],Y-N+m.flag[1],t.seed);txt(t.name,Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),'#a8a496','center')}return}
+        if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);ctx.drawImage(m,X,Y-N);depthPic(m,X,Y-N);drawRotors(m,X,Y-N,l.seed,true);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(holdingFlag(t,col),X+m.flag[0],Y-N+m.flag[1],t.seed);txt(t.name,Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),'#a8a496','center')}return}
         const s=lotSprite(t,l),w=t.work&&(t.work.lot?t.work.lot===l.id:t.work.k===l.k||t.work.k==='wall'&&l.k==='centre'),p=w?workProg(t):0;l._mem=s;l._memSt=l.st;
-        if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed,t.races?.[0]);else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed,t.races?.[0])}
+        if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed,t.races?.[0]);else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);drawRotors(s,X,Y-N,l.seed);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed,t.races?.[0])}
         if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
         if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(holdingFlag(t,col),X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N)}}});// (no estate's name under it near you: no words on the map's places, the owner, 2026-11-08; its tip names it)
       if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)});

@@ -349,7 +349,11 @@
   const rotP=(f,[u,v])=>[[u,v],[-v,u],[-u,-v],[v,-u]][((f%4)+4)%4];
   // (stage 3: a prop's s scales it (2 at the 32 px scale, where a figure is a tile tall), its lift raises it (on a cart, a deck))
   const sized=(q,s,l)=>s===1&&!l?q:Object.assign({},q,{r:q.r&&q.r*s,w:q.w&&q.w*s,d:q.d&&q.d*s,c:q.c&&q.c.map(x=>x*s),z:q.z.map(x=>x*s+l),roof:q.roof&&q.roof.rise?Object.assign({},q.roof,{rise:q.roof.rise*s}):q.roof});
-  function expand(parts){const out=[];for(const p of parts){if(p.k!=='prop'){out.push(p);continue}const f=p.face|0,[au,av]=p.at;
+  function expand(parts){const out=[];for(const p of parts){
+    // (a rotor (a mill's sails, its wheel): drawn apart by the game, turning (m.rotors); here only its ghost, a disc in its plane the
+    // fit counts and nothing draws, so the building is the same size with or without it)
+    if(p.k==='rotor'){const [u,v]=p.at,r=p.r,f=(p.face|0)%2,w=p.dv||1;out.push({k:'box',name:p.name+'g',u:f?[u,u+w]:[u-r,u+r],v:f?[v-r,v+r]:[v,v+w],z:[p.z-r,p.z+r],wall:'timber',thin:true,ghost:true});continue}
+    if(p.k!=='prop'){out.push(p);continue}const f=p.face|0,[au,av]=p.at;
     PROP[p.type].forEach((q0,i)=>{const q=sized(q0,p.s||1,p.lift||0);const [cu,cv]=rotP(f,q.c||[0,0]),c=[au+cu,av+cv],n=(p.name||'prop')+'.'+i;
       if(q.k==='tower')out.push(Object.assign({},q,{name:n,c}));else{const [w,d]=f%2?[q.d,q.w]:[q.w,q.d];out.push(Object.assign({},q,{name:n,u:[c[0]-w/2,c[0]+w/2],v:[c[1]-d/2,c[1]+d/2]}))}})}return out}
 
@@ -371,7 +375,7 @@
         box(F,G,{name:p.name||'chimney',wall:p.mat||'stone',top:true,topMat:'iron',cap:true},{U0,U1:Math.max(U0+1,G.U(cu+h)),V0,V1:Math.max(V0+1,G.V(cv+hd)),Z0:G.Z(p.z[0]),Z1:G.Z(p.z[1])})}
       // (each face its building, the part's dw or its roof's box's: for the tests and the game to tell its buildings' pixels)
       const dw=p.dw!=null?p.dw:p.on?(parts.find(q=>q.name===p.on)||{}).dw:undefined;
-      for(let i=n0;i<F.length;i++){if(F[i].sd==null)F[i].sd=(i*7)%97;if(F[i].dw==null)F[i].dw=dw}}
+      for(let i=n0;i<F.length;i++){if(F[i].sd==null)F[i].sd=(i*7)%97;if(F[i].dw==null)F[i].dw=dw;if(p.ghost)F[i].ghost=true}}
     return{F,G,yaw,parts,base,beds}}
   // how much room it takes on screen (its points' extent)
   function extent(F){let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const f of F)for(const p of f.P){const y=p[1]-p[2];if(p[0]<x0)x0=p[0];if(p[0]>x1)x1=p[0];if(y<y0)y0=y;if(y>y1)y1=y}return[x1-x0,y1-y0]}
@@ -396,7 +400,7 @@
       for(const q of fs)if(u0<q.uo+q.fw&&u0+w>q.uo)q.dec.push({id:di,kind:d.kind,rows,w,h,u0,v0,main:u0+w/2>=q.uo&&u0+w/2<q.uo+q.fw})}
     // the screen: x, g - z, on a buffer with room round the cell
     const M=N*2,B=M*M,ox=M>>1,oy=Math.round(M*.7),depth=new Float32Array(B).fill(-1e9),fid=new Int16Array(B).fill(-1),PT=new Float32Array(B*3);
-    for(let fi=0;fi<F.length;fi++){const f=F[fi];if(f.vis<=1e-4)continue;const S=f.P.map(p=>[p[0]+ox,p[1]-p[2]+oy]);
+    for(let fi=0;fi<F.length;fi++){const f=F[fi];if(f.vis<=1e-4||f.ghost)continue;const S=f.P.map(p=>[p[0]+ox,p[1]-p[2]+oy]);
       let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9,area=0;for(const [x,y] of S){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)}
       for(let i=0;i<S.length;i++){const a=S[i],b=S[(i+1)%S.length];area+=a[0]*b[1]-b[0]*a[1]}if(Math.abs(area)<1e-6)continue;const sg=area>0?1:-1;
       for(let Y=Math.max(0,Math.floor(y0));Y<=Math.min(M-1,Math.ceil(y1));Y++)for(let X=Math.max(0,Math.floor(x0));X<=Math.min(M-1,Math.ceil(x1));X++){
@@ -520,7 +524,7 @@
     // its ground shadow, a mask of its own (solid; the game lays every shadow in view into one mask and shades it once, at SHADE, after
     // the ground and before anything standing, so neighbours' shadows merge rather than stack): every face laid on the ground along
     // the light (to the lower right), inside the cell, off the picture
-    const shadow=PX.canvas(N,N,sg=>{const m=PX.canvas(N,N),P=PX.paint(m.getContext('2d', { willReadFrequently: true }));for(const f of F)P.poly(f.P.map(p=>[p[0]+p[2]*SUN[0]+R.ox-dx,p[1]+p[2]*SUN[1]+R.oy-dy]),'#000');
+    const shadow=PX.canvas(N,N,sg=>{const m=PX.canvas(N,N),P=PX.paint(m.getContext('2d', { willReadFrequently: true }));for(const f of F)if(!f.ghost)P.poly(f.P.map(p=>[p[0]+p[2]*SUN[0]+R.ox-dx,p[1]+p[2]*SUN[1]+R.oy-dy]),'#000');
       const sm=m.getContext('2d', { willReadFrequently: true }).getImageData(0,0,N,N).data,o=sg.createImageData(N,N),on=i=>sm[i*4+3]&&!D[i*4+3];
       // (soft: its edge on open ground a checker, so it fades off rather than ending on a hard line)
       for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x;if(!on(i))continue;const open=j=>!sm[j*4+3]&&!D[j*4+3],e=(x>0&&open(i-1))||(x<N-1&&open(i+1))||(y>0&&open(i-N))||(y<N-1&&open(i+N))||x===0||y===0||x===N-1||y===N-1;
@@ -543,9 +547,13 @@
     let flag=null;if(spec.flag){let best=null;for(const f of F)if(f.cls==='roof')for(const p of f.P)if(!best||p[2]>best[2])best=p;if(best)flag=[Math.round(best[0]+R.ox-dx),Math.round(best[1]-best[2]+R.oy-dy)]}
     // named points of the plan on the picture (spec.marks {name:[u,v,z]}: a camp's fire, a gate's middle)
     const marks={};for(const k in spec.marks||{}){const [u,v,z]=spec.marks[k],G=R.G,p=G.W(G.U(u),G.V(v),G.Z(z||0));marks[k]=[Math.round(p[0]+R.ox-dx),Math.round(p[1]-p[2]+R.oy-dy)]}
+    // (its rotors on the picture: each its kind, materials, hub (c) and the screen vectors of a radius along its plane's level axis
+    // (ex) and up it (ez), so the game draws it turning in its plane, foreshortened as the building is turned: PX.rotorFrame)
+    const rotors=spec.parts.filter(p=>p.k==='rotor').map(p=>{const G=R.G,[u,v]=p.at,r=p.r,f=(p.face|0)%2,at=(a,b,z)=>{const q=G.W(G.U(a),G.V(b),G.Z(z));return[q[0]+R.ox-dx,q[1]-q[2]+R.oy-dy]},vm=v+(p.dv||1)/2,um=u+(p.dv||1)/2,
+      c=f?at(um,v,p.z):at(u,vm,p.z),a=f?at(um,v+r,p.z):at(u+r,vm,p.z),b=f?at(um,v,p.z+r):at(u,vm,p.z+r);return{kind:p.kind,mats:p.mats||{},c,ex:[a[0]-c[0],a[1]-c[1]],ez:[b[0]-c[0],b[1]-c[1]],r}});
     const ground=groundOf(spec,R,dx,dy,N,body,gz,bs.map(b=>b.door).concat(door?[door]:[]).filter(Boolean));
     const out={img,ground,groundKey:groundKey(spec),shadow,shade:SHADE,w:N,h:N,ax:0,ay:N,cell:N,tiles:[N/16,N/16],flag,yaw:R.yaw,role:spec.role||null,windows,door,buildings:bs,dwellings:bs.filter(b=>b.role==='home'),households:bs.reduce((a,b)=>a+b.dwellings,0),mask,clipped:cw>fit||bx.y1-bx.y0+1>fit,scale:sc,view:'model',
-      seed:sd,marks,px:I,season:{}};
+      seed:sd,marks,rotors,px:I,season:{}};
     // (spec.snow, 0-1 or true: the snow overlay made with it, out.snow; the game may ask for another amount later, PX.modelSeason)
     if(spec.snow)out.snow=PX.modelSeason(out,'snow',spec.snow===true?1:+spec.snow);
     out.ms=performance.now()-t0;return out};
@@ -697,7 +705,7 @@
   function place(Q,pc,at,f,id){const T=([u,v])=>{const [a,b]=rotP(f,[u,v]);return[a+at[0],b+at[1]]},R=(u,v)=>{const p=[T([u[0],v[0]]),T([u[1],v[1]])];return[[Math.min(p[0][0],p[1][0]),Math.max(p[0][0],p[1][0])],[Math.min(p[0][1],p[1][1]),Math.max(p[0][1],p[1][1])]]};
     const base=Q.dwellings.length;Q.dwellings.push(...(pc.dwellings||[]));
     for(const p0 of pc.parts){const p=Object.assign({},p0);if(p.name)p.name=id+p.name;if(p.on)p.on=id+p.on;if(p.dw!=null)p.dw+=base;
-      if(p.u&&p.v){[p.u,p.v]=R(p.u,p.v)}if(p.c)p.c=T(p.c);if(p.at)p.at=T(p.at);if(p.k==='prop')p.face=((p.face|0)+f)%4;
+      if(p.u&&p.v){[p.u,p.v]=R(p.u,p.v)}if(p.c)p.c=T(p.c);if(p.at)p.at=T(p.at);if(p.k==='prop'||p.k==='rotor')p.face=((p.face|0)+f)%4;
       if(p.k==='tower'&&!p.round&&f%2){p.w=p.w}// (square: the same either way)
       if(p.k==='chimney'&&f%2){const w=p.w;p.w=p.d||p.w;p.d=w}
       if(p.k==='roof'){const ax=p.axis||'u',hv=ax==='u'?[0,p.hi==='b1'?1:-1]:[p.hi==='b1'?1:-1,0],nh=rotP(f,hv);if(f%2)p.axis=ax==='u'?'v':'u';p.hi=(p.axis==='u'?nh[1]:nh[0])>0?'b1':'b0'}

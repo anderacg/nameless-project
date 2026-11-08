@@ -103,6 +103,11 @@
     fence(pts,gates,h,mat){this.parts.push({k:'fence',name:'f'+this.parts.length,pts,gates,h:h||4,mat});return this}
     bed(u,v,mat){this.parts.push({k:'bed',name:'b'+this.parts.length,u,v,topMat:mat});return this}
     home(kind,role,storeys,dwellings){this.dwellings.push({kind,role:role||'home',storeys:storeys||1,dwellings});return this.dwellings.length-1}
+    // a rotor: a mill's sails or its wheel round (u, z) in the plane v..v+dv (mats: its materials), drawn apart by the game turning
+    // (model.js m.rotors, PX.rotorFrame); in the model only its ghost, so its building keeps its size
+    rotor(kind,at,z,r,mats,dv){this.parts.push({k:'rotor',name:'rt'+this.parts.length,kind,at,z:z+this.lift,r,mats,dv:dv||1,face:0});return this}
+    // a watermill's wheel: a rotor while PX.ROTORS is on, else drawn into the model as any wheel
+    millWheel(name,u,v,z,r,mat,dv){return PX.ROTORS.on?this.rotor('wheel',[u,v],z,r,{rim:mat||'plank',spoke:'timber',hub:'iron'},dv):this.wheel(name,u,v,z,r,mat,dv)}
     // a cut-out standing in the plane v..v+dv (a wheel, sails, a sign, a ladder; dv 1 unless said): rows top to bottom, a material a
     // letter, each run of a row one thin box (u0 its left, z0 its foot); x.alongV stands it in the plane u..u+dv instead, its rows along v;
     // x.top false leaves the runs' tops off (a wheel: its spokes' tops would fill its gaps from above)
@@ -156,7 +161,8 @@
   // the holy symbol: a gold cross standing on a roof's peak, 2 px thick, its arms both ways, so it reads as a cross from every side
   const cross=(Q,n,u,v,z)=>{Q.box(n+'p',[u-1,u+1],[v-1,v+1],[z,z+6],'gold',{top:true,fine:true});for(const [a,b] of [[3,1],[1,3]])Q.box(n+a,[u-a,u+a],[v-b,v+b],[z+3,z+4],'gold',{top:true,fine:true,thin:true})};
   // a windmill's four sails: an X of spars round the hub (u, z), a cloth to one side of each in a lattice, 3 px deep in the plane v
-  function sails(Q,u,v,z,L){const rows=[];for(let j=L;j>=-L;j--){let s='';for(let i=-L;i<=L;i++){let ch='.';
+  // (while PX.ROTORS is on a rotor, drawn apart and turning)
+  function sails(Q,u,v,z,L){if(PX.ROTORS.on){Q.rotor('sails',[u,v],z,L,{spar:'timber',lath:'plank',cloth:'canvas'},3);return}const rows=[];for(let j=L;j>=-L;j--){let s='';for(let i=-L;i<=L;i++){let ch='.';
       for(let k=0;k<4;k++){const a=Math.PI/4+k*Math.PI/2,al=i*Math.cos(a)+j*Math.sin(a),ac=-i*Math.sin(a)+j*Math.cos(a);if(al<1.5||al>L+.5)continue;
         if(Math.abs(ac)<.7){ch='w';break}if(ac>0&&ac<4.6&&al>3.5)ch=ac>3.7||Math.round(al)%3===0?'b':'c'}s+=ch}rows.push(s)}
     Q.cut('sl',u-L-.5,v,z-L,rows,{w:'timber',b:'plank',c:'canvas'},{dv:3,top:false})}
@@ -307,10 +313,10 @@
     // sacks at its door)
     watermill(Q,o){const dw=Q.home('watermill','work');
       if(o.d.int(0,1)){house(Q,{w:16,d:16,c:[-4,-3],z:12,form:'front',rise:7,wall:'daub',dw,door:.5,wins:1,chim:false});Q.bed([4,15],[-12,13],'water');
-        for(const u of [3,15])Q.box('rl'+u,[u,u+1],[-12,13],[0,2],'plank',{top:true,thin:true});Q.wheel('wh',9.5,-2,5,5,'plank',3);Q.box('sl',[3,16],[10,12],[0,3],'plank',{top:true});
+        for(const u of [3,15])Q.box('rl'+u,[u,u+2],[-12,13],[0,2],'plank',{top:true});Q.millWheel('wh',9.5,-2,5,5,'plank',3);Q.box('sl',[3,16],[10,12],[0,3],'plank',{top:true});
         Q.prop('sacks',[-9,8]);Q.prop('barrel',[0,8],0,1.4);return}
       house(Q,{w:14,d:18,c:[-4,-2],z:11,rise:6,wall:'stone',dw,door:.25,wins:1,chim:[-8,-6]});
-      Q.bed([-15,15],[8,13],'water');Q.wheel('wh',8,7,5,5,'plank',2)},
+      Q.bed([-15,15],[8,13],'water');Q.millWheel('wh',8,7,5,5,'plank',2)},
     // a warehouse: long planks on a stone footing, its great doors, a loft over them with its hatch and a hoist, a crate on the rope
     warehouse(Q,o){const dw=Q.home('warehouse','store');Q.box('w',[-11,11],[-8,8],[0,12],'plank',{dw,foot:'stone'});Q.roof('w','gable','u',7,o.roofMat,{ov:1});
       Q.dec('w.S','Door2',.3);Q.dec('w.S','Win',.88,3);Q.dec('w.N','Door',.5);for(const k of ['E','W'])for(const a of [.3,.7])Q.dec('w.'+k,a<.5?'Hatch':'Win',a,4);
@@ -600,5 +606,32 @@
     PX.MODEL_LOOK=Object.fromEntries(PX.MODEL_CULTURES.map(c=>[c,lookOf(c)]));PX.MODEL_OWN=Object.fromEntries(PX.MODEL_CULTURES.map(c=>[c,line(c).flatMap(s=>Object.keys(s.own&&s.own.types||{}))]))}
   index();
   // what a style file builds with: the plan, the shared proportions, the common pieces, the generic plans and the cluster helpers
+  /* ---- the rotors (the owner, 2026-11-08: "for mills or any buildings please draw mills separately from the building to animate
+     it"): a windmill's sails and a watermill's wheel are drawn apart from the building (PX.ROTORS.on), the game turning them (spin:
+     turns a second; frames: pictures a symmetric turn, a quarter for sails, an eighth for a wheel). PX.rotorFrame(rot, a): the rotor
+     at angle a (radians) as {img, ox, oy} (its corner from the model's corner), in its plane foreshortened as its building is turned
+     (rot.ex, rot.ez: model.js), its materials' colours, an outline a shade of its own; kept a frame. PX.withRotors(m, a): the
+     model with its rotors at a, one picture (a still: the menu) ---- */
+  PX.ROTORS={on:true,spin:{sails:.12,wheel:.22},frames:{sails:8,wheel:6}};
+  const ROT_FR=new Map();
+  PX.rotorFrame=(rot,a)=>{const R=PX.ROTORS,sym=rot.kind==='wheel'?Math.PI/4:Math.PI/2,n=R.frames[rot.kind]||8,i=((Math.floor(((a%sym)+sym)%sym/sym*n))%n+n)%n,
+      key=rot.kind+JSON.stringify(rot.mats)+rot.ex.map(x=>x.toFixed(2))+rot.ez.map(x=>x.toFixed(2))+i;if(ROT_FR.has(key))return ROT_FR.get(key);
+    const ang=i/n*sym,[ex0,ex1]=rot.ex,[ez0,ez1]=rot.ez,rx=Math.ceil(Math.abs(ex0)+Math.abs(ez0))+3,ry=Math.ceil(Math.abs(ex1)+Math.abs(ez1))+3,W=rx*2+1,H=ry*2+1,
+      P=(t,s,th)=>{const c=Math.cos(th),sn=Math.sin(th),x=t*c-s*sn,y=t*sn+s*c;return[rx+.5+ex0*x+ez0*y,ry+.5+ex1*x+ez1*y]},col=(m,k)=>(PX.MAT[m]||PX.MAT.timber)[k];
+    const img=PX.canvas(W,H,g=>{const quad=(pts,c)=>{g.fillStyle=c;g.beginPath();pts.forEach((q,j)=>j?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.closePath();g.fill()},
+      bar=(t0,t1,s0,s1,th,c)=>quad([P(t0,s0,th),P(t1,s0,th),P(t1,s1,th),P(t0,s1,th)],c),M=rot.mats,w=1.1/Math.max(4,rot.r),
+        // (a spar or a spoke stroked too, so seen edge-on it still shows)
+        line=(t0,t1,th,c)=>{const a=P(t0,0,th),b=P(t1,0,th);g.strokeStyle=c;g.lineWidth=1.3;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()};
+      if(rot.kind==='wheel'){for(let k=0;k<8;k++){const th=ang+k*Math.PI/4;bar(.12,.8,-w,w,th,col(M.spoke||'timber',1));line(.12,1.05,th,col(M.spoke||'timber',1));bar(.72,1.08,-.09,.09,th,col(M.rim||'plank',2))}
+        for(let k=0;k<48;k++){const th=k/48*Math.PI*2;bar(.74,.86,-.07,.07,th,col(M.rim||'plank',k%2))}quad([P(-.14,-.14,0),P(.14,-.14,0),P(.14,.14,0),P(-.14,.14,0)],col(M.hub||'iron',1))}
+      else{for(let k=0;k<4;k++){const th=ang+Math.PI/4+k*Math.PI/2;bar(.3,1,0,.36,th,col(M.cloth||'canvas',k%2?1:0));for(const t of [.45,.6,.75,.9])bar(t-.025,t+.025,0,.36,th,col(M.lath||'plank',2));
+          bar(.3,1,.33,.38,th,col(M.lath||'plank',2));bar(.08,1.04,-w,w,th,col(M.spar||'timber',1));line(.08,1.04,th,col(M.spar||'timber',1))}
+        quad([P(-.1,-.1,0),P(.1,-.1,0),P(.1,.1,0),P(-.1,.1,0)],col(M.spar||'timber',2))}
+      // (crisp: each pixel all or nothing, then an outline a shade of its neighbour)
+      const im=g.getImageData(0,0,W,H),d=im.data,on=new Uint8Array(W*H);for(let q=0;q<W*H;q++){on[q]=d[q*4+3]>110?1:0;d[q*4+3]=on[q]?255:0}
+      for(let y=0;y<H;y++)for(let x=0;x<W;x++){const q=y*W+x;if(on[q])continue;const nb=[q-1,q+1,q-W,q+W].find(j=>j>=0&&j<W*H&&on[j]&&Math.abs((j%W)-x)<=1);if(nb==null)continue;
+        d[q*4]=d[nb*4]*.5;d[q*4+1]=d[nb*4+1]*.5;d[q*4+2]=d[nb*4+2]*.5;d[q*4+3]=255}g.putImageData(im,0,0)});
+    const out={img,ox:Math.round(rot.c[0])-rx,oy:Math.round(rot.c[1])-ry};if(ROT_FR.size>600)ROT_FR.clear();ROT_FR.set(key,out);return out};
+  PX.withRotors=(m,a)=>{if(!m.rotors||!m.rotors.length)return m.img;return PX.canvas(m.img.width,m.img.height,g=>{g.drawImage(m.img,0,0);for(const r of m.rotors){const f=PX.rotorFrame(r,a||0);g.drawImage(f.img,f.ox,f.oy)}})};
   PX.planKit={Plan,RULE,house,dormer,lean,stilts,cross,sails,crag,curtain,shed,plans:T,piece,made,prop:P,row,stable,fire,clusters:CL};
 })(window.PX=window.PX||{});

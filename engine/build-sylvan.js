@@ -249,7 +249,7 @@
         Q.box('hub',[-1,1],[4.5,7.5],[11,13],'bark',{top:true});PX.planKit.sails(Q,0,6,12,12);tint(Q,{timber:'bark'});Q.prop('sacks',[-7,1])},
       // a watermill: a hall of pale living wood under a leaf roof, its wheel turning in the race before it, fed by a flume on posts
       watermill(Q,o){const K=SY(o),dw=Q.home('watermill','work');pod(Q,o,{w:14,d:16,c:[-4,-3],z:11,ax:'v',R:9,dw,door:.5});
-        Q.bed([-15,15],[8,13],'water');Q.wheel('wh',8,7,5,5,K.wood,2);Q.box('fl',[4,13],[6.5,9.5],[11,12],'plank',{top:true,topMat:'water'});Q.box('fp',[11,13],[6.5,8],[0,11],'bark',{top:true})},
+        Q.bed([-15,15],[8,13],'water');Q.millWheel('wh',8,7,5,5,K.wood,2);Q.box('fl',[4,13],[6.5,9.5],[11,12],'plank',{top:true,topMat:'water'});Q.box('fp',[11,13],[6.5,8],[0,11],'bark',{top:true})},
       // a store hall (the Court's warehouse): long, pale living wood under a leaf roof, its wide arched doors, a loft with its hatch and
       // a hoist of bark, a crate on the rope
       warehouse(Q,o){const K=SY(o),dw=Q.home('warehouse','store');Q.box('w',[-11,11],[-8,8],[0,12],K.wood,{dw,foot:'bark'});Q.roof('w','leaf','u',8,o.roofMat,{o:1,ov:1,lip:1,sweep:3,curl:1,vmat:K.vmat});

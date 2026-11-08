@@ -259,7 +259,7 @@
         Q.box('hub',[-1,1],[5,8],[11,13],'timber',{top:true});sails(Q,0,6.5,12,12);Q.prop('sacks',[-8,3],0,1.5)},
       // a watermill: a hut of logs under a wagon roof of hide, its wheel turning in the race before it
       watermill(Q,o){const dw=Q.home('watermill','work');Q.box('m',[-12,4],[-10,4],[0,11],'log',{dw});Q.roof('m','vault','u',5,o.roofMat,{o:1,ov:1,lip:2});Q.dec('m.S','DoorAsh',.3);Q.dec('m.E','DoorAsh',.5);Q.dec('m.W','WinAsh',.5,5);
-        if(yd(o).band)Q.dec('m.S','BandAshW',.5,6);Q.bed([-15,15],[8,13],'water');Q.wheel('wh',8,7,5,5,'plank',2);Q.prop('sacks',[-8,8],0,1.4)},
+        if(yd(o).band)Q.dec('m.S','BandAshW',.5,6);Q.bed([-15,15],[8,13],'water');Q.millWheel('wh',8,7,5,5,'plank',2);Q.prop('sacks',[-8,8],0,1.4)},
       // a guarded supply tent (the Horde's warehouse): a great tent of hide on low felt walls, the clan band along it, its flap door,
       // crates and barrels stacked by it, a weapon rack (its guard's)
       warehouse(Q,o){const dw=Q.home('warehouse','store'),Y=yd(o);Q.box('w',[-9,7],[-9,5],[0,11],Y.felt||'canvas',{dw});Q.roof('w','gable','u',6,o.roofMat,{lip:2,finial:1,fmat:'bone'});
@@ -383,7 +383,7 @@
     Q.box('stp',[cu-3,cu+3],[f+.5,f+2.5],[0,1],'plank',{top:true});for(const s of [-1,1]){standard(Q,'st'+s,cu+s*(R+3),cv+R*.4,R+10,s);if(!small)trophy(Q,'tp'+s,cu+s*(R*.55),f+6,15)}
     if(!small){for(const s of [-1,1])Q.prop('firepit',[cu+s*8,f+10],0,1.8);rug(Q,'rg',[cu-4,cu+4],[f+3,f+11])}}
   // a windmill's four sails of hide: an X of spars round the hub (u, z), the hide to one side of each on a lattice, 3 px deep in v
-  function sails(Q,u,v,z,L){const rows=[];for(let j=L;j>=-L;j--){let s='';for(let i=-L;i<=L;i++){let ch='.';
+  function sails(Q,u,v,z,L){if(PX.ROTORS.on){Q.rotor('sails',[u,v],z,L,{spar:'timber',lath:'timber',cloth:'canvas'},3);return}const rows=[];for(let j=L;j>=-L;j--){let s='';for(let i=-L;i<=L;i++){let ch='.';
       for(let k=0;k<4;k++){const a=Math.PI/4+k*Math.PI/2,al=i*Math.cos(a)+j*Math.sin(a),ac=-i*Math.sin(a)+j*Math.cos(a);if(al<1.5||al>L+.5)continue;
         if(Math.abs(ac)<.7){ch='w';break}if(ac>0&&ac<4.6&&al>3.5)ch=ac>3.7||Math.round(al)%3===0?'b':'c'}s+=ch}rows.push(s)}
     Q.cut('sl',u-L-.5,v,z-L,rows,{w:'timber',b:'timber',c:'canvas'},{dv:3,top:false})}

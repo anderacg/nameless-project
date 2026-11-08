@@ -155,7 +155,7 @@ const MenuArt=(()=>{
       const c=PX.centreModel({tier:'castle',people:'human',seed:2,yaw:0,env:'grass'}),cy=h.y+4;put(dusk(c.img,fy(cy),1,c.windows),h.x,cy);if(c.flag)this.flags.push([h.x-c.img.width/2+c.flag[0],cy-c.img.height+c.flag[1],6]);
       for(const [type,dx,dy,s] of [['townhouse',-36,8,1],['cottage',-56,16,2],['townhouse',34,10,3],['cottage',54,18,4],['chapel',-20,20,1],['cottage',16,24,5],['townhouse',-2,30,6]]){
         const m=PX.buildingModel({type,people:'human',seed:s,yaw:0,env:'grass'});put(dusk(m.img,fy(h.y+dy),1,m.windows),h.x+dx,h.y+dy)}
-      const mill=[this.u(.24),this.Y(.42)],wm=PX.buildingModel({type:'windmill',people:'human',seed:1,yaw:2,env:'grass'});put(dusk(wm.img,fy(mill[1]),1,wm.windows),mill[0],mill[1]);
+      const mill=[this.u(.24),this.Y(.42)],wm=PX.buildingModel({type:'windmill',people:'human',seed:1,yaw:1,env:'grass'});put(dusk(wm.img,fy(mill[1]),1,wm.windows),mill[0],mill[1]);this.mill={x:Math.round(mill[0]-wm.img.width/2),y:Math.round(mill[1]-wm.img.height),rot:wm.rotors||[],f:fy(mill[1]),pics:new Map()};// (its sails drawn apart since 2026-11-08, turning over it: millSails)
       // (pines in woods, where the land's own noise says, never on the water, the roads, the fields, the castle's ground, the camp's rocks)
       const wood=(x,y)=>vnoise(x,y*1.7,40,41)*.7+vnoise(x,y*1.7,14,42)*.3,ledge=this.u(.44);
       const free=(x,y)=>!(y<hz+4||this.wet(x,y)||this.wet(x-6,y)||this.wet(x+6,y)||this.near(x,y,this.road,10)||this.near(x,y,this.road2,9)||Math.abs(x-h.x)<h.w*.55&&y<h.y+34&&y>h.y-12||
@@ -188,7 +188,9 @@ const MenuArt=(()=>{
       const sh=this._ship||(this._ship=rows(SHIP,{'#':'#1a1420'}));this.ships.forEach(([x,y],i)=>{const b=Math.sin(t*1.2+i*2)>0?0:1;g.drawImage(sh,x,y-7+b);P.rect('#eab07a',x+3,y-6+b,1,3);P.rect('#f0c08a',x+6,y-4+b,1,2)});
       {const img=this._dr||(this._dr=DRAGON.map(r=>rows(r,{'#':A.dragon}))),x=this.u(.62)+Math.sin(t*.06)*30,y=hz*.28+Math.sin(t*.2)*4;g.drawImage(img[Math.floor(t*1.3)%2],Math.round(x),Math.round(y))}
       for(const [x,y,n] of this.flags){P.rect('#2a2018',x,y-1,1,n+3);for(let i=0;i<n;i++)P.rect(i>n-2?'#8a2626':'#b83a32',x+1+i,y+Math.round(Math.sin(t*4+i*.9)*.7),1,Math.max(2,4-(i>n-2?1:0)))}
-      this.banner(P,t);this.column(g,t);this.flame(g,P,t,F)}
+      this.banner(P,t);this.column(g,t);this.millSails(g,t);this.flame(g,P,t,F)}
+    // the windmill's sails turning (engine PX.rotorFrame, PX.ROTORS.spin), in the dusk's light as the mill is
+    millSails(g,t){const M=this.mill;if(!M)return;for(const r of M.rot){const f=PX.rotorFrame(r,.4+t*PX.ROTORS.spin[r.kind]*Math.PI*2);let d=M.pics.get(f.img);if(!d)M.pics.set(f.img,d=dusk(f.img,M.f,1));g.drawImage(d,M.x+f.ox,M.y+f.oy)}}
     // the camp's banner: dark cloth, the white tree on it, its tail ragged, waving
     banner(P,t){const p=this.pole,x0=p.x+2,y0=p.y-p.h+3,w=28,h=Math.min(46,Math.round(p.h*.4)),T=BANNER_TREE,tx=Math.round((w-T[0].length)/2),ty=Math.round(h*.18);
       for(let i=0;i<w;i++){const off=Math.round(Math.sin(t*2.4-i*.4)*1.4*(i/w)),len=h-(i%4===1?4:0)-((i*7)%5===0?2:0)-(i>w-4?(i-w+4)*2:0);
