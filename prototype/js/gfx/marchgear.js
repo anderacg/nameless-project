@@ -71,7 +71,7 @@ class MarchKit{
     if(r.flag&&G.flags){const b=o.banner?.();if(b&&typeof b==='object'){this.flag=b;this.bare=!!r.pole}}
     if(r.torch&&G.torches&&Clock.isNight)this.torch=Math.min(1,Clock.darkness()/G.fade);return this}
   // (a flag's wave: still while he stands, MARCH_GEAR.flutter a second as he walks)
-  wave(){return this.u.walking?Math.floor((this.u.stepT||0)*MARCH_GEAR.flutter)%2:0}
+  wave(){return marchWalks(this.u)?Math.floor((this.u.stepT||0)*MARCH_GEAR.flutter)%2:0}
   // (the same flags as in battle (the owner, 2026-11-07: "the same sprites", "check the flags"): the battle's back pole and banner
   // (battleBackFlag); a flag man's own spear drawn as in battle, a doll's hold and BATTLE_BANNER.pole longer, its cloth under its
   // head (clothSprite, poleTip))
@@ -80,7 +80,7 @@ class MarchKit{
     if(this.bare&&s.hand){const c=poleFlagSprite(this.r.pole,this.flag,this.r.kit.skin,this.wave());ctx.drawImage(c,bx+s.hand[0]-c.R,by+s.hand[1]-c.R)}
     // (its torch: as it burns, its frame by the clock and his id (fire.js fireFrameAt), its flame trailing back as he walks; its
     // light at the flame's foot, with its pool on the ground at his feet (g))
-    if(this.torch>0&&s.free){const on=FLAMES.on,c=on?torchSprite(this.r.kit.skin,fireFrameAt(fireTime(),this.u.id),this.u.walking?-FLAMES.lean:0):torchSprite(this.r.kit.skin,Math.floor(performance.now()/120+this.u.id)%2),a=ctx.globalAlpha,hx=bx+s.free[0],hy=by+s.free[1];
+    if(this.torch>0&&s.free){const on=FLAMES.on,c=on?torchSprite(this.r.kit.skin,fireFrameAt(fireTime(),this.u.id),marchWalks(this.u)?-FLAMES.lean:0):torchSprite(this.r.kit.skin,Math.floor(performance.now()/120+this.u.id)%2),a=ctx.globalAlpha,hx=bx+s.free[0],hy=by+s.free[1];
       ctx.globalAlpha=a*this.torch;ctx.drawImage(c,hx-c.R,hy-c.R);ctx.globalAlpha=a;
       const L={x:Math.round(this.x+this.sx*(hx+c.fx)),y:Math.round(this.y+Math.abs(this.sx)*(hy+c.fy)),r:MARCH_GEAR.light};if(on){L.id=this.u.id;L.g=Math.max(0,this.y-L.y)}LIGHTQ.push(L)}}
 }

@@ -176,9 +176,12 @@ function marchLook(u,o){const type=u.character?u.type.replace(/^comp_/,''):u.typ
   const cold=coldAt(o.x,o.y);if(!u.mLook||u.mLookC!==col||u.mLookW!==cold){u.mLook=dressed(cold,()=>spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col));u.mLookC=col;u.mLookW=cold}return u.mLook}
 // (his stride's frame on the march, 0-3: by the way he has walked, a step each WALK.foot × WALK.step px, so his feet keep to the ground)
 const marcherStep=u=>(Math.floor((u.walk||0)/(WALK.foot*WALK.step))+u.id)%4;
+// (drawn walking: stepping, and not yet at his place: there, he stands at once, not on his last stride frozen for the rest of
+// MARCH_MOVE.stride; the owner, "leg stuck before going to idle". Drawn only: the march itself reads u.walking)
+const marchWalks=u=>!!u.walking&&!(u.tg&&Math.hypot(u.x-u.tg.x,u.y-u.tg.y)<MARCH_MOVE.home);
 function marchSprite(u,o,pose,bare){
   const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',lead=hero||u.row==='leader';
-  return dressed(coldAt(o.x,o.y),()=>unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(u.walking?2+marcherStep(u):0),!!bare,false,o.look().col));
+  return dressed(coldAt(o.x,o.y),()=>unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(marchWalks(u)?2+marcherStep(u):0),!!bare,false,o.look().col));
 }
 // Leaders use the same character kind and equipment as battle; cached cells also serve map picking and banner height.
 const MARCH_LEADERS=new WeakMap();
@@ -200,13 +203,13 @@ function marchDraw(ents,o,cam){
 function drawMarcher(u,o,cam){return reduced(()=>drawMarcherAt(u,o,cam))}
 function drawMarcherAt(u,o,cam){
   // (standing: his fidgets, as in battle: render.js idleLife, on the real clock)
-  const S=ST[u.type]||{},I=!u.walking?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
+  const S=ST[u.type]||{},I=!marchWalks(u)?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
   // (what he carries besides, gfx/marchgear.js: his army's flag (on a spear of its own, his body bare; else at his back, before
   // his body), a torch after dark)
   subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
   // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld (a sword worn out of sight: SHEATH); a flag-bearer's
   // (your hero's, carrying your banner) only if it is sheathed (SHEATH.show), his hands on the pole; none for a beast)
-  const s=marchSprite(u,o,I?.pose,true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,u.walking,marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
+  const s=marchSprite(u,o,I?.pose,true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
   ctx.save();ctx.translate(x,y);ctx.scale(sx,k);G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
 }
 // (the owner, 2026-10-31: "the army ring speed is based on the overall unit speed so it can keep centered") its rings drawn on the
@@ -223,7 +226,7 @@ function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDete
 
 // Positions are runtime state. Saved group offsets remain the destination, never a rigid transform of the men.
 // (the owner, 2026-10-31: units forming up "not walking but shaking") stride: s a man still shows walking after his last step, so a
-// march is one walk, not a flicker; wake: px off his place before a settled man moves again while the army stands; squeeze:
+// march is one walk, not a flicker (home: px from his place within which he is drawn standing at once all the same); wake: px off his place before a settled man moves again while the army stands; squeeze:
 // [s hemmed in by his own side, the share of a step he then squeezes through at, px he must be short of his place, his share of
 // the parting's push against one not squeezing (the other gives way the rest)], the army standing; jam: s one stuck while it
 // marches before he squeezes through too (the owner, 2026-11-01: men jammed in a ford held its middle (leash) for good: none may freeze)
@@ -261,7 +264,7 @@ function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDete
    for a column too */
 // formGiveUp, formTry, formMove, formGain: a man short of his place, no nearer it by formGain px in formTry s, stands where he is, till its guide goes formMove px
 // or it is ordered anew (MarchArmy formWatch; the owner, 2026-11-02); off: they try on, as before
-const MARCH_MOVE={slit:8,formGiveUp:true,formTry:5,formMove:8,formGain:2,cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,wake:1,squeeze:[.4,1,2,0],road:1.45,jam:1.5,cadence:9,body:1,leash:[4,.6],menCentre:true,lead:[4,.6],wide:192,arrive:2,meetEdge:true,follow:{look:6,gap:1.5,gain:4,moving:2},headArrive:true,arriveWait:3,footing:true,
+const MARCH_MOVE={slit:8,formGiveUp:true,formTry:5,formMove:8,formGain:2,cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,home:.5,wake:1,squeeze:[.4,1,2,0],road:1.45,jam:1.5,cadence:9,body:1,leash:[4,.6],menCentre:true,lead:[4,.6],wide:192,arrive:2,meetEdge:true,follow:{look:6,gap:1.5,gain:4,moving:2},headArrive:true,arriveWait:3,footing:true,
   about:{on:true,cos:-.7,leg:200,halt:.6,pass:6,side:1.2,look:16,slow:.7,most:20,loop:{on:true,gap:10,end:0,pace:.8,ease:1,margin:2}}};
 /* (the owner, 2026-11-01: "how about making a ring like freeform based on the area?") the ring drawn round an army is the outline
    of the ground its men stand on: each man a soft disc (his body and pad px; a caravan's wagon one too), their fields summed on a
