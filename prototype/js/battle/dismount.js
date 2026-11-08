@@ -29,18 +29,31 @@ class Horse{
   // left standing where its rider stepped down or was thrown
   stand(){const u=this.rider,L=Horse.standing;this.x=u.x;this.y=u.y;this.face=u.face||1;this.way=null;this.mv=false;if(!L.includes(this))L.push(this)}
   /* its rider thrown: it stands loose there, then a fighter turns on the enemy (way 'fight'), any other bolts (way 'bolt') away from
-     the nearest enemy (else the way its rider faced) to (tx, ty), far off within the field */
+     the nearest enemy (else the way its rider faced) to (tx, ty), far off on open ground within the field (a map battle's ring);
+     no such ground that way or to either side, it stays */
   loose(){this.stand();if(this.fights){this.way='fight';this.bite=0;return}const u=this.rider,e=nearest(u),F=DISMOUNT.bolt,d=rnd(F.far[0],F.far[1]);
-    let a=e?Math.atan2(u.y-e.y,u.x-e.x):(u.face||1)>0?0:Math.PI;a+=rnd(-.5,.5);this.way='bolt';
-    this.tx=B.world?u.x+Math.cos(a)*d:clamp(u.x+Math.cos(a)*d,12,BW-12);this.ty=B.world?u.y+Math.sin(a)*d:clamp(u.y+Math.sin(a)*d,fieldTop()+4,fieldBot()-4)}
+    const a=(e?Math.atan2(u.y-e.y,u.x-e.x):(u.face||1)>0?0:Math.PI)+rnd(-.5,.5);
+    for(const o of F.turn){const p=Horse.inside({x:u.x+Math.cos(a+o)*d,y:u.y+Math.sin(a+o)*d},12);if(Horse.open(p)){this.way='bolt';this.tx=p.x;this.ty=p.y;this.stall=0;return}}}
+  // (p kept within the field, or a map battle's ring, by pad px)
+  static inside(p,pad=8){return B.world?B.world.constrain(p,pad):{x:clamp(p.x,pad,BW-pad),y:clamp(p.y,fieldTop(),fieldBot())}}
+  // (open ground at p for a mount: a cell riders may enter (terrain.js), clear of the rocks and trees)
+  static open(p){const g=B.terrain?.route?.mounted;if(g&&!g.cost[routeIx(g,p.x,p.y)])return false;return !(B.obs||[]).some(o=>Math.hypot(p.x-o.x,p.y-o.y)<o.r+OBSTACLE.pad)}
   // ridden again
   ride(){const L=Horse.standing,i=L.indexOf(this);if(i>=0)L.splice(i,1);this.way=null;this.mv=false}
-  // (a step of its own toward (x, y) at spd px/s, stopping within stop px of it: true when there)
+  /* (a step of its own toward (x, y) at spd px/s, stopping within stop px of it: true when there). Round rock, water and cliffs as a
+     rider goes (terrain.js steerDir, on the riders' grid: nav, its body there), and kept off them as every soldier is (hold), off
+     the rocks and trees (battle.js obstaclePush) and within the field (inside); stall: s it has hardly moved, held up */
   toward(x,y,spd,stop,dt){const dx=x-this.x,dy=y-this.y,d=Math.hypot(dx,dy);this.mv=d>stop;if(!this.mv)return true;
-    const k=Math.min(1,spd*dt/d);this.x+=dx*k;this.y+=dy*k;if(Math.abs(dx)>.5)this.face=dx>0?1:-1;return false}
+    const ax=this.x,ay=this.y,n=this.nav||(this.nav={id:Math.random()*1e3|0,s:{mounted:true}}),st=Math.min(d,spd*dt);n.x=ax;n.y=ay;const w=steerDir(n,x,y);
+    this.x+=(w?w[0]:dx/d)*st;this.y+=(w?w[1]:dy/d)*st;this.hold(ax,ay);
+    const mv=Math.hypot(this.x-ax,this.y-ay);if(Math.abs(this.x-ax)>.3)this.face=this.x>ax?1:-1;this.stall=mv<st*.3?(this.stall||0)+dt:0;return false}
+  // (its step from (ax, ay) refused or slid along where a soldier's would be: terrain.js hold)
+  hold(ax,ay){const T=B.terrain,R=T?.blocky&&T.routes;
+    if(R&&!R.stepOk(ax,ay,this.x,this.y)){if(R.stepOk(ax,ay,this.x,ay))this.y=ay;else if(R.stepOk(ax,ay,ax,this.y))this.x=ax;else{this.x=ax;this.y=ay}}
+    for(const o of B.obs||[])obstaclePush(this,o,[ax,ay]);const p=Horse.inside(this);this.x=p.x;this.y=p.y}
   // a frame of a loose mount (Horse.step): bolting till it stands far off; fighting the enemies near its rider, else at his side
   step(dt){if(this.dead||!this.way)return;if(this.lunge>0)this.lunge-=dt;
-    if(this.way==='bolt'){if(this.toward(this.tx,this.ty,DISMOUNT.bolt.spd,2,dt)){this.way=null;this.mv=false}return}
+    if(this.way==='bolt'){if(this.toward(this.tx,this.ty,DISMOUNT.bolt.spd,2,dt)||this.stall>DISMOUNT.bolt.stall){this.way=null;this.mv=false}return}
     const F=DISMOUNT.fight,u=this.rider,ox=u.hp>0?u.x:this.x,oy=u.hp>0?u.y:this.y;let e=null,bd=DISMOUNT.near;
     for(const o of B.units){if(o.hp<=0||o.left||!battleEnemy(o,this))continue;const d=Math.hypot(o.x-ox,o.y-oy);if(d<bd){bd=d;e=o}}
     if(!e){if(u.hp>0)this.toward(u.x+(u.face||1)*-6,u.y,F.spd,3,dt);else this.mv=false;return}

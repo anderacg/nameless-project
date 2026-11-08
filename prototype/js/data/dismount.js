@@ -13,6 +13,7 @@
    temper: what a mount does when its rider is thrown, by its kind (the rider's look: gfx/people.js mount; the owner, 2026-11-08: "horse
    or sheep should run away. Warg may fight back"): 'fight' turns on the enemy, any other bolts;
    bolt: a bolting mount's pace (px/s) and how far it runs from the nearest enemy ([min, max] px) before it stands, to be caught again;
+   turn: the ways it tries off straight away (radians), the first with open ground there; stall: s held up (a wall) before it stands;
    fight: a fighting mount's pace (px/s; it goes for an enemy within near of its rider), its reach (px), s between bites (cd),
    a bite by its kind (dmg), and of the bitten man's own blow what it takes back (back) ---------- */
 const DISMOUNT={on:true,
@@ -23,5 +24,5 @@ const DISMOUNT={on:true,
   seat:9,brace:.6,
   cd:{dismount:4,mount:4},
   temper:{wolf:'fight',warg:'fight'},
-  bolt:{spd:95,far:[150,230]},
+  bolt:{spd:95,far:[150,230],turn:[0,.5,-.5,1,-1,1.6,-1.6],stall:.8},
   fight:{spd:80,reach:12,cd:.9,dmg:{wolf:5,warg:8},back:.4}};

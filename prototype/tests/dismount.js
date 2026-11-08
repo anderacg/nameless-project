@@ -48,6 +48,20 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,L=t.BattleLab,D=t.DISMOUNT,ev=s=>(
    f.x=u.x+600;const back=go(B,16,()=>!u.afoot);ok(back&&!h.dead&&!t.B.horses.length,'the enemy gone: it comes back to his side and he mounts it')}
   {const B=lab([Gp('orc_warg',1)],[Gp('militia',1)]),u=mine(B).units[0],f=tame(B,u,16);f.cd=0;t.physThrow(u,0,200,true);const h=u.horse;h.hp=1;go(B,4,()=>h.dead);
    ok(h.mount==='warg'&&h.dead&&B.corpses.some(c=>c.sp?.horse&&c.x===h.x&&c.y===h.y),'a warg fights too, and killed it lies where it fought')}
+  // (a bolting horse round a rock in its way, and never to a target in one)
+  {const B=lab([Gp('hum_lancer',1)],[Gp('militia',1)]),u=mine(B).units[0];tame(B,u,500);const rock={x:u.x-60,y:u.y,r:22};B.obs=[rock];
+   ok(!t.Horse.open({x:rock.x,y:rock.y})&&t.Horse.open({x:u.x,y:u.y+40}),'no open ground for a horse inside a rock');
+   t.Dismount.down(u,'thrown');const h=u.horse;let inRock=0;for(let i=0;i<120&&h.way;i++){go(B,1/30);if(Math.hypot(h.x-rock.x,h.y-rock.y)<rock.r)inRock++}
+   ok(!t.Horse.open({x:rock.x,y:rock.y})&&!inRock&&Math.hypot(h.x-u.x,h.y-u.y)>40,'bolting, it goes round a rock in its way, never into it ('+Math.round(Math.hypot(h.x-u.x,h.y-u.y))+' px off)');
+   const p=t.Horse.inside({x:-500,y:-500});ok(p.x>=0&&p.y>=t.fieldTop(),'and never past the field\'s edge')}
+  // (on a river field: a bolting horse by the water, its enemy on the bank behind it, never steps into deep water or rock)
+  {const TR0=ev('TERRAIN.on');ev('TERRAIN.on=true');try{if(L.active)L.exit();G.mode='world';G.modal=false;
+   L.start({leftGroups:[Gp('hum_lancer',1)],rightGroups:[Gp('militia',1)],deploy:false,ai:false,paused:false,morale:false,seed:7,ground:{recipe:'river',seed:4}});const B=t.B,T=B.terrain;B.cmdT=1e9;
+   const bad=(x,y)=>{const i=t.tIx(T,x,y);return T.solid[i]===1||T.kind[i]===t.TKIND.deep},u=mine(B).units[0];let spot=null;
+   for(let x=60;x<t.BW-60&&!spot;x+=6)for(let y=t.fieldTop()+40;y<t.fieldBot()-40&&!spot;y+=6)if(bad(x,y)&&!bad(x+30,y)&&!bad(x+70,y))spot=[x+30,y];
+   if(!spot)ok(false,'(a river bank to stand on)');else{u.x=spot[0];u.y=spot[1];const f=tame(B,u,60);f.x=u.x+60;f.y=u.y;t.Dismount.down(u,'thrown');const h=u.horse;let into=0;
+    for(let i=0;i<180;i++){go(B,1/30);if(bad(h.x,h.y))into++}ok(T.blocky&&!into&&!bad(h.x,h.y),'on a river field, by the water with the enemy behind it: the bolting horse keeps out of deep water ('+Math.round(Math.hypot(h.x-spot[0],h.y-spot[1]))+' px off, '+(h.way?'still going':'standing')+')')}}
+   finally{if(L.active)L.exit();ev('TERRAIN.on='+TR0)}}
   {const B=lab([Gp('dw_ram',1)],[Gp('militia',1)]),u=mine(B).units[0];tame(B,u,16);t.physThrow(u,0,200,true);ok(u.horse.mount==='ram'&&u.horse.way==='bolt','a dwarf\'s ram bolts as a horse does')}
   {const B=lab([Gp('elf_hart',1)],[Gp('militia',1)]),u=mine(B).units[0];tame(B,u,16);t.physThrow(u,0,200,true);ok(u.horse.mount==='stag'&&u.horse.way==='bolt','so does an elf\'s stag')}
   {const B=lab([Gp('hum_lancer',1)],[Gp('militia',1)]),u=mine(B).units[0];tame(B,u,500);mine(B).useAbility('dismount');go(B,1);ok(!u.horse.way&&!u.horse.mv,'stepped down at the order: his horse stands quiet')}
@@ -78,7 +92,12 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,L=t.BattleLab,D=t.DISMOUNT,ev=s=>(
    const end=Bt=>{Bt.over=true;Bt.win=true;Bt.endT=0;t.updateBattle(.01);if(t.B)t.finishBattle();t.hidePanel();G.mode='world';G.modal=false};
    {const Bt=fight(),m=Bt.units.filter(u=>u.sourceGroupId===id&&u.sourceArmy===t.P),e=Bt.units.find(u=>u.team===1);
     for(const u of m.slice(0,2)){t.Horse.of(u).hp=1;t.applyDmg(u,4,1,'slash',e,false)}t.Horse.of(m[2]).hp-=15;m[2].hp=m[2].max;
-    ok(m.length===6&&m.filter(u=>u.afoot).length===2,'in the fight two horses killed, one hurt ('+m.length+' men, '+m.filter(u=>u.afoot).length+' on foot)');end(Bt)}
+    ok(m.length===6&&m.filter(u=>u.afoot).length===2,'in the fight two horses killed, one hurt ('+m.length+' men, '+m.filter(u=>u.afoot).length+' on foot)');
+    // (a battle on the map: a bolting horse stays within its ring)
+    if(Bt.world){const W=Bt.world,in_=q=>W.distance(q)<=W.radius+1,far=t.Horse.inside({x:W.cx+W.radius*3,y:W.cy});t.Dismount.down(m[3],'thrown');const h=m[3].horse;let out=0;
+     for(let i=0;i<90&&h.way;i++){t.updateBattle(1/30);if(!in_(h))out++}ok(in_(far)&&in_({x:h.tx,y:h.ty})&&!out,'a battle on the map: a bolting horse runs and stands within its ring')}
+    else ok(false,'(a battle on the map)');
+    end(Bt)}
    ok(gr().count===6&&gr().horses===4&&t.horsesShort(gr())===2,'after it: the hurt one back, the dead lost: 4 horses for 6 men');
    {const Bt=fight(),m=Bt.units.filter(u=>u.sourceGroupId===id&&u.sourceArmy===t.P),off=m.filter(u=>u.afoot);
     ok(off.length===2&&off.every(u=>u.horse===null&&!u.s.mounted)&&m.filter(u=>u.s.mounted).length===4,'the next fight: two of them on foot from the start, with no horse');
