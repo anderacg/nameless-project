@@ -317,6 +317,7 @@ class BattleSetup{
   // (the battle's state (B), its type's lay-out, morale, the camera, deployment and the sprites queued (initialize))
   muster(){
     B=this.createState();
+    if(INTERIOR.on&&INTERIOR.holdCamp&&G.enc&&G.enc.kind==='camp'&&!B.tourney)B.holds=true;// (a camp's men at their tents till roused: interior.js insideRoused)
     if(this.playerOrder)B.playerOrder=this.playerOrder;
     Dismount.muster();// (your riders with no horse on foot from the start: battle/dismount.js)
     if(B.btype)this.arrangeType();

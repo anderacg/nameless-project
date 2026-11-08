@@ -589,7 +589,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-08, on purpose: the owner, "recheck whether the body composition still match with the new sprites": the weapon
 //  hand back on the hand's inner cell, a cape that keeps to him walking, a whole figure's blow with its arm and the weapon in its fist
 //  (engine/doll.js, dollfigs.js, figures.js). Proof: 212b5c7 gives 5479c8e1 again. Was W6 5479c8e1)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'194e29b2',W7:'30a2328c',W8:'51660bc5',B2:'3b944b30'};
+// (W6 again 2026-11-08, on purpose: the owner, "for the unit sprites that have cape, make sure it just a small pixel and look like
+//  cape": the map's caped men a pixel's cape behind them, fastened at the neck, not a block over the arm (engine/doll.js cloak).
+//  Proof: 251bed8 gives 194e29b2 again. Was W6 194e29b2)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'397e9353',W7:'30a2328c',W8:'51660bc5',B2:'3b944b30'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

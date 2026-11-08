@@ -955,9 +955,10 @@ function captainCav(c,id){return Commander.of(c.ck).cavalry(c,id)}
 function captainHero(c,id){return Commander.of(c.ck).hero(c,id)}
 /* the stall watch (the owner, 2026-10-30: "the battle sometimes seems stuck"): a battle where no blow lands for FOE_CMD.stall s while
    a foe still fights (not routing nor withdrawing) sends every group the AI has, on each side, at its nearest such foe: seen, at
-   him; unseen, to where he stands (the battle has told of him). Its clock (STALLS, by battle), from the last blow (B.lastHit) */
+   him; unseen, to where he stands (the battle has told of him). Its clock (STALLS, by battle), from the last blow (B.lastHit). Not a
+   cave's, a lair's, a camp's or a fort's men still at their posts (interior.js insideHolds, insideRoused): they wait to be found */
 const STALLS=new WeakMap();
 function stallWatch(){if(!B||B.over||B.deploy||B.hunt)return;const t=B.lastHit||0;let S=STALLS.get(B);if(S?.hit!==t)STALLS.set(B,S={hit:t,at:B.t});if(B.t-S.at<FOE_CMD.stall)return;S.at=B.t;
-  for(const g of Object.values(B.groups)){if(g.player&&!aiHas(g)||g.order==='withdraw'||g.resolve?.routed)continue;const m=grpUnits(g.id).filter(fighting);if(!m.length)continue;const C=g.centre();
+  for(const g of Object.values(B.groups)){if(g.player&&!aiHas(g)||g.order==='withdraw'||g.resolve?.routed||insideHolds(g.team)&&!insideRoused(g))continue;const m=grpUnits(g.id).filter(fighting);if(!m.length)continue;const C=g.centre();
     let e=null,d=Infinity;for(const u of B.units)if(fighting(u)&&!withdrawing(u)&&battleEnemy(g.team,u)){const k=Math.hypot(u.x-C.x,u.y-C.y);if(k<d){d=k;e=u}}
     if(e){if(BattleSight.seen(g.team,e))g.attack(e);else g.standAt(e.x,e.y)}}}

@@ -19,7 +19,7 @@
    way in's width (more than EXITS.min, morale.js: the one way off the field); loop: the chance of a passage joining two chambers past the next; jag: how ragged the walls (0 straight);
    box: square-cut chambers and passages; edge: rock kept between a chamber and the field's rows (px); bones, props: how many
    painted in a chamber [least, most]; look: the floor's [dark, mid, light] and the rock's five shades (RGB, dark first) */
-const INTERIOR={on:true,men:8,sight:.5,dark:.9,notice:180,files:2,zoom:2.4,squad:3,face:10,margin:[96,64],
+const INTERIOR={on:true,men:8,sight:.5,dark:.9,notice:180,alarm:150,holdCamp:true,files:2,zoom:2.4,squad:3,face:10,margin:[96,64],
   cave:{rooms:[4,6],r:[76,108],mouthR:80,deep:128,pass:[40,52],mouth:68,loop:.5,jag:.22,edge:26,bones:[2,5],props:[2,4],
     look:{floor:[[44,40,36],[60,55,48],[78,72,62]],rock:[[18,17,16],[30,28,26],[48,45,41],[74,69,62],[102,95,84]]}},
   cellar:{rooms:[4,5],r:[68,92],mouthR:72,deep:104,pass:[32,40],mouth:64,loop:.35,jag:0,box:true,edge:26,bones:[0,2],props:[2,4],
@@ -208,6 +208,10 @@ class InteriorSetup extends BattleSetup{
 const insideHolds=team=>!!B&&(!!B.inside||!!B.holds)&&team!==0;// (B.holds: a siege's defenders at their posts, battle/siegeworks.js)
 // (a group roused, and roused it stays: one of its own hurt, or a foe it sees within INTERIOR.notice px of one of its own; then its
 // captain orders it as anywhere)
-function insideRoused(g){if(g.roused)return true;const m=grpUnits(g.id),N=INTERIOR.notice;
+// (the owner, 2026-11-08: "the player party may be the one who will search while those goblins, bandits or monsters may stay at
+// their place if not alerted or detected": alarm, a group of theirs roused within INTERIOR.alarm px of one of its men rouses it too,
+// as a shout would; holdCamp: a camp's fight on the open field (a hideout's tents, a goblin camp) held the same way, setup.js)
+function insideRoused(g){if(g.roused)return true;const m=grpUnits(g.id),N=INTERIOR.notice,A=INTERIOR.alarm;
+  if(A>0&&Object.values(B.groups).some(o=>o!==g&&o.team===g.team&&o.roused&&grpUnits(o.id).some(v=>v.hp>0&&m.some(u=>Math.hypot(v.x-u.x,v.y-u.y)<A))))return g.roused=true;
   if(m.some(u=>u.hp<u.max)||B.units.some(e=>e.team!==g.team&&e.hp>0&&!e.left&&seenBy(g.team,e)&&m.some(u=>Math.abs(e.x-u.x)<N&&Math.abs(e.y-u.y)<N&&Math.hypot(e.x-u.x,e.y-u.y)<N)))g.roused=true;
   return !!g.roused}
