@@ -124,7 +124,7 @@ class Actor extends Fighter{
     if(ab==='regen')u.hp=Math.min(u.max,u.hp+4*dt);
     else if(ab==='pounce'){u.ab=(u.ab??1.5)-dt;if(u.ab>0)return;const t=nearest(u);if(!t)return;const d=Math.hypot(t.x-u.x,t.y-u.y);if(d<24||d>110)return;
       const a=Math.atan2(t.y-u.y,t.x-u.x);fx(u.x,u.y-6,'#e8d8a0',6);u.x=t.x-Math.cos(a)*10;u.y=t.y-Math.sin(a)*10;u.face=Math.cos(a)>=0?1:-1;
-      this.hit(t,u.s.dmg*1.6);B.floats.push({x:u.x,y:u.y-20,t:'POUNCE',life:.6,c:'#ffb070'});u.ab=4.5}
+      if(u.type==='tiger'&&PX.tiger)PX.tiger.pounce(u,B.t);this.hit(t,u.s.dmg*1.6);B.floats.push({x:u.x,y:u.y-20,t:'POUNCE',life:.6,c:'#ffb070'});u.ab=4.5}
   }
   shotKind(){
     const u=this.u;if(u.s.magic)return 'magic';if(ST[u.type]&&ST[u.type].beast)return 'throw';

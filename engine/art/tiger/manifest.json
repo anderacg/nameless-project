@@ -1,0 +1,779 @@
+{
+  "name": "Approved tiger design \u2014 animation study",
+  "version": 1,
+  "cell": {
+    "width": 96,
+    "height": 64
+  },
+  "anchor": {
+    "x": 48,
+    "y": 55
+  },
+  "facing": "right",
+  "columns": 8,
+  "palette": {
+    "orange": [
+      "#f5b34b",
+      "#df872c",
+      "#ba5d24",
+      "#854022"
+    ],
+    "white": [
+      "#fff0d3",
+      "#ead4ae",
+      "#c4a384",
+      "#927462"
+    ],
+    "ink": "#30211e"
+  },
+  "animations": {
+    "idle": {
+      "row": 0,
+      "count": 8,
+      "frameDurationMs": 160,
+      "loop": true,
+      "frames": [
+        {
+          "file": "frames/idle-00.png",
+          "x": 0,
+          "y": 0,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/idle-01.png",
+          "x": 96,
+          "y": 0,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/idle-02.png",
+          "x": 192,
+          "y": 0,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/idle-03.png",
+          "x": 288,
+          "y": 0,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/idle-04.png",
+          "x": 384,
+          "y": 0,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/idle-05.png",
+          "x": 480,
+          "y": 0,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/idle-06.png",
+          "x": 576,
+          "y": 0,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/idle-07.png",
+          "x": 672,
+          "y": 0,
+          "w": 96,
+          "h": 64
+        }
+      ]
+    },
+    "walk": {
+      "row": 1,
+      "count": 8,
+      "frameDurationMs": 100,
+      "loop": true,
+      "frames": [
+        {
+          "file": "frames/walk-00.png",
+          "x": 0,
+          "y": 64,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/walk-01.png",
+          "x": 96,
+          "y": 64,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/walk-02.png",
+          "x": 192,
+          "y": 64,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/walk-03.png",
+          "x": 288,
+          "y": 64,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/walk-04.png",
+          "x": 384,
+          "y": 64,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/walk-05.png",
+          "x": 480,
+          "y": 64,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/walk-06.png",
+          "x": 576,
+          "y": 64,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/walk-07.png",
+          "x": 672,
+          "y": 64,
+          "w": 96,
+          "h": 64
+        }
+      ]
+    },
+    "run": {
+      "row": 2,
+      "count": 8,
+      "frameDurationMs": 75,
+      "loop": true,
+      "frames": [
+        {
+          "file": "frames/run-00.png",
+          "x": 0,
+          "y": 128,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/run-01.png",
+          "x": 96,
+          "y": 128,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/run-02.png",
+          "x": 192,
+          "y": 128,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/run-03.png",
+          "x": 288,
+          "y": 128,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/run-04.png",
+          "x": 384,
+          "y": 128,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/run-05.png",
+          "x": 480,
+          "y": 128,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/run-06.png",
+          "x": 576,
+          "y": 128,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/run-07.png",
+          "x": 672,
+          "y": 128,
+          "w": 96,
+          "h": 64
+        }
+      ]
+    },
+    "stalk": {
+      "row": 3,
+      "count": 8,
+      "frameDurationMs": 140,
+      "loop": true,
+      "frames": [
+        {
+          "file": "frames/stalk-00.png",
+          "x": 0,
+          "y": 192,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/stalk-01.png",
+          "x": 96,
+          "y": 192,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/stalk-02.png",
+          "x": 192,
+          "y": 192,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/stalk-03.png",
+          "x": 288,
+          "y": 192,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/stalk-04.png",
+          "x": 384,
+          "y": 192,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/stalk-05.png",
+          "x": 480,
+          "y": 192,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/stalk-06.png",
+          "x": 576,
+          "y": 192,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/stalk-07.png",
+          "x": 672,
+          "y": 192,
+          "w": 96,
+          "h": 64
+        }
+      ]
+    },
+    "pounce": {
+      "row": 4,
+      "count": 8,
+      "frameDurationMs": 100,
+      "loop": false,
+      "frames": [
+        {
+          "file": "frames/pounce-00.png",
+          "x": 0,
+          "y": 256,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/pounce-01.png",
+          "x": 96,
+          "y": 256,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/pounce-02.png",
+          "x": 192,
+          "y": 256,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/pounce-03.png",
+          "x": 288,
+          "y": 256,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/pounce-04.png",
+          "x": 384,
+          "y": 256,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/pounce-05.png",
+          "x": 480,
+          "y": 256,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/pounce-06.png",
+          "x": 576,
+          "y": 256,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/pounce-07.png",
+          "x": 672,
+          "y": 256,
+          "w": 96,
+          "h": 64
+        }
+      ]
+    },
+    "swipe": {
+      "row": 5,
+      "count": 8,
+      "frameDurationMs": 100,
+      "loop": false,
+      "frames": [
+        {
+          "file": "frames/swipe-00.png",
+          "x": 0,
+          "y": 320,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/swipe-01.png",
+          "x": 96,
+          "y": 320,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/swipe-02.png",
+          "x": 192,
+          "y": 320,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/swipe-03.png",
+          "x": 288,
+          "y": 320,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/swipe-04.png",
+          "x": 384,
+          "y": 320,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/swipe-05.png",
+          "x": 480,
+          "y": 320,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/swipe-06.png",
+          "x": 576,
+          "y": 320,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/swipe-07.png",
+          "x": 672,
+          "y": 320,
+          "w": 96,
+          "h": 64
+        }
+      ]
+    },
+    "bite": {
+      "row": 6,
+      "count": 8,
+      "frameDurationMs": 100,
+      "loop": false,
+      "frames": [
+        {
+          "file": "frames/bite-00.png",
+          "x": 0,
+          "y": 384,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/bite-01.png",
+          "x": 96,
+          "y": 384,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/bite-02.png",
+          "x": 192,
+          "y": 384,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/bite-03.png",
+          "x": 288,
+          "y": 384,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/bite-04.png",
+          "x": 384,
+          "y": 384,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/bite-05.png",
+          "x": 480,
+          "y": 384,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/bite-06.png",
+          "x": 576,
+          "y": 384,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/bite-07.png",
+          "x": 672,
+          "y": 384,
+          "w": 96,
+          "h": 64
+        }
+      ]
+    },
+    "roar": {
+      "row": 7,
+      "count": 8,
+      "frameDurationMs": 130,
+      "loop": false,
+      "frames": [
+        {
+          "file": "frames/roar-00.png",
+          "x": 0,
+          "y": 448,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/roar-01.png",
+          "x": 96,
+          "y": 448,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/roar-02.png",
+          "x": 192,
+          "y": 448,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/roar-03.png",
+          "x": 288,
+          "y": 448,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/roar-04.png",
+          "x": 384,
+          "y": 448,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/roar-05.png",
+          "x": 480,
+          "y": 448,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/roar-06.png",
+          "x": 576,
+          "y": 448,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/roar-07.png",
+          "x": 672,
+          "y": 448,
+          "w": 96,
+          "h": 64
+        }
+      ]
+    },
+    "hurt": {
+      "row": 8,
+      "count": 4,
+      "frameDurationMs": 110,
+      "loop": false,
+      "frames": [
+        {
+          "file": "frames/hurt-00.png",
+          "x": 0,
+          "y": 512,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/hurt-01.png",
+          "x": 96,
+          "y": 512,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/hurt-02.png",
+          "x": 192,
+          "y": 512,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/hurt-03.png",
+          "x": 288,
+          "y": 512,
+          "w": 96,
+          "h": 64
+        }
+      ]
+    },
+    "death_side": {
+      "row": 9,
+      "count": 8,
+      "frameDurationMs": 140,
+      "loop": false,
+      "frames": [
+        {
+          "file": "frames/death_side-00.png",
+          "x": 0,
+          "y": 576,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_side-01.png",
+          "x": 96,
+          "y": 576,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_side-02.png",
+          "x": 192,
+          "y": 576,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_side-03.png",
+          "x": 288,
+          "y": 576,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_side-04.png",
+          "x": 384,
+          "y": 576,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_side-05.png",
+          "x": 480,
+          "y": 576,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_side-06.png",
+          "x": 576,
+          "y": 576,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_side-07.png",
+          "x": 672,
+          "y": 576,
+          "w": 96,
+          "h": 64
+        }
+      ]
+    },
+    "death_back": {
+      "row": 10,
+      "count": 8,
+      "frameDurationMs": 140,
+      "loop": false,
+      "frames": [
+        {
+          "file": "frames/death_back-00.png",
+          "x": 0,
+          "y": 640,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_back-01.png",
+          "x": 96,
+          "y": 640,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_back-02.png",
+          "x": 192,
+          "y": 640,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_back-03.png",
+          "x": 288,
+          "y": 640,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_back-04.png",
+          "x": 384,
+          "y": 640,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_back-05.png",
+          "x": 480,
+          "y": 640,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_back-06.png",
+          "x": 576,
+          "y": 640,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_back-07.png",
+          "x": 672,
+          "y": 640,
+          "w": 96,
+          "h": 64
+        }
+      ],
+      "displayName": "Side-resting fall (replaces belly-up death)"
+    },
+    "death_slump": {
+      "row": 11,
+      "count": 8,
+      "frameDurationMs": 140,
+      "loop": false,
+      "frames": [
+        {
+          "file": "frames/death_slump-00.png",
+          "x": 0,
+          "y": 704,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_slump-01.png",
+          "x": 96,
+          "y": 704,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_slump-02.png",
+          "x": 192,
+          "y": 704,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_slump-03.png",
+          "x": 288,
+          "y": 704,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_slump-04.png",
+          "x": 384,
+          "y": 704,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_slump-05.png",
+          "x": 480,
+          "y": 704,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_slump-06.png",
+          "x": 576,
+          "y": 704,
+          "w": 96,
+          "h": 64
+        },
+        {
+          "file": "frames/death_slump-07.png",
+          "x": 672,
+          "y": 704,
+          "w": 96,
+          "h": 64
+        }
+      ]
+    }
+  },
+  "notes": [
+    "Standalone preview; production files unchanged.",
+    "64\u00d732 artwork in a padded 96\u00d764 animation cell.",
+    "Ground anchor is fixed; pounce displacement is artistic pose offset, not root motion.",
+    "Left-facing sheet is mirrored with the anchor mirrored.",
+    "Death clips hold the last frame."
+  ]
+}

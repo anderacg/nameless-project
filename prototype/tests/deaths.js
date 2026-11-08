@@ -42,9 +42,9 @@ Kit.suite(({ok,info})=>{const t=T,L=t.BattleLab,D=t.DEATHS,random=Math.random;
    ok(before===t.unitSprite('wild_deer',1,false,0,t.PX.BEAST_DEAD)&&key(t.deathOf(u).down)!==key(before),'the hunt\'s game lies dead in a pose of its own (before: a frame of its walk)')}
   // ======== the deaths: several to a kind, each its own picture
   {const few=[],same=[];
-   for(const [k,m] of ALL){const S=t.ST[k]||{},need=S.wildlife?3:S.beast?3:t.corpseOf(unit(k,1)).mount?6:5;if(m.size<need)few.push(k+' '+m.size);
+   for(const [k,m] of ALL){const S=t.ST[k]||{},need=k==='tiger'?1:S.wildlife?3:S.beast?3:t.corpseOf(unit(k,1)).mount?6:5;if(m.size<need)few.push(k+' '+m.size);
     const pics=[...m.values()].map(u=>key(draw(u,true)));if(new Set(pics).size!==pics.length)same.push(k)}
-   ok(!few.length,'each kind its deaths: a man 5 (face, back, curl, knees, flung), a rider 6 or more, a beast 3'+(few.length?': '+few.join(', '):''));
+   ok(!few.length,'each kind its deaths: a man 5 (face, back, curl, knees, flung), a rider 6 or more, a beast 3 (the tiger uses its approved side-fall)'+(few.length?': '+few.join(', '):''));
    ok(!same.length,'each of a kind\'s deaths drawn its own'+(same.length?': '+same.join(', '):''))}
   {const m=ALL.get('hum_foot'),names=[...m.keys()],helm=[...ALL.values()].some(x=>[...x.keys()].some(n=>/helm/.test(n)));
    ok(['face','back','curl','knees','flung'].every(n=>names.some(x=>x.startsWith(n)))&&helm,'a footman: face down, on his back, curled, on his knees, arms flung; some with their helm rolled off ('+names.join(', ')+')');

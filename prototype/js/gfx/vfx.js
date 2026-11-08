@@ -114,7 +114,8 @@ function drawBody(g,c,q,k){const V=DEATHS.on?c.sp?.horse?horseDeathOf(c):deathFo
   g.save();g.translate(X,Y);if(c.face<0)g.scale(-1,1);
   // (a beast, a mount: slumped low where it stood; its rider thrown forward of it)
   if(S.beast){const sp=S.beast,w=sp.width,h=sp.height,x0=-Math.floor(w/2),Q=q*q;
-    if(S.down&&q>=.6)g.drawImage(S.down,x0,-h+2);// (down: lying dead, engine/beasts.js)
+    if(S.frames)g.drawImage(S.frames[Math.min(7,Math.floor(q*8))],x0,-h+2);
+    else if(S.down&&q>=.6)g.drawImage(S.down,x0,-h+2);// (down: lying dead, engine/beasts.js)
     else if(S.how==='over'||S.how==='tip'){g.rotate((S.how==='tip'?-1:1)*Q*Math.PI/2);g.drawImage(sp,x0,-h+2)}// (tip: over backwards)
     else if(S.how==='back'){const s=1-1.7*Q;if(s<0)g.translate(0,Math.round((h-2)*s*.5));g.scale(1,Math.abs(s)<.05?.05:s);g.drawImage(sp,x0,-h+2)}
     else{const s=1-(S.how==='melt'?.75:.5)*Q;g.drawImage(sp,x0,Math.round((-h+2)*s),w,Math.max(1,Math.round(h*s)))}}

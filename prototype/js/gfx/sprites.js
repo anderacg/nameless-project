@@ -74,11 +74,12 @@ const DOWN_LOOK=new WeakMap();
    (team 0) wears the side's blue; a wild one nothing. Cached by kind, side, variant and pose (the climbs walk, the other blows
    strike) */
 const BEAST_POSES=PX.BEAST_POSES;
-const beastPoseOf=(type,p)=>p>=PX.BEAST_DEAD?p:p>=19?2+(p-19)%4:p>=12&&p<=14?p-6:p>=9&&p<=11&&type!=='dragon'?p-3:p;
+const beastPoseOf=(type,p)=>type==='tiger'?p:p>=PX.BEAST_DEAD?p:p>=19?2+(p-19)%4:p>=12&&p<=14?p-6:p>=9&&p<=11&&type!=='dragon'?p-3:p;
 function beastSprite(type,team,v,pose){v=(v||0)%3;pose=beastPoseOf(type,pose||0);const k='bst'+type+(team?1:0)+v+'p'+pose;
   return spr[k]||(spr[k]=cellOf(PX.beast(type,{v,pose,team:team?1:0})))}
 // a beast's pose now: striking (or breathing fire, winding up a spit), running or walking as it moves, leaping (a pounce), breathing
 function beastPose(u,moved){
+  if(u.type==='tiger'&&PX.tiger)return PX.tiger.live(u,B.t,moved,ATK_ANIM);
   if(u.s.breath&&u.br!=null&&u.br>3.5-ATK_ANIM*1.5)return 9+Math.min(2,Math.floor((3.5-u.br)/(ATK_ANIM*1.5)*3));
   if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)return 6+Math.min(2,Math.floor((B.t-u.atkAt)/ATK_ANIM*3));
   if(u.shot)return 6;
@@ -93,7 +94,7 @@ function corpseOf(u){
   const base=actorSprite(u,0,true);let c=CORPSES.get(base);if(c)return c;
   // (a beast: it sinks as it falls (a troll over as a man does, a spider or a scorpion onto its back, a slime running flat, the rest
   // pressed low), then lies in its dead pose, down: engine/beasts.js)
-  if(ST[u.type]&&ST[u.type].beast)c={beast:base,down:actorSprite(u,PX.BEAST_DEAD),how:BEAST_FALL[u.type]||'side'};
+  if(ST[u.type]&&ST[u.type].beast)c={beast:base,down:actorSprite(u,PX.BEAST_DEAD),how:BEAST_FALL[u.type]||'side',...(u.type==='tiger'?{frames:Array.from({length:8},(_,i)=>actorSprite(u,PX.tiger.pose('death_back',i)))}:{})};
   else{const L=unitLook(u),wk=heldWeapon(L),g=pgrid(24,20);drawFigure(g,{...L,mount:null,weapon:wk?null:L.weapon},4,3,-1,null,-1);const lie=pturn(g);poutline(g);poutline(lie);
     c={stand:pcanvas(g),body:pcanvas(lie),ax:2,ay:12,wk,team:L.team};
     if(L.mount){const m=pgrid(32,32),d=pgrid(32,22);m.edge=d.edge=true;drawMount(m,L,-1);drawMountDown(d,L);poutline(m);poutline(d);c.mount=pcanvas(m);c.down=pcanvas(d);DOWN_LOOK.set(c.down,L)}}
@@ -149,6 +150,7 @@ const DEATH_SPR=new WeakMap(),deathMap=u=>{const b=actorSprite(u,0,true);let m=D
    his blood's middle); a rider's mount, down, ride and at (where he lies from his mount's middle) */
 function deathOf(u){const c=corpseOf(u);if(!DEATHS.on)return c;const id=u.id|0,S=ST[u.type]||{},m=deathMap(u);
   if(S.wildlife)return wildDeath(u,c,m,deathPick(id,DEATHS.wild,1));
+  if(u.type==='tiger'&&c.frames)return{...c,name:'side',blood:bloodOf(u)};
   if(S.beast){const names=PX.BEAST_DEATHS[u.type]||['side'],how=deathPick(id,Object.fromEntries(names.map(n=>[n,DEATHS.beast[n]??1])),1);
     return m[how]||(m[how]={beast:c.beast,down:actorSprite(u,PX.BEAST_DEAD+names.indexOf(how)),how:DEATHS.fall[u.type+'.'+how]||DEATHS.fall[how]||'side',name:how,blood:bloodOf(u)})}
   const L=deathLook(u),ride=c.mount?deathPick(id,DEATHS.rider,2):null,lie=ride&&deathPick(id,DEATHS.mount,3),how=ride==='across'?'face':ride==='under'?'back':deathPick(id,DEATHS.man,1),

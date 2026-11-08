@@ -98,3 +98,7 @@ Open [face arts/portrait-workshop.html](face%20arts/portrait-workshop.html) for 
 ## Character Sprite Studio
 
 Open [sprite arts/sprite-workshop.html](sprite%20arts/sprite-workshop.html) for the offline sprite and rig creator: editable animated skeletons, keyframes, bone-attached pixel parts, project files, and existing paper-doll parts, race and equipment controls, material tinting, game/base animation previews, seeded locked variations, recipe collections and native PNG sheets with attachment metadata. [sprite arts/README.md](sprite%20arts/README.md) describes the shared drawing scripts and integration API. Run `python "engine/sprite arts/build.py"` after shared graphics changes to refresh the standalone snapshot.
+
+## Tiger artwork
+
+The approved striped tiger is in `engine/art/tiger/` (master sheet and timing metadata). `tiger-data.js` and `tiger.js`, loaded after the beast engine, supply synchronous pixel frames for the game and wiki. Combat uses the new movement, attack, pounce, hurt and side-fall poses. The falling body is animated from its own frames, without scaling or spinning the standing sprite.
