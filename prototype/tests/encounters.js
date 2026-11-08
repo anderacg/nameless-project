@@ -587,7 +587,7 @@ try{
      if(stats({...Z,[one]:4},()=>t.statOdds(k))<=TODAY[k])bad.push(k+': '+one+' does not help')}
    const mix=[];for(let i=0;i<60;i++){const o={};for(const k in HI)o[k]=(i*7+k.length*13)%(HI[k]+1);mix.push(odds(o))}
    ok(!bad.length&&mix.every(r=>r.every((p,i)=>p>=TODAY[ks[i]]&&p<=S[ks[i]].cap)),'each stat that helps, 0 to 40: rising, never under today’s, never past the cap; and any mix of them'+(bad.length?': '+bad.slice(0,4).join('; '):''))}
-  {let same=true;for(let r=0;r<=12;r++)for(let a=0;a<=14;a++)stats({ride:r,agi:a},()=>{if(t.catchOdds()!==Math.min(Math.max(.25+.08*r+.04*a,.1),.9))same=false});
+  {let same=true;for(let r=0;r<=12;r++)for(let a=0;a<=14;a++)stats({ride:r,agi:a},()=>{if(Math.abs(t.catchOdds()-Math.min(Math.max(.25+.08*r+.04*a,.1),.9))>1e-9)same=false});
    ok(same&&/statOdds\('horse'\)/.test(String(t.catchOdds)),'the runaway horse on the helper: its odds as they were (25% + 8% a Riding level + 4% a point of Agility, 10–90%), for every Riding 0–12 and Agility 0–14')}
   ok(t.statHelps('mine')==='Survival and Intellect help'&&t.statHelps('dice')==='Intellect or Charisma (the higher) helps'&&t.statHelps('hunt')==='Survival, Hunting and Archery help'&&t.statHelps('respect')==='Charisma helps','the stats that help, by name ('+['mine','dice','hunt','respect'].map(k=>t.statHelps(k)).join('; ')+')');
   // the Insight read: vague at Scouting 0, rough at 3, the chance at 5; and on each page, the stats that help

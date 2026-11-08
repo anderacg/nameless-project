@@ -12,7 +12,7 @@ Kit.suite(({ok})=>{
  ok(ups.every(u=>u===1)&&L.lv===2&&ch.lv===2,'a lord and a chieftain reach level 2 at 60 experience ('+ups.join(', ')+')');
  {const H=t.leaderOf(P),C=t.leaderOf(c,'brann'),l0=P.level,c0=c.lv;H.train('tact',400,true);C.train('oneh',400,true);ok(P.level>l0&&c.lv>c0&&P.level===t.PROF_LEVEL(H.profProgress())&&c.lv===t.PROF_LEVEL(C.profProgress()),'your hero and a companion level by their proficiencies ('+l0+' \u2192 '+P.level+', '+c0+' \u2192 '+c.lv+')')}
  ok([t.leaderOf(P),t.leaderOf(L),t.leaderOf(c),t.leaderOf(ch)].map(x=>x.role).join()==='hero,lord,companion,chieftain'&&[P,L,c,ch].every(o=>t.charOf(o) instanceof t.Character&&t.charOf(o) instanceof t.Unit),'each one Character (a Unit), in its own role');
- {const s0=P.sk.lead.xp,l0=L.sk.lead.xp;t.train('lead',5);t.lordTrain(L,'lead',5);ok(P.sk.lead.xp-s0>L.sk.lead.xp-l0,'you learn faster than a lord, by your Charisma and your knacks')}
+ {const tot=s=>s.lv*1e3+s.xp,s0=tot(P.sk.lead),l0=tot(L.sk.lead);t.train('lead',1);t.lordTrain(L,'lead',1);ok(t.leaderOf(P).learn('lead')>t.leaderOf(L).learn('lead')&&tot(P.sk.lead)>s0&&tot(L.sk.lead)>l0,'you learn faster than a lord, by your Charisma and your knacks')}
  {const C=t.leaderOf(c,'brann');for(const k in c.sk)c.sk[k]={lv:0,xp:0};c.lv=0;c.xp=0;c.perkPend=0;let n=0;while(c.lv<3&&n++<200)C.train('oneh',5,true);ok(c.lv===3&&c.perkPend===1,'a companion still earns a perk every third level ('+c.lv+', '+c.perkPend+')')}
  {const tp=P.tp||0,l0=P.level,H=t.leaderOf(P);let n=0;while(P.level===l0&&n++<500)H.train('eng',5,true);ok(P.level===l0+1&&P.tp===tp+1,'and you a tree point a level')}
  // chieftains

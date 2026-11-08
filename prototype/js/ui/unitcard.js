@@ -104,7 +104,8 @@ class UnitCard{
   static pct(v,m){return Math.round(clamp(v/(m||1),0,1)*1000)/10}
   // (a number's bar: its original (grow: statGrowth's), what grew it since in the grown colour (gr; lost: lo), then its state now
   // (now) over that, red what lowers it (striped over growth, so both show), green what raises it)
-  bar([id,lab,v,show,d],M,F){const g=this.grow&&this.grow[id],o=g?g.base:v,now=this.now&&this.now[id]!=null?this.now[id]:v,dv=F&&F[id]!=null?v-F[id]:null,p=x=>UnitCard.pct(x,M[id]),fmt=x=>id==='chg'?'+'+Math.round(x)+'%':Math.round(x);
+  bar([id,lab,v,show,d],M,F){if(typeof show==='number'&&!Number.isInteger(show))show=+show.toFixed(1);// (a proficiency's power makes fractions: one decimal)
+    const g=this.grow&&this.grow[id],o=g?g.base:v,now=this.now&&this.now[id]!=null?this.now[id]:v,dv=F&&F[id]!=null?v-F[id]:null,p=x=>UnitCard.pct(x,M[id]),fmt=x=>id==='chg'?'+'+Math.round(x)+'%':Math.round(x);
     const own=Math.max(p(Math.min(o,v)),4),seg=(cls,a,b)=>b>a?'<i class="'+cls+'" style="left:'+a+'%;width:'+(b-a)+'%"></i>':'',grown=v>o?seg('gr',own,Math.max(p(v),own+2)):v<o?seg('lo',p(v),p(o)):'';
     const tip=d+(g&&g.parts.length?' · original '+fmt(o)+': '+g.parts.map(([l,n])=>l+' '+growPart(id,n,o)).join(' · '):'')+(now!==v?' · now '+fmt(now)+' (its own '+fmt(v)+')':'');
     const val=now!==v?'<span class="'+(now<v?'bad':'good')+'">'+fmt(now)+'</span>'+(id==='hp'?' / '+fmt(v):''):v!==o?'<span class="gr">'+show+'</span>':show;
