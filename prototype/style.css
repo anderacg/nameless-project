@@ -458,6 +458,24 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .screen.mobile-world .qt-pop b{margin:0;font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.screen.mobile-world .qt-pop .qt-bar{grid-column:1/-1;margin-top:4px}
 .screen.mobile-world .qt-pop .btn.sm{min-height:28px;padding:1px 7px}.screen.mobile-world .qt-pop:nth-last-child(n+3){display:none}
 
+/* ---------- 6b. discovery (world/discovery.js DiscoveryTitle): "You discovered", a place's name and its kind over the map; it rises,
+   its letters drawing together, holds and fades over --discover-ms; not over the windows, never in the way of a click ---------- */
+.discover{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:30;pointer-events:none;text-align:center;opacity:0;
+  display:flex;flex-direction:column;align-items:center;gap:2px;color:#f3e2b0;text-shadow:0 2px 0 #000,0 0 14px rgba(0,0,0,.85);white-space:nowrap}
+.discover small{font-size:var(--fs-sm);letter-spacing:.35em;text-transform:uppercase;color:#d9c48a}
+.discover strong{font-size:34px;font-weight:700;letter-spacing:.06em}
+.discover span{font-size:var(--fs-sm);letter-spacing:.2em;text-transform:uppercase;color:#bfb28c}
+.discover strong::after{content:'';display:block;height:2px;margin:6px auto 0;width:0;background:linear-gradient(90deg,transparent,#e8b94a,transparent)}
+.discover.on{animation:discover var(--discover-ms,4.2s) ease-out both}
+.discover.on strong{animation:discoverName var(--discover-ms,4.2s) ease-out both}
+.discover.on strong::after{animation:discoverLine var(--discover-ms,4.2s) ease-out both}
+@keyframes discover{0%{opacity:0;transform:translate(-50%,10px)}14%{opacity:1;transform:translate(-50%,0)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-6px)}}
+@keyframes discoverName{0%{letter-spacing:.4em}22%{letter-spacing:.06em}100%{letter-spacing:.06em}}
+@keyframes discoverLine{0%,10%{width:0}35%,100%{width:110%}}
+@keyframes discoverStill{0%{opacity:0}10%,85%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.discover.on{animation-name:discoverStill}.discover.on strong{animation:none}.discover.on strong::after{animation:none;width:110%}}
+@media (max-width:900px){.discover{top:16%}.discover strong{font-size:24px}}
+
 /* ---------- 6c. supplies ---------- */
 /* the band card's bars (render.js updateHUD), each its % at its end: fitness steel blue, red under half; morale violet, orange
    under 30 (the battle cards' low morale); stamina green, amber Tired, red Exhausted, the state's word by its %; the tags under
@@ -1051,6 +1069,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .fm-k{--s:7px;display:block;width:var(--s);height:var(--s);background:var(--c);border:1px solid #07090e;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
 .fm-k.city{--s:9px}.fm-k.castle{rotate:45deg}.fm-k.village{--s:5px;border-radius:50%}
 .fm-h b{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:1px;font-size:10px;font-weight:700;line-height:1;white-space:nowrap;color:#f4ecd6;text-shadow:0 0 2px #000,0 1px 1px #000,0 0 3px #000;pointer-events:none}
+.fm-h b.fm-unk{color:#9a958a;font-weight:400;font-style:italic}/* (a holding you have not come near: its kind, world/discovery.js) */
 .fm-x{display:block;width:5px;height:5px;border:1px solid #07090e}
 .fm-x.bridge{background:#b8b0a0}.fm-x.ford{background:#ecdcaa;border-radius:50%}.fm-x.ferry{background:#7a4e2a;border-radius:1px 1px 3px 3px}
 .fm-prov{font-size:10px;font-weight:700;line-height:1;white-space:nowrap;padding:1px 4px;border-radius:2px;background:rgba(10,12,18,.72);color:#d8cfb6;pointer-events:auto;z-index:1}

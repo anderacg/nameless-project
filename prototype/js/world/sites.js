@@ -143,9 +143,9 @@ class Site extends WorldObject{
   inView(V){return this.known()}
   draw(ents,cam,V){if(!this.inView(V))return;const s=this;
     const sp0=siteSprite(s);ents.push({st:true,y:s.y,sh:sp0.sh?[sp0.sh,Math.round(s.x-cam.x)-sp0.ax,Math.round(s.y-cam.y)+8-sp0.ay]:null,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),sp=siteSprite(s);if(sp.gr)ctx.drawImage(sp.gr,sx-sp.ax,sy+8-sp.ay);if(s.cleared)ctx.globalAlpha=.5;ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(!s.cleared)depthPic(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;
-      if(s.fromYou()<70)txt(s.name,sx,sy+12,s.cleared?'#9a958a':'#e4e0cf','center')}})}
+      if(s.fromYou()<70)txt(Discovery.nameOf(s),sx,sy+12,s.cleared||!Discovery.named(s)?'#9a958a':'#e4e0cf','center')}})}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
-  tip(){return '<b>'+this.name+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?' · empty for now':'')+'</small><span class="act">Click: go there</span>'}
+  tip(){return '<b>'+Discovery.nameOf(this)+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?' · empty for now':'')+'</small><span class="act">Click: go there</span>'}
   // a job to clear it (quests.js)
   get clearJob(){return false}
 }
@@ -658,7 +658,7 @@ function genSites(){
 // further off walks you there and opens it on arrival (world.js clickAt, the chase: marchStep meets it); walking past one, or
 // stopping by one you did not click, opens nothing. Never opens anything itself (false)
 function updateSites(){
-  const S=yourSight();
+  const S=yourSight();Discovery.check();
   for(const s of W.sites){
     const dd=Math.hypot(P.x-s.x,P.y-s.y);
     if(!s.seen&&s.scoutable&&S.sees(s.x,s.y,.9)){s.seen=true;train('scout',4);log('Your scouts spot '+s.scoutLine()+'.')}

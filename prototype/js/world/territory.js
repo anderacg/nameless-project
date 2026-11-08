@@ -83,7 +83,7 @@ const landRim=(x,y,r)=>{const i=landIdx(x,y),tx=Math.floor(x/TILE),ty=Math.floor
 // where people live: a holding and its built estates (world objects with a place: estates.js); is (x, y) at least r px from all of them
 const homesOf=t=>[t,...t.estates()];
 const farFromHomes=(x,y,r)=>!TOWNS.some(t=>!t.gone&&homesOf(t).some(o=>Math.hypot(o.x-x,o.y-y)<r));
-const landName=(x,y)=>{const t=landHold(x,y);return t?t.name+' lands':'Wild lands'};
+const landName=(x,y)=>{const t=landHold(x,y);return t?(Discovery.named(t)?t.name+' lands':'Unknown lands'):'Wild lands'};// (a holding you have not come near: its lands unnamed, world/discovery.js)
 const landOf=t=>{landFresh();return landTiles[TOWNS.indexOf(t)]||0};
 const landsOf=f=>{landFresh();return TOWNS.reduce((a,t,i)=>a+(t.owner===f?landTiles[i]:0),0)};
 

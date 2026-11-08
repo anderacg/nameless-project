@@ -116,7 +116,7 @@ function drawPlace(cam){
 // over a holding's centre: its name, a warning while besieged, and the lords inside: a pip of each one's colours under the name
 // (their names when you are near). The holding flies one flag, its owner's, from its centre.
 function holdingLabel(t,cam,X,Y,N){
-  txt(t.name,Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),hostileTo(t.owner)?'#ff9a90':'#e4e0cf','center');
+  txt(Discovery.nameOf(t),Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),!Discovery.named(t)?'#9a958a':hostileTo(t.owner)?'#ff9a90':'#e4e0cf','center');// (a place you have not come near: its kind, grey: world/discovery.js)
   // (a gate that will not have you yet: a small padlock under its name, world/gates.js)
   if(GATES.on&&!Gates.admits(t).ok){const lx=Math.round(t.x-cam.x)-3,ly=Math.round(t.y+21-cam.y);ctx.save();ctx.fillStyle='#e8b94a';ctx.fillRect(lx,ly+3,7,5);ctx.fillRect(lx+1,ly,1,3);ctx.fillRect(lx+5,ly,1,3);ctx.fillRect(lx+1,ly,5,1);ctx.fillStyle='#2a2418';ctx.fillRect(lx+3,ly+5,1,2);ctx.restore()}
   if(besieged(t)&&Math.floor(performance.now()/400)%2)txt('!',X+(N>>1),Y-N-2,'#ff6a60','center');

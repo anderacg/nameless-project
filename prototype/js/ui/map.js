@@ -46,8 +46,8 @@ function fullMapPic(m,k,seen,land,towns){
 function fullMapMarks(ppt){const F=FULLMAP,at=(x,y)=>'left:'+(x*ppt).toFixed(1)+'px;top:'+(y*ppt).toFixed(1)+'px';let h='';
   for(const x of WM.crossings||[]){const tx=x.i%MW,ty=Math.floor(x.i/MW);if(seenTile(tx,ty))h+='<i class="fm-x '+x.kind+'" style="'+at(tx+.5,ty+.5)+'" title="'+cap1(x.kind)+'"></i>'}
   for(const t of TOWNS){if(!seenTile(t.tx,t.ty))continue;const k=F.kinds[t.kind]?t.kind:'village',T=HOLDING_TYPES[t.kind];
-    h+='<span class="fm-h" style="'+at(t.tx+.5,t.ty+.5)+'" title="'+htmlText(t.name+', '+t.label+(t.owner?' of the '+FACS[t.owner].n:''))+'"><i class="fm-k '+k+'" style="--c:'+(t._memCol||facCol(t))+'"></i>'+
-      (ppt>=F.names||T&&T.tier>=3?'<b>'+htmlText(t.name)+'</b>':'')+'</span>'}
+    h+='<span class="fm-h" style="'+at(t.tx+.5,t.ty+.5)+'" title="'+htmlText(Discovery.nameOf(t)+(Discovery.named(t)?', '+t.label:'')+(t.owner?' of the '+FACS[t.owner].n:''))+'"><i class="fm-k '+k+'" style="--c:'+(t._memCol||facCol(t))+'"></i>'+
+      (ppt>=F.names||T&&T.tier>=3?'<b'+(Discovery.named(t)?'':' class="fm-unk"')+'>'+htmlText(Discovery.nameOf(t))+'</b>':'')+'</span>'}
   // (the provinces: at each seat (its name the holding's own, under it) its danger and a lock where it refuses you; the province's
   // name and what makes it so in its tooltip: world/provinces.js)
   if(PROVINCE.on)for(const p of Provinces.all()){const s=p.seat;if(!seenTile(s.tx,s.ty))continue;const d=Provinces.danger(p),lock=GATES.on&&!Gates.admits(s).ok;
