@@ -30,7 +30,7 @@
   $('browser-tip').textContent=character?'Choose a preset as your starting point. Appearance changes also update your rig.':'Select a body part here or tap its joint on the canvas. Your frame changes stay with the project.';
   $('variation-options').hidden=$('collection-options').hidden=!character;
   $('timeline-rig').hidden=character;$('timeline-character').hidden=!character;
-  $('canvas-title').textContent=character?'CHARACTER VIEW':mode==='parts'?'PART COMPOSITION':'POSE VIEW';$('canvas-direction').textContent='Facing '+(s.left?'left':'right');
+  $('canvas-title').textContent=character?'CHARACTER VIEW':mode==='parts'?(s.pixelEditing?'PIXEL EDITOR':'PART COMPOSITION'):'POSE VIEW';$('canvas-direction').textContent='Facing '+(s.left?'left':'right');
   (character?characterPreview:rigStage).prepend(tools);placeDock();
   $('timeline-title').textContent=character?'GAME ANIMATION PREVIEW':'ANIMATION TIMELINE';
   const clip=s.asset.clips[s.clip];$('timeline-info').textContent=character?W.state.pose+' · '+W.state.fps+' FPS':clip.name+' · '+clip.frames.length+' frames · '+clip.frames.reduce((n,f)=>n+f.duration,0)+' ms';
@@ -48,7 +48,7 @@
  function setBackdrop(){document.body.dataset.backdrop=backdrop;$('studio-backdrop').textContent={checker:'Backdrop: grid',charcoal:'Backdrop: dark',paper:'Backdrop: light'}[backdrop];}
  $('studio-backdrop').onclick=()=>{backdrop=backdrops[(backdrops.indexOf(backdrop)+1)%backdrops.length];setBackdrop();try{localStorage.setItem('ashmark.studioBackdrop',backdrop);}catch(e){}};setBackdrop();
  $('studio-scene').onclick=()=>{const open=!document.body.classList.contains('scene-open');document.body.classList.toggle('scene-open',open);$('studio-scene').setAttribute('aria-expanded',String(open));if(open)search.focus();};
- new MutationObserver(queue).observe(document.body,{attributes:true,attributeFilter:['data-mode']});
+ new MutationObserver(queue).observe(document.body,{attributes:true,attributeFilter:['data-mode','data-painting']});
  new MutationObserver(queue).observe($('rig-bone'),{childList:true});
  document.addEventListener('sprite:change',queue);document.addEventListener('rig:saved',queue);
  // Refresh timeline labels without rebuilding the scene on every playback frame.

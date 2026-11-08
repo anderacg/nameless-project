@@ -122,3 +122,24 @@ The desktop layout keeps the searchable scene/library browser, canvas, propertie
 On phones and shorter screens, the timeline sits directly below the preview, properties follow below it, and Scene opens the browser. Undo/redo remain available in the project bar. Original rendering, rig transforms, facing synchronization and project formats are unchanged.
 
 `studio-shell.js` supplies the studio docks and scene navigation over the existing editor controllers; it is also embedded in the standalone build.
+
+## Editing the generated sprite
+
+Open **Paint**, enable **Edit sprite pixels on the canvas**, and use Pencil, Eraser or Pick (B / E / I when the canvas has focus). This edits the standing 17 × 19 source grid. Existing pixels keep their bone binding by default; new pixels attach to the selected bone, or to the explicit attachment choice. Four material tones keep the artwork recolorable. Painting uses one undo step per stroke. Restore generated sprite clears only pixel overrides and can be undone.
+
+Painted overrides are stored as `pixelEdits` in the rig project. Older projects default to an empty list. `SpriteRig.skin(project)` applies the overrides before pose transforms, so edited pixels, transparent erasures, exported layers, animated sheets and attachments share the same source data. The Character preview switches to **Edited sprite + rig animation**, which previews the authored clips rather than the original game figure. The original Game figure and Engine base views remain available for comparison. The advanced indexed-source export remains the original generator's source; use the rig project or JavaScript asset to preserve painted overrides.
+
+In **Export → Editable source data & JavaScript**, you can change the project JSON and Apply source, or export a JavaScript asset. Invalid JSON leaves the project intact. Source edits participate in undo. The generated JavaScript contains the current normalized character recipe, pixel overrides, parts and animation clips, and registers it in `AshmarkSpriteAssets`. It requires the same SpriteRig/runtime dependencies bundled in this kit:
+
+```js
+// Load customSprite.sprite.js after the shared scripts and rig-engine.js.
+const project = AshmarkSpriteAssets.customSprite;
+const clip = project.clips[0];
+const pose = SpriteRig.sample(clip, elapsedMilliseconds).pose;
+const frame = SpriteRig.render(project, pose, { facing: 'right' });
+context.drawImage(frame.image, 0, 0);
+```
+
+The browser updates project data and downloadable source, not files in the game repository. Adding the exported asset to game characters still requires an integration change. The original shared sprite generator and game artwork are not overwritten.
+
+`pixel-editor.js` owns the canvas painting tools and editable source panel. `rig-checks.js` includes source override, erased-pixel, bone attachment, normalization, JavaScript round-trip and sheet checks.
