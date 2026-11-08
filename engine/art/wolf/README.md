@@ -10,6 +10,8 @@ The game renders combat frames at half the master scale with nearest-neighbor pi
 
 Wild/combat wolves and the existing wolf/warg mounts now share the approved wolf artwork. Riders, wolf archers, and darker wargs keep their existing gear and coat palettes. Saddles follow the actual back height; fallen mounts use the authored folded-leg and lying-down poses. The approved source PNGs and timing data remain unchanged.
 
-The alpha variant scales the approved frames to 125% with nearest-neighbor rendering. Wild alphas use the `alpha_wolf` kind; wolf/warg mounts use the same enlarged body in a 40 × 36 frame. Alpha pack spawning and statistics belong to the game data and world model, not the art generator.
+The alpha variant renders directly from the master into a 60 × 40 canvas, 125% of the regular combat frame size, with nearest-neighbor sampling. It does not enlarge a previously reduced frame. Wild alphas use the `alpha_wolf` kind; wolf/warg mounts use the same enlarged body in a 40 × 36 frame. Alpha pack spawning and statistics belong to the game data and world model, not the art generator.
 
-Detail pass: the combat master refines the tapered muzzle, triangular ears, visible amber eye and swept cheek/throat fur. Small facial marks are clustered to remain legible in the half-scale game render. Clip layout and timing, native map artwork and folded death poses remain the same.
+The approved combat master and runtime pixel data match commit `7ce306d` exactly. Later facial-detail experiments were removed; every wolf and alpha uses this reference.
+
+The alpha renderer projects the reference master’s tiny black nose and amber eye onto nearby occupied pixels when reduction would skip those marks. This preserves the facial features without changing the silhouette.

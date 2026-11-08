@@ -8,6 +8,20 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');const PX=t.PX,K=t.WOLF_AL
  const base=PX.beast('wolf',{pose:0,team:1}),alpha=PX.beast(K.unit,{pose:0,team:1});
  ok(alpha.width===60&&alpha.height===40&&alpha.fh>base.fh&&PX.beastMap(K.unit,0).fh>PX.beastMap('wolf',0).fh,'alpha combat and map sprites are 25% larger');
  ok(PX.BEAST_KINDS.includes(K.unit)&&PX.BEAST_DEATHS[K.unit].length===3&&PX._beastFit(K.unit).ok,'all alpha poses and deaths are registered and fit their canvas');
+ const broken=[];
+ for(let f=0;f<PX.WOLF_ART.frames.length;f++){
+  const c=A.alphaRender({pose:A.first+f,team:1}),w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,on=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&d[(y*w+x)*4+3],seen=new Set();let components=0;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+   const j=y*w+x;if(d[j*4+3]!==0&&d[j*4+3]!==255)broken.push(f+' alpha');
+   if(!on(x,y)&&on(x-1,y)&&on(x+1,y)&&on(x,y-1)&&on(x,y+1))broken.push(f+' gap');
+   if(!on(x,y)||seen.has(j))continue;components++;const q=[j];seen.add(j);
+   while(q.length){const k=q.pop(),xx=k%w,yy=Math.floor(k/w);for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=xx+dx,Y=yy+dy,n=Y*w+X;if(on(X,Y)&&!seen.has(n)){seen.add(n);q.push(n)}}}
+  }
+  if(components!==1)broken.push(f+' components '+components);
+ }
+ ok(!broken.length,'all 108 alpha poses render directly from the reference master with solid pixels and a connected silhouette'+(broken.length?': '+broken.slice(0,12).join(', '):''));
+ const face=alpha.getContext('2d').getImageData(0,0,alpha.width,alpha.height).data,hasColor=color=>Array.from({length:face.length/4},(_,i)=>i*4).some(i=>face[i+3]&&color.every((v,j)=>face[i+j]===v));
+ ok(hasColor([37,49,48])&&hasColor([233,188,88]),'the reference nose and amber eye remain visible on the native alpha frame');
  ok(m.n===5&&m.size===5&&m.troops.length===5&&m.troops[0]===K.unit&&m.tc[K.unit]===1&&m.tc.wolf===4,'an alpha replaces one ordinary wolf; total pack headcount stays five');
  ok(m.power()>plain.power()&&m.fightPower()>plain.fightPower(),'encounter and world-fight power include the stronger alpha');
  ok(m.tip().includes('Alpha Wolf')&&m.label().includes('Alpha Wolf'),'pack tooltips and labels identify the leader');

@@ -1626,4 +1626,4 @@ The wolf mount adapter (`PX.wolf.mount` / `PX.mountArt`) supports the existing W
 
 Alpha wolves (`alpha_wolf`) use every approved wolf animation at 125% size. Newly spawned wild packs have a 25% chance of one stronger leader replacing a regular wolf; its mixed roster, survival and rewards persist in saves. Wolf and warg riders use this larger body in a 40 × 36 mount frame, with centered tack and a saddle that follows the back. Tunables are in `data/monsters.js` (`WOLF_ALPHA`, `ST.alpha_wolf`); coverage is in `tests/alphawolf.js` and `tests/wolfmount.js`.
 
-Wolf detail refinement: tapered grey muzzles, black noses, readable amber eyes and swept cheek/throat fur now carry across combat animations, alpha leaders and their rider mounts. The native map walk and animation timing are unchanged.
+Wolf artwork is restored from `7ce306d`, preserving its approved head, fur and proportions across all poses. Alpha frames render directly from that master at the larger combat size, avoiding a second enlargement of reduced pixels. Alpha leaders, pack spawning, saves and centered rider mounts remain.

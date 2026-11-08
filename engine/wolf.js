@@ -1,7 +1,7 @@
 'use strict';
 // Approved wolf art; the old renderer remains in place for every other creature.
 (function(PX){
-  const A=PX.WOLF_ART,BASE=400,ALPHA='alpha_wolf',ALPHA_SCALE=1.25,RIDER_X=6,MOUNT=Object.freeze({w:40,h:36,downH:26,ground:23,axis:19}),cache=new Map(),masters=new Map(),maps=new Map(),mounts=new Map(),alphas=new Map();
+  const A=PX.WOLF_ART,BASE=400,ALPHA='alpha_wolf',ALPHA_SCALE=1.25,RIDER_X=6,MOUNT=Object.freeze({w:40,h:36,downH:26,ground:23,axis:19}),cache=new Map(),masters=new Map(),maps=new Map(),mounts=new Map();
   const pose=(clip,frame)=>{const c=A.clips[clip]||A.clips.idle;return BASE+c[0]+Math.max(0,Math.min(c[1]-1,Math.floor(frame||0)))};
   const sample=(clip,seconds)=>{const c=A.clips[clip];return pose(clip,Math.floor(Math.max(0,seconds)*1000/c[2])%c[1])};
   function index(p){
@@ -19,26 +19,33 @@
     g.putImageData(d,0,0);return c;
   }
   function master(i){if(!masters.has(i))masters.set(i,decode(A.frames[i],A.palette,96,64));return masters.get(i)}
-  function render(o){
-    const i=index(o.pose||0),v=((o.v||0)%3+3)%3,ally=o.team===0,key=i+':'+v+':'+ally;
+  function render(o,alpha=false){
+    const i=index(o.pose||0),v=((o.v||0)%3+3)%3,ally=o.team===0,key=(alpha?'a':'')+i+':'+v+':'+ally;
     if(cache.has(key))return cache.get(key);
-    const c=PX.canvas(48,32),g=c.getContext('2d',{willReadFrequently:true}),drop=Math.min(4,30-Math.floor((A.frames[i][3]-1)/2));g.imageSmoothingEnabled=false;g.drawImage(master(i),0,drop,48,32);
-    const d=g.getImageData(0,0,48,32),p=d.data;
+    const w=alpha?60:48,h=alpha?40:32,scale=w/96,c=PX.canvas(w,h),g=c.getContext('2d',{willReadFrequently:true}),drop=Math.min(alpha?5:4,h-2-Math.floor((A.frames[i][3]-1)*scale));g.imageSmoothingEnabled=false;g.drawImage(master(i),0,drop,w,h);
+    const d=g.getImageData(0,0,w,h),p=d.data;
     const coat=['b9b9ae','92958d','696f6b','414a48','797f7a','59635f','424c4b','303b3b'].map(c=>[0,2,4].map(i=>parseInt(c.slice(i,i+2),16)));
     for(let k=0;k<p.length;k+=4)if(p[k+3]&&v&&coat.some(c=>c[0]===p[k]&&c[1]===p[k+1]&&c[2]===p[k+2]))for(let j=0;j<3;j++)p[k+j]=Math.min(255,Math.round(p[k+j]*(v===1?.8:1.13)));
     // Nearest-neighbor reduction may leave a single pixel enclosed at a bent joint.
-    for(let pass=0;pass<3;pass++){let count=0;for(let y=1;y<31;y++)for(let x=1;x<47;x++){const n=(y*48+x)*4;if(!p[n+3]&&p[n-1]&&p[n+7]&&p[n-48*4+3]&&p[n+48*4+3]){p.set(p.slice(n-4,n),n);count++}}if(!count)break}
-    if(ally){
-      const dead=i>=A.clips.death_side[0],tx=31,ty=dead?25:20;let best=-1,distance=Infinity;
-      for(let y=0;y<32;y++)for(let x=24;x<38;x++){const k=(y*48+x)*4,dist=Math.abs(x-tx)+Math.abs(y-ty);if(p[k+3]&&dist<distance){best=k;distance=dist}}
-      if(best>=0){p.set([57,141,213,255],best);for(const step of [-48*4,48*4])if(best+step>=0&&best+step<p.length&&p[best+step+3])p.set([48,86,172,255],best+step)}
+    for(let pass=0;pass<3;pass++){let count=0;for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const n=(y*w+x)*4;if(!p[n+3]&&p[n-1]&&p[n+7]&&p[n-w*4+3]&&p[n+w*4+3]){p.set(p.slice(n-4,n),n);count++}}if(!count)break}
+    // Keep the reference's tiny nose and eye visible when a reduction skips their source pixels.
+    if(alpha){const source=master(i).getContext('2d').getImageData(0,0,96,64).data;
+      for(const color of [[37,49,48],[233,188,88]]){let sx=0,sy=0,n=0;
+        for(let y=0;y<64;y++)for(let x=0;x<96;x++){const k=(y*96+x)*4;if(source[k+3]&&color.every((c,j)=>source[k+j]===c)){sx+=x;sy+=y;n++}}
+        if(!n)continue;const tx=(sx/n+.5)*scale-.5,ty=(sy/n+.5)*scale-.5+drop;let best=-1,dist=Infinity;
+        for(let y=Math.max(0,Math.floor(ty)-1);y<Math.min(h,Math.ceil(ty)+2);y++)for(let x=Math.max(0,Math.floor(tx)-1);x<Math.min(w,Math.ceil(tx)+2);x++){const k=(y*w+x)*4,d=(x-tx)**2+(y-ty)**2;if(p[k+3]&&d<dist){best=k;dist=d}}
+        if(best>=0)p.set([...color,255],best);
+      }
     }
-    g.putImageData(d,0,0);c.fh=32-(Math.floor(A.frames[A.clips.idle[0]][1]/2)+4);c.kind='wolf';cache.set(key,c);return c;
+    if(ally){
+      const dead=i>=A.clips.death_side[0],size=alpha?ALPHA_SCALE:1,tx=Math.round(31*size),ty=Math.round((dead?25:20)*size);let best=-1,distance=Infinity;
+      for(let y=0;y<h;y++)for(let x=Math.floor(24*size);x<Math.ceil(38*size);x++){const k=(y*w+x)*4,dist=Math.abs(x-tx)+Math.abs(y-ty);if(p[k+3]&&dist<distance){best=k;distance=dist}}
+      if(best>=0){p.set([57,141,213,255],best);for(const step of [-w*4,w*4])if(best+step>=0&&best+step<p.length&&p[best+step+3])p.set([48,86,172,255],best+step)}
+    }
+    g.putImageData(d,0,0);c.fh=alpha?Math.ceil((32-(Math.floor(A.frames[A.clips.idle[0]][1]/2)+4))*ALPHA_SCALE):32-(Math.floor(A.frames[A.clips.idle[0]][1]/2)+4);c.kind=alpha?ALPHA:'wolf';cache.set(key,c);return c;
   }
-  function alphaRender(o){
-    const src=render(o),key=index(o.pose||0)+':'+((o.v||0)%3)+':'+(o.team===0);if(alphas.has(key))return alphas.get(key);
-    const c=PX.canvas(60,40),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(src,0,0,60,40);c.fh=Math.ceil(src.fh*ALPHA_SCALE);c.kind=ALPHA;alphas.set(key,c);return c;
-  }
+  // Draw each size from the original master; never enlarge an already reduced wolf.
+  const alphaRender=o=>render(o,true);
   function map(frame,alpha=false){const f=((frame||0)%8+8)%8,key=alpha?'a'+f:f;if(!maps.has(key)){let c=decode(A.map.frames[f],A.map.palette,16,16);if(alpha){const large=PX.canvas(20,20),g=large.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(c,0,0,20,20);c=large}c.fh=alpha?14:11;c.kind=alpha?ALPHA:'wolf';maps.set(key,c)}return maps.get(key)}
   // The approved wolf under an existing rider: fresh grids keep tack and side colors local.
   function mount(kind,walk,pal,down){
