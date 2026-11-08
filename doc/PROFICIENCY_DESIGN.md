@@ -146,7 +146,7 @@ The owner: "make each skill tree separated by proficiency"; "when you level up y
 - Each proficiency has its own tree (`data/tree.js` `PROF_TREE`): milestones (15, 35, 60, 90 for the fighting ones and Leadership; 15, 35, 60 for the rest), two nodes at each. Its points, one each 15 levels of it (`TREE_PT`), are spent freely on any node a milestone has opened that grows from the tier below (the owner: "freely spend based on their preferences"). Drawn as a tree that grows when shown.
 - Each level is a choice of +10 health, +10 stamina or +10 mana (`LEVEL_UP`); the level no longer adds these by itself.
 - Companions choose in their own trees; lords and chieftains choose for themselves, their trees opening as if their proficiencies were 8 × their level (`AI_TREE`).
-- The skill page's Tree tab is now Skill trees: the proficiencies down the side, the shown one's milestones. See `prototype/README.md`, "Skill trees by proficiency".
+- The skill page's Tree tab is now Skill trees: the shown one's milestones the whole page, the proficiencies switched under it (‹ ›, or the list of them all from its name). See `prototype/README.md`, "Skill trees by proficiency".
 
 ## 10. Phases
 

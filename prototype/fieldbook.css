@@ -128,10 +128,20 @@
    and flickering, nodes hexagons (a keystone a diamond, an active ringed with a turning ring). Shown anew (.grow) the nodes fly out
    of the root (--fx, --fy) and the links draw after them, row by row (--d); a node just learned bursts. None of it with reduced
    motion. The level's choice on the Proficiency tab (fb-lvup) ---------- */
-.fb-skill-work.fb-trees{grid-template-columns:190px minmax(0,1fr)}
-.fb-tree-profs{display:flex;flex-direction:column;gap:4px;min-height:0;overflow:auto;padding-right:2px}
-.fb-tree-profs .btn{display:flex;align-items:center;gap:6px;text-align:left;font-size:12px;padding:6px 8px;flex:none}
-.fb-tree-profs .btn strong{flex:1;min-width:0;font-weight:700}.fb-tree-profs .btn small{color:#b8ae94}
+/* (the tree the whole page; the switch between the proficiencies under it: ‹ the one before, this one (its list), the one after ›) */
+.fb-skill-work.fb-trees{grid-template-columns:minmax(0,1fr)}
+.fb-tree-switch{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;padding:6px 8px;border-top:1px solid #705b37;background:linear-gradient(#2a2216,#1a1610);flex:none}
+.fb-tree-switch .btn{display:flex;align-items:center;gap:6px;min-height:34px;white-space:nowrap;min-width:0}
+.fb-tree-switch .btn.fb-ts-side{background:transparent;border-color:transparent;box-shadow:none;color:#8f8672;font-size:12px;overflow:hidden;padding:4px 2px}.fb-ts-side span{overflow:hidden;text-overflow:ellipsis;opacity:.55}
+.fb-tree-switch .fb-ts-side.prev{justify-content:flex-end}.fb-tree-switch .fb-ts-side.next{justify-content:flex-start}.fb-ts-side:hover span{opacity:1;color:#e8dcc0}
+.fb-ts-ar{font:700 22px/1 Arial,sans-serif;font-style:normal;color:#e8b94a;flex:none}
+.fb-ts-now{grid-column:2;justify-content:center;font-size:14px;padding:6px 14px;min-width:150px}.fb-ts-now strong{font-weight:700;color:#f0ead8}.fb-ts-now small{color:#b8ae94}
+.fb-ts-more{font-style:normal;color:#b8ae94}.fb-ts-more.wait{color:#e8b94a}
+.tr-stage{position:relative}
+.fb-tree-list{position:absolute;left:8px;right:8px;bottom:6px;max-height:calc(100% - 12px);overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px;padding:8px;border:1px solid #967744;background:#16130ef2;box-shadow:0 6px 24px #000a;z-index:5;animation:tr-in .15s ease-out both}
+.fb-tree-list[hidden]{display:none}
+.fb-tree-list .btn{display:flex;flex-direction:row;align-items:center;gap:6px;text-align:left;font-size:12px;padding:6px 8px}
+.fb-tree-list .btn strong{flex:1;min-width:0;font-weight:700}.fb-tree-list .btn small{color:#b8ae94}
 .fb-tree-wait{min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#e8b94a;color:#1a1408;font-size:11px;display:inline-grid;place-items:center}
 .fb-tree-head{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-bottom:1px solid #705b37;flex:none}
 .fb-tree-head strong{font-size:16px;color:#f0ead8}.fb-tree-head small{color:#b8ae94;font-size:12px}.fb-tree-head b.gold{color:#e8b94a}
@@ -180,5 +190,7 @@
 .fb-lvup{border:1px solid #e8b94a;background:#2a2418}.fb-lvup-picks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .fb-lvup-picks .btn{display:flex;align-items:center;gap:6px}
 @container ovl (max-width:900px){.tr-stage{grid-template-columns:minmax(0,1fr) 180px}.tr-pane{padding:8px}.tr-pane h3{font-size:15px}}
-@container ovl (max-width:650px){.fb-skill-work.fb-trees{grid-template-columns:118px minmax(0,1fr);gap:6px;padding:0 6px 6px}.fb-tree-profs .btn{font-size:11px;padding:5px 6px}.fb-tree-head small{font-size:10px}}
+@container ovl (max-width:650px){.fb-skill-work.fb-trees{gap:6px;padding:0 6px 6px}.fb-tree-head small{font-size:10px}.fb-ts-now{min-width:0;padding:6px 10px;font-size:13px}.fb-tree-switch .btn.fb-ts-side{font-size:11px}}
+@container ovl (max-width:560px){.tr-stage{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}.tr-pane{border-left:0;border-top:1px solid #4a4038;max-height:38%}}
+@container ovl (max-height:430px){.fb-tree-switch{padding:3px 6px}.fb-tree-switch .btn{min-height:28px}}
 @container ovl (max-height:430px){.fb-tree-head{padding:4px 8px}.fb-tree-head small{display:none}}

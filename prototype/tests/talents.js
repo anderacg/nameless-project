@@ -48,6 +48,13 @@ try{
  // the page
  G.mode='world';G.modal=false;t.hidePanel();window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyK',key:'k'}));t.act('sk-tab','talents');
  ok(G.mode==='skills'&&document.querySelectorAll('[data-act="tree-prof"]').length===profs.length&&document.querySelectorAll('svg.tr-svg .tp-node').length>=6&&document.querySelector('svg.tr-svg.grow .tp-root'),'K opens the Skills page; Skill trees lists every proficiency and draws one as a path of nodes, flying out of its root');
+ // (the switch under the tree (the owner, 2026-11-08): ‹ the one before, this one, the one after ›, round and round; its name opens the
+ // list of them all, hidden till then; ← and → step too)
+ {const L=t.skProfs(P),sw=()=>document.querySelector('.fb-tree-switch'),side=c=>sw()?.querySelector('.fb-ts-side.'+c+' span')?.textContent,list=()=>document.querySelector('.fb-tree-list'),key=k=>document.getElementById('panel').dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true}));
+  t.act('tree-prof',L[0]);ok(side('prev')===t.SKILLS[L[L.length-1]].n&&side('next')===t.SKILLS[L[1]].n&&sw().querySelector('.fb-ts-now strong').textContent===t.SKILLS[L[0]].n&&list().hidden,'under the tree: '+side('prev')+' ‹ '+t.SKILLS[L[0]].n+' › '+side('next')+', round from the first to the last; the list hidden');
+  t.act('tree-step','-1');const a=G.skTree;t.act('tree-step','1');const b=G.skTree;key('ArrowRight');const c=G.skTree;
+  ok(a===L[L.length-1]&&b===L[0]&&c===L[1],'‹ goes to the one before (the last from the first), › to the one after, → too');
+  t.act('tree-list');const open=!list().hidden&&list().querySelector('[data-act="tree-prof"].on')?.dataset.arg===L[1];t.act('tree-prof',L[2]);ok(open&&list().hidden&&G.skTree===L[2],'its name opens the list of them all, the shown one marked; picking one shows it and closes the list')}
  P.sk.med.lv=20;t.act('tree-prof','med');const nodeCls=id=>document.querySelector('.tp-node[data-arg="'+id+'"]')?.getAttribute('class')||'';
  ok(/Field Surgeon/.test(panel())&&/Healing Light/.test(panel())&&/open/.test(nodeCls('med_surgeon'))&&/locked/.test(nodeCls('med_renew'))&&document.querySelector('svg.tr-svg.grow'),'Medicine\'s tree: at 20 its first tier open (pulsing), its next not yet; switching trees grows it anew');
  t.act('tree-sel','med_surgeon');ok(/Learn · 1 point/.test(panel())&&!document.querySelector('[data-act="tree-take"][data-arg="med_surgeon"]').disabled,'a node chosen on the tree: what it does, and Learn');
