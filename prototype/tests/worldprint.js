@@ -598,6 +598,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-08, on purpose: the owner, "recheck whether all sprites is in the center": an army's label and banner over its
 //  men themselves, a middle man's place across and over the topmost near him, not its point at the front of its column (render.js
 //  armyHome, ARMY_TAG). Proof: d5c92c1 gives 3ab96f78 again. Was W6 3ab96f78)
+// (W6 again 2026-11-08, on purpose: the owner, "check whether the unit and player hero is centered": every figure's picture centred
+//  on its body (figures.js FigureRig.frame ax, people.js FIG_AXIS: it stood 2 px aside), so the map's marchers stand on their points.
+//  Proof: with the frame's own middle again (ax ignored) it is 4141b1f3. Was W6 4141b1f3)
 // (W6 again 2026-11-08, on purpose: the owner, "the outer line should be darker shading not completely black" and the parts inside a
 //  building told apart: its buildings' outlines and seams (engine/pixel.js PX.BUILD_RIM, PX.SEAM). Proof: both off give 40af48fd. Was
 //  W6 40af48fd)
@@ -614,7 +617,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  changed: the save is v4, your hero starts at level 0 with a past's free start (P.sk0: a Veteran's One-Handed 20, Leadership 10),
 //  proficiency levels are stored ×9.9 and P.xp is the level's progress. The world itself held (W1-W6, W8). Proof: f357e21 gives
 //  30a2328c and 3b944b30 again. Were W7 30a2328c, B2 3b944b30)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'4141b1f3',W7:'e3e03768',W8:'51660bc5',B2:'a9339a6a'};
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'3d518113',W6:'deb9755d',W7:'e3e03768',W8:'51660bc5',B2:'a9339a6a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

@@ -210,8 +210,10 @@ class FigureRig{
      hand (the weapon hand), free (the off hand) and back (FIG_ANCHORS); fh: the figure's height (its bars and labels); rig */
   // (a paper doll and its gear unoutlined, as the owner's reference: dollfigs.js)
   // (a doll's blended outline (people.js prim) laid after its extent is taken: it never changes the cell, nor where its anchors fall)
-  static frame(g,R,w,A,fh,rig){const doll=g.body&&DOLL_FIGS.on&&DOLL_FIGS.edge;if(!g.body)poutline(g);else if(doll){pjoin(g);pfillHoles(g)}let x0=g.w,x1=-1;const top=Math.min(R,ptop(g));
+  // (ax: the grid column of the body's middle (the owner, 2026-11-08: "check whether the unit and player hero is centered"): the
+  // frame's middle on it, so the figure stands on its point, not 2 px aside, and does not jump as it turns; else the frame's own)
+  static frame(g,R,w,A,fh,rig,ax){const doll=g.body&&DOLL_FIGS.on&&DOLL_FIGS.edge;if(!g.body)poutline(g);else if(doll){pjoin(g);pfillHoles(g)}let x0=g.w,x1=-1;const top=Math.min(R,ptop(g));
     for(let i=0;i<g.p.length;i++)if(g.p[i]){const x=i%g.w;if(x<x0)x0=x;if(x>x1)x1=x}
     if(doll&&DOLL_FIGS.rim){prim(g);pfillHoles(g)}
-    const cx=R+(w>>1),half=Math.max(w>>1,cx-x0,x1+1-cx),c=pcanvas(pcrop(g,cx-half,top,2*half,g.h-top));c.fh=fh;for(const k of FIG_ANCHORS)if(A[k])c[k]=[A[k][0]-(cx-half),A[k][1]-top];c.rig=rig;return c}
+    const cx=ax??R+(w>>1),half=Math.max(w>>1,cx-x0,x1+1-cx),c=pcanvas(pcrop(g,cx-half,top,2*half,g.h-top));c.fh=fh;for(const k of FIG_ANCHORS)if(A[k])c[k]=[A[k][0]-(cx-half),A[k][1]-top];c.rig=rig;return c}
 }

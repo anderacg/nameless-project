@@ -209,6 +209,9 @@ const STRIDE_CLIMB=[[5,8,5,9],[5,9,5,10],[5,8,5,9],[4,9,4,10]],CLIMB_BOB=[0,-1,0
 /* a figure into grid g at (ox, oy): its body (on foot a paper doll: dollfigs.js), then its gear from the body's anchors (figures.js
    FigureRig). walk: -1 or 0-3; atk:
    -1 or 0-2 with style; cut: only the rows down to it (a rider). Returns its anchors (drawFigureBody's) */
+// (the body's middle column from a figure's origin: a paper doll's (dollfigs.js), the old template's (PEOPLE_T); a rider's, his mount's
+// legs from the grid's margin R: the finished picture is centred on it, figures.js FigureRig.frame)
+const FIG_AXIS={doll:6,template:7,mount:15};
 function drawFigure(g,o,ox,oy,walk,style,atk,cut){if(dollable(o))return drawDollFigure(g,o,ox,oy,walk,style,atk,cut);const A=drawFigureBody(g,o,ox,oy,walk,style,atk,cut);FigureRig.dress(g,o,A,style,atk);return A}
 /* a figure's body into grid g at (ox, oy): the template, its legs, cape, beard, helm and limbs, no gear. Returns its anchors, in
    g's pixels (its gear is drawn from them: figures.js): hand, the weapon hand (weapons.js holds a weapon there); off, the shield
@@ -637,8 +640,8 @@ function peopleSprite(o,pose,bare){
     // against the cloth (RIDER_LEG: [x, y from the seat row, letter] each)
     const leg=RIDER_LEG.map(([x,y,k])=>[x+R,top+y,riderLegCol(o,k,x,y)]),on=new Set(leg.map(([x,y])=>x+','+y));
     if(!(DOLL_FIGS.on&&DOLL_FIGS.edge&&g.body))for(const [x,y] of leg)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const k=(x+dx)+','+(y+dy);if(!on.has(k)){on.add(k);pset(g,x+dx,y+dy,PEOPLE_OUT)}}
-    for(const [x,y,c] of leg)pset(g,x,y,c);return FigureRig.frame(g,R,32,A,32-(top-R-6),false)}
-  const g=pgrid(24+2*R,19+R),A=drawFigure(g,o,4+R,3+R,walk,style,atk);return FigureRig.frame(g,R,24,A,o.short?15:16,!!o.held&&(blow||pose===FLINCH_POSE));
+    for(const [x,y,c] of leg)pset(g,x,y,c);return FigureRig.frame(g,R,32,A,32-(top-R-6),false,R+FIG_AXIS.mount)}
+  const g=pgrid(24+2*R,19+R),A=drawFigure(g,o,4+R,3+R,walk,style,atk);return FigureRig.frame(g,R,24,A,o.short?15:16,!!o.held&&(blow||pose===FLINCH_POSE),4+R+(g.body?FIG_AXIS.doll:FIG_AXIS.template));
 }
 
 /* the world map's own figures (doc/WORLD_DESIGN.md §10.1), smaller than the battle's, so a person is clearly smaller than a

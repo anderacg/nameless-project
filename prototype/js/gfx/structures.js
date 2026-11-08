@@ -73,8 +73,7 @@ function holdingEnts(t,ents,cam,V){
         const s=lotSprite(t,l),w=t.work&&(t.work.lot?t.work.lot===l.id:t.work.k===l.k||t.work.k==='wall'&&l.k==='centre'),p=w?workProg(t):0;l._mem=s;l._memSt=l.st;
         if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed,t.races?.[0]);else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed,t.races?.[0])}
         if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
-        if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(holdingFlag(t,col),X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N)}
-        if(ESTATES[l.k]){const m=lotMid(l);if(Math.hypot(m.x-P.x,m.y-P.y)<60)txt(ESTATES[l.k].n,Math.round(m.x-cam.x),Y+8,'#c8c2ae','center')}}});
+        if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(holdingFlag(t,col),X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N)}}});// (no estate's name under it near you: no words on the map's places, the owner, 2026-11-08; its tip names it)
       if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)});
       if(l.k==='pasture'&&l.st==='built'&&live)penEnts(t,ents,cam)}// (its herd, inside its fence: critters.js)
   TownWall.ents(t,ents,cam);// (its ring of walls: world/townwalls.js)
