@@ -6,9 +6,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');ok(G.mode==='world','begin -> world');ok(P.attr.str===5&&Object.keys(P.sk).every(k=>P.sk[k].lv===(P.sk0[k]||0))&&P.sk.oneh.lv>0&&P.apt.oneh>0&&P.origin==='o_soldier'&&P.tree[0]==='o_soldier','bg attributes, every proficiency at 0 but the past\u2019s free start, a knack for One-Handed, and the Soldier origin (+1 Strength)');
- t.gainXp(500);ok(P.level>=3&&P.tp===P.level&&!P.perkPend,'a battle\u2019s practice raises the level, a tree point each (tp='+P.tp+' lv='+P.level+')');
- t.openChar();ok(G.mode==='char','char opens');t.act('char-close');const s0=P.attr.str;ok(t.takeNode('might0')&&P.attr.str===s0+2,'a Strength talent raises Strength');
- P.tp+=6;['might0','start','arcana0','arcana1','arcana2','arcanaa0'].forEach(id=>t.takeNode(id));ok(t.has('quarter'),'old perks now come from talents (Quartermaster)');
+ t.gainXp(500);ok(P.level>=3&&P.lvUp===P.level&&!P.perkPend,'a battle\u2019s practice raises the level, a choice each (choices='+P.lvUp+' lv='+P.level+')');
+ t.openChar();ok(G.mode==='char','char opens');t.act('char-close');const s0=P.attr.str;P.sk.oneh.lv=Math.max(P.sk.oneh.lv,15);ok(t.takeNode('oneh_str')&&P.attr.str===s0+2,'a Strength talent raises Strength');
+ P.sk.surv.lv=15;t.takeNode('surv_quarter');ok(t.has('quarter'),'old perks now come from talents (Quartermaster, Survival 15)');
  while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  t.act('char-tab','party');t.act('char-close');ok(G.mode==='world','char close');
  P.gold=2000;t.enterTown(t.TOWNS[1]);t.act('tab','tavern');ok(/Brann/.test(document.getElementById('panel').innerHTML),'brann in tavern');

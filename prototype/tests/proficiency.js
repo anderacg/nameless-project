@@ -7,7 +7,7 @@ try{
  const t=T,G=t.G,P=t.P,PROF=t.PROF;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');G.quietEvents=true;const H=t.leaderOf(P);
  // where you start: level 0, every proficiency 0 but your past's, free
- ok(P.level===0&&P.tp===0,'a new hero is level 0 with no tree points (level '+P.level+', '+P.tp+')');
+ ok(P.level===0&&P.lvUp===0,'a new hero is level 0 with no level choice waiting (level '+P.level+', '+P.lvUp+')');
  ok(P.sk.oneh.lv===2*PROF.pastPer&&P.sk.lead.lv===PROF.pastPer&&P.sk.trade.lv===0,'a veteran starts at One-Handed '+P.sk.oneh.lv+' and Leadership '+P.sk.lead.lv+', the rest at 0');
  ok(H.profProgress()===0,'and the past’s start does not count toward the level');
  // power: level / PROF.per, 99 the old 10
@@ -16,10 +16,10 @@ try{
  // the curve: 0 to 99 takes about the old 0 to 10's practice
  let sum=0;for(let l=0;l<PROF.max;l++)sum+=t.SK_XP(l);ok(sum>2600&&sum<2900,'0 to 99 takes '+Math.round(sum)+' practice (2.5 times the 1100 it took before: the owner, 2026-11-08, "proficiency increase too fast")');
  // practice raises it to 99 and no further
- P.sk.med={lv:98,xp:0};H.train('med',999,true);ok(P.sk.med.lv===PROF.max&&P.sk.med.xp===0,'a proficiency stops at 99');P.sk.med={lv:0,xp:0};P.level=0;P.xp=0;P.tp=0;// (as new again: the level never falls by itself)
- // level from progress, a tree point a level
- const lv0=P.level,tp0=P.tp;H.train('tact',300,true);
- ok(P.level>lv0&&P.tp-tp0===P.level-lv0,'practising Tactics raises the level, a tree point each (level '+P.level+', +'+(P.tp-tp0)+' points)');
+ P.sk.med={lv:98,xp:0};H.train('med',999,true);ok(P.sk.med.lv===PROF.max&&P.sk.med.xp===0,'a proficiency stops at 99');P.sk.med={lv:0,xp:0};P.level=0;P.xp=0;P.lvUp=0;// (as new again: the level never falls by itself)
+ // level from progress, a choice (health, stamina or mana) a level
+ const lv0=P.level,tp0=P.lvUp;H.train('tact',300,true);
+ ok(P.level>lv0&&P.lvUp-tp0===P.level-lv0,'practising Tactics raises the level, a choice each (level '+P.level+', +'+(P.lvUp-tp0)+' choices)');
  ok(P.level===t.PROF_LEVEL(H.profProgress()),'the level is the one its progress reaches');
  // weights: the easy ones count less
  const a=H.profProgress();P.sk.scout={lv:10,xp:0};const b=H.profProgress()-a;P.sk.scout={lv:0,xp:0};P.sk.eng={lv:10,xp:0};const c=H.profProgress()-a;P.sk.eng={lv:0,xp:0};
@@ -35,16 +35,16 @@ try{
  ok(P.level>L0||P.xp>xp0,'and fills the level bar');
  {const s0=P.sk.pers.lv+P.sk.pers.xp/1e3;t.gainXp(40,'talk');ok(P.sk.pers.lv+P.sk.pers.xp/1e3>s0,'a talk trains Persuasion');}
  ok(t.QUEST_TRAIN.CourierQuest==='trade'&&t.QUEST_TRAIN.MissingQuest==='search','quests train by kind (deliveries Trade, the missing Scouting)');
- // the combo's upgrades on the Tree
- P.tree=[P.origin];P.tp=10;ok(t.heroCombo().length===2,'the combo is two blows to begin with');
- for(const id of ['might0','might1','might2'])if(!P.tree.includes(id))P.tree.push(id);
- ok(t.canTakeOf(P,'third')&&!t.canTakeOf(P,'fin_stun'),'Third Blow is on the Tree after Brute Force, the finishers after it');
- t.takeNode('third');ok(t.heroCombo().length===3,'Third Blow: a third blow');
- t.takeNode('fin_push');ok(t.heroFin()==='push'&&!t.canTakeOf(P,'fin_stun'),'Crushing Finisher taken shuts Stunning Finisher');
+ // the combo's upgrades in the weapons' trees (One-Handed: Third Blow at 15, a finisher at 60, one of each pair)
+ P.tree=[P.origin];P.sk.oneh.lv=20;ok(t.heroCombo().length===2,'the combo is two blows to begin with');
+ ok(t.canTakeOf(P,'oneh_third')&&!t.canTakeOf(P,'oneh_push'),'Third Blow at One-Handed 15, the finishers not before 60');
+ t.takeNode('oneh_third');ok(t.heroCombo().length===3,'Third Blow: a third blow');
+ P.sk.oneh.lv=60;t.takeNode('oneh_push');ok(t.heroFin()==='push'&&!t.canTakeOf(P,'oneh_stun'),'Crushing Finisher taken shuts Stunning Finisher');
+ P.tree=[P.origin];P.sk.twoh.lv=60;t.takeNode('twoh_stun');ok(t.heroCombo().length===3&&t.heroFin()==='stun','a finisher alone (Two-Handed 60) brings its third blow');P.tree=[P.origin];
  // companions level the same way
  delete P.comps.brann;t.compJoin('brann');const C=t.compOf('brann');
  if(C){ok(C.lv===0&&Object.values(C.sk).every(s=>s.lv===0),'a companion starts at level 0, every proficiency at 0 ('+C.lv+')');
-  t.compXp('brann',400,'battle');ok(C.lv>0&&C.o.tp>=C.lv,'a companion levels by their proficiencies, a tree point each (level '+C.lv+')')}
+  t.compXp('brann',1000,'battle');ok(C.lv>0,'a companion levels by their proficiencies (level '+C.lv+')')}
  else ok(false,'a companion to test');
  // lords grow their own way
  const l=t.W.lords.find(x=>!x.dead);if(l)t.lordStats(l);

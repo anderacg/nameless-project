@@ -121,3 +121,30 @@
   .fb-army>.fb-head .fb-muster-meters{grid-column:auto;padding:3px 6px;gap:2px 8px}.fb-army>.fb-head .fb-muster-note{display:none}
   .fb-army>.fb-head .fb-meter>div:first-child{font-size:9px;flex-wrap:nowrap}.fb-army>.fb-head .fb-meter b{font-size:10px}
 }
+
+/* ---------- skill trees, one for each proficiency (ui/talents.js skTreeBody; the owner, 2026-11-08): the proficiencies down the
+   side (a gold count where a choice waits), the shown one's milestones, two cards at each: open (gold), learned (green), shut by
+   its pair (dim). The level's choice on the Proficiency tab (fb-lvup) ---------- */
+.fb-skill-work.fb-trees{grid-template-columns:190px minmax(0,1fr)}
+.fb-tree-profs{display:flex;flex-direction:column;gap:4px;min-height:0;overflow:auto;padding-right:2px}
+.fb-tree-profs .btn{display:flex;align-items:center;gap:6px;text-align:left;font-size:12px;padding:6px 8px;flex:none}
+.fb-tree-profs .btn strong{flex:1;min-width:0;font-weight:700}.fb-tree-profs .btn small{color:#b8ae94}
+.fb-tree-wait{min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#e8b94a;color:#1a1408;font-size:11px;display:inline-grid;place-items:center}
+.fb-tree-head{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-bottom:1px solid #705b37;flex:none}
+.fb-tree-head strong{font-size:16px;color:#f0ead8}.fb-tree-head small{color:#b8ae94;font-size:12px}
+.fb-trees .fb-tree-pane .fb-scroll{flex:1;min-height:0;overflow:auto}
+.fb-tier{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;padding:8px 10px;border-bottom:1px solid #3a3326}
+.fb-tier h4{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.fb-tier h4 b{font-size:20px;color:#7a7060}.fb-tier.reached h4 b{color:#e8b94a}.fb-tier h4 small{font-size:10px;color:#9a907a;text-align:center}
+.fb-tier-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fb-tcard{display:flex;flex-direction:column;min-width:0;border:1px solid #4a4038;border-radius:6px;background:#1f1d26}
+.fb-tcard .fb-tcard-body{display:flex;flex-direction:column;align-items:flex-start;gap:3px;flex:1;width:100%;padding:8px;text-align:left;white-space:normal;font-weight:400;background:none;border:0;box-shadow:none}
+.fb-tcard small{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#9a907a}.fb-tcard strong{font-size:14px;color:#f0ead8}
+.fb-tcard span{font-size:12px;line-height:1.3;color:#d8d0bc}.fb-tcard em{margin-top:auto;padding-top:2px;font-style:normal;font-size:11px;color:#9a907a}
+.fb-tcard.open{border-color:#e8b94a;box-shadow:0 0 0 1px #e8b94a55}.fb-tcard.open em{color:#e8b94a}
+.fb-tcard.on{border-color:#78c474;background:#1f2a22}.fb-tcard.shut{opacity:.55}
+.fb-tcard .fb-tcard-undo{align-self:flex-start;margin:0 8px 8px;font-size:11px;padding:4px 8px}
+.fb-lvup{border:1px solid #e8b94a;background:#2a2418}.fb-lvup-picks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.fb-lvup-picks .btn{display:flex;align-items:center;gap:6px}
+@container ovl (max-width:650px){.fb-skill-work.fb-trees{grid-template-columns:118px minmax(0,1fr);gap:6px;padding:0 6px 6px}.fb-tree-profs .btn{font-size:11px;padding:5px 6px}
+  .fb-tier{grid-template-columns:30px minmax(0,1fr);gap:5px;padding:6px}.fb-tier h4 b{font-size:16px}.fb-tier-pair{gap:5px}.fb-tcard span{font-size:11px}.fb-tree-head small{display:none}}

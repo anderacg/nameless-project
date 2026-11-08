@@ -68,6 +68,10 @@ const SKILLS={
 // Leadership at 20-30; now about 1.5. 0 to 99 about 2750 practice, was 1100; your level, worked out from them, follows. Was xp0 4, xpUp .145)
 const PROF={max:99,per:9.9,xp0:10,xpUp:.3625,step:50,burst:6,damp:[.5,.25],reward:.5,rose:10,pastPer:10,
   weight:{ride:.8,wood:.8,surv:.8,stew:.8,athl:.8,scout:.6,trade:.6}};
+// a level's choice (the owner, 2026-11-08: "when you level up you choose to upgrade health, stamina or magic"): each level one of
+// these, as much as this (parties.js heroStats, maxSP, maxMP; P.lvPick: how many of each, P.lvUp: the choices waiting); a level
+// gives nothing else of these (it gave 10 health, 2 stamina and 2 mana by itself)
+const LEVEL_UP={hp:10,sp:10,mp:10};
 const REWARD_TRAIN={battle:[['weapon',.6],['lead',.2],['tact',.2]],tourney:[['weapon',.7],['athl',.3]],monster:[['weapon',1]],hunt:[['hunt',1]],
   fight:[['weapon',.6],['lead',.4]],talk:[['pers',1]],search:[['scout',1]],trade:[['trade',1]],command:[['lead',1]],lore:[['scout',.5],['tact',.5]],story:[['pers',.5],['scout',.5]]};
 // (a quest's kind of practice, by its class: what doing it is)

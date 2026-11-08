@@ -140,6 +140,14 @@ Tabs, in the owner's order: **Proficiency · Tree · Trait · Skill bar**. It op
 | Tests: a new `proficiency` suite (0–99, the curve, power, weights and repeats, level from progress, a Tree point a level, rewards as practice, the past's free start, combo nodes, companions, lords, an old save refused); suites that expect flat experience, levels or discipline numbers brought up to date | `tests/` |
 | Fingerprints: W7, W8 and B2 (the save and lords' levels) and the battle suites where heroes' numbers change. Re-recorded with reasons. The proof is the commit before. | `tests/worldprint.js` and others |
 
+## 9b. Since built: a tree for each proficiency, and the level's choice (2026-11-08)
+
+The owner: "make each skill tree separated by proficiency"; "when you level up you choose to upgrade health, stamina or magic". This replaces §5's and §7's Tree point:
+- Each proficiency has its own tree (`data/tree.js` `PROF_TREE`): milestones (15, 35, 60, 90 for the fighting ones and Leadership; 15, 35, 60 for the rest), a pair of nodes at each; reaching one, you take one of the two. No points.
+- Each level is a choice of +10 health, +10 stamina or +10 mana (`LEVEL_UP`); the level no longer adds these by itself.
+- Companions choose in their own trees; lords and chieftains choose for themselves, their trees opening as if their proficiencies were 8 × their level (`AI_TREE`).
+- The skill page's Tree tab is now Skill trees: the proficiencies down the side, the shown one's milestones. See `prototype/README.md`, "Skill trees by proficiency".
+
 ## 10. Phases
 
 1. **Names, tabs, the Trait tab.** Display only.

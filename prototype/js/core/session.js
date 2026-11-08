@@ -9,6 +9,8 @@ class GameSession{
     replace(this.runtime,makeRuntimeState());if(race)this.runtime.race=race;if(quiet!==undefined)this.runtime.quietEvents=quiet;
     // (a skill the save does not have yet, one added since: from 0)
     replace(this.player,{...makePlayerState(),...(savedPlayer||{}),...(savedPlayer&&savedPlayer.sk?{sk:{...mkSkills(),...savedPlayer.sk}}:{})});
+    // (a save from before the level's choice: every level a choice waiting, its trees' nodes of old gone)
+    if(savedPlayer&&savedPlayer.lvUp==null){this.player.lvUp=savedPlayer.level||0;this.player.tree=(this.player.tree||[]).filter(id=>typeof TREE==='undefined'||TREE[id]);delete this.player.tp}
     replace(this.world,makeWorldState());
   }
 }
@@ -72,7 +74,7 @@ function startGame(k,b){
   // every proficiency starts at 0 but your past's, free (PROF.pastPer a point; sk0, not counted toward your level); your race and past give a knack: 25% faster learning per point (P.apt)
   for(const src of [b.sk,rc.sk])for(const s in src||{})P.apt[s]=(P.apt[s]||0)+.25*src[s];
   for(const s in b.sk||{})if(P.sk[s])P.sk[s].lv=P.sk0[s]=Math.min(SK_MAX,PROF.pastPer*b.sk[s]);
-  P.origin=originOf(k);P.tree=[P.origin];applyNode(P.origin,1);G.skSel=P.origin;
+  P.origin=originOf(k);P.tree=[P.origin];applyNode(P.origin,1);
   // (your past's weapon: none for a nobody, bare hands, combat.js FISTS)
   P.gear.weapon=b.weapon?gearId(b.weapon,0):null;Object.assign(P.gear,b.gear);for(const g in b.cargo)invAdd('good',g,b.cargo[g]);
   // (a new game on the map: every system's world reset first, onWorld; the game's number for its random streams, core/rng.js,

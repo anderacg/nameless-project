@@ -36,9 +36,10 @@ const isHammer=m=>m.base==='warhammer'||m.icon==='club';
    one (FIN_BASE). */
 const FIN_BASE={mult:.85,stun:.5,kb:.6},FIN_STYLE={stun:{mult:.9,stun:1.6,kb:.4},push:{mult:.9,stun:0,kb:1.9}};
 // (the combo's upgrades are Tree nodes now, the owner, 2026-11-08: the Third Blow, then a finisher's style, data/tree.js TREE_COMBO)
-const comboBlows=()=>treeHas('third')?3:2;
-const finReady=()=>treeHas('third');
-const heroFin=()=>treeHas('fin_stun')?'stun':treeHas('fin_push')?'push':null;
+// (the third blow and its finishing style: a node of a weapon's tree, data/tree.js combo3, fin; the first finisher learned rules)
+const comboBlows=()=>tm('combo3')>0?3:2;
+const finReady=()=>tm('combo3')>0;
+const heroFin=()=>{const id=(P.tree||[]).find(n=>TREE[n]&&TREE[n].m.fin);return id?TREE[id].m.fin:null};
 function heroCombo(){const C=weaponCombo(),n=comboBlows(),F=FIN_STYLE[heroFin()]||FIN_BASE,K=C===COMBOS.fists?1+P.treeMod('kick'):1;// (the kick: the talents')
   const out=C.slice(0,n).map((c,i)=>i<2?c:{...c,mult:+(c.mult*F.mult*K).toFixed(2),stun:+((c.stun||.4)*F.stun).toFixed(2),kb:Math.round(c.kb*F.kb*K)});return Object.assign(out,{sp:C.sp})}
 function weaponCombo(){if(unarmed())return COMBOS.fists;const m=mainI(),g=grip();if(g==='dual')return COMBOS.dual;if(!m)return COMBO;if(m.base==='dagger'||m.icon==='dagger')return COMBOS.dagger;

@@ -207,7 +207,7 @@ class PlayerParty extends Party{
   heroStats(){
     const tm=k=>this.treeMod(k),gm=k=>this.gearMod(k),melee=this.skill(meleeSk()),two=hybridTwo(),kind=heroKind(),fist=unarmed();// (bare hands: combat.js FISTS)
     return {n:'You',
-      hp:Math.round((50+10*this.level+4*this.attr.str+gm('hp'))*(1+tm('hpPct'))),
+      hp:Math.round((50+LEVEL_UP.hp*lvPicked('hp')+4*this.attr.str+gm('hp'))*(1+tm('hpPct'))),
       dmg:(8+2*this.level+this.bonus+this.attr.str*.5+melee*.6+gm('dmg'))*(1+tm('dmgPct'))*(two?1.2:1)*(fist?FISTS.dmg*(1+tm('fistPct')):1),
       spd:(48+this.attr.agi*2)*(1+gm('spd')),
       reach:21+melee*.4+gm('reach')+(two?4:0)+(fist?FISTS.reach:0),
@@ -216,8 +216,8 @@ class PlayerParty extends Party{
       cd:.45*(1-this.attr.agi*.03)*(1+gm('cd'))*(fist?FISTS.cd*(1+tm('fistCd')):1),
       tags:Object.values(this.gear).map(id=>id&&ITEMS[id].tag).filter(Boolean)}}
   // stamina pays for physical effort, mana for skills
-  maxSP(){return 60+this.attr.agi*5+this.level*2+this.treeMod('sp')+4*this.skill('athl')}
-  maxMP(){return Math.round((30+this.attr.int*6+this.level*2+this.gearMod('mp'))*(1+this.treeMod('mpPct')))}
+  maxSP(){return 60+this.attr.agi*5+LEVEL_UP.sp*lvPicked('sp')+this.treeMod('sp')+4*this.skill('athl')}
+  maxMP(){return Math.round((30+this.attr.int*6+LEVEL_UP.mp*lvPicked('mp')+this.gearMod('mp'))*(1+this.treeMod('mpPct')))}
   /* health, stamina and mana persist between battles; null means full (a new hero or an old save). Returns their maxima. Your
      hero's stamina on the map is your band's (doc/SUPPLY_DESIGN.md §2): kept in sp, on her scale (maxSP); bsta reads and sets it as
      the band's, 0-100 (world/supply.js); it comes back by the hour there, not here */

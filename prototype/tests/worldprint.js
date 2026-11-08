@@ -643,7 +643,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W7 again 2026-11-08, on purpose: the owner, "proficiency increase too fast": a proficiency's level takes 2.5 times the practice
 //  (data/progression.js PROF xp0 10, xpUp .3625), and the save after its days holds your proficiencies. Proof: with xp0 4, xpUp .145
 //  it is 37b3d70f again. Was W7 37b3d70f)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'b1ff7a76',W7:'dd0ee495',W8:'1d99079f',B2:'a9339a6a'};
+// (W7 and B2 again 2026-11-08, on purpose: the owner, "make each skill tree separated by proficiency", and a level's choice of health,
+//  stamina or mana: the save holds your record (tp gone, lvUp and lvPick), the lords' and chieftains' trees (opened by their
+//  proficiencies now) and their numbers. Proof: with the others choosing no node, the old tp, the level's old numbers and its line,
+//  the old code and the new give the same W7 (4168edf3) and B2 (a9339a6a). Was W7 dd0ee495, B2 a9339a6a)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'b1ff7a76',W7:'bbaa5061',W8:'1d99079f',B2:'72712154'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

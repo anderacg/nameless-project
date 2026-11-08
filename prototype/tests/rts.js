@@ -283,7 +283,7 @@ try{
  // combos and skills, on their own
  const ring=(B,n,r,spd)=>{const h=B.hero;B.units.filter(u=>u.team===1).forEach((u,i)=>{const a=i/n*6.283;u.x=h.x+Math.cos(a)*r;u.y=h.y+Math.sin(a)*r;u.cd=99;u.hp=u.max=9999;u.s={...u.s,spd:spd||0};const q=t.resolveOf(u);if(q)q.mor=1e9})};
  const run=(n,f)=>{for(let i=0;i<n&&t.B;i++){t.updateBattle(.03);if(f)f()}};
- P.tree=['start','might0','might1','might2','mighta0'];P.level=6;P.gear.weapon=t.gearId('sword',1);P.gear.offhand=null;P.tree.push('third');// (all three blows of the combo: Third Blow)
+ P.tree=['start','oneh_third','oneh_whirl','twoh_leap'];P.level=6;P.gear.weapon=t.gearId('sword',1);P.gear.offhand=null;// (all three blows of the combo: Third Blow; Whirlwind, Leap Slam)
  {P.slots=Array(10).fill(null);const B=fight(['militia']);ring(B,1,14);const X=t.heroState();X.sp=999;const steps=new Set();run(200,()=>steps.add(X.step));
   ok([0,1,2].every(k=>steps.has(k)),'your hero swings the whole combo on their own: Slash, Sweep, Finisher ('+[...steps].filter(k=>k>=0).join(',')+')');if(t.B){t.B.over=true;t.B.endT=0;t.B=null}}
  {P.slots=Array(10).fill(null);const B=fight(['militia']);ring(B,1,14);const X=t.heroState();X.sp=0;const a0=B.hero.atkAt;let tired=0;run(60,()=>{X.sp=0;tired+=B.floats.filter(f=>/tired/i.test(f.t)).length;B.floats=[]});
@@ -303,7 +303,7 @@ try{
  {P.slots=Array(10).fill(null);P.gear.weapon=t.gearId('bow',1);P.gear.quiver='q_soldier';const B=fight(['militia']);const h=B.hero,e=B.units.find(u=>u.team===1);e.x=h.x+120;e.y=h.y;e.cd=99;e.hp=e.max=9999;e.s={...e.s,spd:0};
   const X=t.heroState();X.sp=999;let shot=0,hit=0,last=e.hp;run(150,()=>{shot=Math.max(shot,B.arrows.length);if(e.hp<last-.01)hit++;last=e.hp});/* (a hit: its hp falls; it may mend over the time) */ok(shot>0&&hit>0,'with a bow they draw, loose and hit ('+hit+' hits)');P.gear.weapon=t.gearId('sword',1);if(t.B){t.B.over=true;t.B.endT=0;t.B=null}}
  // champions: lords, chieftains and companions fight as your hero does
- {P.slots=Array(10).fill(null);P.comps={brann:{ap:0,role:''}};t.compInit('brann').lv=1;const B=fight(['militia','militia']);const c=B.units.find(u=>u.comp),fs=B.units.filter(u=>u.team===1);
+ {P.slots=Array(10).fill(null);P.comps={brann:{ap:0,role:''}};{const cr=t.compInit('brann');cr.lv=1;t.charKit(t.charOf(cr,'brann'));cr.sk.oneh.lv=35;t.takeNodeOf(cr,'oneh_whirl',true)}const B=fight(['militia','militia']);const c=B.units.find(u=>u.comp),fs=B.units.filter(u=>u.team===1);
   fs.forEach((u,i)=>{u.x=c.x+10;u.y=c.y+(i?6:-6);u.cd=99;u.hp=u.max=9999;u.s={...u.s,spd:0};u.grp=null});B.hero.x=10;B.hero.y=10;const C=t.champ(c);C.sp=999;C.cds={whirl:99};
   const steps=[];for(let i=0;i<3;i++){c.cd=0;t.champStrike(c,fs[0]);steps.push(C.step)}ok(steps.join()==='0,1,2'&&fs[0].hp<9999,'a companion swings the whole combo of their weapon ('+t.champCombo(c).map(x=>x.n).join(' → ')+')');
   ok(c.cd>1,'and takes a breath after the finisher');C.sp=0;c.cd=0;C.win=0;const a0=fs[0].hp;t.champStrike(c,fs[0]);ok(fs[0].hp<a0&&t.tiredMul(c).dmg<1,'winded, they still fight (as a soldier does), but softer');ok(c.sta===0&&C.sp===0,'their breath is their soldier’s stamina');

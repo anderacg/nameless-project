@@ -86,10 +86,9 @@ class Character extends Unit{
     while(this.xp>=LV_XP(this.lv)){this.xp-=LV_XP(this.lv);this.lv++;up++}
     if(up)this.levelled(up);
     return up}
-  // new levels: a skill point each; one that chooses for itself spends them at once and dresses for its level; then what else
-  // a level brings it (grew: news of it, a perk)
+  // new levels: one that chooses for itself takes its trees' choices and dresses for its level; then what else a level brings it
+  // (grew: news of it, a perk). Its trees open by its proficiencies (data/tree.js), not by its level
   levelled(up){
-    this.o.tp+=up;
     if(this.aiOwned){this.autoTree();this.outfit()}
     this.grew(up)}
   grew(up){}
@@ -105,7 +104,9 @@ class Character extends Unit{
     if(!whole&&!this.aiOwned){const h=typeof Clock!=='undefined'?Math.floor(Clock.hours()):0,B=this.o.burst||(this.o.burst={}),b=B[k]&&B[k][0]===h?B[k]:(B[k]=[h,0]);b[1]++;
       if(b[1]>2*PROF.burst)n*=PROF.damp[1];else if(b[1]>PROF.burst)n*=PROF.damp[0]}
     s.xp+=n*this.learn(k);
+    const lv0=s.lv;
     while(s.lv<SK_MAX&&s.xp>=SK_XP(s.lv)){s.xp-=SK_XP(s.lv);s.lv++;if(s.lv%PROF.rose===0||s.lv===SK_MAX)this.rose(k,s.lv)}
+    if(s.lv>lv0&&this.aiOwned)this.autoTree();// (a milestone reached: one that chooses for itself takes it)
     if(s.lv>=SK_MAX)s.xp=0;
     if(!this.aiOwned)this.relevel()}
   // (its proficiencies' progress: each one's weight × L(L+1)/2 at its level and the part of the next it has, less a past's free start, sk0)
@@ -126,13 +127,13 @@ class Character extends Unit{
      seven slots (COMP_SLOTS) and perks. A newcomer has grown on its own until now: its tree along its class's path, and (one
      that chooses for itself) the disciplines and gear of its level */
   kit(){
-    const o=this.o;if(o.kit>=2)return o;
+    const o=this.o;if(o.kit>=2){if(this.aiOwned)this.autoTree();return o}// (its level may have risen since: a milestone more)
     o.attr=o.attr||{str:0,agi:0,int:0,cha:0};o.gear=o.gear||{};o.perks=o.perks||[];o.sk=o.sk||{};
     const ai=this.aiOwned;
-    for(const k of FIGHT_SK)if(!o.sk[k])o.sk[k]={lv:ai?Math.min(SK_MAX,Math.floor(this.lv/3)*PROF.per):0,xp:0};
-    // (a tree for each: a point a level, and one to start; an older kit's attribute points become tree points)
+    for(const k of FIGHT_SK.concat(ai&&this.cls()==='caster'?['spell']:[]))if(!o.sk[k])o.sk[k]={lv:ai?Math.min(SK_MAX,Math.floor(this.lv/3)*PROF.per):0,xp:0};// (a caster its Spellcraft too)
+    // (its trees: one for each proficiency, each opened as that proficiency rises (data/tree.js); an older kit's attribute points gone)
     if(!o.tree){
-      o.tree=['start'];o.tp=(o.tp||0)+this.lv+1;o.slots=Array(10).fill(null);
+      o.tree=['start'];o.slots=Array(10).fill(null);
       if(o.kit===1){o.attr={str:0,agi:0,int:0,cha:0};delete o.pts;delete o.spent;delete o.build}}
     o.kit=2;
     if(ai)this.outfit();
@@ -146,12 +147,11 @@ class Character extends Unit{
     if(s.range||w&&w.kind==='ranged'||!w&&/bow|sling/.test(L.weapon||''))return 'archer';
     if(s.mounted)return 'rider';
     return t.includes('shield')||t.includes('heavy')||o.gear&&o.gear.offhand?'guardian':'warrior'}
-  // it chooses for itself: its points along its class's path (the first node it can take), else the nearest open node
+  // it chooses for itself: each milestone its proficiencies have reached, the node its class favours (CLASS_PICK: a pair's second
+  // when it names it), else the first of the pair
   autoTree(){
-    const o=this.o,path=CLASS_PATHS[this.cls()]||CLASS_PATHS.warrior;
-    while(o.tp>0){
-      const id=path.find(n=>TREE[n]&&canTakeOf(o,n))||Object.keys(TREE).find(n=>canTakeOf(o,n));
-      if(!id||!takeNodeOf(o,id,true))break}}
+    const o=this.o,want=CLASS_PICK[this.cls()]||[];if(!o.tree)return;
+    for(const a of treePendingOf(o)){const b=TREE[a].pair;takeNodeOf(o,want.includes(b)?b:a,true)}}
   // a lord's or chieftain's gear: of a tier by its level (one every three), a weapon of its people (outfitWeapons), armour and a
   // helm; better gear replaces worse
   outfit(){
@@ -201,14 +201,9 @@ class Character extends Unit{
 const FIGHT_SK=['oneh','twoh','archery'];
 // health and damage against its kind's: [at level 0, more each level] (a recruit keeps the rate it had: o.grow)
 const CHAR_GROW={companion:{hp:[.9,.1],dmg:[.93,.07]},lord:{hp:[1.3,.08],dmg:[.95,.04]},chieftain:{hp:[1.3,.08],dmg:[.95,.04]}};
-// each class's path through the tree: the nodes it takes first, in order (then whatever is nearest)
-const CLASS_PATHS={
-  warrior:['might0','might1','might2','mighta0','might3','finessea0','finessea1','might4','mightc0','mighta1','mightb0','might5','mightc1','mightb1','finesse0','finesse1','finesse2','might6'],
-  guardian:['might0','might1','might2','might3','might4','might5','mightb0','command0','command1','commanda0','mightc0','mightc1','command2','command3','mightb1','commanda1'],
-  rider:['might0','might1','finesse0','finesse1','finesse2','might2','mighta0','finessea0','finesse3','finesse4','finessea1','finesse5','mighta1','might3'],
-  archer:['finesse0','finesse1','finesse2','finessed0','finessed1','finessed2','finesse3','finesse4','finessec0','finessec1','finessec2','finesse5','finesseb0'],
-  caster:['arcana0','arcana1','arcana2','arcanad0','arcana3','arcana4','arcanac0','arcanac1','arcanad1','arcanac2','arcanab1','arcana5','arcanad2']
-};
+// the nodes each class takes over the other of their pair (the rest: the pair's first)
+const CLASS_PICK={warrior:['oneh_dash','twoh_quake','oneh_duel'],guardian:['block_guard','twoh_hide','lead_bearer'],rider:['ride_charge','oneh_dash'],
+  archer:['arch_marks','arch_hands','arch_eagle'],caster:['spell_nova','spell_flow','spell_study']};
 // the weapons (and a shield) a lord wears, by his people
 const OUTFIT={human:['sword','shield'],dwarf:['axe','shield'],elf:['spear'],orc:['axe']};
 
@@ -227,9 +222,10 @@ class Hero extends Character{
   skill(k){return this.trained(k)}
   learn(k){return (1+P.attr[SKILLS[k].a]*.1)*(1+(P.apt&&P.apt[k]||0))}
   kit(){return this.o}
+  // (a level: a choice of more health, stamina or mana, data/progression.js LEVEL_UP; the trees open by proficiency)
   levelled(up){
-    P.tp=(P.tp||0)+up;
-    log('You reach level '+P.level+'. '+(up>1?up+' tree points':'A tree point')+' to spend.','gold')}
+    P.lvUp=(P.lvUp||0)+up;
+    log('You reach level '+P.level+'. Choose more health, stamina or mana (the Skills page, K).','gold')}
   rose(k,lv){log('Your '+SKILLS[k].n+' proficiency reaches '+lv+'.','gold')}
   meleeSkill(){return meleeSk()}
   // (your fighting proficiency: your weapon's, a bow's Archery, a staff's Spellcraft)
