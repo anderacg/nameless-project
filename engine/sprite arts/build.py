@@ -1,6 +1,7 @@
 """Bundle the live sprite and game art scripts into one offline workshop."""
 from pathlib import Path
 import re
+import json
 root = Path(__file__).resolve().parent
 # Keep wildlife artwork synchronized without loading the world's simulation systems.
 repo = root.parent.parent
@@ -17,11 +18,14 @@ end = monsters.index('});', start) + 3
 (root / 'catalog-unit-data.js').write_text('/* Generated from the game monster unit table; no inventory or simulation. */\n' + monsters[start:end])
 html = (root / 'index.html').read_text()
 html = html.replace('<link rel="stylesheet" href="style.css">', '<style>' + (root / 'style.css').read_text() + '</style>')
-def inline(match):
-    file = (root / match.group(1)).resolve()
-    source = file.read_text().replace('</script', '<\\/script')
+def inline_source(name):
+    source = (root / name).resolve().read_text().replace('</script', '<\\/script')
     source = re.sub(r'(?m)^[ \t]+$', '', source)
     return '<script>\n' + source + '\n</script>'
-html = re.sub(r'<script src="([^"]+)"></script>', inline, html)
+manifest = re.search(r'<script id="studio-sources" type="application/json">(.*?)</script>', html, re.S)
+names = json.loads(manifest.group(1))['scripts']
+app = '<script>globalThis.STUDIO_SOURCE_MODE="snapshot";</script>\n' + '\n'.join(inline_source(name) for name in names)
+html = html[:manifest.start()] + app + html[manifest.end():]
+html = html.replace('<script src="studio-boot.js"></script>', '')
 (root / 'sprite-workshop.html').write_text(html)
 print('Built sprite-workshop.html from the current shared art scripts')

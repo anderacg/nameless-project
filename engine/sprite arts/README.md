@@ -164,3 +164,23 @@ context.drawImage(image, 0, 0);
 `sprite-assets.js` owns native catalog adapters, data validation, rendering and exports. `asset-editor.js` owns the frame editor, its history and library controls. `asset-tests.html` / `asset-checks.js` cover native pixel parity, pivots, mirrors, transparency, source round-trips, validation and mixed-size sheet alignment.
 
 `build.py` refreshes `catalog-unit-data.js` from the monster stat table, and `catalog-wildlife.js` from the game's wildlife data and drawing functions. The generated adapters keep the drawing code synchronized without loading world simulation systems. Rebuilding requires `prototype/js/data/monsters.js`, `prototype/js/data/critters.js`, and `prototype/js/world/critters.js` in addition to the scripts referenced by `index.html`; the complete editable kit includes those sources.
+
+## Refreshing from live game sources
+
+For active development, open **index.html through an HTTP server** instead of the bundled standalone file. From the repository or complete editable kit, run:
+
+```sh
+python "engine/sprite arts/serve.py"
+```
+
+The launcher serves the game folder, opens the live studio, and sends no-store cache headers. `--port 8001` chooses another port; `--no-browser` only starts the server. An existing static server also works when it serves the same repository layout. To access it from a phone on the same network, explicitly start it with `--host 0.0.0.0` and use the computer's LAN address.
+
+Press **Refresh game** (the circular-arrow button in the project bar). The studio starts a fresh page, requests each listed script and stylesheet with a new revision URL, and rebuilds the supported catalogs. Wildlife drawing definitions and monster stat data are extracted from their current source files on each live load, so they do not require rebuilding the generated adapters first. The script loader preserves dependency order. A failed source load shows an error instead of silently using stale generated code.
+
+Before this refresh, the studio stores a session backup of the humanoid project, character collection, all edited library projects, and unapplied source text. On success, game originals are regenerated. Edited native assets are kept separately under **Edited drafts** with `sourceId` recording their original ID; imported assets keep their IDs. Unedited active assets regenerate from current source on ordinary reload too. Refresh does not retain undo stacks. If the backup cannot be stored, the refresh stops so the open projects remain intact. If loading fails, the backup stays available for the next successful load.
+
+The standalone **sprite-workshop.html** remains an offline snapshot. Its refresh button opens connection guidance and a live-studio URL field. Opening the live studio uses a new tab so the offline tab and its edits remain available; projects can be exported/imported between them. Rebuild with `build.py` to make a new offline snapshot.
+
+Refresh reads files available from the server. It does **not** pull Git commits or deploy changed files. Additions to the supported unit, creature, weapon, icon and scenery tables are discovered automatically. A new generator family or changed dependencies still needs a catalog adapter/source-manifest entry.
+
+`studio-boot.js` reads the source manifest embedded in index.html and loads fresh sources. `source-refresh.js` supplies the refresh action, backup/restore and offline guidance. `serve.py` uses Python's standard library; no package installation or backend API is required. The complete editable kit includes the shared source files used by live loading.

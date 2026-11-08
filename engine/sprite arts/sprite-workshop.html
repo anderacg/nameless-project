@@ -45,6 +45,10 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
 .studio-app #assets-studio{padding:0;border:0;min-width:0;min-height:0;background:#1b1e26}.asset-stage-column{min-width:0}.asset-view-options{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:8px;font-size:10px;color:#8996ae}.asset-view-options label{margin:0;font-size:10px}.asset-stage-column #asset-stage{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:hidden}#asset-canvas{image-rendering:pixelated;touch-action:none;cursor:crosshair;display:block}#asset-category-filter{font-size:11px;margin:7px 0 10px}#asset-category{min-height:32px;padding:5px 7px;font-size:11px}.asset-inspector .toolbar{gap:6px}.asset-inspector h3{overflow-wrap:anywhere}.asset-swatches{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0}.studio-app .asset-swatches button{width:22px;height:22px;min-height:22px;padding:0;border:1px solid #778198;border-radius:3px}.asset-inspector #asset-color{display:block;width:100%;height:34px;padding:3px;margin-top:5px}.asset-inspector [data-asset-tool][aria-pressed=true]{background:#a796f529;border-color:var(--gold)}#asset-timeline canvas{object-fit:contain;max-width:56px;max-height:56px}#asset-timeline{padding-bottom:5px;overflow:auto}#asset-timeline button{min-height:88px}.asset-source-panel textarea{resize:vertical;width:100%;min-height:250px;padding:8px;font:10px/1.5 monospace;background:#151822;color:#b5d1e5;border:1px solid var(--line);border-radius:4px}.asset-source-panel textarea:focus-visible{outline:2px solid var(--gold)}
 @media(min-width:1000px) and (min-height:550px){.studio-app #assets-studio{grid-column:2;grid-row:1;overflow:hidden;height:100%}.asset-stage-column{display:grid;grid-template-rows:44px minmax(0,1fr) 36px;container-type:size;height:100%;min-height:0}#asset-canvas{width:min(calc(100cqw - 24px),calc(100cqh - 94px));height:min(calc(100cqw - 24px),calc(100cqh - 94px))}}
 @media(max-width:999px),(max-height:549px){.studio-app .studio-nav{grid-template-columns:repeat(6,minmax(0,1fr))}.studio-app .studio-nav button{font-size:9px}.asset-stage-column #asset-stage{min-height:300px;padding:12px}#asset-canvas{width:min(100%,380px);height:auto}.asset-stage-column>.studio-dock{margin:0}.asset-inspector .asset-swatches button{width:30px;height:30px;min-height:30px}}
+
+/* Source refresh and a compact connection dialog for bundled/offline copies. */
+.studio-app .project-actions #studio-refresh{display:flex;align-items:center;gap:6px}.studio-app .project-actions #studio-refresh>span:first-child{font-size:18px;width:auto;order:0;margin:0;color:var(--accent)}.studio-app .project-actions #studio-refresh .refresh-label{width:auto;order:0;margin:0;color:inherit;font-size:11px}.studio-app .project-actions .full-project-label{width:auto;order:0;margin:0;font-size:inherit;color:inherit}.studio-app .project-actions .compact-project-label{display:none}#studio-live-dialog{color:var(--ink);background:#222631;border:1px solid #58516e;border-radius:10px;max-width:520px;width:calc(100% - 28px);padding:24px;box-shadow:0 20px 80px #0008}#studio-live-dialog::backdrop{background:#090b12bb}#studio-live-dialog h2{font:18px Arial,sans-serif;margin:0}#studio-live-dialog p{font-size:13px;line-height:1.6}#studio-live-dialog input{width:100%;display:block;font-size:12px;margin-top:7px}#studio-live-dialog .small{font-size:11px}#studio-live-message{color:#d2b4f7}.source-error{color:#ffbcb5!important}
+@media(max-width:600px){.studio-app .studio-header p{display:none}.studio-app .project-actions #studio-refresh{width:30px;padding:4px;justify-content:center}.studio-app .project-actions #studio-refresh .refresh-label{display:none}.studio-app .project-actions .full-project-label{display:none}.studio-app .project-actions .compact-project-label{display:inline;order:0;width:auto;margin:0;color:inherit;font-size:inherit}}
 </style></head>
 <body><main>
 <header class="studio-header"><div><div class="eyebrow">ASHMARK / CREATION TOOLS</div><h1>Sprite Studio</h1><p>Choose a character. Make a pose. Bring it to life.</p></div><div class="project-actions"><button id="studio-open">Open project</button><button id="studio-save" class="primary">Save project</button><span id="studio-save-state">Save a project copy to keep your work.</span></div></header>
@@ -111,6 +115,7 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
 </div></div><p id="rig-status" role="status">Choose a body part to begin. Save a project to keep an editable copy.</p>
 </section>
 </main>
+<script>globalThis.STUDIO_SOURCE_MODE="snapshot";</script>
 <script>
 'use strict';
 /* ---------- PX engine: pixel toolkit ---------- */
@@ -186,7 +191,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
   };
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: the building kit ---------- */
 // What every building generator shares, free of any one's layout: the materials (PX.MAT and the kit's own: natural rock, autumn and
@@ -260,7 +266,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
   PX.kit={tone,LIGHT,tex,face,tri,bounds,crop,cellShadow,PIECE,door,win,slit,chimney,barrel,crate,woodpile};
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: piers, boats and a fire's flame ---------- */
 // Needs pixel.js and buildkit.js (PX.kit's tones). Yard props and camps are models now (buildmodels.js: PX.objectModel,
@@ -317,7 +324,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
 
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: the battlefield's ground (terrain phases 1-4: hills as three terraces, woods, marsh; rivers; standing trees and cliff faces; mountains, sheer cliffs and ramps) ---------- */
 // PX.battleGround(spec) paints a battle's terrain over its base ground, once a battle, as one canvas the size of the field. spec is
@@ -1495,7 +1503,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
       g.putImageData(img,0,0)})};
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: the world map's nature (trees, woods, hills, mountain ranges, small things) ---------- */
 // The world map's natural art in the engine's style, on 16-px tiles: hue-shifted 4-tone ramps (highlights warm, shadows cool),
@@ -2550,7 +2559,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
     let s=0;o.t=Object.keys(o.tm).map(k=>k+' '+(s+=o.tm[k]).toFixed(0)).join(', ');return o};
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: beasts and monsters ---------- */
 // The battle's beasts and monsters in the people figures' style (the game's people.js): drawn side-on facing right, pixel by pixel
@@ -3133,7 +3143,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
   PX._beastKit={grid,put,at,mask,shade,flat,outline,canvas,R,gait,quad,quadDead,tube,wing,turn,TEAM,KINDS};
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: every building as a model (the world-map building redesign, stages 2 and 3) ---------- */
 // Each of PX.BUILDING_TYPES (buildings.js) made again as a model (model.js: walls, roofs, towers, drawn by our own renderer in the
@@ -3391,7 +3402,16 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
       const h=house(Q,{w,d:dd,z:10,wall:'plank',rise:6,dw,door:.3,chim:false,wins:1});stilts(Q,h.u,h.v);Q.lift=0;
       for(const b of [-4,4])Q.beam('np'+b,[w/2+3,b,0],[w/2+3,b,8],'timber');Q.cut('nt',-3,w/2+2.5,1,['nnnnnnn','n.n.n.n','nnnnnnn','n.n.n.n','nnnnnnn','n.n.n.n','.nnnnn.'],{n:'net'},{alongV:true});Q.prop('barrel',[-w/2+2,dd/2+2.5],1)},
     // a chapel: its nave's gable and door to the front, a bellcote over it with its bell, the cross on top, lancets, small headstones
-    chapel(Q,o){const st=o.look.stone,dw=Q.home('chapel','worship');
+    // (2026-11-08, the owner: as the sites, in more looks: or a little square tower over its door under a pyramid, the cross on it; or
+    // its bellcote and a rounded apse at its back, a fenced yard of headstones before it; ivy on its stone)
+    chapel(Q,o){const st=o.look.stone,dw=Q.home('chapel','worship'),v=o.d.int(0,2);
+      if(v===1){Q.box('n',[-7,7],[-9,5],[0,11],st,{dw});Q.roof('n','gable','v',7,o.roofMat,{ov:1});Q.square('tw',[0,6],8,[0,21],st,{form:'pyramid',rise:5,mat:o.roofMat,o:1},{dw});cross(Q,'x',0,6,26);
+        Q.dec('tw.S','Door2',.5);Q.dec('tw.S','Lancet',.5,12);Q.dec('tw.E','Bell',.5,14);Q.dec('tw.W','Bell',.5,14);Q.dec('n.N','Lancet',.5,3);for(const k of ['E','W'])for(const a of [.3,.7])Q.dec('n.'+k,'Lancet',a,3);Q.dec('n.W','Ivy',.12,0);
+        Q.prop('headstone',[-9,9],0,1.3);Q.prop('headstone',[9,10],0,1.3);return}
+      if(v===2){Q.box('n',[-7,7],[-6,8],[0,11],st,{dw});Q.roof('n','gable','v',7,o.roofMat,{ov:1});Q.round('ap',[0,-6],5,[0,9],st,{form:'cone',rise:5,mat:o.roofMat,o:1},{dw});
+        Q.box('bc',[-2.5,2.5],[5,8],[13,18],st,{dw});Q.roof('bc','gable','v',2,o.roofMat,{o:0,ov:0});Q.dec('bc.S','Bell',.5,0);cross(Q,'x',0,6.5,19);
+        Q.dec('n.S','Door2',.5);Q.dec('n.S','Rose',.5,6,true);for(const k of ['E','W'])for(const a of [.25,.75])Q.dec('n.'+k,'Lancet',a,3);Q.dec('ap.N','Lancet',.5,3);Q.dec('n.E','Ivy',.85,0);
+        Q.fence([[-9,10],[-3,10]],null,2,'stone');Q.fence([[3,10],[9,10]],null,2,'stone');for(const u of [-11,11])Q.prop('headstone',[u,4],0,1.3);return}
       Q.box('n',[-7,7],[-8,8],[0,11],st,{dw});Q.roof('n','gable','v',7,o.roofMat,{ov:1});
       Q.box('bc',[-2.5,2.5],[2,5],[13,18],st,{dw});Q.roof('bc','gable','v',2,o.roofMat,{o:0,ov:0});Q.dec('bc.S','Bell',.5,0);cross(Q,'x',0,3.5,19);
       Q.dec('n.S','Door2',.5);Q.dec('n.S','Lancet',.15,3);Q.dec('n.S','Lancet',.85,3);Q.dec('n.N','Lancet',.5,3);for(const k of ['E','W'])for(const a of [.22,.5,.78])Q.dec('n.'+k,'Lancet',a,3);
@@ -3417,11 +3437,26 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
       else{const st=o.look.silo;Q.round('g',[0,-1],7.5,[0,11],st,{form:'cone',rise:9,mat:o.roofMat,o:1},{dw});Q.round('gb',[0,-1],7.9,[0,1],'stone',null);
         Q.dec('g.S','Door',.5);Q.dec('g.E','Win',.5,5);Q.dec('g.W','Win',.5,5);Q.dec('g.N','Win',.5,5);Q.prop('sacks',[8,6])}},
     // a windmill: its round tower under a cap, the door at its foot, its four great sails on the front round the hub, cloth on a lattice
-    windmill(Q,o){const d=o.d,dw=Q.home('windmill','work'),wall=d.pick(['stone','whitewash','plank']);
+    // (in three looks: the round tower mill; a post mill, its planked body turning on a great post braced on four legs, its ladder
+    // and tail pole at the back; or a smock mill, a stone footing under a tall timber body and its cap, a gallery round it)
+    windmill(Q,o){const d=o.d,dw=Q.home('windmill','work'),v=d.int(0,2);
+      if(v===1){Q.box('pp',[-1,1],[-1,1],[0,7],'timber',{top:true});for(const [a,b] of [[-5,-5],[5,-5],[-5,5],[5,5]])Q.beam('lg'+a+b,[a,b,0],[a*.2,b*.2,5],'timber');
+        Q.box('m',[-5,5],[-5,4],[7,16],'plank',{dw,frame:'timber'});Q.roof('m','gable','v',5,o.roofMat,{ov:1,lip:1});Q.dec('m.S','Door',.5);Q.dec('m.E','Hatch',.5,3);Q.dec('m.W','Hatch',.5,3);Q.dec('m.N','Door',.5);
+        Q.beam('tp',[0,-5,8],[0,-11,1],'timber');Q.box('hub',[-1,1],[4,7],[12,14],'timber',{top:true});sails(Q,0,5.5,13,12);Q.prop('sacks',[-8,-6]);return}
+      if(v===2){Q.square('ft',[0,0],13,[0,4],'stone',{form:'flat',mat:'stone'},{dw});Q.round('m',[0,0],5.5,[4,15],'plank',{form:'cone',rise:5,mat:o.roofMat,o:1},{dw});
+        Q.round('gl',[0,0],7.5,[4,5],'timber',{form:'lid',mat:'plank'});Q.dec('ft.S','Door',.5);Q.dec('m.N','Win',.5,5);Q.dec('m.E','Win',.5,5);Q.dec('m.W','Win',.5,5);
+        Q.box('hub',[-1,1],[4.5,7.5],[12,14],'timber',{top:true});sails(Q,0,6,13,12);Q.prop('sacks',[-8,3]);return}
+      const wall=d.pick(['stone','whitewash','plank']);
       Q.round('m',[0,0],5.5,[0,14],wall,{form:'cone',rise:6,mat:o.roofMat,o:1},{dw});Q.dec('m.S','Door',.5);Q.dec('m.N','Win',.5,8);Q.dec('m.E','Win',.5,8);Q.dec('m.W','Win',.5,8);
       Q.box('hub',[-1,1],[4.5,7.5],[11,13],'timber',{top:true});sails(Q,0,6,12,12);Q.prop('sacks',[-7,1])},
     // a watermill: stone under the people's roof, its paddle wheel turning in the race before it
-    watermill(Q,o){const dw=Q.home('watermill','work');house(Q,{w:14,d:18,c:[-4,-2],z:11,rise:6,wall:'stone',dw,door:.25,wins:1,chim:[-8,-6]});
+    // (or its other look: a framed mill under its gable to the race, the wheel at its end in a timber-lined race, a sluice board and
+    // sacks at its door)
+    watermill(Q,o){const dw=Q.home('watermill','work');
+      if(o.d.int(0,1)){house(Q,{w:16,d:16,c:[-4,-3],z:12,form:'front',rise:7,wall:'daub',dw,door:.5,wins:1,chim:false});Q.bed([4,15],[-12,13],'water');
+        for(const u of [3,15])Q.box('rl'+u,[u,u+1],[-12,13],[0,2],'plank',{top:true,thin:true});Q.wheel('wh',9.5,-2,5,5,'plank',3);Q.box('sl',[3,16],[10,12],[0,3],'plank',{top:true});
+        Q.prop('sacks',[-9,8]);Q.prop('barrel',[0,8],0,1.4);return}
+      house(Q,{w:14,d:18,c:[-4,-2],z:11,rise:6,wall:'stone',dw,door:.25,wins:1,chim:[-8,-6]});
       Q.bed([-15,15],[8,13],'water');Q.wheel('wh',8,7,5,5,'plank',2)},
     // a warehouse: long planks on a stone footing, its great doors, a loft over them with its hatch and a hoist, a crate on the rope
     warehouse(Q,o){const dw=Q.home('warehouse','store');Q.box('w',[-11,11],[-8,8],[0,12],'plank',{dw,foot:'stone'});Q.roof('w','gable','u',7,o.roofMat,{ov:1});
@@ -3715,7 +3750,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
   PX.planKit={Plan,RULE,house,dormer,lean,stilts,cross,sails,crag,curtain,shed,plans:T,piece,made,prop:P,row,stable,fire,clusters:CL};
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: the Vale Crown's buildings (the humans), and the Salt League's (buildmodels.js PX.registerBuildStyle) ---------- */
 // The owner's doc (doc/references/assets/REALM_STRUCTURE_ART_DESIGN.md, Vale Crown and its climate variations): practical,
@@ -3840,28 +3876,56 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
       Q.box('rk',[-7,-5],[0,4],[0,7],'timber',{top:true,topMat:'iron'});Q.prop('barrel',[6,4],0,1.5)},
     // a smithy: an open-front oak shed (planks on a stone footing) under the roof, the forge glowing in it, a tall brick chimney at its
     // end; an awning on posts before it over its stock stacked in order (bar iron, crates, a cask); the anvil in the open
-    smithy(Q,o){const L=o.look,dw=Q.home('smithy','work');
+    // (2026-11-08, the owner: "improve the building sprites like holding, estate" as the sites: in three looks, by its dice) or a
+    // stone forge under a hip, its great stack through the ridge, a coal store leaning on its end, the quench trough and the anvil
+    // before it; or a farrier's: framed plaster, its gable to the street, the shoeing frame beside it and a grindstone
+    smithy(Q,o){const L=o.look,d=o.d,dw=Q.home('smithy','work'),v=d.int(0,2);
+      if(v===1){Q.box('f',[-9,7],[-8,5],[0,11],L.fort,{dw});Q.roof('f','hip','u',6,o.roofMat,{o:1});Q.dec('f.S','Forge',.45);Q.dec('f.N',L.door,.5);Q.dec('f.W',L.win,.5,3);Q.dec('f.W','Ivy',.2,0);
+        chimney(Q,[-1,-5],8,24,5);Q.box('cs',[7,12],[-6,3],[0,7],'plank',{foot:'stone',keep:1});Q.roof('cs','shed','u',2,o.roofMat,{o:1,ov:0,keep:1});Q.dec('cs.E','Hatch',.5,1);Q.dec('cs.S','Hatch',.5,1);
+        Q.prop('coal',[10,6]);Q.prop('anvil',[-4,8]);Q.prop('trough',[3,8.5],0,1.4);Q.prop('barrel',[-8,8.5],0,1.4);return}
+      if(v===2){Q.box('f',[-9,5],[-9,4],[0,11],'daub',{dw,frame:L.frame,foot:'stone'});Q.roof('f','gable','v',7,o.roofMat,{ov:1,lip:1});Q.dec('f.S','Forge',.5);Q.dec('f.N',L.door,.5);Q.dec('f.E',L.win,.5,3);Q.dec('f.W','Hatch',.5,4);
+        chimney(Q,[-6,-6],9,24,4);for(const [a,b] of [[7,-4],[12,-4],[7,2],[12,2]])Q.box('sf'+a+b,[a,a+1.5],[b,b+1.5],[0,7],'timber',{top:true});
+        for(const b of [-4,2])Q.box('sr'+b,[7,13.5],[b,b+1.5],[6,7],'timber',{top:true,thin:true});Q.wheel('gs',-12,5,3,2.5,'stone',2);Q.prop('anvil',[1,8]);Q.prop('crate',[-5,8],0,1.4);return}
       Q.box('f',[-12,6],[-8,3],[0,11],L.shed||'plank',{dw,foot:'stone'});Q.roof('f','gable','u',6,o.roofMat,{ov:1});Q.dec('f.S','Forge',.35);Q.dec('f.N',L.door,.5);Q.dec('f.W',L.win,.5,3);
       chimney(Q,[8.5,-3],0,22,5);Q.box('aw',[-1,6],[3,9],[9,10],'timber',{thin:true});Q.roof('aw','shed','u',2,o.roofMat,{o:1,ov:0});
       for(const a of [-1,4.5])Q.box('po'+a,[a,a+1.5],[7.5,9],[0,9],'timber',{top:true});
       Q.box('bi',[1,5],[4,6],[0,2],'iron',{top:true});Q.box('bi2',[1.5,4.5],[4,5.5],[2,3],'iron',{top:true});Q.prop('crate',[3,7.5],0,1.5);Q.prop('anvil',[-6,11]);Q.prop('barrel',[10,6],0,1.6)},
     // a barn (the farm): long, framed plaster on a stone footing under a deep thatch, its braced doors, hatches at the ends; grain
     // stacks beside it, field rows in a fence before it
-    barn(Q,o){const L=o.look,dw=Q.home('barn','store'),w=20,dd=15;
+    // (in three looks: the long thatched barn; a tall barn of planks, its gable and great doors to the front, a loft hatch and its
+    // hoist beam; or the long barn with an open cart shed leaning on its end and a raised grain bin)
+    barn(Q,o){const L=o.look,d=o.d,dw=Q.home('barn','store'),v=d.int(0,2);let w=20,dd=15;
+      if(v===1){w=18;dd=17;Q.box('b',[-w/2,w/2],[-dd/2,dd/2-2],[0,12],'plank',{dw,foot:'stone',frame:'timber'});Q.roof('b','gable','v',9,o.roofMat,{lip:2,ov:1});
+        Q.dec('b.S','Barn',.5);Q.dec('b.S','Hatch',.5,13,true);Q.dec('b.N',L.door,.5);for(const k of ['E','W'])for(const a of [.3,.7])Q.dec('b.'+k,'Hatch',a,5);
+        Q.box('hb',[-1,1],[dd/2-2,dd/2+1],[19,21],'timber',{top:true});Q.box('hr',[-.5,.5],[dd/2,dd/2+1],[14,19],'rope',{thin:true});Q.prop('hay',[-w/2-1,dd/2+1],0,1.2);stack(Q,'g0',w/2+2,dd/2-1,2.4);return}
+      if(v===2){w=18;Q.box('b',[-w/2+2,w/2+2],[-dd/2-1,dd/2-1],[0,11],L.barnWall||'daub',{dw,frame:L.frame,foot:'stone'});Q.roof('b','gable','u',8,o.roofMat,{lip:2,ov:1});
+        Q.dec('b.S','Barn',.6);Q.dec('b.N',L.door,.5);Q.dec('b.E','Hatch',.5,4);Q.box('ls',[-w/2-5,-w/2+2],[-dd/2,dd/2-2],[0,8],'plank',{foot:'stone',keep:1});Q.roof('ls','shed','u',3,o.roofMat,{o:1,ov:0,keep:1});Q.dec('ls.S','Hatch',.5,1);Q.dec('ls.W','Hatch',.5,2);
+        bin(Q,'gb',w/2+5,dd/2-2,o.roofMat);stack(Q,'g0',-w/2-2,dd/2+2,2.6);return}
       Q.box('b',[-w/2,w/2],[-dd/2-1,dd/2-1],[0,11],L.barnWall||'daub',{dw,frame:L.frame,foot:'stone'});Q.roof('b','gable','u',8,o.roofMat,{lip:2,ov:1});
       Q.dec('b.S','Barn',.5);Q.dec('b.N',L.door,.5);for(const k of ['E','W']){Q.dec('b.'+k,'Hatch',.5,4)}
       stack(Q,'g0',w/2-1,dd/2+3,2.8);stack(Q,'g1',w/2+3,dd/2-3,2.4);
       if(!o.bare){Q.bed([-w/2,-3],[dd/2+1,dd/2+3],'crop');Q.bed([-w/2,-3],[dd/2+4.5,dd/2+6.5],'crop');Q.fence([[-w/2-1,dd/2],[-w/2-1,dd/2+8],[-2,dd/2+8],[-2,dd/2]],null,4,'plank')}},
     // a granary: a tall plinth of pale stone, its blue door and the painted measure marks; the store above timber-framed, shuttered,
     // under a tile hip; a ramp of stone steps up to its loading door, guarded by a lantern and the shield
-    granary(Q,o){const L=o.look,dw=Q.home('granary','store'),w=16,dd=14,H=8;
+    // (in three looks: this, the store on its tall plinth; or the generic's: a store raised on staddle stones, or a round one under a
+    // cone, its sacks before its door; the Crown's shield on it either way)
+    granary(Q,o){const L=o.look,d=o.d;if(d.int(0,2)){PX.planKit.plans.granary(Q,o);const rd=Q.parts.some(p=>p.name==='g'&&p.round),sk=Q.parts.find(p=>p.type==='sacks');if(rd&&sk)sk.at=[5,8];Q.dec('g.S',L.plaque,.5,6,!rd);return}const dw=Q.home('granary','store'),w=16,dd=14,H=8;
       Q.box('pl',[-w/2,w/2],[-dd/2,dd/2],[0,H],L.fort,{dw});Q.box('g',[-w/2-1,w/2+1],[-dd/2-1,dd/2+1],[H,H+9],L.shed||'plank',{dw,frame:'timber'});Q.roof('g','hip','u',6,L.roof,{o:1});
       Q.dec('pl.S',L.door,.3);Q.dec('pl.S','MarkVale',.08,0);for(const k of ['E','W','N'])Q.dec('pl.'+k,'MarkVale',.5,1);
       Q.dec('g.S','Hatch',.2,2);Q.dec('g.S',L.plaque,.5,2);Q.dec('g.S','Door',.8,0);for(const k of ['E','W','N'])Q.dec('g.'+k,'Hatch',.5,2);
       for(let k=0;k<4;k++)Q.box('st'+k,[3,8],[dd/2,dd/2+(4-k)*1.5],[2*k,2*k+2],'plank',{top:true});Q.prop('lantern',[10,dd/2+3],0,1.5);Q.prop('sacks',[-5,dd/2+3],0,1.5)},
     // a workshop's store: framed plaster on a stone footing under tile, its double door, a loft with its hoist and a crate on the
     // rope; a brick chimney; an awning at its side over bolts and crates
-    warehouse(Q,o){const L=o.look,dw=Q.home('warehouse','store');Q.box('w',[-11,11],[-8,8],[0,12],o.wall==='stone'?'daub':o.wall,{dw,frame:L.frame,foot:'stone'});Q.roof('w','gable','u',7,o.roofMat,{ov:1});
+    // (in three looks: this; a stone store, its gable to the street, a loading dock of planks before its doors and a hoist beam out of
+    // its gable; or a framed store with a covered wagon bay on posts at its end)
+    warehouse(Q,o){const L=o.look,d=o.d,v=d.int(0,2),dw=Q.home('warehouse','store');
+      if(v===1){Q.box('w',[-9,9],[-9,6],[0,13],L.fort,{dw});Q.roof('w','gable','v',8,o.roofMat,{ov:1,lip:1});Q.dec('w.S',L.door2,.5);Q.dec('w.S','Hatch',.5,14,true);Q.dec('w.N',L.door,.5);
+        for(const k of ['E','W'])for(const a of [.3,.7])Q.dec('w.'+k,a<.5?'Hatch':L.win,a,5);Q.box('dk',[-6,6],[6,10],[0,2],'plank',{top:true});Q.box('hb',[-1,1],[5,9],[20,22],'timber',{top:true});
+        Q.box('hr',[-.5,.5],[7.5,8.5],[9,20],'rope',{thin:true});Q.box('hc',[-1.5,1.5],[6.5,9.5],[6,9],'plank',{top:true});Q.prop('crate',[-8,11],0,1.4);Q.prop('sacks',[8,11],0,1.4);return}
+      if(v===2){Q.box('w',[-12,4],[-8,6],[0,12],o.wall==='stone'?'daub':o.wall,{dw,frame:L.frame,foot:'stone'});Q.roof('w','gable','u',7,o.roofMat,{ov:1});Q.dec('w.S',L.door2,.4);Q.dec('w.S',L.win,.85,3);Q.dec('w.N',L.door,.5);
+        for(const k of ['E','W'])Q.dec('w.'+k,'Hatch',.5,4);chimney(Q,[-9,-4],11,22);for(const [a,b] of [[5,-7],[11.5,-7],[5,4],[11.5,4]])Q.box('bp'+a+b,[a,a+1.5],[b,b+1.5],[0,9],'timber',{top:true});
+        Q.box('br',[4,13],[-8,6],[9,10],'plank',{thin:true});Q.roof('br','shed','v',2,o.roofMat,{o:1,ov:0,keep:1});Q.prop('cart',[8.5,-1],1);Q.prop('barrel',[-9,9],0,1.4);Q.prop('crate',[0,9],0,1.4);return}
+      Q.box('w',[-11,11],[-8,8],[0,12],o.wall==='stone'?'daub':o.wall,{dw,frame:L.frame,foot:'stone'});Q.roof('w','gable','u',7,o.roofMat,{ov:1});
       Q.dec('w.S',L.door2,.3);Q.dec('w.S',L.win,.85,3);Q.dec('w.N',L.door,.5);for(const k of ['E','W'])for(const a of [.3,.7])Q.dec('w.'+k,a<.5?'Hatch':L.win,a,4);chimney(Q,[-8,-4],11,22);
       Q.box('lf',[2,8],[1,8],[11,17],'plank',{frame:'timber'});Q.roof('lf','gable','v',3,o.roofMat,{o:0,ov:1});Q.dec('lf.S','Hatch',.5,1);
       Q.box('ho',[4,6],[7,11],[16,18],'timber',{top:true});Q.box('rp',[4.5,5.5],[9.5,10.5],[10,16],'rope',{thin:true});Q.box('hc',[3.5,6.5],[8.5,11.5],[7,10],'plank',{top:true});
@@ -3938,7 +4002,14 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
       if(d.chance(.6))balcony(Q,'bc',-w/2+1,w/2-1,dd/2,12,L.trim);else Q.prop('washing',[(door<.5?1:-1)*(w/2+1),dd/2+3],1,1.4);stilts(Q,h.u,h.v);Q.lift=0;
       if(!o.bare&&L.flat)yard(Q,o,0,(door-.5)*w,dd/2,w);else if(!o.bare)Q.prop(d.pick(['barrel','crate']),[(door<.5?-1:1)*-(w/2-2),dd/2+2.5],0,1.4)},
     // a townhouse: three storeys narrow and tall, a low hip, a balcony on the middle floor, a shop's arch beside the door
-    townhouse(Q,o){const d=o.d,L=o.look,w=14,dd=14,dw=Q.home('townhouse','home',3),door=d.pick([.28,.72]);
+    // (2026-11-08, as the Vale's: in three looks, by its dice) or two storeys with its gable to the street, a shop's arch and its
+    // striped awning, shutters and a planter; or three under a hip with a little belvedere on the roof, a balcony and its lantern
+    townhouse(Q,o){const d=o.d,L=o.look,w=14,dd=14,dw=Q.home('townhouse','home',3),door=d.pick([.28,.72]),v=d.int(0,2);
+      if(v===1){const h=house(Q,{w,d:dd,st:2,form:'front',rise:8,dw,door,chim:false,wins:0,roof:L.roof});chimney(Q,[w/2-3,-dd/2+3],18,30);Q.dec('h.S','Arch',1-door,0);Q.dec('h.S',L.plaque,.5,h.z+1,true);
+        for(const a of [.27,.73])Q.dec('h.S','WinS',a,13);for(const k of ['E','W','N'])Q.dec('h.'+k,L.win,.5,13);Q.dec('h.N',L.win,.5,3);
+        awning(Q,'aw',(1-door)*w-w/2-4,(1-door)*w-w/2+4,dd/2,9,d.pick(L.awnings),3);Q.box('pf',[(door-.5)*w-2,(door-.5)*w+2],[dd/2,dd/2+1.5],[0,1.5],'valeClay',{top:true,topMat:'flower'});return}
+      if(v===2){house(Q,{w,d:dd,st:3,form:'hip',rise:7,dw,door,chim:false,wins:0,roof:L.roof});Q.square('bv',[0,-1],6,[26,34],o.wall,{form:'pyramid',rise:4,mat:L.roof,o:1},{dw});Q.dec('bv.S',L.win,.5,1);Q.dec('bv.E',L.win,.5,1);Q.dec('bv.W',L.win,.5,1);
+        Q.dec('h.S','Lamp',1-door,7);for(const z of [13,20]){for(const a of [.27,.73])Q.dec('h.S',z===20?'WinS':L.win,a,z);for(const k of ['E','W','N'])Q.dec('h.'+k,L.win,.5,z)}Q.dec('h.N',L.win,.5,3);balcony(Q,'bc',-w/2+1,w/2-1,dd/2,19,L.trim);return}
       house(Q,{w,d:dd,st:3,form:'hip',rise:7,dw,door,chim:false,wins:0,roof:L.roof});chimney(Q,[w/2-3,-dd/2+3],25,33);Q.dec('h.S','Arch',1-door,0);
       for(const z of [13,20]){for(const a of [.27,.73])Q.dec('h.S',L.win,a,z);for(const k of ['E','W','N'])Q.dec('h.'+k,L.win,.5,z)}Q.dec('h.N',L.win,.5,3);balcony(Q,'bc',-w/2+1,w/2-1,dd/2,12,L.trim)},
     // a granary: a long warehouse of sea stone on its raised quay, its gable to the water, teal cargo doors, a pulley beam out of the
@@ -4075,7 +4146,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
     types:table(LG,Object.keys(LG),wrapT),clusters:table(LC,Object.keys(LC),wrapC),centres:{}});
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: the Karn Clans' buildings (the dwarves; buildmodels.js PX.registerBuildStyle) ---------- */
 // The owner's doc (doc/references/assets/REALM_STRUCTURE_ART_DESIGN.md, Karn Clans): anchored into the mountain, broad, low and thick
@@ -4419,7 +4491,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
     clusters:CLUSTERS,centres:{}});
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: the Ashgor Horde's buildings (the orcs; buildmodels.js PX.registerBuildStyle) ---------- */
 // The owner's doc (doc/references/assets/REALM_STRUCTURE_ART_DESIGN.md, Ashgor Horde, and its picture
@@ -4773,7 +4846,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
     Q.cut('sl',u-L-.5,v,z-L,rows,{w:'timber',b:'timber',c:'canvas'},{dv:3,top:false})}
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: the Sylvan Court's buildings (the elves; buildmodels.js PX.registerBuildStyle) ---------- */
 // The owner's doc (doc/references/assets/REALM_STRUCTURE_ART_DESIGN.md, Sylvan Court): pale living wood, bark and moss; curved leaf
@@ -5146,7 +5220,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
       DoorSylvanWide:['..uuuuu..','.ummjmmu.','uuuuuuuuu','udedudedu','udedudedu','udedudedu','udekukedu','udedudedu','udedudedu','udedudedu']}});
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: buildings as small 3D models ---------- */
 // A building is a few simple parts (wall boxes, roofs, towers, chimneys) in its own ground plan, turned to one of 4 facings
@@ -5931,7 +6006,8 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
     return Object.assign(people(S[name](o),name,o.people,o.seed),{yaw:o.yaw|0,seed:o.seed|0,flag:!!o.flag,name,people:o.people||'human'})};
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- PX engine: paper-doll figures (the owner, 2026-11-06: "a base body skeleton, then gear or each component added to the
    body by parts: hairstyle, equipment, clothes, different uniforms"). A figure is a base body (its skeleton: which part of the body
@@ -6211,11 +6287,13 @@ main{max-width:1260px;margin:auto;padding:24px 28px 44px}h1{font:32px/1.15 Georg
   PX.DOLL={D,SKEL,RACES,LOOK,MAT,SLOTS,PARTS,UNIFORMS,WEAPONS,POSES,HAIR_MAT};
 })(window.PX=window.PX||{});
 
-</script><script>
+</script>
+<script>
 /* The art scripts run without a world or simulation in this tool. */
 const WM=null;
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- data: troop stats, race troop trees, the dragon's battle stats, hiring and upgrades ---------- */
 const ST={
@@ -6323,7 +6401,8 @@ for(const r in PEASANT_OF)for(const j in TRADES){const T=TRADES[j],id=peasantKin
 for(const r in PEASANT_OF)Object.assign(ST[peasantLevy(r)],{n:'Peasant Levy',size:20,morale:40});// (tools, no drill: the least steady of all)
 const RANSOM=[0,15,30,60];
 
-</script><script>
+</script>
+<script>
 /* Generated from the game monster unit table; no inventory or simulation. */
 Object.assign(ST,{
   boar:{n:'Dire Boar',tier:2,hp:46,dmg:8,spd:56,reach:11,range:0,cd:1,charge:true,beast:true,home:['grass']},
@@ -6334,7 +6413,8 @@ Object.assign(ST,{
   wyrm:{n:'Sand Wyrm',tier:4,hp:650,dmg:24,spd:28,reach:24,range:0,cd:1.6,beast:true,big:true},
   griffin:{n:'Griffin',tier:3,hp:170,dmg:16,spd:72,reach:12,range:0,cd:.9,charge:true,beast:true,ability:'pounce'}
 });
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- data: goblins, their troops, their warbands and their camps (world/goblins.js, world/sites.js GoblinCamp) ----------
    The owner, 2026-11-07: "Goblin enemy should also be added, similar to bandits but can use building sprite from orc factions for
@@ -6364,7 +6444,8 @@ const GOBLINS={on:true,col:'#6f9a3a',band:[8,12],grow:12,bossAt:12,mix:[['gob_st
 ].forEach(([id,n,tier,hp,dmg,spd,reach,range,cd,look,tags,armor,dt])=>{ST[id]={n,tier,hp,dmg,spd,reach,range,cd,look,race:'goblin',home:['forest','swamp'],charge:false,tags,armor,dt,morale:GOBLINS.morale}});
 ST.gob_bow.bow=true;ST.gob_boss.morale=GOBLINS.bossMorale;
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- data: unit strengths and weaknesses ---------- */
 // Class comes from the unit: ranged, cavalry (charges), spear, or foot. Traits add to it:
@@ -6478,7 +6559,8 @@ function vsInfo(s){
 }
 const vsLine=s=>{const v=vsInfo(s);return 'Strong vs '+(v.strong.join(', ')||'—')+' · Weak vs '+(v.weak.join(', ')||'—')};
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- the game's icons: small pixel pictures (9×9), each letter a colour of its own palette, drawn as SVG wherever the
    interface wants one (the party card, the top bar, the dock, the menus and windows). icon(name, size) gives the SVG. ---------- */
@@ -6570,7 +6652,8 @@ function icon(name,size,cls){const I=ICONS[name];if(!I)return '';size=size||16;l
   I.px.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.'&&I.p[c])r+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+I.p[c]+'"/>'}));
   return '<svg class="'+(cls||'gico')+'" viewBox="0 0 '+N+' '+N+'" width="'+size+'" height="'+size+'" shape-rendering="crispEdges" aria-hidden="true">'+r+'</svg>'}
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- sprites ---------- */
 const mkc=(w,h,f)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;f(g);return c};
@@ -7016,7 +7099,8 @@ function mapTxt(s,x,y,col,al){
 const hostSize=n=>n<5?0:Math.min(9,Math.round(Math.sqrt(n)*1.7)-2);
 // (a follower on the map: people.js followerSprite)
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- people and troops, drawn from one template (the style of the Basic Humanoid II pack): a figure about 10×15 in a 16×16
    cell, a 5-wide rounded head looking the way it faces, the arms inside the body's outline, a dark navy outline round the
@@ -7841,7 +7925,8 @@ function figDown(key,race,v,blood){return figKeep('mrd'+key+race+v+(blood?'b':''
 const FIG_RAIL=8;
 function figCrew(L){const g=pgrid(24,FIG_RAIL+5);drawFigure(g,L,4,3,-1,null,-1,FIG_RAIL);poutline(g);const t=ptop(g),c=pcanvas(pcrop(g,0,t,24,g.h-t));c.mx=11;return c}
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- figures and their gear (the owner, 2026-10-31: "a body sprite plus separately drawn gear" for every figure, the map's
    small ones too). A figure is its body (people.js drawFigureBody, drawMapBody: the template, its clothes, helm, cape and limbs) and its
@@ -8062,7 +8147,8 @@ class FigureRig{
     const cx=ax??R+(w>>1),half=Math.max(w>>1,cx-x0,x1+1-cx),c=pcanvas(pcrop(g,cx-half,top,2*half,g.h-top));c.fh=fh;for(const k of FIG_ANCHORS)if(A[k])c[k]=[A[k][0]-(cx-half),A[k][1]-top];c.rig=rig;return c}
 }
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- the battle's figures as paper dolls (engine/doll.js PX.doll; the owner, 2026-11-06: "go ahead with the battle figures"):
    a soldier on foot is the doll's base body for his race in his look's parts (dollParts: his hose and boots, his shirt, tunic or
@@ -8209,7 +8295,8 @@ function drawDollFigure(g,o,ox,oy,walk,style,atk,cut){const A=drawDollBody(g,o,o
 // dolls (PX.BEAST_SIZE: a boar; the wolf, the bear and the tiger drawn at their own size, the monsters as they are)
 if(window.PX&&PX.beast){PX.BEAST_EDGE=DOLL_FIGS.on&&DOLL_FIGS.edge;Object.assign(PX.BEAST_SIZE,DOLL_FIGS.on?{boar:.6}:{})}
 
-</script><script>
+</script>
+<script>
 'use strict';
 /* ---------- weapons held apart from the body: in battle a fighter's melee weapon (sword, greatsword, dagger, axe, big axe,
    hammer, spear, pike, javelin, lance) is drawn on its own over the body, at the hand (each body frame says where it is:
@@ -8399,7 +8486,8 @@ function peeks(sp,w,x,y){const m=sp.peek||(sp.peek=new Map()),k=(w.n*256+x+128)*
   m.set(k,v=out>=n*GEAR.peek);return v}
 function drawHeld(u,o,sp,bx,by,flash){const h=heldNow(u,o,sp);if(h)ctx.drawImage(flash?whiteOf(h.w):h.w,bx+h.x,by+h.y)}
 
-</script><script>
+</script>
+<script>
 /* Generated by build.py from the game wildlife data and drawing functions. */
 const CRITTERS={
   rabbit:{n:'Rabbits',one:'rabbit',where:['grass','forest'],herd:[2,4],meat:1,mat:['rabbitfur',.5],xp:2,spd:30,shy:50,w:4,size:1,col:'#b8a088'},
@@ -8457,7 +8545,8 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
   const rows=how==='back'?body.concat(legs).reverse():how==='belly'?body:body.concat(legs),n=rows.length,g=pgrid(W+2,(how==='belly'?body.length:body.length+legs.length)+2);
   const E=CRITTER_EDGE();if(E)g.edge=true;rows.forEach((r,y)=>[...r].forEach((c,x)=>{const dy=how==='slump'&&x>=W>>1?legs.length:0;if(col[c]&&y+dy<n)pset(g,x+1,y+1+dy+CRITTER_DROP(),col[c])}));poutline(g);return spr[k]=cellOf(pcanvas(g))}
 
-</script><script>
+</script>
+<script>
 /* Lossless, frame-based assets adapted from the game's native sprite generators. */
 (function(root){
  'use strict';
@@ -8465,7 +8554,7 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  const title=s=>s.replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
  function add(id,name,category,make){const entry={id,name,category,make};catalog.push(entry);byId.set(id,entry);}
  function frame(image,name='Frame',clip='Idle',duration=150){if(!image||!image.width||image.width>256||image.height>256)throw Error('Sprite must fit within 256 × 256 pixels.');const data=image.getContext('2d').getImageData(0,0,image.width,image.height).data,palette=[],indices=new Map(),pixels=[];for(let n=0;n<data.length;n+=4){if(!data[n+3]){pixels.push(-1);continue;}const color='#'+[0,1,2,3].map(k=>data[n+k].toString(16).padStart(2,'0')).join('');if(!indices.has(color)){indices.set(color,palette.length);palette.push(color);}pixels.push(indices.get(color));}const anchors={pivot:[image.R??image.ax??image.width/2,image.R??image.ay??image.height-1]};for(const key of ['hand','free','back','hand2'])if(image[key])anchors[key]=[...image[key]];return{name,clip,duration,width:image.width,height:image.height,palette,pixels,anchors};}
- function read(value){if(value?.type!=='ashmark-sprite-asset'||value.version!==1||!Array.isArray(value.frames)||!value.frames.length||value.frames.length>64)throw Error('Choose a Sprite Asset project (version 1, 1–64 frames).');let total=0;const frames=value.frames.map((f,i)=>{if(!f||!Number.isInteger(f.width)||!Number.isInteger(f.height)||f.width<1||f.height<1||f.width>256||f.height>256||!Array.isArray(f.palette)||f.palette.length>65536||!f.palette.every(c=>/^#[a-f0-9]{8}$/i.test(c))||!Array.isArray(f.pixels)||f.pixels.length!==f.width*f.height)throw Error('Invalid pixel data in frame '+(i+1));total+=f.pixels.length;if(total>1048576||!f.pixels.every(p=>Number.isInteger(p)&&(p===-1||p>=0&&p<f.palette.length)))throw Error('Invalid or oversized pixel data.');const anchors={};for(const [key,p]of Object.entries(f.anchors||{}).slice(0,16))if(/^[a-z0-9_-]{1,32}$/i.test(key)&&Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)&&p.every(n=>Math.abs(n)<=512))anchors[key]=[...p];return{name:String(f.name||'Frame '+(i+1)).slice(0,80),clip:String(f.clip||'Idle').slice(0,64),duration:Math.max(50,Math.min(2000,Math.round(Number(f.duration)||150))),width:f.width,height:f.height,palette:[...f.palette],pixels:[...f.pixels],anchors};});return{type:'ashmark-sprite-asset',version:1,id:String(value.id||'custom').slice(0,120),name:String(value.name||'Custom sprite').slice(0,80),category:String(value.category||'Imported').slice(0,40),left:value.left===true,frames};}
+ function read(value){if(value?.type!=='ashmark-sprite-asset'||value.version!==1||!Array.isArray(value.frames)||!value.frames.length||value.frames.length>64)throw Error('Choose a Sprite Asset project (version 1, 1–64 frames).');let total=0;const frames=value.frames.map((f,i)=>{if(!f||!Number.isInteger(f.width)||!Number.isInteger(f.height)||f.width<1||f.height<1||f.width>256||f.height>256||!Array.isArray(f.palette)||f.palette.length>65536||!f.palette.every(c=>/^#[a-f0-9]{8}$/i.test(c))||!Array.isArray(f.pixels)||f.pixels.length!==f.width*f.height)throw Error('Invalid pixel data in frame '+(i+1));total+=f.pixels.length;if(total>1048576||!f.pixels.every(p=>Number.isInteger(p)&&(p===-1||p>=0&&p<f.palette.length)))throw Error('Invalid or oversized pixel data.');const anchors={};for(const [key,p]of Object.entries(f.anchors||{}).slice(0,16))if(/^[a-z0-9_-]{1,32}$/i.test(key)&&Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)&&p.every(n=>Math.abs(n)<=512))anchors[key]=[...p];return{name:String(f.name||'Frame '+(i+1)).slice(0,80),clip:String(f.clip||'Idle').slice(0,64),duration:Math.max(50,Math.min(2000,Math.round(Number(f.duration)||150))),width:f.width,height:f.height,palette:[...f.palette],pixels:[...f.pixels],anchors};});return{type:'ashmark-sprite-asset',version:1,id:String(value.id||'custom').slice(0,120),name:String(value.name||'Custom sprite').slice(0,80),category:String(value.category||'Imported').slice(0,40),...(value.sourceId?{sourceId:String(value.sourceId).slice(0,120)}:{}),left:value.left===true,frames};}
  function image(f,{left=false}={}){const c=canvas(f.width,f.height),g=c.getContext('2d'),data=g.createImageData(f.width,f.height);for(let n=0;n<f.pixels.length;n++){const p=f.pixels[n];if(p<0)continue;const color=f.palette[p],x=n%f.width,y=Math.floor(n/f.width),at=(y*f.width+(left?f.width-1-x:x))*4;for(let k=0;k<4;k++)data.data[at+k]=parseInt(color.slice(1+k*2,3+k*2),16);}g.putImageData(data,0,0);return c;}
  function project(id){const entry=byId.get(id);if(!entry)throw Error('Unknown asset.');return read({type:'ashmark-sprite-asset',version:1,id:entry.id,name:entry.name,category:entry.category,frames:entry.make()});}
  function sheet(input,{left=input.left===true}={}){const a=read(input),w=Math.max(...a.frames.map(f=>f.width)),h=Math.max(...a.frames.map(f=>f.height)),cols=Math.min(8,a.frames.length),out=canvas(w*cols,h*Math.ceil(a.frames.length/cols)),g=out.getContext('2d'),manifest={type:'ashmark-sprite-asset-sheet',version:1,name:a.name,left,frames:[]};a.frames.forEach((f,i)=>{const x=i%cols*w,y=Math.floor(i/cols)*h,ox=Math.floor((w-f.width)/2),oy=h-f.height;g.drawImage(image(f,{left}),x+ox,y+oy);manifest.frames.push({name:f.name,clip:f.clip,x,y,width:w,height:h,sourceWidth:f.width,sourceHeight:f.height,offset:[ox,oy],duration:f.duration,anchors:Object.fromEntries(Object.entries(f.anchors).map(([k,p])=>[k,[(left?f.width-1-p[0]:p[0])+ox,p[1]+oy]]))});});return{image:out,manifest};}
@@ -8498,7 +8587,8 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  root.SpriteAssets=Object.freeze({catalog,byId,project,frame,read,image,sheet,source,clone});
 })(globalThis);
 
-</script><script>
+</script>
+<script>
 /* Workshop recipes around PX.doll and the game's figure drawing functions. */
 (function(root){
  'use strict';
@@ -8548,7 +8638,8 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  root.SpriteStudio=Object.freeze({version:1,slots,options,hair,beards,materials,weapons,poses,animations,defaults:normalize(defaults),presets,normalize,ramp,spec,base,game,render,random,variations,sheet,recipe,read});
 })(globalThis);
 
-</script><script>
+</script>
+<script>
 /* Pixel-skinning rig and authored animation assets around the current PX skeleton. */
 (function(root){
  'use strict';
@@ -8606,7 +8697,8 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  root.SpriteRig=Object.freeze({version:1,bones,model,skin,pixelEdits,source,pose,solve,transform,part,frame,clip,normalize,fromEngine,sample,mirrored,render,headGuide,sheet,read});
 })(globalThis);
 
-</script><script>
+</script>
+<script>
 /* Character controls, playback and portable recipes. */
 (function(){
  'use strict';
@@ -8670,7 +8762,8 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  window.spriteWorkshop=Object.freeze({state:s,apply,snapshot,load,render,rebuild});
 })();
 
-</script><script>
+</script>
+<script>
 /* Bone selection, keyframes, grayscale part painting and portable rig projects. */
 (function(){
  'use strict';
@@ -8732,7 +8825,8 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  window.spriteRigEditor=Object.freeze({state:s,snapshot:projectData,load,draw,edit,commit:before=>{s.asset=R.normalize(s.asset);if(before!==JSON.stringify(s.asset))remember(before);persist();sync();draw();},refresh:()=>{sync();draw();}});
 })();
 
-</script><script>
+</script>
+<script>
 /* Focused creator workspaces, accessible navigation and lightweight preview helpers. */
 (function(){
  'use strict';
@@ -8771,7 +8865,8 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  window.spriteStudioUI=Object.freeze({show:change,get mode(){return mode;}});
 })();
 
-</script><script>
+</script>
+<script>
 /* Studio chrome and scene navigation; editing stays in the existing controllers. */
 (function(){
  'use strict';
@@ -8831,7 +8926,8 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  queue();
 })();
 
-</script><script>
+</script>
+<script>
 /* Rest-space sprite painting and portable, editable source assets. */
 (function(){
  'use strict';
@@ -8877,10 +8973,12 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  let appearanceSignature=JSON.stringify(s.asset),appearanceQueued=false;
  document.addEventListener('rig:saved',()=>{refreshSource();const key=JSON.stringify(s.asset);if(key===appearanceSignature)return;appearanceSignature=key;if((s.asset.pixelEdits.length||s.asset.parts.length||W.state.renderer==='edited')&&!appearanceQueued){appearanceQueued=true;requestAnimationFrame(()=>{appearanceQueued=false;refreshAppearance();});}});
 
+ window.spritePixelEditor=Object.freeze({draft:()=>dirty?sourceField.value:null,restoreDraft:value=>{if(typeof value==='string'){sourceField.value=value;dirty=true;}}});
  refreshSource();if(s.asset.pixelEdits.length)refreshAppearance();
 })();
 
-</script><script>
+</script>
+<script>
 /* Native sprite library, lossless per-frame painting and portable assets. */
 (function(){
  'use strict';
@@ -8889,20 +8987,21 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  const panel=$('assets-studio');panel.innerHTML='<div class="rig-workspace"><div id="asset-stage-column" class="asset-stage-column"><div id="asset-stage" class="checker"><canvas id="asset-canvas" width="512" height="512" tabindex="0" aria-label="Editable game asset pixels"></canvas></div><div class="asset-view-options"><label class="inline"><input id="asset-grid" type="checkbox" checked>Pixel grid</label><label class="inline"><input id="asset-left" type="checkbox">Mirror left</label><span id="asset-dimensions"></span></div></div><div class="rig-inspector asset-inspector"><div class="inspector-heading"><span class="step-badge">NATIVE GAME ART</span><h3 id="asset-heading">Choose an asset</h3></div><p id="asset-library-count" class="muted small"></p><p class="muted small">Native animation frames keep each creature’s shape. These use frame editing; humanoid bone editing remains in Pose.</p><div class="toolbar"><button id="asset-import-png">Import PNG</button><button id="asset-open-project">Open asset project</button></div><input id="asset-png-file" type="file" accept="image/png,.png" hidden><input id="asset-json-file" type="file" accept="application/json,.json" hidden><label>Asset name<input id="asset-name" maxlength="80"></label><div class="pixel-tool-row"><button data-asset-tool="pencil" aria-pressed="true">Pencil · B</button><button data-asset-tool="erase" aria-pressed="false">Eraser · E</button><button data-asset-tool="pick" aria-pressed="false">Pick · I</button></div><label>Paint color<input id="asset-color" type="color" value="#ad9bff"></label><div id="asset-swatches" class="asset-swatches" aria-label="Sprite color palette"></div><label>Animation<select id="asset-clip"></select></label><label>Frame duration (ms)<input id="asset-duration" type="number" min="50" max="2000" step="10"></label><div class="toolbar"><button id="asset-duplicate">Duplicate frame</button><button id="asset-delete">Delete frame</button></div><details><summary>Attachment pivot</summary><div class="fields"><label>X<input id="asset-pivot-x" type="number" min="-512" max="512"></label><label>Y<input id="asset-pivot-y" type="number" min="-512" max="512"></label></div><p class="muted small">Stored per frame for attaching weapons or placing sprites in the game.</p></details><div class="export-card"><h4>Save this asset</h4><button id="asset-save" class="primary">Save editable asset project</button><button id="asset-png">Export frame PNG</button><button id="asset-sheet">Export all frames PNG</button><button id="asset-meta">Export sheet metadata</button><button id="asset-code">Export JavaScript asset</button></div><details class="asset-source-panel"><summary>Editable asset source JSON</summary><textarea id="asset-source" spellcheck="false" aria-label="Editable game sprite source JSON"></textarea><div class="toolbar"><button id="asset-source-apply">Apply source</button><button id="asset-source-reload">Reload current source</button></div></details><p class="muted small">Opened assets stay available during this session. Save each edited project before closing. Exports preserve native pixels and pivots; game integration remains an explicit code change.</p></div></div>';
  $('asset-library-count').textContent=A.catalog.length+' native assets · PNG import supported';
  const categoryLabel=document.createElement('label');categoryLabel.id='asset-category-filter';categoryLabel.hidden=true;categoryLabel.innerHTML='Category<select id="asset-category"></select>';document.querySelector('.asset-search').before(categoryLabel);
- const categories=['All',...new Set(A.catalog.map(e=>e.category)),'Imported'];for(const c of categories)$('asset-category').append(new Option(c,c));
+ const categories=['All',...new Set(A.catalog.map(e=>e.category)),'Imported','Edited drafts'];for(const c of categories)$('asset-category').append(new Option(c,c));
  $('timeline-assets').innerHTML='<div class="preview-actions"><button id="asset-play" class="primary">Play animation</button><button id="asset-prev" aria-label="Previous asset frame">← Frame</button><button id="asset-next" aria-label="Next asset frame">Frame →</button><span class="muted small">Paint the selected frame · Space to play</span></div><div id="asset-timeline" class="rig-timeline" aria-label="Asset animation frames"></div>';
  let stroke=null,view=null,sourceDirty=false,active=false;
  const project=()=>s.record?.project,frame=()=>project()?.frames[s.frame],indices=()=>project().frames.flatMap((f,i)=>f.clip===s.clip?[i]:[]);
  function notify(text){$('studio-status').textContent=text;}
  function signal(){document.dispatchEvent(new Event('assets:change'));}
- function persist(){try{localStorage.setItem(KEY,JSON.stringify({project:project(),frame:s.frame,clip:s.clip}));}catch(e){notify('Asset storage is unavailable or full. Save the project to keep your edits.');}}
+ function persist(){try{localStorage.setItem(KEY,JSON.stringify({project:project(),frame:s.frame,clip:s.clip,edited:s.record.edited}));}catch(e){notify('Asset storage is unavailable or full. Save the project to keep your edits.');}}
  function history(){if(spriteStudioUI.mode==='assets'){$('rig-undo').disabled=!s.record?.undo.length;$('rig-redo').disabled=!s.record?.redo.length;}}
  function remember(before){if(before===JSON.stringify(project()))return;s.record.undo.push(before);s.record.redo=[];while(s.record.undo.length>1&&(s.record.undo.length>20||s.record.undo.reduce((n,v)=>n+v.length,0)>6000000))s.record.undo.shift();}
- function commit(before){s.record.project=A.read(project());remember(before);persist();sync();signal();}
+ function markEdited(){s.record.edited=!s.record.base||JSON.stringify(project())!==s.record.base;}
+ function commit(before){s.record.project=A.read(project());markEdited();remember(before);persist();sync();signal();}
  function change(fn){if(!project())return;pause();const before=JSON.stringify(project()),oldFrame=s.frame,oldClip=s.clip;try{fn();commit(before);}catch(e){s.record.project=A.read(JSON.parse(before));s.frame=oldFrame;s.clip=oldClip;sync();notify(e.message);}}
  function pause(){s.playing=false;$('asset-play').textContent='Play animation';}
- function openData(data){pause();const p=A.read(data);let record=records.get(p.id);if(!record){record={project:p,undo:[],redo:[]};records.set(p.id,record);}s.record=record;if([...$('asset-category').options].some(o=>o.value===record.project.category))$('asset-category').value=record.project.category;else $('asset-category').value='All';s.frame=0;s.clip=record.project.frames[0].clip;sourceDirty=false;sync();persist();signal();}
- function open(id){try{if(records.has(id))openData(records.get(id).project);else openData(A.project(id));notify('Opened '+project().name+'. Paint a frame, then save its asset project.');}catch(e){notify('Could not open asset: '+e.message);}}
+ function openData(data,{edited=true}={}){pause();const p=A.read(data);let record=records.get(p.id);if(!record){record={project:p,undo:[],redo:[],base:edited?'':JSON.stringify(p),edited};records.set(p.id,record);}s.record=record;if([...$('asset-category').options].some(o=>o.value===record.project.category))$('asset-category').value=record.project.category;else $('asset-category').value='All';s.frame=0;s.clip=record.project.frames[0].clip;sourceDirty=false;sync();persist();signal();}
+ function open(id){try{if(records.has(id))openData(records.get(id).project);else openData(A.project(id),{edited:false});notify('Opened '+project().name+'. Paint a frame, then save its asset project.');}catch(e){notify('Could not open asset: '+e.message);}}
  function list(query=''){const category=$('asset-category').value,entries=[...A.catalog.map(e=>records.get(e.id)?.project||e),...[...records.values()].filter(r=>!A.byId.has(r.project.id)).map(r=>r.project)];return entries.filter(e=>(category==='All'||e.category===category)&&(e.name+' '+e.id+' '+e.category).toLowerCase().includes(query));}
  function summary(){return project()?project().category+' · '+project().frames.length+' frames · '+(frame()?.width||0)+' × '+(frame()?.height||0):'Choose an asset';}
  function draw(){if(!frame())return;const c=$('asset-canvas'),g=c.getContext('2d'),f=frame(),scale=Math.max(1,Math.floor((c.width-32)/Math.max(f.width,f.height))),w=f.width*scale,h=f.height*scale,x=Math.floor((c.width-w)/2),y=Math.floor((c.height-h)/2);view={x,y,scale};g.clearRect(0,0,c.width,c.height);g.imageSmoothingEnabled=false;g.drawImage(A.image(f,{left:project().left}),x,y,w,h);if(s.grid&&scale>=4){g.save();g.strokeStyle='#ccd0f22c';g.lineWidth=.5;for(let i=0;i<=f.width;i++){g.beginPath();g.moveTo(x+i*scale,y);g.lineTo(x+i*scale,y+h);g.stroke();}for(let i=0;i<=f.height;i++){g.beginPath();g.moveTo(x,y+i*scale);g.lineTo(x+w,y+i*scale);g.stroke();}g.restore();}g.strokeStyle='#a796f570';g.lineWidth=1;g.strokeRect(x,y,w,h);$('asset-dimensions').textContent=f.width+' × '+f.height+' · '+f.name;for(const button of $('asset-timeline').children)button.classList.toggle('selected',Number(button.dataset.frame)===s.frame);}
@@ -8919,7 +9018,7 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  for(const [key,i]of [['x',0],['y',1]])$('asset-pivot-'+key).onchange=()=>change(()=>{const p=frame().anchors.pivot||[0,0];p[i]=Number($('asset-pivot-'+key).value);frame().anchors.pivot=p;});
  $('asset-clip').onchange=()=>{pause();s.clip=$('asset-clip').value;s.frame=indices()[0];sync();persist();signal();};$('asset-duplicate').onclick=()=>change(()=>{if(project().frames.length>=64)throw Error('An asset holds at most 64 frames.');project().frames.splice(s.frame+1,0,A.clone(frame()));s.frame++;});$('asset-delete').onclick=()=>change(()=>{if(project().frames.length<2)return;project().frames.splice(s.frame,1);s.frame=Math.min(s.frame,project().frames.length-1);s.clip=frame().clip;});
  function step(d){pause();const ids=indices();s.frame=ids[(ids.indexOf(s.frame)+ids.length+d)%ids.length];sync();persist();signal();}$('asset-prev').onclick=()=>step(-1);$('asset-next').onclick=()=>step(1);$('asset-play').onclick=()=>{s.playing=!s.playing;s.last=performance.now();$('asset-play').textContent=s.playing?'Pause animation':'Play animation';};
- for(const [id,key,other]of [['rig-undo','undo','redo'],['rig-redo','redo','undo']])$(id).addEventListener('click',e=>{if(spriteStudioUI.mode!=='assets')return;e.stopImmediatePropagation();pause();if(!s.record?.[key].length)return;s.record[other].push(JSON.stringify(project()));s.record.project=A.read(JSON.parse(s.record[key].pop()));s.frame=Math.min(s.frame,project().frames.length-1);s.clip=frame().clip;sourceDirty=false;sync();persist();signal();},true);
+ for(const [id,key,other]of [['rig-undo','undo','redo'],['rig-redo','redo','undo']])$(id).addEventListener('click',e=>{if(spriteStudioUI.mode!=='assets')return;e.stopImmediatePropagation();pause();if(!s.record?.[key].length)return;s.record[other].push(JSON.stringify(project()));s.record.project=A.read(JSON.parse(s.record[key].pop()));markEdited();s.frame=Math.min(s.frame,project().frames.length-1);s.clip=frame().clip;sourceDirty=false;sync();persist();signal();},true);
  function download(name,data){const url=URL.createObjectURL(data),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
  const filename=()=>project().name.replace(/[^a-z0-9_-]/gi,'-');function save(){if(project())download(filename()+'.asset.json',new Blob([JSON.stringify(project(),null,2)],{type:'application/json'}));}
  function png(name,canvas){canvas.toBlob(blob=>{if(blob)download(name,blob);});}
@@ -8932,10 +9031,31 @@ function critterDead(id,how){const k='crd'+id+how;if(spr[k])return spr[k];
  document.addEventListener('keydown',e=>{if(spriteStudioUI.mode!=='assets'||e.target.closest('input,select,textarea,[contenteditable=true]')||e.ctrlKey||e.metaKey||e.altKey)return;if(e.code==='Space'&&!e.target.closest('button,a,summary')){e.preventDefault();$('asset-play').click();}else if({b:1,e:1,i:1}[e.key.toLowerCase()]){e.preventDefault();s.tool={b:'pencil',e:'erase',i:'pick'}[e.key.toLowerCase()];tools();}});
  new MutationObserver(()=>{if(spriteStudioUI.mode==='assets'){active=true;if(!project())open('monster:wolf');history();draw();}else if(active){finish();pause();active=false;spriteRigEditor.refresh();}}).observe(document.body,{attributes:true,attributeFilter:['data-mode']});
  function tick(now){if(s.playing&&active&&!document.hidden&&now-s.last>=frame().duration){const ids=indices();s.frame=ids[(ids.indexOf(s.frame)+1)%ids.length];s.last=now;draw();$('asset-duration').value=frame().duration;for(const [axis,i]of [['x',0],['y',1]])$('asset-pivot-'+axis).value=frame().anchors.pivot?.[i]??0;}requestAnimationFrame(tick);}requestAnimationFrame(tick);
- window.spriteAssetEditor=Object.freeze({state:s,list,open,load:openData,summary,fit:draw,snapshot:()=>A.clone(project())});
- try{const saved=JSON.parse(localStorage.getItem(KEY));if(saved?.project){openData(saved.project);if(Number.isInteger(saved.frame)&&saved.frame>=0&&saved.frame<project().frames.length){s.frame=saved.frame;s.clip=frame().clip;sync();}}}catch(e){}
+ function refreshState(){finish();pause();return{drafts:[...records.values()].filter(r=>r.edited).map(r=>A.clone(r.project)),active:project()?{id:project().id,frame:s.frame,clip:s.clip}:null,sourceDraft:sourceDirty?$('asset-source').value:null};}
+ function restoreRefresh(data){const drafts=(data?.drafts||[]).map(A.read);records.clear();let count=0;for(const input of drafts){const p=A.clone(input);if(A.byId.has(p.id)){p.sourceId=p.id;let key='draft:'+p.id,n=2;while(records.has(key))key='draft:'+p.id+':'+n++;p.id=key;p.name=(p.name+' (edited draft)').slice(0,80);p.category='Edited drafts';}records.set(p.id,{project:p,undo:[],redo:[],base:'',edited:true});count++;}const id=data?.active?.id;if(id&&A.byId.has(id))openData(A.project(id),{edited:false});else if(id&&records.has(id))openData(records.get(id).project);else if(!project()||!records.has(project().id))open('monster:wolf');if(data?.active&&project()?.id===id){s.frame=Math.min(data.active.frame||0,project().frames.length-1);s.clip=frame().clip;sync();}if(typeof data?.sourceDraft==='string'){$('asset-source').value=data.sourceDraft;sourceDirty=true;}persist();signal();return count;}
+ window.spriteAssetEditor=Object.freeze({state:s,list,open,load:openData,summary,fit:draw,refreshState,restoreRefresh,snapshot:()=>A.clone(project())});
+ try{const saved=JSON.parse(localStorage.getItem(KEY));if(saved?.project){if(saved.edited===false&&A.byId.has(saved.project.id))openData(A.project(saved.project.id),{edited:false});else openData(saved.project);if(Number.isInteger(saved.frame)&&saved.frame>=0&&saved.frame<project().frames.length){s.frame=saved.frame;s.clip=frame().clip;sync();}}}catch(e){}
  if(spriteStudioUI.mode==='assets'){active=true;if(!project())open('monster:wolf');history();}signal();
 })();
 
 </script>
+<script>
+/* Reload served source files while retaining committed projects and unapplied source drafts. */
+(function(){
+ 'use strict';
+ const $=id=>document.getElementById(id),KEY='ashmark.studioRefresh.v1',mode=globalThis.STUDIO_SOURCE_MODE||'snapshot',live=mode==='live';
+ const button=document.createElement('button');button.id='studio-refresh';button.type='button';button.title=live?'Reload the served game scripts and rebuild the catalog':'Open a live studio to refresh game files';button.setAttribute('aria-label','Refresh sprites from game');button.innerHTML='<span aria-hidden="true">↻</span><span class="refresh-label">'+(live?'Refresh game':'Live refresh')+'</span>';
+ document.querySelector('.project-actions').insertBefore(button,$('studio-open'));
+ for(const [id,label]of [['studio-open','Open'],['studio-save','Save']]){const b=$(id);b.setAttribute('aria-label',b.textContent);const full=document.createElement('span'),compact=document.createElement('span');full.className='full-project-label';full.textContent=b.textContent;compact.className='compact-project-label';compact.textContent=label;b.replaceChildren(full,compact);}
+ const dialog=document.createElement('dialog');dialog.id='studio-live-dialog';dialog.setAttribute('aria-labelledby','studio-live-title');dialog.innerHTML='<form method="dialog"><div class="heading"><h2 id="studio-live-title">Connect to live game files</h2><button aria-label="Close live source information">Close</button></div><p>This copy has bundled sprite code. Live refresh needs the studio served beside the game’s source files.</p><p>Use the editable kit’s live launcher, or open the live studio URL from your game server.</p><label>Live studio URL<input id="studio-live-url" type="url" placeholder="http://localhost:8000/engine/sprite%20arts/index.html"></label><button id="studio-open-live" type="button" class="primary">Open live studio in a new tab</button><p class="muted small">This tab and its edits stay open. Refresh reads the latest served files; it does not pull Git commits or deploy the game.</p><p id="studio-live-message" role="status"></p></form>';document.body.append(dialog);
+ $('studio-open-live').onclick=()=>{try{const url=new URL($('studio-live-url').value);if(!['http:','https:'].includes(url.protocol))throw Error('Enter an HTTP or HTTPS studio URL.');window.open(url.href,'_blank','noopener');}catch(e){$('studio-live-message').textContent='Enter a valid HTTP or HTTPS live studio URL.';}};
+ function refresh(){if(!live){dialog.showModal();return false;}document.activeElement?.blur();button.disabled=true;try{const collection=spriteWorkshop.snapshot();collection.rig=null;const data={version:1,rig:spriteRigEditor.snapshot(),collection,assets:spriteAssetEditor.refreshState(),rigSource:spritePixelEditor.draft(),workspace:spriteStudioUI.mode};sessionStorage.setItem(KEY,JSON.stringify(data));const url=new URL(location.href);url.searchParams.set('studio-refresh',Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7));location.assign(url.href);return true;}catch(e){button.disabled=false;$('studio-status').textContent='Refresh stopped because the edit backup could not be saved. Export your projects before reloading. '+e.message;return false;}}
+ button.onclick=refresh;
+ function restore(){let stored;try{stored=sessionStorage.getItem(KEY);if(!stored)return;const data=JSON.parse(stored);if(data.version!==1)throw Error('Unknown refresh backup format.');spriteWorkshop.load(data.collection);spriteRigEditor.load(data.rig);const count=spriteAssetEditor.restoreRefresh(data.assets);spritePixelEditor.restoreDraft(data.rigSource);spriteStudioUI.show(data.workspace);sessionStorage.removeItem(KEY);setTimeout(()=>{$('studio-status').textContent='Loaded current game scripts · '+SpriteAssets.catalog.length+' native assets · '+count+' edited project'+(count===1?'':'s')+' preserved. Native edits are available in Edited drafts.';},0);}catch(e){$('studio-status').textContent='The refresh backup is retained, but could not be restored: '+e.message;}}
+ if(live)window.addEventListener('studio:ready',restore,{once:true});
+ globalThis.studioSources=Object.freeze({mode,refresh});
+})();
+
+</script>
+
 </body></html>
