@@ -622,7 +622,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  watermill) by their dice (engine/build-vale.js, engine/buildmodels.js); the painted world (W5) and the map's views (W6) show
 //  them. Proof: only those two files and tests/buildmodels.js changed, and f69ca44 (the commit before) gives 3d518113 and deb9755d. Were
 //  W5 3d518113, W6 deb9755d)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'12d89c90',W6:'00eb5ca7',W7:'e3e03768',W8:'51660bc5',B2:'a9339a6a'};
+// (W5 again 2026-11-08, on purpose, the same ask: the League's townhouse (f19b718, engine/build-vale.js) and the Court's elf hall,
+//  treehouse and lumber shed, the Horde's yurt, hide hall and barn and the Clans' townhouse and stone hall (engine/build-sylvan.js,
+//  build-ashgor.js, build-karn.js) in three looks each; the painted world shows them, the map's three views (W6) none of them.
+//  Proof: 889971b gives 12d89c90, f19b718 b95a03b2, and with the three culture files as at f19b718 it is b95a03b2 again. Was W5
+//  12d89c90)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'00eb5ca7',W7:'e3e03768',W8:'51660bc5',B2:'a9339a6a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

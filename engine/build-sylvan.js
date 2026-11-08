@@ -104,7 +104,21 @@
       // its wall and roof) on a round deck with a thin railing, held by curved branch braces; root steps winding up round the trunk,
       // a moon lantern hanging from the crown; the pod on the trunk's east or west by the seed. One model turned: the trunk stays, the
       // pod and the stair turn round it
-      treehouse:{cell:32,dwellings:2,look:{leafy:false},plan(Q,o){const dw=Q.home('treehouse','home'),leafy=o.look.treehouse.leafy,K=SY(o),H=8,rw=leafy?K.wood:'timber',L=o.d.chance(.5)?1:-1,U=(a,b)=>L>0?[a,b]:[-b,-a];
+      // (2026-11-08, the owner: as the sites, in three looks by its dice: this; a round pod ringing the trunk under a leaf cone, on a
+      // ring deck held by braces all round, a stair up the front, a lantern; or two younger trees, a pod slung between them on a deck
+      // with its railing and planters, a rope ladder down, a lantern hanging from each crown)
+      treehouse:{cell:32,dwellings:2,look:{leafy:false},plan(Q,o){const dw=Q.home('treehouse','home'),leafy=o.look.treehouse.leafy,K=SY(o),H=8,rw=leafy?K.wood:'timber',L=o.d.chance(.5)?1:-1,U=(a,b)=>L>0?[a,b]:[-b,-a],lk=o.d.int(0,2);
+        if(lk===1){const c=[0,-1];roots(Q,'rt',c,2.6,9,6,.5);for(let i=0;i<4;i++){const a=Math.PI*(.25+i*.5),ca=Math.cos(a),sa=Math.sin(a);brace(Q,'bf'+i,[ca*2.5,-1+sa*2.5,1],[ca*7.5,-1+sa*7,H-1],rw)}
+          Q.round('dk',c,9,[H-1,H],'plank',{form:'lid',mat:'plank'});Q.round('rl',c,9,[H+1,H+2],rw,null);Q.lift=H;
+          Q.round('h',c,6,[0,10],leafy?K.wood:o.wall,{form:'cone',leaf:leafy,rise:leafy?6:4,mat:o.roofMat},{dw});Q.dec('h.S',leafy?'DoorSylvanPod':'Door',.5);if(leafy)for(const a of [.15,.85])Q.dec('h.S','WinLeaf',a,3);for(const k of ['E','W','N'])Q.dec('h.'+k,leafy?'WinLeaf':o.look.win,.5,3);
+          Q.lift=0;tree(Q,o,'tr',c,2.4,23,26,22);for(let i=0;i<H-1;i++)Q.box('st'+i,[-2,2],[8+(H-2-i)*1.4,9.4+(H-2-i)*1.4],[i,i+1],'bark',{top:true,topMat:i?null:'moss'});
+          lantern(Q,o,'ln',[8,10],6);Q.dec('trt0.S','Ivy',.5,0);return}
+        if(lk===2){for(const s of [-1,1]){const c=[s*8,-4];roots(Q,'r'+s,c,1.8,5,4,s);tree(Q,o,'t'+s,c,1.8,18,20,15);brace(Q,'bf'+s,[s*7,-3,2],[s*4,1,H-1],rw);
+            Q.box('lr'+s,[s*11-.5,s*11+.5],[-1.5,-.5],[13,18],'rope',{thin:true});Q.box('ln'+s,[s*11-1,s*11+1],[-2,0],[10,13],K.glow,{top:true,topMat:'gold'})}
+          deck(Q,o,'dk',[-10,10],[-4,5],H,['S','E','W'],[-2,2]);for(const s of [-1,1])Q.box('pt'+s,[s*7.5-1.5,s*7.5+1.5],[2,4],[H,H+1.5],'bark',{top:true,topMat:'flower'});
+          Q.lift=H;if(leafy)pod(Q,o,{w:10,d:7,c:[0,-1],z:8,ax:'u',R:5,sweep:2,dw,wins:[],lamp:false,doorKind:'DoorSylvanPod',curl:false});
+          else{Q.box('h',[-5,5],[-4.5,2.5],[0,8],o.wall,{dw});Q.roof('h','gable','u',5,o.roofMat,{lip:1,o:2,ov:1});Q.dec('h.S','Door',.5);for(const k of ['E','W','N'])Q.dec('h.'+k,o.look.win,.5,3)}
+          Q.lift=0;Q.cut('ld',-1.5,5,0,Array.from({length:H-1},(_,i)=>i%2?'r.r':'rbr'),{r:'rope',b:'bark'},{dv:1});lantern(Q,o,'lp',[5,10],6);Q.prop('crate',[-5,9],0,1.2);return}
         roots(Q,'rt',[0,-1],2.6,8,5,.9);
         for(const b of [-3,5.5])brace(Q,'bf'+b,[2*L,b<0?-2:0,1],[10*L,b,H-1],rw);
         deck(Q,o,'dk',U(-1,11.5),[-4.5,7.5],H,['S',L>0?'E':'W']);
@@ -120,7 +134,26 @@
       // to its arched door, a lantern of moonlight by it, arched windows of moon glass and a round one in each gable, a banner of moon
       // lavender on each side; moss on the stair and the roots. look.elfhall: its wall, its verge, its curled leaf (the Court's: pale
       // living wood, moon lavender, leaf; another culture's: its own wall, no verge, timber)
-      elfhall:{cell:32,dwellings:3,look:{wall:null,vmat:null,leaf:'timber'},plan(Q,o){const dw=Q.home('elfhall','home'),K=o.look.elfhall,wall=K.wall||o.wall,w=12,dd=14,z=11,H=2,R=11,S=2,v1=dd/2;
+      // (2026-11-08, the owner: as the sites, in three looks by its dice: this slender hall; a broad hall, its eaves to the front, a
+      // taller gabled wing crossing it to the front, its door, round window and planters, lanterns on posts at its stair; or a round
+      // hall under a leaf cone (its gold curled leaf) on a mossed root flare, a slim turret behind it, a leaf hood over its door,
+      // banners, flower planters at its stair, lanterns)
+      elfhall:{cell:32,dwellings:3,look:{wall:null,vmat:null,leaf:'timber'},plan(Q,o){const dw=Q.home('elfhall','home'),K=o.look.elfhall,wall=K.wall||o.wall,w=12,dd=14,z=11,H=2,R=11,S=2,v1=dd/2,lk=o.d.int(0,2),
+          leafRoof=(n,ax,r,s,x)=>Q.roof(n,'leaf',ax,r,o.roofMat,Object.assign({o:2,ov:1,lip:1,sweep:s,curl:1,vmat:K.vmat},x)),
+          stair=(v0,mat)=>{Q.box('s0',[-3,3],[v0,v0+2],[0,1],'bark',{top:true,topMat:'moss'});Q.box('s1',[-3,3],[v0,v0+1],[1,2],'bark',{top:true});
+            for(const s of [-1,1])Q.box('pt'+s,[s*5-1.5,s*5+1.5],[v0,v0+2],[0,2],'bark',{top:true,topMat:mat})};
+        if(lk===1){Q.box('pl',[-11,11],[-7,5],[0,H],'bark',{top:true});Q.box('pl2',[-6,6],[5,10],[0,H],'bark',{top:true});Q.lift=H;
+          Q.box('h',[-10,10],[-6,4],[0,9],wall,{dw});leafRoof('h','u',7,3);Q.box('x',[-4.5,4.5],[-4,9],[0,13],wall,{dw});leafRoof('x','v',10,2,{o:1});
+          for(const s of [-1,1])Q.round('cp'+s,[s*10,4],1.4,[0,9],'bark',null);curl(Q,'fn',0,10,24,1,K.leaf);Q.lift=0;
+          Q.dec('x.S','DoorLeaf',.5);Q.dec('x.S','WinRound',.5,15,true);Q.dec('x.N','WinRound',.5,15,true);for(const a of [.14,.86])Q.dec('h.S','WinLeaf',a,2);Q.dec('h.N','WinLeaf',.3,2);Q.dec('h.N','WinLeaf',.7,2);
+          for(const k of ['E','W']){Q.dec('h.'+k,'WinLeaf',.5,2);Q.dec('x.'+k,'Banner',.75,4)}
+          stair(10,'flower');for(const s of [-1,1])lantern(Q,o,'ln'+s,[s*9,8],6);return}
+        if(lk===2){Q.round('pl',[0,-2],9.5,[0,H],'bark',{form:'lid',mat:'moss'});Q.lift=H;
+          Q.round('h',[0,-2],7.5,[0,13],wall,{form:'cone',leaf:true,rise:8,mat:o.roofMat},{dw});curl(Q,'fn',0,-2,20,1,'gold');
+          Q.round('t',[-6,-7],3,[0,16],wall,{form:'cone',leaf:true,rise:5,mat:o.roofMat},{dw});
+          Q.box('hd',[-3.5,3.5],[5,7],[10,11],'bark',{thin:true});leafRoof('hd','u',3,1,{o:1,ov:0});Q.lift=0;Q.dec('t.S','WinLeaf',.5,12);
+          Q.dec('h.S','DoorLeaf',.5);for(const k of ['E','W','N'])Q.dec('h.'+k,'WinLeaf',.5,3);for(const k of ['E','W'])Q.dec('h.'+k,'Banner',.5,7);Q.dec('h.N','WinRound',.5,9);
+          stair(8,'flower');for(const s of [-1,1])lantern(Q,o,'ln'+s,[s*10,3],6);return}
         Q.box('pl',[-w/2-1,w/2+1],[-v1-1,v1+1],[0,H],'bark',{top:true});Q.lift=H;
         Q.box('h',[-w/2,w/2],[-v1,v1],[0,z],wall,{dw});Q.roof('h','leaf','v',R,o.roofMat,{o:2,ov:1,lip:1,sweep:S,curl:1,vmat:K.vmat});
         for(const a of [-1,1])for(const b of [-1,1])Q.round('cp'+a+b,[a*w/2,b*v1],1.4,[0,z],'bark',null);
@@ -295,7 +328,21 @@
         for(const s of [-1,1])lantern(Q,o,'ln'+s,[s*9,7],6);Q.rails('r',6,13,0,false);Q.prop('minecart',[0,13],0,1.5);Q.prop('spoil',[-10,10],0,2)},
       // a lumber yard: a fallen tree on the ground, its cut end pale, a work platform beside it under a leaf roof on bark posts, the
       // tool hut, and a careful nursery of saplings in a bed (never a clear-cut: no stumps)
-      lumbershed(Q,o){const K=SY(o),dw=Q.home('lumbershed','work');
+      // (2026-11-08, the owner: as the sites, in three looks by its dice: this; a woodwright's hall, its tall gable and wide doors to
+      // the front, boards seasoning in stacks under a leaf lean-to at its side, a log on trestles, the nursery bed; or a round store
+      // under a leaf cone (a gold curled leaf), boards seasoning in a stepped stack on bark stickers beside it, logs in a cradle of
+      // bark posts, a chopping block, the nursery bed, a lantern)
+      lumbershed(Q,o){const K=SY(o),dw=Q.home('lumbershed','work'),lk=o.d.int(0,2),
+          nursery=(u0,v0,n)=>{for(let i=0;i<n;i++){const u=u0+(i%2)*4,v=v0+(i>>1)*4;Q.box('sk'+i,[u-.5,u+.5],[v-.5,v+.5],[0,1],'bark',{top:true});Q.round('sa'+i,[u,v],1.5,[1,2],'canopy',{form:'cone',rise:2,mat:'canopy',o:0,lip:0})}};
+        if(lk===1){pod(Q,o,{w:13,d:14,c:[-6,-3],z:11,ax:'v',R:9,dw,doorKind:'DoorSylvanWide',lamp:false,wins:[]});Q.dec('h.S','WinLeaf',.5,11,true);
+          for(const [a,b] of [[1,-9],[9,-9],[1,2],[9,2]])Q.box('wp'+a+b,[a,a+1],[b,b+1],[0,8],'bark',{top:true});Q.box('ws',[1,10],[-9,3],[8,9],'bark',{thin:true});Q.roof('ws','leaf','u',3,o.roofMat,{o:1,ov:1,lip:1,sweep:1,curl:1,vmat:K.vmat});
+          for(let i=0;i<4;i++)Q.box('bd'+i,[2.5,8.5],[-7,1],[i*1.5,i*1.5+1],i%2?K.wood:'plank',{top:true});Q.dec('bd0.S','Logs',.5,0);
+          for(const a of [4,11])Q.box('tr'+a,[a,a+1],[6,9],[0,3],'bark',{top:true});Q.box('lg',[3,13],[6.5,8.5],[3,5],'bark',{top:true,topMat:'moss'});Q.box('le',[13,14],[6.5,8.5],[3,5],K.wood,{top:true});
+          Q.bed([-14,-8],[7,13],'crop');nursery(-12.5,8.5,4);lantern(Q,o,'ln',[1,8],6);return}
+        if(lk===2){Q.round('h',[7,-4],6,[0,10],K.wood,{form:'cone',leaf:true,rise:8,mat:o.roofMat},{dw});curl(Q,'fn',7,-4,17,1,'gold');Q.dec('h.S','DoorSylvanPod',.5);for(const k of ['E','W','N'])Q.dec('h.'+k,'WinLeaf',.5,4);Q.dec('h.S',K.lamp,.85,5);
+          for(let i=0;i<5;i++){const a=i>2?1:0;Q.box('rb'+i,[-13+a,-1-a],[-9,-4],[2*i,2*i+1],K.wood,{top:true});for(const u of [-12.5+a,-7.5,-2.5-a])Q.box('rs'+i+'_'+u,[u,u+1],[-9,-4],[2*i+1,2*i+2],'bark',{top:true})}
+          Q.box('ls',[-12,-1],[0,5],[0,4],'log',{top:true,topMat:'logend'});Q.dec('ls.S','Logs',.3,0);Q.dec('ls.S','Logs',.75,0);for(const u of [-13,-1.5])Q.box('lc'+u,[u,u+1.5],[0,5],[0,6],'bark',{top:true});
+          Q.bed([3,13],[6,12],'crop');nursery(5,7.5,4);Q.prop('block',[-9,9],0,1.5);lantern(Q,o,'ln',[0,9],6);return}
         Q.box('lg',[-13,4],[5,10],[0,5],'bark',{top:true,topMat:'moss'});Q.box('le',[4,5],[5,10],[0,5],K.wood,{top:true});Q.beam('lb',[-8,7,4],[-11,12,7],'bark');
         deck(Q,o,'wp',[-12,4],[-8,2],2,['W','N']);for(const [a,b] of [[-12,-8],[3,-8],[-12,1],[3,1]])Q.box('sp'+a+b,[a,a+1],[b,b+1],[2,10],'bark',{top:true});
         Q.box('sr',[-12,4],[-8,2],[10,11],'bark',{thin:true});Q.roof('sr','leaf','u',4,o.roofMat,{o:1,ov:1,lip:1,sweep:1,curl:1,vmat:K.vmat});Q.prop('logs',[-5,-4],0,1,2);Q.prop('stump',[0,-1],0,1,2);

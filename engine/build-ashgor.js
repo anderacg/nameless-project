@@ -119,6 +119,10 @@
   const tanning=(Q,n,u,v)=>Q.cut(n,u-4,v,0,['tttttttt','thhhhhht','thhhhhht','thhhhhht','thhhhhht','t......t','t......t'],{t:'timber',h:'hide'},{dv:1});
   // a vat: a great tub of staves hooped, its lid
   const vat=(Q,n,u,v,r)=>{Q.round(n,[u,v],r,[0,6],'plank',{form:'lid',mat:'plank'});Q.dec(n+'.S','Hoop',.5,1);Q.dec(n+'.S','Hoop',.5,4)};
+  // a drying rack: two poles, a bar, strips of meat hung from it
+  const drying=(Q,n,u,v)=>Q.cut(n,u-4,v,0,['tttttttt','tm.mm.mt','tm.mm.mt','t..m.m.t','t......t','t......t'],{t:'timber',m:'ashgorOx'},{dv:2});
+  // crossed poles over a gable's peak (u, v its middle, z their foot), their tips horns of bone
+  const crossed=(Q,n,u,v,z)=>Q.cut(n,u-3.5,v-1,z,['b.....b','bb...bb','.tt.tt.','..ttt..'],{b:'bone',t:'timber'},{dv:2});
   // in a cluster: a plan made in the cluster's own frame; a log fence; a family yurt (two households)
   const here=(C,f)=>made(C,[0,0],0,f),logFence=(C,n,pts,gates)=>C.Q.parts.push({k:'fence',name:n,pts,gates,h:5,mat:'log'});
   const famYurt=(C,at,face,r,x)=>made(C,at,face,Q=>yurt(Q,Q.o,Object.assign({r,z:12,dw:Q.home('yurt','home',1,2)},x||{})));
@@ -143,12 +147,36 @@
     own:{types:{
       // a family yurt (the Horde's home): the yurt, its cooking yard to one side (a fire pit and its pot, a log to sit on, a woodpile, a
       // barrel); better levels a hide awning over the yard, then the clan's standard
-      yurt:{cell:32,dwellings:2,look:{felt:null,band:null,skirt:null,skirtZ:0,deck:false,awning:null,skins:false,fur:false},plan(Q,o){const d=o.d,dw=Q.home('yurt'),s=d.chance(.5)?1:-1,c=[-s*3,-2];
+      // (in three looks, by its dice: this; a wagon yurt, the yurt up on a great wagon's bed (its side painted in the clan band) on four
+      // wheels, steps to its door, its shaft and yoke out to the side, meat drying on a rack behind; or a two-tier yurt, a drum of felt rising out of its low cone under its own cone,
+      // band and bone horns, hides stretched on a frame and meat on a rack beside it, a totem)
+      yurt:{cell:32,dwellings:2,look:{felt:null,band:null,skirt:null,skirtZ:0,deck:false,awning:null,skins:false,fur:false},plan(Q,o){const d=o.d,dw=Q.home('yurt'),v=d.int(0,2),s=d.chance(.5)?1:-1,c=[-s*3,-2];
+        if(v===1){const L=Q.lift,Y=yd(o);Q.box('wb',[-9.5,9.5],[-6,6],[3,6],'plank',{top:true});Q.dec('wb.S','BandAshW',.5,0);for(const a of [-6.5,6.5])Q.wheel('wf'+a,a,6,3,3,'log',1);for(const a of [-4.5,4.5])Q.wheel('wr'+a,a,-7,3,3,'log',1);
+          Q.box('sh',s>0?[9.5,15]:[-15,-9.5],[-.5,.5],[2,3],'timber',{top:true});Q.box('yk',s>0?[13.5,15]:[-15,-13.5],[-3,3],[3,4],'timber',{top:true});
+          Q.box('st',[-2.5,2.5],[6,8.5],[0,2],'plank',{top:true});Q.box('st2',[-2.5,2.5],[6,7],[2,4],'plank',{top:true});
+          Q.lift=L+6;yurt(Q,o,{c:[0,-.5],r:7,z:11,rise:5,dw,ground:true});Q.lift=L;drying(Q,'dm',-s*11,-11);Q.prop('barrel',[-s*13,10],0,1.4);if(Y.skins)skins(Q,'sk',s*12,10);
+          if(o.lv>=3)standard(Q,'st',s*13,-10,16,s);return}
+        if(v===2){const Y=yd(o),c=[-s*3,-3],z0=(Y.deck||o.stilts?2:0)+11;yurt(Q,o,{c,r:8.5,z:10,rise:4,dw,crown:false});
+          Q.round('u',c,5,[z0,z0+7],Y.felt||o.wall,{form:'cone',rise:4,mat:o.roofMat,o:1},{dw});Q.round('uc',c,1.6,[z0+9,z0+12],'timber',{form:'lid',mat:'dark'},{dw});for(const k of ['E','W','N'])Q.dec('u.'+k,'WinAsh',.5,1);
+          if(Y.band){Q.round('ub',c,5.3,[z0+3,z0+6],Y.band,null,{dw});for(const k of ['S','E','W','N'])Q.dec('ub.'+k,'BandAshS',.5,0)}
+          for(const h of [-1,1])Q.cut('uh'+h,c[0]+h*6-1,c[1]-1,z0+5,h<0?['b.','bb','.b']:['.b','bb','b.'],{b:'bone'},{dv:2});
+          tanning(Q,'tf',s*11,-2);drying(Q,'dm',s*10,9);Q.prop('totem',[-s*11,10]);yardOf(Q,o,c,8.5,-s);if(o.lv>=3)standard(Q,'st',-s*13,-10,16,-s);return}
         yurt(Q,o,{c,r:8.5,dw});hearth(Q,'ck',s*10,6);Q.prop(d.pick(['woodpile','logs']),[s*11,-6],1,1.5);Q.prop('barrel',[-s*11,7],0,1.5);
         if(o.lv>=2)awning(Q,'ya',[s*10-4,s*10+4],[2,9],7,'hide');if(o.lv>=3)standard(Q,'st',-s*12,-8,16,s);yardOf(Q,o,c,8.5,-s)}},
       // a hide hall (the Horde's long hall, three households): a vaulted hall of felt between two round ends under cones of hide, each
       // end's smoke crown, the clan band along it, its door and skull in the middle, bone horns at the vault's ends, a totem by it
-      hidehall:{cell:32,dwellings:3,long:'a hall long and low between its round ends',look:{wall:null},plan(Q,o){const dw=Q.home('hidehall','home'),wall=o.look.hidehall.wall||o.wall,Y=yd(o);
+      // (in three looks, by its dice: this; a long hall of felt on log posts under a ridge of hide, its ridge pole, crossed poles horned
+      // with bone over its ends, a smoke vent on the ridge, a weapon rack and meat drying before it; or a great yurt between two low vaulted wings of felt, bone
+      // horns at the wings' ends, meat drying, a weapon rack and a totem in its yard)
+      hidehall:{cell:32,dwellings:3,long:'a hall long and low between its round ends',look:{wall:null},plan(Q,o){const dw=Q.home('hidehall','home'),wall=o.look.hidehall.wall||o.wall,Y=yd(o),v=o.d.int(0,2);
+        if(v===1){Q.box('h',[-12,12],[-5.5,5.5],[0,11],wall,{dw});Q.roof('h','gable','u',7,o.roofMat,{o:1,ov:1,lip:1});Q.dec('h.S',Y.fur?'DoorAshFur':o.look.door,.5);
+          for(const at of [.27,.73])Q.dec('h.S','WinAsh',at,4);Q.dec('h.N','WinAsh',.5,4);for(const k of ['E','W'])Q.dec('h.'+k,'WinAsh',.5,4);if(Y.band)Q.dec('h.S','BandAshW',.5,6);
+          for(const [a,b] of [[-12.5,-6],[11,-6],[-12.5,4.5],[11,4.5]])Q.box('hp'+a+b,[a,a+1.5],[b,b+1.5],[0,11],'log',{top:true,dw});Q.box('rp',[-13,13],[-.75,.75],[17.5,19],'log',{top:true});
+          Q.box('sv',[-2,2],[-1.5,1.5],[17,20],'timber',{top:true,topMat:'dark'});for(const k of [-1,1])crossed(Q,'x'+k,k*12,0,18);
+          rack(Q,'rk',-11,10);drying(Q,'dm',11,10);yardOf(Q,o,[0,0],6.5);return}
+        if(v===2){for(const k of [-1,1]){const n='w'+k;Q.box(n,k<0?[-14,-5]:[5,14],[-5,4],[0,9],wall,{dw});Q.roof(n,'vault','u',5,o.roofMat,{o:1,ov:1,lip:2});
+            Q.dec(n+'.S','WinAsh',.5,3);Q.dec(n+'.'+(k<0?'W':'E'),'WinAsh',.5,3);if(Y.band)Q.dec(n+'.S','BandAshW',.5,6);Q.cut('hn'+k,k*14-1.5,-1.5,13,['b.b','b.b','.b.'],{b:'bone'},{dv:2})}
+          yurt(Q,o,{c:[0,-1],r:7.5,z:12,rise:6,dw});drying(Q,'dm',-9,11);rack(Q,'rk',9,11);Q.prop('totem',[-14,13]);yardOf(Q,o,[0,-1],7.5);return}
         house(Q,{w:16,d:13,z:11,form:'vault',rise:7,wall,dw,door:.5,doorKind:Y.fur?'DoorAshFur':o.look.door,wins:0,chim:false,o:1,foot:false});if(Y.band)Q.dec('h.S','BandAshW',.5,6);
         for(const s of [-1,1]){yurt(Q,o,{n:'e'+s,c:[s*8,0],r:6.5,z:11,rise:5,dw,door:false,band:false,ground:true});Q.cut('hn'+s,s*7-1.5,-1,18,['b.b','b.b','.b.'],{b:'bone'},{dv:2})}
         Q.prop('totem',[12,10]);yardOf(Q,o,[0,0],6.5)}},
@@ -208,7 +236,17 @@
         Q.prop('stump',[fu-s*2,11],0,1.2);Q.prop('anvil',[fu-s*2,11],0,1.2,2.4);Q.prop('coal',[-s*12,8],0,1.5);Q.prop('barrel',[fu+s*4,11],0,1.4);yardOf(Q,o,c,7.5,-s)},
       // a farm's barn: rough logs under a wagon roof of hide (a vault, its arched end to the front), its great braced doors there, a
       // wagon wheel leaning by them, hay
-      barn(Q,o){const dw=Q.home('barn','store');Q.box('b',[-8,8],[-9,9],[0,10],'log',{dw});Q.roof('b','vault','v',6,o.roofMat,{o:1,ov:1,lip:2});Q.dec('b.S','Barn',.5);Q.dec('b.N','DoorAsh',.5);
+      // (in three looks, by its dice: this; a log store, its side to the front under a ridge of hide, a skull on its end, beside a hay
+      // barrack (a hide hip on four tall log posts over its stack), sacks and a barrel; or a tall log barn, its gable to the front, crossed
+      // poles horned with bone over it and a loft hatch, a pen of sharpened stakes beside it, a skull on a pole at its gap, a trough, hay)
+      barn(Q,o){const dw=Q.home('barn','store'),d=o.d,v=d.int(0,2),s=d.chance(.5)?1:-1,sp=(a,b)=>s>0?[a,b]:[-b,-a];
+        if(v===1){Q.box('b',sp(-12,2),[-9,3],[0,11],'log',{dw});Q.roof('b','gable','u',5,o.roofMat,{o:1,ov:1,lip:2});Q.dec('b.S','Barn',.5);Q.dec('b.N','DoorAsh',.5);Q.dec('b.'+(s>0?'W':'E'),'Hatch',.5,4);
+          for(const [a,b] of [[1,1],[11,1],[1,11],[11,11]])Q.box('bp'+a+b,sp(a,a+1.5),[b,b+1.5],[0,13],'log',{top:true});Q.box('br',sp(0,13.5),[0,13.5],[13,14],'log',{thin:true});Q.roof('br','hip','u',5,o.roofMat,{o:1,lip:1});
+          Q.round('hy',[s*6.75,6.75],4.5,[0,6],'thatch',{form:'cone',rise:4,mat:'thatch',o:0});Q.prop('sacks',[-s*13,6],0,1.2);Q.prop('barrel',[-s*13,9.5],0,1.3);if(yd(o).band)Q.dec('b.'+(s>0?'W':'E'),'SkullAsh',.5,12,true);return}
+        if(v===2){const c=-s*3;Q.box('b',[c-7,c+7],[-8,6],[0,11],'log',{dw});Q.roof('b','gable','v',9,o.roofMat,{o:1,ov:1,lip:2});Q.dec('b.S','Barn',.5);Q.dec('b.S','Hatch',.5,13,true);Q.dec('b.N','DoorAsh',.5);
+          for(const k of ['E','W'])Q.dec('b.'+k,'Hatch',.5,4);crossed(Q,'x',c,6.5,19);
+          stakes(Q,o,'pf',sp(9,15),[9,10],6);stakes(Q,o,'ps',sp(14,15),[-8,9],6);trophy(Q,'tp',s*7,10,11);Q.prop('trough',[s*10,4],1,1.4);Q.prop('hay',[s*10,-4],0,1.2);return}
+        Q.box('b',[-8,8],[-9,9],[0,10],'log',{dw});Q.roof('b','vault','v',6,o.roofMat,{o:1,ov:1,lip:2});Q.dec('b.S','Barn',.5);Q.dec('b.N','DoorAsh',.5);
         for(const k of ['E','W'])Q.dec('b.'+k,'Hatch',.5,4);Q.wheel('wh',-11,8,3.5,3.5,'timber',1.5);Q.prop('hay',[7,-12],0,1.4);if(yd(o).band)Q.dec('b.S','SkullAsh',.5,11,true)},
       // a raised cache (the Horde's granary): a hide-wrapped store on a plank stage on four log posts, roped round, under a hide cone, a
       // ladder up to its hatch; sacks and barrels below

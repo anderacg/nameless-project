@@ -93,8 +93,19 @@
     for(const [i,u] of [-4,6].entries())vent(Q,'vp'+i,[u,-5],h.z-2,h.z+(h.flat?7:h.rise),dw);
     Q.box('ob',[-14,-8],[-2,5],[0,4],M.stone,{dw,top:true,topMat:'rock'});Q.box('ob2',[-13,-9],[-1,4],[4,5],'rock',{top:true});
     Q.box('hb',[-7,-3],[6,8],[0,2],M.stone,{top:true,topMat:'ember'});Q.prop('anvil',[7,8]);Q.prop('coal',[11,8]);Q.prop('trough',[-12,8])}
-  // a stone hall: squat and broad under a hip, buttresses at its corners, its rune door, two chimney vents (4 households)
-  function stoneHall(Q,o){const dw=Q.home('stonehall','home');khouse(Q,{w:22,d:16,z:12,form:'hip',rise:8,dw,door:.5,doorKind:'Rune',wins:2,vents:[[5,-3],[-5,-3]]});Q.prop('barrel',[-8,11])}
+  // a stone hall: squat and broad under a hip, buttresses at its corners, its rune door, two chimney vents (4 households); in three
+  // looks, by its dice: this; a hall on a terrace held by a granite retaining wall, stone steps up to its rune door between braziers,
+  // a square tower banded in iron at its corner under a slate hip; or a tall hall, its steep gable to the front over a great door, a
+  // rune in the gable, lower aisles under lean-tos at its sides with their chimneys, the clan's banners and braziers, rune stones by its door
+  function stoneHall(Q,o){const dw=Q.home('stonehall','home'),v=o.d.int(0,2),M=km(o);
+    if(v===1){Q.box('tr',[-13,12],[-9,5],[0,4],M.base,{dw,top:true});for(const a of [.12,.3,.7,.88])Q.dec('tr.S','WinKarn'+M.dec,a,0);steps(Q,'sp',-3.5,8,5,5,M);Q.lift=4;
+      khouse(Q,{w:17,d:11,c:[-3.5,-3],z:11,rise:6,dw,door:.5,doorKind:'Rune',wins:2,vents:[[-8,-5]],footing:false});
+      ktower(Q,'tw',[8.5,-5],7,15,M,dw,5);band(Q,'twb',[5,12],[-8.5,-1.5],10);for(const k of ['S','E'])Q.dec('tw.'+k,'SlitKarn'+M.dec,.5,7);Q.lift=0;
+      for(const s of [-1,1])brazier(Q,'br'+s,[-3.5+s*7,8],M);Q.prop('barrel',[7.5,8.5],0,1.4);Q.prop('barrel',[9.5,7],0,1.4);return}
+    if(v===2){const h=khouse(Q,{w:14,d:16,c:[0,-3],z:12,form:'front',rise:9,dw,door:.5,doorKind:'DoorKarn2'+M.dec,wins:0});band(Q,'hb',h.u,h.v,10);Q.dec('h.S','RuneKarn'+M.dec,.5,14,true);
+      for(const s of [-1,1]){const n='a'+(s<0?'W':'E');Q.box(n,s<0?[-14,-7]:[7,14],[-9,3],[0,7],M.stone,{dw});kroof(Q,n,'shed','v',3,s<0?{hi:'b1',ov:0}:{ov:0});
+        Q.dec(n+'.S','BannerKarn',.5,1);Q.dec(n+'.'+(s<0?'W':'E'),'WinKarn'+M.dec,.5,2);Q.chim([s*11,-6],6,12,3,{mat:M.stone,name:'ac'+s});runestone(Q,'rs'+s,[s*6.5,9],7,M);brazier(Q,'br'+s,[s*13,6],M)}return}
+    khouse(Q,{w:22,d:16,z:12,form:'hip',rise:8,dw,door:.5,doorKind:'Rune',wins:2,vents:[[5,-3],[-5,-3]]});Q.prop('barrel',[-8,11])}
   // the Clans' stable: granite under a slate lean-to, three arched stalls, a trough
   const kstable=(C,at,face)=>made(C,at,face,Q=>{const M=km(Q.o),dw=Q.home('stable','stable');Q.box('spl',[-14,14],[-6,6],[0,2],M.stone,{dw,top:true});Q.box('s',[-13,13],[-5,5],[0,10],M.stone,{dw});
     kroof(Q,'s','shed','u',5);for(const a of [.2,.5,.8])Q.dec('s.S','ArchKarn'+M.dec,a,0);Q.prop('trough',[0,8]);Q.prop('hay',[10,8],0,1)});
@@ -183,15 +194,15 @@
     textures:{karnGranite:'stone',karnSand:'stone'},
     materials:{karnGranite:['#a6a8b0','#7c7e88','#5a5c66','#3c3e48'],karnSand:['#eeae80','#c97e56','#9c583e','#683a30'],karnCopper:['#f6be86','#d8844a','#a05a32','#643826']},
     // its decal letters (runes, so another culture's letters never clash; its rows below write them = _ % & + *): the granite's lit
-    // and deep tones, the sandstone's, hay
-    letters:{'\u16b7':['karnGranite',0],'\u16be':['karnGranite',3],'\u16ca':['karnSand',0],'\u16cf':['karnSand',3],'\u16ba':['thatch',1],'\u16c3':['thatch',2]},
+    // and deep tones, the sandstone's, hay, a banner's red cloth
+    letters:{'\u16b1':['canvasR',1],'\u16b2':['canvasR',3],'\u16b7':['karnGranite',0],'\u16be':['karnGranite',3],'\u16ca':['karnSand',0],'\u16cf':['karnSand',3],'\u16ba':['thatch',1],'\u16c3':['thatch',2]},
     // its decals (and the desert's, D: in sandstone, the doorways deep): an iron-banded door under a lintel, a double one, small warm
-    // windows, a timber storey's small window, a warm-lit slit, a glowing rune, the forge's mouth, a monumental gate, an arch, a hay loft
+    // windows, a timber storey's small window, a warm-lit slit, a glowing rune, the forge's mouth, a monumental gate, an arch, a hay loft, a clan's banner
     decals:(()=>{const D={DoorKarn:['=======','=_____=','=diiie=','=dedke=','=dedee=','=diiie=','=dedee=','=diiie=','ppppppp'],
         DoorKarn2:['=========','=_______=','=diiiiie=','=dekhkde=','=dedhdee=','=diiiiie=','=dedhdee=','=diiiiie=','ppppppppp'],
         WinKarn:['====','_ao_','_oo_','____'],RuneKarn:['O__','OO_','O_O','OO_','O__'],SlitKarn:['_','o','O','o','_'],
         ForgeKarn:['============','=__________=','=_########_=','=_###oo###_=','=_##oOOo##_=','=_#oOOOOo#_=','=_oOOOOOOo_=','=_iiiiiiii_=','pppppppppppp'],
-        ArchKarn:['.===.','=___=','=###=','=###=','=###=','=###=','=###='],HayKarn:['_____','_+*+_','+*+*+','+++++']};
+        ArchKarn:['.===.','=___=','=###=','=###=','=###=','=###=','=###='],BannerKarn:['iii','!!!','!k!','!^!','!!!','!.!'],HayKarn:['_____','_+*+_','+*+*+','+++++']};
       // (the monumental gate: an arch of dressed stone round iron-banded doors, studded, its keystone a glowing rune)
       const G=[],gw=14,gh=17,cx=(gw-1)/2,R=gw/2-.5;for(let r=0;r<gh;r++){let s='';for(let c=0;c<gw;c++){const d=Math.hypot(c-cx,r<R?R-r:0);
         s+=d>R+.01?'.':r===0&&Math.abs(c-cx)<1?'O':d>R-2.01?'=':r<R-2?'_':c===6||c===7?'h':(r-4)%4===0?'i':(r+c)%5===0?'k':c<6?'d':'e'}G.push(s)}D.GateKarn=G;
@@ -200,7 +211,7 @@
       D.DoorKarnD=['%%%%%%%','%&&&&&%','%&DDD&%','%&dek&%','%&ded&%','%&ded&%','%&ded&%','%&ded&%','ppppppp'];
       D.WinKarnS=['iiii','iaoi','iiii'];
       // (= _ % & + * to their runes)
-      const RUNE={'=':'\u16b7','_':'\u16be','%':'\u16ca','&':'\u16cf','+':'\u16ba','*':'\u16c3'};for(const k in D)D[k]=D[k].map(r=>r.replace(/[=_%&+*]/g,c=>RUNE[c]));return D})(),
+      const RUNE={'=':'\u16b7','_':'\u16be','%':'\u16ca','&':'\u16cf','+':'\u16ba','*':'\u16c3','!':'\u16b1','^':'\u16b2'};for(const k in D)D[k]=D[k].map(r=>r.replace(/[=_%&+*!^]/g,c=>RUNE[c]));return D})(),
     // its own types (any culture can build them; their plan the generic)
     own:{types:{stonehall:{cell:32,dwellings:4,plan:stoneHall},forge:{cell:32,dwellings:0,plan:forgeHall}}},
     // its plans for the shared types, clusters and centres: (Q, o, base), (C, base), {tier: {type} or {kind}}
@@ -212,8 +223,21 @@
       // a cottage: a granite ground floor, a dark timber storey over it, a steep slate roof, chimney vents (2 households)
       cottage(Q,o){const d=o.d,dw=Q.home('cottage','home',2),form=d.pick(['gable','gable','front']),door=d.pick([.3,.5,.7]),h=khouse(Q,{w:16,d:14,z:11,up:4,form,rise:7,dw,door,vents:form==='front'?[[4,-4]]:[[-4,-1],[4,-1]]});
         const p=d.pick(['barrel','woodpile','crate','']);if(p)Q.prop(p,[(door>.5?-1:1)*5,9+h.ft],p==='woodpile'?0:1)},
-      // a town house: granite below, a jettied timber storey over the street, its gable to it (3 households)
-      townhouse(Q,o){const d=o.d,dw=Q.home('townhouse','home',2);khouse(Q,{w:14,d:14,z:11,up:6,rise:6,jetty:true,form:'front',dw,door:d.pick([.3,.7]),wins:1,vents:[[3,-3]]})},
+      // a town house: granite below, a jettied timber storey over the street, its gable to it (3 households); in three looks, by its
+      // dice: this; a tall granite tower-house on a raised cellar, its door up a stair of stone, an iron band between its storeys, a
+      // steep slate hip, a brazier and barrels at the stair's foot; or a smith's house long along the street, its forge's mouth glowing
+      // below a timber storey, copper vent pipes through its slate, a coal store at its end, bar iron, an anvil and an ore cart before it
+      townhouse(Q,o){const d=o.d,dw=Q.home('townhouse','home',2),v=d.int(0,2),M=km(o);
+        if(v===1){Q.box('cl',[-8,8],[-7,4],[0,3],M.base,{dw,top:true});Q.box('ld',[-3,5],[4,7],[0,3],M.base,{dw,top:true});for(let j=0;j<2;j++)Q.box('sp'+j,[-7+2*j,-5+2*j],[4.5,7],[0,j+1],M.stone,{top:true});
+          Q.lift=3;const h=khouse(Q,{w:12,d:10,c:[1,-1.5],z:16,rise:8,form:'hip',dw,door:.5,wins:0,vents:[[-2,-3]],footing:false});band(Q,'hb',h.u,h.v,10);
+          for(const a of [.2,.8])Q.dec('h.S','WinKarnS',a,11);for(const k of ['E','W'])Q.dec('h.'+k,'WinKarn'+M.dec,.5,10);Q.lift=0;
+          brazier(Q,'br',[7,8],M);Q.prop('barrel',[-10,7],0,1.4);Q.prop('barrel',[-12,5],0,1.4);return}
+        if(v===2){const h=khouse(Q,{w:18,d:13,c:[-2,-3],z:10,up:5,form:'gable',rise:6,jetty:true,dw,door:.5,doorKind:'ForgeKarn'+M.dec,wins:0,vents:[[-8,-4]]});
+          for(const [i,u] of [-2,4].entries())Q.round('vp'+i,[u,-5],1.3,[h.z-2,h.z+(h.flat?6:h.rise+2)],'karnCopper',{form:'lid',mat:'karnCopper'},{dw});
+          Q.box('cs',[7,12],[-8,2],[0,6],M.stone,{dw});kroof(Q,'cs','shed','v',2,{ov:0});Q.dec('cs.S','Hatch',.5,0);Q.prop('coal',[10,4.5]);
+          Q.box('bi',[-11,-6],[6,8],[0,2],'iron',{top:true});Q.box('bi2',[-10,-7],[6,7.5],[2,3],'iron',{top:true});Q.prop('anvil',[4,7]);
+          Q.prop('minecart',[10,7],1,1.5);return}
+        khouse(Q,{w:14,d:14,z:11,up:6,rise:6,jetty:true,form:'front',dw,door:d.pick([.3,.7]),wins:1,vents:[[3,-3]]})},
       // a fisher's hut (the port's): granite on its quay over the water, a mooring post, the net rack, a barrel
       fisherhut(Q,o){const M=km(o),dw=Q.home('fisherhut');khouse(Q,{w:16,d:14,c:[-2,-5],z:11,rise:7,form:'front',dw,door:.4,wins:1,vents:[[-6,-8]]});
         Q.bed([-16,16],[8,15],'water');Q.box('qy',[-14,12],[4,9],[0,2],M.stone,{top:true});Q.box('mp',[9,11],[6,8],[0,5],'timber',{top:true});
