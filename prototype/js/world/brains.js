@@ -76,6 +76,7 @@ class BandBrain extends Brain{
     const v=this.look(b);this.cool(b,d);
     const st=stance(b.power()*b.nerve,b),fear=fearOf(b,st),sp=moveStep(partySpeed(b,b.troops),d);
     if(!fear&&this.hunt(b,sp)){b.waylay=null;return false}// (a caravan it can take, ridden down before all else but its fear of you: BAND_HUNT)
+    if(!fear&&this.feud(b,sp)){b.waylay=null;return false}// (a rival band, goblins against bandits: data/goblins.js BAND_FEUD)
     if(b.waylay||!TravelAwareness.sees(b)&&Waylay.consider(b,d)){const r=Waylay.step(b,sp,d);if(r==='met')return true;if(r)return false}// (lying in wait: waylay.js)
     const home=night&&campNear(b,fear);
     if(fear&&home||b.cool>0&&!fear||!stanceMove(b,st,v.d,v.dx,v.dy,TravelAwareness.sees(b)?travelDetection(b).range:0,sp,true)){
@@ -86,6 +87,12 @@ class BandBrain extends Brain{
   }
   // (bandits, goblins, looters: the nearest caravan in sight it thinks it can take, ridden down (true); the caravan's own brain starts
   // the fight when it is upon it (CaravanBrain: its guards against it), data/outlaws.js BAND_HUNT)
+  // (goblins against every other band: the nearest rival in sight it thinks it can take, ridden down (true); one within X.meet of it,
+  // fought there and then, whichever is the stronger)
+  feud(b,sp){const X=BAND_FEUD;if(!X.on||b.cool>0||b.cvT)return false;const gob=b.kind==='goblins',mine=b.power()*(b.nerve||1)*X.dare;let r=null,bd=X.see;
+    for(const o of bandits){if(o===b||o.gone||inFight(o)||(o.kind==='goblins')===gob)continue;const dd=Math.hypot(o.x-b.x,o.y-b.y);if(dd<bd&&(dd<X.meet||o.power()<=mine)){bd=dd;r=o}}
+    if(!r)return false;if(bd<X.meet){startFight([b],[r]);return true}
+    b.idle=false;const x0=b.x,y0=b.y;if(!Router.travel(b,{x:r.x,y:r.y},sp)||b.x===x0&&b.y===y0)walk(b,r.x-b.x,r.y-b.y,Math.min(bd,sp));return true}
   hunt(b,sp){const X=BAND_HUNT;if(!X.on||b.cool>0||b.cvT)return false;const mine=b.power()*(b.nerve||1)*X.dare;let c=null,bd=X.see;
     for(const o of W.caravans){if(o.gone||o.idle||inFight(o))continue;const dd=Math.hypot(o.x-b.x,o.y-b.y);if(dd<bd&&o.power()<=mine){bd=dd;c=o}}
     if(!c)return false;b.idle=false;const s=sp*X.pace,x0=b.x,y0=b.y;if(!Router.travel(b,{x:c.x,y:c.y},s)||b.x===x0&&b.y===y0)walk(b,c.x-b.x,c.y-b.y,Math.min(bd,s));return true}

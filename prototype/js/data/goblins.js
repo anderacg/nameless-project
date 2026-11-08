@@ -20,6 +20,11 @@ const GOBLINS={on:true,col:'#6f9a3a',band:[8,12],grow:12,bossAt:12,mix:[['gob_st
   d:'A goblin camp of hide yurts in a ring of stakes. Many weak goblins, their boss, and a pile of stolen goods.',
   warren:{on:true,banner:['#6f9a3a','#3f5a1e'],T:{n:'Goblin warren',ico:'cave',col:'#6f9a3a',respawn:20,d:'A goblin warren dug into the hillside. Many weak goblins packed in its burrows, their boss, and a pile of stolen goods deep inside.'}},
   meet:'Small green shapes in ragged hoods scurry through the brush, yelling and waving knives. They keep their distance until they are sure of you.'};
+// goblins and every other band at feud (the owner, 2026-11-08: "Make sure that bandits and goblins are hostile to each other";
+// world/brains.js BandBrain feud): a band rides down a rival in sight (see, px) it thinks it can take (the rival's power at most
+// dare × its own, by its nerve), not while it fears you or cools from its last fight; two rivals within meet px of each other fight,
+// whichever is the stronger (fights.js: in a fight, sides.js armyRelation puts them on opposite sides). on false: they pass by
+const BAND_FEUD={on:true,see:100,dare:1.1,meet:10};
 // their troops: [id, name, tier, hp, dmg, spd, reach, range, cd, look, tags, armour, damage type]. The stabber's knife and small
 // round shield, the spearman's short spear, the archer's short bow, the boss's hand axe in a pelt (no mail: the owner, 2026-11-08, "goblins
 // should not wear full armor")
