@@ -11,6 +11,17 @@ Kit.suite(({ok,info})=>{
   const press=(o)=>window.dispatchEvent(new KeyboardEvent('keydown',Object.assign({code:'KeyM',key:'m',bubbles:true},o)));
   const world=()=>{Kit.world();t.frame()};
   Kit.begin('soldier',4100);Kit.clear();world();const WM=t.WM,MW=WM.w,MH=WM.h;
+  // ---- the minimap a zoomed-in piece of the full map (render.js MINIMAP, drawMiniMap): round the screen's middle, at least its
+  // tiles across (or over x the screen's), never past the map; its picture the full map's parchment for a box round it, made again
+  // once the view leaves the box
+  {const M=t.MINIMAP,v=t.worldMiniView(),cx=(G.cam.x+t.VW/2)/t.TILE,cy=(G.cam.y+t.VH/2)/t.TILE,tw=Math.min(MW,Math.max(M.tiles,t.VW/t.TILE*M.over));
+   ok(M.on&&Math.abs(v.tw-tw)<1e-9&&v.tw<MW&&v.ox>=0&&v.oy>=0&&v.ox+v.tw<=MW+1e-9&&v.oy+v.th<=MH+1e-9&&Math.abs(v.w/v.tw-v.s)<1e-9,'the minimap shows '+Math.round(v.tw)+' of the map\'s '+MW+' tiles across, zoomed in, inside the map');
+   ok(v.ox<=0||v.ox+v.tw>=MW-.01||Math.abs(v.ox+v.tw/2-cx)<1/v.s+1e-9,'round the screen\'s middle ('+(v.ox+v.tw/2).toFixed(1)+' for '+cx.toFixed(1)+')');
+   const p0=t.MINI_PIC;ok(p0&&p0.cv.width===p0.w&&p0.w<=Math.ceil(v.tw*M.box)&&v.ox>=p0.x&&v.ox+v.tw<=p0.x+p0.w,'its picture a box of '+(p0&&p0.w+' x '+p0.h)+' tiles round the view (the full map\'s parchment: fullMapPic box)');
+   t.frame();ok(t.MINI_PIC===p0,'kept while the view stays in it');
+   const c0={x:G.cam.x,y:G.cam.y};G.cam.x=Math.min(MW*t.TILE-t.VW,Math.max(0,G.cam.x+p0.w*t.TILE));const v2=t.worldMiniView();t.miniPic(v2);ok(t.MINI_PIC!==p0&&v2.ox>=t.MINI_PIC.x&&v2.ox+v2.tw<=t.MINI_PIC.x+t.MINI_PIC.w+1e-9,'made again once the view leaves it');G.cam.x=c0.x;G.cam.y=c0.y;
+   const S=t.seenArr(),b={x:10,y:12,w:30,h:20},img=t.fullMapPic(WM,1,S,t.LAND,t.TOWNS,b),all=t.fullMapPic(WM,1,S,t.LAND,t.TOWNS),pa=img.getContext('2d').getImageData(5,6,1,1).data.join(),pb=all.getContext('2d').getImageData(15,18,1,1).data.join();
+   ok(img.width===30&&img.height===20&&pa===pb,'a box of the picture is that part of the whole one ('+pa+')')}
   info('the world: '+WM.gen+', '+MW+' x '+MH+' tiles');
   // ---- M opens it, M again closes it; Shift+M mutes, M never does ----
   const mute0=t.prefGet('mute');press();

@@ -38,17 +38,18 @@ const fmWash=c=>{const F=FULLMAP,P=fmRgb(F.paper),l=c[0]*.3+c[1]*.59+c[2]*.11;re
 // (the icons' scale at ppt px a tile: smaller than the land grows, never under .65 or over 2)
 const fmIconScale=ppt=>clamp(Math.sqrt(ppt)*.8,.65,2);
 /* the picture: map m at 1 px per k tiles, from its tile data, what you have seen (seen: a byte a tile) and the land (land: an index
-   into towns a tile, -1 wild); a canvas. Its time in FULLMAP.ms */
-function fullMapPic(m,k,seen,land,towns){
-  const t0=performance.now(),F=FULLMAP,W0=m.w,H0=m.h,w=Math.ceil(W0/k),h=Math.ceil(H0/k),N=w*h,img=new ImageData(w,h),d=img.data,own=new Int16Array(N),sn=new Uint8Array(N);
+   into towns a tile, -1 wild); a canvas. Its time in FULLMAP.ms. box: only that part of it, in tiles ({x, y, w, h}, inside the map;
+   none: all of it), as the minimap draws it (render.js MINIMAP) */
+function fullMapPic(m,k,seen,land,towns,box){
+  const t0=performance.now(),F=FULLMAP,W0=m.w,H0=m.h,bx=box?box.x:0,by=box?box.y:0,w=Math.ceil((box?box.w:W0)/k),h=Math.ceil((box?box.h:H0)/k),N=w*h,img=new ImageData(w,h),d=img.data,own=new Int16Array(N),sn=new Uint8Array(N);
   const lut=[],riv=F.river.map(c=>c&&fmRgb(c)),un=fmRgb(F.unknown),facs=[],fi=new Map();
   CLIMS.forEach((c,ci)=>PAL[c].mini.forEach((col,kd)=>lut[ci*8+kd]=fmWash(fmRgb(col))));const wat=new Uint8Array(N),rv=new Uint8Array(N);
   const tf=towns.map(t=>{const o=t.owner||'';if(!fi.has(o)){fi.set(o,facs.length);facs.push(fmRgb(landCol(t.owner)))}return fi.get(o)});
   // the ground (a block's middle tile), its widest river, its realm (none on water), seen if any of it is
-  for(let y=0,o=0;y<h;y++)for(let x=0;x<w;x++,o++){let rw=0,s=0,i=o;
-    if(k===1){s=seen[o];rw=m.river[o]&3}// (1:1: the tile itself)
-    else{for(let dy=0;dy<k&&y*k+dy<H0;dy++)for(let dx=0;dx<k&&x*k+dx<W0;dx++){const j=(y*k+dy)*W0+x*k+dx;if(seen[j])s=1;const r=m.river[j]&3;if(r>rw)rw=r}
-      i=Math.min(H0-1,y*k+(k>>1))*W0+Math.min(W0-1,x*k+(k>>1))}
+  for(let y=0,o=0;y<h;y++)for(let x=0;x<w;x++,o++){let rw=0,s=0,i=(by+y)*W0+bx+x;
+    if(k===1){s=seen[i];rw=m.river[i]&3}// (1:1: the tile itself)
+    else{const X=bx+x*k,Y=by+y*k;for(let dy=0;dy<k&&Y+dy<H0;dy++)for(let dx=0;dx<k&&X+dx<W0;dx++){const j=(Y+dy)*W0+X+dx;if(seen[j])s=1;const r=m.river[j]&3;if(r>rw)rw=r}
+      i=Math.min(H0-1,Y+(k>>1))*W0+Math.min(W0-1,X+(k>>1))}
     const c=rw?riv[rw]:lut[m.clim[i]*8+m.kind[i]],p=o*4;
     d[p]=c[0];d[p+1]=c[1];d[p+2]=c[2];d[p+3]=255;own[o]=rw||m.kind[i]===T_WATER||land[i]<0?-1:tf[land[i]];sn[o]=s;wat[o]=!rw&&m.kind[i]===T_WATER;rv[o]=rw}
   // the realms' tint, its border inked (its colour × FULLMAP.ink) where another realm's land touches; the coast inked; the bare paper
@@ -58,7 +59,7 @@ function fullMapPic(m,k,seen,land,towns){
     const l=x>0?own[o-1]:-1,r=x<w-1?own[o+1]:-1,u=y>0?own[o-w]:-1,b=y<h-1?own[o+w]:-1,e=l>=0&&l!==f||r>=0&&r!==f||u>=0&&u!==f||b>=0&&b!==f,a=e?F.edge:F.tint,c=facs[f],k=e?F.ink:1;
     d[p]+=(c[0]*k-d[p])*a;d[p+1]+=(c[1]*k-d[p+1])*a;d[p+2]+=(c[2]*k-d[p+2])*a}
   // (the holdings' walls and fences where you have seen them, a pixel each piece, its colour by its kind: world/townwalls.js)
-  for(const t of towns){const r=TownWall.of(t);if(!r)continue;const c=fmRgb(TownWall.mapCol(t));for(const q of r.parts){if(!seen[q.i])continue;const p=(Math.floor(q.y/k)*w+Math.floor(q.x/k))*4;d[p]=c[0];d[p+1]=c[1];d[p+2]=c[2]}}
+  for(const t of towns){const r=TownWall.of(t);if(!r)continue;const c=fmRgb(TownWall.mapCol(t));for(const q of r.parts){const qx=Math.floor((q.x-bx)/k),qy=Math.floor((q.y-by)/k);if(!seen[q.i]||qx<0||qy<0||qx>=w||qy>=h)continue;const p=(qy*w+qx)*4;d[p]=c[0];d[p+1]=c[1];d[p+2]=c[2]}}
   const cv=mkc(w,h,g=>g.putImageData(img,0,0));F.ms=performance.now()-t0;return cv}
 // the marks over it at ppt px a tile: the crossings and holdings on land you have seen (each its name and kind on hover), your
 // quests' goals (the tracked one the strongest), the rumours' "?" (the rumour on hover), and you
@@ -68,7 +69,7 @@ function fmIcon(o){const F=FULLMAP,town=!(o instanceof Site),l=town?(o.lots||[])
   const c=town?lotSprite(o,l):siteSprite(o),key=c,had=F.icons.get(o);if(had&&had.key===key)return had;
   const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let x0=c.width,y0=c.height,x1=-1,y1=-1;
   for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(d[(y*c.width+x)*4+3]){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}
-  if(x1<0)return null;const w=x1-x0+1,h=y1-y0+1,cut=mkc(w,h,g=>g.drawImage(c,-x0,-y0)),r={key,url:cut.toDataURL(),w,h};F.icons.set(o,r);return r}
+  if(x1<0)return null;const w=x1-x0+1,h=y1-y0+1,cut=mkc(w,h,g=>g.drawImage(c,-x0,-y0)),r={key,url:cut.toDataURL(),cv:cut,w,h};F.icons.set(o,r);return r}
 // (an icon's tag: its width the kind's (FULLMAP.icon) × the zoom's scale (--zs, on the picture), its height by its shape)
 const fmImg=(ic,b)=>'<img class="fm-s" src="'+ic.url+'" alt="" style="--b:'+b+';--a:'+(ic.h/ic.w).toFixed(3)+'">';
 function fullMapMarks(ppt){const F=FULLMAP,at=(x,y)=>'left:calc(var(--z) * '+x.toFixed(2)+'px);top:calc(var(--z) * '+y.toFixed(2)+'px)';let h='';
@@ -100,9 +101,11 @@ function fullMapFit(v){const F=FULLMAP,fit=Math.min(v.clientWidth/MW,v.clientHei
 function fullMapZoom(dir,at){const F=FULLMAP,Z=F.zooms,z=dir>0?Z.find(q=>q>F.ppt+1e-6):[...Z].reverse().find(q=>q<F.ppt-1e-6);if(z!=null&&G.mode==='fullmap')fullMapShow(z,at)}
 /* the paper laid over the picture (w x h, the picture's own px): its grain (a tile of warm specks and fibres, repeated) and its edge
    (a mask: the paper torn along its sides, a little in from them), each an image's address, kept by its size */
-function fullMapPaper(w,h){const F=FULLMAP,key=w+'x'+h;if(F.paperOf===key)return F.paperArt;F.paperOf=key;const hs=(x,y,s)=>PX.hash(x,y,s);
-  const grain=mkc(96,96,g=>{const im=g.createImageData(96,96),d=im.data;for(let y=0;y<96;y++)for(let x=0;x<96;x++){const p=(y*96+x)*4,n=hs(x,y,7),f=hs(x>>2,y,9)<.06?.5:0;
-    d[p]=120;d[p+1]=86;d[p+2]=48;d[p+3]=Math.round(255*(n<.12?.22:n<.4?.08:0)+255*f*.18)}g.putImageData(im,0,0)});
+// (the grain: a canvas, kept; the minimap lays it on too)
+let FM_GRAIN=null;
+const fmGrain=()=>FM_GRAIN||(FM_GRAIN=mkc(96,96,g=>{const im=g.createImageData(96,96),d=im.data,hs=(x,y,s)=>PX.hash(x,y,s);for(let y=0;y<96;y++)for(let x=0;x<96;x++){const p=(y*96+x)*4,n=hs(x,y,7),f=hs(x>>2,y,9)<.06?.5:0;
+    d[p]=120;d[p+1]=86;d[p+2]=48;d[p+3]=Math.round(255*(n<.12?.22:n<.4?.08:0)+255*f*.18)}g.putImageData(im,0,0)}));
+function fullMapPaper(w,h){const F=FULLMAP,key=w+'x'+h;if(F.paperOf===key)return F.paperArt;F.paperOf=key;const hs=(x,y,s)=>PX.hash(x,y,s),grain=fmGrain();
   const mw=Math.max(64,Math.round(w)),mh=Math.max(48,Math.round(h)),edge=mkc(mw,mh,g=>{const im=g.createImageData(mw,mh),d=im.data,dp=(a,s)=>2+3*hs(a>>1,s,11)+2*hs(a>>3,s,13);
     for(let y=0;y<mh;y++)for(let x=0;x<mw;x++){const inn=x>=dp(y,1)&&mw-1-x>=dp(y,2)&&y>=dp(x,3)&&mh-1-y>=dp(x,4);d[(y*mw+x)*4+3]=inn?255:0}g.putImageData(im,0,0)});
   return F.paperArt={grain:grain.toDataURL(),edge:edge.toDataURL()}}
