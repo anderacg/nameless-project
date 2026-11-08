@@ -78,7 +78,7 @@ function holdingEnts(t,ents,cam,V){
         const s=lotSprite(t,l),w=t.work&&(t.work.lot?t.work.lot===l.id:t.work.k===l.k||t.work.k==='wall'&&l.k==='centre'),p=w?workProg(t):0;l._mem=s;l._memSt=l.st;
         if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed,t.races?.[0]);else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);drawRotors(s,X,Y-N,l.seed);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed,t.races?.[0])}
         if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
-        if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(holdingFlag(t,col),X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N)}}});// (no estate's name under it near you: no words on the map's places, the owner, 2026-11-08; its tip names it)
+        if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(holdingFlag(t,col),X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N,s.flag?s.flag[1]:0)}}});// (no estate's name under it near you: no words on the map's places, the owner, 2026-11-08; its tip names it)
       if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)});
       if(l.k==='pasture'&&l.st==='built'&&live)penEnts(t,ents,cam)}// (its herd, inside its fence: critters.js)
   TownWall.ents(t,ents,cam);// (its ring of walls: world/townwalls.js)
@@ -118,14 +118,34 @@ function drawPlace(cam){
   txt('Place the '+(pl.k==='house'?'house':ESTATES[pl.k].n.toLowerCase())+' of '+t.name+' · click to build · Esc to stop',VW/2,VH-8,'#e8b94a','center');
 }
 // over a holding's centre, no words (the owner, 2026-11-08: "remove text on holding or places in the world map"; its name in its
-// tip): a warning while besieged, a padlock on a gate that will not have you, and the lords inside, a pip of each one's colours.
-// The holding flies one flag, its owner's, from its centre.
-function holdingLabel(t,cam,X,Y,N){
-  // (a gate that will not have you yet: a small padlock below its centre, world/gates.js)
-  if(GATES.on&&!Gates.admits(t).ok){const lx=Math.round(t.x-cam.x)-3,ly=Math.round(t.y+12-cam.y);ctx.save();ctx.fillStyle='#e8b94a';ctx.fillRect(lx,ly+3,7,5);ctx.fillRect(lx+1,ly,1,3);ctx.fillRect(lx+5,ly,1,3);ctx.fillRect(lx+1,ly,5,1);ctx.fillStyle='#2a2418';ctx.fillRect(lx+3,ly+5,1,2);ctx.restore()}
+// tip): a warning while besieged, a padlock on a gate that will not have you (GATE_LOCK), and the lords inside, a pip of each one's
+// colours. The holding flies one flag, its owner's, from its centre.
+function holdingLabel(t,cam,X,Y,N,fy=0){
+  if(GATES.on&&!Gates.admits(t).ok)gateLock(t,cam,Y-N+Math.min(0,fy));// (over its flag, if it flies one higher than its roof)
   if(besieged(t)&&Math.floor(performance.now()/400)%2)txt('!',X+(N>>1),Y-N-2,'#ff6a60','center');
-  const li=lordsInside(t),dy=GATES.on&&!Gates.admits(t).ok?22:14;
-  li.slice(0,4).forEach((l,i,a)=>{const px=Math.round(t.x-cam.x)-a.length*3+i*6+1,py=Math.round(t.y+dy-cam.y);rect(ctx,'#1a1512',px-1,py-1,5,5);rect(ctx,FACS[l.fac].col,px,py,3,3)});
+  const li=lordsInside(t);
+  li.slice(0,4).forEach((l,i,a)=>{const px=Math.round(t.x-cam.x)-a.length*3+i*6+1,py=Math.round(t.y+14-cam.y);rect(ctx,'#1a1512',px-1,py-1,5,5);rect(ctx,FACS[l.fac].col,px,py,3,3)});
+}
+/* a gate that will not have you yet (world/gates.js; the owner, 2026-11-08: "make the lock city icon animated and more cool, it should
+   floating around castle"): a gold padlock floating over the holding's top, drifting in a slow figure of eight (bob: [x px, y px,
+   s a turn]), a glow breathing under it, two sparks circling it; each holding its own phase (its seed). Drawn only, from the clock.
+   art: its pixels (o outline, h light, g gold, d shade, k keyhole), made once (GATE_LOCK.pic) */
+const GATE_LOCK={over:5,bob:[5,3,4.2],glow:[11,.22,.42],spark:[9,2.6],
+  art:['..ooooo..','.oghhhgo.','.og...go.','.og...go.','.og...go.','ooooooooo','ohhhhhhgo','ohgggggdo','ohggkggdo','ohggkggdo','ogddddddo','ooooooooo'],
+  col:{o:'#2a1a0a',h:'#fff0b0',g:'#e8b94a',d:'#a8761e',k:'#2a1a0a'},pic:null};
+function gateLock(t,cam,top){// (top: the holding's top on the screen)
+  const L=GATE_LOCK,now=performance.now()/1000,ph=(t.seed||0)%97/97*6.283,a=now*6.283/L.bob[2]+ph;
+  if(!L.pic)L.pic=mkc(L.art[0].length,L.art.length,g=>L.art.forEach((r,y)=>[...r].forEach((c,x)=>{if(L.col[c]){g.fillStyle=L.col[c];g.fillRect(x,y,1,1)}})));
+  const cx=t.x-cam.x+Math.sin(a)*L.bob[0],cy=top-L.over+Math.sin(a*2)*L.bob[1],w=L.pic.width,h=L.pic.height;
+  ctx.save();
+  // (its glow, breathing)
+  const gl=L.glow[1]+(L.glow[2]-L.glow[1])*(.5+.5*Math.sin(now*2.4+ph)),G=ctx.createRadialGradient(cx,cy,0,cx,cy,L.glow[0]);
+  G.addColorStop(0,'rgba(255,224,138,'+gl.toFixed(3)+')');G.addColorStop(1,'rgba(255,224,138,0)');ctx.fillStyle=G;ctx.fillRect(cx-L.glow[0],cy-L.glow[0],L.glow[0]*2,L.glow[0]*2);
+  ctx.drawImage(L.pic,Math.round(cx-w/2),Math.round(cy-h/2));
+  // (two sparks circling it, one each side)
+  for(let i=0;i<2;i++){const s=now*6.283/L.spark[1]+i*3.1416+ph,sx=Math.round(cx+Math.cos(s)*L.spark[0]),sy=Math.round(cy+Math.sin(s)*L.spark[0]*.45);
+    ctx.globalAlpha=Math.sin(s)>0?1:.5;ctx.fillStyle='#fff0b0';ctx.fillRect(sx,sy,1,1);ctx.globalAlpha*=.6;ctx.fillRect(sx-1,sy,1,1);ctx.fillRect(sx+1,sy,1,1);ctx.fillRect(sx,sy-1,1,1);ctx.fillRect(sx,sy+1,1,1)}
+  ctx.restore();
 }
 
 /* estates: fields, pastures, pits and piers lie flat on the tiles they keep; their buildings are lots like any other */

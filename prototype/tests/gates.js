@@ -63,6 +63,11 @@ Kit.suite(({ok,info})=>{
    }finally{t.Gates.odds=odds0;t.GATE_WAYS.bribe.caught=c0;P.passes={};P.gateBan={};G.clock=t.DAY*.3}}
   // ---- the map's lock
   {Kit.goTo(city.x,city.y+60);let err=null;try{t.drawWorld()}catch(e){err=e}ok(!err&&!t.Gates.admits(city).ok,'the map draws a refused holding’s lock')}
+  // ---- the padlock over a gate that will not have you (the owner, 2026-11-08: "make the lock city icon animated and more cool, it should
+  // floating around castle"; gfx/structures.js gateLock): gold, floating over the holding's top, never still
+  {const c=t.ctx,p0=performance.now,shot=at=>{performance.now=()=>at;try{c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,80,80);t.gateLock({x:40,seed:7},{x:0,y:0},50);const d=c.getImageData(0,0,80,80).data;c.restore();
+     let gold=0,top=99,sx=0;for(let i=0;i<d.length;i+=4)if(d[i]>200&&d[i+1]>150&&d[i+2]<120&&d[i+3]>200){gold++;const y=(i/4/80)|0;top=Math.min(top,y);sx+=(i/4)%80}return{gold,top,x:gold?sx/gold:0}}finally{performance.now=p0}};
+   const a=shot(1000),b=shot(2050);ok(a.gold>10&&a.top<50&&(Math.abs(a.x-b.x)>=1||a.top!==b.top),'a gold padlock floats over the holding\'s top ('+a.gold+' gold px, its top at '+a.top+' over 50), and drifts (x '+a.x.toFixed(1)+' → '+b.x.toFixed(1)+', top '+a.top+' → '+b.top+')')}
   // ---- off: as before
   {X.on=false;LA.on=false;near(city);t.approachHolding(city);ok(G.mode==='town','off: every gate as before');t.act('leave')}
  }finally{X.on=on[0];LA.on=on[1]}

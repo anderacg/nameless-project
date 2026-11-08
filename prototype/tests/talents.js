@@ -47,8 +47,8 @@ try{
  const hpA=t.heroStats().hp,capA=t.partyCap();learn(['arch_wolf']);ok(t.heroStats().hp>hpA*1.2&&t.partyCap()<capA,'Lone Wolf: more health, fewer followers');
  // the page
  G.mode='world';G.modal=false;t.hidePanel();window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyK',key:'k'}));t.act('sk-tab','talents');
- ok(G.mode==='skills'&&document.querySelectorAll('[data-act="tree-prof"]').length===profs.length&&document.querySelectorAll('svg.tr-svg .tr-node').length>=6&&document.querySelector('svg.tr-svg.grow .tr-trunk'),'K opens the Skills page; Skill trees lists every proficiency and draws one as a tree, growing');
- P.sk.med.lv=20;t.act('tree-prof','med');const nodeCls=id=>document.querySelector('.tr-node[data-arg="'+id+'"]')?.getAttribute('class')||'';
+ ok(G.mode==='skills'&&document.querySelectorAll('[data-act="tree-prof"]').length===profs.length&&document.querySelectorAll('svg.tr-svg .tp-node').length>=6&&document.querySelector('svg.tr-svg.grow .tp-root'),'K opens the Skills page; Skill trees lists every proficiency and draws one as a path of nodes, flying out of its root');
+ P.sk.med.lv=20;t.act('tree-prof','med');const nodeCls=id=>document.querySelector('.tp-node[data-arg="'+id+'"]')?.getAttribute('class')||'';
  ok(/Field Surgeon/.test(panel())&&/Healing Light/.test(panel())&&/open/.test(nodeCls('med_surgeon'))&&/locked/.test(nodeCls('med_renew'))&&document.querySelector('svg.tr-svg.grow'),'Medicine\'s tree: at 20 its first tier open (pulsing), its next not yet; switching trees grows it anew');
  t.act('tree-sel','med_surgeon');ok(/Learn · 1 point/.test(panel())&&!document.querySelector('[data-act="tree-take"][data-arg="med_surgeon"]').disabled,'a node chosen on the tree: what it does, and Learn');
  t.act('tree-take','med_surgeon');ok(t.treeHas('med_surgeon')&&/Unlearn/.test(panel())&&/have/.test(nodeCls('med_surgeon'))&&/just/.test(nodeCls('med_surgeon'))&&!/open/.test(nodeCls('med_heal'))&&!document.querySelector('svg.tr-svg.grow'),'learned from the page: lit and flaring, not grown again; no point left for Healing Light');

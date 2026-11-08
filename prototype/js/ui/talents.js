@@ -30,34 +30,45 @@ const NODE_KIND=N=>({origin:'Origin',s:'Passive',n:'Notable',k:'Keystone'}[N.t]|
 // (the proficiencies whose trees it has: its own; the tree shown, G.skTree: one with a choice waiting, else your weapon's)
 const skProfs=S=>PROF_GROUPS.flatMap(g=>g[1]).filter(k=>S.sk&&S.sk[k]&&PROF_TREE[k]);
 function skTreeOf(S){const L=skProfs(S);if(L.includes(G.skTree))return G.skTree;const w=treePendingOf(S)[0];return w?w:L.includes(S===P?leaderOf(P).weaponProf():'oneh')?(S===P?leaderOf(P).weaponProf():'oneh'):L[0]}
-/* a proficiency's tree, drawn as one (the owner, 2026-11-08: "make the tree like a cool tree with animation switching between path"):
-   a trunk rising from the ground, a plaque at each milestone on it, a branch curving out to each node (left the tier's first, right
-   its second), leaves along them; a node learned glows on a lit branch, one it can take now pulses, one not yet is dark with its
-   milestone. Shown anew (another proficiency, the page opened: G.skGrow), the trunk draws itself up, the branches out, tier by tier,
-   and the nodes open (fieldbook.css "skill trees"); a node just learned (G.skJust) flares. TREE_ART: its numbers, in the view's units */
-const TREE_ART={w:420,h:380,trunk:210,ground:350,top:58,spread:[96,128],r:{s:15,n:19,k:22,a:19},bark:'#6b4a2e',barkHi:'#8a6440',lit:'#e8b94a',leaf:['#4f7a3a','#6b9a48','#3d6230']};
-const NODE_GLYPH={s:'•',n:'◆',k:'✸',a:'✦'};
+/* a proficiency's tree as a path of nodes (the owner, 2026-11-08: "not an actual tree but a tree node path with more cool animation"):
+   its root (the proficiency, its level) at the foot, each milestone a row of two nodes above, every node linked to both of the row
+   below (any of them opens it: core/talents.js canTake); a rail at the side fills with the proficiency's level, a mark at each
+   milestone. Links: learned ones gold with light flowing up them, the ways open now dashed and flickering, the rest dim. Nodes:
+   hexagons, a keystone a diamond, an active skill ringed with a turning ring; learned gold and glowing, open pulsing, reached bronze,
+   not yet dark. Shown anew (another proficiency, the page opened: G.skGrow) the nodes fly out of the root and the links draw after
+   them, row by row; a node just learned (G.skJust) bursts (fieldbook.css "skill trees"). TREE_ART: its numbers, in the view's units */
+const TREE_ART={w:420,h:380,root:[226,342],top:46,spread:[78,104],rail:34,r:{s:15,n:18,k:21,a:19}};
+const NODE_GLYPH={s:'+',n:'◆',k:'✸',a:'✦'};
+// (a hexagon of radius r round x, y)
+const hexPts=(x,y,r)=>[0,1,2,3,4,5].map(i=>{const a=Math.PI/3*i+Math.PI/6;return (x+r*Math.cos(a)).toFixed(1)+','+(y+r*Math.sin(a)).toFixed(1)}).join(' ');
 function treeSvg(S,k){
-  const A=TREE_ART,T=PROF_TREE[k],n=T.length,lv=talentsOf(S).profLv(k),ys=T.map((_,i)=>Math.round(A.ground-70-(A.ground-70-A.top)*(n>1?i/(n-1):0))),cx=A.trunk;
-  const grow=!!G.skGrow,del=(i,b)=>' style="--d:'+((grow?.15+i*.22+(b||0):0).toFixed(2))+'s"';
-  // the canopy: soft foliage behind the upper branches, swaying; a few leaves drifting down
-  const top=ys[n-1]-12,cy0=ys[n-1]+20;let svg=[[-110,30,62],[110,30,62],[-60,-18,70],[60,-18,70],[0,-34,78],[0,40,66]].map(([dx,dy,r],i)=>'<circle cx="'+(cx+dx)+'" cy="'+(cy0+dy)+'" r="'+r+'" class="tr-canopy" style="--s:'+(i%3)+'"/>').join('')+
-    [[-130,0],[40,1.6],[150,3.1],[-40,4.4]].map(([dx,t])=>'<g transform="translate('+(cx+dx)+' '+(cy0-20)+')"><path class="tr-fall" style="--t:'+t+'s" d="M0 0 q5 -7 11 -2 q-5 6 -11 2 Z"/></g>').join('')+'<ellipse cx="'+cx+'" cy="'+(A.ground+6)+'" rx="150" ry="16" class="tr-ground"/>'+[-120,-70,60,110].map(x=>'<path d="M'+(cx+x)+' '+(A.ground+2)+' l4 -9 l3 9 l4 -7 l2 7" class="tr-grass"/>').join('');
-  svg+='<path class="tr-trunk" pathLength="1"'+del(0,-.15)+' d="M'+(cx-18)+' '+A.ground+' C'+(cx-12)+' '+(A.ground-60)+' '+(cx-8)+' '+(top+80)+' '+(cx-3)+' '+top+' L'+(cx+3)+' '+top+' C'+(cx+8)+' '+(top+80)+' '+(cx+12)+' '+(A.ground-60)+' '+(cx+18)+' '+A.ground+' Z"/>';
-  svg+='<path class="tr-roots" d="M'+(cx-18)+' '+A.ground+' q-18 4 -30 10 M'+(cx+18)+' '+A.ground+' q18 4 30 10 M'+(cx-6)+' '+A.ground+' q-4 8 -12 14"/>';
-  // each tier: its plaque on the trunk, a branch to each node, leaves on it, the node
-  T.forEach((pair,i)=>{const y=ys[i],at=TREE[pair[0][0]].at,ok=lv>=at;
-    svg+='<g class="tr-plaque'+(ok?' on':'')+'"'+del(i)+'><rect x="'+(cx-17)+'" y="'+(y+18)+'" width="34" height="18" rx="4"/><text x="'+cx+'" y="'+(y+31)+'" text-anchor="middle">'+at+'</text></g>';
-    pair.forEach(([id],side)=>{const N=TREE[id],have=treeHasOf(S,id),can=canTakeOf(S,id),x=cx+(side?1:-1)*A.spread[i%2],dir=side?1:-1,by=y+16,mx=(cx+x)/2;
-      const d='M'+(cx+dir*4)+' '+(by+18)+' C'+(mx)+' '+(by+14)+' '+(x-dir*30)+' '+(y+30)+' '+x+' '+y;
-      svg+='<path class="tr-branch'+(have?' lit':'')+'" pathLength="1"'+del(i,.1)+' d="'+d+'"/>';
-      for(const f of [.35,.62])svg+='<path class="tr-leaf" transform="translate('+Math.round(cx+(x-cx)*f)+' '+Math.round(by+12-(by+12-y)*f*f-6)+') rotate('+(dir*(f>.5?-35:25))+')"'+del(i,.3)+' d="M0 0 q9 -13 21 -3 q-9 10 -21 3 Z" fill="'+A.leaf[(i+side+(f>.5?1:0))%3]+'"/>';
-      const r=A.r[N.t]||16,cls='tr-node '+(have?'have':can?'open':ok?'wait':'locked')+(G.skSel===id?' sel':'')+(G.skJust===id?' just':'');
-      const shape=N.t==='k'?'<rect x="'+(x-r)+'" y="'+(y-r)+'" width="'+2*r+'" height="'+2*r+'" rx="4" transform="rotate(45 '+x+' '+y+')" class="tr-body"/>':N.t==='a'?'<rect x="'+(x-r)+'" y="'+(y-r)+'" width="'+2*r+'" height="'+2*r+'" rx="8" class="tr-body"/>':'<circle cx="'+x+'" cy="'+y+'" r="'+r+'" class="tr-body"/>';
-      svg+='<g class="'+cls+'" data-act="tree-sel" data-arg="'+id+'" role="button" tabindex="0" aria-pressed="'+(G.skSel===id)+'" aria-label="'+htmlText(N.n)+' ('+(have?'learned':can?'can learn':'at '+SKILLS[k].n+' '+N.at)+')"'+del(i,.35)+'>'+
-        '<circle cx="'+x+'" cy="'+y+'" r="'+(r+9)+'" class="tr-halo"/>'+shape+'<text x="'+x+'" y="'+(y+5)+'" text-anchor="middle" class="tr-glyph">'+NODE_GLYPH[N.t]+'</text>'+
-        '<text x="'+x+'" y="'+(y+r+16)+'" text-anchor="middle" class="tr-name">'+htmlText(N.n)+'</text></g>'})});
-  return '<svg class="tr-svg'+(grow?' grow':'')+'" viewBox="0 0 '+A.w+' '+A.h+'" preserveAspectRatio="xMidYMid meet" role="group" aria-label="'+SKILLS[k].n+' skill tree">'+svg+'</svg>';
+  const A=TREE_ART,T=PROF_TREE[k],n=T.length,TS=talentsOf(S),lv=TS.profLv(k),[rx,ry]=A.root,ys=T.map((_,i)=>Math.round(ry-70-(ry-70-A.top)*(n>1?i/(n-1):0)));
+  const pos=(i,side)=>[rx+(side?1:-1)*A.spread[i%2],ys[i]],grow=!!G.skGrow,del=(i,b)=>grow?(.12+i*.2+(b||0)).toFixed(2)+'s':'0s';
+  let defs='<defs><radialGradient id="tpGlow"><stop offset="0" stop-color="#ffe08a" stop-opacity=".55"/><stop offset="1" stop-color="#ffe08a" stop-opacity="0"/></radialGradient>'+
+    '<linearGradient id="tpRail" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#b8862a"/><stop offset="1" stop-color="#ffe08a"/></linearGradient></defs>';
+  // the field: faint motes; the rail of its level (the milestones marked, its height where the level stands between them)
+  let svg=defs+[...Array(26)].map((_,i)=>'<circle class="tp-mote" cx="'+Math.round(hash(i,1,53)*A.w)+'" cy="'+Math.round(hash(i,2,53)*A.h)+'" r="'+(hash(i,3,53)<.3?1.6:1)+'" style="--t:'+(hash(i,4,53)*4).toFixed(2)+'s"/>').join('');
+  const ats=T.map(([[a]])=>TREE[a].at),yAt=v=>{if(v<=0)return ry;let y0=ry,a0=0;for(let i=0;i<n;i++){if(v<=ats[i])return y0+(ys[i]-y0)*(v-a0)/(ats[i]-a0);y0=ys[i];a0=ats[i]}return Math.max(A.top-20,ys[n-1]-(v-a0)/(99-a0+1e-9)*20)};
+  const rl=A.rail,fy=yAt(lv);
+  svg+='<line x1="'+rl+'" y1="'+ry+'" x2="'+rl+'" y2="'+(A.top-20)+'" class="tp-rail"/><line x1="'+rl+'" y1="'+ry+'" x2="'+rl+'" y2="'+fy.toFixed(1)+'" class="tp-railfill" pathLength="1" style="--d:'+del(0,-.1)+'"/>';
+  T.forEach((_,i)=>{const ok=lv>=ats[i];svg+='<g class="tp-mark'+(ok?' on':'')+'"><line x1="'+(rl-6)+'" y1="'+ys[i]+'" x2="'+(rl+6)+'" y2="'+ys[i]+'"/><text x="'+(rl+10)+'" y="'+(ys[i]+4)+'">'+ats[i]+'</text></g>'});
+  svg+='<circle cx="'+rl+'" cy="'+fy.toFixed(1)+'" r="4" class="tp-railhead"/><text x="'+(rl-2)+'" y="'+(ry+22)+'" class="tp-raillv" text-anchor="middle">'+lv+'</text>';
+  // the links: the root to the first row, each row to the next (both ways), behind the nodes
+  const linkOf=(x1,y1,x2,y2,a,b,i)=>{const lit=a&&b===true,open=a&&b&&b!==true&&b.open,mx=(x1+x2)/2,d='M'+x1+' '+y1+' C'+x1+' '+(y1-22)+' '+x2+' '+(y2+22)+' '+x2+' '+y2;
+    return '<path class="tp-link'+(lit?' lit':open?' open':'')+'" pathLength="1" d="'+d+'" style="--d:'+del(i,.18)+'"/>'+(lit?'<path class="tp-flow" pathLength="1" d="'+d+'" style="--t:'+(hash(Math.round(mx),y1,7)*1.4).toFixed(2)+'s"/>':'')};
+  const st=id=>{const h=treeHasOf(S,id);return h?true:{open:canTakeOf(S,id)}};
+  T[0].forEach(([id],side)=>{const [x,y]=pos(0,side),b=st(id);svg+=linkOf(rx,ry-20,x,y+18,true,b,0)});
+  for(let i=1;i<n;i++)T[i].forEach(([id],side)=>{const [x,y]=pos(i,side),b=st(id);T[i-1].forEach(([lo],s0)=>{const [x0,y0]=pos(i-1,s0),a=treeHasOf(S,lo);svg+=linkOf(x0,y0-18,x,y+18,a,b,i)})});
+  // the root: the proficiency, its level
+  svg+='<g class="tp-root" style="--d:'+del(0,-.15)+'"><circle cx="'+rx+'" cy="'+ry+'" r="34" fill="url(#tpGlow)"/><polygon points="'+hexPts(rx,ry,22)+'" class="tp-rootbody"/><text x="'+rx+'" y="'+(ry+5)+'" text-anchor="middle" class="tp-roottext">'+(w=>w.length>1?w.map(x=>x[0]).join(''):SKILLS[k].n.slice(0,2))(SKILLS[k].n.split(/[\s-]+/))+'</text></g>';
+  // the nodes, each flying out of the root to its place
+  T.forEach((pair,i)=>pair.forEach(([id],side)=>{const N=TREE[id],[x,y]=pos(i,side),have=treeHasOf(S,id),can=canTakeOf(S,id),ok=TS.reached(id),r=A.r[N.t]||16;
+    const cls='tp-node '+(have?'have':can?'open':ok?'wait':'locked')+(G.skSel===id?' sel':'')+(G.skJust===id?' just':'');
+    const body=N.t==='k'?'<rect x="'+(x-r*.8)+'" y="'+(y-r*.8)+'" width="'+(r*1.6)+'" height="'+(r*1.6)+'" rx="3" transform="rotate(45 '+x+' '+y+')" class="tp-body"/>':'<polygon points="'+hexPts(x,y,r)+'" class="tp-body"/>';
+    svg+='<g class="'+cls+'" data-act="tree-sel" data-arg="'+id+'" role="button" tabindex="0" aria-pressed="'+(G.skSel===id)+'" aria-label="'+htmlText(N.n)+' ('+(have?'learned':can?'can learn':'at '+SKILLS[k].n+' '+N.at)+')" style="--d:'+del(i,.05)+';--fx:'+(rx-x)+'px;--fy:'+(ry-y)+'px">'+
+      '<circle cx="'+x+'" cy="'+y+'" r="'+(r+16)+'" fill="url(#tpGlow)" class="tp-aura"/>'+(N.t==='a'?'<circle cx="'+x+'" cy="'+y+'" r="'+(r+6)+'" class="tp-ring"/>':'')+'<circle cx="'+x+'" cy="'+y+'" r="'+(r+10)+'" class="tp-burst"/>'+body+
+      '<text x="'+x+'" y="'+(y+5)+'" text-anchor="middle" class="tp-glyph">'+NODE_GLYPH[N.t]+'</text><text x="'+x+'" y="'+(y+r+16)+'" text-anchor="middle" class="tp-name">'+htmlText(N.n)+'</text></g>'}));
+  return '<svg class="tr-svg tp'+(grow?' grow':'')+'" viewBox="0 0 '+A.w+' '+A.h+'" preserveAspectRatio="xMidYMid meet" role="group" aria-label="'+SKILLS[k].n+' skill tree">'+svg+'</svg>';
 }
 // the node chosen on the tree: what it does, its kind and milestone, Learn (a point) or Unlearn (gold), or why not yet
 function treeNodePane(S,k){
@@ -143,5 +154,5 @@ function skillsAct(a,arg){
 }
 addEventListener('resize',()=>{if(G.mode==='skills'&&!FIELDBOOK.pick)renderSkills()});
 // (a node of the tree: Enter or Space chooses it, as a click)
-panel.addEventListener('keydown',e=>{const g=e.target.closest&&e.target.closest('.tr-node');if(!g||G.mode!=='skills'||!['Enter',' '].includes(e.key))return;e.preventDefault();e.stopPropagation();act('tree-sel',g.dataset.arg)});
+panel.addEventListener('keydown',e=>{const g=e.target.closest&&e.target.closest('.tp-node');if(!g||G.mode!=='skills'||!['Enter',' '].includes(e.key))return;e.preventDefault();e.stopPropagation();act('tree-sel',g.dataset.arg)});
 onAct('sk-',skillsAct);onAct('tree-',skillsAct);onAct('slot-',skillsAct);onAct('lv-',skillsAct);
