@@ -13,9 +13,10 @@
    px a second, x and y, each; breath: how fast each one's strength comes and goes; seeds: each field's; warp: px the edge is
    pushed about at most; wscale: ground px a pixel of the field that pushes it (puffs of 20-60 px); fscale: of the fine field
    that frays it; fray: how far the fine field moves the edge's threshold (in strength); pale: how much the thin fringe takes
-   the mist's colour; ahead: strength the wisps reach full by (they drift ahead of the body) ---------- */
+   the mist's colour; ahead: strength the wisps reach full by (they drift ahead of the body); ramp: the fog's two layers, its
+   thin fringe and its body, each rising from strength [from, to] (wide: a soft edge, the owner 2026-11-08) ---------- */
 const MIST={n:128,res:8,col:[150,160,178],peak:.22,scale:[4,2.6],drift:[[5,1.6],[-2.6,3.8]],breath:[.23,.17],seeds:[11,29],
-  warp:22,wscale:2.6,smooth:'high',fscale:1.1,fray:.9,pale:.55,ahead:.35};
+  warp:22,wscale:2.6,smooth:'high',fscale:1.1,fray:.55,pale:.55,ahead:.35,ramp:[[.02,.6],[.3,.92]]};
 let MISTV=null;
 // (a field of mist: value noise over three lattices (8, 16 and 32 cells across, wrapping, so it tiles); its picture shaped into
 // wisps (cv), and the field itself stretched to 0..1 (v), for the edges)
@@ -53,7 +54,7 @@ function mistFog(E,x,y,w,h,cs,k,levels){
     else{
       // (the point it reads, pushed about by the slow field; the fine field fraying the threshold most where the fog is half)
       const px=X+(mistN(1,X,Y,ws,t)-.5)*2*W,py=Y+(mistN(1,X+977,Y+613,ws,t)-.5)*2*W,fn=mistN(0,X,Y,fs,t)-.5;
-      for(let i=0;i<nl;i++){const L=levels[i],s=fl[i]>=0?fl[i]:L.s(px,py,X,Y),g=s+fr*fn*4*s*(1-s),dn=.42*mistSm(.1,.48,g)+.58*mistSm(.38,.8,g),a=dn*L.a;
+      for(let i=0;i<nl;i++){const L=levels[i],s=fl[i]>=0?fl[i]:L.s(px,py,X,Y),g=s+fr*fn*4*s*(1-s),dn=.42*mistSm(MIST.ramp[0][0],MIST.ramp[0][1],g)+.58*mistSm(MIST.ramp[1][0],MIST.ramp[1][1],g),a=dn*L.a;
         // (a level with a haze: its thin edge that colour (pale: fog, not a shadow), its own colour from hz[0] to hz[1] of its
         // strength)
         if(L.haze){const u=mistSm(L.hz[0],L.hz[1],g),H=L.haze;cr+=(H[0]+(L.col[0]-H[0])*u-cr)*a;cg+=(H[1]+(L.col[1]-H[1])*u-cg)*a;cb+=(H[2]+(L.col[2]-H[2])*u-cb)*a}else{

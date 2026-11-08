@@ -18,8 +18,9 @@
 const WEATHER={on:true,
   // a region's side in tiles; how often a new front takes a neighbour's; the share of the loss a race at home in the climate feels
   cell:24,spread:.35,home:.5,
-  // seconds (real) the drawing eases from one weather to the next; the share of the particles drawn with reducedMotion, and their pace
-  ease:1.5,calm:.35,slow:.3,
+  // seconds (real) the drawing eases from one weather to the next; the share of the particles drawn with reducedMotion, and their pace;
+  // the size (px) of a haze band's soft cloud, drawn up over the view (gfx/weather.js band)
+  ease:1.5,calm:.35,slow:.3,band:[64,32],
   // each climate's weights (a kind missing never comes there: no sandstorm in the frost, no blizzard in the desert)
   climates:{
     grass:{clear:5,cloudy:3,rain:2.5,storm:.8,fog:1.2},

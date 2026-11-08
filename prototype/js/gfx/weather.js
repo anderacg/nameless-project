@@ -39,16 +39,25 @@ const WeatherArt={
     ctx.fillStyle='rgba('+c[0]+','+c[1]+','+c[2]+','+(c[3]*a).toFixed(3)+')';
     ctx.fillRect(0,0,vw,vh);
   },
-  // (a haze, and its bands drifting across, lighter and darker)
+  // (a haze, and its bands drifting across, lighter and darker: each a soft cloud (band), drawn up smooth, so no edge shows (the
+  // owner, 2026-11-08: "soft edge"); twice its band's height, thickest along its middle)
   veil(A,a,t,vw,vh){
-    const c=A.veil;
+    const c=A.veil,sb=this.band(c);
     this.fill(c,a,vw,vh);
-    ctx.fillStyle='rgb('+c[0]+','+c[1]+','+c[2]+')';
+    ctx.imageSmoothingEnabled=true;
     for(let i=0;i<(A.bands||0);i++){
-      const bh=vh*(.12+.12*hash(i,1,77)),y=(hash(i,2,77)*vh+Math.sin(t*.2+i)*8)|0,x=((hash(i,3,77)*vw*2+t*(10+14*hash(i,4,77)))%(vw*2))-vw;
+      const bh=vh*(.12+.12*hash(i,1,77)),y=hash(i,2,77)*vh+Math.sin(t*.2+i)*8,x=((hash(i,3,77)*vw*2+t*(10+14*hash(i,4,77)))%(vw*2))-vw;
       ctx.globalAlpha=c[3]*a*.6;
-      ctx.fillRect(Math.round(x),y,vw,Math.round(bh));
+      ctx.drawImage(sb,x-vw*.1,y-bh*.5,vw*1.2,bh*2);
     }
+  },
+  // (a band's soft cloud in colour c, made once: faded toward its ends and its top and bottom)
+  bands:{},
+  band(c){
+    const k=c.slice(0,3).join();if(this.bands[k])return this.bands[k];
+    const W=WEATHER.band[0],H=WEATHER.band[1],sm=f=>f<=0?0:f>=1?1:f*f*(3-2*f);
+    return this.bands[k]=mkc(W,H,g=>{const d=g.createImageData(W,H);for(let y=0;y<H;y++)for(let x=0;x<W;x++){const o=(y*W+x)*4,u=(x+.5)/W,v=(y+.5)/H;
+      d.data[o]=c[0];d.data[o+1]=c[1];d.data[o+2]=c[2];d.data[o+3]=Math.round(255*sm(Math.min(u,1-u)/.3)*Math.pow(Math.sin(Math.PI*v),1.5))}g.putImageData(d,0,0)});
   },
   // (rain, snow or sand: n particles at full strength; streaks of len px along their way, or flakes that sway)
   fall(F,a,t,vw,vh){
