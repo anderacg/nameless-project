@@ -1,0 +1,947 @@
+{
+  "type": "ashmark-rig-project",
+  "version": 1,
+  "config": {
+    "race": "human",
+    "style": "crop",
+    "beard": false,
+    "beardStyle": "beardF",
+    "skin": "skin",
+    "hair": "brown",
+    "team": "blue",
+    "eyes": false,
+    "seed": 23,
+    "weapon": null,
+    "shield": null,
+    "uniform": [
+      [
+        "hose",
+        "leather"
+      ],
+      [
+        "boots",
+        "leather"
+      ],
+      [
+        "shirt",
+        "linen"
+      ],
+      [
+        "tunic",
+        "leather",
+        {
+          "cover": "cbpt"
+        }
+      ],
+      [
+        "belt",
+        "leather"
+      ]
+    ],
+    "ramps": {}
+  },
+  "hidden": [],
+  "parts": [
+    {
+      "id": "blue-cuff",
+      "name": "Blue wrist cuff",
+      "bone": "handR",
+      "material": "team",
+      "behind": false,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "pixels": [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        1,
+        1,
+        1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ]
+    }
+  ],
+  "clips": [
+    {
+      "id": "wave",
+      "name": "Wave",
+      "loop": true,
+      "interpolate": false,
+      "frames": [
+        {
+          "duration": 150,
+          "pose": {}
+        },
+        {
+          "duration": 140,
+          "pose": {
+            "armR": {
+              "angle": 45,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        {
+          "duration": 140,
+          "pose": {
+            "armR": {
+              "angle": 90,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        {
+          "duration": 140,
+          "pose": {
+            "armR": {
+              "angle": 140,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 20,
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        {
+          "duration": 140,
+          "pose": {
+            "armR": {
+              "angle": 125,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 20,
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        {
+          "duration": 140,
+          "pose": {
+            "armR": {
+              "angle": 145,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 20,
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        {
+          "duration": 140,
+          "pose": {
+            "armR": {
+              "angle": 90,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        {
+          "duration": 140,
+          "pose": {
+            "armR": {
+              "angle": 45,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "idle",
+      "name": "Engine idle",
+      "loop": true,
+      "interpolate": false,
+      "frames": [
+        {
+          "duration": 150,
+          "pose": {
+            "pelvis": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "chest": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "head": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "armR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "handR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "thighR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "footR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "armL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "handL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "thighL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "footL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "walk",
+      "name": "Engine walk",
+      "loop": true,
+      "interpolate": false,
+      "frames": [
+        {
+          "duration": 150,
+          "pose": {
+            "pelvis": {
+              "angle": 0,
+              "x": 0,
+              "y": 1
+            },
+            "chest": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "head": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "armR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "handR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "thighR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinR": {
+              "angle": 0,
+              "x": 0,
+              "y": -1
+            },
+            "footR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "armL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "handL": {
+              "angle": 0,
+              "x": 1,
+              "y": 0
+            },
+            "thighL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinL": {
+              "angle": 0,
+              "x": 0,
+              "y": -1
+            },
+            "footL": {
+              "angle": 0,
+              "x": 0,
+              "y": -1
+            }
+          }
+        },
+        {
+          "duration": 150,
+          "pose": {
+            "pelvis": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "chest": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "head": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "armR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "handR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "thighR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinR": {
+              "angle": 0,
+              "x": 2,
+              "y": 0
+            },
+            "footR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "armL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "handL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "thighL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinL": {
+              "angle": 0,
+              "x": -2,
+              "y": 0
+            },
+            "footL": {
+              "angle": 0,
+              "x": 0,
+              "y": -1
+            }
+          }
+        },
+        {
+          "duration": 150,
+          "pose": {
+            "pelvis": {
+              "angle": 0,
+              "x": 0,
+              "y": 1
+            },
+            "chest": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "head": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "armR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "handR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "thighR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinR": {
+              "angle": 0,
+              "x": 3,
+              "y": -1
+            },
+            "footR": {
+              "angle": 0,
+              "x": 1,
+              "y": -1
+            },
+            "armL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "handL": {
+              "angle": 0,
+              "x": -1,
+              "y": -1
+            },
+            "thighL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinL": {
+              "angle": 0,
+              "x": -3,
+              "y": -1
+            },
+            "footL": {
+              "angle": 0,
+              "x": -1,
+              "y": 0
+            }
+          }
+        },
+        {
+          "duration": 150,
+          "pose": {
+            "pelvis": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "chest": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "head": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "armR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "handR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "thighR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinR": {
+              "angle": 0,
+              "x": 2,
+              "y": 0
+            },
+            "footR": {
+              "angle": 0,
+              "x": 0,
+              "y": -1
+            },
+            "armL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "handL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "thighL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinL": {
+              "angle": 0,
+              "x": -2,
+              "y": 0
+            },
+            "footL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "strike",
+      "name": "Engine strike",
+      "loop": false,
+      "interpolate": false,
+      "frames": [
+        {
+          "duration": 150,
+          "pose": {
+            "pelvis": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "chest": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "head": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "armR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmR": {
+              "angle": 0,
+              "x": -1,
+              "y": -2
+            },
+            "handR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "thighR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "footR": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "armL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "forearmL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "handL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "thighL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "shinL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            },
+            "footL": {
+              "angle": 0,
+              "x": 0,
+              "y": 0
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "editor": {
+    "clip": 0,
+    "frame": 3,
+    "bone": "armR",
+    "part": 0,
+    "view": 32,
+    "left": false,
+    "ghost": false,
+    "show": true
+  }
+}

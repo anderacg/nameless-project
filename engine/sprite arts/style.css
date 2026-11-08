@@ -3,3 +3,8 @@
 
 /* Keep the live sprite reachable while editing on a phone. */
 #live-mini{position:fixed;right:14px;bottom:14px;z-index:5;padding:5px 8px;background:#15241ef5;border-color:var(--gold);font-size:11px;box-shadow:0 3px 15px #0009}#live-mini[hidden]{display:none}#live-mini canvas{width:80px;height:80px;margin:auto}@media(min-width:851px){#live-mini{display:none}}
+
+/* Bone animation and pixel-part authoring. */
+.rig-workspace{display:grid;grid-template-columns:minmax(280px,1fr) minmax(300px,1fr);gap:24px;align-items:start}.rig-canvas-wrap{border:1px solid var(--line);border-radius:6px;overflow:hidden}#rig-canvas{width:100%;height:auto;touch-action:none;cursor:crosshair}.rig-timeline{display:flex;gap:7px;overflow:auto;padding:8px 0;max-width:100%}.rig-timeline button{flex:none;min-width:55px;min-height:50px;padding:6px}.rig-timeline .selected{border-color:var(--gold);background:#4e4a2b}.rig-adjustments input{display:block;width:100%;min-height:30px;padding:0}.rig-adjustments output{float:right;color:var(--gold)}#rig-part-canvas{max-width:100%;width:256px;height:auto;touch-action:none;border:1px solid var(--line);cursor:crosshair}#rig-brushes button{min-width:38px;padding:7px}.brush-selected{outline:2px solid var(--gold)}#rig-status{color:var(--gold)}#rig-studio button:disabled{opacity:.45;cursor:default}@media(max-width:850px){.rig-workspace{grid-template-columns:1fr}.rig-canvas-wrap{max-width:520px;margin:auto}.rig-workspace .fields{grid-template-columns:1fr 1fr}}
+
+header nav a{display:inline-block;color:var(--gold);border:1px solid var(--line);border-radius:5px;padding:10px 14px;text-decoration:none}html{scroll-behavior:smooth}#rig-studio,#appearance{scroll-margin-top:14px}
