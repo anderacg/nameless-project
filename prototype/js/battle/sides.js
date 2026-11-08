@@ -149,7 +149,7 @@ class BattleSides{
    else if(o.mapKind==='caravan'&&r.playerKills.length>=r.start/2){if(e.kind==='caravan'&&o===e.ref&&e.seize)o.seize();else o.loot();r.handled=true}
    else if(o.mapKind==='band'&&o.ld&&r.playerLeader){spoilsWon({kind:'party',ref:o});if(down)chiefEscapes(o.ld);else captureChief(o.ld);o.ld=null}
   }
-  this.continueFight();let heading=b.win?'Victory':b.retreat?'Withdrawn':'Defeat',detail=(b.byAllies?'Your army fell, but '+(b.units.some(u=>u.team!==0&&u.hp>0&&this.relation(0,u.team)>0)?'your allies':'the others')+' held the field. ':'')+'Your army defeated '+kills.length+' foes. '+(b.win?'The spoils are shared by each army’s part in the fight: yours '+Math.round(mine*100)+'%.'+(down&&spoils.length?NONE_TAKEN:''):'You keep only what your men learned.');
+  this.continueFight();let heading=b.win?'Victory':b.retreat?'Withdrawn':'Defeat',detail=(b.byAllies?'Your army fell, but '+(b.units.some(u=>u.team!==0&&u.hp>0&&this.relation(0,u.team)>0)?'your allies':'the others')+' held the field. ':'')+'Your army defeated '+kills.length+(kills.length===1?' foe. ':' foes. ')+(b.win?'The spoils are shared by each army’s part in the fight: yours '+Math.round(mine*100)+'%.'+(down&&spoils.length?NONE_TAKEN:''):'You keep only what your men learned.');
   if(b.win){this.thanks();
    // (as a battle of two gives (resolution.js conclude, engage.js reinfAfter): the holding near the fight thinks better of you, and a
    // common enemy cleared on a realm's land with its men beside you, that realm more)

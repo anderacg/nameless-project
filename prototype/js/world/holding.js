@@ -37,7 +37,9 @@ class HoldingObject extends WorldObject{
     return boxReach(this,{x0:Math.min(b.x0,g.x-h),y0:Math.min(b.y0,g.y-h),x1:Math.max(b.x1,g.x+h),y1:Math.max(b.y1,g.y+h)})}
   draw(ents,cam,V){holdingEnts(this,ents,cam,V)}
   mapDot(V){return seenTile(this.tx,this.ty)?[this._memCol||facCol(this),3]:null}// (its colour as you last saw it)
-  tip(){return '<b>'+(Discovery.named(this)?this.name:'Unknown')+'</b><small>'+cap1(this.label)+(this.owner?' of the '+tipFac(this.owner):'')+' · '+WALL_N[wallOf(this)]+'</small>'+(closedNow(this)?'<small class="bad">Under siege</small>':'')+'<span class="act">'+(hostileTo(this.owner)?'Click: attack it':'Click: enter')+'</span>'}
+  // (its gate will not have you yet (the padlock under it on the map: structures.js holdingLabel; world/gates.js): what it asks)
+  gateTip(){if(!GATES.on)return '';const a=Gates.admits(this);return a.ok?'':'<small class="bad">Its gate will not let you in: '+htmlText(a.sealed?a.why||'sealed':(a.need||[]).join(', or '))+'</small>'}
+  tip(){return '<b>'+(Discovery.named(this)?this.name:'Unknown')+'</b><small>'+cap1(this.label)+(this.owner?' of the '+tipFac(this.owner):'')+' · '+WALL_N[wallOf(this)]+'</small>'+(closedNow(this)?'<small class="bad">Under siege</small>':'')+this.gateTip()+'<span class="act">'+(hostileTo(this.owner)?'Click: attack it':'Click: enter')+'</span>'}
 }
 
 /* a holding: the plain data of places.js (and what the world adds to it), with what it is and what it does from its kind.

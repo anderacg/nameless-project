@@ -55,7 +55,7 @@ class ArmyReport{
  // (your hero's experience all told: every level's and the present one's, so a level gained in between counts whole)
  static tally(){const h=leaderOf(P);const xp=h.profProgress();// (its growth all told: its proficiencies' progress, characters.js)
   return {gold:P.gold,renown:P.renown,xp,prisoners:prisonerCount()}}
- since(){const n=ArmyReport.tally(),m=this.mark;return {gold:n.gold-m.gold,renown:n.renown-m.renown,xp:n.xp-m.xp,prisoners:n.prisoners-m.prisoners}}
+ since(){const n=ArmyReport.tally(),m=this.mark;return {gold:n.gold-m.gold,renown:n.renown-m.renown,xp:Math.round(n.xp-m.xp),prisoners:n.prisoners-m.prisoners}}// (experience a whole number: the owner, 2026-11-08)
  // (added to the report its settlement showed)
  present(){const V=G.lootView;if(!V?.report)return;V.report.armies=this.armies;V.report.rewards=this.since();renderLoot()}
 }
@@ -120,7 +120,7 @@ class BattleResolution{
       bounty+=reinfCut(e,res,this.battle?.sides);// (the lords and watches beside you take their share of the gold, and of the renown: engage.js)
       P.gold+=res.gold;
       const fame=res.fame==null?Math.max(2,Math.round(kills/2)):res.fame;if(fame)repNear(P.x,P.y,fame);
-      html='<h2>Victory</h2><p>You defeated '+(e.kind==='monster'?(kills>1?kills+' ':'the ')+MONSTERS[e.ref.id].n.toLowerCase():kills+' '+(e.kind==='lord'?'soldiers':'foes'))+(taken?' and took '+taken+' prisoner'+(taken>1?'s':''):'')+'.'+bounty+'</p>'+moodLine;
+      html='<h2>Victory</h2><p>You defeated '+(e.kind==='monster'?(kills>1?kills+' ':'the ')+MONSTERS[e.ref.id].n.toLowerCase():kills+' '+(e.kind==='lord'?(kills===1?'soldier':'soldiers'):(kills===1?'foe':'foes')))+(taken?' and took '+taken+' prisoner'+(taken>1?'s':''):'')+'.'+bounty+'</p>'+moodLine;
       log('Victory. +'+res.gold+' gold, renown now '+P.renown+'.','good','war');mood('win');
     }else if(retreat){
       // as fleeing on the map (fleeOdds): a fight you started you simply leave; else a race. Got away, they lose your trail for a

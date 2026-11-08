@@ -29,7 +29,7 @@ function lootHtml(lost,saved){
   const L=G.loot;if(!L)return '';
   const a=L.from,b=lootSnap(),chips=[],sign=n=>(n>0?'+':'−')+Math.abs(n);
   if(b.gold!==a.gold)chips.push(['Gold',sign(b.gold-a.gold),b.gold>a.gold?'gold':'bad']);
-  if(b.xp>a.xp)chips.push(['XP','+'+(b.xp-a.xp)+(b.lv>a.lv?' · level '+b.lv+'!':''),b.lv>a.lv?'gold':'']);
+  if(Math.round(b.xp-a.xp)>0)chips.push(['XP','+'+Math.round(b.xp-a.xp)+(b.lv>a.lv?' · level '+b.lv+'!':''),b.lv>a.lv?'gold':'']);
   if(b.renown!==a.renown)chips.push(['Renown',sign(b.renown-a.renown),'']);
   const pk=[...new Set([...Object.keys(a.pris),...Object.keys(b.pris)])],pd=pk.map(k=>[k,(b.pris[k]||0)-(a.pris[k]||0)]).filter(([,n])=>n),pn=pd.reduce((s,[,n])=>s+n,0);
   if(pd.length)chips.push(['Prisoners',pn>0?'+'+pn+' ('+pd.filter(([,n])=>n>0).map(([k,n])=>n+' '+ST[k].n.toLowerCase()).join(', ')+')':pn<0?sign(pn)+', escaped':'±0',pn>0?'good':'bad']);
@@ -61,7 +61,8 @@ function battleReportHtml(report){
 // earned by it; none for a report without them
 function battleArmiesHtml(report){
   const A=report.armies,R=report.rewards;if(!A||!A.length)return '';const td=(n,c)=>'<td class="'+(n?c:'muted')+'">'+n+'</td>';
-  const sign=(n,w,c)=>n?'<span class="'+(n>0?c:'bad')+'">'+(n>0?'+':'−')+Math.abs(n)+' '+w+'</span>':'',got=R?[sign(R.gold,'gold','gold'),sign(R.renown,'renown','good'),sign(R.xp,'experience','good'),R.prisoners>0?'<span>'+R.prisoners+' prisoner'+(R.prisoners>1?'s':'')+' taken</span>':''].filter(Boolean):[];
+  const sign=(n,w,c)=>Math.round(n)?'<span class="'+(n>0?c:'bad')+'">'+(n>0?'+':'−')+Math.round(Math.abs(n))+' '+w+'</span>':'',// (whole numbers: the owner, 2026-11-08)
+  got=R?[sign(R.gold,'gold','gold'),sign(R.renown,'renown','good'),sign(R.xp,'experience','good'),R.prisoners>0?'<span>'+R.prisoners+' prisoner'+(R.prisoners>1?'s':'')+' taken</span>':''].filter(Boolean):[];
   return '<div class="lab">Armies in the battle</div><div class="battle-report-scroll" tabindex="0" role="region" aria-label="Army outcomes"><table class="army-report"><thead><tr><th scope="col">Army</th><th scope="col">Fought</th><th scope="col">Fallen</th><th scope="col">Withdrew</th><th scope="col">Fled</th><th scope="col">Standing</th><th scope="col">Kills</th></tr></thead><tbody>'+
     A.map((a,i)=>'<tr data-report-army="'+i+'"'+(a.stance==='Your army'?' class="mine"':'')+'><th scope="row"><span class="army-flag" style="background:'+htmlText(a.colour)+'" aria-hidden="true">⚑</span>'+htmlText(a.name)+(a.name!==a.stance?'<small>'+htmlText(a.stance)+'</small>':'')+(a.score!=null?'<small class="army-score">Score <b>'+a.score+'</b>'+(a.share!=null?' · '+Math.round(a.share*100)+'% of the spoils':'')+'</small>':'')+'</th><td>'+a.start+'</td>'+td(a.fallen,'bad')+td(a.withdrew,'')+td(a.fled,'gold')+td(a.standing,'')+td(a.kills,'good')+'</tr>').join('')+'</tbody></table></div>'+
     (A[0].stance==='Your army'&&!A[0].standing&&A.some(a=>a.standing&&a!==A[0])?'<p class="muted">Still on the field when your army left: '+A.filter(a=>a.standing&&a!==A[0]).map(a=>htmlText(a.name)+' ('+a.standing+')').join(', ')+'. The fight goes on without you.</p>':'')+

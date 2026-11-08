@@ -74,14 +74,21 @@ class BandBrain extends Brain{
   think(b,d,night){
     if(inFight(b))return false;
     const v=this.look(b);this.cool(b,d);
-    if(b.waylay||!TravelAwareness.sees(b)&&Waylay.consider(b,d)){const r=Waylay.step(b,moveStep(partySpeed(b,b.troops),d),d);if(r==='met')return true;if(r)return false}// (lying in wait: waylay.js)
-    const st=stance(b.power()*b.nerve,b),fear=fearOf(b,st),home=night&&campNear(b,fear),sp=moveStep(partySpeed(b,b.troops),d);
+    const st=stance(b.power()*b.nerve,b),fear=fearOf(b,st),sp=moveStep(partySpeed(b,b.troops),d);
+    if(!fear&&this.hunt(b,sp)){b.waylay=null;return false}// (a caravan it can take, ridden down before all else but its fear of you: BAND_HUNT)
+    if(b.waylay||!TravelAwareness.sees(b)&&Waylay.consider(b,d)){const r=Waylay.step(b,sp,d);if(r==='met')return true;if(r)return false}// (lying in wait: waylay.js)
+    const home=night&&campNear(b,fear);
     if(fear&&home||b.cool>0&&!fear||!stanceMove(b,st,v.d,v.dx,v.dy,TravelAwareness.sees(b)?travelDetection(b).range:0,sp,true)){
       if(home){const s=fear?sp*.85:moveStep(16,d);Router.travel(b,home,s)||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),s));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
       else if(!(b.lootGo&&FieldLootQuest.seek(b,d))){b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3;if(b.haunt&&Math.hypot(b.haunt.x-b.x,b.haunt.y-b.y)>b.hauntR*TILE)b.a=Math.atan2(b.haunt.y-b.y,b.haunt.x-b.x)}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(12,d))}}
     if(this.canMeet(b,v.d)){meetBand(b);return true}
     return false;
   }
+  // (bandits, goblins, looters: the nearest caravan in sight it thinks it can take, ridden down (true); the caravan's own brain starts
+  // the fight when it is upon it (CaravanBrain: its guards against it), data/outlaws.js BAND_HUNT)
+  hunt(b,sp){const X=BAND_HUNT;if(!X.on||b.cool>0||b.cvT)return false;const mine=b.power()*(b.nerve||1)*X.dare;let c=null,bd=X.see;
+    for(const o of W.caravans){if(o.gone||o.idle||inFight(o))continue;const dd=Math.hypot(o.x-b.x,o.y-b.y);if(dd<bd&&o.power()<=mine){bd=dd;c=o}}
+    if(!c)return false;b.idle=false;const s=sp*X.pace,x0=b.x,y0=b.y;if(!Router.travel(b,{x:c.x,y:c.y},s)||b.x===x0&&b.y===y0)walk(b,c.x-b.x,c.y-b.y,Math.min(bd,s));return true}
 }
 // (a band that fought in your battle, against you or beside you, knows where your army stands: the weaker leaves the field
 // remembering every group of it (TravelAwareness), afraid of it as if it had just seen it; battle/sides.js puts it back on the map.

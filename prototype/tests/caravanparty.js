@@ -82,5 +82,17 @@ try{
  {c=send();W.caravans=[c];c.guards=5;c.fight='fx';const f=t.forceOf(c);ok(f.kind==='caravan'&&f.src===c&&f.troops.length===5&&f.army,'in a battle you join its guards fight as a force');
   f.troops=f.troops.slice(0,2);t.syncForces([f]);ok(c.guards===2&&c.troops.length===2,'and what is left of them is written back');
   c.fight=null;c.troops=[];t.freeParty(c);ok(c.guards===1&&c.troops.length===1,'a caravan freed with none keeps one guard (as before)');W.caravans=[]}
+ // ---- bandits ride a caravan down to rob it (the owner, 2026-11-08: "bandits or goblins, looters should rob caravans"; brains.js
+ // BandBrain hunt, data/outlaws.js BAND_HUNT): a band in sight of a caravan it can take falls on it; not one too well guarded
+ {c=send();t.W.caravans=[c];c.guards=1;c.troops=[];t.freeParty(c);c.cool=0;t.bandits.length=0;let b=null;for(let i=0;i<20&&!b;i++){t.spawnBandit(false);b=t.bandits[0]}
+  const spot=[0,1,2,3,4,5,6,7].map(k=>[c.x+Math.cos(k*.785)*70,c.y+Math.sin(k*.785)*70]).find(([x,y])=>t.passable(t.terrAt(x,y)))||[c.x+70,c.y];
+  if(!b)ok(false,'(a band to test)');else{const X=t.BAND_HUNT,bx=spot[0],by=spot[1],keepP=[P.x,P.y];b.x=bx;b.y=by;b.cool=0;b.waylay=null;b.cvT=0;P.x=c.x+4000;P.y=c.y;
+   try{const d0=Math.hypot(b.x-c.x,b.y-c.y);ok(X.on&&t.BRAINS.band.hunt(b,4)&&Math.hypot(b.x-c.x,b.y-c.y)<d0,'a band 70 px from a lightly guarded caravan rides at it');
+    b.x=bx;b.y=by;let met=false;for(let i=0;i<900&&!met;i++){t.BRAINS.band.think(b,1/30,false);t.BRAINS.caravan.think(c,1/30);met=!!(c.fight||b.fight)}
+    ok(met,'and falls on it: the caravan\'s guards fight it out (its fight with the band begun)');
+    {const c2=send();t.W.caravans=[c2];c2.cool=0;t.bandits.length=0;t.bandits.push(b);b.fight=null;b.cool=0;b.cvT=0;b.x=c2.x;b.y=c2.y;const sp2=[0,1,2,3,4,5,6,7].map(k=>[c2.x+Math.cos(k*.785)*60,c2.y+Math.sin(k*.785)*60]).find(([x,y])=>t.passable(t.terrAt(x,y)))||[c2.x+60,c2.y];b.x=sp2[0];b.y=sp2[1];
+     const dare=X.dare,need=c2.power()/b.power()/(b.nerve||1);X.dare=need*.5;const no=!t.BRAINS.band.hunt(b,1);X.dare=need*2;b.x=sp2[0];b.y=sp2[1];const yes=t.BRAINS.band.hunt(b,1);X.dare=dare;
+     ok(no&&yes,'a caravan too strong for it (its guards '+Math.round(c2.power())+' over what it dares): left alone; within it, ridden at')}
+    X.on=false;c.guards=1;c.troops=[];t.freeParty(c);b.cool=0;ok(!t.BRAINS.band.hunt(b,1),'BAND_HUNT off: no hunting')}finally{X.on=true;P.x=keepP[0];P.y=keepP[1];t.bandits.length=0;t.W.caravans=[]}}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

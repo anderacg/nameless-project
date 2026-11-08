@@ -13,3 +13,8 @@ const OUTLAWS={on:true,kinds:[['band_looter','Looter','militia'],['band_cutthroa
 OUTLAWS.kinds.forEach(([id,n,base])=>{ST[id]={...ST[base],n,look:id,race:'human'}});
 // (an outlaw for a kind rolled: of two, by the roll's own fraction, so no draw more is made)
 const outlawOf=(k,r)=>{const L=OUTLAWS.on&&OUTLAWS.pick[k];return L?L[Math.floor((r*997)%1*L.length)]:k};
+// a band hunting a caravan (the owner, 2026-11-08: "bandits or goblins, looters should rob caravans"; world/brains.js BandBrain
+// hunt): one in sight (see, px) whose guards it thinks it can take (the caravan's power at most dare × its own, by its nerve), not
+// while it fears you, lies in wait or cools from its last fight; it rides at pace × its speed, and its fight with the caravan's guards
+// (fights.js) plunders it if it wins
+const BAND_HUNT={on:true,see:110,dare:1.15,pace:1};
