@@ -46,7 +46,7 @@ Kit.suite(({ok,info})=>{
     ok(b&&b.inside==='cellar'&&b.interior.X.box,'a ruin’s guardians: fought in its cellars, square-cut');t.B=null;t.fieldDone();Kit.world()}}
   // ---- two kinds of hideout (the owner, 2026-11-06): a camp of tents, fought on the map as before; a bandit lair (a cave's mouth
   // or a dug tunnel), fought inside
-  {const H=W.sites.filter(s=>s instanceof t.Hideout&&!s.within),camp=H.find(s=>!s.tunnel),lairs=H.filter(s=>s.tunnel);
+  {const H=W.sites.filter(s=>s instanceof t.Hideout&&!(s instanceof t.GoblinCamp)&&!s.within),camp=H.find(s=>!s.tunnel),lairs=H.filter(s=>s.tunnel);
    ok(camp&&lairs.length&&lairs.length<H.length&&lairs.every(s=>/lair|tunnels|warren/i.test(s.name)&&s.T.n==='Bandit lair')&&!/lair/i.test(camp.name),'two kinds: '+(H.length-lairs.length)+' hideouts (tents), '+lairs.length+' bandit lairs ('+lairs.filter(s=>s.lairLook==='cave').length+' caves, '+lairs.filter(s=>s.lairLook==='tunnel').length+' tunnels)');
    const rec=JSON.parse(JSON.stringify(lairs[0]));const back=t.siteOf(rec);ok(back.tunnel&&back.name===lairs[0].name,'a lair kept by its place: the same after a save');
    Kit.world();Kit.goTo(camp.x,camp.y+30);camp.enter();t.act('site-ask');ok(!/Into the /.test(Kit.panel())&&/Attack the/.test(Kit.text()),'a hideout’s Attack: its confirm, the whole band');t.act('site-attack');

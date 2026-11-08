@@ -476,8 +476,9 @@ class Hideout extends Lair{
   /* (the owner, 2026-11-06: two kinds of hideout) a bandit hideout, a camp of tents in a ring of stakes, fought on the map as a
      camp; or a bandit lair (HIDEOUT_LAIR.share of them, by a hash of its tile: no draw, never saved), its mouth a cave in the
      hillside where hills or peaks stand by it, else a timbered tunnel dug into the ground, fought inside (battle/interior.js) */
-  get lairLook(){if(this.within||hash(this.tx,this.ty,HIDEOUT_LAIR.salt)>=HIDEOUT_LAIR.share)return null;let n=0;
-    const r=HIDEOUT_LAIR.r;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const k=tAt(this.tx+i,this.ty+j);if(k===T_HILL||k===T_MOUNT)n++}return n>=HIDEOUT_LAIR.hills?'cave':'tunnel'}
+  get lairLook(){if(this.within||hash(this.tx,this.ty,HIDEOUT_LAIR.salt)>=HIDEOUT_LAIR.share)return null;return this.hilly?'cave':'tunnel'}
+  // (hills or peaks round it: HIDEOUT_LAIR.hills of them within r tiles)
+  get hilly(){let n=0;const r=HIDEOUT_LAIR.r;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const k=tAt(this.tx+i,this.ty+j);if(k===T_HILL||k===T_MOUNT)n++}return n>=HIDEOUT_LAIR.hills}
   get tunnel(){return !!this.lairLook}
   get T(){return this.tunnel?HIDEOUT_LAIR.T:SITE_TYPES[this.type]}
   // (a lair its own name: HIDEOUT_LAIR.names)
@@ -583,13 +584,19 @@ class TravellersCamp extends Site{
     else if(a==='site-song'&&!s.special&&P.gold>=15){s.special=true;P.gold-=15;P.renown+=3;P.morale=clamp(P.morale+5,0,100);done('By the next town, children are singing of you. (+3 renown)')}
     return true}
 }
-/* a goblin camp (data/goblins.js GOBLINS): a hideout of the goblins' own, on the same wild land, never a tunnel; the Ashgor Horde's
-   yurts in a ring of stakes (structures.js SITE_CULTURE); a bigger, weaker garrison (GOBLINS.camp) under a boss, a pile of stolen
-   goods in its plunder; its own warbands (world/goblins.js) shelter in it by night and ride out from it */
+/* a goblin camp (data/goblins.js GOBLINS): a hideout of the goblins' own, on the same wild land, never a timbered tunnel; the Ashgor
+   Horde's yurts in a ring of stakes (structures.js SITE_CULTURE); or, among hills (hilly: the owner, 2026-11-08, "add goblin warrens
+   near hills"), a warren, its mouth a cave in the hillside, stormed inside as a bandit lair is (battle/interior.js; GOBLINS.warren).
+   A bigger, weaker garrison (GOBLINS.camp) under a boss, a pile of stolen goods in its plunder; its own warbands (world/goblins.js)
+   shelter in it by night and ride out from it */
 class GoblinCamp extends Hideout{
-  get lairLook(){return null}
+  get lairLook(){return GOBLINS.warren.on&&this.hilly?'cave':null}
+  get T(){return this.tunnel?GOBLINS.warren.T:SITE_TYPES[this.type]}
+  get lairCol(){return GOBLINS.warren.banner}
   get tune(){return GOBLINS.camp}
-  setup(sites){this.band='goblins';this.name=unusedName(GOBLINS.names,sites);this.ld=newChief('goblins',this.newLv(),sites)}
+  // (its name in its own word: a warren's Warren, a camp's Camp; a name taken in either word taken; one draw, as before)
+  setup(sites){this.band='goblins';const camp=n=>n.replace(/ Warren$/,' Camp'),used=new Set(sites.map(o=>camp(o.name))),free=GOBLINS.names.filter(n=>!used.has(camp(n))),
+    n=camp(unusedName(free.length?free:GOBLINS.names,[]));this.name=this.tunnel?n.replace(/ Camp$/,' Warren'):n;this.ld=newChief('goblins',this.newLv(),sites)}
   shelters(b){return b.camp===this.i}
   // (stormed: its own, as scouted or rolled now, and its warbands sheltering in it tonight, as a bandit camp's: world.js campFight)
   attack(own,inside){startEncounter({kind:'camp',ref:this,list:(own||this.foes()).concat(this.sheltering()),band:this.band,inside:inside||Interior.pick()})}

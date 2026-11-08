@@ -23,7 +23,13 @@ Kit.suite(({ok,info})=>{
  ok(C.length>=Math.min(N,4)&&C.every(s=>s instanceof t.GoblinCamp&&wl.at[s.ty*t.MW+s.tx]===1&&holdD(s)>=H.far&&t.Hideout.clear(s.tx,s.ty)&&t.Hideout.fits(s.tx,s.ty)),C.length+' camps, each on the wild land '+H.far+'+ tiles from every holding, on clear ground off the estates');
  {const hid=W.sites.filter(s=>s.type==='hideout'),gap=Math.min(Infinity,...C.map(a=>Math.min(Infinity,...hid.map(b=>Math.hypot(a.tx-b.tx,a.ty-b.ty)))));
   ok(gap>=t.SITE_GAP.goblins.hideout,'apart from the hideouts ('+gap.toFixed(1)+' tiles at the least)')}
- ok(C.every(s=>s.band==='goblins'&&GB.names.includes(s.name)&&!s.tunnel&&s.ld&&t.CHIEF_NAMES.goblins[0].includes(s.ld.name.split(' ')[0])),'each its own name ('+C.slice(0,3).map(s=>s.name).join(', ')+'), no tunnel, a goblin boss ('+C[0].ld.name+')');
+ const root=n=>n.replace(/ (Camp|Warren)$/,'');
+ ok(C.every(s=>s.band==='goblins'&&GB.names.some(n=>root(n)===root(s.name))&&s.lairLook!=='tunnel'&&s.ld&&t.CHIEF_NAMES.goblins[0].includes(s.ld.name.split(' ')[0]))&&new Set(C.map(s=>root(s.name))).size===C.length,'each its own name ('+C.slice(0,3).map(s=>s.name).join(', ')+'), never a dug tunnel, a goblin boss ('+C[0].ld.name+')');
+ // (warrens: the owner, 2026-11-08, "add goblin warrens near hills": a camp among hills a cave in the hillside, stormed inside)
+ {const Wr=C.filter(s=>s.tunnel),Cp=C.filter(s=>!s.tunnel),I0=t.INTERIOR.on;t.INTERIOR.on=true;// (the harness has interiors off)
+  ok(Wr.length>0&&Cp.length>0&&Wr.every(s=>s.hilly&&s.lairLook==='cave'&&s.T.n==='Goblin warren'&&!/ Camp$/.test(s.name)&&t.Interior.on({kind:'camp',ref:s}))&&Cp.every(s=>!s.hilly&&!/ Warren$/.test(s.name)&&!t.Interior.on({kind:'camp',ref:s})),
+   'among hills a warren ('+Wr.length+': '+Wr.slice(0,2).map(s=>s.name).join(', ')+'), a cave in the hillside stormed inside; elsewhere a camp of yurts ('+Cp.length+'), fought in the open');t.INTERIOR.on=I0;
+  const s=Wr[0];ok(s&&t.lairSprite(s,'grass')&&s.lairCol===GB.warren.banner,'its banner by its mouth the goblins\u2019 green')}
  {const s=C[0],c=t.climAt(s.x,s.y),m=t.PX.clusterModel({kind:'hideout',culture:'ashgor',seed:s.seed*131+7,env:c,snow:c==='frost'?1:0}),sp=t.siteSprite(s),hd=t.campSprite(s.seed,'hideout',c);
   const px=v=>v.getContext('2d').getImageData(0,0,v.width,v.height).data,same=(a,b)=>{const x=px(a),y=px(b);if(x.length!==y.length)return false;for(let i=0;i<x.length;i++)if(x[i]!==y[i])return false;return true};
   ok(m.culture==='ashgor'&&t.SITE_CULTURE.goblins==='ashgor'&&sp===t.campSprite(s.seed,'goblins',c)&&!same(sp,hd),'a camp is drawn as the Ashgor Horde builds (its yurts in a ring of stakes), not as a bandit hideout')}
