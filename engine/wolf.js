@@ -1,7 +1,7 @@
 'use strict';
 // Approved wolf art; the old renderer remains in place for every other creature.
 (function(PX){
-  const A=PX.WOLF_ART,BASE=400,ALPHA='alpha_wolf',ALPHA_SCALE=1.25,RIDER_X=8,MOUNT=Object.freeze({w:40,h:36,downH:26,ground:23,axis:19}),cache=new Map(),masters=new Map(),maps=new Map(),mounts=new Map();
+  const A=PX.WOLF_ART,BASE=400,ALPHA='alpha_wolf',ALPHA_SCALE=1.25,RIDER_X=8,GALLOP=[0,-1,-2,-1],MOUNT=Object.freeze({w:40,h:36,downH:26,ground:23,axis:19}),cache=new Map(),masters=new Map(),maps=new Map(),mounts=new Map();
   const pose=(clip,frame)=>{const c=A.clips[clip]||A.clips.idle;return BASE+c[0]+Math.max(0,Math.min(c[1]-1,Math.floor(frame||0)))};
   const sample=(clip,seconds)=>{const c=A.clips[clip];return pose(clip,Math.floor(Math.max(0,seconds)*1000/c[2])%c[1])};
   function index(p){
@@ -52,7 +52,7 @@
     const step=walk==null||walk<0?-1:walk%8,key=JSON.stringify([kind,step,pal.C,pal.M,down||false]);let saved=mounts.get(key);
     if(!saved){
       const clip=down?down==='belly'?'lie_down':'death_back':step<0?'idle':step>=4?'run':'walk',frame=down?7:step<0?0:(step%4)*2;
-      const source=alphaRender({pose:pose(clip,frame),team:1,v:0}),rgba=source.getContext('2d').getImageData(0,0,60,40).data,g=PX._beastKit.grid(MOUNT.w,down?MOUNT.downH-1:MOUNT.h),dy=down?-15:-4;
+      const source=alphaRender({pose:pose(clip,frame),team:1,v:0}),rgba=source.getContext('2d').getImageData(0,0,60,40).data,g=PX._beastKit.grid(MOUNT.w,down?MOUNT.downH-1:MOUNT.h),dy=down?-15:-4+(step>=4?GALLOP[step-4]:0);
       const ramps=[['b9b9ae','92958d','696f6b','414a48'],['797f7a','59635f','424c4b','303b3b'],['eee6d2','d6d0bc','a8aa9b','777f76']],color=(r,g,b)=>'#'+[r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');
       for(let y=0;y<40;y++)for(let x=10;x<50;x++){
         const i=(y*60+x)*4;if(!rgba[i+3])continue;const X=x-10,Y=y+dy;if(Y<0||Y>=g.h)continue;
