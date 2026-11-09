@@ -42,8 +42,8 @@ try{
  P.tree=[P.origin];P.sk.oneh.lv=20;ok(t.heroCombo().length===2,'the combo is two blows to begin with');
  ok(t.canTakeOf(P,'oneh_third')&&!t.canTakeOf(P,'oneh_push'),'Third Blow at One-Handed 15, the finishers not before 60');
  t.takeNode('oneh_third');ok(t.heroCombo().length===3,'Third Blow: a third blow');
- P.level=30;P.sk.oneh.lv=60;t.takeNode('oneh_whirl');t.takeNode('oneh_push');ok(t.heroFin()==='push','Crushing Finisher: its style');t.takeNode('oneh_stun');ok(t.heroFin()==='push','with both, the first learned rules');
- P.tree=[P.origin];P.sk.twoh.lv=60;['twoh_tough','twoh_leap','twoh_stun'].forEach(id=>t.takeNode(id));ok(t.heroCombo().length===3&&t.heroFin()==='stun','a finisher without a Third Blow (Two-Handed 60) brings its third blow');P.tree=[P.origin];
+ P.level=30;P.sk.oneh.lv=60;['oneh_p1','oneh_whirl','oneh_p2','oneh_push'].forEach(id=>t.takeNode(id));ok(t.heroFin()==='push','Crushing Finisher: its style');t.takeNode('oneh_stun');ok(t.heroFin()==='push','with both, the first learned rules');
+ P.tree=[P.origin];P.sk.twoh.lv=60;['twoh_tough','twoh_p1','twoh_leap','twoh_p2','twoh_stun'].forEach(id=>t.takeNode(id));ok(t.heroCombo().length===3&&t.heroFin()==='stun','a finisher without a Third Blow (Two-Handed 60) brings its third blow');P.tree=[P.origin];
  // companions level the same way
  delete P.comps.brann;t.compJoin('brann');const C=t.compOf('brann');
  if(C){ok(C.lv===0&&Object.values(C.sk).every(s=>s.lv===0),'a companion starts at level 0, every proficiency at 0 ('+C.lv+')');

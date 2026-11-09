@@ -51,7 +51,7 @@ try{
   ok(L2.tree.length===1+want&&!t.treePendingOf(L2).length,'a lord at 7 has grown his trees himself: a skill point a level ('+want+'), spent by a '+c2.cls()+' ('+L2.tree.slice(1).join(', ')+')')}
   ok(c2.actives().length>0,'its skills in his slots ('+c2.actives().join(', ')+')');
   ok(L2.gear.weapon===t.gearId(t.OUTFIT[c2.race][0],2)&&L2.gear.body===t.gearId('mail',2)&&L2.gear.head===t.gearId('helm',2),'and wears gear of his level (tier 2: '+[L2.gear.weapon,L2.gear.body,L2.gear.head].join(', ')+')');
-  ok(t.FIGHT_SK.every(k=>L2.sk[k]&&Math.abs(L2.sk[k].lv-2*PROF.per)<1e-9),'and fights with the skills of his level (One-Handed, Two-Handed, Archery 2 in power)');
+  ok(t.FIGHT_SK.every(k=>L2.sk[k]&&Math.abs(L2.sk[k].lv-Math.round(2*PROF.per))<1e-9),'and fights with the skills of his level (One-Handed, Two-Handed, Archery 2 in power)');
   L2.xp=0;const lv0=L2.lv,n0=L2.tree.length;let x=0;for(let i=0;i<5;i++)x+=t.LV_XP(L2.lv+i);c2.gainXp(x);ok(L2.lv===lv0+5&&L2.tree.length>n0&&!t.treePendingOf(L2).length&&L2.gearT===4,'five levels on: the next milestones, chosen at once, and better gear ('+(L2.tree.length-n0)+' more nodes, tier '+L2.gearT+')')}
  ok(['warrior','guardian','rider','archer','caster'].every(k=>t.CLASS_PICK[k].every(n=>t.TREE[n]&&t.TREE[n].prof)),'every class\u2019s favoured nodes are real nodes of the trees');
  {P.comps={tavi:{ap:0,role:''},elske:{ap:0,role:''}};ok(t.charOf(t.compInit('tavi'),'tavi').cls()==='archer'&&t.charOf(t.compInit('elske'),'elske').cls()==='caster','Tavi grows as an archer, Elske as a caster')}
@@ -62,9 +62,9 @@ try{
   const hb=t.charStats(cc).hp;cb.tree.push('block_skin');const ha=t.charStats(cc).hp;cb.tree.pop();ok(ha>hb,'and what its trees give shows in its numbers (Thick Skin: '+hb+' \u2192 '+ha+' health)')}
  // the window: a companion's card, its tree to grow (the Skills page, for it), its slots
  {P.comps={brann:{ap:0,role:''}};const cb=t.compInit('brann');cb.lv=0;cb.xp=0;t.charKit(t.charOf(cb,'brann'));cb.lv=3;cb.sk.oneh.lv=45;// (a newcomer spends what its level has given it at once: kit; the rest is yours)
-t.takeNodeOf(cb,'oneh_third',true);t.takeNodeOf(cb,'oneh_whirl',true);G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');const pn=()=>document.getElementById('panel');
+['oneh_third','oneh_p1','oneh_whirl'].forEach(id=>t.takeNodeOf(cb,id,true));G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');const pn=()=>document.getElementById('panel');
   ok((card=>card&&card.querySelectorAll('.ucard-x .uc-stats .uc-stat').length>=8&&card.querySelector('[data-unit-tab="character"]')&&/Whirlwind/.test(card.innerHTML))(pn().querySelector('.fb-comp-detail')),'a companion\u2019s window shows its card: its numbers, abilities and its skills');
-  const P0=P.tree.slice();cb.sk.oneh.lv=60;t.renderComp();cb.lv=5;t.act('party-comp-tab','skills');ok(/Skill points to spend<\/span><strong>3<\/strong>/.test(pn().querySelector('.fb-skills-summary').innerHTML)&&pn().querySelector('.fb-unit-actions [data-act="cm-tree"]'),'its points to spend (level 5: five, two spent), and its trees to open');
+  const P0=P.tree.slice();cb.sk.oneh.lv=60;t.renderComp();cb.lv=6;t.act('party-comp-tab','skills');ok(/Skill points to spend<\/span><strong>3<\/strong>/.test(pn().querySelector('.fb-skills-summary').innerHTML)&&pn().querySelector('.fb-unit-actions [data-act="cm-tree"]'),'its points to spend (level 6: six, three spent), and its trees to open');
   t.act('cm-tree');ok(G.mode==='skills'&&G.skWho==='brann'&&/Brann’s skills/.test(pn().innerHTML)&&/Back to Brann/.test(pn().innerHTML)&&!/Special skills/.test(pn().innerHTML),'the Skills page opens on Brann\u2019s own tree');
   const nd='oneh_dash';t.act('tree-take',nd);ok(cb.tree.includes(nd)&&t.talentsOf(cb).points().left===2&&P.tree.join()===P0.join(),'learning there grows Brann\u2019s tree, not yours ('+nd+')');
   t.act('sk-tab','abilities');const PS=JSON.stringify(P.slots);t.act('slot-set','4:whirl');ok(cb.slots[4]==='whirl'&&JSON.stringify(P.slots)===PS,'its skill bar sets its own slots');

@@ -26,49 +26,67 @@ function openSkills(tab,who){
   if(who&&!P.comps[who])return;if(G.mode==='world'&&!G.modal)G.mode='char';if(G.mode!=='char')return;// (K from the map: the Army window, on your hero's)
   if(who)charKit(charOf(compInit(who),who));G.skWho=who||null;
   G.mode='skills';G.skTreeList=false;G.skTab=tab||G.skTab||'prof';if(!['prof','talents','traits','abilities'].includes(G.skTab))G.skTab='prof';G.skGrow=true;renderSkills()}
-const NODE_KIND=N=>({origin:'Origin',s:'Passive',n:'Notable',k:'Keystone'}[N.t]||(N.m.unlock?'Active skill':'Skill upgrade'));
+const NODE_KIND=N=>({origin:'Origin',s:'Passive',n:'Notable',k:'Keystone',b:'Bonus'}[N.t]||(N.m.unlock?'Active skill':'Skill upgrade'));
 // (the proficiencies whose trees it has: its own; the tree shown, G.skTree: one with a choice waiting, else your weapon's)
-const skProfs=S=>PROF_GROUPS.flatMap(g=>g[1]).filter(k=>S.sk&&S.sk[k]&&PROF_TREE[k]);
+const skProfs=S=>TREE_RING.flatMap(g=>g[1]).filter(k=>S.sk&&S.sk[k]&&PROF_TREE[k]);// (round the wheel, data/tree.js TREE_RING)
 function skTreeOf(S){const L=skProfs(S);if(L.includes(G.skTree))return G.skTree;const w=treePendingOf(S)[0];return w?w:L.includes(S===P?leaderOf(P).weaponProf():'oneh')?(S===P?leaderOf(P).weaponProf():'oneh'):L[0]}
-/* a proficiency's tree as a path of nodes (the owner, 2026-11-08: "not an actual tree but a tree node path with more cool animation"):
-   its root (the proficiency, its level) at the foot, each milestone a row of two nodes above, every node linked to both of the row
-   below (any of them opens it: core/talents.js canTake); a rail at the side fills with the proficiency's level, a mark at each
-   milestone. Links: learned ones gold with light flowing up them, the ways open now dashed and flickering, the rest dim. Nodes:
-   hexagons, a keystone a diamond, an active skill ringed with a turning ring; learned gold and glowing, open pulsing, reached bronze,
-   not yet dark. Shown anew (another proficiency, the page opened: G.skGrow) the nodes fly out of the root and the links draw after
-   them, row by row; a node just learned (G.skJust) bursts (fieldbook.css "skill trees"). TREE_ART: its numbers, in the view's units */
-const TREE_ART={w:420,h:380,root:[226,342],top:46,spread:[78,104],rail:34,r:{s:15,n:18,k:21,a:19}};
-const NODE_GLYPH={s:'+',n:'◆',k:'✸',a:'✦'};
+/* the round tree (the owner, 2026-11-08: "one big circle node tree spans across each proficiency"): your origin in the middle; each
+   proficiency a slice of the circle (data/tree.js TREE_RING's order, a gap between groups, its name at its foot), its path out from the
+   middle: a tier's pair side by side across the slice, the bonus node between two tiers on its middle line (ring n at r0 + n × dr). The
+   shown proficiency's slice is turned to the top (the wheel spins to it from the last one shown: G.skRot) and the view holds that slice
+   (its names shown, the rest dim); G.skWhole: the whole circle. Links learned gold with light flowing along them, the ways open now
+   dashed and flickering, the rest dim; nodes hexagons (a keystone a diamond, a bonus a small one, an active skill ringed): learned gold,
+   open pulsing, reachable bronze, not yet dark. Shown anew (G.skGrow) the nodes fly out of the middle; one just learned (G.skJust)
+   bursts. TREE_ROUND: its numbers, in the view's units */
+const TREE_ROUND={r0:270,dr:56,gap:.6,pair:32,top:46,foot:92,half:250,r:{s:17,n:19,k:22,a:20,b:9}};
+const NODE_GLYPH={s:'+',n:'◆',k:'✸',a:'✦',b:''};
 // (a hexagon of radius r round x, y)
 const hexPts=(x,y,r)=>[0,1,2,3,4,5].map(i=>{const a=Math.PI/3*i+Math.PI/6;return (x+r*Math.cos(a)).toFixed(1)+','+(y+r*Math.sin(a)).toFixed(1)}).join(' ');
+// (every node's place, each slice's angle (a, radians, 0 east), width and rim; made once)
+let TREE_POS=null;
+function treePos(){if(TREE_POS)return TREE_POS;const R=TREE_ROUND,P={},sec={},units=TREE_RING.reduce((n,[,L])=>n+L.length+R.gap,0);let u=R.gap/2;
+  for(const [g,L] of TREE_RING){for(const k of L){const a=-Math.PI/2+(u+.5)/units*2*Math.PI,w=2*Math.PI/units,T=PROF_TREE[k];u++;
+    T.forEach((pair,t)=>{const r=R.r0+2*t*R.dr,da=Math.min(w*.4,Math.asin(Math.min(1,R.pair/r)));pair.forEach(([id],i)=>{const b=a+(i?da:-da);P[id]=[r*Math.cos(b),r*Math.sin(b)]});
+      if(t){const rh=R.r0+(2*t-1)*R.dr;P[k+'_p'+t]=[rh*Math.cos(a),rh*Math.sin(a)]}});
+    sec[k]={a,w,g,rim:R.r0+2*(T.length-1)*R.dr}}u+=R.gap}
+  return TREE_POS={P,sec,rim:Math.max(...Object.values(sec).map(q=>q.rim))}}
+// (a name beside its node, outward of its pair (side -1 left, 1 right), in two lines when long)
+const nameLines=(n,x,y,side)=>{const w=n.split(' '),tx=(x+side*(TREE_ROUND.r.n+9)).toFixed(1);if(n.length<11||w.length<2)return '<tspan x="'+tx+'" y="'+(y+5).toFixed(1)+'">'+htmlText(n)+'</tspan>';const h=Math.ceil(w.length/2);
+  return '<tspan x="'+tx+'" y="'+(y-3).toFixed(1)+'">'+htmlText(w.slice(0,h).join(' '))+'</tspan><tspan x="'+tx+'" dy="17">'+htmlText(w.slice(h).join(' '))+'</tspan>'};
 function treeSvg(S,k){
-  const A=TREE_ART,T=PROF_TREE[k],n=T.length,TS=talentsOf(S),lv=TS.profLv(k),[rx,ry]=A.root,ys=T.map((_,i)=>Math.round(ry-70-(ry-70-A.top)*(n>1?i/(n-1):0)));
-  const pos=(i,side)=>[rx+(side?1:-1)*A.spread[i%2],ys[i]],grow=!!G.skGrow,del=(i,b)=>grow?(.12+i*.2+(b||0)).toFixed(2)+'s':'0s';
-  let defs='<defs><radialGradient id="tpGlow"><stop offset="0" stop-color="#ffe08a" stop-opacity=".55"/><stop offset="1" stop-color="#ffe08a" stop-opacity="0"/></radialGradient>'+
-    '<linearGradient id="tpRail" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#b8862a"/><stop offset="1" stop-color="#ffe08a"/></linearGradient></defs>';
-  // the field: faint motes; the rail of its level, to 100 (its nodes' strength: a quarter at 0, whole at 100, treeScale), marked each 25
-  let svg=defs+[...Array(26)].map((_,i)=>'<circle class="tp-mote" cx="'+Math.round(hash(i,1,53)*A.w)+'" cy="'+Math.round(hash(i,2,53)*A.h)+'" r="'+(hash(i,3,53)<.3?1.6:1)+'" style="--t:'+(hash(i,4,53)*4).toFixed(2)+'s"/>').join('');
-  const top=A.top-20,yAt=v=>ry-(ry-top)*Math.min(1,Math.max(0,v)/TREE_SCALE.full);
-  const rl=A.rail,fy=yAt(lv);
-  svg+='<line x1="'+rl+'" y1="'+ry+'" x2="'+rl+'" y2="'+(A.top-20)+'" class="tp-rail"/><line x1="'+rl+'" y1="'+ry+'" x2="'+rl+'" y2="'+fy.toFixed(1)+'" class="tp-railfill" pathLength="1" style="--d:'+del(0,-.1)+'"/>';
-  [25,50,75,100].forEach(v=>{const y=Math.round(yAt(v));svg+='<g class="tp-mark'+(lv>=v?' on':'')+'"><line x1="'+(rl-6)+'" y1="'+y+'" x2="'+(rl+6)+'" y2="'+y+'"/><text x="'+(rl+10)+'" y="'+(y+4)+'">'+v+'</text></g>'});
-  svg+='<circle cx="'+rl+'" cy="'+fy.toFixed(1)+'" r="4" class="tp-railhead"/><text x="'+(rl-2)+'" y="'+(ry+22)+'" class="tp-raillv" text-anchor="middle">'+lv+'</text>';
-  // the links: the root to the first row, each row to the next (both ways), behind the nodes
-  const linkOf=(x1,y1,x2,y2,a,b,i)=>{const lit=a&&b===true,open=a&&b&&b!==true&&b.open,mx=(x1+x2)/2,d='M'+x1+' '+y1+' C'+x1+' '+(y1-22)+' '+x2+' '+(y2+22)+' '+x2+' '+y2;
-    return '<path class="tp-link'+(lit?' lit':open?' open':'')+'" pathLength="1" d="'+d+'" style="--d:'+del(i,.18)+'"/>'+(lit?'<path class="tp-flow" pathLength="1" d="'+d+'" style="--t:'+(hash(Math.round(mx),y1,7)*1.4).toFixed(2)+'s"/>':'')};
-  const st=id=>{const h=treeHasOf(S,id);return h?true:{open:canTakeOf(S,id)}};
-  T[0].forEach(([id],side)=>{const [x,y]=pos(0,side),b=st(id);svg+=linkOf(rx,ry-20,x,y+18,true,b,0)});
-  for(let i=1;i<n;i++)T[i].forEach(([id],side)=>{const [x,y]=pos(i,side),b=st(id);T[i-1].forEach(([lo],s0)=>{const [x0,y0]=pos(i-1,s0),a=treeHasOf(S,lo);svg+=linkOf(x0,y0-18,x,y+18,a,b,i)})});
-  // the root: the proficiency, its level
-  svg+='<g class="tp-root" style="--d:'+del(0,-.15)+'"><circle cx="'+rx+'" cy="'+ry+'" r="34" fill="url(#tpGlow)"/><polygon points="'+hexPts(rx,ry,22)+'" class="tp-rootbody"/><text x="'+rx+'" y="'+(ry+5)+'" text-anchor="middle" class="tp-roottext">'+(w=>w.length>1?w.map(x=>x[0]).join(''):SKILLS[k].n.slice(0,2))(SKILLS[k].n.split(/[\s-]+/))+'</text></g>';
-  // the nodes, each flying out of the root to its place
-  T.forEach((pair,i)=>pair.forEach(([id],side)=>{const N=TREE[id],[x,y]=pos(i,side),have=treeHasOf(S,id),can=canTakeOf(S,id),ok=!N.tier||TS.tierHas(k,N.tier-1)>0,r=A.r[N.t]||16;
-    const cls='tp-node '+(have?'have':can?'open':ok?'wait':'locked')+(G.skSel===id?' sel':'')+(G.skJust===id?' just':'');
-    const body=N.t==='k'?'<rect x="'+(x-r*.8)+'" y="'+(y-r*.8)+'" width="'+(r*1.6)+'" height="'+(r*1.6)+'" rx="3" transform="rotate(45 '+x+' '+y+')" class="tp-body"/>':'<polygon points="'+hexPts(x,y,r)+'" class="tp-body"/>';
-    svg+='<g class="'+cls+'" data-act="tree-sel" data-arg="'+id+'" role="button" tabindex="0" aria-pressed="'+(G.skSel===id)+'" aria-label="'+htmlText(N.n)+' ('+(have?'learned':can?'can learn':ok?'no point left':'grows from the tier below')+')" style="--d:'+del(i,.05)+';--fx:'+(rx-x)+'px;--fy:'+(ry-y)+'px">'+
-      '<circle cx="'+x+'" cy="'+y+'" r="'+(r+16)+'" fill="url(#tpGlow)" class="tp-aura"/>'+(N.t==='a'?'<circle cx="'+x+'" cy="'+y+'" r="'+(r+6)+'" class="tp-ring"/>':'')+'<circle cx="'+x+'" cy="'+y+'" r="'+(r+10)+'" class="tp-burst"/>'+body+
-      '<text x="'+x+'" y="'+(y+5)+'" text-anchor="middle" class="tp-glyph">'+NODE_GLYPH[N.t]+'</text><text x="'+x+'" y="'+(y+r+16)+'" text-anchor="middle" class="tp-name">'+htmlText(N.n)+'</text></g>'}));
-  return '<svg class="tr-svg tp'+(grow?' grow':'')+'" viewBox="0 0 '+A.w+' '+A.h+'" preserveAspectRatio="xMidYMid meet" role="group" aria-label="'+SKILLS[k].n+' skill tree">'+svg+'</svg>';
+  const R=TREE_ROUND,{P,sec,rim}=treePos(),TS=talentsOf(S),whole=!!G.skWhole,grow=!!G.skGrow,f=sec[k]||sec.oneh,rot=whole?0:-90-f.a*180/Math.PI,
+    from=G.skRot==null?rot:G.skRot,deg=d=>((d%360)+540)%360-180,spin=from+deg(rot-from);G.skRot=spin;
+  const del=(x,y)=>grow?(.1+Math.hypot(x,y)/rim*.7).toFixed(2)+'s':'0s',up=(x,y)=>' transform="rotate('+(-spin).toFixed(2)+' '+x.toFixed(1)+' '+y.toFixed(1)+')"';
+  let defs='<defs><radialGradient id="tpGlow"><stop offset="0" stop-color="#ffe08a" stop-opacity=".55"/><stop offset="1" stop-color="#ffe08a" stop-opacity="0"/></radialGradient></defs>';
+  // the field: faint motes; the rings each tier stands on
+  let svg='';for(let n=0;n<=2*3;n+=2)svg+='<circle cx="0" cy="0" r="'+(R.r0+n*R.dr)+'" class="tw-ring"/>';
+  svg+=[...Array(60)].map((_,i)=>{const a=hash(i,1,53)*Math.PI*2,r=hash(i,2,53)*(rim+60);return '<circle class="tp-mote" cx="'+(r*Math.cos(a)).toFixed(0)+'" cy="'+(r*Math.sin(a)).toFixed(0)+'" r="'+(hash(i,3,53)<.3?2:1.3)+'" style="--t:'+(hash(i,4,53)*4).toFixed(2)+'s"/>'}).join('');
+  // each slice: its spoke from the middle, its proficiency's name and level at its foot, the shown one lit
+  for(const q in sec){const s=sec[q],x=Math.cos(s.a),y=Math.sin(s.a),lx=(R.r0-62)*x,ly=(R.r0-62)*y,on=q===k,lv=TS.profLv(q);if(!whole&&!on){svg+='<line x1="'+(48*x).toFixed(1)+'" y1="'+(48*y).toFixed(1)+'" x2="'+((R.r0-26)*x).toFixed(1)+'" y2="'+((R.r0-26)*y).toFixed(1)+'" class="tw-spoke"/>';continue}
+    svg+='<line x1="'+(48*x).toFixed(1)+'" y1="'+(48*y).toFixed(1)+'" x2="'+((R.r0-26)*x).toFixed(1)+'" y2="'+((R.r0-26)*y).toFixed(1)+'" class="tw-spoke'+(on?' on':'')+'"/>'+
+      '<g class="tw-sec'+(on?' on':'')+'" data-act="tree-focus" data-arg="'+q+'" role="button" aria-label="'+htmlText(SKILLS[q].n)+'"><text x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'" text-anchor="middle"'+up(lx,ly)+'>'+htmlText(SKILLS[q].n)+'<tspan x="'+lx.toFixed(1)+'" dy="14" class="tw-lv">'+lv+'</tspan></text></g>'}
+  // the groups, named outside the rim at their middle
+  for(const [g,L] of TREE_RING){const a=(sec[L[0]].a+sec[L[L.length-1]].a)/2,r=rim+70,x=r*Math.cos(a),y=r*Math.sin(a);svg+='<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" text-anchor="middle" class="tw-group"'+up(x,y)+'>'+htmlText(g)+'</text>'}
+  // the links, behind the nodes: each once, the first pairs' to the middle
+  const st=id=>treeHasOf(S,id),done=new Set(),ids=Object.keys(P),linkOf=(x1,y1,x2,y2,a,b,open,cur)=>'<path class="tp-link'+(a&&b?' lit':open?' open':'')+(cur?'':' far')+'" pathLength="1" d="M'+x1.toFixed(1)+' '+y1.toFixed(1)+' L'+x2.toFixed(1)+' '+y2.toFixed(1)+'" style="--d:'+del(x2,y2)+'"/>'+(a&&b?'<path class="tp-flow" pathLength="1" d="M'+x1.toFixed(1)+' '+y1.toFixed(1)+' L'+x2.toFixed(1)+' '+y2.toFixed(1)+'" style="--t:'+(hash(Math.round(x2),Math.round(y2),7)*1.4).toFixed(2)+'s"/>':'');
+  for(const id of ids){const N=TREE[id],[x,y]=P[id],cur=N.prof===k||whole;
+    if(N.entry){const s=sec[N.prof],sx=(R.r0-26)*Math.cos(s.a),sy=(R.r0-26)*Math.sin(s.a);svg+=linkOf(sx,sy,x,y,true,st(id),canTakeOf(S,id),cur)}
+    for(const l of N.links){if(done.has(l+'|'+id)||!P[l])continue;done.add(id+'|'+l);const [x2,y2]=P[l],a=st(id),b=st(l);svg+=linkOf(x,y,x2,y2,a,b,a&&canTakeOf(S,l)||b&&canTakeOf(S,id),cur)}}
+  // the middle: your origin (a companion's, a lord's: their start)
+  const O=TREE[TS.root()]||TREE.start;svg+='<g class="tp-root"><circle cx="0" cy="0" r="58" fill="url(#tpGlow)"/><polygon points="'+hexPts(0,0,34)+'" class="tp-rootbody"/><text x="0" y="5" text-anchor="middle" class="tp-roottext"'+up(0,0)+'>'+htmlText(O.n)+'</text></g>';
+  // the nodes, each flying out of the middle to its place; their names over everything (labs)
+  let labs='';for(const id of ids){const N=TREE[id],[x,y]=P[id],have=st(id),can=canTakeOf(S,id),ok=TS.reach(id),r=R.r[N.t]||16,cur=N.prof===k;
+    const cls='tp-node '+(have?'have':can?'open':ok?'wait':'locked')+(N.t==='b'?' bonus':'')+(cur||whole?'':' far')+(G.skSel===id?' sel':'')+(G.skJust===id?' just':'');
+    const body=N.t==='k'?'<rect x="'+(x-r*.8).toFixed(1)+'" y="'+(y-r*.8).toFixed(1)+'" width="'+(r*1.6).toFixed(1)+'" height="'+(r*1.6).toFixed(1)+'" rx="3" transform="rotate(45 '+x.toFixed(1)+' '+y.toFixed(1)+')" class="tp-body"/>':'<polygon points="'+hexPts(x,y,r)+'" class="tp-body"/>';
+    svg+='<g class="'+cls+'" data-act="tree-sel" data-arg="'+id+'" role="button" tabindex="'+(cur?0:-1)+'" aria-pressed="'+(G.skSel===id)+'" aria-label="'+htmlText(N.n)+' ('+(have?'learned':can?'can learn':ok?'no point left':'not reached yet')+')" style="--d:'+del(x,y)+';--fx:'+(-x).toFixed(0)+'px;--fy:'+(-y).toFixed(0)+'px">'+
+      '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+16)+'" fill="url(#tpGlow)" class="tp-aura"/>'+(N.t==='a'?'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+6)+'" class="tp-ring"/>':'')+'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+10)+'" class="tp-burst"/>'+body+
+      (NODE_GLYPH[N.t]?'<text x="'+x.toFixed(1)+'" y="'+(y+5).toFixed(1)+'" text-anchor="middle" class="tp-glyph"'+up(x,y)+'>'+NODE_GLYPH[N.t]+'</text>':'')+
+      '</g>';if(N.t!=='b'&&!whole&&cur){const side=PROF_TREE[N.prof][N.tier][0][0]===id?-1:1;labs+='<g class="tp-lab '+(have?'have':can?'open':ok?'wait':'locked')+'" style="--d:'+del(x,y)+'"><text text-anchor="'+(side<0?'end':'start')+'" class="tp-name"'+up(x,y)+'>'+nameLines(N.n,x,y,side)+'</text></g>'}}
+  svg+=labs;
+  // the view: the shown slice turned up, from just under its foot to over its rim (or the whole circle)
+  const s=f,vb=whole?[-(rim+110),-(rim+110),2*(rim+110),2*(rim+110)]:[-R.half,-(s.rim+R.top),2*R.half,s.rim+R.top-R.r0+R.foot];
+  return '<svg class="tr-svg tp tw'+(grow?' grow':'')+(whole?' whole':'')+'" viewBox="'+vb.map(v=>v.toFixed(0)).join(' ')+'" preserveAspectRatio="xMidYMid meet" role="group" aria-label="The skill tree, '+SKILLS[k].n+' shown">'+defs+
+    '<g class="tw-wheel" style="--from:'+from.toFixed(2)+'deg;--to:'+spin.toFixed(2)+'deg;transform:rotate('+spin.toFixed(2)+'deg)">'+svg+'</g></svg>';
 }
 // the node chosen on the tree: what it does, its kind and tier, how strong it is at its proficiency now, Learn (a point) or Unlearn
 // (gold), or why not yet
@@ -77,7 +95,7 @@ function treeNodePane(S,k){
   const N=TREE[id],T=talentsOf(S),have=T.has(id),can=T.canTake(id),pts=T.points(),u=N.m.unlock,refund=T.quoteRefund(id),lv=T.profLv(k),sc=Math.round(100*treeScale(lv));
   const why=have?(refund.ok?'':refund.code==='gold'?'Not enough gold to unlearn it.':'A node above grows from it: unlearn that first.'):N.tier&&!T.tierHas(k,N.tier-1)?'Learn a node of the tier below first.':!pts.left?'No skill points left: one each level.':'';
   const str=Object.keys(N.m).some(q=>typeof N.m[q]==='number'||q==='sk')?'<p class="muted">At '+SKILLS[k].n+' '+lv+' it gives '+sc+'% of this (a quarter at 0, whole at 100, more past it).</p>':'';
-  return '<aside class="tr-pane"><small>'+NODE_KIND(N)+' · '+SKILLS[k].n+' tier '+(N.tier+1)+'</small><h3>'+htmlText(N.n)+'</h3><p>'+N.d+'</p>'+str+(u&&S===P?'<p class="muted">'+skillStats(u)+'.</p>':'')+
+  return '<aside class="tr-pane"><small>'+NODE_KIND(N)+' · '+SKILLS[k].n+(N.hub?' path':' tier '+(N.tier+1))+'</small><h3>'+htmlText(N.n)+'</h3><p>'+N.d+'</p>'+str+(u&&S===P?'<p class="muted">'+skillStats(u)+'.</p>':'')+
     (have?'<p class="good">Learned</p>'+fbBtn('tree-refund',id,'Unlearn · '+refundCost()+'g',refund.ok?'':'x'):fbBtn('tree-take',id,fbIcon('skills')+' Learn · 1 point',can?'':'x','primary'))+(why?'<p class="muted">'+why+'</p>':'')+'</aside>'}
 /* the traits (were Basics; the owner, 2026-11-08): the moves everyone has from the start, and what your race and your past are. The
    combo's Third Blow and its finishers are nodes of the weapons' trees (data/tree.js combo3, fin) */
@@ -135,7 +153,7 @@ function skTreeBody(){
  const sw='<div class="fb-tree-switch">'+side(-1)+tsBtn('tree-list',null,'<strong>'+SKILLS[k].n+'</strong><small>'+T.profLv(k)+'</small>'+treeWait(pts.left)+'<i class="fb-ts-more'+(more?' wait':'')+'" aria-hidden="true">'+(open?'▴':'▾')+'</i>',open?'Hide the list':'All proficiencies','fb-ts-now'+(open?' on':''))+side(1)+'</div>';
  const out='<div class="fb-skill-work fb-trees"><section class="fb-tree-pane" aria-label="'+SKILLS[k].n+' skill tree"><div class="fb-tree-head"><strong>'+SKILLS[k].n+' · '+T.profLv(k)+'</strong><small>'+
    '<b class="'+(pts.left?'gold':'')+'">'+pts.left+' skill point'+(pts.left===1?'':'s')+' to spend</b> · one each level, on any tree · its nodes '+Math.round(100*treeScale(T.profLv(k)))+'% strong at '+SKILLS[k].n+' '+T.profLv(k)+'</small></div>'+
-   '<div class="tr-stage">'+treeSvg(S,k)+treeNodePane(S,k)+list+'</div>'+sw+'</section></div>';
+   '<div class="tr-stage">'+treeSvg(S,k)+tsBtn('tree-whole',null,G.skWhole?'◉':'◎',G.skWhole?'Back to '+SKILLS[k].n:'The whole tree','fb-ts-whole'+(G.skWhole?' on':''))+treeNodePane(S,k)+list+'</div>'+sw+'</section></div>';
  G.skGrow=false;G.skJust=null;return out;
 }
 function renderSkills(){
@@ -153,7 +171,9 @@ function skillsAct(a,arg){
   else if(a==='tree-prof'&&PROF_TREE[arg]){if(G.skTree!==arg)G.skGrow=true;G.skTree=arg;G.skSel=null;G.skTreeList=false}
   else if(a==='tree-step'){const S=skSubj(),L=skProfs(S),i=L.indexOf(skTreeOf(S)),p=L[(i+(+arg<0?-1:1)+L.length)%L.length];if(p&&p!==G.skTree){G.skGrow=true;G.skTree=p;G.skSel=null}G.skTreeList=false}
   else if(a==='tree-list')G.skTreeList=!G.skTreeList;
-  else if(a==='tree-sel'&&TREE[arg])G.skSel=arg;
+  else if(a==='tree-sel'&&TREE[arg]){G.skSel=arg;if(TREE[arg].prof&&TREE[arg].prof!==G.skTree){G.skTree=TREE[arg].prof;G.skWhole=false}}// (another slice's node: the wheel turns to it)
+  else if(a==='tree-whole')G.skWhole=!G.skWhole;
+  else if(a==='tree-focus'&&PROF_TREE[arg]){if(G.skTree!==arg)G.skSel=null;G.skTree=arg;G.skWhole=false}// (a slice's name: the wheel turns to it, close)
   else if(a==='sk-slot'){skillSlotPick(Number(arg));return true}
   else if(a==='tree-take'){if(takeNodeOf(skSubj(),arg)){G.skSel=arg;G.skJust=arg}}
   else if(a==='tree-refund')refundNodeOf(skSubj(),arg);

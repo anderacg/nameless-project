@@ -186,6 +186,21 @@
 @keyframes tp-twinkle{0%,100%{opacity:.08}50%{opacity:.4}}
 @keyframes tp-burst{from{opacity:1;transform:scale(.5)}to{opacity:0;transform:scale(2)}}
 @keyframes tr-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* (the round tree: the wheel turning its slice up, the rings, spokes, slices' and groups' names; another slice's nodes dim) */
+.tw-wheel{animation:tw-turn .75s cubic-bezier(.25,.8,.25,1) both}
+@keyframes tw-turn{from{transform:rotate(var(--from))}to{transform:rotate(var(--to))}}
+.tw-ring{fill:none;stroke:#2a2834;stroke-width:1.5;stroke-dasharray:3 7}
+.tw-spoke{stroke:#2e2c36;stroke-width:2}.tw-spoke.on{stroke:#8a7448;stroke-width:3}
+.tw-sec{cursor:pointer}.tw-sec text{font:700 15px Arial,sans-serif;fill:#6a6658;paint-order:stroke;stroke:#121218;stroke-width:4px}.tw-sec.on text{fill:#ffe08a;font-size:18px}
+.tw-lv{font-size:12px;fill:#8a8270}.tw-sec.on .tw-lv{fill:#e8b94a}
+.tw-group{font:italic 700 22px Georgia,'Times New Roman',serif;fill:#5a5040;letter-spacing:.06em}
+.tp-node.far{opacity:.38}.tp-node.far .tp-name{display:none}.tp-link.far{opacity:.35}
+.tw .tp-name{font-size:15px;stroke-width:5px}.tw .tp-glyph{font-size:15px}.tw.whole .tw-sec text{font-size:13px}.tw.whole .tw-sec.on text{font-size:16px}
+.tp-node.bonus .tp-body{stroke-width:2}.tp-node.bonus.have .tp-body{filter:drop-shadow(0 0 4px #e8b94acc)}
+.tp-roottext{font-size:13px}
+.tr-stage>.btn.fb-ts-whole{position:absolute;left:8px;top:8px;z-index:2;min-height:32px;min-width:32px;padding:2px 6px;font-size:17px;background:#16130ecc;border-color:#5a4a30}
+.tp-lab{pointer-events:none}.tp-lab.have .tp-name{fill:#ffe9b0}.tp-lab.open .tp-name{fill:#f0e2b8}.tp-lab.locked .tp-name{fill:#6a6878}
+.tr-svg.grow .tp-lab{animation:tp-pop .4s ease-out both;animation-delay:calc(var(--d,0s) + .2s)}
 @media (prefers-reduced-motion:reduce){.tr-svg *,.tr-svg{animation:none!important}}
 .fb-lvup{border:1px solid #e8b94a;background:#2a2418}.fb-lvup-picks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .fb-lvup-picks .btn{display:flex;align-items:center;gap:6px}

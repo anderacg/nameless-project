@@ -145,13 +145,13 @@ class Character extends Unit{
     if(s.range||w&&w.kind==='ranged'||!w&&/bow|sling/.test(L.weapon||''))return 'archer';
     if(s.mounted)return 'rider';
     return t.includes('shield')||t.includes('heavy')||o.gear&&o.gear.offhand?'guardian':'warrior'}
-  // it chooses for itself: each skill point it has (one a level), on the node its class favours (CLASS_PICK) if it can take one, else in
-  // the tree of its strongest proficiency, the lowest tier (a tier's first before its second)
+  // it chooses for itself: each skill point it has (one a level), on the way to the nodes its class favours (CLASS_PICK, the first not
+  // learned yet: core/talents.js pathTo), else in the tree of its strongest proficiency, the lowest tier (a tier's first before its second)
   autoTree(){
     const o=this.o,want=CLASS_PICK[this.cls()]||[];if(!o.tree)return;
-    for(let k=0;k<64;k++){const open=Object.keys(PROF_TREE).flatMap(p=>PROF_TREE[p].flat().map(([id])=>id)).filter(id=>canTakeOf(o,id));if(!open.length)break;
+    for(let k=0;k<64;k++){const open=Object.keys(TREE).filter(id=>TREE[id].prof&&canTakeOf(o,id));if(!open.length)break;
       const lv=id=>o.sk&&o.sk[TREE[id].prof]?o.sk[TREE[id].prof].lv:0;// (else its strongest proficiency's tree first (its nodes the strongest there), the lowest tier)
-      const id=open.find(id=>want.includes(id))||open.sort((a,b)=>lv(b)-lv(a)||TREE[a].tier-TREE[b].tier)[0];if(!takeNodeOf(o,id,true))break}}
+      const T=talentsOf(o),aim=want.map(w=>T.pathTo(w)[0]).find(Boolean),id=aim||open.sort((a,b)=>lv(b)-lv(a)||TREE[a].tier-TREE[b].tier)[0];if(!takeNodeOf(o,id,true))break}}
   // a lord's or chieftain's gear: of a tier by its level (one every three), a weapon of its people (outfitWeapons), armour and a
   // helm; better gear replaces worse
   outfit(){
@@ -204,8 +204,9 @@ const AUTO_LV=new WeakMap();
 // health and damage against its kind's: [at level 0, more each level] (a recruit keeps the rate it had: o.grow)
 const CHAR_GROW={companion:{hp:[.9,.1],dmg:[.93,.07]},lord:{hp:[1.3,.08],dmg:[.95,.04]},chieftain:{hp:[1.3,.08],dmg:[.95,.04]}};
 // the nodes each class takes first when it can (the rest: the lowest it can)
-const CLASS_PICK={warrior:['oneh_dash','twoh_quake','oneh_duel'],guardian:['block_guard','twoh_hide','lead_bearer'],rider:['ride_charge','oneh_dash'],
-  archer:['arch_marks','arch_hands','arch_eagle'],caster:['spell_nova','spell_flow','spell_study']};
+// (each an active skill near the front, so one comes in its first few levels on the round tree's paths)
+const CLASS_PICK={warrior:['oneh_dash','twoh_quake','oneh_duel'],guardian:['block_guard','lead_cry','twoh_hide','lead_bearer'],rider:['ride_charge','oneh_dash'],
+  archer:['arch_volley','arch_marks','arch_hands','arch_eagle'],caster:['spell_nova','spell_flow','spell_study']};
 // the weapons (and a shield) a lord wears, by his people
 const OUTFIT={human:['sword','shield'],dwarf:['axe','shield'],elf:['spear'],orc:['axe']};
 

@@ -5,8 +5,8 @@ try{
   const t=T,P=t.P,G=t.G;try{localStorage.clear()}catch(e){}
   // (a proficiency's tree, data/tree.js: a and b its first tier, c and d its second; the owner's skill points one a level (LEVEL.pts),
   // spent on any tree, no milestone (the owner, 2026-11-08); root the origin, of no tree)
-  const globalBefore=JSON.stringify(P),nodes={root:{t:'origin',links:[],m:{}},a:{t:'s',prof:'x',tier:0,pair:'b',links:[],m:{hp:4}},b:{t:'a',prof:'x',tier:0,pair:'a',links:[],m:{unlock:'storm'}},
-    c:{t:'s',prof:'x',tier:1,pair:'d',links:[],m:{}},d:{t:'s',prof:'x',tier:1,pair:'c',links:[],m:{}},other:{t:'origin',links:[],m:{}}};
+  const globalBefore=JSON.stringify(P),nodes={root:{t:'origin',links:[],m:{}},a:{t:'s',prof:'x',tier:0,pair:'b',entry:true,links:['c','d'],m:{hp:4}},b:{t:'a',prof:'x',tier:0,pair:'a',entry:true,links:['c','d'],m:{unlock:'storm'}},
+    c:{t:'s',prof:'x',tier:1,pair:'d',links:['a','b'],m:{}},d:{t:'s',prof:'x',tier:1,pair:'c',links:['a','b'],m:{}},other:{t:'origin',links:[],m:{}}};
   const owner={tree:['root'],lv:0,sk:{x:{lv:5,xp:0}},slots:[null,null,null],fin:null},wallet={gold:10};let ready=false;
   const effects={stormCost:.1,stormCd:.25,stormR:.2,stormDmg:.5,stormStun:.3,stormDur:1};
   const rules={nodes,trees:()=>({x:[[['a'],['b']],[['c'],['d']]]}),skills:()=>({storm:{learn:'b',mp:10,sp:20,cd:8},unknown:{learn:'never',mp:1,sp:1,cd:1}}),root:()=>'root',slotCount:3,wallet,refundCost:()=>15,effect:k=>effects[k]||0,finisher:{styles:()=>({stun:{},push:{}}),ready:()=>ready}};
@@ -26,7 +26,7 @@ try{
   before=snap();ok(!service.chooseFinisher('push').ok&&snap()===before,'a finisher cannot be chosen before its discipline is ready');ready=true;
   ok(!service.chooseFinisher('constructor').ok&&service.chooseFinisher('push').ok&&!service.chooseFinisher('stun').ok&&owner.fin==='push','only a defined finishing style can be chosen, and only once');
   ok(JSON.stringify(P)===globalBefore,'the injected talent service does not touch the live hero');
-  t.begin('soldier');G.quietEvents=true;const live=t.talentsOf(P);P.level=2;t.takeNode('oneh_str');t.takeNode('oneh_whirl');P.gold=1000;
+  t.begin('soldier');G.quietEvents=true;const live=t.talentsOf(P);P.level=3;t.takeNode('oneh_str');t.takeNode('oneh_p1');t.takeNode('oneh_whirl');P.gold=1000;
   G.mode='world';G.modal=false;t.hidePanel();t.openSkills('talents');t.act('tree-prof','oneh');t.act('tree-sel','oneh_whirl');
   const refund=document.querySelector('[data-act="tree-refund"][data-arg="oneh_whirl"]');ok(refund&&!refund.disabled===live.quoteRefund('oneh_whirl').ok,'the refund button uses service eligibility');
   before=JSON.stringify({tree:P.tree,gold:P.gold});t.act('tree-take','missing');t.act('tree-refund','missing');t.act('tree-take','oneh_dash');
