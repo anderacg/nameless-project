@@ -26,7 +26,7 @@ Status: **design** (2026-11-09), not built; every question answered (round 5). T
 
 ## Decisions, round 4 (owner, 2026-11-09)
 
-- **Graves:** "how about we add a grave system where you can regain all exp or experience from. The more hero dies the more grave will have. The grave may be places near where you died or in your own fief or holdings. You may get rumors of the fallen grave randomly." Each fallen hero leaves a grave; the new person who finds it and pays their respects regains that hero's experience (§6.2). This is the one thing a new person can take from the old life.
+- **Graves:** "how about we add a grave system where you can regain all exp or experience from. The more hero dies the more grave will have. The grave may be places near where you died or in your own fief or holdings. You may get rumors of the fallen grave randomly." Each fallen hero leaves a grave; the new person who finds it and pays their respects regains half that hero's experience (§6.2, round 5). This is the one thing a new person can take from the old life.
 
 ## Decisions, round 5 (owner, 2026-11-09)
 
@@ -128,7 +128,7 @@ Status: **design** (2026-11-09), not built; every question answered (round 5). T
 - **What resets:**
   - **Reputation:** renown, honour and relations start fresh. Lords who knew the old hero remember them in a line, not in numbers.
   - **Quests:** all dropped. Each giver is told, with no penalty to anyone. A quest the world tracks (a bounty) stays open for anyone.
-  - **Progress:** level, points, the tree and proficiencies start as the new background gives; the old hero's can be won back at their grave (§6.2).
+  - **Progress:** level, points, the tree and proficiencies start as the new background gives; half the old hero's experience can be won back at their grave (§6.2).
   - **Known places:** forgotten. The map you discovered is dark again, and the new person finds it anew (owner, 2026-11-09).
 - **The main story:** it starts again for the new person, at its opening (doc/MAIN_QUEST_DESIGN.md, doc/OPENING_STORY_DESIGN.md). What the old hero did in it stays in the world as fact (a defeated foe stays defeated; a lost relic stays where it fell).
 - **Once-a-game events:** stay used (no second first-visit gift).
@@ -186,7 +186,7 @@ Status: **design** (2026-11-09), not built; every question answered (round 5). T
   - `die(e)`: the remains, the slain page, the grave, then the new person.
 - **The man-eater:** a flag and a name on the monster (`W.monsters`), saved; drawn with a mark; news and a bounty.
 - **The remains:** the grave's goods before burial (the same `Grave`, not yet buried); bandits seek it as they seek prey. Saved; never fades.
-- **Graves:** `world/graves.js` (new), `Grave` (a `WorldObject`: who, where, the experience and proficiencies it holds, spent or not), in `W.graves`, saved; its rumours a news kind in `world/news.js` (`grave`), at random (`DEATH.rumour`, a day's chance); its page from the chronicle.
+- **Graves:** `world/graves.js` (new), `Grave` (a `WorldObject`: who, where, the experience and goods it holds, buried or not, spent or not), in `W.graves`, saved; its rumours a news kind in `world/news.js` (`grave`), at random (`DEATH.rumour`, a day's chance); its page from the chronicle.
 - **The heir's company:** a lord-like party led by a companion (the companion parties that exist today, `compInit(id).party`, given a lord's brain: recruiting, fiefs, caravans, wars). Saved.
 - **Starting over:** the new-game start (`core/session.js`, the character maker) run into the live world:
   - first the old hero's things are handed out (the heir, estates, realm, companions);
