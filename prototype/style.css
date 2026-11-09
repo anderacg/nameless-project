@@ -461,18 +461,21 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .screen.mobile-world .qt-pop .btn.sm{min-height:28px;padding:1px 7px}.screen.mobile-world .qt-pop:nth-last-child(n+3){display:none}
 
 /* ---------- 6b. discovery (world/discovery.js DiscoveryTitle): "You discovered", a place's name and its kind over the map; it rises,
-   its letters drawing together, holds and fades over --discover-ms; not over the windows, never in the way of a click ---------- */
-.discover{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;pointer-events:none;text-align:center;opacity:0;
+   its letters drawing together, holds and fades over --discover-ms; not over the windows, never in the way of a click. Centred
+   by its margins on a strip as wide as the screen, its box its words' own width (the owner, 2026-11-09, a phone: "It's not at the
+   center": left 50% and a shift of half its width left the box to the browser's shrink-to-fit); never wider than the screen, a
+   long name wrapping, its size by the screen's width ---------- */
+.discover{position:fixed;left:0;right:0;top:50%;margin:0 auto;width:max-content;max-width:calc(100vw - 16px);box-sizing:border-box;transform:translateY(-50%);z-index:60;pointer-events:none;text-align:center;opacity:0;
   display:flex;flex-direction:column;align-items:center;gap:2px;color:#f3e2b0;text-shadow:0 2px 0 #000,0 0 14px rgba(0,0,0,.85);white-space:nowrap;
-  padding:18px 56px;background:radial-gradient(ellipse at center,rgba(12,10,8,.78) 0,rgba(12,10,8,.5) 45%,transparent 72%)}
+  padding:18px min(56px,9vw);background:radial-gradient(ellipse at center,rgba(12,10,8,.78) 0,rgba(12,10,8,.5) 45%,transparent 72%)}
 .discover small{font-size:var(--fs-sm);letter-spacing:.35em;text-transform:uppercase;color:#d9c48a}
-.discover strong{font-size:34px;font-weight:700;letter-spacing:.06em}
+.discover strong{font-size:min(34px,8.4vw);font-weight:700;letter-spacing:.06em;white-space:normal;text-wrap:balance}
 .discover span{font-size:var(--fs-sm);letter-spacing:.2em;text-transform:uppercase;color:#bfb28c}
 .discover strong::after{content:'';display:block;height:2px;margin:6px auto 0;width:0;background:linear-gradient(90deg,transparent,#e8b94a,transparent)}
 .discover.on{animation:discover var(--discover-ms,4.2s) ease-out both}
 .discover.on strong{animation:discoverName var(--discover-ms,4.2s) ease-out both}
 .discover.on strong::after{animation:discoverLine var(--discover-ms,4.2s) ease-out both}
-@keyframes discover{0%{opacity:0;transform:translate(-50%,calc(-50% + 10px))}14%{opacity:1;transform:translate(-50%,-50%)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,calc(-50% - 6px))}}
+@keyframes discover{0%{opacity:0;transform:translateY(calc(-50% + 10px))}14%{opacity:1;transform:translateY(-50%)}80%{opacity:1}100%{opacity:0;transform:translateY(calc(-50% - 6px))}}
 @keyframes discoverName{0%{letter-spacing:.4em}22%{letter-spacing:.06em}100%{letter-spacing:.06em}}
 @keyframes discoverLine{0%,10%{width:0}35%,100%{width:110%}}
 @keyframes discoverStill{0%{opacity:0}10%,85%{opacity:1}100%{opacity:0}}

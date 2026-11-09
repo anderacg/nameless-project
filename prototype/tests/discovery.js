@@ -24,6 +24,8 @@ Kit.suite(({ok})=>{
    P.x=far.x+Math.cos(a)*(DC.r-1)*t.TILE;P.y=far.y+Math.sin(a)*(DC.r-1)*t.TILE;D.check();const el=document.getElementById('discover');
    ok(D.named(far)&&D.nameOf(far)===far.name&&t.landName(far.x,far.y)===far.name+' lands','within '+DC.r+' tiles: '+far.name+' known by its name, and its lands');
    ok(el&&el.classList.contains('on')&&/You discovered/i.test(el.textContent)&&el.textContent.includes(far.name),'its title over the map: '+(el&&el.textContent));
+   {const mid=r=>(r.left+r.right)/2,box=el.getBoundingClientRect(),nm=el.querySelector('strong').getBoundingClientRect(),cs=getComputedStyle(el);
+    ok(Math.abs(mid(box)-innerWidth/2)<2&&Math.abs(mid(nm)-innerWidth/2)<2&&box.width<=innerWidth&&cs.left==='0px'&&cs.right==='0px'&&cs.width!=='auto','the title in the middle of the screen, its name too, never wider than it (centred by its margins: the owner, a phone, "It\'s not at the center")')}
    ok(G.msgs.some(m=>(m.m||'').startsWith('You discovered '+far.name))&&P.sk.scout.lv*1e3+P.sk.scout.xp>sk,'a line in the log, and Scouting practice');
    const n=D.found.size;D.check();ok(D.found.size===n,'once only')}
   // ---- the full map names it now, and not one you have not seen
