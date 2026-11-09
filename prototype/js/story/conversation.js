@@ -63,9 +63,9 @@ class LordSpeaker extends Speaker{
   // ---- what he remembers and tells you as you meet (DIALOGUE.remember): the first few that hold, each said once (m.said)
   remarks(){const l=this.o,D=DIALOGUE.remember,m=TalkMemory.of(this.key),said=m.said??=[],out=[],R=Relations,v=relWith(l),days=n=>n<=0?'today':n===1?'yesterday':n+' days ago';
     const add=(k,line)=>{if(out.length>=D.most||!line||said.includes(k))return;said.push(k);out.push(this.fill(line))},sub=(t,o)=>t.replace(/\{(\w+)\}/g,(x,k)=>o[k]!=null?o[k]:x);
-    // (your line: one of it he met, fallen since; kin of theirs, or a stranger under their banner)
+    // (your line: the last of it he met, fallen since; kin of that one, or a stranger under their banner)
     const L=Legacy.line.find(r=>m.met&&m.gen!=null&&r.n===m.gen+1);
-    if(L&&m.gen<Legacy.fallen){const P0=pr(L.g==='f'?'f':'m');add('line:'+L.n,sub(Legacy.kin?.rel?D.kin:D.stranger,{who:htmlText(L.who),them:P0.him,they:P0.he,by:htmlText(L.by)}))}
+    if(L&&m.gen<Legacy.fallen){const P0=pr(L.g||null);add('line:'+L.n,sub(Legacy.kin?.rel&&Legacy.kin.of===L.n?D.kin:D.stranger,{who:htmlText(L.who),them:P0.him,they:P0.he,by:htmlText(L.by)}))}
     if(DEATH.on&&l.house){const h=Houses.byId(l.house);if(h){const close=v>=DEATH.house.tell,gr=h.grudged()&&h.grudge;
       if(gr)add('grudge:'+gr.day,sub(gr.half?D.kinGrudge:D.grudge,{name:htmlText(gr.name)}));
       const d=h.buried.filter(x=>G.day-x.day<=D.days&&!(gr&&x.name===gr.name)).pop();
@@ -74,16 +74,18 @@ class LordSpeaker extends Speaker{
       if(kid){add('born:'+kid.id,close?sub(D.born,{child:kid.gender==='f'?'daughter':'son',ago:days(G.day-kid.born),name:htmlText(kid.name)}):D.bornVague);if(close)h.learn([kid.id])}
       if(wed){const to=h.person(wed.spouse);add('wed:'+wed.id,close&&to?sub(D.wed,{name:htmlText(to.name),spouse:htmlText(wed.name)}):D.wedVague);if(close)h.learn([wed.id])}
       const pre=l.succeeded&&h.dead.find(x=>x.id===l.succeeded);if(pre&&G.day-pre.day<=D.deed)add('rose:'+pre.id,sub(D.rose,{name:htmlText(pre.name),they:pr(pre).he}))}}
-    // (your last deed toward him, in his words: "you let them go" his "you let me go"; none naming a lord you do not know)
+    // (your last deed toward him, in his words: "you let them go" his "you let me go"; none naming a lord you do not know, nor what
+    // you said to him this visit (a check's), nor the grudge he named already)
     const w=(P.lrelWhy||{})[l.id]?.slice(-1)[0];
-    if(w&&G.day-w.d<=D.deed&&!W.lords.some(o=>o!==l&&!KNOWLEDGE.knowsLord(o)&&w.why.includes(o.name))){const why=w.why.replace(/\bthem\b/g,'me').replace(/\btheir\b/g,'my').replace(/\bthey\b/g,'I');
+    const gr0=DEATH.on&&l.house&&Houses.byId(l.house)?.grudged()&&Houses.byId(l.house).grudge;
+    if(w&&G.day-w.d<=D.deed&&!/^what you said/.test(w.why)&&!(gr0&&w.why.includes(gr0.name))&&!W.lords.some(o=>o!==l&&!KNOWLEDGE.knowsLord(o)&&w.why.includes(o.name))){const why=w.why.replace(/\bthem\b/g,'me').replace(/\btheir\b/g,'my').replace(/\bthey\b/g,'I').replace(/\bto (him|her)\b/g,'to me');
       add('deed:'+w.d+':'+w.why,sub(w.n>0?D.good:D.bad,{why,Why:cap1(why)}))}
-    // (the war his realm is in: yours too, a foe you share, or his alone)
+    // (the war his realm is in: yours too, a foe you share, or his alone; once a month (D.month) at most; your name once to each of your line)
     const foes=FIDS.filter(f=>f!==l.fac&&!W.dead[f]&&atWar(l.fac,f));
     if(foes.length&&!hostileTo(l.fac)){const foe=foes.find(f=>P.fac&&P.fac!==l.fac&&atWar(P.fac,f))||foes[0],F=FACS[foe].n;
-      add('war:'+foe,sub(P.fac===l.fac?D.ally:P.fac&&atWar(P.fac,foe)?D.shared:D.war,{realm:htmlText(FACS[l.fac].n),foe:htmlText(F)}))}
-    if(!TalkMemory.mine(this.key)&&P.renown>=D.known)add('name',P.renown>=D.famed?D.famed:D.known);
-    return out}
+      add('war:'+foe+':'+Math.floor(G.day/D.month),sub(P.fac===l.fac?D.ally:P.fac&&atWar(P.fac,foe)?D.shared:D.war,{realm:htmlText(FACS[l.fac].n),foe:htmlText(F)}))}
+    if(!TalkMemory.mine(this.key)&&P.renown>=D.known)add('name:'+Legacy.fallen,P.renown>=D.famed?D.famed:D.known);
+    if(said.length>D.keep)m.said=said.slice(-D.keep);return out}
   // ---- the checks: why not now ('' free; false: not offered), the odds, the outcome won or lost
   checkWhy(id){const l=this.o,m=TalkMemory.mine(this.key)?TalkMemory.all[this.key]:{},v=relWith(l);
     if(id==='follow'){const w=Host.askWhy(l);if(w!=='')return w===false?false:w}
@@ -100,7 +102,7 @@ class LordSpeaker extends Speaker{
     if(o.gold)out.gold=Math.min(o.gold,treas(l.fac));if(o.rel)out.rel=[l,o.rel,'what you said to '+pr(l).him];if(o.honor)out.honor=[l.fac,o.honor];return out}
   // (the ways open for an aim, the one his manner suits best first marked: by Insight (rough), or his manner known)
   ways(id){return (DIALOGUE.checks[id].ways||[]).filter(w=>DIALOGUE.ways[w])}
-  best(id){const t=this.temper();return this.ways(id).slice().sort((a,b)=>(DIALOGUE.ways[b].temper[t]||0)-(DIALOGUE.ways[a].temper[t]||0))[0]}
+  best(id){const t=this.temper();return this.ways(id).filter(w=>!this.wayWhy(w)).sort((a,b)=>(DIALOGUE.ways[b].temper[t]||0)-(DIALOGUE.ways[a].temper[t]||0))[0]}
   // (his topics: talk (news, other lords, his house), ask (his soldiers, his company), sway (praise or threaten), work (his job, the board's))
   topics(){const l=this.o;return [{id:'talk',label:'Talk with '+pr(l).him},{id:'ask',label:'Ask '+pr(l).him+' for something'},{id:'sway',label:'Sway '+pr(l).him},
     {id:'work',label:'Work',has:!!lordJobHtml(l),note:'What '+pr(l).he+' would have you do'}]}
@@ -123,11 +125,14 @@ class LordSpeaker extends Speaker{
   /* an aim chosen: with more than one way open, its ways to choose from (cv.aim); one way (or a way chosen: way_<w>), tried: your
      words, the roll (the stream talk), his answer by temper (won, in part, lost), what came of it; remembered (once a day each) */
   act(id,cv){const l=this.o;if(id.startsWith('way_'))return this.attempt(cv.aim,id.slice(4),cv);const X=DIALOGUE.checks[id];if(!X||this.checkWhy(id))return;
-    const open=this.ways(id).filter(w=>!this.wayWhy(w));if(open.length>1){cv.aim=id;return cv.reshow()}return this.attempt(id,open[0]||null,cv)}
+    const open=this.ways(id).filter(w=>!this.wayWhy(w));if(open.length>1){cv.aim=id;return cv.reshow()}if(!open.length&&this.ways(id).length)return cv.reshow();return this.attempt(id,open[0]||null,cv)}
   attempt(id,w,cv){const l=this.o,X=DIALOGUE.checks[id];cv.aim=null;if(!X||this.checkWhy(id)||w&&this.wayWhy(w))return cv.reshow();const m=TalkMemory.meet(this.key);(m.tried||(m.tried={}))[id]=G.day;
-    const W0=w&&DIALOGUE.ways[w];cv.say(this.fill(w&&X.ways.length>1?W0.you:X.you),false,heroName()||'You');
+    // (your words: what you ask (none for his regard: the way is the asking), then the way you put it)
+    const W0=w&&DIALOGUE.ways[w],me=heroName()||'You';if(!(w&&X.ways.length>1)||X.ask)cv.say(this.fill(X.ask||X.you),false,me);if(w&&X.ways.length>1)cv.say(this.fill(W0.you),false,me);
     const p=this.odds(id,w),r=rngOf('talk').next(),won=r<p?true:r<p+DIALOGUE.part?'part':false,words=won==='part'?X.half:won?X.yes:X.no;train('pers',won?3:1);
     cv.say(this.fill(words[this.temper()]||words.plain));const o=this.outcome(id,won);
+    // (a way's cost whatever comes of it: leaning on him for what is not tribute, his liking)
+    if(W0?.cost&&id!=='threaten')o.rel=[l,(o.rel?.[1]||0)+W0.cost,'you leaned on them'];
     if(won&&id==='favour'){const got=lordLend(l,won==='part'?X.part.lend:undefined);cv.say(l.name+' lends you '+got.join(', ')+'.',true)}
     if(won&&id==='follow'){const n=Host.lead(l,won==='part'?X.part.days:undefined);cv.say(l.name+' will follow you for '+n+' days.',true)}// (his place in your host: world/hosts.js)
     if(o.gold)W.treas[l.fac]=Math.max(0,treas(l.fac)-o.gold);Outcome.apply(o,{});const d=Outcome.describe(o);if(d)cv.say('<span class="muted">'+d+'</span>',true);

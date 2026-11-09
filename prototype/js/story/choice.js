@@ -92,11 +92,12 @@ class ChoicePage extends PageScreen{
     super.show({ico:o.ico,title:o.title,sub:o.sub,banner:o.banner,msg:said?null:o.msg,body,acts:o.done?[]:this.buttons(o.choices,o.subject,o.act),keys:CHOICE_KEYS,note:o.note,back:o.back,close:o.close},key);
   }
   /* (the exchange on its page, kept while the page is the same (key) about the same (subject): each choice made, your words (sayFor) or what you did, and what
-     came of it (its result, o.msg), as a talk's lines: story/conversation.js; the last TALK.lines of them) */
+     came of it (its result, o.msg), as a talk's lines: story/conversation.js; the last TALK.lines of them; once it has begun, a result
+     that came of no choice (a fight's end) told too) */
   exchange(o,key){if(key!==this.key||o.subject!==this.subj){this.key=key;this.subj=o.subject;this.log=[];this.lastMsg=null}
-    if(o.msg&&this.picked&&o.msg!==this.lastMsg){const {c,s}=this.picked;this.log.push({say:c.sayFor(s),did:c.labelFor(s),msg:o.msg})}
+    if(o.msg&&o.msg!==this.lastMsg&&(this.picked||this.log.length)){const p=this.picked;this.log.push({say:p?p.c.sayFor(p.s):null,did:p?p.c.labelFor(p.s):null,msg:o.msg})}
     this.picked=null;this.lastMsg=o.msg||null;if(!this.log.length)return '';const you=htmlText(heroName()||'You');
-    return '<div class="talk-lines pg-talk">'+this.log.slice(-TALK.lines).map(x=>(x.say?'<p class="talk-line you"><b>'+you+'</b> &ldquo;'+x.say+'&rdquo;</p>':'<p class="talk-line you did"><b>'+you+'</b> '+x.did+'</p>')+'<div class="talk-told">'+x.msg+'</div>').join('')+'</div>'}
+    return '<div class="talk-lines pg-talk">'+this.log.slice(-TALK.lines).map(x=>(x.say?'<p class="talk-line you"><b>'+you+'</b> &ldquo;'+x.say+'&rdquo;</p>':x.did?'<p class="talk-line you did"><b>'+you+'</b> '+x.did+'</p>':'')+'<div class="talk-told">'+x.msg+'</div>').join('')+'</div>'}
   // the choices offered now, as key actions (each its place in the whole list)
   buttons(cs,s,act){
     return cs.map((c,i)=>[c,i]).filter(([c])=>c.shown(s)).map(([c,i])=>c.button(s,act,i));

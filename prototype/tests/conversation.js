@@ -45,14 +45,24 @@ Kit.suite(({ok})=>{
   try{P.lrelWhy={[L.id]:[{d:G.day,n:6,why:'you let them go'}]};t.lordMeet(L);ok(qa('.talk-line').some(e=>e.innerHTML.includes('you let me go')),'he remembers your last deed, in his words: you let me go');
    t.act('lord-leave');t.lordMeet(L);ok(!qa('.talk-line').some(e=>e.innerHTML.includes('you let me go')),'and says it once');t.act('lord-leave');
    const Lg=t.Legacy,line0=Lg.line,f0=Lg.fallen,k0=Lg.kin;Lg.line=[{n:f0+1,who:'Aldric Ashby',by:'a pack of wolves',g:'m'}];Lg.fallen=f0+1;Lg.kin={rel:'child',of:f0+1};
-   try{t.lordMeet(L);const said=qa('.talk-line').map(e=>e.innerHTML).join(' ');ok(/You have the look of Aldric Ashby/.test(said)&&!said.includes(new t.LordSpeaker(L).fill(t.DIALOGUE.greet.lord[L.temper]?.again||t.DIALOGUE.greet.lord.again).slice(-10)),'met by one of your line who fell: to you, kin of theirs, a first meeting, and he remembers them');t.act('lord-leave')}
+   try{t.lordMeet(L);const said=qa('.talk-line').map(e=>e.innerHTML).join(' ');ok(/You have the look of Aldric Ashby/.test(said)&&!said.includes(new t.LordSpeaker(L).fill(t.DIALOGUE.greet.lord[L.temper]?.again||t.DIALOGUE.greet.lord.again).slice(-10)),'met by one of your line who fell: to you, kin of theirs, a first meeting, and he remembers them');t.act('lord-leave');
+   Lg.line=[{n:f0+1,who:'Aldric Ashby',by:'wolves'},{n:f0+2,who:'Mira Thorn',by:'a bear'}];Lg.fallen=f0+2;Lg.kin={rel:'child',of:f0+2};M.all['lord:'+L.id].gen=f0;M.all['lord:'+L.id].said=[];
+   t.lordMeet(L);const s2=qa('.talk-line').map(e=>e.innerHTML).join(' ');ok(/Another under the banner Aldric Ashby rode under/.test(s2)&&!/the look of/.test(s2),'he knew one of your line, but you are kin of another: you are a stranger to him, under their banner');t.act('lord-leave')}
    finally{Lg.line=line0;Lg.fallen=f0;Lg.kin=k0}}
   finally{P.lrelWhy=why0}}
+ // ---- edge cases of the ways: what you ask then how you put it; leaning on him costs his liking, won or not, and he remembers it in his words
+ {const L=W.lords.find(x=>!x.dead&&!t.hostileTo(x.fac)&&x!==l);Object.assign(L,{inside:null,x:P.x+3,y:P.y,troops:Array(12).fill('hum_foot')});P.troops={hum_knight:6};M.all={};P.lrelWhy={};const o=t.LordSpeaker.prototype.odds;
+  try{t.LordSpeaker.prototype.odds=()=>1;(P.lrel??={})[L.id]=0;L.lend=0;const r0=t.relWith(L);t.lordMeet(L);t.act('talk-topic','ask');t.act('talk-favour',L.id);const ws=qa('[data-act^="talk-way_"]').map(b=>b.dataset.act.slice(9));
+   if(!ws.includes('fear'))ok(false,'fear open ('+ws+'; power '+t.partyPower()+' vs '+L.power()+'; '+(q('.talk-not')?.textContent||'')+')');else{t.act('talk-way_fear',L.id);const you=qa('.talk-line.you').map(e=>e.textContent);
+    ok(you.length===2&&you[0].includes(t.DIALOGUE.checks.favour.ask)&&you[1].includes(t.DIALOGUE.ways.fear.you)&&t.relWith(L)===r0+t.DIALOGUE.ways.fear.cost,'his soldiers, leaning on him: what you ask, then how you put it; his liking '+t.DIALOGUE.ways.fear.cost+' though he gives in');
+    t.act('lord-leave');t.lordMeet(L);ok(qa('.talk-line').some(e=>/You leaned on me/.test(e.textContent)),'and he remembers it, in his words: you leaned on me');t.act('lord-leave')}}
+  finally{t.LordSpeaker.prototype.odds=o}}
  // ---- a story's page as talk: your words as you choose (or what you did), what came of it, kept on the page; its keys numbers
- {G.mode='world';hidePanel();const e=t.roadSpawn('toll',P.x+30,P.y);if(!e)info('no toll to meet');else{t.roadMeet(e);const ks=qa('.rkact').map(b=>b.dataset.rk).join('');ok(/^123/.test(ks),'a road choice page: its choices on number keys ('+ks+')');
+ {G.mode='world';hidePanel();const e=t.roadSpawn('toll',P.x+30,P.y);if(!e)ok(false,'a toll to meet');else{t.roadMeet(e);const ks=qa('.rkact').map(b=>b.dataset.rk).join('');ok(/^123/.test(ks),'a road choice page: its choices on number keys ('+ks+')');
    const i=e.D.acts.findIndex(c=>c.label==='Ask for their writ');t.act('enc-do',String(i));const lines=qa('.pg-talk .talk-line.you').map(b=>b.textContent);
    ok(lines.length===1&&lines[0].includes('Show me the lord’s writ')&&q('.pg-talk .talk-told'),'asked for their writ: your words and what came of it, as a talk');
    const j=e.D.acts.findIndex(c=>c.label==='Talk your way through');if(j>=0&&!e.done&&G.mode==='road'){t.act('enc-do',String(j));ok(qa('.pg-talk .talk-line.you').length===2,'the exchange kept on the page: two choices, two answers')}
+   if(G.mode==='road'){G.roadMsg='A cart rolls by.';t.showRoad();ok(qa('.pg-talk .talk-told').some(e=>e.textContent==='A cart rolls by.'),'once the exchange has begun, a result that came of no choice is told in it too')}
    if(G.mode==='road')t.act('enc-leave')}}
  // ---- phase 3: a companion (from the Army's Role tab): approval in words, their story, their opinion, their wish, a warning
  {P.comps={brann:{ap:5,role:''},elske:{ap:1,role:''}};t.compInit('brann');t.compInit('elske');P.quests=[];

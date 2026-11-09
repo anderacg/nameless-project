@@ -29,19 +29,20 @@ const DIALOGUE={
       you:'Your deeds are spoken of in every hall from here to the sea.',
       yes:{plain:'You speak well. I will remember it.',greedy:'Ha! Words cost nothing, but I like them.',kind:'You are generous.',honourable:'Well said. I hold you the higher for it.'},no:{plain:'Spare me.',proud:'Do you take me for a fool, to be won with words?',cunning:'Fine words. What are you after?'}},
     favour:{label:'Ask a favour: some of {his} soldiers',short:'{his} soldiers',ways:['honour','gain','bond','fear'],part:{lend:2},half:{plain:'Two of them, no more.',greedy:'Two. And you owe me.'},base:.25,cha:.03,pers:.05,renown:.001,honor:.004,temper:{kind:.15,honourable:.05,greedy:-.15,proud:-.05,cunning:-.05},lose:{rel:-3},
-      you:'I could use a few good men. Would you spare me some of yours?',
+      you:'I could use a few good men. Would you spare me some of yours?',ask:'I could use a few good men. Would you spare me some of yours?',
       yes:{plain:'Take them, and bring them back alive.',kind:'Of course. Take care of them.',greedy:'You will owe me for this.'},no:{plain:'I need every man I have.',proud:'My soldiers are not yours to ask for.'}},
     threaten:{label:'Demand tribute',short:'tribute',ways:['fear'],part:{gold:25,rel:-10},half:{plain:'Take this, and be gone. It is all you will get.'},base:.2,cha:.02,power:.3,renown:.001,temper:{kind:.15,greedy:.05,cunning:-.05,honourable:-.1,proud:-.25},win:{gold:60,rel:-8},lose:{rel:-12,honor:-5},
       you:'Pay me, or I will burn your fields to the last stalk.',
       yes:{plain:'Take it, then, and go.',greedy:'Fine! Take it. But this is not over.'},no:{plain:'Get out before I have you thrown out.',proud:'You dare? Out of my sight!',honourable:'I do not bend to threats.'}},
     // (ask him to follow you: he marches in your host for some days: world/hosts.js; by his relation with you too (rel))
     follow:{label:'Ask {him} to follow you',short:'{his} company',ways:['honour','gain','bond'],part:{days:2},half:{plain:'Two days, then. No more.'},base:.25,cha:.03,pers:.03,renown:.0015,honor:.004,rel:.006,temper:{honourable:.1,kind:.1,proud:-.15,greedy:-.05,cunning:0},
-      you:'Ride with me for a while. There is work on the road for both of us.',
+      you:'Ride with me for a while. There is work on the road for both of us.',ask:'Ride with me for a while. There is work on the road for both of us.',
       yes:{plain:'Very well. For a few days, then.',honourable:'Gladly. Lead on.',greedy:'If there is plunder in it, why not.'},no:{plain:'I have my own road to ride.',proud:'I follow my liege, and no one else.',cunning:'Not yet. Show me what you are worth first.'}},
     min:.05,max:.9},
   /* the ways to put it (deeper persuasion: story/conversation.js LordSpeaker): each aim above has its ways (ways); his temper takes
      to each or not (temper: over the aim's own odds, in place of the aim's own); a way may need something (need: warm, his liking
-     at least Warm; power, your army the stronger); your words (you: an aim's own, else the way's). The roll: under the odds, won;
+     at least Warm; power, your army the stronger); its cost whatever comes of it (cost: his liking, fear's, but for tribute); your words:
+     what you ask (an aim's ask), then the way's (you). The roll: under the odds, won;
      under them and part more, won in part (the aim's part, his half words); else lost. Insight (rough) marks the way his manner
      suits best; his manner known, so does it */
   ways:{
@@ -49,7 +50,7 @@ const DIALOGUE={
     honour:{label:'Speak of honour and duty',you:'It is a matter of honour, and I know you for one who keeps {his} word.',temper:{honourable:.2,proud:.1,kind:.05,greedy:-.1,cunning:-.1}},
     gain:{label:'Speak of what {he} gains',you:'There is profit in it for you, and more to come.',temper:{greedy:.25,cunning:.1,honourable:-.15,kind:-.05,proud:-.05}},
     bond:{label:'Ask it as a friend',you:'We have stood together before. I ask it as a friend.',need:'warm',temper:{kind:.2,honourable:.1,cunning:-.1,proud:-.05}},
-    fear:{label:'Lean on {him}',you:'It would go hard for you to refuse me.',need:'power',temper:{kind:.15,greedy:.05,cunning:-.05,honourable:-.1,proud:-.25}}},
+    fear:{label:'Lean on {him}',you:'It would go hard for you to refuse me.',need:'power',cost:-5,temper:{kind:.15,greedy:.05,cunning:-.05,honourable:-.1,proud:-.25}}},
   part:.2,
   // (what another lord tells you of a lord's manner, asked about other lords)
   tells:'Of their manner: {list}.',
@@ -63,8 +64,9 @@ const DIALOGUE={
      said once, the first of these that hold: your line (he knew one of it who fell: kin of theirs, their look; a stranger under
      their banner), his house's grudge, its mourning (one of it dead within days), its joy (a wedding or a child within days: their
      names only to a close friend, DEATH.house.tell), his taking up of the place, your last deed toward him (within days: the
-     reason his liking moved, in his words), the war his realm is in, your name (first meeting, renown at least known) */
-  remember:{most:2,days:20,deed:30,known:50,famed:150,
+     reason his liking moved, in his words), the war his realm is in, your name (first meeting, renown at least known); the last keep
+     of what was said remembered */
+  remember:{most:2,days:20,deed:30,known:50,famed:150,keep:40,month:30,
     kin:'You have the look of {who}. I knew {them}, before {they} fell to {by}.',
     stranger:'Another under the banner {who} rode under. I knew {them}; {they} fell to {by}.',
     grudge:'You killed {name}. My house has not forgotten it.',kinGrudge:'Your kin killed {name}. My house has not forgotten it.',
