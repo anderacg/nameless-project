@@ -205,7 +205,7 @@ const AUTO_LV=new WeakMap();
 const CHAR_GROW={companion:{hp:[.9,.1],dmg:[.93,.07]},lord:{hp:[1.3,.08],dmg:[.95,.04]},chieftain:{hp:[1.3,.08],dmg:[.95,.04]}};
 // the nodes each class takes first when it can (the rest: the lowest it can)
 // (each an active skill near the front, so one comes in its first few levels on the round tree's paths)
-const CLASS_PICK={warrior:['oneh_dash','twoh_quake','oneh_duel'],guardian:['block_guard','lead_cry','twoh_hide','lead_bearer'],rider:['ride_charge','oneh_dash'],
+const CLASS_PICK={warrior:['oneh_dash','twoh_quake','oneh_duel'],guardian:['block_guard','lead_cry','twoh_hide','lead_bearer'],rider:['oneh_dash','ride_charge'],
   archer:['arch_volley','arch_marks','arch_hands','arch_eagle'],caster:['spell_nova','spell_flow','spell_study']};
 // the weapons (and a shield) a lord wears, by his people
 const OUTFIT={human:['sword','shield'],dwarf:['axe','shield'],elf:['spear'],orc:['axe']};

@@ -95,26 +95,29 @@ const PROF_TREE={
     [['stew_reeve','s','Reeve',{sk:{stew:1}}],['stew_order','s','Steward’s Order',{food:.05}]],
     [['stew_tax','s','Tax Collector',{sk:{stew:2}}],['stew_stores','s','Keeper of Stores',{food:.08}]],
     [['stew_lord','s','Lord’s Steward',{sk:{stew:3}}],['stew_pay','s','Garrison Pay',{tHp:.05}]]]};
-/* the round tree (the owner, 2026-11-08: "one big circle node tree spans across each proficiency", "bonus upgrade along journey path"):
-   the proficiencies round the circle by group (TREE_RING, in order), each one's path out from your origin in the middle: its first
-   tier's pair open from the middle, then between one tier and the next a bonus node joining both of each (a hub), what TREE_PATH lists
-   for it in turn (the first also its proficiency learned faster). A node opens once a node linked to it is learned (core/talents.js
-   canTake); its first pair is linked to the middle (entry) */
+/* the round tree (the owner, 2026-11-08: "one big circle node tree spans across each proficiency", "bonus upgrade along journey path";
+   2026-11-09: "add more attribute nodes to each proficiency"): the proficiencies round the circle by group (TREE_RING, in order), each
+   one's path out from your origin in the middle: its first tier's pair open from the middle, then between one tier and the next a run
+   of PATH_RUN bonus nodes (the first joining both of the tier below, the last both of the tier above), and after the last tier PATH_TAIL
+   more; what each gives, TREE_PATH's four for that proficiency in turn (the first also its proficiency learned faster). A node opens
+   once a node linked to it is learned (core/talents.js canTake); its first pair is linked to the middle (entry) */
 const TREE_RING=[['Fighting',['oneh','twoh','block','fist','archery','spell']],['Body and wilds',['athl','ride','wood','hunt','surv','scout']],
   ['Command',['lead','tact','med','eng']],['Word and coin',['pers','trade','stew']]];
+const PATH_RUN=2,PATH_TAIL=2;
 const TREE_PATH={
-  oneh:[{learn:.1,hp:4},{dmgPct:.03},{hp:8}],twoh:[{learn:.1,hp:4},{dmgPct:.03},{dr:.02}],block:[{learn:.1,hp:6},{block:.02}],
-  fist:[{learn:.1,hp:4},{fistPct:.05},{sp:6}],archery:[{learn:.1,crit:.01},{dmgPct:.03},{spd:.03}],spell:[{learn:.1,mp:6},{mpRegen:.1},{mp:10}],
-  athl:[{learn:.1,sp:6},{spd:.03}],ride:[{learn:.1,travel:.02},{sp:6}],wood:[{learn:.1,travel:.02},{hp:6}],hunt:[{learn:.1,food:.03},{crit:.01}],
-  surv:[{learn:.1,hp:6},{food:.04}],scout:[{learn:.1,vis:.03},{travel:.02}],lead:[{learn:.1,morale:2},{tHp:.02},{tDmg:.02}],
-  tact:[{learn:.1,tDmg:.02},{loot:.03}],med:[{learn:.1,regen:.2},{hp:6}],eng:[{learn:.1,train:.03},{tHp:.02}],
-  pers:[{learn:.1,hire:.02},{morale:2}],trade:[{learn:.1,loot:.02},{hire:.02}],stew:[{learn:.1,food:.02},{tHp:.02}]};
+  oneh:[{learn:.1,hp:4},{dmgPct:.02},{hp:6},{dmg:.5}],twoh:[{learn:.1,hp:4},{dmgPct:.02},{dr:.01},{hp:6}],block:[{learn:.1,hp:5},{block:.015},{dr:.01},{hp:6}],
+  fist:[{learn:.1,hp:4},{fistPct:.03},{sp:5},{fistCd:-.02}],archery:[{learn:.1,crit:.01},{dmgPct:.02},{spd:.02},{sp:5}],spell:[{learn:.1,mp:5},{mpRegen:.08},{mp:8},{mpPct:.03}],
+  athl:[{learn:.1,sp:5},{spd:.02},{sp:6},{spRegen:.05}],ride:[{learn:.1,travel:.015},{sp:5},{travel:.02},{hp:4}],wood:[{learn:.1,travel:.015},{hp:5},{vis:.02},{dr:.01}],
+  hunt:[{learn:.1,food:.02},{crit:.01},{food:.03},{dmgPct:.02}],surv:[{learn:.1,hp:5},{food:.03},{regen:.15},{hp:6}],scout:[{learn:.1,vis:.02},{travel:.015},{vis:.03},{crit:.01}],
+  lead:[{learn:.1,morale:2},{tHp:.015},{tDmg:.015},{morale:2}],tact:[{learn:.1,tDmg:.015},{loot:.02},{tHp:.015},{loot:.02}],med:[{learn:.1,regen:.15},{hp:5},{mp:5},{regen:.15}],
+  eng:[{learn:.1,train:.02},{tHp:.015},{food:.02},{train:.02}],pers:[{learn:.1,hire:.015},{morale:2},{hire:.02},{loot:.02}],trade:[{learn:.1,loot:.015},{hire:.015},{loot:.02},{food:.02}],
+  stew:[{learn:.1,food:.015},{tHp:.015},{food:.02},{morale:2}]};
 // (a bonus node's name, by its first effect other than learning)
 const PATH_NAME={hp:'Hardiness',dmg:'Weight',dmgPct:'Edge',dr:'Grit',block:'Firm Grip',crit:'Keen Eye',spd:'Light Step',mp:'Deep Well',mpRegen:'Quickening',
-  mpPct:'Wellspring',fistPct:'Hard Knuckles',fistCd:'Fast Hands',sp:'Long Breath',travel:'Road Legs',vis:'Far Look',food:'Thrift',regen:'Mending',
+  mpPct:'Wellspring',fistPct:'Hard Knuckles',fistCd:'Fast Hands',sp:'Long Breath',spRegen:'Second Breath',travel:'Road Legs',vis:'Far Look',food:'Thrift',regen:'Mending',
   morale:'Heart',tHp:'Steady Ranks',tDmg:'Sharp Ranks',loot:'Keen Purse',hire:'Fair Word',train:'Good Teacher'};
-/* the nodes, by id: prof, tier (a hub its tier below's, hub true), the other of its pair (pair), links (the nodes it joins), entry (its
-   first pair: open from the middle). Each past begins with its origin (a node of no tree: its small head
+/* the nodes, by id: prof, tier (a bonus node its tier below's, hub true), the other of its pair (pair), links (the nodes it joins),
+   entry (its first pair: open from the middle), ring (its place out from the middle: data/tree.js's layers, ui/talents.js draws by it). Each past begins with its origin (a node of no tree: its small head
    start: what its old attributes gave, attr, as their bonuses); your race its own (r_<race>, never on P.tree: state.js tmOf, from
    data/races.js attr); a companion, a lord or a chieftain with 'start' (nothing) */
 const TREE={start:{id:'start',n:'Start',t:'start',m:{},links:[],d:'Where a companion, a lord or a chieftain begins: nothing yet.'}};
@@ -132,10 +135,15 @@ const originOf=bg=>'o_'+(ORIGINS[bg]?bg:'soldier');
 (()=>{
   for(const prof in PROF_TREE){PROF_TREE[prof].forEach((pair,tier)=>pair.forEach(([id,t,n,m,d],i)=>{
     TREE[id]={id,t,n,m:nodeMods(m),d:d||'',prof,tier,pair:pair[1-i][0],links:[],entry:tier===0}}))}
-  // (the bonus nodes between the tiers, each linking both of the tier below to both above)
-  const link=(a,b)=>{TREE[a].links.push(b);TREE[b].links.push(a)};
-  for(const prof in PROF_TREE){const T=PROF_TREE[prof],B=TREE_PATH[prof]||[];for(let t=1;t<T.length;t++){const m=B[(t-1)%Math.max(1,B.length)]||{hp:4},id=prof+'_p'+t,key=Object.keys(m).find(k=>k!=='learn');
-    TREE[id]={id,t:'b',n:PATH_NAME[key]||'Practice',m,d:'',prof,tier:t-1,hub:true,links:[]};for(const [lo] of T[t-1])link(lo,id);for(const [hi] of T[t])link(id,hi)}}
+  // (the bonus nodes: a run of PATH_RUN between each two tiers, its first joining both below, its last both above; PATH_TAIL past the
+  // last tier; each a ring of its own, the next of TREE_PATH's in turn (a repeat named II, III…); the tiers' rings between them)
+  const link=(a,b)=>{TREE[a].links.push(b);TREE[b].links.push(a)},ROMAN=['','',' II',' III',' IV',' V'];
+  for(const prof in PROF_TREE){const T=PROF_TREE[prof],B=TREE_PATH[prof]||[{hp:4}],seen={};let n=0,ring=0;
+    const bonus=(tier,from)=>{const m={...B[n%B.length]};if(n>=B.length)delete m.learn;n++;const id=prof+'_p'+n,key=Object.keys(m).find(k=>k!=='learn')||'hp',nm=PATH_NAME[key]||'Practice';seen[nm]=(seen[nm]||0)+1;
+      TREE[id]={id,t:'b',n:nm+(ROMAN[seen[nm]]||''),m,d:'',prof,tier,hub:true,ring:++ring,links:[]};for(const f of from)link(f,id);return id};
+    T.forEach((pair,t)=>{if(t)ring++;for(const [id] of pair)TREE[id].ring=ring;
+      const lo=pair.map(([id])=>id);let last=lo;const run=t<T.length-1?PATH_RUN:PATH_TAIL;
+      for(let r=0;r<run;r++)last=[bonus(t,last)];if(t<T.length-1)for(const [hi] of T[t+1])link(last[0],hi)})}
   for(const bg in ORIGINS){const O=ORIGINS[bg];TREE['o_'+bg]={id:'o_'+bg,t:'origin',bg,n:O.n,m:nodeMods(O.m),links:[],d:''}}
   for(const r in RACES)TREE['r_'+r]={id:'r_'+r,t:'race',n:RACES[r].n,m:nodeMods({attr:RACES[r].attr}),links:[],d:''}
   // describe the small nodes from their effects

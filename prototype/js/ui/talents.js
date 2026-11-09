@@ -39,17 +39,18 @@ function skTreeOf(S){const L=skProfs(S);if(L.includes(G.skTree))return G.skTree;
    open pulsing, reachable bronze, not yet dark. Shown anew (G.skGrow) the nodes fly out of the middle; one just learned (G.skJust)
    bursts. TREE_ROUND: its numbers, in the view's units (r0 far enough out that the first ring's nodes, evenly spaced, never touch:
    the owner, 2026-11-09, "make the node not overlap") */
-const TREE_ROUND={r0:400,dr:56,gap:.6,spread:.25,top:46,foot:92,half:250,r:{s:17,n:19,k:22,a:20,b:9}};
+const TREE_ROUND={r0:400,dr:46,gap:.6,spread:.25,top:46,foot:92,half:250,r:{s:17,n:19,k:22,a:20,b:9}};
 const NODE_GLYPH={s:'+',n:'◆',k:'✸',a:'✦',b:''};
 // (a hexagon of radius r round x, y)
 const hexPts=(x,y,r)=>[0,1,2,3,4,5].map(i=>{const a=Math.PI/3*i+Math.PI/6;return (x+r*Math.cos(a)).toFixed(1)+','+(y+r*Math.sin(a)).toFixed(1)}).join(' ');
 // (every node's place, each slice's angle (a, radians, 0 east), width and rim; made once)
 let TREE_POS=null;
 function treePos(){if(TREE_POS)return TREE_POS;const R=TREE_ROUND,P={},sec={},units=TREE_RING.reduce((n,[,L])=>n+L.length+R.gap,0);let u=R.gap/2;
-  for(const [g,L] of TREE_RING){for(const k of L){const a=-Math.PI/2+(u+.5)/units*2*Math.PI,w=2*Math.PI/units,T=PROF_TREE[k];u++;
-    T.forEach((pair,t)=>{const r=R.r0+2*t*R.dr,da=w*R.spread;/* (a pair a quarter of its slice either side of its middle: every node evenly spaced round each ring, none touching another) */pair.forEach(([id],i)=>{const b=a+(i?da:-da);P[id]=[r*Math.cos(b),r*Math.sin(b)]});
-      if(t){const rh=R.r0+(2*t-1)*R.dr;P[k+'_p'+t]=[rh*Math.cos(a),rh*Math.sin(a)]}});
-    sec[k]={a,w,g,rim:R.r0+2*(T.length-1)*R.dr}}u+=R.gap}
+  for(const [g,L] of TREE_RING){for(const k of L){const a=-Math.PI/2+(u+.5)/units*2*Math.PI,w=2*Math.PI/units,da=w*R.spread;u++;let top=0;
+    // (each node on its ring (data/tree.js ring): a pair a quarter of its slice either side of its middle, a bonus node on its middle;
+    // every node evenly spaced round each ring, none touching another)
+    for(const id in TREE){const N=TREE[id];if(N.prof!==k)continue;const r=R.r0+N.ring*R.dr,b=N.hub?a:a+(PROF_TREE[k][N.tier][0][0]===id?-da:da);P[id]=[r*Math.cos(b),r*Math.sin(b)];top=Math.max(top,N.ring)}
+    sec[k]={a,w,g,rim:R.r0+top*R.dr}}u+=R.gap}
   return TREE_POS={P,sec,rim:Math.max(...Object.values(sec).map(q=>q.rim))}}
 // (the view of the wheel: the shown slice turned up, from just under its foot to over its rim; or the whole circle)
 const treeView=(k,whole)=>{const R=TREE_ROUND,{sec,rim}=treePos(),s=sec[k]||sec.oneh;return whole?[-(rim+110),-(rim+110),2*(rim+110),2*(rim+110)]:[-R.half,-(s.rim+R.top),2*R.half,s.rim+R.top-R.r0+R.foot]};
@@ -63,7 +64,7 @@ function treeSvg(S,k){
   const del=(x,y)=>grow?(.1+Math.hypot(x,y)/rim*.7).toFixed(2)+'s':'0s',up=(x,y)=>' transform="rotate('+(-spin).toFixed(2)+' '+x.toFixed(1)+' '+y.toFixed(1)+')"';
   let defs='<defs><radialGradient id="tpGlow"><stop offset="0" stop-color="#ffe08a" stop-opacity=".55"/><stop offset="1" stop-color="#ffe08a" stop-opacity="0"/></radialGradient></defs>';
   // the field: faint motes; the rings each tier stands on
-  let svg='';for(let n=0;n<=2*3;n+=2)svg+='<circle cx="0" cy="0" r="'+(R.r0+n*R.dr)+'" class="tw-ring"/>';
+  let svg='';for(let n=0;n<=9;n+=3)svg+='<circle cx="0" cy="0" r="'+(R.r0+n*R.dr)+'" class="tw-ring"/>';
   svg+=[...Array(60)].map((_,i)=>{const a=hash(i,1,53)*Math.PI*2,r=hash(i,2,53)*(rim+60);return '<circle class="tp-mote" cx="'+(r*Math.cos(a)).toFixed(0)+'" cy="'+(r*Math.sin(a)).toFixed(0)+'" r="'+(hash(i,3,53)<.3?2:1.3)+'" style="--t:'+(hash(i,4,53)*4).toFixed(2)+'s"/>'}).join('');
   // each slice: its spoke from the middle, its proficiency's name and level at its foot, the shown one lit
   for(const q in sec){const s=sec[q],x=Math.cos(s.a),y=Math.sin(s.a),lx=(R.r0-62)*x,ly=(R.r0-62)*y,on=q===k,lv=TS.profLv(q);if(!whole&&!on){svg+='<line x1="'+(48*x).toFixed(1)+'" y1="'+(48*y).toFixed(1)+'" x2="'+((R.r0-26)*x).toFixed(1)+'" y2="'+((R.r0-26)*y).toFixed(1)+'" class="tw-spoke"/>';continue}
@@ -99,7 +100,7 @@ function treeNodePane(S,k){
   const N=TREE[id],T=talentsOf(S),have=T.has(id),can=T.canTake(id),pts=T.points(),u=N.m.unlock,refund=T.quoteRefund(id),lv=T.profLv(k),sc=Math.round(100*treeScale(lv));
   const why=have?(refund.ok?'':refund.code==='gold'?'Not enough gold to unlearn it.':'A node above grows from it: unlearn that first.'):N.tier&&!T.tierHas(k,N.tier-1)?'Learn a node of the tier below first.':!pts.left?'No skill points left: one each level.':'';
   const str=Object.keys(N.m).some(q=>typeof N.m[q]==='number'||q==='sk')?'<p class="muted">At '+SKILLS[k].n+' '+lv+' it gives '+sc+'% of this (a quarter at 0, whole at 100, more past it).</p>':'';
-  return '<aside class="tr-pane"><small>'+NODE_KIND(N)+' · '+SKILLS[k].n+(N.hub?' path':' tier '+(N.tier+1))+'</small><h3>'+htmlText(N.n)+'</h3><p>'+N.d+'</p>'+str+(u&&S===P?'<p class="muted">'+skillStats(u)+'.</p>':'')+
+  return '<aside class="tr-pane"><small>'+NODE_KIND(N)+' · '+SKILLS[k].n+(N.hub?' path, after tier '+(N.tier+1):' tier '+(N.tier+1))+'</small><h3>'+htmlText(N.n)+'</h3><p>'+N.d+'</p>'+str+(u&&S===P?'<p class="muted">'+skillStats(u)+'.</p>':'')+
     (have?'<p class="good">Learned</p>'+fbBtn('tree-refund',id,'Unlearn · '+refundCost()+'g',refund.ok?'':'x'):fbBtn('tree-take',id,fbIcon('skills')+' Learn · 1 point',can?'':'x','primary'))+(why?'<p class="muted">'+why+'</p>':'')+'</aside>'}
 /* the traits (were Basics; the owner, 2026-11-08): the moves everyone has from the start, and what your race and your past are. The
    combo's Third Blow and its finishers are nodes of the weapons' trees (data/tree.js combo3, fin) */

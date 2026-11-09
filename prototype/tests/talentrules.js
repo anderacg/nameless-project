@@ -26,7 +26,7 @@ try{
   before=snap();ok(!service.chooseFinisher('push').ok&&snap()===before,'a finisher cannot be chosen before its discipline is ready');ready=true;
   ok(!service.chooseFinisher('constructor').ok&&service.chooseFinisher('push').ok&&!service.chooseFinisher('stun').ok&&owner.fin==='push','only a defined finishing style can be chosen, and only once');
   ok(JSON.stringify(P)===globalBefore,'the injected talent service does not touch the live hero');
-  t.begin('soldier');G.quietEvents=true;const live=t.talentsOf(P);P.level=3;t.takeNode('oneh_str');t.takeNode('oneh_p1');t.takeNode('oneh_whirl');P.gold=1000;
+  t.begin('soldier');G.quietEvents=true;const live=t.talentsOf(P);P.level=4;['oneh_str','oneh_p1','oneh_p2','oneh_whirl'].forEach(id=>t.takeNode(id));P.gold=1000;
   G.mode='world';G.modal=false;t.hidePanel();t.openSkills('talents');t.act('tree-prof','oneh');t.act('tree-sel','oneh_whirl');
   const refund=document.querySelector('[data-act="tree-refund"][data-arg="oneh_whirl"]');ok(refund&&!refund.disabled===live.quoteRefund('oneh_whirl').ok,'the refund button uses service eligibility');
   before=JSON.stringify({tree:P.tree,gold:P.gold});t.act('tree-take','missing');t.act('tree-refund','missing');t.act('tree-take','oneh_dash');

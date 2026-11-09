@@ -664,7 +664,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W7 again 2026-11-08, on purpose: the owner, "one big circle node tree spans across each proficiency" (the round tree: a bonus
 //  node between each two tiers, a node opened by one linked to it; lords and chieftains walk the paths to their class's nodes, an
 //  active skill first): the save holds their trees. Was W7 e8ae4ea7)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'fa66e427',W7:'455f569f',W8:'1d99079f',B2:'f37cd778'};
+// (W7 again 2026-11-09, on purpose: the owner, "add more attribute nodes to each proficiency" (two bonus nodes between each two
+//  tiers, two past the last; riders aim at Blade Dash first): the save holds the lords' trees. Was W7 455f569f)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'fa66e427',W7:'2e2d16ff',W8:'1d99079f',B2:'f37cd778'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
