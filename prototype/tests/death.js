@@ -55,7 +55,29 @@ Kit.suite(({ok})=>{
   // ---- what a grave will give half of (phase 4): the experience your hero gained in this life, counted as it comes; not a grave's gift
   {const e0=P.xpEarned||0,x0=P.xp,lv0=P.level;t.gainXp(40,'battle');const e1=P.xpEarned;t.leaderOf(P).addXp(30,true);
    ok(e1-e0>=40&&P.xpEarned===e1,'the experience you gain counts toward your grave ('+(e1-e0)+' from a 40 XP deed and its practice); a grave\'s own gift does not')}
+  // ---- dying (phase 2; DEATH.die on, as the game will once a new person is built): your remains, the man-eater's bounty, the
+  // chronicle, the Slain page; your remains taken by a band, won back by beating it, or by whoever comes to them
+  {setup();X.die=true;const R=t.Remains;R.list=[];const gid=Object.keys(t.ITEMS).find(k=>t.ITEMS[k].slot==='weapon');t.invAdd('gear',gid,1);P.gear.weapon=P.gear.weapon||gid;
+   const m=wolves(),h0=t.Clock.hours(),g0=P.gold,n0=Object.values(P.gear).filter(Boolean).length+P.inv.filter(Boolean).length,msgs=G.msgs.length;
+   const mm=[X.min,X.max];X.min=X.max=0;try{lose(enc(m))}finally{[X.min,X.max]=mm}const r=R.list[0],S=D.slain;// (no chance to live: the roll lost)
+   ok(S&&/do not rise again/.test(panel())&&t.Clock.hours()===h0,'a lost roll: you do not rise again (no day passes, no waking)');
+   ok(r&&r.gold===Math.floor(g0*X.remains.gold)&&r.items.length===n0&&!P.gold&&!Object.values(P.gear).some(Boolean)&&!P.inv.some(Boolean)&&Math.hypot(r.x-P.x,r.y-P.y)<1,'your remains where you fell: all you wore and carried ('+r.items.length+' things) and '+r.gold+' of your '+g0+' gold');
+   ok(m.eater&&m.eater.slew===S.who&&m.bounty>0&&t.newsW().items.some(it=>it.k==='maneater'&&it.detail.slew===S.who),'the wolves a man-eater for it ('+D.nameOf(m)+'), a bounty of '+m.bounty+' gold on them, talked of');
+   ok(G.msgs.slice(msgs).some(x=>x.kind==='story'&&/fell to/.test(x.m)),'the chronicle keeps it: "'+(G.msgs.slice(msgs).find(x=>/fell to/.test(x.m))||{}).m+'"');
+   t.act('cont');ok(G.mode==='dialog'&&/<h2>Slain<\/h2>/.test(panel())&&/Days on the road/.test(panel())&&/data-act="death-load"/.test(panel())&&/data-act="death-menu"/.test(panel()),'the Slain page: your life in numbers; its way out a save or the main menu');
+   G.mode='world';G.modal=false;t.hidePanel();D.hour();ok(/<h2>Slain<\/h2>/.test(panel()),'no going on in the world while slain: the page comes back');
+   ok(t.worldObjects().includes(r)&&/remains of/.test(r.tip()),'your remains on the map ("'+r.tip().replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()+'")');
+   const sv=JSON.parse(JSON.stringify(R.save()));R.load(sv);const r2=R.list[0];ok(r2 instanceof t.Remains&&r2.gold===r.gold&&r2.items.length===r.items.length,'saved and loaded with the world');
+   // (a new person, as phase 3 will make: the remains are anyone's)
+   D.slain=null;X.die=false;G.mode='world';t.hidePanel();
+   const b=t.asParty({kind:'bandits',troops:Array(4).fill('militia'),x:r2.x+40,y:r2.y,cool:0});t.bandits.push(b);const gr=r2.gold,ni=r2.items.length;
+   roll(0);try{R.hour()}finally{window.Math.random=rnd}ok(r2.empty()&&b.plunder&&b.plunder.gold===gr&&b.plunder.items.length===ni&&/picked clean/.test(r2.tip()),'a band near finds them, and carries it all off');
+   const pg=P.gold;t.worldEmit('band:beaten',{band:b});ok(P.gold===pg+gr&&!b.plunder,'that band beaten: its plunder yours ('+gr+' gold and the gear)');
+   const r3=R.lay(P.x+30,P.y,'a stranger');r3.gold=25;r3.items=[['gear',gid,1]];r3.meet();ok(/<h2>Remains<\/h2>/.test(panel())&&/data-act="death-take"/.test(panel()),'come to remains: take what is left, or leave it');
+   const pg2=P.gold;t.act('death-take');ok(P.gold===pg2+25&&r3.empty()&&G.mode==='world','taken: into your purse and bag');
+   const pg3=P.gold,b0=m.bounty;t.worldEmit('monster:slain',{monster:m});ok(P.gold===pg3+b0,'the man-eater that killed you slain: its bounty ('+b0+' gold)');
+   R.list=[];t.act('cont')}
   // ---- no room on the roll's other side: a man-eater only once, and no mythic one
   {setup();const m=wolves({eater:{name:'the Old Maw',day:1}}),lv=m.lv;roll(.1);try{lose(enc(m))}finally{window.Math.random=rnd}ok(m.lv===lv&&m.eater.name==='the Old Maw','a man-eater already: named once');t.act('cont')}
- }finally{window.Math.random=rnd;X.on=on0;P.comps={};P.weak=0}
+ }finally{window.Math.random=rnd;X.on=on0;X.die=false;D.slain=null;t.Remains.list=[];P.comps={};P.weak=0}
 });

@@ -1,8 +1,8 @@
 'use strict';
 /* ---------- a fight lost to beasts (doc/DEATH_DESIGN.md; the owner, 2026-11-09). Beasts take no captives: when your whole side falls
    to them (no one of yours, nor an ally, still standing or fled: beastLoss), you roll to live (odds: DEATH.live, shifted by Medicine,
-   armour, daylight, a holding or road near, the beast's strength, a frost night, being alone). Phase 1: living (a lost roll kills you
-   only once phase 2 is built: DEATH.die). Living (fall, then after, as the fight's report is up):
+   armour, daylight, a holding or road near, the beast's strength, a frost night, being alone). A lost roll kills you (DEATH.die;
+   phase 2: died, the Slain page, your Remains below). Living (phase 1: fall, then after, as the fight's report is up):
    - you lie there a day (DEATH.wake), the world going on; you wake badly hurt and weak for days (Timed 'weak': world/parties.js
      heroStats);
    - your army is gone for good (its dead and wounded with it); your prisoners escaped as ever (resolution.js);
@@ -15,7 +15,7 @@
    - quests hear it (the bus: hero:fell {lived, monster}), their days run on through the lost day.
    Numbers: data/death.js DEATH ---------- */
 class Death{
-  static pending=null;
+  static pending=null;static slain=null;
   // a loss to beasts with your whole side down (e: the encounter; b: the battle fought, none when auto-resolved)
   static beastLoss(e,b){
     if(!DEATH.on||!e||!['monster','cave'].includes(e.kind)||(e.foes||[]).length||!(e.list||[]).length||!e.list.every(k=>ST[k]?.beast))return false;
@@ -44,8 +44,9 @@ class Death{
     return {ch:clamp(ch,DEATH.min,DEATH.max),why}}
   // the loss (Captivity.defeat): the roll, and all that befalls you; its words for the battle's page
   static fall(e){
-    // (a lost roll kills you once dying is built, phase 2: until then DEATH.die is off, and every roll lives)
+    // (a lost roll kills you, DEATH.die: off, every roll lives)
     const o=this.odds(e),m=e.kind==='monster'&&e.ref instanceof Monster?e.ref:null;
+    if(DEATH.die&&Math.random()>=o.ch)return this.died(e,o,m);
     const say=['The '+this.beastName(e)+' tear through the last of you, and you fall among your dead. A day later you wake, badly hurt.'];
     if(DEATH.die)say[0]+=' ('+Math.round(o.ch*100)+'% chance to live)';
     say.push(this.dismiss());
@@ -55,6 +56,24 @@ class Death{
     const eater=m&&this.eater(m);if(eater)say.push(eater);
     this.pending={m,hx:m?.hx,hy:m?.hy};
     return {how:'beast',text:say.join(' ')}}
+  /* ---- dying (phase 2): your remains where you fell (Remains: your gear, your bag and a share of your gold, for whoever finds them
+     first), the beast a man-eater with a bounty on it, the chronicle's line, then the Slain page (open). A new person in the same
+     world is phase 3: until then its way out is a save or the main menu */
+  static died(e,o,m){
+    const by=m?.eater?m.eater.name:'the '+this.beastName(e),life=this.life(by),r=Remains.lay(P.x,P.y,life.who);
+    if(m)this.eater(m,life.who);this.slain={...life,by:m?.eater?m.eater.name:by,gold:r.gold,items:r.items.length};this.pending={m,hx:m?.hx,hy:m?.hy,slain:true};
+    log(cap1(life.who)+' fell to '+this.slain.by+(life.near?' near '+life.near:'')+', on day '+G.day+': level '+life.level+', renown '+life.renown+'.','bad','story');
+    return {how:'slain',text:'The '+this.beastName(e)+' tear through the last of you, and you do not rise again ('+Math.round(o.ch*100)+'% chance to live).'}}
+  // (your life in a few numbers, for the Slain page and the chronicle)
+  static life(by){const h=Spatial.nearestHolding(P.x,P.y);return {who:heroName()||'a wanderer',day:G.day,days:G.day-(P.born||1)+1,level:P.level,renown:Math.round(P.renown||0),earned:Math.round(P.xpEarned||0),by,near:h?.name||''}}
+  // the Slain page (the frame: its way out a save, or the main menu)
+  static open(){const s=this.slain;if(!s)return;G.mode='dialog';
+    showPanel('<div class="top"><h2>Slain</h2><span class="muted">Day '+s.day+'</span></div>'+
+      '<p><b>'+htmlText(cap1(s.who))+'</b> fell to '+htmlText(s.by)+(s.near?' near '+htmlText(s.near):'')+'.</p>'+
+      '<div class="loot-stats">'+[['Days on the road',s.days],['Level',s.level],['Renown',s.renown],['Experience gained',s.earned]].map(([k,v])=>'<span><b>'+k+'</b><span>'+v+'</span></span>').join('')+'</div>'+
+      '<p>Your remains lie where you fell, with your gear ('+s.items+' piece'+(s.items===1?'':'s')+') and '+s.gold+' gold: whoever finds them first may take them. Men will put a price on '+htmlText(s.by)+'.</p>'+
+      '<p class="muted">Going on as a new person in this world comes next (not built yet): for now, load a save or go back to the main menu.</p>'+
+      nav(['death-load',null,'Load a save'],['death-menu',null,'Main menu']))}
   static beastName(e){const M=e.kind==='monster'&&e.ref&&MONSTERS[e.ref.id];return M?M.n.toLowerCase()+((e.list||[]).length>1&&!/s$/.test(M.n)?'s':''):'beasts'}
   // your army gone for good: the fit, the wounded
   static dismiss(){const r=partyRoster(P);let n=0;for(const g of r.groups.slice()){n+=g.count;r.remove(g.type,g.count,g.id)}
@@ -80,29 +99,33 @@ class Death{
       out.push(cap1(q.pn)+' did not live.');q.fail(cap1(q.pn)+' was killed by the beasts.','slain')}
     return out.join(' ')}
   // the beast that beat you may become a man-eater: its name, stronger, its bounty raised, talked of
-  static eater(m){
-    if(m.eater||MONSTERS[m.id].mythic||Math.random()>=DEATH.eater.chance)return '';const X=DEATH.eater,R=rngOf('maneater');
-    m.eater={name:'the '+R.pick(X.first)+' '+R.pick(X.last),day:G.day};m.lv+=X.lv;m.n+=X.n;if(m.changed)m.changed();
+  // (slew: the hero it killed, a man-eater for sure then, a bounty on it (slayer gold), told by the news)
+  static eater(m,slew){const X=DEATH.eater;
+    if(slew&&!m.bounty)m.bounty=Math.round(X.slayer.base+X.slayer.lv*P.level);
+    if(m.eater||!slew&&(MONSTERS[m.id].mythic||Math.random()>=X.chance)){if(slew&&m.eater)m.eater.slew=slew;return ''}const R=rngOf('maneater');
+    m.eater={name:MONSTERS[m.id].mythic?'the '+MONSTERS[m.id].n:'the '+R.pick(X.first)+' '+R.pick(X.last),day:G.day,...(slew?{slew}:{})};if(!MONSTERS[m.id].mythic){m.lv+=X.lv;m.n+=X.n}if(m.changed)m.changed();
     const q=m.qid&&P.quests.find(x=>x.id===m.qid);if(q?.reward)q.reward.gold=Math.round(q.reward.gold*X.bounty);
-    newsRecord('maneater',m,{id:m.id,name:m.eater.name});
+    newsRecord('maneater',m,{id:m.id,name:m.eater.name,...(slew?{slew}:{})});
     return 'They will talk of '+m.eater.name+' now: a man-eater, stronger for what it has done'+(q?', its bounty raised':'')+'.'}
   // (a man-eater's name, for its tip and the news)
   static nameOf(m){return m?.eater?cap1(m.eater.name):''}
   // the report shown: the day passes, you wake, the beast is gone; quests told
   static after(){
-    const p=this.pending;if(!p)return;this.pending=null;const m=p.m;
-    if(m&&W.monsters.includes(m)){if(p.hx!=null){m.hx=p.hx;m.hy=p.hy}
-      if(Math.hypot(m.hx-P.x,m.hy-P.y)<4*TILE){const dx=m.hx-P.x,dy=m.hy-P.y,l=Math.hypot(dx,dy)||1;m.x=P.x;m.y=P.y;walk(m,dx/l||1,dy/l,8*TILE);m.hx=m.x;m.hy=m.y}
-      m.x=m.hx;m.y=m.hy;m.cool=Math.max(m.cool||0,24)}
+    const p=this.pending;if(!p)return;this.pending=null;const m=p.m;this.home(p);if(p.slain)return;
     Clock.passHours(DEATH.wake);
     const [max]=vitals();P.hp=Math.max(1,Math.round(max*DEATH.hp));Timed.of(P).set('weak',DEATH.weak.days);
     worldEmit('hero:fell',{lived:true,monster:m});updateHUD(true)}
+  // (the beast gone home: its lair, or away from it when it fought you there)
+  static home(p){const m=p.m;
+    if(m&&W.monsters.includes(m)){if(p.hx!=null){m.hx=p.hx;m.hy=p.hy}
+      if(Math.hypot(m.hx-P.x,m.hy-P.y)<4*TILE){const dx=m.hx-P.x,dy=m.hy-P.y,l=Math.hypot(dx,dy)||1;m.x=P.x;m.y=P.y;walk(m,dx/l||1,dy/l,8*TILE);m.hx=m.x;m.hy=m.y}
+      m.x=m.hx;m.y=m.hy;m.cool=Math.max(m.cool||0,24)}}
   static weak(){return Timed.of(P).has('weak')}
   // ---- your lost companions (c.lost {at: the holding, until: the day they give up, left: gone from your service, tried: a talk's day})
   static lost(){return Object.keys(P.comps).filter(id=>P.comps[id].lost)}
   static questOf(id){const q=P.quests.find(q=>q.type==='reunion'&&q.cid===id);return q?Quest.as(q):null}
   // each hour: one left waiting too long gives up on you, for another holding (DEATH.comps.far tiles off)
-  static hour(){const X=DEATH.comps;
+  static hour(){const X=DEATH.comps;if(this.slain){if(G.mode==='world'&&!G.modal)this.open();return}Remains.hour();
     for(const id of this.lost()){const c=P.comps[id],L=c.lost;if(L.left||G.day<L.until)continue;const from=townBy(L.at)||P,[lo,hi]=X.far;
       const ts=TOWNS.filter(t=>!t.gone&&t.name!==L.at&&!hostileTo(t.owner)),far=ts.filter(t=>{const d=Math.hypot(t.x-from.x,t.y-from.y)/TILE;return d>=lo&&d<=hi}),t=(far.length?far:ts)[Math.floor(Math.random()*(far.length||ts.length))];
       if(!t)continue;L.at=t.name;L.left=true;c.ap=(c.ap||0)-X.left;const q=this.questOf(id);if(q)q.moved(t);
@@ -118,7 +141,11 @@ class Death{
   // (back with you)
   static rejoin(id,how){const c=P.comps[id];if(!c?.lost)return;const q=this.questOf(id);delete c.lost;
     log(COMPS[id].short+' '+how,'good','story',q?.journalKey);if(q)q.found()}
-  static act(a,id){const c=P.comps[id],L=c?.lost;if(!L)return;
+  static act(a,id){
+    if(a==='death-load')return toTitle('load');
+    if(a==='death-menu')return toTitle();
+    if(a==='death-take'||a==='death-leave')return Remains.act(a,id);
+    const c=P.comps[id],L=c?.lost;if(!L)return;
     if(a==='death-find'&&!L.left)this.rejoin(id,'is with you again.');
     if(a==='death-talk'&&L.left&&L.tried!==G.day){L.tried=G.day;if(Math.random()<this.talkOdds(id))this.rejoin(id,'hears you out, and comes back to your band.');else log(COMPS[id].short+' will not hear it today.','bad','story')}
     if(a==='death-pay'&&L.left){const p=this.payOf(id);if(P.gold<p)return;P.gold-=p;this.rejoin(id,'takes the pay you owe them, and comes back to your band.')}
@@ -137,10 +164,61 @@ class ReunionQuest extends StepQuest{
   sayOf(k){return {gone:'They are no longer lost.'}[k]||super.sayOf(k)}
 }
 defineKind('step','reunion',{cls:ReunionQuest});
+/* ---------- your remains (phase 2): where you fell, your gear, your bag and a share of your gold (DEATH.remains.gold), never fading.
+   Anyone may take them: a bandit band near finds them (DEATH.remains: seek px, find a chance an hour) and carries them off (its
+   plunder: beat it, and it is yours); one who comes to them takes what is left (meet). Saved (the save piece remains). Phase 4 buries
+   them in the grave ---------- */
+class Remains extends WorldObject{
+  static list=[];
+  // (laid where you fell: all you wore and carried, and the share of your gold)
+  static lay(x,y,who){const items=[];
+    for(const k in P.gear){const id=P.gear[k];if(id){items.push(['gear',id,1]);P.gear[k]=null}}
+    P.inv=P.inv.map(s=>{if(s)items.push([s.k,s.id,s.n||1]);return null});
+    const gold=Math.floor((P.gold||0)*DEATH.remains.gold);P.gold=0;
+    const r=asRemains({rm:1,x:Math.round(x),y:Math.round(y),who,day:G.day,gold,items});this.list.push(r);return r}
+  get mapKind(){return 'remains'}
+  here(){return Remains.list.includes(this)}
+  empty(){return !this.gold&&!this.items.length}
+  inView(V){return spotted(this,V)}
+  pick(at){at.add(this,9,2)}
+  get meetsAnyTime(){return true}
+  what(){const n=k=>this.items.reduce((a,x)=>a+((x[0]==='gear')===k?x[2]:0),0),g=n(true),o=n(false);
+    return [this.gold&&this.gold+' gold',g&&g+' piece'+(g>1?'s':'')+' of gear',o&&o+' other thing'+(o>1?'s':'')].filter(Boolean).join(', ')||'nothing left'}
+  tip(){return '<b>The remains of '+htmlText(this.who)+'</b><small>Fell on day '+this.day+(this.empty()?' · picked clean'+(this.robbed?' by '+htmlText(this.robbed):''):' · '+this.what())+'</small><span class="act">Click: go there</span>'}
+  // (met: what is left, yours to take)
+  meet(){G.mode='dialog';G.remains=this;
+    showPanel('<div class="top"><h2>Remains</h2><span class="muted">'+htmlText(cap1(this.who))+' · fell on day '+this.day+'</span></div>'+
+      '<p>Bones and torn cloth where '+htmlText(this.who)+' fell'+(this.empty()?': '+(this.robbed?htmlText(this.robbed)+' got here first':'nothing is left')+'.':', and what they had: '+this.what()+'.')+'</p>'+
+      nav(['death-leave',null,'Leave'],this.empty()?null:['death-take',null,'Take it']))}
+  static act(a){const r=G.remains;G.remains=null;if(!r){toWorld();return}
+    if(a==='death-take'){const got=r.take();if(got)log('From the remains of '+r.who+': '+got+'.','gold')}
+    hidePanel();toWorld()}
+  // (taken by you: the gold, and what fits in your bag; the rest left)
+  take(){const g=this.gold;P.gold+=g;this.gold=0;let n=0;this.items=this.items.filter(([k,id,c])=>{const put=invAdd(k,id,c);n+=put;return put<c});
+    return [g&&g+' gold',n&&n+' piece'+(n>1?'s':'')].filter(Boolean).join(' and ')}
+  draw(ents,cam,V){if(!this.inView(V))return;const r=this;
+    ents.push({y:r.y,f:()=>{const x=Math.round(r.x-cam.x),y=Math.round(r.y-cam.y),C=DEATH.remains.col;
+      ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x-5,y,10,2);ctx.fillStyle=C.cloth;ctx.fillRect(x-4,y-2,7,2);ctx.fillStyle=C.bone;ctx.fillRect(x+3,y-3,2,2);ctx.fillRect(x-5,y-1,1,1);
+      if(!r.empty()){ctx.fillStyle=C.steel;ctx.fillRect(x-3,y-4,6,1);ctx.fillStyle=C.glint;ctx.fillRect(x+2,y-4,1,1)}}})}
+  // each hour: a band near finds remains not yet picked clean, and carries all of it off (its plunder)
+  static hour(){const X=DEATH.remains;
+    for(const r of this.list){if(r.empty())continue;const b=bandits.find(o=>!o.dead&&Math.hypot(o.x-r.x,o.y-r.y)<X.seek);if(!b||Math.random()>=X.find)continue;
+      const p=b.plunder||(b.plunder={gold:0,items:[],of:[]});p.gold+=r.gold;p.items.push(...r.items);if(!p.of.includes(r.who))p.of.push(r.who);r.gold=0;r.items=[];r.robbed=robberOf(b)}}
+  // (a band beaten that carried off remains: its plunder yours)
+  static beaten(b){const p=b?.plunder;if(!p)return;b.plunder=null;P.gold+=p.gold;let n=0;for(const [k,id,c] of p.items)n+=invAdd(k,id,c);
+    log('Among their plunder, the goods of '+p.of.join(' and ')+': '+[p.gold&&p.gold+' gold',n&&n+' piece'+(n>1?'s':'')].filter(Boolean).join(' and ')+'.','gold')}
+  static save(){return this.list.length?this.list.map(r=>({...r})):undefined}
+  static load(v){this.list=(v||[]).map(asRemains)}
+}
+const asRemains=asClass(Remains);
+const robberOf=b=>b?.ld?.name?b.ld.name+'’s band':'bandits';
 onAct('death-',(a,arg)=>Death.act(a,arg));
 // (the fight's report shown: the day passes: Death.after)
 worldOn('battle:ended',()=>Death.after());
 // (a man-eater slain: renown, and the news of it)
-worldOn('monster:slain',d=>{const m=d?.monster;if(!m?.eater)return;P.renown+=DEATH.eater.renown;log('You slay '+m.eater.name+', the man-eater. Renown +'+DEATH.eater.renown+'.','good','war')});
-onWorld(()=>{Death.pending=null});
+worldOn('monster:slain',d=>{const m=d?.monster;if(!m?.eater)return;P.renown+=DEATH.eater.renown;const g=m.bounty||0;P.gold+=g;
+  log('You slay '+m.eater.name+', the man-eater'+(m.eater.slew?' that killed '+m.eater.slew:'')+'. Renown +'+DEATH.eater.renown+(g?', its bounty '+g+' gold':'')+'.','good','war')});
+worldOn('band:beaten',d=>Remains.beaten(d?.band));
+onWorld(()=>{Death.pending=null;Death.slain=null;Remains.list=[]});
+Saves.add({key:'remains',order:332,defaults:null,save:()=>Remains.save(),load:v=>Remains.load(v)});
 Systems.add({name:'lost companions',order:{hour:165},hour:()=>Death.hour()});

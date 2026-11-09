@@ -11,6 +11,7 @@ function act(a,arg){
   if(a==='auto')return autoResolve();
   if(a==='flee')return flee();
   if(a==='cont'){lootEnd();updateHUD(true);if(G.encAgain){const e=G.encAgain;G.encAgain=null;return startEncounter(e)}// (run down after withdrawing: face them again)
+    if(Death.slain){toWorld();return Death.open()}// (slain by beasts: world/death.js)
     if(G.capture){toWorld();return showCapture()}if(Captivity.held){toWorld();return Captivity.open()}return toWorld()}// (taken captive: world/captivity.js)
   if(a==='leave'){if(G.town&&G.town.inScene)return backToScene();G.town=null;G.scene=null;return toWorld()}
   if(a==='back-town'){lootEnd();G.mode='town';renderTown();return}

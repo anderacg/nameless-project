@@ -2,8 +2,8 @@
 /* ---------- data: a fight lost to beasts (the owner, 2026-11-09: "When you lost to the beast, or monster, you should be dead. But
    there might be a chance that you may survived which would be wounded but the day should be passed and the monster should not be
    there anymore"; doc/DEATH_DESIGN.md). World/death.js Death reads it ----------
-   on: the rule at all (the tests' harness: off, a beast's loss as before); die: a roll lost kills you (phase 2, not built: off, every
-   roll lives); live: the chance to live, shifted (shift) and kept within min-max:
+   on: the rule at all (the tests' harness: off, a beast's loss as before); die: a roll lost kills you (phase 2: off until going on as a
+   new person is built, phase 3, so a death is no dead end; the tests turn it on); live: the chance to live, shifted (shift) and kept within min-max:
      med: a point of the best Medicine among those who fell; armor: your body armour's class; day / night; near: a holding within
      near tiles; road: on a road; lv: each level of the beast past the first (less); big: a big beast (less); mythic (less); frost: a
      frost night (less); alone: no companion and no soldier with you (less);
@@ -14,10 +14,12 @@
    min-max; one a day) or their pay (base + lv a level);
    pass: the chance each passenger you escort lives (else slain);
    eater: the chance the beast becomes a man-eater: levels and beasts it gains, its bounty (× a quest's gold that marks it), the
-   renown for slaying it, the parts of its name */
+   renown for slaying it, the parts of its name; slayer: the bounty on one that killed you (gold, a level of yours more);
+   remains (phase 2, dying): the share of your gold left with them (the rest scattered), how near a band finds them (seek px) and its
+   chance an hour, their look */
 const DEATH={on:true,die:false,live:.3,min:.1,max:.6,
   shift:{med:.03,armor:{leather:.03,mail:.06,plate:.1},day:.05,night:-.05,near:.08,road:.04,lv:.02,big:.08,mythic:.2,frost:.06,alone:.05},near:12,
   wake:24,hp:.2,weak:{days:3,dmg:.85,spd:.9},food:.6,horse:.5,
   comps:{n:3,hurt:2,wander:7,far:[8,30],left:2,talk:{base:.35,pers:.05,ap:.04,min:.1,max:.9},pay:{base:40,lv:12}},
-  pass:.5,
-  eater:{chance:.6,lv:2,n:1,bounty:1.5,renown:12,first:['Grey','Red','Black','Old','Scarred','Pale','Hollow','Silent'],last:['Widow','Maw','Hunger','Shadow','Fang','Reaver','Ghost','Butcher']}};
+  pass:.5,remains:{gold:.6,seek:160,find:.15,col:{cloth:'#5b4a3a',bone:'#e8dfc8',steel:'#9aa4ad',glint:'#ffffff'}},
+  eater:{chance:.6,lv:2,n:1,bounty:1.5,renown:12,slayer:{base:100,lv:30},first:['Grey','Red','Black','Old','Scarred','Pale','Hollow','Silent'],last:['Widow','Maw','Hunger','Shadow','Fang','Reaver','Ghost','Butcher']}};
