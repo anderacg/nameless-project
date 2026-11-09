@@ -15,6 +15,11 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 - **A realm you founded:** the strongest vassal takes the crown.
 - **The main story:** it starts again for the new person.
 
+## Decisions, round 2 (owner, 2026-11-09)
+
+- **The map is forgotten** by the new person.
+- **No easy mode** that always lets you live.
+
 ## 1. When it applies
 
 - **A loss to beasts only:** the foe's side is all beasts or monsters (`mapKind` 'monster', a wildlife fight, a den or a beast lair). If any man stands on the foe's side (bandits with war dogs, a beast tamer), it is a loss to men, and capture works as today (`Captivity.defeat` → `captor`).
@@ -36,7 +41,7 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
   - fighting alone (no band): −.
 - **Bounds:** clamped to `DEATH.min`…`DEATH.max` (about 0.1…0.6), so neither outcome is ever sure.
 - **Shown first:** the encounter page warns "Beasts take no prisoners", and shows the chance when your band is small.
-- **Easy mode:** a difficulty option may always make you live (a later choice; `DEATH.mercy`).
+- **No easy mode:** no setting makes you always live (owner, 2026-11-09).
 
 ## 3. Surviving
 
@@ -89,12 +94,12 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
   - **Estates and fiefs:** go back to the realm that granted them (its lord gives them anew).
   - **A realm you founded:** its strongest vassal takes the crown and the realm goes on, now ruled by the AI. If it has no vassals, its holdings go to the realm next to each.
   - **Prisoners you held:** go free. Someone else's captives you held go home.
-  - **Your stash, workshops and caravans:** go to the holding's lord, or are lost.
+  - **Your caravans** (`world/caravans.js`, `mine`): their goods and purse go to the realm of the holding they are bound for; they become its caravans.
 - **What resets:**
   - **Reputation:** renown, honour and relations start fresh. Lords who knew the old hero remember them in a line, not in numbers.
   - **Quests:** all dropped. Each giver is told, with no penalty to anyone. A quest the world tracks (a bounty) stays open for anyone.
   - **Progress:** level, points, the tree and proficiencies start as the new background gives.
-  - **Known places:** the map you discovered stays; a person hears of the world. This is the kindest choice; tell me if it should reset too.
+  - **Known places:** forgotten. The map you discovered is dark again, and the new person finds it anew (owner, 2026-11-09).
 - **The main story:** it starts again for the new person, at its opening (doc/MAIN_QUEST_DESIGN.md, doc/OPENING_STORY_DESIGN.md). What the old hero did in it stays in the world as fact (a defeated foe stays defeated; a lost relic stays where it fell).
 - **Once-a-game events:** stay used (no second first-visit gift).
 - **Saves:** your saves go on. A save from before the death can still be loaded, as any save can.
@@ -115,7 +120,7 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 
 ## 8. How it would be built
 
-- **Tunables:** `data/death.js` (new), `DEATH`: `on`, `live`, `min`, `max`, the roll's shifts, `wake`, `hp`, `food`, `horse`, `wander`, `remains`, `near`, `mercy`, the man-eater's growth and bounty.
+- **Tunables:** `data/death.js` (new), `DEATH`: `on`, `live`, `min`, `max`, the roll's shifts, `wake`, `hp`, `food`, `horse`, `wander`, `remains`, `near`, the man-eater's growth and bounty.
 - **The rule:** `world/death.js` (new), a `Death` class:
   - `beastLoss(e)`: is it a loss to beasts with your whole side down? `Captivity.defeat` asks it first.
   - `roll(e)`: the chance to live.
@@ -144,6 +149,4 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 
 ## 10. Open questions
 
-- **The map you knew:** kept for the new person (above), or forgotten?
-- **The old hero's gold in the bank or stash:** to the holding's lord (above), or partly inherited by the new person (a "kin" background)?
-- **Easy mode:** should a difficulty setting always let you live?
+- **An heir?** The game has no bank. Besides your purse (a share in your remains), the old hero leaves only their caravans and their fiefs' stock, and both go to a realm (above). Should the new person inherit part of it (a "kin" background that starts with some gold or a caravan)? For now: no, a clean start.
