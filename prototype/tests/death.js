@@ -216,7 +216,7 @@ Kit.suite(({ok})=>{
    fi.value='Thornwood';fi.dispatchEvent(new Event('input',{bubbles:true}));t.act('death-past',k);settleAll();
    ok(L.family==='Thornwood'&&L.line.length===1&&L.line[0].family==='Thornwood','your line goes by it: the Thornwood family');
    const g2=die(X.grave.tiers.near.stone),site=W.sites.find(o=>o.type==='rest'&&o.kind==='plot');ok(site&&site.name==='Thornwood Family Rest'&&L.line.length===2&&L.family==='Thornwood','its graves and plot go by it: "'+(site&&site.name)+'"; the next life keeps it');
-   G.jsec='family';const html=t.JOURNAL_SECTIONS.family.render();ok(/The Thornwood family · 2 fallen/.test(html)&&/the 3rd of your line/.test(html)&&/2nd · /.test(html)&&/1st · /.test(html)&&/Lies in Thornwood Family Rest/.test(html),'the journal\'s Family: you now, the 3rd of your line; the 2nd and the 1st, their lives, what killed them, where they lie');
+   G.jsec='family';const html=t.JOURNAL_SECTIONS.family.render();const ord=[...html.matchAll(/class="ft-n">([^<]+)</g)].map(m=>m[1]);ok(/The Thornwood family · 2 fallen/.test(html)&&ord.join('|')==='1st|2nd|3rd · you'&&/class="ft-gen ft-now"/.test(html)&&/Lies in Thornwood Family Rest/.test(html),'the journal\'s Family, a tree: the 1st at the top, then the 2nd, down to you, the 3rd ('+ord.join(' → ')+')');
    // (a lord of a house killed by you: his house holds it against you, its living lords and the next of it; the house shown with him)
    const H=t.Houses;H.list=[];const lo=W.lords.filter(o=>!o.dead&&!o.gone&&t.fiefsOf(o.fac).length),a=lo[0],h=t.LordHouse.of(a),b=lo.find(o=>o!==a&&o.fac===a.fac);if(b)b.house=h.id;
    const rb=b?t.relWith(b):0;Object.assign(a,{dead:true,gone:true,back:1e9});H.died(a,'put to death',true);

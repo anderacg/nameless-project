@@ -1594,3 +1594,19 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 @keyframes rank-flash{0%{background:rgba(232,185,74,.45);box-shadow:0 0 14px rgba(232,185,74,.8)}100%{background:transparent;box-shadow:none}}
 .fb-field-loot{color:#f0d890}
 @media (prefers-reduced-motion:reduce){.rank-flash{animation:none}}
+
+/* (the Journal's Family, ui/family.js: your line as a tree, its first at the top down to you, each generation a node on one stem, its
+   heir a branch off it) */
+.ft-line{list-style:none;margin:6px 0 0;padding:0 0 0 24px;position:relative}
+.ft-line::before{content:'';position:absolute;left:9px;top:18px;bottom:28px;border-left:2px solid var(--line-2)}
+.ft-gen{position:relative;display:flex;flex-wrap:wrap;align-items:flex-start;gap:0;margin:0 0 12px}
+.ft-gen::before{content:'';position:absolute;left:-20px;top:13px;width:10px;height:10px;border-radius:50%;background:var(--trim);box-shadow:0 0 0 3px var(--shade)}
+.ft-node{flex:1 1 300px;max-width:470px;padding:7px 11px 8px;border:1px solid var(--line-2);border-radius:6px;background:rgba(0,0,0,.28)}
+.ft-node b{font-size:15px}.ft-node small{display:block;margin-top:2px;font-size:13px;color:#cdbf9f}.ft-node small.bad{color:var(--danger)}
+.ft-n{display:inline-block;margin-right:7px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.ft-now::before{background:var(--accent);box-shadow:0 0 0 3px var(--shade),0 0 10px rgba(201,162,78,.7)}
+.ft-now .ft-node{border-color:var(--accent);box-shadow:inset 0 0 0 1px rgba(201,162,78,.45)}
+.ft-branch{position:relative;flex:0 1 250px;padding:6px 0 0 26px}
+.ft-branch::before{content:'';position:absolute;left:4px;top:24px;width:20px;border-top:2px dashed var(--line-2)}
+.ft-heir{max-width:250px;background:rgba(0,0,0,.18);border-style:dashed}
+@media (max-width:700px){.ft-branch{flex-basis:100%;padding-left:30px}.ft-branch::before{left:10px;top:0;width:0;height:24px;border-top:0;border-left:2px dashed var(--line-2)}}

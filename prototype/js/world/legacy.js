@@ -53,7 +53,7 @@ class Legacy{
   static raise(cid,fac,own){const c=P.comps[cid],h=own[0]||Spatial.nearest(fiefsOf(fac),P.x,P.y)||Spatial.nearestHolding(P.x,P.y);
     const comps=[cid,...Object.keys(P.comps).filter(id=>id!==cid&&(P.comps[id].ap||0)>=DEATH.heir.follow&&!P.comps[id].jail)];
     const l=asParty({id:'heir_'+cid+'_'+G.day,name:COMPS[cid].n,fac,x:h.x+rint(-8,8),y:h.y+14,troops:c.party?.troops?.slice()||armyOf(fac,DEATH.heir.men),state:'rest',tgt:h.name,sd:0,cool:0,dead:false,gone:false,back:0,lv:c.lv||0,heir:{cid,comps,of:heroName()||'a fallen hero'}});
-    W.lords.push(l);this.raised=l;const L=this.line[this.line.length-1];if(L)L.heir=COMPS[cid].n;return l}
+    W.lords.push(l);this.raised=l;const L=this.line[this.line.length-1];if(L){L.heir=COMPS[cid].n;L.heirId=l.id}return l}
   // (a holding with no heir: to the realm whose holding is nearest it)
   static nextRealm(t){const o=Spatial.nearest(TOWNS.filter(x=>x!==t&&!x.gone&&x.owner&&x.owner!=='player'&&FACS[x.owner]&&!W.dead[x.owner]),t.x,t.y);return o?o.owner:null}
   // (a companion kept, hired again: as they were)
