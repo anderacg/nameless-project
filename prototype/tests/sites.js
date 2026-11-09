@@ -9,7 +9,7 @@ try{
  const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
  const panel=()=>document.getElementById('panel').innerHTML;
  t.act('begin','soldier');
- const S=W.sites,of=ty=>S.filter(s=>s.type===ty),want=Object.keys(t.SITE_TYPES);
+ const S=W.sites,of=ty=>S.filter(s=>s.type===ty),want=Object.keys(t.SITE_TYPES).filter(ty=>!t.SITE_TYPES[ty].made);// (none made in play: a resting place, world/lineage.js)
  // (as many as the world holds, data/world.js density: at least 9 in 10, the travellers wanting a roadside)
  ok(want.every(ty=>{const n=of(ty).length,w=t.SITE_TYPES[ty].spots?t.CAMP_SPOTS.length:t.density(t.WM).sites[ty];return n<=w&&n>=w*.9}),'every kind placed: '+want.map(ty=>of(ty).length+' '+ty).join(', '));
  // (the travellers' camps (the owner's play-test, 2026-10-22: "too many pilgrim and wanderer camps"): as many as the world's road

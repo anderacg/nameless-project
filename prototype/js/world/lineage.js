@@ -72,7 +72,7 @@ Saves.add({key:'houses',order:334,defaults:null,save:()=>Houses.save(),load:v=>H
    crypt, a lone grave or cairn, or remains no one buried. Its graves draw themselves; its page holds what is done there: pray at
    each that still holds anything, take their grave goods, pay your respects at a crypt. sync makes the places for the graves,
    and keeps each where its graves are ---------- */
-SITE_TYPES.rest={n:'Resting place',ico:'altar',col:'#d8c890',d:'Where the dead lie, and something of them lingers.'};
+SITE_TYPES.rest={n:'Resting place',ico:'altar',col:'#d8c890',d:'Where the dead lie, and something of them lingers.',made:true,on:()=>false};// (made in play, never by the world: genSites passes it by)
 class RestSite extends Site{
   get screen(){return PAGE_SCREEN}
   get scoutable(){return false}
