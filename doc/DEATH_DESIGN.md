@@ -1,6 +1,6 @@
 # Death to beasts, and a new life in the same world: design
 
-Status: **design** (2026-11-09), not built. The owner: "When you lost to the beast, or monster, you should be dead. But there might be a chance that you may survived which would be wounded but the day should be passed and the monster should not be there anymore. Recheck if there is any quest relevant to it. What do you think? Please help me think of edge cases or similar situations."
+Status: **design** (2026-11-09), not built; every question answered (round 5). The owner: "When you lost to the beast, or monster, you should be dead. But there might be a chance that you may survived which would be wounded but the day should be passed and the monster should not be there anymore. Recheck if there is any quest relevant to it. What do you think? Please help me think of edge cases or similar situations."
 
 **Today:** a fight lost to beasts leaves you "for dead among the fallen", waking where you fell at a quarter of your health (`Captivity.defeat`, `world/captivity.js`, `CAPTIVITY.beast.hp`). Nothing else changes: your band, the beast and your quests stay as they were.
 
@@ -27,6 +27,15 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 ## Decisions, round 4 (owner, 2026-11-09)
 
 - **Graves:** "how about we add a grave system where you can regain all exp or experience from. The more hero dies the more grave will have. The grave may be places near where you died or in your own fief or holdings. You may get rumors of the fallen grave randomly." Each fallen hero leaves a grave; the new person who finds it and pays their respects regains that hero's experience (§6.2). This is the one thing a new person can take from the old life.
+
+## Decisions, round 5 (owner, 2026-11-09)
+
+- **The crown:** the heir takes it, over the realm's strongest vassal.
+- **A grave gives half:** half the experience the fallen hero earned; no proficiencies.
+- **An heir for the new person** (kin): later.
+- **The remains never fade, and are one with the grave:** what lies where you fell (your gear, bag and a share of your gold) is buried with you as grave goods (§5, §6.2).
+- **Companions left too long leave you**, and must be won back.
+- **Kept as proposed:** the chance to live (about 30%, 10–60%); the heir only if loyal, the others with them if content; fiefs to the heir if the realm's ruler accepts them; a spent grave stays on the map; graves never fade.
 
 ## 1. When it applies
 
@@ -58,7 +67,7 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 - **Your army:** dismissed, gone for good (dead, or fled home). Prisoners you held run away.
 - **Your companions:** each wakes wounded at a holding near (the nearest few by `Spatial`). They are known to be "somewhere near" and come back through a **reunion quest**:
   - you find them in that holding's tavern;
-  - left too long (`DEATH.wander` days), they wander to another holding or leave your service;
+  - left too long (`DEATH.wander` days), they wander to another holding and leave your service; to have them back you must **win them back**: a talk (Persuasion), a favour they ask (a small quest of their own) or their pay owed, their approval lower for being left (`DEATH.left`);
   - a companion who has their own quest line keeps it.
 - **Your goods:**
   - **Food:** the beasts raid it: a share is eaten (`DEATH.food`).
@@ -86,10 +95,10 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 ## 5. Dying
 
 - **The moment:** a page, "Slain", with your hero's life in a few lines: days lived, deeds, renown, the beast that killed you. The chronicle (the journal's history) records your death.
-- **Your remains:** a place on the map where you fell, holding your bag, your gear and a share of your gold:
-  - **anyone may take them first:** a bandit band near walks to them and carries them off;
+- **Your remains:** your body where you fell, with your bag, your gear and a share of your gold. They never fade; they become your grave (§6.2):
+  - **anyone may take them first:** a bandit band near walks to them and carries off what it can, before you are buried, and robs a cairn later (grave robbers);
   - **getting them back:** beat that band, and its loot holds your gear;
-  - **fading:** what nobody takes lies there for `DEATH.remains` days, then is gone.
+  - **buried:** what is left goes into your grave as its grave goods: with an heir, carried to their fief; with none, under a cairn where you fell.
 - **The beast that killed you:** it becomes a man-eater, as in §3, with a large bounty. Its news names your old hero.
 
 ## 6. A new person, same world
@@ -108,7 +117,7 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 
 - **Who:** the companion with the highest approval, if it is at least "loyal" (`apName`, core/state.js) and they are alive. A tie goes to the higher level. A companion who leads a band of their own already (`compInit(id).party`) counts too.
 - **No one loyal:** no heir. Everything goes as in §6 (to the realms, the companions free).
-- **What they take:** the old hero's caravans, fiefs and estates (they hold them as a vassal of the same realm, if its ruler accepts them; else the fiefs go back to the realm), the crown of a realm the hero founded, and what the remains still hold if they reach them first (§5: the heir's band goes for the remains, and may race the bandits for them).
+- **What they take:** the old hero's caravans, fiefs and estates (they hold them as a vassal of the same realm, if its ruler accepts them; else the fiefs go back to the realm), the crown of a realm the hero founded, They go for your remains (§5) and may race the bandits for them, but what they recover goes into your grave, not their purse.
 - **Their band:** the heir leads a lord-like party, "<heir>'s company", under the old hero's banner:
   - the other companions who are at least "content" with the heir go with them; the rest go free;
   - no troops at first (the old army fell); they recruit over the next days, as a lord does, paid from the inheritance;
@@ -125,23 +134,26 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 - **Once-a-game events:** stay used (no second first-visit gift).
 - **Saves:** your saves go on. A save from before the death can still be loaded, as any save can.
 
-### 6.2 Graves: the fallen's experience
+### 6.2 Graves: the fallen's experience and goods
 
 - **One grave a death:** each hero who dies leaves a grave. The more heroes die, the more graves lie in the world.
 - **Where it is:**
   - **with an heir:** in the heir's fief, at its holding's graveyard (they carry the body home); or, with no fief, at the holding they pass first;
   - **with no heir:** near where the hero fell, a cairn raised by whoever found the body (a shepherd, a patrol), a little off the spot (`DEATH.cairn` px).
-- **What it holds:** the experience that hero earned in their own life (`P.xp` over all their levels, `HERO_XP_ALL`) and their proficiencies' levels. Never what they themselves took from an older grave, so nothing is counted twice.
+- **What it holds:**
+  - **half the experience** that hero earned in their own life (`HERO_XP_ALL` of their level and `P.xp`, × `DEATH.grave`, 0.5), never what they themselves took from an older grave, so nothing is counted twice;
+  - **its grave goods:** the remains (§5) that nobody took first: gear, bag and gold.
 - **Finding it:** the map is forgotten (§6), so you learn of graves by rumour:
   - now and then a teller speaks of one (`world/news.js` `rumourFrom`: "They buried a hero at Dunmere, the one the wolves took"; "A cairn stands by the north road, over some brave fool"), at random, more often near it;
   - its rumour marks the map roughly (as rumours do: a little off its true spot, `drawRumourMarks`), and fades; it is heard again later;
   - you know it when you walk near it (a grave on the map, `WorldObject`).
 - **Paying respects:** at the grave, a short page with the hero's life (from the chronicle). Kneel, and:
-  - **experience:** you gain all of it (`gainXp`), with its levels and skill points;
-  - **proficiencies:** each of yours rises to the old hero's level, if theirs was higher (as practice: `train`, so level-ups give their XP too, `PROF`);
+  - **experience:** you gain its half (`gainXp`), with the levels and skill points it brings;
+  - **grave goods:** you may take them (into your purse and bag; a full bag leaves the rest in the grave), or leave them;
   - the grave is then spent (it stays on the map as a grave, with nothing more to give).
 - **A grave in a fief:** you must reach it: through the holding's gate (`world/gates.js`), its owner's leave or a bribe, as any holding. In a heir's fief, the heir lets you in (they knew the hero).
-- **A cairn in the wilds:** the beast that killed the hero may still roam there (its man-eater); the cairn may stand in a beast's land.
+- **A cairn in the wilds:** the beast that killed the hero may still roam there (its man-eater); the cairn may stand in a beast's land. Bandits may rob its goods (never its experience): beat them to win the goods back.
+- **A grave in a fief** is safe from robbers while the fief holds.
 - **Waiting:** a grave never fades. One not yet found waits for the next person, and the next.
 
 
@@ -166,14 +178,14 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 
 ## 8. How it would be built
 
-- **Tunables:** `data/death.js` (new), `DEATH`: `on`, `live`, `min`, `max`, the roll's shifts, `wake`, `hp`, `food`, `horse`, `wander`, `remains`, `near`, the man-eater's growth and bounty.
+- **Tunables:** `data/death.js` (new), `DEATH`: `on`, `live`, `min`, `max`, the roll's shifts, `wake`, `hp`, `food`, `horse`, `wander`, `left`, `near`, `grave`, `cairn`, `rumour`, the man-eater's growth and bounty.
 - **The rule:** `world/death.js` (new), a `Death` class:
   - `beastLoss(e)`: is it a loss to beasts with your whole side down? `Captivity.defeat` asks it first.
   - `roll(e)`: the chance to live.
   - `survive(e)`: time passes, the band breaks up, goods are lost, the beast moves, quests are rechecked.
-  - `die(e)`: the remains, the slain page, then the new person.
+  - `die(e)`: the remains, the slain page, the grave, then the new person.
 - **The man-eater:** a flag and a name on the monster (`W.monsters`), saved; drawn with a mark; news and a bounty.
-- **The remains:** a `WorldObject` on the map holding the goods; bandits seek it as they seek prey. It is saved, and fades.
+- **The remains:** the grave's goods before burial (the same `Grave`, not yet buried); bandits seek it as they seek prey. Saved; never fades.
 - **Graves:** `world/graves.js` (new), `Grave` (a `WorldObject`: who, where, the experience and proficiencies it holds, spent or not), in `W.graves`, saved; its rumours a news kind in `world/news.js` (`grave`), at random (`DEATH.rumour`, a day's chance); its page from the chronicle.
 - **The heir's company:** a lord-like party led by a companion (the companion parties that exist today, `compInit(id).party`, given a lord's brain: recruiting, fiefs, caravans, wars). Saved.
 - **Starting over:** the new-game start (`core/session.js`, the character maker) run into the live world:
@@ -186,7 +198,8 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
   - a beast loss with your whole side down rolls; one with a soldier standing does not;
   - one that men joined goes to capture;
   - surviving: a day passes, the band breaks up, the companions' reunion, the escort's search, the man-eater;
-  - graves: one a death, where (the heir's fief, a cairn where you fell), its rumour, paying respects (all the experience and proficiencies, once), nothing counted twice;
+  - graves: one a death, where (the heir's fief, a cairn where you fell), its rumour, paying respects (half the experience and the grave goods, once), robbed cairns, nothing counted twice;
+  - surviving: a companion left too long leaves and is won back;
   - dying: the remains (and bandits taking them), the heir (the most loyal; none below loyal), their company, fiefs and caravans; the realm's crown to the heir, or to a vassal; the new person in the same world, quests dropped.
 
 ## 9. Phases
@@ -194,11 +207,9 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 1. **The rule and surviving:** the roll; the lost day; the army gone; companions scattered and their reunion; food, horse and escorts; the man-eater; quests rechecked.
 2. **Dying:** the slain page, the remains, the chronicle.
 3. **A new person:** the old hero's things handed out, the heir and their company, the realm's crown, the new person in the same world, the main story restarting.
-4. **Graves:** where they lie, their rumours, paying respects.
+4. **Graves:** where they lie, the remains in them, grave robbers, their rumours, paying respects.
 5. **The skirmish:** the same rule once real-time fights are built.
 
 ## 10. Open questions
 
-- **The crown:** the heir takes the crown of a realm you founded, over its strongest vassal (my choice, to keep the legacy). Or should the vassals choose?
-- **An heir for the new person** (kin): later.
-- **A grave's gift:** all the experience and the proficiencies (above), or the experience only?
+- None now (owner's answers, round 5). The kin heir for the new person is for later.
