@@ -226,26 +226,37 @@ const asRemains=asClass(Remains);
 class Grave extends Remains{
   // the remains of the hero just dead, buried (old: their life, Death.slain; lord: their heir's, or none)
   static bury(old,lord){const X=DEATH.grave,r=Remains.list.find(o=>!o.grave&&o.who===old.who&&o.day===old.day)||Remains.lay(P.x,P.y,old.who),
-      home=lord?Spatial.nearest(TOWNS.filter(t=>t.owner===lord.fac&&!t.gone),lord.x,lord.y):null;
-    Object.assign(r,{grave:1,n:old.n||1,xp:Math.round((old.earned||0)*X.share),life:{level:old.level,renown:old.renown,days:old.days,by:old.by}});
-    // (where: by the heir's holding, else by where you fell; never on another grave, for you may die many times in one place)
-    const p=home?Grave.spot(home.x,home.y,X.yard.r,r):Grave.spot(r.x+X.cairn,r.y+Math.round(X.cairn/2),0,r);if(home){r.at=home.name;r.fac=lord.fac}r.x=p.x;r.y=p.y;
-    r.cloth=FACS.player.col;return asGrave(r)}
+      T=Grave.tierOf(old,r,lord),home=T.home;
+    Object.assign(r,{grave:1,rest:T.tier,n:old.n||1,xp:Math.round((old.earned||0)*X.share),life:{level:old.level,renown:old.renown,days:old.days,by:old.by}});
+    // (where: by the holding it is kept at, else by where you fell; never on another grave, for you may die many times in one place)
+    const off=T.tier==='cairn'?X.cairn:T.tier==='small'?X.cairn/2:0,p=home?Grave.spot(home.x,home.y,X.yard.r,r):Grave.spot(r.x+off,r.y+Math.round(off/2),0,r);
+    if(home){r.at=home.name;r.fac=home.owner}r.x=p.x;r.y=p.y;r.cloth=FACS.player.col;return asGrave(r)}
+  /* (how you are laid to rest, by your renown and where you fell (the owner, 2026-11-09: "if you died whatout much renown or if you
+     died far away then you may have a grave or remains"; DEATH.grave.tiers): an heir buries you at their holding (a grave); far
+     from anyone (over far tiles from a holding, off the roads) no one buries you: your remains lie as they fell, a cairn if you were
+     known; near people, a grave at the holding nearest if you were renowned, a cairn if known, else a small grave where you fell) */
+  static tierOf(old,r,lord){const X=DEATH.grave.tiers,ren=old.renown||0;
+    if(lord){const home=Spatial.nearest(TOWNS.filter(t=>t.owner===lord.fac&&!t.gone),lord.x,lord.y);if(home)return {tier:'grave',home}}
+    const h=Spatial.nearestHolding(r.x,r.y),far=(!h||Math.hypot(h.x-r.x,h.y-r.y)/TILE>X.far)&&!RoadBand.on(r.x,r.y);
+    if(far)return {tier:ren>=X.cairn?'cairn':'remains'};
+    if(ren>=X.grave&&h&&!h.gone)return {tier:'grave',home:h};
+    return {tier:ren>=X.cairn?'cairn':'small'}}
   // (open ground for a grave: the spot itself (r0 0), or a ring r0 round it, then rings further out, from the south; none within
   // DEATH.grave.apart of another grave)
   static spot(cx,cy,r0,self){const X=DEATH.grave,free=(x,y)=>passable(terrAt(x,y))&&!Remains.list.some(o=>o!==self&&o.grave&&Math.hypot(o.x-x,o.y-y)<X.apart);
     if(!r0&&free(Math.round(cx),Math.round(cy)))return {x:Math.round(cx),y:Math.round(cy)};
     for(let k=0;k<X.rings;k++){const r=(r0||X.apart)+k*X.apart;for(let i=0;i<X.yard.tries;i++){const a=Math.PI/2+(i%2?1:-1)*Math.ceil(i/2)*6.283/X.yard.tries,x=Math.round(cx+Math.cos(a)*r),y=Math.round(cy+Math.sin(a)*r);if(free(x,y))return {x,y}}}
     return {x:Math.round(cx),y:Math.round(cy+(r0||X.apart))}}
-  get kind(){return this.at?'grave':'cairn'}
+  get kind(){return this.rest||(this.at?'grave':'cairn')}// (rest: how it was laid to rest, tierOf)
+  get words(){return DEATH.grave.words[this.kind]}
   // (its light: while it holds anything for you)
   holds(){return !this.spent&&this.xp>0||!this.empty()}
   robbable(){return !(this.at&&townBy(this.at)?.owner===this.fac)}
-  tip(){return '<b>'+(this.at?'The grave of ':'The cairn over ')+htmlText(this.who)+'</b><small>Fell on day '+this.day+(this.spent?' · prayed at':this.xp?' · a warmth lingers here':'')+'</small><span class="act">Click: go there</span>'}
+  tip(){return '<b>'+this.words.tip+htmlText(this.who)+'</b><small>Fell on day '+this.day+(this.spent?' · prayed at':this.xp?' · a warmth lingers here':'')+'</small><span class="act">Click: go there</span>'}
   // (met: its page, the hero's life; Pray, and its goods)
   meet(){G.mode='dialog';G.remains=this;const L=this.life||{};
-    showPanel('<div class="top"><h2>'+(this.at?'A grave':'A cairn')+'</h2><span class="muted">'+htmlText(cap1(this.who))+' · fell on day '+this.day+'</span></div>'+
-      '<p>'+(this.at?'A stone by '+htmlText(this.at)+', kept clean: ':'Stones piled by the road: ')+'here lies '+htmlText(this.who)+', who fell to '+htmlText(L.by||'beasts')+(this.n>1?', the '+ordinal(this.n)+' of your line':'')+'.</p>'+
+    const Wd=this.words;showPanel('<div class="top"><h2>'+Wd.h+'</h2><span class="muted">'+htmlText(cap1(this.who))+' · fell on day '+this.day+'</span></div>'+
+      '<p>'+Wd.line.replace('{at}',htmlText(this.at||''))+'here lies '+htmlText(this.who)+', who fell to '+htmlText(L.by||'beasts')+(this.n>1?', the '+ordinal(this.n)+' of your line':'')+'.</p>'+
       '<div class="loot-stats">'+[['Days on the road',L.days||0],['Level',L.level||0],['Renown',L.renown||0]].map(([k,v])=>'<span><b>'+k+'</b><span>'+v+'</span></span>').join('')+'</div>'+
       (this.spent?'<p class="muted">You prayed here once. It is quiet now.</p>':this.xp?'<p class="gold">Something of them lingers here: '+this.xp+' experience, for one who prays.</p>':'')+
       (this.empty()?'':'<p>With them: '+this.what()+'.</p><div class="btns"><button class="btn sm" type="button" data-act="death-take">Take the grave goods</button></div>')+
@@ -254,16 +265,16 @@ class Grave extends Remains{
   pray(){if(this.spent||!(this.xp>0))return false;this.spent=true;this.flow={t0:performance.now(),n:this.xp};hidePanel();toWorld();
     setTimeout(()=>this.flowed(),DEATH.grave.flow.dur*1000);return true}
   flowed(){const f=this.flow;if(!f||f.done)return;f.done=true;f.end=performance.now();const lv=P.level;leaderOf(P).addXp(f.n,true);
-    log('You pray at the '+this.kind+' of '+this.who+', and what they learned flows into you: +'+f.n+' XP'+(P.level>lv?', level '+P.level:'')+'.','gold','story');updateHUD(true)}
+    log('You pray '+this.words.at+' '+this.who+', and what they learned flows into you: +'+f.n+' XP'+(P.level>lv?', level '+P.level:'')+'.','gold','story');updateHUD(true)}
   // (its place: its ground under everything, what stands on it among the figures, what moves on it; its light while it holds
   // anything: a glow breathing, a faint column, motes rising and turning: gfx/graveart.js)
   draw(ents,cam,V){const g=this,X=DEATH.grave,C=X.col,t=performance.now()/1000;if(g.flow)this.drawFlow(ents,cam);if(!g.inView(V))return;
     const S=GraveArt.sprite(g.kind,g.seed||(g.seed=1+Math.floor(Math.abs(g.x*7+g.y*13))%997)),night=darkness()>.35;
     ents.push({y:g.y-1e5,f:()=>{ctx.drawImage(S.ground,Math.round(g.x-cam.x)-S.ax,Math.round(g.y-cam.y)-S.ay)}});
     ents.push({y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.holds();ctx.save();
-      if(lit){ctx.globalAlpha=.14+.12*pulse;ctx.fillStyle=C.glow;ctx.beginPath();ctx.ellipse(x,y-2,13+pulse*2,6+pulse,0,0,6.283);ctx.fill();ctx.globalAlpha=1}
+      if(lit){const [gw,gh]=X.art.groundOf[g.kind]||[13,6];ctx.globalAlpha=.14+.12*pulse;ctx.fillStyle=C.glow;ctx.beginPath();ctx.ellipse(x,y-2,gw*.8+pulse*2,gh*.8+pulse,0,0,6.283);ctx.fill();ctx.globalAlpha=1}
       ctx.drawImage(S.cv,x-S.ax,y-S.ay);GraveArt.live(g,x,y,t,night);
-      if(lit){const top=y-(g.kind==='cairn'?17:15);
+      if(lit){const top=y-({cairn:17,grave:15,small:9,remains:5}[g.kind]||12);
         const col=ctx.createLinearGradient(0,top-I.h,0,top+2);col.addColorStop(0,'rgba(255,231,160,0)');col.addColorStop(1,'rgba(255,231,160,'+(.1+.08*pulse).toFixed(2)+')');ctx.fillStyle=col;ctx.fillRect(x-2,top-I.h,5,I.h+2);
         for(let i=0;i<I.motes;i++){const p=(t*I.rise+i/I.motes)%1,mx=x+Math.sin(t*1.7+i*2.1)*6*(1-p),my=top-p*I.h;
           ctx.globalAlpha=(1-p)*.35;ctx.fillStyle=i%2?C.mote:C.mote2;ctx.beginPath();ctx.arc(mx,my,1.8,0,6.283);ctx.fill();
@@ -271,8 +282,8 @@ class Grave extends Remains{
       ctx.restore()}})}
   // (on the minimap once you know it; found as a place is, its title rising: world/discovery.js)
   mapDot(V){return Discovery.named(this)?[DEATH.grave.col.glow,2]:null}
-  get name(){return (this.at?'Grave of ':'Cairn of ')+this.who}
-  get label(){return this.at?'Grave':'Cairn'}
+  get name(){return this.words.name+this.who}
+  get label(){return this.words.label}
   // (the flow: motes from the grave to you along curves, one after another; you glow as they arrive; then the gain over you)
   drawFlow(ents,cam){const g=this,f=g.flow,X=DEATH.grave.flow,C=DEATH.grave.col,now=performance.now(),e=(now-f.t0)/1000/X.dur;
     if(f.end&&(now-f.end)/1000>X.show){g.flow=null;return}
@@ -285,7 +296,9 @@ class Grave extends Remains{
       ctx.restore()}})}
   // each hour: now and then someone speaks of a grave that still holds anything (the news)
   // (one grave at most an hour, however many there are: a world of many dead is not all talk of them)
-  static hour(){const gs=Remains.list.filter(g=>g.grave&&g.holds());if(!gs.length||Math.random()>=DEATH.grave.rumour/24)return;const g=gs[Math.floor(Math.random()*gs.length)];newsRecord('grave',g,{who:g.who,kind:g.kind,at:g.at||''})}// (no grave, no draw: the world's Math.random as it was)
+  // (talked of by its kind: remains no one buried, never; a small grave, less: DEATH.grave.tiers.talk)
+  static hour(){const T=DEATH.grave.tiers.talk,gs=Remains.list.filter(g=>g.grave&&g.holds()&&T[g.kind]>0);if(!gs.length||Math.random()>=DEATH.grave.rumour/24)return;const g=gs[Math.floor(Math.random()*gs.length)];
+    if(T[g.kind]>=1||Math.random()<T[g.kind])newsRecord('grave',g,{who:g.who,kind:g.kind,at:g.at||''})}// (no grave, no draw: the world's Math.random as it was)
 }
 const asGrave=asClass(Grave);
 const ordinal=n=>n+(n%100>=11&&n%100<=13?'th':['th','st','nd','rd'][n%10]||'th');

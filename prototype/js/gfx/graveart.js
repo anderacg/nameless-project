@@ -14,14 +14,25 @@ const GraveArt={
     const A=DEATH.grave.art,C=DEATH.grave.col,w=A.w,h=A.h,mk=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c},gcv=mk(),cv=mk(),ax=w>>1,ay=h-A.foot;
     let g=gcv.getContext('2d');const px=(x,y,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),1,1)},rect=(x,y,ww,hh,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),ww,hh)},hash=(x,y,k)=>PX.hash(x,y,seed*17+k);
     // (the ground: trodden earth in an oval, its edge broken, grass tufts, flowers)
-    const rx=A.ground[0],ry=A.ground[1];
+    const [rx,ry]=A.groundOf[kind]||A.ground;
     for(let y=-ry;y<=ry;y++)for(let x=-rx;x<=rx;x++){const d=(x*x)/(rx*rx)+(y*y)/(ry*ry);if(d>1||d>.75&&hash(x,y,1)<.5)continue;px(ax+x,ay+y,hash(x,y,2)<.3?C.earth2:C.earth)}
-    for(let i=0;i<A.tufts;i++){const a=hash(i,0,3)*6.283,r=.7+hash(i,0,4)*.35,x=ax+Math.cos(a)*rx*r,y=ay+Math.sin(a)*ry*r;px(x,y,C.grass);px(x+1,y-1,C.grass2)}
-    for(let i=0;i<A.flowers;i++){const a=hash(i,1,5)*6.283,r=.3+hash(i,1,6)*.6,x=ax+Math.cos(a)*rx*r,y=ay+Math.sin(a)*ry*r;px(x,y,C.flowers[Math.floor(hash(i,1,7)*C.flowers.length)])}
+    for(let i=0;i<(A.groundOf[kind]?A.tufts>>1:A.tufts);i++){const a=hash(i,0,3)*6.283,r=.7+hash(i,0,4)*.35,x=ax+Math.cos(a)*rx*r,y=ay+Math.sin(a)*ry*r;px(x,y,C.grass);px(x+1,y-1,C.grass2)}
+    for(let i=0;i<(kind==='remains'?0:kind==='small'?3:A.flowers);i++){const a=hash(i,1,5)*6.283,r=.3+hash(i,1,6)*.6,x=ax+Math.cos(a)*rx*r,y=ay+Math.sin(a)*ry*r;px(x,y,C.flowers[Math.floor(hash(i,1,7)*C.flowers.length)])}
     // (a grave's path of stones from its gate toward you)
     if(kind==='grave'){const F=A.fence;for(let i=0;i<4;i++)rect(ax-1+((i&1)?1:-1),ay+F.h/2+1+i*2,2,1,C.light)}
-    g=cv.getContext('2d');if(kind==='cairn')this.cairn(ax,ay,px,rect,hash);else this.grave(ax,ay,px,rect,hash);
+    g=cv.getContext('2d');this[kind](ax,ay,px,rect,hash);
     s={ground:gcv,cv,ax,ay};this.cache.set(key,s);return s},
+  // (remains no one buried: bones in the grass, a skull, ribs, a torn cloak, the weapon fallen by them)
+  remains(ax,ay,px,rect,hash){const C=DEATH.grave.col;
+    rect(ax-6,ay-1,9,2,C.cloak);rect(ax-5,ay-2,5,1,C.cloak);px(ax+2,ay-2,C.cloak);
+    rect(ax+3,ay-3,3,2,C.bone);px(ax+4,ay-2,C.dark);px(ax+3,ay-1,C.bone);
+    for(let i=0;i<4;i++)rect(ax-4+i*2,ay-2,1,2,C.bone);rect(ax-6,ay+1,4,1,C.bone);rect(ax+1,ay+2,3,1,C.bone);
+    rect(ax-8,ay+3,9,1,C.blade);px(ax-8,ay+3,C.light);rect(ax+1,ay+2,1,3,C.guard);rect(ax+2,ay+3,2,1,C.grip)},
+  // (a small grave: an earth mound, a cross of two sticks bound, a few stones round it)
+  small(ax,ay,px,rect,hash){const C=DEATH.grave.col;
+    rect(ax-5,ay-1,10,3,C.mound);rect(ax-4,ay-2,8,1,C.mound);rect(ax-3,ay-2,6,1,C.earth2);
+    rect(ax,ay-10,1,9,C.wood);rect(ax-2,ay-8,5,1,C.wood);px(ax,ay-8,C.wood2);px(ax+1,ay-10,C.wood2);
+    for(let i=0;i<5;i++){const a=i/5*6.283+.5;rect(ax+Math.round(Math.cos(a)*6),ay+Math.round(Math.sin(a)*3),2,1,i%2?C.stone:C.stone2)}},
   cairn(ax,ay,px,rect,hash){const C=DEATH.grave.col,A=DEATH.grave.art,R=A.ring;
     // (the ring of standing stones round it, the back ones first)
     const ring=[];for(let i=0;i<R.n;i++){const a=i/R.n*6.283+.3;ring.push([ax+Math.cos(a)*R.rx,ay+Math.sin(a)*R.ry])}ring.sort((a,b)=>a[1]-b[1]);
@@ -47,7 +58,7 @@ const GraveArt={
   // what moves on it this frame (o: the grave; x, y: its foot on the screen; t: seconds; night)
   live(o,x,y,t,night){const C=DEATH.grave.col,A=DEATH.grave.art;
     if(o.kind==='cairn'){const top=y-A.rows.length*2-A.blade-3,c=o.cloth||C.cloth;for(let i=0;i<4;i++){const f=Math.sin(t*5+i*.9)*(i*.5);ctx.fillStyle=c;ctx.fillRect(Math.round(x+1+i),Math.round(top+f),1,2)}}
-    else{const F=A.fence,sy=y-2;
+    else if(o.kind==='grave'){const F=A.fence,sy=y-2;
       // (two candles, their flames flickering, a little light round each)
       for(const dx of [-5,5]){const fl=Math.sin(t*9+dx)*.5+Math.sin(t*13.7+dx*2)*.5;ctx.fillStyle=C.wax;ctx.fillRect(x+dx,sy,1,2);ctx.globalAlpha=.25+.1*fl;ctx.fillStyle=C.glow;ctx.beginPath();ctx.arc(x+dx+.5,sy-1,2.5,0,6.283);ctx.fill();
         ctx.globalAlpha=1;ctx.fillStyle=fl>.3?C.flame2:C.flame;ctx.fillRect(x+dx,sy-1-(fl>.6?1:0),1,1)}

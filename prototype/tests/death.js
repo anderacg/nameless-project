@@ -82,7 +82,7 @@ Kit.suite(({ok})=>{
   {const L=t.Legacy,tidy=()=>{W.lords=W.lords.filter(l=>!l.heir);for(const x of t.TOWNS)if(L.realms[x.owner])x.owner=t.FIDS[0];L.clear()},dieNow=m=>{const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(m||wolves()))}finally{[X.min,X.max]=mm}t.act('cont')};
    setup();tidy();t.Remains.list=[];P.band='The Grey Company';P.fac=null;['brann','elske','tavi'].forEach(id=>t.compJoin(id));P.comps.brann.ap=7;P.comps.brann.lv=3;P.comps.elske.ap=1;P.comps.tavi.ap=-2;P.comps.tavi.lv=2;
    const fief=t.TOWNS.filter(x=>!x.gone&&x.owner&&x.owner!=='player').sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[1];fief.owner='player';
-   const m0=wolves();m0.qid=999;P.quests=[{id:999,type:'beast',title:'Beasts at the folds'}];const day=G.day,lords0=W.lords.length,fids0=t.FIDS.length;
+   const m0=wolves();m0.qid=999;P.quests=[{id:999,type:'beast',title:'Beasts at the folds',mon:'wolf'}];const day=G.day,lords0=W.lords.length,fids0=t.FIDS.length;
    dieNow(m0);ok(/data-act="death-new"/.test(panel()),'slain: "Go on as someone new" on the Slain page');
    t.act('death-new');ok(/<h2>A new life<\/h2>/.test(panel())&&/data-act="death-past"/.test(panel())&&/data-act="death-race"/.test(panel()),'a new life: your race, your name, your past');
    t.act('death-race','dwarf');const k=Object.keys(t.BGS)[0];t.act('death-past',k);
@@ -103,7 +103,7 @@ Kit.suite(({ok})=>{
    const h3=W.lords.find(l=>l.heir&&!l.dead);ok(W.lords.length===n3+1&&h3.fac===t.FIDS[0]&&!Object.keys(L.realms).length,'you a vassal of the '+t.FACS[t.FIDS[0]].n+': your heir one of its lords');
    // ---- graves (phase 4): buried as you go on, half the experience that hero gained, its light; rumours of it; pray, and it flows
    // into you as a gift (not counted toward your own grave); at an heir's holding, safe from robbers
-   setup();tidy();t.Remains.list=[];P.xpEarned=400;const mg=wolves();dieNow(mg);const fx=P.x,fy=P.y;t.act('death-new');t.act('death-past',k);
+   setup();tidy();t.Remains.list=[];P.xpEarned=400;P.renown=X.grave.tiers.cairn;const mg=wolves();dieNow(mg);const fx=P.x,fy=P.y;t.act('death-new');t.act('death-past',k);
    const g=t.Remains.list.find(o=>o.grave);
    ok(g instanceof t.Grave&&g.xp===200&&!g.at&&Math.hypot(g.x-fx,g.y-fy)<=X.grave.cairn*1.5&&g.holds()&&g.robbable()&&/cairn over/.test(g.tip()),'no heir: a cairn where you fell, holding half the experience that hero gained ('+g.xp+' of 400)');
    {const D0=t.DISCOVER.on;t.DISCOVER.on=true;try{const known0=t.Discovery.named(g);t.Discovery.discover(g,true);ok(t.Discovery.places().includes(g)&&/^g:/.test(t.Discovery.key(g))&&!known0&&t.Discovery.named(g)&&g.mapDot(t.vis()),'a place of its own: found as a place is ("'+g.name+'", '+g.label.toLowerCase()+'), then on the minimap')}finally{t.DISCOVER.on=D0}}
@@ -132,6 +132,21 @@ Kit.suite(({ok})=>{
    dieNow();t.act('death-new');t.act('death-past',k);const hp=W.lords.find(l=>l.heir&&!l.dead),fid=hp.fac,nm=t.FACS[fid].n;fp.owner=t.FIDS[0];hp.dead=true;L.hour();
    ok(!t.FIDS.includes(fid)&&t.FACS[fid]&&t.FACS[fid].n===nm&&L.realms[fid].gone,'an heir\'s realm with no holding and no lord left: out of the realms that act ('+nm+', its name kept)');
    const sv3=JSON.parse(JSON.stringify(L.save()));L.load(sv3);ok(!t.FIDS.includes(fid)&&t.FACS[fid]&&L.fallen>=1,'and so after a load');
+   tidy();t.Remains.list=[]}
+  // ---- how you are laid to rest (the owner: "if you died whatout much renown or if you died far away then you may have a grave or
+  // remains"): little renown near people, a small grave; far from anyone, your remains as they fell, never talked of; renowned, a
+  // grave at the holding nearest, safe from robbers
+  {const L=t.Legacy,tidy=()=>{W.lords=W.lords.filter(l=>!l.heir);for(const x of t.TOWNS)if(L.realms[x.owner])x.owner=t.FIDS[0];L.clear()},k=Object.keys(t.BGS)[0],
+    die=(ren,x,y)=>{setup();tidy();t.Remains.list=[];P.comps={};if(x!=null){P.x=x;P.y=y}P.renown=ren;P.xpEarned=60;const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}t.act('cont');t.act('death-new');t.act('death-past',k);return t.Remains.list.find(o=>o.grave)};
+   const g1=die(0);ok(g1&&g1.kind==='small'&&!g1.at&&/small grave/.test(g1.tip()),'little renown, near people: a small grave where you fell ("'+(g1&&g1.name)+'")');
+   const ents=[],cam={x:g1.x-100,y:g1.y-60};g1.draw(ents,cam,t.vis());let e1=null;try{for(const e of ents)e.f()}catch(err){e1=err}ok(!e1,'drawn: its mound and cross of sticks'+(e1?': '+e1.message:''));
+   let far=null;for(let ty=4;ty<t.MH-4&&!far;ty+=3)for(let tx=4;tx<t.MW-4&&!far;tx+=3){const x=tx*t.TILE+8,y=ty*t.TILE+8,h=t.Spatial.nearestHolding(x,y);if(t.passable(t.terrAt(x,y))&&h&&Math.hypot(h.x-x,h.y-y)/t.TILE>X.grave.tiers.far+3&&!t.RoadBand.on(x,y))far={x,y}}
+   if(far){const g2=die(0,far.x,far.y);ok(g2&&g2.kind==='remains'&&Math.hypot(g2.x-far.x,g2.y-far.y)<2&&g2.xp===30,'little renown, far from anyone: no one buries you; your remains where you fell, still holding '+(g2&&g2.xp)+' experience');
+    const ents2=[];g2.draw(ents2,{x:g2.x-100,y:g2.y-60},t.vis());let e2=null;try{for(const e of ents2)e.f()}catch(err){e2=err}ok(!e2,'drawn: bones, a skull, a torn cloak, the weapon fallen by them'+(e2?': '+e2.message:''));
+    const nn=()=>t.newsW().items.filter(it=>it.k==='grave'&&it.detail.who===g2.who).length,n0=nn();roll(0);try{for(let i=0;i<5;i++)t.Grave.hour()}finally{window.Math.random=rnd}ok(nn()===n0,'and no one talks of them');
+    const gc=die(X.grave.tiers.cairn,far.x,far.y);ok(gc.kind==='cairn','known, far from anyone: a cairn')}
+   const g3=die(X.grave.tiers.grave+10);ok(g3&&g3.kind==='grave'&&g3.at&&!g3.robbable()&&/grave of/.test(g3.tip()),'renowned, near people: a grave at '+(g3&&g3.at)+', kept safe');
+   g3.meet();ok(/<h2>A grave<\/h2>/.test(panel())&&new RegExp('A stone by '+g3.at).test(panel()),'its page: "A stone by '+g3.at+', kept clean"');t.act('death-leave');
    tidy();t.Remains.list=[]}
   // ---- no room on the roll's other side: a man-eater only once, and no mythic one
   {setup();const m=wolves({eater:{name:'the Old Maw',day:1}}),lv=m.lv;roll(.1);try{lose(enc(m))}finally{window.Math.random=rnd}ok(m.lv===lv&&m.eater.name==='the Old Maw','a man-eater already: named once');t.act('cont')}
