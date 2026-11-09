@@ -10,5 +10,11 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');const kinds=['hum_squire'
   ok(center(b,14)>center(a,14)&&row(a,21).join()===row(b,21).join()&&B.hand[1]===A.hand[1],L.mount+' leans forward from fixed hips with its hand anchored on the same row');
  }
  for(const kind of ['horse','stag','ram','wolf','warg']){const L={...t.lookOf('hero',0,true,0),mount:kind};for(const pose of [0,3,16]){const c=t.peopleSprite(L,pose);ok(c.width>0&&c.height>0&&c.hand?.every(Number.isFinite),'hero on '+kind+' pose '+pose+' keeps valid body and weapon anchors')}}
+ const ram=t.lookOf('dw_ram',0,false,0);let clearance=true;
+ for(const walk of [-1,0,1,2,3,4,5,6,7]){const loose=t.pgrid(32,32),ridden=t.pgrid(32,32),seat=t.drawMount(loose,ram,walk),at=t.drawMount(ridden,{...ram,ridden:true},walk),changed=[];
+  for(let y=0;y<32;y++)for(let x=0;x<32;x++){const a=loose.p[y*32+x],b=ridden.p[y*32+x];if(a!==b){changed.push([x,y]);if(!a||!b||x<9||x>18||y<seat+5||y>seat+10)clearance=false}}
+  if(!changed.length||seat!==at)clearance=false;
+ }
+ ok(clearance,'ram saddle clearance removes wool only under the rider in every gait, preserving silhouette and seat height');
  info('Shared mounted posture covers horse, stag, ram, wolf and warg; native gallop cycles remain species-specific.');
 });

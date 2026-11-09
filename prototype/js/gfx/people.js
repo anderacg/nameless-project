@@ -571,7 +571,11 @@ function drawMount(g,o,walk,dx=0,dy=0){const ps=(x,y,c)=>pset(g,x+dx,y+dy,c);// 
   // (a wolf, a warg, a ram: drawn by hand, engine/beasts.js PX.mountArt; its saddle or barding only on its body)
   const art=window.PX&&PX.mountArt&&PX.mountArt(kind,walk,{C,M:kind==='ram'?pal('#9a7a5a'):pal('wool')});
   if(art){const on=new Set(),A=art.g,y1=art.seat-6,seatX=art.riderX||0,[b0,b1]=art.body;
-    mountCoat((x,y,c)=>{if(y<b0||y>b1)return null;if(c)A.p[y*A.w+x]=c;else return A.p[y*A.w+x]},A.w,A.h,C,true);for(let y=0;y<A.h;y++)for(let x=0;x<A.w;x++){const c=A.p[y*A.w+x];if(c){ps(x,y,c);on.add(x+','+y)}}
+    mountCoat((x,y,c)=>{if(y<b0||y>b1)return null;if(c)A.p[y*A.w+x]=c;else return A.p[y*A.w+x]},A.w,A.h,C,true);
+    // Smooth the fleece under a seated ram rider so curls do not read over his waist and thigh.
+    if(kind==='ram'&&o.ridden)for(let y=Math.max(b0,art.seat-1);y<=Math.min(b1,art.seat+4);y++){const inset=y>=art.seat+4?2:y>=art.seat+2?1:0;
+      for(let x=9+inset;x<=18-inset;x++)if(A.p[y*A.w+x])A.p[y*A.w+x]=PPAL.leather[y<=art.seat?0:y<=art.seat+2?1:2]}
+    for(let y=0;y<A.h;y++)for(let x=0;x<A.w;x++){const c=A.p[y*A.w+x];if(c){ps(x,y,c);on.add(x+','+y)}}
     const pb=(x,y,c)=>{x+=seatX;if(on.has(x+','+y))ps(x,y,c)};
     if(o.barded){for(let x=6;x<=20;x++){pb(x,y1+6,Tm[0]);pb(x,y1+7,PPAL.gold[1]);pb(x,y1+8,Tm[2]);pb(x,y1+9,x%2?Tm[3]:Tm[2])}}
     else{const tk=HORSE_TACK.on;if(tk||o.saddled)for(let x=10;x<=16;x++){pb(x,y1+7,Tm[1]);pb(x,y1+8,Tm[2]);pb(x,y1+9,tk?Tm[3]:x%2?Tm[3]:Tm[2])}
@@ -658,7 +662,7 @@ function peopleSprite(o,pose,bare){
   if(bare&&heldWeapon(o))o={...o,weapon:null,held:heldWeapon(o)};if(bare==='bow')o={...o,bowApart:true};// (bare 'bow': his bow drawn apart, aimed: figures.js bowPic)
   if(pose===DEF_POSE||pose===DEF_LOW)o={...o,guardUp:pose===DEF_LOW?'low':true};
   const R=GEAR.room;
-  if(o.mount){const wolf=(o.mount==='wolf'||o.mount==='warg')&&window.PX&&PX.wolf,seatX=wolf?PX.wolf.riderX:0,box=mountMetrics(o.mount),g=pgrid(box.w+2*R,box.h+R),top=drawMount(g,o,walk,R,R),rideY=top-6+RIDER_POSTURE.sink,A=drawMountedRider(g,{...o,shield:null,offShield:null},6+R+seatX,rideY,style,atk,walk>=0?(walk>=4?RIDER_POSTURE.gallop:RIDER_POSTURE.walk):0);
+  if(o.mount){const wolf=(o.mount==='wolf'||o.mount==='warg')&&window.PX&&PX.wolf,seatX=wolf?PX.wolf.riderX:0,box=mountMetrics(o.mount),g=pgrid(box.w+2*R,box.h+R),top=drawMount(g,o.mount==='ram'?{...o,ridden:true}:o,walk,R,R),rideY=top-6+RIDER_POSTURE.sink,A=drawMountedRider(g,{...o,shield:null,offShield:null},6+R+seatX,rideY,style,atk,walk>=0?(walk>=4?RIDER_POSTURE.gallop:RIDER_POSTURE.walk):0);
     // the rider's leg down the mount's side (the owner, 2026-11-04: the rider looked low, "show more of him"): his thigh forward
     // from the hip over the cloth, the knee, the shin down the horse's side and his foot, outlined on its own so it reads
     // against the cloth (RIDER_LEG: [x, y from the seat row, letter] each)
