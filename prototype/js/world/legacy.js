@@ -71,7 +71,7 @@ class Legacy{
   static reborn(k){const b=BGS[k],old=Death.slain;if(!b||!old)return false;
     this.raised=null;const said=this.handOut(),qs=P.quests.length;
     // (your remains buried: a grave at your heir's holding, else a cairn where you fell: world/death.js Grave)
-    const grave=Grave.bury(old,this.raised);said.push(grave.at?(this.raised?COMPS[this.raised.heir.cid].short:'They')+' bury them at '+grave.at+'.':'Someone raises a cairn over them where they fell.');
+    Grave.bury(old,this.raised);said.push('Their body lies where they fell'+(this.raised?': '+COMPS[this.raised.heir.cid].short+' will come for it.':', for whoever finds it.'));
     // (the quests' marks on the world gone with them; your stories ended)
     const ids=new Set(P.quests.map(q=>q.id));for(const o of [...W.monsters,...bandits,...W.sites,...W.lords])if(o&&o.qid!=null&&ids.has(o.qid))delete o.qid;
     for(const th of Thread.list().on.slice())th.end('left');

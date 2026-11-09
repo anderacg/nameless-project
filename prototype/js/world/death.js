@@ -125,7 +125,7 @@ class Death{
   static lost(){return Object.keys(P.comps).filter(id=>P.comps[id].lost)}
   static questOf(id){const q=P.quests.find(q=>q.type==='reunion'&&q.cid===id);return q?Quest.as(q):null}
   // each hour: one left waiting too long gives up on you, for another holding (DEATH.comps.far tiles off)
-  static hour(){const X=DEATH.comps;if(this.slain){if(G.mode==='world'&&!G.modal)this.open();return}Remains.hour();Grave.hour();
+  static hour(){const X=DEATH.comps;if(this.slain){if(G.mode==='world'&&!G.modal)this.open();return}Remains.hour();Grave.hour();if(this.day!==G.day){this.day=G.day;Grave.daily()}
     for(const id of this.lost()){const c=P.comps[id],L=c.lost;if(L.left||G.day<L.until)continue;const from=townBy(L.at)||P,[lo,hi]=X.far;
       const ts=TOWNS.filter(t=>!t.gone&&t.name!==L.at&&!hostileTo(t.owner)),far=ts.filter(t=>{const d=Math.hypot(t.x-from.x,t.y-from.y)/TILE;return d>=lo&&d<=hi}),t=(far.length?far:ts)[Math.floor(Math.random()*(far.length||ts.length))];
       if(!t)continue;L.at=t.name;L.left=true;c.ap=(c.ap||0)-X.left;const q=this.questOf(id);if(q)q.moved(t);
@@ -230,13 +230,29 @@ const asRemains=asClass(Remains);
    grave); spent, it stays a grave. Never fades. Numbers: data/death.js DEATH.grave ---------- */
 class Grave extends Remains{
   // the remains of the hero just dead, buried (old: their life, Death.slain; lord: their heir's, or none)
-  static bury(old,lord){const X=DEATH.grave,r=Remains.list.find(o=>!o.grave&&o.who===old.who&&o.day===old.day)||Remains.lay(P.x,P.y,old.who),
-      T=Grave.tierOf(old,r,lord),home=T.home;
-    Object.assign(r,{grave:1,rest:T.tier,n:old.n||1,xp:Math.round((old.earned||0)*X.share),life:{level:old.level,renown:old.renown,days:old.days,by:old.by}});
-    // (where: buried by people, in your family's plot (the owner: "Yes, make a family plot": Grave.plot; the first such grave makes
-    // it, at the holding that buried you); else by where you fell; never on another grave, for you may die many times in one place)
-    const off=T.tier==='cairn'?X.cairn:T.tier==='small'?X.cairn/2:0,p=home?Grave.inPlot(home,old,r):Grave.spot(r.x+off,r.y+Math.round(off/2),0,r);
-    if(home){const t=townBy(Legacy.plot?.at)||home;r.at=t.name;r.fac=t.owner;r.plot=1}r.x=p.x;r.y=p.y;r.cloth=FACS.player.col;const g=asGrave(r);RestSite.sync();return g}
+  /* (as you go on (Legacy.reborn): your remains lie where you fell, unburied (the owner, 2026-11-09: "What times when remains turn into
+     grave or is there a chance to let the remain stay there"; "Yes, go with that"): what lingers of that hero in them, a place of
+     their own; your heir (lord) comes for them in DEATH.grave.find.heir days. Each day someone may find and bury them (Grave.daily),
+     or your new hero may (the place's page: here, or in the family plot); one no one buries stays as it lies) */
+  static bury(old,lord){const X=DEATH.grave,r=Remains.list.find(o=>!o.grave&&o.who===old.who&&o.day===old.day)||Remains.lay(P.x,P.y,old.who);
+    Object.assign(r,{grave:1,rest:'remains',unburied:1,n:old.n||1,xp:Math.round((old.earned||0)*X.share),life:{level:old.level,renown:old.renown,days:old.days,by:old.by},cloth:FACS.player.col});
+    if(lord){r.heir=lord.id;r.fetch=G.day+X.find.heir}const g=asGrave(r);RestSite.sync();return g}
+  /* (laid to rest: by your heir (lord), who carries them to your family's plot or their holding; by someone who found them (how
+     'found': near people to your family's plot, the finer the more renown; far from anyone, a cairn if they were known, else a
+     small grave there); by your new hero (how 'here': a small grave, or a cairn for one known, where they lie; 'plot': carried to
+     your family's plot, the nearest holding's if you have none). Never on another grave, for you may die many times in one place) */
+  static rest(g,lord,how){const X=DEATH.grave,ren=g.life?.renown||0,fine=Object.keys(X.tiers.near).filter(k=>ren>=X.tiers.near[k]).pop();
+    let T=how==='here'?{tier:ren>=X.tiers.cairn?'cairn':'small'}:how==='plot'?{tier:fine,home:townBy(Legacy.plot?.at)||Spatial.nearestHolding(g.x,g.y)}:Grave.tierOf({renown:ren},g,lord);
+    if(how==='found'&&T.tier==='remains')T={tier:'small'};const home=T.home&&!T.home.gone?T.home:null;
+    const off=T.tier==='cairn'?X.cairn:T.tier==='small'?X.cairn/2:0,p=home?Grave.inPlot(home,{who:g.who},g):Grave.spot(g.x+off,g.y+Math.round(off/2),0,g);
+    delete g.unburied;delete g.heir;delete g.fetch;g.rest=home?(T.tier==='remains'?'small':T.tier):T.tier;
+    if(home){const t=townBy(Legacy.plot?.at)||home;g.at=t.name;g.fac=t.owner;g.plot=1}g.x=p.x;g.y=p.y;RestSite.sync();return g}
+  // each day: the unburied found and buried (the chance a day: DEATH.grave.find; near people more, the known more), or fetched by your heir
+  static daily(){const F=DEATH.grave.find;
+    for(const g of Remains.list.filter(o=>o.grave&&o.unburied)){const lord=g.heir&&W.lords.find(l=>l.id===g.heir&&!l.dead&&!l.gone);
+      if(lord&&G.day>=g.fetch){Grave.rest(g,lord,'heir');log(cap1(lord.name)+' comes for the body of '+g.who+', and buries them'+(g.at?' at '+g.at:'')+'.','gold','story');continue}
+      const h=Spatial.nearestHolding(g.x,g.y),near=h&&Math.hypot(h.x-g.x,h.y-g.y)/TILE<=DEATH.grave.tiers.far||RoadBand.on(g.x,g.y),ch=(near?F.near:F.far)+(g.life?.renown||0)*F.renown;
+      if(Math.random()<Math.min(F.max,ch)){Grave.rest(g,null,'found');if(Math.hypot(P.x-g.x,P.y-g.y)<vis()*2||g.at)log('Someone has buried '+g.who+(g.at?', at '+g.at:'')+'.','muted','story')}}}
   // (your family's plot: made by the first of your line buried by people, at that holding (Legacy.plot: its holding, its middle,
   // its family's name); its graves in rows from its middle, DEATH.grave.plot)
   static inPlot(home,old,self){const X=DEATH.grave,F=X.plot;let fp=Legacy.plot;const t=fp&&townBy(fp.at);

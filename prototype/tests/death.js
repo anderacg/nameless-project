@@ -13,6 +13,8 @@ Kit.suite(({ok})=>{
  const lose=e=>{t.startEncounter(e);t.concludeEncounter(false,{},0,true,[],null,{})};
  const setup=()=>{Kit.world();t.Captivity.held=null;t.Captivity.scattered=[];P.quests=[];P.comps={};P.troops={hum_foot:6};P.woundedGroups=[];P.gold=400;P.hp=t.vitals()[0];P.weak=0;P.gear.mount=null;D.pending=null};
  let fell=null;t.worldOn('hero:fell',d=>{fell=d});
+ // (a day for the unburied: found and buried, your heir come for them: Grave.daily)
+ const settle=()=>{for(const g of t.Remains.list)if(g.unburied&&g.heir)g.fetch=G.day;roll(0);try{t.Grave.daily()}finally{window.Math.random=rnd}};
  try{
   // ---- off (the tests' harness): a beast's loss as before
   {setup();X.on=false;const m=wolves();lose(enc(m));ok(/Left for dead/.test(panel())&&!m.eater,'off: left for dead, as before');t.act('cont');X.on=true}
@@ -103,7 +105,7 @@ Kit.suite(({ok})=>{
    const h3=W.lords.find(l=>l.heir&&!l.dead);ok(W.lords.length===n3+1&&h3.fac===t.FIDS[0]&&!Object.keys(L.realms).length,'you a vassal of the '+t.FACS[t.FIDS[0]].n+': your heir one of its lords');
    // ---- graves (phase 4): buried as you go on, half the experience that hero gained, its light; rumours of it; pray, and it flows
    // into you as a gift (not counted toward your own grave); at an heir's holding, safe from robbers
-   setup();tidy();t.Remains.list=[];P.xpEarned=400;P.renown=X.grave.tiers.cairn;const mg=wolves();dieNow(mg);const fx=P.x,fy=P.y;t.act('death-new');t.act('death-past',k);
+   setup();tidy();t.Remains.list=[];P.xpEarned=400;P.renown=X.grave.tiers.cairn;const mg=wolves();dieNow(mg);const fx=P.x,fy=P.y;t.act('death-new');t.act('death-past',k);settle();
    const g=t.Remains.list.find(o=>o.grave);
    ok(g instanceof t.Grave&&g.xp===200&&g.kind==='stone'&&g.at&&g.holds()&&/grave of/i.test(g.tip()),'known, near people: someone buries you, a headstone at '+g.at+', holding half the experience that hero gained ('+g.xp+' of 400)');
    {const D0=t.DISCOVER.on;t.DISCOVER.on=true;try{const site=W.sites.find(o=>o.type==='rest'&&o.members().includes(g)),known0=site&&t.Discovery.named(site);if(site)t.Discovery.discover(site,true);
@@ -118,13 +120,13 @@ Kit.suite(({ok})=>{
    const sv2=JSON.parse(JSON.stringify(t.Remains.save()));t.Remains.load(sv2);ok(t.Remains.list.find(o=>o.grave) instanceof t.Grave,'saved and loaded: still a grave');
    // (an heir: a grave at their holding, safe from robbers while it is theirs)
    setup();tidy();t.Remains.list=[];P.fac=null;t.compJoin('brann');P.comps.brann.ap=8;const fh=t.TOWNS.filter(x=>!x.gone&&x.owner&&x.owner!=='player').sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[1];fh.owner='player';
-   P.xpEarned=100;dieNow();t.act('death-new');t.act('death-past',k);const gh=t.Remains.list.find(o=>o.grave),hl=W.lords.find(l=>l.heir&&!l.dead);
+   P.xpEarned=100;dieNow();t.act('death-new');t.act('death-past',k);settle();const gh=t.Remains.list.find(o=>o.grave),hl=W.lords.find(l=>l.heir&&!l.dead);
    ok(gh&&gh.at===fh.name&&t.townBy(gh.at).owner===hl.fac&&!gh.robbable()&&gh.xp===50,'with an heir: a grave at their holding ('+(gh&&gh.at)+'), safe from robbers');
    const bb=t.asParty({kind:'bandits',troops:Array(4).fill('militia'),x:gh.x+10,y:gh.y,cool:0});t.bandits.push(bb);gh.gold=30;roll(0);try{t.Remains.hour()}finally{window.Math.random=rnd}ok(gh.gold===30&&!bb.plunder,'a band near does not rob it');
    // ---- many lives (the owner: "Bear in mind, player may died a lot"): graves never on one another, however often you fall in one
    // place; one rumour at a time; your line counted; a realm of an heir's that has fallen out of the realms that act, its name kept
    setup();tidy();t.Remains.list=[];const f0=L.fallen,x0=P.x,y0=P.y;
-   for(let i=0;i<6;i++){P.x=x0;P.y=y0;P.xpEarned=50;dieNow();t.act('death-new');t.act('death-past',k)}
+   for(let i=0;i<6;i++){P.x=x0;P.y=y0;P.xpEarned=50;dieNow();t.act('death-new');t.act('death-past',k);settle()}
    const gs=t.Remains.list.filter(o=>o.grave),close=gs.some((a,i)=>gs.some((b,j)=>j>i&&Math.hypot(a.x-b.x,a.y-b.y)<(a.plot&&b.plot?X.grave.plot.gap*X.grave.plot.row:X.grave.apart)-1));// (in the family plot, in its rows)
    ok(gs.length===6&&!close&&L.fallen===f0+6&&gs[5].n===f0+6,'six deaths in one place: six graves, none on another; your line counted ('+L.fallen+')');
    ok(/the \d+(st|nd|rd|th) of your line/.test((gs[5].meet(),panel())),'the grave says which of your line it was');t.act('death-leave');
@@ -138,21 +140,25 @@ Kit.suite(({ok})=>{
   // remains"): little renown near people, a small grave; far from anyone, your remains as they fell, never talked of; renowned, a
   // grave at the holding nearest, safe from robbers
   {const L=t.Legacy,tidy=()=>{W.lords=W.lords.filter(l=>!l.heir);for(const x of t.TOWNS)if(L.realms[x.owner])x.owner=t.FIDS[0];L.clear()},k=Object.keys(t.BGS)[0],
-    die=(ren,x,y)=>{setup();tidy();t.Remains.list=[];P.comps={};if(x!=null){P.x=x;P.y=y}P.renown=ren;P.xpEarned=60;const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}t.act('cont');t.act('death-new');t.act('death-past',k);return t.Remains.list.find(o=>o.grave)};
+    die=(ren,x,y,keep)=>{setup();tidy();t.Remains.list=[];P.comps={};if(x!=null){P.x=x;P.y=y}P.renown=ren;P.xpEarned=60;const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}t.act('cont');t.act('death-new');t.act('death-past',k);if(!keep)settle();return t.Remains.list.find(o=>o.grave)};
    const g1=die(0);ok(g1&&g1.kind==='small'&&g1.at&&/small grave/.test(g1.tip()),'little renown, near people: someone buries you anyway, a small grave by '+(g1&&g1.at)+' ("'+(g1&&g1.name)+'")');
    const ents=[],cam={x:g1.x-100,y:g1.y-60};g1.draw(ents,cam,t.vis());let e1=null;try{for(const e of ents)e.f()}catch(err){e1=err}ok(!e1,'drawn: its mound and cross of sticks'+(e1?': '+e1.message:''));
    let far=null;for(let ty=4;ty<t.MH-4&&!far;ty+=3)for(let tx=4;tx<t.MW-4&&!far;tx+=3){const x=tx*t.TILE+8,y=ty*t.TILE+8,h=t.Spatial.nearestHolding(x,y);if(t.passable(t.terrAt(x,y))&&h&&Math.hypot(h.x-x,h.y-y)/t.TILE>X.grave.tiers.far+3&&!t.RoadBand.on(x,y))far={x,y}}
-   if(far){const g2=die(0,far.x,far.y);ok(g2&&g2.kind==='remains'&&Math.hypot(g2.x-far.x,g2.y-far.y)<2&&g2.xp===30,'little renown, far from anyone: no one buries you; your remains where you fell, still holding '+(g2&&g2.xp)+' experience');
+   if(far){const g2=die(0,far.x,far.y,true);roll(.99);try{for(let i=0;i<5;i++)t.Grave.daily()}finally{window.Math.random=rnd}ok(g2&&g2.kind==='remains'&&g2.unburied&&Math.hypot(g2.x-far.x,g2.y-far.y)<2&&g2.xp===30,'far from anyone: days pass and no one finds you; your remains where you fell, still holding '+(g2&&g2.xp)+' experience');
     const ents2=[];g2.draw(ents2,{x:g2.x-100,y:g2.y-60},t.vis());let e2=null;try{for(const e of ents2)e.f()}catch(err){e2=err}ok(!e2,'drawn: bones, a skull, a torn cloak, the weapon fallen by them'+(e2?': '+e2.message:''));
     const nn=()=>t.newsW().items.filter(it=>it.k==='grave'&&it.detail.who===g2.who).length,n0=nn();roll(0);try{for(let i=0;i<5;i++)t.Grave.hour()}finally{window.Math.random=rnd}ok(nn()===n0,'and no one talks of them');
-    const gc=die(X.grave.tiers.cairn,far.x,far.y);ok(gc.kind==='cairn','known, far from anyone: a cairn')}
+    roll(0);try{t.Grave.daily()}finally{window.Math.random=rnd}ok(!g2.unburied&&g2.kind==='small','found at last by someone passing: a small grave where they lay');
+    const g5=die(0,far.x,far.y,true),site=W.sites.find(o=>o.type==='rest'&&o.members().includes(g5));G.mode='world';G.modal=false;site.meet();ok(/No one has buried them yet/.test(panel())&&/data-arg="here:0"/.test(panel())&&/data-arg="plot:0"/.test(panel()),'come to them yourself: bury them here, or carry them to the plot');
+    t.act('site-rest','here:0');ok(!g5.unburied&&g5.kind==='small'&&!g5.at&&G.mode==='world','buried by you, where they lay');
+    const g6=die(0,far.x,far.y,true),s6=W.sites.find(o=>o.type==='rest'&&o.members().includes(g6));G.mode='world';s6.meet();t.act('site-rest','plot:0');ok(!g6.unburied&&g6.plot&&g6.at,'or carried to the plot, by '+g6.at);
+    const gc=die(X.grave.tiers.cairn,far.x,far.y);ok(gc.kind==='cairn','known, far from anyone, found: a cairn')}
    const gs1=die(X.grave.tiers.near.stone);ok(gs1.kind==='stone','more renown: a headstone');const g3=die(X.grave.tiers.near.grave+10);ok(g3&&g3.kind==='grave'&&g3.at&&!g3.robbable()&&/grave of/.test(g3.tip()),'renowned, near people: a grave at '+(g3&&g3.at)+', kept safe');
    const g4=die(X.grave.tiers.near.tomb);const e4=[];g4.draw(e4,{x:g4.x-100,y:g4.y-60},t.vis());let x4=null;try{for(const e of e4)e.f()}catch(err){x4=err}ok(g4.kind==='tomb'&&g4.at&&!x4&&/Tomb of/.test(g4.name),'renowned the most: a tomb at '+g4.at+', its stone tall, railed in iron, four candles'+(x4?': '+x4.message:''));
    g3.meet();ok(/<h2>A grave<\/h2>/.test(panel())&&new RegExp('A stone by '+g3.at).test(panel()),'its page: "A stone by '+g3.at+', kept clean"');t.act('death-leave');
    tidy();t.Remains.list=[]}
   // ---- your family's plot (the owner: "Yes, make a family plot"): those of your line buried by people lie together, in rows, at the
   // holding that buried the first; those who fell far from anyone stay where they fell
-  {const L=t.Legacy,k=Object.keys(t.BGS)[0],die=(ren,x,y)=>{setup();W.lords=W.lords.filter(l=>!l.heir);P.comps={};if(x!=null){P.x=x;P.y=y}P.renown=ren;P.xpEarned=20;const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}t.act('cont');t.act('death-new');t.act('death-past',k);return t.Remains.list.filter(o=>o.grave).pop()};
+  {const L=t.Legacy,k=Object.keys(t.BGS)[0],die=(ren,x,y)=>{setup();W.lords=W.lords.filter(l=>!l.heir);P.comps={};if(x!=null){P.x=x;P.y=y}P.renown=ren;P.xpEarned=20;const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}t.act('cont');t.act('death-new');t.act('death-past',k);settle();return t.Remains.list.filter(o=>o.grave).pop()};
    L.clear();t.Remains.list=[];const x0=P.x,y0=P.y,a=die(0),at=L.plot&&L.plot.at;const b=die(X.grave.tiers.near.stone,x0+200,y0+120),c=die(X.grave.tiers.near.tomb,x0,y0);
    ok(at&&[a,b,c].every(g=>g.plot&&g.at===at)&&new Set([a,b,c].map(g=>g.x+','+g.y)).size===3&&[a,b,c].every(g=>Math.hypot(g.x-L.plot.x,g.y-L.plot.y)<X.grave.plot.gap*3),'three of your line, buried by people, lie together in the family plot at '+at+' ('+[a,b,c].map(g=>g.kind).join(', ')+')');
    {const hp=t.townBy(at),lots=[a,b,c].every(g=>t.Grave.clear(g.x,g.y));ok(lots&&Math.hypot(L.plot.x-hp.x,L.plot.y-hp.y)>=X.grave.yard.town,'the plot away from '+at+', its lots and its estates\' fields ('+Math.round(Math.hypot(L.plot.x-hp.x,L.plot.y-hp.y))+' px out, '+(()=>{let w=0;const tx=Math.floor(L.plot.x/t.TILE),ty=Math.floor(L.plot.y/t.TILE);for(let j=-3;j<=3;j++)for(let i=-3;i<=3;i++)if(t.tAt(tx+i,ty+j)===t.T_FOREST)w++;return w})()+' wooded tiles round it)')}

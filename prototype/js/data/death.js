@@ -22,7 +22,8 @@
    the cairn's ring of stones, its rows, the blade in it, the grave's fence: gfx/graveart.js; yard: how far from the holding, the
    ways tried; past its lots and fields: how far out to look (min, max, step px), the tiles about it that must be clear of lots,
    fields and water (clear), and of any holding (town px), the woods counted round it (wood tiles) and how much nearer counts
-   against them (near, a step); plot: your family's plot, its rows of graves (to a row, apart, rows closer) and the wall round them (px out); tiers: how you are laid to rest (far: tiles from any holding, off the roads, that no one buries you; the renown a cairn
+   against them (near, a step); find: unburied, the days before your heir comes for them, the chance a day someone finds and buries them near people
+   and far from anyone, more by each point of renown, at most max; plot: your family's plot, its rows of graves (to a row, apart, rows closer) and the wall round them (px out); tiers: how you are laid to rest (far: tiles from any holding, off the roads, that no one buries you; the renown a cairn
    needs there; near people, the renown each finer grave needs: a small grave, a headstone, a fenced plot, a tomb; how much each kind
    is talked of); words: each kind's names and lines; apart: no two graves nearer, rings: how far out to look for room, for you may die many times in one place); its colours;
    house (the lords' houses, world/lineage.js): the chance a lord dies when his army is beaten, the days of mourning before one of his
@@ -38,7 +39,7 @@ const DEATH={on:true,die:true,live:.3,min:.1,max:.6,
   comps:{n:3,hurt:2,wander:7,far:[8,30],left:2,talk:{base:.35,pers:.05,ap:.04,min:.1,max:.9},pay:{base:40,lv:12}},
   heir:{ap:5,follow:0,men:4},
   house:{slain:.06,wait:5,lv:2,men:6,respect:3,titles:{Lord:['Lord','Lady'],Lady:['Lord','Lady'],Ser:['Ser','Dame'],Dame:['Ser','Dame']}},
-  grave:{share:.5,cairn:12,yard:{r:70,tries:12,min:110,max:330,step:22,clear:2,town:90,wood:3,near:.6},apart:34,rings:6,plot:{cols:4,gap:30,row:.8,wall:16},
+  grave:{share:.5,find:{heir:3,near:.3,far:.04,renown:.002,max:.9},cairn:12,yard:{r:70,tries:12,min:110,max:330,step:22,clear:2,town:90,wood:3,near:.6},apart:34,rings:6,plot:{cols:4,gap:30,row:.8,wall:16},
     tiers:{far:22,cairn:50,near:{small:0,stone:50,grave:200,tomb:500},talk:{remains:0,small:.5,stone:1,cairn:1,grave:1,tomb:1}},
     words:{remains:{h:'Remains',label:'Body',name:'Remains of ',tip:'The remains of ',at:'over the remains of',line:'No one came to bury them: bones in the grass, picked at by beasts. '},
       small:{h:'A small grave',label:'Grave',name:'Grave of ',tip:'A small grave: ',at:'at the small grave of',line:'A mound of earth and a cross of sticks by {at}, dug by someone who passed: '},

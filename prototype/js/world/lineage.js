@@ -94,17 +94,20 @@ class RestSite extends Site{
   about(){const ms=this.members(),g=ms[0];
     if(this.kind==='plot')return '<p>The plot of the family of '+htmlText(Legacy.plot?.family||'your line')+', by '+htmlText(g?.at||'')+': '+ms.length+' of your line lie here, within its low wall.</p>';
     if(this.kind==='crypt'){const h=Houses.byId(this.ref);return '<p>The crypt of '+htmlText(h?.name||'a house')+', at '+htmlText(h?.seat||'its seat')+'. Their names are cut over its door: '+(h?h.dead.map(d=>htmlText(d.name)+' <span class="muted">(day '+d.day+', '+htmlText(d.how)+')</span>').join(', '):'')+'.</p>'}
-    return g?'<p>'+g.words.line.replace('{at}',htmlText(g.at||''))+'here lies '+htmlText(g.who)+', who fell to '+htmlText(g.life?.by||'beasts')+'.</p>':''}
+    return g?'<p>'+(g.unburied?'No one has buried them yet: '+htmlText(g.who)+' lies as they fell, to '+htmlText(g.life?.by||'beasts')+'.'+(g.heir?' Their heir is coming for them.':''):g.words.line.replace('{at}',htmlText(g.at||''))+'here lies '+htmlText(g.who)+', who fell to '+htmlText(g.life?.by||'beasts')+'.')+'</p>':''}
   page(){const ms=this.members(),acts=[];let body=this.about();
     if(this.kind!=='crypt')body+='<div class="lab">Here lie</div>'+ms.map(g=>'<p><b>'+htmlText(g.who)+'</b> <span class="muted">· '+g.words.label.toLowerCase()+' · fell on day '+g.day+(g.n>1?' · the '+ordinal(g.n)+' of your line':'')+' · level '+(g.life?.level||0)+'</span>'+
       (g.spent?' <span class="muted">· prayed at</span>':g.xp?' <span class="gold">· '+g.xp+' experience lingers</span>':'')+(g.empty()?'':' · with them: '+g.what())+'</p>').join('');
     ms.forEach((g,i)=>{if(g.grave&&!g.spent&&g.xp>0)acts.push({icon:'altar',label:'Pray for '+htmlText(g.who),act:'site-rest',arg:'pray:'+i,facts:[g.xp+' experience']});
       if(!g.empty())acts.push({icon:'gold',label:'Take what lies with '+htmlText(g.who),act:'site-rest',arg:'take:'+i,facts:[g.what()]});
+      if(g.unburied){acts.push({icon:'altar',label:'Bury '+htmlText(g.who)+' here',act:'site-rest',arg:'here:'+i,facts:[(g.life?.renown||0)>=DEATH.grave.tiers.cairn?'a cairn over them':'a small grave']});
+        const to=townBy(Legacy.plot?.at)||Spatial.nearestHolding(g.x,g.y);if(to)acts.push({icon:'altar',label:'Carry them to '+(Legacy.plot?'the family plot':to.name),act:'site-rest',arg:'plot:'+i,facts:['by '+to.name]})}
       if(g.crypt)acts.push({icon:'altar',label:'Pay your respects',act:'site-rest',arg:'respect:'+i,why:g.paid===G.day?'Paid today':'',facts:['its living lords think the better of you']})});
     return {body,acts}}
   act(a,arg,done){if(a!=='site-rest')return false;const [k,n]=String(arg).split(':'),g=this.members()[+n];if(!g)return true;
     if(k==='pray'){G.site=null;g.pray();return true}
     if(k==='take'){const got=g.take();done(got?'From '+g.who+': '+got+'.':'Nothing you can carry.');return true}
+    if((k==='here'||k==='plot')&&g.unburied){Grave.rest(g,null,k);G.site=null;G.mode='world';hidePanel();log('You bury '+g.who+(g.at?' in the family plot at '+g.at:' where they lay')+'.','gold','story');return true}
     if(k==='respect'&&g.crypt){g.respect();done('You pay your respects.');return true}return true}
   // (the places for the graves: each made once, kept where its graves are; its name)
   static sync(){if(!W.sites)return;const want=[];
