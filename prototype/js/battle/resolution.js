@@ -172,7 +172,7 @@ class BattleResolution{
   }
 }
 // Existing callers (simulation, auto-resolve, encounters and tests) keep the same entry points.
-function finishBattle(){if(B&&B.opts.sandbox)return BattleLab.finish();return new BattleResolution(B).finish()}
+function finishBattle(){if(B&&B.opts.sandbox)return BattleLab.finish();if(B&&DROPS.on)BattleDrops.of(B).end(B);return new BattleResolution(B).finish()}// (won: the field's drops gathered, battle/drops.js)
 function concludeEncounter(win,lost,kills,auto,slain,retreat){return new BattleResolution().conclude(win,lost,kills,auto,slain,retreat)}
 // each of your troop groups that fought: its men's average experience (attacks.js u.xp), and TROOP_XP.fight and, won, .win;
 // Leadership 5% more a level. Its ranks gained (core/ranks.js), for the report

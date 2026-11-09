@@ -1,0 +1,61 @@
+'use strict';
+/* ---------- what falls in a fight (the owner, 2026-11-09: "it drops something on the ground like just cool dot effects or small icons
+   for exp and items"; doc/ACTION_DESIGN.md §0): each foe of yours that falls bursts into gold dots that fly to your hero (the
+   experience a kill is worth, DROPS.xp, shown: the end of the fight pays it, as ever) and blue ones into the soldier of yours who
+   struck it (his own experience for the kill, attacks.js earnXp, as ever); a man may leave coins and a piece of gear, a beast its hide,
+   lying where it fell, bobbing and glinting; your hero or a companion who comes near draws them in (into your purse and bag:
+   DROPS.loot), a line over them; the fight won, what is left on the ground is gathered for you, lost or fled, it is left. Its state
+   is its own, never on the battle or its men (BattleDrops.of: kept by the battle), so nothing it does moves a battle's numbers.
+   Numbers: data/drops.js DROPS ---------- */
+const DROP_OF=new WeakMap(),DROP_BY=new WeakMap();
+class BattleDrops{
+  constructor(){this.ground=[];this.orbs=[];this.done=new WeakSet();this.got=[]}
+  static of(b){if(!b)return null;let d=DROP_OF.get(b);if(!d)DROP_OF.set(b,d=new BattleDrops());return d}
+  // (who struck the blow that felled t: attacks.js earnXp)
+  static struck(t,u){if(t&&u)DROP_BY.set(t,u)}
+  // each moment: a foe newly fallen bursts; the dots fly; what lies near your hero or a companion is drawn in
+  step(dt){
+    const D=DROPS,k=worldEffectScale(),h=B.hero;
+    for(const u of B.units){if(u.hp>0||u.team===0||this.done.has(u)||(h?!battleEnemy(h,u):false))continue;this.done.add(u);this.fall(u)}
+    for(const o of this.orbs){o.t+=dt;if(o.t<o.wait){o.x+=o.vx*dt;o.y+=o.vy*dt;o.vx*=.92;o.vy=o.vy*.92+60*k*dt;continue}
+      const to=o.to&&o.to.hp>0?o.to:null;if(!to){o.gone=true;if(o.item)this.ground.push(o.item);continue}
+      const tx=to.x,ty=to.y-8*k,dx=tx-o.x,dy=ty-o.y,d=Math.hypot(dx,dy),v=D.speed*k*(1+2*(o.t-o.wait));
+      if(d<=v*dt+2){o.gone=true;if(o.on)o.on();continue}o.x+=dx/d*v*dt;o.y+=dy/d*v*dt}
+    this.orbs=this.orbs.filter(o=>!o.gone);
+    const pick=B.units.filter(u=>u.team===0&&u.hp>0&&(u.hero||u.comp));
+    this.ground=this.ground.filter(g=>{const p=pick.find(u=>Math.hypot(u.x-g.x,u.y-g.y)<D.pick*k);if(!p)return true;
+      this.orbs.push({x:g.x,y:g.y-4*k,vx:0,vy:-40*k,t:0,wait:.15,to:p,item:g,on:()=>this.take(g,p)});return false})}
+  // (a foe fallen: its dots, and what it leaves on the ground)
+  fall(u){
+    const D=DROPS,k=worldEffectScale(),h=B.hero,by=DROP_BY.get(u);
+    if(h&&h.hp>0)for(let i=0;i<D.dots.xp;i++)this.burst(u,h,D.col.xp,D.col.xpCore,i?null:()=>B.floats.push({x:h.x,y:h.y-28*k,t:'+'+D.xp+' XP',life:.9,c:D.col.xp}));
+    if(by&&by.team===0&&!by.hero&&!by.comp&&by.hp>0)for(let i=0;i<D.dots.troop;i++)this.burst(u,by,D.col.troop,D.col.troopCore,null);
+    const spot=()=>({x:u.x+(Math.random()-.5)*14*k,y:u.y+(Math.random()-.5)*8*k,ph:Math.random()*6.283}),M=Object.values(MONSTERS).find(m=>m.unit===u.type);
+    if(M){if(M.mat&&Math.random()<D.beast)this.ground.push({k:'mat',id:M.mat,...spot()});return}
+    if(Math.random()<D.coin.chance)this.ground.push({k:'gold',n:rint(D.coin.n[0],D.coin.n[1]),...spot()});
+    if(Math.random()<D.gear)this.ground.push({k:'gear',id:randomGear(0,gearTop()),...spot()})}
+  // (dots from u to whom they go: out in a burst, then home on him)
+  burst(u,to,c,c2,on){const k=worldEffectScale(),a=Math.random()*6.283,v=(40+Math.random()*70)*k;
+    this.orbs.push({x:u.x,y:u.y-6*k,vx:Math.cos(a)*v,vy:Math.sin(a)*v-50*k,t:0,wait:.3+Math.random()*.25,to,c,c2,on})}
+  // (one drawn in: into your purse or bag (DROPS.loot), its line over whoever took it; a full bag leaves it on the ground)
+  take(g,p){const k=worldEffectScale(),say=(t,c)=>B.floats.push({x:p.x,y:p.y-30*k,t,life:1,c});
+    if(g.k==='gold'){if(DROPS.loot)P.gold+=g.n;this.got.push(g.n+' gold');say('+'+g.n+' gold',DROPS.col.coin);return}
+    const nm=g.k==='gear'?ITEMS[g.id].n:MATS[g.id].n;if(DROPS.loot&&!invAdd(g.k,g.id,1)){say('Bag full','#e07a6a');this.ground.push({...g,x:p.x+8*k,y:p.y});return}
+    this.got.push(nm);say(nm,'#f0e6c8')}
+  // the fight over: won, the ground gathered for you; its line in the log
+  end(b){if(b.win)for(const g of this.ground.splice(0)){if(g.k==='gold'){if(DROPS.loot)P.gold+=g.n;this.got.push(g.n+' gold')}else if(!DROPS.loot||invAdd(g.k,g.id,1))this.got.push(g.k==='gear'?ITEMS[g.id].n:MATS[g.id].n)}
+    if(this.got.length&&DROPS.loot){const gold=this.got.filter(x=>/ gold$/.test(x)).reduce((n,x)=>n+parseInt(x),0),rest=this.got.filter(x=>!/ gold$/.test(x));
+      log('From the field: '+[gold?gold+' gold':'',...rest].filter(Boolean).join(', ')+'.','gold')}}
+  // drawn over the field: the ground's icons (a shadow, a glint by its worth, bobbing), then the dots and what flies
+  draw(){const D=DROPS,t=performance.now()/1000;
+    for(const g of this.ground){ctx.save();effectTransform(g.x,g.y);this.icon(g,g.x,g.y-4+Math.sin(t*2+g.ph)*D.bob[0],(Math.sin(t*6.283/D.bob[1]+g.ph)+1)/2,true);ctx.restore()}
+    for(const o of this.orbs){ctx.save();effectTransform(o.x,o.y);if(o.item)this.icon(o.item,o.x,o.y,1,false);
+      else{ctx.globalAlpha=.3;ctx.fillStyle=o.c;ctx.beginPath();ctx.arc(o.x,o.y,3.2,0,6.283);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle=o.c2;ctx.fillRect(Math.round(o.x)-1,Math.round(o.y)-1,2,2)}ctx.restore()}}
+  icon(g,x,y,gl,shade){
+    if(shade){ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y+7,4.5,1.6,0,0,6.283);ctx.fill()}
+    if(g.k==='gold'){const C=DROPS.col;for(const [dx,dy] of [[-2,1],[2,1],[0,-1]].slice(0,Math.min(3,g.n))){ctx.fillStyle=C.coinEdge;ctx.beginPath();ctx.ellipse(x+dx,y+dy+.6,2.6,1.6,0,0,6.283);ctx.fill();ctx.fillStyle=C.coin;ctx.beginPath();ctx.ellipse(x+dx,y+dy,2.6,1.6,0,0,6.283);ctx.fill()}
+      ctx.globalAlpha=gl*.9;ctx.fillStyle='#fffbe6';ctx.fillRect(Math.round(x+1),Math.round(y-2),1,1);ctx.globalAlpha=1;return}
+    const def=g.k==='gear'?ITEMS[g.id]:MATS[g.id],c=def&&itemIcon(def);
+    ctx.globalAlpha=.18+.3*gl;ctx.fillStyle=g.k==='gear'?'#ffe08a':'#e8d8b0';ctx.beginPath();ctx.arc(x,y,7.5,0,6.283);ctx.fill();ctx.globalAlpha=1;
+    if(c)ctx.drawImage(c,Math.round(x-6),Math.round(y-6),12,12)}
+}
