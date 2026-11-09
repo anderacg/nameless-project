@@ -157,7 +157,7 @@ class BattleSides{
    const h=e&&commonFoe(e)&&landHold(P.x,P.y),lf=h&&h.owner;if(lf&&lf!=='player'&&this.records.some(r=>r.owner!==P&&r.joined&&this.relation(0,r.team)>0&&forceRealm(r.owner)===lf))addHonor(lf,REINF.honor.land,true)}
   // (beaten, your allies too: taken captive, or away in the rout: world/captivity.js)
   // (by whoever holds the field: captorEnc; it grows by its win as in a battle of two, resolution.js conclude)
-  if(!b.win&&!b.retreat){if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}captivesEscape();const ce=this.captorEnc(b.captor)||e,fate=Captivity.defeat(ce);if(ce?.ref&&ce.kind!=='camp')ce.ref.cool=8;
+  if(!b.win&&!b.retreat){if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}captivesEscape();const ce=this.captorEnc(b.captor)||e,fate=Captivity.defeat(ce,b);if(ce?.ref&&ce.kind!=='camp')ce.ref.cool=8;
    if(ce?.kind==='party')chiefWins(ce.ref,partySize()+1);if(ce?.kind==='lord')lordWins(ce.ref,partySize());if(ce?.kind==='patrol'){const h=townBy(ce.ref.home);if(h)h.crime=null}
    if(ce!==e)detail+=' '+cap1(this.label(b.captor))+' held the field.';detail+=' '+fate.text;log('Defeat. '+fate.text,'bad','war')}
   {const h=!b.win&&(b.captor||this.victor()),q=h?.owner?.mapKind==='monster'&&leaveFieldLoot(b.world.x,b.world.y,kills,h.owner);if(q)detail+=' '+fieldLootLine(q).replace(/<[^>]+>/g,'')}

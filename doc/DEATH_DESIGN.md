@@ -1,6 +1,6 @@
 # Death to beasts, and a new life in the same world: design
 
-Status: **design** (2026-11-09), not built; every question answered (round 5). The owner: "When you lost to the beast, or monster, you should be dead. But there might be a chance that you may survived which would be wounded but the day should be passed and the monster should not be there anymore. Recheck if there is any quest relevant to it. What do you think? Please help me think of edge cases or similar situations."
+Status: **design** (2026-11-09); every question answered (round 5). **Phase 1, living, built** (`world/death.js`, `data/death.js`; tests `death`): the roll and its odds are there, but every roll lives (and its chance is not shown) until phase 2 turns `DEATH.die` on. Not yet: pack animals, a bolted horse found again, a favour as a way to win a companion back, a lord's war task failed with your army. The owner: "When you lost to the beast, or monster, you should be dead. But there might be a chance that you may survived which would be wounded but the day should be passed and the monster should not be there anymore. Recheck if there is any quest relevant to it. What do you think? Please help me think of edge cases or similar situations."
 
 **Today:** a fight lost to beasts leaves you "for dead among the fallen", waking where you fell at a quarter of your health (`Captivity.defeat`, `world/captivity.js`, `CAPTIVITY.beast.hp`). Nothing else changes: your band, the beast and your quests stay as they were.
 

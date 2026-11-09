@@ -207,11 +207,11 @@ class PlayerParty extends Party{
   skill(k){return profPow(this.sk[k].lv)+this.roleBonus(k)+this.gearSkill(k)+this.treeSkill(k)}// (a proficiency's level in power: profPow)
   // your hero's numbers in battle (HERO_BASE): her level, disciplines, gear and tree
   heroStats(){
-    const tm=k=>this.treeMod(k),gm=k=>this.gearMod(k),melee=this.skill(meleeSk()),two=hybridTwo(),kind=heroKind(),fist=unarmed();// (bare hands: combat.js FISTS)
+    const tm=k=>this.treeMod(k),gm=k=>this.gearMod(k),melee=this.skill(meleeSk()),two=hybridTwo(),kind=heroKind(),fist=unarmed(),weak=this===P&&Death.weak()?DEATH.weak:null;// (bare hands: combat.js FISTS; weak after the beasts: world/death.js)
     return {n:'You',
       hp:Math.round((HERO_BASE.hp+gm('hp'))*(1+tm('hpPct'))),
-      dmg:(HERO_BASE.dmg+LEVEL.dmg*this.level+this.bonus+melee*.6+gm('dmg'))*(1+tm('dmgPct'))*(two?1.2:1)*(fist?FISTS.dmg*(1+tm('fistPct')):1),
-      spd:HERO_BASE.spd*(1+gm('spd')),
+      dmg:(HERO_BASE.dmg+LEVEL.dmg*this.level+this.bonus+melee*.6+gm('dmg'))*(1+tm('dmgPct'))*(two?1.2:1)*(fist?FISTS.dmg*(1+tm('fistPct')):1)*(weak?weak.dmg:1),
+      spd:HERO_BASE.spd*(1+gm('spd'))*(weak?weak.spd:1),
       reach:21+melee*.4+gm('reach')+(two?4:0)+(fist?FISTS.reach:0),
       range:heroRange(),magic:kind==='magic',
       dt:itemDt(this.gear.weapon)||(kind==='magic'?'arcane':'blunt'),armor:itemArmor(this.gear.body)||'none',race:this.race,

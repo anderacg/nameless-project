@@ -152,7 +152,7 @@ class BattleResolution{
       if(e.kind==='patrol'){const h=townBy(e.ref.home);if(h)h.crime=null}
       if(e.kind==='party'||e.kind==='camp')chiefWins(e.ref,partySize()+1);// the chieftain who beat you grows
       // (taken captive, or away in the rout, or left for dead by beasts: world/captivity.js)
-      const fate=Captivity.defeat(e);if(e.kind!=='camp'&&e.ref)e.ref.cool=8;
+      const fate=Captivity.defeat(e,this.battle);if(e.kind!=='camp'&&e.ref)e.ref.cool=8;
       if(e.kind==='lord'){const l=e.ref;if(auto)cull(l,.3);else if(!this.primaryLossesApplied)for(const k of slain)l.remove(k,1);lordWins(l,partySize())}
       html='<h2>Defeat</h2><p>Your band was routed. '+fate.text+'</p>'+moodLine;
       log('Defeat. '+fate.text,'bad','war');

@@ -30,7 +30,7 @@ class Monster extends Party{
       ctx.save();ctx.translate(sx,sy-lift);if(Y?m.dir<0:faceDir(m)<0)ctx.scale(-1,1);ctx.drawImage(s,-(w>>1),-s.height+2);ctx.restore();
       if(!Y)txt((m.n>1?m.n+' ':'')+'Lv'+m.lv,sx,sy-h,STANCE_COL[M.aggro||stance(monPower(m))==='afraid'?stance(monPower(m)):'wary'],'center')}})}
   mapDot(V){const Y=MONSTERS[this.id].mythic;return yourSight(V).sees(this.x,this.y)?[Y?'#ff7a30':'#c58af0',Y?2:1]:null}
-  tip(){const M=MONSTERS[this.id];return '<b>'+(M.n||this.id)+(this.n>1?' ×'+this.n:'')+'</b><small>Level '+this.lv+tipOdds(monPower(this))+(this.id==='wolf'&&this.alpha?' · Led by an Alpha Wolf':'')+'</small><span class="act">Click: fight</span>'}
+  tip(){const M=MONSTERS[this.id];return '<b>'+(this.eater?Death.nameOf(this)+', ':'')+(M.n||this.id)+(this.n>1?' ×'+this.n:'')+'</b><small>Level '+this.lv+tipOdds(monPower(this))+(this.id==='wolf'&&this.alpha?' · Led by an Alpha Wolf':'')+'</small><span class="act">Click: fight</span>'}
   // as one side of a fight on the map (fights.js), the face every party there shows: its fighters (n of its kind), its strength
   // (monPower; in a fight, its fighters at its level), its name, no realm; it loses its fighters one by one (n goes down)
   get troops(){return monsterTroops(this)}
