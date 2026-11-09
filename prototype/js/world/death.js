@@ -285,7 +285,7 @@ class Grave extends Remains{
       ctx.restore()}})}
   // each hour: now and then someone speaks of a grave that still holds anything (the news)
   // (one grave at most an hour, however many there are: a world of many dead is not all talk of them)
-  static hour(){if(Math.random()>=DEATH.grave.rumour/24)return;const gs=Remains.list.filter(g=>g.grave&&g.holds());if(gs.length){const g=gs[Math.floor(Math.random()*gs.length)];newsRecord('grave',g,{who:g.who,kind:g.kind,at:g.at||''})}}
+  static hour(){const gs=Remains.list.filter(g=>g.grave&&g.holds());if(!gs.length||Math.random()>=DEATH.grave.rumour/24)return;const g=gs[Math.floor(Math.random()*gs.length)];newsRecord('grave',g,{who:g.who,kind:g.kind,at:g.at||''})}// (no grave, no draw: the world's Math.random as it was)
 }
 const asGrave=asClass(Grave);
 const ordinal=n=>n+(n%100>=11&&n%100<=13?'th':['th','st','nd','rd'][n%10]||'th');
