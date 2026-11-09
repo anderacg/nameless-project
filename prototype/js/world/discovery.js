@@ -11,7 +11,7 @@ const Discovery={
   found:new Set(),
   started:false,
   reset(){this.found=new Set();this.started=false},
-  key(o){return o instanceof Site?'s:'+o.i:o.grave?'g:'+o.who+':'+o.day:'h:'+o.name},
+  key(o){return o instanceof Site?'s:'+o.i:o.grave?'g:'+o.who+':'+o.day+':'+Math.round(o.x):'h:'+o.name},
   // (the places one can discover: the holdings, and the named sites)
   places(){return [...TOWNS,...W.sites.filter(s=>!(s instanceof BanditCamp)&&!(s instanceof TravellersCamp)),...Remains.list.filter(r=>r.grave)]},// (and the graves: world/death.js)
   named(o){return !DISCOVER.on||!o||this.found.has(this.key(o))},

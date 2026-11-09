@@ -120,6 +120,18 @@ Kit.suite(({ok})=>{
    P.xpEarned=100;dieNow();t.act('death-new');t.act('death-past',k);const gh=t.Remains.list.find(o=>o.grave),hl=W.lords.find(l=>l.heir&&!l.dead);
    ok(gh&&gh.at===fh.name&&t.townBy(gh.at).owner===hl.fac&&!gh.robbable()&&gh.xp===50,'with an heir: a grave at their holding ('+(gh&&gh.at)+'), safe from robbers');
    const bb=t.asParty({kind:'bandits',troops:Array(4).fill('militia'),x:gh.x+10,y:gh.y,cool:0});t.bandits.push(bb);gh.gold=30;roll(0);try{t.Remains.hour()}finally{window.Math.random=rnd}ok(gh.gold===30&&!bb.plunder,'a band near does not rob it');
+   // ---- many lives (the owner: "Bear in mind, player may died a lot"): graves never on one another, however often you fall in one
+   // place; one rumour at a time; your line counted; a realm of an heir's that has fallen out of the realms that act, its name kept
+   setup();tidy();t.Remains.list=[];const f0=L.fallen,x0=P.x,y0=P.y;
+   for(let i=0;i<6;i++){P.x=x0;P.y=y0;P.xpEarned=50;dieNow();t.act('death-new');t.act('death-past',k)}
+   const gs=t.Remains.list.filter(o=>o.grave),close=gs.some((a,i)=>gs.some((b,j)=>j>i&&Math.hypot(a.x-b.x,a.y-b.y)<X.grave.apart-1));
+   ok(gs.length===6&&!close&&L.fallen===f0+6&&gs[5].n===f0+6,'six deaths in one place: six graves, none on another; your line counted ('+L.fallen+')');
+   ok(/the \d+(st|nd|rd|th) of your line/.test((gs[5].meet(),panel())),'the grave says which of your line it was');t.act('death-leave');
+   const nn=()=>t.newsW().items.filter(it=>it.k==='grave').length,n0=nn();roll(0);try{t.Grave.hour()}finally{window.Math.random=rnd}ok(nn()-n0<=1,'one rumour an hour at most, not one for each grave ('+(nn()-n0)+')');
+   setup();tidy();P.fac=null;t.compJoin('brann');P.comps.brann.ap=8;const fp=t.TOWNS.filter(x=>!x.gone&&x.owner&&x.owner!=='player').sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[3];fp.owner='player';
+   dieNow();t.act('death-new');t.act('death-past',k);const hp=W.lords.find(l=>l.heir&&!l.dead),fid=hp.fac,nm=t.FACS[fid].n;fp.owner=t.FIDS[0];hp.dead=true;L.hour();
+   ok(!t.FIDS.includes(fid)&&t.FACS[fid]&&t.FACS[fid].n===nm&&L.realms[fid].gone,'an heir\'s realm with no holding and no lord left: out of the realms that act ('+nm+', its name kept)');
+   const sv3=JSON.parse(JSON.stringify(L.save()));L.load(sv3);ok(!t.FIDS.includes(fid)&&t.FACS[fid]&&L.fallen>=1,'and so after a load');
    tidy();t.Remains.list=[]}
   // ---- no room on the roll's other side: a man-eater only once, and no mythic one
   {setup();const m=wolves({eater:{name:'the Old Maw',day:1}}),lv=m.lv;roll(.1);try{lose(enc(m))}finally{window.Math.random=rnd}ok(m.lv===lv&&m.eater.name==='the Old Maw','a man-eater already: named once');t.act('cont')}

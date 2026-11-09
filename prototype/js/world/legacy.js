@@ -16,7 +16,7 @@
    The heir's company ends with its lord, gone or dead: its companions free (hour). Saved: the realms made and the companions kept
    (the save piece legacy, loaded before the holdings and the lords that name its realms). Numbers: data/death.js DEATH.heir ---------- */
 class Legacy{
-  static realms={};static kept={};static raised=null;
+  static realms={};static kept={};static raised=null;static fallen=0;// (fallen: how many of your line have died)
   // the heir: the most loyal companion with you, at least DEATH.heir.ap, a tie to the higher level; null: none
   static heirOf(comps){return Object.keys(comps).filter(id=>(comps[id].ap||0)>=DEATH.heir.ap&&!comps[id].jail)
     .sort((a,b)=>(comps[b].ap-comps[a].ap)||((comps[b].lv||0)-(comps[a].lv||0)))[0]||null}
@@ -40,9 +40,14 @@ class Legacy{
     return say}
   // a realm of the heir's own: your banner's colour, their people, at war with whoever was at war with you
   static found(cid){let n=1;while(FACS['legacy'+n])n++;const id='legacy'+n,race=ST[cid]?.race||'human';
-    const def={n:P.band||COMPS[cid].short+'’s Company',col:FACS.player.col,d:'The realm '+COMPS[cid].short+' keeps in the name of '+(heroName()||'a fallen hero')+'.',races:[race],lords:[COMPS[cid].n],gender:{}};
+    const base=P.band||COMPS[cid].short+'’s Company',taken=n=>Object.values(FACS).some(f=>f.n===n);let nm=base;for(let k=2;taken(nm);k++)nm=base+' '+['II','III','IV','V','VI','VII','VIII','IX','X'][Math.min(8,k-2)]+(k>10?' ('+k+')':'');
+    const def={n:nm,col:FACS.player.col,d:'The realm '+COMPS[cid].short+' keeps in the name of '+(heroName()||'a fallen hero')+'.',races:[race],lords:[COMPS[cid].n],gender:{}};
     this.realms[id]=def;this.install(id,def);for(const f of FIDS)if(f!==id&&realmOf('player').atWar(f))setRel(id,f,'war');return id}
-  static install(id,def){FACS[id]=def;if(!FIDS.includes(id))FIDS.push(id)}
+  // (a realm made in play: in FACS for good, its name read wherever it is named; among the realms that act, FIDS, until it falls)
+  static install(id,def){FACS[id]=def;if(!def.gone&&!FIDS.includes(id))FIDS.push(id)}
+  // (one with no holding and no lord left: out of the realms that act, so many lives make no crowd of dead realms; its name kept)
+  static prune(){for(const id in this.realms){const d=this.realms[id];if(d.gone||fiefsOf(id).length||W.lords.some(l=>l.fac===id&&!l.dead&&!l.gone))continue;
+    d.gone=true;const i=FIDS.indexOf(id);if(i>=0)FIDS.splice(i,1);for(const k in W.rel)if(k.split('|').includes(id))delete W.rel[k];W.dead[id]=W.dead[id]||G.day}}
   // (the heir as a lord: at their realm's holding nearest you, with the companions content with them and the men of their party if
   // they led one, else a few)
   static raise(cid,fac,own){const c=P.comps[cid],h=own[0]||Spatial.nearest(fiefsOf(fac),P.x,P.y)||Spatial.nearestHolding(P.x,P.y);
@@ -83,11 +88,11 @@ class Legacy{
     if(a==='death-race'&&RACES[arg]){G.race=arg;return this.page()}
     if(a==='death-past')return this.reborn(arg)}
   // each hour: a company whose lord is gone breaks up, its companions free
-  static hour(){for(const l of W.lords){const h=l.heir;if(!h||h.ended||!(l.dead||l.gone))continue;h.ended=true;
+  static hour(){this.prune();for(const l of W.lords){const h=l.heir;if(!h||h.ended||!(l.dead||l.gone))continue;h.ended=true;
     worldEvent({text:cap1(l.name)+'’s company breaks up: '+h.comps.map(id=>COMPS[id].short).join(', ')+' go their own ways.',x:l.x,y:l.y,fac:[l.fac],post:false,kind:''})}}
-  static save(){return Object.keys(this.realms).length||Object.keys(this.kept).length?{realms:this.realms,kept:this.kept}:undefined}
-  static load(v){this.clear();for(const id in v?.realms||{}){this.realms[id]=v.realms[id];this.install(id,v.realms[id])}this.kept=v?.kept||{}}
-  static clear(){for(const id in this.realms){delete FACS[id];const i=FIDS.indexOf(id);if(i>=0)FIDS.splice(i,1);REALMS.delete(id)}this.realms={};this.kept={}}
+  static save(){return Object.keys(this.realms).length||Object.keys(this.kept).length||this.fallen?{realms:this.realms,kept:this.kept,fallen:this.fallen}:undefined}
+  static load(v){this.clear();for(const id in v?.realms||{}){this.realms[id]=v.realms[id];this.install(id,v.realms[id])}this.kept=v?.kept||{};this.fallen=v?.fallen||0}
+  static clear(){for(const id in this.realms){delete FACS[id];const i=FIDS.indexOf(id);if(i>=0)FIDS.splice(i,1);REALMS.delete(id)}this.realms={};this.kept={};this.fallen=0}
 }
 onWorld(()=>Legacy.clear());
 Systems.add({name:'heirs',order:{hour:166},hour:()=>Legacy.hour()});

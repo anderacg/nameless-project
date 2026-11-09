@@ -61,7 +61,7 @@ class Death{
      world is phase 3: until then its way out is a save or the main menu */
   static died(e,o,m){
     const by=m?.eater?m.eater.name:'the '+this.beastName(e),life=this.life(by),r=Remains.lay(P.x,P.y,life.who);
-    if(m)this.eater(m,life.who);this.slain={...life,by:m?.eater?m.eater.name:by,gold:r.gold,items:r.items.length};this.pending={m,hx:m?.hx,hy:m?.hy,slain:true};
+    if(m)this.eater(m,life.who);Legacy.fallen++;this.slain={...life,n:Legacy.fallen,by:m?.eater?m.eater.name:by,gold:r.gold,items:r.items.length};this.pending={m,hx:m?.hx,hy:m?.hy,slain:true};
     log(cap1(life.who)+' fell to '+this.slain.by+(life.near?' near '+life.near:'')+', on day '+G.day+': level '+life.level+', renown '+life.renown+'.','bad','story');
     return {how:'slain',text:'The '+this.beastName(e)+' tear through the last of you, and you do not rise again ('+Math.round(o.ch*100)+'% chance to live).'}}
   // (your life in a few numbers, for the Slain page and the chronicle)
@@ -69,7 +69,7 @@ class Death{
   // the Slain page (the frame: its way out a new person in the same world, world/legacy.js; else a save, or the main menu)
   static open(){const s=this.slain;if(!s)return;G.mode='dialog';
     showPanel('<div class="top"><h2>Slain</h2><span class="muted">Day '+s.day+'</span></div>'+
-      '<p><b>'+htmlText(cap1(s.who))+'</b> fell to '+htmlText(s.by)+(s.near?' near '+htmlText(s.near):'')+'.</p>'+
+      '<p><b>'+htmlText(cap1(s.who))+'</b> fell to '+htmlText(s.by)+(s.near?' near '+htmlText(s.near):'')+'.'+(s.n>1?' The '+ordinal(s.n)+' of your line to fall.':'')+'</p>'+
       '<div class="loot-stats">'+[['Days on the road',s.days],['Level',s.level],['Renown',s.renown],['Experience gained',s.earned]].map(([k,v])=>'<span><b>'+k+'</b><span>'+v+'</span></span>').join('')+'</div>'+
       '<p>Your remains lie where you fell, with your gear ('+s.items+' piece'+(s.items===1?'':'s')+') and '+s.gold+' gold: whoever finds them first may take them. Men will put a price on '+htmlText(s.by)+'.</p>'+
       '<p class="muted">The world goes on without them. Go on in it as someone new, or load a save.</p><div class="btns"><button class="btn sm" type="button" data-act="death-menu">Main menu</button></div>'+
@@ -227,12 +227,16 @@ class Grave extends Remains{
   // the remains of the hero just dead, buried (old: their life, Death.slain; lord: their heir's, or none)
   static bury(old,lord){const X=DEATH.grave,r=Remains.list.find(o=>!o.grave&&o.who===old.who&&o.day===old.day)||Remains.lay(P.x,P.y,old.who),
       home=lord?Spatial.nearest(TOWNS.filter(t=>t.owner===lord.fac&&!t.gone),lord.x,lord.y):null;
-    Object.assign(r,{grave:1,xp:Math.round((old.earned||0)*X.share),life:{level:old.level,renown:old.renown,days:old.days,by:old.by}});
-    if(home){r.at=home.name;r.fac=lord.fac;const p=Grave.yardOf(home);r.x=p.x;r.y=p.y}else{r.x+=X.cairn;r.y+=Math.round(X.cairn/2)}
+    Object.assign(r,{grave:1,n:old.n||1,xp:Math.round((old.earned||0)*X.share),life:{level:old.level,renown:old.renown,days:old.days,by:old.by}});
+    // (where: by the heir's holding, else by where you fell; never on another grave, for you may die many times in one place)
+    const p=home?Grave.spot(home.x,home.y,X.yard.r,r):Grave.spot(r.x+X.cairn,r.y+Math.round(X.cairn/2),0,r);if(home){r.at=home.name;r.fac=lord.fac}r.x=p.x;r.y=p.y;
     r.cloth=FACS.player.col;return asGrave(r)}
-  // (a grave's yard by a holding: the first open ground on a ring round it, from the south)
-  static yardOf(t){const R=DEATH.grave.yard;for(let i=0;i<R.tries;i++){const a=Math.PI/2+(i%2?1:-1)*Math.ceil(i/2)*6.283/R.tries,x=Math.round(t.x+Math.cos(a)*R.r),y=Math.round(t.y+Math.sin(a)*R.r);
-      if(passable(terrAt(x,y)))return {x,y}}return {x:Math.round(t.x),y:Math.round(t.y+R.r)}}
+  // (open ground for a grave: the spot itself (r0 0), or a ring r0 round it, then rings further out, from the south; none within
+  // DEATH.grave.apart of another grave)
+  static spot(cx,cy,r0,self){const X=DEATH.grave,free=(x,y)=>passable(terrAt(x,y))&&!Remains.list.some(o=>o!==self&&o.grave&&Math.hypot(o.x-x,o.y-y)<X.apart);
+    if(!r0&&free(Math.round(cx),Math.round(cy)))return {x:Math.round(cx),y:Math.round(cy)};
+    for(let k=0;k<X.rings;k++){const r=(r0||X.apart)+k*X.apart;for(let i=0;i<X.yard.tries;i++){const a=Math.PI/2+(i%2?1:-1)*Math.ceil(i/2)*6.283/X.yard.tries,x=Math.round(cx+Math.cos(a)*r),y=Math.round(cy+Math.sin(a)*r);if(free(x,y))return {x,y}}}
+    return {x:Math.round(cx),y:Math.round(cy+(r0||X.apart))}}
   get kind(){return this.at?'grave':'cairn'}
   // (its light: while it holds anything for you)
   holds(){return !this.spent&&this.xp>0||!this.empty()}
@@ -241,7 +245,7 @@ class Grave extends Remains{
   // (met: its page, the hero's life; Pray, and its goods)
   meet(){G.mode='dialog';G.remains=this;const L=this.life||{};
     showPanel('<div class="top"><h2>'+(this.at?'A grave':'A cairn')+'</h2><span class="muted">'+htmlText(cap1(this.who))+' · fell on day '+this.day+'</span></div>'+
-      '<p>'+(this.at?'A stone by '+htmlText(this.at)+', kept clean: ':'Stones piled by the road: ')+'here lies '+htmlText(this.who)+', who fell to '+htmlText(L.by||'beasts')+'.</p>'+
+      '<p>'+(this.at?'A stone by '+htmlText(this.at)+', kept clean: ':'Stones piled by the road: ')+'here lies '+htmlText(this.who)+', who fell to '+htmlText(L.by||'beasts')+(this.n>1?', the '+ordinal(this.n)+' of your line':'')+'.</p>'+
       '<div class="loot-stats">'+[['Days on the road',L.days||0],['Level',L.level||0],['Renown',L.renown||0]].map(([k,v])=>'<span><b>'+k+'</b><span>'+v+'</span></span>').join('')+'</div>'+
       (this.spent?'<p class="muted">You prayed here once. It is quiet now.</p>':this.xp?'<p class="gold">Something of them lingers here: '+this.xp+' experience, for one who prays.</p>':'')+
       (this.empty()?'':'<p>With them: '+this.what()+'.</p><div class="btns"><button class="btn sm" type="button" data-act="death-take">Take the grave goods</button></div>')+
@@ -280,9 +284,11 @@ class Grave extends Remains{
       if(f.end){const k=(now-f.end)/1000/X.show;ctx.globalAlpha=1-k;txt('+'+f.n+' XP',Math.round(hx),Math.round(hy-6-k*10),C.text,'center')}
       ctx.restore()}})}
   // each hour: now and then someone speaks of a grave that still holds anything (the news)
-  static hour(){for(const g of Remains.list)if(g.grave&&g.holds()&&Math.random()<DEATH.grave.rumour/24)newsRecord('grave',g,{who:g.who,kind:g.kind,at:g.at||''})}
+  // (one grave at most an hour, however many there are: a world of many dead is not all talk of them)
+  static hour(){if(Math.random()>=DEATH.grave.rumour/24)return;const gs=Remains.list.filter(g=>g.grave&&g.holds());if(gs.length){const g=gs[Math.floor(Math.random()*gs.length)];newsRecord('grave',g,{who:g.who,kind:g.kind,at:g.at||''})}}
 }
 const asGrave=asClass(Grave);
+const ordinal=n=>n+(n%100>=11&&n%100<=13?'th':['th','st','nd','rd'][n%10]||'th');
 const robberOf=b=>b?.ld?.name?b.ld.name+'’s band':'bandits';
 onAct('death-',(a,arg)=>Death.act(a,arg));
 // (the fight's report shown: the day passes: Death.after)
