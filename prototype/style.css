@@ -1651,3 +1651,38 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 @media (hover:hover){.ft-house:hover{border-color:#cdbf9f}}.ft-house.ft-sel{border-color:var(--accent);color:var(--fg);box-shadow:0 0 0 1px rgba(201,162,78,.35)}
 @media (max-width:560px){.ft-body{flex-direction:column}.ft-info{flex-basis:auto;align-self:stretch}}
 @media (max-height:430px){.ft-info{flex-basis:220px}.ft-pic{width:54px;height:54px}.ft-tile{width:74px}.ft-tile b{max-width:74px}.ft-side{left:calc(50% + 44px)}.ft-side::before{top:19px}.ft-heir .ft-pic{width:40px;height:40px}}
+
+/* (the dice, ui/dice.js: a check's roll as it falls, over the screen: the die tumbling in and landing on your roll, the bar of the
+   odds you had (green won, amber won in part), the mark of your roll sliding to it, what came of it; then gone) */
+.dice-ov{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.dice-card{pointer-events:auto;cursor:pointer;min-width:220px;max-width:min(320px,86vw);padding:12px 18px 14px;border:1px solid var(--accent);border-radius:8px;text-align:center;
+  background:linear-gradient(#211a15f2,#120e0cf2);box-shadow:0 10px 40px rgba(0,0,0,.6),inset 0 0 0 1px rgba(201,162,78,.2);
+  animation:dice-in .18s ease-out,dice-out .35s ease-in calc(var(--tumble) + 1.4s) forwards}
+.dice-lab{font-size:var(--fs-xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.die-wrap{position:relative;width:64px;height:64px;margin:12px auto 14px;perspective:420px}
+.die{position:relative;width:64px;height:64px;transform-style:preserve-3d;animation:die-roll var(--tumble) cubic-bezier(.25,.8,.35,1) both}
+.die i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border:2px solid #6b5536;border-radius:12px;
+  background:radial-gradient(circle at 35% 30%,#fbf1d8,#d9c393 60%,#b89c66);box-shadow:inset 0 -4px 8px rgba(80,55,25,.35);
+  font:bold 24px Georgia,serif;color:#3a2814;backface-visibility:hidden}
+.die i:nth-child(1){transform:translateZ(32px)}.die i:nth-child(2){transform:rotateY(180deg) translateZ(32px)}
+.die i:nth-child(3){transform:rotateY(90deg) translateZ(32px)}.die i:nth-child(4){transform:rotateY(-90deg) translateZ(32px)}
+.die i:nth-child(5){transform:rotateX(90deg) translateZ(32px)}.die i:nth-child(6){transform:rotateX(-90deg) translateZ(32px)}
+.die-shadow{position:absolute;left:8px;right:8px;bottom:-10px;height:8px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(3px);animation:die-shadow var(--tumble) cubic-bezier(.25,.8,.35,1) both}
+.dice-bar{position:relative;height:8px;margin:4px 4px 8px;border-radius:4px;background:#3d3129;overflow:visible}
+.dice-bar b{position:absolute;left:0;top:0;bottom:0;border-radius:4px 0 0 4px;background:var(--good)}
+.dice-bar u{position:absolute;top:0;bottom:0;background:#c89a3a}
+.dice-bar em{position:absolute;top:-4px;width:3px;height:16px;margin-left:-1.5px;border-radius:2px;background:#fff;box-shadow:0 0 6px #fff;animation:dice-mark .35s ease-out var(--tumble) both}
+.dice-res{display:flex;flex-direction:column;gap:2px;animation:dice-fade .3s ease-out var(--tumble) both}
+.dice-res span{font-size:var(--fs-xs);color:var(--muted)}.dice-res strong{font-size:var(--fs-lg);letter-spacing:.04em}
+.dice-won .dice-res strong{color:var(--good)}.dice-lost .dice-res strong{color:var(--danger)}.dice-part .dice-res strong{color:#e0b050}
+.dice-won .die i:first-child{border-color:var(--good)}.dice-lost .die i:first-child{border-color:var(--danger)}
+@keyframes dice-in{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+@keyframes dice-out{to{opacity:0;transform:translateY(-8px)}}
+@keyframes die-roll{0%{transform:translateY(-90px) rotateX(0) rotateY(0) rotateZ(0) scale(.7)}35%{transform:translateY(0) rotateX(470deg) rotateY(260deg) rotateZ(40deg)}
+  55%{transform:translateY(-22px) rotateX(610deg) rotateY(330deg) rotateZ(20deg)}75%{transform:translateY(0) rotateX(690deg) rotateY(350deg) rotateZ(4deg)}
+  88%{transform:translateY(-5px) rotateX(712deg) rotateY(358deg)}100%{transform:translateY(0) rotateX(720deg) rotateY(360deg) rotateZ(0)}}
+@keyframes die-shadow{0%{transform:scale(.4);opacity:.2}35%,75%,100%{transform:scale(1);opacity:1}55%{transform:scale(.7);opacity:.6}}
+@keyframes dice-mark{from{left:0;opacity:0}to{opacity:1}}
+@keyframes dice-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.dice-ov.quiet .die,.dice-ov.quiet .die-shadow,.dice-ov.quiet .dice-bar em,.dice-ov.quiet .dice-res{animation:none}
+@media (prefers-reduced-motion:reduce){.dice-card{animation:none}}

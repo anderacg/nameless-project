@@ -53,7 +53,7 @@ class Choice{
   }
   // (the road's stream: its odds are the road's checks, core/rng.js)
   roll(){
-    return rngOf('road').chance(this.chance());
+    return Dice.check(this.chance(),typeof this.label==='string'?this.label:'',()=>rngOf('road').next());
   }
   read(o){
     return statRead(this.odds,o);

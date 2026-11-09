@@ -127,7 +127,7 @@ class Prisons{
   static crime(t,fine){if(!t.owner||t.owner==='player')return;const old=crimeAt(t);t.crime={until:G.day+PATROL.wanted,fine:(old?old.fine:0)+fine}}
   static act(a,arg,t){const key=t.name,list=this.of(key),r=list[+arg],mine=this.mine(t);
     if(a==='pz-quest'||a==='pz-qbreak'){const q=this.quests(t).find(q=>String(q.id)===String(arg));if(!q)return;if(a==='pz-quest')return void q.ransom();
-      if(mine||this.breakWhy(key))return;if(Math.random()<this.breakChance(key)){this.crimeOut(t);return void q.pay('freed','taken')}return void this.caught(t)}
+      if(mine||this.breakWhy(key))return;if(Dice.check(this.breakChance(key),'Break out')){this.crimeOut(t);return void q.pay('freed','taken')}return void this.caught(t)}
     if(a==='pz-lock'){const c=captives()[+arg];if(!c||!mine||this.room(key)<1)return;captives().splice(+arg,1);
       this.put(key,c.k==='lord'?{k:'lord',id:c.id,name:c.name,fac:c.fac,lv:c.lv,keep:'player',since:G.day,offerDay:G.day+rint(...PRISON.offer)}:{k:'chief',ld:c.ld,keep:'player',since:G.day});
       const l=c.k==='lord'&&W.lords.find(x=>x.id===c.id);if(l)l.jail=key;return void log('You lock '+(c.k==='lord'?c.name:c.ld.name)+' in '+this.title(key)+'.','gold','war')}
@@ -141,10 +141,10 @@ class Prisons{
       if(a==='pz-pay'){const g=this.ransomOf(r);if(P.gold<g)return;P.gold-=g;if(FACS[r.keep])W.treas[r.keep]=treas(r.keep)+g;log('You pay '+g+' gold for '+this.who(r)+'.','gold','war');return void this.freedByYou(r,key)}
       // (the gaoler: takes it and unbars a door; else reports you (your coin gone, the watch's fine, the guards on alert) or refuses (your coin back); once a day)
       if(a==='pz-bribe'){const b=this.bribe(r,key);if(P.gold<b.cost||this.bribeWhy(r,key,t))return;r.bribed=G.day;
-        if(Math.random()<b.ch){P.gold-=b.cost;log('The gaoler takes your '+b.cost+' gold and leaves a door unbarred: '+this.who(r)+' walks free.','gold','war');return void this.freedByYou(r,key)}
+        if(Dice.check(b.ch,'Bribe the gaoler')){P.gold-=b.cost;log('The gaoler takes your '+b.cost+' gold and leaves a door unbarred: '+this.who(r)+' walks free.','gold','war');return void this.freedByYou(r,key)}
         if(Math.random()<PRISON.bribe.report){P.gold-=b.cost;this.crime(t,PRISON.bribe.fine);this.alarm(t);return void log('The gaoler takes your '+b.cost+' gold, and tells the watch. The guards are on alert.','bad','war')}
         return void log('The gaoler pushes your coin back. "Not for that one." He will not hear you again today.','','war')}
-      if(a==='pz-break'){if(this.breakWhy(key))return;if(Math.random()<this.breakChance(key)){this.crimeOut(t);log('In the night you break '+this.who(r)+' out of '+this.title(key)+'.','gold','war');return void this.freedByYou(r,key,PRISON.brk.rel)}return void this.caught(t)}
+      if(a==='pz-break'){if(this.breakWhy(key))return;if(Dice.check(this.breakChance(key),'Break out')){this.crimeOut(t);log('In the night you break '+this.who(r)+' out of '+this.title(key)+'.','gold','war');return void this.freedByYou(r,key,PRISON.brk.rel)}return void this.caught(t)}
       return}
     // yours
     if(a==='pz-out'){if(r.k==='men'){const m=Math.min(r.n,prisonCap()-prisonerCount());if(m<=0)return;P.prisoners[r.type]=(P.prisoners[r.type]||0)+m;r.n-=m;if(!r.n)this.drop(key,r);return}
@@ -157,7 +157,7 @@ class Prisons{
     if(a==='pz-hand'&&r.k==='chief'){const g=bountyOf(r.ld);P.gold+=g;P.renown+=2;repNear(P.x,P.y,4);this.drop(key,r);return void log('You hand '+r.ld.name+' over to justice: '+g+' gold.','gold')}
     if(r.k!=='lord')return;const l=this.lordOf(r);
     if(a==='pz-ransom'&&r.offer){if(!fiefsOf(r.fac).length){r.offer=0;return}if(!payRealm(r.fac,r.offer))return void log('The '+FACS[r.fac].n+' cannot raise '+r.offer+' gold now. Their offer stands.','bad','war');P.gold+=r.offer;addHonor(r.fac,-3,true);if(l)changeRel(l,RELATION.ransom,'you held them for ransom');log('The '+FACS[r.fac].n+' pay '+r.offer+' gold for '+r.name+'.','gold');mood('ransom');return void this.out(r,key,'ransomed')}
-    if(a==='pz-ask'&&r.offer&&!r.asked){r.asked=true;const X=PRISON.ask;if(Math.random()<X.ch){r.offer=Math.round(r.offer*X.more/5)*5;return void log('The '+FACS[r.fac].n+' grumble, and raise their offer to '+r.offer+' gold.','gold')}
+    if(a==='pz-ask'&&r.offer&&!r.asked){r.asked=true;const X=PRISON.ask;if(Dice.check(X.ch,'Ask for more')){r.offer=Math.round(r.offer*X.more/5)*5;return void log('The '+FACS[r.fac].n+' grumble, and raise their offer to '+r.offer+' gold.','gold')}
       r.offer=0;r.offerDay=G.day+X.wait;return void log('The '+FACS[r.fac].n+' take back their offer. They may make another in '+X.wait+' days.','bad')}
     if(a==='pz-swap'){const s=this.swapFor(r);if(!s)return;this.out(s.r,s.key,'exchanged');this.out(r,key,'exchanged');if(s.r.k==='lord'&&P.fac){addHonor(P.fac,PRISON.pay.honor,true);const o=this.lordOf(s.r);if(o)changeRel(o,PRISON.pay.rel,'you traded for them')}
       return void log('You trade '+r.name+' to the '+FACS[r.fac].n+' for '+this.who(s.r)+'.','gold','war')}

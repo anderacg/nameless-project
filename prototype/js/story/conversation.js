@@ -130,6 +130,8 @@ class LordSpeaker extends Speaker{
     // (your words: what you ask (none for his regard: the way is the asking), then the way you put it)
     const W0=w&&DIALOGUE.ways[w],me=heroName()||'You';if(!(w&&X.ways.length>1)||X.ask)cv.say(this.fill(X.ask||X.you),false,me);if(w&&X.ways.length>1)cv.say(this.fill(W0.you),false,me);
     const p=this.odds(id,w),r=rngOf('talk').next(),won=r<p?true:r<p+DIALOGUE.part?'part':false,words=won==='part'?X.half:won?X.yes:X.no;train('pers',won?3:1);
+    // (the roll shown as it falls: ui/dice.js)
+    Dice.show({p,r,part:DIALOGUE.part,label:this.fill(X.label)+(w&&X.ways.length>1?' · '+this.fill(W0.label):'')});
     cv.say(this.fill(words[this.temper()]||words.plain));const o=this.outcome(id,won);
     // (a way's cost whatever comes of it: leaning on him for what is not tribute, his liking)
     if(W0?.cost&&id!=='threaten')o.rel=[l,(o.rel?.[1]||0)+W0.cost,'you leaned on them'];
