@@ -37,8 +37,9 @@ function skTreeOf(S){const L=skProfs(S);if(L.includes(G.skTree))return G.skTree;
    (its names shown, the rest dim); G.skWhole: the whole circle. Links learned gold with light flowing along them, the ways open now
    dashed and flickering, the rest dim; nodes hexagons (a keystone a diamond, a bonus a small one, an active skill ringed): learned gold,
    open pulsing, reachable bronze, not yet dark. Shown anew (G.skGrow) the nodes fly out of the middle; one just learned (G.skJust)
-   bursts. TREE_ROUND: its numbers, in the view's units */
-const TREE_ROUND={r0:270,dr:56,gap:.6,pair:32,top:46,foot:92,half:250,r:{s:17,n:19,k:22,a:20,b:9}};
+   bursts. TREE_ROUND: its numbers, in the view's units (r0 far enough out that the first ring's nodes, evenly spaced, never touch:
+   the owner, 2026-11-09, "make the node not overlap") */
+const TREE_ROUND={r0:400,dr:56,gap:.6,spread:.25,top:46,foot:92,half:250,r:{s:17,n:19,k:22,a:20,b:9}};
 const NODE_GLYPH={s:'+',n:'◆',k:'✸',a:'✦',b:''};
 // (a hexagon of radius r round x, y)
 const hexPts=(x,y,r)=>[0,1,2,3,4,5].map(i=>{const a=Math.PI/3*i+Math.PI/6;return (x+r*Math.cos(a)).toFixed(1)+','+(y+r*Math.sin(a)).toFixed(1)}).join(' ');
@@ -46,7 +47,7 @@ const hexPts=(x,y,r)=>[0,1,2,3,4,5].map(i=>{const a=Math.PI/3*i+Math.PI/6;return
 let TREE_POS=null;
 function treePos(){if(TREE_POS)return TREE_POS;const R=TREE_ROUND,P={},sec={},units=TREE_RING.reduce((n,[,L])=>n+L.length+R.gap,0);let u=R.gap/2;
   for(const [g,L] of TREE_RING){for(const k of L){const a=-Math.PI/2+(u+.5)/units*2*Math.PI,w=2*Math.PI/units,T=PROF_TREE[k];u++;
-    T.forEach((pair,t)=>{const r=R.r0+2*t*R.dr,da=Math.min(w*.4,Math.asin(Math.min(1,R.pair/r)));pair.forEach(([id],i)=>{const b=a+(i?da:-da);P[id]=[r*Math.cos(b),r*Math.sin(b)]});
+    T.forEach((pair,t)=>{const r=R.r0+2*t*R.dr,da=w*R.spread;/* (a pair a quarter of its slice either side of its middle: every node evenly spaced round each ring, none touching another) */pair.forEach(([id],i)=>{const b=a+(i?da:-da);P[id]=[r*Math.cos(b),r*Math.sin(b)]});
       if(t){const rh=R.r0+(2*t-1)*R.dr;P[k+'_p'+t]=[rh*Math.cos(a),rh*Math.sin(a)]}});
     sec[k]={a,w,g,rim:R.r0+2*(T.length-1)*R.dr}}u+=R.gap}
   return TREE_POS={P,sec,rim:Math.max(...Object.values(sec).map(q=>q.rim))}}
