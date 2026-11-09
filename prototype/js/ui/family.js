@@ -56,30 +56,43 @@ defineJournalSection('family',{label:'Family',icon:'altar',render:()=>'<div clas
   sub:()=>(Legacy.family?'The '+Legacy.family+' family':'Your line')+(Legacy.line.length?' · '+Legacy.line.length+' fallen':'')});
 onAct('fam-',(a,arg)=>{if(a==='fam-pick')ftPick('family',()=>{G.famPick=arg})});
 /* ---- the lords' houses (the owner, 2026-11-09: "only appear once you know them or someone tell you about their family (only when
-   very friendly)"; world/lineage.js LordHouse): a house is set down here once you know one of it; its dead and its living, each
-   below the one whose place they took up; one you do not know a ?? (LordHouse#knows: met or named to you, read on its crypt, or told
-   of by a close friend of the house). G.hsHouse, G.hsPick: runtime, never saved */
-// (one of a house's picture: a living lord's face, a dead one's as he was; '' unknown)
-function houseFace(h,m){if(!h.knows(m.id))return '';const l=W.lords.find(o=>o.id===m.id);return lordPic(l||{name:m.name,fac:m.fac,race:m.race,gender:m.gender})||''}
+   very friendly)", "Give lords spouses and children so houses have real families"; world/lineage.js LordHouse): a house is set down
+   here once you know one of it. Its family: each child below the one they were born to, the one wed to them a small tile beside them
+   (one of afar who took up the place of one dead below them, dashed); its dead, its lords and its kin; one you do not know a ??
+   (LordHouse#knows: met or named to you, read on its crypt, or told of by a close friend of the house). G.hsHouse, G.hsPick:
+   runtime, never saved */
+// (one of a house's picture: a lord's face, a dead one's as they were, one of its kin's (a child's young); '' unknown)
+function houseFace(h,m){if(!h.knows(m.id))return '';const l=W.lords.find(o=>o.id===m.id);
+  return lordPic(l||{name:m.name,id:m.id,fac:m.fac||h.fac,race:m.race,gender:m.gender,kinFace:m.kin||m.kinFace,young:m.kin&&!h.adult(m)})||''}
+// (what one is to a house, in a word over their name: a lord of it, one dead, wed into it, a child, a grown one of its blood)
+function houseRole(h,m){return m.dead?'Died day '+m.day:!m.kin?'Lord':m.inlaw?(m.gender==='f'?'Wife':'Husband'):!h.adult(m)?'Child':(m.gender==='f'?'Daughter':'Son')}
 function housePage(){const hs=Houses.known();
   if(!hs.length)return '<div class="ft"><p class="muted">You know no lord\'s house yet. Meet a lord, or hear one named, and his house is set down here. A close friend of a house will tell you of all of it.</p></div>';
-  const h=hs.find(x=>x.id===G.hsHouse)||hs[0],all=h.members,by=new Map(all.map(m=>[m.id,m])),kn=m=>h.knows(m.id),prev=m=>m.dead?m.of:m.succeeded;
-  const picked=(by.get(G.hsPick)||all.find(m=>!m.dead&&kn(m))||all.find(kn)).id,F=FACS[h.fac];
-  const chips='<div class="ft-houses">'+hs.map(x=>'<button type="button" class="ft-house'+(x===h?' ft-sel':'')+'" data-act="lh-house" data-arg="'+x.id+'" aria-pressed="'+(x===h)+'">'+htmlText(x.name)+'</button>').join('')+'</div>';
-  const row=m=>'<div class="ft-row">'+ftTile('lh-pick',m.id,picked,houseFace(h,m),kn(m)?m.dead?'Died day '+m.day:'Living':'Unknown',kn(m)?m.name:'??',(m.dead?' ft-dead':'')+(kn(m)?'':' ft-unknown'))+'</div>';
-  // (the one chosen, told: who, what they are to the house, how they stand toward you, or how they died and where they lie)
-  const info=()=>{const m=by.get(picked),p=prev(m)&&by.get(prev(m)),pn=p?(kn(p)?htmlText(p.name):'??'):'';
+  const h=hs.find(x=>x.id===G.hsHouse)||hs[0],all=h.members,by=new Map(all.map(m=>[m.id,m])),kn=m=>h.knows(m.id),F=FACS[h.fac];
+  // (its blood in the tree: wed into it, one beside the one they wed while they are in it; each below the one born to, else the one whose place they took)
+  const beside=m=>m.inlaw&&by.has(m.spouse)&&!by.get(m.spouse).inlaw,blood=all.filter(m=>!beside(m)).sort((a,b)=>(a.born??-1e9)-(b.born??-1e9));
+  const up=m=>by.has(m.parent)?m.parent:by.has(m.succeeded)?m.succeeded:null,wedTo=m=>all.filter(o=>beside(o)&&o.spouse===m.id);
+  const picked=(by.get(G.hsPick)||all.find(m=>!m.dead&&!m.kin&&kn(m))||all.find(kn)).id;
+  const nm=m=>kn(m)?m.name:'??',who=id=>{const o=by.get(id);return o?(kn(o)?htmlText(o.name):'??'):''};
+  const tile=(m,cls)=>ftTile('lh-pick',m.id,picked,houseFace(h,m),kn(m)?houseRole(h,m):'Unknown',nm(m),cls+(m.dead?' ft-dead':'')+(kn(m)?'':' ft-unknown'));
+  const row=m=>{const ws=wedTo(m);return '<div class="ft-row'+(ws.length?' ft-hh':'')+'">'+tile(m,'')+(ws.length?'<div class="ft-side ft-wed">'+ws.map(w=>tile(w,' ft-heir ft-spouse')).join('')+'</div>':'')+'</div>'};
+  // (the one chosen, told: who, born to whom and wed to whom, how they stand toward you, or how they died and where they lie)
+  const info=()=>{const m=by.get(picked),pa=m.parent&&by.get(m.parent),sp=m.spouse&&by.get(m.spouse),f=m.gender==='f';
     if(!kn(m))return '<div class="ft-head"><span class="ft-pic"><span class="ft-unk">?</span></span><div><span class="ft-n">'+htmlText(h.name)+'</span><b>??</b></div></div>'+
-      '<p>One of '+htmlText(h.name)+', '+(m.dead?'dead now,':'living,')+' but not known to you.</p><p class="muted">'+(m.dead?'Their name is cut over the crypt at '+htmlText(h.seat||'its seat')+'; ':'Meet them, or hear them named; ')+'a close friend of the house might tell you of them.</p>';
-    const l=!m.dead&&m,rep=KNOWLEDGE.lords[m.id],pic=houseFace(h,m);
-    return '<div class="ft-head">'+(pic?'<img src="'+pic+'" alt="">':'')+'<div><span class="ft-n">'+(m.dead?'Died day '+m.day:'Of '+htmlText(h.name))+'</span><b>'+htmlText(m.name)+'</b></div></div>'+
-      (pn?'<p>Took up the place of '+pn+'.</p>':'')+
-      (l?'<p>A lord of the '+(FACS[l.fac]?htmlText(FACS[l.fac].n):'realm')+' · level '+(l.lv||1)+' · renown '+(l.renown||0)+'</p><p>Toward you: '+relTag(relWith(l))+'</p>'+(rep?.text?'<p class="muted">'+htmlText(rep.text)+(rep.at!=null?' (day '+rep.at+')':'')+'</p>':''):
-        '<p class="bad">'+cap1(htmlText(m.how))+(m.byYou?', by your line\'s hand':'')+'.</p><p>Lies in the crypt of '+htmlText(h.name)+(h.seat?' at '+htmlText(h.seat):'')+'.</p>')};
+      '<p>One of '+htmlText(h.name)+', '+(m.dead?'dead now,':'living,')+' but not known to you.</p><p class="muted">'+(m.dead?'Their name is cut over the crypt at '+htmlText(h.seat||'its seat')+'; ':m.kin?'':'Meet them, or hear them named; ')+'a close friend of the house might tell you of them.</p>';
+    const l=!m.dead&&!m.kin&&m,rep=KNOWLEDGE.lords[m.id],pic=houseFace(h,m),two=pa&&pa.spouse&&by.get(pa.spouse);
+    return '<div class="ft-head">'+(pic?'<img src="'+pic+'" alt="">':'')+'<div><span class="ft-n">'+htmlText(houseRole(h,m))+'</span><b>'+htmlText(m.name)+'</b></div></div>'+
+      (pa?'<p>'+(f?'Daughter':'Son')+' of '+who(pa.id)+(two?' and '+who(two.id):'')+'.</p>':'')+
+      (sp?'<p>'+(m.inlaw?'Wed into the house, '+(f?'wife':'husband')+' of ':'Wed to ')+who(sp.id)+(sp.dead?', now dead':'')+'.</p>':'')+
+      (m.succeeded&&by.has(m.succeeded)?'<p>Took up the place of '+who(m.succeeded)+(m.cousin?', a cousin from afar':'')+'.</p>':'')+
+      (m.kin?'<p>'+(h.adult(m)?'Of age':'A child yet')+(m.born!=null&&m.born>0?', born day '+m.born:'')+'.</p>':'')+
+      (l?'<p>A lord of the '+(FACS[l.fac]?htmlText(FACS[l.fac].n):'realm')+' · level '+(l.lv||1)+' · renown '+(l.renown||0)+'</p><p>Toward you: '+relTag(relWith(l))+'</p>'+(rep?.text?'<p class="muted">'+htmlText(rep.text)+(rep.at!=null?' (day '+rep.at+')':'')+'</p>':''):'')+
+      (m.dead?'<p class="bad">'+cap1(htmlText(m.how))+(m.byYou?', by your line\'s hand':'')+'.</p><p>Lies in the crypt of '+htmlText(h.name)+(h.seat?' at '+htmlText(h.seat):'')+'.</p>':'')};
+  const chips='<div class="ft-houses">'+hs.map(x=>'<button type="button" class="ft-house'+(x===h?' ft-sel':'')+'" data-act="lh-house" data-arg="'+x.id+'" aria-pressed="'+(x===h)+'">'+htmlText(x.name)+'</button>').join('')+'</div>';
   const n=all.filter(kn).length;
   return '<div class="ft">'+chips+'<div class="lab">'+htmlText(h.name)+(h.seat?' · seat '+htmlText(h.seat):'')+(F?' · the '+htmlText(F.n):'')+' · '+n+' of '+all.length+' known'+(h.dead.length?' · '+h.dead.length+' in its crypt':'')+'</div>'+
     (h.grudged()?'<p class="bad">It bears you a grudge: '+(h.grudge.half?'your kin':'you')+' killed '+htmlText(h.grudge.name)+'.</p>':'')+
-    '<div class="ft-body">'+ftChart(all,m=>m.id,m=>prev(m)&&by.has(prev(m))?prev(m):null,row,m=>m.dead?'':' ft-now')+'<div class="ft-info" aria-live="polite">'+info()+'</div></div></div>'}
+    '<div class="ft-body">'+ftChart(blood,m=>m.id,up,row,m=>(!m.dead&&!m.kin?' ft-now':'')+(!by.has(m.parent)&&by.has(m.succeeded)?' ft-cousin':''))+'<div class="ft-info" aria-live="polite">'+info()+'</div></div></div>'}
 defineJournalSection('houses',{label:'Houses',icon:'tower',render:()=>'<div class="fb-scroll" data-fb-scroll="journal:houses">'+housePage()+'</div>',
   sub:()=>{const n=Houses.known().length;return n?n+' house'+(n===1?'':'s')+' known':'No house known yet'}});
 onAct('lh-',(a,arg)=>{if(a==='lh-house')ftPick('houses',()=>{G.hsHouse=arg;G.hsPick=null});if(a==='lh-pick')ftPick('houses',()=>{G.hsPick=arg})});

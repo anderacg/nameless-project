@@ -240,6 +240,19 @@ Kit.suite(({ok})=>{
        ok(rp&&rp.why&&!h.tell(s)&&!t.KNOWLEDGE.knowsLord(b),'"Tell me of your house": not for one who is not a close friend ('+(rp&&rp.why)+')');
        P.lrel[s.id]=X.house.tell;const said=h.tell(s);ok(new t.LordSpeaker(s).replies().find(r=>r.act==='lr-house').why===''&&said.includes(b.name)&&t.KNOWLEDGE.knowsLord(b)&&h.knows(a.id),'a close friend of the house tells you of all of it: '+said.replace(/<[^>]+>/g,''))}
    }finally{for(const id in KL)delete KL[id];Object.assign(KL,k0);P.lrel=lr0;G.hsHouse=G.hsPick=null}}
+   // (a house's family: a spouse and children as it is first known; the eldest grown child after one dead; by the days weddings and births; its kin ?? until told)
+   {const Fm=X.house.fam,f0={...Fm},KL=t.KNOWLEDGE.lords,k0={...KL},lr0={...(P.lrel||{})};try{Object.assign(Fm,{wed:1,kids:[2,2],age:[Fm.adult,Fm.adult+50]});
+     const lo=W.lords.find(o=>!o.dead&&!o.gone&&!o.house&&t.fiefsOf(o.fac).length),hh=t.LordHouse.of(lo),sp=hh.person(lo.spouse),kids=hh.kinLive.filter(k=>k.parent===lo.id);
+     ok(sp&&sp.inlaw&&sp.spouse===lo.id&&sp.gender!==t.genderOf(lo)&&kids.length===2&&kids.every(k=>hh.adult(k)&&k.race===hh.raceOf(lo)),'a lord\'s family, as his house is first known: '+lo.name+' wed to '+(sp&&sp.name)+', their children '+kids.map(k=>k.name).join(' and '));
+     const eld=kids.slice().sort((x,y)=>x.born-y.born)[0];Object.assign(Fm,f0);Object.assign(lo,{dead:true,gone:true,back:1e9});H.died(lo,'slain in battle',false);G.day+=X.house.wait;H.hour();
+     const nx=W.lords.find(o=>o.id===eld.id);ok(nx&&!nx.dead&&nx.house===hh.id&&nx.name.endsWith(' '+eld.name)&&nx.parent===lo.id&&nx.succeeded===lo.id&&!hh.kinLive.includes(eld)&&hh.person(lo.spouse),'one dead: their eldest grown child takes up the place ('+(nx&&nx.name)+'), the widow'+(sp.gender==='f'?'':'er')+' still of the house');
+     Object.assign(Fm,{marry:1,birth:1});G.day++;H.hour();const w=hh.person(nx.spouse);G.day++;H.hour();const born=hh.kinLive.filter(k=>k.parent===nx.id);Object.assign(Fm,f0);
+     ok(w&&w.inlaw&&born.length>=1&&born.every(k=>!hh.adult(k)&&k.born===G.day),'by the days: the grown and unwed wed, a couple has a child ('+nx.name+' wed to '+(w&&w.name)+'; '+born.map(k=>k.name).join(', ')+')');
+     for(const id in KL)delete KL[id];hh.known=[];t.KNOWLEDGE.lord(nx);G.hsHouse=hh.id;G.hsPick=nx.id;let html=t.JOURNAL_SECTIONS.houses.render();const unk=(html.match(/<b>\?\?<\/b>/g)||[]).length;
+     ok(unk>=hh.kinLive.length+hh.dead.length&&!html.includes('<b>'+w.name+'</b>'),'its kin not known to you: ?? ('+unk+' of '+hh.members.length+')');
+     P.lrel[nx.id]=X.house.tell;const said=hh.tell(nx);html=t.JOURNAL_SECTIONS.houses.render();
+     ok(said.includes(w.name)&&said.includes(born[0].name)&&html.includes('<b>'+w.name+'</b>')&&/ft-spouse/.test(html)&&new RegExp((nx.gender==='f'?'Daughter':'Son')+' of '+lo.name).test(html)&&hh.knows(born[0].id),'told by a close friend: its kin by name, the one wed beside the one they wed, each child below their parent');
+   }finally{Object.assign(Fm,f0);for(const id in KL)delete KL[id];Object.assign(KL,k0);P.lrel=lr0;G.hsHouse=G.hsPick=null}}
    const c=W.lords.find(o=>!o.dead&&!o.gone&&!o.house);ok(/House /.test(H.tagOf(c,true))&&c.house,'a lord with no house yet: his house founded as you look him up');
    G.kin=null;die(0);ok(!h.grudged(),'you dead, a stranger going on: the grudge gone with you');
    const r0=W.lords.find(o=>!o.dead&&!o.gone&&!o.house);roll(0);let txt='';try{txt=t.lordWon(r0,{gold:0})}finally{window.Math.random=rnd}ok(r0.gone&&/falls in the fighting/.test(txt)&&H.byId(r0.house).grudged(),'beaten by you, now and then he falls in the fighting: his house holds it against you');

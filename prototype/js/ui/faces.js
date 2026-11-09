@@ -74,8 +74,11 @@ class Faces{
   static you(){return this.R?this.R.player:null}
   static of(id,race,g,role){if(!this.R)return null;let r=this.R.get(id);if(r)return r;
     try{r=this.R.create({id,race:this.raceOf(race),profile:this.profileOf(g),role,mode:FACES.mode})}catch(e){return null}return r}
+  // (one of a lord's house's kin, or a lord who was one (kinFace): the face kept by their id, as they grow up and take up a title;
+  // a child's young and beardless: world/lineage.js)
   static lord(l){const name=l&&(l.name||l.id);if(!name)return null;const F=FACS[l.fac],rs=l.race?[l.race]:F?.races||['human'];
-    const r=this.of('lord:'+name,rs[Rng.seedOf('face:'+name)%rs.length],genderOf(l)||'m','lord');
+    let r=this.of(l.kinFace?'kin:'+l.id:'lord:'+name,rs[Rng.seedOf('face:'+name)%rs.length],genderOf(l)||'m','lord');
+    if(r&&l.young)r={...r,config:PortraitEngine.normalize({...r.config,age:'young',beard:'none'})};
     // (in its realm's colour: a recipe's cloth, drawn so, its saved face unchanged)
     return r&&F?{...r,colors:{...r.colors,cloth:PX.shade(F.col,.7)}}:r}
   static companion(id){const c=COMPS[id],r=c?this.of('comp:'+id,c.race||'human',c.gender||'m','companion'):null;return r?{...r,config:this.bare(r.config)}:null}

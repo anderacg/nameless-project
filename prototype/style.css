@@ -1629,6 +1629,7 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .ft-n{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 .ft-side{position:absolute;left:calc(50% + 50px);top:8px}
 .ft-side::before{content:'';position:absolute;left:-10px;top:24px;width:12px;border-top:2px dashed var(--line-2)}
+.ft-wed{display:flex;gap:6px}.ft-side.ft-wed::before{border-top:5px double var(--line-2)}.ft-heir.ft-spouse .ft-pic{border-style:solid}
 .ft-heir{width:62px}.ft-heir .ft-pic{width:46px;height:46px;border-style:dashed}.ft-heir b{max-width:62px;font-size:11px}
 .ft-info{flex:0 0 250px;padding:10px 12px;border:1px solid var(--line-2);border-radius:6px;background:rgba(0,0,0,.3);font-size:13px;color:#cdbf9f}
 .ft-info p{margin:5px 0 0}.ft-info p.bad{color:var(--danger)}
