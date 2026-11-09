@@ -63,7 +63,7 @@ class Dice{
     el.innerHTML='<div class="dice-card dice-'+s.res+'">'+(s.label?'<div class="dice-lab">'+s.label+'</div>':'')+
       '<canvas class="dice-cv" aria-hidden="true"></canvas>'+
       '<div class="dice-bar"><b style="left:'+pc(s.need)+'"></b>'+(s.low<s.need?'<u style="left:'+pc(s.low)+';width:'+(s.need-s.low)*5+'%"></u>':'')+'<em style="left:'+((s.n-.5)*5)+'%"></em></div>'+
-      '<div class="dice-res"><span>Rolled '+s.n+(s.b?' + '+s.b+' = '+(s.n+s.b):'')+' · DC '+s.dc+' ('+s.pct+'%)'+(s.low<s.need?' · in part on '+(s.low+s.b):'')+'</span>'+
+      '<div class="dice-res"><span>Rolled '+s.n+(s.b?' + '+s.b+' = '+(s.n+s.b):'')+', DC '+s.dc+' ('+s.pct+'%)'+(s.low<s.need?', in part on '+(s.low+s.b):'')+'</span>'+
       (nat?'<em class="dice-nat">'+nat+'</em>':'')+'<strong>'+W+'</strong></div><button class="dice-go" type="button">Continue</button></div>';
     el.style.setProperty('--tumble',(quiet?0:DICE.tumble)+'ms');el.addEventListener('click',e=>{e.stopPropagation();this.clear()});document.body.appendChild(el);this.el=el;
     this.roll(el.querySelector('.dice-cv'),s.n,quiet);el.querySelector('.dice-go').focus({preventScroll:true})}

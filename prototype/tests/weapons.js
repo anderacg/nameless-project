@@ -22,7 +22,7 @@ try{
  ok(sword.split(',').filter(x=>x==='arc').length===2&&sword.includes('thrust'),'sword: two sweeps and one riposte ('+sword+')');
  ok(spear.split(',').filter(x=>x==='thrust').length===2&&t.COMBOS.thrust[1].arc<.8,'spear: thrusts and one narrow sweep ('+spear+')');
  ok(phal==='thrust,thrust,thrust','spear and shield: jabs and a drive ('+phal+')');
- ok(ham.startsWith('slam')&&gs.endsWith('spin')&&dg.startsWith('thrust')&&ax.startsWith('slam'),'hammer '+ham+' · greatsword '+gs+' · dagger '+dg+' · axe '+ax);
+ ok(ham.startsWith('slam')&&gs.endsWith('spin')&&dg.startsWith('thrust')&&ax.startsWith('slam'),'hammer '+ham+', greatsword '+gs+', dagger '+dg+', axe '+ax);
  // in battle: a thrust pierces a line of enemies; a sweep hits those around but not one behind another
  const battle=enemies=>{P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0},list:enemies.slice()};t.startBattle({enemies,tournament:false});const B=t.B;B.aim=0;B.units.filter(u=>u.team===0&&!u.hero).forEach(u=>{u.x=10;u.y=30});return B};
  use(gid('spear',2));let B=battle(['chief','chief','chief']);let h=B.hero,es=B.units.filter(u=>u.team===1);es.forEach((u,i)=>{u.x=h.x+12+i*12;u.y=h.y;u.cd=9;u.hp=u.max=999});

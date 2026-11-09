@@ -126,7 +126,7 @@ function skinsFill(n){n=Math.min(n,skinsEmpty());if(n>0){goodTake(SKIN.empty,n);
 const SKINS_NONE='No empty waterskins';
 const skinsWhy=()=>skinsWant()<=0?'Your waterskins are full.':!skinsEmpty()?SKINS_NONE+': buy them at a market or a tavern.':'';
 // the skins you carry, for the card's drink chip (render.js updateHUD): full and empty, and none to fill
-const skinsTip=()=>'Waterskins: '+goodN(SKIN.full)+' full, '+skinsEmpty()+' empty'+(skinsWant()>0&&!skinsEmpty()?' · '+SKINS_NONE:'');
+const skinsTip=()=>'Waterskins: '+goodN(SKIN.full)+' full, '+skinsEmpty()+' empty'+(skinsWant()>0&&!skinsEmpty()?', '+SKINS_NONE:'');
 // a new hero's full skins; a recruit's empty ones (n soldiers: how many came in); n empty ones bought at their base price (how many)
 const skinsStart=()=>playerInventory.add('good',SKIN.full,SUPPLY.skins.start);
 const skinsJoin=n=>playerInventory.add('good',SKIN.empty,n*SUPPLY.skins.recruit);
@@ -326,7 +326,7 @@ function woundedPanel(){
   sickTrim();const W=P.wounded||{},ks=Object.keys(W).filter(k=>W[k]>0),l=lostLines();if(!ks.length&&!l.length)return '';
   const r=healShare(),help=[P.camp||P.stay?'':'rest in camp or a holding',r.near?'':'a friendly holding near'].filter(Boolean);
   const rows=ks.map(k=>{const s=BAND.sick[k]||{},sn=sum(s),wn=W[k]-sn;
-    return '<li>'+ST[k].n+' ×'+W[k]+': '+[wn?wn+' wounded':'',...Object.keys(s).map(w=>s[w]+' sick ('+(WHY_SICK[w]||w)+')')].filter(Boolean).join(', ')+' · '+htmlText(recoveryTimeText(woundedRecoveryHours(k)))+'</li>'}).join('');
+    return '<li>'+ST[k].n+' ×'+W[k]+': '+[wn?wn+' wounded':'',...Object.keys(s).map(w=>s[w]+' sick ('+(WHY_SICK[w]||w)+')')].filter(Boolean).join(', ')+', '+htmlText(recoveryTimeText(woundedRecoveryHours(k)))+'</li>'}).join('');
   return '<div class="lab">Wounded and sick</div>'+(ks.length?'<ul class="tnotes">'+rows+'</ul><p class="muted" style="font-size:13px">About '+Math.round(r.share*100)+'% are fit again each day'+(help.length?'; more with '+help.join(' and '):'')+' (Medicine helps too). Recovery times are estimates at current conditions; daily rolls can vary.</p>':'')+
     (l.length?'<p class="bad" style="font-size:13px">Lost on the road, these '+SUPPLY.lost.days+' days: '+l.join('; ')+'.</p>':'')}
 /* ---------- the camp (§7): Z, the dock's Camp, or the action ring. Your band stops and pitches its tents; stamina comes back
@@ -464,7 +464,7 @@ function tapsterCard(t,race){
   const k=SUPPLY.skins.lot,ps=GOODS[SKIN.empty].base*k,whyS=P.gold<ps?'Not enough gold':goodRoom(SKIN.empty)<k?BAG_FULL:'';
   return{pic:personPic('innkeeper',race,2),name:'The tapster',role:'Drink for the road',facts:['Waterskins '+goodN(SKIN.full)+' full, '+skinsEmpty()+' empty','Liquor '+goodN('liquor'),goodN('ale')?'Ale '+goodN('ale'):''],
     note:'One of any drink is one person’s day of it. Something to drink keeps your band’s stamina draining at its rate; ale and liquor lift its spirits as they come into your stores. The tapster fills your empty waterskins from the well.',
-    acts:[['sup-fill',t.name,'Fill waterskins',skinsFillable()?'':skinsWhy()],['sup-skins',t.name,'Buy '+k+' empty waterskins · '+ps+'g',whyS],['sup-liquor',t.name,'Buy '+LIQUOR_LOT+' liquor · '+p+'g',why]]}}
+    acts:[['sup-fill',t.name,'Fill waterskins',skinsFillable()?'':skinsWhy()],['sup-skins',t.name,'Buy '+k+' empty waterskins, '+ps+'g',whyS],['sup-liquor',t.name,'Buy '+LIQUOR_LOT+' liquor, '+p+'g',why]]}}
 function supplyAct(a,arg){
   if(a==='sup-fill')fillNow();
   else if(a==='sup-skins')skinsBuy(SUPPLY.skins.lot);

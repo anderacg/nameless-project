@@ -1238,7 +1238,7 @@ const QuestTrack={
 worldOn('quest:ended',d=>{if(d&&d.e)QuestTrack.drop('q'+d.e.id)});
 worldOn('thread:ended',d=>{if(d&&d.e)QuestTrack.drop('t'+d.e.i)});
 /* panels */
-const rewardText=r=>'<span class="gold">'+r.gold+' gold</span>'+(r.goods&&GOODS[r.goods[0]]?' · '+r.goods[1]+' '+GOODS[r.goods[0]].n.toLowerCase():'')+(r.rep?' · +'+r.rep+' reputation':'')+(r.honor?' · +'+r.honor+' honor':'')+(r.xp?' · '+r.xp+' XP':'');
+const rewardText=r=>'<span class="gold">'+r.gold+' gold</span>'+(r.goods&&GOODS[r.goods[0]]?', '+r.goods[1]+' '+GOODS[r.goods[0]].n.toLowerCase():'')+(r.rep?', +'+r.rep+' reputation':'')+(r.honor?', +'+r.honor+' honor':'')+(r.xp?', '+r.xp+' XP':'');
 // a quest's facts, [label, html] each: who gave it, the day taken, its timing, where it is turned in, its reward (a late one's
 // pay now); an offer's the same before you take it, and what it requires that you lack (its giver's trust aside: QuestShut's
 // line, said once where its offers are)
@@ -1246,11 +1246,11 @@ function questFacts(q){
   q=Quest.as(q);
   const f=[['Given by',q.givenBy()]],tm=q.timing(),r=q.reportLine(),late=q.earned()<q.reward.gold;
   const need=q.id==null?q.needs().filter(n=>!n.met&&n.k!=='shut'):[];
-  if(need.length)f.push(['Requires','<span class="bad">'+need.map(n=>n.what).join(' · ')+'</span>']);
+  if(need.length)f.push(['Requires','<span class="bad">'+need.map(n=>n.what).join(', ')+'</span>']);
   if(q.taken!=null)f.push(['Taken','Day '+q.taken]);
   if(tm)f.push(['Timing',late?'<span class="bad">'+tm+'</span>':tm]);
   if(r)f.push(['Turn in',r]);
-  f.push(['Reward',q.rewardLine()+(late?' · <span class="bad">now '+q.earned()+' gold</span>':'')]);
+  f.push(['Reward',q.rewardLine()+(late?', <span class="bad">now '+q.earned()+' gold</span>':'')]);
   return f;
 }
 const questFactsHtml=q=>'<dl class="qfacts">'+questFacts(q).map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>';
@@ -1280,7 +1280,7 @@ function hereRow(q){
 function jobsBody(t){
   const here=P.quests.filter(q=>canReportAt(q,t)),offers=jobsAt(t),n=Quest.jobs(),shut=QuestShut.of({home:t.name});
   return '<div class="lab">Your quests here</div>'+(here.length?here.map(hereRow).join(''):'<p class="muted">None.</p>')+
-    '<div class="lab" style="margin-top:6px">Work offered · you hold '+n+' job'+(n===1?'':'s')+'</div>'+
+    '<div class="lab" style="margin-top:6px">Work offered, you hold '+n+' job'+(n===1?'':'s')+'</div>'+
     (shut?'<p class="bad">'+QuestShut.line({home:t.name},shut)+'.</p>':'')+
     NoticeBoard.html(t,offers);// (a cork board, its papers pinned: ui/noticeboard.js; the questbook's among them: story/questbook.js)
 }

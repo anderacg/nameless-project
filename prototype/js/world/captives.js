@@ -111,7 +111,7 @@ function captivesHtml(){
   const cs=captives(),b=(act,i,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'" data-arg="'+i+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
   return '<div class="lab" style="margin-top:6px">Captives ('+cs.length+')</div>'+(cs.length?cs.map((c,i)=>c.k==='lord'
     ?'<div class="row"><div class="info"><strong>'+c.name+' <span class="muted">Lv '+c.lv+'</span></strong><small>'+cap1(lordWord(c))+' of the '+FACS[c.fac].n+'. Ransomed or let go, '+pr(c).he+' rides home to raise a new army. Ransomed now, '+pr(c).his+' realm\'s envoy pays '+fieldRansom(c)+'g; locked in a prison of yours, they offer the whole '+lordRansom(c)+'g in days.</small></div><div class="acts">'+
-      b('ct-ransom',i,'Ransom now · '+fieldRansom(c)+'g',fiefsOf(c.fac).length?'':pr(c).His+' realm has fallen: no one will pay')+b('ct-recruit',i,'Recruit',recruitWhy(c))+b('ct-free',i,'Let go')+'</div></div>'
+      b('ct-ransom',i,'Ransom now, '+fieldRansom(c)+'g',fiefsOf(c.fac).length?'':pr(c).His+' realm has fallen: no one will pay')+b('ct-recruit',i,'Recruit',recruitWhy(c))+b('ct-free',i,'Let go')+'</div></div>'
     :'<div class="row"><div class="info"><strong>'+c.ld.name+' <span class="muted">Lv '+c.ld.lv+'</span></strong><small>Bandit chief. Handed over, '+pr(c.ld).he+' hangs; let go, '+pr(c.ld).he+' gathers a new band; or '+pr(c.ld).he+' may join you.</small></div><div class="acts">'+
       b('ct-hand',i,'Hand over '+bountyOf(c.ld)+'g')+b('ct-recruit',i,'Recruit',recruitWhy(c))+b('ct-free',i,'Let go')+'</div></div>').join(''):'<p class="muted">None. Beat a lord or a bandit chief in battle to take one captive.</p>');
 }

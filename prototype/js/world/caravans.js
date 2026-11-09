@@ -72,7 +72,7 @@ class CaravanParty extends Party{
   mapDot(V){return yourSight(V).sees(this.x,this.y)?['#e8d8a0',1]:null}
   get meetsAnyTime(){return true}
   label(){return 'Caravan of '+this.from}
-  tip(){return '<b>Caravan</b><small>'+(this.from||'')+' → '+(this.to||'')+(this.fac?' · '+tipFac(this.fac):'')+'</small><span class="act">Click: actions · double-click: meet</span>'}
+  tip(){return '<b>Caravan</b><small>'+(this.from||'')+' → '+(this.to||'')+(this.fac?', '+tipFac(this.fac):'')+'</small><span class="act">Click: actions, double-click: meet</span>'}
   get brain(){return BRAINS.caravan}
   get tc(){let c=CV_TC.get(this);if(!c||sum(c)!==this.guards){c=countsOf(this.rollGuards());CV_TC.set(this,c);LISTS.delete(this)}return c}
   set tc(v){CV_TC.set(this,v||{})}
@@ -96,9 +96,9 @@ class CaravanParty extends Party{
     showPanel('<div class="top"><h2>'+(mine?'Your caravan':'Caravan of '+c.from)+'</h2><span class="muted">'+(mine&&c.leg==='back'?'Heading home to '+c.home:'Bound for '+c.to)+'</span></div>'+
       '<p class="muted">Flying the colors of the <span style="color:'+f.col+'">'+f.n+'</span>. '+c.guards+' guards walk beside the carts.</p><p>Carrying '+cargoText(c)+(c.purse?', and '+c.purse+' gold from its sales':'')+'.</p>'+(rum?'<p>The caravan master: &ldquo;'+rum+'&rdquo;</p>':'')+
       (mine?'<p class="good">'+(c.repeat?'A standing route: '+c.home+' → '+(c.dest||c.to)+' and back, again and again.':'One run: '+c.home+' → '+(c.dest||c.to)+', then home.')+'</p>':hostile?'':
-        Object.keys(c.goods).map(g=>{const p=c.price(g),n=Math.min(5,c.goods[g]);return '<div class="row"><div class="info"><strong>Buy '+GOODS[g].n.toLowerCase()+'</strong><small>'+p+'g each · '+c.goods[g]+' aboard · you have '+goodN(g)+'</small></div><div class="acts">'+
+        Object.keys(c.goods).map(g=>{const p=c.price(g),n=Math.min(5,c.goods[g]);return '<div class="row"><div class="info"><strong>Buy '+GOODS[g].n.toLowerCase()+'</strong><small>'+p+'g each, '+c.goods[g]+' aboard, you have '+goodN(g)+'</small></div><div class="acts">'+
           btn('cv-buy',g,'Buy '+n+' for '+p*n+'g',P.gold<p*n?'Not enough gold':goodRoom(g)<n?'No room in your bag':'')+'</div></div>'}).join('')+
-        wants.map(g=>{const p=c.pays(g),n=Math.min(5,goodN(g));return '<div class="row"><div class="info"><strong>Sell '+GOODS[g].n.toLowerCase()+'</strong><small>'+c.to+' is short of it · '+p+'g each</small></div><div class="acts">'+btn('cv-sell',g,'Sell '+n+' for '+p*n+'g')+'</div></div>'}).join(''))+
+        wants.map(g=>{const p=c.pays(g),n=Math.min(5,goodN(g));return '<div class="row"><div class="info"><strong>Sell '+GOODS[g].n.toLowerCase()+'</strong><small>'+c.to+' is short of it, '+p+'g each</small></div><div class="acts">'+btn('cv-sell',g,'Sell '+n+' for '+p*n+'g')+'</div></div>'}).join(''))+
       '<div class="btns">'+c.demands(hostile)+(mine?btn('cv-repeat',null,c.repeat?'End the standing route':'Make it a standing route')+btn('cv-disband',null,'Disband here'):'<button class="btn" type="button" data-act="cv-attack"'+(P.fac===c.fac?' disabled title="Your employer"':'')+'>Attack'+(hostile?'':' (the '+f.n+' turns hostile)')+'</button>')+'</div>'+
       (mine||hostile?'':'<p class="muted">Attacking a caravan makes its owner hostile for 20 days and costs 10 honor with them.</p>')+nav(null,['cv-leave',null,'Leave']));
   }

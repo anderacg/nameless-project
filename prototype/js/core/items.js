@@ -170,8 +170,8 @@ class Quiver extends Gear{
   q(id){return QUIVERS[ITEMS[id].quiver]}
   catId(s){return 'quiver'}
   label(s){return this.q(s.id).fits==='crossbow'?'bolt case':'quiver'}
-  title(s){return ITEMS[s.id].n+' · '+arrowsText(this.q(s.id))}
-  lootLine(s){return cap1(arrowsText(this.q(s.id)))+' · for a '+this.q(s.id).fits}
+  title(s){return ITEMS[s.id].n+', '+arrowsText(this.q(s.id))}
+  lootLine(s){return cap1(arrowsText(this.q(s.id)))+', for a '+this.q(s.id).fits}
   // what a fighter shoots: by its weapon (w: an item id) if it has one (a bow, a crossbow, or none: a blade, a staff), else by its
   // kind's stats s (a bow; a flat shot: a crossbow; casters and beasts none)
   shootsWith(w,s){
@@ -216,7 +216,7 @@ class Good extends ItemKind{
   // a sorted bag: in the order of GOODS, the bigger stack first
   compare(a,b){return this.ids.indexOf(a.id)-this.ids.indexOf(b.id)||b.n-a.n}
   lootRank(s){return GOODS[s.id].base/10}
-  lootLine(s){return ITEM_CATS[this.catId(s)].n+' · '+GOODS[s.id].stack+' a slot'}
+  lootLine(s){return ITEM_CATS[this.catId(s)].n+', '+GOODS[s.id].stack+' a slot'}
   // a drink into your stores: its morale, once (world/supply.js drinkIn)
   gained(s,n){if(this.catId(s)==='water')drinkIn(s.id,n)}
 }
@@ -233,7 +233,7 @@ class Trophy extends ItemKind{
   // a sorted bag: the dearest first, the bigger stack first
   compare(a,b){return MATS[b.id].v-MATS[a.id].v||b.n-a.n}
   lootRank(s){return 50+MATS[s.id].v/10}
-  lootLine(s){return 'Trophy · '+MATS[s.id].v+'g'}
+  lootLine(s){return 'Trophy, '+MATS[s.id].v+'g'}
   verbSpecs(){return [SELL_VERB,DROP_VERB]}
 }
 /* valuables (doc/ITEMS_DESIGN.md §4b): jewels, rings, a chalice, a relic (VALUABLES), worth a lot for one slot (VALUE.stack to a
@@ -253,7 +253,7 @@ class Valuable extends ItemKind{
   // a sorted bag: the dearest first, the bigger stack first
   compare(a,b){return VALUABLES[b.id].v-VALUABLES[a.id].v||b.n-a.n}
   lootRank(s){return 80+VALUABLES[s.id].v/10}
-  lootLine(s){return 'Valuable · '+VALUABLES[s.id].v+'g'}
+  lootLine(s){return 'Valuable, '+VALUABLES[s.id].v+'g'}
   verbSpecs(){return [SELL_VERB,DROP_VERB]}
 }
 /* quest items (doc/ITEMS_DESIGN.md §4): bound to the quest or thread that gave them (by: its key, 'quest:3', 'thread:1'; none:

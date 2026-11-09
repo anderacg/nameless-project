@@ -33,12 +33,12 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,q=s=>document.querySelector(s),car
  // ---- the header, no names: the default band name over your race and past
  {const b=card().querySelector('.pc-band'),s=card().querySelector('.pc-who small'),who=t.RACES[P.race].n+' '+t.BGS[P.bg].n;
   ok(b&&b.tagName==='BUTTON'&&b.textContent===t.NAMING.band&&b.dataset.act==='nm-open','the band’s name, big, a button ('+(b&&b.textContent)+')');
-  ok(s.textContent===who+' · Lv '+P.level+' · '+t.rankName(),'under it your race and past, level and rank ('+s.textContent+')');
+  ok(s.textContent===who+', Lv '+P.level+', '+t.rankName(),'under it your race and past, level and rank ('+s.textContent+')');
   ok(!own('name')&&!own('band'),'a new game with no names stores none')}
  // ---- a new game with names
  newGame('Bran Redhand','The Grey Company');
  ok(P.name==='Bran Redhand'&&P.band==='The Grey Company'&&!t.NEW_NAMES.hero&&!t.NEW_NAMES.band,'names typed on the New game page: your hero’s and your band’s, the page’s cleared');
- ok(card().querySelector('.pc-band').textContent==='The Grey Company'&&card().querySelector('.pc-who small').textContent==='Bran Redhand · Lv '+P.level+' · '+t.rankName(),'on the card: '+card().querySelector('.pc-band').textContent+' / '+card().querySelector('.pc-who small').textContent);
+ ok(card().querySelector('.pc-band').textContent==='The Grey Company'&&card().querySelector('.pc-who small').textContent==='Bran Redhand, Lv '+P.level+', '+t.rankName(),'on the card: '+card().querySelector('.pc-band').textContent+' / '+card().querySelector('.pc-who small').textContent);
  ok(/You ride out of .* alone, as Bran Redhand, a /.test(G.msgs[0].m)&&/The Grey Company is you alone for now/.test(G.msgs[0].m),'the first line names them ('+G.msgs[0].m+')');
  // ---- empty, spaces only: the defaults, nothing stored
  newGame('   ','');ok(!own('name')&&!own('band')&&card().querySelector('.pc-band').textContent===t.NAMING.band,'left empty (or spaces): the defaults, nothing stored');
@@ -80,6 +80,6 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,q=s=>document.querySelector(s),car
  t.loadGame('1');ok(!own('name')&&!own('band')&&card().querySelector('.pc-band').textContent===t.NAMING.band,'loaded: the defaults');
  P.name='Bran <Redhand>';P.band='The Grey Company';Kit.world();t.saveGame(true,'2');{const d=raw('2');ok(d.P.name==='Bran <Redhand>'&&d.P.band==='The Grey Company','a save with names holds them')}
  delete P.name;delete P.band;t.loadGame('2');t.updateHUD(true);
- ok(P.name==='Bran <Redhand>'&&P.band==='The Grey Company'&&card().querySelector('.pc-band').textContent==='The Grey Company'&&card().querySelector('.pc-who small').textContent.startsWith('Bran <Redhand> ·'),'loaded: the names back, on the card');
+ ok(P.name==='Bran <Redhand>'&&P.band==='The Grey Company'&&card().querySelector('.pc-band').textContent==='The Grey Company'&&card().querySelector('.pc-who small').textContent.startsWith('Bran <Redhand>,'),'loaded: the names back, on the card');
  t.loadGame('1');ok(!own('name')&&!own('band'),'and a save without them loaded after: none (the last game’s names do not leak)');
 });

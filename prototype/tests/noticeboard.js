@@ -27,7 +27,7 @@ Kit.suite(({ok})=>{
  // Report greyed with why till it is done
  {P.jobs={};P.level=5;P.quests=[];open();const j=t.jobsAt(ash).find(x=>t.Quest.as(x).state==='available');t.acceptQuest(j);open();
   const r=qa('.row').find(x=>x.querySelector('[data-act="q-turnin"]')),Q=t.Quest.as(j),b=r&&r.querySelector('[data-act="q-turnin"]');
-  ok(r&&r.querySelector('.qw-who')&&(!Q.causeLine()||r.textContent.includes(Q.causeLine()))&&r.querySelector('.qw-steps li.now')&&/Taken/.test(r.textContent)&&/Turn in/.test(r.textContent)&&/Reward/.test(r.textContent),'yours here, in full: '+(r&&r.querySelector('strong').textContent)+' · '+(r&&r.querySelector('.qw-steps').textContent));
+  ok(r&&r.querySelector('.qw-who')&&(!Q.causeLine()||r.textContent.includes(Q.causeLine()))&&r.querySelector('.qw-steps li.now')&&/Taken/.test(r.textContent)&&/Turn in/.test(r.textContent)&&/Reward/.test(r.textContent),'yours here, in full: '+(r&&r.querySelector('strong').textContent)+', '+(r&&r.querySelector('.qw-steps').textContent));
   ok(b&&b.disabled&&/^Not done yet|^You have/.test(b.title),'Report greyed till it is done: "'+(b&&b.title)+'"');P.quests=[]}
  // ---- it fits
  {P.jobs={};P.level=5;open();const b=q('.nb').getBoundingClientRect(),c=q('.nb').parentElement.getBoundingClientRect();ok(b.right<=c.right+1&&b.left>=c.left-1,'the board fits its window (no sideways scroll)')}

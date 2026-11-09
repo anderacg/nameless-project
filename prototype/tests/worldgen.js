@@ -56,7 +56,7 @@ try{
  info('the classic world in '+ms.toFixed(0)+' ms; by stage (ms): '+times.join(', '));
  ok(ms<=4000,'the classic world (Normal) generates within 4 s here ('+ms.toFixed(0)+' ms)');
  ok(J(steps.map(s=>s.id))===J(t.GEN_STAGES.map(s=>s.id))&&steps.every((s,k)=>s.label===t.GEN_STAGES[k].label&&s.w>0)&&J(steps.map(s=>s.id))===J(['land','elev','climate','rivers','forest','ponds','regions','holdings','hamlets','roads','sites','glades','graph']),
-  'genWorldSteps: the twelve stages in order (the hamlets after the holdings), each with its label and weight ('+steps.map(s=>s.label).join(' · ')+')');
+  'genWorldSteps: the twelve stages in order (the hamlets after the holdings), each with its label and weight ('+steps.map(s=>s.label).join(', ')+')');
  ok(!back&&fr.length>=10,'each stage yields its share done, 0-1, never going back ('+fr.length+' yields)');
  ok(!calls,'generating draws no Math.random ('+calls+' calls)');
  {const m=R1.map,s=t.classicSettings();

@@ -20,7 +20,7 @@ Kit.suite(({ok})=>{
  ok(t.bandits.every(b=>b.ld&&b.ld.name)&&lairs.every(s=>s.ld&&s.ld.name),'every band, bandit camp and hideout has a named chieftain');
  {const names=t.allChiefs().map(x=>x.name);ok(new Set(names).size===names.length,'no two share a name ('+names.length+')')}
  {const b=t.bandits[0];b.ld.lv=1;b.pw=0;const p1=b.power();b.ld.lv=7;b.pw=0;const p7=b.power();ok(p7>p1&&t.bountyOf(b.ld)>t.bountyOf({lv:1}),'a stronger chieftain makes a stronger band, and a bigger bounty ('+p1+' → '+p7+', '+t.bountyOf(b.ld)+' gold)');b.ld.lv=1;b.pw=0}
- {const b=t.bandits[0];ok(/Led by .+ \(level \d+\) · bounty \d+ gold/.test(t.tipFor(b)),'its tooltip names the chieftain, level and bounty');
+ {const b=t.bandits[0];ok(/Led by .+ \(level \d+\), bounty \d+ gold/.test(t.tipFor(b)),'its tooltip names the chieftain, level and bounty');
   const s=lairs[0];ok(/Led by/.test(t.tipFor(s)),'and so does a camp or hideout’s')}
  // it grows only by winning
  {const b=t.bandits[0],x0=b.ld.xp+b.ld.lv*1000;t.updateWorld&&0;ok(b.ld.wins===0,'a new chieftain has won nothing');

@@ -6,7 +6,7 @@
 // (where one of your line lies: their grave, if it is known, and its place)
 function familyRest(r){const g=Remains.list.find(o=>o.grave&&o.who===r.who&&o.day===r.day);if(!g)return '<span class="muted">Where they lie is not known.</span>';
   const s=W.sites.find(x=>x.type==='rest'&&x.members().includes(g)),at=s?htmlText(s.name):htmlText(g.name);
-  return (g.unburied?'<span class="bad">Lies unburied</span>, '+at:'Lies in '+at)+(g.spent?' · prayed at':g.xp?' · <span class="gold">'+g.xp+' experience lingers</span>':'')}
+  return (g.unburied?'<span class="bad">Lies unburied</span>, '+at:'Lies in '+at)+(g.spent?', prayed at':g.xp?', <span class="gold">'+g.xp+' experience lingers</span>':'')}
 // (the heir who kept one's company: their lord, if they still are one, and how they stand now)
 function familyHeirLord(r){return r.heirId&&W.lords.find(o=>o.id===r.heirId)||null}
 function familyHeirNow(r){const l=familyHeirLord(r);return !l?'':l.gone||l.dead&&l.back>=1e9?'<span class="bad">fallen</span>':(FACS[l.fac]?'a lord of the '+htmlText(FACS[l.fac].n):'a lord')}
@@ -39,21 +39,21 @@ function familyPage(){const L=Legacy.line,f=Legacy.family,who=r=>(RACES[r.race]?
   const pick=String(G.famPick??''),hp=/^h\d+$/.test(pick)?by.get(+pick.slice(1)):null,heirOf=hp&&hp.heir?hp:null,picked=heirOf?pick:by.has(+pick)?+pick:now.n;
   const tile=(arg,pic,top,name,cls)=>ftTile('fam-pick',arg,picked,pic,top,name,cls);
   const heirTile=r=>{if(!r.heir)return '';const l=familyHeirLord(r);return '<div class="ft-side">'+tile('h'+r.n,l?lordPic(l):'','Heir',r.heir,' ft-heir')+'</div>'};
-  const row=r=>'<div class="ft-row'+(r.heir?' ft-hh':'')+'">'+tile(r.n,familyPic(r),ordinal(r.n)+(r.now?' · you':''),r.who,r.now?'':' ft-dead')+heirTile(r)+'</div>';
+  const row=r=>'<div class="ft-row'+(r.heir?' ft-hh':'')+'">'+tile(r.n,familyPic(r),ordinal(r.n)+(r.now?', you':''),r.who,r.now?'':' ft-dead')+heirTile(r)+'</div>';
   // (the life chosen, told: who they were, how they lived and fell, where they lie; an heir's: whose company, and now)
   const info=()=>{if(heirOf){const r=heirOf,l=familyHeirLord(r),n=familyHeirNow(r),pic=l&&lordPic(l);
       return '<div class="ft-head">'+(pic?'<img src="'+pic+'" alt="">':'')+'<div><span class="ft-n">Heir of the '+ordinal(r.n)+'</span><b>'+htmlText(r.heir)+'</b></div></div>'+
         '<p>Kept the company of '+htmlText(r.who)+' when they fell.</p>'+(n?'<p>Now '+n+'.</p>':'')}
-    const r=by.get(picked);return '<div class="ft-head"><img src="'+familyPic(r)+'" alt=""><div><span class="ft-n">'+ordinal(r.n)+(r.now?' · you':'')+'</span><b>'+htmlText(r.who)+'</b></div></div>'+
-      '<p>'+kinLine(r)+'.</p>'+(r.now?'<p>'+who(P)+'. On the road since day '+(P.born||1)+'.</p><p>Level '+P.level+' · renown '+Math.round(P.renown||0)+'</p>':
-      '<p>'+who(r)+'. Day '+r.born+' to '+r.day+' ('+r.days+' day'+(r.days===1?'':'s')+').</p><p>Level '+r.level+' · renown '+r.renown+'</p>'+
+    const r=by.get(picked);return '<div class="ft-head"><img src="'+familyPic(r)+'" alt=""><div><span class="ft-n">'+ordinal(r.n)+(r.now?', you':'')+'</span><b>'+htmlText(r.who)+'</b></div></div>'+
+      '<p>'+kinLine(r)+'.</p>'+(r.now?'<p>'+who(P)+'. On the road since day '+(P.born||1)+'.</p><p>Level '+P.level+', renown '+Math.round(P.renown||0)+'</p>':
+      '<p>'+who(r)+'. Day '+r.born+' to '+r.day+' ('+r.days+' day'+(r.days===1?'':'s')+').</p><p>Level '+r.level+', renown '+r.renown+'</p>'+
       '<p class="bad">Fell to '+htmlText(r.by)+(r.near?' near '+htmlText(r.near):'')+'.</p><p>'+familyRest(r)+'.</p>'+
       (r.heir?'<p>'+htmlText(r.heir)+' kept their company'+(familyHeirNow(r)?', now '+familyHeirNow(r):'')+'.</p>':''))};
-  return '<div class="ft"><div class="lab">'+(f?'The '+htmlText(f)+' family':'Your line')+(L.length?' · '+L.length+' fallen':'')+'</div>'+
+  return '<div class="ft"><div class="lab">'+(f?'The '+htmlText(f)+' family':'Your line')+(L.length?', '+L.length+' fallen':'')+'</div>'+
     (L.length?'':'<p class="muted">No one of your line has fallen yet. Those who do take their place above you here, and where they lie.</p>')+
     '<div class="ft-body">'+ftChart(all,r=>r.n,up,row,r=>(r.now?' ft-now':'')+(r.rel==='cousin'?' ft-cousin':''))+'<div class="ft-info" aria-live="polite">'+info()+'</div></div></div>'}
 defineJournalSection('family',{label:'Family',icon:'altar',render:()=>'<div class="fb-scroll" data-fb-scroll="journal:family">'+familyPage()+'</div>',
-  sub:()=>(Legacy.family?'The '+Legacy.family+' family':'Your line')+(Legacy.line.length?' · '+Legacy.line.length+' fallen':'')});
+  sub:()=>(Legacy.family?'The '+Legacy.family+' family':'Your line')+(Legacy.line.length?', '+Legacy.line.length+' fallen':'')});
 onAct('fam-',(a,arg)=>{if(a==='fam-pick')ftPick('family',()=>{G.famPick=arg})});
 /* ---- the lords' houses (the owner, 2026-11-09: "only appear once you know them or someone tell you about their family (only when
    very friendly)", "Give lords spouses and children so houses have real families"; world/lineage.js LordHouse): a house is set down
@@ -87,11 +87,11 @@ function housePage(){const hs=Houses.known();
       (sp?'<p>'+(m.inlaw?'Wed into the house, '+(f?'wife':'husband')+' of ':'Wed to ')+who(sp.id)+(sp.dead?', now dead':'')+'.</p>':'')+
       (m.succeeded&&by.has(m.succeeded)?'<p>Took up the place of '+who(m.succeeded)+(m.cousin?', a cousin from afar':'')+'.</p>':'')+
       (m.kin?'<p>'+(h.adult(m)?'Of age':'A child yet')+(m.born!=null&&m.born>0?', born day '+m.born:'')+'.</p>':'')+
-      (l?'<p>A lord of the '+(FACS[l.fac]?htmlText(FACS[l.fac].n):'realm')+' · level '+(l.lv||1)+' · renown '+(l.renown||0)+'</p><p>Toward you: '+relTag(relWith(l))+'</p>'+(rep?.text?'<p class="muted">'+htmlText(rep.text)+(rep.at!=null?' (day '+rep.at+')':'')+'</p>':''):'')+
+      (l?'<p>A lord of the '+(FACS[l.fac]?htmlText(FACS[l.fac].n):'realm')+', level '+(l.lv||1)+', renown '+(l.renown||0)+'</p><p>Toward you: '+relTag(relWith(l))+'</p>'+(rep?.text?'<p class="muted">'+htmlText(rep.text)+(rep.at!=null?' (day '+rep.at+')':'')+'</p>':''):'')+
       (m.away?'<p>'+cap1(htmlText(m.how))+'.</p>':m.dead?'<p class="bad">'+cap1(htmlText(m.how))+(m.byYou?', by your line\'s hand':'')+'.</p><p>Lies in the crypt of '+htmlText(h.name)+(h.seat?' at '+htmlText(h.seat):'')+'.</p>':'')};
   const chips='<div class="ft-houses">'+hs.map(x=>'<button type="button" class="ft-house'+(x===h?' ft-sel':'')+'" data-act="lh-house" data-arg="'+x.id+'" aria-pressed="'+(x===h)+'">'+htmlText(x.name)+'</button>').join('')+'</div>';
   const n=all.filter(kn).length;
-  return '<div class="ft">'+chips+'<div class="lab">'+htmlText(h.name)+(h.seat?' · seat '+htmlText(h.seat):'')+(F?' · the '+htmlText(F.n):'')+' · '+n+' of '+all.length+' known'+(h.buried.length?' · '+h.buried.length+' in its crypt':'')+'</div>'+
+  return '<div class="ft">'+chips+'<div class="lab">'+htmlText(h.name)+(h.seat?', seat '+htmlText(h.seat):'')+(F?', the '+htmlText(F.n):'')+', '+n+' of '+all.length+' known'+(h.buried.length?', '+h.buried.length+' in its crypt':'')+'</div>'+
     (h.grudged()?'<p class="bad">It bears you a grudge: '+(h.grudge.half?'your kin':'you')+' killed '+htmlText(h.grudge.name)+'.</p>':'')+
     '<div class="ft-body">'+ftChart(blood,m=>m.id,up,row,m=>(!m.dead&&!m.kin?' ft-now':'')+(!by.has(m.parent)&&by.has(m.succeeded)?' ft-cousin':''))+'<div class="ft-info" aria-live="polite">'+info()+'</div></div></div>'}
 defineJournalSection('houses',{label:'Houses',icon:'tower',render:()=>'<div class="fb-scroll" data-fb-scroll="journal:houses">'+housePage()+'</div>',

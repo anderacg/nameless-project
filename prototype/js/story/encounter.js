@@ -212,7 +212,7 @@ class Encounter extends Happening{
   // its page (story/choice.js ChoicePage): its banner, what you see, its choices; forced: no way out till chosen
   page(){
     const D=this.D,done=!!this.done;
-    return {ico:D.ico,title:D.n,sub:regionAt(this.x,this.y).name+' · day '+G.day,banner:this.view(),msg:G.roadMsg,text:D.text(this),facts:D.facts&&D.facts(this),
+    return {ico:D.ico,title:D.n,sub:regionAt(this.x,this.y).name+', day '+G.day,banner:this.view(),msg:G.roadMsg,text:D.text(this),facts:D.facts&&D.facts(this),
       choices:D.acts,subject:this,act:'enc-do',done,close:roadForced(this)&&!done?null:['enc-leave',null,D.leave||'Leave']};
   }
   // first heard (a caller, near enough) or seen: the log line, a soft sound unless silent; its call-out waits to be on the screen

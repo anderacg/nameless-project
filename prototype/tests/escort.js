@@ -72,9 +72,9 @@ Kit.suite(({ok,info})=>{
    const s2=x('quest bounty');ok(/taken: Bounty/.test(s2)&&P.quests.some(q=>q.type==='bounty'),'quest bounty: offered at the nearest holding and taken ('+s2+')');
    ok(/No thread under way/.test(x('chains')),'chains: none under way, and the kinds');
    Kit.storyKinds();const th=Kit.seeded(21,()=>t.Thread.start('test_thread',{town:'Ashford'})),c=x('chains'),one=x('chain '+th.i);
-   ok(new RegExp(th.i+' · A test thread \\(test_thread\\) · step job · waits for quest').test(c)&&one.step==='job'&&one.starts==='quest'&&one.until==='quest:ended'&&one.memory.town==='Ashford','chains lists it; chain '+th.i+': its step, what it began, what it waits for, its memory');
+   ok(new RegExp(th.i+', A test thread \\(test_thread\\), step job, waits for quest').test(c)&&one.step==='job'&&one.starts==='quest'&&one.until==='quest:ended'&&one.memory.town==='Ashford','chains lists it; chain '+th.i+': its step, what it began, what it waits for, its memory');
    P.quests=P.quests.filter(q=>q.type!=='supply');W.story.threads.on=[];
-   const q7=E.start(spec()),p=x('passengers');ok(new RegExp(q7.id+' · the refugee family \\(refugees\\) to '+far.name).test(p),'passengers: who, where, when due');
+   const q7=E.start(spec()),p=x('passengers');ok(new RegExp(q7.id+', the refugee family \\(refugees\\) to '+far.name).test(p),'passengers: who, where, when due');
    const j=x('escort');ok(/Teleported/.test(j)&&Math.hypot(P.x-q7.to.x,P.y-q7.to.y)<=t.ESCORT.reach.holding,'escort: to its place ('+j+')');t.updateRoad(.05);ok(q7.fate==='arrived','and there once the world runs');t.act('pas-close')}
  }finally{t.worldOff('quest:ended',ear);P.quests=[];Kit.world()}
 });

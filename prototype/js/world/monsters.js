@@ -30,14 +30,14 @@ class Monster extends Party{
       ctx.save();ctx.translate(sx,sy-lift);if(Y?m.dir<0:faceDir(m)<0)ctx.scale(-1,1);ctx.drawImage(s,-(w>>1),-s.height+2);ctx.restore();
       if(!Y)txt((m.n>1?m.n+' ':'')+'Lv'+m.lv,sx,sy-h,STANCE_COL[M.aggro||stance(monPower(m))==='afraid'?stance(monPower(m)):'wary'],'center')}})}
   mapDot(V){const Y=MONSTERS[this.id].mythic;return yourSight(V).sees(this.x,this.y)?[Y?'#ff7a30':'#c58af0',Y?2:1]:null}
-  tip(){const M=MONSTERS[this.id];return '<b>'+(this.eater?Death.nameOf(this)+', ':'')+(M.n||this.id)+(this.n>1?' ×'+this.n:'')+'</b><small>Level '+this.lv+tipOdds(monPower(this))+(this.id==='wolf'&&this.alpha?' · Led by an Alpha Wolf':'')+'</small><span class="act">Click: fight</span>'}
+  tip(){const M=MONSTERS[this.id];return '<b>'+(this.eater?Death.nameOf(this)+', ':'')+(M.n||this.id)+(this.n>1?' ×'+this.n:'')+'</b><small>Level '+this.lv+tipOdds(monPower(this))+(this.id==='wolf'&&this.alpha?', Led by an Alpha Wolf':'')+'</small><span class="act">Click: fight</span>'}
   // as one side of a fight on the map (fights.js), the face every party there shows: its fighters (n of its kind), its strength
   // (monPower; in a fight, its fighters at its level), its name, no realm; it loses its fighters one by one (n goes down)
   get troops(){return monsterTroops(this)}
   set troops(list){this.tc=countsOf(list);this.changed()}
   power(){return monPower(this)}
   fightPower(){return power(this.troops)*lvPow(this.lv)}
-  label(){return MONSTERS[this.id].n+(this.id==='wolf'&&this.alpha?' · Alpha Wolf':'')}
+  label(){return MONSTERS[this.id].n+(this.id==='wolf'&&this.alpha?', Alpha Wolf':'')}
   get faction(){return null}
   removeAny(k=1){const n=Math.max(0,Math.min(Math.floor(k),this.n)),a=this.id==='wolf'&&this.alpha&&this.n>0?1:0,regular=Math.min(n,this.n-a),out=Array(regular).fill(MONSTERS[this.id].unit);if(n>regular){out.push(WOLF_ALPHA.unit);this.alpha=0}this.n-=n;this.pw=0;MON_COUNTS.delete(this);super.changed();return out}
   // a blow in a fight on the map (blow: the strength of the fighter that dealt it): a wound (hurt); wounds as strong as one of

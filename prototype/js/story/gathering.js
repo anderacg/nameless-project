@@ -55,7 +55,7 @@ class Gathering extends Happening{
   }
   page(){
     const K=this.kind;
-    return {ico:K.ico||'banner',title:K.n,sub:this.at+' · '+this.when(),msg:G.gatherMsg||'',text:K.text||'',
+    return {ico:K.ico||'banner',title:K.n,sub:this.at+', '+this.when(),msg:G.gatherMsg||'',text:K.text||'',
       facts:[this.entrants.length+' entered',this.entrants.includes('you')&&'you among them'],choices:this.choices(),subject:this,act:'gth-do',
       done:false,close:['gth-close',null,'Leave']};
   }

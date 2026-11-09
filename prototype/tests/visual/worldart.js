@@ -40,7 +40,7 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
   if(part===3){const CL=['grass','frost','desert','swamp'],BG={grass:'#54803a',frost:'#d6dee8',desert:'#d6b668',swamp:'#48583a'},Z=6,rows=[];for(const c of CL)for(const sp of PX.WORLD_SPECIES[c])rows.push([c,sp]);
    const pg=document.createElement('canvas');pg.width=8*(16*Z+6)+120;pg.height=rows.length*(16*Z+6)+10;pg.style.cssText='position:absolute;left:0;top:0;z-index:9999';document.body.appendChild(pg);
    const g=pg.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
-   rows.forEach(([c,sp],r)=>{g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(c+' · '+sp,4,r*(16*Z+6)+50);
+   rows.forEach(([c,sp],r)=>{g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(c+', '+sp,4,r*(16*Z+6)+50);
     for(let k=0;k<8;k++){const s=PX.worldTree(c,sp,k&3,k>>2),X=120+k*(16*Z+6),Y=r*(16*Z+6)+4;g.fillStyle=BG[c];g.fillRect(X,Y,16*Z,16*Z);g.drawImage(s,X,Y,16*Z,16*Z)}});
    o.push('INFO page '+pg.width+' x '+pg.height,'PASS drawn ('+rows.length+' species)');throw 0}
   // (part 9: each crop (PX.WORLD_CROPS) in each climate at x6, a plot of 2 x 2 tiles, then what stands on a plot)
@@ -239,8 +239,8 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
      const undo=setup&&PX.WN_MOUNT&&PX.WN_MOUNT.pool?setup():null;// (part 7: a kind put in for this piece alone)
      try{t.drawWorld();t.drawWorld()}finally{if(wide===2)(0,eval)('drawWorldFog=function(){};reducedMotion=__rmV')}
      const sx=Math.max(0,Math.min(t.cv.width-cw,Math.round(fx-G.cam.x-cw/2))),sy=Math.max(0,Math.min(t.cv.height-ch,Math.round(fy-G.cam.y-ch/2)));
-     g.fillText(pn+' · '+(s?'normal '+s:t.WM.gen)+' ('+at[0]+', '+at[1]+')',X,Y+13);if(wide)g.drawImage(t.cv,0,0,t.VW,t.VH,X,Y+lab,cw*Z,ch*Z);else g.drawImage(t.cv,sx,sy,cw,ch,X,Y+lab,cw*Z,ch*Z);if(undo)undo();o.push('INFO '+pn+': '+(s?'normal '+s:t.WM.gen)+' '+at.join(', ')+' (at='+k+':'+s+':'+at.join(':')+')')}}
-   for(const k of left){const c=k%per,r=(k/per)|0;g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(PIECES[k][0]+' · none found',8+c*(cw*Z+8),8+r*(ch*Z+lab+8)+13);o.push('INFO '+PIECES[k][0]+': none found')}}
+     g.fillText(pn+', '+(s?'normal '+s:t.WM.gen)+' ('+at[0]+', '+at[1]+')',X,Y+13);if(wide)g.drawImage(t.cv,0,0,t.VW,t.VH,X,Y+lab,cw*Z,ch*Z);else g.drawImage(t.cv,sx,sy,cw,ch,X,Y+lab,cw*Z,ch*Z);if(undo)undo();o.push('INFO '+pn+': '+(s?'normal '+s:t.WM.gen)+' '+at.join(', ')+' (at='+k+':'+s+':'+at.join(':')+')')}}
+   for(const k of left){const c=k%per,r=(k/per)|0;g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(PIECES[k][0]+', none found',8+c*(cw*Z+8),8+r*(ch*Z+lab+8)+13);o.push('INFO '+PIECES[k][0]+': none found')}}
   finally{P.stay=stay;[window.txt,window.drawParties,window.drawBanners]=keep;window.estateGround=eg0}o.push('PASS drawn ('+t.WM.gen+')');
  }catch(e){if(e!==0)o.push('EXC '+e.message+' '+e.stack)}
  const d=document.createElement('pre');d.id='OUT';d.style.display='none';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

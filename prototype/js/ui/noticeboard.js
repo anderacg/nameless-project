@@ -26,7 +26,7 @@ const NoticeBoard={
     const g=q.person,seal=!!g&&NOTICE.seal.includes(g.role);
     return '<div class="nb-note'+(lock?' locked':'')+(seal?' sealed':'')+'"'+this.look(i,q.type)+'><div class="nb-kind">'+(NOTICE.kinds[q.type]||'Notice')+'</div><h4>'+htmlText(cap1(q.title.replace(/^(Bounty|Supply run|Beasts at the folds): /,'')))+'</h4>'+
       (why?'<p class="nb-cause">'+htmlText(why)+'</p>':'')+'<p>'+htmlText(q.text)+'</p>'+
-      '<p class="nb-pay"><b>For the deed:</b> '+q.rewardLine()+'</p><p class="nb-small">'+[tm,r&&(r.startsWith('At ')?'Return to '+r.slice(3)+' when it is done':r)].filter(Boolean).map(htmlText).join(' · ')+'</p>'+
+      '<p class="nb-pay"><b>For the deed:</b> '+q.rewardLine()+'</p><p class="nb-small">'+[tm,r&&(r.startsWith('At ')?'Return to '+r.slice(3)+' when it is done':r)].filter(Boolean).map(htmlText).join(', ')+'</p>'+
       (lock?'<p class="nb-stamp">Requires '+htmlText(need)+'</p>':'')+
       '<p class="nb-ask">'+htmlText(this.ask(q))+'</p>'+
       '<button class="btn sm" type="button" data-act="q-accept" data-arg="'+i+'"'+(lock?' disabled':'')+'>Accept</button></div>';

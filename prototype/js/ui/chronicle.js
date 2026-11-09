@@ -40,10 +40,10 @@ function chronicleWindow(){
   let h='',day=null;
   for(let i=hi-1;i>=lo;i--){const r=list[i];if(r.day!==day){day=r.day;h+='<h4 class="ch-day">Day '+day+'</h4>'}
     h+='<div class="ch-msg'+(r.cls?' '+r.cls:'')+'"><span>'+r.m+chronWhen(r)+'</span>'+chronLink(r,byK)+'</div>'}
-  const filters=fbTabs(CHRON.filters.map(([f,l])=>[f,l+' · '+(n[f]||0)]),C.f,'ch-filter','Chronicle filters');
+  const filters=fbTabs(CHRON.filters.map(([f,l])=>[f,l+', '+(n[f]||0)]),C.f,'ch-filter','Chronicle filters');
   const first=pages>1&&list[hi-1].day,last=pages>1&&list[lo].day,at=C.page===0,end=C.page===pages-1;
   const pager=pages>1?'<div class="ch-pager" role="group" aria-label="Pages">'+qwBtn('ch-page',0,'Newest',at?'This is the newest page':'')+qwBtn('ch-page',C.page-1,'Newer',at?'This is the newest page':'')+
-    '<span>Page '+(C.page+1)+' of '+pages+' · day '+first+(last!==first?'–'+last:'')+'</span>'+qwBtn('ch-page',C.page+1,'Older',end?'This is the oldest page':'')+qwBtn('ch-page',pages-1,'Oldest',end?'This is the oldest page':'')+'</div>':'';
+    '<span>Page '+(C.page+1)+' of '+pages+', day '+first+(last!==first?'–'+last:'')+'</span>'+qwBtn('ch-page',C.page+1,'Older',end?'This is the oldest page':'')+qwBtn('ch-page',pages-1,'Oldest',end?'This is the oldest page':'')+'</div>':'';
   return '<div class="chron">'+filters+'<div class="ch-scroll" data-fb-scroll="chron:'+C.f+':'+C.page+'" role="region" aria-label="Messages">'+
     (h||'<p class="muted">'+(C.f==='all'?'Nothing has happened yet.':'Nothing of this kind yet.')+'</p>')+'</div>'+pager+'</div>';
 }

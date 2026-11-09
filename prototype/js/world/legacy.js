@@ -66,14 +66,14 @@ class Legacy{
      for them; they begin where the family is known. A stranger begins with nothing of theirs, as any new person) */
   static page(){const old=Death.slain,kin=G.kin!==undefined?G.kin:(G.kin='child');if(kin&&old?.race)G.race=old.race;const r=G.race||P.race||'human';G.race=r;G.mode='dialog';
     const who=htmlText(old?.who||'your hero'),rels=[...Object.keys(KIN).map(k=>[k,KIN[k].n+' of '+who]),[null,'A stranger']];
-    showPanel('<div class="top"><h2>A new life</h2><span class="muted">Day '+G.day+' · the same world</span></div>'+
+    showPanel('<div class="top"><h2>A new life</h2><span class="muted">Day '+G.day+', the same world</span></div>'+
       '<p class="muted">The world goes on: its holdings, lords and wars as they stand, and what '+who+' left behind.</p>'+
       '<div class="lab">Who you are</div><div class="tabs" role="group" aria-label="Who you are">'+rels.map(([k,n])=>'<button class="btn sm'+(kin===k?' on':'')+'" type="button" data-act="death-kin" data-arg="'+(k||'')+'" aria-pressed="'+(kin===k)+'">'+n+'</button>').join('')+'</div>'+
       '<p class="muted">'+(kin?'Kin of '+who+': '+(/^[aeiou]/i.test(RACES[r].n)?'an ':'a ')+RACES[r].n.toLowerCase()+' as they were, of the family; you carry a little of them (a keepsake of their gear, some of their name, half of what their lords thought of them) and begin where the family is known.':'A stranger to them: any people, nothing of theirs.')+'</p>'+
       (kin?'':'<div class="lab">Your race</div><div class="tabs" role="group" aria-label="Race">'+Object.keys(RACES).map(k=>'<button class="btn sm'+(r===k?' on':'')+'" type="button" data-act="death-race" data-arg="'+k+'" aria-pressed="'+(r===k)+'">'+RACES[k].n+'</button>').join('')+'</div>')+
-      '<div class="lab">Your name · or leave it for later</div>'+nameFields(NEW_NAMES)+
-      '<div class="lab">Your family · the name your line goes by, on its graves and its plot</div><label class="nm-field"><span>Family</span><span class="nm-line"><input data-name="family" type="text" maxlength="'+NAMING.max+'" autocomplete="off" spellcheck="false" value="'+htmlText(NEW_NAMES.family??this.familyGuess())+'" placeholder="'+htmlText(this.familyGuess())+'"></span></label>'+
-      '<div class="lab">Your past · it decides where you begin</div><div class="cards origin-cards">'+Object.keys(BGS).map(k=>{const B0=BGS[k],w=B0.weapon?BASES[B0.weapon]:null;
+      '<div class="lab">Your name, or leave it for later</div>'+nameFields(NEW_NAMES)+
+      '<div class="lab">Your family, the name your line goes by, on its graves and its plot</div><label class="nm-field"><span>Family</span><span class="nm-line"><input data-name="family" type="text" maxlength="'+NAMING.max+'" autocomplete="off" spellcheck="false" value="'+htmlText(NEW_NAMES.family??this.familyGuess())+'" placeholder="'+htmlText(this.familyGuess())+'"></span></label>'+
+      '<div class="lab">Your past, it decides where you begin</div><div class="cards origin-cards">'+Object.keys(BGS).map(k=>{const B0=BGS[k],w=B0.weapon?BASES[B0.weapon]:null;
         return '<button class="card origin-card" type="button" data-act="death-past" data-arg="'+k+'">'+originArt(k)+'<strong>'+B0.n+'</strong><span class="gold">'+(w?w.n:'Bare hands')+'</span><span>'+B0.d+'</span></button>'}).join('')+'</div>'+
       nav(['death-slain',null,'Back'],null))}
   // ---- going on as someone new (k: your past)

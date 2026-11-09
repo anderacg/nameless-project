@@ -8,7 +8,7 @@
 // the orders: n, d (the order bar's words); mouse: given with the mouse, with its modifiers (mods); their keys: KIT_KEYS. Advance is a
 // Move now (Walk, the Pace stance's). Charge (G, step 2): a true order, at a run into the enemy (commands.js chargeOrder)
 const ORDERS={
-  move:{n:'Move',mouse:'Right-click the ground',mods:'Shift: a waypoint · a drag: a line · Shift+K: keep formation',d:'Go there in formation'},
+  move:{n:'Move',mouse:'Right-click the ground',mods:'Shift: a waypoint, a drag: a line, Shift+K: keep formation',d:'Go there in formation'},
   attack:{n:'Attack',mouse:'Right-click an enemy',mods:'Ctrl or D: an attack-move, fighting what it meets on the way',d:'Set on that enemy',
     // (the attack-move, its modifier, has its own button: commands.js armAttackMove)
     amove:{n:'Attack-move',d:'Attack-move: their next order on the ground (a right-click, a line, a tap) marches there, fighting any enemy met on the way, then on to the place; Ctrl + right-click too; Esc: off'}},

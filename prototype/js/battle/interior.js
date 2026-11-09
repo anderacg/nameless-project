@@ -157,7 +157,7 @@ class Interior{
       '<button class="btn sm" type="button" data-act="'+act+'-" data-arg="'+arg+'"'+(have>0?'':' disabled')+' aria-label="Fewer">−</button><b>'+have+'</b>'+
       '<button class="btn sm" type="button" data-act="'+act+'+" data-arg="'+arg+'"'+(can?'':' disabled')+' aria-label="More">+</button></span></div>';
     const comps=compsInBand().map(id=>row(COMPS[id].n,'companion',k.comps.includes(id)?1:0,'in-c',id,!k.comps.includes(id)&&n<max)).join('');
-    const men=r.groups.filter(g=>g.count>0&&ST[g.type]).map(g=>{const have=k.g[g.id]||0;return row(htmlText(r.nameOf(g.id)||ST[g.type].n),ST[g.type].n+' · '+g.count+' in your band'+(ST[g.type].mounted?' · on foot inside':''),have,'in-g',g.id,have<g.count&&n<max)}).join('');
+    const men=r.groups.filter(g=>g.count>0&&ST[g.type]).map(g=>{const have=k.g[g.id]||0;return row(htmlText(r.nameOf(g.id)||ST[g.type].n),ST[g.type].n+', '+g.count+' in your band'+(ST[g.type].mounted?', on foot inside':''),have,'in-g',g.id,have<g.count&&n<max)}).join('');
     showPanel('<div class="top"><h2>Into the '+site.name+'</h2><span class="muted">Up to '+max+' go in with you; the rest wait outside</span></div>'+
       '<p>'+(site instanceof Hideout?'Their camp lies deep inside, behind a palisade of stakes. ':'')+'The way in is narrow and dark. Riders go on foot; your shooters will find few clear shots between the rocks.</p>'+
       '<div class="in-list">'+(comps+men||'<p class="muted">You go in alone.</p>')+'</div>'+

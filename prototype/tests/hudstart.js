@@ -19,7 +19,7 @@ const wrong=()=>{if(bar.hidden)return [];const B=t.B,w=[],gs=B?['all',...t.playe
  const live=k=>B.units.filter(u=>u.team===k&&u.hp>0).length;if(q('#bMine').textContent!==String(live(0))||q('#bFoe').textContent!==String(live(1)))w.push('numbers '+q('#bMine').textContent+'/'+q('#bFoe').textContent+' for '+live(0)+'/'+live(1));
  if(q('#bField').textContent!==B.env.name)w.push('field "'+q('#bField').textContent+'"');
  // (a battle opens ready, paused for Start Battle (f8cfe32); forming up first, as armies walk to their places (c0ba7c6))
- const st=q('#bStatus').textContent,want=B.over?null:B.muster?.active?/^(Forming up|Preparation paused)/:B.ready?/^Ready · Start Battle/:B.deploy?/Deploy/:null;
+ const st=q('#bStatus').textContent,want=B.over?null:B.muster?.active?/^(Forming up|Preparation paused)/:B.ready?/^Ready, Start Battle/:B.deploy?/Deploy/:null;
  if(want?!want.test(st):/Deploy|Ready/.test(st))w.push('status "'+st+'"');
  if(q('#bPause').textContent!==(!B.over&&(B.ready||B.deploy)?'▶ Start':B.paused?'▶ Play':'⏸ Pause'))w.push('pause "'+q('#bPause').textContent+'"');
  if(qa('[data-bspeed]').filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>+b.dataset.bspeed).join()!==String(B.speed))w.push('speed buttons');

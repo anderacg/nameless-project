@@ -49,10 +49,10 @@ Kit.suite(({ok})=>{
    const br=P.comps.brann;br.hurt=0;t.act('death-find','brann');ok(!br.lost&&!D.questOf('brann')&&t.compsInBand().includes('brann'),'Brann found in the tavern of his holding: with you again, his quest done');
    const el=P.comps.elske,ap=el.ap,at=el.lost.at;el.lost.until=G.day;D.hour();
    ok(el.lost.left&&el.lost.at!==at&&el.ap===ap-X.comps.left&&D.questOf('elske').to.town===el.lost.at,'Elske, left past '+X.comps.wander+' days, gives up on you for '+el.lost.at+' and leaves your service (approval −'+X.comps.left+')');
-   const card=D.cards(t.townBy(el.lost.at))[0];ok(card&&card.acts.map(a=>a[0]).join()==='death-talk,death-pay','in its tavern: talk her round, or pay her ('+card.acts.map(a=>a[2]).join(' · ')+')');
+   const card=D.cards(t.townBy(el.lost.at))[0];ok(card&&card.acts.map(a=>a[0]).join()==='death-talk,death-pay','in its tavern: talk her round, or pay her ('+card.acts.map(a=>a[2]).join(', ')+')');
    roll(.99);try{t.act('death-talk','elske')}finally{window.Math.random=rnd}ok(el.lost&&el.lost.tried===G.day&&D.cards(t.townBy(el.lost.at))[0].acts[0][3],'a talk that fails: not again today');
    const g=P.gold,p=D.payOf('elske');t.act('death-pay','elske');el.hurt=0;ok(!el.lost&&P.gold===g-p&&!D.questOf('elske')&&t.compsInBand().includes('elske'),'paid what she is owed ('+p+'g): back in your band');
-   ok(/Lost · after the beasts/.test((()=>{P.comps.brann.lost={at,until:G.day+5,left:false};const h=t.partyRosterPage();delete P.comps.brann.lost;return h})()),'the Army window lists the lost apart');
+   ok(/Lost, after the beasts/.test((()=>{P.comps.brann.lost={at,until:G.day+5,left:false};const h=t.partyRosterPage();delete P.comps.brann.lost;return h})()),'the Army window lists the lost apart');
    const r0=P.renown;t.worldEmit('monster:slain',{monster:m});ok(P.renown===r0+X.eater.renown,'the man-eater slain: renown +'+X.eater.renown)}
   // ---- what a grave will give half of (phase 4): the experience your hero gained in this life, counted as it comes; not a grave's gift
   {const e0=P.xpEarned||0,x0=P.xp,lv0=P.level;t.gainXp(40,'battle');const e1=P.xpEarned;t.leaderOf(P).addXp(30,true);
@@ -219,8 +219,8 @@ Kit.suite(({ok})=>{
    ok(L.family==='Thornwood'&&L.line.length===1&&L.line[0].family==='Thornwood','your line goes by it: the Thornwood family');
    const g2=die(X.grave.tiers.near.stone),site=W.sites.find(o=>o.type==='rest'&&o.kind==='plot');ok(site&&site.name==='Thornwood Family Rest'&&L.line.length===2&&L.family==='Thornwood','its graves and plot go by it: "'+(site&&site.name)+'"; the next life keeps it');
    G.jsec='family';G.famPick=null;const html=t.JOURNAL_SECTIONS.family.render();const ord=[...html.matchAll(/class="ft-pic">[\s\S]*?<\/span><span class="ft-n">([^<]+)</g)].map(m=>m[1]);
-   ok(/The Thornwood family · 2 fallen/.test(html)&&ord.join('|')==='1st|2nd|3rd · you'&&/class="ft-li ft-now"/.test(html)&&(html.match(/data-act="fam-pick"/g)||[]).length===3,'the journal\'s Family, a tree of tiles: the 1st at the top, then the 2nd, down to you, the 3rd ('+ord.join(' → ')+')');
-   ok(/class="ft-info"[\s\S]*3rd · you/.test(html)&&!/Lies in /.test(html),'you told beside the chart, until another tile is chosen');
+   ok(/The Thornwood family, 2 fallen/.test(html)&&ord.join('|')==='1st|2nd|3rd, you'&&/class="ft-li ft-now"/.test(html)&&(html.match(/data-act="fam-pick"/g)||[]).length===3,'the journal\'s Family, a tree of tiles: the 1st at the top, then the 2nd, down to you, the 3rd ('+ord.join(' → ')+')');
+   ok(/class="ft-info"[\s\S]*3rd, you/.test(html)&&!/Lies in /.test(html),'you told beside the chart, until another tile is chosen');
    t.openJournal('family');t.act('fam-pick','2');const info=document.querySelector('#panel .ft-info')?.textContent||'',sel=document.querySelector('#panel .ft-tile.ft-sel');
    ok(/Lies in Thornwood Family Rest/.test(info)&&/Fell to /.test(info)&&sel&&sel.dataset.arg==='2'&&sel.querySelector('img'),'a tile clicked: its life told (where they lie, what killed them), the tile marked, its picture in its square');
    const fc=L.line.map(r=>r.face&&JSON.stringify(r.face.config));ok(!t.Faces.ok()||fc.every(Boolean)&&new Set(fc).size===fc.length&&JSON.stringify(t.Faces.you().config)!==fc[1],'each of your line kept their own face, and you have yours');

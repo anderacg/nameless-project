@@ -17,8 +17,8 @@ const FrameProf={rows:[],sys:new Map(),el:null,shown:0,
   lines(){const R=this.rows,n=Math.max(1,R.length),avg=i=>{const v=R.map(r=>r[i]).sort((a,b)=>a-b);return v.length?v[v.length>>1]:0},max=i=>Math.max(0,...R.map(r=>r[i])),f=x=>x.toFixed(1);
     const span=R.length>1?(R[R.length-1][0]-R[0][0])/1000:1,slow=R.filter(r=>r[1]+r[2]>FRAMEPROF.slow).length;
     const top=[...this.sys].map(([k,s])=>[k,s.reduce((a,x)=>a+x[1],0)/n,Math.max(...s.map(x=>x[1]))]).sort((a,b)=>b[1]-a[1]).slice(0,FRAMEPROF.top);
-    return ['update '+f(avg(1))+' / '+f(max(1))+' ms · draw '+f(avg(2))+' / '+f(max(2))+' ms (median / worst)',
-      Math.round((R.length-1)/Math.max(.001,span))+' frames a second · '+slow+' slow (over '+FRAMEPROF.slow+' ms) in '+FRAMEPROF.win+' s',
+    return ['update '+f(avg(1))+' / '+f(max(1))+' ms, draw '+f(avg(2))+' / '+f(max(2))+' ms (median / worst)',
+      Math.round((R.length-1)/Math.max(.001,span))+' frames a second, '+slow+' slow (over '+FRAMEPROF.slow+' ms) in '+FRAMEPROF.win+' s',
       ...top.map(([k,a,m])=>k+': '+a.toFixed(2)+' ms a frame, worst '+f(m))]},
   show(){if(!this.el){this.el=document.createElement('div');this.el.className='frameprof';this.el.setAttribute('aria-hidden','true');document.body.appendChild(this.el)}this.el.textContent=this.lines().join('\n')},
   toggle(on=!FRAMEPROF.on){FRAMEPROF.on=!!on;Systems.timer=on?(name,f)=>this.time(name,f):null;this.rows=[];this.sys.clear();if(!on&&this.el){this.el.remove();this.el=null}return on?'Frame timings on.':'Frame timings off.'}};

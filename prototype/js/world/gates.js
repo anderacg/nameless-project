@@ -68,9 +68,9 @@ class Gates{
   static waysHtml(t){
     const W2=GATE_WAYS,b=(a,label,why,tip)=>'<button class="btn" type="button" data-act="'+a+'"'+(why?' disabled title="'+why+'"':tip?' title="'+tip+'"':'')+'>'+label+'</button>',ban=this.barred(t)&&'The wardens know your face.';
     const writ=W2.writ[t.kind],bribe=W2.bribe[t.kind],night=Clock.isNight;
-    return (writ?b('gt-writ','Buy a writ · '+writ+' gold',P.gold<writ?'Not enough gold.':standingAt(t)<W2.writ.rep?'Your name is not good here.':'','A steward\u2019s writ: the gate opens to you from now on.'):'')+
-      (bribe?b('gt-bribe','Bribe the warden · '+bribe+' gold · '+this.oddsWord(this.odds('bribe',t)),ban||(this.bribed(t)?'You tried the warden today.':P.gold<bribe?'Not enough gold.':''),'Persuasion and Trade help. Refused, your coin back; caught, your coin taken, and honour and reputation lost.'):'')+
-      b('gt-slip','Slip in by night · '+this.oddsWord(this.odds('slip',t)),ban||(night?'':'Only after dark.'),'Scouting and Athletics help. Caught, a fine, and honour and reputation lost.')}
+    return (writ?b('gt-writ','Buy a writ, '+writ+' gold',P.gold<writ?'Not enough gold.':standingAt(t)<W2.writ.rep?'Your name is not good here.':'','A steward\u2019s writ: the gate opens to you from now on.'):'')+
+      (bribe?b('gt-bribe','Bribe the warden, '+bribe+' gold, '+this.oddsWord(this.odds('bribe',t)),ban||(this.bribed(t)?'You tried the warden today.':P.gold<bribe?'Not enough gold.':''),'Persuasion and Trade help. Refused, your coin back; caught, your coin taken, and honour and reputation lost.'):'')+
+      b('gt-slip','Slip in by night, '+this.oddsWord(this.odds('slip',t)),ban||(night?'':'Only after dark.'),'Scouting and Athletics help. Caught, a fine, and honour and reputation lost.')}
   // a way in tried at t's gate: true when in
   static tryWay(t,a){
     const X=GATE_WAYS,R=rngOf('gates');G.gateSay=null;

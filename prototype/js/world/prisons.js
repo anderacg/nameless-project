@@ -94,7 +94,7 @@ class Prisons{
       (list.filter(r=>r.k!=='men').length)+' of '+(k?.holds||0)+' cells taken'+(mine&&k?.men?', '+(k.men-this.menRoom(key))+' of '+k.men+' places for soldiers':'')+'.</p>';
     const theirs=list.filter(r=>r.keep!=='player'),yours=list.filter(r=>r.keep==='player');
     const cards=[...qs.map(q=>({pic:personPic('folk',t.races?.[0]||'human',1),name:cap1(q.pn),role:q.title,facts:[[q.price+'g asked','gold']],note:q.say('gaol')||'Held here until someone pays.',
-        acts:[['pz-quest',q.id,'Pay '+q.price+'g',P.gold<q.price?'You have '+P.gold+'g':''],!mine&&['pz-qbreak',q.id,'Break out · '+this.odds(this.breakChance(key)),this.breakWhy(key)]]})),
+        acts:[['pz-quest',q.id,'Pay '+q.price+'g',P.gold<q.price?'You have '+P.gold+'g':''],!mine&&['pz-qbreak',q.id,'Break out, '+this.odds(this.breakChance(key)),this.breakWhy(key)]]})),
       ...theirs.map(r=>this.card(r,i(r),key,t,mine))];
     const lock=mine&&this.lockCards(key);
     return head+(cards.length?railCards(cards):'<p class="muted">No one is held here now.</p>')+
@@ -103,7 +103,7 @@ class Prisons{
       (!mine?'<p class="muted">Paying, bribing and breaking out take place at once. The gaoler costs less than the ransom, but he may refuse (your coin back) or report you: then your coin is gone, the watch wants a fine, and the guards are on alert for days. A break-out is a crime against the '+(FACS[t.owner]?.n||'holding')+'.'+(this.alarmed(key)?' <b>The guards are on alert.</b>':'')+'</p>':'')}
   // (one held by others: a lord, your companion; what you can do for him)
   static card(r,i,key,t,mine){const pay=this.ransomOf(r),bb=this.bribe(r,key),br=this.breakChance(key),l=r.k==='lord'&&this.lordOf(r),
-      acts=mine?[]:[['pz-pay',i,'Pay '+pay+'g',P.gold<pay?'You have '+P.gold+'g':''],['pz-bribe',i,'Bribe the gaoler · '+bb.cost+'g · '+this.odds(bb.ch),this.bribeWhy(r,key,t)||(P.gold<bb.cost?'You have '+P.gold+'g':'')],['pz-break',i,'Break out · '+this.odds(br),this.breakWhy(key)]];
+      acts=mine?[]:[['pz-pay',i,'Pay '+pay+'g',P.gold<pay?'You have '+P.gold+'g':''],['pz-bribe',i,'Bribe the gaoler, '+bb.cost+'g, '+this.odds(bb.ch),this.bribeWhy(r,key,t)||(P.gold<bb.cost?'You have '+P.gold+'g':'')],['pz-break',i,'Break out, '+this.odds(br),this.breakWhy(key)]];
     if(r.k==='lord')return{fac:r.fac,pic:lordPic(l||r),name:this.who(r),role:cap1(lordWord(r))+' of the '+FACS[r.fac].n+', held by the '+FACS[r.keep].n,facts:['Lv '+r.lv,'since day '+r.since,l&&['Relation '+relWith(l),relWith(l)>=0?'good':'bad']],
       acts:[['pz-visit',i,'Visit',r.seen!=null&&G.day-r.seen<PRISON.visit.days?'Not again so soon':''],...acts]};
     return{pic:portrait(r.id),name:this.who(r),role:'Your companion, held by '+(FACS[r.keep]?'the '+FACS[r.keep].n:r.keep==='broker'?'the ransom broker':'the band'),facts:['since day '+r.since],note:'Get '+pr(r.id).him+' out, or '+pr(r.id).he+' may slip away in time.',acts}}
@@ -172,7 +172,7 @@ class Prisons{
   static crimeOut(t){const X=PRISON.brk;if(FACS[t.owner]&&t.owner!==P.fac)realmOf(t.owner).provoke(X.hostile,X.honor)}
   static caught(t){const X=PRISON.brk;this.crime(t,X.fine);this.alarm(t);P.hp=Math.max(1,Math.round(P.hp-vitals()[0]*X.hurt));log('The guards catch you at the cells and beat you off. The watch wants '+(crimeAt(t)?.fine||X.fine)+' gold of you.','bad','war')}
   // a hostile holding's prison, from outside its walls (siege.js showSiege: The prison): the same page, Back to the walls
-  static outside(t){G.mode='besiege';G.bes=t;showPanel('<div class="top"><h2>'+cap1(this.title(t.name))+'</h2><span class="muted">'+t.name+' · '+P.gold+' gold</span></div><p class="muted">From outside its walls: coin for its keepers, or a night over the wall.</p>'+
+  static outside(t){G.mode='besiege';G.bes=t;showPanel('<div class="top"><h2>'+cap1(this.title(t.name))+'</h2><span class="muted">'+t.name+', '+P.gold+' gold</span></div><p class="muted">From outside its walls: coin for its keepers, or a night over the wall.</p>'+
     this.body(t)+nav(['sg-back',null,'Back'],['sg-leave',null,'Leave']),'prison:'+t.name)}
   // a camp's or hideout's page (world/sites.js Lair): who it holds of yours
   static siteNote(s){const key=this.keyOf({k:'site',i:s.i,seed:s.seed}),cs=this.of(key).filter(r=>r.k==='comp');return cs.length?'<p class="bad">'+cs.map(r=>this.who(r)).join(' and ')+' '+(cs.length>1?'are':'is')+' held here, in '+this.title(key)+'. Clear it to free '+(cs.length>1?'them':pr(cs[0].id).him)+'.</p>':''}

@@ -15,7 +15,7 @@ function skillStats(id){
   return{whirl:'Hits everything around you for '+x(1.3)+' damage',leap:'Leaps up to 100, stuns '+(1+A.stun).toFixed(1)+'s where you land',quake:'Hits everything within '+Math.round(50*A.r)+' for '+x(.9)+', staggers '+(.6+A.stun).toFixed(1)+'s',
     dash:'Dashes 80, '+x(1.1)+' to everyone you pass',volley:'8 arrows of '+x(.7)+' over a '+Math.round(28*A.r)+' radius; uses 4 arrows',fireball:x(2)+' fire bursting over '+Math.round(32*A.r),
     nova:x(.7)+' to everyone within '+Math.round(60*A.r)+', slowed '+(3+A.dur)+'s',heal:'Heals you '+Math.round(30*A.dmg*sm)+'% and troops within '+Math.round(90*A.r)+' '+Math.round(20*A.dmg*sm)+'%',
-    cry:'Troops within '+Math.round(90*A.r)+' fight harder for '+(6+A.dur)+'s; enemies flinch '+(.8+A.stun).toFixed(1)+'s',banner:'Troops within '+Math.round(100*A.r)+' take 25% less damage for '+(8+A.dur)+'s'}[id]+' · '+costText(A)+' · cooldown '+A.cd+'s';
+    cry:'Troops within '+Math.round(90*A.r)+' fight harder for '+(6+A.dur)+'s; enemies flinch '+(.8+A.stun).toFixed(1)+'s',banner:'Troops within '+Math.round(100*A.r)+' take 25% less damage for '+(8+A.dur)+'s'}[id]+', '+costText(A)+', cooldown '+A.cd+'s';
 }
 /* the view: part of the Army window (ui/partypage.js), opened from a card's Skills (your hero's or a companion's) or by K (your
    hero's); its Back returns to that card on the Roster */
@@ -100,22 +100,22 @@ function treeNodePane(S,k){
   const N=TREE[id],T=talentsOf(S),have=T.has(id),can=T.canTake(id),pts=T.points(),u=N.m.unlock,refund=T.quoteRefund(id),lv=T.profLv(k),sc=Math.round(100*treeScale(lv));
   const why=have?(refund.ok?'':refund.code==='gold'?'Not enough gold to unlearn it.':'A node above grows from it: unlearn that first.'):N.tier&&!T.tierHas(k,N.tier-1)?'Learn a node of the tier below first.':!pts.left?'No skill points left: one each level.':'';
   const str=Object.keys(N.m).some(q=>typeof N.m[q]==='number'||q==='sk')?'<p class="muted">At '+SKILLS[k].n+' '+lv+' it gives '+sc+'% of this (a quarter at 0, whole at 100, more past it).</p>':'';
-  return '<aside class="tr-pane"><small>'+NODE_KIND(N)+' · '+SKILLS[k].n+(N.hub?' path, after tier '+(N.tier+1):' tier '+(N.tier+1))+'</small><h3>'+htmlText(N.n)+'</h3><p>'+N.d+'</p>'+str+(u&&S===P?'<p class="muted">'+skillStats(u)+'.</p>':'')+
-    (have?'<p class="good">Learned</p>'+fbBtn('tree-refund',id,'Unlearn · '+refundCost()+'g',refund.ok?'':'x'):fbBtn('tree-take',id,fbIcon('skills')+' Learn · 1 point',can?'':'x','primary'))+(why?'<p class="muted">'+why+'</p>':'')+'</aside>'}
+  return '<aside class="tr-pane"><small>'+NODE_KIND(N)+', '+SKILLS[k].n+(N.hub?' path, after tier '+(N.tier+1):' tier '+(N.tier+1))+'</small><h3>'+htmlText(N.n)+'</h3><p>'+N.d+'</p>'+str+(u&&S===P?'<p class="muted">'+skillStats(u)+'.</p>':'')+
+    (have?'<p class="good">Learned</p>'+fbBtn('tree-refund',id,'Unlearn, '+refundCost()+'g',refund.ok?'':'x'):fbBtn('tree-take',id,fbIcon('skills')+' Learn, 1 point',can?'':'x','primary'))+(why?'<p class="muted">'+why+'</p>':'')+'</aside>'}
 /* the traits (were Basics; the owner, 2026-11-08): the moves everyone has from the start, and what your race and your past are. The
    combo's Third Blow and its finishers are nodes of the weapons' trees (data/tree.js combo3, fin) */
 const HERO_TRAITS=[
   {id:'combo',n:'Combo',d:()=>'Two blows in a row with a melee weapon; a third, the finisher, from a Third Blow or a finisher in the One-Handed, Two-Handed or Unarmed tree.'},
-  {id:'dodge',n:'Dodge Roll',d:()=>'A quick roll you cannot be hit in, away from trouble · '+dodgeCost()+' stamina · every '+dodgeCd().toFixed(1)+'s'},
-  {id:'shove',n:'Shove',d:()=>'With a bow: push back an enemy who reaches you and stagger them '+SHOVE.stun+'s · '+SHOVE.sp+' stamina'},
-  {id:'bash',n:'Shield Bash',d:()=>'With a shield: slam an enemy in front of you, stagger '+BASH.stun+'s, '+BASH.mult+'× damage · '+BASH.sp+' stamina'}];
+  {id:'dodge',n:'Dodge Roll',d:()=>'A quick roll you cannot be hit in, away from trouble, '+dodgeCost()+' stamina, every '+dodgeCd().toFixed(1)+'s'},
+  {id:'shove',n:'Shove',d:()=>'With a bow: push back an enemy who reaches you and stagger them '+SHOVE.stun+'s, '+SHOVE.sp+' stamina'},
+  {id:'bash',n:'Shield Bash',d:()=>'With a shield: slam an enemy in front of you, stagger '+BASH.stun+'s, '+BASH.mult+'× damage, '+BASH.sp+' stamina'}];
 // (the knacks: a race's and a past's proficiencies learned faster, P.apt)
 const knackText=apt=>Object.keys(apt||{}).filter(k=>apt[k]>0&&SKILLS[k]).map(k=>SKILLS[k].n+' +'+Math.round(apt[k]*100)+'%').join(', ');
 function traitBody(){
   const S=skSubj(),who=skWho(),race=who?ST[who]&&ST[who].race:P.race,R=RACES[race]||RACES.human,B=!who&&BGS[P.bg],card=(n,d,cls)=>'<div class="spnode on'+(cls?' '+cls:'')+'"><strong>'+n+'</strong><small>'+d+'</small></div>';
-  return (who?'':'<div class="lab" style="margin-top:6px">Your attack · with the weapon in hand</div>'+heroAttackRow())+'<div class="lab" style="margin-top:6px">Moves · everyone has them from the start</div><div class="specials">'+HERO_TRAITS.filter(T=>who||T.id!=='combo').map(T=>card(T.n,T.d())).join('')+'</div>'+
-    '<div class="lab" style="margin-top:10px">Your people · '+htmlText(R.n)+'</div><div class="specials">'+card(R.n,htmlText(R.d))+'</div>'+
-    (B?'<div class="lab" style="margin-top:10px">Your past · '+htmlText(B.n)+'</div><div class="specials">'+card(B.n,htmlText(B.d))+(knackText(P.apt)?card('Knack','Learned faster: '+knackText(P.apt)+'.'):'')+'</div>':'');
+  return (who?'':'<div class="lab" style="margin-top:6px">Your attack, with the weapon in hand</div>'+heroAttackRow())+'<div class="lab" style="margin-top:6px">Moves, everyone has them from the start</div><div class="specials">'+HERO_TRAITS.filter(T=>who||T.id!=='combo').map(T=>card(T.n,T.d())).join('')+'</div>'+
+    '<div class="lab" style="margin-top:10px">Your people, '+htmlText(R.n)+'</div><div class="specials">'+card(R.n,htmlText(R.d))+'</div>'+
+    (B?'<div class="lab" style="margin-top:10px">Your past, '+htmlText(B.n)+'</div><div class="specials">'+card(B.n,htmlText(B.d))+(knackText(P.apt)?card('Knack','Learned faster: '+knackText(P.apt)+'.'):'')+'</div>':'');
 }
 // the Skill bar: the ten slots your hero uses in battle and the active skills you have learned
 function skillSlotPick(i){
@@ -124,14 +124,14 @@ function skillSlotPick(i){
 }
 function skillBarBody(){
  const S=skSubj(),known=Object.keys(HSKILLS).filter(k=>knowsOf(S,k));
- return '<div class="lab">Skill slots · used automatically in battle</div><div class="fb-slot-grid">'+SLOT_KEYS.map((k,i)=>{const id=S.slots[i];return fbBtn('sk-slot',i,'<small>'+(i+1)+'</small>'+fbIcon('skills',28)+'<strong>'+(id?HSKILLS[id].n:'Empty')+'</strong>','','fb-slot')}).join('')+'</div><div class="lab">Active skills</div>'+(known.length?known.map(id=>'<div class="row"><div class="info"><strong>'+HSKILLS[id].n+'</strong><small>'+HSKILLS[id].d+'</small>'+(S===P?'<small>'+skillStats(id)+'</small>':'')+'<small class="'+(S.slots.includes(id)?'gold':'muted')+'">'+(S.slots.includes(id)?'In slot '+(S.slots.indexOf(id)+1):'Not assigned · will not be used in battle')+'</small></div></div>').join(''):'<p>No active skills yet. Learn them in the skill trees as your proficiencies rise.</p>');
+ return '<div class="lab">Skill slots, used automatically in battle</div><div class="fb-slot-grid">'+SLOT_KEYS.map((k,i)=>{const id=S.slots[i];return fbBtn('sk-slot',i,'<small>'+(i+1)+'</small>'+fbIcon('skills',28)+'<strong>'+(id?HSKILLS[id].n:'Empty')+'</strong>','','fb-slot')}).join('')+'</div><div class="lab">Active skills</div>'+(known.length?known.map(id=>'<div class="row"><div class="info"><strong>'+HSKILLS[id].n+'</strong><small>'+HSKILLS[id].d+'</small>'+(S===P?'<small>'+skillStats(id)+'</small>':'')+'<small class="'+(S.slots.includes(id)?'gold':'muted')+'">'+(S.slots.includes(id)?'In slot '+(S.slots.indexOf(id)+1):'Not assigned, will not be used in battle')+'</small></div></div>').join(''):'<p>No active skills yet. Learn them in the skill trees as your proficiencies rise.</p>');
 }
 // your hero's own attack with the weapon in hand: the combo, the shot or the cast, with its numbers
 function heroAttackRow(){
  const row=(name,stats,note)=>'<div class="row"><div class="info"><strong>'+name+'</strong><small>'+stats+'</small>'+(note?'<small>'+note+'</small>':'')+'</div></div>',CB=heroCombo();
- return heroKind()==='melee'?row('Combo','<span>'+CB.map(c=>c.n+' ×'+c.mult).join(' → ')+'</span>',CB.length<3?'<span class="muted">A third blow: Third Blow in your weapon\'s skill tree (at 15)</span>':heroFin()?'<span class="gold">'+(heroFin()==='stun'?'Stunning':'Crushing')+' finisher</span>':'<span class="muted">Its finishing style: a finisher in your weapon\'s skill tree (at 60)</span>')+(unarmed()?row('Grapple','Bare hands: now and then you seize the one before you and throw him, perhaps down · every '+Moveset.of({hero:true,s:{},type:'hero'}).hard.cd.toFixed(1)+'s'):'')
+ return heroKind()==='melee'?row('Combo','<span>'+CB.map(c=>c.n+' ×'+c.mult).join(' → ')+'</span>',CB.length<3?'<span class="muted">A third blow: Third Blow in your weapon\'s skill tree (at 15)</span>':heroFin()?'<span class="gold">'+(heroFin()==='stun'?'Stunning':'Crushing')+' finisher</span>':'<span class="muted">Its finishing style: a finisher in your weapon\'s skill tree (at 60)</span>')+(unarmed()?row('Grapple','Bare hands: now and then you seize the one before you and throw him, perhaps down, every '+Moveset.of({hero:true,s:{},type:'hero'}).hard.cd.toFixed(1)+'s'):'')
   :heroKind()==='ranged'?row('Shoot ('+ITEMS[P.gear.weapon].n.toLowerCase()+')',heroQuiverText()+'Your hero draws and looses at whoever is in range.')
-  :row('Cast ('+ITEMS[P.gear.weapon].n.toLowerCase()+')','Magic bolts, '+heroShot().mult+'× damage, splash half to enemies beside the target, ignore armor and trees · '+heroShot().mp+' mana each · every '+heroShot().cd+'s');
+  :row('Cast ('+ITEMS[P.gear.weapon].n.toLowerCase()+')','Magic bolts, '+heroShot().mult+'× damage, splash half to enemies beside the target, ignore armor and trees, '+heroShot().mp+' mana each, every '+heroShot().cd+'s');
 }
 /* the Proficiency tab: your level, its experience and the skill points it left you (characters.js xpNeed; the tree's points, LEVEL.pts
    a level), then each proficiency (from 0, no top) with its bar, its power and what the tree, gear and roles add, a knack, what it does */
@@ -139,9 +139,9 @@ const PROF_GROUPS=[['Fighting',['oneh','twoh','block','archery','spell','fist','
 function profBody(){
   const S=skSubj(),who=skWho(),C=who?compOf(who):leaderOf(P),lvl=who?S.lv:P.level,need=C.xpNeed(),pc=Math.min(100,Math.round(100*(S.xp||0)/need)),keys=who?Object.keys(COMP_SK):null;
   const pts=talentsOf(S).points(),xp=Math.floor(S.xp||0);
-  const head='<div class="row fb-prof-level"><div class="info"><strong>Level '+lvl+(pts.left?' · <span class="gold">'+pts.left+' skill point'+(pts.left===1?'':'s')+' to spend</span>':'')+'</strong><small>Experience comes from battles, quests, beasts and lore, and from every level your proficiencies reach. Each level: '+LEVEL.pts+' skill point for the tree (Skill trees).</small><div class="bar" role="progressbar" aria-label="Level progress" aria-valuenow="'+pc+'"><i style="width:'+pc+'%"></i></div><small>'+xp+' / '+Math.round(need)+' XP to level '+(lvl+1)+'</small></div></div>';
+  const head='<div class="row fb-prof-level"><div class="info"><strong>Level '+lvl+(pts.left?', <span class="gold">'+pts.left+' skill point'+(pts.left===1?'':'s')+' to spend</span>':'')+'</strong><small>Experience comes from battles, quests, beasts and lore, and from every level your proficiencies reach. Each level: '+LEVEL.pts+' skill point for the tree (Skill trees).</small><div class="bar" role="progressbar" aria-label="Level progress" aria-valuenow="'+pc+'"><i style="width:'+pc+'%"></i></div><small>'+xp+' / '+Math.round(need)+' XP to level '+(lvl+1)+'</small></div></div>';
   const row=k=>{const s=S.sk[k];if(!s)return '';const lv=s.lv,pw=profPow(lv),bonus=who?0:skill(k)-pw,pc2=Math.round(100*s.xp/SK_XP(lv)),apt=!who&&P.apt&&P.apt[k];
-    return '<div class="row"><div class="info"><strong>'+SKILLS[k].n+(apt?' <span class="good" style="font-size:12px">knack +'+Math.round(apt*100)+'%</span>':'')+'</strong><small>'+SKILLS[k].d+' · power '+pw.toFixed(1)+(bonus>=.05?' <span class="good">+'+bonus.toFixed(1)+'</span> from your tree, gear and roles':'')+'</small><div class="bar" role="progressbar" aria-label="'+SKILLS[k].n+' progress" aria-valuenow="'+pc2+'"><i style="width:'+pc2+'%"></i></div></div><span class="own">'+lv+'</span></div>'};
+    return '<div class="row"><div class="info"><strong>'+SKILLS[k].n+(apt?' <span class="good" style="font-size:12px">knack +'+Math.round(apt*100)+'%</span>':'')+'</strong><small>'+SKILLS[k].d+', power '+pw.toFixed(1)+(bonus>=.05?' <span class="good">+'+bonus.toFixed(1)+'</span> from your tree, gear and roles':'')+'</small><div class="bar" role="progressbar" aria-label="'+SKILLS[k].n+' progress" aria-valuenow="'+pc2+'"><i style="width:'+pc2+'%"></i></div></div><span class="own">'+lv+'</span></div>'};
   return head+'<p class="muted" style="font-size:13px">Proficiencies rise as you use them, with no top. The higher one is, the stronger the nodes of its tree (a quarter at 0, whole at 100).</p>'+PROF_GROUPS.map(([g,L])=>{const r=L.filter(k=>!keys||keys.includes(k)).map(row).join('');return r?'<div class="lab">'+g+'</div>'+r:''}).join('');
 }
 // the Skill trees tab: the shown one's tree, the main thing, and the chosen node; under it the switch between the proficiencies (the
@@ -156,8 +156,8 @@ function skTreeBody(){
  const list='<nav class="fb-tree-list'+(open?' open':'')+'" aria-label="Proficiencies"'+(open?'':' hidden')+' data-fb-scroll="tree-profs:'+htmlText(skWho()||'hero')+'">'+L.map(p=>
    fbBtn('tree-prof',p,'<strong>'+SKILLS[p].n+'</strong><small>'+S.sk[p].lv+'</small>'+treeWait(T.pending(p).length?'•':0),'',p===k?'on':'')).join('')+'</nav>';
  const sw='<div class="fb-tree-switch">'+side(-1)+tsBtn('tree-list',null,'<strong>'+SKILLS[k].n+'</strong><small>'+T.profLv(k)+'</small>'+treeWait(pts.left)+'<i class="fb-ts-more'+(more?' wait':'')+'" aria-hidden="true">'+(open?'▴':'▾')+'</i>',open?'Hide the list':'All proficiencies','fb-ts-now'+(open?' on':''))+side(1)+'</div>';
- const out='<div class="fb-skill-work fb-trees"><section class="fb-tree-pane" aria-label="'+SKILLS[k].n+' skill tree"><div class="fb-tree-head"><strong>'+SKILLS[k].n+' · '+T.profLv(k)+'</strong><small>'+
-   '<b class="'+(pts.left?'gold':'')+'">'+pts.left+' skill point'+(pts.left===1?'':'s')+' to spend</b> · one each level, on any tree · its nodes '+Math.round(100*treeScale(T.profLv(k)))+'% strong at '+SKILLS[k].n+' '+T.profLv(k)+'</small></div>'+
+ const out='<div class="fb-skill-work fb-trees"><section class="fb-tree-pane" aria-label="'+SKILLS[k].n+' skill tree"><div class="fb-tree-head"><strong>'+SKILLS[k].n+', '+T.profLv(k)+'</strong><small>'+
+   '<b class="'+(pts.left?'gold':'')+'">'+pts.left+' skill point'+(pts.left===1?'':'s')+' to spend</b>, one each level, on any tree, its nodes '+Math.round(100*treeScale(T.profLv(k)))+'% strong at '+SKILLS[k].n+' '+T.profLv(k)+'</small></div>'+
    '<div class="tr-stage">'+treeSvg(S,k)+'<div class="tw-tools">'+tsBtn('tree-whole',null,G.skWhole?'◉':'◎',G.skWhole?'Back to '+SKILLS[k].n:'The whole tree','fb-ts-whole'+(G.skWhole?' on':''))+tsBtn('tree-zoom','in','+','Zoom in','tw-zoom')+tsBtn('tree-zoom','out','−','Zoom out','tw-zoom')+'</div>'+treeNodePane(S,k)+list+'</div>'+sw+'</section></div>';
  G.skGrow=false;G.skJust=null;return out;
 }
@@ -165,7 +165,7 @@ function renderSkills(){
  const S=skSubj(),who=skWho(),tab=G.skTab,n=treePendingOf(S).length,pts=n?n+' skill point'+(n>1?'s':'')+' to spend':'no skill point to spend';
  const tabs=fbTabs([['prof',fbIcon('book')+' Proficiency'],['talents',fbIcon('skills')+' Skill trees'],['traits',fbIcon('shield')+' Trait'],['abilities',fbIcon('sword')+' Skill bar']],tab,'sk-tab','Skills sections');// (the owner's order, 2026-11-08)
  const body=tab==='talents'?skTreeBody():'<div class="fb-scroll" data-fb-scroll="skills:'+tab+'">'+(tab==='abilities'?skillBarBody():tab==='traits'?traitBody():profBody())+'</div>';
- fbShow(who?COMPS[who].short+'’s skills':'Skills','Level '+(who?S.lv:P.level)+' · '+pts,tabs,body,['sk-close',null,'Back to '+(who?COMPS[who].short:'Army')],['sk-map',null,'Back to map'],'fb-skills','Army · '+htmlText(bandName()));
+ fbShow(who?COMPS[who].short+'’s skills':'Skills','Level '+(who?S.lv:P.level)+', '+pts,tabs,body,['sk-close',null,'Back to '+(who?COMPS[who].short:'Army')],['sk-map',null,'Back to map'],'fb-skills','Army, '+htmlText(bandName()));
 }
 function skillsAct(a,arg){
   if(!a.startsWith('sk-')&&!a.startsWith('tree-')&&!a.startsWith('lv-')&&a!=='slot-set')return false;

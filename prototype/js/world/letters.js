@@ -95,7 +95,7 @@ class Letter extends ItemKind{
     const body='<p>'+(L.seal?'A letter under the wax seal of the '+F+', taken from their rider on the road. It is addressed to the lord of '+L.to+'.':'The '+F+'’s letter to the lord of '+L.to+', its seal broken. It reads:')+'</p>'+
       (L.seal?'':'<blockquote class="ltr-text">'+this.text(L)+'</blockquote>')+
       pageFacts(['from '+L.from,old?'<span class="bad">stale: '+(L.seal?'whatever it says has surely happened by now':old)+'; worth little</span>':'its news is fresh',L.seen?'<span class="bad">someone saw you rob the rider</span>':'nobody saw you rob the rider']);
-    CHOICE_PAGE.show({ico:'scroll',title:L.seal?'Sealed letter':'Opened letter',sub:'The '+F+' to '+L.to+(h?' · in '+h.name:''),msg:g.msg,body,
+    CHOICE_PAGE.show({ico:'scroll',title:L.seal?'Sealed letter':'Opened letter',sub:'The '+F+' to '+L.to+(h?', in '+h.name:''),msg:g.msg,body,
       choices:LETTER_VERBS,subject:L,act:'ltr-do',done:g.done,
       back:['ltr-back',null,g.from==='town'?'Back':'Back to the bag'],close:['ltr-close',null,g.from==='town'?'Leave '+h.label:'Back to map']},'letter:'+L.id)}
   act(a,arg){
@@ -109,7 +109,7 @@ class Letter extends ItemKind{
       g.msg=c.perform(g.L);log(g.msg);updateHUD(true);this.page();railFocus(a,arg)}}
   // (the bag's detail on one: what it is, and its page; bound, it has no Drop)
   detail(k,s){const L=s.L,def=this.def(s),old=this.stale(L);
-    return '<h3>'+def.n+'</h3><p class="muted">Quest item · from the '+this.facName(L.fac)+' to '+L.to+'</p><p>'+def.d+'</p>'+(old?'<p class="bad">Stale: worth little now.</p>':'')+
+    return '<h3>'+def.n+'</h3><p class="muted">Quest item, from the '+this.facName(L.fac)+' to '+L.to+'</p><p>'+def.d+'</p>'+(old?'<p class="bad">Stale: worth little now.</p>':'')+
       '<div class="btns"><button class="btn sm primary" type="button" data-act="ltr-open" data-arg="'+L.id+'">Look it over</button></div>'}
   // (a holding's overview: the letters you carry that it would take: addressed here, or a rival's here would buy)
   townHtml(t){const ls=P.inv.filter(s=>s&&s.k==='letter').map(s=>s.L).filter(L=>!this.giveWhy(L,t)||!this.sellWhy(L,t));if(!ls.length)return '';

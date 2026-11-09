@@ -179,13 +179,13 @@ const Escort={
   html(){
     const L=Escort.list();
     if(!L.length)return '';
-    return '<div class="lab" style="margin-top:6px">Passengers ('+L.length+' / '+ESCORT.max+')</div>'+L.map(q=>'<div class="row"><div class="info"><strong>'+cap1(q.pn)+'</strong><small>'+(q.wait?'Waits for you in '+q.wait+' · ':'')+'To '+q.to.name+', '+Escort.way(q)+' · '+Escort.left(q)+' · eats '+q.eat+' food a day · does not fight</small></div></div>').join('');
+    return '<div class="lab" style="margin-top:6px">Passengers ('+L.length+' / '+ESCORT.max+')</div>'+L.map(q=>'<div class="row"><div class="info"><strong>'+cap1(q.pn)+'</strong><small>'+(q.wait?'Waits for you in '+q.wait+', ':'')+'To '+q.to.name+', '+Escort.way(q)+', '+Escort.left(q)+', eats '+q.eat+' food a day, does not fight</small></div></div>').join('');
   },
   show(q,line){
     if(G.mode!=='world'||G.modal)return;
     G.escort=q;
     G.mode='story';
-    CHOICE_PAGE.show({ico:Escort.who(q.who).ico,title:'Escort: '+cap1(q.pn),sub:q.to.name+' · day '+G.day,text:line,facts:[Outcome.describe(q.prize)],choices:[],subject:q,act:'pas-do',done:true,close:['pas-close',null,'Ride on']},'escort:'+q.id);
+    CHOICE_PAGE.show({ico:Escort.who(q.who).ico,title:'Escort: '+cap1(q.pn),sub:q.to.name+', day '+G.day,text:line,facts:[Outcome.describe(q.prize)],choices:[],subject:q,act:'pas-do',done:true,close:['pas-close',null,'Ride on']},'escort:'+q.id);
   },
 };
 // (its page's way out: back on the map)

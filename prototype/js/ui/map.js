@@ -139,7 +139,7 @@ function fullMapPan(v){const F=FULLMAP,pts=new Map(),mid=()=>{const a=[...pts.va
 // the window, from the map only (false when it cannot open: somewhere else, or another window open); at: the tile point in its
 // middle, a step closer than it opens (none: you), back: its bar's Back ([act, arg, label]: opened from another window)
 function fullMapOpen(at,back){if(G.mode!=='world'||G.modal)return false;const S=seenArr();let n=0;for(let i=0;i<S.length;i++)n+=S[i];const pc=n*100/S.length;FULLMAP.pics={};
-  if(!openOver('fullmap','<div class="top"><div class="fm-head"><h2>Map of '+htmlText(worldName(WM))+'</h2><span class="muted">'+MW+' × '+MH+' tiles · '+(!n?0:pc<10?pc.toFixed(1):Math.floor(pc))+'% explored</span></div>'+
+  if(!openOver('fullmap','<div class="top"><div class="fm-head"><h2>Map of '+htmlText(worldName(WM))+'</h2><span class="muted">'+MW+' × '+MH+' tiles, '+(!n?0:pc<10?pc.toFixed(1):Math.floor(pc))+'% explored</span></div>'+
     '<div class="fm-zoom" role="group" aria-label="Zoom"><button class="btn sm" type="button" data-act="map-zoom" data-arg="out" title="Zoom out (−)">−</button><button class="btn sm" type="button" data-act="map-zoom" data-arg="in" title="Zoom in (+, or click the map)">+</button></div></div>'+
     '<div class="fm"><div class="fm-view" tabindex="0" aria-label="The map"><div class="fm-pic"></div></div>'+fullMapLegend()+'</div>'+nav(fbMenu(back),['map-close',null,'Close'])))return false;
   panel.classList.add('fmap');const v=panel.querySelector('.fm-view');const z=fullMapFit(v),Z=FULLMAP.zooms;fullMapShow(at?Z[Math.min(Z.length-1,Z.indexOf(z)+1)]:z,at||{x:P.x/TILE,y:P.y/TILE});fullMapPan(v);v.focus({preventScroll:true});return true}

@@ -45,7 +45,7 @@ try{
   fresh(S);ok(t.WM===m,'a new game with the same settings uses it again (as it first stood)');
   play(200);save('1');t.loadGame('1');const g0=save('1'),sum=t.WM.sum;
   const L1=t.saveLine(t.readSlot('1')),L0=t.saveLine(JSON.parse(s0));
-  ok(/^Redwater · Normal · seed redwater · Day \d+ · /.test(L1)&&/^Ashmark · Classic · Day/.test(L0),'the save line names the world, its preset and seed (Phase 2b): "'+L1.split(' · ').slice(0,4).join(' · ')+'"; the default world: "'+L0.split(' · ').slice(0,3).join(' · ')+'"');
+  ok(/^Redwater, Normal, seed redwater, Day \d+, /.test(L1)&&/^Ashmark, Classic, Day/.test(L0),'the save line names the world, its preset and seed (Phase 2b): "'+L1.split(', ').slice(0,4).join(', ')+'"; the default world: "'+L0.split(', ').slice(0,3).join(', ')+'"');
   // a new game without settings: the New game screen's choice (Classic at first)
   fresh();ok(t.worldKey(t.WM)===home,'a new game without settings: the New game screen\'s choice, the classic seed ('+t.WM.gen+')');
   // the default world back by a load (made again first); a game in it starts as one in the page's own does (the
@@ -67,7 +67,7 @@ try{
  // ---- gzipped, a plain header beside it; read back, waiting
  fresh();play(200);save('2');t.loadGame('2');let plain='';
  LD.sync=false;try{
-  ok(await t.gunzip64(await t.gzip64('Ashmark · ×'))==='Ashmark · ×','gzip and gunzip, base64, round trip');
+  ok(await t.gunzip64(await t.gzip64('Ashmark, ×'))==='Ashmark, ×','gzip and gunzip, base64, round trip');
   // (the game as it stands now, saved plain and gzipped at once: the page's frames go on between awaits)
   LD.sync=true;plain=save('3');LD.sync=false;const p=t.saveGame(true,'2');ok(p instanceof Promise&&!!t.SAVING,'with CompressionStream a save is written gzipped, a moment later (a Promise)');await p;
   const h=JSON.parse(raw('2'));

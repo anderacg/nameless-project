@@ -16,7 +16,7 @@ window.RUN=()=>{const t=T,o=[],q=new URLSearchParams(location.search);
   c.drawImage(cv,0,lab);c.save();c.translate(0,lab);t.PX.battleProps(c,cv);
   if(q.get('zones')){c.strokeStyle='rgba(255,255,255,.55)';c.setLineDash([6,4]);for(const tm of [0,1]){const z=t.fieldZone(tm);c.strokeRect(z.x0+.5,24.5,z.x1-z.x0,H-32)}}
   c.restore();const w=S.mix?'mix '+S.mix.c+' '+S.mix.share.toFixed(2):'',p=S.pond?'pond '+S.pond.kind:'',b=S.brook?'brook':'',l=S.lane?(S.lane.track?'track':'lane'):'',lt=S.lots?'lots '+S.lots.length:'';
-  c.fillStyle='#e8e0c8';c.font='13px Arial';c.fillText((off?'BEFORE':'AFTER')+' · '+x+','+y+' · '+env.name+' ('+env.c+', '+g.recipe+'/'+T0.recipe.layout+') · '+[w,p,b,l,lt].filter(Boolean).join(' · '),6,15);
+  c.fillStyle='#e8e0c8';c.font='13px Arial';c.fillText((off?'BEFORE':'AFTER')+', '+x+','+y+', '+env.name+' ('+env.c+', '+g.recipe+'/'+T0.recipe.layout+'), '+[w,p,b,l,lt].filter(Boolean).join(', '),6,15);
   c.font='11px Arial';c.fillText((T0.recipe.text||'').slice(0,230),6,32);
   o.push('PASS drawn '+x+','+y+' '+(off?'off':'on'));
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}

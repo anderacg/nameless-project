@@ -220,7 +220,7 @@ Kit.suite(({ok,info})=>{
   {fresh();delete Th.store().aside;const z=t.Wanderer.taverns()[0];W.news=null;t.enterTown(z);t.act('tab','tavern');ok(!pageHas('Ander')&&!t.Wanderer.at(),'none wandering (a game where he was never met, or he rides with you): no sign of him in any tavern');t.act('leave');Kit.world()}
   // ---- the developer commands: chains, chain n go
   {C=home();const D=t.DevConsole,x=c=>{try{return D.execute(c)}catch(e){return 'ERR '+e.message}};
-   ok(new RegExp(C.th.i+' · The Wounded Traveller \\(wounded\\) · step escort').test(x('chains')),'chains lists it');
+   ok(new RegExp(C.th.i+', The Wounded Traveller \\(wounded\\), step escort').test(x('chains')),'chains lists it');
    const j=x('chain '+C.th.i+' go');ok(/Teleported/.test(j)&&Math.hypot(P.x-C.q.to.x,P.y-C.q.to.y)<=t.ESCORT.reach.lot+t.TILE,'chain '+C.th.i+' go: to where its step points ('+j+')');
    frame();ok(C.th.at==='family'&&/its page waits/.test(x('chain '+C.th.i+' go')),'there; a page step points nowhere: it says so');t.act('thr-do','1')}
   // ---- the step kinds, reused by another thread: a visit to a spot, a delivery

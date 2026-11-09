@@ -16,7 +16,7 @@
    ---------- */
 const RECRUIT_UI={ask:.5};
 // (your units and men, for a desk's head: units in their slots, everyone you lead)
-const unitsLine=()=>{const r=partyRoster(P);return 'units '+r.slots+' / '+r.groupLimit+' · '+partySize()+' men'};
+const unitsLine=()=>{const r=partyRoster(P);return 'units '+r.slots+' / '+r.groupLimit+', '+partySize()+' men'};
 // (the window's scroll: read, or set)
 const panelScroll=v=>{const b=panel.querySelector('.rwbody');if(v===undefined)return b?b.scrollTop:0;if(b)b.scrollTop=v};
 class HireDesk{
@@ -40,18 +40,18 @@ class HireDesk{
     const S=this.src,ks=S.kinds,r=partyRoster(P),kind=s=>s.range?'ranged':s.mounted?'mounted':'melee';let pick=s.pick;if(!ks.includes(pick))pick=ks[0]||null;
     const units=ks.map(k=>{const st=ST[k],u=this.unit(k);
       return '<div class="rec-row'+(pick===k?' sel':'')+'" data-act="'+this.p+'pick" data-arg="'+k+'"><button class="rec-pic" type="button" data-act="'+this.p+'info" data-arg="'+k+'" aria-label="'+htmlText(st.n)+': its card"><img src="'+portrait(k)+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
-        '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(k),14)+' '+st.n+'</strong><small>Tier '+st.tier+(st.race?' · '+raceOf(st.race).n:'')+' · '+kind(st)+' · <b>'+u.n+' men</b> · <b class="gold">'+u.cost+'g</b></small><small>'+S.line(k)+(u.why?' · <span class="bad">'+htmlText(u.why)+'</span>':'')+'</small></div>'+
+        '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(k),14)+' '+st.n+'</strong><small>Tier '+st.tier+(st.race?', '+raceOf(st.race).n:'')+', '+kind(st)+', <b>'+u.n+' men</b>, <b class="gold">'+u.cost+'g</b></small><small>'+S.line(k)+(u.why?', <span class="bad">'+htmlText(u.why)+'</span>':'')+'</small></div>'+
         '<div class="rec-step">'+this.btn('unit',k,'Recruit unit',u.why,u.why?'':' primary')+'</div></div>'}).join('');
     const gs=this.short(),fills=gs.map(g=>{const f=this.fill(g),n=unitSize(g.type),w=r.wounded(g.id);
       return '<div class="rec-row rec-refill"><div class="rec-txt"><strong>'+groupBadge(g,12)+' '+htmlText(armyGroupLabel(g.id))+'</strong><span class="rec-meter" aria-hidden="true"><i style="width:'+Math.round(g.count/n*100)+'%"></i><b style="width:'+Math.round(w/n*100)+'%"></b></span>'+
-        '<small>'+g.count+' / '+n+(w?' · '+w+' wounded':'')+' · needs '+f.need+(f.why?' · <span class="bad">'+htmlText(f.why)+'</span>':f.n<f.need?' · '+f.n+' now':'')+'</small></div>'+
-        '<div class="rec-step">'+this.btn('refill',g.id,'Refill'+(f.n?' +'+f.n+' · '+f.cost+'g':''),f.why)+'</div></div>'}).join(''),
+        '<small>'+g.count+' / '+n+(w?', '+w+' wounded':'')+', needs '+f.need+(f.why?', <span class="bad">'+htmlText(f.why)+'</span>':f.n<f.need?', '+f.n+' now':'')+'</small></div>'+
+        '<div class="rec-step">'+this.btn('refill',g.id,'Refill'+(f.n?' +'+f.n+', '+f.cost+'g':''),f.why)+'</div></div>'}).join(''),
       all=gs.map(g=>this.fill(g)).filter(f=>!f.why),allCost=all.reduce((a,f)=>a+f.cost,0);
     const ask=s.recAsk?'<div class="recruit-confirm" role="status">Spend '+s.recAsk.cost+'g, more than half your gold?<div class="btns">'+this.btn('ok',null,'Yes, hire','',' primary')+this.btn('no',null,'Cancel','')+'</div></div>':'';
     return '<div class="recwrap"><div class="reclist">'+ask+(s.recruitNotice?'<p class="rec-notice" role="status">'+s.recruitNotice+'</p>':'')+
       '<div class="lab">New units <small class="muted">each a full unit</small></div><div class="rec-rows">'+units+'</div>'+
       '<div class="lab">Replenish your units</div><div class="rec-rows">'+(S.extra||'')+(fills||'<p class="muted">None of your units of these kinds is short.</p>')+'</div>'+
-      (gs.length>1?'<div class="btns rec-all">'+this.btn('refillall',null,'Refill all'+(allCost?' · '+allCost+'g':''),all.length?'':'None can be refilled now')+'</div>':'')+
+      (gs.length>1?'<div class="btns rec-all">'+this.btn('refillall',null,'Refill all'+(allCost?', '+allCost+'g':''),all.length?'':'None can be refilled now')+'</div>':'')+
       (S.note?'<p class="muted" style="font-size:12px">'+S.note+'</p>':'')+'</div><div class="reccard">'+(pick?unitCard(pick):'')+'</div></div>'}
   // ---- its acts (a: the act, its prefix taken off)
   act(a,arg){const v=a.slice(this.p.length),f={pick:'pick',unit:'buy',refill:'buy',refillall:'buy',ok:'buy',no:'buy',info:'info','info-back':'info'}[v];

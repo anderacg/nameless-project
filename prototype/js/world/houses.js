@@ -22,6 +22,6 @@ class House extends WorldObject{
   people(){return this.households()*HOUSING.household}
   // your quests that lead to it (story/steps.js StepQuest.place: a house of its holding, at its door)
   quests(){const m=lotMid(this.#l);return P.quests.filter(q=>q.to?.k==='house'&&q.to.town===this.town&&Math.hypot(q.to.x-m.x,q.to.y-m.y)<this.#l.n*TILE)}
-  tip(){return '<b>'+this.kindN()+'</b><small>A house of '+this.town+(this.#l.st==='built'?' · '+this.households()+' household'+(this.households()>1?'s':''):this.#l.st==='ruined'?' · burnt':' · being built')+'</small>'+(this.quests().length?'<small class="gold">'+htmlText(this.quests()[0].title)+'</small>':'')+'<span class="act">Click: look</span>'}
+  tip(){return '<b>'+this.kindN()+'</b><small>A house of '+this.town+(this.#l.st==='built'?', '+this.households()+' household'+(this.households()>1?'s':''):this.#l.st==='ruined'?', burnt':', being built')+'</small>'+(this.quests().length?'<small class="gold">'+htmlText(this.quests()[0].title)+'</small>':'')+'<span class="act">Click: look</span>'}
 }
 const housePick=(t,l)=>{let o=HOUSE_OBJ.get(l);if(!o)HOUSE_OBJ.set(l,o=new House(t,l));return o};

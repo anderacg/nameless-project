@@ -25,7 +25,7 @@ const escSaveWhy=from=>ESC_SAVE.includes(from)?'':from==='battle'?'Not during a 
 // the world you play in, for the header: the day, its name, its kind and its seed, with Copy seed (the generated world's settings:
 // the owner, 2026-10-22), and World: its page (worldsetup.js worldPage: every setting, the world code)
 function escWorld(){const s=WM.settings;
-  return '<span class="gm-world">Day '+G.day+' · '+htmlText(worldName(WM))+' · '+htmlText(worldKind(s))+(s.seed?' · seed <b>'+htmlText(s.seed)+'</b>':'')+'</span><span class="gm-head-acts">'+
+  return '<span class="gm-world">Day '+G.day+', '+htmlText(worldName(WM))+', '+htmlText(worldKind(s))+(s.seed?', seed <b>'+htmlText(s.seed)+'</b>':'')+'</span><span class="gm-head-acts">'+
     (s.seed?'<button class="btn sm" type="button" data-act="esc-seed">Copy seed</button>':'')+'<button class="btn sm" type="button" data-act="esc-wpage">World</button></span>'}
 function showEsc(msg){
   if(G.mode!=='esc'){if(B&&B.draw)B.draw=null;G.esc={mode:G.mode,html:ov.hidden?null:panel.innerHTML,cls:panel.className,modal:G.modal}}
@@ -36,7 +36,7 @@ function showEsc(msg){
   fbShow('Paused',escWorld(),'','<div class="fb-scroll gm-body" data-fb-scroll="gm"><div class="gm-tiles" role="group" aria-label="Windows">'+Object.values(MENU_ENTRIES).map(tile).join('')+'</div>'+
     '<div class="gm-sys" role="group" aria-label="Game">'+sys('esc-saves','save','Save game',escSaveWhy(from))+sys('esc-loads','load','Load game',readSave()?'':'No saved game')+
     sys('esc-settings','settings','Settings')+sys('esc-main','menu','Main menu')+sys('esc-exit','exit','Exit game')+'</div>'+(msg?'<p class="gold gm-msg" role="status">'+msg+'</p>':'')+'</div>',
-    null,['esc-resume',null,'Resume'],'fb-gm',htmlText(bandName())+' · '+(from==='battle'?'in battle':from==='scene'?'in the streets':'on the road'));
+    null,['esc-resume',null,'Resume'],'fb-gm',htmlText(bandName())+', '+(from==='battle'?'in battle':from==='scene'?'in the streets':'on the road'));
   // (under the keyboard: opened, the first window that can open, else Resume; back from a page, the button that opened it)
   const at=was==null?panel.querySelector('.gm-tile:not([disabled])')||panel.querySelector('.nav [data-nav="close"]'):panel.querySelector('[data-act="'+({save:'esc-saves',load:'esc-loads',settings:'esc-settings',world:'esc-wpage'}[was]||'esc-resume')+'"]:not([disabled])');
   if(at&&was!=='menu')at.focus({preventScroll:true})

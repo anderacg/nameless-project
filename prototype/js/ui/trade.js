@@ -93,7 +93,7 @@ const TradeScreen={
   theirs(t,D,q){
     const goodCat=k=>ITEM_KINDS.good.catId({id:k});ensureEcon(t);
     const gs=[...Object.keys(GOODS).filter(k=>goodCat(k)&&k!==SKIN.empty&&((t.stock[k]||0)>0||needOf(t,k)>.05)),SKIN.empty];
-    let h=byCategory(gs,goodCat,k=>{if(k===SKIN.empty)return this.row(GOODS[k].n,GOODS[k].base+'g each · filled free at a well','','deal','k:skin','‹<span class="tr-w"> Buy</span>','','good:'+k);
+    let h=byCategory(gs,goodCat,k=>{if(k===SKIN.empty)return this.row(GOODS[k].n,GOODS[k].base+'g each, filled free at a well','','deal','k:skin','‹<span class="tr-w"> Buy</span>','','good:'+k);
       const l=D.left(t,'b',k),ms=marketState(t,k);
       return this.row(GOODS[k].n+(ms?' <span class="'+(ms==='shortage'?'bad':'good')+'">'+cap1(ms)+'</span>':''),nextBuy(t,k)+'g each',l,'deal','b:'+k,'‹<span class="tr-w"> Buy</span>',l<1?'The market has none left':'','good:'+k)});
     const qs=quiverStock(t,'trade');
@@ -113,12 +113,12 @@ const TradeScreen={
   },
   // (your terms here: your standing, a haggle, and the button to try one)
   terms(t,D){const m=tradeTerms(t),pc=v=>(v>=0?'+':'−')+Math.abs(Math.round(v*100))+'%',st=standingAt(t),hw=D.haggleWhy(t),k='chk:haggle';ENC_STAT[k]=ENC_STAT[k]||QUEST_CHECKS.haggle;
-    return '<div class="tr-terms"><div><span>Your standing here ('+(st>=0?'+':'')+st+')</span><b class="'+(m.stand<0?'bad':'good')+'">'+(m.stand?'buy '+pc(-m.stand)+' · sell '+pc(m.stand):'no favour')+'</b></div>'+
-      (m.haggle?'<div><span>'+(m.haggle>0?'Haggled':'They are sour')+'</span><b class="'+(m.haggle<0?'bad':'good')+'">buy '+pc(-m.haggle)+' · sell '+pc(m.haggle)+'</b></div>':'')+
+    return '<div class="tr-terms"><div><span>Your standing here ('+(st>=0?'+':'')+st+')</span><b class="'+(m.stand<0?'bad':'good')+'">'+(m.stand?'buy '+pc(-m.stand)+', sell '+pc(m.stand):'no favour')+'</b></div>'+
+      (m.haggle?'<div><span>'+(m.haggle>0?'Haggled':'They are sour')+'</span><b class="'+(m.haggle<0?'bad':'good')+'">buy '+pc(-m.haggle)+', sell '+pc(m.haggle)+'</b></div>':'')+
       (G.town.haggle?'':'<div class="tr-haggle">'+railBtn('deal-haggle','','Haggle',hw)+'<small>'+statRead(k,{vague:'you cannot tell your odds',what:'to beat them down'})+'</small></div>')+'</div>'},
   html(t){
     const D=TradeDeal.of(),q=G.town.qty||1,I=playerInventory,scarce=Object.keys(GOODS).filter(g=>marketState(t,g)==='shortage');
-    return '<p class="muted tr-head">The merchants of '+t.name+(scarce.length?' · <span class="bad">short of '+scarce.slice(0,3).map(g=>GOODS[g].n.toLowerCase()).join(', ')+'</span>':' · prices fair')+' · your bag '+I.used+' / '+I.size+(I.over?' · <span class="bad">'+I.over+' over: burdened</span>':'')+'</p>'+
+    return '<p class="muted tr-head">The merchants of '+t.name+(scarce.length?', <span class="bad">short of '+scarce.slice(0,3).map(g=>GOODS[g].n.toLowerCase()).join(', ')+'</span>':', prices fair')+', your bag '+I.used+' / '+I.size+(I.over?', <span class="bad">'+I.over+' over: burdened</span>':'')+'</p>'+
       '<div class="tr-find">'+Finder.html('trade','Search goods and items')+'</div>'+
       '<div class="tr" data-find-scope><section class="tr-pane tr-mine"><h3>Your pack</h3>'+this.heads(this.mine(t,D,q))+'<p class="muted find-none" data-find-none="trade" hidden>None by that name.</p></section>'+
       '<section class="tr-mid"><h3>The bargain</h3>'+this.bargain(t,D,q)+'</section>'+

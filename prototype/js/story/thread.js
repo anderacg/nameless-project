@@ -146,7 +146,7 @@ class Thread extends Happening{
   page(){
     const p=this.pageSpec,K=this.kind;
     if(!p)return null;
-    return {ico:p.ico||'scroll',title:this.param(p.title)||K.n,sub:K.n+' · day '+G.day,msg:'',text:this.param(p.text)||'',who:p.who?this.param(p.who):null,
+    return {ico:p.ico||'scroll',title:this.param(p.title)||K.n,sub:K.n+', day '+G.day,msg:'',text:this.param(p.text)||'',who:p.who?this.param(p.who):null,
       choices:this.choices(),subject:this,act:'thr-do',done:false,close:null};
   }
   // shown when you are free on the map (true); else it waits for whoever opens it later (Thread.paged)

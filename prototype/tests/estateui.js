@@ -59,7 +59,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     t.act('es-tab','fields');ok(h2()==='Fields'&&/Fields worked/.test(panel())&&q('.rwbody .row'),'its Fields: the fields it works, as rows');
     t.act('es-tab','home');ok(G.estTab===null&&q('.rwbody [data-act="fief-build"][data-arg="farm"]')&&q('.rwbody [data-act="es-ask"][data-arg="demolish"]'),'the overview: the building buttons, Upgrade and Pull down');
     {const lv0=t.bldLv(ash,'farm');t.act('es-ask','demolish');ok(q('#panel.confirm')&&q('.nav [data-nav="close"]').dataset.act==='fief-demolish'&&t.bldLv(ash,'farm')===lv0,'Pull down asks first (nothing pulled down yet)');t.act('es-tab','home')}
-    ok(qa('.rwbody .rkact').map(b=>b.dataset.act+':'+b.dataset.rk).join()===(t.bldLv(ash,'farm')<t.bldCap(ash,'farm')?'fief-build:q,':'')+'es-ask:w'&&/\d+g · \d+ days/.test(q('.rwbody .rkact').textContent),'your own estate\'s key actions: Upgrade (its cost and days) and Pull down, Q and W');
+    ok(qa('.rwbody .rkact').map(b=>b.dataset.act+':'+b.dataset.rk).join()===(t.bldLv(ash,'farm')<t.bldCap(ash,'farm')?'fief-build:q,':'')+'es-ask:w'&&/\d+g, \d+ days/.test(q('.rwbody .rkact').textContent),'your own estate\'s key actions: Upgrade (its cost and days) and Pull down, Q and W');
     {const g0=P.gold,lv=t.bldLv(ash,'farm');if(lv<t.bldCap(ash,'farm')){key('KeyQ','q');ok(ash.work&&ash.work.k==='farm'&&P.gold===g0-t.bldCost('farm',lv+1)&&G.est&&G.mode==='dialog'&&G.estTab===null&&/building \d+%/.test(q('.rwbody').textContent)&&/Done in/.test(panel()),'Upgrade from the estate: the work starts, the gold is paid, the window stays (its state: '+t.bldStatus(ash,'farm')[0]+')')}
       else ok(false,'Ashford\'s farm can be upgraded')}
     ash.work=null;world();

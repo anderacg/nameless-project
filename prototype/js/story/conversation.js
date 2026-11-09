@@ -56,7 +56,7 @@ class LordSpeaker extends Speaker{
   realm(){return FACS[this.o.fac].n}
   temper(){return this.o.temper||(this.o.temper=rngOf('talk').pick(TEMPERS))}
   knowsTemper(){return insightLv()>=2||!!TalkMemory.all[this.key]?.temper}
-  sub(){const l=this.o,f=FACS[l.fac];return cap1(lordWord(l))+' of the <span style="color:'+f.col+'">'+f.n+'</span>, leading '+l.troops.length+' soldiers (power '+l.power()+' vs your '+partyPower()+')'+(this.knowsTemper()?' · '+this.temper():'')}
+  sub(){const l=this.o,f=FACS[l.fac];return cap1(lordWord(l))+' of the <span style="color:'+f.col+'">'+f.n+'</span>, leading '+l.troops.length+' soldiers (power '+l.power()+' vs your '+partyPower()+')'+(this.knowsTemper()?', '+this.temper():'')}
   // (his first words: what he holds against you first (a threat a month, a slight a week), else by his temper)
   greet(again){const m=TalkMemory.mine(this.key)?TalkMemory.all[this.key]:{},G0=DIALOGUE.greet.lord,g=G0[this.temper()]||G0;
     return this.fill(m.threat!=null&&G.day-m.threat<=30?G0.threatened:m.slight!=null&&G.day-m.slight<=7?G0.slighted:again?g.again:g.first)}
@@ -133,7 +133,7 @@ class LordSpeaker extends Speaker{
     const W0=w&&DIALOGUE.ways[w],me=heroName()||'You';if(!(w&&X.ways.length>1)||X.ask)cv.say(this.fill(X.ask||X.you),false,me);if(w&&X.ways.length>1)cv.say(this.fill(W0.you),false,me);
     const p=this.odds(id,w),r=rngOf('talk').next(),won=r<p?true:r<p+DIALOGUE.part?'part':false,words=won==='part'?X.half:won?X.yes:X.no;train('pers',won?3:1);
     // (the roll shown as it falls: ui/dice.js)
-    Dice.show({p,r,part:DIALOGUE.part,bonus:this.mine(id),label:this.fill(X.label)+(w&&X.ways.length>1?' · '+this.fill(W0.label):'')});
+    Dice.show({p,r,part:DIALOGUE.part,bonus:this.mine(id),label:this.fill(X.label)+(w&&X.ways.length>1?': '+this.fill(W0.label):'')});
     cv.say(this.fill(words[this.temper()]||words.plain));const o=this.outcome(id,won);
     // (a way's cost whatever comes of it: leaning on him for what is not tribute, his liking)
     if(W0?.cost&&id!=='threaten')o.rel=[l,(o.rel?.[1]||0)+W0.cost,'you leaned on them'];
@@ -142,7 +142,7 @@ class LordSpeaker extends Speaker{
     if(o.gold)W.treas[l.fac]=Math.max(0,treas(l.fac)-o.gold);Outcome.apply(o,{});const d=Outcome.describe(o);if(d)cv.say('<span class="muted">'+d+'</span>',true);
     if(id==='threaten')m.threat=G.day;else if(!won&&id!=='follow')m.slight=G.day;updateHUD(true);lordMeet(l)}
   facts(){const l=this.o,f=FACS[l.fac],st=hostileTo(l.fac)?'Your realms are at odds, but '+l.name+' will not draw on a friend.':P.fac===l.fac?'You serve the '+f.n+'.':P.fac?'Your employer is at '+(relOf(P.fac,l.fac).s==='ally'?'alliance':'peace')+' with them.':'They have no quarrel with you.';
-    return '<p class="muted">Level '+lordStats(l).lv+' · renown '+(l.renown||0)+' · Leadership '+Math.round(lordSkill(l,'lead')*PROF.per)+' · Tactics '+Math.round(lordSkill(l,'tact')*PROF.per)+' · Medicine '+Math.round(lordSkill(l,'med')*PROF.per)+' · leads up to '+lcapOf(l)+'.</p><p>'+st+'</p>'}
+    return '<p class="muted">Level '+lordStats(l).lv+', renown '+(l.renown||0)+', Leadership '+Math.round(lordSkill(l,'lead')*PROF.per)+', Tactics '+Math.round(lordSkill(l,'tact')*PROF.per)+', Medicine '+Math.round(lordSkill(l,'med')*PROF.per)+', leads up to '+lcapOf(l)+'.</p><p>'+st+'</p>'}
   // (the page under the replies: his standing toward you and the way to attack him; in his Work, his job; in another topic, none)
   body(talk){const l=this.o,f=FACS[l.fac],free=P.fac===l.fac||l.inside,tp=talk?.cv?.topic;if(tp)return tp==='work'?lordJobHtml(l):'';
     return relHtml(l,!talk?.lords)+(l.inside?'<p class="muted">Holding court in '+l.inside+', with '+l.troops.length+' soldiers quartered alongside the garrison.</p>':'')+
@@ -169,7 +169,7 @@ class CompanionSpeaker extends Speaker{
   get c(){return compInit(this.o)}
   get D(){return DIALOGUE.comps[this.o]||{}}
   name(){return COMPS[this.o].n}
-  sub(){const a=this.c.ap;return 'Companion · <span title="Approval '+a+' (from −10 to 10)">'+apName(a)+'</span>'}
+  sub(){const a=this.c.ap;return 'Companion, <span title="Approval '+a+' (from −10 to 10)">'+apName(a)+'</span>'}
   greet(){const g=this.D.greet;return g?g[apName(this.c.ap).toLowerCase()]||'':''}
   // (what they think: of the last deed they cared about, liked or not; none, by how they feel)
   thinks(){const d=this.c.deed,F=DIALOGUE.feel;return (d&&F[d[0]]?.[d[1]>0?'good':'bad'])||F.none[apName(this.c.ap).toLowerCase()]}
@@ -221,12 +221,12 @@ class Conversation{
   answers(rs){rs=rs.filter(Boolean);const T=this.sp.topics(),tp=T.find(x=>x.id===this.topic),ofT=r=>T.some(x=>x.id===r.topic);
     let shown=tp?rs.filter(r=>r.topic===tp.id):rs.filter(r=>!ofT(r));
     if(!tp)shown=[...T.map(x=>{const of=rs.filter(r=>r.topic===x.id),free=of.filter(r=>!r.why);if(!of.length&&!x.has)return null;
-      return {act:'talk-topic',arg:x.id,label:x.label,note:x.note||free.map(r=>r.short||r.label).join(' · '),why:free.length||x.has?'':of.map(r=>r.why)[0]}}).filter(Boolean),...shown];
+      return {act:'talk-topic',arg:x.id,label:x.label,note:x.note||free.map(r=>r.short||r.label).join(', '),why:free.length||x.has?'':of.map(r=>r.why)[0]}}).filter(Boolean),...shown];
     const can=shown.filter(r=>!r.why),cant=shown.filter(r=>r.why);
     const btn=(r,i)=>'<button class="btn talk-r'+(r.primary?' primary':'')+(r.back?' talk-back':'')+'" type="button" data-act="'+r.act+'"'+(r.arg!=null?' data-arg="'+r.arg+'"':'')+(i<9?' data-key="'+(i+1)+'"':'')+'>'+
       (i<9?'<b class="talk-k">'+(i+1)+'</b>':'')+'<span class="talk-l">'+r.label+(r.odds!=null?Conversation.odds(r.odds):'')+'</span>'+(r.note?'<small class="talk-out">'+r.note+'</small>':'')+'</button>';
-    return (tp?'<div class="lab talk-topic">'+tp.label+(this.aim&&this.sp.aimLabel?' · '+this.sp.aimLabel(this.aim):'')+'</div>':'')+(can.length?'<div class="btns talk-replies">'+can.map(btn).join('')+'</div>':'')+
-      (cant.length?'<p class="talk-not">Not now: '+cant.map(r=>'<span>'+r.label+' <i>('+r.why+')</i></span>').join(' · ')+'</p>':'')}
+    return (tp?'<div class="lab talk-topic">'+tp.label+(this.aim&&this.sp.aimLabel?', '+this.sp.aimLabel(this.aim):'')+'</div>':'')+(can.length?'<div class="btns talk-replies">'+can.map(btn).join('')+'</div>':'')+
+      (cant.length?'<p class="talk-not">Not now: '+cant.map(r=>'<span>'+r.label+' <i>('+r.why+')</i></span>').join(', ')+'</p>':'')}
   // (a chance, as Insight reads it: ? (none), likely or a long chance (rough), its number (sharp))
   static odds(p){const l=insightLv(),w=['odds?',p>=.5?'likely':'a long chance',Math.round(p*100)+'%'][l];
     return '<span class="talk-odds'+(l?(p>=.5?' good':' bad'):'')+'" title="'+(l===2?'Your odds':'Scouting '+(l?INSIGHT.exact:INSIGHT.rough)+' to know your odds better')+'">'+w+'</span>'}

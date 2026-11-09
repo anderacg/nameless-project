@@ -10,7 +10,7 @@ Kit.suite(({ok})=>{
  const pn=performance.now;let now=pn.call(performance);performance.now=()=>now;
  try{for(let i=0;i<40;i++){now+=16;const a=now;t.updateWorld(1/30);now+=3;const b=now;now+=5;FP.frame(b-a,now-b)}}finally{performance.now=pn}
  FP.show();const txt=document.querySelector('.frameprof')?.textContent||'';
- ok(/update \\d|update [\d.]+ \/ [\d.]+ ms · draw [\d.]+ \/ [\d.]+ ms/.test(txt)&&/frames a second/.test(txt)&&/slow/.test(txt),'its readout: update and draw, the frames a second and the slow ones');
+ ok(/update \\d|update [\d.]+ \/ [\d.]+ ms, draw [\d.]+ \/ [\d.]+ ms/.test(txt)&&/frames a second/.test(txt)&&/slow/.test(txt),'its readout: update and draw, the frames a second and the slow ones');
  ok(FP.sys.size>0&&/ms a frame, worst/.test(txt),'and the systems costing most, each as it runs ('+[...FP.sys.keys()].slice(0,3).join(', ')+'…)');
  ok(t.DevConsole.execute('perf off')==='Frame timings off.'&&!F.on&&!t.Systems.timer&&!document.querySelector('.frameprof'),'perf off in the console: off, the readout gone');
  G.mode='world';G.modal=false;t.hidePanel();

@@ -32,20 +32,20 @@ Kit.suite(({ok,info})=>{
  const rowOf=k=>q('.qw-row[data-arg="'+k+'"]'),tabBtn=k=>q('.qw-tabs [data-arg="'+k+'"]');
  // ---- the tabs; a story listed once, in Side, with its objective
  t.openQuests();
- ok(G.mode==='quests'&&qa('.qw-tabs [data-act="qw-tab"]').map(b=>b.textContent).join('|')==='Main|Side · 1|Jobs · 3|Archive'&&tabBtn('side').classList.contains('on'),'the tabs: '+qa('.qw-tabs .btn').map(b=>b.textContent).join(', ')+'; it opens on Side, the first with anything under way');
+ ok(G.mode==='quests'&&qa('.qw-tabs [data-act="qw-tab"]').map(b=>b.textContent).join('|')==='Main|Side, 1|Jobs, 3|Archive'&&tabBtn('side').classList.contains('on'),'the tabs: '+qa('.qw-tabs .btn').map(b=>b.textContent).join(', ')+'; it opens on Side, the first with anything under way');
  const rows=qa('.qw-row');
  ok(q('.qw .qw-list')&&q('.qw .qw-detail')&&rows.length===1&&rows[0].dataset.arg==='t'+th.i&&rows[0].textContent.includes(th.kind.n)&&rows[0].textContent.includes(th.note)&&/Active/.test(rows[0].textContent)&&!rowOf('q'+stepQ.id),
    'the story, once (its escort is no row of its own): '+rows[0].textContent);
  {const f=facts(),sq=t.QuestTrack.quest('t'+th.i),g=sq&&sq.goal();
   ok(q('.qw-detail h3').textContent===th.kind.n&&/Side quest/.test(q('.qw-meta').textContent)&&/Active/.test(q('.qw-meta').textContent)&&f.Who===th.kind.who(th)&&f.Begun==='Day '+th.day&&f.Objective===th.note&&f.Progress===sq.progress()&&g&&f.Where.includes(t.questWay(g)),
-   'its detail: a side quest, active · '+f.Who+' · '+f.Objective+' · '+f.Progress+' · '+f.Where);
+   'its detail: a side quest, active, '+f.Who+', '+f.Objective+', '+f.Progress+', '+f.Where);
   ok(/Bring .+ home/.test(f.Stages)&&q('.qw-detail .qw-steps li.now')&&q('.qw-detail [data-act="qw-map"]:not([disabled])')&&q('.qw-detail [data-act="qw-track"]')&&!q('.qw-detail [data-act="qw-abandon"]'),'its stages ('+f.Stages+'), Show on map, Track, no Abandon')}
  const nav0=q('#panel > .nav');ok((nav0.querySelector('[data-nav="back"]')||{}).dataset.act==='fb-menu'&&nav0.querySelector('[data-nav="back"]').textContent==='Back'&&nav0.querySelector('[data-nav="close"]').textContent==='Back to map','the frame rule: its bottom bar, Back to the Game Menu on the left (its top level), the way out on the right');
  // ---- Main: none yet
  t.act('qw-tab','main');ok(tabBtn('main').classList.contains('on')&&!qa('.qw-row').length&&/No main story yet/.test(q('.qw-list').textContent)&&!q('.qw-detail'),'Main: '+q('.qw-list p').textContent);
  // ---- Jobs: your jobs, each its state; the offers you know of, a locked one greyed with what it requires
  t.act('qw-tab','job');
- ok(['q'+qb.id,'q'+qc.id,'q'+ql.id].every(k=>rowOf(k)&&/Active/.test(rowOf(k).textContent))&&/Your jobs · 3/.test(q('.qw-list').textContent),'Jobs: your three, each Active');
+ ok(['q'+qb.id,'q'+qc.id,'q'+ql.id].every(k=>rowOf(k)&&/Active/.test(rowOf(k).textContent))&&/Your jobs, 3/.test(q('.qw-list').textContent),'Jobs: your three, each Active');
  {const ro=rowOf('oAshford:1'),rb=rowOf('oAshford:0');ok(/Offered where you have been/.test(q('.qw-list').textContent)&&ro&&ro.classList.contains('locked')&&/Locked/.test(ro.textContent)&&/Requires level 3 \(yours: 1\)/.test(ro.textContent)&&rb&&/Available/.test(rb.textContent)&&!rb.classList.contains('locked'),
    'the offers you know of: '+rb.textContent+' | '+ro.textContent)}
  t.act('qw-sel','oAshford:1');
@@ -55,15 +55,15 @@ Kit.suite(({ok,info})=>{
  // a bounty: given by, taken, no timing, report at its holding, its steps (where the band was last seen, 0 / 1 broken), its reward
  t.act('qw-sel','q'+qb.id);
  {const f=facts();ok(q('.qw-detail h3').textContent===qb.title&&/Job/.test(q('.qw-meta').textContent)&&/, the .+ of Ashford$/.test(f['Given by'])&&f.Taken==='Day '+d0&&f.Timing==='No time limit'&&f['Turn in']==='At Ashford'&&/gold/.test(f.Reward),
-   'a bounty in full: given by '+f['Given by']+' · taken '+f.Taken+' · '+f.Timing+' · turn in '+f['Turn in']+' · '+f.Reward);
+   'a bounty in full: given by '+f['Given by']+', taken '+f.Taken+', '+f.Timing+', turn in '+f['Turn in']+', '+f.Reward);
   ok(/^Break the .+, last seen \d+ tiles [a-z]+(, within \d+ tiles of there \(day \d+\))?; 0 \/ 1 broken/.test(f.Steps)&&/Then report back at Ashford/.test(f.Steps)&&q('.qw-detail [data-act="qw-abandon"]'),'its steps: '+f.Steps+'; a job: Abandon')}
  // a courier: its best-by day, later pays less; paid on arrival
  t.act('qw-sel','q'+qc.id);
- {const f=facts();ok(f.Timing==='Best by day '+qc.due+' ('+qc.days+' days left); later pays less'&&f['Turn in']==='Paid on arrival at '+qc.to&&/Carry the letter to /.test(f.Steps)&&!/report back/.test(f.Steps),'a courier: '+f.Timing+' · '+f['Turn in'])}
+ {const f=facts();ok(f.Timing==='Best by day '+qc.due+' ('+qc.days+' days left); later pays less'&&f['Turn in']==='Paid on arrival at '+qc.to&&/Carry the letter to /.test(f.Steps)&&!/report back/.test(f.Steps),'a courier: '+f.Timing+', '+f['Turn in'])}
  // a lord's: given by the lord, where he is; reported to him or at any holding of his realm (as canReportAt)
  t.act('qw-sel','q'+ql.id);
  {const f=facts(),F=t.FACS[lord.fac].n,any=t.TOWNS.filter(h=>t.canReportAt(ql,h));ok(f['Given by'].startsWith(lord.name+' of the '+F)&&f['Turn in']==='To '+lord.name+', or at any holding of the '+F&&any.length>0&&any.every(h=>h.owner===lord.fac),
-   'a lord’s: given by '+f['Given by']+' · turn in '+f['Turn in'])}
+   'a lord’s: given by '+f['Given by']+', turn in '+f['Turn in'])}
  // completed: "Return to X for your reward"
  qb.done=true;t.act('qw-tab','job');ok(/Completed/.test(rowOf('q'+qb.id).textContent)&&/Return to Ashford for your reward/.test(rowOf('q'+qb.id).textContent)&&rowOf('q'+qb.id).querySelector('small.good'),'its deed done: Completed, "Return to Ashford for your reward"');qb.done=false;
  // ---- Show on map: the full map, centred on the goal; Back (and Esc) return to your Quests
@@ -90,10 +90,10 @@ Kit.suite(({ok,info})=>{
  ok(q('.qw-ask')&&/Give up .+\? It counts as abandoned: reputation in Ashford −\d+; no work from Ashford for 3 days/.test(q('.qw-ask').textContent)&&P.quests.includes(qb),'Abandon asks first: '+(q('.qw-ask')&&q('.qw-ask p').textContent));
  t.act('qw-keep','q'+qb.id);ok(!q('.qw-ask')&&P.quests.includes(qb),'Keep it: still yours');
  t.act('qw-abandon','q'+qb.id);q('.qw-ask [data-act="q-abandon"]').click();
- ok(!P.quests.includes(qb)&&G.mode==='quests'&&q('.qw-row.on')&&G.qw.sel!=='q'+qb.id&&tabBtn('past').textContent==='Archive · 1','Give it up: gone, another chosen; the Archive holds it');
+ ok(!P.quests.includes(qb)&&G.mode==='quests'&&q('.qw-row.on')&&G.qw.sel!=='q'+qb.id&&tabBtn('past').textContent==='Archive, 1','Give it up: gone, another chosen; the Archive holds it');
  t.act('qw-tab','past');
  {const r=rowOf('aq'+qb.id),f=facts();ok(r&&/Abandoned/.test(r.textContent)&&/reputation in Ashford −\d+/.test(r.textContent)&&q('.qw-detail h3').textContent===qb.title&&f['Given by']==='Ashford'&&f.Ended==='Day '+G.day&&/reputation in Ashford −\d+/.test(f.Cost)&&!q('.qw-detail .btn'),
-   'the Archive: '+r.textContent+' · its detail: given by '+f['Given by']+', ended '+f.Ended+', cost '+f.Cost)}
+   'the Archive: '+r.textContent+', its detail: given by '+f['Given by']+', ended '+f.Ended+', cost '+f.Cost)}
  t.act('qw-tab','job');t.act('qw-abandon','q'+qc.id);esc();ok(G.mode==='quests'&&!q('.qw-ask')&&P.quests.includes(qc)&&P.track==='q'+qc.id,'Esc cancels abandonment without changing the quest');esc();ok(G.mode==='esc','Esc again, at its top level: the Game Menu');esc();
  // ---- a phone on its side: the tabs and the list, then the chosen one alone; Back to the list; all on the screen
  {const css0=scr.style.cssText;scr.style.cssText+=';width:844px;height:390px';

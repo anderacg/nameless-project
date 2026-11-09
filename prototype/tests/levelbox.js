@@ -15,7 +15,7 @@ Kit.suite(({ok})=>{
  {const L=document.getElementById('log').getBoundingClientRect();ok(L.left>=r.right-1,'the messages beside it, not under it')}
  b.click();ok(G.mode==='skills'&&G.skTab==='talents','a click opens your Skill trees');t.act('sk-map');
  t.takeNode('oneh_third');t.takeNode('oneh_str');t.updateHUD(true);ok(!shown(),'spent: gone');
- P.level=3;t.updateHUD(true);ok(shown()&&/Skill point/.test(btn().textContent),'another level: the box again ('+btn().textContent+')');const wt=t.SKILLS[t.treePending()[0]].n;btn().click();ok(G.mode==='skills'&&G.skTab==='talents'&&document.getElementById('panel').textContent.includes(wt+' · '),'its click opens a tree with a node to take ('+wt+')');t.act('sk-map');t.takeNode('lead_cry');
+ P.level=3;t.updateHUD(true);ok(shown()&&/Skill point/.test(btn().textContent),'another level: the box again ('+btn().textContent+')');const wt=t.SKILLS[t.treePending()[0]].n;btn().click();ok(G.mode==='skills'&&G.skTab==='talents'&&document.getElementById('panel').textContent.includes(wt+', '),'its click opens a tree with a node to take ('+wt+')');t.act('sk-map');t.takeNode('lead_cry');
  t.updateHUD(true);document.getElementById('screen').dataset.mode='battle';ok(!shown(),'not in battle');document.getElementById('screen').dataset.mode='world';
  P.level=0;P.tree=[P.origin];t.updateHUD(true);Kit.clear();
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));

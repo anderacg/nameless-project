@@ -45,7 +45,7 @@ class RecruitPick{
   static btn(k,d,label,off){return '<button class="btn" type="button" data-act="pl-pick" data-arg="'+k+':'+d+'" aria-label="'+(d>0?'One more ':'One fewer ')+htmlText(ST[k].n)+'"'+(off?' disabled':'')+'>'+label+'</button>'}
   static show(){const t=G.par.take,have=this.kinds(),r=partyRoster(P),n=sum(t),heads=partyRoom()-n,free=r.groupLimit-r.slots;
     const rows=Object.keys(have).map(k=>{const c=t[k]||0,no=!r.accepts(k)?'Will not serve you':'',more=c<have[k]&&this.fits({...t,[k]:c+1});
-      return '<div class="pick-row"><span>'+htmlText(ST[k].n)+' <small class="muted">'+have[k]+' yielded'+(!no&&c<have[k]&&!more?' · no room in your groups':'')+'</small></span>'+(no?'<small class="muted">'+no+'</small>':
+      return '<div class="pick-row"><span>'+htmlText(ST[k].n)+' <small class="muted">'+have[k]+' yielded'+(!no&&c<have[k]&&!more?', no room in your groups':'')+'</small></span>'+(no?'<small class="muted">'+no+'</small>':
         '<span class="pick-step">'+this.btn(k,-1,'−',!c)+'<b>'+c+'</b>'+this.btn(k,1,'+',!more)+'</span>')+'</div>'}).join('');
     G.mode='dialog';showPanel('<h2>Take them into your band</h2><p class="muted">Room for '+Math.max(0,heads)+' more fighters; '+free+' free group'+(free===1?'':'s')+' of ten. The rest are disarmed and sent off.</p><div class="pick-rows">'+rows+'</div>'+
       nav(['pl-back',null,'Back'],['pl-take',null,n?'Take '+n:'Take none',n?'':'Choose who joins']))}

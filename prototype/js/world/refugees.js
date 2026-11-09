@@ -18,7 +18,7 @@ class Refugees extends WorldObject{
       for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*4-4)+(i>2?-r.dir*2:0),py=sy-(i>2?2:0),fr=go?(frameOf(r,WALK.foot,WALK.n)+i*2)%WALK.n:0;if(fig){drawFig(figRefugee(i,r.race,figPose(fr,go)),px,py,r.dir);continue}
         const s=refugeeSprite(fr,i);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
       if(r.fromYou()<90)txt('Refugees '+r.n,sx,sy-13,r.fear?'#ff9a90':'#c8c2ae','center')}})}
-  tip(){return '<b>Refugees</b><small>From '+this.from+' to '+this.to+'</small><span class="act">Click: actions · double-click: meet</span>'}
+  tip(){return '<b>Refugees</b><small>From '+this.from+' to '+this.to+'</small><span class="act">Click: actions, double-click: meet</span>'}
 }
 const asRefugees=asClass(Refugees);
 const REFUGEE_CAP=density().refugees,REFUGEE_SPD=11;// (REFUGEE_CAP: today's; a world's own: density(WM), data/world.js)

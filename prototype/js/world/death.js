@@ -191,10 +191,10 @@ class Remains extends WorldObject{
   get meetsAnyTime(){return true}
   what(){const n=k=>this.items.reduce((a,x)=>a+((x[0]==='gear')===k?x[2]:0),0),g=n(true),o=n(false);
     return [this.gold&&this.gold+' gold',g&&g+' piece'+(g>1?'s':'')+' of gear',o&&o+' other thing'+(o>1?'s':'')].filter(Boolean).join(', ')||'nothing left'}
-  tip(){return '<b>The remains of '+htmlText(this.who)+'</b><small>Fell on day '+this.day+(this.empty()?' · picked clean'+(this.robbed?' by '+htmlText(this.robbed):''):' · '+this.what())+'</small><span class="act">Click: go there</span>'}
+  tip(){return '<b>The remains of '+htmlText(this.who)+'</b><small>Fell on day '+this.day+(this.empty()?', picked clean'+(this.robbed?' by '+htmlText(this.robbed):''):', '+this.what())+'</small><span class="act">Click: go there</span>'}
   // (met: what is left, yours to take)
   meet(){G.mode='dialog';G.remains=this;
-    showPanel('<div class="top"><h2>Remains</h2><span class="muted">'+htmlText(cap1(this.who))+' · fell on day '+this.day+'</span></div>'+
+    showPanel('<div class="top"><h2>Remains</h2><span class="muted">'+htmlText(cap1(this.who))+', fell on day '+this.day+'</span></div>'+
       '<p>Bones and torn cloth where '+htmlText(this.who)+' fell'+(this.empty()?': '+(this.robbed?htmlText(this.robbed)+' got here first':'nothing is left')+'.':', and what they had: '+this.what()+'.')+'</p>'+
       nav(['death-leave',null,'Leave'],this.empty()?null:['death-take',null,'Take it']))}
   static act(a){const r=G.remains;G.remains=null;if(!r){toWorld();return}
@@ -304,10 +304,10 @@ class Grave extends Remains{
   // its goods are there; prayed at and emptied, nothing left, it lies dark)
   glows(){return this.holds()}
   robbable(){return !(this.at&&townBy(this.at)?.owner===this.fac)}
-  tip(){return '<b>'+this.words.tip+htmlText(this.who)+'</b><small>Fell on day '+this.day+(this.spent?' · prayed at':this.xp?' · a warmth lingers here':'')+'</small><span class="act">Click: go there</span>'}
+  tip(){return '<b>'+this.words.tip+htmlText(this.who)+'</b><small>Fell on day '+this.day+(this.spent?', prayed at':this.xp?', a warmth lingers here':'')+'</small><span class="act">Click: go there</span>'}
   // (met: its page, the hero's life; Pray, and its goods)
   meet(){G.mode='dialog';G.remains=this;const L=this.life||{};
-    const Wd=this.words;showPanel('<div class="top"><h2>'+Wd.h+'</h2><span class="muted">'+htmlText(cap1(this.who))+' · fell on day '+this.day+'</span></div>'+
+    const Wd=this.words;showPanel('<div class="top"><h2>'+Wd.h+'</h2><span class="muted">'+htmlText(cap1(this.who))+', fell on day '+this.day+'</span></div>'+
       '<p>'+(this.plot?'In the plot of the family of '+htmlText(this.family||Legacy.plot?.family||'your line')+'. ':'')+Wd.line.replace('{at}',htmlText(this.at||''))+'here lies '+htmlText(this.who)+', who fell to '+htmlText(L.by||'beasts')+(this.n>1?', the '+ordinal(this.n)+' of your line':'')+'.</p>'+
       '<div class="loot-stats">'+[['Days on the road',L.days||0],['Level',L.level||0],['Renown',L.renown||0]].map(([k,v])=>'<span><b>'+k+'</b><span>'+v+'</span></span>').join('')+'</div>'+
       (this.spent?'<p class="muted">You prayed here once. It is quiet now.</p>':this.xp?'<p class="gold">Something of them lingers here: '+this.xp+' experience, for one who prays.</p>':'')+

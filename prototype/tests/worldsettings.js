@@ -42,7 +42,7 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
  // ---- the screen
  t.act('race','dwarf');t.act('begin','world:hedge');
  {const nb=[...document.querySelectorAll('#panel .nav [data-nav]')].map(b=>b.dataset.nav+':'+b.textContent);
-  ok(G.mode==='title'&&G.menu==='world'&&/New world/.test(txt())&&/Dwarf · Hedge mage/.test(txt())&&J(nb)===J(['back:Back','close:Forge the world'])&&q('.ws-cv')&&q('.ws-cv').width>2,'the New world screen: its header, the preview drawn, Back on the left and Forge the world on the right ('+nb.join(', ')+')')}
+  ok(G.mode==='title'&&G.menu==='world'&&/New world/.test(txt())&&/Dwarf, Hedge mage/.test(txt())&&J(nb)===J(['back:Back','close:Forge the world'])&&q('.ws-cv')&&q('.ws-cv').width>2,'the New world screen: its header, the preview drawn, Back on the left and Forge the world on the right ('+nb.join(', ')+')')}
  {const ps=[...document.querySelectorAll('#panel [data-act="ws-preset"]')];
   ok(ps[0]&&ps[0].dataset.arg==='classic'&&ps[0].classList.contains('on')&&S.s.preset==='classic','the classic world offered first, and the choice at first (WORLD_DESIGN.md wave 4): '+ps.map(b=>b.textContent+(b.classList.contains('on')?' (chosen)':'')).join(', '))}
  t.act('ws-preset','classic');
@@ -97,6 +97,6 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
   const s=t.WM.settings,nb=[...document.querySelectorAll('#panel .nav [data-nav]')].map(b=>b.dataset.nav);
   ok(G.mode==='esc'&&/World code/.test(txt())&&txt().includes(t.worldCode(s))&&t.WS_SET.every(([,n])=>txt().includes(n))&&J(nb)===J(['back','close']),'the Esc menu\'s World page: the world code ('+t.worldCode(s)+'), every setting, Back and Resume');
   t.act('esc-back');ok(G.mode==='esc'&&/Paused/.test(txt()),'Back: the Esc menu');t.act('esc-resume')}
- ok(t.worldLine(N({preset:'large',seed:'redwater'}))==='Redwater · Large · seed redwater · '&&t.worldLine(t.classicSettings())==='Ashmark · Classic · '&&/^Mine · Custom 512 × 352 · seed mine · $/.test(t.worldLine(N({preset:'custom',seed:'mine',w:512,h:352}))),
+ ok(t.worldLine(N({preset:'large',seed:'redwater'}))==='Redwater, Large, seed redwater, '&&t.worldLine(t.classicSettings())==='Ashmark, Classic, '&&/^Mine, Custom 512 × 352, seed mine, $/.test(t.worldLine(N({preset:'custom',seed:'mine',w:512,h:352}))),
   'the save list\'s line: '+t.worldLine(N({preset:'large',seed:'redwater'}))+'| '+t.worldLine(t.classicSettings())+'| '+t.worldLine(N({preset:'custom',seed:'mine',w:512,h:352})));
 }catch(e){r.exc(e)}r.out()};

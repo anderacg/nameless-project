@@ -115,7 +115,7 @@ function drawPlace(cam){
   if(!pl._s){const s={culture:holdingCulture(t),people:t.races[0],seed:pl.seed,env:climAt(t.x,t.y)},b=PX.MODEL_SIZES.types[pl.type]?PX.buildingModel({...s,type:pl.type}):PX.clusterModel({...s,kind:pl.type});pl._s=b.img}
   ctx.fillStyle=ok?'rgba(120,220,110,.28)':'rgba(230,90,80,.32)';ctx.fillRect(X,Y,N,N);ctx.globalAlpha=.75;ctx.drawImage(pl._s,X,Y);ctx.globalAlpha=1;
   ctx.strokeStyle=ok?'#78dc6e':'#e65a50';ctx.lineWidth=1;ctx.strokeRect(X+.5,Y+.5,N-1,N-1);
-  txt('Place the '+(pl.k==='house'?'house':ESTATES[pl.k].n.toLowerCase())+' of '+t.name+' · click to build · Esc to stop',VW/2,VH-8,'#e8b94a','center');
+  txt('Place the '+(pl.k==='house'?'house':ESTATES[pl.k].n.toLowerCase())+' of '+t.name+', click to build, Esc to stop',VW/2,VH-8,'#e8b94a','center');
 }
 // over a holding's centre, no words (the owner, 2026-11-08: "remove text on holding or places in the world map"; its name in its
 // tip): a warning while besieged, a padlock on a gate that will not have you (GATE_LOCK), and the lords inside, a pip of each one's

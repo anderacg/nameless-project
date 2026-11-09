@@ -25,7 +25,7 @@ Kit.suite(({ok,info})=>{
    P.gold=12;ok(a===b&&c.gold===12,'when and who: the Clock and the accessors, read live (a change in the frame is seen: gold '+c.gold+')')});G.clock=DAY*.3}
  // ---- outcomes: every handler applies and describes
  {const H=O.handlers,keys=Object.keys(H),seen=new Set();let e=null;const fresh=()=>{Kit.world();Kit.clear();Kit.goHome();P.gold=200;P.morale=50;P.renown=5;P.troops={[U]:6};P.wounded={};P.sp=40;t.invAdd('good','grain',10)};
-  const run=(o,ctx,check,label)=>{for(const k of Object.keys(o))seen.add(k);let r=null,err='';try{r=O.apply(o,ctx||{})}catch(x){err=x.message}const f=O.facts(o);ok(!err&&check(r,f),label+' → '+(f.join(' · ')||'(silent)')+(err?' EXC '+err:''))};
+  const run=(o,ctx,check,label)=>{for(const k of Object.keys(o))seen.add(k);let r=null,err='';try{r=O.apply(o,ctx||{})}catch(x){err=x.message}const f=O.facts(o);ok(!err&&check(r,f),label+' → '+(f.join(', ')||'(silent)')+(err?' EXC '+err:''))};
   fresh();let g0=P.gold;run({gold:7},null,(r,f)=>P.gold===g0+7&&f.join()==='+7 gold','gold');
   P.gold=20;run({gold:{n:-50,min:0}},null,(r,f)=>P.gold===0&&f.join()==='−50 gold','gold, never below its floor');
   fresh();let f0=t.foodN();run({food:-3},null,(r,f)=>t.foodN()===f0-3&&r.food===3&&f.join()==='−3 food','food');
@@ -66,7 +66,7 @@ Kit.suite(({ok,info})=>{
   ok(keys.every(k=>seen.has(k)),'every handler tried: '+keys.join(', ')+(keys.some(k=>!seen.has(k))?' (not: '+keys.filter(k=>!seen.has(k)).join(', ')+')':''));
   let thr='';try{O.apply({nope:1})}catch(x){thr=x.message}ok(/nope/.test(thr),'an effect with no handler is refused');
   fresh();g0=P.gold;let at=[];O.apply({gold:5,call:()=>at.push(P.gold)});O.apply({call:()=>at.push(P.gold),gold:5});ok(at.join()===(g0+5)+','+(g0+5),'the keys are done in the order they are written');
-  ok(t.applyOutcome({renown:1}).say===undefined&&t.describeOutcome({gold:-3,morale:2})==='−3 gold · morale +2','applyOutcome and describeOutcome: the namespace\'s');
+  ok(t.applyOutcome({renown:1}).say===undefined&&t.describeOutcome({gold:-3,morale:2})==='−3 gold, morale +2','applyOutcome and describeOutcome: the namespace\'s');
   // the words are what it did: deltas measured, written the same way, against describeOutcome
   {const snap=()=>({g:P.gold,f:t.foodN(),m:P.morale,r:P.renown,sp:P.sp,rep:{...P.rep},hon:{...P.honor},iron:t.goodN('iron'),furs:t.goodN('furs'),tr:{...P.troops}});
    const said=(a,b,o)=>Object.keys(o).flatMap(k=>{const sg=O.signed;
@@ -75,7 +75,7 @@ Kit.suite(({ok,info})=>{
     if(k==='honor')return Object.keys(b.hon).filter(f=>(b.hon[f]||0)!==(a.hon[f]||0)).map(f=>'honour with the '+t.FACS[f].n+' '+sg(b.hon[f]-(a.hon[f]||0)));
     if(k==='goods')return Object.keys(o.goods).map(g=>sg(b[g]-a[g])+' '+t.GOODS[g].n.toLowerCase());if(k==='troops')return Object.keys(o.troops).map(u=>sg((b.tr[u]||0)-(a.tr[u]||0))+' '+t.ST[u].n);return[]});
    const samples=[{gold:-15,goods:{furs:3}},{food:-3,renown:1,morale:3},{gold:20,honor:[fac,-5],morale:-3},{rep:['Ashford',4],gold:10},{sp:-8,rep:['Ashford',3],goods:{iron:2}},{troops:{[U]:2},gold:-15},{gold:40},{morale:-6}],bad=[];
-   for(const o of samples){fresh();P.gold=100;const a=snap();O.apply(o,{});const w=said(a,snap(),o).join(' · ');if(w!==t.describeOutcome(o))bad.push(w+' ≠ '+t.describeOutcome(o))}
+   for(const o of samples){fresh();P.gold=100;const a=snap();O.apply(o,{});const w=said(a,snap(),o).join(', ');if(w!==t.describeOutcome(o))bad.push(w+' ≠ '+t.describeOutcome(o))}
    ok(!bad.length,'what describeOutcome says is what applyOutcome did, for '+samples.length+' outcomes'+(bad.length?': '+bad.join('; '):''))}}
  // ---- the road's choices: showing an outcome does nothing; their facts written from it (the lines kept by hand: INFO)
  {const ks=Object.keys(t.ROAD_ENC),miss=[],kept=[];let pure=0,impure=[];
@@ -83,15 +83,15 @@ Kit.suite(({ok,info})=>{
    e.D.acts.forEach((c,i)=>{if(!c.out)return;const before=JSON.stringify([P.gold,P.morale,P.rep,P.honor,P.inv,P.troops,G.clock,G.msgs.length]);let d=0;const r0=Math.random,s0=JSON.stringify(t.Rng.states());Math.random=()=>{d++;return r0()};
     let o=null;try{o=c.preview(e)}finally{Math.random=r0}if(JSON.stringify(t.Rng.states())!==s0)d++;const after=JSON.stringify([P.gold,P.morale,P.rep,P.honor,P.inv,P.troops,G.clock,G.msgs.length]);if(d||before!==after||!t.Outcome.is(o))impure.push(k+'#'+i);else pure++;
     const fs=(c.factsFor(e)||[]).filter(Boolean),said=t.Outcome.facts(o),own=c.also?(c.also(e)||[]).filter(Boolean):[];
-    if(c.facts||fs.slice(0,said.length).join(' · ')!==said.join(' · ')||fs.length!==said.length+own.length||fs.some(f=>/\bhonor\b/.test(f)))miss.push(k+' “'+c.label+'” ['+fs.join(' · ')+']');
-    if(own.length)kept.push(k+' “'+c.label+'”: '+own.join(' · ').replace(/<[^>]+>/g,''))})}
+    if(c.facts||fs.slice(0,said.length).join(', ')!==said.join(', ')||fs.length!==said.length+own.length||fs.some(f=>/\bhonor\b/.test(f)))miss.push(k+' “'+c.label+'” ['+fs.join(', ')+']');
+    if(own.length)kept.push(k+' “'+c.label+'”: '+own.join(', ').replace(/<[^>]+>/g,''))})}
   ok(pure>=20&&!impure.length,'every road choice that declares its outcome shows it with no draw and no change ('+pure+' of them)'+(impure.length?': not '+impure.join(' '):''));
   // (the sealed letter's verbs and the shrine's: a messenger's letter, sealed and unseen, opened and seen; a real shrine)
   {Kit.world();Kit.clear();Kit.goHome();W.road=null;let m=null;for(let i=0;i<12&&!m;i++)m=t.roadSpawn('messenger',P.x+10+i*24,P.y);const sh=W.sites.find(x=>x.type==='shrine');
    for(const L of m?[{...m.letter,seal:1,seen:0},{...m.letter,seal:0,seen:1}]:[])t.LETTER_VERBS.forEach(c=>{if(!c.out)return;const fs=(c.factsFor(L)||[]).filter(Boolean),said=t.Outcome.facts(c.preview(L)),own=c.also?(c.also(L)||[]).filter(Boolean):[];
-    if(c.facts||fs.join(' · ')!==said.concat(own).join(' · '))miss.push('letter “'+c.label+'” ['+fs.join(' · ')+']');if(own.length)kept.push('letter “'+c.label+'”'+(L.seen?' (seen)':'')+': '+own.join(' · '))});
-   if(sh)t.SHRINE_CHOICES.forEach(c=>{const fs=c.factsFor(sh);if(c.facts||fs.join(' · ')!==t.Outcome.describe(c.preview(sh)))miss.push('shrine “'+c.label+'” ['+fs.join(' · ')+']')});
-   ok(m&&sh&&t.SHRINE_CHOICES[1].factsFor(sh).join(' · ')==='−25 gold · fully restored · morale +10 · +40 XP','and the sealed letter\'s and the shrine\'s (the offering shows its cost: '+(sh?t.SHRINE_CHOICES[1].factsFor(sh).join(' · '):'no shrine')+')')}
+    if(c.facts||fs.join(', ')!==said.concat(own).join(', '))miss.push('letter “'+c.label+'” ['+fs.join(', ')+']');if(own.length)kept.push('letter “'+c.label+'”'+(L.seen?' (seen)':'')+': '+own.join(', '))});
+   if(sh)t.SHRINE_CHOICES.forEach(c=>{const fs=c.factsFor(sh);if(c.facts||fs.join(', ')!==t.Outcome.describe(c.preview(sh)))miss.push('shrine “'+c.label+'” ['+fs.join(', ')+']')});
+   ok(m&&sh&&t.SHRINE_CHOICES[1].factsFor(sh).join(', ')==='−25 gold, fully restored, morale +10, +40 XP','and the sealed letter\'s and the shrine\'s (the offering shows its cost: '+(sh?t.SHRINE_CHOICES[1].factsFor(sh).join(', '):'no shrine')+')')}
   ok(!miss.length,'every choice that declares its outcome has its facts written from it (its own lines after), one spelling: honour'+(miss.length?': not '+miss.join('; '):''));
   info('lines kept by hand, after the outcome\'s ('+kept.length+'): what no outcome can say');for(const m of kept)info('  '+m)}
  // ---- choices
@@ -107,10 +107,10 @@ Kit.suite(({ok,info})=>{
   ok(t.ROAD_ENC.traveller.acts.every(a=>a instanceof C)&&t.ROAD_ENC.merchant.acts.includes(t.ROAD_ASK)&&t.LETTER_VERBS.every(a=>a instanceof C)&&t.SHRINE_CHOICES.length===2,'the road\'s kinds, the sealed letter\'s verbs and the shrine\'s are Choices')}
  // ---- the ChoicePage: its frame
  {Kit.world();const C=t.Choice,cs=C.list([{icon:'gold',label:'First',facts:()=>['a fact'],tip:'tip one'},{icon:'eye',label:'Hidden',when:()=>false},{icon:'sword',label:'Greyed',need:()=>'Not now',ask:()=>'Really?',out:()=>({gold:-3})}]),s={};
-  G.mode='road';t.CHOICE_PAGE.show({ico:'scroll',title:'A test page',sub:'Somewhere · day 1',msg:'Last thing',text:'What you see here.',facts:['one','two'],choices:cs,subject:s,act:'zz-do',back:['zz-back',null,'Back'],close:['zz-out',null,'Leave']},'zz:1');
+  G.mode='road';t.CHOICE_PAGE.show({ico:'scroll',title:'A test page',sub:'Somewhere, day 1',msg:'Last thing',text:'What you see here.',facts:['one','two'],choices:cs,subject:s,act:'zz-do',back:['zz-back',null,'Back'],close:['zz-out',null,'Leave']},'zz:1');
   const q=Kit.q,qa=Kit.qa,nav=q('.rwin .nav'),bs=nav?[...nav.querySelectorAll('button')]:[];
-  ok(q('#panel.paged')&&q('.rwin .top h2').textContent==='A test page'&&q('.rwin .top .muted').textContent==='Somewhere · day 1'&&q('.rw-gold'),'its header: its icon, title, where, your gold');
-  ok(q('.pg-msg').textContent==='Last thing'&&q('.rwbody>p:not(.pg-msg):not(.pg-facts)').textContent==='What you see here.'&&q('.pg-facts').textContent==='one · two','its content: the last result, what you see, what you know');
+  ok(q('#panel.paged')&&q('.rwin .top h2').textContent==='A test page'&&q('.rwin .top .muted').textContent==='Somewhere, day 1'&&q('.rw-gold'),'its header: its icon, title, where, your gold');
+  ok(q('.pg-msg').textContent==='Last thing'&&q('.rwbody>p:not(.pg-msg):not(.pg-facts)').textContent==='What you see here.'&&q('.pg-facts').textContent==='one, two','its content: the last result, what you see, what you know');
   const ka=qa('.rkact');ok(ka.map(b=>b.querySelector('b').textContent).join('|')==='First|Greyed'&&ka[0].dataset.act==='zz-do'&&ka[0].dataset.arg==='0'&&ka[1].dataset.arg==='2'&&ka[1].disabled&&/Not now/.test(ka[1].textContent)&&/a fact/.test(ka[0].textContent)&&/−3 gold/.test(ka[1].textContent),'its choices as key actions: only those offered, each its place, greyed with why, its facts (by hand, or its outcome\'s)');
   ok(bs.length===2&&bs[0].dataset.nav==='back'&&bs[0].dataset.act==='zz-back'&&bs[1].dataset.nav==='close'&&bs[1].dataset.act==='zz-out'&&bs[1].textContent==='Leave'&&nav.firstElementChild===bs[0]&&nav.lastElementChild===bs[1],'its bottom bar (the frame rule): Back on the left, the way out on the right');
   ok(t.CHOICE_PAGE.choose(cs,'0',s)===cs[0]&&!t.CHOICE_PAGE.choose(cs,'1',s)&&!t.CHOICE_PAGE.choose(cs,'2',s)&&t.CHOICE_PAGE.choose(cs,'0!',s)===cs[0],'a press picks only a choice offered and free');

@@ -61,7 +61,7 @@ class BattleSides{
  activate(){
   if(this.active)return;this.active=true;const b=this.b;
   this.memo=null;for(const r of this.records)r.team=r.id;
-  for(const r of this.records)for(const id of r.groups){const g=b.groups[id];if(!g)continue;g.team=r.team;if(r.team!==0&&!g.armyName){g.armyName=this.label(r);g.name=g.armyName+' · '+g.name}g.ally=r.team!==0&&this.relation(0,r.team)>0;g.foe=this.relation(0,r.team)<0;if(g.resolve)g.resolve.team=r.team;for(const u of b.units)if(u.grp===id){u.team=r.team;u.hid=0;delete u.ls;delete u.rv;u.tgt=null;if(u.leader)u.leader.team=r.team}}
+  for(const r of this.records)for(const id of r.groups){const g=b.groups[id];if(!g)continue;g.team=r.team;if(r.team!==0&&!g.armyName){g.armyName=this.label(r);g.name=g.armyName+', '+g.name}g.ally=r.team!==0&&this.relation(0,r.team)>0;g.foe=this.relation(0,r.team)<0;if(g.resolve)g.resolve.team=r.team;for(const u of b.units)if(u.grp===id){u.team=r.team;u.hid=0;delete u.ls;delete u.rv;u.tgt=null;if(u.leader)u.leader.team=r.team}}
   for(const a of b.arrows)if(a.by)a.team=a.by.team;b.captains={};b.sight=null;b.cmdT=0;
  }
  // (your side by duty: an ally of yours in this fight, or the land's own lord or watch against outlaws on it: engage.js localBanditDuty;

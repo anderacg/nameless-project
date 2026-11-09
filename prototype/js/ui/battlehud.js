@@ -96,8 +96,8 @@ const ammoText=m=>{const q=quiverLeft(m);return q?q.left+'/'+q.tot:''};
 function groupAbilityText(g){const gr=B.groups[g],m=grpUnits(g);if(!gr)return '';const eligible=m.filter(shieldEligible).length,parts=[];
   if(eligible)parts.push('Shield wall: '+eligible+'/'+m.length+' eligible, '+m.filter(shieldWallActive).length+' active'+(gr.shieldWall?'':' (off)'));
   if(gr.form==='wedge'){const n=wedgeMembers(g).length;parts.push('Wedge: '+n+' formed cavalry, +'+Math.round(wedgeBonus(n)*1000)/10+'% charge')}
-  return parts.join(' · ')}
-function moraleContextText(mo){if(!mo||mo.cohesion==null)return '';return (mo.weak.includes('outmatched')?'Outmatched · ':'')+(mo.weak.includes('outnumbered')?'Locally overwhelmed · ':'')+'Cohesion '+Math.round(mo.cohesion*100)+'%'+(mo.lossStrain>0.1?' · Recent-loss pressure '+mo.lossStrain.toFixed(1):'')}
+  return parts.join(', ')}
+function moraleContextText(mo){if(!mo||mo.cohesion==null)return '';return (mo.weak.includes('outmatched')?'Outmatched, ':'')+(mo.weak.includes('outnumbered')?'Locally overwhelmed, ':'')+'Cohesion '+Math.round(mo.cohesion*100)+'%'+(mo.lossStrain>0.1?', Recent-loss pressure '+mo.lossStrain.toFixed(1):'')}
 /* a unit card, all pictures and no words: its key, its soldiers' portrait (All: the troops icon), how many, its shape and
    formation, up to CARD.show status icons, its health, morale and stamina bars. The words are in its tooltip (title and
    aria-label; a long press on a phone shows them) and in each icon's own (an SVG title). Its statuses, most pressing first
@@ -159,7 +159,7 @@ function bhudCards(){
   if(row.dataset.groups!==signature){row.dataset.groups=signature;row.classList.toggle('many',ids.length>8);row.replaceChildren();ids.forEach(id=>{const b=document.createElement('button');b.type='button';b.className='ucard'+(id==='all'?' all':'');b.dataset.grp=id;row.appendChild(b)})}
   const keys=Object.fromEntries(ids.map(id=>[id,[]]));for(const k of '1234567890'){const gs=ctrlGroups(k);for(const g of gs==='all'?ids.filter(id=>id==='all'||grpUnits(id).length):gs)if(keys[g])keys[g].push(k)}
   // Update bindings without replacing cards or losing focus. Two keys fit; the tooltip carries every key.
-  for(const b of row.children){const ks=keys[b.dataset.grp];b.dataset.key=ks.join(', ');b.dataset.badge=ks.slice(0,2).join('·')+(ks.length>2?'+'+(ks.length-2):'');if(ks.length)b.setAttribute('aria-keyshortcuts',ks.join(' '));else b.removeAttribute('aria-keyshortcuts')}
+  for(const b of row.children){const ks=keys[b.dataset.grp];b.dataset.key=ks.join(', ');b.dataset.badge=ks.slice(0,2).join(',')+(ks.length>2?'+'+(ks.length-2):'');if(ks.length)b.setAttribute('aria-keyshortcuts',ks.join(' '));else b.removeAttribute('aria-keyshortcuts')}
 }
 function bhudCard(b,g){
   const m=g==='all'?playerGroups().flatMap(grpUnits):grpUnits(g),n=m.length,on=B.sel===g||Array.isArray(B.sel)&&B.sel.includes(g),gr=B.groups[g];
@@ -171,8 +171,8 @@ function bhudCard(b,g){
   if(b.cardHead!==head){b.cardHead=head;b.innerHTML=head+'<span class="ubars"></span>'}
   const bars='<span class="ub"><i class="chp" style="width:'+pct(hp)+'"></i></span>'+(mo?'<span class="ub"><i class="cmo'+(mo.v<MORALE.waver/100?' low':'')+'" style="width:'+pct(mo.v)+'"></i></span>':'')+(stm!=null?'<span class="ub"><i class="cst'+(stm*FATIGUE.max<FATIGUE.tired?' low':'')+'" style="width:'+pct(stm)+'"></i></span>':''),bb=b.querySelector('.ubars');
   if(bb.cardBars!==bars){bb.cardBars=bars;bb.innerHTML=bars}
-  b.title=(g==='all'?'All troops: '+n:groupName(g)+': '+n+(gr&&g!=='hero'?' · '+FORMS[gr.form||'line'].n.toLowerCase()+(sh?' '+sh.files+' wide, '+sh.ranks+' deep':''):''))+(mo?' · morale '+Math.round(mo.v*100)+' ('+MORALE_STATE[mo.state].n.toLowerCase()+')':'')+
-    (st.length?' · '+st.map(o=>o.s).join(' · '):'')+(g!=='all'&&groupAbilityText(g)?' · '+groupAbilityText(g):'')+(b.dataset.key?' ('+b.dataset.key+')':'');
+  b.title=(g==='all'?'All troops: '+n:groupName(g)+': '+n+(gr&&g!=='hero'?', '+FORMS[gr.form||'line'].n.toLowerCase()+(sh?' '+sh.files+' wide, '+sh.ranks+' deep':''):''))+(mo?', morale '+Math.round(mo.v*100)+' ('+MORALE_STATE[mo.state].n.toLowerCase()+')':'')+
+    (st.length?', '+st.map(o=>o.s).join(', '):'')+(g!=='all'&&groupAbilityText(g)?', '+groupAbilityText(g):'')+(b.dataset.key?' ('+b.dataset.key+')':'');
   b.setAttribute('aria-label',b.title);b.disabled=g!=='all'&&!n;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));
 }
 // the selected unit's details (bottom left): one group in full; several, a line each
@@ -182,15 +182,15 @@ function bhudInfo(){
   const stat=(g)=>{const m=grpUnits(g),gr=B.groups[g],mo=B.noMorale?null:grpMorale(m),hp=m.reduce((a,u)=>a+u.hp,0),mx=m.reduce((a,u)=>a+u.max,0);return{m,gr,mo,hp,mx}};
   if(gs.length>1){setHtml(el,'<div class="bi-title">'+(B.sel==='all'?'All troops':gs.length+' units')+'</div>'+gs.map(g=>{const S=stat(g);return '<div class="bi-row"><img class="bi-mini" src="'+hudPic(g==='hero'?'hero':repOf(S.m),g==='hero')+'" alt=""><span class="bi-n">'+htmlText(groupName(g))+' <b>'+S.m.length+'</b></span><span class="ub"><i class="chp" style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i></span>'+(aiHas(S.gr)?badgeSVG('ai',12):'')+(S.mo?badgeSVG(stateIcon(S.mo.state),12)+(S.mo.confident?badgeSVG('confident',12):''):'')+'</div>'}).join(''));return}
   const g=gs[0],S=stat(g),gr=S.gr,rep=g==='hero'?'hero':repOf(S.m),st=g==='hero'?B.hero.s:ST[rep]||S.m[0].s,sh=g!=='hero'?grpShape(g):null;
-  const flags=[S.mo&&S.mo.breaking?'Breaking: '+S.mo.breaking+' (morale collapse)':'',gr.walk?'Walking':'Running',gr.firm?'Holding ground':'',gr.cease?'Cease fire':'',gr.skirmish?'Skirmishing':'',gr.melee===false&&grpUnits(g).some(u=>u.s.range)?'Melee mode off':'',(r=>r&&r.on<r.of?r.on+'/'+r.of+' mounted':'')(Dismount.tally(S.m)),S.mo?.confident?'Confident: local superiority':''].filter(Boolean).join(' · ');
+  const flags=[S.mo&&S.mo.breaking?'Breaking: '+S.mo.breaking+' (morale collapse)':'',gr.walk?'Walking':'Running',gr.firm?'Holding ground':'',gr.cease?'Cease fire':'',gr.skirmish?'Skirmishing':'',gr.melee===false&&grpUnits(g).some(u=>u.s.range)?'Melee mode off':'',(r=>r&&r.on<r.of?r.on+'/'+r.of+' mounted':'')(Dismount.tally(S.m)),S.mo?.confident?'Confident: local superiority':''].filter(Boolean).join(', ');
   const head='<div class="bi-head"><button class="bi-picb'+(B.infoCard?' on':'')+'" type="button" data-bi-card title="'+(B.infoCard?'Back to its orders and bars':'Its unit card')+'" aria-pressed="'+!!B.infoCard+'"><img class="bi-pic" src="'+hudPic(rep,g==='hero')+'" alt=""></button><div><div class="bi-title">'+htmlText(g==='hero'&&!gr.customName?(P.name||'Your hero'):groupName(g))+'</div><small>'+(g==='hero'?'Your hero':S.m.length+' × '+(ST[rep]?ST[rep].n:rep))+'</small>'+
-    '<small>'+(aiHas(gr)?'AI · ':'')+(gr.amove?'Attack-move':cap1(gr.order))+(g!=='hero'?' · '+FORMS[gr.form||'line'].n+(sh?' '+sh.files+'×'+sh.ranks:''):'')+'</small></div></div>';
+    '<small>'+(aiHas(gr)?'AI, ':'')+(gr.amove?'Attack-move':cap1(gr.order))+(g!=='hero'?', '+FORMS[gr.form||'line'].n+(sh?' '+sh.files+'×'+sh.ranks:''):'')+'</small></div></div>';
   if(B.infoCard){setHtml(el,head+bhudCardOf(g,S,rep,st));return}
   setHtml(el,head+
     '<div class="bi-bar hp"><i style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i><em>Health '+Math.round(S.hp)+' / '+Math.round(S.mx)+'</em></div>'+
     (g==='hero'&&B.hx?'<div class="bi-bar sp"><i style="width:'+pct(B.hx.sp/maxSP())+'"></i><em>Stamina '+Math.round(B.hx.sp)+'</em></div><div class="bi-bar mp"><i style="width:'+pct(B.hx.mp/maxMP())+'"></i><em>Mana '+Math.round(B.hx.mp)+'</em></div>':'')+
-    (g!=='hero'&&grpStamina(S.m)!=null?(st=>'<div class="bi-bar st"><i class="'+(st*FATIGUE.max<FATIGUE.tired?'low':'')+'" style="width:'+pct(st)+'"></i><em>Stamina '+Math.round(st*FATIGUE.max)+(st*FATIGUE.max<FATIGUE.spent?' · spent':st*FATIGUE.max<FATIGUE.tired?' · tired':'')+'</em></div>')(grpStamina(S.m)):'')+
-    (S.mo?'<div class="bi-bar mo"><i class="'+(S.mo.v<MORALE.waver/100?'low':'')+'" style="width:'+pct(S.mo.v)+'"></i><em>Morale '+Math.round(S.mo.v*100)+' · '+MORALE_STATE[S.mo.state].n+'</em></div>'+
+    (g!=='hero'&&grpStamina(S.m)!=null?(st=>'<div class="bi-bar st"><i class="'+(st*FATIGUE.max<FATIGUE.tired?'low':'')+'" style="width:'+pct(st)+'"></i><em>Stamina '+Math.round(st*FATIGUE.max)+(st*FATIGUE.max<FATIGUE.spent?', spent':st*FATIGUE.max<FATIGUE.tired?', tired':'')+'</em></div>')(grpStamina(S.m)):'')+
+    (S.mo?'<div class="bi-bar mo"><i class="'+(S.mo.v<MORALE.waver/100?'low':'')+'" style="width:'+pct(S.mo.v)+'"></i><em>Morale '+Math.round(S.mo.v*100)+', '+MORALE_STATE[S.mo.state].n+'</em></div>'+
       (S.mo.confident?'<div class="bi-weak"><span title="'+CONFIDENCE_LABEL+'">'+badgeSVG('confident',14)+'Confident</span></div>':'')+
       (S.mo.weak.length?'<div class="bi-weak">'+S.mo.weak.map(w=>'<span title="'+WEAK_N[w]+'">'+badgeSVG(w,12)+WEAK_N[w].split(':')[0]+'</span>').join('')+'</div>':''):'')+
     (st?'<div class="bi-stats"><span><b>Damage</b>'+Math.round(st.dmg)+'</span><span><b>'+(st.range?'Range':'Reach')+'</b>'+(st.range||st.reach)+'</span><span><b>Speed</b>'+Math.round(st.spd)+'</span><span><b>Health</b>'+Math.round(st.hp)+'</span>'+(ammoText(S.m)?'<span><b>Ammo</b>'+ammoText(S.m)+'</span>':'')+'</div>':'')+
@@ -208,8 +208,8 @@ function bhudTop(){
   for(const u of B.units){if(u.hp<=0)continue;if(battleFriend(0,u)){nm++;if(!u.rout)me+=w(u)}else if(battleEnemy(0,u)){nf++;if(!u.rout)foe+=w(u)}}
   const $id=id=>document.getElementById(id);if(!$id('bMine'))return;$id('bMine').textContent=nm;$id('bFoe').textContent=nf;$id('bPowMe').style.width=pct(me/Math.max(.01,me+foe));
   const huntEnd=$id('huntEnd');if(huntEnd)huntEnd.hidden=!B.hunt;const foeLabel=$id('bFoeLabel');if(foeLabel)foeLabel.textContent=B.hunt?'Wildlife':B.sides?.active?'Hostile':'Enemy';
-  $id('bField').textContent=B.env.name+(B.env.w&&WEATHER.kinds[B.env.w]?' · '+Weather.name(B.env.w):'')+(B.opts.tournament?' · tournament':'')+(B.sides?' · '+B.sides.records.filter(r=>r.joined).length+'/'+BATTLE_JOIN.armies+' armies':'');
-  $id('bStatus').textContent=B.over?(B.hunt?'Hunt over':B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.muster?.active?(B.paused?'Preparation paused · Space to continue':'Forming up · '+B.muster.done+'/'+B.muster.entries.length):B.ready?'Ready · Start Battle to begin':B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone · Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused · give your orders · Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
+  $id('bField').textContent=B.env.name+(B.env.w&&WEATHER.kinds[B.env.w]?', '+Weather.name(B.env.w):'')+(B.opts.tournament?', tournament':'')+(B.sides?', '+B.sides.records.filter(r=>r.joined).length+'/'+BATTLE_JOIN.armies+' armies':'');
+  $id('bStatus').textContent=B.over?(B.hunt?'Hunt over':B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.muster?.active?(B.paused?'Preparation paused, Space to continue':'Forming up, '+B.muster.done+'/'+B.muster.entries.length):B.ready?'Ready, Start Battle to begin':B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone, Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused, give your orders, Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
   {const b=$id('bAmove');if(b){b.classList.toggle('on',!!B.amArm);b.setAttribute('aria-pressed',String(!!B.amArm));b.disabled=!!B.deploy}}// (armed: commands.js armAttackMove)
   bhudSkills();bhudRing();bhudArmies();withdrawView.hud();bhudSkip();
@@ -235,22 +235,22 @@ class BattleArmyHud{
  direction(o){const p=fromField(B.world.field(o)),a=Math.round(Math.atan2(p.y-BVH/2,p.x-BVW/2)/(Math.PI/4)),i=(a+8)%8;return ['→ E','↘ SE','↓ S','↙ SW','← W','↖ NW','↑ N','↗ NE'][i]}
  pending(r){return B.world.pending.find(p=>p.o===r.owner)}
  state(r){
-  const p=this.pending(r);if(p){const count=p.existing?p.existing.reduce((n,id)=>n+B.units.filter(u=>u.grp===id).length,0):null;return !this.s.room(p.o,count)?'Waiting to enter · fighter limit':'Approaching'}
-  if(!r.joined)return r.away?'Turned away':'Not yet entered';const m=this.s.survivors(r);if(!m.length)return 'Defeated';return m.some(u=>u.hp>0&&!u.left&&!u.rout&&!withdrawing(u))?'Fighting · '+m.length:'Withdrawn / withdrawing';
+  const p=this.pending(r);if(p){const count=p.existing?p.existing.reduce((n,id)=>n+B.units.filter(u=>u.grp===id).length,0):null;return !this.s.room(p.o,count)?'Waiting to enter, fighter limit':'Approaching'}
+  if(!r.joined)return r.away?'Turned away':'Not yet entered';const m=this.s.survivors(r);if(!m.length)return 'Defeated';return m.some(u=>u.hp>0&&!u.left&&!u.rout&&!withdrawing(u))?'Fighting, '+m.length:'Withdrawn / withdrawing';
  }
  update(){
   if(!B?.sides){this.root.hidden=true;this.close();this.battle=null;return}
   if(this.battle!==B){this.battle=B;this.s=B.sides;this.selected=0;this.close();this.noticed=new Set();this.signature=null;this.detailSignature=null}
   this.root.hidden=false;this.toggle.textContent='Armies '+this.s.records.filter(r=>r.joined).length+'/'+BATTLE_JOIN.armies+' '+(this.panel.hidden?'▾':'▴');
-  const pending=this.s.records.filter(r=>this.pending(r)),lines=pending.map(r=>({r,text:this.direction(r.owner)+' · '+this.s.label(r)+' — '+this.relation(r)+' · '+this.state(r)}));
+  const pending=this.s.records.filter(r=>this.pending(r)),lines=pending.map(r=>({r,text:this.direction(r.owner)+', '+this.s.label(r)+' — '+this.relation(r)+', '+this.state(r)}));
   for(const {r,text} of lines)if(!this.noticed.has(r.id)){this.noticed.add(r.id);callout(text,r.team,'approach:'+r.id,{major:true,side:this.relation(r)==='Ally'?'ally':this.relation(r)==='Neutral'?'neutral':'foe'})}
-  const sig=lines.map(l=>l.text).join('|');if(sig!==this.signature){this.signature=sig;const el=this.root.querySelector('.army-arrivals');el.replaceChildren();for(const {r,text} of lines.slice(0,2)){const b=document.createElement('button');b.type='button';b.dataset.army=r.id;b.textContent=text;b.title='View this army’s allies and enemies';b.addEventListener('click',()=>{window.mobileBattleHud?.close();this.panel.hidden=false;this.toggle.setAttribute('aria-expanded','true')});el.appendChild(b)}if(lines.length>2){const more=document.createElement('small');more.textContent='+'+(lines.length-2)+' more approaching · see Armies';el.appendChild(more)}}
+  const sig=lines.map(l=>l.text).join('|');if(sig!==this.signature){this.signature=sig;const el=this.root.querySelector('.army-arrivals');el.replaceChildren();for(const {r,text} of lines.slice(0,2)){const b=document.createElement('button');b.type='button';b.dataset.army=r.id;b.textContent=text;b.title='View this army’s allies and enemies';b.addEventListener('click',()=>{window.mobileBattleHud?.close();this.panel.hidden=false;this.toggle.setAttribute('aria-expanded','true')});el.appendChild(b)}if(lines.length>2){const more=document.createElement('small');more.textContent='+'+(lines.length-2)+' more approaching, see Armies';el.appendChild(more)}}
   if(!this.panel.hidden)this.render();
  }
  fit(){const screen=document.getElementById('screen').getBoundingClientRect(),r=this.root.parentElement.getBoundingClientRect(),space=this.root.closest('.mobile-battle-hud')?r.top-screen.top-6:screen.bottom-r.bottom-6;this.panel.style.maxHeight=Math.max(60,Math.floor(space))+'px'}
  render(){
   this.fit();const s=this.s,r=s.records.find(q=>q.id===this.selected)||s.records[0],rows=s.records.map(q=>({q,name:s.label(q),relation:this.relation(q),state:this.state(q)})),sig=JSON.stringify([r.id,rows.map(x=>[x.name,x.relation,x.state]),s.records.map(q=>s.pair(r,q))]);if(sig===this.detailSignature)return;this.detailSignature=sig;
-  const banners=this.root.querySelector('.army-banners');setHtml(banners,rows.map(({q,name,relation,state})=>'<button type="button" data-army="'+q.id+'" aria-pressed="'+(q===r)+'"><span class="army-flag" style="background:'+s.colour(q.id)+'" aria-hidden="true">⚑</span><span><strong>'+htmlText(name)+'</strong><small>'+htmlText(relation+' · '+state)+'</small></span></button>').join(''));
+  const banners=this.root.querySelector('.army-banners');setHtml(banners,rows.map(({q,name,relation,state})=>'<button type="button" data-army="'+q.id+'" aria-pressed="'+(q===r)+'"><span class="army-flag" style="background:'+s.colour(q.id)+'" aria-hidden="true">⚑</span><span><strong>'+htmlText(name)+'</strong><small>'+htmlText(relation+', '+state)+'</small></span></button>').join(''));
   const names=v=>s.records.filter(q=>q!==r&&s.pair(r,q)===v).map(q=>htmlText(s.label(q))).join(', ')||'None';
   this.root.querySelector('.army-relations').innerHTML='<strong>'+htmlText(s.label(r))+'</strong><dl><dt>Allies</dt><dd>'+names(1)+'</dd><dt>Enemies</dt><dd>'+names(-1)+'</dd><dt>Neutral</dt><dd>'+names(0)+'</dd></dl><small>Neutral armies may fight each other. Viewing an army does not issue orders.</small>';
  }

@@ -75,13 +75,13 @@ function lordTies(l,known=true){
 }
 function relHtml(l,showTies=true){
   const why=(P.lrelWhy||{})[l.id]||[],R=RELATION,v=relWith(l);
-  return '<p>Toward you: '+relTag(v)+(why.length?' <span class="muted" style="font-size:13px">· '+why.slice().reverse().map(w=>w.why+' ('+(w.n>0?'+':'')+w.n+')').join(' · ')+'</span>':'')+'</p>'+
+  return '<p>Toward you: '+relTag(v)+(why.length?'<span class="muted" style="font-size:13px">, '+why.slice().reverse().map(w=>w.why+' ('+(w.n>0?'+':'')+w.n+')').join(', ')+'</span>':'')+'</p>'+
     (showTies?lordTies(l):'');
 }
 // (what his liking lets you do, as replies of his talk (story/conversation.js): a gift (Sway), his soldiers lent a friend (Ask);
 // the loan, before he is a friend, is a favour to ask instead (DIALOGUE.checks.favour))
 function relReplies(l){const R=RELATION,v=relWith(l),giftWait=(l.gift||0)>G.day,lendWait=(l.lend||0)>G.day;
-  return [{act:'lr-gift',arg:l.id,label:'Give '+pr(l).him+' a gift',short:'a gift',topic:'sway',note:R.gift.gold+' gold · relation +'+R.gift.rel,why:P.gold<R.gift.gold?'Not enough gold':giftWait?'Gave lately':''},
+  return [{act:'lr-gift',arg:l.id,label:'Give '+pr(l).him+' a gift',short:'a gift',topic:'sway',note:R.gift.gold+' gold, relation +'+R.gift.rel,why:P.gold<R.gift.gold?'Not enough gold':giftWait?'Gave lately':''},
     v>=R.troopsAt&&{act:'lr-troops',arg:l.id,label:'Ask for '+R.troops+' of '+pr(l).his+' soldiers',short:pr(l).his+' soldiers',topic:'ask',note:'for '+R.troopsDays+' days, a friend\'s loan',why:lendWait?'Asked lately':l.troops.length<R.troops+6?'Too few to spare':!lendFits(l)?'No room in your band':''}].filter(Boolean)}
 // (why he cannot lend you soldiers now, his liking aside; and his lending them. Room: his men of a kind your units can take, in a
 // unit of theirs or a free unit slot (whole units since 803bd3a: room by headcount alone lent no one into a full band of slots))

@@ -68,7 +68,7 @@ class LordParty extends Party{
   meet(){lordMeet(this)}
   mapDot(V){return !this.dead&&!this.inside&&yourSight(V).sees(this.x,this.y)?[FACS[this.fac].col,1]:null}
   label(){return this.name}
-  tip(){return '<b>'+htmlText(lordName(this))+' <span class="muted">Lv '+lordStats(this).lv+'</span></b><small>'+tipFac(this.fac)+' · '+this.fighters+' fighters, including the leader'+tipOdds(this.power())+paceVs(lordSpeed(this))+'</small>'+Houses.tagOf(this)+'<span class="act">Click: actions · double-click: '+(hostileTo(this.fac)?'fight':'talk')+'</span>'}
+  tip(){return '<b>'+htmlText(lordName(this))+' <span class="muted">Lv '+lordStats(this).lv+'</span></b><small>'+tipFac(this.fac)+', '+this.fighters+' fighters, including the leader'+tipOdds(this.power())+paceVs(lordSpeed(this))+'</small>'+Houses.tagOf(this)+'<span class="act">Click: actions, double-click: '+(hostileTo(this.fac)?'fight':'talk')+'</span>'}
   get brain(){return BRAINS.lord}
   shelterWhy(t){return t&&t.owner!==this.fac?'Not a holding of '+pr(this).his+' realm':super.shelterWhy(t)}
   banner(){return{k:'banner',col:FACS[this.fac].col,dev:this.fac}}
@@ -81,7 +81,7 @@ class CompanionParty extends Party{
   get faction(){return 'player'}
   // (its leader's Leadership makes it stronger)
   power(){return power(this.troops)*(1+.04*compSkill(this.cid,'lead'))}
-  tip(){return '<b>'+this.label()+'</b><small>Your companion · '+this.fighters+' fighters · '+({follow:'following you',patrol:'patrolling '+this.base,return:'coming back'})[this.order]+'</small><span class="act">Click: actions · double-click: orders</span>'}
+  tip(){return '<b>'+this.label()+'</b><small>Your companion, '+this.fighters+' fighters, '+({follow:'following you',patrol:'patrolling '+this.base,return:'coming back'})[this.order]+'</small><span class="act">Click: actions, double-click: orders</span>'}
   get brain(){return BRAINS.cparty}
   shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)}
   enter(t){this.inside=t.name;this.x=t.x;this.y=t.y}
@@ -95,7 +95,7 @@ class PatrolParty extends Party{
   meet(){patrolMeet(this)}
   get meetsAnyTime(){return true}
   label(){return watchName(this)}
-  tip(){return '<b>'+watchName(this)+'</b><small>'+tipFac(this.fac)+' · '+this.fighters+' fighters'+(hostileTo(this.fac)?tipOdds(this.power()):'')+'</small><span class="act">Click: actions · double-click: meet</span>'}
+  tip(){return '<b>'+watchName(this)+'</b><small>'+tipFac(this.fac)+', '+this.fighters+' fighters'+(hostileTo(this.fac)?tipOdds(this.power()):'')+'</small><span class="act">Click: actions, double-click: meet</span>'}
   mapDot(V){return yourSight(V).sees(this.x,this.y)?[this.fac==='player'?FACS.player.col:FACS[this.fac].col,1]:null}
   get brain(){return BRAINS.patrol}
   banner(){return watchOf(this)==='night'?{k:'pennant',col:WATCH.night.pennant,dev:'lantern'}:{k:'pennant',col:this.fac==='player'?FACS.player.col:FACS[this.fac].col,dev:this.fac}}// (the day watch: its holding's realm's pennant; the night watch: a dark one with a lantern)
@@ -114,12 +114,12 @@ class BandParty extends Party{
   get faction(){return null}
   // (its chieftain hardens it: leaders.js chiefLv)
   power(){return this.pw||(this.pw=rating(this.troops,chiefLv(this)))}
-  tip(){return '<b>'+this.label()+'</b>'+chiefTip(this)+'<small>'+this.fighters+' fighters'+tipOdds(this.power())+paceVs(partySpeed(this,this.troops))+'</small>'+(this.carry?'<small class="gold">They hold '+this.carry.map(c=>c.n).join(' and ')+' captive</small>':'')+'<span class="act">Click: actions · double-click: attack</span>'}
+  tip(){return '<b>'+this.label()+'</b>'+chiefTip(this)+'<small>'+this.fighters+' fighters'+tipOdds(this.power())+paceVs(partySpeed(this,this.troops))+'</small>'+(this.carry?'<small class="gold">They hold '+this.carry.map(c=>c.n).join(' and ')+' captive</small>':'')+'<span class="act">Click: actions, double-click: attack</span>'}
   get brain(){return BRAINS.band}
   // (a tattered rag: red, a desert raider's ochre, a bog raider's green; flagB, colB: a fight's own men under their place's flag and
   //  colours (battle/setup.js: a camp's or a hideout's, sites.js flag; a realm's real toll-men, their holding's: encounters.js roadFight))
   banner(){return this.flagB!==undefined?this.flagB:{k:'rag',col:BAND_FLAG[this.kind]||BAND_FLAG.bandits,dev:'skull'}}// (flagB null: none, a ruin's cultists or grave robbers: no army's)
-  look(){const c=this.ld;return{col:this.colB||'#8a4a3a',bandit:true,dir:faceDir(this),moving:!this.idle,seed:Math.round(this.x)%97,label:(c?c.name.split(' ')[0]+' Lv'+c.lv+' · ':'')+this.fighters,labelCol:STANCE_COL[stance(this.power())]}}
+  look(){const c=this.ld;return{col:this.colB||'#8a4a3a',bandit:true,dir:faceDir(this),moving:!this.idle,seed:Math.round(this.x)%97,label:(c?c.name.split(' ')[0]+' Lv'+c.lv+', ':'')+this.fighters,labelCol:STANCE_COL[stance(this.power())]}}
   changed(){super.changed();if(this.tc)this.n=this.size;this.pw=0}
   // its nerve: how bold it is (brains.js BandBrain: it judges you as if it had this share of its power); how far it strays from
   // where it haunts (haunt) before it heads back, in tiles

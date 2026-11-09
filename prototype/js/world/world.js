@@ -158,7 +158,7 @@ function campEmpty(c){if(!c.bands||!c.bands.length)return;for(const b of c.bands
 // attacking a camp: its own bandits and chieftain (own: as your scouts saw them; else rolled now: sites.js BanditCamp foes), and
 // any bands sheltering there tonight
 function campFight(c,own){own=own||c.foes();const bands=c.bands||[];
-  startEncounter({kind:'camp',ref:c,list:own.concat(...bands.map(b=>b.troops)),title:(c.name||'Bandit camp')+(bands.length?' · '+bands.length+' band'+(bands.length>1?'s':'')+' sheltering inside':'')})}
+  startEncounter({kind:'camp',ref:c,list:own.concat(...bands.map(b=>b.troops)),title:(c.name||'Bandit camp')+(bands.length?', '+bands.length+' band'+(bands.length>1?'s':'')+' sheltering inside':'')})}
 // the hero's speed multiplier where they stand: ground, race, mount, Pathfinder and gear
 /* how fast a party moves on the map: what it is made of. Each member's pace is its battle speed (a foot soldier 38, a rider 62
    to 80); a party moves near its slowest (3/4 the slowest, 1/4 the average), compressed so riders are about 1.5x foot. Big

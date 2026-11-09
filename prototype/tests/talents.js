@@ -85,7 +85,7 @@ try{
   const k=G.skTree;t.act('tree-step','1');ok(vb().join()===t.treeView(G.skTree,false).join()&&G.skTree!==k,'another slice: its own view again');t.act('tree-step','-1')}
  P.sk.med.lv=20;t.act('tree-prof','med');const nodeCls=id=>document.querySelector('.tp-node[data-arg="'+id+'"]')?.getAttribute('class')||'';
  P.level=P.tree.filter(id=>TR[id]&&TR[id].prof).length+1;t.act('tree-prof','oneh');t.act('tree-prof','med');ok(/Field Surgeon/.test(panel())&&/Healing Light/.test(panel())&&/open/.test(nodeCls('med_surgeon'))&&/locked/.test(nodeCls('med_renew'))&&document.querySelector('svg.tr-svg.grow'),'Medicine\'s tree: a point left, its first tier open (pulsing), its next not yet; switching trees grows it anew');
- t.act('tree-sel','med_surgeon');ok(/Learn · 1 point/.test(panel())&&!document.querySelector('[data-act="tree-take"][data-arg="med_surgeon"]').disabled,'a node chosen on the tree: what it does, and Learn');
+ t.act('tree-sel','med_surgeon');ok(/Learn, 1 point/.test(panel())&&!document.querySelector('[data-act="tree-take"][data-arg="med_surgeon"]').disabled,'a node chosen on the tree: what it does, and Learn');
  t.act('tree-take','med_surgeon');ok(t.treeHas('med_surgeon')&&/Unlearn/.test(panel())&&/have/.test(nodeCls('med_surgeon'))&&/just/.test(nodeCls('med_surgeon'))&&!/open/.test(nodeCls('med_heal'))&&!document.querySelector('svg.tr-svg.grow'),'learned from the page: lit and flaring, not grown again; no point left for Healing Light');
  t.act('sk-tab','prof');ok(/Level \d+/.test(panel())&&/XP to level/.test(panel())&&!document.querySelector('[data-act="lv-pick"]'),'the Proficiency tab shows your level and its experience, no level choice');
  t.act('sk-tab','abilities');{const un=Object.keys(t.HSKILLS).filter(k=>!t.knows(k));ok(!/Not learned/.test(panel())&&un.length&&un.every(k=>!panel().includes('<strong>'+t.HSKILLS[k].n+'</strong>')),'the Skill bar lists only the active skills you have learned ('+un.length+' not learned, not shown)')}
@@ -103,7 +103,7 @@ try{
  learnAll();ok(ids2.every(t.knows)&&ids2.every(id=>P.slots.includes(id)),'learning skills puts them on free slots ('+P.slots.map(x=>x||'-').join(' ')+')');
  G.mode='world';G.modal=false;t.hidePanel();t.openSkills('abilities');t.act('sk-slot','0');t.act('fb-choice','fireball');t.act('fb-apply');
  ok(P.slots[0]==='fireball'&&P.slots.filter(x=>x==='fireball').length===1,'the Skill bar puts Fireball on slot 1 (and takes it off its old slot)');
- ok(/Skill slots/.test(panel())&&!/press 1 to 0|Right-click|Space ·|F ·/.test(panel())&&document.querySelectorAll('[data-act="sk-slot"]').length===10&&!document.getElementById('panel').querySelector('select'),'the Skill bar shows ten touch slots and learned skills, without dropdowns');t.act('sk-close');
+ ok(/Skill slots/.test(panel())&&!/press 1 to 0|Right-click|Space, |F, /.test(panel())&&document.querySelectorAll('[data-act="sk-slot"]').length===10&&!document.getElementById('panel').querySelector('select'),'the Skill bar shows ten touch slots and learned skills, without dropdowns');t.act('sk-close');
  // each new skill in battle
  P.troops={hum_spear:4};P.gear.weapon=t.gearId('bow',2);P.gear.quiver='q_master';const fight=()=>{G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia','militia','militia']};t.startBattle({enemies:G.enc.list,tournament:false});t.beginFight();const B=t.B;
    B.units.filter(u=>u.team===1).forEach((u,i)=>{u.x=B.hero.x+18;u.y=B.hero.y+(i-1)*8;u.cd=99;u.s={...u.s,spd:0}});B.aim=0;const X=t.heroState();X.sp=999;X.mp=999;return B};

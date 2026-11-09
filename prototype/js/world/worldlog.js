@@ -123,7 +123,7 @@ function intelBuy(t,keys){if(intelBought(t))return 'You bought information here 
 // the picker: each offer and its price, none chosen (or sel), a note (why the last try failed)
 function intelPicker(t,note,sel){const offers=intelGather(intelSrc(t));
   railPicker({title:'Buy information',sub:'The innkeeper of '+t.name,total:'You pay',unit:'g',sel:sel||{},confirm:['intel-buy','Buy'],back:['tab','tavern','Back'],note:note||'Choose up to '+INTEL.n+'.',
-    items:offers.map(o=>({id:o.key,name:o.name,sub:o.sub+' · '+intelPrice(o,t)+'g',max:1,unit:intelPrice(o,t)}))})}
+    items:offers.map(o=>({id:o.key,name:o.name,sub:o.sub+', '+intelPrice(o,t)+'g',max:1,unit:intelPrice(o,t)}))})}
 // (under the tavern's Rumours: what you bought today, or the offer)
 function intelHtml(t){const b=intelBought(t);
   if(b)return '<div class="lab">Information bought</div>'+b.intel.map(x=>'<p class="rum-new"><span class="rum-q">?</span> '+x.t+'</p>').join('')+'<p class="muted">You bought what the innkeeper knows today; come back tomorrow.</p>';

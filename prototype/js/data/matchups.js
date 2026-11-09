@@ -109,4 +109,4 @@ function vsInfo(s){
   if(s.big){weak.push('spearmen','armor-piercing attacks')}
   return{strong:[...new Set(strong)],weak:[...new Set(weak)]};
 }
-const vsLine=s=>{const v=vsInfo(s);return 'Strong vs '+(v.strong.join(', ')||'—')+' · Weak vs '+(v.weak.join(', ')||'—')};
+const vsLine=s=>{const v=vsInfo(s);return 'Strong vs '+(v.strong.join(', ')||'—')+', Weak vs '+(v.weak.join(', ')||'—')};
