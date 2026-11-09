@@ -114,6 +114,7 @@ Kit.suite(({ok})=>{
    const ents=[],cam={x:P.x-200,y:P.y-120};g.x=P.x+30;g.y=P.y;g.draw(ents,cam,t.vis());let threw=null;try{for(const e of ents)e.f()}catch(err){threw=err}ok(ents.length&&!threw,'drawn with its light rising ('+(threw?threw.message:ents.length+' to draw')+')');
    g.meet();ok(/<h2>A grave<\/h2>/.test(panel())&&/data-act="death-pray"/.test(panel())&&/200 experience/.test(panel()),'come to it: its hero\'s life, and Pray');
    const all0=t.HERO_XP_ALL(P.level,P.xp),e0=P.xpEarned||0;t.act('death-pray');ok(g.spent&&g.flow&&G.mode==='world','Pray: its light flows from it into you, out on the map');
+   {const dark=Object.create(Object.getPrototypeOf(g));Object.assign(dark,{xp:0,spent:false,gold:40,gear:[]});ok(!g.glows()&&dark.holds()&&!dark.glows()&&Object.assign(Object.create(Object.getPrototypeOf(g)),{xp:5,spent:false,gold:0,gear:[]}).glows(),'its light only while its experience waits: prayed at, or only goods left, it lies dark (the goods still there)')}
    const fe=[];g.draw(fe,cam,t.vis());let threw2=null;try{for(const e of fe)e.f()}catch(err){threw2=err}ok(fe.length>1&&!threw2,'the flow drawn over the map'+(threw2?': '+threw2.message:''));
    g.flowed();const dx=Math.round(t.HERO_XP_ALL(P.level,P.xp)-all0);ok(dx===200&&(P.xpEarned||0)===e0&&g.flow.done,'and as it arrives you gain it: +'+dx+' XP, level '+P.level+' (a gift: not toward your own grave)');
    ok(!g.pray()&&/prayed at/.test(g.tip()),'spent: it stays, quiet');

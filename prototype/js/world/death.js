@@ -298,8 +298,11 @@ class Grave extends Remains{
     return {x:Math.round(cx),y:Math.round(cy+(r0||X.apart))}}
   get kind(){return this.rest||(this.at?'grave':'cairn')}// (rest: how it was laid to rest, tierOf)
   get words(){return DEATH.grave.words[this.kind]}
-  // (its light: while it holds anything for you)
+  // (anything for you: its experience not yet prayed for, or its goods (a rumour of it: hour))
   holds(){return !this.spent&&this.xp>0||!this.empty()}
+  // (its light: only while its experience waits for you (the owner, 2026-11-09: "If there's no exp then no need a glow on remains or
+  // grave"): goods alone, or prayed at, it lies dark)
+  glows(){return !this.spent&&this.xp>0}
   robbable(){return !(this.at&&townBy(this.at)?.owner===this.fac)}
   tip(){return '<b>'+this.words.tip+htmlText(this.who)+'</b><small>Fell on day '+this.day+(this.spent?' · prayed at':this.xp?' · a warmth lingers here':'')+'</small><span class="act">Click: go there</span>'}
   // (met: its page, the hero's life; Pray, and its goods)
@@ -317,12 +320,12 @@ class Grave extends Remains{
     log('You pray '+this.words.at+' '+this.who+', and what they learned flows into you: +'+n+' XP'+(P.level>lv?', level '+P.level:'')+'.','gold','story');updateHUD(true);
     setTimeout(()=>this.flowed(),DEATH.grave.flow.dur*1000);return true}
   flowed(){const f=this.flow;if(!f||f.done)return;f.done=true;f.end=performance.now()}
-  // (its place: its ground under everything, what stands on it among the figures, what moves on it; its light while it holds
-  // anything: a glow breathing, a faint column, motes rising and turning: gfx/graveart.js)
+  // (its place: its ground under everything, what stands on it among the figures, what moves on it; its light while its
+  // experience waits (glows): a glow breathing, a faint column, motes rising and turning: gfx/graveart.js)
   draw(ents,cam,V){const g=this,X=DEATH.grave,C=X.col,t=performance.now()/1000;if(g.flow)this.drawFlow(ents,cam);if(!g.inView(V))return;
     const S=GraveArt.sprite(g.kind,g.seed||(g.seed=1+Math.floor(Math.abs(g.x*7+g.y*13))%997)),night=darkness()>.35;
     ents.push({y:g.y-1e5,f:()=>{ctx.drawImage(S.ground,Math.round(g.x-cam.x)-S.ax,Math.round(g.y-cam.y)-S.ay)}});
-    ents.push({y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.holds();ctx.save();
+    ents.push({y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.glows();ctx.save();
       if(lit){const [gw,gh]=X.art.groundOf[g.kind]||[13,6];ctx.globalAlpha=.14+.12*pulse;ctx.fillStyle=C.glow;ctx.beginPath();ctx.ellipse(x,y-2,gw*.8+pulse*2,gh*.8+pulse,0,0,6.283);ctx.fill();ctx.globalAlpha=1}
       ctx.drawImage(S.cv,x-S.ax,y-S.ay);GraveArt.live(g,x,y,t,night);
       if(lit){const top=y-({cairn:17,grave:15,small:9,remains:5,stone:12,tomb:28}[g.kind]||12);
