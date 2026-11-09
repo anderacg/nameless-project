@@ -40,7 +40,7 @@
     for(const profile of E.profiles)$('profile-'+profile).setAttribute('aria-pressed',String(state.config.profile===profile));
     const fit=E.headwearRules[state.config.headwear].hair;$('headwear-note').textContent={show:'Hair remains visible.',tuck:'Crown hair tucked under this headwear.',hide:'Hair and ears concealed by this headwear.',frame:'Hair stays within the veil; back hair and ears are covered.'}[fit];
     anchors();$('gray').setAttribute('aria-pressed',String(!state.colored));$('color').setAttribute('aria-pressed',String(state.colored));
-    $('preset').value=String(E.presets.findIndex(p=>JSON.stringify(state.config)===JSON.stringify(E.normalize(p.config)))).replace('-1','');for(const key of Object.keys(selectors))selectors[key].value=state.config[key];$('seed').value=state.config.seed;
+    $('preset').value=String(E.presets.findIndex(p=>JSON.stringify(state.config)===JSON.stringify(E.normalize(p.config)))).replace('-1','');for(const key of Object.keys(selectors))selectors[key].value=state.config[key];$('seed').value=state.config.seed;$('engraving-control').style.display=state.config.race==='dwarf'?'grid':'none';$('engraving-pattern').value=String(state.config.seed%E.engravingPatterns.length);
     for(const s of E.order){checks[s.id].checked=state.visible[s.id];copy(state.portrait.layers[s.id],tiles[s.id].querySelector('canvas'));}
     inspect(state.selected);
     $('color-hint').textContent=state.colored?'Applied to preview only':'Enable tint preview to apply';
@@ -63,6 +63,8 @@
     label.append(document.createTextNode(names[key]),select);if(key==='race'){const note=document.createElement('small');note.textContent='Only compatible parts are listed. Switching race replaces incompatible choices.';note.style.cssText='font-size:11px;line-height:1.4;color:#aaa;font-weight:normal';label.append(note);}if(key==='headwear'){const note=document.createElement('small');note.id='headwear-note';note.style.cssText='font-size:11px;line-height:1.4;color:#aaa;font-weight:normal';label.append(note);}$('features').append(label);selectors[key]=select;
     select.onchange=()=>{if(key==='race')state.config=E.startRace(select.value,state.config);else state.config[key]=select.value;render(true);};
   }
+  E.engravingPatterns.forEach((name,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=title(name);$('engraving-pattern').append(option)});
+  $('engraving-pattern').onchange=()=>{const n=E.engravingPatterns.length;state.config.seed=(Math.floor(state.config.seed/n)*n+Number($('engraving-pattern').value))>>>0;render(true)};
   for(const [key,value] of Object.entries(state.colors)){
     const label=document.createElement('label'),input=document.createElement('input');input.type='color';input.value=value;input.id='tint-'+key;input.setAttribute('aria-label',title(key)+' tint');
     label.append(input,document.createTextNode(title(key)));$('colors').append(label);input.oninput=()=>{state.colors[key]=input.value;render();};

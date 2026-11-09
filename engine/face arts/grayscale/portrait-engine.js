@@ -279,6 +279,21 @@
     });
     line(g,COLLAR,139,1.2);return true;
   }
+  // Small fantasy emblems share a seed-selected primary and secondary motif across a suit.
+  const ENGRAVINGS=[
+    {name:'diamond',paths:[[[0,-4],[3,0],[0,4],[-3,0],[0,-4]]]},
+    {name:'mountain',paths:[[[-4,3],[-1,-4],[1,1],[3,-2],[4,3],[-4,3]]]},
+    {name:'anvil',paths:[[[-4,-3],[4,-3],[3,-1],[1,0],[1,3],[-2,3],[-2,0],[-4,-1],[-4,-3]]]},
+    {name:'sun',paths:[[[0,-4],[0,4]],[[-4,0],[4,0]],[[-3,-3],[3,3]],[[3,-3],[-3,3]]]},
+    {name:'knot',paths:[[[-1,-4],[2,-1],[-1,2],[-4,-1],[-1,-4]],[[1,-2],[4,1],[1,4],[-2,1],[1,-2]]]},
+    {name:'hammer',paths:[[[-3,-4],[3,-4],[3,-1],[-3,-1],[-3,-4]],[[0,-1],[0,4]],[[-2,4],[2,4]]]},
+    {name:'chevrons',paths:[[[-3,-3],[0,-1],[3,-3]],[[-3,1],[0,3],[3,1]]]},
+    {name:'gate',paths:[[[-3,4],[-3,-2],[0,-4],[3,-2],[3,4]],[[-3,1],[3,1]]]}
+  ];
+  function engraving(g,c,x,y,slot=0,scale=1,tone=219){
+    const motif=ENGRAVINGS[((c.seed>>>0)+slot*3)%ENGRAVINGS.length];
+    g.save();g.translate(x,y);g.scale(scale,scale);for(const path of motif.paths)line(g,path,tone,1.1);g.restore();
+  }
   function culturalArmor(g,a,c){
     const kind=c.clothing,dwarf=kind==='dwarf-runic-plate'||kind==='dwarf-forge-plate',elf=kind==='elf-silver-scale'||kind==='elf-leaf-cuirass';
     if(!dwarf&&!elf)return false;
@@ -292,12 +307,12 @@
     for(const side of [-1,1]){
       if(dwarf){const shoulder=[[64+side*18,96],[64+side*32,94],[64+side*47,102],[64+side*54,117],[64+side*37,123],[64+side*23,111]];plate(shoulder,190);
         clip(g,shoulder,()=>{for(let n=0;n<3;n++){const y=100+n*6;line(g,[[64+side*19,y],[64+side*34,y],[64+side*49,y+9]],n?60:207,n?2:1.3);}
-          if(kind==='dwarf-runic-plate')for(const dx of [28,39]){const x=64+side*dx,y=103+(dx-28)*.35;line(g,[[x,y],[x,y+10],[x+side*4,y+6],[x,y+3],[x-side*3,y+6]],219,1.4);}
+          if(kind==='dwarf-runic-plate')for(const [dx,slot] of [[28,0],[39,1]])engraving(g,c,64+side*dx,107+(dx-28)*.35,slot);
           else for(const dx of [27,40]){const x=64+side*dx;poly(g,[[x-3,105],[x,101],[x+3,105],[x,109]],215);oval(g,x,114,1.4,1.4,211);}
         });
       }else for(let n=0;n<3;n++){const x=64+side*(23+n*10),y=98+n*5,P=[[x-side*8,y+3],[x-side*2,y-3],[x+side*8,y-5],[x+side*9,y+5],[x+side*4,y+14],[x-side*6,y+10]];plate(P,kind==='elf-silver-scale'?201:174);curve(g,[x-side*4,y+8,x,y+3,x+side*3,y,x+side*6,y-3],214,1);}
     }
-    if(kind==='dwarf-forge-plate')poly(g,[[58,108],[64,104],[70,108],[68,114],[60,114]],205);
+    if(kind==='dwarf-forge-plate'){poly(g,[[58,108],[64,104],[70,108],[68,114],[60,114]],205);engraving(g,c,64,109,0,.7,66);}
     if(elf)curve(g,[64,104,61,111,65,118,64,126],219,1.1);
     return true;
   }
@@ -314,7 +329,7 @@
       if(dwarf){const edge=x+side*(w-2);surface(g,[[edge,40],[edge+side*2,47],[edge,70],[edge-side*6,77],[edge-side*7,67],[edge-side*4,51]],()=>side<0?163:96);line(g,[[edge,46],[edge-side*2,65],[edge-side*5,71]],205,1);}
       if(elf)for(let n=0;n<3;n++){const at=x+side*(w-4),tip=x+side*(w+11-n*4),y=8+n*8;surface(g,[[at,38],[at+side*5,26],[tip,y],[tip-side*1,y+13],[at+side*5,41]],(px,py)=>121+77*falloff(px,py,at-4,24,17,22));curve(g,[at+side*1,37,at+side*7,26,tip-side*3,y+8,tip,y+2],222,.85);}
     }
-    if(dwarf){for(const dx of [-12,0,12])line(g,[[x+dx,23],[x+dx,32],[x+dx+4,28],[x+dx,26]],kind==='dwarf-rune-helm'?218:179,1.3);if(kind==='dwarf-rune-helm'){poly(g,[[x-9,17],[x,7],[x+9,17],[x,28]],133);line(g,[[x,11],[x,23],[x+4,18],[x-4,18]],230,1.2);}}
+    if(dwarf){for(const [dx,slot] of [[-12,1],[0,0],[12,1]])engraving(g,c,x+dx,27,slot,.85,kind==='dwarf-rune-helm'?218:179);if(kind==='dwarf-rune-helm'){poly(g,[[x-9,17],[x,7],[x+9,17],[x,28]],133);engraving(g,c,x,17,0,1.1,230);}}
     else curve(g,[x,15,x-2,23,x+2,30,x,36],218,1.2);
     return true;
   }
@@ -348,7 +363,7 @@
     surface(g,outline,(x,y)=>97+79*falloff(x,y,51,109,17,22)-28*falloff(x,y,85,117,19,15));
     clip(g,outline,()=>{curve(g,[64,104,61,111,64,119,64,127],199,1);for(const side of [-1,1])curve(g,[64+side*4,107,64+side*10,112,64+side*18,111,64+side*24,106],side<0?199:78,1.2);for(let y=119;y<129;y+=4)curve(g,[29,y,48,y-2,79,y-2,99,y],58,1);});
     for(const side of [-1,1]){surface(g,shoulder(side),(x,y)=>107+63*falloff(x,y,38,105,26,17));for(let row=0;row<3;row++)curve(g,[64+side*23,100+row*4,64+side*30,104+row*4,64+side*40,103+row*4,64+side*46,111+row*4],row===0?192:72,1);}
-    if(kind==='dwarf-iron-guard')for(const side of [-1,1]){curve(g,[64+side*9,108,64+side*12,113,64+side*12,117,64+side*15,121],187,2);line(g,[[64+side*12,113],[64+side*17,111]],187,1);}
+    if(kind==='dwarf-iron-guard')for(const side of [-1,1])engraving(g,c,64+side*13,114,0,1.1,197);
     return true;
   }
   function soldierHelmet(g,a,c,back) {
@@ -372,7 +387,7 @@
       oval(g,edge,47,1.2,1.2,195);
     }
     if(sallet){curve(g,[x-w+1,40,x-10,32,x+12,32,x+w,40],116,4);curve(g,[x-w,38,x-10,30,x+12,30,x+w,38],200,1);}
-    if(dwarf){curve(g,[x-w+1,33,x-14,37,x+14,37,x+w-1,33],68,4);for(const dx of [-11,0,11])line(g,[[x+dx,21],[x+dx,29],[x+dx+3,26]],193,1.3);}
+    if(dwarf){curve(g,[x-w+1,33,x-14,37,x+14,37,x+w-1,33],68,4);for(const [dx,slot] of [[-11,1],[0,0],[11,1]])engraving(g,c,x+dx,25,slot,.85,193);}
     if(orc){curve(g,[x-w,33,x-12,39,x+12,39,x+w,33],58,4);for(const side of [-1,1]){curve(g,[x+side*2,11,x+side*6,20,x+side*8,27,x+side*9,34],side<0?189:135,2);oval(g,x+side*17,34,1.5,1.5,197);}curve(g,[x-7,16,x-2,11,x+4,11,x+8,17],65,2);}
     if(elf){curve(g,[x,12,x-7,23,x-3,30,x,37],202,1.5);curve(g,[x,12,x+7,23,x+3,30,x,37],143,1);for(const side of [-1,1])curve(g,[x+side*2,34,x+side*8,29,x+side*17,27,x+side*21,24],184,1);}
     if(kind==='ridge-helm')for(const side of [-1,1])curve(g,[x+side*2,12,x+side*2,21,x+side*3,30,x+side*3,36],side<0?216:61,1.5);
@@ -479,7 +494,7 @@
         if(c.clothing==='plate'){for(const side of [-1,1]){curve(g,[64+side*4,105,64+side*13,109,64+side*24,105,64+side*30,101],182,1.2);curve(g,[64+side*2,108,64+side*6,114,64+side*11,121,64+side*14,125],side<0?195:77,1.4);}for(let y=119;y<128;y+=4)curve(g,[22,y,44,y-3,83,y-3,108,y],62,1);}
       });return;
     }
-    if(c.clothing==='rune-mail'){chain(g,bodyOutline(c),c);for(const x of [39,51,77,89]){line(g,[[x,108],[x,116]],181,1);line(g,[[x,109],[x+3,111],[x,113]],173,1);}return;}
+    if(c.clothing==='rune-mail'){chain(g,bodyOutline(c),c);for(const [x,slot] of [[39,1],[51,0],[77,0],[89,1]])engraving(g,c,x,112,slot,.9,181);return;}
     if(c.clothing==='ruffled-mail'){chain(g,[[47,107],[56,111],[72,111],[80,107],[86,125],[41,125]],c);return;}
     if(c.clothing==='brigandine'){for(let y=106;y<126;y+=6)for(let x=31;x<103;x+=9)oval(g,x+(y%4),y,1.1,1.1,198);return;}
     if(c.clothing!=='mail'&&c.clothing!=='surcoat')return;
@@ -812,7 +827,7 @@
     const base={'heraldic-cap':'cap','forge-helm':'round-helm',warband:'headband','vine-diadem':'leaf-circlet'}[c.headwear];if(!base)return false;
     headwear(g,a,{...c,headwear:base},back);if(back)return true;const x=a.cx;
     if(c.headwear==='heraldic-cap'){oval(g,x+9,28,3,3.6,180);curve(g,[x+8,30,x+7,27,x+10,25,x+10,28],75,1);}
-    if(c.headwear==='forge-helm'){curve(g,[x-a.w,35,x-10,39,x+10,39,x+a.w,35],67,3);line(g,[[x,21],[x,31]],191,1.3);line(g,[[x,22],[x+4,25],[x,27]],181,1.2);}
+    if(c.headwear==='forge-helm'){curve(g,[x-a.w,35,x-10,39,x+10,39,x+a.w,35],67,3);engraving(g,c,x,26,0,1.1,191);}
     if(c.headwear==='warband')for(const px of [x-10,x,x+10])oval(g,px,36,1.6,1.6,174);
     if(c.headwear==='vine-diadem')for(const side of [-1,1])for(let i=0;i<3;i++)oval(g,x+side*(2+i*2),30-i*.6,2,1.1,181,-side*.6);
     return true;
@@ -1236,5 +1251,5 @@
     return normalize(c);
   }
   function geometry(input){const c=normalize(input);return placedRig(rig(c.face,c.adjustments,c.race),c.race==='dwarf'?DWARF_HEAD_DROP:0);}
-  root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,soldierEquipment:SOLDIER_EQUIPMENT,soldierPresets:SOLDIER_PRESETS,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
+  root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,engravingPatterns:Object.freeze(ENGRAVINGS.map(p=>p.name)),soldierEquipment:SOLDIER_EQUIPMENT,soldierPresets:SOLDIER_PRESETS,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
 })(globalThis);

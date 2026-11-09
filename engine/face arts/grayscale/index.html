@@ -13,6 +13,7 @@
 </section>
 <aside class="controls-panel"><div class="panel-heading"><h2>Build a character</h2><span class="badge">LIVE</span></div><span class="preset-label" id="profile-label">Starting profile</span><div class="profile-picker" role="group" aria-labelledby="profile-label"><button id="profile-male" type="button" aria-pressed="false">Male</button><button id="profile-female" type="button" aria-pressed="false">Female</button><button id="profile-custom" type="button" aria-pressed="true">Custom</button></div><p class="profile-hint">Sets starting features and random faces. Every part stays editable; Custom keeps your current face.</p><label class="preset-label" for="preset">Start from a character</label><select id="preset"><option value="">Custom character</option></select><div id="features" class="feature-controls"></div>
 <div class="seed-row"><label for="seed">Texture seed</label><input id="seed" type="number" min="0" max="4294967295" value="23"></div>
+<div id="engraving-control" class="feature-controls" style="display:none"><label>Armor engraving<select id="engraving-pattern" aria-label="Armor engraving pattern"></select></label></div>
 <div class="color-heading"><h3>Independent colors</h3><span id="color-hint">Enable tint preview to apply</span></div><div id="colors" class="colors"></div><p class="hint">Source layers stay grayscale. Tints change only the assembled preview; skin, hair and eyes keep their own shading.</p>
 </aside></div>
 <section class="studio-section" aria-label="Character creation and variations">

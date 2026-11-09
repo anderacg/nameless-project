@@ -211,3 +211,10 @@ Eight new selectable parts add four helmets and four armor sets:
 The armor stays on the tintable metal layer, with cloth beneath it. Headwear keeps its independent tint; the source remains grayscale. Helmet fit groups control hair and ear concealment, leave the pupils visible and respect the lowered dwarf head placement. Female and male profiles can use the same compatible equipment.
 
 Five editable presets demonstrate the new gear. Military and lord generation pools include the new parts, filtered by race; dwarf and elf cultural weighting includes their own sets. Saved recipes retain their part IDs and remain version 7. The game’s worn-gear portrait rules recognize the new armor and helmets without adding inventory items or changing combat stats.
+
+
+## Engraving variations
+
+Dwarf armor and helmets use eight emblem families: Diamond, Mountain, Anvil, Sun, Knot, Hammer, Chevrons and Gate. Their primary and secondary motifs match across a suit, replacing the repeated numeral-like strokes. The styles apply to rune/forge plate, rune mail, iron guard armor and the dwarf guard, forge, horned and rune helms.
+
+Choose **Armor engraving** in the workshop after selecting Dwarf. The control stays synchronized with the texture seed; changing it preserves the face proportions and equipment choices. The motif is carried by the existing seed, so it survives recipe export/import and NPC saves without new recipe fields. Seeds 0–7 display the eight families in order. Both standalone offline HTML entry points are rebuilt from the current source.

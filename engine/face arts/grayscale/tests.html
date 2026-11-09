@@ -25,6 +25,10 @@ try {
  }
  for(const headwear of ['horned-helm','dwarf-horned-helm']){const q=E.build({race:'dwarf',headwear}),a=q.anchors,pixels=data(q.layers.headwearFront);let left=false,right=false;for(let y=0;y<a.eyes[0].y-5;y++)for(let x=0;x<128;x++)if(pixels[(y*128+x)*4+3]){if(x<a.cx-a.w-9)left=true;if(x>a.cx+a.w+9)right=true;}ok(left&&right,headwear+' has visible horns on both sides');}
  ok(!E.partsFor('human','clothing').includes('dwarf-runic-plate')&&!E.partsFor('dwarf','headwear').includes('elf-winged-helm'),'new cultural equipment respects racial selection pools');
+ ok(E.engravingPatterns.length===8&&new Set(E.engravingPatterns).size===8,'eight named engraving motifs are exposed to the workshop');
+ const suit={race:'dwarf',clothing:'dwarf-runic-plate',headwear:'dwarf-rune-helm',beard:'none'},motifs=new Set();
+ for(let seed=0;seed<E.engravingPatterns.length;seed++){const q=E.build({...suit,seed}),pixels=data(q.layers.headwearFront),offset=q.anchors.offsetY||0,mask=[];for(let y=11+offset;y<24+offset;y++)for(let x=58;x<71;x++)mask.push(pixels[(y*128+x)*4]>205?1:0);motifs.add(mask.join(''));if(q.layers.armor.toDataURL()!==E.build({...suit,seed}).layers.armor.toDataURL())throw Error('Unstable suit engraving');}
+ ok(motifs.size===8,'all eight crest engravings have distinct silhouettes and stable seeded armor rendering');
  const p=E.build(E.defaults),before=Object.fromEntries(E.order.map(s=>[s.id,p.layers[s.id].toDataURL()]));
  for(const spec of E.order){const a=data(p.layers[spec.id]);ok(a.every((v,i)=>i%4!==0||a[i]===a[i+1]&&a[i]===a[i+2]),spec.id+': neutral grayscale');const levels=(['brows','mouth'].includes(spec.id)||spec.id==='age'&&p.config.age==='mature'||spec.id==='beard'&&['stubble','close-beard'].includes(p.config.beard))?Array.from({length:8},(_,i)=>Math.round(i*255/7)):[0,255];ok(a.every((v,i)=>i%4!==3||levels.includes(v)),spec.id+': expected pixel coverage');ok(a[3]===0,spec.id+': transparent canvas');}
  const again=E.build(E.defaults);ok(E.order.every(s=>before[s.id]===again.layers[s.id].toDataURL()),'identical recipe gives identical pixels');

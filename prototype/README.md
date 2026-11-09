@@ -1742,3 +1742,5 @@ Dwarf portrait anatomy is redesigned in the shared generation engine (`engine/fa
 Dwarf portrait necks are shortened by seating the entire head eight pixels closer to the shoulders, with the collar fixed. Facial parts, beards, helmets and exported anchors stay aligned without rescaling the artwork.
 
 The portrait generator adds four helmets (horned war helm, dwarf horned/rune helms and elven winged helm) and four armor sets (dwarf runic/forge plate and elven silver scale/leaf cuirass). They appear in compatible selectors, five editable presets and military NPC generation pools. Metal, clothing and headwear tints remain independent. Worn-gear portrait rules recognize the new parts; these are portrait choices. See `doc/PORTRAIT_ARMOR_DESIGN.md`.
+
+Dwarf portrait engravings now vary across eight coordinated motif families, selectable under Armor engraving in the workshop. Existing seeds preserve the chosen motif through recipes and saved portraits. Rune/forge armor, mail and dwarf helms use the new marks. Both offline portrait tools are rebuilt to match the shared renderer.

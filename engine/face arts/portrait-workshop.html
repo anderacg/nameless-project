@@ -22,6 +22,7 @@
 </section>
 <aside class="controls-panel"><div class="panel-heading"><h2>Build a character</h2><span class="badge">LIVE</span></div><span class="preset-label" id="profile-label">Starting profile</span><div class="profile-picker" role="group" aria-labelledby="profile-label"><button id="profile-male" type="button" aria-pressed="false">Male</button><button id="profile-female" type="button" aria-pressed="false">Female</button><button id="profile-custom" type="button" aria-pressed="true">Custom</button></div><p class="profile-hint">Sets starting features and random faces. Every part stays editable; Custom keeps your current face.</p><label class="preset-label" for="preset">Start from a character</label><select id="preset"><option value="">Custom character</option></select><div id="features" class="feature-controls"></div>
 <div class="seed-row"><label for="seed">Texture seed</label><input id="seed" type="number" min="0" max="4294967295" value="23"></div>
+<div id="engraving-control" class="feature-controls" style="display:none"><label>Armor engraving<select id="engraving-pattern" aria-label="Armor engraving pattern"></select></label></div>
 <div class="color-heading"><h3>Independent colors</h3><span id="color-hint">Enable tint preview to apply</span></div><div id="colors" class="colors"></div><p class="hint">Source layers stay grayscale. Tints change only the assembled preview; skin, hair and eyes keep their own shading.</p>
 </aside></div>
 <section class="studio-section" aria-label="Character creation and variations">
@@ -44,7 +45,7 @@
 </main><script>/* Ashmark portrait study: independent grayscale layers, one shared face rig. No image assets. */
 (function (root) {
   'use strict';
-  const SIZE = 128, VERSION = 7;
+  const SIZE = 128, VERSION = 7, DWARF_HEAD_DROP = 8;
   const OPTIONS = Object.freeze({
     race: ['human', 'dwarf', 'orc', 'elf'],
     face: ['oval', 'angular', 'broad', 'long', 'round', 'chiseled', 'heart', 'balanced', 'soft-oval', 'tapered', 'full-cheeked', 'narrow', 'youthful', 'soft-heart', 'strong-jaw', 'dwarven', 'orcish', 'elven', 'dwarf-square', 'orc-heavy', 'elf-high-cheek'],
@@ -57,8 +58,8 @@
     beard: ['none', 'stubble', 'trimmed', 'full', 'forked', 'braided', 'goatee', 'moustache', 'short-boxed', 'rounded', 'tapered-beard', 'sideburns', 'walrus', 'close-beard', 'scruffy', 'bound-beard', 'chin-bristle'],
     age: ['young', 'mature', 'seasoned', 'elder', 'weathered'],
     marks: ['none', 'scar', 'freckles', 'pockmarks', 'beauty-mark', 'twin-scars', 'brow-scar', 'sunspots', 'weathering'],
-    clothing: ['tunic', 'gambeson', 'mail', 'surcoat', 'fur', 'robe', 'leather', 'cloak', 'brocade', 'brigandine', 'doublet', 'jerkin', 'tabard', 'scale', 'lamellar', 'plate', 'traveler-coat', 'embroidered-robe', 'linen-chemise', 'velvet-bodice', 'embroidered-doublet', 'ruffled-mail', 'guild-doublet', 'rune-mail', 'hide-harness', 'leaf-mantle', 'padded-jack', 'leather-mail', 'coat-of-plates', 'steel-cuirass', 'dwarf-iron-guard', 'orc-lamellar', 'elf-leaf-mail'],
-    headwear: ['none', 'hood', 'coif', 'nasal', 'kettle', 'cap', 'circlet', 'beret', 'wrapped-hood', 'headband', 'veil', 'fur-cap', 'arming-cap', 'chaperon', 'straw-hat', 'feathered-cap', 'coronet', 'round-helm', 'turban', 'linen-wrap', 'draped-veil', 'pearl-hood', 'leaf-circlet', 'heraldic-cap', 'forge-helm', 'warband', 'vine-diadem', 'open-bascinet', 'sallet', 'ridge-helm', 'dwarf-guard-helm', 'orc-war-helm', 'elf-guard-helm']
+    clothing: ['tunic', 'gambeson', 'mail', 'surcoat', 'fur', 'robe', 'leather', 'cloak', 'brocade', 'brigandine', 'doublet', 'jerkin', 'tabard', 'scale', 'lamellar', 'plate', 'traveler-coat', 'embroidered-robe', 'linen-chemise', 'velvet-bodice', 'embroidered-doublet', 'ruffled-mail', 'guild-doublet', 'rune-mail', 'hide-harness', 'leaf-mantle', 'padded-jack', 'leather-mail', 'coat-of-plates', 'steel-cuirass', 'dwarf-iron-guard', 'orc-lamellar', 'elf-leaf-mail', 'dwarf-runic-plate', 'dwarf-forge-plate', 'elf-silver-scale', 'elf-leaf-cuirass'],
+    headwear: ['none', 'hood', 'coif', 'nasal', 'kettle', 'cap', 'circlet', 'beret', 'wrapped-hood', 'headband', 'veil', 'fur-cap', 'arming-cap', 'chaperon', 'straw-hat', 'feathered-cap', 'coronet', 'round-helm', 'turban', 'linen-wrap', 'draped-veil', 'pearl-hood', 'leaf-circlet', 'heraldic-cap', 'forge-helm', 'warband', 'vine-diadem', 'open-bascinet', 'sallet', 'ridge-helm', 'dwarf-guard-helm', 'orc-war-helm', 'elf-guard-helm', 'horned-helm', 'dwarf-horned-helm', 'dwarf-rune-helm', 'elf-winged-helm']
   });
   // Length describes the hair before it is tied or braided; bald is separate.
   const HAIR_GROUPS=Object.freeze({
@@ -69,8 +70,8 @@
   });
   const HEADWEAR_GROUPS=Object.freeze({
     Open:Object.freeze(['none','headband','circlet','coronet','leaf-circlet','warband','vine-diadem']),
-    'Caps and helmets':Object.freeze(['cap','nasal','kettle','beret','fur-cap','arming-cap','chaperon','straw-hat','feathered-cap','round-helm','turban','heraldic-cap','forge-helm']),
-    Enclosing:Object.freeze(['hood','coif','wrapped-hood','veil','linen-wrap','pearl-hood','open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm']),
+    'Caps and helmets':Object.freeze(['cap','nasal','kettle','beret','fur-cap','arming-cap','chaperon','straw-hat','feathered-cap','round-helm','turban','heraldic-cap','forge-helm','horned-helm','elf-winged-helm']),
+    Enclosing:Object.freeze(['hood','coif','wrapped-hood','veil','linen-wrap','pearl-hood','open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','dwarf-horned-helm','dwarf-rune-helm']),
     Draped:Object.freeze(['draped-veil'])
   });
   const HEADWEAR_RULES=Object.freeze(Object.fromEntries(Object.entries(HEADWEAR_GROUPS).flatMap(([group,kinds])=>kinds.map(kind=>[kind,Object.freeze({
@@ -104,8 +105,8 @@
     mouth:{'small-tusks':['orc'],'heavy-tusks':['orc']},
     hair:{'knight-crop':['human'],'forge-braids':['dwarf'],'war-crest':['orc'],'braided-crown':['elf'],tonsure:['human','dwarf']},
     beard:{'bound-beard':['dwarf'],'chin-bristle':['orc']},
-    clothing:{'guild-doublet':['human'],'rune-mail':['dwarf'],'hide-harness':['orc'],'leaf-mantle':['elf'],'dwarf-iron-guard':['dwarf'],'orc-lamellar':['orc'],'elf-leaf-mail':['elf']},
-    headwear:{'heraldic-cap':['human'],'forge-helm':['dwarf'],warband:['orc'],'vine-diadem':['elf'],'dwarf-guard-helm':['dwarf'],'orc-war-helm':['orc'],'elf-guard-helm':['elf']}
+    clothing:{'guild-doublet':['human'],'rune-mail':['dwarf'],'hide-harness':['orc'],'leaf-mantle':['elf'],'dwarf-iron-guard':['dwarf'],'orc-lamellar':['orc'],'elf-leaf-mail':['elf'],'dwarf-runic-plate':['dwarf'],'dwarf-forge-plate':['dwarf'],'elf-silver-scale':['elf'],'elf-leaf-cuirass':['elf']},
+    headwear:{'heraldic-cap':['human'],'forge-helm':['dwarf'],warband:['orc'],'vine-diadem':['elf'],'dwarf-guard-helm':['dwarf'],'orc-war-helm':['orc'],'elf-guard-helm':['elf'],'horned-helm':['human','dwarf','orc'],'dwarf-horned-helm':['dwarf'],'dwarf-rune-helm':['dwarf'],'elf-winged-helm':['elf']}
   };
   const RACE_LIMITS={
     human:{face:['oval','angular','broad','long','round','chiseled','heart','balanced','soft-oval','tapered','full-cheeked','narrow','youthful','soft-heart','strong-jaw'],ears:['normal','small','rounded','broad','attached-lobe','none']},
@@ -116,7 +117,7 @@
   const RACE_PARTS=Object.freeze(Object.fromEntries(OPTIONS.race.map(race=>[race,Object.freeze(Object.fromEntries(Object.entries(OPTIONS).filter(([key])=>key!=='race').map(([key,values])=>[key,Object.freeze((RACE_LIMITS[race][key]||values).filter(value=>!EXCLUSIVE_PARTS[key]?.[value]||EXCLUSIVE_PARTS[key][value].includes(race)))])))])));
   function partsFor(race,key){return key==='race'?OPTIONS.race:(RACE_PARTS[race]||RACE_PARTS.human)[key]||[];}
   const COLORS = Object.freeze({skin:'#b88b69',hair:'#45372e',iris:'#687f83',lips:'#9e7066',cloth:'#70464b',metal:'#899294',headwear:'#656e63'});
-  const SOLDIER_EQUIPMENT=Object.freeze({armor:Object.freeze(["padded-jack", "leather-mail", "coat-of-plates", "steel-cuirass", "dwarf-iron-guard", "orc-lamellar", "elf-leaf-mail"]),helmets:Object.freeze(["open-bascinet", "sallet", "ridge-helm", "dwarf-guard-helm", "orc-war-helm", "elf-guard-helm"])});
+  const SOLDIER_EQUIPMENT=Object.freeze({armor:Object.freeze(["padded-jack", "leather-mail", "coat-of-plates", "steel-cuirass", "dwarf-iron-guard", "orc-lamellar", "elf-leaf-mail", "dwarf-runic-plate", "dwarf-forge-plate", "elf-silver-scale", "elf-leaf-cuirass"]),helmets:Object.freeze(["open-bascinet", "sallet", "ridge-helm", "dwarf-guard-helm", "orc-war-helm", "elf-guard-helm", "horned-helm", "dwarf-horned-helm", "dwarf-rune-helm", "elf-winged-helm"])});
   const SOLDIER_PRESETS=Object.freeze([
     {"name":"Vale foot soldier","category":"soldier","roles":["soldier","infantry","guard"],"config":{"race":"human","profile":"male","seed":1200,"face":"strong-jaw","hair":"knight-crop","eyes":"focused","brows":"bold","nose":"straight","mouth":"stern","beard":"stubble","age":"mature","marks":"none","clothing":"coat-of-plates","headwear":"open-bascinet"}},
     {"name":"Vale bow guard","category":"soldier","roles":["soldier","archer","guard"],"config":{"race":"human","profile":"female","seed":1201,"face":"soft-oval","hair":"tied-back-waves","eyes":"deep-almond","brows":"full-soft","nose":"defined-tip","mouth":"reserved-smile","beard":"none","age":"young","marks":"none","clothing":"padded-jack","headwear":"kettle"}},
@@ -132,6 +133,11 @@
     {"name":"Elf mounted warden","category":"soldier","roles":["soldier","cavalry","guard"],"config":{"race":"elf","profile":"female","seed":1211,"face":"elven","hair":"braids","eyes":"clear","brows":"tapered-natural","nose":"defined-tip","mouth":"reserved-smile","beard":"none","age":"young","marks":"none","clothing":"elf-leaf-mail","headwear":"open-bascinet"}}
   ]);
   const PRESETS = Object.freeze([
+    {"name":"Horned war captain","config":{"race":"human","profile":"male","seed":1800,"face":"strong-jaw","hair":"cropped","beard":"full","eyes":"focused","brows":"bold","nose":"straight","mouth":"stern","age":"mature","marks":"none","clothing":"plate","headwear":"horned-helm"}},
+    {"name":"Dwarf horn guard","config":{"race":"dwarf","profile":"male","seed":1801,"face":"dwarf-square","hair":"cropped","beard":"bound-beard","eyes":"focused","brows":"bold","nose":"dwarf-bulb","mouth":"stern","age":"mature","marks":"none","clothing":"dwarf-forge-plate","headwear":"dwarf-horned-helm"}},
+    {"name":"Dwarf rune lord","config":{"race":"dwarf","profile":"male","seed":1802,"face":"dwarf-square","hair":"cropped","beard":"braided","eyes":"focused","brows":"bold","nose":"dwarf-bulb","mouth":"stern","age":"mature","marks":"none","clothing":"dwarf-runic-plate","headwear":"dwarf-rune-helm"}},
+    {"name":"Elven silver warden","config":{"race":"elf","profile":"male","seed":1803,"face":"elf-high-cheek","hair":"cropped","beard":"none","eyes":"elf-slanted","brows":"sculpted","nose":"slender","mouth":"stern","age":"mature","marks":"none","clothing":"elf-silver-scale","headwear":"elf-winged-helm"}},
+    {"name":"Elven leaf sentinel","config":{"race":"elf","profile":"male","seed":1804,"face":"elf-high-cheek","hair":"cropped","beard":"none","eyes":"elf-slanted","brows":"sculpted","nose":"slender","mouth":"stern","age":"mature","marks":"none","clothing":"elf-leaf-cuirass","headwear":"elf-guard-helm"}},
     {name:'Village levy',config:{profile:'male',seed:11,face:'round',hair:'pageboy',eyes:'wide',brows:'natural',nose:'button',mouth:'slight-smile',beard:'none',age:'young',marks:'freckles',clothing:'tunic',headwear:'cap'}},
     {name:'Company veteran',config:{profile:'male',seed:42,face:'angular',hair:'cropped',eyes:'keen',brows:'broken',nose:'crooked',mouth:'stern',beard:'stubble',age:'seasoned',marks:'scar',clothing:'mail',headwear:'coif'}},
     {name:'Court envoy',config:{profile:'female',seed:19,face:'oval',hair:'braids',eyes:'calm',brows:'arched',nose:'straight',mouth:'full',beard:'none',age:'young',marks:'none',clothing:'robe',headwear:'circlet'}},
@@ -241,16 +247,24 @@
     g.save();g.translate(x,y);g.scale(direction,1);draw();g.restore();
   }
   // Every part receives this same rig. Replacements never guess their own absolute coordinates.
-  function rig(shape,adjustments={}) {
+  function rig(shape,adjustments={},race='human') {
     const source = {oval:{w:22,jaw:14,chin:9,eye:10}, angular:{w:23,jaw:20,chin:11,eye:11}, broad:{w:27,jaw:22,chin:13,eye:12},long:{w:20,jaw:13,chin:8,eye:9,y:92},round:{w:26,jaw:18,chin:12,eye:11,y:86},chiseled:{w:24,jaw:20,chin:12,eye:11,y:87,cheek:57,jawY:79,eyeY:52,definition:1,softness:.15},heart:{w:23,jaw:13,chin:7,eye:11,y:86,cheek:57,eyeY:52,mouthY:74,noseY:63,definition:.15,softness:1},balanced:{w:23,jaw:16,chin:10,eye:11,y:88,cheek:58,eyeY:52,mouthY:75,definition:.4,softness:.6},'soft-oval':{w:23,jaw:15,chin:10,eye:11,y:88,cheek:58,softness:.85,definition:.2},tapered:{w:22,jaw:14,chin:9,eye:10,y:87,cheek:56,softness:.5,definition:.3},'full-cheeked':{w:26,jaw:19,chin:12,eye:11,y:87,cheek:59,softness:.8,definition:.1},narrow:{w:20,jaw:14,chin:9,eye:10,y:90,softness:.45,definition:.3},youthful:{w:23,jaw:15,chin:10,eye:11,y:86,cheek:57,eyeY:52,mouthY:74,noseY:63,softness:.9,definition:.1},'soft-heart':{w:24,jaw:14,chin:9,eye:11,y:87,cheek:57,eyeY:52,mouthY:75,noseY:64,softness:.9,definition:.25},'strong-jaw':{w:25,jaw:21,chin:12,eye:11,y:89,cheek:58,jawY:80,eyeY:52,mouthY:76,noseY:64,softness:.3,definition:.9},dwarven:{w:28,jaw:24,chin:15,eye:12,y:86,cheek:58,jawY:77,eyeY:52,mouthY:74,noseY:63,softness:.35,definition:.9},orcish:{w:29,jaw:25,chin:17,eye:12,y:90,cheek:59,jawY:80,eyeY:52,mouthY:77,noseY:64,softness:.2,definition:1},elven:{w:22,jaw:13,chin:8,eye:11,y:90,cheek:57,jawY:79,eyeY:52,mouthY:76,noseY:64,softness:.65,definition:.45},'dwarf-square':{w:29,jaw:25,chin:16,eye:12,y:87,cheek:58,jawY:78,eyeY:52,mouthY:75,noseY:63,softness:.2,definition:1},'orc-heavy':{w:30,jaw:26,chin:18,eye:12,y:91,cheek:59,jawY:81,eyeY:52,mouthY:78,noseY:65,softness:.15,definition:1},'elf-high-cheek':{w:22,jaw:13,chin:7,eye:11,y:90,cheek:55,jawY:79,eyeY:51,mouthY:75,noseY:63,softness:.5,definition:.7}}[shape];
     const m=Object.fromEntries(Object.keys(ADJUSTMENTS).map(k=>[k,adjustments[k]||0]));
     const v={...source,w:source.w+m.faceWidth,jaw:source.jaw+m.jawWidth,chin:source.chin+m.jawWidth*.5,eye:source.eye+m.eyeSpacing};
+    // Dwarves keep a broad, compact skull even with a shared face option or no beard.
+    const dwarf=race==='dwarf';
+    if(dwarf){v.w+=2;v.jaw=Math.max(v.jaw+2,v.w-4);v.chin+=2;v.y=(v.y||88)-5;v.cheek=(v.cheek||61)-2;v.jawY=(v.jawY||78)-3;v.noseY=(v.noseY||64)-2;v.mouthY=(v.mouthY||76)-4;}
     v.jaw=Math.max(v.chin+2,Math.min(v.w-2,v.jaw));v.eye=Math.max(8,Math.min(v.w-8,v.eye));
     const cx=64, top=24, cheekY=v.cheek||61, chinY=v.y||88;
     // Sample an elliptical cranium instead of a flat polygon across the scalp.
     const crown=Array.from({length:19},(_,i)=>{const t=Math.PI+i*Math.PI/18;return [cx+v.w*Math.cos(t),49+(49-top+3)*Math.sin(t)];});
     const outline=[...crown,[cx+v.w-2,cheekY+7],[cx+v.jaw,v.jawY||78],[cx+v.chin,chinY-2],[cx,chinY],[cx-v.chin,chinY-2],[cx-v.jaw,v.jawY||78],[cx-v.w+2,cheekY+7]];
-    return {cx,top,eyeScale:1+m.eyeSize*.12,w:v.w,jaw:v.jaw,chin:v.chin,chinY,outline,definition:v.definition||0,softness:v.softness||0,eyes:[{x:cx-v.eye,y:v.eyeY||53},{x:cx+v.eye,y:v.eyeY||53}],nose:{x:cx,y:v.noseY||(shape==='long'?65:shape==='round'?63:64)},mouth:{x:cx,y:v.mouthY||(shape==='long'?78:shape==='round'?74:76)},brows:[{x:cx-v.eye,y:(v.eyeY||53)-5},{x:cx+v.eye,y:(v.eyeY||53)-5}]};
+    return {cx,top,eyeScale:(1+m.eyeSize*.12)*(dwarf?.9:1),w:v.w,jaw:v.jaw,chin:v.chin,chinY,outline,definition:v.definition||0,softness:v.softness||0,eyes:[{x:cx-v.eye,y:v.eyeY||53},{x:cx+v.eye,y:v.eyeY||53}],nose:{x:cx,y:v.noseY||(shape==='long'?65:shape==='round'?63:64)},mouth:{x:cx,y:v.mouthY||(shape==='long'?78:shape==='round'?74:76)},brows:[{x:cx-v.eye,y:(v.eyeY||53)-(dwarf?4:5)},{x:cx+v.eye,y:(v.eyeY||53)-(dwarf?4:5)}]};
+  }
+  // Place the complete dwarf head closer to the shoulders without scaling its pixels.
+  function placedRig(a,dy){
+    if(!dy)return a;const at=p=>({...p,y:p.y+dy});
+    return {...a,offsetY:dy,top:a.top+dy,chinY:a.chinY+dy,outline:a.outline.map(([x,y])=>[x,y+dy]),eyes:a.eyes.map(at),nose:at(a.nose),mouth:at(a.mouth),brows:a.brows.map(at)};
   }
   function clip(g,p,draw) {g.save();contour(g,p);g.clip();draw();g.restore();}
   function texture(g,r,box,count,lo,hi) {for(let i=0;i<count;i++){const x=box[0]+Math.floor(r()*box[2]),y=box[1]+Math.floor(r()*box[3]); rect(g,x,y,1+r()*2,1,lo+r()*(hi-lo));}}
@@ -277,15 +291,15 @@
   const REFINED_BODY=[[48,94],[34,96],[15,106],[4,125],[124,125],[113,107],[94,96],[80,94],...COLLAR.slice(0,-1).reverse()];
   const bodyOutline=()=>REFINED_BODY;
   function drawNeck(g,a,c) {
-    const x=a.cx,half=Math.max(9,Math.min(['dwarven','dwarf-square','orcish','orc-heavy'].includes(c.face)?14:12,a.jaw*.45+2)),top=a.chinY-11;
-    const outline=[[x-half,top],[x+half,top],[x+half-1,91],...COLLAR.slice().reverse(),[x-half+1,91]];
+    const x=a.cx,half=c.race==='dwarf'?Math.max(16,Math.min(18,a.jaw*.55+2)):Math.max(9,Math.min(['dwarven','dwarf-square','orcish','orc-heavy'].includes(c.face)?14:12,a.jaw*.45+2)),top=a.chinY-11,drop=c.race==='dwarf'?DWARF_HEAD_DROP:0;
+    const outline=[[x-half,top],[x+half,top],[x+half-1,91-drop],...COLLAR.map(([X,Y])=>[X,Y-drop]).reverse(),[x-half+1,91-drop]];
     surface(g,outline,(px,py)=>{
       const u=(px-x)/(half+2);
       let v=134+31*Math.sqrt(Math.max(0,1-u*u))-12*u;
       v-=30*falloff(px,py,x,a.chinY+1,half+1,3.3);
-      v-=8*falloff(px,py,x+6,96,3.5,7);
-      v+=6*falloff(px,py,x-5,96,3.5,7);
-      v-=10*falloff(px,py,x,103,17,2);
+      v-=8*falloff(px,py,x+6,96-drop,3.5,7);
+      v+=6*falloff(px,py,x-5,96-drop,3.5,7);
+      v-=10*falloff(px,py,x,103-drop,17,2);
       return v+grain(Math.floor(px),Math.floor(py),c.seed)*1.5;
     });
   }
@@ -309,8 +323,63 @@
     });
     line(g,COLLAR,139,1.2);return true;
   }
+  // Small fantasy emblems share a seed-selected primary and secondary motif across a suit.
+  const ENGRAVINGS=[
+    {name:'diamond',paths:[[[0,-4],[3,0],[0,4],[-3,0],[0,-4]]]},
+    {name:'mountain',paths:[[[-4,3],[-1,-4],[1,1],[3,-2],[4,3],[-4,3]]]},
+    {name:'anvil',paths:[[[-4,-3],[4,-3],[3,-1],[1,0],[1,3],[-2,3],[-2,0],[-4,-1],[-4,-3]]]},
+    {name:'sun',paths:[[[0,-4],[0,4]],[[-4,0],[4,0]],[[-3,-3],[3,3]],[[3,-3],[-3,3]]]},
+    {name:'knot',paths:[[[-1,-4],[2,-1],[-1,2],[-4,-1],[-1,-4]],[[1,-2],[4,1],[1,4],[-2,1],[1,-2]]]},
+    {name:'hammer',paths:[[[-3,-4],[3,-4],[3,-1],[-3,-1],[-3,-4]],[[0,-1],[0,4]],[[-2,4],[2,4]]]},
+    {name:'chevrons',paths:[[[-3,-3],[0,-1],[3,-3]],[[-3,1],[0,3],[3,1]]]},
+    {name:'gate',paths:[[[-3,4],[-3,-2],[0,-4],[3,-2],[3,4]],[[-3,1],[3,1]]]}
+  ];
+  function engraving(g,c,x,y,slot=0,scale=1,tone=219){
+    const motif=ENGRAVINGS[((c.seed>>>0)+slot*3)%ENGRAVINGS.length];
+    g.save();g.translate(x,y);g.scale(scale,scale);for(const path of motif.paths)line(g,path,tone,1.1);g.restore();
+  }
+  function culturalArmor(g,a,c){
+    const kind=c.clothing,dwarf=kind==='dwarf-runic-plate'||kind==='dwarf-forge-plate',elf=kind==='elf-silver-scale'||kind==='elf-leaf-cuirass';
+    if(!dwarf&&!elf)return false;
+    const plate=(P,light=175)=>surface(g,P,(x,y)=>94+(light-94)*falloff(x,y,43,103,36,28)-25*falloff(x,y,101,120,24,25));
+    const chest=[[45,98],[55,103],[73,103],[83,98],[97,119],[99,126],[29,126],[31,119]];
+    plate(chest);clip(g,chest,()=>{
+      if(kind==='elf-silver-scale')for(let row=0;row<4;row++)for(let x=30+(row%2)*5;x<104;x+=10){const y=104+row*6;poly(g,[[x-5,y],[x+5,y],[x+4,y+4],[x,y+7],[x-4,y+4]],103);curve(g,[x-4,y+1,x-2,y+5,x+2,y+5,x+4,y+1],199,.8);}
+      else if(kind==='elf-leaf-cuirass')for(const side of [-1,1])for(let i=0;i<3;i++){const y=103+i*7;curve(g,[64,y,64+side*8,y+1,64+side*20,y-1,64+side*29,y-6],side<0?207:151,1.5);curve(g,[64,y+3,64+side*10,y+6,64+side*21,y+3,64+side*31,y-3],58,1);}
+      else {curve(g,[64,104,63,111,65,119,64,126],205,1.5);for(let y=113;y<128;y+=5)line(g,[[30,y],[98,y]],55,1);}
+    });
+    for(const side of [-1,1]){
+      if(dwarf){const shoulder=[[64+side*18,96],[64+side*32,94],[64+side*47,102],[64+side*54,117],[64+side*37,123],[64+side*23,111]];plate(shoulder,190);
+        clip(g,shoulder,()=>{for(let n=0;n<3;n++){const y=100+n*6;line(g,[[64+side*19,y],[64+side*34,y],[64+side*49,y+9]],n?60:207,n?2:1.3);}
+          if(kind==='dwarf-runic-plate')for(const [dx,slot] of [[28,0],[39,1]])engraving(g,c,64+side*dx,107+(dx-28)*.35,slot);
+          else for(const dx of [27,40]){const x=64+side*dx;poly(g,[[x-3,105],[x,101],[x+3,105],[x,109]],215);oval(g,x,114,1.4,1.4,211);}
+        });
+      }else for(let n=0;n<3;n++){const x=64+side*(23+n*10),y=98+n*5,P=[[x-side*8,y+3],[x-side*2,y-3],[x+side*8,y-5],[x+side*9,y+5],[x+side*4,y+14],[x-side*6,y+10]];plate(P,kind==='elf-silver-scale'?201:174);curve(g,[x-side*4,y+8,x,y+3,x+side*3,y,x+side*6,y-3],214,1);}
+    }
+    if(kind==='dwarf-forge-plate'){poly(g,[[58,108],[64,104],[70,108],[68,114],[60,114]],205);engraving(g,c,64,109,0,.7,66);}
+    if(elf)curve(g,[64,104,61,111,65,118,64,126],219,1.1);
+    return true;
+  }
+  function culturalHelmet(g,a,c,back){
+    const kind=c.headwear,dwarf=kind==='dwarf-horned-helm'||kind==='dwarf-rune-helm',elf=kind==='elf-winged-helm',horned=kind==='horned-helm'||kind==='dwarf-horned-helm';
+    if(!dwarf&&!elf&&!horned)return false;
+    const x=a.cx,w=a.w+3;
+    if(back){if(dwarf)chain(g,[[x-w,43],[x+w,43],[x+w+1,81],[x+22,98],[x-22,98],[x-w-1,81]],c);return true;}
+    const dome=dwarf?[[x-w,43],[x-w,26],[x-17,17],[x+17,17],[x+w,26],[x+w,43],[x+12,38],[x-12,38]]:elf?[[x-w,43],[x-w+5,27],[x-10,18],[x,9],[x+10,18],[x+w-5,27],[x+w,43],[x+11,37],[x-11,37]]:[[x-w,43],[x-w+3,26],[x-14,17],[x,14],[x+15,18],[x+w-2,28],[x+w,43]];
+    surface(g,dome,(px,py)=>105+83*falloff(px,py,x-12,26,24,22)-31*falloff(px,py,x+w,41,12,24));
+    curve(g,[x-w+1,42,x-12,36,x+12,36,x+w-1,42],61,3);curve(g,[x-w+2,40,x-12,34,x+12,34,x+w-2,40],214,1.2);
+    for(const side of [-1,1]){
+      if(horned){const at=x+side*(w-3),outer=x+side*(w+13),tip=x+side*(w+7);surface(g,[[at,30],[at+side*10,26],[outer,15],[tip,5],[tip-side*3,8],[outer-side*6,16],[at-side*2,23]],(px,py)=>179+35*falloff(px,py,at,21,13,17)-36*falloff(px,py,outer,25,9,14));curve(g,[at,28,at+side*7,25,outer-side*1,15,tip,7],227,1.2);for(let n=0;n<3;n++)line(g,[[at+side*(2+n*3),26-n*3],[at+side*(6+n*2),28-n*4]],103,.8);}
+      if(dwarf){const edge=x+side*(w-2);surface(g,[[edge,40],[edge+side*2,47],[edge,70],[edge-side*6,77],[edge-side*7,67],[edge-side*4,51]],()=>side<0?163:96);line(g,[[edge,46],[edge-side*2,65],[edge-side*5,71]],205,1);}
+      if(elf)for(let n=0;n<3;n++){const at=x+side*(w-4),tip=x+side*(w+11-n*4),y=8+n*8;surface(g,[[at,38],[at+side*5,26],[tip,y],[tip-side*1,y+13],[at+side*5,41]],(px,py)=>121+77*falloff(px,py,at-4,24,17,22));curve(g,[at+side*1,37,at+side*7,26,tip-side*3,y+8,tip,y+2],222,.85);}
+    }
+    if(dwarf){for(const [dx,slot] of [[-12,1],[0,0],[12,1]])engraving(g,c,x+dx,27,slot,.85,kind==='dwarf-rune-helm'?218:179);if(kind==='dwarf-rune-helm'){poly(g,[[x-9,17],[x,7],[x+9,17],[x,28]],133);engraving(g,c,x,17,0,1.1,230);}}
+    else curve(g,[x,15,x-2,23,x+2,30,x,36],218,1.2);
+    return true;
+  }
   function soldierArmor(g,a,c) {
     const kind=c.clothing;if(!SOLDIER_EQUIPMENT.armor.includes(kind))return false;
+    if(culturalArmor(g,a,c))return true;
     const shoulder=side=>[[64+side*19,97],[64+side*32,98],[64+side*45,107],[64+side*52,119],[64+side*35,122],[64+side*25,111]];
     if(kind==='padded-jack')return true;
     if(kind==='leather-mail'){
@@ -338,7 +407,7 @@
     surface(g,outline,(x,y)=>97+79*falloff(x,y,51,109,17,22)-28*falloff(x,y,85,117,19,15));
     clip(g,outline,()=>{curve(g,[64,104,61,111,64,119,64,127],199,1);for(const side of [-1,1])curve(g,[64+side*4,107,64+side*10,112,64+side*18,111,64+side*24,106],side<0?199:78,1.2);for(let y=119;y<129;y+=4)curve(g,[29,y,48,y-2,79,y-2,99,y],58,1);});
     for(const side of [-1,1]){surface(g,shoulder(side),(x,y)=>107+63*falloff(x,y,38,105,26,17));for(let row=0;row<3;row++)curve(g,[64+side*23,100+row*4,64+side*30,104+row*4,64+side*40,103+row*4,64+side*46,111+row*4],row===0?192:72,1);}
-    if(kind==='dwarf-iron-guard')for(const side of [-1,1]){curve(g,[64+side*9,108,64+side*12,113,64+side*12,117,64+side*15,121],187,2);line(g,[[64+side*12,113],[64+side*17,111]],187,1);}
+    if(kind==='dwarf-iron-guard')for(const side of [-1,1])engraving(g,c,64+side*13,114,0,1.1,197);
     return true;
   }
   function soldierHelmet(g,a,c,back) {
@@ -362,7 +431,7 @@
       oval(g,edge,47,1.2,1.2,195);
     }
     if(sallet){curve(g,[x-w+1,40,x-10,32,x+12,32,x+w,40],116,4);curve(g,[x-w,38,x-10,30,x+12,30,x+w,38],200,1);}
-    if(dwarf){curve(g,[x-w+1,33,x-14,37,x+14,37,x+w-1,33],68,4);for(const dx of [-11,0,11])line(g,[[x+dx,21],[x+dx,29],[x+dx+3,26]],193,1.3);}
+    if(dwarf){curve(g,[x-w+1,33,x-14,37,x+14,37,x+w-1,33],68,4);for(const [dx,slot] of [[-11,1],[0,0],[11,1]])engraving(g,c,x+dx,25,slot,.85,193);}
     if(orc){curve(g,[x-w,33,x-12,39,x+12,39,x+w,33],58,4);for(const side of [-1,1]){curve(g,[x+side*2,11,x+side*6,20,x+side*8,27,x+side*9,34],side<0?189:135,2);oval(g,x+side*17,34,1.5,1.5,197);}curve(g,[x-7,16,x-2,11,x+4,11,x+8,17],65,2);}
     if(elf){curve(g,[x,12,x-7,23,x-3,30,x,37],202,1.5);curve(g,[x,12,x+7,23,x+3,30,x,37],143,1);for(const side of [-1,1])curve(g,[x+side*2,34,x+side*8,29,x+side*17,27,x+side*21,24],184,1);}
     if(kind==='ridge-helm')for(const side of [-1,1])curve(g,[x+side*2,12,x+side*2,21,x+side*3,30,x+side*3,36],side<0?216:61,1.5);
@@ -469,7 +538,7 @@
         if(c.clothing==='plate'){for(const side of [-1,1]){curve(g,[64+side*4,105,64+side*13,109,64+side*24,105,64+side*30,101],182,1.2);curve(g,[64+side*2,108,64+side*6,114,64+side*11,121,64+side*14,125],side<0?195:77,1.4);}for(let y=119;y<128;y+=4)curve(g,[22,y,44,y-3,83,y-3,108,y],62,1);}
       });return;
     }
-    if(c.clothing==='rune-mail'){chain(g,bodyOutline(c),c);for(const x of [39,51,77,89]){line(g,[[x,108],[x,116]],181,1);line(g,[[x,109],[x+3,111],[x,113]],173,1);}return;}
+    if(c.clothing==='rune-mail'){chain(g,bodyOutline(c),c);for(const [x,slot] of [[39,1],[51,0],[77,0],[89,1]])engraving(g,c,x,112,slot,.9,181);return;}
     if(c.clothing==='ruffled-mail'){chain(g,[[47,107],[56,111],[72,111],[80,107],[86,125],[41,125]],c);return;}
     if(c.clothing==='brigandine'){for(let y=106;y<126;y+=6)for(let x=31;x<103;x+=9)oval(g,x+(y%4),y,1.1,1.1,198);return;}
     if(c.clothing!=='mail'&&c.clothing!=='surcoat')return;
@@ -559,7 +628,7 @@
   }
   function brows(g,a,c) {
     const forms={natural:[7,1.2,1.8,1],arched:[7,2.7,1.7,1.5],bold:[7,1.2,2.6,1],flat:[6,.3,1.7,.3],broken:[7,1.2,1.8,1],sculpted:[7,1.6,1.9,1],soft:[6.5,1.1,1.2,1.1],feathered:[7.3,1.8,1.5,1.4],'low-arch':[7,.75,1.6,.8],'high-arch':[7,3.4,1.7,1.6],slim:[6.8,1.5,.9,1.2],'tapered-natural':[7.4,1.1,1.4,.5],'full-soft':[7.2,1.4,2.2,.8]};
-    const [w,arch,thick,tail]=forms[c.brows];
+    const [bw,ba,bt,tail]=forms[c.brows],dwarf=c.race==='dwarf',w=bw+(dwarf?1:0),arch=ba*(dwarf?.7:1),thick=bt*(dwarf?1.25:1);
     for(let i=0;i<a.brows.length;i++) {
       const e=a.brows[i];featureFrame(g,e.x+.5,e.y,e.x<a.cx?1:-1,()=>{
         g.fillStyle=gray(c.brows==='soft'||c.brows==='slim'?89:64);g.beginPath();g.moveTo(-w,tail);
@@ -654,10 +723,10 @@
       return;
     }
     if(['full','forked','braided','short-boxed','rounded','tapered-beard'].includes(c.beard)) {
-      const end=c.beard==='short-boxed'?94:c.beard==='rounded'?100:c.beard==='full'?104:c.beard==='tapered-beard'?108:112,baseY=Math.min(98,end-4),tip=c.beard==='rounded'||c.beard==='short-boxed'?11:7;
-      const jaw=[[x-a.w+2,61],[x-15,72],[x-11,my+3],[x-7,my+6],[x+7,my+6],[x+11,my+3],[x+15,72],[x+a.w-2,61],[x+a.jaw,82],[x+13,baseY],[x+tip,end],[x,end+1],[x-tip,end],[x-14,baseY],[x-a.jaw,82]];
+      const dwarf=c.race==='dwarf',end=c.beard==='short-boxed'?94:c.beard==='rounded'?(dwarf?104:100):c.beard==='full'?(dwarf?108:104):c.beard==='tapered-beard'?108:112,baseY=Math.min(98,end-4),tip=(c.beard==='rounded'||c.beard==='short-boxed'?11:7)+(dwarf?(c.beard==='full'?6:3):0),baseHalf=dwarf?18:13;
+      const jaw=[[x-a.w+2,61],[x-15,72],[x-11,my+3],[x-7,my+6],[x+7,my+6],[x+11,my+3],[x+15,72],[x+a.w-2,61],[x+a.jaw,82],[x+baseHalf,baseY],[x+tip,end],[x,end+1],[x-tip,end],[x-baseHalf-1,baseY],[x-a.jaw,82]];
       poly(g,jaw,59);
-      clip(g,jaw,()=>{for(let i=0;i<130;i++){const px=x-17+Math.floor(R()*34),py=80+Math.floor(R()*32);line(g,[[px,py],[px-1,py+4]],78+R()*45);}});
+      clip(g,jaw,()=>{const span=dwarf?a.jaw-1:17;for(let i=0;i<(dwarf?170:130);i++){const px=x-span+Math.floor(R()*span*2),py=80+Math.floor(R()*32);line(g,[[px,py],[px-1,py+4]],78+R()*45);}});
       if(c.beard==='forked'){g.save();g.globalCompositeOperation='destination-out';g.beginPath();g.ellipse(x,111,1.5,12,0,0,Math.PI*2);g.fill();g.restore();line(g,[[x-7,96],[x-9,107]],130);line(g,[[x+7,96],[x+9,107]],107);}
       if(c.beard==='braided')for(let y=90;y<111;y+=4){line(g,[[x-5,y],[x+4,y+3],[x-4,y+5]],131);rect(g,x-5,109,10,2,183);}
       for(const side of [-1,1])poly(g,[[x+side,my-4],[x+side*5,my-5],[x+side*12,my-2],[x+side*12,my+1],[x+side*4,my-1],[x+side,my-1]],58);
@@ -802,7 +871,7 @@
     const base={'heraldic-cap':'cap','forge-helm':'round-helm',warband:'headband','vine-diadem':'leaf-circlet'}[c.headwear];if(!base)return false;
     headwear(g,a,{...c,headwear:base},back);if(back)return true;const x=a.cx;
     if(c.headwear==='heraldic-cap'){oval(g,x+9,28,3,3.6,180);curve(g,[x+8,30,x+7,27,x+10,25,x+10,28],75,1);}
-    if(c.headwear==='forge-helm'){curve(g,[x-a.w,35,x-10,39,x+10,39,x+a.w,35],67,3);line(g,[[x,21],[x,31]],191,1.3);line(g,[[x,22],[x+4,25],[x,27]],181,1.2);}
+    if(c.headwear==='forge-helm'){curve(g,[x-a.w,35,x-10,39,x+10,39,x+a.w,35],67,3);engraving(g,c,x,26,0,1.1,191);}
     if(c.headwear==='warband')for(const px of [x-10,x,x+10])oval(g,px,36,1.6,1.6,174);
     if(c.headwear==='vine-diadem')for(const side of [-1,1])for(let i=0;i<3;i++)oval(g,x+side*(2+i*2),30-i*.6,2,1.1,181,-side*.6);
     return true;
@@ -849,7 +918,7 @@
   function headwear(g,a,c,back) {
     const kind=c.headwear,x=a.cx,w=a.w;
     if(kind==='none')return;
-    if(soldierHelmet(g,a,c,back)||racialHeadwear(g,a,c,back)||referenceHeadwear(g,a,c,back)||addedHeadwear(g,a,c,back)||extraHeadwear(g,a,c,back))return;
+    if(culturalHelmet(g,a,c,back)||soldierHelmet(g,a,c,back)||racialHeadwear(g,a,c,back)||referenceHeadwear(g,a,c,back)||addedHeadwear(g,a,c,back)||extraHeadwear(g,a,c,back))return;
     if(back) {
       if(kind==='hood'||kind==='coif') {
         const p=[[x-w-8,39],[x-w-5,20],[x-13,9],[x+13,10],[x+w+7,25],[x+w+10,60],[x+w+6,87],[x+39,107],[x-40,106],[x-w-8,80]];
@@ -940,8 +1009,8 @@
       v-=10*falloff(px,py,x+7,70,3,5);
       v+=11*falloff(px,py,x-3,58,3,12);
       for(const eye of a.eyes) {
-        v-=(37-10*a.definition-14*a.softness)*falloff(px,py,eye.x,eye.y-1,7,4);
-        v+=12*falloff(px,py,eye.x-1,eye.y-6,7,2.5);
+        v-=(37-10*a.definition-14*a.softness+(c.race==='dwarf'?10:0))*falloff(px,py,eye.x,eye.y-1,7,4);
+        v+=(c.race==='dwarf'?22:12)*falloff(px,py,eye.x-1,eye.y-(c.race==='dwarf'?4:6),c.race==='dwarf'?8:7,2.5);
         v+=9*falloff(px,py,eye.x-1,eye.y+5,6,2);
       }
       return v+grain(Math.floor(px),Math.floor(py),c.seed)*(3-.8*a.softness);
@@ -951,14 +1020,14 @@
   function drawNose(g,a,c) {
     const x=a.nose.x+(c.nose==='crooked'?2:0),y=a.nose.y-(c.nose==='short'?1:0);
     const width={straight:5,broad:7,aquiline:5,button:4,crooked:5,slender:4,rounded:5.8,short:4.5,roman:5.5,'wide-tip':7,'soft-tip':4.8,'defined-tip':5.2,'orc-flat':8.3,'dwarf-bulb':8.1,'orc-broad':9.3}[c.nose];
-    const noseWidth=width+c.adjustments.noseWidth*.6;
-    const bridge=c.nose==='slender'?1:c.nose==='soft-tip'?1.25:c.nose==='defined-tip'?1.7:c.nose==='wide-tip'?1.5:2,top=c.nose==='orc-flat'||c.nose==='orc-broad'?54:c.nose==='short'?53:c.nose==='soft-tip'?51:49,hook=c.nose==='aquiline'?1.5:0;
+    const noseWidth=width+c.adjustments.noseWidth*.6+(c.race==='dwarf'?1:0);
+    const bridge=c.nose==='slender'?1:c.nose==='soft-tip'?1.25:c.nose==='defined-tip'?1.7:c.nose==='wide-tip'?1.5:c.race==='dwarf'?2.8:2,top=c.nose==='orc-flat'||c.nose==='orc-broad'?54:c.nose==='short'?53:c.nose==='soft-tip'?51:49,hook=c.nose==='aquiline'?1.5:0;
     const outline=[[x-bridge,top],[x+bridge,top],[x+2.8,y-6],[x+noseWidth,y+hook],[x+noseWidth-1.5,y+3],[x,y+4],[x-noseWidth+1.5,y+3],[x-noseWidth,y],[x-2.5,y-5]];
     surface(g,outline,(px,py)=>154+38*falloff(px,py,x-1,y-7,2.5,9)-30*falloff(px,py,x+3,y-5,2.3,8)+25*falloff(px,py,x-1,y,4,3)-25*falloff(px,py,x,y+4,7,2));
     curve(g,[x-noseWidth+1,y+2,x-noseWidth+2,y+.4,x-3,y+1.7,x-2,y+2.8],70,.65);
     curve(g,[x+1,y+2.8,x+2,y+1+hook,x+noseWidth-1,y+1+hook,x+noseWidth-1,y+2.8+hook],69,.65);
     if(c.nose==='rounded'){g.fillStyle=gray(194);g.beginPath();g.ellipse(x-.8,y+.3,2.4,1.7,0,0,Math.PI*2);g.fill();}
-    if(c.nose==='dwarf-bulb')oval(g,x-.5,y+.6,3.7,2.1,182);
+    if(c.nose==='dwarf-bulb')oval(g,x-.7,y+.4,c.race==='dwarf'?4.6:3.7,c.race==='dwarf'?2.7:2.1,182);
     if(c.nose==='orc-broad')curve(g,[x-6,y+.5,x-3,y-1,x+3,y-1,x+6,y+.5],155,1.5);
     if(c.nose==='orc-flat')curve(g,[x-5,y,x-3,y-1.3,x+3,y-1.3,x+5,y],164,1.2);
     if(c.nose==='soft-tip')oval(g,x-.6,y+.4,1.7,1.2,186);
@@ -1141,7 +1210,7 @@
     if(clear.length)g.putImageData(im,0,0);return c;
   }
   function build(input) {
-    const config=normalize(input),anchors=rig(config.face,config.adjustments),layers={};
+    const config=normalize(input),anchors=rig(config.face,config.adjustments,config.race),layers={};
     const painters={ears,face:drawFace,clothing,armor,age,marks,nose:drawNose,brows,mouth,teeth,beard,eyelids,headwearBack:(g,a,c)=>headwear(g,a,c,true),headwearFront:(g,a,c)=>headwear(g,a,c,false),eyes:(g,a,c)=>naturalEyes(g,a,c,false),iris:(g,a,c)=>naturalEyes(g,a,c,true),hairBack:(g,a,c)=>hair(g,a,c,true),hairFront:(g,a,c)=>hair(g,a,c,false)};
     for(const spec of LAYERS){const c=canvas(),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.lineCap='round';g.lineJoin='round';g.save();if(spec.feature==='hair'){const v=config.adjustments.hairVolume;g.translate(anchors.cx,43);g.scale(1+v*.05,1+v*.04);g.translate(-anchors.cx,-43);}painters[spec.id](g,anchors,config);refineLayer(g,spec,anchors,config);g.restore();layers[spec.id]=rasterize(c,32,spec.id==='brows'||spec.id==='mouth'||spec.id==='teeth'&&['small-tusks','heavy-tusks'].includes(config.mouth)||spec.id==='age'&&config.age==='mature'||spec.id==='beard'&&['stubble','close-beard','chin-bristle'].includes(config.beard));}
     symmetricCoverage(layers.ears,64);
@@ -1167,7 +1236,9 @@
     const protection=canvas(),pg=protection.getContext('2d');
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){pg.drawImage(layers.eyes,dx,dy);pg.drawImage(layers.eyelids,dx,dy);}
     for(const id of ['age','marks']){const g=layers[id].getContext('2d');g.save();g.globalCompositeOperation='destination-out';g.drawImage(protection,0,0);g.restore();}
-    return {config,anchors,layers};
+    const drop=config.race==='dwarf'?DWARF_HEAD_DROP:0;
+    if(drop)for(const spec of LAYERS){if(spec.id==='clothing'||spec.id==='armor')continue;const shifted=canvas();shifted.getContext('2d').drawImage(layers[spec.id],0,drop);layers[spec.id]=shifted;}
+    return {config,anchors:placedRig(anchors,drop),layers};
   }
   function tint(source,color) {
     if(!/^#[0-9a-f]{6}$/i.test(color))throw new Error('A tint must be a six-digit hex color');
@@ -1182,7 +1253,7 @@
       g.drawImage(portrait.layers.face,0,0);
       g.drawImage(portrait.layers.headwearBack,0,0);
       g.drawImage(portrait.layers.headwearFront,0,0);
-    } else {g.fillStyle='#fff';g.fillRect(0,rule.rim,SIZE,SIZE-rule.rim);}
+    } else {const rim=rule.rim+(portrait.anchors.offsetY||0);g.fillStyle='#fff';g.fillRect(0,rim,SIZE,SIZE-rim);}
     return out;
   }
   function composite(portrait,{colors=null,visible=null}={}) {
@@ -1216,15 +1287,15 @@
     const pick=values=>values[Math.floor(R()*values.length)];
     for(const key of Object.keys(RACE_PARTS[kind]))c[key]=pick(partsFor(kind,key));
     if(selected==='female'){c.beard='none';const hair=['long','braids','waves','swept','pageboy','cropped','curls','ponytail','high-bun','low-bun','half-up','single-braid','undercut','loose-side-braid','loose-center-part','forge-braids','braided-crown','war-crest'].filter(v=>partsFor(kind,'hair').includes(v));c.hair=pick(hair);}
-    if(kind==='dwarf'&&selected!=='female'&&R()<.75)c.beard=pick(['full','forked','braided','bound-beard','rounded','trimmed']);
+    if(kind==='dwarf'&&selected!=='female'&&R()<.9)c.beard=pick(['full','forked','braided','bound-beard','rounded']);
     if(kind==='orc'){if(R()<.7)c.mouth=pick(['small-tusks','heavy-tusks']);if(R()<.7)c.beard='none';}
     if(kind==='elf')c.beard='none';
     if(kind==='human'&&selected!=='female'&&R()<.35)c.beard='none';
     if(R()<.55)c.marks='none';
     return normalize(c);
   }
-  function geometry(input){const c=normalize(input);return rig(c.face,c.adjustments);}
-  root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,soldierEquipment:SOLDIER_EQUIPMENT,soldierPresets:SOLDIER_PRESETS,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
+  function geometry(input){const c=normalize(input);return placedRig(rig(c.face,c.adjustments,c.race),c.race==='dwarf'?DWARF_HEAD_DROP:0);}
+  root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,engravingPatterns:Object.freeze(ENGRAVINGS.map(p=>p.name)),soldierEquipment:SOLDIER_EQUIPMENT,soldierPresets:SOLDIER_PRESETS,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
 })(globalThis);
 </script><script>/* Character creation, structural face reservations and persistent NPC recipes. */
 (function(root){
@@ -1232,12 +1303,12 @@
   const E=root.PortraitEngine;
   const clone=value=>JSON.parse(JSON.stringify(value));
   const ROLES=Object.freeze({
-    lord:{clothing:['brocade','embroidered-doublet','guild-doublet','rune-mail','leaf-mantle','plate','robe','velvet-bodice','hide-harness'],headwear:['circlet','coronet','heraldic-cap','forge-helm','warband','vine-diadem','none']},
-    soldier:{clothing:['padded-jack','leather-mail','coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail','gambeson'],headwear:['open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','kettle','coif']},
-    infantry:{clothing:['coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail'],headwear:['open-bascinet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','kettle']},
+    lord:{clothing:['brocade','embroidered-doublet','guild-doublet','rune-mail','leaf-mantle','plate','robe','velvet-bodice','hide-harness','dwarf-runic-plate','dwarf-forge-plate','elf-silver-scale','elf-leaf-cuirass'],headwear:['circlet','coronet','heraldic-cap','forge-helm','warband','vine-diadem','none','horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm']},
+    soldier:{clothing:['padded-jack','leather-mail','coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail','gambeson','dwarf-runic-plate','dwarf-forge-plate','elf-silver-scale','elf-leaf-cuirass'],headwear:['open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','kettle','coif','horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm']},
+    infantry:{clothing:['coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail','dwarf-runic-plate','dwarf-forge-plate','elf-silver-scale','elf-leaf-cuirass'],headwear:['open-bascinet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','kettle','horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm']},
     archer:{clothing:['padded-jack','leather-mail','gambeson','leather'],headwear:['kettle','ridge-helm','arming-cap','warband','vine-diadem','none']},
-    cavalry:{clothing:['steel-cuirass','coat-of-plates','dwarf-iron-guard','rune-mail','orc-lamellar','elf-leaf-mail','plate'],headwear:['sallet','open-bascinet','ridge-helm','dwarf-guard-helm','forge-helm','orc-war-helm','elf-guard-helm']},
-    guard:{clothing:['coat-of-plates','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail','gambeson','brigandine','rune-mail','hide-harness','leather'],headwear:['open-bascinet','dwarf-guard-helm','orc-war-helm','elf-guard-helm','coif','round-helm','nasal','forge-helm','warband','none']},
+    cavalry:{clothing:['steel-cuirass','coat-of-plates','dwarf-iron-guard','rune-mail','orc-lamellar','elf-leaf-mail','plate','dwarf-runic-plate','dwarf-forge-plate','elf-silver-scale','elf-leaf-cuirass'],headwear:['sallet','open-bascinet','ridge-helm','dwarf-guard-helm','forge-helm','orc-war-helm','elf-guard-helm','horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm']},
+    guard:{clothing:['coat-of-plates','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','mail','gambeson','brigandine','rune-mail','hide-harness','leather','dwarf-runic-plate','dwarf-forge-plate','elf-silver-scale','elf-leaf-cuirass'],headwear:['open-bascinet','dwarf-guard-helm','orc-war-helm','elf-guard-helm','coif','round-helm','nasal','forge-helm','warband','none','horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm']},
     villager:{clothing:['tunic','robe','linen-chemise','traveler-coat'],headwear:['cap','straw-hat','linen-wrap','none']},
     wanderer:{clothing:['cloak','leather','traveler-coat','leaf-mantle','hide-harness'],headwear:['hood','headband','none']},
     bandit:{clothing:['leather','fur','hide-harness','gambeson'],headwear:['hood','cap','warband','none']},
@@ -1294,7 +1365,7 @@
     while(result.length<n&&candidates<n*100){
       const attempt=candidates++,s=hash(seed+'/'+attempt);if(mode==='mixed'&&pool.length&&R()<.35){const p=pick(pool);if(accept(p.recipe.config,'preset',p))continue;}
       const c=E.random(s,profile,race);c.adjustments=randomAdjustments(s^0x73c9);
-      for(const key of ['clothing','headwear']){const allowed=ROLES[role][key].filter(v=>E.partsFor(race,key).includes(v));if(allowed.length){const cultural={human:{clothing:['guild-doublet','brocade','embroidered-doublet'],headwear:['heraldic-cap','circlet']},dwarf:{clothing:['rune-mail','dwarf-iron-guard'],headwear:['forge-helm','dwarf-guard-helm']},orc:{clothing:['hide-harness','orc-lamellar'],headwear:['warband','orc-war-helm']},elf:{clothing:['leaf-mantle','elf-leaf-mail'],headwear:['vine-diadem','leaf-circlet','elf-guard-helm']}}[race][key].filter(v=>allowed.includes(v));c[key]=pick(cultural.length&&R()<.65?cultural:allowed);}}
+      for(const key of ['clothing','headwear']){const allowed=ROLES[role][key].filter(v=>E.partsFor(race,key).includes(v));if(allowed.length){const cultural={human:{clothing:['guild-doublet','brocade','embroidered-doublet'],headwear:['heraldic-cap','circlet']},dwarf:{clothing:['rune-mail','dwarf-iron-guard','dwarf-runic-plate','dwarf-forge-plate'],headwear:['forge-helm','dwarf-guard-helm','dwarf-horned-helm','dwarf-rune-helm']},orc:{clothing:['hide-harness','orc-lamellar'],headwear:['warband','orc-war-helm']},elf:{clothing:['leaf-mantle','elf-leaf-mail','elf-silver-scale','elf-leaf-cuirass'],headwear:['vine-diadem','leaf-circlet','elf-guard-helm','elf-winged-helm']}}[race][key].filter(v=>allowed.includes(v));c[key]=pick(cultural.length&&R()<.65?cultural:allowed);}}
       accept(E.normalize(c),'random');
     }
     if(result.length<n)throw new GenerationError('FACE_POOL_EXHAUSTED','Not enough distinct faces remain for this player and roster. Use fewer characters or broaden the race/preset pool.');
@@ -1366,7 +1437,7 @@
     for(const profile of E.profiles)$('profile-'+profile).setAttribute('aria-pressed',String(state.config.profile===profile));
     const fit=E.headwearRules[state.config.headwear].hair;$('headwear-note').textContent={show:'Hair remains visible.',tuck:'Crown hair tucked under this headwear.',hide:'Hair and ears concealed by this headwear.',frame:'Hair stays within the veil; back hair and ears are covered.'}[fit];
     anchors();$('gray').setAttribute('aria-pressed',String(!state.colored));$('color').setAttribute('aria-pressed',String(state.colored));
-    $('preset').value=String(E.presets.findIndex(p=>JSON.stringify(state.config)===JSON.stringify(E.normalize(p.config)))).replace('-1','');for(const key of Object.keys(selectors))selectors[key].value=state.config[key];$('seed').value=state.config.seed;
+    $('preset').value=String(E.presets.findIndex(p=>JSON.stringify(state.config)===JSON.stringify(E.normalize(p.config)))).replace('-1','');for(const key of Object.keys(selectors))selectors[key].value=state.config[key];$('seed').value=state.config.seed;$('engraving-control').style.display=state.config.race==='dwarf'?'grid':'none';$('engraving-pattern').value=String(state.config.seed%E.engravingPatterns.length);
     for(const s of E.order){checks[s.id].checked=state.visible[s.id];copy(state.portrait.layers[s.id],tiles[s.id].querySelector('canvas'));}
     inspect(state.selected);
     $('color-hint').textContent=state.colored?'Applied to preview only':'Enable tint preview to apply';
@@ -1389,6 +1460,8 @@
     label.append(document.createTextNode(names[key]),select);if(key==='race'){const note=document.createElement('small');note.textContent='Only compatible parts are listed. Switching race replaces incompatible choices.';note.style.cssText='font-size:11px;line-height:1.4;color:#aaa;font-weight:normal';label.append(note);}if(key==='headwear'){const note=document.createElement('small');note.id='headwear-note';note.style.cssText='font-size:11px;line-height:1.4;color:#aaa;font-weight:normal';label.append(note);}$('features').append(label);selectors[key]=select;
     select.onchange=()=>{if(key==='race')state.config=E.startRace(select.value,state.config);else state.config[key]=select.value;render(true);};
   }
+  E.engravingPatterns.forEach((name,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=title(name);$('engraving-pattern').append(option)});
+  $('engraving-pattern').onchange=()=>{const n=E.engravingPatterns.length;state.config.seed=(Math.floor(state.config.seed/n)*n+Number($('engraving-pattern').value))>>>0;render(true)};
   for(const [key,value] of Object.entries(state.colors)){
     const label=document.createElement('label'),input=document.createElement('input');input.type='color';input.value=value;input.id='tint-'+key;input.setAttribute('aria-label',title(key)+' tint');
     label.append(input,document.createTextNode(title(key)));$('colors').append(label);input.oninput=()=>{state.colors[key]=input.value;render();};
