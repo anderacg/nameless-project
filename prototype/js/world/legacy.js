@@ -84,7 +84,7 @@ class Legacy{
     const i=r.items.findIndex(([k,id])=>k==='gear'&&ITEMS[id]?.slot==='weapon'),j=i>=0?i:r.items.findIndex(([k])=>k==='gear');if(j<0)return null;
     const [,id,n]=r.items[j];if(n>1)r.items[j][2]--;else r.items.splice(j,1);return id}
   // (one of your line fallen: their life, for your family's tree (ui/family.js): kin of whom, if they were)
-  static record(s){this.line.push({rel:this.kin?.rel||null,of:this.kin?.of||null,n:s.n,who:s.who,race:s.race,bg:s.bg,born:s.born,day:s.day,days:s.days,level:s.level,renown:s.renown,earned:s.earned,by:s.by,near:s.near,family:this.family||''})}
+  static record(s){this.line.push({rel:this.kin?.rel||null,of:this.kin?.of||null,n:s.n,who:s.who,race:s.race,bg:s.bg,born:s.born,day:s.day,days:s.days,level:s.level,renown:s.renown,earned:s.earned,by:s.by,near:s.near,family:this.family||'',g:s.g,face:s.face||null})}
   static reborn(k){const b=BGS[k],old=Death.slain;if(!b||!old)return false;
     // (kin: what they carry of the one who fell, taken now, before your hero is made afresh)
     const kin=G.kin!==undefined?G.kin:'child',K=DEATH.kin,rel0={...(P.lrel||{})},home0=P.home,heir=kin&&this.heirloom(old);if(kin)G.race=old.race||G.race;G.kin=undefined;
@@ -95,8 +95,9 @@ class Legacy{
     // (the quests' marks on the world gone with them; your stories ended)
     const ids=new Set(P.quests.map(q=>q.id));for(const o of [...W.monsters,...bandits,...W.sites,...W.lords])if(o&&o.qid!=null&&ids.has(o.qid))delete o.qid;
     for(const th of Thread.list().on.slice())th.end('left');
+    const faces=typeof Faces!=='undefined'?Faces.save():undefined;
     gameSession.resetPlayer();Captivity.held=null;Captivity.scattered=[];Death.slain=null;Death.pending=null;
-    heroFrom(k,b);P.born=G.day;this.kin=kin?{rel:kin,of:old.n}:{rel:null,of:old.n};
+    heroFrom(k,b);P.born=G.day;if(typeof Faces!=='undefined')Faces.next(faces,kin&&old.face,this.fallen);this.kin=kin?{rel:kin,of:old.n}:{rel:null,of:old.n};
     fogReset();Discovery.reset();KNOWLEDGE.reset();for(const s of W.sites)s.seen=false;
     let {home}=heroHome(k,b);
     // (kin: a share of their renown, half what their lords thought of them, the grudges against them half held against you; where the

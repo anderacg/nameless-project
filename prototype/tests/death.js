@@ -216,7 +216,13 @@ Kit.suite(({ok})=>{
    fi.value='Thornwood';fi.dispatchEvent(new Event('input',{bubbles:true}));t.act('death-past',k);settleAll();
    ok(L.family==='Thornwood'&&L.line.length===1&&L.line[0].family==='Thornwood','your line goes by it: the Thornwood family');
    const g2=die(X.grave.tiers.near.stone),site=W.sites.find(o=>o.type==='rest'&&o.kind==='plot');ok(site&&site.name==='Thornwood Family Rest'&&L.line.length===2&&L.family==='Thornwood','its graves and plot go by it: "'+(site&&site.name)+'"; the next life keeps it');
-   G.jsec='family';const html=t.JOURNAL_SECTIONS.family.render();const ord=[...html.matchAll(/class="ft-n">([^<]+)</g)].map(m=>m[1]);ok(/The Thornwood family · 2 fallen/.test(html)&&ord.join('|')==='1st|2nd|3rd · you'&&/class="ft-li ft-now"/.test(html)&&/Lies in Thornwood Family Rest/.test(html),'the journal\'s Family, a tree: the 1st at the top, then the 2nd, down to you, the 3rd ('+ord.join(' → ')+')');
+   G.jsec='family';G.famPick=null;const html=t.JOURNAL_SECTIONS.family.render();const ord=[...html.matchAll(/class="ft-pic">[\s\S]*?<\/span><span class="ft-n">([^<]+)</g)].map(m=>m[1]);
+   ok(/The Thornwood family · 2 fallen/.test(html)&&ord.join('|')==='1st|2nd|3rd · you'&&/class="ft-li ft-now"/.test(html)&&(html.match(/data-act="fam-pick"/g)||[]).length===3,'the journal\'s Family, a tree of tiles: the 1st at the top, then the 2nd, down to you, the 3rd ('+ord.join(' → ')+')');
+   ok(/class="ft-info"[\s\S]*3rd · you/.test(html)&&!/Lies in /.test(html),'you told beside the chart, until another tile is chosen');
+   t.openJournal('family');t.act('fam-pick','2');const info=document.querySelector('#panel .ft-info')?.textContent||'',sel=document.querySelector('#panel .ft-tile.ft-sel');
+   ok(/Lies in Thornwood Family Rest/.test(info)&&/Fell to /.test(info)&&sel&&sel.dataset.arg==='2'&&sel.querySelector('img'),'a tile clicked: its life told (where they lie, what killed them), the tile marked, its picture in its square');
+   const fc=L.line.map(r=>r.face&&JSON.stringify(r.face.config));ok(!t.Faces.ok()||fc.every(Boolean)&&new Set(fc).size===fc.length&&JSON.stringify(t.Faces.you().config)!==fc[1],'each of your line kept their own face, and you have yours');
+   t.act('journal-close');G.famPick=null;
    // (a lord of a house killed by you: his house holds it against you, its living lords and the next of it; the house shown with him)
    const H=t.Houses;H.list=[];const lo=W.lords.filter(o=>!o.dead&&!o.gone&&t.fiefsOf(o.fac).length),a=lo[0],h=t.LordHouse.of(a),b=lo.find(o=>o!==a&&o.fac===a.fac);if(b)b.house=h.id;
    const rb=b?t.relWith(b):0;Object.assign(a,{dead:true,gone:true,back:1e9});H.died(a,'put to death',true);
@@ -234,7 +240,8 @@ Kit.suite(({ok})=>{
     ok(ok1,'their child: an elf as they were, '+P.renown+' renown of their 200, half their lord\'s regard ('+(P.lrel[lo.id])+' of 60), their blade in your bag');
     const fh=t.townBy(L.plot?.at)||t.townBy(home0);ok(!fh||P.home===fh.name,'you begin where the family is known ('+P.home+')');
     ok(hl.grudged()&&hl.grudge.half&&/your kin killed/.test(H.tagOf(lo)),'their feud yours, at half: "'+H.tagOf(lo).replace(/<[^>]+>/g,'')+'"');
-    const html=t.JOURNAL_SECTIONS.family.render(),m=html.match(/<li class="ft-li"><div class="ft-row">[\s\S]*?<ul><li class="ft-li ft-now">/);ok(m&&/Child of /.test(html),'the tree: you below the one you came from, their child')}
+    const html=t.JOURNAL_SECTIONS.family.render(),m=html.match(/<li class="ft-li"><div class="ft-row[^"]*">[\s\S]*?<ul><li class="ft-li ft-now">/);ok(m&&/Child of /.test(html),'the tree: you below the one you came from, their child');
+    const pf=L.line[L.line.length-1].face,yf=t.Faces.ok()&&t.Faces.you();ok(!yf||!pf||yf.colors.skin===pf.colors.skin&&(yf.config.race!==pf.config.race||yf.config.face===pf.config.face),'their child\'s face like theirs: the same skin, and the same shape of face where their people allow it')}
    H.list=[];t.Remains.list=[];W.sites=W.sites.filter(o=>o.type!=='rest');L.clear()}
   // ---- no room on the roll's other side: a man-eater only once, and no mythic one
   {setup();const m=wolves({eater:{name:'the Old Maw',day:1}}),lv=m.lv;roll(.1);try{lose(enc(m))}finally{window.Math.random=rnd}ok(m.lv===lv&&m.eater.name==='the Old Maw','a man-eater already: named once');t.act('cont')}

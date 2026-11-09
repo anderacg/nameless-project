@@ -1595,23 +1595,45 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .fb-field-loot{color:#f0d890}
 @media (prefers-reduced-motion:reduce){.rank-flash{animation:none}}
 
-/* (the Journal's Family, ui/family.js: your line as a family tree: a child below the one they came from, siblings and cousins side
-   by side under one stem, a cousin's line dashed, a stranger a root of their own; each heir a branch off the one they followed) */
-.ft-tree,.ft-tree ul{list-style:none;margin:0;padding:0}
-.ft-tree>li{margin:6px 0 14px}
-.ft-tree ul{margin-left:16px;padding-left:24px}
-.ft-tree ul>li{position:relative;padding-top:10px}
-.ft-tree ul>li::before{content:'';position:absolute;left:-24px;top:34px;width:22px;border-top:2px solid var(--line-2)}
-.ft-tree ul>li::after{content:'';position:absolute;left:-24px;top:0;bottom:0;border-left:2px solid var(--line-2)}
-.ft-tree ul>li:last-child::after{bottom:auto;height:35px}
-.ft-tree li.ft-cousin::before{border-top-style:dashed}
-.ft-row{display:flex;flex-wrap:wrap;align-items:flex-start}
-.ft-node{flex:1 1 300px;max-width:470px;padding:7px 11px 8px;border:1px solid var(--line-2);border-radius:6px;background:rgba(0,0,0,.28)}
-.ft-node b{font-size:15px}.ft-node small{display:block;margin-top:2px;font-size:13px;color:#cdbf9f}.ft-node small.bad{color:var(--danger)}
-.ft-n{display:inline-block;margin-right:7px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
-.ft-now>.ft-row>.ft-node{border-color:var(--accent);box-shadow:inset 0 0 0 1px rgba(201,162,78,.45),0 0 10px rgba(201,162,78,.25)}
-.ft-cousin>.ft-row>.ft-node{border-style:dashed}
-.ft-branch{position:relative;flex:0 1 250px;padding:6px 0 0 26px}
-.ft-branch::before{content:'';position:absolute;left:4px;top:24px;width:20px;border-top:2px dashed var(--line-2)}
-.ft-heir{max-width:250px;background:rgba(0,0,0,.18);border-style:dashed}
-@media (max-width:700px){.ft-tree ul{margin-left:8px;padding-left:18px}.ft-tree ul>li::before{left:-18px;width:16px}.ft-tree ul>li::after{left:-18px}.ft-branch{flex-basis:100%;padding-left:30px}.ft-branch::before{left:10px;top:0;width:0;height:24px;border-top:0;border-left:2px dashed var(--line-2)}}
+/* (the Journal's Family, ui/family.js: your line as a chart of square tiles, each one's picture: a child below the one they came
+   from, siblings and cousins side by side under one stem, a cousin's line dashed, a stranger a root of their own; each heir a small
+   tile beside the one they followed; the tile chosen told beside the chart) */
+.ft-body{display:flex;gap:14px;align-items:flex-start}
+.ft-chart{flex:1 1 auto;min-width:0;overflow-x:auto;padding:6px 2px 10px}
+.ft-tree,.ft-tree ul{list-style:none;margin:0;padding:0;display:flex;justify-content:center}
+.ft-tree{width:max-content;min-width:100%}
+.ft-li{position:relative;display:flex;flex-direction:column;align-items:center;padding:0 5px}
+.ft-li ul{position:relative;padding-top:18px}
+.ft-li ul::before{content:'';position:absolute;top:0;left:50%;height:18px;border-left:2px solid var(--line-2)}
+.ft-li ul>.ft-li{padding-top:18px}
+.ft-li ul>.ft-li::before,.ft-li ul>.ft-li::after{content:'';position:absolute;top:0;right:50%;width:50%;height:18px;border-top:2px solid var(--line-2)}
+.ft-li ul>.ft-li::after{right:auto;left:50%;border-left:2px solid var(--line-2)}
+.ft-li ul>.ft-li:only-child{padding-top:0}
+.ft-li ul>.ft-li:only-child::before,.ft-li ul>.ft-li:only-child::after{display:none}
+.ft-li ul>.ft-li:first-child::before,.ft-li ul>.ft-li:last-child::after{border:0}
+.ft-li ul>.ft-li:last-child::before{border-right:2px solid var(--line-2);border-radius:0 6px 0 0}
+.ft-li ul>.ft-li:first-child::after{border-radius:6px 0 0 0}
+.ft-li ul>.ft-li.ft-cousin::before{border-top-style:dashed;border-right-style:dashed}.ft-li ul>.ft-li.ft-cousin::after{border-top-style:dashed;border-left-style:dashed}
+.ft-row{position:relative;display:flex;justify-content:center}
+.ft-row.ft-hh{padding:0 66px}
+.ft-tile{display:flex;flex-direction:column;align-items:center;width:84px;padding:0;margin:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer}
+.ft-pic{display:block;width:64px;height:64px;border:2px solid var(--line-2);border-radius:5px;background:rgba(0,0,0,.4);overflow:hidden}
+.ft-pic img{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+.ft-dead .ft-pic img{filter:grayscale(.75) brightness(.8)}
+.ft-tile .ft-n{margin-top:3px}
+.ft-tile b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;max-width:84px;overflow:hidden;overflow-wrap:anywhere;font-size:12px;line-height:1.25}
+.fb-shell .ft-tile:focus-visible{outline:none}.ft-tile:hover .ft-pic,.ft-tile:focus-visible .ft-pic{border-color:#cdbf9f}
+.ft-tile.ft-sel .ft-pic{border-color:var(--accent);box-shadow:0 0 0 2px rgba(201,162,78,.35),0 0 10px rgba(201,162,78,.35)}
+.ft-now>.ft-row>.ft-tile:not(.ft-sel) .ft-pic{border-color:rgba(201,162,78,.7)}
+.ft-cousin>.ft-row>.ft-tile .ft-pic{border-style:dashed}
+.ft-n{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.ft-side{position:absolute;left:calc(50% + 50px);top:8px}
+.ft-side::before{content:'';position:absolute;left:-10px;top:24px;width:12px;border-top:2px dashed var(--line-2)}
+.ft-heir{width:62px}.ft-heir .ft-pic{width:46px;height:46px;border-style:dashed}.ft-heir b{max-width:62px;font-size:11px}
+.ft-info{flex:0 0 250px;padding:10px 12px;border:1px solid var(--line-2);border-radius:6px;background:rgba(0,0,0,.3);font-size:13px;color:#cdbf9f}
+.ft-info p{margin:5px 0 0}.ft-info p.bad{color:var(--danger)}
+.ft-head{display:flex;gap:10px;align-items:center;margin-bottom:4px;color:var(--fg)}
+.ft-head img{width:56px;height:56px;flex:none;border:2px solid var(--line-2);border-radius:5px;background:rgba(0,0,0,.4);image-rendering:pixelated}
+.ft-head b{display:block;font-size:15px}
+@media (max-width:560px){.ft-body{flex-direction:column}.ft-info{flex-basis:auto;align-self:stretch}}
+@media (max-height:430px){.ft-info{flex-basis:220px}.ft-pic{width:54px;height:54px}.ft-tile{width:74px}.ft-tile b{max-width:74px}.ft-side{left:calc(50% + 44px)}.ft-side::before{top:19px}.ft-heir .ft-pic{width:40px;height:40px}}
