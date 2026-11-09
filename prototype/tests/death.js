@@ -124,7 +124,7 @@ Kit.suite(({ok})=>{
    // place; one rumour at a time; your line counted; a realm of an heir's that has fallen out of the realms that act, its name kept
    setup();tidy();t.Remains.list=[];const f0=L.fallen,x0=P.x,y0=P.y;
    for(let i=0;i<6;i++){P.x=x0;P.y=y0;P.xpEarned=50;dieNow();t.act('death-new');t.act('death-past',k)}
-   const gs=t.Remains.list.filter(o=>o.grave),close=gs.some((a,i)=>gs.some((b,j)=>j>i&&Math.hypot(a.x-b.x,a.y-b.y)<X.grave.apart-1));
+   const gs=t.Remains.list.filter(o=>o.grave),close=gs.some((a,i)=>gs.some((b,j)=>j>i&&Math.hypot(a.x-b.x,a.y-b.y)<(a.plot&&b.plot?X.grave.plot.gap*X.grave.plot.row:X.grave.apart)-1));// (in the family plot, in its rows)
    ok(gs.length===6&&!close&&L.fallen===f0+6&&gs[5].n===f0+6,'six deaths in one place: six graves, none on another; your line counted ('+L.fallen+')');
    ok(/the \d+(st|nd|rd|th) of your line/.test((gs[5].meet(),panel())),'the grave says which of your line it was');t.act('death-leave');
    const nn=()=>t.newsW().items.filter(it=>it.k==='grave').length,n0=nn();roll(0);try{t.Grave.hour()}finally{window.Math.random=rnd}ok(nn()-n0<=1,'one rumour an hour at most, not one for each grave ('+(nn()-n0)+')');
@@ -149,6 +149,29 @@ Kit.suite(({ok})=>{
    const g4=die(X.grave.tiers.near.tomb);const e4=[];g4.draw(e4,{x:g4.x-100,y:g4.y-60},t.vis());let x4=null;try{for(const e of e4)e.f()}catch(err){x4=err}ok(g4.kind==='tomb'&&g4.at&&!x4&&/Tomb of/.test(g4.name),'renowned the most: a tomb at '+g4.at+', its stone tall, railed in iron, four candles'+(x4?': '+x4.message:''));
    g3.meet();ok(/<h2>A grave<\/h2>/.test(panel())&&new RegExp('A stone by '+g3.at).test(panel()),'its page: "A stone by '+g3.at+', kept clean"');t.act('death-leave');
    tidy();t.Remains.list=[]}
+  // ---- your family's plot (the owner: "Yes, make a family plot"): those of your line buried by people lie together, in rows, at the
+  // holding that buried the first; those who fell far from anyone stay where they fell
+  {const L=t.Legacy,k=Object.keys(t.BGS)[0],die=(ren,x,y)=>{setup();W.lords=W.lords.filter(l=>!l.heir);P.comps={};if(x!=null){P.x=x;P.y=y}P.renown=ren;P.xpEarned=20;const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}t.act('cont');t.act('death-new');t.act('death-past',k);return t.Remains.list.filter(o=>o.grave).pop()};
+   L.clear();t.Remains.list=[];const x0=P.x,y0=P.y,a=die(0),at=L.plot&&L.plot.at;const b=die(X.grave.tiers.near.stone,x0+200,y0+120),c=die(X.grave.tiers.near.tomb,x0,y0);
+   ok(at&&[a,b,c].every(g=>g.plot&&g.at===at)&&new Set([a,b,c].map(g=>g.x+','+g.y)).size===3&&[a,b,c].every(g=>Math.hypot(g.x-L.plot.x,g.y-L.plot.y)<X.grave.plot.gap*3),'three of your line, buried by people, lie together in the family plot at '+at+' ('+[a,b,c].map(g=>g.kind).join(', ')+')');
+   c.meet();ok(/In the plot of the family of/.test(panel()),'its page: "In the plot of the family of '+L.plot.family+'"');t.act('death-leave');
+   const ents=[];t.GraveArt.plot(ents,{x:L.plot.x-120,y:L.plot.y-80},t.vis(),L.plot,[a,b,c]);let ex=null;try{for(const e of ents)e.f()}catch(err){ex=err}ok(ents.length===2&&!ex,'its low wall round them, its gate under a wooden arch'+(ex?': '+ex.message:''));
+   ok(L.save().plot.at===at,'the plot saved with your line');
+   t.Remains.list=[];L.clear()}
+  // ---- the lords' houses (the owner: "Create a family system for lords as well. Lord die may also have grave but may be different
+  // grave"): a lord dead for good is buried in his house's crypt at its seat; after mourning, one of his house takes his place
+  {const H=t.Houses,l=W.lords.find(o=>!o.dead&&!o.gone&&t.fiefsOf(o.fac).length),fac=l.fac,name=l.name;H.list=[];t.Remains.list=[];
+   Object.assign(l,{dead:true,gone:true,back:1e9});H.died(l,'put to death');const h=H.byId(l.house),cr=t.Remains.list.find(o=>o.crypt);
+   ok(h&&h.name==='House '+name.split(' ').pop()&&h.dead[0].name===name&&cr&&cr.house===h.id&&t.townBy(h.seat)&&Math.hypot(cr.x-t.townBy(h.seat).x,cr.y-t.townBy(h.seat).y)<X.grave.yard.r*2,name+' put to death: '+(h&&h.name)+' buries '+(l.gender==='f'?'her':'him')+' in its crypt at '+(h&&h.seat));
+   cr.meet();ok(/<h2>A crypt<\/h2>/.test(panel())&&panel().includes(t.htmlText(name))&&/data-act="death-respect"/.test(panel()),'the crypt: a house of stone, the names cut over it; pay your respects');t.act('death-leave');
+   const n0=W.lords.length;G.day+=X.house.wait;H.hour();const s=W.lords.find(o=>o.house===h.id&&!o.dead);
+   ok(W.lords.length===n0+1&&s&&s.fac===fac&&s.name!==name&&s.lv>=1,'after '+X.house.wait+' days of mourning, one of the house takes up the place: '+(s&&s.name));
+   const r0=t.relWith(s);cr.meet();t.act('death-respect');ok(t.relWith(s)===r0+X.house.respect&&cr.paid===G.day,'respects paid: '+s.name+' thinks the better of you (+'+X.house.respect+'), once a day');
+   const ents=[];cr.draw(ents,{x:cr.x-120,y:cr.y-80},t.vis());let ex=null;try{for(const e of ents)e.f()}catch(err){ex=err}ok(!ex,'drawn: its steps, pediment, columns, dark door, the banner over it, candles'+(ex?': '+ex.message:''));
+   roll(0);try{t.defeatLord(s)}finally{window.Math.random=rnd}ok(s.gone&&h.dead.length===2,'beaten in the field, now and then slain: the second of the house in its crypt');
+   const sv=JSON.parse(JSON.stringify(H.save())),rs=JSON.parse(JSON.stringify(t.Remains.save()));H.load(sv);t.Remains.load(rs);ok(H.byId(h.id).dead.length===2&&t.Remains.list.find(o=>o.crypt) instanceof t.Crypt,'saved and loaded: the house, its crypt');
+   X.on=false;const o2=W.lords.find(o=>!o.dead&&!o.gone);roll(0);try{ok(!H.slain(o2),'the rule off (the tests\' harness): no lord dies')}finally{window.Math.random=rnd;X.on=true}
+   H.list=[];t.Remains.list=[]}
   // ---- no room on the roll's other side: a man-eater only once, and no mythic one
   {setup();const m=wolves({eater:{name:'the Old Maw',day:1}}),lv=m.lv;roll(.1);try{lose(enc(m))}finally{window.Math.random=rnd}ok(m.lv===lv&&m.eater.name==='the Old Maw','a man-eater already: named once');t.act('cont')}
  }finally{window.Math.random=rnd;X.on=on0;X.die=die0;D.slain=null;t.Remains.list=[];W.lords=W.lords.filter(l=>!l.heir);for(const x of t.TOWNS)if(t.Legacy.realms[x.owner])x.owner=t.FIDS[0];t.Legacy.clear();P.comps={};P.weak=0}

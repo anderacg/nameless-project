@@ -20,9 +20,12 @@
    second, how high, its breathing) and as it flows into you when you pray (seconds, motes, how far apart they leave, their curve,
    the gain shown for so long); its place (art: its picture's size and foot, its ground's oval, tufts, flowers, fireflies by night,
    the cairn's ring of stones, its rows, the blade in it, the grave's fence: gfx/graveart.js; yard: how far from the holding, the
-   ways tried; tiers: how you are laid to rest (far: tiles from any holding, off the roads, that no one buries you; the renown a cairn
+   ways tried; plot: your family's plot, its rows of graves (to a row, apart, rows closer) and the wall round them (px out); tiers: how you are laid to rest (far: tiles from any holding, off the roads, that no one buries you; the renown a cairn
    needs there; near people, the renown each finer grave needs: a small grave, a headstone, a fenced plot, a tomb; how much each kind
    is talked of); words: each kind's names and lines; apart: no two graves nearer, rings: how far out to look for room, for you may die many times in one place); its colours;
+   house (the lords' houses, world/lineage.js): the chance a lord dies when his army is beaten, the days of mourning before one of his
+   house takes his place, the levels the next has less, their men, what paying your respects at a crypt gives with its living lords
+   (relation), the titles that follow their bearer's sex (others stay as they are);
    heir (phase 3): the approval a companion needs to be your heir (Loyal), the approval the others need to ride with them (Content),
    the men they start with when they led no party of their own;
    remains (phase 2, dying): the share of your gold left with them (the rest scattered), how near a band finds them (seek px) and its
@@ -32,7 +35,8 @@ const DEATH={on:true,die:true,live:.3,min:.1,max:.6,
   wake:24,hp:.2,weak:{days:3,dmg:.85,spd:.9},food:.6,horse:.5,
   comps:{n:3,hurt:2,wander:7,far:[8,30],left:2,talk:{base:.35,pers:.05,ap:.04,min:.1,max:.9},pay:{base:40,lv:12}},
   heir:{ap:5,follow:0,men:4},
-  grave:{share:.5,cairn:12,yard:{r:70,tries:12},apart:34,rings:6,
+  house:{slain:.06,wait:5,lv:2,men:6,respect:3,titles:{Lord:['Lord','Lady'],Lady:['Lord','Lady'],Ser:['Ser','Dame'],Dame:['Ser','Dame']}},
+  grave:{share:.5,cairn:12,yard:{r:70,tries:12},apart:34,rings:6,plot:{cols:4,gap:30,row:.8,wall:16},
     tiers:{far:22,cairn:50,near:{small:0,stone:50,grave:200,tomb:500},talk:{remains:0,small:.5,stone:1,cairn:1,grave:1,tomb:1}},
     words:{remains:{h:'Remains',label:'Body',name:'Remains of ',tip:'The remains of ',at:'over the remains of',line:'No one came to bury them: bones in the grass, picked at by beasts. '},
       small:{h:'A small grave',label:'Grave',name:'Grave of ',tip:'A small grave: ',at:'at the small grave of',line:'A mound of earth and a cross of sticks by {at}, dug by someone who passed: '},
@@ -40,7 +44,7 @@ const DEATH={on:true,die:true,live:.3,min:.1,max:.6,
       tomb:{h:'A tomb',label:'Tomb',name:'Tomb of ',tip:'The tomb of ',at:'at the tomb of',line:'A tall stone by {at}, railed in iron, its candles kept lit: '},
       cairn:{h:'A cairn',label:'Cairn',name:'Cairn of ',tip:'The cairn over ',at:'at the cairn of',line:'Stones piled by the road: '},
       grave:{h:'A grave',label:'Grave',name:'Grave of ',tip:'The grave of ',at:'at the grave of',line:'A stone by {at}, kept clean: '}},rumour:.35,idle:{motes:10,rise:.3,h:20,breathe:2.2},flow:{dur:2.4,motes:36,spread:.55,bend:26,arc:22,show:1.6},
-    art:{w:56,h:44,foot:12,ground:[22,10],groundOf:{remains:[10,5],small:[12,6],stone:[14,7],tomb:[26,12]},rail:{w:34,h:16,gap:3},tufts:16,flowers:9,flies:6,ring:{n:7,rx:17,ry:8},rows:[14,12,9,6,3],blade:8,fence:{w:30,h:14,gap:4}},
+    art:{w:56,h:44,foot:12,ground:[22,10],groundOf:{remains:[10,5],small:[12,6],stone:[14,7],tomb:[26,12],crypt:[24,11]},rail:{w:34,h:16,gap:3},tufts:16,flowers:9,flies:6,ring:{n:7,rx:17,ry:8},rows:[14,12,9,6,3],blade:8,fence:{w:30,h:14,gap:4}},
     col:{stone:'#8d8f95',stone2:'#7a7c82',light:'#b3b5bb',shade:'#5c5e64',dark:'#3e3f44',moss:'#6f8a4a',mound:'#5b4a3a',earth:'#7a6a50',earth2:'#6b5a44',grass:'#5f7d3c',grass2:'#7a9a4c',
       flowers:['#e06a6a','#f2d16b','#f4f0e6','#b88ae0'],blade:'#c8ccd2',guard:'#b08a3a',grip:'#5a3a22',cloth:'#f0d060',wood:'#6a4a2e',cloak:'#4a3a30',iron:'#3a3c42',bone:'#e8dfc8',wood2:'#4e3520',carve:'#5c5e64',wax:'#f3ead2',flame:'#ffb347',flame2:'#fff2a8',fly:'#d8ff8a',
       glow:'#ffe7a0',mote:'#ffd54a',mote2:'#9fd8ff',core:'#fffbe6',text:'#ffe08a'}},pass:.5,remains:{gold:.6,seek:160,find:.15,col:{cloth:'#5b4a3a',bone:'#e8dfc8',steel:'#9aa4ad',glint:'#ffffff'}},

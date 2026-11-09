@@ -146,6 +146,7 @@ class Death{
     if(a==='death-menu')return toTitle();
     if(a==='death-take'||a==='death-leave')return Remains.act(a,id);
     if(['death-new','death-slain','death-race','death-past'].includes(a))return Legacy.act(a,id);
+    if(a==='death-respect'){const c=G.remains;if(c instanceof Crypt){c.respect();c.meet()}return}
     if(a==='death-pray'){const g=G.remains;G.remains=null;if(g instanceof Grave)g.pray();return}
     const c=P.comps[id],L=c?.lost;if(!L)return;
     if(a==='death-find'&&!L.left)this.rejoin(id,'is with you again.');
@@ -210,7 +211,9 @@ class Remains extends WorldObject{
   static beaten(b){const p=b?.plunder;if(!p)return;b.plunder=null;P.gold+=p.gold;let n=0;for(const [k,id,c] of p.items)n+=invAdd(k,id,c);
     log('Among their plunder, the goods of '+p.of.join(' and ')+': '+[p.gold&&p.gold+' gold',n&&n+' piece'+(n>1?'s':'')].filter(Boolean).join(' and ')+'.','gold')}
   static save(){return this.list.length?this.list.map(r=>({...r})):undefined}
-  static load(v){this.list=(v||[]).map(o=>o.grave?asGrave(o):asRemains(o))}
+  static load(v){this.list=(v||[]).map(o=>o.crypt?asCrypt(o):o.grave?asGrave(o):asRemains(o))}
+  // (all of them drawn, and your family's plot round its graves: gfx/graveart.js)
+  static drawAll(ents,cam,V){if(Legacy.plot)GraveArt.plot(ents,cam,V,Legacy.plot,this.list.filter(o=>o.grave&&o.plot));for(const r of this.list)r.draw(ents,cam,V)}
   // (open to robbers: remains always; a grave, see Grave)
   robbable(){return true}
 }
@@ -228,9 +231,16 @@ class Grave extends Remains{
   static bury(old,lord){const X=DEATH.grave,r=Remains.list.find(o=>!o.grave&&o.who===old.who&&o.day===old.day)||Remains.lay(P.x,P.y,old.who),
       T=Grave.tierOf(old,r,lord),home=T.home;
     Object.assign(r,{grave:1,rest:T.tier,n:old.n||1,xp:Math.round((old.earned||0)*X.share),life:{level:old.level,renown:old.renown,days:old.days,by:old.by}});
-    // (where: by the holding it is kept at, else by where you fell; never on another grave, for you may die many times in one place)
-    const off=T.tier==='cairn'?X.cairn:T.tier==='small'?X.cairn/2:0,p=home?Grave.spot(home.x,home.y,X.yard.r,r):Grave.spot(r.x+off,r.y+Math.round(off/2),0,r);
-    if(home){r.at=home.name;r.fac=home.owner}r.x=p.x;r.y=p.y;r.cloth=FACS.player.col;return asGrave(r)}
+    // (where: buried by people, in your family's plot (the owner: "Yes, make a family plot": Grave.plot; the first such grave makes
+    // it, at the holding that buried you); else by where you fell; never on another grave, for you may die many times in one place)
+    const off=T.tier==='cairn'?X.cairn:T.tier==='small'?X.cairn/2:0,p=home?Grave.inPlot(home,old,r):Grave.spot(r.x+off,r.y+Math.round(off/2),0,r);
+    if(home){const t=townBy(Legacy.plot?.at)||home;r.at=t.name;r.fac=t.owner;r.plot=1}r.x=p.x;r.y=p.y;r.cloth=FACS.player.col;return asGrave(r)}
+  // (your family's plot: made by the first of your line buried by people, at that holding (Legacy.plot: its holding, its middle,
+  // its family's name); its graves in rows from its middle, DEATH.grave.plot)
+  static inPlot(home,old,self){const X=DEATH.grave,F=X.plot;let fp=Legacy.plot;const t=fp&&townBy(fp.at);
+    if(!t||t.gone){const c=Grave.spot(home.x,home.y,X.yard.r,self);fp=Legacy.plot={at:home.name,x:c.x,y:c.y,family:old.who}}
+    const i=Remains.list.filter(o=>o!==self&&o.grave&&o.plot).length,col=i%F.cols,row=Math.floor(i/F.cols),x=Math.round(fp.x+(col-(F.cols-1)/2)*F.gap),y=Math.round(fp.y+row*F.gap*F.row);
+    return passable(terrAt(x,y))&&!Remains.list.some(o=>o!==self&&(o.grave||o.crypt)&&Math.hypot(o.x-x,o.y-y)<F.gap*.6)?{x,y}:Grave.spot(fp.x,fp.y,X.apart,self)}
   /* (how you are laid to rest, by your renown and where you fell (the owner, 2026-11-09: "if you died whatout much renown or if you
      died far away then you may have a grave or remains"; "If you death near town, someone may burry for you right? But if you have
      more renown you may have a good looking grave"; DEATH.grave.tiers): far from anyone (over far tiles from a holding, off the
@@ -244,7 +254,7 @@ class Grave extends Remains{
     return {tier:fine,home:h}}
   // (open ground for a grave: the spot itself (r0 0), or a ring r0 round it, then rings further out, from the south; none within
   // DEATH.grave.apart of another grave)
-  static spot(cx,cy,r0,self){const X=DEATH.grave,free=(x,y)=>passable(terrAt(x,y))&&!Remains.list.some(o=>o!==self&&o.grave&&Math.hypot(o.x-x,o.y-y)<X.apart);
+  static spot(cx,cy,r0,self){const X=DEATH.grave,free=(x,y)=>passable(terrAt(x,y))&&!Remains.list.some(o=>o!==self&&(o.grave||o.crypt)&&Math.hypot(o.x-x,o.y-y)<X.apart);
     if(!r0&&free(Math.round(cx),Math.round(cy)))return {x:Math.round(cx),y:Math.round(cy)};
     for(let k=0;k<X.rings;k++){const r=(r0||X.apart)+k*X.apart;for(let i=0;i<X.yard.tries;i++){const a=Math.PI/2+(i%2?1:-1)*Math.ceil(i/2)*6.283/X.yard.tries,x=Math.round(cx+Math.cos(a)*r),y=Math.round(cy+Math.sin(a)*r);if(free(x,y))return {x,y}}}
     return {x:Math.round(cx),y:Math.round(cy+(r0||X.apart))}}
@@ -257,7 +267,7 @@ class Grave extends Remains{
   // (met: its page, the hero's life; Pray, and its goods)
   meet(){G.mode='dialog';G.remains=this;const L=this.life||{};
     const Wd=this.words;showPanel('<div class="top"><h2>'+Wd.h+'</h2><span class="muted">'+htmlText(cap1(this.who))+' · fell on day '+this.day+'</span></div>'+
-      '<p>'+Wd.line.replace('{at}',htmlText(this.at||''))+'here lies '+htmlText(this.who)+', who fell to '+htmlText(L.by||'beasts')+(this.n>1?', the '+ordinal(this.n)+' of your line':'')+'.</p>'+
+      '<p>'+(this.plot&&Legacy.plot?'In the plot of the family of '+htmlText(Legacy.plot.family)+'. ':'')+Wd.line.replace('{at}',htmlText(this.at||''))+'here lies '+htmlText(this.who)+', who fell to '+htmlText(L.by||'beasts')+(this.n>1?', the '+ordinal(this.n)+' of your line':'')+'.</p>'+
       '<div class="loot-stats">'+[['Days on the road',L.days||0],['Level',L.level||0],['Renown',L.renown||0]].map(([k,v])=>'<span><b>'+k+'</b><span>'+v+'</span></span>').join('')+'</div>'+
       (this.spent?'<p class="muted">You prayed here once. It is quiet now.</p>':this.xp?'<p class="gold">Something of them lingers here: '+this.xp+' experience, for one who prays.</p>':'')+
       (this.empty()?'':'<p>With them: '+this.what()+'.</p><div class="btns"><button class="btn sm" type="button" data-act="death-take">Take the grave goods</button></div>')+

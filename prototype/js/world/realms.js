@@ -235,7 +235,8 @@ function lordWon(l,res,take=true){
   FIDS.filter(f=>atWar(f,l.fac)).forEach(f=>addHonor(f,5));addHonor(l.fac,-10);
   return txt;
 }
-function defeatLord(l){l.inside=null;l.dead=true;l.troops=[];l.back=G.day+4;l.state='rest'}
+function defeatLord(l){if(Houses.slain(l))return;// (now and then slain on the field, gone for good: world/lineage.js)
+  l.inside=null;l.dead=true;l.troops=[];l.back=G.day+4;l.state='rest'}
 function fallFaction(f,at,involved){realmOf(f).fall(at,involved)}
 // (a marshal's siege: all his host's strength there, hosts.js Host.besiegers; each takes his share of the losses)
 function resolveSiege(l,t){

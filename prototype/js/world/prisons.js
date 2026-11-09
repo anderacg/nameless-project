@@ -149,7 +149,7 @@ class Prisons{
       r.offer=0;r.offerDay=G.day+X.wait;return void log('The '+FACS[r.fac].n+' take back their offer. They may make another in '+X.wait+' days.','bad')}
     if(a==='pz-swap'){const s=this.swapFor(r);if(!s)return;this.out(s.r,s.key,'exchanged');this.out(r,key,'exchanged');if(s.r.k==='lord'&&P.fac){addHonor(P.fac,PRISON.pay.honor,true);const o=this.lordOf(s.r);if(o)changeRel(o,PRISON.pay.rel,'you traded for them')}
       return void log('You trade '+r.name+' to the '+FACS[r.fac].n+' for '+this.who(s.r)+'.','gold','war')}
-    if(a==='pz-exec'){const X=PRISON.exec;this.drop(key,r);if(l)Object.assign(l,{gone:true,dead:true,held:false,jail:null,back:1e9});addHonor(r.fac,X.honor,true);for(const f of FIDS)if(f!==r.fac&&!W.dead[f])addHonor(f,X.all,true);
+    if(a==='pz-exec'){const X=PRISON.exec;this.drop(key,r);if(l){Object.assign(l,{gone:true,dead:true,held:false,jail:null,back:1e9});Houses.died(l,'put to death')}addHonor(r.fac,X.honor,true);for(const f of FIDS)if(f!==r.fac&&!W.dead[f])addHonor(f,X.all,true);
       for(const o of lordsOf(r.fac))if(o!==l&&!o.gone)changeRel(o,X.rel,'you put '+r.name+' to death');mood('cruel');
       worldEvent({text:r.name+' of the '+FACS[r.fac].n+' is put to death in '+this.title(key)+'.',fac:[r.fac],cls:'bad',past:r.name+' was put to death'});return}}
   // (freed by your hand: a lord thinks better of you (more, broken out), and your realm if he is its own; your companion with you)
