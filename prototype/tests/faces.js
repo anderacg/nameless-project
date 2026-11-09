@@ -43,10 +43,11 @@ Kit.suite(({ok,info})=>{
  }finally{P.gear=g0;P.comps=cp}}
  // ---- a dwarf's face by the marks of their people (FACE_KIN): every one drawn so; a human's as it is; your own as you made it
  {const K=t.FACE_KIN.dwarf,bad=[];for(let i=0;i<12;i++)for(const g of ['f','m']){const c=F.random(5000+i*13,'dwarf',g).config;
-    if(!K.face.includes(c.face)||c.nose!=='dwarf-bulb'||c.adjustments.faceWidth<2||(g==='m'&&K.thin.includes(c.beard))||(g==='f'&&!K.hair.f.includes(c.hair)))bad.push(g+':'+c.face+'/'+c.nose+'/'+c.beard+'/'+c.hair)}
+    if(!K.face.includes(c.face)||!K.nose.includes(c.nose)||c.adjustments.faceWidth<2||(g==='m'&&K.thin.includes(c.beard))||(g==='f'&&!K.hair.f.includes(c.hair)))bad.push(g+':'+c.face+'/'+c.nose+'/'+c.beard+'/'+c.hair)}
   ok(!bad.length,'24 dwarves drawn at random: a dwarf\'s face, nose and breadth; a man\'s beard full or braided, a woman\'s hair braided'+(bad.length?' (not: '+bad.join(', ')+')':''));
   const h=t.PortraitCharacters.recipe({config:t.Faces.bare(t.PortraitEngine.random(77,'male','human'))});ok(JSON.stringify(F.kin(h).config)===JSON.stringify(h.config),'a human\'s face as it is');
   const d=t.PortraitCharacters.recipe({config:t.Faces.bare(t.PortraitEngine.random(78,'female','dwarf'))});ok(JSON.stringify(F.kin(d))===JSON.stringify(F.kin(d)),'the same dwarf drawn the same every time')}
+ {const E=t.PortraitEngine,C=t.PortraitCharacters,look=beard=>F.look(C.recipe({config:E.normalize({race:'dwarf',beard})}));ok(!look('dwarf-heavy-moustache').beard&&look('dwarf-fan').beard&&look('dwarf-twin-braids').beard,'dwarf moustaches and full beard styles map correctly to battle figures')}
  // (switched off: the paintings again)
  t.FACES.on=false;try{ok(!/^data:/.test(t.lordPic(L))||!t.NamedPortraits.of(L.name),'FACES.on false: a lord\'s painting again')}finally{t.FACES.on=true}
 });

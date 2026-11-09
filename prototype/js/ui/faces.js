@@ -20,9 +20,9 @@ const FACES={on:true,px:256,mode:'random'};
    from the face's own seed (the same face every time), and the face made broader (adj: at least these, the engine's bounds).
    Every dwarf the world draws: a lord's, a companion's, a kinsman's, a face drawn at random (yours before you shape it); the face
    you made yourself is as you made it */
-const FACE_KIN={dwarf:{face:['dwarven','dwarf-square'],nose:['dwarf-bulb'],ears:['rounded','broad'],eyes:['deep-set','heavy','focused'],
-  brows:{m:['bold','broken','bold'],f:['full-soft','bold']},hair:{f:['braids','forge-braids','single-braid','loose-side-braid']},
-  beard:{m:['braided','bound-beard','full','forked']},thin:['none','stubble','goatee','moustache','trimmed','short-boxed','close-beard','sideburns','chin-bristle'],
+const FACE_KIN={dwarf:{face:['dwarven','dwarf-square'],nose:['dwarf-bulb','dwarf-broad-bridge','dwarf-broken'],ears:['rounded','broad'],eyes:['deep-set','heavy','focused','dwarf-deep','dwarf-squint'],
+  brows:{m:['dwarf-bushy','dwarf-straight','dwarf-weathered','bold'],f:['full-soft','dwarf-straight','dwarf-bushy']},hair:{f:['braids','forge-braids','single-braid','loose-side-braid']},
+  beard:{m:['braided','bound-beard','full','forked','dwarf-fan','dwarf-twin-braids']},thin:['none','stubble','goatee','moustache','trimmed','short-boxed','close-beard','sideburns','chin-bristle'],
   // (each proportion at least lo to hi (a man's m, a woman's f), or at most for one below nought: smaller eyes)
   adj:{faceWidth:[2,2],jawWidth:{m:[2,2],f:[1,2]},noseWidth:[1,2],eyeSize:{m:[-1,0],f:[-1,-1]},hairVolume:[0,1]}}};
 /* (the owner, 2026-11-09: "Ensure that the characters wearing the correct armor or equipment based on their current armor and make
@@ -151,7 +151,7 @@ class Faces{
   static lookKey(hero,type){if(!this.ok())return '';const f=hero?this.you():COMPS[type]?this.companion(type):null;return f?'f'+Rng.seedOf(JSON.stringify(this.look(f))):''}
   // ---- the figure as the face: its hair (style, colour), its beard, its face from before him
   static look(rec){if(!rec)return null;const c=rec.config,G=PortraitEngine.hairGroups,grp=Object.keys(G).find(k=>G[k].includes(c.hair))||'Short',col=rec.colors.hair;
-    const bearded=c.beard&&!['none','stubble','moustache','walrus','sideburns'].includes(c.beard);
+    const bearded=c.beard&&!['none','stubble','moustache','walrus','sideburns','dwarf-heavy-moustache'].includes(c.beard);
     return{hairStyle:FACE_HAIR.bun.includes(c.hair)?'cropBun':FACE_HAIR[grp],hair:col,beard:bearded?col:null,beardStyle:bearded?'beardF':null}}// (no eye drawn on the figure: the owner, 2026-11-07)
 }
 Saves.add({key:'faces',order:365,save:()=>Faces.save(),load:v=>Faces.load(v)});

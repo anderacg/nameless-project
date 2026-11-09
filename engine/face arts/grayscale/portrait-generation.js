@@ -20,7 +20,7 @@
   function hash(value){let n=2166136261;for(const c of String(value)){n^=c.charCodeAt(0);n=Math.imul(n,16777619);}return n>>>0;}
   function stream(seed){let n=seed>>>0;return()=>{n+=0x6d2b79f5;let t=Math.imul(n^n>>>15,n|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
   function configOf(value){return E.normalize(value?.config||value);}
-  function eyeFamily(eyes){if(['round','wide','natural-wide'].includes(eyes))return'open';if(['keen','focused','heavy'].includes(eyes))return'narrow';if(['hooded','deep-set'].includes(eyes))return'hooded';if(['almond','deep-almond','upturned','elf-slanted'].includes(eyes))return'almond';return'neutral';}
+  function eyeFamily(eyes){if(['round','wide','natural-wide'].includes(eyes))return'open';if(['keen','focused','heavy','dwarf-squint'].includes(eyes))return'narrow';if(['hooded','deep-set','dwarf-deep'].includes(eyes))return'hooded';if(['almond','deep-almond','upturned','elf-slanted'].includes(eyes))return'almond';return'neutral';}
   function faceTraits(value){const c=configOf(value),g=E.geometry(c);return{
     face:[g.w,g.jaw,g.chin,g.chinY,g.definition,g.softness],
     eyes:[eyeFamily(c.eyes),g.eyes[1].x-g.eyes[0].x,g.eyeScale],

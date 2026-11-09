@@ -12,17 +12,17 @@ All artwork is drawn by JavaScript into separate transparent **128 × 128** canv
 | Face shape | 21 |
 | Ear shape (including none) | 10 |
 | Hairstyle (including bald) | 38 |
-| Eye shape | 19 |
-| Eyebrows | 13 |
-| Nose | 15 |
+| Eye shape | 21 |
+| Eyebrows | 16 |
+| Nose | 17 |
 | Mouth / expression | 18 |
-| Facial hair (including none) | 17 |
+| Facial hair (including none) | 20 |
 | Age | 5 |
 | Skin marks (including none) | 9 |
 | Clothing | 37 |
 | Headwear (including none) | 37 |
 
-New hairstyles include curls, tousled hair, side parts, ponytails, high and low buns, half-up hair, a single braid, an undercut, a topknot and swept-back hair. Mouths include reserved, broad, asymmetric and thin smiles, parted lips and a pout. Additional headwear includes a beret, wrapped hood, headband, veil and fur cap. Each drawable-part option produces distinct source artwork. `gallery.html` shows 80 curated characters.
+New hairstyles include curls, tousled hair, side parts, ponytails, high and low buns, half-up hair, a single braid, an undercut, a topknot and swept-back hair. Mouths include reserved, broad, asymmetric and thin smiles, parted lips and a pout. Additional headwear includes a beret, wrapped hood, headband, veil and fur cap. Each drawable-part option produces distinct source artwork. `gallery.html` shows 84 curated characters.
 
 ## Facial shape and symmetry
 
@@ -218,3 +218,15 @@ Five editable presets demonstrate the new gear. Military and lord generation poo
 Dwarf armor and helmets use eight emblem families: Diamond, Mountain, Anvil, Sun, Knot, Hammer, Chevrons and Gate. Their primary and secondary motifs match across a suit, replacing the repeated numeral-like strokes. The styles apply to rune/forge plate, rune mail, iron guard armor and the dwarf guard, forge, horned and rune helms.
 
 Choose **Armor engraving** in the workshop after selecting Dwarf. The control stays synchronized with the texture seed; changing it preserves the face proportions and equipment choices. The motif is carried by the existing seed, so it survives recipe export/import and NPC saves without new recipe fields. Seeds 0–7 display the eight families in order. Both standalone offline HTML entry points are rebuilt from the current source.
+
+
+## Dwarf facial feature options
+
+Ten dwarf-only choices add more individual character:
+
+- Brows: Bushy (thick tufts), Straight (heavy low brow) and Weathered (uneven notched brow).
+- Eyes: Dwarf deep-set and Dwarf squint, with visible irises beneath the heavy brow.
+- Noses: Broad bridge and Broken, retaining the race’s wide nose proportions.
+- Facial hair: Fan beard, Twin braids and Heavy moustache.
+
+These appear in the compatible feature selectors, four new editable presets and seeded dwarf generation. Brows grow upward to preserve pupil visibility; all facial-hair styles keep the mouth opening clear. The short neck, 128-pixel rendering and existing recipe schema remain. Female generation stays unbearded, with manual facial hair still available. Both offline tools are rebuilt with the new choices.
