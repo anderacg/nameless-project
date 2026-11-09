@@ -120,6 +120,8 @@ class Death{
     if(m&&W.monsters.includes(m)){if(p.hx!=null){m.hx=p.hx;m.hy=p.hy}
       if(Math.hypot(m.hx-P.x,m.hy-P.y)<4*TILE){const dx=m.hx-P.x,dy=m.hy-P.y,l=Math.hypot(dx,dy)||1;m.x=P.x;m.y=P.y;walk(m,dx/l||1,dy/l,8*TILE);m.hx=m.x;m.hy=m.y}
       m.x=m.hx;m.y=m.hy;m.cool=Math.max(m.cool||0,24)}}
+  // (out of your sight, and not the place you stand at: what changes there changes unseen)
+  static unseenAt(x,y){return !yourSight().sees(x,y,1)&&!(G.mode==='site'&&G.site&&Math.hypot(G.site.x-x,G.site.y-y)<60)}
   static weak(){return Timed.of(P).has('weak')}
   // ---- your lost companions (c.lost {at: the holding, until: the day they give up, left: gone from your service, tried: a talk's day})
   static lost(){return Object.keys(P.comps).filter(id=>P.comps[id].lost)}
@@ -205,9 +207,9 @@ class Remains extends WorldObject{
     ents.push({y:r.y,f:()=>{const x=Math.round(r.x-cam.x),y=Math.round(r.y-cam.y),C=DEATH.remains.col;
       ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x-5,y,10,2);ctx.fillStyle=C.cloth;ctx.fillRect(x-4,y-2,7,2);ctx.fillStyle=C.bone;ctx.fillRect(x+3,y-3,2,2);ctx.fillRect(x-5,y-1,1,1);
       if(!r.empty()){ctx.fillStyle=C.steel;ctx.fillRect(x-3,y-4,6,1);ctx.fillStyle=C.glint;ctx.fillRect(x+2,y-4,1,1)}}})}
-  // each hour: a band near finds remains not yet picked clean, and carries all of it off (its plunder)
+  // each hour: a band near finds remains not yet picked clean, and carries all of it off (its plunder); never before your eyes
   static hour(){const X=DEATH.remains;
-    for(const r of this.list){if(r.empty()||!r.robbable())continue;const b=bandits.find(o=>!o.dead&&Math.hypot(o.x-r.x,o.y-r.y)<X.seek);if(!b||Math.random()>=X.find)continue;
+    for(const r of this.list){if(r.empty()||!r.robbable()||!Death.unseenAt(r.x,r.y))continue;const b=bandits.find(o=>!o.dead&&Math.hypot(o.x-r.x,o.y-r.y)<X.seek);if(!b||Math.random()>=X.find)continue;
       const p=b.plunder||(b.plunder={gold:0,items:[],of:[]});p.gold+=r.gold;p.items.push(...r.items);if(!p.of.includes(r.who))p.of.push(r.who);r.gold=0;r.items=[];r.robbed=robberOf(b)}}
   // (a band beaten that carried off remains: its plunder yours)
   static beaten(b){const p=b?.plunder;if(!p)return;b.plunder=null;P.gold+=p.gold;let n=0;for(const [k,id,c] of p.items)n+=invAdd(k,id,c);
@@ -247,9 +249,11 @@ class Grave extends Remains{
     const off=T.tier==='cairn'?X.cairn:T.tier==='small'?X.cairn/2:0,p=home?Grave.inPlot(home,{who:g.who},g):Grave.spot(g.x+off,g.y+Math.round(off/2),0,g);
     delete g.unburied;delete g.heir;delete g.fetch;g.rest=home?(T.tier==='remains'?'small':T.tier):T.tier;
     if(home){const t=townBy(Legacy.plot?.at)||home;g.at=t.name;g.fac=t.owner;g.plot=1}g.x=p.x;g.y=p.y;RestSite.sync();return g}
-  // each day: the unburied found and buried (the chance a day: DEATH.grave.find; near people more, the known more), or fetched by your heir
+  // each day: the unburied found and buried (the chance a day: DEATH.grave.find; near people more, the known more), or fetched by your
+  // heir; never before your eyes (the owner: "Will it going to disappear right in front of the eye if I happen to be near that place"):
+  // while you see the spot, or stand at its page, it waits for a day you are away (Grave.unseen)
   static daily(){const F=DEATH.grave.find;
-    for(const g of Remains.list.filter(o=>o.grave&&o.unburied)){const lord=g.heir&&W.lords.find(l=>l.id===g.heir&&!l.dead&&!l.gone);
+    for(const g of Remains.list.filter(o=>o.grave&&o.unburied)){if(!Grave.unseen(g))continue;const lord=g.heir&&W.lords.find(l=>l.id===g.heir&&!l.dead&&!l.gone);
       if(lord&&G.day>=g.fetch){Grave.rest(g,lord,'heir');log(cap1(lord.name)+' comes for the body of '+g.who+', and buries them'+(g.at?' at '+g.at:'')+'.','gold','story');continue}
       const h=Spatial.nearestHolding(g.x,g.y),near=h&&Math.hypot(h.x-g.x,h.y-g.y)/TILE<=DEATH.grave.tiers.far||RoadBand.on(g.x,g.y),ch=(near?F.near:F.far)+(g.life?.renown||0)*F.renown;
       if(Math.random()<Math.min(F.max,ch)){Grave.rest(g,null,'found');if(Math.hypot(P.x-g.x,P.y-g.y)<vis()*2||g.at)log('Someone has buried '+g.who+(g.at?', at '+g.at:'')+'.','muted','story')}}}
@@ -344,6 +348,7 @@ class Grave extends Remains{
     if(T[g.kind]>=1||Math.random()<T[g.kind])newsRecord('grave',g,{who:g.who,kind:g.kind,at:g.at||''})}// (no grave, no draw: the world's Math.random as it was)
 }
 const asGrave=asClass(Grave);
+Grave.unseen=g=>Death.unseenAt(g.x,g.y);
 const ordinal=n=>n+(n%100>=11&&n%100<=13?'th':['th','st','nd','rd'][n%10]||'th');
 const robberOf=b=>b?.ld?.name?b.ld.name+'’s band':'bandits';
 onAct('death-',(a,arg)=>Death.act(a,arg));

@@ -14,7 +14,7 @@ Kit.suite(({ok})=>{
  const setup=()=>{Kit.world();t.Captivity.held=null;t.Captivity.scattered=[];P.quests=[];P.comps={};P.troops={hum_foot:6};P.woundedGroups=[];P.gold=400;P.hp=t.vitals()[0];P.weak=0;P.gear.mount=null;D.pending=null};
  let fell=null;t.worldOn('hero:fell',d=>{fell=d});
  // (a day for the unburied: found and buried, your heir come for them: Grave.daily)
- const settle=()=>{for(const g of t.Remains.list)if(g.unburied&&g.heir)g.fetch=G.day;roll(0);try{t.Grave.daily()}finally{window.Math.random=rnd}};
+ const settle=()=>{for(const g of t.Remains.list)if(g.unburied&&g.heir)g.fetch=G.day;const was=D.unseenAt;D.unseenAt=()=>true;roll(0);try{t.Grave.daily()}finally{window.Math.random=rnd;D.unseenAt=was}};// (a day away: as if out of your sight)
  try{
   // ---- off (the tests' harness): a beast's loss as before
   {setup();X.on=false;const m=wolves();lose(enc(m));ok(/Left for dead/.test(panel())&&!m.eater,'off: left for dead, as before');t.act('cont');X.on=true}
@@ -73,7 +73,7 @@ Kit.suite(({ok})=>{
    // (a new person, as phase 3 will make: the remains are anyone's)
    D.slain=null;X.die=false;G.mode='world';t.hidePanel();
    const b=t.asParty({kind:'bandits',troops:Array(4).fill('militia'),x:r2.x+40,y:r2.y,cool:0});t.bandits.push(b);const gr=r2.gold,ni=r2.items.length;
-   roll(0);try{R.hour()}finally{window.Math.random=rnd}ok(r2.empty()&&b.plunder&&b.plunder.gold===gr&&b.plunder.items.length===ni&&/picked clean/.test(r2.tip()),'a band near finds them, and carries it all off');
+   const wasU=D.unseenAt;D.unseenAt=()=>true;roll(0);try{R.hour()}finally{window.Math.random=rnd;D.unseenAt=wasU}ok(r2.empty()&&b.plunder&&b.plunder.gold===gr&&b.plunder.items.length===ni&&/picked clean/.test(r2.tip()),'a band near finds them, and carries it all off');
    const pg=P.gold;t.worldEmit('band:beaten',{band:b});ok(P.gold===pg+gr&&!b.plunder,'that band beaten: its plunder yours ('+gr+' gold and the gear)');
    const r3=R.lay(P.x+30,P.y,'a stranger');r3.gold=25;r3.items=[['gear',gid,1]];r3.meet();ok(/<h2>Remains<\/h2>/.test(panel())&&/data-act="death-take"/.test(panel()),'come to remains: take what is left, or leave it');
    const pg2=P.gold;t.act('death-take');ok(P.gold===pg2+25&&r3.empty()&&G.mode==='world','taken: into your purse and bag');
@@ -147,7 +147,8 @@ Kit.suite(({ok})=>{
    if(far){const g2=die(0,far.x,far.y,true);roll(.99);try{for(let i=0;i<5;i++)t.Grave.daily()}finally{window.Math.random=rnd}ok(g2&&g2.kind==='remains'&&g2.unburied&&Math.hypot(g2.x-far.x,g2.y-far.y)<2&&g2.xp===30,'far from anyone: days pass and no one finds you; your remains where you fell, still holding '+(g2&&g2.xp)+' experience');
     const ents2=[];g2.draw(ents2,{x:g2.x-100,y:g2.y-60},t.vis());let e2=null;try{for(const e of ents2)e.f()}catch(err){e2=err}ok(!e2,'drawn: bones, a skull, a torn cloak, the weapon fallen by them'+(e2?': '+e2.message:''));
     const nn=()=>t.newsW().items.filter(it=>it.k==='grave'&&it.detail.who===g2.who).length,n0=nn();roll(0);try{for(let i=0;i<5;i++)t.Grave.hour()}finally{window.Math.random=rnd}ok(nn()===n0,'and no one talks of them');
-    roll(0);try{t.Grave.daily()}finally{window.Math.random=rnd}ok(!g2.unburied&&g2.kind==='small','found at last by someone passing: a small grave where they lay');
+    P.x=g2.x+10;P.y=g2.y;roll(0);try{t.Grave.daily()}finally{window.Math.random=rnd}ok(g2.unburied,'and while you stand there and see them, nothing changes before your eyes');
+    P.x=g2.x+t.vis()*3;P.y=g2.y;roll(0);try{t.Grave.daily()}finally{window.Math.random=rnd}ok(!g2.unburied&&g2.kind==='small','found at last by someone passing, while you were away: a small grave where they lay');
     const g5=die(0,far.x,far.y,true),site=W.sites.find(o=>o.type==='rest'&&o.members().includes(g5));G.mode='world';G.modal=false;site.meet();ok(/No one has buried them yet/.test(panel())&&/data-arg="here:0"/.test(panel())&&/data-arg="plot:0"/.test(panel()),'come to them yourself: bury them here, or carry them to the plot');
     t.act('site-rest','here:0');ok(!g5.unburied&&g5.kind==='small'&&!g5.at&&G.mode==='world','buried by you, where they lay');
     const g6=die(0,far.x,far.y,true),s6=W.sites.find(o=>o.type==='rest'&&o.members().includes(g6));G.mode='world';s6.meet();t.act('site-rest','plot:0');ok(!g6.unburied&&g6.plot&&g6.at,'or carried to the plot, by '+g6.at);

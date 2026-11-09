@@ -454,13 +454,14 @@ function lotFooting(t,l){const s=lotSprite(t,l),X=l.x*TILE,Y=l.y*TILE,hold=l.k==
   const f=l.k==='centre'?(hold?holdFooting(lotModel(t,l)):null):modelFooting(lotModel(t,l));l._ftS=s;l._ftX=X;l._ftY=Y;l._ftH=hold;
   if(!f){const b=opaqueBox(s),h=Math.min(12,l.n*TILE*.3);return l._ft=[{x:X+b[0],y:Y+Math.max(b[1],b[3]-h),w:b[2]-b[0]+1,h}]}
   return l._ft=f.map(r=>({x:X+r.x,y:Y+r.y,w:r.w,h:r.h}))}
-// (a site's or camp's model, as gfx/structures.js siteSprite makes it (its snow aside: the same shape))
+// (a site's or camp's model, as gfx/structures.js siteSprite makes it (its snow aside: the same shape); a resting place has none: its
+// graves are walked among, world/lineage.js)
 function siteModel(s){const c=climAt(s.x,s.y),k=s instanceof BanditCamp?'bandit':SITE_KIND[s.type]?s.type:null;
   return k?PX.clusterModel({kind:SITE_KIND[k],seed:s.seed*131+7,env:c,snow:0}):PX.buildingModel({type:s.type,seed:s.seed,env:c,snow:0,glow:c==='desert'?'#e8c040':'#7fd8e8'})}
 function siteFooting(s){const sp=siteSprite(s);if(!sp._ft)sp._ft=modelFooting(siteModel(s))||[];const X=s.x-sp.ax,Y=s.y+8-sp.ay;return sp._ft.map(r=>({x:X+r.x,y:Y+r.y,w:r.w,h:r.h}))}
 // (every footing in the box x0..x1, y0..y1, world px: the lots standing there (not ruins, fields nor pastures), the sites you know of)
 const marchFootings=(x0,y0,x1,y1)=>TOWNS.flatMap(t=>(t.lots||[]).filter(l=>l.st!=='ruined'&&l.k!=='field'&&l.k!=='pasture'&&l.x*TILE<x1&&l.y*TILE<y1&&(l.x+l.n)*TILE>x0&&(l.y+l.n)*TILE>y0).flatMap(l=>lotFooting(t,l)))
-  .concat((W.sites||[]).filter(s=>s.known&&s.known()&&s.x>x0-96&&s.x<x1+96&&s.y>y0-96&&s.y<y1+96).flatMap(siteFooting));
+  .concat((W.sites||[]).filter(s=>s.type!=='rest'&&s.known&&s.known()&&s.x>x0-96&&s.x<x1+96&&s.y>y0-96&&s.y<y1+96).flatMap(siteFooting));
 // (what those footings are made of, in the box: each lot there, its state and its picture (structures.js lotSprite, the same one
 // till it changes: its stage, level, walls, facing, a ruin), each site near, its picture while you know it; a grid made over them
 // is stale when any differs (MarchGround fresh: a building raised, finished or burnt, a site found, change no world version))
