@@ -52,6 +52,9 @@ Kit.suite(({ok})=>{
    const g=P.gold,p=D.payOf('elske');t.act('death-pay','elske');el.hurt=0;ok(!el.lost&&P.gold===g-p&&!D.questOf('elske')&&t.compsInBand().includes('elske'),'paid what she is owed ('+p+'g): back in your band');
    ok(/Lost · after the beasts/.test((()=>{P.comps.brann.lost={at,until:G.day+5,left:false};const h=t.partyRosterPage();delete P.comps.brann.lost;return h})()),'the Army window lists the lost apart');
    const r0=P.renown;t.worldEmit('monster:slain',{monster:m});ok(P.renown===r0+X.eater.renown,'the man-eater slain: renown +'+X.eater.renown)}
+  // ---- what a grave will give half of (phase 4): the experience your hero gained in this life, counted as it comes; not a grave's gift
+  {const e0=P.xpEarned||0,x0=P.xp,lv0=P.level;t.gainXp(40,'battle');const e1=P.xpEarned;t.leaderOf(P).addXp(30,true);
+   ok(e1-e0>=40&&P.xpEarned===e1,'the experience you gain counts toward your grave ('+(e1-e0)+' from a 40 XP deed and its practice); a grave\'s own gift does not')}
   // ---- no room on the roll's other side: a man-eater only once, and no mythic one
   {setup();const m=wolves({eater:{name:'the Old Maw',day:1}}),lv=m.lv;roll(.1);try{lose(enc(m))}finally{window.Math.random=rnd}ok(m.lv===lv&&m.eater.name==='the Old Maw','a man-eater already: named once');t.act('cont')}
  }finally{window.Math.random=rnd;X.on=on0;P.comps={};P.weak=0}

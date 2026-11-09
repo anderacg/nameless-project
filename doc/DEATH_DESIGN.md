@@ -31,7 +31,7 @@ Status: **design** (2026-11-09); every question answered (round 5). **Phase 1, l
 ## Decisions, round 5 (owner, 2026-11-09)
 
 - **The crown:** the heir takes it, over the realm's strongest vassal.
-- **A grave gives half:** half the experience the fallen hero earned; no proficiencies.
+- **A grave gives half:** half the experience the fallen hero gained in their life (not their start, not an older grave's gift); no proficiencies.
 - **An heir for the new person** (kin): later.
 - **The remains never fade, and are one with the grave:** what lies where you fell (your gear, bag and a share of your gold) is buried with you as grave goods (§5, §6.2).
 - **Companions left too long leave you**, and must be won back.
@@ -141,7 +141,7 @@ Status: **design** (2026-11-09); every question answered (round 5). **Phase 1, l
   - **with an heir:** in the heir's fief, at its holding's graveyard (they carry the body home); or, with no fief, at the holding they pass first;
   - **with no heir:** near where the hero fell, a cairn raised by whoever found the body (a shepherd, a patrol), a little off the spot (`DEATH.cairn` px).
 - **What it holds:**
-  - **half the experience** that hero earned in their own life (`HERO_XP_ALL` of their level and `P.xp`, × `DEATH.grave`, 0.5), never what they themselves took from an older grave, so nothing is counted twice;
+  - **half the experience that hero gained** in their own life (`P.xpEarned` × `DEATH.grave`, 0.5; the owner, 2026-11-09: "the exp from grave is the gained exp"): only what they earned by deeds and proficiencies after they began (counted as it comes, `Character#addXp`), never what their start gave them, nor what they themselves took from an older grave (a grave's gift is added with `gift`, uncounted), so nothing is counted twice;
   - **its grave goods:** the remains (§5) that nobody took first: gear, bag and gold.
 - **Finding it:** the map is forgotten (§6), so you learn of graves by rumour:
   - now and then a teller speaks of one (`world/news.js` `rumourFrom`: "They buried a hero at Dunmere, the one the wolves took"; "A cairn stands by the north road, over some brave fool"), at random, more often near it;
