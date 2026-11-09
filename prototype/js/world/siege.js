@@ -127,7 +127,7 @@ function siegeDay(){
 }
 // won the assault or raid (from concludeEncounter); returns a line for the victory panel
 function siegeWon(e){
-  const t=e.ref;(e.lords||[]).forEach(l=>{if(!l.dead){defeatLord(l);log(lordName(l)+' is beaten inside the walls of '+t.name+'.','good','war')}});
+  const t=e.ref;(e.lords||[]).forEach(l=>{if(!l.dead){defeatLord(l,true);log(lordName(l)+' is beaten inside the walls of '+t.name+'.','good','war')}});
   if(e.kind==='raid')return startRaid(t);
   t.gar=0;G.capture=t;return ' The gates of '+t.name+' are open. Decide its fate.';
 }

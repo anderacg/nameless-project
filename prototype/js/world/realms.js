@@ -231,11 +231,14 @@ function lordWon(l,res,take=true){
   let txt='';worldEmit('lord:routed',{lord:l});if(l.state==='siege'&&townBy(l.tgt))worldEmit('siege:broken',{town:townBy(l.tgt),lord:l});// (the bus: news.js)
   if(P.fac&&atWar(P.fac,l.fac)){res.gold+=40;P.renown+=5;txt+=' Your employer adds a 40 gold bounty.'}
   if(l.state==='siege'){const st=townBy(l.tgt);if(st&&!hostileTo(st.owner)){addRep(st.name,10,true);if(st.owner!=='player')addHonor(st.owner,8,true);lordsInside(st).forEach(o=>changeRel(o,RELATION.breakSiege,'you broke the siege of '+st.name));txt+=' You break the siege of '+st.name+'. Its people cheer you in.'}}
-  rippleRel(l,RELATION.beatThem,'you beat them in battle');worldEmit('lord:beaten',{lord:l});if(take){captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom '+pr(l).him+' or let '+pr(l).him+' go (Hero, Party).'}else{defeatLord(l);txt+=getsAway(l.name)}
+  rippleRel(l,RELATION.beatThem,'you beat them in battle');worldEmit('lord:beaten',{lord:l});
+  // (now and then he dies in the fighting: gone for good, his house buries him and holds it against you, world/lineage.js)
+  if(take&&Houses.slain(l,true)){txt+=' '+l.name+' falls in the fighting. '+cap1(pr(l).his)+' house will not forget it.';take=false}
+  if(take){captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom '+pr(l).him+' or let '+pr(l).him+' go (Hero, Party).'}else{defeatLord(l);txt+=getsAway(l.name)}
   FIDS.filter(f=>atWar(f,l.fac)).forEach(f=>addHonor(f,5));addHonor(l.fac,-10);
   return txt;
 }
-function defeatLord(l){if(Houses.slain(l))return;// (now and then slain on the field, gone for good: world/lineage.js)
+function defeatLord(l,byYou){if(Houses.slain(l,byYou))return;// (now and then slain on the field, gone for good, by you a grudge: world/lineage.js)
   l.inside=null;l.dead=true;l.troops=[];l.back=G.day+4;l.state='rest'}
 function fallFaction(f,at,involved){realmOf(f).fall(at,involved)}
 // (a marshal's siege: all his host's strength there, hosts.js Host.besiegers; each takes his share of the losses)

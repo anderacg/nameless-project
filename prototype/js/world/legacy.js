@@ -16,7 +16,7 @@
    The heir's company ends with its lord, gone or dead: its companions free (hour). Saved: the realms made and the companions kept
    (the save piece legacy, loaded before the holdings and the lords that name its realms). Numbers: data/death.js DEATH.heir ---------- */
 class Legacy{
-  static realms={};static kept={};static raised=null;static fallen=0;static plot=null;static restN=0;// (fallen: how many of your line have died; plot: your family's, world/death.js Grave.inPlot)
+  static realms={};static kept={};static raised=null;static fallen=0;static plot=null;static restN=0;static family='';static line=[];// (family: your line's name; line: each of it who fell, Legacy.record)// (fallen: how many of your line have died; plot: your family's, world/death.js Grave.inPlot)
   // the heir: the most loyal companion with you, at least DEATH.heir.ap, a tie to the higher level; null: none
   static heirOf(comps){return Object.keys(comps).filter(id=>(comps[id].ap||0)>=DEATH.heir.ap&&!comps[id].jail)
     .sort((a,b)=>(comps[b].ap-comps[a].ap)||((comps[b].lv||0)-(comps[a].lv||0)))[0]||null}
@@ -53,7 +53,7 @@ class Legacy{
   static raise(cid,fac,own){const c=P.comps[cid],h=own[0]||Spatial.nearest(fiefsOf(fac),P.x,P.y)||Spatial.nearestHolding(P.x,P.y);
     const comps=[cid,...Object.keys(P.comps).filter(id=>id!==cid&&(P.comps[id].ap||0)>=DEATH.heir.follow&&!P.comps[id].jail)];
     const l=asParty({id:'heir_'+cid+'_'+G.day,name:COMPS[cid].n,fac,x:h.x+rint(-8,8),y:h.y+14,troops:c.party?.troops?.slice()||armyOf(fac,DEATH.heir.men),state:'rest',tgt:h.name,sd:0,cool:0,dead:false,gone:false,back:0,lv:c.lv||0,heir:{cid,comps,of:heroName()||'a fallen hero'}});
-    W.lords.push(l);this.raised=l;return l}
+    W.lords.push(l);this.raised=l;const L=this.line[this.line.length-1];if(L)L.heir=COMPS[cid].n;return l}
   // (a holding with no heir: to the realm whose holding is nearest it)
   static nextRealm(t){const o=Spatial.nearest(TOWNS.filter(x=>x!==t&&!x.gone&&x.owner&&x.owner!=='player'&&FACS[x.owner]&&!W.dead[x.owner]),t.x,t.y);return o?o.owner:null}
   // (a companion kept, hired again: as they were)
@@ -64,11 +64,17 @@ class Legacy{
       '<p class="muted">The world goes on: its holdings, lords and wars as they stand, and what '+htmlText(Death.slain?.who||'your hero')+' left behind. You begin again with nothing of theirs.</p>'+
       '<div class="lab">Your race</div><div class="tabs" role="group" aria-label="Race">'+Object.keys(RACES).map(k=>'<button class="btn sm'+(r===k?' on':'')+'" type="button" data-act="death-race" data-arg="'+k+'" aria-pressed="'+(r===k)+'">'+RACES[k].n+'</button>').join('')+'</div>'+
       '<div class="lab">Your name · or leave it for later</div>'+nameFields(NEW_NAMES)+
+      '<div class="lab">Your family · the name your line goes by, on its graves and its plot</div><label class="nm-field"><span>Family</span><span class="nm-line"><input data-name="family" type="text" maxlength="'+NAMING.max+'" autocomplete="off" spellcheck="false" value="'+htmlText(NEW_NAMES.family??this.familyGuess())+'" placeholder="'+htmlText(this.familyGuess())+'"></span></label>'+
       '<div class="lab">Your past · it decides where you begin</div><div class="cards origin-cards">'+Object.keys(BGS).map(k=>{const B0=BGS[k],w=B0.weapon?BASES[B0.weapon]:null;
         return '<button class="card origin-card" type="button" data-act="death-past" data-arg="'+k+'">'+originArt(k)+'<strong>'+B0.n+'</strong><span class="gold">'+(w?w.n:'Bare hands')+'</span><span>'+B0.d+'</span></button>'}).join('')+'</div>'+
       nav(['death-slain',null,'Back'],null))}
   // ---- going on as someone new (k: your past)
+  // (your family's name: as chosen, else your line's so far, else the first of it's own last name)
+  static familyGuess(){if(this.family)return this.family;const w=String(this.line[0]?.who||Death.slain?.who||P.name||'').trim().split(/\s+/);return cap1(w.length>1&&w[0]?w[w.length-1]:w[0]||'Wanderer')}
+  // (one of your line fallen: their life, for your family's tree (ui/family.js))
+  static record(s){this.line.push({n:s.n,who:s.who,race:s.race,bg:s.bg,born:s.born,day:s.day,days:s.days,level:s.level,renown:s.renown,earned:s.earned,by:s.by,near:s.near,family:this.family||''})}
   static reborn(k){const b=BGS[k],old=Death.slain;if(!b||!old)return false;
+    {const f=cleanName(NEW_NAMES.family??'');this.family=f||this.family||this.familyGuess();NEW_NAMES.family=undefined;const L=this.line[this.line.length-1];if(L&&!L.family)L.family=this.family}
     this.raised=null;const said=this.handOut(),qs=P.quests.length;
     // (your remains buried: a grave at your heir's holding, else a cairn where you fell: world/death.js Grave)
     Grave.bury(old,this.raised);said.push('Their body lies where they fell'+(this.raised?': '+COMPS[this.raised.heir.cid].short+' will come for it.':', for whoever finds it.'));
@@ -90,9 +96,9 @@ class Legacy{
   // each hour: a company whose lord is gone breaks up, its companions free
   static hour(){this.prune();for(const l of W.lords){const h=l.heir;if(!h||h.ended||!(l.dead||l.gone))continue;h.ended=true;
     worldEvent({text:cap1(l.name)+'’s company breaks up: '+h.comps.map(id=>COMPS[id].short).join(', ')+' go their own ways.',x:l.x,y:l.y,fac:[l.fac],post:false,kind:''})}}
-  static save(){return Object.keys(this.realms).length||Object.keys(this.kept).length||this.fallen||this.restN?{realms:this.realms,kept:this.kept,fallen:this.fallen,plot:this.plot,restN:this.restN}:undefined}
-  static load(v){this.clear();for(const id in v?.realms||{}){this.realms[id]=v.realms[id];this.install(id,v.realms[id])}this.kept=v?.kept||{};this.fallen=v?.fallen||0;this.plot=v?.plot||null;this.restN=v?.restN||0}
-  static clear(){for(const id in this.realms){delete FACS[id];const i=FIDS.indexOf(id);if(i>=0)FIDS.splice(i,1);REALMS.delete(id)}this.realms={};this.kept={};this.fallen=0;this.plot=null;this.restN=0}
+  static save(){return Object.keys(this.realms).length||Object.keys(this.kept).length||this.fallen||this.restN?{realms:this.realms,kept:this.kept,fallen:this.fallen,plot:this.plot,restN:this.restN,family:this.family,line:this.line}:undefined}
+  static load(v){this.clear();for(const id in v?.realms||{}){this.realms[id]=v.realms[id];this.install(id,v.realms[id])}this.kept=v?.kept||{};this.fallen=v?.fallen||0;this.plot=v?.plot||null;this.restN=v?.restN||0;this.family=v?.family||'';this.line=v?.line||[]}
+  static clear(){for(const id in this.realms){delete FACS[id];const i=FIDS.indexOf(id);if(i>=0)FIDS.splice(i,1);REALMS.delete(id)}this.realms={};this.kept={};this.fallen=0;this.plot=null;this.restN=0;this.family='';this.line=[]}
 }
 onWorld(()=>Legacy.clear());
 Systems.add({name:'heirs',order:{hour:166},hour:()=>Legacy.hour()});

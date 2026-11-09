@@ -14,9 +14,13 @@ class LordHouse{
   // (a lord's house: his own, or one he founds now)
   static of(l){let h=l.house&&Houses.byId(l.house);if(h)return h;const sur=String(l.name||'').split(/\s+/).pop()||'Nameless',seat=Spatial.nearest(fiefsOf(l.fac),l.x,l.y);
     h=new LordHouse({id:'h'+(++Houses.n),name:'House '+sur,fac:l.fac,seat:seat?seat.name:'',dead:[]});Houses.list.push(h);l.house=h.id;return h}
+  // (a grudge against you, the hero who did it: gone with you, for a new person is a stranger to them)
+  grudged(){return !!this.grudge&&this.grudge.gen===Legacy.fallen}
   get live(){return W.lords.filter(l=>l.house===this.id&&!l.dead&&!l.gone)}
   // (one of it dead for good: named in its crypt, and one of it to take up his place)
-  fell(l,how){if(this.dead.some(d=>d.id===l.id))return;this.dead.push({id:l.id,name:l.name,day:G.day,how,lv:l.lv||1});Crypt.of(this).honour(l);
+  // (byYou: put to death or slain by you: the house holds it against you (grudge), its living lords and the next of it, while you live)
+  fell(l,how,byYou){if(this.dead.some(d=>d.id===l.id))return;this.dead.push({id:l.id,name:l.name,day:G.day,how,lv:l.lv||1,byYou:!!byYou});Crypt.of(this).honour(l);
+    if(byYou){this.grudge={gen:Legacy.fallen,day:G.day,name:l.name,how};for(const o of this.live)changeRel(o,DEATH.house.grudge,'you killed '+l.name+' of '+this.name)}
     if(!W.dead[l.fac]&&FACS[l.fac])this.next={day:G.day+DEATH.house.wait,fac:l.fac,lv:Math.max(1,(l.lv||1)-DEATH.house.lv),title:String(l.name).split(/\s+/)[0]};
     worldEvent({text:l.name+' of '+this.name+' is dead ('+how+'). '+cap1(pr(l).his)+' house will bury '+pr(l).him+' at '+(this.seat||'home')+'.',x:l.x,y:l.y,fac:[l.fac],cls:'bad',past:l.name+' died'})}
   // (the one who takes up the place: a given name of the realm's people, the title fitting them)
@@ -26,14 +30,18 @@ class LordHouse{
     const f=FOLK_WOMEN.includes(given),
       T=DEATH.house.titles,title=T[n.title]?T[n.title][f?1:0]:n.title,seat=townBy(this.seat)||Spatial.nearest(fiefsOf(n.fac),P.x,P.y);if(!seat)return;
     const l=asParty({id:this.id+'_'+G.day+'_'+this.dead.length,name:title+' '+given,fac:n.fac,x:seat.x+rint(-8,8),y:seat.y+14,troops:armyOf(n.fac,DEATH.house.men),state:'rest',tgt:seat.name,sd:0,cool:0,dead:false,gone:false,back:0,lv:n.lv,house:this.id,gender:f?'f':'m'});
-    W.lords.push(l);worldEvent({text:l.name+' takes up the place of '+this.name+' at '+seat.name+'.',x:seat.x,y:seat.y,fac:[n.fac],post:false,kind:''});return l}
+    W.lords.push(l);if(this.grudged())changeRel(l,DEATH.house.grudge,'you killed '+this.grudge.name+' of '+this.name);
+    worldEvent({text:l.name+' takes up the place of '+this.name+' at '+seat.name+'.',x:seat.x,y:seat.y,fac:[n.fac],post:false,kind:''});return l}
 }
 const Houses={list:[],n:0,
   byId(id){return this.list.find(h=>h.id===id)||null},
   // a lord dead for good (how: 'put to death', 'slain'), with the rule on
-  died(l,how){if(!DEATH.on||!l)return;LordHouse.of(l).fell(l,how)},
-  // (his army beaten: now and then he dies on the field, gone for good)
-  slain(l){if(!DEATH.on||!l||l.gone||Math.random()>=DEATH.house.slain)return false;Object.assign(l,{dead:true,gone:true,back:1e9,troops:[],inside:null});this.died(l,'slain in battle');return true},
+  died(l,how,byYou){if(!DEATH.on||!l)return;LordHouse.of(l).fell(l,how,byYou)},
+  // (his army beaten: now and then he dies on the field, gone for good; by you (byYou), his house's grudge)
+  slain(l,byYou){if(!DEATH.on||!l||l.gone||Math.random()>=DEATH.house.slain)return false;Object.assign(l,{dead:true,gone:true,back:1e9,troops:[],inside:null});this.died(l,'slain in battle',byYou);return true},
+  // (a lord's house in a line: its name, seat, its dead, a grudge against you; make: found it now if it has none, the rule on)
+  tagOf(l,make){const h=l.house&&this.byId(l.house)||(make&&DEATH.on&&!l.gone?LordHouse.of(l):null);if(!h)return '';
+    return '<small>'+htmlText(h.name)+(h.seat?' · seat '+htmlText(h.seat):'')+(h.dead.length?' · '+h.dead.length+' in its crypt':'')+(h.grudged()?' · <span class="bad">bears you a grudge: you killed '+htmlText(h.grudge.name)+'</span>':'')+'</small>'},
   hour(){if(!DEATH.on)return;for(const h of this.list)h.succeed()},
   save(){return this.list.length?{n:this.n,list:this.list}:undefined},
   load(v){this.n=v?.n||0;this.list=(v?.list||[]).map(o=>new LordHouse(o))}
@@ -120,7 +128,7 @@ class RestSite extends Site{
       let i=RESTSITE_I0+(++Legacy.restN);while(W.sites.some(x=>x.i===i))i=RESTSITE_I0+(++Legacy.restN);
       if(!s){s=siteOf({i,type:'rest',kind,ref,seed:W.sites.length+1,seen:true,cleared:false,back:0,name:'',tx:0,ty:0,x:0,y:0});W.sites.push(s)}
       const ms=s.members();if(!ms.length)continue;s.x=Math.round(ms.reduce((a,g)=>a+g.x,0)/ms.length);s.y=Math.round(ms.reduce((a,g)=>a+g.y,0)/ms.length);s.tx=Math.floor(s.x/TILE);s.ty=Math.floor(s.y/TILE);
-      s.name=kind==='plot'?'Rest of '+cap1(ms[0].family||Legacy.plot?.family||'your line'):kind==='crypt'?'Crypt of '+(Houses.byId(ref)?.name||'a house'):ms[0].name}
+      s.name=kind==='plot'?cap1(ms[0].family||Legacy.plot?.family||'your')+' Family Rest':kind==='crypt'?'Crypt of '+(Houses.byId(ref)?.name||'a house'):ms[0].name}
     W.sites=W.sites.filter(x=>x.type!=='rest'||x.members().length)}
 }
 SITE_CLASS.rest=RestSite;

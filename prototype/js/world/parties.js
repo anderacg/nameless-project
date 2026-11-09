@@ -68,7 +68,7 @@ class LordParty extends Party{
   meet(){lordMeet(this)}
   mapDot(V){return !this.dead&&!this.inside&&yourSight(V).sees(this.x,this.y)?[FACS[this.fac].col,1]:null}
   label(){return this.name}
-  tip(){return '<b>'+htmlText(lordName(this))+' <span class="muted">Lv '+lordStats(this).lv+'</span></b><small>'+tipFac(this.fac)+' · '+this.fighters+' fighters, including the leader'+tipOdds(this.power())+paceVs(lordSpeed(this))+'</small><span class="act">Click: actions · double-click: '+(hostileTo(this.fac)?'fight':'talk')+'</span>'}
+  tip(){return '<b>'+htmlText(lordName(this))+' <span class="muted">Lv '+lordStats(this).lv+'</span></b><small>'+tipFac(this.fac)+' · '+this.fighters+' fighters, including the leader'+tipOdds(this.power())+paceVs(lordSpeed(this))+'</small>'+Houses.tagOf(this)+'<span class="act">Click: actions · double-click: '+(hostileTo(this.fac)?'fight':'talk')+'</span>'}
   get brain(){return BRAINS.lord}
   shelterWhy(t){return t&&t.owner!==this.fac?'Not a holding of '+pr(this).his+' realm':super.shelterWhy(t)}
   banner(){return{k:'banner',col:FACS[this.fac].col,dev:this.fac}}

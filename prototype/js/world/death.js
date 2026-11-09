@@ -61,11 +61,11 @@ class Death{
      world is phase 3: until then its way out is a save or the main menu */
   static died(e,o,m){
     const by=m?.eater?m.eater.name:'the '+this.beastName(e),life=this.life(by),r=Remains.lay(P.x,P.y,life.who);
-    if(m)this.eater(m,life.who);Legacy.fallen++;this.slain={...life,n:Legacy.fallen,by:m?.eater?m.eater.name:by,gold:r.gold,items:r.items.length};this.pending={m,hx:m?.hx,hy:m?.hy,slain:true};
+    if(m)this.eater(m,life.who);Legacy.fallen++;this.slain={...life,n:Legacy.fallen,by:m?.eater?m.eater.name:by,gold:r.gold,items:r.items.length};Legacy.record(this.slain);this.pending={m,hx:m?.hx,hy:m?.hy,slain:true};
     log(cap1(life.who)+' fell to '+this.slain.by+(life.near?' near '+life.near:'')+', on day '+G.day+': level '+life.level+', renown '+life.renown+'.','bad','story');
     return {how:'slain',text:'The '+this.beastName(e)+' tear through the last of you, and you do not rise again ('+Math.round(o.ch*100)+'% chance to live).'}}
   // (your life in a few numbers, for the Slain page and the chronicle)
-  static life(by){const h=Spatial.nearestHolding(P.x,P.y);return {who:heroName()||'a wanderer',day:G.day,days:G.day-(P.born||1)+1,level:P.level,renown:Math.round(P.renown||0),earned:Math.round(P.xpEarned||0),by,near:h?.name||''}}
+  static life(by){const h=Spatial.nearestHolding(P.x,P.y);return {who:heroName()||'a wanderer',day:G.day,born:P.born||1,days:G.day-(P.born||1)+1,level:P.level,renown:Math.round(P.renown||0),earned:Math.round(P.xpEarned||0),by,near:h?.name||'',race:P.race,bg:P.bg}}
   // the Slain page (the frame: its way out a new person in the same world, world/legacy.js; else a save, or the main menu)
   static open(){const s=this.slain;if(!s)return;G.mode='dialog';
     showPanel('<div class="top"><h2>Slain</h2><span class="muted">Day '+s.day+'</span></div>'+
@@ -249,7 +249,7 @@ class Grave extends Remains{
     if(how==='found'&&T.tier==='remains')T={tier:'small'};const home=T.home&&!T.home.gone?T.home:null;
     const off=T.tier==='cairn'?X.cairn:T.tier==='small'?X.cairn/2:0,p=home?Grave.inPlot(home,{who:g.who},g):Grave.spot(g.x+off,g.y+Math.round(off/2),0,g);
     delete g.unburied;delete g.heir;delete g.fetch;g.rest=home?(T.tier==='remains'?'small':T.tier):T.tier;
-    if(home){const t=townBy(Legacy.plot?.at)||home;g.at=t.name;g.fac=t.owner;g.plot=Legacy.plot?.at||t.name;g.family=Legacy.plot?.family||g.who}g.x=p.x;g.y=p.y;RestSite.sync();return g}
+    if(home){const t=townBy(Legacy.plot?.at)||home;g.at=t.name;g.fac=t.owner;g.plot=Legacy.plot?.at||t.name;g.family=Legacy.plot?.family||Legacy.family||g.who}g.x=p.x;g.y=p.y;RestSite.sync();return g}
   // each day: the unburied found and buried (the chance a day: DEATH.grave.find; near people more, the known more), or fetched by your
   // heir; never before your eyes (the owner: "Will it going to disappear right in front of the eye if I happen to be near that place"):
   // while you see the spot, or stand at its page, it waits for a day you are away (Grave.unseen)
@@ -261,7 +261,7 @@ class Grave extends Remains{
   // (your family's plot: made by the first of your line buried by people, at that holding (Legacy.plot: its holding, its middle,
   // its family's name); its graves in rows from its middle, DEATH.grave.plot)
   static inPlot(home,old,self){const X=DEATH.grave,F=X.plot;let fp=Legacy.plot;const t=fp&&townBy(fp.at);
-    if(!t||t.gone){const c=Grave.ground(home.x,home.y,self);fp=Legacy.plot={at:home.name,x:c.x,y:c.y,family:old.who}}
+    if(!t||t.gone){const c=Grave.ground(home.x,home.y,self);fp=Legacy.plot={at:home.name,x:c.x,y:c.y,family:Legacy.family||old.who}}
     // (a plot by a holding: its own graves; a holding gone, a new plot begun at the next, the old one kept as it is)
     const i=Remains.list.filter(o=>o!==self&&o.grave&&o.plot===fp.at).length,col=i%F.cols,row=Math.floor(i/F.cols),x=Math.round(fp.x+(col-(F.cols-1)/2)*F.gap),y=Math.round(fp.y+row*F.gap*F.row);
     return Grave.clear(x,y)&&!Remains.list.some(o=>o!==self&&(o.grave||o.crypt)&&Math.hypot(o.x-x,o.y-y)<F.gap*.6)?{x,y}:Grave.ground(fp.x,fp.y,self,0,true)}
