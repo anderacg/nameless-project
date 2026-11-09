@@ -1666,6 +1666,8 @@ Alpha wolves (`alpha_wolf`) use every approved wolf animation at 125% size. Newl
 
 Wolf artwork is restored from `7ce306d`, preserving its approved head, fur and proportions across all poses. Alpha frames render directly from that master at the larger combat size, avoiding a second enlargement of reduced pixels. Alpha leaders, pack spawning, saves and centered rider mounts remain.
 
-Wolf and warg riders sit into centered saddles, with a forward thigh, bent knee and shin angled back (`people.js` `WOLF_RIDER`). The moving back carries the same saddle, rider and equipment alignment through walking, running and attacks.
+Wolf and warg riders sit into centered saddles, with a forward thigh, bent knee and shin angled back (`people.js` `RIDER_POSTURE`). The moving back carries the same saddle, rider and equipment alignment through walking, running and attacks.
 
 Wolf/warg gallops have a stronger suspension lift and a forward rider lean. `drawMountedRider` keeps the hips seated and dresses the shifted upper body afterwards, preserving native weapon shapes and hand anchors. Walking has a lighter lean; idle remains upright.
+
+All mounts now share the seated knee/shin pose and forward rider lean (`people.js` `RIDER_POSTURE`, `RIDER_LEG`, `drawMountedRider`). This covers horse, stag, ram, wolf and warg riders and mounted heroes. Each mount keeps its authored gait and saddle motion. `tests/mountposture.js` verifies the common posture and anchors across all five types.
