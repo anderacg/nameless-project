@@ -25,10 +25,12 @@ An `alpha_wolf` is 25% larger than the regular wolf, using every approved animat
 
 At birth, about 25% of wild wolf packs receive one alpha in place of an ordinary wolf. The alpha occupies the leader position in the map formation. Pack counts, encounter strength, survivor lists, wolf pelts and XP include its actual unit type. The saved `alpha` flag preserves a living leader and clears when it dies; loading or adding ordinary wolves cannot bring it back. Existing packs stay as saved. Alpha selection is derived from the seeded lair location without advancing either RNG stream.
 
-Wolf Riders, Wolf Archers and Warg Raiders now ride alpha-sized bodies. Their mount frame is 40 × 36 pixels, with a six-pixel rider/tack offset in that expanded frame and a saddle sampled from the actual back. Loose and fallen mounts use the same body size. Other mounts retain their existing dimensions and placement.
+Wolf Riders, Wolf Archers and Warg Raiders now ride alpha-sized bodies. Their mount frame is 40 × 36 pixels, with a eight-pixel rider/tack offset in that expanded frame and a saddle sampled from the actual back. Loose and fallen mounts use the same body size. Other mounts retain their existing dimensions and placement.
 
 Tests: `alphawolf` covers spawning, mixed rosters, persistence, map leadership, encounter rewards, combat stats and mount size. `wolfmount` checks the expanded frame and saddle contact. No fingerprint values are re-recorded.
 
 Reference restoration (2026-11-08): the combat master and indexed runtime data are restored byte-for-byte from `7ce306d`, as requested. This locks the approved muzzle, ears, fur, legs and death poses. The later detail/redesign experiments are not the game artwork. Alpha combat frames now render once from that same 96 × 64 master into their 60 × 40 canvas; they no longer enlarge the already reduced 48 × 32 regular wolf. Both paths retain nearest-neighbor sampling. Alpha leader stats, pack spawning and persistence, larger rider mounts and centered saddles remain implemented. `alphawolf` checks pixel integrity across all 108 directly rendered alpha frames.
 
 The alpha renderer projects the reference master’s tiny black nose and amber eye onto nearby occupied pixels when reduction would skip those marks. This preserves the facial features without changing the silhouette.
+
+Riding posture (2026-11-09): wolf/warg saddles and riders move two pixels forward toward the back’s center. The torso sits one row deeper into the saddle. A dedicated near-leg pose angles the thigh forward and the shin back, with a small boot below the knee. Rider gear and attack anchors move with the torso; the saddle continues to track each gait. Other mount types keep their existing pose.

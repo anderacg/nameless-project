@@ -634,6 +634,8 @@ function riderLegCol(o,k,x,y){const a=o.armor,P=PPAL;
   if(!o.legsC&&a==='mail')return L[(x+y)%2?1:2];
   return k==='M'?L[2]:a==='plate'&&y===6?L[0]:L[1]}
 const RIDER_LEG=[[11,6,'L'],[12,6,'L'],[13,6,'L'],[12,7,'M'],[13,7,'L'],[13,8,'L'],[13,9,'F'],[14,9,'F']];// (the owner: "too long and too square": a short thigh, the shin slanting from the knee, a small boot)
+// Wolf riders sit into the saddle, thigh forward and shin back below the bent knee.
+const WOLF_RIDER={sink:1,leg:[[12,6,'L'],[13,6,'L'],[14,7,'L'],[15,7,'L'],[15,8,'M'],[14,9,'M'],[14,10,'F'],[15,10,'F']]};
 /* the sprite: a figure on foot in a 24×19 frame (the man at 4, 3), or a rider on its mount in 32×32, its gear on it (figures.js
    FigureRig), laid in a grid GEAR.room px wider each way and taller, outlined round it all, cut to the frame grown only where the
    gear reaches past it (a pike, a lance, a blade raised), so nothing is cut off; then placed in its power-of-two cell (sprites.js
@@ -647,13 +649,13 @@ function peopleSprite(o,pose,bare){
   if(bare&&heldWeapon(o))o={...o,weapon:null,held:heldWeapon(o)};if(bare==='bow')o={...o,bowApart:true};// (bare 'bow': his bow drawn apart, aimed: figures.js bowPic)
   if(pose===DEF_POSE||pose===DEF_LOW)o={...o,guardUp:pose===DEF_LOW?'low':true};
   const R=GEAR.room;
-  if(o.mount){const seatX=(o.mount==='wolf'||o.mount==='warg')&&window.PX&&PX.wolf?PX.wolf.riderX:0,box=mountMetrics(o.mount),g=pgrid(box.w+2*R,box.h+R),top=drawMount(g,o,walk,R,R),A=drawFigure(g,{...o,shield:null,offShield:null},6+R+seatX,top-6,-1,style,atk,12);
+  if(o.mount){const wolf=(o.mount==='wolf'||o.mount==='warg')&&window.PX&&PX.wolf,seatX=wolf?PX.wolf.riderX:0,box=mountMetrics(o.mount),g=pgrid(box.w+2*R,box.h+R),top=drawMount(g,o,walk,R,R),rideY=top-6+(wolf?WOLF_RIDER.sink:0),A=drawFigure(g,{...o,shield:null,offShield:null},6+R+seatX,rideY,-1,style,atk,12);
     // the rider's leg down the mount's side (the owner, 2026-11-04: the rider looked low, "show more of him"): his thigh forward
     // from the hip over the cloth, the knee, the shin down the horse's side and his foot, outlined on its own so it reads
     // against the cloth (RIDER_LEG: [x, y from the seat row, letter] each)
-    const leg=RIDER_LEG.map(([x,y,k])=>[x+R+seatX,top+y,riderLegCol(o,k,x,y)]),on=new Set(leg.map(([x,y])=>x+','+y));
+    const leg=(wolf?WOLF_RIDER.leg:RIDER_LEG).map(([x,y,k])=>[x+R+seatX,top+y,riderLegCol(o,k,x,y)]),on=new Set(leg.map(([x,y])=>x+','+y));
     if(!(DOLL_FIGS.on&&DOLL_FIGS.edge&&g.body))for(const [x,y] of leg)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const k=(x+dx)+','+(y+dy);if(!on.has(k)){on.add(k);pset(g,x+dx,y+dy,PEOPLE_OUT)}}
-    for(const [x,y,c] of leg)pset(g,x,y,c);return FigureRig.frame(g,R,box.w,A,box.h-(top-R-6),false,R+box.axis)}
+    for(const [x,y,c] of leg)pset(g,x,y,c);return FigureRig.frame(g,R,box.w,A,box.h-(rideY-R),false,R+box.axis)}
   const g=pgrid(24+2*R,19+R),A=drawFigure(g,o,4+R,3+R,walk,style,atk);return FigureRig.frame(g,R,24,A,o.short?15:16,!!o.held&&(blow||pose===FLINCH_POSE),4+R+(g.body?FIG_AXIS.doll:FIG_AXIS.template));
 }
 

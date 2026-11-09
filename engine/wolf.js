@@ -1,7 +1,7 @@
 'use strict';
 // Approved wolf art; the old renderer remains in place for every other creature.
 (function(PX){
-  const A=PX.WOLF_ART,BASE=400,ALPHA='alpha_wolf',ALPHA_SCALE=1.25,RIDER_X=6,MOUNT=Object.freeze({w:40,h:36,downH:26,ground:23,axis:19}),cache=new Map(),masters=new Map(),maps=new Map(),mounts=new Map();
+  const A=PX.WOLF_ART,BASE=400,ALPHA='alpha_wolf',ALPHA_SCALE=1.25,RIDER_X=8,MOUNT=Object.freeze({w:40,h:36,downH:26,ground:23,axis:19}),cache=new Map(),masters=new Map(),maps=new Map(),mounts=new Map();
   const pose=(clip,frame)=>{const c=A.clips[clip]||A.clips.idle;return BASE+c[0]+Math.max(0,Math.min(c[1]-1,Math.floor(frame||0)))};
   const sample=(clip,seconds)=>{const c=A.clips[clip];return pose(clip,Math.floor(Math.max(0,seconds)*1000/c[2])%c[1])};
   function index(p){
