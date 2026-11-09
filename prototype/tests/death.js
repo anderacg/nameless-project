@@ -106,7 +106,8 @@ Kit.suite(({ok})=>{
    setup();tidy();t.Remains.list=[];P.xpEarned=400;P.renown=X.grave.tiers.cairn;const mg=wolves();dieNow(mg);const fx=P.x,fy=P.y;t.act('death-new');t.act('death-past',k);
    const g=t.Remains.list.find(o=>o.grave);
    ok(g instanceof t.Grave&&g.xp===200&&g.kind==='stone'&&g.at&&g.holds()&&/grave of/i.test(g.tip()),'known, near people: someone buries you, a headstone at '+g.at+', holding half the experience that hero gained ('+g.xp+' of 400)');
-   {const D0=t.DISCOVER.on;t.DISCOVER.on=true;try{const known0=t.Discovery.named(g);t.Discovery.discover(g,true);ok(t.Discovery.places().includes(g)&&/^g:/.test(t.Discovery.key(g))&&!known0&&t.Discovery.named(g)&&g.mapDot(t.vis()),'a place of its own: found as a place is ("'+g.name+'", '+g.label.toLowerCase()+'), then on the minimap')}finally{t.DISCOVER.on=D0}}
+   {const D0=t.DISCOVER.on;t.DISCOVER.on=true;try{const site=W.sites.find(o=>o.type==='rest'&&o.members().includes(g)),known0=site&&t.Discovery.named(site);if(site)t.Discovery.discover(site,true);
+    ok(site instanceof t.RestSite&&t.Discovery.places().includes(site)&&!known0&&t.Discovery.named(site)&&site.mapDot(t.vis())&&t.fmIcon(site),'an actual place: "'+(site&&site.name)+'", a site of its own, found as a place is, on the minimap and the full map')}finally{t.DISCOVER.on=D0}}
    roll(0);try{t.Grave.hour()}finally{window.Math.random=rnd}ok(t.newsW().items.some(it=>it.k==='grave'&&it.detail.who===g.who),'folk talk of it (the news: "'+(t.newsW().items.find(it=>it.k==='grave')?'a cairn …':'')+'")');
    const ents=[],cam={x:P.x-200,y:P.y-120};g.x=P.x+30;g.y=P.y;g.draw(ents,cam,t.vis());let threw=null;try{for(const e of ents)e.f()}catch(err){threw=err}ok(ents.length&&!threw,'drawn with its light rising ('+(threw?threw.message:ents.length+' to draw')+')');
    g.meet();ok(/<h2>A grave<\/h2>/.test(panel())&&/data-act="death-pray"/.test(panel())&&/200 experience/.test(panel()),'come to it: its hero\'s life, and Pray');
@@ -155,6 +156,9 @@ Kit.suite(({ok})=>{
    L.clear();t.Remains.list=[];const x0=P.x,y0=P.y,a=die(0),at=L.plot&&L.plot.at;const b=die(X.grave.tiers.near.stone,x0+200,y0+120),c=die(X.grave.tiers.near.tomb,x0,y0);
    ok(at&&[a,b,c].every(g=>g.plot&&g.at===at)&&new Set([a,b,c].map(g=>g.x+','+g.y)).size===3&&[a,b,c].every(g=>Math.hypot(g.x-L.plot.x,g.y-L.plot.y)<X.grave.plot.gap*3),'three of your line, buried by people, lie together in the family plot at '+at+' ('+[a,b,c].map(g=>g.kind).join(', ')+')');
    {const hp=t.townBy(at),lots=[a,b,c].every(g=>t.Grave.clear(g.x,g.y));ok(lots&&Math.hypot(L.plot.x-hp.x,L.plot.y-hp.y)>=X.grave.yard.town,'the plot away from '+at+', its lots and its estates\' fields ('+Math.round(Math.hypot(L.plot.x-hp.x,L.plot.y-hp.y))+' px out, '+(()=>{let w=0;const tx=Math.floor(L.plot.x/t.TILE),ty=Math.floor(L.plot.y/t.TILE);for(let j=-3;j<=3;j++)for(let i=-3;i<=3;i++)if(t.tAt(tx+i,ty+j)===t.T_FOREST)w++;return w})()+' wooded tiles round it)')}
+   {const site=W.sites.find(o=>o.type==='rest'&&o.kind==='plot');ok(site&&site.members().length===3&&/^Rest of /.test(site.name),'the plot a place: "'+(site&&site.name)+'", its three graves');
+    G.mode='world';G.modal=false;site.meet();ok(G.mode==='site'&&/Here lie/.test(panel())&&(panel().match(/data-act="site-rest"/g)||[]).length>=3,'walked in: the site window, its graves, pray for each');
+    const g0=site.members().find(g=>!g.spent&&g.xp>0),i0=site.members().indexOf(g0);t.act('site-rest','pray:'+i0);ok(g0.spent&&G.mode==='world','pray there for '+g0.who+': its light flows into you');g0.flowed()}
    c.meet();ok(/In the plot of the family of/.test(panel()),'its page: "In the plot of the family of '+L.plot.family+'"');t.act('death-leave');
    P.x=L.plot.x;P.y=L.plot.y+20;const ents=[];t.GraveArt.plot(ents,{x:L.plot.x-120,y:L.plot.y-80},t.vis(),L.plot,[a,b,c]);let ex=null;try{for(const e of ents)e.f()}catch(err){ex=err}ok(ents.length===2&&!ex,'its low wall round them, its gate under a wooden arch'+(ex?': '+ex.message:''));
    ok(L.save().plot.at===at,'the plot saved with your line');
@@ -164,6 +168,7 @@ Kit.suite(({ok})=>{
   {const H=t.Houses,l=W.lords.find(o=>!o.dead&&!o.gone&&t.fiefsOf(o.fac).length),fac=l.fac,name=l.name;H.list=[];t.Remains.list=[];
    Object.assign(l,{dead:true,gone:true,back:1e9});H.died(l,'put to death');const h=H.byId(l.house),cr=t.Remains.list.find(o=>o.crypt);
    ok(h&&h.name==='House '+name.split(' ').pop()&&h.dead[0].name===name&&cr&&cr.house===h.id&&t.townBy(h.seat)&&Math.hypot(cr.x-t.townBy(h.seat).x,cr.y-t.townBy(h.seat).y)<X.grave.yard.max+10&&t.Grave.clear(cr.x,cr.y),name+' put to death: '+(h&&h.name)+' buries '+(l.gender==='f'?'her':'him')+' in its crypt at '+(h&&h.seat));
+   {const site=W.sites.find(o=>o.type==='rest'&&o.kind==='crypt'&&o.ref===h.id);ok(site&&site.name==='Crypt of '+h.name&&site.members()[0]===cr,'the crypt a place: "'+(site&&site.name)+'"')}
    cr.meet();ok(/<h2>A crypt<\/h2>/.test(panel())&&panel().includes(t.htmlText(name))&&/data-act="death-respect"/.test(panel()),'the crypt: a house of stone, the names cut over it; pay your respects');t.act('death-leave');
    const n0=W.lords.length;G.day+=X.house.wait;H.hour();const s=W.lords.find(o=>o.house===h.id&&!o.dead);
    ok(W.lords.length===n0+1&&s&&s.fac===fac&&s.name!==name&&s.lv>=1,'after '+X.house.wait+' days of mourning, one of the house takes up the place: '+(s&&s.name));

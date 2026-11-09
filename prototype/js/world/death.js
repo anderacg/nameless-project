@@ -180,10 +180,12 @@ class Remains extends WorldObject{
     const gold=Math.floor((P.gold||0)*DEATH.remains.gold);P.gold=0;
     const r=asRemains({rm:1,x:Math.round(x),y:Math.round(y),who,day:G.day,gold,items});this.list.push(r);return r}
   get mapKind(){return 'remains'}
+  // (a grave or a crypt is met through its resting place, a site: world/lineage.js RestSite; remains not yet buried, as they are)
+  get placed(){return !!(this.grave||this.crypt)}
   here(){return Remains.list.includes(this)}
   empty(){return !this.gold&&!this.items.length}
   inView(V){return spotted(this,V)}
-  pick(at){at.add(this,this.grave?14:9,2)}
+  pick(at){if(!this.placed)at.add(this,9,2)}
   get meetsAnyTime(){return true}
   what(){const n=k=>this.items.reduce((a,x)=>a+((x[0]==='gear')===k?x[2]:0),0),g=n(true),o=n(false);
     return [this.gold&&this.gold+' gold',g&&g+' piece'+(g>1?'s':'')+' of gear',o&&o+' other thing'+(o>1?'s':'')].filter(Boolean).join(', ')||'nothing left'}
@@ -234,7 +236,7 @@ class Grave extends Remains{
     // (where: buried by people, in your family's plot (the owner: "Yes, make a family plot": Grave.plot; the first such grave makes
     // it, at the holding that buried you); else by where you fell; never on another grave, for you may die many times in one place)
     const off=T.tier==='cairn'?X.cairn:T.tier==='small'?X.cairn/2:0,p=home?Grave.inPlot(home,old,r):Grave.spot(r.x+off,r.y+Math.round(off/2),0,r);
-    if(home){const t=townBy(Legacy.plot?.at)||home;r.at=t.name;r.fac=t.owner;r.plot=1}r.x=p.x;r.y=p.y;r.cloth=FACS.player.col;return asGrave(r)}
+    if(home){const t=townBy(Legacy.plot?.at)||home;r.at=t.name;r.fac=t.owner;r.plot=1}r.x=p.x;r.y=p.y;r.cloth=FACS.player.col;const g=asGrave(r);RestSite.sync();return g}
   // (your family's plot: made by the first of your line buried by people, at that holding (Legacy.plot: its holding, its middle,
   // its family's name); its graves in rows from its middle, DEATH.grave.plot)
   static inPlot(home,old,self){const X=DEATH.grave,F=X.plot;let fp=Legacy.plot;const t=fp&&townBy(fp.at);
@@ -306,7 +308,7 @@ class Grave extends Remains{
           ctx.globalAlpha=(1-p)*.95;ctx.fillStyle=C.core;ctx.fillRect(Math.round(mx),Math.round(my),1,1)}}
       ctx.restore()}})}
   // (on the minimap once you know it; found as a place is, its title rising: world/discovery.js)
-  mapDot(V){return Discovery.named(this)?[DEATH.grave.col.glow,2]:null}
+  mapDot(V){return null}
   get name(){return this.words.name+this.who}
   get label(){return this.words.label}
   // (the flow: motes from the grave to you along curves, one after another; you glow as they arrive; then the gain over you)
@@ -336,5 +338,5 @@ worldOn('monster:slain',d=>{const m=d?.monster;if(!m?.eater)return;P.renown+=DEA
   log('You slay '+m.eater.name+', the man-eater'+(m.eater.slew?' that killed '+m.eater.slew:'')+'. Renown +'+DEATH.eater.renown+(g?', its bounty '+g+' gold':'')+'.','good','war')});
 worldOn('band:beaten',d=>Remains.beaten(d?.band));
 onWorld(()=>{Death.pending=null;Death.slain=null;Remains.list=[]});
-Saves.add({key:'remains',order:332,defaults:null,save:()=>Remains.save(),load:v=>Remains.load(v)});
+Saves.add({key:'remains',order:332,defaults:null,save:()=>Remains.save(),load:v=>Remains.load(v),settle:()=>RestSite.sync()});// (their places after the sites: world/lineage.js)
 Systems.add({name:'lost companions',order:{hour:165},hour:()=>Death.hour()});
