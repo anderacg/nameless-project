@@ -27,6 +27,20 @@ Kit.suite(({ok,info})=>{
  ok(/fm-pic/.test(html)&&parts>=10&&tints===7&&adjs===Object.keys(E.adjustments).length&&F.draft.rec.config.race==='dwarf'&&F.draft.rec.config.hair===h1&&F.draft.rec.colors.iris==='#2a6a9a'&&F.draft.rec.config.adjustments.jawWidth===2&&new Set([r0,r1,r2,r3]).size===4,
    'the face maker: '+parts+' parts, '+tints+' colour pickers and '+adjs+' proportions, each changing your face');
  F.draft=null;
+ // ---- dressed as they are (FACE_GEAR): armour and helm by tier and people, metal its material's; none worn, no armour drawn; lords armoured by standing
+ {const FG=t.FACE_GEAR,g0={...P.gear},cp=P.comps;try{
+   for(const k of ['body','head','cape'])delete P.gear[k];const bare=F.yours().config;ok(!FG.armours.includes(bare.clothing)&&!FG.helms.includes(bare.headwear),'nothing worn: no armour on your face ('+bare.clothing+', '+bare.headwear+'), whatever it was made in ('+F.you().config.clothing+')');
+   const seen=[];for(let tr=0;tr<7;tr++){P.gear.body=t.gearId('mail',tr);P.gear.head=t.gearId('helm',tr);const c=F.yours();seen.push(c.config.clothing+'/'+c.config.headwear);
+     if(c.config.clothing!==F.armour(tr,t.Faces.raceOf(P.race))||c.config.headwear!==F.helm(tr,t.Faces.raceOf(P.race))||(tr>0&&c.colors.metal!==F.metal(tr)))seen.push('WRONG')}
+   ok(!seen.includes('WRONG')&&new Set(seen).size>=5,'your armour and helm drawn as worn, wood to adamant, the metal its material\'s ('+seen.join(', ')+')');
+   const pic0=t.portrait('hero',true);P.gear.body=t.gearId('mail',1);ok(t.portrait('hero',true)!==pic0,'a new piece put on: your portrait drawn anew');
+   for(const r of ['dwarf','elf','orc'])ok(t.PortraitEngine.partsFor(r,'clothing').includes(F.armour(4,r))&&t.PortraitEngine.partsFor(r,'headwear').includes(F.helm(4,r)),t.an(r)+'\'s armour of their own make where it has one ('+F.armour(4,r)+', '+F.helm(4,r)+')');
+   P.gear.body='bearcoat';ok(F.yours().config.clothing==='fur','a bear hide coat: fur');
+   P.comps={brann:{ap:5,role:''}};t.compInit('brann');P.comps.brann.gear.body=t.gearId('mail',6);ok(F.companion('brann').config.clothing===F.armour(6,'human'),'a companion in the armour you gave him ('+F.companion('brann').config.clothing+')');
+   const lo=W.lords.find(o=>!o.dead),lows={...lo,lv:1},highs={...lo,lv:13},a1=F.lord(lows).config,a2=F.lord(highs).config;
+   ok(FG.armours.includes(a1.clothing)&&FG.armours.includes(a2.clothing)&&F.lord(highs).colors.metal===F.metal(6)&&a1.headwear===F.lord(highs).config.headwear,'a lord in good armour, the better for his level ('+a1.clothing+' at 1, '+a2.clothing+' at 13), his crown kept ('+a1.headwear+')');
+   ok(!FG.armours.includes(F.lord({...lo,id:'kx1',name:'Wat',kinFace:true,plain:true}).config.clothing),'one of his house\'s kin, not a lord: no armour');
+ }finally{P.gear=g0;P.comps=cp}}
  // (switched off: the paintings again)
  t.FACES.on=false;try{ok(!/^data:/.test(t.lordPic(L))||!t.NamedPortraits.of(L.name),'FACES.on false: a lord\'s painting again')}finally{t.FACES.on=true}
 });

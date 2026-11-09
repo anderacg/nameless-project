@@ -14,6 +14,29 @@
    FACE_HAIR by the engine's hairGroups, a bun its own; its colour the portrait's), a beard if it has one
    (dollfigs.js: o.hairStyle, o.beardStyle; no eye, as every soldier) ---------- */
 const FACES={on:true,px:256,mode:'random'};
+/* (the owner, 2026-11-09: "Ensure that the characters wearing the correct armor or equipment based on their current armor and make
+   sure lords are having a good armor") a face dressed as its wearer is (Faces.dress): the body armour worn its clothing, by its tier
+   (body: wood a padded jack … adamant plate; bodyOf: a people's own make where it has one; items: the pieces of beasts' hides),
+   its metal the armour's material (gear.js MATERIALS); a helm its headwear by tier (head, headOf), else the face's own; a cloak
+   and no armour, a cloak; nothing worn, the face's own clothes, but never armour or a helm not worn (plain: your past's clothes). A lord has no gear: he is armoured by his standing (lord: the tier
+   from his level, from at least min, lv levels a tier; his realm's colour on it and his crown kept); his house's kin are not */
+const FACE_GEAR={
+  body:['padded-jack','scale','mail','brigandine','coat-of-plates','steel-cuirass','plate'],
+  bodyOf:{dwarf:[null,null,'dwarf-iron-guard','dwarf-iron-guard','rune-mail','rune-mail','rune-mail'],orc:[null,'lamellar','orc-lamellar','orc-lamellar','orc-lamellar','steel-cuirass','plate'],
+    elf:[null,null,'elf-leaf-mail','elf-leaf-mail','elf-leaf-mail','steel-cuirass','plate']},
+  items:{bearcoat:'fur',silkvest:'jerkin',scorpplate:'lamellar',trollhide:{orc:'hide-harness',any:'fur'}},
+  head:['arming-cap','coif','nasal','kettle','sallet','open-bascinet','ridge-helm'],
+  headOf:{dwarf:[null,null,'dwarf-guard-helm','dwarf-guard-helm','forge-helm','forge-helm','forge-helm'],orc:[null,null,'orc-war-helm','orc-war-helm','orc-war-helm','orc-war-helm','orc-war-helm'],
+    elf:[null,null,'elf-guard-helm','elf-guard-helm','elf-guard-helm','elf-guard-helm','elf-guard-helm']},
+  cape:'cloak',
+  // (no armour worn: a face's own armour (armours) its past's plain clothes (plain; any: anyone else's), its own helm (helms) off)
+  armours:['mail','brigandine','scale','lamellar','plate','ruffled-mail','rune-mail','leather-mail','coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail'],
+  helms:['coif','nasal','kettle','round-helm','forge-helm','open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm'],
+  plain:{soldier:'gambeson',guard:'gambeson',woodcutter:'jerkin',exile:'leather',merchant:'doublet',hedge:'robe',nobody:'linen-chemise',apprentice:'tunic',any:'traveler-coat'},
+  // (the metal's colour: its material's, steel (steel) mixed in by tint, so gold reads gilt and mithril pale, not paint)
+  steel:'#8f969a',tint:.5,
+  lord:{min:3,lv:3}
+};
 // (the doll's hair by the portrait's: its length group, the tied-up styles a bun on top; no hair, none)
 const FACE_HAIR={Short:'crop',Medium:'cropMid',Long:'cropLong','No hair':'bald',bun:['high-bun','low-bun','topknot','braided-crown','war-crest']};
 /* the face maker's controls, as the portrait workshop's (engine/face arts/grayscale workshop.js): each part a list of your race's
@@ -79,9 +102,30 @@ class Faces{
   static lord(l){const name=l&&(l.name||l.id);if(!name)return null;const F=FACS[l.fac],rs=l.race?[l.race]:F?.races||['human'];
     let r=this.of(l.kinFace?'kin:'+l.id:'lord:'+name,rs[Rng.seedOf('face:'+name)%rs.length],genderOf(l)||'m','lord');
     if(r&&l.young)r={...r,config:PortraitEngine.normalize({...r.config,age:'young',beard:'none'})};
+    // (a lord in armour fit for him; a child, or one of his house's kin (plain), in the clothes of the house)
+    if(r&&!l.young&&!l.plain)r=this.armoured(r,l);
     // (in its realm's colour: a recipe's cloth, drawn so, its saved face unchanged)
     return r&&F?{...r,colors:{...r.colors,cloth:PX.shade(F.col,.7)}}:r}
-  static companion(id){const c=COMPS[id],r=c?this.of('comp:'+id,c.race||'human',c.gender||'m','companion'):null;return r?{...r,config:this.bare(r.config)}:null}
+  // (a companion's, bareheaded, in what they wear: P.comps' gear)
+  static companion(id){const c=COMPS[id],r=c?this.of('comp:'+id,c.race||'human',c.gender||'m','companion'):null;return r?this.dress({...r,config:this.bare(r.config)},P.comps?.[id]?.gear,c.race||'human'):null}
+  // ---- dressed as they are (FACE_GEAR): gear a slot's item ids (P.gear, a companion's); race the wearer's people
+  static fits(race,part,v){return !!v&&PortraitEngine.partsFor(this.raceOf(race),part).includes(v)}
+  static metal(t){const D=FACE_GEAR;return PX.mix(MATERIALS[t].col,D.steel,D.tint)}
+  static armour(t,race){const D=FACE_GEAR,own=D.bodyOf[race]?.[t];return this.fits(race,'clothing',own)?own:D.body[Math.max(0,Math.min(D.body.length-1,t))]}
+  static helm(t,race){const D=FACE_GEAR,own=D.headOf[race]?.[t];return this.fits(race,'headwear',own)?own:D.head[Math.max(0,Math.min(D.head.length-1,t))]}
+  static dress(rec,gear,race,past){if(!rec||!this.ok())return rec;gear=gear||{};const D=FACE_GEAR,r=this.raceOf(race||rec.config.race),c={...rec.config},col={...rec.colors},b=ITEMS[gear.body],h=ITEMS[gear.head];
+    if(b){const it=D.items[gear.body],cl=it?(typeof it==='string'?it:it[r]||it.any):b.base==='mail'?this.armour(b.tier,r):null;
+      if(this.fits(r,'clothing',cl)){c.clothing=cl;if(b.base==='mail'&&b.tier>0)col.metal=this.metal(b.tier)}}
+    else if(gear.cape&&this.fits(r,'clothing',D.cape))c.clothing=D.cape;
+    else if(D.armours.includes(c.clothing)){const pl=D.plain[past]||D.plain.any;if(this.fits(r,'clothing',pl))c.clothing=pl}
+    if(h&&h.base==='helm'){const hw=this.helm(h.tier,r);if(this.fits(r,'headwear',hw)){c.headwear=hw;if(!b&&h.tier>0)col.metal=this.metal(h.tier)}}
+    else if(D.helms.includes(c.headwear))c.headwear='none';
+    return {...rec,config:PortraitEngine.normalize(c),colors:col}}
+  // (your hero's face as you are now: in what you wear)
+  static yours(){return this.dress(this.you(),P.gear,P.race,P.bg)}
+  // (a lord's armour by his standing: his tier from his level, his people's make, its metal that tier's)
+  static armoured(rec,l){const L=FACE_GEAR.lord,t=Math.max(L.min,Math.min(MATERIALS.length-1,L.min+Math.floor(((l.lv||1)-1)/L.lv))),r=this.raceOf(rec.config.race),cl=this.armour(t,r);
+    return this.fits(r,'clothing',cl)?{...rec,config:PortraitEngine.normalize({...rec.config,clothing:cl}),colors:{...rec.colors,metal:this.metal(t)}}:rec}
   static pic(rec){return rec?this.url(rec):''}
   // (a figure's picture key by the face it wears: your hero's, a companion's; '' none)
   static lookKey(hero,type){if(!this.ok())return '';const f=hero?this.you():COMPS[type]?this.companion(type):null;return f?'f'+Rng.seedOf(JSON.stringify(this.look(f))):''}

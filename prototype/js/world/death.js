@@ -65,7 +65,7 @@ class Death{
     log(cap1(life.who)+' fell to '+this.slain.by+(life.near?' near '+life.near:'')+', on day '+G.day+': level '+life.level+', renown '+life.renown+'.','bad','story');
     return {how:'slain',text:'The '+this.beastName(e)+' tear through the last of you, and you do not rise again ('+Math.round(o.ch*100)+'% chance to live).'}}
   // (your life in a few numbers, for the Slain page and the chronicle)
-  static life(by){const h=Spatial.nearestHolding(P.x,P.y);return {who:heroName()||'a wanderer',day:G.day,born:P.born||1,days:G.day-(P.born||1)+1,level:P.level,renown:Math.round(P.renown||0),earned:Math.round(P.xpEarned||0),by,near:h?.name||'',race:P.race,bg:P.bg,g:P.gender==='f'?'f':'m',face:typeof Faces!=='undefined'?Faces.you():null}}
+  static life(by){const h=Spatial.nearestHolding(P.x,P.y);return {who:heroName()||'a wanderer',day:G.day,born:P.born||1,days:G.day-(P.born||1)+1,level:P.level,renown:Math.round(P.renown||0),earned:Math.round(P.xpEarned||0),by,near:h?.name||'',race:P.race,bg:P.bg,g:P.gender==='f'?'f':'m',face:typeof Faces!=='undefined'?Faces.yours():null}}
   // the Slain page (the frame: its way out a new person in the same world, world/legacy.js; else a save, or the main menu)
   static open(){const s=this.slain;if(!s)return;G.mode='dialog';
     showPanel('<div class="top"><h2>Slain</h2><span class="muted">Day '+s.day+'</span></div>'+

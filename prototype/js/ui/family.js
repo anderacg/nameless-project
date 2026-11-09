@@ -63,7 +63,7 @@ onAct('fam-',(a,arg)=>{if(a==='fam-pick')ftPick('family',()=>{G.famPick=arg})});
    runtime, never saved */
 // (one of a house's picture: a lord's face, a dead one's as they were, one of its kin's (a child's young); '' unknown)
 function houseFace(h,m){if(!h.knows(m.id))return '';const l=W.lords.find(o=>o.id===m.id);
-  return lordPic(l||{name:m.name,id:m.id,fac:m.fac||h.fac,race:m.race,gender:m.gender,kinFace:m.kin||m.kinFace,young:m.kin&&!h.adult(m)})||''}
+  return lordPic(l||{name:m.name,id:m.id,fac:m.fac||h.fac,race:m.race,gender:m.gender,kinFace:m.kin||m.kinFace,young:m.kin&&!h.adult(m),plain:m.kin,lv:m.lv})||''}
 // (what one is to a house, in a word over their name: a lord of it, one dead or gone from it, wed into it, a child, a grown one of its blood)
 function houseRole(h,m){return m.away?'Gone day '+m.day:m.dead?'Died day '+m.day:!m.kin?'Lord':m.inlaw?(m.gender==='f'?'Wife':'Husband'):!h.adult(m)?'Child':(m.gender==='f'?'Daughter':'Son')}
 function housePage(){const hs=Houses.known();
