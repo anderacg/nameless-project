@@ -198,7 +198,9 @@
 .tw .tp-name{font-size:15px;stroke-width:5px}.tw .tp-glyph{font-size:15px}.tw.whole .tw-sec text{font-size:13px}.tw.whole .tw-sec.on text{font-size:16px}
 .tp-node.bonus .tp-body{stroke-width:2}.tp-node.bonus.have .tp-body{filter:drop-shadow(0 0 4px #e8b94acc)}
 .tp-roottext{font-size:13px}
-.tr-stage>.btn.fb-ts-whole{position:absolute;left:8px;top:8px;z-index:2;min-height:32px;min-width:32px;padding:2px 6px;font-size:17px;background:#16130ecc;border-color:#5a4a30}
+.tw-tools{position:absolute;left:8px;top:8px;z-index:2;display:flex;flex-direction:column;gap:4px}
+.tw-tools .btn{min-height:32px;min-width:32px;padding:2px 6px;font-size:17px;background:#16130ecc;border-color:#5a4a30}
+.tr-svg.tw{touch-action:none;cursor:grab}.tr-svg.tw:active{cursor:grabbing}
 .tp-lab{pointer-events:none}.tp-lab.have .tp-name{fill:#ffe9b0}.tp-lab.open .tp-name{fill:#f0e2b8}.tp-lab.locked .tp-name{fill:#6a6878}
 .tr-svg.grow .tp-lab{animation:tp-pop .4s ease-out both;animation-delay:calc(var(--d,0s) + .2s)}
 @media (prefers-reduced-motion:reduce){.tr-svg *,.tr-svg{animation:none!important}}

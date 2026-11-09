@@ -50,6 +50,9 @@ function treePos(){if(TREE_POS)return TREE_POS;const R=TREE_ROUND,P={},sec={},un
       if(t){const rh=R.r0+(2*t-1)*R.dr;P[k+'_p'+t]=[rh*Math.cos(a),rh*Math.sin(a)]}});
     sec[k]={a,w,g,rim:R.r0+2*(T.length-1)*R.dr}}u+=R.gap}
   return TREE_POS={P,sec,rim:Math.max(...Object.values(sec).map(q=>q.rim))}}
+// (the view of the wheel: the shown slice turned up, from just under its foot to over its rim; or the whole circle)
+const treeView=(k,whole)=>{const R=TREE_ROUND,{sec,rim}=treePos(),s=sec[k]||sec.oneh;return whole?[-(rim+110),-(rim+110),2*(rim+110),2*(rim+110)]:[-R.half,-(s.rim+R.top),2*R.half,s.rim+R.top-R.r0+R.foot]};
+const twKey=k=>k+(G.skWhole?'*':'');
 // (a name beside its node, outward of its pair (side -1 left, 1 right), in two lines when long)
 const nameLines=(n,x,y,side)=>{const w=n.split(' '),tx=(x+side*(TREE_ROUND.r.n+9)).toFixed(1);if(n.length<11||w.length<2)return '<tspan x="'+tx+'" y="'+(y+5).toFixed(1)+'">'+htmlText(n)+'</tspan>';const h=Math.ceil(w.length/2);
   return '<tspan x="'+tx+'" y="'+(y-3).toFixed(1)+'">'+htmlText(w.slice(0,h).join(' '))+'</tspan><tspan x="'+tx+'" dy="17">'+htmlText(w.slice(h).join(' '))+'</tspan>'};
@@ -84,8 +87,8 @@ function treeSvg(S,k){
       '</g>';if(N.t!=='b'&&!whole&&cur){const side=PROF_TREE[N.prof][N.tier][0][0]===id?-1:1;labs+='<g class="tp-lab '+(have?'have':can?'open':ok?'wait':'locked')+'" style="--d:'+del(x,y)+'"><text text-anchor="'+(side<0?'end':'start')+'" class="tp-name"'+up(x,y)+'>'+nameLines(N.n,x,y,side)+'</text></g>'}}
   svg+=labs;
   // the view: the shown slice turned up, from just under its foot to over its rim (or the whole circle)
-  const s=f,vb=whole?[-(rim+110),-(rim+110),2*(rim+110),2*(rim+110)]:[-R.half,-(s.rim+R.top),2*R.half,s.rim+R.top-R.r0+R.foot];
-  return '<svg class="tr-svg tp tw'+(grow?' grow':'')+(whole?' whole':'')+'" viewBox="'+vb.map(v=>v.toFixed(0)).join(' ')+'" preserveAspectRatio="xMidYMid meet" role="group" aria-label="The skill tree, '+SKILLS[k].n+' shown">'+defs+
+  const vb=G.skVB&&G.skVBk===twKey(k)?G.skVB:treeView(k,whole);
+  return '<svg class="tr-svg tp tw'+(grow?' grow':'')+(whole?' whole':'')+'" data-key="'+twKey(k)+'" viewBox="'+vb.map(v=>+v.toFixed(1)).join(' ')+'" preserveAspectRatio="xMidYMid meet" role="group" aria-label="The skill tree, '+SKILLS[k].n+' shown">'+defs+
     '<g class="tw-wheel" style="--from:'+from.toFixed(2)+'deg;--to:'+spin.toFixed(2)+'deg;transform:rotate('+spin.toFixed(2)+'deg)">'+svg+'</g></svg>';
 }
 // the node chosen on the tree: what it does, its kind and tier, how strong it is at its proficiency now, Learn (a point) or Unlearn
@@ -153,7 +156,7 @@ function skTreeBody(){
  const sw='<div class="fb-tree-switch">'+side(-1)+tsBtn('tree-list',null,'<strong>'+SKILLS[k].n+'</strong><small>'+T.profLv(k)+'</small>'+treeWait(pts.left)+'<i class="fb-ts-more'+(more?' wait':'')+'" aria-hidden="true">'+(open?'▴':'▾')+'</i>',open?'Hide the list':'All proficiencies','fb-ts-now'+(open?' on':''))+side(1)+'</div>';
  const out='<div class="fb-skill-work fb-trees"><section class="fb-tree-pane" aria-label="'+SKILLS[k].n+' skill tree"><div class="fb-tree-head"><strong>'+SKILLS[k].n+' · '+T.profLv(k)+'</strong><small>'+
    '<b class="'+(pts.left?'gold':'')+'">'+pts.left+' skill point'+(pts.left===1?'':'s')+' to spend</b> · one each level, on any tree · its nodes '+Math.round(100*treeScale(T.profLv(k)))+'% strong at '+SKILLS[k].n+' '+T.profLv(k)+'</small></div>'+
-   '<div class="tr-stage">'+treeSvg(S,k)+tsBtn('tree-whole',null,G.skWhole?'◉':'◎',G.skWhole?'Back to '+SKILLS[k].n:'The whole tree','fb-ts-whole'+(G.skWhole?' on':''))+treeNodePane(S,k)+list+'</div>'+sw+'</section></div>';
+   '<div class="tr-stage">'+treeSvg(S,k)+'<div class="tw-tools">'+tsBtn('tree-whole',null,G.skWhole?'◉':'◎',G.skWhole?'Back to '+SKILLS[k].n:'The whole tree','fb-ts-whole'+(G.skWhole?' on':''))+tsBtn('tree-zoom','in','+','Zoom in','tw-zoom')+tsBtn('tree-zoom','out','−','Zoom out','tw-zoom')+'</div>'+treeNodePane(S,k)+list+'</div>'+sw+'</section></div>';
  G.skGrow=false;G.skJust=null;return out;
 }
 function renderSkills(){
@@ -173,6 +176,7 @@ function skillsAct(a,arg){
   else if(a==='tree-list')G.skTreeList=!G.skTreeList;
   else if(a==='tree-sel'&&TREE[arg]){G.skSel=arg;if(TREE[arg].prof&&TREE[arg].prof!==G.skTree){G.skTree=TREE[arg].prof;G.skWhole=false}}// (another slice's node: the wheel turns to it)
   else if(a==='tree-whole')G.skWhole=!G.skWhole;
+  else if(a==='tree-zoom'){const svg=panel.querySelector('svg.tw');if(svg)twZoom(svg,arg==='in'?1/TREE_PAN.step:TREE_PAN.step)}
   else if(a==='tree-focus'&&PROF_TREE[arg]){if(G.skTree!==arg)G.skSel=null;G.skTree=arg;G.skWhole=false}// (a slice's name: the wheel turns to it, close)
   else if(a==='sk-slot'){skillSlotPick(Number(arg));return true}
   else if(a==='tree-take'){if(takeNodeOf(skSubj(),arg)){G.skSel=arg;G.skJust=arg}}
@@ -181,6 +185,33 @@ function skillsAct(a,arg){
   updateHUD(true);renderSkills();return true;
 }
 addEventListener('resize',()=>{if(G.mode==='skills'&&!FIELDBOOK.pick)renderSkills()});
+/* the wheel under your hands (the owner, 2026-11-08, step 3): a drag pans it, two fingers, the mouse wheel or a trackpad's pinch zoom
+   about the point under them, + and − a step about the middle; the view kept (G.skVB) while the same slice (or the whole wheel) is
+   shown, another one its own view again (treeView). A tap still chooses a node or a slice's name; a drag is never a tap (its click
+   eaten). TREE_PAN: the least of it in view (units across; the most the whole wheel), what counts as a drag (px), a button's step */
+const TREE_PAN={min:200,drag:6,step:1.4};
+const TW={pts:new Map(),drag:null,pinch:null,ate:false};
+// (the view set, its middle at cx, cy and w units across (its height in step), kept inside the wheel)
+function twSet(svg,cx,cy,w,vb){const {rim}=treePos(),M=rim+110,W=clamp(w,TREE_PAN.min,2*M),H=vb[3]*W/vb[2],x=clamp(cx,-M,M)-W/2,y=clamp(cy,-M,M)-H/2;
+  G.skVB=[x,y,W,H];G.skVBk=svg&&svg.dataset.key;if(svg)svg.setAttribute('viewBox',G.skVB.map(v=>v.toFixed(1)).join(' '))}
+// (a screen point in the wheel's units; the view now)
+const twAt=(svg,cx,cy)=>{const m=svg.getScreenCTM();return m?new DOMPoint(cx,cy).matrixTransform(m.inverse()):{x:0,y:0}};
+const twVB=svg=>svg.getAttribute('viewBox').split(/\s+/).map(Number);
+// (zoom by k about wheel point p: what is under it stays)
+function twZoom(svg,k,p){const vb=twVB(svg),cx=vb[0]+vb[2]/2,cy=vb[1]+vb[3]/2;p=p||{x:cx,y:cy};twSet(svg,p.x+(cx-p.x)*k,p.y+(cy-p.y)*k,vb[2]*k,vb)}
+panel.addEventListener('pointerdown',e=>{const svg=e.target.closest&&e.target.closest('svg.tw');if(!svg||G.mode!=='skills'||e.button>0)return;TW.pts.set(e.pointerId,{x:e.clientX,y:e.clientY});TW.svg=svg;
+  const vb=twVB(svg);if(TW.pts.size===1)TW.drag={x:e.clientX,y:e.clientY,vb,moved:false};
+  else if(TW.pts.size===2){const [a,b]=[...TW.pts.values()],m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};TW.pinch={d:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),vb,p:twAt(svg,m.x,m.y)};if(TW.drag)TW.drag.moved=true}});
+addEventListener('pointermove',e=>{if(!TW.pts.has(e.pointerId))return;TW.pts.set(e.pointerId,{x:e.clientX,y:e.clientY});const svg=TW.svg;if(!svg||!svg.isConnected){TW.pts.clear();TW.drag=TW.pinch=null;return}
+  if(TW.pinch&&TW.pts.size>=2){const [a,b]=[...TW.pts.values()],P0=TW.pinch,k=P0.d/Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),vb=P0.vb,cx=vb[0]+vb[2]/2,cy=vb[1]+vb[3]/2;
+    twSet(svg,P0.p.x+(cx-P0.p.x)*k,P0.p.y+(cy-P0.p.y)*k,vb[2]*k,vb);return}
+  const d=TW.drag;if(!d)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(!d.moved&&Math.hypot(dx,dy)<TREE_PAN.drag)return;d.moved=true;
+  const m=svg.getScreenCTM(),sc=m?Math.hypot(m.a,m.b):1;twSet(svg,d.vb[0]+d.vb[2]/2-dx/sc,d.vb[1]+d.vb[3]/2-dy/sc,d.vb[2],d.vb)});
+const twEnd=e=>{if(!TW.pts.delete(e.pointerId))return;if(TW.pinch){if(TW.pts.size<2)TW.pinch=null;if(TW.drag)TW.ate=true;TW.drag=null;return}if(TW.drag&&TW.drag.moved)TW.ate=true;TW.drag=null};
+addEventListener('pointerup',twEnd);addEventListener('pointercancel',twEnd);
+// (the click a drag ends with goes nowhere)
+panel.addEventListener('click',e=>{if(!TW.ate)return;TW.ate=false;if(e.target.closest&&e.target.closest('svg.tw')){e.stopPropagation();e.preventDefault()}},true);
+panel.addEventListener('wheel',e=>{const svg=e.target.closest&&e.target.closest('svg.tw');if(!svg||G.mode!=='skills')return;e.preventDefault();twZoom(svg,Math.pow(2,e.deltaY*(e.ctrlKey?.01:.0025)),twAt(svg,e.clientX,e.clientY))},{passive:false});
 // (a node of the tree: Enter or Space chooses it, as a click)
 // (← and →: the proficiency before or after, on the Skill trees tab)
 panel.addEventListener('keydown',e=>{if(G.mode!=='skills'||G.skTab!=='talents'||!['ArrowLeft','ArrowRight'].includes(e.key)||e.target.closest?.('input,select,textarea'))return;e.preventDefault();act('tree-step',e.key==='ArrowLeft'?'-1':'1')});

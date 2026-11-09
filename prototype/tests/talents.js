@@ -64,6 +64,20 @@ try{
   ok(document.querySelectorAll('svg.tw .tp-node').length===Object.keys(TR).filter(id=>TR[id].prof).length&&document.querySelectorAll('svg.tw .tp-node:not(.far)').length===t.talentsOf(P).nodesOf(G.skTree).length,'every node of the wheel drawn, the shown slice\'s lit, the rest dim');
   const k0=G.skTree,far=Object.keys(TR).find(id=>TR[id].prof&&TR[id].prof!==k0);t.act('tree-sel',far);ok(G.skTree===TR[far].prof&&G.skSel===far&&document.querySelector('.tw-wheel').style.transform.includes('rotate'),'a node of another slice: the wheel turns to it, chosen');
   t.act('tree-whole');ok(document.querySelector('svg.tw.whole')&&document.querySelectorAll('.tw-sec').length===profs.length,'the whole tree at a press: every slice named');t.act('tree-focus','oneh');ok(!document.querySelector('svg.tw.whole')&&G.skTree==='oneh','a slice\'s name: back close, on it')}
+ // (step 3: a drag pans the wheel and is never a tap; the wheel and two fingers zoom about the point under them; the view kept through
+ // a tap, another slice its own view again; + and − a step)
+ {const svg=()=>document.querySelector('svg.tw'),vb=()=>svg().getAttribute('viewBox').split(/\s+/).map(Number),R=svg().getBoundingClientRect(),cx=R.left+R.width/2,cy=R.top+R.height/2,
+   pe=(el,type,x,y,id=1,kind='mouse')=>el.dispatchEvent(new PointerEvent(type,{clientX:x,clientY:y,pointerId:id,pointerType:kind,isPrimary:id===1,button:0,bubbles:true,cancelable:true}));
+  const v0=vb(),s0=G.skSel;pe(svg(),'pointerdown',cx,cy);pe(window,'pointermove',cx+40,cy+30);pe(window,'pointermove',cx+80,cy+60);pe(window,'pointerup',cx+80,cy+60);
+  const hit=svg().querySelector('.tp-node:not(.far)');hit.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));const v1=vb();
+  ok(v1[0]<v0[0]&&v1[1]<v0[1]&&v1[2]===v0[2]&&G.skSel===s0,'a drag pans the wheel (its view moved, not its size), and the click it ends with chooses nothing');
+  const pt=t.twAt(svg(),cx,cy);svg().dispatchEvent(new WheelEvent('wheel',{deltaY:-300,clientX:cx,clientY:cy,bubbles:true,cancelable:true}));const v2=vb(),pt2=t.twAt(svg(),cx,cy);
+  ok(v2[2]<v1[2]&&Math.abs(pt.x-pt2.x)<1&&Math.abs(pt.y-pt2.y)<1,'the mouse wheel zooms in about the point under it ('+Math.round(v1[2])+' → '+Math.round(v2[2])+' across)');
+  pe(svg(),'pointerdown',cx-30,cy,11,'touch');pe(svg(),'pointerdown',cx+30,cy,12,'touch');pe(window,'pointermove',cx-10,cy,11,'touch');pe(window,'pointermove',cx+10,cy,12,'touch');pe(window,'pointerup',cx-10,cy,11,'touch');pe(window,'pointerup',cx+10,cy,12,'touch');const v3=vb();
+  ok(v3[2]>v2[2]*2.5,'two fingers drawn together zoom out ('+Math.round(v2[2])+' → '+Math.round(v3[2])+' across)');
+  t.act('tree-sel',hit.dataset.arg);ok(vb().every((v,i)=>Math.abs(v-v3[i])<.06),'a tap keeps the view');
+  t.act('tree-zoom','in');ok(Math.abs(vb()[2]-v3[2]/t.TREE_PAN.step)<.2,'+ zooms in a step');
+  const k=G.skTree;t.act('tree-step','1');ok(vb().join()===t.treeView(G.skTree,false).join()&&G.skTree!==k,'another slice: its own view again');t.act('tree-step','-1')}
  P.sk.med.lv=20;t.act('tree-prof','med');const nodeCls=id=>document.querySelector('.tp-node[data-arg="'+id+'"]')?.getAttribute('class')||'';
  P.level=P.tree.filter(id=>TR[id]&&TR[id].prof).length+1;t.act('tree-prof','oneh');t.act('tree-prof','med');ok(/Field Surgeon/.test(panel())&&/Healing Light/.test(panel())&&/open/.test(nodeCls('med_surgeon'))&&/locked/.test(nodeCls('med_renew'))&&document.querySelector('svg.tr-svg.grow'),'Medicine\'s tree: a point left, its first tier open (pulsing), its next not yet; switching trees grows it anew');
  t.act('tree-sel','med_surgeon');ok(/Learn · 1 point/.test(panel())&&!document.querySelector('[data-act="tree-take"][data-arg="med_surgeon"]').disabled,'a node chosen on the tree: what it does, and Learn');
