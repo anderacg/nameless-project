@@ -1,26 +1,27 @@
 'use strict';
-// The dice (ui/dice.js): a check's roll shown as it falls, on two ten-sided dice. The die's number on the right side of the mark (won at or under it,
+// The dice (ui/dice.js): a check's roll shown as it falls, on a d20 by its rules (roll + bonus against a DC). The die's number on the right side of the mark (won at or under it,
 // lost over it, won in part in the amber beyond); the check draws once, as before (no stream moves); the overlay comes, says what
 // came of it, and goes (a click, or in time); a road's chance shows it; switched off, nothing shown.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,D=t.Dice;try{localStorage.clear()}catch(e){}t.act('begin','soldier');G.quietEvents=true;
  const ov=()=>document.querySelector('.dice-ov');
- // ---- the face: its number by the draw, kept on the right side of the mark
- {const bad=[];for(let i=0;i<400;i++){const p=(i%97)/97,r=((i*37)%101)/101,f=D.face({p,r,part:.2}),won=r<p,half=!won&&r<p+.2;
-    if(won!==(f.n<=f.need)||f.res!==(won?'won':half?'part':'lost')||f.n<1||f.n>100)bad.push(p.toFixed(2)+'/'+r.toFixed(2)+':'+f.n+'/'+f.need+' '+f.res)}
-  ok(!bad.length,'400 rolls: the die always on the right side of the mark, won in part in the band beyond it'+(bad.length?' ('+bad.slice(0,4).join(', ')+')':''))}
- // ---- the ten-sided: ten flat kites, each number once, opposite faces adding to 9; at rest, its number the face to you
- {const F=t.D10.faces,flat=F.every(f=>{const[a,b,c,d]=f.v,n=f.n;return [b,c,d].every(p=>Math.abs((p[0]-a[0])*n[0]+(p[1]-a[1])*n[1]+(p[2]-a[2])*n[2])<1e-9)}),
-    opp=F.every(f=>{const o=F.find(g=>g.n[0]*f.n[0]+g.n[1]*f.n[1]+g.n[2]*f.n[2]<-.999);return o&&o.d+f.d===9});
-  ok(F.length===10&&flat&&opp&&F.map(f=>f.d).sort().join('')==='0123456789','the ten-sided: ten flat faces, 0 to 9 once each, opposites adding to 9');
-  ok([0,1,2,3,4,5,6,7,8,9].every(d=>t.D10.up(t.D10.rest(d,.2))===d&&t.D10.up(t.D10.rest(d,-.16))===d),'at rest, each die shows its number to you');
-  ok([[47,'4,7'],[100,'0,0'],[6,'0,6'],[10,'1,0'],[1,'0,1'],[99,'9,9']].every(([n,w])=>D.pair(n).join()===w),'the pair reads the roll: tens and ones (100 is 00 and 0)')}
+ // ---- the face, by the d20's rules: won on the face needed or over, won in part just under it; a 20 always a win, a 1 always a loss
+ {const bad=[];for(let i=0;i<600;i++){const p=(i%97)/97,r=((i*37)%101)/101,part=i%2?.2:0,f=D.face({p,r,part}),won=r<p,half=!won&&part>0&&r<p+part;
+    if(won!==(f.n>=f.need)||half!==(f.n>=f.low&&f.n<f.need)||f.res!==(won?'won':half?'part':'lost')||f.n<1||f.n>20||f.need<2||f.need>20||f.n===20&&!won||f.n===1&&won)bad.push(p.toFixed(2)+'/'+r.toFixed(2)+':'+f.n+'/'+f.need+' '+f.res)}
+  ok(!bad.length,'600 rolls: the die on the right side of the mark (and of the band won in part), 1 to 20, a 20 only won, a 1 never'+(bad.length?' ('+bad.slice(0,4).join(', ')+')':''))}
+ {const f=D.face({p:.5,r:.3,bonus:.15}),g=D.face({p:.3,r:.1});ok(f.need===11&&f.b===3&&f.dc===14&&f.n===14&&g.need===15&&g.n===18&&g.b===0&&g.dc===15,'a 50% chance needs 11; your skills\' 15% a +3 bonus, the DC 14; a 30% chance needs 15')}
+ // ---- the twenty-sided: twenty flat faces, each number once, opposite faces adding to 21; at rest, its number the face to you
+ {const F=t.D20.faces,opp=F.every(f=>{const o=F.find(g=>g.n[0]*f.n[0]+g.n[1]*f.n[1]+g.n[2]*f.n[2]<-.999);return o&&o.d+f.d===21});
+  ok(F.length===20&&opp&&F.map(f=>f.d).sort((a,b)=>a-b).join()===Array.from({length:20},(_,i)=>i+1).join(),'the twenty-sided: twenty faces, 1 to 20 once each, opposites adding to 21');
+  ok(Array.from({length:20},(_,i)=>i+1).every(d=>t.D20.up(t.D20.rest(d,.14))===d&&t.D20.up(t.D20.rest(d,-.3))===d),'at rest, the die shows its number to you')}
+ // ---- a bonus and a natural 20 shown
+ {D.clear();D.draw(D.face({p:.5,r:.01,bonus:.15,label:'z'}));const el=ov();ok(el&&/Rolled 20 \+ 3 = 23 · DC 14/.test(el.textContent)&&/natural 20/.test(el.textContent),'shown: the roll, its bonus and total against the DC; a natural 20 named');D.clear()}
  // ---- a check: one draw, as the check's; won by the same rule
  {let n=0;const won=D.check(.5,'Test',()=>{n++;return .3});ok(n===1&&won===true&&D.check(.5,'Test',()=>.7)===false,'a check draws once, and is won under its odds')}
  // ---- shown: the overlay over the screen, its label, roll and result; gone on a click
  {D.clear();D.show({p:.4,r:.2,label:'Bribe the gaoler'});
-  return new Promise(res=>setTimeout(()=>{const el=ov();ok(el&&/Bribe the gaoler/.test(el.textContent)&&/Rolled 21/.test(el.textContent)&&/needed 40 or less/.test(el.textContent)&&/Success/.test(el.textContent)&&el.querySelector('canvas.dice-cv'),'shown: the dice (on their canvas), the odds, what came of it');
+  return new Promise(res=>setTimeout(()=>{const el=ov();ok(el&&/Bribe the gaoler/.test(el.textContent)&&/Rolled 16 · DC 13 \(40%\)/.test(el.textContent)&&/Success/.test(el.textContent)&&el.querySelector('canvas.dice-cv'),'shown: the die (on its canvas), the roll against its DC, what came of it');
     el.querySelector('.dice-card').click();ok(!ov(),'a click: gone');
     // ---- a road's chance: its roll shown (the road's own stream, as before)
     G.mode='world';t.hidePanel();const e=t.roadSpawn('toll',P.x+30,P.y);if(e){t.roadMeet(e);const i=e.D.acts.findIndex(c=>c.label==='Ask for their writ');t.act('enc-do',String(i))}

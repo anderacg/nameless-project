@@ -15,6 +15,7 @@ const diceLeft=e=>ENC_GAMBLE.hands-(e.hands||0);
    each stat's worth, for the wiki ---------- */
 const statOf=s=>Array.isArray(s)?Math.max(...s.map(statOf)):Math.max(0,ATTRS[s]?attrCheck(s):skill(s));
 const statOdds=k=>{const S=ENC_STAT[k];return Math.min(S.cap,S.parts.reduce((a,[s,p])=>a+p*statOf(s),S.base))};
+const statPart=k=>ENC_STAT[k].parts.reduce((a,[s,p])=>a+p*statOf(s),0);// (what your stats give a check: the die's bonus, ui/dice.js)
 const statMore=(k,v)=>Math.round(v*(1+statOdds(k)));// (a share's worth on top of v)
 const statName=s=>Array.isArray(s)?s.map(statName).join(' or '):ATTRS[s]?ATTRS[s].profs.map(k=>SKILLS[k].n).join(' or '):SKILLS[s].n;
 function statHelps(k){const n=ENC_STAT[k].parts.map(([s])=>statName(s));return(n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]+' help':n[0]+(Array.isArray(ENC_STAT[k].parts[0][0])?' (the higher) helps':' helps'))}

@@ -97,6 +97,8 @@ class LordSpeaker extends Speaker{
   // (the odds of an aim, put one way (w; none: the aim's own manner))
   odds(id,w){const C=DIALOGUE.checks,X=C[id],l=this.o,pw=Math.max(0,partyPower()/Math.max(1,l.power())-1),T=w?DIALOGUE.ways[w].temper:X.temper;
     return clamp(X.base+skill('pers')*(X.pers||0)+P.renown*(X.renown||0)+honorWith(l.fac)*(X.honor||0)+relWith(l)*(X.rel||0)+Math.min(1,pw)*(X.power||0)+(T[this.temper()]||0)+(has('silver')?CAPTIVITY.traits.silver:0),C.min,C.max)}
+  // (what you bring to it yourself, your words, name and tongue: the die's bonus, ui/dice.js)
+  mine(id){const X=DIALOGUE.checks[id];return skill('pers')*(X.pers||0)+P.renown*(X.renown||0)+(has('silver')?CAPTIVITY.traits.silver:0)}
   // (won (true), won in part ('part'), lost (false): its outcome; a part's lend and days are done by act)
   outcome(id,won){const X=DIALOGUE.checks[id],o=won==='part'?X.part:won?X.win:X.lose,l=this.o,out={};if(!o)return out;
     if(o.gold)out.gold=Math.min(o.gold,treas(l.fac));if(o.rel)out.rel=[l,o.rel,'what you said to '+pr(l).him];if(o.honor)out.honor=[l.fac,o.honor];return out}
@@ -131,7 +133,7 @@ class LordSpeaker extends Speaker{
     const W0=w&&DIALOGUE.ways[w],me=heroName()||'You';if(!(w&&X.ways.length>1)||X.ask)cv.say(this.fill(X.ask||X.you),false,me);if(w&&X.ways.length>1)cv.say(this.fill(W0.you),false,me);
     const p=this.odds(id,w),r=rngOf('talk').next(),won=r<p?true:r<p+DIALOGUE.part?'part':false,words=won==='part'?X.half:won?X.yes:X.no;train('pers',won?3:1);
     // (the roll shown as it falls: ui/dice.js)
-    Dice.show({p,r,part:DIALOGUE.part,label:this.fill(X.label)+(w&&X.ways.length>1?' · '+this.fill(W0.label):'')});
+    Dice.show({p,r,part:DIALOGUE.part,bonus:this.mine(id),label:this.fill(X.label)+(w&&X.ways.length>1?' · '+this.fill(W0.label):'')});
     cv.say(this.fill(words[this.temper()]||words.plain));const o=this.outcome(id,won);
     // (a way's cost whatever comes of it: leaning on him for what is not tribute, his liking)
     if(W0?.cost&&id!=='threaten')o.rel=[l,(o.rel?.[1]||0)+W0.cost,'you leaned on them'];

@@ -46,7 +46,7 @@ class Death{
   static fall(e){
     // (a lost roll kills you, DEATH.die: off, every roll lives)
     const o=this.odds(e),m=e.kind==='monster'&&e.ref instanceof Monster?e.ref:null;
-    if(DEATH.die&&!Dice.check(o.ch,'The roll to live'))return this.died(e,o,m);
+    if(DEATH.die&&!Dice.check(o.ch,'The roll to live',undefined,(o.why.find(w=>w[0]==='Medicine')||[0,0])[1]))return this.died(e,o,m);
     const say=['The '+this.beastName(e)+' tear through the last of you, and you fall among your dead. A day later you wake, badly hurt.'];
     if(DEATH.die)say[0]+=' ('+Math.round(o.ch*100)+'% chance to live)';
     say.push(this.dismiss());
