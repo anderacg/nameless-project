@@ -14,6 +14,17 @@
    FACE_HAIR by the engine's hairGroups, a bun its own; its colour the portrait's), a beard if it has one
    (dollfigs.js: o.hairStyle, o.beardStyle; no eye, as every soldier) ---------- */
 const FACES={on:true,px:256,mode:'random'};
+/* (the owner, 2026-11-09: "Can you make the face a bit more like dwarf?") a dwarf's face by the marks of their people (FACE_KIN,
+   Faces.kin): the engine draws a dwarf from every face and nose a human may have, so any of theirs not of their people's own is
+   swapped for one that is (face, nose, ears, brows; a woman's hair braided; a man's thin beard a full or braided one), each drawn
+   from the face's own seed (the same face every time), and the face made broader (adj: at least these, the engine's bounds).
+   Every dwarf the world draws: a lord's, a companion's, a kinsman's, a face drawn at random (yours before you shape it); the face
+   you made yourself is as you made it */
+const FACE_KIN={dwarf:{face:['dwarven','dwarf-square'],nose:['dwarf-bulb'],ears:['rounded','broad'],eyes:['deep-set','heavy','focused'],
+  brows:{m:['bold','broken','bold'],f:['full-soft','bold']},hair:{f:['braids','forge-braids','single-braid','loose-side-braid']},
+  beard:{m:['braided','bound-beard','full','forked']},thin:['none','stubble','goatee','moustache','trimmed','short-boxed','close-beard','sideburns','chin-bristle'],
+  // (each proportion at least lo to hi (a man's m, a woman's f), or at most for one below nought: smaller eyes)
+  adj:{faceWidth:[2,2],jawWidth:{m:[2,2],f:[1,2]},noseWidth:[1,2],eyeSize:{m:[-1,0],f:[-1,-1]},hairVolume:[0,1]}}};
 /* (the owner, 2026-11-09: "Ensure that the characters wearing the correct armor or equipment based on their current armor and make
    sure lords are having a good armor") a face dressed as its wearer is (Faces.dress): the body armour worn its clothing, by its tier
    (body: wood a padded jack … adamant plate; bodyOf: a people's own make where it has one; items: the pieces of beasts' hides),
@@ -49,7 +60,15 @@ class Faces{
   static profileOf(g){return g==='f'?'female':'male'}
   static raceOf(r){return PortraitEngine.races.includes(r)?r:'human'}
   // (a face drawn at random for a race and a man or a woman, its seed given)
-  static random(seed,race,g){return PortraitCharacters.recipe({config:this.bare(PortraitEngine.random(seed>>>0,this.profileOf(g),this.raceOf(race)))})}
+  static random(seed,race,g){return this.kin(PortraitCharacters.recipe({config:this.bare(PortraitEngine.random(seed>>>0,this.profileOf(g),this.raceOf(race)))}))}
+  // (a face by the marks of its people (FACE_KIN: none, as it is), each choice from its own seed)
+  static kin(rec){const K=rec&&FACE_KIN[rec.config.race];if(!K)return rec;const c={...rec.config,adjustments:{...rec.config.adjustments}},f=c.profile==='female'?'f':'m',r=c.race,
+      pick=(k,L)=>L[PortraitCharacters.hash(c.seed+'/'+r+'/'+k)%L.length],set=(k,L)=>{if(L&&!L.includes(c[k])){const v=pick(k,L.filter(x=>this.fits(r,k,x)));if(v)c[k]=v}};
+    set('face',K.face);set('nose',K.nose);set('ears',K.ears);set('eyes',K.eyes);set('brows',K.brows[f]);if(K.hair[f])set('hair',K.hair[f]);
+    if(K.beard[f]&&K.thin.includes(c.beard)){const v=pick('beard',K.beard[f].filter(x=>this.fits(r,'beard',x)));if(v)c.beard=v}
+    for(const k in K.adj){const A=PortraitEngine.adjustments[k],R=Array.isArray(K.adj[k])?K.adj[k]:K.adj[k][f],[lo,hi]=R,n=lo+PortraitCharacters.hash(c.seed+'/'+r+'/adj/'+k)%(hi-lo+1),v=c.adjustments[k]||0;
+      if(A)c.adjustments[k]=Math.max(A.min,Math.min(A.max,n<0?Math.min(v,n):Math.max(v,n)))}
+    return {...rec,config:PortraitEngine.normalize(c)}}
   // (bareheaded: your hero's and a companion's face shows its hair, as their figures do; a lord's keeps its hat, helm or crown)
   static bare(c){return PortraitEngine.normalize({...c,headwear:'none'})}
   // ---- the New game page's face: the draft, made again when your race or your hero's gender changes
@@ -95,8 +114,9 @@ class Faces{
     u=mkc(n,n,g=>{g.imageSmoothingEnabled=false;g.drawImage(src,0,0,n,n)}).toDataURL();if(!draft)this.pics.set(key,u);return u}
   // ---- the faces: yours, a lord's, a companion's (null: none, the old pictures stand)
   static you(){return this.R?this.R.player:null}
-  static of(id,race,g,role){if(!this.R)return null;let r=this.R.get(id);if(r)return r;
-    try{r=this.R.create({id,race:this.raceOf(race),profile:this.profileOf(g),role,mode:FACES.mode})}catch(e){return null}return r}
+  // (one of the world's faces by its id, made the first time; drawn by the marks of its people: kin)
+  static of(id,race,g,role){if(!this.R)return null;let r=this.R.get(id);if(r)return this.kin(r);
+    try{r=this.R.create({id,race:this.raceOf(race),profile:this.profileOf(g),role,mode:FACES.mode})}catch(e){return null}return this.kin(r)}
   // (one of a lord's house's kin, or a lord who was one (kinFace): the face kept by their id, as they grow up and take up a title;
   // a child's young and beardless: world/lineage.js)
   static lord(l){const name=l&&(l.name||l.id);if(!name)return null;const F=FACS[l.fac],rs=l.race?[l.race]:F?.races||['human'];
