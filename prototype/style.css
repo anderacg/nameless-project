@@ -1588,3 +1588,9 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 
 .btop:has(.army-intel:not([hidden])) .bpow,.btop:has(.army-intel:not([hidden])) .bfield{align-self:flex-start;width:calc(100% - 92px)}
 .army-arrivals{width:100%}
+
+/* (a battle's report: a group ranked up flashes; what the field gave: battle/drops.js) */
+.rank-flash{animation:rank-flash 1.2s ease-out 2;border-radius:4px}
+@keyframes rank-flash{0%{background:rgba(232,185,74,.45);box-shadow:0 0 14px rgba(232,185,74,.8)}100%{background:transparent;box-shadow:none}}
+.fb-field-loot{color:#f0d890}
+@media (prefers-reduced-motion:reduce){.rank-flash{animation:none}}

@@ -4,12 +4,14 @@
    experience a kill is worth, DROPS.xp, shown: the end of the fight pays it, as ever) and blue ones into the soldier of yours who
    struck it (his own experience for the kill, attacks.js earnXp, as ever); a man may leave coins and a piece of gear, a beast its hide,
    lying where it fell, bobbing and glinting; your hero or a companion who comes near draws them in (into your purse and bag:
-   DROPS.loot), a line over them; the fight won, what is left on the ground is gathered for you, lost or fled, it is left. Its state
-   is its own, never on the battle or its men (BattleDrops.of: kept by the battle), so nothing it does moves a battle's numbers.
+   DROPS.loot), a line over them; the fight won, what is left on the ground is gathered for you, lost or fled, it is left. What the
+   field gave (tally: its gold, gear and hides) is taken off the fight's own spoils at its end (resolution.js conclude, monsterLoot), so
+   the whole is as it was, and listed in its report (fieldLine). Its state is its own, never on the battle or its men (BattleDrops.of:
+   kept by the battle), so nothing it does moves a battle's numbers.
    Numbers: data/drops.js DROPS ---------- */
 const DROP_OF=new WeakMap(),DROP_BY=new WeakMap();
 class BattleDrops{
-  constructor(){this.ground=[];this.orbs=[];this.done=new WeakSet();this.got=[]}
+  constructor(){this.ground=[];this.orbs=[];this.done=new WeakSet();this.tally={gold:0,gear:0,mats:{},names:[]}}
   static of(b){if(!b)return null;let d=DROP_OF.get(b);if(!d)DROP_OF.set(b,d=new BattleDrops());return d}
   // (who struck the blow that felled t: attacks.js earnXp)
   static struck(t,u){if(t&&u)DROP_BY.set(t,u)}
@@ -23,7 +25,8 @@ class BattleDrops{
       if(d<=v*dt+2){o.gone=true;if(o.on)o.on();continue}o.x+=dx/d*v*dt;o.y+=dy/d*v*dt}
     this.orbs=this.orbs.filter(o=>!o.gone);
     const pick=B.units.filter(u=>u.team===0&&u.hp>0&&(u.hero||u.comp));
-    this.ground=this.ground.filter(g=>{const p=pick.find(u=>Math.hypot(u.x-g.x,u.y-g.y)<D.pick*k);if(!p)return true;
+    // (one a full bag gave back waits till its taker steps away: skip)
+    this.ground=this.ground.filter(g=>{const near=u=>Math.hypot(u.x-g.x,u.y-g.y)<D.pick*k;if(g.skip&&!near(g.skip))g.skip=null;const p=pick.find(u=>u!==g.skip&&near(u));if(!p)return true;
       this.orbs.push({x:g.x,y:g.y-4*k,vx:0,vy:-40*k,t:0,wait:.15,to:p,item:g,on:()=>this.take(g,p)});return false})}
   // (a foe fallen: its dots, and what it leaves on the ground)
   fall(u){
@@ -39,13 +42,17 @@ class BattleDrops{
     this.orbs.push({x:u.x,y:u.y-6*k,vx:Math.cos(a)*v,vy:Math.sin(a)*v-50*k,t:0,wait:.3+Math.random()*.25,to,c,c2,on})}
   // (one drawn in: into your purse or bag (DROPS.loot), its line over whoever took it; a full bag leaves it on the ground)
   take(g,p){const k=worldEffectScale(),say=(t,c)=>B.floats.push({x:p.x,y:p.y-30*k,t,life:1,c});
-    if(g.k==='gold'){if(DROPS.loot)P.gold+=g.n;this.got.push(g.n+' gold');say('+'+g.n+' gold',DROPS.col.coin);return}
-    const nm=g.k==='gear'?ITEMS[g.id].n:MATS[g.id].n;if(DROPS.loot&&!invAdd(g.k,g.id,1)){say('Bag full','#e07a6a');this.ground.push({...g,x:p.x+8*k,y:p.y});return}
-    this.got.push(nm);say(nm,'#f0e6c8')}
-  // the fight over: won, the ground gathered for you; its line in the log
-  end(b){if(b.win)for(const g of this.ground.splice(0)){if(g.k==='gold'){if(DROPS.loot)P.gold+=g.n;this.got.push(g.n+' gold')}else if(!DROPS.loot||invAdd(g.k,g.id,1))this.got.push(g.k==='gear'?ITEMS[g.id].n:MATS[g.id].n)}
-    if(this.got.length&&DROPS.loot){const gold=this.got.filter(x=>/ gold$/.test(x)).reduce((n,x)=>n+parseInt(x),0),rest=this.got.filter(x=>!/ gold$/.test(x));
-      log('From the field: '+[gold?gold+' gold':'',...rest].filter(Boolean).join(', ')+'.','gold')}}
+    if(g.k==='gold'){this.gain(g);say('+'+g.n+' gold',DROPS.col.coin);return}
+    if(DROPS.loot&&!invAdd(g.k,g.id,1)){say('Bag full','#e07a6a');this.ground.push({...g,x:p.x+8*k,y:p.y,skip:p});return}
+    this.gain(g,true);say(g.k==='gear'?ITEMS[g.id].n:MATS[g.id].n,'#f0e6c8')}
+  // (one taken: into your purse (or, an item, already in the bag: in), and the tally)
+  gain(g,in_){const T=this.tally;if(g.k==='gold'){if(DROPS.loot)P.gold+=g.n;T.gold+=g.n;return}if(!in_&&DROPS.loot&&!invAdd(g.k,g.id,1))return;
+    if(g.k==='gear')T.gear++;else T.mats[g.id]=(T.mats[g.id]||0)+1;T.names.push(g.k==='gear'?ITEMS[g.id].n:MATS[g.id].n)}
+  // the fight over: won, the ground gathered for you (lost or fled, it stays)
+  end(b){if(b.win)for(const g of this.ground.splice(0))this.gain(g)}
+  // (its report's line: what the field gave, '' if nothing)
+  fieldLine(){const T=this.tally,n={};for(const x of T.names)n[x]=(n[x]||0)+1;const L=[T.gold?T.gold+' gold':'',...Object.keys(n).map(x=>n[x]>1?n[x]+' × '+x:x)].filter(Boolean);
+    return L.length?'<p class="fb-field-loot">From the field: '+htmlText(L.join(', '))+'.</p>':''}
   // drawn over the field: the ground's icons (a shadow, a glint by its worth, bobbing), then the dots and what flies
   draw(){const D=DROPS,t=performance.now()/1000;
     for(const g of this.ground){ctx.save();effectTransform(g.x,g.y);this.icon(g,g.x,g.y-4+Math.sin(t*2+g.ph)*D.bob[0],(Math.sin(t*6.283/D.bob[1]+g.ph)+1)/2,true);ctx.restore()}

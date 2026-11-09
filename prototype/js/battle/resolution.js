@@ -107,12 +107,13 @@ class BattleResolution{
     if(groupLosses){for(const g of groupLosses)if(g.count)partyRoster(P).remove(g.type,g.count,g.id)}else applyLosses(lost);
     if(win){
       const O=ON_WIN[e.kind]||ON_WIN.party,big=!!O.big,res={gold:0,fame:O.fame};let bounty='';slain=slain||[];
-      const beasts=slain.filter(k=>ST[k].beast).length;for(let i=0;i<kills-beasts;i++)res.gold+=rint(2,6);
+      const beasts=slain.filter(k=>ST[k].beast).length,F=this.battle&&DROPS.on&&DROPS.loot?BattleDrops.of(this.battle).tally:null;for(let i=0;i<kills-beasts;i++)res.gold+=rint(2,6);
+      if(F){res.gold=Math.max(0,res.gold-F.gold);if(e)e.field=F}// (what the field gave already, off the spoils: battle/drops.js)
       const furs=invAdd('good','furs',Math.floor(slain.filter(k=>k==='wolf').length/2));if(furs>0)bounty+=' You skin '+furs+' furs from the wolves.';
       if(big)res.gold+=25;if(auto)res.gold=Math.floor(res.gold*.8);res.gold=Math.round(res.gold*(1+tm('loot')));
       P.renown+=Math.ceil(kills*(big?1.5:1)*reinfRenown(e));const moodLine=battleMood(4,'victory');gainXp(kills*8+(big?30:0));
       if(troopCount()>0)train('lead',3+kills*.5);train('tact',auto?6:2);
-      const down=noneTake(this.battle,e),taken=down?0:takePrisoners(slain),drop=O.drop&&O.drop();res.down=down;if(down&&slain.some(k=>!ST[k].beast))bounty+=NONE_TAKEN;
+      const down=noneTake(this.battle,e),taken=down?0:takePrisoners(slain),drop=O.drop&&!(F&&F.gear)&&O.drop();res.down=down;if(down&&slain.some(k=>!ST[k].beast))bounty+=NONE_TAKEN;
       if(drop&&!invAdd('gear',drop,1))log(BAG_FULL+'. You leave a '+ITEMS[drop].n+' behind.','bad');
       bounty+=spoilsWon(e);// (valuables: a lord's or chieftain's purse, a camp's plunder: captives.js)
       {const c=(e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld;if(c&&down){chiefEscapes(c);e.ref.ld=null;bounty+=getsAway(chiefLabel(c))}else if(c){captureChief(c);e.ref.ld=null;bounty+=' You take '+chiefLabel(c)+' captive: hand '+pr(c).him+' over for '+bountyOf(c)+' gold, or let '+pr(c).him+' go (Hero, Party).'}}
@@ -159,6 +160,7 @@ class BattleResolution{
     // your groups' experience (core/ranks.js): a fought battle's from its men (finish, groupRanks); auto-resolved, each group the
     // same share of the fight
     {const up=auto?groupRanksAuto(win,kills):this.ranksUp||[];html+=rankUpHtml(up);if(auto&&e?.ref)aiFightRanks(e.ref,!win)}
+    if(this.battle&&DROPS.on)html+=BattleDrops.of(this.battle).fieldLine();// (what the field gave: battle/drops.js)
     // (withdrawn or beaten, the beasts holding the field: the spoils stay there, a quest to take them back: world/fieldloot.js)
     if(!win&&e.kind==='monster'){const at=this.battle?.world||e.ref,q=leaveFieldLoot(at.x,at.y,slain||[],e.ref);if(q)html+=fieldLootLine(q)}
     if(!win)encLost(e);// (withdrawn or beaten: what that costs or leaves behind, engage.js ON_WIN lost)
@@ -187,4 +189,4 @@ function groupRanksAuto(win,kills){const r=partyRoster(P),n=troopCount(),each=TR
 // (a rank's word, its name with RANKS.statsOnly (Seasoned, rank 3); a mastery level's name (Adept; step 1, Bronze mastery))
 const rankUpWord=x=>x.mastery?masteryWord(x.mastery):RANKS.statsOnly?rankWord(x.rank)+' (rank '+x.rank+')':'rank '+x.rank;
 function rankUpHtml(up){for(const x of up)log(armyGroupLabel(x.id)+' reach '+rankUpWord(x)+(x.mastery?': choose an improvement in the Army window.':'.'),'good','band');
-  return up.length?'<p class="gold">Ranked up: '+up.map(x=>rankBadge(x.type,x.rank,14,x.mastery||0)+' '+htmlText(armyGroupLabel(x.id))+' '+rankUpWord(x)).join(', ')+'.</p>':''}
+  return up.length?'<p class="gold rank-flash">Ranked up: '+up.map(x=>rankBadge(x.type,x.rank,14,x.mastery||0)+' '+htmlText(armyGroupLabel(x.id))+' '+rankUpWord(x)).join(', ')+'.</p>':''}

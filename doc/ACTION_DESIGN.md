@@ -1,6 +1,6 @@
 # Fighting on the map, in real time: design
 
-Status: **design** (2026-11-09); §0, the drops in the current battles, is being built first. The owner: "Can we make battle realtime in the world map? And for the existing world map battle and separated battle map we still keep them. I want to make it like mmorpg style where you can move and kill it and it drops something on the ground like just cool dot effects or small icons for exp and items. Design with me first."
+Status: **design** (2026-11-09); §0, the drops in the current battles, **built** (`battle/drops.js`, `data/drops.js`; tests `drops`); the skirmish not yet. The owner: "Can we make battle realtime in the world map? And for the existing world map battle and separated battle map we still keep them. I want to make it like mmorpg style where you can move and kill it and it drops something on the ground like just cool dot effects or small icons for exp and items. Design with me first."
 
 **Words used here:**
 - A **skirmish** is the new kind of fight: on the world map, as you travel, with no encounter page, no ring and no pause.
