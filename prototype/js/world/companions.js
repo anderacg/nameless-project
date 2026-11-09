@@ -60,6 +60,7 @@ function compJoin(id,o){
   // (one who joins grown, a story's (Ander): his level, and what he was good at as a free start, as a hero's past: sk0, not counted)
   if(o&&o.lv){c.lv=o.lv;const S=COMP_START[id]||{};c.sk0={};for(const k in S)if(c.sk[k])c.sk[k].lv=c.sk0[k]=Math.min(SK_MADE,Math.round(S[k]*PROF.per))}
   if(o&&o.attr)c.own=attrMods(o.attr);// (his old attributes as their bonuses: state.js tmOf)
+  Legacy.rejoin(id);// (one who rode with a hero now dead: as they were, world/legacy.js)
   log(COMPS[id].n+' joins your band as a companion.','gold');
   return c}
 // (the older names: the companion's methods)

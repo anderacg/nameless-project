@@ -66,14 +66,14 @@ class Death{
     return {how:'slain',text:'The '+this.beastName(e)+' tear through the last of you, and you do not rise again ('+Math.round(o.ch*100)+'% chance to live).'}}
   // (your life in a few numbers, for the Slain page and the chronicle)
   static life(by){const h=Spatial.nearestHolding(P.x,P.y);return {who:heroName()||'a wanderer',day:G.day,days:G.day-(P.born||1)+1,level:P.level,renown:Math.round(P.renown||0),earned:Math.round(P.xpEarned||0),by,near:h?.name||''}}
-  // the Slain page (the frame: its way out a save, or the main menu)
+  // the Slain page (the frame: its way out a new person in the same world, world/legacy.js; else a save, or the main menu)
   static open(){const s=this.slain;if(!s)return;G.mode='dialog';
     showPanel('<div class="top"><h2>Slain</h2><span class="muted">Day '+s.day+'</span></div>'+
       '<p><b>'+htmlText(cap1(s.who))+'</b> fell to '+htmlText(s.by)+(s.near?' near '+htmlText(s.near):'')+'.</p>'+
       '<div class="loot-stats">'+[['Days on the road',s.days],['Level',s.level],['Renown',s.renown],['Experience gained',s.earned]].map(([k,v])=>'<span><b>'+k+'</b><span>'+v+'</span></span>').join('')+'</div>'+
       '<p>Your remains lie where you fell, with your gear ('+s.items+' piece'+(s.items===1?'':'s')+') and '+s.gold+' gold: whoever finds them first may take them. Men will put a price on '+htmlText(s.by)+'.</p>'+
-      '<p class="muted">Going on as a new person in this world comes next (not built yet): for now, load a save or go back to the main menu.</p>'+
-      nav(['death-load',null,'Load a save'],['death-menu',null,'Main menu']))}
+      '<p class="muted">The world goes on without them. Go on in it as someone new, or load a save.</p><div class="btns"><button class="btn sm" type="button" data-act="death-menu">Main menu</button></div>'+
+      nav(['death-load',null,'Load a save'],['death-new',null,'Go on as someone new']))}
   static beastName(e){const M=e.kind==='monster'&&e.ref&&MONSTERS[e.ref.id];return M?M.n.toLowerCase()+((e.list||[]).length>1&&!/s$/.test(M.n)?'s':''):'beasts'}
   // your army gone for good: the fit, the wounded
   static dismiss(){const r=partyRoster(P);let n=0;for(const g of r.groups.slice()){n+=g.count;r.remove(g.type,g.count,g.id)}
@@ -145,6 +145,7 @@ class Death{
     if(a==='death-load')return toTitle('load');
     if(a==='death-menu')return toTitle();
     if(a==='death-take'||a==='death-leave')return Remains.act(a,id);
+    if(['death-new','death-slain','death-race','death-past'].includes(a))return Legacy.act(a,id);
     const c=P.comps[id],L=c?.lost;if(!L)return;
     if(a==='death-find'&&!L.left)this.rejoin(id,'is with you again.');
     if(a==='death-talk'&&L.left&&L.tried!==G.day){L.tried=G.day;if(Math.random()<this.talkOdds(id))this.rejoin(id,'hears you out, and comes back to your band.');else log(COMPS[id].short+' will not hear it today.','bad','story')}

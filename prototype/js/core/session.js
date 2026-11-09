@@ -2,22 +2,27 @@
 /* A session owns the three live records. Reset them in place so Party prototypes, Character wrappers and services keep valid references. */
 class GameSession{
   constructor(runtime,player,world){this.runtime=runtime;this.player=player;this.world=world}
+  // Define saved fields as own data: assigning after deletion would invoke Party's inherited troops-list setter on P's counts.
+  static replace(record,data){for(const k of Object.keys(record))delete record[k];Object.defineProperties(record,Object.getOwnPropertyDescriptors(data))}
   reset(savedPlayer){
-    const race=this.runtime.race,quiet=this.runtime.quietEvents;
-    // Define saved fields as own data: assigning after deletion would invoke Party's inherited troops-list setter on P's counts.
-    const replace=(record,data)=>{for(const k of Object.keys(record))delete record[k];Object.defineProperties(record,Object.getOwnPropertyDescriptors(data))};
+    const race=this.runtime.race,quiet=this.runtime.quietEvents,replace=GameSession.replace;
     replace(this.runtime,makeRuntimeState());if(race)this.runtime.race=race;if(quiet!==undefined)this.runtime.quietEvents=quiet;
     // (a skill the save does not have yet, one added since: from 0)
-    replace(this.player,{...makePlayerState(),...(savedPlayer||{}),...(savedPlayer&&savedPlayer.sk?{sk:{...mkSkills(),...savedPlayer.sk}}:{})});
+    this.resetPlayer(savedPlayer);
     // (an older save: its trees' nodes of old gone, its attributes and the level's old choice dropped (no migration: its level's points
     // are spent again on the tree))
     if(savedPlayer){const p=this.player;p.tree=(p.tree||[]).filter(id=>typeof TREE==='undefined'||TREE[id]);for(const k of ['tp','attr','lvUp','lvPick','pts'])delete p[k]}
     replace(this.world,makeWorldState());
   }
+  // your hero alone made afresh (a new game; a new person in the same world: world/legacy.js), the runtime and the world kept
+  resetPlayer(savedPlayer){
+    GameSession.replace(this.player,{...makePlayerState(),...(savedPlayer||{}),...(savedPlayer&&savedPlayer.sk?{sk:{...mkSkills(),...savedPlayer.sk}}:{})});
+    if(typeof MARCH_FACING!=='undefined')MARCH_FACING.delete(this.player);if(typeof MARCH_ARMIES!=='undefined')MARCH_ARMIES.delete(this.player);
+  }
 }
 const gameSession=new GameSession(G,P,W);
 function resetSession(savedPlayer){
-  gameSession.reset(savedPlayer);if(typeof MARCH_FACING!=='undefined')MARCH_FACING.delete(P);if(typeof MARCH_ARMIES!=='undefined')MARCH_ARMIES.delete(P);B=null;fieldDone();bandits=[];bbar.hidden=true;BATTLE_MOOD=null;
+  gameSession.reset(savedPlayer);B=null;fieldDone();bandits=[];bbar.hidden=true;BATTLE_MOOD=null;
   const messages=$('#log');if(messages)messages.textContent='';
   setSpeed(G.speed);pauseUI();
 }
@@ -69,7 +74,23 @@ function begin(k,settings){
    world as ever: from the game's number) */
 const seededStart=()=>!WM.classic,startDraws=(own,fn)=>own?Rng.use('start',fn):fn();
 function startGame(k,b){
-  resetSession();nameStart();P.bg=k;P.gold=b.gold;P.troops={...b.troops};P.bonus=b.bonus;// (the names typed on the New game page, if any: ui/names.js)
+  resetSession();heroFrom(k,b);
+  // (a new game on the map: every system's world reset first, onWorld; the game's number for its random streams, core/rng.js,
+  // drawn before the wild game and the beasts are placed from them)
+  // (a generated world but the classic one: its first sites, herds, bands and beasts from its seed, seededStart)
+  const own=seededStart();useWorld(WM);initWorld();if(own)Rng.reset();
+  startDraws(own,()=>{W.sites=genSites()});fogReset();if(!own)Rng.newGame();startDraws(own,initCritters);
+  const {S,home}=heroHome(k,b),rc=RACES[P.race];
+  startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);goblinsStart();
+    for(let i=0,n=Math.round(density(WM).monsterStart*spawnMul('monsters'));i<n;i++)spawnMonster(true)});
+  if(own)Rng.newGame();Weather.fair(P.x,P.y);// (a clear sky over your start: data/weather.js WEATHER.start)
+  // (named: the hero and the band in the first line; the band's name only once you gave it one)
+  hidePanel();G.msgs=[];if(S)log(S.line+' '+(P.band?htmlText(P.band)+' is you alone for now: ':'')+'Win fame around here and the locals will follow you.');else log('You ride out of '+home.name+' alone, as '+(P.name?htmlText(P.name)+', ':'')+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. '+
+    (P.band?htmlText(P.band)+' is you alone for now: win fame around here and the locals will follow you.':'Win fame around here and the locals will follow you.'));updateHint();updateHUD(true);
+}
+// your hero from your race and past (a new game, a new person: world/legacy.js): names, face, knacks, proficiencies, origin, gear
+function heroFrom(k,b){
+  nameStart();P.bg=k;P.gold=b.gold;P.troops={...b.troops};P.bonus=b.bonus;// (the names typed on the New game page, if any: ui/names.js)
   const rc=RACES[P.race=G.race||'human'];if(typeof Faces!=='undefined')Faces.start();// (your face: the New game page's, or one drawn for you: ui/faces.js)
   // every proficiency starts at 0 but your past's, free (PROF.pastPer a point, rounded: 15 at most; sk0); your race and past give a knack: 25% faster learning per point (P.apt)
   for(const src of [b.sk,rc.sk])for(const s in src||{})P.apt[s]=(P.apt[s]||0)+.25*src[s];
@@ -77,21 +98,14 @@ function startGame(k,b){
   P.origin=originOf(k);P.tree=[P.origin];// (your past's and your race's bonuses: their nodes, data/tree.js ORIGINS, RACE_NODES)
   // (your past's weapon: none for a nobody, bare hands, combat.js FISTS)
   P.gear.weapon=b.weapon?gearId(b.weapon,0):null;Object.assign(P.gear,b.gear);for(const g in b.cargo)invAdd('good',g,b.cargo[g]);
-  // (a new game on the map: every system's world reset first, onWorld; the game's number for its random streams, core/rng.js,
-  // drawn before the wild game and the beasts are placed from them)
-  // (a generated world but the classic one: its first sites, herds, bands and beasts from its seed, seededStart)
-  const own=seededStart();useWorld(WM);initWorld();if(own)Rng.reset();
-  startDraws(own,()=>{W.sites=genSites()});fogReset();if(!own)Rng.newGame();startDraws(own,initCritters);
-  // (where your past begins: a hamlet or a small village by its reason, world/start.js StartPlace; none fits, your people's capital)
+}
+// where your past begins (a hamlet or a small village by its reason, world/start.js StartPlace; none fits, your people's capital):
+// your standing there, and you at its gate. Gives {S: the start place, home}
+function heroHome(k,b){
   const S=StartPlace.pick(k),home=S?S.t:capitalOf(P.race);P.home=home.name;if(b.rep)P.rep[home.name]=b.rep;
   if(S)P.rep[home.name]=Math.max(P.rep[home.name]||0,HUMBLE_START.rep);// (nothing past what you see revealed: the owner, 2026-11-05)
   heroAtGate(home);G.mode='world';G.lastTown=home;// (in front of its gate, on land: world.js gateSpot)
-  startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);goblinsStart();
-    for(let i=0,n=Math.round(density(WM).monsterStart*spawnMul('monsters'));i<n;i++)spawnMonster(true)});
-  if(own)Rng.newGame();Weather.fair(P.x,P.y);// (a clear sky over your start: data/weather.js WEATHER.start)
-  // (named: the hero and the band in the first line; the band's name only once you gave it one)
-  hidePanel();G.msgs=[];if(S)log(S.line+' '+(P.band?htmlText(P.band)+' is you alone for now: ':'')+'Win fame around here and the locals will follow you.');else log('You ride out of '+home.name+' alone, as '+(P.name?htmlText(P.name)+', ':'')+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. '+
-    (P.band?htmlText(P.band)+' is you alone for now: win fame around here and the locals will follow you.':'Win fame around here and the locals will follow you.'));updateHint();updateHUD(true);
+  return {S,home}
 }
 // the land you are about to see, painted now, inside the loading steps, not in the first frame: the chunks under the view the
 // camera will take round you (render.js drawWorld; worldart.js WorldArt keeps them)

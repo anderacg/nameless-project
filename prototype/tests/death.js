@@ -7,7 +7,7 @@
 // companions left too long leave your service and are won back by a talk or their pay; off (the tests' harness), as before.
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,W=t.W,D=t.Death,X=t.DEATH;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;
- const rnd=Math.random,roll=v=>{window.Math.random=()=>v},panel=()=>document.getElementById('panel').innerHTML,on0=X.on;
+ const rnd=Math.random,roll=v=>{window.Math.random=()=>v},panel=()=>document.getElementById('panel').innerHTML,on0=X.on,die0=X.die;
  const wolves=(o={})=>{const m=t.asMonster({id:'wolf',n:3,lv:1,x:P.x+20,y:P.y,hx:P.x+400,hy:P.y,cool:0,t:0,a:0,...o});W.monsters=[m];return m};
  const enc=(m,o={})=>({kind:'monster',ref:m,lv:m.lv,list:m.troops.slice(),allies:[],foes:[],...o});
  const lose=e=>{t.startEncounter(e);t.concludeEncounter(false,{},0,true,[],null,{})};
@@ -77,7 +77,32 @@ Kit.suite(({ok})=>{
    const pg2=P.gold;t.act('death-take');ok(P.gold===pg2+25&&r3.empty()&&G.mode==='world','taken: into your purse and bag');
    const pg3=P.gold,b0=m.bounty;t.worldEmit('monster:slain',{monster:m});ok(P.gold===pg3+b0,'the man-eater that killed you slain: its bounty ('+b0+' gold)');
    R.list=[];t.act('cont')}
+  // ---- a new person in the same world (phase 3, world/legacy.js): your heir and their company, your holdings, caravans and
+  // companions handed out; you begin again with nothing of theirs, the map forgotten
+  {const L=t.Legacy,dieNow=m=>{const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(m||wolves()))}finally{[X.min,X.max]=mm}t.act('cont')};
+   setup();L.clear();t.Remains.list=[];P.band='The Grey Company';P.fac=null;['brann','elske','tavi'].forEach(id=>t.compJoin(id));P.comps.brann.ap=7;P.comps.brann.lv=3;P.comps.elske.ap=1;P.comps.tavi.ap=-2;P.comps.tavi.lv=2;
+   const fief=t.TOWNS.filter(x=>!x.gone&&x.owner&&x.owner!=='player').sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[1];fief.owner='player';
+   const m0=wolves();m0.qid=999;P.quests=[{id:999,type:'beast',title:'Beasts at the folds'}];const day=G.day,lords0=W.lords.length,fids0=t.FIDS.length;
+   dieNow(m0);ok(/data-act="death-new"/.test(panel()),'slain: "Go on as someone new" on the Slain page');
+   t.act('death-new');ok(/<h2>A new life<\/h2>/.test(panel())&&/data-act="death-past"/.test(panel())&&/data-act="death-race"/.test(panel()),'a new life: your race, your name, your past');
+   t.act('death-race','dwarf');const k=Object.keys(t.BGS)[0];t.act('death-past',k);
+   ok(G.mode==='world'&&!D.slain&&P.race==='dwarf'&&P.bg===k&&P.level===0&&!P.renown&&!Object.keys(P.comps).length&&!P.quests.length&&P.born===G.day&&G.day===day,'you begin again: a dwarf '+t.BGS[k].n.toLowerCase()+', level 0, no renown, no companions, no quests, on the same day ('+G.day+')');
+   ok(m0.qid==null&&W.monsters.includes(m0),'the quests\' marks on the world gone with them; the world as it was');
+   const h=W.lords.find(l=>l.heir),f=h&&h.fac;
+   ok(h&&h.heir.cid==='brann'&&f&&t.FACS[f].n==='The Grey Company'&&t.FIDS.length===fids0+1&&W.lords.length===lords0+1,'your heir, the most loyal (Brann): a lord now, crowned over a realm of your banner\'s name ("'+(f&&t.FACS[f].n)+'")');
+   ok(fief.owner===f&&h.heir.comps.includes('elske')&&!h.heir.comps.includes('tavi'),'your holding ('+fief.name+') theirs; Elske, content with Brann, rides along; Tavi does not');
+   const tv=t.compTown('tavi'),bt=t.compTown('brann'),et=t.compTown('elske');ok((!tv||t.compsHere(tv).includes('tavi'))&&(!bt||!t.compsHere(bt).includes('brann'))&&(!et||!t.compsHere(et).includes('elske')),'Tavi free in their tavern again; those with the heir not for hire');
+   if(tv){P.gold=1e4;t.compJoin('tavi');ok(P.comps.tavi.lv===2,'Tavi hired again: as they were (level '+P.comps.tavi.lv+')')}
+   const sv=JSON.parse(JSON.stringify(L.save()));L.clear();ok(!t.FACS[f],'(the realm gone with a world let go)');L.load(sv);ok(t.FACS[f]&&t.FIDS.includes(f)&&L.serves('brann'),'saved and loaded: the heir\'s realm, its companions');
+   h.dead=true;L.hour();ok(!L.serves('brann')&&h.heir.ended,'the heir dead: the company breaks up, its companions free');
+   // (no heir: your holding to the realm nearest it, every companion free)
+   setup();L.clear();P.fac=null;t.compJoin('brann');P.comps.brann.ap=2;const f2=t.TOWNS.filter(x=>!x.gone&&x.owner&&x.owner!=='player').sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[2];f2.owner='player';const n2=W.lords.length;
+   dieNow();t.act('death-new');t.act('death-past',k);ok(f2.owner&&f2.owner!=='player'&&t.FACS[f2.owner]&&W.lords.length===n2&&!L.serves('brann'),'no one loyal: no heir; '+f2.name+' to the '+t.FACS[f2.owner].n+', Brann free');
+   // (a realm's vassal: the heir one of its lords)
+   setup();L.clear();P.fac=t.FIDS[0];t.compJoin('brann');P.comps.brann.ap=8;const n3=W.lords.length;dieNow();t.act('death-new');t.act('death-past',k);
+   const h3=W.lords.find(l=>l.heir&&!l.dead);ok(W.lords.length===n3+1&&h3.fac===t.FIDS[0]&&!Object.keys(L.realms).length,'you a vassal of the '+t.FACS[t.FIDS[0]].n+': your heir one of its lords');
+   W.lords=W.lords.filter(l=>!l.heir);L.clear();t.Remains.list=[]}
   // ---- no room on the roll's other side: a man-eater only once, and no mythic one
   {setup();const m=wolves({eater:{name:'the Old Maw',day:1}}),lv=m.lv;roll(.1);try{lose(enc(m))}finally{window.Math.random=rnd}ok(m.lv===lv&&m.eater.name==='the Old Maw','a man-eater already: named once');t.act('cont')}
- }finally{window.Math.random=rnd;X.on=on0;X.die=false;D.slain=null;t.Remains.list=[];P.comps={};P.weak=0}
+ }finally{window.Math.random=rnd;X.on=on0;X.die=die0;D.slain=null;t.Remains.list=[];W.lords=W.lords.filter(l=>!l.heir);t.Legacy.clear();P.comps={};P.weak=0}
 });

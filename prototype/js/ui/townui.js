@@ -15,7 +15,7 @@ const townPlaces=t=>Object.values(PLACES).filter(p=>p.rail&&p.at(t)&&(!outsideWa
 const shut=t=>Place.closed(t);
 // a quest of yours to report here (the Notice board's dot on the rail); the companions waiting in its tavern
 const questHere=t=>P.quests.some(q=>canReportAt(q,t)&&questReady(q));
-const compsHere=t=>Object.keys(COMPS).filter(id=>compTown(id)===t&&!P.comps[id]);
+const compsHere=t=>Object.keys(COMPS).filter(id=>compTown(id)===t&&!P.comps[id]&&!Legacy.serves(id));// (none riding with an heir's company: world/legacy.js)
 // the rail's header (window.js): the holding's colours, its name and owner (with your gold); a click: its overview (‹ when that is
 // a step back). Also an estate's rail (estates.js)
 const ownerTag=t=>{const f=FACS[t.owner];return f?'<span style="color:'+f.col+'">'+(t.owner==='player'?'Yours':f.n)+'</span>':cap1(t.label)};
