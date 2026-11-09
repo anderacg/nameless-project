@@ -16,7 +16,7 @@
    The heir's company ends with its lord, gone or dead: its companions free (hour). Saved: the realms made and the companions kept
    (the save piece legacy, loaded before the holdings and the lords that name its realms). Numbers: data/death.js DEATH.heir ---------- */
 class Legacy{
-  static realms={};static kept={};
+  static realms={};static kept={};static raised=null;
   // the heir: the most loyal companion with you, at least DEATH.heir.ap, a tie to the higher level; null: none
   static heirOf(comps){return Object.keys(comps).filter(id=>(comps[id].ap||0)>=DEATH.heir.ap&&!comps[id].jail)
     .sort((a,b)=>(comps[b].ap-comps[a].ap)||((comps[b].lv||0)-(comps[a].lv||0)))[0]||null}
@@ -48,7 +48,7 @@ class Legacy{
   static raise(cid,fac,own){const c=P.comps[cid],h=own[0]||Spatial.nearest(fiefsOf(fac),P.x,P.y)||Spatial.nearestHolding(P.x,P.y);
     const comps=[cid,...Object.keys(P.comps).filter(id=>id!==cid&&(P.comps[id].ap||0)>=DEATH.heir.follow&&!P.comps[id].jail)];
     const l=asParty({id:'heir_'+cid+'_'+G.day,name:COMPS[cid].n,fac,x:h.x+rint(-8,8),y:h.y+14,troops:c.party?.troops?.slice()||armyOf(fac,DEATH.heir.men),state:'rest',tgt:h.name,sd:0,cool:0,dead:false,gone:false,back:0,lv:c.lv||0,heir:{cid,comps,of:heroName()||'a fallen hero'}});
-    W.lords.push(l);return l}
+    W.lords.push(l);this.raised=l;return l}
   // (a holding with no heir: to the realm whose holding is nearest it)
   static nextRealm(t){const o=Spatial.nearest(TOWNS.filter(x=>x!==t&&!x.gone&&x.owner&&x.owner!=='player'&&FACS[x.owner]&&!W.dead[x.owner]),t.x,t.y);return o?o.owner:null}
   // (a companion kept, hired again: as they were)
@@ -64,7 +64,9 @@ class Legacy{
       nav(['death-slain',null,'Back'],null))}
   // ---- going on as someone new (k: your past)
   static reborn(k){const b=BGS[k],old=Death.slain;if(!b||!old)return false;
-    const said=this.handOut(),qs=P.quests.length;
+    this.raised=null;const said=this.handOut(),qs=P.quests.length;
+    // (your remains buried: a grave at your heir's holding, else a cairn where you fell: world/death.js Grave)
+    const grave=Grave.bury(old,this.raised);said.push(grave.at?(this.raised?COMPS[this.raised.heir.cid].short:'They')+' bury them at '+grave.at+'.':'Someone raises a cairn over them where they fell.');
     // (the quests' marks on the world gone with them; your stories ended)
     const ids=new Set(P.quests.map(q=>q.id));for(const o of [...W.monsters,...bandits,...W.sites,...W.lords])if(o&&o.qid!=null&&ids.has(o.qid))delete o.qid;
     for(const th of Thread.list().on.slice())th.end('left');

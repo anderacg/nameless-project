@@ -101,6 +101,24 @@ Kit.suite(({ok})=>{
    // (a realm's vassal: the heir one of its lords)
    setup();tidy();P.fac=t.FIDS[0];t.compJoin('brann');P.comps.brann.ap=8;const n3=W.lords.length;dieNow();t.act('death-new');t.act('death-past',k);
    const h3=W.lords.find(l=>l.heir&&!l.dead);ok(W.lords.length===n3+1&&h3.fac===t.FIDS[0]&&!Object.keys(L.realms).length,'you a vassal of the '+t.FACS[t.FIDS[0]].n+': your heir one of its lords');
+   // ---- graves (phase 4): buried as you go on, half the experience that hero gained, its light; rumours of it; pray, and it flows
+   // into you as a gift (not counted toward your own grave); at an heir's holding, safe from robbers
+   setup();tidy();t.Remains.list=[];P.xpEarned=400;const mg=wolves();dieNow(mg);const fx=P.x,fy=P.y;t.act('death-new');t.act('death-past',k);
+   const g=t.Remains.list.find(o=>o.grave);
+   ok(g instanceof t.Grave&&g.xp===200&&!g.at&&Math.hypot(g.x-fx,g.y-fy)<=X.grave.cairn*1.5&&g.holds()&&g.robbable()&&/cairn over/.test(g.tip()),'no heir: a cairn where you fell, holding half the experience that hero gained ('+g.xp+' of 400)');
+   roll(0);try{t.Grave.hour()}finally{window.Math.random=rnd}ok(t.newsW().items.some(it=>it.k==='grave'&&it.detail.who===g.who),'folk talk of it (the news: "'+(t.newsW().items.find(it=>it.k==='grave')?'a cairn …':'')+'")');
+   const ents=[],cam={x:P.x-200,y:P.y-120};g.x=P.x+30;g.y=P.y;g.draw(ents,cam,t.vis());let threw=null;try{for(const e of ents)e.f()}catch(err){threw=err}ok(ents.length&&!threw,'drawn with its light rising ('+(threw?threw.message:ents.length+' to draw')+')');
+   g.meet();ok(/<h2>A cairn<\/h2>/.test(panel())&&/data-act="death-pray"/.test(panel())&&/200 experience/.test(panel()),'come to it: its hero\'s life, and Pray');
+   const all0=t.HERO_XP_ALL(P.level,P.xp),e0=P.xpEarned||0;t.act('death-pray');ok(g.spent&&g.flow&&G.mode==='world','Pray: its light flows from it into you, out on the map');
+   const fe=[];g.draw(fe,cam,t.vis());let threw2=null;try{for(const e of fe)e.f()}catch(err){threw2=err}ok(fe.length>1&&!threw2,'the flow drawn over the map'+(threw2?': '+threw2.message:''));
+   g.flowed();const dx=Math.round(t.HERO_XP_ALL(P.level,P.xp)-all0);ok(dx===200&&(P.xpEarned||0)===e0&&g.flow.done,'and as it arrives you gain it: +'+dx+' XP, level '+P.level+' (a gift: not toward your own grave)');
+   ok(!g.pray()&&/prayed at/.test(g.tip()),'spent: it stays, quiet');
+   const sv2=JSON.parse(JSON.stringify(t.Remains.save()));t.Remains.load(sv2);ok(t.Remains.list.find(o=>o.grave) instanceof t.Grave,'saved and loaded: still a grave');
+   // (an heir: a grave at their holding, safe from robbers while it is theirs)
+   setup();tidy();t.Remains.list=[];P.fac=null;t.compJoin('brann');P.comps.brann.ap=8;const fh=t.TOWNS.filter(x=>!x.gone&&x.owner&&x.owner!=='player').sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[1];fh.owner='player';
+   P.xpEarned=100;dieNow();t.act('death-new');t.act('death-past',k);const gh=t.Remains.list.find(o=>o.grave),hl=W.lords.find(l=>l.heir&&!l.dead);
+   ok(gh&&gh.at===fh.name&&t.townBy(gh.at).owner===hl.fac&&!gh.robbable()&&gh.xp===50,'with an heir: a grave at their holding ('+(gh&&gh.at)+'), safe from robbers');
+   const bb=t.asParty({kind:'bandits',troops:Array(4).fill('militia'),x:gh.x+10,y:gh.y,cool:0});t.bandits.push(bb);gh.gold=30;roll(0);try{t.Remains.hour()}finally{window.Math.random=rnd}ok(gh.gold===30&&!bb.plunder,'a band near does not rob it');
    tidy();t.Remains.list=[]}
   // ---- no room on the roll's other side: a man-eater only once, and no mythic one
   {setup();const m=wolves({eater:{name:'the Old Maw',day:1}}),lv=m.lv;roll(.1);try{lose(enc(m))}finally{window.Math.random=rnd}ok(m.lv===lv&&m.eater.name==='the Old Maw','a man-eater already: named once');t.act('cont')}

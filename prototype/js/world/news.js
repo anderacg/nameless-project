@@ -68,6 +68,9 @@ const NEWS_KINDS={
   caravan:{w:6,say:[(d,s)=>'A caravan'+(d.from?' out of '+d.from:'')+' was '+(d.lord?'seized by '+d.lord+'’s men':d.band?'plundered by bandits':'robbed')+' '+s.road+', '+s.when+'.',
     (d,s)=>'Merchants are wary: a caravan was '+(d.band?'burnt':'taken')+' '+s.road+' '+s.when+'.']},
   beast:{w:5,same:(it,d,x,y)=>it.detail.id===d.id&&Math.hypot(it.x-x,it.y-y)<NEWS.radius,say:[(d,s)=>{const [n,pl]=beastN(d);return n+(pl?' have':' has')+' been seen '+s.where+'.'},(d,s)=>{const [n,pl]=beastN(d);return 'Keep off the fields '+s.where+': '+n.toLowerCase()+(pl?' prowl':' prowls')+' there.'}]},
+  // (a fallen hero's grave, or a cairn over them, that still holds something: world/death.js Grave)
+  grave:{w:4,same:(it,d)=>it.detail.who===d.who,say:[(d,s)=>d.at?'They buried a hero at '+d.at+', '+d.who+'. Folk say the grave is never cold.':'A cairn stands '+s.where+', over '+d.who+', who fell to beasts. A strange light is seen there at night.',
+    (d,s)=>'Pilgrims go to pray '+s.where+', where '+d.who+' lies. They come back changed, they say.']},
   // (a beast that beat your band, named: world/death.js Death.eater)
   maneater:{w:6,same:(it,d)=>it.detail.name===d.name,say:[(d,s)=>'They speak of '+d.name+' '+s.where+': a man-eater that tore a whole band apart.',(d,s)=>'Bar your doors '+s.where+': '+d.name+' has a taste for men now.']},
   band:{w:5,same:(it,d)=>!!d.chief&&it.detail.chief===d.chief,say:[(d,s)=>d.grew?(d.chief?d.chief+'’s band':'A band of cutthroats')+' grows bolder '+s.where+', fat on plunder.':'A big band of '+(d.label||'bandits').toLowerCase()+', '+newsMany(d.n||0,s.v)+' strong, was seen '+s.where+'.',
