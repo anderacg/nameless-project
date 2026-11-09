@@ -6,6 +6,13 @@ function data(c){return c.getContext('2d').getImageData(0,0,E.size,E.size).data;
 function equal(a,b){return a.length===b.length&&a.every((v,i)=>v===b[i]);}
 function componentCount(p){const seen=new Set();let count=0;for(let i=0;i<16384;i++){if(!p[i*4+3]||seen.has(i))continue;count++;const q=[i];seen.add(i);for(let j=0;j<q.length;j++){const n=q[j],x=n%128,y=n>>7;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy,k=yy*128+xx;if(xx<0||xx>=128||yy<0||yy>=128||seen.has(k)||!p[k*4+3])continue;seen.add(k);q.push(k);}}}return count;}
 try {
+ const shared={face:'broad',hair:'none',beard:'none',headwear:'none'},human=E.geometry({...shared,race:'human'}),dwarf=E.geometry({...shared,race:'dwarf'});
+ ok(dwarf.w>human.w&&dwarf.jaw>human.jaw&&dwarf.chinY<human.chinY&&dwarf.nose.y<human.nose.y&&dwarf.mouth.y<human.mouth.y,'dwarf anatomy is broader and shorter than a shared human face, even without hair or beard');
+ for(const face of E.partsFor('dwarf','face'))for(const profile of ['male','female']){const q=E.build({race:'dwarf',profile,face,beard:'none',hair:'none',headwear:'none'}),a=q.anchors,mask=data(q.layers.face);if(a.chinY>83||a.w/(a.chinY-a.top)<.47)throw Error('Human proportions on dwarf '+face+'/'+profile);for(const point of [...a.eyes,a.nose,a.mouth])if(!mask[(point.y*E.size+point.x)*4+3])throw Error('Dwarf feature outside face');}
+ ok(true,'all dwarf face options and both profiles retain compact anatomy without a beard');
+ for(const face of E.partsFor('dwarf','face'))for(const beard of ['none','full','forked','braided','rounded','bound-beard']){const q=E.build({race:'dwarf',face,beard}),a=q.anchors.mouth;if(data(q.layers.beard)[(a.y*E.size+a.x)*4+3])throw Error('Dwarf beard covers mouth '+face+'/'+beard);}
+ ok(true,'full dwarf beard shapes preserve the mouth opening across every face');
+ ok(Array.from({length:32},(_,seed)=>E.random(seed,'female','dwarf')).every(c=>c.beard==='none'),'female dwarf generation keeps the unbearded profile');
  const p=E.build(E.defaults),before=Object.fromEntries(E.order.map(s=>[s.id,p.layers[s.id].toDataURL()]));
  for(const spec of E.order){const a=data(p.layers[spec.id]);ok(a.every((v,i)=>i%4!==0||a[i]===a[i+1]&&a[i]===a[i+2]),spec.id+': neutral grayscale');const levels=(['brows','mouth'].includes(spec.id)||spec.id==='age'&&p.config.age==='mature'||spec.id==='beard'&&['stubble','close-beard'].includes(p.config.beard))?Array.from({length:8},(_,i)=>Math.round(i*255/7)):[0,255];ok(a.every((v,i)=>i%4!==3||levels.includes(v)),spec.id+': expected pixel coverage');ok(a[3]===0,spec.id+': transparent canvas');}
  const again=E.build(E.defaults);ok(E.order.every(s=>before[s.id]===again.layers[s.id].toDataURL()),'identical recipe gives identical pixels');
@@ -26,7 +33,7 @@ try {
  for(const face of E.partsFor('human','face'))for(const beard of ['trimmed','full','forked','braided','goatee','stubble','close-beard']){const q=E.build({...E.defaults,face,beard}),a=q.anchors.mouth;if(q.layers.beard.getContext('2d').getImageData(a.x,a.y,1,1).data[3])throw Error('Beard hides mouth: '+face+'/'+beard);}
  ok(true,'beards keep the mouth anchor clear on every face shape');
  const headwearKinds=Object.values(E.headwearGroups).flat();ok(headwearKinds.length===E.options.headwear.length&&new Set(headwearKinds).size===headwearKinds.length&&E.options.headwear.every(k=>E.headwearRules[k]),'each headwear has exactly one fit type');
- for(const kind of E.headwearGroups.Enclosing){const none=E.build({...E.defaults,headwear:kind,hair:'none'});for(const hair of ['long','high-bun','loose-center-part']){const q=E.build({...E.defaults,headwear:kind,hair}),before=q.layers.hairFront.toDataURL();if(E.composite(q).toDataURL()!==E.composite(none).toDataURL())throw Error('Hair through enclosing gear '+kind+'/'+hair);if(before!==q.layers.hairFront.toDataURL())throw Error('Hair export changed');}}
+ for(const kind of E.headwearGroups.Enclosing){const race=E.races.find(r=>E.partsFor(r,'headwear').includes(kind)),base={...E.defaults,race,headwear:kind},none=E.build({...base,hair:'none'});for(const hair of ['long','high-bun','loose-center-part']){const q=E.build({...base,hair}),before=q.layers.hairFront.toDataURL();if(E.composite(q).toDataURL()!==E.composite(none).toDataURL())throw Error('Hair through enclosing gear '+kind+'/'+hair);if(before!==q.layers.hairFront.toDataURL())throw Error('Hair export changed');}}
  ok(true,'enclosing headwear conceals hair while preserving source layers');
  const veil=E.build({...E.defaults,headwear:'draped-veil',hair:'loose-center-part'}),veilBald=E.build({...E.defaults,headwear:'draped-veil',hair:'none'});ok(E.composite(veil).toDataURL()!==E.composite(veilBald).toDataURL(),'draped veil keeps the visible hairstyle');
  const worn=E.build({...E.defaults,clothing:'mail',headwear:'coif'}),plain=E.build({...E.defaults,clothing:'tunic',headwear:'none'});
@@ -52,7 +59,7 @@ try {
  const original=E.normalize({...E.defaults,seed:91,age:'elder',clothing:'fur',headwear:'cap',marks:'scar'});
  for(const profile of ['male','female']){const c=E.startProfile(profile,original);ok(c.profile===profile&&['seed','age','clothing','headwear','marks'].every(k=>c[k]===original[k]),profile+' starter preserves non-facial choices');}
  const female=E.startProfile('female',original),custom=E.startProfile('custom',female);
- ok(Object.keys(female).every(k=>k==='profile'||female[k]===custom[k]),'Custom preserves the current choices');
+ ok(Object.keys(female).every(k=>k==='profile'||JSON.stringify(female[k])===JSON.stringify(custom[k])),'Custom preserves the current choices');
  ok(E.normalize({...female,beard:'full'}).beard==='full','profile does not lock manual beard choices');
  for(const profile of E.profiles){const c=E.random(42,profile);ok(c.profile===profile&&JSON.stringify(c)===JSON.stringify(E.random(42,profile)),'seeded random follows '+profile);}
  ok(E.normalize({face:'heart'}).profile==='custom','recipes without a profile default to Custom');

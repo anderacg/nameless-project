@@ -187,3 +187,12 @@ const elfArcher = roster.create({id: 'archer-017', race: 'elf', role: 'archer'})
 ```
 
 Open `soldier-tests.html` for focused checks of the added presets, eye clearance, layer independence, grayscale artwork, race rules and soldier NPC generation. `examples/soldiers/` contains current tinted PNG previews and editable recipes; runtime generation does not load them.
+
+
+## Dwarf face redesign
+
+Dwarf race recipes now use a compact skull, wider square jaw, broad chin and stout neck, including shared face options and unbearded portraits. The shorter nose-to-mouth spacing, low heavy brow ridge, smaller eye openings and broader nose distinguish the anatomy without requiring facial hair. Width and feature sliders still work on top of the racial proportions.
+
+Full dwarf beards have broader lower masses and textured side growth; rounded, full, forked, braided and bound options remain distinct and preserve the lip opening. Male random generation favors the full beard families. Female random generation keeps no beard, and all compatible manual beard choices remain available. Existing recipes keep their choices and seed; the revised geometry is applied when drawing them. Other races retain their renderer.
+
+`tests.html` covers dwarf proportions for both profiles, all compatible face options, beard mouth clearance and unbearded female generation. `character-tests.html` covers deterministic generation and roster persistence. No external artwork or new recipe fields are required.

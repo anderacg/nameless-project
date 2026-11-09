@@ -198,16 +198,19 @@
     g.save();g.translate(x,y);g.scale(direction,1);draw();g.restore();
   }
   // Every part receives this same rig. Replacements never guess their own absolute coordinates.
-  function rig(shape,adjustments={}) {
+  function rig(shape,adjustments={},race='human') {
     const source = {oval:{w:22,jaw:14,chin:9,eye:10}, angular:{w:23,jaw:20,chin:11,eye:11}, broad:{w:27,jaw:22,chin:13,eye:12},long:{w:20,jaw:13,chin:8,eye:9,y:92},round:{w:26,jaw:18,chin:12,eye:11,y:86},chiseled:{w:24,jaw:20,chin:12,eye:11,y:87,cheek:57,jawY:79,eyeY:52,definition:1,softness:.15},heart:{w:23,jaw:13,chin:7,eye:11,y:86,cheek:57,eyeY:52,mouthY:74,noseY:63,definition:.15,softness:1},balanced:{w:23,jaw:16,chin:10,eye:11,y:88,cheek:58,eyeY:52,mouthY:75,definition:.4,softness:.6},'soft-oval':{w:23,jaw:15,chin:10,eye:11,y:88,cheek:58,softness:.85,definition:.2},tapered:{w:22,jaw:14,chin:9,eye:10,y:87,cheek:56,softness:.5,definition:.3},'full-cheeked':{w:26,jaw:19,chin:12,eye:11,y:87,cheek:59,softness:.8,definition:.1},narrow:{w:20,jaw:14,chin:9,eye:10,y:90,softness:.45,definition:.3},youthful:{w:23,jaw:15,chin:10,eye:11,y:86,cheek:57,eyeY:52,mouthY:74,noseY:63,softness:.9,definition:.1},'soft-heart':{w:24,jaw:14,chin:9,eye:11,y:87,cheek:57,eyeY:52,mouthY:75,noseY:64,softness:.9,definition:.25},'strong-jaw':{w:25,jaw:21,chin:12,eye:11,y:89,cheek:58,jawY:80,eyeY:52,mouthY:76,noseY:64,softness:.3,definition:.9},dwarven:{w:28,jaw:24,chin:15,eye:12,y:86,cheek:58,jawY:77,eyeY:52,mouthY:74,noseY:63,softness:.35,definition:.9},orcish:{w:29,jaw:25,chin:17,eye:12,y:90,cheek:59,jawY:80,eyeY:52,mouthY:77,noseY:64,softness:.2,definition:1},elven:{w:22,jaw:13,chin:8,eye:11,y:90,cheek:57,jawY:79,eyeY:52,mouthY:76,noseY:64,softness:.65,definition:.45},'dwarf-square':{w:29,jaw:25,chin:16,eye:12,y:87,cheek:58,jawY:78,eyeY:52,mouthY:75,noseY:63,softness:.2,definition:1},'orc-heavy':{w:30,jaw:26,chin:18,eye:12,y:91,cheek:59,jawY:81,eyeY:52,mouthY:78,noseY:65,softness:.15,definition:1},'elf-high-cheek':{w:22,jaw:13,chin:7,eye:11,y:90,cheek:55,jawY:79,eyeY:51,mouthY:75,noseY:63,softness:.5,definition:.7}}[shape];
     const m=Object.fromEntries(Object.keys(ADJUSTMENTS).map(k=>[k,adjustments[k]||0]));
     const v={...source,w:source.w+m.faceWidth,jaw:source.jaw+m.jawWidth,chin:source.chin+m.jawWidth*.5,eye:source.eye+m.eyeSpacing};
+    // Dwarves keep a broad, compact skull even with a shared face option or no beard.
+    const dwarf=race==='dwarf';
+    if(dwarf){v.w+=2;v.jaw=Math.max(v.jaw+2,v.w-4);v.chin+=2;v.y=(v.y||88)-5;v.cheek=(v.cheek||61)-2;v.jawY=(v.jawY||78)-3;v.noseY=(v.noseY||64)-2;v.mouthY=(v.mouthY||76)-4;}
     v.jaw=Math.max(v.chin+2,Math.min(v.w-2,v.jaw));v.eye=Math.max(8,Math.min(v.w-8,v.eye));
     const cx=64, top=24, cheekY=v.cheek||61, chinY=v.y||88;
     // Sample an elliptical cranium instead of a flat polygon across the scalp.
     const crown=Array.from({length:19},(_,i)=>{const t=Math.PI+i*Math.PI/18;return [cx+v.w*Math.cos(t),49+(49-top+3)*Math.sin(t)];});
     const outline=[...crown,[cx+v.w-2,cheekY+7],[cx+v.jaw,v.jawY||78],[cx+v.chin,chinY-2],[cx,chinY],[cx-v.chin,chinY-2],[cx-v.jaw,v.jawY||78],[cx-v.w+2,cheekY+7]];
-    return {cx,top,eyeScale:1+m.eyeSize*.12,w:v.w,jaw:v.jaw,chin:v.chin,chinY,outline,definition:v.definition||0,softness:v.softness||0,eyes:[{x:cx-v.eye,y:v.eyeY||53},{x:cx+v.eye,y:v.eyeY||53}],nose:{x:cx,y:v.noseY||(shape==='long'?65:shape==='round'?63:64)},mouth:{x:cx,y:v.mouthY||(shape==='long'?78:shape==='round'?74:76)},brows:[{x:cx-v.eye,y:(v.eyeY||53)-5},{x:cx+v.eye,y:(v.eyeY||53)-5}]};
+    return {cx,top,eyeScale:(1+m.eyeSize*.12)*(dwarf?.9:1),w:v.w,jaw:v.jaw,chin:v.chin,chinY,outline,definition:v.definition||0,softness:v.softness||0,eyes:[{x:cx-v.eye,y:v.eyeY||53},{x:cx+v.eye,y:v.eyeY||53}],nose:{x:cx,y:v.noseY||(shape==='long'?65:shape==='round'?63:64)},mouth:{x:cx,y:v.mouthY||(shape==='long'?78:shape==='round'?74:76)},brows:[{x:cx-v.eye,y:(v.eyeY||53)-(dwarf?4:5)},{x:cx+v.eye,y:(v.eyeY||53)-(dwarf?4:5)}]};
   }
   function clip(g,p,draw) {g.save();contour(g,p);g.clip();draw();g.restore();}
   function texture(g,r,box,count,lo,hi) {for(let i=0;i<count;i++){const x=box[0]+Math.floor(r()*box[2]),y=box[1]+Math.floor(r()*box[3]); rect(g,x,y,1+r()*2,1,lo+r()*(hi-lo));}}
@@ -234,7 +237,7 @@
   const REFINED_BODY=[[48,94],[34,96],[15,106],[4,125],[124,125],[113,107],[94,96],[80,94],...COLLAR.slice(0,-1).reverse()];
   const bodyOutline=()=>REFINED_BODY;
   function drawNeck(g,a,c) {
-    const x=a.cx,half=Math.max(9,Math.min(['dwarven','dwarf-square','orcish','orc-heavy'].includes(c.face)?14:12,a.jaw*.45+2)),top=a.chinY-11;
+    const x=a.cx,half=c.race==='dwarf'?Math.max(16,Math.min(18,a.jaw*.55+2)):Math.max(9,Math.min(['dwarven','dwarf-square','orcish','orc-heavy'].includes(c.face)?14:12,a.jaw*.45+2)),top=a.chinY-11;
     const outline=[[x-half,top],[x+half,top],[x+half-1,91],...COLLAR.slice().reverse(),[x-half+1,91]];
     surface(g,outline,(px,py)=>{
       const u=(px-x)/(half+2);
@@ -516,7 +519,7 @@
   }
   function brows(g,a,c) {
     const forms={natural:[7,1.2,1.8,1],arched:[7,2.7,1.7,1.5],bold:[7,1.2,2.6,1],flat:[6,.3,1.7,.3],broken:[7,1.2,1.8,1],sculpted:[7,1.6,1.9,1],soft:[6.5,1.1,1.2,1.1],feathered:[7.3,1.8,1.5,1.4],'low-arch':[7,.75,1.6,.8],'high-arch':[7,3.4,1.7,1.6],slim:[6.8,1.5,.9,1.2],'tapered-natural':[7.4,1.1,1.4,.5],'full-soft':[7.2,1.4,2.2,.8]};
-    const [w,arch,thick,tail]=forms[c.brows];
+    const [bw,ba,bt,tail]=forms[c.brows],dwarf=c.race==='dwarf',w=bw+(dwarf?1:0),arch=ba*(dwarf?.7:1),thick=bt*(dwarf?1.25:1);
     for(let i=0;i<a.brows.length;i++) {
       const e=a.brows[i];featureFrame(g,e.x+.5,e.y,e.x<a.cx?1:-1,()=>{
         g.fillStyle=gray(c.brows==='soft'||c.brows==='slim'?89:64);g.beginPath();g.moveTo(-w,tail);
@@ -611,10 +614,10 @@
       return;
     }
     if(['full','forked','braided','short-boxed','rounded','tapered-beard'].includes(c.beard)) {
-      const end=c.beard==='short-boxed'?94:c.beard==='rounded'?100:c.beard==='full'?104:c.beard==='tapered-beard'?108:112,baseY=Math.min(98,end-4),tip=c.beard==='rounded'||c.beard==='short-boxed'?11:7;
-      const jaw=[[x-a.w+2,61],[x-15,72],[x-11,my+3],[x-7,my+6],[x+7,my+6],[x+11,my+3],[x+15,72],[x+a.w-2,61],[x+a.jaw,82],[x+13,baseY],[x+tip,end],[x,end+1],[x-tip,end],[x-14,baseY],[x-a.jaw,82]];
+      const dwarf=c.race==='dwarf',end=c.beard==='short-boxed'?94:c.beard==='rounded'?(dwarf?104:100):c.beard==='full'?(dwarf?108:104):c.beard==='tapered-beard'?108:112,baseY=Math.min(98,end-4),tip=(c.beard==='rounded'||c.beard==='short-boxed'?11:7)+(dwarf?(c.beard==='full'?6:3):0),baseHalf=dwarf?18:13;
+      const jaw=[[x-a.w+2,61],[x-15,72],[x-11,my+3],[x-7,my+6],[x+7,my+6],[x+11,my+3],[x+15,72],[x+a.w-2,61],[x+a.jaw,82],[x+baseHalf,baseY],[x+tip,end],[x,end+1],[x-tip,end],[x-baseHalf-1,baseY],[x-a.jaw,82]];
       poly(g,jaw,59);
-      clip(g,jaw,()=>{for(let i=0;i<130;i++){const px=x-17+Math.floor(R()*34),py=80+Math.floor(R()*32);line(g,[[px,py],[px-1,py+4]],78+R()*45);}});
+      clip(g,jaw,()=>{const span=dwarf?a.jaw-1:17;for(let i=0;i<(dwarf?170:130);i++){const px=x-span+Math.floor(R()*span*2),py=80+Math.floor(R()*32);line(g,[[px,py],[px-1,py+4]],78+R()*45);}});
       if(c.beard==='forked'){g.save();g.globalCompositeOperation='destination-out';g.beginPath();g.ellipse(x,111,1.5,12,0,0,Math.PI*2);g.fill();g.restore();line(g,[[x-7,96],[x-9,107]],130);line(g,[[x+7,96],[x+9,107]],107);}
       if(c.beard==='braided')for(let y=90;y<111;y+=4){line(g,[[x-5,y],[x+4,y+3],[x-4,y+5]],131);rect(g,x-5,109,10,2,183);}
       for(const side of [-1,1])poly(g,[[x+side,my-4],[x+side*5,my-5],[x+side*12,my-2],[x+side*12,my+1],[x+side*4,my-1],[x+side,my-1]],58);
@@ -897,8 +900,8 @@
       v-=10*falloff(px,py,x+7,70,3,5);
       v+=11*falloff(px,py,x-3,58,3,12);
       for(const eye of a.eyes) {
-        v-=(37-10*a.definition-14*a.softness)*falloff(px,py,eye.x,eye.y-1,7,4);
-        v+=12*falloff(px,py,eye.x-1,eye.y-6,7,2.5);
+        v-=(37-10*a.definition-14*a.softness+(c.race==='dwarf'?10:0))*falloff(px,py,eye.x,eye.y-1,7,4);
+        v+=(c.race==='dwarf'?22:12)*falloff(px,py,eye.x-1,eye.y-(c.race==='dwarf'?4:6),c.race==='dwarf'?8:7,2.5);
         v+=9*falloff(px,py,eye.x-1,eye.y+5,6,2);
       }
       return v+grain(Math.floor(px),Math.floor(py),c.seed)*(3-.8*a.softness);
@@ -908,14 +911,14 @@
   function drawNose(g,a,c) {
     const x=a.nose.x+(c.nose==='crooked'?2:0),y=a.nose.y-(c.nose==='short'?1:0);
     const width={straight:5,broad:7,aquiline:5,button:4,crooked:5,slender:4,rounded:5.8,short:4.5,roman:5.5,'wide-tip':7,'soft-tip':4.8,'defined-tip':5.2,'orc-flat':8.3,'dwarf-bulb':8.1,'orc-broad':9.3}[c.nose];
-    const noseWidth=width+c.adjustments.noseWidth*.6;
-    const bridge=c.nose==='slender'?1:c.nose==='soft-tip'?1.25:c.nose==='defined-tip'?1.7:c.nose==='wide-tip'?1.5:2,top=c.nose==='orc-flat'||c.nose==='orc-broad'?54:c.nose==='short'?53:c.nose==='soft-tip'?51:49,hook=c.nose==='aquiline'?1.5:0;
+    const noseWidth=width+c.adjustments.noseWidth*.6+(c.race==='dwarf'?1:0);
+    const bridge=c.nose==='slender'?1:c.nose==='soft-tip'?1.25:c.nose==='defined-tip'?1.7:c.nose==='wide-tip'?1.5:c.race==='dwarf'?2.8:2,top=c.nose==='orc-flat'||c.nose==='orc-broad'?54:c.nose==='short'?53:c.nose==='soft-tip'?51:49,hook=c.nose==='aquiline'?1.5:0;
     const outline=[[x-bridge,top],[x+bridge,top],[x+2.8,y-6],[x+noseWidth,y+hook],[x+noseWidth-1.5,y+3],[x,y+4],[x-noseWidth+1.5,y+3],[x-noseWidth,y],[x-2.5,y-5]];
     surface(g,outline,(px,py)=>154+38*falloff(px,py,x-1,y-7,2.5,9)-30*falloff(px,py,x+3,y-5,2.3,8)+25*falloff(px,py,x-1,y,4,3)-25*falloff(px,py,x,y+4,7,2));
     curve(g,[x-noseWidth+1,y+2,x-noseWidth+2,y+.4,x-3,y+1.7,x-2,y+2.8],70,.65);
     curve(g,[x+1,y+2.8,x+2,y+1+hook,x+noseWidth-1,y+1+hook,x+noseWidth-1,y+2.8+hook],69,.65);
     if(c.nose==='rounded'){g.fillStyle=gray(194);g.beginPath();g.ellipse(x-.8,y+.3,2.4,1.7,0,0,Math.PI*2);g.fill();}
-    if(c.nose==='dwarf-bulb')oval(g,x-.5,y+.6,3.7,2.1,182);
+    if(c.nose==='dwarf-bulb')oval(g,x-.7,y+.4,c.race==='dwarf'?4.6:3.7,c.race==='dwarf'?2.7:2.1,182);
     if(c.nose==='orc-broad')curve(g,[x-6,y+.5,x-3,y-1,x+3,y-1,x+6,y+.5],155,1.5);
     if(c.nose==='orc-flat')curve(g,[x-5,y,x-3,y-1.3,x+3,y-1.3,x+5,y],164,1.2);
     if(c.nose==='soft-tip')oval(g,x-.6,y+.4,1.7,1.2,186);
@@ -1098,7 +1101,7 @@
     if(clear.length)g.putImageData(im,0,0);return c;
   }
   function build(input) {
-    const config=normalize(input),anchors=rig(config.face,config.adjustments),layers={};
+    const config=normalize(input),anchors=rig(config.face,config.adjustments,config.race),layers={};
     const painters={ears,face:drawFace,clothing,armor,age,marks,nose:drawNose,brows,mouth,teeth,beard,eyelids,headwearBack:(g,a,c)=>headwear(g,a,c,true),headwearFront:(g,a,c)=>headwear(g,a,c,false),eyes:(g,a,c)=>naturalEyes(g,a,c,false),iris:(g,a,c)=>naturalEyes(g,a,c,true),hairBack:(g,a,c)=>hair(g,a,c,true),hairFront:(g,a,c)=>hair(g,a,c,false)};
     for(const spec of LAYERS){const c=canvas(),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.lineCap='round';g.lineJoin='round';g.save();if(spec.feature==='hair'){const v=config.adjustments.hairVolume;g.translate(anchors.cx,43);g.scale(1+v*.05,1+v*.04);g.translate(-anchors.cx,-43);}painters[spec.id](g,anchors,config);refineLayer(g,spec,anchors,config);g.restore();layers[spec.id]=rasterize(c,32,spec.id==='brows'||spec.id==='mouth'||spec.id==='teeth'&&['small-tusks','heavy-tusks'].includes(config.mouth)||spec.id==='age'&&config.age==='mature'||spec.id==='beard'&&['stubble','close-beard','chin-bristle'].includes(config.beard));}
     symmetricCoverage(layers.ears,64);
@@ -1173,13 +1176,13 @@
     const pick=values=>values[Math.floor(R()*values.length)];
     for(const key of Object.keys(RACE_PARTS[kind]))c[key]=pick(partsFor(kind,key));
     if(selected==='female'){c.beard='none';const hair=['long','braids','waves','swept','pageboy','cropped','curls','ponytail','high-bun','low-bun','half-up','single-braid','undercut','loose-side-braid','loose-center-part','forge-braids','braided-crown','war-crest'].filter(v=>partsFor(kind,'hair').includes(v));c.hair=pick(hair);}
-    if(kind==='dwarf'&&selected!=='female'&&R()<.75)c.beard=pick(['full','forked','braided','bound-beard','rounded','trimmed']);
+    if(kind==='dwarf'&&selected!=='female'&&R()<.9)c.beard=pick(['full','forked','braided','bound-beard','rounded']);
     if(kind==='orc'){if(R()<.7)c.mouth=pick(['small-tusks','heavy-tusks']);if(R()<.7)c.beard='none';}
     if(kind==='elf')c.beard='none';
     if(kind==='human'&&selected!=='female'&&R()<.35)c.beard='none';
     if(R()<.55)c.marks='none';
     return normalize(c);
   }
-  function geometry(input){const c=normalize(input);return rig(c.face,c.adjustments);}
+  function geometry(input){const c=normalize(input);return rig(c.face,c.adjustments,c.race);}
   root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,soldierEquipment:SOLDIER_EQUIPMENT,soldierPresets:SOLDIER_PRESETS,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
 })(globalThis);
