@@ -1,10 +1,11 @@
 'use strict';
-// The dice (ui/dice.js): a check's roll shown as it falls, on a d20 by its rules (roll + bonus against a DC). The die's number on the right side of the mark (won at or under it,
-// lost over it, won in part in the amber beyond); the check draws once, as before (no stream moves); the overlay comes, says what
-// came of it, and goes (a click, or in time); a road's chance shows it; switched off, nothing shown.
+// The dice (ui/dice.js): a check's roll shown as it falls, on a d20 by its rules (roll + bonus against a DC). The die on the
+// right side of the mark (won on it or over, won in part just under it); the check draws once, as before (no stream moves); the
+// overlay comes, says what came of it, and waits for you (Continue, a click, Enter, Space, Esc; no other key reaches the game
+// meanwhile); a road's chance shows it; switched off (as every other suite has it: harness.js), nothing shown.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
- const t=T,G=t.G,P=t.P,D=t.Dice;try{localStorage.clear()}catch(e){}t.act('begin','soldier');G.quietEvents=true;
+ const t=T,G=t.G,P=t.P,D=t.Dice;try{localStorage.clear()}catch(e){}t.act('begin','soldier');G.quietEvents=true;t.DICE.on=true;
  const ov=()=>document.querySelector('.dice-ov');
  // ---- the face, by the d20's rules: won on the face needed or over, won in part just under it; a 20 always a win, a 1 always a loss
  {const bad=[];for(let i=0;i<600;i++){const p=(i%97)/97,r=((i*37)%101)/101,part=i%2?.2:0,f=D.face({p,r,part}),won=r<p,half=!won&&part>0&&r<p+part;
@@ -28,8 +29,14 @@ try{
     setTimeout(()=>{ok(!e||ov()&&/Ask for their writ/.test(ov().textContent),'a road\'s check: its roll shown');D.clear();
       // ---- off: nothing
       t.DICE.on=false;D.show({p:.5,r:.2,label:'x'});setTimeout(()=>{ok(!ov(),'switched off: nothing shown');t.DICE.on=true;
-        // ---- in time: gone
-        D.show({p:.5,r:.2,label:'y'});setTimeout(()=>{ok(!!ov(),'it stays a while');setTimeout(()=>{ok(!ov(),'and goes in time ('+(t.DICE.tumble+t.DICE.hold)+' ms)');finish()},t.DICE.tumble+t.DICE.hold+500)},50)},20)},20);
+        // ---- it waits for you: still up long after it lands; a key not its own goes nowhere; Enter, Space, Esc close it (Esc only it)
+        const key=k=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code:k===' '?'Space':k,bubbles:true,cancelable:true})),mode=()=>G.mode+'|'+(t.panel?.innerHTML||'').length;
+        D.show({p:.5,r:.2,label:'y'});setTimeout(()=>{ok(!!ov()&&!!ov().querySelector('.dice-go'),'it stays till you close it (a Continue button)');const m0=mode();key('1');key('m');
+          ok(!!ov()&&mode()===m0,'while it is up, another key goes nowhere');key('Enter');ok(!ov(),'Enter closes it');
+          D.draw(D.face({p:.5,r:.2}));key(' ');ok(!ov(),'Space closes it');D.draw(D.face({p:.5,r:.2}));const m1=mode();key('Escape');ok(!ov()&&mode()===m1,'Esc closes it, and only it');
+          D.draw(D.face({p:.5,r:.2}));ov().querySelector('.dice-go').click();ok(!ov(),'Continue closes it');
+          D.draw(D.face({p:.5,r:.2}));D.draw(D.face({p:.6,r:.9}));ok(document.querySelectorAll('.dice-ov').length===1&&/Failed/.test(ov().textContent),'a new roll replaces it');D.clear();
+          key('Escape');ok(true,'with none up, keys are the game\'s again');finish()},t.DICE.tumble+600)},20)},20);
     function finish(){const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);res()}},20))}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

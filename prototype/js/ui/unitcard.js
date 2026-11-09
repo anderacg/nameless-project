@@ -136,7 +136,7 @@ class SpriteView{
     const img=card.querySelector('img.uc-pic'),cv=card.querySelector('canvas.uc-anim'),b=card.querySelector('.uc-sprbtn'),on=cv.hidden;
     cv.hidden=!on;img.hidden=on;if(b){b.textContent=on?'View portrait':'View sprite';b.setAttribute('aria-pressed',on)}if(on)this.draw(cv)}
   // (as large as the canvas takes the figure standing, cw × ch inside its cell; its feet on the bottom)
-  static draw(cv){const type=cv.dataset.spr,hero=!!cv.dataset.hero,s=unitSprite(type,0,hero,0,0),g=cv.getContext('2d'),k=Math.max(1,Math.floor(Math.min(cv.width/(s.cw||s.width),(cv.height-4)/(s.ch||s.height))));
+  static draw(cv){const type=cv.dataset.spr,hero=!!cv.dataset.hero,s=unitSprite(type,0,hero,!hero&&typeof Faces!=='undefined'&&Faces.unit(type)?Faces.vOf(type):0,0),g=cv.getContext('2d'),k=Math.max(1,Math.floor(Math.min(cv.width/(s.cw||s.width),(cv.height-4)/(s.ch||s.height))));
     g.clearRect(0,0,cv.width,cv.height);g.imageSmoothingEnabled=false;g.drawImage(s,Math.round((cv.width-s.width*k)/2),cv.height-2-s.height*k,s.width*k,s.height*k)}
 }
 onAct('uc-',(a,arg)=>{if(a==='uc-sprite')SpriteView.toggle(arg)});

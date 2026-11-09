@@ -1,7 +1,8 @@
 'use strict';
 /* Character faces and corrected animal poses use compact WebP artwork. Named faces stay independent of equipment and allegiance;
    full PNG artwork stays in art/portrait. Extra generated lords retain a stable individual sprite look. The troops' painted portraits:
-   data/unitportraits.js (NamedPortraits.unit). */
+   data/unitportraits.js (NamedPortraits.unit): a beast's always, a troop's only with faces off (else its generated face, ui/faces.js
+   Faces.unit). */
 const NAMED_PORTRAITS={
   "brann": "brann.webp?v=eb6e933d",
   "elske": "elske.webp?v=eec0d775",
@@ -35,12 +36,13 @@ const NAMED_PORTRAITS={
   "griffin": "griffin.webp?v=d24cc600"
 };
 // the new kinds' paintings till their own are made (doc/TROOPS_DESIGN.md): the Lancer a Squire's, the Crossbowman an Arbalester's
-const PORTRAIT_LIKE={hum_lancer:'hum_squire',hum_crossbow:'hum_xbow',gob_stab:'orc_shield',gob_spear:'orc_grunt',gob_bow:'orc_hunter',gob_boss:'orc_brute'};// (the goblins the orcs' until theirs are painted)
+const PORTRAIT_LIKE={hum_lancer:'hum_squire',hum_crossbow:'hum_xbow',gob_stab:'orc_shield',gob_spear:'orc_grunt',gob_bow:'orc_hunter',gob_boss:'orc_brute',// (the goblins the orcs' until theirs are painted)
+  band_looter:'militia',band_cutthroat:'militia',band_brigand:'militia',band_highway:'spearman',band_poacher:'archer',alpha_wolf:'wolf'};// (the outlaws the old bandits', the alpha a wolf: with faces off, every kind its picture)
 class NamedPortraits{
   static of(key){if(!Object.hasOwn(NAMED_PORTRAITS,key)&&typeof lordListed==='function')key=lordListed(key);return Object.hasOwn(NAMED_PORTRAITS,key)?'art/portrait/game/'+NAMED_PORTRAITS[key]:''}// (a retitled lord by her listed name: data/factions.js)
   // (a troop's: its kind's painted portrait, data/unitportraits.js, after a named one)
   // (a kind with no painting of its own yet: its neighbour's, PORTRAIT_LIKE)
-  static unit(type){const k=Object.hasOwn(UNIT_PORTRAITS,type)?type:PORTRAIT_LIKE[type];return this.of(type)||(k?'art/portrait/game/'+UNIT_PORTRAITS[k]:'')}
+  static unit(type){const k=Object.hasOwn(UNIT_PORTRAITS,type)?type:PORTRAIT_LIKE[type];return this.of(type)||(k&&Object.hasOwn(UNIT_PORTRAITS,k)?'art/portrait/game/'+UNIT_PORTRAITS[k]:k?this.of(k):'')}
   static lord(l){
     const art=this.of(l.name);if(art)return art;
     const key=l.name||l.id||'lord';let h=2166136261;for(const c of key)h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;

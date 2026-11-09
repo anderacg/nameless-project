@@ -24,7 +24,47 @@ const FACE_KIN={dwarf:{face:['dwarven','dwarf-square'],nose:['dwarf-bulb'],ears:
   brows:{m:['bold','broken','bold'],f:['full-soft','bold']},hair:{f:['braids','forge-braids','single-braid','loose-side-braid']},
   beard:{m:['braided','bound-beard','full','forked']},thin:['none','stubble','goatee','moustache','trimmed','short-boxed','close-beard','sideburns','chin-bristle'],
   // (each proportion at least lo to hi (a man's m, a woman's f), or at most for one below nought: smaller eyes)
-  adj:{faceWidth:[2,2],jawWidth:{m:[2,2],f:[1,2]},noseWidth:[1,2],eyeSize:{m:[-1,0],f:[-1,-1]},hairVolume:[0,1]}}};
+  adj:{faceWidth:[2,2],jawWidth:{m:[2,2],f:[1,2]},noseWidth:[1,2],eyeSize:{m:[-1,0],f:[-1,-1]},hairVolume:[0,1]}},
+  /* (the owner, 2026-11-09: "make sure all race or factions use the correct appearance and features on their portrait") a goblin:
+     the engine has none, so an orc's face made small and sharp: a narrow jaw, big pointed ears and big eyes, a long thin nose,
+     little tusks or a sly grin, no beard to speak of; mostly bald (FACE_LOOK) and green-yellow (FACE_LOOK.skin) */
+  goblin:{face:['orcish','strong-jaw'],ears:['pointed'],nose:['wide-tip','crooked'],eyes:['keen','natural-wide','deep-almond'],mouth:['small-tusks','asymmetric-smile','stern'],
+    beard:{m:['none','chin-bristle'],f:['none']},adj:{faceWidth:[-2,-1],jawWidth:[-2,-2],earSize:[1,1],eyeSize:[1,1],eyeSpacing:[1,2],noseWidth:[-2,-1],mouthWidth:[1,2]}}};
+// (the engine's own peoples: a goblin's face is drawn on an orc's)
+const FACE_RACE={goblin:'orc',hobgoblin:'orc'};
+/* (the owner: "Dont forget to have bald (or none hair) as well"; every face the world draws, yours before you shape it) bald: the
+   share of a people's men (m) and women (f) with no hair; skin and hair: each people's tones, one by the face's seed (the engine
+   gives every face of a people the same two); skinOf, hairOf: a figure's (gfx/people.js PPAL) as a portrait's, so a troop's face
+   is its figure's */
+const FACE_LOOK={bald:{human:{m:.14},dwarf:{m:.2},orc:{m:.3,f:.04},elf:{m:.02},goblin:{m:.85,f:.5}},
+  skin:{human:['#e2b896','#d2a37e','#bf8f6b','#a87656','#8a5c40','#6a4430'],dwarf:['#cfa283','#bd8f70','#a87b5e','#d9b090'],elf:['#e4d2c0','#d6bfa8','#c8ae96','#b89c84'],
+    orc:['#76885a','#66784a','#5a6a40','#7c8060','#6e7a58'],goblin:['#7e8c42','#8a9448','#6e7c36','#909650']},
+  hair:{human:['#2a211c','#45372e','#5e4130','#7a4a2a','#9a5a2c','#b98a50','#8f8a84','#4a3e36'],dwarf:['#9a4e24','#76543a','#3a2c22','#b8823e','#8c8680','#c09858'],
+    elf:['#c8b27a','#e0d6b0','#d8d8d0','#8a6a44','#3a3028','#a18c60'],orc:['#2a2820','#1c1b16','#40362a','#5e5c52'],goblin:['#2a2820','#3a3226','#4a4030']},
+  skinOf:{skin:'#e2b896',skinTan:'#bf8f6b',skinDark:'#8a5c40',elf:'#d6bfa8',dwarf:'#bd8f70',orc:'#6e8050',orcDark:'#5a6a40',orcGrey:'#727a62',goblin:'#7e8c42',goblinDark:'#6a7834',hobgoblin:'#a8704a'},
+  hairOf:{brown:'#5e4130',blond:'#b98a50',black:'#2a211c',ginger:'#9a4e24',grey:'#8f8a84',silver:'#d8d8d0'}};
+/* (the owner, 2026-11-09: "Make sure to change old unit portrait (unitcard) to generated sprite and please use most relevant armor
+   for each unit") a troop's portrait is a face of its people (Faces.unit), dressed as its figure is (gfx/people.js lookOf): its
+   armour (body: by the armour it wears, its people's make where they have one; robe a caster's; plain a worker's clothes by their
+   colour), its helm as headwear (head), the figure's colours (its cloth, its metal: metal, its skin and hair), where the rules
+   miss the kind's own (own: clothing, headwear); women: the share of each people's troops who are; beasts keep their paintings */
+const FACE_UNIT={women:{human:.15,elf:.35,orc:.1,dwarf:.1,goblin:0},
+  body:{plate:{any:'plate',dwarf:'dwarf-iron-guard',orc:'orc-lamellar',elf:'elf-leaf-mail'},mail:{any:'mail',orc:'orc-lamellar',elf:'elf-leaf-mail'},
+    leather:{any:'gambeson',orc:'leather',dwarf:'leather',elf:'leather-mail',goblin:'leather'},hide:{any:'fur',orc:'hide-harness'},none:{any:'tunic',elf:'leaf-mantle',orc:'hide-harness',dwarf:'fur',goblin:'hide-harness'}},
+  robe:{any:'robe',elf:'embroidered-robe'},
+  plain:{leather:'leather',fur:'fur',forest:'jerkin',cloth:'tunic',blue:'linen-chemise',any:'tunic'},
+  head:{cap:'arming-cap',kettle:'kettle',great:{any:'ridge-helm',dwarf:'dwarf-guard-helm',orc:'orc-war-helm',elf:'elf-guard-helm'},horned:{any:'round-helm',dwarf:'forge-helm',orc:'orc-war-helm'},
+    hood:'hood',bare:'none',circlet:{any:'circlet',elf:'leaf-circlet'},wizard:'wrapped-hood',plume:'sallet',straw:'straw-hat',bandana:'headband',skull:'warband'},
+  // (a people known by their ears (elves, goblins): a hood down, so they show)
+  open:{elf:{hood:'leaf-circlet'},goblin:{hood:'none'}},
+  metal:{steel:'#8f969a',iron:'#6e737c',silver:'#b8c0c8',gold:'#b8923a',rust:'#8a5a3a'},
+  own:{hum_knight:['plate','sallet'],hum_guard:['coat-of-plates','open-bascinet'],hum_sergeant:['steel-cuirass','sallet'],hum_champ:['surcoat','open-bascinet'],
+    hum_bow:['padded-jack','arming-cap'],hum_crossbow:['padded-jack','kettle'],hum_xbow:['leather-mail','kettle'],hum_long:['padded-jack','hood'],hum_hbow:['leather','hood'],hum_lancer:['mail','nasal'],
+    hum_pike:['brigandine','kettle'],hum_levy:['gambeson','arming-cap'],hum_foot:['gambeson','coif'],hum_sword:['mail','nasal'],hum_spear:['mail','nasal'],hum_squire:['mail','kettle'],
+    chief:['fur','fur-cap'],horse:['mail','nasal'],dw_rune:['rune-mail','forge-helm'],dw_longbeard:['rune-mail','forge-helm'],dw_thane:['rune-mail','forge-helm'],dw_hammer:['dwarf-iron-guard','dwarf-guard-helm'],
+    dw_xbow:['mail','kettle'],elf_sharp:['elf-leaf-mail','leaf-circlet'],elf_blade:['leather-mail','leaf-circlet'],elf_eternal:['elf-leaf-mail','leaf-circlet'],
+    orc_shaman:['fur','warband'],orc_reaver:['hide-harness','warband'],orc_wolf:['leather','warband'],orc_wolfbow:['leather','warband'],orc_thrower:['leather','none'],
+    elf_glade:['leaf-mantle','hood'],gob_stab:['leather','none'],gob_bow:['hide-harness','hood'],gob_boss:['fur','hood']}};
 /* (the owner, 2026-11-09: "Ensure that the characters wearing the correct armor or equipment based on their current armor and make
    sure lords are having a good armor") a face dressed as its wearer is (Faces.dress): the body armour worn its clothing, by its tier
    (body: wood a padded jack … adamant plate; bodyOf: a people's own make where it has one; items: the pieces of beasts' hides),
@@ -58,22 +98,31 @@ const FACE_TINTS=[['skin','Skin'],['hair','Hair'],['iris','Eyes'],['lips','Lips'
 class Faces{
   static ok(){return FACES.on&&typeof PortraitCharacters!=='undefined'&&typeof PortraitEngine!=='undefined'}
   static profileOf(g){return g==='f'?'female':'male'}
-  static raceOf(r){return PortraitEngine.races.includes(r)?r:'human'}
+  static raceOf(r){r=FACE_RACE[r]||r;return PortraitEngine.races.includes(r)?r:'human'}
   // (a face drawn at random for a race and a man or a woman, its seed given)
-  static random(seed,race,g){return this.kin(PortraitCharacters.recipe({config:this.bare(PortraitEngine.random(seed>>>0,this.profileOf(g),this.raceOf(race)))}))}
-  // (a face by the marks of its people (FACE_KIN: none, as it is), each choice from its own seed)
-  static kin(rec){const K=rec&&FACE_KIN[rec.config.race];if(!K)return rec;const c={...rec.config,adjustments:{...rec.config.adjustments}},f=c.profile==='female'?'f':'m',r=c.race,
-      pick=(k,L)=>L[PortraitCharacters.hash(c.seed+'/'+r+'/'+k)%L.length],set=(k,L)=>{if(L&&!L.includes(c[k])){const v=pick(k,L.filter(x=>this.fits(r,k,x)));if(v)c[k]=v}};
-    set('face',K.face);set('nose',K.nose);set('ears',K.ears);set('eyes',K.eyes);set('brows',K.brows[f]);if(K.hair[f])set('hair',K.hair[f]);
-    if(K.beard[f]&&K.thin.includes(c.beard)){const v=pick('beard',K.beard[f].filter(x=>this.fits(r,'beard',x)));if(v)c.beard=v}
-    for(const k in K.adj){const A=PortraitEngine.adjustments[k],R=Array.isArray(K.adj[k])?K.adj[k]:K.adj[k][f],[lo,hi]=R,n=lo+PortraitCharacters.hash(c.seed+'/'+r+'/adj/'+k)%(hi-lo+1),v=c.adjustments[k]||0;
-      if(A)c.adjustments[k]=Math.max(A.min,Math.min(A.max,n<0?Math.min(v,n):Math.max(v,n)))}
-    return {...rec,config:PortraitEngine.normalize(c)}}
+  // (own: your own face, as the engine and its people's marks make it: no tone or bald head of the world's, FACE_LOOK; you choose yours)
+  static random(seed,race,g,own){return this.kin(PortraitCharacters.recipe({config:this.bare(PortraitEngine.random(seed>>>0,this.profileOf(g),this.raceOf(race)))}),race,own)}
+  /* (a face by the marks of its people (race: the wearer's, a goblin on an orc's face; FACE_KIN: none, as it is), each choice from
+     its own seed: a part not of theirs swapped for one that is (a dwarf's thin beard only for a full one); bald by its people's
+     share (FACE_LOOK.bald); its skin and hair one of its people's tones, unless chosen (colours not the engine's own); mine: your
+     own face, its people's marks only) */
+  static kin(rec,race,mine){if(!rec)return rec;const r=rec.config.race,r0=race&&this.raceOf(race)===r?race:r,K=FACE_KIN[r0],c={...rec.config,adjustments:{...rec.config.adjustments}},f=c.profile==='female'?'f':'m',
+      H=k=>PortraitCharacters.hash(c.seed+'/'+r0+'/'+k),pick=(k,L)=>L[H(k)%L.length],set=(k,L)=>{if(L&&!L.includes(c[k])){const v=pick(k,L.filter(x=>this.fits(r,k,x)));if(v)c[k]=v}};
+    if(K){for(const k of['face','nose','ears','eyes','brows','mouth','hair'])set(k,Array.isArray(K[k])?K[k]:K[k]?.[f]);
+      const B=K.beard?.[f];if(B&&(!K.thin||K.thin.includes(c.beard)))set('beard',B);
+      for(const k in K.adj||{}){const A=PortraitEngine.adjustments[k],R=Array.isArray(K.adj[k])?K.adj[k]:K.adj[k][f],[lo,hi]=R,n=lo+H('adj/'+k)%(hi-lo+1),v=c.adjustments[k]||0;
+        if(A)c.adjustments[k]=Math.max(A.min,Math.min(A.max,n<0?Math.min(v,n):Math.max(v,n)))}}
+    if(mine)return {...rec,config:PortraitEngine.normalize(c)};
+    const bald=FACE_LOOK.bald[r0]?.[f]||0;if(bald&&c.hair!=='none'&&H('bald')%1000<bald*1000&&this.fits(r,'hair','none'))c.hair='none';
+    const pal=PortraitCharacters.palettes[r]||{},own=rec.colors&&(rec.colors.skin&&rec.colors.skin!==pal.skin||rec.colors.hair&&rec.colors.hair!==pal.hair);
+    return {...rec,config:PortraitEngine.normalize(c),colors:own?rec.colors:{...rec.colors,...this.tone(r0,c.seed)}}}
+  // (a people's skin and hair, one of each by a seed: FACE_LOOK)
+  static tone(race,seed){const L=FACE_LOOK,S=L.skin[race],Hr=L.hair[race],h=k=>PortraitCharacters.hash(seed+'/tone/'+k),o={};if(S)o.skin=S[h('s')%S.length];if(Hr)o.hair=Hr[h('h')%Hr.length];return o}
   // (bareheaded: your hero's and a companion's face shows its hair, as their figures do; a lord's keeps its hat, helm or crown)
   static bare(c){return PortraitEngine.normalize({...c,headwear:'none'})}
   // ---- the New game page's face: the draft, made again when your race or your hero's gender changes
   static draftFor(race,g){const D=this.draft;if(D&&D.race===race&&D.g===g)return D.rec;
-    const rec=D?.rec?PortraitCharacters.recipe({config:PortraitEngine.startProfile(this.profileOf(g),PortraitEngine.startRace(this.raceOf(race),D.rec.config)),colors:{}}):this.random(Math.random()*4294967296,race,g);
+    const rec=D?.rec?PortraitCharacters.recipe({config:PortraitEngine.startProfile(this.profileOf(g),PortraitEngine.startRace(this.raceOf(race),D.rec.config)),colors:{}}):this.random(Math.random()*4294967296,race,g,true);
     this.draft={race,g,rec};return rec}
   static maker(race,g){if(!this.ok())return '';const E=PortraitEngine,rec=this.draftFor(race,g),c=rec.config,r=this.raceOf(race);
     const part=([k,n])=>{const L=E.partsFor(r,k);return L.length<2?'':'<label class="fm-row"><span>'+n+'</span><select data-fm-part="'+k+'">'+L.map(v=>'<option value="'+v+'"'+(v===c[k]?' selected':'')+'>'+this.partName(v)+'</option>').join('')+'</select></label>'};
@@ -90,12 +139,12 @@ class Faces{
   static adjust(k,v){const D=this.draft,A=PortraitEngine.adjustments[k];if(!D||!A)return;const n=Math.max(A.min,Math.min(A.max,Math.round(+v||0)));
     D.rec=PortraitCharacters.recipe({config:PortraitEngine.normalize({...D.rec.config,adjustments:{...D.rec.config.adjustments,[k]:n}}),colors:D.rec.colors})}
   static preset(i){const D=this.draft,p=PortraitEngine.presets?.[+i];if(!D||!p)return;D.rec=PortraitCharacters.recipe({config:PortraitEngine.startRace(this.raceOf(D.race),PortraitEngine.normalize(p.config)),colors:D.rec.colors})}
-  static reroll(){const D=this.draft;if(D)D.rec=this.random(Math.random()*4294967296,D.race,D.g)}
+  static reroll(){const D=this.draft;if(D)D.rec=this.random(Math.random()*4294967296,D.race,D.g,true)}
   // (the portrait shown again as a picker or a slider moves, the page kept as it is)
   static refresh(){const img=panel.querySelector('.fm-pic');if(img&&this.draft)img.src=this.url(this.draft.rec,true)}
   // ---- the world's roster: made as the game starts (your face the page's, else one drawn by your race and gender), or loaded
   static start(){this.R=null;this.pics=new Map();if(!this.ok())return;const g=P.gender==='f'?'f':'m',D=this.draft,
-      rec=D&&D.race===P.race&&D.g===g?D.rec:this.random(Rng.seedOf('face:you'),P.race,g);this.draft=null;
+      rec=D&&D.race===P.race&&D.g===g?D.rec:this.random(Rng.seedOf('face:you'),P.race,g,true);this.draft=null;
     try{this.R=new PortraitCharacters.Roster({seed:Rng.seedOf('faces'),player:rec})}catch(e){this.R=null}}
   // (a new person in the same world, world/legacy.js: a face of their own (n: the generation), kin's like the one who fell, theirs
   // the same shape of face, nose and ears and the same skin, hair and eyes; the world's faces kept as they were, saved: the roster's)
@@ -103,7 +152,7 @@ class Faces{
     if(old?.config)try{const base=PortraitEngine.normalize({...old.config,profile:this.profileOf(g),race:this.raceOf(P.race)}),
         [c]=C.variations({base,seed:Rng.seedOf('face:kin:'+n),count:1,locks:['face','nose','ears']});
       rec=C.recipe({config:this.bare(c),colors:{skin:old.colors?.skin,hair:old.colors?.hair,iris:old.colors?.iris}})}catch(e){rec=null}
-    rec??=this.random(Rng.seedOf('face:you:'+n),P.race,g);
+    rec??=this.random(Rng.seedOf('face:you:'+n),P.race,g,true);
     try{this.R=new C.Roster({seed:saved?.seed??Rng.seedOf('faces'),player:rec,characters:saved?.characters||[]})}
     catch(e){try{this.R=new C.Roster({seed:Rng.seedOf('faces'),player:rec})}catch(e2){}}}
   static save(){return this.R?this.R.export():undefined}
@@ -115,8 +164,9 @@ class Faces{
   // ---- the faces: yours, a lord's, a companion's (null: none, the old pictures stand)
   static you(){return this.R?this.R.player:null}
   // (one of the world's faces by its id, made the first time; drawn by the marks of its people: kin)
-  static of(id,race,g,role){if(!this.R)return null;let r=this.R.get(id);if(r)return this.kin(r);
-    try{r=this.R.create({id,race:this.raceOf(race),profile:this.profileOf(g),role,mode:FACES.mode})}catch(e){return null}return this.kin(r)}
+  // (mine: a face kept as the engine and its people's marks make it, as yours: a companion's, whose figure in battle wears its hair)
+  static of(id,race,g,role,mine){if(!this.R)return null;let r=this.R.get(id);if(r)return this.kin(r,race,mine);
+    try{r=this.R.create({id,race:this.raceOf(race),profile:this.profileOf(g),role,mode:FACES.mode})}catch(e){return null}return this.kin(r,race,mine)}
   // (one of a lord's house's kin, or a lord who was one (kinFace): the face kept by their id, as they grow up and take up a title;
   // a child's young and beardless: world/lineage.js)
   static lord(l){const name=l&&(l.name||l.id);if(!name)return null;const F=FACS[l.fac],rs=l.race?[l.race]:F?.races||['human'];
@@ -127,7 +177,7 @@ class Faces{
     // (in its realm's colour: a recipe's cloth, drawn so, its saved face unchanged)
     return r&&F?{...r,colors:{...r.colors,cloth:PX.shade(F.col,.7)}}:r}
   // (a companion's, bareheaded, in what they wear: P.comps' gear)
-  static companion(id){const c=COMPS[id],r=c?this.of('comp:'+id,c.race||'human',c.gender||'m','companion'):null;return r?this.dress({...r,config:this.bare(r.config)},P.comps?.[id]?.gear,c.race||'human'):null}
+  static companion(id){const c=COMPS[id],r=c?this.of('comp:'+id,c.race||'human',c.gender||'m','companion',true):null;return r?this.dress({...r,config:this.bare(r.config)},P.comps?.[id]?.gear,c.race||'human'):null}
   // ---- dressed as they are (FACE_GEAR): gear a slot's item ids (P.gear, a companion's); race the wearer's people
   static fits(race,part,v){return !!v&&PortraitEngine.partsFor(this.raceOf(race),part).includes(v)}
   static metal(t){const D=FACE_GEAR;return PX.mix(MATERIALS[t].col,D.steel,D.tint)}
@@ -146,6 +196,23 @@ class Faces{
   // (a lord's armour by his standing: his tier from his level, his people's make, its metal that tier's)
   static armoured(rec,l){const L=FACE_GEAR.lord,t=Math.max(L.min,Math.min(MATERIALS.length-1,L.min+Math.floor(((l.lv||1)-1)/L.lv))),r=this.raceOf(rec.config.race),cl=this.armour(t,r);
     return this.fits(r,'clothing',cl)?{...rec,config:PortraitEngine.normalize({...rec.config,clothing:cl}),colors:{...rec.colors,metal:this.metal(t)}}:rec}
+  /* (a troop's face (FACE_UNIT): one of its people's, a man or a woman by its kind and v (the figure's variant), dressed as the
+     figure (lookOf) is (v: which figure, by default the kind's own, vOf); the same in every world, kept; null for a beast, a
+     companion (their own), a kind unknown) */
+  static unit(type,v){if(!this.ok())return null;const s=ST[type];if(!s||s.beast||COMPS[type])return null;v=v??this.vOf(type);const key=type+':'+(v|0),C=this.units??=new Map();if(C.has(key))return C.get(key);
+    let rec=null;try{rec=this.dressUnit(type,v|0)}catch(e){rec=null}C.set(key,rec);return rec}
+  // (a kind's own figure where none is named: its card's (ui/unitcard.js), so kinds of a people are not all one skin and hair)
+  static vOf(type){return PortraitCharacters.hash('v:'+type)%6}
+  static dressUnit(type,v){const s=ST[type],L=lookOf(type,0,false,v),race=L.race||s.race||'human',r=this.raceOf(race),U=FACE_UNIT,P0=PortraitCharacters,h=k=>P0.hash('unit:'+type+':'+v+':'+k),
+      by=t=>t==null?null:typeof t==='string'?t:t[race]||t[r]||t.any,fit=(k,x,d)=>this.fits(r,k,x)?x:d;
+    const g=h('g')%1000<(U.women[race]||0)*1000?'f':'m',rec=this.random(h('face'),race,g),c={...rec.config},col={...rec.colors},own=U.own[type];
+    const cl=own?own[0]:!s.tier||L.plain?U.plain[L.outer]||U.plain.any:L.robe?by(U.robe):L.outer==='fur'&&L.armor!=='plate'?'fur':by(U.body[L.armor]||U.body.none);
+    c.clothing=fit('clothing',cl,fit('clothing',by(U.body[L.armor]||U.body.none),c.clothing));c.headwear=fit('headwear',own?own[1]:by(U.head[L.helm])||'none','none');c.headwear=fit('headwear',U.open[race]?.[c.headwear]||c.headwear,c.headwear);
+    // (its colours: the figure's skin and hair, its cloth its coat's, its metal its armour's)
+    const F=FACE_LOOK,cloth=k=>PPAL[k]?PX.mix(PPAL[k][2],'#5a4a3c',.25):null,mt=U.metal[L.outer];
+    if(F.skinOf[L.skin])col.skin=F.skinOf[L.skin];if(F.hairOf[L.hair])col.hair=F.hairOf[L.hair];
+    if(mt)col.metal=mt;else if(cloth(L.outer))col.cloth=cloth(L.outer);if(L.hood&&cloth(L.hood))col.headwear=cloth(L.hood);else if(mt)col.headwear=mt;
+    return {...rec,config:PortraitEngine.normalize(c),colors:col}}
   static pic(rec){return rec?this.url(rec):''}
   // (a figure's picture key by the face it wears: your hero's, a companion's; '' none)
   static lookKey(hero,type){if(!this.ok())return '';const f=hero?this.you():COMPS[type]?this.companion(type):null;return f?'f'+Rng.seedOf(JSON.stringify(this.look(f))):''}

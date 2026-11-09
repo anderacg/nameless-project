@@ -11,9 +11,11 @@
    The die ("Can we have a dice like this?", a photo of light wooden polyhedrals): light haldu wood with its fine grain, the
    numbers burnt in, drawn on a canvas in 3D (lit faces, the grain turning with them), thrown in from the left, hopping and
    rolling, coming to rest with its number to you. Never a draw of the game's: its tumble comes from the roll. DICE: on; tumble,
-   how long it rolls (ms); hold, how long the result stays; die, its look and throw. Reduced motion (the system's): the die at
-   rest, still. A click dismisses it; a new roll replaces it. The overlay is over the screen, not in the window ---------- */
-const DICE={on:true,tumble:1000,hold:1400,
+   how long it rolls (ms); die, its look and throw. Reduced motion (the system's): the die at rest, still. It stays till you close
+   it (the owner: "Please wait the player to close the panel, dont auto close"): Continue, a click anywhere, Enter, Space or Esc
+   (ui/input.js: while it is up no other key reaches the game); a new roll replaces it. The overlay is over the screen, not in the
+   window ---------- */
+const DICE={on:true,tumble:1000,
   // (r the die's size, px; h the canvas's height; spin its turns; hop how high it bounces (px); tilt and roll how it rests
   // (radians); far the eye's distance (perspective); wood light to dark; ink and scorch the burnt numbers; light where it comes from)
   die:{r:40,h:120,spin:2.7,hop:22,tilt:-.26,roll:.14,far:5,
@@ -62,10 +64,12 @@ class Dice{
       '<canvas class="dice-cv" aria-hidden="true"></canvas>'+
       '<div class="dice-bar"><b style="left:'+pc(s.need)+'"></b>'+(s.low<s.need?'<u style="left:'+pc(s.low)+';width:'+(s.need-s.low)*5+'%"></u>':'')+'<em style="left:'+((s.n-.5)*5)+'%"></em></div>'+
       '<div class="dice-res"><span>Rolled '+s.n+(s.b?' + '+s.b+' = '+(s.n+s.b):'')+' · DC '+s.dc+' ('+s.pct+'%)'+(s.low<s.need?' · in part on '+(s.low+s.b):'')+'</span>'+
-      (nat?'<em class="dice-nat">'+nat+'</em>':'')+'<strong>'+W+'</strong></div></div>';
-    el.style.setProperty('--tumble',(quiet?0:DICE.tumble)+'ms');el.addEventListener('click',()=>this.clear());document.body.appendChild(el);this.el=el;
-    this.roll(el.querySelector('.dice-cv'),s.n,quiet);this.timer=setTimeout(()=>this.clear(),(quiet?0:DICE.tumble)+DICE.hold+300)}
-  static clear(){clearTimeout(this.timer);cancelAnimationFrame(this.raf);if(this.el)this.el.remove();this.el=null}
+      (nat?'<em class="dice-nat">'+nat+'</em>':'')+'<strong>'+W+'</strong></div><button class="dice-go" type="button">Continue</button></div>';
+    el.style.setProperty('--tumble',(quiet?0:DICE.tumble)+'ms');el.addEventListener('click',e=>{e.stopPropagation();this.clear()});document.body.appendChild(el);this.el=el;
+    this.roll(el.querySelector('.dice-cv'),s.n,quiet);el.querySelector('.dice-go').focus({preventScroll:true})}
+  // (a key while it is up (ui/input.js): Enter, Space or Esc close it; true: the key is the die's, nothing else hears it)
+  static key(k){if(!this.el)return false;if(k==='escape'||k==='enter'||k===' ')this.clear();return true}
+  static clear(){cancelAnimationFrame(this.raf);if(this.el)this.el.remove();this.el=null}
   // (the throw: the die from the left, hopping lower each time, its turns running out as it comes to rest on its number)
   static roll(cv,n,quiet){const D=DICE.die,dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth||200,h=D.h,x=cv.getContext('2d');if(!x)return;
     cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);const rest=D20.rest(n,D.roll),ax=[.3+.1*(n%3),.35,1],spin=D.spin+(n*7%5)*.08,at=w/2,t0=performance.now(),T=quiet?0:DICE.tumble;

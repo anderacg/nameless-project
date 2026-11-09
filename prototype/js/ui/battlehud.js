@@ -76,7 +76,7 @@ function keepFormUI(){const b=typeof document!=='undefined'&&document.getElement
 // sprite, drawn once into a picture (cached by kind); hudPic, the battle's own cards: the sprite, as its soldiers look on the field
 const PORTRAITS={};
 // (your hero's and a named companion's: their faces (ui/faces.js), while there are)
-function portrait(type,hero,v){const f=typeof Faces!=='undefined'&&Faces.ok()?hero?Faces.yours():COMPS[type]?Faces.companion(type):null:null;if(f)return Faces.pic(f);return !hero&&NamedPortraits.unit(type)||hudPic(type,hero,v)}
+function portrait(type,hero,v){const f=typeof Faces!=='undefined'&&Faces.ok()?hero?Faces.yours():COMPS[type]?Faces.companion(type):Faces.unit(type,v):null;if(f)return Faces.pic(f);return !hero&&NamedPortraits.unit(type)||hudPic(type,hero,v)}
 function hudPic(type,hero,v){const fc=!hero&&COMPS[type]&&typeof Faces!=='undefined'&&Faces.ok()?Faces.companion(type):null;if(fc)return Faces.pic(fc);const art=!hero&&NamedPortraits.of(type);if(art)return art;return spritePic((hero?'hero:'+heroLookKey()+':':'')+type+(v?':'+v:''),()=>unitSprite(type,0,!!hero,v||0))}// (v: one of its looks; your hero's by what he wears now)
 // (your hero's look in a picture's key: his race and gear, so one who takes up a weapon or armour is drawn anew)
 const heroLookKey=()=>[typeof Faces!=='undefined'?Faces.lookKey(true,'hero'):'',P.race,P.gender,P.gear?.weapon,P.gear?.offhand,P.gear?.body,P.gear?.head,P.gear?.mount].join('/')

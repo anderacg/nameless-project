@@ -263,6 +263,7 @@ function keyOf(e){const c=e.code||'';
 window.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   const k=keyOf(e);
+  if(typeof Dice!=='undefined'&&Dice.key(k)){e.preventDefault();e.stopPropagation();return}// (the dice up (ui/dice.js): the key is theirs, till you close them)
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
   if(k==='tab'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!G.modal&&['world','scene','battle'].includes(G.mode)){e.preventDefault();if(!e.repeat)menuKey();return}// Tab: the Game Menu (hub.js; in a window, the menu too, Tab moves between its buttons)
   if(k==='escape'){e.preventDefault();if(window.battleArmyHud?.close()||window.mobileBattleHud?.close()||window.mobileWorldHud?.close()||ActionRing.close()||dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
