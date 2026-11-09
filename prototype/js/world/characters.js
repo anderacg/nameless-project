@@ -84,9 +84,10 @@ class Character extends Unit{
     this.addXp(n);
     return this.lv-lv}
   // (experience added: each level its need (xpNeed), levelled. Your hero's earned in this life is kept apart, xpEarned: what a grave
-  // will give half of, doc/DEATH_DESIGN.md §6.2; a grave's own gift (gift) never counts, nor anything your start gave)
+  // will give half of, doc/DEATH_DESIGN.md §6.2; a grave's own gift (gift) never counts, nor anything your start gave; kept with the rule on,
+  // DEATH.on, so the tests' harness, which turns it off, sees your record as it was)
   addXp(n,gift){
-    if(!(n>0))return;this.xp=(this.xp||0)+n;let up=0;if(this.role==='hero'&&!gift)P.xpEarned=(P.xpEarned||0)+n;
+    if(!(n>0))return;this.xp=(this.xp||0)+n;let up=0;if(this.role==='hero'&&!gift&&DEATH.on)P.xpEarned=(P.xpEarned||0)+n;
     while(this.xp>=this.xpNeed()){this.xp-=this.xpNeed();this.lv++;up++}
     if(up)this.levelled(up)}
   // new levels: one that chooses for itself takes its trees' choices and dresses for its level; then what else a level brings it
