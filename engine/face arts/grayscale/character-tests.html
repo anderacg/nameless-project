@@ -4,6 +4,10 @@ const E=PortraitEngine,C=PortraitCharacters,lines=[];
 function ok(test,label){if(!test)throw Error(label);lines.push('PASS '+label);}
 function throwsCode(fn,code){try{fn();}catch(e){return e.code===code;}return false;}
 try{
+ for(const race of ['dwarf','elf']){const player=E.startRace(race),records=C.generateNPCs({player,race,role:'guard',count:64,seed:812});
+  const armors=race==='dwarf'?['dwarf-runic-plate','dwarf-forge-plate']:['elf-silver-scale','elf-leaf-cuirass'],helms=race==='dwarf'?['dwarf-horned-helm','dwarf-rune-helm']:['elf-winged-helm'];
+  ok(armors.every(k=>records.some(r=>r.config.clothing===k))&&helms.every(k=>records.some(r=>r.config.headwear===k)),race+' military generation uses all new racial armor and helmets');
+ }
  const player=E.startProfile('male'),decorated={...player,seed:666,hair:'none',beard:'full',age:'elder',marks:'scar'};
  ok(C.faceKey(player)===C.faceKey(decorated)&&!C.distinctFromPlayer(player,decorated),'hair, beard, age, marks and texture do not create a new face');
  for(const race of E.races){const p=E.startRace(race),records=C.generateNPCs({player:p,race,count:32,seed:42}),keys=new Set();for(const record of records){if(!C.distinctFromPlayer(record,p)||keys.has(C.faceKey(record)))throw Error('Clone in '+race);keys.add(C.faceKey(record));for(const key of Object.keys(E.raceParts[race]))if(!E.partsFor(race,key).includes(record.config[key]))throw Error('Incompatible '+race+'/'+key);}ok(true,race+': 32 compatible NPCs exclude player and each other');ok(JSON.stringify(records)===JSON.stringify(C.generateNPCs({player:p,race,count:32,seed:42})),race+': seeded batch is reproducible');}

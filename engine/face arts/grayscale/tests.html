@@ -18,6 +18,13 @@ try {
   const mask=data(q.layers.face);for(let y=a.chinY+1;y<=collar;y++)if(!mask[(y*E.size+a.cx)*4+3])throw Error('Dwarf head detached from collar');
  }
  ok(true,'both dwarf profiles sit close to their shoulders with a short connected neck and matching exported anchors');
+ const newArmor=['dwarf-runic-plate','dwarf-forge-plate','elf-silver-scale','elf-leaf-cuirass'],newHelms=['horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm'];
+ for(const clothing of newArmor){const race=clothing.startsWith('dwarf')?'dwarf':'elf',q=E.build({race,clothing});ok(E.soldierEquipment.armor.includes(clothing)&&data(q.layers.armor).some((v,i)=>i%4===3&&v),clothing+' draws independent tintable metal armor');}
+ for(const headwear of newHelms){for(const race of E.races.filter(r=>E.partsFor(r,'headwear').includes(headwear)))for(const face of E.partsFor(race,'face'))for(const faceWidth of [-2,2]){const q=E.build({race,face,headwear,adjustments:{faceWidth}}),mask=data(q.layers.headwearFront);for(const eye of q.anchors.eyes)if(mask[(eye.y*128+eye.x)*4+3])throw Error('New helmet covers pupil '+headwear+'/'+face);}
+  ok(E.soldierEquipment.helmets.includes(headwear),headwear+' is registered and leaves the eyes clear across compatible faces');
+ }
+ for(const headwear of ['horned-helm','dwarf-horned-helm']){const q=E.build({race:'dwarf',headwear}),a=q.anchors,pixels=data(q.layers.headwearFront);let left=false,right=false;for(let y=0;y<a.eyes[0].y-5;y++)for(let x=0;x<128;x++)if(pixels[(y*128+x)*4+3]){if(x<a.cx-a.w-9)left=true;if(x>a.cx+a.w+9)right=true;}ok(left&&right,headwear+' has visible horns on both sides');}
+ ok(!E.partsFor('human','clothing').includes('dwarf-runic-plate')&&!E.partsFor('dwarf','headwear').includes('elf-winged-helm'),'new cultural equipment respects racial selection pools');
  const p=E.build(E.defaults),before=Object.fromEntries(E.order.map(s=>[s.id,p.layers[s.id].toDataURL()]));
  for(const spec of E.order){const a=data(p.layers[spec.id]);ok(a.every((v,i)=>i%4!==0||a[i]===a[i+1]&&a[i]===a[i+2]),spec.id+': neutral grayscale');const levels=(['brows','mouth'].includes(spec.id)||spec.id==='age'&&p.config.age==='mature'||spec.id==='beard'&&['stubble','close-beard'].includes(p.config.beard))?Array.from({length:8},(_,i)=>Math.round(i*255/7)):[0,255];ok(a.every((v,i)=>i%4!==3||levels.includes(v)),spec.id+': expected pixel coverage');ok(a[3]===0,spec.id+': transparent canvas');}
  const again=E.build(E.defaults);ok(E.order.every(s=>before[s.id]===again.layers[s.id].toDataURL()),'identical recipe gives identical pixels');

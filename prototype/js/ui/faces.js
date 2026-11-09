@@ -41,8 +41,8 @@ const FACE_GEAR={
     elf:[null,null,'elf-guard-helm','elf-guard-helm','elf-guard-helm','elf-guard-helm','elf-guard-helm']},
   cape:'cloak',
   // (no armour worn: a face's own armour (armours) its past's plain clothes (plain; any: anyone else's), its own helm (helms) off)
-  armours:['mail','brigandine','scale','lamellar','plate','ruffled-mail','rune-mail','leather-mail','coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail'],
-  helms:['coif','nasal','kettle','round-helm','forge-helm','open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm'],
+  armours:['mail','brigandine','scale','lamellar','plate','ruffled-mail','rune-mail','leather-mail','coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','dwarf-runic-plate','dwarf-forge-plate','elf-silver-scale','elf-leaf-cuirass'],
+  helms:['coif','nasal','kettle','round-helm','forge-helm','open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm'],
   plain:{soldier:'gambeson',guard:'gambeson',woodcutter:'jerkin',exile:'leather',merchant:'doublet',hedge:'robe',nobody:'linen-chemise',apprentice:'tunic',any:'traveler-coat'},
   // (the metal's colour: its material's, steel (steel) mixed in by tint, so gold reads gilt and mithril pale, not paint)
   steel:'#8f969a',tint:.5,

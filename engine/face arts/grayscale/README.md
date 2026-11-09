@@ -1,6 +1,6 @@
 # Grayscale procedural portrait workshop v7
 
-Open **portrait-workshop-grayscale.html** directly in a browser. It is entirely offline: no server, installation or PNG assets required. This standalone study is not installed in the game. The parent v3 image kit is unchanged.
+Open **portrait-workshop-grayscale.html** directly in a browser. It is entirely offline: no server, installation or PNG assets required. The same drawing engine is shared by the in-game face maker. The parent v3 image kit is unchanged.
 
 All artwork is drawn by JavaScript into separate transparent **128 × 128** canvases. Sources use 32 neutral grayscale values. Most layers use binary alpha; brows, lips, Mature skin lines, short beards and tusks retain eight edge-coverage levels so curved features do not become solid rectangular bars. Color is applied at runtime without altering source layers. Classic drawing detail has been removed; old v4/v5/v6 recipes import into the current drawing style.
 
@@ -19,10 +19,10 @@ All artwork is drawn by JavaScript into separate transparent **128 × 128** canv
 | Facial hair (including none) | 17 |
 | Age | 5 |
 | Skin marks (including none) | 9 |
-| Clothing | 33 |
-| Headwear (including none) | 33 |
+| Clothing | 37 |
+| Headwear (including none) | 37 |
 
-New hairstyles include curls, tousled hair, side parts, ponytails, high and low buns, half-up hair, a single braid, an undercut, a topknot and swept-back hair. Mouths include reserved, broad, asymmetric and thin smiles, parted lips and a pout. Additional headwear includes a beret, wrapped hood, headband, veil and fur cap. Each drawable-part option produces distinct source artwork. `gallery.html` shows 75 curated characters.
+New hairstyles include curls, tousled hair, side parts, ponytails, high and low buns, half-up hair, a single braid, an undercut, a topknot and swept-back hair. Mouths include reserved, broad, asymmetric and thin smiles, parted lips and a pout. Additional headwear includes a beret, wrapped hood, headband, veil and fur cap. Each drawable-part option produces distinct source artwork. `gallery.html` shows 80 curated characters.
 
 ## Facial shape and symmetry
 
@@ -198,3 +198,16 @@ Full dwarf beards have broader lower masses and textured side growth; rounded, f
 `tests.html` covers dwarf proportions for both profiles, all compatible face options, beard mouth clearance and unbearded female generation. `character-tests.html` covers deterministic generation and roster persistence. No external artwork or new recipe fields are required.
 
 Dwarf heads sit lower toward the shoulders to keep the visible neck short. The head, hair, beard and headwear move together by eight native pixels; the neck remains joined to the original collar. Exported geometry/anchors and cap hair masks match the new position. Clothing, armor and other races retain their placement.
+
+
+## Horned helmets and cultural armor
+
+Eight new selectable parts add four helmets and four armor sets:
+
+- Horned helm for humans, dwarves and orcs; dwarf horned helm and rune helm for dwarves; winged helm for elves.
+- Dwarf runic plate and forge plate: broad segmented pauldrons, thick plates, studs and engraved runes.
+- Elven silver scale and leaf cuirass: overlapping fine scales, swept leaf plates and curved veins.
+
+The armor stays on the tintable metal layer, with cloth beneath it. Headwear keeps its independent tint; the source remains grayscale. Helmet fit groups control hair and ear concealment, leave the pupils visible and respect the lowered dwarf head placement. Female and male profiles can use the same compatible equipment.
+
+Five editable presets demonstrate the new gear. Military and lord generation pools include the new parts, filtered by race; dwarf and elf cultural weighting includes their own sets. Saved recipes retain their part IDs and remain version 7. The game’s worn-gear portrait rules recognize the new armor and helmets without adding inventory items or changing combat stats.
