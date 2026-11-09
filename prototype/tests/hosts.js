@@ -46,8 +46,8 @@ Kit.suite(({ok})=>{
  ok(t.Host.friend(L)&&!t.Host.friend(N)&&t.Host.askWhy(L)===''&&/know you well enough/.test(t.Host.askWhy(N)),'who may march with you: your realm’s lord, not a stranger');
  {const r=t.relWith(N);t.Relations.change(N,30,'test');ok(t.Host.friend(N),'a friend of another realm may');t.Relations.change(N,r-t.relWith(N),'test')}
  // (asked in his talk)
- {G.enc={kind:'lord',ref:L,list:L.troops.slice()};t.lordMeet(L);const b=document.querySelector('[data-act="talk-follow"]');ok(b&&!b.disabled&&/follow you/.test(b.textContent),'his talk: Ask him to follow you');
-  Kit.stubStream('talk',0,()=>t.act('talk-follow',L.id));ok(L.follow&&L.follow.until>G.day&&/will follow you for/.test(document.getElementById('panel').textContent),'he agrees: he follows you for '+(L.follow&&L.follow.until-G.day)+' days');Kit.world()}
+ {G.enc={kind:'lord',ref:L,list:L.troops.slice()};t.lordMeet(L);t.act('talk-topic','ask');const b=document.querySelector('[data-act="talk-follow"]');ok(b&&!b.disabled&&/follow you/.test(b.textContent),'his talk: Ask him to follow you');
+  Kit.stubStream('talk',0,()=>{t.act('talk-follow',L.id);t.act('talk-way_honour',L.id)});ok(L.follow&&L.follow.until>G.day&&/will follow you for/.test(document.getElementById('panel').textContent),'he agrees: he follows you for '+(L.follow&&L.follow.until-G.day)+' days');Kit.world()}
  {const h=t.Host.yours();ok(h&&h.members.includes(L),'a lord in your host');P.tx=P.x+20*t.TILE;P.ty=P.y;Kit.frames(500,.05,null,()=>P.tx==null);Kit.frames(40,.05);const d=Math.hypot(L.x-P.x,L.y-P.y);ok(Math.abs(d-back(L))<X.gap&&ring(P,L)>0,'he keeps his place in your column ('+Math.round(d)+' px back, his place '+Math.round(back(L))+'; '+Math.round(ring(P,L))+' px between your rings)')}
  // (a battle of yours: he joins against bandits; against a realm at peace with his, he stands aside and leaves your host)
  {const bd=t.asParty({kind:'bandits',troops:Array(4).fill('militia'),x:P.x+30,y:P.y,cool:0});t.bandits.push(bd);t.startEncounter({kind:'party',ref:bd,n:4,list:bd.troops.slice(),band:'bandits'});

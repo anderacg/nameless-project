@@ -425,15 +425,15 @@ defineKinds('encounter',{trigger:'travelHour'},{
     text:e=>'Men in the colours of the '+FACS[e.fac].n+' have dragged a barrier across the road. “The lord’s toll,” says their sergeant: '+tollPrice(e)+' gold to pass.',
     facts:e=>tollFacts(e),
     left:()=>'You turn back from their barrier and go round.',
-    acts:[{icon:'gold',label:'Pay the toll',need:e=>P.gold<tollPrice(e)&&'Not enough gold.',tip:'Pay and pass. Trade gets the toll down.',also:()=>[statHelps('haggle')],
+    acts:[{icon:'gold',words:'Here is your coin.',label:'Pay the toll',need:e=>P.gold<tollPrice(e)&&'Not enough gold.',tip:'Pay and pass. Trade gets the toll down.',also:()=>[statHelps('haggle')],
         out:e=>({gold:-tollPrice(e),say:tollKnown(e)&&!e.real?'You pay the false toll-men. They grin and drag the barrier aside.':'You pay. The sergeant counts the coins and waves you through.'})},
-      {icon:'scroll',label:'Ask for their writ',again:true,odds:'writ',when:e=>!tollKnown(e)&&!e.asked,facts:()=>['whether they are the lord’s men'],
+      {icon:'scroll',words:'Show me the lord’s writ.',label:'Ask for their writ',again:true,odds:'writ',when:e=>!tollKnown(e)&&!e.asked,facts:()=>['whether they are the lord’s men'],
         tip:'Ask to see the lord’s writ and look them over. Scouting and Intellect help; at Scouting '+ENC_TUNE.toll.see+' you see through them at a glance.',run:(e,c)=>tollWrit(e,c)},
-      {icon:'people',label:'Talk your way through',again:true,odds:'talk',when:e=>!e.talked,facts:()=>[statRead('talk',{vague:'they may let you by',what:'to talk your way through'}),statHelps('talk'),'fail: the toll goes up'],
+      {icon:'people',words:'Come now. The lord’s peace is not served by fleecing travellers.',label:'Talk your way through',again:true,odds:'talk',when:e=>!e.talked,facts:()=>[statRead('talk',{vague:'they may let you by',what:'to talk your way through'}),statHelps('talk'),'fail: the toll goes up'],
         tip:'Bluff, flatter or argue the law. Persuasion and Charisma help.',run:(e,c)=>tollTalk(e,c)},
-      {icon:'shield',label:'Refuse',facts:e=>tollRefuseFacts(e),tip:'Tell them you will not pay. False toll-men may back off from a strong band; the lord’s own men will remember it.',run:e=>tollRefuse(e)},
-      {icon:'sword',label:'Fight them',ask:e=>tollKnown(e)&&!e.real?null:'Attack men in the '+FACS[e.fac].n+'’s colours? If they are the lord’s own, the '+FACS[e.fac].n+' will not forgive it.',facts:e=>tollFightFacts(e),run:e=>tollFight(e)},
-      {icon:'prisoners',label:'Report them',when:e=>tollKnown(e)&&!e.real&&!!tollReport(e),need:e=>Escort.why()||!tollStrong(e,ENC_TUNE.toll.seize)&&'They are too many to seize their ringleader.',
+      {icon:'shield',words:'I will not pay.',label:'Refuse',facts:e=>tollRefuseFacts(e),tip:'Tell them you will not pay. False toll-men may back off from a strong band; the lord’s own men will remember it.',run:e=>tollRefuse(e)},
+      {icon:'sword',words:'Clear the road, or we clear it for you.',label:'Fight them',ask:e=>tollKnown(e)&&!e.real?null:'Attack men in the '+FACS[e.fac].n+'’s colours? If they are the lord’s own, the '+FACS[e.fac].n+' will not forgive it.',facts:e=>tollFightFacts(e),run:e=>tollFight(e)},
+      {icon:'prisoners',words:'The lord shall hear of this.',label:'Report them',when:e=>tollKnown(e)&&!e.real&&!!tollReport(e),need:e=>Escort.why()||!tollStrong(e,ENC_TUNE.toll.seize)&&'They are too many to seize their ringleader.',
         tip:'Seize their ringleader and hand him to the lord’s reeve: a bounty there, and the word goes round.',
         out:e=>({passenger:tollReport(e),gone:true,say:r=>r.escort?'You seize their ringleader and bind him; the rest scatter. The reeve of '+r.escort.to.name+' will want him: '+Escort.way(r.escort)+'.':'He slips away.'})}]},
   wagon:{n:'Abandoned wagon',ico:'sack',w:2,ok:()=>true,on:'byroad',beh:'stay',life:'wagon',ends:'unseen',silent:true,tip:'A wagon left beside the road',
@@ -642,7 +642,7 @@ function tollWrit(e,c){if(c.roll()){e.known=1;return'You read the writ and look 
 function tollTalk(e,c){e.talked=1;if(c.roll())return{end:true,say:e.real?'You talk of the law and the lord’s peace until the sergeant lets you by with a grunt.':'They look at each other, unsure of you, and drag the barrier aside.'};
   e.fee=Math.round(e.fee*ENC_TUNE.toll.talk);return'He hears you out, then spits: “'+tollPrice(e)+' gold now, for the trouble.”'}
 function tollRefuseFacts(e){const x=ENC_TUNE.toll,hurt='honour with the '+FACS[e.fac].n+' −'+x.refuse.honor+', reputation in '+e.home+' −'+x.refuse.rep;
-  if(!tollKnown(e))return['false: they back off, or fight','real: '+hurt];
+  if(!tollKnown(e))return['impostors: they back off, or fight','the lord’s own: '+hurt];
   return e.real?['you pass',hurt]:tollStrong(e,x.back)?['they back off: you are too strong for them']:['they fight: '+roadLureOdds(e)]}
 function tollRefuse(e){const x=ENC_TUNE.toll;
   if(e.real)return{honor:[e.fac,-x.refuse.honor],rep:[e.home,-x.refuse.rep],say:'You ride through. “The lord will hear of this,” the sergeant calls after you.'};

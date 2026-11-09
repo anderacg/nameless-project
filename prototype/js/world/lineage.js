@@ -55,7 +55,7 @@ class LordHouse{
   child(p,R,born){const g=R.chance(.5)?'f':'m',race=this.raceOf(p);return this.addKin({name:this.nameFor(race,g,R),gender:g,race,born,parent:p.id})}
   // (one of it wed: a spouse of their people from outside the house, of age)
   // (by: the latest day they may be born, so as to be of age before their eldest child was born)
-  wed(p,R,by=G.day){const F=DEATH.house.fam,g=genderOf(p)==='f'?'m':'f',race=this.raceOf(p),s=this.addKin({name:this.nameFor(race,g,R),gender:g,race,born:by-R.int(F.adult,F.adult+F.age[1]),spouse:p.id,inlaw:true});p.spouse=s.id;return s}
+  wed(p,R,by=G.day){const F=DEATH.house.fam,g=genderOf(p)==='f'?'m':'f',race=this.raceOf(p),s=this.addKin({name:this.nameFor(race,g,R),gender:g,race,born:by-R.int(F.adult,F.adult+F.age[1]),spouse:p.id,inlaw:true,wed:by<G.day?undefined:G.day});p.spouse=s.id;return s}
   // (a lord's family as his house first knows him: a spouse, and children of all ages; your heir (world/legacy.js) has none of it)
   seed(l){if(l.famed)return;l.famed=true;if(l.heir)return;const F=DEATH.house.fam,R=rngOf('houses');
     if(l.spouse||!R.chance(F.wed))return;const ages=Array.from({length:R.int(F.kids[0],F.kids[1])},()=>G.day-R.int(F.age[0],F.age[1]));

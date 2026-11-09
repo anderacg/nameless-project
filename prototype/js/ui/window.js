@@ -53,8 +53,9 @@ const railCards=cs=>'<div class="rcards">'+cs.filter(Boolean).map(railCard).join
    why (disabled, and why: its tooltip and a small line), tip (its rules, in its tooltip)}; the first four get the letter keys
    Q, W, E, R (railActKey; the digits stay the rail's); note: a short muted line under the bar */
 const RAIL_ACT_KEYS='qwer';
-function railKeyActions(as,note){as=as.filter(Boolean);if(!as.length)return '';
-  return '<div class="rkacts">'+as.map((a,i)=>{const k=RAIL_ACT_KEYS[i],fs=(a.facts||[]).filter(Boolean);
+// (keys: the keys in order, RAIL_ACT_KEYS (Q, W, E, R) unless a page gives its own: a choice page's numbers, story/choice.js)
+function railKeyActions(as,note,keys=RAIL_ACT_KEYS){as=as.filter(Boolean);if(!as.length)return '';
+  return '<div class="rkacts">'+as.map((a,i)=>{const k=keys[i],fs=(a.facts||[]).filter(Boolean);
     return '<button class="rkact" type="button" data-act="'+a.act+'"'+(a.arg!=null?' data-arg="'+a.arg+'"':'')+(k?' data-rk="'+k+'"':'')+(a.why?' disabled':'')+' title="'+htmlText((a.tip||a.label)+(a.why?' ('+a.why+')':''))+'">'+
       '<span class="rka-ico">'+icon(a.icon,22)+'</span><span class="rka-t"><b>'+a.label+'</b>'+(fs.length?'<small>'+fs.join(' · ')+'</small>':'')+(a.why?'<small class="rka-why">'+a.why+'</small>':'')+'</span>'+(k?'<kbd>'+k.toUpperCase()+'</kbd>':'')+'</button>'}).join('')+'</div>'+
     (note?'<p class="rka-note">'+note+'</p>':'')}
@@ -101,7 +102,7 @@ class PageScreen extends RailScreen{
   banner(b){const k=pageBanner(b);return '<div class="pg-banner" role="img" aria-label="'+htmlText(b.alt||'')+'" data-pk="'+htmlText(k)+'" style="--bw:'+PAGE_BANNER.w+';--bh:'+PAGE_BANNER.h+';background-image:url('+BANNERS[k]+')"></div>'}
   show(o,key){const old=panel.querySelector('.rwbody'),keep=old&&panel.dataset.page===key?old.scrollTop:0;
     showPanel('<section class="rwin"><div class="top"><span class="rh-flag">'+icon(o.ico,22)+'</span><div class="rw-h"><h2>'+o.title+'</h2>'+(o.sub?'<span class="muted">'+o.sub+'</span>':'')+'</div><span class="gold rw-gold">'+icon('gold',14)+' '+P.gold+' gold</span></div>'+
-      '<div class="rwbody">'+(o.banner?this.banner(o.banner):'')+(o.msg?'<p class="gold pg-msg">'+o.msg+'</p>':'')+(o.body||'')+railKeyActions(o.acts||[],o.note)+'</div>'+nav(o.back,o.close)+'</section>');
+      '<div class="rwbody">'+(o.banner?this.banner(o.banner):'')+(o.msg?'<p class="gold pg-msg">'+o.msg+'</p>':'')+(o.body||'')+railKeyActions(o.acts||[],o.note,o.keys)+'</div>'+nav(o.back,o.close)+'</section>');
     panel.classList.add('wide','paged');panel.dataset.page=key;const b=panel.querySelector('.rwbody');if(b)b.scrollTop=keep}
 }
 const PAGE_SCREEN=new PageScreen();

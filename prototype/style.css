@@ -1338,6 +1338,13 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .talk-line.you b{color:var(--side-me-fg)}
 .talk-out{display:block;flex-basis:100%;margin-left:24px;color:var(--muted);font-weight:normal;font-size:var(--fs-xs)}
 .talk-r{flex-wrap:wrap}
+.talk-l{display:inline-flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+.talk-odds{padding:0 6px;border:1px solid var(--line-2);border-radius:9px;font-size:var(--fs-2xs);font-weight:normal;line-height:16px;color:var(--muted)}
+.talk-odds.good{border-color:var(--good);color:var(--good)}.talk-odds.bad{border-color:var(--danger);color:var(--danger)}
+.talk-r.talk-back{color:var(--muted);font-weight:normal}
+.talk-topic{margin-top:var(--sp-2)}
+.pg-talk{margin:var(--sp-2) 0}.talk-line.did{color:var(--muted)}.talk-line.did b{color:inherit}
+.talk-not{margin:0 0 var(--sp-2);color:var(--faint);font-size:var(--fs-xs)}.talk-not i{font-style:normal;color:var(--muted)}
 
 /* ---------- 9. responsive ---------- */
 /* a touch screen: everything you press at least 44 px, and nothing that only hovering shows */

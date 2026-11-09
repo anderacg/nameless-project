@@ -2,7 +2,7 @@
 /* ---------- choices and their page (doc/STORY_DESIGN.md §3.4; the story wave, S0) ----------
    A Choice is one verb on a page: a happening's (a road encounter's), a thing's (the sealed letter's) or a place's (a shrine's).
    Made from its spec, plain data, each field read with the subject s it is about (the encounter, the letter, the site):
-     icon, label, tip (label and tip: plain, or of s: a person's he or she, core/pronouns.js);
+     icon, label, tip (label and tip: plain, or of s: a person's he or she, core/pronouns.js); words: what your hero says choosing it;
      when(s): offered now (none: always);
      need(s): why it is greyed ('' or false: free to choose);
      ask(s): the confirm before it (what cannot be undone; none or null: no confirm);
@@ -73,6 +73,10 @@ class Choice{
   tipFor(s){
     return typeof this.tip==='function'?this.tip(s):this.tip;
   }
+  // your words as you choose it (its words, of s; else DIALOGUE.says by its label; none: null, what you did shown instead)
+  sayFor(s){
+    return (typeof this.words==='function'?this.words(s):this.words)||DIALOGUE.says[this.labelFor(s)]||null;
+  }
   // its key action on a page (window.js railKeyActions): it sends act with its place in the list
   button(s,act,i){
     return {icon:this.icon,label:this.labelFor(s),facts:this.factsFor(s),act,arg:i,why:this.why(s),tip:this.tipFor(s)};
@@ -84,17 +88,24 @@ class ChoicePage extends PageScreen{
      are about), act (the action its buttons send), done (no choices now), note, back, close}; key: as PageScreen's */
   show(o,key){
     // (someone speaking (o.who: {name, pic, sub}): their head, the text in a talk's frame: story/conversation.js)
-    const text=o.who?Conversation.headOf(o.who)+'<div class="talk-lines"><div class="talk-told">'+o.text+'</div></div>':'<p>'+o.text+'</p>',body=o.body!=null?o.body:text+(o.facts?pageFacts(o.facts):'');
-    super.show({ico:o.ico,title:o.title,sub:o.sub,banner:o.banner,msg:o.msg,body,acts:o.done?[]:this.buttons(o.choices,o.subject,o.act),note:o.note,back:o.back,close:o.close},key);
+    const text=o.who?Conversation.headOf(o.who)+'<div class="talk-lines"><div class="talk-told">'+o.text+'</div></div>':'<p>'+o.text+'</p>',said=this.exchange(o,key),body=(o.body!=null?o.body:text+(o.facts?pageFacts(o.facts):''))+said;
+    super.show({ico:o.ico,title:o.title,sub:o.sub,banner:o.banner,msg:said?null:o.msg,body,acts:o.done?[]:this.buttons(o.choices,o.subject,o.act),keys:CHOICE_KEYS,note:o.note,back:o.back,close:o.close},key);
   }
+  /* (the exchange on its page, kept while the page is the same (key) about the same (subject): each choice made, your words (sayFor) or what you did, and what
+     came of it (its result, o.msg), as a talk's lines: story/conversation.js; the last TALK.lines of them) */
+  exchange(o,key){if(key!==this.key||o.subject!==this.subj){this.key=key;this.subj=o.subject;this.log=[];this.lastMsg=null}
+    if(o.msg&&this.picked&&o.msg!==this.lastMsg){const {c,s}=this.picked;this.log.push({say:c.sayFor(s),did:c.labelFor(s),msg:o.msg})}
+    this.picked=null;this.lastMsg=o.msg||null;if(!this.log.length)return '';const you=htmlText(heroName()||'You');
+    return '<div class="talk-lines pg-talk">'+this.log.slice(-TALK.lines).map(x=>(x.say?'<p class="talk-line you"><b>'+you+'</b> &ldquo;'+x.say+'&rdquo;</p>':'<p class="talk-line you did"><b>'+you+'</b> '+x.did+'</p>')+'<div class="talk-told">'+x.msg+'</div>').join('')+'</div>'}
   // the choices offered now, as key actions (each its place in the whole list)
   buttons(cs,s,act){
     return cs.map((c,i)=>[c,i]).filter(([c])=>c.shown(s)).map(([c,i])=>c.button(s,act,i));
   }
   // the choice a press picked (arg: its place, '!' after it once its confirm is answered), if it is offered and free
   choose(cs,arg,s){
-    const c=cs[parseInt(arg)];
-    return c&&c.shown(s)&&!c.why(s)?c:null;
+    const c=cs[parseInt(arg)],ok=c&&c.shown(s)&&!c.why(s)?c:null;
+    if(ok)this.picked={c,s};
+    return ok;
   }
   // its confirm (o: sub, act, i (its place), back): the same window as every confirm (window.js railConfirm)
   confirm(c,s,o){
@@ -102,4 +113,7 @@ class ChoicePage extends PageScreen{
     railConfirm({title:c.labelFor(s)+'?',sub:o.sub,text:c.asks(s),facts:fs?fs.filter(Boolean):[],confirm:[o.act,o.i+'!',c.labelFor(s)],back:o.back});
   }
 }
+// (a choice page's keys: numbers, as a talk's replies are: story/conversation.js)
+const CHOICE_KEYS='123456789';
 const CHOICE_PAGE=new ChoicePage();
+onWorld(()=>{CHOICE_PAGE.key=null;CHOICE_PAGE.log=[]});

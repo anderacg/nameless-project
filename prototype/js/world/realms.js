@@ -311,7 +311,7 @@ function lordMeet(l,topic){
   const talk=['dialog','scene'].includes(G.mode)&&G.enc&&G.enc.kind==='lord'&&G.enc.ref===l&&G.enc.talk||{};
   G.enc={kind:'lord',ref:l,talk};G.mode=l.inside&&G.scene?'scene':'dialog';P.tx=null;
   // (the talk: story/conversation.js; its answers kept on the visit's talk, said once each)
-  const cv=talk.cv||(talk.cv=new Conversation(new LordSpeaker(l)));
+  const cv=talk.cv||(talk.cv=new Conversation(new LordSpeaker(l)));cv.again=()=>lordMeet(l);
   if(topic==='rumours'&&talk.rumours==null){talk.rumours=rumourSay(rumourSource('lord',l.id,l,{fac:l.fac,from:l.name}))||'I have heard nothing new.';cv.say(talk.rumours)}
   if(topic==='house'&&talk.house==null&&DEATH.on){const h=LordHouse.of(l);talk.house=h.tell(l);if(talk.house)cv.say(talk.house,true)}
   if(topic==='lords'&&talk.lords==null){talk.lords=lordTies(l,false)||'<p>I have no other lords to speak of.</p>';KNOWLEDGE.hear(talk.lords);cv.say(talk.lords,true);
