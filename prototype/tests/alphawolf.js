@@ -41,7 +41,7 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');const PX=t.PX,K=t.WOLF_AL
  finally{for(const[k,w]of Object.entries(weights))t.MONSTERS[k].w=w;K.chance=chance}
  t.startMonster(m);ok(t.G.enc.list.filter(k=>k===K.unit).length===1&&t.G.enc.list.length===5&&document.getElementById('panel').textContent.includes('Alpha Wolf'),'encounters include and display the alpha alongside its pack');t.G.enc=null;t.G.mode='world';t.hidePanel();
  ok(t.monsterXp(m,[K.unit,'wolf','wolf'])===K.xp+20,'slaying an alpha grants its own XP');const pelts=t.invCount('mat','pelt');t.monsterLoot(m,[K.unit,'wolf']);ok(t.invCount('mat','pelt')===pelts+2,'alpha wolves still yield wolf pelts');
- const L=t.lookOf('orc_wolf',0,false,0),art=PX.mountArt('wolf',-1,{C:t.pal('wolf'),M:t.pal('wool')});ok(art.g.w===40&&art.g.h===36&&art.riderX===6,'riders use larger alpha wolves with a centered saddle');
+ const L=t.lookOf('orc_wolf',0,false,0),art=PX.mountArt('wolf',-1,{C:t.pal('wolf'),M:t.pal('wool')});ok(art.g.w===40&&art.g.h===36&&art.riderX===8,'riders use larger alpha wolves with a centered saddle');
  const state=t.BEAST_TACTICS.on;try{t.BEAST_TACTICS.on=true;t.BattleLab.start({leftGroups:[{type:'militia',count:4}],rightGroups:[{type:K.unit,count:1},{type:'wolf',count:4}],seed:7,deploy:false,paused:true,ai:true});
   const B=t.B,u=B.units.find(u=>u.type===K.unit),normal=B.units.find(u=>u.type==='wolf');ok(u&&normal&&u.max>normal.max&&t.beastKind(u.grp)?.way==='pack','the alpha enters combat with its own stats and wolf pack tactics');ok(t.beastPose(u,false)>=A.first,'alpha combat uses the approved wolf animation clips');
  }finally{if(t.BattleLab.active)t.BattleLab.exit();t.BEAST_TACTICS.on=state}

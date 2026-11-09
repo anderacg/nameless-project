@@ -8,6 +8,7 @@ Kit.suite(({ok,info})=>{const t=T,PX=t.PX;Kit.begin('soldier');
   ok(stand.g.w===40&&stand.g.h===36&&stand.seat>=19&&stand.seat<=27,kind+' uses the larger alpha-wolf mount with its saddle on the back');
   ok(new Set(walk.map(a=>raw(a.g))).size>=3&&new Set(run.map(a=>raw(a.g))).size>=3,kind+' has distinct walking and running poses');
   ok([stand,...walk,...run].every(a=>Array.from({length:6},(_,i)=>a.g.p[a.seat*a.g.w+11+PX.wolf.riderX+i]).some(Boolean)),kind+' rider seat always touches the back');
+  const feet=run.map(a=>Math.max(...a.g.p.flatMap((c,i)=>c?[Math.floor(i/a.g.w)]:[])));ok(Math.max(...feet)-Math.min(...feet)>=2,kind+' gallop lifts the body clear of its contact height during suspension');
   const untouched=raw(stand.g);stand.g.p.fill('#ff0000');ok(raw(PX.mountArt(kind,-1,P).g)===untouched,kind+' saddle/barding edits cannot leak into another rider');
   const side=PX.mountArt(kind,0,P,true),belly=PX.mountArt(kind,0,P,'belly');ok(side.g.h===25&&belly.g.h===25&&raw(side.g)!==raw(belly.g),kind+' uses separate authored side and belly fallen poses');
  }
@@ -15,6 +16,10 @@ Kit.suite(({ok,info})=>{const t=T,PX=t.PX;Kit.begin('soldier');
  const units=['orc_wolf','orc_wolfbow','orc_warg'];let count=0,bad=[];
  for(const type of units)for(const team of [0,1])for(const pose of poses){const s=t.unitSprite(type,team,false,0,pose);count++;if(!s.hand||!s.ch||s.width!==s.height)bad.push(type+' '+pose);}
  info(count+' rider sprites: infantry rider, archer and warg raider on both sides');ok(!bad.length,'all mounted actions retain their rider/weapon anchors'+(bad.length?': '+bad.join(', '):''));
+ const rider={...t.lookOf('orc_wolf',0,false,0),weapon:null,held:null,shield:null,offShield:null,bowApart:false},straight=t.pgrid(80,60),leaning=t.pgrid(80,60),a=t.drawMountedRider(straight,rider,20,10,null,-1,0),b=t.drawMountedRider(leaning,rider,20,10,null,-1,1);
+ const row=(g,y)=>g.p.slice(y*g.w,(y+1)*g.w),center=(g,y)=>{const xs=row(g,y).flatMap((v,x)=>v?[x]:[]);return xs.reduce((n,x)=>n+x,0)/xs.length};
+ ok(center(leaning,14)>center(straight,14)&&row(straight,21).join()===row(leaning,21).join(),'the galloping rider leans his head forward while his hips stay seated');
+ ok(b.hand[0]>=a.hand[0]&&b.hand[1]===a.hand[1]&&b.free[0]>=a.free[0],'hands and weapon anchors follow the forward lean without rotating equipment');
  const g=t.pgrid(40,36),L=t.lookOf('orc_wolf',0,false,0);t.drawMount(g,{...L,saddled:true},-1);const down=t.mountDown(L,'side'),belly=t.mountDown(L,'belly');
  ok(g.p.some(Boolean)&&down.width===40&&down.height===26&&belly.width===40&&belly.height===26,'unridden and fallen wolves use the approved mount through production drawing');
 });

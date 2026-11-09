@@ -1728,3 +1728,11 @@ The wolf mount adapter (`PX.wolf.mount` / `PX.mountArt`) supports the existing W
 Alpha wolves (`alpha_wolf`) use every approved wolf animation at 125% size. Newly spawned wild packs have a 25% chance of one stronger leader replacing a regular wolf; its mixed roster, survival and rewards persist in saves. Wolf and warg riders use this larger body in a 40 × 36 mount frame, with centered tack and a saddle that follows the back. Tunables are in `data/monsters.js` (`WOLF_ALPHA`, `ST.alpha_wolf`); coverage is in `tests/alphawolf.js` and `tests/wolfmount.js`.
 
 Wolf artwork is restored from `7ce306d`, preserving its approved head, fur and proportions across all poses. Alpha frames render directly from that master at the larger combat size, avoiding a second enlargement of reduced pixels. Alpha leaders, pack spawning, saves and centered rider mounts remain.
+
+Wolf and warg riders sit into centered saddles, with a forward thigh, bent knee and shin angled back (`people.js` `RIDER_POSTURE`). The moving back carries the same saddle, rider and equipment alignment through walking, running and attacks.
+
+Wolf/warg gallops have a stronger suspension lift and a forward rider lean. `drawMountedRider` keeps the hips seated and dresses the shifted upper body afterwards, preserving native weapon shapes and hand anchors. Walking has a lighter lean; idle remains upright.
+
+All mounts now share the seated knee/shin pose and forward rider lean (`people.js` `RIDER_POSTURE`, `RIDER_LEG`, `drawMountedRider`). This covers horse, stag, ram, wolf and warg riders and mounted heroes. Each mount keeps its authored gait and saddle motion. `tests/mountposture.js` verifies the common posture and anchors across all five types.
+
+Ridden rams use a smooth saddle patch around the waist and thighs so wool does not obscure the rider. The patch follows each gait and preserves the ram silhouette; loose rams keep their fleece. `mountposture` checks the bounded clearance area and stable seat in all nine idle/walk/run frames.
