@@ -1,7 +1,7 @@
 /* Ashmark portrait study: independent grayscale layers, one shared face rig. No image assets. */
 (function (root) {
   'use strict';
-  const SIZE = 128, VERSION = 7;
+  const SIZE = 128, VERSION = 7, DWARF_HEAD_DROP = 8;
   const OPTIONS = Object.freeze({
     race: ['human', 'dwarf', 'orc', 'elf'],
     face: ['oval', 'angular', 'broad', 'long', 'round', 'chiseled', 'heart', 'balanced', 'soft-oval', 'tapered', 'full-cheeked', 'narrow', 'youthful', 'soft-heart', 'strong-jaw', 'dwarven', 'orcish', 'elven', 'dwarf-square', 'orc-heavy', 'elf-high-cheek'],
@@ -212,6 +212,11 @@
     const outline=[...crown,[cx+v.w-2,cheekY+7],[cx+v.jaw,v.jawY||78],[cx+v.chin,chinY-2],[cx,chinY],[cx-v.chin,chinY-2],[cx-v.jaw,v.jawY||78],[cx-v.w+2,cheekY+7]];
     return {cx,top,eyeScale:(1+m.eyeSize*.12)*(dwarf?.9:1),w:v.w,jaw:v.jaw,chin:v.chin,chinY,outline,definition:v.definition||0,softness:v.softness||0,eyes:[{x:cx-v.eye,y:v.eyeY||53},{x:cx+v.eye,y:v.eyeY||53}],nose:{x:cx,y:v.noseY||(shape==='long'?65:shape==='round'?63:64)},mouth:{x:cx,y:v.mouthY||(shape==='long'?78:shape==='round'?74:76)},brows:[{x:cx-v.eye,y:(v.eyeY||53)-(dwarf?4:5)},{x:cx+v.eye,y:(v.eyeY||53)-(dwarf?4:5)}]};
   }
+  // Place the complete dwarf head closer to the shoulders without scaling its pixels.
+  function placedRig(a,dy){
+    if(!dy)return a;const at=p=>({...p,y:p.y+dy});
+    return {...a,offsetY:dy,top:a.top+dy,chinY:a.chinY+dy,outline:a.outline.map(([x,y])=>[x,y+dy]),eyes:a.eyes.map(at),nose:at(a.nose),mouth:at(a.mouth),brows:a.brows.map(at)};
+  }
   function clip(g,p,draw) {g.save();contour(g,p);g.clip();draw();g.restore();}
   function texture(g,r,box,count,lo,hi) {for(let i=0;i<count;i++){const x=box[0]+Math.floor(r()*box[2]),y=box[1]+Math.floor(r()*box[3]); rect(g,x,y,1+r()*2,1,lo+r()*(hi-lo));}}
   function baseFace(g,a,c) {drawNeck(g,a,c);}
@@ -237,15 +242,15 @@
   const REFINED_BODY=[[48,94],[34,96],[15,106],[4,125],[124,125],[113,107],[94,96],[80,94],...COLLAR.slice(0,-1).reverse()];
   const bodyOutline=()=>REFINED_BODY;
   function drawNeck(g,a,c) {
-    const x=a.cx,half=c.race==='dwarf'?Math.max(16,Math.min(18,a.jaw*.55+2)):Math.max(9,Math.min(['dwarven','dwarf-square','orcish','orc-heavy'].includes(c.face)?14:12,a.jaw*.45+2)),top=a.chinY-11;
-    const outline=[[x-half,top],[x+half,top],[x+half-1,91],...COLLAR.slice().reverse(),[x-half+1,91]];
+    const x=a.cx,half=c.race==='dwarf'?Math.max(16,Math.min(18,a.jaw*.55+2)):Math.max(9,Math.min(['dwarven','dwarf-square','orcish','orc-heavy'].includes(c.face)?14:12,a.jaw*.45+2)),top=a.chinY-11,drop=c.race==='dwarf'?DWARF_HEAD_DROP:0;
+    const outline=[[x-half,top],[x+half,top],[x+half-1,91-drop],...COLLAR.map(([X,Y])=>[X,Y-drop]).reverse(),[x-half+1,91-drop]];
     surface(g,outline,(px,py)=>{
       const u=(px-x)/(half+2);
       let v=134+31*Math.sqrt(Math.max(0,1-u*u))-12*u;
       v-=30*falloff(px,py,x,a.chinY+1,half+1,3.3);
-      v-=8*falloff(px,py,x+6,96,3.5,7);
-      v+=6*falloff(px,py,x-5,96,3.5,7);
-      v-=10*falloff(px,py,x,103,17,2);
+      v-=8*falloff(px,py,x+6,96-drop,3.5,7);
+      v+=6*falloff(px,py,x-5,96-drop,3.5,7);
+      v-=10*falloff(px,py,x,103-drop,17,2);
       return v+grain(Math.floor(px),Math.floor(py),c.seed)*1.5;
     });
   }
@@ -1127,7 +1132,9 @@
     const protection=canvas(),pg=protection.getContext('2d');
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){pg.drawImage(layers.eyes,dx,dy);pg.drawImage(layers.eyelids,dx,dy);}
     for(const id of ['age','marks']){const g=layers[id].getContext('2d');g.save();g.globalCompositeOperation='destination-out';g.drawImage(protection,0,0);g.restore();}
-    return {config,anchors,layers};
+    const drop=config.race==='dwarf'?DWARF_HEAD_DROP:0;
+    if(drop)for(const spec of LAYERS){if(spec.id==='clothing'||spec.id==='armor')continue;const shifted=canvas();shifted.getContext('2d').drawImage(layers[spec.id],0,drop);layers[spec.id]=shifted;}
+    return {config,anchors:placedRig(anchors,drop),layers};
   }
   function tint(source,color) {
     if(!/^#[0-9a-f]{6}$/i.test(color))throw new Error('A tint must be a six-digit hex color');
@@ -1142,7 +1149,7 @@
       g.drawImage(portrait.layers.face,0,0);
       g.drawImage(portrait.layers.headwearBack,0,0);
       g.drawImage(portrait.layers.headwearFront,0,0);
-    } else {g.fillStyle='#fff';g.fillRect(0,rule.rim,SIZE,SIZE-rule.rim);}
+    } else {const rim=rule.rim+(portrait.anchors.offsetY||0);g.fillStyle='#fff';g.fillRect(0,rim,SIZE,SIZE-rim);}
     return out;
   }
   function composite(portrait,{colors=null,visible=null}={}) {
@@ -1183,6 +1190,6 @@
     if(R()<.55)c.marks='none';
     return normalize(c);
   }
-  function geometry(input){const c=normalize(input);return rig(c.face,c.adjustments,c.race);}
+  function geometry(input){const c=normalize(input);return placedRig(rig(c.face,c.adjustments,c.race),c.race==='dwarf'?DWARF_HEAD_DROP:0);}
   root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,soldierEquipment:SOLDIER_EQUIPMENT,soldierPresets:SOLDIER_PRESETS,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
 })(globalThis);

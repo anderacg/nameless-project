@@ -196,3 +196,5 @@ Dwarf race recipes now use a compact skull, wider square jaw, broad chin and sto
 Full dwarf beards have broader lower masses and textured side growth; rounded, full, forked, braided and bound options remain distinct and preserve the lip opening. Male random generation favors the full beard families. Female random generation keeps no beard, and all compatible manual beard choices remain available. Existing recipes keep their choices and seed; the revised geometry is applied when drawing them. Other races retain their renderer.
 
 `tests.html` covers dwarf proportions for both profiles, all compatible face options, beard mouth clearance and unbearded female generation. `character-tests.html` covers deterministic generation and roster persistence. No external artwork or new recipe fields are required.
+
+Dwarf heads sit lower toward the shoulders to keep the visible neck short. The head, hair, beard and headwear move together by eight native pixels; the neck remains joined to the original collar. Exported geometry/anchors and cap hair masks match the new position. Clothing, armor and other races retain their placement.

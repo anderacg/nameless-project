@@ -1738,3 +1738,5 @@ All mounts now share the seated knee/shin pose and forward rider lean (`people.j
 Ridden rams use a smooth saddle patch around the waist and thighs so wool does not obscure the rider. The patch follows each gait and preserves the ram silhouette; loose rams keep their fleece. `mountposture` checks the bounded clearance area and stable seat in all nine idle/walk/run frames.
 
 Dwarf portrait anatomy is redesigned in the shared generation engine (`engine/face arts/grayscale/portrait-engine.js`): a compact broad skull, square jaw, heavy brows, wider nose, stout neck and fuller beard silhouettes. Both bearded and unbearded faces retain dwarf proportions. The workshop and game face maker use the same renderer, preserving saved recipe choices and seeded generation. See `doc/DWARF_PORTRAIT_DESIGN.md`.
+
+Dwarf portrait necks are shortened by seating the entire head eight pixels closer to the shoulders, with the collar fixed. Facial parts, beards, helmets and exported anchors stay aligned without rescaling the artwork.
