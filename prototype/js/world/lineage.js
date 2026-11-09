@@ -29,8 +29,9 @@ class LordHouse{
       taken=g=>W.lords.some(o=>!o.gone&&String(o.name).split(/\s+/).pop()===g);let given=R.pick(FOLK_NAMES[race]||FOLK_NAMES.human);for(let k=0;k<6&&taken(given);k++)given=R.pick(FOLK_NAMES[race]||FOLK_NAMES.human);// (no two lords alive of one name)
     const f=FOLK_WOMEN.includes(given),
       T=DEATH.house.titles,title=T[n.title]?T[n.title][f?1:0]:n.title,seat=townBy(this.seat)||Spatial.nearest(fiefsOf(n.fac),P.x,P.y);if(!seat)return;
-    const l=asParty({id:this.id+'_'+G.day+'_'+this.dead.length,name:title+' '+given,fac:n.fac,x:seat.x+rint(-8,8),y:seat.y+14,troops:armyOf(n.fac,DEATH.house.men),state:'rest',tgt:seat.name,sd:0,cool:0,dead:false,gone:false,back:0,lv:n.lv,house:this.id,gender:f?'f':'m'});
-    W.lords.push(l);if(this.grudged())changeRel(l,DEATH.house.grudge,'you killed '+this.grudge.name+' of '+this.name);
+    const l=asParty({id:this.id+'_'+G.day+'_'+this.dead.length,name:title+' '+given,fac:n.fac,x:seat.x+rint(-8,8),y:seat.y+14,troops:armyOf(n.fac,DEATH.house.men),state:'rest',tgt:seat.name,sd:0,cool:0,dead:false,gone:false,back:0,house:this.id,gender:f?'f':'m'});
+    // (his skills made as any lord's: realms.js lordStats; then the level he comes to it with)
+    lordStats(l);l.lv=n.lv;W.lords.push(l);if(this.grudged())changeRel(l,Math.round(DEATH.house.grudge*(this.grudge.half?DEATH.kin.rel:1)),(this.grudge.half?'your kin':'you')+' killed '+this.grudge.name+' of '+this.name);
     worldEvent({text:l.name+' takes up the place of '+this.name+' at '+seat.name+'.',x:seat.x,y:seat.y,fac:[n.fac],post:false,kind:''});return l}
 }
 const Houses={list:[],n:0,
@@ -41,7 +42,7 @@ const Houses={list:[],n:0,
   slain(l,byYou){if(!DEATH.on||!l||l.gone||Math.random()>=DEATH.house.slain)return false;Object.assign(l,{dead:true,gone:true,back:1e9,troops:[],inside:null});this.died(l,'slain in battle',byYou);return true},
   // (a lord's house in a line: its name, seat, its dead, a grudge against you; make: found it now if it has none, the rule on)
   tagOf(l,make){const h=l.house&&this.byId(l.house)||(make&&DEATH.on&&!l.gone?LordHouse.of(l):null);if(!h)return '';
-    return '<small>'+htmlText(h.name)+(h.seat?' · seat '+htmlText(h.seat):'')+(h.dead.length?' · '+h.dead.length+' in its crypt':'')+(h.grudged()?' · <span class="bad">bears you a grudge: you killed '+htmlText(h.grudge.name)+'</span>':'')+'</small>'},
+    return '<small>'+htmlText(h.name)+(h.seat?' · seat '+htmlText(h.seat):'')+(h.dead.length?' · '+h.dead.length+' in its crypt':'')+(h.grudged()?' · <span class="bad">bears you a grudge: '+(h.grudge.half?'your kin':'you')+' killed '+htmlText(h.grudge.name)+'</span>':'')+'</small>'},
   hour(){if(!DEATH.on)return;for(const h of this.list)h.succeed()},
   save(){return this.list.length?{n:this.n,list:this.list}:undefined},
   load(v){this.n=v?.n||0;this.list=(v?.list||[]).map(o=>new LordHouse(o))}

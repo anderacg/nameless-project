@@ -86,8 +86,8 @@ Kit.suite(({ok})=>{
    const fief=t.TOWNS.filter(x=>!x.gone&&x.owner&&x.owner!=='player').sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[1];fief.owner='player';
    const m0=wolves();m0.qid=999;P.quests=[{id:999,type:'beast',title:'Beasts at the folds',mon:'wolf'}];const day=G.day,lords0=W.lords.length,fids0=t.FIDS.length;
    dieNow(m0);ok(/data-act="death-new"/.test(panel()),'slain: "Go on as someone new" on the Slain page');
-   t.act('death-new');ok(/<h2>A new life<\/h2>/.test(panel())&&/data-act="death-past"/.test(panel())&&/data-act="death-race"/.test(panel()),'a new life: your race, your name, your past');
-   t.act('death-race','dwarf');const k=Object.keys(t.BGS)[0];t.act('death-past',k);
+   t.act('death-new');ok(/<h2>A new life<\/h2>/.test(panel())&&/data-act="death-past"/.test(panel())&&/data-act="death-kin"/.test(panel()),'a new life: who you are (kin, or a stranger), your name, your past');
+   t.act('death-kin','');t.act('death-race','dwarf');const k=Object.keys(t.BGS)[0];t.act('death-past',k);
    ok(G.mode==='world'&&!D.slain&&P.race==='dwarf'&&P.bg===k&&P.level===0&&!P.renown&&!Object.keys(P.comps).length&&!P.quests.length&&P.born===G.day&&G.day===day,'you begin again: a dwarf '+t.BGS[k].n.toLowerCase()+', level 0, no renown, no companions, no quests, on the same day ('+G.day+')');
    ok(m0.qid==null&&W.monsters.includes(m0),'the quests\' marks on the world gone with them; the world as it was');
    const h=W.lords.find(l=>l.heir),f=h&&h.fac;
@@ -216,7 +216,7 @@ Kit.suite(({ok})=>{
    fi.value='Thornwood';fi.dispatchEvent(new Event('input',{bubbles:true}));t.act('death-past',k);settleAll();
    ok(L.family==='Thornwood'&&L.line.length===1&&L.line[0].family==='Thornwood','your line goes by it: the Thornwood family');
    const g2=die(X.grave.tiers.near.stone),site=W.sites.find(o=>o.type==='rest'&&o.kind==='plot');ok(site&&site.name==='Thornwood Family Rest'&&L.line.length===2&&L.family==='Thornwood','its graves and plot go by it: "'+(site&&site.name)+'"; the next life keeps it');
-   G.jsec='family';const html=t.JOURNAL_SECTIONS.family.render();const ord=[...html.matchAll(/class="ft-n">([^<]+)</g)].map(m=>m[1]);ok(/The Thornwood family · 2 fallen/.test(html)&&ord.join('|')==='1st|2nd|3rd · you'&&/class="ft-gen ft-now"/.test(html)&&/Lies in Thornwood Family Rest/.test(html),'the journal\'s Family, a tree: the 1st at the top, then the 2nd, down to you, the 3rd ('+ord.join(' → ')+')');
+   G.jsec='family';const html=t.JOURNAL_SECTIONS.family.render();const ord=[...html.matchAll(/class="ft-n">([^<]+)</g)].map(m=>m[1]);ok(/The Thornwood family · 2 fallen/.test(html)&&ord.join('|')==='1st|2nd|3rd · you'&&/class="ft-li ft-now"/.test(html)&&/Lies in Thornwood Family Rest/.test(html),'the journal\'s Family, a tree: the 1st at the top, then the 2nd, down to you, the 3rd ('+ord.join(' → ')+')');
    // (a lord of a house killed by you: his house holds it against you, its living lords and the next of it; the house shown with him)
    const H=t.Houses;H.list=[];const lo=W.lords.filter(o=>!o.dead&&!o.gone&&t.fiefsOf(o.fac).length),a=lo[0],h=t.LordHouse.of(a),b=lo.find(o=>o!==a&&o.fac===a.fac);if(b)b.house=h.id;
    const rb=b?t.relWith(b):0;Object.assign(a,{dead:true,gone:true,back:1e9});H.died(a,'put to death',true);
@@ -224,8 +224,17 @@ Kit.suite(({ok})=>{
    G.day+=X.house.wait;H.hour();const s=W.lords.find(o=>o.house===h.id&&!o.dead&&o!==b);ok(s&&t.relWith(s)===X.house.grudge,'the next of the house takes up the place, and the grudge with it ('+(s&&s.name)+': '+(s&&t.relWith(s))+')');
    ok(new RegExp(h.name+'.*bears you a grudge').test(H.tagOf(s))&&s.tip().includes(h.name),'the house shown with its lords, on the map and in the Lords: "'+H.tagOf(s).replace(/<[^>]+>/g,'')+'"');
    const c=W.lords.find(o=>!o.dead&&!o.gone&&!o.house);ok(/House /.test(H.tagOf(c,true))&&c.house,'a lord with no house yet: his house founded as you look him up');
-   die(0);ok(!h.grudged(),'you dead, a new person: a stranger to them, the grudge gone with you');
+   G.kin=null;die(0);ok(!h.grudged(),'you dead, a stranger going on: the grudge gone with you');
    const r0=W.lords.find(o=>!o.dead&&!o.gone&&!o.house);roll(0);let txt='';try{txt=t.lordWon(r0,{gold:0})}finally{window.Math.random=rnd}ok(r0.gone&&/falls in the fighting/.test(txt)&&H.byId(r0.house).grudged(),'beaten by you, now and then he falls in the fighting: his house holds it against you');
+   // (kin of the one who fell: their people, a keepsake, a little of their name and of what their lords thought of them, the family's ground)
+   {setup();const lo=W.lords.find(o=>!o.dead&&!o.gone),gid=Object.keys(t.ITEMS).find(q=>t.ITEMS[q].slot==='weapon');P.race='elf';P.renown=200;P.lrel={[lo.id]:60};P.gear.weapon=gid;
+    const hl=t.LordHouse.of(lo);hl.grudge={gen:L.fallen,day:G.day,name:'Lord X',how:'put to death'};const home0=P.home,n0=L.line.length,mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}
+    t.act('cont');t.act('death-new');ok(/data-act="death-kin"/.test(panel())&&!/data-act="death-race"/.test(panel()),'who you are: kin of the fallen (their people, no choosing your race), or a stranger');
+    t.act('death-past',k);const ok1=P.race==='elf'&&P.renown===20&&P.lrel[lo.id]===30&&P.inv.some(q=>q&&q.id===gid)&&L.kin.rel==='child'&&L.kin.of===n0+1;
+    ok(ok1,'their child: an elf as they were, '+P.renown+' renown of their 200, half their lord\'s regard ('+(P.lrel[lo.id])+' of 60), their blade in your bag');
+    const fh=t.townBy(L.plot?.at)||t.townBy(home0);ok(!fh||P.home===fh.name,'you begin where the family is known ('+P.home+')');
+    ok(hl.grudged()&&hl.grudge.half&&/your kin killed/.test(H.tagOf(lo)),'their feud yours, at half: "'+H.tagOf(lo).replace(/<[^>]+>/g,'')+'"');
+    const html=t.JOURNAL_SECTIONS.family.render(),m=html.match(/<li class="ft-li"><div class="ft-row">[\s\S]*?<ul><li class="ft-li ft-now">/);ok(m&&/Child of /.test(html),'the tree: you below the one you came from, their child')}
    H.list=[];t.Remains.list=[];W.sites=W.sites.filter(o=>o.type!=='rest');L.clear()}
   // ---- no room on the roll's other side: a man-eater only once, and no mythic one
   {setup();const m=wolves({eater:{name:'the Old Maw',day:1}}),lv=m.lv;roll(.1);try{lose(enc(m))}finally{window.Math.random=rnd}ok(m.lv===lv&&m.eater.name==='the Old Maw','a man-eater already: named once');t.act('cont')}

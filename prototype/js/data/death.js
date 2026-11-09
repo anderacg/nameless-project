@@ -29,6 +29,8 @@
    house (the lords' houses, world/lineage.js): the chance a lord dies when his army is beaten, the days of mourning before one of his
    house takes his place, the levels the next has less, their men, what paying your respects at a crypt gives with its living lords
    (relation), the grudge a house holds when one of it dies by your hand (relation, its living lords and the next), the titles that follow their bearer's sex (others stay as they are);
+   kin (world/legacy.js: going on as kin of the one who fell): the share of their renown you carry, of their lords' regard and grudges,
+   the standing you begin with where the family is known;
    heir (phase 3): the approval a companion needs to be your heir (Loyal), the approval the others need to ride with them (Content),
    the men they start with when they led no party of their own;
    remains (phase 2, dying): the share of your gold left with them (the rest scattered), how near a band finds them (seek px) and its
@@ -38,6 +40,7 @@ const DEATH={on:true,die:true,live:.3,min:.1,max:.6,
   wake:24,hp:.2,weak:{days:3,dmg:.85,spd:.9},food:.6,horse:.5,
   comps:{n:3,hurt:2,wander:7,far:[8,30],left:2,talk:{base:.35,pers:.05,ap:.04,min:.1,max:.9},pay:{base:40,lv:12}},
   heir:{ap:5,follow:0,men:4},
+  kin:{renown:.1,rel:.5,rep:10},
   house:{slain:.06,wait:5,lv:2,men:6,respect:3,grudge:-40,titles:{Lord:['Lord','Lady'],Lady:['Lord','Lady'],Ser:['Ser','Dame'],Dame:['Ser','Dame']}},
   grave:{share:.5,find:{heir:3,near:.3,far:.04,renown:.002,max:.9},cairn:12,yard:{r:70,tries:12,min:110,max:330,step:22,clear:2,town:90,wood:3,near:.6},apart:34,rings:6,plot:{cols:4,gap:30,row:.8,wall:16},
     tiers:{far:22,cairn:50,near:{small:0,stone:50,grave:200,tomb:500},talk:{remains:0,small:.5,stone:1,cairn:1,grave:1,tomb:1}},
