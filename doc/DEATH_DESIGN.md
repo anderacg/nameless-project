@@ -20,6 +20,10 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 - **The map is forgotten** by the new person.
 - **No easy mode** that always lets you live.
 
+## Decisions, round 3 (owner, 2026-11-09)
+
+- **A companion is your heir:** "let companion have it, and companion will lead the band if their loyalty is high, they will keep up your legacy but no benefit for new character". What the old hero leaves goes to their most loyal companion, who leads a band of their own (§6.1). An heir for the new person (kin) comes later.
+
 ## 1. When it applies
 
 - **A loss to beasts only:** the foe's side is all beasts or monsters (`mapKind` 'monster', a wildlife fight, a den or a beast lair). If any man stands on the foe's side (bandits with war dogs, a beast tamer), it is a loss to men, and capture works as today (`Captivity.defeat` → `captor`).
@@ -89,12 +93,25 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 - **Starting over:** you pick a new person (race, background, name) as at a new game, but in **this world, at this date**, in the same save. You start at a holding near or one you pick (as a new game's start).
 - **What stays in the world:** every holding, lord, war, realm and the date.
 - **What goes:**
-  - **Companions:** the old hero's companions are free again. They go to taverns and may be hired again (they remember the old hero: a line).
+  - **Companions:** the heir and those who follow them go with the heir (§6.1). The rest are free again: they go to taverns and may be hired again (they remember the old hero: a line).
   - **Troops:** gone.
-  - **Estates and fiefs:** go back to the realm that granted them (its lord gives them anew).
-  - **A realm you founded:** its strongest vassal takes the crown and the realm goes on, now ruled by the AI. If it has no vassals, its holdings go to the realm next to each.
+  - **Estates and fiefs:** go to the heir (§6.1); with no heir, back to the realm that granted them (its lord gives them anew).
+  - **A realm you founded:** the heir takes the crown (§6.1); with no heir, its strongest vassal does, and the realm goes on, now ruled by the AI. If it has no vassals, its holdings go to the realm next to each.
   - **Prisoners you held:** go free. Someone else's captives you held go home.
-  - **Your caravans** (`world/caravans.js`, `mine`): their goods and purse go to the realm of the holding they are bound for; they become its caravans.
+  - **Your caravans** (`world/caravans.js`, `mine`): go to the heir (§6.1); with no heir, their goods and purse go to the realm of the holding they are bound for, and they become its caravans.
+
+### 6.1 The heir: a companion keeps your legacy
+
+- **Who:** the companion with the highest approval, if it is at least "loyal" (`apName`, core/state.js) and they are alive. A tie goes to the higher level. A companion who leads a band of their own already (`compInit(id).party`) counts too.
+- **No one loyal:** no heir. Everything goes as in §6 (to the realms, the companions free).
+- **What they take:** the old hero's caravans, fiefs and estates (they hold them as a vassal of the same realm, if its ruler accepts them; else the fiefs go back to the realm), the crown of a realm the hero founded, and what the remains still hold if they reach them first (§5: the heir's band goes for the remains, and may race the bandits for them).
+- **Their band:** the heir leads a lord-like party, "<heir>'s company", under the old hero's banner:
+  - the other companions who are at least "content" with the heir go with them; the rest go free;
+  - no troops at first (the old army fell); they recruit over the next days, as a lord does, paid from the inheritance;
+  - they act as a lord of their realm, or as a free company without one: they guard their fiefs, run the caravans, hunt the beast that killed the hero (its man-eater bounty), and go to the realm's wars.
+- **No benefit for the new person:** nothing passes to you. The heir's company is a party like any other: neutral to you at first, it can be talked to (they speak of the old hero), traded with, fought or befriended as any lord. Its companions cannot be hired while they serve the heir.
+- **The legacy ends** when the heir dies, is captured and never ransomed, or loses everything (no gold, no fief, no men): their company breaks up and its companions go free.
+- **Surviving is unchanged:** an heir is only for a death (§5).
 - **What resets:**
   - **Reputation:** renown, honour and relations start fresh. Lords who knew the old hero remember them in a line, not in numbers.
   - **Quests:** all dropped. Each giver is told, with no penalty to anyone. A quest the world tracks (a bounty) stays open for anyone.
@@ -114,7 +131,9 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
 - **Losing during an escort or a caravan's guard:** §3 for the people; the caravan's goods are left as remains, as yours are.
 - **During a quest that needs you alive** (a duel set, a wedding, a meeting): if you survive, its date passes as usual. If you die, the quest is dropped (§6).
 - **Your realm's king** (you are a vassal) hears of your death; your fiefs go back to him.
-- **A companion leads a band apart from you** (if that is built): they keep it, and become free with it, a lord-like party of their own.
+- **A companion leads a band apart from you:** they keep it. If they are the heir, it becomes the heir's company (§6.1); else it breaks up and they go free.
+- **The heir is wounded or captured when you die:** they still inherit, and take up the band once healed or free.
+- **The heir's realm is at war with the new person's:** nothing special; they are a lord of that realm.
 - **Saving during the lost day:** you cannot; the day passes in one step.
 - **A death in the tutorial or the opening story:** the opening's rule (you live, wounded).
 
@@ -128,8 +147,9 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
   - `die(e)`: the remains, the slain page, then the new person.
 - **The man-eater:** a flag and a name on the monster (`W.monsters`), saved; drawn with a mark; news and a bounty.
 - **The remains:** a `WorldObject` on the map holding the goods; bandits seek it as they seek prey. It is saved, and fades.
+- **The heir's company:** a lord-like party led by a companion (the companion parties that exist today, `compInit(id).party`, given a lord's brain: recruiting, fiefs, caravans, wars). Saved.
 - **Starting over:** the new-game start (`core/session.js`, the character maker) run into the live world:
-  - first the old hero's things are handed out (estates, realm, companions);
+  - first the old hero's things are handed out (the heir, estates, realm, companions);
   - then a fresh `P` is made for the new person.
   - This is the largest part, and it needs a careful pass over everything kept on `P`.
 - **Quests:** a world event `hero:fell` {lived} that quests listen to (the bus: `worldOn`), so each quest kind decides its own outcome (§4).
@@ -138,15 +158,16 @@ Status: **design** (2026-11-09), not built. The owner: "When you lost to the bea
   - a beast loss with your whole side down rolls; one with a soldier standing does not;
   - one that men joined goes to capture;
   - surviving: a day passes, the band breaks up, the companions' reunion, the escort's search, the man-eater;
-  - dying: the remains (and bandits taking them), the realm's crown to a vassal, the new person in the same world, quests dropped.
+  - dying: the remains (and bandits taking them), the heir (the most loyal; none below loyal), their company, fiefs and caravans; the realm's crown to the heir, or to a vassal; the new person in the same world, quests dropped.
 
 ## 9. Phases
 
 1. **The rule and surviving:** the roll; the lost day; the army gone; companions scattered and their reunion; food, horse and escorts; the man-eater; quests rechecked.
 2. **Dying:** the slain page, the remains, the chronicle.
-3. **A new person:** the old hero's things handed out, the realm's crown, the new person in the same world, the main story restarting.
+3. **A new person:** the old hero's things handed out, the heir and their company, the realm's crown, the new person in the same world, the main story restarting.
 4. **The skirmish:** the same rule once real-time fights are built.
 
 ## 10. Open questions
 
-- **An heir?** The game has no bank. Besides your purse (a share in your remains), the old hero leaves only their caravans and their fiefs' stock, and both go to a realm (above). Should the new person inherit part of it (a "kin" background that starts with some gold or a caravan)? For now: no, a clean start.
+- **The crown:** the heir takes the crown of a realm you founded, over its strongest vassal (my choice, to keep the legacy). Or should the vassals choose?
+- **An heir for the new person** (kin): later.
