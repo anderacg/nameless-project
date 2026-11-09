@@ -185,6 +185,26 @@ Kit.suite(({ok})=>{
    const sv=JSON.parse(JSON.stringify(H.save())),rs=JSON.parse(JSON.stringify(t.Remains.save()));H.load(sv);t.Remains.load(rs);ok(H.byId(h.id).dead.length===2&&t.Remains.list.find(o=>o.crypt) instanceof t.Crypt,'saved and loaded: the house, its crypt');
    X.on=false;const o2=W.lords.find(o=>!o.dead&&!o.gone);roll(0);try{ok(!H.slain(o2),'the rule off (the tests\' harness): no lord dies')}finally{window.Math.random=rnd;X.on=true}
    H.list=[];t.Remains.list=[]}
+  // ---- edge cases (the owner: "Check for edge cases")
+  {const L=t.Legacy,k=Object.keys(t.BGS)[0],settleAll=()=>{const was=D.unseenAt;D.unseenAt=()=>true;roll(0);try{t.Grave.daily()}finally{window.Math.random=rnd;D.unseenAt=was}},
+    die=(ren,x,y,keep)=>{setup();W.lords=W.lords.filter(l=>!l.heir);P.comps={};if(x!=null){P.x=x;P.y=y}P.renown=ren;P.xpEarned=40;const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}t.act('cont');t.act('death-new');t.act('death-past',k);if(!keep)settleAll();return t.Remains.list.filter(o=>o.grave).pop()};
+   // (Esc on the Slain page: on as someone new, never thrown out of the game)
+   {setup();t.Remains.list=[];L.clear();const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}t.act('cont');
+    const nb=document.querySelector('#panel .nav [data-nav="back"]'),nc=document.querySelector('#panel .nav [data-nav="close"]');ok(!nb&&nc&&nc.dataset.act==='death-new'&&/data-act="death-load"/.test(panel()),'the Slain page: Esc goes on as someone new; a save or the main menu are buttons of their own');
+    t.act('death-new');t.act('death-past',k);settleAll()}
+   // (praying, then saving or loading at once: the gain is yours already, and nothing of the flow is saved)
+   {t.Remains.list=[];const g=die(0);G.mode='world';const a0=t.HERO_XP_ALL(P.level,P.xp);g.pray();ok(Math.round(t.HERO_XP_ALL(P.level,P.xp)-a0)===g.xp&&!JSON.stringify(t.Remains.save()).includes('"flow"'),'pray, and save before the light arrives: the experience yours already (+'+g.xp+'), its flow not saved')}
+   // (the holding of your family's plot gone: a new plot begun by the next; the old one stays a place of its own)
+   {t.Remains.list=[];L.clear();const a=die(0),at1=a.plot,h1=t.townBy(at1);h1.gone=true;const h2=t.Spatial.nearestHolding(h1.x,h1.y,o=>o!==h1&&!o.gone);let b;try{b=die(0,h2.x+24,h2.y+30)}finally{h1.gone=false}
+    const plots=W.sites.filter(o=>o.type==='rest'&&o.kind==='plot');ok(b.plot&&b.plot!==at1&&plots.some(o=>o.ref===at1&&o.members().includes(a))&&plots.some(o=>o.ref===b.plot&&o.members().includes(b)),'the plot\'s holding gone: a new plot at '+b.plot+', the old at '+at1+' kept as its own place')}
+   // (a lone one found, then buried where it lay or carried off: the same place, as you knew it)
+   {let far=null;for(let ty=4;ty<t.MH-4&&!far;ty+=3)for(let tx=4;tx<t.MW-4&&!far;tx+=3){const x=tx*t.TILE+8,y=ty*t.TILE+8,h=t.Spatial.nearestHolding(x,y);if(t.passable(t.terrAt(x,y))&&h&&Math.hypot(h.x-x,h.y-y)/t.TILE>X.grave.tiers.far+3&&!t.RoadBand.on(x,y))far={x,y}}
+    if(far){t.Remains.list=[];const g=die(0,far.x,far.y,true),s0=W.sites.find(o=>o.type==='rest'&&o.members().includes(g));G.mode='world';s0.meet();t.act('site-rest','here:0');const s1=W.sites.find(o=>o.type==='rest'&&o.members().includes(g));
+     ok(s0&&s1===s0&&g.kind==='small','buried where it lay (moved a little): still the place you found ("'+(s1&&s1.name)+'")')}}
+   {const lv=P.level,bg=P.bg;D.slain=null;t.act('death-new');t.act('death-past',Object.keys(t.BGS)[1]);ok(P.level===lv&&P.bg===bg&&!/A new life/.test(panel()),'alive, no new life to be had (its page and its pasts do nothing)')}
+   // (no two resting places ever share a number, though places come and go)
+   {const is=W.sites.filter(o=>o.type==='rest').map(o=>o.i);ok(new Set(is).size===is.length&&is.every(i=>i>=100000),'every resting place its own number, past the world\'s sites')}
+   t.Remains.list=[];W.sites=W.sites.filter(o=>o.type!=='rest');L.clear()}
   // ---- no room on the roll's other side: a man-eater only once, and no mythic one
   {setup();const m=wolves({eater:{name:'the Old Maw',day:1}}),lv=m.lv;roll(.1);try{lose(enc(m))}finally{window.Math.random=rnd}ok(m.lv===lv&&m.eater.name==='the Old Maw','a man-eater already: named once');t.act('cont')}
  }finally{window.Math.random=rnd;X.on=on0;X.die=die0;D.slain=null;t.Remains.list=[];W.lords=W.lords.filter(l=>!l.heir);for(const x of t.TOWNS)if(t.Legacy.realms[x.owner])x.owner=t.FIDS[0];t.Legacy.clear();P.comps={};P.weak=0}

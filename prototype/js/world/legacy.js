@@ -16,7 +16,7 @@
    The heir's company ends with its lord, gone or dead: its companions free (hour). Saved: the realms made and the companions kept
    (the save piece legacy, loaded before the holdings and the lords that name its realms). Numbers: data/death.js DEATH.heir ---------- */
 class Legacy{
-  static realms={};static kept={};static raised=null;static fallen=0;static plot=null;// (fallen: how many of your line have died; plot: your family's, world/death.js Grave.inPlot)
+  static realms={};static kept={};static raised=null;static fallen=0;static plot=null;static restN=0;// (fallen: how many of your line have died; plot: your family's, world/death.js Grave.inPlot)
   // the heir: the most loyal companion with you, at least DEATH.heir.ap, a tie to the higher level; null: none
   static heirOf(comps){return Object.keys(comps).filter(id=>(comps[id].ap||0)>=DEATH.heir.ap&&!comps[id].jail)
     .sort((a,b)=>(comps[b].ap-comps[a].ap)||((comps[b].lv||0)-(comps[a].lv||0)))[0]||null}
@@ -82,7 +82,7 @@ class Legacy{
     log(cap1(old.who)+' is dead. '+[...said,qs?'Those who gave them work hear of it: '+qs+' quest'+(qs>1?'s':'')+' left undone.':''].filter(Boolean).join(' '),'bad','story');
     log((P.name?htmlText(P.name):'You')+' set'+(P.name?'s':'')+' out from '+home.name+', a '+RACES[P.race].n.toLowerCase()+' '+b.n.toLowerCase()+', with nothing of theirs.','gold','story');
     worldEmit('hero:reborn',{old});updateHint();updateHUD(true);return true}
-  static act(a,arg){
+  static act(a,arg){if(!Death.slain)return;// (a new life only for the dead)
     if(a==='death-new')return this.page();
     if(a==='death-slain')return Death.open();
     if(a==='death-race'&&RACES[arg]){G.race=arg;return this.page()}
@@ -90,9 +90,9 @@ class Legacy{
   // each hour: a company whose lord is gone breaks up, its companions free
   static hour(){this.prune();for(const l of W.lords){const h=l.heir;if(!h||h.ended||!(l.dead||l.gone))continue;h.ended=true;
     worldEvent({text:cap1(l.name)+'’s company breaks up: '+h.comps.map(id=>COMPS[id].short).join(', ')+' go their own ways.',x:l.x,y:l.y,fac:[l.fac],post:false,kind:''})}}
-  static save(){return Object.keys(this.realms).length||Object.keys(this.kept).length||this.fallen?{realms:this.realms,kept:this.kept,fallen:this.fallen,plot:this.plot}:undefined}
-  static load(v){this.clear();for(const id in v?.realms||{}){this.realms[id]=v.realms[id];this.install(id,v.realms[id])}this.kept=v?.kept||{};this.fallen=v?.fallen||0;this.plot=v?.plot||null}
-  static clear(){for(const id in this.realms){delete FACS[id];const i=FIDS.indexOf(id);if(i>=0)FIDS.splice(i,1);REALMS.delete(id)}this.realms={};this.kept={};this.fallen=0;this.plot=null}
+  static save(){return Object.keys(this.realms).length||Object.keys(this.kept).length||this.fallen||this.restN?{realms:this.realms,kept:this.kept,fallen:this.fallen,plot:this.plot,restN:this.restN}:undefined}
+  static load(v){this.clear();for(const id in v?.realms||{}){this.realms[id]=v.realms[id];this.install(id,v.realms[id])}this.kept=v?.kept||{};this.fallen=v?.fallen||0;this.plot=v?.plot||null;this.restN=v?.restN||0}
+  static clear(){for(const id in this.realms){delete FACS[id];const i=FIDS.indexOf(id);if(i>=0)FIDS.splice(i,1);REALMS.delete(id)}this.realms={};this.kept={};this.fallen=0;this.plot=null;this.restN=0}
 }
 onWorld(()=>Legacy.clear());
 Systems.add({name:'heirs',order:{hour:166},hour:()=>Legacy.hour()});

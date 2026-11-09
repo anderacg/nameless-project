@@ -21,7 +21,9 @@ class LordHouse{
     worldEvent({text:l.name+' of '+this.name+' is dead ('+how+'). '+cap1(pr(l).his)+' house will bury '+pr(l).him+' at '+(this.seat||'home')+'.',x:l.x,y:l.y,fac:[l.fac],cls:'bad',past:l.name+' died'})}
   // (the one who takes up the place: a given name of the realm's people, the title fitting them)
   succeed(){const n=this.next;if(!n||G.day<n.day)return;this.next=null;if(W.dead[n.fac]||!FACS[n.fac])return;
-    const R=rngOf('houses'),race=FACS[n.fac].races[R.int(0,FACS[n.fac].races.length-1)]||'human',given=R.pick(FOLK_NAMES[race]||FOLK_NAMES.human),f=FOLK_WOMEN.includes(given),
+    const R=rngOf('houses'),race=FACS[n.fac].races[R.int(0,FACS[n.fac].races.length-1)]||'human',T0=DEATH.house.titles,
+      taken=g=>W.lords.some(o=>!o.gone&&String(o.name).split(/\s+/).pop()===g);let given=R.pick(FOLK_NAMES[race]||FOLK_NAMES.human);for(let k=0;k<6&&taken(given);k++)given=R.pick(FOLK_NAMES[race]||FOLK_NAMES.human);// (no two lords alive of one name)
+    const f=FOLK_WOMEN.includes(given),
       T=DEATH.house.titles,title=T[n.title]?T[n.title][f?1:0]:n.title,seat=townBy(this.seat)||Spatial.nearest(fiefsOf(n.fac),P.x,P.y);if(!seat)return;
     const l=asParty({id:this.id+'_'+G.day+'_'+this.dead.length,name:title+' '+given,fac:n.fac,x:seat.x+rint(-8,8),y:seat.y+14,troops:armyOf(n.fac,DEATH.house.men),state:'rest',tgt:seat.name,sd:0,cool:0,dead:false,gone:false,back:0,lv:n.lv,house:this.id,gender:f?'f':'m'});
     W.lords.push(l);worldEvent({text:l.name+' takes up the place of '+this.name+' at '+seat.name+'.',x:seat.x,y:seat.y,fac:[n.fac],post:false,kind:''});return l}
@@ -79,8 +81,9 @@ class RestSite extends Site{
   get empties(){return false}
   known(){return true}
   // (its graves: the family's plot, a house's crypt, or one alone)
-  members(){const L=Remains.list;return this.kind==='plot'?L.filter(o=>o.grave&&o.plot):this.kind==='crypt'?L.filter(o=>o.crypt&&o.house===this.ref):L.filter(o=>o.grave&&!o.plot&&RestSite.keyOf(o)===this.ref)}
-  static keyOf(g){return g.who+':'+g.day+':'+Math.round(g.x)}
+  members(){const L=Remains.list;return this.kind==='plot'?L.filter(o=>o.grave&&o.plot&&o.plot===this.ref):this.kind==='crypt'?L.filter(o=>o.crypt&&o.house===this.ref):L.filter(o=>o.grave&&!o.plot&&RestSite.keyOf(o)===this.ref)}
+  // (a lone grave's own key, kept as it is moved: buried where it lay, or carried away)
+  static keyOf(g){return g.key||(g.key=g.who+':'+g.day+':'+(g.n||0))}
   static point(tx,ty){return[(tx+.5)*TILE,(ty+.5)*TILE]}
   placed(){}
   // (its picture: its finest grave's, for the full map; drawn on the map by its graves themselves)
@@ -92,7 +95,7 @@ class RestSite extends Site{
   box(box){const ms=this.members();if(!ms.length)return;box(this,Math.min(...ms.map(g=>g.x))-12,Math.min(...ms.map(g=>g.y))-14,Math.max(...ms.map(g=>g.x))+12,Math.max(...ms.map(g=>g.y))+8)}
   tip(){const n=this.members().length;return '<b>'+Discovery.nameOf(this)+'</b><small>'+this.T.n+(this.kind==='plot'?' · '+n+' of your line':this.kind==='crypt'?' · '+(Houses.byId(this.ref)?.dead.length||0)+' lords':'')+'</small><span class="act">Click: go there</span>'}
   about(){const ms=this.members(),g=ms[0];
-    if(this.kind==='plot')return '<p>The plot of the family of '+htmlText(Legacy.plot?.family||'your line')+', by '+htmlText(g?.at||'')+': '+ms.length+' of your line lie here, within its low wall.</p>';
+    if(this.kind==='plot')return '<p>The plot of the family of '+htmlText(g?.family||Legacy.plot?.family||'your line')+', by '+htmlText(g?.at||'')+': '+ms.length+' of your line lie here, within its low wall.</p>';
     if(this.kind==='crypt'){const h=Houses.byId(this.ref);return '<p>The crypt of '+htmlText(h?.name||'a house')+', at '+htmlText(h?.seat||'its seat')+'. Their names are cut over its door: '+(h?h.dead.map(d=>htmlText(d.name)+' <span class="muted">(day '+d.day+', '+htmlText(d.how)+')</span>').join(', '):'')+'.</p>'}
     return g?'<p>'+(g.unburied?'No one has buried them yet: '+htmlText(g.who)+' lies as they fell, to '+htmlText(g.life?.by||'beasts')+'.'+(g.heir?' Their heir is coming for them.':''):g.words.line.replace('{at}',htmlText(g.at||''))+'here lies '+htmlText(g.who)+', who fell to '+htmlText(g.life?.by||'beasts')+'.')+'</p>':''}
   page(){const ms=this.members(),acts=[];let body=this.about();
@@ -101,7 +104,7 @@ class RestSite extends Site{
     ms.forEach((g,i)=>{if(g.grave&&!g.spent&&g.xp>0)acts.push({icon:'altar',label:'Pray for '+htmlText(g.who),act:'site-rest',arg:'pray:'+i,facts:[g.xp+' experience']});
       if(!g.empty())acts.push({icon:'gold',label:'Take what lies with '+htmlText(g.who),act:'site-rest',arg:'take:'+i,facts:[g.what()]});
       if(g.unburied){acts.push({icon:'altar',label:'Bury '+htmlText(g.who)+' here',act:'site-rest',arg:'here:'+i,facts:[(g.life?.renown||0)>=DEATH.grave.tiers.cairn?'a cairn over them':'a small grave']});
-        const to=townBy(Legacy.plot?.at)||Spatial.nearestHolding(g.x,g.y);if(to)acts.push({icon:'altar',label:'Carry them to '+(Legacy.plot?'the family plot':to.name),act:'site-rest',arg:'plot:'+i,facts:['by '+to.name]})}
+        const to=townBy(Legacy.plot?.at)||Spatial.nearestHolding(g.x,g.y,t=>!t.gone);if(to)acts.push({icon:'altar',label:'Carry them to '+(Legacy.plot?'the family plot':to.name),act:'site-rest',arg:'plot:'+i,facts:['by '+to.name]})}
       if(g.crypt)acts.push({icon:'altar',label:'Pay your respects',act:'site-rest',arg:'respect:'+i,why:g.paid===G.day?'Paid today':'',facts:['its living lords think the better of you']})});
     return {body,acts}}
   act(a,arg,done){if(a!=='site-rest')return false;const [k,n]=String(arg).split(':'),g=this.members()[+n];if(!g)return true;
@@ -111,12 +114,16 @@ class RestSite extends Site{
     if(k==='respect'&&g.crypt){g.respect();done('You pay your respects.');return true}return true}
   // (the places for the graves: each made once, kept where its graves are; its name)
   static sync(){if(!W.sites)return;const want=[];
-    if(Remains.list.some(o=>o.grave&&o.plot))want.push(['plot','plot']);
+    for(const at of new Set(Remains.list.filter(o=>o.grave&&o.plot).map(o=>o.plot)))want.push(['plot',at]);
     for(const o of Remains.list){if(o.crypt)want.push(['crypt',o.house]);else if(o.grave&&!o.plot)want.push(['lone',RestSite.keyOf(o)])}
     for(const [kind,ref] of want){let s=W.sites.find(x=>x.type==='rest'&&x.kind===kind&&x.ref===ref);
-      if(!s){s=siteOf({i:1+Math.max(0,...W.sites.map(x=>x.i||0)),type:'rest',kind,ref,seed:W.sites.length+1,seen:true,cleared:false,back:0,name:'',tx:0,ty:0,x:0,y:0});W.sites.push(s)}
+      let i=RESTSITE_I0+(++Legacy.restN);while(W.sites.some(x=>x.i===i))i=RESTSITE_I0+(++Legacy.restN);
+      if(!s){s=siteOf({i,type:'rest',kind,ref,seed:W.sites.length+1,seen:true,cleared:false,back:0,name:'',tx:0,ty:0,x:0,y:0});W.sites.push(s)}
       const ms=s.members();if(!ms.length)continue;s.x=Math.round(ms.reduce((a,g)=>a+g.x,0)/ms.length);s.y=Math.round(ms.reduce((a,g)=>a+g.y,0)/ms.length);s.tx=Math.floor(s.x/TILE);s.ty=Math.floor(s.y/TILE);
-      s.name=kind==='plot'?'Rest of '+(Legacy.plot?.family?cap1(Legacy.plot.family):'your line'):kind==='crypt'?'Crypt of '+(Houses.byId(ref)?.name||'a house'):ms[0].name}
+      s.name=kind==='plot'?'Rest of '+cap1(ms[0].family||Legacy.plot?.family||'your line'):kind==='crypt'?'Crypt of '+(Houses.byId(ref)?.name||'a house'):ms[0].name}
     W.sites=W.sites.filter(x=>x.type!=='rest'||x.members().length)}
 }
 SITE_CLASS.rest=RestSite;
+// (a resting place's number: its own run, far past the world's sites, never used again once a place is gone, so a place found and
+// gone never makes a new one known: Legacy.restN, saved)
+const RESTSITE_I0=100000;
