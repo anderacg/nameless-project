@@ -229,6 +229,17 @@ Kit.suite(({ok})=>{
    ok(h.grudged()&&(!b||t.relWith(b)===rb+X.house.grudge),'you put '+a.name+' to death: '+h.name+' bears you a grudge'+(b?' ('+b.name+' '+X.house.grudge+')':''));
    G.day+=X.house.wait;H.hour();const s=W.lords.find(o=>o.house===h.id&&!o.dead&&o!==b);ok(s&&t.relWith(s)===X.house.grudge,'the next of the house takes up the place, and the grudge with it ('+(s&&s.name)+': '+(s&&t.relWith(s))+')');
    ok(new RegExp(h.name+'.*bears you a grudge').test(H.tagOf(s))&&s.tip().includes(h.name),'the house shown with its lords, on the map and in the Lords: "'+H.tagOf(s).replace(/<[^>]+>/g,'')+'"');
+   // (its tree in the Journal's Houses: set down once you know one of it; the rest ?? until met, read on its crypt, or told by a close friend)
+   {const KL=t.KNOWLEDGE.lords,k0={...KL},lr0={...(P.lrel||{})};try{for(const id in KL)delete KL[id];h.known=[];
+     ok(!H.known().includes(h),'a house you know no one of: not in the Journal\'s Houses');
+     t.KNOWLEDGE.lord(s);G.jsec='houses';G.hsHouse=h.id;G.hsPick=s.id;let html=t.JOURNAL_SECTIONS.houses.render();
+     ok(H.known().includes(h)&&html.includes('<b>'+s.name+'</b>')&&!html.includes('<b>'+a.name+'</b>')&&/<b>\?\?<\/b>/.test(html)&&/Took up the place of \?\?/.test(html),'once you know one of it, its tree: '+s.name+' by name; '+a.name+', whose place he took, a ??');
+     ok(String(s.name).split(/\s+/).pop()!==String(a.name).split(/\s+/).pop(),'the next of the house not named as the one whose place he took ('+s.name+' after '+a.name+')');
+     t.Crypt.of(h).meet();html=t.JOURNAL_SECTIONS.houses.render();ok(h.knows(a.id)&&html.includes('<b>'+a.name+'</b>')&&html.includes('Took up the place of '+a.name),'its crypt read: its dead known by name');t.act('death-leave');
+     if(b){for(const id in KL)delete KL[id];h.known=[];t.KNOWLEDGE.lord(s);P.lrel[s.id]=X.house.tell-1;const rp=new t.LordSpeaker(s).replies().find(r=>r.act==='lr-house');
+       ok(rp&&rp.why&&!h.tell(s)&&!t.KNOWLEDGE.knowsLord(b),'"Tell me of your house": not for one who is not a close friend ('+(rp&&rp.why)+')');
+       P.lrel[s.id]=X.house.tell;const said=h.tell(s);ok(new t.LordSpeaker(s).replies().find(r=>r.act==='lr-house').why===''&&said.includes(b.name)&&t.KNOWLEDGE.knowsLord(b)&&h.knows(a.id),'a close friend of the house tells you of all of it: '+said.replace(/<[^>]+>/g,''))}
+   }finally{for(const id in KL)delete KL[id];Object.assign(KL,k0);P.lrel=lr0;G.hsHouse=G.hsPick=null}}
    const c=W.lords.find(o=>!o.dead&&!o.gone&&!o.house);ok(/House /.test(H.tagOf(c,true))&&c.house,'a lord with no house yet: his house founded as you look him up');
    G.kin=null;die(0);ok(!h.grudged(),'you dead, a stranger going on: the grudge gone with you');
    const r0=W.lords.find(o=>!o.dead&&!o.gone&&!o.house);roll(0);let txt='';try{txt=t.lordWon(r0,{gold:0})}finally{window.Math.random=rnd}ok(r0.gone&&/falls in the fighting/.test(txt)&&H.byId(r0.house).grudged(),'beaten by you, now and then he falls in the fighting: his house holds it against you');

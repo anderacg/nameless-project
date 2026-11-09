@@ -67,6 +67,8 @@ class LordSpeaker extends Speaker{
     if(o.gold)out.gold=Math.min(o.gold,treas(l.fac));if(o.rel)out.rel=[l,o.rel,'what you said to '+pr(l).him];if(o.honor)out.honor=[l.fac,o.honor];return out}
   replies(){const l=this.o,C=DIALOGUE.checks,read=p=>insight(['you cannot tell your odds',p>=.5?pr(l).he+' may well':'a long chance','about '+Math.round(p*100)+'%'],'know the odds');
     return [{act:'lr-rumours',arg:l.id,label:'Ask for rumours'},{act:'lr-lords',arg:l.id,label:'Ask about other lords'},
+      // (his house, the rule on: told only to a close friend, world/lineage.js LordHouse#tell)
+      ...(DEATH.on?[{act:'lr-house',arg:l.id,label:'Tell me of your house',why:LordHouse.of(l).tellWhy(l)}]:[]),
       ...['flatter','favour','threaten','follow'].map(id=>{const why=this.checkWhy(id);if(why===false)return null;const win=Outcome.describe(this.outcome(id,true)),lose=Outcome.describe(this.outcome(id,false));
         return {act:'talk-'+id,arg:l.id,label:this.fill(C[id].label)+' · '+read(this.odds(id)),note:(id==='favour'?RELATION.troops+' soldiers':id==='follow'?pr(l).he+' follows you for some days':win)+(lose?' / failing: '+lose:''),why}}),
       ...Questbook.replies(l)]}

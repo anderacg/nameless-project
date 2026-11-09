@@ -89,7 +89,7 @@ function lordLend(l){const R=RELATION;l.lend=G.day+R.troopsDays;const got=partyR
   log(l.name+' lends you '+got.join(', ')+'.','good');updateHUD(true);return got}
 function relAct(a,arg){
   const l=W.lords.find(x=>x.id===arg);if(!l||l.dead)return;const R=RELATION;
-  if(a==='lr-rumours'||a==='lr-lords'){
+  if(a==='lr-rumours'||a==='lr-lords'||a==='lr-house'){
     if(!['dialog','scene'].includes(G.mode)||!G.enc||G.enc.kind!=='lord'||G.enc.ref!==l||hostileTo(l.fac)&&!lordSpares(l))return;
     return lordMeet(l,a.slice(3));
   }
