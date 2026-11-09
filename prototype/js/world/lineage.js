@@ -39,7 +39,7 @@ const Houses={list:[],n:0,
 /* a house's crypt at its seat (a kind of Remains: world/death.js): a stone mausoleum, the realm's banner over its door, its dead named
    on its page. Pay your respects (once a day): the house's living lords think the better of you (DEATH.house.respect) */
 class Crypt extends Remains{
-  static of(h){let c=Remains.list.find(o=>o.crypt&&o.house===h.id);if(c)return c;const t=townBy(h.seat)||Spatial.nearest(fiefsOf(h.fac),P.x,P.y),p=t?Grave.spot(t.x,t.y,DEATH.grave.yard.r,null):{x:P.x,y:P.y};
+  static of(h){let c=Remains.list.find(o=>o.crypt&&o.house===h.id);if(c)return c;const t=townBy(h.seat)||Spatial.nearest(fiefsOf(h.fac),P.x,P.y),p=t?Grave.ground(t.x,t.y,null):{x:P.x,y:P.y};
     c=asCrypt({rm:1,crypt:1,house:h.id,x:p.x,y:p.y,who:h.name,day:G.day,gold:0,items:[]});Remains.list.push(c);return c}
   get kind(){return 'crypt'}
   get grave(){return 0}

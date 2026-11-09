@@ -238,9 +238,23 @@ class Grave extends Remains{
   // (your family's plot: made by the first of your line buried by people, at that holding (Legacy.plot: its holding, its middle,
   // its family's name); its graves in rows from its middle, DEATH.grave.plot)
   static inPlot(home,old,self){const X=DEATH.grave,F=X.plot;let fp=Legacy.plot;const t=fp&&townBy(fp.at);
-    if(!t||t.gone){const c=Grave.spot(home.x,home.y,X.yard.r,self);fp=Legacy.plot={at:home.name,x:c.x,y:c.y,family:old.who}}
+    if(!t||t.gone){const c=Grave.ground(home.x,home.y,self);fp=Legacy.plot={at:home.name,x:c.x,y:c.y,family:old.who}}
     const i=Remains.list.filter(o=>o!==self&&o.grave&&o.plot).length,col=i%F.cols,row=Math.floor(i/F.cols),x=Math.round(fp.x+(col-(F.cols-1)/2)*F.gap),y=Math.round(fp.y+row*F.gap*F.row);
-    return passable(terrAt(x,y))&&!Remains.list.some(o=>o!==self&&(o.grave||o.crypt)&&Math.hypot(o.x-x,o.y-y)<F.gap*.6)?{x,y}:Grave.spot(fp.x,fp.y,X.apart,self)}
+    return Grave.clear(x,y)&&!Remains.list.some(o=>o!==self&&(o.grave||o.crypt)&&Math.hypot(o.x-x,o.y-y)<F.gap*.6)?{x,y}:Grave.ground(fp.x,fp.y,self,0,true)}
+  /* (ground for a grave, a plot or a crypt by a holding (the owner: "Can you make it away from holding or estates? At least make it in
+     forest or some where"): out past its lots and its estates' fields, on clear ground (clear), none within DEATH.grave.apart of
+     another; the nearest the woods best, or the nearest of all (close) (DEATH.grave.yard: how far out, the ring's step and ways, the woods counted round it)) */
+  static ground(cx,cy,self,min,close){const X=DEATH.grave,Y=X.yard,lo=min==null?Y.min:min;let best=null;
+    for(let r=lo;r<=Y.max;r+=Y.step)for(let i=0;i<Y.tries;i++){const a=i/Y.tries*6.283+r*.01,x=Math.round(cx+Math.cos(a)*r),y=Math.round(cy+Math.sin(a)*r);
+      if(!Grave.clear(x,y)||Remains.list.some(o=>o!==self&&(o.grave||o.crypt)&&Math.hypot(o.x-x,o.y-y)<X.apart))continue;
+      const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);let w=0;for(let j=-Y.wood;j<=Y.wood;j++)for(let k=-Y.wood;k<=Y.wood;k++)if(tAt(tx+k,ty+j)===T_FOREST)w++;
+      // (close: the nearest clear ground, a plot's next row)
+      const score=close?-r:w-r/Y.step*Y.near;if(!best||score>best.s)best={x,y,s:score}}
+    return best?{x:best.x,y:best.y}:Grave.spot(cx,cy,Y.r,self)}
+  // (clear ground: walkable, no water or road under it, and no lot, estate field or holding within DEATH.grave.yard.clear tiles)
+  static clear(x,y){const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),c=DEATH.grave.yard.clear;if(!passable(terrAt(x,y))||tAt(tx,ty)===T_ROAD)return false;
+    for(let j=-c;j<=c;j++)for(let i=-c;i<=c;i++){const v=occAt(tx+i,ty+j),k=tAt(tx+i,ty+j);if(v!==0||k===T_WATER||k===T_ROAD&&Math.abs(i)+Math.abs(j)<2)return false}
+    return !TOWNS.some(t=>!t.gone&&Math.hypot(t.x-x,t.y-y)<DEATH.grave.yard.town)}
   /* (how you are laid to rest, by your renown and where you fell (the owner, 2026-11-09: "if you died whatout much renown or if you
      died far away then you may have a grave or remains"; "If you death near town, someone may burry for you right? But if you have
      more renown you may have a good looking grave"; DEATH.grave.tiers): far from anyone (over far tiles from a holding, off the

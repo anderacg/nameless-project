@@ -154,15 +154,16 @@ Kit.suite(({ok})=>{
   {const L=t.Legacy,k=Object.keys(t.BGS)[0],die=(ren,x,y)=>{setup();W.lords=W.lords.filter(l=>!l.heir);P.comps={};if(x!=null){P.x=x;P.y=y}P.renown=ren;P.xpEarned=20;const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}t.act('cont');t.act('death-new');t.act('death-past',k);return t.Remains.list.filter(o=>o.grave).pop()};
    L.clear();t.Remains.list=[];const x0=P.x,y0=P.y,a=die(0),at=L.plot&&L.plot.at;const b=die(X.grave.tiers.near.stone,x0+200,y0+120),c=die(X.grave.tiers.near.tomb,x0,y0);
    ok(at&&[a,b,c].every(g=>g.plot&&g.at===at)&&new Set([a,b,c].map(g=>g.x+','+g.y)).size===3&&[a,b,c].every(g=>Math.hypot(g.x-L.plot.x,g.y-L.plot.y)<X.grave.plot.gap*3),'three of your line, buried by people, lie together in the family plot at '+at+' ('+[a,b,c].map(g=>g.kind).join(', ')+')');
+   {const hp=t.townBy(at),lots=[a,b,c].every(g=>t.Grave.clear(g.x,g.y));ok(lots&&Math.hypot(L.plot.x-hp.x,L.plot.y-hp.y)>=X.grave.yard.town,'the plot away from '+at+', its lots and its estates\' fields ('+Math.round(Math.hypot(L.plot.x-hp.x,L.plot.y-hp.y))+' px out, '+(()=>{let w=0;const tx=Math.floor(L.plot.x/t.TILE),ty=Math.floor(L.plot.y/t.TILE);for(let j=-3;j<=3;j++)for(let i=-3;i<=3;i++)if(t.tAt(tx+i,ty+j)===t.T_FOREST)w++;return w})()+' wooded tiles round it)')}
    c.meet();ok(/In the plot of the family of/.test(panel()),'its page: "In the plot of the family of '+L.plot.family+'"');t.act('death-leave');
-   const ents=[];t.GraveArt.plot(ents,{x:L.plot.x-120,y:L.plot.y-80},t.vis(),L.plot,[a,b,c]);let ex=null;try{for(const e of ents)e.f()}catch(err){ex=err}ok(ents.length===2&&!ex,'its low wall round them, its gate under a wooden arch'+(ex?': '+ex.message:''));
+   P.x=L.plot.x;P.y=L.plot.y+20;const ents=[];t.GraveArt.plot(ents,{x:L.plot.x-120,y:L.plot.y-80},t.vis(),L.plot,[a,b,c]);let ex=null;try{for(const e of ents)e.f()}catch(err){ex=err}ok(ents.length===2&&!ex,'its low wall round them, its gate under a wooden arch'+(ex?': '+ex.message:''));
    ok(L.save().plot.at===at,'the plot saved with your line');
    t.Remains.list=[];L.clear()}
   // ---- the lords' houses (the owner: "Create a family system for lords as well. Lord die may also have grave but may be different
   // grave"): a lord dead for good is buried in his house's crypt at its seat; after mourning, one of his house takes his place
   {const H=t.Houses,l=W.lords.find(o=>!o.dead&&!o.gone&&t.fiefsOf(o.fac).length),fac=l.fac,name=l.name;H.list=[];t.Remains.list=[];
    Object.assign(l,{dead:true,gone:true,back:1e9});H.died(l,'put to death');const h=H.byId(l.house),cr=t.Remains.list.find(o=>o.crypt);
-   ok(h&&h.name==='House '+name.split(' ').pop()&&h.dead[0].name===name&&cr&&cr.house===h.id&&t.townBy(h.seat)&&Math.hypot(cr.x-t.townBy(h.seat).x,cr.y-t.townBy(h.seat).y)<X.grave.yard.r*2,name+' put to death: '+(h&&h.name)+' buries '+(l.gender==='f'?'her':'him')+' in its crypt at '+(h&&h.seat));
+   ok(h&&h.name==='House '+name.split(' ').pop()&&h.dead[0].name===name&&cr&&cr.house===h.id&&t.townBy(h.seat)&&Math.hypot(cr.x-t.townBy(h.seat).x,cr.y-t.townBy(h.seat).y)<X.grave.yard.max+10&&t.Grave.clear(cr.x,cr.y),name+' put to death: '+(h&&h.name)+' buries '+(l.gender==='f'?'her':'him')+' in its crypt at '+(h&&h.seat));
    cr.meet();ok(/<h2>A crypt<\/h2>/.test(panel())&&panel().includes(t.htmlText(name))&&/data-act="death-respect"/.test(panel()),'the crypt: a house of stone, the names cut over it; pay your respects');t.act('death-leave');
    const n0=W.lords.length;G.day+=X.house.wait;H.hour();const s=W.lords.find(o=>o.house===h.id&&!o.dead);
    ok(W.lords.length===n0+1&&s&&s.fac===fac&&s.name!==name&&s.lv>=1,'after '+X.house.wait+' days of mourning, one of the house takes up the place: '+(s&&s.name));
