@@ -99,7 +99,8 @@ function recruitCaptive(i){
   const sk={};for(const k in COMP_SK)sk[k]={lv:0,xp:0};for(const k in src.sk||{})sk[k]={...src.sk[k]};
   P.comps[id]={ap:c.k==='chief'?-1:1,role:'',lv:C.lv,xp:0,sk,gear:{...src.gear},perks:[],perkPend:0,party:null,hurt:0,tree:src.tree.slice(),slots:src.slots.slice(),own:{...(src.own||{})},kit:2,grow:c.k==='chief'?'chieftain':'lord'};
   cs.splice(i,1);
-  if(c.k==='lord'){const l=W.lords.find(x=>x.id===c.id);Object.assign(l,{gone:true,held:false,recruited:true,dead:true,back:1e9})}
+  // (a lord who rides with you: gone from his house, the next of it to take up his place: world/lineage.js Houses.away)
+  if(c.k==='lord'){const l=W.lords.find(x=>x.id===c.id);Houses.away(l,'left the house to ride with you');Object.assign(l,{gone:true,held:false,recruited:true,dead:true,back:1e9})}
   else for(const f of FIDS)if(!W.dead[f])addHonor(f,-RECRUIT.honor,true);
   log(r.n+' joins your band as a companion'+(c.k==='chief'?' (the realms think less of you for it)':'')+'.','gold');return true}
 

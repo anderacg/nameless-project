@@ -244,6 +244,7 @@ Kit.suite(({ok})=>{
    {const Fm=X.house.fam,f0={...Fm},KL=t.KNOWLEDGE.lords,k0={...KL},lr0={...(P.lrel||{})};try{Object.assign(Fm,{wed:1,kids:[2,2],age:[Fm.adult,Fm.adult+50]});
      const lo=W.lords.find(o=>!o.dead&&!o.gone&&!o.house&&t.fiefsOf(o.fac).length),hh=t.LordHouse.of(lo),sp=hh.person(lo.spouse),kids=hh.kinLive.filter(k=>k.parent===lo.id);
      ok(sp&&sp.inlaw&&sp.spouse===lo.id&&sp.gender!==t.genderOf(lo)&&kids.length===2&&kids.every(k=>hh.adult(k)&&k.race===hh.raceOf(lo)),'a lord\'s family, as his house is first known: '+lo.name+' wed to '+(sp&&sp.name)+', their children '+kids.map(k=>k.name).join(' and '));
+     ok(kids.every(k=>k.born-sp.born>=Fm.adult),'their spouse of age before their eldest was born ('+sp.born+' vs '+kids.map(k=>k.born)+')');
      const eld=kids.slice().sort((x,y)=>x.born-y.born)[0];Object.assign(Fm,f0);Object.assign(lo,{dead:true,gone:true,back:1e9});H.died(lo,'slain in battle',false);G.day+=X.house.wait;H.hour();
      const nx=W.lords.find(o=>o.id===eld.id);ok(nx&&!nx.dead&&nx.house===hh.id&&nx.name.endsWith(' '+eld.name)&&nx.parent===lo.id&&nx.succeeded===lo.id&&!hh.kinLive.includes(eld)&&hh.person(lo.spouse),'one dead: their eldest grown child takes up the place ('+(nx&&nx.name)+'), the widow'+(sp.gender==='f'?'':'er')+' still of the house');
      Object.assign(Fm,{marry:1,birth:1});G.day++;H.hour();const w=hh.person(nx.spouse);G.day++;H.hour();const born=hh.kinLive.filter(k=>k.parent===nx.id);Object.assign(Fm,f0);
@@ -253,6 +254,22 @@ Kit.suite(({ok})=>{
      P.lrel[nx.id]=X.house.tell;const said=hh.tell(nx);html=t.JOURNAL_SECTIONS.houses.render();
      ok(said.includes(w.name)&&said.includes(born[0].name)&&html.includes('<b>'+w.name+'</b>')&&/ft-spouse/.test(html)&&new RegExp((nx.gender==='f'?'Daughter':'Son')+' of '+lo.name).test(html)&&hh.knows(born[0].id),'told by a close friend: its kin by name, the one wed beside the one they wed, each child below their parent');
    }finally{Object.assign(Fm,f0);for(const id in KL)delete KL[id];Object.assign(KL,k0);P.lrel=lr0;G.hsHouse=G.hsPick=null}}
+   // (the edge cases: titles for a woman or a man, a lord with no title; a widow who rules and then falls; one who rides with you; a realm fallen)
+   {const Fm=X.house.fam,f0={...Fm},NP=t.nameParts,kill=l=>{Object.assign(l,{dead:true,gone:true,back:1e9});H.died(l,'slain in battle',false)};try{
+     const hh=new t.LordHouse({id:'hx',name:'House X',fac:W.lords[0].fac,dead:[],kin:[]});
+     ok(hh.styled(NP('Thane Dain'),'Grimma',true)==='Clanmother Grimma'&&hh.styled(NP('Clanmother Borka'),'Korri',false)==='Thane Korri'&&hh.styled(NP('Warmother Ulgra'),'Brak',false)==='Warchief Brak',
+       'a title for a woman or a man: Clanmother Grimma, Thane Korri, Warchief Brak');
+     ok(hh.styled(NP('Gash Bonecleaver'),'Rukk',false)==='Rukk Bonecleaver'&&hh.styled(NP('Mok the Red'),'Krenna',true)==='Krenna the Red'&&NP('Lord Caelir of Sunwell').tail==='',
+       'a lord with no title: the next of the house by their own name and the house\'s after it (Rukk Bonecleaver, Krenna the Red)');
+     Object.assign(Fm,{wed:1,kids:[0,0]});const a2=W.lords.find(o=>!o.dead&&!o.gone&&!o.house&&!o.heir&&t.fiefsOf(o.fac).length),h2=t.LordHouse.of(a2);Object.assign(Fm,f0);
+     kill(a2);G.day+=X.house.wait;H.hour();const wd=h2.live[0];ok(wd&&wd.inlaw&&wd.id===a2.spouse,'no child of theirs: their spouse takes up the place ('+(wd&&wd.name)+')');
+     kill(wd);G.day+=X.house.wait;H.hour();const cz=h2.live[0];h2.learn(h2.members.map(m=>m.id));G.jsec='houses';G.hsHouse=h2.id;G.hsPick=null;const html=t.JOURNAL_SECTIONS.houses.render();
+     ok(cz&&cz.cousin&&(html.match(/data-act="lh-pick"/g)||[]).length===h2.members.length,'then none of its blood: a cousin from afar; and every one of it in its tree ('+h2.members.length+')');
+     const r=W.lords.find(o=>!o.dead&&!o.gone&&!o.heir&&t.fiefsOf(o.fac).length&&o.house!==h2.id),hr=t.LordHouse.of(r),nb=hr.buried.length;H.away(r,'left the house to ride with you');Object.assign(r,{gone:true,dead:true,back:1e9});G.day+=X.house.wait;H.hour();
+     ok(hr.dead.some(d=>d.id===r.id&&d.away)&&hr.buried.length===nb&&hr.live.length,'one who rides with you: gone from the house (not in its crypt), the next takes up the place ('+hr.live.map(o=>o.name)+')');
+     const fh=W.lords.find(o=>!o.dead&&!o.gone),ff=fh.fac,hf=t.LordHouse.of(fh),k1=hf.kinLive.length;const dead0=W.dead[ff];W.dead[ff]=true;Object.assign(Fm,{marry:1,birth:1});G.day++;H.hour();Object.assign(Fm,f0);W.dead[ff]=dead0;
+     ok(hf.kinLive.length===k1,'a house whose realm has fallen: no weddings and no births');
+   }finally{Object.assign(Fm,f0);G.hsHouse=G.hsPick=null}}
    const c=W.lords.find(o=>!o.dead&&!o.gone&&!o.house);ok(/House /.test(H.tagOf(c,true))&&c.house,'a lord with no house yet: his house founded as you look him up');
    G.kin=null;die(0);ok(!h.grudged(),'you dead, a stranger going on: the grudge gone with you');
    const r0=W.lords.find(o=>!o.dead&&!o.gone&&!o.house);roll(0);let txt='';try{txt=t.lordWon(r0,{gold:0})}finally{window.Math.random=rnd}ok(r0.gone&&/falls in the fighting/.test(txt)&&H.byId(r0.house).grudged(),'beaten by you, now and then he falls in the fighting: his house holds it against you');

@@ -65,6 +65,8 @@ class Realm{
   fall(at,involved){
     const f=this.id;
     W.dead[f]=true;
+    // (its lords' houses keep them, gone with it: world/lineage.js Houses.away)
+    for(const l of W.lords)if(l.fac===f&&!l.gone)Houses.away(l,'lost with the fall of the '+this.name);
     W.lords.forEach(l=>{if(l.fac===f){l.dead=true;l.gone=true}});
     FIDS.forEach(g=>{if(g!==f)delete W.rel[rk(f,g)]});
     worldEvent({text:'The '+this.name+' has fallen. Its last holding is lost.',cls:'bad',fac:[f],involved:involved||P.fac===f,x:at&&at.x,y:at&&at.y,

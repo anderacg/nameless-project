@@ -13,10 +13,13 @@
      wed, its couples have children, its children come of age (daily); one dead is followed by their eldest grown child, else a grown
      brother or sister, else their spouse, else the eldest grown of its blood, else a cousin from afar (heirOf).
    Numbers: data/death.js DEATH.house ---------- */
+// (a lord's name in parts: his title (one of DEATH.house.titles), his given name, what follows it ("Bonecleaver", "the Red"))
+function nameParts(name){const w=String(name||'').split(/\s+/).filter(Boolean),t=DEATH.house.titles[w[0]]&&w.length>1?w[0]:null;
+  return {title:t,given:w[t?1:0]||'',tail:w.slice(t?2:1).join(' ').replace(/(^| )of .*$/,'')}}
 class LordHouse{
   constructor(o){Object.assign(this,o)}
   // (a lord's house: his own, or one he founds now)
-  static of(l){let h=l.house&&Houses.byId(l.house);if(h){if(!l.famed&&!l.gone&&!l.dead)h.seed(l);return h}const sur=String(l.name||'').split(/\s+/).pop()||'Nameless',seat=Spatial.nearest(fiefsOf(l.fac),l.x,l.y);
+  static of(l){let h=l.house&&Houses.byId(l.house);if(h){if(!l.famed&&!l.gone&&!l.dead)h.seed(l);return h}const np=nameParts(l.name),sur=(np.tail&&!/^the /.test(np.tail)?np.tail.split(' ').pop():np.given)||'Nameless',seat=Spatial.nearest(fiefsOf(l.fac),l.x,l.y);
     h=new LordHouse({id:'h'+(++Houses.n),name:'House '+sur,fac:l.fac,seat:seat?seat.name:'',dead:[],kin:[]});Houses.list.push(h);l.house=h.id;h.seed(l);return h}
   // (a grudge against you, the hero who did it: gone with you, for a new person is a stranger to them)
   grudged(){return !!this.grudge&&this.grudge.gen===Legacy.fallen}
@@ -30,11 +33,11 @@ class LordHouse{
   get knownAny(){return this.members.some(m=>this.knows(m.id))}
   // (a lord of it who thinks well enough of you (DEATH.house.tell) tells you of all of it: its living and its dead; else '' and why not)
   tellWhy(l){return relWith(l)>=DEATH.house.tell?'':'Only for a close friend'}
-  tell(l){if(this.tellWhy(l))return '';const live=this.live.filter(o=>o!==l),D=this.dead,K=this.kinLive,blood=K.filter(k=>!k.inlaw),wed=K.filter(k=>k.inlaw);
-    for(const o of live)KNOWLEDGE.lord(o);this.learn([...D.map(d=>d.id),...K.map(k=>k.id)]);
+  tell(l){if(this.tellWhy(l))return '';const live=this.live.filter(o=>o!==l),D=this.buried,A=this.dead.filter(d=>d.away),K=this.kinLive,blood=K.filter(k=>!k.inlaw),wed=K.filter(k=>k.inlaw);
+    for(const o of live)KNOWLEDGE.lord(o);this.learn([...this.dead.map(d=>d.id),...K.map(k=>k.id)]);
     return '<p>'+htmlText(this.name)+(this.seat?', of '+htmlText(this.seat):'')+'. '+(live.length?'Its lords besides me: '+live.map(o=>htmlText(o.name)).join(', ')+'. ':K.length?'':'There is only me of it now. ')+
       (blood.length?'Of our blood besides: '+blood.map(k=>htmlText(k.name)+(this.adult(k)?'':' (a child yet)')).join(', ')+'. ':'')+(wed.length?'Wed into the house: '+wed.map(k=>htmlText(k.name)).join(', ')+'. ':'')+
-      (D.length?'Our dead lie in the crypt: '+D.map(d=>htmlText(d.name)+' ('+htmlText(d.how)+')').join(', ')+'.':'None of us lies in the crypt yet.')+'</p>'}
+      (A.length?'Gone from us: '+A.map(d=>htmlText(d.name)+' ('+htmlText(d.how)+')').join(', ')+'. ':'')+(D.length?'Our dead lie in the crypt: '+D.map(d=>htmlText(d.name)+' ('+htmlText(d.how)+')').join(', ')+'.':'None of us lies in the crypt yet.')+'</p>'}
   // ---- its family: kin (spouses wed into it, inlaw; children of its blood, parent), lords and its dead by the same fields
   get kinLive(){return (this.kin||[]).filter(k=>!k.dead)}
   // (anyone of it by id: a lord of it living, one of its dead, one of its kin)
@@ -43,20 +46,22 @@ class LordHouse{
   childrenOf(id){return [...this.live,...this.kinLive].filter(p=>p.parent===id)}
   // (a lord's people: his own, else his realm's, as his face is drawn: ui/faces.js Faces.lord)
   raceOf(l){if(l.race)return l.race;const rs=FACS[l.fac||this.fac]?.races||['human'];return rs[Rng.seedOf('face:'+l.name)%rs.length]||'human'}
-  // (a given name of a people, a woman's or a man's, one no lord alive, none of its dead and none of its kin goes by if it can)
-  nameFor(race,g,R){const L=(FOLK_NAMES[race]||FOLK_NAMES.human).filter(n=>FOLK_WOMEN.includes(n)===(g==='f')),last=n=>String(n).split(/\s+/).pop(),
-      used=new Set([...W.lords.filter(o=>!o.gone).map(o=>last(o.name)),...this.dead.map(d=>last(d.name)),...(this.kin||[]).map(k=>k.name)]),free=L.filter(n=>!used.has(n));
+  // (a given name of a people, a woman's or a man's, one no lord alive, none of its dead and none of any house's kin goes by if it can)
+  nameFor(race,g,R){const L=(FOLK_NAMES[race]||FOLK_NAMES.human).filter(n=>FOLK_WOMEN.includes(n)===(g==='f')),gv=n=>nameParts(n).given,
+      used=new Set([...W.lords.filter(o=>!o.gone).map(o=>gv(o.name)),...this.dead.map(d=>gv(d.name)),...Houses.list.flatMap(h=>h.kinLive.map(k=>k.name))]),free=L.filter(n=>!used.has(n));
     return R.pick(free.length?free:L)}
   addKin(o){(this.kin??=[]).push({id:this.id+'k'+(this.kn=(this.kn||0)+1),kin:true,...o});return this.kin[this.kin.length-1]}
   // (a child of one of its blood: their people, a daughter or a son; born: the day)
   child(p,R,born){const g=R.chance(.5)?'f':'m',race=this.raceOf(p);return this.addKin({name:this.nameFor(race,g,R),gender:g,race,born,parent:p.id})}
   // (one of it wed: a spouse of their people from outside the house, of age)
-  wed(p,R){const F=DEATH.house.fam,g=genderOf(p)==='f'?'m':'f',race=this.raceOf(p),s=this.addKin({name:this.nameFor(race,g,R),gender:g,race,born:G.day-R.int(F.adult,F.adult+F.age[1]),spouse:p.id,inlaw:true});p.spouse=s.id;return s}
-  // (a lord's family as his house first knows him: a spouse, and children of all ages)
-  seed(l){if(l.famed)return;l.famed=true;const F=DEATH.house.fam,R=rngOf('houses');
-    if(l.spouse||!R.chance(F.wed))return;this.wed(l,R);for(let i=0,n=R.int(F.kids[0],F.kids[1]);i<n;i++)this.child(l,R,G.day-R.int(F.age[0],F.age[1]))}
-  // (each day: the grown and unwed of its blood may wed, its couples have children; none past cap of it alive)
-  daily(){const F=DEATH.house.fam,R=rngOf('houses');for(const l of this.live)this.seed(l);
+  // (by: the latest day they may be born, so as to be of age before their eldest child was born)
+  wed(p,R,by=G.day){const F=DEATH.house.fam,g=genderOf(p)==='f'?'m':'f',race=this.raceOf(p),s=this.addKin({name:this.nameFor(race,g,R),gender:g,race,born:by-R.int(F.adult,F.adult+F.age[1]),spouse:p.id,inlaw:true});p.spouse=s.id;return s}
+  // (a lord's family as his house first knows him: a spouse, and children of all ages; your heir (world/legacy.js) has none of it)
+  seed(l){if(l.famed)return;l.famed=true;if(l.heir)return;const F=DEATH.house.fam,R=rngOf('houses');
+    if(l.spouse||!R.chance(F.wed))return;const ages=Array.from({length:R.int(F.kids[0],F.kids[1])},()=>G.day-R.int(F.age[0],F.age[1]));
+    this.wed(l,R,Math.min(G.day,...ages));for(const b of ages)this.child(l,R,b)}
+  // (each day: the grown and unwed of its blood may wed, its couples have children; none past cap of it alive; a house whose realm has fallen, none)
+  daily(){if(W.dead[this.fac])return;const F=DEATH.house.fam,R=rngOf('houses');for(const l of this.live)this.seed(l);
     const blood=()=>[...this.live,...this.kinLive].filter(p=>!p.inlaw);
     for(const p of blood()){if(this.live.length+this.kinLive.length>=F.cap)return;const s=p.spouse&&this.person(p.spouse);
       if(!p.spouse){if(this.adult(p)&&R.chance(F.marry))this.wed(p,R)}else if(s&&!s.dead&&this.childrenOf(p.id).length<F.most&&R.chance(F.birth))this.child(p,R,G.day)}}
@@ -66,26 +71,33 @@ class LordHouse{
     return d&&(eld(K.filter(k=>k.parent===d.id))||(d.parent?eld(K.filter(k=>k.parent===d.parent)):null)||K.find(k=>k.id===d.spouse&&this.adult(k)))||eld(K)||null}
   // (one of it dead for good: named in its crypt, and one of it to take up his place)
   // (byYou: put to death or slain by you: the house holds it against you (grudge), its living lords and the next of it, while you live)
-  fell(l,how,byYou){if(this.dead.some(d=>d.id===l.id))return;this.dead.push({id:l.id,name:l.name,day:G.day,how,lv:l.lv||1,byYou:!!byYou,of:l.succeeded||null,fac:l.fac,race:l.race,gender:genderOf(l),parent:l.parent||null,spouse:l.spouse||null,inlaw:l.inlaw||undefined,born:l.born,kinFace:l.kinFace||undefined,cousin:l.cousin||undefined});Crypt.of(this).honour(l);
+  // (away: not dead but gone from it, riding with you or lost with its realm: kept with its dead, but not in its crypt, and no news of a death)
+  fell(l,how,byYou,away){if(this.dead.some(d=>d.id===l.id))return;
+    this.dead.push({id:l.id,name:l.name,day:G.day,how,lv:l.lv||1,byYou:!!byYou,of:l.succeeded||null,fac:l.fac,race:l.race,gender:genderOf(l),parent:l.parent||null,spouse:l.spouse||null,inlaw:l.inlaw||undefined,born:l.born,kinFace:l.kinFace||undefined,cousin:l.cousin||undefined,away:away||undefined});
+    if(!away)Crypt.of(this).honour(l);
     if(byYou){this.grudge={gen:Legacy.fallen,day:G.day,name:l.name,how};for(const o of this.live)changeRel(o,DEATH.house.grudge,'you killed '+l.name+' of '+this.name)}
-    if(!W.dead[l.fac]&&FACS[l.fac])this.next={of:l.id,day:G.day+DEATH.house.wait,fac:l.fac,lv:Math.max(1,(l.lv||1)-DEATH.house.lv),title:String(l.name).split(/\s+/)[0]};
-    worldEvent({text:l.name+' of '+this.name+' is dead ('+how+'). '+cap1(pr(l).his)+' house will bury '+pr(l).him+' at '+(this.seat||'home')+'.',x:l.x,y:l.y,fac:[l.fac],cls:'bad',past:l.name+' died'})}
-  // (the one who takes up the place: a given name of the realm's people, the title fitting them)
+    if(!W.dead[l.fac]&&FACS[l.fac])this.next={of:l.id,day:G.day+DEATH.house.wait,fac:l.fac,lv:Math.max(1,(l.lv||1)-DEATH.house.lv),...nameParts(l.name)};
+    if(!away)worldEvent({text:l.name+' of '+this.name+' is dead ('+how+'). '+cap1(pr(l).his)+' house will bury '+pr(l).him+' at '+(this.seat||'home')+'.',x:l.x,y:l.y,fac:[l.fac],cls:'bad',past:l.name+' died'})}
+  get buried(){return this.dead.filter(d=>!d.away)}
+  // (a lord's name in the style of the one whose place they take (n: title, tail): the title for a woman or a man, else their given
+  // name and the house's own after it ("Shagra Bonecleaver"); one alive of the same name: "of" its seat after it)
+  styled(n,given,f,seat){const T=DEATH.house.titles[n.title],nm=(n.title?(T?T[f?1:0]:n.title)+' ':'')+given+(n.tail?' '+n.tail:'');
+    return W.lords.some(o=>!o.gone&&o.name===nm)&&seat?nm+' of '+seat.name:nm}
+  // (the one who takes up the place: of its blood (raise), else one of the realm's people from afar, a cousin of it)
   succeed(){const n=this.next;if(!n||G.day<n.day)return;this.next=null;if(W.dead[n.fac]||!FACS[n.fac])return;
     const k=this.heirOf(this.dead.find(d=>d.id===n.of));if(k)return this.raise(k,n);
-    const R=rngOf('houses'),race=FACS[n.fac].races[R.int(0,FACS[n.fac].races.length-1)]||'human',T0=DEATH.house.titles,
-      taken=g=>W.lords.some(o=>!o.gone&&String(o.name).split(/\s+/).pop()===g)||this.dead.some(d=>String(d.name).split(/\s+/).pop()===g);let given=R.pick(FOLK_NAMES[race]||FOLK_NAMES.human);for(let k=0;k<6&&taken(given);k++)given=R.pick(FOLK_NAMES[race]||FOLK_NAMES.human);// (no two lords alive of one name, nor one of its dead's)
-    const f=FOLK_WOMEN.includes(given),
-      T=DEATH.house.titles,title=T[n.title]?T[n.title][f?1:0]:n.title,seat=townBy(this.seat)||Spatial.nearest(fiefsOf(n.fac),P.x,P.y);if(!seat)return;
-    const l=asParty({id:this.id+'_'+G.day+'_'+this.dead.length,name:title+' '+given,fac:n.fac,x:seat.x+rint(-8,8),y:seat.y+14,troops:armyOf(n.fac,DEATH.house.men),state:'rest',tgt:seat.name,sd:0,cool:0,dead:false,gone:false,back:0,house:this.id,gender:f?'f':'m',succeeded:n.of||null,race,cousin:true});
+    const R=rngOf('houses'),race=FACS[n.fac].races[R.int(0,FACS[n.fac].races.length-1)]||'human',g=R.chance(.5)?'f':'m',given=this.nameFor(race,g,R),f=g==='f',
+      seat=townBy(this.seat)||Spatial.nearest(fiefsOf(n.fac),P.x,P.y);if(!seat)return;
+    const l=asParty({id:this.id+'_'+G.day+'_'+this.dead.length,name:this.styled(n,given,f,seat),fac:n.fac,x:seat.x+rint(-8,8),y:seat.y+14,troops:armyOf(n.fac,DEATH.house.men),state:'rest',tgt:seat.name,sd:0,cool:0,dead:false,gone:false,back:0,house:this.id,gender:g,succeeded:n.of||null,race,cousin:true});
     // (his skills made as any lord's: realms.js lordStats; then the level he comes to it with)
-    lordStats(l);l.lv=n.lv;W.lords.push(l);if(this.grudged())changeRel(l,Math.round(DEATH.house.grudge*(this.grudge.half?DEATH.kin.rel:1)),(this.grudge.half?'your kin':'you')+' killed '+this.grudge.name+' of '+this.name);
-    worldEvent({text:l.name+' takes up the place of '+this.name+' at '+seat.name+'.',x:seat.x,y:seat.y,fac:[n.fac],post:false,kind:''});return l}
+    return this.install(l,n,seat)}
   // (one of its kin a lord now (n: the place, from fell): their own name and face, under the title fitting them, at its seat)
-  raise(k,n){const seat=townBy(this.seat)||Spatial.nearest(fiefsOf(n.fac),P.x,P.y);if(!seat)return null;const T=DEATH.house.titles,f=k.gender==='f';
+  raise(k,n){const seat=townBy(this.seat)||Spatial.nearest(fiefsOf(n.fac),P.x,P.y);if(!seat)return null;
     this.kin=this.kin.filter(o=>o!==k);const {kin:_,...rec}=k;
-    const l=asParty({...rec,name:(T[n.title]?T[n.title][f?1:0]:n.title)+' '+k.name,fac:n.fac,x:seat.x+rint(-8,8),y:seat.y+14,troops:armyOf(n.fac,DEATH.house.men),state:'rest',tgt:seat.name,sd:0,cool:0,dead:false,gone:false,back:0,house:this.id,succeeded:n.of||null,famed:true,kinFace:true});
-    lordStats(l);l.lv=n.lv;W.lords.push(l);if((this.known||[]).includes(l.id))KNOWLEDGE.lord(l);
+    const l=asParty({...rec,name:this.styled(n,k.name,k.gender==='f',seat),fac:n.fac,x:seat.x+rint(-8,8),y:seat.y+14,troops:armyOf(n.fac,DEATH.house.men),state:'rest',tgt:seat.name,sd:0,cool:0,dead:false,gone:false,back:0,house:this.id,succeeded:n.of||null,famed:true,kinFace:true});
+    if((this.known||[]).includes(l.id))KNOWLEDGE.lord(l);return this.install(l,n,seat)}
+  // (a new lord of it in the world: his skills as any lord's (realms.js lordStats), the level he comes to it with, the grudge it holds)
+  install(l,n,seat){lordStats(l);l.lv=n.lv;W.lords.push(l);
     if(this.grudged())changeRel(l,Math.round(DEATH.house.grudge*(this.grudge.half?DEATH.kin.rel:1)),(this.grudge.half?'your kin':'you')+' killed '+this.grudge.name+' of '+this.name);
     worldEvent({text:l.name+' takes up the place of '+this.name+' at '+seat.name+'.',x:seat.x,y:seat.y,fac:[n.fac],post:false,kind:''});return l}
 }
@@ -93,13 +105,16 @@ const Houses={list:[],n:0,
   byId(id){return this.list.find(h=>h.id===id)||null},
   // (the houses you know one of, the rule on: a house founded for each lord you know, as you look them up)
   known(){if(!DEATH.on)return [];for(const l of W.lords)if(!l.gone&&!l.dead&&KNOWLEDGE.knowsLord(l))LordHouse.of(l);return this.list.filter(h=>h.knownAny)},
+  // (a lord gone from his house alive, the rule on: one who rides with you now (world/captives.js), the lords of a realm that has
+  // fallen (world/realms.js): kept with its dead but not in its crypt; one left, the next of it takes up his place)
+  away(l,how){if(!DEATH.on||!l||l.gone)return;LordHouse.of(l).fell(l,how,false,true)},
   // a lord dead for good (how: 'put to death', 'slain'), with the rule on
   died(l,how,byYou){if(!DEATH.on||!l)return;LordHouse.of(l).fell(l,how,byYou)},
   // (his army beaten: now and then he dies on the field, gone for good; by you (byYou), his house's grudge)
   slain(l,byYou){if(!DEATH.on||!l||l.gone||Math.random()>=DEATH.house.slain)return false;Object.assign(l,{dead:true,gone:true,back:1e9,troops:[],inside:null});this.died(l,'slain in battle',byYou);return true},
   // (a lord's house in a line: its name, seat, its dead, a grudge against you; make: found it now if it has none, the rule on)
   tagOf(l,make){const h=l.house&&this.byId(l.house)||(make&&DEATH.on&&!l.gone?LordHouse.of(l):null);if(!h)return '';
-    return '<small>'+htmlText(h.name)+(h.seat?' · seat '+htmlText(h.seat):'')+(h.dead.length?' · '+h.dead.length+' in its crypt':'')+(h.grudged()?' · <span class="bad">bears you a grudge: '+(h.grudge.half?'your kin':'you')+' killed '+htmlText(h.grudge.name)+'</span>':'')+'</small>'},
+    return '<small>'+htmlText(h.name)+(h.seat?' · seat '+htmlText(h.seat):'')+(h.buried.length?' · '+h.buried.length+' in its crypt':'')+(h.grudged()?' · <span class="bad">bears you a grudge: '+(h.grudge.half?'your kin':'you')+' killed '+htmlText(h.grudge.name)+'</span>':'')+'</small>'},
   hour(){if(!DEATH.on)return;const day=this.day!==G.day;this.day=G.day;for(const h of this.list){h.succeed();if(day)h.daily()}},
   save(){return this.list.length?{n:this.n,list:this.list,day:this.day}:undefined},
   load(v){this.n=v?.n||0;this.day=v?.day;this.list=(v?.list||[]).map(o=>new LordHouse(o))}
@@ -118,7 +133,7 @@ class Crypt extends Remains{
   get label(){return 'Crypt'}
   tip(){const h=this.houseOf;return '<b>The crypt of '+htmlText(this.who)+'</b><small>'+(h?h.dead.length+' of its dead lie here'+(FACS[h.fac]?' · the '+htmlText(FACS[h.fac].n):''):'')+'</small><span class="act">Click: go there</span>'}
   mapDot(V){return null}
-  meet(){G.mode='dialog';G.remains=this;const h=this.houseOf,dead=h?h.dead:[],live=h?h.live:[],paid=this.paid===G.day;if(h)h.learn(dead.map(d=>d.id));
+  meet(){G.mode='dialog';G.remains=this;const h=this.houseOf,dead=h?h.buried:[],live=h?h.live:[],paid=this.paid===G.day;if(h)h.learn(dead.map(d=>d.id));
     showPanel('<div class="top"><h2>A crypt</h2><span class="muted">'+htmlText(this.who)+'</span></div>'+
       '<p>A house of stone at '+htmlText(h?.seat||'its seat')+', the banner of '+(h&&FACS[h.fac]?'the '+htmlText(FACS[h.fac].n):'its realm')+' over its door. Their names are cut over it:</p>'+
       '<div class="lab">Here lie</div>'+(dead.length?dead.map(d=>'<p>'+htmlText(d.name)+' <span class="muted">· day '+d.day+', '+htmlText(d.how)+'</span></p>').join(''):'<p class="muted">No one yet.</p>')+
@@ -162,7 +177,7 @@ class RestSite extends Site{
   tip(){const n=this.members().length;return '<b>'+Discovery.nameOf(this)+'</b><small>'+this.T.n+(this.kind==='plot'?' · '+n+' of your line':this.kind==='crypt'?' · '+(Houses.byId(this.ref)?.dead.length||0)+' lords':'')+'</small><span class="act">Click: go there</span>'}
   about(){const ms=this.members(),g=ms[0];
     if(this.kind==='plot')return '<p>The plot of the family of '+htmlText(g?.family||Legacy.plot?.family||'your line')+', by '+htmlText(g?.at||'')+': '+ms.length+' of your line lie here, within its low wall.</p>';
-    if(this.kind==='crypt'){const h=Houses.byId(this.ref);return '<p>The crypt of '+htmlText(h?.name||'a house')+', at '+htmlText(h?.seat||'its seat')+'. Their names are cut over its door: '+(h?h.dead.map(d=>htmlText(d.name)+' <span class="muted">(day '+d.day+', '+htmlText(d.how)+')</span>').join(', '):'')+'.</p>'}
+    if(this.kind==='crypt'){const h=Houses.byId(this.ref);return '<p>The crypt of '+htmlText(h?.name||'a house')+', at '+htmlText(h?.seat||'its seat')+'. Their names are cut over its door: '+(h?h.buried.map(d=>htmlText(d.name)+' <span class="muted">(day '+d.day+', '+htmlText(d.how)+')</span>').join(', '):'')+'.</p>'}
     return g?'<p>'+(g.unburied?'No one has buried them yet: '+htmlText(g.who)+' lies as they fell, to '+htmlText(g.life?.by||'beasts')+'.'+(g.heir?' Their heir is coming for them.':''):g.words.line.replace('{at}',htmlText(g.at||''))+'here lies '+htmlText(g.who)+', who fell to '+htmlText(g.life?.by||'beasts')+'.')+'</p>':''}
   page(){const ms=this.members(),acts=[];let body=this.about();
     if(this.kind!=='crypt')body+='<div class="lab">Here lie</div>'+ms.map(g=>'<p><b>'+htmlText(g.who)+'</b> <span class="muted">· '+g.words.label.toLowerCase()+' · fell on day '+g.day+(g.n>1?' · the '+ordinal(g.n)+' of your line':'')+' · level '+(g.life?.level||0)+'</span>'+

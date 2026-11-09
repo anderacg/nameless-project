@@ -45,7 +45,8 @@ const DEATH={on:true,die:true,live:.3,min:.1,max:.6,
     // (a house's family: a lord wed as his house is first known (wed) with 0-2 children (kids) of 0-200 days (age); of age at adult days;
     // each day one of age and unwed may wed (marry), a couple have a child (birth) up to most; no more than cap of it alive)
     fam:{wed:.75,kids:[0,2],age:[0,200],adult:120,marry:.01,birth:.01,most:4,cap:24},
-    titles:{Lord:['Lord','Lady'],Lady:['Lord','Lady'],Ser:['Ser','Dame'],Dame:['Ser','Dame']}},
+    titles:{Lord:['Lord','Lady'],Lady:['Lord','Lady'],Ser:['Ser','Dame'],Dame:['Ser','Dame'],Thane:['Thane','Clanmother'],Clanmother:['Thane','Clanmother'],
+      Warchief:['Warchief','Warmother'],Warmother:['Warchief','Warmother'],Warden:['Warden','Warden'],Admiral:['Admiral','Admiral'],Captain:['Captain','Captain']}},
   grave:{share:.5,find:{heir:3,near:.3,far:.04,renown:.002,max:.9},cairn:12,yard:{r:70,tries:12,min:110,max:330,step:22,clear:2,town:90,wood:3,near:.6},apart:34,rings:6,plot:{cols:4,gap:30,row:.8,wall:16},
     tiers:{far:22,cairn:50,near:{small:0,stone:50,grave:200,tomb:500},talk:{remains:0,small:.5,stone:1,cairn:1,grave:1,tomb:1}},
     words:{remains:{h:'Remains',label:'Body',name:'Remains of ',tip:'The remains of ',at:'over the remains of',line:'No one came to bury them: bones in the grass, picked at by beasts. '},
