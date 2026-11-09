@@ -64,6 +64,7 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
   ok(!before&&S.pics[k1]&&S.last===S.pics[k1]&&S.s.seed,'Random: a new seed ('+S.s.seed+'), the preview redrawn '+S.wait+' ms after the change, the last picture shown meanwhile')}
  {const seen=new Set(),seeds=new Set();for(let i=0;i<12;i++){t.act('ws-surprise');seen.add(t.settingsKey({...S.s,seed:''}));seeds.add(S.s.seed)}
   const s=S.s;ok(seen.size>=6&&seeds.size===12&&J(t.normSettings(s))===J(s)&&s.w<=640&&s.holdings>=25&&s.holdings<=t.maxHoldings(s)&&/A world of chance/.test(S.note),'Surprise me: a world of chance, its size (Normal or Large), holdings and every land and danger setting rolled, a fresh seed each time ('+seen.size+' mixes in 12)');
+  {const L=Array.from({length:t.WS_FRESH},()=>t.freshSeed());ok(new Set(L).size===L.length&&L.every(v=>/^[a-z]+$/.test(v)),'a fresh seed never one of the last '+t.WS_FRESH+' given (two words of 32 each: a dozen rolls would meet one again one time in fifteen)')}
   t.act('ws-preset','normal')}
  t.act('ws-size','large');ok(S.s.w===640&&S.s.h===448&&S.s.holdings===40&&S.s.preset==='large','a Large size at the normal density is the Large preset (40 holdings)');
  t.act('ws-dens','more');ok(S.s.holdings===55&&S.s.preset==='custom'&&q('[data-act="ws-dens"][data-arg="more"]').classList.contains('on'),'More: 55 holdings; touching a setting makes it Custom');

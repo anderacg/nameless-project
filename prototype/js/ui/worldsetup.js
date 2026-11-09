@@ -53,10 +53,12 @@ const WS_PRESET={classic:['Classic','The world of Ashmark, the same for everyone
   huge:['Huge','The largest world. Sparse until later phases fill it.'],frontier:['Wild Frontier','Large and cold, rugged and wet: few holdings, deadly beasts, many bandits, rich land.'],
   crowded:['Crowded Realms','Normal size, half as many holdings again, calm beasts.'],custom:['Custom','Your own mix of settings.']};
 const WS_SIZE={normal:[448,320],large:[640,448],huge:[1024,768]};
-// a fresh seed: two words (crypto.getRandomValues: never Math.random)
+/* a fresh seed: two words (crypto.getRandomValues: never Math.random), never one of the last WS_FRESH it gave (32 × 32 of them, so
+   a dozen rolls of Surprise me or Random would otherwise meet one again one time in fifteen: "a fresh seed each time") */
 const SEED_A=['red','ash','iron','oak','frost','stone','wolf','raven','amber','thorn','elder','storm','salt','moon','gold','black','silver','high','deep','wild','briar','cold','dusk','fern','grey','hawk','mist','pine','rook','sun','west','yew'],
   SEED_B=['water','fell','ford','mere','wood','vale','crest','hollow','brook','gate','moor','reach','field','marsh','barrow','haven','spire','fen','dale','watch','holm','stead','wick','burn','combe','tor','ness','ley','mouth','shaw','well','by'];
-const freshSeed=()=>{const r=crypto.getRandomValues(new Uint32Array(1))[0];return SEED_A[r&31]+SEED_B[r>>>5&31]};
+const WS_FRESH=64,wsGiven=[];
+const freshSeed=()=>{let v;do{const r=crypto.getRandomValues(new Uint32Array(1))[0];v=SEED_A[r&31]+SEED_B[r>>>5&31]}while(wsGiven.includes(v));wsGiven.push(v);if(wsGiven.length>WS_FRESH)wsGiven.shift();return v};
 // (a phone: a coarse pointer, the short side of the screen under 900 px: Huge is slow to forge there, D44)
 const phoneSlow=()=>matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<900;
 // the settings the screen holds, clamped (Classic by default); a world with no seed gets a fresh one
