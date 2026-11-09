@@ -300,9 +300,9 @@ class Grave extends Remains{
   get words(){return DEATH.grave.words[this.kind]}
   // (anything for you: its experience not yet prayed for, or its goods (a rumour of it: hour))
   holds(){return !this.spent&&this.xp>0||!this.empty()}
-  // (its light: only while its experience waits for you (the owner, 2026-11-09: "If there's no exp then no need a glow on remains or
-  // grave"): goods alone, or prayed at, it lies dark)
-  glows(){return !this.spent&&this.xp>0}
+  // (its light (the owner, 2026-11-09: "if money, items, etc still there then can have glow"): while its experience waits for you or
+  // its goods are there; prayed at and emptied, nothing left, it lies dark)
+  glows(){return this.holds()}
   robbable(){return !(this.at&&townBy(this.at)?.owner===this.fac)}
   tip(){return '<b>'+this.words.tip+htmlText(this.who)+'</b><small>Fell on day '+this.day+(this.spent?' · prayed at':this.xp?' · a warmth lingers here':'')+'</small><span class="act">Click: go there</span>'}
   // (met: its page, the hero's life; Pray, and its goods)
