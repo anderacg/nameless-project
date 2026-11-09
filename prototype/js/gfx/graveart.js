@@ -33,6 +33,20 @@ const GraveArt={
     rect(ax-5,ay-1,10,3,C.mound);rect(ax-4,ay-2,8,1,C.mound);rect(ax-3,ay-2,6,1,C.earth2);
     rect(ax,ay-10,1,9,C.wood);rect(ax-2,ay-8,5,1,C.wood);px(ax,ay-8,C.wood2);px(ax+1,ay-10,C.wood2);
     for(let i=0;i<5;i++){const a=i/5*6.283+.5;rect(ax+Math.round(Math.cos(a)*6),ay+Math.round(Math.sin(a)*3),2,1,i%2?C.stone:C.stone2)}},
+  // (a headstone over a mound in flowers)
+  stone(ax,ay,px,rect,hash){const C=DEATH.grave.col,sy=ay-1;
+    rect(ax-4,sy,9,2,C.shade);rect(ax-3,sy-8,7,8,C.stone);rect(ax-2,sy-9,5,1,C.stone);rect(ax+2,sy-8,1,8,C.shade);px(ax-3,sy-8,C.light);
+    rect(ax-1,sy-6,3,1,C.carve);rect(ax-1,sy-4,3,1,C.carve);
+    rect(ax-5,sy+2,11,3,C.mound);rect(ax-4,sy+2,9,1,C.earth2);for(let i=0;i<5;i++)px(ax-4+Math.round(hash(i,3,13)*8),sy+3+Math.round(hash(i,3,14)),C.flowers[i%C.flowers.length])},
+  // (a tomb: a tall stone on its steps, capped, its plaque carved; railed in iron, spear-tipped; flower beds at its foot)
+  tomb(ax,ay,px,rect,hash){const C=DEATH.grave.col,R=DEATH.grave.art.rail,x0=ax-R.w/2,y0=ay-R.h/2,x1=ax+R.w/2,y1=ay+R.h/2,
+      rail=(x,y)=>{rect(x,y-5,1,5,C.iron);px(x,y-6,C.light)};
+    rect(x0,y0-3,R.w,1,C.iron);for(let x=x0;x<=x1;x+=R.gap)rail(x,y0);for(let y=y0;y<=y1;y+=3){rail(x0,y);rail(x1,y)}
+    const sy=ay;rect(ax-8,sy,17,2,C.shade);rect(ax-7,sy-2,15,2,C.stone2);rect(ax-5,sy-4,11,2,C.stone);
+    for(let i=0;i<20;i++){const w=i<16?5:5-Math.ceil((i-15)*1.2);if(w<=0)break;rect(ax-(w>>1),sy-5-i,w,1,C.stone);px(ax+(w>>1),sy-5-i,C.shade)}px(ax-2,sy-20,C.light);
+    rect(ax-2,sy-9,5,3,C.carve);px(ax,sy-8,C.light);
+    for(const dx of [-12,8])for(let i=0;i<4;i++)px(ax+dx+i,sy+1+(i&1),C.flowers[(i+dx)&3]);
+    for(const [a,b] of [[x0,ax-3],[ax+3,x1]])rect(a,y1-3,b-a+1,1,C.iron);for(let x=x0;x<=x1;x+=R.gap)if(Math.abs(x-ax)>2)rail(x,y1)},
   cairn(ax,ay,px,rect,hash){const C=DEATH.grave.col,A=DEATH.grave.art,R=A.ring;
     // (the ring of standing stones round it, the back ones first)
     const ring=[];for(let i=0;i<R.n;i++){const a=i/R.n*6.283+.3;ring.push([ax+Math.cos(a)*R.rx,ay+Math.sin(a)*R.ry])}ring.sort((a,b)=>a[1]-b[1]);
@@ -55,16 +69,19 @@ const GraveArt={
     rect(sx-5,sy+2,11,4,C.mound);rect(sx-4,sy+2,9,1,C.earth2);for(let i=0;i<6;i++)px(sx-4+Math.round(hash(i,2,13)*8),sy+3+Math.round(hash(i,2,14)*2),C.flowers[i%C.flowers.length]);
     // (the front of the fence, its gate open in the middle)
     for(const [a,b] of [[x0,ax-3],[ax+3,x1]]){rect(a,y1-2,b-a+1,1,C.wood2);rect(a,y1-3,b-a+1,1,C.wood)}for(let x=x0;x<=x1;x+=F.gap)if(Math.abs(x-ax)>2)post(x,y1)},
+  // (a candle, its flame flickering, a little light round it)
+  candle(x,y,t){const C=DEATH.grave.col,fl=Math.sin(t*9+x)*.5+Math.sin(t*13.7+x*2)*.5;ctx.fillStyle=C.wax;ctx.fillRect(x,y,1,2);ctx.globalAlpha=.25+.1*fl;ctx.fillStyle=C.glow;ctx.beginPath();ctx.arc(x+.5,y-1,2.5,0,6.283);ctx.fill();
+    ctx.globalAlpha=1;ctx.fillStyle=fl>.3?C.flame2:C.flame;ctx.fillRect(x,y-1-(fl>.6?1:0),1,1)},
   // what moves on it this frame (o: the grave; x, y: its foot on the screen; t: seconds; night)
   live(o,x,y,t,night){const C=DEATH.grave.col,A=DEATH.grave.art;
     if(o.kind==='cairn'){const top=y-A.rows.length*2-A.blade-3,c=o.cloth||C.cloth;for(let i=0;i<4;i++){const f=Math.sin(t*5+i*.9)*(i*.5);ctx.fillStyle=c;ctx.fillRect(Math.round(x+1+i),Math.round(top+f),1,2)}}
     else if(o.kind==='grave'){const F=A.fence,sy=y-2;
-      // (two candles, their flames flickering, a little light round each)
-      for(const dx of [-5,5]){const fl=Math.sin(t*9+dx)*.5+Math.sin(t*13.7+dx*2)*.5;ctx.fillStyle=C.wax;ctx.fillRect(x+dx,sy,1,2);ctx.globalAlpha=.25+.1*fl;ctx.fillStyle=C.glow;ctx.beginPath();ctx.arc(x+dx+.5,sy-1,2.5,0,6.283);ctx.fill();
-        ctx.globalAlpha=1;ctx.fillStyle=fl>.3?C.flame2:C.flame;ctx.fillRect(x+dx,sy-1-(fl>.6?1:0),1,1)}
+      // (two candles at its foot)
+      for(const dx of [-5,5])this.candle(x+dx,sy,t);
       // (the heir's banner on its pole, waving)
       const bx=x+F.w/2-4,by=y-F.h/2-14;ctx.fillStyle=C.wood;ctx.fillRect(bx,by,1,14);const col=o.fac&&FACS[o.fac]?FACS[o.fac].col:C.cloth;
       for(let i=0;i<5;i++){const f=Math.round(Math.sin(t*4-i*.8)*(i*.3));ctx.fillStyle=col;ctx.fillRect(bx+1+i,by+1+f,1,4)}}
+    else if(o.kind==='tomb'){const R=A.rail;for(const [dx,dy] of [[-R.w/2+2,-R.h/2+1],[R.w/2-2,-R.h/2+1],[-R.w/2+2,R.h/2-2],[R.w/2-2,R.h/2-2]])this.candle(x+dx,y+dy,t)}
     // (fireflies by night, round its ground)
     if(night)for(let i=0;i<A.flies;i++){const a=t*.4+i*2.4,fx=x+Math.cos(a*1.3+i)*A.ground[0]*.9,fy=y-3+Math.sin(a+i*1.7)*A.ground[1]*.9-Math.abs(Math.sin(a*2))*3,on=.5+.5*Math.sin(t*3+i*1.9);
       ctx.globalAlpha=.25*on;ctx.fillStyle=C.fly;ctx.beginPath();ctx.arc(fx,fy,1.6,0,6.283);ctx.fill();ctx.globalAlpha=on;ctx.fillRect(Math.round(fx),Math.round(fy),1,1)}

@@ -105,11 +105,11 @@ Kit.suite(({ok})=>{
    // into you as a gift (not counted toward your own grave); at an heir's holding, safe from robbers
    setup();tidy();t.Remains.list=[];P.xpEarned=400;P.renown=X.grave.tiers.cairn;const mg=wolves();dieNow(mg);const fx=P.x,fy=P.y;t.act('death-new');t.act('death-past',k);
    const g=t.Remains.list.find(o=>o.grave);
-   ok(g instanceof t.Grave&&g.xp===200&&!g.at&&Math.hypot(g.x-fx,g.y-fy)<=X.grave.cairn*1.5&&g.holds()&&g.robbable()&&/cairn over/.test(g.tip()),'no heir: a cairn where you fell, holding half the experience that hero gained ('+g.xp+' of 400)');
+   ok(g instanceof t.Grave&&g.xp===200&&g.kind==='stone'&&g.at&&g.holds()&&/grave of/i.test(g.tip()),'known, near people: someone buries you, a headstone at '+g.at+', holding half the experience that hero gained ('+g.xp+' of 400)');
    {const D0=t.DISCOVER.on;t.DISCOVER.on=true;try{const known0=t.Discovery.named(g);t.Discovery.discover(g,true);ok(t.Discovery.places().includes(g)&&/^g:/.test(t.Discovery.key(g))&&!known0&&t.Discovery.named(g)&&g.mapDot(t.vis()),'a place of its own: found as a place is ("'+g.name+'", '+g.label.toLowerCase()+'), then on the minimap')}finally{t.DISCOVER.on=D0}}
    roll(0);try{t.Grave.hour()}finally{window.Math.random=rnd}ok(t.newsW().items.some(it=>it.k==='grave'&&it.detail.who===g.who),'folk talk of it (the news: "'+(t.newsW().items.find(it=>it.k==='grave')?'a cairn …':'')+'")');
    const ents=[],cam={x:P.x-200,y:P.y-120};g.x=P.x+30;g.y=P.y;g.draw(ents,cam,t.vis());let threw=null;try{for(const e of ents)e.f()}catch(err){threw=err}ok(ents.length&&!threw,'drawn with its light rising ('+(threw?threw.message:ents.length+' to draw')+')');
-   g.meet();ok(/<h2>A cairn<\/h2>/.test(panel())&&/data-act="death-pray"/.test(panel())&&/200 experience/.test(panel()),'come to it: its hero\'s life, and Pray');
+   g.meet();ok(/<h2>A grave<\/h2>/.test(panel())&&/data-act="death-pray"/.test(panel())&&/200 experience/.test(panel()),'come to it: its hero\'s life, and Pray');
    const all0=t.HERO_XP_ALL(P.level,P.xp),e0=P.xpEarned||0;t.act('death-pray');ok(g.spent&&g.flow&&G.mode==='world','Pray: its light flows from it into you, out on the map');
    const fe=[];g.draw(fe,cam,t.vis());let threw2=null;try{for(const e of fe)e.f()}catch(err){threw2=err}ok(fe.length>1&&!threw2,'the flow drawn over the map'+(threw2?': '+threw2.message:''));
    g.flowed();const dx=Math.round(t.HERO_XP_ALL(P.level,P.xp)-all0);ok(dx===200&&(P.xpEarned||0)===e0&&g.flow.done,'and as it arrives you gain it: +'+dx+' XP, level '+P.level+' (a gift: not toward your own grave)');
@@ -138,14 +138,15 @@ Kit.suite(({ok})=>{
   // grave at the holding nearest, safe from robbers
   {const L=t.Legacy,tidy=()=>{W.lords=W.lords.filter(l=>!l.heir);for(const x of t.TOWNS)if(L.realms[x.owner])x.owner=t.FIDS[0];L.clear()},k=Object.keys(t.BGS)[0],
     die=(ren,x,y)=>{setup();tidy();t.Remains.list=[];P.comps={};if(x!=null){P.x=x;P.y=y}P.renown=ren;P.xpEarned=60;const mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}t.act('cont');t.act('death-new');t.act('death-past',k);return t.Remains.list.find(o=>o.grave)};
-   const g1=die(0);ok(g1&&g1.kind==='small'&&!g1.at&&/small grave/.test(g1.tip()),'little renown, near people: a small grave where you fell ("'+(g1&&g1.name)+'")');
+   const g1=die(0);ok(g1&&g1.kind==='small'&&g1.at&&/small grave/.test(g1.tip()),'little renown, near people: someone buries you anyway, a small grave by '+(g1&&g1.at)+' ("'+(g1&&g1.name)+'")');
    const ents=[],cam={x:g1.x-100,y:g1.y-60};g1.draw(ents,cam,t.vis());let e1=null;try{for(const e of ents)e.f()}catch(err){e1=err}ok(!e1,'drawn: its mound and cross of sticks'+(e1?': '+e1.message:''));
    let far=null;for(let ty=4;ty<t.MH-4&&!far;ty+=3)for(let tx=4;tx<t.MW-4&&!far;tx+=3){const x=tx*t.TILE+8,y=ty*t.TILE+8,h=t.Spatial.nearestHolding(x,y);if(t.passable(t.terrAt(x,y))&&h&&Math.hypot(h.x-x,h.y-y)/t.TILE>X.grave.tiers.far+3&&!t.RoadBand.on(x,y))far={x,y}}
    if(far){const g2=die(0,far.x,far.y);ok(g2&&g2.kind==='remains'&&Math.hypot(g2.x-far.x,g2.y-far.y)<2&&g2.xp===30,'little renown, far from anyone: no one buries you; your remains where you fell, still holding '+(g2&&g2.xp)+' experience');
     const ents2=[];g2.draw(ents2,{x:g2.x-100,y:g2.y-60},t.vis());let e2=null;try{for(const e of ents2)e.f()}catch(err){e2=err}ok(!e2,'drawn: bones, a skull, a torn cloak, the weapon fallen by them'+(e2?': '+e2.message:''));
     const nn=()=>t.newsW().items.filter(it=>it.k==='grave'&&it.detail.who===g2.who).length,n0=nn();roll(0);try{for(let i=0;i<5;i++)t.Grave.hour()}finally{window.Math.random=rnd}ok(nn()===n0,'and no one talks of them');
     const gc=die(X.grave.tiers.cairn,far.x,far.y);ok(gc.kind==='cairn','known, far from anyone: a cairn')}
-   const g3=die(X.grave.tiers.grave+10);ok(g3&&g3.kind==='grave'&&g3.at&&!g3.robbable()&&/grave of/.test(g3.tip()),'renowned, near people: a grave at '+(g3&&g3.at)+', kept safe');
+   const gs1=die(X.grave.tiers.near.stone);ok(gs1.kind==='stone','more renown: a headstone');const g3=die(X.grave.tiers.near.grave+10);ok(g3&&g3.kind==='grave'&&g3.at&&!g3.robbable()&&/grave of/.test(g3.tip()),'renowned, near people: a grave at '+(g3&&g3.at)+', kept safe');
+   const g4=die(X.grave.tiers.near.tomb);const e4=[];g4.draw(e4,{x:g4.x-100,y:g4.y-60},t.vis());let x4=null;try{for(const e of e4)e.f()}catch(err){x4=err}ok(g4.kind==='tomb'&&g4.at&&!x4&&/Tomb of/.test(g4.name),'renowned the most: a tomb at '+g4.at+', its stone tall, railed in iron, four candles'+(x4?': '+x4.message:''));
    g3.meet();ok(/<h2>A grave<\/h2>/.test(panel())&&new RegExp('A stone by '+g3.at).test(panel()),'its page: "A stone by '+g3.at+', kept clean"');t.act('death-leave');
    tidy();t.Remains.list=[]}
   // ---- no room on the roll's other side: a man-eater only once, and no mythic one

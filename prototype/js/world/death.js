@@ -232,15 +232,16 @@ class Grave extends Remains{
     const off=T.tier==='cairn'?X.cairn:T.tier==='small'?X.cairn/2:0,p=home?Grave.spot(home.x,home.y,X.yard.r,r):Grave.spot(r.x+off,r.y+Math.round(off/2),0,r);
     if(home){r.at=home.name;r.fac=home.owner}r.x=p.x;r.y=p.y;r.cloth=FACS.player.col;return asGrave(r)}
   /* (how you are laid to rest, by your renown and where you fell (the owner, 2026-11-09: "if you died whatout much renown or if you
-     died far away then you may have a grave or remains"; DEATH.grave.tiers): an heir buries you at their holding (a grave); far
-     from anyone (over far tiles from a holding, off the roads) no one buries you: your remains lie as they fell, a cairn if you were
-     known; near people, a grave at the holding nearest if you were renowned, a cairn if known, else a small grave where you fell) */
-  static tierOf(old,r,lord){const X=DEATH.grave.tiers,ren=old.renown||0;
-    if(lord){const home=Spatial.nearest(TOWNS.filter(t=>t.owner===lord.fac&&!t.gone),lord.x,lord.y);if(home)return {tier:'grave',home}}
-    const h=Spatial.nearestHolding(r.x,r.y),far=(!h||Math.hypot(h.x-r.x,h.y-r.y)/TILE>X.far)&&!RoadBand.on(r.x,r.y);
-    if(far)return {tier:ren>=X.cairn?'cairn':'remains'};
-    if(ren>=X.grave&&h&&!h.gone)return {tier:'grave',home:h};
-    return {tier:ren>=X.cairn?'cairn':'small'}}
+     died far away then you may have a grave or remains"; "If you death near town, someone may burry for you right? But if you have
+     more renown you may have a good looking grave"; DEATH.grave.tiers): far from anyone (over far tiles from a holding, off the
+     roads) no one buries you: your remains lie as they fell, a cairn if you were known. Near people, someone buries you at the
+     holding nearest, your heir at theirs: the finer the more renown you had (near): a small grave (a mound, a cross of sticks), a
+     headstone (stone), a fenced plot (grave), a tomb) */
+  static tierOf(old,r,lord){const X=DEATH.grave.tiers,ren=old.renown||0,fine=Object.keys(X.near).filter(k=>ren>=X.near[k]).pop();
+    if(lord){const home=Spatial.nearest(TOWNS.filter(t=>t.owner===lord.fac&&!t.gone),lord.x,lord.y);if(home)return {tier:fine==='tomb'?'tomb':'grave',home}}
+    const h=Spatial.nearestHolding(r.x,r.y),far=(!h||h.gone||Math.hypot(h.x-r.x,h.y-r.y)/TILE>X.far)&&!RoadBand.on(r.x,r.y);
+    if(far||!h||h.gone)return {tier:ren>=X.cairn?'cairn':'remains'};
+    return {tier:fine,home:h}}
   // (open ground for a grave: the spot itself (r0 0), or a ring r0 round it, then rings further out, from the south; none within
   // DEATH.grave.apart of another grave)
   static spot(cx,cy,r0,self){const X=DEATH.grave,free=(x,y)=>passable(terrAt(x,y))&&!Remains.list.some(o=>o!==self&&o.grave&&Math.hypot(o.x-x,o.y-y)<X.apart);
@@ -274,7 +275,7 @@ class Grave extends Remains{
     ents.push({y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.holds();ctx.save();
       if(lit){const [gw,gh]=X.art.groundOf[g.kind]||[13,6];ctx.globalAlpha=.14+.12*pulse;ctx.fillStyle=C.glow;ctx.beginPath();ctx.ellipse(x,y-2,gw*.8+pulse*2,gh*.8+pulse,0,0,6.283);ctx.fill();ctx.globalAlpha=1}
       ctx.drawImage(S.cv,x-S.ax,y-S.ay);GraveArt.live(g,x,y,t,night);
-      if(lit){const top=y-({cairn:17,grave:15,small:9,remains:5}[g.kind]||12);
+      if(lit){const top=y-({cairn:17,grave:15,small:9,remains:5,stone:12,tomb:28}[g.kind]||12);
         const col=ctx.createLinearGradient(0,top-I.h,0,top+2);col.addColorStop(0,'rgba(255,231,160,0)');col.addColorStop(1,'rgba(255,231,160,'+(.1+.08*pulse).toFixed(2)+')');ctx.fillStyle=col;ctx.fillRect(x-2,top-I.h,5,I.h+2);
         for(let i=0;i<I.motes;i++){const p=(t*I.rise+i/I.motes)%1,mx=x+Math.sin(t*1.7+i*2.1)*6*(1-p),my=top-p*I.h;
           ctx.globalAlpha=(1-p)*.35;ctx.fillStyle=i%2?C.mote:C.mote2;ctx.beginPath();ctx.arc(mx,my,1.8,0,6.283);ctx.fill();
