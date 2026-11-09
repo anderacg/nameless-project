@@ -182,7 +182,7 @@ class Remains extends WorldObject{
   here(){return Remains.list.includes(this)}
   empty(){return !this.gold&&!this.items.length}
   inView(V){return spotted(this,V)}
-  pick(at){at.add(this,9,2)}
+  pick(at){at.add(this,this.grave?14:9,2)}
   get meetsAnyTime(){return true}
   what(){const n=k=>this.items.reduce((a,x)=>a+((x[0]==='gear')===k?x[2]:0),0),g=n(true),o=n(false);
     return [this.gold&&this.gold+' gold',g&&g+' piece'+(g>1?'s':'')+' of gear',o&&o+' other thing'+(o>1?'s':'')].filter(Boolean).join(', ')||'nothing left'}
@@ -228,8 +228,11 @@ class Grave extends Remains{
   static bury(old,lord){const X=DEATH.grave,r=Remains.list.find(o=>!o.grave&&o.who===old.who&&o.day===old.day)||Remains.lay(P.x,P.y,old.who),
       home=lord?Spatial.nearest(TOWNS.filter(t=>t.owner===lord.fac&&!t.gone),lord.x,lord.y):null;
     Object.assign(r,{grave:1,xp:Math.round((old.earned||0)*X.share),life:{level:old.level,renown:old.renown,days:old.days,by:old.by}});
-    if(home){r.at=home.name;r.fac=lord.fac;r.x=Math.round(home.x+X.yard[0]);r.y=Math.round(home.y+X.yard[1])}else{r.x+=X.cairn;r.y+=Math.round(X.cairn/2)}
-    return asGrave(r)}
+    if(home){r.at=home.name;r.fac=lord.fac;const p=Grave.yardOf(home);r.x=p.x;r.y=p.y}else{r.x+=X.cairn;r.y+=Math.round(X.cairn/2)}
+    r.cloth=FACS.player.col;return asGrave(r)}
+  // (a grave's yard by a holding: the first open ground on a ring round it, from the south)
+  static yardOf(t){const R=DEATH.grave.yard;for(let i=0;i<R.tries;i++){const a=Math.PI/2+(i%2?1:-1)*Math.ceil(i/2)*6.283/R.tries,x=Math.round(t.x+Math.cos(a)*R.r),y=Math.round(t.y+Math.sin(a)*R.r);
+      if(passable(terrAt(x,y)))return {x,y}}return {x:Math.round(t.x),y:Math.round(t.y+R.r)}}
   get kind(){return this.at?'grave':'cairn'}
   // (its light: while it holds anything for you)
   holds(){return !this.spent&&this.xp>0||!this.empty()}
@@ -248,18 +251,24 @@ class Grave extends Remains{
     setTimeout(()=>this.flowed(),DEATH.grave.flow.dur*1000);return true}
   flowed(){const f=this.flow;if(!f||f.done)return;f.done=true;f.end=performance.now();const lv=P.level;leaderOf(P).addXp(f.n,true);
     log('You pray at the '+this.kind+' of '+this.who+', and what they learned flows into you: +'+f.n+' XP'+(P.level>lv?', level '+P.level:'')+'.','gold','story');updateHUD(true)}
+  // (its place: its ground under everything, what stands on it among the figures, what moves on it; its light while it holds
+  // anything: a glow breathing, a faint column, motes rising and turning: gfx/graveart.js)
   draw(ents,cam,V){const g=this,X=DEATH.grave,C=X.col,t=performance.now()/1000;if(g.flow)this.drawFlow(ents,cam);if(!g.inView(V))return;
-    ents.push({y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y);ctx.save();
-      ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x-5,y,10,2);
-      if(g.at){ctx.fillStyle=C.mound;ctx.fillRect(x-5,y-1,10,2);ctx.fillStyle=C.stone;ctx.fillRect(x-2,y-8,5,7);ctx.fillRect(x-1,y-9,3,1);ctx.fillStyle=C.shade;ctx.fillRect(x+2,y-8,1,7)}
-      else{ctx.fillStyle=C.stone;ctx.fillRect(x-4,y-2,8,2);ctx.fillRect(x-3,y-4,6,2);ctx.fillRect(x-1,y-6,3,2);ctx.fillStyle=C.shade;ctx.fillRect(x+2,y-4,1,2);ctx.fillRect(x+1,y-6,1,2)}
-      // (its light, while it holds anything: a glow breathing, a faint column over it, motes rising and turning round it)
-      if(g.holds()){const I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe);ctx.globalAlpha=.16+.14*pulse;ctx.fillStyle=C.glow;ctx.beginPath();ctx.ellipse(x,y-3,10+pulse*2,5+pulse,0,0,6.283);ctx.fill();
-        const col=ctx.createLinearGradient(0,y-4-I.h,0,y-2);col.addColorStop(0,'rgba(255,231,160,0)');col.addColorStop(1,'rgba(255,231,160,'+(.18+.12*pulse).toFixed(2)+')');ctx.globalAlpha=1;ctx.fillStyle=col;ctx.fillRect(x-3,y-4-I.h,7,I.h+2);
-        for(let i=0;i<I.motes;i++){const p=(t*I.rise+i/I.motes)%1,mx=x+Math.sin(t*1.7+i*2.1)*5*(1-p),my=y-4-p*I.h;
+    const S=GraveArt.sprite(g.kind,g.seed||(g.seed=1+Math.floor(Math.abs(g.x*7+g.y*13))%997)),night=darkness()>.35;
+    ents.push({y:g.y-1e5,f:()=>{ctx.drawImage(S.ground,Math.round(g.x-cam.x)-S.ax,Math.round(g.y-cam.y)-S.ay)}});
+    ents.push({y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.holds();ctx.save();
+      if(lit){ctx.globalAlpha=.14+.12*pulse;ctx.fillStyle=C.glow;ctx.beginPath();ctx.ellipse(x,y-2,13+pulse*2,6+pulse,0,0,6.283);ctx.fill();ctx.globalAlpha=1}
+      ctx.drawImage(S.cv,x-S.ax,y-S.ay);GraveArt.live(g,x,y,t,night);
+      if(lit){const top=y-(g.kind==='cairn'?17:15);
+        const col=ctx.createLinearGradient(0,top-I.h,0,top+2);col.addColorStop(0,'rgba(255,231,160,0)');col.addColorStop(1,'rgba(255,231,160,'+(.1+.08*pulse).toFixed(2)+')');ctx.fillStyle=col;ctx.fillRect(x-2,top-I.h,5,I.h+2);
+        for(let i=0;i<I.motes;i++){const p=(t*I.rise+i/I.motes)%1,mx=x+Math.sin(t*1.7+i*2.1)*6*(1-p),my=top-p*I.h;
           ctx.globalAlpha=(1-p)*.35;ctx.fillStyle=i%2?C.mote:C.mote2;ctx.beginPath();ctx.arc(mx,my,1.8,0,6.283);ctx.fill();
           ctx.globalAlpha=(1-p)*.95;ctx.fillStyle=C.core;ctx.fillRect(Math.round(mx),Math.round(my),1,1)}}
       ctx.restore()}})}
+  // (on the minimap once you know it; found as a place is, its title rising: world/discovery.js)
+  mapDot(V){return Discovery.named(this)?[DEATH.grave.col.glow,2]:null}
+  get name(){return (this.at?'Grave of ':'Cairn of ')+this.who}
+  get label(){return this.at?'Grave':'Cairn'}
   // (the flow: motes from the grave to you along curves, one after another; you glow as they arrive; then the gain over you)
   drawFlow(ents,cam){const g=this,f=g.flow,X=DEATH.grave.flow,C=DEATH.grave.col,now=performance.now(),e=(now-f.t0)/1000/X.dur;
     if(f.end&&(now-f.end)/1000>X.show){g.flow=null;return}

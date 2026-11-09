@@ -106,6 +106,7 @@ Kit.suite(({ok})=>{
    setup();tidy();t.Remains.list=[];P.xpEarned=400;const mg=wolves();dieNow(mg);const fx=P.x,fy=P.y;t.act('death-new');t.act('death-past',k);
    const g=t.Remains.list.find(o=>o.grave);
    ok(g instanceof t.Grave&&g.xp===200&&!g.at&&Math.hypot(g.x-fx,g.y-fy)<=X.grave.cairn*1.5&&g.holds()&&g.robbable()&&/cairn over/.test(g.tip()),'no heir: a cairn where you fell, holding half the experience that hero gained ('+g.xp+' of 400)');
+   {const D0=t.DISCOVER.on;t.DISCOVER.on=true;try{const known0=t.Discovery.named(g);t.Discovery.discover(g,true);ok(t.Discovery.places().includes(g)&&/^g:/.test(t.Discovery.key(g))&&!known0&&t.Discovery.named(g)&&g.mapDot(t.vis()),'a place of its own: found as a place is ("'+g.name+'", '+g.label.toLowerCase()+'), then on the minimap')}finally{t.DISCOVER.on=D0}}
    roll(0);try{t.Grave.hour()}finally{window.Math.random=rnd}ok(t.newsW().items.some(it=>it.k==='grave'&&it.detail.who===g.who),'folk talk of it (the news: "'+(t.newsW().items.find(it=>it.k==='grave')?'a cairn …':'')+'")');
    const ents=[],cam={x:P.x-200,y:P.y-120};g.x=P.x+30;g.y=P.y;g.draw(ents,cam,t.vis());let threw=null;try{for(const e of ents)e.f()}catch(err){threw=err}ok(ents.length&&!threw,'drawn with its light rising ('+(threw?threw.message:ents.length+' to draw')+')');
    g.meet();ok(/<h2>A cairn<\/h2>/.test(panel())&&/data-act="death-pray"/.test(panel())&&/200 experience/.test(panel()),'come to it: its hero\'s life, and Pray');
