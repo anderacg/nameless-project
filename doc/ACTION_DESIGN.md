@@ -1,6 +1,6 @@
 # Fighting on the map, in real time: design
 
-Status: **design only** (2026-11-09). Nothing here is built yet. The owner: "Can we make battle realtime in the world map? And for the existing world map battle and separated battle map we still keep them. I want to make it like mmorpg style where you can move and kill it and it drops something on the ground like just cool dot effects or small icons for exp and items. Design with me first."
+Status: **design** (2026-11-09); §0, the drops in the current battles, is being built first. The owner: "Can we make battle realtime in the world map? And for the existing world map battle and separated battle map we still keep them. I want to make it like mmorpg style where you can move and kill it and it drops something on the ground like just cool dot effects or small icons for exp and items. Design with me first."
 
 **Words used here:**
 - A **skirmish** is the new kind of fight: on the world map, as you travel, with no encounter page, no ring and no pause.
@@ -12,6 +12,22 @@ Status: **design only** (2026-11-09). Nothing here is built yet. The owner: "Can
 - **Small groups only:** wildlife, beasts, monsters and bands of up to about 8 (`ACTION.most`). A bigger party still meets you through the encounter page and its two battle modes.
 - **Time keeps running at 1×:** the world goes on around the fight (other parties move, and may come into it); the speed is held at 1× until the fight is over.
 - **Knocked out, not captured by beasts:** your hero down, you wake nearby, wounded, missing some gold (`ACTION.down`); against bandits the usual capture rules still apply.
+
+## Decisions, round 2 (owner, 2026-11-09)
+
+- **Bigger, later:** "make province or region into world battle map area, and let all army or small group battle real time". A later revision: a province one live battle area where any army fights in real time. Not in the first build.
+- **Talking stays:** a party you meet (a lord, a band, a caravan) can still be talked to, its encounter page and the battle modes kept (a long press, or its menu).
+- **Picked up by walking near**, not by tapping.
+- **Drops in every kind of fight, first:** "add exp drops and items drops animations first and apply to current battle". Built first, in the battle map and the battle on the world map (§0 below), the skirmish after.
+- **Field loot is real:** each fallen enemy may drop coins and his own gear or a beast's hide or meat, on the ground where he fell; your hero and companions gather it walking near; won, what is left is gathered for you; lost or fled, it is lost. The enemy's end loot is that much smaller, so the total stays fair.
+- **Troops' experience as it is, shown:** a soldier's experience (attacks.js `u.xp`: 0.5 a point of damage, 6 × the enemy's tier a kill), each group's rank at the end from its men's average, +4 for the fight, +4 won, Leadership's 5% a point (`resolution.js` `groupRanks`) — unchanged; blue dots fly into the soldier who killed, and a group that ranks up flashes at the end.
+
+## 0. Drops in the current battles (built first)
+
+- **Experience dots:** each enemy that falls bursts into gold dots that fly to your hero (the 8 XP a kill is worth, now counted as it is earned; the end's sum unchanged), and blue dots into the soldier who struck the blow (his `u.xp` for the kill).
+- **Field loot:** coins (a share of the enemy's purse) and sometimes his weapon, or a beast's hide or meat (its kind's drop), lie where he fell as small icons, bobbing, glinting by their worth; your hero or a companion within `DROPS.pick` draws them in (a float: "+3 gold", "Wolf pelt"). Won, the rest is gathered (the loot window lists everything taken in the field); lost, it stays.
+- **Tunables:** `data/drops.js` (`DROPS`: on, the chances, the share of the purse, pick range, the dots' count, speed and colours).
+- **Tests and fingerprints:** the test harness keeps the dots drawn but the field loot off (`DROPS.loot` false there), so every battle fingerprint holds; a new suite `drops`.
 
 ## 1. How a skirmish starts and ends
 
