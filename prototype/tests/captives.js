@@ -22,7 +22,8 @@ try{
  {world();t.startEncounter({kind:'lord',ref:L,list:L.troops.slice(),allies:[],foes:[]});t.concludeEncounter(true,{},10,true,[]);t.act('cont');done();
   const i=P.captives.findIndex(c=>c.k==='lord'&&c.id===L.id);ok(i>=0&&L.dead&&L.held,'beat a lord and he is your captive');
   G.day+=20;t.worldDay();ok(L.dead,'held, he raises no army');
-  const g0=P.gold,r=t.lordRansom(P.captives[i]);t.act('ct-ransom',String(i));ok(P.gold-g0===r&&!L.held&&L.back<=G.day+6,'ransomed ('+r+' gold), he rides home to raise a new army')}
+  const g0=P.gold,r=t.fieldRansom(P.captives[i]);ok(r<t.lordRansom(P.captives[i]),'ransomed where you hold him, a quick deal: less than his full ransom ('+r+' of '+t.lordRansom(P.captives[i])+')');const em=t.ECON.mode;t.ECON.mode='full';W.treas[L.fac]=r-1;t.act('ct-ransom',String(i));ok(P.gold===g0&&L.held&&P.captives.some(c=>c.id===L.id),'his realm\'s treasury short of it: no ransom, he stays your captive');t.ECON.mode=em;
+  W.treas[L.fac]=1000;t.act('ct-ransom',String(i));ok(P.gold-g0===r&&!L.held&&L.back<=G.day+6,'ransomed ('+r+' gold), he rides home to raise a new army')}
  // a chieftain beaten by you, let go
  {world();const b=t.bandits[0],ld=b.ld;b.x=P.x+8;b.y=P.y;t.startEncounter({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:'bandits'});t.concludeEncounter(true,{},3,true,[]);t.act('cont');done();
   const i=P.captives.findIndex(c=>c.ld===ld);ok(i>=0&&!t.bandits.includes(b),'break a band and its chieftain is your captive');

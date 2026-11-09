@@ -1629,7 +1629,7 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .ft-dead .ft-pic img{filter:grayscale(.75) brightness(.8)}
 .ft-tile .ft-n{margin-top:3px}
 .ft-tile b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;max-width:84px;overflow:hidden;overflow-wrap:anywhere;font-size:12px;line-height:1.25}
-.fb-shell .ft-tile:focus-visible,.fb-shell .ft-house:focus-visible{outline:none}.ft-tile:hover .ft-pic,.ft-tile:focus-visible .ft-pic{border-color:#cdbf9f}
+.fb-shell .ft-tile:focus-visible,.fb-shell .ft-house:focus-visible{outline:none}.ft-tile:focus-visible .ft-pic{border-color:#cdbf9f}@media (hover:hover){.ft-tile:hover .ft-pic{border-color:#cdbf9f}}
 .ft-tile.ft-sel .ft-pic{border-color:var(--accent);box-shadow:0 0 0 2px rgba(201,162,78,.35),0 0 10px rgba(201,162,78,.35)}
 .ft-now>.ft-row>.ft-tile:not(.ft-sel) .ft-pic{border-color:rgba(201,162,78,.7)}
 .ft-cousin>.ft-row>.ft-tile .ft-pic{border-style:dashed}
@@ -1648,6 +1648,6 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .ft-head>.ft-pic{width:56px;height:56px;flex:none}
 .ft-houses{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .ft-house{padding:5px 11px;border:1px solid var(--line-2);border-radius:5px;background:rgba(0,0,0,.3);color:#cdbf9f;font:inherit;font-size:13px;cursor:pointer}
-.ft-house:hover{border-color:#cdbf9f}.ft-house.ft-sel{border-color:var(--accent);color:var(--fg);box-shadow:0 0 0 1px rgba(201,162,78,.35)}
+@media (hover:hover){.ft-house:hover{border-color:#cdbf9f}}.ft-house.ft-sel{border-color:var(--accent);color:var(--fg);box-shadow:0 0 0 1px rgba(201,162,78,.35)}
 @media (max-width:560px){.ft-body{flex-direction:column}.ft-info{flex-basis:auto;align-self:stretch}}
 @media (max-height:430px){.ft-info{flex-basis:220px}.ft-pic{width:54px;height:54px}.ft-tile{width:74px}.ft-tile b{max-width:74px}.ft-side{left:calc(50% + 44px)}.ft-side::before{top:19px}.ft-heir .ft-pic{width:40px;height:40px}}

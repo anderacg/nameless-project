@@ -22,11 +22,19 @@ const PRISONS={
    later), exchange (a day's chance two realms at war trade a lord each), comp (your companion held: escape, a day's chance he gets
    away and finds you; price, his ransom: base + per level), pay (paying a lord's ransom: his relation, and your honour with his
    realm if it is yours), bribe (the gaoler, to free one: price, his ransom times, by the prison's kind; ch, the chance, less a step
-   for its watch; fine, found out), brk (breaking one out: base + per point of Agility and of Athletics, the prison's own odds and
-   its watch; won: his relation, the holding's realm hostile for days and honour lost; caught: fine, hurt), visit (a lord held:
-   relation, once every days), offer (a lord in your prison: his realm's offer after so many days), ask (asking more: ch, more;
-   refused: the offer withdrawn for wait days), exec (a lord put to death: honour with his realm, with every realm, his realm's
-   lords' relation) */
-const PRISON={take:.5,ransom:[14,28],exchange:.1,comp:{escape:.03,base:60,lv:20},pay:{rel:10,honor:3},
-  bribe:{price:.5,ch:.55,watch:.15,fine:60},brk:{base:.3,agi:.02,athl:.01,watch:.06,rel:12,hostile:20,honor:5,fine:120,hurt:.25},
+   for its watch; fine, found out), brk (breaking one out: base + per point of Athletics (athl), the prison's own odds (its walls
+   and garrison in them) and its watch; won: his relation, the holding's realm hostile for days and honour lost; caught: fine,
+   hurt), visit (a lord held: relation, once every days), offer (a lord in your prison: his realm's offer after so many days), ask
+   (asking more: ch, more; refused: the offer withdrawn for wait days), exec (a lord put to death: honour with his realm, with
+   every realm, his realm's lords' relation).
+   (the owner, 2026-11-09: "Revise prisoner, and bribe ... make the logic make more sense") the gaoler's bribe: price, a share of
+   the ransom by the prison's kind, so buying him is cheaper than paying, but a gamble; ch, the odds, + per point of Persuasion
+   (pers) and of Trade (trade), less a step for the prison's watch and for its alarm; failing, he reports you (report of the
+   failures: your coin taken, the watch's fine, the alarm) or else refuses (your coin back), and he hears no more from you today.
+   alarm: a bribe reported or a break-out caught puts the watch on its guard for days, a step of watch more on both. field: a lord
+   ransomed where you hold him, not from a prison, his realm's envoy paying a share of it (a quick deal; a prison's offer is the
+   whole, and you may ask more); enemy: freeing a lord of a realm at war with yours costs honour with your own */
+const PRISON={take:.5,ransom:[14,28],exchange:.1,comp:{escape:.03,base:60,lv:20},pay:{rel:10,honor:3,enemy:5},
+  bribe:{price:.35,ch:.45,pers:.04,trade:.03,watch:.12,report:.5,fine:60},brk:{base:.3,athl:.01,watch:.06,rel:12,hostile:20,honor:5,fine:120,hurt:.25},
+  alarm:{days:3,watch:1},field:.7,
   visit:{rel:2,days:7},offer:[5,10],ask:{ch:.4,more:1.5,wait:7},exec:{honor:-30,all:-5,rel:-25}};

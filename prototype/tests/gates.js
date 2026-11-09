@@ -51,9 +51,11 @@ Kit.suite(({ok,info})=>{
     ok(G.mode==='town'&&G.town.ref===city&&!G.town.outside&&P.gold===g0-t.GATE_WAYS.writ.city&&t.Gates.admits(city).ok,'bought: '+t.GATE_WAYS.writ.city+' gold, and the city is open to you from now on');t.act('leave');P.passes={};
     // (a bribe: paid and let in for the day; refused; caught and marked)
     t.Gates.odds=()=>1;near(city);t.approachHolding(city);t.act('gt-bribe');ok(G.mode==='town'&&G.town.ref===city&&P.passes[city.name].until===G.day,'a bribe that works: in, for the day');t.act('leave');P.passes={};
-    t.Gates.odds=()=>0;t.GATE_WAYS.bribe.caught=1;const h0=t.honorWith(city.owner);near(city);t.approachHolding(city);t.act('gt-bribe');
+    t.Gates.odds=()=>0;t.GATE_WAYS.bribe.caught=0;P.gateTried={};near(city);t.approachHolding(city);const gr=P.gold;t.act('gt-bribe');
+    ok(G.mode==='gate'&&P.gold===gr&&/pushes your coin back/.test(text())&&document.querySelector('[data-act="gt-bribe"]').disabled,'a bribe refused: your coin back, and no second try today');t.act('gt-leave');
+    t.GATE_WAYS.bribe.caught=1;P.gateTried={};const h0=t.honorWith(city.owner);near(city);t.approachHolding(city);t.act('gt-bribe');
     ok(G.mode==='gate'&&/briber/.test(text())&&t.honorWith(city.owner)===h0-t.GATE_WAYS.bribe.honor&&t.Gates.barred(city)&&document.querySelector('[data-act="gt-bribe"]').disabled,'caught bribing: honour lost, marked, the ways barred for some days');
-    t.act('gt-leave');P.gateBan={};t.GATE_WAYS.bribe.caught=c0;
+    t.act('gt-leave');P.gateBan={};P.gateTried={};t.GATE_WAYS.bribe.caught=c0;
     // (slipping in by night)
     G.clock=t.DAY*.3;near(city);t.approachHolding(city);ok(document.querySelector('[data-act="gt-slip"]').disabled,'by day you cannot slip in');t.act('gt-leave');
     G.clock=t.DAY*.8;t.Gates.odds=()=>1;near(city);t.approachHolding(city);t.act('gt-slip');ok(G.mode==='town'&&G.town.ref===city,'by night: you slip in');t.act('leave');P.passes={};

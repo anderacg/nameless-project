@@ -89,15 +89,16 @@ const GATES={on:true,town:{renown:10,honor:10},city:{renown:30,honor:25},castle:
 const LORD_AUDIENCE={on:true,great:32,need:.5,honor:15,rel:20};
 // the ways past a gate (G2): a letter of introduction (a reeve's or innkeeper's work done, to the nearest town or city that refuses
 // you within letter tiles) or a guild token (a merchant's, a city's first); a writ bought at the gate (gold by kind; your standing
-// there writ.rep at least); a bribe (gold by kind; odds base + Persuasion x pers + Charisma x cha; failed, caught by caught: honour
-// and reputation lost, the gate barred to such ways ban days); slipping in at night (odds by Scouting and Agility; caught: a fine,
+// there writ.rep at least); a bribe (gold by kind; odds base + Persuasion x pers + Trade x trade, less hard by kind (a castle's
+// warden the hardest to buy); failed, caught by caught: your coin taken, honour and reputation lost, the gate barred to such ways ban
+// days; else he only refuses, your coin back; one bribe a day at a gate); slipping in at night (odds by Scouting and Athletics; caught: a fine,
 // a share of your gold, reputation and honour lost, barred ban days). A bribe's or a night's way in lasts the visit (a day)
 // provinces (G3, world/provinces.js): on (their marks on the full map and the warning; the harness turns them off); what counts as on its land (within reach tiles of its
 // holdings; a bandits' lair as lair power), its danger by their strength over yours (levels: watchful, dangerous, deadly at
 // least), its words; a warning on setting out for one of warn or worse
 const PROVINCE={on:true,reach:12,lair:60,levels:[.3,.8,1.6],words:['calm','watchful','dangerous','deadly'],warn:3};
-const GATE_WAYS={letter:80,writ:{town:60,city:160,rep:0},bribe:{town:25,city:60,castle:120,fort:70,base:.3,pers:.05,cha:.04,caught:.5,honor:3,rep:5,ban:3},
-  slip:{base:.25,scout:.05,agi:.04,fine:.5,honor:5,rep:10,ban:3}};
+const GATE_WAYS={letter:80,writ:{town:60,city:160,rep:0},bribe:{town:25,city:60,castle:120,fort:70,base:.3,pers:.05,trade:.04,hard:{town:0,city:.05,fort:.1,castle:.15},caught:.5,honor:3,rep:5,ban:3},
+  slip:{base:.25,scout:.05,athl:.04,fine:.5,honor:5,rep:10,ban:3}};
 // discovering places (world/discovery.js): on the switch; r tiles your band comes within a holding to learn its name, site the same
 // for a cave, ruins, a shrine or a hideout, start what a game begins knowing round you; scout: the Scouting practice a place gives;
 // show: seconds its title stays over the map

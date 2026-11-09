@@ -45,7 +45,10 @@ class Gates{
     if(!best)return;const g=q.person,kind=role==='merchant'?'token':'letter';this.give(best,kind,h.name);
     log((g?Givers.label(g):'The '+role+' of '+h.name)+' gives you '+(kind==='token'?'a guild token for the market of ':'a letter of introduction to ')+best.name+'. Its gate will open to you.','gold','story')}
   // (the odds of a way in: a bribe, a night's slip; the words for them)
-  static odds(way){const X=GATE_WAYS[way];return clamp(way==='bribe'?X.base+skill('pers')*X.pers+skill('trade')*X.cha:X.base+skill('scout')*X.scout+skill('athl')*X.agi,.05,.9)}
+  // (a bribe's by Persuasion and Trade, the harder by its kind (t: the holding); a night's by Scouting and Athletics)
+  static odds(way,t){const X=GATE_WAYS[way];return clamp(way==='bribe'?X.base+skill('pers')*X.pers+skill('trade')*X.trade-(X.hard[t?.kind]||0):X.base+skill('scout')*X.scout+skill('athl')*X.athl,.05,.9)}
+  // (a bribe tried at its gate today, refused or not)
+  static bribed(t){return (P.gateTried&&P.gateTried[t.name])===G.day}
   static oddsWord(p){return p>=.7?'likely':p>=.45?'an even chance':p>=.25?'a long shot':'all but hopeless'}
   static barred(t){return (P.gateBan&&P.gateBan[t.name]||0)>=G.day}
   // a quest seals a holding (why: the words at its gate) or opens it again (why null)
@@ -64,20 +67,21 @@ class Gates{
     const W2=GATE_WAYS,b=(a,label,why,tip)=>'<button class="btn" type="button" data-act="'+a+'"'+(why?' disabled title="'+why+'"':tip?' title="'+tip+'"':'')+'>'+label+'</button>',ban=this.barred(t)&&'The wardens know your face.';
     const writ=W2.writ[t.kind],bribe=W2.bribe[t.kind],night=Clock.isNight;
     return (writ?b('gt-writ','Buy a writ · '+writ+' gold',P.gold<writ?'Not enough gold.':standingAt(t)<W2.writ.rep?'Your name is not good here.':'','A steward\u2019s writ: the gate opens to you from now on.'):'')+
-      (bribe?b('gt-bribe','Bribe the warden · '+bribe+' gold · '+this.oddsWord(this.odds('bribe')),ban||(P.gold<bribe?'Not enough gold.':''),'Persuasion and Charisma help. Caught, honour and reputation are lost.'):'')+
-      b('gt-slip','Slip in by night · '+this.oddsWord(this.odds('slip')),ban||(night?'':'Only after dark.'),'Scouting and Agility help. Caught, a fine, and honour and reputation lost.')}
+      (bribe?b('gt-bribe','Bribe the warden · '+bribe+' gold · '+this.oddsWord(this.odds('bribe',t)),ban||(this.bribed(t)?'You tried the warden today.':P.gold<bribe?'Not enough gold.':''),'Persuasion and Trade help. Refused, your coin back; caught, your coin taken, and honour and reputation lost.'):'')+
+      b('gt-slip','Slip in by night · '+this.oddsWord(this.odds('slip',t)),ban||(night?'':'Only after dark.'),'Scouting and Athletics help. Caught, a fine, and honour and reputation lost.')}
   // a way in tried at t's gate: true when in
   static tryWay(t,a){
     const X=GATE_WAYS,R=rngOf('gates');G.gateSay=null;
     if(a==='gt-writ'){const c=X.writ[t.kind];if(!c||P.gold<c||standingAt(t)<X.writ.rep)return false;P.gold-=c;this.give(t,'writ');log('You buy a writ for '+t.name+' ('+c+' gold).','gold');return true}
     if(this.barred(t))return false;
-    if(a==='gt-bribe'){const c=X.bribe[t.kind];if(!c||P.gold<c)return false;P.gold-=c;
-      if(R.next()<this.odds('bribe')){this.give(t,'bribe',null,G.day);log('The warden pockets '+c+' gold and looks the other way.','gold');return true}
-      if(R.next()<X.bribe.caught){if(t.owner&&FACS[t.owner])addHonor(t.owner,-X.bribe.honor,true);addRep(t.name,-X.bribe.rep,true);P.gateBan[t.name]=G.day+X.bribe.ban;G.gateSay=['bad','The warden takes your coin and calls his sergeant. You are marked as a briber (honour \u2212'+X.bribe.honor+', reputation \u2212'+X.bribe.rep+').']}
-      else G.gateSay=['muted','The warden takes your coin and shrugs. Not today.'];return false}
+    // (one bribe a day at a gate: taken, you are in; refused, your coin back; caught, your coin taken and your name marked)
+    if(a==='gt-bribe'){const c=X.bribe[t.kind];if(!c||P.gold<c||this.bribed(t))return false;(P.gateTried??={})[t.name]=G.day;
+      if(R.next()<this.odds('bribe',t)){P.gold-=c;this.give(t,'bribe',null,G.day);log('The warden pockets '+c+' gold and looks the other way.','gold');return true}
+      if(R.next()<X.bribe.caught){P.gold-=c;if(t.owner&&FACS[t.owner])addHonor(t.owner,-X.bribe.honor,true);addRep(t.name,-X.bribe.rep,true);(P.gateBan??={})[t.name]=G.day+X.bribe.ban;G.gateSay=['bad','The warden takes your coin and calls his sergeant. You are marked as a briber (honour \u2212'+X.bribe.honor+', reputation \u2212'+X.bribe.rep+').']}
+      else G.gateSay=['muted','The warden pushes your coin back across the table. Not today.'];return false}
     if(a==='gt-slip'){if(!Clock.isNight)return false;
       if(R.next()<this.odds('slip')){this.give(t,'night',null,G.day);log('You slip into '+t.name+' in the dark.','gold');return true}
-      const fine=Math.floor(P.gold*X.slip.fine);P.gold-=fine;if(t.owner&&FACS[t.owner])addHonor(t.owner,-X.slip.honor,true);addRep(t.name,-X.slip.rep,true);P.gateBan[t.name]=G.day+X.slip.ban;
+      const fine=Math.floor(P.gold*X.slip.fine);P.gold-=fine;if(t.owner&&FACS[t.owner])addHonor(t.owner,-X.slip.honor,true);addRep(t.name,-X.slip.rep,true);(P.gateBan??={})[t.name]=G.day+X.slip.ban;
       G.gateSay=['bad','The watch catches you at the wall. A fine of '+fine+' gold, and they will know your face (honour \u2212'+X.slip.honor+', reputation \u2212'+X.slip.rep+').'];return false}
     return false}
   // the steward's word: a great lord who will not see you yet (g: audience)

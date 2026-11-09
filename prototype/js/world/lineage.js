@@ -23,7 +23,8 @@ class LordHouse{
     h=new LordHouse({id:'h'+(++Houses.n),name:'House '+sur,fac:l.fac,seat:seat?seat.name:'',dead:[],kin:[]});Houses.list.push(h);l.house=h.id;h.seed(l);return h}
   // (a grudge against you, the hero who did it: gone with you, for a new person is a stranger to them)
   grudged(){return !!this.grudge&&this.grudge.gen===Legacy.fallen}
-  get live(){return W.lords.filter(l=>l.house===this.id&&!l.dead&&!l.gone)}
+  // (its lords alive: a captive one too, held in a prison or by you, though marked out of the world while held)
+  get live(){return W.lords.filter(l=>l.house===this.id&&!l.gone&&(!l.dead||l.held))}
   // ---- what you know of it (the owner, 2026-11-09: "only appear once you know them or someone tell you about their family (only
   // when very friendly)"): one of it is known once you know them (KNOWLEDGE: met, or named to you), or read their name on its crypt,
   // or a close friend of the house told you of it (tell); the rest of it shown as ?? (ui/family.js housePage)
@@ -62,7 +63,7 @@ class LordHouse{
     this.wed(l,R,Math.min(G.day,...ages));for(const b of ages)this.child(l,R,b)}
   // (each day: the grown and unwed of its blood may wed, its couples have children; none past cap of it alive; a house whose realm has fallen, none)
   daily(){if(W.dead[this.fac])return;const F=DEATH.house.fam,R=rngOf('houses');for(const l of this.live)this.seed(l);
-    const blood=()=>[...this.live,...this.kinLive].filter(p=>!p.inlaw);
+    const blood=()=>[...this.live,...this.kinLive].filter(p=>!p.inlaw&&!p.held);
     for(const p of blood()){if(this.live.length+this.kinLive.length>=F.cap)return;const s=p.spouse&&this.person(p.spouse);
       if(!p.spouse){if(this.adult(p)&&R.chance(F.marry))this.wed(p,R)}else if(s&&!s.dead&&this.childrenOf(p.id).length<F.most&&R.chance(F.birth))this.child(p,R,G.day)}}
   // (who takes up the place of one of it dead (d): their eldest grown child, else a grown brother or sister, else their spouse, else
