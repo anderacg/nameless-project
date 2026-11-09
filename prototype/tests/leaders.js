@@ -10,11 +10,11 @@ Kit.suite(({ok})=>{
  const ch=t.newChief('bandits',1);t.bandits.push(t.asParty({x:-999,y:-999,n:4,kind:'bandits',list:['militia'],t:0,a:0,cool:0,ld:ch}));
  const ups=[t.leaderOf(L),t.leaderOf(ch)].map(x=>x.gainXp(59)+x.gainXp(1));
  ok(ups.every(u=>u===1)&&L.lv===2&&ch.lv===2,'a lord and a chieftain reach level 2 at 60 experience ('+ups.join(', ')+')');
- {const H=t.leaderOf(P),C=t.leaderOf(c,'brann'),l0=P.level,c0=c.lv;H.train('tact',400,true);C.train('oneh',400,true);ok(P.level>l0&&c.lv>c0&&P.level===t.PROF_LEVEL(H.profProgress())&&c.lv===t.PROF_LEVEL(C.profProgress()),'your hero and a companion level by their proficiencies ('+l0+' \u2192 '+P.level+', '+c0+' \u2192 '+c.lv+')')}
+ {const H=t.leaderOf(P),C=t.leaderOf(c,'brann'),l0=P.level,c0=c.lv;H.train('tact',400,true);C.train('oneh',400,true);ok(P.level>l0&&c.lv>c0,'your hero and a companion level by the experience their proficiencies\' levels give ('+l0+' \u2192 '+P.level+', '+c0+' \u2192 '+c.lv+')')}
  ok([t.leaderOf(P),t.leaderOf(L),t.leaderOf(c),t.leaderOf(ch)].map(x=>x.role).join()==='hero,lord,companion,chieftain'&&[P,L,c,ch].every(o=>t.charOf(o) instanceof t.Character&&t.charOf(o) instanceof t.Unit),'each one Character (a Unit), in its own role');
- {const tot=s=>s.lv*1e3+s.xp,s0=tot(P.sk.lead),l0=tot(L.sk.lead);t.train('lead',1);t.lordTrain(L,'lead',1);ok(t.leaderOf(P).learn('lead')>t.leaderOf(L).learn('lead')&&tot(P.sk.lead)>s0&&tot(L.sk.lead)>l0,'you learn faster than a lord, by your Charisma and your knacks')}
+ {const tot=s=>s.lv*1e3+s.xp,s0=tot(P.sk.lead),l0=tot(L.sk.lead);t.train('lead',1);t.lordTrain(L,'lead',1);ok(t.leaderOf(P).learn('lead')>t.leaderOf(L).learn('lead')&&tot(P.sk.lead)>s0&&tot(L.sk.lead)>l0,'you learn faster than a lord, by your knacks')}
  {const C=t.leaderOf(c,'brann');for(const k in c.sk)c.sk[k]={lv:0,xp:0};c.lv=0;c.xp=0;c.perkPend=0;let n=0;while(c.lv<3&&n++<200)C.train('oneh',5,true);ok(c.lv===3&&c.perkPend===1,'a companion still earns a perk every third level ('+c.lv+', '+c.perkPend+')')}
- {const tp=P.lvUp||0,l0=P.level,H=t.leaderOf(P);let n=0;while(P.level===l0&&n++<500)H.train('eng',5,true);ok(P.level===l0+1&&P.lvUp===tp+1,'and you a choice a level (health, stamina or mana)')}
+ {const l0=P.level,H=t.leaderOf(P);let n=0;while(P.level===l0&&n++<500)H.train('eng',5,true);ok(P.level===l0+1&&t.talentsOf(P).points().left>=1,'and you a skill point a level')}
  // chieftains
  t.bandits.length=0;for(let i=0;i<6;i++)t.spawnBandit(true);const lairs=W.sites.filter(s=>s.type==='camp'||s.type==='hideout');
  ok(t.bandits.every(b=>b.ld&&b.ld.name)&&lairs.every(s=>s.ld&&s.ld.name),'every band, bandit camp and hideout has a named chieftain');

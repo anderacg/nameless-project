@@ -36,12 +36,12 @@ Object.defineProperty(COMPS,'ander',{enumerable:false,configurable:true,writable
 // the checks a story's choice may name (story/forms.js), shaped as data/encounters.js ENC_STAT's ({base, parts: [[stat or skill, per
 // point]], cap}); their odds on the button read by Insight
 const QUEST_CHECKS={
-  talk:{base:.25,parts:[['pers',.05],['cha',.04]],cap:.9},
-  threaten:{base:.15,parts:[['cha',.04],['str',.04]],cap:.8},
-  sneak:{base:.2,parts:[['agi',.05],['scout',.04]],cap:.85},
-  heal:{base:.1,parts:[['med',.1],['int',.02]],cap:.95},
+  talk:{base:.25,parts:[['pers',.05],['lead',.04]],cap:.9},
+  threaten:{base:.15,parts:[['lead',.04],[['oneh','twoh','fist'],.04]],cap:.8},
+  sneak:{base:.2,parts:[['athl',.05],['scout',.04]],cap:.85},
+  heal:{base:.1,parts:[['med',.1],['spell',.02]],cap:.95},
   track:{base:.2,parts:[['scout',.06],['surv',.04]],cap:.9},
-  lift:{base:.15,parts:[['str',.06],['athl',.04]],cap:.85},
-  lore:{base:.15,parts:[['int',.06]],cap:.85},
-  haggle:{base:.2,parts:[['trade',.06],['cha',.02]],cap:.85}
+  lift:{base:.15,parts:[['athl',.06],['eng',.04]],cap:.85},
+  lore:{base:.15,parts:[['tact',.03],['scout',.03]],cap:.85},
+  haggle:{base:.2,parts:[['trade',.06],['pers',.02]],cap:.85}
 };

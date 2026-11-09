@@ -17,6 +17,8 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE,ev=s=>(0,eval)(s);try{localStorage.clear()}catch(e){}
+ // (an old attribute's checks read the best of its proficiencies (data/progression.js ATTRS): v in power, each of them set to it)
+ const lvOfPow=v=>v<=t.PROF.lin*t.PROF.k?v/t.PROF.k:t.PROF.lin*Math.exp((v-t.PROF.lin*t.PROF.k)/t.PROF.log),attrSet=(k,v)=>t.ATTRS[k].profs.forEach(q=>{P.sk[q].lv=lvOfPow(v)}),skSnap=()=>JSON.parse(JSON.stringify(P.sk)),skBack=s=>{for(const k in s)P.sk[k]=s[k]};
  t.act('begin','soldier');G.quietEvents=false;
  const q=s=>document.querySelector(s),qa=s=>[...document.querySelectorAll(s)],panel=()=>document.getElementById('panel').innerHTML,txt=()=>(q('#panel')||{}).textContent||'';
  const world=()=>{t.hidePanel();t.QuestReward.close();G.mode='world';G.modal=false;G.enc=null;G.road=null;G.chase=null;P.tx=null;G.encCool=0;G.paused=false};
@@ -289,9 +291,9 @@ try{
  // ---- the cart stuck in the mud: stays and calls out; Help push (stamina, or an hour), Rob (asks first; as robbing a worker); left be, an abandoned cart
  {goHome();const SP=t.vitals()[1];P.sp=SP;cleanBag();const n0=G.msgs.length,e=t.roadSpawn('mud',P.x+V+50,P.y);frames(1);ok(e.seen&&/help with a cart on the road to the east/.test(logsSince(n0)),'the stuck cart: heard calling out ("'+D('mud').call+'")');
   e.x=P.x+40;e.y=P.y;frames(200);ok(e.x===P.x+40&&!e.gone&&e.beh==='stay','it stays where it is stuck');
-  const A0={...P.attr};P.attr.str=0;P.sk.athl.lv=0;// (Strength and Athletics 0: today's cost; more, below)
+  const A0=skSnap();attrSet('str',0);P.sk.athl.lv=0;// (Strength and Athletics 0: today's cost; more, below)
   t.roadMeet(e);const r0=t.repAt(e.home),g0=t.goodN('grain');pickA(0);ok(P.sp===SP-TU.mud.sp&&t.repAt(e.home)===r0+TU.mud.rep&&t.goodN('grain')===g0+e.got&&/lurches free/.test(panel()),'Help push: −'+TU.mud.sp+' stamina, reputation in '+e.home+' +'+TU.mud.rep+', '+e.got+' grain from the farmer (stamina '+P.sp+', reputation '+r0+' → '+t.repAt(e.home)+', grain '+g0+' → '+t.goodN('grain')+')');world();
-  P.sp=0;const f=meet('mud'),h0=t.roadNow();ok(/1 hour/.test(qa('.rkact')[0].textContent),'tired out, it costs an hour of your time instead (“1 hour”)');pickA(0);ok(Math.abs(t.roadNow()-h0-TU.mud.hours)<1e-6&&P.sp===0,'and the hour passes');world();Object.assign(P.attr,A0);
+  P.sp=0;const f=meet('mud'),h0=t.roadNow();ok(/1 hour/.test(qa('.rkact')[0].textContent),'tired out, it costs an hour of your time instead (“1 hour”)');pickA(0);ok(Math.abs(t.roadNow()-h0-TU.mud.hours)<1e-6&&P.sp===0,'and the hour passes');world();skBack(A0);
   const m=meet('mud'),T0=t.townBy(m.home),r1=t.repAt(m.home),g1=P.gold,gr=t.goodN('grain');pickA(1);ok(q('#panel.confirm')&&P.gold===g1&&t.goodN('grain')===gr,'Rob asks first, and nothing is taken yet');sure();
   ok(P.gold===g1+m.coins&&t.goodN('grain')===gr+m.load&&t.repAt(m.home)===r1-t.CONDUCT.robWorker.rep&&(T0.owner==='player'||!!t.crimeAt(T0))&&/coins from his cart/.test(panel()),'confirmed: '+m.load+' grain and '+m.coins+' coins; it costs as robbing a worker does (reputation in '+m.home+' −'+t.CONDUCT.robWorker.rep+', its guards want you)');world();
   goHome();const c=t.roadSpawn('mud',P.x+40,P.y);c.seen=1;G.clock+=(c.end-t.roadNow()+.1)*t.DAY/24;P.x=c.x-V*1.2;frames(1);const tr=R().on.find(x=>x.trace&&x.k==='cart');
@@ -300,7 +302,7 @@ try{
 
  // ---- the thief: runs across your view from his victim; a click opens his page from afar; Chase (on the map: Agility and Riding
  // help), caught: Return the purse or Keep it (asks first); he may get away
- {goHome();P.attr.agi=2;P.morale=60;const n0=G.msgs.length,e=t.roadSpawn('thief',P.x+V+10,P.y+20),vx=e.vx,vy=e.vy;frames(1);
+ {goHome();attrSet('agi',2);P.morale=60;const n0=G.msgs.length,e=t.roadSpawn('thief',P.x+V+10,P.y+20),vx=e.vx,vy=e.vy;frames(1);
   ok(e.hx!=null&&Math.hypot(e.x-vx,e.y-vy)>5&&/Stop, thief/.test(logsSince(n0))&&e.end-e.t0>=t.ENC_LIFE.run[0]&&e.end-e.t0<=t.ENC_LIFE.run[1],'the thief: heard ("Stop, thief!"), running off from his victim, for at most '+t.ENC_LIFE.run[1]+' hours');
   let md=1e9,seen=0;for(let i=0;i<4000&&!e.gone;i++){t.updateRoad(.05);md=Math.min(md,e.fromYou());if(e.inView(t.vis()))seen++}
   ok(e.vx===vx&&e.vy===vy&&md<V*.6&&seen>0&&e.gone&&!e.met,'he runs across your view ('+Math.round(md)+' px from you at his nearest, in sight for '+seen+' moments), his victim left where he was robbed; let be, he is gone once out of your sight');
@@ -309,7 +311,7 @@ try{
   ok(G.mode==='road'&&G.road===f&&acts().join('|')==='Chase'&&q('.nav [data-nav="close"]').textContent==='Let go'&&q('.pg-banner'),'and his page opens at once, though he is out of reach: Chase, or Let go');
   P.sk.scout.lv=5*PROF.per;t.showRoad();ok(/you would close on him in|cannot catch him/.test(panel()),'Insight (Scouting 5): whether you can run him down, in hours');P.sk.scout.lv=0;
   // Chase: you go after him on the map at a sprint; quick on your feet, you have him
-  P.attr.agi=10;const g0=P.gold;pickA(0);ok(G.mode==='world'&&G.chase===f&&f.chase>t.roadNow()&&!G.modal,'Chase: off his page and after him on the map');
+  attrSet('agi',10);const g0=P.gold;pickA(0);ok(G.mode==='world'&&G.chase===f&&f.chase>t.roadNow()&&!G.modal,'Chase: off his page and after him on the map');
   let i=0;for(;i<3000&&G.mode==='world'&&!f.gone;i++)t.updateWorld(.05);
   ok(G.mode==='road'&&G.road===f&&f.nab&&acts().join('|')==='Return the purse|Keep it'&&!q('.nav [data-nav="close"]')&&/run the thief down/.test(panel()),'Agility 10: you catch him ('+i+' moments): Return the purse or Keep it, a choice you must make');
   const r0=t.repAt(f.home);pickA(1);ok(P.gold===g0+TU.thief.reward&&t.repAt(f.home)===r0+TU.thief.rep,'Return the purse: a '+TU.thief.reward+'-gold reward, reputation in '+f.home+' +'+TU.thief.rep);world();
@@ -317,11 +319,11 @@ try{
   ok(P.gold===g1+k.purse&&t.honorWith(k.fac)===h0-TU.thief.honor,'confirmed: his '+k.purse+' gold yours, honor with the '+t.FACS[k.fac].n+' −'+TU.thief.honor);world();
   // slow and clumsy, he gets away
   // (made certain: he runs far faster than any band, so the way you go that day cannot let you close on him)
-  goHome();P.attr.agi=0;P.morale=10;const s=t.roadSpawn('thief',P.x+V+10,P.y);s.x=P.x+90;s.y=P.y;t.roadMeet(s);const n1=G.msgs.length,sr=t.ENC_SPD.run;t.ENC_SPD.run=200;
+  goHome();attrSet('agi',0);P.morale=10;const s=t.roadSpawn('thief',P.x+V+10,P.y);s.x=P.x+90;s.y=P.y;t.roadMeet(s);const n1=G.msgs.length,sr=t.ENC_SPD.run;t.ENC_SPD.run=200;
   try{pickA(0);for(i=0;i<3000&&G.mode==='world'&&!s.gone;i++)t.updateWorld(.05)}finally{t.ENC_SPD.run=sr}
   ok(s.gone&&G.mode==='world'&&!G.chase&&!s.nab&&/slips away/.test(logsSince(n1)),'Agility 0, your band weary, he runs faster than you: he gets away ('+i+' moments)');P.morale=60;
   // Agility and Riding: how soon you close on him (catchHours), how near you must come
-  P.attr.agi=0;const h1=t.catchHours(80);P.attr.agi=8;const h2=t.catchHours(80),r2=t.catchReach();P.gear.mount='m_horse';const h3=t.catchHours(80);P.gear.mount=null;P.attr.agi=2;
+  attrSet('agi',0);const h1=t.catchHours(80);attrSet('agi',8);const h2=t.catchHours(80),r2=t.catchReach();P.gear.mount='m_horse';const h3=t.catchHours(80);P.gear.mount=null;attrSet('agi',2);
   ok(h2<h1&&h3<h2&&r2>CA.reach,'Agility and Riding help: 80 px off, you close on him in '+h1.toFixed(2)+' h (Agility 0), '+h2.toFixed(2)+' h (Agility 8), '+h3.toFixed(2)+' h mounted; your reach '+r2+' px')}
 
  // ---- the poacher: in a lord's wood, he runs if he sees you first (Scouting); Turn him in, Buy the meat
@@ -342,12 +344,12 @@ try{
       G.clock+=(e.end-t.roadNow()+.1)*t.DAY/24;frames(1);const ks=t.ENC_SCENE.lay(e,true).map(p=>p.k);
       ok(!e.gone&&e.beh==='leave'&&e.left&&ks.every(k=>k==='walk')&&/walk home from/.test(D(k).text(e)),'then walk home, their dead laid to rest ('+ks.join(', ')+')');
       let pre=true,j=0;for(;j<8000&&!e.gone;j++){pre=e.inView(t.vis());t.updateRoad(.05)}ok(e.gone&&!pre,'and are gone once out of your sight');G.clock=t.DAY*.3}}
-  const A1={...P.attr};P.attr.cha=0;// (Charisma 0: today's; more, below)
+  const A1=skSnap();attrSet('cha',0);// (Charisma 0: today's; more, below)
   world();const f=meet('funeral',e=>{e.fac=Object.keys(t.FACS).find(x=>x!=='player')}),h0=t.honorWith(f.fac);P.morale=50;pickA(0);ok(t.honorWith(f.fac)===h0+TU.funeral.honor&&P.morale===50+TU.funeral.morale,'Pay respects: honor with the '+t.FACS[f.fac].n+' +'+TU.funeral.honor+', morale +'+TU.funeral.morale);world();
   ok(f.beh==='walk','and they walk on');
   P.morale=50;const w=meet('wedding'),c0=t.roadNow();pickA(0);ok(P.morale===50+TU.wedding.morale&&Math.abs(t.roadNow()-c0-TU.wedding.hours)<1e-6,'Join the wedding: morale +'+TU.wedding.morale+', '+TU.wedding.hours+' hours of your time');world();G.clock=t.DAY*.3;
   const w2=meet('wedding'),r0=t.repAt(w2.home),g0=P.gold;pickA(1);ok(P.gold===g0-TU.wedding.gift&&t.repAt(w2.home)===r0+TU.wedding.rep,'Give a gift: '+TU.wedding.gift+' gold, reputation in '+w2.home+' +'+TU.wedding.rep);world();
-  P.gold=5;meet('wedding');ok(qa('.rkact')[1].disabled&&/Not enough gold/.test(panel()),'no gold for a gift: disabled');P.gold=500;world();Object.assign(P.attr,A1)}
+  P.gold=5;meet('wedding');ok(qa('.rkact')[1].disabled&&/Not enough gold/.test(panel()),'no gold for a gift: disabled');P.gold=500;world();skBack(A1)}
 
  // ---- the runaway horse: bolts as you come, then stops to graze; Catch it (a Riding check, its odds read by Insight)
  {goHome();P.gear.mount=null;const e=t.roadSpawn('horse',P.x+V*.45,P.y),d0=e.fromYou();frames(1);ok(e.fled&&!e.calm,'the runaway horse bolts as you come');
@@ -356,7 +358,7 @@ try{
   stub(0,()=>pickA(0));ok(P.gear.mount==='m_'+e.mk&&e.gone&&/is yours/.test(panel()),'Catch it, the check made: the '+t.ITEMS['m_'+e.mk].n+' is yours');world();
   const g0=P.gold,h=meet('horse');stub(0,()=>pickA(0));ok(P.gold===g0+t.itemPrice('m_'+h.mk)&&P.gear.mount==='m_'+e.mk,'with a mount already (the '+t.ITEMS['m_'+e.mk].n+' caught, as the land there breeds): its worth in gold ('+t.itemPrice('m_'+h.mk)+')');world();P.gear.mount=null;
   const b=meet('horse');stub(.99,()=>pickA(0));ok(b.beh==='bolt'&&!b.gone&&/bolts/.test(panel()),'missed: it bolts');world();const bd=b.fromYou();frames(40);ok(b.fromYou()>bd+5,'at a run');frames(3000);ok(b.gone,'and is gone');
-  P.attr.agi=2;P.sk.ride.lv=0;const o0=t.catchOdds();P.sk.ride.lv=5*PROF.per;const o1=t.catchOdds();P.sk.ride.lv=0;ok(o1>o0,'Riding makes a catch likelier ('+Math.round(o0*100)+'% → '+Math.round(o1*100)+'%)');
+  attrSet('agi',2);P.sk.ride.lv=0;const o0=t.catchOdds();P.sk.ride.lv=5*PROF.per;const o1=t.catchOdds();P.sk.ride.lv=0;ok(o1>o0,'Riding makes a catch likelier ('+Math.round(o0*100)+'% → '+Math.round(o1*100)+'%)');
   const ds=findT2((tx,ty)=>t.climAt((tx+.5)*TILE,(ty+.5)*TILE)==='desert');ok(!ds||t.roadMount({x:ds.x,y:ds.y})==='camel','the mount of the region: a horse here, a camel in the desert')}
 
  // ---- the beggar: walks up to you; Give 5, 10 or 20 gold (honor), or Ignore
@@ -439,7 +441,7 @@ try{
    ok(t.ENC_SCENE.lay(e,true).filter(p=>p.k==='soldier').length===3&&t.ENC_SCENE.lay(e,true).some(p=>p.k==='stand'),'on the map, the “wounded man” on his feet and the bandits out of the trees behind him');
    pickA(4);ok(G.enc&&!G.enc.btype&&G.enc.list.length===e.foes.length,'Fight them: no ambush edge');t.act('flee');world()}
   {const e=lure();stub(.999,()=>pickA(3));t.act('enc-leave');ok(G.mode==='world'&&e.out&&!e.gone&&/You ride on/.test(G.msgs[G.msgs.length-1].m),'called out, Leave: you ride on, they watch you go');world()}
-  {P.sk.lead.lv=5*PROF.per;P.attr.cha=6;const e=lure(e=>{e.foes=e.foes.slice(0,5)}),c=t.roadScare();stub(0,()=>pickA(3));ok(e.gone&&e.done&&!G.enc&&!qa('.rwbody .rkact').length&&/melt back into the woods/.test(panel()),'a small band ('+e.foes.length+') may be scared off by your Leadership and Charisma ('+Math.round(c*100)+'%): they melt back into the woods');world();P.sk.lead.lv=0;P.attr.cha=2}
+  {P.sk.lead.lv=5*PROF.per;P.sk.pers.lv=100;const e=lure(e=>{e.foes=e.foes.slice(0,5)}),c=t.roadScare();stub(0,()=>pickA(3));ok(e.gone&&e.done&&!G.enc&&!qa('.rwbody .rkact').length&&/melt back into the woods/.test(panel()),'a small band ('+e.foes.length+') may be scared off by your Leadership and Persuasion ('+Math.round(c*100)+'%): they melt back into the woods');world();P.sk.lead.lv=0;P.sk.pers.lv=0}
   {const e=lure();t.act('enc-leave');ok(G.mode==='world'&&/^You leave (him to his|her to her) fate\.$/.test(G.msgs[G.msgs.length-1].m),'Leave: you leave him (or her) to his fate')}
   P.sk.scout.lv=0;
   // left be: the bandits move on, no body; the word on the road
@@ -576,8 +578,8 @@ try{
  // ---- your stats on the road (owner, 2026-10-19: stats only add; ENC_STAT, statOdds): a stat of 0 is today's odds or outcome;
  // more raises it, up to its cap, never past it and never under today's; the horse's odds as they were; the Insight read (Scouting
  // 0, 3, 5); each check's outcome; Tend his wounds always heals, its care (e.care) rising with Medicine
- {const S=t.ENC_STAT,Z={str:0,agi:0,int:0,cha:0,med:0,surv:0,hunt:0,archery:0,athl:0,ride:0,scout:0,lead:0,pers:0,trade:0},HI={str:30,agi:30,int:30,cha:30,med:20,surv:20,hunt:20,archery:20,athl:20,ride:20,scout:20,lead:20,pers:20,trade:20};
-  const stats=(o,fn)=>{const a0={...P.attr},s0={};for(const k in o)if(k in P.attr)P.attr[k]=o[k];else{s0[k]=P.sk[k].lv;P.sk[k].lv=o[k]*PROF.per}try{return fn()}finally{Object.assign(P.attr,a0);for(const k in s0)P.sk[k].lv=s0[k]}};
+ {const S=t.ENC_STAT,Z={med:0,surv:0,hunt:0,archery:0,athl:0,ride:0,scout:0,lead:0,pers:0,trade:0,eng:0,spell:0,tact:0,wood:0,stew:0,oneh:0,twoh:0,fist:0},HI={eng:20,spell:20,tact:20,wood:20,stew:20,oneh:20,twoh:20,fist:20,med:20,surv:20,hunt:20,archery:20,athl:20,ride:20,scout:20,lead:20,pers:20,trade:20};
+  const stats=(o,fn)=>{const s0={},set=(k,v)=>{if(!(k in s0))s0[k]=P.sk[k].lv;P.sk[k].lv=lvOfPow(v)};for(const k in o)if(t.ATTRS[k])t.ATTRS[k].profs.forEach(q=>set(q,o[k]));else set(k,o[k]);try{return fn()}finally{for(const k in s0)P.sk[k].lv=s0[k]}};// (a stat in power; an old attribute: every proficiency of it, data/progression.js ATTRS)
   // (the stories' checks share ENC_STAT (story/forms.js Stories.check, 'chk:…'): today's is their base, the rest held to the same rules)
   const TODAY={horse:.25,dice:.48,mine:.6,mineGear:.4,wisps:.5,care:0,push:0,hunt:0,respect:0,tracks:.4,watch:0,nimble:0,forage:0,herblore:.3,writ:.3,talk:.25,haggle:0,
    ...Object.fromEntries(Object.keys(S).filter(k=>k.startsWith('chk:')).map(k=>[k,S[k].base]))},ks=Object.keys(S),odds=o=>stats(o,()=>ks.map(k=>t.statOdds(k)));
@@ -587,19 +589,19 @@ try{
      if(stats({...Z,[one]:4},()=>t.statOdds(k))<=TODAY[k])bad.push(k+': '+one+' does not help')}
    const mix=[];for(let i=0;i<60;i++){const o={};for(const k in HI)o[k]=(i*7+k.length*13)%(HI[k]+1);mix.push(odds(o))}
    ok(!bad.length&&mix.every(r=>r.every((p,i)=>p>=TODAY[ks[i]]&&p<=S[ks[i]].cap)),'each stat that helps, 0 to 40: rising, never under today’s, never past the cap; and any mix of them'+(bad.length?': '+bad.slice(0,4).join('; '):''))}
-  {let same=true;for(let r=0;r<=12;r++)for(let a=0;a<=14;a++)stats({ride:r,agi:a},()=>{if(Math.abs(t.catchOdds()-Math.min(Math.max(.25+.08*r+.04*a,.1),.9))>1e-9)same=false});
-   ok(same&&/statOdds\('horse'\)/.test(String(t.catchOdds)),'the runaway horse on the helper: its odds as they were (25% + 8% a Riding level + 4% a point of Agility, 10–90%), for every Riding 0–12 and Agility 0–14')}
-  ok(t.statHelps('mine')==='Survival and Intellect help'&&t.statHelps('dice')==='Intellect or Charisma (the higher) helps'&&t.statHelps('hunt')==='Survival, Hunting and Archery help'&&t.statHelps('respect')==='Charisma helps','the stats that help, by name ('+['mine','dice','hunt','respect'].map(k=>t.statHelps(k)).join('; ')+')');
+  {let same=true;for(let r=0;r<=12;r++)for(let a=0;a<=14;a++)stats({ride:r,athl:a},()=>{if(Math.abs(t.catchOdds()-Math.min(Math.max(.25+.08*r+.04*a,.1),.9))>1e-9)same=false});
+   ok(same&&/statOdds\('horse'\)/.test(String(t.catchOdds)),'the runaway horse on the helper: its odds as they were (25% + 8% a Riding point + 4% an Athletics point (was Agility), 10–90%), for every Riding 0–12 and Athletics 0–14')}
+  ok(t.statHelps('mine')==='Survival and Engineering help'&&t.statHelps('dice')==='Tactics or Persuasion (the higher) helps'&&t.statHelps('hunt')==='Survival, Hunting and Archery help'&&t.statHelps('respect')==='Persuasion helps','the stats that help, by name ('+['mine','dice','hunt','respect'].map(k=>t.statHelps(k)).join('; ')+')');
   // the Insight read: vague at Scouting 0, rough at 3, the chance at 5; and on each page, the stats that help
   const page=(k,o)=>stats(o,()=>{meet(k);const h=(q('.pg-facts')||{}).textContent||'';world();return h});
   {const r0=page('mine',{...Z,scout:0}),r3=page('mine',{...Z,scout:3}),r5=page('mine',{...Z,scout:5}),h3=page('mine',{...HI,scout:3}),h5=page('mine',{...HI,scout:5});
-   ok(/the timbers creak/.test(r0)&&!/%/.test(r0)&&/Survival and Intellect help/.test(r0),'the mine, Scouting 0: vague ("'+r0+'")');
+   ok(/the timbers creak/.test(r0)&&!/%/.test(r0)&&/Survival and Engineering help/.test(r0),'the mine, Scouting 0: vague ("'+r0+'")');
    ok(/the tunnels look unsafe/.test(r3)&&!/%/.test(r3)&&/you can tell which tunnels will hold/.test(h3),'Scouting 3: a rough read, better with Survival ("'+r3+'" / "'+h3+'")');
    ok(/60% the tunnels hold.*40% chance of gear/.test(r5)&&/85% the tunnels hold.*55% chance of gear/.test(h5),'Scouting 5: the chance itself ("'+r5+'" / "'+h5+'")')}
-  {const d0=page('gamblers',{...Z,scout:5}),d1=page('gamblers',{...Z,cha:10,scout:5}),w0=page('wisps',{...Z,scout:0}),w3=page('wisps',{...Z,int:10,scout:3}),w5=page('wisps',{...Z,int:10,scout:5}),h5=page('horse',{...Z,ride:3,agi:2,scout:5});
-   ok(/48% to win a hand/.test(d0)&&/63% to win a hand/.test(d1)&&/Intellect or Charisma/.test(d0),'the gamblers: 48% to win a hand at Charisma 0, 63% at 10 ("'+d1+'")');
-   ok(/who knows where they lead/.test(w0)&&/most end in treasure/.test(w3)&&/75%: 40 gold/.test(w5)&&/Intellect helps/.test(w0),'the wisps: vague, rough, and 75% at Intellect 10 ("'+w5+'")');
-   ok(/57% to catch it/.test(h5)&&/Riding and Agility help/.test(h5),'the horse: 57% at Riding 3, Agility 2 ("'+h5+'")')}
+  {const d0=page('gamblers',{...Z,scout:5}),d1=page('gamblers',{...Z,pers:10,scout:5}),w0=page('wisps',{...Z,scout:0}),w3=page('wisps',{...Z,spell:10,scout:3}),w5=page('wisps',{...Z,spell:10,scout:5}),h5=page('horse',{...Z,ride:3,athl:2,scout:5});
+   ok(/48% to win a hand/.test(d0)&&/63% to win a hand/.test(d1)&&/Tactics or Persuasion/.test(d0),'the gamblers: 48% to win a hand at Persuasion 0, 63% at 10 ("'+d1+'")');
+   ok(/who knows where they lead/.test(w0)&&/most end in treasure/.test(w3)&&/75%: 40 gold/.test(w5)&&/Spellcraft helps/.test(w0),'the wisps: vague, rough, and 75% at Spellcraft 10 ("'+w5+'")');
+   ok(/57% to catch it/.test(h5)&&/Riding and Athletics help/.test(h5),'the horse: 57% at Riding 3, Athletics 2 ("'+h5+'")')}
   // each check's outcome: today's at 0, better with the stat
   world();P.troops={hum_levy:6};P.morale=50;
   {const i0=t.goodN('iron');stats({...Z,surv:20,int:30},()=>{meet('mine');stub(.8,()=>pickA(0))});ok(t.goodN('iron')===i0+5&&/tunnels hold/.test(panel()),'the mine at Survival 20: a roll of 0.8 still holds (85%)');world();
@@ -610,10 +612,10 @@ try{
    ok(t.goodN('meat')===m0+3&&t.goodN('furs')===f0,'and brings 3 meat, no furs');world();
    stats({...Z,surv:5,hunt:4},()=>{meet('hunters');pickA(1)});ok(t.goodN('meat')===m0+3+5&&t.goodN('furs')===f0+1,'at Survival 5, Hunting 4: 5 meat and a fur ('+(t.goodN('meat')-m0-3)+' meat, '+(t.goodN('furs')-f0)+' furs)');world();
    stats(HI,()=>{meet('hunters');pickA(1)});ok(t.goodN('meat')===m0+3+5+6&&t.goodN('furs')===f0+1+2,'at the most: twice the meat (6) and 2 furs');world()}
-  {const SP=t.vitals()[1];stats({...Z,str:6,athl:6},()=>{P.sp=SP;meet('mud');ok(/−8 stamina/.test(qa('.rkact')[0].textContent)&&/Strength and Athletics help/.test(panel()),'the cart at Strength 6, Athletics 6: −8 stamina (of 20)');pickA(0);ok(P.sp===SP-8,'and it takes 8');world();
+  {const SP=t.vitals()[1];stats({...Z,athl:6,eng:6},()=>{P.sp=SP;meet('mud');ok(/−8 stamina/.test(qa('.rkact')[0].textContent)&&/Athletics and Engineering help/.test(panel()),'the cart at Athletics 6, Engineering 6: −8 stamina (of 20)');pickA(0);ok(P.sp===SP-8,'and it takes 8');world();
     P.sp=0;meet('mud');const h0=t.roadNow();ok(/24 minutes/.test(qa('.rkact')[0].textContent),'tired out: 24 minutes, not an hour');pickA(0);ok(Math.abs(t.roadNow()-h0-.4)<1e-6,'and 0.4 hours pass');world()});
    const pz=stats({...Z,str:40,athl:40},()=>t.roadPushSp());ok(pz===Math.round(TU.mud.sp*(1-S.push.cap))&&pz>0,'never under '+Math.round((1-S.push.cap)*100)+'% of it ('+pz+' stamina)')}
-  {const fac=Object.keys(t.FACS).find(x=>x!=='player');stats({...Z,cha:10},()=>{const f=meet('funeral',e=>{e.fac=fac}),h0=t.honorWith(fac);P.morale=50;pickA(0);ok(t.honorWith(fac)===h0+4&&P.morale===57,'Pay respects at Charisma 10: honor +4, morale +7 (of 2 and 4)');world();
+  {const fac=Object.keys(t.FACS).find(x=>x!=='player');stats({...Z,pers:10},()=>{const f=meet('funeral',e=>{e.fac=fac}),h0=t.honorWith(fac);P.morale=50;pickA(0);ok(t.honorWith(fac)===h0+4&&P.morale===57,'Pay respects at Persuasion 10: honor +4, morale +7 (of 2 and 4)');world();
     P.morale=50;meet('wedding');pickA(0);ok(P.morale===68,'Join the wedding: morale +18 (of 10)');world();G.clock=t.DAY*.3;
     const w=meet('wedding'),r0=t.repAt(w.home);pickA(1);ok(t.repAt(w.home)===r0+9,'Give a gift: reputation +9 (of 5)');world();G.clock=t.DAY*.3})}
   // Tend his wounds: always heals, whatever your Medicine; the better, the more he owes you

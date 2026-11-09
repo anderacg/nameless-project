@@ -23,7 +23,7 @@ function parleyYield(){
   // (a lord: his ransom, renown and the honor it costs as ever; his end the same window as a band's, his army's spoils a beaten
   // lord's (yieldSpoils: ON_WIN lord's drop, his purse), the soldiers sent home unarmed leaving their weapons)
   if(lord){lootStart();const ransom=80+5*list.length;P.gold+=ransom;rippleRel(o,RELATION.ransom,'you took their ransom');P.renown+=8;addHonor(o.fac,-5,true);FIDS.filter(f=>atWar(f,o.fac)).forEach(f=>addHonor(f,3,true));
-    const n=cage(list),more=yieldSpoils({kind:'lord',ref:o,list},list.length-n);worldEmit('lord:beaten',{lord:o});defeatLord(o);G.par=null;mood('ransom');G.mode='dialog';
+    const n=cage(list),more=yieldSpoils({kind:'lord',ref:o,list},list.length-n);worldEmit('lord:beaten',{lord:o});defeatLord(o,true);G.par=null;mood('ransom');G.mode='dialog';
     return lootShow('<h2>'+o.name+' yields</h2><p>The sword is handed over, and '+ransom+' gold paid as ransom. '+(n?n+' of the soldiers become your prisoners; the rest are sent home unarmed.':'The soldiers are sent home unarmed.')+' Renown +8; the '+FACS[o.fac].n+' will not forget the shame (−5 honor).'+more+'</p>',null,0,'cont')}
   G.mode='dialog';showPanel('<h2>They yield</h2><p>The '+(o.kind==='raiders'?'raiders':o.kind==='goblins'?'goblins':'bandits')+' throw down their weapons. What becomes of them?</p><div class="btns">'+
     dlgBtn('pl-cage',null,'Take them prisoner ('+Math.min(list.length,prisonCap()-prisonerCount())+' fit)',prisonerCount()>=prisonCap()?'No room for prisoners':'',true)+

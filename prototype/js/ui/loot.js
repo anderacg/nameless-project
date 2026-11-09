@@ -6,7 +6,7 @@
 // want while you can carry it (past the bag's size into overflow slots, a burden on your pace, up to its limit: core/inventory.js;
 // a quest item always), put things from your bag back on the pile to make room, and leave the rest. Gold, XP, renown and
 // prisoners are counted from the snapshot. Leaving things behind is your choice, so Esc never does it for you.
-const xpTotal=()=>Math.floor(leaderOf(P).profProgress());// (your level's progress, from your proficiencies: characters.js)
+const xpTotal=()=>Math.floor(HERO_XP_ALL(P.level,P.xp));// (your experience all told: characters.js)
 function lootSnap(){return{gold:P.gold,xp:xpTotal(),lv:P.level,renown:P.renown,pris:{...P.prisoners}}}
 function lootStart(){if(!G.loot)G.loot={from:lootSnap(),pile:[],capture:true};return G.loot}
 const looting=()=>!!(G.loot&&G.loot.capture);

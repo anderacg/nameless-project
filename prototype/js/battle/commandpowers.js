@@ -36,7 +36,7 @@ function commanderOf(team){
 function commanderLead(team,u=commanderOf(team)){
   const f=B&&B.cmdLead&&B.cmdLead[team];if(f!=null)return clamp(f,0,10);if(!u)return 0;
   if(u.hero)return clamp(P&&P.sk&&P.sk.lead?skill('lead'):0,0,10);
-  const L=u.leader,r=L&&L.ref;if(r&&r.sk&&r.sk.lead)return clamp(r.sk.lead.lv/PROF.per,0,10);return L?clamp(Math.floor((L.lv||1)/2),0,10):0}
+  const L=u.leader,r=L&&L.ref;if(r&&r.sk&&r.sk.lead)return clamp(profPow(r.sk.lead.lv),0,10);return L?clamp(Math.floor((L.lv||1)/2),0,10):0}
 const commandRadius=team=>COMMANDS.radius*(1+Math.min(COMMANDS.leadMax,COMMANDS.lead*commanderLead(team)));
 const powerCd=(team,id)=>Math.round(COMMANDS[id].cd*Math.max(COMMANDS.cdMin,1-COMMANDS.cdLead*commanderLead(team)));
 const powerState=team=>{const S=B.cmdp||(B.cmdp={});return S[team]||(S[team]={})};// (made on first use: looking makes none)

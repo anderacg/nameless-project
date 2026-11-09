@@ -8,7 +8,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,ev=s=>(0,eval)(s);
   // ======== the Nobody: nothing but a little to survive on
   t.act('begin','nobody');const B0=t.BGS.nobody;
   ok(P.bg==='nobody'&&!P.gear.weapon&&t.unarmed()&&P.gold===B0.gold&&P.gold<=10&&B0.cargo.grain>0&&B0.cargo.grain<=4&&!t.troopCount(),'the Nobody starts with no weapon, '+P.gold+' gold and a crust ('+B0.cargo.grain+' grain), no troops');
-  ok(P.tree.includes('o_nobody')&&t.PROF_TREE.fist&&t.PROF_TREE.fist.length===t.treeAt('fist').length,'their origin, and the brawler\'s Unarmed tree to grow');
+  ok(P.tree.includes('o_nobody')&&t.PROF_TREE.fist&&t.PROF_TREE.fist.length>=3,'their origin, and the brawler\'s Unarmed tree to grow');
   t.showTitle('past');ok(/Nobody/.test(document.getElementById('panel').innerHTML)&&/Bare hands · Unarmed/.test(document.getElementById('panel').innerHTML),'a card of its own on the New game page: bare hands');t.hidePanel();
   ok(t.meleeSk()==='fist'&&t.SKILLS.fist&&P.apt.fist>0,'their discipline is Unarmed, learned faster ('+P.apt.fist+')');
   // ======== the fists' numbers, against a sword
@@ -35,7 +35,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,ev=s=>(0,eval)(s);
   B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
   // ======== the brawler's chain: its talents move the fists' numbers
   {const d0=t.heroStats().dmg,c0=t.heroStats().cd,k0=t.heroCombo()[2].mult;P.tree.push('fist_knuckles','fist_shins','fist_quick','fist_open');const d1=t.heroStats().dmg,c1=t.heroStats().cd,k1=t.heroCombo()[2].mult;
-   ok(d1>d0*1.4&&c1<c0&&k1>k0,'Bare Knuckles and Open Hand: harder and quicker blows ('+d0.toFixed(1)+' → '+d1.toFixed(1)+'), Iron Shins a harder kick (×'+k0+' → ×'+k1+')');
+   ok(d1>d0*1.1&&c1<c0&&k1>k0,'Bare Knuckles and Open Hand: harder and quicker blows, as strong as Unarmed '+P.sk.fist.lv+' makes them ('+d0.toFixed(1)+' → '+d1.toFixed(1)+'), Iron Shins a harder kick (×'+k0+' → ×'+k1+')');
    P.gear.weapon=t.gearId('sword',0);const s1=t.heroStats();P.tree=P.tree.filter(id=>!['fist_knuckles','fist_shins','fist_quick','fist_open'].includes(id));const s0=t.heroStats();P.gear.weapon=null;ok(s1.dmg===s0.dmg&&s1.cd===s0.cd,'with a weapon in hand the brawler\'s talents add nothing to its blows');
    ok(['fist_knuckles','fist_shins','fist_quick','fist_open'].every(id=>t.TREE[id].d&&t.TREE[id].prof==='fist'),'four nodes of the Unarmed tree')}
  }finally{ev('MANUAL_HERO=false');if(t.B){t.B.over=true;t.B.endT=0;t.updateBattle(.01)}}

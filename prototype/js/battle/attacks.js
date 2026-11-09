@@ -69,7 +69,8 @@ class Fighter{
     if(sfxOn())blowSound(att,t,false,isMagical(dt||dtOf(att.s)));
   }
   // one of your troops (not your hero, a companion or a lord's man) earns XP for a blow: the damage it dealt, and a kill by the foe's tier
-  earnXp(t,was){const u=this.u;if(u.team!==0||u.lord||!t||!battleEnemy(u,t))return;const dealt=Math.max(0,was-Math.max(0,t.hp));
+  // (who felled t: its dots fly to him, battle/drops.js)
+  earnXp(t,was){const u=this.u;if(was>0&&t&&t.hp<=0)BattleDrops.struck(t,u);if(u.team!==0||u.lord||!t||!battleEnemy(u,t))return;const dealt=Math.max(0,was-Math.max(0,t.hp));
     u.xp=(u.xp||0)+dealt*TROOP_XP.dmg+(was>0&&t.hp<=0?TROOP_XP.kill*(ST[t.type]&&ST[t.type].tier||1):0)}
   // how true he shoots (p: a bow's draw, 0 to 1): AIM's spread by his weapon, his race, how steady he is, how tired, the draw
   aimErr(p){

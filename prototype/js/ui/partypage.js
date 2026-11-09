@@ -34,7 +34,7 @@ function rankLine(g){const r=rankOf(g),need=rankNeed(g),x=Math.floor(rankXp(g));
 const rankMeter=L=>fbMeter('skills',L.label,L.v,Math.max(1,L.max)).replace(/<b>[^<]*<\/b>/,'<b>'+htmlText(L.val)+'</b>');
 const rankPips=g=>{const r=rankOf(g),m=masteryOf(g);return r?'<span class="rk-pips'+(m?' m'+(['bronze','silver','gold'].indexOf(RANKS.mastery.metal[m-1])+1):'')+'" aria-label="Rank '+r+' of '+RANKS.max+'">'+Array.from({length:RANKS.max},(_,i)=>'<i'+(i<r?' class="on"':'')+'></i>').join('')+'</span>':''};
 function rosterXp(id,u){
-  // (your hero's and a companion's level from their proficiencies: its progress into the next, characters.js relevel)
+  // (your hero's and a companion's level: its experience into the next, characters.js xpNeed)
   if(id==='hero'){const h=leaderOf(P),n=h.xpNeed();return{v:P.xp,max:n,txt:'Lv. '+P.level+' · '+Math.round(100*P.xp/n)+'% to '+(P.level+1)}}
   if(u.cid){const c=compInit(u.cid),h=compOf(u.cid),n=h.xpNeed();return{v:c.xp,max:n,txt:'Lv. '+c.lv+' · '+Math.round(100*c.xp/n)+'% to '+(c.lv+1)}}
   const g=u.g||(P.woundedGroups||[]).find(w=>w.id===id);return g?rankLine(g):{v:0,max:1,txt:''};
@@ -84,7 +84,7 @@ function partyUnitEquipment(d){if(d.kind==='comp')return companionEquipment(d.u.
   const on=EQUIP.filter(k=>P.gear[k]&&ITEMS[P.gear[k]]);return '<div class="fb-gear-rows">'+(on.length?on.map(k=>{const label=k.startsWith('ring')?'Ring '+(+k.slice(4)+1):INV_SLOT_LABELS[k]||SLOTS[slotOfKey(k)];return '<div class="fb-gear-row">'+fbIcon('shield',26)+'<div><small>'+htmlText(label)+'</small><strong>'+htmlText(ITEMS[P.gear[k]].n)+'</strong></div></div>'}).join(''):'<p class="fb-note">Nothing worn but your clothes.</p>')+'</div>'+fbBtn('party-equipment',null,'Change equipment');
 }
 function partyUnitCompany(d){
-  return '<div class="fb-stat-grid"><span title="Approval '+d.c.ap+' (from −10 to 10)">'+fbStat('morale','Approval',apName(d.c.ap))+'</span></div>'+fbBtn('talk-comp',d.u.cid,'Talk with '+htmlText(COMPS[d.u.cid].short),d.c.jail?'Held in prison':'')+companionRole()+companionOrders(d.u.cid,d.c)+fbDetails('Company service','<p>'+htmlText(COMPS[d.u.cid].short)+' can leave your company and be found again in a tavern. Upkeep: 2 gold a day.</p>'+fbBtn('party-dismiss',null,'Dismiss from company'));
+  return '<div class="fb-stat-grid"><span title="Approval '+d.c.ap+' (from −10 to 10)">'+fbStat('morale','Approval',apName(d.c.ap))+'</span></div>'+fbBtn('talk-comp',d.u.cid,'Talk with '+htmlText(COMPS[d.u.cid].short),d.c.jail?'Held in prison':d.c.lost?'Lost: in '+d.c.lost.at:'')+companionRole()+companionOrders(d.u.cid,d.c)+fbDetails('Company service','<p>'+htmlText(COMPS[d.u.cid].short)+' can leave your company and be found again in a tavern. Upkeep: 2 gold a day.</p>'+fbBtn('party-dismiss',null,'Dismiss from company'));
 }
 // the unit's card (ui/unitcard.js UnitCard): its numbers grown past its original (statGrowth: a group's rank, upgrades and your
 // talents; a character's attributes, skills, talents and gear) and now (health; morale as your band's mood drifts it), a group's
@@ -158,11 +158,11 @@ function troopPath(k,id){const s=ST[k],from=UP_FROM(k),orders=troopOrdersOf(k),t
 function partyRosterPage(){
   if(G.char==='march')return marchTabPage();
   const s=partyView(),r=partyRoster(P);if(G.armyEdit){s.sel=G.armyEdit;s.open=true}
-  const recover=[...new Set((P.woundedGroups||[]).filter(w=>w.count>0&&!r.groups.some(g=>g.id===w.id)).map(w=>w.id))],away=Object.keys(P.comps).filter(id=>P.comps[id].party).map(id=>'comp_'+id),held=Object.keys(P.comps).filter(id=>P.comps[id].jail&&!P.comps[id].party).map(id=>'comp_'+id),ids=[...r.order,...recover,...away,...held.filter(id=>!r.order.includes(id))];
+  const recover=[...new Set((P.woundedGroups||[]).filter(w=>w.count>0&&!r.groups.some(g=>g.id===w.id)).map(w=>w.id))],away=Object.keys(P.comps).filter(id=>P.comps[id].party).map(id=>'comp_'+id),held=Object.keys(P.comps).filter(id=>P.comps[id].jail&&!P.comps[id].party).map(id=>'comp_'+id),lost=Object.keys(P.comps).filter(id=>P.comps[id].lost&&!P.comps[id].jail&&!P.comps[id].party).map(id=>'comp_'+id),ids=[...r.order,...recover,...away,...[...held,...lost].filter(id=>!r.order.includes(id))];
   if(!ids.includes(s.sel)){s.sel=ids[0];s.path=false}if(rosterKind(s.sel)==='comp')compPick(s.sel.slice(5));
   const full=partyFull(),cls=(s.open?' open':'')+(full?' full':'');const numbers=marchNumbers(P);s.shape=partyShape();
-  return '<div class="fb-army-layout'+cls+'"><div class="fb-split"><section class="fb-pane fb-collection"><div class="fb-pane-head"><h3>Battle Group</h3><span>'+r.slots+' / '+r.groupLimit+'</span></div><div class="fb-scroll fb-unit-grid" data-fb-scroll="army-roster">'+r.order.filter(id=>!held.includes(id)).map(id=>{const g=partyGroup(id,r);return partyCard(id,r,numbers[id]??'—')}).join('')+
-    (recover.length?'<div class="fb-section">Recovering groups · no fit soldiers</div>'+recover.map(id=>partyCard(id,r,'—')).join(''):'')+(away.length?'<div class="fb-section">Away · leading their own party</div>'+away.map(id=>partyCard(id,r,'—')).join(''):'')+(held.length?'<div class="fb-section">Held · in prison</div>'+held.map(id=>partyCard(id,r,'—')).join(''):'')+
+  return '<div class="fb-army-layout'+cls+'"><div class="fb-split"><section class="fb-pane fb-collection"><div class="fb-pane-head"><h3>Battle Group</h3><span>'+r.slots+' / '+r.groupLimit+'</span></div><div class="fb-scroll fb-unit-grid" data-fb-scroll="army-roster">'+r.order.filter(id=>!held.includes(id)&&!lost.includes(id)).map(id=>{const g=partyGroup(id,r);return partyCard(id,r,numbers[id]??'—')}).join('')+
+    (recover.length?'<div class="fb-section">Recovering groups · no fit soldiers</div>'+recover.map(id=>partyCard(id,r,'—')).join(''):'')+(away.length?'<div class="fb-section">Away · leading their own party</div>'+away.map(id=>partyCard(id,r,'—')).join(''):'')+(held.length?'<div class="fb-section">Held · in prison</div>'+held.map(id=>partyCard(id,r,'—')).join(''):'')+(lost.length?'<div class="fb-section">Lost · after the beasts (Quests)</div>'+lost.map(id=>partyCard(id,r,'—')).join(''):'')+
     '</div></section>'+partyDetail(s.sel,r)+'</div></div>';
 }
 /* ---- Army skills: your band's skills are your hero's (parties.js Leader.skill): what you have trained, with what a companion in its
@@ -173,7 +173,7 @@ const BAND_SKILL_ICON={lead:'banner',tact:'map',med:'wounded',eng:'tower',pers:'
 const ROLE_ICON={scout:'eye',surgeon:'wounded',quarter:'bag',guide:'map',trainer:'shield'};
 // who gives a skill: [who, how much], yours first
 function bandSkillFrom(k){const rid=k==='scout'?roleOf('scout'):k==='med'?roleOf('surgeon'):null,rb=P.roleBonus(k),g=P.gearSkill(k),t=P.treeSkill(k);
-  return [['You',+(P.sk[k].lv/PROF.per).toFixed(1)],...(rb?[[COMPS[rid].short+' ('+ROLES[k==='scout'?'scout':'surgeon']+')',rb]]:[]),...(g?[['Gear',g]]:[]),...(t?[['Skill tree',t]]:[])]}
+  return [['You',+profPow(P.sk[k].lv).toFixed(1)],...(rb?[[COMPS[rid].short+' ('+ROLES[k==='scout'?'scout':'surgeon']+')',rb]]:[]),...(g?[['Gear',g]]:[]),...(t?[['Skill tree',t]]:[])]}
 // (Athletics on foot and Riding in the saddle also spare the band's stamina on the march: world/supply.js)
 function bandSkillNote(k){if(k!=='athl'&&k!=='ride')return '';const ride=mountedShare(bandSpeeds())>=.5,on=ride===(k==='ride');
   return '<small class="'+(on?'good':'muted')+'">On the march your band tires '+Math.round(Math.min(SUPPLY.skillCap,SUPPLY.skill*skill(k))*100)+'% less'+(on?' (it is '+(ride?'mostly mounted':'mostly on foot')+')':' when '+(k==='ride'?'mostly mounted':'mostly on foot'))+'.</small>'}
@@ -181,6 +181,7 @@ function bandSkillNote(k){if(k!=='athl'&&k!=='ride')return '';const ride=mounted
 function roleFx(k,id){
   if(!id)return {scout:'A Scout adds 2 and a third of their Scouting to yours.',surgeon:'A Surgeon adds 2 and a third of their Medicine to yours.',quarter:'Your band would eat 25% less food.',guide:'Your band would tire less on the march and travel faster.'}[k];
   if(P.comps[id]?.jail)return 'Held in '+Prisons.title(P.comps[id].jail)+': no effect until they are free.';
+  if(P.comps[id]?.lost)return 'Lost after the beasts, in '+P.comps[id].lost.at+': no effect until you find them.';
   if(!compInBand(id))return 'Away leading their own party: no effect until they rejoin.';
   return k==='scout'?'+'+P.roleBonus('scout')+' Scouting':k==='surgeon'?'+'+P.roleBonus('med')+' Medicine':k==='quarter'?'Your band eats 25% less food.':'Your band tires '+Math.round((1-SUPPLY.guide)*100)+'% less on the march and travels '+Math.round(3+compSkill(id,'scout'))+'% faster (3% and 1% a level of their Scouting).';
 }

@@ -65,6 +65,8 @@ class Realm{
   fall(at,involved){
     const f=this.id;
     W.dead[f]=true;
+    // (its lords' houses keep them, gone with it: world/lineage.js Houses.away)
+    for(const l of W.lords)if(l.fac===f&&!l.gone)Houses.away(l,'lost with the fall of the '+this.name);
     W.lords.forEach(l=>{if(l.fac===f){l.dead=true;l.gone=true}});
     FIDS.forEach(g=>{if(g!==f)delete W.rel[rk(f,g)]});
     worldEvent({text:'The '+this.name+' has fallen. Its last holding is lost.',cls:'bad',fac:[f],involved:involved||P.fac===f,x:at&&at.x,y:at&&at.y,
@@ -163,8 +165,8 @@ const nearestOf=(o,list)=>Spatial.nearest(list,o.x,o.y);// (the old name: core/s
    levels 0-10, (level+1) x 20 to the next, as yours). Their army is capped as yours is: 8 + 3 a level + renown/25 + Leadership
    (+1 for a lord's bearing), and a realm short of holdings rallies 4 more for each it lacks. Lords from older saves are filled in */
 const LORD_SK=['lead','tact','med'];
-function lordStats(l){if(l.lv)return l;l.lv=rint(2,6);l.xp=0;l.renown=l.lv*8;l.sk={};for(const k of LORD_SK)l.sk[k]={lv:Math.min(SK_MADE,(Math.floor(l.lv/2)+rint(0,1))*PROF.per),xp:0};return l}
-const lordSkill=(l,k)=>{const s=lordStats(l).sk[k];return s?s.lv/PROF.per:0};// (in power: a level ÷ PROF.per)
+function lordStats(l){if(l.lv)return l;l.lv=rint(2,6);l.xp=0;l.renown=l.lv*8;l.sk={};for(const k of LORD_SK)l.sk[k]={lv:Math.min(SK_MADE,Math.round((Math.floor(l.lv/2)+rint(0,1))*PROF.per)),xp:0};return l}
+const lordSkill=(l,k)=>{const s=lordStats(l).sk[k];return s?profPow(s.lv):0};// (in power: profPow)
 function lordTrain(l,k,n){leaderOf(l).train(k,n)}
 function lordXp(l,n){leaderOf(l).gainXp(n)}// (leaders.js Lord)
 // a lord's hiring (doRealms, realms.js): men a unit slot (his slots: lcapOf over it, parties.js LordParty unitSlots), men refilled a unit a
@@ -231,11 +233,15 @@ function lordWon(l,res,take=true){
   let txt='';worldEmit('lord:routed',{lord:l});if(l.state==='siege'&&townBy(l.tgt))worldEmit('siege:broken',{town:townBy(l.tgt),lord:l});// (the bus: news.js)
   if(P.fac&&atWar(P.fac,l.fac)){res.gold+=40;P.renown+=5;txt+=' Your employer adds a 40 gold bounty.'}
   if(l.state==='siege'){const st=townBy(l.tgt);if(st&&!hostileTo(st.owner)){addRep(st.name,10,true);if(st.owner!=='player')addHonor(st.owner,8,true);lordsInside(st).forEach(o=>changeRel(o,RELATION.breakSiege,'you broke the siege of '+st.name));txt+=' You break the siege of '+st.name+'. Its people cheer you in.'}}
-  rippleRel(l,RELATION.beatThem,'you beat them in battle');worldEmit('lord:beaten',{lord:l});if(take){captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom '+pr(l).him+' or let '+pr(l).him+' go (Hero, Party).'}else{defeatLord(l);txt+=getsAway(l.name)}
+  rippleRel(l,RELATION.beatThem,'you beat them in battle');worldEmit('lord:beaten',{lord:l});
+  // (now and then he dies in the fighting: gone for good, his house buries him and holds it against you, world/lineage.js)
+  if(take&&Houses.slain(l,true)){txt+=' '+l.name+' falls in the fighting. '+cap1(pr(l).his)+' house will not forget it.';take=false}
+  if(take){captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom '+pr(l).him+' or let '+pr(l).him+' go (Hero, Party).'}else{defeatLord(l);txt+=getsAway(l.name)}
   FIDS.filter(f=>atWar(f,l.fac)).forEach(f=>addHonor(f,5));addHonor(l.fac,-10);
   return txt;
 }
-function defeatLord(l){l.inside=null;l.dead=true;l.troops=[];l.back=G.day+4;l.state='rest'}
+function defeatLord(l,byYou){if(Houses.slain(l,byYou))return;// (now and then slain on the field, gone for good, by you a grudge: world/lineage.js)
+  l.inside=null;l.dead=true;l.troops=[];l.back=G.day+4;l.state='rest'}
 function fallFaction(f,at,involved){realmOf(f).fall(at,involved)}
 // (a marshal's siege: all his host's strength there, hosts.js Host.besiegers; each takes his share of the losses)
 function resolveSiege(l,t){
@@ -305,8 +311,9 @@ function lordMeet(l,topic){
   const talk=['dialog','scene'].includes(G.mode)&&G.enc&&G.enc.kind==='lord'&&G.enc.ref===l&&G.enc.talk||{};
   G.enc={kind:'lord',ref:l,talk};G.mode=l.inside&&G.scene?'scene':'dialog';P.tx=null;
   // (the talk: story/conversation.js; its answers kept on the visit's talk, said once each)
-  const cv=talk.cv||(talk.cv=new Conversation(new LordSpeaker(l)));
+  const cv=talk.cv||(talk.cv=new Conversation(new LordSpeaker(l)));cv.again=()=>lordMeet(l);
   if(topic==='rumours'&&talk.rumours==null){talk.rumours=rumourSay(rumourSource('lord',l.id,l,{fac:l.fac,from:l.name}))||'I have heard nothing new.';cv.say(talk.rumours)}
+  if(topic==='house'&&talk.house==null&&DEATH.on){const h=LordHouse.of(l);talk.house=h.tell(l);if(talk.house)cv.say(talk.house,true)}
   if(topic==='lords'&&talk.lords==null){talk.lords=lordTies(l,false)||'<p>I have no other lords to speak of.</p>';KNOWLEDGE.hear(talk.lords);cv.say(talk.lords,true);
     // (and their manner: their tempers known to you from now: story/conversation.js)
     const named=[...lordFriends(l).filter(o=>!o.dead).slice(0,3),...lordRivals(l).filter(o=>!o.dead).slice(0,3)];if(named.length){named.forEach(o=>{TalkMemory.of('lord:'+o.id).temper=true});cv.say(DIALOGUE.tells.replace('{list}',named.map(o=>htmlText(o.name)+' is '+new LordSpeaker(o).temper()).join(', ')),true)}}

@@ -2,7 +2,7 @@
 /* Recruitment owns prices, eligibility and roster changes. Quotes are read-only and shared by screens and commands. */
 class RecruitmentService{
   constructor(player,rules){this.player=player;this.rules=rules}
-  hireCost(k){const s=this.rules.troops[k];return s?Math.round(this.rules.hire[k]*(this.rules.has('silver')?.8:1)*(1-.02*this.player.attr.cha)*(s.race&&s.race===this.player.race?.85:1)*(1-this.rules.effect('hire'))):0}
+  hireCost(k){const s=this.rules.troops[k];return s?Math.round(this.rules.hire[k]*(this.rules.has('silver')?.8:1)*(s.race&&s.race===this.player.race?.85:1)*(1-this.rules.effect('hire'))):0}
   // (a group's upgrade (the owner, 2026-10-31: "every tier after levy require enlist"): at its last rank (core/ranks.js), at a
   // barracks, for trainCost a man; a special one (to TRAIN_PLACE.tier or up, or into a caster) with an expert trainer of its role
   // there too (world/trainers.js upgradeTrainer); into a mounted kind, a horse a man (the rules' horses: yours first, then its

@@ -1338,6 +1338,13 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .talk-line.you b{color:var(--side-me-fg)}
 .talk-out{display:block;flex-basis:100%;margin-left:24px;color:var(--muted);font-weight:normal;font-size:var(--fs-xs)}
 .talk-r{flex-wrap:wrap}
+.talk-l{display:inline-flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+.talk-odds{padding:0 6px;border:1px solid var(--line-2);border-radius:9px;font-size:var(--fs-2xs);font-weight:normal;line-height:16px;color:var(--muted)}
+.talk-odds.good{border-color:var(--good);color:var(--good)}.talk-odds.bad{border-color:var(--danger);color:var(--danger)}
+.talk-r.talk-back{color:var(--muted);font-weight:normal}
+.talk-topic{margin-top:var(--sp-2)}
+.pg-talk{margin:var(--sp-2) 0}.talk-line.did{color:var(--muted)}.talk-line.did b{color:inherit}
+.talk-not{margin:0 0 var(--sp-2);color:var(--faint);font-size:var(--fs-xs)}.talk-not i{font-style:normal;color:var(--muted)}
 
 /* ---------- 9. responsive ---------- */
 /* a touch screen: everything you press at least 44 px, and nothing that only hovering shows */
@@ -1588,3 +1595,59 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 
 .btop:has(.army-intel:not([hidden])) .bpow,.btop:has(.army-intel:not([hidden])) .bfield{align-self:flex-start;width:calc(100% - 92px)}
 .army-arrivals{width:100%}
+
+/* (a battle's report: a group ranked up flashes; what the field gave: battle/drops.js) */
+.rank-flash{animation:rank-flash 1.2s ease-out 2;border-radius:4px}
+@keyframes rank-flash{0%{background:rgba(232,185,74,.45);box-shadow:0 0 14px rgba(232,185,74,.8)}100%{background:transparent;box-shadow:none}}
+.fb-field-loot{color:#f0d890}
+@media (prefers-reduced-motion:reduce){.rank-flash{animation:none}}
+
+/* (the Journal's Family, ui/family.js: your line as a chart of square tiles, each one's picture: a child below the one they came
+   from, siblings and cousins side by side under one stem, a cousin's line dashed, a stranger a root of their own; each heir a small
+   tile beside the one they followed; the tile chosen told beside the chart) */
+.ft-body{display:flex;gap:14px;align-items:flex-start}
+.ft-chart{flex:1 1 auto;min-width:0;overflow-x:auto;padding:6px 2px 10px}
+.ft-tree,.ft-tree ul{list-style:none;margin:0;padding:0;display:flex;justify-content:center}
+.ft-tree{width:max-content;min-width:100%}
+.ft-li{position:relative;display:flex;flex-direction:column;align-items:center;padding:0 5px}
+.ft-li ul{position:relative;padding-top:18px}
+.ft-li ul::before{content:'';position:absolute;top:0;left:50%;height:18px;border-left:2px solid var(--line-2)}
+.ft-li ul>.ft-li{padding-top:18px}
+.ft-li ul>.ft-li::before,.ft-li ul>.ft-li::after{content:'';position:absolute;top:0;right:50%;width:50%;height:18px;border-top:2px solid var(--line-2)}
+.ft-li ul>.ft-li::after{right:auto;left:50%;border-left:2px solid var(--line-2)}
+.ft-li ul>.ft-li:only-child{padding-top:0}
+.ft-li ul>.ft-li:only-child::before,.ft-li ul>.ft-li:only-child::after{display:none}
+.ft-li ul>.ft-li:first-child::before,.ft-li ul>.ft-li:last-child::after{border:0}
+.ft-li ul>.ft-li:last-child::before{border-right:2px solid var(--line-2);border-radius:0 6px 0 0}
+.ft-li ul>.ft-li:first-child::after{border-radius:6px 0 0 0}
+.ft-li ul>.ft-li.ft-cousin::before{border-top-style:dashed;border-right-style:dashed}.ft-li ul>.ft-li.ft-cousin::after{border-top-style:dashed;border-left-style:dashed}
+.ft-row{position:relative;display:flex;justify-content:center}
+.ft-row.ft-hh{padding:0 66px}
+.ft-tile{display:flex;flex-direction:column;align-items:center;width:84px;padding:0;margin:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer}
+.ft-pic{display:block;width:64px;height:64px;border:2px solid var(--line-2);border-radius:5px;background:rgba(0,0,0,.4);overflow:hidden}
+.ft-pic img{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+.ft-dead .ft-pic img{filter:grayscale(.75) brightness(.8)}
+.ft-tile .ft-n{margin-top:3px}
+.ft-tile b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;max-width:84px;overflow:hidden;overflow-wrap:anywhere;font-size:12px;line-height:1.25}
+.fb-shell .ft-tile:focus-visible,.fb-shell .ft-house:focus-visible{outline:none}.ft-tile:hover .ft-pic,.ft-tile:focus-visible .ft-pic{border-color:#cdbf9f}
+.ft-tile.ft-sel .ft-pic{border-color:var(--accent);box-shadow:0 0 0 2px rgba(201,162,78,.35),0 0 10px rgba(201,162,78,.35)}
+.ft-now>.ft-row>.ft-tile:not(.ft-sel) .ft-pic{border-color:rgba(201,162,78,.7)}
+.ft-cousin>.ft-row>.ft-tile .ft-pic{border-style:dashed}
+.ft-n{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.ft-side{position:absolute;left:calc(50% + 50px);top:8px}
+.ft-side::before{content:'';position:absolute;left:-10px;top:24px;width:12px;border-top:2px dashed var(--line-2)}
+.ft-wed{display:flex;gap:6px}.ft-side.ft-wed::before{border-top:5px double var(--line-2)}.ft-heir.ft-spouse .ft-pic{border-style:solid}
+.ft-heir{width:62px}.ft-heir .ft-pic{width:46px;height:46px;border-style:dashed}.ft-heir b{max-width:62px;font-size:11px}
+.ft-info{flex:0 0 250px;padding:10px 12px;border:1px solid var(--line-2);border-radius:6px;background:rgba(0,0,0,.3);font-size:13px;color:#cdbf9f}
+.ft-info p{margin:5px 0 0}.ft-info p.bad{color:var(--danger)}
+.ft-head{display:flex;gap:10px;align-items:center;margin-bottom:4px;color:var(--fg)}
+.ft-head img{width:56px;height:56px;flex:none;border:2px solid var(--line-2);border-radius:5px;background:rgba(0,0,0,.4);image-rendering:pixelated}
+.ft-head b{display:block;font-size:15px}
+.ft-unk{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:28px;font-weight:700;color:var(--muted)}
+.ft-unknown b{color:var(--muted)}.ft-unknown .ft-pic{border-style:dotted}
+.ft-head>.ft-pic{width:56px;height:56px;flex:none}
+.ft-houses{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.ft-house{padding:5px 11px;border:1px solid var(--line-2);border-radius:5px;background:rgba(0,0,0,.3);color:#cdbf9f;font:inherit;font-size:13px;cursor:pointer}
+.ft-house:hover{border-color:#cdbf9f}.ft-house.ft-sel{border-color:var(--accent);color:var(--fg);box-shadow:0 0 0 1px rgba(201,162,78,.35)}
+@media (max-width:560px){.ft-body{flex-direction:column}.ft-info{flex-basis:auto;align-self:stretch}}
+@media (max-height:430px){.ft-info{flex-basis:220px}.ft-pic{width:54px;height:54px}.ft-tile{width:74px}.ft-tile b{max-width:74px}.ft-side{left:calc(50% + 44px)}.ft-side::before{top:19px}.ft-heir .ft-pic{width:40px;height:40px}}

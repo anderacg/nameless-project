@@ -49,7 +49,7 @@ const unusedName=(list,sites)=>{const free=list.filter(n=>!sites.some(o=>o.name=
 
 // scouting a cave, a camp or a hideout (Site scout): the chance your scouts get a close look unseen: Scouting and Agility, the
 // night; a big band is hard to hide
-const scoutChance=()=>clamp(.4+.05*skill('scout')+.02*P.attr.agi+(darkness()>.5?.1:0)-(partySize()>20?.1:0),.15,.95);
+const scoutChance=()=>clamp(.4+.05*skill('scout')+.02*skill('athl')+(darkness()>.5?.1:0)-(partySize()>20?.1:0),.15,.95);
 // a rough count, and how strong they look against you, from outside (Lair guess)
 const roughly=n=>n<6?'a handful':n<10?'fewer than ten':n<14?'about a dozen':n<18?'fifteen or so':n<26?'about a score':'dozens';
 const looks=r=>r<.5?['They look far weaker than your band','good']:r<.8?['They look weaker than your band','good']:r<1.2?['They look about your match','gold']:r<1.8?['They look stronger than your band','bad']:['They look far too strong for you','bad'];
@@ -203,9 +203,9 @@ class Cave extends Site{
    an Agility point, the night, a small band (−: a bigger one)], lore [base, an Intellect point], the hermit's prices and XP, a
    map's price, drop (the cultists' and robbers' chance of gear), fight (how many of them: [from, to]) */
 const RUIN={wake:.3,chest:.75,aware:[.25,.05,.03],stealth:[.2,.03,.2,.15],small:12,lore:[.2,.06],hermit:{rumour:5,lore:10,xp:25},map:30,drop:.25,fight:[5,9]};
-const awareChance=()=>{const A=RUIN.aware;return clamp(A[0]+A[1]*skill('scout')+A[2]*P.attr.agi,.05,.95)};
-const stealthChance=()=>{const S=RUIN.stealth;return clamp(S[0]+S[1]*P.attr.agi+(darkness()>.5?S[2]:0)+(partySize()<=RUIN.small?S[3]:-S[3]),.05,.9)};
-const loreChance=()=>clamp(RUIN.lore[0]+RUIN.lore[1]*P.attr.int,.05,.95);
+const awareChance=()=>{const A=RUIN.aware;return clamp(A[0]+A[1]*skill('scout')+A[2]*skill('athl'),.05,.95)};
+const stealthChance=()=>{const S=RUIN.stealth;return clamp(S[0]+S[1]*skill('athl')+(darkness()>.5?S[2]:0)+(partySize()<=RUIN.small?S[3]:-S[3]),.05,.9)};
+const loreChance=()=>clamp(RUIN.lore[0]+RUIN.lore[1]*attrCheck('int'),.05,.95);
 // the people of the land round it (its holding's, or the nearest), and the realm that cares what you do to them
 const ruinHold=s=>landHold(s.x,s.y)||Spatial.nearestHolding(s.x,s.y);
 const ruinRealm=s=>{const h=ruinHold(s);return h&&h.owner&&h.owner!=='player'?h.owner:null};

@@ -238,6 +238,7 @@ function drawWorld(){
   // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
   // the road (road.js) and fights
   for(const s of W.sites)s.draw(ents,cam,V);
+  Remains.drawAll(ents,cam,V);// (the remains of a hero who fell, the graves, your family's plot, the lords' crypts: world/death.js, world/lineage.js)
   // the holdings (and their estates) are drawn as their placed buildings (lotEnts, called with the estates below)
   drawParties(ents,cam,V);// lords, bands, patrols and your companions' parties (each party draws itself: parties.js)
   for(const m of W.monsters)asMonster(m).draw(ents,cam,V);
@@ -595,6 +596,7 @@ function drawBattle(){
   for(const p of B.parts){ctx.save();effectTransform(p.x,p.y);if(p.stuck){const x=Math.round(p.x),y=Math.round(p.y);ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle='#c9b48a';ctx.fillRect(x-p.stuck,y-3,1,2);ctx.fillRect(x-2*p.stuck,y-5,1,2);ctx.fillStyle='#e8e4d0';ctx.fillRect(x-3*p.stuck,y-6,1,1);ctx.globalAlpha=1;ctx.restore();continue}
     ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x),Math.round(p.y),2,2);ctx.restore()}
   vfxAir();stateFxAir();heroFxAir();// (sparks, glows, embers, flying blood: vfx.js)
+  if(DROPS.on)BattleDrops.of(B).draw();// (what falls: its dots and the icons on the ground, battle/drops.js)
   // (a number pops up big and settles)
   for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1;if(k===1){txt(f.t,Math.round(f.x),Math.round(f.y),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(f.y));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();
@@ -639,14 +641,13 @@ function frame(){
    carried, troops, power and pace as icon chips (what runs short is red); where you are and whom you serve. Your hero's health
    and mana are in the Hero window (C) and the battle. The top bar: the day and the time */
 // the left panel's group at the bottom left (the owner, 2026-11-04: "a level up button at the bottom left corner ... like a square
-// box and animated in blinking"): its one notice now, what a level and your proficiencies leave you to choose (P.lvUp: health,
-// stamina or mana; treePending: a proficiency's tree's points to spend), a square that blinks till they are chosen; a click opens your
-// Skills (as K) on the level's choice, else the tree that waits. None: the group hidden
-function lvBox(){const el=$('#lgroup');if(!el)return;const lv=P.lvUp||0,t=typeof treePending==='function'?treePending().length:0,n=lv+t,sig=lv+'/'+t;if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.hidden=!n;
-  const what=(lv?lv+' level choice'+(lv>1?'s':''):'')+(lv&&t?' and ':'')+(t?t+' skill point'+(t>1?'s':''):'');
-  el.innerHTML=n?'<button class="lvup" type="button" title="'+what+' waiting (K)" aria-label="'+what+' waiting">'+icon('skills',22)+'<b>+'+n+'</b><small>'+(lv?'Level up':'New skill')+'</small></button>':''}
-{const g=document.getElementById('lgroup');if(g)g.addEventListener('click',e=>{if(!e.target.closest('.lvup'))return;if(G.mode==='skills')return;const t=!(P.lvUp>0)&&treePending()[0];
-  if(t){G.skTree=t;openSkills('talents')}else openSkills('prof')})}
+// box and animated in blinking"): its one notice now, the skill points your levels left you to spend (treePending), a square that
+// blinks till they are spent; a click opens your Skill trees (as K) on a tree that has a node to take. None: the group hidden
+function lvBox(){const el=$('#lgroup');if(!el)return;const n=typeof treePending==='function'?treePending().length:0,sig=String(n);if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.hidden=!n;
+  const what=n+' skill point'+(n>1?'s':'');
+  el.innerHTML=n?'<button class="lvup" type="button" title="'+what+' to spend (K)" aria-label="'+what+' to spend">'+icon('skills',22)+'<b>+'+n+'</b><small>Skill point'+(n>1?'s':'')+'</small></button>':''}
+{const g=document.getElementById('lgroup');if(g)g.addEventListener('click',e=>{if(!e.target.closest('.lvup'))return;if(G.mode==='skills')return;const t=treePending()[0];
+  if(t)G.skTree=t;openSkills('talents')})}
 function updateHUD(force){
   lvBox();
   const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=bandFitness(),fp=Math.round(F.pct),mo=Math.round(P.morale),lh=landHold(P.x,P.y),sp=bandPace();

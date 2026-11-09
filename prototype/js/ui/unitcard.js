@@ -51,7 +51,7 @@ function unitCard(k,from){
    character now against its original, and what grew it, in the order a battle gives it. A troop group: its kind's own numbers (ST),
    then your talents (tHp, tDmg: as Unit.fieldStats), its rank (proficiency on damage and health, its ladder's reach and range
    and their mastery: its kit's, battle/unitkit.js UnitKit; in battle rankskills.js rankUnit) and its upgrades (world/buffs.js Buffs). A character: the one formula
-   on its record stripped (its kind at its level and race; your hero's background bonus kept), then its attributes, disciplines,
+   on its record stripped (its kind at its level and race; your hero's background and race bonus kept), then its disciplines,
    talents and gear given back in turn, the last its numbers now (c.stats()); then its upgrades. Each step its numbers (unitNumbers).
    statGrowth(x) → {s: its numbers now, stats: {id: {base, now, parts: [[label, n]]}}}: a part what one source added; a number
    its original has not (a bow's range on a swordsman) shows no growth */
@@ -76,9 +76,9 @@ function troopGrowth(g){
   for(const b of Buffs.list(g.id))s=step(BUFFS[b.id].n,Buffs.apply(s,[b],k));
   return out}
 // (a character's steps: the same formula on a view of its record, each source given back in turn)
-const GROW_SOURCES=[['Attributes',['attr']],['Skills',['sk']],['Talents',['tree','perks']],['Gear',['gear']]];
+const GROW_SOURCES=[['Skills',['sk']],['Talents',['tree','perks']],['Gear',['gear']]];
 function charGrowth(c){
-  const now=c.stats(),hero=c.role==='hero',o=hero?P:c.o,rec={attr:{str:0,agi:0,int:0,cha:0},sk:Object.fromEntries(Object.entries(o.sk||{}).map(([k,v])=>[k,{...v,lv:0}])),tree:(o.tree||[]).filter(id=>id==='start'),perks:[],gear:{}};
+  const now=c.stats(),hero=c.role==='hero',o=hero?P:c.o,rec={sk:Object.fromEntries(Object.entries(o.sk||{}).map(([k,v])=>[k,{...v,lv:0}])),tree:(o.tree||[]).filter(id=>id==='start'),perks:[],gear:{}};
   const view=r=>{if(hero)return Object.assign(Object.create(P),r).heroStats();const v=Object.create(c);v.o={...o,...r};return v.base()};
   const out=[['',view(rec)]];GROW_SOURCES.forEach(([label,keys],i)=>{for(const k of keys)rec[k]=o[k];out.push([label,i<GROW_SOURCES.length-1?view(rec):now])});
   const id=hero?'hero':c.role==='companion'?'comp_'+c.id:null;let s=now;

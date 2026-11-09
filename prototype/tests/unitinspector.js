@@ -26,10 +26,10 @@ Kit.suite(({ok})=>{
   ok(['Missile attack','Range','Ammunition'].every(n=>b.includes(n))&&!b.includes('Reach')&&!b.includes('Charge bonus'),'a bowman: missile attack, range and ammunition ('+b.join(', ')+')')}
  {const pane=open(foot.id),s=t.ST.hum_foot;ok(stat(pane,'Melee attack').querySelector('.uc-v').textContent.startsWith(String(Math.round(t.meleeDmgOf(s))))&&stat(pane,'Armour').querySelector('.uc-v').textContent===String(t.armorValue(s))&&pane.querySelector('.uc-strength').textContent.includes('8 / '+t.unitSize('hum_foot'))&&!q('[data-act="party-unit-tab"]'),'a troop group: its actual attack and armour value, its strength of its unit’s size, and no tabs')}
  // the hero: real zeros, his tree, his equipment (only what he wears) and back
- let pane=open('hero');P.mp=0;P.lvUp=0;P.attr.int=0;t.renderChar();pane=q('.fb-unit-inspector');
+ let pane=open('hero');P.mp=0;t.renderChar();pane=q('.fb-unit-inspector');
  t.act('army-edit','hero');ok(q('[data-act="army-auto-reinforce"]').disabled,'hero Auto Reinforce is disabled inside Manage Group');t.act('army-edit-close');pane=q('.fb-unit-inspector');
  ok(/^0 \//.test(stat(pane,'Mana').querySelector('.uc-v').textContent),'zero hero mana is a real value');
- ok([...tab('character').querySelectorAll('.fb-stat')].find(e=>/Choices waiting/.test(e.textContent))?.querySelector('strong').textContent===String(t.treePending().length),'the choices waiting stay readable, on the Character tab');
+ ok([...tab('character').querySelectorAll('.fb-stat')].find(e=>/Skill points to spend/.test(e.textContent))?.querySelector('strong').textContent===String(t.talentsOf(P).points().left),'the skill points to spend stay readable, on the Character tab');
  q('.fb-unit-actions [data-act="open-skills"]').click();ok(G.mode==='skills'&&!G.skWho,'hero Development opens the actual hero tree');t.act('sk-close');
  t.act('party-unit-tab','gear');ok(tab('gear')&&!/Empty/.test(tab('gear').textContent),'the Equipment tab lists only what he wears');t.act('party-equipment');ok(G.mode==='inv'&&G.invView==='equipment'&&q('[data-act="party-equipment-back"]'),'hero equipment opens the equipment view with Back to Army');
  t.act('party-equipment-back');ok(G.mode==='char'&&t.partyView().sel==='hero'&&tab('gear'),'Back to Army returns to the same hero, on his Equipment tab');

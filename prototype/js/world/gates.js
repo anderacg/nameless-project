@@ -45,7 +45,7 @@ class Gates{
     if(!best)return;const g=q.person,kind=role==='merchant'?'token':'letter';this.give(best,kind,h.name);
     log((g?Givers.label(g):'The '+role+' of '+h.name)+' gives you '+(kind==='token'?'a guild token for the market of ':'a letter of introduction to ')+best.name+'. Its gate will open to you.','gold','story')}
   // (the odds of a way in: a bribe, a night's slip; the words for them)
-  static odds(way){const X=GATE_WAYS[way],a=P.attr||{};return clamp(way==='bribe'?X.base+skill('pers')*X.pers+(a.cha||0)*X.cha:X.base+skill('scout')*X.scout+(a.agi||0)*X.agi,.05,.9)}
+  static odds(way){const X=GATE_WAYS[way];return clamp(way==='bribe'?X.base+skill('pers')*X.pers+skill('trade')*X.cha:X.base+skill('scout')*X.scout+skill('athl')*X.agi,.05,.9)}
   static oddsWord(p){return p>=.7?'likely':p>=.45?'an even chance':p>=.25?'a long shot':'all but hopeless'}
   static barred(t){return (P.gateBan&&P.gateBan[t.name]||0)>=G.day}
   // a quest seals a holding (why: the words at its gate) or opens it again (why null)

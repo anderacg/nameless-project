@@ -11,6 +11,7 @@ function act(a,arg){
   if(a==='auto')return autoResolve();
   if(a==='flee')return flee();
   if(a==='cont'){lootEnd();updateHUD(true);if(G.encAgain){const e=G.encAgain;G.encAgain=null;return startEncounter(e)}// (run down after withdrawing: face them again)
+    if(Death.slain){toWorld();return Death.open()}// (slain by beasts: world/death.js)
     if(G.capture){toWorld();return showCapture()}if(Captivity.held){toWorld();return Captivity.open()}return toWorld()}// (taken captive: world/captivity.js)
   if(a==='leave'){if(G.town&&G.town.inScene)return backToScene();G.town=null;G.scene=null;return toWorld()}
   if(a==='back-town'){lootEnd();G.mode='town';renderTown();return}
@@ -266,7 +267,7 @@ window.addEventListener('keydown',e=>{
   if(k==='tab'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!G.modal&&['world','scene','battle'].includes(G.mode)){e.preventDefault();if(!e.repeat)menuKey();return}// Tab: the Game Menu (hub.js; in a window, the menu too, Tab moves between its buttons)
   if(k==='escape'){e.preventDefault();if(window.battleArmyHud?.close()||window.mobileBattleHud?.close()||window.mobileWorldHud?.close()||ActionRing.close()||dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
   if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat){if(e.shiftKey)toggleMute();else if(G.mode==='battle'&&B){if(!KITS.keys2)shootingCycle()}else fullMapKey()}return}// M: the full map (map.js), in battle free (step 1's keys: the Shooting stance's next choice, commands.js); Shift+M: the sound off or on, anywhere (ui.js)
-  if(/^[0-9]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&(railKey(k)||Conversation.key(k))){e.preventDefault();return}// a number: a place on the window's rail (window.js), or a reply in a talk (story/conversation.js)
+  if(/^[0-9]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&(railKey(k)||railActKey(k)||Conversation.key(k))){e.preventDefault();return}// a number: a place on the window's rail (window.js), a choice on a story's page (story/choice.js), or a reply in a talk (story/conversation.js)
   if(/^[qwer]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railActKey(k)){e.preventDefault();return}// Q, W, E, R: the window's key actions (window.js)
   if(G.mode==='battle'&&B){
     // the battle's speed: Space pauses (orders still go: a tactical pause), [ and ] slow it down and speed it up

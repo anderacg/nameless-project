@@ -893,7 +893,7 @@ class ScoutQuest extends JobQuest{
   }
   // (its words: a lord you have not met named only once you take the work, his realm's army till then: knowledge.js)
   words(f,by){
-    const n=KNOWLEDGE.knowsLord(f)?f.name:null,who=n?n+'’s army':'a '+FACS[f.fac].n+' army';this.by=by||this.by;
+    const n=KNOWLEDGE.knowsLord(f)?f.name:null,who=n?n+'’s army':an(FACS[f.fac].n+' army');this.by=by||this.by;
     this.cause='Word is '+(n?n+' of the '+FACS[f.fac].n:'a lord of the '+FACS[f.fac].n)+' is in the field with '+f.troops.length+' men.';
     this.title='Find '+who;
     this.text=this.by+' wants to know where '+who+' is, and how strong. Find it, and report.';

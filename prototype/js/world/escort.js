@@ -57,9 +57,6 @@ class EscortQuest extends StepQuest{
     this.x=this.to.x;
     this.y=this.to.y;
   }
-  todo(){
-    return 'Bring '+this.pn+' to '+this.to.name+'.';
-  }
   rewardLine(){
     return Outcome.describe(this.prize)||'their thanks';
   }
@@ -67,6 +64,21 @@ class EscortQuest extends StepQuest{
   // day), captured (a battle lost), left (abandoned): the steps' own, its lines its kind's (Escort.say)
   get reaches(){
     return true;
+  }
+  // (one waiting at a holding after the beasts, wait: world/death.js; there, they ride with you again, and if it is their place, are
+  // there)
+  near(){
+    return !this.wait&&super.near();
+  }
+  arrive(t){
+    if(this.wait&&t.name===this.wait){
+      this.wait=null;
+      log(cap1(this.pn)+' rides with you again.','good','story',this.journalKey);
+    }
+    if(!this.wait)super.arrive(t);
+  }
+  todo(){
+    return this.wait?'Find '+this.pn+' in '+this.wait+', then bring them to '+this.to.name+'.':'Bring '+this.pn+' to '+this.to.name+'.';
   }
   shown(line){
     if(!this.quiet)Escort.show(this,line);
@@ -127,7 +139,7 @@ const Escort={
   // what they eat: food a day, all of them; an hour of it (as the band's: world/parties.js foodHour)
   eatDay(){
     let n=0;
-    for(const q of P.quests)if(q.type==='escort')n+=q.eat||0;
+    for(const q of P.quests)if(q.type==='escort'&&!q.wait)n+=q.eat||0;
     return n;
   },
   foodHour(moving){
@@ -137,6 +149,7 @@ const Escort={
   // a battle lost (e: its encounter): each passenger carried off by the victors; a rescue's held by them (by)
   lost(e){
     for(const q of Escort.list()){
+      if(q.wait)continue;
       if(q.rescue)q.by=carryOff(e,q.id,q.pn);
       q.fail(null,'captured');
     }
@@ -161,12 +174,12 @@ const Escort={
   tag(){
     const L=Escort.list();
     if(!L.length)return null;
-    return ['Escort'+(L.length>1?' ×'+L.length:''),'good',L.map(q=>cap1(q.pn)+' rides with you to '+q.to.name+' ('+Escort.left(q)+')').join('. ')+'. They eat '+Math.round(Escort.eatDay()*100)/100+' food a day, do not fight and take no place in your ranks.'];
+    return ['Escort'+(L.length>1?' ×'+L.length:''),'good',L.map(q=>cap1(q.pn)+(q.wait?' waits for you in '+q.wait+', bound for ':' rides with you to ')+q.to.name+' ('+Escort.left(q)+')').join('. ')+'. They eat '+Math.round(Escort.eatDay()*100)/100+' food a day, do not fight and take no place in your ranks.'];
   },
   html(){
     const L=Escort.list();
     if(!L.length)return '';
-    return '<div class="lab" style="margin-top:6px">Passengers ('+L.length+' / '+ESCORT.max+')</div>'+L.map(q=>'<div class="row"><div class="info"><strong>'+cap1(q.pn)+'</strong><small>To '+q.to.name+', '+Escort.way(q)+' · '+Escort.left(q)+' · eats '+q.eat+' food a day · does not fight</small></div></div>').join('');
+    return '<div class="lab" style="margin-top:6px">Passengers ('+L.length+' / '+ESCORT.max+')</div>'+L.map(q=>'<div class="row"><div class="info"><strong>'+cap1(q.pn)+'</strong><small>'+(q.wait?'Waits for you in '+q.wait+' · ':'')+'To '+q.to.name+', '+Escort.way(q)+' · '+Escort.left(q)+' · eats '+q.eat+' food a day · does not fight</small></div></div>').join('');
   },
   show(q,line){
     if(G.mode!=='world'||G.modal)return;

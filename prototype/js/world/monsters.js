@@ -30,7 +30,7 @@ class Monster extends Party{
       ctx.save();ctx.translate(sx,sy-lift);if(Y?m.dir<0:faceDir(m)<0)ctx.scale(-1,1);ctx.drawImage(s,-(w>>1),-s.height+2);ctx.restore();
       if(!Y)txt((m.n>1?m.n+' ':'')+'Lv'+m.lv,sx,sy-h,STANCE_COL[M.aggro||stance(monPower(m))==='afraid'?stance(monPower(m)):'wary'],'center')}})}
   mapDot(V){const Y=MONSTERS[this.id].mythic;return yourSight(V).sees(this.x,this.y)?[Y?'#ff7a30':'#c58af0',Y?2:1]:null}
-  tip(){const M=MONSTERS[this.id];return '<b>'+(M.n||this.id)+(this.n>1?' ×'+this.n:'')+'</b><small>Level '+this.lv+tipOdds(monPower(this))+(this.id==='wolf'&&this.alpha?' · Led by an Alpha Wolf':'')+'</small><span class="act">Click: fight</span>'}
+  tip(){const M=MONSTERS[this.id];return '<b>'+(this.eater?Death.nameOf(this)+', ':'')+(M.n||this.id)+(this.n>1?' ×'+this.n:'')+'</b><small>Level '+this.lv+tipOdds(monPower(this))+(this.id==='wolf'&&this.alpha?' · Led by an Alpha Wolf':'')+'</small><span class="act">Click: fight</span>'}
   // as one side of a fight on the map (fights.js), the face every party there shows: its fighters (n of its kind), its strength
   // (monPower; in a fight, its fighters at its level), its name, no realm; it loses its fighters one by one (n goes down)
   get troops(){return monsterTroops(this)}
@@ -124,7 +124,7 @@ function updateMonsters(d){BAND_GRID=beastPreyGrid();try{return lodEach(W.monste
 function startMonster(m){startEncounter({kind:'monster',ref:m,lv:m.lv,list:monsterTroops(m)})}
 // roll trophies and gear for a won monster fight, into the bag (the victory panel lists them with the rest of the spoils)
 function monsterLoot(m,slain){
-  const M=MONSTERS[m.id],mats=slain.filter(k=>k===M.unit||m.id==='wolf'&&k===WOLF_ALPHA.unit).length;
+  const M=MONSTERS[m.id],mats=Math.max(0,slain.filter(k=>k===M.unit||m.id==='wolf'&&k===WOLF_ALPHA.unit).length-(G.enc?.field?.mats?.[M.mat]||0));// (the hides the field gave already: battle/drops.js)
   if(mats&&M.mat){const kept=invAdd('mat',M.mat,mats);if(kept<mats)log('Your bag is full. You leave '+(mats-kept)+' '+MATS[M.mat].n.toLowerCase()+(mats-kept>1?'s':'')+' behind.','bad')}
   if(M.meat&&mats){const n=invAdd('good','meat',mats*M.meat);if(n)worldEmit('meat:hunted',{n})}
   for(const [it,ch] of M.gear)if(monRng().chance(ch*(1+.1*(m.lv-1)))){

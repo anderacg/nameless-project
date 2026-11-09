@@ -1,0 +1,105 @@
+'use strict';
+/* ---------- a grave's place on the map (the owner, 2026-11-09: "Can the grave be a special area? And more detail"; world/death.js
+   Grave): a ground of its own and what stands on it, made once into a picture (sprite, kept by kind and seed), and what moves on
+   it each frame (live: the light, the candles, the cloth, the banner, fireflies by night).
+   - a cairn (no heir, where you fell): trodden earth, wildflowers, a ring of standing stones; the cairn of stacked stones, moss on
+     them, your weapon planted in its top, a cloth of your banner's colour tied to its hilt;
+   - a grave (at your heir's holding): a fenced plot with its gate to the front, a path of stones to it; a carved headstone on its
+     slab, the earth mound before it in flowers, two candles at its foot, your heir's banner on a pole beside it.
+   Its numbers and colours: data/death.js DEATH.grave.art ---------- */
+const GraveArt={
+  cache:new Map(),
+  // (the pictures, w × h px, their foot at (ax, ay): its ground, drawn under everything, and what stands on it, among the figures)
+  sprite(kind,seed){const key=kind+':'+seed;let s=this.cache.get(key);if(s)return s;
+    const A=DEATH.grave.art,C=DEATH.grave.col,w=A.w,h=A.h,mk=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c},gcv=mk(),cv=mk(),ax=w>>1,ay=h-A.foot;
+    let g=gcv.getContext('2d');const px=(x,y,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),1,1)},rect=(x,y,ww,hh,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),ww,hh)},hash=(x,y,k)=>PX.hash(x,y,seed*17+k);
+    // (the ground: trodden earth in an oval, its edge broken, grass tufts, flowers)
+    const [rx,ry]=A.groundOf[kind]||A.ground;
+    for(let y=-ry;y<=ry;y++)for(let x=-rx;x<=rx;x++){const d=(x*x)/(rx*rx)+(y*y)/(ry*ry);if(d>1||d>.75&&hash(x,y,1)<.5)continue;px(ax+x,ay+y,hash(x,y,2)<.3?C.earth2:C.earth)}
+    for(let i=0;i<(A.groundOf[kind]?A.tufts>>1:A.tufts);i++){const a=hash(i,0,3)*6.283,r=.7+hash(i,0,4)*.35,x=ax+Math.cos(a)*rx*r,y=ay+Math.sin(a)*ry*r;px(x,y,C.grass);px(x+1,y-1,C.grass2)}
+    for(let i=0;i<(kind==='remains'?0:kind==='small'?3:A.flowers);i++){const a=hash(i,1,5)*6.283,r=.3+hash(i,1,6)*.6,x=ax+Math.cos(a)*rx*r,y=ay+Math.sin(a)*ry*r;px(x,y,C.flowers[Math.floor(hash(i,1,7)*C.flowers.length)])}
+    // (a grave's path of stones from its gate toward you)
+    if(kind==='grave'){const F=A.fence;for(let i=0;i<4;i++)rect(ax-1+((i&1)?1:-1),ay+F.h/2+1+i*2,2,1,C.light)}
+    g=cv.getContext('2d');this[kind](ax,ay,px,rect,hash);
+    s={ground:gcv,cv,ax,ay};this.cache.set(key,s);return s},
+  // (remains no one buried: bones in the grass, a skull, ribs, a torn cloak, the weapon fallen by them)
+  remains(ax,ay,px,rect,hash){const C=DEATH.grave.col;
+    rect(ax-6,ay-1,9,2,C.cloak);rect(ax-5,ay-2,5,1,C.cloak);px(ax+2,ay-2,C.cloak);
+    rect(ax+3,ay-3,3,2,C.bone);px(ax+4,ay-2,C.dark);px(ax+3,ay-1,C.bone);
+    for(let i=0;i<4;i++)rect(ax-4+i*2,ay-2,1,2,C.bone);rect(ax-6,ay+1,4,1,C.bone);rect(ax+1,ay+2,3,1,C.bone);
+    rect(ax-8,ay+3,9,1,C.blade);px(ax-8,ay+3,C.light);rect(ax+1,ay+2,1,3,C.guard);rect(ax+2,ay+3,2,1,C.grip)},
+  // (a small grave: an earth mound, a cross of two sticks bound, a few stones round it)
+  small(ax,ay,px,rect,hash){const C=DEATH.grave.col;
+    rect(ax-5,ay-1,10,3,C.mound);rect(ax-4,ay-2,8,1,C.mound);rect(ax-3,ay-2,6,1,C.earth2);
+    rect(ax,ay-10,1,9,C.wood);rect(ax-2,ay-8,5,1,C.wood);px(ax,ay-8,C.wood2);px(ax+1,ay-10,C.wood2);
+    for(let i=0;i<5;i++){const a=i/5*6.283+.5;rect(ax+Math.round(Math.cos(a)*6),ay+Math.round(Math.sin(a)*3),2,1,i%2?C.stone:C.stone2)}},
+  // (a lord's crypt: a house of stone on its steps, its pediment, two columns, the door dark under its arch, a band cut with names)
+  crypt(ax,ay,px,rect,hash){const C=DEATH.grave.col,sy=ay;
+    rect(ax-12,sy,25,2,C.shade);rect(ax-11,sy-2,23,2,C.stone2);rect(ax-9,sy-14,19,12,C.stone);rect(ax+8,sy-14,2,12,C.shade);
+    for(const cx of [ax-8,ax+6])rect(cx,sy-13,2,11,C.light);
+    for(let i=0;i<6;i++){const w=21-i*3.4;rect(ax-Math.round(w/2),sy-15-i,Math.round(w),1,i?C.stone:C.stone2);px(ax+Math.round(w/2)-1,sy-15-i,C.shade)}
+    rect(ax-6,sy-13,13,1,C.carve);rect(ax-2,sy-9,5,7,C.dark);rect(ax-1,sy-10,3,1,C.dark);px(ax,sy-6,C.shade);
+    rect(ax-4,sy+2,9,1,C.light)},
+  // (a headstone over a mound in flowers)
+  stone(ax,ay,px,rect,hash){const C=DEATH.grave.col,sy=ay-1;
+    rect(ax-4,sy,9,2,C.shade);rect(ax-3,sy-8,7,8,C.stone);rect(ax-2,sy-9,5,1,C.stone);rect(ax+2,sy-8,1,8,C.shade);px(ax-3,sy-8,C.light);
+    rect(ax-1,sy-6,3,1,C.carve);rect(ax-1,sy-4,3,1,C.carve);
+    rect(ax-5,sy+2,11,3,C.mound);rect(ax-4,sy+2,9,1,C.earth2);for(let i=0;i<5;i++)px(ax-4+Math.round(hash(i,3,13)*8),sy+3+Math.round(hash(i,3,14)),C.flowers[i%C.flowers.length])},
+  // (a tomb: a tall stone on its steps, capped, its plaque carved; railed in iron, spear-tipped; flower beds at its foot)
+  tomb(ax,ay,px,rect,hash){const C=DEATH.grave.col,R=DEATH.grave.art.rail,x0=ax-R.w/2,y0=ay-R.h/2,x1=ax+R.w/2,y1=ay+R.h/2,
+      rail=(x,y)=>{rect(x,y-5,1,5,C.iron);px(x,y-6,C.light)};
+    rect(x0,y0-3,R.w,1,C.iron);for(let x=x0;x<=x1;x+=R.gap)rail(x,y0);for(let y=y0;y<=y1;y+=3){rail(x0,y);rail(x1,y)}
+    const sy=ay;rect(ax-8,sy,17,2,C.shade);rect(ax-7,sy-2,15,2,C.stone2);rect(ax-5,sy-4,11,2,C.stone);
+    for(let i=0;i<20;i++){const w=i<16?5:5-Math.ceil((i-15)*1.2);if(w<=0)break;rect(ax-(w>>1),sy-5-i,w,1,C.stone);px(ax+(w>>1),sy-5-i,C.shade)}px(ax-2,sy-20,C.light);
+    rect(ax-2,sy-9,5,3,C.carve);px(ax,sy-8,C.light);
+    for(const dx of [-12,8])for(let i=0;i<4;i++)px(ax+dx+i,sy+1+(i&1),C.flowers[(i+dx)&3]);
+    for(const [a,b] of [[x0,ax-3],[ax+3,x1]])rect(a,y1-3,b-a+1,1,C.iron);for(let x=x0;x<=x1;x+=R.gap)if(Math.abs(x-ax)>2)rail(x,y1)},
+  cairn(ax,ay,px,rect,hash){const C=DEATH.grave.col,A=DEATH.grave.art,R=A.ring;
+    // (the ring of standing stones round it, the back ones first)
+    const ring=[];for(let i=0;i<R.n;i++){const a=i/R.n*6.283+.3;ring.push([ax+Math.cos(a)*R.rx,ay+Math.sin(a)*R.ry])}ring.sort((a,b)=>a[1]-b[1]);
+    const stone=(x,y,hh)=>{rect(x-1,y-hh,3,hh,C.stone);rect(x+1,y-hh,1,hh,C.shade);px(x-1,y-hh,C.light);rect(x-1,y,3,1,C.dark)};
+    for(const [x,y] of ring.filter(p=>p[1]<ay))stone(x,y,3+Math.round(hash(x,y,8)*2));
+    // (the cairn: rows of stones, wide at its foot, moss on some)
+    let y=ay;for(const wd of A.rows){const x0=ax-(wd>>1)+Math.round((hash(wd,y,15)-.5)*2);for(let x=x0;x<x0+wd;){const sw=2+Math.round(hash(x,y,9)),col=[C.stone,C.stone2,C.light][Math.floor(hash(x,y,10)*3)];
+        rect(x,y-2,sw,2,col);rect(x,y,sw,1,C.dark);if(hash(x,y,11)<.2)px(x,y-2,C.moss);x+=sw+(hash(x,y,12)<.15?1:0)}y-=2}
+    // (your weapon planted in its top: the blade, the guard, the grip, the pommel)
+    const top=y,sx=ax;rect(sx,top-A.blade,1,A.blade,C.blade);px(sx,top-A.blade,C.light);rect(sx-2,top-A.blade-1,5,1,C.guard);rect(sx,top-A.blade-4,1,3,C.grip);px(sx,top-A.blade-5,C.guard);
+    for(const [x,y2] of ring.filter(p=>p[1]>=ay))stone(x,y2,3+Math.round(hash(x,y2,8)*2))},
+  grave(ax,ay,px,rect,hash){const C=DEATH.grave.col,F=DEATH.grave.art.fence;
+    // (the back of the fence, its sides)
+    const x0=ax-F.w/2,y0=ay-F.h/2,x1=ax+F.w/2,y1=ay+F.h/2,post=(x,y)=>{rect(x,y-4,1,4,C.wood);px(x,y-4,C.wood2)};
+    rect(x0,y0-2,F.w,1,C.wood2);rect(x0,y0-3,F.w,1,C.wood);for(let x=x0;x<=x1;x+=F.gap)post(x,y0);
+    for(let y=y0;y<=y1;y+=3){post(x0,y);post(x1,y)}rect(x0,y0,1,F.h,C.wood2);rect(x1,y0,1,F.h,C.wood2);
+    // (the headstone on its slab, carved; the mound in flowers before it)
+    const sx=ax,sy=ay-2;rect(sx-6,sy,13,2,C.shade);rect(sx-4,sy-11,9,11,C.stone);rect(sx-3,sy-12,7,1,C.stone);rect(sx-2,sy-13,5,1,C.stone);rect(sx+3,sy-11,2,11,C.shade);px(sx-4,sy-11,C.light);px(sx-3,sy-12,C.light);
+    rect(sx,sy-10,1,6,C.carve);rect(sx-2,sy-8,5,1,C.carve);rect(sx-2,sy-3,5,1,C.carve);
+    rect(sx-5,sy+2,11,4,C.mound);rect(sx-4,sy+2,9,1,C.earth2);for(let i=0;i<6;i++)px(sx-4+Math.round(hash(i,2,13)*8),sy+3+Math.round(hash(i,2,14)*2),C.flowers[i%C.flowers.length]);
+    // (the front of the fence, its gate open in the middle)
+    for(const [a,b] of [[x0,ax-3],[ax+3,x1]]){rect(a,y1-2,b-a+1,1,C.wood2);rect(a,y1-3,b-a+1,1,C.wood)}for(let x=x0;x<=x1;x+=F.gap)if(Math.abs(x-ax)>2)post(x,y1)},
+  // (a candle, its flame flickering, a little light round it)
+  candle(x,y,t){const C=DEATH.grave.col,fl=Math.sin(t*9+x)*.5+Math.sin(t*13.7+x*2)*.5;ctx.fillStyle=C.wax;ctx.fillRect(x,y,1,2);ctx.globalAlpha=.25+.1*fl;ctx.fillStyle=C.glow;ctx.beginPath();ctx.arc(x+.5,y-1,2.5,0,6.283);ctx.fill();
+    ctx.globalAlpha=1;ctx.fillStyle=fl>.3?C.flame2:C.flame;ctx.fillRect(x,y-1-(fl>.6?1:0),1,1)},
+  // (your family's plot: a low wall of stones round its graves, its gate to the front under a wooden arch; drawn on the ground)
+  plot(ents,cam,V,fp,graves){if(!graves.length||!graves.some(g=>g.inView(V)))return;const C=DEATH.grave.col,M=DEATH.grave.plot.wall;
+    const x0=Math.min(...graves.map(g=>g.x))-M,x1=Math.max(...graves.map(g=>g.x))+M,y0=Math.min(...graves.map(g=>g.y))-M,y1=Math.max(...graves.map(g=>g.y))+M*.7,gx=Math.round((x0+x1)/2);
+    const wall=(ax,ay,bx,by)=>{const n=Math.max(1,Math.round(Math.hypot(bx-ax,by-ay)/3));for(let i=0;i<=n;i++){const x=Math.round(ax+(bx-ax)*i/n-cam.x),y=Math.round(ay+(by-ay)*i/n-cam.y);
+      ctx.fillStyle=i%2?C.stone:C.stone2;ctx.fillRect(x-1,y-2,3,2);ctx.fillStyle=C.dark;ctx.fillRect(x-1,y,3,1)}};
+    ents.push({y:y0-1e5+1,f:()=>{ctx.save();wall(x0,y0,x1,y0);wall(x0,y0,x0,y1);wall(x1,y0,x1,y1);wall(x0,y1,gx-5,y1);wall(gx+5,y1,x1,y1);ctx.restore()}});
+    ents.push({y:y1,f:()=>{const x=Math.round(gx-cam.x),y=Math.round(y1-cam.y);ctx.save();ctx.fillStyle=C.wood;ctx.fillRect(x-5,y-9,1,9);ctx.fillRect(x+4,y-9,1,9);ctx.fillRect(x-5,y-10,10,1);
+      ctx.fillStyle=C.wood2;ctx.fillRect(x-3,y-13,7,3);ctx.fillStyle=C.carve;ctx.fillRect(x-2,y-12,5,1);ctx.restore()}})},
+  // what moves on it this frame (o: the grave; x, y: its foot on the screen; t: seconds; night)
+  live(o,x,y,t,night,banner){const C=DEATH.grave.col,A=DEATH.grave.art;
+    if(o.kind==='crypt'){this.candle(x-5,y-2,t);this.candle(x+5,y-2,t);const col=banner||C.cloth;for(let i=0;i<4;i++){const f=Math.round(Math.sin(t*3+i)*.4);ctx.fillStyle=col;ctx.fillRect(x-2+i,y-13+f,1,3+(i===1||i===2?1:0))}}
+    if(o.kind==='cairn'){const top=y-A.rows.length*2-A.blade-3,c=o.cloth||C.cloth;for(let i=0;i<4;i++){const f=Math.sin(t*5+i*.9)*(i*.5);ctx.fillStyle=c;ctx.fillRect(Math.round(x+1+i),Math.round(top+f),1,2)}}
+    else if(o.kind==='grave'){const F=A.fence,sy=y-2;
+      // (two candles at its foot)
+      for(const dx of [-5,5])this.candle(x+dx,sy,t);
+      // (the heir's banner on its pole, waving)
+      const bx=x+F.w/2-4,by=y-F.h/2-14;ctx.fillStyle=C.wood;ctx.fillRect(bx,by,1,14);const col=o.fac&&FACS[o.fac]?FACS[o.fac].col:C.cloth;
+      for(let i=0;i<5;i++){const f=Math.round(Math.sin(t*4-i*.8)*(i*.3));ctx.fillStyle=col;ctx.fillRect(bx+1+i,by+1+f,1,4)}}
+    else if(o.kind==='tomb'){const R=A.rail;for(const [dx,dy] of [[-R.w/2+2,-R.h/2+1],[R.w/2-2,-R.h/2+1],[-R.w/2+2,R.h/2-2],[R.w/2-2,R.h/2-2]])this.candle(x+dx,y+dy,t)}
+    // (fireflies by night, round its ground)
+    if(night)for(let i=0;i<A.flies;i++){const a=t*.4+i*2.4,fx=x+Math.cos(a*1.3+i)*A.ground[0]*.9,fy=y-3+Math.sin(a+i*1.7)*A.ground[1]*.9-Math.abs(Math.sin(a*2))*3,on=.5+.5*Math.sin(t*3+i*1.9);
+      ctx.globalAlpha=.25*on;ctx.fillStyle=C.fly;ctx.beginPath();ctx.arc(fx,fy,1.6,0,6.283);ctx.fill();ctx.globalAlpha=on;ctx.fillRect(Math.round(fx),Math.round(fy),1,1)}
+    ctx.globalAlpha=1}
+};

@@ -10,11 +10,11 @@
      his own (captives.js recruitCaptive).
    In battle a soldier is a link to its Unit (u.unit) and its own state there (health, morale, stamina, place): every one is made
    by the Unit's fieldStats. ---------- */
-// (LV_XP: a lord's or chieftain's experience to his next level, as ever; SK_XP: practice from a proficiency's level to the next,
-// SK_MAX its top: data/progression.js PROF. Your hero's and a companion's level from their proficiencies: Character#relevel)
-const LV_XP=lv=>lv*60,SK_XP=lv=>PROF.xp0+PROF.xpUp*lv,SK_MAX=PROF.max,SK_MADE=PROF.made;// (SK_MADE: the most a made one starts with)
-// (progress for level n, and the level a progress reaches; a proficiency's share at level L (part of the next as its bar fills))
-const PROF_NEED=n=>PROF.step*n*(n+1)/2,PROF_LEVEL=p=>Math.max(0,Math.floor((Math.sqrt(1+8*p/PROF.step)-1)/2)),PROF_TRI=L=>L*(L+1)/2;
+// (LV_XP: a lord's or chieftain's experience to his next level, as ever; HERO_XP: your hero's and a companion's (data/progression.js
+// LEVEL); SK_XP: practice from a proficiency's level to the next, SK_MAX its top (none): PROF)
+// (HERO_XP_ALL: all it took to reach level lv, and xp into it: a battle's report counts what it gave)
+const HERO_XP_ALL=(lv,xp)=>lv*LEVEL.base+LEVEL.per*lv*(lv-1)/2+(xp||0);
+const LV_XP=lv=>lv*60,HERO_XP=lv=>LEVEL.base+LEVEL.per*lv,SK_XP=lv=>PROF.xp0+PROF.xpUp*lv,SK_MAX=PROF.max,SK_MADE=PROF.made;// (SK_MADE: the most a made one starts with)
 // every fighter's health in battle, × this (your hero's and a lord's own health come and go at it: battle/setup.js, resolution.js,
 // sides.js)
 const FIELD_HP=2;
@@ -66,26 +66,30 @@ class Character extends Unit{
   get lv(){return this.o.lv} set lv(v){this.o.lv=v}
   get xp(){return this.o.xp} set xp(v){this.o.xp=v}
   get sk(){return this.o.sk}
-  // a proficiency as it has trained it, in power (its level ÷ PROF.per: 99 is the old discipline's 10), and with what its tree adds
+  // a proficiency as it has trained it, in power (profPow: 6 at 100), and with what its tree adds
   trained(k){
     const s=this.sk[k];
-    return s?s.lv/PROF.per:0}
-  // (its level, 0 to 99)
+    return s?profPow(s.lv):0}
+  // (its level, from 0)
   profLv(k){const s=this.sk[k];return s?s.lv:0}
   skill(k){return this.trained(k)+treeSkOf(this.o,k)}
   learn(k){return 1}
-  /* experience: a lord's or chieftain's (aiOwned) as ever, his level from it. Your hero's and a companion's level comes from their
-     proficiencies (the owner, 2026-11-08: "the level progress will just based on your proficiency progress"): what used to be
-     experience is practice, by the deed's kind (REWARD_TRAIN: a battle, a tournament, a beast, a quest's...). Returns the levels it gained */
+  /* experience from a deed: a lord's or chieftain's (aiOwned) as ever. Your hero's and a companion's (the owner, 2026-11-08: Skyrim's
+     way): the experience itself, and practice by the deed's kind (REWARD_TRAIN: a battle, a tournament, a beast, a quest's...), whose
+     levels give more (train). Returns the levels it gained */
   gainXp(n,kind){
     if(!(n>0))return 0;
-    this.kit();
-    if(!this.aiOwned){const lv=this.lv,w=this.weaponProf();for(const [k,f] of REWARD_TRAIN[kind]||REWARD_TRAIN.battle){const q=k==='weapon'?w:k;if(this.sk[q])this.train(q,n*PROF.reward*f,true)}return this.lv-lv}
-    this.xp+=n;
-    let up=0;
-    while(this.xp>=LV_XP(this.lv)){this.xp-=LV_XP(this.lv);this.lv++;up++}
-    if(up)this.levelled(up);
-    return up}
+    this.kit();const lv=this.lv;
+    if(!this.aiOwned){const w=this.weaponProf();for(const [k,f] of REWARD_TRAIN[kind]||REWARD_TRAIN.battle){const q=k==='weapon'?w:k;if(this.sk[q])this.train(q,n*PROF.reward*f,true)}}
+    this.addXp(n);
+    return this.lv-lv}
+  // (experience added: each level its need (xpNeed), levelled. Your hero's earned in this life is kept apart, xpEarned: what a grave
+  // will give half of, doc/DEATH_DESIGN.md §6.2; a grave's own gift (gift) never counts, nor anything your start gave; kept with the rule on,
+  // DEATH.on, so the tests' harness, which turns it off, sees your record as it was)
+  addXp(n,gift){
+    if(!(n>0))return;this.xp=(this.xp||0)+n;let up=0;if(this.role==='hero'&&!gift&&DEATH.on)P.xpEarned=(P.xpEarned||0)+n;
+    while(this.xp>=this.xpNeed()){this.xp-=this.xpNeed();this.lv++;up++}
+    if(up)this.levelled(up)}
   // new levels: one that chooses for itself takes its trees' choices and dresses for its level; then what else a level brings it
   // (grew: news of it, a perk). Its trees open by its proficiencies (data/tree.js), not by its level
   levelled(up){
@@ -96,8 +100,8 @@ class Character extends Unit{
   // leaves its points to you (the Skills page, from its window)
   get aiOwned(){return false}
   /* a proficiency used: it rises by its use, as fast as this character learns it (rose: news of it every PROF.rose levels); the same
-     practised over and over within an hour, less (PROF.burst, damp; not a reward: whole); then, one whose level is its proficiencies',
-     its level again (relevel) */
+     practised over and over within an hour, less (PROF.burst, damp; not a reward: whole); each level it reaches, experience (LEVEL.prof
+     × that level: Skyrim's), a lord's or chieftain's none (his own way) */
   train(k,n,whole){
     const s=this.sk[k];
     if(!s||s.lv>=SK_MAX||!(n>0))return;
@@ -105,15 +109,11 @@ class Character extends Unit{
       if(b[1]>2*PROF.burst)n*=PROF.damp[1];else if(b[1]>PROF.burst)n*=PROF.damp[0]}
     s.xp+=n*this.learn(k);
     const lv0=s.lv;
-    while(s.lv<SK_MAX&&s.xp>=SK_XP(s.lv)){s.xp-=SK_XP(s.lv);s.lv++;if(s.lv%PROF.rose===0||s.lv===SK_MAX)this.rose(k,s.lv)}
-    if(s.lv>lv0&&this.aiOwned)this.autoTree();// (a milestone reached: one that chooses for itself takes it)
+    let gain=0;while(s.lv<SK_MAX&&s.xp>=SK_XP(s.lv)){s.xp-=SK_XP(s.lv);s.lv++;gain+=s.lv;if(s.lv%PROF.rose===0||s.lv===SK_MAX)this.rose(k,s.lv)}
     if(s.lv>=SK_MAX)s.xp=0;
-    if(!this.aiOwned)this.relevel()}
-  // (its proficiencies' progress: each one's weight × L(L+1)/2 at its level and the part of the next it has, less a past's free start, sk0)
-  profProgress(){let p=0;const b=this.o.sk0||{};for(const k in this.sk){const s=this.sk[k],L=s.lv+(s.lv<SK_MAX?Math.min(1,s.xp/SK_XP(s.lv)):0);p+=(PROF.weight[k]??1)*(PROF_TRI(L)-PROF_TRI(b[k]||0))}return Math.max(0,p)}
-  // (its level from them: new levels a tree point each, levelled; xp, its progress into this level, and xpNeed, what the next takes)
-  relevel(){const p=this.profProgress(),n=PROF_LEVEL(p);this.xp=p-PROF_NEED(n);if(n>this.lv){const up=n-this.lv;this.lv=n;this.levelled(up)}}
-  xpNeed(){return this.aiOwned?LV_XP(this.lv):PROF_NEED(this.lv+1)-PROF_NEED(this.lv)}
+    if(gain&&!this.aiOwned)this.addXp(LEVEL.prof*gain)}
+  // (what the next level takes)
+  xpNeed(){return this.aiOwned?LV_XP(this.lv):HERO_XP(this.lv)}
   // (the proficiency it fights with: its weapon's)
   weaponProf(){const c=this.cls();return c==='archer'?'archery':c==='caster'?'spell':this.meleeSkill()}
   rose(k,lv){}
@@ -128,13 +128,13 @@ class Character extends Unit{
      that chooses for itself) the disciplines and gear of its level */
   kit(){
     const o=this.o;if(o.kit>=2){if(this.aiOwned&&AUTO_LV.get(o)!==this.lv){AUTO_LV.set(o,this.lv);this.autoTree()}return o}// (its level risen since: its trees' points spent)
-    o.attr=o.attr||{str:0,agi:0,int:0,cha:0};o.gear=o.gear||{};o.perks=o.perks||[];o.sk=o.sk||{};
+    o.gear=o.gear||{};o.perks=o.perks||[];o.sk=o.sk||{};
     const ai=this.aiOwned;
-    for(const k of FIGHT_SK.concat(ai&&this.cls()==='caster'?['spell']:[]))if(!o.sk[k])o.sk[k]={lv:ai?Math.min(SK_MADE,Math.floor(this.lv/3)*PROF.per):0,xp:0};// (a caster its Spellcraft too)
+    for(const k of FIGHT_SK.concat(ai&&this.cls()==='caster'?['spell']:[]))if(!o.sk[k])o.sk[k]={lv:ai?Math.min(SK_MADE,Math.round(Math.floor(this.lv/3)*PROF.per)):0,xp:0};// (a caster its Spellcraft too)
     // (its trees: one for each proficiency, each opened as that proficiency rises (data/tree.js); an older kit's attribute points gone)
     if(!o.tree){
       o.tree=['start'];o.slots=Array(10).fill(null);
-      if(o.kit===1){o.attr={str:0,agi:0,int:0,cha:0};delete o.pts;delete o.spent;delete o.build}}
+      if(o.kit===1){delete o.pts;delete o.spent;delete o.build}}
     o.kit=2;
     if(ai)this.outfit();
     this.autoTree();
@@ -147,12 +147,13 @@ class Character extends Unit{
     if(s.range||w&&w.kind==='ranged'||!w&&/bow|sling/.test(L.weapon||''))return 'archer';
     if(s.mounted)return 'rider';
     return t.includes('shield')||t.includes('heavy')||o.gear&&o.gear.offhand?'guardian':'warrior'}
-  // it chooses for itself: each point its trees have, on the node its class favours (CLASS_PICK) if it can take one, else the lowest it can
-  // (a tier's first before its second)
+  // it chooses for itself: each skill point it has (one a level), on the way to the nodes its class favours (CLASS_PICK, the first not
+  // learned yet: core/talents.js pathTo), else in the tree of its strongest proficiency, the lowest tier (a tier's first before its second)
   autoTree(){
     const o=this.o,want=CLASS_PICK[this.cls()]||[];if(!o.tree)return;
-    for(let k=0;k<64;k++){const open=Object.keys(PROF_TREE).flatMap(p=>PROF_TREE[p].flat().map(([id])=>id)).filter(id=>canTakeOf(o,id));if(!open.length)break;
-      const id=open.find(id=>want.includes(id))||open.sort((a,b)=>TREE[a].tier-TREE[b].tier)[0];if(!takeNodeOf(o,id,true))break}}
+    for(let k=0;k<64;k++){const open=Object.keys(TREE).filter(id=>TREE[id].prof&&canTakeOf(o,id));if(!open.length)break;
+      const lv=id=>o.sk&&o.sk[TREE[id].prof]?o.sk[TREE[id].prof].lv:0;// (else its strongest proficiency's tree first (its nodes the strongest there), the lowest tier)
+      const T=talentsOf(o),aim=want.map(w=>T.pathTo(w)[0]).find(Boolean),id=aim||open.sort((a,b)=>lv(b)-lv(a)||TREE[a].tier-TREE[b].tier)[0];if(!takeNodeOf(o,id,true))break}}
   // a lord's or chieftain's gear: of a tier by its level (one every three), a weapon of its people (outfitWeapons), armour and a
   // helm; better gear replaces worse
   outfit(){
@@ -176,21 +177,21 @@ class Character extends Unit{
   // its numbers on a battlefield, with the shots its quiver holds there (core/items.js quiverShots; none when it shoots nothing)
   fieldStats(env,team,lv){const s=super.fieldStats(env,team,lv),g=this.o.gear||{},q=quiverShots(g,g.weapon,s);return q==null?s:{...s,shots:q}}
   /* its numbers: the kind it fights as (ST[key]), grown by its level (CHAR_GROW: its role's rate, or the one a recruit kept:
-     o.grow), then attributes, gear, disciplines, its tree and perks. One formula for every character but your hero */
+     o.grow), then gear, disciplines, its tree and perks. One formula for every character but your hero */
   base(){
-    const o=this.kit(),K=ST[this.key],gr=CHAR_GROW[o.grow||this.role],lv=this.lv,a=o.attr,s={...K},w=o.gear.weapon&&ITEMS[o.gear.weapon];
+    const o=this.kit(),K=ST[this.key],gr=CHAR_GROW[o.grow||this.role],lv=this.lv,s={...K},w=o.gear.weapon&&ITEMS[o.gear.weapon];
     const g=k=>this.gearMod(k),pk=p=>this.hasPerk(p),t=k=>this.treeMod(k);
-    s.hp=Math.round((K.hp*(gr.hp[0]+gr.hp[1]*lv)+4*a.str+g('hp')+t('hp'))*(1+t('hpPct'))*(pk('stalwart')?1.15:1));
+    s.hp=Math.round((K.hp*(gr.hp[0]+gr.hp[1]*lv)+g('hp')+t('hp'))*(1+t('hpPct'))*(pk('stalwart')?1.15:1));
     // (a weapon that shoots: a bow's reach, a crossbow's, a staff's: as a troop's of that kind)
     if(w){
       if(w.kind){s.range=Math.max(K.range||0,w.kind==='magic'?160:w.shot&&w.shot.flat?200:400);s.reach=0}
       else{s.range=0;s.reach=Math.max(K.reach||13,13)+(w.m.reach||0)}}
     if(!s.range)s.reach+=t('reach');
-    let dmg=K.dmg*(gr.dmg[0]+gr.dmg[1]*lv)+.5*a.str+g('dmg')+t('dmg');
-    if(s.range)dmg*=1+.04*this.skill('archery');else dmg+=.6*this.skill(this.meleeSkill());
+    let dmg=K.dmg*(gr.dmg[0]+gr.dmg[1]*lv)+g('dmg')+t('dmg');
+    if(s.range)dmg*=1+.04*this.skill('archery');else dmg+=.6*this.skill(this.meleeSkill());// (in power: profPow)
     s.dmg=+(dmg*(1+t('dmgPct'))*(pk('brute')?1.12:1)).toFixed(1);
-    s.spd=Math.round((K.spd+2*a.agi)*(1+g('spd')+t('spd')+(pk('swift')?.1:0)));
-    s.cd=+(K.cd*(1-.03*a.agi)*(1+t('cd'))).toFixed(3);
+    s.spd=Math.round(K.spd*(1+g('spd')+t('spd')+(pk('swift')?.1:0)));
+    s.cd=+(K.cd*(1+t('cd'))).toFixed(3);
     s.block=Math.min(.6,g('block')+t('block')+(pk('guardian')?.1:0));
     // (taken less, and more breath and mana for its skills: charmind.js champ)
     s.dr=t('dr');s.spX=t('sp');s.mpX=t('mp');s.mpPct=t('mpPct');s.mpRegen=t('mpRegen');
@@ -205,14 +206,15 @@ const AUTO_LV=new WeakMap();
 // health and damage against its kind's: [at level 0, more each level] (a recruit keeps the rate it had: o.grow)
 const CHAR_GROW={companion:{hp:[.9,.1],dmg:[.93,.07]},lord:{hp:[1.3,.08],dmg:[.95,.04]},chieftain:{hp:[1.3,.08],dmg:[.95,.04]}};
 // the nodes each class takes first when it can (the rest: the lowest it can)
-const CLASS_PICK={warrior:['oneh_dash','twoh_quake','oneh_duel'],guardian:['block_guard','twoh_hide','lead_bearer'],rider:['ride_charge','oneh_dash'],
-  archer:['arch_marks','arch_hands','arch_eagle'],caster:['spell_nova','spell_flow','spell_study']};
+// (each an active skill near the front, so one comes in its first few levels on the round tree's paths)
+const CLASS_PICK={warrior:['oneh_dash','twoh_quake','oneh_duel'],guardian:['block_guard','lead_cry','twoh_hide','lead_bearer'],rider:['oneh_dash','ride_charge'],
+  archer:['arch_volley','arch_marks','arch_hands','arch_eagle'],caster:['spell_nova','spell_flow','spell_study']};
 // the weapons (and a shield) a lord wears, by his people
 const OUTFIT={human:['sword','shield'],dwarf:['axe','shield'],elf:['spear'],orc:['axe']};
 
 /* ---------- your hero: her record is P (as your band is: parties.js PlayerParty). Her numbers are her own (P.heroStats); she
-   keeps her growth on P as level, xp, sk; her kit is her own (no kit to make); she learns faster by the attribute behind a
-   discipline and her knacks (P.apt) ---------- */
+   keeps her growth on P as level, xp, sk; her kit is her own (no kit to make); she learns faster by her knacks (P.apt) and her tree's
+   learning (a node's learn: its own proficiency's) ---------- */
 class Hero extends Character{
   get role(){return 'hero'}
   get roleName(){return 'Hero'}
@@ -223,12 +225,11 @@ class Hero extends Character{
   get lv(){return P.level} set lv(v){P.level=v}
   // (as she trained it: what her companions, gear and tree add is P.skill)
   skill(k){return this.trained(k)}
-  learn(k){return (1+P.attr[SKILLS[k].a]*.1)*(1+(P.apt&&P.apt[k]||0))}
+  learn(k){return (1+treeLearnOf(P,k))*(1+(P.apt&&P.apt[k]||0))}
   kit(){return this.o}
-  // (a level: a choice of more health, stamina or mana, data/progression.js LEVEL_UP; the trees open by proficiency)
+  // (a level: skill points for the tree, LEVEL.pts each)
   levelled(up){
-    P.lvUp=(P.lvUp||0)+up;
-    log('You reach level '+P.level+'. Choose more health, stamina or mana (the Skills page, K).','gold')}
+    const n=up*LEVEL.pts;log('You reach level '+P.level+'. '+n+' skill point'+(n>1?'s':'')+' to spend on your tree (the Skills page, K).','gold')}
   rose(k,lv){log('Your '+SKILLS[k].n+' proficiency reaches '+lv+'.','gold')}
   meleeSkill(){return meleeSk()}
   // (your fighting proficiency: your weapon's, a bow's Archery, a staff's Spellcraft)

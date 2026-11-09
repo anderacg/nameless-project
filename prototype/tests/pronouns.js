@@ -35,15 +35,15 @@ Kit.suite(({ok,info})=>{
   ok(sw.every(l=>t.genderHash(l.name.split(' ')[1])==='f'&&t.genderOf(l)==='f')&&he.every(l=>t.genderHash(l.name.split(' ')[1])==='m'&&t.genderOf(l)==='m'),gen.length+' generated lords: '+sw.length+' with a woman\'s title, each hashed a woman; '+he.length+' with a man\'s, each a man');
   info('lords: '+W.lords.map(l=>l.name+' '+t.genderOf(l)).join(', '))}
  const lady=W.lords.find(l=>l.name==='Lady Maren'),lord=W.lords.find(l=>l.name==='Lord Aldric');
- const talk=l=>{Object.assign(l,{inside:null,x:P.x+3,y:P.y,dead:false,gone:false,held:false});Kit.world({town:null});t.lordMeet(l);return Kit.text()};
+ const talk=l=>{Object.assign(l,{inside:null,x:P.x+3,y:P.y,dead:false,gone:false,held:false});Kit.world({town:null});t.lordMeet(l);t.act('talk-topic','sway');t.act('talk-flatter',l.id);return Kit.text()};
  const leaveHost=l=>{t.Host.under=null;t.Host.join(l,2);t.Host.leave(false);return G.msgs[G.msgs.length-1]?.m||''};
  // (a Lady: her dialogue and her log lines)
- {const s=talk(lady);ok(/Lady of the/.test(s)&&/Praise her deeds/.test(s)&&!/Praise his/.test(s),'a Lady\'s audience: Lady of the realm, Praise her deeds');
+ {const s=talk(lady);ok(/Lady of the/.test(s)&&/Win her regard/.test(s)&&/Praise her/.test(s)&&!/Praise him|his regard/.test(s),'a Lady\'s audience: Lady of the realm, Win her regard, Praise her');
   ok(/Threaten her/.test(s)||!q('[data-act="talk-threaten"]'),'Threaten her (when offered)');t.act('lord-leave');
   const m=leaveHost(lady);ok(/lets you go with her thanks/.test(m),'her log line: "'+m+'"');
   ok(t.charOf(lady).roleName==='Lady','her role on her card: Lady')}
  // (a Lord: his)
- {const s=talk(lord);ok(/Lord of the/.test(s)&&/Praise his deeds/.test(s),'a Lord\'s audience: Lord of the realm, Praise his deeds');t.act('lord-leave');
+ {const s=talk(lord);ok(/Lord of the/.test(s)&&/Win his regard/.test(s)&&/Praise him/.test(s),'a Lord\'s audience: Lord of the realm, Win his regard, Praise him');t.act('lord-leave');
   const m=leaveHost(lord);ok(/lets you go with his thanks/.test(m),'his log line: "'+m+'"');ok(t.charOf(lord).roleName==='Lord','his role: Lord')}
  // ---- a neutral title, stable across a save and a load, and in two new games from one seed
  const neutral=W.lords.find(l=>/^(Ser|Warden|Admiral|Captain) /.test(l.name)&&!t.FACS[l.fac].gender?.[l.name])||W.lords.find(l=>/^(Ser|Warden|Admiral|Captain) /.test(l.name));

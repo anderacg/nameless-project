@@ -138,6 +138,7 @@ function battleStep(rt,world){
   }
   if(B.over){B.endT-=rt;if(B.endT<=0){finishBattle();return}}
   for(const p of B.parts){p.life-=rt;if(p.stuck)continue;p.x+=p.vx*rt;p.y+=p.vy*rt;p.vy+=90*rt}B.parts=B.parts.filter(p=>p.life>0);
+  if(DROPS.on)BattleDrops.of(B).step(rt);// (what falls, flies and is picked up: battle/drops.js)
   for(const f of B.floats){f.y-=14*rt;f.life-=rt;f.age=(f.age||0)+rt}B.floats=B.floats.filter(f=>f.life>0);vfxStep(rt);// (effects: gfx/vfx.js)
   for(const s of B.slashes)s.life-=rt;B.slashes=B.slashes.filter(s=>s.life>0);
   for(const r of B.rings)r.life-=rt;B.rings=B.rings.filter(r=>r.life>0);

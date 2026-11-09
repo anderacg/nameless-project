@@ -1,7 +1,7 @@
 'use strict';
 window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
-// Talents: a tree for each proficiency, its points (one each TREE_PT.per levels) spent freely on what its milestones open, each tier
-// from the one below; a level a choice of health, stamina or mana; refunds cost gold and give the point back; effects reach the hero, troops, party, abilities and perks; the page works; saves.
+// Talents: a tree for each proficiency; your skill points (one a level, LEVEL.pts) spent freely on any tree's nodes, each tier from the
+// one below, no milestone, a node's strength by its proficiency's level (treeScale); refunds cost gold and give the point back; effects reach the hero, troops, party, abilities and perks; the page works; saves.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  (0,eval)('MANUAL_HERO=true');// (the manual control is set aside in play, RTS command: its skills are still tested here)
@@ -12,39 +12,39 @@ try{
  // separated by proficiency"; data/tree.js PROF_TREE)
  const ids=Object.keys(TR),nodes=ids.filter(id=>TR[id].prof),profs=Object.keys(t.PROF_TREE);
  ok(profs.length===Object.keys(t.SKILLS).length&&profs.every(k=>t.SKILLS[k]),'a tree for each of the '+profs.length+' proficiencies ('+nodes.length+' nodes)');
- ok(profs.every(k=>{const at=t.treeAt(k),T=t.PROF_TREE[k];return T.length===at.length&&T.every(([[a],[b]],i)=>TR[a].at===at[i]&&TR[b].at===at[i]&&TR[a].pair===b&&TR[b].pair===a&&TR[a].prof===k)}),'each milestone a pair, each node knowing its other ('+t.TREE_AT.major.join(', ')+' for fighting and Leadership; '+t.TREE_AT.minor.join(', ')+' for the rest)');
+ ok(profs.every(k=>{const T=t.PROF_TREE[k];return T.length>=3&&T.every(([[a],[b]],i)=>TR[a].tier===i&&TR[b].tier===i&&TR[a].pair===b&&TR[b].pair===a&&TR[a].prof===k&&TR[a].at==null)}),'each tier a pair, each node knowing its other; no milestone')
  ok(['k','n','a','s'].every(k=>nodes.some(id=>TR[id].t===k))&&nodes.filter(id=>TR[id].t==='k').length===5,'small, notable, ability and 5 keystone nodes');
  ok(ids.every(id=>TR[id].d&&TR[id].d.length>3),'every node is described');
  ok(Object.values(t.PERKS).length&&Object.keys(t.PERKS).filter(p=>!['captain'].includes(p)).every(p=>nodes.some(id=>TR[id].m.perk===p)),'every old perk is a node of a tree');
- // milestones
- ok(P.lvUp===0&&P.tree.length===1&&P.tree[0]===P.origin,'a new hero has only the origin and no level choice');
- ok(P.sk.oneh.lv===20&&JSON.stringify(t.treePending())==='["oneh"]'&&t.talentsOf(P).points('oneh').left===1,'a veteran soldier\'s One-Handed 20: one point to spend (one each '+t.TREE_PT.per+' levels), its first milestone open (Third Blow or Strength)');
- ok(!t.takeNode('oneh_whirl')&&!t.takeNode('lead_cry'),'a milestone not reached cannot be taken');
- const s0=P.attr.str,h0=t.heroStats().hp;ok(t.takeNode('oneh_str')&&P.attr.str===s0+2&&t.heroStats().hp>h0&&!t.canTake('oneh_third')&&!t.treePending().length,'Strength: +2 Strength, more health; no point left for Third Blow, nothing waiting');
- P.gold=1000;const g0=P.gold;ok(t.refundNode('oneh_str')&&P.attr.str===s0&&P.gold===g0-t.refundCost()&&t.canTake('oneh_third'),'unlearning it for '+t.refundCost()+' gold takes its Strength back and gives the point back');
- {const H=t.leaderOf(P);let k=0;while(P.sk.oneh.lv<35&&k++<2000)H.train('oneh',5,true);t.takeNode('oneh_third');t.takeNode('oneh_str');
-  ok(t.treeHas('oneh_third')&&t.treeHas('oneh_str')&&!t.canTake('oneh_whirl')&&t.talentsOf(P).points('oneh').earned===2,'One-Handed trained to '+P.sk.oneh.lv+': two points, both on the first milestone as you like (Third Blow and Strength); Whirlwind waits for a third');
-  P.gold=1000;ok(t.refundNode('oneh_str')&&t.canTake('oneh_whirl')&&!t.canRefund('oneh_third')===false,'unlearn one, and the point goes up the tree instead (Whirlwind)');t.takeNode('oneh_whirl');ok(!t.canRefund('oneh_third'),'the node a higher one grows from cannot go while it holds it')}
- // the level's choice (the owner, 2026-11-08: "when you level up you choose to upgrade health, stamina or magic")
- {const H=t.leaderOf(P),l0=P.level,u0=P.lvUp;let k=0;while(P.level<l0+2&&k++<500)H.train('eng',5,true);
-  ok(P.level===l0+2&&P.lvUp===u0+2,'two levels (from practice) give two choices, no tree points ('+P.lvUp+' waiting)');
-  const hp=t.heroStats().hp,sp=t.maxSP(),mp=t.maxMP(),L=t.LEVEL_UP;P.lvUp=3;
-  ok(t.levelPick('hp')&&t.heroStats().hp===hp+L.hp&&t.levelPick('sp')&&t.maxSP()===sp+L.sp&&t.levelPick('mp')&&t.maxMP()===mp+L.mp&&P.lvUp===0&&!t.levelPick('hp'),'each choice: +'+L.hp+' health, +'+L.sp+' stamina or +'+L.mp+' mana; none waiting, none to take')}
+ // skill points: one a level (the owner, 2026-11-08: Skyrim's way), on any tree, no milestone
+ ok(P.level===0&&P.tree.length===1&&P.tree[0]===P.origin&&!t.treePending().length,'a new hero has only the origin and no point to spend');
+ P.level=1;ok(t.talentsOf(P).points().left===1&&t.treePending().length===1&&!t.takeNode('oneh_whirl')&&t.canTake('lead_cry'),'level 1: a point, for any tree\'s first tier (Leadership\'s at '+P.sk.lead.lv+' too), never a tier above one learned');
+ const h0=t.heroStats().hp;ok(t.takeNode('oneh_str')&&t.heroStats().hp>h0&&!t.canTake('oneh_third')&&!t.treePending().length,'Strength: more health; no point left for Third Blow, nothing waiting');
+ P.gold=1000;const g0=P.gold;ok(t.refundNode('oneh_str')&&t.heroStats().hp===h0&&P.gold===g0-t.refundCost()&&t.canTake('oneh_third'),'unlearning it for '+t.refundCost()+' gold takes its health back and gives the point back');
+ P.level=2;t.takeNode('oneh_third');t.takeNode('oneh_str');ok(t.treeHas('oneh_third')&&t.treeHas('oneh_str')&&!t.canTake('oneh_whirl'),'level 2: two points, both on the first tier as you like; Whirlwind waits for a third');
+ P.gold=1000;ok(t.refundNode('oneh_str')&&t.canTake('oneh_p1')&&!t.canTake('oneh_whirl'),'unlearn one, and the point goes up the path instead: its bonus node first (Whirlwind beyond it)');t.takeNode('oneh_p1');ok(!t.canRefund('oneh_third'),'the node a higher one grows from cannot go while it holds it');
+ ok((w=>w.length===5&&w[0]==='oneh_p2'&&w[4]==='oneh_stun')(t.talentsOf(P).pathTo('oneh_stun'))&&!t.talentsOf(P).pathTo('oneh_p1').length,'the way to a node: what is still to learn, the first open now (pathTo)');
+ // a node's strength by its proficiency (the owner: "quarter at 0"): Strength's health at One-Handed 0, 100, 400
+ {const lv=P.sk.oneh.lv,at=v=>{P.sk.oneh.lv=v;const g=t.tmOf(P,'hp')-t.TREE[P.origin].m.hp;return Math.round(g*100)/100};P.gold=1000;t.takeNode('oneh_str')||(P.level++,t.takeNode('oneh_str'));
+  const hp=P.tree.reduce((n,id)=>n+(TR[id]&&TR[id].prof==='oneh'&&TR[id].m.hp||0),0),a=at(0),b=at(100),c=at(400);P.sk.oneh.lv=lv;ok(Math.abs(a-hp/4)<.01&&Math.abs(b-hp)<.01&&c>b,'its One-Handed nodes\' '+hp+' health: a quarter at 0 ('+a+'), all at 100 ('+b+'), more past it ('+c+' at 400)')}
+ // no health, stamina or mana to choose: the level gives points only
+ ok((0,eval)('typeof levelPick')==='undefined'&&(0,eval)('typeof LEVEL_UP')==='undefined','no level choice of health, stamina or mana');
  // effects: a node taken as its proficiency reaches it
- const learn=list=>list.forEach(id=>{const N=TR[id],k=N.prof;P.sk[k].lv=Math.max(P.sk[k].lv,N.at,(N.tier+2)*t.TREE_PT.per);for(let i=0;i<N.tier;i++)if(!t.talentsOf(P).tierHas(k,i))t.takeNode(t.PROF_TREE[k][i][0][0]);t.takeNode(id)});P.gold=99999;
+ // (each at its proficiency 100: whole; the points it needs given)
+ const learn=list=>list.forEach(id=>{const N=TR[id],k=N.prof;P.sk[k].lv=Math.max(P.sk[k].lv,100);const w=t.talentsOf(P).pathTo(id);P.level+=w.length;w.forEach(x=>t.takeNode(x))});P.gold=99999;// (the way to it learned, a point each)
  const d0=t.heroStats().dmg;learn(['oneh_duel']);ok(t.heroStats().dmg>d0*1.05,'Duelist: +10% damage');
  ok(!t.knows('leap'),'Leap Slam must be learned');learn(['twoh_leap','oneh_whirl']);ok(t.knows('leap')&&t.knows('whirl'),'Leap Slam (Two-Handed 35) and Whirlwind (One-Handed 35) learned');
  const l0=t.abil('leap');learn(['twoh_shake']);const l1=t.abil('leap');ok(l1.r>l0.r&&l1.stun>l0.stun,'Earthshaker upgrades it');
- {const rn=P.renown;P.renown=1000;P.sk.lead.lv=Math.max(P.sk.lead.lv,2*t.TREE_PT.per);const c0=t.partyRoster(P).groupLimit;learn(['lead_follow']);ok(t.partyRoster(P).groupLimit===Math.min(t.ARMY_LIMIT,c0+1),'Followers: +1 unit slot');P.renown=rn}
+ {const rn=P.renown;P.renown=1000;P.sk.lead.lv=Math.max(P.sk.lead.lv,100);const c0=t.partyRoster(P).groupLimit;learn(['lead_follow']);ok(t.partyRoster(P).groupLimit===Math.min(t.ARMY_LIMIT,c0+1),'Followers: +1 unit slot (a slot whole, at any Leadership)');P.renown=rn}
  const hc=t.hireCost('hum_levy');learn(['pers_silver']);ok(t.has('silver')&&t.hireCost('hum_levy')<hc,'Silver Tongue: the perk, and cheaper hiring');
- const ms=t.maxMP();learn(['spell_clarity']);ok(t.maxMP()===ms+20,'Clarity: +20 mana');
+ const ms=t.maxMP(),wm=t.talentsOf(P).pathTo('spell_clarity').reduce((n,id)=>n+(TR[id].m.mp||0),0);learn(['spell_clarity']);ok(t.maxMP()===ms+wm&&wm>=20,'Clarity: +20 mana (with the bonus on its path: +'+wm+')');
  // troops in battle
  P.troops={hum_spear:2};G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia']};t.startBattle({enemies:['militia'],tournament:false});
  const sp0=t.B.units.find(u=>u.type==='hum_spear').s.hp;t.B.over=true;t.B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  learn(['lead_bearer']);G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia']};t.startBattle({enemies:['militia'],tournament:false});
  ok(t.B.units.find(u=>u.type==='hum_spear').s.hp>sp0,'Banner Bearer: troops get more health in battle');t.B.over=true;t.B.endT=0;t.updateBattle(.01);t.act('cont');
  // keystone trade-off
- const hpA=t.heroStats().hp,capA=t.partyCap();learn(['arch_wolf']);ok(t.heroStats().hp>hpA*1.2&&t.partyCap()<capA,'Lone Wolf: more health, fewer followers');
+ P.sk.archery.lv=Math.max(P.sk.archery.lv,100);const ld=P.sk.lead.lv;P.sk.lead.lv=0;const hpA=t.heroStats().hp,capA=t.partyCap();learn(['arch_wolf']);ok(t.heroStats().hp>hpA*1.2&&t.partyCap()<capA,'Lone Wolf: more health, fewer followers (under the army\'s top)');P.sk.lead.lv=ld;
  // the page
  G.mode='world';G.modal=false;t.hidePanel();window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyK',key:'k'}));t.act('sk-tab','talents');
  ok(G.mode==='skills'&&document.querySelectorAll('[data-act="tree-prof"]').length===profs.length&&document.querySelectorAll('svg.tr-svg .tp-node').length>=6&&document.querySelector('svg.tr-svg.grow .tp-root'),'K opens the Skills page; Skill trees lists every proficiency and draws one as a path of nodes, flying out of its root');
@@ -55,11 +55,39 @@ try{
   t.act('tree-step','-1');const a=G.skTree;t.act('tree-step','1');const b=G.skTree;key('ArrowRight');const c=G.skTree;
   ok(a===L[L.length-1]&&b===L[0]&&c===L[1],'‹ goes to the one before (the last from the first), › to the one after, → too');
   t.act('tree-list');const open=!list().hidden&&list().querySelector('[data-act="tree-prof"].on')?.dataset.arg===L[1];t.act('tree-prof',L[2]);ok(open&&list().hidden&&G.skTree===L[2],'its name opens the list of them all, the shown one marked; picking one shows it and closes the list')}
+ // (the round tree (the owner, 2026-11-08: "one big circle node tree spans across each proficiency"): every proficiency a slice of one
+ // wheel, round it in TREE_RING's order; a bonus node between each two tiers joining both of each; the shown slice turned up, the rest
+ // dim; the whole circle at a press; another slice's node turns the wheel to it)
+ {const ring=t.TREE_RING.flatMap(g=>g[1]),hubs=Object.keys(TR).filter(id=>TR[id].hub);
+  ok(ring.length===profs.length&&profs.every(k=>ring.includes(k))&&t.skProfs(P).join()===ring.join(),'the wheel holds every proficiency, once, the switch going round it in its order');
+  // (2026-11-09, the owner: "add more attribute nodes to each proficiency": a run of PATH_RUN between each two tiers, PATH_TAIL past the last)
+  ok(profs.every(k=>{const T=t.PROF_TREE[k],B=Object.keys(TR).filter(id=>TR[id].prof===k&&TR[id].hub);if(B.length!==(T.length-1)*t.PATH_RUN+t.PATH_TAIL)return false;
+    return T.every((pair,i)=>i===T.length-1||(run=>run.length===t.PATH_RUN&&pair.every(([lo])=>TR[run[0]].links.includes(lo))&&T[i+1].every(([hi])=>TR[run[run.length-1]].links.includes(hi)))(B.filter(id=>TR[id].tier===i)))})
+    &&hubs.every(id=>TR[id].m&&Object.keys(TR[id].m).filter(q=>q!=='learn').length&&TR[id].t==='b'),hubs.length+' bonus nodes: a run of '+t.PATH_RUN+' between each two tiers (its first joining both below, its last both above) and '+t.PATH_TAIL+' past the last, each giving something');
+  ok(document.querySelectorAll('svg.tw .tp-node').length===Object.keys(TR).filter(id=>TR[id].prof).length&&document.querySelectorAll('svg.tw .tp-node:not(.far)').length===t.talentsOf(P).nodesOf(G.skTree).length,'every node of the wheel drawn, the shown slice\'s lit, the rest dim');
+  const k0=G.skTree,far=Object.keys(TR).find(id=>TR[id].prof&&TR[id].prof!==k0);t.act('tree-sel',far);ok(G.skTree===TR[far].prof&&G.skSel===far&&document.querySelector('.tw-wheel').style.transform.includes('rotate'),'a node of another slice: the wheel turns to it, chosen');
+  {const {P:Q}=t.treePos(),ids=Object.keys(Q),rr=id=>t.TREE_ROUND.r[TR[id].t]||16;let m=1e9,w='';for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){const g=Math.hypot(Q[ids[i]][0]-Q[ids[j]][0],Q[ids[i]][1]-Q[ids[j]][1])-rr(ids[i])-rr(ids[j]);if(g<m){m=g;w=ids[i]+' / '+ids[j]}}
+   ok(m>=8,'no two nodes of the wheel touch (the owner, 2026-11-09: "make the node not overlap"): the closest '+Math.round(m)+' apart ('+w+')')}
+  t.act('tree-whole');ok(document.querySelector('svg.tw.whole')&&document.querySelectorAll('.tw-sec').length===profs.length,'the whole tree at a press: every slice named');t.act('tree-focus','oneh');ok(!document.querySelector('svg.tw.whole')&&G.skTree==='oneh','a slice\'s name: back close, on it')}
+ // (step 3: a drag pans the wheel and is never a tap; the wheel and two fingers zoom about the point under them; the view kept through
+ // a tap, another slice its own view again; + and − a step)
+ {const svg=()=>document.querySelector('svg.tw'),vb=()=>svg().getAttribute('viewBox').split(/\s+/).map(Number),R=svg().getBoundingClientRect(),cx=R.left+R.width/2,cy=R.top+R.height/2,
+   pe=(el,type,x,y,id=1,kind='mouse')=>el.dispatchEvent(new PointerEvent(type,{clientX:x,clientY:y,pointerId:id,pointerType:kind,isPrimary:id===1,button:0,bubbles:true,cancelable:true}));
+  const v0=vb(),s0=G.skSel;pe(svg(),'pointerdown',cx,cy);pe(window,'pointermove',cx+40,cy+30);pe(window,'pointermove',cx+80,cy+60);pe(window,'pointerup',cx+80,cy+60);
+  const hit=svg().querySelector('.tp-node:not(.far)');hit.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));const v1=vb();
+  ok(v1[0]<v0[0]&&v1[1]<v0[1]&&v1[2]===v0[2]&&G.skSel===s0,'a drag pans the wheel (its view moved, not its size), and the click it ends with chooses nothing');
+  const pt=t.twAt(svg(),cx,cy);svg().dispatchEvent(new WheelEvent('wheel',{deltaY:-300,clientX:cx,clientY:cy,bubbles:true,cancelable:true}));const v2=vb(),pt2=t.twAt(svg(),cx,cy);
+  ok(v2[2]<v1[2]&&Math.abs(pt.x-pt2.x)<1&&Math.abs(pt.y-pt2.y)<1,'the mouse wheel zooms in about the point under it ('+Math.round(v1[2])+' → '+Math.round(v2[2])+' across)');
+  pe(svg(),'pointerdown',cx-30,cy,11,'touch');pe(svg(),'pointerdown',cx+30,cy,12,'touch');pe(window,'pointermove',cx-10,cy,11,'touch');pe(window,'pointermove',cx+10,cy,12,'touch');pe(window,'pointerup',cx-10,cy,11,'touch');pe(window,'pointerup',cx+10,cy,12,'touch');const v3=vb();
+  ok(v3[2]>v2[2]*2.5,'two fingers drawn together zoom out ('+Math.round(v2[2])+' → '+Math.round(v3[2])+' across)');
+  t.act('tree-sel',hit.dataset.arg);ok(vb().every((v,i)=>Math.abs(v-v3[i])<.06),'a tap keeps the view');
+  t.act('tree-zoom','in');ok(Math.abs(vb()[2]-v3[2]/t.TREE_PAN.step)<.2,'+ zooms in a step');
+  const k=G.skTree;t.act('tree-step','1');ok(vb().join()===t.treeView(G.skTree,false).join()&&G.skTree!==k,'another slice: its own view again');t.act('tree-step','-1')}
  P.sk.med.lv=20;t.act('tree-prof','med');const nodeCls=id=>document.querySelector('.tp-node[data-arg="'+id+'"]')?.getAttribute('class')||'';
- ok(/Field Surgeon/.test(panel())&&/Healing Light/.test(panel())&&/open/.test(nodeCls('med_surgeon'))&&/locked/.test(nodeCls('med_renew'))&&document.querySelector('svg.tr-svg.grow'),'Medicine\'s tree: at 20 its first tier open (pulsing), its next not yet; switching trees grows it anew');
+ P.level=P.tree.filter(id=>TR[id]&&TR[id].prof).length+1;t.act('tree-prof','oneh');t.act('tree-prof','med');ok(/Field Surgeon/.test(panel())&&/Healing Light/.test(panel())&&/open/.test(nodeCls('med_surgeon'))&&/locked/.test(nodeCls('med_renew'))&&document.querySelector('svg.tr-svg.grow'),'Medicine\'s tree: a point left, its first tier open (pulsing), its next not yet; switching trees grows it anew');
  t.act('tree-sel','med_surgeon');ok(/Learn · 1 point/.test(panel())&&!document.querySelector('[data-act="tree-take"][data-arg="med_surgeon"]').disabled,'a node chosen on the tree: what it does, and Learn');
  t.act('tree-take','med_surgeon');ok(t.treeHas('med_surgeon')&&/Unlearn/.test(panel())&&/have/.test(nodeCls('med_surgeon'))&&/just/.test(nodeCls('med_surgeon'))&&!/open/.test(nodeCls('med_heal'))&&!document.querySelector('svg.tr-svg.grow'),'learned from the page: lit and flaring, not grown again; no point left for Healing Light');
- P.lvUp=1;t.act('sk-tab','prof');{const hp=t.heroStats().hp;ok(/Level up/.test(panel())&&document.querySelectorAll('[data-act="lv-pick"]').length===3,'the Proficiency tab offers the level\'s choice');t.act('lv-pick','hp');ok(t.heroStats().hp>=hp+t.LEVEL_UP.hp&&P.lvPick.hp>=1&&P.lvUp===0&&!document.querySelector('[data-act="lv-pick"]'),'chosen there: +'+t.LEVEL_UP.hp+' health, the offer gone')}
+ t.act('sk-tab','prof');ok(/Level \d+/.test(panel())&&/XP to level/.test(panel())&&!document.querySelector('[data-act="lv-pick"]'),'the Proficiency tab shows your level and its experience, no level choice');
  t.act('sk-tab','abilities');{const un=Object.keys(t.HSKILLS).filter(k=>!t.knows(k));ok(!/Not learned/.test(panel())&&un.length&&un.every(k=>!panel().includes('<strong>'+t.HSKILLS[k].n+'</strong>')),'the Skill bar lists only the active skills you have learned ('+un.length+' not learned, not shown)')}
  t.act('sk-tab','prof');ok(/One-Handed/.test(panel())&&/Scouting/.test(panel()),'Proficiency lists the proficiencies you train by use');
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='char'&&t.partyView().sel==='hero','Escape follows its Back: the Army window, on your hero');
@@ -67,11 +95,11 @@ try{
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='esc','and again: the Army window’s Back, the Game Menu');window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','then resumed');
  t.openChar();ok(document.querySelector('.fb-unit-actions [data-act="open-skills"]')?.textContent==='Development'&&!/improve through use/.test(panel()),'your hero’s card points to the Skills page');t.act('char-close');
  // saves
- P.lvUp=2;P.lvPick={hp:1,sp:0,mp:3};t.saveGame();const tree=P.tree.slice();P.tree=['start'];P.lvUp=0;P.lvPick={hp:0,sp:0,mp:0};t.act('load');ok(JSON.stringify(P.tree)===JSON.stringify(tree)&&P.lvUp===2&&P.lvPick.mp===3,'the trees and the level\'s choices survive a reload');
+ P.xp=42;t.saveGame();const tree=P.tree.slice(),lvS=P.level;P.tree=['start'];P.level=0;P.xp=0;t.act('load');ok(JSON.stringify(P.tree)===JSON.stringify(tree)&&P.level===lvS&&P.xp===42,'the trees, the level and its experience survive a reload');
  // active skills: every one learned on a node of a tree; slots fill themselves
  const H=t.HSKILLS,ids2=Object.keys(H);ok(ids2.length===10&&ids2.every(id=>TR[H[id].learn]&&TR[H[id].learn].prof&&TR[H[id].learn].m.unlock===id&&TR[H[id].learn].t!=='k'),'ten active skills, each learned on a node of a proficiency\'s tree (none a keystone)');
- t.act('begin','soldier');ok(!t.knows('whirl')&&P.slots.every(x=>x===null),'a new hero knows no active skills and has empty slots');P.sk.oneh.lv=35;t.takeNode('oneh_third');P.sk.oneh.lv=45;t.takeNode('oneh_whirl');ok(t.knows('whirl')&&P.slots[0]==='whirl','One-Handed 45: Third Blow, then Whirlwind, onto slot 1');
- const learnAll=()=>{for(const id of ids2){const N=TR[H[id].learn];P.sk[N.prof].lv=99;if(!t.treeHas(N.id))P.tree.push(N.id);t.slotSkill(id)}};// (each active's node, put there: the tiers below set aside)
+ t.act('begin','soldier');ok(!t.knows('whirl')&&P.slots.every(x=>x===null),'a new hero knows no active skills and has empty slots');P.level=4;['oneh_third','oneh_p1','oneh_p2','oneh_whirl'].forEach(id=>t.takeNode(id));ok(t.knows('whirl')&&P.slots[0]==='whirl','four points: Third Blow, its path\'s two bonuses, then Whirlwind, onto slot 1');
+ const learnAll=()=>{for(const id of ids2){const N=TR[H[id].learn];P.sk[N.prof].lv=99;for(const x of t.talentsOf(P).pathTo(N.id))P.tree.push(x);t.slotSkill(id)}};// (each active's node and the way to it, put there)
  learnAll();ok(ids2.every(t.knows)&&ids2.every(id=>P.slots.includes(id)),'learning skills puts them on free slots ('+P.slots.map(x=>x||'-').join(' ')+')');
  G.mode='world';G.modal=false;t.hidePanel();t.openSkills('abilities');t.act('sk-slot','0');t.act('fb-choice','fireball');t.act('fb-apply');
  ok(P.slots[0]==='fireball'&&P.slots.filter(x=>x==='fireball').length===1,'the Skill bar puts Fireball on slot 1 (and takes it off its old slot)');
@@ -95,18 +123,18 @@ try{
  B=fight();key('0');ok(B.hx.leap||B.hx.cds.leap>0,'key 0 casts slot 10 (Leap Slam)');B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // disciplines: four new ones that rise with use
  ok(['archery','spell','athl','eng'].every(k=>t.SKILLS[k]&&P.sk[k]),'new disciplines: Archery, Spellcraft, Athletics, Engineering');
- const spA=t.maxSP();P.sk.athl.lv+=2*PROF.per;ok(t.maxSP()===spA+8,'Athletics adds stamina');const mp0=t.abil('fireball').mp;P.sk.spell.lv+=5*PROF.per;ok(t.abil('fireball').mp<mp0,'Spellcraft makes spells cheaper');
+ const spA=t.maxSP(),a0=P.sk.athl.lv;P.sk.athl.lv+=20;ok(Math.abs(t.maxSP()-spA-4*(t.profPow(a0+20)-t.profPow(a0)))<1e-9,'Athletics adds stamina (4 a point of its power)');const mp0=t.abil('fireball').mp;P.sk.spell.lv+=100;ok(t.abil('fireball').mp<mp0,'Spellcraft makes spells cheaper');
  B=fight();const ax=t.heroState();const ath=P.sk.athl.xp+P.sk.athl.lv*1000;t.dodge();ok(P.sk.athl.xp+P.sk.athl.lv*1000>ath,'dodging trains Athletics');B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // unlearning an active skill takes it off its slot
  P.gold=99999;ok(t.refundNode('lead_banner')&&!P.slots.includes('banner'),'unlearning War Banner takes it off its slot');
  // origins: every past starts from its own, with its bonus; none taken or unlearned
  const bgs=Object.keys(t.BGS);ok(bgs.every(b=>TR['o_'+b]&&TR['o_'+b].t==='origin'),'every past has an origin: '+bgs.map(b=>TR['o_'+b].n).join(', '));
  const res={};for(const b of bgs){t.act('begin',b);res[b]=P.tree.slice()}ok(bgs.every(b=>res[b].length===1&&res[b][0]==='o_'+b),'a new hero starts with only their own origin learned');
- t.act('begin','hedge');ok(P.origin==='o_hedge'&&t.skill('spell')>=P.sk.spell.lv/PROF.per+1,'the Hedge mage origin adds Spellcraft');
+ t.act('begin','hedge');ok(P.origin==='o_hedge'&&t.skill('spell')>=t.profPow(P.sk.spell.lv)+1-1e-9,'the Hedge mage origin adds Spellcraft');
  P.gold=9999;ok(!t.canTake('o_soldier')&&!t.canRefund('o_hedge'),'your origin cannot be unlearned, nor another past\'s taken');
  t.act('begin','soldier');
  // attributes are read-only now
- G.mode='world';G.modal=false;t.hidePanel();t.openChar();ok(!document.querySelector('[data-act="spend"]')&&/raised on the skill trees/.test(panel()),'your hero’s card shows attributes without + buttons');t.act('char-close');
+ G.mode='world';G.modal=false;t.hidePanel();t.openChar();ok(!document.querySelector('[data-act="spend"]')&&/From the skill trees/.test(panel()),'your hero’s card shows what the trees give (no attributes, no + buttons)');t.act('char-close');
  t.frame();
  // the Trait page: the moves everyone has, your attack and the way to the combo's third blow on the Tree
  {G.mode='world';G.modal=false;t.hidePanel();t.openSkills('traits');

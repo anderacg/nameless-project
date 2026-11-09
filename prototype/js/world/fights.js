@@ -127,7 +127,7 @@ function syncForces(list){for(const f of list||[]){if(!f.src)continue;const o=f.
 const garrisonForce=t=>({kind:'garrison',src:t,name:'the garrison of '+t.name,fac:t.owner,troops:garList(t)});
 // a force you beat (or that fought beside you and was ground down); one you beat is heard on the bus as yours (a bounty's band,
 // a lord to kill: quests)
-function routForce(f,mine){if(!f.src){if(mine)worldEmit('lord:beaten',{lord:f});defeatLord(f);return ''}if(f.kind==='garrison')return '';const o=f.src;if(f.kind==='caravan'&&mine){const t=o.loot();o.gone=true;return t}
+function routForce(f,mine){if(!f.src){if(mine)worldEmit('lord:beaten',{lord:f});defeatLord(f,mine);return ''}if(f.kind==='garrison')return '';const o=f.src;if(f.kind==='caravan'&&mine){const t=o.loot();o.gone=true;return t}
   if(mine&&f.kind==='band')worldEmit('band:beaten',{band:o});worldPart(()=>routParty(o,[]));return ''}
 function fightAct(a,arg){
   const f=G.fg;if(!f||!W.fights.includes(f)){closeDialog();return}

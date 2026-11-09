@@ -7,16 +7,16 @@
 const diceLeft=e=>ENC_GAMBLE.hands-(e.hands||0);
 /* ---------- your stats on the road (their numbers: data/encounters.js ENC_STAT) (owner, 2026-10-19: stats only add to what anyone gets, up to a cap; a stat of 0 is today's
    odds or outcome, never worse). ENC_STAT, each check: {base (what anyone gets), parts: [[stat, per]…] (a stat: a discipline,
-   P.sk, or an attribute, str, agi, int, cha; a list of them: the highest counts), cap}. statOdds(k): base + Σ stat × per, at
+   P.sk, or what was an attribute, str, agi, int, cha: the best of its proficiencies, attrCheck; a list of them: the highest counts), cap}. statOdds(k): base + Σ stat × per, at
    most cap. A chance (horse: Catch it; dice: a hand won; mine: the tunnels hold, mineGear: gear deep inside; wisps: the
    treasure) or a share added on top (care: how well you tend the wounded traveller, 0–1, kept on him as e.care; push: of the
    stamina and time a cart takes, taken off; hunt, respect: × (1 + it) the haul, or the honour, reputation and morale given).
    statRead: a chance's Insight read (vague, rough or exact by Scouting); statHelps: the stats that help, by name; statParts:
    each stat's worth, for the wiki ---------- */
-const statOf=s=>Array.isArray(s)?Math.max(...s.map(statOf)):Math.max(0,s in P.attr?P.attr[s]:skill(s));
+const statOf=s=>Array.isArray(s)?Math.max(...s.map(statOf)):Math.max(0,ATTRS[s]?attrCheck(s):skill(s));
 const statOdds=k=>{const S=ENC_STAT[k];return Math.min(S.cap,S.parts.reduce((a,[s,p])=>a+p*statOf(s),S.base))};
 const statMore=(k,v)=>Math.round(v*(1+statOdds(k)));// (a share's worth on top of v)
-const statName=s=>Array.isArray(s)?s.map(statName).join(' or '):ATTRS[s]?ATTRS[s][0]:SKILLS[s].n;
+const statName=s=>Array.isArray(s)?s.map(statName).join(' or '):ATTRS[s]?ATTRS[s].profs.map(k=>SKILLS[k].n).join(' or '):SKILLS[s].n;
 function statHelps(k){const n=ENC_STAT[k].parts.map(([s])=>statName(s));return(n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]+' help':n[0]+(Array.isArray(ENC_STAT[k].parts[0][0])?' (the higher) helps':' helps'))}
 const statParts=k=>ENC_STAT[k].parts.map(([s,p])=>'+'+Math.round(p*1000)/10+'% '+(Array.isArray(s)||ATTRS[s]?'a point of ':'a level of ')+statName(s)).join(', ');
 // (o: vague, what (the words after a rough or exact chance), rough(p) and exact(p) (words of their own), more (its tooltip))
@@ -425,15 +425,15 @@ defineKinds('encounter',{trigger:'travelHour'},{
     text:e=>'Men in the colours of the '+FACS[e.fac].n+' have dragged a barrier across the road. “The lord’s toll,” says their sergeant: '+tollPrice(e)+' gold to pass.',
     facts:e=>tollFacts(e),
     left:()=>'You turn back from their barrier and go round.',
-    acts:[{icon:'gold',label:'Pay the toll',need:e=>P.gold<tollPrice(e)&&'Not enough gold.',tip:'Pay and pass. Trade gets the toll down.',also:()=>[statHelps('haggle')],
+    acts:[{icon:'gold',words:'Here is your coin.',label:'Pay the toll',need:e=>P.gold<tollPrice(e)&&'Not enough gold.',tip:'Pay and pass. Trade gets the toll down.',also:()=>[statHelps('haggle')],
         out:e=>({gold:-tollPrice(e),say:tollKnown(e)&&!e.real?'You pay the false toll-men. They grin and drag the barrier aside.':'You pay. The sergeant counts the coins and waves you through.'})},
-      {icon:'scroll',label:'Ask for their writ',again:true,odds:'writ',when:e=>!tollKnown(e)&&!e.asked,facts:()=>['whether they are the lord’s men'],
+      {icon:'scroll',words:'Show me the lord’s writ.',label:'Ask for their writ',again:true,odds:'writ',when:e=>!tollKnown(e)&&!e.asked,facts:()=>['whether they are the lord’s men'],
         tip:'Ask to see the lord’s writ and look them over. Scouting and Intellect help; at Scouting '+ENC_TUNE.toll.see+' you see through them at a glance.',run:(e,c)=>tollWrit(e,c)},
-      {icon:'people',label:'Talk your way through',again:true,odds:'talk',when:e=>!e.talked,facts:()=>[statRead('talk',{vague:'they may let you by',what:'to talk your way through'}),statHelps('talk'),'fail: the toll goes up'],
+      {icon:'people',words:'Come now. The lord’s peace is not served by fleecing travellers.',label:'Talk your way through',again:true,odds:'talk',when:e=>!e.talked,facts:()=>[statRead('talk',{vague:'they may let you by',what:'to talk your way through'}),statHelps('talk'),'fail: the toll goes up'],
         tip:'Bluff, flatter or argue the law. Persuasion and Charisma help.',run:(e,c)=>tollTalk(e,c)},
-      {icon:'shield',label:'Refuse',facts:e=>tollRefuseFacts(e),tip:'Tell them you will not pay. False toll-men may back off from a strong band; the lord’s own men will remember it.',run:e=>tollRefuse(e)},
-      {icon:'sword',label:'Fight them',ask:e=>tollKnown(e)&&!e.real?null:'Attack men in the '+FACS[e.fac].n+'’s colours? If they are the lord’s own, the '+FACS[e.fac].n+' will not forgive it.',facts:e=>tollFightFacts(e),run:e=>tollFight(e)},
-      {icon:'prisoners',label:'Report them',when:e=>tollKnown(e)&&!e.real&&!!tollReport(e),need:e=>Escort.why()||!tollStrong(e,ENC_TUNE.toll.seize)&&'They are too many to seize their ringleader.',
+      {icon:'shield',words:'I will not pay.',label:'Refuse',facts:e=>tollRefuseFacts(e),tip:'Tell them you will not pay. False toll-men may back off from a strong band; the lord’s own men will remember it.',run:e=>tollRefuse(e)},
+      {icon:'sword',words:'Clear the road, or we clear it for you.',label:'Fight them',ask:e=>tollKnown(e)&&!e.real?null:'Attack men in the '+FACS[e.fac].n+'’s colours? If they are the lord’s own, the '+FACS[e.fac].n+' will not forgive it.',facts:e=>tollFightFacts(e),run:e=>tollFight(e)},
+      {icon:'prisoners',words:'The lord shall hear of this.',label:'Report them',when:e=>tollKnown(e)&&!e.real&&!!tollReport(e),need:e=>Escort.why()||!tollStrong(e,ENC_TUNE.toll.seize)&&'They are too many to seize their ringleader.',
         tip:'Seize their ringleader and hand him to the lord’s reeve: a bounty there, and the word goes round.',
         out:e=>({passenger:tollReport(e),gone:true,say:r=>r.escort?'You seize their ringleader and bind him; the rest scatter. The reeve of '+r.escort.to.name+' will want him: '+Escort.way(r.escort)+'.':'He slips away.'})}]},
   wagon:{n:'Abandoned wagon',ico:'sack',w:2,ok:()=>true,on:'byroad',beh:'stay',life:'wagon',ends:'unseen',silent:true,tip:'A wagon left beside the road',
@@ -502,7 +502,7 @@ function roadLureW(){const x=ENC_TUNE.lure,nr=o=>Math.hypot(o.x-P.x,o.y-P.y)<x.n
   return Math.min(x.cap,x.w*(darkness()>0?x.night:1)*(landHold(P.x,P.y)?1:x.wild)*(1+x.bandit*Math.min(x.bands,n)))}
 const roadWarned=()=>skill('scout')>=ENC_TUNE.lure.warn;
 const roadLureOdds=e=>{const [w,c]=odds(rating(e.foes));return '<span class="'+c+'">'+w+'</span> odds'};
-const roadScare=()=>{const s=ENC_TUNE.lure.scare;return clamp(s.base+s.lead*skill('lead')+s.cha*P.attr.cha,s.lo,s.hi)};
+const roadScare=()=>{const s=ENC_TUNE.lure.scare;return clamp(s.base+s.lead*skill('lead')+s.cha*skill('pers'),s.lo,s.hi)};// (cha: Persuasion's, was Charisma's)
 function roadSpring(e){const w=Wounded.prOf(e),m='You kneel beside '+w.him+', and '+w.he+' grins. Bandits burst from the brush: an ambush!';return{log:[m,'bad'],fight:{amb:true},say:m}}
 // where an ambush's band stands as its fight begins: called out, at the tree line (edge); else where it lies hidden (lie); none
 // (one from before, the caravan's raiders): null
@@ -523,8 +523,8 @@ function roadNews(){const out=[],s=W.sites.filter(x=>!x.seen&&x.scoutable).sort(
    you would take to close on one dist px away at your normal pace (Infinity: never); the odds of a catch by hand (Riding, Agility);
    roadSprint: compatibility name; chasing grants no automatic speed bonus */
 const roadSprint=()=>1;
-const catchSpd=()=>ENC_SPD.run*Math.max(ENC_CATCH.lo,1-ENC_CATCH.agi*P.attr.agi);
-const catchReach=()=>ENC_CATCH.reach+ENC_CATCH.agiReach*P.attr.agi;
+const catchSpd=()=>ENC_SPD.run*Math.max(ENC_CATCH.lo,1-ENC_CATCH.agi*skill('athl'));// (agi: Athletics', was Agility's)
+const catchReach=()=>ENC_CATCH.reach+ENC_CATCH.agiReach*skill('athl');
 function catchHours(dist,who){const g=MAP_BASE*travelMul()*(P.morale<25?.8:1)-catchSpd()*(who?EscapeStamina.factor(who):1);return dist<=catchReach()?0:g>0?(dist-catchReach())/moveStep(g,Clock.hourSecs()):Infinity}
 const catchOdds=()=>statOdds('horse');
 // (the thief's Insight read: can you run him down, from here)
@@ -642,7 +642,7 @@ function tollWrit(e,c){if(c.roll()){e.known=1;return'You read the writ and look 
 function tollTalk(e,c){e.talked=1;if(c.roll())return{end:true,say:e.real?'You talk of the law and the lord’s peace until the sergeant lets you by with a grunt.':'They look at each other, unsure of you, and drag the barrier aside.'};
   e.fee=Math.round(e.fee*ENC_TUNE.toll.talk);return'He hears you out, then spits: “'+tollPrice(e)+' gold now, for the trouble.”'}
 function tollRefuseFacts(e){const x=ENC_TUNE.toll,hurt='honour with the '+FACS[e.fac].n+' −'+x.refuse.honor+', reputation in '+e.home+' −'+x.refuse.rep;
-  if(!tollKnown(e))return['false: they back off, or fight','real: '+hurt];
+  if(!tollKnown(e))return['impostors: they back off, or fight','the lord’s own: '+hurt];
   return e.real?['you pass',hurt]:tollStrong(e,x.back)?['they back off: you are too strong for them']:['they fight: '+roadLureOdds(e)]}
 function tollRefuse(e){const x=ENC_TUNE.toll;
   if(e.real)return{honor:[e.fac,-x.refuse.honor],rep:[e.home,-x.refuse.rep],say:'You ride through. “The lord will hear of this,” the sergeant calls after you.'};

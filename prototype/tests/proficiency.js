@@ -6,30 +6,27 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,PROF=t.PROF;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');G.quietEvents=true;const H=t.leaderOf(P);
- // where you start: level 0, every proficiency 0 but your past's, free
- ok(P.level===0&&P.lvUp===0,'a new hero is level 0 with no level choice waiting (level '+P.level+', '+P.lvUp+')');
- ok(P.sk.oneh.lv===2*PROF.pastPer&&P.sk.lead.lv===PROF.pastPer&&P.sk.trade.lv===0,'a veteran starts at One-Handed '+P.sk.oneh.lv+' and Leadership '+P.sk.lead.lv+', the rest at 0');
- ok(H.profProgress()===0,'and the past’s start does not count toward the level');
- // power: level / PROF.per, 99 the old 10
- P.sk.archery={lv:99,xp:0};ok(Math.abs(t.skill('archery')-10)<1e-9,'Archery 99 is a power of 10 (as the old top)');
- P.sk.archery={lv:0,xp:0};
- // the curve: 0 to 99 takes about the old 0 to 10's practice
- let sum=0;for(let l=0;l<99;l++)sum+=t.SK_XP(l);ok(sum>2600&&sum<2900,'0 to 99 takes '+Math.round(sum)+' practice (2.5 times the 1100 it took before: the owner, 2026-11-08, "proficiency increase too fast")');
- // practice raises it past the old 99 (no top for now: the owner, 2026-11-08, "remove the proficiency cap for now, may be max at 9999"),
- // to 9999 and no further; the effects made for the old top read it as 99 (skillSafe), the rest grow on
- P.sk.med={lv:98,xp:0};H.train('med',999,true);const past=P.sk.med.lv;P.sk.med={lv:PROF.max-1,xp:0};H.train('med',1e9,true);
- ok(PROF.max===9999&&past>99&&P.sk.med.lv===PROF.max&&P.sk.med.xp===0,'a proficiency rises past 99 ('+past+' from 98 with 999 practice) and stops at 9999');
+ // where you start: level 0, every proficiency 0 but your past's, free (15 at most: PROF.pastPer a point, rounded)
+ ok(P.level===0&&t.talentsOf(P).points().left===0,'a new hero is level 0 with no skill point waiting (level '+P.level+')');
+ ok(P.sk.oneh.lv===Math.round(2*PROF.pastPer)&&P.sk.oneh.lv===15&&P.sk.lead.lv===Math.round(PROF.pastPer)&&P.sk.trade.lv===0,'a veteran starts at One-Handed '+P.sk.oneh.lv+' and Leadership '+P.sk.lead.lv+', the rest at 0');
+ // power (the owner, 2026-11-08: "nerf the buff from proficiency"): .06 a level to 100, then slower (profPow)
+ ok(Math.abs(t.profPow(100)-6)<1e-9&&Math.abs(t.profPow(50)-3)<1e-9&&t.profPow(500)>9.9&&t.profPow(500)<10.1&&t.profPow(1000)<12,'power: 3 at 50, 6 at 100, '+t.profPow(500).toFixed(1)+' at 500, '+t.profPow(1000).toFixed(1)+' at 1000 (was a level ÷ 9.9: 10 at 99)');
+ P.sk.archery={lv:100,xp:0};ok(Math.abs(t.skill('archery')-6)<1e-9,'Archery 100 is a power of 6');P.sk.archery={lv:0,xp:0};
+ // the curve: 0 to 99 the same practice as before
+ let sum=0;for(let l=0;l<99;l++)sum+=t.SK_XP(l);ok(sum>2600&&sum<2900,'0 to 99 takes '+Math.round(sum)+' practice');
+ // no top (the owner, 2026-11-08: "no cap on max how you can gain proficiency"); the effects made for the old top read it as 99
+ // (skillSafe), the rest grow on
+ P.sk.med={lv:98,xp:0};H.train('med',999,true);const past=P.sk.med.lv;P.sk.med={lv:20000,xp:0};H.train('med',1e5,true);
+ ok(PROF.max===Infinity&&past>99&&P.sk.med.lv>20000,'a proficiency rises past 99 ('+past+' from 98 with 999 practice), and past 20000: no top');
  {const was=P.sk.trade;P.sk.trade={lv:5000,xp:0};const buy=t.spreadBuy(),sell=t.spreadSell(),sh=(P.sk.surv=P.sk.surv||{lv:0,xp:0},P.sk.surv.lv=5000,t.survivalShare());P.sk.surv.lv=0;P.sk.trade=was;P.sk.archery={lv:5000,xp:0};const pw=t.skill('archery');P.sk.archery={lv:0,xp:0};
-  ok(buy>0&&sell>0&&sh>0&&Math.abs(t.skillSafe('trade')-t.skill('trade'))<1e-9&&pw>500,'at 5000 the effects made for the old top read it as 99: prices as at 99 ('+buy.toFixed(3)+', '+sell.toFixed(3)+'), Survival still needs food ('+sh.toFixed(2)+'), power grows on ('+Math.round(pw)+')')}
+  ok(buy>0&&sell>0&&sh>0&&pw>15,'at 5000 the effects made for the old top read it as 99: prices as at 99 ('+buy.toFixed(3)+', '+sell.toFixed(3)+'), Survival still needs food ('+sh.toFixed(2)+'), power grows on ('+pw.toFixed(1)+')')}
  // (the characters made never start past the old top)
- ok(t.SK_MADE===99&&Math.min(t.SK_MADE,30*t.PROF.per)===99,'a lord, chieftain, companion or past starts at no more than 99 (SK_MADE)');P.sk.med={lv:0,xp:0};P.level=0;P.xp=0;P.lvUp=0;// (as new again: the level never falls by itself)
- // level from progress, a choice (health, stamina or mana) a level
- const lv0=P.level,tp0=P.lvUp;H.train('tact',300,true);
- ok(P.level>lv0&&P.lvUp-tp0===P.level-lv0,'practising Tactics raises the level, a choice each (level '+P.level+', +'+(P.lvUp-tp0)+' choices)');
- ok(P.level===t.PROF_LEVEL(H.profProgress()),'the level is the one its progress reaches');
- // weights: the easy ones count less
- const a=H.profProgress();P.sk.scout={lv:10,xp:0};const b=H.profProgress()-a;P.sk.scout={lv:0,xp:0};P.sk.eng={lv:10,xp:0};const c=H.profProgress()-a;P.sk.eng={lv:0,xp:0};
- ok(Math.abs(b-c*PROF.weight.scout)<1e-6,'Scouting counts '+Math.round(PROF.weight.scout*100)+'% of Engineering toward the level');
+ ok(t.SK_MADE===99&&Math.min(t.SK_MADE,30*t.PROF.per)===99,'a lord, chieftain, companion or past starts at no more than 99 (SK_MADE)');P.sk.med={lv:0,xp:0};P.level=0;P.xp=0;// (as new again)
+ // your level, Skyrim's way (the owner, 2026-11-08): experience from deeds and from each level a proficiency reaches; a skill point a level
+ {const need=[0,1,2,3].map(l=>H.xpNeed.call({aiOwned:false,lv:l}));ok(need.join()===[0,1,2,3].map(l=>t.LEVEL.base+t.LEVEL.per*l).join(),'each level takes more: '+need.join(', ')+' XP')}
+ P.level=0;P.xp=0;H.addXp(t.LEVEL.base-1);ok(P.level===0,'one short: still level 0');H.addXp(1);ok(P.level===1&&P.xp===0&&t.talentsOf(P).points().left===t.LEVEL.pts,'then level 1 and a skill point');
+ P.level=0;P.xp=0;P.sk.tact={lv:0,xp:0};H.train('tact',t.SK_XP(0)+t.SK_XP(1),true);ok(P.sk.tact.lv===2&&Math.abs(P.xp-t.LEVEL.prof*(1+2))<1e-9,'Tactics to 2: experience of its new levels (1 + 2 = '+P.xp+')');
+ P.level=0;P.xp=0;P.sk.tact={lv:0,xp:0};const sk0=JSON.stringify(P.sk.oneh);t.gainXp(40,'battle');ok(P.xp>=40&&JSON.stringify(P.sk.oneh)!==sk0,'a battle: its experience, and practice for your weapon ('+Math.round(P.xp)+' XP)');P.level=0;P.xp=0;
  // repeats: the same practice over and over within an hour gives less
  P.sk.trade={lv:0,xp:0};for(let i=0;i<3*PROF.burst;i++)H.train('trade',1);const damp=P.sk.trade.lv*1000+P.sk.trade.xp;
  P.sk.trade={lv:0,xp:0};for(let i=0;i<3*PROF.burst;i++)H.train('trade',1,true);const whole=P.sk.trade.lv*1000+P.sk.trade.xp;
@@ -45,8 +42,8 @@ try{
  P.tree=[P.origin];P.sk.oneh.lv=20;ok(t.heroCombo().length===2,'the combo is two blows to begin with');
  ok(t.canTakeOf(P,'oneh_third')&&!t.canTakeOf(P,'oneh_push'),'Third Blow at One-Handed 15, the finishers not before 60');
  t.takeNode('oneh_third');ok(t.heroCombo().length===3,'Third Blow: a third blow');
- P.sk.oneh.lv=60;t.takeNode('oneh_whirl');t.takeNode('oneh_push');ok(t.heroFin()==='push','Crushing Finisher: its style');t.takeNode('oneh_stun');ok(t.heroFin()==='push','with both, the first learned rules');
- P.tree=[P.origin];P.sk.twoh.lv=60;['twoh_tough','twoh_leap','twoh_stun'].forEach(id=>t.takeNode(id));ok(t.heroCombo().length===3&&t.heroFin()==='stun','a finisher without a Third Blow (Two-Handed 60) brings its third blow');P.tree=[P.origin];
+ P.level=30;P.sk.oneh.lv=60;t.talentsOf(P).pathTo('oneh_push').forEach(id=>t.takeNode(id));ok(t.heroFin()==='push','Crushing Finisher: its style');t.takeNode('oneh_stun');ok(t.heroFin()==='push','with both, the first learned rules');
+ P.tree=[P.origin];P.sk.twoh.lv=60;t.takeNode('twoh_tough');t.talentsOf(P).pathTo('twoh_stun').forEach(id=>t.takeNode(id));ok(t.heroCombo().length===3&&t.heroFin()==='stun','a finisher without a Third Blow (Two-Handed 60) brings its third blow');P.tree=[P.origin];
  // companions level the same way
  delete P.comps.brann;t.compJoin('brann');const C=t.compOf('brann');
  if(C){ok(C.lv===0&&Object.values(C.sk).every(s=>s.lv===0),'a companion starts at level 0, every proficiency at 0 ('+C.lv+')');
