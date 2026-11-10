@@ -1503,14 +1503,15 @@
     for(const id of ids)layers[id].getContext('2d').putImageData(images[id],0,0);
   }
   function helmetOutline(layer){
-    const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,n=SIZE/2,outside=new Uint8Array(n*n),queue=[];
+    const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,source=new Uint8ClampedArray(d),n=SIZE/2,outside=new Uint8Array(n*n),queue=[];
     const add=(x,y)=>{if(x<0||y<0||x>=n||y>=n)return;const i=y*n+x;if(outside[i]||d[(y*2*SIZE+x*2)*4+3])return;outside[i]=1;queue.push(i);};
     for(let i=0;i<n;i++){add(i,0);add(i,n-1);add(0,i);add(n-1,i);}
     for(let i=0;i<queue.length;i++){const x=queue[i]%n,y=Math.floor(queue[i]/n);add(x-1,y);add(x+1,y);add(x,y-1);add(x,y+1);}
     for(let y=0;y<n;y++)for(let x=0;x<n;x++){
       const k=(y*2*SIZE+x*2)*4;if(!d[k+3])continue;
       if(x&&y&&x<n-1&&y<n-1&&!outside[y*n+x-1]&&!outside[y*n+x+1]&&!outside[(y-1)*n+x]&&!outside[(y+1)*n+x])continue;
-      for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y*2+j)*SIZE+x*2+i)*4;d[q]=d[q+1]=d[q+2]=32;}
+      const inside=[k,k-8,k+8,k-SIZE*8,k+SIZE*8].filter(q=>q>=0&&q<source.length&&source[q+3]),shade=inside.reduce((sum,q)=>sum+source[q],0)/inside.length>=192?96:64;
+      for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y*2+j)*SIZE+x*2+i)*4;d[q]=d[q+1]=d[q+2]=shade;}
     }
     g.putImageData(im,0,0);
   }

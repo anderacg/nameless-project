@@ -261,7 +261,7 @@ Full helmet refinement: rounded cheek/jaw bowls, beveled great-helm corners and 
 
 Reference-based closed visors now use long, narrow brow slits with a stepped upward slope toward a solid nose bridge. A raised center seam and paired breathing holes define the faceplate; deeper cavity shading keeps the eyes recessed. Apertures remain sharp on the two-pixel grid and keep pupil anchors clear.
 
-Full helmet lighting: a single curved crown glint and broad rounded light/shadow regions define the metal volume. A dark external silhouette separates steel from the background. Rivets, reinforcement bands, flutes, leaf ribs and vents use connected native-scale marks. Headwear tint stays editable; all details use the shared equipment palette and two-pixel grid.
+Full helmet lighting: a single curved crown glint and broad rounded light/shadow regions define the metal volume. A darker steel silhouette separates the helmet from the background. Rivets, reinforcement bands, flutes, leaf ribs and vents use connected native-scale marks. Headwear tint stays editable; all details use the shared equipment palette and two-pixel grid.
 
 ## Equipment detail at native size
 
@@ -271,4 +271,6 @@ The pass changes clothing and armor tones inside their existing masks. It preser
 
 Full helmet contour cleanup: great-helm crowns and reinforcing bands follow curved metal profiles, with tapered center straps and jaw contours. A redundant straight-sided face lining is removed after coverage checks. Broad curved lighting regions replace the patchy source shading. Deliberate native-scale vents, rivets and ribs retain sharp pixel edges. Both helmet layers use the shared steel palette; checks cover all races for detached grey blocks, clear visors and fitted coverage.
 
-Helmet lighting and contour redraw: a dark exterior edge follows both helmet layers and excludes enclosed visor holes. Smoothly curved light/shadow regions and one crown reflection replace the small disconnected grey patches. Construction details are drawn directly on the native two-pixel grid. Face coverage, visor apertures, body art and other portrait parts keep their existing geometry.
+Helmet lighting and contour redraw: a shaded steel exterior edge follows both helmet layers and excludes enclosed visor holes. Smoothly curved light/shadow regions and one crown reflection replace the small disconnected grey patches. Construction details are drawn directly on the native two-pixel grid. Face coverage, visor apertures, body art and other portrait parts keep their existing geometry.
+
+Helmet edge shading uses the neighboring metal tones: medium-dark steel on lit edges and deeper steel on shadowed edges. Exterior contours avoid near-black; visor cavities and breathing holes retain their deeper shadows.
