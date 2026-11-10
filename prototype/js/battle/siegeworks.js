@@ -28,6 +28,12 @@ const SIEGE_WALL={on:true,x:.6,thick:3,lv:[0,1,2,2],gate:4,hp:[0,260,480,720],ra
    one of your engines every every s, by hit, dmg of its hp; its tower down, it is lost */
 const SIEGE_ENGINE={on:true,days:6,more:3,most:3,range:330,gap:90,every:[8,11],first:[3,6],flight:1.8,hit:.7,miss:[26,60],dmg:[85,125],splash:22,hurt:[18,34],
   section:5,hp:[0,220,380,520],tower:1.6,rubble:1,fall:[16,32],hp0:200,def:{lv:2,every:[10,13],first:[6,9],hit:.45,dmg:[60,90]}};
+/* SIEGE_TOWN, the town behind the wall (the owner: "check and improve siege battle"; its yard was bare grass): its centre building (its
+   kind's: a citadel, a keep, a hall, a fort) at centre of the yard's width on the gate's street, its houses (its own lots' kinds) in
+   cells of cell px across the yard, fill of them taken, jit px off their cell's middle, none within street px of the gate's row
+   nor within inset px of the wall nor edge px of the field's ends; each drawn k times its model and a footprint foot (its share of
+   the picture's width and height) at its feet that the field's buildings block, gap px kept between two */
+const SIEGE_TOWN={on:true,k:2,centre:.6,cell:74,fill:.55,jit:10,street:46,inset:84,edge:22,foot:[.72,.42],gap:6,kinds:['house','smithy','tavern','chapel','granary','warehouse']};
 const sRand=([a,b])=>a+Math.random()*(b-a);// (a draw between a and b: the battle's, Math.random)
 class SiegeWorks{
   static on(e){return SIEGE_WALL.on&&!!e&&e.kind==='siege'&&!!e.ref&&typeof e.ref.walled==='function'&&e.ref.walled()&&wallOf(e.ref)>0}
@@ -43,7 +49,7 @@ class SiegeWorks{
     this.stairs=[];for(let r=R0+3;r<R1-2;r+=S.stairs){let q=r;while(q<R1-2&&busy(q))q++;if(q<R1-2&&!this.stairs.includes(q))this.stairs.push(q)}
     let free=[];for(let r=R0+2;r<R1-1;r++)if(!busy(r)&&!this.stairs.some(q=>Math.abs(q-r)<=1))free.push(r);
     this.ladders=[];for(let k=0;k<S.ladders&&free.length;k++){const want=R0+(R1-R0)*(k+1)/(S.ladders+1)+(R()-.5)*3;let best=free[0];for(const r of free)if(Math.abs(r-want)<Math.abs(best-want))best=r;this.ladders.push(best);free=free.filter(r=>Math.abs(r-best)>2)}
-    this.sections();this.engines=[];this.shots=[];this.mangonel=null;this.nEngines=Math.max(0,o.engines|0);this.aim=null}
+    this.sections();this.engines=[];this.shots=[];this.mangonel=null;this.nEngines=Math.max(0,o.engines|0);this.aim=null;this.houses=this.townPlan()}
   // (its sections: each stretch of the walk between the gate and its towers in SIEGE_ENGINE.section rows at most, and each tower; each
   // {r0, r1, hp, hp0, tower, down})
   sections(){const E=SIEGE_ENGINE,h=E.hp[Math.min(3,this.w)]||E.hp[1],out=[];let run=[];
@@ -55,8 +61,19 @@ class SiegeWorks{
   get gy0(){return this.g0*this.cs}
   get gy1(){return (this.g1+1)*this.cs}
   isTower(r){return this.towers.some(q=>r>=q&&r<q+SIEGE_WALL.tower)}
-  // (its plan for the battle's terrain: open ground, and the wall laid by raster)
-  plan(W,H,top,bot){return{recipe:'siege',layout:this.kind,W,H,top,bot,hills:[],woods:[],marsh:[],rocks:[],rivers:[],lane:null,siege:this}}
+  // (the town behind it, SIEGE_TOWN: each building {x, y, w, h} its footprint, type, n its picture's size (px), the centre one big)
+  townPlan(){const S=SIEGE_TOWN,t=this.t,MS=(typeof PX!=='undefined'&&PX.MODEL_SIZES&&PX.MODEL_SIZES.types)||{};if(!S.on||!MS.cottage)return[];
+    const R=seeded(((this.seed||1)^0x70A2E5)>>>0),out=[],x0=this.x1+S.inset,x1=this.W-S.edge,y0=this.top+S.edge,y1=this.bot-S.edge,gy=(this.gy0+this.gy1)/2;
+    const c0=HOLDING_TYPES[t.kind]&&HOLDING_TYPES[t.kind].centre&&HOLDING_TYPES[t.kind].centre._,centre=MS[c0]?c0:'keep';
+    let kinds=[...new Set((t.lots||[]).filter(l=>S.kinds.includes(l.k)).map(l=>l.type))].filter(k=>MS[k]&&MS[k].cell>=32);if(!kinds.length)kinds=['cottage'];
+    const put=(type,x,y,big)=>{const n=MS[type].cell*S.k,w=n*S.foot[0],h=n*S.foot[1],b={x:Math.round(x-w/2),y:Math.round(y-h),w:Math.round(w),h:Math.round(h),type,n,big};
+      if(b.x<x0-(big?40:0)||b.x+b.w>x1||b.y<y0||b.y+b.h>y1||Math.abs(y-gy)<S.street+(big?0:h)&&!big)return false;
+      if(out.some(o=>b.x<o.x+o.w+S.gap&&o.x<b.x+b.w+S.gap&&b.y<o.y+o.h+S.gap&&o.y<b.y+b.h+S.gap))return false;out.push(b);return true};
+    put(centre,x0+(x1-x0)*S.centre,gy+MS[centre].cell*S.k*S.foot[1]/2,true);
+    for(let y=y0+S.cell/2;y<y1;y+=S.cell)for(let x=x0+S.cell/2;x<x1;x+=S.cell)if(R()<S.fill)put(kinds[Math.floor(R()*kinds.length)],x+(R()-.5)*S.jit,y+(R()-.5)*S.jit+S.cell*.3,false);
+    return out}
+  // (its plan for the battle's terrain: open ground, the wall laid by raster, the town's buildings standing behind it)
+  plan(W,H,top,bot){return{recipe:'siege',layout:this.kind,W,H,top,bot,hills:[],woods:[],marsh:[],rocks:[],rivers:[],lane:null,siege:this,...(this.houses.length?{built:{houses:this.houses,fields:[]}}:{})}}
   /* laid on the cells (raster): the wall-walk L levels up, its outer face a cliff both ways but at the ladders, its inner one
      but at the stairs; towers rock (a cell wider, outside); the gate's cells rock till it breaks (its sides cliffs) */
   lay(kind,lvl,C,R,wall,rockH){const S=SIEGE_WALL,bit=(i,q)=>{wall[i]|=1<<q},at=(c,r)=>r*C+c,{c0,c1,L}=this;
@@ -148,9 +165,15 @@ class SiegeArt{
     // (the stairs down into the yard: steps across the inner lip)
     for(const r of w.stairs){const y=r*cs,h=SIEGE_WALL.stair*cs;for(let k=0;k<h;k+=3){rect(g,C[3],x1-12,y+k,14,1);rect(g,C[1],x1-12,y+k+1,14,2)}rect(g,C[3],x1+2,y,1,h)}
     this.passage(g);for(const r of w.ladders)this.ladder(g,x0,r*cs);
-    for(const r of w.towers)this.props.push(this.tower(r));this.props.sort((a,b)=>a.y-b.y);
+    for(const r of w.towers)this.props.push(this.tower(r));yield;for(const h of w.houses||[])if(!h.out){const p=this.house(g,h);if(p)this.props.push(p)}this.props.sort((a,b)=>a.y-b.y);
     this.cv=cv;return this}
   gateRow(y){const w=this.w;return y>=w.gy0&&y<w.gy1}
+  // (a building of the town (SIEGE_TOWN): the holding's builders' model, SIEGE_TOWN.k times it, crisp; its ground and shadow painted
+  // on the layer under it; standing, a prop whose feet are its footprint's south edge)
+  house(g,h){if(typeof PX==='undefined'||!PX.buildingModel)return null;let m=null;try{m=PX.buildingModel({type:h.type,people:'human',culture:this.cul,seed:(this.w.seed+h.x)%4,yaw:0,env:this.w.clim||'grass',snow:this.w.clim==='frost'})}catch(e){m=null}
+    if(!m||!m.img)return null;const k=SIEGE_TOWN.k,n=m.img.width*k,X=Math.round(h.x+h.w/2-n/2),Y=Math.round(h.y+h.h-n),cv=mkcv(n,n),q=cv.getContext('2d');q.imageSmoothingEnabled=false;q.drawImage(m.img,0,0,n,n);if(m.snow&&m.snow.img)q.drawImage(m.snow.img,0,0,n,n);
+    g.save();g.imageSmoothingEnabled=false;if(m.shadow)g.drawImage(m.shadow,X,Y,n,n);if(m.ground)g.drawImage(m.ground,X,Y,n,n);g.restore();
+    return{dk:5,x:h.x+h.w/2,y:h.y+h.h,s:cv,dx:X,dy:Y,box:[X,Y,X+n,h.y+h.h]}}
   // (stone: the sloped foot outside, the walk's flags, the parapet and its merlons, the inner lip)
   stone(g,y0,y1,skip){const w=this.w,C=this.C,x0=w.x0,x1=w.x1,s=w.seed%9973,[mh,mg]=SIEGE_ART.merlon,F=SIEGE_ART.foot;
     for(let y=y0;y<y1;y++){if(skip(y))continue;
@@ -234,7 +257,7 @@ class SiegeSetup extends BattleSetup{
   constructor(opts){super(opts);const e=G.enc,t=e.ref,s=mySiege(t);this.ram=!!G.capWith||!!s&&s.days>=RAM_DAYS;this.seed=Math.floor(hash(t.tx||0,t.ty||0,431)*4294967296)>>>0}
   groundSpec(){const E=this.env,n=siegeEngines(G.enc.ref);E.t=T_OPEN;E.name='Shadow of the walls';E.text='The walls of '+G.enc.ref.name+': climb them by your ladders'+(this.ram?', or break the gate with the ram':'')+(n?'; your '+(n>1?n+' trebuchets':'trebuchet')+' batter the wall (click a stretch of it to aim them)':'')+'; their archers hold the wall-walk.';return{siege:true,seed:this.seed}}
   terrain(){const FI=this.field;this.works=new SiegeWorks(G.enc.ref,BW,FI.top,FI.bot,{ram:this.ram,seed:this.seed,engines:siegeEngines(G.enc.ref)});return this.TR=buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot,siege:this.works})}
-  *paint(){const base=yield* arenaSteps(this.env.c);this.painted=yield* new SiegeArt(this.works,base).paintSteps()}
+  *paint(){this.works.clim=this.env.c;const base=yield* arenaSteps(this.env.c);this.painted=yield* new SiegeArt(this.works,base).paintSteps()}
   muster(){super.muster();B.works=this.works;B.holds=true;for(const u of B.units)if(isRider(u))Dismount.down(u,'none');this.post();this.works.placeEngines()}
   /* (the defenders at their posts: shooters along the wall-walk, clear of the gate and towers, in a file facing out; foot behind
      the gate; the rest (lords, characters) in the yard behind them) */

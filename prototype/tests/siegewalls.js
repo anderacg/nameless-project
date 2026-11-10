@@ -21,6 +21,9 @@ Kit.suite(({ok,info})=>{
    ok(T2.wall[mid(noLad)+w.c0-1]&1&&T2.wall[mid(rd)+w.c0-1]===0,'the outer face sheer but at the ladders');
    const g0={x:w.x0-30,y:(w.gy0+w.gy1)/2},g1={x:w.x1+30,y:(w.gy0+w.gy1)/2},straight=T2.routes.wayLen(g0,g1,'foot');
    ok(b.units.every(u=>!u.s.mounted),'everyone on foot');
+   {const H=w.houses.filter(q=>!q.out),c=H.find(q=>q.big),cell=q=>Math.floor((q.y+q.h/2)/cs0)*C+Math.floor((q.x+q.w/2)/cs0),cs0=w.cs,gy=(w.gy0+w.gy1)/2;
+    ok(H.length>=6&&c&&H.every(q=>T2.built&&T2.built[cell(q)]===1&&q.x>=w.x1),'the town behind the wall: its '+(c&&c.type)+' and '+(H.length-1)+' houses of its own kinds ('+[...new Set(H.map(q=>q.type))].join(', ')+'), each standing where the way is barred');
+    ok(c&&T2.routes.canReach({x:w.x1+30,y:gy},{x:c.x-10,y:c.y+c.h/2},'foot')&&b.ground.props.filter(p=>p.dk===5).length===H.length,'a street from the gate to it, each building drawn standing')}
    const arc=b.units.filter(u=>u.team===1&&u.s.range),foot=b.units.filter(u=>u.team===1&&!u.s.range&&!u.leader&&!u.hero);
    ok(arc.length&&arc.every(u=>u.x>=w.x0&&u.x<w.x1)&&foot.every(u=>u.x>=w.x1),'their shooters on the wall-walk ('+arc.length+'), their foot behind it ('+foot.length+')');
    const p0=foot.map(u=>[u.x,u.y]);for(let i=0;i<60;i++)t.updateBattle(.05);
