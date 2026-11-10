@@ -163,7 +163,7 @@ class BattleResolution{
     if(this.battle&&DROPS.on)html+=BattleDrops.of(this.battle).fieldLine();// (what the field gave: battle/drops.js)
     // (withdrawn or beaten, the beasts holding the field: the spoils stay there, a quest to take them back: world/fieldloot.js)
     if(!win&&e.kind==='monster'){const at=this.battle?.world||e.ref,q=leaveFieldLoot(at.x,at.y,slain||[],e.ref);if(q)html+=fieldLootLine(q)}
-    if(!win)encLost(e);// (withdrawn or beaten: what that costs or leaves behind, engage.js ON_WIN lost)
+    if(!win)encLost(e,slain);// (withdrawn or beaten: what that costs or leaves behind, engage.js ON_WIN lost)
     // (how it went, on the world's bus: an encounter fought on the road ends with it, passengers are lost with a defeat; run down,
     // it is to be faced again: story/encounter.js, world/escort.js)
     worldEmit('battle:ended',{enc:e,how:win?'won':!retreat?'lost':G.encAgain===e?'rundown':'withdrawn'});

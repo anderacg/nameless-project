@@ -16,22 +16,51 @@ class Standard extends Site{
   get empties(){return false}
   // (known once you have seen its ground, as a holding is)
   known(){return this.seen||seenAt(this.x,this.y)}
-  // (its realm: a realm of the world's, yours ('player'), or none)
+  // (its realm: a realm of the world's, yours ('player'), or none; band: the bandits, raiders, bog raiders or goblins who hold it
+  // as their lair, phase 3)
   get realm(){return this.owner&&(this.owner==='player'||FACS[this.owner])?this.owner:null}
-  ownerName(){const f=this.realm;return f==='player'?'yours':f?'the '+FACS[f].n:''}
-  col(){const f=this.realm;return f?FACS[f].col:STANDARD_ART.rag}
-  banner(){const f=this.realm;return f?{k:'banner',col:FACS[f].col,dev:f==='player'?'crown':f}:null}
+  get band(){return STANDARD.lair.kinds.includes(this.owner)?this.owner:null}
+  ownerName(){const f=this.realm,b=this.band;return f==='player'?'yours':f?'the '+FACS[f].n:b?LAIR_SAY[b].toLowerCase():''}
+  col(){const f=this.realm,b=this.band;return f?FACS[f].col:b?(b==='goblins'?GOBLINS.col:BAND_FLAG[b]||BAND_FLAG.bandits):STANDARD_ART.rag}
+  banner(){const f=this.realm,b=this.band;return f?{k:'banner',col:FACS[f].col,dev:f==='player'?'crown':f}:b?{k:'rag',col:this.col(),dev:'skull'}:null}
   flag(){return this.banner()||{k:'rag',col:STANDARD_ART.rag,dev:null}}
   // (yours to keep: your realm's, or your employer's)
   get ours(){const f=this.realm;return !!f&&(f==='player'||f===P.fac)}
   // (as many guards as its level keeps: one level fewer while its tower lies broken)
   get most(){return STANDARD.guards[Math.max(1,this.lv-(this.broken?1:0))]||0}
   // its guards, as its realm's soldiers
-  guardList(){const f=this.realm;return f&&f!=='player'&&this.guards>0?armyOf(f,this.guards):[]}
+  guardList(){const f=this.realm,b=this.band,t=this.supplier();if(this.guards<=0)return [];if(b)return b==='goblins'?goblinList(this.guards,true):makeEnemies(this.guards,true,b);
+    return f==='player'?(t?garList({...t,gar:this.guards}):[]):f?armyOf(f,this.guards):[]}
+  // (beaten off or withdrawn from: those of its guards you slew stay dead: engage.js ON_WIN.standard lost)
+  held(slain){const n=(slain||[]).filter(k=>ST[k]&&!ST[k].beast&&k!=='chief').length;this.guards=Math.max(0,this.guards-n)}
   whyText(){return this.why==='deposit'||this.why==='fish'?'by the '+(GOODS[this.g]?GOODS[this.g].n.toLowerCase():'')+' '+(this.why==='fish'?'waters':'deposit'):'at the '+STANDARD_WHY[this.why]}
   // the day: its realm fallen, it is no one's; else its realm sends a guard back while it holds it in peace
   day(){const f=this.realm;if(f&&f!=='player'&&W.dead[f]){this.owner=null;this.guards=0;return}
-    if(!f||this.taking||this.choose)return;if(f!=='player'&&this.guards<this.most)this.guards=Math.min(this.most,this.guards+STANDARD.regrow);this.work()}
+    if(this.taking||this.choose)return;if(this.band){this.raid();return}if(!f)return;
+    if(this.guards<this.most){if(f!=='player')this.guards=Math.min(this.most,this.guards+STANDARD.regrow);
+      else{const t=this.supplier();if(t&&t.gar>STANDARD.own.keep){t.gar--;this.guards++}}}// (yours: a man a day from your nearest holding's garrison, while it keeps STANDARD.own.keep)
+    this.work()}
+  /* (a band's lair, phase 3: every STANDARD.lair.every days, while fewer than STANDARD.lair.most of its raiders are out, a band
+     rides out of it to raid the roads round it (world.js bandits; a goblins' warband), its own men left at the lair) */
+  raid(){const L=STANDARD.lair,b=this.band;if(G.day-(this.raided||0)<L.every)return;const out=bandits.filter(o=>o.lair===this.i&&!o.gone).length;if(out>=L.most)return;this.raided=G.day;
+    const n=rint(...L.n)+Math.floor(G.day/15),x=this.x,y=this.y+20,ld=newChief(b,1+Math.floor(G.day/25));
+    bandits.push(asParty(b==='goblins'?{x,y,n,kind:'goblins',list:goblinList(n,false),t:0,a:0,idle:false,cool:0,ld,haunt:{x:this.x,y:this.y},lair:this.i}:{x,y,n,kind:b,list:makeEnemies(n,false,b),t:0,a:0,idle:false,cool:0,ld,lair:this.i}))}
+  /* (the world's captures, phase 3, once a day: a lord at war with its realm, or come for a lair or a standard no one holds, with
+     STANDARD.capture.more times its guards or more within capture.r tiles takes it for his realm (his realm's again, if it was
+     theirs); a band within reach of one held by STANDARD.capture.weak guards or fewer, of its realm or of no one, takes it for its
+     lair, its men its guards, its chieftain theirs) */
+  contest(){const C=STANDARD.capture,R=C.r*TILE,f=this.realm,b=this.band;if(this.taking||this.choose)return;
+    const near=o=>Math.hypot(o.x-this.x,o.y-this.y)<R,want=l=>!l.dead&&!l.inside&&!l.fight&&l.fac!==f&&(b||!f||f!=='player'&&atWar(l.fac,f)||f==='player'&&hostileTo(l.fac))&&near(l)&&l.troops.length>=Math.max(1,this.guards)*C.more;
+    const L=W.lords.find(want);if(L&&Math.random()<C.chance)return this.taken(L.fac,lordName(L));
+    if(b||f==='player'||this.guards>C.weak)return;const B=bandits.find(o=>!o.gone&&STANDARD.lair.kinds.includes(o.kind)&&near(o)&&o.troops.length>this.guards&&!o.lair);
+    if(B&&Math.random()<C.chance){const n=B.troops.length,ld=B.ld;bandits=bandits.filter(o=>o!==B);worldEmit('band:beaten',{band:B});this.taken(B.kind,null);this.guards=Math.min(C.lairMost,n);this.ld=ld||null}}
+  // (taken in the world: its new holder, its tower broken, word of it to you as the world's news go: worldlog.js worldEvent)
+  taken(to,who){const was=this.realm||this.band;this.owner=to;this.choose=false;this.taking=null;this.guards=this.realm&&this.realm!=='player'?Math.max(1,this.guards>>1):0;
+    if(this.lv>=2)this.broken=true;this.fix=0;this.since=G.day;this.need=null;worldEmit('standard:taken',{standard:this,from:was,to,by:who||to});
+    const W0=n=>n&&FACS[n]?'the '+FACS[n].n:n?LAIR_SAY[n]||n:'no one',text=(who?who+' takes':cap1(W0(to))+' take')+' the '+this.name+(was?' from '+W0(was):'')+'.';
+    worldEvent({text,cls:to===P.fac||was===P.fac&&!!was?(to===P.fac?'good':'bad'):'',fac:[to,was].filter(k=>FACS[k]),x:this.x,y:this.y,kind:'war'})}
+  // (an hour: your banner going up; and yours and your employer's lifting the fog round them, STANDARD.sight tiles)
+  watch(){if(this.ours)revealDisk(this.x,this.y,STANDARD.sight*TILE)}
   // (the holding of its realm that pays for its works: the nearest of its realm's)
   supplier(){const f=this.realm;if(!f)return null;const F=fiefsOf(f);return F.length?Spatial.nearest(F,this.x,this.y):null}
   // (its works this day: a broken tower mended, STANDARD.repair days on, once its goods are paid; else, held in peace long enough,
@@ -74,18 +103,19 @@ class Standard extends Site{
         {icon:'truce',label:'Leave it to no one',act:'site-hand',arg:'none',facts:['renown +'+STANDARD.renown]}]};
     if(s.taking)return{body:body+'<p class="gold">Your banner goes up: '+s.taking.h+' of '+STANDARD.hold+' hours. Stay by it.</p>'};
     if(s.ours)return{body:body+'<p class="muted">It flies '+(s.realm==='player'?'your own colours':'the colours of the realm you serve')+'.</p>'};
-    const war=s.realm&&s.realm!=='player'&&!hostileTo(s.realm),fight=s.guards>0;
-    return{body,acts:[{icon:'sword',label:fight?'Attack its guards':'Raise your banner',act:'site-attack',facts:[fight?roughly(s.guards)+' guards':'no guards',war?'an act of war on the '+FACS[s.realm].n:'',STANDARD.hold+' hours by it'].filter(Boolean),
+    const war=s.realm&&s.realm!=='player'&&!hostileTo(s.realm),fight=s.guards>0,lair=s.band?'<p class="bad">'+LAIR_SAY[s.band]+' have made it their lair: their raiders ride out of it onto the roads round it.</p>':'';
+    return{body:body+lair,acts:[{icon:'sword',label:fight?(s.band?'Drive them out':'Attack its guards'):'Raise your banner',act:'site-attack',facts:[fight?roughly(s.guards)+' guards':'no guards',war?'an act of war on the '+FACS[s.realm].n:'',STANDARD.hold+' hours by it'].filter(Boolean),
       why:partySize()<1&&fight?'You have no men':''}]}}
   act(a,arg,done){
     if(a==='site-attack'&&!this.ours&&!this.taking&&!this.choose){const f=this.realm;this.was=f;
       if(f&&f!=='player'&&!hostileTo(f)){const X=STANDARD.hostile;Timed.of(P,'hostile').extend(f,X.days);addHonor(f,X.honor,true)}
-      if(this.guards>0){G.site=null;startEncounter({kind:'standard',ref:this,list:this.guardList(),title:'Guards of the '+this.name,word:'guards',mine:true});return true}
+      if(this.guards>0){G.site=null;const b=this.band;startEncounter({kind:'standard',ref:this,list:this.guardList(),title:b?LAIR_SAY[b]+' at the '+this.name:'Guards of the '+this.name,word:b?'raiders':'guards',band:b||undefined,mine:true});return true}
       this.taking={h:0};done('Your men plant your banner by the '+this.name+'. Stay by it '+STANDARD.hold+' hours.');return true}
     if(a==='site-hand'&&this.choose){done(this.give(arg==='none'?null:arg));return true}
     return false}
   // its guards beaten (engage.js ON_WIN.standard): your banner goes up while you stay by it
-  beaten(){this.guards=0;this.taking={h:0};return ' Its guards are beaten. Stay by the '+this.name+' '+STANDARD.hold+' hours to raise your banner.'}
+  beaten(){const b=this.band;this.guards=0;this.taking={h:0};if(b){this.owner=null;this.ld=null;worldEmit('site:cleared',{site:this})}
+    return (b?' The '+LAIR_SAY[b].toLowerCase()+' are driven out of it.':' Its guards are beaten.')+' Stay by the '+this.name+' '+STANDARD.hold+' hours to raise your banner.'}
   // an hour by it: your banner goes up; gone well off, it is broken off
   hour(){const t=this.taking;if(!t)return;const d=Math.hypot(P.x-this.x,P.y-this.y);
     if(d<=STANDARD.r){if(++t.h>=STANDARD.hold)this.raised()}else if(d>STANDARD.r*3){this.taking=null;log('You leave the '+this.name+': your banner never went up.','bad')}}
@@ -149,15 +179,19 @@ const Standards={
       s=Object.assign(Object.create(Standard.prototype),{i:STANDARD.I0+k,type:'standard',tx,ty,x,y,seed:1+Math.floor(hash(tx,ty,4243)*99998),seen:false,cleared:false,back:0,
         owner:p.f,lv,why:p.why,g:p.g||null,guards:STANDARD.guards[lv],taking:null,choose:false});
     s.name=(h?h.name+' ':'')+(p.why==='deposit'&&GOODS[p.g]?GOODS[p.g].n.toLowerCase()+' ':'')+STANDARD_WHY[p.why];return s},
-  hour(){for(const s of this.all())s.hour()}
+  hour(){for(const s of this.all()){s.hour();s.watch()}},
+  // (the world's captures, once a day after the sites' own day: Standard#contest)
+  day(){for(const s of this.all())s.contest()},
+  // (a held standard of a realm's or yours within STANDARD.safe tiles of a point: no band is raised there, world.js spawnBandit)
+  guarded(x,y){const r=STANDARD.safe*TILE;return this.all().some(s=>s.realm&&s.guards>0&&Math.hypot(s.x-x,s.y-y)<r)}
 };
-Systems.add({name:'standards',order:{hour:45},hour:()=>Standards.hour()});
+Systems.add({name:'standards',order:{hour:45,day:72},hour:()=>Standards.hour(),day:()=>Standards.day()});
 
 /* its picture: the standard (a stepped stone plinth, an iron pole with a gilt finial, a crossbar, two banners hung from it in its
    realm's colours with its device, a rope's tassel at an end; ragged, no one's) and, level 2 and 3, a watchtower or a stone tower
    (buildmodels.js) beside it in its realm's builders' style; ax, ay: the pole's foot. One picture a look */
 const STANDARD_PICS=new Map();
-function standardSprite(s){const f=s.realm,col=f?FACS[f].col:null,dev=f==='player'?'crown':f,key=(col||'-')+(dev||'')+s.lv+s.seed%3+(s.broken?'b':'');let c=STANDARD_PICS.get(key);if(c)return c;
+function standardSprite(s){const f=s.realm,col=f||s.band?s.col():null,dev=f==='player'?'crown':f||(s.band?'skull':null),key=(col||'-')+(dev||'')+s.lv+s.seed%3+(s.broken?'b':'');let c=STANDARD_PICS.get(key);if(c)return c;
   const A=STANDARD_ART,W=22,H=40,g=pgrid(W,H),p=(x,y,c)=>pset(g,x,y,c),St=A.stone,I=A.iron,G=PPAL.gold;
   // (the plinth: three steps, each lit along its top, its right side in shade, mortar between its blocks)
   for(const [x0,w,y0,h] of [[3,16,36,4],[5,12,33,3],[7,8,30,3]])for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)p(x,y,y===y0?St[0]:x>=x0+w-2?St[2]:(x+y*3)%5===0?St[2]:St[1]);

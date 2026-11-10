@@ -56,6 +56,32 @@ Kit.suite(({ok,info})=>{
   }finally{Object.assign(st,keep);s.owner=f;s.lv=1;s.broken=false;s.guards=S.guards[1];G.mode='world';t.hidePanel()}}
  {const s=all().find(x=>x.guards>0&&t.FACS[x.realm]&&x.realm!=='player');P.x=s.x;P.y=s.y+30;s.seen=true;const ents=[],cam={x:P.x-200,y:P.y-150};t.frame();s.draw(ents,cam,200);
   ok(ents.length===1+Math.min(S.sentries.most,s.guards)&&t.FACS[s.realm]&&typeof s.sentryType()==='string','in your sight its sentries walk their beat round it ('+(ents.length-1)+', '+s.sentryType()+')')}
+ // ---- a lost fight: those of its guards you slew stay dead; your own standards' guards from your nearest holding
+ {const s=all().find(x=>x.guards>=3&&t.FACS[x.realm]&&x.realm!=='player'),g0=s.guards;t.ON_WIN.standard.lost({ref:s},['hum_spear','hum_spear','chief']);ok(s.guards===g0-2,'beaten off it: the two guards you slew stay dead ('+g0+' to '+s.guards+')');s.guards=g0}
+ {const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'&&!x.choose&&!x.taking),f=s.realm,h=t.TOWNS.find(x=>x.owner===f&&!x.gone),o0=h.owner,g0=h.gar,keep=s.guards;
+  try{h.owner='player';h.gar=10;s.owner='player';s.guards=0;s.broken=false;const sup=s.supplier();s.day();
+   ok(sup===h&&s.guards===1&&h.gar===9&&s.guardList().length===1,'yours: a man a day from your nearest holding\'s garrison ('+h.name+')');h.gar=S.own.keep;s.day();ok(s.guards===1&&h.gar===S.own.keep,'but never below '+S.own.keep+' at home')}
+  finally{h.owner=o0;h.gar=g0;s.owner=f;s.guards=keep}}
+ // ---- phase 3: the world's captures
+ {const R0=Math.random;Math.random=()=>0;try{
+  const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'&&!x.choose&&!x.taking),f=s.realm,foe=Object.keys(t.FACS).find(k=>k!=='player'&&k!==f&&!t.W.dead[k]);
+  const r0=t.W.rel[t.rk(f,foe)];t.W.rel[t.rk(f,foe)]={s:'war',since:0};const L=W.lords.find(l=>l.fac===foe&&!l.dead),l0={x:L.x,y:L.y,inside:L.inside,fight:L.fight};
+  try{L.inside=null;L.fight=null;L.x=s.x+8;L.y=s.y;L.troops=Array(Math.max(2,s.guards*S.capture.more)).fill('hum_spear');t.Standards.day();
+   ok(s.realm===foe&&s.since===t.G.day,'a lord at war with its realm, strong enough, by it: he takes it for the '+t.FACS[foe].n);
+   L.fac=f;t.W.rel[t.rk(f,foe)]={s:'war',since:0};L.fac=foe}finally{Object.assign(L,l0);t.W.rel[t.rk(f,foe)]=r0;s.owner=f;s.guards=S.guards[s.lv];s.broken=false}
+  // (a band by a weakly held one makes it its lair; its raiders ride out of it; you drive them out)
+  const n0=t.bandits.length,b=t.asParty({x:s.x+6,y:s.y,n:8,kind:'bandits',list:t.makeEnemies(8,false,'bandits'),t:0,a:0,idle:false,cool:0,ld:t.newChief('bandits',1)});t.bandits.push(b);s.guards=1;t.Standards.day();
+  ok(s.band==='bandits'&&!t.bandits.includes(b)&&s.guards===8&&s.banner().k==='rag'&&/lair/.test((G.site=s,G.mode='site',t.showSite(),Kit.panel())),'a band by a weakly held one: their lair now, their men its guards, their rag, its page says so');
+  ok(t.Provinces.danger(t.Provinces.at(s.x,s.y)).what.join().length>0&&t.W.sites.filter(x=>x.band).length>=1,'a lair counts in its province\'s danger');
+  s.raided=-99;s.day();const out=t.bandits.filter(o=>o.lair===s.i);ok(out.length===1&&out[0].kind==='bandits','a band rides out of it to raid the roads');
+  t.bandits=t.bandits.filter(o=>o.lair!==s.i);
+  Kit.world({encCool:0});P.troops={hum_knight:40};P.hp=null;t.vitals();P.x=s.x+10;P.y=s.y+12;G.site=s;G.mode='site';t.showSite();ok(/Drive them out/.test(Kit.panel()),'you may drive them out');
+  t.act('site-attack');ok(G.enc&&G.enc.kind==='standard'&&G.enc.band==='bandits','a fight with its raiders');t.act('auto');ok(!s.band&&!s.realm&&s.taking,'driven out: no one\'s, your banner going up');
+  s.taking=null;s.owner=f;s.guards=S.guards[s.lv];s.broken=false;G.mode='world';t.hidePanel()
+  }finally{Math.random=R0}}
+ // ---- sight round yours and your employer's; no band raised by a held one
+ {const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'),f=s.realm;P.fac=f;const S0=t.W.seen;t.W.seen=new Uint8Array(t.MW*t.MH);try{s.watch();ok(t.seenAt(s.x,s.y)&&t.seenAt(s.x+(S.sight-1)*t.TILE,s.y),'your employer\'s: the fog lifted '+S.sight+' tiles round it')}finally{t.W.seen=S0;P.fac=null}
+  ok(t.Standards.guarded(s.x+t.TILE,s.y)&&!t.Standards.guarded(s.x+(S.safe+2)*t.TILE*2,s.y+(S.safe+2)*t.TILE*2),'no band is raised within '+S.safe+' tiles of a held one')}
  // ---- through a save
  {const rec=all().map(s=>[s.name,s.realm,s.lv,s.guards].join());t.saveGame(true,'quick');W.sites=[];t.loadGame('quick');
   ok(all().length===A.length&&all().map(s=>[s.name,s.realm,s.lv,s.guards].join()).join('|')===rec.join('|')&&all().every(s=>s instanceof t.Standard),'a save keeps every standard, whose it is, its level and its guards')}

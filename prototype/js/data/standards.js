@@ -8,6 +8,12 @@
 // stride each stride game minutes
 const STANDARD={on:true,guards:[0,3,6,10],hold:4,r:44,renown:4,thanks:6,regrow:1,I0:200000,hostile:{days:20,honor:-10},
   grow:{days:[0,8,14],cost:{2:{timber:14},3:{timber:8,stone:20}}},repair:{days:4,cost:{timber:6,stone:6}},sentries:{most:3,r:14,lap:40,stride:2},
+  // (phase 3) capture: a lord with more times its guards within r tiles takes it, chance a day; a band takes one held by weak guards
+  // or fewer, its men its guards (lairMost at most); lair: the bands that make one their lair (kinds), a band out of it every
+  // days while fewer than most are out, of n men (and the days'); own: yours keeps a man a day from your nearest holding's
+  // garrison while it keeps keep; sight: tiles of fog lifted round yours and your employer's; safe: no band raised within safe
+  // tiles of a held one (world.js spawnBandit)
+  capture:{r:6,more:2,chance:.5,weak:1,lairMost:12},lair:{kinds:['bandits','raiders','bog','goblins'],every:4,most:2,n:[3,5]},own:{keep:4},sight:7,safe:9,
   T:{n:'Standard',ico:'banner',col:'#e8b94a',d:'A realm’s standard on its land: a tall pole on a stepped stone plinth, its banners hung from a crossbar, its guards beside it.'}};
 // STANDARD_PLACE: where they stand (doc §2). score: by why (a deposit, a pass, a ford, a road crossing), and add more on a border with
 // another realm's land (within border.r tiles); town: tiles from any holding, clear: tiles to anything built; gap: tiles between two; per province base + one for

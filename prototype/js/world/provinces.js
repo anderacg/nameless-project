@@ -22,6 +22,7 @@ class Provinces{
     for(const b of bandits)if(!b.gone&&on(b))list.push([b.power(),'a band of '+(b.kind||'bandits')]);
     for(const l of W.lords||[])if(!l.dead&&!l.inside&&hostileTo(l.fac)&&on(l))list.push([rating(l.troops),lordName(l)+'’s army']);
     for(const s of W.sites||[])if((s.type==='camp'||s.type==='hideout')&&!s.cleared&&on(s))list.push([X.lair,s.type==='camp'?'a bandit camp':'a hideout']);
+    for(const s of W.sites||[])if(s.type==='standard'&&s.band&&on(s))list.push([X.lair,LAIR_SAY[s.band].toLowerCase()+' in the '+s.name]);// (a standard made a lair: world/standards.js)
     const foes=list.reduce((a,[v])=>a+v,0),mine=Math.max(1,partyPower()),r=foes/mine;let lv=0;for(let i=0;i<X.levels.length;i++)if(r>=X.levels[i])lv=i+1;
     list.sort((a,b)=>b[0]-a[0]);return{lv,word:X.words[lv],foes,what:list.slice(0,2).map(e=>e[1])}}
   // setting out for (x, y): a warning once a day for a deadly province you are not in
