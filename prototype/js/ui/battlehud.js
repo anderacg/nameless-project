@@ -397,7 +397,7 @@ function calloutDraw(C){
 }
 
 /* on the field */
-/* each group's health (the owner, 2026-10-31: no bars over each man, one for the group by its flag): a strip under its flag's cloth
+/* each group's health (the owner, 2026-10-31: no bars over each man, one for the group by its flag): a strip under its banner's fringe
    (ui/moraleicons.js drawUnitIcons, B.icons; 2026-11-10, the flag on its pole: a bar standing by it read as a second pole), as wide
    as the cloth while the group is whole: its men's health now over theirs as the battle began (GROUP_HP0, by battle and group:
    taken the first frame the group is on the field, a group come late at its coming; more men since count as whole), in the unit
@@ -410,7 +410,7 @@ function drawGroupHealth(){
   if(!B.icons||!B.icons.length)return;const K=unitIconScale(),S=UICON.s;
   for(const r of B.icons){const f=Math.min(1,(now[r.g]||0)/Math.max(1,h0[r.g]||1)),n=Math.round((S-4)*f);
     ctx.save();ctx.translate(r.x,r.y);ctx.scale(K,K);if(r.under)ctx.globalAlpha=ICON_FAN.under;
-    ctx.fillStyle=G.edge;ctx.fillRect(1,S+G.gap,S-2,G.h);ctx.fillStyle=G.trough;ctx.fillRect(2,S+G.gap+1,S-4,G.h-2);if(n>0){ctx.fillStyle=G.col;ctx.fillRect(2,S+G.gap+1,n,G.h-2)}ctx.restore()}
+    const y0=FLAG.ch+G.gap;ctx.fillStyle=G.edge;ctx.fillRect(1,y0,S-2,G.h);ctx.fillStyle=G.trough;ctx.fillRect(2,y0+1,S-4,G.h-2);if(n>0){ctx.fillStyle=G.col;ctx.fillRect(2,y0+1,n,G.h-2)}ctx.restore()}
 }
 // rings: under every soldier of the groups you have selected (bright; with All, light), under the group you point at (soft); an enemy you point
 // at, red (a right-click sets them on it)

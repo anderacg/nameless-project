@@ -56,8 +56,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,L=t
   // grow as the camera comes closer, held within UICON.zoom; each a cloth on a pole, swallow-tailed at its fly)
   {const z0=B.cam.z,far=t.camFar(),Z=t.UICON.zoom;try{B.cam.z=far;const a=t.iconZoom(),k0=t.unitIconScale();B.cam.z=far*1.25;const b=t.iconZoom();B.cam.z=far*9;const c=t.iconZoom(),k9=t.unitIconScale();
     const v=t.bview().k,want=f=>Math.max(1,Math.round(t.UICON.k*f*v))/v;ok(Math.abs(a-1)<1e-9&&Math.abs(b-Math.min(Z.hi,Math.pow(1.25,Z.pow)))<1e-9&&c===Z.hi&&k0===want(1)&&k9===want(Z.hi)&&k9>=k0,'a flag grows with the zoom, at most UICON.zoom.hi, each art px a whole number of canvas px ('+[a,b,c].map(v=>v.toFixed(2)).join(', ')+'; scale '+k0+' to '+k9+')')}finally{B.cam.z=z0}
-   const S=t.UICON.s,o=t.FLAG.left,pic=t.flagPic(S,t.SIDE.own.plate,'#0a0c12'),d=pic.getContext('2d').getImageData(0,0,pic.width,pic.height).data,at=(x,y)=>d[((y+o)*pic.width+x+o)*4+3],mid=(S-1)>>1;
-   ok(at(-2,-2)&&at(-2,S+t.FLAG.foot-1)&&!at(S-1,mid)&&!at(S-2,mid)&&at(S-1,1)&&at(5,mid)&&pic===t.flagPic(S,t.SIDE.own.plate,'#0a0c12'),'each flag a cloth on a pole: its finial over it, its foot under it, its fly cut in a swallow tail (made once a look)')}
+   const S=t.UICON.s,F=t.FLAG,pic=t.flagPic(S,t.SIDE.own.plate,'#0a0c12'),d=pic.getContext('2d').getImageData(0,0,pic.width,pic.height).data,at=(x,y)=>d[((y+F.top)*pic.width+x+1)*4+3],
+    col=(x,y)=>{const k=((y+F.top)*pic.width+x+1)*4;return '#'+[d[k],d[k+1],d[k+2]].map(v=>v.toString(16).padStart(2,'0')).join('')},mid=(S-1)>>1;
+   ok(col(mid,-F.top+1)===F.finial&&col(0,-1)===F.finial&&col(S-1,-1)===F.finial&&col(1,1)===F.trim&&col(4,6)===t.SIDE.own.plate[0]&&col(1,F.ch)===F.fringe&&!at(2,F.ch)&&at(mid,F.ch+4+F.foot)&&pic===t.flagPic(S,t.SIDE.own.plate,'#0a0c12'),
+    'each flag a banner: its finial and crossbar\'s gold knobs over it, a gold trim inside its edge, its side\'s field, a fringe at its foot, its pole down to its men (made once a look)')}
   B.sel='all';B.iconHov=null;
   // (a group of yours and one of theirs passing close, not fighting)
   put(foot,mid.x,mid.y);put(e1,mid.x+4,mid.y-6);B.iconPos={};lay(1);lay(1);

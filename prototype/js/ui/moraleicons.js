@@ -121,20 +121,24 @@ const iconZoom=()=>{const Z=UICON.zoom,r=B?.world?VS/Math.max(1,MAPZOOM.auto):B?
 // (a battle drawn sharp (core.js bview, k canvas px a view px), or on the map (VS device px a map px): its art px a whole number of
 // device px, about k times its zoom as many, each flag put on a whole canvas px (iconPx))
 const unitIconScale=()=>{const f=iconZoom();if(B?.world)return Math.max(1,Math.round(UICON.k*f*dprOf()))/VS;const k=bview().k;return Math.max(1,Math.round(UICON.k*f*k))/k};
-/* a group's flag: its cloth the plate it was (S art px square, so its badges and its health stand where they did), squared at its
-   pole and swallow-tailed at its fly, in its side's colours (cols: field, lit top, shaded foot) and edged (edge: dark; gold
-   selected, amber wavering, light pointed at); its pole at its left (left art px: its dark case and the wood) from a gold finial
-   over the cloth down foot px under it, pointing at its men. One picture a look (FLAG_PICS), at (-left, -left) of the cloth */
-const FLAG={left:3,foot:5,pole:'#7a5632',finial:'#e8b94a',out:'#0a0c12'},FLAG_PICS=new Map();
-function flagPic(S,cols,edge){const key=S+cols.join()+edge;let c=FLAG_PICS.get(key);if(c)return c;const F=FLAG,o=F.left,mid=(S-1)>>1;
-  c=document.createElement('canvas');c.width=S+o;c.height=S+o+F.foot+1;const g=c.getContext('2d'),px=(x,y,col)=>{g.fillStyle=col;g.fillRect(x+o,y+o,1,1)};
-  for(let y=-o;y<=S+F.foot;y++)for(let x=-o;x<0;x++)px(x,y,F.out);for(let y=-1;y<S+F.foot;y++)px(-2,y,F.pole);px(-2,-2,F.finial);
-  // (the fly's notch: the last column open mid-2..mid+2, the one before mid-1..mid+1; its edge round it)
-  const cut=(x,y)=>x===S-1&&Math.abs(y-mid)<=2||x===S-2&&Math.abs(y-mid)<=1,rim=(x,y)=>x===S-2&&Math.abs(y-mid)===2||x===S-3&&Math.abs(y-mid)<=1;
-  for(let y=0;y<S;y++)for(let x=0;x<S;x++){if(cut(x,y)||x===S-1&&(y===0||y===S-1))continue;
-    px(x,y,x===0||y===0||x===S-1||y===S-1||rim(x,y)?edge:y===1?cols[1]:y>=S-3?cols[2]:cols[0])}
+/* a group's flag, a banner hung from a crossbar (the owner, 2026-11-10, a page of standards: "The flag should be like this"): its
+   cloth S art px wide and ch tall in its side's colours (cols: field, lit top, shaded foot), edged (edge: dark; gold selected,
+   amber wavering, light pointed at), a gold trim inside its edge, its kind's glyph on it (drawUnitIcons), a gold fringe at its foot;
+   the crossbar over it with gold knobs, on a pole through its middle from a gold finial (top art px over the cloth) down foot px
+   under the fringe and its health, pointing at its men. One picture a look (FLAG_PICS), its cloth's top left at (0, 0) */
+const FLAG={top:5,ch:15,foot:4,pole:'#7a5632',finial:'#e8b94a',out:'#0a0c12',trim:'#d6b052',trimLow:'#9a7a30',fringe:'#e8c86a'},FLAG_PICS=new Map();
+function flagPic(S,cols,edge){const key=S+cols.join()+edge;let c=FLAG_PICS.get(key);if(c)return c;const F=FLAG,ch=F.ch,mid=(S-1)>>1,low=ch+5+F.foot;
+  c=document.createElement('canvas');c.width=S+2;c.height=F.top+low;const g=c.getContext('2d'),px=(x,y,col)=>{g.fillStyle=col;g.fillRect(x+1,y+F.top,1,1)};
+  // (the pole, dark-cased, from its finial to its foot; the crossbar over the cloth, its knobs gold)
+  for(let y=-F.top+1;y<low;y++){px(mid-1,y,F.out);px(mid+1,y,F.out);px(mid,y,F.pole)}px(mid,-F.top,F.out);px(mid,-F.top+1,F.finial);px(mid,low-1,F.out);
+  for(let x=-1;x<=S;x++){px(x,-2,F.out);px(x,-1,x<0||x===S?F.out:x===0||x===S-1?F.finial:F.pole)}
+  for(let y=0;y<ch;y++)for(let x=0;x<S;x++){const ed=x===0||x===S-1||y===0||y===ch-1,tr=x===1||x===S-2||y===1||y===ch-2;
+    px(x,y,ed?edge:tr?(x===S-2||y===ch-2?F.trimLow:F.trim):y===2?cols[1]:y>=ch-5?cols[2]:cols[0])}
+  for(let x=1;x<S;x+=2)px(x,ch,F.fringe);
   FLAG_PICS.set(key,c);return c}
-const drawFlag0=(S,cols,edge)=>{const c=flagPic(S,cols,edge),o=FLAG.left;ctx.imageSmoothingEnabled=false;ctx.drawImage(c,-o,-o)};
+const drawFlag0=(S,cols,edge)=>{const c=flagPic(S,cols,edge);ctx.imageSmoothingEnabled=false;ctx.drawImage(c,-1,-FLAG.top)};
+// (a flag's height for its place and its click: the cloth, its fringe, its health under it)
+const flagH=()=>FLAG.ch+7;
 const iconPx=v=>{const k=bview().k;return Math.round(v*k)/k};
 /* where they stand (iconLayout; B.icons, for clicks, in the order drawn): each over its own group, its place on the field eased
    after its men on the battle's clock (follow: a man falling or running moves it with no jump; snap: field px past which it is
@@ -153,7 +157,7 @@ function iconLayout(rt){
   for(const g in B.groups){const m=B.units.filter(u=>u.grp===g&&u.hp>0&&seenBy(0,u));if(!m.length){delete IP[g];continue}const mo=B.noMorale?null:grpMorale(m);
     const f=m.filter(u=>!u.rout),at=f.length?f:m,cx=at.reduce((a,u)=>a+u.x,0)/at.length,cy=at.reduce((a,u)=>a+u.y,0)/at.length,top=Math.min(...at.map(u=>u.y));
     let p=IP[g];if(!p||rm||B.deploy||B.muster&&(B.muster.active||B.ready)||Math.hypot(p.x-cx,p.y-top)>ICON_FAN.snap)p=IP[g]={x:cx,y:top,dx:p?p.dx:0};else{const k=1-Math.exp(-dt*ICON_FAN.follow);p.x+=(cx-p.x)*k;p.y+=(top-p.y)*k}
-    const st=[...(aiHas(B.groups[g])?['ai']:[]),...(mo?statusOf(mo):[])],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=(S+6)*K,sp=fromField({x:p.x,y:p.y});
+    const st=[...(aiHas(B.groups[g])?['ai']:[]),...(mo?statusOf(mo):[])],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=flagH()*K,sp=fromField({x:p.x,y:p.y});
     if(sp.x<-W||sp.x>BVW+W||sp.y<0||sp.y>BVH+40)continue;// (off the view: none)
     items.push({g,m,mo,st,W,H,cx,cy,p,team:m[0].team,bx:sp.x-S*K/2,y:Math.max(4,sp.y-UICON.lift*z*(B.world?WORLD_BATTLE.sprite:1)-H),tier:sel.includes(g)?3:B.iconHov===g?2:m[0].team?0:1})}
   const hit=(a,b)=>a.bx<b.bx+b.W&&b.bx<a.bx+a.W&&a.y<b.y+b.H&&b.y<a.y+a.H,up=items.map((_,i)=>i),root=i=>up[i]===i?i:(up[i]=root(up[i]));
@@ -164,7 +168,7 @@ function iconLayout(rt){
   for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){const a=items[i],b=items[j];if(a.team!==b.team&&hit(a,b)&&(atBlows(a,b)||atBlows(b,a)))up[root(i)]=root(j)}
   const fan=new Map();
   for(const i of new Set(items.map((_,i)=>root(i)))){const c=items.filter((_,j)=>root(j)===i).sort((a,b)=>a.bx-b.bx||(a.g<b.g?-1:1));if(c.length<2)continue;
-    const t=[];c.forEach((o,j)=>t.push(j?Math.max(o.bx,t[j-1]+c[j-1].W+ICON_FAN.gap+FLAG.left*K):o.bx));const sh=(c.reduce((a,o)=>a+o.bx,0)-t.reduce((a,x)=>a+x,0))/c.length;c.forEach((o,j)=>fan.set(o.g,t[j]+sh-o.bx))}
+    const t=[];c.forEach((o,j)=>t.push(j?Math.max(o.bx,t[j-1]+c[j-1].W+ICON_FAN.gap+K):o.bx));const sh=(c.reduce((a,o)=>a+o.bx,0)-t.reduce((a,x)=>a+x,0))/c.length;c.forEach((o,j)=>fan.set(o.g,t[j]+sh-o.bx))}
   const k=rm?1:1-Math.exp(-Math.max(0,rt)*3/ICON_FAN.ease);// (about 95% of the way in ease s)
   for(const it of items){const p=it.p,to=fan.get(it.g)||0;p.dx=(p.dx||0)+(to-(p.dx||0))*k;if(Math.abs(to-p.dx)<.05)p.dx=to;it.x=iconPx(it.bx+p.dx);it.y=iconPx(it.y)}
   items.sort((a,b)=>a.tier-b.tier||a.y-b.y||(a.g<b.g?-1:1));
@@ -178,11 +182,11 @@ function drawUnitIcons(){
     const team=SIDE[sideKey(B.groups[g])].plate,wav=mo&&mo.state==='wavering'&&blink;
     const hov=B.iconHov===g,edge=sel.includes(g)?'#ffd25a':wav?'#ffa040':hov?'#f4efe0':'#0a0c12',fade=it.under?ICON_FAN.under:1;
     ctx.save();ctx.translate(x,y);ctx.scale(K,K);ctx.globalAlpha=(mo&&(mo.state==='routing'||mo.state==='shattered')?.6:1)*fade;
-    // the flag: its cloth in its side's colours, edged (gold when selected), on its pole (flagPic)
+    // the flag: its cloth in its side's colours, edged (gold when selected), hung on its crossbar and pole (flagPic)
     drawFlag0(S,team,edge);
     // its type, in white with a dark shadow
     const gl=UNIT_GLYPH[unitIcon(g,m)];
-    for(const [col,dx] of [['rgba(0,0,0,.45)',1],['#f4efe0',0]]){ctx.fillStyle=col;gl.forEach((row,ry)=>[...row].forEach((c,rx)=>{if(c==='g')ctx.fillRect(2+rx+dx,2+ry+dx,1,1)}))}
+    for(const [col,dx] of [['rgba(0,0,0,.45)',1],['#f4efe0',0]]){ctx.fillStyle=col;gl.forEach((row,ry)=>[...row].forEach((c,rx)=>{if(c==='g')ctx.fillRect(2+rx+dx,3+ry+dx,1,1)}))}
     ctx.globalAlpha=fade;
     // (its health: the vertical bar beside it, battlehud.js drawGroupHealth: the owner, 2026-10-31)
     // what is wrong with it, beside it (two to a column)
@@ -193,11 +197,11 @@ function drawUnitIcons(){
    faint dashed ring on the ground under it; drawn on the screen as the icons, but no icon of B.icons (nothing to click) */
 function drawFogGhosts(){
   const Gs=B.fog&&B.sight&&B.sight.ghost;if(!Gs||!Gs.size)return;const K=unitIconScale(),S=UICON.s,z=B.cam?B.cam.z:1;
-  for(const [g,q] of Gs){const m=grpUnits(g),a=ghostFade(q);if(!m.length||a<=0)continue;const p=fromField({x:q.x,y:q.y}),x=iconPx(p.x-S*K/2),y=iconPx(p.y-UICON.lift*z-(S+6)*K);
+  for(const [g,q] of Gs){const m=grpUnits(g),a=ghostFade(q);if(!m.length||a<=0)continue;const p=fromField({x:q.x,y:q.y}),x=iconPx(p.x-S*K/2),y=iconPx(p.y-UICON.lift*z-flagH()*K);
     if(p.x<-40||p.x>BVW+40||p.y<0||p.y>BVH+60)continue;
     ctx.save();ctx.globalAlpha=.75*a;ctx.strokeStyle='#b8bcc4';ctx.setLineDash([3,3]);ctx.lineWidth=1;const rr=Math.max(8,Math.sqrt(m.length)*5)*z;ctx.beginPath();ctx.ellipse(Math.round(p.x),Math.round(p.y),rr,rr*.5,0,0,7);ctx.stroke();ctx.setLineDash([]);
     ctx.translate(x,y);ctx.scale(K,K);drawFlag0(S,['#6a6e78','#7a7e88','#585c66'],'#2a2d33');
-    ctx.fillStyle='#d8dae0';UNIT_GLYPH[unitIcon(g,m)].forEach((row,ry)=>[...row].forEach((c,rx)=>{if(c==='g')ctx.fillRect(2+rx,2+ry,1,1)}));ctx.restore()}}
+    ctx.fillStyle='#d8dae0';UNIT_GLYPH[unitIcon(g,m)].forEach((row,ry)=>[...row].forEach((c,rx)=>{if(c==='g')ctx.fillRect(2+rx,3+ry,1,1)}));ctx.restore()}}
 // over a soldier: a white flag while it runs, a blinking mark while it wavers
 function drawMorale(u,x,y){
   if(B.noMorale||u.mor==null||steady(u))return;
