@@ -34,6 +34,15 @@ const SIEGE_ENGINE={on:true,days:6,more:3,most:3,range:330,gap:90,every:[8,11],f
    nor within inset px of the wall nor edge px of the field's ends; each drawn k times its model and a footprint foot (its share of
    the picture's width and height) at its feet that the field's buildings block, gap px kept between two */
 const SIEGE_TOWN={on:true,k:2,centre:.6,cell:74,fill:.55,jit:10,street:46,inset:84,edge:22,foot:[.72,.42],gap:6,kinds:['house','smithy','tavern','chapel','granary','warehouse']};
+/* SIEGE_FIGHT, the fight at the wall (the owner, 2026-11-10: "improve the walls and ladders and siege details"). ladder: a defender
+   on the walk within reach px of a ladder's top, none of yours up there and one of yours on it or at its foot, they throw it down by
+   odds each look s, those of yours on it falling (hurt by fall); its row's face sheer till your foot stand within foot px of its foot
+   for raise s. pitch: while the ram works the gate's defenders pour pitch (a palisade's, stones) on its crew within r px of the gate,
+   every every s (the first after first), each man hurt by hurt. mantlet: your camp's n wooden mantlets stand out px from the wall, gap
+   px apart, none within gate px of the gate's middle nor on a ladder's rows (where one thrown down lies); a man of yours behind one (within back px west of it, half px of its middle)
+   takes cover of the harm of a shot from the wall's side */
+const SIEGE_FIGHT={ladder:{on:true,look:1.2,reach:26,odds:.3,foot:34,raise:5,fall:[10,20]},pitch:{on:true,every:[8,11],first:[4,6],hurt:[6,12],r:28},
+  mantlet:{on:true,n:[3,5],out:60,gap:70,gate:40,back:20,half:12,cover:.5}};
 const sRand=([a,b])=>a+Math.random()*(b-a);// (a draw between a and b: the battle's, Math.random)
 class SiegeWorks{
   static on(e){return SIEGE_WALL.on&&!!e&&e.kind==='siege'&&!!e.ref&&typeof e.ref.walled==='function'&&e.ref.walled()&&wallOf(e.ref)>0}
@@ -49,7 +58,7 @@ class SiegeWorks{
     this.stairs=[];for(let r=R0+3;r<R1-2;r+=S.stairs){let q=r;while(q<R1-2&&busy(q))q++;if(q<R1-2&&!this.stairs.includes(q))this.stairs.push(q)}
     let free=[];for(let r=R0+2;r<R1-1;r++)if(!busy(r)&&!this.stairs.some(q=>Math.abs(q-r)<=1))free.push(r);
     this.ladders=[];for(let k=0;k<S.ladders&&free.length;k++){const want=R0+(R1-R0)*(k+1)/(S.ladders+1)+(R()-.5)*3;let best=free[0];for(const r of free)if(Math.abs(r-want)<Math.abs(best-want))best=r;this.ladders.push(best);free=free.filter(r=>Math.abs(r-best)>2)}
-    this.sections();this.engines=[];this.shots=[];this.mangonel=null;this.nEngines=Math.max(0,o.engines|0);this.aim=null;this.houses=this.townPlan()}
+    this.lad=this.ladders.map(r=>({r,up:true,look:0,raise:0,tilt:0}));this.mantlets=[];this.sections();this.engines=[];this.shots=[];this.mangonel=null;this.nEngines=Math.max(0,o.engines|0);this.aim=null;this.houses=this.townPlan()}
   // (its sections: each stretch of the walk between the gate and its towers in SIEGE_ENGINE.section rows at most, and each tower; each
   // {r0, r1, hp, hp0, tower, down})
   sections(){const E=SIEGE_ENGINE,h=E.hp[Math.min(3,this.w)]||E.hp[1],out=[];let run=[];
@@ -87,10 +96,38 @@ class SiegeWorks{
     return wall}
   // (the ram at work: each second, your foot at the gate's face (not running, not routing) take SIEGE_WALL.ram from it; broken, open)
   // (each frame: the ram at the gate; the engines and their stones)
-  step(dt){this.ramStep(dt);this.engineStep(dt)}
+  step(dt){this.ramStep(dt);this.engineStep(dt);this.ladderStep(dt);this.pitchStep(dt)}
   ramStep(dt){if(this.open||!this.ram)return;const S=SIEGE_WALL,x=this.x0,n=B.units.filter(u=>u.team===0&&u.hp>0&&!u.rout&&!u.left&&!u.s.range&&!u.hero&&u.x>x-S.ramR&&u.x<x+4&&u.y>this.gy0-6&&u.y<this.gy1+6).length;
     if(!n)return;this.ramT=B.t;this.hp-=n*S.ram*dt;this.hit=(this.hit||0)+dt;if(this.hit>.5){this.hit=0;sfxAt&&sfxAt('hit',x,(this.gy0+this.gy1)/2,{vol:.6});B.floats.push({x:x-6,y:this.gy0-8,t:'Ram!',life:.8,c:'#ffd08a'})}
     if(this.hp<=0)this.breach()}
+  /* ---- the ladders (SIEGE_FIGHT.ladder): each up, looked at every look s for defenders at its top to throw it down, or down till
+     your men at its foot raise it */
+  ladderStep(dt){const D=SIEGE_FIGHT.ladder;if(!D.on||!this.lad.length)return;const cs=this.cs,T=B.terrain,L=this.L,live=u=>u.hp>0&&!u.rout&&!u.left;
+    for(const l of this.lad){const s=this.secAt(l.r);if(s&&s.down)continue;const y=(l.r+.5)*cs;
+      if(l.up){if((l.look-=dt)>0)continue;l.look=D.look;const tx=this.x0+cs*.5,top=u=>live(u)&&Math.hypot(u.x-tx,u.y-y)<D.reach&&T.levelAt(u.x,u.y)>=L;
+        if(!B.units.some(u=>u.team!==0&&top(u))||B.units.some(u=>u.team===0&&top(u)))continue;
+        if(!B.units.some(u=>u.team===0&&live(u)&&Math.abs(u.y-y)<cs&&u.x>this.x0-D.foot&&u.x<this.x0+4))continue;
+        if(Math.random()<D.odds)this.throwDown(l)}
+      else if(B.units.some(u=>u.team===0&&live(u)&&!u.s.range&&Math.hypot(u.x-(this.x0-D.foot*.5),u.y-y)<D.foot)&&(l.raise+=dt)>=D.raise)this.raiseUp(l)}}
+  // (the section of row r, or null)
+  secAt(r){return (this.secs||[]).find(q=>r>=q.r0&&r<=q.r1)||null}
+  // (its rows' outer face sheer (true) or climbable; the field's ways made again)
+  ladderFace(l,shut){const T=B.terrain,C=T.C;if(!T.wall)return;for(let r=l.r;r<l.r+SIEGE_WALL.ladder;r++){const a=r*C+this.c0-1,b=r*C+this.c0;if(shut){T.wall[a]|=1;T.wall[b]|=4}else{T.wall[a]&=~1;T.wall[b]&=~4}}
+    T.routes.build(T.rows[0],T.rows[1]);T.index()}
+  throwDown(l){const D=SIEGE_FIGHT.ladder,y=(l.r+.5)*this.cs;l.up=false;l.raise=0;l.tilt=(Math.random()-.5)*.5;this.ladderFace(l,true);
+    for(const u of B.units)if(u.team===0&&u.hp>0&&!u.left&&Math.abs(u.y-y)<this.cs*.8&&u.x>this.x0-12&&u.x<this.x0+2)this.hurt(u,sRand(D.fall));
+    if(typeof sfxAt==='function')sfxAt('hit',this.x0,y,{vol:.7});B.floats.push({x:this.x0-20,y:y-12,t:'Ladder thrown down!',life:1.2,c:'#ff9a7a'})}
+  raiseUp(l){const y=(l.r+.5)*this.cs;l.up=true;l.look=SIEGE_FIGHT.ladder.look;this.ladderFace(l,false);B.floats.push({x:this.x0-20,y:y-12,t:'Ladder up!',life:1,c:'#bfe3a0'})}
+  // (pitch on the ram's crew (SIEGE_FIGHT.pitch): the gate shut, the ram at work, a defender standing)
+  pitchStep(dt){const D=SIEGE_FIGHT.pitch;if(!D.on||this.open||!this.ram||!B||B.t-(this.ramT??-9)>.5)return;if(this.pitchCool==null)this.pitchCool=sRand(D.first);if((this.pitchCool-=dt)>0)return;this.pitchCool=sRand(D.every);
+    if(!B.units.some(u=>u.team!==0&&u.hp>0&&!u.rout&&!u.left))return;const x=this.x0,y=(this.gy0+this.gy1)/2;this.pitchT=B.t;
+    for(const u of B.units)if(u.team===0&&u.hp>0&&!u.left&&u.x>x-D.r&&u.x<x+4&&u.y>this.gy0-6&&u.y<this.gy1+6)this.hurt(u,sRand(D.hurt));
+    const stake=this.kind==='stake';if(typeof vfx==='function')for(let k=0;k<8;k++)vfx({k:'dust',x:x-6-Math.random()*14,y:y+(Math.random()-.5)*(this.gy1-this.gy0),vx:(Math.random()-.5)*20,vy:-18-Math.random()*16,r:2,grow:7,life:1.1,col:stake?'150,130,100':'200,200,196'});
+    if(typeof sfxAt==='function')sfxAt('hit',x,y,{vol:.5});B.floats.push({x:x-14,y:this.gy0-10,t:stake?'Stones!':'Pitch!',life:.9,c:'#ffb070'})}
+  // (your mantlets (SIEGE_FIGHT.mantlet) set out as the battle musters, each painted on the field's layer)
+  placeMantlets(){const M=SIEGE_FIGHT.mantlet;this.mantlets=[];if(!M.on)return;const n=Math.round(sRand(M.n)),my=(this.gy0+this.gy1)/2,lo=this.R0*this.cs+40,hi=(this.R1+1)*this.cs-40;
+    for(let i=0;i<n;i++){let y=my+(i-(n-1)/2)*M.gap;if(Math.abs(y-my)<M.gate)y+=(y<my?-1:1)*M.gate;y=clamp(y+(Math.random()-.5)*10,lo,hi);for(let k=0;k<6&&this.ladders.some(r=>Math.abs((r+.5)*this.cs-y)<M.half+this.cs*1.5);k++)y+=(y<my?-1:1)*this.cs;this.mantlets.push({x:this.x0-M.out+(Math.random()-.5)*10,y})}
+    if(this.art)for(const m of this.mantlets)this.art.mantlet(m)}
   /* ---- the engines (SIEGE_ENGINE): yours placed as the battle musters, in a file across the field's middle range px out from the
      wall; the defenders' mangonel on the tower nearest the gate, behind walls of SIEGE_ENGINE.def.lv or more */
   placeEngines(){const E=SIEGE_ENGINE,n=E.on?this.nEngines:0,my=(this.gy0+this.gy1)/2,lo=this.R0*this.cs+40,hi=(this.R1+1)*this.cs-40;this.engines=[];
@@ -113,7 +150,7 @@ class SiegeWorks{
   loose(e,s){const E=SIEGE_ENGINE,cs=this.cs,hit=Math.random()<E.hit,x=s.tower?this.x0-cs*.5+Math.random()*(this.x1-this.x0+cs*.5):this.x0+Math.random()*(this.x1-this.x0),y=(s.r0+Math.random()*(s.r1-s.r0+1))*cs;
     this.shots.push({fx:e.x+10,fy:e.y-34,tx:hit?x:x-sRand(E.miss),ty:y+(hit?0:(Math.random()-.5)*20),t:0,T:E.flight,sec:hit?s:null})}
   // (a stone down: its dust, the men by it hurt; a section's or an engine's strength taken)
-  land(q){const E=SIEGE_ENGINE;if(typeof vfx==='function')for(let k=0;k<6;k++)vfx({k:'dust',x:q.tx+(Math.random()-.5)*10,y:q.ty+(Math.random()-.5)*6,vx:(Math.random()-.5)*40,vy:-10-Math.random()*20,r:2,grow:8,life:.9,col:'#b8ab98'});
+  land(q){const E=SIEGE_ENGINE;if(typeof vfx==='function')for(let k=0;k<6;k++)vfx({k:'dust',x:q.tx+(Math.random()-.5)*10,y:q.ty+(Math.random()-.5)*6,vx:(Math.random()-.5)*40,vy:-10-Math.random()*20,r:2,grow:8,life:.9,col:'184,171,152'});
     B.rings.push({x:q.tx,y:q.ty,r:E.splash,life:.3,max:.3,col:'200,180,150'});if(typeof sfxAt==='function')sfxAt('hit',q.tx,q.ty,{vol:.9});
     for(const u of B.units)if(u.hp>0&&!u.left&&Math.hypot(u.x-q.tx,u.y-q.ty)<E.splash)this.hurt(u,sRand(E.hurt));
     if(q.def){const e=q.at;if(e&&e.hp>0&&(e.hp-=sRand(E.def.dmg))<=0){e.hp=0;toast('A trebuchet is smashed!','bad');log('The defenders\' mangonel smashes one of your trebuchets.','bad','war')}return}
@@ -123,8 +160,9 @@ class SiegeWorks{
   // their shooters on the walk as they were)
   holdGap(y){for(const g of Object.values(B.groups)){if(g.team===0)continue;const m=grpUnits(g.id).filter(u=>u.hp>0);if(!m.length)continue;
     if((g.role==='inf'||g.role==='cav')&&!g.roused){g.standAt(this.x1+SIEGE_WALL.hold,y);g.face=g.currentFacing=Math.PI}else if(g.role!=='arc'&&g.role!=='mag')g.roused=true}}
-  // (the harm a shot does to e: less on the wall-walk from one loosed below it (its merlons, SIEGE_WALL.cover))
-  cover(e,by){const T=B.terrain;if(!T||!by||e.x<this.x0||e.x>=this.x1)return 1;const r=Math.floor(e.y/this.cs),s=(this.secs||[]).find(q=>r>=q.r0&&r<=q.r1);
+  // (the harm a shot does to e: less behind one of your mantlets from the wall's side (SIEGE_FIGHT.mantlet), less on the wall-walk from one loosed below it (its merlons, SIEGE_WALL.cover))
+  cover(e,by){const T=B.terrain,M=SIEGE_FIGHT.mantlet;if(by&&e.team===0&&by.x>e.x)for(const m of this.mantlets||[])if(e.x<=m.x&&e.x>=m.x-M.back&&Math.abs(e.y-m.y)<=M.half)return M.cover;
+    if(!T||!by||e.x<this.x0||e.x>=this.x1)return 1;const r=Math.floor(e.y/this.cs),s=(this.secs||[]).find(q=>r>=q.r0&&r<=q.r1);
     if(!s||s.down||s.tower)return 1;return T.levelAt(e.x,e.y)>=this.L&&T.levelAt(by.x,by.y)<this.L?SIEGE_WALL.cover:1}
   // (hurt where he stands: a stone, a fall; nobody's blow)
   hurt(u,amt){Actor.of(u).wound(amt,1,'blunt',null,true)}
@@ -151,20 +189,27 @@ class SiegeWorks{
    cobbled passage; your ladders leaning on it. Standing (props, sorted with the soldiers by their feet, faded when one of yours
    is behind: render.js propsInView): each tower, raised (its crenellated top, its face of courses and arrow slits, the lord's
    banner). Each frame: the gate's doors and portcullis (whole, battered, broken) and the ram, its head swinging while it works ---------- */
-const SIEGE_ART={rise:18,riseL:8,foot:6,merlon:[6,4],face:2,shadow:14};
+/* SIEGE_ART: rise, riseL: a tower's face (px, and px a level); foot: the gate's doors this far out; plinth: the stone wall's battered
+   foot (px); merlon: [its length, the crenel's] (rows px), face: its face; shadow: the wall's on the yard (px, and 4 a level); clutter:
+   the walk's heaps (stones, arrows, a barrel, a brazier) one in so many rows (cells); spent: one spent arrow in the field before the
+   wall for so many px of it; moss: the foot's growth by climate; ladder: your ladders (SiegeArt#ladPic: w px wide, a rung every step px; STANDARD_ART.ladder's colours) */
+const SIEGE_ART={rise:18,riseL:8,foot:6,plinth:10,merlon:[6,4],face:2,shadow:14,clutter:5,spent:5,
+  moss:{grass:'#5e6e3c',swamp:'#4e6038',forest:'#556a36',frost:'#e6ecf0',desert:'#cbb27c'},ladder:{...STANDARD_ART.ladder,w:11,step:5,broken:.3}};
 class SiegeArt{
   constructor(w,base){this.w=w;this.base=base;this.cv=null;const t=w.t,A=TOURNEY_ARENA.walls,cul=holdingCulture(t),own=t.owner&&FACS[t.owner];
     this.cul=cul;this.col=own?own.col:'#9a9a9a';this.dev=own&&t.owner!=='player'?t.owner:'star';
     const st=A[cul]&&A[cul].kind==='stone'?A[cul]:A.vale,wood=A[cul]&&A[cul].kind!=='stone'?A[cul]:A.timber;
-    this.C=w.kind==='stake'?wood.c:w.kind==='great'?st.c.map(c=>shade(c,1.06)):st.c;this.trim=(w.kind==='stake'?wood:st).trim;this.wood=wood.c;this.props=[];w.art=this}
+    this.C=w.kind==='stake'?wood.c:w.kind==='great'?st.c.map(c=>shade(c,1.06)):st.c;this.trim=(w.kind==='stake'?wood:st).trim;this.wood=wood.c;this.props=[];this.braziers=[];this.moss=SIEGE_ART.moss[w.clim]||null;w.art=this}
   *paintSteps(){const w=this.w,cv=mkcv(BW,BH),g=cv.getContext('2d'),cs=w.cs,C=this.C,x0=w.x0,x1=w.x1,y0=w.R0*cs,y1=(w.R1+1)*cs,A=SIEGE_ART;
     const skip=y=>this.gateRow(y)||w.isTower(Math.floor(y/cs));
     // (its shadow on the yard, soft)
     for(let k=0;k<A.shadow+w.L*4;k++){g.fillStyle='rgba(10,12,18,'+(.42*(1-k/(A.shadow+w.L*4))).toFixed(3)+')';g.fillRect(x1+k,y0,1,y1-y0)}yield;
     if(w.kind==='stake')this.palisade(g,y0,y1,skip);else this.stone(g,y0,y1,skip);yield;
-    // (the stairs down into the yard: steps across the inner lip)
-    for(const r of w.stairs){const y=r*cs,h=SIEGE_WALL.stair*cs;for(let k=0;k<h;k+=3){rect(g,C[3],x1-12,y+k,14,1);rect(g,C[1],x1-12,y+k+1,14,2)}rect(g,C[3],x1+2,y,1,h)}
-    this.passage(g);for(const r of w.ladders)this.ladder(g,x0,r*cs);
+    // (the stairs down into the yard: five steps east from the walk, each a shade lower, its nose lit, its riser dark; their sides' kerbs)
+    for(const r of w.stairs){const y=r*cs,h=SIEGE_WALL.stair*cs,n=5,X=x1-8;
+      for(let i=0;i<n;i++){const x=X+i*4;rect(g,shade(C[1],1-.09*i),x,y+2,4,h-4);rect(g,shade(C[0],1-.08*i),x,y+2,1,h-4);rect(g,shade(C[2],1-.06*i),x+3,y+2,1,h-4)}
+      rect(g,C[2],X,y,n*4,2);rect(g,C[3],X,y+h-2,n*4,2);rect(g,C[0],X,y,n*4,1);rect(g,'rgba(10,12,18,.35)',X,y+h,n*4,2)}
+    this.passage(g);this.clutter(g);this.spent(g);
     for(const r of w.towers)this.props.push(this.tower(r));yield;for(const h of w.houses||[])if(!h.out){const p=this.house(g,h);if(p)this.props.push(p)}this.props.sort((a,b)=>a.y-b.y);
     this.cv=cv;return this}
   gateRow(y){const w=this.w;return y>=w.gy0&&y<w.gy1}
@@ -174,34 +219,77 @@ class SiegeArt{
     if(!m||!m.img)return null;const k=SIEGE_TOWN.k,n=m.img.width*k,X=Math.round(h.x+h.w/2-n/2),Y=Math.round(h.y+h.h-n),cv=mkcv(n,n),q=cv.getContext('2d');q.imageSmoothingEnabled=false;q.drawImage(m.img,0,0,n,n);if(m.snow&&m.snow.img)q.drawImage(m.snow.img,0,0,n,n);
     g.save();g.imageSmoothingEnabled=false;if(m.shadow)g.drawImage(m.shadow,X,Y,n,n);if(m.ground)g.drawImage(m.ground,X,Y,n,n);g.restore();
     return{dk:5,x:h.x+h.w/2,y:h.y+h.h,s:cv,dx:X,dy:Y,box:[X,Y,X+n,h.y+h.h]}}
-  // (stone: the sloped foot outside, the walk's flags, the parapet and its merlons, the inner lip)
-  stone(g,y0,y1,skip){const w=this.w,C=this.C,x0=w.x0,x1=w.x1,s=w.seed%9973,[mh,mg]=SIEGE_ART.merlon,F=SIEGE_ART.foot;
-    for(let y=y0;y<y1;y++){if(skip(y))continue;
-      for(let x=x0-F;x<x0;x++){const k=(x-(x0-F))/F;g.fillStyle=k<.25?C[3]:hs(x>>1,y>>2,s)<.2?C[3]:k<.6?C[2]:C[1];g.fillRect(x,y,1,1)}// (the talus: dark at its foot, lit toward the wall)
-      if(!((y+((y>>3)&1)*3)%6))rect(g,C[3],x0-F+2,y,F-2,1);
-      for(let x=x0+8;x<x1-3;x++){const fx=x-(x0+8),row=Math.floor(y/6),col=Math.floor((fx+(row&1)*5)/10),v=hs(col,row,s);g.fillStyle=(y%6===0||(fx+(row&1)*5)%10===0)?C[2]:v<.15?shade(C[1],.92):v>.85?shade(C[1],1.06):C[1];g.fillRect(x,y,1,1)}// (flagstones)
-      rect(g,C[2],x0,y,8,1);rect(g,C[3],x0+7,y,1,1);rect(g,C[0],x1-3,y,2,1);rect(g,C[3],x1-1,y,1,1)}
-    // (the merlons: each a block with its top lit and its face below it; dark crenels between)
-    for(let y=y0;y<y1;y+=mh+mg){if(skip(y)||skip(y+mh+1))continue;rect(g,C[0],x0,y,7,mh);rect(g,shade(C[0],1.08),x0+1,y,5,1);rect(g,C[2],x0,y+mh,7,SIEGE_ART.face);rect(g,C[3],x0+6,y,1,mh+SIEGE_ART.face);rect(g,'rgba(10,12,18,.5)',x0,y+mh+SIEGE_ART.face,7,mg-SIEGE_ART.face)}}
+  /* (stone: its battered foot outside, courses of big blocks lit toward the wall, its base grimed (moss, snow, sand by the climate)
+     and scree before it; the walk's flags, worn down its middle, the parapet's shadow on them; the merlons, each a block with its top
+     lit and its face below, every other one with its loop; dark crenels between; the inner lip) */
+  stone(g,y0,y1,skip){const w=this.w,C=this.C,x0=w.x0,x1=w.x1,s=w.seed%9973,A=SIEGE_ART,[mh,mg]=A.merlon,P=A.plinth,M=this.moss,mid=(x0+8+x1-3)/2;
+    for(let y=y0;y<y1;y++){if(skip(y))continue;const row=Math.floor(y/5),off=(row&1)*4;
+      for(let x=x0-P;x<x0;x++){const fx=x-(x0-P),k=fx/P,j=y%5===0||(fx+off)%7===0,v=hs(Math.floor((fx+off)/7),row,s+5);
+        let c=j?C[3]:k>.7?C[1]:k>.35?C[2]:shade(C[2],.86);if(!j&&v<.22)c=shade(c,.93);else if(!j&&v>.86)c=shade(c,1.05);if(!j&&y%5===1&&k>.35)c=shade(c,1.07);
+        if(M&&k<.4&&hs(x,y,s+9)<.6-k)c=M;g.fillStyle=c;g.fillRect(x,y,1,1)}
+      if(hs(row,y,s+11)<.03)rect(g,'rgba(20,16,12,.2)',x0-P+2,y,P-2,1);// (a stain run down the face)
+      for(let x=x0-P-6;x<x0-P;x++)if(hs(x,y,s+13)<.12)rect(g,hs(x,y,s+14)<.5?C[2]:C[3],x,y,1,1);// (scree at its foot)
+      for(let x=x0+8;x<x1-3;x++){const fx=x-(x0+8),row=Math.floor(y/6),col=Math.floor((fx+(row&1)*5)/10),v=hs(col,row,s);let c=(y%6===0||(fx+(row&1)*5)%10===0)?C[2]:v<.15?shade(C[1],.92):v>.85?shade(C[1],1.06):C[1];
+        if(Math.abs(x-mid)<5&&hs(x,y,s+3)<.45)c=shade(c,1.04);g.fillStyle=c;g.fillRect(x,y,1,1)}// (flagstones, worn down the middle)
+      rect(g,'rgba(10,12,18,.16)',x0+8,y,2,1);rect(g,C[2],x0,y,8,1);rect(g,C[3],x0+7,y,1,1);rect(g,C[0],x1-3,y,2,1);rect(g,C[3],x1-1,y,1,1)}
+    for(let y=y0,n=0;y<y1;y+=mh+mg,n++){if(skip(y)||skip(y+mh+1))continue;rect(g,'rgba(10,12,18,.3)',x0+8,y+1,3,mh);
+      rect(g,C[0],x0,y,7,mh);rect(g,shade(C[0],1.1),x0+1,y,5,1);rect(g,C[2],x0,y+mh,7,A.face);rect(g,C[3],x0+6,y,1,mh+A.face);
+      if(n%2)rect(g,'#16120e',x0+1,y+2,5,1);rect(g,'rgba(10,12,18,.5)',x0,y+mh+A.face,7,mg-A.face)}}
   // (a palisade: logs side by side, their sharpened tops outside lit, a plank walk on posts behind, the logs' lashing)
   palisade(g,y0,y1,skip){const w=this.w,C=this.C,x0=w.x0,x1=w.x1,s=w.seed%9973;
     for(let y=y0;y<y1;y++){if(skip(y))continue;const pl=Math.floor(y/4)%2;rect(g,pl?C[1]:shade(C[1],.92),x0+10,y,x1-x0-12,1);if(y%4===0)rect(g,C[3],x0+10,y,x1-x0-12,1)}
     for(let y=y0;y<y1;y+=4){if(skip(y)||skip(y+3))continue;const t=hs(1,y,s)<.5?1:0;
       rect(g,C[3],x0-4-t,y,14+t,4);rect(g,C[1],x0-3-t,y,12+t,3);rect(g,C[0],x0-3-t,y,3,2);rect(g,C[2],x0+3,y+1,6,2);rect(g,'#e8d8b0',x0-4-t,y+1,1,1)}// (each log: its point west, lit, its length to the walk)
-    for(let y=y0;y<y1;y+=18){if(skip(y))continue;rect(g,'#3a2a1a',x0+4,y,2,4)}}
+    for(let y=y0;y<y1;y+=18){if(skip(y))continue;rect(g,'#3a2a1a',x0+4,y,2,4)}
+    for(let y=y0;y<y1;y++){if(skip(y))continue;if(y%12<8){rect(g,'#cdb67a',x0+1,y,1,1);rect(g,y%2?'#cdb67a':'#8a7448',x0+6,y,1,1)}}}// (rope lashed across the logs, two bands)
   // (the gate's passage: cobbles through the wall, dark at its mouths)
   passage(g){const w=this.w,X=w.x0-SIEGE_ART.foot,W2=w.x1-X+4,Y0=w.gy0,Y1=w.gy1,s=w.seed;
     for(let y=Y0;y<Y1;y++){const row=Math.floor(y/5),off=hs(row,7,s)*6|0;for(let x=X;x<X+W2;x++){const cx=Math.floor((x+off)/(5+(row%2))),v=hs(cx,row,s+3),e=(x+off)%(5+(row%2))===0||y%5===0;g.fillStyle=w.kind==='stake'?(v<.3?'#6a5236':v<.7?'#7a6040':'#8a6e4a'):e?'#3e3834':v<.3?'#6e665e':v<.7?'#7e766c':'#8e867a';g.fillRect(x,y,1,1)}}// (cobbles of uneven size, row by row; a palisade's trodden earth)
-    rect(g,'rgba(10,12,18,.45)',X,Y0,W2,3);rect(g,'rgba(10,12,18,.3)',X,Y1-2,W2,2)}
-  // (a ladder leaning on the wall: two rails from its foot outside to the parapet, rungs, its shadow)
-  ladder(g,x,y){const L=this.w.L*10+16,X=x-L;rect(g,'rgba(10,12,18,.3)',X+2,y+12,L,3);
-    for(const dy of [2,10]){for(let k=0;k<L;k++){const t=k/L;rect(g,t<.5?'#7a5634':'#9a7448',X+k,y+dy-Math.round(t*1),1,2)}}for(let k=3;k<L;k+=5){rect(g,'#b08a5a',X+k,y+3,2,8);rect(g,'#5a3e26',X+k+2,y+4,1,7)}}
+    rect(g,'rgba(10,12,18,.45)',X,Y0,W2,3);rect(g,'rgba(10,12,18,.3)',X,Y1-2,W2,2);
+    // (the arch's sill at each mouth: dressed blocks across the passage, lit along their tops; a palisade's, a squared log)
+    for(const sx of [w.x0-1,w.x1-5])for(let y=Y0+3;y<Y1-2;y+=4){rect(g,hs(y,sx,s)<.5?this.C[1]:this.C[2],sx,y,5,3);rect(g,this.C[0],sx,y,5,1);rect(g,this.C[3],sx,y+3,5,1)}}
+  /* (the walk's heaps by its inner lip, SIEGE_ART.clutter rows apart at least, clear of the gate, the towers (and the rows their tops
+     stand over), stairs and ladders: a pile of stones to drop, a basket of arrows, a barrel, a brazier (its glow each frame, drawView)) */
+  clutter(g){const w=this.w,cs=w.cs,C=this.C,x=w.x1-12,S=SIEGE_WALL,A=SIEGE_ART,up=Math.ceil((A.rise+w.L*A.riseL+22)/cs),
+      busy=r=>w.towers.some(q=>r>=q-up&&r<q+S.tower)||r>=w.g0-1&&r<=w.g1+1||w.stairs.some(q=>r>=q-1&&r<=q+S.stair)||w.ladders.some(q=>Math.abs(q-r)<=1);
+    for(let r=w.R0+1,last=-99;r<w.R1;r++){if(busy(r)||r-last<A.clutter)continue;last=r;const y=r*cs+5,k=Math.floor(hs(r,3,w.seed)*4),Wd=this.wood;rect(g,'rgba(10,12,18,.3)',x+1,y+5,8,2);
+      if(k===0)for(const [dx,dy] of [[0,2],[3,0],[5,3],[2,4],[6,0],[4,5]]){rect(g,C[3],x+dx,y+dy+1,3,2);rect(g,C[1],x+dx,y+dy,3,2);rect(g,C[0],x+dx,y+dy,1,1)}
+      else if(k===1){rect(g,Wd[3],x,y,7,6);rect(g,Wd[1],x+1,y+1,5,4);for(let i=0;i<4;i++){rect(g,'#e8e0d0',x+1+i,y+1+(i%2),1,1);rect(g,'#a03028',x+2+i%3,y+3,1,1)}}
+      else if(k===2){rect(g,Wd[3],x,y,7,7);rect(g,Wd[1],x+1,y+1,5,5);rect(g,Wd[0],x+2,y+1,3,1);rect(g,'#3a3a40',x,y+2,7,1);rect(g,'#3a3a40',x,y+5,7,1)}
+      else{rect(g,'#2a2a30',x+1,y+1,6,5);rect(g,'#4a4a52',x+2,y+1,4,1);rect(g,'#7a2a10',x+2,y+2,4,3);rect(g,'#1a1a1e',x+3,y+5,2,2);this.braziers.push({x:x+4,y:y+3})}}}
+  // (spent arrows stuck in the field before the wall, thicker near it, leaning back toward it, their fletching up)
+  spent(g){const w=this.w,cs=w.cs,y0=w.R0*cs,y1=(w.R1+1)*cs,n=Math.round((y1-y0)/SIEGE_ART.spent),s=w.seed+7;
+    for(let k=0;k<n;k++){const x=Math.round(w.x0-SIEGE_ART.plinth-6-Math.pow(hs(k,1,s),1.7)*130),y=Math.round(y0+hs(k,2,s)*(y1-y0));
+      rect(g,'rgba(10,12,18,.22)',x+1,y,4,1);for(let j=0;j<3;j++)rect(g,'#7a5a38',x+j,y-j,1,1);rect(g,hs(k,3,s)<.5?'#e6dccb':'#b8b0a0',x+3,y-3,1,1)}}
+  /* (a mantlet of yours (SIEGE_FIGHT.mantlet): planks leaning toward the wall, lit on the west, iron-banded, propped on two struts behind,
+     a few of their arrows in it, its shadow; painted on the field's layer) */
+  mantlet(m){const g=this.cv&&this.cv.getContext('2d');if(!g)return;const x=Math.round(m.x)-5,y=Math.round(m.y)-12,R=SIEGE_ART.ladder.rail,G=SIEGE_ART.ladder.rung,H=24;
+    rect(g,'rgba(10,12,18,.3)',x+9,y+3,7,H-2);rect(g,'#2a1a0c',x+9,y+4,4,1);rect(g,'#2a1a0c',x+9,y+H-5,4,1);// (its shadow behind it, its struts)
+    rect(g,'#2a1a0c',x-1,y-1,11,H+2);for(let k=0;k<9;k++){const c=k===0?G[0]:k>=7?R[2]:k%3===2?shade(R[1],.9):R[1];rect(g,c,x+k,y,1,H)}rect(g,R[2],x,y+H-1,9,1);// (its planks, lit west, its top edge dark)
+    for(const by of [y+4,y+H-6]){rect(g,'#4a4a52',x,by,9,1);rect(g,'#7a7a84',x,by,2,1)}
+    for(const [dx,dy] of [[2,8],[5,13],[3,17]]){rect(g,'#7a5a38',x+dx,y+dy,3,1);rect(g,'#e6dccb',x+dx-1,y+dy-1,1,2)}}// (their arrows in it)
+  /* (a ladder's picture, its foot west and its top east, run px from one to the other (seen from above, leaning on the wall): two
+     rails of split poles two px thick, lit along their north edge, a knot here and there; a rung every step px, its west face lit,
+     its east shaded, rope lashed at its ends every other one, by its seed one snapped; two iron hooks over its top. One a ladder) */
+  ladPic(l){if(l.pic)return l.pic;const A=SIEGE_ART.ladder,run=this.w.L*10+16,W=run+4,H=A.w+3,cv=mkcv(W,H),g=cv.getContext('2d'),R=A.rail,G=A.rung,s=this.w.seed+l.r*7;
+    const cut=hs(s,3,911)<A.broken?2+Math.floor(hs(s,4,912)*(run/A.step-3)):-1;
+    for(const [y0,dy] of [[1,1],[A.w,-1]])for(let x=0;x<run;x++){const y=y0+(x>run*.6?dy:0);rect(g,'#2a1a0c',x,y-1,1,4);rect(g,R[0],x,y,1,1);rect(g,hs(x,y0,s)<.06?A.knot:R[1],x,y+1,1,1)}// (each rail closing in a px toward its top)
+    for(let x=3,n=0;x<run-2;x+=A.step,n++){const y0=3,y1=A.w-1,half=n===cut?(y0+y1)>>1:y1;rect(g,'#2a1a0c',x-1,y0,4,half-y0+1);rect(g,G[0],x,y0,1,half-y0+1);rect(g,G[1],x+1,y0,1,half-y0+1);
+      if(n%2===0){rect(g,A.rope,x,y0-1,2,1);rect(g,A.rope,x,y1+1,2,1)}}
+    for(const y of [1,A.w]){rect(g,'#2e2e34',run,y-1,3,2);rect(g,'#6a6a72',run+2,y-1,1,3)}// (its hooks)
+    return l.pic=cv}
+  /* (the ladders each frame: up, leaning from its foot out in the field to the parapet, its iron hooks over the merlons; thrown down,
+     lying in the field before the wall, askew) */
+  ladders(g){const w=this.w,cs=w.cs;for(const l of w.lad||[]){const s=w.secAt(l.r);if(l.up&&s&&s.down)continue;const sp=this.ladPic(l),y=Math.round((l.r+.5)*cs);g.save();g.imageSmoothingEnabled=false;
+      const X=w.x0+3-sp.width,Y=y-(sp.height>>1);if(l.up){rect(g,'rgba(10,12,18,.28)',X+2,Y+sp.height-1,sp.width-6,3);g.drawImage(sp,X,Y)}
+      else{g.translate(X-sp.width*.55,y);g.rotate(l.tilt);rect(g,'rgba(10,12,18,.25)',-sp.width/2+1,sp.height/2-2,sp.width-2,2);g.drawImage(sp,-sp.width/2,-sp.height/2)}g.restore()}}
   // (a tower, standing: its top raised over its footprint (crenellated, a hatch), its face below (courses, two arrow slits, lit to
   // the west), the lord's banner on its top; a prop: its feet its footprint's south edge)
   tower(r){const w=this.w,cs=w.cs,C=this.C,X=w.x0-cs,Y=r*cs,W2=w.x1-X+2,h=SIEGE_WALL.tower*cs,H=SIEGE_ART.rise+w.L*SIEGE_ART.riseL,FL=22,stake=w.kind==='stake';
     const cv=mkcv(W2+2,FL+h+H),g=cv.getContext('2d'),ty=FL,fy=FL+h;// (its top from ty to fy, its face from fy to fy + H)
-    for(let y=0;y<H;y++)for(let x=0;x<W2;x++){let c;if(stake)c=x%4===0?C[3]:x%4===1?C[0]:C[1];else{const row=Math.floor(y/4),j=(x+(row&1)*4)%8===0;c=y%4===0||j?C[2]:x<3?C[0]:x>W2-4?C[3]:C[1]}g.fillStyle=c;g.fillRect(x,fy+y,1,1)}
-    rect(g,'rgba(10,12,18,.35)',0,fy,W2,2);for(const sx of [Math.round(W2*.3),Math.round(W2*.65)]){rect(g,'#14100c',sx,fy+5,2,Math.min(8,H-8));rect(g,C[0],sx-1,fy+4,4,1)}// (arrow slits)
+    for(let y=0;y<H;y++)for(let x=0;x<W2;x++){let c;if(stake)c=x%4===0?C[3]:x%4===1?C[0]:C[1];else{const row=Math.floor(y/4),j=(x+(row&1)*4)%8===0;c=y%4===0||j?C[2]:x<3?C[0]:x>W2-4?C[3]:C[1];if(y>=H-5)c=y===H-5?C[0]:j||y%4===0?C[3]:C[2]}g.fillStyle=c;g.fillRect(x,fy+y,1,1)}// (its courses, its plinth at its foot)
+    rect(g,'rgba(10,12,18,.35)',0,fy,W2,2);if(!stake)for(let x=1;x<W2-2;x+=4){rect(g,C[3],x,fy+2,2,2);rect(g,C[1],x,fy+2,2,1)}// (the corbels under its top)
+    for(const sx of [Math.round(W2*.3),Math.round(W2*.65)]){const sl=Math.min(9,H-10);rect(g,'#14100c',sx,fy+6,2,sl);if(!stake)rect(g,'#14100c',sx-2,fy+6+(sl>>1)-1,6,2);rect(g,C[0],sx-1,fy+5,4,1)}// (arrow slits, a stone wall's crosslets)
     rect(g,C[3],0,ty,W2,h);rect(g,stake?C[2]:shade(C[1],.95),1,ty+1,W2-2,h-2);rect(g,C[2],5,ty+5,W2-10,h-10);
     for(let x=0;x<W2;x+=6){rect(g,C[0],x,ty,4,3);rect(g,C[2],x,ty+3,4,1)}for(let y=ty;y<fy;y+=6){rect(g,C[0],0,y,3,4);rect(g,C[0],W2-3,y,3,4)}// (its merlons round the top)
     rect(g,stake?'#3a2a1a':'#4a4440',W2-14,ty+8,6,5);rect(g,'#2a2420',W2-13,ty+9,4,3);// (a hatch)
@@ -229,6 +317,11 @@ class SiegeArt{
     // (each standing section's cracks as its strength goes: zigzags down its outer face)
     for(const q of w.secs||[]){if(q.down||q.hp>=q.hp0)continue;const n=Math.ceil((1-q.hp/q.hp0)*4),y0=q.r0*w.cs,y1=(q.r1+1)*w.cs;
       for(let k=0;k<n;k++){let x=w.x0-2+Math.round(hs(k,q.r0,w.seed)*8),y=y0+hs(k,q.r1,w.seed)*(y1-y0-10);for(let j=0;j<6;j++){rect(g,'#120e0a',x,y,1,2);x+=hs(k,j,w.seed)<.5?-1:1;y+=2}}}
+    this.ladders(g);
+    // (the braziers on the walk: their coals' flicker and glow)
+    for(const q of this.braziers){const f=.6+.4*Math.sin(now*9+q.x*.7+q.y);g.save();g.globalAlpha=.16*f;g.fillStyle='#ff9a40';g.beginPath();g.arc(q.x,q.y,7+f*2,0,6.283);g.fill();g.restore();rect(g,f>.8?'#ffd070':'#ff8a30',q.x-1,q.y-1,2,2)}
+    // (pitch poured on the ram's crew: black runs down over the doors, as it falls; a palisade's stones)
+    if(B&&!w.open&&B.t-(w.pitchT??-9)<.8){const k=(B.t-w.pitchT)/.8;for(let i=0;i<5;i++){const py=Y0+4+i*(Y1-Y0-8)/4;rect(g,w.kind==='stake'?'#6e665e':'#0e0c0a',X-2-Math.round(k*10),Math.round(py),Math.round(4+k*8),2)}}
     // (your trebuchets: their frame, the arm swung up as it looses and back down to cock, the counterweight; smashed, a heap)
     for(const e of w.engines||[])this.trebuchet(g,e,now);
     // (stones in flight: high in their arc, their shadow on the ground under them)
@@ -258,7 +351,7 @@ class SiegeSetup extends BattleSetup{
   groundSpec(){const E=this.env,n=siegeEngines(G.enc.ref);E.t=T_OPEN;E.name='Shadow of the walls';E.text='The walls of '+G.enc.ref.name+': climb them by your ladders'+(this.ram?', or break the gate with the ram':'')+(n?'; your '+(n>1?n+' trebuchets':'trebuchet')+' batter the wall (click a stretch of it to aim them)':'')+'; their archers hold the wall-walk.';return{siege:true,seed:this.seed}}
   terrain(){const FI=this.field;this.works=new SiegeWorks(G.enc.ref,BW,FI.top,FI.bot,{ram:this.ram,seed:this.seed,engines:siegeEngines(G.enc.ref)});return this.TR=buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot,siege:this.works})}
   *paint(){this.works.clim=this.env.c;const base=yield* arenaSteps(this.env.c);this.painted=yield* new SiegeArt(this.works,base).paintSteps()}
-  muster(){super.muster();B.works=this.works;B.holds=true;for(const u of B.units)if(isRider(u))Dismount.down(u,'none');this.post();this.works.placeEngines()}
+  muster(){super.muster();B.works=this.works;B.holds=true;for(const u of B.units)if(isRider(u))Dismount.down(u,'none');this.post();this.works.placeEngines();this.works.placeMantlets()}
   /* (the defenders at their posts: shooters along the wall-walk, clear of the gate and towers, in a file facing out; foot behind
      the gate; the rest (lords, characters) in the yard behind them) */
   post(){const w=this.works,cs=w.cs,gs=Object.values(B.groups).filter(g=>g.team!==0&&grpUnits(g.id).length),arc=gs.filter(g=>g.role==='arc'||g.role==='mag'),foot=gs.filter(g=>g.role==='inf'||g.role==='cav'),rest=gs.filter(g=>!arc.includes(g)&&!foot.includes(g));
