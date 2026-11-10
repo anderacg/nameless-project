@@ -105,10 +105,10 @@ function battleFlag(u){if(!MARCH_GEAR.flags||!B||u.hero||u.comp||u.leader)return
    flag's pole (h px, up: its foot under his shoulders), tall enough that the cloth flies over his head; pole: how much longer a flag
    man's spear is drawn, so his cloth flies over his head too (drawing only: his reach is his spear's); hang: a realm's banner at his
    back hung from a crossbar (hangBackFlag: on, the cloth's w, h, the crossbar's row). The owner, 2026-11-10: "Can you make a faction
-   flag not cut the emblem off?": a banner 11 x 9 (was 10 x 8), its fly waving and its swallow tail cut only past the device's
-   columns (fly 8, was 6: the wave had moved the device's last column), the back banner 9 x 11 (was 7 x 10), a field's pixel each
-   side of its device inside the trim */
-const BATTLE_BANNER={cloth:{banner:[11,9],rag:[10,8],pennant:[11,7],trade:[7,4]},fold:1.2,fly:8,notch:2,back:{h:22,up:3},pole:7,hang:{on:true,w:9,h:11,bar:3}};
+   flag not cut the emblem off?", then "May need a bit more area at the end?": a banner 13 x 9 (was 10 x 8), its device dev columns
+   from the pole, plain cloth after it, its fly waving (fly) and its swallow tail cut (notch) only past it; the back banner 9 x 11
+   (was 7 x 10), a field's pixel each side of its device inside the trim */
+const BATTLE_BANNER={cloth:{banner:[13,9],rag:[10,8],pennant:[11,7],trade:[7,4]},fold:1.2,fly:8,notch:3,dev:2,back:{h:22,up:3},pole:7,hang:{on:true,w:9,h:11,bar:3}};
 // (a flag's cloth alone, hung from (ax, ay) by its first column, trailing back to the left: a spear's in battle)
 function clothSprite(b,f){const key='fc'+b.k+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;const Q=BATTLE_BANNER,[cw,ch]=Q.cloth[b.k]||Q.cloth.banner,g=pgrid(cw+2,ch+4);
   bannerCloth((x,y,c)=>pset(g,x,y,c),cw,2,b,f,Q.cloth,-1,Q);g.edge=true;poutline(g);c=pcanvas(g);c.ax=cw+1;c.ay=2;MARCH_FLAGS.set(key,c);return c}

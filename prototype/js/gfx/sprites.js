@@ -281,7 +281,9 @@ function banditSprite(f){f=(f||0)%PEOPLE_STEPS;const k='bd'+f;return FIGURES.get
    and column); outlined inside as every figure is (people.js poutline, the edge kept). f: the flutter (0, 1), the folds half a fold along.
    BANNER: the grid (w, h), the cloth's top and the pole's foot (rows; a caravan's top: trade), each shape's cloth [w, h], the folds
    across it (fold) and where its fly end begins to wave (fly, columns) */
-const BANNER={w:16,h:24,top:4,foot:22,trade:10,cloth:{banner:[11,9],rag:[11,9],pennant:[12,8],trade:[7,4]},fold:2.2,fly:8};
+// (the owner, 2026-11-10: "May need a bit more area at the end?": a banner 13 long, its device dev columns from the pole with plain
+// cloth after it before its swallow tail (notch), its fly waving past the device)
+const BANNER={w:16,h:24,top:4,foot:22,trade:10,cloth:{banner:[13,9],rag:[11,9],pennant:[12,8],trade:[7,4]},fold:2.2,fly:8,notch:3,dev:2};
 // (a band's rag by its kind: bandits, desert raiders, bog raiders)
 const BAND_FLAG={bandits:'#8a2a2a',raiders:'#b07a38',bog:'#4e6a3a'};
 const BANNER_DEV={vale:['..w..','..w..','wwwww','..x..','..x..'],karn:['wwwww','wwwww','..x..','..x..','..x..'],sylvan:['..w..','.www.','wwwww','.www.','..x..'],
@@ -302,7 +304,7 @@ function bannerCloth(s,x0,top,b,f,sizes,dir,o){const R=PX.ramp(b.col),G=PPAL.gol
   for(let i=0;i<cw;i++){const sl=Math.cos(ph(i)),k=i===0?1:sl>.45?0:sl<-.45?2:1;for(const [r0,r1] of rows(i))for(let r=r0;r<=r1;r++){const y=top+r+wave(i);at.set(i+','+r,y);s(X(i),y,R[r===0?Math.max(0,k-1):r===r1?Math.min(3,k+1):k])}}
   if(b.k==='rag'&&cw>7){s(X(cw-5),top+3+wave(cw-5),R[3]);s(X(cw-4),top+Math.min(5,ch-2)+wave(cw-4),R[3])}// (a hole, a stain)
   let T=BANNER_DEV[b.dev];if(T&&pen&&!trade&&b.dev!=='lantern')T=[0,2,4].map(y=>[0,2,4].map(x=>T[y][x]).join(''));
-  if(T){const i0=trade?1:pen?1:(cw-T[0].length)>>1,r0=trade?0:pen?Math.min(2,ch-T.length):(ch-T.length)>>1,C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'},dev=new Set();
+  if(T){const i0=trade?1:pen?1:o.dev!=null?o.dev:(cw-T[0].length)>>1,r0=trade?0:pen?Math.min(2,ch-T.length):(ch-T.length)>>1,C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'},dev=new Set();
     T.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')dev.add((i0+x)+','+(r0+y))}));
     if(!trade)for(const p of dev){const [i,r]=p.split(',').map(Number);for(const [di,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=(i+di)+','+(r+dr);if(!dev.has(q)&&at.has(q))s(X(i+di),at.get(q),R[3])}}
     T.forEach((row,y)=>[...row].forEach((c,x)=>{const q=(i0+x)+','+(r0+y);if(c!=='.'&&at.has(q))s(X(i0+x),at.get(q),C[c])}))}}
