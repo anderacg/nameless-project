@@ -24,6 +24,11 @@ const GOBLINS={on:true,col:'#6f9a3a',band:[8,12],grow:12,bossAt:12,mix:[['gob_st
 // world/brains.js BandBrain feud): a band rides down a rival in sight (see, px) it thinks it can take (the rival's power at most
 // dare × its own, by its nerve), not while it fears you or cools from its last fight; two rivals within meet px of each other fight,
 // whichever is the stronger (fights.js: in a fight, sides.js armyRelation puts them on opposite sides). on false: they pass by
+/* their tongue (the owner, 2026-11-10: "Goblin cannot be negotiating if you cannot speak their language"): no terms with goblins (a
+   cornered band's surrender, a camp's price or surrender, captors' mercy) without one who speaks it: your hero, or a companion with
+   you, of a people that does (races: the orcs, their kin, and goblins), or a goblin among your men to speak for you (not when you are
+   held: you are alone); why: said when no one can */
+const GOBLIN_TONGUE={races:['orc','goblin'],why:'no one with you speaks their tongue'};
 const BAND_FEUD={on:true,see:100,dare:1.1,meet:10};
 // their troops: [id, name, tier, hp, dmg, spd, reach, range, cd, look, tags, armour, damage type]. The stabber's knife and small
 // round shield, the spearman's short spear, the archer's short bow, the boss's hand axe in a pelt (no mail: the owner, 2026-11-08, "goblins

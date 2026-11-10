@@ -30,7 +30,7 @@ function clearLine(x0,y0,x1,y1){holdShut();const d=Math.hypot(x1-x0,y1-y0),n=Mat
    walked over) where the land lets it: such a tile costs WAY_FOOT_LOT.cost times as much (findPath, the straightening), and no
    straight line crosses one (clearLine, wayClear) but where you stand or are going. Dearer, never shut, so no way is lost; nobody
    else's way changes */
-const WAY_FOOT_LOT={cost:8,open:['farm','pasture'],every:250,near:12};
+const WAY_FOOT_LOT={cost:30,open:['farm','pasture'],every:250,near:12};
 let WAY_FOOT=false,FOOTM={m:null,key:'',t:-1e9};
 // (where to walk for a point clicked (ui/input.js worldMove): itself if one may stand there; on water or a peak, a holding's shut
 // keep or walls, a building, the nearest tile within WAY_FOOT_LOT.near that one may, on the land from reaches (the owner, 2026-11-10:

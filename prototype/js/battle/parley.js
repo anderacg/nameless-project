@@ -9,8 +9,8 @@ function parley(o,kind){
   G.par={o,kind};G.mode='dialog';P.tx=null;G.chase=null;const lord=kind==='lord',n=lord?o.troops.length:o.n,ch=Math.round(yieldChance(o,kind)*100);
   showPanel('<h2>'+(lord?o.name+' is cornered':'The '+(o.kind==='raiders'?'raiders':o.kind==='bog'?'bog raiders':o.kind==='goblins'?'goblins':'bandits')+' are cornered')+'</h2>'+
     '<p>They ran from you, but you have caught them. '+n+' '+(lord?'soldiers of the '+FACS[o.fac].n:'fighters')+' (power '+o.power()+') against your '+partyPower()+'.</p>'+
-    '<p class="muted">Call on them to yield ('+insight(['you cannot tell whether they would','they '+(ch>=50?'may well':'might')+' yield','about '+ch+'% they do'],'know the odds')+'; if not, they fight), attack at once, or let them go.</p><div class="btns">'+
-    dlgBtn('pl-yield',null,'Demand surrender',null,true)+dlgBtn('pl-fight',null,'Attack')+dlgBtn('pl-go',null,'Let them go')+'</div>'+
+    '<p class="muted">'+goblinTongueSay(o.kind==='goblins')+'Call on them to yield ('+insight(['you cannot tell whether they would','they '+(ch>=50?'may well':'might')+' yield','about '+ch+'% they do'],'know the odds')+'; if not, they fight), attack at once, or let them go.</p><div class="btns">'+
+    dlgBtn('pl-yield',null,'Demand surrender',kind!=='lord'?goblinTongueWhy(o.kind==='goblins')||null:null,true)+dlgBtn('pl-fight',null,'Attack')+dlgBtn('pl-go',null,'Let them go')+'</div>'+
     '<p class="muted" style="font-size:13px">'+YIELD_WHY+'</p>');
 }
 // what decides it, said plainly (the owner, 2026-10-30: "just need explanations"); and why they would not, when they will not
@@ -75,7 +75,7 @@ function parleyAct(a,arg){
   const p=G.par;if(!p){closeDialog();return}const {o,kind}=p;
   if(a==='pl-fight')return parleyFight(o,kind);
   if(a==='pl-go'){o.cool=8;G.encCool=3;if(kind==='lord'){addHonor(o.fac,2,true);changeRel(o,RELATION.letGo,'you let them go')}else repNear(o.x,o.y,-2);mood('mercy');closeDialog();log(kind==='lord'?'You let '+o.name+' ride away.':'You let the band go. The roads stay dangerous.');return}
-  if(a==='pl-yield'){const y=Math.random()<yieldChance(o,kind);train('pers',y?6:2);if(y)return parleyYield();log((kind==='lord'?o.name:'The band')+' refuses to yield: '+yieldNo(o)+'.','bad');return parleyFight(o,kind)}
+  if(a==='pl-yield'){if(kind!=='lord'&&goblinTongueWhy(o.kind==='goblins'))return;const y=Math.random()<yieldChance(o,kind);train('pers',y?6:2);if(y)return parleyYield();log((kind==='lord'?o.name:'The band')+' refuses to yield: '+yieldNo(o)+'.','bad');return parleyFight(o,kind)}
   if(a==='pl-cage'&&kind==='band'){lootStart();const n=cage(o.troops),gold=rint(5,15)+o.n*2;P.gold+=gold;P.renown+=2;
     return yieldEnd(o,'Prisoners',n+' of them are bound and marched with you'+(o.n>n?'; the rest are disarmed and chased off':'')+'. You take '+gold+' gold they had stolen.',o.troops.length-n,true)}
   if(a==='pl-join'&&kind==='band'&&RecruitPick.room())return RecruitPick.open();

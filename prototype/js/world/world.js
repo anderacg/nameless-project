@@ -29,9 +29,7 @@ const bridgeAt=(tx,ty)=>tAt(tx,ty)!==T_ROAD?0:tAt(tx-1,ty)===T_WATER&&tAt(tx+1,t
 function walk(o,dx,dy,step,ok){
   const a0=Math.atan2(dy,dx);
   const inWall=TownWall.at(Math.floor(o.x/TILE),Math.floor(o.y/TILE));// (a town's ring of walls kept off, but by one standing in it: world/townwalls.js)
-  // (on foot round the buildings (WAY_FOOT, router.js): a step onto one only when no other will do, and never kept off one you stand in)
-  const F=WAY_FOOT&&footMask(),fi=(x,y)=>F&&F[Math.floor(y/TILE)*MW+Math.floor(x/TILE)],inB=fi(o.x,o.y);
-  for(const pass of F&&!inB?[0,1]:[1])for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(!pass&&fi(nx,ny))continue;if(passable(terrAt(nx,ny))&&(inWall||!TownWall.at(Math.floor(nx/TILE),Math.floor(ny/TILE)))&&(!ok||ok(nx,ny))){
+  for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(passable(terrAt(nx,ny))&&(inWall||!TownWall.at(Math.floor(nx/TILE),Math.floor(ny/TILE)))&&(!ok||ok(nx,ny))){
     const tx=Math.floor(nx/TILE),ty=Math.floor(ny/TILE),b=bridgeAt(tx,ty),m=Math.max(1,step);if(b===1)nx+=clamp((tx+.5)*TILE-nx,-m,m);else if(b===2)ny+=clamp((ty+.5)*TILE-ny,-m,m);
     WALKED.set(o,(WALKED.get(o)||0)+Math.hypot(nx-o.x,ny-o.y));o.x=nx;o.y=ny;return true}}
   return false;

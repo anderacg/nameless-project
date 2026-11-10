@@ -131,7 +131,7 @@ function holdingPlaque(t,cam,top,live){PLAQUEQ.push({t,top:top+cam.y,live})}
 function lockPic(){const L=GATE_LOCK;if(!L.pic)L.pic=mkc(L.art[0].length,L.art.length,g=>L.art.forEach((r,y)=>[...r].forEach((c,x)=>{if(L.col[c]){g.fillStyle=L.col[c];g.fillRect(x,y,1,1)}})));return L.pic}
 // (the bars queued this frame, onto the screen with the map's words: render.js; the ctx's transform the world's)
 function drawPlaques(cam){const Q=PLAQUEQ;PLAQUEQ=[];if(!Q.length)return;const H=HOLD_PLAQUE,m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf();
-  for(const p of Q){const t=p.t;if(!seenAt(t.x,t.y))continue;const lock=GATES.on&&!Gates.admits(t).ok,cr=p.live?lordsInside(t).slice(0,H.most).map(l=>FACS[l.fac].col):[],sg=p.live&&besieged(t);
+  for(const p of Q){const t=p.t,lock=GATES.on&&!Gates.admits(t).ok,cr=p.live?lordsInside(t).slice(0,H.most).map(l=>FACS[l.fac].col):[],sg=p.live&&besieged(t);
     const known=Discovery.named(t),name=Discovery.nameOf(t),col=known?H.name:H.kind,pic=mapTxtPic(name,col,'left',sc,dpr),tw=(pic.width-2*pic.ox)/sc,asc=(pic.oy-pic.ox)/sc;
     const lp=lock?lockPic():null,w=H.pad*2+(lp?lp.width+H.gap:0)+tw+(cr.length?H.gap+cr.length*(7*H.crown+1)-1:0)+(sg?H.gap+3:0),x0=Math.round(t.x-cam.x-w/2),y0=Math.round(p.top-cam.y-H.over-H.h);
     ctx.save();ctx.fillStyle=H.edge;ctx.fillRect(x0+1,y0,w-2,H.h);ctx.fillRect(x0,y0+1,w,H.h-2);ctx.fillStyle=H.bg;ctx.fillRect(x0+1,y0+1,w-2,H.h-2);

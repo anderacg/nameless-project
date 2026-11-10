@@ -69,8 +69,22 @@ Kit.suite(({ok,info})=>{
   P.troops={hum_levy:1};t.meetBand(b);
   ok(G.enc&&G.enc.band==='goblins'&&/Goblin warband/.test(Kit.panel())&&/ragged hoods/.test(Kit.panel())&&/goblins/.test(Kit.panel()),'meeting a warband: its own title, a line about them, the scouts count goblins');
   Kit.world();strong();t.meetBand(b);ok(G.par&&/The goblins are cornered/.test(Kit.panel()),'a warband that fears you is cornered as goblins');
+  // (the owner, 2026-11-10: "Goblin cannot be negotiating if you cannot speak their language")
+  {const yb=()=>document.querySelector('#panel [data-act="pl-yield"]');ok(P.race!=='orc'&&!t.goblinSpeaker()&&yb()&&yb().disabled&&/speaks their tongue/.test(yb().textContent),'no one with you speaks Goblin: no demand of surrender ("'+(yb()&&yb().textContent)+'")');
+   t.act('pl-yield');ok(G.par&&/The goblins are cornered/.test(Kit.panel()),'and asking anyway does nothing: fight them or let them go');
+   P.troops={...P.troops,gob_spear:1};t.parley(b,'band');ok(t.goblinSpeaker()==='your goblin spearman'&&!yb().disabled&&/Your goblin spearman speaks for you/.test(Kit.panel()),'a goblin among your men speaks for you: the demand open');
+   delete P.troops.gob_spear;const r0=P.race;P.race='orc';try{t.parley(b,'band');ok(t.goblinSpeaker()==='you'&&!yb().disabled&&/You know their tongue/.test(Kit.panel()),'an orc knows their tongue himself')}finally{P.race=r0}
+   const bb={...b,kind:'bandits',power:()=>b.power(),troops:b.troops,n:b.n};t.parley(bb,'band');ok(!yb().disabled,'bandits: no tongue needed, as ever');G.par=null}
   Kit.world();G.par=null;t.startEncounter({kind:'party',ref:b,list:b.troops.slice(),band:'goblins'});t.autoResolve();
   ok(/Victory/.test(Kit.panel())&&!t.bandits.includes(b),'beaten, the warband is broken');Kit.done({cont:true})}
+ // ---- a camp's parley: its price and its surrender only in their tongue; held by goblins, no persuading them in it either
+ {Kit.world({encCool:0});P.troops={hum_levy:4};const s=C[C.length-1];P.x=s.x;P.y=s.y+12;P.gold=5000;t.act('site-open-'+s.i);s.meet?.();G.site=s;G.siteTab='parley';t.showSite();
+  const pay=()=>document.querySelector('#panel [data-act="site-pay"]'),yl=()=>document.querySelector('#panel [data-act="site-yield"]'),g0=P.gold;
+  ok(pay()&&pay().disabled!==false&&yl()&&/no one with you understands/.test(Kit.panel()),'at a goblin camp with no one who speaks Goblin: no price to pay, no surrender to demand, their jabber not understood');
+  t.act('site-pay');ok(P.gold===g0&&!s.cleared,'and paying anyway does nothing');
+  P.troops.gob_stab=2;t.showSite();ok(pay()&&!pay().disabled&&/speaks for you/.test(Kit.panel()),'a goblin among your men: they can be bought off');delete P.troops.gob_stab;G.site=null;G.siteTab=null;t.hidePanel();G.mode='world'
+  const C0=t.Captivity,c={k:'band',band:'goblins',name:'the goblins',tried:[],ransom:100},rp=C0.replies(c).find(r=>r&&r.act==='held-persuade');
+  ok(rp&&/speaks their tongue/.test(rp.why),'held by goblins, alone: no persuading them ('+(rp&&rp.why)+')');const r0=P.race;P.race='orc';try{ok(!C0.replies(c).find(r=>r&&r.act==='held-persuade').why,'an orc can talk to them')}finally{P.race=r0}}
  // ---- storming a camp: its boss, its plunder and stolen goods, empty for a while
  {Kit.world({encCool:0});strong();const s=C[0];P.x=s.x;P.y=s.y+12;
   s.fight(true);ok(G.enc&&G.enc.kind==='camp'&&G.enc.list.includes(GB.boss)&&G.enc.list.length>=GB.camp.foes[0]+1&&new RegExp(s.name).test(Kit.panel()),'storming '+s.name+': '+G.enc.list.length+' goblins and their boss');
