@@ -128,7 +128,7 @@ function holdingLabel(t,cam,X,Y,N,fy=0){holdingPlaque(t,cam,Y-N+Math.min(0,fy),t
    wood with its grain, a gold trim over it and its owner's colour under it, rivets, its owner's ribbon swallow-tailed at both ends and
    its owner's small shield before its name (plaqueShield; free folk's in plain brown). HOLD_PLAQUE: its size (px), colours, at most
    so many crowns */
-const HOLD_PLAQUE={h:16,pad:5,gap:3,over:6,most:4,tail:6,bg:'#2a1c10',grain:'#3b2915',edge:'#120b05',trim:'#c9a25a',rivet:'#dcc58e',
+const HOLD_PLAQUE={h:16,pad:6,gap:3,over:8,most:4,ribbon:8,tail:9,drop:3,droop:4,bg:'#2a1c10',grain:'#3b2915',edge:'#120b05',trim:'#c9a25a',trimLow:'#8a6a30',rivet:'#f0dca0',
   name:'#f0e2b8',kind:'#a39a86',siege:'#ff6a60',free:'#8a7a5a',dim:.78};
 let PLAQUEQ=[];
 function holdingPlaque(t,cam,top,live){PLAQUEQ.push({t,top:top+cam.y,live})}
@@ -137,6 +137,31 @@ function lockPic(){const L=GATE_LOCK;if(!L.pic)L.pic=mkc(L.art[0].length,L.art.l
 const PLAQUE_SHIELD=['ooooooooo','orrrrrrro','oxxxpxxdo','oxxxpxxdo','oxxxpxxdo','oxxxpxxdo','.oxxpxdo.','.oxxpxdo.','..oxpdo..','...oxo...','....o....'],SHIELD_PICS=new Map();
 function plaqueShield(col){let c=SHIELD_PICS.get(col);if(c)return c;const A=PLAQUE_SHIELD,C={o:'#120b05',r:'#c9a25a',x:col,p:PX.mix(col,'#ffffff',.45),d:PX.shade(col,.7)};
   c=mkc(A[0].length,A.length,g=>A.forEach((r,y)=>[...r].forEach((q,x)=>{if(!C[q])return;g.fillStyle=q==='x'&&x<3&&y<6?PX.mix(col,'#ffffff',.18):C[q];g.fillRect(x,y,1,1)})));SHIELD_PICS.set(col,c);return c}
+/* (the bar's ribbon and plank; the owner, 2026-11-10: "It's too bland, can you make it like more ribbon and more detail?") a cloth
+   ribbon in its owner's colour run behind the plank, out ribbon px each side, gold-edged and stitched, lit along its top and shaded
+   at its foot; past each end it folds under (its darkest shade) into a tail hung a little lower, swallow-tailed, stitched; on it
+   the plank of dark wood, its grain, a gold frame inside its edge, a rivet at each corner and a gold crest over its middle set
+   with the owner's colour. x0, y0: the plank's corner, w its width (the ribbon's parts round it: HOLD_PLAQUE ribbon, tail, drop,
+   droop: how far its ends hang) */
+function drawPlaqueRibbon(x0,y0,w,own,seed){const H=HOLD_PLAQUE,y1=y0+H.h,E=H.ribbon,T=H.tail,D=H.drop,r=(x,y,ww,hh,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,ww,hh)};
+  const lit=PX.mix(own,'#ffffff',.28),stitch=PX.mix(own,'#ffffff',.5),sh=PX.shade(own,.72),tail=PX.shade(own,.58),tailLit=PX.shade(own,.7),tailLow=PX.shade(own,.44),fold=PX.shade(own,.32),by0=y0+2,by1=y1-1,N=E+2+T;
+  // (each end a column at a time from the plank out, drooping as it goes (H.droop px at its end): the ribbon, the fold, the tail)
+  for(const s of [-1,1])for(let i=0;i<=N;i++){const X=s<0?x0-1-i:x0+w+i,o=Math.round(Math.pow(i/N,1.6)*H.droop);
+    if(i<E){const t0=by0+o,t1=by1+o;r(X,t0-1,1,t1-t0+3,H.edge);r(X,t0,1,1,H.trim);r(X,t1,1,1,H.trimLow);r(X,t0+1,1,t1-t0-1,own);r(X,t0+1,1,1,lit);r(X,t1-1,1,1,sh);
+      if(i%2)r(X,t0+3,1,1,stitch),r(X,t1-3,1,1,stitch);if(i===0)r(X,t0+1,1,t1-t0-1,sh);continue}// (its first column shaded, going behind the plank)
+    if(i<E+2){const t0=by1+o-2+(i-E),t1=by1+o+D;r(X,t0-1,1,t1-t0+3,H.edge);r(X,t0,1,t1-t0+1,fold);continue}
+    // (the tail, under the ribbon's end, swallow-tailed: its last columns open about its middle)
+    const t0=by0+D+o,t1=by1+D+o,mid=(t0+t1)>>1,k=N-i,d=Math.max(0,3-k);
+    for(let y=t0-1;y<=t1+1;y++){const a=Math.abs(y-mid);if(a<d)continue;
+      r(X,y,1,1,y<t0||y>t1||a===d&&d>0||i===N?H.edge:y===t0?tailLit:y===t1?tailLow:i%2&&(y===t0+2||y===t1-2)?stitch:tail)}}
+  // (the plank: its edge, its wood and grain, its gold frame, its rivets)
+  r(x0,y0+1,w,H.h-1,H.edge);r(x0+1,y0,w-2,H.h+1,H.edge);r(x0+1,y0+1,w-2,H.h-2,H.bg);
+  ctx.fillStyle=H.grain;const sd=seed|0;for(const [gy,a,b] of [[5,.08,.42],[9,.5,.93],[11,.15,.3],[7,.6,.75]]){const ga=Math.round(x0+w*((a+(sd%7)/50)%1)),gb=Math.round(x0+w*Math.min(.97,b+(sd%5)/60));if(gb>ga)ctx.fillRect(ga,y0+gy,gb-ga,1)}
+  r(x0+1,y0+1,w-2,1,H.trim);r(x0+1,y1-2,w-2,1,H.trimLow);r(x0+1,y0+1,1,H.h-3,H.trim);r(x0+w-2,y0+1,1,H.h-3,H.trimLow);
+  for(const [rx,ry] of [[x0+3,y0+3],[x0+w-4,y0+3],[x0+3,y1-4],[x0+w-4,y1-4]])r(rx,ry,1,1,H.rivet);
+  // (the crest: a gold gable seated on the plank's middle, the owner's colour set in it)
+  const cx=Math.round(x0+w/2);for(let k=0;k<4;k++){r(cx-k-1,y0-4+k,2*k+3,1,H.edge);if(k)r(cx-k,y0-4+k,2*k+1,1,k===3?H.trimLow:H.trim)}
+  r(cx-3,y0,7,1,H.trim);r(cx,y0-3,1,1,H.rivet);r(cx,y0-1,1,1,own);r(cx-1,y0-1,1,1,PX.shade(own,.7))}
 // (the bars queued this frame, onto the screen with the map's words: render.js; the ctx's transform the world's). Each a plank of dark
 // wood, its grain, a gold trim over and its owner's colour under, rivets at its corners and its owner's ribbon tails at its ends
 function drawPlaques(cam){const Q=PLAQUEQ;PLAQUEQ=[];if(!Q.length)return;const H=HOLD_PLAQUE,m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf();
@@ -144,15 +169,7 @@ function drawPlaques(cam){const Q=PLAQUEQ;PLAQUEQ=[];if(!Q.length)return;const H
     const known=Discovery.named(t),name=Discovery.nameOf(t),col=known?H.name:H.kind,pic=mapTxtPic(name,col,'left',sc,dpr),tw=(pic.width-2*pic.ox)/sc,asc=(pic.oy-pic.ox)/sc;
     const own=t.owner&&(t.owner==='player'||FACS[t.owner])?(p.live?facCol(t):t._memCol||facCol(t)):H.free,sh=plaqueShield(own),lp=lock?lockPic():null;
     const w=Math.round(H.pad*2+sh.width+H.gap+(lp?lp.width+H.gap:0)+tw+(cr.length?H.gap+cr.length*(LORD_CROWN[0].length+1)-1:0)+(sg?H.gap+3:0)),x0=Math.round(t.x-cam.x-w/2),y0=Math.round(p.top-cam.y-H.over-H.h),y1=y0+H.h,T=H.tail;
-    ctx.save();if(!p.live)ctx.globalAlpha=H.dim;
-    // (the ribbon's tails, swallow-tailed, behind the plank)
-    for(const s of [-1,1]){const xa=s<0?x0+2:x0+w-2,xb=xa+s*(T+2);ctx.fillStyle=PX.shade(own,.55);ctx.beginPath();ctx.moveTo(xa,y0+3);ctx.lineTo(xb,y0+3);ctx.lineTo(xb-s*3,(y0+y1)/2+1);ctx.lineTo(xb,y1+1);ctx.lineTo(xa,y1+1);ctx.closePath();ctx.fill();
-      ctx.fillStyle=own;ctx.fillRect(Math.min(xa,xb-s*1),y0+4,Math.abs(xb-xa)-1,1)}
-    // (the plank: its edge, its wood and grain, its trims)
-    ctx.fillStyle=H.edge;ctx.fillRect(x0,y0+1,w,H.h-1);ctx.fillRect(x0+1,y0,w-2,H.h+1);ctx.fillStyle=H.bg;ctx.fillRect(x0+1,y0+1,w-2,H.h-2);
-    ctx.fillStyle=H.grain;const sd=(t.seed||7)|0;for(const [gy,a,b] of [[5,.08,.42],[9,.5,.93],[11,.15,.3],[7,.6,.75]]){const ga=Math.round(x0+w*((a+(sd%7)/50)%1)),gb=Math.round(x0+w*Math.min(.97,b+(sd%5)/60));if(gb>ga)ctx.fillRect(ga,y0+gy,gb-ga,1)}
-    ctx.fillStyle=H.trim;ctx.fillRect(x0+1,y0+1,w-2,1);ctx.fillStyle=own;ctx.fillRect(x0+1,y1-3,w-2,2);ctx.fillStyle=PX.shade(own,.6);ctx.fillRect(x0+1,y1-1,w-2,1);
-    ctx.fillStyle=H.rivet;for(const [rx,ry] of [[x0+2,y0+3],[x0+w-3,y0+3]])ctx.fillRect(rx,ry,1,1);
+    ctx.save();if(!p.live)ctx.globalAlpha=H.dim;drawPlaqueRibbon(x0,y0,w,own,t.seed||7);
     // (its marks and its name, in a row)
     let x=x0+H.pad,mid=y0+(H.h-2)/2;ctx.drawImage(sh,x,Math.round(mid-sh.height/2));x+=sh.width+H.gap;
     if(lp){ctx.drawImage(lp,x,Math.round(mid-lp.height/2));x+=lp.width+H.gap}
