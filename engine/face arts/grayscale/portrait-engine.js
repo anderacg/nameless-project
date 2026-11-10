@@ -375,11 +375,16 @@
       if(great||style==='visored-bascinet'||beaked)chain(g,skirt,c);else surface(g,skirt,(px,py)=>92+43*falloff(px,py,x-15,eye+10,19,29));
       return true;
     }
-    const top=a.top-(fluted?16:leaf?19:great?9:sallet?8:beaked?15:style==='visored-bascinet'?13:12);
-    const crown=Array.from({length:15},(_,i)=>{const t=Math.PI+i*Math.PI/14;return [x+w*Math.cos(t),top+18+18*Math.sin(t)];});
-    const lower=Array.from({length:13},(_,i)=>{const t=i*Math.PI/12;return [x+(w-1)*Math.cos(t),eye+10+(bottom-eye-10)*Math.sin(t)];});
-    const rolledCrown=Array.from({length:17},(_,i)=>{const t=Math.PI+i*Math.PI/16;return [x+w*Math.cos(t),top+10+10*Math.sin(t)];});
+    const top=a.top-(fluted?19:horned?10:leaf?19:great?9:sallet?8:beaked?15:style==='visored-bascinet'?13:12);
+    const crown=fluted?[[x-w,top+26],[x-w+3,top+15],[x-w*.5,top+5],[x-3,top],[x+3,top],[x+w*.5,top+5],[x+w-3,top+15],[x+w,top+26]]:Array.from({length:15},(_,i)=>{const t=Math.PI+i*Math.PI/14,depth=horned?14:18;return [x+w*Math.cos(t),top+depth+depth*Math.sin(t)];});
+    const lower=Array.from({length:13},(_,i)=>{const t=i*Math.PI/12,center=eye+(barrel?16:10);return [x+(w-1)*Math.cos(t),center+(bottom-center)*Math.sin(t)];});
+    const rolledCrown=Array.from({length:17},(_,i)=>{const t=Math.PI+i*Math.PI/16;const depth=barrel?7:10;return [x+w*Math.cos(t),top+depth+depth*Math.sin(t)];});
     const shell=style==='closed-knight-helm'||mask||sallet?[...crown,...lower]:great?[...rolledCrown,...lower]:[[x-w,top+18],[x-w+6,top+6],[x,top],[x+w-6,top+6],[x+w,top+18],...lower];
+    if(barrel||fluted||horned){
+      poly(g,shell,128);
+      if(horned)for(const side of [-1,1]){const at=x+side*(w-3);poly(g,[[at-side*6,top+24],[at+side*7,top+20],[at+side*15,top+10],[at+side*18,top],[at+side*16,Math.max(1,top-5)],[at+side*12,Math.max(1,top-5)],[at+side*13,top+2],[at+side*8,top+8],[at+side*1,top+10],[at-side*4,top+10]],128);}
+      return true;
+    }
     surface(g,shell,(px,py)=>133+60*falloff(px,py,x-12,eye-15,w*.8,30)-35*falloff(px,py,x+w-2,eye+13,13,27));
     clip(g,shell,()=>{
       if(great){rect(g,x-3,top+3,6,bottom-top-6,180);rect(g,x-w,eye-6,w*2,4,100);curve(g,[x-w+3,top+13,x-12,top+1,x+12,top+1,x+w-3,top+13],207,2);}
@@ -404,15 +409,11 @@
       curve(g,[x-jaw,bottom-5,x-8,bottom-1,x+8,bottom-1,x+jaw,bottom-5],62,2);
     });
     clip(g,shell,()=>{
-      if(barrel){for(const side of [-1,1]){rect(g,x+side*(w-8)-2,top+7,4,bottom-top-15,154);for(let y=top+10;y<bottom-10;y+=10)rect(g,x+side*(w-8)-1,y,2,2,232);}curve(g,[x-w+3,top+14,x-12,top+3,x+12,top+3,x+w-3,top+14],184,4);}
       if(riveted){poly(g,[[x-3,top+3],[x+3,top+3],[x+5,eye-6],[x+3,bottom-6],[x-3,bottom-6],[x-5,eye-6]],72);poly(g,[[x-1,top+3],[x+1,top+3],[x+3,eye-6],[x+1,bottom-6],[x-1,bottom-6],[x-3,eye-6]],201);for(const y of [top+14,eye-7]){curve(g,[x-w,y+4,x-12,y-6,x+12,y-6,x+w,y+4],80,8);curve(g,[x-w,y+4,x-12,y-6,x+12,y-6,x+w,y+4],201,4);for(let dx=-w+6;dx<w-4;dx+=8)rect(g,x+dx,y-3+6*(dx/w)**2,2,2,232);}for(let y=top+6;y<bottom-6;y+=8)rect(g,x-1,y,2,2,232);}
-      if(fluted)for(const side of [-1,1])for(let i=0;i<4;i++){const dx=8+i*6;curve(g,[x+side*2,top+5,x+side*dx,top+12,x+side*(dx+2),eye-17,x+side*dx,eye-6],64,2);curve(g,[x+side*4,top+6,x+side*(dx+2),top+13,x+side*(dx+4),eye-17,x+side*(dx+2),eye-6],218,2);}
-      if(horned){rect(g,x-w,eye-10,w*2,6,104);for(const side of [-1,1]){poly(g,[[x+side*7,eye+8],[x+side*19,eye+13],[x+side*15,bottom-8],[x+side*6,bottom-4]],157);engraving(g,c,x+side*13,eye+19,0,.75,212);}}
       if(leaf)for(const side of [-1,1]){curve(g,[x+side*4,eye+6,x+side*21,eye+11,x+side*21,bottom-10,x+side*5,bottom-4],212,2);curve(g,[x+side*7,eye+12,x+side*16,eye+16,x+side*14,bottom-12,x+side*6,bottom-7],80,2);}
       if(tusked){rect(g,x-w,eye-10,w*2,6,88);for(const side of [-1,1])for(let i=0;i<3;i++)rect(g,x+side*(8+i*7)-1,eye-10,2,2,219);}
     });
     for(const side of [-1,1]){
-      if(horned){const at=x+side*(w-3);surface(g,[[at,top+19],[at+side*8,top+15],[at+side*13,top+5],[at+side*9,Math.max(2,top-3)],[at+side*7,top+8],[at+side*2,top+10],[at-side*3,top+12]],(px,py)=>136+60*falloff(px,py,at,top+9,12,14));curve(g,[at,top+16,at+side*7,top+13,at+side*12,top+9,at+side*9,top+1],220,2);}
       if(leaf){const at=x+side*(w-6);surface(g,[[at,eye-8],[at+side*10,top+12],[at+side*8,top+1],[at+side*3,top+10],[at-side*3,top+18]],(px,py)=>149+45*falloff(px,py,at,top+13,10,20));}
       if(tusked){const at=x+side*(w-5);surface(g,[[at-side*3,eye+23],[at+side*12,eye+12],[at+side*15,eye-6],[at+side*10,eye+1],[at+side*6,eye+9],[at-side*5,eye+16]],(px,py)=>139+69*falloff(px,py,at,eye+10,8,19));}
     }
@@ -1523,16 +1524,24 @@
     const line=(path,tone,mirror=false)=>{for(let n=1;n<path.length;n++){const [ax,ay]=path[n-1],[bx,by]=path[n],steps=Math.max(1,Math.ceil(Math.max(Math.abs(bx-ax),Math.abs(by-ay))/2));for(let i=0;i<=steps;i++){const t=i/steps;dot(ax+(bx-ax)*t,ay+(by-ay)*t,tone,mirror);}}};
     const pair=(path,tone)=>{line(path,tone);line(path,tone,true);};
     const lip=[[x-w+4,eye+1],[x-w*.55,eye-1],[x-4,eye-3]];pair(lip,192);
-    for(let row=0;row<4;row++){const y=eye+8+row*6;if(y>chin-5)break;for(const dx of [7,13,19])if(dx<w-7-row){dot(x-dx,y,32);dot(x-dx,y,32,true);}}
+    const vents=kind==='barrel-great-helm'?[[9,[8,14,20]],[17,[8,14,20]]]:kind==='fluted-knight-helm'?[[10,[8,16]],[18,[8,16]],[26,[8,16]]]:kind==='horned-closed-helm'?[[10,[8,16]],[16,[12]],[22,[8,16]]]:[[8,[7,13,19]],[14,[7,13,19]],[20,[7,13,19]],[26,[7,13,19]]];
+    for(const [dy,columns] of vents)if(eye+dy<=chin-5)for(const dx of columns)if(dx<w-7-(['barrel-great-helm','fluted-knight-helm','horned-closed-helm'].includes(kind)?0:(dy-8)/6)){dot(x-dx,eye+dy,32);dot(x-dx,eye+dy,32,true);}
     if(kind==='rivet-banded-helm'){
       for(const y of [top+h*.3,eye-6]){const band=[[x-w+3,y+6],[x-w*.55,y+1],[x-4,y-1]];pair(band,64);pair(band.map(([px,py])=>[px,py-2]),192);for(const dx of [10,20]){dot(x-dx,y+2*(dx/w)**2-2,224);dot(x-dx,y+2*(dx/w)**2-2,224,true);}}
       pair([[x-3,top+4],[x-4,eye-6],[x-2,chin-3]],96);
     }
-    if(kind==='barrel-great-helm')pair([[x-w+8,top+h*.3],[x-w+7,eye-4]],96);
-    if(kind==='fluted-knight-helm')for(const dx of [8,16,24]){const rib=[[x-2,top+4],[x-dx*.65,top+h*.3],[x-dx,top+h*.65],[x-dx,eye-5]];pair(rib,96);pair(rib.map(([px,py])=>[px+2,py]),192);}
+    if(kind==='barrel-great-helm'){
+      pair([[x-w+8,top+h*.3],[x-w+7,eye-4]],96);
+      pair([[x-w+4,top+10],[x-w*.6,top+4],[x-3,top+2]],192);
+      for(const dx of [w-8,5]){dot(x-dx,eye-6,224);dot(x-dx,eye-6,224,true);}
+    }
+    if(kind==='fluted-knight-helm')for(const dx of [10,22]){const rib=[[x-2,top+4],[x-dx*.65,top+h*.3],[x-dx,top+h*.65],[x-dx,eye-5]];pair(rib,96);pair(rib.map(([px,py])=>[px+2,py]),224);}
     if(kind==='leaf-visor-helm'||kind==='closed-sallet')pair([[x-4,eye+6],[x-14,eye+14],[x-12,chin-5],[x-4,chin+1]],96);
     if(kind==='horned-closed-helm'){
-      pair([[x-w+3,eye-7],[x-8,eye-9],[x-3,eye-7]],64);
+      pair([[x-w+3,eye-7],[x-8,eye-9],[x-3,eye-7]],96);
+      pair([[x-w+3,eye-9],[x-8,eye-11],[x-3,eye-9]],192);
+      pair([[x-w+3,top+h*.55],[x-w-6,top+h*.3],[x-w-12,top+1],[x-w-10,top-5]],192);
+      for(const dx of [w-6,5]){dot(x-dx,eye-9,224);dot(x-dx,eye-9,224,true);}
     }
     if(kind==='tusked-closed-helm')pair([[x-w+5,eye+16],[x-w-3,eye+6],[x-w-5,eye-3]],192);
     if(kind==='closed-knight-helm')pair([[x-7,eye+6],[x-6,eye+18],[x-1,eye+23]],128);
@@ -1553,8 +1562,19 @@
       if(y<eye-3){
         // One curved reflection sits on a broad lit dome, rather than stacked grey strips.
         v=96+96*Math.max(0,1-1.8*(u+.22)**2-.9*(t-.45)**2);
-        const glint=((u+.4)/.4)**2+((t-.3-.15*u)/.13)**2;
+        let glint;
+        if(c.headwear==='barrel-great-helm'){
+          v=96+96*Math.max(0,1-1.65*(u+.16)**2-.35*(t-.45)**2);
+          glint=((u+.4+.08*t)/.12)**2+((t-.54)/.42)**2;
+        }else if(c.headwear==='fluted-knight-helm'){
+          v+=14*Math.cos(Math.abs(u)*Math.PI*3);
+          glint=((u+.15)/.34)**2+((t-.27-.28*(u+.15)**2)/.075)**2;
+        }else if(c.headwear==='horned-closed-helm'){
+          v=96+64*Math.max(0,1-1.4*(u+.2)**2-.65*(t-.5)**2);
+          glint=((u+.36)/.3)**2+((t-.29)/.09)**2;
+        }else glint=((u+.4)/.4)**2+((t-.3-.15*u)/.13)**2;
         if(glint<1)v=glint<.35?248:224;
+        if(c.headwear==='horned-closed-helm'&&Math.abs(u)>.95)v=u<0?192:160;
       }else{
         v=96+80*Math.max(0,1-2.4*(u+.2)**2-.3*(lower-.3)**2);
         if(Math.abs(u)<.07*(1-Math.max(0,lower)*.4)&&lower<.95)v=192;
