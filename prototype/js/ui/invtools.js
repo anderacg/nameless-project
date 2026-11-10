@@ -37,7 +37,7 @@ const GearCompare={
     for(const k of sk){const x=(b.sk||{})[k]||0,y=(a.sk||{})[k]||0;out.push([SKILLS[k].n,x||'—',y||'—',y===x?null:y>x])}
     return out;
   },
-  card(id,what){const I=ITEMS[id];return '<div class="gc-item"><small>'+what+'</small>'+(id?'<span data-icon="gear:'+id+'"></span><b style="color:'+RARITY[I.r]+'">'+htmlText(I.n)+'</b><small>'+cap1(I.r)+' · '+I.v+'g</small>':'<span class="gc-empty"></span><b class="muted">Nothing</b><small>an empty slot</small>')+'</div>'},
+  card(id,what){const I=ITEMS[id];return '<div class="gc-item"><small>'+what+'</small>'+(id?'<span data-icon="gear:'+id+'"></span><b style="color:'+RARITY[I.r]+'">'+htmlText(I.n)+'</b><small>'+cap1(I.r)+', '+I.v+'g</small>':'<span class="gc-empty"></span><b class="muted">Nothing</b><small>an empty slot</small>')+'</div>'},
   html(id){
     const key=targetKey(id),cur=P.gear[key],rows=this.rows(id,cur);
     return '<div class="gc"><div class="gc-head">'+this.card(cur,'Equipped')+'<span class="gc-vs">vs</span>'+this.card(id,'Selected')+'</div>'+

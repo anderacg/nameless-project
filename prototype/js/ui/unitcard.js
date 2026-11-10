@@ -33,8 +33,8 @@ const unitAbilities=s=>traitsOf(s).map(id=>[ABILITIES[id].n,abilityText(id,s)]);
    in their slots, its skills in theirs (their keys: data/kits.js KIT_KEYS), the perks its mastery earned; each [name, what it does].
    None with RANKS.statsOnly off (step 1's card) */
 function kitChips(rec){if(!RANKS.statsOnly||!ST[rec.type])return null;const K=UnitKit.of(rec),SK=skillKeys(),SS=KITS.keys2?KIT_KEYS.now.stance:[],from={kind:'Its kind\u2019s.',mastery:'From its mastery.',tech:'From an upgrade (the tech tree).'};
-  return{stances:K.slots.map((id,i)=>[(SS[i]?SS[i]+' · ':'')+STANCES[id].n,STANCES[id].ch.map(c=>c.d||c.n).join(' / ')]),
-    skills:K.skills.map((x,i)=>{const A=UNIT_SKILLS[x.id];return [(SK[i]?SK[i]+' · ':'')+A.n+(x.idle?' (idle)':''),A.d+' '+from[x.from]+(x.idle?' Not for their kind.':'')]}),
+  return{stances:K.slots.map((id,i)=>[(SS[i]?SS[i]+', ':'')+STANCES[id].n,STANCES[id].ch.map(c=>c.d||c.n).join(' / ')]),
+    skills:K.skills.map((x,i)=>{const A=UNIT_SKILLS[x.id];return [(SK[i]?SK[i]+', ':'')+A.n+(x.idle?' (idle)':''),A.d+' '+from[x.from]+(x.idle?' Not for their kind.':'')]}),
     perks:K.perks.map(p=>['★ '+p.n,p.d+' Earned by mastery.'])}}
 // the type icon (ui/moraleicons.js UNIT_GLYPH) as SVG
 function glyphSVG(kind,size){const G=UNIT_GLYPH[kind];if(!G)return '';size=size||18;
@@ -45,8 +45,8 @@ const CLASS_N={spear:'Spear infantry',foot:'Melee infantry',ranged:'Missile infa
 const classN=s=>s.mounted&&s.range?'Missile cavalry':tagsOf(s).includes('shield')&&unitClass(s)==='foot'?'Shield infantry':CLASS_N[unitClass(s)];
 // the card; from: the troop it is trained from (its numbers shown as gains and losses)
 function unitCard(k,from){
-  const s=ST[k];return cardHtml({key:k,s,name:s.n,sub:'Tier '+s.tier+(s.race?' · '+raceOf(s.race).n:''),from:from&&ST[from],fromN:from&&ST[from]&&ST[from].n,
-    abil:unitAbilities(s),kit:kitChips({type:k}),foot:(HIRE[k]?'Hire '+hireCost(k)+'g · ':'')+(UP_FROM(k)?'Train '+trainCost(k)+'g · ':'')+'Upkeep '+(soldierPay(k)+(s.mounted?BAND_PAY.mounted:0))+'g a day'})}
+  const s=ST[k];return cardHtml({key:k,s,name:s.n,sub:'Tier '+s.tier+(s.race?', '+raceOf(s.race).n:''),from:from&&ST[from],fromN:from&&ST[from]&&ST[from].n,
+    abil:unitAbilities(s),kit:kitChips({type:k}),foot:(HIRE[k]?'Hire '+hireCost(k)+'g, ':'')+(UP_FROM(k)?'Train '+trainCost(k)+'g, ':'')+'Upkeep '+(soldierPay(k)+(s.mounted?BAND_PAY.mounted:0))+'g a day'})}
 /* growth (the owner, 2026-11-01: "the unit detail should show which stat they grow from the original"): a troop group or a
    character now against its original, and what grew it, in the order a battle gives it. A troop group: its kind's own numbers (ST),
    then your talents (tHp, tDmg: as Unit.fieldStats), its rank (proficiency on damage and health, its ladder's reach and range
@@ -68,7 +68,7 @@ function troopGrowth(g){
   if(tm('tHp')||tm('tDmg'))s=step('Talents',{...s,hp:Math.round(s.hp*(1+tm('tHp'))),dmg:s.dmg*(1+tm('tDmg'))});
   // (its kit's: its rank's stats (§6) and its drills, its perks and their mastery, on a horse no foot drill: battle/unitkit.js; as
   // battle/rankskills.js rankUnit gives them)
-  const K=UnitKit.of(g),p=K.prof,S=K.stats,dr=(g.picks||[]).filter(x=>x==='drill').length,rode=!!ST[k]?.mounted,rk='Rank '+rankOf(g)+(RANKS.statsOnly&&rankOf(g)?' ('+rankWord(rankOf(g))+')':'')+(dr?' · '+dr+' drill'+(dr>1?'s':''):'');
+  const K=UnitKit.of(g),p=K.prof,S=K.stats,dr=(g.picks||[]).filter(x=>x==='drill').length,rode=!!ST[k]?.mounted,rk='Rank '+rankOf(g)+(RANKS.statsOnly&&rankOf(g)?' ('+rankWord(rankOf(g))+')':'')+(dr?', '+dr+' drill'+(dr>1?'s':''):'');
   if(!RANKS.statsOnly){if(p>0)s=step(rk,{...s,dmg:s.dmg*(1+p),hp:Math.round(s.hp*(1+p))});
     for(const r of K.rungs(rode)){if(r.reach)s=step(r.n,{...s,reach:(s.reach||11)*(r.reach+K.up(r.id,'reach',rode))});if(r.range&&s.range)s=step(r.n,{...s,range:s.range*(r.range+K.up(r.id,'range',rode))})}}
   else{if(S.dmg>0||S.hp>0||S.mor>0||S.vig>0)s=step(rk,{...s,dmg:s.dmg*(1+S.dmg),hp:Math.round(s.hp*(1+S.hp)),morale:unitMoraleOf(s)+S.mor,vigK:(s.vigK||1)*(1+S.vig)});
@@ -89,7 +89,7 @@ const growPart=(id,n,base)=>(n>0?'+':'−')+(id==='atk'||id==='shot'?Math.round(
 // a character's card (a companion, a lord, a chieftain; your hero): its own numbers, its traits and the skills it casts
 function charCard(c){
   const g=statGrowth(c),s=g.s,A=c.actives().map(id=>[ABILITIES[id].n,abilityText(id,s)]);
-  return cardHtml({key:c.key,hero:c.role==='hero',s,grow:g.stats,name:htmlText(cap1(c.role==='hero'?(P.name||'You'):c.role==='lord'?lordName(c.o):c.name)),sub:'Level '+c.lv+' · '+c.roleName+(c.race?' · '+RACES[c.race].n:''),
+  return cardHtml({key:c.key,hero:c.role==='hero',s,grow:g.stats,name:htmlText(cap1(c.role==='hero'?(P.name||'You'):c.role==='lord'?lordName(c.o):c.name)),sub:'Level '+c.lv+', '+c.roleName+(c.race?', '+RACES[c.race].n:''),
     abil:unitAbilities(s),skills:A,foot:c.role==='companion'?'Upkeep 2g a day':''})}
 /* the card (the owner, 2026-10-28: as Total War: Warhammer III's): its picture, name and class, its damage type and armour; its
    strength (fit of a group's ten, hurt) and rank (training or experience to the next); its numbers as bars against the best of
@@ -107,19 +107,19 @@ class UnitCard{
   bar([id,lab,v,show,d],M,F){if(typeof show==='number'&&!Number.isInteger(show))show=+show.toFixed(1);// (a proficiency's power makes fractions: one decimal)
     const g=this.grow&&this.grow[id],o=g?g.base:v,now=this.now&&this.now[id]!=null?this.now[id]:v,dv=F&&F[id]!=null?v-F[id]:null,p=x=>UnitCard.pct(x,M[id]),fmt=x=>id==='chg'?'+'+Math.round(x)+'%':Math.round(x);
     const own=Math.max(p(Math.min(o,v)),4),seg=(cls,a,b)=>b>a?'<i class="'+cls+'" style="left:'+a+'%;width:'+(b-a)+'%"></i>':'',grown=v>o?seg('gr',own,Math.max(p(v),own+2)):v<o?seg('lo',p(v),p(o)):'';
-    const tip=d+(g&&g.parts.length?' · original '+fmt(o)+': '+g.parts.map(([l,n])=>l+' '+growPart(id,n,o)).join(' · '):'')+(now!==v?' · now '+fmt(now)+' (its own '+fmt(v)+')':'');
+    const tip=d+(g&&g.parts.length?', original '+fmt(o)+': '+g.parts.map(([l,n])=>l+' '+growPart(id,n,o)).join(', '):'')+(now!==v?', now '+fmt(now)+' (its own '+fmt(v)+')':'');
     const val=now!==v?'<span class="'+(now<v?'bad':'good')+'">'+fmt(now)+'</span>'+(id==='hp'?' / '+fmt(v):''):v!==o?'<span class="gr">'+show+'</span>':show;
     return '<div class="uc-stat" data-stat="'+id+'" title="'+htmlText(tip)+'"><span class="uc-l">'+lab+'</span><span class="uc-bar"><i style="width:'+own+'%"></i>'+grown+
       (now<v?seg('dn'+(v>o?' over':''),p(now),p(v)):seg('up',p(v),p(now)))+'</span><span class="uc-v">'+val+(dv?' <b class="'+(dv>0?'good':'bad')+'">'+(dv>0?'▲':'▼')+'</b>':'')+'</span></div>'}
   // (what grew it, in a line under its numbers, a phone having no tooltips: each source once, gains first)
   growHtml(){const G=this.grow;if(!G)return '';const by=[...new Set(Object.values(G).flatMap(g=>g.parts.filter(([,n])=>n>0).map(([l])=>l)))];
-    return by.length?'<p class="uc-grow"><i aria-hidden="true"></i>Grown by '+by.map(htmlText).join(' · ')+'</p>':''}
+    return by.length?'<p class="uc-grow"><i aria-hidden="true"></i>Grown by '+by.map(htmlText).join(', ')+'</p>':''}
   strengthHtml(){const S=this.strength;if(!S)return '';const fit=UnitCard.pct(S.fit,S.max),hurt=UnitCard.pct(S.fit+S.hurt,S.max)-fit;
-    return '<div class="uc-strength" title="'+htmlText(S.tip||'Fit men of the group’s '+S.max+(S.hurt?'; '+S.hurt+' wounded, out of the fighting till they heal':''))+'"><span class="uc-bar"><i style="width:'+fit+'%"></i>'+(hurt>0?'<i class="dn" style="left:'+fit+'%;width:'+hurt+'%"></i>':'')+'</span><span>'+S.fit+' / '+S.max+(S.hurt?' · '+S.hurt+' hurt':'')+'</span></div>'}
+    return '<div class="uc-strength" title="'+htmlText(S.tip||'Fit men of the group’s '+S.max+(S.hurt?'; '+S.hurt+' wounded, out of the fighting till they heal':''))+'"><span class="uc-bar"><i style="width:'+fit+'%"></i>'+(hurt>0?'<i class="dn" style="left:'+fit+'%;width:'+hurt+'%"></i>':'')+'</span><span>'+S.fit+' / '+S.max+(S.hurt?', '+S.hurt+' hurt':'')+'</span></div>'}
   meter(R,cls){return '<div class="uc-rank'+(cls||'')+'" title="'+htmlText(R.tip||R.label)+'"><span class="uc-l">'+htmlText(R.label)+'</span><span class="uc-bar"><i style="width:'+UnitCard.pct(R.v,R.max)+'%"></i></span><span class="uc-v">'+(R.val!=null?htmlText(R.val):R.max?Math.round(R.v)+' / '+R.max:'—')+'</span></div>'}
   rankHtml(){return (this.rank?this.meter(this.rank):'')+(this.meters||[]).map(m=>this.meter(m,' uc-meter')).join('')}
   html(){const s=this.s,M=ucMax(),F=this.from?Object.fromEntries(unitNumbers(this.from).map(r=>[r[0],r[2]])):null,vs=vsInfo(s),chips=(l,cls)=>l.map(([n,d])=>'<span class="uc-ab'+(cls||'')+'" title="'+htmlText(d)+'" tabindex="0">'+n+'</span>').join('');
-    return '<div class="ucard-x" data-unit="'+this.key+'"><div class="uc-head"><img class="uc-pic" src="'+(this.pic||portrait(this.key,this.hero))+'" alt=""><canvas class="uc-pic uc-anim" width="120" height="120" hidden data-spr="'+this.key+'"'+(this.hero?' data-hero="1"':'')+'></canvas><div class="uc-name"><strong>'+this.name+'</strong><small>'+this.sub+'</small><small>'+glyphSVG(this.hero?'hero':iconOfType(this.key),14)+' '+classN(s)+' · <span class="uc-type" title="Its damage type, and the armour it wears">'+DMG[dtOf(s)].n+(isMagical(dtOf(s))?' (magic)':'')+' · '+ARMOR[armorOf(s)].n+'</span></small>'+(this.fromN?'<small class="uc-from">▲▼ against '+this.fromN+'</small>':'')+'<button class="btn sm uc-sprbtn" type="button" data-act="uc-sprite" data-arg="'+this.key+'" aria-pressed="false">View sprite</button></div></div>'+(this.acts?'<div class="uc-acts">'+this.acts+'</div>':'')+
+    return '<div class="ucard-x" data-unit="'+this.key+'"><div class="uc-head"><img class="uc-pic" src="'+(this.pic||portrait(this.key,this.hero))+'" alt=""><canvas class="uc-pic uc-anim" width="120" height="120" hidden data-spr="'+this.key+'"'+(this.hero?' data-hero="1"':'')+'></canvas><div class="uc-name"><strong>'+this.name+'</strong><small>'+this.sub+'</small><small>'+glyphSVG(this.hero?'hero':iconOfType(this.key),14)+' '+classN(s)+', <span class="uc-type" title="Its damage type, and the armour it wears">'+DMG[dtOf(s)].n+(isMagical(dtOf(s))?' (magic)':'')+', '+ARMOR[armorOf(s)].n+'</span></small>'+(this.fromN?'<small class="uc-from">▲▼ against '+this.fromN+'</small>':'')+'<button class="btn sm uc-sprbtn" type="button" data-act="uc-sprite" data-arg="'+this.key+'" aria-pressed="false">View sprite</button></div></div>'+(this.acts?'<div class="uc-acts">'+this.acts+'</div>':'')+
       this.strengthHtml()+this.rankHtml()+'<div class="uc-stats">'+unitNumbers(s).map(r=>this.bar(r,M,F)).join('')+'</div>'+this.growHtml()+
       (this.abil.length||this.skills?.length||this.kit?'<div class="uc-abs">'+chips(this.abil)+(this.kit?chips(this.kit.stances,' st')+chips(this.kit.skills,' sk')+chips(this.kit.perks,' pk'):'')+chips(this.skills||[],' sk')+'</div>':'')+
       '<div class="uc-vs"><span class="good">✔ Strong vs</span> '+(vs.strong.join(', ')||'—')+'<br><span class="bad">✖ Weak vs</span> '+(vs.weak.join(', ')||'—')+'</div>'+
@@ -136,7 +136,7 @@ class SpriteView{
     const img=card.querySelector('img.uc-pic'),cv=card.querySelector('canvas.uc-anim'),b=card.querySelector('.uc-sprbtn'),on=cv.hidden;
     cv.hidden=!on;img.hidden=on;if(b){b.textContent=on?'View portrait':'View sprite';b.setAttribute('aria-pressed',on)}if(on)this.draw(cv)}
   // (as large as the canvas takes the figure standing, cw × ch inside its cell; its feet on the bottom)
-  static draw(cv){const type=cv.dataset.spr,hero=!!cv.dataset.hero,s=unitSprite(type,0,hero,0,0),g=cv.getContext('2d'),k=Math.max(1,Math.floor(Math.min(cv.width/(s.cw||s.width),(cv.height-4)/(s.ch||s.height))));
+  static draw(cv){const type=cv.dataset.spr,hero=!!cv.dataset.hero,s=unitSprite(type,0,hero,!hero&&typeof Faces!=='undefined'&&Faces.unit(type)?Faces.vOf(type):0,0),g=cv.getContext('2d'),k=Math.max(1,Math.floor(Math.min(cv.width/(s.cw||s.width),(cv.height-4)/(s.ch||s.height))));
     g.clearRect(0,0,cv.width,cv.height);g.imageSmoothingEnabled=false;g.drawImage(s,Math.round((cv.width-s.width*k)/2),cv.height-2-s.height*k,s.width*k,s.height*k)}
 }
 onAct('uc-',(a,arg)=>{if(a==='uc-sprite')SpriteView.toggle(arg)});

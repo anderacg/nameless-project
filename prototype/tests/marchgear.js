@@ -106,6 +106,14 @@ Kit.suite(({ok,info})=>{
     // the device in its field; a flag man's spear drawn longer, so his cloth flies over his head)
     const c=t.clothSprite(b,0),Q=t.BATTLE_BANNER,[cw,ch]=Q.cloth[b.k]||Q.cloth.banner;
     ok(cw>ch&&ch>=7&&c.width>=cw&&hw.w.R>t.WPN[hw.k][0]+4,'its cloth '+cw+' × '+ch+' (a '+b.k+'), its spear '+(hw.w.R-8)+' long, not '+t.WPN[hw.k][0])}
+   // (a realm's banner at his back hung from a crossbar (the owner, 2026-11-10: "only for a large one. But the pole should still at
+   // left side"): the pole where it was, the crossbar out to the cloth's side with a gold knob, the cloth taller than wide and
+   // fringed; a rag as before)
+   {const Q=t.BATTLE_BANNER.hang,bn={k:'banner',col:t.FACS.vale.col,dev:'vale'},c=t.battleBackFlag(bn,0),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data,
+     px=(x,y)=>{const k=(y*c.width+x)*4;return d[k+3]?'#'+[d[k],d[k+1],d[k+2]].map(v=>v.toString(16).padStart(2,'0')).join(''):null},x=c.ax,x0=x-Q.w,y0=Q.bar+1;
+    let opaque=0;for(let r=0;r<Q.h;r++)for(let i=0;i<Q.w;i++)if(px(x0+i,y0+r))opaque++;
+    ok(c===t.hangBackFlag(bn,0)&&px(x,Q.bar+4)&&px(x-Q.w-1,Q.bar)===t.PPAL.gold[1]&&opaque===Q.w*Q.h&&Q.h>Q.w&&px(x0,y0+Q.h)===t.PPAL.gold[1]&&px(x0+1,y0+Q.h)!==t.PPAL.gold[1]&&t.battleBackFlag({k:'rag',col:'#8a2a2a',dev:'skull'},0)!==t.hangBackFlag({k:'banner',col:'#8a2a2a',dev:'skull'},0),
+     'a realm\'s banner at his back hangs from a crossbar off its pole, gold-knobbed, its cloth '+Q.w+' x '+Q.h+' whole, fringed; a rag as before')}
    M.flags=false;seen.length=0;t.drawUnit(bw);ok(!seen.includes(t.battleBackFlag(b,0))&&!seen.includes(t.battleBackFlag(b,1)),'flags off: none in battle either');M.flags=true}
   finally{t.ctx.drawImage=img1;L.exit()}}
 });

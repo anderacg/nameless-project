@@ -74,7 +74,7 @@ class HuntBattleArea extends WorldBattleArea{
     for(const c of this.herds){const n=dead.filter(u=>u.herd===c).length;if(n)huntRewards(c,n)}
     const e=G.enc;G.enc=null;G.encCool=3;G.mode='dialog';WildHunt.controls();worldEmit('battle:ended',{enc:e,how:b.retreat?'withdrawn':'won'});
     const report={groups:groupLosses.map(g=>({id:g.id,type:g.type,name:g.name,start:g.start,fit:g.start-g.count,wounded:g.wounded,killed:g.count-g.wounded,saved:g.saved,rearguard:0})),characters:[]};
-    lootShow('<h2>Hunt complete</h2><p>'+dead.length+' animal'+(dead.length===1?'':'s')+' killed · '+escaped+' escaped · '+(this.animals.length-dead.length-escaped)+' still alive. Only kills provide meat and species trophies.</p>',lost,saved,'cont',report);updateHUD(true);
+    lootShow('<h2>Hunt complete</h2><p>'+dead.length+' animal'+(dead.length===1?'':'s')+' killed, '+escaped+' escaped, '+(this.animals.length-dead.length-escaped)+' still alive. Only kills provide meat and species trophies.</p>',lost,saved,'cont',report);updateHUD(true);
   }
 }
 class HuntBattleSetup extends WorldBattleSetup{

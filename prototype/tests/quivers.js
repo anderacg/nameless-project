@@ -13,7 +13,7 @@ try{
  ok(Object.keys(Q).every(k=>{const q=Q[k],I=t.ITEMS['q_'+k];return A[q.arrow]&&['bow','crossbow'].includes(q.fits)&&q.shots>0&&I&&I.slot==='quiver'&&I.quiver===k&&!!A[q.arrow].bolt===(q.fits==='crossbow')})&&Object.values(A).every(a=>a.f===1),
    Object.keys(Q).length+' quivers, each a piece of gear (q_*) for the quiver slot, its arrows of a type in ARROWS (every damage factor 1 for now), bolts for a crossbow');
  ok(Q.worn.shots===20&&Q.hunter.shots===30&&Q.soldier.shots===40&&Q.elven.shots===50&&Q.master.shots===60&&t.QUIVER.none===5,'the sizes: worn 20, hunter\'s 30, soldier\'s 40, elven 50, master\'s 60; a bow with none, 5');
- ok(QK.title({id:'q_hunter'})==='Hunter’s quiver · 30 bronze arrows'&&QK.title({id:'q_boltCase'})==='Soldier’s bolt case · 40 iron bolts'&&/30 bronze arrows/.test(t.ITEMS.q_hunter.d),'each shows its arrow type: '+QK.title({id:'q_hunter'})+'; '+QK.title({id:'q_boltCase'}));
+ ok(QK.title({id:'q_hunter'})==='Hunter’s quiver, 30 bronze arrows'&&QK.title({id:'q_boltCase'})==='Soldier’s bolt case, 40 iron bolts'&&/30 bronze arrows/.test(t.ITEMS.q_hunter.d),'each shows its arrow type: '+QK.title({id:'q_hunter'})+'; '+QK.title({id:'q_boltCase'}));
  ok(t.EQUIP.includes('quiver')&&t.SLOTS.quiver==='Quiver'&&t.targetKey('q_worn')==='quiver','a slot of its own');
  // ---- shots by quiver and weapon
  const bow=t.gearId('bow',1),xbow=t.gearId('crossbow',1),sh=(w,q)=>t.quiverShots({weapon:w,quiver:q},w,null);
@@ -51,7 +51,7 @@ try{
  ok(/q_elven/.test(stock('Elderglen','smith'))&&/q_dwarven/.test(stock('Karn Hold','smith'))&&/q_elven/.test(stock('Mossdell','trade'))&&!/q_elven/.test(stock('Ashford','smith')),'elven quivers in elven holdings (a village\'s at its market), dwarven bolt cases in dwarven ones');
  // ---- buying one, wearing it
  empty();P.gold=5000;P.gear.quiver=null;const ash=by('Ashford');G.lastTown=null;Kit.world();t.enterTown(ash);t.act('tab','smith');
- ok(/Quivers/.test(Kit.panel())&&/Soldier’s quiver · 40 iron arrows/.test(Kit.panel())&&!/Ammunition/.test(Kit.panel())&&!/>Arrows</.test(Kit.panel()),'the smith: quivers, no ammunition');
+ ok(/Quivers/.test(Kit.panel())&&/Soldier’s quiver, 40 iron arrows/.test(Kit.panel())&&!/Ammunition/.test(Kit.panel())&&!/>Arrows</.test(Kit.panel()),'the smith: quivers, no ammunition');
  const g0=P.gold,p=t.gearPrice('q_soldier');t.act('buy-quiver','q_soldier');const i=P.inv.findIndex(s=>s&&s.id==='q_soldier');
  ok(i>=0&&P.gold===g0-p,'bought: into your bag ('+p+'g), a bag slot while unworn');t.act('leave');Kit.done({world:true});
  ok(t.invEquip(i)&&P.gear.quiver==='q_soldier'&&!P.inv.some(s=>s&&s.id==='q_soldier'),'worn in its slot');

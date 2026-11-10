@@ -66,7 +66,7 @@ Kit.suite(({ok,info})=>{
    ok(S(1)==='spring'&&S(30)==='spring'&&S(31)==='summer'&&S(61)==='autumn'&&S(91)==='winter'&&S(121)==='spring','the seasons turn every 30 days: spring, summer, autumn, winter, and spring again');
    const gw=Wx.weights(gi,95),gs=Wx.weights(gi,40),fs=Wx.weights(fi,40),fw=Wx.weights(fi,95);
    ok(gw.snow>0&&!(gs.snow>0)&&gs.clear>gw.clear&&fw.snow>fs.snow&&fs.rain>0&&!(Wx.weights(fi,95).rain>0),'winter brings snow to the grassland, summer more clear sky; the frost snows more in winter, and rains only in summer');
-   t.updateHUD(true);ok(new RegExp('Day '+G.day+' · '+Wx.season().n).test(Kit.q('#wday').textContent),'the day bar names the season ('+Kit.q('#wday').textContent.trim()+')')}
+   t.updateHUD(true);ok(new RegExp('Day '+G.day+', '+Wx.season().n).test(Kit.q('#wday').textContent),'the day bar names the season ('+Kit.q('#wday').textContent.trim()+')')}
   // ---- gradually: one weather fades out as the next fades in; a new front builds over WEATHER.build hours
   {const A=t.WeatherArt,c=t.ctx;A.layers=[{k:'rain',a:1}];A.last=performance.now()/1000-.05;c.save();A.draw('fog',120,80);c.restore();
    const r=A.layers.find(l=>l.k==='rain'),f=A.layers.find(l=>l.k==='fog');

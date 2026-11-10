@@ -20,7 +20,7 @@ try{
  const c=document.createElement('canvas');c.width=128;c.height=96;const g=c.getContext('2d'),seen=[],draw=g.drawImage;g.drawImage=function(s,...args){seen.push(s);return draw.call(this,s,...args)};
  const record={x:64,y:80,sp:corpse,face:1,pool:0,seed:0,dry:true};t.drawBody(g,record,.5,0);t.drawBody(g,record,1,0);
  ok(seen.includes(corpse.frames[4])&&seen.includes(corpse.frames[7]),'production corpse drawing uses keyframes and holds the resting pose');
- const preview=document.createElement('canvas');preview.width=900;preview.height=420;preview.id='tiger-preview';preview.style.cssText='position:fixed;left:0;top:0;z-index:999999';const cg=preview.getContext('2d');cg.imageSmoothingEnabled=false;cg.fillStyle='#a5aa91';cg.fillRect(0,0,900,420);cg.fillStyle='#222';cg.font='18px Arial';cg.fillText('Approved tiger · production game sprites',20,28);
+ const preview=document.createElement('canvas');preview.width=900;preview.height=420;preview.id='tiger-preview';preview.style.cssText='position:fixed;left:0;top:0;z-index:999999';const cg=preview.getContext('2d');cg.imageSmoothingEnabled=false;cg.fillStyle='#a5aa91';cg.fillRect(0,0,900,420);cg.fillStyle='#222';cg.font='18px Arial';cg.fillText('Approved tiger, production game sprites',20,28);
  ['idle','walk','run','swipe','death_back'].forEach((n,i)=>{const s=t.unitSprite('tiger',1,false,0,api.pose(n,n==='death_back'?7:3));cg.drawImage(s,i*175,42,256,256);cg.fillText(n,i*175+20,320)});document.body.prepend(preview);
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

@@ -60,23 +60,31 @@ class Legacy{
   // (a companion kept, hired again: as they were)
   static rejoin(id){const k=this.kept[id],c=P.comps[id];if(!k||!c)return;delete this.kept[id];Object.assign(c,k,{ap:c.ap||0})}
   // ---- the page: your new person (your race, your name, your past: its card goes on)
-  /* (who you are (the owner, 2026-11-09: "1. Small 2. Ok": kin, of the same people, any past; a little carried over): kin of the one who
-     fell (KIN: a child, a sibling or a cousin; G.kin) or a stranger. Kin are of their people, keep the family's name, and carry a
-     little of them (DEATH.kin): an heirloom of their gear, a share of their renown, half the regard and the grudges their lords had
-     for them; they begin where the family is known. A stranger begins with nothing of theirs, as any new person) */
-  static page(){const old=Death.slain,kin=G.kin!==undefined?G.kin:(G.kin='child');if(kin&&old?.race)G.race=old.race;const r=G.race||P.race||'human';G.race=r;G.mode='dialog';
-    const who=htmlText(old?.who||'your hero'),rels=[...Object.keys(KIN).map(k=>[k,KIN[k].n+' of '+who]),[null,'A stranger']];
-    showPanel('<div class="top"><h2>A new life</h2><span class="muted">Day '+G.day+' · the same world</span></div>'+
+  /* (who you are, as your past (the owner, 2026-11-10: "remove who are you since it redundant with background"; "to be able to select
+     you need to be eligible"): kin of the one who fell is a past of its own, the first card: a young one of the family just come of
+     age (never an old hand: no other past; DEATH.kin.past), of their people, which kin by chance (KIN: a child, a sibling or a
+     cousin, kinOf), carrying a little of them (DEATH.kin): an heirloom of their gear, a share of their renown, half the regard and
+     the grudges their lords had for them; they begin where the family is known, so only while a home of the family stands (kinWhy).
+     Every other past is a stranger to them: any people, nothing of theirs) */
+  static page(){const old=Death.slain;const r=G.race||old?.race||P.race||'human';G.race=r;G.mode='dialog';
+    const who=htmlText(old?.who||'your hero'),kr=old?.race||r,why=this.kinWhy(),K=DEATH.kin.past;
+    const kinCard='<button class="card origin-card'+(why?' off':'')+'" type="button" data-act="death-past" data-arg="kin"'+(why?' disabled aria-disabled="true"':'')+'>'+originArt('nobody')+
+      '<strong>Kin of '+who+'</strong><span class="gold">'+(why?htmlText(why):'Their keepsake, '+K.gold+' gold')+'</span><span>A young '+RACES[kr].n.toLowerCase()+' of the family, just come of age: their child, sibling or cousin, as it falls. A keepsake of their gear, some of their name, half their lords\' regard; you begin '+(why?'where the family is known':'at '+htmlText(this.kinHome().name))+'.</span></button>';
+    showPanel('<div class="top"><h2>A new life</h2><span class="muted">Day '+G.day+', the same world</span></div>'+
       '<p class="muted">The world goes on: its holdings, lords and wars as they stand, and what '+who+' left behind.</p>'+
-      '<div class="lab">Who you are</div><div class="tabs" role="group" aria-label="Who you are">'+rels.map(([k,n])=>'<button class="btn sm'+(kin===k?' on':'')+'" type="button" data-act="death-kin" data-arg="'+(k||'')+'" aria-pressed="'+(kin===k)+'">'+n+'</button>').join('')+'</div>'+
-      '<p class="muted">'+(kin?'Kin of '+who+': '+(/^[aeiou]/i.test(RACES[r].n)?'an ':'a ')+RACES[r].n.toLowerCase()+' as they were, of the family; you carry a little of them (a keepsake of their gear, some of their name, half of what their lords thought of them) and begin where the family is known.':'A stranger to them: any people, nothing of theirs.')+'</p>'+
-      (kin?'':'<div class="lab">Your race</div><div class="tabs" role="group" aria-label="Race">'+Object.keys(RACES).map(k=>'<button class="btn sm'+(r===k?' on':'')+'" type="button" data-act="death-race" data-arg="'+k+'" aria-pressed="'+(r===k)+'">'+RACES[k].n+'</button>').join('')+'</div>')+
-      '<div class="lab">Your name · or leave it for later</div>'+nameFields(NEW_NAMES)+
-      '<div class="lab">Your family · the name your line goes by, on its graves and its plot</div><label class="nm-field"><span>Family</span><span class="nm-line"><input data-name="family" type="text" maxlength="'+NAMING.max+'" autocomplete="off" spellcheck="false" value="'+htmlText(NEW_NAMES.family??this.familyGuess())+'" placeholder="'+htmlText(this.familyGuess())+'"></span></label>'+
-      '<div class="lab">Your past · it decides where you begin</div><div class="cards origin-cards">'+Object.keys(BGS).map(k=>{const B0=BGS[k],w=B0.weapon?BASES[B0.weapon]:null;
+      '<div class="lab">Your race, if you are a stranger to them; kin are of the family\'s people ('+RACES[kr].n+')</div><div class="tabs" role="group" aria-label="Race">'+Object.keys(RACES).map(k=>'<button class="btn sm'+(r===k?' on':'')+'" type="button" data-act="death-race" data-arg="'+k+'" aria-pressed="'+(r===k)+'">'+RACES[k].n+'</button>').join('')+'</div>'+
+      '<div class="lab">Your name, or leave it for later</div>'+nameFields(NEW_NAMES)+
+      '<div class="lab">Your family, the name your line goes by, on its graves and its plot</div><label class="nm-field"><span>Family</span><span class="nm-line"><input data-name="family" type="text" maxlength="'+NAMING.max+'" autocomplete="off" spellcheck="false" value="'+htmlText(NEW_NAMES.family??this.familyGuess())+'" placeholder="'+htmlText(this.familyGuess())+'"></span></label>'+
+      '<div class="lab">Your past, it decides who you are and where you begin</div><div class="cards origin-cards">'+kinCard+Object.keys(BGS).map(k=>{const B0=BGS[k],w=B0.weapon?BASES[B0.weapon]:null;
         return '<button class="card origin-card" type="button" data-act="death-past" data-arg="'+k+'">'+originArt(k)+'<strong>'+B0.n+'</strong><span class="gold">'+(w?w.n:'Bare hands')+'</span><span>'+B0.d+'</span></button>'}).join('')+'</div>'+
       nav(['death-slain',null,'Back'],null))}
-  // ---- going on as someone new (k: your past)
+  // (where the family is known: its plot's holding, else the home of the one who fell, while it stands; null: none)
+  static kinHome(){return [townBy(this.plot?.at),townBy(P.home)].find(t=>t&&!t.gone)||null}
+  // (why you cannot be kin: '' you can)
+  static kinWhy(){return !Death.slain?'No one has fallen':!this.kinHome()?'No home of the family stands':''}
+  // (which kin you are, by chance: from the fallen and the day, never a draw of the game's)
+  static kinOf(old){const ks=Object.keys(KIN);return ks[Rng.seedOf('kin:'+(old?.who||'')+':'+(old?.n||0)+':'+G.day)%ks.length]}
+  // ---- going on as someone new (k: your past; 'kin', the family's young one)
   // (your family's name: as chosen, else your line's so far, else the first of it's own last name)
   static familyGuess(){if(this.family)return this.family;const w=String(this.line[0]?.who||Death.slain?.who||P.name||'').trim().split(/\s+/);return cap1(w.length>1&&w[0]?w[w.length-1]:w[0]||'Wanderer')}
   // (kin's keepsake: a piece of the fallen's gear from their remains (their weapon first), taken from what lies there; none, if it was taken)
@@ -85,9 +93,11 @@ class Legacy{
     const [,id,n]=r.items[j];if(n>1)r.items[j][2]--;else r.items.splice(j,1);return id}
   // (one of your line fallen: their life, for your family's tree (ui/family.js): kin of whom, if they were)
   static record(s){this.line.push({rel:this.kin?.rel||null,of:this.kin?.of||null,n:s.n,who:s.who,race:s.race,bg:s.bg,born:s.born,day:s.day,days:s.days,level:s.level,renown:s.renown,earned:s.earned,by:s.by,near:s.near,family:this.family||'',g:s.g,face:s.face||null})}
-  static reborn(k){const b=BGS[k],old=Death.slain;if(!b||!old)return false;
+  static reborn(k){const old=Death.slain,K=DEATH.kin,young=k==='kin';if(young&&this.kinWhy())return false;
+    // (kin: a young one's start (a Nobody's, its own coins, food and knack), of the family)
+    const b=young?{...BGS.nobody,n:'Young one of the family',gold:K.past.gold,cargo:K.past.cargo,sk:K.past.sk}:BGS[k];if(!b||!old)return false;if(young)k='nobody';
     // (kin: what they carry of the one who fell, taken now, before your hero is made afresh)
-    const kin=G.kin!==undefined?G.kin:'child',K=DEATH.kin,rel0={...(P.lrel||{})},home0=P.home,heir=kin&&this.heirloom(old);if(kin)G.race=old.race||G.race;G.kin=undefined;
+    const kin=young?this.kinOf(old):null,rel0={...(P.lrel||{})},home0=P.home,fh0=young&&this.kinHome(),heir=kin&&this.heirloom(old);if(kin)G.race=old.race||G.race;
     {const f=cleanName(NEW_NAMES.family??'');this.family=f||this.family||this.familyGuess();NEW_NAMES.family=undefined;const L=this.line[this.line.length-1];if(L&&!L.family)L.family=this.family}
     this.raised=null;const said=this.handOut(),qs=P.quests.length;
     // (your remains buried: a grave at your heir's holding, else a cairn where you fell: world/death.js Grave)
@@ -97,24 +107,23 @@ class Legacy{
     for(const th of Thread.list().on.slice())th.end('left');
     const faces=typeof Faces!=='undefined'?Faces.save():undefined;
     gameSession.resetPlayer();Captivity.held=null;Captivity.scattered=[];Death.slain=null;Death.pending=null;
-    heroFrom(k,b);P.born=G.day;if(typeof Faces!=='undefined')Faces.next(faces,kin&&old.face,this.fallen);this.kin=kin?{rel:kin,of:old.n}:{rel:null,of:old.n};
+    heroFrom(k,b);P.born=G.day;if(typeof Faces!=='undefined')Faces.next(faces,kin&&old.face,this.fallen,!!kin);this.kin=kin?{rel:kin,of:old.n}:{rel:null,of:old.n};
     fogReset();Discovery.reset();KNOWLEDGE.reset();for(const s of W.sites)s.seen=false;
     let {home}=heroHome(k,b);
     // (kin: a share of their renown, half what their lords thought of them, the grudges against them half held against you; where the
     // family is known, its plot's holding or their home, your start; their keepsake in your bag)
     if(kin){P.renown+=Math.round((old.renown||0)*K.renown);P.lrel={};for(const id in rel0){const v=Math.round(rel0[id]*K.rel);if(v)P.lrel[id]=v}
       for(const h of Houses.list)if(h.grudge&&h.grudge.gen===Legacy.fallen-1){h.grudge.gen=Legacy.fallen;h.grudge.half=true}
-      const fh=[townBy(this.plot?.at),townBy(home0)].find(t=>t&&!t.gone);if(fh){home=fh;P.home=fh.name;heroAtGate(fh);G.lastTown=fh;P.rep[fh.name]=Math.max(P.rep[fh.name]||0,K.rep)}
+      const fh=fh0&&!fh0.gone?fh0:[townBy(this.plot?.at),townBy(home0)].find(t=>t&&!t.gone);if(fh){home=fh;P.home=fh.name;heroAtGate(fh);G.lastTown=fh;P.rep[fh.name]=Math.max(P.rep[fh.name]||0,K.rep)}
       if(heir&&invAdd('gear',heir,1))log('You carry '+ITEMS[heir].n+', that was '+htmlText(old.who)+'’s.','gold','story')}
     hidePanel();
     log(cap1(old.who)+' is dead. '+[...said,qs?'Those who gave them work hear of it: '+qs+' quest'+(qs>1?'s':'')+' left undone.':''].filter(Boolean).join(' '),'bad','story');
-    log((P.name?htmlText(P.name):'You')+' set'+(P.name?'s':'')+' out from '+home.name+', '+(/^[aeiou]/i.test(RACES[P.race].n)?'an ':'a ')+RACES[P.race].n.toLowerCase()+' '+b.n.toLowerCase()+(kin?', '+KIN[kin].n.toLowerCase()+' of '+htmlText(old.who)+'.':', with nothing of theirs.'),'gold','story');
+    log((P.name?htmlText(P.name):'You')+' set'+(P.name?'s':'')+' out from '+home.name+', '+(kin?'a young '+RACES[P.race].n.toLowerCase()+' just come of age, '+KIN[kin].n.toLowerCase()+' of '+htmlText(old.who)+'.':(/^[aeiou]/i.test(RACES[P.race].n)?'an ':'a ')+RACES[P.race].n.toLowerCase()+' '+b.n.toLowerCase()+', with nothing of theirs.'),'gold','story');
     worldEmit('hero:reborn',{old});updateHint();updateHUD(true);return true}
   static act(a,arg){if(!Death.slain)return;// (a new life only for the dead)
     if(a==='death-new')return this.page();
     if(a==='death-slain')return Death.open();
     if(a==='death-race'&&RACES[arg]){G.race=arg;return this.page()}
-    if(a==='death-kin'){G.kin=KIN[arg]?arg:null;return this.page()}
     if(a==='death-past')return this.reborn(arg)}
   // each hour: a company whose lord is gone breaks up, its companions free
   static hour(){this.prune();for(const l of W.lords){const h=l.heir;if(!h||h.ended||!(l.dead||l.gone))continue;h.ended=true;

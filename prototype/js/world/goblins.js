@@ -5,6 +5,15 @@
    it is of its camp (camp: the site's i), haunts the land round it (haunt: it heads back past GOBLINS.leash tiles), shelters in it
    by night (GoblinCamp shelters), and is short of nerve (GOBLINS.nerve). Every draw here is from the stream 'goblins' (core/rng.js),
    so the world's Math.random is as it was; GOBLINS.on off, nothing here happens */
+// (who speaks for you in the goblins' tongue (GOBLIN_TONGUE): 'you', a companion's name, one of your goblins; null, no one. alone:
+// held captive, only you)
+function goblinSpeaker(alone){const T=GOBLIN_TONGUE;if(T.races.includes(P.race))return 'you';if(alone)return null;
+  for(const id in P.comps||{}){const c=P.comps[id],C=COMPS[id];if(C&&!c.party&&T.races.includes(C.race))return C.short||C.n}
+  for(const k in P.troops||{})if(P.troops[k]>0&&ST[k]?.race==='goblin')return 'your '+ST[k].n.toLowerCase();return null}
+// (why there are no terms to be had with goblins: '' when someone speaks their tongue; never for anyone else)
+const goblinTongueWhy=(goblins,alone)=>goblins&&!goblinSpeaker(alone)?cap1(GOBLIN_TONGUE.why):'';
+// (who speaks, said on the page: a line, or '')
+const goblinTongueSay=(goblins,alone)=>{const s=goblins&&goblinSpeaker(alone);return !s?'':s==='you'?'You know their tongue. ':cap1(s)+' speaks for you in their tongue. '};
 class GoblinBand extends BandParty{
   get nerve(){return GOBLINS.nerve}
   get hauntR(){return GOBLINS.leash}

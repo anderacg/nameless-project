@@ -41,5 +41,13 @@ try{
   let raw=null;try{raw=JSON.parse(localStorage.getItem(t.slotKey('auto'))||'null')}catch(e){}
   const rl=raw&&raw.world&&raw.world.lords.find(x=>x.id===L.id);ok(rl&&rl.tc&&rl.tc.hum_knight===2&&!rl.troops,'a save keeps a party’s counts, not a list');
   t.loadGame();const L2=W.lords.find(x=>x.id===L.id);ok(L2 instanceof t.LordParty&&L2.troops.length===3&&L2.tc.hum_knight===2&&t.bandits[0].n===bn&&t.cparties().length===1&&t.cparties().every(q=>q instanceof t.CompanionParty),'and loading makes them parties again');ok(P instanceof t.PlayerParty&&typeof P.troops==='object'&&!Array.isArray(P.troops),'your band stays a party after loading')}
+ // a force made for a fight flies its source's flag (the owner, 2026-11-10: "When siege or battle with garrison the flag seems to
+ // be bugged and use bandit flag"): a free holding's garrison, a village's folk and an estate's guards its holding's banner, not the
+ // bandits' rag; a patrol its pennant, a band its own rag; its kind as before
+ {const sh=b=>b?b.k+' '+b.col+' '+b.dev:'none',bad=[],free=t.TOWNS.find(h=>!h.owner),own=t.TOWNS.find(h=>h.owner);
+  for(const h of [free,own]){const f=t.asParty(t.garrisonForce(h)),want=sh(t.holdingFlag(h,t.facCol(h)));if(sh(f.banner())!==want)bad.push('garrison of '+h.name+': '+sh(f.banner()))}
+  for(const h of [free,own]){const v=t.asParty({town:h.name,k:'farm',x:h.x,y:h.y,fac:h.owner,cool:0,troops:['militia']});if(sh(v.banner())!==sh(t.holdingFlag(h,t.facCol(h)))||!(v instanceof t.BandParty))bad.push('folk of '+h.name+': '+sh(v.banner()))}
+  for(const x of [...W.patrols.slice(0,1),...t.bandits.slice(0,2)]){const f=t.asParty(t.forceOf(x));if(sh(f.banner())!==sh(x.banner()))bad.push(x.mapKind+': '+sh(f.banner()))}
+  const lf=t.asParty(t.garrisonForce(own));ok(free&&own&&!bad.length&&lf instanceof t.LordParty&&sh(t.asParty(t.garrisonForce(free)).banner())==='banner #98a0ba null','a force flies its source\'s flag: a free holding\'s garrison and folk its grey banner, not the bandits\' rag; a held one\'s, a patrol\'s, a band\'s their own (its kind as before)'+(bad.length?': '+bad.join(', '):''))}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

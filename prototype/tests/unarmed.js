@@ -9,7 +9,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,ev=s=>(0,eval)(s);
   t.act('begin','nobody');const B0=t.BGS.nobody;
   ok(P.bg==='nobody'&&!P.gear.weapon&&t.unarmed()&&P.gold===B0.gold&&P.gold<=10&&B0.cargo.grain>0&&B0.cargo.grain<=4&&!t.troopCount(),'the Nobody starts with no weapon, '+P.gold+' gold and a crust ('+B0.cargo.grain+' grain), no troops');
   ok(P.tree.includes('o_nobody')&&t.PROF_TREE.fist&&t.PROF_TREE.fist.length>=3,'their origin, and the brawler\'s Unarmed tree to grow');
-  t.showTitle('past');ok(/Nobody/.test(document.getElementById('panel').innerHTML)&&/Bare hands · Unarmed/.test(document.getElementById('panel').innerHTML),'a card of its own on the New game page: bare hands');t.hidePanel();
+  t.showTitle('past');ok(/Nobody/.test(document.getElementById('panel').innerHTML)&&/Bare hands, Unarmed/.test(document.getElementById('panel').innerHTML),'a card of its own on the New game page: bare hands');t.hidePanel();
   ok(t.meleeSk()==='fist'&&t.SKILLS.fist&&P.apt.fist>0,'their discipline is Unarmed, learned faster ('+P.apt.fist+')');
   // ======== the fists' numbers, against a sword
   const fist=t.heroStats();P.gear.weapon=t.gearId('sword',0);const sw=t.heroStats(),sk=t.meleeSk();P.gear.weapon=null;

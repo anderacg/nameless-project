@@ -41,6 +41,8 @@ function freeCaptive(c,days){
   else chiefEscapes(c.ld,days);
 }
 const lordRansom=c=>80+30*c.lv;
+// (a quick deal where you hold him: a share of it, PRISON.field; locked in a prison of yours, his realm offers the whole)
+const fieldRansom=c=>Math.round(lordRansom(c)*PRISON.field/5)*5;
 // once a day: chieftains who got away come back with a new band
 function chiefDay(){
   const ex=W.exiles;for(const x of ex.filter(x=>G.day>=x.back)){spawnBandit(false,x.ld);x.done=true}
@@ -108,14 +110,15 @@ function recruitCaptive(i){
 function captivesHtml(){
   const cs=captives(),b=(act,i,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'" data-arg="'+i+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
   return '<div class="lab" style="margin-top:6px">Captives ('+cs.length+')</div>'+(cs.length?cs.map((c,i)=>c.k==='lord'
-    ?'<div class="row"><div class="info"><strong>'+c.name+' <span class="muted">Lv '+c.lv+'</span></strong><small>'+cap1(lordWord(c))+' of the '+FACS[c.fac].n+'. Ransomed or let go, '+pr(c).he+' rides home to raise a new army.</small></div><div class="acts">'+
-      b('ct-ransom',i,'Ransom '+lordRansom(c)+'g',fiefsOf(c.fac).length?'':pr(c).His+' realm has fallen: no one will pay')+b('ct-recruit',i,'Recruit',recruitWhy(c))+b('ct-free',i,'Let go')+'</div></div>'
+    ?'<div class="row"><div class="info"><strong>'+c.name+' <span class="muted">Lv '+c.lv+'</span></strong><small>'+cap1(lordWord(c))+' of the '+FACS[c.fac].n+'. Ransomed or let go, '+pr(c).he+' rides home to raise a new army. Ransomed now, '+pr(c).his+' realm\'s envoy pays '+fieldRansom(c)+'g; locked in a prison of yours, they offer the whole '+lordRansom(c)+'g in days.</small></div><div class="acts">'+
+      b('ct-ransom',i,'Ransom now, '+fieldRansom(c)+'g',fiefsOf(c.fac).length?'':pr(c).His+' realm has fallen: no one will pay')+b('ct-recruit',i,'Recruit',recruitWhy(c))+b('ct-free',i,'Let go')+'</div></div>'
     :'<div class="row"><div class="info"><strong>'+c.ld.name+' <span class="muted">Lv '+c.ld.lv+'</span></strong><small>Bandit chief. Handed over, '+pr(c.ld).he+' hangs; let go, '+pr(c.ld).he+' gathers a new band; or '+pr(c.ld).he+' may join you.</small></div><div class="acts">'+
       b('ct-hand',i,'Hand over '+bountyOf(c.ld)+'g')+b('ct-recruit',i,'Recruit',recruitWhy(c))+b('ct-free',i,'Let go')+'</div></div>').join(''):'<p class="muted">None. Beat a lord or a bandit chief in battle to take one captive.</p>');
 }
 function captiveAct(a,arg){
   const cs=captives(),c=cs[+arg];if(!c)return;
-  if(a==='ct-ransom'&&c.k==='lord'&&fiefsOf(c.fac).length){const g=lordRansom(c);P.gold+=g;W.treas[c.fac]=Math.max(0,(W.treas[c.fac]||0)-g);addHonor(c.fac,-3,true);
+  // (ransomed where you hold him: his realm's envoy pays a share of it at once (PRISON.field), if their treasury holds it)
+  if(a==='ct-ransom'&&c.k==='lord'&&fiefsOf(c.fac).length){const g=fieldRansom(c);if(!payRealm(c.fac,g)){log('The '+FACS[c.fac].n+' cannot raise '+g+' gold now.','bad','war');updateHUD(true);if(G.mode==='char')renderChar();return}P.gold+=g;addHonor(c.fac,-3,true);
     const l=W.lords.find(x=>x.id===c.id);if(l)changeRel(l,RELATION.ransom,'you held them for ransom');freeCaptive(c);cs.splice(+arg,1);log('The '+FACS[c.fac].n+' pays '+g+' gold for '+c.name+'.','gold')}
   else if(a==='ct-hand'&&c.k==='chief'){const g=bountyOf(c.ld);P.gold+=g;P.renown+=2;repNear(P.x,P.y,4);cs.splice(+arg,1);log('You hand '+c.ld.name+' over to justice: '+g+' gold.','gold')}
   else if(a==='ct-recruit')recruitCaptive(+arg);

@@ -24,7 +24,7 @@ const frighten=(t,days)=>{Timed.of(t).extend('fear',days);for(const f of W.folk)
 
 /* dialogs */
 // a dialog button; why (if set) disables it and says why
-const dlgBtn=(act,arg,label,why,primary)=>'<button class="btn'+(primary?' primary':'')+'" type="button" data-act="'+act+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+why+'"':'')+'>'+label+(why?' · '+why:'')+'</button>';
+const dlgBtn=(act,arg,label,why,primary)=>'<button class="btn'+(primary?' primary':'')+'" type="button" data-act="'+act+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+why+'"':'')+'>'+label+(why?', '+why:'')+'</button>';
 const closeDialog=()=>{G.wk=G.rf=G.est=G.par=null;G.mode='world';G.encCool=Math.max(G.encCool,1);hidePanel();updateHUD(true)};
 // a moment's notice in the dialog, then back to the map
 function notice(title,msg,cls){G.mode='dialog';showPanel('<h2>'+title+'</h2><p class="'+(cls||'')+'">'+msg+'</p>'+nav(null,['dlg-ok',null,'Continue']));updateHUD(true)}

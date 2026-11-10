@@ -63,6 +63,7 @@ class Prisons{
       if(!ab.length||!ba.length||Math.random()>=PRISON.exchange)continue;const x=ab[0],y=ba[0];this.out(x.r,x.key,'exchanged');this.out(y.r,y.key,'exchanged');
       worldEvent({text:'The '+FACS[a].n+' and the '+FACS[b].n+' trade prisoners: '+x.r.name+' for '+y.r.name+'.',fac:[a,b],cls:a===P.fac||b===P.fac?'good':'',past:'the '+FACS[a].n+' and the '+FACS[b].n+' traded prisoners'})}
     this.each((r,key)=>{if(r.k==='comp'&&Math.random()<PRISON.comp.escape)this.out(r,key,'escaped')});
+    this.each((r,key)=>{if(r.k==='lord'&&r.keep==='player'&&r.offer&&!fiefsOf(r.fac).length){r.offer=0;log('The '+FACS[r.fac].n+' have fallen: no one will pay for '+r.name+' now.','bad','war')}});
     this.each((r,key)=>{if(r.k==='lord'&&r.keep==='player'&&!r.offer&&G.day>=r.offerDay&&fiefsOf(r.fac).length){r.offer=lordRansom(r);log('The '+FACS[r.fac].n+' offer '+r.offer+' gold for '+r.name+', in '+this.title(key)+'.','gold','war')}})}
   // peace between a and b (realms.js setRel): the prisoners each holds of the other go free, your companions with them
   static peace(a,b){this.each((r,key)=>{if(r.k==='lord'&&(r.keep===a&&r.fac===b||r.keep===b&&r.fac===a)||r.k==='comp'&&(r.keep===a&&P.fac===b||r.keep===b&&P.fac===a))this.out(r,key,'peace')})}
@@ -77,24 +78,32 @@ class Prisons{
   static mine(t){return t.owner==='player'||!!P.fac&&t.owner===P.fac}
   static quests(t){return P.quests.filter(q=>q.type==='held'&&q.held?.k==='holding'&&q.held.town===t.name).map(q=>Quest.as(q))}
   static dot(t){return this.quests(t).length>0||this.of(t.name).some(r=>r.k==='comp'||r.k==='lord'&&r.offer&&r.keep==='player')}
-  static bribe(r,key){const k=this.kind(key)||{bribe:1,watch:0},X=PRISON.bribe;return{cost:Math.max(10,Math.round(this.ransomOf(r)*X.price*k.bribe/5)*5),ch:clamp(X.ch-(k.watch||0)*X.watch,.05,.9)}}
-  static breakChance(key){const k=this.kind(key)||{brk:0,watch:0},X=PRISON.brk;return clamp(X.base+skill('athl')*X.athl+k.brk-(k.watch||0)*X.watch,.05,.85)}
+  // (its watch: its kind's, a step more while it is on alarm: a bribe reported or a break-out caught there, PRISON.alarm)
+  static alarmed(key){const t=!key.startsWith('s:')&&townBy(key);return !!t&&Timed.of(t).has('alarm')}
+  static watch(key){return (this.kind(key)?.watch||0)+(this.alarmed(key)?PRISON.alarm.watch:0)}
+  static alarm(t){Timed.of(t).extend('alarm',PRISON.alarm.days)}
+  // (the gaoler's price, a share of the ransom by the prison's kind; his odds by your Persuasion and Trade, less its watch)
+  static bribe(r,key){const k=this.kind(key)||{bribe:1},X=PRISON.bribe;return{cost:Math.max(10,Math.round(this.ransomOf(r)*X.price*k.bribe/5)*5),ch:clamp(X.ch+skill('pers')*X.pers+skill('trade')*X.trade-this.watch(key)*X.watch,.05,.85),sk:skill('pers')*X.pers+skill('trade')*X.trade}}
+  // (why not now: the watch wants you here, the prison on its guard, tried today; '' free)
+  static bribeWhy(r,key,t){return crimeAt(t)?'The watch wants you here':this.alarmed(key)?'The guards are on alert':r&&r.bribed===G.day?'Tried today':''}
+  static breakWhy(key){return this.alarmed(key)?'The guards are on alert':''}
+  static breakChance(key){const k=this.kind(key)||{brk:0},X=PRISON.brk;return clamp(X.base+skill('athl')*X.athl+k.brk-this.watch(key)*X.watch,.05,.85)}
   static odds(ch){return insight(['you cannot tell your odds',ch>=.5?'a fair chance':'a long chance','about '+Math.round(ch*100)+'%'],'know the odds')}
   static body(t){const key=t.name,k=this.kind(key),mine=this.mine(t),list=this.of(key),qs=this.quests(t),i=r=>list.indexOf(r);
     const head='<p class="muted">'+(k?'The '+k.name+' of '+t.name+': '+['its keepers a few men of the '+t.T.n,'kept by the watch','kept by a strong guard','kept by the garrison'][Math.max(0,['village','town','city','castle'].indexOf(t.kind==='fort'?'castle':t.kind))]+'. ':'')+
       (list.filter(r=>r.k!=='men').length)+' of '+(k?.holds||0)+' cells taken'+(mine&&k?.men?', '+(k.men-this.menRoom(key))+' of '+k.men+' places for soldiers':'')+'.</p>';
     const theirs=list.filter(r=>r.keep!=='player'),yours=list.filter(r=>r.keep==='player');
     const cards=[...qs.map(q=>({pic:personPic('folk',t.races?.[0]||'human',1),name:cap1(q.pn),role:q.title,facts:[[q.price+'g asked','gold']],note:q.say('gaol')||'Held here until someone pays.',
-        acts:[['pz-quest',q.id,'Pay '+q.price+'g',P.gold<q.price?'You have '+P.gold+'g':''],!mine&&['pz-qbreak',q.id,'Break out · '+this.odds(this.breakChance(key))]]})),
+        acts:[['pz-quest',q.id,'Pay '+q.price+'g',P.gold<q.price?'You have '+P.gold+'g':''],!mine&&['pz-qbreak',q.id,'Break out, '+this.odds(this.breakChance(key)),this.breakWhy(key)]]})),
       ...theirs.map(r=>this.card(r,i(r),key,t,mine))];
     const lock=mine&&this.lockCards(key);
     return head+(cards.length?railCards(cards):'<p class="muted">No one is held here now.</p>')+
       (yours.length?'<div class="lab">Your prisoners</div>'+railCards(yours.map(r=>this.yourCard(r,i(r),key))):'')+
       (lock?'<div class="lab">Lock them up</div>'+lock:'')+
-      (!mine?'<p class="muted">Paying, bribing and breaking out take place at once. A bribe found out, or a break-out, is a crime against the '+(FACS[t.owner]?.n||'holding')+'.</p>':'')}
+      (!mine?'<p class="muted">Paying, bribing and breaking out take place at once. The gaoler costs less than the ransom, but he may refuse (your coin back) or report you: then your coin is gone, the watch wants a fine, and the guards are on alert for days. A break-out is a crime against the '+(FACS[t.owner]?.n||'holding')+'.'+(this.alarmed(key)?' <b>The guards are on alert.</b>':'')+'</p>':'')}
   // (one held by others: a lord, your companion; what you can do for him)
   static card(r,i,key,t,mine){const pay=this.ransomOf(r),bb=this.bribe(r,key),br=this.breakChance(key),l=r.k==='lord'&&this.lordOf(r),
-      acts=mine?[]:[['pz-pay',i,'Pay '+pay+'g',P.gold<pay?'You have '+P.gold+'g':''],['pz-bribe',i,'Bribe the gaoler · '+bb.cost+'g',P.gold<bb.cost?'You have '+P.gold+'g':''],['pz-break',i,'Break out · '+this.odds(br)]];
+      acts=mine?[]:[['pz-pay',i,'Pay '+pay+'g',P.gold<pay?'You have '+P.gold+'g':''],['pz-bribe',i,'Bribe the gaoler, '+bb.cost+'g, '+this.odds(bb.ch),this.bribeWhy(r,key,t)||(P.gold<bb.cost?'You have '+P.gold+'g':'')],['pz-break',i,'Break out, '+this.odds(br),this.breakWhy(key)]];
     if(r.k==='lord')return{fac:r.fac,pic:lordPic(l||r),name:this.who(r),role:cap1(lordWord(r))+' of the '+FACS[r.fac].n+', held by the '+FACS[r.keep].n,facts:['Lv '+r.lv,'since day '+r.since,l&&['Relation '+relWith(l),relWith(l)>=0?'good':'bad']],
       acts:[['pz-visit',i,'Visit',r.seen!=null&&G.day-r.seen<PRISON.visit.days?'Not again so soon':''],...acts]};
     return{pic:portrait(r.id),name:this.who(r),role:'Your companion, held by '+(FACS[r.keep]?'the '+FACS[r.keep].n:r.keep==='broker'?'the ransom broker':'the band'),facts:['since day '+r.since],note:'Get '+pr(r.id).him+' out, or '+pr(r.id).he+' may slip away in time.',acts}}
@@ -118,7 +127,7 @@ class Prisons{
   static crime(t,fine){if(!t.owner||t.owner==='player')return;const old=crimeAt(t);t.crime={until:G.day+PATROL.wanted,fine:(old?old.fine:0)+fine}}
   static act(a,arg,t){const key=t.name,list=this.of(key),r=list[+arg],mine=this.mine(t);
     if(a==='pz-quest'||a==='pz-qbreak'){const q=this.quests(t).find(q=>String(q.id)===String(arg));if(!q)return;if(a==='pz-quest')return void q.ransom();
-      if(mine)return;if(Math.random()<this.breakChance(key)){this.crimeOut(t);return void q.pay('freed','taken')}return void this.caught(t)}
+      if(mine||this.breakWhy(key))return;if(Dice.check(this.breakChance(key),'Break out',undefined,skill('athl')*PRISON.brk.athl)){this.crimeOut(t);return void q.pay('freed','taken')}return void this.caught(t)}
     if(a==='pz-lock'){const c=captives()[+arg];if(!c||!mine||this.room(key)<1)return;captives().splice(+arg,1);
       this.put(key,c.k==='lord'?{k:'lord',id:c.id,name:c.name,fac:c.fac,lv:c.lv,keep:'player',since:G.day,offerDay:G.day+rint(...PRISON.offer)}:{k:'chief',ld:c.ld,keep:'player',since:G.day});
       const l=c.k==='lord'&&W.lords.find(x=>x.id===c.id);if(l)l.jail=key;return void log('You lock '+(c.k==='lord'?c.name:c.ld.name)+' in '+this.title(key)+'.','gold','war')}
@@ -130,9 +139,12 @@ class Prisons{
       if(a==='pz-visit'&&r.k==='lord'){const l=this.lordOf(r);if(!l||r.seen!=null&&G.day-r.seen<PRISON.visit.days)return;r.seen=G.day;KNOWLEDGE.lord(l);changeRel(l,PRISON.visit.rel,'you visited them in prison');
         return void log('You visit '+lordName(l)+' in '+this.title(key)+'. '+pr(l).He+' is glad of the company.','gold','war')}
       if(a==='pz-pay'){const g=this.ransomOf(r);if(P.gold<g)return;P.gold-=g;if(FACS[r.keep])W.treas[r.keep]=treas(r.keep)+g;log('You pay '+g+' gold for '+this.who(r)+'.','gold','war');return void this.freedByYou(r,key)}
-      if(a==='pz-bribe'){const b=this.bribe(r,key);if(P.gold<b.cost)return;P.gold-=b.cost;if(Math.random()<b.ch){log('The gaoler takes your '+b.cost+' gold and leaves a door unbarred: '+this.who(r)+' walks free.','gold','war');return void this.freedByYou(r,key)}
-        this.crime(t,PRISON.bribe.fine);return void log('The gaoler takes your '+b.cost+' gold, and tells the watch.','bad','war')}
-      if(a==='pz-break'){if(Math.random()<this.breakChance(key)){this.crimeOut(t);log('In the night you break '+this.who(r)+' out of '+this.title(key)+'.','gold','war');return void this.freedByYou(r,key,PRISON.brk.rel)}return void this.caught(t)}
+      // (the gaoler: takes it and unbars a door; else reports you (your coin gone, the watch's fine, the guards on alert) or refuses (your coin back); once a day)
+      if(a==='pz-bribe'){const b=this.bribe(r,key);if(P.gold<b.cost||this.bribeWhy(r,key,t))return;r.bribed=G.day;
+        if(Dice.check(b.ch,'Bribe the gaoler',undefined,b.sk)){P.gold-=b.cost;log('The gaoler takes your '+b.cost+' gold and leaves a door unbarred: '+this.who(r)+' walks free.','gold','war');return void this.freedByYou(r,key)}
+        if(Math.random()<PRISON.bribe.report){P.gold-=b.cost;this.crime(t,PRISON.bribe.fine);this.alarm(t);return void log('The gaoler takes your '+b.cost+' gold, and tells the watch. The guards are on alert.','bad','war')}
+        return void log('The gaoler pushes your coin back. "Not for that one." He will not hear you again today.','','war')}
+      if(a==='pz-break'){if(this.breakWhy(key))return;if(Dice.check(this.breakChance(key),'Break out',undefined,skill('athl')*PRISON.brk.athl)){this.crimeOut(t);log('In the night you break '+this.who(r)+' out of '+this.title(key)+'.','gold','war');return void this.freedByYou(r,key,PRISON.brk.rel)}return void this.caught(t)}
       return}
     // yours
     if(a==='pz-out'){if(r.k==='men'){const m=Math.min(r.n,prisonCap()-prisonerCount());if(m<=0)return;P.prisoners[r.type]=(P.prisoners[r.type]||0)+m;r.n-=m;if(!r.n)this.drop(key,r);return}
@@ -144,21 +156,23 @@ class Prisons{
       this.out(r,key,'free');mood('release');return void log('You let '+this.who(r)+' go.')}
     if(a==='pz-hand'&&r.k==='chief'){const g=bountyOf(r.ld);P.gold+=g;P.renown+=2;repNear(P.x,P.y,4);this.drop(key,r);return void log('You hand '+r.ld.name+' over to justice: '+g+' gold.','gold')}
     if(r.k!=='lord')return;const l=this.lordOf(r);
-    if(a==='pz-ransom'&&r.offer){P.gold+=r.offer;W.treas[r.fac]=Math.max(0,(W.treas[r.fac]||0)-r.offer);addHonor(r.fac,-3,true);if(l)changeRel(l,RELATION.ransom,'you held them for ransom');log('The '+FACS[r.fac].n+' pay '+r.offer+' gold for '+r.name+'.','gold');mood('ransom');return void this.out(r,key,'ransomed')}
-    if(a==='pz-ask'&&r.offer&&!r.asked){r.asked=true;const X=PRISON.ask;if(Math.random()<X.ch){r.offer=Math.round(r.offer*X.more/5)*5;return void log('The '+FACS[r.fac].n+' grumble, and raise their offer to '+r.offer+' gold.','gold')}
+    if(a==='pz-ransom'&&r.offer){if(!fiefsOf(r.fac).length){r.offer=0;return}if(!payRealm(r.fac,r.offer))return void log('The '+FACS[r.fac].n+' cannot raise '+r.offer+' gold now. Their offer stands.','bad','war');P.gold+=r.offer;addHonor(r.fac,-3,true);if(l)changeRel(l,RELATION.ransom,'you held them for ransom');log('The '+FACS[r.fac].n+' pay '+r.offer+' gold for '+r.name+'.','gold');mood('ransom');return void this.out(r,key,'ransomed')}
+    if(a==='pz-ask'&&r.offer&&!r.asked){r.asked=true;const X=PRISON.ask;if(Dice.check(X.ch,'Ask for more')){r.offer=Math.round(r.offer*X.more/5)*5;return void log('The '+FACS[r.fac].n+' grumble, and raise their offer to '+r.offer+' gold.','gold')}
       r.offer=0;r.offerDay=G.day+X.wait;return void log('The '+FACS[r.fac].n+' take back their offer. They may make another in '+X.wait+' days.','bad')}
     if(a==='pz-swap'){const s=this.swapFor(r);if(!s)return;this.out(s.r,s.key,'exchanged');this.out(r,key,'exchanged');if(s.r.k==='lord'&&P.fac){addHonor(P.fac,PRISON.pay.honor,true);const o=this.lordOf(s.r);if(o)changeRel(o,PRISON.pay.rel,'you traded for them')}
       return void log('You trade '+r.name+' to the '+FACS[r.fac].n+' for '+this.who(s.r)+'.','gold','war')}
     if(a==='pz-exec'){const X=PRISON.exec;this.drop(key,r);if(l){Object.assign(l,{gone:true,dead:true,held:false,jail:null,back:1e9});Houses.died(l,'put to death',true)}addHonor(r.fac,X.honor,true);for(const f of FIDS)if(f!==r.fac&&!W.dead[f])addHonor(f,X.all,true);
       for(const o of lordsOf(r.fac))if(o!==l&&!o.gone)changeRel(o,X.rel,'you put '+r.name+' to death');mood('cruel');
       worldEvent({text:r.name+' of the '+FACS[r.fac].n+' is put to death in '+this.title(key)+'.',fac:[r.fac],cls:'bad',past:r.name+' was put to death'});return}}
-  // (freed by your hand: a lord thinks better of you (more, broken out), and your realm if he is its own; your companion with you)
-  static freedByYou(r,key,rel=PRISON.pay.rel){if(r.k==='lord'){const l=this.lordOf(r);if(l)changeRel(l,rel,'you freed them from prison');if(r.fac===P.fac)addHonor(P.fac,PRISON.pay.honor,true)}this.out(r,key,'freed')}
+  // (freed by your hand: a lord thinks better of you (more, broken out), and your realm if he is its own (less, if he is its enemy);
+  // your companion with you)
+  static freedByYou(r,key,rel=PRISON.pay.rel){if(r.k==='lord'){const l=this.lordOf(r);if(l)changeRel(l,rel,'you freed them from prison');if(r.fac===P.fac)addHonor(P.fac,PRISON.pay.honor,true);
+    else if(P.fac&&FACS[P.fac]&&atWar(P.fac,r.fac)){addHonor(P.fac,-PRISON.pay.enemy,true);log('The '+FACS[P.fac].n+' will not thank you for freeing one of their enemies.','bad','war')}}this.out(r,key,'freed')}
   // (a break-out: a crime against the holding's realm, hostile for days, your honour with it lower; caught: its fine, and hurt)
   static crimeOut(t){const X=PRISON.brk;if(FACS[t.owner]&&t.owner!==P.fac)realmOf(t.owner).provoke(X.hostile,X.honor)}
-  static caught(t){const X=PRISON.brk;this.crime(t,X.fine);P.hp=Math.max(1,Math.round(P.hp-vitals()[0]*X.hurt));log('The guards catch you at the cells and beat you off. The watch wants '+(crimeAt(t)?.fine||X.fine)+' gold of you.','bad','war')}
+  static caught(t){const X=PRISON.brk;this.crime(t,X.fine);this.alarm(t);P.hp=Math.max(1,Math.round(P.hp-vitals()[0]*X.hurt));log('The guards catch you at the cells and beat you off. The watch wants '+(crimeAt(t)?.fine||X.fine)+' gold of you.','bad','war')}
   // a hostile holding's prison, from outside its walls (siege.js showSiege: The prison): the same page, Back to the walls
-  static outside(t){G.mode='besiege';G.bes=t;showPanel('<div class="top"><h2>'+cap1(this.title(t.name))+'</h2><span class="muted">'+t.name+' · '+P.gold+' gold</span></div><p class="muted">From outside its walls: coin for its keepers, or a night over the wall.</p>'+
+  static outside(t){G.mode='besiege';G.bes=t;showPanel('<div class="top"><h2>'+cap1(this.title(t.name))+'</h2><span class="muted">'+t.name+', '+P.gold+' gold</span></div><p class="muted">From outside its walls: coin for its keepers, or a night over the wall.</p>'+
     this.body(t)+nav(['sg-back',null,'Back'],['sg-leave',null,'Leave']),'prison:'+t.name)}
   // a camp's or hideout's page (world/sites.js Lair): who it holds of yours
   static siteNote(s){const key=this.keyOf({k:'site',i:s.i,seed:s.seed}),cs=this.of(key).filter(r=>r.k==='comp');return cs.length?'<p class="bad">'+cs.map(r=>this.who(r)).join(' and ')+' '+(cs.length>1?'are':'is')+' held here, in '+this.title(key)+'. Clear it to free '+(cs.length>1?'them':pr(cs[0].id).him)+'.</p>':''}

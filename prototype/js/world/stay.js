@@ -26,7 +26,7 @@ function yourShelterWhy(t,cost){
 const stayWhy=t=>P.shelterWhy(t);
 // the terms, for the button
 const stayTerms=t=>stayFree(t)?'free (they know you)':stayCost()+'g a day';
-const stayBtn=t=>{const why=stayWhy(t);return '<button class="btn" type="button" data-act="sy-stay" data-arg="'+t.name+'"'+(why?' disabled title="'+why+'"':'')+'>Stay · '+(why||stayTerms(t))+'</button>'};
+const stayBtn=t=>{const why=stayWhy(t);return '<button class="btn" type="button" data-act="sy-stay" data-arg="'+t.name+'"'+(why?' disabled title="'+why+'"':'')+'>Stay, '+(why||stayTerms(t))+'</button>'};
 // the day your gold runs out at this rate
 const stayUntil=()=>Math.floor((P.stay.paidTo+Math.floor(P.gold/stayCost())*DAY)/DAY);
 function startStay(t){
@@ -69,7 +69,7 @@ function staySiege(t){
     '<p>'+ls.map(o=>o.name+' of the '+FACS[o.fac].n+' ('+o.troops.length+' soldiers, power '+o.power()+')').join(' and ')+' '+(ls.length>1?'surround':'surrounds')+' the walls. Your power <strong>'+partyPower()+'</strong>, the garrison '+t.gar+'.</p>'+
     '<div class="btns" style="flex-direction:column;align-items:stretch">'+
     ls.map((o,i)=>dlgBtn('sy-defend',i,'Defend the walls: attack '+o.name+(hostileTo(o.fac)?'':' (the '+FACS[o.fac].n+' turns hostile)'),P.fac&&P.fac===o.fac?'Your employer':'',!i)).join('')+
-    dlgBtn('sy-slip','','Slip out past '+l.name+(od.ch>0?' · '+Math.round(od.ch*100)+'% to get away':''),od.ch>0?'':od.why)+
+    dlgBtn('sy-slip','','Slip out past '+l.name+(od.ch>0?', '+Math.round(od.ch*100)+'% to get away':''),od.ch>0?'':od.why)+
     dlgBtn('sy-wait','','Stay inside and wait it out')+'</div>'+
     '<p class="muted" style="font-size:13px">If you wait and '+t.name+' falls, you are thrown out with the defeated and a quarter of your soldiers are lost. Slipping out and caught, your rearguard pays and you must fight.</p>');
 }

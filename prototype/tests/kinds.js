@@ -59,7 +59,7 @@ Kit.suite(({ok,info})=>{
    if(d||look()!==b0||!O.is(o)){bad.pure.push(k+'#'+i);return}
    // (its facts: written from it, its own lines after)
    const fs=(c.factsFor(x)||[]).filter(Boolean),said=O.facts(o),own=c.also?(c.also(x)||[]).filter(Boolean):[];
-   if(c.facts||fs.join(' · ')!==said.concat(own).join(' · ')||fs.some(f=>/\bhonor\b/.test(f)))bad.facts.push(k+' “'+c.label+'” ['+fs.join(' · ')+']');
+   if(c.facts||fs.join(', ')!==said.concat(own).join(', ')||fs.some(f=>/\bhonor\b/.test(f)))bad.facts.push(k+' “'+c.label+'” ['+fs.join(', ')+']');
    // (done, the dice stubbed: what changed is what it says)
    if(c.why(x)){skipped.push(k+' “'+c.label+'” ('+c.why(x)+')');return}
    const fx=Object.entries(o).filter(([key])=>key!=='say'),rep=n=>n?t.repAt(n):0,hon=f=>f?t.honorWith(f):0,gd=g=>t.goodN(g);
@@ -76,7 +76,7 @@ Kit.suite(({ok,info})=>{
     else if(key==='hours'){const hh=Math.round((t.roadNow()-a.h)*1e6)/1e6;got.push(...[].concat(O.handlers.hours.text(hh)))}
     else if(key==='wrong'){const [z,cc]=v;if(z){if(cc.rep)got.push('reputation in '+z.name+' '+sg(rep(z.name)-a.rep[z.name]));if(cc.morale)got.push('morale '+sg(P.morale-a.m));if(cc.honor&&z.owner&&z.owner!=='player')got.push('honour with the '+t.FACS[z.owner].n+' '+sg(hon(z.owner)-a.hon[z.owner]))}}
     else got.push(...[].concat(O.handlers[key].text(v)).filter(Boolean))}
-   nDid++;if(err||got.join(' · ')!==t.describeOutcome(o))bad.did.push(k+' “'+c.label+'”: did ['+got.join(' · ')+'], says ['+t.describeOutcome(o)+']'+(err?' EXC '+err:''));
+   nDid++;if(err||got.join(', ')!==t.describeOutcome(o))bad.did.push(k+' “'+c.label+'”: did ['+got.join(', ')+'], says ['+t.describeOutcome(o)+']'+(err?' EXC '+err:''));
    if(G.enc)t.act('flee');Kit.world();G.road=null;G.chase=null;G.enc=null});
   // ---- its live record: saved and loaded as it was
   {const x=spawnOf(k,false);if(x){x.seen=1;const snap=JSON.stringify(x),rec=JSON.parse(JSON.stringify(x.save())),y=E.load(rec);
@@ -120,7 +120,7 @@ Kit.suite(({ok,info})=>{
     try{e=Kit.stub(v,()=>Kit.stubStream('incidents',v,()=>I.befall(D,c)))}finally{t.worldOff('incident:ended',fn)}
     const got=[];for(const key of Object.keys(o)){if(key==='gold')got.push(O.signed(P.gold-a.g)+' gold');else if(key==='food')got.push(O.signed(t.foodN()-a.f)+' food');else if(key==='morale')got.push('morale '+O.signed(P.morale-a.m));else if(key!=='log')got.push('?'+key)}
     const last=G.msgs[G.msgs.length-1],line=[].concat(o.log);nDid++;
-    if(got.join(' · ')!==t.describeOutcome(o))bad.push(D.id+' '+race+': did ['+got.join(' · ')+'], says ['+t.describeOutcome(o)+']');
+    if(got.join(', ')!==t.describeOutcome(o))bad.push(D.id+' '+race+': did ['+got.join(', ')+'], says ['+t.describeOutcome(o)+']');
     if(G.msgs.length!==n0+1||last.m!==line[0]||last.cls!==line[1])bad.push(D.id+' (its line)');
     if(!(e instanceof I)||e.kind!==D||said.length!==1||said[0]!==e)bad.push(D.id+' (its record, or its end)')}}
   ok(I.load({k:'nope'})===null&&I.load({k:ids[0]}) instanceof I,'an incident\'s record loads as one of its class; one whose kind is gone, as nothing');

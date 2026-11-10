@@ -13,7 +13,7 @@ try{
  world();let b=band(12);t.startEncounter({kind:'party',ref:b,n:12,band:'bandits',mine:true});ok(/>Leave</.test(panel()),'a fight you started shows Leave');flee();ok(G.mode==='world','and you can always call it off');
  // they came for you: a race
  world();b=band(12);t.startEncounter({kind:'party',ref:b,n:12,band:'bandits'});const od=t.fleeOdds(G.enc);
- ok(!od.leave&&od.ch>0&&od.ch<1&&/Flee · \d+% to get away/.test(panel()),'when they come for you, Flee shows your chance ('+Math.round(od.ch*100)+'%)');
+ ok(!od.leave&&od.ch>0&&od.ch<1&&/Flee, \d+% to get away/.test(panel()),'when they come for you, Flee shows your chance ('+Math.round(od.ch*100)+'%)');
  {const r=Math.random;Math.random=()=>.999;flee();Math.random=r;ok(G.mode==='dialog'&&G.enc&&G.enc.noFlee&&P.troops.hum_levy===9&&/They caught you/.test(panel()),'caught: your rearguard falls (1 of 10) and you must fight; Flee is closed')}
  world();b=band(12);t.startEncounter({kind:'party',ref:b,n:12,band:'bandits'});{const r=Math.random;Math.random=()=>0;const x0=P.x;flee();Math.random=r;
   ok(G.mode==='world'&&b.cool>=10&&Math.hypot(P.x-x0,0)>30,'got away: you put ground between you, and they lose your trail ('+b.cool+'s)');

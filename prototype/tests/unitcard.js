@@ -24,7 +24,7 @@ try{
  {const c=t.unitCard('hum_knight');ok(/Knight/.test(c)&&/Cavalry/.test(c)&&/\+90%/.test(c)&&/Strong vs/.test(c)&&/Upkeep 2.5g a day/.test(c)&&/<img/.test(c),'a knight’s card: name, class, charge bonus, strong and weak, upkeep (by tier: a tier-3 rider 2g, and 0.5g for his horse), picture')}
  {const c=t.unitCard('hum_levy');ok(/Armour/.test(c)&&/Morale/.test(c)&&!/Missile attack/.test(c)&&t.unitCard('hum_bow').includes('Missile attack'),'a card shows only the numbers its unit has (a levy no missile attack), armour among them');
   const live=new t.UnitCard({key:'hum_foot',s:ST.hum_foot,name:'Footman',sub:'',now:{mor:20,spd:ST.hum_foot.spd*.85},strength:{fit:7,max:10,hurt:2},abil:[]}).html();
-  ok(/uc-bar"><i[^>]*><\/i><i class="dn"/.test(live)&&/7 \/ 10 · 2 hurt/.test(live)&&/class="bad">20</.test(live),'its numbers now against its own: what lowers them a red end, the value in red; its strength, fit and hurt')}
+  ok(/uc-bar"><i[^>]*><\/i><i class="dn"/.test(live)&&/7 \/ 10, 2 hurt/.test(live)&&/class="bad">20</.test(live),'its numbers now against its own: what lowers them a red end, the value in red; its strength, fit and hurt')}
  {const c=t.unitCard('hum_pike','hum_levy');ok(/against Spearman/.test(c)&&/▲/.test(c),'a training’s card marks the gains over the troop it comes from')}
  // in a holding: click a troop for its card
  const ash=t.townBy('Ashford');P.troops={hum_levy:3};P.gold=500;P.rep[ash.name]=90;ash.vol=5;G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(ash);t.act('tab','recruit');

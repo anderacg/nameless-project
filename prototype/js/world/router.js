@@ -8,6 +8,7 @@
        from where o stands (the walker should pick another)
      Router.flee(o, threat, step): escape along reachable ground, committing to a bounded detour at obstacles
      Router.reach(a, b): can one walk from a to b (a holding from its own tile, anything else from its point)
+     Router.open(x, y, from): where to walk for a point clicked: itself, or the nearest spot one may stand on (wayOpenSpot)
      Router.days(a, b, pace): how many days' march from a to b at pace (px a world second, unscaled: MAP_BASE if left out);
        Infinity when there is no way
      Router.close(xi, shut): shuts crossing xi (WM.crossings) or opens it again (Phase 5's seasons)
@@ -21,7 +22,31 @@ let ROUTES=new WeakMap();
 onWorld(()=>{ROUTES=new WeakMap()});
 // is the straight line from (x0,y0) to (x1,y1) open ground all the way (a holding's walls shut: holdShut; a crossing shut, Router.close:
 // as the tile searches keep off both, a code review, 2026-11-03, found a closed bridge crossed by the straight line)
-function clearLine(x0,y0,x1,y1){holdShut();const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/4);for(let i=1;i<=n;i++){const k=i/n,x=x0+(x1-x0)*k,y=y0+(y1-y0)*k;if(!passable(terrAt(x,y))||SHUT&&SHUT[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]&7)return false}return true}
+function clearLine(x0,y0,x1,y1){holdShut();const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/4),F=WAY_FOOT&&footMask(),s0=Math.floor(y0/TILE)*MW+Math.floor(x0/TILE),g0=Math.floor(y1/TILE)*MW+Math.floor(x1/TILE);
+  for(let i=1;i<=n;i++){const k=i/n,x=x0+(x1-x0)*k,y=y0+(y1-y0)*k,j=Math.floor(y/TILE)*MW+Math.floor(x/TILE);if(!passable(terrAt(x,y))||SHUT&&SHUT[j]&7||F&&F[j]&&j!==s0&&j!==g0)return false}return true}
+/* on foot round the buildings (the owner, 2026-11-10: "fix pathfinder and the guide path to use a walkable path otherwise my character
+   would walk into obstacle"): your band's way (WAY_FOOT, set while world.js heroWay looks for it, and so for the way drawn ahead of
+   you) goes round a holding's buildings (its houses, halls, workshops, wells, carts: footMask; its fields and pastures, WAY_FOOT_LOT.open,
+   walked over) where the land lets it: such a tile costs WAY_FOOT_LOT.cost times as much (findPath, the straightening), and no
+   straight line crosses one (clearLine, wayClear) but where you stand or are going. Dearer, never shut, so no way is lost; nobody
+   else's way changes */
+const WAY_FOOT_LOT={cost:30,open:['farm','pasture'],every:250,near:12};
+let WAY_FOOT=false,FOOTM={m:null,key:'',t:-1e9};
+// (where to walk for a point clicked (ui/input.js worldMove): itself if one may stand there; on water or a peak, a holding's shut
+// keep or walls, a building, the nearest tile within WAY_FOOT_LOT.near that one may, on the land from reaches (the owner, 2026-11-10:
+// the way stopped short at a keep's walls, the band "stuck")
+function wayOpenSpot(x,y,from){holdShut();const F=footMask(),ok=(tx,ty)=>{if(tx<0||ty<0||tx>=MW||ty>=MH)return false;const i=ty*MW+tx;return passable(tiles[i])&&!(SHUT&&SHUT[i]&7)&&!TownWall.at(tx,ty)&&!F[i]};
+  const cx=Math.floor(x/TILE),cy=Math.floor(y/TILE);if(ok(cx,cy))return{x,y};
+  for(let r=1;r<=WAY_FOOT_LOT.near;r++){let best=null,bd=Infinity;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r||!ok(cx+dx,cy+dy))continue;
+      const p={x:(cx+dx+.5)*TILE,y:(cy+dy+.5)*TILE},d=Math.hypot(p.x-x,p.y-y);if(d<bd&&(!from||Router.reach(from,p))){bd=d;best=p}}if(best)return best}
+  return{x,y}}
+// (the building tiles, a byte a tile: made again when the holdings' plots change, looked at every WAY_FOOT_LOT.every ms at most)
+function footMask(){const now=performance.now();if(FOOTM.m&&now-FOOTM.t<WAY_FOOT_LOT.every)return FOOTM.m;FOOTM.t=now;let key=TOWNS.length+':';
+  for(const t of TOWNS){const L=t.lots;if(!L)continue;let b=0;for(const l of L)if(l.st==='built'||l.st==='building')b++;key+=L.length+'.'+b+','}
+  if(FOOTM.m&&key===FOOTM.key&&FOOTM.m.length===MW*MH)return FOOTM.m;const m=new Uint8Array(MW*MH),O=WAY_FOOT_LOT.open;
+  for(const t of TOWNS)for(const l of t.lots||[]){if(!(l.st==='built'||l.st==='building')||O.includes(l.k))continue;for(let y=l.y;y<l.y+l.n;y++)for(let x=l.x;x<l.x+l.n;x++)if(x>=0&&y>=0&&x<MW&&y<MH)m[y*MW+x]=1}
+  FOOTM.m=m;FOOTM.key=key;return m}
+onWorld(()=>{FOOTM={m:null,key:'',t:-1e9}});
 // the tiles to pass from one point to another by the cheapest way, searched within a box round both (pad tiles); null if none;
 // rm: off the roads x rm (a road keeper's)
 function findPath(x0,y0,x1,y1,pad,rm){
@@ -31,11 +56,11 @@ function findPath(x0,y0,x1,y1,pad,rm){
   const N=bw*bh,g=new Float64Array(N).fill(Infinity),from=new Int32Array(N).fill(-1),heap=[],L=(x,y)=>(y-by)*bw+(x-bx);
   const push=(i,f)=>{heap.push([f,i]);let k=heap.length-1;while(k>0){const q=(k-1)>>1;if(heap[q][0]<=heap[k][0])break;[heap[q],heap[k]]=[heap[k],heap[q]];k=q}};
   const pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){heap[0]=last;let k=0;for(;;){const l=2*k+1,r=l+1;let m=k;if(l<heap.length&&heap[l][0]<heap[m][0])m=l;if(r<heap.length&&heap[r][0]<heap[m][0])m=r;if(m===k)break;[heap[m],heap[k]]=[heap[k],heap[m]];k=m}}return top};
-  const h=(x,y)=>Math.hypot(x-gx,y-gy)/1.3,s0=L(sx,sy),goal=L(gx,gy);g[s0]=0;push(s0,h(sx,sy));
+  const h=(x,y)=>Math.hypot(x-gx,y-gy)/1.3,s0=L(sx,sy),goal=L(gx,gy),F=WAY_FOOT&&footMask(),fc=WAY_FOOT_LOT.cost;g[s0]=0;push(s0,h(sx,sy));
   while(heap.length){const [,i]=pop();if(i===goal)break;const x=bx+i%bw,y=by+((i/bw)|0);
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<bx||ny<by||nx>=bx+bw||ny>=by+bh)continue;
       const t=tiles[ny*MW+nx];if(!passable(t)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])||SHUT&&(SHUT[y*MW+nx]&6||SHUT[ny*MW+x]&6)))continue;// (no corner of a holding's walls cut, its centre's or its ring's: holdShut)
-      const sp=t===T_ROAD?1.3:Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]]),j=L(nx,ny),nd=g[i]+(dx&&dy?1.414:1)/sp*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1);
+      const sp=t===T_ROAD?1.3:Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]]),j=L(nx,ny),nd=g[i]+(dx&&dy?1.414:1)/sp*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(F&&F[ny*MW+nx]?fc:1);
       if(nd<g[j]){g[j]=nd;from[j]=i;push(j,nd+h(nx,ny))}}}
   if(!isFinite(g[goal]))return null;
   const out=[];for(let i=goal;i!==s0;i=from[i])out.push((by+((i/bw)|0))*MW+bx+i%bw);return out.reverse();
@@ -66,6 +91,7 @@ const Router={
   travel(o,goal,step){if(goal.road===ROAD_GO.keep&&(o===P||!(o instanceof WorldObject))&&TRAVEL_STYLES.steady&&!TravelStyle.long(P))goal={x:goal.x,y:goal.y};
     const ok=wayTravel(o,goal,step),r=ROUTES.get(o);if(r){r.gx=goal.x;r.gy=goal.y;r.ax=o.x;r.ay=o.y}return ok},
   reach(a,b){const L=landPieces(),i=wayTile(a),j=wayTile(b);return i>=0&&j>=0&&L[i]>=0&&L[i]===L[j]},
+  open(x,y,from){return wayOpenSpot(x,y,from)},
   // (the graph's days at WAY.pace, by the pace asked)
   days(a,b,pace){return wayDays(a,b)*WAY.pace/(pace||MAP_BASE)},
   // (its edges in closed, its tiles shut to the searches, the chunks they lie in and the pair cache made afresh, every walker's way
@@ -319,9 +345,10 @@ function wayRay(x0,y0,x1,y1,fn){const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy),ax=M
     if(mx<my){tx+=sx;mx+=kx}else if(my<mx){ty+=sy;my+=ky}else{if(fn(id(tx+sx,ty),0)===false||fn(id(tx,ty+sy),0)===false)return false;tx+=sx;ty+=sy;mx+=kx;my+=ky}}
   return true}
 // (a tile's cost to cross, as findPath weighs it: rm, a road keeper's, off the roads)
-const wayCostAt=(i,rm)=>{const t=tiles[i];return wayStep(t,climate[i])*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)};
+const wayCostAt=(i,rm)=>{const t=tiles[i];return wayStep(t,climate[i])*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(WAY_FOOT&&footMask()[i]?WAY_FOOT_LOT.cost:1)};
 // (the line from (x0, y0) to (x1, y1) open: every tile it crosses, and those of two lines WAY_SMOOTH.w px each side of it)
-function wayClear(x0,y0,x1,y1){const d=Math.hypot(x1-x0,y1-y0);if(!d)return true;const w=WAY_SMOOTH.w,nx=-(y1-y0)/d*w,ny=(x1-x0)/d*w,ok=i=>i>=0&&wayOpen(i);
+function wayClear(x0,y0,x1,y1){const d=Math.hypot(x1-x0,y1-y0);if(!d)return true;const w=WAY_SMOOTH.w,nx=-(y1-y0)/d*w,ny=(x1-x0)/d*w,F=WAY_FOOT&&footMask(),s0=Math.floor(y0/TILE)*MW+Math.floor(x0/TILE),g0=Math.floor(y1/TILE)*MW+Math.floor(x1/TILE),
+    ok=i=>i>=0&&wayOpen(i)&&!(F&&F[i]&&i!==s0&&i!==g0);
   return wayRay(x0,y0,x1,y1,ok)&&wayRay(x0+nx,y0+ny,x1+nx,y1+ny,ok)&&wayRay(x0-nx,y0-ny,x1-nx,y1-ny,ok)}
 // (the line's cost: px in each tile x its cost; WAYOFF: px of it off the roads and fords)
 let WAYOFF=0;
@@ -348,8 +375,10 @@ function wayStraight(r,o,goal){let p=r.path;if(p.ferry!=null||r.legs[r.li-1].k==
 // to straight. Straightened, a walker setting off for a tile more than 1.5 tiles off, or moved since its last step (pushed off
 // its way: a fight, a shove), with the line there not clear finds its way again from where it is, once (WAYRE: the walker doing so)
 let WAYRE=null;
+// (is o on its way to (x, y) by a route of the router's, not yet done: world.js heroWay keeps to it)
+function wayRouted(o,x,y){const r=ROUTES.get(o);return !!r&&!!r.legs&&!r.done&&r.goal===Math.floor(y/TILE)*MW+Math.floor(x/TILE)}
 function wayTravel(o,goal,step){holdShut();
-  const dd=Math.hypot(goal.x-o.x,goal.y-o.y),straight=()=>{walk(o,goal.x-o.x,goal.y-o.y,Math.min(dd,step));return true};if(dd<=1)return true;
+  const dd=Math.hypot(goal.x-o.x,goal.y-o.y),straight=()=>{const r=ROUTES.get(o);if(r)r.done=true;walk(o,goal.x-o.x,goal.y-o.y,Math.min(dd,step));return true};if(dd<=1)return true;
   if(goal.tw&&dd<TILE*1.6)return straight();
   const gt=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE),rm=wayKeep(goal);let r=ROUTES.get(o);
   if(!r||r.goal!==gt||r.rm!==rm||r.v!==WAYV){r=wayTrip(o,goal);r.goal=gt;r.rm=rm;r.v=WAYV;r.li=0;r.path=null;ROUTES.set(o,r)}

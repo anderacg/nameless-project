@@ -145,7 +145,7 @@ function worldGo(wx,wy){
 }
 // travel to a point, or meet what is there (Follow ends: world.js followStop)
 // (a new trip: by road, if that mode is on, asks again whether a road is near: world.js byRoadTo)
-function worldMove(wx,wy){followStop();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0;Provinces.warn(P.tx,P.ty)}wuiClick(wx,wy)}// (a deadly province ahead: its warning, world/provinces.js)// (the click's ripple: worldui.js)
+function worldMove(wx,wy){followStop();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){const s=Router.open(clamp(wx,8,MW*TILE-8),clamp(wy,8,MH*TILE-8),P);P.tx=s.x;P.ty=s.y;P.stuck=0;Provinces.warn(P.tx,P.ty)}wuiClick(wx,wy)}// (a deadly province ahead: its warning, world/provinces.js)// (the click's ripple: worldui.js)
 /* a click or a tap on another party (the owner, 2026-10-23: Follow "can be used when you click at the other unit in the world
    map"): its ring at it (ActionRing; supply.js partyRingItems: Approach, today's chase, Follow, Look), nothing done yet; Esc or a
    press elsewhere closes it (ring.js). A second press on it within PARTY_CLICK.dbl ms (a double click or tap) approaches it at
@@ -263,6 +263,7 @@ function keyOf(e){const c=e.code||'';
 window.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   const k=keyOf(e);
+  if(typeof Dice!=='undefined'&&Dice.key(k)){e.preventDefault();e.stopPropagation();return}// (the dice up (ui/dice.js): the key is theirs, till you close them)
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
   if(k==='tab'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!G.modal&&['world','scene','battle'].includes(G.mode)){e.preventDefault();if(!e.repeat)menuKey();return}// Tab: the Game Menu (hub.js; in a window, the menu too, Tab moves between its buttons)
   if(k==='escape'){e.preventDefault();if(window.battleArmyHud?.close()||window.mobileBattleHud?.close()||window.mobileWorldHud?.close()||ActionRing.close()||dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
@@ -374,7 +375,7 @@ class MobileWorldHud{
   }
   speed(){this.speedButton.querySelector('strong').textContent=G.speed+'× '+(this.choices.hidden?'▴':'▾');this.speedButton.setAttribute('aria-label','Travel speed '+G.speed+' times')}
   update(fitness,morale,stamina){
-    const text='Fit '+fitness+'% · Morale '+morale+'% · Stamina '+stamina+'%',label=this.partyButton.querySelector('span');if(label.textContent!==text){label.textContent=text;this.measure()}
+    const text='Fit '+fitness+'%, Morale '+morale+'%, Stamina '+stamina+'%',label=this.partyButton.querySelector('span');if(label.textContent!==text){label.textContent=text;this.measure()}
     this.partyButton.setAttribute('aria-label','Party status: fitness '+fitness+' percent, morale '+morale+' percent, stamina '+stamina+' percent');this.partyButton.classList.toggle('warn',fitness<50||morale<30||stamina<SUPPLY.tired);
   }
 }

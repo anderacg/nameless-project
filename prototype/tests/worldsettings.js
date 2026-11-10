@@ -42,7 +42,7 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
  // ---- the screen
  t.act('race','dwarf');t.act('begin','world:hedge');
  {const nb=[...document.querySelectorAll('#panel .nav [data-nav]')].map(b=>b.dataset.nav+':'+b.textContent);
-  ok(G.mode==='title'&&G.menu==='world'&&/New world/.test(txt())&&/Dwarf · Hedge mage/.test(txt())&&J(nb)===J(['back:Back','close:Forge the world'])&&q('.ws-cv')&&q('.ws-cv').width>2,'the New world screen: its header, the preview drawn, Back on the left and Forge the world on the right ('+nb.join(', ')+')')}
+  ok(G.mode==='title'&&G.menu==='world'&&/New world/.test(txt())&&/Dwarf, Hedge mage/.test(txt())&&J(nb)===J(['back:Back','close:Forge the world'])&&q('.ws-cv')&&q('.ws-cv').width>2,'the New world screen: its header, the preview drawn, Back on the left and Forge the world on the right ('+nb.join(', ')+')')}
  {const ps=[...document.querySelectorAll('#panel [data-act="ws-preset"]')];
   ok(ps[0]&&ps[0].dataset.arg==='classic'&&ps[0].classList.contains('on')&&S.s.preset==='classic','the classic world offered first, and the choice at first (WORLD_DESIGN.md wave 4): '+ps.map(b=>b.textContent+(b.classList.contains('on')?' (chosen)':'')).join(', '))}
  t.act('ws-preset','classic');
@@ -64,6 +64,7 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
   ok(!before&&S.pics[k1]&&S.last===S.pics[k1]&&S.s.seed,'Random: a new seed ('+S.s.seed+'), the preview redrawn '+S.wait+' ms after the change, the last picture shown meanwhile')}
  {const seen=new Set(),seeds=new Set();for(let i=0;i<12;i++){t.act('ws-surprise');seen.add(t.settingsKey({...S.s,seed:''}));seeds.add(S.s.seed)}
   const s=S.s;ok(seen.size>=6&&seeds.size===12&&J(t.normSettings(s))===J(s)&&s.w<=640&&s.holdings>=25&&s.holdings<=t.maxHoldings(s)&&/A world of chance/.test(S.note),'Surprise me: a world of chance, its size (Normal or Large), holdings and every land and danger setting rolled, a fresh seed each time ('+seen.size+' mixes in 12)');
+  {const L=Array.from({length:t.WS_FRESH},()=>t.freshSeed());ok(new Set(L).size===L.length&&L.every(v=>/^[a-z]+$/.test(v)),'a fresh seed never one of the last '+t.WS_FRESH+' given (two words of 32 each: a dozen rolls would meet one again one time in fifteen)')}
   t.act('ws-preset','normal')}
  t.act('ws-size','large');ok(S.s.w===640&&S.s.h===448&&S.s.holdings===40&&S.s.preset==='large','a Large size at the normal density is the Large preset (40 holdings)');
  t.act('ws-dens','more');ok(S.s.holdings===55&&S.s.preset==='custom'&&q('[data-act="ws-dens"][data-arg="more"]').classList.contains('on'),'More: 55 holdings; touching a setting makes it Custom');
@@ -97,6 +98,6 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
   const s=t.WM.settings,nb=[...document.querySelectorAll('#panel .nav [data-nav]')].map(b=>b.dataset.nav);
   ok(G.mode==='esc'&&/World code/.test(txt())&&txt().includes(t.worldCode(s))&&t.WS_SET.every(([,n])=>txt().includes(n))&&J(nb)===J(['back','close']),'the Esc menu\'s World page: the world code ('+t.worldCode(s)+'), every setting, Back and Resume');
   t.act('esc-back');ok(G.mode==='esc'&&/Paused/.test(txt()),'Back: the Esc menu');t.act('esc-resume')}
- ok(t.worldLine(N({preset:'large',seed:'redwater'}))==='Redwater · Large · seed redwater · '&&t.worldLine(t.classicSettings())==='Ashmark · Classic · '&&/^Mine · Custom 512 × 352 · seed mine · $/.test(t.worldLine(N({preset:'custom',seed:'mine',w:512,h:352}))),
+ ok(t.worldLine(N({preset:'large',seed:'redwater'}))==='Redwater, Large, seed redwater, '&&t.worldLine(t.classicSettings())==='Ashmark, Classic, '&&/^Mine, Custom 512 × 352, seed mine, $/.test(t.worldLine(N({preset:'custom',seed:'mine',w:512,h:352}))),
   'the save list\'s line: '+t.worldLine(N({preset:'large',seed:'redwater'}))+'| '+t.worldLine(t.classicSettings())+'| '+t.worldLine(N({preset:'custom',seed:'mine',w:512,h:352})));
 }catch(e){r.exc(e)}r.out()};

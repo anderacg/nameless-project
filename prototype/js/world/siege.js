@@ -57,13 +57,13 @@ function showRaid(t){
     '<div class="btns"><button class="btn primary" type="button" data-act="sg-wait">Keep raiding</button><button class="btn" type="button" data-act="sg-stopraid">Stop and leave with what you have</button></div>');
 }
 // arriving at a holding: its gates, a siege or a blockade
-function approachHolding(t){if(foeAt(t))openSiege(t);else if(closedNow(t))showBlockade(t);else{const g=Gates.admits(t);if(!g.ok)return Gates.showGate(t,g);G.lastTown=t;enterTown(t)}}// (a gate that will not have you yet: world/gates.js)
+function approachHolding(t){Discovery.meet(t);if(foeAt(t))openSiege(t);else if(closedNow(t))showBlockade(t);else{const g=Gates.admits(t);if(!g.ok)return Gates.showGate(t,g);G.lastTown=t;enterTown(t)}}// (a gate that will not have you yet: world/gates.js)
 function showSiege(msg){
   const t=G.bes;if(myRaid(t))return showRaid(t);const f=FACS[t.owner],s=mySiege(t),village=!walled(t),def=siegeDefenders(t),lv=siegeLv(t),ep=rating(def.list,lv),pp=partyPower(),r=ep/Math.max(1,pp);
   const threat=r<.6?'<span class="good">Easy</span>':r<1?'<span class="gold">Even</span>':r<1.5?'<span class="bad">Risky</span>':'<span class="bad">Deadly</span>';
-  const btn=(act,label,why,primary)=>'<button class="btn'+(primary?' primary':'')+'" type="button" data-act="'+act+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+(why?' · '+why:'')+'</button>';
+  const btn=(act,label,why,primary)=>'<button class="btn'+(primary?' primary':'')+'" type="button" data-act="'+act+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+(why?', '+why:'')+'</button>';
   let body='<p class="muted">'+(f?'Held by the <span style="color:'+f.col+'">'+f.n+'</span>':'Held by no realm: its free folk')+'. '+(f?'Garrison ':'Militia ')+t.gar+(def.lords.length?', and '+def.lords.map(l=>lordName(l)).join(' and ')+' with '+def.lords.reduce((a,l)=>a+l.troops.length,0)+' soldiers':'')+'.'+
-    (wallOf(t)?' '+WALL_N[wallOf(t)]+' make every defender as strong as level '+lv+'.':' It has no walls.')+'</p><p>Defenders\' power <strong>'+ep+'</strong> vs yours <strong>'+pp+'</strong> · threat <strong>'+threat+'</strong></p>',btns='';
+    (wallOf(t)?' '+WALL_N[wallOf(t)]+' make every defender as strong as level '+lv+'.':' It has no walls.')+'</p><p>Defenders\' power <strong>'+ep+'</strong> vs yours <strong>'+pp+'</strong>, threat <strong>'+threat+'</strong></p>',btns='';
   if(!t.owner&&!foeAt(t)){
     body+='<p>The free folk of '+t.name+' are no one’s subjects. Attacking them costs '+FREE_FOE.honor+' honor with every realm, and they will not forget it.</p>';
     btns=btn('sg-declare','Attack '+t.name,'');
@@ -86,7 +86,7 @@ function showSiege(msg){
   }
   // (its prison, from outside the walls: world/prisons.js)
   if(t.owner&&hostileTo(t.owner)){const n=Prisons.of(t.name).length+Prisons.quests(t).length;btns+=btn('sg-prison','The prison'+(n?' ('+n+' held)':''))}
-  showPanel('<div class="top"><h2>'+(s?'Siege of ':'')+t.name+'</h2><span class="muted">'+cap1(t.label)+' · '+P.gold+' gold</span></div>'+body+(msg?'<p class="gold">'+msg+'</p>':'')+
+  showPanel('<div class="top"><h2>'+(s?'Siege of ':'')+t.name+'</h2><span class="muted">'+cap1(t.label)+', '+P.gold+' gold</span></div>'+body+(msg?'<p class="gold">'+msg+'</p>':'')+
     '<div class="btns">'+btns+'</div>'+(s?'':nav(null,['sg-leave',null,'Leave'])));
 }
 // with: the realm whose siege you join (its besiegers fight beside you; it may have the holding)
@@ -206,7 +206,7 @@ function fiefDay(){
 function fiefBody(t){
   const cap=fiefCap(t),row=(title,sub,acts)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div><div class="acts">'+acts+'</div></div>';
   const b=(act,arg,label,dis)=>'<button class="btn sm" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(dis?' disabled':'')+'>'+label+'</button>';
-  return fiefEconBody(t)+'<p class="muted" style="font-size:13px">'+t.name+' rules '+landOf(t)+' tiles of land, reaching '+landReach(t)+' (grows to '+(t.T.reach+growCap(t))+' in peace; clear camps nearby to push further).</p><div class="lab">Your fief · '+fiefIncome(t)+' gold a day'+(Timed.of(t).has('turmoil')?' (halved while in turmoil)':'')+(ruined(t)?' (nothing while it lies ruined)':'')+'</div>'+
+  return fiefEconBody(t)+'<p class="muted" style="font-size:13px">'+t.name+' rules '+landOf(t)+' tiles of land, reaching '+landReach(t)+' (grows to '+(t.T.reach+growCap(t))+' in peace; clear camps nearby to push further).</p><div class="lab">Your fief, '+fiefIncome(t)+' gold a day'+(Timed.of(t).has('turmoil')?' (halved while in turmoil)':'')+(ruined(t)?' (nothing while it lies ruined)':'')+'</div>'+
     '<p class="muted" style="font-size:13px">Garrison '+t.gar+' / '+cap+': hire, station and call up soldiers in the Garrison tab of the town.</p>'+estatesBody(t);
 }
 /* the Garrison tab: everyone who would defend a holding, how well, and for how long; in your own fief, its soldiers */
@@ -227,12 +227,12 @@ function garrisonBody(t){
     !mine&&crimeAt(t)&&'<span class="bad">The guards want you for a crime here: '+crimeAt(t).fine+' gold, until day '+crimeAt(t).until+'.</span>'].filter(Boolean);
   if(notes.length)html+='<p style="font-size:14px">'+notes.join(' ')+'</p>';
   // the soldiers on the walls
-  html+=lab('On the walls · '+t.gar+' '+t.races.map(r=>RACES[r].n).join(' and ')+' soldiers'+(mine?'':' ('+(t.gar<cap?'refilling to '+cap:'full')+')'))+
-    (gl.length?groups(gl).map(([k,n])=>{const s=ST[k];return row(s.n,'Tier '+s.tier+' · '+s.hp+' hp · '+s.dmg+' damage'+(s.range?' · ranged':'')+'<br><span class="vs">'+vsLine(s)+'</span>',null,'×'+n)}).join(''):'<p class="muted">No one holds the walls.</p>');
+  html+=lab('On the walls, '+t.gar+' '+t.races.map(r=>RACES[r].n).join(' and ')+' soldiers'+(mine?'':' ('+(t.gar<cap?'refilling to '+cap:'full')+')'))+
+    (gl.length?groups(gl).map(([k,n])=>{const s=ST[k];return row(s.n,'Tier '+s.tier+', '+s.hp+' hp, '+s.dmg+' damage'+(s.range?', ranged':'')+'<br><span class="vs">'+vsLine(s)+'</span>',null,'×'+n)}).join(''):'<p class="muted">No one holds the walls.</p>');
   // lords staying, and the patrol out on the land
-  html+=lab('Lords inside')+(def.lords.length?def.lords.map(l=>{const tr=groups(l.troops);return row(lordName(l)+' · <span style="color:'+FACS[l.fac].col+'">'+FACS[l.fac].n+'</span>',
-      l.troops.length+' soldiers: '+tr.slice(0,4).map(([k,n])=>n+' '+ST[k].n.toLowerCase()).join(', ')+(tr.length>4?'…':'')+' · toward you '+relTag(relWith(l)),null,'power '+l.power())}).join(''):'<p class="muted">'+(mine?'None: your fief is held by its garrison alone.':'None. A lord of the '+(FACS[t.owner]||{n:'realm'}).n+' resting here would go inside and defend it.')+'</p>');
-  html+=lab('Patrol')+(pt?row(pt.troops.length+' guards out on the land','Back by day '+pt.back+(pt.fight?' · <span class="bad">fighting now</span>':'')+' · '+(d=>d<1?'by the gate':d+(d===1?' tile ':' tiles ')+compass(pt.x-t.x,pt.y-t.y))(Math.round(Math.hypot(pt.x-t.x,pt.y-t.y)/TILE))+'. They rejoin the garrison when they return.',null,'power '+pt.power()):
+  html+=lab('Lords inside')+(def.lords.length?def.lords.map(l=>{const tr=groups(l.troops);return row(lordName(l)+', <span style="color:'+FACS[l.fac].col+'">'+FACS[l.fac].n+'</span>',
+      l.troops.length+' soldiers: '+tr.slice(0,4).map(([k,n])=>n+' '+ST[k].n.toLowerCase()).join(', ')+(tr.length>4?'…':'')+', toward you '+relTag(relWith(l)),null,'power '+l.power())}).join(''):'<p class="muted">'+(mine?'None: your fief is held by its garrison alone.':'None. A lord of the '+(FACS[t.owner]||{n:'realm'}).n+' resting here would go inside and defend it.')+'</p>');
+  html+=lab('Patrol')+(pt?row(pt.troops.length+' guards out on the land','Back by day '+pt.back+(pt.fight?', <span class="bad">fighting now</span>':'')+', '+(d=>d<1?'by the gate':d+(d===1?' tile ':' tiles ')+compass(pt.x-t.x,pt.y-t.y))(Math.round(Math.hypot(pt.x-t.x,pt.y-t.y)/TILE))+'. They rejoin the garrison when they return.',null,'power '+pt.power()):
     '<p class="muted">None out'+(t.gar<t.T.patrol.keep+t.T.patrol.size?': the garrison needs '+(t.T.patrol.keep+t.T.patrol.size)+' before it can spare '+t.T.patrol.size+' to ride the land.':'; one rides out each day it can spare the soldiers.')+'</p>');
   // in your fief: hire, station and call up
   if(mine){const cu=ST[RACES[t.races[0]].melee].n.toLowerCase();

@@ -5,17 +5,17 @@
    line and its one way out. Each kind a row of UNDERWAY: on() its state (falsy: not shown), its icon (cls: uw-live, a pulse while it runs), line and
    button (off: why it cannot be pressed now, shown in its tooltip). ---------- */
 const UNDERWAY=[
-  {k:'stay',on:()=>stayTown(),ico:'house',line:t=>'<b>'+t.name+'</b> · '+(stayFree(t)?'free':stayCost()+'g/day')+(siegeLordsAt(t).length?' · <span class="bad">besieged</span>':''),
+  {k:'stay',on:()=>stayTown(),ico:'house',line:t=>'<b>'+t.name+'</b>, '+(stayFree(t)?'free':stayCost()+'g/day')+(siegeLordsAt(t).length?', <span class="bad">besieged</span>':''),
    title:t=>'Staying in '+t.name+(stayFree(t)?': free, as long as you like':': '+stayCost()+'g a day; your gold lasts until Day '+stayUntil()),btn:['sy-leave','Leave']},
-  {k:'recruit',on:()=>P.recruit&&townBy(P.recruit.town),ico:'recruit',cls:'uw-live',line:t=>'<b>Recruiting</b> · '+t.name+' · +'+P.recruit.n,title:t=>P.recruit.n+' joined so far. Volunteers from '+t.name+' join your groups for free, about '+volunteerRate(t).toFixed(1)+' an hour, while you stay or camp on its lands',btn:['uw-vstop','Stop']},
-  {k:'volunteers',on:()=>!P.recruit&&(P.camp||P.stay)&&volunteerTown(),ico:'recruit',line:t=>'<b>Volunteers</b> · '+t.name,title:t=>volunteerWhy(t)||'Its people would join you for free to refill your groups: about '+volunteerRate(t).toFixed(1)+' an hour',btn:['uw-vgo','Recruit'],off:t=>volunteerWhy(t)},
+  {k:'recruit',on:()=>P.recruit&&townBy(P.recruit.town),ico:'recruit',cls:'uw-live',line:t=>'<b>Recruiting</b>, '+t.name+', +'+P.recruit.n,title:t=>P.recruit.n+' joined so far. Volunteers from '+t.name+' join your groups for free, about '+volunteerRate(t).toFixed(1)+' an hour, while you stay or camp on its lands',btn:['uw-vstop','Stop']},
+  {k:'volunteers',on:()=>!P.recruit&&(P.camp||P.stay)&&volunteerTown(),ico:'recruit',line:t=>'<b>Volunteers</b>, '+t.name,title:t=>volunteerWhy(t)||'Its people would join you for free to refill your groups: about '+volunteerRate(t).toFixed(1)+' an hour',btn:['uw-vgo','Recruit'],off:t=>volunteerWhy(t)},
   {k:'camp',on:()=>P.camp,ico:'fire',line:()=>'<b>In camp</b>'+(P.recruit?' '+icon('recruit',12,'gico uw-live')+' <small>recruiting</small>':''),title:()=>'Your band rests: stamina comes back faster and the wounded mend (Z)',btn:['uw-camp','Break']},
   {k:'pitch',on:()=>!P.camp&&G.pitch,ico:'fire',line:()=>'<b>Making camp</b>',title:()=>'Your band makes for clear ground to camp',btn:['uw-pitch','Stop']},
   {k:'follow',on:()=>G.follow,ico:'shoe',line:f=>'<b>'+followName(f.o,true)+'</b>',title:f=>'Following '+followName(f.o)+': your band keeps after it at a distance (any other order ends it)',btn:['uw-follow','Stop']},
   // (in column: your army marching in one now, marchstyles.js TravelStyle)
-  {k:'road',on:()=>P.byRoad,ico:'map',line:()=>'<b>By road</b>'+(TravelStyle.column(P)?' · in column':''),title:()=>'Every way you go keeps to the roads and tracks when one is within '+ROAD_GO.near+' tiles, your band in a column on them, two abreast (B)',btn:['uw-road','Off']},
-  {k:'siege',on:()=>P.siege&&townBy(P.siege.town),ico:'ladder',line:t=>'<b>'+t.name+'</b> · siege, day '+P.siege.days,title:t=>'Your band besieges '+t.name,btn:['uw-siege','Open']},
-  {k:'raid',on:()=>P.raid&&townBy(P.raid.town),ico:'axe',line:t=>'<b>'+t.name+'</b> · raid '+Math.min(100,Math.round(P.raid.t/RAID_TIME*100))+'%',title:t=>'Your band plunders '+t.name,btn:['uw-siege','Open']},
+  {k:'road',on:()=>P.byRoad,ico:'map',line:()=>'<b>By road</b>'+(TravelStyle.column(P)?', in column':''),title:()=>'Every way you go keeps to the roads and tracks when one is within '+ROAD_GO.near+' tiles, your band in a column on them, two abreast (B)',btn:['uw-road','Off']},
+  {k:'siege',on:()=>P.siege&&townBy(P.siege.town),ico:'ladder',line:t=>'<b>'+t.name+'</b>, siege, day '+P.siege.days,title:t=>'Your band besieges '+t.name,btn:['uw-siege','Open']},
+  {k:'raid',on:()=>P.raid&&townBy(P.raid.town),ico:'axe',line:t=>'<b>'+t.name+'</b>, raid '+Math.min(100,Math.round(P.raid.t/RAID_TIME*100))+'%',title:t=>'Your band plunders '+t.name,btn:['uw-siege','Open']},
 ];
 const UW={el:null};
 // (where it stands: just under the minimap's frame (render.js drawMapFrame, UW_FRAME game px round its map), as wide as it, its

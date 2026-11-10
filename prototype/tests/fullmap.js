@@ -27,8 +27,8 @@ Kit.suite(({ok,info})=>{
   const mute0=t.prefGet('mute');press();
   ok(G.mode==='fullmap'&&!q('#ov').hidden&&q('#panel.fmap')&&t.prefGet('mute')===mute0,'M opens the full map (mode '+G.mode+'), and the sound stays as it was');
   const nav=q('#panel > .nav'),close=nav&&nav.querySelector('[data-nav="close"]');
-  ok(q('#panel > .top h2')&&/^Map of /.test(q('#panel h2').textContent)&&/tiles · [\d.]+% explored/.test(q('#panel .fm-head .muted').textContent)&&close&&close.textContent==='Close'&&(nav.querySelector('[data-nav="back"]')||{}).dataset.act==='fb-menu',
-    'the frame rule: its header ('+q('#panel h2').textContent+' · '+q('#panel .fm-head .muted').textContent+'), the map and legend, a bottom bar with Close on the right');
+  ok(q('#panel > .top h2')&&/^Map of /.test(q('#panel h2').textContent)&&/tiles, [\d.]+% explored/.test(q('#panel .fm-head .muted').textContent)&&close&&close.textContent==='Close'&&(nav.querySelector('[data-nav="back"]')||{}).dataset.act==='fb-menu',
+    'the frame rule: its header ('+q('#panel h2').textContent+', '+q('#panel .fm-head .muted').textContent+'), the map and legend, a bottom bar with Close on the right');
   ok(q('.fm-view .fm-cv')&&q('.fm-leg'),'the map and its legend side by side');
   press();ok(G.mode==='world'&&q('#ov').hidden&&!G.modal,'M again closes it');
   press({shiftKey:true,key:'M'});const m1=t.prefGet('mute');press({shiftKey:true,key:'M'});
@@ -147,8 +147,8 @@ Kit.suite(({ok,info})=>{
       const sv={v:t.SAVE_V,at:1,day:3,P:{race:'human',bg:'soldier',level:1,gold:5,army:{}},world:{v:t.SAVE_V,map:{gen:'ashmark-1',settings:t.normSettings({preset:'normal',seed:'fmone'}),sum:1}}};
       localStorage.setItem(t.slotKey('5'),JSON.stringify(sv));t.loadGame('5');localStorage.removeItem(t.slotKey('5'));
     }finally{window.runSteps=run0}
-    const [a,b,c]=seen,eq=(x,y)=>x&&x.join(' · ')===y.join(' · ');
-    ok(a&&a[0]==='Forging the world…'&&eq(a[1],[...stages,'Drawing borders','Peopling the land','Painting the first lands','Raising the walls']),'a new world: "'+(a&&a[0])+'" '+(a&&a[1].join(' · ')));
-    ok(b&&b[0]==='Forging the world…'&&eq(b[1],['Peopling the land','Painting the first lands','Raising the walls']),'the world in, again: '+(b&&b[1].join(' · ')));
-    ok(c&&c[0]==='Returning to Fmone…'&&eq(c[1],['Reading the save',...stages,'Restoring holdings and parties','Painting the land','Raising the walls'])/* (the walls' step since the holdings' walls went solid: loading.js holdShutWarm) */,'a save from another world: "'+(c&&c[0])+'" '+(c&&c[1].join(' · ')))}
+    const [a,b,c]=seen,eq=(x,y)=>x&&x.join(', ')===y.join(', ');
+    ok(a&&a[0]==='Forging the world…'&&eq(a[1],[...stages,'Drawing borders','Peopling the land','Painting the first lands','Raising the walls']),'a new world: "'+(a&&a[0])+'" '+(a&&a[1].join(', ')));
+    ok(b&&b[0]==='Forging the world…'&&eq(b[1],['Peopling the land','Painting the first lands','Raising the walls']),'the world in, again: '+(b&&b[1].join(', ')));
+    ok(c&&c[0]==='Returning to Fmone…'&&eq(c[1],['Reading the save',...stages,'Restoring holdings and parties','Painting the land','Raising the walls'])/* (the walls' step since the holdings' walls went solid: loading.js holdShutWarm) */,'a save from another world: "'+(c&&c[0])+'" '+(c&&c[1].join(', ')))}
 });

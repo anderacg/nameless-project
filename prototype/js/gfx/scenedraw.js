@@ -96,6 +96,6 @@ function drawScene(){
   for(const o of S.npcs)if((o.role||o.lord)&&Math.hypot(o.x-p.x,o.y-p.y)<70)txt(nameOf(o),Math.round((o.x-cam.x)*Z),Math.round((o.y-cam.y)*Z)-58,o===n?'#ffe08a':'#e4e0cf','center');
   txt(S.ref,6,14,'#e8b94a');
   if(n){const lab=n.folk?'Talk':n.guard?'Talk to the guard':n.lord?'Talk to '+nameOf(n):'Talk to the '+SCENE_ROLES[n.role].n.toLowerCase()+(SCENE_ROLES[n.role].tab?' ('+(townTabs(townBy(S.ref)).find(x=>x[0]===SCENE_ROLES[n.role].tab)||['',''])[1]+')':'');
-    ctx.fillStyle='rgba(11,13,20,.8)';ctx.fillRect(VW/2-130,VH-26,260,18);txt('E · '+lab,VW/2,VH-13,'#ffe08a','center')}
+    ctx.fillStyle='rgba(11,13,20,.8)';ctx.fillRect(VW/2-130,VH-26,260,18);txt('E, '+lab,VW/2,VH-13,'#ffe08a','center')}
   else if(GUIDE.on&&p.y>(S.H-4)*TILE)txt('Walk out of the gate to leave',VW/2,VH-13,'#c8c2ae','center');
 }

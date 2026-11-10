@@ -57,7 +57,7 @@ const RAIL_ACT_KEYS='qwer';
 function railKeyActions(as,note,keys=RAIL_ACT_KEYS){as=as.filter(Boolean);if(!as.length)return '';
   return '<div class="rkacts">'+as.map((a,i)=>{const k=keys[i],fs=(a.facts||[]).filter(Boolean);
     return '<button class="rkact" type="button" data-act="'+a.act+'"'+(a.arg!=null?' data-arg="'+a.arg+'"':'')+(k?' data-rk="'+k+'"':'')+(a.why?' disabled':'')+' title="'+htmlText((a.tip||a.label)+(a.why?' ('+a.why+')':''))+'">'+
-      '<span class="rka-ico">'+icon(a.icon,22)+'</span><span class="rka-t"><b>'+a.label+'</b>'+(fs.length?'<small>'+fs.join(' · ')+'</small>':'')+(a.why?'<small class="rka-why">'+a.why+'</small>':'')+'</span>'+(k?'<kbd>'+k.toUpperCase()+'</kbd>':'')+'</button>'}).join('')+'</div>'+
+      '<span class="rka-ico">'+icon(a.icon,22)+'</span><span class="rka-t"><b>'+a.label+'</b>'+(fs.length?'<small>'+fs.join(', ')+'</small>':'')+(a.why?'<small class="rka-why">'+a.why+'</small>':'')+'</span>'+(k?'<kbd>'+k.toUpperCase()+'</kbd>':'')+'</button>'}).join('')+'</div>'+
     (note?'<p class="rka-note">'+note+'</p>':'')}
 /* a picker: an action that needs a choice opens a window of its own (the frame rule: its header, the list to choose from, Back
    on the left and Confirm on the right), the same in every screen. railPicker(o): title, sub, items [{id, name, sub, pic, max
@@ -74,7 +74,7 @@ function pickShow(focus){
     (x.max===1?'<button class="btn sm pk-tick'+(v?' on':'')+'" type="button" data-act="pk-set" data-arg="'+x.id+':'+(v?0:1)+'" aria-pressed="'+!!v+'">'+(v?'✓ Chosen':'Choose')+'</button>':
       railBtn('pk-set',x.id+':'+(v-1),'−',v?'':'None chosen')+'<span class="pk-n" aria-live="polite">'+v+' / '+x.max+'</span>'+railBtn('pk-set',x.id+':'+(v+1),'+',v<x.max?'':'No more')+railBtn('pk-set',x.id+':'+(v<x.max?x.max:0),v<x.max?'All':'None'))+'</div></div>'};
   showPanel('<div class="top"><h2>'+o.title+'</h2>'+(o.sub?'<span class="muted">'+o.sub+'</span>':'')+'</div><div class="pk-list">'+o.items.map(row).join('')+'</div>'+
-    (o.total?'<p class="pk-total">'+o.total+' <b>'+tot+(o.unit||'')+'</b> · '+cnt+' chosen</p>':'')+(o.note?'<p class="muted pk-note">'+o.note+'</p>':'')+
+    (o.total?'<p class="pk-total">'+o.total+' <b>'+tot+(o.unit||'')+'</b>, '+cnt+' chosen</p>':'')+(o.note?'<p class="muted pk-note">'+o.note+'</p>':'')+
     nav(o.back,[o.confirm[0],arg,o.confirm[1],cnt?'':'Choose something first']));panel.classList.add('picker');
   if(focus){const b=panel.querySelector('[data-act="pk-set"][data-arg^="'+focus+':"]:not([disabled])');if(b)b.focus({preventScroll:true})}
 }
@@ -107,7 +107,7 @@ class PageScreen extends RailScreen{
 }
 const PAGE_SCREEN=new PageScreen();
 // a page's line of what you know at a glance: its parts (words, or markup) side by side
-const pageFacts=ps=>'<p class="pg-facts">'+ps.filter(Boolean).join(' · ')+'</p>';
+const pageFacts=ps=>'<p class="pg-facts">'+ps.filter(Boolean).join(', ')+'</p>';
 /* Insight (doc/CONDUCT_RUINS_DESIGN.md §1): how much you can tell before you act, by Scouting, the same everywhere (robbing
    villagers, a camp's or a cave's page before your scouts look, a parley's odds, the ruins' checks). INSIGHT: the levels of a
    rough read and of the full picture. It decides only what is shown: the rolls are made as ever. insight(reads, more): reads

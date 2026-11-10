@@ -158,7 +158,7 @@ function campEmpty(c){if(!c.bands||!c.bands.length)return;for(const b of c.bands
 // attacking a camp: its own bandits and chieftain (own: as your scouts saw them; else rolled now: sites.js BanditCamp foes), and
 // any bands sheltering there tonight
 function campFight(c,own){own=own||c.foes();const bands=c.bands||[];
-  startEncounter({kind:'camp',ref:c,list:own.concat(...bands.map(b=>b.troops)),title:(c.name||'Bandit camp')+(bands.length?' · '+bands.length+' band'+(bands.length>1?'s':'')+' sheltering inside':'')})}
+  startEncounter({kind:'camp',ref:c,list:own.concat(...bands.map(b=>b.troops)),title:(c.name||'Bandit camp')+(bands.length?', '+bands.length+' band'+(bands.length>1?'s':'')+' sheltering inside':'')})}
 // the hero's speed multiplier where they stand: ground, race, mount, Pathfinder and gear
 /* how fast a party moves on the map: what it is made of. Each member's pace is its battle speed (a foot soldier 38, a rider 62
    to 80); a party moves near its slowest (3/4 the slowest, 1/4 the average), compressed so riders are about 1.5x foot. Big
@@ -318,9 +318,13 @@ const HERO_WAY={x:NaN,y:NaN,d:Infinity};
 // (a step of walker o toward (tx, ty) by that rule: 1 moved straight, 2 moved by the router, 0 not moved, -1 the router knows no
 // way. Your hero's own (heroStep), and the ghost the drawn way follows ahead of you: gfx/worldui.js wuiWay. By road (byRoadTo,
 // below): never straight, the router's way keeping to the roads)
-function heroWay(o,tx,ty,step){const rd=byRoadTo(tx,ty);
-  if(!rd&&passable(terrAt(o.x,o.y))&&clearLine(o.x,o.y,tx,ty))return walk(o,tx-o.x,ty-o.y,step)?1:0;// (not while on a ferry's water: its leg goes on by the router)
-  const x0=o.x,y0=o.y;if(!Router.travel(o,rd?{x:tx,y:ty,road:ROAD_GO.keep}:{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}
+// (once the router has the way to a goal it keeps it till that trip is done (wayRouted): a step that found the line clear went
+// straight, the next, a hair off it, went back by the router, and the walk swayed on the spot for ever (the owner, 2026-11-10:
+// "sometime stuck"); the router straightens its own way where the land is open)
+// (on foot round the buildings: WAY_FOOT, router.js)
+function heroWay(o,tx,ty,step){const f0=WAY_FOOT;WAY_FOOT=true;try{const rd=byRoadTo(tx,ty);
+  if(!rd&&!wayRouted(o,tx,ty)&&passable(terrAt(o.x,o.y))&&clearLine(o.x,o.y,tx,ty))return walk(o,tx-o.x,ty-o.y,step)?1:0;// (not while on a ferry's water: its leg goes on by the router)
+  const x0=o.x,y0=o.y;if(!Router.travel(o,rd?{x:tx,y:ty,road:ROAD_GO.keep}:{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}finally{WAY_FOOT=f0}}
 // (toward dx, dy from you: your goal, or short of it so your army's head stands on it: march.js marchAim)
 function heroStep(dx,dy,dist,step){
   const x0=P.x,gx=P.x+dx,gy=P.y+dy,r=heroWay(P,gx,gy,step);if(r===2&&P.x!==x0)P.dir=P.x>x0?1:-1;if(r>=0)return r>0;

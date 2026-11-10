@@ -358,7 +358,7 @@ try{
   u.sta=F.tired-1;const T1=t.tiredMul(u);u.sta=F.spent-1;const T2=t.tiredMul(u);u.sta=F.max;const T0=t.tiredMul(u);
   ok(T0.spd===1&&T1.spd<1&&T2.spd<T1.spd&&T1.dmg<1&&T2.dmg<T1.dmg&&T1.run<1&&T2.run===0,'tired: slower and weaker, a charge builds half as fast; spent: no charge at all');
   inf.forEach(x=>x.sta=F.tired-5);ok(t.grpMorale(inf).weak.includes('tired'),'a tired unit\u2019s banner says so');
-  t.selectGroup(testGroup('inf'));t.setOrderUI();ok(document.querySelector('[data-grp="'+testGroup('inf')+'"] .cst.low'),'its card shows its stamina, low');ok(/Stamina \d+ · tired/.test(document.getElementById('bInfo').textContent),'and its details');
+  t.selectGroup(testGroup('inf'));t.setOrderUI();ok(document.querySelector('[data-grp="'+testGroup('inf')+'"] .cst.low'),'its card shows its stamina, low');ok(/Stamina \d+, tired/.test(document.getElementById('bInfo').textContent),'and its details');
   B.over=true;B.endT=0;t.B=null}
  // in the fight: a rider who charges is winded, a spent one is slow
  {const B=fight(['militia']),e=B.units.find(u=>u.team===1),F=t.FATIGUE;

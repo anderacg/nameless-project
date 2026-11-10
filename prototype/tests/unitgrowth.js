@@ -18,7 +18,7 @@ Kit.suite(({ok})=>{
   {gs.rank=5;gs.mxp=300;gs.picks=['longReach'];const g=t.statGrowth(gs),R=g.stats.reach,A=g.stats.atk;
    ok(R&&R.now>R.base&&R.parts.some(([l])=>l==='Long reach')&&A.now>A.base&&A.parts.some(([l])=>/^Rank 5/.test(l)),'rank 5 spearmen, Adept: reach '+R.base+' → '+Math.round(R.now)+' (Long reach), attack up by Rank 5 ('+A.parts.map(p=>p[0]).join(', ')+')');
    const c=open(gs.id),s=stat(c,'reach');
-   ok(s&&s.querySelector('.uc-bar i.gr')&&s.querySelector('.uc-v .gr')&&/original \d+: .*Long reach \+/.test(s.title),'its card: the reach bar\'s gain in the grown colour, its value too, the tip naming its source ('+(s&&s.title.split(' · ').slice(1).join(' · '))+')');
+   ok(s&&s.querySelector('.uc-bar i.gr')&&s.querySelector('.uc-v .gr')&&/original \d+: .*Long reach \+/.test(s.title),'its card: the reach bar\'s gain in the grown colour, its value too, the tip naming its source ('+(s&&s.title.split(', ').slice(1).join(', '))+')');
    ok(/Rank 5/.test(stat(c,'atk').title)&&/Grown by .*Rank 5.*Long reach|Grown by .*Long reach.*Rank 5/.test(c.querySelector('.uc-grow')?.textContent||''),'the attack\'s tip names Rank 5; the line under the bars names every source (a phone has no tooltips)')}
   // ======== an upgrade (world/buffs.js): its own part, by its name
   {t.BUFFS.ugDrill={n:'Drill upgrade',d:'',mods:{hpPct:.2}};try{gs.buffs=[{id:'ugDrill',from:'Ashford'}];const g=t.statGrowth(gs),H=g.stats.hp;

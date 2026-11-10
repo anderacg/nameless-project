@@ -773,7 +773,7 @@ class BattleTerrain{
     // (World Phase 2b: crop rows, a fence; a mixed field's other ground under most of them (CLIM_GROUND's words))
     if(T.built)for(const K of [2,3])if(half(u=>T.built[tIx(T,u.x,u.y)]===K))out.push(TBUILT[K].n+' (slowed)');
     if(T.clim){const k=CLIMS.indexOf(T.mix.c);if(half(u=>T.clim[tIx(T,u.x,u.y)]===k)&&CLIM_GROUND[T.mix.c])out.push(CLIM_GROUND[T.mix.c].n)}
-    return out.join(' · ')}
+    return out.join(', ')}
 
   /* -- rivers: where the water is (the AI's helpers: the contract at the top; the soldiers' crossWay: TerrainRoutes) -- */
   // the water of river i (0: the first) at height y: [x0, x1] in px, or null

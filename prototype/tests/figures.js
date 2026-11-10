@@ -52,7 +52,7 @@ Kit.suite(({ok})=>{
   for(let i=0;i<30;i++)t.updateBattle(.03);t.drawBattle();const g=B.units.find(u=>u.team===1).grp;for(const u of B.units)if(u.grp===g)u.hp=Math.max(1,u.hp*.5);
   const bars=[];try{c.fillRect=function(x,y,w,h){if(c.fillStyle===t.GROUP_HP.col&&w===t.GROUP_HP.w-2)bars.push(h);return f0.apply(this,arguments)};t.drawBattle()}finally{c.fillRect=f0}
   const icons=t.B.icons.length,foe=t.B.icons.findIndex(r=>r.g===g);ok(icons>=2&&bars.length===icons,'every group, yours and theirs, has its health bar by its icon ('+bars.length+' of '+icons+')');
-  ok(foe>=0&&Math.abs(bars[foe]/(t.UICON.s-2)-.5)<.15,'its height its health now over what it began with (a group at half health: '+(bars[foe]/(t.UICON.s-2)).toFixed(2)+')');
+  ok(foe>=0&&Math.abs(bars[foe]/(t.FLAG.ch-2)-.5)<.15,'its height its health now over what it began with (a group at half health: '+(bars[foe]/(t.FLAG.ch-2)).toFixed(2)+')');
   B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);t.B=null;G.mode='world'}
  // ---- the army's tag (its label, the eye, your badges: the banner over it is gone, 2026-11-01) on its army's ring
  {const wb=t.WORLD_BATTLE.on;t.WORLD_BATTLE.on=true;try{Kit.world();t.frame();const a=t.MarchArmy.of(P),r=t.marchOuter(P);a.mid={x:P.x+r*.5,y:P.y+3};

@@ -54,7 +54,7 @@ try{
  Xs.mp=t.maxMP();Xs.sp=5;Xs.cds.whirl=0;t.castSkill('whirl');ok(Xs.cds.whirl===0&&Xs.mp===t.maxMP(),'Whirlwind needs stamina as well as mana');
  Xs.sp=t.maxSP();t.castSkill('whirl');ok(Xs.mp===t.maxMP()-15&&Xs.sp===t.maxSP()-20,'Whirlwind costs 15 mana and 20 stamina');
  Xs.mp=0;tick(B,2);ok(Xs.mp===0||t.tm('mpRegen')>0,'no mana comes back in battle without a talent for it ('+Xs.mp.toFixed(1)+')');
- t.buildSlotBar();t.updateSkillBar();ok(/15 MP · 20 SP/.test(document.querySelector('#slotbar [data-slot="0"]').title),'skill slot buttons list their costs (the hero’s bar: a unit’s skill buttons have data-slot too)');
+ t.buildSlotBar();t.updateSkillBar();ok(/15 MP, 20 SP/.test(document.querySelector('#slotbar [data-slot="0"]').title),'skill slot buttons list their costs (the hero’s bar: a unit’s skill buttons have data-slot too)');
  end();
  // level locks and UI
  const tr=P.tree;P.tree=['start','oneh_whirl'];B=fresh(['militia']);t.castSkill('leap');ok(B.hx.cds.leap===0&&B.floats.some(f=>/Learn Leap Slam/.test(f.t)),'Leap Slam is locked until learned on the tree');

@@ -24,15 +24,15 @@ Kit.suite(({ok})=>{
   ok(qa('[data-act="char-tab"]').map(b=>b.textContent).join('|')==='Roster|March formation|Army skills|Condition|Passengers'&&G.char==='roster','its tabs: Roster (first), March formation (its editors: tests/columnorder.js), Army skills, Condition, Passengers');
   // ---- the company muster: the window's header, on every tab
   const F=t.bandFitness(),h=q('.fb-head');
-  ok(h.textContent.includes('Iron <Band>')&&h.textContent.includes(r.slots+' / '+t.ARMY_LIMIT+' groups · '+(F.fit+1)+' fit (including hero) · '+F.wounded+' wounded')&&!q('.fb-head>.muted'),'the header is the muster: the band’s name, its groups, fit and wounded');
-  ok(['Fitness','Morale','Stamina'].every(n=>h.querySelector('.fb-meter[aria-label="'+n+'"]'))&&+h.querySelector('[aria-label="Morale"]').getAttribute('aria-valuenow')===55&&Math.abs(+h.querySelector('[aria-label="Stamina"]').getAttribute('aria-valuenow')-60)<1e-6&&/On the road|·/.test(h.textContent)&&!/Details/.test(h.textContent),'its bars: Fitness, Morale and Stamina, with the road’s word');
+  ok(h.textContent.includes('Iron <Band>')&&h.textContent.includes(r.slots+' / '+t.ARMY_LIMIT+' groups, '+(F.fit+1)+' fit (including hero), '+F.wounded+' wounded')&&!q('.fb-head>.muted'),'the header is the muster: the band’s name, its groups, fit and wounded');
+  ok(['Fitness','Morale','Stamina'].every(n=>h.querySelector('.fb-meter[aria-label="'+n+'"]'))&&+h.querySelector('[aria-label="Morale"]').getAttribute('aria-valuenow')===55&&Math.abs(+h.querySelector('[aria-label="Stamina"]').getAttribute('aria-valuenow')-60)<1e-6&&/On the road|, /.test(h.textContent)&&!/Details/.test(h.textContent),'its bars: Fitness, Morale and Stamina, with the road’s word');
   ok(p.textContent.split('Iron <Band>').length===2&&qa('.fb-meter[aria-label="Fitness"]').length===1&&!q('.fb-body .fb-muster-meters'),'the band’s name once and its bars once: no banner row in the Roster');
   ok(!h.querySelector('button,a,[data-act],[role="button"]')&&!h.closest('[data-act]'),'the muster is to read: no link, button or action in the header');
   {h.querySelector('h2').click();ok(G.char==='roster','a click on it does nothing (the Roster stays)')}
   for(const [tab] of t.ARMY_TABS){t.act('char-tab',tab);ok(q('.fb-head .fb-meter[aria-label="Fitness"]')&&q('.fb-head h2').textContent==='Iron <Band>'&&G.char===tab,'the muster heads the '+tab+' tab too')}
   t.act('char-tab','condition');ok(G.char==='condition'&&q('.fb-condition')&&q('[data-act="char-tab"][data-arg="condition"]').classList.contains('on'),'its tab opens Condition');
   // ---- Condition
-  {const c=q('.fb-condition').textContent;ok(/Stamina [+-]?[\d.]+ \/ hour/.test(c)&&c.includes('Headcount')&&c.includes(t.partySize()+' / '+t.partyCap())&&c.includes('Food')&&c.includes('Drink')&&/Party power · \d+/.test(c)&&c.includes('Brann the Wolf')&&c.includes('Groups'+r.slots+' / '+r.groupLimit)&&/Recruitment.*Start with 3 slots/.test(c),'Condition: recovery and its reasons, supplies, capacity, group slots and the power breakdown');
+  {const c=q('.fb-condition').textContent;ok(/Stamina [+-]?[\d.]+ \/ hour/.test(c)&&c.includes('Headcount')&&c.includes(t.partySize()+' / '+t.partyCap())&&c.includes('Food')&&c.includes('Drink')&&/Party power, \d+/.test(c)&&c.includes('Brann the Wolf')&&c.includes('Groups'+r.slots+' / '+r.groupLimit)&&/Recruitment.*Start with 3 slots/.test(c),'Condition: recovery and its reasons, supplies, capacity, group slots and the power breakdown');
    ok(q('.fb-condition .fb-scroll [data-act="party-supplies"]')&&menuBack()&&navClose().textContent==='Back to map'&&qa('.nav').length===1&&[...q('.fb-condition').querySelectorAll('button')].every(b=>b.closest('.fb-scroll')),'its Supplies in its content; its bar, the only bottom bar: Back (to the Game Menu), Back to map');
    esc();ok(G.mode==='esc'&&G.esc.page==='menu'&&G.esc.html==null,'Esc follows the bar: from Condition, the Game Menu, the window closed under it');esc();ok(G.mode==='world','one more Esc resumes');open();ok(G.char==='roster','Roster again')}
   // ---- every tab, the same bar: Back to the Game Menu (ui/hub.js), Back to map; however the window was opened
@@ -44,7 +44,7 @@ Kit.suite(({ok})=>{
   const cards=qa('.fb-unit-grid .fb-unit'),ids=cards.map(c=>c.dataset.armyGroup),kinds=cards.map(c=>c.dataset.kind);
   ok(ids.slice(0,r.order.length).join()===r.order.join()&&ids.includes('hero')&&ids.includes('comp_brann')&&ids.includes('comp_elske')&&ids.includes(foot.id)&&ids.includes(knight.id),'one list: your hero, your companions and your troop groups, in battle order ('+ids.join(', ')+')');
   ok(!qa('[data-act="party-tab"]').length&&!/Companions<\/button>/.test(p.innerHTML)&&!qa('[data-act="char-tab"][data-arg="prisoners"]').length,'no Companions or Prisoners tab');
-  ok(ids[ids.length-1]==='comp_tavi'&&q('.fb-unit-grid').textContent.includes('Away · leading their own party'),'a companion leading his own party is still on the roster, under Away');
+  ok(ids[ids.length-1]==='comp_tavi'&&q('.fb-unit-grid').textContent.includes('Away, leading their own party'),'a companion leading his own party is still on the roster, under Away');
   ok(kinds[ids.indexOf('hero')]==='hero'&&kinds[ids.indexOf('comp_brann')]==='comp'&&kinds[ids.indexOf(foot.id)]==='troop','each card says what it is');
   {const kindIcon=id=>fills(q('.fb-unit[data-army-group="'+id+'"] .fb-unit-kind svg'));
    ok(kindIcon('hero')===iconFills('rosterhero')&&kindIcon('comp_brann')===iconFills('rostercomp')&&new Set(['rosterhero','rostercomp'].map(iconFills)).size===2,'its icon: a crown for the hero, a star for a companion');
@@ -53,11 +53,11 @@ Kit.suite(({ok})=>{
    ok(['rosterhero','rostercomp','rostertroop'].every(k=>t.ICONS[k].px.length===9&&t.ICONS[k].px.every(row=>row.length===9&&[...row].every(c=>c==='.'||t.ICONS[k].p[c]))),'the three are pixel icons of the game’s set (9 × 9, each colour its palette’s)')}
   {const xp=id=>q('.fb-unit[data-army-group="'+id+'"] .fb-unit-xp'),val=e=>[+e.getAttribute('aria-valuenow'),+e.getAttribute('aria-valuemax')].join('/'),txt=id=>q('.fb-unit[data-army-group="'+id+'"] .fb-unit-xptxt').textContent;
    ok(cards.every(c=>c.querySelector('.fb-unit-xp[role="meter"]')),'every card has an experience bar');
-   {const n=t.leaderOf(P).xpNeed();ok(val(xp('hero'))===P.xp+'/'+n&&txt('hero')==='Lv. '+P.level+' · '+Math.round(100*P.xp/n)+'% to '+(P.level+1),'the hero’s: progress to the next level ('+txt('hero')+')')}
-   {const n=t.compOf('brann').xpNeed();ok(val(xp('comp_brann'))===brann.xp+'/'+n&&txt('comp_brann')==='Lv. '+brann.lv+' · '+Math.round(100*brann.xp/n)+'% to '+(brann.lv+1),'a companion’s: its own, to its next level ('+txt('comp_brann')+')')}
+   {const n=t.leaderOf(P).xpNeed();ok(val(xp('hero'))===P.xp+'/'+n&&txt('hero')==='Lv. '+P.level+', '+Math.round(100*P.xp/n)+'% to '+(P.level+1),'the hero’s: progress to the next level ('+txt('hero')+')')}
+   {const n=t.compOf('brann').xpNeed();ok(val(xp('comp_brann'))===brann.xp+'/'+n&&txt('comp_brann')==='Lv. '+brann.lv+', '+Math.round(100*brann.xp/n)+'% to '+(brann.lv+1),'a companion’s: its own, to its next level ('+txt('comp_brann')+')')}
    // (the ranks and mastery levels named, doc/UNIT_KITS_DESIGN.md §7: Recruit to Elite, Adept to Legend)
-   ok(val(xp(foot.id))==='10/'+t.RANKS.xp[1][1]&&txt(foot.id)==='Trained · rank 2 · 10 / '+t.RANKS.xp[1][1],'a troop group’s: its rank and the way to the next ('+txt(foot.id)+')');
-   ok(txt(knight.id)==='Elite · rank 5 · Legend · full'&&val(xp(knight.id))==='1/1','a group at its last rank, its mastery full: Legend ('+txt(knight.id)+')')}
+   ok(val(xp(foot.id))==='10/'+t.RANKS.xp[1][1]&&txt(foot.id)==='Trained, rank 2, 10 / '+t.RANKS.xp[1][1],'a troop group’s: its rank and the way to the next ('+txt(foot.id)+')');
+   ok(txt(knight.id)==='Elite, rank 5, Legend, full'&&val(xp(knight.id))==='1/1','a group at its last rank, its mastery full: Legend ('+txt(knight.id)+')')}
   // ---- opening each kind
   t.act('party-select','hero');{const d=q('.fb-hero-detail');const c=d&&d.querySelector('.ucard-x');ok(c&&/From the skill trees/.test(d.innerHTML)&&/Health/.test(c.querySelector('.uc-stats').textContent)&&new RegExp('To level '+(P.level+1)).test(c.textContent)&&/Stamina/.test(c.textContent)&&c.querySelector('[data-act="army-edit"][data-arg="hero"]'),'the hero’s card: its numbers, experience, stamina and mana, Manage; its Character tab (what the trees give, perks)')}
   t.act('party-select','comp_brann');{const d=q('.fb-comp-detail');ok(d&&t.compShown()&&G.compSel==='brann'&&!qa('.fb-comp-detail [data-act="party-comp-tab"]').length&&d.querySelector('[data-act="party-unit-tab"][data-arg="gear"]')&&d.querySelector('[data-act="party-unit-tab"][data-arg="role"]')&&new RegExp('To level '+(P.comps.brann.lv+1)).test(d.querySelector('.ucard-x').textContent),'a companion’s card: the shared card, Equipment and Role tabs, its experience to the next level');
@@ -132,7 +132,7 @@ Kit.suite(({ok})=>{
     scr.style.cssText=original+';width:'+w+'px;height:'+h+'px';const at=w+' × '+h;
     // (each tab's main panel the same box: the Roster's cards and detail, Army skills, Condition, Passengers, edge to edge alike)
     open();{const box=()=>{const e=q('.fb-army-layout>.fb-split')||q('.fb-army-layout>.fb-pane');return e?[...['left','top','right','bottom'].map(k=>e.getBoundingClientRect()[k])]:[]},boxes=t.ARMY_TABS.map(([k])=>{t.act('char-tab',k);return [k,box()]}),b0=boxes[0][1];
-     ok(b0.length===4&&b0[2]-b0[0]>100&&boxes.every(([,b])=>b.length===4&&b.every((v,i)=>Math.abs(v-b0[i])<=1)),'Tabs '+at+': each tab’s main panel the same box ('+boxes.map(([k,b])=>k+' '+b.map(Math.round).join(',')).join(' · ')+')');world()}
+     ok(b0.length===4&&b0[2]-b0[0]>100&&boxes.every(([,b])=>b.length===4&&b.every((v,i)=>Math.abs(v-b0[i])<=1)),'Tabs '+at+': each tab’s main panel the same box ('+boxes.map(([k,b])=>k+' '+b.map(Math.round).join(',')).join(', ')+')');world()}
     open();t.act('char-tab','condition');{const c=q('.fb-condition'),sc=c.querySelector('.fb-scroll'),last=[...sc.querySelectorAll('button,summary')].pop();
      ok(last&&last.tagName==='SUMMARY'&&last.textContent==='Condition and recovery','Condition '+at+': its last control is the Condition and recovery notes (the recruitment target moved to the Roster)');reach(sc,last,'Condition '+at);area(sc,'Condition '+at);oneBar(c,'Condition '+at);
      ok(menuBack()&&navClose().textContent==='Back to map','Condition '+at+': Back (to the Game Menu) on the left, Back to map on the right');

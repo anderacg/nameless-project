@@ -143,7 +143,7 @@ function groupAbility(id,gs=selGroups()){
 const FORM_CYCLE=['line','loose','circle','cantabrian','wedge','column'];
 function formCycle(){if(!B||B.muster?.active)return;const gs=selGroups().filter(g=>grpUnits(g).length);if(!gs.length)return;
   const next=g=>{const gr=B.groups[g],has=['line',...['loose',...RING_FORMS].filter(f=>formFits(g,f)),formFits(g,'wedge')?'wedge':'column'],i=has.indexOf(gr.form);return has[(i+1)%has.length]};
-  const to=playerOrder(gs,()=>gs.map(g=>{const f=next(g);B.groups[g].setForm(f);return f}));if(to)toast(gs.map((g,i)=>htmlText(groupName(g))+': '+FORMS[to[i]].n.toLowerCase()).join(' · ')+'.')}
+  const to=playerOrder(gs,()=>gs.map(g=>{const f=next(g);B.groups[g].setForm(f);return f}));if(to)toast(gs.map((g,i)=>htmlText(groupName(g))+': '+FORMS[to[i]].n.toLowerCase()).join(', ')+'.')}
 /* the ring (O, its button: the owner, 2026-11-01): each selected group into its own ring, a circle (foot who fight hand to hand) or a
    Cantabrian circle (horse archers), those it suits; all of them in theirs already: back to line. Its size: as the group stands
    (its files), or the line you drag next */
@@ -151,7 +151,7 @@ const groupRing=g=>RING_FORMS.find(f=>formFits(g,f))||null;
 function ringForm(){if(!B||B.muster?.active)return false;const sel=selGroups().filter(g=>grpUnits(g).length),gs=sel.filter(groupRing);
   if(!gs.length){if(sel.length)toast('Only foot who fight hand to hand can form a circle, and horse archers a Cantabrian circle.');return false}
   const back=gs.every(g=>B.groups[g].form===groupRing(g)),to=playerOrder(gs,()=>gs.map(g=>{const f=back?'line':groupRing(g);B.groups[g].setForm(f);return f}));
-  toast(gs.map((g,i)=>htmlText(groupName(g))+': '+FORMS[to[i]].n.toLowerCase()).join(' · ')+'.');return true}
+  toast(gs.map((g,i)=>htmlText(groupName(g))+': '+FORMS[to[i]].n.toLowerCase()).join(', ')+'.');return true}
 // the skill bar's slot i (0-4: Z, X, C, V, B; battle/unitkit.js groupSlots): each selected group its own skill in that slot
 function groupSlot(i){
   if(!B||B.muster?.active)return false;const by={};

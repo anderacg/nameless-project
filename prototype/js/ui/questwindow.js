@@ -66,8 +66,8 @@ const qwLacks=q=>q.needs().filter(n=>!n.met).map(n=>n.what);
 function qwSub(it){
   if(it.q)return it.state==='completed'?'Return to '+qwReturnTo(it.q)+' for your reward':it.q.progress();
   if(it.th)return it.th.note||'Under way.';
-  if(it.o)return it.state==='locked'?'Requires '+qwLacks(it.o).join(' · '):'Offered by '+(it.o.lord?it.o.giver:it.o.home);
-  return 'Day '+it.e.day+(it.e.got?' · '+it.e.got:'');
+  if(it.o)return it.state==='locked'?'Requires '+qwLacks(it.o).join(', '):'Offered by '+(it.o.lord?it.o.giver:it.o.home);
+  return 'Day '+it.e.day+(it.e.got?', '+it.e.got:'');
 }
 // the one chosen, still there in its tab (else the tracked one, else the first; none: null)
 function qwChosen(items){
@@ -82,7 +82,7 @@ function qwChosen(items){
 // ---- the tabs, each with its count (the archive's: all it keeps)
 function qwTabs(all,tab){
   return '<div class="qw-tabs" role="tablist" aria-label="Quests">'+QW.tabs.map(t=>{const n=all.filter(x=>x.tab===t&&!x.o).length;
-    return '<button class="btn sm'+(t===tab?' on':'')+'" type="button" role="tab" tabindex="'+(t===tab?0:-1)+'" data-act="qw-tab" data-arg="'+t+'" aria-selected="'+(t===tab)+'">'+qwTabName(t)+(n?' · '+n:'')+'</button>'}).join('')+'</div>';
+    return '<button class="btn sm'+(t===tab?' on':'')+'" type="button" role="tab" tabindex="'+(t===tab?0:-1)+'" data-act="qw-tab" data-arg="'+t+'" aria-selected="'+(t===tab)+'">'+qwTabName(t)+(n?', '+n:'')+'</button>'}).join('')+'</div>';
 }
 // ---- the list: a row each (a button: choosing it opens it)
 function qwRow(it,sel){
@@ -93,10 +93,10 @@ function qwList(items,tab,sel){
   const tk=items.find(x=>x.k===P.track),rest=items.filter(x=>x!==tk),mine=rest.filter(x=>!x.o),offers=rest.filter(x=>x.o);
   const none={main:'No main story yet.',side:'No side quests. Help those you meet on the road, and more may come of it.',
     job:'No jobs. Look for work on the notice board of any holding, or ask a friendly lord.',past:'Nothing done, failed or given up yet.'}[tab];
-  const lab={main:'Main story',side:'Side quests',job:'Your jobs',past:'Archive · the last '+QUEST_ARCHIVE.keep}[tab];
+  const lab={main:'Main story',side:'Side quests',job:'Your jobs',past:'Archive, the last '+QUEST_ARCHIVE.keep}[tab];
   return '<div class="qw-list" role="group" aria-label="'+qwTabName(tab)+'">'+
     (tk?'<div class="lab">Tracked</div>'+qwRow(tk,sel):'')+
-    (mine.length?'<div class="lab">'+lab+(tab==='past'?'':' · '+(mine.length+(tk?1:0)))+'</div>'+mine.map(x=>qwRow(x,sel)).join(''):tk?'':'<div class="lab">'+lab+'</div><p class="muted">'+none+'</p>')+
+    (mine.length?'<div class="lab">'+lab+(tab==='past'?'':', '+(mine.length+(tk?1:0)))+'</div>'+mine.map(x=>qwRow(x,sel)).join(''):tk?'':'<div class="lab">'+lab+'</div><p class="muted">'+none+'</p>')+
     (offers.length?'<div class="lab">Offered where you have been</div>'+offers.map(x=>qwRow(x,sel)).join(''):'')+'</div>';
 }
 // ---- the one chosen in full
@@ -140,7 +140,7 @@ function qwStory(it){
 // (an offer you know of: taken at its board or from its lord; locked, what it requires, its giver's trust among them)
 function qwOffer(it){
  const q=it.o,s=QuestShut.of(q),where=q.lord?'Ask '+q.giver+' for it.':'Take it at the notice board of '+q.home+'.',needs=q.needs();
- return qwHead(it,q.title)+'<div class="fb-qobjective">'+fbIcon(it.state==='locked'?'prisoners':'region',24)+'<span>'+htmlText(it.state==='locked'?'Requires '+qwLacks(q).join(' · '):where)+'</span></div>'+qwButtons(it,qwGoal(it))+needs.map(n=>'<p class="'+(n.met?'good':'')+'">'+(n.met?'✓ ':'○ ')+htmlText(n.what)+'</p>').join('')+'<p>'+htmlText(where)+'</p>'+(s?'<p class="bad">'+QuestShut.line(q,s)+'.</p>':'')+fbRewards(q.reward)+fbDetails('Offer details','<p class="qw-text">'+q.text+'</p>'+qwFacts(questFacts(q)));
+ return qwHead(it,q.title)+'<div class="fb-qobjective">'+fbIcon(it.state==='locked'?'prisoners':'region',24)+'<span>'+htmlText(it.state==='locked'?'Requires '+qwLacks(q).join(', '):where)+'</span></div>'+qwButtons(it,qwGoal(it))+needs.map(n=>'<p class="'+(n.met?'good':'')+'">'+(n.met?'✓ ':'○ ')+htmlText(n.what)+'</p>').join('')+'<p>'+htmlText(where)+'</p>'+(s?'<p class="bad">'+QuestShut.line(q,s)+'.</p>':'')+fbRewards(q.reward)+fbDetails('Offer details','<p class="qw-text">'+q.text+'</p>'+qwFacts(questFacts(q)));
 }
 // (an archive entry: who, how it ended, the day, what it paid or cost; a story's, its last stage)
 function qwPast(it){

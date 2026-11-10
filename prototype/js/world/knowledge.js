@@ -33,7 +33,7 @@ class JournalKnowledge{
   }
   sight(l){
     const home=l.inside&&townBy(l.inside),near=Spatial.nearestHolding(l.x,l.y,t=>Object.hasOwn(this.holdings,t.name));
-    this.report(l,(home?'In '+home.name:'In the field'+(near&&Math.hypot(l.x-near.x,l.y-near.y)<vis()*2?' near '+near.name:''))+' · '+l.troops.length+' soldiers',G.day,true);
+    this.report(l,(home?'In '+home.name:'In the field'+(near&&Math.hypot(l.x-near.x,l.y-near.y)<vis()*2?' near '+near.name:''))+', '+l.troops.length+' soldiers',G.day,true);
   }
   watch(){
     this.realm(P.fac);if(G.lastTown&&!this.holdings[G.lastTown.name])this.holding(G.lastTown);

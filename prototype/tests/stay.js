@@ -13,7 +13,7 @@ try{
  const castle=t.TOWNS.find(q=>q.kind==='castle'&&q.owner&&q.owner!=='player'&&!t.besieged(q)&&!t.ruined(q));
  P.troops={hum_levy:10};P.wounded={};P.gold=200;setSt(town,10);
  // paid
- t.enterTown(town);ok(/Stay · 10g a day/.test(panel()),'a holding that hardly knows you offers lodgings by the day (5g, and 1g for every 2 people: 10g)');
+ t.enterTown(town);ok(/Stay, 10g a day/.test(panel()),'a holding that hardly knows you offers lodgings by the day (5g, and 1g for every 2 people: 10g)');
  t.act('sy-stay',town.name);ok(P.stay&&P.stay.town===town.name&&P.gold===190&&G.mode==='world'&&!G.modal,'you pay the first day and go inside; time runs on');
  t.updateHUD(true);ok(bar()&&/Staying in/.test(bar().outerHTML)&&/\d+g\/day/.test(bar().textContent)&&/your gold lasts until Day \d+/.test(bar().outerHTML)&&/data-act="sy-leave"/.test(bar().outerHTML),'a line under the minimap (Under way) says where you stay and the price, the day your gold runs out on it, and offers Leave');
  {P.stay.paidTo=t.worldTime()-.01;t.stayTick(.01);ok(P.gold===180&&P.stay.paidTo>t.worldTime(),'each day inside is paid as it begins (10g)')}
@@ -33,7 +33,7 @@ try{
  P.gold=3;P.stay.paidTo=t.worldTime()-.01;t.stayTick(.01);ok(!P.stay&&(g=>Math.abs(P.x-g.x)<1&&Math.abs(P.y-g.y)<1)(t.gateSpot(town))&&P.gold===3,'when you cannot pay for another day, the innkeeper sends you out at the gate');
  t.updateHUD(true);ok(!bar(),'and the line goes');
  // free
- P.gold=50;setSt(town,35);world();t.enterTown(town);ok(/Stay · free \(they know you\)/.test(panel()),'where they know you (standing 30+), you stay free');t.act('sy-stay',town.name);
+ P.gold=50;setSt(town,35);world();t.enterTown(town);ok(/Stay, free \(they know you\)/.test(panel()),'where they know you (standing 30+), you stay free');t.act('sy-stay',town.name);
  ok(P.stay&&P.gold===50,'and pay nothing');P.stay.paidTo=t.worldTime()-5;t.stayTick(.01);t.updateHUD(true);ok(P.stay&&P.gold===50&&/free, as long as you like/.test(bar().outerHTML),'for as long as you like');
  t.act('sy-leave');ok(!P.stay&&G.mode==='world','Leave on the banner takes you out');
  // refused

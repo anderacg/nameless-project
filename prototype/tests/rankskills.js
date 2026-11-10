@@ -37,6 +37,6 @@ Kit.suite(({ok})=>Kit.kits(false,()=>{
  // ======== the Army window: the ladder
  {Kit.world();t.openChar();t.act('party-select',sp1.id);t.act('party-path',sp1.id);const d=document.querySelector('.fb-inspector');
   ok(/Rank skills/.test(d.textContent)&&d.querySelectorAll('.fb-path-step.off').length===4&&/Brace flanks \(G\)/.test(d.textContent),'a spearmen\'s path: its five rungs, four still to reach');
-  {const rungs=[...d.querySelectorAll('.fb-path-step')].map(x=>x.textContent),tl=d.textContent.split('Traits')[1]||'';ok(/Rank 1 · Braced front \(its trait\)/.test(rungs.join('|'))&&!/Set spears/.test(tl)&&/Shield/.test(tl),'rank 1 is its own trait, Set spears, not listed again with its traits (its Shield is)')}t.act('char-close')}
+  {const rungs=[...d.querySelectorAll('.fb-path-step')].map(x=>x.textContent),tl=d.textContent.split('Traits')[1]||'';ok(/Rank 1, Braced front \(its trait\)/.test(rungs.join('|'))&&!/Set spears/.test(tl)&&/Shield/.test(tl),'rank 1 is its own trait, Set spears, not listed again with its traits (its Shield is)')}t.act('char-close')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 }));

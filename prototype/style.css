@@ -222,6 +222,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .origin-card{padding:0 0 10px;overflow:hidden;gap:5px}
 .origin-card strong,.origin-card span{margin-inline:10px}
 .origin-card strong{margin-top:3px}
+.origin-card.off{opacity:.55;cursor:default;filter:grayscale(.6)}.origin-card.off .gold{color:var(--muted,#a99)}/* (a past you may not take: kin with no home of the family standing, world/legacy.js kinWhy) */
 .origin-art{display:block;width:100%;height:96px;background:#172127;image-rendering:pixelated;border-bottom:1px solid var(--line)}
 .origin-card:focus-visible .origin-art{border-bottom-color:var(--accent)}@media (hover:hover){.origin-card:hover .origin-art{border-bottom-color:var(--accent)}}
 /* save slots: a row each, the slot and its delete */
@@ -334,7 +335,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .lgroup[hidden]{display:none}
 .lvup{width:58px;height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0;background:var(--hud-face);border:2px solid var(--accent);border-radius:var(--r-md);box-shadow:var(--float);color:var(--accent);font:700 var(--fs-md)/1 Arial,sans-serif;cursor:pointer;animation:lvup-blink 1.2s ease-in-out infinite}
 .lvup small{font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg)}
-.lvup:hover,.lvup:focus-visible{background:var(--accent);color:var(--accent-ink)}.lvup:hover small,.lvup:focus-visible small{color:var(--accent-ink)}
+.lvup:focus-visible{background:var(--accent);color:var(--accent-ink)}.lvup:focus-visible small{color:var(--accent-ink)}
+@media (hover:hover){.lvup:hover{background:var(--accent);color:var(--accent-ink)}.lvup:hover small{color:var(--accent-ink)}}
 @keyframes lvup-blink{0%,100%{border-color:var(--accent);box-shadow:var(--float),0 0 0 0 rgba(240,200,90,0)}50%{border-color:var(--trim-hi);box-shadow:var(--float),0 0 14px 3px rgba(240,200,90,.65)}}
 @media (prefers-reduced-motion:reduce){.lvup{animation:none}}
 .screen:not([data-mode="world"]) .lgroup{display:none}
@@ -428,7 +430,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .qt-pop{position:relative;padding-right:24px;border-color:var(--trim-hi);transition:opacity .3s,transform .3s}
 /* its close mark: small, in its top corner */
 .qt-x{position:absolute;top:2px;right:3px;width:20px;height:20px;padding:0;border:0;background:none;color:var(--muted);font:700 15px/20px Arial,sans-serif;cursor:pointer;border-radius:var(--r-sm)}
-.qt-x:hover,.qt-x:focus-visible{color:var(--fg);background:var(--shade)}
+.qt-x:focus-visible{color:var(--fg);background:var(--shade)}@media (hover:hover){.qt-x:hover{color:var(--fg);background:var(--shade)}}
 .qt-pop b{display:block;font-size:var(--fs-md);margin-bottom:6px}
 .qt-pop.going{opacity:0;transform:translateX(-10px)}
 .qt-btns{display:flex;gap:6px}
@@ -461,18 +463,21 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .screen.mobile-world .qt-pop .btn.sm{min-height:28px;padding:1px 7px}.screen.mobile-world .qt-pop:nth-last-child(n+3){display:none}
 
 /* ---------- 6b. discovery (world/discovery.js DiscoveryTitle): "You discovered", a place's name and its kind over the map; it rises,
-   its letters drawing together, holds and fades over --discover-ms; not over the windows, never in the way of a click ---------- */
-.discover{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;pointer-events:none;text-align:center;opacity:0;
+   its letters drawing together, holds and fades over --discover-ms; not over the windows, never in the way of a click. Centred
+   by its margins on a strip as wide as the screen, its box its words' own width (the owner, 2026-11-09, a phone: "It's not at the
+   center": left 50% and a shift of half its width left the box to the browser's shrink-to-fit); never wider than the screen, a
+   long name wrapping, its size by the screen's width ---------- */
+.discover{position:fixed;left:0;right:0;top:50%;margin:0 auto;width:max-content;max-width:calc(100vw - 16px);box-sizing:border-box;transform:translateY(-50%);z-index:60;pointer-events:none;text-align:center;opacity:0;
   display:flex;flex-direction:column;align-items:center;gap:2px;color:#f3e2b0;text-shadow:0 2px 0 #000,0 0 14px rgba(0,0,0,.85);white-space:nowrap;
-  padding:18px 56px;background:radial-gradient(ellipse at center,rgba(12,10,8,.78) 0,rgba(12,10,8,.5) 45%,transparent 72%)}
+  padding:18px min(56px,9vw);background:radial-gradient(ellipse at center,rgba(12,10,8,.78) 0,rgba(12,10,8,.5) 45%,transparent 72%)}
 .discover small{font-size:var(--fs-sm);letter-spacing:.35em;text-transform:uppercase;color:#d9c48a}
-.discover strong{font-size:34px;font-weight:700;letter-spacing:.06em}
+.discover strong{font-size:min(34px,8.4vw);font-weight:700;letter-spacing:.06em;white-space:normal;text-wrap:balance}
 .discover span{font-size:var(--fs-sm);letter-spacing:.2em;text-transform:uppercase;color:#bfb28c}
 .discover strong::after{content:'';display:block;height:2px;margin:6px auto 0;width:0;background:linear-gradient(90deg,transparent,#e8b94a,transparent)}
 .discover.on{animation:discover var(--discover-ms,4.2s) ease-out both}
 .discover.on strong{animation:discoverName var(--discover-ms,4.2s) ease-out both}
 .discover.on strong::after{animation:discoverLine var(--discover-ms,4.2s) ease-out both}
-@keyframes discover{0%{opacity:0;transform:translate(-50%,calc(-50% + 10px))}14%{opacity:1;transform:translate(-50%,-50%)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,calc(-50% - 6px))}}
+@keyframes discover{0%{opacity:0;transform:translateY(calc(-50% + 10px))}14%{opacity:1;transform:translateY(-50%)}80%{opacity:1}100%{opacity:0;transform:translateY(calc(-50% - 6px))}}
 @keyframes discoverName{0%{letter-spacing:.4em}22%{letter-spacing:.06em}100%{letter-spacing:.06em}}
 @keyframes discoverLine{0%,10%{width:0}35%,100%{width:110%}}
 @keyframes discoverStill{0%{opacity:0}10%,85%{opacity:1}100%{opacity:0}}
@@ -1177,7 +1182,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .panel .fb-bag-find .find input{padding:3px 0}.panel .fb-shell .fb-bag-footer{padding:2px 6px}.panel .fb-shell .fb-bag-footer .btn{min-height:28px;padding:3px 8px}}
 .slot-menu{position:fixed;z-index:80;min-width:150px;display:flex;flex-direction:column;padding:4px;border:1px solid var(--trim);border-radius:6px;background:#18130d;box-shadow:0 8px 20px rgba(0,0,0,.65)}
 .slot-menu .sm-i{all:unset;box-sizing:border-box;padding:7px 12px;border-radius:4px;font-size:var(--fs-sm);color:var(--fg);cursor:pointer}
-.slot-menu .sm-i:hover:not([disabled]),.slot-menu .sm-i:focus-visible{background:rgba(215,179,107,.18);color:#fff0c7}
+.slot-menu .sm-i:focus-visible{background:rgba(215,179,107,.18);color:#fff0c7}@media (hover:hover){.slot-menu .sm-i:hover:not([disabled]){background:rgba(215,179,107,.18);color:#fff0c7}}
 .slot-menu .sm-i[disabled]{color:var(--muted);cursor:default}.slot-menu .sm-i.danger{color:#e89a8a}
 .slot-ghost{position:fixed;z-index:70;width:44px;height:44px;margin:-22px 0 0 -22px;display:flex;align-items:center;justify-content:center;border:2px solid var(--trim-hi);border-radius:6px;background:rgba(24,19,13,.9);box-shadow:0 6px 14px rgba(0,0,0,.6);pointer-events:none}
 .slot.dragging{opacity:.4}.slot.drop-over{outline:2px solid var(--trim-hi);outline-offset:1px}
@@ -1252,7 +1257,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .nb-note[data-tear="2"]{clip-path:polygon(0.0% 0.4%,5.6% 0.8%,11.1% 1.1%,16.7% 0.0%,22.2% 0.7%,27.8% 0.6%,33.3% 0.6%,38.9% 0.0%,44.4% 0.0%,50.0% 0.1%,55.6% 0.7%,61.1% 0.0%,66.7% 0.3%,72.2% 0.0%,77.8% 0.9%,83.3% 1.0%,88.9% 0.2%,94.4% 1.1%,100.0% 0.0%,99.3% 6.2%,99.2% 12.5%,100.0% 18.8%,99.4% 25.0%,99.6% 31.2%,99.1% 37.5%,100.0% 43.8%,99.7% 50.0%,99.2% 56.2%,99.5% 62.5%,100.0% 68.8%,100.0% 75.0%,99.1% 81.2%,99.8% 87.5%,99.0% 93.8%,100.0% 100.0%,95.5% 98.9%,90.9% 98.9%,86.4% 98.6%,81.8% 100.0%,77.3% 99.6%,72.7% 98.8%,68.2% 97.0%,63.6% 99.3%,59.1% 98.5%,54.5% 99.8%,50.0% 99.0%,45.5% 98.8%,40.9% 100.0%,36.4% 99.4%,31.8% 98.6%,27.3% 98.3%,22.7% 98.6%,18.2% 100.0%,13.6% 98.9%,9.1% 100.0%,4.5% 99.3%,0.4% 100.0%,0.4% 93.8%,0.0% 87.5%,0.5% 81.2%,0.9% 75.0%,0.0% 68.8%,0.0% 62.5%,1.8% 56.2%,3.6% 50.0%,0.9% 43.8%,0.0% 37.5%,0.6% 31.2%,0.1% 25.0%,0.2% 18.8%,0.0% 12.5%,0.5% 6.2%)}
 .nb-note[data-tear="3"]{clip-path:polygon(0.0% 0.7%,5.7% 0.9%,11.4% 0.0%,17.1% 1.1%,22.9% 0.0%,28.6% 0.6%,34.3% 0.0%,40.0% 0.7%,45.7% 0.0%,51.4% 0.7%,57.1% 0.7%,62.9% 0.7%,68.6% 0.2%,74.3% 0.9%,79.4% 0.7%,83.5% 2.6%,86.5% 5.9%,89.4% 9.2%,92.9% 11.8%,96.5% 14.3%,100.0% 17.0%,99.1% 22.9%,100.0% 28.9%,99.4% 34.8%,99.2% 40.7%,100.0% 46.6%,100.0% 52.6%,100.0% 58.5%,99.7% 64.4%,99.9% 70.4%,99.2% 76.3%,99.1% 82.2%,100.0% 88.1%,99.2% 94.1%,100.0% 100.0%,95.5% 100.0%,90.9% 99.2%,86.4% 98.9%,81.8% 98.9%,77.3% 98.2%,72.7% 97.1%,68.2% 98.1%,63.6% 98.5%,59.1% 98.6%,54.5% 100.0%,50.0% 99.6%,45.5% 100.0%,40.9% 100.0%,36.4% 99.6%,31.8% 99.2%,27.3% 97.3%,22.7% 99.1%,18.2% 99.5%,13.6% 98.5%,9.1% 99.0%,4.5% 99.5%,0.0% 100.0%,0.5% 93.8%,0.0% 87.5%,0.5% 81.2%,0.5% 75.0%,0.1% 68.8%,0.7% 62.5%,0.1% 56.2%,0.2% 50.0%,0.7% 43.8%,0.0% 37.5%,0.0% 31.2%,0.4% 25.0%,0.2% 18.8%,0.8% 12.5%,0.0% 6.2%)}
 .nb-note .btn{background:rgba(120,60,20,.12);border:2px solid #5a2e10;border-radius:2px;color:#3a1a08;font-family:Georgia,'Times New Roman',serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;box-shadow:none;rotate:-2deg;text-shadow:none}
-.nb-note .btn:hover,.nb-note .btn:focus-visible{background:rgba(120,60,20,.24);border-color:#3a1a08;color:#2a1004}
+.nb-note .btn:focus-visible{background:rgba(120,60,20,.24);border-color:#3a1a08;color:#2a1004}@media (hover:hover){.nb-note .btn:hover{background:rgba(120,60,20,.24);border-color:#3a1a08;color:#2a1004}}
 .nb-note .btn:disabled{opacity:.55}
 .nb-note::before{content:'';position:absolute;top:7px;left:50%;width:9px;height:9px;margin-left:-4px;border-radius:50%;
   background:radial-gradient(circle at 35% 35%,#a08060,#5a3a22 50%,#2a1a10);box-shadow:0 1px 1px rgba(0,0,0,.6),0 0 0 2px rgba(110,60,20,.35)}
@@ -1629,7 +1634,7 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .ft-dead .ft-pic img{filter:grayscale(.75) brightness(.8)}
 .ft-tile .ft-n{margin-top:3px}
 .ft-tile b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;max-width:84px;overflow:hidden;overflow-wrap:anywhere;font-size:12px;line-height:1.25}
-.fb-shell .ft-tile:focus-visible,.fb-shell .ft-house:focus-visible{outline:none}.ft-tile:hover .ft-pic,.ft-tile:focus-visible .ft-pic{border-color:#cdbf9f}
+.fb-shell .ft-tile:focus-visible,.fb-shell .ft-house:focus-visible{outline:none}.ft-tile:focus-visible .ft-pic{border-color:#cdbf9f}@media (hover:hover){.ft-tile:hover .ft-pic{border-color:#cdbf9f}}
 .ft-tile.ft-sel .ft-pic{border-color:var(--accent);box-shadow:0 0 0 2px rgba(201,162,78,.35),0 0 10px rgba(201,162,78,.35)}
 .ft-now>.ft-row>.ft-tile:not(.ft-sel) .ft-pic{border-color:rgba(201,162,78,.7)}
 .ft-cousin>.ft-row>.ft-tile .ft-pic{border-style:dashed}
@@ -1648,6 +1653,64 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .ft-head>.ft-pic{width:56px;height:56px;flex:none}
 .ft-houses{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .ft-house{padding:5px 11px;border:1px solid var(--line-2);border-radius:5px;background:rgba(0,0,0,.3);color:#cdbf9f;font:inherit;font-size:13px;cursor:pointer}
-.ft-house:hover{border-color:#cdbf9f}.ft-house.ft-sel{border-color:var(--accent);color:var(--fg);box-shadow:0 0 0 1px rgba(201,162,78,.35)}
+@media (hover:hover){.ft-house:hover{border-color:#cdbf9f}}.ft-house.ft-sel{border-color:var(--accent);color:var(--fg);box-shadow:0 0 0 1px rgba(201,162,78,.35)}
 @media (max-width:560px){.ft-body{flex-direction:column}.ft-info{flex-basis:auto;align-self:stretch}}
 @media (max-height:430px){.ft-info{flex-basis:220px}.ft-pic{width:54px;height:54px}.ft-tile{width:74px}.ft-tile b{max-width:74px}.ft-side{left:calc(50% + 44px)}.ft-side::before{top:19px}.ft-heir .ft-pic{width:40px;height:40px}}
+
+/* (the dice, ui/dice.js: a check's roll as it falls, over the screen; the owner, 2026-11-09: "Make it more medieval, old, wooden
+   materials": an old oak board, its planks' seams and grain, a dark frame and four iron rivets; its name carved into a plaque; the
+   die carved of boxwood, its edges worn round, its numbers burnt in; the odds a groove cut in the board, stained moss green (won)
+   and ochre (won in part), an iron nail where your roll fell; what came of it carved in. The textures: SVG noise as data URIs,
+   as the notice board's (.nb); the board's words a book hand, in-world as a sign's. "Make it more old, wooden damaged": the board
+   cracked and split (--cracks, an SVG of jagged cracks with their light lips), chipped at its corners and notched along its edge
+   (clip-path), scratched, water-stained and scorched at a corner, its rivets rusted and one of them lost (only its hole); its title
+   plaque whole, to be read (.dice-lab), and no crack across its words below the die. The dice themselves ("Can we have a dice like this?": light wooden polyhedrals) are drawn on the
+   canvas (.dice-cv) by ui/dice.js: a twenty-sided of light haldu, its numbers burnt in. "Use d20 rules": the bar is the die's
+   twenty faces, the win (green) from the face you needed up to 20, won in part (amber) just under it; a natural 20 or 1 named) */
+.dice-ov{--cracks:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 220' preserveAspectRatio='none'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M0 72 L22 70 L41 76 L63 73 L80 79 L96 77' stroke='rgba%288%2C4%2C1%2C.85%29' stroke-width='1.6'/%3E%3Cpath d='M0 73.6 L22 71.6 L41 77.6 L63 74.6 L80 80.6 L96 78.6' stroke='rgba%28255%2C220%2C170%2C.14%29' stroke-width='.8'/%3E%3Cpath d='M300 100 L276 97 L260 104 L238 100 L226 106 L214 103 L205 110' stroke='rgba%288%2C4%2C1%2C.85%29' stroke-width='1.8'/%3E%3Cpath d='M238 100 L244 90 L241 81' stroke='rgba%288%2C4%2C1%2C.7%29' stroke-width='1'/%3E%3Cpath d='M300 101.6 L276 98.6 L260 105.6 L238 101.6 L226 107.6' stroke='rgba%28255%2C220%2C170%2C.12%29' stroke-width='.8'/%3E%3Cpath d='M120 220 L124 210 L119 203' stroke='rgba%288%2C4%2C1%2C.75%29' stroke-width='1.3'/%3E%3Cpath d='M190 0 L187 12 L193 22 L189 31' stroke='rgba%288%2C4%2C1%2C.7%29' stroke-width='1.2'/%3E%3Cpath d='M30 140 L70 132 M150 40 L210 46 M60 190 L110 186 M200 100 L262 92' stroke='rgba%28255%2C230%2C190%2C.09%29' stroke-width='.7'/%3E%3Cpath d='M40 150 L78 143 M170 60 L228 64' stroke='rgba%280%2C0%2C0%2C.35%29' stroke-width='.6'/%3E%3C/g%3E%3C/svg%3E");--grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.42' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.16  0 0 0 0 0.09  0 0 0 0 0.03  0 0 0 0.9 -0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23g%29'/%3E%3C/svg%3E");--fine:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.03 0.6' numOctaves='2' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 0.22  0 0 0 0 0.12  0 0 0 0 0.04  0 0 0 0.7 -0.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23f%29'/%3E%3C/svg%3E");position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:rgba(6,3,1,.42);cursor:pointer}
+.dice-card{position:relative;pointer-events:auto;cursor:pointer;min-width:236px;max-width:min(330px,86vw);padding:18px 24px 18px;text-align:center;
+  clip-path:polygon(0 9px,7px 3px,14px 0,38% 0,40% 3px,43% 0,calc(100% - 16px) 0,100% 11px,100% 46%,calc(100% - 3px) 49%,100% 53%,100% calc(100% - 7px),calc(100% - 10px) 100%,62% 100%,59% calc(100% - 4px),55% 100%,12px 100%,4px calc(100% - 5px),0 calc(100% - 14px),0 62%,3px 58%,0 55%);
+  background-color:#4e3c2a;
+  background-image:radial-gradient(circle at 13px 13px,#1d1a17 0 2.5px,#6a3f1f 3px,#9a5a28 3.8px,rgba(90,45,15,.55) 5px,transparent 6.5px),radial-gradient(circle at calc(100% - 13px) 14px,#0b0603 0 2px,rgba(60,30,10,.7) 2.6px,rgba(120,70,30,.3) 4px,transparent 5.5px),radial-gradient(circle at 13px calc(100% - 13px),#1d1a17 0 2.5px,#6a3f1f 3px,#9a5a28 3.8px,rgba(90,45,15,.55) 5px,transparent 6.5px),radial-gradient(circle at calc(100% - 14px) calc(100% - 12px),#1d1a17 0 2.5px,#6a3f1f 3px,#9a5a28 3.8px,rgba(90,45,15,.55) 5px,transparent 6.5px),
+    radial-gradient(ellipse 16px 6px at 84% 22%,rgba(30,16,6,.7),rgba(30,16,6,.2) 55%,transparent 75%),
+    radial-gradient(ellipse 60px 40px at 8% 96%,rgba(10,4,0,.75),rgba(30,12,2,.35) 45%,transparent 70%),
+    radial-gradient(ellipse 70px 34px at 70% 38%,transparent 55%,rgba(30,18,8,.35) 62%,transparent 70%),
+    radial-gradient(ellipse 46px 26px at 30% 30%,rgba(25,14,6,.25),transparent 70%),
+    repeating-linear-gradient(28deg,transparent 0 23px,rgba(255,230,190,.05) 23px 24px,transparent 24px 61px),
+    repeating-linear-gradient(-14deg,transparent 0 37px,rgba(0,0,0,.18) 37px 38px,transparent 38px 83px),
+    repeating-linear-gradient(180deg,transparent 0 52px,rgba(8,4,1,.85) 52px 55px,rgba(255,230,190,.06) 55px 56px),
+    var(--grain),linear-gradient(180deg,#5d4630,#3b2b1a);
+  background-size:auto,auto,auto,auto,auto,auto,auto,auto,auto,auto,auto,240px 240px,auto;
+  box-shadow:0 14px 40px rgba(0,0,0,.7),inset 0 0 0 5px #2a1d10,inset 0 0 0 7px #120c05,inset 0 0 55px rgba(0,0,0,.8);
+  animation:dice-in .2s ease-out}
+.dice-card::before{content:'';position:absolute;inset:0;pointer-events:none;background:var(--cracks) 0 0/100% 100% no-repeat;opacity:.95}
+.dice-card>*{position:relative}
+/* (its title a sound plaque, unlike the board (the owner, 2026-11-09: "Make the title when dice roll has no damage since it'll hard
+   to read"): whole, its corners cut even, no split, its letters cream on dark wood, crisp) */
+.dice-lab{display:inline-block;max-width:100%;box-sizing:border-box;margin:2px 0 0;padding:6px 22px 7px;
+  clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,8px 100%,0 50%);
+  background-color:#4f3521;background-image:var(--grain),linear-gradient(180deg,#5e4129,#3e2a19);background-size:180px 180px,auto;
+  box-shadow:inset 0 1px 0 rgba(255,225,180,.22),inset 0 -2px 0 rgba(0,0,0,.45),inset 0 0 0 1px rgba(20,10,3,.6);
+  font:700 var(--fs-sm) Georgia,'Times New Roman',serif;letter-spacing:.12em;text-transform:uppercase;color:#f3e2b8;
+  text-shadow:0 1px 0 rgba(0,0,0,.85),0 0 4px rgba(0,0,0,.5);filter:drop-shadow(0 2px 2px rgba(0,0,0,.55))}
+.dice-cv{display:block;width:100%;min-width:200px;height:120px;margin:4px 0 6px}
+.dice-bar{position:relative;height:10px;margin:4px 6px 10px;border-radius:3px 6px 4px 5px;background:#1d1209 repeating-linear-gradient(90deg,transparent 0 calc(5% - 1px),rgba(255,220,170,.07) calc(5% - 1px) 5%);box-shadow:inset 0 2px 3px rgba(0,0,0,.85),0 1px 0 rgba(255,220,170,.12)}
+.dice-bar b{position:absolute;right:0;top:2px;bottom:2px;border-radius:0 4px 4px 0;background:linear-gradient(180deg,#7d9a4e,#4f6a2e);box-shadow:inset 0 1px 0 rgba(220,240,170,.25);opacity:.9}
+.dice-bar u{position:absolute;top:2px;bottom:2px;background:linear-gradient(180deg,#c99a3e,#8a6322);opacity:.9}
+.dice-bar em{position:absolute;top:-6px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#a9a296,#4a4640 55%,#1e1c19);box-shadow:0 2px 3px rgba(0,0,0,.7);animation:dice-mark .35s ease-out var(--tumble) both}
+.dice-bar em::after{content:'';position:absolute;left:5px;top:11px;width:2px;height:6px;background:#2c2925}
+.dice-res{display:flex;flex-direction:column;gap:3px;animation:dice-fade .3s ease-out var(--tumble) both}
+.dice-res span{font-size:var(--fs-xs);color:#dcc8a0;text-shadow:0 1px 1px rgba(0,0,0,.8)}
+.dice-res strong{font:700 var(--fs-lg) Georgia,'Times New Roman',serif;letter-spacing:.12em;text-transform:uppercase;text-shadow:0 -1px 0 rgba(0,0,0,.8),0 1px 0 rgba(255,215,160,.18)}
+.dice-nat{font:italic 700 var(--fs-sm) Georgia,'Times New Roman',serif;color:#f0d48a;text-shadow:0 0 6px rgba(240,200,110,.45),0 1px 1px rgba(0,0,0,.8)}
+.dice-go{margin:12px auto 2px;display:block;min-width:120px;min-height:34px;padding:6px 18px;border:0;border-radius:3px;cursor:pointer;background:#2a1b0e linear-gradient(180deg,#4a3520,#2a1b0e);
+  box-shadow:inset 0 1px 0 rgba(255,220,170,.18),inset 0 0 0 1px #120a04,0 2px 3px rgba(0,0,0,.6);font:700 var(--fs-sm) Georgia,'Times New Roman',serif;letter-spacing:.1em;text-transform:uppercase;color:#e8d2a4;
+  animation:dice-fade .3s ease-out var(--tumble) both}
+.dice-go:focus-visible{outline:2px solid #d8b56a;outline-offset:2px}
+@media (hover:hover){.dice-go:hover{color:#fff0c8;background:#3a2714 linear-gradient(180deg,#5a4228,#34230f)}}
+.dice-won .dice-res strong{color:#a8c472}.dice-lost .dice-res strong{color:#d0583c}.dice-part .dice-res strong{color:#e0b050}
+@keyframes dice-in{from{opacity:0;transform:scale(.92) rotate(-1deg)}to{opacity:1;transform:none}}
+@keyframes dice-mark{from{left:0;opacity:0}to{opacity:1}}
+@keyframes dice-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.dice-ov.quiet .dice-bar em,.dice-ov.quiet .dice-res,.dice-ov.quiet .dice-go{animation:none}
+@media (prefers-reduced-motion:reduce){.dice-card{animation:none}}

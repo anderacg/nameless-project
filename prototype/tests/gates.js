@@ -51,9 +51,11 @@ Kit.suite(({ok,info})=>{
     ok(G.mode==='town'&&G.town.ref===city&&!G.town.outside&&P.gold===g0-t.GATE_WAYS.writ.city&&t.Gates.admits(city).ok,'bought: '+t.GATE_WAYS.writ.city+' gold, and the city is open to you from now on');t.act('leave');P.passes={};
     // (a bribe: paid and let in for the day; refused; caught and marked)
     t.Gates.odds=()=>1;near(city);t.approachHolding(city);t.act('gt-bribe');ok(G.mode==='town'&&G.town.ref===city&&P.passes[city.name].until===G.day,'a bribe that works: in, for the day');t.act('leave');P.passes={};
-    t.Gates.odds=()=>0;t.GATE_WAYS.bribe.caught=1;const h0=t.honorWith(city.owner);near(city);t.approachHolding(city);t.act('gt-bribe');
+    t.Gates.odds=()=>0;t.GATE_WAYS.bribe.caught=0;P.gateTried={};near(city);t.approachHolding(city);const gr=P.gold;t.act('gt-bribe');
+    ok(G.mode==='gate'&&P.gold===gr&&/pushes your coin back/.test(text())&&document.querySelector('[data-act="gt-bribe"]').disabled,'a bribe refused: your coin back, and no second try today');t.act('gt-leave');
+    t.GATE_WAYS.bribe.caught=1;P.gateTried={};const h0=t.honorWith(city.owner);near(city);t.approachHolding(city);t.act('gt-bribe');
     ok(G.mode==='gate'&&/briber/.test(text())&&t.honorWith(city.owner)===h0-t.GATE_WAYS.bribe.honor&&t.Gates.barred(city)&&document.querySelector('[data-act="gt-bribe"]').disabled,'caught bribing: honour lost, marked, the ways barred for some days');
-    t.act('gt-leave');P.gateBan={};t.GATE_WAYS.bribe.caught=c0;
+    t.act('gt-leave');P.gateBan={};P.gateTried={};t.GATE_WAYS.bribe.caught=c0;
     // (slipping in by night)
     G.clock=t.DAY*.3;near(city);t.approachHolding(city);ok(document.querySelector('[data-act="gt-slip"]').disabled,'by day you cannot slip in');t.act('gt-leave');
     G.clock=t.DAY*.8;t.Gates.odds=()=>1;near(city);t.approachHolding(city);t.act('gt-slip');ok(G.mode==='town'&&G.town.ref===city,'by night: you slip in');t.act('leave');P.passes={};
@@ -65,9 +67,10 @@ Kit.suite(({ok,info})=>{
   {Kit.goTo(city.x,city.y+60);let err=null;try{t.drawWorld()}catch(e){err=e}ok(!err&&!t.Gates.admits(city).ok,'the map draws a refused holding’s lock')}
   // ---- the padlock over a gate that will not have you (the owner, 2026-11-08: "make the lock city icon animated and more cool, it should
   // floating around castle"; gfx/structures.js gateLock): gold, floating over the holding's top, never still
-  {const c=t.ctx,p0=performance.now,shot=at=>{performance.now=()=>at;try{c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,80,80);t.gateLock({x:40,seed:7},{x:0,y:0},50);const d=c.getImageData(0,0,80,80).data;c.restore();
-     let gold=0,top=99,sx=0;for(let i=0;i<d.length;i+=4)if(d[i]>200&&d[i+1]>150&&d[i+2]<120&&d[i+3]>200){gold++;const y=(i/4/80)|0;top=Math.min(top,y);sx+=(i/4)%80}return{gold,top,x:gold?sx/gold:0}}finally{performance.now=p0}};
-   const a=shot(1000),b=shot(2050);ok(a.gold>10&&a.top<50&&(Math.abs(a.x-b.x)>=1||a.top!==b.top),'a gold padlock floats over the holding\'s top ('+a.gold+' gold px, its top at '+a.top+' over 50), and drifts (x '+a.x.toFixed(1)+' → '+b.x.toFixed(1)+', top '+a.top+' → '+b.top+')')}
+  {const h=t.TOWNS.find(x=>!t.Gates.admits(x).ok)||t.TOWNS[0],o0=t.Gates.admits,on=t.GATES.on;t.GATES.on=true;t.Gates.admits=()=>({ok:false,why:'shut'});const c=t.ctx;
+   try{c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,200,60);t.PLAQUEQ.length=0;t.holdingPlaque(h,{x:h.x-100,y:h.y-60},60,true);t.drawPlaques({x:h.x-100,y:h.y-60});const d=c.getImageData(0,0,200,60).data;c.restore();
+    let gold=0;for(let i=0;i<d.length;i+=4)if(d[i]>200&&d[i+1]>150&&d[i+2]<120&&d[i+3]>200)gold++;
+    ok(gold>10,'a gate that will not have you: a gold padlock in the holding\'s bar ('+gold+' gold px)')}finally{t.Gates.admits=o0;t.GATES.on=on}}
   // ---- off: as before
   {X.on=false;LA.on=false;near(city);t.approachHolding(city);ok(G.mode==='town','off: every gate as before');t.act('leave')}
  }finally{X.on=on[0];LA.on=on[1]}

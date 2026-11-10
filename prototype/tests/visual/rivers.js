@@ -40,7 +40,7 @@ window.RUN=()=>{const t=T,o=[],q=new URLSearchParams(location.search),Z=+(q.get(
   // laid out in rows of 3 at Z, each labelled
   const per=3,cw=CW*TILE*Z,ch=CH*TILE*Z,lab=18,cols=per,rows=Math.ceil(PIECES.length/per),pg=document.createElement('canvas');pg.width=cols*(cw+8)+8;pg.height=rows*(ch+lab+8)+8;
   pg.style.cssText='position:absolute;left:0;top:0;z-index:9999;background:#1a1c26';document.body.appendChild(pg);const g=pg.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
-  PIECES.forEach(([pn],k)=>{const c=k%per,r=(k/per)|0,x=8+c*(cw+8),y=8+r*(ch+lab+8),f=found.get(pn);g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(pn+(f?' · '+f.at:' · none found'),x,y+13);
+  PIECES.forEach(([pn],k)=>{const c=k%per,r=(k/per)|0,x=8+c*(cw+8),y=8+r*(ch+lab+8),f=found.get(pn);g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(pn+(f?', '+f.at:', none found'),x,y+13);
    if(f)g.drawImage(f.cv,0,0,f.cv.width,f.cv.height,x,y+lab,cw,ch);o.push('INFO '+pn+': '+(f?f.at:'none found'))});
   o.push('PASS the river pieces drawn ('+found.size+' of '+PIECES.length+')');
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}

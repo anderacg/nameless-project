@@ -49,10 +49,10 @@ Kit.suite(({ok})=>{
    const br=P.comps.brann;br.hurt=0;t.act('death-find','brann');ok(!br.lost&&!D.questOf('brann')&&t.compsInBand().includes('brann'),'Brann found in the tavern of his holding: with you again, his quest done');
    const el=P.comps.elske,ap=el.ap,at=el.lost.at;el.lost.until=G.day;D.hour();
    ok(el.lost.left&&el.lost.at!==at&&el.ap===ap-X.comps.left&&D.questOf('elske').to.town===el.lost.at,'Elske, left past '+X.comps.wander+' days, gives up on you for '+el.lost.at+' and leaves your service (approval −'+X.comps.left+')');
-   const card=D.cards(t.townBy(el.lost.at))[0];ok(card&&card.acts.map(a=>a[0]).join()==='death-talk,death-pay','in its tavern: talk her round, or pay her ('+card.acts.map(a=>a[2]).join(' · ')+')');
+   const card=D.cards(t.townBy(el.lost.at))[0];ok(card&&card.acts.map(a=>a[0]).join()==='death-talk,death-pay','in its tavern: talk her round, or pay her ('+card.acts.map(a=>a[2]).join(', ')+')');
    roll(.99);try{t.act('death-talk','elske')}finally{window.Math.random=rnd}ok(el.lost&&el.lost.tried===G.day&&D.cards(t.townBy(el.lost.at))[0].acts[0][3],'a talk that fails: not again today');
    const g=P.gold,p=D.payOf('elske');t.act('death-pay','elske');el.hurt=0;ok(!el.lost&&P.gold===g-p&&!D.questOf('elske')&&t.compsInBand().includes('elske'),'paid what she is owed ('+p+'g): back in your band');
-   ok(/Lost · after the beasts/.test((()=>{P.comps.brann.lost={at,until:G.day+5,left:false};const h=t.partyRosterPage();delete P.comps.brann.lost;return h})()),'the Army window lists the lost apart');
+   ok(/Lost, after the beasts/.test((()=>{P.comps.brann.lost={at,until:G.day+5,left:false};const h=t.partyRosterPage();delete P.comps.brann.lost;return h})()),'the Army window lists the lost apart');
    const r0=P.renown;t.worldEmit('monster:slain',{monster:m});ok(P.renown===r0+X.eater.renown,'the man-eater slain: renown +'+X.eater.renown)}
   // ---- what a grave will give half of (phase 4): the experience your hero gained in this life, counted as it comes; not a grave's gift
   {const e0=P.xpEarned||0,x0=P.xp,lv0=P.level;t.gainXp(40,'battle');const e1=P.xpEarned;t.leaderOf(P).addXp(30,true);
@@ -86,8 +86,8 @@ Kit.suite(({ok})=>{
    const fief=t.TOWNS.filter(x=>!x.gone&&x.owner&&x.owner!=='player').sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[1];fief.owner='player';
    const m0=wolves();m0.qid=999;P.quests=[{id:999,type:'beast',title:'Beasts at the folds',mon:'wolf'}];const day=G.day,lords0=W.lords.length,fids0=t.FIDS.length;
    dieNow(m0);ok(/data-act="death-new"/.test(panel()),'slain: "Go on as someone new" on the Slain page');
-   t.act('death-new');ok(/<h2>A new life<\/h2>/.test(panel())&&/data-act="death-past"/.test(panel())&&/data-act="death-kin"/.test(panel()),'a new life: who you are (kin, or a stranger), your name, your past');
-   t.act('death-kin','');t.act('death-race','dwarf');const k=Object.keys(t.BGS)[0];t.act('death-past',k);
+   t.act('death-new');ok(/<h2>A new life<\/h2>/.test(panel())&&/data-act="death-past"/.test(panel())&&/data-act="death-past" data-arg="kin"/.test(panel())&&!/data-act="death-kin"|Who you are/.test(panel()),'a new life: your race, your name, your past (kin of the fallen among the pasts; no "Who you are" of its own)');
+   t.act('death-race','dwarf');const k=Object.keys(t.BGS)[0];t.act('death-past',k);
    ok(G.mode==='world'&&!D.slain&&P.race==='dwarf'&&P.bg===k&&P.level===0&&!P.renown&&!Object.keys(P.comps).length&&!P.quests.length&&P.born===G.day&&G.day===day,'you begin again: a dwarf '+t.BGS[k].n.toLowerCase()+', level 0, no renown, no companions, no quests, on the same day ('+G.day+')');
    ok(m0.qid==null&&W.monsters.includes(m0),'the quests\' marks on the world gone with them; the world as it was');
    const h=W.lords.find(l=>l.heir),f=h&&h.fac;
@@ -114,6 +114,8 @@ Kit.suite(({ok})=>{
    const ents=[],cam={x:P.x-200,y:P.y-120};g.x=P.x+30;g.y=P.y;g.draw(ents,cam,t.vis());let threw=null;try{for(const e of ents)e.f()}catch(err){threw=err}ok(ents.length&&!threw,'drawn with its light rising ('+(threw?threw.message:ents.length+' to draw')+')');
    g.meet();ok(/<h2>A grave<\/h2>/.test(panel())&&/data-act="death-pray"/.test(panel())&&/200 experience/.test(panel()),'come to it: its hero\'s life, and Pray');
    const all0=t.HERO_XP_ALL(P.level,P.xp),e0=P.xpEarned||0;t.act('death-pray');ok(g.spent&&g.flow&&G.mode==='world','Pray: its light flows from it into you, out on the map');
+   {const G0=o=>Object.assign(Object.create(Object.getPrototypeOf(g)),{xp:0,spent:false,gold:0,items:[],...o});
+    ok(G0({xp:5}).glows()&&G0({spent:true,xp:5,gold:40}).glows()&&G0({spent:true,items:[['item','x',1]]}).glows()&&!G0({spent:true,xp:5}).glows()&&!G0({}).glows(),'its light while anything is there for you: experience to pray for, gold or goods; prayed at and emptied, or nothing at all, dark')}
    const fe=[];g.draw(fe,cam,t.vis());let threw2=null;try{for(const e of fe)e.f()}catch(err){threw2=err}ok(fe.length>1&&!threw2,'the flow drawn over the map'+(threw2?': '+threw2.message:''));
    g.flowed();const dx=Math.round(t.HERO_XP_ALL(P.level,P.xp)-all0);ok(dx===200&&(P.xpEarned||0)===e0&&g.flow.done,'and as it arrives you gain it: +'+dx+' XP, level '+P.level+' (a gift: not toward your own grave)');
    ok(!g.pray()&&/prayed at/.test(g.tip()),'spent: it stays, quiet');
@@ -217,8 +219,8 @@ Kit.suite(({ok})=>{
    ok(L.family==='Thornwood'&&L.line.length===1&&L.line[0].family==='Thornwood','your line goes by it: the Thornwood family');
    const g2=die(X.grave.tiers.near.stone),site=W.sites.find(o=>o.type==='rest'&&o.kind==='plot');ok(site&&site.name==='Thornwood Family Rest'&&L.line.length===2&&L.family==='Thornwood','its graves and plot go by it: "'+(site&&site.name)+'"; the next life keeps it');
    G.jsec='family';G.famPick=null;const html=t.JOURNAL_SECTIONS.family.render();const ord=[...html.matchAll(/class="ft-pic">[\s\S]*?<\/span><span class="ft-n">([^<]+)</g)].map(m=>m[1]);
-   ok(/The Thornwood family · 2 fallen/.test(html)&&ord.join('|')==='1st|2nd|3rd · you'&&/class="ft-li ft-now"/.test(html)&&(html.match(/data-act="fam-pick"/g)||[]).length===3,'the journal\'s Family, a tree of tiles: the 1st at the top, then the 2nd, down to you, the 3rd ('+ord.join(' → ')+')');
-   ok(/class="ft-info"[\s\S]*3rd · you/.test(html)&&!/Lies in /.test(html),'you told beside the chart, until another tile is chosen');
+   ok(/The Thornwood family, 2 fallen/.test(html)&&ord.join('|')==='1st|2nd|3rd, you'&&/class="ft-li ft-now"/.test(html)&&(html.match(/data-act="fam-pick"/g)||[]).length===3,'the journal\'s Family, a tree of tiles: the 1st at the top, then the 2nd, down to you, the 3rd ('+ord.join(' → ')+')');
+   ok(/class="ft-info"[\s\S]*3rd, you/.test(html)&&!/Lies in /.test(html),'you told beside the chart, until another tile is chosen');
    t.openJournal('family');t.act('fam-pick','2');const info=document.querySelector('#panel .ft-info')?.textContent||'',sel=document.querySelector('#panel .ft-tile.ft-sel');
    ok(/Lies in Thornwood Family Rest/.test(info)&&/Fell to /.test(info)&&sel&&sel.dataset.arg==='2'&&sel.querySelector('img'),'a tile clicked: its life told (where they lie, what killed them), the tile marked, its picture in its square');
    const fc=L.line.map(r=>r.face&&JSON.stringify(r.face.config));ok(!t.Faces.ok()||fc.every(Boolean)&&new Set(fc).size===fc.length&&JSON.stringify(t.Faces.you().config)!==fc[1],'each of your line kept their own face, and you have yours');
@@ -271,14 +273,19 @@ Kit.suite(({ok})=>{
      ok(hf.kinLive.length===k1,'a house whose realm has fallen: no weddings and no births');
    }finally{Object.assign(Fm,f0);G.hsHouse=G.hsPick=null}}
    const c=W.lords.find(o=>!o.dead&&!o.gone&&!o.house);ok(/House /.test(H.tagOf(c,true))&&c.house,'a lord with no house yet: his house founded as you look him up');
-   G.kin=null;die(0);ok(!h.grudged(),'you dead, a stranger going on: the grudge gone with you');
+   die(0);ok(!h.grudged(),'you dead, a stranger going on: the grudge gone with you');
    const r0=W.lords.find(o=>!o.dead&&!o.gone&&!o.house);roll(0);let txt='';try{txt=t.lordWon(r0,{gold:0})}finally{window.Math.random=rnd}ok(r0.gone&&/falls in the fighting/.test(txt)&&H.byId(r0.house).grudged(),'beaten by you, now and then he falls in the fighting: his house holds it against you');
    // (kin of the one who fell: their people, a keepsake, a little of their name and of what their lords thought of them, the family's ground)
    {setup();const lo=W.lords.find(o=>!o.dead&&!o.gone),gid=Object.keys(t.ITEMS).find(q=>t.ITEMS[q].slot==='weapon');P.race='elf';P.renown=200;P.lrel={[lo.id]:60};P.gear.weapon=gid;
     const hl=t.LordHouse.of(lo);hl.grudge={gen:L.fallen,day:G.day,name:'Lord X',how:'put to death'};const home0=P.home,n0=L.line.length,mm=[X.min,X.max];X.min=X.max=0;X.die=true;try{lose(enc(wolves()))}finally{[X.min,X.max]=mm}
-    t.act('cont');t.act('death-new');ok(/data-act="death-kin"/.test(panel())&&!/data-act="death-race"/.test(panel()),'who you are: kin of the fallen (their people, no choosing your race), or a stranger');
-    t.act('death-past',k);const ok1=P.race==='elf'&&P.renown===20&&P.lrel[lo.id]===30&&P.inv.some(q=>q&&q.id===gid)&&L.kin.rel==='child'&&L.kin.of===n0+1;
-    ok(ok1,'their child: an elf as they were, '+P.renown+' renown of their 200, half their lord\'s regard ('+(P.lrel[lo.id])+' of 60), their blade in your bag');
+    t.act('cont');t.act('death-new');const kc=document.querySelector('#panel [data-act="death-past"][data-arg="kin"]');
+    ok(kc&&!kc.disabled&&/Kin of /.test(kc.textContent)&&/young elf of the family, just come of age/.test(kc.textContent)&&document.querySelector('#panel .origin-cards').firstElementChild===kc,'kin of the fallen: the first past, a young one of the family, of their people ('+kc?.textContent.slice(0,60)+'…)');
+    {const ks=new Set(),d0=G.day;for(let i=0;i<40;i++){G.day=d0+i;ks.add(L.kinOf(D.slain))}G.day=d0;ok(ks.size===Object.keys(t.KIN).length&&L.kinOf(D.slain)===L.kinOf(D.slain),'which kin by chance ('+[...ks].join(', ')+'), never chosen, the same for the same fall')}
+    {const hs=[t.townBy(L.plot?.at),t.townBy(P.home)].filter(Boolean),g0=hs.map(o=>o.gone);hs.forEach(o=>o.gone=true);try{t.act('death-new');const c2=document.querySelector('#panel [data-act="death-past"][data-arg="kin"]');
+      ok(c2&&c2.disabled&&/No home of the family stands/.test(c2.textContent)&&L.reborn('kin')===false&&D.slain,'no home of the family standing: kin greyed out, why, and not to be taken')}finally{hs.forEach((o,i)=>o.gone=g0[i])}t.act('death-new')}
+    const kinOf0=L.kinOf;L.kinOf=()=>'child';try{t.act('death-past','kin')}finally{L.kinOf=kinOf0}const ok1=P.race==='elf'&&P.renown===20&&P.lrel[lo.id]===30&&P.inv.some(q=>q&&q.id===gid)&&L.kin.rel==='child'&&L.kin.of===n0+1&&P.bg==='nobody'&&P.level===0&&P.gold===X.kin.past.gold&&!P.gear.weapon;
+    ok(ok1,'their child: an elf as they were, just come of age (level 0, '+P.gold+' gold, bare hands), '+P.renown+' renown of their 200, half their lord\'s regard ('+(P.lrel[lo.id])+' of 60), their blade in your bag');
+    {const yf=t.Faces.ok()&&t.Faces.you();ok(!yf||yf.config.age==='young'&&yf.config.beard==='none','a young face, no beard yet')}
     const fh=t.townBy(L.plot?.at)||t.townBy(home0);ok(!fh||P.home===fh.name,'you begin where the family is known ('+P.home+')');
     ok(hl.grudged()&&hl.grudge.half&&/your kin killed/.test(H.tagOf(lo)),'their feud yours, at half: "'+H.tagOf(lo).replace(/<[^>]+>/g,'')+'"');
     const html=t.JOURNAL_SECTIONS.family.render(),m=html.match(/<li class="ft-li"><div class="ft-row[^"]*">[\s\S]*?<ul><li class="ft-li ft-now">/);ok(m&&/Child of /.test(html),'the tree: you below the one you came from, their child');

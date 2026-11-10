@@ -54,7 +54,7 @@ function bldStatus(t,k){
   const w=t.work,pct=()=>'building '+Math.round(workProg(t)*100)+'%';
   if(w&&w.k===k)return [pct(),'gold'];
   if(k==='wall')return [wallOf(t)||!fenceOf(t)?WALL_N[wallOf(t)]:'A fence',''];
-  if(k==='house'){const n=(t.lots||[]).filter(l=>l.k==='house').length;return housingFull(t)?[n+' · full','bad']:[n+' · room for '+housing(t),'']}
+  if(k==='house'){const n=(t.lots||[]).filter(l=>l.k==='house').length;return housingFull(t)?[n+', full','bad']:[n+', room for '+housing(t),'']}
   const lv=bldLv(t,k),M=MAKE[k]||{},out=(t.last&&t.last.out)||{};
   if(!lv)return bldCap(t,k)?[needsMet(t,k)?'not built':'needs '+needsText(k),'']:['no land',''];
   if(sabotaged(t,k))return ['sabotaged','bad'];
@@ -63,7 +63,7 @@ function bldStatus(t,k){
   if(M.in&&M.out&&t.last&&!Object.keys(M.out).some(g=>out[g]))return ['idle: no '+Object.keys(M.in).map(g=>GOODS[g].n.toLowerCase()).join(', '),'bad'];
   if(PLOTS[k]&&fieldShare(t,k)<1)return ['short of fields','bad'];
   if(M.out&&workerScale(t)<1)return ['short of workers','gold'];
-  return ['level '+lv+(M.out?' · working':''),'good'];
+  return ['level '+lv+(M.out?', working':''),'good'];
 }
 function holdingItems(t){return [{act:'tab',arg:'fief',ico:'banner',n:PLACES.fief.n,short:PLACES.fief.short,on:!G.town.bld},
   ...bldKeys().map(k=>{const lv=ESTATES[k]?bldLv(t,k):1;return {act:'bld',arg:k,ico:HOLD_ICO[k],n:bldName(k),short:bldShort(k),on:G.town.bld===k,dim:!lv&&!(t.work&&t.work.k===k)}})]}
@@ -77,7 +77,7 @@ function bldTop(t,k){
   let h='<p>'+(k==='wall'?'The fortification of the centre: walls make every defender stronger, sieges longer and the garrison bigger.':k==='house'?'Houses give the people room to live; a full holding grows no more and sends people away.':ESTATES[k].d)+'</p>';
   if(k==='wall'||k==='house')h+='<div class="loot-stats">'+cell('State',st,tone)+(k==='wall'?cell('Defenders fight as','level '+(1+wallOf(t)))+cell('Garrison up to',fiefCap(t)):cell('People',Math.round(t.pop||0))+cell('Room for',housing(t)))+'</div>';
   else{const lv=bldLv(t,k),M=MAKE[k]||{},ws=workerScale(t);
-    h+='<div class="loot-stats">'+cell('State',st,tone)+cell('Level',lv+' / '+(bldCap(t,k)||'–'))+(M.out?cell('Workers',lv?lv*WORKERS+' needed · '+Math.round(ws*100)+'% at work':'—',ws<1&&lv?'gold':''):'')+
+    h+='<div class="loot-stats">'+cell('State',st,tone)+cell('Level',lv+' / '+(bldCap(t,k)||'–'))+(M.out?cell('Workers',lv?lv*WORKERS+' needed, '+Math.round(ws*100)+'% at work':'—',ws<1&&lv?'gold':''):'')+
       (PLOTS[k]&&lv?cell('Fields',plotsAt(t,k,lv).length+' of '+PLOTS_AT[k](lv)):'')+'</div>'}
   return h;
 }
@@ -86,7 +86,7 @@ function bldWorks(t,k,here){
   {if(lv&&M.out)h+='<div class="lab">Production</div><p style="font-size:14px">'+(Object.keys(M.out).some(g=>(L.out||{})[g])?'Made yesterday: '+Object.keys(M.out).filter(g=>(L.out||{})[g]).map(g=>L.out[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+'.':'Nothing made yesterday.')+
       (M.in?' Uses '+Object.keys(M.in).map(g=>M.in[g]*lv+' '+GOODS[g].n.toLowerCase()).join(' and ')+' a day from the stores.':'')+
       (ESTATES[k].work?' '+(hands.length?hands.length+' '+ESTATES[k].work+(hands.length>1?'s':'')+' about'+(hands.some(f=>f.st!=='in')?', '+hands.filter(f=>f.st!=='in').length+' carrying the day’s load':'')+(here?'.':'; meet them at the estate on the map.'):here?'':'Its '+ESTATES[k].work+'s are met at the estate on the map.'):'')+'</p>';
-    if(gs.length){ensureEcon(t);h+='<div class="lab">In store</div><p style="font-size:14px">'+gs.map(g=>GOODS[g].n+' <b>'+Math.floor(t.stock[g]||0)+'</b>'+(marketState(t,g)?' <span class="'+(marketState(t,g)==='shortage'?'bad':'good')+'">('+marketState(t,g)+')</span>':'')).join(' · ')+'</p>'}}
+    if(gs.length){ensureEcon(t);h+='<div class="lab">In store</div><p style="font-size:14px">'+gs.map(g=>GOODS[g].n+' <b>'+Math.floor(t.stock[g]||0)+'</b>'+(marketState(t,g)?' <span class="'+(marketState(t,g)==='shortage'?'bad':'good')+'">('+marketState(t,g)+')</span>':'')).join(', ')+'</p>'}}
   return h;
 }
 function bldBuild(t,k){
@@ -102,6 +102,6 @@ function showTown(t,body){
   const items=hold?holdingItems(t):townPlaces(t).map(k=>PLACES[k].item(t,tab));
   const close=['leave',null,s.inScene?'Back to the streets':P.stay&&P.stay.town===t.name?'Back to your lodgings':'Leave '+t.label];
   showRail({head:{act:['tab','home'],on:!tab,...townHead(t,hold)},label:hold?'Walls and estates':'Places',items,
-    title:bld?bldName(bld):P0&&tab?(hold?'Your holding':P0.n):t.name,sub:tab?t.name+(hold?' · '+(bld?'your holding':fiefIncome(t)+' gold a day'):''):cap1(t.label)+(t.owner?' of the '+FACS[t.owner].n:''),gold:true,
+    title:bld?bldName(bld):P0&&tab?(hold?'Your holding':P0.n):t.name,sub:tab?t.name+(hold?', '+(bld?'your holding':fiefIncome(t)+' gold a day'):''):cap1(t.label)+(t.owner?' of the '+FACS[t.owner].n:''),gold:true,
     body:(s.greet?'<p class="gold">'+s.greet+'</p>':'')+body,back:bld?['tab','fief','Back']:tab&&!s.direct?['tab','home','Back']:null,close},'town:'+t.name+':'+(tab||'')+':'+(bld||''));
 }

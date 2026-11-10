@@ -306,7 +306,7 @@ class Quest extends Happening{
     const r=this.reward||{};
     if(how==='closed')return '+'+Math.round(r.gold*QUEST_CLOSED.gold)+' gold for your trouble';
     if(state!=='done')return Outcome.describe(this.penalty(this.fate));
-    return ['+'+this.earned()+' gold',r.rep&&'+'+r.rep+' reputation',r.honor&&'+'+r.honor+' honor',r.xp&&r.xp+' XP'].filter(Boolean).join(' · ');
+    return ['+'+this.earned()+' gold',r.rep&&'+'+r.rep+' reputation',r.honor&&'+'+r.honor+' honor',r.xp&&r.xp+' XP'].filter(Boolean).join(', ');
   }
 }
 /* ---------- the archive: every quest and story over (done, failed, abandoned), the last QUEST_ARCHIVE.keep, oldest first; each a

@@ -24,10 +24,19 @@ Kit.suite(({ok})=>{
    const pay=t.lordRansom(h.r),tr=t.treas(g),g0=P.gold;t.act('pz-pay','0');ok(!l.held&&l.back>G.day&&P.gold===g0-pay&&t.treas(g)===tr+pay&&t.relWith(l)===r0+X.visit.rel+X.pay.rel&&!S.of(h.key).length,'his ransom paid ('+pay+'g, to their treasury): free, riding home to raise an army, and he thinks better of you');t.toWorld()}
   // (bribe, break out: crimes when they fail or succeed)
   reset();{const l=lordOf(f),town=Kit.stub(0,()=>S.take(l,g,l.x,l.y));enter(town);const b=S.bribe(S.of(town.name)[0],town.name),g0=P.gold;
-   Kit.stub(.99,()=>t.act('pz-bribe','0'));ok(l.held&&P.gold===g0-b.cost&&t.crimeAt(town)?.fine===X.bribe.fine,'a bribe found out: '+b.cost+'g gone, the watch fines you '+X.bribe.fine+'g');
+   ok(b.cost<t.lordRansom(S.of(town.name)[0]),'the gaoler asks less than the ransom ('+b.cost+'g against '+t.lordRansom(S.of(town.name)[0])+'g): a gamble, not a dearer way to pay');
+   Kit.stub(.99,()=>t.act('pz-bribe','0'));ok(l.held&&P.gold===g0&&S.of(town.name)[0].bribed===G.day&&btn('pz-bribe','0').disabled&&!t.crimeAt(town),'a bribe refused: your coin back, no crime, and he will not hear you again today');
+   G.day++;Kit.rolls([.99,0],()=>t.act('pz-bribe','0'));ok(l.held&&P.gold===g0-b.cost&&t.crimeAt(town)?.fine===X.bribe.fine&&S.alarmed(town.name)&&btn('pz-bribe','0').disabled&&btn('pz-break','0').disabled,'a bribe reported: '+b.cost+'g gone, the watch fines you '+X.bribe.fine+'g, the guards on alert (no bribe, no break-out for days)');
+   G.day+=X.alarm.days;town.crime=null;enter(town);ok(!S.alarmed(town.name)&&!btn('pz-bribe','0').disabled,'days on, the alarm is over');
    Kit.stub(0,()=>t.act('pz-bribe','0'));ok(!l.held,'a bribe taken: he walks free');
-   l.held=false;l.dead=false;Kit.stub(0,()=>S.take(l,g,l.x,l.y,town));const hp=P.hp;Kit.stub(.99,()=>t.act('pz-break','0'));ok(l.held&&P.hp<hp&&t.crimeAt(town).fine>X.bribe.fine,'caught breaking him out: beaten, a bigger fine');
-   Kit.stub(0,()=>t.act('pz-break','0'));ok(!l.held&&t.hostileTo(g),'broken out: free, and the '+t.FACS[g].n+' hostile to you');t.toWorld()}
+   l.held=false;l.dead=false;Kit.stub(0,()=>S.take(l,g,l.x,l.y,town));const hp=P.hp;Kit.stub(.99,()=>t.act('pz-break','0'));ok(l.held&&P.hp<hp&&t.crimeAt(town).fine>X.bribe.fine&&S.alarmed(town.name),'caught breaking him out: beaten, a bigger fine, the guards on alert');
+   const hp2=P.hp;Kit.stub(.99,()=>t.act('pz-break','0'));ok(l.held&&P.hp===hp2,'and no second try while they are: no more beatings for it');
+   t.Timed.of(town).clear('alarm');Kit.stub(0,()=>t.act('pz-break','0'));ok(!l.held&&t.hostileTo(g),'broken out: free, and the '+t.FACS[g].n+' hostile to you');t.toWorld()}
+  // (freeing a lord your realm is at war with: honour lost with your own; his house counts him among its living while he is held)
+  reset();{const l=lordOf(f),town=Kit.stub(0,()=>S.take(l,g,l.x,l.y)),hf=t.FIDS.find(x=>x!==f&&x!==g),pf=P.fac,r0=W.rel[t.rk(hf,f)];
+   try{const de=t.DEATH.on;t.DEATH.on=true;const h=t.LordHouse.of(l);ok(l.held&&h.live.includes(l),'a lord held is still of his house\'s living');t.DEATH.on=de;
+    war(hf,f,'war');P.fac=hf;t.addHonor(hf,20,true);const h0=t.honorWith(hf);enter(town);P.gold=5000;t.act('pz-pay','0');ok(!l.held&&t.honorWith(hf)===h0-X.pay.enemy,'you free one your realm is at war with: honour lost with the '+t.FACS[hf].n+' (−'+X.pay.enemy+')')}
+   finally{P.fac=pf;W.rel[t.rk(hf,f)]=r0;t.toWorld()}}
   // (from outside a hostile holding's walls)
   reset();{const l=lordOf(f),town=Kit.stub(0,()=>S.take(l,g,l.x,l.y));t.Timed.of(P,'hostile').set(g,20);Kit.world();t.openSiege(town);ok(has('sg-prison')&&/The prison \(1 held\)/.test(panel()),'a hostile holding: its prison from outside its walls');
    t.act('sg-prison');ok(G.mode==='besiege'&&panel().includes(t.lordName(l))&&document.querySelector('.nav [data-act="sg-back"]'),'its page, Back to the walls');t.act('pz-pay','0');ok(!l.held&&G.mode==='besiege'&&!has('pz-pay'),'paid from outside: free');t.act('sg-back');ok(has('sg-prison'),'Back: the walls again');t.act('sg-leave')}

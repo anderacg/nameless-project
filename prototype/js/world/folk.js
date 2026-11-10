@@ -255,7 +255,7 @@ function workerDeeds(t,f){const own=t.owner==='player',lv=recruitKind(t,f),c=hir
       tip:'Hire the '+f.job+' as '+an(ST[lv].n.toLowerCase())+' for '+c+' gold: '+t.name+' has one less pair of hands.'},
     !own&&{icon:'bag',label:'Rob',act:'wk-ask',arg:'rob',facts:[robCarries(t,f),mem?'':robRead(t,f,robOdds(t,f))],why:mem?'They have nothing left to give you':'',
       tip:'Take what they carry. They may fight back, with any guards near: then it is a fight. Reputation −'+rb.rep+', honor −'+rb.honor+'; killing them costs far more. It asks you first.'},
-    !own&&{icon:'prisoners',label:'Press-gang',act:'wk-ask',arg:'press',facts:['into your band as '+an(ST[lv].n.toLowerCase()),'reputation −'+pg.rep+' · honor −'+pg.honor],why:partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(lv)?'No Peasant Levy unit with room, nor a free slot':'',
+    !own&&{icon:'prisoners',label:'Press-gang',act:'wk-ask',arg:'press',facts:['into your band as '+an(ST[lv].n.toLowerCase()),'reputation −'+pg.rep+', honor −'+pg.honor],why:partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(lv)?'No Peasant Levy unit with room, nor a free slot':'',
       tip:'Drag the '+f.job+' into your ranks: reputation −'+pg.rep+', honor −'+pg.honor+', morale −'+pg.morale+', and '+pr(f).his+' estate remembers you for '+ROB.estate+' days. It asks you first.'}]}
 /* robbing (doc/CONDUCT_RUINS_DESIGN.md §2; its numbers: ROB, data/conduct.js). What he carries goes by what he is doing (robLoot);
    whether they fight back, by their power against yours and their nerve (robOdds); given in, you take it (robTake); fighting

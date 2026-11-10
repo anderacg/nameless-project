@@ -5,6 +5,8 @@
 // holding was often water or a house there). How you walk (world.js heroStep): straight on while the way is open, else by the
 // router (world/router.js) over a ford, a bridge and a ferry and round a river to a holding beyond it; a click on water you cannot
 // reach stops you at the shore, never sliding back and forth along it. The way drawn ahead of you (gfx/worldui.js) is that way.
+// Round the buildings, kept to the router's way once it has one (no swaying on the spot), a click on what you cannot stand on the
+// nearest open spot (2026-11-10).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
 try{
  const t=T,G=t.G,P=t.P,TILE=t.TILE;
@@ -61,6 +63,25 @@ try{
  {start();let lake=null;for(let i=0;i<t.MW*t.MH&&!lake;i+=7){const x=i%t.MW,y=(i-x)/t.MW;if(x>4&&y>4&&x<t.MW-4&&y<t.MH-16&&[[0,0],[-3,0],[3,0],[0,-3],[0,3]].every(([a,b])=>t.tAt(x+a,y+b)===t.T_WATER)){
     for(let d=4;d<12&&!lake;d++)if(t.tAt(x,y+d)===t.T_OPEN&&t.tAt(x,y+d+1)===t.T_OPEN)lake=[(x+.5)*TILE,(y+.5)*TILE,(x+.5)*TILE,(y+d+1.5)*TILE]}}
   if(lake){Kit.goTo(lake[2],lake[3]);const f=go(lake[0],lake[1],2000);ok(P.tx==null&&f<600,'a click out on the water: you walk to the shore and stop there ('+f+' frames), never sliding back and forth along it')}else info('no lake to click on')}
+ // ---- (the owner, 2026-11-10: "fix pathfinder and the guide path to use a walkable path otherwise my character would walk into obstacle
+ // and sometime stuck") trips from holdings' gates out over their land: each reaches its goal, never swaying on the spot (straight one
+ // step, back by the router the next) nor stopping short; round the buildings (no more than a corner's pixel into one), the way drawn
+ // the same; a click on water, a building or a shut keep walks to the nearest open spot
+ {const F=t.footMask(),deep=(x,y)=>[[-4,-4],[4,-4],[-4,4],[4,4]].every(([a,b])=>F[Math.floor((y+b)/TILE)*t.MW+Math.floor((x+a)/TILE)]);let n=0,arrived=0,met=0;const short=[],inB=[],wayB=[];
+  // (is there a way there touching no building at all (a flood over open, unshut tiles in a box round both): only then is a way into one a fault; a goal walled in by
+  // buildings is reached through them, at their cost)
+  const free=(x0,y0,x1,y1)=>{const MW=t.MW,s0=Math.floor(y0/TILE)*MW+Math.floor(x0/TILE),g0=Math.floor(y1/TILE)*MW+Math.floor(x1/TILE),bx=Math.min(s0%MW,g0%MW)-24,bX=Math.max(s0%MW,g0%MW)+24,by=Math.min((s0/MW)|0,(g0/MW)|0)-24,bY=Math.max((s0/MW)|0,(g0/MW)|0)+24,seen=new Set([s0]),q=[s0];
+    while(q.length){const i=q.pop();if(i===g0)return true;const x=i%MW,y=(i/MW)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+a,ny=y+b,j=ny*MW+nx;if(nx<bx||nx>bX||ny<by||ny>bY||seen.has(j)||!t.passable(t.tiles[j])||t.SHUT&&t.SHUT[j]&7||F[j]&&j!==g0)continue;seen.add(j);q.push(j)}}return false};
+  for(const h of t.TOWNS.slice(0,10))for(let k=0;k<3;k++){const ang=k*2.1+h.tx%7,d=(9+k*5)*TILE;start();t.heroAtGate(h);G.lastTown=h;let gx=P.x+Math.cos(ang)*d,gy=P.y+Math.sin(ang)*d;
+    if(!t.passable(t.terrAt(gx,gy))||!t.Router.reach(P,{x:gx,y:gy}))continue;({x:gx,y:gy}=t.Router.open(gx,gy,P));n++;
+    const x0=P.x,y0=P.y,w=t.wuiWay(P.x,P.y,gx,gy,0);if(w.X.some((x,i)=>deep(x,w.Y[i]))&&free(x0,y0,gx,gy))wayB.push(h.name);let ib=false;P.tx=gx;P.ty=gy;P.stuck=0;G.chase=null;
+    Kit.frames(2500,.05,dt=>{P.bsta=100;if(!t.marchStep(dt*t.WORLD_PACE))t.arriveStep();if(deep(P.x,P.y))ib=true},()=>P.tx==null||G.mode!=='world');
+    if(ib&&free(x0,y0,gx,gy))inB.push(h.name);if(G.mode!=='world'){met++;t.hidePanel();G.town=null;G.mode='world'}else if(P.tx==null&&Math.hypot(P.x-gx,P.y-gy)<40)arrived++;else short.push(h.name+' '+Math.round(Math.hypot(P.x-gx,P.y-gy))+' px short'+(P.tx!=null?', still walking':''));P.tx=null}
+  ok(n>=20&&!short.length,n+' walks from the holdings\' gates: '+arrived+' reach their goal, '+met+' meet something on the way, none stuck or swaying short of it'+(short.length?' ('+short.slice(0,4).join('; ')+')':''));
+  ok(!inB.length&&!wayB.length,'round the buildings, not through them: your band'+(inB.length?' (into one: '+inB.slice(0,3).join(', ')+')':'')+' and the way drawn'+(wayB.length?' (through one: '+wayB.slice(0,3).join(', ')+')':''));
+  const h=t.TOWNS[0],l=(h.lots||[]).find(q=>q.st==='built'&&!t.WAY_FOOT_LOT.open.includes(q.k)),bx=(l.x+l.n/2)*TILE,by=(l.y+l.n/2)*TILE,ob=t.Router.open(bx,by,{x:h.x,y:h.y+40}),[otx,oty]=tileOf(ob.x,ob.y);
+  ok(l&&!F[oty*t.MW+otx]&&t.passable(t.tAt(otx,oty))&&Math.hypot(ob.x-bx,ob.y-by)<l.n*TILE*1.5,'a click on a '+l.k+': you walk to the open ground beside it');
+  {const gs=t.gateSpot(h),op=t.Router.open(gs.x,gs.y,{x:gs.x,y:gs.y});ok(op.x===gs.x&&op.y===gs.y,'a click on open land: that very spot')}}
  // ---- a ferry (seed s2)
  Math.random=t.seeded(5);t.begin('soldier',t.normSettings({preset:'normal',seed:'s2'}));{const f=t.WM.crossings.find(c=>c.kind==='ferry');if(!f)info('s2 has no ferry');
   else{const MW=t.MW,[a,b]=[f.i,f.j].map(i=>[(i%MW+.5)*TILE,(Math.floor(i/MW)+.5)*TILE]);start();Kit.goTo(a[0],a[1]);go(b[0],b[1],3000);

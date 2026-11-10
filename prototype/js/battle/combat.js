@@ -77,7 +77,7 @@ const spellMul=()=>1+.04*skill('spell');
 // (under RTS command your hero aims where they choose: B.aiAim, charmind.js HeroMind.aimAt)
 const aimPoint=d=>B.aiAim?{x:B.aiAim.x,y:B.aiAim.y}:G.mouse.in&&G.mouse.type==='mouse'?{x:G.mouse.x,y:G.mouse.y+6}:{x:B.hero.x+Math.cos(B.aim)*d,y:B.hero.y+Math.sin(B.aim)*d};
 function castSlot(i){const id=(P.slots||[])[i];if(id)castSkill(id)}
-const costText=S=>[S.mp?S.mp+' MP':'',S.sp?S.sp+' SP':''].filter(Boolean).join(' · ');
+const costText=S=>[S.mp?S.mp+' MP':'',S.sp?S.sp+' SP':''].filter(Boolean).join(', ');
 // what share of a blocked hit still lands: shieldwall, gear and Blocking lower it
 const blockMul=()=>Math.max(.05,(has('shieldwall')?.1:.2)-gm('block')-.01*skill('block'));
 function knock(u,ox,oy,f){if(!f||u.hp<=0)return;const a=Math.atan2(u.y-oy,u.x-ox),k=PHYSICS.on?1/physMass(u):u.s.big?.2:1;// (physics: by his mass)
@@ -235,7 +235,7 @@ class HeroHands{
       if(L&&has('guide')){const a=B.draw?.9:.35;ctx.fillStyle='rgba(255,224,138,'+a+')';
         for(let k=1;k<12;k++){const f=k/12;ctx.fillRect(Math.round(h.x+(L.x-h.x)*f)-1,Math.round(h.y+(L.y-h.y)*f-4-4*L.H*f*(1-f))-1,2,2)}
         ctx.strokeStyle='rgba(255,224,138,'+a+')';ctx.lineWidth=1;const lx=Math.round(L.x)+.5,ly=Math.round(L.y)+.5;ctx.beginPath();ctx.moveTo(lx-3,ly-3);ctx.lineTo(lx+3,ly+3);ctx.moveTo(lx+3,ly-3);ctx.lineTo(lx-3,ly+3);ctx.stroke()}
-      txt('BOW · '+heroShotsLeft()+' arrows · range '+bowRange()+' (wheel)'+(B.draw&&B.draw.t>=DRAW_TIME?' · holding drains stamina':'')+(has('guide')?'':' · learn Hawkeye for a guide'),6,VH-36,B.draw&&B.draw.t>=DRAW_TIME?'#ffb04a':'#e8d8a0');}
+      txt('BOW, '+heroShotsLeft()+' arrows, range '+bowRange()+' (wheel)'+(B.draw&&B.draw.t>=DRAW_TIME?', holding drains stamina':'')+(has('guide')?'':', learn Hawkeye for a guide'),6,VH-36,B.draw&&B.draw.t>=DRAW_TIME?'#ffb04a':'#e8d8a0');}
     // stamina and mana under the health bar (with the manual control; under RTS command, in the hero's details: battlehud.js)
     if(MANUAL_HERO){ctx.fillStyle='#000';ctx.fillRect(5,20,62,4);ctx.fillRect(5,25,62,4);
       ctx.fillStyle=X.spT<STAM.delay?'#c8a24a':'#78c474';ctx.fillRect(6,21,Math.round(60*X.sp/maxSP()),2);

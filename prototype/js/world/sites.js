@@ -144,7 +144,7 @@ class Site extends WorldObject{
   draw(ents,cam,V){if(!this.inView(V))return;const s=this;
     const sp0=siteSprite(s);ents.push({st:true,y:s.y,sh:sp0.sh?[sp0.sh,Math.round(s.x-cam.x)-sp0.ax,Math.round(s.y-cam.y)+8-sp0.ay]:null,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),sp=siteSprite(s);if(sp.gr)ctx.drawImage(sp.gr,sx-sp.ax,sy+8-sp.ay);if(s.cleared)ctx.globalAlpha=.5;ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(!s.cleared)depthPic(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;}})}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
-  tip(){return '<b>'+Discovery.nameOf(this)+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?' · empty for now':'')+'</small><span class="act">Click: go there</span>'}
+  tip(){return '<b>'+Discovery.nameOf(this)+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?', empty for now':'')+'</small><span class="act">Click: go there</span>'}
   // a job to clear it (quests.js)
   get clearJob(){return false}
 }
@@ -234,7 +234,7 @@ const RUIN_OCC={
     page:(s,o)=>{const H=RUIN.hermit,y=G.siteSpy,told=y&&y.s===s&&y.told,why=told?'He has said his piece for today':'';
       return{body:railCards([{pic:personPic('priest',o.race,o.v),name:'The hermit',role:'Living in the ruins',facts:['Knows the land','Knows the old kings']}]),
         acts:[{icon:'region',label:'Ask',act:'site-hermit',arg:'rumour',facts:['rumours: a place you have not found',H.rumour+'g'],why:why||(P.gold<H.rumour?'Not enough gold':''),tip:'Pay him for what he has heard of the land. Once a visit.'},
-          {icon:'book',label:'Listen',act:'site-hermit',arg:'lore',facts:['lore of the old kings','+'+H.xp+' XP · '+H.lore+'g'],why:why||(P.gold<H.lore?'Not enough gold':''),tip:'Pay him to tell of the old kings. Once a visit.'}],note:'Once a visit: rumours or lore.'}},
+          {icon:'book',label:'Listen',act:'site-hermit',arg:'lore',facts:['lore of the old kings','+'+H.xp+' XP, '+H.lore+'g'],why:why||(P.gold<H.lore?'Not enough gold':''),tip:'Pay him to tell of the old kings. Once a visit.'}],note:'Once a visit: rumours or lore.'}},
     act:(s,o,a,arg,done)=>{const H=RUIN.hermit,y=G.siteSpy;if(a!=='site-hermit'||y&&y.s===s&&y.told)return false;const c=arg==='lore'?H.lore:H.rumour;if(P.gold<c)return true;
       P.gold-=c;G.siteSpy={s,told:true};
       if(arg==='lore'){gainXp(H.xp,'lore');done('By his fire the hermit tells of the old kings and the wars that broke them. (+'+H.xp+' XP)');return true}
@@ -410,15 +410,15 @@ class Lair extends Site{
     if(step==='yield'&&yl){const n=yl.length,tb=CONDUCT.takeBrigands;
       return{title:'They yield',msg:'',body:'<p>They throw down their weapons'+(ld?', '+ld.name+' with them':'')+'. What becomes of them?</p><p class="muted">Brigands in your ranks lower morale and every realm’s opinion of you. Setting them free is merciful, but the roads stay dangerous.</p>',
         acts:[{icon:'prisoners',label:'Take them prisoner',act:'site-fate',arg:'cage',facts:[Math.min(n,Math.max(0,prisonCap()-prisonerCount()))+' fit','and their plunder'],why:prisonerCount()>=prisonCap()?'No room for prisoners':''},
-          {icon:'troops',label:'Into your band',act:'site-fate',arg:'join',facts:[Math.min(n,Math.max(0,partyRoom()))+' join','morale −'+tb.morale+' · honor −'+tb.honorAll],why:partyRoom()<1?'Your band is full':''},
+          {icon:'troops',label:'Into your band',act:'site-fate',arg:'join',facts:[Math.min(n,Math.max(0,partyRoom()))+' join','morale −'+tb.morale+', honor −'+tb.honorAll],why:partyRoom()<1?'Your band is full':''},
           {icon:'truce',label:'Let them go',act:'site-fate',arg:'free',facts:['disarmed','renown +1']}],close:['site-fate','free','Let them go']}}
     if(step==='parley'){const pw=y?s.power(s.all(y.list)):g.pw,afraid=stance(pw)==='afraid',ch=Math.round(yieldChance({power:()=>pw},'band')*100),tb=tribute(s);
-      return{title:'Parley',body:'<p>You ride up with a white rag on a spear. '+(ld?ld.name+' steps out':'Their chieftain steps out')+' to hear you, '+roughly(g.n)+' at '+pr(ld).his+' back.</p>',
-        acts:[{icon:'gold',label:'Pay them to go',act:'site-pay',facts:[tb+'g','they break camp'],why:P.gold<tb?'Not enough gold':'',tip:'Buy them off: '+tb+' gold and they break camp and ride away, any bands sheltering with them. No fight, no loot, no bounty; the place lies empty for a while.'},
-          {icon:'prisoners',label:'Demand surrender',act:'site-yield',facts:[afraid?insight(['they might yield, or not',oddsWord(ch/100)+' they yield',ch+'% they yield'],'know the odds'):'they do not fear you','else they fight'],why:afraid?'':'They do not fear you: it takes about twice their strength',tip:'Call on them to yield, as a cornered band would. If they do, you choose their fate: prisoners, recruits or let go. If not, they fight.'}],
+      return{title:'Parley',body:'<p>You ride up with a white rag on a spear. '+(ld?ld.name+' steps out':'Their chieftain steps out')+' to hear you, '+roughly(g.n)+' at '+pr(ld).his+' back.</p>'+(s.bandKind==='goblins'?'<p class="muted">'+(goblinTongueSay(true)||'They jabber at you in their own tongue; no one with you understands a word.')+'</p>':''),
+        acts:[{icon:'gold',label:'Pay them to go',act:'site-pay',facts:[tb+'g','they break camp'],why:goblinTongueWhy(s.bandKind==='goblins')||(P.gold<tb?'Not enough gold':''),tip:'Buy them off: '+tb+' gold and they break camp and ride away, any bands sheltering with them. No fight, no loot, no bounty; the place lies empty for a while.'},
+          {icon:'prisoners',label:'Demand surrender',act:'site-yield',facts:[afraid?insight(['they might yield, or not',oddsWord(ch/100)+' they yield',ch+'% they yield'],'know the odds'):'they do not fear you','else they fight'],why:goblinTongueWhy(s.bandKind==='goblins')||(afraid?'':'They do not fear you: it takes about twice their strength'),tip:'Call on them to yield, as a cornered band would. If they do, you choose their fate: prisoners, recruits or let go. If not, they fight.'}],
         note:'They '+(afraid?'eye your band warily.':'laugh at your band.'),back:['site-tab','home','Back']}}
     const all=y&&s.all(y.list),pw=all?s.power(all):g.pw,lk=looks(pw/Math.max(1,partyPower()));
-    return{body:'<p class="muted">'+s.T.d+'</p>'+Prisons.siteNote(s)+(y?'<div class="lab">What your scouts saw</div>'+railCards(Object.entries(countsOf(all)).map(([k,n])=>({pic:portrait(k),name:k==='chief'&&ld?chiefLabel(ld):ST[k].n,role:k==='chief'?'Their chieftain · bounty '+bountyOf(ld)+'g':'Tier '+ST[k].tier,n})))+
+    return{body:'<p class="muted">'+s.T.d+'</p>'+Prisons.siteNote(s)+(y?'<div class="lab">What your scouts saw</div>'+railCards(Object.entries(countsOf(all)).map(([k,n])=>({pic:portrait(k),name:k==='chief'&&ld?chiefLabel(ld):ST[k].n,role:k==='chief'?'Their chieftain, bounty '+bountyOf(ld)+'g':'Tier '+ST[k].tier,n})))+
         '<ul class="tnotes"><li>Power <b>'+pw+'</b> vs your '+partyPower()+'.</li><li>Loot: '+s.lootSay(all.length)+', and '+(ld?ld.name:'their chieftain')+' to take captive ('+bountyOf(ld)+'g bounty).</li></ul>':
         pageFacts([insight([band+' in their tents',cap1(roughly(g.n))+' '+band.toLowerCase(),g.n+' '+band.toLowerCase()+' and their chieftain'],'know their numbers')+(s.sheltering().length?', bands among them sheltering for the night':''),
           insight(['you cannot tell how strong','<span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>','power '+g.pw+' vs your '+partyPower()],'know their strength')])+
@@ -430,6 +430,7 @@ class Lair extends Site{
     if(a==='site-ask'){const g=s.guess(),all=y&&s.all(y.list);railConfirm({title:'Attack the '+s.T.n.toLowerCase()+'?',sub:s.name,text:'You storm it: '+(all?all.length+' fighters':roughly(g.n)+' of them, as far as you can tell')+', their chieftain at their head.',
       facts:[all?'Power '+s.power(all)+' vs your '+partyPower():insight(['You cannot tell how strong they are',looks(g.pw/Math.max(1,partyPower()))[0],'Power about '+g.pw+' vs your '+partyPower()],'know their strength'),'You may still call it off before the first blow'],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
     if(a==='site-attack'){s.fight(true,y&&y.list);return true}
+    if((a==='site-pay'||a==='site-yield')&&goblinTongueWhy(s.bandKind==='goblins'))return true;
     if(a==='site-pay'){const m=lairPay(s);if(m){G.siteTab=null;done(m)}return true}
     if(a==='site-yield'){const m=lairYield(s);if(m){G.siteTab='yield';done(m)}return true}
     if(a==='site-fate'){const yl=G.siteSpy&&G.siteSpy.s===s&&G.siteSpy.yielded;if(yl){G.siteTab=null;G.site=null;G.siteHire=null;lairFate(s,yl,arg)}return true}// (their fate's end: the spoils window, the page left)
@@ -554,12 +555,12 @@ class TravellersCamp extends Site{
   places(r){const TR=this.TR,s=this,left=Object.keys(s.stock).filter(g=>s.stock[g]>0).length,race=TR.race||'human',u=s.unit;
     return [{k:'trade',n:'Wagons',ico:'stall',note:left?left+' goods for sale':'sold out',
       body:railCards([{pic:personPic('merchant',race),name:'The traders',role:TR.n,facts:[left?left+' goods for sale':['Sold out','bad'],'They move on in '+Math.max(1,s.until-G.day)+' days']}])+'<div class="lab">Goods</div>'+
-        Object.keys(s.stock).map(g=>{const p=travPrice(g),n=s.stock[g],k=Math.min(5,n);return railRow(GOODS[g].n,p+'g each · '+n+' left · you have '+goodN(g)+(k?' · '+k+' for '+p*k+'g':''),railBtn('site-buy',g,'Buy',!k?'Sold out':P.gold<p*k?'Not enough gold':goodRoom(g)<k?'No room in your bag':''))}).join('')+
+        Object.keys(s.stock).map(g=>{const p=travPrice(g),n=s.stock[g],k=Math.min(5,n);return railRow(GOODS[g].n,p+'g each, '+n+' left, you have '+goodN(g)+(k?', '+k+' for '+p*k+'g':''),railBtn('site-buy',g,'Buy',!k?'Sold out':P.gold<p*k?'Not enough gold':goodRoom(g)<k?'No room in your bag':''))}).join('')+
         (P.inv.some(x=>x&&x.k==='mat')?railRow('Your trophies','They pay a little less than a town market: '+Math.round(P.inv.reduce((a,x)=>a+(x&&x.k==='mat'?matPrice(x.id)*x.n:0),0)*.85)+'g for all',railBtn('site-sellpick',null,'Sell')):'')},
       u&&{k:'hire',n:'Sellswords',short:'Hire',ico:'shield',note:s.mercs?s.mercs+' sellsword'+(s.mercs>1?'s':'')+' willing':'no sellswords left',
-        body:'<div class="top rec-top"><span class="lab">'+RACES[race].n+' sellswords · '+unitsLine()+'</span><span class="lab">'+s.mercs+' willing</span></div>'+
+        body:'<div class="top rec-top"><span class="lab">'+RACES[race].n+' sellswords, '+unitsLine()+'</span><span class="lab">'+s.mercs+' willing</span></div>'+
           (s.mercs?s.deskOf().body():'<p class="muted">No one is left to hire: the sellswords went with their pay.</p>')},
-      {k:'fire',n:'Campfire',short:'Fire',ico:'fire',note:[TR.special&&!s.special&&(TR.special==='bless'?'a blessing':'a song'),s.news===G.day?'':'news',s.fire===G.day?'rested today':'rest'].filter(Boolean).join(' · '),
+      {k:'fire',n:'Campfire',short:'Fire',ico:'fire',note:[TR.special&&!s.special&&(TR.special==='bless'?'a blessing':'a song'),s.news===G.day?'':'news',s.fire===G.day?'rested today':'rest'].filter(Boolean).join(', '),
       body:railCards([
         TR.special==='bless'&&{pic:personPic('priest',race),name:'The pilgrims',role:'Robed, singing softly',facts:[s.special?'They have blessed you':'A blessing: your mana restored, morale +8'],acts:[['site-bless',null,'Kneel',s.special?'They have blessed you already':'']]},
         TR.special==='song'&&{pic:personPic('innkeeper',race,2),name:'The minstrels',role:'A fiddle and painted wagons',facts:[s.special?'They sing of you already':'15 gold: renown +3, morale +5'],acts:[['site-song',null,'Pay 15g',s.special?'They already sing of you':P.gold<15?'Not enough gold':'']]},
@@ -697,7 +698,7 @@ function caveFight(s,lv,inside){
    the chosen one's window beside it (G.siteTab; none: its overview, what it is and what is in each area); the last result
    (G.siteMsg) under whichever is open */
 function showSite(){
-  const s=G.site,r=regionAt(s.x,s.y),where=s.T.n+' · '+r.name;
+  const s=G.site,r=regionAt(s.x,s.y),where=s.T.n+', '+r.name;
   if(s.screen===PAGE_SCREEN){const p=s.page(r,G.siteTab);return PAGE_SCREEN.show({ico:s.T.ico,title:p.title||s.name,sub:p.title?s.name:where,banner:s.view(),body:p.body,acts:p.acts,note:p.note,msg:p.msg??G.siteMsg,
     back:p.back||null,close:p.close||['site-leave',null,'Leave']},'site:'+s.i+':'+(G.siteTab||''))}
   const ps=s.places(r).filter(Boolean),p=ps.find(x=>x.k===G.siteTab);if(!p)G.siteTab=null;

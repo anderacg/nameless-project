@@ -23,7 +23,8 @@ class LordHouse{
     h=new LordHouse({id:'h'+(++Houses.n),name:'House '+sur,fac:l.fac,seat:seat?seat.name:'',dead:[],kin:[]});Houses.list.push(h);l.house=h.id;h.seed(l);return h}
   // (a grudge against you, the hero who did it: gone with you, for a new person is a stranger to them)
   grudged(){return !!this.grudge&&this.grudge.gen===Legacy.fallen}
-  get live(){return W.lords.filter(l=>l.house===this.id&&!l.dead&&!l.gone)}
+  // (its lords alive: a captive one too, held in a prison or by you, though marked out of the world while held)
+  get live(){return W.lords.filter(l=>l.house===this.id&&!l.gone&&(!l.dead||l.held))}
   // ---- what you know of it (the owner, 2026-11-09: "only appear once you know them or someone tell you about their family (only
   // when very friendly)"): one of it is known once you know them (KNOWLEDGE: met, or named to you), or read their name on its crypt,
   // or a close friend of the house told you of it (tell); the rest of it shown as ?? (ui/family.js housePage)
@@ -62,7 +63,7 @@ class LordHouse{
     this.wed(l,R,Math.min(G.day,...ages));for(const b of ages)this.child(l,R,b)}
   // (each day: the grown and unwed of its blood may wed, its couples have children; none past cap of it alive; a house whose realm has fallen, none)
   daily(){if(W.dead[this.fac])return;const F=DEATH.house.fam,R=rngOf('houses');for(const l of this.live)this.seed(l);
-    const blood=()=>[...this.live,...this.kinLive].filter(p=>!p.inlaw);
+    const blood=()=>[...this.live,...this.kinLive].filter(p=>!p.inlaw&&!p.held);
     for(const p of blood()){if(this.live.length+this.kinLive.length>=F.cap)return;const s=p.spouse&&this.person(p.spouse);
       if(!p.spouse){if(this.adult(p)&&R.chance(F.marry))this.wed(p,R)}else if(s&&!s.dead&&this.childrenOf(p.id).length<F.most&&R.chance(F.birth))this.child(p,R,G.day)}}
   // (who takes up the place of one of it dead (d): their eldest grown child, else a grown brother or sister, else their spouse, else
@@ -114,7 +115,7 @@ const Houses={list:[],n:0,
   slain(l,byYou){if(!DEATH.on||!l||l.gone||Math.random()>=DEATH.house.slain)return false;Object.assign(l,{dead:true,gone:true,back:1e9,troops:[],inside:null});this.died(l,'slain in battle',byYou);return true},
   // (a lord's house in a line: its name, seat, its dead, a grudge against you; make: found it now if it has none, the rule on)
   tagOf(l,make){const h=l.house&&this.byId(l.house)||(make&&DEATH.on&&!l.gone?LordHouse.of(l):null);if(!h)return '';
-    return '<small>'+htmlText(h.name)+(h.seat?' · seat '+htmlText(h.seat):'')+(h.buried.length?' · '+h.buried.length+' in its crypt':'')+(h.grudged()?' · <span class="bad">bears you a grudge: '+(h.grudge.half?'your kin':'you')+' killed '+htmlText(h.grudge.name)+'</span>':'')+'</small>'},
+    return '<small>'+htmlText(h.name)+(h.seat?', seat '+htmlText(h.seat):'')+(h.buried.length?', '+h.buried.length+' in its crypt':'')+(h.grudged()?', <span class="bad">bears you a grudge: '+(h.grudge.half?'your kin':'you')+' killed '+htmlText(h.grudge.name)+'</span>':'')+'</small>'},
   hour(){if(!DEATH.on)return;const day=this.day!==G.day;this.day=G.day;for(const h of this.list){h.succeed();if(day)h.daily()}},
   save(){return this.list.length?{n:this.n,list:this.list,day:this.day}:undefined},
   load(v){this.n=v?.n||0;this.day=v?.day;this.list=(v?.list||[]).map(o=>new LordHouse(o))}
@@ -131,12 +132,12 @@ class Crypt extends Remains{
   robbable(){return false}
   get name(){return 'Crypt of '+this.who}
   get label(){return 'Crypt'}
-  tip(){const h=this.houseOf;return '<b>The crypt of '+htmlText(this.who)+'</b><small>'+(h?h.dead.length+' of its dead lie here'+(FACS[h.fac]?' · the '+htmlText(FACS[h.fac].n):''):'')+'</small><span class="act">Click: go there</span>'}
+  tip(){const h=this.houseOf;return '<b>The crypt of '+htmlText(this.who)+'</b><small>'+(h?h.dead.length+' of its dead lie here'+(FACS[h.fac]?', the '+htmlText(FACS[h.fac].n):''):'')+'</small><span class="act">Click: go there</span>'}
   mapDot(V){return null}
   meet(){G.mode='dialog';G.remains=this;const h=this.houseOf,dead=h?h.buried:[],live=h?h.live:[],paid=this.paid===G.day;if(h)h.learn(dead.map(d=>d.id));
     showPanel('<div class="top"><h2>A crypt</h2><span class="muted">'+htmlText(this.who)+'</span></div>'+
       '<p>A house of stone at '+htmlText(h?.seat||'its seat')+', the banner of '+(h&&FACS[h.fac]?'the '+htmlText(FACS[h.fac].n):'its realm')+' over its door. Their names are cut over it:</p>'+
-      '<div class="lab">Here lie</div>'+(dead.length?dead.map(d=>'<p>'+htmlText(d.name)+' <span class="muted">· day '+d.day+', '+htmlText(d.how)+'</span></p>').join(''):'<p class="muted">No one yet.</p>')+
+      '<div class="lab">Here lie</div>'+(dead.length?dead.map(d=>'<p>'+htmlText(d.name)+'<span class="muted">, day '+d.day+', '+htmlText(d.how)+'</span></p>').join(''):'<p class="muted">No one yet.</p>')+
       (live.length?'<p class="muted">Of the house now: '+live.map(l=>htmlText(l.name)).join(', ')+'.</p>':'')+
       nav(['death-leave',null,'Leave'],paid?null:['death-respect',null,'Pay your respects']))}
   respect(){if(this.paid===G.day)return;this.paid=G.day;const h=this.houseOf;for(const l of h?h.live:[])changeRel(l,DEATH.house.respect,'you paid your respects to the dead of '+h.name);
@@ -174,14 +175,14 @@ class RestSite extends Site{
   view(){const ms=this.members(),ps=[];for(const g of ms){const S=GraveArt.sprite(g.kind,g.seed||1);ps.push([S.ground,g.x-S.ax,g.y-S.ay],[S.cv,g.x-S.ax,g.y-S.ay])}
     return{key:'rest:'+this.i+':'+ms.length+':'+ms.filter(g=>g.spent).length,x:this.x,y:this.y+8,alt:this.name,ps}}
   box(box){const ms=this.members();if(!ms.length)return;box(this,Math.min(...ms.map(g=>g.x))-12,Math.min(...ms.map(g=>g.y))-14,Math.max(...ms.map(g=>g.x))+12,Math.max(...ms.map(g=>g.y))+8)}
-  tip(){const n=this.members().length;return '<b>'+Discovery.nameOf(this)+'</b><small>'+this.T.n+(this.kind==='plot'?' · '+n+' of your line':this.kind==='crypt'?' · '+(Houses.byId(this.ref)?.dead.length||0)+' lords':'')+'</small><span class="act">Click: go there</span>'}
+  tip(){const n=this.members().length;return '<b>'+Discovery.nameOf(this)+'</b><small>'+this.T.n+(this.kind==='plot'?', '+n+' of your line':this.kind==='crypt'?', '+(Houses.byId(this.ref)?.dead.length||0)+' lords':'')+'</small><span class="act">Click: go there</span>'}
   about(){const ms=this.members(),g=ms[0];
     if(this.kind==='plot')return '<p>The plot of the family of '+htmlText(g?.family||Legacy.plot?.family||'your line')+', by '+htmlText(g?.at||'')+': '+ms.length+' of your line lie here, within its low wall.</p>';
     if(this.kind==='crypt'){const h=Houses.byId(this.ref);return '<p>The crypt of '+htmlText(h?.name||'a house')+', at '+htmlText(h?.seat||'its seat')+'. Their names are cut over its door: '+(h?h.buried.map(d=>htmlText(d.name)+' <span class="muted">(day '+d.day+', '+htmlText(d.how)+')</span>').join(', '):'')+'.</p>'}
     return g?'<p>'+(g.unburied?'No one has buried them yet: '+htmlText(g.who)+' lies as they fell, to '+htmlText(g.life?.by||'beasts')+'.'+(g.heir?' Their heir is coming for them.':''):g.words.line.replace('{at}',htmlText(g.at||''))+'here lies '+htmlText(g.who)+', who fell to '+htmlText(g.life?.by||'beasts')+'.')+'</p>':''}
   page(){const ms=this.members(),acts=[];let body=this.about();
-    if(this.kind!=='crypt')body+='<div class="lab">Here lie</div>'+ms.map(g=>'<p><b>'+htmlText(g.who)+'</b> <span class="muted">· '+g.words.label.toLowerCase()+' · fell on day '+g.day+(g.n>1?' · the '+ordinal(g.n)+' of your line':'')+' · level '+(g.life?.level||0)+'</span>'+
-      (g.spent?' <span class="muted">· prayed at</span>':g.xp?' <span class="gold">· '+g.xp+' experience lingers</span>':'')+(g.empty()?'':' · with them: '+g.what())+'</p>').join('');
+    if(this.kind!=='crypt')body+='<div class="lab">Here lie</div>'+ms.map(g=>'<p><b>'+htmlText(g.who)+'</b><span class="muted">, '+g.words.label.toLowerCase()+', fell on day '+g.day+(g.n>1?', the '+ordinal(g.n)+' of your line':'')+', level '+(g.life?.level||0)+'</span>'+
+      (g.spent?'<span class="muted">, prayed at</span>':g.xp?'<span class="gold">, '+g.xp+' experience lingers</span>':'')+(g.empty()?'':', with them: '+g.what())+'</p>').join('');
     ms.forEach((g,i)=>{if(g.grave&&!g.spent&&g.xp>0)acts.push({icon:'altar',label:'Pray for '+htmlText(g.who),act:'site-rest',arg:'pray:'+i,facts:[g.xp+' experience']});
       if(!g.empty())acts.push({icon:'gold',label:'Take what lies with '+htmlText(g.who),act:'site-rest',arg:'take:'+i,facts:[g.what()]});
       if(g.unburied){acts.push({icon:'altar',label:'Bury '+htmlText(g.who)+' here',act:'site-rest',arg:'here:'+i,facts:[(g.life?.renown||0)>=DEATH.grave.tiers.cairn?'a cairn over them':'a small grave']});

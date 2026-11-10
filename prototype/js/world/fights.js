@@ -108,7 +108,7 @@ function updateFights(d){
 /* you and a fight */
 function fightMeet(f){
   G.fg=f;G.mode='dialog';P.tx=null;G.chase=null;const where=Spatial.nearestHolding(f.x,f.y).name;
-  const side=s=>{const ps=sideParties(f,s),tr=sideTroops(f,s);return '<div class="row"><div class="info"><strong>'+ps.map(o=>{const fc=o.faction;return '<span'+(fc?' style="color:'+(fc==='player'?FACS.player.col:FACS[fc].col)+'"':'')+'>'+htmlText(partyName(o))+' ('+o.troops.length+')</span>'}).join(', ')+'</strong><small>'+tr.length+' fighters · power '+rating(tr)+'</small></div><div class="acts">'+dlgBtn('fg-join',s,'Join them',joinWhy(f,s))+'</div></div>'};
+  const side=s=>{const ps=sideParties(f,s),tr=sideTroops(f,s);return '<div class="row"><div class="info"><strong>'+ps.map(o=>{const fc=o.faction;return '<span'+(fc?' style="color:'+(fc==='player'?FACS.player.col:FACS[fc].col)+'"':'')+'>'+htmlText(partyName(o))+' ('+o.troops.length+')</span>'}).join(', ')+'</strong><small>'+tr.length+' fighters, power '+rating(tr)+'</small></div><div class="acts">'+dlgBtn('fg-join',s,'Join them',joinWhy(f,s))+'</div></div>'};
   if(f.multi){showPanel('<h2>Battle near '+where+'</h2><p>Multiple armies are fighting. Each keeps its own enemies and allies.</p>'+f.sides.map((_,i)=>side(i)).join('')+nav(null,['dlg-close',null,'Watch from afar']));return}
   const p0=sidePower(f,0),p1=sidePower(f,1),share=Math.round(p0/Math.max(1,p0+p1)*100);
   showPanel('<h2>Battle near '+where+'</h2><p class="muted">The fight has gone on a while ('+Math.round(f.t/Math.max(.1,f.dur)*100)+'% of its likely length). Your power: '+partyPower()+'.</p>'+side(0)+

@@ -52,7 +52,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,L=t.BattleLab,R=t.RANKS,K=t.KITS,G
    ok(g.picks.join()==='braceUp'&&qa('.fb-mastery .fb-mpick').length===K.kinds.spear.menu.length,'picked Brace+; the next level\'s choice shown');
    q('.fb-mastery [data-arg="'+g.id+':hedge"]').click();t.act('party-select',g.id);t.act('party-path',g.id);
    const d=q('.fb-inspector').textContent;ok(g.picks.join()==='braceUp,hedge'&&!q('.fb-mastery')&&/Perks \(earned\)/.test(d)&&/Hedge of spears/.test(d)&&/Stances/.test(d)&&/Brace/.test(d)&&/Lunge/.test(d),'both picked: no more to choose; its stances, skills and earned perks listed');
-   t.act('party-back');const card=q('.fb-inspector .ucard-x');ok(card&&/Lunge/.test(card.textContent)&&/★ Hedge of spears/.test(card.textContent)&&/Q · Brace/.test(card.textContent)&&/Expert|Elite/.test(q('.fb-inspector').textContent),'its card: traits, stances, skills in their slots, the earned perk, its rank\'s and mastery\'s names');
+   t.act('party-back');const card=q('.fb-inspector .ucard-x');ok(card&&/Lunge/.test(card.textContent)&&/★ Hedge of spears/.test(card.textContent)&&/Q, Brace/.test(card.textContent)&&/Expert|Elite/.test(q('.fb-inspector').textContent),'its card: traits, stances, skills in their slots, the earned perk, its rank\'s and mastery\'s names');
    t.act('char-close');r.remove('hum_spear',5,g.id)}
   // ======== Brace, a stance (§3)
   {t.PHYSICS.on=false;R.ai=2;const B=lab([Gp('hum_spear',8)],[Gp('hum_knight',4)]),g=B.groups[t.playerGroups()[0]],sp=g.units[0],kn=B.units.find(u=>u.team===1);B.paused=false;

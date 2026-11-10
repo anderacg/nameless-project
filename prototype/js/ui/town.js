@@ -37,7 +37,7 @@ const gearPrice=id=>ITEM_KINDS.gear.cost({id});
 const quiverStock=(t,place)=>ITEM_KINDS.quiver.stockAt(t,place);
 function quiverRows(t,place,act){
   const ids=quiverStock(t,place);if(!ids.length)return '';
-  return '<div class="lab" style="margin-top:6px">Quivers · your shots in every battle</div>'+ids.map(id=>{const I=ITEMS[id],p=gearPrice(id),own=P.gear.quiver===id;
+  return '<div class="lab" style="margin-top:6px">Quivers, your shots in every battle</div>'+ids.map(id=>{const I=ITEMS[id],p=gearPrice(id),own=P.gear.quiver===id;
     return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+ITEM_KINDS.quiver.title({id})+'</strong><small>'+I.d+'</small></div><div class="acts">'+railBtn(act,id,'Buy',P.gold<p?'Not enough gold':playerInventory.room('gear',id)<1?BAG_FULL:'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('');
 }
 // a quiver bought where it is sold (place): into your bag, your standing up a little
@@ -196,7 +196,7 @@ class Tavern extends Place{
   // the ransom broker: which prisoners, in a picker first (window.js); then all of them, or kind:n,… from it
   ransomPick(arg,t){
     railPicker({title:'Ransom prisoners',sub:'The ransom broker of '+t.name,total:'The broker pays',unit:'g',confirm:['ransom','Ransom'],back:['tab','tavern','Back'],
-      items:Object.keys(P.prisoners).filter(k=>P.prisoners[k]>0).map(k=>({id:k,name:ST[k].n,sub:'Tier '+ST[k].tier+' · '+RANSOM[ST[k].tier]+'g each',pic:portrait(k),max:P.prisoners[k],unit:RANSOM[ST[k].tier]}))});
+      items:Object.keys(P.prisoners).filter(k=>P.prisoners[k]>0).map(k=>({id:k,name:ST[k].n,sub:'Tier '+ST[k].tier+', '+RANSOM[ST[k].tier]+'g each',pic:portrait(k),max:P.prisoners[k],unit:RANSOM[ST[k].tier]}))});
     return Place.AWAY;
   }
   ransom(arg,t){
@@ -231,7 +231,7 @@ definePlace('tavern',Tavern);
 function buffShop(t,place){const ids=Buffs.offer(t,place),L='<div class="lab">Upgrades for your units</div>';if(!ids.length)return L+'<p class="muted">Nothing to offer yet.</p>';
   const gs=['hero',...Object.keys(P.comps).map(c=>'comp_'+c),...partyRoster(P).groups.map(g=>g.id)];
   return L+ids.map(b=>{const B=BUFFS[b],mine=gs.filter(id=>Buffs.fits(B,Buffs.kindOf(id),Buffs.statsOf(id)));
-    return railRow(htmlText(B.n),(B.d?htmlText(B.d)+' · ':'')+Buffs.text(B)+' · '+(B.cost||0)+'g a man',mine.map(id=>railBtn('buff-buy',id+'|'+b,htmlText(armyGroupLabel(id))+(Buffs.has(id,b)?' ✓':' · '+Buffs.price(id,b)+'g'),Buffs.why(t,place,id,b))).join('')||'<small class="muted">None of yours</small>')}).join('')}
+    return railRow(htmlText(B.n),(B.d?htmlText(B.d)+', ':'')+Buffs.text(B)+', '+(B.cost||0)+'g a man',mine.map(id=>railBtn('buff-buy',id+'|'+b,htmlText(armyGroupLabel(id))+(Buffs.has(id,b)?' ✓':', '+Buffs.price(id,b)+'g'),Buffs.why(t,place,id,b))).join('')||'<small class="muted">None of yours</small>')}).join('')}
 // (one bought: its group, the upgrade, a line of it)
 function buffBuy(arg,t,place){const [id,b]=String(arg).split('|');if(Buffs.buy(t,place,id,b))log(armyGroupLabel(id)+': '+BUFFS[b].n+' at '+t.name+'.','gold')}
 class Smithy extends Place{
@@ -255,7 +255,7 @@ class Smithy extends Place{
     const st=this.stock(t);
     return railCards([{pic:personPic('smith',t.races[0]),name:'The smith',role:'At the forge of '+t.name,facts:[st.length?st.length+' pieces for sale':'Sold out','New stock in '+(7-Clock.daysSince(W.shops[t.name].day)%7)+' days'],
       note:forgeText(t)+' Bring copper and tin, silver, gold, mithril or adamantite to its market and the smith will forge with them.'}])+'<div class="lab">For sale</div>'+(st.length?st.map((id,i)=>{const I=ITEMS[id],p=gearPrice(id);
-      return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+SLOTS[I.slot]+' · '+I.d+'</small><small class="diff">'+(gearDiff(id).join(' · ')||'<span class="muted">No change from what you wear.</span>')+'</small></div><div class="acts">'+railBtn('buy-gear',i,'Buy',P.gold<p?'Not enough gold':playerInventory.room('gear',id)<1?BAG_FULL:'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')
+      return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+SLOTS[I.slot]+', '+I.d+'</small><small class="diff">'+(gearDiff(id).join(', ')||'<span class="muted">No change from what you wear.</span>')+'</small></div><div class="acts">'+railBtn('buy-gear',i,'Buy',P.gold<p?'Not enough gold':playerInventory.room('gear',id)<1?BAG_FULL:'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')
       :'<p class="muted">Sold out until the next delivery.</p>')+quiverRows(t,'smith','buy-quiver');
   }
   buyBuff(arg,t){buffBuy(arg,t,this.id)}
@@ -274,8 +274,8 @@ definePlace('smith',Smithy);
 function horseQuote(t,g){const n=horsesShort(g);if(!n)return null;const q=horsesFor(t,null,g.type,n);return q.why&&q.own?horsesFor(t,null,g.type,q.own):q}
 function horseRows(t){const gs=partyRoster(P).groups.filter(g=>horsesShort(g)>0);if(!gs.length)return '';
   return '<div class="lab">Horses for your riders</div>'+gs.map(g=>{const n=horsesShort(g),q=horseQuote(t,g),I=ITEMS[q.id];
-    return railRow(htmlText(armyGroupLabel(g.id)),n+' of its men without a horse · '+I.n+(q.own?' · '+q.own+' of yours':'')+(q.buy?' · '+q.buy+' at '+gearPrice(q.id)+'g':''),
-      railBtn('buy-horses',g.id,'Horse '+q.n+(q.cost?' · '+q.cost+'g':''),q.why||(P.gold<q.cost?'Not enough gold':'')))}).join('')}
+    return railRow(htmlText(armyGroupLabel(g.id)),n+' of its men without a horse, '+I.n+(q.own?', '+q.own+' of yours':'')+(q.buy?', '+q.buy+' at '+gearPrice(q.id)+'g':''),
+      railBtn('buy-horses',g.id,'Horse '+q.n+(q.cost?', '+q.cost+'g':''),q.why||(P.gold<q.cost?'Not enough gold':'')))}).join('')}
 class Stable extends Place{
   constructor(id){
     super(id,{n:'Stable',ico:'shoe',verbs:{'buy-mount':'buyMount','buff-buy':'buyBuff','buy-horses':'buyHorses'}});
@@ -289,7 +289,7 @@ class Stable extends Place{
     return railCards([{pic:personPic('groom',t.races[0]),name:'The stablemaster',role:'Mounts for sale',facts:[stableStock(t).length+' mounts',cur?'You ride a '+cur.n:'You travel on foot'],
       note:'A mount goes in its own slot and speeds your travel. Rare beasts need standing '+REP_NEED[2]+' here (yours: '+standingAt(t)+').'}])+'<div class="lab">In the stalls</div>'+
       stableStock(t).map(id=>{const I=ITEMS[id],p=gearPrice(id),ok=canBuyMount(t,id),own=P.gear.mount===id;
-        return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+I.d+'</small><small class="diff">'+(gearDiff(id).join(' · ')||'<span class="muted">No change from your mount.</span>')+'</small></div><div class="acts">'+(ok?'':'<small class="bad">Needs standing '+REP_NEED[2]+'</small>')+
+        return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+I.d+'</small><small class="diff">'+(gearDiff(id).join(', ')||'<span class="muted">No change from your mount.</span>')+'</small></div><div class="acts">'+(ok?'':'<small class="bad">Needs standing '+REP_NEED[2]+'</small>')+
           railBtn('buy-mount',id,own?'Riding':'Buy',own?'You ride it':!ok?'Needs standing '+REP_NEED[2]:P.gold<p?'Not enough gold':P.gear.mount&&!invFree()?'Your bag is full':'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')+horseRows(t);
   }
   buyBuff(arg,t){buffBuy(arg,t,this.id)}
@@ -311,9 +311,9 @@ definePlace('stable',Stable);
    ready in one press, or a whole group at once. The order (G.town.cart) belongs to this visit, never to a save */
 // trainers' rows (a holding's, or yours): each his level, roles, the rank he trains to and what a lesson gives, his lessons left this
 // week; a button for each of your groups of his roles (its badge, its price, or why not)
-function trainerRows(trs){const gs=partyRoster(P).groups,where=tr=>tr.wander?' · passing through, till Day '+tr.until:'';return '<div class="rec-rows">'+trs.map(tr=>{const mine=gs.filter(g=>tr.roles.includes(trainRole(g.type)));
-  return '<div class="rec-row trainer"><div class="rec-txt"><strong>'+htmlText(tr.name)+'</strong><small>'+trainLevelN(tr)+' · '+trainRolesN(tr)+' · to rank '+TRAINERS.cap[tr.level-1]+' · +'+TRAINERS.xp[tr.level-1]+' a lesson · '+trainLeft(tr)+' of '+TRAINERS.week+' left this week'+where(tr)+'</small></div>'+
-    '<div class="rec-step">'+(mine.length?mine.map(g=>{const why=lessonWhy(tr,g),p=lessonPrice(tr,g);return '<button class="btn sm" type="button" data-act="trn-lesson" data-arg="'+htmlText(tr.id+'|'+g.id)+'"'+(why?' disabled title="'+htmlText(why)+'"':'')+'>'+groupBadge(g,12)+' Train '+htmlText(armyGroupLabel(g.id))+(p?' · '+p+'g':'')+'</button>'}).join(''):'<small class="muted">None of your groups</small>')+'</div></div>'}).join('')+'</div>'}
+function trainerRows(trs){const gs=partyRoster(P).groups,where=tr=>tr.wander?', passing through, till Day '+tr.until:'';return '<div class="rec-rows">'+trs.map(tr=>{const mine=gs.filter(g=>tr.roles.includes(trainRole(g.type)));
+  return '<div class="rec-row trainer"><div class="rec-txt"><strong>'+htmlText(tr.name)+'</strong><small>'+trainLevelN(tr)+', '+trainRolesN(tr)+', to rank '+TRAINERS.cap[tr.level-1]+', +'+TRAINERS.xp[tr.level-1]+' a lesson, '+trainLeft(tr)+' of '+TRAINERS.week+' left this week'+where(tr)+'</small></div>'+
+    '<div class="rec-step">'+(mine.length?mine.map(g=>{const why=lessonWhy(tr,g),p=lessonPrice(tr,g);return '<button class="btn sm" type="button" data-act="trn-lesson" data-arg="'+htmlText(tr.id+'|'+g.id)+'"'+(why?' disabled title="'+htmlText(why)+'"':'')+'>'+groupBadge(g,12)+' Train '+htmlText(armyGroupLabel(g.id))+(p?', '+p+'g':'')+'</button>'}).join(''):'<small class="muted">None of your groups</small>')+'</div></div>'}).join('')+'</div>'}
 class Barracks extends Place{
   constructor(id){
     super(id,{n:'Barracks',ico:'shield',verbs:{'rec-tab':'tab',hire:'hire','rec-upgroup':'upgroup',
@@ -331,7 +331,7 @@ class Barracks extends Place{
   body(t){
     const s=G.town,tab=t.T.train&&s.recTab==='train'?'train':'hire',v=Math.floor(t.vol||0);
     const tabs=t.T.train?'<div class="rec-tabs" role="tablist">'+[['hire','Hire'],['train','Train & upgrade']].map(([k,n])=>'<button class="btn sm'+(k===tab?' on':'')+'" type="button" role="tab" aria-selected="'+(k===tab)+'" data-act="rec-tab" data-arg="'+k+'">'+n+'</button>').join('')+'</div>':'';
-    const head='<div class="top rec-top">'+tabs+'<span class="lab">'+t.races.map(r=>RACES[r].n).join(' and ')+' troops · '+unitsLine()+'</span><span class="lab">Standing <b class="gold" style="font-size:14px">'+standingAt(t)+'</b> · '+v+' willing</span></div>';
+    const head='<div class="top rec-top">'+tabs+'<span class="lab">'+t.races.map(r=>RACES[r].n).join(' and ')+' troops, '+unitsLine()+'</span><span class="lab">Standing <b class="gold" style="font-size:14px">'+standingAt(t)+'</b>, '+v+' willing</span></div>';
     return head+(tab==='train'&&!s.info?this.trainTab(t):this.deskOf(t).body());
   }
   // (its free volunteers, world/volunteers.js: taking them while you stay here or camp on its lands, or why they will not come)
@@ -352,7 +352,7 @@ class Barracks extends Place{
         '<div class="rec-txt"><strong>'+groupBadge(g,14)+' '+htmlText(armyGroupLabel(g.id))+' ×'+g.count+'</strong><small>'+(rankReady(g)?'<b class="gold">'+L.txt+'</b>':L.txt)+'</small></div>'+
         '<div class="rec-step">'+(rankReady(g)?UP[g.type].map(to=>{const q=recruitment.quoteGroupTraining(t,g.id,to);
           if(q.code==='slot')return '<button class="btn sm" type="button" disabled title="'+htmlText(recruitmentWhy(q))+'">No free unit slot</button>';// (a split: room for its new unit first)
-          return '<button class="btn sm'+(q.ok?' primary':'')+'" type="button" data-act="rec-upgroup" data-arg="'+g.id+':'+to+'"'+(q.ok?'':' disabled title="'+htmlText(q.code==='experience'?(rankPeasant(g.type)?'Its experience is not full yet':'Needs rank '+RANKS.max+': fight with them'):recruitmentWhy(q)||'Not available')+'"')+'>'+htmlText(q.split?'Train '+q.count+' of '+g.count+' into '+troopsWord(ST[to].n):ST[to].n)+(q.cost?' · '+q.cost+'g':'')+(q.horses?' · '+q.horses.n+' '+htmlText(ITEMS[q.horses.id].n.toLowerCase())+(q.horses.n>1?'s':'')+(q.horses.own?' ('+q.horses.own+' yours)':''):'')+'</button>'}).join(''):'<small class="muted">'+(rankPeasant(g.type)?'When its experience is full':'At rank '+RANKS.max)+': '+UP[g.type].map(to=>htmlText(ST[to].n)).join(', ')+'</small>')+'</div></div>'}).join('')+'</div>'}
+          return '<button class="btn sm'+(q.ok?' primary':'')+'" type="button" data-act="rec-upgroup" data-arg="'+g.id+':'+to+'"'+(q.ok?'':' disabled title="'+htmlText(q.code==='experience'?(rankPeasant(g.type)?'Its experience is not full yet':'Needs rank '+RANKS.max+': fight with them'):recruitmentWhy(q)||'Not available')+'"')+'>'+htmlText(q.split?'Train '+q.count+' of '+g.count+' into '+troopsWord(ST[to].n):ST[to].n)+(q.cost?', '+q.cost+'g':'')+(q.horses?', '+q.horses.n+' '+htmlText(ITEMS[q.horses.id].n.toLowerCase())+(q.horses.n>1?'s':'')+(q.horses.own?' ('+q.horses.own+' yours)':''):'')+'</button>'}).join(''):'<small class="muted">'+(rankPeasant(g.type)?'When its experience is full':'At rank '+RANKS.max)+': '+UP[g.type].map(to=>htmlText(ST[to].n)).join(', ')+'</small>')+'</div></div>'}).join('')+'</div>'}
   upgroup(arg,t){const [id,to]=String(arg).split(':'),r=recruitment.trainGroup(t,id,to);recruitmentFeedback(r,t)}
   // (back from a unit's card: the list where you left it)
   focus(a){return this.deskOf(G.town.ref).focus(a)}
@@ -409,7 +409,7 @@ class Lists extends Place{
     return !!t.T.tourney;
   }
   body(t){
-    return '<p>One-on-one against the town champion, before the crowd.</p>'+railCards([{pic:portrait('chief'),name:'The town champion',role:'Waiting in the lists',facts:[['Win 45 gold and renown','gold'],'Entry 10 gold · you have '+P.gold],
+    return '<p>One-on-one against the town champion, before the crowd.</p>'+railCards([{pic:portrait('chief'),name:'The town champion',role:'Waiting in the lists',facts:[['Win 45 gold and renown','gold'],'Entry 10 gold, you have '+P.gold],
       acts:[['tourney',null,this.entry.label,this.entry.why(t)]]}]);
   }
   enter(arg,t){
@@ -431,9 +431,9 @@ class Storehouse extends Place{
   body(t){
     ensureEcon(t);const own=t.owner==='player',cap=Math.round(storeCap(t)),gs=Object.keys(GOODS).filter(g=>(t.stock[g]||0)>=1||own&&goodN(g)>0);
     const b=(act,g,n,label,no)=>'<button class="btn sm" type="button" data-act="'+act+'" data-arg="'+g+':'+n+'"'+(no?' disabled':'')+'>'+label+'</button>';
-    return '<div class="lab">Stores · '+gs.filter(g=>(t.stock[g]||0)>=1).length+' goods · room for '+cap+' of each</div><p class="muted" style="font-size:13px">'+(own?'Your '+t.T.n+'’s stockpile. Put goods in for safe keeping or take out what you need. Nothing is bought or sold here.':
+    return '<div class="lab">Stores, '+gs.filter(g=>(t.stock[g]||0)>=1).length+' goods, room for '+cap+' of each</div><p class="muted" style="font-size:13px">'+(own?'Your '+t.T.n+'’s stockpile. Put goods in for safe keeping or take out what you need. Nothing is bought or sold here.':
       'The '+t.T.n+'’s stockpile. A '+t.T.n+' has no market: nothing here is for sale. Take '+t.name+', and its stores are yours to keep or plunder.')+'</p>'+
-      (gs.length?gs.map(g=>{const st=Math.floor(t.stock[g]||0),n=goodN(g);return '<div class="row"><div class="info"><strong>'+GOODS[g].n+'</strong><small>'+st+' in store'+(own?' · you carry '+n:'')+'</small></div>'+
+      (gs.length?gs.map(g=>{const st=Math.floor(t.stock[g]||0),n=goodN(g);return '<div class="row"><div class="info"><strong>'+GOODS[g].n+'</strong><small>'+st+' in store'+(own?', you carry '+n:'')+'</small></div>'+
         (own?'<div class="acts">'+b('st-put',g,5,'Store 5',n<1||st>=cap)+b('st-put',g,'all','Store all',n<1||st>=cap)+b('st-take',g,5,'Take 5',st<1||goodRoom(g)<1)+b('st-take',g,'all','Take all',st<1||goodRoom(g)<1)+'</div>':'')+'</div>'}).join('')
         :'<p class="muted">The stores are empty.</p>');
   }
@@ -495,7 +495,7 @@ class SiegeCamp extends Place{
     const f=FACS[t.owner];const def=siegeDefenders(t),lv=siegeLv(t),ep=rating(def.list,lv),pp=partyPower(),r=ep/Math.max(1,pp);
     return '<div class="lab">Attack '+t.name+'</div><p>Garrison '+t.gar+(def.lords.length?', with '+def.lords.map(l=>lordName(l)).join(' and ')+' inside':'')+'. '+(!walled(t)?''+(wallOf(t)?WALL_N[wallOf(t)]+': its militia fights as level '+lv+'. ':'It has no walls. ')+'You can raid it or seize it.':WALL_N[wallOf(t)]+' make every defender as strong as level '+lv+'. You will need a siege camp: ladders take '+LADDER_DAYS+' days, a ram '+RAM_DAYS+'.')+'</p>'+
       '<p class="'+(foeAt(t)?'muted':'bad')+'">'+this.cost(t)+'</p>'+
-      railKeyActions([{icon:'ladder',label:'Attack',act:'siege-ask',facts:[(r<.6?'Easy':r<1?'Even':r<1.5?'Risky':'Deadly')+' · power '+ep+' vs '+pp,walled(t)?'a siege camp: ladders '+LADDER_DAYS+' days':'raid or seize it'],tip:'Leave the gates and plan an attack'}]);
+      railKeyActions([{icon:'ladder',label:'Attack',act:'siege-ask',facts:[(r<.6?'Easy':r<1?'Even':r<1.5?'Risky':'Deadly')+', power '+ep+' vs '+pp,walled(t)?'a siege camp: ladders '+LADDER_DAYS+' days':'raid or seize it'],tip:'Leave the gates and plan an attack'}]);
   }
   // (what attacking costs: its realm's anger, or, a free folk's, honour with every realm (siege.js FREE_FOE))
   cost(t){

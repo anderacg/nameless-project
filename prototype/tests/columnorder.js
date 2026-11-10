@@ -16,7 +16,7 @@ Kit.suite(({ok,info})=>{
  try{
   // ---- the tab beside Roster; Roster's button gone
   Kit.world();t.openChar();
-  ok(qa('[data-act="char-tab"]').map(b=>b.textContent).join('|')==='Roster|March formation|Army skills|Condition|Passengers','the tabs: Roster · March formation · Army skills · Condition · Passengers');
+  ok(qa('[data-act="char-tab"]').map(b=>b.textContent).join('|')==='Roster|March formation|Army skills|Condition|Passengers','the tabs: Roster, March formation, Army skills, Condition, Passengers');
   ok(!q('[data-act="march-open"]')&&!/March formation/.test(q('.fb-collection').textContent),'the Roster has no March formation button now');
   t.act('char-tab','march');t.marchBind();
   ok(G.char==='march'&&q('.fb-march-pane')&&q('#marchCanvas')&&G.march&&q('[data-act="march-view"][data-arg="field"]').classList.contains('on')&&/Apply formation/.test(Kit.text()),'the tab opens the editor on its Field view: today\'s preview, Apply formation');

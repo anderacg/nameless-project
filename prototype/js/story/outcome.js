@@ -300,7 +300,7 @@ const Outcome={
     return out;
   },
   describe(o){
-    return this.facts(o).join(' · ');
+    return this.facts(o).join(', ');
   },
 };
 const applyOutcome=(o,ctx)=>Outcome.apply(o,ctx);

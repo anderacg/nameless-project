@@ -10,10 +10,10 @@ function showHouse(){const o=G.house,t=o.holding,l=o.lot,s=lotSprite(t,l),qs=o.q
   const ps=[[s,l.x*TILE,l.y*TILE]],B=PAGE_BANNER,cy=(l.y+l.n/2)*TILE-B.h/2+B.foot;// (as the map draws it: structures.js holdingEnts; the house in the middle)
   const state=l.st==='built'?'':l.st==='ruined'?'<p class="bad">Burnt out: no one lives here now.</p>':'<p class="muted">Still being built.</p>';
   const homes=Layout.of(t).housing(),pop=Math.round(t.pop||0);
-  PAGE_SCREEN.show({ico:'house',title:name?cap1(name):o.kindN(),sub:(name?o.kindN()+', a':'A')+' house of '+t.name+(t.owner&&FACS[t.owner]?' · '+FACS[t.owner].n:''),
+  PAGE_SCREEN.show({ico:'house',title:name?cap1(name):o.kindN(),sub:(name?o.kindN()+', a':'A')+' house of '+t.name+(t.owner&&FACS[t.owner]?', '+FACS[t.owner].n:''),
     banner:{key:'house:'+t.name+':'+l.id+':'+l.st,x:o.x,y:cy,ps,alt:o.kindN()+' in '+t.name},
     body:state+pageFacts([l.st==='built'?o.households()+' household'+(o.households()>1?'s':'')+', about '+o.people()+' people':'',t.name+': '+pop+' people, homes for '+homes])+
-      (qs.length?'<div class="lab">Your quests here</div>'+qs.map(q=>'<p class="gold">'+htmlText(q.title)+'<small class="muted"> · '+htmlText(q.todo?q.todo():'')+'</small></p>').join(''):''),
+      (qs.length?'<div class="lab">Your quests here</div>'+qs.map(q=>'<p class="gold">'+htmlText(q.title)+'<small class="muted">, '+htmlText(q.todo?q.todo():'')+'</small></p>').join(''):''),
     acts:give,close:['house-close',null,'Back to map']},'house:'+l.id)}
 onAct('house-',(a,arg)=>{G.house=null;hidePanel();G.mode='world';
   if(a==='house-give'){const q=P.quests.find(x=>x.id===+arg),Q=q&&Quest.as(q);if(Q&&Q.byHand&&Q.ready())Q.reached()}});

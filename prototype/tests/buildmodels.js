@@ -43,11 +43,15 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // colonnade of real columns: plinth, round shaft, capital; a tower stump; a temple's steps; standing stones of rough rock; a column
 // gate; a cairn; a cliff cave, a low mound, twin crags). Proof: 99c96eb (the commit before) gives the old values. Were ruins 885cc7fd,
 // shrine f895e57b, cave fdff66d2; in the blocks ruins 7aa41f18 (karn e883e3f3), shrine dd70f9ee (karn 7ef8af13), cave 77e05999)
+// (keep re-recorded 2026-11-10, on purpose, in EXPECT, vale's and league's blocks (the cultures that build the shared keep): the owner,
+// "the castle building looks a bit odd for the balcony vs tower roof": a keep whose towers wear cones now roofs its donjon too (a hip
+// roof over its battlements) and its turrets rise over it, its low windows left off where its walls' towers stand. Were keep 1b27855b,
+// vale dc351a52, league 3e85bdbb. Proof: 6e16d3b (the commit before) gives the old values)
 const EXPECT={
  cottage:'566a0878',townhouse:'fb9511de',fisherhut:'2d6d2bf1',chapel:'762d3bbe',stall:'48ec423e',tower:'6acd7ef2',yurt:'86b1b101',
  longhouse:'d3212831',tavern:'f53264e7',smithy:'75f35aaf',church:'cc12a724',barn:'6e101819',granary:'de56ef0e',windmill:'b61f4af0',
  watermill:'830ea6cc',warehouse:'e1d6564f',gatehouse:'086b156b',hidehall:'29442873',watchtower:'fee9afe9',treehouse:'15172543',
- elfhall:'c3176da7',spire:'b2b90839',stonehall:'3a7b6dc9',forge:'ca2badee',keep:'1b27855b',citadel:'2dd8a20d',well:'33e99b97',
+ elfhall:'c3176da7',spire:'b2b90839',stonehall:'3a7b6dc9',forge:'ca2badee',keep:'a79864f4',citadel:'2dd8a20d',well:'33e99b97',
  tent:'df76730a',wagon:'fdb79bc0',minehead:'422e6aa4',lumbershed:'84bc6106',crane:'797e027a',village:'669be472',signpost:'bc1b0551',
  cart:'8db7e550',haystack:'1e55c871',woodpile:'a63e45e5',fence:'4ccfec38',crates:'2ec14f27',barrels:'38164d9d',chiefyurt:'b2ed7c38',
  warcamp:'5ab3c989',horselines:'107a7786',ruins:'0aa26bed',shrine:'8479cf14',cave:'48639c12','cluster:row':'6310eca6',
@@ -62,7 +66,7 @@ const EXPECT_CULTURE={
  // vale (build-vale.js)
  vale:{cottage:'596a2542',townhouse:'493f1766',fisherhut:'cded18e1',chapel:'e009cbba',stall:'34446497',tower:'392e5970',
   longhouse:'150da3e0',tavern:'a2e66800',smithy:'5e056d49',church:'5c23d20b',barn:'2d350b53',granary:'4443b66b',windmill:'beca74c4',
-  watermill:'a20a03ac',warehouse:'e5ea1bf1',gatehouse:'aea9c5e4',keep:'dc351a52',citadel:'31572182',well:'b9d0bf82',tent:'ae51fca4',
+  watermill:'a20a03ac',warehouse:'e5ea1bf1',gatehouse:'aea9c5e4',keep:'e712bce0',citadel:'31572182',well:'b9d0bf82',tent:'ae51fca4',
   wagon:'7f883ead',minehead:'e3a3c641',lumbershed:'3424207a',crane:'3684fe3d',village:'9b82ff3d',signpost:'6aa0a05a',
   cart:'28df91db',haystack:'a0645989',woodpile:'99d02398',fence:'f1fa5cce',crates:'b10eb20e',barrels:'2d8697bb',ruins:'14952244',
   shrine:'021850c8',cave:'78ef68d1','cluster:row':'398f34f4','cluster:yard':'eb0ce1a9','cluster:farmstead':'cc1ae121',
@@ -74,7 +78,7 @@ const EXPECT_CULTURE={
  // league (build-vale.js, on the Vale’s)
  league:{cottage:'ac264369',townhouse:'5dc0a33c',fisherhut:'10e0915a',chapel:'c2560107',stall:'7a3166a8',tower:'4b3e2e96',
   longhouse:'4e06b740',tavern:'6f8e047b',smithy:'69744288',church:'307a7d73',barn:'2c5e5154',granary:'fdc46d73',windmill:'ceab0d14',
-  watermill:'ad359c76',warehouse:'67233d64',gatehouse:'517ba774',keep:'3e85bdbb',citadel:'3f21cca9',well:'df8286cb',tent:'b51b91e2',
+  watermill:'ad359c76',warehouse:'67233d64',gatehouse:'517ba774',keep:'5c0c5c8d',citadel:'3f21cca9',well:'df8286cb',tent:'b51b91e2',
   wagon:'7f883ead',minehead:'e3a3c641',lumbershed:'7c51be02',crane:'d1abb9f9',village:'b7c4d6b0',signpost:'6aa0a05a',
   cart:'28df91db',haystack:'a0645989',woodpile:'99d02398',fence:'f1fa5cce',crates:'b10eb20e',barrels:'2d8697bb',ruins:'14952244',
   shrine:'021850c8',cave:'78ef68d1','cluster:row':'5ee0baf0','cluster:yard':'54b1814f','cluster:farmstead':'a25296f7',

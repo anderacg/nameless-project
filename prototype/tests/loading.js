@@ -128,7 +128,7 @@ try{
     const fl=LD.el.querySelector('.lflag');mid.push(fl.getContext('2d', { willReadFrequently: true }).getImageData(0,0,fl.width,fl.height).data.some(v=>v>0));yield .5;busy(150);yield 1}}]);
   ok(!r.err&&mono(fr),'the bar never goes back, even when a step says less than before, and ends full ('+fr.map(v=>v.toFixed(2)).join(' ')+')');
   ok(modeIn.every(m=>m===k0)&&modeOut.some(m=>m==='loading/true')&&G.mode===k0,'each slice of work sees the game as the last left it ('+k0+'); between slices it is loading, and modal ('+[...new Set(modeOut)].join(', ')+')');
-  ok(mid&&mid[0]==='Forging the world…'&&mid[1]==='Carving rivers'&&mid[2].length>10&&parseFloat(mid[3])>0,'it shows its title, the step under way, a tip and the bar ('+(mid&&mid.slice(0,4).join(' · '))+')');
+  ok(mid&&mid[0]==='Forging the world…'&&mid[1]==='Carving rivers'&&mid[2].length>10&&parseFloat(mid[3])>0,'it shows its title, the step under way, a tip and the bar ('+(mid&&mid.slice(0,4).join(', '))+')');
   ok(mid&&mid[4],'its window fits a phone on its side, 844 x 390 ('+(mid&&mid[5])+')');
   ok(mid&&mid[6],'your flag flutters by the title')}
  // a step that returns a Promise (a gunzip: save.js) is waited for, the game waiting too; one that rejects shows the error

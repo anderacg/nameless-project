@@ -31,7 +31,7 @@ function travelDetection(o){
   if(!(range>0))return null;const factor=k==='critter'?.6:k==='worker'?1:.55,base=range/(cover?factor:1),rows=TravelAwareness.scan(o,base,factor),visible=rows.filter(r=>r.within&&r.q>=1),nearest=(visible.length?visible:rows).slice().sort((a,b)=>a.distance-b.distance)[0],within=rows.some(r=>r.within),exposure=TravelAwareness.level(o),sees=visible.length>0;
   return{o,range:nearest.range+Math.min(12,nearest.group.extent),distance:nearest.distance,within,sees,exposure,danger,rows,target:visible.length?nearest.group:null};
 }
-function travelDetectionText(o){const d=travelDetection(o),wait=o.waylay?.seen?'Lying in wait in the trees · ':'';return wait+(d?d.sees?'Has detected your army':TravelSearch.of(o)?'Searching where it last saw your army':d.exposure>0?(d.within?'Suspicious of your army':'Losing suspicion')+' ('+Math.round(d.exposure*100)+'%)':'Has not detected your army':'')}
+function travelDetectionText(o){const d=travelDetection(o),wait=o.waylay?.seen?'Lying in wait in the trees, ':'';return wait+(d?d.sees?'Has detected your army':TravelSearch.of(o)?'Searching where it last saw your army':d.exposure>0?(d.within?'Suspicious of your army':'Losing suspicion')+' ('+Math.round(d.exposure*100)+'%)':'Has not detected your army':'')}
 const TRAVEL_AWARE={open:2,forest:4,fade:3,close:3,contact:8};
 // (who may notice you: TravelAwareness.observers)
 const travelObservers=()=>TravelAwareness.observers();

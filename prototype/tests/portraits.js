@@ -38,4 +38,34 @@ Kit.suite(({ok})=>{
   ok(L2.every(s=>s.startsWith('data:image/png'))&&new Set(L2).size===20&&C2.every(s=>s.startsWith('data:image/png'))&&new Set(C2.concat(L2)).size===24,'with faces: the twenty lords and four companions each their own generated face');
   const l2={name:'Lord Aldric',fac:'vale'},f0=JSON.stringify(t.Faces.lord(l2).config);l2.fac='karn';
   ok(JSON.stringify(t.Faces.lord(l2).config)===f0&&t.TALK_PIC.lord(l2)===t.lordPic(l2)&&t.hudPic('brann')===t.portrait('brann'),'with faces: a lord keeps his face when his allegiance changes, dialogue and the battle\'s cards show the same faces')}
+ // (2026-11-09, the owner: "change old unit portrait (unitcard) to generated sprite and please use most relevant armor for each unit";
+ // "make sure all race or factions use the correct appearance and features on their portrait. Dont forget to have bald")
+ {const F=t.Faces,ST=t.ST,types=Object.keys(ST),men=types.filter(k=>!ST[k].beast&&!t.COMPS[k]),beasts=types.filter(k=>ST[k].beast);
+  const bad=men.filter(k=>!t.portrait(k).startsWith('data:image/png')||!F.unit(k));
+  ok(!bad.length,'with faces: every one of the '+men.length+' troop kinds a generated face'+(bad.length?' (not '+bad.slice(0,6).join(', ')+')':''));
+  ok(beasts.every(k=>!F.unit(k)&&t.portrait(k).startsWith('art/portrait/game/')),'a beast keeps its painting ('+beasts.length+')');
+  ok(t.unitCard('hum_knight').includes('src="'+t.portrait('hum_knight')+'"'),'the unit card shows the generated face');
+  ok(F.unit('hum_knight')===F.unit('hum_knight')&&JSON.stringify(F.unit('hum_levy',0))!==JSON.stringify(F.unit('hum_levy',1)),'a kind\'s face kept; another of its figures (v) another face');
+  const C=k=>F.unit(k).config,arm=[['hum_knight','plate','sallet'],['hum_levy','gambeson','arming-cap'],['hum_squire','mail','kettle'],['dw_iron','dwarf-iron-guard','dwarf-guard-helm'],
+    ['dw_rune','rune-mail','forge-helm'],['orc_ironjaw','orc-lamellar','orc-war-helm'],['orc_reaver','hide-harness','warband'],['elf_phoenix','elf-leaf-mail','elf-guard-helm'],['elf_archer','leaf-mantle','none'],
+    ['hum_mage','robe','wrapped-hood'],['hum_farmer','tunic','straw-hat']],wrong=arm.filter(([k,cl,hw])=>C(k).clothing!==cl||C(k).headwear!==hw);
+  ok(!wrong.length,'each kind in its own armour and helm: plate and a sallet for a knight, a gambeson for a levy, the dwarves\' and orcs\' and elves\' own makes, a robe for a mage, plain clothes for a farmer'+(wrong.length?' ('+wrong.map(([k])=>k+': '+C(k).clothing+'/'+C(k).headwear).join(', ')+')':''));
+  const metal=['hum_knight','hum_squire','dw_iron','orc_ironjaw','elf_phoenix'].every(k=>men.includes(k)&&/^#[0-9a-f]{6}$/i.test(F.unit(k).colors.metal)),armless=men.filter(k=>!ST[k].tier&&t.FACE_GEAR.armours.includes(C(k).clothing));
+  const outl=men.filter(k=>/^band_/.test(k)).flatMap(k=>[0,1,2,3].map(v=>C(k)&&F.unit(k,v).config.clothing)).filter(c=>t.FACE_GEAR.armours.includes(c));
+  ok(metal&&!armless.length&&!outl.length,'armour in its metal; no worker in armour, no outlaw in mail'+(armless.length?' ('+armless.join(', ')+')':''));
+  // (each people's marks: elves' ears and no beard, orcs' face, dwarves' beards, goblins green with pointed ears)
+  const of=r=>men.filter(k=>(ST[k].race||'human')===r).flatMap(k=>[undefined,0,1,2,3,4,5].map(v=>F.unit(k,v))),E=t.PortraitEngine,pr=(r,k,x)=>E.partsFor(r,k).includes(x);
+  const elf=of('elf'),orc=of('orc'),dw=of('dwarf'),gob=of('goblin'),hum=of('human');
+  ok(elf.every(f=>f.config.race==='elf'&&f.config.beard==='none'&&['pointed','elven-long','elf-swept'].includes(f.config.ears)||f.config.ears==='none'),'elves: elven ears, never a beard');
+  ok(orc.every(f=>f.config.race==='orc'&&pr('orc','face',f.config.face))&&orc.some(f=>/tusks/.test(f.config.mouth)),'orcs: orcish faces, tusks among them');
+  ok(dw.filter(f=>f.config.profile==='male').every(f=>!['none','stubble'].includes(f.config.beard)||f.config.beard!=='none'),'dwarves: the men bearded');
+  ok(gob.length&&gob.every(f=>f.config.race==='orc'&&f.config.ears==='pointed'&&f.config.beard!=='full'&&t.FACE_LOOK.skin.goblin.concat(Object.values(t.FACE_LOOK.skinOf)).includes(f.colors.skin)),'goblins: on an orc\'s face, pointed ears, green skin');
+  ok(new Set(hum.map(f=>f.colors.skin)).size>=3&&new Set(hum.map(f=>f.colors.hair)).size>=4,'humans in more than one skin and hair ('+new Set(hum.map(f=>f.colors.skin)).size+' skins, '+new Set(hum.map(f=>f.colors.hair)).size+' hairs)');
+  // (bald heads among every people's men but the elves', by their share; a woman's hair kept but among goblins and orcs)
+  const share=r=>{let n=0;for(let i=0;i<300;i++)if(F.random(i*31+7,r,'m').config.hair==='none')n++;return n/300},sh=Object.fromEntries(['human','dwarf','orc','goblin','elf'].map(r=>[r,share(r)]));
+  ok(sh.human>.07&&sh.dwarf>.1&&sh.orc>.2&&sh.goblin>.7&&sh.elf<.08&&[0,1,2,3,4].every(i=>F.random(i*31+7,'human','f').config.hair!=='none'),'bald heads: '+Object.entries(sh).map(([r,v])=>r+' '+Math.round(v*100)+'%').join(', ')+'; no human woman bald');
+  const mine=t.PortraitCharacters.recipe({config:F.random(5,'human','m').config,colors:{skin:'#123456',hair:'#654321'}});
+  ok(F.kin(mine,'human').colors.skin==='#123456'&&F.kin(mine,'human').colors.hair==='#654321','a face\'s own chosen colours are kept');
+  // (faces off: every kind its painting still, the outlaws the old bandits', the alpha a wolf's)
+  t.FACES.on=false;const miss=types.filter(k=>!t.portrait(k).startsWith('art/portrait/game/'));ok(!miss.length,'faces off: every kind its painting ('+miss.join(', ')+')');t.FACES.on=true}
 });

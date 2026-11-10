@@ -81,6 +81,10 @@ Kit.suite(({ok})=>{
    for(let i=0;i<40&&C.held;i++)t.act('held-wait');window.Math.random=rnd;ok(!C.held&&P.gold===q.hidden&&gearN()===0&&!t.troopCount()&&!C.scattered.length&&/turn you out/.test(panel()),'after '+X.prison.days+' days they turn you out: only the gold you hid, no gear in your bag, no soldiers');t.act('dlg-ok')}
   {const q=caged();window.Math.random=()=>0;t.act('held-break');window.Math.random=rnd;ok(!C.held&&P.gold===q.hidden&&/over the wall/.test(panel()),'breaking out: free, with only the gold you hid');t.act('dlg-ok')}
   {const q=caged(),cost=C.bribe(q).cost,hid=q.hidden;window.Math.random=()=>0;t.act('held-bribe');window.Math.random=rnd;ok(!C.held&&P.gold===hid-cost&&/unbarred/.test(panel()),'a bribed guard ('+cost+'g of what you hid) leaves the door unbarred');t.act('dlg-ok')}
+  {const q=caged(),cost=C.bribe(q).cost,hid=q.hidden,g0=q.guard;ok(C.bribe({...q,offer:q.offer*4}).cost>cost,'a guard asks the more, the more you are worth to them');
+   window.Math.random=()=>.99;t.act('held-bribe');window.Math.random=rnd;ok(C.held&&q.hidden===hid&&q.guard===g0&&/shakes his head/.test(panel()),'a guard who will not take it: you keep your coin, and the day goes by');
+   let k=0;window.Math.random=()=>[.99,0][k++]??.99;t.act('held-bribe');window.Math.random=rnd;ok(C.held&&q.hidden===hid-cost&&q.guard===g0+1&&/tells his captain/.test(panel()),'one who tells his captain: your coin gone, and they watch you closer');
+   for(let i=0;i<40&&C.held;i++)t.act('held-wait');window.Math.random=rnd;t.act('dlg-ok')}
   {const q=caged(),o=q.offer;t.act('held-pay');window.Math.random=rnd;ok(!C.held&&P.gold===400-o,'or pay what they ask, and they let you out');t.act('dlg-ok')}
   // (your companions: each tries to get away as you are taken; those who do may break you out)
   {P.comps={brann:{ap:5,role:''}};t.compInit('brann');const q=caged([.99,0]);ok(C.held.away.includes('brann'),'Brann got away as you were taken');
