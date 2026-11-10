@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><title>Shared hairstyle checks</title><pre id="out">Running…</pre><script src="portrait-engine.js"></script><script>
+'use strict';
+const E=PortraitEngine,lines=[];
+function ok(v,s){if(!v)throw Error(s);lines.push('PASS '+s);}
+const hasInk=c=>c.getContext('2d').getImageData(0,0,128,128).data.some((v,i)=>i%4===3&&v);
+try{
+ for(const race of E.races){
+  ok(JSON.stringify(E.partsFor(race,'hair'))===JSON.stringify(E.options.hair),race+' offers all '+E.options.hair.length+' hairstyles');
+  for(const hair of E.options.hair){if(E.normalize({race,hair}).hair!==hair)throw Error('Hair replaced on import: '+race+'/'+hair);for(const target of E.races)if(E.startRace(target,{race,hair}).hair!==hair)throw Error('Race change replaces '+hair);}
+  ok(true,race+' preserves every style through normalization and race changes');
+  const signatures=new Set();for(const hair of E.options.hair){const q=E.build({...E.startRace(race),hair,headwear:'none'}),ink=hasInk(q.layers.hairFront)||hasInk(q.layers.hairBack);if(ink!==(hair!=='none'))throw Error('Missing hairstyle: '+race+'/'+hair);signatures.add(q.layers.hairBack.toDataURL()+'|'+q.layers.hairFront.toDataURL());}
+  ok(signatures.size===E.options.hair.length,race+' renders every hairstyle with distinct source artwork');
+  const preferred=E.hairPreferences[race];if(!preferred.length||preferred.some(h=>!E.options.hair.includes(h)))throw Error('Invalid hair preference table');
+  for(const profile of E.profiles){const seen=new Set();let favored=0;const n=2048;for(let seed=0;seed<n;seed++){const c=E.random(seed,profile,race);seen.add(c.hair);if(preferred.includes(c.hair))favored++;}if(seen.size!==E.options.hair.length)throw Error('Random hair excludes styles: '+race+'/'+profile);const rate=favored/preferred.length,other=(n-favored)/(E.options.hair.length-preferred.length);if(rate<other*2)throw Error('Racial preference missing: '+race+'/'+profile);if(JSON.stringify(E.random(42,profile,race))!==JSON.stringify(E.random(42,profile,race)))throw Error('Unstable hair randomization');ok(true,race+'/'+profile+' favors racial styles while reaching every shared hairstyle deterministically');}
+ }
+ const styles=Object.values(E.hairGroups).flat();ok(styles.length===E.options.hair.length&&new Set(styles).size===styles.length,'shared hair groups list each hairstyle exactly once');
+ for(const race of E.races){const q=E.build({...E.startRace(race),hair:'war-crest',headwear:'coif'}),blank=E.build({...q.config,hair:'none'});if(E.composite(q).toDataURL()!==E.composite(blank).toDataURL())throw Error('Shared mohawk protrudes through helm: '+race);}
+ ok(true,'shared mohawks remain concealed by enclosing headwear for all races');
+ lines.push('DONE '+lines.length+' checks');
+}catch(e){lines.push('FAIL '+e.message);console.error(e);}
+document.getElementById('out').textContent=lines.join('\n');
+</script>

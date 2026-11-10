@@ -16,12 +16,12 @@
 const FACES={on:true,px:256,mode:'random'};
 /* (the owner, 2026-11-09: "Can you make the face a bit more like dwarf?") a dwarf's face by the marks of their people (FACE_KIN,
    Faces.kin): the engine draws a dwarf from every face and nose a human may have, so any of theirs not of their people's own is
-   swapped for one that is (face, nose, ears, brows; a woman's hair braided; a man's thin beard a full or braided one), each drawn
-   from the face's own seed (the same face every time), and the face made broader (adj: at least these, the engine's bounds).
+   swapped for one that is (face, nose, ears, brows; a man's thin beard a full or braided one), each drawn
+   from the face's own seed (the same face every time), and the face made broader (adj: at least these, the engine's bounds). Hairstyles stay shared; the engine biases random cuts by race.
    Every dwarf the world draws: a lord's, a companion's, a kinsman's, a face drawn at random (yours before you shape it); the face
    you made yourself is as you made it */
 const FACE_KIN={dwarf:{face:['dwarven','dwarf-square'],nose:['dwarf-bulb','dwarf-broad-bridge','dwarf-broken'],ears:['rounded','broad'],eyes:['deep-set','heavy','focused','dwarf-deep','dwarf-squint'],
-  brows:{m:['dwarf-bushy','dwarf-straight','dwarf-weathered','bold'],f:['full-soft','dwarf-straight','dwarf-bushy']},hair:{f:['braids','forge-braids','single-braid','loose-side-braid']},
+  brows:{m:['dwarf-bushy','dwarf-straight','dwarf-weathered','bold'],f:['full-soft','dwarf-straight','dwarf-bushy']},
   beard:{m:['braided','bound-beard','full','forked','dwarf-fan','dwarf-twin-braids']},thin:['none','stubble','goatee','moustache','trimmed','short-boxed','close-beard','sideburns','chin-bristle'],
   // (each proportion at least lo to hi (a man's m, a woman's f), or at most for one below nought: smaller eyes)
   adj:{faceWidth:[2,2],jawWidth:{m:[2,2],f:[1,2]},noseWidth:[1,2],eyeSize:{m:[-1,0],f:[-1,-1]},hairVolume:[0,1]}},
@@ -108,7 +108,7 @@ class Faces{
      own face, its people's marks only) */
   static kin(rec,race,mine){if(!rec)return rec;const r=rec.config.race,r0=race&&this.raceOf(race)===r?race:r,K=FACE_KIN[r0],c={...rec.config,adjustments:{...rec.config.adjustments}},f=c.profile==='female'?'f':'m',
       H=k=>PortraitCharacters.hash(c.seed+'/'+r0+'/'+k),pick=(k,L)=>L[H(k)%L.length],set=(k,L)=>{if(L&&!L.includes(c[k])){const v=pick(k,L.filter(x=>this.fits(r,k,x)));if(v)c[k]=v}};
-    if(K){for(const k of['face','nose','ears','eyes','brows','mouth','hair'])set(k,Array.isArray(K[k])?K[k]:K[k]?.[f]);
+    if(K){for(const k of['face','nose','ears','eyes','brows','mouth'])set(k,Array.isArray(K[k])?K[k]:K[k]?.[f]);
       const B=K.beard?.[f];if(B&&(!K.thin||K.thin.includes(c.beard)))set('beard',B);
       for(const k in K.adj||{}){const A=PortraitEngine.adjustments[k],R=Array.isArray(K.adj[k])?K.adj[k]:K.adj[k][f],[lo,hi]=R,n=lo+H('adj/'+k)%(hi-lo+1),v=c.adjustments[k]||0;
         if(A)c.adjustments[k]=Math.max(A.min,Math.min(A.max,n<0?Math.min(v,n):Math.max(v,n)))}}
@@ -122,7 +122,7 @@ class Faces{
   static bare(c){return PortraitEngine.normalize({...c,headwear:'none'})}
   // ---- the New game page's face: the draft, made again when your race or your hero's gender changes
   static draftFor(race,g){const D=this.draft;if(D&&D.race===race&&D.g===g)return D.rec;
-    const rec=D?.rec?PortraitCharacters.recipe({config:PortraitEngine.startProfile(this.profileOf(g),PortraitEngine.startRace(this.raceOf(race),D.rec.config)),colors:{}}):this.random(Math.random()*4294967296,race,g,true);
+    const rec=D?.rec?PortraitCharacters.recipe({config:{...PortraitEngine.startProfile(this.profileOf(g),PortraitEngine.startRace(this.raceOf(race),D.rec.config)),hair:D.rec.config.hair},colors:{}}):this.random(Math.random()*4294967296,race,g,true);
     this.draft={race,g,rec};return rec}
   static maker(race,g){if(!this.ok())return '';const E=PortraitEngine,rec=this.draftFor(race,g),c=rec.config,r=this.raceOf(race);
     const part=([k,n])=>{const L=E.partsFor(r,k);return L.length<2?'':'<label class="fm-row"><span>'+n+'</span><select data-fm-part="'+k+'">'+L.map(v=>'<option value="'+v+'"'+(v===c[k]?' selected':'')+'>'+this.partName(v)+'</option>').join('')+'</select></label>'};

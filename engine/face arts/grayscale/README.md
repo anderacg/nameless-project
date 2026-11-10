@@ -50,9 +50,9 @@ Seven presets demonstrate the parts: Braided shieldmaiden, Veiled village daught
 
 ## Hair length and scalp attachment
 
-The hairstyle selector uses **Short**, **Medium**, **Long** and **No hair** groups. Length refers to untied hair, so buns and ponytails belong to Long. `PortraitEngine.hairGroups` exposes the same classification to consumers. The selector shows the styles compatible with the chosen race.
+The hairstyle selector uses **Short**, **Medium**, **Long** and **No hair** groups. Length refers to untied hair, so buns and ponytails belong to Long. `PortraitEngine.hairGroups` exposes the same classification to consumers. All 38 hairstyles are available to every race and profile, including knight crop, forge braids, mohawk / war crest, braided crown and tonsure. Switching race and importing recipes preserve the chosen hairstyle.
 
-Additional men’s cuts include buzz cut, crew cut, Caesar, textured crop, short quiff, brushed-up hair, curtains, shag, slick side and shoulder-length hair. Race generation uses its own compatible style pool. Tonsure, receding hair and buzz cuts are clipped to the actual scalp; the tonsure opening clears the crown without leaving a detached hair rim.
+Additional men’s cuts include buzz cut, crew cut, Caesar, textured crop, short quiff, brushed-up hair, curtains, shag, slick side and shoulder-length hair. Race generation uses the shared style catalog with weighted preferences. Tonsure, receding hair and buzz cuts are clipped to the actual scalp; the tonsure opening clears the crown without leaving a detached hair rim.
 
 Eye folds and lower edges no longer use thin separate strokes that can quantize into stray flecks or pale corner dots. Eye whites use a softer shaded range, and iris reflections are smaller and dimmer. Upper eyelids have a separate skin-tinted foreground layer after the iris. The iris mask explicitly excludes lid pixels, so tinting cannot draw it over the upper edge. Eye and iris layers are checked for two connected silhouettes, symmetry, iris containment and correct lid occlusion.
 
@@ -60,7 +60,7 @@ New outfits include doublet, jerkin, tabard, scale armor, lamellar armor, plate,
 
 ## Race-specific parts and generation
 
-Race now controls compatibility across the engine, selectors and recipe import. The table above describes the complete catalog; each race sees its own subset. Switching races retains compatible choices and replaces incompatible ones with racial or safe defaults. No hidden unsupported combination is retained in the renderer.
+Race now controls compatibility across the engine, selectors and recipe import. The table above describes the complete catalog; each race sees its own subset of anatomy and equipment. Hair is shared in full. Switching races retains compatible choices and replaces incompatible ones with racial or safe defaults. No hidden unsupported combination is retained in the renderer.
 
 | Race | New distinctive parts | Restrictions and generation |
 |---|---|---|
@@ -69,9 +69,9 @@ Race now controls compatibility across the engine, selectors and recipe import. 
 | Orc | Heavy orc jaw, broad flat nose, two tusk sizes, war crest, chin bristle, hide harness, warband | Orc/pointed ears and broad noses; short/sparse facial hair, no dwarf braid beards. Random generation favors tusks. |
 | Elf | High cheekbones, swept pointed ears, slanted eyes, braided crown, leaf mantle, vine diadem | Pointed ears, slender facial features, no facial hair. |
 
-Generic clothing and headwear remain shared. New racial gear and distinctive anatomy stay with their intended race. Female generation starts without facial hair; gender does not restrict allowed manual parts within a race. Race does not force a skin color: the green Orc preview uses a runtime tint.
+Every hairstyle remains shared. Generic clothing and headwear remain shared. New racial gear and distinctive anatomy stay with their intended race. Female generation starts without facial hair; gender does not restrict allowed manual parts within a race. Race does not force a skin color: the green Orc preview uses a runtime tint.
 
-The compatibility tables are `EXCLUSIVE_PARTS` and `RACE_LIMITS` in `portrait-engine.js`. They are used to derive `PortraitEngine.raceParts`; `partsFor(race, feature)` exposes the available choices. To change the lore (for example, allow bearded elves), edit these tables. Random generation draws directly from each race's pool, with additional racial and gender preferences, and remains deterministic.
+The compatibility tables are `EXCLUSIVE_PARTS` and `RACE_LIMITS` in `portrait-engine.js`. They are used to derive `PortraitEngine.raceParts`; `partsFor(race, feature)` exposes the available choices. To change the lore (for example, allow bearded elves), edit these tables. Random generation draws compatible anatomy and equipment from each race's pool and remains deterministic. Hair always comes from the shared catalog; `PortraitEngine.hairPreferences` exposes the favored styles. Preferred styles have four times the baseline weight. Female random generation adds a two-times preference for its usual long/tied styles, without excluding any other cut. The random stream still consumes the same number of draws, so non-hair choices retain their seeded sequence.
 
 ```js
 const elf = PortraitEngine.startRace('elf', currentConfig);
@@ -247,3 +247,6 @@ These appear in the compatible feature selectors, four new editable presets and 
 Eight new orc-only clothing options are available in the workshop, game face maker, curated presets and compatible NPC role pools: laced leather vest, studded leather, crossed harness over a leather vest, ring harness over a leather vest, layered hide armor, leather with shoulder guards, bare crossed harness and bare ring harness. The six covered kits cover the chest and shoulders; the two bare options deliberately expose skin. Harness straps meet the shoulder tops and continue down the chest. Buckles and rings stay attached to leather.
 
 The optional Torso layer sits below Clothing and Armor and uses the existing Skin tint. Leather remains on Cloth; hardware remains on Metal. All layers keep the same 128-pixel origin. The body surface joins the smaller orc neck without moving the broad shoulders. Existing outfits leave the torso layer empty, preserving their rendering. Saved recipes remain version 7; the atlas grows to 19 cells. Both offline tools are rebuilt with the same source.
+
+
+Shared hair checks: `hair-tests.html` verifies every hairstyle on every race, normalization and race-switch preservation, distinct artwork, deterministic weighted sampling with every style reachable, and helmet concealment. The game’s face maker also preserves a selected cut when switching race; dwarf appearance rules keep anatomical preferences without replacing chosen hair. Existing bald-frequency and hair-color preferences for generated characters remain.

@@ -43,8 +43,8 @@ Kit.suite(({ok,info})=>{
  }finally{P.gear=g0;P.comps=cp}}
  // ---- a dwarf's face by the marks of their people (FACE_KIN): every one drawn so; a human's as it is; your own as you made it
  {const K=t.FACE_KIN.dwarf,bad=[];for(let i=0;i<12;i++)for(const g of ['f','m']){const c=F.random(5000+i*13,'dwarf',g).config;
-    if(!K.face.includes(c.face)||!K.nose.includes(c.nose)||c.adjustments.faceWidth<2||(g==='m'&&K.thin.includes(c.beard))||(g==='f'&&!K.hair.f.includes(c.hair)))bad.push(g+':'+c.face+'/'+c.nose+'/'+c.beard+'/'+c.hair)}
-  ok(!bad.length,'24 dwarves drawn at random: a dwarf\'s face, nose and breadth; a man\'s beard full or braided, a woman\'s hair braided'+(bad.length?' (not: '+bad.join(', ')+')':''));
+    if(!K.face.includes(c.face)||!K.nose.includes(c.nose)||c.adjustments.faceWidth<2||(g==='m'&&K.thin.includes(c.beard))||!t.PortraitEngine.partsFor('dwarf','hair').includes(c.hair))bad.push(g+':'+c.face+'/'+c.nose+'/'+c.beard+'/'+c.hair)}
+  ok(!bad.length,'24 dwarves drawn at random: a dwarf\'s face, nose and breadth; a man\'s beard full or braided, hair from the shared catalog'+(bad.length?' (not: '+bad.join(', ')+')':''));
   const h=t.PortraitCharacters.recipe({config:t.Faces.bare(t.PortraitEngine.random(77,'male','human'))});ok(JSON.stringify(F.kin(h).config)===JSON.stringify(h.config),'a human\'s face as it is');
   const d=t.PortraitCharacters.recipe({config:t.Faces.bare(t.PortraitEngine.random(78,'female','dwarf'))});ok(JSON.stringify(F.kin(d))===JSON.stringify(F.kin(d)),'the same dwarf drawn the same every time')}
  {const E=t.PortraitEngine,C=t.PortraitCharacters,look=beard=>F.look(C.recipe({config:E.normalize({race:'dwarf',beard})}));ok(!look('dwarf-heavy-moustache').beard&&look('dwarf-fan').beard&&look('dwarf-twin-braids').beard,'dwarf moustaches and full beard styles map correctly to battle figures')}
@@ -53,6 +53,9 @@ Kit.suite(({ok,info})=>{
   try{F.draft=null;const html=F.maker('orc','m');for(const clothing of kits){F.set('clothing',clothing);const rec=F.draft.rec,p=E.build(rec.config);ok(html.includes('value="'+clothing+'"')&&html.includes(E.partLabels[clothing])&&rec.config.clothing===clothing&&p.layers.torso.getContext('2d').getImageData(0,0,128,128).data.some((v,i)=>i%4===3&&v)&&/^data:image/.test(F.url(rec,true)),'orc face maker selects and renders '+E.partLabels[clothing]);}
    ok(kits.every(k=>t.FACE_GEAR.armours.includes(k)),'all new orc kits follow the existing worn-armor portrait rules');
   }finally{F.draft=saved}}
+ // (hair is a choice shared by every people; racial preferences never replace a chosen cut)
+ {const E=t.PortraitEngine,C=t.PortraitCharacters;for(const race of E.races){const rec=C.recipe({config:{race,profile:'female',hair:'war-crest'}});ok(E.options.hair.every(h=>E.partsFor(race,'hair').includes(h))&&F.kin(rec,race,true).config.hair==='war-crest',race+' allows every hairstyle and preserves a chosen mohawk through racial appearance rules');}}
+ {const saved=F.draft;try{F.draft=null;F.maker('orc','f');F.set('hair','war-crest');for(const race of t.PortraitEngine.races)F.maker(race,'f');ok(F.draft.rec.config.hair==='war-crest','changing race in the face maker preserves a chosen hairstyle');}finally{F.draft=saved}}
  // (switched off: the paintings again)
  t.FACES.on=false;try{ok(!/^data:/.test(t.lordPic(L))||!t.NamedPortraits.of(L.name),'FACES.on false: a lord\'s painting again')}finally{t.FACES.on=true}
 });
