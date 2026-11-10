@@ -8,7 +8,20 @@
 // stride each stride game minutes
 const STANDARD={on:true,guards:[0,3,6,10],hold:4,r:44,renown:4,thanks:6,regrow:1,I0:200000,hostile:{days:20,honor:-10},
   grow:{days:[0,8,14],cost:{2:{timber:14},3:{timber:8,stone:20}}},repair:{days:4,cost:{timber:6,stone:6}},sentries:{most:3,r:14,lap:40,stride:2},
-  T:{n:'Standard',ico:'banner',col:'#e8b94a',d:'A realm’s standard on its land: a tall pole on a stepped stone plinth, its banners hung from a crossbar, its guards beside it.'}};
+  // (phase 3) capture: a lord with more times its guards within r tiles takes it, chance a day; a band takes one held by weak guards
+  // or fewer, its men its guards (lairMost at most); lair: the bands that make one their lair (kinds), a band out of it every
+  // days while fewer than most are out, of n men (and the days'); own: yours keeps a man a day from your nearest holding's
+  // garrison while it keeps keep; sight: tiles of fog lifted round yours and your employer's; safe: no band raised within safe
+  // tiles of a held one (world.js spawnBandit)
+  capture:{r:6,more:2,chance:.5,weak:1,lairMost:12},lair:{kinds:['bandits','raiders','bog','goblins'],every:4,most:2,n:[3,5]},own:{keep:4},sight:7,safe:9,
+  // (phase 5) tower: its tower in a fight on the world map (world/standards.js StandardTower): its top rise[lv] levels over the ground
+  // (HILL.range a level on its archers' range; no blade between its top and the ground: terrain.js apart), perch[lv] of its archers posted on it in a fight for it,
+  // its men drawn top[lv] of its model's height up (its platform), its ladder ladder cells wide on the side away from your army (a world battle's man needs more than one: terrain.js routeBody)
+  tower:{rise:[0,0,2,3],perch:[0,0,2,4],top:[0,0,.26,.3],ladder:3},
+  // land: the land a held one claims round it for its realm (world/territory.js, as a holding's reach: travel cost from its tile),
+  // reach[lv] by its level (one fewer while its tower lies broken); its tiles its realm's nearest holding's
+  land:{reach:[0,5,7,9]},
+  T:{n:'Outpost',ico:'banner',col:'#e8b94a',d:'A realm’s outpost on its land: a tall flag pole on a stepped stone plinth, its banners hung from a crossbar, its guards beside it.'}};// (an outpost to the player, a standard in the code)
 // STANDARD_PLACE: where they stand (doc §2). score: by why (a deposit, a pass, a ford, a road crossing), and add more on a border with
 // another realm's land (within border.r tiles); town: tiles from any holding, clear: tiles to anything built; gap: tiles between two; per province base + one for
 // each per of its holdings, most at most, one more where it borders another realm, a kind it has already worth same less (its

@@ -76,6 +76,8 @@ const Rng={
   seedOf(name){
     return Math.imul(this.worldSeed()^Math.imul(this.game,0x85ebca6b)^seedNum(name),0x9e3779b1)>>>0;
   },
+  // (the same from the world's seed and the name alone, whatever game it is: a game's first faces, ui/faces.js Faces.start)
+  worldOf(name){const g=this.game;this.game=0;try{return this.seedOf(name)}finally{this.game=g}},
   of(name){
     let s=this.streams.get(name);
     if(!s)this.streams.set(name,s=new RngStream(name,this.seedOf(name)));

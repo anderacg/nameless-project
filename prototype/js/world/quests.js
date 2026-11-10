@@ -1106,6 +1106,51 @@ class MissingQuest extends JobQuest{
     return super.gone()?super.goneWhy():'No one knows what became of '+this.pn+'.';
   }
 }
+/* outposts (doc/STANDARDS_DESIGN.md phase 4; world/standards.js; an outpost to the player, a standard in the code): a lord at war
+   wants an outpost taken for his realm: the nearest held by a realm at war with his, a band's lair, or one of his realm's first
+   (then: retake); done once its banner is his realm's by your hand (you serving him, or handing it to his realm). A holding's
+   board: bandits or goblins driven from the outpost they made their lair near it; the broken tower of an outpost of its realm's
+   mended with the timber and stone you bring (its page's Mend its tower). OUTPOST_JOB: how far (tiles) each looks */
+const OUTPOST_JOB={take:60,lair:40,mend:40};
+const outpostNear=(fn,t,r)=>Standards.all().filter(s=>fn(s)&&qTiles(s,t)<r).sort((a,b)=>qTiles(a,t)-qTiles(b,t))[0]||null;
+class OutpostQuest extends JobQuest{
+  needless(){return this.gone()}
+  setup(t,lord){const f=this.fac,s=outpostNear(x=>x.realm!==f&&!x.choose&&(x.band||x.home0===f&&x.realm!=='player'||x.realm&&x.realm!=='player'&&atWar(f,x.realm)),t,OUTPOST_JOB.take);if(!s)return false;
+    const back=s.home0===f;this.site=s.i;this.title=(back?'Retake the ':'Take the ')+s.name;
+    this.text=(lord?lord.name:t.name)+' wants the '+s.name+(back?' back for the '+FACS[f].n:' taken for the '+FACS[f].n)+': beat its guards and raise their banner over it.';
+    this.cause=back?'It was the '+FACS[f].n+'’s, and is '+(s.band?'a lair of '+LAIR_SAY[s.band].toLowerCase():'the '+FACS[s.realm].n+'’s')+' now.':'It stands on the road into the '+FACS[s.realm||'vale'].n+'’s land.';this.pays(150,0,8,40)}
+  begin(){const s=Standards.of(this.site);if(!s)return false;s.seen=true;this.x=s.x;this.y=s.y}
+  seek(){const s=Standards.of(this.site);return s?{x:s.x,y:s.y,name:'the '+s.name}:null}
+  get deed(){return 'standard:taken'}
+  hits(d){return d.standard.i===this.site&&d.to===this.fac&&d.by==='you'}
+  get deedWord(){return 'taken'}
+  gone(){const s=Standards.of(this.site);return super.gone()||!s||!this.done&&s.realm===this.fac}
+  goneWhy(){const s=Standards.of(this.site);return super.gone()?super.goneWhy():s?'The '+s.name+' is the '+FACS[this.fac].n+'’s again, by other hands.':'The outpost is gone.'}
+}
+class OutlairQuest extends JobQuest{
+  needless(){return this.gone()}
+  setup(t){const s=outpostNear(x=>!!x.band,t,OUTPOST_JOB.lair);if(!s)return false;this.site=s.i;this.title='Drive the '+LAIR_SAY[s.band].toLowerCase()+' from the '+s.name;
+    this.text=LAIR_SAY[s.band]+' have made the '+s.name+' to the '+compass(s.x-t.x,s.y-t.y)+' their lair. Drive them out.';this.cause='Their raiders ride out of it onto '+t.name+'’s roads.';this.pays(140,10,3,40)}
+  begin(){const s=Standards.of(this.site);if(!s||!s.band)return false;s.seen=true;this.x=s.x;this.y=s.y}
+  seek(){const s=Standards.of(this.site);return s?{x:s.x,y:s.y,name:'the '+s.name}:null}
+  get deed(){return 'site:cleared'}
+  hits(d){return d.site.i===this.site}
+  get deedWord(){return 'cleared'}
+  gone(){const s=Standards.of(this.site);return super.gone()||!s||!this.done&&!s.band}
+  goneWhy(){const s=Standards.of(this.site);return super.gone()?super.goneWhy():s?'Someone else drove them from the '+s.name+'.':'The outpost is gone.'}
+}
+class MendQuest extends JobQuest{
+  needless(){return this.gone()}
+  setup(t){const s=outpostNear(x=>x.broken&&x.realm===t.owner,t,OUTPOST_JOB.mend);if(!s)return false;this.site=s.i;this.title='Mend the tower of the '+s.name;
+    this.text=t.name+' needs the broken tower of the '+s.name+' mended: bring '+s.costText(STANDARD.repair.cost)+' there.';this.cause='Its guards stand short-handed while it lies broken.';this.pays(90,8,2,30)}
+  begin(){const s=Standards.of(this.site);if(!s||!s.broken)return false;s.seen=true;this.x=s.x;this.y=s.y}
+  seek(){const s=Standards.of(this.site);return s?{x:s.x,y:s.y,name:'the '+s.name}:null}
+  get deed(){return 'standard:mended'}
+  hits(d){return d.standard.i===this.site&&d.by==='you'}
+  get deedWord(){return 'mended'}
+  gone(){const s=Standards.of(this.site);return super.gone()||!s||!this.done&&(!s.broken||s.realm!==this.fac&&!!this.fac)}
+  goneWhy(){const s=Standards.of(this.site);return super.gone()?super.goneWhy():s&&!s.broken?'Its tower is mended already.':'The outpost is no longer theirs.'}
+}
 // the kinds (the holdings' boards name theirs: data/holdings.js jobs; lords give lordkill, raid, bounty and beast: lordJob)
 defineKinds('quest',{},{
   bounty:{cls:BountyQuest},
@@ -1121,6 +1166,9 @@ defineKinds('quest',{},{
   scout:{cls:ScoutQuest},
   convoy:{cls:ConvoyQuest},
   missing:{cls:MissingQuest},
+  outpost:{cls:OutpostQuest},
+  outlair:{cls:OutlairQuest},
+  mend:{cls:MendQuest},
 });
 // their deeds heard on the bus (core/bus.js): a band beaten, a beast slain, a site cleared, a lord beaten, a holding razed
 Quest.listen();
@@ -1170,7 +1218,7 @@ function jobsAt(t){
 }
 // a lord's job: war work if his faction is at war (raids only for those who serve him), else a bounty or a beast near his lands
 function lordJob(l){
-  const t=Spatial.nearest(fiefsOf(l.fac).length?fiefsOf(l.fac):TOWNS,l.x,l.y);const kinds=enemiesOf(l.fac).length?(P.fac===l.fac?['lordkill','raid','relieve','scout']:['lordkill','relieve','scout']):['bounty','beast'];
+  const t=Spatial.nearest(fiefsOf(l.fac).length?fiefsOf(l.fac):TOWNS,l.x,l.y);const kinds=enemiesOf(l.fac).length?(P.fac===l.fac?['lordkill','raid','relieve','scout','outpost']:['lordkill','relieve','scout','outpost']):['bounty','beast'];
   for(let k=0;k<6;k++){const q=makeQuest(questRng().pick(kinds),t,l);if(q)return q}return null;
 }
 /* taking a quest, where it points, how far along it is, reporting and failing: the quest's own (story/quest.js); the names

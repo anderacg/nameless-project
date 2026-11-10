@@ -16,10 +16,10 @@ const NB8=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.41],[1,-1,1.41],[-1,1,1.41],
 // what crossing a tile costs a holding's reach (0: it cannot), and the least any tile costs (how far a reach can run, in tiles)
 const LAND_COST=[1,1.7,1.5,0,.8,4,1.5],LAND_STEP=Math.min(...LAND_COST.filter(Boolean));
 const landCost=k=>LAND_COST[tiles[k]];
-let LAND=null,LAND_EDGE=null,landSig='',landTiles=[],landRuns=null,landWas=null,landVer=0,landBest=null,landDist=null;
+let LAND=null,LAND_EDGE=null,landSig='',landTiles=[],landRuns=null,landWas=null,landVer=0,landBest=null,landDist=null,landKey='',landClaims=null;
 // a world goes in: its land as the world first stood (worldmap.js worldKeep), or none claimed yet (reckoned at the next look)
 onWorld(m=>{const F=m.first,n=MW*MH;LAND=F?Int16Array.from(F.land):new Int16Array(n).fill(-1);LAND_EDGE=new Uint8Array(n);landBest=new Float64Array(n);landDist=new Float64Array(n).fill(1e9);
-  landSig=F?F.landSig:'';landTiles=F?F.landTiles.slice():[];landRuns=landWas=null;landVer++});
+  landSig=F?F.landSig:'';landTiles=F?F.landTiles.slice():[];landRuns=landWas=landClaims=null;landKey='';landVer++});
 const landReach=t=>t.T.reach+Math.floor(t.grow||0);
 // up to 3 more reach for friendly holdings near (WORLD_SCALE.land.friendly tiles)
 const growCap=t=>t.T.growMax+Math.min(3,TOWNS.filter(o=>o!==t&&o.owner===t.owner&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<WORLD_SCALE.land.friendly).length);
@@ -28,12 +28,12 @@ function heapPush(h,e){h.push(e);let i=h.length-1;while(i){const p=(i-1)>>1;if(h
 function heapPop(h){const top=h[0],last=h.pop();if(h.length){h[0]=last;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<h.length&&h[l][0]<h[m][0])m=l;if(r<h.length&&h[r][0]<h[m][0])m=r;if(m===i)break;[h[m],h[i]]=[h[i],h[m]];i=m}}return top}
 // what a holding's claim hangs on: its reach (none once it is gone) and its tile; [x0, y0, x1, y1] the tiles a reach can touch
 const landLim=t=>t.gone?0:landReach(t);
-const landBox=(t,lim)=>{const r=Math.ceil(lim/LAND_STEP)+1;return[Math.max(0,t.tx-r),Math.max(0,t.ty-r),Math.min(MW-1,t.tx+r),Math.min(MH-1,t.ty+r)]};
+const landBox=(t,lim)=>{const r=Math.ceil(lim/LAND_STEP)+1;return[Math.max(0,t.tx-r),Math.max(0,t.ty-r),Math.min(MW-1,t.tx+r),Math.min(MH-1,t.ty+r)]};// (t: a holding, or any {tx, ty})
 const boxMeets=(a,b)=>a[0]<=b[2]&&b[0]<=a[2]&&a[1]<=b[3]&&b[1]<=a[3];
-// one holding's run: its reach spreads from its tile by the cost of the land, taking each tile where more of it is left than of
-// any holding's before it
-function landRun(i,lim){
-  const t=TOWNS[i],s0=t.ty*MW+t.tx,h=[[0,s0]],used=[s0],tk=[],tv=[];landDist[s0]=0;
+// one holding's run: its reach spreads from its tile (or at: an outpost's claim for it, Standards.claims) by the cost of the land,
+// taking each tile where more of it is left than of any holding's before it
+function landRun(i,lim,at=TOWNS[i]){
+  const t=at,s0=t.ty*MW+t.tx,h=[[0,s0]],used=[s0],tk=[],tv=[];landDist[s0]=0;
   while(h.length){const [c,k]=heapPop(h);if(c>landDist[k])continue;if(c/lim<landBest[k]){landBest[k]=c/lim;LAND[k]=i;tk.push(k);tv.push(c/lim)}
     const x=k%MW,y=(k-x)/MW;
     for(const [dx,dy,m] of NB8){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=MW||ny>=MH)continue;const n=ny*MW+nx,lc=landCost(n);if(!lc)continue;
@@ -48,6 +48,8 @@ function landCompute(S){
     if(S&&!S.has(i)&&!(box&&D.some(b=>boxMeets(b,box)))){if(was)for(let j=0;j<was.k.length;j++){landBest[was.k[j]]=was.v[j];LAND[was.k[j]]=i}return}
     if(was)D.push(was.box);if(box)D.push(box);runs[i]=lim>0?landRun(i,lim):null});
   runs.length=TOWNS.length;landRuns=runs;
+  // (then the outposts' claims, after every holding's, each for its realm's nearest holding: world/standards.js Standards.claims)
+  for(const r of landClaims||[])D.push(r.box);landClaims=(typeof Standards!=='undefined'?Standards.claims():[]).map(c=>{const r=landRun(c.i,c.lim,c.s);D.push(r.box);return r});
   landTiles=TOWNS.map(()=>0);for(let k=0;k<LAND.length;k++)if(LAND[k]>=0)landTiles[LAND[k]]++;
   return D;
 }
@@ -61,15 +63,16 @@ function landEdges(b){
 }
 // look again when an owner, a reach (a whole step of growth) or a holding's tile changes: the claims changed run again, the
 // borders are drawn afresh round them and round a holding that changed hands
+// (or an outpost's holder or level: Standards.landKey)
 function landFresh(){
-  const s=TOWNS.map(t=>(t.owner||'')+':'+landLim(t)+':'+t.tx+','+t.ty).join();if(s===landSig&&landWas)return;
+  const s=TOWNS.map(t=>(t.owner||'')+':'+landLim(t)+':'+t.tx+','+t.ty).join(),k=typeof Standards!=='undefined'?Standards.landKey():'';if(s===landSig&&k===landKey&&landWas)return;
   const now=TOWNS.map(t=>({own:t.owner,lim:landLim(t),at:t.ty*MW+t.tx}));landVer++;
   // (a world put back as it first stood: its land as kept, reckoned afresh at the next change)
-  if(s===landSig){landWas=now;landEdges([0,0,MW-1,MH-1]);return}
-  landSig=s;const was=landWas;landWas=now;
+  if(s===landSig&&k===landKey){landWas=now;landEdges([0,0,MW-1,MH-1]);return}
+  const kc=k!==landKey;landSig=s;landKey=k;const was=landWas;landWas=now;
   if(!was||!landRuns||was.length>now.length){computeLand();return}
   const S=new Set(),O=[];now.forEach((n,i)=>{const w=was[i];if(!w||w.lim!==n.lim||w.at!==n.at)S.add(i);else if(w.own!==n.own&&n.lim>0)O.push(landRuns[i].box)});
-  const D=S.size?landCompute(S):[];
+  const D=S.size||kc?landCompute(S):[];
   for(const b of [...D,...O])landEdges([Math.max(0,b[0]-1),Math.max(0,b[1]-1),Math.min(MW-1,b[2]+1),Math.min(MH-1,b[3]+1)]);
 }
 // a holding added or lost: looked at again at the next look

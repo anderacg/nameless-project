@@ -60,12 +60,12 @@ Kit.suite(({ok})=>{
  near(cas);t.updateWorld(.01);t.act('q-turnin',String(qt.id));ok(!P.quests.length&&P.troops.hum_spear===1&&P.troops.hum_levy===5&&cas.gar===gar+qt.n,qt.n+' men-at-arms join the garrison (levies are too green)');t.act('leave');done();
  // lords
  P.fac='vale';P.hostile={};W.rel[t.rk('vale','horde')]={s:'war',since:G.day};W.lords.forEach(l=>{l.dead=false});
- const lord=W.lords.find(l=>l.fac==='vale'),foe=W.lords.find(l=>l.fac==='horde');lord.x=P.x+3;lord.y=P.y;lord.asked=0;G.lordJob=null;world();t.lordMeet(lord);
+ const lord=W.lords.find(l=>l.fac==='vale'),foe=W.lords.find(l=>l.fac==='horde');lord.x=P.x+3;lord.y=P.y;lord.asked=0;G.lordJob=null;world();t.lordMeet(lord);t.act('talk-topic','work');// (his work under its topic: story/conversation.js)
  ok(G.mode==='dialog'&&/Accept/.test(panel()),lord.name+' offers war work');let lq=G.lordJob;
  for(let k=0;k<20&&lq.type!=='lordkill';k++){G.lordJob=null;t.lordMeet(lord);lq=G.lordJob}
  t.act('q-lord');ok(P.quests.some(q=>q.lord&&q.giver===lord.name),'accepted from the lord');t.act('lord-leave');
  const tgt=W.lords.find(l=>l.name===lq.target);world();t.startEncounter({kind:'lord',ref:tgt,list:tgt.troops.slice()});win();ok(lq.done,'beating '+lq.target+' finishes it');
- const h0=t.honorWith('vale');lord.cool=0;world();t.lordMeet(lord);ok(/Report/.test(panel()),'the lord asks for your report');t.act('q-lord-report');ok(!P.quests.length&&t.honorWith('vale')>h0,'reporting earns honor');t.act('lord-leave');
+ const h0=t.honorWith('vale');lord.cool=0;world();t.lordMeet(lord);t.act('talk-topic','work');ok(/Report/.test(panel()),'the lord asks for your report');t.act('q-lord-report');ok(!P.quests.length&&t.honorWith('vale')>h0,'reporting earns honor');t.act('lord-leave');
  // a lord's job can also be reported at any of his faction's holdings
  world();const lr=t.makeQuest('raid',ash,lord);ok(lr&&t.atWar('vale',t.townBy(lr.village).owner),'vassals are asked to raid enemy villages ('+(lr&&lr.village)+')');t.acceptQuest(lr);
  const v=t.townBy(lr.village);P.x=v.x;P.y=v.y+5;world();G.lastTown=null;t.updateWorld(.01);t.act('sg-raid-auto');t.act('cont');done();for(let i=0;i<70&&P.raid;i++){G.mode='world';G.modal=false;t.updateWorld(.25)}ok(lr.done,'raiding it finishes the quest');

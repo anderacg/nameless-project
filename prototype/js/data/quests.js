@@ -26,8 +26,8 @@ const QUEST_ARCHIVE={keep:60};
 const GIVERS={
   reeve:{where:'the reeve’s house',n:'reeve',at:{kind:['village','hamlet']},jobs:['beast','bounty','hunt','missing'],why:'The village is mine to keep.',pays:.5},
   herder:{where:'the pasture',n:'herder',at:{estate:'pasture'},jobs:['beast'],why:'Every ewe lost is a winter lost.',pays:.4},
-  captain:{where:'the watch house',n:'captain of the watch',at:{walls:1},jobs:['bounty','clear','troops'],why:'The roads are the watch’s to keep.',pays:1},
-  steward:{where:'the lord’s hall',n:'steward',at:{kind:['town','city','castle','fort']},jobs:['supply','courier','troops'],why:'The stores answer to me.',pays:1},
+  captain:{where:'the watch house',n:'captain of the watch',at:{walls:1},jobs:['bounty','clear','troops','outlair'],why:'The roads are the watch’s to keep.',pays:1},
+  steward:{where:'the lord’s hall',n:'steward',at:{kind:['town','city','castle','fort']},jobs:['supply','courier','troops','mend'],why:'The stores answer to me.',pays:1},
   merchant:{where:'the market square',n:'merchant',at:{estate:'market'},jobs:['supply','bounty','convoy'],why:'My caravans go out on those roads.',pays:1},
   tanner:{where:'the tanners’ yard',n:'tanner',at:{estate:'workshop'},jobs:['hunt'],why:'No hides, no leather.',pays:.7},
   innkeeper:{where:'the tavern',n:'innkeeper',at:{kind:['hamlet','village','town','city']},jobs:['hunt'],why:'A full table keeps the tavern full.',pays:.6},

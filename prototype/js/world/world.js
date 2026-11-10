@@ -8,7 +8,7 @@ function spawnBandit(initial,ld){// (ld: a chieftain coming back)
   for(let tries=0;tries<80;tries++){
     const x=rint(3,MW-4)*TILE+8,y=rint(3,MH-4)*TILE+8;
     if(!passable(terrAt(x,y)))continue;
-    if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.bandit[initial?0:1]||!farFromHomes(x,y,WORLD_SCALE.spawn.away))continue;
+    if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.bandit[initial?0:1]||!farFromHomes(x,y,WORLD_SCALE.spawn.away)||Standards.guarded(x,y))continue;// (none by a held standard: world/standards.js)
     const c=climAt(x,y),n=rint(3,5)+Math.floor(G.day/12),kind=c==='desert'?'raiders':c==='swamp'?'bog':'bandits';bandits.push(asParty({x,y,n,kind,list:makeEnemies(n,false,kind),t:0,a:0,idle:false,cool:0,ld:ld||newChief(kind,1+Math.floor(G.day/25)+(Math.random()<.3?1:0))}));if(ld&&Math.hypot(x-P.x,y-P.y)<vis()*3)log(ld.name+' is back on the roads with a new band.','bad');return;
   }
 }
