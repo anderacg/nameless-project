@@ -677,7 +677,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  place" and "can you make a bar more interesting?": the holding's bar of wood, trim, ribbon, shield, padlock and crowns drawn over
 //  it (gfx/structures.js drawPlaques). W6 was b6e74327 already at a7c2f8d, before this batch (moved earlier, not by it); 6e16d3b gives
 //  W5 as before. Were W5 f64851c8, W6 fa66e427)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'eed44484',W6:'8a493d1b',W7:'944093c1',W8:'c6df5ce6',B2:'f37cd778'};
+// (W6 again 2026-11-10, on purpose: the owner, "do this kind of flag for a faction flag on units as well only for a large one. But
+//  the pole should still at left side": a realm's banner at a flag man's back hung from a crossbar out from its pole, taller than
+//  wide, gold-trimmed and fringed (gfx/marchgear.js hangBackFlag), on the marchers in the view. Proof: BATTLE_BANNER.hang.on false
+//  gives W6 as before. Was W6 8a493d1b)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'eed44484',W6:'4e0e6b92',W7:'944093c1',W8:'c6df5ce6',B2:'f37cd778'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

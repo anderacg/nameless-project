@@ -103,16 +103,32 @@ function battleFlag(u){if(!MARCH_GEAR.flags||!B||u.hero||u.comp||u.leader)return
    army's device in its middle; cloth: each shape's [w, h]; fold, fly: its folds and where its fly begins to wave; notch: its
    swallow tail's cut; back: a back
    flag's pole (h px, up: its foot under his shoulders), tall enough that the cloth flies over his head; pole: how much longer a flag
-   man's spear is drawn, so his cloth flies over his head too (drawing only: his reach is his spear's) */
-const BATTLE_BANNER={cloth:{banner:[10,8],rag:[10,8],pennant:[11,7],trade:[7,4]},fold:1.2,fly:6,notch:2,back:{h:22,up:3},pole:7};
+   man's spear is drawn, so his cloth flies over his head too (drawing only: his reach is his spear's); hang: a realm's banner at his
+   back hung from a crossbar (hangBackFlag: on, the cloth's w, h, the crossbar's row) */
+const BATTLE_BANNER={cloth:{banner:[10,8],rag:[10,8],pennant:[11,7],trade:[7,4]},fold:1.2,fly:6,notch:2,back:{h:22,up:3},pole:7,hang:{on:true,w:7,h:10,bar:3}};
 // (a flag's cloth alone, hung from (ax, ay) by its first column, trailing back to the left: a spear's in battle)
 function clothSprite(b,f){const key='fc'+b.k+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;const Q=BATTLE_BANNER,[cw,ch]=Q.cloth[b.k]||Q.cloth.banner,g=pgrid(cw+2,ch+4);
   bannerCloth((x,y,c)=>pset(g,x,y,c),cw,2,b,f,Q.cloth,-1,Q);g.edge=true;poutline(g);c=pcanvas(g);c.ax=cw+1;c.ay=2;MARCH_FLAGS.set(key,c);return c}
 // (a flag at his back in battle: a tall pole up from under his shoulders, a gilt knob atop, the banner hung under it; ax, ay: the
 // shoulders' point)
-function battleBackFlag(b,f){const key='fB'+b.k+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;
+function battleBackFlag(b,f){if(b.k==='banner'&&BATTLE_BANNER.hang.on)return hangBackFlag(b,f);const key='fB'+b.k+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;
   const Q=BATTLE_BANNER,{h,up}=Q.back,[cw]=Q.cloth[b.k]||Q.cloth.banner,g=pgrid(cw+3,h+4),x=cw+1,W=PPAL.wood;
   for(let y=2;y<=h+1;y++)pset(g,x,y,W[y>h-2?2:1]);pset(g,x,1,PPAL.gold[1]);pset(g,x,0,PPAL.gold[0]);bannerCloth((X,Y,c)=>pset(g,X,Y,c),x-1,3,b,f,Q.cloth,-1,Q);
+  g.edge=true;poutline(g);c=pcanvas(g);c.ax=x;c.ay=h+1-up;MARCH_FLAGS.set(key,c);return c}
+/* (a realm's banner at his back hung as the group flags are (the owner, 2026-11-10: "do this kind of flag for a faction flag on units
+   as well only for a large one. But the pole should still at left side"): the same tall pole and gilt knob, a crossbar out from it
+   to the cloth's side with a gold knob at its end, the cloth hung under it, taller than wide (hang: w, h), a gold trim at its sides
+   and foot, the realm's device in its middle ringed in its deepest shade, a gold fringe under it; its foot and fringe swung a px as
+   he moves (f). A rag, a pennant, a trade flag as before; ax, ay: the shoulders' point) */
+function hangBackFlag(b,f){const key='fH'+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;
+  const Q=BATTLE_BANNER,{h,up}=Q.back,{w:cw,h:ch,bar}=Q.hang,g=pgrid(cw+4,h+4),x=cw+2,W=PPAL.wood,G=PPAL.gold,R=PX.ramp(b.col),s=(X,Y,col)=>pset(g,X,Y,col);
+  for(let y=2;y<=h+1;y++)s(x,y,W[y>h-2?2:1]);s(x,1,G[1]);s(x,0,G[0]);
+  for(let X=x-cw-1;X<x;X++)s(X,bar,W[1]);s(x-cw-1,bar,G[1]);
+  const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?['#4a2226','#2a1418']:['#f6eedc','#d0c4a6'],T=BANNER_DEV[b.dev],x0=x-cw,y0=bar+1;
+  const sw=r=>r>=ch-2?-f:0,dev=new Map();if(T){const i0=(cw-T[0].length)>>1,r0=2;T.forEach((row,y)=>[...row].forEach((q,i)=>{if(q!=='.')dev.set((i0+i)+','+(r0+y),q)}))}
+  for(let r=0;r<ch;r++)for(let i=0;i<cw;i++){const k=i+','+r,d=dev.get(k),ring=!d&&[[1,0],[-1,0],[0,1],[0,-1]].some(([a,e])=>dev.has((i+a)+','+(r+e)));
+    s(x0+i+sw(r),y0+r,i===0||i===cw-1||r===ch-1?(r===ch-1||i===cw-1?G[2]:G[1]):d?(d==='x'?D[1]:D[0]):ring?R[3]:R[r===0?0:r>=ch-3?2:1])}
+  for(let i=0;i<cw;i+=2)s(x0+i+sw(ch),y0+ch,G[1]);
   g.edge=true;poutline(g);c=pcanvas(g);c.ax=x;c.ay=h+1-up;MARCH_FLAGS.set(key,c);return c}
 // (its wave: still while he stands, MARCH_GEAR.flutter a second as he moves)
 const battleWave=(u,moved)=>moved?Math.floor(B.t*MARCH_GEAR.flutter+(u.id||0)*.37)%2:0;

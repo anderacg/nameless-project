@@ -125,8 +125,8 @@ const unitIconScale=()=>{const f=iconZoom();if(B?.world)return Math.max(1,Math.r
    cloth S art px wide and ch tall in its side's colours (cols: field, lit top, shaded foot), edged (edge: dark; gold selected,
    amber wavering, light pointed at), a gold trim inside its edge, its kind's glyph on it (drawUnitIcons), a gold fringe at its foot;
    the crossbar over it with gold knobs, on a pole through its middle from a gold finial (top art px over the cloth) down foot px
-   under the fringe and its health, pointing at its men. One picture a look (FLAG_PICS), its cloth's top left at (0, 0) */
-const FLAG={top:5,ch:15,foot:4,pole:'#7a5632',finial:'#e8b94a',out:'#0a0c12',trim:'#d6b052',trimLow:'#9a7a30',fringe:'#e8c86a'},FLAG_PICS=new Map();
+   under the fringe, pointing at its men (its health a bar on its left: battlehud.js drawGroupHealth). One picture a look (FLAG_PICS), its cloth's top left at (0, 0) */
+const FLAG={top:5,ch:15,foot:0,pole:'#7a5632',finial:'#e8b94a',out:'#0a0c12',trim:'#d6b052',trimLow:'#9a7a30',fringe:'#e8c86a'},FLAG_PICS=new Map();
 function flagPic(S,cols,edge){const key=S+cols.join()+edge;let c=FLAG_PICS.get(key);if(c)return c;const F=FLAG,ch=F.ch,mid=(S-1)>>1,low=ch+5+F.foot;
   c=document.createElement('canvas');c.width=S+2;c.height=F.top+low;const g=c.getContext('2d'),px=(x,y,col)=>{g.fillStyle=col;g.fillRect(x+1,y+F.top,1,1)};
   // (the pole, dark-cased, from its finial to its foot; the crossbar over the cloth, its knobs gold)
@@ -137,8 +137,8 @@ function flagPic(S,cols,edge){const key=S+cols.join()+edge;let c=FLAG_PICS.get(k
   for(let x=1;x<S;x+=2)px(x,ch,F.fringe);
   FLAG_PICS.set(key,c);return c}
 const drawFlag0=(S,cols,edge)=>{const c=flagPic(S,cols,edge);ctx.imageSmoothingEnabled=false;ctx.drawImage(c,-1,-FLAG.top)};
-// (a flag's height for its place and its click: the cloth, its fringe, its health under it)
-const flagH=()=>FLAG.ch+7;
+// (a flag's height for its place and its click: the cloth, its fringe, its pole's foot)
+const flagH=()=>FLAG.ch+6;
 const iconPx=v=>{const k=bview().k;return Math.round(v*k)/k};
 /* where they stand (iconLayout; B.icons, for clicks, in the order drawn): each over its own group, its place on the field eased
    after its men on the battle's clock (follow: a man falling or running moves it with no jump; snap: field px past which it is
