@@ -329,6 +329,7 @@ function lairSprite(s,c){const look=s.lairLook,L=s.lairCol||LAIR_COL,k='lair'+lo
   g.fillStyle='#d8d0bc';g.fillRect(Math.round(N*.3),y-2,4,1);g.fillRect(Math.round(N*.36),y-1,2,2);cv.flag=null;return spr[k]=cv}
 function siteSprite(s){s=siteOf(s);// (plain data too)
   if(s.type==='rest')return s.picture();// (a resting place: its finest grave's picture, world/lineage.js RestSite)
+  if(s.type==='standard')return s.sprite();// (a realm's standard and its tower: world/standards.js standardSprite)
   const c=climAt(s.x,s.y);if(s instanceof BanditCamp)return campSprite(s.seed,'bandit',c);// a bandit camp: the big camp, as the siege camp is drawn
   if(SITE_KIND[s.type]&&!s.tunnel)return campSprite(s.seed,s.type,c);
   if(s.tunnel)return lairSprite(s,c);// (a bandit lair: a tunnel's mouth in the hillside, their banner by it)

@@ -145,7 +145,7 @@ class BattleSetup{
     if(!opts.tournament)addArmy(P,P.list,0,'p_',true);
     const raw=enc&&['lord','party','patrol','caravan','monster','villagers','estate'].includes(enc.kind)?enc.ref:null;
     if(raw&&!(raw instanceof Party)&&!raw.tc&&!raw.troops&&!raw.list)raw.troops=opts.enemies.slice();
-    const main=raw?asParty(raw):enc&&['siege','raid'].includes(enc.kind)&&enc.ref?.name?asParty({gar:enc.ref.name,troops:opts.enemies.slice()}):enc&&enc.kind==='camp'&&enc.ref?.flag?asParty({kind:enc.band||enc.ref.bandKind||'bandits',flagB:enc.ref.flag(),troops:opts.enemies.slice()}):enc&&enc.kind==='ruin'?asParty({flagB:null,troops:opts.enemies.slice()}):null;// (a holding's own men: world/parties.js GarrisonParty; a camp's or a hideout's under its flag)
+    const main=raw?asParty(raw):enc&&['siege','raid'].includes(enc.kind)&&enc.ref?.name?asParty({gar:enc.ref.name,troops:opts.enemies.slice()}):enc&&enc.kind==='camp'&&enc.ref?.flag?asParty({kind:enc.band||enc.ref.bandKind||'bandits',flagB:enc.ref.flag(),troops:opts.enemies.slice()}):enc&&enc.kind==='ruin'?asParty({flagB:null,troops:opts.enemies.slice()}):enc&&enc.kind==='standard'&&enc.ref?asParty({src:enc.ref,fac:enc.ref.realm,name:'Guards of the '+enc.ref.name,troops:opts.enemies.slice()}):null;// (a holding's own men: world/parties.js GarrisonParty; a camp's or a hideout's under its flag)
     addArmy(main,opts.enemies,1,'e0_');
     if(enc){(enc.allies||[]).forEach((l,i)=>addArmy(l,l.troops,0,'a'+i+'_',false,true));(enc.foes||[]).forEach((l,i)=>addArmy(l,l.troops,1,'e'+(i+1)+'_',false,true))}
     // Characters are their own formations, not mixed into cavalry or infantry.

@@ -1,6 +1,6 @@
 # Standards: a realm's flags on its land, their towers and guards
 
-Status: **design agreed (2026-11-10); phase 1 in progress.**
+Status: **phase 1 built (2026-11-10)**: the standards placed, drawn (a stone plinth, a pole and crossbar, two banners; a watchtower or stone tower from level 2), held, on the minimap and the full map, saved; taken by you (its guards beaten, your banner up after `STANDARD.hold` hours by it) for the realm you serve, for yourself with a holding of your own, else handed to a realm near or left to no one; a realm's guards back a day. Phases 2-5 to come.
 
 **The owner, 2026-11-10** (a photo of tall poles on stepped stone plinths, crossbars and tattered banners hung from them): "every factions will also have a static flag in their territory, and around that they may have tower or buildings to defense (have a guard patrol around) that area. This tower and flag can be captured by another factions or even bandits, goblin. Which will lead to quests, etc as well".
 
