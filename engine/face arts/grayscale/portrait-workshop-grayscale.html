@@ -1497,6 +1497,56 @@
     }
     if(!ids&&c.brows==='broken'){const a=geometry(c),{s}=headPlacement(c);layers.brows.getContext('2d').clearRect(a.brows[1].x+Math.round(5*s),a.brows[1].y-Math.ceil(3*s),1,Math.ceil(7*s));}
   }
+  function equipmentDetails(p,layers){
+    const kind=p.config.clothing,ids=['clothing','armor'],images=Object.fromEntries(ids.map(id=>[id,layers[id].getContext('2d').getImageData(0,0,SIZE,SIZE)]));
+    const dot=(id,x,y,tone)=>{
+      x=Math.floor(x/2)*2;y=Math.floor(y/2)*2;if(x<0||x>=SIZE||y<0||y>=SIZE)return;
+      const d=images[id].data,k=(y*SIZE+x)*4;if(!d[k+3])return;
+      const value=Math.max(32,Math.min(248,tone-(x>=64&&tone>64?32:0))),v=PIXEL_STYLE.tones.reduce((best,n)=>Math.abs(n-value)<Math.abs(best-value)?n:best,PIXEL_STYLE.tones[0]);
+      for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y+j)*SIZE+x+i)*4;d[q]=d[q+1]=d[q+2]=v;}
+    };
+    const stroke=(id,path,tone,dy=0)=>{for(let n=1;n<path.length;n++){const [ax,ay]=path[n-1],[bx,by]=path[n],steps=Math.max(1,Math.ceil(Math.max(Math.abs(bx-ax),Math.abs(by-ay))/2));for(let i=0;i<=steps;i++){const t=i/steps;dot(id,ax+(bx-ax)*t,ay+(by-ay)*t+dy,tone);}}};
+    const pair=(id,path,tone,dy=0)=>{stroke(id,path,tone,dy);stroke(id,path.map(([x,y])=>[126-x,y]),tone,dy);};
+    // Large overlapping scales and laced plates keep their own cadence after reduction.
+    if(['scale','elf-silver-scale','lamellar','orc-lamellar'].includes(kind)){
+      const scale=kind==='scale'||kind==='elf-silver-scale',wide=kind==='elf-silver-scale'?12:scale?10:8,height=scale?8:10;
+      for(let y=100;y<SIZE;y+=2)for(let x=0;x<SIZE;x+=2){
+        const row=Math.floor((y-100)/height),px=x<64?x:126-x,u=((px-24+(row%2)*4)%wide+wide)%wide,v=(y-100)%height;
+        let tone;
+        if(scale){tone=v===0?(u<wide-2?128:64):v===2?(u===0?192:u===wide-2?96:144):v===4?(u===2?192:u>=4&&u<wide-2?144:64):(u===4?160:u===6&&wide===12?128:64);}
+        else{tone=u===0||v===height-2?64:u===2?160:128;if(v===0&&u===4||v===4&&u===4)tone=48;}
+        dot('armor',x,y,tone);
+      }
+    }
+    // Plate lips use one dark joint and one short reflected edge, never blurred outlines.
+    if(['plate','steel-cuirass','dwarf-iron-guard','dwarf-runic-plate','dwarf-forge-plate'].includes(kind)){
+      const chest=[[38,106],[48,110],[60,112]],shoulder=[[20,112],[28,104],[38,100],[44,102]];
+      for(const path of [chest,shoulder]){pair('armor',path,64,2);pair('armor',path,192);}
+      for(const y of [118,124]){const path=[[26,y+2],[40,y],[62,y]];pair('armor',path,64,2);pair('armor',path,160);}
+      for(let y=106;y<118;y+=2)dot('armor',62,y,192);
+    }
+    if(kind==='elf-leaf-cuirass')for(const y of [114,124]){
+      const path=[[36,y-14],[40,y-10],[46,y-6],[54,y-2],[62,y]];pair('armor',path,64,2);pair('armor',path,192);
+    }
+    if(kind==='elf-leaf-mail')for(let i=0;i<3;i++){
+      const x=42-i*8,y=102+i*4,path=[[x-4,y],[x,y+4],[x+4,y+8]];pair('armor',path,64,2);pair('armor',path,192);
+    }
+    // Forge emblems are rebuilt from their shared motif, rather than a few averaged specks.
+    if(['dwarf-iron-guard','dwarf-forge-plate','dwarf-runic-plate'].includes(kind)){
+      for(const [cx,cy,slot] of kind==='dwarf-runic-plate'?[[36,108,0],[48,114,1]]:[[50,112,0]]){
+        const motif=ENGRAVINGS[((p.config.seed>>>0)+slot*3)%ENGRAVINGS.length];
+        for(const path of motif.paths){const placed=path.map(([x,y])=>[cx+x,cy+y]);pair('armor',placed,64,2);pair('armor',placed,224);}
+      }
+    }
+    if(['orc-leather-vest','orc-studded-leather','orc-leather-guard','leather','jerkin'].includes(kind)){
+      for(let y=108;y<126;y+=6){stroke('clothing',[[60,y],[66,y+2]],160);stroke('clothing',[[60,y+2],[66,y+4]],64);}
+      if(kind.startsWith('orc-')){const path=[[48,100],[46,110],[42,124]];pair('clothing',path,64,2);pair('clothing',path,128);}
+    }
+    if(['brocade','embroidered-robe','embroidered-doublet','guild-doublet'].includes(kind)){
+      for(const [x,y] of [[36,108],[48,118]])pair('clothing',[[x,y-4],[x+4,y],[x,y+4],[x-4,y],[x,y-4]],160);
+    }
+    for(const id of ids)layers[id].getContext('2d').putImageData(images[id],0,0);
+  }
   function helmetReflections(layer,a){
     const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,eye=a.eyes[0].y;
     for(let y=0;y<SIZE;y+=2)for(let x=0;x<SIZE;x+=2){
@@ -1553,6 +1603,7 @@
     if(CLOSED_HELMS.includes(p.config.headwear)){
       const g=layers.headwearFront.getContext('2d');for(const r of visorSlots(a))g.clearRect(r.x,r.y,r.w,r.h);
     }
+    equipmentDetails(p,layers);
     fitLeatherToBody(layers,p.config);
     if(p.config.race==='orc')mirrorParts(layers,p.config);else if(CLOSED_HELMS.includes(p.config.headwear))mirrorParts(layers,p.config,['headwearFront','headwearBack']);
     if(CLOSED_HELMS.includes(p.config.headwear))helmetReflections(layers.headwearFront,a);

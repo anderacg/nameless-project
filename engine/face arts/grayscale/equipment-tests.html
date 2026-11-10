@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><title>Equipment quality checks</title><pre id="out">Running…</pre><script src="portrait-engine.js"></script><script>
+'use strict';
+const E=PortraitEngine,lines=[],data=c=>c.getContext('2d').getImageData(0,0,128,128).data;
+function ok(v,s){if(!v)throw Error(s);lines.push('PASS '+s);}
+try{
+ let outfits=0,hats=0;
+ for(const race of E.races){
+  for(const clothing of E.partsFor(race,'clothing')){const p=E.build({...E.startRace(race),clothing,hair:'none',beard:'none',headwear:'none'});
+   for(const id of ['clothing','armor']){const a=data(p.layers[id]);for(let y=0;y<128;y+=2)for(let x=0;x<128;x+=2){const k=(y*128+x)*4;for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y+j)*128+x+i)*4;if(a[k]!==a[q]||a[k+3]!==a[q+3])throw Error('Mixed equipment pixel size: '+race+'/'+clothing+'/'+id);}}}
+   if(!data(p.layers.clothing).some((v,i)=>i%4===3&&v))throw Error('Empty clothing: '+race+'/'+clothing);outfits++;
+  }
+  for(const headwear of E.partsFor(race,'headwear')){const p=E.build({...E.startRace(race),headwear,hair:'none',beard:'none'}),a=data(p.layers.headwearFront);for(const eye of p.anchors.eyes)if(a[(eye.y*128+eye.x)*4+3])throw Error('Equipment covers pupil: '+race+'/'+headwear);hats++;}
+ }
+ ok(outfits>140,outfits+' race/outfit combinations retain consistent two-pixel equipment clusters');
+ ok(hats>150,hats+' race/headwear combinations retain clear pupil anchors');
+ for(const clothing of ['scale','lamellar','orc-lamellar','elf-silver-scale']){const race=E.races.find(r=>E.partsFor(r,'clothing').includes(clothing)),p=E.build({...E.startRace(race),clothing}),a=data(p.layers.armor);let dark=0,light=0;for(let k=0;k<a.length;k+=4)if(a[k+3]){if(a[k]<=64)dark++;if(a[k]>=160)light++;}ok(dark>=16&&light>=16,clothing+' keeps readable plate edges and recessed joints');}
+ for(const clothing of ['dwarf-iron-guard','dwarf-forge-plate','dwarf-runic-plate']){const variants=new Set();for(let seed=0;seed<8;seed++)variants.add(E.build({race:'dwarf',clothing,seed}).layers.armor.toDataURL());ok(variants.size===8,clothing+' preserves all eight distinct engraving motifs');}
+ const variants=new Set(['scale','lamellar','orc-lamellar','elf-silver-scale'].map(clothing=>{const race=E.races.find(r=>E.partsFor(r,'clothing').includes(clothing));return E.build({...E.startRace(race),clothing}).layers.armor.toDataURL();}));ok(variants.size===4,'scale and laced-plate families keep distinct native artwork');
+ lines.push('DONE '+lines.length+' checks');
+}catch(e){lines.push('FAIL '+e.message);console.error(e);}
+document.getElementById('out').textContent=lines.join('\n');
+</script>

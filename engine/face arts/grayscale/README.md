@@ -262,3 +262,9 @@ Full helmet refinement: rounded cheek/jaw bowls, beveled great-helm corners and 
 Reference-based closed visors now use long, narrow brow slits with a stepped upward slope toward a solid nose bridge. A raised center seam and paired breathing holes define the faceplate; deeper cavity shading keeps the eyes recessed. Apertures remain sharp on the two-pixel grid and keep pupil anchors clear.
 
 Full helmet reflections: crisp curved crown bands, a narrow cheek reflection and raised seam highlights sit against darker steel. Lighting comes from the upper left; silhouettes, paired details, visor cuts and breathing holes retain their existing shape. Reflection tones share the equipment palette and two-pixel grid; headwear tint remains editable.
+
+## Equipment detail at native size
+
+The equipment detail pass keeps scales, laced lamellar plates, plate lips, elven leaf seams, forge emblems, leather lacing and embroidered trim on the final two-pixel grid. Larger, fewer marks replace features that were lost when the original fine strokes were reduced. Shading and edge contrast separate adjacent pieces while retaining the existing eight-tone equipment palette and independent material tints.
+
+The pass changes clothing and armor tones inside their existing masks. It preserves coverage, skin and facial parts, harness placement, headwear and visor openings. Recipes remain version 7 with 19 layers. `equipment-tests.html` checks all race/outfit combinations for pixel scale, every compatible headwear option for pupil clearance, scale/lamellar contrast and all eight forge motifs.
