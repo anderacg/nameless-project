@@ -258,13 +258,22 @@ class PlayerParty extends Party{
 Object.setPrototypeOf(P,PlayerParty.prototype);
 // which kind a plain party is
 const partyClassOf=o=>o.gar?GarrisonParty:o.cid?CompanionParty:o.pt?PatrolParty:o.cv?CaravanParty:o.fac&&o.name?LordParty:o.kind==='goblins'?GoblinBand:BandParty;
+/* a force made for a fight flies its source's flag (the owner, 2026-11-10: "When siege or battle with garrison the flag seems to be
+   bugged and use bandit flag": a free holding's garrison, a village's folk and an estate's guards read as a band and flew the
+   bandits' rag). A force: a party's or a holding's men as a plain record, src where they came from (fights.js forceOf,
+   garrisonForce), or town their holding (estate.js, folk.js). A holding's men its banner (grey, free folk's), a patrol its pennant,
+   a band its own rag; else its kind's. Its kind otherwise as before (partyClassOf), made once a kind */
+const FORCE_KINDS=new Map();
+function forceKindOf(C){let F=FORCE_KINDS.get(C);if(F)return F;
+  F=class extends C{banner(){const s=this.src||townBy(this.town);return typeof s?.banner==='function'?s.banner():s&&TOWNS.includes(s)?holdingFlag(s,facCol(s)):super.banner()}};
+  FORCE_KINDS.set(C,F);return F}
 // make a party one of its kind: its own list of soldiers (or a save's counts) becomes its counts; a band with only its number
 // (n) musters its fighters here, once
 function asParty(o){
   if(!o||o instanceof Party)return o;
-  const own=k=>Object.prototype.hasOwnProperty.call(o,k)?o[k]:undefined,list=own('troops')||own('list'),C=partyClassOf(o);
+  const own=k=>Object.prototype.hasOwnProperty.call(o,k)?o[k]:undefined,list=own('troops')||own('list'),K=partyClassOf(o),C=o.src&&o.src!==o||o.town&&!o.name?forceKindOf(K):K;
   delete o.troops;delete o.list;Object.setPrototypeOf(o,C.prototype);
-  o.tc=o.tc||(list?countsOf(list):C===BandParty?countsOf(makeEnemies(o.n||3,false,o.kind)):{});o.changed();return o;
+  o.tc=o.tc||(list?countsOf(list):K===BandParty?countsOf(makeEnemies(o.n||3,false,o.kind)):{});o.changed();return o;
 }
 // every party on the map: the lords in the field, bands, patrols, your companions' parties (not caravans: they are drawn and
 // picked as their carts, caravans.js, not as a host behind a leader, render.js drawParties)
