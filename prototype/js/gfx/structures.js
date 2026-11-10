@@ -74,7 +74,7 @@ function holdingEnts(t,ents,cam,V){
       const live=inSight((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE),sm=live?l.st!=='building'&&lotSprite(t,l):(seenTile(l.x,l.y)||seenTile(l.x+l.n-1,l.y+l.n-1))&&(l._mem||lotSprite(t,l));
       ents.push({y:(l.y+l.n)*TILE-1,sh:sm&&sm.sh?[sm.sh,X,Y-N]:null,f:()=>{
         // outside your sight: the building as you last saw it (fog.js), or nothing if you never saw its ground
-        if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);ctx.drawImage(m,X,Y-N);depthPic(m,X,Y-N);drawRotors(m,X,Y-N,l.seed,true);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(holdingFlag(t,col),X+m.flag[0],Y-N+m.flag[1],t.seed);txt(t.name,Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),'#a8a496','center')}return}
+        if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);ctx.drawImage(m,X,Y-N);depthPic(m,X,Y-N);drawRotors(m,X,Y-N,l.seed,true);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(holdingFlag(t,col),X+m.flag[0],Y-N+m.flag[1],t.seed);holdingMark(t,cam,Y-N+Math.min(0,m.flag?m.flag[1]:0))}return}
         const s=lotSprite(t,l),w=t.work&&(t.work.lot?t.work.lot===l.id:t.work.k===l.k||t.work.k==='wall'&&l.k==='centre'),p=w?workProg(t):0;l._mem=s;l._memSt=l.st;
         if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed,t.races?.[0]);else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);drawRotors(s,X,Y-N,l.seed);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed,t.races?.[0])}
         if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
@@ -118,14 +118,22 @@ function drawPlace(cam){
   txt('Place the '+(pl.k==='house'?'house':ESTATES[pl.k].n.toLowerCase())+' of '+t.name+', click to build, Esc to stop',VW/2,VH-8,'#e8b94a','center');
 }
 // over a holding's centre, no words (the owner, 2026-11-08: "remove text on holding or places in the world map"; its name in its
-// tip): a warning while besieged, a padlock on a gate that will not have you (GATE_LOCK), and the lords inside, a pip of each one's
-// colours. The holding flies one flag, its owner's, from its centre.
+// tip): a warning while besieged, a padlock on a gate that will not have you (GATE_LOCK), and the lords inside, a small crown in each
+// one's colours (lordCrown). The holding flies one flag, its owner's, from its centre.
 function holdingLabel(t,cam,X,Y,N,fy=0){
-  if(GATES.on&&!Gates.admits(t).ok)gateLock(t,cam,Y-N+Math.min(0,fy));// (over its flag, if it flies one higher than its roof)
+  holdingMark(t,cam,Y-N+Math.min(0,fy));// (over its flag, if it flies one higher than its roof)
   if(besieged(t)&&Math.floor(performance.now()/400)%2)txt('!',X+(N>>1),Y-N-2,'#ff6a60','center');
   const li=lordsInside(t);
-  li.slice(0,4).forEach((l,i,a)=>{const px=Math.round(t.x-cam.x)-a.length*3+i*6+1,py=Math.round(t.y+14-cam.y);rect(ctx,'#1a1512',px-1,py-1,5,5);rect(ctx,FACS[l.fac].col,px,py,3,3)});
+  li.slice(0,4).forEach((l,i,a)=>{ctx.drawImage(lordCrown(FACS[l.fac].col),Math.round(t.x-cam.x)-a.length*4+i*8,Math.round(t.y+12-cam.y))});
 }
+// (what a holding shows from afar, in sight or as you last saw it (the owner, 2026-11-10: the padlock went and its name came when it
+// left your sight): no name; its padlock while its gate will not have you)
+function holdingMark(t,cam,top){if(GATES.on&&!Gates.admits(t).ok)gateLock(t,cam,top)}
+/* (a lord inside, in his realm's colour: a small crown, dark-edged, its band lit (the owner, 2026-11-10: "a weird blue square dot",
+   a 3-pixel square before); made once a colour) */
+const LORD_CROWN=[[0,0],[2,0],[4,0],[0,1],[1,1],[2,1],[3,1],[4,1],[0,2],[1,2],[2,2],[3,2],[4,2]],CROWN_PICS=new Map();
+function lordCrown(col){let c=CROWN_PICS.get(col);if(c)return c;c=mkc(7,5,g=>{g.fillStyle='#1a1512';for(const [x,y] of LORD_CROWN)for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]])g.fillRect(x+1+dx,y+1+dy,1,1);
+  for(const [x,y] of LORD_CROWN){g.fillStyle=y===1?PX.mix(col,'#ffffff',.35):y===0?PX.mix(col,'#fff2b0',.25):col;g.fillRect(x+1,y+1,1,1)}});CROWN_PICS.set(col,c);return c}
 /* a gate that will not have you yet (world/gates.js; the owner, 2026-11-08: "make the lock city icon animated and more cool, it should
    floating around castle"): a gold padlock floating over the holding's top, drifting in a slow figure of eight (bob: [x px, y px,
    s a turn]), a glow breathing under it, two sparks circling it; each holding its own phase (its seed). Drawn only, from the clock.
