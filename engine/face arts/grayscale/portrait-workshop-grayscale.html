@@ -422,12 +422,11 @@
     const top=a.top-(fluted?16:leaf?19:great?9:sallet?8:beaked?15:style==='visored-bascinet'?13:12);
     const crown=Array.from({length:15},(_,i)=>{const t=Math.PI+i*Math.PI/14;return [x+w*Math.cos(t),top+18+18*Math.sin(t)];});
     const lower=Array.from({length:13},(_,i)=>{const t=i*Math.PI/12;return [x+(w-1)*Math.cos(t),eye+10+(bottom-eye-10)*Math.sin(t)];});
-    const shell=style==='closed-knight-helm'||mask||sallet?[...crown,...lower]:great?[[x-w,top+10],[x-w+3,top+4],[x-w+10,top],[x+w-10,top],[x+w-3,top+4],[x+w,top+10],...lower]:[[x-w,top+18],[x-w+6,top+6],[x,top],[x+w-6,top+6],[x+w,top+18],...lower];
-    // A fitted metal lining covers wide jaws beneath the outer visor silhouette.
-    surface(g,a.outline.map(([px,py])=>[px+(px<x?-2:px>x?2:0),py]),(px,py)=>126+45*falloff(px,py,x-12,eye+10,w,30));
+    const rolledCrown=Array.from({length:17},(_,i)=>{const t=Math.PI+i*Math.PI/16;return [x+w*Math.cos(t),top+10+10*Math.sin(t)];});
+    const shell=style==='closed-knight-helm'||mask||sallet?[...crown,...lower]:great?[...rolledCrown,...lower]:[[x-w,top+18],[x-w+6,top+6],[x,top],[x+w-6,top+6],[x+w,top+18],...lower];
     surface(g,shell,(px,py)=>133+60*falloff(px,py,x-12,eye-15,w*.8,30)-35*falloff(px,py,x+w-2,eye+13,13,27));
     clip(g,shell,()=>{
-      if(great){rect(g,x-3,top+3,6,bottom-top-6,180);rect(g,x-w,eye-6,w*2,4,100);line(g,[[x-w+2,top+5],[x+w-2,top+5]],207,2);}
+      if(great){rect(g,x-3,top+3,6,bottom-top-6,180);rect(g,x-w,eye-6,w*2,4,100);curve(g,[x-w+3,top+13,x-12,top+1,x+12,top+1,x+w-3,top+13],207,2);}
       else{
         const cheek=[[x-w+3,eye+4],[x,eye+9],[x+w-3,eye+4],[x+jaw,bottom-4],[x,bottom-1],[x-jaw,bottom-4]];
         surface(g,cheek,(px,py)=>124+51*falloff(px,py,x-9,eye+12,18,20)-24*falloff(px,py,x+19,eye+16,14,20));
@@ -445,12 +444,12 @@
         }
         if(great)for(let y=eye+4;y<bottom-3;y+=10)rect(g,x+side*(w-4),y,2,2,213);
       }
-      if(mask){line(g,[[x-w+3,eye+5],[x-w+6,bottom-9]],198,2);line(g,[[x+w-3,eye+5],[x+w-6,bottom-9]],137,2);rect(g,x-2,eye+6,4,27,166);}
+      if(mask){line(g,[[x-w+3,eye+5],[x-w+6,bottom-9]],198,2);line(g,[[x+w-3,eye+5],[x+w-6,bottom-9]],137,2);poly(g,[[x-2,eye+6],[x+2,eye+6],[x+2,bottom-8],[x,bottom-4],[x-2,bottom-8]],166);}
       curve(g,[x-jaw,bottom-5,x-8,bottom-1,x+8,bottom-1,x+jaw,bottom-5],62,2);
     });
     clip(g,shell,()=>{
-      if(barrel){for(const side of [-1,1]){rect(g,x+side*(w-8)-2,top+7,4,bottom-top-15,154);for(let y=top+10;y<bottom-10;y+=10)rect(g,x+side*(w-8)-1,y,2,2,232);}rect(g,x-w,top+5,w*2,4,184);}
-      if(riveted){rect(g,x-6,top+3,12,bottom-top-8,72);rect(g,x-4,top+3,8,bottom-top-8,201);for(const y of [top+14,eye-7]){rect(g,x-w,y-2,w*2,8,80);rect(g,x-w,y,w*2,4,201);for(let dx=-w+6;dx<w-4;dx+=8)rect(g,x+dx,y,2,2,232);}for(let y=top+6;y<bottom-6;y+=8)rect(g,x-1,y,2,2,232);}
+      if(barrel){for(const side of [-1,1]){rect(g,x+side*(w-8)-2,top+7,4,bottom-top-15,154);for(let y=top+10;y<bottom-10;y+=10)rect(g,x+side*(w-8)-1,y,2,2,232);}curve(g,[x-w+3,top+14,x-12,top+3,x+12,top+3,x+w-3,top+14],184,4);}
+      if(riveted){poly(g,[[x-3,top+3],[x+3,top+3],[x+5,eye-6],[x+3,bottom-6],[x-3,bottom-6],[x-5,eye-6]],72);poly(g,[[x-1,top+3],[x+1,top+3],[x+3,eye-6],[x+1,bottom-6],[x-1,bottom-6],[x-3,eye-6]],201);for(const y of [top+14,eye-7]){curve(g,[x-w,y+4,x-12,y-6,x+12,y-6,x+w,y+4],80,8);curve(g,[x-w,y+4,x-12,y-6,x+12,y-6,x+w,y+4],201,4);for(let dx=-w+6;dx<w-4;dx+=8)rect(g,x+dx,y-3+6*(dx/w)**2,2,2,232);}for(let y=top+6;y<bottom-6;y+=8)rect(g,x-1,y,2,2,232);}
       if(fluted)for(const side of [-1,1])for(let i=0;i<4;i++){const dx=8+i*6;curve(g,[x+side*2,top+5,x+side*dx,top+12,x+side*(dx+2),eye-17,x+side*dx,eye-6],64,2);curve(g,[x+side*4,top+6,x+side*(dx+2),top+13,x+side*(dx+4),eye-17,x+side*(dx+2),eye-6],218,2);}
       if(horned){rect(g,x-w,eye-10,w*2,6,104);for(const side of [-1,1]){poly(g,[[x+side*7,eye+8],[x+side*19,eye+13],[x+side*15,bottom-8],[x+side*6,bottom-4]],157);engraving(g,c,x+side*13,eye+19,0,.75,212);}}
       if(leaf)for(const side of [-1,1]){curve(g,[x+side*4,eye+6,x+side*21,eye+11,x+side*21,bottom-10,x+side*5,bottom-4],212,2);curve(g,[x+side*7,eye+12,x+side*16,eye+16,x+side*14,bottom-12,x+side*6,bottom-7],80,2);}
@@ -1497,26 +1496,117 @@
     }
     if(!ids&&c.brows==='broken'){const a=geometry(c),{s}=headPlacement(c);layers.brows.getContext('2d').clearRect(a.brows[1].x+Math.round(5*s),a.brows[1].y-Math.ceil(3*s),1,Math.ceil(7*s));}
   }
-  function helmetReflections(layer,a){
-    const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,eye=a.eyes[0].y;
+  function equipmentDetails(p,layers){
+    const kind=p.config.clothing,ids=['clothing','armor'],images=Object.fromEntries(ids.map(id=>[id,layers[id].getContext('2d').getImageData(0,0,SIZE,SIZE)]));
+    const dot=(id,x,y,tone)=>{
+      x=Math.floor(x/2)*2;y=Math.floor(y/2)*2;if(x<0||x>=SIZE||y<0||y>=SIZE)return;
+      const d=images[id].data,k=(y*SIZE+x)*4;if(!d[k+3])return;
+      const value=Math.max(32,Math.min(248,tone-(x>=64&&tone>64?32:0))),v=PIXEL_STYLE.tones.reduce((best,n)=>Math.abs(n-value)<Math.abs(best-value)?n:best,PIXEL_STYLE.tones[0]);
+      for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y+j)*SIZE+x+i)*4;d[q]=d[q+1]=d[q+2]=v;}
+    };
+    const stroke=(id,path,tone,dy=0)=>{for(let n=1;n<path.length;n++){const [ax,ay]=path[n-1],[bx,by]=path[n],steps=Math.max(1,Math.ceil(Math.max(Math.abs(bx-ax),Math.abs(by-ay))/2));for(let i=0;i<=steps;i++){const t=i/steps;dot(id,ax+(bx-ax)*t,ay+(by-ay)*t+dy,tone);}}};
+    const pair=(id,path,tone,dy=0)=>{stroke(id,path,tone,dy);stroke(id,path.map(([x,y])=>[126-x,y]),tone,dy);};
+    // Large overlapping scales and laced plates keep their own cadence after reduction.
+    if(['scale','elf-silver-scale','lamellar','orc-lamellar'].includes(kind)){
+      const scale=kind==='scale'||kind==='elf-silver-scale',wide=kind==='elf-silver-scale'?12:scale?10:8,height=scale?8:10;
+      for(let y=100;y<SIZE;y+=2)for(let x=0;x<SIZE;x+=2){
+        const row=Math.floor((y-100)/height),px=x<64?x:126-x,u=((px-24+(row%2)*4)%wide+wide)%wide,v=(y-100)%height;
+        let tone;
+        if(scale){tone=v===0?(u<wide-2?128:64):v===2?(u===0?192:u===wide-2?96:144):v===4?(u===2?192:u>=4&&u<wide-2?144:64):(u===4?160:u===6&&wide===12?128:64);}
+        else{tone=u===0||v===height-2?64:u===2?160:128;if(v===0&&u===4||v===4&&u===4)tone=48;}
+        dot('armor',x,y,tone);
+      }
+    }
+    // Plate lips use one dark joint and one short reflected edge, never blurred outlines.
+    if(['plate','steel-cuirass','dwarf-iron-guard','dwarf-runic-plate','dwarf-forge-plate'].includes(kind)){
+      const chest=[[38,106],[48,110],[60,112]],shoulder=[[20,112],[28,104],[38,100],[44,102]];
+      for(const path of [chest,shoulder]){pair('armor',path,64,2);pair('armor',path,192);}
+      for(const y of [118,124]){const path=[[26,y+2],[40,y],[62,y]];pair('armor',path,64,2);pair('armor',path,160);}
+      for(let y=106;y<118;y+=2)dot('armor',62,y,192);
+    }
+    if(kind==='elf-leaf-cuirass')for(const y of [114,124]){
+      const path=[[36,y-14],[40,y-10],[46,y-6],[54,y-2],[62,y]];pair('armor',path,64,2);pair('armor',path,192);
+    }
+    if(kind==='elf-leaf-mail')for(let i=0;i<3;i++){
+      const x=42-i*8,y=102+i*4,path=[[x-4,y],[x,y+4],[x+4,y+8]];pair('armor',path,64,2);pair('armor',path,192);
+    }
+    // Forge emblems are rebuilt from their shared motif, rather than a few averaged specks.
+    if(['dwarf-iron-guard','dwarf-forge-plate','dwarf-runic-plate'].includes(kind)){
+      for(const [cx,cy,slot] of kind==='dwarf-runic-plate'?[[36,108,0],[48,114,1]]:[[50,112,0]]){
+        const motif=ENGRAVINGS[((p.config.seed>>>0)+slot*3)%ENGRAVINGS.length];
+        for(const path of motif.paths){const placed=path.map(([x,y])=>[cx+x,cy+y]);pair('armor',placed,64,2);pair('armor',placed,224);}
+      }
+    }
+    if(['orc-leather-vest','orc-studded-leather','orc-leather-guard','leather','jerkin'].includes(kind)){
+      for(let y=108;y<126;y+=6){stroke('clothing',[[60,y],[66,y+2]],160);stroke('clothing',[[60,y+2],[66,y+4]],64);}
+      if(kind.startsWith('orc-')){const path=[[48,100],[46,110],[42,124]];pair('clothing',path,64,2);pair('clothing',path,128);}
+    }
+    if(['brocade','embroidered-robe','embroidered-doublet','guild-doublet'].includes(kind)){
+      for(const [x,y] of [[36,108],[48,118]])pair('clothing',[[x,y-4],[x+4,y],[x,y+4],[x-4,y],[x,y-4]],160);
+    }
+    for(const id of ids)layers[id].getContext('2d').putImageData(images[id],0,0);
+  }
+  function helmetOutline(layer){
+    const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,source=new Uint8ClampedArray(d),n=SIZE/2,outside=new Uint8Array(n*n),queue=[];
+    const add=(x,y)=>{if(x<0||y<0||x>=n||y>=n)return;const i=y*n+x;if(outside[i]||d[(y*2*SIZE+x*2)*4+3])return;outside[i]=1;queue.push(i);};
+    for(let i=0;i<n;i++){add(i,0);add(i,n-1);add(0,i);add(n-1,i);}
+    for(let i=0;i<queue.length;i++){const x=queue[i]%n,y=Math.floor(queue[i]/n);add(x-1,y);add(x+1,y);add(x,y-1);add(x,y+1);}
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+      const k=(y*2*SIZE+x*2)*4;if(!d[k+3])continue;
+      if(x&&y&&x<n-1&&y<n-1&&!outside[y*n+x-1]&&!outside[y*n+x+1]&&!outside[(y-1)*n+x]&&!outside[(y+1)*n+x])continue;
+      const inside=[k,k-8,k+8,k-SIZE*8,k+SIZE*8].filter(q=>q>=0&&q<source.length&&source[q+3]);
+      const target=Math.max(64,Math.min(160,inside.reduce((sum,q)=>sum+source[q],0)/inside.length-32));
+      const shade=PIXEL_STYLE.tones.reduce((best,v)=>Math.abs(v-target)<Math.abs(best-target)?v:best,PIXEL_STYLE.tones[0]);
+      for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y*2+j)*SIZE+x*2+i)*4;d[q]=d[q+1]=d[q+2]=shade;}
+    }
+    g.putImageData(im,0,0);
+  }
+  function helmetFeatures(layer,a,c,top){
+    const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,x=a.cx,w=a.w+4,eye=a.eyes[0].y,chin=a.chinY,h=eye-top,kind=c.headwear;
+    const dot=(px,py,tone,mirror=false)=>{px=Math.floor(px/2)*2;if(mirror)px=126-px;py=Math.floor(py/2)*2;if(px<0||py<0||px>=SIZE||py>=SIZE||!d[(py*SIZE+px)*4+3])return;const v=px<64?tone:Math.max(32,tone-(tone>96?32:0));for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((py+j)*SIZE+px+i)*4;d[q]=d[q+1]=d[q+2]=v;}};
+    const line=(path,tone,mirror=false)=>{for(let n=1;n<path.length;n++){const [ax,ay]=path[n-1],[bx,by]=path[n],steps=Math.max(1,Math.ceil(Math.max(Math.abs(bx-ax),Math.abs(by-ay))/2));for(let i=0;i<=steps;i++){const t=i/steps;dot(ax+(bx-ax)*t,ay+(by-ay)*t,tone,mirror);}}};
+    const pair=(path,tone)=>{line(path,tone);line(path,tone,true);};
+    const lip=[[x-w+4,eye+1],[x-w*.55,eye-1],[x-4,eye-3]];pair(lip,192);
+    for(let row=0;row<4;row++){const y=eye+8+row*6;if(y>chin-5)break;for(const dx of [7,13,19])if(dx<w-7-row){dot(x-dx,y,32);dot(x-dx,y,32,true);}}
+    if(kind==='rivet-banded-helm'){
+      for(const y of [top+h*.3,eye-6]){const band=[[x-w+3,y+6],[x-w*.55,y+1],[x-4,y-1]];pair(band,64);pair(band.map(([px,py])=>[px,py-2]),192);for(const dx of [10,20]){dot(x-dx,y+2*(dx/w)**2-2,224);dot(x-dx,y+2*(dx/w)**2-2,224,true);}}
+      pair([[x-3,top+4],[x-4,eye-6],[x-2,chin-3]],96);
+    }
+    if(kind==='barrel-great-helm')pair([[x-w+8,top+h*.3],[x-w+7,eye-4]],96);
+    if(kind==='fluted-knight-helm')for(const dx of [8,16,24]){const rib=[[x-2,top+4],[x-dx*.65,top+h*.3],[x-dx,top+h*.65],[x-dx,eye-5]];pair(rib,96);pair(rib.map(([px,py])=>[px+2,py]),192);}
+    if(kind==='leaf-visor-helm'||kind==='closed-sallet')pair([[x-4,eye+6],[x-14,eye+14],[x-12,chin-5],[x-4,chin+1]],96);
+    if(kind==='horned-closed-helm'){
+      pair([[x-w+3,eye-7],[x-8,eye-9],[x-3,eye-7]],64);
+    }
+    if(kind==='tusked-closed-helm')pair([[x-w+5,eye+16],[x-w-3,eye+6],[x-w-5,eye-3]],192);
+    if(kind==='closed-knight-helm')pair([[x-7,eye+6],[x-6,eye+18],[x-1,eye+23]],128);
+    if(kind==='slit-mask-helm'){
+      pair([[x-w+4,eye+4],[x-w+6,chin-8]],64);
+      pair([[x-w+3,eye-7],[x-w*.5,eye-9],[x-3,eye-7]],96);
+    }
+    if(kind==='beaked-bascinet')pair([[x-7,eye+5],[x-11,eye+17],[x-1,eye+25]],96);
+    g.putImageData(im,0,0);
+  }
+  function helmetReflections(layer,a,c){
+    const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,source=new Uint8ClampedArray(d),eye=a.eyes[0].y;
+    let top=eye;for(let y=0;y<eye;y+=2)for(let x=52;x<76;x+=2)if(source[(y*SIZE+x)*4+3])top=Math.min(top,y);
     for(let y=0;y<SIZE;y+=2)for(let x=0;x<SIZE;x+=2){
-      const k=(y*SIZE+x)*4;if(!d[k+3]||d[k]<96)continue;
-      const u=(x+1-a.cx)/(a.w+4),cap=(y+1-a.top)/(eye-a.top),lower=(y+1-eye)/Math.max(1,a.chinY-eye),key=u<0?1:.35;
-      let v=d[k]*.65+12-Math.abs(u)*20;
+      const k=(y*SIZE+x)*4;if(!source[k+3])continue;
+      const u=(x+1-a.cx)/(a.w+4),t=(y+1-top)/Math.max(1,eye-top),lower=(y+1-eye)/Math.max(1,a.chinY-eye);
+      let v;
       if(y<eye-3){
-        const band=cap-.18*u*u+.1*u;
-        if(band>.03&&band<.15)v+=112*key;
-        else if(band>.22&&band<.33)v+=64*key;
-        else if(band>.42&&band<.65&&u<-.2)v+=24;
+        // One curved reflection sits on a broad lit dome, rather than stacked grey strips.
+        v=96+96*Math.max(0,1-1.8*(u+.22)**2-.9*(t-.45)**2);
+        const glint=((u+.4)/.4)**2+((t-.3-.15*u)/.13)**2;
+        if(glint<1)v=glint<.35?248:224;
       }else{
-        if(Math.abs(u+.46-.12*lower)<.1&&lower<.82)v+=96;
-        if(Math.abs(u)<.09)v+=56;
-        if(Math.abs(u)>.8&&Math.abs(u)<.92)v+=32*key;
+        v=96+80*Math.max(0,1-2.4*(u+.2)**2-.3*(lower-.3)**2);
+        if(Math.abs(u)<.07*(1-Math.max(0,lower)*.4)&&lower<.95)v=192;
       }
       const tone=PIXEL_STYLE.tones.reduce((best,n)=>Math.abs(n-v)<Math.abs(best-v)?n:best,PIXEL_STYLE.tones[0]);
       for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y+j)*SIZE+x+i)*4;d[q]=d[q+1]=d[q+2]=tone;}
     }
-    g.putImageData(im,0,0);
+    g.putImageData(im,0,0);helmetFeatures(layer,a,c,top);helmetOutline(layer);
   }
   function pixelPortrait(p) {
     const layers={...p.layers},a=p.anchors;
@@ -1553,9 +1643,14 @@
     if(CLOSED_HELMS.includes(p.config.headwear)){
       const g=layers.headwearFront.getContext('2d');for(const r of visorSlots(a))g.clearRect(r.x,r.y,r.w,r.h);
     }
+    equipmentDetails(p,layers);
     fitLeatherToBody(layers,p.config);
     if(p.config.race==='orc')mirrorParts(layers,p.config);else if(CLOSED_HELMS.includes(p.config.headwear))mirrorParts(layers,p.config,['headwearFront','headwearBack']);
-    if(CLOSED_HELMS.includes(p.config.headwear))helmetReflections(layers.headwearFront,a);
+    if(CLOSED_HELMS.includes(p.config.headwear)){
+      helmetReflections(layers.headwearFront,a,p.config);layers.headwearBack=pixelLayer(layers.headwearBack,2);
+      // Rear lining stays inside the shell instead of forming an extra cheek/neck rim.
+      const back=layers.headwearBack.getContext('2d');back.save();back.globalCompositeOperation='destination-in';back.drawImage(layers.headwearFront,0,0);back.restore();helmetOutline(layers.headwearBack);
+    }
     return {...p,layers};
   }
   function build(input) {

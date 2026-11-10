@@ -1,6 +1,7 @@
 <!doctype html><meta charset="utf-8"><title>Closed helmet checks</title><pre id="out">Running…</pre><script src="portrait-engine.js"></script><script>
 'use strict';
 const E=PortraitEngine,lines=[];function ok(v,s){if(!v)throw Error(s);lines.push('PASS '+s);}const data=c=>c.getContext('2d').getImageData(0,0,128,128).data;
+function components(c){const p=data(c),seen=new Uint8Array(16384),sizes=[];for(let i=0;i<16384;i++){if(seen[i]||!p[i*4+3])continue;const todo=[i];seen[i]=1;for(let j=0;j<todo.length;j++){const n=todo[j],x=n%128,y=n>>7;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy,k=Y*128+X;if(X<0||X>=128||Y<0||Y>=128||seen[k]||!p[k*4+3])continue;seen[k]=1;todo.push(k);}}sizes.push(todo.length);}return sizes;}
 try{
  const helms=E.faceCoveringHelmets;ok(helms.length===12&&new Set(helms).size===12,'twelve distinct face-covering helmets are registered');
  for(const headwear of helms){const rule=E.headwearRules[headwear];ok(E.races.every(r=>E.partsFor(r,'headwear').includes(headwear))&&E.soldierEquipment.helmets.includes(headwear)&&rule.face==='covered'&&rule.hair==='hide'&&rule.ears==='hide'&&rule.beard==='hide',headwear+' is shared, selectable and conceals hair, ears and beard');}
@@ -9,10 +10,10 @@ try{
   for(const eye of p.anchors.eyes)if(helmet[(eye.y*128+eye.x)*4+3])throw Error('Blocked vision slit: '+race+'/'+face+'/'+headwear+'/'+direction);
   for(const point of [p.anchors.nose,p.anchors.mouth])if(helmet[(point.y*128+point.x)*4+3]<128)throw Error('Exposed nose/mouth: '+race+'/'+headwear);
   for(let y=p.anchors.eyes[0].y+6;y<=p.anchors.chinY;y++)for(let x=0;x<128;x++){const k=(y*128+x)*4;if(skin[k+3]&&probe.isPointInPath(outline,x+.5,y+.5)&&!helmet[k+3])throw Error('Face escapes shell: '+race+'/'+face+'/'+headwear+' at '+x+','+y+' direction '+direction);}
-  for(const id of ['headwearFront','headwearBack']){const a=data(p.layers[id]);for(let y=0;y<128;y++)for(let x=0;x<64;x++)if(a[(y*128+x)*4+3]!==a[(y*128+127-x)*4+3])throw Error('Unmirrored helmet: '+headwear);}
+  for(const id of ['headwearFront','headwearBack']){const a=data(p.layers[id]);if(id==='headwearBack')for(let k=3;k<a.length;k+=4)if(a[k]&&!helmet[k])throw Error('Backing protrudes past jaw shell: '+race+'/'+face+'/'+headwear);if(components(p.layers[id]).some(n=>n<8))throw Error('Detached grey block at proportion extreme: '+race+'/'+face+'/'+headwear+'/'+id);for(let y=0;y<128;y++)for(let x=0;x<64;x++)if(a[(y*128+x)*4+3]!==a[(y*128+127-x)*4+3])throw Error('Unmirrored helmet: '+headwear);}
   fit++;
  }
- ok(fit>700,fit+' race/face/proportion combinations keep eye slits clear and nose, mouth and jaw covered');
+ ok(fit>700,fit+' race/face/proportion combinations keep eyes clear, faces covered and backing inside the shell');
  ok(true,'all new front and back helmet silhouettes remain mirrored');
  for(const race of E.races)for(const headwear of helms){const base={...E.startRace(race),headwear,hair:'war-crest',beard:race==='elf'?'none':race==='orc'?'stubble':'full'},p=E.build(base),before={hair:p.layers.hairFront.toDataURL(),beard:p.layers.beard.toDataURL()},hidden=E.build({...base,hair:'none',beard:'none'});if(E.composite(p).toDataURL()!==E.composite(hidden).toDataURL())throw Error('Hair or beard clips through '+race+'/'+headwear);if(before.hair!==p.layers.hairFront.toDataURL()||before.beard!==p.layers.beard.toDataURL())throw Error('Raw hair/beard export changed');const visible={headwearFront:false,headwearBack:false};if(E.composite(p,{visible}).toDataURL()!==E.composite(E.build({...base,headwear:'none'})).toDataURL())throw Error('Removing helmet does not restore face/hair: '+headwear);}
  ok(true,'all races conceal facial hair and mohawks without altering their source layers');
@@ -25,6 +26,14 @@ try{
  ok(true,'all twelve helmets have long angled brow slits and a solid central nose bridge');
  for(const race of E.races)for(const headwear of helms){const p=E.build({...E.startRace(race),headwear}),front=data(p.layers.headwearFront);let bright=0,dark=0,left=0,right=0;for(let y=0;y<128;y++)for(let x=0;x<128;x++){const k=(y*128+x)*4;if(!front[k+3])continue;if(front[k]>=224)bright++;if(front[k]>=96&&front[k]<=128)dark++;if(front[k]>=96){if(x<64)left+=front[k];else right+=front[k];}}if(bright<4||dark<16||left<=right)throw Error('Missing directional metal reflections '+race+'/'+headwear);}
  ok(true,'all closed helmets combine bright crown reflections, dark metal and directional lighting');
+ const palette=new Set([32,64,96,128,160,192,224,248]);for(const race of E.races)for(const headwear of helms){const p=E.build({...E.startRace(race),headwear});for(const id of ['headwearFront','headwearBack']){const a=data(p.layers[id]);for(let k=0;k<a.length;k+=4)if(a[k+3]&&!palette.has(a[k]))throw Error('Stray grey tone '+race+'/'+headwear+'/'+id);if(components(p.layers[id]).some(n=>n<8))throw Error('Detached grey block '+race+'/'+headwear+'/'+id);}}
+ ok(true,'all full helmets use the shared steel palette without detached grey blocks');
+ for(const race of E.races)for(const headwear of helms){const p=E.build({...E.startRace(race),headwear});for(const id of ['headwearFront','headwearBack']){const a=data(p.layers[id]);for(let y=0;y<128;y++){let left=-1,right=-1;for(let x=0;x<128;x++)if(a[(y*128+x)*4+3]){if(left<0)left=x;right=x;}if(left>=0&&(a[(y*128+left)*4]<64||a[(y*128+left)*4]>160||a[(y*128+right)*4]<64||a[(y*128+right)*4]>160))throw Error('Non-steel outer contour '+race+'/'+headwear+'/'+id);}}}
+ ok(true,'both helmet layers retain a blended steel exterior contour without near-black edging on every race');
+ for(const headwear of ['great-helm','barrel-great-helm']){const p=E.build({race:'human',face:'strong-jaw',headwear}),a=data(p.layers.headwearFront),width=y=>{let n=0;for(let x=0;x<128;x++)if(a[(y*128+x)*4+3])n++;return n;};let top=0;while(top<128&&!width(top))top++;if(width(top+8)<=width(top)+4)throw Error('Flat boxy crown '+headwear);if(width(p.anchors.chinY)>=width(p.anchors.eyes[0].y+10))throw Error('Square helmet jaw '+headwear);}
+ ok(true,'great helms have arched crowns and tapered jaw contours');
+ for(const race of E.races)for(const headwear of helms){const p=E.build({...E.startRace(race),headwear});if(E.composite(p).toDataURL()!==E.composite(p,{visible:{headwearBack:false}}).toDataURL())throw Error('Visible double jaw/neck edge '+race+'/'+headwear);}
+ ok(true,'rear lining adds no second cheek or neck edge on any full helmet');
  lines.push('DONE '+lines.length+' checks');
 }catch(e){lines.push('FAIL '+e.message);console.error(e);}
 document.getElementById('out').textContent=lines.join('\n');
