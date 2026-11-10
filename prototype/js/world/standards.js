@@ -199,7 +199,7 @@ const Standards={
       s=Object.assign(Object.create(Standard.prototype),{i:STANDARD.I0+k,type:'standard',tx,ty,x,y,seed:1+Math.floor(hash(tx,ty,4243)*99998),seen:false,cleared:false,back:0,
         owner:p.f,home0:p.f,lv,why:p.why,g:p.g||null,guards:STANDARD.guards[lv],taking:null,choose:false});
     s.name=(h?h.name+' ':'')+(p.why==='deposit'&&GOODS[p.g]?GOODS[p.g].n.toLowerCase()+' ':'')+STANDARD_WHY[p.why]+' outpost';return s},
-  hour(){for(const s of this.all()){s.hour();s.watch()}},
+  hour(){for(const s of this.all()){s.hour();s.watch()}if(typeof outpostJobsHour==='function')outpostJobsHour()},// (and the outposts' jobs that run by the hour: world/quests.js)
   // (the world's captures, once a day after the sites' own day: Standard#contest)
   day(){for(const s of this.all())s.contest()},
   // (a held standard of a realm's or yours within STANDARD.safe tiles of a point: no band is raised there, world.js spawnBandit)
