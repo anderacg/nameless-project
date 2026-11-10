@@ -258,3 +258,5 @@ Six shared choices add great helm, closed knight helm, visored bascinet, closed 
 Closed helmets conceal hair, ears and beards in the assembled portrait. Recipes and raw part exports preserve those choices; hiding both helmet layers restores them. Fit metadata adds `face: 'covered'` and `beard: 'hide'`. The recipe stays version 7 with 19 layers. `helmet-tests.html` checks face coverage, eye clearance, mirrored shells and concealment across races and proportion extremes.
 
 Full helmet refinement: rounded cheek/jaw bowls, beveled great-helm corners and curved rear skirts soften the silhouettes. Pixel-sharp visor shadows darken the exposed eyes only while the front helmet is visible; source eye layers and facial choices remain intact.
+
+Closed helmet eye openings now use tapered ends and angled upper/lower rims, keeping the pixel edges sharp and pupils visible.

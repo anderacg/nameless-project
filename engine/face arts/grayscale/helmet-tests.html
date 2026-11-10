@@ -21,6 +21,8 @@ try{
  ok(unique.size===helms.length,'all six helmets have distinct artwork and editable presets');
  for(const race of E.races)for(const headwear of helms){const p=E.build({...E.startRace(race),headwear,hair:'none',beard:'none'}),before=p.layers.eyes.toDataURL(),lit=data(E.composite(p,{visible:{headwearFront:false,headwearBack:false}})),shaded=data(E.composite(p));for(const eye of p.anchors.eyes){const k=(eye.y*128+eye.x)*4;if(shaded[k]+shaded[k+1]+shaded[k+2]>=lit[k]+lit[k+1]+lit[k+2]||shaded[k+3]!==lit[k+3])throw Error('Missing visor eye shadow '+race+'/'+headwear);}if(before!==p.layers.eyes.toDataURL())throw Error('Shadow modified raw eye layer');}
  ok(true,'visor eye shadows darken both pupils for every race while preserving raw eye art');
+ for(const headwear of helms){const p=E.build({race:'human',face:'strong-jaw',headwear}),front=data(p.layers.headwearFront);for(const eye of p.anchors.eyes){const widths=[];for(let y=eye.y-4;y<=eye.y+4;y++){let width=0;for(let x=eye.x-9;x<=eye.x+9;x++)if(!front[(y*128+x)*4+3])width++;if(width)widths.push(width);}if(new Set(widths).size<2)throw Error('Rectangular eye opening '+headwear);}}
+ ok(true,'all six visor openings taper at their ends after pixel rendering');
  lines.push('DONE '+lines.length+' checks');
 }catch(e){lines.push('FAIL '+e.message);console.error(e);}
 document.getElementById('out').textContent=lines.join('\n');

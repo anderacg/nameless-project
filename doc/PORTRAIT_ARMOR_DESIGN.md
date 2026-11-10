@@ -15,3 +15,5 @@ Face-covering helmets — implemented: six shared options (`great-helm`, `closed
 Six presets, military role pools, workshop fit notes and both offline tools include the new helmets. The highest worn-helmet tier uses a closed knight helm for humans, visored bascinet for dwarves, closed sallet for elves and slitted mask for orcs. Lower tiers retain their existing designs. No items, stats or recipe version changes. Checks: `helmet-tests.html`, `pixel-tests.html`, portrait engine regressions, game `faces` and live/offline recipe round trips.
 
 Full helmet refinement: rounded cheek/jaw bowls, beveled great-helm corners and curved rear skirts soften the silhouettes. Pixel-sharp visor shadows darken the exposed eyes only while the front helmet is visible; source eye layers and facial choices remain intact.
+
+Closed helmet eye openings now use tapered ends and angled upper/lower rims, keeping the pixel edges sharp and pupils visible.

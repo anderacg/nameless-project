@@ -435,7 +435,10 @@
       curve(g,[x-jaw,bottom-5,x-8,bottom-1,x+8,bottom-1,x+jaw,bottom-5],62,2);
     });
     // Real openings retain the eyes; dark vent marks do not expose the face beneath.
-    for(const e of a.eyes){const half=Math.max(5.5,6*(a.eyeScale||1));rect(g,e.x-half-1,e.y-3,half*2+2,7,43);g.save();g.globalCompositeOperation='destination-out';g.fillRect(Math.floor(e.x-half),e.y-2,Math.ceil(half*2),5);g.restore();}
+    for(const e of a.eyes){
+      const half=Math.max(6,6*(a.eyeScale||1)),slit=(h,v)=>[[e.x-h,e.y],[e.x-h+5,e.y-v],[e.x+h-5,e.y-v],[e.x+h,e.y],[e.x+h-5,e.y+v],[e.x-h+5,e.y+v]];
+      poly(g,slit(half+2,5),43);g.save();g.globalCompositeOperation='destination-out';poly(g,slit(half,3),255);g.restore();
+    }
     return true;
   }
   function culturalHelmet(g,a,c,back){
@@ -1498,6 +1501,11 @@
       const ig=layers.iris.getContext('2d');ig.save();ig.globalCompositeOperation='destination-in';ig.drawImage(layers.eyes,0,0);ig.globalCompositeOperation='destination-out';ig.drawImage(layers.eyelids,0,0);ig.restore();
     }
     bg.save();bg.globalCompositeOperation='destination-out';bg.drawImage(layers.teeth,0,0);bg.restore();
+    // Finish tapered apertures on the final two-pixel grid so resizing cannot square them off.
+    if(CLOSED_HELMS.includes(p.config.headwear)){
+      const g=layers.headwearFront.getContext('2d'),h=Math.max(4,Math.round(3*(a.eyeScale||1))*2);
+      for(const e of a.eyes){const x=Math.floor(e.x/2)*2,y=Math.floor((e.y-4)/2)*2;[h-2,h+2,h+4,h+2,h-2].forEach((half,row)=>rect(g,x-half,y+row*2,half*2,2,48));[h-2,h,h-2].forEach((half,row)=>g.clearRect(x-half,y+2+row*2,half*2,2));}
+    }
     fitLeatherToBody(layers,p.config);
     if(p.config.race==='orc')mirrorParts(layers,p.config);else if(CLOSED_HELMS.includes(p.config.headwear))mirrorParts(layers,p.config,['headwearFront','headwearBack']);
     return {...p,layers};

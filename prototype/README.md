@@ -1777,3 +1777,5 @@ Shared portrait hairstyles: all 38 styles are selectable for all races, includin
 Closed portrait helmets: six face-covering styles are selectable for every race, with clear vision slits and fitted jaw coverage. Hair, ears and beards tuck inside while remaining in the saved recipe. The highest worn-helmet tier uses a closed knight helm, dwarf visor, elven sallet or orc war mask. Military portrait pools and both standalone tools include the styles; inventory and combat stats are unchanged. Checks: portrait `helmet-tests.html`, `pixel-tests.html` and game `faces`.
 
 Full helmet refinement: rounded cheek/jaw bowls, beveled great-helm corners and curved rear skirts soften the silhouettes. Pixel-sharp visor shadows darken the exposed eyes only while the front helmet is visible; source eye layers and facial choices remain intact.
+
+Closed helmet eye openings now use tapered ends and angled upper/lower rims, keeping the pixel edges sharp and pupils visible.
