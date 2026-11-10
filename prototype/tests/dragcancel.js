@@ -48,7 +48,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     ok(calls.some(c=>c[0]==='moveTo'&&c[1]===testGroup('inf'))&&Math.abs(inf().ax-400)<1&&inf().files>1&&!B.rdrag,'a right-drag let go still lays the line ('+Math.round(inf().ax)+','+Math.round(inf().ay)+', '+inf().files+' files)');
     B.over=true;B.endT=0;t.B=null;
     // deploying: a group's banner stands over it the moment it is placed (the battle's clock stands still), and stays
-    B=fresh(true);ok(B.deploy,'a battle opens in deployment');const S=t.UICON.s*t.UICON.k;
+    B=fresh(true);ok(B.deploy,'a battle opens in deployment');const S=t.UICON.s*t.unitIconScale();
     const banner=g=>{const ic=B.icons.find(i=>i.g===g),m=t.grpUnits(g).filter(u=>!u.rout),cx=m.reduce((s,u)=>s+u.x,0)/m.length,top=Math.min(...m.map(u=>u.y)),sp=t.fromField({x:cx,y:top});
       return ic?{dx:ic.x+S/2-sp.x,y:ic.y,want:Math.max(4,sp.y-t.UICON.lift*B.cam.z-ic.h)}:null};
     const over=g=>{const q=banner(g);return !!q&&Math.abs(q.dx)<=1.5&&Math.abs(q.y-q.want)<=1.5},say=g=>{const q=banner(g);return q?'off by '+q.dx.toFixed(1)+','+(q.y-q.want).toFixed(1):'none'};

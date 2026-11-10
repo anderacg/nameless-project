@@ -397,20 +397,20 @@ function calloutDraw(C){
 }
 
 /* on the field */
-/* each group's health (the owner, 2026-10-31: no bars over each man, one for the group by its flag): a bar standing on the left of
-   its icon (ui/moraleicons.js drawUnitIcons, B.icons), as tall as the icon's plate while the group is whole: its men's health now
-   over theirs as the battle began (GROUP_HP0, by battle and group: taken the first frame the group is on the field, a group come
-   late at its coming; more men since count as whole), in the unit card's health green over a dark trough; every group's, yours,
-   your allies' and the enemy's, faded as its icon is under another. On the screen as the icons are, the same size at any zoom.
-   w, gap: its width and the gap to the plate, art px (the icon's: UICON.k screen px each) */
-const GROUP_HP={w:4,gap:1,col:'#78c474',trough:'#2c2a26',edge:'#0a0c12',now:{}},GROUP_HP0=new WeakMap();
+/* each group's health (the owner, 2026-10-31: no bars over each man, one for the group by its flag): a strip under its flag's cloth
+   (ui/moraleicons.js drawUnitIcons, B.icons; 2026-11-10, the flag on its pole: a bar standing by it read as a second pole), as wide
+   as the cloth while the group is whole: its men's health now over theirs as the battle began (GROUP_HP0, by battle and group:
+   taken the first frame the group is on the field, a group come late at its coming; more men since count as whole), in the unit
+   card's health green over a dark trough; every group's, yours, your allies' and the enemy's, faded as its flag is under another.
+   On the screen as the flags are, at their scale. h, gap: its height and the gap under the cloth, art px (the flag's) */
+const GROUP_HP={h:4,gap:1,col:'#78c474',trough:'#2c2a26',edge:'#0a0c12',now:{}},GROUP_HP0=new WeakMap();
 function drawGroupHealth(){
   const G=GROUP_HP,now=G.now;for(const k in now)now[k]=0;for(const u of B.units)if(u.grp&&u.hp>0)now[u.grp]=(now[u.grp]||0)+u.hp;
   let h0=GROUP_HP0.get(B);if(!h0)GROUP_HP0.set(B,h0={});for(const g in B.groups)if(h0[g]==null&&now[g]>0)h0[g]=now[g];
   if(!B.icons||!B.icons.length)return;const K=unitIconScale(),S=UICON.s;
-  for(const r of B.icons){const f=Math.min(1,(now[r.g]||0)/Math.max(1,h0[r.g]||1)),n=Math.round((S-2)*f);
-    ctx.save();ctx.translate(r.x-(G.w+G.gap)*K,r.y);ctx.scale(K,K);if(r.under)ctx.globalAlpha=ICON_FAN.under;
-    ctx.fillStyle=G.edge;ctx.fillRect(0,0,G.w,S);ctx.fillStyle=G.trough;ctx.fillRect(1,1,G.w-2,S-2);if(n>0){ctx.fillStyle=G.col;ctx.fillRect(1,S-1-n,G.w-2,n)}ctx.restore()}
+  for(const r of B.icons){const f=Math.min(1,(now[r.g]||0)/Math.max(1,h0[r.g]||1)),n=Math.round((S-4)*f);
+    ctx.save();ctx.translate(r.x,r.y);ctx.scale(K,K);if(r.under)ctx.globalAlpha=ICON_FAN.under;
+    ctx.fillStyle=G.edge;ctx.fillRect(1,S+G.gap,S-2,G.h);ctx.fillStyle=G.trough;ctx.fillRect(2,S+G.gap+1,S-4,G.h-2);if(n>0){ctx.fillStyle=G.col;ctx.fillRect(2,S+G.gap+1,n,G.h-2)}ctx.restore()}
 }
 // rings: under every soldier of the groups you have selected (bright; with All, light), under the group you point at (soft); an enemy you point
 // at, red (a right-click sets them on it)

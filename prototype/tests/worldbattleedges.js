@@ -16,7 +16,7 @@ Kit.suite(({ok,info})=>{
  const before={x:G.cam.x,y:G.cam.y,scale:t.VS};G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});const b=t.B,a=b.world;b.paused=true;
  ok(!t.LOADING.on&&G.mode==='battle','talk-to-fight completes in place without opening a battle loading screen');
  t.frame();ok(G.cam.x===before.x&&G.cam.y===before.y&&t.VS===before.scale&&t.CVS===t.VS,'live world drawing retains the exact world viewport and native resolution');
- const icon=b.icons.find(i=>i.team===0);ok(icon&&Math.abs(icon.w*t.VS/(devicePixelRatio||1)-t.UICON.s*t.UICON.k)<.001,'group markers keep a stable screen size on the native world canvas');
+ const icon=b.icons.find(i=>i.team===0);{const dpx=icon&&icon.w*t.VS/t.UICON.s;ok(icon&&Math.abs(dpx-Math.max(1,Math.round(t.UICON.k*t.iconZoom()*(devicePixelRatio||1))))<.001,'group flags on the native world canvas: each art px a whole number of device px, about UICON.k times the zoom ('+dpx+')')}
  const original=t.marchDraw,seen=[];window.__marchDraw=original;window.marchDraw=(out,o,cam)=>{seen.push(o);return original(out,o,cam)};try{t.frame()}finally{window.marchDraw=original;delete window.__marchDraw}
  ok(!seen.includes(P)&&!seen.includes(enemy),'campaign army figures are hidden while their battle actors occupy the same world positions');
  const mini=t.worldMiniView(),hit=t.miniHit({x:mini.x+mini.w/2,y:mini.y+mini.h/2}),world=a.world(hit),mid={x:(mini.ox+mini.tw/2)*t.TILE,y:(mini.oy+mini.th/2)*t.TILE};ok(Math.abs(world.x-mid.x)<.001&&Math.abs(world.y-mid.y)<.001,'the world minimap retains its world coordinates during combat (its middle the tile it shows there: render.js worldMiniView)');

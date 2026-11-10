@@ -112,11 +112,29 @@ function iconPick(x,y,team){
   const p=fromField({x,y}),key=st.map(r=>r.g).sort().join(),C=B.iconCyc;
   if(C&&C.key===key&&Math.hypot(C.x-p.x,C.y-p.y)<=ICON_FAN.again)C.i=(C.i+1)%C.order.length;else B.iconCyc={key,x:p.x,y:p.y,order:st.map(r=>r.g),i:0};
   const c=B.iconCyc;return st.find(r=>r.g===c.order[c.i])||st[0]}
-// the icons over each group on the field (yours and theirs), drawn on the screen (not the zoomed field) so they keep their size
-const UICON={s:13,lift:22,k:2,crowd:2};// (its art in pixels, drawn k times over; crowd: the badges a banner keeps in a press: iconLayout)
-// (a battle drawn sharp (core.js bview, k canvas px a view px): its art px a whole number of canvas px, about k as many, each icon
-// put on a whole canvas px (iconPx))
-const unitIconScale=()=>{if(B?.world)return UICON.k*dprOf()/VS;const k=bview().k;return Math.max(1,Math.round(UICON.k*k))/k};
+// the flags over each group on the field (yours and theirs), drawn on the screen (not the zoomed field). The owner, 2026-11-10: "make a
+// unit flag scale based on camera zoom? And make it a bit smaller and more flag like": k 1.5 (was 2, each the same size at any zoom),
+// grown as you come closer and shrunk as you draw back: the camera's zoom against its first view (a field's fitted view, the map's
+// own zoom), softened by zoom.pow, held within zoom.lo..hi
+const UICON={s:13,lift:22,k:1.5,crowd:2,zoom:{pow:1,lo:.6,hi:1.6}};// (its art in pixels, drawn about k times over; crowd: the badges a banner keeps in a press: iconLayout)
+const iconZoom=()=>{const Z=UICON.zoom,r=B?.world?VS/Math.max(1,MAPZOOM.auto):B?.cam?B.cam.z/Math.max(.01,camFar()):1;return Math.max(Z.lo,Math.min(Z.hi,Math.pow(r,Z.pow)))};
+// (a battle drawn sharp (core.js bview, k canvas px a view px), or on the map (VS device px a map px): its art px a whole number of
+// device px, about k times its zoom as many, each flag put on a whole canvas px (iconPx))
+const unitIconScale=()=>{const f=iconZoom();if(B?.world)return Math.max(1,Math.round(UICON.k*f*dprOf()))/VS;const k=bview().k;return Math.max(1,Math.round(UICON.k*f*k))/k};
+/* a group's flag: its cloth the plate it was (S art px square, so its badges and its health stand where they did), squared at its
+   pole and swallow-tailed at its fly, in its side's colours (cols: field, lit top, shaded foot) and edged (edge: dark; gold
+   selected, amber wavering, light pointed at); its pole at its left (left art px: its dark case and the wood) from a gold finial
+   over the cloth down foot px under it, pointing at its men. One picture a look (FLAG_PICS), at (-left, -left) of the cloth */
+const FLAG={left:3,foot:5,pole:'#7a5632',finial:'#e8b94a',out:'#0a0c12'},FLAG_PICS=new Map();
+function flagPic(S,cols,edge){const key=S+cols.join()+edge;let c=FLAG_PICS.get(key);if(c)return c;const F=FLAG,o=F.left,mid=(S-1)>>1;
+  c=document.createElement('canvas');c.width=S+o;c.height=S+o+F.foot+1;const g=c.getContext('2d'),px=(x,y,col)=>{g.fillStyle=col;g.fillRect(x+o,y+o,1,1)};
+  for(let y=-o;y<=S+F.foot;y++)for(let x=-o;x<0;x++)px(x,y,F.out);for(let y=-1;y<S+F.foot;y++)px(-2,y,F.pole);px(-2,-2,F.finial);
+  // (the fly's notch: the last column open mid-2..mid+2, the one before mid-1..mid+1; its edge round it)
+  const cut=(x,y)=>x===S-1&&Math.abs(y-mid)<=2||x===S-2&&Math.abs(y-mid)<=1,rim=(x,y)=>x===S-2&&Math.abs(y-mid)===2||x===S-3&&Math.abs(y-mid)<=1;
+  for(let y=0;y<S;y++)for(let x=0;x<S;x++){if(cut(x,y)||x===S-1&&(y===0||y===S-1))continue;
+    px(x,y,x===0||y===0||x===S-1||y===S-1||rim(x,y)?edge:y===1?cols[1]:y>=S-3?cols[2]:cols[0])}
+  FLAG_PICS.set(key,c);return c}
+const drawFlag0=(S,cols,edge)=>{const c=flagPic(S,cols,edge),o=FLAG.left;ctx.imageSmoothingEnabled=false;ctx.drawImage(c,-o,-o)};
 const iconPx=v=>{const k=bview().k;return Math.round(v*k)/k};
 /* where they stand (iconLayout; B.icons, for clicks, in the order drawn): each over its own group, its place on the field eased
    after its men on the battle's clock (follow: a man falling or running moves it with no jump; snap: field px past which it is
@@ -146,7 +164,7 @@ function iconLayout(rt){
   for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){const a=items[i],b=items[j];if(a.team!==b.team&&hit(a,b)&&(atBlows(a,b)||atBlows(b,a)))up[root(i)]=root(j)}
   const fan=new Map();
   for(const i of new Set(items.map((_,i)=>root(i)))){const c=items.filter((_,j)=>root(j)===i).sort((a,b)=>a.bx-b.bx||(a.g<b.g?-1:1));if(c.length<2)continue;
-    const t=[];c.forEach((o,j)=>t.push(j?Math.max(o.bx,t[j-1]+c[j-1].W+ICON_FAN.gap):o.bx));const sh=(c.reduce((a,o)=>a+o.bx,0)-t.reduce((a,x)=>a+x,0))/c.length;c.forEach((o,j)=>fan.set(o.g,t[j]+sh-o.bx))}
+    const t=[];c.forEach((o,j)=>t.push(j?Math.max(o.bx,t[j-1]+c[j-1].W+ICON_FAN.gap+FLAG.left*K):o.bx));const sh=(c.reduce((a,o)=>a+o.bx,0)-t.reduce((a,x)=>a+x,0))/c.length;c.forEach((o,j)=>fan.set(o.g,t[j]+sh-o.bx))}
   const k=rm?1:1-Math.exp(-Math.max(0,rt)*3/ICON_FAN.ease);// (about 95% of the way in ease s)
   for(const it of items){const p=it.p,to=fan.get(it.g)||0;p.dx=(p.dx||0)+(to-(p.dx||0))*k;if(Math.abs(to-p.dx)<.05)p.dx=to;it.x=iconPx(it.bx+p.dx);it.y=iconPx(it.y)}
   items.sort((a,b)=>a.tier-b.tier||a.y-b.y||(a.g<b.g?-1:1));
@@ -160,9 +178,8 @@ function drawUnitIcons(){
     const team=SIDE[sideKey(B.groups[g])].plate,wav=mo&&mo.state==='wavering'&&blink;
     const hov=B.iconHov===g,edge=sel.includes(g)?'#ffd25a':wav?'#ffa040':hov?'#f4efe0':'#0a0c12',fade=it.under?ICON_FAN.under:1;
     ctx.save();ctx.translate(x,y);ctx.scale(K,K);ctx.globalAlpha=(mo&&(mo.state==='routing'||mo.state==='shattered')?.6:1)*fade;
-    // the plate: an edge (gold when selected), its side's colour, lighter at the top and darker at the foot, a notch pointing down
-    ctx.fillStyle=edge;ctx.fillRect(1,0,S-2,S);ctx.fillRect(0,1,S,S-2);ctx.fillRect(S/2-1.5|0,S,3,1);
-    ctx.fillStyle=team[0];ctx.fillRect(1,1,S-2,S-2);ctx.fillStyle=team[1];ctx.fillRect(2,1,S-4,1);ctx.fillStyle=team[2];ctx.fillRect(1,S-3,S-2,2);
+    // the flag: its cloth in its side's colours, edged (gold when selected), on its pole (flagPic)
+    drawFlag0(S,team,edge);
     // its type, in white with a dark shadow
     const gl=UNIT_GLYPH[unitIcon(g,m)];
     for(const [col,dx] of [['rgba(0,0,0,.45)',1],['#f4efe0',0]]){ctx.fillStyle=col;gl.forEach((row,ry)=>[...row].forEach((c,rx)=>{if(c==='g')ctx.fillRect(2+rx+dx,2+ry+dx,1,1)}))}
@@ -179,7 +196,7 @@ function drawFogGhosts(){
   for(const [g,q] of Gs){const m=grpUnits(g),a=ghostFade(q);if(!m.length||a<=0)continue;const p=fromField({x:q.x,y:q.y}),x=iconPx(p.x-S*K/2),y=iconPx(p.y-UICON.lift*z-(S+6)*K);
     if(p.x<-40||p.x>BVW+40||p.y<0||p.y>BVH+60)continue;
     ctx.save();ctx.globalAlpha=.75*a;ctx.strokeStyle='#b8bcc4';ctx.setLineDash([3,3]);ctx.lineWidth=1;const rr=Math.max(8,Math.sqrt(m.length)*5)*z;ctx.beginPath();ctx.ellipse(Math.round(p.x),Math.round(p.y),rr,rr*.5,0,0,7);ctx.stroke();ctx.setLineDash([]);
-    ctx.translate(x,y);ctx.scale(K,K);ctx.fillStyle='#2a2d33';ctx.fillRect(1,0,S-2,S);ctx.fillRect(0,1,S,S-2);ctx.fillRect(S/2-1.5|0,S,3,1);ctx.fillStyle='#6a6e78';ctx.fillRect(1,1,S-2,S-2);ctx.fillStyle='#585c66';ctx.fillRect(1,S-3,S-2,2);
+    ctx.translate(x,y);ctx.scale(K,K);drawFlag0(S,['#6a6e78','#7a7e88','#585c66'],'#2a2d33');
     ctx.fillStyle='#d8dae0';UNIT_GLYPH[unitIcon(g,m)].forEach((row,ry)=>[...row].forEach((c,rx)=>{if(c==='g')ctx.fillRect(2+rx,2+ry,1,1)}));ctx.restore()}}
 // over a soldier: a white flag while it runs, a blinking mark while it wavers
 function drawMorale(u,x,y){
