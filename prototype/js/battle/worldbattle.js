@@ -345,7 +345,7 @@ class WorldBattleSetup extends BattleSetup{
     const a=this.area,primary=G.enc.ref?.src||G.enc.ref;for(const owner of new Set([P,primary,...(G.enc.allies||[]).map(o=>o.src||o),...(G.enc.foes||[]).map(o=>o.src||o)]))if(owner instanceof Party)MarchArmy.of(owner).sync();BFIELD=null;BW=BH=a.span*a.scale;this.site=this.battleSite();this.env=battleEnv(false,this.site);a.env=this.env;this.env.text='Fight on the world map. The gold circle is fixed; routed soldiers can regroup beyond it and return.';
     this.field={top:8,bot:BH-8};this.createUnits();this.createGroups();
   }
-  createGroups(){StandardTower.man(this.units);super.createGroups();if(this.groups.e0_tower)this.groups.e0_tower.name='Archers on the tower';for(const u of this.units)if(u.leader&&W.lords.includes(u.leader.ref))this.groups[u.grp].name=lordName(u.leader.ref)}
+  createGroups(){StandardTower.man(this.units);super.createGroups();for(const k of ['e0_tower','a0_tower'])if(this.groups[k])this.groups[k].name='Archers on the tower';for(const u of this.units)if(u.leader&&W.lords.includes(u.leader.ref))this.groups[u.grp].name=lordName(u.leader.ref)}
   terrain(){return this.TR=this.area.terrain()}
   *paint(){yield}
   canopy(){}

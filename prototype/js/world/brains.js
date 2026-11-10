@@ -73,6 +73,7 @@ const HAUNT={r:8};
 class BandBrain extends Brain{
   think(b,d,night){
     if(inFight(b))return false;
+    if(b.wave)return holdWaveStep(b,d,this);// (a wave marching on an outpost you hold: world/quests.js HoldQuest)
     const v=this.look(b);this.cool(b,d);
     const st=stance(b.power()*b.nerve,b),fear=fearOf(b,st),sp=moveStep(partySpeed(b,b.troops),d);
     if(!fear&&this.hunt(b,sp)){b.waylay=null;return false}// (a caravan it can take, ridden down before all else but its fear of you: BAND_HUNT)

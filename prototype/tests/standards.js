@@ -145,13 +145,25 @@ Kit.suite(({ok,info})=>{
    let q=null;for(let i=0;i<6&&!q;i++){q=t.makeQuest('hold',hh,L);if(q&&q.site!==s.i)q=null}
    ok(q&&/Hold the /.test(q.title)&&q.foeF===foe,'a lord at war fears for an outpost of his near his foes: '+(q&&q.title));
    t.acceptQuest(q);P.x=s.x+400;P.y=s.y;hour();ok(!q.on&&q.h===0,'away from it, the hold has not begun');
-   P.x=s.x+8;P.y=s.y+8;let waves=0;for(let i=0;i<40&&!q.done;i++){hour();if(G.enc&&G.enc.hold===q.id){waves++;t.act('auto');}}
+   const wave=Q=>t.bandits.find(o=>o.wave&&o.wave.q===Q.id&&!o.gone),BR=new t.BandBrain();
+   P.x=s.x+8;P.y=s.y+8;let waves=0,set=null,closer=false,beside=false,tower=false;for(let i=0;i<40&&!q.done;i++){hour();const b=wave(q);if(!b)continue;
+    if(waves===0)s.guardList=()=>['hum_crossbow','hum_crossbow','hum_spear'];
+    if(!set){set=Math.hypot(b.x-s.x,b.y-s.y)/t.TILE;const d0=Math.hypot(b.x-s.x,b.y-s.y);for(let k=0;k<20;k++)t.holdWaveStep(b,.5,BR);closer=Math.hypot(b.x-s.x,b.y-s.y)<d0}
+    b.x=P.x+10;b.y=P.y;b.cool=0;G.encCool=0;G.modal=false;if(!G.enc)t.holdWaveStep(b,.1,BR);delete s.guardList;
+    if(G.enc&&G.enc.hold===q.id){waves++;const e=G.enc;if(waves===1){beside=e.post===s&&e.allies.length===1&&e.allies[0].src===s;s.lv=3;s.broken=false;
+      t.startBattle({enemies:e.list,tournament:false});const B=t.B,g=B.groups.a0_tower;tower=!!g&&g.post&&g.team===0&&t.grpUnits(g.id).length===2&&t.grpUnits(g.id).every(u=>u.z>0||B.terrain.lift[t.tIx(B.terrain,u.x,u.y)]>0);
+      B.win=true;B.over=true;B.units.filter(u=>u.team===1).forEach(u=>u.hp=0);t.finishBattle()}else t.act('auto')}}
+   ok(set>=H.from-2&&closer,'a wave sets out '+(set&&set.toFixed(0))+' tiles off, its foe\'s way, and marches on the outpost');
+   ok(beside&&tower,'upon you there: its guards beside you, their archers posted on its tower (yours, holding it)');
    ok(waves===H.waves.length&&q.done&&q.wave===H.waves.length,'by it '+H.hours+' hours: '+waves+' waves of the '+t.FACS[foe].n+' beaten, and relief comes: the job done');
    P.quests=[];let q2=null;for(let i=0;i<6&&!q2;i++){q2=t.makeQuest('hold',hh,L);if(q2&&q2.site!==s.i)q2=null}t.acceptQuest(q2);P.x=s.x+8;P.y=s.y+8;hour();P.x=s.x+400;for(let i=0;i<=H.away;i++)hour();
    ok(q2.left&&t.Quest.as(q2).gone()&&/before relief/.test(t.Quest.as(q2).goneWhy()),'left too long once begun: the job lost');
    P.quests=[];let q3=null;for(let i=0;i<6&&!q3;i++){q3=t.makeQuest('hold',hh,L);if(q3&&q3.site!==s.i)q3=null}t.acceptQuest(q3);P.x=s.x+8;P.y=s.y+8;
-   for(let i=0;i<H.waves[0];i++)hour();ok(G.enc&&G.enc.hold===q3.id,'a wave comes at you there');t.Quest.as(q3).ended({how:'lost'});
-   ok(s.realm===foe&&t.Quest.as(q3).gone(),'beaten by it: the outpost the '+t.FACS[foe].n+'\'s, the job lost');
+   for(let i=0;i<H.waves[0];i++)hour();const b3=wave(q3);ok(!!b3&&!G.enc,'a wave sets out at its hour, no fight yet');
+   P.x=s.x+400;b3.x=s.x+4;b3.y=s.y;t.holdWaveStep(b3,.1,BR);ok(s.realm===foe&&!wave(q3)&&t.Quest.as(q3).gone(),'it reaches the outpost with you away: the '+t.FACS[foe].n+'\'s, the job lost');
+   s.owner=f0;s.guards=g0;P.quests=[];let q4=null;for(let i=0;i<6&&!q4;i++){q4=t.makeQuest('hold',hh,L);if(q4&&q4.site!==s.i)q4=null}t.acceptQuest(q4);P.x=s.x+8;P.y=s.y+8;
+   for(let i=0;i<H.waves[0];i++)hour();const b4=wave(q4);b4.x=P.x+10;b4.y=P.y;b4.cool=0;G.encCool=0;t.holdWaveStep(b4,.1,BR);t.Quest.as(q4).ended({how:'lost',enc:G.enc});
+   ok(s.realm===foe&&!wave(q4)&&t.Quest.as(q4).gone(),'beaten by it: the outpost the '+t.FACS[foe].n+'\'s, its men its garrison, the job lost');
    s.owner=f0;s.guards=g0;s.broken=false;s.lv=lv0;P.quests=[];G.enc=null;
    // (scouting: the foe's outposts near his lord)
    const Lf=W.lords.filter(l=>l.fac===foe&&!l.dead).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y))[0],hf=t.Spatial.nearest(t.fiefsOf(foe),s.x,s.y);let o=null;for(let i=0;i<6&&!o;i++)o=t.makeQuest('outscout',hf,Lf);

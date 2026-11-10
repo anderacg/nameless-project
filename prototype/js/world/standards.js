@@ -222,7 +222,8 @@ const StandardTower={
       if(c0>=1&&r0>=1&&c1<T.C-1&&r1<T.R-1&&c1>=c0&&r1>=r0)out.push({s,c0,r0,c1,r1})}return out},
   // (laid on the field's cells after its buildings: open, raised, its men lifted; cliffs on its faces (wall bits 0 east, 1 south,
   // 2 west, 3 north, as terrain.js), but for its ladder's cells in the middle of the side away from you)
-  lay(T,area){const X=STANDARD.tower,W=this.on(area,T);if(!W.length)return;const C=T.C,N=C*T.R,you=area.field(area.starts[0]);T.lift=new Uint8Array(N);T.towers=W;
+  // (you: the side that comes at it, yours or, holding it, theirs)
+  lay(T,area){const X=STANDARD.tower,W=this.on(area,T);if(!W.length)return;const C=T.C,N=C*T.R,you=area.field(area.starts[G.enc&&G.enc.post?1:0]);T.lift=new Uint8Array(N);T.towers=W;
     for(const w of W){const {c0,r0,c1,r1}=w,cs=T.cs,mx=(c0+c1+1)/2*cs,my=(r0+r1+1)/2*cs,dx=you.x-mx,dy=you.y-my;let g=0;
       for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++)g=Math.max(g,T.lvl[r*C+c]);
       w.lv=g+X.rise[w.s.towerLv];w.ladder=Math.abs(dx)>Math.abs(dy)?(dx>0?2:0):(dy>0?3:1);const z=w.z=Math.round(this.top(w.s)*area.scale/WORLD_BATTLE.sprite);
@@ -232,11 +233,15 @@ const StandardTower={
         if(c===c1&&!lad(0,c,r))face(i,i+1,0);if(r===r1&&!lad(1,c,r))face(i,i+C,1);if(c===c0&&!lad(2,c,r))face(i,i-1,2);if(r===r0&&!lad(3,c,r))face(i,i-C,3)}}},
   // (its top, world px over its foot: a share of its model's height)
   top(s){return (s.sprite().width-22)*STANDARD.tower.top[s.towerLv]},
+  // (the outpost a fight is for: one you attack (its guards your foes), or one you hold (its guards beside you, world/quests.js HoldQuest))
+  of(e){return e&&(e.kind==='standard'?e.ref:e.post)||null},
   // (a fight for it: up to perch[lv] of its archers, no leader, their own group's, before the groups are made)
-  man(units){const e=G.enc,s=e&&e.kind==='standard'&&e.ref;if(!s||!s.towerLv)return;
-    units.filter(u=>u.team===1&&!u.leader&&!u.lord&&grpOf(u.s)==='arc').slice(0,STANDARD.tower.perch[s.towerLv]).forEach(u=>{u.grp='e0_tower'})},
+  man(units){const e=G.enc,s=this.of(e);if(!s||!s.towerLv)return;const ours=u=>e.post?!!u.sourceArmy&&u.sourceArmy.src===s:u.team===1;// (holding it: its guards, by their source (an ally's team may be its own while the sides are made: sides.js))
+    units.filter(u=>ours(u)&&!u.leader&&!u.hero&&!u.comp&&grpOf(u.s)==='arc').slice(0,STANDARD.tower.perch[s.towerLv]).forEach(u=>{u.grp=u.grp.split('_')[0]+'_tower'})},
+  // (its archers' group on the field)
+  group(b){return Object.values(b.groups||{}).find(g=>g.id.endsWith('_tower'))||null},
   // (and once placed, posted on its top: a man a cell from its middle out, the ladder's cells last, facing your army)
-  post(b,area){const g=b.groups.e0_tower,e=G.enc,w=b.terrain?.towers?.find(x=>x.s===e?.ref);if(!g||!w)return;const m=grpUnits(g.id),cs=b.terrain.cs,you=area.field(area.starts[0]);
+  post(b,area){const g=this.group(b),e=G.enc,s=this.of(e),w=b.terrain?.towers?.find(x=>x.s===s);if(!g||!w)return;const m=grpUnits(g.id),cs=b.terrain.cs,you=area.field(area.starts[e.post?1:0]);
     const cells=[];for(let r=w.r0;r<=w.r1;r++)for(let c=w.c0;c<=w.c1;c++)cells.push({x:(c+.5)*cs,y:(r+.5)*cs});const ax=(w.c0+w.c1+1)/2*cs,ay=(w.r0+w.r1+1)/2*cs;
     cells.sort((a,b)=>Math.hypot(a.x-ax,a.y-ay)-Math.hypot(b.x-ax,b.y-ay));w.cells=cells;g.post=true;g.order='hold';g.ax=ax;g.ay=ay;g.face=g.currentFacing=Math.atan2(you.y-ay,you.x-ax);g.tgt=null;g.queue=[];
     m.forEach((u,i)=>{const q=cells[i%cells.length];u.x=q.x;u.y=q.y;u.sx=q.x-ax;u.sy=q.y-ay;u.dir=g.face;u.face=Math.cos(g.face)>=0?1:-1})},
@@ -244,7 +249,7 @@ const StandardTower={
   foot(w,cs){const q=w.ladder,m=(w.l0+w.l1)/2*cs;return q===0?{x:(w.c1+1)*cs,y:m}:q===2?{x:w.c0*cs,y:m}:q===1?{x:m,y:(w.r1+1)*cs}:{x:m,y:w.r0*cs}},
   // (each frame of a world battle: a foe up on its top, its archers fall back to the cells farthest from the ladder, once; looked at
   // every STANDARD.tower.look s)
-  step(b){const g=b.groups&&b.groups.e0_tower,T=b.terrain,w=T&&T.towers&&T.towers.find(x=>x.cells);if(!g||!w||w.back||b.t<(w.seen||0))return;w.seen=b.t+STANDARD.tower.look;
+  step(b){const g=this.group(b),T=b.terrain,w=T&&T.towers&&T.towers.find(x=>x.cells);if(!g||!w||w.back||b.t<(w.seen||0))return;w.seen=b.t+STANDARD.tower.look;
     const on=u=>{const c=Math.floor(u.x/T.cs),r=Math.floor(u.y/T.cs);return c>=w.c0&&c<=w.c1&&r>=w.r0&&r<=w.r1};
     if(!b.units.some(u=>u.hp>0&&u.team!==g.team&&!u.rout&&on(u)))return;w.back=true;const f=this.foot(w,T.cs),far=w.cells.slice().sort((a,b)=>Math.hypot(b.x-f.x,b.y-f.y)-Math.hypot(a.x-f.x,a.y-f.y));
     grpUnits(g.id).forEach((u,i)=>{const q=far[i%far.length];u.sx=q.x-g.ax;u.sy=q.y-g.ay})},
