@@ -2,7 +2,7 @@
 
 Open **[portrait-workshop.html](portrait-workshop.html)** directly in a browser. It works offline and includes the full generator. `index.html` opens the same workshop when this folder is served.
 
-The current generator draws independent grayscale **128 × 128** parts, assembles 18 layers, and supports runtime tinting, editable recipes, and Human, Dwarf, Orc and Elf generation. Race compatibility controls the selectors, random generation and recipe import. Headwear fits the selected hair and ears.
+The current generator draws independent grayscale **128 × 128** parts, assembles 19 layers, and supports runtime tinting, editable recipes, and Human, Dwarf, Orc and Elf generation. Race compatibility controls the selectors, random generation and recipe import. Headwear fits the selected hair and ears.
 
 ## Character creation and world generation
 

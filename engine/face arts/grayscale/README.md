@@ -10,9 +10,9 @@ The shared renderer now applies the approved pixel treatment to every race. Skin
 
 Orc heads and headwear are 87.5% of their original size; the widest `orc-heavy` skull used by war infantry is 75%. Shoulders and armor retain their size. Eyes, brows, noses, mouths and teeth are redrawn from their paths at the smaller size; mouth seams and nostrils keep a minimum readable pixel. Paired eye masks are checked after reduction, and exported integer feature anchors match `geometry()`. Hair-fit masks use the same head placement. Every existing part remains selectable; recipes, tint channels and the version-7 format are unchanged.
 
-Orc facial anatomy also has a broader lower jaw and chin, heavier brow relief, a flatter broad nose, a stronger lower lip and taller lower tusks. These apply across compatible face options while preserving selected parts and the smaller skull sizes.
+Orc facial anatomy has a rounded lower jaw, angular cheekbones, heavier brow relief, a flatter broad nose, stronger lower lip and inward-curving lower tusks. Narrow eye openings retain readable pupils; the War crest style has taller spikes and shaved sides. Healthy part shapes mirror about the canvas center while directional shading remains. Selected scars, broken brows and crooked noses preserve injury asymmetry. The smaller skull sizes remain.
 
-Run `pixel-tests.html` for smaller-head facial detail, helmet clearance, tusks, uniform pixel scale and detached-pixel checks. `tests.html` and `character-tests.html` continue to cover part independence, all options and saved recipes. See `../../../doc/PIXEL_PORTRAIT_DESIGN.md`.
+Run `pixel-tests.html` for smaller-head facial detail, helmet clearance, tusks, uniform pixel scale and detached-pixel checks. `orc-tests.html` covers the approved anatomy, mirrored parts, injuries, new armor, coverage and shoulder attachments. `tests.html` and `character-tests.html` continue to cover part independence, all options and saved recipes. See `../../../doc/PIXEL_PORTRAIT_DESIGN.md`.
 
 ## Choices
 
@@ -29,10 +29,10 @@ Run `pixel-tests.html` for smaller-head facial detail, helmet clearance, tusks, 
 | Facial hair (including none) | 20 |
 | Age | 5 |
 | Skin marks (including none) | 9 |
-| Clothing | 37 |
+| Clothing | 45 |
 | Headwear (including none) | 37 |
 
-New hairstyles include curls, tousled hair, side parts, ponytails, high and low buns, half-up hair, a single braid, an undercut, a topknot and swept-back hair. Mouths include reserved, broad, asymmetric and thin smiles, parted lips and a pout. Additional headwear includes a beret, wrapped hood, headband, veil and fur cap. Each drawable-part option produces distinct source artwork. `gallery.html` shows 84 curated characters.
+New hairstyles include curls, tousled hair, side parts, ponytails, high and low buns, half-up hair, a single braid, an undercut, a topknot and swept-back hair. Mouths include reserved, broad, asymmetric and thin smiles, parted lips and a pout. Additional headwear includes a beret, wrapped hood, headband, veil and fur cap. Each drawable-part option produces distinct source artwork. `gallery.html` shows 92 curated characters.
 
 ## Facial shape and symmetry
 
@@ -106,7 +106,7 @@ Male and Female provide starting feature combinations on the shared facial rig; 
 
 ## Independent layers
 
-Drawing order is back hair, back headwear, clothing, armor, **ears**, face/neck, age, skin marks, nose, eye whites, irises, **upper eyelids**, brows, mouth, **teeth / tusks**, front hair, front headwear and facial hair: **18 layers** in total.
+Drawing order is back hair, back headwear, torso skin, clothing, armor, **ears**, face/neck, age, skin marks, nose, eye whites, irises, **upper eyelids**, brows, mouth, **teeth / tusks**, front hair, front headwear and facial hair: **19 layers** in total.
 
 Teeth remain neutral when lips are tinted. Mail/metal, cloth and headwear have separate tint channels. Headwear face openings preserve pupil visibility. Headwear uses explicit hair-fit rules in the assembled portrait; individual hair source layers remain complete and exportable. Some hairstyles and features are naturally hidden by equipment or beards.
 
@@ -141,7 +141,7 @@ Stubble uses a light continuous beard shadow with fine tonal grain; close beard 
 - `tests.html`: focused checks for symmetry, alignment, distinct artwork, equipment clearance, independent layers, grayscale/alpha, tinting and deterministic generation.
 - `examples/`: optional current baseline PNGs and manifest; `examples/medieval/`: 63 earlier preset PNGs and recipes, plus `examples/soldiers/` with the 12 soldier portraits. Historical comparison images elsewhere in this folder are not loaded by the engine.
 
-Exports include the assembled portrait, selected source layer, a **2304 × 128** grayscale atlas, and a v7 JSON recipe with colors, visibility, rig and layer order. Import accepts v4, v5, v6 and v7 recipes; absent fields use current defaults. These are portrait recipes, not game saves.
+Exports include the assembled portrait, selected source layer, a **2432 × 128** grayscale atlas, and a v7 JSON recipe with colors, visibility, rig and layer order. Import accepts v4, v5, v6 and v7 recipes; absent fields use current defaults. These are portrait recipes, not game saves.
 
 
 ## Character Studio controls
@@ -178,7 +178,7 @@ The core identity uses actual face geometry, eye family/spacing/size and nose ty
 
 Generation has finite retries and never silently falls back to a clone. Handle `GenerationError.code`, notably `PRESET_POOL_EXHAUSTED`, `FACE_POOL_EXHAUSTED`, `PLAYER_REQUIRED`, `DUPLICATE_ID` and `SAVED_FACE_CONFLICT`. Add more eligible presets or use Mixed/Random when a strict preset pool is too small. Imported v7 rosters are revalidated; v4–v6 individual portrait recipes remain accepted with zero adjustments. Studio collection format version 1 is separate from engine recipe/roster version 7.
 
-Source artwork remains 18 independent grayscale canvases with runtime tinting. Race palettes are editable defaults, not forced skin colors. The game consumes this shared renderer through `prototype/js/ui/faces.js`; workshop PNG exports remain optional.
+Source artwork remains 19 independent grayscale canvases with runtime tinting. Race palettes are editable defaults, not forced skin colors. The game consumes this shared renderer through `prototype/js/ui/faces.js`; workshop PNG exports remain optional.
 
 
 ## Soldier presets and equipment
@@ -240,3 +240,10 @@ Ten dwarf-only choices add more individual character:
 - Facial hair: Fan beard, Twin braids and Heavy moustache.
 
 These appear in the compatible feature selectors, four new editable presets and seeded dwarf generation. Brows grow upward to preserve pupil visibility; all facial-hair styles keep the mouth opening clear. The short neck, 128-pixel rendering and existing recipe schema remain. Female generation stays unbearded, with manual facial hair still available. Both offline tools are rebuilt with the new choices.
+
+
+## Orc leather and harness armor
+
+Eight new orc-only clothing options are available in the workshop, game face maker, curated presets and compatible NPC role pools: laced leather vest, studded leather, crossed harness over a leather vest, ring harness over a leather vest, layered hide armor, leather with shoulder guards, bare crossed harness and bare ring harness. The six covered kits cover the chest and shoulders; the two bare options deliberately expose skin. Harness straps meet the shoulder tops and continue down the chest. Buckles and rings stay attached to leather.
+
+The optional Torso layer sits below Clothing and Armor and uses the existing Skin tint. Leather remains on Cloth; hardware remains on Metal. All layers keep the same 128-pixel origin. The body surface joins the smaller orc neck without moving the broad shoulders. Existing outfits leave the torso layer empty, preserving their rendering. Saved recipes remain version 7; the atlas grows to 19 cells. Both offline tools are rebuilt with the same source.

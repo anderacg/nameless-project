@@ -1,0 +1,36 @@
+<!doctype html><meta charset="utf-8"><title>Orc portrait checks</title><pre id="out">Running…</pre><script src="portrait-engine.js"></script><script>
+'use strict';
+const E=PortraitEngine,lines=[],full=['orc-leather-vest','orc-studded-leather','orc-cross-harness','orc-ring-harness','orc-layered-hide','orc-leather-guard'],bare=['orc-bare-cross-harness','orc-bare-ring-harness'],kits=[...full,...bare],base={race:'orc',hair:'war-crest',headwear:'none',eyes:'focused',brows:'bold',nose:'orc-broad',mouth:'heavy-tusks',beard:'none',age:'young',marks:'none',seed:42};
+function ok(v,s){if(!v)throw Error(s);lines.push('PASS '+s);}
+const data=c=>c.getContext('2d').getImageData(0,0,128,128).data;
+function mismatch(c){const a=data(c);let n=0;for(let y=0;y<128;y++)for(let x=0;x<64;x++)if(a[(y*128+x)*4+3]!==a[(y*128+127-x)*4+3])n++;return n;}
+function groups(mask){const seen=new Uint8Array(16384),out=[];for(let k=0;k<16384;k++){if(!mask[k]||seen[k])continue;const q=[k];seen[k]=1;for(let i=0;i<q.length;i++){const n=q[i],x=n%128,y=n>>7;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy,j=Y*128+X;if(X<0||X>=128||Y<0||Y>=128||seen[j]||!mask[j])continue;seen[j]=1;q.push(j);}}out.push(q);}return out;}
+try{
+ ok(kits.every(k=>E.partsFor('orc','clothing').includes(k))&&E.races.filter(r=>r!=='orc').every(r=>kits.every(k=>!E.partsFor(r,'clothing').includes(k))),'all eight new kits are selectable for orcs only');
+ ok(E.order.length===19&&E.order.find(s=>s.id==='torso').channel==='skin'&&E.order.findIndex(s=>s.id==='torso')<E.order.findIndex(s=>s.id==='clothing'),'body skin exports independently below leather and metal');
+ const signatures=new Set(),reference=E.build({...base,clothing:full[0]});
+ for(const clothing of kits){const p=E.build({...base,clothing});signatures.add(E.composite(p).toDataURL());for(const s of E.order)if(s.feature!=='clothing'&&p.layers[s.id].toDataURL()!==reference.layers[s.id].toDataURL())throw Error('Armor changes face or hair: '+clothing);}
+ ok(signatures.size===kits.length,'all eight outfits have distinct art while retaining the same face and hair');
+ let fit=0,attachments=0;
+ for(const face of E.partsFor('orc','face'))for(const profile of ['male','female'])for(const size of [-2,2])for(const clothing of kits){const p=E.build({...base,face,profile,clothing,adjustments:{faceWidth:size,jawWidth:size}}),skin=data(p.layers.torso),cloth=data(p.layers.clothing),metal=data(p.layers.armor),head=data(p.layers.face),body=new Uint8Array(16384),hardware=new Uint8Array(16384);let exposed=0;
+  for(let n=0;n<16384;n++){const k=n*4,y=n>>7;if((cloth[k+3]||metal[k+3])&&!skin[k+3])throw Error('Armor outside body: '+clothing+'/'+face);if(y<94&&(cloth[k+3]||metal[k+3]))throw Error('Armor over neck: '+clothing);if(y>=104&&skin[k+3]&&!cloth[k+3]&&!metal[k+3])exposed++;body[n]=skin[k+3]||cloth[k+3]||metal[k+3]||head[k+3]?1:0;hardware[n]=metal[k+3]?1:0;}
+  if(full.includes(clothing)&&exposed)throw Error('Missing full coverage: '+clothing);if(bare.includes(clothing)&&exposed<100)throw Error('Bare harness loses exposed skin');
+  if(groups(body).length!==1)throw Error('Head or body detached');for(let y=Math.ceil(p.anchors.chinY)+1;y<=108;y++)for(let x=58;x<=69;x++)if(!body[y*128+x])throw Error('Neck gap');
+  for(const g of groups(hardware))if(!g.some(n=>cloth[n*4+3]))throw Error('Floating hardware');
+  for(const s of E.order)if(mismatch(p.layers[s.id]))throw Error('Unmirrored healthy part: '+clothing+'/'+s.id);
+  if(bare.includes(clothing)){for(const left of [42,44,46])for(const x of [left,127-left]){let y=88;while(y<104&&!skin[(y*128+x)*4+3])y++;if(y>=104||!cloth[(y*128+x)*4+3])throw Error('Strap misses shoulder top: '+clothing+'/'+face);}attachments++;}fit++;
+ }
+ ok(fit===128,'128 armor/face/profile/width combinations stay on the body with a connected neck, supported hardware and mirrored parts');
+ ok(attachments===32,'both bare harnesses reach both shoulder tops in all 32 body variants');
+ ok(true,'six full-coverage kits cover chest and shoulders; two bare harnesses preserve exposed skin');
+ for(const [open,covered] of [[bare[0],full[2]],[bare[1],full[3]]]){const a=E.build({...base,clothing:open}),b=E.build({...base,clothing:covered});if(a.layers.armor.toDataURL()!==b.layers.armor.toDataURL())throw Error('Harness hardware changes with underlayer');}
+ ok(true,'bare and covered versions retain identical harness hardware');
+ let eyesChecked=0;
+ for(const face of E.partsFor('orc','face'))for(const eyes of E.partsFor('orc','eyes'))for(const eyeSize of [-1,1]){const p=E.build({...base,face,eyes,adjustments:{eyeSize}}),iris=data(p.layers.iris),lid=data(p.layers.eyelids),brow=data(p.layers.brows),seen=[0,0];for(let y=0;y<128;y++)for(let x=0;x<128;x++){const k=(y*128+x)*4;if(iris[k+3]&&iris[k]<=64&&!lid[k+3]&&!brow[k+3])seen[x<64?0:1]++;}if(seen.some(n=>!n))throw Error('Hidden orc pupil: '+face+'/'+eyes+'/'+eyeSize);const h=data(p.layers.hairFront);let top=128;for(let y=0;y<128;y++)for(let x=0;x<128;x++)if(h[(y*128+x)*4+3])top=Math.min(top,y);if(top>p.anchors.top-10)throw Error('Mohawk tips lost');eyesChecked++;}
+ ok(eyesChecked===48,'48 eye/face/size combinations retain visible pupils and tall mohawk tips');
+ for(const [key,value,id] of [['marks','scar','marks'],['brows','broken','brows'],['nose','crooked','nose']]){const p=E.build({...base,[key]:value});if(!mismatch(p.layers[id]))throw Error('Injury mirrored away: '+value);for(const s of E.order)if(s.id!==id&&mismatch(p.layers[s.id]))throw Error('Injury shifts another part: '+s.id);}
+ ok(true,'configured scars, broken brows and crooked noses retain intentional asymmetry without shifting other parts');
+ lines.push('DONE '+lines.length+' checks');
+}catch(e){lines.push('FAIL '+e.message);console.error(e);}
+document.getElementById('out').textContent=lines.join('\n');
+</script>

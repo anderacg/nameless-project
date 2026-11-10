@@ -48,6 +48,11 @@ Kit.suite(({ok,info})=>{
   const h=t.PortraitCharacters.recipe({config:t.Faces.bare(t.PortraitEngine.random(77,'male','human'))});ok(JSON.stringify(F.kin(h).config)===JSON.stringify(h.config),'a human\'s face as it is');
   const d=t.PortraitCharacters.recipe({config:t.Faces.bare(t.PortraitEngine.random(78,'female','dwarf'))});ok(JSON.stringify(F.kin(d))===JSON.stringify(F.kin(d)),'the same dwarf drawn the same every time')}
  {const E=t.PortraitEngine,C=t.PortraitCharacters,look=beard=>F.look(C.recipe({config:E.normalize({race:'dwarf',beard})}));ok(!look('dwarf-heavy-moustache').beard&&look('dwarf-fan').beard&&look('dwarf-twin-braids').beard,'dwarf moustaches and full beard styles map correctly to battle figures')}
+ // ---- approved orc outfits remain selectable and keep their independent torso skin
+ {const E=t.PortraitEngine,kits=['orc-leather-vest','orc-studded-leather','orc-cross-harness','orc-ring-harness','orc-layered-hide','orc-leather-guard','orc-bare-cross-harness','orc-bare-ring-harness'],saved=F.draft;
+  try{F.draft=null;const html=F.maker('orc','m');for(const clothing of kits){F.set('clothing',clothing);const rec=F.draft.rec,p=E.build(rec.config);ok(html.includes('value="'+clothing+'"')&&html.includes(E.partLabels[clothing])&&rec.config.clothing===clothing&&p.layers.torso.getContext('2d').getImageData(0,0,128,128).data.some((v,i)=>i%4===3&&v)&&/^data:image/.test(F.url(rec,true)),'orc face maker selects and renders '+E.partLabels[clothing]);}
+   ok(kits.every(k=>t.FACE_GEAR.armours.includes(k)),'all new orc kits follow the existing worn-armor portrait rules');
+  }finally{F.draft=saved}}
  // (switched off: the paintings again)
  t.FACES.on=false;try{ok(!/^data:/.test(t.lordPic(L))||!t.NamedPortraits.of(L.name),'FACES.on false: a lord\'s painting again')}finally{t.FACES.on=true}
 });

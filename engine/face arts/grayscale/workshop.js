@@ -4,7 +4,7 @@
   const state={config:{...E.defaults},colors:{...E.colors},colored:false,visible:Object.fromEntries(E.order.map(s=>[s.id,true])),selected:'hairFront',portrait:null};
   const selectors={},checks={},tiles={};
   function copy(src,target){const g=target.getContext('2d');g.clearRect(0,0,E.size,E.size);g.imageSmoothingEnabled=false;g.drawImage(src,0,0);}
-  function title(s){const label={coif:'Mail coif',nasal:'Nasal helm',kettle:'Kettle helm',cap:'Wool cap',gambeson:'Quilted gambeson',mail:'Mail shirt',tunic:'Laced tunic',surcoat:'Surcoat / mail',fur:'Fur mantle'};return label[s]||s.split('-').map(v=>v.charAt(0).toUpperCase()+v.slice(1)).join(' ');}
+  function title(s){const label={coif:'Mail coif',nasal:'Nasal helm',kettle:'Kettle helm',cap:'Wool cap',gambeson:'Quilted gambeson',mail:'Mail shirt',tunic:'Laced tunic',surcoat:'Surcoat / mail',fur:'Fur mantle'};return E.partLabels?.[s]||label[s]||s.split('-').map(v=>v.charAt(0).toUpperCase()+v.slice(1)).join(' ');}
   let controlsRace=null;
   function fillOptions(select,key,race){
     const allowed=E.partsFor(race,key),groups=key==='hair'?Object.entries(E.hairGroups):key==='headwear'?Object.entries(E.headwearGroups):[[null,allowed]];

@@ -1767,3 +1767,6 @@ Portrait pixel style (2026-11-10): the shared portrait engine now draws the appr
 
 
 Orc portrait anatomy (2026-11-10): compatible orc faces now have a broad flat chin and lower jaw, stronger brow ridges, flattened wide noses, heavier lower lips and taller tusks. The smaller head/helmet proportions stay in place; facial options and sliders remain editable in the shared generator.
+
+
+Approved orc portrait study: the shared generator now uses the rounder jaw, mirrored healthy parts, narrow eyes and taller mohawk. Configured injuries remain asymmetric, and head sizes stay reduced. Eight leather/harness options include six covered kits and two bare harnesses, with straps reaching the shoulder tops. They appear in the face maker, presets and compatible NPC role pools; worn-gear classification recognizes the new kits. A separate torso-skin layer keeps skin, leather and metal tints independent. Both offline tools are rebuilt. Design and checks: `doc/ORC_PORTRAIT_DESIGN.md`, `engine/face arts/grayscale/orc-tests.html`.

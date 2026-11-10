@@ -81,7 +81,7 @@ const FACE_GEAR={
     elf:[null,null,'elf-guard-helm','elf-guard-helm','elf-guard-helm','elf-guard-helm','elf-guard-helm']},
   cape:'cloak',
   // (no armour worn: a face's own armour (armours) its past's plain clothes (plain; any: anyone else's), its own helm (helms) off)
-  armours:['mail','brigandine','scale','lamellar','plate','ruffled-mail','rune-mail','leather-mail','coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','dwarf-runic-plate','dwarf-forge-plate','elf-silver-scale','elf-leaf-cuirass'],
+  armours:['orc-bare-cross-harness','orc-bare-ring-harness','orc-leather-vest','orc-studded-leather','orc-cross-harness','orc-ring-harness','orc-layered-hide','orc-leather-guard','mail','brigandine','scale','lamellar','plate','ruffled-mail','rune-mail','leather-mail','coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','dwarf-runic-plate','dwarf-forge-plate','elf-silver-scale','elf-leaf-cuirass'],
   helms:['coif','nasal','kettle','round-helm','forge-helm','open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm'],
   plain:{soldier:'gambeson',guard:'gambeson',woodcutter:'jerkin',exile:'leather',merchant:'doublet',hedge:'robe',nobody:'linen-chemise',apprentice:'tunic',any:'traveler-coat'},
   // (the metal's colour: its material's, steel (steel) mixed in by tint, so gold reads gilt and mithril pale, not paint)
@@ -132,7 +132,7 @@ class Faces{
     return '<div class="face-maker"><div class="fm-side"><img class="fm-pic" src="'+this.url(rec,true)+'" alt="Your face"><button class="btn sm" type="button" data-act="fm-random">Random face</button>'+
       (pre.length?'<select data-fm-preset aria-label="Preset"><option value="">Preset…</option>'+pre.map(([p,i])=>'<option value="'+i+'">'+htmlText(p.name)+'</option>').join('')+'</select>':'')+'</div>'+
       '<div class="fm-main"><div class="fm-rows">'+FACE_PARTS.map(part).join('')+'</div><div class="fm-tints">'+FACE_TINTS.map(tint).join('')+'</div><div class="fm-rows fm-adj">'+Object.entries(E.adjustments).map(adj).join('')+'</div></div></div>'}
-  static partName(v){return String(v).replace(/-/g,' ').replace(/^./,s=>s.toUpperCase())}
+  static partName(v){return (typeof PortraitEngine!=='undefined'&&PortraitEngine.partLabels?.[v])||String(v).replace(/-/g,' ').replace(/^./,s=>s.toUpperCase())}
   // (a part chosen (the draft made again within your race's choices), a tint, a proportion, a preset of your race)
   static set(k,v){const D=this.draft;if(!D)return;D.rec=PortraitCharacters.recipe({config:PortraitEngine.normalize({...D.rec.config,[k]:v}),colors:D.rec.colors})}
   static tint(k,v){const D=this.draft;if(D&&/^#[0-9a-f]{6}$/i.test(v))D.rec={...D.rec,colors:{...D.rec.colors,[k]:v}}}
