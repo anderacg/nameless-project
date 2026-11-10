@@ -16,4 +16,4 @@ Six presets, military role pools, workshop fit notes and both offline tools incl
 
 Full helmet refinement: rounded cheek/jaw bowls, beveled great-helm corners and curved rear skirts soften the silhouettes. Pixel-sharp visor shadows darken the exposed eyes only while the front helmet is visible; source eye layers and facial choices remain intact.
 
-Closed helmet eye openings now use tapered ends and angled upper/lower rims, keeping the pixel edges sharp and pupils visible.
+Reference-based closed visors now use long, narrow brow slits with a stepped upward slope toward a solid nose bridge. A raised center seam and paired breathing holes define the faceplate; deeper cavity shading keeps the eyes recessed. Apertures remain sharp on the two-pixel grid and keep pupil anchors clear.

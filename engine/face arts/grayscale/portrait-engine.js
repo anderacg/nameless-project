@@ -353,6 +353,11 @@
     if(elf)curve(g,[64,104,61,111,65,118,64,126],219,1.1);
     return true;
   }
+  function visorSlots(a){
+    const e=a.eyes[0],y=Math.floor(e.y/2)*2,outer=Math.floor(Math.min(e.x-4,a.cx-a.w+3)/2)*2,inner=Math.floor((a.cx-4)/2)*2,end=Math.min(inner,Math.max(inner-2,Math.ceil((e.x+1)/2)*2));
+    const left=[{x:outer+4,y:y-2,w:inner-outer-4,h:2},{x:outer,y,w:end-outer,h:2}];
+    return [...left,...left.map(r=>({...r,x:SIZE-r.x-r.w}))];
+  }
   function closedHelmet(g,a,c,back){
     const kind=c.headwear;if(!CLOSED_HELMS.includes(kind))return false;
     const x=a.cx,w=a.w+4,eye=a.eyes[0].y,bottom=a.chinY+5,jaw=Math.max(a.chin+4,a.jaw),great=kind==='great-helm',sallet=kind==='closed-sallet',beaked=kind==='beaked-bascinet',mask=kind==='slit-mask-helm';
@@ -373,7 +378,7 @@
       else{
         const cheek=[[x-w+3,eye+4],[x,eye+9],[x+w-3,eye+4],[x+jaw,bottom-4],[x,bottom-1],[x-jaw,bottom-4]];
         surface(g,cheek,(px,py)=>124+51*falloff(px,py,x-9,eye+12,18,20)-24*falloff(px,py,x+19,eye+16,14,20));
-        curve(g,[x-w+3,eye+4,x-12,eye+9,x+12,eye+9,x+w-3,eye+4],79,2);
+        line(g,[[x-w+3,eye+3],[x-4,eye-1],[x+4,eye-1],[x+w-3,eye+3]],199,1.5);
         curve(g,[x,top+3,x-2,eye-17,x+1,eye-9,x,eye-4],204,2);
       }
       if(beaked){poly(g,[[x-9,eye+4],[x+9,eye+4],[x+12,eye+18],[x,eye+26],[x-12,eye+18]],108);poly(g,[[x-9,eye+4],[x,eye+5],[x,eye+25],[x-12,eye+18]],180);line(g,[[x,eye+6],[x,eye+24]],208,2);}
@@ -381,20 +386,19 @@
       if(sallet){curve(g,[x-w+1,eye-5,x-11,eye-10,x+11,eye-10,x+w-1,eye-5],80,4);curve(g,[x-jaw,eye+22,x-12,bottom-3,x+12,bottom-3,x+jaw,eye+22],195,2);}
       for(const side of [-1,1]){
         const hinge=x+side*(w-3);if(!great){oval(g,hinge,eye-4,2.5,2.5,190);oval(g,hinge,eye-4,1,1,69);}
-        for(let row=0;row<(mask?4:3);row++){
-          const y=eye+12+row*5,px=x+side*(beaked?16:great?11:mask?8:14);
-          rect(g,px-1,y,mask?2:4,2,48);if(mask)rect(g,px+side*6-1,y,2,2,48);
+        for(let row=0;row<4;row++)for(let col=0;col<(mask?2:3);col++){
+          const px=x+side*(7+col*6),y=eye+10+row*6;
+          if(y<bottom-7&&Math.abs(px-x)<w-7-row)rect(g,px-1,y,2,2,48);
         }
         if(great)for(let y=eye+4;y<bottom-3;y+=10)rect(g,x+side*(w-4),y,2,2,213);
       }
       if(mask){line(g,[[x-w+3,eye+5],[x-w+6,bottom-9]],198,2);line(g,[[x+w-3,eye+5],[x+w-6,bottom-9]],137,2);rect(g,x-2,eye+6,4,27,166);}
       curve(g,[x-jaw,bottom-5,x-8,bottom-1,x+8,bottom-1,x+jaw,bottom-5],62,2);
     });
-    // Real openings retain the eyes; dark vent marks do not expose the face beneath.
-    for(const e of a.eyes){
-      const half=Math.max(6,6*(a.eyeScale||1)),slit=(h,v)=>[[e.x-h,e.y],[e.x-h+5,e.y-v],[e.x+h-5,e.y-v],[e.x+h,e.y],[e.x+h-5,e.y+v],[e.x-h+5,e.y+v]];
-      poly(g,slit(half+2,5),43);g.save();g.globalCompositeOperation='destination-out';poly(g,slit(half,3),255);g.restore();
-    }
+    // Raised center seam separates the long vision slits and continues down the faceplate.
+    poly(g,[[x-3,eye-6],[x+3,eye-6],[x+2,bottom-5],[x,bottom-2],[x-2,bottom-5]],163);
+    line(g,[[x,eye-5],[x,bottom-4]],211,2);
+    // Vision slits are cut after head scaling on the final pixel grid.
     return true;
   }
   function culturalHelmet(g,a,c,back){
@@ -1457,10 +1461,9 @@
       const ig=layers.iris.getContext('2d');ig.save();ig.globalCompositeOperation='destination-in';ig.drawImage(layers.eyes,0,0);ig.globalCompositeOperation='destination-out';ig.drawImage(layers.eyelids,0,0);ig.restore();
     }
     bg.save();bg.globalCompositeOperation='destination-out';bg.drawImage(layers.teeth,0,0);bg.restore();
-    // Finish tapered apertures on the final two-pixel grid so resizing cannot square them off.
+    // Cut long brow slits after scaling; their stepped slope stays on the equipment grid.
     if(CLOSED_HELMS.includes(p.config.headwear)){
-      const g=layers.headwearFront.getContext('2d'),h=Math.max(4,Math.round(3*(a.eyeScale||1))*2);
-      for(const e of a.eyes){const x=Math.floor(e.x/2)*2,y=Math.floor((e.y-4)/2)*2;[h-2,h+2,h+4,h+2,h-2].forEach((half,row)=>rect(g,x-half,y+row*2,half*2,2,48));[h-2,h,h-2].forEach((half,row)=>g.clearRect(x-half,y+2+row*2,half*2,2));}
+      const g=layers.headwearFront.getContext('2d');for(const r of visorSlots(a))g.clearRect(r.x,r.y,r.w,r.h);
     }
     fitLeatherToBody(layers,p.config);
     if(p.config.race==='orc')mirrorParts(layers,p.config);else if(CLOSED_HELMS.includes(p.config.headwear))mirrorParts(layers,p.config,['headwearFront','headwearBack']);
@@ -1531,7 +1534,7 @@
     if(rule.face==='covered'&&(!visible||visible.headwearFront!==false)) {
       const shadow=canvas(),sg=shadow.getContext('2d'),front=portrait.layers.headwearFront;
       sg.fillStyle='#151515';
-      for(const e of portrait.anchors.eyes){const half=Math.max(4,Math.ceil(6*(portrait.anchors.eyeScale||1)));sg.globalAlpha=.5;sg.fillRect(e.x-half-2,e.y-3,half*2+4,3);sg.globalAlpha=.3;sg.fillRect(e.x-half-2,e.y,half*2+4,3);}
+      sg.globalAlpha=.85;for(const r of visorSlots(portrait.anchors))sg.fillRect(r.x,r.y,r.w,r.h);
       sg.globalAlpha=1;sg.globalCompositeOperation='destination-out';sg.drawImage(front,0,0);
       sg.globalCompositeOperation='destination-in';sg.drawImage(out,0,0);g.drawImage(shadow,0,0);
     }
