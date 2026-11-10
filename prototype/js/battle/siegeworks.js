@@ -17,6 +17,17 @@
    many, ladder: each one's width (cells); look: each kind of wall's colours [light, mid, dark, deep] */
 const SIEGE_WALL={on:true,x:.6,thick:3,lv:[0,1,2,2],gate:4,hp:[0,260,480,720],ram:12,ramR:26,towers:12,tower:2,stairs:9,stair:2,ladders:3,ladder:1,
   look:{stake:['#cb804a','#a15735','#682a19','#3a1c10'],stone:['#d8d2c6','#b0a99c','#857e74','#4e4a45'],great:['#e4dfd4','#bfb8aa','#918a7e','#56514a']}};
+/* SIEGE_ENGINE, the siege engines (the owner, 2026-11-10: "wall collapse from siege weapons"): your camp's trebuchets (world/siege.js:
+   the first after days of the siege, one more each more days, most at most) stand back range px from the wall's outer face, gap px
+   apart, each loosing a stone every every s (its first at first s) at its mark: the section you clicked, else the weakest standing;
+   a stone flies flight s, hits its section by hit (else lands miss px off), takes dmg from it and hurts men within splash px by
+   hurt. The wall in sections of section rows between the gate and its towers, each hp[walls] strong, a tower tower times that; one
+   at nothing collapses into a rubble slope (rubble levels: climbed from either side, sheer to the walk still standing beside it),
+   its men falling, hurt by fall. def: behind walls of lv or more the defenders' mangonel on the tower nearest the gate, a stone at
+   one of your engines every every s, by hit, dmg of its hp; its tower down, it is lost */
+const SIEGE_ENGINE={on:true,days:6,more:3,most:3,range:330,gap:90,every:[8,11],first:[3,6],flight:1.8,hit:.7,miss:[26,60],dmg:[85,125],splash:22,hurt:[18,34],
+  section:5,hp:[0,220,380,520],tower:1.6,rubble:1,fall:[16,32],hp0:200,def:{lv:2,every:[10,13],first:[6,9],hit:.45,dmg:[60,90]}};
+const sRand=([a,b])=>a+Math.random()*(b-a);// (a draw between a and b: the battle's, Math.random)
 class SiegeWorks{
   static on(e){return SIEGE_WALL.on&&!!e&&e.kind==='siege'&&!!e.ref&&typeof e.ref.walled==='function'&&e.ref.walled()&&wallOf(e.ref)>0}
   // t: the holding; W, top, bot: the field; o: {ram: the ram built, seed}
@@ -30,7 +41,14 @@ class SiegeWorks{
     this.towers=T.filter(r=>r>R0&&r+S.tower-1<R1);const busy=r=>r>=this.g0-1&&r<=this.g1+1||this.towers.some(q=>r>=q-1&&r<=q+S.tower);
     this.stairs=[];for(let r=R0+3;r<R1-2;r+=S.stairs){let q=r;while(q<R1-2&&busy(q))q++;if(q<R1-2&&!this.stairs.includes(q))this.stairs.push(q)}
     let free=[];for(let r=R0+2;r<R1-1;r++)if(!busy(r)&&!this.stairs.some(q=>Math.abs(q-r)<=1))free.push(r);
-    this.ladders=[];for(let k=0;k<S.ladders&&free.length;k++){const want=R0+(R1-R0)*(k+1)/(S.ladders+1)+(R()-.5)*3;let best=free[0];for(const r of free)if(Math.abs(r-want)<Math.abs(best-want))best=r;this.ladders.push(best);free=free.filter(r=>Math.abs(r-best)>2)}}
+    this.ladders=[];for(let k=0;k<S.ladders&&free.length;k++){const want=R0+(R1-R0)*(k+1)/(S.ladders+1)+(R()-.5)*3;let best=free[0];for(const r of free)if(Math.abs(r-want)<Math.abs(best-want))best=r;this.ladders.push(best);free=free.filter(r=>Math.abs(r-best)>2)}
+    this.sections();this.engines=[];this.shots=[];this.mangonel=null;this.nEngines=Math.max(0,o.engines|0);this.aim=null}
+  // (its sections: each stretch of the walk between the gate and its towers in SIEGE_ENGINE.section rows at most, and each tower; each
+  // {r0, r1, hp, hp0, tower, down})
+  sections(){const E=SIEGE_ENGINE,h=E.hp[Math.min(3,this.w)]||E.hp[1],out=[];let run=[];
+    const flush=()=>{for(let i=0;i<run.length;i+=E.section){const r0=run[i],r1=run[Math.min(run.length,i+E.section)-1];out.push({r0,r1,hp:h,hp0:h,tower:false,down:false})}run=[]};
+    for(let r=this.R0;r<=this.R1;r++){if(r>=this.g0&&r<=this.g1||this.isTower(r)){flush();continue}if(run.length&&run[run.length-1]!==r-1)flush();run.push(r)}flush();
+    for(const q of this.towers)out.push({r0:q,r1:q+SIEGE_WALL.tower-1,hp:h*E.tower,hp0:h*E.tower,tower:true,down:false});this.secs=out}
   get x0(){return this.c0*this.cs}
   get x1(){return (this.c1+1)*this.cs}
   get gy0(){return this.g0*this.cs}
@@ -50,9 +68,50 @@ class SiegeWorks{
     for(let c=c0;c<=c1;c++){bit(at(c,this.g0),3);if(this.g0>0)bit(at(c,this.g0-1),1);bit(at(c,this.g1),1);if(this.g1<R-1)bit(at(c,this.g1+1),3)}
     return wall}
   // (the ram at work: each second, your foot at the gate's face (not running, not routing) take SIEGE_WALL.ram from it; broken, open)
-  step(dt){if(this.open||!this.ram)return;const S=SIEGE_WALL,x=this.x0,n=B.units.filter(u=>u.team===0&&u.hp>0&&!u.rout&&!u.left&&!u.s.range&&!u.hero&&u.x>x-S.ramR&&u.x<x+4&&u.y>this.gy0-6&&u.y<this.gy1+6).length;
+  // (each frame: the ram at the gate; the engines and their stones)
+  step(dt){this.ramStep(dt);this.engineStep(dt)}
+  ramStep(dt){if(this.open||!this.ram)return;const S=SIEGE_WALL,x=this.x0,n=B.units.filter(u=>u.team===0&&u.hp>0&&!u.rout&&!u.left&&!u.s.range&&!u.hero&&u.x>x-S.ramR&&u.x<x+4&&u.y>this.gy0-6&&u.y<this.gy1+6).length;
     if(!n)return;this.ramT=B.t;this.hp-=n*S.ram*dt;this.hit=(this.hit||0)+dt;if(this.hit>.5){this.hit=0;sfxAt&&sfxAt('hit',x,(this.gy0+this.gy1)/2,{vol:.6});B.floats.push({x:x-6,y:this.gy0-8,t:'Ram!',life:.8,c:'#ffd08a'})}
     if(this.hp<=0)this.breach()}
+  /* ---- the engines (SIEGE_ENGINE): yours placed as the battle musters, in a file across the field's middle range px out from the
+     wall; the defenders' mangonel on the tower nearest the gate, behind walls of SIEGE_ENGINE.def.lv or more */
+  placeEngines(){const E=SIEGE_ENGINE,n=E.on?this.nEngines:0,my=(this.gy0+this.gy1)/2,lo=this.R0*this.cs+40,hi=(this.R1+1)*this.cs-40;this.engines=[];
+    for(let i=0;i<n;i++){const y=clamp(my+(i-(n-1)/2)*E.gap,lo,hi);this.engines.push({x:Math.max(40,this.x0-E.range),y,hp:E.hp0,hp0:E.hp0,cool:sRand(E.first),shotT:-9})}
+    const q=this.w>=E.def.lv&&E.on&&this.towers.length?this.towers.slice().sort((a,b)=>Math.abs(a-this.g0)-Math.abs(b-this.g0))[0]:null;
+    this.mangonel=q!=null?{r:q,x:(this.x0+this.x1)/2,y:(q+1)*this.cs,cool:sRand(E.def.first),shotT:-9,lost:false}:null}
+  // (where your engines aim: the section you set (its click, aimAt), else the weakest standing, the nearest the gate of those)
+  mark(){if(this.aim&&!this.aim.down)return this.aim;const gm=(this.g0+this.g1)/2,up=this.secs.filter(s=>!s.down);if(!up.length)return null;
+    return up.reduce((a,s)=>{const ka=a.hp/a.hp0,ks=s.hp/s.hp0;return ks<ka-1e-6||Math.abs(ks-ka)<1e-6&&Math.abs((s.r0+s.r1)/2-gm)<Math.abs((a.r0+a.r1)/2-gm)?s:a})}
+  // (a click on the wall: the section there your engines' mark; true: taken)
+  aimAt(x,y){if(!this.engines.some(e=>e.hp>0)||x<this.x0-SIEGE_ART.foot-SIEGE_WALL.tower*this.cs||x>this.x1)return false;const r=Math.floor(y/this.cs),s=this.secs.find(q=>!q.down&&r>=q.r0&&r<=q.r1);
+    if(!s)return false;this.aim=s;toast('Your engines aim at that '+(s.tower?'tower':'stretch of wall')+'.');return true}
+  engineStep(dt){const E=SIEGE_ENGINE;if(!E.on)return;
+    for(const e of this.engines){if(e.hp<=0||(e.cool-=dt)>0)continue;const s=this.mark();if(!s){e.cool=1;continue}e.cool=sRand(E.every);e.shotT=B.t;this.loose(e,s)}
+    const m=this.mangonel,live=this.engines.filter(e=>e.hp>0);
+    if(m&&!m.lost&&live.length&&(m.cool-=dt)<=0){const D=E.def,e=live[Math.floor(Math.random()*live.length)],hit=Math.random()<D.hit;m.cool=sRand(D.every);m.shotT=B.t;
+      this.shots.push({fx:m.x,fy:m.y,tx:e.x+(hit?0:(Math.random()<.5?-1:1)*sRand(E.miss)),ty:e.y+(Math.random()-.5)*10,t:0,T:E.flight,at:hit?e:null,def:true})}
+    for(let i=this.shots.length-1;i>=0;i--){const q=this.shots[i];if((q.t+=dt)>=q.T){this.shots.splice(i,1);this.land(q)}}}
+  // (a stone loosed at section s: at a point of it, or short of it by a miss)
+  loose(e,s){const E=SIEGE_ENGINE,cs=this.cs,hit=Math.random()<E.hit,x=s.tower?this.x0-cs*.5+Math.random()*(this.x1-this.x0+cs*.5):this.x0+Math.random()*(this.x1-this.x0),y=(s.r0+Math.random()*(s.r1-s.r0+1))*cs;
+    this.shots.push({fx:e.x+10,fy:e.y-34,tx:hit?x:x-sRand(E.miss),ty:y+(hit?0:(Math.random()-.5)*20),t:0,T:E.flight,sec:hit?s:null})}
+  // (a stone down: its dust, the men by it hurt; a section's or an engine's strength taken)
+  land(q){const E=SIEGE_ENGINE;if(typeof vfx==='function')for(let k=0;k<6;k++)vfx({k:'dust',x:q.tx+(Math.random()-.5)*10,y:q.ty+(Math.random()-.5)*6,vx:(Math.random()-.5)*40,vy:-10-Math.random()*20,r:2,grow:8,life:.9,col:'#b8ab98'});
+    B.rings.push({x:q.tx,y:q.ty,r:E.splash,life:.3,max:.3,col:'200,180,150'});if(typeof sfxAt==='function')sfxAt('hit',q.tx,q.ty,{vol:.9});
+    for(const u of B.units)if(u.hp>0&&!u.left&&Math.hypot(u.x-q.tx,u.y-q.ty)<E.splash)this.hurt(u,sRand(E.hurt));
+    if(q.def){const e=q.at;if(e&&e.hp>0&&(e.hp-=sRand(E.def.dmg))<=0){e.hp=0;toast('A trebuchet is smashed!','bad');log('The defenders\' mangonel smashes one of your trebuchets.','bad','war')}return}
+    const s=q.sec;if(!s||s.down)return;s.hp-=sRand(E.dmg);if(s.hp<=0)this.collapse(s)}
+  // (hurt where he stands: a stone, a fall; nobody's blow)
+  hurt(u,amt){Actor.of(u).wound(amt,1,'blunt',null,true)}
+  /* (a section's fall: its cells a rubble slope of SIEGE_ENGINE.rubble levels (none for a palisade's one), its faces and the tower's
+     rock gone, sheer to the walk still standing beside it; its men falling; the ways and sight made again; every defender roused) */
+  collapse(s){if(s.down)return;s.down=true;s.hp=0;const T=B.terrain,C=T.C,R=T.R,E=SIEGE_ENGINE,rub=Math.min(E.rubble,Math.max(0,this.L-1)),cs=this.cs,at=(c,r)=>r*C+c,bit=(i,q)=>{T.wall[i]|=1<<q};
+    for(let r=s.r0;r<=s.r1;r++)for(let c=this.c0-1;c<=this.c1+1;c++){const i=at(c,r);T.kind[i]=TKIND.open;T.lvl[i]=c>=this.c0&&c<=this.c1?rub:0;if(T.rockH)T.rockH[i]=0;if(T.wall)T.wall[i]=0}
+    if(T.wall)for(let c=this.c0;c<=this.c1;c++){if(s.r0>0&&T.lvl[at(c,s.r0-1)]>rub){bit(at(c,s.r0),3);bit(at(c,s.r0-1),1)}if(s.r1<R-1&&T.lvl[at(c,s.r1+1)]>rub){bit(at(c,s.r1),1);bit(at(c,s.r1+1),3)}}
+    const y0=s.r0*cs,y1=(s.r1+1)*cs;for(const u of B.units)if(u.hp>0&&!u.left&&u.y>=y0&&u.y<y1&&u.x>=this.x0-cs&&u.x<this.x1+cs)this.hurt(u,sRand(E.fall));
+    if(s.tower&&this.mangonel&&this.mangonel.r===s.r0)this.mangonel.lost=true;if(this.aim===s)this.aim=null;
+    T.routes.build(T.rows[0],T.rows[1]);T.index();if(B.sight&&B.sight.fogCast)B.sight.fogCast.clear();if(this.art)this.art.rubble(s);
+    for(const g of Object.values(B.groups))if(g.team!==0)g.roused=true;
+    const what=s.tower?'A tower':'The wall';toast(what+' comes down!','good');log(what+' of '+this.t.name+' comes down under your engines.','good','war');battleEvent('breach',{text:what+' is down',team:0})}
   // the gate gives way: its cells open ground, the ways and sight made again; every defender roused
   breach(){if(this.open)return;this.open=true;this.hp=0;const T=B.terrain,C=T.C;
     for(let r=this.g0;r<=this.g1;r++)for(let c=this.c0;c<=this.c1;c++){const i=r*C+c;T.kind[i]=TKIND.open;T.lvl[i]=0;if(T.rockH)T.rockH[i]=0}
@@ -71,7 +130,7 @@ class SiegeArt{
   constructor(w,base){this.w=w;this.base=base;this.cv=null;const t=w.t,A=TOURNEY_ARENA.walls,cul=holdingCulture(t),own=t.owner&&FACS[t.owner];
     this.cul=cul;this.col=own?own.col:'#9a9a9a';this.dev=own&&t.owner!=='player'?t.owner:'star';
     const st=A[cul]&&A[cul].kind==='stone'?A[cul]:A.vale,wood=A[cul]&&A[cul].kind!=='stone'?A[cul]:A.timber;
-    this.C=w.kind==='stake'?wood.c:w.kind==='great'?st.c.map(c=>shade(c,1.06)):st.c;this.trim=(w.kind==='stake'?wood:st).trim;this.wood=wood.c;this.props=[]}
+    this.C=w.kind==='stake'?wood.c:w.kind==='great'?st.c.map(c=>shade(c,1.06)):st.c;this.trim=(w.kind==='stake'?wood:st).trim;this.wood=wood.c;this.props=[];w.art=this}
   *paintSteps(){const w=this.w,cv=mkcv(BW,BH),g=cv.getContext('2d'),cs=w.cs,C=this.C,x0=w.x0,x1=w.x1,y0=w.R0*cs,y1=(w.R1+1)*cs,A=SIEGE_ART;
     const skip=y=>this.gateRow(y)||w.isTower(Math.floor(y/cs));
     // (its shadow on the yard, soft)
@@ -116,7 +175,15 @@ class SiegeArt{
     rect(g,stake?'#3a2a1a':'#4a4440',W2-14,ty+8,6,5);rect(g,'#2a2420',W2-13,ty+9,4,3);// (a hatch)
     if(this.trim)rect(g,this.trim,0,fy-1,W2,1);
     const b=bannerSprite({k:'banner',col:this.col,dev:this.dev},0);g.drawImage(b,8-b.px,ty+6-b.py);
-    return{dk:6,x:X+W2/2,y:Y+h,s:cv,dx:X,dy:Y-H-FL,box:[X,Y-H-FL+8,X+W2,Y+h]}}
+    // (the defenders' mangonel on it: its frame and its arm, cocked)
+    if(w.w>=SIEGE_ENGINE.def.lv&&SIEGE_ENGINE.on&&w.towers.slice().sort((a,b)=>Math.abs(a-w.g0)-Math.abs(b-w.g0))[0]===r){const mx=W2/2-6,my=ty+h/2-4,Wd=this.wood;
+      rect(g,Wd[3],mx,my+6,14,4);rect(g,Wd[1],mx+1,my+6,12,2);rect(g,Wd[2],mx+2,my,2,7);rect(g,Wd[2],mx+10,my,2,7);rect(g,Wd[0],mx+2,my,10,2);rect(g,Wd[1],mx+5,my-6,2,9);rect(g,'#5a5a60',mx+4,my-8,4,3)}
+    return{dk:6,x:X+W2/2,y:Y+h,s:cv,dx:X,dy:Y-H-FL,box:[X,Y-H-FL+8,X+W2,Y+h],r}}
+  // (a section down (SiegeWorks collapse): its stretch of the layer a slope of rubble, its blocks tumbled out on both sides, its dust;
+  // a tower's standing prop gone)
+  rubble(sec){const w=this.w,cs=w.cs,C=this.C,g=this.cv&&this.cv.getContext('2d'),F=SIEGE_ART.foot;if(!g)return;const X0=w.x0-F-(sec.tower?cs:0),X1=w.x1+4,Y0=sec.r0*cs,Y1=(sec.r1+1)*cs,s=w.seed+sec.r0*31;
+    rect(g,shade(C[2],.82),X0,Y0,X1-X0,Y1-Y0);for(let k=0;k<(Y1-Y0)*(X1-X0)/14;k++){const x=X0-8+hs(k,1,s)*(X1-X0+16),y=Y0+hs(k,2,s)*(Y1-Y0),z=1+Math.floor(hs(k,3,s)*4),c=C[Math.floor(hs(k,4,s)*4)];rect(g,'rgba(10,12,18,.35)',x+1,y+1,z,z-1||1);rect(g,c,x,y,z,Math.max(1,z-1))}
+    for(let k=0;k<5;k++)rect(g,'rgba(10,12,18,.28)',X0+hs(k,5,s)*(X1-X0),Y0,2,Y1-Y0);if(sec.tower)this.props=this.props.filter(p=>p.r!==sec.r0)}
   // (the field in view: the ground, the wall's layer, the gate (its doors and portcullis whole, battered or broken), the ram)
   drawView(g,x0,y0,x1,y1,z){const L=this.base.ground||this.base;if(L.drawView)L.drawView(g,x0,y0,x1,y1,z);else drawInView(L);if(!this.cv)return;
     const a=Math.max(0,Math.floor(x0)),b=Math.max(0,Math.floor(y0)),c=Math.min(BW,Math.ceil(x1)),d=Math.min(BH,Math.ceil(y1));if(c>a&&d>b)g.drawImage(this.cv,a,b,c-a,d-b,a,b,c-a,d-b);
@@ -127,21 +194,39 @@ class SiegeArt{
       for(let y=Y0+4;y<Y1-4;y+=8)rect(g,'#c8c8d0',X+2+sh,y,1,1);if(k<.66)rect(g,'#0a0806',X+2,Y0+10,1,Math.round((Y1-Y0-20)*(1-k)));if(k<.33)rect(g,'#0a0806',X+4,Y0+18,1,Math.round((Y1-Y0-28)*(1-k)));
       for(let y=Y0;y<Y1;y+=4)rect(g,'#2a2a30',X+12,y,4,1);rect(g,'#3a3a42',X+11,Y0,1,Y1-Y0);rect(g,'#3a3a42',X+16,Y0,1,Y1-Y0)}
     else{for(let k=0;k<9;k++){const px=X-14+Math.round(hs(k,1,w.seed)*24),py=Y0+Math.round(hs(k,2,w.seed)*(Y1-Y0-4));rect(g,Wd[k%2?1:2],px,py,6+(k%3),2);rect(g,Wd[3],px,py+2,6+(k%3),1)}}
+    // (each standing section's cracks as its strength goes: zigzags down its outer face)
+    for(const q of w.secs||[]){if(q.down||q.hp>=q.hp0)continue;const n=Math.ceil((1-q.hp/q.hp0)*4),y0=q.r0*w.cs,y1=(q.r1+1)*w.cs;
+      for(let k=0;k<n;k++){let x=w.x0-2+Math.round(hs(k,q.r0,w.seed)*8),y=y0+hs(k,q.r1,w.seed)*(y1-y0-10);for(let j=0;j<6;j++){rect(g,'#120e0a',x,y,1,2);x+=hs(k,j,w.seed)<.5?-1:1;y+=2}}}
+    // (your trebuchets: their frame, the arm swung up as it looses and back down to cock, the counterweight; smashed, a heap)
+    for(const e of w.engines||[])this.trebuchet(g,e,now);
+    // (stones in flight: high in their arc, their shadow on the ground under them)
+    for(const q of w.shots||[]){const k=q.t/q.T,x=q.fx+(q.tx-q.fx)*k,y=q.fy+(q.ty-q.fy)*k,h=Math.sin(Math.PI*k)*Math.min(160,Math.abs(q.tx-q.fx)*.35);
+      rect(g,'rgba(10,12,18,.25)',Math.round(x-2),Math.round(y),4,2);rect(g,'#6e665e',Math.round(x-2),Math.round(y-h-3),5,5);rect(g,'#9a9286',Math.round(x-2),Math.round(y-h-3),3,2)}
     if(w.ram){const swing=!!B&&B.t-(w.ramT??-9)<.4&&!w.open?Math.round(3*Math.sin(now*6)):0,rx=X-40,ry=(Y0+Y1)/2;
       // (the ram: a shed on wheels, its roof of hides, the beam slung under it, its iron head toward the gate)
       rect(g,'rgba(10,12,18,.3)',rx+2,ry+10,34,4);for(const wx of [rx+4,rx+26])for(const wy of [ry-11,ry+8]){rect(g,'#2a1a0c',wx,wy,6,4);rect(g,'#6a4a2a',wx+1,wy+1,4,2)}
       rect(g,'#3a2614',rx+swing+16,ry-2,26,4);rect(g,'#6a6a72',rx+swing+40,ry-3,6,6);rect(g,'#9a9aa2',rx+swing+41,ry-3,4,1);
       rect(g,'#2a1a0c',rx,ry-10,34,20);for(let k=0;k<34;k+=4)rect(g,k%8?'#8a6a44':'#a07a4c',rx+k,ry-9,3,18);rect(g,'#c8a87a',rx,ry-10,34,1);rect(g,'#4a3020',rx,ry+9,34,1)}}
+  trebuchet(g,e,now){const Wd=this.wood,x=Math.round(e.x),y=Math.round(e.y);rect(g,'rgba(10,12,18,.3)',x-16,y+2,36,5);
+    if(e.hp<=0){for(let k=0;k<6;k++)rect(g,Wd[k%3],x-14+k*5,y-4+((k*7)%5),12,3);rect(g,'#3a2a1a',x-4,y-10,3,10);return}
+    const since=B?B.t-e.shotT:9,R0=3.5,R1=1,a=since<.35?R0+(R1-R0)*(since/.35):since<3?R1+(R0-R1)*Math.min(1,(since-.35)/2.6):R0;// (its long arm back and down at rest (west, from the wall), up over the top to the east as it looses, then wound back)
+    rect(g,Wd[3],x-17,y-3,34,5);rect(g,Wd[1],x-16,y-3,32,2);rect(g,Wd[0],x-16,y-3,32,1);for(const wx of [x-15,x+9]){rect(g,'#2a1a0c',wx,y,6,5);rect(g,'#6a4a2a',wx+1,y+1,4,3);rect(g,'#9a7a4a',wx+2,y+2,2,1)}// (its base of squared timbers and its wheels)
+    for(const s of [-1,1])for(let k=0;k<31;k++){const lx=x+s*Math.round(10-k*.3);rect(g,s<0?Wd[0]:Wd[2],lx,y-3-k,2,1);rect(g,Wd[3],lx+(s<0?2:-1),y-3-k,1,1)}// (its A-frame, two timbers a side, lit on the west)
+    rect(g,Wd[2],x-7,y-16,14,2);rect(g,Wd[1],x-6,y-16,12,1);rect(g,Wd[3],x-3,y-35,6,4);rect(g,'#5a5a62',x-1,y-34,2,2);// (its brace across the frame, the axle block and its iron pin)
+    const ax=x,ay=y-33,L1=32,L2=11,ca=Math.cos(a),sa=Math.sin(a);for(let k=-L2;k<=L1;k++){const px=Math.round(ax+ca*k),py=Math.round(ay-sa*k);rect(g,k<0?Wd[2]:Wd[1],px,py,2,2);rect(g,Wd[0],px,py,1,1)}// (its arm: long to the sling, short to the weight)
+    {const tx=Math.round(ax+ca*L1),ty=Math.round(ay-sa*L1),hang=since<.35?0:8;rect(g,'#d8c8a0',tx,ty,1,hang+2);if(hang)rect(g,'#6e665e',tx-1,ty+hang+2,3,3)}// (its sling, and the next stone in it once wound back)
+    const wx=Math.round(ax-ca*L2),wy=Math.round(ay+sa*L2);rect(g,'#2e2e34',wx-5,wy,10,9);rect(g,'#4e4e56',wx-4,wy+1,8,3);rect(g,'#7a6a50',wx-5,wy+3,10,1);rect(g,'#7a6a50',wx-5,wy+7,10,1);// (the counterweight box, iron-banded)
+    if(e.hp<e.hp0)rect(g,'#120e0a',x-6,y-12,1,6)}
   get mini(){if(this._mini||!this.cv)return this._mini||null;const cs=TERRAIN.cs,C=Math.ceil(BW/cs),R=Math.ceil(BH/cs),cv=mkcv(C,R),g=cv.getContext('2d');g.imageSmoothingEnabled=true;
     g.fillStyle='rgb(84,110,62)';g.fillRect(0,0,C,R);g.drawImage(this.cv,0,0,BW,BH,0,0,C,R);g.fillStyle=this.C[1];for(const r of this.w.towers)g.fillRect(this.w.c0-1,r,4,SIEGE_WALL.tower);return this._mini=cv}
 }
 /* ---------- the assault (startBattle: SiegeWorks.on): BattleSetup's steps against the wall ---------- */
 class SiegeSetup extends BattleSetup{
   constructor(opts){super(opts);const e=G.enc,t=e.ref,s=mySiege(t);this.ram=!!G.capWith||!!s&&s.days>=RAM_DAYS;this.seed=Math.floor(hash(t.tx||0,t.ty||0,431)*4294967296)>>>0}
-  groundSpec(){const E=this.env;E.t=T_OPEN;E.name='Shadow of the walls';E.text='The walls of '+G.enc.ref.name+': climb them by your ladders'+(this.ram?', or break the gate with the ram':'')+'; their archers hold the wall-walk.';return{siege:true,seed:this.seed}}
-  terrain(){const FI=this.field;this.works=new SiegeWorks(G.enc.ref,BW,FI.top,FI.bot,{ram:this.ram,seed:this.seed});return this.TR=buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot,siege:this.works})}
+  groundSpec(){const E=this.env,n=siegeEngines(G.enc.ref);E.t=T_OPEN;E.name='Shadow of the walls';E.text='The walls of '+G.enc.ref.name+': climb them by your ladders'+(this.ram?', or break the gate with the ram':'')+(n?'; your '+(n>1?n+' trebuchets':'trebuchet')+' batter the wall (click a stretch of it to aim them)':'')+'; their archers hold the wall-walk.';return{siege:true,seed:this.seed}}
+  terrain(){const FI=this.field;this.works=new SiegeWorks(G.enc.ref,BW,FI.top,FI.bot,{ram:this.ram,seed:this.seed,engines:siegeEngines(G.enc.ref)});return this.TR=buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot,siege:this.works})}
   *paint(){const base=yield* arenaSteps(this.env.c);this.painted=yield* new SiegeArt(this.works,base).paintSteps()}
-  muster(){super.muster();B.works=this.works;B.holds=true;for(const u of B.units)if(isRider(u))Dismount.down(u,'none');this.post()}
+  muster(){super.muster();B.works=this.works;B.holds=true;for(const u of B.units)if(isRider(u))Dismount.down(u,'none');this.post();this.works.placeEngines()}
   /* (the defenders at their posts: shooters along the wall-walk, clear of the gate and towers, in a file facing out; foot behind
      the gate; the rest (lords, characters) in the yard behind them) */
   post(){const w=this.works,cs=w.cs,gs=Object.values(B.groups).filter(g=>g.team!==0&&grpUnits(g.id).length),arc=gs.filter(g=>g.role==='arc'||g.role==='mag'),foot=gs.filter(g=>g.role==='inf'||g.role==='cav'),rest=gs.filter(g=>!arc.includes(g)&&!foot.includes(g));

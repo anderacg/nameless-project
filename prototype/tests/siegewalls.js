@@ -31,6 +31,22 @@ Kit.suite(({ok,info})=>{
    w.hp=1;w.step(1);const after=T2.routes.wayLen(g0,g1,'foot');
    ok(w.open&&T2.kind[mid(w.g0)+w.c0]===t.TKIND.open&&after<straight&&Object.values(b.groups).filter(g=>g.team===1).every(g=>g.roused),'broken: the gate a way through ('+Math.round(straight)+' → '+Math.round(after)+' px), every defender roused');
    done()}
+  // ---- siege engines (SIEGE_ENGINE): trebuchets from the camp's days, stones at the wall's sections, a section brought down
+  {const E=t.SIEGE_ENGINE,n=d=>{P.siege={town:h.name,days:d};return t.siegeEngines(h)};
+   ok(n(E.days-1)===0&&n(E.days)===1&&n(E.days+E.more)===2&&n(E.days+E.more*9)===E.most,'trebuchets by the siege\'s day: none before day '+E.days+', one more every '+E.more+', '+E.most+' at most');
+   const b=assault(E.days+E.more),w=b.works,T2=b.terrain,cs=w.cs,C=T2.C;
+   ok(w.engines.length===2&&w.engines.every(e=>e.hp>0&&e.x<w.x0-E.range+1)&&w.secs.length>4&&w.secs.some(q=>q.tower),'two trebuchets back from the wall, its stretches and towers each a section ('+w.secs.length+')');
+   ok(t.wallOf(h)>=E.def.lv?!!w.mangonel&&w.towers.includes(w.mangonel.r):!w.mangonel,'the defenders\' mangonel on a tower behind walls of stone or better');
+   const sec=w.secs.find(q=>!q.tower&&q.r1<w.g0-2),y=(sec.r0+sec.r1+1)/2*cs;ok(w.aimAt((w.x0+w.x1)/2,y)&&w.mark()===sec,'a click on a stretch of the wall: your engines\' mark');
+   const h0=sec.hp;w.land({tx:(w.x0+w.x1)/2,ty:y,sec});ok(sec.hp<h0&&!sec.down,'a stone on it: its strength taken ('+Math.round(h0)+' → '+Math.round(sec.hp)+')');
+   const out={x:w.x0-60,y},yard={x:w.x1+60,y},before=T2.routes.wayLen(out,yard,'foot'),on=b.units.find(u=>u.team===1&&u.x>=w.x0&&u.x<w.x1),hp1=on&&on.hp;if(on){on.x=(w.x0+w.x1)/2;on.y=y}
+   sec.hp=1;w.land({tx:(w.x0+w.x1)/2,ty:y,sec});const after=T2.routes.wayLen(out,yard,'foot'),mid=Math.floor(y/cs)*C+w.c0;
+   ok(sec.down&&T2.kind[mid]===t.TKIND.open&&T2.lvl[mid]<=E.rubble&&after<before,'brought down: a rubble slope, a way over it ('+Math.round(before)+' → '+Math.round(after)+' px)');
+   ok(!on||on.hp<hp1,'its men fall with it, hurt');
+   if(w.mangonel){const e=w.engines[0],e0=e.hp;w.land({def:true,at:e,tx:e.x,ty:e.y});ok(e.hp<e0,'the mangonel\'s stone on a trebuchet: its strength taken');
+    const tw=w.secs.find(q=>q.tower&&q.r0===w.mangonel.r),np=w.art.props.length;tw.hp=1;w.land({tx:w.x0,ty:(tw.r0+.5)*cs,sec:tw});ok(tw.down&&w.mangonel.lost&&w.art.props.length===np-1,'its tower brought down: the tower gone, the mangonel with it')}
+   for(let i=0;i<40;i++)t.updateBattle(.25);ok(w.shots.length>0||w.engines.some(e=>e.shotT>0),'in the fight, the trebuchets loose their stones');
+   done()}
   // ---- no ram yet: the gate holds
   {const b=assault(t.LADDER_DAYS),w=b.works;ok(w&&!w.ram,'before the ram is built ('+t.LADDER_DAYS+' days): ladders only');const men=b.units.filter(u=>u.team===0&&!u.hero&&!u.s.range).slice(0,4);men.forEach((u,i)=>{u.x=w.x0-8;u.y=w.gy0+8+i*12});const hp0=w.hp;w.step(2);ok(w.hp===hp0,'the gate holds');done()}
   // ---- a village (no walls), and the switch off: the open field

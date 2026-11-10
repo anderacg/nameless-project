@@ -4,6 +4,8 @@
 // weakens the walls; from STARVE_DAY on the garrison starves, and a garrison of one surrenders.
 // Holdings carry: sacked / raided / turmoil (the day each ends). Holdings you own have owner 'player'.
 const LADDER_DAYS=2,RAM_DAYS=4,STARVE_DAY=6;
+// (your camp's trebuchets by its day: the first after SIEGE_ENGINE.days, one more each .more days, .most at most: battle/siegeworks.js)
+const siegeEngines=t=>{const s=mySiege(t),E=SIEGE_ENGINE;return E.on&&s&&s.days>=E.days?Math.min(E.most,1+Math.floor((s.days-E.days)/E.more)):0};
 // Any holding with walls (a palisade or better: wallOf) is taken by siege: a camp, ladders, then the assault. One without walls
 // (a village that never built them, or a castle whose walls were breached) is raided or seized outright.
 const walled=t=>t.walled();// (the old names: holdings.js Holding)
@@ -74,11 +76,12 @@ function showSiege(msg){
     body+='<p>'+t.name+' has no walls. You can raid it for food and coin, or seize it outright. Either way, its people will hate you.</p>';
     btns=btn('sg-raid','Raid',troopCount()<3?'Need 3 troops':'',true)+btn('sg-raid-auto','Raid (auto)',troopCount()<3?'Need 3 troops':'')+btn('sg-assault','Seize it',troopCount()<3?'Need 3 troops':'')+btn('sg-auto','Seize (auto)',troopCount()<3?'Need 3 troops':'');
   }else if(!s){
-    body+='<p>Make camp outside the walls. Your band builds ladders in '+LADDER_DAYS+' days and a ram in '+RAM_DAYS+'. Its stores hold food for about '+foodDays(t)+' days; then the garrison starves. The '+f.n+' will send its lords to break the siege.</p>';
+    body+='<p>Make camp outside the walls. Your band builds ladders in '+LADDER_DAYS+' days, a ram in '+RAM_DAYS+' and a trebuchet in '+SIEGE_ENGINE.days+' (one more every '+SIEGE_ENGINE.more+' days after, '+SIEGE_ENGINE.most+' at most). Its stores hold food for about '+foodDays(t)+' days; then the garrison starves. The '+f.n+' will send its lords to break the siege.</p>';
     btns=btn('sg-camp','Make siege camp',troopCount()<5?'Need 5 troops':'',true);
     body+=joinHtml(t);
   }else{
     body+='<p>Day '+s.days+' of the siege. '+(s.days>=RAM_DAYS?'Ladders and a ram are ready.':s.days>=LADDER_DAYS?'Ladders are ready. The ram needs '+(RAM_DAYS-s.days)+' more days.':'Ladders need '+(LADDER_DAYS-s.days)+' more days.')+
+      (siegeEngines(t)?' '+(siegeEngines(t)>1?siegeEngines(t)+' trebuchets stand':'A trebuchet stands')+' ready to batter the walls.':s.days>=RAM_DAYS&&SIEGE_ENGINE.on?' A trebuchet needs '+(SIEGE_ENGINE.days-s.days)+' more days.':'')+
       (foodStock(t)<=0?' The garrison is starving.':' Food inside for about '+foodDays(t)+' more days.')+' Walking away from the walls lifts the siege.</p>';
     const no=s.days<LADDER_DAYS?'No ladders yet':'';
     btns=btn('sg-assault','Assault the walls',no,true)+btn('sg-auto','Assault (auto)',no)+btn('sg-wait','Wait in camp')+btn('sg-lift','Lift the siege');
@@ -122,6 +125,7 @@ function siegeDay(){
   s.days++;train('eng',4);if(Math.random()<.1*skill('eng')){s.days++;log('Your engineers work fast at '+t.name+'.','good','war')}
   if(s.days===LADDER_DAYS)log('Ladders are ready at '+t.name+'. You can assault the walls.','gold','war');
   if(s.days===RAM_DAYS)log('Your ram is built. The walls of '+t.name+' will not hold as well.','gold','war');
+  {const E=SIEGE_ENGINE;if(E.on&&s.days>=E.days&&(s.days-E.days)%E.more===0&&(s.days-E.days)/E.more<E.most)log((s.days===E.days?'A trebuchet is built':'Another trebuchet is built')+' before '+t.name+'. Its stones will bring the walls down.','gold','war')}
   if(foodStock(t)<=0&&t.gar>1){t.gar--;worldEvent({text:'The garrison of '+t.name+' starves. '+t.gar+' defenders left.',involved:true,news:['starving',t,{town:t.name,fac:t.owner}]})}// (your siege: at once, and news for the rest: worldlog.js)
   if(t.gar<=1&&!siegeDefenders(t).lords.length){log(t.name+' surrenders!','good','war');P.renown+=5;G.capture=t;t.gar=0}
 }
