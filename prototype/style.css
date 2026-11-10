@@ -335,7 +335,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .lgroup[hidden]{display:none}
 .lvup{width:58px;height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0;background:var(--hud-face);border:2px solid var(--accent);border-radius:var(--r-md);box-shadow:var(--float);color:var(--accent);font:700 var(--fs-md)/1 Arial,sans-serif;cursor:pointer;animation:lvup-blink 1.2s ease-in-out infinite}
 .lvup small{font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg)}
-.lvup:hover,.lvup:focus-visible{background:var(--accent);color:var(--accent-ink)}.lvup:hover small,.lvup:focus-visible small{color:var(--accent-ink)}
+.lvup:focus-visible{background:var(--accent);color:var(--accent-ink)}.lvup:focus-visible small{color:var(--accent-ink)}
+@media (hover:hover){.lvup:hover{background:var(--accent);color:var(--accent-ink)}.lvup:hover small{color:var(--accent-ink)}}
 @keyframes lvup-blink{0%,100%{border-color:var(--accent);box-shadow:var(--float),0 0 0 0 rgba(240,200,90,0)}50%{border-color:var(--trim-hi);box-shadow:var(--float),0 0 14px 3px rgba(240,200,90,.65)}}
 @media (prefers-reduced-motion:reduce){.lvup{animation:none}}
 .screen:not([data-mode="world"]) .lgroup{display:none}
@@ -429,7 +430,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .qt-pop{position:relative;padding-right:24px;border-color:var(--trim-hi);transition:opacity .3s,transform .3s}
 /* its close mark: small, in its top corner */
 .qt-x{position:absolute;top:2px;right:3px;width:20px;height:20px;padding:0;border:0;background:none;color:var(--muted);font:700 15px/20px Arial,sans-serif;cursor:pointer;border-radius:var(--r-sm)}
-.qt-x:hover,.qt-x:focus-visible{color:var(--fg);background:var(--shade)}
+.qt-x:focus-visible{color:var(--fg);background:var(--shade)}@media (hover:hover){.qt-x:hover{color:var(--fg);background:var(--shade)}}
 .qt-pop b{display:block;font-size:var(--fs-md);margin-bottom:6px}
 .qt-pop.going{opacity:0;transform:translateX(-10px)}
 .qt-btns{display:flex;gap:6px}
@@ -1181,7 +1182,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .panel .fb-bag-find .find input{padding:3px 0}.panel .fb-shell .fb-bag-footer{padding:2px 6px}.panel .fb-shell .fb-bag-footer .btn{min-height:28px;padding:3px 8px}}
 .slot-menu{position:fixed;z-index:80;min-width:150px;display:flex;flex-direction:column;padding:4px;border:1px solid var(--trim);border-radius:6px;background:#18130d;box-shadow:0 8px 20px rgba(0,0,0,.65)}
 .slot-menu .sm-i{all:unset;box-sizing:border-box;padding:7px 12px;border-radius:4px;font-size:var(--fs-sm);color:var(--fg);cursor:pointer}
-.slot-menu .sm-i:hover:not([disabled]),.slot-menu .sm-i:focus-visible{background:rgba(215,179,107,.18);color:#fff0c7}
+.slot-menu .sm-i:focus-visible{background:rgba(215,179,107,.18);color:#fff0c7}@media (hover:hover){.slot-menu .sm-i:hover:not([disabled]){background:rgba(215,179,107,.18);color:#fff0c7}}
 .slot-menu .sm-i[disabled]{color:var(--muted);cursor:default}.slot-menu .sm-i.danger{color:#e89a8a}
 .slot-ghost{position:fixed;z-index:70;width:44px;height:44px;margin:-22px 0 0 -22px;display:flex;align-items:center;justify-content:center;border:2px solid var(--trim-hi);border-radius:6px;background:rgba(24,19,13,.9);box-shadow:0 6px 14px rgba(0,0,0,.6);pointer-events:none}
 .slot.dragging{opacity:.4}.slot.drop-over{outline:2px solid var(--trim-hi);outline-offset:1px}
@@ -1256,7 +1257,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .nb-note[data-tear="2"]{clip-path:polygon(0.0% 0.4%,5.6% 0.8%,11.1% 1.1%,16.7% 0.0%,22.2% 0.7%,27.8% 0.6%,33.3% 0.6%,38.9% 0.0%,44.4% 0.0%,50.0% 0.1%,55.6% 0.7%,61.1% 0.0%,66.7% 0.3%,72.2% 0.0%,77.8% 0.9%,83.3% 1.0%,88.9% 0.2%,94.4% 1.1%,100.0% 0.0%,99.3% 6.2%,99.2% 12.5%,100.0% 18.8%,99.4% 25.0%,99.6% 31.2%,99.1% 37.5%,100.0% 43.8%,99.7% 50.0%,99.2% 56.2%,99.5% 62.5%,100.0% 68.8%,100.0% 75.0%,99.1% 81.2%,99.8% 87.5%,99.0% 93.8%,100.0% 100.0%,95.5% 98.9%,90.9% 98.9%,86.4% 98.6%,81.8% 100.0%,77.3% 99.6%,72.7% 98.8%,68.2% 97.0%,63.6% 99.3%,59.1% 98.5%,54.5% 99.8%,50.0% 99.0%,45.5% 98.8%,40.9% 100.0%,36.4% 99.4%,31.8% 98.6%,27.3% 98.3%,22.7% 98.6%,18.2% 100.0%,13.6% 98.9%,9.1% 100.0%,4.5% 99.3%,0.4% 100.0%,0.4% 93.8%,0.0% 87.5%,0.5% 81.2%,0.9% 75.0%,0.0% 68.8%,0.0% 62.5%,1.8% 56.2%,3.6% 50.0%,0.9% 43.8%,0.0% 37.5%,0.6% 31.2%,0.1% 25.0%,0.2% 18.8%,0.0% 12.5%,0.5% 6.2%)}
 .nb-note[data-tear="3"]{clip-path:polygon(0.0% 0.7%,5.7% 0.9%,11.4% 0.0%,17.1% 1.1%,22.9% 0.0%,28.6% 0.6%,34.3% 0.0%,40.0% 0.7%,45.7% 0.0%,51.4% 0.7%,57.1% 0.7%,62.9% 0.7%,68.6% 0.2%,74.3% 0.9%,79.4% 0.7%,83.5% 2.6%,86.5% 5.9%,89.4% 9.2%,92.9% 11.8%,96.5% 14.3%,100.0% 17.0%,99.1% 22.9%,100.0% 28.9%,99.4% 34.8%,99.2% 40.7%,100.0% 46.6%,100.0% 52.6%,100.0% 58.5%,99.7% 64.4%,99.9% 70.4%,99.2% 76.3%,99.1% 82.2%,100.0% 88.1%,99.2% 94.1%,100.0% 100.0%,95.5% 100.0%,90.9% 99.2%,86.4% 98.9%,81.8% 98.9%,77.3% 98.2%,72.7% 97.1%,68.2% 98.1%,63.6% 98.5%,59.1% 98.6%,54.5% 100.0%,50.0% 99.6%,45.5% 100.0%,40.9% 100.0%,36.4% 99.6%,31.8% 99.2%,27.3% 97.3%,22.7% 99.1%,18.2% 99.5%,13.6% 98.5%,9.1% 99.0%,4.5% 99.5%,0.0% 100.0%,0.5% 93.8%,0.0% 87.5%,0.5% 81.2%,0.5% 75.0%,0.1% 68.8%,0.7% 62.5%,0.1% 56.2%,0.2% 50.0%,0.7% 43.8%,0.0% 37.5%,0.0% 31.2%,0.4% 25.0%,0.2% 18.8%,0.8% 12.5%,0.0% 6.2%)}
 .nb-note .btn{background:rgba(120,60,20,.12);border:2px solid #5a2e10;border-radius:2px;color:#3a1a08;font-family:Georgia,'Times New Roman',serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;box-shadow:none;rotate:-2deg;text-shadow:none}
-.nb-note .btn:hover,.nb-note .btn:focus-visible{background:rgba(120,60,20,.24);border-color:#3a1a08;color:#2a1004}
+.nb-note .btn:focus-visible{background:rgba(120,60,20,.24);border-color:#3a1a08;color:#2a1004}@media (hover:hover){.nb-note .btn:hover{background:rgba(120,60,20,.24);border-color:#3a1a08;color:#2a1004}}
 .nb-note .btn:disabled{opacity:.55}
 .nb-note::before{content:'';position:absolute;top:7px;left:50%;width:9px;height:9px;margin-left:-4px;border-radius:50%;
   background:radial-gradient(circle at 35% 35%,#a08060,#5a3a22 50%,#2a1a10);box-shadow:0 1px 1px rgba(0,0,0,.6),0 0 0 2px rgba(110,60,20,.35)}
