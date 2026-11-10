@@ -22,7 +22,8 @@ const lotDrop=(t,l)=>Layout.of(t).drop(l);
 // (centreBox), its own centre laid over it: a neighbour laid first keeps off it, its lots and its estates' tracks (a hamlet stands
 // just past a holding's reach, worldplace.js genHamlets: an estate's track ran through Brookford's yard), and the ground before its
 // gate, 3 tiles across on the gate's row and the one out from it: its way out (Mossdell's was walled in by its own lots)
-function occReserve(){if(typeof Standards!=='undefined')Standards.reserve();for(const c of CAMP_SPOTS)for(let j=-2;j<=1;j++)for(let i=-1;i<=2;i++)if(!OCC[(c.ty+j)*MW+c.tx+i])OCC[(c.ty+j)*MW+c.tx+i]=-2;
+// (fresh: a world just reset or loaded, its standards not yet placed or settled: theirs kept by world/standards.js then)
+function occReserve(fresh){if(!fresh&&typeof Standards!=='undefined')Standards.reserve();for(const c of CAMP_SPOTS)for(let j=-2;j<=1;j++)for(let i=-1;i<=2;i++)if(!OCC[(c.ty+j)*MW+c.tx+i])OCC[(c.ty+j)*MW+c.tx+i]=-2;
   for(const t of TOWNS){const b=centreBox(t);for(let y=b.y;y<b.y+b.n+2;y++)for(let x=y<b.y+b.n?b.x:t.tx-1;x<(y<b.y+b.n?b.x+b.n:t.tx+2);x++)if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-2}}
 // bandits keep their distance from the estates: no estate's building or field within BANDIT_GAP tiles of a bandit camp or hideout
 // (estates avoid the camps and hideouts there are; hideouts are placed after the estates and avoid them, sites.js)
@@ -32,7 +33,7 @@ const nearBandits=(x,y,r)=>banditSpots().some(s=>Math.hypot(s.tx-x,s.ty-y)<r);
 // is any estate's building or field within r tiles of (tx, ty)
 function estateNear(tx,ty,r){for(let y=ty-r;y<=ty+r;y++)for(let x=tx-r;x<=tx+r;x++){const id=occAt(x,y),l=id>0&&LOT[id];if(l&&ESTATES[l.k]&&Math.hypot(x-tx,y-ty)<r)return true}return false}
 // a new world: nothing stands anywhere yet
-function lotsReset(){roadsToGates();OCC.fill(0);for(const k in LOT)delete LOT[k];TOWNS.forEach(t=>{t.lots=null});occReserve()}
+function lotsReset(){roadsToGates();OCC.fill(0);for(const k in LOT)delete LOT[k];TOWNS.forEach(t=>{t.lots=null});occReserve(true)}
 // nothing stands on a road: the roads were carved to each holding's own tile, where its centre now stands, so once a map (it is
 // the same every game) the road under each centre is taken up, and every road that ran into it is led round its walls to its
 // gate, the tile in front of it, by the shortest way that keeps off every centre, water, mountain and ore vein. Other buildings, fields,
@@ -55,7 +56,7 @@ function roadsToGates(){
 }
 function occRebuild(){roadsToGates();tracksUp(WM);ROAD_PAINT=null;OCC.fill(0);for(const k in LOT)delete LOT[k];for(const t of TOWNS)if(t.lots){t.lots=t.lots.filter(l=>l.k!=='wall');const c=t.lots.find(l=>l.k==='centre');if(!c||t.tx<c.x||t.tx>=c.x+c.n||t.ty<c.y||t.ty>=c.y+c.n||c.type!==typeFor(t,'centre',Math.random))t.lots=null}// (older layouts are laid out again)
   for(const t of TOWNS)for(const l of t.lots||[]){if(l.st==='ruin')l.st='ruined';// (older saves)
-    LOT[l.id]=l;l.town=t.name;occMark(l,l.id);lotN=Math.max(lotN,l.id+1)}occReserve();for(const t of TOWNS)if(t.lots)Layout.of(t).tracks(true);tracksDone()}
+    LOT[l.id]=l;l.town=t.name;occMark(l,l.id);lotN=Math.max(lotN,l.id+1)}occReserve(true);for(const t of TOWNS)if(t.lots)Layout.of(t).tracks(true);tracksDone()}
 const lotOf=(x,y)=>{const id=occAt(x,y);return id>0?LOT[id]:null};
 /* the roads as painted (the owner's play-test 2: "some buildings still on the road"): the tiles within LOT_ROAD px of a road's
    middle as the art draws it, a byte a tile. A road follows its smoothed line, not its tiles (worldart.js artGenPlan: the points

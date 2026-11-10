@@ -5,7 +5,9 @@
    in W.sites (saved with them). Its level (1-3): the standard alone, a wooden watchtower by it, a stone tower; its guards
    (STANDARD.guards) by it, back a day while its realm holds it. You take one by beating its guards and staying by it STANDARD.hold
    hours: for the realm you serve (P.fac), for yourself once you hold a holding of your own, else for a realm near it you hand it
-   to, or no one. Phase 1: placed, drawn, held, saved, taken by you ---------- */
+   to, or no one. Phase 1: placed, drawn, held, saved, taken by you. Phase 2: its sentries walking their beat round it; held in
+   peace it grows a level, paid in timber and stone from its realm's nearest holding (STANDARD.grow); taken, its tower is broken
+   (fewer guards) and mended slowly, again on timber and stone (STANDARD.repair) ---------- */
 const STANDARD_LV=['','a standard','a standard and a watchtower','a standard and a stone tower'];
 class Standard extends Site{
   get T(){return STANDARD.T}
@@ -22,20 +24,40 @@ class Standard extends Site{
   flag(){return this.banner()||{k:'rag',col:STANDARD_ART.rag,dev:null}}
   // (yours to keep: your realm's, or your employer's)
   get ours(){const f=this.realm;return !!f&&(f==='player'||f===P.fac)}
-  get most(){return STANDARD.guards[this.lv]||0}
+  // (as many guards as its level keeps: one level fewer while its tower lies broken)
+  get most(){return STANDARD.guards[Math.max(1,this.lv-(this.broken?1:0))]||0}
   // its guards, as its realm's soldiers
   guardList(){const f=this.realm;return f&&f!=='player'&&this.guards>0?armyOf(f,this.guards):[]}
   whyText(){return this.why==='deposit'||this.why==='fish'?'by the '+(GOODS[this.g]?GOODS[this.g].n.toLowerCase():'')+' '+(this.why==='fish'?'waters':'deposit'):'at the '+STANDARD_WHY[this.why]}
   // the day: its realm fallen, it is no one's; else its realm sends a guard back while it holds it in peace
   day(){const f=this.realm;if(f&&f!=='player'&&W.dead[f]){this.owner=null;this.guards=0;return}
-    if(f&&f!=='player'&&!this.taking&&!this.choose&&this.guards<this.most)this.guards=Math.min(this.most,this.guards+STANDARD.regrow)}
+    if(!f||this.taking||this.choose)return;if(f!=='player'&&this.guards<this.most)this.guards=Math.min(this.most,this.guards+STANDARD.regrow);this.work()}
+  // (the holding of its realm that pays for its works: the nearest of its realm's)
+  supplier(){const f=this.realm;if(!f)return null;const F=fiefsOf(f);return F.length?Spatial.nearest(F,this.x,this.y):null}
+  // (its works this day: a broken tower mended, STANDARD.repair days on, once its goods are paid; else, held in peace long enough,
+  // the next level, once paid. need: what it waits for, for its page)
+  work(){const R=STANDARD.repair,Gw=STANDARD.grow,t=this.supplier();this.need=null;
+    if(this.broken){this.fix=(this.fix||0)+1;if(this.fix>=R.days){if(this.pay(t,R.cost)){this.broken=false;this.fix=0}else this.need=R.cost}return}
+    if(this.lv>=3||G.day-(this.since||0)<Gw.days[this.lv])return;const c=Gw.cost[this.lv+1];
+    if(this.pay(t,c)){this.lv++;this.since=G.day;Standards.reserve();worldEmit('standard:grown',{standard:this})}else this.need=c}
+  // (its goods out of a holding's stores: all or none)
+  pay(t,cost){if(!t||!t.stock)return false;for(const g in cost)if((t.stock[g]||0)<cost[g])return false;for(const g in cost)t.stock[g]-=cost[g];return true}
+  costText(c){return Object.entries(c).map(([g,n])=>n+' '+GOODS[g].n.toLowerCase()).join(' and ')}
   // put back after a load: its point, and its tiles kept free of building (Standards.reserve)
   placed(){super.placed();Standards.reserve()}
   // (its tiles: its plinth's, the tile in front, its tower's beside it)
   tiles(){const L=[];for(let j=-1;j<=1;j++)for(let i=this.lv>=2?-3:-1;i<=1;i++)L.push([this.tx+i,this.ty+j]);return L}
   mapDot(V){return this.known()?[this.col(),2]:null}
-  tip(){const f=this.ownerName();return '<b>'+Discovery.nameOf(this)+'</b><small>'+(f?'Held by '+f:'Held by no one')+', '+STANDARD_LV[this.lv]+(this.guards?', '+roughly(this.guards)+' guards':'')+'</small><span class="act">Click: go there</span>'}
+  tip(){const f=this.ownerName();return '<b>'+Discovery.nameOf(this)+'</b><small>'+(f?'Held by '+f:'Held by no one')+', '+STANDARD_LV[this.lv]+(this.broken?' (broken)':'')+(this.guards?', '+roughly(this.guards)+' guards':'')+'</small><span class="act">Click: go there</span>'}
   sprite(){return standardSprite(this)}
+  // (on the map: it, and its sentries walking their beat round it in your sight, a lap each STANDARD.sentries.lap game minutes)
+  draw(ents,cam,V){super.draw(ents,cam,V);const X=STANDARD.sentries,n=Math.min(X.most,this.guards),f=this.realm;if(!n||!f||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
+    const type=this.sentryType(),col=FACS[f].col,mins=(G.day+Clock.frac)*1440;
+    for(let i=0;i<n;i++){const a=(mins/X.lap+i/n)*Math.PI*2,x=this.x+Math.cos(a)*X.r,y=this.y+4+Math.sin(a)*X.r*.5,dir=-Math.sin(a)<0?-1:1,step=Math.floor(mins/X.stride+i)%4;
+      ents.push({y,f:()=>reduced(()=>{const s=unitSprite(type,0,false,(this.seed+i)%6,2+step,false,false,col),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
+        ctx.save();ctx.translate(Math.round(x-cam.x),Math.round(y-cam.y));ctx.scale(dir*k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore()})})}}
+  // (who they are: its realm's foot soldiers, as its nearest holding's garrison is made: realms.js garList)
+  sentryType(){if(this._st&&this._st[0]===this.realm)return this._st[1];const t=this.supplier(),k=t?garList({...t,gar:1})[0]:'militia';Object.defineProperty(this,'_st',{value:[this.realm,k],configurable:true,writable:true});return k}
   // (what stands in the way, world px: its plinth, and its tower beside it)
   footing(){const sp=this.sprite(),X=this.x-sp.ax,Y=this.y+8-sp.ay,f=[{x:this.x-8,y:this.y+2,w:16,h:6}];if(this.lv>=2){const tw=sp.width-22;f.push({x:X+tw*.25,y:Y+sp.height-tw*.45,w:tw*.5,h:tw*.3})}return f}
   box(box,camp){camp(this,this.sprite())}
@@ -44,7 +66,9 @@ class Standard extends Site{
      realms near it to hand it to, or no one */
   page(r){const s=this,f=s.ownerName(),facts=pageFacts([f?'<span style="color:'+s.col()+'">held by '+f+'</span>':'held by no one',STANDARD_LV[s.lv],
       s.guards?insight(['guards by it',roughly(s.guards)+' guards',s.guards+' guards'],'know how many'):'no guards',s.whyText()]);
-    const body='<p>A standard '+s.whyText()+': a tall pole on a stepped stone plinth, '+(f?'its banners hung from a crossbar':'its banners torn to rags')+'.</p>'+facts;
+    const t=s.supplier(),works=!s.realm?'':s.broken?'<p class="muted">Its tower lies broken'+(s.need?': its mending waits on '+s.costText(s.need)+' from '+(t?t.name:'its realm'):', mended in '+Math.max(1,STANDARD.repair.days-(s.fix||0))+' days')+'.</p>'
+      :s.lv<3?'<p class="muted">'+(s.need?'It would grow, but waits on '+s.costText(s.need)+' from '+(t?t.name:'its realm'):'Held in peace, it grows in '+Math.max(1,STANDARD.grow.days[s.lv]-(G.day-(s.since||0)))+' days, for '+s.costText(STANDARD.grow.cost[s.lv+1])+' from '+(t?t.name:'its realm'))+'.</p>':'';
+    const body='<p>A standard '+s.whyText()+': a tall pole on a stepped stone plinth, '+(f?'its banners hung from a crossbar':'its banners torn to rags')+'.</p>'+facts+works;
     if(s.choose)return{title:'Your banner flies',body:body+'<p>Your men hold it. You have no realm of your own and serve no one: hand it to a realm near, or leave it to no one.</p>',
       acts:[...s.nearRealms().map(([k,d])=>({icon:'banner',label:'Hand it to the '+FACS[k].n,act:'site-hand',arg:k,facts:['renown +'+STANDARD.renown,'their thanks',Math.round(d)+' tiles to their nearest holding']})),
         {icon:'truce',label:'Leave it to no one',act:'site-hand',arg:'none',facts:['renown +'+STANDARD.renown]}]};
@@ -71,6 +95,7 @@ class Standard extends Site{
     this.choose=true;log('Your men hold the '+this.name+'. Whose banner shall fly over it?','gold');if(G.mode==='world'&&!G.modal){G.site=this;G.siteTab=null;G.mode='site';showSite()}}
   // its new holder (none: no one's); your renown and its realm's thanks
   give(f){const was=this.realm;this.owner=f&&(f==='player'||FACS[f])?f:null;this.choose=false;this.taking=null;this.guards=this.realm&&this.realm!=='player'?1:0;
+    if(this.lv>=2)this.broken=true;this.fix=0;this.since=G.day;this.need=null;// (its tower broken in the taking: mended slowly, work)
     P.renown+=STANDARD.renown;if(this.realm&&this.realm!=='player')addHonor(this.realm,STANDARD.thanks,true);worldEmit('standard:taken',{standard:this,from:was,to:this.realm,by:'you'});
     return this.realm?'The '+this.name+' flies '+(this.realm==='player'?'your colours':'the colours of the '+FACS[this.realm].n)+' now. Renown +'+STANDARD.renown+'.':'You cut down its banners and leave the '+this.name+' to no one. Renown +'+STANDARD.renown+'.'}
   // the realms near it you may hand it to: [realm, tiles to its nearest holding], the nearest three, not the one you took it from
@@ -132,7 +157,7 @@ Systems.add({name:'standards',order:{hour:45},hour:()=>Standards.hour()});
    realm's colours with its device, a rope's tassel at an end; ragged, no one's) and, level 2 and 3, a watchtower or a stone tower
    (buildmodels.js) beside it in its realm's builders' style; ax, ay: the pole's foot. One picture a look */
 const STANDARD_PICS=new Map();
-function standardSprite(s){const f=s.realm,col=f?FACS[f].col:null,dev=f==='player'?'crown':f,key=(col||'-')+(dev||'')+s.lv+s.seed%3;let c=STANDARD_PICS.get(key);if(c)return c;
+function standardSprite(s){const f=s.realm,col=f?FACS[f].col:null,dev=f==='player'?'crown':f,key=(col||'-')+(dev||'')+s.lv+s.seed%3+(s.broken?'b':'');let c=STANDARD_PICS.get(key);if(c)return c;
   const A=STANDARD_ART,W=22,H=40,g=pgrid(W,H),p=(x,y,c)=>pset(g,x,y,c),St=A.stone,I=A.iron,G=PPAL.gold;
   // (the plinth: three steps, each lit along its top, its right side in shade, mortar between its blocks)
   for(const [x0,w,y0,h] of [[3,16,36,4],[5,12,33,3],[7,8,30,3]])for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)p(x,y,y===y0?St[0]:x>=x0+w-2?St[2]:(x+y*3)%5===0?St[2]:St[1]);
@@ -152,6 +177,10 @@ function standardSprite(s){const f=s.realm,col=f?FACS[f].col:null,dev=f==='playe
   // (its tower beside it, level 2 a watchtower, 3 a stone tower, in its realm's builders' style)
   let m=null;if(s.lv>=2&&typeof PX!=='undefined'&&PX.buildingModel)try{m=PX.buildingModel({type:s.lv>=3?'tower':'watchtower',culture:f&&f!=='player'&&FAC_CULTURE[f]||'vale',seed:s.seed%7+1})}catch(e){m=null}
   const tw=m?m.cell:0,CW=tw+W,CH=Math.max(H,tw),fx=tw?tw-6:0;
-  c=mkc(CW,CH,q=>{if(m)q.drawImage(m.img,0,CH-tw);q.drawImage(fl,fx,CH-H)});c.ax=fx+11;c.ay=CH-2;
+  // (broken: its tower's top gone, its lower part standing, rubble at its foot)
+  const cut=s.broken&&m?Math.round(tw*STANDARD_ART.broken):0;
+  c=mkc(CW,CH,q=>{if(m)q.drawImage(m.img,0,cut,tw,tw-cut,0,CH-tw+cut,tw,tw-cut);
+    if(cut){q.fillStyle=STANDARD_ART.stone[2];for(let i=0;i<7;i++)q.fillRect(Math.round(tw*.2+hash(i,s.seed,77)*tw*.6),CH-3-Math.round(hash(i,s.seed,78)*3),2,1)}
+    q.drawImage(fl,fx,CH-H)});c.ax=fx+11;c.ay=CH-2;
   if(m){c.gr=mkc(CW,CH,q=>q.drawImage(m.ground,0,CH-tw));c.sh=mkc(CW,CH,q=>q.drawImage(m.shadow,0,CH-tw))}
   STANDARD_PICS.set(key,c);return c}

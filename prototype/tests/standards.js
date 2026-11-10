@@ -44,6 +44,18 @@ Kit.suite(({ok,info})=>{
   t.startBattle({enemies:G.enc.list,tournament:false});const B=t.B,foes=B.units.filter(u=>u.team===1),fl=foes.map(u=>t.battleFlag(u)).find(Boolean);
   ok(foes.length===G.enc.list.length&&fl&&fl.col===s.col(),'fought out on the field: its guards there under its realm\'s banner');
   B.win=true;B.over=true;foes.forEach(u=>u.hp=0);t.finishBattle();ok(s.taking&&s.guards===0,'and won there, your banner begins to go up');G.mode='world';t.hidePanel();s.taking=null;s.guards=S.guards[s.lv]}
+ // ---- phase 2: its sentries; held in peace it grows on timber and stone; taken, its tower broken and mended slowly
+ {const s=all().find(x=>x.lv===1&&t.FACS[x.realm]&&x.realm!=='player'&&!x.choose&&!x.taking),f=s.realm,sup=s.supplier(),Gw=S.grow;
+  ok(sup&&sup.owner===f,'its works paid by its realm\'s nearest holding ('+(sup&&sup.name)+')');
+  const st=sup.stock,keep={...st};try{
+   st.timber=0;s.since=t.G.day-Gw.days[1];s.day();ok(s.lv===1&&s.need&&s.need.timber===Gw.cost[2].timber&&/waits on/.test((G.site=s,G.mode='site',t.showSite(),Kit.panel())),'held long enough but short of timber: it waits, and its page says on what');
+   st.timber=100;s.day();ok(s.lv===2&&st.timber===100-Gw.cost[2].timber&&s.since===t.G.day,'its timber paid: it grows to a watchtower ('+Gw.cost[2].timber+' timber)');
+   const t0=s.sprite().width;s.give(f==='vale'?'karn':'vale');ok(s.broken&&s.most===S.guards[1]&&s.sprite()!==t0&&/broken/.test(s.tip()),'taken: its tower broken, its guards one level fewer');
+   const sup2=s.supplier(),st2=sup2.stock,k2={...st2};try{st2.timber=0;st2.stone=0;for(let i=0;i<S.repair.days;i++)s.day();ok(s.broken&&s.need,'mended only once paid');
+    st2.timber=50;st2.stone=50;s.day();ok(!s.broken&&st2.timber===50-S.repair.cost.timber&&s.most===S.guards[2],'paid: its tower mended ('+s.costText(S.repair.cost)+')')}finally{Object.assign(st2,k2)}
+  }finally{Object.assign(st,keep);s.owner=f;s.lv=1;s.broken=false;s.guards=S.guards[1];G.mode='world';t.hidePanel()}}
+ {const s=all().find(x=>x.guards>0&&t.FACS[x.realm]&&x.realm!=='player');P.x=s.x;P.y=s.y+30;s.seen=true;const ents=[],cam={x:P.x-200,y:P.y-150};t.frame();s.draw(ents,cam,200);
+  ok(ents.length===1+Math.min(S.sentries.most,s.guards)&&t.FACS[s.realm]&&typeof s.sentryType()==='string','in your sight its sentries walk their beat round it ('+(ents.length-1)+', '+s.sentryType()+')')}
  // ---- through a save
  {const rec=all().map(s=>[s.name,s.realm,s.lv,s.guards].join());t.saveGame(true,'quick');W.sites=[];t.loadGame('quick');
   ok(all().length===A.length&&all().map(s=>[s.name,s.realm,s.lv,s.guards].join()).join('|')===rec.join('|')&&all().every(s=>s instanceof t.Standard),'a save keeps every standard, whose it is, its level and its guards')}
