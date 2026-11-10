@@ -413,8 +413,10 @@ function drawUnitAt(u){
   // round him, its back half behind him; a ford wets his feet and splashes as he walks; a frozen ford (frost) is ice. From the
   // battle's time and his id: drawn only)
   const z=Math.round(u.z||0),ghost=u.hero&&B.hx&&B.hx.inv>0,wk=B.terrain&&!z?groundAt(u.x,u.y):0,deep=wk===4,ford=wk===3&&B.env.c!=='frost',rr=Math.round(5*big+1);
-  if(deep)waterRing(x,y-2,rr,u,-1);else{const sh=1-Math.min(.5,(u.z||0)/32);ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y,5.5*big*sh,1.8*big*sh,0,0,6.283);ctx.fill()}// (a soft shadow, smaller as he leaps)
-  heroAura(u,x,y,big);stateAura(u,x,y,big);// (what lifts him, under his feet: vfx.js STATE_FX)
+  // (standing up on a height (u.lifted: an outpost's tower, a siege's wall-walk), his shadow and rings at his feet up there)
+  const fy=u.lifted?y-z:y;
+  if(deep)waterRing(x,y-2,rr,u,-1);else{const sh=u.lifted?1:1-Math.min(.5,(u.z||0)/32);ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,fy,5.5*big*sh,1.8*big*sh,0,0,6.283);ctx.fill()}// (a soft shadow, smaller as he leaps)
+  heroAura(u,x,fy,big);stateAura(u,x,fy,big);// (what lifts him, under his feet: vfx.js STATE_FX)
   const hit=u.hitAt!=null&&B.t-u.hitAt<.09;
   // (moving: a step in the last few frames, so a man who stops and starts as he settles does not flicker between standing and walking)
   // (stopped, those frames show the pass, his legs under him, not a stride frozen wide: the owner, "leg stuck before going to idle")

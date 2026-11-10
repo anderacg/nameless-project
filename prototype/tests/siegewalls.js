@@ -73,6 +73,26 @@ Kit.suite(({ok,info})=>{
      ok(cv===M.cover&&open===1&&back===1,'behind one, a shot from the wall does '+M.cover+' of its harm; before it, or from behind, all of it')}
    }finally{D.odds=odds0}
    done()}
+  // ---- the wall's height drawn, the castle's keep and court, the lord's standard taken (SIEGE_FIGHT.flag)
+  {const F=t.SIEGE_FIGHT.flag,b=assault(t.RAM_DAYS),w=b.works,cs=w.cs,f=w.flag,kp=w.houses.find(q=>q.big);
+   {const a=b.units.find(u=>u.team===1&&u.x>=w.x0&&u.x<w.x1&&t.levelAt(u.x,u.y)>=w.L),l=w.lad.find(q=>q.up),me=b.units.find(u=>u.team===0&&!u.hero&&u.hp>0),y=(l.r+.5)*cs;
+    me.x=w.x0-w.run/2;me.y=y;w.liftStep();const half=me.z;me.x=w.x0-w.run-20;w.liftStep();const ground=me.z;
+    ok(a&&a.z===w.z&&Math.abs(half-w.z/2)<1.5&&ground===0,'the men on the walk drawn up its height ('+w.z+' px), one half up a ladder half of it, on the ground none');
+    const lp=w.art.leanPic(l,w.art.ladPic(l));ok(lp&&lp.height===w.art.ladPic(l).height+w.z,'a ladder drawn leaning from its foot up to the walk\'s height')}
+   ok(kp&&kp.k===t.SIEGE_TOWN.kc&&kp.x>f.x+f.court&&f.x>w.x1,'the castle\'s keep, '+t.SIEGE_TOWN.kc+' times its model ('+kp.type+'), its standard in the court before it');
+   ok(w.houses.every(q=>q.big||!(q.x<f.x+f.court&&q.x+q.w>f.x-f.court&&q.y<f.y+f.court&&q.y+q.h>f.y-f.court)),'the court kept clear of houses');
+   ok(b.ground.props.some(p=>p.flag),'the standard standing in it');
+   const theirs=b.units.filter(u=>u.team!==0&&u.hp>0),mine=b.units.filter(u=>u.team===0&&u.hp>0).slice(0,3);
+   for(const u of theirs){if(Math.hypot(u.x-f.x,u.y-f.y)<F.r+10){u.x=w.x1+F.x+F.court+150;u.y=f.y+200}}mine.forEach((u,i)=>{u.x=f.x+i*6;u.y=f.y+4});
+   w.flagStep(F.hold/2);ok(!f.taken&&Math.abs(f.prog-F.hold/2)<.01,'your men alone by it: its taking goes on');
+   const d=theirs[0],dx=d.x,dy=d.y;mine.forEach(u=>{u.x=f.x-200});d.x=f.x;d.y=f.y;w.flagStep(1);ok(f.prog<F.hold/2&&f.prog>0,'theirs alone there: lost again, slowly');
+   d.x=dx;d.y=dy;mine.forEach((u,i)=>{u.x=f.x+i*6;u.y=f.y+4});w.flagStep(F.hold);
+   ok(f.taken&&theirs.filter(u=>u.hp>0).every(u=>u.rout||u.left)&&b.ground.props.filter(p=>p.flag).length===1,'held '+F.hold+' s: the standard taken, every defender breaking, your banner raised on it');
+   done()}
+  {const b=assault(t.RAM_DAYS),w=b.works;b.auto=true;w.open=true;const Cm=t.Commander.of(0),N=Cm.groups(),id=(N.inf||[])[0],g=id&&b.groups[id];
+   if(g){for(const u of t.grpUnits(id))if(u.hp>0){u.x=w.x1+40;u.y=w.flag.y+30}for(const u of b.units)if(u.team!==0&&u.hp>0){u.x=t.BW-30;u.y=w.flag.y+300}g.tgt=null;Cm.siege(N);
+    ok(Math.hypot(g.ax-w.flag.x,g.ay-w.flag.y)<6||g.hasTarget,'your captain sends a group inside the wall to the standard')}
+   done()}
   // ---- no ram yet: the gate holds
   {const b=assault(t.LADDER_DAYS),w=b.works;ok(w&&!w.ram,'before the ram is built ('+t.LADDER_DAYS+' days): ladders only');const men=b.units.filter(u=>u.team===0&&!u.hero&&!u.s.range).slice(0,4);men.forEach((u,i)=>{u.x=w.x0-8;u.y=w.gy0+8+i*12});const hp0=w.hp;w.step(2);ok(w.hp===hp0,'the gate holds');done()}
   // ---- a village (no walls), and the switch off: the open field

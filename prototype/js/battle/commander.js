@@ -380,9 +380,13 @@ class Commander{
      the rest spread over the breaches (twice) and the ladders, each to the foot of its own (SIEGE_AI.foot px out from the wall), then
      at the nearest foe up or through it; its shooters as ever (their places along the way, pathPlace). The gate down and no breach:
      every group as ever, through it */
-  siege(N){const w=B.works;if(!SIEGE_AI.on||!w||this.team!==0||!N||!N.inf)return;const cs0=w.cs,gaps=(w.secs||[]).filter(q=>q.down).map(q=>({x:w.x0-SIEGE_AI.foot,y:(q.r0+q.r1+1)/2*cs0}));if(w.open&&!gaps.length)return;// (the gate down and the wall whole: as ever; breaches: SiegeWorks collapse)
+  siege(N){const w=B.works;if(!SIEGE_AI.on||!w||this.team!==0||!N||!N.inf)return;const cs0=w.cs,gaps=(w.secs||[]).filter(q=>q.down).map(q=>({x:w.x0-SIEGE_AI.foot,y:(q.r0+q.r1+1)/2*cs0}));
+    // (a group inside the wall with no one to fight: at the lord's standard in the court, to take it (SIEGE_FIGHT.flag); never back out to a ladder)
+    const f=w.flag,inside=id=>{const m=grpUnits(id).filter(u=>u.hp>0&&!u.rout&&!u.left);return m.length&&centroid(m).x>w.x1-4};
+    for(const id of N.inf){if(!inside(id))continue;const g=B.groups[id];if(f&&!f.taken&&!g.hasTarget&&(g.order!=='hold'||Math.hypot(g.ax-f.x,g.ay-f.y)>4))g.standAt(f.x,f.y)}
+    if(w.open&&!gaps.length)return;// (the gate down and the wall whole: as ever; breaches: SiegeWorks collapse)
     // (d2: how far apart, px; it was called here and defined nowhere, so the siege's orders threw and none were given)
-    const d2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),live=id=>grpUnits(id).filter(u=>u.hp>0&&!u.rout&&!u.left),foot=N.inf.filter(id=>{const m=live(id);return m.length&&m.some(u=>!u.s.range)&&B.groups[id].order!=='withdraw'});if(!foot.length)return;
+    const d2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),live=id=>grpUnits(id).filter(u=>u.hp>0&&!u.rout&&!u.left),foot=N.inf.filter(id=>{const m=live(id);return m.length&&m.some(u=>!u.s.range)&&B.groups[id].order!=='withdraw'&&!inside(id)});if(!foot.length)return;
     const cs=w.cs,ram={x:w.x0-SIEGE_WALL.ramR*.5,y:(w.gy0+w.gy1)/2},by=foot.map(id=>({id,C:centroid(live(id))})).sort((a,b)=>d2(a.C,ram)-d2(b.C,ram)),
       nRam=w.ram&&!w.open&&!gaps.length?Math.max(1,Math.round(by.length*SIEGE_AI.ram)):0,foes=B.units.filter(u=>battleEnemy(0,u)&&u.hp>0&&!u.rout&&!u.left);
     by.forEach((o,i)=>{const g=B.groups[o.id];
