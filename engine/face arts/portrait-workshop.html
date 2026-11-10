@@ -422,12 +422,11 @@
     const top=a.top-(fluted?16:leaf?19:great?9:sallet?8:beaked?15:style==='visored-bascinet'?13:12);
     const crown=Array.from({length:15},(_,i)=>{const t=Math.PI+i*Math.PI/14;return [x+w*Math.cos(t),top+18+18*Math.sin(t)];});
     const lower=Array.from({length:13},(_,i)=>{const t=i*Math.PI/12;return [x+(w-1)*Math.cos(t),eye+10+(bottom-eye-10)*Math.sin(t)];});
-    const shell=style==='closed-knight-helm'||mask||sallet?[...crown,...lower]:great?[[x-w,top+10],[x-w+3,top+4],[x-w+10,top],[x+w-10,top],[x+w-3,top+4],[x+w,top+10],...lower]:[[x-w,top+18],[x-w+6,top+6],[x,top],[x+w-6,top+6],[x+w,top+18],...lower];
-    // A fitted metal lining covers wide jaws beneath the outer visor silhouette.
-    surface(g,a.outline.map(([px,py])=>[px+(px<x?-2:px>x?2:0),py]),(px,py)=>126+45*falloff(px,py,x-12,eye+10,w,30));
+    const rolledCrown=Array.from({length:17},(_,i)=>{const t=Math.PI+i*Math.PI/16;return [x+w*Math.cos(t),top+10+10*Math.sin(t)];});
+    const shell=style==='closed-knight-helm'||mask||sallet?[...crown,...lower]:great?[...rolledCrown,...lower]:[[x-w,top+18],[x-w+6,top+6],[x,top],[x+w-6,top+6],[x+w,top+18],...lower];
     surface(g,shell,(px,py)=>133+60*falloff(px,py,x-12,eye-15,w*.8,30)-35*falloff(px,py,x+w-2,eye+13,13,27));
     clip(g,shell,()=>{
-      if(great){rect(g,x-3,top+3,6,bottom-top-6,180);rect(g,x-w,eye-6,w*2,4,100);line(g,[[x-w+2,top+5],[x+w-2,top+5]],207,2);}
+      if(great){rect(g,x-3,top+3,6,bottom-top-6,180);rect(g,x-w,eye-6,w*2,4,100);curve(g,[x-w+3,top+13,x-12,top+1,x+12,top+1,x+w-3,top+13],207,2);}
       else{
         const cheek=[[x-w+3,eye+4],[x,eye+9],[x+w-3,eye+4],[x+jaw,bottom-4],[x,bottom-1],[x-jaw,bottom-4]];
         surface(g,cheek,(px,py)=>124+51*falloff(px,py,x-9,eye+12,18,20)-24*falloff(px,py,x+19,eye+16,14,20));
@@ -445,12 +444,12 @@
         }
         if(great)for(let y=eye+4;y<bottom-3;y+=10)rect(g,x+side*(w-4),y,2,2,213);
       }
-      if(mask){line(g,[[x-w+3,eye+5],[x-w+6,bottom-9]],198,2);line(g,[[x+w-3,eye+5],[x+w-6,bottom-9]],137,2);rect(g,x-2,eye+6,4,27,166);}
+      if(mask){line(g,[[x-w+3,eye+5],[x-w+6,bottom-9]],198,2);line(g,[[x+w-3,eye+5],[x+w-6,bottom-9]],137,2);poly(g,[[x-2,eye+6],[x+2,eye+6],[x+2,bottom-8],[x,bottom-4],[x-2,bottom-8]],166);}
       curve(g,[x-jaw,bottom-5,x-8,bottom-1,x+8,bottom-1,x+jaw,bottom-5],62,2);
     });
     clip(g,shell,()=>{
-      if(barrel){for(const side of [-1,1]){rect(g,x+side*(w-8)-2,top+7,4,bottom-top-15,154);for(let y=top+10;y<bottom-10;y+=10)rect(g,x+side*(w-8)-1,y,2,2,232);}rect(g,x-w,top+5,w*2,4,184);}
-      if(riveted){rect(g,x-6,top+3,12,bottom-top-8,72);rect(g,x-4,top+3,8,bottom-top-8,201);for(const y of [top+14,eye-7]){rect(g,x-w,y-2,w*2,8,80);rect(g,x-w,y,w*2,4,201);for(let dx=-w+6;dx<w-4;dx+=8)rect(g,x+dx,y,2,2,232);}for(let y=top+6;y<bottom-6;y+=8)rect(g,x-1,y,2,2,232);}
+      if(barrel){for(const side of [-1,1]){rect(g,x+side*(w-8)-2,top+7,4,bottom-top-15,154);for(let y=top+10;y<bottom-10;y+=10)rect(g,x+side*(w-8)-1,y,2,2,232);}curve(g,[x-w+3,top+14,x-12,top+3,x+12,top+3,x+w-3,top+14],184,4);}
+      if(riveted){poly(g,[[x-3,top+3],[x+3,top+3],[x+5,eye-6],[x+3,bottom-6],[x-3,bottom-6],[x-5,eye-6]],72);poly(g,[[x-1,top+3],[x+1,top+3],[x+3,eye-6],[x+1,bottom-6],[x-1,bottom-6],[x-3,eye-6]],201);for(const y of [top+14,eye-7]){curve(g,[x-w,y+4,x-12,y-6,x+12,y-6,x+w,y+4],80,8);curve(g,[x-w,y+4,x-12,y-6,x+12,y-6,x+w,y+4],201,4);for(let dx=-w+6;dx<w-4;dx+=8)rect(g,x+dx,y-3+6*(dx/w)**2,2,2,232);}for(let y=top+6;y<bottom-6;y+=8)rect(g,x-1,y,2,2,232);}
       if(fluted)for(const side of [-1,1])for(let i=0;i<4;i++){const dx=8+i*6;curve(g,[x+side*2,top+5,x+side*dx,top+12,x+side*(dx+2),eye-17,x+side*dx,eye-6],64,2);curve(g,[x+side*4,top+6,x+side*(dx+2),top+13,x+side*(dx+4),eye-17,x+side*(dx+2),eye-6],218,2);}
       if(horned){rect(g,x-w,eye-10,w*2,6,104);for(const side of [-1,1]){poly(g,[[x+side*7,eye+8],[x+side*19,eye+13],[x+side*15,bottom-8],[x+side*6,bottom-4]],157);engraving(g,c,x+side*13,eye+19,0,.75,212);}}
       if(leaf)for(const side of [-1,1]){curve(g,[x+side*4,eye+6,x+side*21,eye+11,x+side*21,bottom-10,x+side*5,bottom-4],212,2);curve(g,[x+side*7,eye+12,x+side*16,eye+16,x+side*14,bottom-12,x+side*6,bottom-7],80,2);}
@@ -1550,21 +1549,29 @@
   function helmetReflections(layer,a){
     const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,eye=a.eyes[0].y;
     for(let y=0;y<SIZE;y+=2)for(let x=0;x<SIZE;x+=2){
-      const k=(y*SIZE+x)*4;if(!d[k+3]||d[k]<96)continue;
+      const k=(y*SIZE+x)*4;if(!d[k+3])continue;
       const u=(x+1-a.cx)/(a.w+4),cap=(y+1-a.top)/(eye-a.top),lower=(y+1-eye)/Math.max(1,a.chinY-eye),key=u<0?1:.35;
-      let v=d[k]*.65+12-Math.abs(u)*20;
-      if(y<eye-3){
+      let v=d[k]<96?d[k]:d[k]*.65+12-Math.abs(u)*20;
+      if(d[k]>=96&&y<eye-3){
         const band=cap-.18*u*u+.1*u;
         if(band>.03&&band<.15)v+=112*key;
         else if(band>.22&&band<.33)v+=64*key;
         else if(band>.42&&band<.65&&u<-.2)v+=24;
-      }else{
+      }else if(d[k]>=96){
         if(Math.abs(u+.46-.12*lower)<.1&&lower<.82)v+=96;
         if(Math.abs(u)<.09)v+=56;
         if(Math.abs(u)>.8&&Math.abs(u)<.92)v+=32*key;
       }
       const tone=PIXEL_STYLE.tones.reduce((best,n)=>Math.abs(n-v)<Math.abs(best-v)?n:best,PIXEL_STYLE.tones[0]);
       for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y+j)*SIZE+x+i)*4;d[q]=d[q+1]=d[q+2]=tone;}
+    }
+    const shaded=new Uint8ClampedArray(d);
+    for(let y=2;y<SIZE-2;y+=2)for(let x=2;x<SIZE-2;x+=2){
+      const k=(y*SIZE+x)*4,v=shaded[k];if(!shaded[k+3]||v<96||v>192)continue;
+      const adjacent=[k-8,k+8,k-SIZE*8,k+SIZE*8];
+      if(adjacent.some(q=>!shaded[q+3]||shaded[q]<96))continue;
+      const tones=adjacent.map(q=>shaded[q]),tone=tones.find(n=>n!==v&&Math.abs(n-v)<=32&&tones.filter(t=>t===n).length>=3);
+      if(tone!==undefined)for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y+j)*SIZE+x+i)*4;d[q]=d[q+1]=d[q+2]=tone;}
     }
     g.putImageData(im,0,0);
   }
@@ -1606,7 +1613,7 @@
     equipmentDetails(p,layers);
     fitLeatherToBody(layers,p.config);
     if(p.config.race==='orc')mirrorParts(layers,p.config);else if(CLOSED_HELMS.includes(p.config.headwear))mirrorParts(layers,p.config,['headwearFront','headwearBack']);
-    if(CLOSED_HELMS.includes(p.config.headwear))helmetReflections(layers.headwearFront,a);
+    if(CLOSED_HELMS.includes(p.config.headwear)){helmetReflections(layers.headwearFront,a);layers.headwearBack=pixelLayer(layers.headwearBack,2);}
     return {...p,layers};
   }
   function build(input) {
