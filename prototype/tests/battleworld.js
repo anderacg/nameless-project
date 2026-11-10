@@ -104,15 +104,17 @@ try{
    // (crisp at 2x: every 2x2 block of its picture one pixel of the model's)
    const crisp=s=>{const d=s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data,w=s.width;if(w%2||s.height%2)return false;for(let y=0;y<s.height;y+=2)for(let x=0;x<w;x+=2){const o=(y*w+x)*4;for(const q of [o+4,o+w*4,o+w*4+4])for(let k=0;k<4;k++)if(d[q+k]!==d[o+k])return false}return true};
    ok(hs.length===T0.recipe.built.houses.length&&hs.every(p=>p.s&&p.s.width>=32&&crisp(p.s)),'painted: each building a standing prop (dk 5, '+hs.length+'), the world\'s own model'+(t.PX.buildingModel?'':' (none here: a plain block)')+' drawn at 2x, each pixel a crisp 2x2 block ('+hs.map(p=>p.s.width+'x'+p.s.height).join(', ')+')')}
+  // (up to 6 buildings from the fights by a farm; the ring's pixels where no prop stands: a tree at a building's wall, in a wood's
+  // clearing, is no patch of ground)
   // (it sits in the field's ground: round each building (the field painted with its props) the pixels just outside its silhouette
   // near the field's ground there (painted without what stands by the fight: the mean colour of that ring, either way), and no
   // straight run of an odd colour along a cell edge round it (no flat square: across each cell line through its footprint and a
   // cell round it, 6 px (3 of the model's) or more off its silhouette (its walls' feet and contact shade are its own), no 8 px running one way more than 14 in light where the field without it does not))
-  {const ring=[],runs=[];let nH=0;for(const [x,y] of vs.slice(0,8)){const {T:T0,env}=at(x,y);if(!T0.recipe.built||!T0.recipe.built.houses.length)continue;
+  {const ring=[],runs=[];let nH=0;for(const [x,y] of vs){if(nH>=6)break;const {T:T0,env}=at(x,y);if(!T0.recipe.built||!T0.recipe.built.houses.length)continue;
     const cv=t.PX.battleGround({...T0,climate:env.c}),rf=t.PX.battleGround({...T0,built:null,recipe:{...T0.recipe,built:null},climate:env.c}),pg=document.createElement('canvas');pg.width=BW;pg.height=BH;
     const g=pg.getContext('2d', { willReadFrequently: true });t.PX.battleProps(g,cv);const pa=g.getImageData(0,0,BW,BH).data;g.globalCompositeOperation='destination-over';g.drawImage(cv,0,0);g.globalCompositeOperation='source-over';const d=g.getImageData(0,0,BW,BH).data,r=rf.getContext('2d', { willReadFrequently: true }).getImageData(0,0,BW,BH).data,L=(a,o)=>a[o]*.3+a[o+1]*.59+a[o+2]*.11;
     for(const p of cv.props.filter(p=>p.dk===5)){nH++;const sw=p.s.width,sh=p.s.height,sa=p.s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,sw,sh).data,sil=(X,Y)=>{const u=X-p.dx,v=Y-p.dy;return u>=0&&v>=0&&u<sw&&v<sh&&sa[(v*sw+u)*4+3]>0},near=(X,Y,k=3)=>{for(let b=-k;b<=k;b++)for(let a=-k;a<=k;a++)if(sil(X+a,Y+b))return true;return false};
-     const A=[0,0,0],B=[0,0,0];let n=0;for(let Y=p.dy-3;Y<p.dy+sh+3;Y++)for(let X=p.dx-3;X<p.dx+sw+3;X++){if(X<0||Y<0||X>=BW||Y>=BH||sil(X,Y))continue;if(!near(X,Y))continue;const o=(Y*BW+X)*4;for(let k=0;k<3;k++){A[k]+=d[o+k];B[k]+=r[o+k]}n++}
+     const A=[0,0,0],B=[0,0,0];let n=0;for(let Y=p.dy-3;Y<p.dy+sh+3;Y++)for(let X=p.dx-3;X<p.dx+sw+3;X++){if(X<0||Y<0||X>=BW||Y>=BH||sil(X,Y))continue;if(!near(X,Y))continue;const o=(Y*BW+X)*4;if(pa[o+3]>0)continue;for(let k=0;k<3;k++){A[k]+=d[o+k];B[k]+=r[o+k]}n++}
      ring.push(n?Math.hypot(A[0]-B[0],A[1]-B[1],A[2]-B[2])/n:0);
      const cs=T0.cs,x0=Math.floor(p.dx/cs)*cs-cs,y0=Math.floor(p.dy/cs)*cs-cs,x1=Math.ceil((p.dx+sw)/cs)*cs+cs,y1=Math.ceil((p.dy+sh)/cs)*cs+cs;let worst=0;
      const scan=(len,at)=>{let run=0,sg=0;for(let s=0;s<len;s++){const q=at(s);if(!q){run=0;continue}const dl=L(d,q[0])-L(d,q[1]),dr=L(r,q[0])-L(r,q[1]),z=Math.abs(dl)>14&&Math.abs(dl-dr)>14?Math.sign(dl):0;if(z&&z===sg)run++;else run=z?1:0;sg=z;if(run>worst)worst=run}};
