@@ -199,7 +199,7 @@ const Standards={
       s=Object.assign(Object.create(Standard.prototype),{i:STANDARD.I0+k,type:'standard',tx,ty,x,y,seed:1+Math.floor(hash(tx,ty,4243)*99998),seen:false,cleared:false,back:0,
         owner:p.f,home0:p.f,lv,why:p.why,g:p.g||null,guards:STANDARD.guards[lv],taking:null,choose:false});
     s.name=(h?h.name+' ':'')+(p.why==='deposit'&&GOODS[p.g]?GOODS[p.g].n.toLowerCase()+' ':'')+STANDARD_WHY[p.why]+' outpost';return s},
-  hour(){for(const s of this.all()){s.hour();s.watch()}},
+  hour(){for(const s of this.all()){s.hour();s.watch()}if(typeof outpostJobsHour==='function')outpostJobsHour()},// (and the outposts' jobs that run by the hour: world/quests.js)
   // (the world's captures, once a day after the sites' own day: Standard#contest)
   day(){for(const s of this.all())s.contest()},
   // (a held standard of a realm's or yours within STANDARD.safe tiles of a point: no band is raised there, world.js spawnBandit)
@@ -224,8 +224,9 @@ const StandardTower={
   lay(T,area){const X=STANDARD.tower,W=this.on(area,T);if(!W.length)return;const C=T.C,N=C*T.R,you=area.field(area.starts[0]);T.lift=new Uint8Array(N);T.towers=W;
     for(const w of W){const {c0,r0,c1,r1}=w,cs=T.cs,mx=(c0+c1+1)/2*cs,my=(r0+r1+1)/2*cs,dx=you.x-mx,dy=you.y-my;let g=0;
       for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++)g=Math.max(g,T.lvl[r*C+c]);
-      w.lv=g+X.rise[w.s.towerLv];w.ladder=Math.abs(dx)>Math.abs(dy)?(dx>0?2:0):(dy>0?3:1);const z=Math.round(this.top(w.s)*area.scale/WORLD_BATTLE.sprite);
-      const lad=(q,c,r)=>{if(q!==w.ladder)return false;const [a,b,k]=q&1?[c0,c1,c]:[r0,r1,r],m=a+Math.max(0,Math.floor((b-a+1-X.ladder)/2));return k>=m&&k<m+X.ladder},face=(i,j,q)=>{T.wall[i]|=1<<q;if(j>=0&&j<N)T.wall[j]|=1<<(q+2&3)};
+      w.lv=g+X.rise[w.s.towerLv];w.ladder=Math.abs(dx)>Math.abs(dy)?(dx>0?2:0):(dy>0?3:1);const z=w.z=Math.round(this.top(w.s)*area.scale/WORLD_BATTLE.sprite);
+      const lm=(w.ladder&1?c0:r0)+Math.max(0,Math.floor(((w.ladder&1?c1-c0:r1-r0)+1-X.ladder)/2)),lad=(q,c,r)=>{if(q!==w.ladder)return false;const k=q&1?c:r;return k>=lm&&k<lm+X.ladder},face=(i,j,q)=>{T.wall[i]|=1<<q;if(j>=0&&j<N)T.wall[j]|=1<<(q+2&3)};
+      w.l0=lm;w.l1=lm+X.ladder;
       for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const i=r*C+c;T.built[i]=0;T.kind[i]=TKIND.open;T.road[i]=0;T.lvl[i]=w.lv;T.lift[i]=z;
         if(c===c1&&!lad(0,c,r))face(i,i+1,0);if(r===r1&&!lad(1,c,r))face(i,i+C,1);if(c===c0&&!lad(2,c,r))face(i,i-1,2);if(r===r0&&!lad(3,c,r))face(i,i-C,3)}}},
   // (its top, world px over its foot: a share of its model's height)
@@ -236,8 +237,23 @@ const StandardTower={
   // (and once placed, posted on its top: a man a cell from its middle out, the ladder's cells last, facing your army)
   post(b,area){const g=b.groups.e0_tower,e=G.enc,w=b.terrain?.towers?.find(x=>x.s===e?.ref);if(!g||!w)return;const m=grpUnits(g.id),cs=b.terrain.cs,you=area.field(area.starts[0]);
     const cells=[];for(let r=w.r0;r<=w.r1;r++)for(let c=w.c0;c<=w.c1;c++)cells.push({x:(c+.5)*cs,y:(r+.5)*cs});const ax=(w.c0+w.c1+1)/2*cs,ay=(w.r0+w.r1+1)/2*cs;
-    cells.sort((a,b)=>Math.hypot(a.x-ax,a.y-ay)-Math.hypot(b.x-ax,b.y-ay));g.post=true;g.order='hold';g.ax=ax;g.ay=ay;g.face=g.currentFacing=Math.atan2(you.y-ay,you.x-ax);g.tgt=null;g.queue=[];
-    m.forEach((u,i)=>{const q=cells[i%cells.length];u.x=q.x;u.y=q.y;u.sx=q.x-ax;u.sy=q.y-ay;u.dir=g.face;u.face=Math.cos(g.face)>=0?1:-1})}
+    cells.sort((a,b)=>Math.hypot(a.x-ax,a.y-ay)-Math.hypot(b.x-ax,b.y-ay));w.cells=cells;g.post=true;g.order='hold';g.ax=ax;g.ay=ay;g.face=g.currentFacing=Math.atan2(you.y-ay,you.x-ax);g.tgt=null;g.queue=[];
+    m.forEach((u,i)=>{const q=cells[i%cells.length];u.x=q.x;u.y=q.y;u.sx=q.x-ax;u.sy=q.y-ay;u.dir=g.face;u.face=Math.cos(g.face)>=0?1:-1})},
+  // (the foot of its ladder's middle, field px: where a climber comes up)
+  foot(w,cs){const q=w.ladder,m=(w.l0+w.l1)/2*cs;return q===0?{x:(w.c1+1)*cs,y:m}:q===2?{x:w.c0*cs,y:m}:q===1?{x:m,y:(w.r1+1)*cs}:{x:m,y:w.r0*cs}},
+  // (each frame of a world battle: a foe up on its top, its archers fall back to the cells farthest from the ladder, once; looked at
+  // every STANDARD.tower.look s)
+  step(b){const g=b.groups&&b.groups.e0_tower,T=b.terrain,w=T&&T.towers&&T.towers.find(x=>x.cells);if(!g||!w||w.back||b.t<(w.seen||0))return;w.seen=b.t+STANDARD.tower.look;
+    const on=u=>{const c=Math.floor(u.x/T.cs),r=Math.floor(u.y/T.cs);return c>=w.c0&&c<=w.c1&&r>=w.r0&&r<=w.r1};
+    if(!b.units.some(u=>u.hp>0&&u.team!==g.team&&!u.rout&&on(u)))return;w.back=true;const f=this.foot(w,T.cs),far=w.cells.slice().sort((a,b)=>Math.hypot(b.x-f.x,b.y-f.y)-Math.hypot(a.x-f.x,a.y-f.y));
+    grpUnits(g.id).forEach((u,i)=>{const q=far[i%far.length];u.sx=q.x-g.ax;u.sy=q.y-g.ay})},
+  /* (its ladder drawn on the field, over the world's picture (worldbattle.js draw): two rails and their rungs from the ground to its
+     top against the side it stands on; behind it (the side away to the north), only its top showing over the parapet. Field px,
+     a world px each scale of them) */
+  draw(area){const T=B&&B.terrain;if(!T||!T.towers)return;const A=STANDARD_ART.ladder,k=area.scale,cs=T.cs;
+    for(const w of T.towers){if(w.l0==null)continue;const f=this.foot(w,cs),top=w.z*WORLD_BATTLE.sprite,y1=f.y-top-(w.ladder===3?A.over*k:0),y0=w.ladder===3?f.y-top+A.over*k:(w.r1+1)*cs,half=A.w*k/2;// (its foot on the ground at the tower's front)
+      ctx.save();ctx.fillStyle=A.rail;ctx.fillRect(f.x-half,y1,k,y0-y1);ctx.fillRect(f.x+half-k,y1,k,y0-y1);ctx.fillStyle=A.rung;
+      for(let y=y0-A.step*k;y>y1;y-=A.step*k)ctx.fillRect(f.x-half+k,y,A.w*k-2*k,k);ctx.restore()}}
 };
 
 /* its picture: the standard (a stepped stone plinth, an iron pole with a gilt finial, a crossbar, two banners hung from it in its

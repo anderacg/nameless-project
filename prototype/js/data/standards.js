@@ -16,8 +16,9 @@ const STANDARD={on:true,guards:[0,3,6,10],hold:4,r:44,renown:4,thanks:6,regrow:1
   capture:{r:6,more:2,chance:.5,weak:1,lairMost:12},lair:{kinds:['bandits','raiders','bog','goblins'],every:4,most:2,n:[3,5]},own:{keep:4},sight:7,safe:9,
   // (phase 5) tower: its tower in a fight on the world map (world/standards.js StandardTower): its top rise[lv] levels over the ground
   // (HILL.range a level on its archers' range; no blade between its top and the ground: terrain.js apart), perch[lv] of its archers posted on it in a fight for it,
-  // its men drawn top[lv] of its model's height up (its platform), its ladder ladder cells wide on the side away from your army (a world battle's man needs more than one: terrain.js routeBody)
-  tower:{rise:[0,0,2,3],perch:[0,0,2,4],top:[0,0,.26,.3],ladder:3},
+  // its men drawn top[lv] of its model's height up (its platform), its ladder ladder cells wide on the side away from your army (a world battle's man needs more than one: terrain.js routeBody); look: s between
+  // its archers' looks for a foe up on its top (then they fall back from the ladder)
+  tower:{rise:[0,0,2,3],perch:[0,0,2,4],top:[0,0,.26,.3],ladder:3,look:.5},
   // land: the land a held one claims round it for its realm (world/territory.js, as a holding's reach: travel cost from its tile),
   // reach[lv] by its level (one fewer while its tower lies broken); its tiles its realm's nearest holding's
   land:{reach:[0,5,7,9]},
@@ -32,4 +33,6 @@ const STANDARD_PLACE={score:{deposit:3,fish:2,pass:2.5,ford:2,crossing:1.5},bord
 const STANDARD_WHY={crossing:'crossroads',ford:'ford',pass:'pass',deposit:'diggings',fish:'fishing grounds'};
 // its picture (world/standards.js standardSprite): the stone plinth's ramp, the iron pole's, the bare rags of one no one holds
 // broken: the share of its tower's height gone when it lies broken
-const STANDARD_ART={stone:['#c4bcae','#a39b8c','#7f786b','#5a554b'],iron:['#8a8c94','#5e6068','#3e4048'],rag:'#6a5a48',rope:'#c8b070',broken:.45};
+// ladder: its tower's ladder in battle (StandardTower.draw), world px: w wide, a rung every step, over: its top over the parapet behind
+const STANDARD_ART={stone:['#c4bcae','#a39b8c','#7f786b','#5a554b'],iron:['#8a8c94','#5e6068','#3e4048'],rag:'#6a5a48',rope:'#c8b070',broken:.45,
+  ladder:{w:4,step:2,over:3,rail:'#6e4626',rung:'#a8743e'}};

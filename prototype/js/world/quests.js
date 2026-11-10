@@ -1111,7 +1111,11 @@ class MissingQuest extends JobQuest{
    (then: retake); done once its banner is his realm's by your hand (you serving him, or handing it to his realm). A holding's
    board: bandits or goblins driven from the outpost they made their lair near it; the broken tower of an outpost of its realm's
    mended with the timber and stone you bring (its page's Mend its tower). OUTPOST_JOB: how far (tiles) each looks */
-const OUTPOST_JOB={take:60,lair:40,mend:40};
+/* hold: an outpost of his realm's within r tiles of him, within foe tiles of a holding of a realm at war with his; held hours by
+   it (within near tiles), a wave of its foe's men at each of waves' hours (n[i] men and a man a day's ten more), away hours away
+   from it at most once begun; scout: n of his foes' outposts within r tiles, each looked on from within see tiles, never within spot
+   of a guarded one by day (half that by night) */
+const OUTPOST_JOB={take:60,lair:40,mend:40,hold:{r:60,foe:80,near:3,hours:12,waves:[3,7,10],n:[4,6,8],away:2},scout:{r:140,n:3,least:2,see:6,spot:2.5}};
 const outpostNear=(fn,t,r)=>Standards.all().filter(s=>fn(s)&&qTiles(s,t)<r).sort((a,b)=>qTiles(a,t)-qTiles(b,t))[0]||null;
 class OutpostQuest extends JobQuest{
   needless(){return this.gone()}
@@ -1151,6 +1155,69 @@ class MendQuest extends JobQuest{
   gone(){const s=Standards.of(this.site);return super.gone()||!s||!this.done&&(!s.broken||s.realm!==this.fac&&!!this.fac)}
   goneWhy(){const s=Standards.of(this.site);return super.gone()?super.goneWhy():s&&!s.broken?'Its tower is mended already.':'The outpost is no longer theirs.'}
 }
+/* hold the outpost until relief comes (doc/STANDARDS_DESIGN.md §6): a lord at war fears his foes will come for one of his realm's
+   outposts near them; once you stand by it, its hold begins: OUTPOST_JOB.hold.hours hours there, a wave of his foe's men (under the
+   banner of its nearest holding) coming at you at each of its waves' hours, each to beat before relief comes. Left too long, the
+   job is lost; beaten or run off, the outpost is theirs. Its hours from the outposts' hour (world/standards.js Standards.hour) */
+class HoldQuest extends JobQuest{
+  needless(){return this.gone()}
+  setup(t,lord){const f=this.fac,H=OUTPOST_JOB.hold;let best=null,bd=1e9,foe=null;
+    for(const s of Standards.all()){if(s.realm!==f||s.choose||s.taking||qTiles(s,lord||t)>H.r)continue;
+      for(const h of TOWNS)if(!h.gone&&FACS[h.owner]&&h.owner!=='player'&&atWar(f,h.owner)){const d=qTiles(s,h);if(d<bd&&d<H.foe){bd=d;best=s;foe=h.owner}}}
+    if(!best)return false;Object.assign(this,{site:best.i,foeF:foe,h:0,wave:0,away:0,on:false,left:false});this.title='Hold the '+best.name;
+    this.text=(lord?lord.name:t.name)+' fears the '+FACS[foe].n+' will come for the '+best.name+'. Hold it until relief comes: '+H.hours+' hours by it, whoever comes.';
+    this.cause='It stands '+Math.round(bd)+' tiles from the '+FACS[foe].n+'’s nearest holding.';this.pays(170,0,8,50)}
+  begin(){const s=Standards.of(this.site);if(!s)return false;s.seen=true;this.x=s.x;this.y=s.y}
+  seek(){const s=Standards.of(this.site);return s?{x:s.x,y:s.y,name:'the '+s.name}:null}
+  get deed(){return 'outpost:held'}
+  hits(d){return d.standard.i===this.site}
+  get deedWord(){return 'held'}
+  gone(){const s=Standards.of(this.site);return super.gone()||!s||!this.done&&(s.realm!==this.fac||this.left)}
+  goneWhy(){const s=Standards.of(this.site);return super.gone()?super.goneWhy():!s?'The outpost is gone.':this.left?'You left the '+s.name+' before relief came.':'The '+s.name+' fell to the '+(FACS[s.realm]?FACS[s.realm].n:'wilds')+'.'}
+  // (an hour: by it, the hold runs and a wave comes at its hour; away once begun, too long and the job is lost)
+  hour(){const s=Standards.of(this.site),H=OUTPOST_JOB.hold;if(!s||s.realm!==this.fac||this.done||this.left)return;
+    if(Math.hypot(P.x-s.x,P.y-s.y)>H.near*TILE){if(this.on&&++this.away>H.away)this.left=true;return}
+    if(!this.on){this.on=true;log('You take your post at the '+s.name+'. Relief is '+H.hours+' hours away.','gold')}
+    // (a wave's page left with no fight: run from it)
+    this.away=0;if(this.fight){if(!G.enc)this.ended({how:'fled'});return}this.h=Math.min(H.hours,this.h+1);const w=H.waves[this.wave];
+    if(w!=null&&this.h>=w)this.attack(s);else if(w==null&&this.h>=H.hours){log('Relief comes to the '+s.name+': the '+FACS[this.fac].n+'’s men take it from you.','good');worldEmit('outpost:held',{standard:s,by:'you'})}}
+  // (a wave: his foe's men, made for the fight under its nearest holding's banner, coming from its way, at you)
+  attack(s){if(G.mode!=='world'||G.enc||G.modal)return;const H=OUTPOST_JOB.hold,h=Spatial.nearest(fiefsOf(this.foeF),s.x,s.y);if(!h)return;
+    const n=H.n[this.wave]+Math.floor(G.day/10),a=Math.atan2(h.y-s.y,h.x-s.x),b=asParty({x:s.x+Math.cos(a)*TILE*4,y:s.y+Math.sin(a)*TILE*4,town:h.name,fac:this.foeF,troops:armyOf(this.foeF,n)});
+    this.fight=true;log('Men of the '+FACS[this.foeF].n+' come for the '+s.name+'!','bad');
+    startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),title:FACS[this.foeF].n+' men at the '+s.name,word:'soldiers',hold:this.id})}
+  // (its wave's fight over (the bus's battle:ended): beaten, the next; lost or run from, the outpost theirs)
+  ended(d){this.fight=false;const s=Standards.of(this.site);if(!s)return;if(d.how==='won'){this.wave++;return}
+    if(s.realm===this.fac)s.taken(this.foeF)}
+}
+/* scout the enemy's outposts (doc §6): a lord at war wants his foes' outposts near him looked on, unseen: each looked on from within
+   OUTPOST_JOB.scout.see tiles; within spot tiles of a guarded one by daylight (half that by night), its guards see you and the
+   job is lost. Looked at each hour, and as it points you on (seek) */
+class OutscoutQuest extends JobQuest{
+  needless(){return this.gone()}
+  setup(t,lord){const f=this.fac,X=OUTPOST_JOB.scout,c=Standards.all().filter(s=>s.realm&&s.realm!=='player'&&s.realm!==f&&atWar(f,s.realm)&&qTiles(s,lord||t)<X.r).sort((a,b)=>qTiles(a,lord||t)-qTiles(b,lord||t)).slice(0,X.n);
+    if(c.length<X.least)return false;Object.assign(this,{sites:c.map(s=>s.i),looked:[],caught:null});const F=[...new Set(c.map(s=>FACS[s.realm].n))].join(' and the ');
+    this.title='Scout the '+F+'’s outposts';this.text=(lord?lord.name:t.name)+' wants the '+c.map(s=>s.name).join(', ')+' looked on, unseen: how many guard them, and what stands there.';
+    this.cause='The '+F+' hold them on the roads into his land.';this.pays(120,0,6,40)}
+  begin(){for(const i of this.sites){const s=Standards.of(i);if(s)s.seen=true}const n=this.next();if(n){this.x=n.x;this.y=n.y}}
+  next(){for(const i of this.sites)if(!this.looked.includes(i)){const s=Standards.of(i);if(s)return s}return null}
+  seek(){this.look();const s=this.next();return s?{x:s.x,y:s.y,name:'the '+s.name}:null}
+  // (where you stand: seen by a guarded one's men close by day, or near enough to look on one)
+  look(){if(this.done||this.caught!=null)return;const X=OUTPOST_JOB.scout,dark=Clock.darkness()>.5;
+    for(const i of this.sites){if(this.looked.includes(i))continue;const s=Standards.of(i);if(!s)continue;const d=Math.hypot(P.x-s.x,P.y-s.y)/TILE;
+      if(s.guards>0&&s.realm&&atWar(this.fac,s.realm)&&d<X.spot*(dark?.5:1)){this.caught=i;log('The guards of the '+s.name+' see you.','bad');return}
+      if(d<X.see){this.looked.push(i);log('You look on the '+s.name+' unseen: '+s.guards+' guards, '+STANDARD_LV[s.lv]+'.','good')}}
+    if(this.looked.length===this.sites.length)worldEmit('outposts:scouted',{quest:this.id,by:'you'})}
+  hour(){this.look()}
+  get deed(){return 'outposts:scouted'}
+  hits(d){return d.quest===this.id}
+  get deedWord(){return 'scouted'}
+  gone(){return super.gone()||!this.done&&this.caught!=null}
+  goneWhy(){const s=this.caught!=null&&Standards.of(this.caught);return super.gone()?super.goneWhy():'The guards of the '+(s?s.name:'outpost')+' saw you.'}
+}
+// (the outposts' jobs that run by the hour: the hold's waves and hours, the scouting's look (world/standards.js Standards.hour))
+const outpostJobsHour=()=>{for(const q of P.quests||[])if((q.type==='hold'||q.type==='outscout')&&!q.done)Quest.as(q).hour()};
+worldOn('battle:ended',d=>{const id=d.enc&&d.enc.hold;if(id==null)return;const q=(P.quests||[]).find(x=>x.id===id);if(q)Quest.as(q).ended(d)});
 // the kinds (the holdings' boards name theirs: data/holdings.js jobs; lords give lordkill, raid, bounty and beast: lordJob)
 defineKinds('quest',{},{
   bounty:{cls:BountyQuest},
@@ -1169,6 +1236,8 @@ defineKinds('quest',{},{
   outpost:{cls:OutpostQuest},
   outlair:{cls:OutlairQuest},
   mend:{cls:MendQuest},
+  hold:{cls:HoldQuest},
+  outscout:{cls:OutscoutQuest},
 });
 // their deeds heard on the bus (core/bus.js): a band beaten, a beast slain, a site cleared, a lord beaten, a holding razed
 Quest.listen();
@@ -1218,7 +1287,7 @@ function jobsAt(t){
 }
 // a lord's job: war work if his faction is at war (raids only for those who serve him), else a bounty or a beast near his lands
 function lordJob(l){
-  const t=Spatial.nearest(fiefsOf(l.fac).length?fiefsOf(l.fac):TOWNS,l.x,l.y);const kinds=enemiesOf(l.fac).length?(P.fac===l.fac?['lordkill','raid','relieve','scout','outpost']:['lordkill','relieve','scout','outpost']):['bounty','beast'];
+  const t=Spatial.nearest(fiefsOf(l.fac).length?fiefsOf(l.fac):TOWNS,l.x,l.y);const kinds=enemiesOf(l.fac).length?(P.fac===l.fac?['lordkill','raid','relieve','scout','outpost','hold','outscout']:['lordkill','relieve','scout','outpost','hold','outscout']):['bounty','beast'];
   for(let k=0;k<6;k++){const q=makeQuest(questRng().pick(kinds),t,l);if(q)return q}return null;
 }
 /* taking a quest, where it points, how far along it is, reporting and failing: the quest's own (story/quest.js); the names

@@ -140,6 +140,7 @@ class WorldBattleArea{
   clipSight(){ctx.beginPath();for(const p of this.sight()){const q=this.field(p),r=p.r*this.scale;ctx.moveTo(q.x+r,q.y);ctx.arc(q.x,q.y,r,0,Math.PI*2)}ctx.clip()}
   draw(){
     ctx.save();ctx.strokeStyle='#d1b464';ctx.lineWidth=this.scale;ctx.setLineDash([3*this.scale,4*this.scale]);ctx.beginPath();ctx.arc(this.cx,this.cy,this.radius,0,Math.PI*2);ctx.stroke();ctx.restore();
+    StandardTower.draw(this);// (an outpost tower's ladder: world/standards.js)
     this.drawArrivals();
     for(const a of this.arrivals){const p=this.field(a.mini);if(a.u.team&&!this.visible(p))continue;const s=marchSprite(a.mini,a.army.owner),k=WORLD_BATTLE.sprite;ctx.save();ctx.translate(p.x,p.y);ctx.scale(Math.cos(a.mini.dir??a.army.face)<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore()}
     for(const u of B.units)if(u.regroup&&(!u.team||this.visible(u))){ctx.fillStyle=sideCol(u,'ui');ctx.fillRect(u.x-2*WORLD_BATTLE.sprite,u.y-6*WORLD_BATTLE.sprite,4*WORLD_BATTLE.sprite,6*WORLD_BATTLE.sprite)}
@@ -209,7 +210,7 @@ class WorldBattleArea{
   clamp(){for(const u of B.units)if(u.hp>0&&!u.rout&&!withdrawing(u)){const p=this.constrain(u);u.x=p.x;u.y=p.y}
     for(const g of Object.values(B.groups))if(g.order!=='rout'&&g.order!=='withdraw'){const p=this.constrain({x:g.ax,y:g.ay},16);g.ax=p.x;g.ay=p.y;for(const q of g.queue||[]){const a=this.constrain(q,16);q.x=a.x;q.y=a.y}}}
   step(dt){
-    B.surprise?.step();this.enterMarchers(dt);
+    B.surprise?.step();this.enterMarchers(dt);StandardTower.step(B);// (an outpost tower's archers falling back from its ladder)
     for(const u of B.units){const a=u.regroup;if(!a)continue;
       if(a.phase==='rest'){a.t+=dt;if(a.t>=WORLD_BATTLE.regroup)a.phase='return';continue}
       const w=a.way||(a.way=this.returnPlan(u));if(!w)continue;const way=this.escapeWay(u,w),s=way?Math.min(way[2],u.s.spd*dt):0;

@@ -125,10 +125,43 @@ Kit.suite(({ok,info})=>{
    ok(m.every(u=>u.z>0&&Math.abs(u.s.range-u.r0*T.rangeMul(t.tIx(T,u.x,u.y)))<1&&u.s.range>=u.r0*(1+H*X.rise[3])-1),'drawn up on it, shooting from its height (range '+(u0&&u0.s.range.toFixed(0))+', '+(u0&&u0.r0)+' on level ground)');
    ok(!B.muster||!B.muster.entries.some(e=>e.g===g),'not marched off it to a formation');
    {const C=t.Commander.of(1).groups();ok(g&&!Object.values(C).some(ids=>ids.includes(g.id))&&Object.values(C).some(ids=>ids.length),'no captain orders them, the rest of its guards his (commander.js: g.post)')}
+   {const f=t.StandardTower.foot(w,T.cs),d0=m.map(u=>Math.hypot(u.sx+g.ax-f.x,u.sy+g.ay-f.y)),foe=B.units.find(u=>u.team===0&&u.hp>0);let drew=true;try{t.StandardTower.draw(B.world)}catch(e){drew=false}
+    ok(drew&&w.l1-w.l0===X.ladder&&!w.back,'its ladder drawn on the field ('+X.ladder+' cells, from the ground to its top)');
+    const fx=foe.x,fy=foe.y;foe.x=m[0].x;foe.y=m[0].y;w.seen=0;t.StandardTower.step(B);const d1=m.map(u=>Math.hypot(u.sx+g.ax-f.x,u.sy+g.ay-f.y));foe.x=fx;foe.y=fy;
+    ok(w.back&&d1.reduce((a,b)=>a+b,0)>d0.reduce((a,b)=>a+b,0),'a foe up on its top: its archers fall back from the ladder ('+d0.map(v=>v.toFixed(0)).join(',')+' to '+d1.map(v=>v.toFixed(0)).join(',')+' px from its foot)')}
    end(B);
    const B2=fight(3,true);ok(!B2.groups.e0_tower&&!(B2.terrain.towers||[]).some(x=>x.s===s),'its tower broken: no one on it, nothing raised');end(B2);
    const B3=fight(1,false);ok(B3.world&&!B3.groups.e0_tower,'a flag post alone: fought on the map, no tower');end(B3)}
   finally{s.lv=lv0;s.broken=false;s.owner=f0;s.guards=S.guards[lv0];s.taking=null;s.choose=false;G.mode='world';t.hidePanel()}}
+ // ---- phase 4: hold an outpost until relief comes; scout the enemy's outposts unseen
+ {Kit.world({encCool:0});P.troops={hum_knight:40,hum_long:20};P.hp=null;t.vitals();P.fac=null;P.quests=[];const H=t.OUTPOST_JOB.hold,X=t.OUTPOST_JOB.scout;
+  // (an outpost of a realm with a holding of another near it, both at war)
+  let s=null,foe=null,bd=1e9;for(const x of all())if(t.FACS[x.realm]&&x.realm!=='player'&&!x.choose&&!x.taking)for(const h of t.TOWNS)if(!h.gone&&t.FACS[h.owner]&&h.owner!=='player'&&h.owner!==x.realm){const d=Math.hypot(h.x-x.x,h.y-x.y);if(d<bd){bd=d;s=x;foe=h.owner}}
+  let f0=s.realm;const rk=t.rk(f0,foe),r0=W.rel[rk],L=W.lords.filter(l=>l.fac===f0&&!l.dead).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y))[0],hh=t.Spatial.nearest(t.fiefsOf(f0),s.x,s.y);
+  W.rel[rk]={s:'war',since:0};const hon0={...P.honor},lr0={...(P.lrel||{})},ho0=P.hostile;P.hostile={};for(const k of Object.keys(t.FACS))P.honor[k]=Math.max(0,P.honor[k]||0);(P.lrel??={});for(const l of W.lords)P.lrel[l.id]=50;// (in good standing with every lord here: their jobs given)
+  const q0=t.makeQuest('hold',hh,L);if(q0)s=t.Standards.of(q0.site);const g0=s.guards,lv0=s.lv;
+  const hour=()=>{G.mode='world';G.modal=false;G.enc=null;t.hidePanel();t.Standards.hour()};
+  try{
+   let q=null;for(let i=0;i<6&&!q;i++){q=t.makeQuest('hold',hh,L);if(q&&q.site!==s.i)q=null}
+   ok(q&&/Hold the /.test(q.title)&&q.foeF===foe,'a lord at war fears for an outpost of his near his foes: '+(q&&q.title));
+   t.acceptQuest(q);P.x=s.x+400;P.y=s.y;hour();ok(!q.on&&q.h===0,'away from it, the hold has not begun');
+   P.x=s.x+8;P.y=s.y+8;let waves=0;for(let i=0;i<40&&!q.done;i++){hour();if(G.enc&&G.enc.hold===q.id){waves++;t.act('auto');}}
+   ok(waves===H.waves.length&&q.done&&q.wave===H.waves.length,'by it '+H.hours+' hours: '+waves+' waves of the '+t.FACS[foe].n+' beaten, and relief comes: the job done');
+   P.quests=[];let q2=null;for(let i=0;i<6&&!q2;i++){q2=t.makeQuest('hold',hh,L);if(q2&&q2.site!==s.i)q2=null}t.acceptQuest(q2);P.x=s.x+8;P.y=s.y+8;hour();P.x=s.x+400;for(let i=0;i<=H.away;i++)hour();
+   ok(q2.left&&t.Quest.as(q2).gone()&&/before relief/.test(t.Quest.as(q2).goneWhy()),'left too long once begun: the job lost');
+   P.quests=[];let q3=null;for(let i=0;i<6&&!q3;i++){q3=t.makeQuest('hold',hh,L);if(q3&&q3.site!==s.i)q3=null}t.acceptQuest(q3);P.x=s.x+8;P.y=s.y+8;
+   for(let i=0;i<H.waves[0];i++)hour();ok(G.enc&&G.enc.hold===q3.id,'a wave comes at you there');t.Quest.as(q3).ended({how:'lost'});
+   ok(s.realm===foe&&t.Quest.as(q3).gone(),'beaten by it: the outpost the '+t.FACS[foe].n+'\'s, the job lost');
+   s.owner=f0;s.guards=g0;s.broken=false;s.lv=lv0;P.quests=[];G.enc=null;
+   // (scouting: the foe's outposts near his lord)
+   const Lf=W.lords.filter(l=>l.fac===foe&&!l.dead).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y))[0],hf=t.Spatial.nearest(t.fiefsOf(foe),s.x,s.y);let o=null;for(let i=0;i<6&&!o;i++)o=t.makeQuest('outscout',hf,Lf);
+   ok(o&&o.sites.length>=X.least&&o.sites.every(i=>{const x=t.Standards.of(i);return x&&t.atWar(foe,x.realm)}),'a lord at war wants his foes\' outposts scouted: '+(o&&o.title));
+   if(o){t.acceptQuest(o);const A1=t.Standards.of(o.sites[0]),A2=t.Standards.of(o.sites[1]);G.clock=t.DAY*.3;
+    P.x=A1.x+(X.see-1)*t.TILE;P.y=A1.y;hour();ok(o.looked.includes(A1.i)&&o.caught==null,'from '+(X.see-1)+' tiles, unseen by day: the '+A1.name+' looked on');
+    A2.guards=Math.max(1,A2.guards);P.x=A2.x+t.TILE;P.y=A2.y;hour();ok(o.caught===A2.i&&t.Quest.as(o).gone()&&/saw you/.test(t.Quest.as(o).goneWhy()),'a tile from a guarded one by day: its guards see you, the job lost');
+    o.caught=null;o.looked=[];G.clock=t.DAY*.75;for(const i of o.sites){const x=t.Standards.of(i);P.x=x.x+X.spot*.6*t.TILE;P.y=x.y;hour()}
+    ok(o.done,'by night closer still, every one looked on unseen: the job done')}}
+  finally{W.rel[rk]=r0;P.honor=hon0;P.lrel=lr0;P.hostile=ho0;s.owner=f0;s.guards=g0;s.broken=false;s.lv=lv0;P.quests=[];G.enc=null;G.clock=t.DAY*.3;G.mode='world';t.hidePanel()}}
  // ---- the land each claims round it (doc §4; territory.js): its realm's, its nearest holding's; borders follow it
  {Kit.world({encCool:0});const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'&&!x.choose&&!x.taking&&t.fiefsOf(x.realm).length),f0=s.realm,
    g=Object.keys(t.FACS).find(k=>k!==f0&&k!=='player'&&t.fiefsOf(k).length),L=S.land.reach,at=()=>t.landHold(s.x,s.y);
