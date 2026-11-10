@@ -8,7 +8,9 @@
    to, or no one. Phase 1: placed, drawn, held, saved, taken by you. Phase 2: its sentries walking their beat round it; held in
    peace it grows a level, paid in timber and stone from its realm's nearest holding (STANDARD.grow); taken, its tower is broken
    (fewer guards) and mended slowly, again on timber and stone (STANDARD.repair) ---------- */
-const STANDARD_LV=['','a standard','a standard and a watchtower','a standard and a stone tower'];
+// (what stands there by its level, in words: the owner, 2026-11-10, "can we rename it to something more straightforward?": an outpost
+// to the player, a standard in the code)
+const STANDARD_LV=['','a flag post','a flag post and a watchtower','a flag post and a stone tower'];
 class Standard extends Site{
   get T(){return STANDARD.T}
   get screen(){return PAGE_SCREEN}
@@ -97,14 +99,15 @@ class Standard extends Site{
       s.guards?insight(['guards by it',roughly(s.guards)+' guards',s.guards+' guards'],'know how many'):'no guards',s.whyText()]);
     const t=s.supplier(),works=!s.realm?'':s.broken?'<p class="muted">Its tower lies broken'+(s.need?': its mending waits on '+s.costText(s.need)+' from '+(t?t.name:'its realm'):', mended in '+Math.max(1,STANDARD.repair.days-(s.fix||0))+' days')+'.</p>'
       :s.lv<3?'<p class="muted">'+(s.need?'It would grow, but waits on '+s.costText(s.need)+' from '+(t?t.name:'its realm'):'Held in peace, it grows in '+Math.max(1,STANDARD.grow.days[s.lv]-(G.day-(s.since||0)))+' days, for '+s.costText(STANDARD.grow.cost[s.lv+1])+' from '+(t?t.name:'its realm'))+'.</p>':'';
-    const body='<p>A standard '+s.whyText()+': a tall pole on a stepped stone plinth, '+(f?'its banners hung from a crossbar':'its banners torn to rags')+'.</p>'+facts+works;
+    const body='<p>An outpost '+s.whyText()+': a tall flag pole on a stepped stone plinth, '+(f?'its banners hung from a crossbar':'its banners torn to rags')+'.</p>'+facts+works;
     if(s.choose)return{title:'Your banner flies',body:body+'<p>Your men hold it. You have no realm of your own and serve no one: hand it to a realm near, or leave it to no one.</p>',
       acts:[...s.nearRealms().map(([k,d])=>({icon:'banner',label:'Hand it to the '+FACS[k].n,act:'site-hand',arg:k,facts:['renown +'+STANDARD.renown,'their thanks',Math.round(d)+' tiles to their nearest holding']})),
         {icon:'truce',label:'Leave it to no one',act:'site-hand',arg:'none',facts:['renown +'+STANDARD.renown]}]};
     if(s.taking)return{body:body+'<p class="gold">Your banner goes up: '+s.taking.h+' of '+STANDARD.hold+' hours. Stay by it.</p>'};
-    if(s.ours)return{body:body+'<p class="muted">It flies '+(s.realm==='player'?'your own colours':'the colours of the realm you serve')+'.</p>'};
+    const C=STANDARD.repair.cost,can=Object.entries(C).every(([g,n])=>goodN(g)>=n),mend=s.broken&&s.realm&&(s.ours||!hostileTo(s.realm))?[{icon:'tools',label:'Mend its tower',act:'site-mend',facts:[s.costText(C)+' from your packs'],why:can?'':'You need '+s.costText(C)}]:[];
+    if(s.ours)return{body:body+'<p class="muted">It flies '+(s.realm==='player'?'your own colours':'the colours of the realm you serve')+'.</p>',acts:mend};
     const war=s.realm&&s.realm!=='player'&&!hostileTo(s.realm),fight=s.guards>0,lair=s.band?'<p class="bad">'+LAIR_SAY[s.band]+' have made it their lair: their raiders ride out of it onto the roads round it.</p>':'';
-    return{body:body+lair,acts:[{icon:'sword',label:fight?(s.band?'Drive them out':'Attack its guards'):'Raise your banner',act:'site-attack',facts:[fight?roughly(s.guards)+' guards':'no guards',war?'an act of war on the '+FACS[s.realm].n:'',STANDARD.hold+' hours by it'].filter(Boolean),
+    return{body:body+lair,acts:[...mend,{icon:'sword',label:fight?(s.band?'Drive them out':'Attack its guards'):'Raise your banner',act:'site-attack',facts:[fight?roughly(s.guards)+' guards':'no guards',war?'an act of war on the '+FACS[s.realm].n:'',STANDARD.hold+' hours by it'].filter(Boolean),
       why:partySize()<1&&fight?'You have no men':''}]}}
   act(a,arg,done){
     if(a==='site-attack'&&!this.ours&&!this.taking&&!this.choose){const f=this.realm;this.was=f;
@@ -112,6 +115,9 @@ class Standard extends Site{
       if(this.guards>0){G.site=null;const b=this.band;startEncounter({kind:'standard',ref:this,list:this.guardList(),title:b?LAIR_SAY[b]+' at the '+this.name:'Guards of the '+this.name,word:b?'raiders':'guards',band:b||undefined,mine:true});return true}
       this.taking={h:0};done('Your men plant your banner by the '+this.name+'. Stay by it '+STANDARD.hold+' hours.');return true}
     if(a==='site-hand'&&this.choose){done(this.give(arg==='none'?null:arg));return true}
+    // (its tower mended with the timber and stone you carry: at once, the deed a mending job waits on)
+    if(a==='site-mend'&&this.broken&&this.realm){const C=STANDARD.repair.cost;if(!Object.entries(C).every(([g,n])=>goodN(g)>=n))return true;for(const g in C)goodTake(g,C[g]);
+      this.broken=false;this.fix=0;this.need=null;worldEmit('standard:mended',{standard:this,by:'you'});done('Your men mend the tower of the '+this.name+'.');return true}
     return false}
   // its guards beaten (engage.js ON_WIN.standard): your banner goes up while you stay by it
   beaten(){const b=this.band;this.guards=0;this.taking={h:0};if(b){this.owner=null;this.ld=null;worldEmit('site:cleared',{site:this})}
@@ -130,7 +136,9 @@ class Standard extends Site{
     return this.realm?'The '+this.name+' flies '+(this.realm==='player'?'your colours':'the colours of the '+FACS[this.realm].n)+' now. Renown +'+STANDARD.renown+'.':'You cut down its banners and leave the '+this.name+' to no one. Renown +'+STANDARD.renown+'.'}
   // the realms near it you may hand it to: [realm, tiles to its nearest holding], the nearest three, not the one you took it from
   nearRealms(){const out=[];for(const k of Object.keys(FACS)){if(k==='player'||k===this.was)continue;const F=fiefsOf(k);if(!F.length)continue;
-    out.push([k,Math.min(...F.map(t=>Math.hypot(t.x-this.x,t.y-this.y)))/TILE])}return out.sort((a,b)=>a[1]-b[1]).slice(0,3)}
+    out.push([k,Math.min(...F.map(t=>Math.hypot(t.x-this.x,t.y-this.y)))/TILE])}out.sort((a,b)=>a[1]-b[1]);
+    // (the nearest three, and any realm whose job for it you have: world/quests.js OutpostQuest)
+    const job=new Set((P.quests||[]).filter(q=>q.type==='outpost'&&q.site===this.i).map(q=>q.fac));return out.filter((e,i)=>i<3||job.has(e[0]))}
 }
 SITE_CLASS.standard=Standard;
 
@@ -141,6 +149,7 @@ SITE_CLASS.standard=Standard;
    border, gap tiles apart. Each stands on open ground beside its spot (near tiles), off the road */
 const Standards={
   all(){return (W.sites||[]).filter(s=>s instanceof Standard)},
+  of(i){return this.all().find(s=>s.i===i)||null},
   // (their tiles kept free of every holding's building: lots.js occReserve, lotFits)
   reserve(){if(typeof OCC==='undefined'||!OCC)return;for(const s of this.all())for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},// (-3: a standard's, no lot's: Standards.stand looks past them)
   spots(){const S=STANDARD_PLACE,road=(x,y)=>{const k=tAt(x,y);return k===T_ROAD||k===T_FORD},peak=(x,y)=>tAt(x,y)===T_MOUNT,out=[];
@@ -177,8 +186,8 @@ const Standards={
     return out},
   make(p,k){const [tx,ty]=p.at,[x,y]=Standard.point(tx,ty),S=STANDARD_PLACE,lv=p.score>=S.lv[1]?3:p.score>=S.lv[0]?2:1,h=Spatial.nearestHolding(x,y),
       s=Object.assign(Object.create(Standard.prototype),{i:STANDARD.I0+k,type:'standard',tx,ty,x,y,seed:1+Math.floor(hash(tx,ty,4243)*99998),seen:false,cleared:false,back:0,
-        owner:p.f,lv,why:p.why,g:p.g||null,guards:STANDARD.guards[lv],taking:null,choose:false});
-    s.name=(h?h.name+' ':'')+(p.why==='deposit'&&GOODS[p.g]?GOODS[p.g].n.toLowerCase()+' ':'')+STANDARD_WHY[p.why];return s},
+        owner:p.f,home0:p.f,lv,why:p.why,g:p.g||null,guards:STANDARD.guards[lv],taking:null,choose:false});
+    s.name=(h?h.name+' ':'')+(p.why==='deposit'&&GOODS[p.g]?GOODS[p.g].n.toLowerCase()+' ':'')+STANDARD_WHY[p.why]+' outpost';return s},
   hour(){for(const s of this.all()){s.hour();s.watch()}},
   // (the world's captures, once a day after the sites' own day: Standard#contest)
   day(){for(const s of this.all())s.contest()},

@@ -711,7 +711,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  band is raised within STANDARD.safe tiles of a held standard (world.js spawnBandit), so the first bands stand elsewhere: the
 //  save after begin (B2), the 600 frames (W8) and the three days (W7). Proof: STANDARD.safe 0 gives W8 and B2 as before and W7
 //  bc80b8b9. Were W7 2ad6afe1, W8 c6df5ce6, B2 cdc4c20b)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c817e41c',W6:'08c052b5',W7:'4385273b',W8:'c7207a9e',B2:'80f263f5'};
+// (W7 and B2 again 2026-11-10, on purpose: standards phase 4 (doc/STANDARDS_DESIGN.md), outposts to the player (the owner: "can
+//  we rename it to something more straightforward?"): each one's name ends in "outpost" and keeps the realm it began with (home0,
+//  for a quest to retake it), both in the save, after begin (B2) and after three days (W7). W1-W6 and W8 hold. Proof: its name
+//  without "outpost" and no home0 give W7 and B2 as before. Were W7 4385273b, B2 80f263f5)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c817e41c',W6:'08c052b5',W7:'6e5fbaa2',W8:'c7207a9e',B2:'f41e4976'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

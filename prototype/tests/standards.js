@@ -82,6 +82,31 @@ Kit.suite(({ok,info})=>{
  // ---- sight round yours and your employer's; no band raised by a held one
  {const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'),f=s.realm;P.fac=f;const S0=t.W.seen;t.W.seen=new Uint8Array(t.MW*t.MH);try{s.watch();ok(t.seenAt(s.x,s.y)&&t.seenAt(s.x+(S.sight-1)*t.TILE,s.y),'your employer\'s: the fog lifted '+S.sight+' tiles round it')}finally{t.W.seen=S0;P.fac=null}
   ok(t.Standards.guarded(s.x+t.TILE,s.y)&&!t.Standards.guarded(s.x+(S.safe+2)*t.TILE*2,s.y+(S.safe+2)*t.TILE*2),'no band is raised within '+S.safe+' tiles of a held one')}
+ // ---- phase 4: the outposts' quests
+ {Kit.world({encCool:0});P.troops={hum_knight:40};P.hp=null;t.vitals();P.fac=null;P.quests=[];
+  // (the outpost nearest another realm's holding, and that realm)
+  let s=null,foe=null,bd=1e9;for(const x of all())if(t.FACS[x.realm]&&x.realm!=='player'&&!x.choose&&!x.taking)for(const h of t.TOWNS)if(!h.gone&&t.FACS[h.owner]&&h.owner!=='player'&&h.owner!==x.realm){const d=Math.hypot(h.x-x.x,h.y-x.y);if(d<bd){bd=d;s=x;foe=h.owner}}
+  const f0=s.realm,r0=t.W.rel[t.rk(f0,foe)];
+  t.W.rel[t.rk(f0,foe)]={s:'war',since:0};const L=W.lords.find(l=>l.fac===foe&&!l.dead),h=t.Spatial.nearest(t.fiefsOf(foe),s.x,s.y);
+  try{let q=null;for(let i=0;i<4&&!q;i++){q=t.makeQuest('outpost',h,L);if(q&&q.site!==s.i)q=null}
+   if(!q){const near=t.Standards.all().filter(x=>x!==s);near.forEach(x=>x._k=x.owner);near.forEach(x=>x.owner=foe);try{q=t.makeQuest('outpost',h,L)}finally{near.forEach(x=>{x.owner=x._k;delete x._k})}}
+   ok(q&&q.site===s.i&&/Take the /.test(q.title)&&q.fac===foe,'a lord at war wants an outpost of his foes taken: '+(q&&q.title));
+   t.acceptQuest(q);G.site=s;G.mode='site';s.guards=0;s.broken=false;P.x=s.x;P.y=s.y+12;t.act('site-attack');for(let i=0;i<S.hold;i++)t.Standards.hour();
+   ok(s.choose&&s.nearRealms().some(([k])=>k===foe),'taken by you, serving no one: his realm among those you may hand it to');
+   t.act('site-hand',foe);const Q=P.quests.find(x=>x.id===q.id);ok(s.realm===foe&&Q&&Q.done,'handed to his realm: the job done ('+(Q&&Q.done)+')');
+   s.owner=f0;s.home0=f0;const q2=t.makeQuest('outpost',t.Spatial.nearest(t.fiefsOf(f0),s.x,s.y),W.lords.find(l=>l.fac===f0&&!l.dead));s.owner=foe;
+   const q3=(()=>{const L0=W.lords.find(l=>l.fac===f0&&!l.dead),h0=t.Spatial.nearest(t.fiefsOf(f0),s.x,s.y);for(let i=0;i<4;i++){const x=t.makeQuest('outpost',h0,L0);if(x&&x.site===s.i)return x}return null})();
+   ok(q3&&/Retake the /.test(q3.title),'its first realm\'s lord wants it back: '+(q3&&q3.title))}
+  finally{t.W.rel[t.rk(f0,foe)]=r0;s.owner=f0;s.guards=S.guards[s.lv];s.broken=false;s.choose=false;P.quests=[];G.mode='world';t.hidePanel()}}
+ {const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'&&!x.choose&&!x.taking&&!t.hostileTo(x.realm)),f0=s.realm,t0=t.Spatial.nearest(t.TOWNS.filter(x=>x.owner===f0&&!x.gone),s.x,s.y);Kit.world({encCool:0});
+  try{s.broken=true;s.lv=Math.max(2,s.lv);let q=null;for(let i=0;i<4&&!q;i++){q=t.makeQuest('mend',t0,null);if(q&&q.site!==s.i)q=null}
+   ok(q&&/Mend the tower/.test(q.title),'a broken tower of its realm\'s: a holding\'s job to mend it ('+(q&&q.title)+')');
+   if(q){t.acceptQuest(q);P.x=s.x;P.y=s.y+12;G.site=s;G.mode='site';t.showSite();ok(/Mend its tower/.test(Kit.panel()),'its page: Mend its tower');
+    for(const g in S.repair.cost)t.invAdd('good',g,S.repair.cost[g]);t.act('site-mend');const Q=P.quests.find(x=>x.id===q.id);ok(!s.broken&&Q&&Q.done,'mended with the timber and stone you brought: the job done')}
+   s.owner='bandits';s.guards=5;let o=null;for(let i=0;i<4&&!o;i++){o=t.makeQuest('outlair',t0,null);if(o&&o.site!==s.i)o=null}
+   ok(o&&/Drive the bandits from/.test(o.title),'a band\'s lair near: a holding\'s job to drive them out ('+(o&&o.title)+')');
+   if(o){t.acceptQuest(o);P.troops={hum_knight:40};P.hp=null;t.vitals();G.site=s;G.mode='site';t.showSite();t.act('site-attack');t.act('auto');const Q=P.quests.find(x=>x.id===o.id);ok(!s.band&&Q&&Q.done,'driven out: the job done')}}
+  finally{s.owner=f0;s.guards=S.guards[s.lv];s.broken=false;s.taking=null;P.quests=[];G.mode='world';t.hidePanel()}}
  // ---- through a save
  {const rec=all().map(s=>[s.name,s.realm,s.lv,s.guards].join());t.saveGame(true,'quick');W.sites=[];t.loadGame('quick');
   ok(all().length===A.length&&all().map(s=>[s.name,s.realm,s.lv,s.guards].join()).join('|')===rec.join('|')&&all().every(s=>s instanceof t.Standard),'a save keeps every standard, whose it is, its level and its guards')}
