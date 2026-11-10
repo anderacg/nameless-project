@@ -1526,12 +1526,11 @@
       for(const y of [top+h*.3,eye-6]){const band=[[x-w+3,y+6],[x-w*.55,y+1],[x-4,y-1]];pair(band,64);pair(band.map(([px,py])=>[px,py-2]),192);for(const dx of [10,20]){dot(x-dx,y+2*(dx/w)**2-2,224);dot(x-dx,y+2*(dx/w)**2-2,224,true);}}
       pair([[x-3,top+4],[x-4,eye-6],[x-2,chin-3]],96);
     }
-    if(kind==='barrel-great-helm')pair([[x-w+8,top+h*.3],[x-w+6,eye+8],[x-w+12,chin-3]],96);
+    if(kind==='barrel-great-helm')pair([[x-w+8,top+h*.3],[x-w+7,eye-4]],96);
     if(kind==='fluted-knight-helm')for(const dx of [8,16,24]){const rib=[[x-2,top+4],[x-dx*.65,top+h*.3],[x-dx,top+h*.65],[x-dx,eye-5]];pair(rib,96);pair(rib.map(([px,py])=>[px+2,py]),192);}
     if(kind==='leaf-visor-helm'||kind==='closed-sallet')pair([[x-4,eye+6],[x-14,eye+14],[x-12,chin-5],[x-4,chin+1]],96);
     if(kind==='horned-closed-helm'){
       pair([[x-w+3,eye-7],[x-8,eye-9],[x-3,eye-7]],64);
-      pair([[x-6,eye+8],[x-17,eye+13],[x-13,chin-4],[x-6,chin-2]],96);
     }
     if(kind==='tusked-closed-helm')pair([[x-w+5,eye+16],[x-w-3,eye+6],[x-w-5,eye-3]],192);
     if(kind==='closed-knight-helm')pair([[x-7,eye+6],[x-6,eye+18],[x-1,eye+23]],128);
@@ -1601,7 +1600,11 @@
     equipmentDetails(p,layers);
     fitLeatherToBody(layers,p.config);
     if(p.config.race==='orc')mirrorParts(layers,p.config);else if(CLOSED_HELMS.includes(p.config.headwear))mirrorParts(layers,p.config,['headwearFront','headwearBack']);
-    if(CLOSED_HELMS.includes(p.config.headwear)){helmetReflections(layers.headwearFront,a,p.config);layers.headwearBack=pixelLayer(layers.headwearBack,2);helmetOutline(layers.headwearBack);}
+    if(CLOSED_HELMS.includes(p.config.headwear)){
+      helmetReflections(layers.headwearFront,a,p.config);layers.headwearBack=pixelLayer(layers.headwearBack,2);
+      // Rear lining stays inside the shell instead of forming an extra cheek/neck rim.
+      const back=layers.headwearBack.getContext('2d');back.save();back.globalCompositeOperation='destination-in';back.drawImage(layers.headwearFront,0,0);back.restore();helmetOutline(layers.headwearBack);
+    }
     return {...p,layers};
   }
   function build(input) {
