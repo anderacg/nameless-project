@@ -1749,3 +1749,6 @@ Dwarf portraits gain ten facial options: three heavy brows, two narrow/deep-set 
 
 
 Portrait pixel style (2026-11-10): the shared portrait engine now draws the approved coarser skin, hair and equipment treatment in the face maker and named-character portraits. Facial features keep native pixel contours, ear roots have subtle contact shading, and orc heads/helmets are 12.5% smaller (25% for the wide `orc-heavy` infantry head), with facial detail redrawn at that size. Saved choices and tint channels remain. The workshop and both offline tools use the same renderer. Design and checks: `doc/PIXEL_PORTRAIT_DESIGN.md`, `engine/face arts/grayscale/pixel-tests.html`.
+
+
+Orc portrait anatomy (2026-11-10): compatible orc faces now have a broad flat chin and lower jaw, stronger brow ridges, flattened wide noses, heavier lower lips and taller tusks. The smaller head/helmet proportions stay in place; facial options and sliders remain editable in the shared generator.

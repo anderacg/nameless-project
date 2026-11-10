@@ -8,6 +8,13 @@ function region(c,x,y,rx,ry,predicate){const p=data(c);let n=0;for(let Y=Math.ma
 try{
  for(const race of E.races)for(const profile of ['male','female']){const p=E.build(E.random(27,profile,race));ok(JSON.stringify(p.anchors)===JSON.stringify(E.geometry(p.config)),race+'/'+profile+' exports the rig used by its artwork');for(const a of [...p.anchors.eyes,p.anchors.nose,p.anchors.mouth])if(!Number.isInteger(a.x)||!Number.isInteger(a.y)||!data(p.layers.face)[(a.y*128+a.x)*4+3])throw Error('Invalid '+race+' feature anchor');}
  const base={race:'orc',hair:'none',beard:'none',headwear:'none',age:'young',marks:'none'};
+ for(const face of E.partsFor('orc','face')){const a=E.geometry({...base,face});if(a.chin/a.w<.63)throw Error('Orc lower jaw too tapered: '+face);}
+ ok(true,'every orc face keeps a broad, flat lower jaw without enlarging its skull');
+ for(const face of E.partsFor('orc','face'))for(const nose of E.partsFor('orc','nose'))for(const noseWidth of [-2,2]){const p=E.build({...base,face,nose,adjustments:{noseWidth}}),a=p.anchors.nose;for(const side of [-1,1])if(!region(p.layers.nose,a.x+(nose==='crooked'?2:0)+side*5,a.y+1,4,3,v=>v<=112))throw Error('Orc nostril lost: '+face+'/'+nose+'/'+noseWidth);}
+ ok(true,'broad orc noses retain two dark nostrils at both width extremes');
+ for(const mouth of ['small-tusks','heavy-tusks']){const p=E.build({...base,face:'orc-heavy',mouth}),a=data(p.layers.teeth),rows=[];for(let y=0;y<128;y++)if(a.slice(y*128*4,(y+1)*128*4).some((v,i)=>i%4===3&&v))rows.push(y);if(rows.length<(mouth==='heavy-tusks'?5:3))throw Error('Orc tusks lost their height');}
+ ok(true,'both tusk styles retain a readable height on the smallest orc head');
+
  ok(E.geometry({...base,face:'orcish'}).w===29*.875,'other orc skulls keep the approved 12.5 percent reduction');
  ok(E.geometry({...base,face:'orc-heavy'}).w===30*.75,'heavy orc skull is 25 percent smaller');
  let checked=0;

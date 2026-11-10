@@ -11,3 +11,6 @@ Orc heads and helmets are reduced together to 87.5%, anchored near the collar, w
 Implementation: `engine/face arts/grayscale/portrait-engine.js`. Both generated offline tools are rebuilt with `python "engine/face arts/build.py"`. The game already consumes the shared engine, so no separate portrait image assets or game adapter changes are required.
 
 Validation: existing engine and character-generation checks, new `pixel-tests.html` checks for smaller-head detail and pixel artifacts, game `faces` integration and `structure`, and live/offline workshop checks. Review images and detailed results are exported beside the task report. No simulation fingerprint changes are required.
+
+
+Orc facial anatomy: every compatible orc face now keeps a broader, flatter chin and lower jaw, a heavier low brow ridge, a flattened broad nose tip with paired nostrils, a weightier lower lip and taller lower tusks. Changes apply to the race rather than only named presets. Eye styles, nose variants, mouth choices and proportion sliders remain distinct and editable. Head/helmet scales and shoulder proportions stay at their approved values. Non-orc drawing paths remain unchanged.

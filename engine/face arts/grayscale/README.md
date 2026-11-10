@@ -10,6 +10,8 @@ The shared renderer now applies the approved pixel treatment to every race. Skin
 
 Orc heads and headwear are 87.5% of their original size; the widest `orc-heavy` skull used by war infantry is 75%. Shoulders and armor retain their size. Eyes, brows, noses, mouths and teeth are redrawn from their paths at the smaller size; mouth seams and nostrils keep a minimum readable pixel. Paired eye masks are checked after reduction, and exported integer feature anchors match `geometry()`. Hair-fit masks use the same head placement. Every existing part remains selectable; recipes, tint channels and the version-7 format are unchanged.
 
+Orc facial anatomy also has a broader lower jaw and chin, heavier brow relief, a flatter broad nose, a stronger lower lip and taller lower tusks. These apply across compatible face options while preserving selected parts and the smaller skull sizes.
+
 Run `pixel-tests.html` for smaller-head facial detail, helmet clearance, tusks, uniform pixel scale and detached-pixel checks. `tests.html` and `character-tests.html` continue to cover part independence, all options and saved recipes. See `../../../doc/PIXEL_PORTRAIT_DESIGN.md`.
 
 ## Choices
