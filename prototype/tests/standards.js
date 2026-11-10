@@ -145,16 +145,20 @@ Kit.suite(({ok,info})=>{
    let q=null;for(let i=0;i<6&&!q;i++){q=t.makeQuest('hold',hh,L);if(q&&q.site!==s.i)q=null}
    ok(q&&/Hold the /.test(q.title)&&q.foeF===foe,'a lord at war fears for an outpost of his near his foes: '+(q&&q.title));
    t.acceptQuest(q);P.x=s.x+400;P.y=s.y;hour();ok(!q.on&&q.h===0,'away from it, the hold has not begun');
-   const wave=Q=>t.bandits.find(o=>o.wave&&o.wave.q===Q.id&&!o.gone),BR=new t.BandBrain();
+   const wave=Q=>t.bandits.find(o=>o.wave&&o.wave.q===Q.id&&!o.gone),BR=new t.BandBrain();let gn0=0,gs0=0,lostG=0;
    P.x=s.x+8;P.y=s.y+8;let waves=0,set=null,closer=false,beside=false,tower=false;for(let i=0;i<40&&!q.done;i++){hour();const b=wave(q);if(!b)continue;
     if(waves===0)s.guardList=()=>['hum_crossbow','hum_crossbow','hum_spear'];
     if(!set){set=Math.hypot(b.x-s.x,b.y-s.y)/t.TILE;const d0=Math.hypot(b.x-s.x,b.y-s.y);for(let k=0;k<20;k++)t.holdWaveStep(b,.5,BR);closer=Math.hypot(b.x-s.x,b.y-s.y)<d0}
     b.x=P.x+10;b.y=P.y;b.cool=0;G.encCool=0;G.modal=false;if(!G.enc)t.holdWaveStep(b,.1,BR);delete s.guardList;
     if(G.enc&&G.enc.hold===q.id){waves++;const e=G.enc;if(waves===1){beside=e.post===s&&e.allies.length===1&&e.allies[0].src===s;s.lv=3;s.broken=false;
       t.startBattle({enemies:e.list,tournament:false});const B=t.B,g=B.groups.a0_tower;tower=!!g&&g.post&&g.team===0&&t.grpUnits(g.id).length===2&&t.grpUnits(g.id).every(u=>u.z>0||B.terrain.lift[t.tIx(B.terrain,u.x,u.y)]>0);
-      B.win=true;B.over=true;B.units.filter(u=>u.team===1).forEach(u=>u.hp=0);t.finishBattle()}else t.act('auto')}}
+      const gu=B.units.filter(u=>u.sourceArmy&&u.sourceArmy.src===s&&u.type==='hum_spear'),gp=e.allies[0];gn0=gp.troops.length;gs0=s.guards;
+      // (one guard down: taken off his party as a blow that kills him takes him, attacks.js)
+      if(gu.length){gu[0].hp=0;gp.remove(gu[0].type,1)}
+      B.win=true;B.over=true;B.units.filter(u=>u.team===1).forEach(u=>u.hp=0);t.finishBattle();lostG=gs0-s.guards}else t.act('auto')}}
    ok(set>=H.from-2&&closer,'a wave sets out '+(set&&set.toFixed(0))+' tiles off, its foe\'s way, and marches on the outpost');
    ok(beside&&tower,'upon you there: its guards beside you, their archers posted on its tower (yours, holding it)');
+   ok(lostG===1,'a guard of its fallen beside you: one fewer guarding it after ('+gs0+' to '+(gs0-lostG)+')');
    ok(waves===H.waves.length&&q.done&&q.wave===H.waves.length,'by it '+H.hours+' hours: '+waves+' waves of the '+t.FACS[foe].n+' beaten, and relief comes: the job done');
    P.quests=[];let q2=null;for(let i=0;i<6&&!q2;i++){q2=t.makeQuest('hold',hh,L);if(q2&&q2.site!==s.i)q2=null}t.acceptQuest(q2);P.x=s.x+8;P.y=s.y+8;hour();P.x=s.x+400;for(let i=0;i<=H.away;i++)hour();
    ok(q2.left&&t.Quest.as(q2).gone()&&/before relief/.test(t.Quest.as(q2).goneWhy()),'left too long once begun: the job lost');

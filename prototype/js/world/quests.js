@@ -1189,10 +1189,13 @@ class HoldQuest extends JobQuest{
     const n=H.n[this.wave]+Math.floor(G.day/10);bandits.push(asParty({x,y,n,town:h.name,fac:this.foeF,troops:armyOf(this.foeF,n),t:0,a:0,idle:false,cool:0,wave:{q:this.id,site:s.i,i:this.wave}}));
     log('Men of the '+FACS[this.foeF].n+' march on the '+s.name+' from the '+compass(h.x-s.x,h.y-s.y)+'!','bad')}
   // (a wave upon you: the fight, its guards beside you (their archers on its tower: world/standards.js StandardTower))
-  meet(b,s){const g=s.guards>0&&s.realm===this.fac?asParty({src:s,fac:s.realm,name:'Guards of the '+s.name,troops:s.guardList(),x:s.x,y:s.y}):null;
+  meet(b,s){const g=s.guards>0&&s.realm===this.fac?asParty({src:s,fac:s.realm,name:'Guards of the '+s.name,troops:s.guardList(),x:s.x,y:s.y}):null;if(g)g.n0=g.troops.length;
     startEncounter({kind:'party',ref:b,n:b.troops.length,list:b.troops.slice(),title:FACS[this.foeF].n+' men at the '+s.name,word:'soldiers',hold:this.id,post:s,allies:g?[g]:[]})}
   // (its wave's fight over (the bus's battle:ended): beaten, the next; lost or run from, the outpost theirs, their men its garrison)
-  ended(d){const s=Standards.of(this.site);if(!s)return;if(d.how==='won'){this.wave++;return}
+  // (its guards who fell beside you lost to it: their party's men at its start (n0) less as the fight left them, a fought one's dead taken off it as they
+  // fell (attacks.js: an ally's), an auto-resolved one culled (engage.js autoResolve))
+  ended(d){const s=Standards.of(this.site);if(!s)return;const g=((d.enc&&d.enc.allies)||[]).find(a=>a&&a.src===s);
+    if(g&&Array.isArray(g.troops)&&g.n0!=null)s.guards=Math.max(0,s.guards-Math.max(0,g.n0-g.troops.length));if(d.how==='won'){this.wave++;return}
     const b=d.enc&&d.enc.ref;if(b&&b.wave){b.gone=true;bandits=bandits.filter(x=>x!==b)}if(s.realm===this.fac)s.taken(this.foeF)}
 }
 /* scout the enemy's outposts (doc §6): a lord at war wants his foes' outposts near him looked on, unseen: each looked on from within
