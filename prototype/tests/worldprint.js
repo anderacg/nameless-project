@@ -681,7 +681,32 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  the pole should still at left side": a realm's banner at a flag man's back hung from a crossbar out from its pole, taller than
 //  wide, gold-trimmed and fringed (gfx/marchgear.js hangBackFlag), on the marchers in the view. Proof: BATTLE_BANNER.hang.on false
 //  gives W6 as before. Was W6 8a493d1b)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'eed44484',W6:'4e0e6b92',W7:'944093c1',W8:'c6df5ce6',B2:'f37cd778'};
+// (W7 and B2 again 2026-11-10, on purpose: the owner, "leather or harness can be wore by everyone": the approved orc study's eight
+//  leather and harness kits open to every people (engine/face arts/grayscale/portrait-engine.js, its race limits), so the faces the
+//  world makes for its people (in the save after begin and after three days) may wear them. Proof: those kits limited to orcs again
+//  give W7 and B2 as before. Were W7 944093c1, B2 f37cd778)
+// (W6 again 2026-11-10, on purpose: the owner, "It's too bland, can you make it like more ribbon and more detail?": the holding's
+//  bar a ribbon behind its plank, gold-edged and stitched, drooping to a fold and a swallow-tailed tail each side, the plank framed
+//  in gold with four rivets and a crest (gfx/structures.js drawPlaqueRibbon). Only that file changed; 51cf84d gives W6 as before.
+//  Was W6 4e0e6b92)
+// (W6 again 2026-11-10, on purpose: the owner, "Can you make a faction flag not cut the emblem off?": a battle banner 11 x 9, its
+//  wave and swallow tail past its device, the back banner 9 x 11 with a margin round its device (gfx/marchgear.js BATTLE_BANNER), on the
+//  holdings and the marchers in the view. Only that table changed; a9a40b1 gives W6 as before. Was W6 da35c7a1)
+// (W6 again 2026-11-10, on purpose: the owner, "May need a bit more area at the end?": the banners 13 long, their device two
+//  columns from the pole and plain cloth after it before a deeper swallow tail (gfx/sprites.js BANNER, gfx/marchgear.js
+//  BATTLE_BANNER: dev, notch 3), on the holdings and the marchers in the view. 81e88a7 gives W6 as before. Was W6 8904cbc4)
+// (W7 and B2 again 2026-11-10, on purpose: the owner, "every factions will also have a static flag in their territory": the
+//  realms' standards (world/standards.js, doc/STANDARDS_DESIGN.md phase 1), placed when a game begins by a pure reckoning of the
+//  map (no random draw, so every site, band, beast and herd stands where it did), among the sites in the save after begin and
+//  after three days. W1-W6 and W8 hold. Proof: STANDARD.on false gives W7 and B2 as before. Were W7 fa8834d8, B2 90225f8a)
+// (W5 and W6 again 2026-11-10, on purpose: a standard's tiles kept from every holding's building (world/standards.js
+//  Standards.reserve, lots.js occReserve: the owner's "check edge cases"), so the life on the ground (gfx/ambient.js ambLot) leaves
+//  them bare as it does a camp's ground, in the painted world (W5) and the view (W6). Proof: Standards.reserve doing nothing gives
+//  W5 and W6 as before. Were W5 eed44484, W6 1c401aea)
+// (W7 again 2026-11-10, on purpose: standards phase 2 (doc/STANDARDS_DESIGN.md): each standard's works a day (world/standards.js
+//  Standard#work: growth paid in timber and stone, a broken tower mended), what it waits on kept with it in the save after three
+//  days. W1-W6, W8 and B2 hold. Proof: its day without work() gives W7 as before. Was W7 65bc6abf)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c817e41c',W6:'08c052b5',W7:'2ad6afe1',W8:'c6df5ce6',B2:'cdc4c20b'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

@@ -114,6 +114,12 @@ Kit.suite(({ok,info})=>{
     let opaque=0;for(let r=0;r<Q.h;r++)for(let i=0;i<Q.w;i++)if(px(x0+i,y0+r))opaque++;
     ok(c===t.hangBackFlag(bn,0)&&px(x,Q.bar+4)&&px(x-Q.w-1,Q.bar)===t.PPAL.gold[1]&&opaque===Q.w*Q.h&&Q.h>Q.w&&px(x0,y0+Q.h)===t.PPAL.gold[1]&&px(x0+1,y0+Q.h)!==t.PPAL.gold[1]&&t.battleBackFlag({k:'rag',col:'#8a2a2a',dev:'skull'},0)!==t.hangBackFlag({k:'banner',col:'#8a2a2a',dev:'skull'},0),
      'a realm\'s banner at his back hangs from a crossbar off its pole, gold-knobbed, its cloth '+Q.w+' x '+Q.h+' whole, fringed; a rag as before')}
+   // (the owner, 2026-11-10: "Can you make a faction flag not cut the emblem off?": every realm's device whole on a battle banner, its
+   // fly's wave and swallow tail past it, so both frames show it in the same pixels)
+   {const Q=t.BATTLE_BANNER,[cw]=Q.cloth.banner,bad=[];for(const dev of ['crown',...Object.keys(t.FACS).filter(f=>f!=='player')]){const T=t.BANNER_DEV[dev];if(!T)continue;
+     const want=T.join('').replace(/\./g,'').length,fr=[0,1].map(f=>{const m=new Map();t.bannerCloth((x,y,c)=>m.set(x+','+y,c),cw,2,{k:'banner',col:'#3466c0',dev},f,Q.cloth,1,Q);return [...m].filter(([,c])=>c==='#f6eedc'||c==='#d0c4a6').map(([k])=>k).sort().join(' ')});
+     if(fr[0]!==fr[1]||fr[0].split(' ').length!==want)bad.push(dev)}
+    ok(!bad.length,'every realm\'s device whole on a battle banner and still as its fly waves'+(bad.length?': '+bad.join(', '):''))}
    M.flags=false;seen.length=0;t.drawUnit(bw);ok(!seen.includes(t.battleBackFlag(b,0))&&!seen.includes(t.battleBackFlag(b,1)),'flags off: none in battle either');M.flags=true}
   finally{t.ctx.drawImage=img1;L.exit()}}
 });

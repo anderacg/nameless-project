@@ -29,7 +29,13 @@ const FACE_KIN={dwarf:{face:['dwarven','dwarf-square'],nose:['dwarf-bulb','dwarf
      the engine has none, so an orc's face made small and sharp: a narrow jaw, big pointed ears and big eyes, a long thin nose,
      little tusks or a sly grin, no beard to speak of; mostly bald (FACE_LOOK) and green-yellow (FACE_LOOK.skin) */
   goblin:{face:['orcish','strong-jaw'],ears:['pointed'],nose:['wide-tip','crooked'],eyes:['keen','natural-wide','deep-almond'],mouth:['small-tusks','asymmetric-smile','stern'],
-    beard:{m:['none','chin-bristle'],f:['none']},adj:{faceWidth:[-2,-1],jawWidth:[-2,-2],earSize:[1,1],eyeSize:[1,1],eyeSpacing:[1,2],noseWidth:[-2,-1],mouthWidth:[1,2]}}};
+    beard:{m:['none','chin-bristle'],f:['none']},adj:{faceWidth:[-2,-1],jawWidth:[-2,-2],earSize:[1,1],eyeSize:[1,1],eyeSpacing:[1,2],noseWidth:[-2,-1],mouthWidth:[1,2]}},
+  /* (the owner's approved orc study, 2026-11-10, engine/face arts: doc/ORC_PORTRAIT_DESIGN.md) an orc the world draws: mostly the war
+     crest (the tall mohawk) or a shaved or bound head, a flat broad nose, an orc's ears, its tusks, at most a short bristle. world:
+     the world's faces only, never yours or a companion's (theirs the engine's own, as you shape yours). A heavy one's face: FACE_UNIT.heavy */
+  orc:{world:true,face:['orcish','broad','strong-jaw'],nose:['orc-flat','orc-broad','orc-flat','broad'],ears:['orc','orc','pointed'],mouth:['small-tusks','heavy-tusks','heavy-tusks','stern'],
+    brows:['bold','broken','flat','bold'],hair:{m:['war-crest','war-crest','war-crest','war-crest','buzz-cut','crew-cut','topknot','undercut','braids'],f:['war-crest','war-crest','braids','single-braid','ponytail','topknot','high-bun']},
+    beard:{m:['none','none','stubble','chin-bristle','scruffy'],f:['none']}}};
 // (the engine's own peoples: a goblin's face is drawn on an orc's)
 const FACE_RACE={goblin:'orc',hobgoblin:'orc'};
 /* (the owner: "Dont forget to have bald (or none hair) as well"; every face the world draws, yours before you shape it) bald: the
@@ -47,10 +53,16 @@ const FACE_LOOK={bald:{human:{m:.14},dwarf:{m:.2},orc:{m:.3,f:.04},elf:{m:.02},g
    for each unit") a troop's portrait is a face of its people (Faces.unit), dressed as its figure is (gfx/people.js lookOf): its
    armour (body: by the armour it wears, its people's make where they have one; robe a caster's; plain a worker's clothes by their
    colour), its helm as headwear (head), the figure's colours (its cloth, its metal: metal, its skin and hair), where the rules
-   miss the kind's own (own: clothing, headwear); women: the share of each people's troops who are; beasts keep their paintings */
+   miss the kind's own (own: clothing, headwear); a list, one by the face's seed (the leather and harness kits of the approved orc study
+   for every people: the owner, 2026-11-10, "leather or harness can be wore by everyone"); women: the share of each people's troops
+   who are; beasts keep their paintings */
 const FACE_UNIT={women:{human:.15,elf:.35,orc:.1,dwarf:.1,goblin:0},
   body:{plate:{any:'plate',dwarf:'dwarf-iron-guard',orc:'orc-lamellar',elf:'elf-leaf-mail'},mail:{any:'mail',orc:'orc-lamellar',elf:'elf-leaf-mail'},
-    leather:{any:'gambeson',orc:'leather',dwarf:'leather',elf:'leather-mail',goblin:'leather'},hide:{any:'fur',orc:'hide-harness'},none:{any:'tunic',elf:'leaf-mantle',orc:'hide-harness',dwarf:'fur',goblin:'hide-harness'}},
+    leather:{any:['gambeson','orc-leather-vest','orc-studded-leather','orc-leather-guard'],orc:['orc-leather-vest','orc-studded-leather','orc-leather-guard'],dwarf:['leather','orc-studded-leather','orc-leather-guard'],
+      elf:['leather-mail','orc-leather-vest'],goblin:['orc-leather-vest','orc-studded-leather']},
+    hide:{any:['fur','orc-layered-hide','orc-cross-harness'],orc:['orc-layered-hide','orc-cross-harness','orc-ring-harness'],dwarf:['fur','orc-layered-hide'],goblin:'orc-layered-hide'},none:{any:'tunic',elf:'leaf-mantle',orc:['orc-bare-cross-harness','orc-bare-ring-harness'],dwarf:'fur',goblin:['orc-bare-cross-harness','orc-bare-ring-harness']}},
+  // (the approved orc study: a heavy orc's face, its head smaller (the engine's 75%), on those in mail or plate)
+  heavy:{orc:{armor:['mail','plate'],face:'orc-heavy'}},
   robe:{any:'robe',elf:'embroidered-robe'},
   plain:{leather:'leather',fur:'fur',forest:'jerkin',cloth:'tunic',blue:'linen-chemise',any:'tunic'},
   head:{cap:'arming-cap',kettle:'kettle',great:{any:'ridge-helm',dwarf:'dwarf-guard-helm',orc:'orc-war-helm',elf:'elf-guard-helm'},horned:{any:'round-helm',dwarf:'forge-helm',orc:'orc-war-helm'},
@@ -63,8 +75,8 @@ const FACE_UNIT={women:{human:.15,elf:.35,orc:.1,dwarf:.1,goblin:0},
     hum_pike:['brigandine','kettle'],hum_levy:['gambeson','arming-cap'],hum_foot:['gambeson','coif'],hum_sword:['mail','nasal'],hum_spear:['mail','nasal'],hum_squire:['mail','kettle'],
     chief:['fur','fur-cap'],horse:['mail','nasal'],dw_rune:['rune-mail','forge-helm'],dw_longbeard:['rune-mail','forge-helm'],dw_thane:['rune-mail','forge-helm'],dw_hammer:['dwarf-iron-guard','dwarf-guard-helm'],
     dw_xbow:['mail','kettle'],elf_sharp:['elf-leaf-mail','leaf-circlet'],elf_blade:['leather-mail','leaf-circlet'],elf_eternal:['elf-leaf-mail','leaf-circlet'],
-    orc_shaman:['fur','warband'],orc_reaver:['hide-harness','warband'],orc_wolf:['leather','warband'],orc_wolfbow:['leather','warband'],orc_thrower:['leather','none'],
-    elf_glade:['leaf-mantle','hood'],gob_stab:['leather','none'],gob_bow:['hide-harness','hood'],gob_boss:['fur','hood']}};
+    orc_shaman:['fur','warband'],orc_reaver:['orc-bare-cross-harness','warband'],orc_wolf:['orc-leather-guard','warband'],orc_wolfbow:['orc-studded-leather','warband'],orc_thrower:['orc-leather-vest','none'],
+    elf_glade:['leaf-mantle','hood'],gob_stab:['orc-leather-vest','none'],gob_bow:['orc-bare-ring-harness','hood'],gob_boss:['orc-layered-hide','hood']}};
 /* (the owner, 2026-11-09: "Ensure that the characters wearing the correct armor or equipment based on their current armor and make
    sure lords are having a good armor") a face dressed as its wearer is (Faces.dress): the body armour worn its clothing, by its tier
    (body: wood a padded jack … adamant plate; bodyOf: a people's own make where it has one; items: the pieces of beasts' hides),
@@ -75,7 +87,7 @@ const FACE_GEAR={
   body:['padded-jack','scale','mail','brigandine','coat-of-plates','steel-cuirass','plate'],
   bodyOf:{dwarf:[null,null,'dwarf-iron-guard','dwarf-iron-guard','rune-mail','rune-mail','rune-mail'],orc:[null,'lamellar','orc-lamellar','orc-lamellar','orc-lamellar','steel-cuirass','plate'],
     elf:[null,null,'elf-leaf-mail','elf-leaf-mail','elf-leaf-mail','steel-cuirass','plate']},
-  items:{bearcoat:'fur',silkvest:'jerkin',scorpplate:'lamellar',trollhide:{orc:'hide-harness',any:'fur'}},
+  items:{bearcoat:'fur',silkvest:'jerkin',scorpplate:'lamellar',trollhide:{orc:'orc-layered-hide',any:'fur'}},
   head:['arming-cap','coif','nasal','kettle','sallet','open-bascinet','closed-knight-helm'],
   headOf:{dwarf:[null,null,'dwarf-guard-helm','dwarf-guard-helm','forge-helm','forge-helm','visored-bascinet'],orc:[null,null,'orc-war-helm','orc-war-helm','orc-war-helm','orc-war-helm','slit-mask-helm'],
     elf:[null,null,'elf-guard-helm','elf-guard-helm','elf-guard-helm','elf-guard-helm','closed-sallet']},
@@ -108,7 +120,7 @@ class Faces{
      own face, its people's marks only) */
   static kin(rec,race,mine){if(!rec)return rec;const r=rec.config.race,r0=race&&this.raceOf(race)===r?race:r,K=FACE_KIN[r0],c={...rec.config,adjustments:{...rec.config.adjustments}},f=c.profile==='female'?'f':'m',
       H=k=>PortraitCharacters.hash(c.seed+'/'+r0+'/'+k),pick=(k,L)=>L[H(k)%L.length],set=(k,L)=>{if(L&&!L.includes(c[k])){const v=pick(k,L.filter(x=>this.fits(r,k,x)));if(v)c[k]=v}};
-    if(K){for(const k of['face','nose','ears','eyes','brows','mouth'])set(k,Array.isArray(K[k])?K[k]:K[k]?.[f]);
+    if(K&&!(mine&&K.world)){for(const k of['face','nose','ears','eyes','brows','mouth'])set(k,Array.isArray(K[k])?K[k]:K[k]?.[f]);
       const B=K.beard?.[f];if(B&&(!K.thin||K.thin.includes(c.beard)))set('beard',B);
       for(const k in K.adj||{}){const A=PortraitEngine.adjustments[k],R=Array.isArray(K.adj[k])?K.adj[k]:K.adj[k][f],[lo,hi]=R,n=lo+H('adj/'+k)%(hi-lo+1),v=c.adjustments[k]||0;
         if(A)c.adjustments[k]=Math.max(A.min,Math.min(A.max,n<0?Math.min(v,n):Math.max(v,n)))}}
@@ -205,10 +217,10 @@ class Faces{
   // (a kind's own figure where none is named: its card's (ui/unitcard.js), so kinds of a people are not all one skin and hair)
   static vOf(type){return PortraitCharacters.hash('v:'+type)%6}
   static dressUnit(type,v){const s=ST[type],L=lookOf(type,0,false,v),race=L.race||s.race||'human',r=this.raceOf(race),U=FACE_UNIT,P0=PortraitCharacters,h=k=>P0.hash('unit:'+type+':'+v+':'+k),
-      by=t=>t==null?null:typeof t==='string'?t:t[race]||t[r]||t.any,fit=(k,x,d)=>this.fits(r,k,x)?x:d;
+      one=(x,k)=>Array.isArray(x)?x[h(k)%x.length]:x,by=(t,k='by')=>t==null?null:typeof t==='string'?t:one(t[race]||t[r]||t.any,k),fit=(k,x,d)=>this.fits(r,k,x)?x:d;
     const g=h('g')%1000<(U.women[race]||0)*1000?'f':'m',rec=this.random(h('face'),race,g),c={...rec.config},col={...rec.colors},own=U.own[type];
     const cl=own?own[0]:!s.tier||L.plain?U.plain[L.outer]||U.plain.any:L.robe?by(U.robe):L.outer==='fur'&&L.armor!=='plate'?'fur':by(U.body[L.armor]||U.body.none);
-    c.clothing=fit('clothing',cl,fit('clothing',by(U.body[L.armor]||U.body.none),c.clothing));c.headwear=fit('headwear',own?own[1]:by(U.head[L.helm])||'none','none');c.headwear=fit('headwear',U.open[race]?.[c.headwear]||c.headwear,c.headwear);
+    c.clothing=fit('clothing',cl,fit('clothing',by(U.body[L.armor]||U.body.none),c.clothing));{const Hv=U.heavy[race];if(Hv&&Hv.armor.includes(L.armor))c.face=fit('face',Hv.face,c.face)}c.headwear=fit('headwear',own?own[1]:by(U.head[L.helm])||'none','none');c.headwear=fit('headwear',U.open[race]?.[c.headwear]||c.headwear,c.headwear);
     // (its colours: the figure's skin and hair, its cloth its coat's, its metal its armour's)
     const F=FACE_LOOK,cloth=k=>PPAL[k]?PX.mix(PPAL[k][2],'#5a4a3c',.25):null,mt=U.metal[L.outer];
     if(F.skinOf[L.skin])col.skin=F.skinOf[L.skin];if(F.hairOf[L.hair])col.hair=F.hairOf[L.hair];

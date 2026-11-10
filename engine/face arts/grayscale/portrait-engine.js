@@ -76,7 +76,7 @@
     brows:{'dwarf-bushy':['dwarf'],'dwarf-straight':['dwarf'],'dwarf-weathered':['dwarf']},
     mouth:{'small-tusks':['orc'],'heavy-tusks':['orc']},
     beard:{'bound-beard':['dwarf'],'chin-bristle':['orc'],'dwarf-fan':['dwarf'],'dwarf-twin-braids':['dwarf'],'dwarf-heavy-moustache':['dwarf']},
-    clothing:{'orc-bare-cross-harness':['orc'],'orc-bare-ring-harness':['orc'],'orc-leather-vest':['orc'],'orc-studded-leather':['orc'],'orc-cross-harness':['orc'],'orc-ring-harness':['orc'],'orc-layered-hide':['orc'],'orc-leather-guard':['orc'],'guild-doublet':['human'],'rune-mail':['dwarf'],'hide-harness':['orc'],'leaf-mantle':['elf'],'dwarf-iron-guard':['dwarf'],'orc-lamellar':['orc'],'elf-leaf-mail':['elf'],'dwarf-runic-plate':['dwarf'],'dwarf-forge-plate':['dwarf'],'elf-silver-scale':['elf'],'elf-leaf-cuirass':['elf']},
+    clothing:{'guild-doublet':['human'],'rune-mail':['dwarf'],'hide-harness':['orc'],'leaf-mantle':['elf'],'dwarf-iron-guard':['dwarf'],'orc-lamellar':['orc'],'elf-leaf-mail':['elf'],'dwarf-runic-plate':['dwarf'],'dwarf-forge-plate':['dwarf'],'elf-silver-scale':['elf'],'elf-leaf-cuirass':['elf']},
     headwear:{'heraldic-cap':['human'],'forge-helm':['dwarf'],warband:['orc'],'vine-diadem':['elf'],'dwarf-guard-helm':['dwarf'],'orc-war-helm':['orc'],'elf-guard-helm':['elf'],'horned-helm':['human','dwarf','orc'],'dwarf-horned-helm':['dwarf'],'dwarf-rune-helm':['dwarf'],'elf-winged-helm':['elf']}
   };
   const RACE_LIMITS={
