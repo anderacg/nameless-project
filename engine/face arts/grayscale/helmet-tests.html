@@ -19,6 +19,8 @@ try{
  ok(true,'hiding both helmet layers restores the selected face, hair and beard');
  const base={race:'human',face:'strong-jaw',hair:'none',beard:'none'};for(const headwear of helms){const p=E.build({...base,headwear});unique.add(p.layers.headwearFront.toDataURL());if(!E.presets.some(s=>s.config.headwear===headwear))throw Error('Missing editable helmet example');}
  ok(unique.size===helms.length,'all six helmets have distinct artwork and editable presets');
+ for(const race of E.races)for(const headwear of helms){const p=E.build({...E.startRace(race),headwear,hair:'none',beard:'none'}),before=p.layers.eyes.toDataURL(),lit=data(E.composite(p,{visible:{headwearFront:false,headwearBack:false}})),shaded=data(E.composite(p));for(const eye of p.anchors.eyes){const k=(eye.y*128+eye.x)*4;if(shaded[k]+shaded[k+1]+shaded[k+2]>=lit[k]+lit[k+1]+lit[k+2]||shaded[k+3]!==lit[k+3])throw Error('Missing visor eye shadow '+race+'/'+headwear);}if(before!==p.layers.eyes.toDataURL())throw Error('Shadow modified raw eye layer');}
+ ok(true,'visor eye shadows darken both pupils for every race while preserving raw eye art');
  lines.push('DONE '+lines.length+' checks');
 }catch(e){lines.push('FAIL '+e.message);console.error(e);}
 document.getElementById('out').textContent=lines.join('\n');

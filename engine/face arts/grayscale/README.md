@@ -256,3 +256,5 @@ Shared hair checks: `hair-tests.html` verifies every hairstyle on every race, no
 Six shared choices add great helm, closed knight helm, visored bascinet, closed sallet, beaked bascinet and slitted war mask. Six editable presets demonstrate their different shells and visors. Every race can select them; military generation includes them. Narrow eye openings preserve pupil visibility, while fitted metal covers the nose, mouth and jaw.
 
 Closed helmets conceal hair, ears and beards in the assembled portrait. Recipes and raw part exports preserve those choices; hiding both helmet layers restores them. Fit metadata adds `face: 'covered'` and `beard: 'hide'`. The recipe stays version 7 with 19 layers. `helmet-tests.html` checks face coverage, eye clearance, mirrored shells and concealment across races and proportion extremes.
+
+Full helmet refinement: rounded cheek/jaw bowls, beveled great-helm corners and curved rear skirts soften the silhouettes. Pixel-sharp visor shadows darken the exposed eyes only while the front helmet is visible; source eye layers and facial choices remain intact.
