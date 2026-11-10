@@ -129,6 +129,16 @@ Kit.suite(({ok,info})=>{
    const B2=fight(3,true);ok(!B2.groups.e0_tower&&!(B2.terrain.towers||[]).some(x=>x.s===s),'its tower broken: no one on it, nothing raised');end(B2);
    const B3=fight(1,false);ok(B3.world&&!B3.groups.e0_tower,'a flag post alone: fought on the map, no tower');end(B3)}
   finally{s.lv=lv0;s.broken=false;s.owner=f0;s.guards=S.guards[lv0];s.taking=null;s.choose=false;G.mode='world';t.hidePanel()}}
+ // ---- the land each claims round it (doc §4; territory.js): its realm's, its nearest holding's; borders follow it
+ {Kit.world({encCool:0});const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'&&!x.choose&&!x.taking&&t.fiefsOf(x.realm).length),f0=s.realm,
+   g=Object.keys(t.FACS).find(k=>k!==f0&&k!=='player'&&t.fiefsOf(k).length),L=S.land.reach,at=()=>t.landHold(s.x,s.y);
+  try{ok(t.Standards.live&&t.Standards.claims().some(c=>c.s===s&&c.lim===L[Math.max(1,s.lv-(s.broken?1:0))])&&at()===s.supplier(),'a held outpost claims the land round it ('+L[s.lv]+' reach at level '+s.lv+') for its realm\'s nearest holding ('+(at()&&at().name)+')');
+   const n0=t.landsOf(f0),m0=t.landsOf(g);s.owner=g;ok(at()&&at().owner===g&&t.landsOf(f0)<n0&&t.landsOf(g)>m0,'handed to the '+t.FACS[g].n+': the land round it theirs now, the border moved ('+n0+' to '+t.landsOf(f0)+' tiles of the '+t.FACS[f0].n+'\'s)');
+   s.owner='bandits';ok(!t.Standards.claims().some(c=>c.s===s),'a band\'s lair claims none');
+   s.owner=f0;t.Standards.live=false;try{ok(!t.Standards.claims().length&&t.Standards.landKey()==='','before a game\'s are placed (a new world), none claim')}finally{t.Standards.live=true}
+   ok(at()===s.supplier()&&t.landsOf(f0)===n0,'its own again: the land as it was')}
+  finally{s.owner=f0}}
+ // ---- through a save
  {const rec=all().map(s=>[s.name,s.realm,s.lv,s.guards].join());t.saveGame(true,'quick');W.sites=[];t.loadGame('quick');
   ok(all().length===A.length&&all().map(s=>[s.name,s.realm,s.lv,s.guards].join()).join('|')===rec.join('|')&&all().every(s=>s instanceof t.Standard),'a save keeps every standard, whose it is, its level and its guards')}
 });

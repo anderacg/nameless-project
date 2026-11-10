@@ -152,9 +152,17 @@ SITE_CLASS.standard=Standard;
    border, gap tiles apart. Each stands on open ground beside its spot (near tiles), off the road */
 const Standards={
   all(){return (W.sites||[]).filter(s=>s instanceof Standard)},
+  /* (the land each held one claims round it (doc §4; world/territory.js landCompute), its realm's nearest holding's, its reach by
+     its level (STANDARD.land); none for a band's lair, one no one holds or one you have yet to hand over. live: this game's placed
+     (a new game's, or a save's put back: reserve); off while a new world is made, its first land reckoned without them) */
+  live:false,
+  claims(){if(!this.live)return [];const out=[],R=STANDARD.land.reach;for(const s of this.all()){if(s.choose||s.band)continue;const t=s.supplier(),i=t?TOWNS.indexOf(t):-1;
+    if(i>=0)out.push({s,i,lim:R[Math.max(1,s.lv-(s.broken?1:0))]})}return out},
+  // (what the claims hang on besides the holdings' own (their owners, territory.js landFresh): each one's holder and level)
+  landKey(){if(!this.live)return '';let k='';for(const s of W.sites||[])if(s.type==='standard')k+=(s.owner||'-')+s.lv+(s.broken?'b':'')+(s.choose?'c':'')+',';return k},
   of(i){return this.all().find(s=>s.i===i)||null},
   // (their tiles kept free of every holding's building: lots.js occReserve, lotFits)
-  reserve(){if(typeof OCC==='undefined'||!OCC)return;for(const s of this.all())for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},// (-3: a standard's, no lot's: Standards.stand looks past them)
+  reserve(){this.live=true;if(typeof OCC==='undefined'||!OCC)return;for(const s of this.all())for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},// (-3: a standard's, no lot's: Standards.stand looks past them)
   spots(){const S=STANDARD_PLACE,road=(x,y)=>{const k=tAt(x,y);return k===T_ROAD||k===T_FORD},peak=(x,y)=>tAt(x,y)===T_MOUNT,out=[];
     for(let ty=3;ty<MH-3;ty++)for(let tx=3;tx<MW-3;tx++){const k=tAt(tx,ty);let why=null;
       if(k===T_FORD)why='ford';
@@ -198,6 +206,7 @@ const Standards={
   guarded(x,y){const r=STANDARD.safe*TILE;return this.all().some(s=>s.realm&&s.guards>0&&Math.hypot(s.x-x,s.y-y)<r)}
 };
 Systems.add({name:'standards',order:{hour:45,day:72},hour:()=>Standards.hour(),day:()=>Standards.day()});
+onWorld(()=>{Standards.live=false});// (a new world: no claims till this game's are placed)
 
 /* ---------- its tower in battle (doc/STANDARDS_DESIGN.md §7, phase 5; the owner: "Its tower in battle: yes", archers shooting
    from it): in a fight on the world map (battle/worldbattle.js) a standing tower's footprint is raised STANDARD.tower.rise[lv]

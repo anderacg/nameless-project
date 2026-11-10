@@ -715,7 +715,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  we rename it to something more straightforward?"): each one's name ends in "outpost" and keeps the realm it began with (home0,
 //  for a quest to retake it), both in the save, after begin (B2) and after three days (W7). W1-W6 and W8 hold. Proof: its name
 //  without "outpost" and no home0 give W7 and B2 as before. Were W7 4385273b, B2 80f263f5)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'c817e41c',W6:'08c052b5',W7:'6e5fbaa2',W8:'c7207a9e',B2:'f41e4976'};
+// (W4, W6, W7, W8 and B2 again 2026-11-10, on purpose: outposts claim the land round them (doc/STANDARDS_DESIGN.md §4; the owner's
+//  answer: "Yes" to land, sight, safety and renown): each held one's tiles its realm's nearest holding's (world/territory.js
+//  landCompute, Standards.claims), so the land (W4: 176 more tiles claimed), its borders and tint drawn (W6), and what stands on
+//  whose land after begin and through the days (B2, W8, W7: where bands are raised, whose land a party crosses). W1-W3 and W5 hold.
+//  Proof: no claims (Standards.claims none) gives every one as before. Were W4 55a05137, W6 08c052b5, W7 6e5fbaa2, W8 c7207a9e,
+//  B2 f41e4976)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'8d7629ca',W7:'900f09fc',W8:'850e9451',B2:'93e3e0b7'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
