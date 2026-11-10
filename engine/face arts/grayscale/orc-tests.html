@@ -6,7 +6,7 @@ const data=c=>c.getContext('2d').getImageData(0,0,128,128).data;
 function mismatch(c){const a=data(c);let n=0;for(let y=0;y<128;y++)for(let x=0;x<64;x++)if(a[(y*128+x)*4+3]!==a[(y*128+127-x)*4+3])n++;return n;}
 function groups(mask){const seen=new Uint8Array(16384),out=[];for(let k=0;k<16384;k++){if(!mask[k]||seen[k])continue;const q=[k];seen[k]=1;for(let i=0;i<q.length;i++){const n=q[i],x=n%128,y=n>>7;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy,j=Y*128+X;if(X<0||X>=128||Y<0||Y>=128||seen[j]||!mask[j])continue;seen[j]=1;q.push(j);}}out.push(q);}return out;}
 try{
- ok(kits.every(k=>E.partsFor('orc','clothing').includes(k))&&E.races.filter(r=>r!=='orc').every(r=>kits.every(k=>!E.partsFor(r,'clothing').includes(k))),'all eight new kits are selectable for orcs only');
+ ok(E.races.every(r=>kits.every(k=>E.partsFor(r,'clothing').includes(k))),'all eight leather and harness kits are selectable for every race (the owner, 2026-11-10: "leather or harness can be wore by everyone")');
  ok(E.order.length===19&&E.order.find(s=>s.id==='torso').channel==='skin'&&E.order.findIndex(s=>s.id==='torso')<E.order.findIndex(s=>s.id==='clothing'),'body skin exports independently below leather and metal');
  const signatures=new Set(),reference=E.build({...base,clothing:full[0]});
  for(const clothing of kits){const p=E.build({...base,clothing});signatures.add(E.composite(p).toDataURL());for(const s of E.order)if(s.feature!=='clothing'&&p.layers[s.id].toDataURL()!==reference.layers[s.id].toDataURL())throw Error('Armor changes face or hair: '+clothing);}

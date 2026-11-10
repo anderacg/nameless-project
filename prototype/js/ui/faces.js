@@ -53,11 +53,14 @@ const FACE_LOOK={bald:{human:{m:.14},dwarf:{m:.2},orc:{m:.3,f:.04},elf:{m:.02},g
    for each unit") a troop's portrait is a face of its people (Faces.unit), dressed as its figure is (gfx/people.js lookOf): its
    armour (body: by the armour it wears, its people's make where they have one; robe a caster's; plain a worker's clothes by their
    colour), its helm as headwear (head), the figure's colours (its cloth, its metal: metal, its skin and hair), where the rules
-   miss the kind's own (own: clothing, headwear); women: the share of each people's troops who are; beasts keep their paintings */
+   miss the kind's own (own: clothing, headwear); a list, one by the face's seed (the leather and harness kits of the approved orc study
+   for every people: the owner, 2026-11-10, "leather or harness can be wore by everyone"); women: the share of each people's troops
+   who are; beasts keep their paintings */
 const FACE_UNIT={women:{human:.15,elf:.35,orc:.1,dwarf:.1,goblin:0},
   body:{plate:{any:'plate',dwarf:'dwarf-iron-guard',orc:'orc-lamellar',elf:'elf-leaf-mail'},mail:{any:'mail',orc:'orc-lamellar',elf:'elf-leaf-mail'},
-    leather:{any:'gambeson',orc:['orc-leather-vest','orc-studded-leather','orc-leather-guard'],dwarf:'leather',elf:'leather-mail',goblin:['orc-leather-vest','orc-studded-leather']},
-    hide:{any:'fur',orc:['orc-layered-hide','orc-cross-harness','orc-ring-harness'],goblin:'orc-layered-hide'},none:{any:'tunic',elf:'leaf-mantle',orc:['orc-bare-cross-harness','orc-bare-ring-harness'],dwarf:'fur',goblin:['orc-bare-cross-harness','orc-bare-ring-harness']}},
+    leather:{any:['gambeson','orc-leather-vest','orc-studded-leather','orc-leather-guard'],orc:['orc-leather-vest','orc-studded-leather','orc-leather-guard'],dwarf:['leather','orc-studded-leather','orc-leather-guard'],
+      elf:['leather-mail','orc-leather-vest'],goblin:['orc-leather-vest','orc-studded-leather']},
+    hide:{any:['fur','orc-layered-hide','orc-cross-harness'],orc:['orc-layered-hide','orc-cross-harness','orc-ring-harness'],dwarf:['fur','orc-layered-hide'],goblin:'orc-layered-hide'},none:{any:'tunic',elf:'leaf-mantle',orc:['orc-bare-cross-harness','orc-bare-ring-harness'],dwarf:'fur',goblin:['orc-bare-cross-harness','orc-bare-ring-harness']}},
   // (the approved orc study: a heavy orc's face, its head smaller (the engine's 75%), on those in mail or plate)
   heavy:{orc:{armor:['mail','plate'],face:'orc-heavy'}},
   robe:{any:'robe',elf:'embroidered-robe'},

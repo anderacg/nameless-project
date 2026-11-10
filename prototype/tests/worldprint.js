@@ -681,7 +681,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  the pole should still at left side": a realm's banner at a flag man's back hung from a crossbar out from its pole, taller than
 //  wide, gold-trimmed and fringed (gfx/marchgear.js hangBackFlag), on the marchers in the view. Proof: BATTLE_BANNER.hang.on false
 //  gives W6 as before. Was W6 8a493d1b)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'eed44484',W6:'4e0e6b92',W7:'944093c1',W8:'c6df5ce6',B2:'f37cd778'};
+// (W7 and B2 again 2026-11-10, on purpose: the owner, "leather or harness can be wore by everyone": the approved orc study's eight
+//  leather and harness kits open to every people (engine/face arts/grayscale/portrait-engine.js, its race limits), so the faces the
+//  world makes for its people (in the save after begin and after three days) may wear them. Proof: those kits limited to orcs again
+//  give W7 and B2 as before. Were W7 944093c1, B2 f37cd778)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'eed44484',W6:'4e0e6b92',W7:'fa8834d8',W8:'c6df5ce6',B2:'90225f8a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

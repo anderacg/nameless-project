@@ -51,7 +51,7 @@ Kit.suite(({ok})=>{
     ['hum_mage','robe','wrapped-hood'],['hum_farmer','tunic','straw-hat']],wrong=arm.filter(([k,cl,hw])=>C(k).clothing!==cl||C(k).headwear!==hw);
   ok(!wrong.length,'each kind in its own armour and helm: plate and a sallet for a knight, a gambeson for a levy, the dwarves\' and orcs\' and elves\' own makes, a robe for a mage, plain clothes for a farmer'+(wrong.length?' ('+wrong.map(([k])=>k+': '+C(k).clothing+'/'+C(k).headwear).join(', ')+')':''));
   const metal=['hum_knight','hum_squire','dw_iron','orc_ironjaw','elf_phoenix'].every(k=>men.includes(k)&&/^#[0-9a-f]{6}$/i.test(F.unit(k).colors.metal)),armless=men.filter(k=>!ST[k].tier&&t.FACE_GEAR.armours.includes(C(k).clothing));
-  const outl=men.filter(k=>/^band_/.test(k)).flatMap(k=>[0,1,2,3].map(v=>C(k)&&F.unit(k,v).config.clothing)).filter(c=>t.FACE_GEAR.armours.includes(c));
+  const hard=t.FACE_GEAR.armours.filter(c=>!/^orc-(bare-|leather|studded|cross|ring|layered)/.test(c)),outl=men.filter(k=>/^band_/.test(k)).flatMap(k=>[0,1,2,3].map(v=>C(k)&&F.unit(k,v).config.clothing)).filter(c=>hard.includes(c));// (leather and harness kits not mail: an outlaw may wear them)
   ok(metal&&!armless.length&&!outl.length,'armour in its metal; no worker in armour, no outlaw in mail'+(armless.length?' ('+armless.join(', ')+')':''));
   // (each people's marks: elves' ears and no beard, orcs' face, dwarves' beards, goblins green with pointed ears)
   const of=r=>men.filter(k=>(ST[k].race||'human')===r).flatMap(k=>[undefined,0,1,2,3,4,5].map(v=>F.unit(k,v))),E=t.PortraitEngine,pr=(r,k,x)=>E.partsFor(r,k).includes(x);
