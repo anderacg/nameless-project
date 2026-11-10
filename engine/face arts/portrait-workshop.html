@@ -1233,6 +1233,75 @@
     for(const i of clear)p.fill(0,i,i+4);
     if(clear.length)g.putImageData(im,0,0);return c;
   }
+  function smallFaceLayers(portrait,scale,dx,dy) {
+    const layers={},a=portrait.anchors,c=portrait.config,painters={eyes:(g)=>naturalEyes(g,a,c,false),iris:(g)=>naturalEyes(g,a,c,true),eyelids:g=>eyelids(g,a,c),brows:g=>brows(g,a,c),nose:g=>drawNose(g,a,c),mouth:g=>mouth(g,a,c),teeth:g=>teeth(g,a,c)};
+    for(const [id,paint] of Object.entries(painters)){const out=canvas(),g=out.getContext('2d');g.lineCap='round';g.lineJoin='round';g.save();g.translate(dx,dy);g.scale(scale,scale);paint(g);g.restore();
+    if(id==='mouth'&&!mouthForm(c)[4]){const f=mouthForm(c),x=a.mouth.x*scale+dx,y=a.mouth.y*scale+dy,w=f[0]*scale,smile=f[2]*scale,half=v=>Math.round(v)+.5;g.strokeStyle=gray(80);g.lineWidth=1;g.beginPath();g.moveTo(half(x-w+scale),half(y+smile));g.bezierCurveTo(half(x-3*scale),half(y+.6*scale),half(x+3*scale),half(y+.6*scale),half(x+w-scale),half(y+smile));g.stroke();}
+    if(id==='nose'){const widths={broad:7,'orc-broad':9.3,'orc-flat':8.3,crooked:5},w=(widths[c.nose]||7)*scale,x=(a.nose.x+(c.nose==='crooked'?2:0))*scale+dx,y=a.nose.y*scale+dy;g.fillStyle=gray(96);for(const side of [-1,1])g.fillRect(Math.round(x+side*(w-2)),Math.round(y+1.5*scale),1,1);}
+    layers[id]=rasterize(out,32,['brows','mouth','teeth'].includes(id));}
+    const g=layers.iris.getContext('2d');g.save();g.globalCompositeOperation='destination-in';g.drawImage(layers.eyes,0,0);g.globalCompositeOperation='destination-out';g.drawImage(layers.eyelids,0,0);g.restore();
+    return layers;
+  }
+  // Coarse shading and equipment share a two-pixel grid; facial contours stay native.
+  const PIXEL_STYLE=Object.freeze({orcScale:.875,orcX:8,orcY:12,tones:Object.freeze([32,64,96,128,160,192,224,248])});
+  function headRig(a,race) {
+    if(race!=='orc')return a;
+    const {orcScale:s,orcX:dx,orcY:dy}=PIXEL_STYLE,point=p=>({...p,x:Math.round(p.x*s+dx),y:Math.round(p.y*s+dy)});
+    return {...a,cx:a.cx*s+dx,top:Math.round(a.top*s+dy),w:a.w*s,jaw:a.jaw*s,chin:a.chin*s,chinY:Math.round(a.chinY*s+dy),eyeScale:a.eyeScale*s,eyes:a.eyes.map(point),brows:a.brows.map(point),nose:point(a.nose),mouth:point(a.mouth),outline:a.outline.map(([x,y])=>[x*s+dx,y*s+dy])};
+  }
+  function smallerHead(p) {
+    if(p.config.race!=='orc')return p;
+    const {orcScale:s,orcX:dx,orcY:dy}=PIXEL_STYLE,layers={...p.layers};
+    for(const spec of LAYERS){if(spec.id==='clothing'||spec.id==='armor')continue;const layer=canvas(),g=layer.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(p.layers[spec.id],dx,dy,SIZE*s,SIZE*s);layers[spec.id]=layer;}
+    Object.assign(layers,smallFaceLayers(p,s,dx,dy));
+    return {...p,layers,anchors:headRig(p.anchors,p.config.race)};
+  }
+  function pixelLayer(source,step,increment=0,radius=0) {
+    const out=canvas(),g=out.getContext('2d'),src=source.getContext('2d').getImageData(0,0,SIZE,SIZE).data,im=g.createImageData(SIZE,SIZE),d=im.data;
+    for(let y=0;y<SIZE;y+=step)for(let x=0;x<SIZE;x+=step){let sum=0,weight=0,count=0;
+      for(let Y=Math.max(0,y-radius);Y<Math.min(SIZE,y+step+radius);Y++)for(let X=Math.max(0,x-radius);X<Math.min(SIZE,x+step+radius);X++){const k=(Y*SIZE+X)*4,a=src[k+3]/255;sum+=src[k]*a;weight+=a;count++;}
+      if(!weight||weight/count<(increment===16?.5:.45))continue;
+      const tone=sum/weight,v=increment?Math.min(255,Math.round(tone/increment)*increment):PIXEL_STYLE.tones.reduce((best,n)=>Math.abs(n-tone)<Math.abs(best-tone)?n:best,PIXEL_STYLE.tones[0]);
+      for(let j=0;j<step;j++)for(let i=0;i<step;i++){const k=((y+j)*SIZE+x+i)*4;d[k]=d[k+1]=d[k+2]=v;d[k+3]=255;}
+    }
+    g.putImageData(im,0,0);return out;
+  }
+  function pixelMail(p,layer) {
+    const src=p.layers.armor.getContext('2d').getImageData(0,0,SIZE,SIZE).data,g=layer.getContext('2d');g.clearRect(0,0,SIZE,SIZE);
+    for(let y=0;y<SIZE;y+=2)for(let x=0;x<SIZE;x+=2){const k=(y*SIZE+x)*4;if(src[k+3]<160)continue;const row=Math.floor(y/6),cx=(x+(row%2)*2)%6,cy=y%6;let v=cy===0&&cx<4?144:cy===2&&cx===0?112:cy===4&&cx<4?80:64;if(x>76)v-=24;rect(g,x,y,2,2,Math.max(32,v));}
+    if(p.config.clothing==='rune-mail')for(let y=108;y<=116;y+=2)for(let x=0;x<SIZE;x+=2){if(![39,51,77,89].some(c=>Math.abs(x-c)<=3))continue;let peak=0;for(let j=0;j<2;j++)for(let i=0;i<2;i++){const k=((y+j)*SIZE+x+i)*4;if(src[k+3]>160)peak=Math.max(peak,src[k]);}if(peak>=173)rect(g,x,y,2,2,192);}
+  }
+  function pixelPortrait(p) {
+    const layers={...p.layers},a=p.anchors;
+    for(const id of ['hairBack','hairFront','beard'])layers[id]=pixelLayer(p.layers[id],2,51,1);
+    if(p.config.hair==='slick-side'){const g=layers.hairFront.getContext('2d');g.save();g.globalCompositeOperation='source-atop';for(let n=0;n<5;n++){rect(g,a.cx-6+n,a.top+2+n*2,2,2,32);rect(g,a.cx-4+n,a.top+2+n*2,2,2,102);}g.restore();}
+    for(const id of ['ears','eyes','iris','eyelids','brows','nose','mouth','teeth','marks'])layers[id]=pixelLayer(p.layers[id],1);
+    for(const id of ['headwearBack','headwearFront','clothing','armor'])layers[id]=pixelLayer(p.layers[id],2);
+    if(['rune-mail','mail','leather-mail','ruffled-mail'].includes(p.config.clothing))pixelMail(p,layers.armor);
+    if(p.config.headwear==='dwarf-rune-helm'){
+      const src=p.layers.headwearFront.getContext('2d').getImageData(0,0,SIZE,SIZE).data,g=layers.headwearFront.getContext('2d'),drop=a.offsetY||0;
+      for(let y=10+drop;y<26+drop;y+=2)for(let x=56;x<74;x+=2){let peak=0;for(let j=0;j<2;j++)for(let i=0;i<2;i++)peak=Math.max(peak,src[((y+j)*SIZE+x+i)*4]);if(peak>=218)rect(g,x,y,2,2,224);}
+    }
+    if(['stubble','close-beard','chin-bristle'].includes(p.config.beard))layers.beard=p.layers.beard;
+    const bg=layers.beard.getContext('2d'),x=Math.floor(a.mouth.x-13),y=Math.floor(a.mouth.y-6),beard=pixelLayer(p.layers.beard,1);
+    if(!['stubble','close-beard','chin-bristle'].includes(p.config.beard)){bg.clearRect(x,y,26,14);bg.drawImage(beard,x,y,26,14,x,y,26,14);}
+    layers.face=pixelLayer(p.layers.face,2,16);
+    const fg=layers.face.getContext('2d'),im=fg.getImageData(0,0,SIZE,SIZE),d=im.data,counts=new Map();
+    for(let Y=Math.ceil(a.top);Y<=a.chinY;Y++)for(let X=0;X<SIZE;X++){const k=(Y*SIZE+X)*4;if(d[k+3])counts.set(d[k],(counts.get(d[k])||0)+1);}
+    const tones=[...counts.keys()].sort((a,b)=>a-b),candidates=tones.slice(1,-1).filter(v=>v>=112);
+    if(candidates.length){const removed=candidates.sort((a,b)=>counts.get(a)-counts.get(b))[0],at=tones.indexOf(removed),target=[tones[at-1],tones[at+1]].sort((a,b)=>Math.abs(a-removed)-Math.abs(b-removed)||counts.get(b)-counts.get(a))[0];for(let k=0;k<d.length;k+=4)if(d[k+3]&&d[k]===removed)d[k]=d[k+1]=d[k+2]=target;fg.putImageData(im,0,0);}
+    const eg=layers.ears.getContext('2d'),ear=eg.getImageData(0,0,SIZE,SIZE),e=ear.data;
+    for(let Y=Math.round(a.eyes[0].y+1);Y<=a.nose.y+2;Y++)for(let X=20;X<108;X++){const k=(Y*SIZE+X)*4;if(e[k+3]<128||d[k+3])continue;const near=(Y*SIZE+X+(X<a.cx?1:-1))*4;if(!d[near+3])continue;const v=Math.max(80,e[k]-12);e[k]=e[k+1]=e[k+2]=v;}
+    eg.putImageData(ear,0,0);
+    for(const id of ['hairBack','hairFront','ears','mouth','brows'])removeSpecks(layers[id]);
+    // Native feature masks remain paired after the fractional head reduction.
+    if(p.config.race==='orc'){
+      for(const id of ['eyes','iris','eyelids',...(p.config.brows==='broken'?[]:['brows'])])symmetricCoverage(layers[id]);
+      const ig=layers.iris.getContext('2d');ig.save();ig.globalCompositeOperation='destination-in';ig.drawImage(layers.eyes,0,0);ig.globalCompositeOperation='destination-out';ig.drawImage(layers.eyelids,0,0);ig.restore();
+    }
+    bg.save();bg.globalCompositeOperation='destination-out';bg.drawImage(layers.teeth,0,0);bg.restore();
+    return {...p,layers};
+  }
   function build(input) {
     const config=normalize(input),anchors=rig(config.face,config.adjustments,config.race),layers={};
     const painters={ears,face:drawFace,clothing,armor,age,marks,nose:drawNose,brows,mouth,teeth,beard,eyelids,headwearBack:(g,a,c)=>headwear(g,a,c,true),headwearFront:(g,a,c)=>headwear(g,a,c,false),eyes:(g,a,c)=>naturalEyes(g,a,c,false),iris:(g,a,c)=>naturalEyes(g,a,c,true),hairBack:(g,a,c)=>hair(g,a,c,true),hairFront:(g,a,c)=>hair(g,a,c,false)};
@@ -1262,7 +1331,7 @@
     for(const id of ['age','marks']){const g=layers[id].getContext('2d');g.save();g.globalCompositeOperation='destination-out';g.drawImage(protection,0,0);g.restore();}
     const drop=config.race==='dwarf'?DWARF_HEAD_DROP:0;
     if(drop)for(const spec of LAYERS){if(spec.id==='clothing'||spec.id==='armor')continue;const shifted=canvas();shifted.getContext('2d').drawImage(layers[spec.id],0,drop);layers[spec.id]=shifted;}
-    return {config,anchors:placedRig(anchors,drop),layers};
+    return pixelPortrait(smallerHead({config,anchors:placedRig(anchors,drop),layers}));
   }
   function tint(source,color) {
     if(!/^#[0-9a-f]{6}$/i.test(color))throw new Error('A tint must be a six-digit hex color');
@@ -1277,7 +1346,7 @@
       g.drawImage(portrait.layers.face,0,0);
       g.drawImage(portrait.layers.headwearBack,0,0);
       g.drawImage(portrait.layers.headwearFront,0,0);
-    } else {const rim=rule.rim+(portrait.anchors.offsetY||0);g.fillStyle='#fff';g.fillRect(0,rim,SIZE,SIZE-rim);}
+    } else {const rim=(portrait.config.race==='orc'?rule.rim*PIXEL_STYLE.orcScale+PIXEL_STYLE.orcY:rule.rim)+(portrait.anchors.offsetY||0);g.fillStyle='#fff';g.fillRect(0,rim,SIZE,SIZE-rim);}
     return out;
   }
   function composite(portrait,{colors=null,visible=null}={}) {
@@ -1318,7 +1387,7 @@
     if(R()<.55)c.marks='none';
     return normalize(c);
   }
-  function geometry(input){const c=normalize(input);return placedRig(rig(c.face,c.adjustments,c.race),c.race==='dwarf'?DWARF_HEAD_DROP:0);}
+  function geometry(input){const c=normalize(input);return headRig(placedRig(rig(c.face,c.adjustments,c.race),c.race==='dwarf'?DWARF_HEAD_DROP:0),c.race);}
   root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,engravingPatterns:Object.freeze(ENGRAVINGS.map(p=>p.name)),soldierEquipment:SOLDIER_EQUIPMENT,soldierPresets:SOLDIER_PRESETS,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
 })(globalThis);
 </script><script>/* Character creation, structural face reservations and persistent NPC recipes. */

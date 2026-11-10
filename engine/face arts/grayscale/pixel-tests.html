@@ -1,0 +1,31 @@
+<!doctype html><meta charset="utf-8"><title>Pixel portrait checks</title><pre id="out">Running…</pre><script src="portrait-engine.js"></script><script>
+'use strict';
+const E=PortraitEngine,lines=[];
+function ok(value,label){if(!value)throw Error(label);lines.push('PASS '+label);}
+const data=c=>c.getContext('2d').getImageData(0,0,128,128).data;
+function components(c){const p=data(c),seen=new Uint8Array(16384),sizes=[];for(let i=0;i<16384;i++){if(seen[i]||!p[i*4+3])continue;const todo=[i];seen[i]=1;for(let j=0;j<todo.length;j++){const n=todo[j],x=n%128,y=n>>7;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy,k=Y*128+X;if(X<0||X>=128||Y<0||Y>=128||seen[k]||!p[k*4+3])continue;seen[k]=1;todo.push(k);}}sizes.push(todo.length);}return sizes;}
+function region(c,x,y,rx,ry,predicate){const p=data(c);let n=0;for(let Y=Math.max(0,Math.round(y-ry));Y<=Math.min(127,Math.round(y+ry));Y++)for(let X=Math.max(0,Math.round(x-rx));X<=Math.min(127,Math.round(x+rx));X++){const k=(Y*128+X)*4;if(p[k+3]&&predicate(p[k],k))n++;}return n;}
+try{
+ for(const race of E.races)for(const profile of ['male','female']){const p=E.build(E.random(27,profile,race));ok(JSON.stringify(p.anchors)===JSON.stringify(E.geometry(p.config)),race+'/'+profile+' exports the rig used by its artwork');for(const a of [...p.anchors.eyes,p.anchors.nose,p.anchors.mouth])if(!Number.isInteger(a.x)||!Number.isInteger(a.y)||!data(p.layers.face)[(a.y*128+a.x)*4+3])throw Error('Invalid '+race+' feature anchor');}
+ const base={race:'orc',hair:'none',beard:'none',headwear:'none',age:'young',marks:'none'};
+ ok(E.geometry({...base,face:'orc-heavy'}).w===30*.875,'orc skull is 12.5 percent smaller');
+ let checked=0;
+ for(const face of E.partsFor('orc','face'))for(const eyes of E.partsFor('orc','eyes'))for(const eyeSize of [-1,1]){const p=E.build({...base,face,eyes,adjustments:{eyeSize}}),iris=data(p.layers.iris),lids=data(p.layers.eyelids),opening=data(p.layers.eyes);
+  for(const id of ['eyes','iris'])if(components(p.layers[id]).length!==2)throw Error('Disconnected or missing '+id+': '+face+'/'+eyes+'/'+eyeSize);
+  for(let k=3;k<iris.length;k+=4)if(iris[k]&&(!opening[k]||lids[k]))throw Error('Iris crosses lid or opening');
+  for(const eye of p.anchors.eyes)if(!region(p.layers.iris,eye.x,eye.y,3,3,v=>v<=64))throw Error('Pupil detail lost: '+face+'/'+eyes+'/'+eyeSize);
+  checked++;
+ }
+ ok(true,checked+' smaller orc eye/face/size combinations retain paired, connected eyes and visible pupils');
+ for(const headwear of E.partsFor('orc','headwear'))for(const face of E.partsFor('orc','face'))for(const faceWidth of [-2,2]){const p=E.build({...base,headwear,face,eyes:'focused',adjustments:{faceWidth}}),mask=data(p.layers.headwearFront);for(const eye of p.anchors.eyes)if(mask[(eye.y*128+eye.x)*4+3])throw Error('Scaled helmet covers eye: '+headwear+'/'+face);}
+ ok(true,'every compatible orc helmet keeps the pupils clear at both face-width extremes');
+ for(const face of E.partsFor('orc','face'))for(const mouth of ['small-tusks','heavy-tusks']){const p=E.build({...base,face,mouth,beard:'stubble'}),hair=data(p.layers.beard),teeth=data(p.layers.teeth);if(components(p.layers.teeth).length!==2)throw Error('Tusks merged or fractured: '+face+'/'+mouth);for(let k=3;k<teeth.length;k+=4)if(teeth[k]&&hair[k])throw Error('Scaled beard hides tusk');if(!region(p.layers.mouth,p.anchors.mouth.x,p.anchors.mouth.y,9,3,v=>v<=96))throw Error('Mouth seam vanished');}
+ ok(true,'both tusk styles remain paired and visible above facial hair with a readable mouth');
+ for(const race of E.races)for(const preset of E.presets.filter(p=>p.config.race===race).slice(0,4)){const p=E.build(preset.config);for(const id of ['face','clothing','armor','headwearBack','headwearFront']){const a=data(p.layers[id]);for(let y=0;y<128;y+=2)for(let x=0;x<128;x+=2)for(let j=0;j<2;j++)for(let i=0;i<2;i++){const k=(y*128+x)*4,q=((y+j)*128+x+i)*4;if(a[k]!==a[q]||a[k+3]!==a[q+3])throw Error('Mixed pixel scale in '+race+'/'+id);}if(components(p.layers[id]).some(n=>n===1))throw Error('Isolated single pixel in '+race+'/'+id);}}
+ ok(true,'skin and equipment use uniform two-pixel clusters without detached single pixels');
+ for(const preset of [...E.presets,...E.soldierPresets]){const p=E.build(preset.config);for(const id of ['hairBack','hairFront','ears','mouth','brows'])if(components(p.layers[id]).some(n=>n===1))throw Error('Stray pixel: '+preset.name+'/'+id);}
+ ok(true,'all presets are free of detached single pixels in hair, ears, brows and mouth');
+ lines.push('DONE '+lines.length+' checks');
+}catch(e){lines.push('FAIL '+e.message);console.error(e);}
+document.getElementById('out').textContent=lines.join('\n');
+</script>

@@ -1746,3 +1746,6 @@ The portrait generator adds four helmets (horned war helm, dwarf horned/rune hel
 Dwarf portrait engravings now vary across eight coordinated motif families, selectable under Armor engraving in the workshop. Existing seeds preserve the chosen motif through recipes and saved portraits. Rune/forge armor, mail and dwarf helms use the new marks. Both offline portrait tools are rebuilt to match the shared renderer.
 
 Dwarf portraits gain ten facial options: three heavy brows, two narrow/deep-set eyes, broad-bridge/broken noses, fan beard, twin braids and heavy moustache. They appear in the face maker, four editable presets and named dwarf generation pools. Short-neck proportions remain. Moustache-only portraits avoid a full beard on battle figures; both offline portrait tools are rebuilt.
+
+
+Portrait pixel style (2026-11-10): the shared portrait engine now draws the approved coarser skin, hair and equipment treatment in the face maker and named-character portraits. Facial features keep native pixel contours, ear roots have subtle contact shading, and orc heads/helmets are 12.5% smaller with facial detail redrawn at that size. Saved choices and tint channels remain. The workshop and both offline tools use the same renderer. Design and checks: `doc/PIXEL_PORTRAIT_DESIGN.md`, `engine/face arts/grayscale/pixel-tests.html`.

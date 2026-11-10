@@ -2,7 +2,15 @@
 
 Open **portrait-workshop-grayscale.html** directly in a browser. It is entirely offline: no server, installation or PNG assets required. The same drawing engine is shared by the in-game face maker. The parent v3 image kit is unchanged.
 
-All artwork is drawn by JavaScript into separate transparent **128 × 128** canvases. Sources use 32 neutral grayscale values. Most layers use binary alpha; brows, lips, Mature skin lines, short beards and tusks retain eight edge-coverage levels so curved features do not become solid rectangular bars. Color is applied at runtime without altering source layers. Classic drawing detail has been removed; old v4/v5/v6 recipes import into the current drawing style.
+All artwork is drawn by JavaScript into separate transparent **128 × 128** canvases. The source drawings use 32 neutral grayscale values before the pixel treatment reduces shading by part. Final facial and equipment contours use binary alpha; Mature skin lines and short beards retain subtle edge coverage. Color is applied at runtime without altering source layers. Classic drawing detail has been removed; old v4/v5/v6 recipes import into the current drawing style.
+
+## Pixel style and head proportions
+
+The shared renderer now applies the approved pixel treatment to every race. Skin, hair and equipment use two-pixel clusters on the 128-pixel canvas. Skin retains the source lighting with one intermediate tone merged; equipment keeps its silhouette, broad highlights and legible engravings. Eyes, brows, nose, mouth and teeth retain native-pixel contours. Ear separation is a small contact shadow inside the ear root, without a cheek outline. Subtle age lines and short beards keep their coverage rather than disappearing in the simplification.
+
+Orc heads and headwear are 87.5% of their previous size while shoulders and armor retain their size. Eyes, brows, noses, mouths and teeth are redrawn from their paths at the smaller size; mouth seams and nostrils keep a minimum readable pixel. Paired eye masks are checked after reduction, and exported integer feature anchors match `geometry()`. Hair-fit masks use the same head placement. Every existing part remains selectable; recipes, tint channels and the version-7 format are unchanged.
+
+Run `pixel-tests.html` for smaller-head facial detail, helmet clearance, tusks, uniform pixel scale and detached-pixel checks. `tests.html` and `character-tests.html` continue to cover part independence, all options and saved recipes. See `../../../doc/PIXEL_PORTRAIT_DESIGN.md`.
 
 ## Choices
 
@@ -168,7 +176,7 @@ The core identity uses actual face geometry, eye family/spacing/size and nose ty
 
 Generation has finite retries and never silently falls back to a clone. Handle `GenerationError.code`, notably `PRESET_POOL_EXHAUSTED`, `FACE_POOL_EXHAUSTED`, `PLAYER_REQUIRED`, `DUPLICATE_ID` and `SAVED_FACE_CONFLICT`. Add more eligible presets or use Mixed/Random when a strict preset pool is too small. Imported v7 rosters are revalidated; v4–v6 individual portrait recipes remain accepted with zero adjustments. Studio collection format version 1 is separate from engine recipe/roster version 7.
 
-Source artwork remains 18 independent grayscale canvases with runtime tinting. Race palettes are editable defaults, not forced skin colors. These APIs prepare the tool for a future in-game creator and world generator; they do not replace production game portraits automatically.
+Source artwork remains 18 independent grayscale canvases with runtime tinting. Race palettes are editable defaults, not forced skin colors. The game consumes this shared renderer through `prototype/js/ui/faces.js`; workshop PNG exports remain optional.
 
 
 ## Soldier presets and equipment
