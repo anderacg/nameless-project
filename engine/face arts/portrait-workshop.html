@@ -1546,34 +1546,65 @@
     }
     for(const id of ids)layers[id].getContext('2d').putImageData(images[id],0,0);
   }
-  function helmetReflections(layer,a){
-    const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,eye=a.eyes[0].y;
+  function helmetOutline(layer){
+    const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,n=SIZE/2,outside=new Uint8Array(n*n),queue=[];
+    const add=(x,y)=>{if(x<0||y<0||x>=n||y>=n)return;const i=y*n+x;if(outside[i]||d[(y*2*SIZE+x*2)*4+3])return;outside[i]=1;queue.push(i);};
+    for(let i=0;i<n;i++){add(i,0);add(i,n-1);add(0,i);add(n-1,i);}
+    for(let i=0;i<queue.length;i++){const x=queue[i]%n,y=Math.floor(queue[i]/n);add(x-1,y);add(x+1,y);add(x,y-1);add(x,y+1);}
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+      const k=(y*2*SIZE+x*2)*4;if(!d[k+3])continue;
+      if(x&&y&&x<n-1&&y<n-1&&!outside[y*n+x-1]&&!outside[y*n+x+1]&&!outside[(y-1)*n+x]&&!outside[(y+1)*n+x])continue;
+      for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y*2+j)*SIZE+x*2+i)*4;d[q]=d[q+1]=d[q+2]=32;}
+    }
+    g.putImageData(im,0,0);
+  }
+  function helmetFeatures(layer,a,c,top){
+    const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,x=a.cx,w=a.w+4,eye=a.eyes[0].y,chin=a.chinY,h=eye-top,kind=c.headwear;
+    const dot=(px,py,tone,mirror=false)=>{px=Math.floor(px/2)*2;if(mirror)px=126-px;py=Math.floor(py/2)*2;if(px<0||py<0||px>=SIZE||py>=SIZE||!d[(py*SIZE+px)*4+3])return;const v=px<64?tone:Math.max(32,tone-(tone>96?32:0));for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((py+j)*SIZE+px+i)*4;d[q]=d[q+1]=d[q+2]=v;}};
+    const line=(path,tone,mirror=false)=>{for(let n=1;n<path.length;n++){const [ax,ay]=path[n-1],[bx,by]=path[n],steps=Math.max(1,Math.ceil(Math.max(Math.abs(bx-ax),Math.abs(by-ay))/2));for(let i=0;i<=steps;i++){const t=i/steps;dot(ax+(bx-ax)*t,ay+(by-ay)*t,tone,mirror);}}};
+    const pair=(path,tone)=>{line(path,tone);line(path,tone,true);};
+    const lip=[[x-w+4,eye+1],[x-w*.55,eye-1],[x-4,eye-3]];pair(lip,192);
+    for(let row=0;row<4;row++){const y=eye+8+row*6;if(y>chin-5)break;for(const dx of [7,13,19])if(dx<w-7-row){dot(x-dx,y,32);dot(x-dx,y,32,true);}}
+    if(kind==='rivet-banded-helm'){
+      for(const y of [top+h*.3,eye-6]){const band=[[x-w+3,y+6],[x-w*.55,y+1],[x-4,y-1]];pair(band,64);pair(band.map(([px,py])=>[px,py-2]),192);for(const dx of [10,20]){dot(x-dx,y+2*(dx/w)**2-2,224);dot(x-dx,y+2*(dx/w)**2-2,224,true);}}
+      pair([[x-3,top+4],[x-4,eye-6],[x-2,chin-3]],96);
+    }
+    if(kind==='barrel-great-helm')pair([[x-w+8,top+h*.3],[x-w+6,eye+8],[x-w+12,chin-3]],96);
+    if(kind==='fluted-knight-helm')for(const dx of [8,16,24]){const rib=[[x-2,top+4],[x-dx*.65,top+h*.3],[x-dx,top+h*.65],[x-dx,eye-5]];pair(rib,96);pair(rib.map(([px,py])=>[px+2,py]),192);}
+    if(kind==='leaf-visor-helm'||kind==='closed-sallet')pair([[x-4,eye+6],[x-14,eye+14],[x-12,chin-5],[x-4,chin+1]],96);
+    if(kind==='horned-closed-helm'){
+      pair([[x-w+3,eye-7],[x-8,eye-9],[x-3,eye-7]],64);
+      pair([[x-6,eye+8],[x-17,eye+13],[x-13,chin-4],[x-6,chin-2]],96);
+    }
+    if(kind==='tusked-closed-helm')pair([[x-w+5,eye+16],[x-w-3,eye+6],[x-w-5,eye-3]],192);
+    if(kind==='closed-knight-helm')pair([[x-7,eye+6],[x-6,eye+18],[x-1,eye+23]],128);
+    if(kind==='slit-mask-helm'){
+      pair([[x-w+4,eye+4],[x-w+6,chin-8]],64);
+      pair([[x-w+3,eye-7],[x-w*.5,eye-9],[x-3,eye-7]],96);
+    }
+    if(kind==='beaked-bascinet')pair([[x-7,eye+5],[x-11,eye+17],[x-1,eye+25]],96);
+    g.putImageData(im,0,0);
+  }
+  function helmetReflections(layer,a,c){
+    const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,source=new Uint8ClampedArray(d),eye=a.eyes[0].y;
+    let top=eye;for(let y=0;y<eye;y+=2)for(let x=52;x<76;x+=2)if(source[(y*SIZE+x)*4+3])top=Math.min(top,y);
     for(let y=0;y<SIZE;y+=2)for(let x=0;x<SIZE;x+=2){
-      const k=(y*SIZE+x)*4;if(!d[k+3])continue;
-      const u=(x+1-a.cx)/(a.w+4),cap=(y+1-a.top)/(eye-a.top),lower=(y+1-eye)/Math.max(1,a.chinY-eye),key=u<0?1:.35;
-      let v=d[k]<96?d[k]:d[k]*.65+12-Math.abs(u)*20;
-      if(d[k]>=96&&y<eye-3){
-        const band=cap-.18*u*u+.1*u;
-        if(band>.03&&band<.15)v+=112*key;
-        else if(band>.22&&band<.33)v+=64*key;
-        else if(band>.42&&band<.65&&u<-.2)v+=24;
-      }else if(d[k]>=96){
-        if(Math.abs(u+.46-.12*lower)<.1&&lower<.82)v+=96;
-        if(Math.abs(u)<.09)v+=56;
-        if(Math.abs(u)>.8&&Math.abs(u)<.92)v+=32*key;
+      const k=(y*SIZE+x)*4;if(!source[k+3])continue;
+      const u=(x+1-a.cx)/(a.w+4),t=(y+1-top)/Math.max(1,eye-top),lower=(y+1-eye)/Math.max(1,a.chinY-eye);
+      let v;
+      if(y<eye-3){
+        // One curved reflection sits on a broad lit dome, rather than stacked grey strips.
+        v=96+96*Math.max(0,1-1.8*(u+.22)**2-.9*(t-.45)**2);
+        const glint=((u+.4)/.4)**2+((t-.3-.15*u)/.13)**2;
+        if(glint<1)v=glint<.35?248:224;
+      }else{
+        v=96+80*Math.max(0,1-2.4*(u+.2)**2-.3*(lower-.3)**2);
+        if(Math.abs(u)<.07*(1-Math.max(0,lower)*.4)&&lower<.95)v=192;
       }
       const tone=PIXEL_STYLE.tones.reduce((best,n)=>Math.abs(n-v)<Math.abs(best-v)?n:best,PIXEL_STYLE.tones[0]);
       for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y+j)*SIZE+x+i)*4;d[q]=d[q+1]=d[q+2]=tone;}
     }
-    const shaded=new Uint8ClampedArray(d);
-    for(let y=2;y<SIZE-2;y+=2)for(let x=2;x<SIZE-2;x+=2){
-      const k=(y*SIZE+x)*4,v=shaded[k];if(!shaded[k+3]||v<96||v>192)continue;
-      const adjacent=[k-8,k+8,k-SIZE*8,k+SIZE*8];
-      if(adjacent.some(q=>!shaded[q+3]||shaded[q]<96))continue;
-      const tones=adjacent.map(q=>shaded[q]),tone=tones.find(n=>n!==v&&Math.abs(n-v)<=32&&tones.filter(t=>t===n).length>=3);
-      if(tone!==undefined)for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y+j)*SIZE+x+i)*4;d[q]=d[q+1]=d[q+2]=tone;}
-    }
-    g.putImageData(im,0,0);
+    g.putImageData(im,0,0);helmetFeatures(layer,a,c,top);helmetOutline(layer);
   }
   function pixelPortrait(p) {
     const layers={...p.layers},a=p.anchors;
@@ -1613,7 +1644,7 @@
     equipmentDetails(p,layers);
     fitLeatherToBody(layers,p.config);
     if(p.config.race==='orc')mirrorParts(layers,p.config);else if(CLOSED_HELMS.includes(p.config.headwear))mirrorParts(layers,p.config,['headwearFront','headwearBack']);
-    if(CLOSED_HELMS.includes(p.config.headwear)){helmetReflections(layers.headwearFront,a);layers.headwearBack=pixelLayer(layers.headwearBack,2);}
+    if(CLOSED_HELMS.includes(p.config.headwear)){helmetReflections(layers.headwearFront,a,p.config);layers.headwearBack=pixelLayer(layers.headwearBack,2);helmetOutline(layers.headwearBack);}
     return {...p,layers};
   }
   function build(input) {

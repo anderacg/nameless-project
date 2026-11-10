@@ -261,7 +261,7 @@ Full helmet refinement: rounded cheek/jaw bowls, beveled great-helm corners and 
 
 Reference-based closed visors now use long, narrow brow slits with a stepped upward slope toward a solid nose bridge. A raised center seam and paired breathing holes define the faceplate; deeper cavity shading keeps the eyes recessed. Apertures remain sharp on the two-pixel grid and keep pupil anchors clear.
 
-Full helmet reflections: crisp curved crown bands, a narrow cheek reflection and raised seam highlights sit against darker steel. Lighting comes from the upper left; silhouettes, paired details, visor cuts and breathing holes retain their existing shape. Reflection tones share the equipment palette and two-pixel grid; headwear tint remains editable.
+Full helmet lighting: a single curved crown glint and broad rounded light/shadow regions define the metal volume. A dark external silhouette separates steel from the background. Rivets, reinforcement bands, flutes, leaf ribs and vents use connected native-scale marks. Headwear tint stays editable; all details use the shared equipment palette and two-pixel grid.
 
 ## Equipment detail at native size
 
@@ -269,4 +269,6 @@ The equipment detail pass keeps scales, laced lamellar plates, plate lips, elven
 
 The pass changes clothing and armor tones inside their existing masks. It preserves coverage, skin and facial parts, harness placement, headwear and visor openings. Recipes remain version 7 with 19 layers. `equipment-tests.html` checks all race/outfit combinations for pixel scale, every compatible headwear option for pupil clearance, scale/lamellar contrast and all eight forge motifs.
 
-Full helmet contour cleanup: great-helm crowns and reinforcing bands follow curved metal profiles, with tapered center straps and jaw contours. A redundant straight-sided face lining is removed after coverage checks. Isolated intermediate shading cells merge into adjacent metal, while vents, rivets and sharp pixel edges remain. Both helmet layers use the shared steel palette; checks cover all races for detached grey blocks, clear visors and fitted coverage.
+Full helmet contour cleanup: great-helm crowns and reinforcing bands follow curved metal profiles, with tapered center straps and jaw contours. A redundant straight-sided face lining is removed after coverage checks. Broad curved lighting regions replace the patchy source shading. Deliberate native-scale vents, rivets and ribs retain sharp pixel edges. Both helmet layers use the shared steel palette; checks cover all races for detached grey blocks, clear visors and fitted coverage.
+
+Helmet lighting and contour redraw: a dark exterior edge follows both helmet layers and excludes enclosed visor holes. Smoothly curved light/shadow regions and one crown reflection replace the small disconnected grey patches. Construction details are drawn directly on the native two-pixel grid. Face coverage, visor apertures, body art and other portrait parts keep their existing geometry.
