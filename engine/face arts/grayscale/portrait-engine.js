@@ -1199,18 +1199,19 @@
     return layers;
   }
   // Coarse shading and equipment share a two-pixel grid; facial contours stay native.
-  const PIXEL_STYLE=Object.freeze({orcScale:.875,orcX:8,orcY:12,tones:Object.freeze([32,64,96,128,160,192,224,248])});
-  function headRig(a,race) {
-    if(race!=='orc')return a;
-    const {orcScale:s,orcX:dx,orcY:dy}=PIXEL_STYLE,point=p=>({...p,x:Math.round(p.x*s+dx),y:Math.round(p.y*s+dy)});
+  const PIXEL_STYLE=Object.freeze({orcScale:.875,orcHeavyScale:.75,tones:Object.freeze([32,64,96,128,160,192,224,248])});
+  function headPlacement(c){const s=c.face==='orc-heavy'?PIXEL_STYLE.orcHeavyScale:PIXEL_STYLE.orcScale;return {s,dx:64*(1-s),dy:96*(1-s)};}
+  function headRig(a,c) {
+    if(c.race!=='orc')return a;
+    const {s,dx,dy}=headPlacement(c),point=p=>({...p,x:Math.round(p.x*s+dx),y:Math.round(p.y*s+dy)});
     return {...a,cx:a.cx*s+dx,top:Math.round(a.top*s+dy),w:a.w*s,jaw:a.jaw*s,chin:a.chin*s,chinY:Math.round(a.chinY*s+dy),eyeScale:a.eyeScale*s,eyes:a.eyes.map(point),brows:a.brows.map(point),nose:point(a.nose),mouth:point(a.mouth),outline:a.outline.map(([x,y])=>[x*s+dx,y*s+dy])};
   }
   function smallerHead(p) {
     if(p.config.race!=='orc')return p;
-    const {orcScale:s,orcX:dx,orcY:dy}=PIXEL_STYLE,layers={...p.layers};
+    const {s,dx,dy}=headPlacement(p.config),layers={...p.layers};
     for(const spec of LAYERS){if(spec.id==='clothing'||spec.id==='armor')continue;const layer=canvas(),g=layer.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(p.layers[spec.id],dx,dy,SIZE*s,SIZE*s);layers[spec.id]=layer;}
     Object.assign(layers,smallFaceLayers(p,s,dx,dy));
-    return {...p,layers,anchors:headRig(p.anchors,p.config.race)};
+    return {...p,layers,anchors:headRig(p.anchors,p.config)};
   }
   function pixelLayer(source,step,increment=0,radius=0) {
     const out=canvas(),g=out.getContext('2d'),src=source.getContext('2d').getImageData(0,0,SIZE,SIZE).data,im=g.createImageData(SIZE,SIZE),d=im.data;
@@ -1302,7 +1303,7 @@
       g.drawImage(portrait.layers.face,0,0);
       g.drawImage(portrait.layers.headwearBack,0,0);
       g.drawImage(portrait.layers.headwearFront,0,0);
-    } else {const rim=(portrait.config.race==='orc'?rule.rim*PIXEL_STYLE.orcScale+PIXEL_STYLE.orcY:rule.rim)+(portrait.anchors.offsetY||0);g.fillStyle='#fff';g.fillRect(0,rim,SIZE,SIZE-rim);}
+    } else {const rim=(portrait.config.race==='orc'?rule.rim*headPlacement(portrait.config).s+headPlacement(portrait.config).dy:rule.rim)+(portrait.anchors.offsetY||0);g.fillStyle='#fff';g.fillRect(0,rim,SIZE,SIZE-rim);}
     return out;
   }
   function composite(portrait,{colors=null,visible=null}={}) {
@@ -1343,6 +1344,6 @@
     if(R()<.55)c.marks='none';
     return normalize(c);
   }
-  function geometry(input){const c=normalize(input);return headRig(placedRig(rig(c.face,c.adjustments,c.race),c.race==='dwarf'?DWARF_HEAD_DROP:0),c.race);}
+  function geometry(input){const c=normalize(input);return headRig(placedRig(rig(c.face,c.adjustments,c.race),c.race==='dwarf'?DWARF_HEAD_DROP:0),c);}
   root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,engravingPatterns:Object.freeze(ENGRAVINGS.map(p=>p.name)),soldierEquipment:SOLDIER_EQUIPMENT,soldierPresets:SOLDIER_PRESETS,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
 })(globalThis);
