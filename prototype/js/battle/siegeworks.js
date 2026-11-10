@@ -15,7 +15,8 @@
    the walls; ram: its harm a second for each of your foot at it (px: within ramR of its face); towers: one every so many rows
    (cells; great walls tower: as many again); stairs: one every so many rows (cells), stair: its width (cells); ladders: how
    many, ladder: each one's width (cells); look: each kind of wall's colours [light, mid, dark, deep] */
-const SIEGE_WALL={on:true,x:.6,thick:3,lv:[0,1,2,2],gate:4,hp:[0,260,480,720],ram:12,ramR:26,towers:12,tower:2,stairs:9,stair:2,ladders:3,ladder:1,
+// cover: the harm taken by a man on the wall-walk from a shot loosed below it (its merlons); hold: px inside a gap the defenders' foot stand to hold it
+const SIEGE_WALL={on:true,x:.6,thick:3,lv:[0,1,2,2],gate:4,hp:[0,260,480,720],ram:12,ramR:26,towers:12,tower:2,stairs:9,stair:2,ladders:3,ladder:1,cover:.5,hold:34,
   look:{stake:['#cb804a','#a15735','#682a19','#3a1c10'],stone:['#d8d2c6','#b0a99c','#857e74','#4e4a45'],great:['#e4dfd4','#bfb8aa','#918a7e','#56514a']}};
 /* SIEGE_ENGINE, the siege engines (the owner, 2026-11-10: "wall collapse from siege weapons"): your camp's trebuchets (world/siege.js:
    the first after days of the siege, one more each more days, most at most) stand back range px from the wall's outer face, gap px
@@ -100,6 +101,14 @@ class SiegeWorks{
     for(const u of B.units)if(u.hp>0&&!u.left&&Math.hypot(u.x-q.tx,u.y-q.ty)<E.splash)this.hurt(u,sRand(E.hurt));
     if(q.def){const e=q.at;if(e&&e.hp>0&&(e.hp-=sRand(E.def.dmg))<=0){e.hp=0;toast('A trebuchet is smashed!','bad');log('The defenders\' mangonel smashes one of your trebuchets.','bad','war')}return}
     const s=q.sec;if(!s||s.down)return;s.hp-=sRand(E.dmg);if(s.hp<=0)this.collapse(s)}
+  // (a way in made (the gate down, a section fallen): the defenders' foot not yet fighting to hold it, standing SIEGE_WALL.hold px
+  // inside it, facing out, at their posts still till a foe comes on them (interior.js insideRoused); their lords and the rest roused;
+  // their shooters on the walk as they were)
+  holdGap(y){for(const g of Object.values(B.groups)){if(g.team===0)continue;const m=grpUnits(g.id).filter(u=>u.hp>0);if(!m.length)continue;
+    if((g.role==='inf'||g.role==='cav')&&!g.roused){g.standAt(this.x1+SIEGE_WALL.hold,y);g.face=g.currentFacing=Math.PI}else if(g.role!=='arc'&&g.role!=='mag')g.roused=true}}
+  // (the harm a shot does to e: less on the wall-walk from one loosed below it (its merlons, SIEGE_WALL.cover))
+  cover(e,by){const T=B.terrain;if(!T||!by||e.x<this.x0||e.x>=this.x1)return 1;const r=Math.floor(e.y/this.cs),s=(this.secs||[]).find(q=>r>=q.r0&&r<=q.r1);
+    if(!s||s.down||s.tower)return 1;return T.levelAt(e.x,e.y)>=this.L&&T.levelAt(by.x,by.y)<this.L?SIEGE_WALL.cover:1}
   // (hurt where he stands: a stone, a fall; nobody's blow)
   hurt(u,amt){Actor.of(u).wound(amt,1,'blunt',null,true)}
   /* (a section's fall: its cells a rubble slope of SIEGE_ENGINE.rubble levels (none for a palisade's one), its faces and the tower's
@@ -110,13 +119,13 @@ class SiegeWorks{
     const y0=s.r0*cs,y1=(s.r1+1)*cs;for(const u of B.units)if(u.hp>0&&!u.left&&u.y>=y0&&u.y<y1&&u.x>=this.x0-cs&&u.x<this.x1+cs)this.hurt(u,sRand(E.fall));
     if(s.tower&&this.mangonel&&this.mangonel.r===s.r0)this.mangonel.lost=true;if(this.aim===s)this.aim=null;
     T.routes.build(T.rows[0],T.rows[1]);T.index();if(B.sight&&B.sight.fogCast)B.sight.fogCast.clear();if(this.art)this.art.rubble(s);
-    for(const g of Object.values(B.groups))if(g.team!==0)g.roused=true;
+    this.holdGap((y0+y1)/2);
     const what=s.tower?'A tower':'The wall';toast(what+' comes down!','good');log(what+' of '+this.t.name+' comes down under your engines.','good','war');battleEvent('breach',{text:what+' is down',team:0})}
   // the gate gives way: its cells open ground, the ways and sight made again; every defender roused
   breach(){if(this.open)return;this.open=true;this.hp=0;const T=B.terrain,C=T.C;
     for(let r=this.g0;r<=this.g1;r++)for(let c=this.c0;c<=this.c1;c++){const i=r*C+c;T.kind[i]=TKIND.open;T.lvl[i]=0;if(T.rockH)T.rockH[i]=0}
     T.routes.build(T.rows[0],T.rows[1]);T.index();if(B.sight&&B.sight.fogCast)B.sight.fogCast.clear();
-    for(const g of Object.values(B.groups))if(g.team!==0)g.roused=true;
+    this.holdGap((this.gy0+this.gy1)/2);
     toast('The gate gives way!','good');log('The gate of '+this.t.name+' gives way under the ram.','good','war');battleEvent('breach',{text:'The gate is down',team:0})}
 }
 /* ---------- its look (the owner, 2026-11-06: "improve the sprites in siege"), in the holding's culture (TOURNEY_ARENA.walls: its

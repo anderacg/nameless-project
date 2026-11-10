@@ -29,7 +29,10 @@ Kit.suite(({ok,info})=>{
    const men=b.units.filter(u=>u.team===0&&!u.hero&&!u.s.range).slice(0,4);men.forEach((u,i)=>{u.x=w.x0-8;u.y=w.gy0+8+i*12});const hp0=w.hp;w.step(1);
    ok(w.hp<hp0&&Math.abs(hp0-w.hp-4*X.ram)<1e-6,'the ram: '+X.ram+' a second for each of your foot at the gate ('+Math.round(hp0)+' → '+Math.round(w.hp)+')');
    w.hp=1;w.step(1);const after=T2.routes.wayLen(g0,g1,'foot');
-   ok(w.open&&T2.kind[mid(w.g0)+w.c0]===t.TKIND.open&&after<straight&&Object.values(b.groups).filter(g=>g.team===1).every(g=>g.roused),'broken: the gate a way through ('+Math.round(straight)+' → '+Math.round(after)+' px), every defender roused');
+   const dg=Object.values(b.groups).filter(g=>g.team===1&&t.grpUnits(g.id).some(u=>u.hp>0)),hold=dg.filter(g=>(g.role==='inf'||g.role==='cav')&&!g.roused),gy=(w.gy0+w.gy1)/2;
+   ok(w.open&&T2.kind[mid(w.g0)+w.c0]===t.TKIND.open&&after<straight,'broken: the gate a way through ('+Math.round(straight)+' → '+Math.round(after)+' px)');
+   ok(hold.length&&hold.every(g=>Math.abs(g.ax-(w.x1+X.hold))<2&&Math.abs(g.ay-gy)<2)&&dg.filter(g=>g.role!=='inf'&&g.role!=='cav'&&g.role!=='arc'&&g.role!=='mag').every(g=>g.roused),'its foot to hold it from inside ('+hold.length+' groups), the rest roused');
+   {const a=b.units.find(u=>u.team===1&&u.x>=w.x0&&u.x<w.x1&&t.levelAt(u.x,u.y)>=w.L),sh={x:w.x0-80,y:a?a.y:0};ok(a&&w.cover(a,sh)===X.cover&&w.cover(a,{x:a.x+2,y:a.y})===1,'on the wall-walk, a shot from below does '+X.cover+' of its harm (its merlons); from the walk itself, all of it')}
    done()}
   // ---- siege engines (SIEGE_ENGINE): trebuchets from the camp's days, stones at the wall's sections, a section brought down
   {const E=t.SIEGE_ENGINE,n=d=>{P.siege={town:h.name,days:d};return t.siegeEngines(h)};
@@ -43,6 +46,8 @@ Kit.suite(({ok,info})=>{
    sec.hp=1;w.land({tx:(w.x0+w.x1)/2,ty:y,sec});const after=T2.routes.wayLen(out,yard,'foot'),mid=Math.floor(y/cs)*C+w.c0;
    ok(sec.down&&T2.kind[mid]===t.TKIND.open&&T2.lvl[mid]<=E.rubble&&after<before,'brought down: a rubble slope, a way over it ('+Math.round(before)+' → '+Math.round(after)+' px)');
    ok(!on||on.hp<hp1,'its men fall with it, hurt');
+   {b.auto=true;const Cm=t.Commander.of(0),N=Cm.groups(),at={x:w.x0-t.SIEGE_AI.foot,y:(sec.r0+sec.r1+1)/2*cs};Cm.siege(N);const sent=(N.inf||[]).filter(id=>{const g=b.groups[id];return Math.hypot(g.ax-at.x,g.ay-at.y)<6||g.hasTarget});
+    ok(sent.length>0,'your captain sends his foot at the breach ('+sent.length+' of '+(N.inf||[]).length+' groups)')}
    if(w.mangonel){const e=w.engines[0],e0=e.hp;w.land({def:true,at:e,tx:e.x,ty:e.y});ok(e.hp<e0,'the mangonel\'s stone on a trebuchet: its strength taken');
     const tw=w.secs.find(q=>q.tower&&q.r0===w.mangonel.r),np=w.art.props.length;tw.hp=1;w.land({tx:w.x0,ty:(tw.r0+.5)*cs,sec:tw});ok(tw.down&&w.mangonel.lost&&w.art.props.length===np-1,'its tower brought down: the tower gone, the mangonel with it')}
    for(let i=0;i<40;i++)t.updateBattle(.25);ok(w.shots.length>0||w.engines.some(e=>e.shotT>0),'in the fight, the trebuchets loose their stones');
