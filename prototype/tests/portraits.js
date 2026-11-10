@@ -62,14 +62,14 @@ Kit.suite(({ok})=>{
   ok(gob.length&&gob.every(f=>f.config.race==='orc'&&f.config.ears==='pointed'&&f.config.beard!=='full'&&t.FACE_LOOK.skin.goblin.concat(Object.values(t.FACE_LOOK.skinOf)).includes(f.colors.skin)),'goblins: on an orc\'s face, pointed ears, green skin');
   ok(new Set(hum.map(f=>f.colors.skin)).size>=3&&new Set(hum.map(f=>f.colors.hair)).size>=4,'humans in more than one skin and hair ('+new Set(hum.map(f=>f.colors.skin)).size+' skins, '+new Set(hum.map(f=>f.colors.hair)).size+' hairs)');
   // (the owner's approved orc study (doc/ORC_PORTRAIT_DESIGN.md): orc troops in its leather and harness kits, a heavy one's face on
-  // those in mail or plate; the world's orcs mostly the war crest, never a human's pageboy; yours and a companion's the engine's own)
+  // those in mail or plate; orc hair shared with racial preferences; yours and a companion's the engine's own)
   {const kits=['orc-leather-vest','orc-studded-leather','orc-leather-guard','orc-layered-hide','orc-cross-harness','orc-ring-harness','orc-bare-cross-harness','orc-bare-ring-harness'],
     oT=men.filter(k=>{const L=t.lookOf(k,0,false,0);return (L.race||ST[k].race)==='orc'&&ST[k].tier}),bad=[];
    for(const k of oT){const L=t.lookOf(k,0,false,0),f=F.unit(k),heavy=['mail','plate'].includes(L.armor);
      if(['leather','hide','none'].includes(L.armor)&&L.outer!=='fur'&&!kits.includes(f.config.clothing))bad.push(k+' '+f.config.clothing);if(heavy!==(f.config.face==='orc-heavy'))bad.push(k+' face '+f.config.face)}
    const W=[...Array(60)].map((_,i)=>F.random(i*17+3,'orc','m')),crest=W.filter(f=>f.config.hair==='war-crest').length,human=W.filter(f=>['pageboy','low-bun','curtains','waves'].includes(f.config.hair)).length;
    const e=t.PortraitEngine.random(4242,'male','orc'),mine=F.random(4242,'orc','m',true);
-   ok(oT.length>5&&!bad.length&&crest>=15&&!human&&mine.config.hair===t.Faces.bare(e).hair,'orcs as approved: troops in the orc leather and harness kits, the heavy face on mail and plate; the world\'s orcs mostly the war crest ('+crest+' of 60), no human hairstyle; your own face the engine\'s'+(bad.length?': '+bad.join(', '):''))}
+   ok(oT.length>5&&!bad.length&&crest>0&&human>0&&mine.config.hair===t.Faces.bare(e).hair,'orcs as approved: troops in the orc leather and harness kits, the heavy face on mail and plate; the shared hairstyle catalog keeps the war crest ('+crest+' of 60) and other cuts ('+human+' of 60); your own face the engine\'s'+(bad.length?': '+bad.join(', '):''))}
   // (bald heads among every people's men but the elves', by their share; a woman's hair kept but among goblins and orcs)
   const share=r=>{let n=0;for(let i=0;i<300;i++)if(F.random(i*31+7,r,'m').config.hair==='none')n++;return n/300},sh=Object.fromEntries(['human','dwarf','orc','goblin','elf'].map(r=>[r,share(r)]));
   ok(sh.human>.07&&sh.dwarf>.1&&sh.orc>.2&&sh.goblin>.7&&sh.elf<.08&&[0,1,2,3,4].every(i=>F.random(i*31+7,'human','f').config.hair!=='none'),'bald heads: '+Object.entries(sh).map(([r,v])=>r+' '+Math.round(v*100)+'%').join(', ')+'; no human woman bald');

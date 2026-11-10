@@ -30,9 +30,9 @@ Run `pixel-tests.html` for smaller-head facial detail, helmet clearance, tusks, 
 | Age | 5 |
 | Skin marks (including none) | 9 |
 | Clothing | 45 |
-| Headwear (including none) | 43 |
+| Headwear (including none) | 49 |
 
-New hairstyles include curls, tousled hair, side parts, ponytails, high and low buns, half-up hair, a single braid, an undercut, a topknot and swept-back hair. Mouths include reserved, broad, asymmetric and thin smiles, parted lips and a pout. Additional headwear includes a beret, wrapped hood, headband, veil and fur cap. Each drawable-part option produces distinct source artwork. `gallery.html` shows 98 curated characters.
+New hairstyles include curls, tousled hair, side parts, ponytails, high and low buns, half-up hair, a single braid, an undercut, a topknot and swept-back hair. Mouths include reserved, broad, asymmetric and thin smiles, parted lips and a pout. Additional headwear includes a beret, wrapped hood, headband, veil and fur cap. Each drawable-part option produces distinct source artwork. `gallery.html` shows 104 curated characters.
 
 ## Facial shape and symmetry
 
@@ -253,7 +253,7 @@ Shared hair checks: `hair-tests.html` verifies every hairstyle on every race, no
 
 ## Face-covering helmets
 
-Six shared choices add great helm, closed knight helm, visored bascinet, closed sallet, beaked bascinet and slitted war mask. Six editable presets demonstrate their different shells and visors. Every race can select them; military generation includes them. Narrow eye openings preserve pupil visibility, while fitted metal covers the nose, mouth and jaw.
+Twelve shared choices include great helm, closed knight helm, visored bascinet, closed sallet, beaked bascinet, slitted war mask, barrel great helm, rivet-banded helm, fluted knight helm, horned closed helm, leaf visor and tusked closed helm. Twelve editable presets demonstrate their different shells and visors. Every race can select them; military generation includes them. Narrow eye openings preserve pupil visibility, while fitted metal covers the nose, mouth and jaw.
 
 Closed helmets conceal hair, ears and beards in the assembled portrait. Recipes and raw part exports preserve those choices; hiding both helmet layers restores them. Fit metadata adds `face: 'covered'` and `beard: 'hide'`. The recipe stays version 7 with 19 layers. `helmet-tests.html` checks face coverage, eye clearance, mirrored shells and concealment across races and proportion extremes.
 

@@ -15,7 +15,7 @@
     age: ['young', 'mature', 'seasoned', 'elder', 'weathered'],
     marks: ['none', 'scar', 'freckles', 'pockmarks', 'beauty-mark', 'twin-scars', 'brow-scar', 'sunspots', 'weathering'],
     clothing: ['orc-bare-cross-harness','orc-bare-ring-harness','orc-leather-vest','orc-studded-leather','orc-cross-harness','orc-ring-harness','orc-layered-hide','orc-leather-guard','tunic', 'gambeson', 'mail', 'surcoat', 'fur', 'robe', 'leather', 'cloak', 'brocade', 'brigandine', 'doublet', 'jerkin', 'tabard', 'scale', 'lamellar', 'plate', 'traveler-coat', 'embroidered-robe', 'linen-chemise', 'velvet-bodice', 'embroidered-doublet', 'ruffled-mail', 'guild-doublet', 'rune-mail', 'hide-harness', 'leaf-mantle', 'padded-jack', 'leather-mail', 'coat-of-plates', 'steel-cuirass', 'dwarf-iron-guard', 'orc-lamellar', 'elf-leaf-mail', 'dwarf-runic-plate', 'dwarf-forge-plate', 'elf-silver-scale', 'elf-leaf-cuirass'],
-    headwear: ['great-helm','closed-knight-helm','visored-bascinet','closed-sallet','beaked-bascinet','slit-mask-helm','none', 'hood', 'coif', 'nasal', 'kettle', 'cap', 'circlet', 'beret', 'wrapped-hood', 'headband', 'veil', 'fur-cap', 'arming-cap', 'chaperon', 'straw-hat', 'feathered-cap', 'coronet', 'round-helm', 'turban', 'linen-wrap', 'draped-veil', 'pearl-hood', 'leaf-circlet', 'heraldic-cap', 'forge-helm', 'warband', 'vine-diadem', 'open-bascinet', 'sallet', 'ridge-helm', 'dwarf-guard-helm', 'orc-war-helm', 'elf-guard-helm', 'horned-helm', 'dwarf-horned-helm', 'dwarf-rune-helm', 'elf-winged-helm']
+    headwear: ['barrel-great-helm','rivet-banded-helm','fluted-knight-helm','horned-closed-helm','leaf-visor-helm','tusked-closed-helm','great-helm','closed-knight-helm','visored-bascinet','closed-sallet','beaked-bascinet','slit-mask-helm','none', 'hood', 'coif', 'nasal', 'kettle', 'cap', 'circlet', 'beret', 'wrapped-hood', 'headband', 'veil', 'fur-cap', 'arming-cap', 'chaperon', 'straw-hat', 'feathered-cap', 'coronet', 'round-helm', 'turban', 'linen-wrap', 'draped-veil', 'pearl-hood', 'leaf-circlet', 'heraldic-cap', 'forge-helm', 'warband', 'vine-diadem', 'open-bascinet', 'sallet', 'ridge-helm', 'dwarf-guard-helm', 'orc-war-helm', 'elf-guard-helm', 'horned-helm', 'dwarf-horned-helm', 'dwarf-rune-helm', 'elf-winged-helm']
   });
   // Length describes the hair before it is tied or braided; bald is separate.
   const HAIR_GROUPS=Object.freeze({
@@ -38,7 +38,7 @@
     for(const style of OPTIONS.hair){n-=weight(style);if(n<0)return style;}
     return OPTIONS.hair[OPTIONS.hair.length-1];
   }
-  const CLOSED_HELMS=Object.freeze(['great-helm','closed-knight-helm','visored-bascinet','closed-sallet','beaked-bascinet','slit-mask-helm']);
+  const CLOSED_HELMS=Object.freeze(['barrel-great-helm','rivet-banded-helm','fluted-knight-helm','horned-closed-helm','leaf-visor-helm','tusked-closed-helm','great-helm','closed-knight-helm','visored-bascinet','closed-sallet','beaked-bascinet','slit-mask-helm']);
   const HEADWEAR_GROUPS=Object.freeze({
     Open:Object.freeze(['none','headband','circlet','coronet','leaf-circlet','warband','vine-diadem']),
     'Caps and helmets':Object.freeze(['cap','nasal','kettle','beret','fur-cap','arming-cap','chaperon','straw-hat','feathered-cap','round-helm','turban','heraldic-cap','forge-helm','horned-helm','elf-winged-helm']),
@@ -88,7 +88,7 @@
   const RACE_PARTS=Object.freeze(Object.fromEntries(OPTIONS.race.map(race=>[race,Object.freeze(Object.fromEntries(Object.entries(OPTIONS).filter(([key])=>key!=='race').map(([key,values])=>[key,Object.freeze((RACE_LIMITS[race][key]||values).filter(value=>!EXCLUSIVE_PARTS[key]?.[value]||EXCLUSIVE_PARTS[key][value].includes(race)))])))])));
   function partsFor(race,key){return key==='race'?OPTIONS.race:(RACE_PARTS[race]||RACE_PARTS.human)[key]||[];}
   const COLORS = Object.freeze({skin:'#b88b69',hair:'#45372e',iris:'#687f83',lips:'#9e7066',cloth:'#70464b',metal:'#899294',headwear:'#656e63'});
-  const SOLDIER_EQUIPMENT=Object.freeze({armor:Object.freeze(["orc-leather-vest","orc-studded-leather","orc-cross-harness","orc-ring-harness","orc-layered-hide","orc-leather-guard","padded-jack", "leather-mail", "coat-of-plates", "steel-cuirass", "dwarf-iron-guard", "orc-lamellar", "elf-leaf-mail", "dwarf-runic-plate", "dwarf-forge-plate", "elf-silver-scale", "elf-leaf-cuirass"]),helmets:Object.freeze(["great-helm","closed-knight-helm","visored-bascinet","closed-sallet","beaked-bascinet","slit-mask-helm","open-bascinet", "sallet", "ridge-helm", "dwarf-guard-helm", "orc-war-helm", "elf-guard-helm", "horned-helm", "dwarf-horned-helm", "dwarf-rune-helm", "elf-winged-helm"])});
+  const SOLDIER_EQUIPMENT=Object.freeze({armor:Object.freeze(["orc-leather-vest","orc-studded-leather","orc-cross-harness","orc-ring-harness","orc-layered-hide","orc-leather-guard","padded-jack", "leather-mail", "coat-of-plates", "steel-cuirass", "dwarf-iron-guard", "orc-lamellar", "elf-leaf-mail", "dwarf-runic-plate", "dwarf-forge-plate", "elf-silver-scale", "elf-leaf-cuirass"]),helmets:Object.freeze(["barrel-great-helm","rivet-banded-helm","fluted-knight-helm","horned-closed-helm","leaf-visor-helm","tusked-closed-helm","great-helm","closed-knight-helm","visored-bascinet","closed-sallet","beaked-bascinet","slit-mask-helm","open-bascinet", "sallet", "ridge-helm", "dwarf-guard-helm", "orc-war-helm", "elf-guard-helm", "horned-helm", "dwarf-horned-helm", "dwarf-rune-helm", "elf-winged-helm"])});
   const SOLDIER_PRESETS=Object.freeze([
     {"name":"Vale foot soldier","category":"soldier","roles":["soldier","infantry","guard"],"config":{"race":"human","profile":"male","seed":1200,"face":"strong-jaw","hair":"knight-crop","eyes":"focused","brows":"bold","nose":"straight","mouth":"stern","beard":"stubble","age":"mature","marks":"none","clothing":"coat-of-plates","headwear":"open-bascinet"}},
     {"name":"Vale bow guard","category":"soldier","roles":["soldier","archer","guard"],"config":{"race":"human","profile":"female","seed":1201,"face":"soft-oval","hair":"tied-back-waves","eyes":"deep-almond","brows":"full-soft","nose":"defined-tip","mouth":"reserved-smile","beard":"none","age":"young","marks":"none","clothing":"padded-jack","headwear":"kettle"}},
@@ -104,6 +104,13 @@
     {"name":"Elf mounted warden","category":"soldier","roles":["soldier","cavalry","guard"],"config":{"race":"elf","profile":"female","seed":1211,"face":"elven","hair":"braids","eyes":"clear","brows":"tapered-natural","nose":"defined-tip","mouth":"reserved-smile","beard":"none","age":"young","marks":"none","clothing":"elf-leaf-mail","headwear":"open-bascinet"}}
   ]);
   const PRESETS = Object.freeze([
+    {"name":"Barrel great helm study","config":{"race":"human","profile":"male","seed":2300,"face":"strong-jaw","hair":"knight-crop","eyes":"focused","nose":"straight","mouth":"stern","beard":"full","age":"mature","marks":"none","clothing":"plate","headwear":"barrel-great-helm"}},
+    {"name":"Rivet-banded helm study","config":{"race":"human","profile":"male","seed":2301,"face":"strong-jaw","hair":"knight-crop","eyes":"focused","nose":"straight","mouth":"stern","beard":"full","age":"mature","marks":"none","clothing":"coat-of-plates","headwear":"rivet-banded-helm"}},
+    {"name":"Fluted knight helm study","config":{"race":"human","profile":"male","seed":2302,"face":"strong-jaw","hair":"knight-crop","eyes":"focused","nose":"straight","mouth":"stern","beard":"full","age":"mature","marks":"none","clothing":"steel-cuirass","headwear":"fluted-knight-helm"}},
+    {"name":"Horned closed helm study","config":{"race":"dwarf","profile":"male","seed":2303,"face":"dwarf-square","hair":"forge-braids","eyes":"focused","nose":"dwarf-bulb","mouth":"stern","beard":"full","age":"mature","marks":"none","clothing":"dwarf-forge-plate","headwear":"horned-closed-helm"}},
+    {"name":"Leaf visor helm study","config":{"race":"elf","profile":"male","seed":2304,"face":"elf-high-cheek","hair":"braided-crown","eyes":"elf-slanted","nose":"straight","mouth":"stern","beard":"none","age":"mature","marks":"none","clothing":"elf-leaf-cuirass","headwear":"leaf-visor-helm"}},
+    {"name":"Tusked closed helm study","config":{"race":"orc","profile":"male","seed":2305,"face":"orc-heavy","hair":"war-crest","eyes":"focused","nose":"orc-broad","mouth":"stern","beard":"none","age":"mature","marks":"none","clothing":"orc-lamellar","headwear":"tusked-closed-helm"}},
+
     {"name":"Great helm knight","config":{"race":"human","profile":"male","seed":2200,"face":"chiseled","hair":"knight-crop","eyes":"focused","nose":"straight","mouth":"stern","beard":"trimmed","age":"mature","marks":"none","clothing":"plate","headwear":"great-helm"}},
     {"name":"Closed visor knight","config":{"race":"human","profile":"male","seed":2201,"face":"strong-jaw","hair":"knight-crop","eyes":"focused","nose":"straight","mouth":"stern","beard":"full","age":"mature","marks":"none","clothing":"steel-cuirass","headwear":"closed-knight-helm"}},
     {"name":"Dwarf visor guard","config":{"race":"dwarf","profile":"male","seed":2202,"face":"dwarf-square","hair":"forge-braids","eyes":"dwarf-deep","nose":"dwarf-bulb","mouth":"stern","beard":"braided","age":"mature","marks":"none","clothing":"dwarf-forge-plate","headwear":"visored-bascinet"}},
@@ -360,16 +367,18 @@
   }
   function closedHelmet(g,a,c,back){
     const kind=c.headwear;if(!CLOSED_HELMS.includes(kind))return false;
-    const x=a.cx,w=a.w+4,eye=a.eyes[0].y,bottom=a.chinY+5,jaw=Math.max(a.chin+4,a.jaw),great=kind==='great-helm',sallet=kind==='closed-sallet',beaked=kind==='beaked-bascinet',mask=kind==='slit-mask-helm';
+    const barrel=kind==='barrel-great-helm',riveted=kind==='rivet-banded-helm',fluted=kind==='fluted-knight-helm',horned=kind==='horned-closed-helm',leaf=kind==='leaf-visor-helm',tusked=kind==='tusked-closed-helm';
+    const style=barrel?'great-helm':riveted?'visored-bascinet':fluted||horned?'closed-knight-helm':leaf?'closed-sallet':tusked?'slit-mask-helm':kind;
+    const x=a.cx,w=a.w+(barrel?6:4),eye=a.eyes[0].y,bottom=a.chinY+5,jaw=Math.max(a.chin+4,a.jaw),great=style==='great-helm',sallet=style==='closed-sallet',beaked=style==='beaked-bascinet',mask=style==='slit-mask-helm';
     if(back){
       const skirt=[[x-w+1,eye-5],[x+w-1,eye-5],...Array.from({length:13},(_,i)=>{const t=i*Math.PI/12;return [x+(w+1)*Math.cos(t),eye+14+(bottom-eye-7)*Math.sin(t)];})];
-      if(great||kind==='visored-bascinet'||beaked)chain(g,skirt,c);else surface(g,skirt,(px,py)=>92+43*falloff(px,py,x-15,eye+10,19,29));
+      if(great||style==='visored-bascinet'||beaked)chain(g,skirt,c);else surface(g,skirt,(px,py)=>92+43*falloff(px,py,x-15,eye+10,19,29));
       return true;
     }
-    const top=a.top-(great?9:sallet?8:beaked?15:kind==='visored-bascinet'?13:12);
+    const top=a.top-(fluted?16:leaf?19:great?9:sallet?8:beaked?15:style==='visored-bascinet'?13:12);
     const crown=Array.from({length:15},(_,i)=>{const t=Math.PI+i*Math.PI/14;return [x+w*Math.cos(t),top+18+18*Math.sin(t)];});
     const lower=Array.from({length:13},(_,i)=>{const t=i*Math.PI/12;return [x+(w-1)*Math.cos(t),eye+10+(bottom-eye-10)*Math.sin(t)];});
-    const shell=kind==='closed-knight-helm'||mask||sallet?[...crown,...lower]:great?[[x-w,top+10],[x-w+3,top+4],[x-w+10,top],[x+w-10,top],[x+w-3,top+4],[x+w,top+10],...lower]:[[x-w,top+18],[x-w+6,top+6],[x,top],[x+w-6,top+6],[x+w,top+18],...lower];
+    const shell=style==='closed-knight-helm'||mask||sallet?[...crown,...lower]:great?[[x-w,top+10],[x-w+3,top+4],[x-w+10,top],[x+w-10,top],[x+w-3,top+4],[x+w,top+10],...lower]:[[x-w,top+18],[x-w+6,top+6],[x,top],[x+w-6,top+6],[x+w,top+18],...lower];
     // A fitted metal lining covers wide jaws beneath the outer visor silhouette.
     surface(g,a.outline.map(([px,py])=>[px+(px<x?-2:px>x?2:0),py]),(px,py)=>126+45*falloff(px,py,x-12,eye+10,w,30));
     surface(g,shell,(px,py)=>133+60*falloff(px,py,x-12,eye-15,w*.8,30)-35*falloff(px,py,x+w-2,eye+13,13,27));
@@ -382,7 +391,7 @@
         curve(g,[x,top+3,x-2,eye-17,x+1,eye-9,x,eye-4],204,2);
       }
       if(beaked){poly(g,[[x-9,eye+4],[x+9,eye+4],[x+12,eye+18],[x,eye+26],[x-12,eye+18]],108);poly(g,[[x-9,eye+4],[x,eye+5],[x,eye+25],[x-12,eye+18]],180);line(g,[[x,eye+6],[x,eye+24]],208,2);}
-      if(kind==='closed-knight-helm'){poly(g,[[x-8,eye+7],[x+8,eye+7],[x+6,eye+21],[x,eye+25],[x-6,eye+21]],160);line(g,[[x,eye+8],[x,eye+23]],212,2);}
+      if(style==='closed-knight-helm'){poly(g,[[x-8,eye+7],[x+8,eye+7],[x+6,eye+21],[x,eye+25],[x-6,eye+21]],160);line(g,[[x,eye+8],[x,eye+23]],212,2);}
       if(sallet){curve(g,[x-w+1,eye-5,x-11,eye-10,x+11,eye-10,x+w-1,eye-5],80,4);curve(g,[x-jaw,eye+22,x-12,bottom-3,x+12,bottom-3,x+jaw,eye+22],195,2);}
       for(const side of [-1,1]){
         const hinge=x+side*(w-3);if(!great){oval(g,hinge,eye-4,2.5,2.5,190);oval(g,hinge,eye-4,1,1,69);}
@@ -395,6 +404,20 @@
       if(mask){line(g,[[x-w+3,eye+5],[x-w+6,bottom-9]],198,2);line(g,[[x+w-3,eye+5],[x+w-6,bottom-9]],137,2);rect(g,x-2,eye+6,4,27,166);}
       curve(g,[x-jaw,bottom-5,x-8,bottom-1,x+8,bottom-1,x+jaw,bottom-5],62,2);
     });
+    clip(g,shell,()=>{
+      if(barrel){for(const side of [-1,1]){rect(g,x+side*(w-8)-2,top+7,4,bottom-top-15,154);for(let y=top+10;y<bottom-10;y+=10)rect(g,x+side*(w-8)-1,y,2,2,232);}rect(g,x-w,top+5,w*2,4,184);}
+      if(riveted){rect(g,x-6,top+3,12,bottom-top-8,72);rect(g,x-4,top+3,8,bottom-top-8,201);for(const y of [top+14,eye-7]){rect(g,x-w,y-2,w*2,8,80);rect(g,x-w,y,w*2,4,201);for(let dx=-w+6;dx<w-4;dx+=8)rect(g,x+dx,y,2,2,232);}for(let y=top+6;y<bottom-6;y+=8)rect(g,x-1,y,2,2,232);}
+      if(fluted)for(const side of [-1,1])for(let i=0;i<4;i++){const dx=8+i*6;curve(g,[x+side*2,top+5,x+side*dx,top+12,x+side*(dx+2),eye-17,x+side*dx,eye-6],64,2);curve(g,[x+side*4,top+6,x+side*(dx+2),top+13,x+side*(dx+4),eye-17,x+side*(dx+2),eye-6],218,2);}
+      if(horned){rect(g,x-w,eye-10,w*2,6,104);for(const side of [-1,1]){poly(g,[[x+side*7,eye+8],[x+side*19,eye+13],[x+side*15,bottom-8],[x+side*6,bottom-4]],157);engraving(g,c,x+side*13,eye+19,0,.75,212);}}
+      if(leaf)for(const side of [-1,1]){curve(g,[x+side*4,eye+6,x+side*21,eye+11,x+side*21,bottom-10,x+side*5,bottom-4],212,2);curve(g,[x+side*7,eye+12,x+side*16,eye+16,x+side*14,bottom-12,x+side*6,bottom-7],80,2);}
+      if(tusked){rect(g,x-w,eye-10,w*2,6,88);for(const side of [-1,1])for(let i=0;i<3;i++)rect(g,x+side*(8+i*7)-1,eye-10,2,2,219);}
+    });
+    for(const side of [-1,1]){
+      if(horned){const at=x+side*(w-3);surface(g,[[at,top+19],[at+side*8,top+15],[at+side*13,top+5],[at+side*9,Math.max(2,top-3)],[at+side*7,top+8],[at+side*2,top+10],[at-side*3,top+12]],(px,py)=>136+60*falloff(px,py,at,top+9,12,14));curve(g,[at,top+16,at+side*7,top+13,at+side*12,top+9,at+side*9,top+1],220,2);}
+      if(leaf){const at=x+side*(w-6);surface(g,[[at,eye-8],[at+side*10,top+12],[at+side*8,top+1],[at+side*3,top+10],[at-side*3,top+18]],(px,py)=>149+45*falloff(px,py,at,top+13,10,20));}
+      if(tusked){const at=x+side*(w-5);surface(g,[[at-side*3,eye+23],[at+side*12,eye+12],[at+side*15,eye-6],[at+side*10,eye+1],[at+side*6,eye+9],[at-side*5,eye+16]],(px,py)=>139+69*falloff(px,py,at,eye+10,8,19));}
+    }
+    if(leaf)surface(g,[[x-5,top+18],[x-4,top+6],[x,Math.max(1,top-4)],[x+4,top+6],[x+5,top+18],[x,top+25]],(px,py)=>151+67*falloff(px,py,x-3,top+9,8,17));
     // Raised center seam separates the long vision slits and continues down the faceplate.
     poly(g,[[x-3,eye-6],[x+3,eye-6],[x+2,bottom-5],[x,bottom-2],[x-2,bottom-5]],163);
     line(g,[[x,eye-5],[x,bottom-4]],211,2);
@@ -479,7 +502,7 @@
     if(kind==='open-bascinet')curve(g,[x,10,x-2,20,x-1,29,x,35],207,1);
     return true;
   }
-  const PART_LABELS=Object.freeze({'great-helm':'Great helm','closed-knight-helm':'Closed knight helm','visored-bascinet':'Visored bascinet','closed-sallet':'Closed sallet','beaked-bascinet':'Beaked bascinet','slit-mask-helm':'Slitted war mask','war-crest':'Mohawk / war crest','orc-leather-vest':'Laced leather vest','orc-studded-leather':'Studded leather','orc-cross-harness':'Cross harness over leather vest','orc-ring-harness':'Ring harness over leather vest','orc-layered-hide':'Layered hide armor','orc-leather-guard':'Leather with shoulder guards','orc-bare-cross-harness':'Cross harness over bare skin','orc-bare-ring-harness':'Ring harness over bare skin'});
+  const PART_LABELS=Object.freeze({'barrel-great-helm':'Barrel great helm','rivet-banded-helm':'Rivet-banded helm','fluted-knight-helm':'Fluted knight helm','horned-closed-helm':'Horned closed helm','leaf-visor-helm':'Leaf visor helm','tusked-closed-helm':'Tusked closed helm','great-helm':'Great helm','closed-knight-helm':'Closed knight helm','visored-bascinet':'Visored bascinet','closed-sallet':'Closed sallet','beaked-bascinet':'Beaked bascinet','slit-mask-helm':'Slitted war mask','war-crest':'Mohawk / war crest','orc-leather-vest':'Laced leather vest','orc-studded-leather':'Studded leather','orc-cross-harness':'Cross harness over leather vest','orc-ring-harness':'Ring harness over leather vest','orc-layered-hide':'Layered hide armor','orc-leather-guard':'Leather with shoulder guards','orc-bare-cross-harness':'Cross harness over bare skin','orc-bare-ring-harness':'Ring harness over bare skin'});
   const ORC_LEATHER=new Set(['orc-bare-cross-harness','orc-bare-ring-harness','orc-leather-vest','orc-studded-leather','orc-cross-harness','orc-ring-harness','orc-layered-hide','orc-leather-guard']);
   const ORC_OPEN_HARNESS=new Set(['orc-bare-cross-harness','orc-bare-ring-harness']);
   function bareTorso(g,a,c){

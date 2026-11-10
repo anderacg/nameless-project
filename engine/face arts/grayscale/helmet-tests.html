@@ -2,7 +2,7 @@
 'use strict';
 const E=PortraitEngine,lines=[];function ok(v,s){if(!v)throw Error(s);lines.push('PASS '+s);}const data=c=>c.getContext('2d').getImageData(0,0,128,128).data;
 try{
- const helms=E.faceCoveringHelmets;ok(helms.length===6&&new Set(helms).size===6,'six distinct face-covering helmets are registered');
+ const helms=E.faceCoveringHelmets;ok(helms.length===12&&new Set(helms).size===12,'twelve distinct face-covering helmets are registered');
  for(const headwear of helms){const rule=E.headwearRules[headwear];ok(E.races.every(r=>E.partsFor(r,'headwear').includes(headwear))&&E.soldierEquipment.helmets.includes(headwear)&&rule.face==='covered'&&rule.hair==='hide'&&rule.ears==='hide'&&rule.beard==='hide',headwear+' is shared, selectable and conceals hair, ears and beard');}
  let fit=0;const unique=new Set();
  for(const race of E.races)for(const face of E.partsFor(race,'face'))for(const direction of [-1,1])for(const headwear of helms){const p=E.build({race,face,headwear,hair:'war-crest',beard:'none',age:'young',marks:'none',adjustments:{faceWidth:2*direction,jawWidth:2*direction,eyeSize:direction,eyeSpacing:2*direction}}),helmet=data(p.layers.headwearFront),skin=data(p.layers.face),outline=new Path2D();p.anchors.outline.forEach(([x,y],i)=>i?outline.lineTo(x,y):outline.moveTo(x,y));outline.closePath();const probe=p.layers.face.getContext('2d');
@@ -12,17 +12,17 @@ try{
   for(const id of ['headwearFront','headwearBack']){const a=data(p.layers[id]);for(let y=0;y<128;y++)for(let x=0;x<64;x++)if(a[(y*128+x)*4+3]!==a[(y*128+127-x)*4+3])throw Error('Unmirrored helmet: '+headwear);}
   fit++;
  }
- ok(fit>300,fit+' race/face/proportion combinations keep eye slits clear and nose, mouth and jaw covered');
+ ok(fit>700,fit+' race/face/proportion combinations keep eye slits clear and nose, mouth and jaw covered');
  ok(true,'all new front and back helmet silhouettes remain mirrored');
  for(const race of E.races)for(const headwear of helms){const base={...E.startRace(race),headwear,hair:'war-crest',beard:race==='elf'?'none':race==='orc'?'stubble':'full'},p=E.build(base),before={hair:p.layers.hairFront.toDataURL(),beard:p.layers.beard.toDataURL()},hidden=E.build({...base,hair:'none',beard:'none'});if(E.composite(p).toDataURL()!==E.composite(hidden).toDataURL())throw Error('Hair or beard clips through '+race+'/'+headwear);if(before.hair!==p.layers.hairFront.toDataURL()||before.beard!==p.layers.beard.toDataURL())throw Error('Raw hair/beard export changed');const visible={headwearFront:false,headwearBack:false};if(E.composite(p,{visible}).toDataURL()!==E.composite(E.build({...base,headwear:'none'})).toDataURL())throw Error('Removing helmet does not restore face/hair: '+headwear);}
  ok(true,'all races conceal facial hair and mohawks without altering their source layers');
  ok(true,'hiding both helmet layers restores the selected face, hair and beard');
  const base={race:'human',face:'strong-jaw',hair:'none',beard:'none'};for(const headwear of helms){const p=E.build({...base,headwear});unique.add(p.layers.headwearFront.toDataURL());if(!E.presets.some(s=>s.config.headwear===headwear))throw Error('Missing editable helmet example');}
- ok(unique.size===helms.length,'all six helmets have distinct artwork and editable presets');
+ ok(unique.size===helms.length,'all twelve helmets have distinct artwork and editable presets');
  for(const race of E.races)for(const headwear of helms){const p=E.build({...E.startRace(race),headwear,hair:'none',beard:'none'}),before=p.layers.eyes.toDataURL(),lit=data(E.composite(p,{visible:{headwearFront:false,headwearBack:false}})),shaded=data(E.composite(p));for(const eye of p.anchors.eyes){const k=(eye.y*128+eye.x)*4;if(shaded[k]+shaded[k+1]+shaded[k+2]>=lit[k]+lit[k+1]+lit[k+2]||shaded[k+3]!==lit[k+3])throw Error('Missing visor eye shadow '+race+'/'+headwear);}if(before!==p.layers.eyes.toDataURL())throw Error('Shadow modified raw eye layer');}
  ok(true,'visor eye shadows darken both pupils for every race while preserving raw eye art');
  for(const headwear of helms){const p=E.build({race:'human',face:'strong-jaw',headwear}),front=data(p.layers.headwearFront),e=p.anchors.eyes[0],rows=[];for(let y=e.y-4;y<=e.y+3;y++){const xs=[];for(let x=Math.ceil(p.anchors.cx-p.anchors.w+2);x<64;x++)if(!front[(y*128+x)*4+3])xs.push(x);if(xs.length)rows.push(xs);}if(rows.length>4||!rows.length||Math.max(...rows.map(r=>r.length))<14||new Set(rows.map(r=>r[0]+':'+r[r.length-1])).size<2)throw Error('Visor must have long, narrow, angled slits '+headwear);for(let x=62;x<=65;x++)if(!front[(e.y*128+x)*4+3])throw Error('Open nose bridge '+headwear);}
- ok(true,'all six helmets have long angled brow slits and a solid central nose bridge');
+ ok(true,'all twelve helmets have long angled brow slits and a solid central nose bridge');
  for(const race of E.races)for(const headwear of helms){const p=E.build({...E.startRace(race),headwear}),front=data(p.layers.headwearFront);let bright=0,dark=0,left=0,right=0;for(let y=0;y<128;y++)for(let x=0;x<128;x++){const k=(y*128+x)*4;if(!front[k+3])continue;if(front[k]>=224)bright++;if(front[k]>=96&&front[k]<=128)dark++;if(front[k]>=96){if(x<64)left+=front[k];else right+=front[k];}}if(bright<4||dark<16||left<=right)throw Error('Missing directional metal reflections '+race+'/'+headwear);}
  ok(true,'all closed helmets combine bright crown reflections, dark metal and directional lighting');
  lines.push('DONE '+lines.length+' checks');

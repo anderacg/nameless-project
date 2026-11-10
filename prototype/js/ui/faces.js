@@ -30,11 +30,11 @@ const FACE_KIN={dwarf:{face:['dwarven','dwarf-square'],nose:['dwarf-bulb','dwarf
      little tusks or a sly grin, no beard to speak of; mostly bald (FACE_LOOK) and green-yellow (FACE_LOOK.skin) */
   goblin:{face:['orcish','strong-jaw'],ears:['pointed'],nose:['wide-tip','crooked'],eyes:['keen','natural-wide','deep-almond'],mouth:['small-tusks','asymmetric-smile','stern'],
     beard:{m:['none','chin-bristle'],f:['none']},adj:{faceWidth:[-2,-1],jawWidth:[-2,-2],earSize:[1,1],eyeSize:[1,1],eyeSpacing:[1,2],noseWidth:[-2,-1],mouthWidth:[1,2]}},
-  /* (the owner's approved orc study, 2026-11-10, engine/face arts: doc/ORC_PORTRAIT_DESIGN.md) an orc the world draws: mostly the war
-     crest (the tall mohawk) or a shaved or bound head, a flat broad nose, an orc's ears, its tusks, at most a short bristle. world:
+  /* (the owner's approved orc study, 2026-11-10, engine/face arts: doc/ORC_PORTRAIT_DESIGN.md) an orc the world draws: the shared hair
+     catalog with racial preferences, a flat broad nose, an orc's ears, its tusks, at most a short bristle. world:
      the world's faces only, never yours or a companion's (theirs the engine's own, as you shape yours). A heavy one's face: FACE_UNIT.heavy */
   orc:{world:true,face:['orcish','broad','strong-jaw'],nose:['orc-flat','orc-broad','orc-flat','broad'],ears:['orc','orc','pointed'],mouth:['small-tusks','heavy-tusks','heavy-tusks','stern'],
-    brows:['bold','broken','flat','bold'],hair:{m:['war-crest','war-crest','war-crest','war-crest','buzz-cut','crew-cut','topknot','undercut','braids'],f:['war-crest','war-crest','braids','single-braid','ponytail','topknot','high-bun']},
+    brows:['bold','broken','flat','bold'],
     beard:{m:['none','none','stubble','chin-bristle','scruffy'],f:['none']}}};
 // (the engine's own peoples: a goblin's face is drawn on an orc's)
 const FACE_RACE={goblin:'orc',hobgoblin:'orc'};
@@ -94,7 +94,7 @@ const FACE_GEAR={
   cape:'cloak',
   // (no armour worn: a face's own armour (armours) its past's plain clothes (plain; any: anyone else's), its own helm (helms) off)
   armours:['orc-bare-cross-harness','orc-bare-ring-harness','orc-leather-vest','orc-studded-leather','orc-cross-harness','orc-ring-harness','orc-layered-hide','orc-leather-guard','mail','brigandine','scale','lamellar','plate','ruffled-mail','rune-mail','leather-mail','coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','dwarf-runic-plate','dwarf-forge-plate','elf-silver-scale','elf-leaf-cuirass'],
-  helms:['great-helm','closed-knight-helm','visored-bascinet','closed-sallet','beaked-bascinet','slit-mask-helm','coif','nasal','kettle','round-helm','forge-helm','open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm'],
+  helms:['barrel-great-helm','rivet-banded-helm','fluted-knight-helm','horned-closed-helm','leaf-visor-helm','tusked-closed-helm','great-helm','closed-knight-helm','visored-bascinet','closed-sallet','beaked-bascinet','slit-mask-helm','coif','nasal','kettle','round-helm','forge-helm','open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm'],
   plain:{soldier:'gambeson',guard:'gambeson',woodcutter:'jerkin',exile:'leather',merchant:'doublet',hedge:'robe',nobody:'linen-chemise',apprentice:'tunic',any:'traveler-coat'},
   // (the metal's colour: its material's, steel (steel) mixed in by tint, so gold reads gilt and mithril pale, not paint)
   steel:'#8f969a',tint:.5,
