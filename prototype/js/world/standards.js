@@ -26,8 +26,13 @@ class Standard extends Site{
   // its guards, as its realm's soldiers
   guardList(){const f=this.realm;return f&&f!=='player'&&this.guards>0?armyOf(f,this.guards):[]}
   whyText(){return this.why==='deposit'||this.why==='fish'?'by the '+(GOODS[this.g]?GOODS[this.g].n.toLowerCase():'')+' '+(this.why==='fish'?'waters':'deposit'):'at the '+STANDARD_WHY[this.why]}
-  // the day: its realm sends a guard back while it holds it in peace
-  day(){if(this.realm&&this.realm!=='player'&&!this.taking&&!this.choose&&this.guards<this.most)this.guards=Math.min(this.most,this.guards+STANDARD.regrow)}
+  // the day: its realm fallen, it is no one's; else its realm sends a guard back while it holds it in peace
+  day(){const f=this.realm;if(f&&f!=='player'&&W.dead[f]){this.owner=null;this.guards=0;return}
+    if(f&&f!=='player'&&!this.taking&&!this.choose&&this.guards<this.most)this.guards=Math.min(this.most,this.guards+STANDARD.regrow)}
+  // put back after a load: its point, and its tiles kept free of building (Standards.reserve)
+  placed(){super.placed();Standards.reserve()}
+  // (its tiles: its plinth's, the tile in front, its tower's beside it)
+  tiles(){const L=[];for(let j=-1;j<=1;j++)for(let i=this.lv>=2?-3:-1;i<=1;i++)L.push([this.tx+i,this.ty+j]);return L}
   mapDot(V){return this.known()?[this.col(),2]:null}
   tip(){const f=this.ownerName();return '<b>'+Discovery.nameOf(this)+'</b><small>'+(f?'Held by '+f:'Held by no one')+', '+STANDARD_LV[this.lv]+(this.guards?', '+roughly(this.guards)+' guards':'')+'</small><span class="act">Click: go there</span>'}
   sprite(){return standardSprite(this)}
@@ -80,7 +85,9 @@ SITE_CLASS.standard=Standard;
    border with another realm; each province (provinces.js) its best, base + one for each per of its holdings (most), one more on a
    border, gap tiles apart. Each stands on open ground beside its spot (near tiles), off the road */
 const Standards={
-  all(){return W.sites.filter(s=>s instanceof Standard)},
+  all(){return (W.sites||[]).filter(s=>s instanceof Standard)},
+  // (their tiles kept free of every holding's building: lots.js occReserve, lotFits)
+  reserve(){if(typeof OCC==='undefined'||!OCC)return;for(const s of this.all())for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},// (-3: a standard's, no lot's: Standards.stand looks past them)
   spots(){const S=STANDARD_PLACE,road=(x,y)=>{const k=tAt(x,y);return k===T_ROAD||k===T_FORD},peak=(x,y)=>tAt(x,y)===T_MOUNT,out=[];
     for(let ty=3;ty<MH-3;ty++)for(let tx=3;tx<MW-3;tx++){const k=tAt(tx,ty);let why=null;
       if(k===T_FORD)why='ford';
@@ -92,7 +99,7 @@ const Standards={
   // (open ground by a spot to stand on: off the road, nothing built, a clear tile under the plinth and in front)
   stand(tx,ty){const N=STANDARD_PLACE.near;let best=null,bd=1e9;
     for(let j=-N;j<=N;j++)for(let i=-N;i<=N;i++){const x=tx+i,y=ty+j;if(x<2||y<2||x>=MW-2||y>=MH-2)continue;const k=tAt(x,y),f=tAt(x,y+1);
-      if(k!==T_OPEN||!passable(f)||occAt(x,y)||occAt(x,y+1)||occAt(x-1,y))continue;const d=i*i+j*j+(hash(x,y,9301)*.5);if(d<bd){bd=d;best=[x,y]}}
+      const oc=(a,b)=>{const v=occAt(a,b);return v&&v!==-3};if(k!==T_OPEN||!passable(f)||oc(x,y)||oc(x,y+1)||oc(x-1,y))continue;const d=i*i+j*j+(hash(x,y,9301)*.5);if(d<bd){bd=d;best=[x,y]}}
     return best},
   // (anything built within STANDARD_PLACE.clear tiles: a holding's lots, its estates, its walls)
   built(tx,ty){const r=STANDARD_PLACE.clear;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(occAt(tx+i,ty+j)>0)return true;return false},
@@ -110,7 +117,9 @@ const Standards={
       while(true){let best=null,bs=-1e9;for(const p of L){if(p.used||!chosen.every(q=>Math.hypot(q.at[0]-p.at[0],q.at[1]-p.at[1])>=S.gap))continue;if(k>=n&&(extra||!p.border))continue;
           const v=p.score-S.same*(took[p.why==='fish'?'deposit':p.why]||0);if(v>bs){bs=v;best=p}}
         if(!best)break;best.used=true;chosen.push(best);took[best.why==='fish'?'deposit':best.why]=(took[best.why==='fish'?'deposit':best.why]||0)+1;if(k<n)k++;else extra=true}}
-    return chosen.map((p,k)=>this.make(p,k))},
+    const out=[];chosen.forEach((p,k)=>{const s=this.make(p,k),h=Spatial.nearestHolding(s.x,s.y);
+      if(h&&out.some(o=>o.name===s.name))s.name=h.name+' '+compass(s.x-h.x,s.y-h.y)+s.name.slice(h.name.length);out.push(s)});// (two of one name: the second by its compass from the holding)
+    return out},
   make(p,k){const [tx,ty]=p.at,[x,y]=Standard.point(tx,ty),S=STANDARD_PLACE,lv=p.score>=S.lv[1]?3:p.score>=S.lv[0]?2:1,h=Spatial.nearestHolding(x,y),
       s=Object.assign(Object.create(Standard.prototype),{i:STANDARD.I0+k,type:'standard',tx,ty,x,y,seed:1+Math.floor(hash(tx,ty,4243)*99998),seen:false,cleared:false,back:0,
         owner:p.f,lv,why:p.why,g:p.g||null,guards:STANDARD.guards[lv],taking:null,choose:false});

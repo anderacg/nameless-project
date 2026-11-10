@@ -36,6 +36,14 @@ Kit.suite(({ok,info})=>{
   P.x=s.x+S.r*4;t.Standards.hour();ok(!s.taking&&s.realm!=='karn','walk well off and it is broken off');
   P.x=s.x;t.act('site-attack');for(let i=0;i<S.hold;i++)t.Standards.hour();ok(s.realm==='karn'&&!s.choose,'stay by it: it flies the colours of the realm you serve');
   G.site=s;t.showSite();ok(!/Attack its guards|Raise your banner/.test(Kit.panel()),'and yours to keep: no attack on it');P.fac=null}
+ // ---- edge cases: names, their tiles kept from building, a fallen realm's, a fight fought out on the field
+ {const names=all().map(s=>s.name);ok(new Set(names).size===names.length,'every standard its own name');
+  ok(all().every(s=>s.tiles().every(([x,y])=>t.occAt(x,y)!==0)),'its tiles (plinth, front, tower) kept from every holding\'s building');
+  const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'&&x.realm!=='karn'),f=s.realm;W.dead[f]=true;try{s.day();ok(!s.realm&&s.guards===0,'its realm fallen, it is no one\'s')}finally{delete W.dead[f];s.owner=f;s.guards=S.guards[s.lv]}}
+ {Kit.world({encCool:0});strong();P.fac=null;const s=all().find(x=>x.guards>0&&x.realm&&x.realm!=='player'&&!x.choose&&!x.taking);P.x=s.x+10;P.y=s.y+12;G.site=s;G.mode='site';t.showSite();t.act('site-attack');
+  t.startBattle({enemies:G.enc.list,tournament:false});const B=t.B,foes=B.units.filter(u=>u.team===1),fl=foes.map(u=>t.battleFlag(u)).find(Boolean);
+  ok(foes.length===G.enc.list.length&&fl&&fl.col===s.col(),'fought out on the field: its guards there under its realm\'s banner');
+  B.win=true;B.over=true;foes.forEach(u=>u.hp=0);t.finishBattle();ok(s.taking&&s.guards===0,'and won there, your banner begins to go up');G.mode='world';t.hidePanel();s.taking=null;s.guards=S.guards[s.lv]}
  // ---- through a save
  {const rec=all().map(s=>[s.name,s.realm,s.lv,s.guards].join());t.saveGame(true,'quick');W.sites=[];t.loadGame('quick');
   ok(all().length===A.length&&all().map(s=>[s.name,s.realm,s.lv,s.guards].join()).join('|')===rec.join('|')&&all().every(s=>s instanceof t.Standard),'a save keeps every standard, whose it is, its level and its guards')}
