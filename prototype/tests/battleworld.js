@@ -106,6 +106,8 @@ try{
    ok(hs.length===T0.recipe.built.houses.length&&hs.every(p=>p.s&&p.s.width>=32&&crisp(p.s)),'painted: each building a standing prop (dk 5, '+hs.length+'), the world\'s own model'+(t.PX.buildingModel?'':' (none here: a plain block)')+' drawn at 2x, each pixel a crisp 2x2 block ('+hs.map(p=>p.s.width+'x'+p.s.height).join(', ')+')')}
   // (up to 6 buildings from the fights by a farm; the ring's pixels where no prop stands: a tree at a building's wall, in a wood's
   // clearing, is no patch of ground)
+  // (a run under 12 px: a small detail is up to 11 (a frost drift), and with a building there the details' draws fall elsewhere (its
+  // cells' kind changed), so one may lie along a cell line where the field without it has none; a flat square's edge runs a cell, 16)
   // (it sits in the field's ground: round each building (the field painted with its props) the pixels just outside its silhouette
   // near the field's ground there (painted without what stands by the fight: the mean colour of that ring, either way), and no
   // straight run of an odd colour along a cell edge round it (no flat square: across each cell line through its footprint and a
@@ -121,7 +123,7 @@ try{
      const pr=(X,Y)=>pa[(Y*BW+X)*4+3]>0,fd=(X,Y)=>{const c=Math.floor(X/cs),q=Math.floor(Y/cs);return c>=0&&q>=0&&c<T0.C&&q<T0.R&&T0.built[q*T0.C+c]>1},ok2=(X,Y)=>X>=1&&Y>=1&&X<BW-1&&Y<BH-1&&!fd(X,Y)&&!fd(X-1,Y)&&!fd(X,Y-1)&&!pr(X,Y)&&!pr(X-1,Y)&&!pr(X,Y-1);
      for(let X=x0;X<=x1;X+=cs)scan(y1-y0,s=>{const Y=y0+s;return ok2(X,Y)&&!near(X,Y,6)&&!near(X-1,Y,6)?[(Y*BW+X)*4,(Y*BW+X-1)*4]:null});
      for(let Y=y0;Y<=y1;Y+=cs)scan(x1-x0,s=>{const X=x0+s;return ok2(X,Y)&&!near(X,Y,6)&&!near(X,Y-1,6)?[(Y*BW+X)*4,((Y-1)*BW+X)*4]:null});runs.push(worst)}}
-   ok(nH>=4&&ring.every(v=>v<24)&&runs.every(v=>v<8),'each building sits in the field\'s ground ('+nH+' buildings): the ring just outside its silhouette within '+Math.round(Math.max(...ring))+' of the field\'s colour there (its mean: '+ring.map(v=>v.toFixed(0)).join(' ')+'), no straight run along a cell edge round it (a field\'s rows and fences and whatever else stands aside: longest '+Math.max(...runs)+' px)')}}
+   ok(nH>=4&&ring.every(v=>v<24)&&runs.every(v=>v<12),'each building sits in the field\'s ground ('+nH+' buildings): the ring just outside its silhouette within '+Math.round(Math.max(...ring))+' of the field\'s colour there (its mean: '+ring.map(v=>v.toFixed(0)).join(' ')+'), no straight run along a cell edge round it (a field\'s rows and fences and whatever else stands aside: longest '+Math.max(...runs)+' px)')}}
 
  // ======== a brook, a pond, an oasis
  {const bk=scan((S,x,y)=>S.brook&&!S.river&&!S.pond&&S.c!=='desert'&&!S.kinds.some((k,i)=>i!==4&&k===T_WATER),23,20);let st=0,fd=0,fr=0;
