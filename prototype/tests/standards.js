@@ -125,6 +125,10 @@ Kit.suite(({ok,info})=>{
    ok(m.every(u=>u.z>0&&Math.abs(u.s.range-u.r0*T.rangeMul(t.tIx(T,u.x,u.y)))<1&&u.s.range>=u.r0*(1+H*X.rise[3])-1),'drawn up on it, shooting from its height (range '+(u0&&u0.s.range.toFixed(0))+', '+(u0&&u0.r0)+' on level ground)');
    ok(!B.muster||!B.muster.entries.some(e=>e.g===g),'not marched off it to a formation');
    {const C=t.Commander.of(1).groups();ok(g&&!Object.values(C).some(ids=>ids.includes(g.id))&&Object.values(C).some(ids=>ids.length),'no captain orders them, the rest of its guards his (commander.js: g.post)')}
+   {const f=t.StandardTower.foot(w,T.cs),d0=m.map(u=>Math.hypot(u.sx+g.ax-f.x,u.sy+g.ay-f.y)),foe=B.units.find(u=>u.team===0&&u.hp>0);let drew=true;try{t.StandardTower.draw(B.world)}catch(e){drew=false}
+    ok(drew&&w.l1-w.l0===X.ladder&&!w.back,'its ladder drawn on the field ('+X.ladder+' cells, from the ground to its top)');
+    const fx=foe.x,fy=foe.y;foe.x=m[0].x;foe.y=m[0].y;w.seen=0;t.StandardTower.step(B);const d1=m.map(u=>Math.hypot(u.sx+g.ax-f.x,u.sy+g.ay-f.y));foe.x=fx;foe.y=fy;
+    ok(w.back&&d1.reduce((a,b)=>a+b,0)>d0.reduce((a,b)=>a+b,0),'a foe up on its top: its archers fall back from the ladder ('+d0.map(v=>v.toFixed(0)).join(',')+' to '+d1.map(v=>v.toFixed(0)).join(',')+' px from its foot)')}
    end(B);
    const B2=fight(3,true);ok(!B2.groups.e0_tower&&!(B2.terrain.towers||[]).some(x=>x.s===s),'its tower broken: no one on it, nothing raised');end(B2);
    const B3=fight(1,false);ok(B3.world&&!B3.groups.e0_tower,'a flag post alone: fought on the map, no tower');end(B3)}

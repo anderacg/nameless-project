@@ -32,8 +32,9 @@ const AMBIENT={homes:{tiles:8,tries:8,chance:.65,cache:256,quiet:2,memories:96,r
   // a gull over water within shore tiles of land, gliding about where it came (range px) for life s, then on its way
   gull:{every:15,max:1,shore:2,speed:[16,24],alt:[22,36],life:[14,24],range:48},
   fly:{every:5,max:2,speed:[6,12],life:[7,13]},
-  // fireflies on warm nights in the woods (only within near × your sight: what a wood hides) and over the marsh
-  glow:{every:1,max:8,life:[4,9],near:.45},
+  // fireflies on warm nights in the woods (only within near × your sight: what a wood hides; .9, was .45, 2026-11-10: a night's sight
+  // so short and their homes so far apart they were almost never seen) and over the marsh
+  glow:{every:1,max:8,life:[4,9],near:.9},
   fish:{every:6,max:1,shore:3,life:1.2},
   hare:{every:20,max:1,scare:36,speed:[70,90],life:[12,24]},
   // a squirrel on the floor of a wood near you: it sits wait s, then darts off into the trees
