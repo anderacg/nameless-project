@@ -33,6 +33,9 @@ const STANDARD_PLACE={score:{deposit:3,fish:2,pass:2.5,ford:2,crossing:1.5},bord
 const STANDARD_WHY={crossing:'crossroads',ford:'ford',pass:'pass',deposit:'diggings',fish:'fishing grounds'};
 // its picture (world/standards.js standardSprite): the stone plinth's ramp, the iron pole's, the bare rags of one no one holds
 // broken: the share of its tower's height gone when it lies broken
-// ladder: its tower's ladder in battle (StandardTower.draw), world px: w wide, a rung every step, over: its top over the parapet behind
+// ladder: its tower's ladder in battle (StandardTower.draw, ladderSprite), world px: w wide at its foot, top at its top (it narrows
+// up), a rung every step, over: its top over the parapet behind, lean: its foot that far out from the wall (a side's), rail: its
+// rails' light, mid and shade, rung: a rung's top and its underside, rope: the lashings at every other rung, knot: the grain's,
+// shadow: on the wall behind, broken: the chance one rung of it is snapped (half of it left)
 const STANDARD_ART={stone:['#c4bcae','#a39b8c','#7f786b','#5a554b'],iron:['#8a8c94','#5e6068','#3e4048'],rag:'#6a5a48',rope:'#c8b070',broken:.45,
-  ladder:{w:4,step:2,over:3,rail:'#6e4626',rung:'#a8743e'}};
+  ladder:{w:6,top:4,step:3,over:3,lean:2,rail:['#a8794a','#7d5532','#56381f'],rung:['#c69257','#8e6036'],rope:'#cdb67a',knot:'#4a2f19',shadow:'rgba(24,16,8,.3)',broken:.5}};

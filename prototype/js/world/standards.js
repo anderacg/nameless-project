@@ -257,10 +257,30 @@ const StandardTower={
      top against the side it stands on; behind it (the side away to the north), only its top showing over the parapet. Field px,
      a world px each scale of them) */
   draw(area){const T=B&&B.terrain;if(!T||!T.towers)return;const A=STANDARD_ART.ladder,k=area.scale,cs=T.cs;
-    for(const w of T.towers){if(w.l0==null)continue;const f=this.foot(w,cs),top=w.z*WORLD_BATTLE.sprite,y1=f.y-top-(w.ladder===3?A.over*k:0),y0=w.ladder===3?f.y-top+A.over*k:(w.r1+1)*cs,half=A.w*k/2;// (its foot on the ground at the tower's front)
-      ctx.save();ctx.fillStyle=A.rail;ctx.fillRect(f.x-half,y1,k,y0-y1);ctx.fillRect(f.x+half-k,y1,k,y0-y1);ctx.fillStyle=A.rung;
-      for(let y=y0-A.step*k;y>y1;y-=A.step*k)ctx.fillRect(f.x-half+k,y,A.w*k-2*k,k);ctx.restore()}}
+    for(const w of T.towers){if(w.l0==null)continue;const f=this.foot(w,cs),top=w.z*WORLD_BATTLE.sprite,back=w.ladder===3,y1=f.y-top-(back?A.over*k:0),y0=back?f.y-top+A.over*k:(w.r1+1)*cs;// (its foot on the ground at the tower's front)
+      // (a side's leans out from the wall at its foot (east, west); the front's and the back's stand straight)
+      const lean=w.ladder===0?A.lean:w.ladder===2?-A.lean:0,h=Math.max(4,Math.round((y0-y1)/k)),sp=ladderSprite(h,lean,w.s.seed);
+      ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(sp,Math.round(f.x-sp.ax*k),Math.round(y1),sp.width*k,sp.height*k);ctx.restore()}}
 };
+/* (a ladder's picture, world px, made once a height and a lean: two rails narrowing up from splayed feet, lit on the left, shaded
+   on the right, a knot here and there in their grain; a rung every STANDARD_ART.ladder.step, its top lit, its underside shaded, lashed
+   with rope at every other one; by its seed one rung may be snapped, half of it left; its foot lean px out from the wall (the
+   rows shear back to it as they rise); its shadow on the wall behind it. ax: the column of its top's middle) */
+const LADDER_PICS=new Map();
+function ladderSprite(h,lean,seed){const key=h+'|'+lean+'|'+(seed%5);let c=LADDER_PICS.get(key);if(c)return c;
+  const A=STANDARD_ART.ladder,L=Math.abs(lean),W=A.w+L+2,g=pgrid(W,h+1),Rl=A.rail,Rg=A.rung,cut=hash(seed,h,911)<A.broken?2+Math.floor(hash(seed,h,912)*Math.max(1,(h-4)/A.step)):-1;
+  // (row y's rails' columns: a foot w wide narrowing to top at its top, the foot lean px from the top's middle)
+  const x0=lean<0?1+L:1,top=x0+(A.w-1)/2,rails=y=>{const t=y/h,half=(A.top+(A.w-A.top)*t-1)/2,mid=top+lean*t;return[Math.round(mid-half),Math.round(mid+half)]};
+  for(let y=0;y<=h;y++){const [a,b]=rails(y),foot=y>=h-1;
+    pset(g,a-(foot?1:0),y,y%7===3&&hash(seed,y,913)<.5?A.knot:Rl[0]);pset(g,b+(foot?1:0),y,y%6===2&&hash(seed,y,914)<.5?A.knot:Rl[2]);
+    if(y===h)continue;const n=Math.floor((h-1-y)/A.step);if((h-1-y)%A.step||y<1)continue;
+    // (a rung: its top lit, the row under it its shade where it meets each rail; lashed every other one; the snapped one half)
+    for(let x=a+1;x<b;x++){if(n===cut&&x>a+(b-a)/2)break;pset(g,x,y,Rg[0])}if(n!==cut){pset(g,a+1,y+1,Rg[1]);pset(g,b-1,y+1,Rg[1])}
+    if(n%2===0){pset(g,a,y,A.rope);pset(g,b,y,A.rope)}}
+  g.edge=true;poutline(g);const pic=pcanvas(g),sd=lean>0?-1:1;
+  c=mkc(W+1,h+1,q=>{q.drawImage(pic,0,0);q.globalCompositeOperation='destination-over';
+    const s=mkc(W,h+1,z=>{z.drawImage(pic,0,0);z.globalCompositeOperation='source-in';z.fillStyle=A.shadow;z.fillRect(0,0,W,h+1)});q.drawImage(s,lean===0?1:sd,1)});
+  c.ax=top;LADDER_PICS.set(key,c);return c}
 
 /* its picture: the standard (a stepped stone plinth, an iron pole with a gilt finial, a crossbar, two banners hung from it in its
    realm's colours with its device, a rope's tassel at an end; ragged, no one's) and, level 2 and 3, a watchtower or a stone tower
