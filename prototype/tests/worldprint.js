@@ -689,7 +689,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  bar a ribbon behind its plank, gold-edged and stitched, drooping to a fold and a swallow-tailed tail each side, the plank framed
 //  in gold with four rivets and a crest (gfx/structures.js drawPlaqueRibbon). Only that file changed; 51cf84d gives W6 as before.
 //  Was W6 4e0e6b92)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'eed44484',W6:'da35c7a1',W7:'fa8834d8',W8:'c6df5ce6',B2:'90225f8a'};
+// (W6 again 2026-11-10, on purpose: the owner, "Can you make a faction flag not cut the emblem off?": a battle banner 11 x 9, its
+//  wave and swallow tail past its device, the back banner 9 x 11 with a margin round its device (gfx/marchgear.js BATTLE_BANNER), on the
+//  holdings and the marchers in the view. Only that table changed; a9a40b1 gives W6 as before. Was W6 da35c7a1)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'eed44484',W6:'8904cbc4',W7:'fa8834d8',W8:'c6df5ce6',B2:'90225f8a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
