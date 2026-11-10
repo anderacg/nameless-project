@@ -155,9 +155,11 @@ class Faces{
   // (the portrait shown again as a picker or a slider moves, the page kept as it is)
   static refresh(){const img=panel.querySelector('.fm-pic');if(img&&this.draft)img.src=this.url(this.draft.rec,true)}
   // ---- the world's roster: made as the game starts (your face the page's, else one drawn by your race and gender), or loaded
+  // (from the world's seed alone (Rng.worldOf): made before the game's number is drawn, from the last game's it made a second new
+  // game's faces unlike a fresh page's, worldsave)
   static start(){this.R=null;this.pics=new Map();if(!this.ok())return;const g=P.gender==='f'?'f':'m',D=this.draft,
-      rec=D&&D.race===P.race&&D.g===g?D.rec:this.random(Rng.seedOf('face:you'),P.race,g,true);this.draft=null;
-    try{this.R=new PortraitCharacters.Roster({seed:Rng.seedOf('faces'),player:rec})}catch(e){this.R=null}}
+      rec=D&&D.race===P.race&&D.g===g?D.rec:this.random(Rng.worldOf('face:you'),P.race,g,true);this.draft=null;
+    try{this.R=new PortraitCharacters.Roster({seed:Rng.worldOf('faces'),player:rec})}catch(e){this.R=null}}
   // (a new person in the same world, world/legacy.js: a face of their own (n: the generation), kin's like the one who fell, theirs
   // the same shape of face, nose and ears and the same skin, hair and eyes; the world's faces kept as they were, saved: the roster's)
   // (young: kin just come of age, a young face, no beard yet)
