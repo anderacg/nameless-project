@@ -346,10 +346,13 @@
     longhouse(Q,o){const d=o.d,dw=Q.home('longhouse','home');house(Q,{w:44,d:18,c:[-2,7],z:12,rise:9,dw,finial:1,fmat:o.look.finial,door:.5,doorKind:'Door2',wins:4,chim:[-2,5],back:'door'});
       lean(Q,'an',[20,27],[1,15],9,o.roofMat);shed(Q,'sh',[-14,-19],14,9,9,o.roofMat);Q.prop('woodpile',[12,-17],0);Q.prop('hay',[24,-14]);Q.prop('cart',[-24,22],1)},
     // a keep (straight on): a square donjon crenellated, turrets at its corners, its hall beside it, a well in the yard; walls by its
-    // fortification
+    // fortification. Its towers under cones, the donjon too is roofed: a steep roof of theirs rising inside its battlements (the
+    // owner, 2026-11-10: "the castle building looks a bit odd for the balcony vs tower roof": a bare crenellated top among cones), its
+    // corner turrets standing clear above the parapet
     keep(Q,o){const d=o.d,st=o.look.fort,cone=o.look.cones&&d.chance(.7),f=o.fort|0,dw=Q.home('keep','hall',3),L=d.chance(.5)?-1:1;Q.flag=true;Q.ground='cobble';
-      Q.square('dj',[L*8,-12],18,[0,30],st,{form:'battlements'},{dw});for(const a of [-1,1])Q.round('dt'+a,[L*8+a*9,-3],2.5,[0,33],st,cone?{form:'cone',rise:6,mat:o.roofMat}:{form:'lid',mat:st},{dw});
-      Q.dec('dj.S','Door2',.5);Q.dec('dj.S','WinS',.3,13);Q.dec('dj.S','WinS',.7,13);Q.dec('dj.S','Lancet',.5,21);for(const k of ['E','W','N'])Q.dec('dj.'+k,'Lancet',.5,21);
+      Q.square('dj',[L*8,-12],18,[0,30],st,{form:'battlements'},{dw});if(cone)Q.square('djr',[L*8,-12],12,[28,32],st,{form:'pyramid',rise:10,mat:o.roofMat},{dw});
+      for(const a of [-1,1])Q.round('dt'+a,[L*8+a*9,-3],2.5,[0,cone?37:33],st,cone?{form:'cone',rise:7,mat:o.roofMat}:{form:'lid',mat:st},{dw});
+      Q.dec('dj.S','Door2',.5);if(!f){Q.dec('dj.S','WinS',.3,13);Q.dec('dj.S','WinS',.7,13)}Q.dec('dj.S','Lancet',.5,21);// (its low windows not behind its walls' towers)for(const k of ['E','W','N'])Q.dec('dj.'+k,'Lancet',.5,21);
       const hx=-L*10;Q.box('hl',[hx-9,hx+9],[-14,-2],[0,13],st,{dw});Q.roof('hl','gable','u',7,o.roofMat,{finial:1});for(const at of [.2,.8])Q.dec('hl.S','Lancet2',at,4);Q.dec('hl.S','Door',.5);
       Q.round('wl',[hx,8],3,[0,3],'stone',{form:'water'});if(f)curtain(Q,-27,27,-30,26,f,cone,1);else{Q.prop('cart',[-16,18],1);Q.prop('barrel',[16,16])}},
     // a gatehouse (straight on): a gate arch with its portcullis in a block between two great towers, battlements, walls either side
@@ -373,7 +376,8 @@
       const Z=z=>Math.round(z*kz);Q.box('pl',[-15*k,15*k],[-24*k,-10*k],[0,Z(16)],st,{dw});Q.roof('pl',d.chance(.5)?'hip':'gable','u',Z(9),o.roofMat,{finial:1});
       Q.dec('pl.S','Door2',.5);const nw=4*k;for(let i=0;i<nw;i++){const at=(i+.5)/nw*.86+.07;if(Math.abs(at-.5)<.08)continue;Q.dec('pl.S','Lancet2',at,4);Q.dec('pl.S','WinS',at,Z(16)-6)}
       for(const s of [-1,1]){Q.round('pt'+s,[s*17*k,-17*k],5*k,[0,Z(26)],st,cone?{form:'cone',rise:Z(10),mat:o.roofMat}:{form:'lid',mat:st},{dw});Q.dec('pt'+s+'.S','Lancet',.5,Z(14))}
-      if(o.capital){Q.square('dj',[0,-36],24,[0,Z(34)],st,{form:'battlements'},{dw});for(const s of [-1,1])Q.round('dt'+s,[s*12,-36],4,[0,Z(40)],st,cone?{form:'cone',rise:12,mat:o.roofMat}:{form:'lid',mat:st},{dw});Q.dec('dj.S','Lancet2',.5,Z(22))}
+      if(o.capital){Q.square('dj',[0,-36],24,[0,Z(34)],st,{form:'battlements'},{dw});if(cone)Q.square('djr',[0,-36],16,[Z(34)-2,Z(34)+2],st,{form:'pyramid',rise:13,mat:o.roofMat},{dw});
+        for(const s of [-1,1])Q.round('dt'+s,[s*12,-36],4,[0,Z(cone?42:40)],st,cone?{form:'cone',rise:12,mat:o.roofMat}:{form:'lid',mat:st},{dw});Q.dec('dj.S','Lancet2',.5,Z(22))}
       Q.round('ft',[0,6*k],3.5*k,[0,2],'stone',{form:'water'});Q.round('fp',[0,6*k],1.2,[0,6],'stone',{form:'lid',mat:'stone'});
       if(f||o.capital)curtain(Q,-27*k,27*k,(o.capital?-56:-30),27*k,f||3,cone,k);else{Q.prop('cart',[-16,16],1);Q.prop('crate',[16,14])}},
 

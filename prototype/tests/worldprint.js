@@ -666,7 +666,18 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  active skill first): the save holds their trees. Was W7 e8ae4ea7)
 // (W7 again 2026-11-09, on purpose: the owner, "add more attribute nodes to each proficiency" (two bonus nodes between each two
 //  tiers, two past the last; riders aim at Blade Dash first): the save holds the lords' trees. Was W7 455f569f)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'f64851c8',W6:'fa66e427',W7:'2e2d16ff',W8:'1d99079f',B2:'f37cd778'};
+// (W7 and W8 again 2026-11-10, on purpose: the owner, "please fix pathfinder and the guide path to use a walkable path otherwise my
+//  character would walk into obstacle and sometime stuck": your band's way kept to the router's route once it has one, round the
+//  buildings of a holding (router.js WAY_FOOT, footMask), a click on what you cannot stand on the nearest open spot (Router.open), so
+//  the hero walks another way in the 600 frames (W8) and the three days' save holds where he stands (W7). Proof: a7c2f8d (the commit
+//  before 0cab5a5) gives W7 and W8 as before. Were W7 2e2d16ff, W8 1d99079f)
+// (W5 and W6 again 2026-11-10, on purpose: the owner, "the castle building looks a bit odd for the balcony vs tower roof": a keep
+//  whose towers wear cones roofs its donjon too (engine/buildmodels.js; tests/buildmodels.js keep) in the painted world (W5) and the
+//  view (W6); and W6 also for "a panel bar above holding to show name (once discovered), lord crown visit icon and lock icon in one
+//  place" and "can you make a bar more interesting?": the holding's bar of wood, trim, ribbon, shield, padlock and crowns drawn over
+//  it (gfx/structures.js drawPlaques). W6 was b6e74327 already at a7c2f8d, before this batch (moved earlier, not by it); 6e16d3b gives
+//  W5 as before. Were W5 f64851c8, W6 fa66e427)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'55a05137',W5:'eed44484',W6:'8a493d1b',W7:'944093c1',W8:'c6df5ce6',B2:'f37cd778'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

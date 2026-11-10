@@ -124,28 +124,47 @@ function holdingLabel(t,cam,X,Y,N,fy=0){holdingPlaque(t,cam,Y-N+Math.min(0,fy),t
    its name once you have discovered it (else its kind, greyed: Discovery.nameOf), a small crown for each lord inside (lordCrown; in
    your sight only: no one is seen inside from afar), a red "!" while it is besieged. Queued as the holding is drawn (in sight or as
    you last saw it), drawn over everything with the map's words (drawPlaques, render.js): never hidden by those who walk by it; a
-   remembered one where you know the land. HOLD_PLAQUE: its size (px), colours, at most so many crowns, drawn crown times their size */
-const HOLD_PLAQUE={h:14,pad:4,gap:3,over:5,most:4,crown:2,bg:'rgba(22,15,9,.84)',edge:'#6e5228',lit:'#c9a25a',name:'#f0e2b8',kind:'#a39a86',siege:'#ff6a60'};
+   remembered one where you know the land, a little dimmer. Then (the owner: "Can you make a bar more interesting?"): a plank of dark
+   wood with its grain, a gold trim over it and its owner's colour under it, rivets, its owner's ribbon swallow-tailed at both ends and
+   its owner's small shield before its name (plaqueShield; free folk's in plain brown). HOLD_PLAQUE: its size (px), colours, at most
+   so many crowns */
+const HOLD_PLAQUE={h:16,pad:5,gap:3,over:6,most:4,tail:6,bg:'#2a1c10',grain:'#3b2915',edge:'#120b05',trim:'#c9a25a',rivet:'#dcc58e',
+  name:'#f0e2b8',kind:'#a39a86',siege:'#ff6a60',free:'#8a7a5a',dim:.78};
 let PLAQUEQ=[];
 function holdingPlaque(t,cam,top,live){PLAQUEQ.push({t,top:top+cam.y,live})}
 function lockPic(){const L=GATE_LOCK;if(!L.pic)L.pic=mkc(L.art[0].length,L.art.length,g=>L.art.forEach((r,y)=>[...r].forEach((c,x)=>{if(L.col[c]){g.fillStyle=L.col[c];g.fillRect(x,y,1,1)}})));return L.pic}
-// (the bars queued this frame, onto the screen with the map's words: render.js; the ctx's transform the world's)
+// (its owner's shield: a heater, flat-topped, in its colours with a pale down it, gold-rimmed, lit on its left; made once a colour)
+const PLAQUE_SHIELD=['ooooooooo','orrrrrrro','oxxxpxxdo','oxxxpxxdo','oxxxpxxdo','oxxxpxxdo','.oxxpxdo.','.oxxpxdo.','..oxpdo..','...oxo...','....o....'],SHIELD_PICS=new Map();
+function plaqueShield(col){let c=SHIELD_PICS.get(col);if(c)return c;const A=PLAQUE_SHIELD,C={o:'#120b05',r:'#c9a25a',x:col,p:PX.mix(col,'#ffffff',.45),d:PX.shade(col,.7)};
+  c=mkc(A[0].length,A.length,g=>A.forEach((r,y)=>[...r].forEach((q,x)=>{if(!C[q])return;g.fillStyle=q==='x'&&x<3&&y<6?PX.mix(col,'#ffffff',.18):C[q];g.fillRect(x,y,1,1)})));SHIELD_PICS.set(col,c);return c}
+// (the bars queued this frame, onto the screen with the map's words: render.js; the ctx's transform the world's). Each a plank of dark
+// wood, its grain, a gold trim over and its owner's colour under, rivets at its corners and its owner's ribbon tails at its ends
 function drawPlaques(cam){const Q=PLAQUEQ;PLAQUEQ=[];if(!Q.length)return;const H=HOLD_PLAQUE,m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf();
   for(const p of Q){const t=p.t,lock=GATES.on&&!Gates.admits(t).ok,cr=p.live?lordsInside(t).slice(0,H.most).map(l=>FACS[l.fac].col):[],sg=p.live&&besieged(t);
     const known=Discovery.named(t),name=Discovery.nameOf(t),col=known?H.name:H.kind,pic=mapTxtPic(name,col,'left',sc,dpr),tw=(pic.width-2*pic.ox)/sc,asc=(pic.oy-pic.ox)/sc;
-    const lp=lock?lockPic():null,w=H.pad*2+(lp?lp.width+H.gap:0)+tw+(cr.length?H.gap+cr.length*(7*H.crown+1)-1:0)+(sg?H.gap+3:0),x0=Math.round(t.x-cam.x-w/2),y0=Math.round(p.top-cam.y-H.over-H.h);
-    ctx.save();ctx.fillStyle=H.edge;ctx.fillRect(x0+1,y0,w-2,H.h);ctx.fillRect(x0,y0+1,w,H.h-2);ctx.fillStyle=H.bg;ctx.fillRect(x0+1,y0+1,w-2,H.h-2);
-    ctx.fillStyle=H.lit;ctx.fillRect(x0+2,y0,w-4,1);
-    let x=x0+H.pad;if(lp){ctx.drawImage(lp,x,y0+Math.round((H.h-lp.height)/2));x+=lp.width+H.gap}
-    mapTxt(name,x,y0+H.h/2+asc/2,col,'left');x+=Math.round(tw);
-    if(cr.length){x+=H.gap;const cw=7*H.crown,ch=5*H.crown;ctx.imageSmoothingEnabled=false;for(const c of cr){ctx.drawImage(lordCrown(c),x,y0+Math.round((H.h-ch)/2),cw,ch);x+=cw+1}x-=1}
-    if(sg&&Math.floor(performance.now()/400)%2){x+=H.gap;ctx.fillStyle=H.siege;ctx.fillRect(x+1,y0+3,1,H.h-8);ctx.fillRect(x+1,y0+H.h-4,1,1)}
+    const own=t.owner&&(t.owner==='player'||FACS[t.owner])?(p.live?facCol(t):t._memCol||facCol(t)):H.free,sh=plaqueShield(own),lp=lock?lockPic():null;
+    const w=Math.round(H.pad*2+sh.width+H.gap+(lp?lp.width+H.gap:0)+tw+(cr.length?H.gap+cr.length*(LORD_CROWN[0].length+1)-1:0)+(sg?H.gap+3:0)),x0=Math.round(t.x-cam.x-w/2),y0=Math.round(p.top-cam.y-H.over-H.h),y1=y0+H.h,T=H.tail;
+    ctx.save();if(!p.live)ctx.globalAlpha=H.dim;
+    // (the ribbon's tails, swallow-tailed, behind the plank)
+    for(const s of [-1,1]){const xa=s<0?x0+2:x0+w-2,xb=xa+s*(T+2);ctx.fillStyle=PX.shade(own,.55);ctx.beginPath();ctx.moveTo(xa,y0+3);ctx.lineTo(xb,y0+3);ctx.lineTo(xb-s*3,(y0+y1)/2+1);ctx.lineTo(xb,y1+1);ctx.lineTo(xa,y1+1);ctx.closePath();ctx.fill();
+      ctx.fillStyle=own;ctx.fillRect(Math.min(xa,xb-s*1),y0+4,Math.abs(xb-xa)-1,1)}
+    // (the plank: its edge, its wood and grain, its trims)
+    ctx.fillStyle=H.edge;ctx.fillRect(x0,y0+1,w,H.h-1);ctx.fillRect(x0+1,y0,w-2,H.h+1);ctx.fillStyle=H.bg;ctx.fillRect(x0+1,y0+1,w-2,H.h-2);
+    ctx.fillStyle=H.grain;const sd=(t.seed||7)|0;for(const [gy,a,b] of [[5,.08,.42],[9,.5,.93],[11,.15,.3],[7,.6,.75]]){const ga=Math.round(x0+w*((a+(sd%7)/50)%1)),gb=Math.round(x0+w*Math.min(.97,b+(sd%5)/60));if(gb>ga)ctx.fillRect(ga,y0+gy,gb-ga,1)}
+    ctx.fillStyle=H.trim;ctx.fillRect(x0+1,y0+1,w-2,1);ctx.fillStyle=own;ctx.fillRect(x0+1,y1-3,w-2,2);ctx.fillStyle=PX.shade(own,.6);ctx.fillRect(x0+1,y1-1,w-2,1);
+    ctx.fillStyle=H.rivet;for(const [rx,ry] of [[x0+2,y0+3],[x0+w-3,y0+3]])ctx.fillRect(rx,ry,1,1);
+    // (its marks and its name, in a row)
+    let x=x0+H.pad,mid=y0+(H.h-2)/2;ctx.drawImage(sh,x,Math.round(mid-sh.height/2));x+=sh.width+H.gap;
+    if(lp){ctx.drawImage(lp,x,Math.round(mid-lp.height/2));x+=lp.width+H.gap}
+    mapTxt(name,x,mid+asc/2,col,'left');x+=Math.round(tw);
+    if(cr.length){x+=H.gap;for(const c of cr){const k=lordCrown(c);ctx.drawImage(k,x,Math.round(mid-k.height/2));x+=k.width+1}x-=1}
+    if(sg&&Math.floor(performance.now()/400)%2){x+=H.gap;ctx.fillStyle=H.siege;ctx.fillRect(x+1,y0+3,1,H.h-9);ctx.fillRect(x+1,y1-5,1,1)}
     ctx.restore()}}
-/* (a lord inside, in his realm's colour: a small crown, dark-edged, its band lit (the owner, 2026-11-10: "a weird blue square dot",
-   a 3-pixel square before); made once a colour) */
-const LORD_CROWN=[[0,0],[2,0],[4,0],[0,1],[1,1],[2,1],[3,1],[4,1],[0,2],[1,2],[2,2],[3,2],[4,2]],CROWN_PICS=new Map();
-function lordCrown(col){let c=CROWN_PICS.get(col);if(c)return c;c=mkc(7,5,g=>{g.fillStyle='#1a1512';for(const [x,y] of LORD_CROWN)for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]])g.fillRect(x+1+dx,y+1+dy,1,1);
-  for(const [x,y] of LORD_CROWN){g.fillStyle=y===1?PX.mix(col,'#ffffff',.35):y===0?PX.mix(col,'#fff2b0',.25):col;g.fillRect(x+1,y+1,1,1)}});CROWN_PICS.set(col,c);return c}
+/* (a lord inside: a small gold crown set with his realm's colour, dark-edged (the owner, 2026-11-10: "a weird blue square dot", a
+   3-pixel square before; then "make a bar more interesting"); its pixels (o outline, h light, g gold, d shade, c his colour), made once a colour) */
+const LORD_CROWN=['.o..o..o.','ohoohooho','ohoohooho','ohgghggho','ohhhhhhho','ogcgcgcdo','odddddddo','ooooooooo'],CROWN_PICS=new Map();
+function lordCrown(col){let c=CROWN_PICS.get(col);if(c)return c;const A=LORD_CROWN,C={o:'#1a1512',h:'#fff0b0',g:'#e8b94a',d:'#a8761e',c:col};
+  c=mkc(A[0].length,A.length,g=>A.forEach((r,y)=>[...r].forEach((q,x)=>{if(C[q]){g.fillStyle=C[q];g.fillRect(x,y,1,1)}})));CROWN_PICS.set(col,c);return c}
 /* a gate that will not have you yet (world/gates.js): a gold padlock in the holding's bar (holdingPlaque); its pixels (o outline,
    h light, g gold, d shade, k keyhole), made once (lockPic) */
 const GATE_LOCK={art:['..ooooo..','.oghhhgo.','.og...go.','.og...go.','.og...go.','ooooooooo','ohhhhhhgo','ohgggggdo','ohggkggdo','ohggkggdo','ogddddddo','ooooooooo'],
