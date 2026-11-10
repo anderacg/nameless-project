@@ -26,13 +26,14 @@ Kit.suite(({ok})=>{
    ok(el&&el.classList.contains('on')&&/You discovered/i.test(el.textContent)&&el.textContent.includes(far.name),'its title over the map: '+(el&&el.textContent));
    {const mid=r=>(r.left+r.right)/2,box=el.getBoundingClientRect(),nm=el.querySelector('strong').getBoundingClientRect(),cs=getComputedStyle(el);
     ok(Math.abs(mid(box)-innerWidth/2)<2&&Math.abs(mid(nm)-innerWidth/2)<2&&box.width<=innerWidth&&cs.left==='0px'&&cs.right==='0px'&&cs.width!=='auto','the title in the middle of the screen, its name too, never wider than it (centred by its margins: the owner, a phone, "It\'s not at the center")')}
-   // (the owner, 2026-11-10: a locked holding: come to its gate, known, whether or not it will have you; no name on the map, even as
-   // you last saw it; a lord inside a small crown)
+   // (the owner, 2026-11-10: a locked holding: come to its gate, known, whether or not it will have you; its bar over it, its name once
+   // known; a lord inside a small crown)
    {const g=t.TOWNS.filter(h=>!D.named(h)&&h!==far)[0],px=P.x,py=P.y;if(g){const Gt=t.Gates,o0=Gt.admits;Gt.admits=()=>({ok:false,why:'shut'});try{P.x=g.x+60*t.TILE;P.y=g.y;G.mode='world';t.approachHolding(g)}finally{Gt.admits=o0}
      ok(D.named(g)&&G.mode==='gate','come to the gate of '+g.name+', shut to you: known at once')}t.hidePanel();G.mode='world';G.gate=null;P.x=px;P.y=py}
-   {const said=[],o0=window.txt;window.txt=function(s,...a){said.push(String(s));return o0.call(this,s,...a)};const gs=t.GATES.on;t.GATES.on=true;
-    try{for(const h of t.TOWNS){const ents=[],cam={x:h.x-200,y:h.y-120};const SA=t.seenArr(),MW=t.MW;for(const l of h.lots||[])for(let x=l.x;x<l.x+l.n;x++)for(let y=l.y;y<l.y+l.n;y++)SA[y*MW+x]=1;t.holdingEnts(h,ents,cam,1e5);for(const e of ents)e.f()}}finally{window.txt=o0;t.GATES.on=gs}
-    ok(!said.some(s=>t.TOWNS.some(h=>s.includes(h.name))),'no holding\'s name drawn on the map, in sight or as you last saw it')}
+   {const said=[],o0=window.mapTxt;window.mapTxt=function(s,...a){said.push(String(s));return o0.call(this,s,...a)};const gs=t.GATES.on;t.GATES.on=true;let hs=[];
+    try{for(const h of t.TOWNS){const ents=[],cam={x:h.x-200,y:h.y-120},SA=t.seenArr(),MW=t.MW;for(const l of h.lots||[])for(let x=l.x;x<l.x+l.n;x++)for(let y=l.y;y<l.y+l.n;y++)SA[y*MW+x]=1;t.PLAQUEQ.length=0;t.holdingEnts(h,ents,cam,1e5);for(const e of ents)e.f();t.drawPlaques(cam);hs.push(h)}}finally{window.mapTxt=o0;t.GATES.on=gs}
+    const known=hs.filter(h=>D.named(h)),unknown=hs.filter(h=>!D.named(h));
+    ok(known.length&&known.every(h=>said.includes(h.name))&&unknown.every(h=>!said.includes(h.name)&&said.includes(D.nameOf(h))),'each holding\'s bar: its name once discovered ('+known.length+'), else only its kind ('+unknown.length+'), in sight or as you last saw it')}
    {const c=t.lordCrown('#4cc0a8');ok(c.width===7&&c.height===5&&c===t.lordCrown('#4cc0a8'),'a lord inside: a small crown of his colours (7 x 5, made once)')}
    ok(G.msgs.some(m=>(m.m||'').startsWith('You discovered '+far.name))&&P.sk.scout.lv*1e3+P.sk.scout.xp>sk,'a line in the log, and Scouting practice');
    const n=D.found.size;D.check();ok(D.found.size===n,'once only')}
