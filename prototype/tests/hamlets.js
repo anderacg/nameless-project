@@ -14,7 +14,7 @@ Kit.suite(({ok})=>{
  {const n=new Set(t.TOWNS.map(x=>x.name)).size;ok(n===t.TOWNS.length,'every one named its own ('+H.slice(0,5).map(h=>h.name).join(', ')+'…)')}
  const h=H.find(x=>x.kind==='hamlet');
  ok(h.T.tier===1&&h.T.wallMax===0&&h.gar===h.T.gar&&/^A free .+ hamlet /.test(h.note),'a hamlet: tier 1, no walls, a militia of '+h.gar+'; "'+h.note+'"');
- {const ks=(h.lots||[]).map(l=>l.k).filter(k=>k!=='house'&&k!=='centre');ok(ks.includes('farm')&&ks.length<=2,'a field and one estate: '+ks.join(', '))}
+ {const ks=(h.lots||[]).map(l=>l.k).filter(k=>k!=='house'&&k!=='centre'&&k!=='nook');ok(ks.includes('farm')&&ks.length<=2,'a field and one estate: '+ks.join(', ')+' (its houses, its hall and the street\'s nooks aside: lots.js, 2c86d20)')}
  ok(t.landHold(h.x,h.y+4)===h,'its land its own ('+h.name+' lands)');
  // ---- its window: no lord's hall, walls or prison
  {Kit.goHome(h);t.enterTown(h);const tabs=[...document.querySelectorAll('#panel [data-act="tab"]')].map(b=>b.dataset.arg);

@@ -46,7 +46,7 @@ Kit.suite(({ok})=>{
  {Kit.clear();lairsFar();ash.gar=ash.T.gar;P.jobs={};const tr=t.Troubles.of(ash);t.jobsAt(ash);
   const list=P.jobs.Ashford.list;ok(list.every(q=>q.person),'every offer is a giver\'s ('+list.map(q=>q.type+': '+(q.person&&q.person.name)).join(', ')+')');
   ok(list.every(q=>q.type!=='bounty'&&q.type!=='hunt'&&q.type!=='troops'),'with no band, no hideout, no game near and a full garrison: no bounty, hunt or troops offered ('+list.map(q=>q.type).join(', ')+')');
-  P.jobs={Ashford:{day:G.day,list:[],none:true}};t.enterTown?.(ash);const html=t.jobsBody(ash);ok(/Nothing troubles Ashford these days/.test(html),'an empty board says nothing troubles it')}
+  P.jobs={Ashford:{day:G.day,list:[],none:true}};t.enterTown?.(ash);const html=t.jobsBody(ash);ok(/class="nb bare"/.test(html)&&!/class="nb-note/.test(html),'an empty board is bare, no paper pinned to it (7a48c7e: no line saying so)')}
  // ======== a giver's regard and their goods
  {Kit.clear();P.quests=[];const b=bandAt(ash.x+200,ash.y+40,4),q=t.makeQuest('bounty',ash);q.accept();const g=q.person,r0=t.Givers.regard(g);q.done=true;t.payQuest(q,ash.name);
   ok(t.Givers.regard(g)===r0+t.GIVER_REGARD.done,'a job done: '+g.name+' thinks better of you ('+t.Givers.regard(g)+')');

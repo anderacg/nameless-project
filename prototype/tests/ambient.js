@@ -65,8 +65,11 @@ try{
   ok(sat&&bolt==='bolt'&&Math.hypot(h.x-P.x,h.y-P.y)>10+5,'a hare sits, and bolts from your band as it comes near ('+bolt+', '+Math.round(d0)+' px off before)');[L.x,L.y,L.inside]=keep;park()}
  // ---- fireflies: at night, in a wood only near you, never by day
  {const woods=finds((x,y)=>tAt(x,y)===t.T_FOREST&&cl(x,y)==='grass'&&away(x,y),3,[hx,hy],8);let wood=null,by=null;/* (up to 8 woods, was 4, 2026-11-05: the 4 nearest Ashford saw no firefly born) */
-  // (the first of the woods near Ashford where fireflies are born in the frames: so few a night, one wood may see none)
-  for(const w of woods){const [x,y]=mid(w);night();at(x,y);by=births(200);wood=w;if(by.glow)break}
+  // (the first of the woods near Ashford with a firefly's home in it (ambient.js ambHomeView: one at most every homes.tiles tiles, a
+  // wood's born only within glow.near of your sight, so you stand at it); a clear night: they are born only in clear weather (the
+  // day's own may be rain)
+  window.__w1=t.ambWeather;ev('ambWeather=()=>"clear"');try{for(const w of woods){const [x,y]=mid(w);night();at(x,y);
+    const h=t.ambHomeView(G.cam,t.vis()).find(h=>h.k==='glow'&&tAt(Math.floor(h.x/TILE),Math.floor(h.y/TILE))===t.T_FOREST);if(!h)continue;at(h.x,h.y);by=births(200);wood=w;if(by.glow)break}}finally{ev('ambWeather=__w1')}
   if(!wood)ok(true,'(no wood on this map)');else{const [x,y]=mid(wood),V=t.vis(),far=__amb.filter(b=>b[0]==='glow'&&b[5]===t.T_FOREST&&b[4]>=V*A.glow.near);
    ok(by.glow>0&&!by.fly&&!by.peck&&!by.flock&&!by.gull&&!by.squirrel,'at night in a wood: fireflies, no butterflies, no birds, no squirrels ('+show(by)+')');
    ok(!far.length,'the wood’s fireflies only near you (within '+A.glow.near+' of your sight: '+far.length+' farther)');
