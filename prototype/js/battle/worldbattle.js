@@ -102,6 +102,7 @@ class WorldBattleArea{
     for(const box of marchFootprints(this.x0,this.y0,this.x0+this.span,this.y0+this.span)){
       for(let r=Math.max(0,Math.floor((box.y-this.y0)*this.scale/cs));r<Math.min(R,Math.ceil((box.y+box.h-this.y0)*this.scale/cs));r++)for(let c=Math.max(0,Math.floor((box.x-this.x0)*this.scale/cs));c<Math.min(C,Math.ceil((box.x+box.w-this.x0)*this.scale/cs));c++)T.built[r*C+c]=1;
     }
+    StandardTower.lay(T,this);// (a standing outpost tower: raised, sheer but its ladder, world/standards.js)
     const plan={recipe:'world',hills:[],woods:[],marsh:[],rocks:[],rivers:[],lane:0,built:{houses:[],fields:[]}};T.routes.build(8,BH-8);this.escapeRoutes=T.route;T.route=Object.fromEntries(Object.entries(T.route).map(([who,g])=>{const cost=g.cost.slice();for(let i=0;i<cost.length;i++)if(!this.inside({x:(i%g.C+.5)*g.cs,y:(Math.floor(i/g.C)+.5)*g.cs},4))cost[i]=0;return[who,{...g,cost,pv:0,mv:null,off:null,memo:new Map(),dm:new Map()}]}));T.finish({seed:WM.seedNum||1},plan,BW,8,BH-8,1,false);return T;
   }
   openPoint(p,T=B?.terrain){
@@ -285,7 +286,7 @@ class BattleMuster{
   constructor(b){
     this.b=b;this.area=b.world;this.active=true;this.time=0;this.done=0;this.entries=[];this.armies=[];this.reserved=new Set();
     const a=this.area,by=new Map(),centers=[0,1].map(team=>{const m=b.units.filter(u=>u.team===team&&u.hp>0&&!u.left);return{x:m.reduce((n,u)=>n+u.x,0)/Math.max(1,m.length),y:m.reduce((n,u)=>n+u.y,0)/Math.max(1,m.length)}}),angle=Math.atan2(centers[1].y-centers[0].y,centers[1].x-centers[0].x);
-    for(const g of Object.values(b.groups)){const units=b.units.filter(u=>u.grp===g.id&&u.hp>0&&!u.left),owner=g.player?P:units[0]?.sourceArmy;if(!owner||!units.length)continue;let army=by.get(owner);if(!army){army={owner,team:g.team,groups:[],rows:marchRows(owner)};by.set(owner,army);this.armies.push(army)}army.groups.push({g,units})}
+    for(const g of Object.values(b.groups)){const units=b.units.filter(u=>u.grp===g.id&&u.hp>0&&!u.left),owner=g.player?P:units[0]?.sourceArmy;if(!owner||!units.length||g.post)continue;let army=by.get(owner);if(!army){army={owner,team:g.team,groups:[],rows:marchRows(owner)};by.set(owner,army);this.armies.push(army)}army.groups.push({g,units})}
     for(const army of this.armies){
       const face=angle+(army.team?Math.PI:0),co=Math.cos(face),si=Math.sin(face);
       const layout=army.groups.map(({g,units})=>{const row=army.rows.find(r=>r.id===marchRowOf(g,units[0]))||{x:0,y:0,face:0,form:g.form,files:g.files};if(g.form!=='pack'){g.form=row.form;g.files=row.files}g.face=g.currentFacing=face+row.face;g.order='hold';
@@ -343,7 +344,7 @@ class WorldBattleSetup extends BattleSetup{
     const a=this.area,primary=G.enc.ref?.src||G.enc.ref;for(const owner of new Set([P,primary,...(G.enc.allies||[]).map(o=>o.src||o),...(G.enc.foes||[]).map(o=>o.src||o)]))if(owner instanceof Party)MarchArmy.of(owner).sync();BFIELD=null;BW=BH=a.span*a.scale;this.site=this.battleSite();this.env=battleEnv(false,this.site);a.env=this.env;this.env.text='Fight on the world map. The gold circle is fixed; routed soldiers can regroup beyond it and return.';
     this.field={top:8,bot:BH-8};this.createUnits();this.createGroups();
   }
-  createGroups(){super.createGroups();for(const u of this.units)if(u.leader&&W.lords.includes(u.leader.ref))this.groups[u.grp].name=lordName(u.leader.ref)}
+  createGroups(){StandardTower.man(this.units);super.createGroups();if(this.groups.e0_tower)this.groups.e0_tower.name='Archers on the tower';for(const u of this.units)if(u.leader&&W.lords.includes(u.leader.ref))this.groups[u.grp].name=lordName(u.leader.ref)}
   terrain(){return this.TR=this.area.terrain()}
   *paint(){yield}
   canopy(){}
@@ -355,9 +356,10 @@ class WorldBattleSetup extends BattleSetup{
       if(!g.player&&source&&Number.isFinite(anchor?.x)&&Number.isFinite(anchor?.y)){a.participants.add(anchor);if(source!==primary&&source!==e.ref&&!a.initial.has(anchor)&&!a.inside(a.field(anchor),6)){const team=g.team;let p=a.pending.find(p=>p.o===anchor);if(!p){p={o:anchor,team,existing:[]};a.pending.push(p)}p.existing.push(id);m.forEach(u=>{u.hpLeft=u.hp;u.hp=0;u.left=true;u.waiting=true});continue}}
       const key=marchRowOf(g,first),formation=g.player?rows:source instanceof Party?marchRows(source):[],offset=formation.find(r=>r.id===key)||{x:0,y:first?.leader?0:(Object.keys(B.groups).indexOf(id)%5-2)*7};a.place(g,m,g.player?a.starts[0]:this.area.joinedFight&&Number.isFinite(anchor?.x)?anchor:a.starts[1],offset,g.player?P:source?.src||source||e.ref,true);// (men of no army of their own, a camp's after a load: they stand for the place, e.ref)
     }
+    StandardTower.post(B,a);// (an outpost's archers on its tower: world/standards.js)
     if(this.surprise||a.joinedFight){B.ready=false;B.paused=false}else{B.muster=new BattleMuster(B);B.ready=false;B.paused=false}B.speed=G.speed;B.deploy=false;exitInit(B.units);a.clamp();B.sight=null;for(const u of B.units){delete u.ls;u.hid=0}if(BattleSides.eligible(e))this.area.sides=B.sides=new BattleSides(B,e);Surprise.begin(B,e);sightStep(true);warmBattle(B.units);
   }
   present(){super.present();B.deploy=false;bbar.hidden=false;this.area.syncCamera();if(B.muster?.active)toast('Armies are moving to their starting formations. Combat begins only after Start Battle.')}
   start(after){this.survey();this.terrain();this.muster();this.open();if(after)after();return Promise.resolve()}
 }
-function worldBattleEligible(opts){return WORLD_BATTLE.on&&!opts.sandbox&&!opts.tournament&&G.enc&&['party','lord','patrol','caravan','monster','field','villagers','estate','camp','ruin'].includes(G.enc.kind)}
+function worldBattleEligible(opts){return WORLD_BATTLE.on&&!opts.sandbox&&!opts.tournament&&G.enc&&['party','lord','patrol','caravan','monster','field','villagers','estate','camp','ruin','standard'].includes(G.enc.kind)}

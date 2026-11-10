@@ -402,8 +402,8 @@ class Commander{
   // (a captain's groups: the enemy's, your allies', or, yours, those the AI has (deploy.js aiHas): your others are friends it fights
   // beside, never its to order)
   groups(){const {team,key}=this;
-    if(B.sides?.active&&team>0)return Object.fromEntries(['inf','arc','mag','cav','hero'].map(role=>[role,Object.keys(B.groups).filter(id=>B.groups[id].team===team&&B.groups[id].role===role)]));
-    const ids=Object.keys(B.groups).filter(id=>{const g=B.groups[id];return g.team===team&&(team===1||key==='ally'?team===1||g.ally:aiHas(g))&&(!insideHolds(team)||insideRoused(g))});// (inside, a group waits in its chamber till roused: battle/interior.js)
+    if(B.sides?.active&&team>0)return Object.fromEntries(['inf','arc','mag','cav','hero'].map(role=>[role,Object.keys(B.groups).filter(id=>B.groups[id].team===team&&B.groups[id].role===role&&!B.groups[id].post)]));
+    const ids=Object.keys(B.groups).filter(id=>{const g=B.groups[id];return g.team===team&&(team===1||key==='ally'?team===1||g.ally:aiHas(g))&&!g.post&&(!insideHolds(team)||insideRoused(g))});// (g.post: men at their post, an outpost's tower: world/standards.js StandardTower; inside, a group waits in its chamber till roused: battle/interior.js)
     return Object.fromEntries(['inf','arc','mag','cav','hero'].map(role=>[role,ids.filter(id=>B.groups[id].role===role)]));
   }
   /* one side's captain. It reads the whole battle (assess): each side's strength (health by tier), how much of it shoots, how
@@ -959,6 +959,6 @@ function captainHero(c,id){return Commander.of(c.ck).hero(c,id)}
    cave's, a lair's, a camp's or a fort's men still at their posts (interior.js insideHolds, insideRoused): they wait to be found */
 const STALLS=new WeakMap();
 function stallWatch(){if(!B||B.over||B.deploy||B.hunt)return;const t=B.lastHit||0;let S=STALLS.get(B);if(S?.hit!==t)STALLS.set(B,S={hit:t,at:B.t});if(B.t-S.at<FOE_CMD.stall)return;S.at=B.t;
-  for(const g of Object.values(B.groups)){if(g.player&&!aiHas(g)||g.order==='withdraw'||g.resolve?.routed||insideHolds(g.team)&&!insideRoused(g))continue;const m=grpUnits(g.id).filter(fighting);if(!m.length)continue;const C=g.centre();
+  for(const g of Object.values(B.groups)){if(g.player&&!aiHas(g)||g.order==='withdraw'||g.resolve?.routed||g.post||insideHolds(g.team)&&!insideRoused(g))continue;const m=grpUnits(g.id).filter(fighting);if(!m.length)continue;const C=g.centre();
     let e=null,d=Infinity;for(const u of B.units)if(fighting(u)&&!withdrawing(u)&&battleEnemy(g.team,u)){const k=Math.hypot(u.x-C.x,u.y-C.y);if(k<d){d=k;e=u}}
     if(e){if(BattleSight.seen(g.team,e))g.attack(e);else g.standAt(e.x,e.y)}}}

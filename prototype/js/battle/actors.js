@@ -186,7 +186,8 @@ class Actor extends Fighter{
     this.faceFoe(g,gt,s);
     const order=g?(gt?'charge':g.order):'charge';
     if(!t&&!(g&&order!=='charge'))return;
-    const dx=t?t.x-u.x:0,dy=t?t.y-u.y:0,d=Math.hypot(dx,dy)||1,de=t?d-(t.s.big&&!s.range?12:0):1e9;
+    // (no blade reaches up onto a raised place from below, nor down from it: an outpost's tower, terrain.js apart)
+    const dx=t?t.x-u.x:0,dy=t?t.y-u.y:0,d=Math.hypot(dx,dy)||1,de=t?d-(t.s.big&&!s.range?12:0)+(!s.range&&B.terrain&&B.terrain.lift&&B.terrain.apart(u,t)?1e9:0):1e9;
     // (a fighter at his foe holds there till the foe is MELEE_HOLD.slack px past his reach, as a shooter keeps his range (inRng), as far as he strikes: else
     // a body's push or a blow's knock takes him just out, he steps in, and over again, jiggling where he stands (the owner,
     // 2026-11-01: "the fighter that I fight in battle map seems to move weird, jiggering left right"))

@@ -107,7 +107,28 @@ Kit.suite(({ok,info})=>{
    ok(o&&/Drive the bandits from/.test(o.title),'a band\'s lair near: a holding\'s job to drive them out ('+(o&&o.title)+')');
    if(o){t.acceptQuest(o);P.troops={hum_knight:40};P.hp=null;t.vitals();G.site=s;G.mode='site';t.showSite();t.act('site-attack');t.act('auto');const Q=P.quests.find(x=>x.id===o.id);ok(!s.band&&Q&&Q.done,'driven out: the job done')}}
   finally{s.owner=f0;s.guards=S.guards[s.lv];s.broken=false;s.taking=null;P.quests=[];G.mode='world';t.hidePanel()}}
- // ---- through a save
+ // ---- phase 5: its tower in battle: the fight on the world map, its top raised and sheer but its ladder, its archers posted on it
+ {Kit.world({encCool:0});strong();P.fac=null;const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'&&!x.choose&&!x.taking),f0=s.realm,lv0=s.lv,X=S.tower;
+  const fight=(lv,broken)=>{s.lv=lv;s.broken=broken;s.guards=S.guards[lv];s.seen=true;P.x=s.x+30;P.y=s.y+24;G.site=s;G.mode='site';t.showSite();t.act('site-attack');
+    G.enc.list=G.enc.list.map((k,i)=>i<X.perch[3]?'hum_crossbow':k);t.startBattle({enemies:G.enc.list,tournament:false});return t.B};
+  const end=B=>{B.win=true;B.over=true;B.units.filter(u=>u.team===1).forEach(u=>u.hp=0);t.finishBattle();G.mode='world';t.hidePanel();s.taking=null};
+  try{const B=fight(3,false),T=B.terrain,w=(T.towers||[]).find(x=>x.s===s),g=B.groups.e0_tower,m=g?t.grpUnits(g.id):[];
+   ok(B.world&&w&&w.lv>=X.rise[3],'a fight at an outpost is on the world map, its stone tower '+X.rise[3]+' levels over the ground ('+(w&&w.lv)+')');
+   const cells=[],out=[];if(w)for(let r=w.r0;r<=w.r1;r++)for(let c=w.c0;c<=w.c1;c++){const i=r*T.C+c;cells.push(i);
+     for(const [q,e] of [[0,c===w.c1],[1,r===w.r1],[2,c===w.c0],[3,r===w.r0]])if(e&&!(T.wall[i]&1<<q))out.push(q)}
+   ok(cells.length&&cells.every(i=>T.lvl[i]===w.lv&&T.lift[i]>0&&!T.built[i]),'its top open ground, raised, its men drawn up on it ('+cells.length+' cells)');
+   ok(w&&out.length===X.ladder&&out.every(q=>q===w.ladder),'sheer all round but its ladder ('+X.ladder+' cell, on the side away from you: '+out.join()+')');
+   {const sp=B.units.find(u=>u.team===0&&!u.hero&&t.routeWho(u.s)==='foot')||B.hero,p=m[0]&&t.routePath(T.route.foot,sp.x,sp.y,m[0].x,m[0].y,{need:t.routeNeedOf(sp)});
+    ok(p&&p.ok,'climbed by its ladder: your foot have a way up to them, room for a man ('+(sp&&sp.type)+')')}
+   ok(m.length===X.perch[3]&&g.post&&m.every(u=>cells.includes(t.tIx(T,u.x,u.y))),m.length+' of its archers posted on its top, holding their post');
+   B.terrain.update();const H=t.HILL.range,u0=m[0];
+   ok(m.every(u=>u.z>0&&Math.abs(u.s.range-u.r0*T.rangeMul(t.tIx(T,u.x,u.y)))<1&&u.s.range>=u.r0*(1+H*X.rise[3])-1),'drawn up on it, shooting from its height (range '+(u0&&u0.s.range.toFixed(0))+', '+(u0&&u0.r0)+' on level ground)');
+   ok(!B.muster||!B.muster.entries.some(e=>e.g===g),'not marched off it to a formation');
+   {const C=t.Commander.of(1).groups();ok(g&&!Object.values(C).some(ids=>ids.includes(g.id))&&Object.values(C).some(ids=>ids.length),'no captain orders them, the rest of its guards his (commander.js: g.post)')}
+   end(B);
+   const B2=fight(3,true);ok(!B2.groups.e0_tower&&!(B2.terrain.towers||[]).some(x=>x.s===s),'its tower broken: no one on it, nothing raised');end(B2);
+   const B3=fight(1,false);ok(B3.world&&!B3.groups.e0_tower,'a flag post alone: fought on the map, no tower');end(B3)}
+  finally{s.lv=lv0;s.broken=false;s.owner=f0;s.guards=S.guards[lv0];s.taking=null;s.choose=false;G.mode='world';t.hidePanel()}}
  {const rec=all().map(s=>[s.name,s.realm,s.lv,s.guards].join());t.saveGame(true,'quick');W.sites=[];t.loadGame('quick');
   ok(all().length===A.length&&all().map(s=>[s.name,s.realm,s.lv,s.guards].join()).join('|')===rec.join('|')&&all().every(s=>s instanceof t.Standard),'a save keeps every standard, whose it is, its level and its guards')}
 });

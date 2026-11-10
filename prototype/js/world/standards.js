@@ -30,6 +30,8 @@ class Standard extends Site{
   get ours(){const f=this.realm;return !!f&&(f==='player'||f===P.fac)}
   // (as many guards as its level keeps: one level fewer while its tower lies broken)
   get most(){return STANDARD.guards[Math.max(1,this.lv-(this.broken?1:0))]||0}
+  // (its tower standing to fight from (phase 5): its level, 0 for a flag post alone or a tower lying broken, its top gone)
+  get towerLv(){return this.lv>=2&&!this.broken?this.lv:0}
   // its guards, as its realm's soldiers
   guardList(){const f=this.realm,b=this.band,t=this.supplier();if(this.guards<=0)return [];if(b)return b==='goblins'?goblinList(this.guards,true):makeEnemies(this.guards,true,b);
     return f==='player'?(t?garList({...t,gar:this.guards}):[]):f?armyOf(f,this.guards):[]}
@@ -82,7 +84,8 @@ class Standard extends Site{
   tip(){const f=this.ownerName();return '<b>'+Discovery.nameOf(this)+'</b><small>'+(f?'Held by '+f:'Held by no one')+', '+STANDARD_LV[this.lv]+(this.broken?' (broken)':'')+(this.guards?', '+roughly(this.guards)+' guards':'')+'</small><span class="act">Click: go there</span>'}
   sprite(){return standardSprite(this)}
   // (on the map: it, and its sentries walking their beat round it in your sight, a lap each STANDARD.sentries.lap game minutes)
-  draw(ents,cam,V){super.draw(ents,cam,V);const X=STANDARD.sentries,n=Math.min(X.most,this.guards),f=this.realm;if(!n||!f||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
+  // (not while a battle is fought on the map: its guards are in it, StandardTower)
+  draw(ents,cam,V){super.draw(ents,cam,V);const X=STANDARD.sentries,n=Math.min(X.most,this.guards),f=this.realm;if(!n||!f||B&&B.world||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
     const type=this.sentryType(),col=FACS[f].col,mins=(G.day+Clock.frac)*1440;
     for(let i=0;i<n;i++){const a=(mins/X.lap+i/n)*Math.PI*2,x=this.x+Math.cos(a)*X.r,y=this.y+4+Math.sin(a)*X.r*.5,dir=-Math.sin(a)<0?-1:1,step=Math.floor(mins/X.stride+i)%4;
       ents.push({y,f:()=>reduced(()=>{const s=unitSprite(type,0,false,(this.seed+i)%6,2+step,false,false,col),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
@@ -195,6 +198,38 @@ const Standards={
   guarded(x,y){const r=STANDARD.safe*TILE;return this.all().some(s=>s.realm&&s.guards>0&&Math.hypot(s.x-x,s.y-y)<r)}
 };
 Systems.add({name:'standards',order:{hour:45,day:72},hour:()=>Standards.hour(),day:()=>Standards.day()});
+
+/* ---------- its tower in battle (doc/STANDARDS_DESIGN.md §7, phase 5; the owner: "Its tower in battle: yes", archers shooting
+   from it): in a fight on the world map (battle/worldbattle.js) a standing tower's footprint is raised STANDARD.tower.rise[lv]
+   levels over the ground, sheer all round but its ladder, on the side away from your army (climbed as a siege's ladder is: no
+   cliff on it); its men drawn up on its top (the field's lift, terrain.js update). In a fight for the outpost, up to perch[lv] of
+   its archers are posted on it, their own group holding its post (no captain moves it: commander.js, the muster: worldbattle.js),
+   shooting from its height (terrain.js rangeMul: HILL.range a level); no blade between its top and the ground (terrain.js apart) ---------- */
+const StandardTower={
+  // (the standing towers on a world battle's field, each with its cells [c0, r0, c1, r1] in the field's grid T)
+  on(area,T){const out=[];for(const s of Standards.all()){if(!s.towerLv||!s.known())continue;const f=s.footing()[1],k=area.scale/T.cs;if(!f)continue;
+      const c0=Math.floor((f.x-area.x0)*k),r0=Math.floor((f.y-area.y0)*k),c1=Math.ceil((f.x+f.w-area.x0)*k)-1,r1=Math.ceil((f.y+f.h-area.y0)*k)-1;
+      if(c0>=1&&r0>=1&&c1<T.C-1&&r1<T.R-1&&c1>=c0&&r1>=r0)out.push({s,c0,r0,c1,r1})}return out},
+  // (laid on the field's cells after its buildings: open, raised, its men lifted; cliffs on its faces (wall bits 0 east, 1 south,
+  // 2 west, 3 north, as terrain.js), but for its ladder's cells in the middle of the side away from you)
+  lay(T,area){const X=STANDARD.tower,W=this.on(area,T);if(!W.length)return;const C=T.C,N=C*T.R,you=area.field(area.starts[0]);T.lift=new Uint8Array(N);T.towers=W;
+    for(const w of W){const {c0,r0,c1,r1}=w,cs=T.cs,mx=(c0+c1+1)/2*cs,my=(r0+r1+1)/2*cs,dx=you.x-mx,dy=you.y-my;let g=0;
+      for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++)g=Math.max(g,T.lvl[r*C+c]);
+      w.lv=g+X.rise[w.s.towerLv];w.ladder=Math.abs(dx)>Math.abs(dy)?(dx>0?2:0):(dy>0?3:1);const z=Math.round(this.top(w.s)*area.scale/WORLD_BATTLE.sprite);
+      const lad=(q,c,r)=>{if(q!==w.ladder)return false;const [a,b,k]=q&1?[c0,c1,c]:[r0,r1,r],m=a+Math.max(0,Math.floor((b-a+1-X.ladder)/2));return k>=m&&k<m+X.ladder},face=(i,j,q)=>{T.wall[i]|=1<<q;if(j>=0&&j<N)T.wall[j]|=1<<(q+2&3)};
+      for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const i=r*C+c;T.built[i]=0;T.kind[i]=TKIND.open;T.road[i]=0;T.lvl[i]=w.lv;T.lift[i]=z;
+        if(c===c1&&!lad(0,c,r))face(i,i+1,0);if(r===r1&&!lad(1,c,r))face(i,i+C,1);if(c===c0&&!lad(2,c,r))face(i,i-1,2);if(r===r0&&!lad(3,c,r))face(i,i-C,3)}}},
+  // (its top, world px over its foot: a share of its model's height)
+  top(s){return (s.sprite().width-22)*STANDARD.tower.top[s.towerLv]},
+  // (a fight for it: up to perch[lv] of its archers, no leader, their own group's, before the groups are made)
+  man(units){const e=G.enc,s=e&&e.kind==='standard'&&e.ref;if(!s||!s.towerLv)return;
+    units.filter(u=>u.team===1&&!u.leader&&!u.lord&&grpOf(u.s)==='arc').slice(0,STANDARD.tower.perch[s.towerLv]).forEach(u=>{u.grp='e0_tower'})},
+  // (and once placed, posted on its top: a man a cell from its middle out, the ladder's cells last, facing your army)
+  post(b,area){const g=b.groups.e0_tower,e=G.enc,w=b.terrain?.towers?.find(x=>x.s===e?.ref);if(!g||!w)return;const m=grpUnits(g.id),cs=b.terrain.cs,you=area.field(area.starts[0]);
+    const cells=[];for(let r=w.r0;r<=w.r1;r++)for(let c=w.c0;c<=w.c1;c++)cells.push({x:(c+.5)*cs,y:(r+.5)*cs});const ax=(w.c0+w.c1+1)/2*cs,ay=(w.r0+w.r1+1)/2*cs;
+    cells.sort((a,b)=>Math.hypot(a.x-ax,a.y-ay)-Math.hypot(b.x-ax,b.y-ay));g.post=true;g.order='hold';g.ax=ax;g.ay=ay;g.face=g.currentFacing=Math.atan2(you.y-ay,you.x-ax);g.tgt=null;g.queue=[];
+    m.forEach((u,i)=>{const q=cells[i%cells.length];u.x=q.x;u.y=q.y;u.sx=q.x-ax;u.sy=q.y-ay;u.dir=g.face;u.face=Math.cos(g.face)>=0?1:-1})}
+};
 
 /* its picture: the standard (a stepped stone plinth, an iron pole with a gilt finial, a crossbar, two banners hung from it in its
    realm's colours with its device, a rope's tassel at an end; ragged, no one's) and, level 2 and 3, a watchtower or a stone tower

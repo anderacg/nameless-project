@@ -14,6 +14,10 @@ const STANDARD={on:true,guards:[0,3,6,10],hold:4,r:44,renown:4,thanks:6,regrow:1
   // garrison while it keeps keep; sight: tiles of fog lifted round yours and your employer's; safe: no band raised within safe
   // tiles of a held one (world.js spawnBandit)
   capture:{r:6,more:2,chance:.5,weak:1,lairMost:12},lair:{kinds:['bandits','raiders','bog','goblins'],every:4,most:2,n:[3,5]},own:{keep:4},sight:7,safe:9,
+  // (phase 5) tower: its tower in a fight on the world map (world/standards.js StandardTower): its top rise[lv] levels over the ground
+  // (HILL.range a level on its archers' range; no blade between its top and the ground: terrain.js apart), perch[lv] of its archers posted on it in a fight for it,
+  // its men drawn top[lv] of its model's height up (its platform), its ladder ladder cells wide on the side away from your army (a world battle's man needs more than one: terrain.js routeBody)
+  tower:{rise:[0,0,2,3],perch:[0,0,2,4],top:[0,0,.26,.3],ladder:3},
   T:{n:'Outpost',ico:'banner',col:'#e8b94a',d:'A realm’s outpost on its land: a tall flag pole on a stepped stone plinth, its banners hung from a crossbar, its guards beside it.'}};// (an outpost to the player, a standard in the code)
 // STANDARD_PLACE: where they stand (doc §2). score: by why (a deposit, a pass, a ford, a road crossing), and add more on a border with
 // another realm's land (within border.r tiles); town: tiles from any holding, clear: tiles to anything built; gap: tiles between two; per province base + one for
