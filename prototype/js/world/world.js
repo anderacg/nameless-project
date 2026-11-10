@@ -29,7 +29,9 @@ const bridgeAt=(tx,ty)=>tAt(tx,ty)!==T_ROAD?0:tAt(tx-1,ty)===T_WATER&&tAt(tx+1,t
 function walk(o,dx,dy,step,ok){
   const a0=Math.atan2(dy,dx);
   const inWall=TownWall.at(Math.floor(o.x/TILE),Math.floor(o.y/TILE));// (a town's ring of walls kept off, but by one standing in it: world/townwalls.js)
-  for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(passable(terrAt(nx,ny))&&(inWall||!TownWall.at(Math.floor(nx/TILE),Math.floor(ny/TILE)))&&(!ok||ok(nx,ny))){
+  // (on foot round the buildings (WAY_FOOT, router.js): a step onto one only when no other will do, and never kept off one you stand in)
+  const F=WAY_FOOT&&footMask(),fi=(x,y)=>F&&F[Math.floor(y/TILE)*MW+Math.floor(x/TILE)],inB=fi(o.x,o.y);
+  for(const pass of F&&!inB?[0,1]:[1])for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(!pass&&fi(nx,ny))continue;if(passable(terrAt(nx,ny))&&(inWall||!TownWall.at(Math.floor(nx/TILE),Math.floor(ny/TILE)))&&(!ok||ok(nx,ny))){
     const tx=Math.floor(nx/TILE),ty=Math.floor(ny/TILE),b=bridgeAt(tx,ty),m=Math.max(1,step);if(b===1)nx+=clamp((tx+.5)*TILE-nx,-m,m);else if(b===2)ny+=clamp((ty+.5)*TILE-ny,-m,m);
     WALKED.set(o,(WALKED.get(o)||0)+Math.hypot(nx-o.x,ny-o.y));o.x=nx;o.y=ny;return true}}
   return false;
@@ -318,9 +320,13 @@ const HERO_WAY={x:NaN,y:NaN,d:Infinity};
 // (a step of walker o toward (tx, ty) by that rule: 1 moved straight, 2 moved by the router, 0 not moved, -1 the router knows no
 // way. Your hero's own (heroStep), and the ghost the drawn way follows ahead of you: gfx/worldui.js wuiWay. By road (byRoadTo,
 // below): never straight, the router's way keeping to the roads)
-function heroWay(o,tx,ty,step){const rd=byRoadTo(tx,ty);
-  if(!rd&&passable(terrAt(o.x,o.y))&&clearLine(o.x,o.y,tx,ty))return walk(o,tx-o.x,ty-o.y,step)?1:0;// (not while on a ferry's water: its leg goes on by the router)
-  const x0=o.x,y0=o.y;if(!Router.travel(o,rd?{x:tx,y:ty,road:ROAD_GO.keep}:{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}
+// (once the router has the way to a goal it keeps it till that trip is done (wayRouted): a step that found the line clear went
+// straight, the next, a hair off it, went back by the router, and the walk swayed on the spot for ever (the owner, 2026-11-10:
+// "sometime stuck"); the router straightens its own way where the land is open)
+// (on foot round the buildings: WAY_FOOT, router.js)
+function heroWay(o,tx,ty,step){const f0=WAY_FOOT;WAY_FOOT=true;try{const rd=byRoadTo(tx,ty);
+  if(!rd&&!wayRouted(o,tx,ty)&&passable(terrAt(o.x,o.y))&&clearLine(o.x,o.y,tx,ty))return walk(o,tx-o.x,ty-o.y,step)?1:0;// (not while on a ferry's water: its leg goes on by the router)
+  const x0=o.x,y0=o.y;if(!Router.travel(o,rd?{x:tx,y:ty,road:ROAD_GO.keep}:{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}finally{WAY_FOOT=f0}}
 // (toward dx, dy from you: your goal, or short of it so your army's head stands on it: march.js marchAim)
 function heroStep(dx,dy,dist,step){
   const x0=P.x,gx=P.x+dx,gy=P.y+dy,r=heroWay(P,gx,gy,step);if(r===2&&P.x!==x0)P.dir=P.x>x0?1:-1;if(r>=0)return r>0;
