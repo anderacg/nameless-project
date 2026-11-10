@@ -1554,7 +1554,9 @@
     for(let y=0;y<n;y++)for(let x=0;x<n;x++){
       const k=(y*2*SIZE+x*2)*4;if(!d[k+3])continue;
       if(x&&y&&x<n-1&&y<n-1&&!outside[y*n+x-1]&&!outside[y*n+x+1]&&!outside[(y-1)*n+x]&&!outside[(y+1)*n+x])continue;
-      const inside=[k,k-8,k+8,k-SIZE*8,k+SIZE*8].filter(q=>q>=0&&q<source.length&&source[q+3]),shade=inside.reduce((sum,q)=>sum+source[q],0)/inside.length>=192?96:64;
+      const inside=[k,k-8,k+8,k-SIZE*8,k+SIZE*8].filter(q=>q>=0&&q<source.length&&source[q+3]);
+      const target=Math.max(64,Math.min(160,inside.reduce((sum,q)=>sum+source[q],0)/inside.length-32));
+      const shade=PIXEL_STYLE.tones.reduce((best,v)=>Math.abs(v-target)<Math.abs(best-target)?v:best,PIXEL_STYLE.tones[0]);
       for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y*2+j)*SIZE+x*2+i)*4;d[q]=d[q+1]=d[q+2]=shade;}
     }
     g.putImageData(im,0,0);

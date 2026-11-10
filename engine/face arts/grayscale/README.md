@@ -273,6 +273,6 @@ Full helmet contour cleanup: great-helm crowns and reinforcing bands follow curv
 
 Helmet lighting and contour redraw: a shaded steel exterior edge follows both helmet layers and excludes enclosed visor holes. Smoothly curved light/shadow regions and one crown reflection replace the small disconnected grey patches. Construction details are drawn directly on the native two-pixel grid. Face coverage, visor apertures, body art and other portrait parts keep their existing geometry.
 
-Helmet edge shading uses the neighboring metal tones: medium-dark steel on lit edges and deeper steel on shadowed edges. Exterior contours avoid near-black; visor cavities and breathing holes retain their deeper shadows.
+Helmet edge shading follows neighboring metal about one palette step darker, blending lit edges into the crown and keeping deeper steel on shadowed edges. Exterior contours avoid near-black; visor cavities and breathing holes retain their deeper shadows.
 
 Closed helmet backing fits inside the final front-shell mask, including at the cheek, jaw and neck. This removes the exposed grey lining crescents and double lower contours. The assembled portrait has a single jaw edge; head shape, front details and armor retain their placement. Raw backing remains a separate layer. The barrel reinforcing strap ends above the cheek vents, and the horned helm omits the lower stroke that crossed them. Fit checks enforce containment at all proportion extremes.
