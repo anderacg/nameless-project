@@ -76,13 +76,13 @@ const FACE_GEAR={
   bodyOf:{dwarf:[null,null,'dwarf-iron-guard','dwarf-iron-guard','rune-mail','rune-mail','rune-mail'],orc:[null,'lamellar','orc-lamellar','orc-lamellar','orc-lamellar','steel-cuirass','plate'],
     elf:[null,null,'elf-leaf-mail','elf-leaf-mail','elf-leaf-mail','steel-cuirass','plate']},
   items:{bearcoat:'fur',silkvest:'jerkin',scorpplate:'lamellar',trollhide:{orc:'hide-harness',any:'fur'}},
-  head:['arming-cap','coif','nasal','kettle','sallet','open-bascinet','ridge-helm'],
-  headOf:{dwarf:[null,null,'dwarf-guard-helm','dwarf-guard-helm','forge-helm','forge-helm','forge-helm'],orc:[null,null,'orc-war-helm','orc-war-helm','orc-war-helm','orc-war-helm','orc-war-helm'],
-    elf:[null,null,'elf-guard-helm','elf-guard-helm','elf-guard-helm','elf-guard-helm','elf-guard-helm']},
+  head:['arming-cap','coif','nasal','kettle','sallet','open-bascinet','closed-knight-helm'],
+  headOf:{dwarf:[null,null,'dwarf-guard-helm','dwarf-guard-helm','forge-helm','forge-helm','visored-bascinet'],orc:[null,null,'orc-war-helm','orc-war-helm','orc-war-helm','orc-war-helm','slit-mask-helm'],
+    elf:[null,null,'elf-guard-helm','elf-guard-helm','elf-guard-helm','elf-guard-helm','closed-sallet']},
   cape:'cloak',
   // (no armour worn: a face's own armour (armours) its past's plain clothes (plain; any: anyone else's), its own helm (helms) off)
   armours:['orc-bare-cross-harness','orc-bare-ring-harness','orc-leather-vest','orc-studded-leather','orc-cross-harness','orc-ring-harness','orc-layered-hide','orc-leather-guard','mail','brigandine','scale','lamellar','plate','ruffled-mail','rune-mail','leather-mail','coat-of-plates','steel-cuirass','dwarf-iron-guard','orc-lamellar','elf-leaf-mail','dwarf-runic-plate','dwarf-forge-plate','elf-silver-scale','elf-leaf-cuirass'],
-  helms:['coif','nasal','kettle','round-helm','forge-helm','open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm'],
+  helms:['great-helm','closed-knight-helm','visored-bascinet','closed-sallet','beaked-bascinet','slit-mask-helm','coif','nasal','kettle','round-helm','forge-helm','open-bascinet','sallet','ridge-helm','dwarf-guard-helm','orc-war-helm','elf-guard-helm','horned-helm','dwarf-horned-helm','dwarf-rune-helm','elf-winged-helm'],
   plain:{soldier:'gambeson',guard:'gambeson',woodcutter:'jerkin',exile:'leather',merchant:'doublet',hedge:'robe',nobody:'linen-chemise',apprentice:'tunic',any:'traveler-coat'},
   // (the metal's colour: its material's, steel (steel) mixed in by tint, so gold reads gilt and mithril pale, not paint)
   steel:'#8f969a',tint:.5,

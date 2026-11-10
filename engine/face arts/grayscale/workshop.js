@@ -38,7 +38,7 @@
     if(rebuild||!state.portrait)state.portrait=E.build(state.config);
     copy(E.composite(state.portrait,{colors:state.colored?state.colors:null,visible:state.visible}),$('portrait'));
     for(const profile of E.profiles)$('profile-'+profile).setAttribute('aria-pressed',String(state.config.profile===profile));
-    const fit=E.headwearRules[state.config.headwear].hair;$('headwear-note').textContent={show:'Hair remains visible.',tuck:'Crown hair tucked under this headwear.',hide:'Hair and ears concealed by this headwear.',frame:'Hair stays within the veil; back hair and ears are covered.'}[fit];
+    const rule=E.headwearRules[state.config.headwear],fit=rule.hair;$('headwear-note').textContent=rule.face==='covered'?'Face-covering helmet; hair, ears and beard stay inside.':{show:'Hair remains visible.',tuck:'Crown hair tucked under this headwear.',hide:'Hair and ears concealed by this headwear.',frame:'Hair stays within the veil; back hair and ears are covered.'}[fit];
     anchors();$('gray').setAttribute('aria-pressed',String(!state.colored));$('color').setAttribute('aria-pressed',String(state.colored));
     $('preset').value=String(E.presets.findIndex(p=>JSON.stringify(state.config)===JSON.stringify(E.normalize(p.config)))).replace('-1','');for(const key of Object.keys(selectors))selectors[key].value=state.config[key];$('seed').value=state.config.seed;$('engraving-control').style.display=state.config.race==='dwarf'?'grid':'none';$('engraving-pattern').value=String(state.config.seed%E.engravingPatterns.length);
     for(const s of E.order){checks[s.id].checked=state.visible[s.id];copy(state.portrait.layers[s.id],tiles[s.id].querySelector('canvas'));}

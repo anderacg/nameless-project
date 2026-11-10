@@ -56,6 +56,10 @@ Kit.suite(({ok,info})=>{
  // (hair is a choice shared by every people; racial preferences never replace a chosen cut)
  {const E=t.PortraitEngine,C=t.PortraitCharacters;for(const race of E.races){const rec=C.recipe({config:{race,profile:'female',hair:'war-crest'}});ok(E.options.hair.every(h=>E.partsFor(race,'hair').includes(h))&&F.kin(rec,race,true).config.hair==='war-crest',race+' allows every hairstyle and preserves a chosen mohawk through racial appearance rules');}}
  {const saved=F.draft;try{F.draft=null;F.maker('orc','f');F.set('hair','war-crest');for(const race of t.PortraitEngine.races)F.maker(race,'f');ok(F.draft.rec.config.hair==='war-crest','changing race in the face maker preserves a chosen hairstyle');}finally{F.draft=saved}}
+ // ---- closed helmets are selectable and used by the highest worn-gear tier
+ {const E=t.PortraitEngine,saved=F.draft;try{F.draft=null;const html=F.maker('human','m');for(const headwear of E.faceCoveringHelmets){F.set('headwear',headwear);ok(html.includes('value="'+headwear+'"')&&html.includes(E.partLabels[headwear])&&F.draft.rec.config.headwear===headwear&&t.FACE_GEAR.helms.includes(headwear)&&/^data:image/.test(F.url(F.draft.rec,true)),'face maker selects and renders '+E.partLabels[headwear]);}
+  ok(E.races.every(r=>E.faceCoveringHelmets.includes(F.helm(6,r))),'highest worn helmet tier covers the face for every race');
+ }finally{F.draft=saved}}
  // (switched off: the paintings again)
  t.FACES.on=false;try{ok(!/^data:/.test(t.lordPic(L))||!t.NamedPortraits.of(L.name),'FACES.on false: a lord\'s painting again')}finally{t.FACES.on=true}
 });
