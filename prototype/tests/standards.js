@@ -168,7 +168,7 @@ Kit.suite(({ok,info})=>{
   try{ok(t.Standards.live&&t.Standards.claims().some(c=>c.s===s&&c.lim===L[Math.max(1,s.lv-(s.broken?1:0))])&&at()===s.supplier(),'a held outpost claims the land round it ('+L[s.lv]+' reach at level '+s.lv+') for its realm\'s nearest holding ('+(at()&&at().name)+')');
    const n0=t.landsOf(f0),m0=t.landsOf(g);s.owner=g;ok(at()&&at().owner===g&&t.landsOf(f0)<n0&&t.landsOf(g)>m0,'handed to the '+t.FACS[g].n+': the land round it theirs now, the border moved ('+n0+' to '+t.landsOf(f0)+' tiles of the '+t.FACS[f0].n+'\'s)');
    s.owner='bandits';ok(!t.Standards.claims().some(c=>c.s===s),'a band\'s lair claims none');
-   s.owner=f0;t.Standards.live=false;try{ok(!t.Standards.claims().length&&t.Standards.landKey()==='','before a game\'s are placed (a new world), none claim')}finally{t.Standards.live=true}
+   s.owner=f0;t.Standards.live=false;try{ok(!t.Standards.claims().length&&t.Standards.landKey()===0,'before a game\'s are placed (a new world), none claim')}finally{t.Standards.live=true}
    ok(at()===s.supplier()&&t.landsOf(f0)===n0,'its own again: the land as it was')}
   finally{s.owner=f0}}
  // ---- through a save
