@@ -222,6 +222,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .origin-card{padding:0 0 10px;overflow:hidden;gap:5px}
 .origin-card strong,.origin-card span{margin-inline:10px}
 .origin-card strong{margin-top:3px}
+.origin-card.off{opacity:.55;cursor:default;filter:grayscale(.6)}.origin-card.off .gold{color:var(--muted,#a99)}/* (a past you may not take: kin with no home of the family standing, world/legacy.js kinWhy) */
 .origin-art{display:block;width:100%;height:96px;background:#172127;image-rendering:pixelated;border-bottom:1px solid var(--line)}
 .origin-card:focus-visible .origin-art{border-bottom-color:var(--accent)}@media (hover:hover){.origin-card:hover .origin-art{border-bottom-color:var(--accent)}}
 /* save slots: a row each, the slot and its delete */

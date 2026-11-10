@@ -147,7 +147,7 @@ class Death{
     if(a==='death-load')return toTitle('load');
     if(a==='death-menu')return toTitle();
     if(a==='death-take'||a==='death-leave')return Remains.act(a,id);
-    if(['death-new','death-slain','death-race','death-past','death-kin'].includes(a))return Legacy.act(a,id);
+    if(['death-new','death-slain','death-race','death-past'].includes(a))return Legacy.act(a,id);
     if(a==='death-respect'){const c=G.remains;if(c instanceof Crypt){c.respect();c.meet()}return}
     if(a==='death-pray'){const g=G.remains;G.remains=null;if(g instanceof Grave)g.pray();return}
     const c=P.comps[id],L=c?.lost;if(!L)return;

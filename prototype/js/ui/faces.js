@@ -148,11 +148,12 @@ class Faces{
     try{this.R=new PortraitCharacters.Roster({seed:Rng.seedOf('faces'),player:rec})}catch(e){this.R=null}}
   // (a new person in the same world, world/legacy.js: a face of their own (n: the generation), kin's like the one who fell, theirs
   // the same shape of face, nose and ears and the same skin, hair and eyes; the world's faces kept as they were, saved: the roster's)
-  static next(saved,old,n){if(!this.ok())return;const g=P.gender==='f'?'f':'m',C=PortraitCharacters;let rec=null;
+  // (young: kin just come of age, a young face, no beard yet)
+  static next(saved,old,n,young){if(!this.ok())return;const g=P.gender==='f'?'f':'m',C=PortraitCharacters;let rec=null;
     if(old?.config)try{const base=PortraitEngine.normalize({...old.config,profile:this.profileOf(g),race:this.raceOf(P.race)}),
         [c]=C.variations({base,seed:Rng.seedOf('face:kin:'+n),count:1,locks:['face','nose','ears']});
       rec=C.recipe({config:this.bare(c),colors:{skin:old.colors?.skin,hair:old.colors?.hair,iris:old.colors?.iris}})}catch(e){rec=null}
-    rec??=this.random(Rng.seedOf('face:you:'+n),P.race,g,true);
+    rec??=this.random(Rng.seedOf('face:you:'+n),P.race,g,true);if(young&&rec)rec={...rec,config:PortraitEngine.normalize({...rec.config,age:'young',beard:'none'})};
     try{this.R=new C.Roster({seed:saved?.seed??Rng.seedOf('faces'),player:rec,characters:saved?.characters||[]})}
     catch(e){try{this.R=new C.Roster({seed:Rng.seedOf('faces'),player:rec})}catch(e2){}}}
   static save(){return this.R?this.R.export():undefined}

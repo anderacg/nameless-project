@@ -40,7 +40,11 @@ const DEATH={on:true,die:true,live:.3,min:.1,max:.6,
   wake:24,hp:.2,weak:{days:3,dmg:.85,spd:.9},food:.6,horse:.5,
   comps:{n:3,hurt:2,wander:7,far:[8,30],left:2,talk:{base:.35,pers:.05,ap:.04,min:.1,max:.9},pay:{base:40,lv:12}},
   heir:{ap:5,follow:0,men:4},
-  kin:{renown:.1,rel:.5,rep:10},
+  /* kin (the owner, 2026-11-10: "you cannot start as someone who is already old, you should be a new one that just born and grow";
+     which kin, random): a share of their renown, of their lords' regard, your standing where the family is known; past: the young
+     one's own, just come of age, little of their own (as a Nobody's start: bare hands, these coins and food, a little Athletics),
+     the family's keepsake in their bag */
+  kin:{renown:.1,rel:.5,rep:10,past:{gold:20,cargo:{grain:4},sk:{athl:1}}},
   house:{slain:.06,wait:5,lv:2,men:6,respect:3,grudge:-40,tell:50,
     // (a house's family: a lord wed as his house is first known (wed) with 0-2 children (kids) of 0-200 days (age); of age at adult days;
     // each day one of age and unwed may wed (marry), a couple have a child (birth) up to most; no more than cap of it alive)
