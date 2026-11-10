@@ -1779,3 +1779,5 @@ Closed portrait helmets: six face-covering styles are selectable for every race,
 Full helmet refinement: rounded cheek/jaw bowls, beveled great-helm corners and curved rear skirts soften the silhouettes. Pixel-sharp visor shadows darken the exposed eyes only while the front helmet is visible; source eye layers and facial choices remain intact.
 
 Reference-based closed visors now use long, narrow brow slits with a stepped upward slope toward a solid nose bridge. A raised center seam and paired breathing holes define the faceplate; deeper cavity shading keeps the eyes recessed. Apertures remain sharp on the two-pixel grid and keep pupil anchors clear.
+
+Full helmet reflections: crisp curved crown bands, a narrow cheek reflection and raised seam highlights sit against darker steel. Lighting comes from the upper left; silhouettes, paired details, visor cuts and breathing holes retain their existing shape. Reflection tones share the equipment palette and two-pixel grid; headwear tint remains editable.

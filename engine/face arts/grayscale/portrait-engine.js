@@ -1430,6 +1430,27 @@
     }
     if(!ids&&c.brows==='broken'){const a=geometry(c),{s}=headPlacement(c);layers.brows.getContext('2d').clearRect(a.brows[1].x+Math.round(5*s),a.brows[1].y-Math.ceil(3*s),1,Math.ceil(7*s));}
   }
+  function helmetReflections(layer,a){
+    const g=layer.getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data,eye=a.eyes[0].y;
+    for(let y=0;y<SIZE;y+=2)for(let x=0;x<SIZE;x+=2){
+      const k=(y*SIZE+x)*4;if(!d[k+3]||d[k]<96)continue;
+      const u=(x+1-a.cx)/(a.w+4),cap=(y+1-a.top)/(eye-a.top),lower=(y+1-eye)/Math.max(1,a.chinY-eye),key=u<0?1:.35;
+      let v=d[k]*.65+12-Math.abs(u)*20;
+      if(y<eye-3){
+        const band=cap-.18*u*u+.1*u;
+        if(band>.03&&band<.15)v+=112*key;
+        else if(band>.22&&band<.33)v+=64*key;
+        else if(band>.42&&band<.65&&u<-.2)v+=24;
+      }else{
+        if(Math.abs(u+.46-.12*lower)<.1&&lower<.82)v+=96;
+        if(Math.abs(u)<.09)v+=56;
+        if(Math.abs(u)>.8&&Math.abs(u)<.92)v+=32*key;
+      }
+      const tone=PIXEL_STYLE.tones.reduce((best,n)=>Math.abs(n-v)<Math.abs(best-v)?n:best,PIXEL_STYLE.tones[0]);
+      for(let j=0;j<2;j++)for(let i=0;i<2;i++){const q=((y+j)*SIZE+x+i)*4;d[q]=d[q+1]=d[q+2]=tone;}
+    }
+    g.putImageData(im,0,0);
+  }
   function pixelPortrait(p) {
     const layers={...p.layers},a=p.anchors;
     layers.torso=pixelLayer(p.layers.torso,2,16);
@@ -1467,6 +1488,7 @@
     }
     fitLeatherToBody(layers,p.config);
     if(p.config.race==='orc')mirrorParts(layers,p.config);else if(CLOSED_HELMS.includes(p.config.headwear))mirrorParts(layers,p.config,['headwearFront','headwearBack']);
+    if(CLOSED_HELMS.includes(p.config.headwear))helmetReflections(layers.headwearFront,a);
     return {...p,layers};
   }
   function build(input) {

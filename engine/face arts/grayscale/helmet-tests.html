@@ -23,6 +23,8 @@ try{
  ok(true,'visor eye shadows darken both pupils for every race while preserving raw eye art');
  for(const headwear of helms){const p=E.build({race:'human',face:'strong-jaw',headwear}),front=data(p.layers.headwearFront),e=p.anchors.eyes[0],rows=[];for(let y=e.y-4;y<=e.y+3;y++){const xs=[];for(let x=Math.ceil(p.anchors.cx-p.anchors.w+2);x<64;x++)if(!front[(y*128+x)*4+3])xs.push(x);if(xs.length)rows.push(xs);}if(rows.length>4||!rows.length||Math.max(...rows.map(r=>r.length))<14||new Set(rows.map(r=>r[0]+':'+r[r.length-1])).size<2)throw Error('Visor must have long, narrow, angled slits '+headwear);for(let x=62;x<=65;x++)if(!front[(e.y*128+x)*4+3])throw Error('Open nose bridge '+headwear);}
  ok(true,'all six helmets have long angled brow slits and a solid central nose bridge');
+ for(const race of E.races)for(const headwear of helms){const p=E.build({...E.startRace(race),headwear}),front=data(p.layers.headwearFront);let bright=0,dark=0,left=0,right=0;for(let y=0;y<128;y++)for(let x=0;x<128;x++){const k=(y*128+x)*4;if(!front[k+3])continue;if(front[k]>=224)bright++;if(front[k]>=96&&front[k]<=128)dark++;if(front[k]>=96){if(x<64)left+=front[k];else right+=front[k];}}if(bright<4||dark<16||left<=right)throw Error('Missing directional metal reflections '+race+'/'+headwear);}
+ ok(true,'all closed helmets combine bright crown reflections, dark metal and directional lighting');
  lines.push('DONE '+lines.length+' checks');
 }catch(e){lines.push('FAIL '+e.message);console.error(e);}
 document.getElementById('out').textContent=lines.join('\n');
