@@ -38,8 +38,7 @@
 .campaign-mini-slot{position:relative;display:block;width:100%;aspect-ratio:1.4;appearance:none;margin:0;padding:0;border:0;background:transparent;box-shadow:none;pointer-events:auto;cursor:pointer}
 .campaign-mini-slot canvas,.campaign-mobile-survey canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;image-rendering:pixelated}
 .campaign-mobile-survey{position:absolute;appearance:none;padding:0;margin:0;border:var(--phone-map-rim,8px) solid transparent;border-image:var(--campaign-frame) 176/1;background:none;border-radius:0;cursor:pointer;z-index:1}
-.campaign-warning{position:absolute;top:94px;left:var(--e-l);display:flex;align-items:center;gap:8px;min-height:44px;padding:3px 8px;border:8px solid transparent;border-image:var(--campaign-frame) 176/12px;color:#e4c080;font:700 12px var(--hud-font);pointer-events:auto}
-.campaign-world:not(.mobile-world) .hint{top:86px;left:var(--e-l);transform:none;max-width:370px;padding:6px 8px;text-align:left;border:1px solid #78654855;background:#191d17cf;color:#c0bb9e;font:11px var(--hud-font)}.campaign-world:not(.mobile-world):has(.campaign-warning:not([hidden])) .hint{top:144px}
+.campaign-world:not(.mobile-world) .hint{top:86px;left:var(--e-l);transform:none;max-width:370px;padding:6px 8px;text-align:left;border:1px solid #78654855;background:#191d17cf;color:#c0bb9e;font:11px var(--hud-font)}
 .campaign-world:not(.mobile-world) :is(.toasts,.lgroup){bottom:calc(var(--campaign-console) + 18px)}
 .campaign-world:not(.mobile-world) #underway{background:var(--campaign-surface);background-size:auto,640px 320px;padding:8px;border:1px solid #a18a5b;border-radius:0;box-shadow:none}
 .campaign-world:not(.mobile-world) #qtrack{width:280px;max-height:calc(100% - var(--campaign-console) - 196px);overflow:auto;padding:3px;border:4px ridge #9b8050;border-radius:0;background:linear-gradient(110deg,#d0bc8e,#e2d1aa 35%,#c8b083);color:#392e1c;text-shadow:none}
@@ -50,7 +49,7 @@
 .campaign-town footer{display:flex;gap:6px;margin-top:10px}.campaign-town footer button{min-height:44px;min-width:44px;border:7px solid transparent;border-image:var(--campaign-frame) 176/11px;background:linear-gradient(#daba75,#a67a38);background-clip:padding-box;color:#251c10;font:700 13px var(--hud-font);cursor:pointer}.campaign-town footer button:first-child{flex:1}
 .campaign-world:not(.mobile-world):has(.campaign-town:not([hidden])) #qtrack{max-height:calc(100% - var(--campaign-console) - 410px)}
 /* One panel surface and one frame palette on both platforms. */
-.campaign-world :is(.campaign-resource,.campaign-town,.campaign-warning,.mwh-status,.mwh-dock,.mwh-speeds,.mwh-map),.campaign-world:not(.mobile-world) :is(#stats,.wtop,.dockrow .dbtn,.wtime button),.campaign-world.mobile-world :is(.mwh-dock,.mwh-speeds,.mwh-map) button{background:var(--campaign-surface);background-size:auto,640px 320px;background-clip:padding-box;box-shadow:none}
+.campaign-world :is(.campaign-resource,.campaign-town,.mwh-status,.mwh-dock,.mwh-speeds,.mwh-map),.campaign-world:not(.mobile-world) :is(#stats,.wtop,.dockrow .dbtn,.wtime button),.campaign-world.mobile-world :is(.mwh-dock,.mwh-speeds,.mwh-map) button{background:var(--campaign-surface);background-size:auto,640px 320px;background-clip:padding-box;box-shadow:none}
 .campaign-world :is(.wtime button.on,.mwh-dock button.on,.mwh-speeds button.on){background:linear-gradient(#b69b5ac9,#6f542bc9),var(--campaign-wood);background-size:auto,640px 320px;color:#211a11}
 .campaign-world:not(.mobile-world) .dockrow:not(.sys) .dbtn.on{border:12px solid transparent;border-image:var(--campaign-frame) 176/18px;background:linear-gradient(#b69b5a99,#6f542b99),var(--campaign-wood);background-size:auto,640px 320px}
 /* Phone: same conditions, frames, type and artwork in the compact control strip. */
@@ -70,3 +69,27 @@
 @media(max-height:650px){.campaign-town{display:none}}
 
 .campaign-world.mobile-world :is(.mwh-speeds,.mwh-map) button{border:3px solid transparent;border-image:var(--campaign-frame) 176/6px;border-radius:0;font-family:var(--hud-font)}
+
+/* Army identity replaces the game logo; supplies carry their own warnings. */
+.campaign-brand{display:flex;align-items:center;gap:8px;flex-basis:240px;min-width:0;height:50px;margin:3px 0;padding:2px 6px;border:7px solid transparent;border-image:var(--campaign-frame) 176/10px;border-radius:0;background:var(--campaign-surface);background-size:auto,640px 320px;background-clip:padding-box;filter:none;color:var(--hud-ink);text-align:left;cursor:pointer;font:700 16px var(--hud-font)}
+.campaign-army-flag{display:flex;align-items:center;justify-content:center;flex:none;width:28px;height:30px}.campaign-army-flag .tipflag{position:static;inset:auto;width:auto;height:30px;max-width:28px;object-fit:contain;image-rendering:pixelated;filter:none}
+.campaign-army-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.campaign-resource-art{width:24px;height:24px}
+.campaign-resource[data-supply]{appearance:none;cursor:pointer}.campaign-resource small{white-space:nowrap}.campaign-resource-alert{display:inline-block;margin-left:4px;padding:1px 3px;border:1px solid #c28b5e;border-radius:2px;background:#6b3022;color:#ffe4b7;font:700 8px/10px var(--hud-font);vertical-align:middle}
+.campaign-world .campaign-resource.warn[data-supply]{background:linear-gradient(#633026c9,#311d18c9),var(--campaign-wood);background-size:auto,640px 320px;background-clip:padding-box}.campaign-resource.warn .campaign-supply-track{border-color:#d49458}.campaign-resource.warn b{color:#ffdba2}
+/* Stamina takes the portrait's former slot; fitness and morale sit beside it. */
+.campaign-world:not(.mobile-world) #stats{padding:12px 14px}.campaign-world:not(.mobile-world) #stats .pc-pic{display:none}.campaign-world:not(.mobile-world):not(.company-details) #stats .pc-head{display:none}
+.campaign-world:not(.mobile-world) #stats .bars{display:grid;grid-template-columns:92px minmax(0,1fr);grid-template-rows:44px 44px;gap:8px 16px}
+.campaign-world:not(.mobile-world) #stats .bar.fit{grid-column:2;grid-row:1;align-self:center}.campaign-world:not(.mobile-world) #stats .bar.mor{grid-column:2;grid-row:2;align-self:center}
+.campaign-world:not(.mobile-world) #stats .bar.sta{grid-column:1;grid-row:1/3;align-self:stretch;height:100%}.campaign-world:not(.mobile-world) #stats .bar.sta>em{height:100%}
+.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition{height:100%;grid-template-columns:18px 1fr;grid-template-rows:22px minmax(0,1fr) 8px;gap:6px 4px}
+.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition-art{grid-column:1;grid-row:1;width:18px;height:20px}.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition-name{grid-column:2;grid-row:1}
+.campaign-world:not(.mobile-world) #stats .bar.sta strong{grid-column:1/-1;grid-row:2;text-align:center;font-size:22px}.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition-gauge{grid-column:1/-1;grid-row:3;height:8px}
+.campaign-details{left:calc(var(--e-l) + var(--company-width) - 48px);bottom:calc(var(--e-b) + 2px)}
+/* One time strip, without nested button frames. */
+.campaign-world .wtime{border-left:1px solid #8b744666;padding-left:6px;margin-left:2px}
+.campaign-world .wtime .tbtn{border:0;border-image:none;border-radius:0;background:none;box-shadow:none;padding:2px 5px;color:var(--hud-ink)}
+.campaign-world .wtime .tbtn.on{border:0;border-image:none;background:none;box-shadow:inset 0 -2px #c9a65c;color:#f0d28c}
+.campaign-world:not(.mobile-world) .wtop .wtime .tbtn{border:0;border-image:none;background:none;box-shadow:none}.campaign-world:not(.mobile-world) .wtop .wtime .tbtn.on{box-shadow:inset 0 -2px #c9a65c}
+.campaign-world:not(.mobile-world) .wday{padding-left:12px}.campaign-world.mobile-world .mwh-status>[data-place="day"]{padding-left:8px}
+@media(max-width:1250px){.campaign-brand{flex-basis:200px;font-size:14px}.campaign-resource-art{width:20px;height:20px}}
+@media(max-width:1020px){.campaign-brand{flex-basis:150px;font-size:12px}.campaign-army-flag{width:20px}.campaign-army-flag .tipflag{max-width:20px;height:26px}.campaign-world:not(.mobile-world) #stats .bars{grid-template-columns:70px minmax(0,1fr);column-gap:8px}.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition{grid-template-columns:14px 1fr}.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition-art{width:14px;height:16px}.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition-name{font-size:10px}}

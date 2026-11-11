@@ -3,17 +3,17 @@
 class CampaignHud{
   constructor(){
     this.screen=$('#screen');this.root=document.createElement('div');this.root.className='campaign-chrome';
-    this.root.innerHTML='<div class="campaign-rail"><div class="campaign-brand"><span aria-hidden="true">✠</span> ASHMARK<small>THE CAMPAIGN</small></div><div class="campaign-resources" role="group" aria-label="Company supplies"></div></div><button type="button" class="campaign-warning" hidden></button><div class="campaign-console" aria-hidden="true"><span>◆</span></div><div class="campaign-survey"><span aria-hidden="true">N</span><button type="button" class="campaign-mini-slot" aria-label="Open full map"></button><small aria-hidden="true">LOCAL MAP</small></div><button class="campaign-details" type="button" aria-controls="stats" aria-expanded="false">Company details ▴</button>';
-    $('.hudlayer').appendChild(this.root);this.resources=this.root.querySelector('.campaign-resources');this.slot=this.root.querySelector('.campaign-mini-slot');this.details=this.root.querySelector('.campaign-details');this.warning=this.root.querySelector('.campaign-warning');
+    this.root.innerHTML='<div class="campaign-rail"><button type="button" class="campaign-brand" aria-label="Your army"></button><div class="campaign-resources" role="group" aria-label="Company supplies"></div></div><div class="campaign-console" aria-hidden="true"><span>◆</span></div><div class="campaign-survey"><span aria-hidden="true">N</span><button type="button" class="campaign-mini-slot" aria-label="Open full map"></button><small aria-hidden="true">LOCAL MAP</small></div><button class="campaign-details" type="button" aria-controls="stats" aria-expanded="false">Company details ▴</button>';
+    $('.hudlayer').appendChild(this.root);this.resources=this.root.querySelector('.campaign-resources');this.slot=this.root.querySelector('.campaign-mini-slot');this.details=this.root.querySelector('.campaign-details');this.brand=this.root.querySelector('.campaign-brand');
     this.help=document.getElementById('helpBtn');this.helpHome=document.createComment('campaign help home');this.help.before(this.helpHome);
-    this.root.querySelector('.campaign-brand').innerHTML='<img class="campaign-banner" src="art/ui/title-cloth.png" alt="" aria-hidden="true">';
+    this.brand.addEventListener('click',()=>act('nm-open'));
+    this.resources.addEventListener('click',e=>{if(e.target.closest('[data-supply]'))document.getElementById('invBtn').click()});
     this.commandArt=[['campBtn','fire'],['mapBtn','map'],['mapToggle','map'],['charBtn','troops'],['skillBtn','skills'],['invBtn','bag'],['journalBtn','book']];
     this.townCard=document.createElement('aside');this.townCard.className='campaign-town';this.townCard.hidden=true;this.townCard.setAttribute('aria-label','Nearby holding');this.root.appendChild(this.townCard);
     this.townCard.addEventListener('click',e=>{const b=e.target.closest('[data-town-action]');if(!b||!this.town||G.mode!=='world'||G.modal)return;if(b.dataset.townAction==='approach')worldApproach(this.town);else fullMapOpen({x:this.town.x/TILE,y:this.town.y/TILE});this.sync()});
     this.details.textContent='⋯';this.details.setAttribute('aria-label','Company details');this.details.title='Company details';
     this.mobileMini=document.createElement('button');this.mobileMini.type='button';this.mobileMini.className='campaign-mobile-survey';this.mobileMini.hidden=true;this.mobileMini.setAttribute('aria-label','Open full map');$('.hudlayer').appendChild(this.mobileMini);this.mobileMini.addEventListener('click',()=>document.getElementById('mapBtn').click());
     this.slot.addEventListener('click',()=>document.getElementById('mapBtn').click());
-    this.warning.addEventListener('click',()=>document.getElementById('invBtn').click());
     this.details.addEventListener('click',()=>{const open=this.screen.classList.toggle('company-details');this.details.setAttribute('aria-expanded',String(open));this.details.textContent=open?'×':'⋯'});
   }
   art(name,cls){return icon(name,52,cls)}
@@ -27,12 +27,10 @@ class CampaignHud{
   update(S,cnt){
     this.sync();
     if(G.mode!=='world')return;
+    setHtml(this.brand,'<span class="campaign-army-flag" aria-hidden="true">'+tipFlag(P)+'</span><span class="campaign-army-name">'+htmlText(bandName())+'</span>');this.brand.title=bandName()+' · Rename army';this.brand.setAttribute('aria-label',bandName()+'. Rename army');
     const days=n=>(n>=10?Math.floor(n):Math.floor(n*10)/10)+'d';
-    const cell=(ic,label,value,title,warn,coverage)=>'<div class="campaign-resource'+(warn?' warn':'')+'" title="'+htmlText(title)+'">'+this.art(ic,'campaign-resource-art')+'<span><small>'+label+'</small><b>'+value+'</b>'+(coverage!=null?'<i class="campaign-supply-track" aria-hidden="true"><em style="width:'+Math.min(100,Math.max(0,coverage/3*100))+'%"></em></i>':'')+'</span></div>';
+    const cell=(ic,label,value,title,warn,coverage)=>{const supply=coverage!=null,tag=supply?'button':'div';return '<'+tag+' class="campaign-resource'+(warn?' warn':'')+'"'+(supply?' type="button" data-supply="'+ic+'"':'')+' title="'+htmlText(title+(warn?'. Running low':'')+(supply?'. Open inventory':''))+'">'+this.art(ic,'campaign-resource-art')+'<span><small>'+label+(warn?'<em class="campaign-resource-alert">LOW</em>':'')+'</small><b>'+value+'</b>'+(supply?'<i class="campaign-supply-track" aria-hidden="true"><em style="width:'+Math.min(100,Math.max(0,coverage/3*100))+'%"></em></i>':'')+'</span></'+tag+'>'};
     setHtml(this.resources,cell('gold','Gold',P.gold,'Your gold')+cell('troops','Company',cnt,'Your company’s troop count')+cell('food','Food',days(S.foodDays),'Food remaining at the current consumption rate',S.foodDays<1,S.foodDays)+cell('mug','Drink',days(S.drinkDays),'Drink remaining at the current consumption rate',S.drinkDays<1,S.drinkDays));
-    this.warning.hidden=S.drinkDays>=1&&S.foodDays>=1;
-    setHtml(this.warning,icon(S.drinkDays<1?'mug':'food',18)+'<span>'+(S.drinkDays<1?'Drink':'Food')+' running low</span>'+icon('bag',18));
-    this.warning.setAttribute('aria-label',(S.drinkDays<1?'Drink':'Food')+' running low. Open inventory');
     this.updateTown();
     this.slot.style.aspectRatio=MW+'/'+MH;
   }
