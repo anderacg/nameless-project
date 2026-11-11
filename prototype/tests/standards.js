@@ -55,7 +55,18 @@ Kit.suite(({ok,info})=>{
     st2.timber=50;st2.stone=50;s.day();ok(!s.broken&&st2.timber===50-S.repair.cost.timber&&s.most===S.guards[2],'paid: its tower mended ('+s.costText(S.repair.cost)+')')}finally{Object.assign(st2,k2)}
   }finally{Object.assign(st,keep);s.owner=f;s.lv=1;s.broken=false;s.guards=S.guards[1];G.mode='world';t.hidePanel()}}
  {const s=all().find(x=>x.guards>0&&t.FACS[x.realm]&&x.realm!=='player');P.x=s.x;P.y=s.y+30;s.seen=true;const ents=[],cam={x:P.x-200,y:P.y-150};t.frame();s.draw(ents,cam,200);
-  ok(ents.length===1+Math.min(S.sentries.most,s.guards)&&t.FACS[s.realm]&&typeof s.sentryType()==='string','in your sight its sentries walk their beat round it ('+(ents.length-1)+', '+s.sentryType()+')')}
+  const mins=(t.G.day+t.Clock.frac)*1440,n=Math.min(S.sentries.most,s.guards),out=[...Array(n).keys()].filter(i=>!s.sentryAt(i,n,mins).inside).length;
+  ok(ents.length===1+out&&t.FACS[s.realm]&&typeof s.sentryType()==='string','in your sight its sentries on their beat round it, those resting in its tower not seen ('+out+' of '+n+', '+s.sentryType()+')')}
+ // ---- their beat (the owner, 2026-11-11: "patrol around the flag and stop, dont make them always walk, and they should go rest in the tower like garrison")
+ {const X=S.sentries;for(const lv of [1,2]){const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'),keep={lv:s.lv,broken:s.broken};s.lv=lv;s.broken=false;delete s._sp;
+   const n=3,F=s.footing(),c={walk:0,stand:0,inside:0},on=(p)=>F.some(f=>p.x>f.x&&p.x<f.x+f.w&&p.y>f.y&&p.y<f.y+f.h);let onF=0,far=0,jump=0,last=[];
+   for(let m=0;m<3000;m+=.5){for(let i=0;i<n;i++){const p=s.sentryAt(i,n,m);c[p.inside?'inside':p.moving?'walk':'stand']++;if(!p.inside&&on(p))onF++;far=Math.max(far,Math.hypot(p.x-s.x,p.y-s.y));if(last[i]&&!last[i].inside&&!p.inside)jump=Math.max(jump,Math.hypot(p.x-last[i].x,p.y-last[i].y));last[i]=p}}
+   const T=c.walk+c.stand+c.inside,pc=k=>Math.round(c[k]/T*100);
+   ok(c.stand>c.walk*.5&&c.walk>0,(lv>1?'a watchtower':'the banner alone')+': they walk to a post and stand there a while ('+pc('walk')+'% walking, '+pc('stand')+'% standing)');
+   ok(lv>1?c.inside>T*.15&&c.inside<T*.6:c.inside===0,lv>1?'and take turns resting in the tower ('+pc('inside')+'% of the time)':'no tower: none goes in (they rest by the flag\'s foot)');
+   ok(!onF&&far<X.r*3+20&&jump<=X.pace*.5+.01,'never on the plinth or in the tower, near the flag (at most '+Math.round(far)+' px), no jumps');
+   if(lv>1){let both=0;for(let m=0;m<3000;m+=5)if([0,1,2].filter(i=>s.sentryAt(i,n,m).inside).length===n)both++;ok(both===0,'never all three in at once: one always on watch')}
+   Object.assign(s,keep);delete s._sp}}
  // ---- a lost fight: those of its guards you slew stay dead; your own standards' guards from your nearest holding
  {const s=all().find(x=>x.guards>=3&&t.FACS[x.realm]&&x.realm!=='player'),g0=s.guards;t.ON_WIN.standard.lost({ref:s},['hum_spear','hum_spear','chief']);ok(s.guards===g0-2,'beaten off it: the two guards you slew stay dead ('+g0+' to '+s.guards+')');s.guards=g0}
  {const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'&&!x.choose&&!x.taking),f=s.realm,h=t.TOWNS.find(x=>x.owner===f&&!x.gone),o0=h.owner,g0=h.gar,keep=s.guards;

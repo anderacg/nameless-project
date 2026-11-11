@@ -83,13 +83,40 @@ class Standard extends Site{
   mapDot(V){return this.known()?[this.col(),2]:null}
   tip(){const f=this.ownerName();return '<b>'+Discovery.nameOf(this)+'</b><small>'+(f?'Held by '+f:'Held by no one')+', '+STANDARD_LV[this.lv]+(this.broken?' (broken)':'')+(this.guards?', '+roughly(this.guards)+' guards':'')+'</small><span class="act">Click: go there</span>'}
   sprite(){return standardSprite(this)}
-  // (on the map: it, and its sentries walking their beat round it in your sight, a lap each STANDARD.sentries.lap game minutes)
+  // (on the map: it, and its sentries on their beat round it in your sight, those resting in its tower not seen: sentryAt)
   // (not while a battle is fought on the map: its guards are in it, StandardTower)
   draw(ents,cam,V){super.draw(ents,cam,V);const X=STANDARD.sentries,n=Math.min(X.most,this.guards),f=this.realm;if(!n||!f||B&&B.world||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
     const type=this.sentryType(),col=FACS[f].col,mins=(G.day+Clock.frac)*1440;
-    for(let i=0;i<n;i++){const a=(mins/X.lap+i/n)*Math.PI*2,x=this.x+Math.cos(a)*X.r,y=this.y+4+Math.sin(a)*X.r*.5,dir=-Math.sin(a)<0?-1:1,step=Math.floor(mins/X.stride+i)%4;
-      ents.push({y,f:()=>reduced(()=>{const s=unitSprite(type,0,false,(this.seed+i)%6,2+step,false,false,col),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
+    for(let i=0;i<n;i++){const p=this.sentryAt(i,n,mins);if(p.inside)continue;const x=p.x,y=p.y,dir=p.dir,step=p.moving?2+Math.floor(mins/X.stride+i)%4:Math.floor(mins/X.stride/4+i)%2;// (walking: its stride; at a post: breathing)
+      ents.push({y,f:()=>reduced(()=>{const s=unitSprite(type,0,false,(this.seed+i)%6,step,false,false,col),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
         ctx.save();ctx.translate(Math.round(x-cam.x),Math.round(y-cam.y));ctx.scale(dir*k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore()})})}}
+  // (its beat: the posts round the flag, each outpost's turned by its seed; its tower's door, where a sentry goes in to rest, or the
+  // flag's foot with no tower standing)
+  // (its beat's posts: an arc in front of it (the map draws its sentries over the outpost, so none may stand behind the flag or the
+  // tower), r px either side and a little forward, each outpost's arc shifted by its seed)
+  posts(){const X=STANDARD.sentries,k=X.posts,sh=((this.seed||0)%7-3)*.03;
+    return Array.from({length:k},(_,j)=>{const a=Math.PI*(.12+.76*(j+.5)/k+sh);return{x:this.x+Math.cos(a)*X.r,y:this.y+11+Math.sin(a)*X.r*.3}})}
+  // (where sentry i of n rests: in its tower, at its door; with no tower standing, a spot of his own below the flag's foot)
+  door(i=0,n=1){const f=this.towerLv&&this.footing()[1];return f?{x:f.x+f.w/2,y:f.y+f.h+1,tower:true}:{x:this.x+(i-(n-1)/2)*9,y:this.y+13,tower:false}}
+  // (sentry i of n at game minute mins: {x, y, dir, moving, inside}. From his rest to the post nearest it, round the others, a stand at
+  // each, back to that post and to his rest; each a share of the round behind the one before (the same round for all: one is
+  // always out). Of the time alone, so nothing is kept or saved)
+  sentryAt(i,n,mins){const X=STANDARD.sentries,P=this.posts(),D=this.door(i,n),k=P.length,d=p=>Math.hypot(p.x-D.x,p.y-D.y),s0=P.reduce((b,p,j)=>d(p)<d(P[b])?j:b,0);
+    const way=[...Array(k).keys()].map(j=>P[(s0+j)%k]).concat([P[s0],D]),legs=[];let at=D;
+    way.forEach((to,j)=>{const st=j<k?X.stand[0]+((this.seed||0)*7+j*13)%(X.stand[1]-X.stand[0]+1):0,via=this.around(at,to);
+      for(const v of via)legs.push({from:at,to:v,w:Math.hypot(v.x-at.x,v.y-at.y)/X.pace,st:0}),at=v;legs.push({from:at,to,w:Math.hypot(to.x-at.x,to.y-at.y)/X.pace,st});at=to});
+    const round=legs.reduce((a,l)=>a+l.w+l.st,0),rest=Math.min(X.rest,round),cyc=round+rest;let t=((mins+i*cyc/n)%cyc+cyc)%cyc;
+    for(const l of legs){if(t<l.w){const u=t/l.w,dx=l.to.x-l.from.x;return{x:l.from.x+dx*u,y:l.from.y+(l.to.y-l.from.y)*u,dir:dx<0?-1:1,moving:true,inside:false}}t-=l.w;
+      if(t<l.st)return{x:l.to.x,y:l.to.y,dir:l.to.x<this.x?1:-1,moving:false,inside:false};t-=l.st}
+    return{x:D.x,y:D.y,dir:i%2?-1:1,moving:false,inside:D.tower}}
+  // (the corners to walk by from a to b, if the straight way crosses its plinth or tower: [] none, else those of the box in the way
+  // (4 px clear of it))
+  around(a,b){const F=this.footing(),inB=(f,x,y,m)=>x>f.x-m&&x<f.x+f.w+m&&y>f.y-m&&y<f.y+f.h+m,cross=(p,q,m)=>{for(let u=0;u<=1;u+=.05){const x=p.x+(q.x-p.x)*u,y=p.y+(q.y-p.y)*u;if(F.some(f=>inB(f,x,y,m)))return true}return false};
+    if(!cross(a,b,0))return [];const f=F.find(f=>{for(let u=0;u<=1;u+=.05)if(inB(f,a.x+(b.x-a.x)*u,a.y+(b.y-a.y)*u,0))return true;return false}),e=4;
+    // (one corner, else two along a side of it; the shortest of the ways that are clear)
+    const K=[[f.x-e,f.y-e],[f.x+f.w+e,f.y-e],[f.x+f.w+e,f.y+f.h+e],[f.x-e,f.y+f.h+e]].map(([x,y])=>({x,y})),len=w=>w.reduce((n,p,j)=>n+Math.hypot(p.x-(j?w[j-1]:a).x,p.y-(j?w[j-1]:a).y),0)+Math.hypot(b.x-w[w.length-1].x,b.y-w[w.length-1].y);
+    const ok=w=>[a,...w,b].every((p,j,L)=>!j||!cross(L[j-1],p,0)),ways=[...K.map(c=>[c]),...K.flatMap((c,j)=>[[c,K[(j+1)%4]],[K[(j+1)%4],c]])].filter(ok);
+    return ways.length?ways.reduce((m,w)=>len(w)<len(m)?w:m):[]}
   // (who they are: its realm's foot soldiers, as its nearest holding's garrison is made: realms.js garList)
   sentryType(){if(this._st&&this._st[0]===this.realm)return this._st[1];const t=this.supplier(),k=t?garList({...t,gar:1})[0]:'militia';Object.defineProperty(this,'_st',{value:[this.realm,k],configurable:true,writable:true});return k}
   // (what stands in the way, world px: its plinth, and its tower beside it)
