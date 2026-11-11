@@ -13,3 +13,5 @@ Visual fingerprint: W6 changes from `8d7629ca` to `92f27da3` because the desktop
 Review: desktop at 1440×900 and 1200×800; landscape touch at 844×390. Targeted checks: campaignhud, structure, mobilehud, fullmap and worldprint. Captures and check results are exported under `/workspace/artifacts`.
 
 Phone Map and Army use the same illustrated SVG regions as desktop, including Map in its drawer; the compact controls scale the artwork to 22×22px and retain accessible names and 44px targets. Phone icon captions are visually hidden; the speed multiplier remains visible.
+
+The phone minimap uses the same painted iron/brass frame as the desktop HUD. Its existing canvas rectangle, zoom and position stay unchanged. A fitted frame presents the live minimap canvas and opens the existing full-map action; it hides with the phone HUD.
