@@ -115,3 +115,14 @@ Held in the captor's holding (a lord's castle dungeon) or camp (a cage).
 3. **Serving bandits:** their raids cost you reputation and honour as if you had done them yourself.
 4. **Prison:** with no ransom and no escape, you are let go after about **3 weeks**.
 5. **The stash** is sold off after about **a month**.
+
+## A band strips you (2026-11-11, built)
+
+The owner: bandits who catch you take everything, so paying them makes no sense, and what you lose comes back by how soon you go for it.
+
+- **Taken by a band:** your purse and your bag's gear are theirs at once; you keep the coin you hid (a quarter).
+- **No ransom from you:** talk them round (no fine), ride with them (gear given back, gold theirs), your realm pays, bribe a guard, break out, or wait in their cage.
+- **Their stash:** from the day they took it; all of it there the first day, 75% from day 10, sold off at 30 days.
+- **Lords and realms:** unchanged; their ransom is paid as before.
+- **Switch:** `CAPTIVITY.band.strip`.
+- **Not built:** a lord's ransom paid from your holdings' treasury; a bounty on the camp that holds your stash.
