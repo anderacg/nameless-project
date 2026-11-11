@@ -1804,3 +1804,5 @@ Campaign HUD: `campaign-hud.css`, `js/ui/campaignhud.js` and `art/ui/` provide t
 Campaign art refinement: painted nine-slice frames and oak texture replace the vector approximation; approved concept illustrations supply decorative command icons and title cloth. Six main commands plus utility Help, live three-day supply gauges and a nearby-holding card retain existing game actions and gate checks. Landscape phones use one 52px strip with 44px controls, keeping speed, map and party drawers above it.
 
 Compact phone Map and Army controls reuse the desktop illustrations; the Map drawer uses that same map artwork. The bar stays 52px high with 44px targets.
+
+Phone icon buttons hide their captions visually while preserving accessible names; the travel speed multiplier remains visible.

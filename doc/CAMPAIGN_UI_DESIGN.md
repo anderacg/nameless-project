@@ -12,4 +12,4 @@ Visual fingerprint: W6 changes from `8d7629ca` to `92f27da3` because the desktop
 
 Review: desktop at 1440×900 and 1200×800; landscape touch at 844×390. Targeted checks: campaignhud, structure, mobilehud, fullmap and worldprint. Captures and check results are exported under `/workspace/artifacts`.
 
-Phone Map and Army use the same illustrated SVG regions as desktop, including Map in its drawer; the compact controls scale the artwork to 22×22px and retain their labels and 44px targets.
+Phone Map and Army use the same illustrated SVG regions as desktop, including Map in its drawer; the compact controls scale the artwork to 22×22px and retain accessible names and 44px targets. Phone icon captions are visually hidden; the speed multiplier remains visible.
