@@ -120,7 +120,8 @@ class SiegeWorks{
      defender breaks, your banner raised on it) */
   flagStep(dt){const F=SIEGE_FIGHT.flag,f=this.flag;if(!F.on||!f||f.taken||B.over)return;const near=k=>B.units.some(u=>(k?u.team!==0:u.team===0)&&u.hp>0&&!u.rout&&!u.left&&Math.hypot(u.x-f.x,u.y-f.y)<F.r);
     const me=near(0),them=near(1);if(me&&!them)f.prog+=dt;else if(them&&!me)f.prog=Math.max(0,f.prog-F.decay*dt);if(f.prog>=F.hold)this.takeFlag()}
-  takeFlag(){const f=this.flag;f.taken=true;f.prog=SIEGE_FIGHT.flag.hold;for(const u of B.units)if(u.team!==0&&u.hp>0&&!u.rout&&!u.left)rout(u);if(this.art)this.art.raiseFlag();
+  // (the banner taken: every defender breaks, for good: none rallies, morale.js BattleResolve route)
+  takeFlag(){const f=this.flag;f.taken=true;f.prog=SIEGE_FIGHT.flag.hold;for(const u of B.units)if(u.team!==0&&u.hp>0&&!u.left){const r=resolveOf(u);if(r){r.rallied=true;if(r.routed)r.shattered=true}if(!u.rout)rout(u)}if(this.art)this.art.raiseFlag();
     toast('The banner of '+this.t.name+' is taken!','good');log('Your men take the banner of '+this.t.name+' in its court: its defenders break.','good','war');battleEvent('breach',{text:'The banner is taken',team:0})}
   ramStep(dt){if(this.open||!this.ram)return;const S=SIEGE_WALL,x=this.x0,n=B.units.filter(u=>u.team===0&&u.hp>0&&!u.rout&&!u.left&&!u.s.range&&!u.hero&&u.x>x-S.ramR&&u.x<x+4&&u.y>this.gy0-6&&u.y<this.gy1+6).length;
     if(!n)return;this.ramT=B.t;this.hp-=n*S.ram*dt;this.hit=(this.hit||0)+dt;if(this.hit>.5){this.hit=0;sfxAt&&sfxAt('hit',x,(this.gy0+this.gy1)/2,{vol:.6});B.floats.push({x:x-6,y:this.gy0-8,t:'Ram!',life:.8,c:'#ffd08a'})}

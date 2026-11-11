@@ -78,7 +78,7 @@ class Captivity{
   static escapeChance(e){const X=CAPTIVITY.escape,mounted=!!P.gear.mount,list=e.list||[],riders=list.length?list.filter(k=>ST[k]&&(ST[k].mounted||ST[k].beast)).length/list.length:0;
     return clamp(X.base+skill(mounted?'ride':'athl')*X.skill+(mounted?X.mounted:0)+(Clock.isNight?X.night:0)+(hiddenAt(P.x,P.y)?X.cover:0)-riders*X.riders-(P.hp<vitals()[0]/2?X.hurt:0)+(has('slippery')?CAPTIVITY.traits.slippery.escape:0),X.min,X.max)}
   // the defeat, as the battle is lost (resolution.js conclude): the words for the battle's page
-  static defeat(e,b){const c=this.captor(e);
+  static defeat(e,b){P.siege=null;P.raid=null;const c=this.captor(e);
     // (your whole side down to beasts: the roll to live, world/death.js; else, left for dead)
     if(!c&&Death.beastLoss(e,b))return Death.fall(e);
     if(!c){P.hp=Math.max(1,Math.min(P.hp,Math.round(vitals()[0]*CAPTIVITY.beast.hp)));return{how:'beast',text:'Left for dead among the fallen, you wake where you fell, badly hurt.'}}

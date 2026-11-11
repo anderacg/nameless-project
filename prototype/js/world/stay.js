@@ -14,6 +14,7 @@ const stayTown=()=>P.stay&&townBy(P.stay.town);
 // why you may not stay here ('' if you may)
 // (the rules for you and your companions' parties; every party has its own: parties.js shelterWhy)
 function yourShelterWhy(t,cost){
+  if(typeof outsideWalls==='function'&&outsideWalls(t))return 'You are outside its walls';// (at the market outside a gate that will not have you: world/gates.js)
   if(hostileTo(t.owner))return 'Its realm is hostile to you';
   if(besieged(t))return 'The gates are barred for the siege';
   if(ruined(t))return 'It lies in ruins';
@@ -86,7 +87,7 @@ function stayAct(a,arg){
   if(a==='sy-wait'){G.mode='world';hidePanel();log('Your band waits inside the walls of '+t.name+'.');return}
   if(a==='sy-defend'){const l=siegeLordsAt(t)[+arg];if(!l||P.fac&&P.fac===l.fac)return;
     realmOf(l.fac).provoke(20,15);
-    leaveStay('You lead your band out of the gate of '+t.name+' against '+l.name+'.');G.encCool=0;startEncounter({kind:'lord',ref:l,list:l.troops.slice(),mine:true});return}
+    leaveStay('You lead your band out of the gate of '+t.name+' against '+l.name+'.');G.encCool=0;startEncounter({kind:'lord',ref:l,list:l.troops.slice(),mine:true,sally:true});return}
   if(a==='sy-slip'){const ls=siegeLordsAt(t),l=ls.slice().sort((a,b)=>lordSpeed(b)-lordSpeed(a))[0];if(!l)return;
     const e={kind:'lord',ref:l,list:l.troops.slice(),foes:ls.filter(o=>o!==l&&Math.hypot(o.x-l.x,o.y-l.y)>40),mine:false};if(fleeOdds(e).ch<=0)return;
     leaveStay('Your band slips out of '+t.name+' by night.');e.foes=[];G.enc=e;flee();return}

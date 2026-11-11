@@ -235,8 +235,9 @@ function lordWon(l,res,take=true){
   if(l.state==='siege'){const st=townBy(l.tgt);if(st&&!hostileTo(st.owner)){addRep(st.name,10,true);if(st.owner!=='player')addHonor(st.owner,8,true);lordsInside(st).forEach(o=>changeRel(o,RELATION.breakSiege,'you broke the siege of '+st.name));txt+=' You break the siege of '+st.name+'. Its people cheer you in.'}}
   rippleRel(l,RELATION.beatThem,'you beat them in battle');worldEmit('lord:beaten',{lord:l});
   // (now and then he dies in the fighting: gone for good, his house buries him and holds it against you, world/lineage.js)
-  if(take&&Houses.slain(l,true)){txt+=' '+l.name+' falls in the fighting. '+cap1(pr(l).his)+' house will not forget it.';take=false}
-  if(take){captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom '+pr(l).him+' or let '+pr(l).him+' go (Hero, Party).'}else{defeatLord(l);txt+=getsAway(l.name)}
+  // (slain: neither taken nor away. He was also told to get away, and beaten a second time)
+  const fell=take&&Houses.slain(l,true);if(fell)txt+=' '+l.name+' falls in the fighting. '+cap1(pr(l).his)+' house will not forget it.';
+  else if(take){captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom '+pr(l).him+' or let '+pr(l).him+' go (Hero, Party).'}else{defeatLord(l);txt+=getsAway(l.name)}
   FIDS.filter(f=>atWar(f,l.fac)).forEach(f=>addHonor(f,5));addHonor(l.fac,-10);
   return txt;
 }

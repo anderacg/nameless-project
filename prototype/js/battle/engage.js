@@ -224,7 +224,7 @@ function chaserSpeed(e){const o=e.ref,k=e.kind,at=Math.max(.45,speedAt(P.x,P.y)|
   if(k==='lord')return lordSpeed(o);if(k==='party')return partySpeed(o,o.troops);if(k==='patrol')return partySpeed(o,o.troops)*.75*1.25;
   return (k==='camp'?30:k==='caravan'?CARAVAN_SPD:k==='estate'?22:26)*at}
 function fleeOdds(e){
-  if(['siege','raid','field','tourney','cave'].includes(e.kind)||e.mine&&!(e.ref&&e.ref.sab))return{leave:true,ch:1};
+  if(['siege','raid','field','tourney','cave'].includes(e.kind)||e.mine&&!e.sally&&!(e.ref&&e.ref.sab))return{leave:true,ch:1};// (sally: out of a besieged holding you stayed in, world/stay.js: no free leave past its odds to slip out)
   if(e.btype&&e.btype.kind==='ambush'&&e.btype.hid===1)return{ch:0,why:'They have you in their trap'};// (an ambush: no way out but through)
   const pw=['lord','party','patrol'].includes(e.kind)?e.ref.power():null;if(pw!=null&&stance(pw)==='afraid')return{leave:true,ch:1};
   if(e.noFlee)return{ch:0,why:'They caught you'};

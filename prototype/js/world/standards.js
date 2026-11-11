@@ -56,8 +56,8 @@ class Standard extends Site{
   contest(){const C=STANDARD.capture,R=C.r*TILE,f=this.realm,b=this.band;if(this.taking||this.choose)return;
     const near=o=>Math.hypot(o.x-this.x,o.y-this.y)<R,want=l=>!l.dead&&!l.inside&&!l.fight&&l.fac!==f&&(b||!f||f!=='player'&&atWar(l.fac,f)||f==='player'&&hostileTo(l.fac))&&near(l)&&l.troops.length>=Math.max(1,this.guards)*C.more;
     const L=W.lords.find(want);if(L&&Math.random()<C.chance)return this.taken(L.fac,lordName(L));
-    if(b||f==='player'||this.guards>C.weak)return;const B=bandits.find(o=>!o.gone&&STANDARD.lair.kinds.includes(o.kind)&&near(o)&&o.troops.length>this.guards&&!o.lair);
-    if(B&&Math.random()<C.chance){const n=B.troops.length,ld=B.ld;bandits=bandits.filter(o=>o!==B);worldEmit('band:beaten',{band:B});this.taken(B.kind,null);this.guards=Math.min(C.lairMost,n);this.ld=ld||null}}
+    if(b||f==='player'||this.guards>C.weak)return;const B=bandits.find(o=>!o.gone&&STANDARD.lair.kinds.includes(o.kind)&&near(o)&&o.troops.length>this.guards&&!o.lair&&!o.qid);// (not a quest's quarry: it stays on the map for you)
+    if(B&&Math.random()<C.chance){const n=B.troops.length,ld=B.ld;bandits=bandits.filter(o=>o!==B);this.taken(B.kind,null);this.guards=Math.min(C.lairMost,n);this.ld=ld||null}}
   // (taken in the world: its new holder, its tower broken, word of it to you as the world's news go: worldlog.js worldEvent)
   taken(to,who){const was=this.realm||this.band;this.owner=to;this.choose=false;this.taking=null;this.guards=this.realm&&this.realm!=='player'?Math.max(1,this.guards>>1):0;
     if(this.lv>=2)this.broken=true;this.fix=0;this.since=G.day;this.need=null;worldEmit('standard:taken',{standard:this,from:was,to,by:who||to});

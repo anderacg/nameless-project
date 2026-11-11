@@ -96,7 +96,7 @@ class Death{
   static passengers(){const out=[];
     for(const q of Escort.list()){if(q.wait)continue;
       if(Math.random()<DEATH.pass){const t=Spatial.nearestHolding(P.x,P.y,t=>!t.gone);if(t){q.wait=t.name;out.push(cap1(q.pn)+' got away to '+t.name+', and waits for you there.');continue}}
-      out.push(cap1(q.pn)+' did not live.');q.fail(cap1(q.pn)+' was killed by the beasts.','slain')}
+      out.push(cap1(q.pn)+' did not live.');q.fail(cap1(q.pn)+' was killed by the beasts.','dead')}
     return out.join(' ')}
   // the beast that beat you may become a man-eater: its name, stronger, its bounty raised, talked of
   // (slew: the hero it killed, a man-eater for sure then, a bounty on it (slayer gold), told by the news)

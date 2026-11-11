@@ -31,6 +31,7 @@ let SAVING=null;
 // the game saved to a slot (the autosave, if none is named): written at once when plain; gzipped, the save as it stands now is
 // written once zipped (a Promise; plain if zipping fails)
 function saveGame(quiet,slot){
+  if(quiet&&typeof Death!=='undefined'&&Death.slain)return;// (slain by beasts: no autosave over it, world/death.js: the Slain page's own choices stand)
   if(typeof BattleLab!=='undefined'&&BattleLab.active){if(!quiet)toast('Exit the battle test before saving.','bad');return}
   if(!ESC_SAVE.includes(G.mode)){if(!quiet)toast('You can only save while traveling or in town.','bad');return}
   Systems.drain(true);// (a sliced day's work finished first: core/systems.js)

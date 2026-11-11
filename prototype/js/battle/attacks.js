@@ -58,7 +58,7 @@ class Fighter{
   dodging(){const t=this.u;return t.ch&&t.ch.inv}
   taken(amt){const t=this.u;if(t.wardT>0)amt*=.75;if(t.s.dr)amt*=1-t.s.dr;return amt}
   // one of yours down (theirs are kills): a soldier lost to your band, but a lord's man
-  fell(){const t=this.u;if(!t.lord)B.lost[t.type]=(B.lost[t.type]||0)+1}
+  fell(){const t=this.u;if(!t.lord&&!t.leader)B.lost[t.type]=(B.lost[t.type]||0)+1}
   // (a blow or a missile from angle a, of dm: none but your hero ever guards)
   guards(a,dm){return false}
   // ---- striking: a blow of dm on t (dt: its damage type)

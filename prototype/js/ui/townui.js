@@ -39,7 +39,7 @@ function townOverview(t){
       ['Garrison',t.gar+(ls.length?' + '+ls.length+' lord'+(ls.length>1?'s':''):'')],['Walls',wallOf(t)||!fenceOf(t)?WALL_N[wallOf(t)]:'A fence'],['Food',fd==null?'—':fd+' days',fd!=null&&fd<3?'bad':''],['Your standing',st,st>=REP_NEED[1]?'gold':'']].map(x=>cell(...x)).join('')+'</div>'+
     (notes.length?'<div class="lab">Today</div><ul class="tnotes">'+notes.map(([c,s])=>'<li'+(c?' class="'+c+'"':'')+'>'+s+'</li>').join('')+'</ul>':'')+letterTownHtml(t)+
     '<p class="muted" style="font-size:13px">'+(resText(t)?'Its land yields '+resText(t)+'. ':'')+'Estates: '+estateLine(t)+'.</p>'+
-    (G.town.inScene?'':'<div class="btns">'+(hasScene(t)?'<button class="btn" type="button" data-act="scene-enter">'+SCENES[t.T.scene].hint+'</button>':'')+(P.stay&&P.stay.town===t.name?'<button class="btn" type="button" data-act="sy-leave">Leave '+t.label+'</button>':stayBtn(t))+'</div>')+
+    (G.town.inScene?'':'<div class="btns">'+(hasScene(t)&&!outsideWalls(t)?'<button class="btn" type="button" data-act="scene-enter">'+SCENES[t.T.scene].hint+'</button>':'')+(P.stay&&P.stay.town===t.name?'<button class="btn" type="button" data-act="sy-leave">Leave '+t.label+'</button>':stayBtn(t))+'</div>')+
     (PLACES.siege.at(t)&&!G.town.inScene?PLACES.siege.body(t):'')+
     '<p class="muted" style="font-size:13px">Choose a place on the left'+(G.mouse&&G.mouse.type==='touch'?'':' (or its number key)')+'.</p>';
 }

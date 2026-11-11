@@ -125,6 +125,7 @@ function siegeAct(a,arg){
 // the day in camp: build, starve them out, and accept a surrender
 function siegeDay(){
   const s=P.siege;if(!s)return;const t=townBy(s.town);
+  if(Captivity.held||!troopCount()){P.siege=null;log('The siege'+(t?' of '+t.name:'')+' is over: no one is left to keep it.','bad','war');return}// (taken, or alone: it built on and could surrender to its own prisoner)
   if(!t||!hostileTo(t.owner)){P.siege=null;log('The siege ends: '+(t?t.name+' is no longer held by your enemies.':''),undefined,'war');return}
   s.days++;train('eng',4);if(Math.random()<.1*skill('eng')){s.days++;log('Your engineers work fast at '+t.name+'.','good','war')}
   if(s.days===LADDER_DAYS)log('Ladders are ready at '+t.name+'. You can assault the walls.','gold','war');

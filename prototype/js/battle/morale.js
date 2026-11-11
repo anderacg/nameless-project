@@ -236,7 +236,7 @@ function moraleHurt(t,amt,source,missile){
 function moraleDeath(t,source){
   B.moraleNext=0;// Casualties change perceived strength immediately on the next morale update.
   if(withdrawing(t))B.caught=(B.caught||0)+1;// (cut down withdrawing: the rearguard)
-  if(t.team===0&&!t.lord)B.lastOut='died';
+  if(yourOwn(t))B.lastOut='died';
   if(B.noMorale)return;const lead=t.hero||t.leader,own=resolveOf(t);if(own&&!own.death(t))return;
   if(own&&!own.live().length)armyWord(own,{x:t.x,y:t.y},'cut');// (the last of a group cut down: the army hears of it)
   for(const r of battleResolves()){if(!r.live().length)continue;const d=Math.hypot(r.point().x-t.x,r.point().y-t.y);
@@ -312,7 +312,11 @@ function routStep(u,dt){
   if(any?exitReached(u,exitOf(u),2):u.team?u.x>=BW-MORALE.edge-2:u.x<=MORALE.edge+2){u.fled=true;if(u.team===1)B.fledFoes=(B.fledFoes||0)+1;else B.fledMine=(B.fledMine||0)+1;leaveField(u)}
 }
 // a soldier off the field (at its edge): out of the fight, alive (not a loss); its health kept for after (your hero's)
-function leaveField(u){u.hpLeft=u.hp;u.hp=0;u.left=true;if(u.team===0&&!u.lord)B.lastOut='left';battleEvent('left',{u})}// (the cards and the selection: battlehud.js; the lab's row: lab.js)
+// (yours: of your own band, not a lord's man nor an ally's leader (his unit carries leader, not lord: an allied lord alive kept a
+// band wholly withdrawn in the fight, and his fall was told as your loss). The last of yours out: 'left' only for one withdrawing,
+// not for one routed off the field (a rout is no withdrawal: battle/sides.js))
+const yourOwn=u=>u.team===0&&!u.lord&&!u.leader;
+function leaveField(u){u.hpLeft=u.hp;u.hp=0;u.left=true;if(yourOwn(u)&&(withdrawing(u)||!u.fled))B.lastOut='left';battleEvent('left',{u})}// (the cards and the selection: battlehud.js; the lab's row: lab.js)
 
 /* withdrawing (W) is fleeing the battle: the group drops its fight, briefly disengages if in melee, then runs for your edge of the field (the side you formed up on,
    marked there while any of yours withdraw; EXITS.on: its exit, the safest way off by any open edge), straight back, striking no one; there they leave the field, alive. The enemy may run
@@ -414,7 +418,7 @@ function withdrawStep(u,dt){
 // Your hero knocked down: a retreat if the last of your band got away withdrawing (they carry you off), a defeat if they fell
 function retreating(){
   if(!B.withdrawn||B.hero&&B.hero.hp<=0&&!B.hero.left&&B.lastOut!=='left')return false;
-  return !B.units.some(u=>u.team===0&&!u.lord&&u.hp>0&&!u.rout);
+  return !B.units.some(u=>yourOwn(u)&&u.hp>0&&!u.rout);
 }
 function retreatNow(){B.over=true;B.endT=END_WAIT;B.win=false;B.retreat=true;log('Your band withdraws from the battle'+(B.caught?': '+B.caught+' cut down on the way.':'.'),'bad')}
 // the withdrawal edge on the field: a faint strip along your edge, bright with a word while any of yours withdraw; EXITS.on, along

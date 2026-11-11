@@ -23,7 +23,7 @@
    Two registries, a new kind one call: defineGoal(id, {start(step, th), remember?}), defineCond(id, test(v, ctx), why(v)).
    Nothing here draws Math.random: a check rolls the road's stream (Choice.roll), a band's numbers the quests' (questRng) ---------- */
 // (the fates a goal's quest ends with: done, on to next; failed, to failed or the story failed)
-const STORY_OK=['arrived','cleared','beaten','slain','gone','freed'],STORY_BAD=['late','left','captured','scattered'];
+const STORY_OK=['arrived','cleared','beaten','slain','gone','freed'],STORY_BAD=['late','left','captured','scattered','dead'];// (dead: a passenger the beasts killed, world/death.js: 'slain' is a beast hunt's done)
 class Stories{
   // ---- a field: plain, or a function of the thread
   static val(x,th){return typeof x==='function'?x(th):x}

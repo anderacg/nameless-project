@@ -88,6 +88,7 @@ Kit.suite(({ok,info})=>{
    const d=theirs[0],dx=d.x,dy=d.y;mine.forEach(u=>{u.x=f.x-200});d.x=f.x;d.y=f.y;w.flagStep(1);ok(f.prog<F.hold/2&&f.prog>0,'theirs alone there: lost again, slowly');
    d.x=dx;d.y=dy;mine.forEach((u,i)=>{u.x=f.x+i*6;u.y=f.y+4});w.flagStep(F.hold);
    ok(f.taken&&theirs.filter(u=>u.hp>0).every(u=>u.rout||u.left)&&b.ground.props.filter(p=>p.flag).length===1,'held '+F.hold+' s: the standard taken, every defender breaking, your banner raised on it');
+   ok(theirs.filter(u=>u.hp>0).every(u=>{const r=t.resolveOf(u);return !r||r.shattered}),'broken for good: none of them rallies (a review of the rules, 2026-11-11)');
    done()}
   {const b=assault(t.RAM_DAYS),w=b.works;b.auto=true;w.open=true;const Cm=t.Commander.of(0),N=Cm.groups(),id=(N.inf||[])[0],g=id&&b.groups[id];
    if(g){for(const u of t.grpUnits(id))if(u.hp>0){u.x=w.x1+40;u.y=w.flag.y+30}for(const u of b.units)if(u.team!==0&&u.hp>0){u.x=t.BW-30;u.y=w.flag.y+300}g.tgt=null;Cm.siege(N);
