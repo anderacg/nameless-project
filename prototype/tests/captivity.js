@@ -10,6 +10,9 @@ Kit.suite(({ok})=>{
  const lose=e=>{t.startEncounter(e);t.concludeEncounter(false,{},0,true,[],null,{})};
  const gearN=()=>P.inv.filter(s=>s&&s.k==='gear').reduce((n,s)=>n+(s.n||1),0);
  const sells=C.sells;C.sells=()=>false;// (no sale but where it is tested: below)
+ // (a band stripping you as it takes you, band.strip: off for the checks written before it, a captor's ways as they were, with a band
+ // as the captor at hand; on for its own, at the end)
+ const strip0=X.band.strip;X.band.strip=false;
  try{
   // ---- who takes you
   ok(t.Captivity.captor({kind:'monster',ref:{}})===null&&C.captor({kind:'party',ref:{kind:'bandits'}}).k==='band'&&C.captor({kind:'lord',ref:W.lords[0]}).k==='lord','beasts take no captives; a band and a lord do');
@@ -142,7 +145,11 @@ Kit.suite(({ok})=>{
   const stashOf=()=>P.quests.find(q=>q.type==='stash'),atLair=()=>{const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;return l};
   const ransomed=()=>{setup();const l=atLair(),b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');const r=C.held.ransom;t.act('held-pay');return {l,r,q:t.Quest.as(stashOf())}};
   {const {l,r,q}=ransomed();ok(q&&q.gold===r&&q.gear.length>=1&&q.holder.k==='site'&&q.holder.i===l.i&&q.seek().x===l.x&&/a quest marks it/.test(panel()),'ransomed: the '+r+'g and '+q.gear.length+' piece(s) they took are in the '+l.name+', marked');t.act('dlg-ok');
-   const g=P.gold,n=gearN();t.worldEmit('site:cleared',{site:l});ok(!stashOf()&&P.gold===g+Math.round(r*X.stash.back)&&gearN()===n+Math.round(q.gear.length*X.stash.back),'their camp cleared: '+Math.round(X.stash.back*100)+'% of it back')}
+   const g=P.gold,n=gearN();t.worldEmit('site:cleared',{site:l});ok(!stashOf()&&P.gold===g+r&&gearN()===n+q.gear.length,'their camp cleared the same day: all of it back')}
+  // (less as they spend it: all of it the day it is taken, stash.back's second from stash.fade days on)
+  {const [a,z]=X.stash.back,F=X.stash.fade;ok(C.stashShare(0)===a&&Math.abs(C.stashShare(F/2)-(a+z)/2)<1e-9&&C.stashShare(F)===z&&C.stashShare(F*3)===z,'a stash: '+a*100+'% the day it is taken, '+Math.round((a+z)*50)+'% after '+F/2+' days, '+z*100+'% from '+F+' on');
+   const {l,r,q}=ransomed();t.act('dlg-ok');const g=P.gold,n=gearN(),d0=G.day;G.day=q.since+F;try{ok(/75% of it is there still/.test(q.todo()),'the quest tells what is left');t.worldEmit('site:cleared',{site:l})}finally{G.day=d0}
+   ok(!stashOf()&&P.gold===g+Math.round(r*z)&&gearN()===n+Math.round(q.gear.length*z),'cleared '+F+' days on: '+z*100+'% of it back')}
   // (a fence in a tavern sells your gear back; the gold still waits in their stash)
   {const {q}=ransomed();t.act('dlg-ok');const town=t.TOWNS.find(x=>x.T.broker)||t.TOWNS[0];t.enterTown(town);t.act('tab','tavern');const p=C.fencePrice(q),g=P.gold,n=gearN(),k=q.gear.length;
    ok(document.querySelector('[data-act="held-fence"]')&&/A fence/.test(panel()),'a fence in the tavern has your gear');t.act('held-fence',q.id);
@@ -152,10 +159,29 @@ Kit.suite(({ok})=>{
   // (a lord's: in a holding of his realm; raided, won back)
   {setup();const f=t.FIDS[0];C.held={k:'realm',fac:f,name:'the men of the '+t.FACS[f].n};C.free('prison','Out.');const q=t.Quest.as(stashOf()),town=t.townBy(q.holder.town);
    ok(q&&town&&town.owner===f&&q.gold===400&&q.gear.length===gearN()+q.gear.length&&q.deed==='holding:raided','out of their prison: your 400g and all your gear in '+town.name+', a holding of theirs');t.act('dlg-ok');
-   const g=P.gold;t.worldEmit('holding:raided',{town});ok(!stashOf()&&P.gold===g+Math.round(400*X.stash.back),'raided: most of it back')}
+   const g=P.gold;t.worldEmit('holding:raided',{town});ok(!stashOf()&&P.gold===g+400,'raided the same day: all of it back')}
   // ---- a captivity and the scattered are kept in the save
   setup();b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');C.scattered.push({type:'hum_foot',n:2,at:t.Clock.hours()+30});
   {const s=JSON.stringify(C.save());C.held=null;C.scattered=[];C.load(JSON.parse(s));ok(C.held&&C.held.k==='band'&&C.scattered.length===1,'held and scattered come back with a save');t.hidePanel();G.mode='world';G.modal=false;C.hour();ok(G.mode==='dialog'&&/Taken captive/.test(panel()),'loaded while held: the captor’s page opens again');t.act('held-refuse');t.act('dlg-ok')}
- }finally{window.Math.random=rnd;C.held=null;C.scattered=[];C.sells=sells}
+  // ---- a band strips you as it takes you (band.strip): your purse and your bag's gear theirs at once, but the coin you hid; so no ransom
+  // to pay: talk them round, ride with them, their cage
+  X.band.strip=true;
+  {const hid=Math.floor(400*X.prison.hidden),taken=()=>{setup();const l=atLair(),b=band(),n=gearN();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;return{l,n}};
+   {const {n}=taken(),h=C.held;ok(h&&h.took&&h.took.gold===400-hid&&h.took.gear.length===n&&P.gold===hid&&gearN()===0&&h.hidden===hid&&/They take your purse, \d+ gold/.test(panel()),'taken by the bandits: your purse ('+(400-hid)+'g) and your bag’s gear ('+n+') theirs at once; the '+hid+'g you hid stays on you');
+    t.act('cont');ok(G.mode==='dialog'&&!document.querySelector('[data-act="held-pay"]')&&document.querySelector('[data-act="held-persuade"]')&&document.querySelector('[data-act="held-serve"]')&&document.querySelector('.nav [data-act="held-refuse"]')&&/ask no ransom/.test(panel()),'their page: no ransom to pay; persuade, ride with them, or refuse');
+    t.act('held-pay');ok(!!C.held&&P.gold===hid,'and no paying them by another way');
+    roll(.99);t.act('held-persuade');window.Math.random=rnd;ok(C.held&&!document.querySelector('[data-act="held-persuade"]')&&!/ask more/.test(panel()),'your words fail: no second try, and no ransom raised');t.act('held-refuse');
+    const q=C.held.prison;ok(q&&q.hidden===hid&&!document.querySelector('[data-act="held-pay"]')&&document.querySelector('[data-act="held-bribe"]')&&/ask no ransom/.test(panel()),'their cage: no price to pay; a guard to bribe with what you hid ('+hid+'g)');
+    window.Math.random=()=>0;t.act('held-break');window.Math.random=rnd;const sq=t.Quest.as(stashOf());
+    ok(!C.held&&P.gold===hid&&sq&&sq.gold===400-hid&&sq.gear.length===n&&sq.since===G.day,'broken out: only what you hid; all they took in their stash, a quest marks it');t.act('dlg-ok')}
+   {const {n}=taken();t.act('cont');roll(0);t.act('held-persuade');window.Math.random=rnd;const sq=t.Quest.as(stashOf());
+    ok(!C.held&&P.gold===hid&&gearN()===0&&sq&&sq.gold===400-hid&&sq.gear.length===n,'talked round: let go with no fine, but what they took stays theirs (their stash)');t.act('dlg-ok')}
+   {const {l,n}=taken();t.act('cont');roll(.99);t.act('held-serve');window.Math.random=rnd;const sq=t.Quest.as(stashOf());
+    ok(!C.held&&gearN()===n&&P.gold===hid&&sq&&sq.gold===400-hid&&!sq.gear.length&&/give you back your gear/.test(panel()),'rode with them: your gear given back ('+n+'), your gold theirs still (their stash)');t.act('dlg-ok');
+    const g=P.gold;t.worldEmit('site:cleared',{site:l});ok(!stashOf()&&P.gold>g&&P.gold<=g+(400-hid),'their camp cleared days later: most of your gold back ('+(P.gold-g)+' of '+(400-hid)+')')}
+   // (a lord is no robber: his page as ever)
+   {setup();const f=t.FIDS[0],town=t.TOWNS.find(x=>x.owner===f);C.held={k:'realm',fac:f,name:'the men',since:G.day,ransom:100,tried:[],away:[],at:{k:'holding',town:town.name}};C.cv=null;C.open();
+    ok(!C.held.took&&P.gold===400&&document.querySelector('[data-act="held-pay"]'),'a realm’s men take no purse: their ransom to pay, as before');C.held=null;t.hidePanel();G.mode='world';G.modal=false}}
+ }finally{window.Math.random=rnd;C.held=null;C.scattered=[];C.sells=sells;X.band.strip=strip0}
  ok(!ERR.length,'no runtime errors');
 });
