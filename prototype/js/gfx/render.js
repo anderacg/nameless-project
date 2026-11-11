@@ -343,7 +343,7 @@ function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y
   for(const m of rumourMarks())if(rumourFade(m)>0)dot(m.x,m.y,RUMOUR_COL,2);
   if(B?.world){for(const un of B.units)if(un.hp>0&&seenBy(0,un)){const p=B.world.world(un);dot(p.x,p.y,un.hero?'#fff':sideCol(un,'ui'),un.hero?3:1)}}
   else{const r=2.4*u;g.beginPath();g.arc(X(P.x),Y(P.y),r,0,Math.PI*2);g.fillStyle=M.you;g.fill();g.lineWidth=u;g.strokeStyle=M.ring;g.stroke();g.beginPath();g.arc(X(P.x),Y(P.y),r+u,0,Math.PI*2);g.lineWidth=.6*u;g.strokeStyle=M.ink;g.stroke()}
-  drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh)}
+  drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh);window.campaignHud?.presentMini(MINI_FACE)}
 // how long a unit holds its attack pose after it strikes
 const ATK_ANIM=.36;
 // the body's small life (drawUnit): a flinch for flinch s after a blow; standing (the owner, 2026-10-31: "idle animation for
