@@ -87,7 +87,8 @@ class CaravanParty extends Party{
   /* meeting a caravan: trade, toll, attack or seize */
   // what its merchants charge and pay: the going rate where they came from, a little either way
   price(g){const t=townBy(this.from);return Math.max(2,Math.round((t?marketPrice(t,g):GOODS[g].base)*1.05))}
-  pays(g){const t=townBy(this.to);return Math.max(1,Math.round((t?marketPrice(t,g):GOODS[g].base)*.8))}
+  // (never as much as it charges for the same good: economy.js TRADE_FAIR)
+  pays(g){const t=townBy(this.to),p=Math.max(1,Math.round((t?marketPrice(t,g):GOODS[g].base)*.8));return TRADE_FAIR.on?Math.max(1,Math.min(p,this.price(g)-1)):p}
   meet(){
     const c=this;G.cv=c;G.mode='dialog';P.tx=null;G.chase=null;c.cool=4;const f=c.fac==='player'?FACS.player:FACS[c.fac],hostile=!c.mine&&hostileTo(c.fac),mine=c.mine;
     const btn=(act,arg,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
@@ -109,7 +110,7 @@ class CaravanParty extends Party{
     if(a==='cv-buy'){const g=arg,p=c.price(g),n=Math.min(5,c.goods[g]||0);if(n&&P.gold>=p*n&&goodRoom(g)>=n){P.gold-=p*n;c.goods[g]-=n;if(!c.goods[g])delete c.goods[g];invAdd('good',g,n);train('trade',n*p/40);log('You buy '+n+' '+GOODS[g].n.toLowerCase()+' from the caravan.')}
       if(!Object.keys(c.goods).length){c.gone=true;W.caravans=W.caravans.filter(x=>x!==c);G.cv=null;G.mode='world';hidePanel();log('The caravan sold out and turns home.');return true}
       c.meet();updateHUD(true);return true}
-    if(a==='cv-sell'){const g=arg,p=c.pays(g),n=goodTake(g,Math.min(5,goodN(g)));if(n){P.gold+=p*n;c.goods[g]=(c.goods[g]||0)+n;train('trade',n*p/40);log('You sell '+n+' '+GOODS[g].n.toLowerCase()+' to the caravan.')}c.meet();updateHUD(true);return true}
+    if(a==='cv-sell'){const g=arg,p=c.pays(g),n=goodTake(g,Math.min(5,goodN(g)));if(n){P.gold+=p*n;c.goods[g]=(c.goods[g]||0)+n;drinkOut(g,n);train('trade',n*p/40);log('You sell '+n+' '+GOODS[g].n.toLowerCase()+' to the caravan.')}c.meet();updateHUD(true);return true}
     if(a==='cv-repeat'&&c.mine){c.repeat=!c.repeat;c.meet();return true}
     if(a==='cv-disband'&&c.mine){if(c.purse){P.gold+=c.purse;c.purse=0}const got=Object.keys(c.goods).map(g=>invAdd('good',g,c.goods[g])).reduce((x,y)=>x+y,0);W.caravans=W.caravans.filter(x=>x!==c);G.cv=null;G.mode='world';hidePanel();log('You disband the caravan'+(got?' and take '+got+' goods into your bag':'')+'.');updateHUD(true);return true}
     if(a==='cv-attack'&&!c.mine&&P.fac!==c.fac){realmOf(c.fac).provoke(20,10);G.cv=null;

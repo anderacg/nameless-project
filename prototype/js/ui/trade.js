@@ -84,7 +84,7 @@ const TradeScreen={
   row(name,facts,n,act,arg,label,why,ic){return '<div class="tr-row"'+Finder.attrs('trade',String(name).replace(/<[^>]*>/g,''))+'>'+this.ico(ic)+'<div class="tr-info"><strong>'+name+'</strong><small>'+facts+'</small></div><span class="tr-n">'+n+'</span>'+railBtn(act,arg,label,why)+'</div>'},
   mine(t,D,q){
     const goodCat=k=>ITEM_KINDS.good.catId({id:k}),gs=Object.keys(GOODS).filter(k=>goodCat(k)&&goodN(k)>0);
-    let h=byCategory(gs,goodCat,k=>{const l=D.left(t,'s',k);return this.row(GOODS[k].n,nextSell(t,k)+'g each',l,'deal','s:'+k,'<span class="tr-w">Sell </span>›',l<1?'All in the bargain':'','good:'+k)});
+    let h=byCategory(gs,goodCat,k=>{const l=D.left(t,'s',k);return this.row(GOODS[k].n,nextSell(t,k)+'g each',l,'deal','s:'+k,'<span class="tr-w">Sell </span>›',TRADE_FAIR.own&&t.owner==='player'?'Your own fief: store it at the steward’s':l<1?'All in the bargain':'','good:'+k)});
     const own=P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k!=='good'&&(itemCat(x)||{}).sell);
     if(own.length)h+=byCategory(own,([x])=>itemKind(x).catId(x),([x,i])=>{const K=itemKind(x),c=K.colour(x),on=D.own.includes(i);
       return this.row('<span'+(c?' style="color:'+c+'"':'')+'>'+K.name(x)+'</span>',K.fetches(x,t)+'g',x.n>1?'×'+x.n:'','deal','o:'+i,'<span class="tr-w">Sell </span>›',on?'In the bargain':'',x.k+':'+x.id)});

@@ -50,7 +50,7 @@ const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5
   rest:{stop:4,camp:16,stay:20},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
   eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
-  drink:{perDay:1,rest:.5,order:['water','ale','liquor'],water:{morale:0},ale:{morale:2},liquor:{morale:6}},skins:{start:4,recruit:1,lot:5},
+  drink:{perDay:1,rest:.5,once:true,order:['water','ale','liquor'],water:{morale:0},ale:{morale:2},liquor:{morale:6}},skins:{start:4,recruit:1,lot:5},
   thirst:{desert:2,parched:12,pace:.85,morale:1,dying:24,death:48,toll:6,hero:{hp:.1,mp:.1}},lost:{days:7,keep:20},
   fill:{days:2,near:.5,well:1.5,timed:true,minPerDay:15,min:5,max:180},furPer:5,frost:{every:6,morale:1},
   battleMin:25,camp:{heal:1.5,caught:8,r:12,step:8,hop:2,across:4,m:2,road:4,lot:0,ring:1,site:4,pole:[20,1]},hint:60,hurt:3,fever:{sick:.5,die:.2,dieMin:.05,med:.02}};
@@ -105,11 +105,15 @@ function drinkOrder(L){const o=SUPPLY.drink.order;return L&&L.desert?['water']:B
 const drinkStock=L=>drinkOrder(L).reduce((a,k)=>a+goodN(k),0);
 const drinkNext=L=>drinkOrder(L).find(k=>goodN(k)>0)||null;
 // n of a drink come into your stores (the bag: core/items.js Good gained): its morale, once (SUPPLY.drink: ale and liquor lift it)
-function drinkIn(id,n){const m=SUPPLY.drink[id]?SUPPLY.drink[id].morale*n:0;if(m)P.morale=clamp(P.morale+m,0,100)}
+// (once: only for more of it than you have held since you last drank or sold some (P.cheer, the most held of each): the same ale
+// put on a pile, or in a fief's stores, and taken up again lifts no one twice. drinkOut: n of it drunk or sold)
+function drinkIn(id,n){const D=SUPPLY.drink[id];if(!D||!D.morale)return;const C=P.cheer||(P.cheer={}),have=goodN(id),was=C[id]||0,k=SUPPLY.drink.once?Math.min(n,Math.max(0,have-was)):n;
+  C[id]=Math.max(was,have);if(k)P.morale=clamp(P.morale+D.morale*k,0,100)}
+function drinkOut(id,n){const C=P.cheer;if(C&&C[id]&&n>0)C[id]=Math.max(0,C[id]-n)}
 // n drunk, in order: the drink it was on (the first that gave any), or null with none to drink. Each water drunk leaves its
 // waterskin empty in the bag (never lost: past the bag's limit too)
 function drinkTake(n,L){let left=n,first=null;
-  for(const k of drinkOrder(L)){if(!left)break;const m=goodTake(k,left);if(m){if(!first)first=k;if(k===SKIN.full)playerInventory.add('good',SKIN.empty,m,true)}left-=m}
+  for(const k of drinkOrder(L)){if(!left)break;const m=goodTake(k,left);if(m){drinkOut(k,m);if(!first)first=k;if(k===SKIN.full)playerInventory.add('good',SKIN.empty,m,true)}left-=m}
   return first}
 /* ---------- the waterskins (the owner, 2026-10-24: data/places.js CONTAINERS, today one kind, the waterskin: full, one person's
    day of drink, the good water; empty, skin_empty). A new hero sets out with SUPPLY.skins.start full ones (skinsStart); each

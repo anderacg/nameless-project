@@ -56,9 +56,10 @@ class Economy{
     return t.T.needs.food*t.pop/100+(t.gar+insideTroops(t).length)/4}
   foodDays(){return Math.floor(this.food()/Math.max(.1,this.foodNeed()))}
   /* prices: base x √(target ÷ stock), between 0.4x and 3x; ruin adds 40% */
-  price(g){
+  // (add: with that many more of it in its stock)
+  price(g,add){
     const t=this.t;this.ensure();
-    const s=t.stock[g]||0,tg=this.target(g);
+    const s=(t.stock[g]||0)+(add||0),tg=this.target(g);
     return Math.max(1,Math.round(GOODS[g].base*clamp(Math.sqrt(tg/(s+1)),.4,3)*(t.ruined()?1.4:1)))}
   // short of a good, or well stocked with it ('' between)
   state(g){
@@ -66,8 +67,11 @@ class Economy{
     return r<.35?'shortage':r>1.8?'surplus':''}
   // what one unit costs you to buy, and fetches you to sell
   // (yours: the market's price, your Trading, and your terms here: your standing, a haggle, tradeTerms)
-  buyPrice(g){const m=tradeTerms(this.t);return Math.max(1,Math.ceil(this.price(g)*spreadBuy()*(1-m.stand-m.haggle)))}
-  sellPrice(g){const m=tradeTerms(this.t);return Math.max(1,Math.floor(this.price(g)*spreadSell()*(1+m.stand+m.haggle)))}
+  buyPrice(g,add){const m=tradeTerms(this.t);return Math.max(1,Math.ceil(this.price(g,add)*spreadBuy()*(1-m.stand-m.haggle)))}
+  // (TRADE_FAIR: a sale is priced as the market stands with the unit in it, and under what it would cost to buy back there;
+  // in a fief of yours, nothing: its stores are yours to fill and to take from at the steward's)
+  sellPrice(g){const m=tradeTerms(this.t),F=TRADE_FAIR,k=spreadSell()*(1+m.stand+m.haggle);if(F.own&&this.t.owner==='player')return 0;
+    return F.on?Math.max(1,Math.min(Math.floor(this.price(g,1)*k),this.buyPrice(g,1)-1)):Math.max(1,Math.floor(this.price(g)*k))}
 
   /* the day */
   // how much of its estates' work its people can staff (half while they are afraid to go out)
@@ -134,8 +138,9 @@ class Economy{
     t.stock[g]=s0;return sum}
   // you sell up to n of a good: what you sold and earned
   sell(g,n){
-    const t=this.t;this.ensure();let sold=0,earned=0;
+    const t=this.t;this.ensure();let sold=0,earned=0;if(TRADE_FAIR.own&&t.owner==='player')return{sold,earned};
     for(let i=0;i<n;i++){if(goodN(g)<1)break;const p=this.sellPrice(g);goodTake(g,1);t.stock[g]=(t.stock[g]||0)+1;P.gold+=p;earned+=p;sold++}
+    drinkOut(g,sold);
     return{sold,earned}}
 
   /* building materials from its stock: what is short of a project's (as words), and taking them */
@@ -219,6 +224,12 @@ const spreadBuy=()=>1.08*(1-.015*skillSafe('trade')),spreadSell=()=>.92*(1+.01*s
    'lost'). The things a holding's merchants buy and sell (gear, mounts, quivers, trophies, valuables) by your standing too
    (itemTerms), never by a haggle */
 const TRADE_TERMS={stand:.06,lo:-50,hi:100,haggle:.05,annoy:.03,min:60,xp:6};
+/* no gold from nothing at a market (a review of the rules, 2026-11-11). on: a unit sold is priced with it already in the stock,
+   and a gold under its price to buy back (it was priced before it went in: sold at an empty stall and bought back for less);
+   a caravan pays under what it charges for the same good (caravans.js pays: it charged its source's price and paid its
+   market's). own: the market of a fief of yours buys no goods of you (what you took free at the steward's was sold to it,
+   and was in its stock again) */
+const TRADE_FAIR={on:true,own:true};
 // (a thing's price with your standing in the holding you are in, its merchants' (G.town): × this, buying or selling; out of a
 // holding, ×1. Your standing only: a haggle is the market's goods')
 const itemTerms=buying=>{const t=G.town&&G.town.ref;if(!t||!t.T)return 1;const m=tradeTerms(t);return buying?1-m.stand:1+m.stand};

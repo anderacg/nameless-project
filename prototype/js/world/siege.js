@@ -13,6 +13,9 @@ const walled=t=>t.walled();// (the old names: holdings.js Holding)
 const RAID_TIME=DAY*.5;
 const until=(t,k)=>Timed.of(t).has(k);// (the old name: timed.js)
 const ruined=t=>t.ruined();
+// (a holding lying sacked or raided has nothing left: no sack gold, no raid, no renown for taking it or for its surrender (it was
+// sacked, left with one guard, taken and sacked again the same day, each time for the whole of it). once false: as before)
+const PLUNDER={once:true},plunderLeft=t=>!(PLUNDER.once&&t.ruined()),sackGold=t=>plunderLeft(t)?Math.round(t.T.sack*(1+G.day/50)):0;
 // a fief pays its taxes (people x tax rate x prosperity) and market dues; its land feeds it through the economy
 const fiefIncome=t=>t.fiefIncome();
 const playerFiefs=()=>TOWNS.filter(t=>t.owner==='player');
@@ -74,7 +77,8 @@ function showSiege(msg){
     btns=btn('sg-declare','Attack '+t.name,P.fac===t.owner?'Your employer':'');
   }else if(village){
     body+='<p>'+t.name+' has no walls. You can raid it for food and coin, or seize it outright. Either way, its people will hate you.</p>';
-    btns=btn('sg-raid','Raid',troopCount()<3?'Need 3 troops':'',true)+btn('sg-raid-auto','Raid (auto)',troopCount()<3?'Need 3 troops':'')+btn('sg-assault','Seize it',troopCount()<3?'Need 3 troops':'')+btn('sg-auto','Seize (auto)',troopCount()<3?'Need 3 troops':'');
+    const noRaid=troopCount()<3?'Need 3 troops':plunderLeft(t)?'':'Plundered already';
+    btns=btn('sg-raid','Raid',noRaid,true)+btn('sg-raid-auto','Raid (auto)',noRaid)+btn('sg-assault','Seize it',troopCount()<3?'Need 3 troops':'')+btn('sg-auto','Seize (auto)',troopCount()<3?'Need 3 troops':'');
   }else if(!s){
     body+='<p>Make camp outside the walls. Your band builds ladders in '+LADDER_DAYS+' days, a ram in '+RAM_DAYS+' and a trebuchet in '+SIEGE_ENGINE.days+' (one more every '+SIEGE_ENGINE.more+' days after, '+SIEGE_ENGINE.most+' at most). Its stores hold food for about '+foodDays(t)+' days; then the garrison starves. The '+f.n+' will send its lords to break the siege.</p>';
     btns=btn('sg-camp','Make siege camp',troopCount()<5?'Need 5 troops':'',true);
@@ -115,7 +119,7 @@ function siegeAct(a,arg){
     W.lords.forEach(l=>{if(!l.dead&&l.fac===t.owner&&l.state!=='siege')lordThink(l)});showSiege();return true}
   if(a==='sg-lift'){P.siege=null;log('You lift the siege of '+t.name+'.',undefined,'war');G.mode='world';hidePanel();return true}
   if((a==='sg-assault'||a==='sg-auto')&&(!walled(t)?troopCount()>=3:(mySiege(t)||{days:0}).days>=LADDER_DAYS)){startAssault(t,'siege',a==='sg-auto');return true}
-  if((a==='sg-raid'||a==='sg-raid-auto')&&!walled(t)&&troopCount()>=3){startAssault(t,'raid',a==='sg-raid-auto');return true}
+  if((a==='sg-raid'||a==='sg-raid-auto')&&!walled(t)&&troopCount()>=3&&plunderLeft(t)){startAssault(t,'raid',a==='sg-raid-auto');return true}
   return true;
 }
 // the day in camp: build, starve them out, and accept a surrender
@@ -127,7 +131,7 @@ function siegeDay(){
   if(s.days===RAM_DAYS)log('Your ram is built. The walls of '+t.name+' will not hold as well.','gold','war');
   {const E=SIEGE_ENGINE;if(E.on&&s.days>=E.days&&(s.days-E.days)%E.more===0&&(s.days-E.days)/E.more<E.most)log((s.days===E.days?'A trebuchet is built':'Another trebuchet is built')+' before '+t.name+'. Its stones will bring the walls down.','gold','war')}
   if(foodStock(t)<=0&&t.gar>1){t.gar--;worldEvent({text:'The garrison of '+t.name+' starves. '+t.gar+' defenders left.',involved:true,news:['starving',t,{town:t.name,fac:t.owner}]})}// (your siege: at once, and news for the rest: worldlog.js)
-  if(t.gar<=1&&!siegeDefenders(t).lords.length){log(t.name+' surrenders!','good','war');P.renown+=5;G.capture=t;t.gar=0}
+  if(t.gar<=1&&!siegeDefenders(t).lords.length){log(t.name+' surrenders!','good','war');if(plunderLeft(t))P.renown+=5;G.capture=t;t.gar=0}
 }
 // won the assault or raid (from concludeEncounter); returns a line for the victory panel
 function siegeWon(e){
@@ -162,11 +166,11 @@ function finishRaid(t,f){
 
 /* the fate of a captured holding */
 function showCapture(){
-  const t=G.capture;G.mode='capture';const f=FACS[t.owner],lead=P.fac||G.capWith,emp=lead&&FACS[lead],led=!P.fac&&!!G.capWith,loot=Math.round(t.T.sack*(1+G.day/50));
+  const t=G.capture;G.mode='capture';const f=FACS[t.owner],lead=P.fac||G.capWith,emp=lead&&FACS[lead],led=!P.fac&&!!G.capWith,loot=sackGold(t);
   const opt=(act,title,sub)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div><div class="acts"><button class="btn sm" type="button" data-act="'+act+'">Choose</button></div></div>';
   showPanel('<div class="top"><h2>'+t.name+' has fallen</h2><span class="muted">'+cap1(t.label)+(f?' of the '+f.n:' of the free folk')+'</span></div><p>Your soldiers hold the gates. The people of '+t.name+' wait to learn what you will do.</p>'+
     opt('cap-peace',emp?'Take it in peace for the '+emp.n:'Take it in peace and rule it','No looting. Other factions respect your restraint (+3 honor). '+(emp?(led?'The '+emp.n+', who led the siege, pays you and it becomes their fief.':'Your employer rewards you and it becomes their fief.'):'It becomes your fief: about '+taxOf(t)+' gold a day in taxes, but every faction hostile to you will want it.'))+
-    opt('cap-sack',emp?'Sack it, then hand it over':'Sack it, then rule it','About '+loot+' gold and goods. Reputation there −40 and −10 in nearby holdings, −6 honor with every faction. The town lies ruined for 20 days.')+
+    opt('cap-sack',emp?'Sack it, then hand it over':'Sack it, then rule it',(loot?'About '+loot+' gold and goods.':'It was plundered already: no gold, and what goods are left.')+' Reputation there −40 and −10 in nearby holdings, −6 honor with every faction. The town lies ruined for 20 days.')+
     opt('cap-leave','Sack it and leave','Take the loot and go. '+cap1(holderN(t))+(f?' keeps':' keep')+' a ruined, empty '+t.label+'.')+
     (emp?opt('cap-keep','Keep it for yourself',led?'The '+emp.n+' led the siege and will resent it: −15 honor with them.':'Break your contract with the '+emp.n+': −30 honor with them, and they turn hostile for 30 days.'):''));
 }
@@ -174,9 +178,9 @@ function captureAct(a){
   if(!a.startsWith('cap-'))return false;
   const t=G.capture;if(G.mode!=='capture'||!t)return true;
   const prev=t.owner,sack=a==='cap-sack'||a==='cap-leave',lines=[];
-  G.capture=null;P.siege=null;breach(t);P.renown+=t.T.renown;
+  const fresh=plunderLeft(t);G.capture=null;P.siege=null;breach(t);if(fresh)P.renown+=t.T.renown;
   if(prev&&prev!=='player'){Timed.of(P,'hostile').extend(prev,60);addHonor(prev,-15,true)}
-  if(sack){const loot=Math.round(t.T.sack*(1+G.day/50));P.gold+=loot;P.morale=clamp(P.morale+12,0,100);
+  if(sack){const loot=sackGold(t);P.gold+=loot;if(fresh)P.morale=clamp(P.morale+12,0,100);
     let got=sackStock(t,.5,.3,true);
     addRep(t.name,-40,true);TOWNS.forEach(o=>{if(o!==t&&Math.hypot(o.x-t.x,o.y-t.y)<WORLD_SCALE.law.siegeOutrage*TILE)addRep(o.name,-10,true)});FIDS.forEach(g=>addHonor(g,-6,true));
     Timed.of(t).set('sacked',20);const burnt=burnEstates(t,2);lines.push('You sack '+t.name+': '+loot+' gold and '+got+(burnt.length?'. Your soldiers burn its '+burnt.join(' and '):'')+'. Word spreads of what you did.');mood('ransom')}

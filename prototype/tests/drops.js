@@ -37,6 +37,9 @@ Kit.suite(({ok})=>{
    G.enc={kind:'monster',field:{gold:0,gear:0,mats:{[M.mat]:2},names:[]}};const a=has();t.monsterLoot({id:'wolf',lv:1},slain);ok(has()-a===1,'a wolf pack of three: the field gave two pelts, its end loot one more (3 in all)');G.enc=null}
   // ---- a group ranked up flashes in the report
   ok(/rank-flash/.test(t.rankUpHtml([{id:'x',type:'hum_foot',rank:2}])),'a group ranked up: its line flashes');
+  // ---- one who left the field alive, or has not come onto it, leaves nothing (a review of the rules, 2026-11-11: the routed burst as the slain)
+  {const {foes,d}=fight();t.leaveField(foes[0]);foes[1].hp=0;foes[1].waiting=true;d.step(.05);ok(!d.ground.length&&!d.orbs.length,'a foe gone from the field alive, and one not yet come onto it: nothing falls');
+   foes[2].hp=0;d.step(.05);ok(d.ground.length>0,'one who fell there: his coins and gear');t.B=null;G.mode='world';Kit.clear()}
   // ---- off: nothing falls
   {D.on=false;const {b,h,foes,d}=fight(),f=foes[0];f.hp=0;run(5);ok(!d.ground.length&&!d.orbs.length,'off (the tests\' harness): nothing falls');t.B=null;G.mode='world';Kit.clear()}
  }finally{D.on=keep.on;D.loot=keep.loot;D.coin.chance=keep.coin;D.gear=keep.gear}

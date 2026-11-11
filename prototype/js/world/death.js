@@ -201,7 +201,7 @@ class Remains extends WorldObject{
     if(a==='death-take'){const got=r.take();if(got)log('From the '+(r.grave?r.kind:'remains')+' of '+r.who+': '+got+'.','gold');if(r.grave)return r.meet()}
     hidePanel();toWorld()}
   // (taken by you: the gold, and what fits in your bag; the rest left)
-  take(){const g=this.gold;P.gold+=g;this.gold=0;let n=0;this.items=this.items.filter(([k,id,c])=>{const put=invAdd(k,id,c);n+=put;return put<c});
+  take(){const g=this.gold;P.gold+=g;this.gold=0;let n=0;this.items=this.items.filter(it=>{const put=invAdd(it[0],it[1],it[2]);n+=put;it[2]-=put;return it[2]>0});
     return [g&&g+' gold',n&&n+' piece'+(n>1?'s':'')].filter(Boolean).join(' and ')}
   draw(ents,cam,V){if(!this.inView(V))return;const r=this;
     ents.push({y:r.y,f:()=>{const x=Math.round(r.x-cam.x),y=Math.round(r.y-cam.y),C=DEATH.remains.col;
