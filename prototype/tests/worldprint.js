@@ -725,7 +725,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  Faces.start), as a fresh page made them; they were made before the game's number was drawn, from the last game's, so a second
 //  begin's faces were not a fresh page's (worldsave). B2 is that second begin: its faces' seed in the save. W1-W8 hold. Proof:
 //  Rng.seedOf back in Faces.start gives B2 as before. Was B2 93e3e0b7)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'8d7629ca',W7:'900f09fc',W8:'850e9451',B2:'4df790ec'};
+// (W6 again 2026-11-11, on purpose: the approved campaign HUD places its desktop minimap inside the bottom console
+//  instead of the top-right corner. worldMiniRect shares the DOM slot with drawing and hit testing; campaignhud checks
+//  that alignment. W1-W5, W7-W8, B2 and all generator sums hold. Was W6 8d7629ca.)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'92f27da3',W7:'900f09fc',W8:'850e9451',B2:'4df790ec'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

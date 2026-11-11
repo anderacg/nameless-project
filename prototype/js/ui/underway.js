@@ -24,6 +24,7 @@ const UW_FRAME=2,UW_MIN=168;
 // (no narrower than UW_MIN, nor wider than 40% of a narrow screen: a phone held upright; the minimap as wide, render.js worldMiniRect)
 const uwMin=()=>Math.min(UW_MIN,Math.floor(innerWidth*.4));
 function uwPlace(el,host){if(!WM)return;const r=worldMiniRect(),c=cv.getBoundingClientRect(),h=host.getBoundingClientRect(),k=c.width/VW,f=UW_FRAME;
+  if(window.campaignHud?.desktop){el.style.top='auto';el.style.bottom='calc(var(--campaign-console) + 20px)';el.style.right='var(--e-r)';el.style.width='260px';return}el.style.bottom='';
   el.style.top=Math.round(c.top-h.top+(r.y+r.h+f)*k+4)+'px';el.style.right=Math.max(safeInsets().r+4,Math.round(h.right-c.left-(r.x+r.w+f)*k))+'px';
   el.style.width=Math.max(uwMin(),Math.round((r.w+2*f)*k))+'px'}
 // each HUD tick (render.js updateHUD): drawn afresh only when what it shows has changed
