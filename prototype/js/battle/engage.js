@@ -262,7 +262,7 @@ const gearTop=()=>Math.min(MATERIALS.length-1,1+Math.floor(G.day/20));
 const clearPlace=(o,days)=>{o.cleared=true;o.back=G.day+days;pacify(o.x,o.y)};
 const ON_WIN={
   party:{drop:()=>Math.random()<.3?randomGear(0,gearTop()):null,won:e=>{worldEmit('band:beaten',{band:e.ref});bandits=bandits.filter(x=>x!==e.ref);return ''}},
-  camp:{big:true,fame:10,drop:()=>Math.random()<.8?randomGear(0,gearTop()):null,won:(e,slain,res)=>{worldEmit('site:cleared',{site:e.ref});(e.ref.bands||[]).forEach(b=>{worldEmit('band:beaten',{band:b});chiefEscapes(b.ld)});e.ref.bands=[];clearPlace(e.ref,e.ref.T?.respawn||10);return e.ref.plunder(res)}},
+  camp:{big:true,fame:10,drop:()=>Math.random()<.8?randomGear(0,gearTop()):null,won:(e,slain,res)=>{worldEmit('site:cleared',{site:e.ref});(e.ref.bands||[]).forEach(b=>{worldEmit('band:beaten',{band:b});chiefEscapes(b.ld)});e.ref.bands=[];clearPlace(e.ref,e.ref.T?.respawn||10);return e.ref.plunder(res)},lost:e=>e.ref.worn&&e.ref.worn(e)},
   monster:{won:(e,slain,res)=>{const m=e.ref;worldEmit('monster:slain',{monster:m});W.monsters=W.monsters.filter(x=>x!==m);gainXp(monsterXp(m,slain),'monster');return monsterLoot(m,slain)+(MONSTERS[m.id].mythic?mythicSlain(m,res):'')}},
   standard:{fame:4,won:e=>e.ref.beaten(),lost:(e,slain)=>e.ref.held(slain)},
   cave:{won:(e,slain)=>{worldEmit('site:cleared',{site:e.ref});gainXp(monsterXp(e.ref,slain),'monster');return monsterLoot(e.ref,slain)+e.ref.lairWon()},lost:e=>e.ref.lairLost(e)},

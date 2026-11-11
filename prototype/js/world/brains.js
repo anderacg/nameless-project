@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- brains: how each kind of party behaves on the map. Every moment each party's brain takes the same steps: its
-   cool-down runs, it sizes you up (how far, whether it can see you: hidden in woods or hills you are harder to see, inside a
+   cool-down runs, it sizes you up (how far, whether it can see you: hidden in woods you are harder to see (map.js hiddenAt: forest only; on hills one sees further), inside a
    holding not at all), then it does what its kind does: hunt you, keep clear of you, or go about its business. One class per
    kind; the party's own data stays on the party. think(o, d) returns true when it opened an encounter (the world stops there).
    updateParties(d) runs them all, kind by kind, each party by its tier (parties.js lodEach; a far one would take its brain's
@@ -205,7 +205,7 @@ class CaravanBrain extends Brain{
     else if(scared){const ox=c.x;Router.flee(c,{x:c.x+v.dx,y:c.y+v.dy},moveStep(CARAVAN_SPD*.9,d));this.face(c,ox)}
     else{const ox=c.x,oy=c.y;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*armyGround(c,caravanGround)*(this.behind(c,gate,gd)?CARAVAN_GAP.slow:1),d));c.dir=c.x>=ox?1:-1;
       const m=Math.hypot(c.x-ox,c.y-oy);if(m>0)CARAVAN_HEAD.set(c,[(c.x-ox)/m,(c.y-oy)/m])}
-    if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.arrive(to))c.gone=true;return false}
+    if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(SIEGE_SHUT.on&&!c.mine&&besieged(to)){const alt=Spatial.nearest(TOWNS.filter(t=>t!==to&&!t.gone&&t.owner===c.fac&&!besieged(t)),c.x,c.y);if(alt){c.to=alt.name;return false}}if(c.arrive(to))c.gone=true;return false}// (a besieged gate barred to it: on to another of its realm)
     // preyed on: bandits close by, or a lord at war with its owner; the guards fight it out (fights.js)
     const b=bandits.find(o=>Math.hypot(o.x-c.x,o.y-c.y)<12&&!o.cvT);
     const l=!b&&W.lords.find(o=>!o.dead&&!o.inside&&o.state!=='siege'&&(c.mine?hostileTo(o.fac):atWar(o.fac,c.fac))&&Math.hypot(o.x-c.x,o.y-c.y)<14);

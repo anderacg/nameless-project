@@ -26,7 +26,7 @@ class Party extends WorldObject{
   changed(){LISTS.delete(this)}
   // on the map (to be drawn and clicked): not beaten, not inside a holding
   onMap(){return !this.dead&&!this.inside}
-  // in sight (fog): within your sight, or nearer when it is in woods or hills
+  // in sight (fog): within your sight, or nearer when it is in woods (map.js hiddenAt)
   inView(V){return this.onMap()&&spotted(this,V)}
   // a click: on its ring; marched man by man, on any of its men or inside its outline (world.js pickAt army, march.js MarchArmy
   // hit), else on its leader's figure (a lord's whole horse: render.js partyFig, opaqueBox); and on its banner

@@ -9,7 +9,7 @@
    only: saves keep plain data, made one of its kind again on loading or when the map next asks (asClass; world.js
    asWorldObject, worldObjects). The parties and caravans (here), holdings (holding.js) and estates (estates.js), sites, beasts (monsters.js),
    herds (critters.js), refugees, workers (folk.js) and ships are world objects. ---------- */
-// (in sight: within your sight (any of your men's: fog.js Sight), or nearer one of them where it hides in woods or hills; an army
+// (in sight: within your sight (any of your men's: fog.js Sight), or nearer one of them where it hides in woods (map.js hiddenAt); an army
 // marched man by man (march.js marchMen), while any of its men is, each by his own ground (the owner, 2026-11-01: "a huge army
 // roaming around but suddenly disappear even with in just few feet away. and even weird when in the forest"): its middle first,
 // then, its men's reach touching your sight (MarchArmy.spread), man by man. SIGHT_EYES.armies off: by its middle alone, as before)

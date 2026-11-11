@@ -730,7 +730,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  pixels at one size whatever the zoom, its cloth ribbon and plank gone (gfx/structures.js drawPlaques, drawPlaquePlate), on the
 //  holding in the view. Proof: 3bafce3, the bar as it was, gives 8d7629ca; with DISCOVER.r back at 6 (lowered to 4 in the same batch)
 //  W6 is d9d0c82c still, so the distance moves nothing. Was 8d7629ca)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'d9d0c82c',W7:'900f09fc',W8:'850e9451',B2:'4df790ec'};
+// (W7 re-recorded 2026-11-11, on purpose: a besieged holding works a quarter of its land and estates, and its gate is barred to
+//  caravans (world/economy.js SIEGE_SHUT; a review of the rules: "then the garrison starves" never came, its farms fed it): a siege laid
+//  in the three days moves the save. Was 900f09fc; checked: with SIEGE_SHUT.on false it is 900f09fc again, and W1-W6, W8 and B2 hold either way)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'d9d0c82c',W7:'8804095d',W8:'850e9451',B2:'4df790ec'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

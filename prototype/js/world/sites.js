@@ -128,6 +128,10 @@ class Site extends WorldObject{
   // its beasts beaten (engage.js ON_WIN.cave): its chest, and it lies empty; withdrawn from or beaten by them: nothing kept
   lairWon(){const x=siteChest(this);clearPlace(this,this.T.respawn);return x}
   lairLost(e){}
+  // (a camp or a hideout you withdrew from or lost to: its fighters left (not its chieftain), for CAMP_WORN.days, as each attack takes
+  // them (keep): it was at full strength again at once, and a free withdrawal could be had again and again)
+  worn(e){if(!CAMP_WORN.on||!e||!e.list)return;const n=e.list.filter(k=>k!=='chief').length;this.wear={n:Math.max(1,n),until:G.day+CAMP_WORN.days}}
+  keep(list){const w=this.wear;if(!w||!list)return list;if(G.day>=w.until){this.wear=null;return list}const ch=list.filter(k=>k==='chief'),rest=list.filter(k=>k!=='chief');return rest.slice(0,w.n).concat(ch)}
   // on the map: its banner's colour, a banner of its own (travellers), clicked where (its yard under it: structures.js siteSprite gr)
   // (its flag on the map (structures.js flagSprite): an outlaw's black rag, its skull)
   flag(){return{k:'rag',col:'#2a1e14',dev:'skull'}}
@@ -463,6 +467,7 @@ function wildGround(tx,ty){const H=HIDEOUT_PLACE,c=climate[ty*MW+tx];let n=0,r=0
    of another piece of gear past a camp's (4 in 5; the den's 1.5 x: 1.2 a fight) */
 // (a bandit lair: the share of hideouts that are (salt: its hash's), the hills or peaks within r tiles of it that make its mouth a cave; its type's words)
 const HIDEOUT_LAIR={share:.45,salt:7171,r:3,hills:4,names:{bandits:'Bandit lair',raiders:'Raider tunnels',bog:'Bog raider warren'},T:{n:'Bandit lair',ico:'cave',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, dug in underground, their plunder deep in its tunnels.'}};
+const CAMP_WORN={on:true,days:7};// (a camp's losses kept after you withdrew: Lair worn, keep)
 const HIDEOUT_BAND={den:{size0:8,foes:[7,9],chief:[2,5],gold:1.5,gear:.4},ruin:{size0:6,foes:[5,7],chief:[1,3],gold:1,gear:0}};
 class Hideout extends Lair{
   static ground(tx,ty){return wildLand().at[ty*MW+tx]===1}
@@ -489,7 +494,7 @@ class Hideout extends Lair{
   foes(){return makeEnemies(this.garrison(),true,this.band)}
   garrison(){return rint(...this.tune.foes)+Math.floor(G.day/15)}
   // (inside: who goes in with you, battle/interior.js; none chosen, the best of your band)
-  attack(own,inside){const I={inside:inside||Interior.pick()};startEncounter(own?{kind:'camp',ref:this,n:own.length-1,list:own,band:this.band,...I}:{kind:'camp',ref:this,n:this.garrison(),band:this.band,...I})}
+  attack(own,inside){const I={inside:inside||Interior.pick()},L=this.keep(own||this.foes());startEncounter({kind:'camp',ref:this,n:L.length-1,list:L,band:this.band,...I})}
   // (its plunder: the gold x tune's, and maybe another piece of gear)
   plunder(res){const T=this.tune;res.gold=Math.round(res.gold*T.gold);if(!T.gear||Math.random()>=T.gear)return '';const id=randomGear(0,gearTop());
     return invAdd('gear',id,1)?' Among their plunder: a <span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEMS[id].n+'</span>.':' '+BAG_FULL+'. You leave a '+ITEMS[id].n+' behind.'}
@@ -506,7 +511,7 @@ class BanditCamp extends Lair{
   get size0(){return 8}
   // its own raiders and chieftain, as campFight makes them (the bands sheltering join at the fight: world.js campFight)
   foes(){return makeEnemies(rint(7,9)+Math.floor(G.day/15),true)}
-  attack(own){campFight(this,own)}
+  attack(own){campFight(this,this.keep(own||this.foes()))}
   pickable(){return this.known()&&!this.cleared}
   tip(){return '<b>Bandit camp</b>'+(this.cleared?'':chiefTip(this))+'<small>'+(this.cleared?'Cleared':'Its bands shelter here by night')+'</small>'+(this.cleared?'':'<span class="act">Click: ride up to it</span>')}
 }
@@ -599,7 +604,7 @@ class GoblinCamp extends Hideout{
     n=camp(unusedName(free.length?free:GOBLINS.names,[]));this.name=this.tunnel?n.replace(/ Camp$/,' Warren'):n;this.ld=newChief('goblins',this.newLv(),sites)}
   shelters(b){return b.camp===this.i}
   // (stormed: its own, as scouted or rolled now, and its warbands sheltering in it tonight, as a bandit camp's: world.js campFight)
-  attack(own,inside){startEncounter({kind:'camp',ref:this,list:(own||this.foes()).concat(this.sheltering()),band:this.band,inside:inside||Interior.pick()})}
+  attack(own,inside){startEncounter({kind:'camp',ref:this,list:this.keep(own||this.foes()).concat(this.sheltering()),band:this.band,inside:inside||Interior.pick()})}
   flag(){return{k:'rag',col:GOBLINS.col,dev:'skull'}}
   // (a hideout's plunder, and their pile of stolen goods: one of GOBLINS.loot)
   plunder(res){const L=GOBLINS.loot,g=L.goods[rint(0,L.goods.length-1)],n=invAdd('good',g,rint(L.n[0],L.n[1]));

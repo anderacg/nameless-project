@@ -81,7 +81,8 @@ class Economy{
   // what its estates make (each estate's own work: estates.js Estate produce), and what its land yields (ly: landYield's)
   produce(ly){
     const t=this.t,st=t.stock,ws=this.workerScale(),clim=climAt(t.x,t.y),out={};
-    const add=(g,n)=>{if(n<=0)return;const v=n+(Math.random()<n%1?1:0);st[g]=(st[g]||0)+Math.floor(v);out[g]=(out[g]||0)+Math.floor(v)};
+    const sh=SIEGE_SHUT.on&&t.besieged()?SIEGE_SHUT.work:1;// (besieged: its people shut in, its fields and estates outside the walls not worked)
+    const add=(g,n)=>{n*=sh;if(n<=0)return;const v=n+(Math.random()<n%1?1:0);st[g]=(st[g]||0)+Math.floor(v);out[g]=(out[g]||0)+Math.floor(v)};
     for(const k in MAKE)t.estate(k).produce(ws,clim,add);
     if(ly){add('grain',ly.grain*FARM_CLIM[clim]);add('timber',ly.timber);add('stone',ly.stone)}
     return out}
@@ -230,6 +231,9 @@ const TRADE_TERMS={stand:.06,lo:-50,hi:100,haggle:.05,annoy:.03,min:60,xp:6};
    market's). own: the market of a fief of yours buys no goods of you (what you took free at the steward's was sold to it,
    and was in its stock again) */
 const TRADE_FAIR={on:true,own:true};
+// (a besieged holding: work, the share of its yield it still makes; caravans turned away from its gate, world/brains.js. Its stores, as
+// the siege's page says, then run down and its garrison starves)
+const SIEGE_SHUT={on:true,work:.25};
 // (a thing's price with your standing in the holding you are in, its merchants' (G.town): × this, buying or selling; out of a
 // holding, ×1. Your standing only: a haggle is the market's goods')
 const itemTerms=buying=>{const t=G.town&&G.town.ref;if(!t||!t.T)return 1;const m=tradeTerms(t);return buying?1-m.stand:1+m.stand};

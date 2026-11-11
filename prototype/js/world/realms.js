@@ -47,7 +47,7 @@ class Realm{
       if(C.relWith(a).s==='ally'&&C.relWith(b).s==='peace')C.setRel(b,'war',1);
       if(C.relWith(b).s==='ally'&&C.relWith(a).s==='peace')C.setRel(a,'war',1);
     });
-    if(prev==='war'&&s!=='war')Prisons.peace(a,b);// (peace frees their prisoners: world/prisons.js)
+    if(prev==='war'&&s!=='war'){Prisons.peace(a,b);truceFights(a,b)}// (peace frees their prisoners: world/prisons.js)
     W.lords.forEach(l=>{if(!l.dead&&(l.fac===a||l.fac===b)&&l.state!=='siege')lordThink(l)});
   }
   // one day between it and realm g (after it in FIDS): a peace of six days or more may break into war; a war of eight days or

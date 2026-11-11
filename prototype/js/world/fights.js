@@ -67,6 +67,10 @@ function routParty(o,winners){
 }
 // a party that came through: free to go on its way
 // (a lord who rode out to defend his land goes back to what he was doing: defence.js)
+// (a truce between realms a and b: their fights with each other on the map end, both sides let go (a lord was routed, even slain,
+// by a realm at peace with his))
+function truceFights(a,b){for(const f of [...W.fights]){if(f.multi)continue;const F=s=>sideParties(f,s).map(o=>o.fac),A=F(0),B2=F(1),is=(L,x)=>L.length&&L.every(y=>y===x);
+  if(is(A,a)&&is(B2,b)||is(A,b)&&is(B2,a)){for(const s of [0,1])sideParties(f,s).forEach(freeParty);W.fights=W.fights.filter(x=>x!==f)}}}
 function freeParty(o){o.fight=null;o.cool=3;const k=o.mapKind;if(k==='band'){o.n=o.size;o.pw=0}if(k==='caravan'&&!o.guards)o.guards=1;if(k==='lord'){if(o.defend)lordDefended(o);else if(o.state!=='siege')lordThink(o)}}
 function endFight(f,win){
   const W0=sideParties(f,win),L=sideParties(f,1-win),lw=W0.filter(o=>o.mapKind==='lord'),ll=L.filter(o=>o.mapKind==='lord');
