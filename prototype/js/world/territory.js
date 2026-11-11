@@ -69,7 +69,12 @@ function landEdges(b){
 // world's reckoning while it is made waits on))
 const landOwn=new Map(),landOwnId=o=>{if(!o)return 0;let v=landOwn.get(o);if(v==null)landOwn.set(o,v=landOwn.size+1);return v};
 function landSigOf(){let h=TOWNS.length|0;for(const t of TOWNS){h=Math.imul(h^landOwnId(t.owner),0x9e3779b1)^landLim(t);h=Math.imul(h,0x85ebca6b)^(t.tx<<12|t.ty)}return h>>>0}
+// (held: looked at already for a pass that asks it of many and changes none of it (landHeldFor); a holding added or lost meanwhile
+// unsets its sig (onHolding below), and is seen at once all the same)
+let landHeld=false;
+function landHeldFor(f){if(!WORLD_FAST.land||landHeld)return f();landFresh();landHeld=true;try{return f()}finally{landHeld=false}}
 function landFresh(){
+  if(landHeld&&landSig)return;
   const s=landSigOf(),k=typeof Standards!=='undefined'?Standards.landKey():0;if(s===landSig&&k===landKey&&landWas)return;
   const now=TOWNS.map(t=>({own:t.owner,lim:landLim(t),at:t.ty*MW+t.tx}));landVer++;
   // (a world put back as it first stood: its land as kept, reckoned afresh at the next change)

@@ -160,7 +160,10 @@ const Standards={
     if(i>=0)out.push({s,i,lim:R[Math.max(1,s.lv-(s.broken?1:0))]})}return out},
   // (what the claims hang on besides the holdings' own (their owners, territory.js landFresh): each one's holder and level)
   // (a number, territory.js landOwnId: 0 for none (not live, or none placed: as the unset key, territory.js), else never 0)
-  landKey(){if(!this.live)return 0;let h=1,n=0;for(const s of W.sites||[])if(s.type==='standard'){n++;h=Math.imul(h^landOwnId(s.owner)*8^s.lv*2^(s.broken?1:0)^(s.choose?64:0),0x9e3779b1)+s.i|0}return n?h>>>0||1:0},
+  // (the outposts among the sites, in the sites' order, listed once a list of sites (another list, or one longer or shorter, lists
+  // them again): a site is never made an outpost nor an outpost another kind where it stands. WORLD_FAST.land off: every site looked at)
+  posts(){const L=W.sites||[];if(!WORLD_FAST.land)return L;const C=this.postList||(this.postList={of:null,n:-1,s:[]});if(C.of!==L||C.n!==L.length){C.of=L;C.n=L.length;C.s=L.filter(s=>s.type==='standard')}return C.s},
+  landKey(){if(!this.live)return 0;let h=1,n=0;for(const s of this.posts())if(s.type==='standard'){n++;h=Math.imul(h^landOwnId(s.owner)*8^s.lv*2^(s.broken?1:0)^(s.choose?64:0),0x9e3779b1)+s.i|0}return n?h>>>0||1:0},
   of(i){return this.all().find(s=>s.i===i)||null},
   // (their tiles kept free of every holding's building: lots.js occReserve, lotFits)
   reserve(){this.live=true;if(typeof OCC==='undefined'||!OCC)return;for(const s of this.all())for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},// (-3: a standard's, no lot's: Standards.stand looks past them)

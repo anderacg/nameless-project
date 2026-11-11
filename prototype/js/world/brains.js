@@ -90,14 +90,36 @@ class BandBrain extends Brain{
   // the fight when it is upon it (CaravanBrain: its guards against it), data/outlaws.js BAND_HUNT)
   // (goblins against every other band: the nearest rival in sight it thinks it can take, ridden down (true); one within X.meet of it,
   // fought there and then, whichever is the stronger)
-  feud(b,sp){const X=BAND_FEUD;if(!X.on||b.cool>0||b.cvT)return false;const gob=b.kind==='goblins',mine=b.power()*(b.nerve||1)*X.dare;let r=null,bd=X.see;
-    for(const o of bandits){if(o===b||o.gone||inFight(o)||(o.kind==='goblins')===gob)continue;const dd=Math.hypot(o.x-b.x,o.y-b.y);if(dd<bd&&(dd<X.meet||o.power()<=mine)){bd=dd;r=o}}
-    if(!r)return false;if(bd<X.meet){startFight([b],[r]);return true}
+  feud(b,sp){const X=BAND_FEUD;if(!X.on||b.cool>0||b.cvT)return false;const f=this.rival(b);if(!f)return false;const r=f.r,bd=f.bd;
+    if(bd<X.meet){startFight([b],[r]);return true}
     b.idle=false;const x0=b.x,y0=b.y;if(!Router.travel(b,{x:r.x,y:r.y},sp)||b.x===x0&&b.y===y0)walk(b,r.x-b.x,r.y-b.y,Math.min(bd,sp));return true}
+  // (the rival it rides at, {r, bd: how far}: the nearest of the other kind in sight it thinks it can take, or one right on it; null: none)
+  rival(b){const X=BAND_FEUD,gob=b.kind==='goblins',mine=b.power()*(b.nerve||1)*X.dare;let r=null,bd=X.see;
+    for(const o of this.near(b)){if(o===b||o.gone||inFight(o)||(o.kind==='goblins')===gob)continue;const dd=Math.hypot(o.x-b.x,o.y-b.y);if(dd<bd&&(dd<X.meet||o.power()<=mine)){bd=dd;r=o}}
+    return r?{r,bd}:null}
+  /* (the bands a feud's look goes through: every band (WORLD_FAST.feud off, as before), else those filed in the cells within
+     BAND_FEUD.see of b, in the bands' own order: none further off can be picked, so the pick is the old one. The cells (cs px a
+     side) are filed once a pass over the bands (updateBands counts them; again when the bands' list is another, or longer or
+     shorter), and each band filed again after its own moment (moved): only the band whose moment it is moves. The old look went
+     through every band and so cleared each one's stale mark of a fight that is gone (fights.js inFight): done here for them all as
+     the cells are filed and whenever a fight has gone) */
+  near(b){if(!WORLD_FAST.feud)return bandits;const C=BandBrain.cells,S=BAND_FEUD.see,cs=C.cs;
+    if(C.of!==bandits||C.n!==bandits.length||C.pass!==BandBrain.pass){C.of=bandits;C.n=bandits.length;C.pass=BandBrain.pass;C.by.clear();C.at.clear();C.ix.clear();C.fights=-1;
+      bandits.forEach((o,i)=>{const k=BandBrain.cell(o);C.ix.set(o,i);C.at.set(o,k);const L=C.by.get(k);if(L)L.push(o);else C.by.set(k,[o])})}
+    if(C.fights!==W.fights.length){C.fights=W.fights.length;for(const o of bandits)if(o.fight&&!o.gone)inFight(o)}
+    const x0=Math.floor((b.x-S)/cs),x1=Math.floor((b.x+S)/cs),y0=Math.floor((b.y-S)/cs),y1=Math.floor((b.y+S)/cs),out=C.out;out.length=0;
+    for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){const L=C.by.get(cx+cy*8192);if(L)for(const o of L)out.push(o)}
+    if(out.length>1)out.sort((p,q)=>C.ix.get(p)-C.ix.get(q));return out}
+  // (a band's moment over: filed where it stands now, if it left its cell)
+  moved(o){const C=BandBrain.cells;if(C.of!==bandits||C.pass!==BandBrain.pass)return;const k0=C.at.get(o);if(k0===undefined)return;const k=BandBrain.cell(o);if(k===k0)return;
+    const L=C.by.get(k0),i=L.indexOf(o);L[i]=L[L.length-1];L.pop();C.at.set(o,k);const N=C.by.get(k);if(N)N.push(o);else C.by.set(k,[o])}
   hunt(b,sp){const X=BAND_HUNT;if(!X.on||b.cool>0||b.cvT)return false;const mine=b.power()*(b.nerve||1)*X.dare;let c=null,bd=X.see;
     for(const o of W.caravans){if(o.gone||o.idle||inFight(o))continue;const dd=Math.hypot(o.x-b.x,o.y-b.y);if(dd<bd&&o.power()<=mine){bd=dd;c=o}}
     if(!c)return false;b.idle=false;const s=sp*X.pace,x0=b.x,y0=b.y;if(!Router.travel(b,{x:c.x,y:c.y},s)||b.x===x0&&b.y===y0)walk(b,c.x-b.x,c.y-b.y,Math.min(bd,s));return true}
 }
+// (the feuds' cells: near; the passes over the bands counted)
+BandBrain.pass=0;BandBrain.cells={cs:128,of:null,n:-1,pass:-1,fights:-1,by:new Map(),at:new Map(),ix:new Map(),out:[]};
+BandBrain.cell=o=>Math.floor(o.x/128)+Math.floor(o.y/128)*8192;
 // (a band that fought in your battle, against you or beside you, knows where your army stands: the weaker leaves the field
 // remembering every group of it (TravelAwareness), afraid of it as if it had just seen it; battle/sides.js puts it back on the map.
 // Its power weighed without caching it (pw), so the battle's outcome stays as it was)
@@ -197,7 +219,8 @@ const BRAINS={lord:new LordBrain(),band:new BandBrain(),cparty:new CompanionBrai
 /* each kind's moment, and then what the kind does together */
 function updateBands(d){
   // bands shelter in a camp at night (its site's bands, sites.js) and ride out at dawn
-  const night=Clock.isNight;if(!night)nightCamps().forEach(campEmpty);const met=lodEach(bandits,BRAINS.band,d,night);
+  const night=Clock.isNight;if(!night)nightCamps().forEach(campEmpty);// (each band in turn by its tier, as lodEach has them, and filed again where its moment left it: BandBrain moved)
+  BandBrain.pass++;let met=false,k=0;const by=BRAINS.band;for(const o of bandits){const m=lodThink(by,o,k++,d,night);by.moved(o);if(m){met=true;break}}
   if(bandits.some(b=>b.gone))bandits=bandits.filter(b=>!b.gone);return met;
 }
 function updateLords(d){

@@ -120,7 +120,8 @@ const beastMeets=m=>m.cool<=0&&fightsOnMap(m)&&(BAND_GRID&&lodIn(BAND_GRID.box,m
 function beastRouted(m){m.fight=null;asMonster(m).removeAny(Math.ceil(m.n*DEFEND.rout));m.pw=0;const near=Math.hypot(m.x-P.x,m.y-P.y)<vis()*1.5,nm=MONSTERS[m.id].n.toLowerCase(),many=/s$/.test(nm);
   if(m.n<=0){W.monsters=W.monsters.filter(x=>x!==m);if(near)log('The '+nm+(many?' are':' is')+' slain near '+Spatial.nearestHolding(m.x,m.y).name+'.');return}
   m.cool=6;m.a=Math.atan2(m.hy-m.y,m.hx-m.x);m.t=3;if(near)log('The '+nm+(many?' break off and slink':' breaks off and slinks')+' away.')}
-function updateMonsters(d){BAND_GRID=beastPreyGrid();try{return lodEach(W.monsters,BEAST_MIND,d,hiddenAt(P.x,P.y)?.55:1)}finally{BAND_GRID=null}}
+// (each beast asks whose land it stands on, before and after its step, and none of them changes it: looked at once, territory.js landHeldFor)
+function updateMonsters(d){BAND_GRID=beastPreyGrid();try{return landHeldFor(()=>lodEach(W.monsters,BEAST_MIND,d,hiddenAt(P.x,P.y)?.55:1))}finally{BAND_GRID=null}}
 function startMonster(m){startEncounter({kind:'monster',ref:m,lv:m.lv,list:monsterTroops(m)})}
 // roll trophies and gear for a won monster fight, into the bag (the victory panel lists them with the rest of the spoils)
 function monsterLoot(m,slain){
