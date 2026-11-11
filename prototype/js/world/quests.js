@@ -196,7 +196,13 @@ class JobQuest extends Quest{
       this.fac=t.owner;
       log(this.home+' has changed hands; the '+(FACS[t.owner]?FACS[t.owner].n:'new lords')+' will honour '+this.title+'.','gold','story',this.journalKey);
     }
-    if(!this.done&&this.gone())this.close();
+    if(this.done?this.lost():this.gone())this.close();
+  }
+  // (done, and never to be reported: its giver's realm fallen, its holding no more. One hostile for a time is waited out)
+  lost(){
+    if(this.lord)return !!W.dead[this.fac];
+    const h=townBy(this.home);
+    return !h||!!h.gone;
   }
   // (over: its giver's realm fallen, or turned on you; its holding gone, or held by a realm hostile to you: you could never report
   // there)
@@ -1184,7 +1190,8 @@ class HoldQuest extends JobQuest{
   // (its wave on the map, marching on it: world/brains.js BandBrain, holdWaveStep)
   out(){return bandits.find(o=>o.wave&&o.wave.q===this.id&&!o.gone)||null}
   // (a wave: his foe's men under its nearest holding's banner, setting out from its way OUTPOST_JOB.hold.from tiles off, on land)
-  attack(s){const H=OUTPOST_JOB.hold,h=Spatial.nearest(fiefsOf(this.foeF),s.x,s.y);if(!h)return;const a=Math.atan2(h.y-s.y,h.x-s.x);let x=s.x,y=s.y;
+  // (his foe with no holding left to send men from: no wave, and relief still comes; it waited for a wave for ever)
+  attack(s){const H=OUTPOST_JOB.hold,h=Spatial.nearest(fiefsOf(this.foeF),s.x,s.y);if(!h){this.wave++;return}const a=Math.atan2(h.y-s.y,h.x-s.x);let x=s.x,y=s.y;
     for(let r=H.from;r>=H.near+1;r--){const qx=s.x+Math.cos(a)*r*TILE,qy=s.y+Math.sin(a)*r*TILE;if(passable(terrAt(qx,qy))){x=qx;y=qy;break}}
     const n=H.n[this.wave]+Math.floor(G.day/10);bandits.push(asParty({x,y,n,town:h.name,fac:this.foeF,troops:armyOf(this.foeF,n),t:0,a:0,idle:false,cool:0,wave:{q:this.id,site:s.i,i:this.wave}}));
     log('Men of the '+FACS[this.foeF].n+' march on the '+s.name+' from the '+compass(h.x-s.x,h.y-s.y)+'!','bad')}
@@ -1424,7 +1431,7 @@ function questAct(a,arg,t){
   else if(a==='q-turnin'&&t){const q=questBy(+arg);if(q&&canReportAt(q,t)){if(q.done&&!Quest.as(q).handsOver)payQuest(q,t.name);else turnIn(q,t)}}
   // (only a job may be given up: never a main or side quest, nor a story's stage)
   else if(a==='q-abandon'){const q=questBy(+arg);if(q&&Quest.as(q).abandonable)Quest.as(q).abandon()}
-  else if(a==='q-lord'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref;if(G.lordJob&&Quest.as(G.lordJob).state==='available'&&acceptQuest(G.lordJob)){G.lordJob=null;l.asked=G.day}lordMeet(l);return true}
+  else if(a==='q-lord'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref;if(G.lordJob&&Quest.as(G.lordJob).state==='available'){if(acceptQuest(G.lordJob))l.asked=G.day;else Quest.as(G.lordJob).needless();G.lordJob=null}lordMeet(l);return true}// (taken, or its need passed: another next time)
   else if(a==='q-lord-report'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref,t=lordPayAt(l);P.quests.filter(q=>q.lord&&q.giver===l.name&&q.done).forEach(q=>payQuest(q,t&&t.name));lordMeet(l);return true}
   return 'refresh';
 }

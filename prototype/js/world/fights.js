@@ -39,7 +39,7 @@ function startFight(A,B){
 }
 function joinFight(f,o,s){if(s<0||o.fight||fightParties(f).length>=BATTLE_JOIN.armies||fightParties(f).reduce((n,p)=>n+p.fighters,0)+o.fighters>BATTLE_JOIN.fighters)return false;if(s>=2&&!f.multi){f.multi=true;f.wars=[];for(const a of sideParties(f,0))for(const b of sideParties(f,1))f.wars.push([uidOf(a),uidOf(b)])}if(!f.sides[s])f.sides[s]=[];f.sides[s].push(uidOf(o));o.fight=f.id;const k=o.troops.length;f.n0=(f.n0||0)+k;f.dur+=FIGHT.per*k;if(!f.multi)fightPlace(f);return true}
 // the two lines face each other across the fight
-function fightPlace(f){for(const s of [0,1])sideParties(f,s).forEach((o,i)=>{const x=f.x+(s?14:-14)+(s?1:-1)*(i>>1)*10,y=f.y+(i%2?8:-4)+(i>>1)*3,army=MARCH_ARMIES.get(o);if(army)army.relocate(x,y);else{o.x=x;o.y=y}o.dir=s?-1:1})}
+function fightPlace(f){for(const s of [0,1])sideParties(f,s).forEach((o,i)=>{const x=f.x+(s?14:-14)+(s?1:-1)*(i>>1)*10,y=f.y+(i%2?8:-4)+(i>>1)*3,army=MARCH_ARMIES.get(o),p={x,y};unstick(p);if(army)army.relocate(p.x,p.y);else{o.x=p.x;o.y=p.y}o.dir=s?-1:1})}// (unstick: the nearest ground one may stand on, map.js: a fight on a bridge set its lines in the river, for good)
 // whose side a party would take: its realm's and allies', against its enemies; bands stick together; lawful men fight bands
 function sideFor(f,o){
   const sides=f.sides.map((_,i)=>sideParties(f,i));if(fightParties(f).length>=BATTLE_JOIN.armies||fightParties(f).reduce((n,p)=>n+p.fighters,0)+o.fighters>BATTLE_JOIN.fighters)return -1;

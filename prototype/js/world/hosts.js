@@ -130,7 +130,7 @@ class Host{
   static yourSlot(l){if(l.inside){const t=townBy(l.inside);return t?gateGoal(t):{x:l.x,y:l.y}}const h=this.of(P);h.mark();return h.slot(P)}
   // (each moment on the map: your place taken up again after a battle or a talk; his battle near, its page)
   static watch(){const l=this.leader();if(!l){if(this.under)this.under=null;return}if(G.mode!=='world'||G.modal)return;
-    if(!G.follow&&this.paused){this.paused=false;if(followable(l)||l.inside){G.follow={o:l,crumbs:[[l.x,l.y]],host:true}}}
+    if(!G.follow&&this.paused&&(followable(l)||l.inside)){this.paused=false;G.follow={o:l,crumbs:[[l.x,l.y]],host:true}}// (paused till he can be followed again: his fight's page shut while he still fought dropped you from his column, a deserter)
     const f=l.fight&&W.fights.find(x=>x.id===l.fight);if(f&&this.asked!==f.id&&Math.hypot(f.x-P.x,f.y-P.y)<HOSTS.join+(this.of(P)?.back(P)||0)){this.asked=f.id;fightMeet(f)}}
   // (his battle's page: Stand aside, in place of Watch from afar)
   static asideAct(f){const l=this.leader();return l&&f.sides.some((_,i)=>sideParties(f,i).includes(l))?['hs-aside',null,'Stand aside']:null}
@@ -155,7 +155,9 @@ class Host{
     for(const l of W.lords.filter(l=>l.with&&(l.dead||!W.lords.some(L=>L.id===l.with&&L.campaign&&!L.dead))))this.part(l);
     for(const f of FIDS){if(W.dead[f]||!realmOf(f).enemies().length||W.lords.some(l=>l.campaign&&l.fac===f)||Math.random()>=C.start)continue;this.campaign(f)}}
   // (a realm's campaign begun: its marshal, his host, his aim; its news; you summoned, serving it)
-  static campaign(f){const C=HOSTS.camp,free=lordsOf(f).filter(l=>!l.dead&&!l.gone&&!l.held&&!l.follow&&!l.with&&!l.campaign&&!l.fight&&l.troops.length>=C.troops&&!['siege','relieve'].includes(l.state)&&this.leader()!==l);
+  // (inside a besieged holding of his realm: he does not leave one he is defending, realms.js lordThink; a campaign called him out)
+  static defending(l){const h=l.inside&&townBy(l.inside);return !!h&&besieged(h)&&h.owner===l.fac}
+  static campaign(f){const C=HOSTS.camp,free=lordsOf(f).filter(l=>!l.dead&&!l.gone&&!l.held&&!l.follow&&!l.with&&!l.campaign&&!l.fight&&l.troops.length>=C.troops&&!['siege','relieve'].includes(l.state)&&this.leader()!==l&&!Host.defending(l));
     if(free.length<C.min)return null;const L=free.reduce((a,b)=>b.power()>a.power()?b:a),foes=TOWNS.filter(t=>!t.gone&&t.owner&&atWar(f,t.owner)),t=Spatial.nearest(foes,L.x,L.y);if(!t)return null;
     const ms=free.filter(l=>l!==L&&Math.hypot(l.x-L.x,l.y-L.y)<=C.reach).sort((a,b)=>Math.hypot(a.x-L.x,a.y-L.y)-Math.hypot(b.x-L.x,b.y-L.y)).slice(0,C.members[1]);if(ms.length<C.members[0])return null;
     if(L.inside)L.leave();L.campaign={tgt:t.name,since:G.day,until:G.day+C.days};L.state='march';L.tgt=t.name;ms.forEach((m,i)=>{m.with=L.id;m.wseq=i+1;m.state='march';m.tgt=t.name});
@@ -165,8 +167,9 @@ class Host{
   static summon(L){G.mode='dialog';G.hostSummon=L;const c=L.campaign;showPanel('<h2>'+lordName(L)+', marshal of the '+FACS[L.fac].n+'</h2><p>A rider brings word: '+lordName(L)+' calls the lords of the '+FACS[L.fac].n+' to march with '+pr(L).him+' on '+c.tgt+'. You serve the realm: will you ride with '+pr(L).his+' host?</p>'+
     '<div class="btns">'+dlgBtn('hs-summon',null,'Ride with '+pr(L).his+' host',this.under?'You follow another':'',true)+'</div><p class="muted">Declining costs honour with the '+FACS[L.fac].n+' ('+HOSTS.camp.refuse+').</p>'+nav(null,['hs-decline-summon',null,'Decline']))}
   // (a member gone its own way; a campaign ended, its line, its members released)
-  static part(l){l.with=null;l.wseq=null;if(!l.dead)lordThink(l)}
-  static disband(L,why){for(const m of this.campMembers(L))this.part(m);L.campaign=null;if(!L.dead){L.state=L.state==='siege'?L.state:'home';lordThink(L)}
+  // (one laying siege goes on with it: thinking afresh began his siege again from its first day)
+  static part(l){l.with=null;l.wseq=null;if(!l.dead&&l.state!=='siege')lordThink(l)}
+  static disband(L,why){for(const m of this.campMembers(L))this.part(m);L.campaign=null;if(!L.dead&&L.state!=='siege'){L.state='home';lordThink(L)}
     if(why)worldEvent({text:why,fac:[L.fac],x:L.x,y:L.y,past:why.replace(/\.$/,'')})}
   // (the lords besieging t with l: his host's, there; or him alone)
   static besiegers(l,t){if(!l.campaign)return[l];const h=new Host(l,this.campMembers(l));return[l,...h.members.filter(m=>!m.fight&&Math.hypot(m.x-t.x,m.y-t.y)<h.back(m)+HOSTS.far*1.5)]}

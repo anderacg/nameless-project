@@ -313,8 +313,9 @@ function supplyHour(){
     for(let i=passed(a,h,T.dying,T.toll);i>0;i--){supplyHurt('thirst');log('Thirst saps your strength.','bad','band');heroHurt(T.hero.hp,T.hero.mp,'thirst')}
     for(let i=passed(a,h,T.death,T.toll);i>0;i--)supplyDie('thirst')}else u.dry=0;
   sickTrim();
-  // (frostbite: the hours short of furs, weighted by how short, until a man is bitten)
-  const cold=L.frost?coldShare():0;if(cold){u.cold+=cold;if(u.cold>=S.frost.every){u.cold-=S.frost.every;supplyHurt('frostbite')}}else u.cold=0;
+  // (frostbite: the hours short of furs, weighted by how short, until a man is bitten; not in your captors' keeping (free): a day
+  // in a cage in the north killed you, and the cage's page went on over it)
+  const cold=!free&&L.frost?coldShare():0;if(cold){u.cold+=cold;if(u.cold>=S.frost.every){u.cold-=S.frost.every;supplyHurt('frostbite')}}else u.cold=0;
   P.morale=clamp(P.morale,0,100);
   if(!u.hint&&P.bsta<S.hint){u.hint=true;toast('Marching tires your band. Stop, or Make camp, to rest.','gold','band')}
 }

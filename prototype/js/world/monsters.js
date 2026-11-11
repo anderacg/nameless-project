@@ -125,9 +125,10 @@ function updateMonsters(d){BAND_GRID=beastPreyGrid();try{return landHeldFor(()=>
 function startMonster(m){startEncounter({kind:'monster',ref:m,lv:m.lv,list:monsterTroops(m)})}
 // roll trophies and gear for a won monster fight, into the bag (the victory panel lists them with the rest of the spoils)
 function monsterLoot(m,slain){
-  const M=MONSTERS[m.id],mats=Math.max(0,slain.filter(k=>k===M.unit||m.id==='wolf'&&k===WOLF_ALPHA.unit).length-(G.enc?.field?.mats?.[M.mat]||0));// (the hides the field gave already: battle/drops.js)
+  const M=MONSTERS[m.id],all=slain.filter(k=>k===M.unit||m.id==='wolf'&&k===WOLF_ALPHA.unit).length,mats=Math.max(0,all-(G.enc?.field?.mats?.[M.mat]||0));// (the hides the field gave already: battle/drops.js)
   if(mats&&M.mat){const kept=invAdd('mat',M.mat,mats);if(kept<mats)log('Your bag is full. You leave '+(mats-kept)+' '+MATS[M.mat].n.toLowerCase()+(mats-kept>1?'s':'')+' behind.','bad')}
-  if(M.meat&&mats){const n=invAdd('good','meat',mats*M.meat);if(n)worldEmit('meat:hunted',{n})}
+  // (every beast's meat: a hide picked up on the field cost its meat)
+  if(M.meat&&all){const n=invAdd('good','meat',all*M.meat);if(n)worldEmit('meat:hunted',{n})}
   for(const [it,ch] of M.gear)if(monRng().chance(ch*(1+.1*(m.lv-1)))){
     if(invAdd('gear',it,1))log('You found '+ITEMS[it].n+' ('+ITEMS[it].r+')!','gold');
     else log('Your bag is full. You leave '+ITEMS[it].n+' behind.','bad');

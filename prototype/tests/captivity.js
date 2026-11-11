@@ -154,6 +154,9 @@ Kit.suite(({ok})=>{
   {const {q}=ransomed();t.act('dlg-ok');const town=t.TOWNS.find(x=>x.T.broker)||t.TOWNS[0];t.enterTown(town);t.act('tab','tavern');const p=C.fencePrice(q),g=P.gold,n=gearN(),k=q.gear.length;
    ok(document.querySelector('[data-act="held-fence"]')&&/A fence/.test(panel()),'a fence in the tavern has your gear');t.act('held-fence',q.id);
    ok(P.gold===g-p&&gearN()===n+k&&!q.gear.length&&stashOf()&&/A fence/.test(panel())===false,'bought back for '+p+'g: all '+k+' piece(s); the gold is still in their stash');t.toWorld();
+   // (a full bag: nothing bought, nothing paid; the fence keeps it. A review of the rules, 2026-11-11: it paid the whole and lost the gear)
+   {const {q}=ransomed();t.act('dlg-ok');const town=t.TOWNS.find(x=>x.T.broker)||t.TOWNS[0];t.enterTown(town);t.act('tab','tavern');while(t.invAdd('good','iron',50)>0);const g=P.gold,k=q.gear.length;t.act('held-fence',q.id);
+    ok(k>0&&P.gold===g&&q.gear.length===k&&stashOf(),'a full bag at the fence: nothing bought, nothing paid, your '+k+' piece(s) still his to sell you');t.toWorld();P.inv=P.inv.map(x=>x&&x.k==='good'&&x.id==='iron'?null:x);P.quests=P.quests.filter(x=>x.type!=='stash')}
    // (a month on, sold off)
    G.day=q.due+1;q.lapse();ok(!stashOf(),'not taken back in '+X.stash.days+' days: sold off')}
   // (a lord's: in a holding of his realm; raided, won back)

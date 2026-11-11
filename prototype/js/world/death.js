@@ -112,7 +112,7 @@ class Death{
   // the report shown: the day passes, you wake, the beast is gone; quests told
   static after(){
     const p=this.pending;if(!p)return;this.pending=null;const m=p.m;this.home(p);if(p.slain)return;
-    Clock.passHours(DEATH.wake);
+    Clock.passHours(DEATH.wake);if(G.dead)return;// (dead of cold or thirst as you lay: supply.js heroDies)
     const [max]=vitals();P.hp=Math.max(1,Math.round(max*DEATH.hp));Timed.of(P).set('weak',DEATH.weak.days);
     worldEmit('hero:fell',{lived:true,monster:m});updateHUD(true)}
   // (the beast gone home: its lair, or away from it when it fought you there)

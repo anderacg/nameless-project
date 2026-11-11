@@ -223,7 +223,7 @@ function lordThink(l){
   const own=fiefsOf(l.fac);if(!own.length){l.dead=true;l.gone=true;return}
   const foes=TOWNS.filter(t=>atWar(l.fac,t.owner)),hit=own.find(besieged);
   if(hit&&l.troops.length>=9){l.state='relieve';l.tgt=hit.name;return}
-  if(l.troops.length<9||(!foes.length&&l.troops.length<lcapOf(l)-4)){l.state='home';l.tgt=Spatial.nearest(own,l.x,l.y).name;return}
+  if(l.troops.length<9||(!foes.length&&l.troops.length<lcapOf(l)-4)){const open=own.filter(t=>!besieged(t));l.state='home';l.tgt=Spatial.nearest(open.length?open:own,l.x,l.y).name;return}// (home to a holding not besieged, if there is one)
   if(foes.length){l.state='march';l.tgt=Spatial.nearest(foes,l.x,l.y).name;return}
   l.state='patrol';l.tgt=own[rint(0,own.length-1)].name;
 }
@@ -284,7 +284,8 @@ function worldDay(){
     if(l.gone)continue;
     if(l.dead){
       if(G.day<l.back)continue;const own=fiefsOf(l.fac);if(!own.length){l.gone=true;continue}
-      const h=own.slice().sort((a,b)=>(b.vol||0)-(a.vol||0))[0];ensureEcon(h);const can=Math.min(9,Math.floor(h.vol||0),Math.floor((h.pop||0)-GUARD_FLOOR));if(can<3||!payRealm(l.fac,90,h,9))continue;
+      const open=own.filter(t=>!besieged(t));if(!open.length)continue;// (none raised outside barred gates, beside the besiegers: when one is free)
+      const h=open.slice().sort((a,b)=>(b.vol||0)-(a.vol||0))[0];ensureEcon(h);const can=Math.min(9,Math.floor(h.vol||0),Math.floor((h.pop||0)-GUARD_FLOOR));if(can<3||!payRealm(l.fac,90,h,9))continue;
       const raised=[];for(let i=draftLocals(h,can);i>0;i--){const c=RACES[h.races[rint(0,h.races.length-1)]];raised.push(Math.random()<.6?c.melee:c.ranged)}
       Object.assign(l,{dead:false,x:h.x,y:h.y+14,troops:raised,state:'rest',tgt:h.name,cool:3});if(!l.shelterWhy(h))l.enter(h);
       worldEvent({text:l.name+' raises a new army at '+h.name+'.',x:h.x,y:h.y,fac:[l.fac],towns:[h],news:['army',h,{lord:l.name,fac:l.fac,town:h.name,n:raised.length}],past:l.name+' raised a new army at '+h.name});continue;

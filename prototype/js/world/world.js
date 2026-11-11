@@ -277,8 +277,11 @@ function dangerInSight(){const V=vis();
   return ''}
 // (main.js calls this every frame, whatever is shown): following a party is watched here (followWatch)
 function fastWatch(){followWatch()}
+// (your band on ground it cannot stand on and no step to take: a ferry's crossing given up mid-water. To the nearest ground, its army with it)
+function heroAshore(){unstick(P);const a=MARCH_ARMIES.get(P);if(a)a.relocate(P.x,P.y);log('Your band makes for the nearest bank.')}
 function updateWorld(dt){
-  if(G.paused||G.dead)return;
+  if(G.dead){if(G.mode!=='dead')showDeath();return}// (dead in hours passed off the map, a cage's day or a wake: the death's page, not a map that never moves again)
+  if(G.paused)return;
   fastWatch();KNOWLEDGE.watch();// (last-known sightings: knowledge.js)
   const d=dt*G.speed*WORLD_PACE;lodTick(dt);
   Clock.advance(dt*G.speed*DAY/DAY_SECONDS);// (a new day: dayTick; a new hour: Systems.hour; core/clock.js)
@@ -306,7 +309,7 @@ function marchStep(d){
     else{
       const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*Host.yourPace());// (your host's slowest: hosts.js)
       P.dir=dx>=0?1:-1;
-      const x0=P.x,y0=P.y;if(heroStep(dx,dy,dist,step)){P.stuck=0;const moved=Math.hypot(P.x-x0,P.y-y0);if(moved>0){train('scout',moved/TILE*.08);if(mountDef())train('ride',moved/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',moved/TILE*WOODCRAFT.xp)}}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0;campArrive()}}
+      const x0=P.x,y0=P.y;if(heroStep(dx,dy,dist,step)){P.stuck=0;const moved=Math.hypot(P.x-x0,P.y-y0);if(moved>0){train('scout',moved/TILE*.08);if(mountDef())train('ride',moved/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',moved/TILE*WOODCRAFT.xp)}}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0;if(!passable(terrAt(P.x,P.y)))heroAshore();campArrive()}}
     }
   }
 }

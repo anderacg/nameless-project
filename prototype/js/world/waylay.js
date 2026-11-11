@@ -37,7 +37,7 @@ class Waylay{
     return true}
   // (you alongside, free to be met, a foe it would fall on)
   static springs(o){if(P.stay||G.modal||G.encCool>0||o.cool>0||Math.hypot(P.x-o.x,P.y-o.y)>=Math.min(WAYLAY.spring,worldBattleReach(o)))return false;
-    return o.mapKind==='lord'?hostileTo(o.fac)&&!lordSpares(o):stance(o.power(),o)!=='afraid'}
+    return (o.mapKind!=='lord'||hostileTo(o.fac)&&!lordSpares(o))&&stance(o.power(),o)!=='afraid'}// (a lord too only on one he can beat: he sprang on any army, and there is no leaving an ambush)
   static onYou(o){log((o.mapKind==='lord'?lordName(o)+'’s men':o.label())+' burst from the trees!','bad','war');
     if(o.mapKind==='lord')startEncounter({kind:'lord',ref:o,list:o.troops.slice(),btype:{kind:'ambush',hid:1}});else startEncounter({kind:'party',ref:o,n:o.troops.length,list:o.troops.slice(),band:o.kind||'bandits',btype:{kind:'ambush',hid:1}})}
   // the parties passing that it would fall on (at war with it, not too strong), each once, while it is within their sight into the trees

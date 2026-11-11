@@ -158,7 +158,7 @@ class Captivity{
       return this.day('The guard looks at your coin a long while, and shakes his head. You keep it.')}
     if(a==='held-wait')return this.day('')}
   // a day in the cage: their ask comes down, your realm may pay, your companions may come, something may happen; let go at the end
-  static day(text){const c=this.held,q=c.prison,X=CAPTIVITY.prison;Clock.passHours(24);q.day++;q.talked=false;P.hp=Math.min(vitals()[0],P.hp+Math.round(vitals()[0]*X.heal));
+  static day(text){const c=this.held,q=c.prison,X=CAPTIVITY.prison;Clock.passHours(24);if(G.dead)return showDeath();q.day++;q.talked=false;P.hp=Math.min(vitals()[0],P.hp+Math.round(vitals()[0]*X.heal));
     if(c.war&&!this.atWar(c))return this.free('peace','The '+FACS[c.fac].n+' are at war with your realm no more: peace, and their prisoners are let go.');
     if(!c.war)q.offer=Math.max(Math.round(c.ransom*X.floor/5)*5,q.offer-Math.max(5,Math.round(q.offer*X.fall/5)*5));
     if(this.realmPays(c)&&Math.random()<(c.war?CAPTIVITY.war.realm:CAPTIVITY.realm.daily)&&(!c.war||payRealm(P.fac,c.ransom)))return this.free('light','On day '+q.day+' the '+FACS[P.fac].n+' pay '+(c.war?'your war price, '+c.ransom+' gold,':'for you')+' and you are let out.',0,true);
@@ -273,8 +273,11 @@ Captivity.fenceCard=(t,race)=>{const qs=P.quests.filter(q=>q.type==='stash'&&q.g
   return {pic:personPic('merchant',race,2),name:'A fence',role:'Deals in what was taken',facts:qs.map(q=>q.gear.length+' piece'+(q.gear.length>1?'s':'')+' of your gear, from '+q.by),
     acts:qs.map(q=>{const p=Captivity.fencePrice(q);return ['held-fence',q.id,'Buy back '+p+'g',P.gold<p?'You have '+P.gold+'g':'']})}};
 Captivity.fencePrice=q=>Math.max(5,Math.round(q.gear.reduce((n,id)=>n+gearPrice(id),0)*CAPTIVITY.stash.fence/5)*5);
-onAct('held-',(a,arg)=>{if(a==='held-fence'){const q=P.quests.find(q=>q.id===+arg||q.id===arg);if(!q)return;const Q=Quest.as(q),p=Captivity.fencePrice(Q);if(P.gold<p)return;P.gold-=p;let k=0;for(const id of Q.gear)if(invAdd('gear',id,1))k++;Q.gear=[];
-  log('You buy back '+k+' piece'+(k>1?'s':'')+' of your gear from a fence for '+p+' gold.','gold','story',Q.journalKey);if(!Q.gold)Q.over('bought','bought');if(G.town){updateHUD(true);renderTown()}return}Captivity.act(a)});
+onAct('held-',(a,arg)=>{if(a==='held-fence'){const q=P.quests.find(q=>q.id===+arg||q.id===arg);if(!q)return;const Q=Quest.as(q),p=Captivity.fencePrice(Q);if(P.gold<p)return;
+  // (what your bag takes, at its share of the price: the rest the fence keeps for you. A full bag paid the whole and lost it all)
+  const left=[];let k=0,sum=0;for(const id of Q.gear){if(invAdd('gear',id,1)){k++;sum+=gearPrice(id)*CAPTIVITY.stash.fence}else left.push(id)}
+  if(!k){log('Your bag is full: the fence keeps your gear for you.','bad','story',Q.journalKey);return}const paid=left.length?Math.min(p,Math.max(5,Math.round(sum/5)*5)):p;P.gold-=paid;Q.gear=left;
+  log('You buy back '+k+' piece'+(k>1?'s':'')+' of your gear from a fence for '+paid+' gold'+(left.length?': '+left.length+' more wait there, your bag is full.':'.'),'gold','story',Q.journalKey);if(!Q.gold&&!left.length)Q.over('bought','bought');if(G.town){updateHUD(true);renderTown()}return}Captivity.act(a)});
 onWorld(()=>{Captivity.held=null;Captivity.scattered=[];Captivity.cv=null});
 Systems.add({name:'captivity',order:{hour:160},hour:()=>Captivity.hour()});
 Saves.add({key:'captivity',order:330,defaults:null,save:()=>Captivity.save(),load:v=>Captivity.load(v)});
