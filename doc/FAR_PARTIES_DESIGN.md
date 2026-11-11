@@ -1,0 +1,112 @@
+# Far parties: a cheaper moment for what you cannot see
+
+Status: **design, not built** (2026-11-11). It carries on from `WORLD_DESIGN.md` §3.5, whose far tier was left unfinished for parties.
+
+## 1. The problem
+
+Every mover on the map is sorted into a tier by how far it is from you (`world/worldobject.js` `WORLD_LOD`): near (1 ring of 512 px chunks), mid (to 4 rings, about 2,048 px), far (beyond). Beasts and herds have a far step: they hold by their lair. Bands, patrols, lords and caravans have none, so far from you they run their whole brain every fourth frame.
+
+Measured on a Huge world (seed `s1`, a new game, this server, after the `WORLD_FAST` speedups), ms a frame spent thinking, by kind and tier:
+
+| Kind and tier | How many | 1× | 8× |
+|---|---|---|---|
+| Bands, far | 478 | 2.94 | 2.76 |
+| Patrols, far | 60 | 1.16 | 1.02 |
+| Herds, far | 1,630 | 0.47 | 0.46 |
+| Beasts, far | 749 | 0.27 | 0.25 |
+| Lords, far | 31 | 0.03 | 0.33 |
+| Caravans, far | 8 | – | 0.24 |
+| Everything near and mid | about 300 | 0.83 | 0.87 |
+
+The far tier is about 4.9 of the 5.7 ms. The whole update is 9.3 ms a frame at 1× and 12.4 at 8×.
+
+## 2. What far parties do today that matters
+
+Three days of the same world, fights begun by a far party:
+
+| Fight | A day |
+|---|---|
+| Band on band (goblins against the rest: `BAND_FEUD`) | 15.3 |
+| Patrol on band (its holding's land: `LandDefence`) | 6.7 |
+| Lord on beast | 3.7 |
+| Lord on band | 1.0 |
+| Caravan and band (`BAND_HUNT`) | 0.7 |
+
+Bands went from 510 to 459 in those days. These rates are what the far step must keep: they decide how many bands roam, how safe the roads are and what the news tells.
+
+What a far party does that matters to no one: looking for you, fearing you, lying in wait for you, arresting you, walking tile by tile round every rock.
+
+## 3. The rule
+
+A far party takes a **far step** once a game hour, not a full think every fourth frame.
+
+- **Kept:** where it is going, when it gets there, whom it fights, where it sleeps.
+- **Dropped:** everything about you (sight, fear, ambush, arrest, meeting), and walking by the router.
+- **Back to full thinking** the moment it is mid or near. The far tier starts about 2,048 px from you, more than a screen and a half beyond the view, so a jump is never seen.
+- **Never far:** a party a quest points at or moves (a hold quest's wave, a bounty's band on its haunt, an escort's, one seeking field loot), a party in a fight, your companions' parties, anything in your host. These think as mid, as today.
+
+The steps are spread over the hour by each party's place in its list, so no frame takes them all.
+
+## 4. Each kind's far step
+
+### Bands
+1. **In a fight:** nothing.
+2. **Night, a camp of its own within an hour's ride:** it is in the camp (as it arrives today, without the ride).
+3. **A rival band or a caravan it dares, within its sight plus an hour's ride** (the cells of `BandBrain#near`; a caravan by the same test as `hunt`): it is on it, and the fight on the map begins there (`startFight`), by a chance (`far.feud`, `far.hunt`) set so the rates of §2 hold.
+4. **Else it wanders:** one straight step of an hour's roaming in its heading, the heading drawn again as today; a step onto water, a peak or a holding's walls is not taken.
+
+### Patrols
+1. **Its watch over, too few men, its holding besieged or lost:** it is back inside (`watch.back`), without the ride.
+2. **A threat its holding set it on (`LandDefence.prey`) within an hour's ride:** it is on it, and the fight begins.
+3. **Else:** it stands at the next stop of its beat (`watch.beat`).
+
+### Lords and caravans
+Left as they are in the first build: together 0.03 to 0.6 ms. Their far step (along the route by time) needs a `Router.travel` that spends a whole hour's step in one call (today it stops at each waypoint): phase 4.
+
+### Beasts and herds
+Their far step already does nothing, but each is still visited every frame (0.7 ms for 2,379 of them). The lists of those near and mid, made when the tiers are sorted (every half second), are walked in their place, each keeping its number in the whole list so its mid frames fall as today. A mythic beast stays in. This one changes nothing in the world.
+
+## 5. Numbers
+
+One table, `WORLD_FAR` (`world/worldobject.js`):
+
+| Key | Meaning | First value |
+|---|---|---|
+| `on` | The switch. Off: every far party thinks as mid, as today | true |
+| `band`, `patrol`, `skip` | Each kind's switch (`skip`: far beasts and herds not visited) | true |
+| `every` | Game hours between far steps | 1 |
+| `feud`, `hunt` | A far band's chance to fall on a rival or a caravan it could reach this hour | found by the measure of §7 |
+| `ride` | The share of an hour's ride a far party may cover to reach a fight or a camp | 1 |
+
+## 6. Build order
+
+| Phase | What | Changes the world? | Saves (Huge, 1×) |
+|---|---|---|---|
+| F0 | Far beasts and herds not visited | No (proved as `tests/worldfast.js` does) | about 0.7 ms |
+| F1 | Bands' far step | Yes | about 2.8 ms |
+| F2 | Patrols' far step | Yes | about 1.1 ms |
+| F3 | A far fight decided at once by strength (`fights.js` auto-resolve), not fought out over the hours | Yes | the `fights` system, 0.4 to 1.1 ms |
+| F4 | Lords and caravans along their routes by time | Yes | about 0.5 ms at 8× |
+
+After F0 to F2 the update should be about 4.7 ms a frame at 1× on Huge, from 9.3.
+
+## 7. How it is checked
+
+- **Speed:** the tier table of §1 measured again; far bands and far patrols under 0.3 ms together.
+- **The world's health:** the same seeded world run 30 days with `WORLD_FAR.on` off and on, three seeds, at Normal and Huge. Within a fifth of each other: fights a day of each kind (§2), bands alive, caravans arrived, each realm's holdings. `far.feud` and `far.hunt` are set from this.
+- **Nothing seen changes:** no party within the mid tier ever takes a far step (a test counts them); a party that turns from far to mid stands on ground it may stand on.
+- **Fingerprints:** W7 and W8 of `tests/worldprint.js` run the world and will move for F1 and F2 (the far tier reaches a Normal world too); re-recorded with their reason. With `WORLD_FAR.on` off they hold. The battle fingerprints are not touched.
+- **Saves:** no new saved field (a party's wait for its next far step starts afresh on load).
+
+## 8. Risks
+
+- **The world drifts:** far bands may fight more or less than today. The 30-day measure and the two chances are the guard; the switch is the way back.
+- **A quest's party taken for a common one:** the "never far" list of §3 must name every kind; a test walks the quest kinds that make or move a party.
+- **A band at the tiers' edge:** it could turn far and mid in turn as you move. The tiers are sorted every half second from your chunk, so it changes at most twice a second; a far step is taken only once an hour either way.
+- **The spikes are another matter:** the worst frames (47 ms at 1×, 273 at 8×) come from single long calls in the parties' and the land defence's systems, not from the far tier. They need their own look.
+
+## 9. Not in this design
+
+- The economy's day, the realms' wars and the sieges: they are daily or hourly already.
+- Drawing: a party out of sight is not drawn today.
+- Generation.
