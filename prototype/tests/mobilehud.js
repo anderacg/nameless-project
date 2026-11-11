@@ -13,6 +13,8 @@ Kit.suite(({ok})=>{
  ok(!survey.hidden&&Math.abs(picture.left-game.left-map.x*scale)<1&&Math.abs(picture.top-game.top-map.y*scale)<1&&Math.abs(picture.width-map.w*scale)<1,'painted phone frame preserves the minimap picture size and position');
  ok(document.elementFromPoint(picture.left+picture.width/2,picture.top+picture.height/2)===survey,'the phone minimap remains directly clickable');
  survey.click();t.frame();ok(G.mode==='fullmap'&&survey.hidden,'the painted phone minimap opens the full map and hides with the HUD');t.fullMapKey();t.frame();
+ const conditions=[...party.querySelectorAll('.campaign-condition')],desktop=document.querySelector('#stats .campaign-condition');ok(conditions.length===3&&conditions.every(e=>e.querySelector('.campaign-condition-art')&&e.querySelector('.campaign-condition-gauge')),'phone fitness, morale and stamina use the shared icon and gauge components');
+ ok(conditions.every(e=>getComputedStyle(e).fontFamily===getComputedStyle(desktop).fontFamily),'phone and desktop condition text use the same font family');
  const buttons=[document.getElementById('pause'),speed,...['mapToggle','charBtn','menuBtn'].map(id=>document.getElementById(id))],r=rect(root);
  ok(buttons.every(b=>{const p=rect(b);return root.contains(b)&&p.width>=44&&p.height>=44&&p.left>=r.left&&p.right<=r.right&&p.bottom<=r.bottom})&&buttons.every((b,i)=>!i||rect(b).left>=rect(buttons[i-1]).right),'the five thumb-sized controls fit in one row without overlapping');
  {const sc=rect(document.getElementById('screen'));ok(r.bottom<=sc.bottom+.5&&r.top>sc.top+sc.height/2,'the dock stays inside the screen at the bottom (the game’s screen: the tests’ fixed view)')}
@@ -21,6 +23,7 @@ Kit.suite(({ok})=>{
  click('pause');ok(!G.paused&&G.speed===4,'Pause/Play stays directly accessible without changing the selected speed');click('pause');
  click('speedToggle');cv.click();ok(choices.hidden,'tapping the map dismisses the speed picker');
  click('partyToggle');ok(visible(stats)&&party.getAttribute('aria-expanded')==='true'&&rect(stats).bottom<=r.top,'the condition card expands above the dock without covering controls ('+rect(stats).bottom+' <= '+r.top+')');
+ ok(rect(stats.querySelector('.campaign-condition-gauge')).width>rect(stats).width*.5,'expanded phone condition meters use the available card width');
  click('speedToggle');ok(!visible(stats)&&!choices.hidden,'opening speed closes party details');
  window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true}));ok(choices.hidden&&G.mode==='world','Escape collapses the picker before opening a menu');
  click('menuBtn');t.frame();const panel=document.getElementById('panel');panel.style.animation='none';const p=rect(panel),screen=rect(document.getElementById('screen'));

@@ -14,6 +14,8 @@ Kit.suite(({ok})=>{
  const r=t.worldMiniRect(),slot=rect(hud.slot),canvas=rect(document.getElementById('game')),k=canvas.width/t.VW;
  ok(Math.abs(canvas.left+r.x*k-slot.left)<k+1&&Math.abs(canvas.top+r.y*k-slot.top)<k+1,'the canvas minimap aligns with its framed console slot');
  ok(hud.slot.querySelector('canvas')?.width>0,'the framed minimap presents the live rendered canvas');
+ const panel=document.querySelector('.campaign-survey'),padding=getComputedStyle(panel);ok(['paddingTop','paddingRight','paddingBottom','paddingLeft'].every(k=>parseFloat(padding[k])===0),'the minimap frame has no wooden spacer around the picture');
+ ok(document.querySelectorAll('#stats .campaign-condition-art').length===3,'desktop fitness, morale and stamina share illustrated condition icons');
  ok(t.fullMapHit({x:r.x+r.w/2,y:r.y+r.h/2})&&!t.fullMapHit({x:r.x-5,y:r.y-5}),'minimap hit testing uses the new drawing rectangle');
  ok(document.elementFromPoint(slot.left+slot.width/2,slot.top+slot.height/2)===hud.slot,'the framed minimap has a click target aligned with its picture ('+document.elementsFromPoint(slot.left+slot.width/2,slot.top+slot.height/2).map(e=>e.tagName+'#'+e.id+'.'+e.className).join(' / ')+')');
  ok(document.elementFromPoint(canvas.left+40,canvas.bottom-6)?.id!=='game','clicking the timber console does not issue a travel order behind it');

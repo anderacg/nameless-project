@@ -375,7 +375,7 @@ class MobileWorldHud{
   }
   speed(){this.speedButton.querySelector('strong').textContent=G.speed+'× '+(this.choices.hidden?'▴':'▾');this.speedButton.setAttribute('aria-label','Travel speed '+G.speed+' times')}
   update(fitness,morale,stamina){
-    const text='Fit '+fitness+'% · Mor '+morale+'% · Sta '+stamina+'%',label=this.partyButton.querySelector('span');if(label.textContent!==text){label.textContent=text;this.measure()}
+    const label=this.partyButton.querySelector('span'),html=[['fit',fitness],['mor',morale],['sta',stamina]].map(([k,v])=>window.campaignHud.condition(k,v)).join('');label.classList.add('campaign-condition-row');if(label._html!==html){setHtml(label,html);this.measure()}
     this.partyButton.setAttribute('aria-label','Party status: fitness '+fitness+' percent, morale '+morale+' percent, stamina '+stamina+' percent');this.partyButton.classList.toggle('warn',fitness<50||morale<30||stamina<SUPPLY.tired);
   }
 }

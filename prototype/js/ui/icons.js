@@ -1,6 +1,34 @@
 'use strict';
-/* ---------- the game's icons: small pixel pictures (9×9), each letter a colour of its own palette, drawn as SVG wherever the
-   interface wants one (the party card, the top bar, the dock, the menus and windows). icon(name, size) gives the SVG. ---------- */
+/* Shared UI illustrations use a transparent atlas on both platforms. Other symbols retain their 9×9 pixel registry.
+   icon(name, size, class) gives the SVG used by cards, controls, menus and windows. */
+// Shared transparent illustrations for desktop and phone UI.
+const UI_ILLUSTRATIONS={
+  fire:[24,19,218,231],
+  map:[266,52,227,185],
+  troops:[522,16,214,231],
+  skills:[769,25,210,219],
+  bag:[1007,50,235,189],
+  book:[17,302,234,185],
+  gold:[280,296,195,186],
+  food:[513,276,224,219],
+  mug:[772,271,198,228],
+  crest:[1028,263,194,239],
+  fitness:[15,538,229,203],
+  morale:[276,518,222,225],
+  stamina:[555,524,158,218],
+  house:[752,518,240,220],
+  garrison:[1022,511,204,235],
+  banner:[46,760,172,229],
+  play:[310,773,166,230],
+  pause:[549,781,154,184],
+  menu:[762,770,216,210],
+  zoomin:[1010,763,225,240],
+  zoomout:[20,1012,224,220],
+  save:[283,1003,209,233],
+  full:[524,1022,206,194],
+  help:[789,1012,157,216],
+  sun:[1003,1003,242,227]
+};
 const ICONS={
   gold:{p:{r:'#a8781e',y:'#e8b94a',w:'#fff6c0'},px:['..rrrrr..','.ryyyyyr.','ryywyyyyr','ryyyyyyyr','ryyyyyyyr','ryyyyyyyr','ryyyyyyyr','.ryyyyyr.','..rrrrr..']},
   food:{p:{b:'#7a4a22',c:'#d8a058',w:'#f2d8a0'},px:['.........','..bbbbb..','.bccwccb.','bcwccwccb','bccccccccb'.slice(0,9),'bbbbbbbbb','.bbbbbbb.','.........','.........']},
@@ -85,6 +113,6 @@ const ICONS={
   rostertroop:{p:{g:'#cfd6e0',b:'#3d74d6',w:'#f4efe0'},px:['ggggggggg','gbbbwbbbg','gbbbwbbbg','gwwwwwwwg','gbbbwbbbg','.gbbwbbg.','.gbbwbbg.','..gbwbg..','...ggg...']}
 };
 // an icon as SVG: its pixels in its colours (crisp at any whole size)
-function icon(name,size,cls){const I=ICONS[name];if(!I)return '';size=size||16;let r='';const N=Math.max(I.px.length,I.px[0].length);
+function icon(name,size,cls){const A=UI_ILLUSTRATIONS[name];if(A){size=size||16;return '<svg class="'+(cls||'gico')+'" data-ui-icon="'+name+'" viewBox="'+A.join(' ')+'" width="'+size+'" height="'+size+'" aria-hidden="true" focusable="false"><image href="art/ui/hud-icons.png" width="1254" height="1254"/></svg>'}const I=ICONS[name];if(!I)return '';size=size||16;let r='';const N=Math.max(I.px.length,I.px[0].length);
   I.px.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.'&&I.p[c])r+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+I.p[c]+'"/>'}));
   return '<svg class="'+(cls||'gico')+'" viewBox="0 0 '+N+' '+N+'" width="'+size+'" height="'+size+'" shape-rendering="crispEdges" aria-hidden="true">'+r+'</svg>'}
