@@ -434,8 +434,9 @@ function txtPic(s,col,al){s=String(s);const k=s+'|'+col+'|'+al;let c=TXTC.get(k)
 /* World labels are cached at their final device-pixel size, never enlarged from the 8px text above. Arial matches the UI;
    a small CSS-size floor keeps phones readable. The outline is part of the cached picture, not a blurred canvas shadow. */
 const MAP_TEXT={size:8,min:11,font:'Arial, sans-serif',weight:600,edge:'#09080a'};
-function mapTxtPic(s,col,al,scale,dpr){
-  s=String(s);const size=Math.max(Math.ceil(MAP_TEXT.min*dpr),Math.round(MAP_TEXT.size*scale)),line=Math.max(2,Math.round(2*dpr)),font=MAP_TEXT.weight+' '+size+'px '+MAP_TEXT.font,k='map|'+size+'|'+line+'|'+s+'|'+col+'|'+al;
+function mapTxtPic(s,col,al,scale,dpr,o){
+  // (o: a face and a size of its own, screen px whatever the zoom: {font, px, weight} (a holding's bar: structures.js drawPlaques))
+  s=String(s);const size=o?Math.max(6,Math.round(o.px*dpr)):Math.max(Math.ceil(MAP_TEXT.min*dpr),Math.round(MAP_TEXT.size*scale)),line=Math.max(2,Math.round(2*dpr)),font=(o?o.weight||MAP_TEXT.weight:MAP_TEXT.weight)+' '+size+'px '+(o?o.font:MAP_TEXT.font),k='map|'+size+'|'+line+'|'+s+'|'+col+'|'+al+(o?'|'+o.font+'|'+(o.weight||''):'');
   let c=TXTC.get(k);if(c)return c;if(TXTC.size>600)TXTC.clear();
   const m=TXTM||(TXTM=mkc(1,1,()=>{}).getContext('2d', { willReadFrequently: true }));m.font=font;m.textAlign='left';m.textBaseline='alphabetic';
   const metric=m.measureText(s),w=Math.ceil(metric.width),up=Math.ceil(metric.actualBoundingBoxAscent||size),down=Math.ceil(metric.actualBoundingBoxDescent||0),pad=Math.ceil(line/2)+2,ox=pad+(al==='center'?Math.ceil(w/2):al==='right'?w:0),oy=pad+up;
@@ -443,8 +444,8 @@ function mapTxtPic(s,col,al,scale,dpr){
   c.ox=ox;c.oy=oy;c.deviceText=true;c.labelSize=size;TXTC.set(k,c);return c;
 }
 // A queued map label's anchor passes through the current camera transform, then the finished picture is copied 1:1.
-function mapTxt(s,x,y,col,al){
-  const g=ctx,m=g.getTransform(),dpr=dprOf(),c=mapTxtPic(s,col,al,Math.hypot(m.a,m.b),dpr),px=Math.round(m.a*x+m.c*y+m.e),py=Math.round(m.b*x+m.d*y+m.f);
+function mapTxt(s,x,y,col,al,o){
+  const g=ctx,m=g.getTransform(),dpr=dprOf(),c=mapTxtPic(s,col,al,Math.hypot(m.a,m.b),dpr,o),px=Math.round(m.a*x+m.c*y+m.e),py=Math.round(m.b*x+m.d*y+m.f);
   g.save();try{g.setTransform(1,0,0,1,0,0);g.shadowBlur=0;g.drawImage(c,px-c.ox,py-c.oy)}finally{g.restore()}
 }
 
