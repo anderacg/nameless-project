@@ -7,7 +7,8 @@ class CampaignHud{
     $('.hudlayer').appendChild(this.root);this.resources=this.root.querySelector('.campaign-resources');this.slot=this.root.querySelector('.campaign-mini-slot');this.details=this.root.querySelector('.campaign-details');this.warning=this.root.querySelector('.campaign-warning');
     this.help=document.getElementById('helpBtn');this.helpHome=document.createComment('campaign help home');this.help.before(this.helpHome);
     this.root.querySelector('.campaign-brand').innerHTML=this.art([45,3,268,91],'campaign-banner');
-    this.commandArt=[['campBtn',[608,783,65,66]],['mapBtn',[727,783,70,66]],['charBtn',[847,784,68,66]],['skillBtn',[978,783,70,66]],['invBtn',[1091,784,69,67]],['journalBtn',[1211,783,72,68]]];
+    const mapArt=[727,783,70,66];
+    this.commandArt=[['campBtn',[608,783,65,66]],['mapBtn',mapArt],['mapToggle',mapArt],['charBtn',[847,784,68,66]],['skillBtn',[978,783,70,66]],['invBtn',[1091,784,69,67]],['journalBtn',[1211,783,72,68]]];
     this.townCard=document.createElement('aside');this.townCard.className='campaign-town';this.townCard.hidden=true;this.townCard.setAttribute('aria-label','Nearby holding');this.root.appendChild(this.townCard);
     this.townCard.addEventListener('click',e=>{const b=e.target.closest('[data-town-action]');if(!b||!this.town||G.mode!=='world'||G.modal)return;if(b.dataset.townAction==='approach')worldApproach(this.town);else fullMapOpen({x:this.town.x/TILE,y:this.town.y/TILE});this.sync()});
     this.details.textContent='⋯';this.details.setAttribute('aria-label','Company details');this.details.title='Company details';

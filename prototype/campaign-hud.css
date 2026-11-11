@@ -115,3 +115,7 @@
 @media(max-height:650px){.campaign-town{display:none}}
 .campaign-mini-slot{position:relative}.campaign-mini-slot canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;image-rendering:pixelated}
 .screen[data-mode="world"].campaign-world.mobile-world .mwh-dock #speedToggle{min-height:44px;height:44px;padding:2px}
+
+/* Compact controls use the same artwork as their desktop counterparts. */
+.screen[data-mode="world"].campaign-world.mobile-world .mwh-dock .campaign-command-art,.screen[data-mode="world"].campaign-world.mobile-world .mwh-map .campaign-command-art{display:block;flex:none;width:22px;height:22px}
+.screen[data-mode="world"].campaign-world.mobile-world .mwh-dock .dbtn:has(>.campaign-command-art)>.gico,.screen[data-mode="world"].campaign-world.mobile-world .mwh-map .dbtn:has(>.campaign-command-art)>.gico{display:none}

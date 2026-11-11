@@ -8,6 +8,7 @@ Kit.suite(({ok})=>{
  const visible=e=>!!e.getClientRects().length&&getComputedStyle(e).display!=='none',rect=e=>e.getBoundingClientRect(),click=id=>document.getElementById(id).click();
  ok(hud.enabled&&visible(root)&&!visible(stats)&&!visible(document.getElementById('wtop'))&&!visible(document.querySelector('.dock')),'mobile world starts with one bottom dock and collapsed party details');
  ok(rect(root).height<=52,'landscape phone HUD fits a single compact row ('+rect(root).height+'px, at most 52)');
+ const shared=id=>document.getElementById(id).querySelector('.campaign-command-art');ok(shared('mapToggle')&&shared('charBtn')&&visible(shared('mapToggle'))&&visible(shared('charBtn'))&&shared('mapToggle').getAttribute('viewBox')===shared('mapBtn').getAttribute('viewBox'),'phone Map and Army show the same illustrated artwork as desktop');
  const buttons=[document.getElementById('pause'),speed,...['mapToggle','charBtn','menuBtn'].map(id=>document.getElementById(id))],r=rect(root);
  ok(buttons.every(b=>{const p=rect(b);return root.contains(b)&&p.width>=44&&p.height>=44&&p.left>=r.left&&p.right<=r.right&&p.bottom<=r.bottom})&&buttons.every((b,i)=>!i||rect(b).left>=rect(buttons[i-1]).right),'the five thumb-sized controls fit in one row without overlapping');
  {const sc=rect(document.getElementById('screen'));ok(r.bottom<=sc.bottom+.5&&r.top>sc.top+sc.height/2,'the dock stays inside the screen at the bottom (the game’s screen: the tests’ fixed view)')}

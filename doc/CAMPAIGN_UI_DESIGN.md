@@ -11,3 +11,5 @@ Frames use a painted nine-slice iron/brass panel and an oak texture. The title c
 Visual fingerprint: W6 changes from `8d7629ca` to `92f27da3` because the desktop minimap moves from the top-right corner into the bottom console. This is the only updated baseline. W1–W5, W7–W8, B2 and all generator sums held. No world or battle rules were edited.
 
 Review: desktop at 1440×900 and 1200×800; landscape touch at 844×390. Targeted checks: campaignhud, structure, mobilehud, fullmap and worldprint. Captures and check results are exported under `/workspace/artifacts`.
+
+Phone Map and Army use the same illustrated SVG regions as desktop, including Map in its drawer; the compact controls scale the artwork to 22×22px and retain their labels and 44px targets.
