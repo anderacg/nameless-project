@@ -49,7 +49,7 @@
 const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
   rest:{stop:4,camp:16,stay:20},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
-  eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
+  eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,recover:4,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
   drink:{perDay:1,rest:.5,once:true,order:['water','ale','liquor'],water:{morale:0},ale:{morale:2},liquor:{morale:6}},skins:{start:4,recruit:1,lot:5},
   thirst:{desert:2,parched:12,pace:.85,morale:1,dying:24,death:48,toll:6,hero:{hp:.1,mp:.1}},lost:{days:7,keep:20},
   fill:{days:2,near:.5,well:1.5,timed:true,minPerDay:15,min:5,max:180},furPer:5,frost:{every:6,morale:1},
@@ -299,12 +299,14 @@ function supplyHour(){
   if(st!=='fresh'){if(++u.tired%S.tiredMorale.every===0)P.morale-=S.tiredMorale.n}else u.tired=0;
   if(st==='exhausted'){if(++u.worn%S.worn.every===0)supplyHurt('exhaustion')}else u.worn=0;
   // hunger, by its stages (SUPPLY.hunger): morale, then Starving, then men desert, fall sick and at last die
-  if(hungry){const H=S.hunger,h=++u.hungry;if(h===1){log('Your band goes hungry. Buy food in a town, or hunt.','bad','band');mood('hungry')}
+  // (fed, the hungry hours wear off recover an hour (u.lean); hungry again soon, it goes on from what is left: one ration bought
+  // at the 71st hour began it all again)
+  if(hungry){const H=S.hunger;if(!u.hungry&&u.lean){u.hungry=u.lean;u.lean=0}const h=++u.hungry;if(h===1){log('Your band goes hungry. Buy food in a town, or hunt.','bad','band');mood('hungry')}
     if(h>=H.starving){P.morale-=H.starveMorale;if(h===H.starving)log('Your band is starving: the march drains it more, and soon men will leave.','bad','band')}else if(h%H.every===0)P.morale-=H.morale;
     if(passed(h-1,h,H.desert,H.toll))supplyHurt('hunger',true);
     if(passed(h-1,h,H.sick,H.toll))supplyHurt('hunger');
     if(passed(h-1,h,H.die,H.toll))supplyDie('hunger');
-    if(passed(h-1,h,H.starving,H.hero.every)){log('Hunger gnaws at you.','bad','band');heroHurt(H.hero.hp,H.hero.mp,'hunger')}}else u.hungry=0;
+    if(passed(h-1,h,H.starving,H.hero.every)){log('Hunger gnaws at you.','bad','band');heroHurt(H.hero.hp,H.hero.mp,'hunger')}}else{if(u.lean||u.hungry){const l=Math.max(u.lean||0,u.hungry)-S.hunger.recover;if(l>0)u.lean=l;else delete u.lean}u.hungry=0}// (kept only while some is left: a fed band saves as ever)
   // thirst, by its stages (SUPPLY.thirst; the desert's hours count double): Parched, then men fall sick, then they die
   if(!dr){const T=S.thirst,a=u.dry,h=u.dry+=L.desert?T.desert:1;
     if(!a)log(L.desert?'No water in the desert: your band thirsts. Find an oasis, a river or a holding.':'Nothing to drink: your band thirsts. Find a river, a lake or a holding’s well.','bad','band');

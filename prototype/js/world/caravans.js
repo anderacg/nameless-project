@@ -145,7 +145,7 @@ class CaravanParty extends Party{
   // a beaten caravan becomes yours: it drives its cargo to your nearest fief and is then yours to send again
   seize(){
     const c=this,home=Spatial.nearest(playerFiefs(),c.x,c.y);if(!home)return c.loot();
-    addRep(c.from,-8,true);// (the holding it came from resents it, before the carts become yours)
+    addRep(c.from,-8,true);worldEmit('caravan:robbed',{caravan:c});// (the holding it came from resents it, before the carts become yours; robbed by you: a convoy job of it fails)
     Object.assign(c,{mine:true,fac:'player',home:home.name,to:home.name,dest:home.name,from:home.name,leg:'out',repeat:false,order:{},guards:Math.max(1,Math.floor(c.guards/2)),cool:4,purse:0});
     return ' Your soldiers take the carts and drive them to '+home.name+': '+cargoText(c)+'.';
   }

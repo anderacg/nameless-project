@@ -153,8 +153,8 @@ class Captivity{
     if(a==='held-break'){if(this.breakWhy(q))return;if(Dice.check(this.breakChance(q),'Break out',undefined,skill('athl')*CAPTIVITY.prison.break.athl))return this.free('broke','In the dark you slip your bonds and get over the wall.');
       q.guard++;q.fails=(q.fails||0)+1;P.hp=Math.max(1,Math.round(P.hp-vitals()[0]*X.beat*(this.prisonOf(c)?.beat||1)));q.help=0;return this.day('They catch you at the wall and beat you for it. '+(q.fails>=X.break.fails?'They put you in chains.':'They watch you closer now.'))}
     // (a guard: takes it and unbars the door; else tells his captain (your coin gone, they watch you closer) or will not (your coin kept))
-    if(a==='held-bribe'){const b=this.bribe(q);if(q.hidden<b.cost)return;if(Dice.check(b.ch,'Bribe a guard',undefined,b.sk)){q.hidden-=b.cost;return this.free('broke','The guard takes your '+b.cost+' gold and leaves the door unbarred.')}
-      if(Math.random()<CAPTIVITY.prison.bribe.report){q.hidden-=b.cost;q.guard++;return this.day('The guard takes your '+b.cost+' gold, and tells his captain. They watch you closer now.')}
+    if(a==='held-bribe'){const b=this.bribe(q);if(q.hidden<b.cost)return;if(Dice.check(b.ch,'Bribe a guard',undefined,b.sk)){q.hidden-=b.cost;P.gold=Math.max(0,P.gold-b.cost);return this.free('broke','The guard takes your '+b.cost+' gold and leaves the door unbarred.')}
+      if(Math.random()<CAPTIVITY.prison.bribe.report){q.hidden-=b.cost;P.gold=Math.max(0,P.gold-b.cost);q.guard++;return this.day('The guard takes your '+b.cost+' gold, and tells his captain. They watch you closer now.')}
       return this.day('The guard looks at your coin a long while, and shakes his head. You keep it.')}
     if(a==='held-wait')return this.day('')}
   // a day in the cage: their ask comes down, your realm may pay, your companions may come, something may happen; let go at the end

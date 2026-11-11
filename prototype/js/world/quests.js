@@ -105,7 +105,8 @@ class JobQuest extends Quest{
   static purse(q,g,t){
     const k=Givers.goods(g,q.reward.gold,t);
     if(!k)return;
-    q.reward.gold=Math.round(q.reward.gold*g.pays);
+    // (the gold less only what the goods are worth: a village with one cheese took half the gold for it)
+    const worth=k[1]*Math.max(1,marketPrice(t,k[0]));q.reward.gold=Math.max(Math.round(q.reward.gold*g.pays),Math.round(q.reward.gold-worth));
     q.reward.goods=k;
   }
   // (the lord who gave it, if one did)
@@ -196,8 +197,11 @@ class JobQuest extends Quest{
       this.fac=t.owner;
       log(this.home+' has changed hands; the '+(FACS[t.owner]?FACS[t.owner].n:'new lords')+' will honour '+this.title+'.','gold','story',this.journalKey);
     }
+    if(!this.done&&this.ruined())return this.fail(this.goneWhy());
     if(this.done?this.lost():this.gone())this.close();
   }
+  // (its end your own doing (a post left, guards that saw you): failed, not closed with pay)
+  ruined(){return false}
   // (done, and never to be reported: its giver's realm fallen, its holding no more. One hostile for a time is waited out)
   lost(){
     if(this.lord)return !!W.dead[this.fac];
@@ -216,11 +220,11 @@ class JobQuest extends Quest{
     return this.lord?(W.dead[this.fac]?'The '+FACS[this.fac].n+' has fallen.':'The '+FACS[this.fac].n+' is your enemy now.'):!h||h.gone?this.home+' is no more.':this.home+' is held by your enemies now.';
   }
   close(){
-    const g=Math.round(this.reward.gold*QUEST_CLOSED.gold);
+    const g=hostileTo(this.fac)?0:Math.round(this.reward.gold*QUEST_CLOSED.gold);// (none from a realm at odds with you)
     P.gold+=g;
     P.quests=P.quests.filter(x=>x!==this);
     Quest.unmark(this.id);
-    log('Quest over: '+this.title+'. '+this.goneWhy()+' You are paid '+g+' gold for your trouble.','gold','story',this.journalKey);
+    log('Quest over: '+this.title+'. '+this.goneWhy()+(g?' You are paid '+g+' gold for your trouble.':''),'gold','story',this.journalKey);
     this.announceEnd('closed');
   }
 }
@@ -1179,6 +1183,8 @@ class HoldQuest extends JobQuest{
   hits(d){return d.standard.i===this.site}
   get deedWord(){return 'held'}
   gone(){const s=Standards.of(this.site);return super.gone()||!s||!this.done&&(s.realm!==this.fac||this.left)}
+  // (left, or fallen while you held it: your doing; fallen before you took your post: not)
+  ruined(){const s=Standards.of(this.site);return !super.gone()&&!!s&&(this.left||this.on&&s.realm!==this.fac)}
   goneWhy(){const s=Standards.of(this.site);return super.gone()?super.goneWhy():!s?'The outpost is gone.':this.left?'You left the '+s.name+' before relief came.':'The '+s.name+' fell to the '+(FACS[s.realm]?FACS[s.realm].n:'wilds')+'.'}
   // (an hour: by it, the hold runs (not while a wave of its is out) and a wave sets out at its hour; away once begun, too long and
   // the job is lost)
@@ -1228,6 +1234,7 @@ class OutscoutQuest extends JobQuest{
   hits(d){return d.quest===this.id}
   get deedWord(){return 'scouted'}
   gone(){return super.gone()||!this.done&&this.caught!=null}
+  ruined(){return !super.gone()&&this.caught!=null}
   goneWhy(){const s=this.caught!=null&&Standards.of(this.caught);return super.gone()?super.goneWhy():'The guards of the '+(s?s.name:'outpost')+' saw you.'}
 }
 // (a hold's wave, each frame (world/brains.js BandBrain): on to the outpost; upon you there, the fight; at it with you not by it,

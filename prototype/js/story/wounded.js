@@ -172,7 +172,7 @@ const Wounded={
   // ---- the thanks: the heirloom, once a game (after it, gold), reputation and renown; Ander joins you
   gift(th){
     const R=WOUNDED.reward,t=Wounded.home(th).town,first=!Thread.once('heirloom'),I=ITEMS.hearthring;
-    return {...(first?{gear:'hearthring',call:()=>Thread.mark('heirloom')}:{gold:R.gold}),rep:[t,R.rep],renown:R.renown,
+    return {...(first?{gear:'hearthring',call:(c,r)=>{if(r.gear)Thread.mark('heirloom')}}:{gold:R.gold}),rep:[t,R.rep],renown:R.renown,
       say:r=>first?(r.gear?'The '+I.n+' is yours.':'Your bag is too full to take it: they keep the '+I.n+' for you.'):'They press their savings on you, and will not take them back.'};
   },
   joins(th){
