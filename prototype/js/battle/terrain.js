@@ -1405,12 +1405,18 @@ class TerrainRoutes{
    B.terrain and no fog (B.fog: battlefog.js) nothing is ever set: everyone is seen. With fog, a side also sees no one beyond
    its soldiers' sight ranges (battlefog.js FOG) */
 class BattleSight{
-  constructor(){this.next=-1;this.n=0;this.hid=new Map();this.sprung=new Map();this.goal=new Map();this.los=new Map();this.seer=new Map()}
+  constructor(){this.next=-1;this.n=0;this.hv=0;this.sc=null;this.hid=new Map();this.sprung=new Map();this.goal=new Map();this.los=new Map();this.seer=new Map()}
   // (is there sight to keep: terrain or fog)
   static on(){return !!B&&!!(B.terrain||B.fog)}
   // (does side team see u: always for his own side, and while nothing hides him)
   static seen(team,u){return B?.world?u.team===team||B.world.visible(u,team)&&!(u.hid&1<<team):!(u.hid&1<<team)}
   seen(team,u){return BattleSight.seen(team,u)}
+  /* (the soldiers of the other sides not hidden from side team (u.hid; a world battle's must be in sight too: seen), the fallen among
+     them too, in B.units' order: everyone its men could pick, so a reader sifts these as it would sift the whole battle and finds
+     the same (actors.js nearestSeen), and with none looks for no one. Kept till who is hidden changes (hv: a reckoning, a blow that
+     shows its striker) or a soldier joins; a change of sides makes the sight anew (sides.js) */
+  shown(team){let c=this.sc;if(!c||c.v!==this.hv||c.n!==B.units.length)c=this.sc={v:this.hv,n:B.units.length,by:new Map()};let l=c.by.get(team);
+    if(!l){l=[];const bit=1<<team;for(const u of B.units)if(u.team!==team&&!(u.hid&bit))l.push(u);c.by.set(team,l)}return l}
   // (the living soldiers of the other sides that side sees)
   static foes(team){return B.units.filter(u=>u.hp>0&&battleEnemy(team,u)&&BattleSight.seen(team,u))}
   // (where that side last saw him: his place now while seen; null never seen)
@@ -1431,7 +1437,7 @@ class BattleSight{
     S.reckon(T,F)}
   // (the reckoning itself, once a step: T, the terrain or none; F, the fog)
   reckon(T,F){
-    const S=this;S.next=B.t+SIGHT.every;S.n++;S.goal.clear();S.los.clear();
+    const S=this;S.next=B.t+SIGHT.every;S.n++;S.hv++;S.goal.clear();S.los.clear();
     const live=[];for(const u of B.units)if(u.hp>0)live.push(u);const n=live.length,teams=[];for(const u of live)if(!teams.includes(u.team))teams.push(u.team);
     const foes=t=>teams.reduce((m,o)=>o===t?m:m|1<<o,0),now=B.t;
     if(!B.world&&!F&&!(T.has.wood||T.shTop)){for(const u of live){if(u.hid)u.hid=0;const p=u.ls||(u.ls=[]);for(const t of teams)if(t!==u.team){p[2*t]=u.x;p[2*t+1]=u.y}}return}
@@ -1463,7 +1469,7 @@ class BattleSight{
   // he struck or shot at t: t's side sees him now and for SIGHT.memory s (attacks.js: a blow, a shot loosed, a missile landing)
   struckBy(att,t){
     if(!att||!t||!battleEnemy(att,t))return;(att.rv||(att.rv=[]))[t.team]=B.t;
-    if(att.hid&1<<t.team){att.hid&=~(1<<t.team);const p=att.ls||(att.ls=[]);p[2*t.team]=att.x;p[2*t.team+1]=att.y;this.goal.clear()}}
+    if(att.hid&1<<t.team){att.hid&=~(1<<t.team);this.hv++;const p=att.ls||(att.ls=[]);p[2*t.team]=att.x;p[2*t.team+1]=att.y;this.goal.clear()}}
   // (an order at a target that side sees none of: where it was last seen; reckoned once a sight step for each target)
   goalFor(g,team){
     const S=this;if(!g||!g.hasTarget)return null;
