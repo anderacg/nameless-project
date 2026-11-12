@@ -58,9 +58,21 @@ try{
 })`);
   const paint=fn=>{c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,c.canvas.width,c.canvas.height);c.restore();fn();const d=c.getImageData(0,0,c.canvas.width,c.canvas.height).data;let h=0;for(let i=0;i<d.length;i++)h=(h*31+d[i])|0;return h};
   const c0=TW.find(x=>x.kind==='castle'),cams=[v,c0,TW[5],TW[20]].map(x=>({x:Math.round(x.x-t.VW/2),y:Math.round(x.y-t.VH/2)})).concat([{x:0,y:0},{x:MW*TILE-t.VW,y:MH*TILE-t.VH}]);
-  const diff=cams.filter(q=>paint(()=>oldDraw(q))!==paint(()=>t.drawLand(q)));
-  const f0=c0.owner;c0.owner=t.FIDS.find(f=>f!==f0);const m0=t.landMiniCv(),sw=paint(()=>oldDraw(cams[1]))===paint(()=>t.drawLand(cams[1]));c0.owner=f0;
+  // (tile by tile: LAND_SMOOTH off, as it was)
+  const S=t.LAND_SMOOTH,on0=S.on;S.on=false;let diff,sw,m0,f0;
+  try{diff=cams.filter(q=>paint(()=>oldDraw(q))!==paint(()=>t.drawLand(q)));
+  f0=c0.owner;c0.owner=t.FIDS.find(f=>f!==f0);m0=t.landMiniCv();sw=paint(()=>oldDraw(cams[1]))===paint(()=>t.drawLand(cams[1]));c0.owner=f0}finally{S.on=on0}
   ok(!diff.length&&sw&&t.landMiniCv()!==m0&&t.landMiniCv()===t.landMiniCv(),'drawn from them, the borders are the same pixels at '+cams.length+' views (map corners too), and after a holding changes hands; the minimap tint is made again only on a change')}
+ // ---- smooth (LAND_SMOOTH, the owner 2026-11-12: "make territory boundaries not look squared"): cut at 45° where a tile stands out at a
+ // corner; built for the view and round it, again when the land changes hands; the same pixels drawn twice
+ {const c=t.ctx,S=t.LAND_SMOOTH,paint=fn=>{c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,c.canvas.width,c.canvas.height);c.restore();fn();const d=c.getImageData(0,0,c.canvas.width,c.canvas.height).data;let h=0;for(let i=0;i<d.length;i++)h=(h*31+d[i])|0;return h};
+  const A=t.LandArt;ok(A.odd(['a','b','b','b'])===0&&A.odd(['b','a','b','b'])===1&&A.odd(['b','b','a','b'])===2&&A.odd(['b','b','b','a'])===3&&A.odd(['a','a','b','b'])===-1&&A.odd(['a','b','b','a'])===-1,'a corner stands out where one tile of four differs from the other three, and only then');
+  const TW=t.TOWNS,c0=TW.find(x=>x.kind==='castle'),q={x:Math.round(c0.x-t.VW/2),y:Math.round(c0.y-t.VH/2)};
+  const a1=paint(()=>t.drawLand(q)),a2=paint(()=>t.drawLand(q));S.on=false;const old=paint(()=>t.drawLand(q));S.on=true;
+  const f0=c0.owner;c0.owner=t.FIDS.find(f=>f!==f0);const ver=A.built&&A.built.ver,b1=paint(()=>t.drawLand(q)),rebuilt=A.built.ver!==ver;c0.owner=f0;const back=paint(()=>t.drawLand(q));
+  ok(a1===a2&&a1!==old&&rebuilt&&b1!==a1&&back===a1,'smooth: the same pixels drawn twice, not the tiles\' stairs, built again when a holding changes hands (and back)');
+  const far={x:q.x+40*t.TILE,y:q.y},bx=A.built.box;t.drawLand(far);ok(A.built.box!==bx&&A.built.box[0]<=Math.floor(far.x/t.TILE),'and again once the view leaves what was built')}
+
  // ---- a holding that is gone rules no land
  {const g=TW.find(x=>x.kind==='village'&&x!==v),gi=TW.indexOf(g),n0=t.landOf(g);g.gone=true;const n1=t.landOf(g),any=t.LAND.includes(gi);delete g.gone;
   ok(n0>0&&!n1&&!any&&t.landOf(g)===n0,'a holding that is gone rules no land ('+n0+' tiles freed), and back, rules them again')}

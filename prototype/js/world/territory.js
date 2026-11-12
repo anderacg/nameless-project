@@ -122,6 +122,7 @@ function landWatch(){
    and estates, under everyone who moves, you, the fog and the night: the owner, 2026-10-22), or both (none given) */
 const landCol=o=>o?FACS[o].col:'#98a0ba';
 function drawLand(cam,part){
+  if(LAND_SMOOTH.on)return LandArt.draw(cam,part);
   landFresh();const x0=Math.max(0,Math.floor(cam.x/TILE)),y0=Math.max(0,Math.floor(cam.y/TILE)),x1=Math.min(MW-1,x0+Math.ceil(VW/TILE)+1),y1=Math.min(MH-1,y0+Math.ceil(VH/TILE)+1);
   ctx.save();
   // (the tint a run of a row's tiles of one colour at a time: one rect, the same pixels as a rect a tile; then the lines)
@@ -136,6 +137,60 @@ function drawLand(cam,part){
   }
   ctx.restore();
 }
+/* the borders and tint, smooth (LAND_SMOOTH): on the tiles' corners (a vertex: its four tiles, top left, top right, bottom left, bottom
+   right), each of its four arms (half a tile edge, from the vertex to the edge's middle: up between the top two, right between the right
+   two, down, left) a border where its two tiles differ. Two arms across: a straight line; two arms at a corner: one tile stands out
+   there, the line cut across it from one arm's end to the other's (45°), its corner going to the others; three or four: each arm to
+   the vertex. Each side of a line in its own colour, inside its own tile (as the tiles' borders were), drawn where that side had one
+   (to another holding, a realm or the wilds; not to the water). One path a colour and width, stroked once: no doubled alpha */
+const LandArt={
+  // (the id at a tile: its holding, -1 wild or off the map; key: what a corner is cut by: the holding (lines) or its realm's colour (tint))
+  at:(x,y)=>x<0||y<0||x>=MW||y>=MH?-1:LAND[y*MW+x],
+  col(i){return i<0?null:landCol(TOWNS[i].owner)},
+  // (a side's line to the other: its width and alpha (LAND_SMOOTH.line), or null)
+  side(a,b,bx,by){if(a<0||a===b||b<0&&(bx<0||by<0||bx>=MW||by>=MH||tAt(bx,by)===T_WATER))return null;return LAND_SMOOTH.line[b<0||TOWNS[b].owner!==TOWNS[a].owner?1:0]},
+  // (a vertex's corner cut: the tile standing out there, by key: 0 top left, 1 top right, 2 bottom left, 3 bottom right; -1 none)
+  odd(k){const [a,b,c,d]=k;if(a!==b&&b===d&&d===c)return 0;if(b!==a&&a===c&&c===d)return 1;if(c!==a&&a===b&&b===d)return 2;if(d!==b&&b===a&&a===c)return 3;return -1},
+  // (built for the view and LAND_SMOOTH.margin tiles round it, again when the land or its owners change or the view leaves that box)
+  built:null,
+  draw(cam,part){landFresh();const T=TILE,M=LAND_SMOOTH.margin,x0=Math.max(0,Math.floor(cam.x/T)),y0=Math.max(0,Math.floor(cam.y/T)),x1=Math.min(MW-1,x0+Math.ceil(VW/T)+1),y1=Math.min(MH-1,y0+Math.ceil(VH/T)+1);
+    let b=this.built;if(!b||b.ver!==landVer||x0<b.box[0]||y0<b.box[1]||x1>b.box[2]||y1>b.box[3]){
+      const B=[Math.max(0,x0-M),Math.max(0,y0-M),Math.min(MW-1,x1+M),Math.min(MH-1,y1+M)];b=this.built={ver:landVer,box:B,tint:this.tint(...B,T,T/2),lines:this.lines(...B,T,T/2)}}
+    ctx.save();ctx.translate(-cam.x,-cam.y);
+    if(part!=='line'){ctx.globalAlpha=LAND_SMOOTH.tint;for(const [c,p] of b.tint){ctx.fillStyle=c;ctx.fill(p)}}
+    if(part!=='tint'){ctx.lineCap='square';for(const e of b.lines.values()){ctx.globalAlpha=e.L[1];ctx.strokeStyle=e.c;ctx.lineWidth=e.L[0];ctx.stroke(e.p)}}
+    ctx.restore()},
+  // the tint: each tile, its corner cut where it stands out by its realm's colour, that corner the others'; a path a colour, filled
+  // once (a run of a row's whole tiles one rect)
+  tint(x0,y0,x1,y1,T,h){const P=new Map(),path=c=>P.get(c)||(P.set(c,new Path2D()),P.get(c)),C=(x,y)=>this.col(this.at(x,y));
+    // (a tile's four corners: 0 top left … 3 bottom right; at each, the four colours round that vertex)
+    const ring=(x,y,v)=>{const vx=x+(v&1),vy=y+(v>>1);return [C(vx-1,vy-1),C(vx,vy-1),C(vx-1,vy),C(vx,vy)]};
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const c=C(x,y);if(!c)continue;const X=x*T,Y=y*T,cut=[0,1,2,3].map(v=>{const r=ring(x,y,v);return this.odd(r)===3-v});
+      const p=path(c);if(!cut.some(Boolean)){let n=1;while(x+n<=x1&&C(x+n,y)===c&&![0,1,2,3].some(v=>this.odd(ring(x+n,y,v))===3-v))n++;p.rect(X,Y,n*T,T);x+=n-1;continue}
+      // (clockwise from the top left corner, each cut corner its two half-edge points)
+      const pts=[];const add=(v,a,b,cx,cy)=>{if(cut[v])pts.push(a,b);else pts.push([cx,cy])};
+      add(0,[X,Y+h],[X+h,Y],X,Y);add(1,[X+h,Y],[X+T,Y+h],X+T,Y);add(3,[X+T,Y+h],[X+h,Y+T],X+T,Y+T);add(2,[X+h,Y+T],[X,Y+h],X,Y+T);
+      p.moveTo(pts[0][0],pts[0][1]);for(const q of pts.slice(1))p.lineTo(q[0],q[1]);p.closePath()}
+    // (each cut corner given to the others round it: a triangle of their colour)
+    for(let vy=y0;vy<=y1+1;vy++)for(let vx=x0;vx<=x1+1;vx++){const r=[C(vx-1,vy-1),C(vx,vy-1),C(vx-1,vy),C(vx,vy)],o=this.odd(r);if(o<0)continue;const m=r[3-o];if(!m)continue;
+      const X=vx*T,Y=vy*T,sx=o&1?1:-1,sy=o>>1?1:-1,p=path(m);p.moveTo(X,Y);p.lineTo(X+sx*h,Y);p.lineTo(X,Y+sy*h);p.closePath()}
+    return P},
+  // the lines: at each vertex its border arms joined as the head says; each side offset into its own tile by half its width
+  lines(x0,y0,x1,y1,T,h){const P=new Map(),A=(x,y)=>this.at(x,y);
+    const seg=(px,py,qx,qy,ax,ay,bx,by)=>{for(const [sx,sy,ox,oy] of [[ax,ay,bx,by],[bx,by,ax,ay]]){const a=A(sx,sy),L=this.side(a,A(ox,oy),ox,oy);if(!L)continue;
+        // (the normal toward the side's own tile's middle)
+        let nx=-(qy-py),ny=qx-px;const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;const mx=(sx+.5)*T-(px+qx)/2,my=(sy+.5)*T-(py+qy)/2;if(nx*mx+ny*my<0){nx=-nx;ny=-ny}
+        const k=this.col(a)+'|'+L[0]+'|'+L[1];let e=P.get(k);if(!e)P.set(k,e={c:this.col(a),L,p:new Path2D()});const o=L[0]/2;e.p.moveTo(px+nx*o,py+ny*o);e.p.lineTo(qx+nx*o,qy+ny*o)}};
+    for(let vy=y0;vy<=y1+1;vy++)for(let vx=x0;vx<=x1+1;vx++){const r=[A(vx-1,vy-1),A(vx,vy-1),A(vx-1,vy),A(vx,vy)];if(r[0]===r[1]&&r[1]===r[2]&&r[2]===r[3])continue;
+      const X=vx*T,Y=vy*T,tiles=[[vx-1,vy-1],[vx,vy-1],[vx-1,vy],[vx,vy]],
+        // (the arms: its end, and its two tiles' corners: up 0|1, right 1|3, down 2|3, left 0|2)
+        arms=[[X,Y-h,0,1],[X+h,Y,1,3],[X,Y+h,2,3],[X-h,Y,0,2]].filter(([,,i,j])=>r[i]!==r[j]),o=this.odd(r);
+      const T2=(i,j,P0,P1)=>seg(P0[0],P0[1],P1[0],P1[1],tiles[i][0],tiles[i][1],tiles[j][0],tiles[j][1]);
+      if(o>=0){const [a,b]=arms;T2(o,3-o,a,b)}
+      else if(arms.length===2){const [a,b]=arms;T2(a[2],a[3],a,b)}
+      else for(const a of arms)T2(a[2],a[3],a,[X,Y])}
+    return P}
+};
 // the minimap tint, one pixel per tile, made again when the land or its owners change
 let landMini=null;
 function landMiniCv(){

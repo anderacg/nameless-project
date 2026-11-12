@@ -105,6 +105,12 @@ const GATE_WAYS={letter:80,writ:{town:60,city:160,rep:0},bribe:{town:25,city:60,
 // show: seconds its title stays over the map
 // a party stalled on its way (world/stalls.js): hours still, within px, before it is sent another way; keep: how many kept to read
 const WORLD_STALL={on:true,hours:12,px:16,keep:40};
+// the land's borders and tint on the map (the owner, 2026-11-12: "make territory boundaries not look squared"; world/territory.js
+// drawLand): on, each border a line through its tiles' edges' middles, cut at 45° where a tile stands out at a corner (a stair of tiles
+// a straight slant), the tint cut the same; tint: its alpha; line: [between holdings of one realm, between realms or to the wilds],
+// each [width px, alpha]; margin: tiles round the view built with it (built again once the view leaves them). on false: tile by
+// tile, as before
+const LAND_SMOOTH={on:true,tint:.08,line:[[1,.22],[2,.7]],margin:16};
 const DISCOVER={on:true,r:2,site:3,start:10,scout:6,show:4.2};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
