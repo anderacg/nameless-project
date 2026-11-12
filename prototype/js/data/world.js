@@ -100,10 +100,10 @@ const PROVINCE={on:true,reach:12,lair:60,levels:[.3,.8,1.6],words:['calm','watch
 const GATE_WAYS={letter:80,writ:{town:60,city:160,rep:0},bribe:{town:25,city:60,castle:120,fort:70,base:.3,pers:.05,trade:.04,hard:{town:0,city:.05,fort:.1,castle:.15},caught:.5,honor:3,rep:5,ban:3},
   slip:{base:.25,scout:.05,athl:.04,fine:.5,honor:5,rep:10,ban:3}};
 // discovering places (world/discovery.js): on the switch; r tiles your band comes within a holding's edge to learn its name (the owner,
-// 2026-11-11: "a bit shorter distance": 6 before), site the same
-// for a cave, ruins, a shrine or a hideout, start what a game begins knowing round you; scout: the Scouting practice a place gives;
+// 2026-11-11: "a bit shorter distance": 6, then 4; 2026-11-12, "still discover too easy need a bit more near holding": 2), site
+// for a cave, ruins, a shrine or a hideout (3, was 4), start what a game begins knowing round you; scout: the Scouting practice a place gives;
 // show: seconds its title stays over the map
-const DISCOVER={on:true,r:4,site:4,start:10,scout:6,show:4.2};
+const DISCOVER={on:true,r:2,site:3,start:10,scout:6,show:4.2};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}},

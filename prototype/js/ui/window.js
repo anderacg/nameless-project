@@ -7,7 +7,7 @@
    left and the way out on the right; Esc follows that bar (escDismiss), so it steps back a window at a time.
    railWindow(o) is the panel's HTML:
      head: the rail's header, a button sending home ([act, arg]: the overview; on: that is open): its banner (fac: a realm's
-       flag in its colour, or ico: an icon), name, sub (a line under it: whose, what) and your gold; back: ‹ (a step back)
+       flag in its colour, or ico: an icon), name, sub (a line under it: whose, what) and your gold (gold false: none); back: ‹ (a step back)
      label: a small heading over the entries
      items: the entries, each an area of the place, as the rooms of a house: {act, arg, ico (icons.js), n (its name), short (on a
        slim rail), on (the chosen one), dim (nothing there yet), dot (something there needs you: a quest to report)}; only its
@@ -28,7 +28,7 @@ function railWindow(o){
     ' title="'+htmlText(x.n)+'"'+(x.on?' aria-current="page"':'')+'><span class="ri-ico">'+icon(x.ico,18)+'</span><span class="ri-t"><b><span class="ri-n">'+x.n+'</span><span class="ri-s">'+(x.short||x.n)+'</span></b></span>'+
     (x.dot?'<i class="ri-dot" aria-hidden="true"></i>':'')+(i<RAIL_KEYS.length?'<kbd>'+RAIL_KEYS[i]+'</kbd>':'')+'</button>';
   return '<nav class="rail" aria-label="'+htmlText(o.label||'Places')+'"><button class="rail-head" type="button" data-act="'+h.act[0]+'" data-arg="'+h.act[1]+'"'+(h.on?' aria-current="page"':'')+'>'+
-    '<span class="rh-flag">'+(h.ico?icon(h.ico,22):facFlag(h.fac,22))+'</span><span class="rh-t"><b>'+(h.back?'‹ ':'')+h.name+'</b><small>'+h.sub+'</small><small class="gold">'+P.gold+' gold</small></span></button>'+
+    '<span class="rh-flag">'+(h.ico?icon(h.ico,22):facFlag(h.fac,22))+'</span><span class="rh-t"><b>'+(h.back?'‹ ':'')+h.name+'</b><small>'+h.sub+'</small>'+(h.gold===false?'':'<small class="gold">'+P.gold+' gold</small>')+'</span></button>'+
     (o.label?'<div class="rail-lab">'+o.label+'</div>':'')+o.items.map(item).join('')+'</nav>'+
     '<section class="rwin"><div class="top"><div class="rw-h"><h2>'+o.title+'</h2>'+(o.sub?'<span class="muted">'+o.sub+'</span>':'')+'</div>'+(o.gold?'<span class="gold rw-gold">'+icon('gold',14)+' '+P.gold+' gold</span>':'')+'</div>'+
     '<div class="rwbody">'+o.body+'</div>'+nav(o.back,o.close)+'</section>';
