@@ -2,7 +2,7 @@
 /* ---------- discovery (the owner, 2026-11-08: "make a discovery feel more rewarding like when you visit somewhere you may not know
    the name right the way but once you near it then you'll have a text animation like You discovered xxxxxx") ----------
    A holding or a named site (a cave, ruins, a shrine, a hideout, a goblin camp: not a bandit or travellers' camp) is known by its
-   kind only ("Village", "Cave": in its tip, its lands, the full map; the map itself has no names) until your band comes within DISCOVER.r tiles of it, of its edge for a holding (reach), or to its gate (meet) (DISCOVER.site tiles for a site): then you learn its
+   kind only ("Village", "Cave": in its tip, its lands, the full map; the map itself has no names) until your band comes within DISCOVER.r tiles of it, of its edge for a holding (reach: its heart, houses and market, not its fields), or to its gate (meet) (DISCOVER.site tiles for a site): then you learn its
    name, its title rises over the map (DiscoveryTitle), a line in the log and Scouting practice (DISCOVER.scout). What a game
    begins near (within DISCOVER.start tiles) is known from the start, without a title. Read: Discovery.named(o), Discovery.nameOf(o)
    (its name, or its kind while you do not know it). Saved (the keys found: 'h:' a holding's name, 's:' a site's number). With
@@ -27,11 +27,12 @@ const Discovery={
       if(Math.hypot(o.x-P.x,o.y-P.y)<=r)this.discover(o,quiet);
     }
   },
-  /* (how far a holding spreads from its centre, px: its farthest building, field or wall, so its DISCOVER.r tiles count from its edge
+  /* (how far a holding spreads from its centre, px: its farthest lot of DISCOVER.core's kinds (its heart, houses and market, not the
+     estates out in its fields: the owner, 2026-11-12, "need to be very close to the holding"), so its DISCOVER.r tiles count from its edge
      (the owner, 2026-11-10: "check whether we can discover them": a city's or a castle's gate is farther out than 6 tiles from its
      heart, so turned away there you never came near enough); a site, none. Kept while its lots are as they were) */
   reach(o){const L=!(o instanceof Site)&&o.lots;if(!L||!L.length)return 0;if(o._reach&&o._reach[0]===L.length)return o._reach[1];
-    let r=0;for(const l of L)r=Math.max(r,Math.hypot((l.x+l.n/2)*TILE-o.x,(l.y+l.n/2)*TILE-o.y)+l.n*TILE/2);o._reach=[L.length,r];return r},
+    let r=0;for(const l of L)if(DISCOVER.core.includes(l.k))r=Math.max(r,Math.hypot((l.x+l.n/2)*TILE-o.x,(l.y+l.n/2)*TILE-o.y)+l.n*TILE/2);o._reach=[L.length,r];return r},
   // (come to it: at its gate (world/siege.js approachHolding), known at once, whether or not it will have you)
   meet(o){if(DISCOVER.on&&o&&!this.named(o)&&this.places().includes(o))this.discover(o,false)},
   discover(o,quiet){

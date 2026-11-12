@@ -111,7 +111,11 @@ const WORLD_STALL={on:true,hours:12,px:16,keep:40};
 // each [width px, alpha]; margin: tiles round the view built with it (built again once the view leaves them). on false: tile by
 // tile, as before
 const LAND_SMOOTH={on:true,tint:.08,line:[[1,.22],[2,.7]],margin:16};
-const DISCOVER={on:true,r:2,site:3,start:10,scout:6,show:4.2};
+// a holding or site learnt by name (world/discovery.js): r tiles from a holding's edge, its edge its farthest lot of core's kinds (its
+// heart, houses and market: not its farms, pastures, mines, lumber camps, quarries or port, out in its fields: the owner, 2026-11-12,
+// "need to be very close to the holding"); site tiles from a site; start: what a game begins near, known at once; scout: Scouting
+// practice for each; show: its title's seconds on the screen
+const DISCOVER={on:true,r:1,site:3,start:10,scout:6,show:4.2,core:['centre','house','nook','market']};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}},
