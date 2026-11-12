@@ -14,8 +14,7 @@ class CampaignHud{
     this.brand.addEventListener('click',()=>act('nm-open'));
     this.resources.addEventListener('click',e=>{if(e.target.closest('[data-supply]'))document.getElementById('invBtn').click()});
     this.commandArt=[['campBtn','fire'],['mapBtn','map'],['mapToggle','map'],['charBtn','troops'],['skillBtn','skills'],['invBtn','bag'],['journalBtn','book']];
-    this.townCard=document.createElement('aside');this.townCard.className='campaign-town';this.townCard.hidden=true;this.townCard.setAttribute('aria-label','Nearby holding');this.root.appendChild(this.townCard);
-    this.townCard.addEventListener('click',e=>{const b=e.target.closest('[data-town-action]');if(!b||!this.town||G.mode!=='world'||G.modal)return;if(b.dataset.townAction==='approach')worldApproach(this.town);else fullMapOpen({x:this.town.x/TILE,y:this.town.y/TILE});this.sync()});
+    this.regionCard=document.createElement('aside');this.regionCard.className='campaign-region';this.regionCard.hidden=true;this.regionCard.setAttribute('aria-label','Current region');this.regionCard.setAttribute('aria-live','polite');this.regionCard.setAttribute('aria-atomic','true');this.root.appendChild(this.regionCard);
     this.details.textContent='⋯';this.details.setAttribute('aria-label','Company details');this.details.title='Company details';
     this.mobileMini=document.createElement('button');this.mobileMini.type='button';this.mobileMini.className='campaign-mobile-survey';this.mobileMini.hidden=true;this.mobileMini.setAttribute('aria-label','Open full map');$('.hudlayer').appendChild(this.mobileMini);this.mobileMini.addEventListener('click',()=>document.getElementById('mapBtn').click());
     this.slot.addEventListener('click',()=>document.getElementById('mapBtn').click());
@@ -43,16 +42,14 @@ class CampaignHud{
     const days=n=>(n>=10?Math.floor(n):Math.floor(n*10)/10)+'d';
     const cell=(ic,label,value,title,warn,coverage)=>{const supply=coverage!=null,tag=supply?'button':'div';return '<'+tag+' class="campaign-resource'+(warn?' warn':'')+'"'+(supply?' type="button" data-supply="'+ic+'"':'')+' title="'+htmlText(title+(warn?'. Running low':'')+(supply?'. Open inventory':''))+'">'+this.art(ic,'campaign-resource-art')+'<span><small>'+label+(warn?'<em class="campaign-resource-alert">LOW</em>':'')+'</small><b>'+value+'</b>'+(supply?'<i class="campaign-supply-track" aria-hidden="true"><em style="width:'+Math.min(100,Math.max(0,coverage/3*100))+'%"></em></i>':'')+'</span></'+tag+'>'};
     setHtml(this.resources,cell('gold','Gold',P.gold,'Your gold')+cell('troops','Company',cnt,'Your company’s troop count')+cell('food','Food',days(S.foodDays),'Food remaining at the current consumption rate',S.foodDays<1,S.foodDays)+cell('mug','Drink',days(S.drinkDays),'Drink remaining at the current consumption rate',S.drinkDays<1,S.drinkDays));
-    this.updateTown();
+    this.updateRegion();
     this.slot.style.aspectRatio=MW+'/'+MH;
   }
-  updateTown(){
-    const focus=[G.chase,typeof WUI!=='undefined'?WUI.hov:null].find(o=>o&&objKind(o)==='town'),near=Spatial.nearestHolding(P.x,P.y,t=>!t.gone);
-    const t=focus||near&&Math.hypot(near.x-P.x,near.y-P.y)<=Math.max(180,worldBattleReach(near)*2)&&near;
-    this.town=t&&t.inView(vis())?t:null;this.townCard.hidden=!this.town;if(!this.town)return;
-    const gate=Gates.admits(t),hostile=foeAt(t),closed=closedNow(t),open=gate.ok&&!hostile&&!closed,close=Math.hypot(t.x-P.x,t.y-P.y)<=worldBattleReach(t),realm=t.owner&&FACS[t.owner],name=htmlText(t.name);
-    const row=(ic,label,value,cls='')=>'<div class="campaign-town-line">'+icon(ic,18)+'<span>'+label+'</span><b class="'+cls+'">'+value+'</b></div>',type=t.T.n.charAt(0).toUpperCase()+t.T.n.slice(1);
-    setHtml(this.townCard,'<header>'+this.art('crest','campaign-town-crest')+'<div><small>Nearby holding</small><h3>'+name+'</h3></div></header>'+row('house','Type',htmlText(type))+row('crest','Realm',htmlText(realm?realm.n:'Free folk'))+row('garrison','Garrison',t.gar)+row('banner','Gate',hostile?'Hostile':closed?'Closed':gate.ok?'Open':'Restricted',open?'good':'gold')+'<footer><button type="button" data-town-action="approach">'+(close&&open?'Enter '+htmlText(t.T.n):'Approach gate')+'</button><button type="button" data-town-action="map" aria-label="Show '+name+' on the map">'+icon('zoomin',20)+'</button></footer>');
+  updateRegion(){
+    const t=this.desktop?landHold(P.x,P.y):null;
+    this.region=t&&Discovery.named(t)?t:null;this.regionCard.hidden=!this.region;if(!this.region)return;
+    const realm=t.owner&&FACS[t.owner],terrain=regionAt(P.x,P.y);
+    setHtml(this.regionCard,'<div class="campaign-region-content"><small>Current region</small><h3>'+htmlText(landName(P.x,P.y))+'</h3><p>'+icon('banner',16)+'<span>'+htmlText(realm?realm.n:'Free folk')+'</span><span aria-hidden="true">·</span>'+icon('map',16)+'<span>'+htmlText(terrain.name)+'</span></p></div>');
   }
   presentMini(face){
     let target;if(this.desktop)target=this.slot;else if(this.phone){
