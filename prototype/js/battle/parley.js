@@ -116,5 +116,6 @@ function lairFate(s,list,how){lootStart();const ld=s.ld,men=list.filter(u=>u!=='
 // (a chieftain taken: what to do with him)
 const chiefCaught=ld=>'You take '+chiefLabel(ld)+' captive: hand '+pr(ld).him+' over for '+bountyOf(ld)+' gold, or let '+pr(ld).him+' go (Hero, Party).'
 // what happens when you reach a roaming party: a hostile one that fears you is cornered; else the fight it wants
-function meetBand(b){if(cornered(b,'band'))return parley(b,'band');startEncounter({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:b.kind||'bandits',word:b.word})}
+function meetBand(b){if(cornered(b,'band')&&!seamless({kind:'party'}))return parley(b,'band');// (seamless: no talk, the fight at once: SEAMLESS)
+  startEncounter({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:b.kind||'bandits',word:b.word})}
 onAct('pl-',parleyAct);

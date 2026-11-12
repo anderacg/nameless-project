@@ -18,6 +18,11 @@ const JOIN_RULES={reach:120,every:5,hear:{base:20,per:.5,max:60},band:{small:12,
   kin:(o,e)=>!!e&&(o.mapKind==='monster'?e.kind==='monster'&&o.id===e.ref?.id:e.kind==='party'&&(o.kind||'bandits')===((e.ref?.src||e.ref)?.kind||'bandits'))};// (kin: a pack or band of the kind you fight, riding to its own: as ever)
 // (clear: px kept between your army's room and a place's defenders' as a fight there begins: WorldBattleArea.clearOf)
 const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1,clear:24};
+// a fight on the map begun at once (the owner, 2026-11-12: "make battle seamless without preparations, no talking"): an encounter of
+// these kinds opens no window first (no talk, no Attack, Auto-resolve or Flee: withdraw in the fight), and the armies form up where
+// they stand, no muster (BattleMuster); sieges, raids, tournaments and caves keep their own. on false: the window and the muster, as before
+const SEAMLESS={on:true,kinds:['party','lord','patrol','caravan','monster','field','villagers','estate','camp','ruin','outpost']};
+const seamless=e=>!!(SEAMLESS.on&&WORLD_BATTLE.on&&e&&SEAMLESS.kinds.includes(e.kind)&&!Interior.on(e)&&!SiegeWorks.on(e));
 // Only local avoidance runs while campaign time is paused. Existing work/travel orders stay on their owners.
 class BattleBystanders{
   constructor(area){this.area=area;this.time=0;this.next=0;this.entries=new Map();this.navs=new Map()}
@@ -358,7 +363,7 @@ class WorldBattleSetup extends BattleSetup{
       const key=marchRowOf(g,first),formation=g.player?rows:source instanceof Party?marchRows(source):[],offset=formation.find(r=>r.id===key)||{x:0,y:first?.leader?0:(Object.keys(B.groups).indexOf(id)%5-2)*7};a.place(g,m,g.player?a.starts[0]:this.area.joinedFight&&Number.isFinite(anchor?.x)?anchor:a.starts[1],offset,g.player?P:source?.src||source||e.ref,true);// (men of no army of their own, a camp's after a load: they stand for the place, e.ref)
     }
     OutpostTower.post(B,a);// (an outpost's archers on its tower: world/outposts.js)
-    if(this.surprise||a.joinedFight){B.ready=false;B.paused=false}else{B.muster=new BattleMuster(B);B.ready=false;B.paused=false}B.speed=G.speed;B.deploy=false;exitInit(B.units);a.clamp();B.sight=null;for(const u of B.units){delete u.ls;u.hid=0}if(BattleSides.eligible(e))this.area.sides=B.sides=new BattleSides(B,e);Surprise.begin(B,e);if(e&&e.btype&&e.btype.kind==='ambush')e.btype=false;sightStep(true);warmBattle(B.units);
+    if(this.surprise||a.joinedFight||seamless(e)){B.ready=false;B.paused=false}else{B.muster=new BattleMuster(B);B.ready=false;B.paused=false}B.speed=G.speed;B.deploy=false;exitInit(B.units);a.clamp();B.sight=null;for(const u of B.units){delete u.ls;u.hid=0}if(BattleSides.eligible(e))this.area.sides=B.sides=new BattleSides(B,e);Surprise.begin(B,e);if(e&&e.btype&&e.btype.kind==='ambush')e.btype=false;sightStep(true);warmBattle(B.units);
   }
   present(){super.present();B.deploy=false;bbar.hidden=false;this.area.syncCamera();if(B.muster?.active)toast('Armies are moving to their starting formations. Combat begins only after Start Battle.')}
   start(after){this.survey();this.terrain();this.muster();this.open();if(after)after();return Promise.resolve()}

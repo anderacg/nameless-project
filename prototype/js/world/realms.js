@@ -313,7 +313,7 @@ function worldDay(){
 // each moment on the map: LordBrain (brains.js)
 function lordMeet(l,topic){
   KNOWLEDGE.sight(l);
-  if(hostileTo(l.fac)&&!lordSpares(l))return cornered(l,'lord')?parley(l,'lord'):startEncounter({kind:'lord',ref:l,list:l.troops.slice()});
+  if(hostileTo(l.fac)&&!lordSpares(l))return cornered(l,'lord')&&!seamless({kind:'lord'})?parley(l,'lord'):startEncounter({kind:'lord',ref:l,list:l.troops.slice()});// (seamless: no talk, the fight at once: SEAMLESS)
   // (a great lord who will not see you yet: his steward's word, world/gates.js)
   if(!topic&&!(G.enc&&G.enc.kind==='lord'&&G.enc.ref===l)){const g=Gates.audience(l);if(!g.ok)return Gates.showSteward(l,g)}
   const talk=['dialog','scene'].includes(G.mode)&&G.enc&&G.enc.kind==='lord'&&G.enc.ref===l&&G.enc.talk||{};
