@@ -63,7 +63,8 @@ class BattleDrops{
     if(shade){ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y+7,4.5,1.6,0,0,6.283);ctx.fill()}
     if(g.k==='gold'){const C=DROPS.col;for(const [dx,dy] of [[-2,1],[2,1],[0,-1]].slice(0,Math.min(3,g.n))){ctx.fillStyle=C.coinEdge;ctx.beginPath();ctx.ellipse(x+dx,y+dy+.6,2.6,1.6,0,0,6.283);ctx.fill();ctx.fillStyle=C.coin;ctx.beginPath();ctx.ellipse(x+dx,y+dy,2.6,1.6,0,0,6.283);ctx.fill()}
       ctx.globalAlpha=gl*.9;ctx.fillStyle='#fffbe6';ctx.fillRect(Math.round(x+1),Math.round(y-2),1,1);ctx.globalAlpha=1;return}
-    const def=g.k==='gear'?ITEMS[g.id]:MATS[g.id],c=def&&itemIcon(def);
+    // (its picture: the inventory's illustration (ui/icons.js itemArtCanvas), drawn smooth at DROPS.art px; its pixel icon while that loads)
+    const def=g.k==='gear'?ITEMS[g.id]:MATS[g.id],art=def&&typeof itemArtCanvas==='function'&&itemArtCanvas(def,DROPS.art*2),c=art||def&&itemIcon(def);
     ctx.globalAlpha=.18+.3*gl;ctx.fillStyle=g.k==='gear'?'#ffe08a':'#e8d8b0';ctx.beginPath();ctx.arc(x,y,7.5,0,6.283);ctx.fill();ctx.globalAlpha=1;
-    if(c)ctx.drawImage(c,Math.round(x-6),Math.round(y-6),12,12)}
+    if(art){const z=DROPS.art,sm=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=true;ctx.drawImage(art,x-z/2,y-z/2,z,z);ctx.imageSmoothingEnabled=sm}else if(c)ctx.drawImage(c,Math.round(x-6),Math.round(y-6),12,12)}
 }

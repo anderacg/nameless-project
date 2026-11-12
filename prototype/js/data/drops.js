@@ -7,5 +7,6 @@
    the map's scale in a battle on the map); coin: the chance of coins from a man, and how many (a range); gear: the chance he drops his
    gear (a piece of his tier); beast: the chance a beast leaves its hide (its kind's: data/monsters.js MATS); pick: how near your hero or
    a companion draws them in (px); bob: the ground's icons' bob (px) and glint period (s); col: the dots' and coins' colours */
-const DROPS={on:true,loot:true,xp:8,dots:{xp:6,troop:3},speed:220,coin:{chance:.6,n:[1,4]},gear:.1,beast:.6,pick:26,bob:[1.5,1.6],
+// (art: px a ground item's picture is drawn, the inventory's illustration: battle/drops.js)
+const DROPS={on:true,art:14,loot:true,xp:8,dots:{xp:6,troop:3},speed:220,coin:{chance:.6,n:[1,4]},gear:.1,beast:.6,pick:26,bob:[1.5,1.6],
   col:{xp:'#ffd54a',xpCore:'#fff6c8',troop:'#7fc8ff',troopCore:'#e6f6ff',coin:'#f2c94c',coinEdge:'#a8781c'}};

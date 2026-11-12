@@ -11,6 +11,10 @@ const WILDLIFE_AWARE={cover:.6,switch:.8};
 const CRITTER_WOODS={keep:.3};
 // (rare: {habitat: share}: a spot of that habitat kept only that share of the time when one is placed: reindeer and snow hares mostly
 // in the snowy woods, some on the open snow. w: how often a kind is placed, against the others: hares are few)
+// a hunted animal's figure in a battle (gfx/sprites.js wildKind): on, its battle figure (engine/wildlife.js, the owner, 2026-11-12: "make
+// wildlife sprite a battle sprite too": shaded, outlined, walking, running and dying as the beasts do, at its real size); off, its map
+// figure, as before
+const WILD_ART={on:true};
 const CRITTERS={
   rabbit:{n:'Rabbits',one:'rabbit',where:['grass','forest'],herd:[2,4],meat:1,mat:['rabbitfur',.5],xp:2,spd:30,shy:50,w:4,size:1,col:'#b8a088'},
   deer:{n:'Deer',one:'deer',where:['forest','grass'],herd:[2,4],meat:4,mat:['hide',.6],xp:5,spd:40,shy:70,w:3,size:2,col:'#a0683a'},

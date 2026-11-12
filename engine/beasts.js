@@ -134,7 +134,7 @@
     const Y=S.Y,b=F.bob,lx=F.lean?1:0,hip=S.hip,sho=S.sho+lx,top=[Y-S.back[0]+b,Y-S.back[1]+b],bel=Y-S.belly+b,C=S.C,Dk=S.D,P={Y,b,lx,hip,sho,top,bel};
     // (a leg: from its root under the body to its foot on the ground (lift: raised), a hind one bent back at the hock)
     const leg=(i,near)=>{const fore=i%2===1,[dx,lift]=F.legs[i]||[0,0],up=fore&&near&&S.pawUp?[0,S.pawUp,Math.ceil(S.pawUp/2)][F.paw]||0:0,rx=(fore?sho:hip)+(near?0:-1),ry=bel-1,
-      fx=rx+dx+(near?0:(fore?-1:1))+(up?2:0),fy=Y-lift-up,m=mask(),[w0,w1,hock]=fore&&S.fore?S.fore:S.legs,LC=fore&&S.foreC?S.foreC:C;
+      fx=rx+dx+(near?0:(fore?-1:1))+(up?2:0),fy=Y-lift-up,m=mask(),[w0,w1,hock]=fore&&S.fore?S.fore:S.legs,LC=fore&&S.foreC?S.foreC:S.legC||C;
       // (S.elbow: a foreleg bent as a great lizard's, the elbow back under the body and the forearm down and forward to the wrist;
       // S.toes: a long foot on the ground ahead of the leg, its claws at the end)
       // (S.talons (the dragon's, the owner 2026-11-07: "dragon feet should not be a straight line"): the leg ends at its ankle, its
@@ -167,10 +167,10 @@
     return h}
   // the neck and head: the neck from the withers to the back of the head; the skull, the snout, the jaw (open in a bite)
   function head(g,S,F,P){const H=S.head,C=S.C,Dk=S.D,sho=P.sho,hx=sho+H.x+F.head[0]+P.lx,hy=P.Y-H.y+P.b+F.head[1],neck=mask();
-    neck.poly([[sho-2,P.top[1]],[hx-H.w/2+1,hy-H.h/2],[hx,hy+H.h/2],[sho+1,P.bel-1]]);shade(g,neck,C,{cx:sho-1,cy:hy-2,rx:H.w,ry:H.h+3});
+    neck.poly([[sho-2,P.top[1]],[hx-H.w/2+1,hy-H.h/2],[hx,hy+H.h/2],[sho+1,P.bel-1]]);shade(g,neck,C,{cx:sho-1,cy:hy-2,rx:H.w,ry:H.h+3,dk:-(H.lit||0)});// (H.lit: a long neck a step lighter, a deer's)
     if(S.mane)S.mane(g,F,P,hx,hy);
     const [sl,sd]=H.snout,sx=Math.round(hx+H.w/2-1),sy=Math.round(hy-sd/2+(H.sy||0)),sk=mask().ell(hx,hy,H.w/2,H.h/2),sn=mask().rect(sx,sy,sl,sd);if(sd>2)sn.s.delete(K(sx+sl-1,sy+sd-1));
-    shade(g,sk,C,{cx:hx-1,cy:hy-1,rx:H.w/2+1,ry:H.h/2+1});shade(g,sn,H.M||C,{cx:hx,cy:sy,rx:H.w/2+sl,ry:sd+1});
+    shade(g,sk,H.C||C,{cx:hx-1,cy:hy-1,rx:H.w/2+1,ry:H.h/2+1});shade(g,sn,H.M||H.C||C,{cx:hx,cy:sy,rx:H.w/2+sl,ry:sd+1});// (H.C: a head of its own colour, a sheep's dark face)
     if(F.jaw){const my=sy+sd;for(let k=0;k<F.jaw;k++)for(let x=sx;x<sx+sl-(k?1:0);x++)put(g,x,my+k,k?'#6a3038':'#3a2430');for(let x=sx-1;x<sx+sl-(F.jaw>1?0:1);x++)put(g,x,my+F.jaw,(H.M||C)[2]);
       if(H.fang){put(g,sx+sl-2,my,'#efe8d8');put(g,sx+1,my+F.jaw-1,'#d8d0bc')}}
     put(g,sx+sl-1,sy,Dk[3]);// (the nose)

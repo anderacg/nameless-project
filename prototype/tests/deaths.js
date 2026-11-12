@@ -38,8 +38,11 @@ Kit.suite(({ok,info})=>{const t=T,L=t.BattleLab,D=t.DEATHS,random=Math.random;
       const d=box(draw(u,true));if(!d||d[3]<G-1||d[3]>G+(V.mount?24:18)||d[1]<G-32||d[0]<G-46||d[2]>G+46)bad.push(k+' '+n+' lies '+(d&&d.map(v=>v-G)))}}}
    ok(!bad.length,'all '+kinds.length+' kinds ('+[...ALL.values()].reduce((a,m)=>a+m.size,0)+' deaths) lie dead, each not its standing sprite, whole, on the ground'+(bad.length?': '+bad.slice(0,12).join('; '):''))}
   // (the hunt's game: dead, not walking (before: a frame of its walk))
-  {const u=unit('wild_deer',1),k0=D.on;D.on=false;const before=t.deathOf(u).down;D.on=k0;
-   ok(before===t.unitSprite('wild_deer',1,false,0,t.PX.BEAST_DEAD)&&key(t.deathOf(u).down)!==key(before),'the hunt\'s game lies dead in a pose of its own (before: a frame of its walk)')}
+  {const W0=t.WILD_ART.on;t.WILD_ART.on=false;try{const u=unit('wild_deer',1),k0=D.on;D.on=false;const before=t.deathOf(u).down;D.on=k0;
+   ok(before===t.unitSprite('wild_deer',1,false,0,t.PX.BEAST_DEAD)&&key(t.deathOf(u).down)!==key(before),'the hunt\'s game (its map figure, WILD_ART off) lies dead in a pose of its own (before: a frame of its walk)')}finally{t.WILD_ART.on=W0}}
+  // (its battle figure, engine/wildlife.js: one of its kind's three deaths, as a beast's)
+  {const u=unit('wild_deer',1),V=t.deathOf(u),dead=[0,1,2].map(i=>key(t.unitSprite('wild_deer',1,false,0,t.PX.BEAST_DEAD+i)));
+   ok(dead.includes(key(V.down))&&t.PX.BEAST_DEATHS.w_deer.includes(V.name),'its battle figure lies dead as a beast does: '+V.name)}
   // ======== the deaths: several to a kind, each its own picture
   {const few=[],same=[];
    for(const [k,m] of ALL){const S=t.ST[k]||{},need=k==='tiger'?1:S.wildlife?3:S.beast?3:t.corpseOf(unit(k,1)).mount?6:5;if(m.size<need)few.push(k+' '+m.size);

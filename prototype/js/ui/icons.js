@@ -249,6 +249,16 @@ const ICONS={
 };
 // Atlas view boxes preserve native proportions and transparent silhouettes.
 function icon(name,size,cls){if(name==='tree')return '<svg class="'+(cls||'gico')+'" data-ui-icon="tree" viewBox="0 0 100 100" width="'+(size||16)+'" height="'+(size||16)+'" aria-hidden="true" focusable="false"><defs><linearGradient id="ui-tree-light"><stop stop-color="#b6c781"/><stop offset=".5" stop-color="#65854c"/><stop offset="1" stop-color="#344e32"/></linearGradient></defs><path d="M44 68H56V95H44Z" fill="#926c3e" stroke="#443722" stroke-width="3"/><path d="M50 5L74 35H64L86 61H72L96 84H4L28 61H14L36 35H26Z" fill="url(#ui-tree-light)" stroke="#c2a567" stroke-width="3"/><path d="M31 35H63M21 61H73" stroke="#d2d79b" stroke-width="2" opacity=".5"/></svg>';const A=UI_ILLUSTRATIONS[name];if(A){const S=UI_ICON_SHEETS[A[4]||0];size=size||16;return '<svg class="'+(cls||'gico')+'" data-ui-icon="'+name+'" viewBox="'+A.slice(0,4).join(' ')+'" width="'+size+'" height="'+size+'" aria-hidden="true" focusable="false"><image href="'+S[0]+'" width="'+S[1]+'" height="'+S[2]+'"/></svg>'}return ''}
+// an item's illustration as the inventory shows it (itemIllustration: its sheet's crop, its material's swatch), as a canvas px square
+// for the battlefield's canvas (battle/drops.js: what lies on the ground, the owner 2026-11-12: "use the same icon in inventory");
+// null while its sheet loads, or for an item with no illustration (its pixel icon then: gfx/sprites.js itemIcon)
+const ITEM_ART_CV=new Map(),UI_SHEET_IMG=[];
+function itemArtCanvas(def,px){const name=UI_ICON_ALIASES[def.icon]||def.icon,A=UI_ILLUSTRATIONS[name];if(!A)return null;const col=/^#[a-f0-9]{3,8}$/i.test(def.col||'')?def.col:null,k=name+'|'+(col||'')+'|'+px;
+  if(ITEM_ART_CV.has(k))return ITEM_ART_CV.get(k);const i=A[4]||0,S=UI_ICON_SHEETS[i],img=UI_SHEET_IMG[i]||(UI_SHEET_IMG[i]=Object.assign(new Image(),{src:S[0]}));if(!img.complete||!img.naturalWidth)return null;
+  const fx=img.naturalWidth/S[1],fy=img.naturalHeight/S[2],f=Math.min(px/A[2],px/A[3]),c=mkc(px,px,g=>{g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+    g.drawImage(img,A[0]*fx,A[1]*fy,A[2]*fx,A[3]*fy,(px-A[2]*f)/2,(px-A[3]*f)/2,A[2]*f,A[3]*f);
+    if(col){g.beginPath();g.arc(px*.87,px*.87,px*.09,0,6.283);g.fillStyle=col;g.fill();g.lineWidth=Math.max(1,px*.03);g.strokeStyle='#c4a365';g.stroke()}});
+  ITEM_ART_CV.set(k,c);return c}
 // Inventory uses the same illustrated categories; a small material swatch preserves item colour.
 function itemIllustration(def,size){const name=UI_ICON_ALIASES[def.icon]||def.icon;if(!UI_ILLUSTRATIONS[name])return '';const art=icon(name,100),col=/^#[a-f0-9]{3,8}$/i.test(def.col||'')?def.col:null;return '<svg class="gico item-illustration" data-item-illustration="'+def.icon+'" viewBox="0 0 100 100" width="'+size+'" height="'+size+'" aria-hidden="true" focusable="false">'+art+(col?'<circle cx="87" cy="87" r="9" fill="'+col+'" stroke="#c4a365" stroke-width="3"/>':'')+'</svg>'}
 const UI_ORDER_ART={

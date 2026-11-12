@@ -42,6 +42,7 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
   // (a beast or a monster: its own figure (engine/beasts.js), one of three variants, its poses: beastSprite)
   // (wildlife hunted: the map's own animal; with the paper dolls at its real size beside them (the owner, 2026-11-06: "fit with the
   //  current sprites scale"), drawn with no outline, its own edge darkened, as theirs (critters.js CRITTER_EDGE); else doubled)
+  {const wk=wildKind(type);if(wk)return beastSprite(wk,team===2?0:team,v,pose)}
   if(ST[type]?.wildlife){const id=ST[type].wildlife,f=pose>=2?pose%PX.MAP_STEPS:0,key='hunt:'+id+':'+f;if(spr[key])return spr[key];const s=critterSprite(id,f);
     if(DOLL_FIGS.on&&DOLL_FIGS.edge)return spr[key]=s;
     const c=mkc(s.width*2,s.height*2,g=>g.drawImage(s,0,0,s.width*2,s.height*2));c.cw=s.cw*2;c.ch=s.ch*2;return spr[key]=c;}
@@ -65,6 +66,8 @@ function horseSprite(L){const key='hz'+L.mount+(L.mountC||'')+L.team+(L.barded?'
    crisp; a rider thrown from his mount, which lies low beside him; a beast slumped where it stood. stand: him upright (his fall
    turns it about his feet), body: him lying, ax, ay: his feet in it; wk: the weapon he dropped; mount: his mount standing, down:
    lying */
+// (a hunted animal's battle figure, its kind's (engine/wildlife.js 'w_' + its look), while WILD_ART is on; else null: its map figure)
+const wildKind=type=>{const id=ST[type]?.wildlife;if(!id||!WILD_ART.on||!PX.WILD_KINDS)return null;const D=CRITTERS[id],k='w_'+(D&&D.look||id);return PX.WILD_KINDS.includes(k)?k:null};
 const CORPSES=new WeakMap(),BEAST_FALL=breedsInto({troll:'over',spider:'back',scorpion:'back',slime:'melt'});
 // (whose mount each lying one is, for its deaths: horseDeathOf)
 const DOWN_LOOK=new WeakMap();
@@ -104,7 +107,7 @@ function corpseOf(u){
    owner, 2026-11-01: "draw a weapon from start to finish"), GEAR.room rows over him for it (top); his corpse's (corpseOf) when he
    holds none apart. Kept by his body, apart from the corpse's record (the battle keeps that) */
 const DOWNED=new WeakMap();
-function downedOf(u){const c=corpseOf(u);if(!c.wk)return DEATHS.on&&ST[u.type]?.wildlife?wildDeath(u,c,deathMap(u),'belly'):c;const base=actorSprite(u,0,true);let d=DOWNED.get(base);if(d)return d;
+function downedOf(u){const c=corpseOf(u);if(!c.wk)return DEATHS.on&&ST[u.type]?.wildlife&&!wildKind(u.type)?wildDeath(u,c,deathMap(u),'belly'):c;const base=actorSprite(u,0,true);let d=DOWNED.get(base);if(d)return d;
   const L=unitLook(u),R=GEAR.room,g=pgrid(24,20+R);drawFigure(g,{...L,mount:null},4,3+R,-1,null,-1);const lie=pturn(g);poutline(g);poutline(lie);
   d={stand:pcanvas(g),body:pcanvas(lie),ax:c.ax,ay:c.ay,top:R};DOWNED.set(base,d);return d}
 /* ---------- the ways to die (the owner, 2026-11-03: "make sure all sprites has correct dead sprite and more variant of dead
@@ -150,9 +153,9 @@ const DEATH_SPR=new WeakMap(),deathMap=u=>{const b=actorSprite(u,0,true);let m=D
    (the side his weapon drops: 1 ahead of him, -1 behind), bits ([canvas, x, y]: his shield, his helm, lying by him), pool ([x, y]:
    his blood's middle); a rider's mount, down, ride and at (where he lies from his mount's middle) */
 function deathOf(u){const c=corpseOf(u);if(!DEATHS.on)return c;const id=u.id|0,S=ST[u.type]||{},m=deathMap(u);
-  if(S.wildlife)return wildDeath(u,c,m,deathPick(id,DEATHS.wild,1));
+  if(S.wildlife&&!wildKind(u.type))return wildDeath(u,c,m,deathPick(id,DEATHS.wild,1));
   if(u.type==='tiger'&&c.frames)return{...c,name:'side',blood:bloodOf(u)};
-  if(S.beast){const names=PX.BEAST_DEATHS[u.type]||['side'],how=deathPick(id,Object.fromEntries(names.map(n=>[n,DEATHS.beast[n]??1])),1);
+  if(S.beast){const names=PX.BEAST_DEATHS[wildKind(u.type)||u.type]||['side'],how=deathPick(id,Object.fromEntries(names.map(n=>[n,DEATHS.beast[n]??1])),1);
     return m[how]||(m[how]={beast:c.beast,down:actorSprite(u,PX.BEAST_DEAD+names.indexOf(how)),how:DEATHS.fall[u.type+'.'+how]||DEATHS.fall[how]||'side',name:how,blood:bloodOf(u),...(PX.wolf.isWolf(u.type)?{frames:Array.from({length:8},(_,i)=>actorSprite(u,PX.wolf.pose('death_'+how,i)))}:{})})}
   const L=deathLook(u),ride=c.mount?deathPick(id,DEATHS.rider,2):null,lie=ride&&deathPick(id,DEATHS.mount,3),how=ride==='across'?'face':ride==='under'?'back':deathPick(id,DEATHS.man,1),
     helm=DEATHS.hats.includes(L.helm)&&PX.hash(id,4,7177)<DEATHS.helm,k=how+(helm?'h':'')+(ride?ride+lie:'');
