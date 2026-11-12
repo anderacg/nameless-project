@@ -51,9 +51,10 @@ function wuiArrow(k,col){const key='a'+k+col;let c=WUIP.get(key);if(c)return c;c
   c=mkc(w+2,h+2,g=>{for(let y=-1;y<=h;y++)for(let x=-1;x<=w;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)||at(x-1,y-1)||at(x+1,y-1)))rect(g,WUI_K.dark,x+1,y+1);
     for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(at(x,y))rect(g,!at(x,y-1)||!at(x-1,y)?lt:!at(x+1,y)||x>=w>>1&&!at(x,y+1)?dk:col,x+1,y+1)});
   c.cx=(w+2)>>1;c.tip=h;WUIP.set(key,c);return c}
-// the crossed swords (icons.js ICONS.attack, the ring's Attack), outlined in the figures' navy (people.js PEOPLE_OUT): the marker
+// Shared crossed-sword artwork with a hostile rim (the original glyph while loading): the marker
 // over a party you go to attack. tip: the row of its pommels in the picture, cx its middle
-function wuiSwords(){let c=WUIP.get('x');if(c)return c;const I=ICONS.attack,M=I.px,h=M.length,w=M[0].length,at=(x,y)=>y>=0&&y<h&&x>=0&&x<w&&M[y][x]!=='.';
+function wuiSwords(){let c=WUIP.get('x');if(c&&(c.uiIcon||!uiIconReady('attack')))return c;
+  if(uiIconReady('attack')){c=mkc(13,12,g=>{g.fillStyle=PEOPLE_OUT;g.strokeStyle=WUI_K.col.foe;g.lineWidth=1;g.beginPath();g.ellipse(6.5,6,5.7,5.4,0,0,Math.PI*2);g.fill();g.stroke();uiCanvasIcon(g,'attack',1.5,1,10,10)});c.cx=6;c.tip=10;c.uiIcon='attack';WUIP.set('x',c);return c}const I=ICONS.attack,M=I.px,h=M.length,w=M[0].length,at=(x,y)=>y>=0&&y<h&&x>=0&&x<w&&M[y][x]!=='.';
   c=mkc(w+2,h+2,g=>{for(let y=-1;y<=h;y++)for(let x=-1;x<=w;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))rect(g,PEOPLE_OUT,x+1,y+1);
     for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(at(x,y))rect(g,I.p[M[y][x]],x+1,y+1)});
   c.cx=(w+2)>>1;c.tip=h;WUIP.set('x',c);return c}

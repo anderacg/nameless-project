@@ -166,3 +166,12 @@
 .campaign-world:not(.mobile-world) .campaign-company .campaign-details{position:static;display:block;width:100%;height:36px;min-height:36px;margin-top:4px;padding:0 8px;border:3px solid transparent;border-image:var(--campaign-frame) 176/6px;border-radius:0;background:var(--campaign-surface);color:var(--hud-ink);font:700 11px var(--hud-font);cursor:pointer}
 .campaign-world.company-details:not(.mobile-world) .campaign-company>.campaign-resources{grid-template-rows:18px repeat(2,36px)}.campaign-world.company-details:not(.mobile-world) .campaign-company>.campaign-resources::before{grid-column:1/-1}
 @media(max-width:1020px){.campaign-world:not(.mobile-world) .campaign-company{column-gap:10px}.campaign-world:not(.mobile-world) .campaign-company>#stats{padding-left:8px}.campaign-world:not(.mobile-world) .campaign-company .campaign-resource{grid-template-columns:20px minmax(0,1fr);gap:4px}.campaign-world:not(.mobile-world) .campaign-company .campaign-resource-art{width:18px;height:20px;margin-top:2.5px}}
+
+/* Illustrated symbols share transparency and material rendering in every window. */
+.gico[data-ui-icon],.item-illustration,.oico[data-ui-order],.mico[data-ui-status],.ficon[data-ui-formation]{image-rendering:auto;shape-rendering:auto;flex:none;vertical-align:middle}
+.item-illustration{display:inline-block}
+
+.uc-ico[data-ui-icon],.tp-glyph[data-ui-icon]{image-rendering:auto;shape-rendering:auto}
+.slot .item-illustration{width:28px;height:28px}.doll .slot .item-illustration,.invgrid .slot .item-illustration{width:26px;height:26px}.slot.ring .item-illustration{width:22px;height:22px}.doll .slot.ring .item-illustration{width:18px;height:18px}.loot-item .slot .item-illustration{width:24px;height:24px}.gc-item .item-illustration{width:32px;height:32px}.gc-tip .gc-item .item-illustration{width:24px;height:24px}.qrw-item .item-illustration{width:20px;height:20px}.fb-gear-row .item-illustration{width:36px;height:36px}.fb-shell .slot .item-illustration{width:32px;height:32px}.fb-item-summary .item-illustration{width:48px;height:48px}
+
+.slot-ghost .item-illustration{width:32px;height:32px}

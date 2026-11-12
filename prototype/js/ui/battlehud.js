@@ -3,7 +3,7 @@
    right, the selected unit's details at the bottom left, the orders over a row of unit cards at the bottom middle. On the field:
    rings under the soldiers you have selected, a softer one under the group you point at, and lines from each selected group to
    where it is going (or whom it is set on). ---------- */
-// the order and flag icons: 9×9 pixel maps (a: the button's colour, b: dimmer), on the buttons only (the cards: badgeSVG)
+// Glyph identities resolve to shared illustrated commands; unknown rows keep their compact fallback.
 const ORDER_ICON={
   shieldWall:['.aaaaaaa.','.a..a..a.','.a..a..a.','.aaaaaaa.','.a..a..a.','.a..a..a.','..aaaaa..','...aaa...','....a....'],
   hold:['...a.a...','.a.a.a.a.','.a.a.a.a.','.a.a.a.a.','.aaaaaaa.','.aaaaaaa.','..aaaaa..','..aaaaa..','...aaa...'],
@@ -24,7 +24,7 @@ const ORDER_ICON={
   // (keep formation: a front rank and a rear rank, bracketed together)
   keep:['aa.....aa','a.......a','..aaaaa..','.........','.........','..bbbbb..','.........','a.......a','aa.....aa']
 };
-function pixelSVG(rows,size,cls){const s=rows.length;let r='';rows.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')r+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="currentColor"'+(c==='b'?' opacity=".5"':'')+'/>'}));
+function pixelSVG(rows,size,cls){const key=Object.keys(ORDER_ICON).find(k=>ORDER_ICON[k]===rows)||Object.keys(ABIL_ICON).find(k=>ABIL_ICON[k]===rows),art=key&&uiOrderIcon(key,size,cls);if(art)return art;const s=rows.length;let r='';rows.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')r+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="currentColor"'+(c==='b'?' opacity=".5"':'')+'/>'}));
   return '<svg class="'+(cls||'oico')+'" viewBox="0 0 '+s+' '+s+'" width="'+size+'" height="'+size+'" shape-rendering="crispEdges" aria-hidden="true">'+r+'</svg>'}
 /* the order bar (doc/UNIT_KITS_DESIGN.md §2, §3, §5, §7b), built from the tables (data/kits.js; its keys KIT_KEYS, by KITS.keys2): the
    orders (ORDERS: Hold, Charge (keys2: a true order, bCharge), the Attack-move; Withdraw last, on the right), the stances (STANCES:

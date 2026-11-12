@@ -39,7 +39,7 @@ Kit.suite(({ok})=>{
  const slotOf=(k,id)=>P.inv.findIndex(x=>x&&x.k===k&&x.id===id);P.gear.weapon=null;G.mode='world';t.openInv();ok(G.mode==='inv'&&document.querySelectorAll('.invgrid .slot').length===t.INV_SIZE,'inventory opens with '+t.INV_SIZE+' slots');t.act('inv-equip',String(slotOf('gear','clawblade')));
  // (against the blade without its +3, not against no weapon: bare hands hit for less since the Nobody's fists, combat.js FISTS)
  {const m=t.ITEMS.clawblade.m,d=m.dmg;m.dmg=0;const base=t.heroStats().dmg;m.dmg=d;ok(P.gear.weapon==='clawblade'&&Math.abs(t.heroStats().dmg-base-3)<.01,'equipping the claw blade adds 3 damage')}
- ok(/Tiger Claw Blade/.test(document.getElementById('panel').innerHTML)&&document.querySelectorAll('.slot canvas').length>0,'inventory shows the weapon with icons');
+ ok(/Tiger Claw Blade/.test(document.getElementById('panel').innerHTML)&&document.querySelectorAll('.slot .item-illustration').length>0,'inventory shows the weapon with icons');
  t.act('inv-unequip','weapon');ok(!P.gear.weapon&&slotOf('gear','clawblade')>=0,'unequip returns it to the bag');t.act('inv-equip',String(slotOf('gear','clawblade')));t.act('inv-close');
  P.gear.charm='griffcharm';ok(t.gm('travel')===.15,'charm bonuses add up');
  // market
