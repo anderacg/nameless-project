@@ -121,9 +121,9 @@ Only the lead the player chooses is tracked. The others remain in the completed 
 
 ## Implementation scope
 
-Reuse the existing Thread, Quest, Choice, Outcome, map markers, settlement pages, recruitment service, and battle/parley systems. Add one opening thread, a short courier/delivery quest variant, a fixed-target recovery quest, the carter and deserter encounter kinds, and the compact objective tracker. Keep tunables and story-kind declarations with the project's data/story definitions rather than scattering special cases across UI files.
+Reuse the existing QuestChain, Quest, Choice, Outcome, map markers, settlement pages, recruitment service, and battle/parley systems. Add one opening quest chain, a short courier/delivery quest variant, a fixed-target recovery quest, the carter and deserter encounter kinds, and the compact objective tracker. Keep tunables and story-kind declarations with the project's data/story definitions rather than scattering special cases across UI files.
 
-The existing encounter-end issue must be corrected first: an encounter disappearing or handing off to a battle does not consistently notify a waiting thread. The recovery quest must listen to the actual result, not consider battle entry a victory. Also handle a full quest list without dropping the next step.
+The existing encounter-end issue must be corrected first: an encounter disappearing or handing off to a battle does not consistently notify a waiting quest chain. The recovery quest must listen to the actual result, not consider battle entry a victory. Also handle a full quest list without dropping the next step.
 
 Suggested build order:
 

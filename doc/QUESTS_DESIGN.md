@@ -33,7 +33,7 @@ And across all of them:
 - **The target is a pin.** You are shown exactly where it is, so there is nothing to find out.
 - **Nothing changes after.** A broken band, a slain pack or a delivered load leaves no mark: prices, roads and herds are as before,
   and no one mentions it again.
-- **Chains do not grow from jobs.** The one real chain (The Wounded Traveller, `story/wounded.js`) is good, but no job leads to
+- **JobChains do not grow from jobs.** The one real chain (The Wounded Traveller, `story/wounded.js`) is good, but no job leads to
   another.
 
 What the world already knows, and the quests do not use:
@@ -201,9 +201,9 @@ on its daily check (`lapse`) and rewrites its objective with a line in the journ
 - the cause ended (the shortage eased, the siege broke): closed, a share paid;
 - the giver's holding changed hands: the giver asks you to finish it anyway (the new lord pays) or lets you go without cost.
 
-## 8. Chains
+## 8. JobChains
 
-Chains are stories several quests long. They are **threads** (`story/thread.js`) whose steps are the quests above, so every step
+JobChains are stories several quests long. They are **quest chains** (`story/questchain.js`) whose steps are the quests above, so every step
 is grounded too. A chain starts from how a quest ended, from a place you find, or from a person.
 
 Rules:
@@ -268,7 +268,7 @@ The questbook keeps its hand-written entries. Two changes:
 | D3 | Named givers on each holding | **Yes**, 2–4 per holding by its estates and kind, each with regard |
 | D4 | Empty boards when nothing is true | **Yes**, saying why |
 | D5 | Rewards from the giver's purse (villages pay in goods) | **Yes** |
-| D6 | Chains from jobs: the four in §8 | **Build all four**, one at a time |
+| D6 | JobChains from jobs: the four in §8 | **Build all four**, one at a time |
 | D7 | Old saves | No migration (the house rule): quests already taken keep their old target; new fields get defaults |
 | D8 | The boards' offers stay seeded from the `quests` stream | **Yes**, so `worldprint` (W1–W8) holds; only quest content moves |
 
@@ -284,7 +284,7 @@ Each step is its own patch, behaviour-preserving first where it refactors; tests
 | Q4 | **Leads:** the ageing circle, rumours and tracking sharpen it | `world/quests.js`, `ui/questmarks` in `quests.js` | `tests/questleads.js` |
 | Q5 | **Turns and marks** (§7, §9) | `world/quests.js`, `world/caravans.js` (fear), `world/news.js` (the safe-road line) | `tests/questmarks.js` |
 | Q6 | **New kinds:** the letter (real), the war's two, the caravan escort (`convoy`) and the missing (all built) | `world/quests.js`, `world/letters.js`, `world/caravans.js` | `tests/questkinds2.js`, `tests/questkinds3.js` |
-| Q7 | **Chains:** the four in §8, one at a time | `story/chains/*.js` (new, as `story/wounded.js`) | one suite each |
+| Q7 | **JobChains:** the four in §8, one at a time | `story/chains/*.js` (new, as `story/wounded.js`) | one suite each |
 | Q8 | **The questbook's goals and conditions** find real targets (§8) | `story/questbook.js`, `data/questbook/samples.js` | `tests/questbook.js` updated |
 
 Fingerprints: the quests draw from their own stream, so `worldprint` should hold. The battle suites are untouched. Any re-record

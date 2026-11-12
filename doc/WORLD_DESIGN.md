@@ -141,7 +141,7 @@ It runs under `-Seed 1`. Every Phase 0 step must reproduce all eight.
 - a plugin system for generator stages (they are plain functions in one file);
 - typed config objects;
 - rewriting the 200+ `tAt`/`MW` call sites;
-- a worker thread (Chrome blocks workers loaded from `file://`);
+- a worker quest chain (Chrome blocks workers loaded from `file://`);
 - streaming tile data (all tile data fits in memory even at Huge, §3.2; only pixels stream).
 
 **Order and split** (5 agents at most, by file; full launch plan with file lists and checks in §15.1):
@@ -280,7 +280,7 @@ Today's flow field per holding is Float64 over every tile: 6.3 MB each at Huge, 
 
 ### 3.7 Generation time and memory
 
-Generation runs on the main thread in stages, behind a **"Forging the world…" screen** with a bar and the stage's name ("Raising mountains", "Carving rivers", "Founding holdings", "Laying roads"). It yields every ≤ 50 ms so the page never freezes.
+Generation runs on the main quest chain in stages, behind a **"Forging the world…" screen** with a bar and the stage's name ("Raising mountains", "Carving rivers", "Founding holdings", "Laying roads"). It yields every ≤ 50 ms so the page never freezes.
 
 | | Normal | Large | Huge |
 |---|---|---|---|

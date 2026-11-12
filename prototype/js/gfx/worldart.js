@@ -377,7 +377,7 @@ function straightOn(l,XE,k,ramped,seg){const G=GENART,o=[],n=l.length,mid=v=>Mat
   return o}
 // is map pixel (x, y) water (1) or land (0): the water's field there over a half. The field: the tiles round it (water 1, land 0, off
 // the map water) read between their middles a quadratic B-spline's way (a straight shore stays on its tiles' edge, a staircase of
-// tiles reads as a slope, a corner as an arc), or bilinearly where that is more (a lone water tile or a thread of them keeps its
+// tiles reads as a slope, a corner as an arc), or bilinearly where that is more (a lone water tile or a quest chain of them keeps its
 // size), its edge moved by a smooth noise (GENART.wob px either way): rounded lakes and smooth bends, each shore within some 6 px of
 // its tiles' edge (passing stays by tile; the land's nature keeps clear of the water: worldnature.js spec.wet and round)
 function wpx(K,x,y){const n=wnb(K,x>>4,y>>4,WN9);for(let k=1;k<9;k++)if(n[k]!==n[0])return wpxN(n,x,y);return n[0]}

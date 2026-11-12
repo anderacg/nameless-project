@@ -111,7 +111,7 @@ Kit.suite(({ok})=>{
  const child=days=>E.start({who:'child',to:{town:'Ashford',lot:'house',i:0},prize:{morale:5},...(days?{days}:{})});
  // ---- the categories: a job, a side quest (an escort from the road), a story (side; a main story's kind is marked main)
  {const qb=t.makeQuest('bounty',ash),qe=child();
-  ok(qb.cat==='job'&&qe.cat==='side'&&t.Quest.as(qe).abandonable===false&&t.QUEST_CATS.job.tab==='Jobs'&&t.kindOf('thread','wounded')&&!t.kindOf('thread','wounded').main,'categories: a bounty is a job, an escort from the road a side quest; The Wounded Traveller is no main story');
+  ok(qb.cat==='job'&&qe.cat==='side'&&t.Quest.as(qe).abandonable===false&&t.QUEST_CATS.job.tab==='Jobs'&&t.kindOf(t.QUESTCHAIN_SHAPE,'wounded')&&!t.kindOf(t.QUESTCHAIN_SHAPE,'wounded').main,'categories: a bounty is a job, an escort from the road a side quest; The Wounded Traveller is no main story');
   P.quests=[]}
  // ---- every state of a job: locked, available, active, completed, done (archived)
  {const qt=t.makeQuest('troops',ash);P.troops={};
@@ -163,22 +163,22 @@ Kit.suite(({ok})=>{
   G.day=qe.due+1;t.questDay();G.day=qe.due-2;ok(!P.quests.length&&qe.fate==='late'&&lastArch().k==='q'+qe.id&&lastArch().cat==='side'&&lastArch().state==='failed','but it still fails by the world: late, archived failed ('+lastArch().got+')')}
  // ---- the main story (a test-only kind): stages with checkpoints; a failed stage falls back to the last checkpoint, never ends it
  {world();P.quests=[];const page=(title,cs)=>({page:{title,text:title+'.',choices:cs.map(([label,how])=>({label,how,out:()=>({})}))}});
-  t.defineKind('thread','qm_main',{n:'A Test of Names',main:true,who:()=>'you',steps:[
+  t.defineKind(t.QUESTCHAIN_SHAPE,'qm_main',{n:'A Test of Names',main:true,who:()=>'you',steps:[
    {id:'road',stage:'Reach Ashford',checkpoint:true,how:d=>d.e.fate,start:{step:'visit',town:'Ashford',spec:{to:{town:'Ashford'},title:'Reach Ashford'}},note:'Go to Ashford.',then:{arrived:'grain'}},
    {id:'grain',stage:'Recover the grain',checkpoint:true,fail:['lost'],setback:'The deserters beat you back. The grain is still theirs.',start:page('The deserters',[['Win','won'],['Lose','lost']]),note:'Recover the grain.',then:{won:'cart'}},
    {id:'cart',stage:'Bring the cart home',fail:['ambush'],start:page('The road home',[['Home','home'],['Ambushed','ambush']]),note:'Bring the cart home.',then:{home:'end'}},
    {id:'end',stage:'Home',start:page('Home',[['Rest','rest']]),note:'Rest.'}]});
-  const th=t.Thread.start('qm_main',{town:'Ashford'}),sq=()=>t.Quest.as(P.quests.find(x=>x.id===th.wait.id));
+  const th=t.QuestChain.start('qm_main',{town:'Ashford'}),sq=()=>t.Quest.as(P.quests.find(x=>x.id===th.wait.id));
   ok(th.cat==='main'&&th.state==='active'&&th.cp==='road'&&sq()&&sq().story===th,'a main story: category main, active, at its first checkpoint, its stage a quest of its own');
   t.act('q-abandon',String(sq().id));ok(P.quests.length===1&&th.at==='road','q-abandon refuses a main story’s stage');
   sq().arrive(ash);ok(th.at==='grain'&&th.cp==='grain'&&G.mode==='story','there: the next stage, a checkpoint too (its page)');
-  t.act('thr-do','1');ok(t.Thread.list().on.includes(th)&&th.at==='grain'&&G.msgs.some(m=>m.m==='The deserters beat you back. The grain is still theirs.')&&th.past.map(p=>p.join(':')).join()==='road:arrived,grain:lost','beaten by the deserters: back to "Recover the grain", a line saying what happened, never ended');
+  t.act('thr-do','1');ok(t.QuestChain.list().on.includes(th)&&th.at==='grain'&&G.msgs.some(m=>m.m==='The deserters beat you back. The grain is still theirs.')&&th.past.map(p=>p.join(':')).join()==='road:arrived,grain:lost','beaten by the deserters: back to "Recover the grain", a line saying what happened, never ended');
   t.act('thr-do','0');ok(th.at==='cart','won: on to the cart');
   t.act('thr-do','1');ok(th.at==='grain'&&th.cp==='grain'&&/You failed: Bring the cart home\. Back to Recover the grain\./.test(G.msgs[G.msgs.length-1].m),'ambushed on the road home (no checkpoint of its own): back to the last checkpoint passed, the grain ('+G.msgs[G.msgs.length-1].m+')');
   ok(!arch().some(e=>e.k==='t'+th.i),'never archived while it falls back');
-  Kit.world();t.saveGame();t.act('load');const z=t.Thread.list().on.find(x=>x.i===th.i);ok(z&&z.cp==='grain'&&z.at==='grain'&&z.cat==='main','saved and loaded: its checkpoint kept');
+  Kit.world();t.saveGame();t.act('load');const z=t.QuestChain.list().on.find(x=>x.i===th.i);ok(z&&z.cp==='grain'&&z.at==='grain'&&z.cat==='main','saved and loaded: its checkpoint kept');
   Kit.world();z.showPage();t.act('thr-do','0');t.act('thr-do','0');t.act('thr-do','0');
-  ok(!t.Thread.list().on.includes(z)&&lastArch().k==='t'+z.i&&lastArch().cat==='main'&&lastArch().state==='done'&&lastArch().title==='A Test of Names'&&lastArch().got==='Home','won, home, rested: done, archived as one main quest ('+JSON.stringify(lastArch())+')')}
+  ok(!t.QuestChain.list().on.includes(z)&&lastArch().k==='t'+z.i&&lastArch().cat==='main'&&lastArch().state==='done'&&lastArch().title==='A Test of Names'&&lastArch().got==='Home','won, home, rested: done, archived as one main quest ('+JSON.stringify(lastArch())+')')}
  // ---- the archive: kept capped (the last QUEST_ARCHIVE.keep), saved; none yet, no field
  {world();for(let i=0;i<70;i++)t.QuestArchive.add({k:'qz'+i,cat:'job',title:'T'+i,giver:'X',state:'done',day:G.day,got:''});
   ok(arch().length===t.QUEST_ARCHIVE.keep&&arch()[0].k==='qz10'&&lastArch().k==='qz69','capped at '+t.QUEST_ARCHIVE.keep+', the oldest dropped');

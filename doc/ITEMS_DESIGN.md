@@ -102,7 +102,7 @@ Each kind's verbs (`ItemKind.verbs`) ask the category: a Quest item never shows 
 
 - **Given** by a quest, a chain step or an encounter (the sealed letter today; the wounded traveller's heirloom; a map that marks a site).
 - **Bound** to their quest: no Sell, no Drop, a mark on the icon; **it takes a bag slot** (owner), so a full bag is overfilled by it (§4a), never refused.
-- **Gone** when the quest or chain ends: delivered, failed or abandoned (`quest:ended`, `thread:ended` on the bus).
+- **Gone** when the quest or chain ends: delivered, failed or abandoned (`quest:ended`, `quest chain:ended` on the bus).
 - The story system's outcomes (`story/outcome.js`) give and take them: `item: {give: id}`, `item: {take: id}`.
 
 ## 4a. Overfilling the bag (owner, 2026-10-22)

@@ -1,23 +1,23 @@
 'use strict';
-// Threads and gatherings (doc/STORY_DESIGN.md §2, §6: the story wave's S5, the frameworks only). The game registers no kind of
+// QuestChains and gatherings (doc/STORY_DESIGN.md §2, §6: the story wave's S5, the frameworks only). The game registers no kind of
 // either, keeps no store of them and saves neither key, its day check last of the day; the test kinds (tests/kit.js
-// Kit.storyKinds) prove them: a thread started by an outcome takes a job, then (paid) meets an encounter, or (failed) shows a page,
+// Kit.storyKinds) prove them: a quest chain started by an outcome takes a job, then (paid) meets an encounter, or (failed) shows a page,
 // its memory shared, saved and loaded midway, ended once on the bus; a gathering at three holdings is announced, opened and
 // closed on its days, its calendar kept in order, saved and loaded, entered on its page. Written on the test kit (tests/kit.js).
 Kit.suite(({ok,info})=>{
- const t=T,G=t.G,P=t.P,W=t.W,Th=t.Thread,Ga=t.Gathering;Kit.begin('soldier',73);Kit.clear();Kit.world();
+ const t=T,G=t.G,P=t.P,W=t.W,Th=t.QuestChain,Ga=t.Gathering;Kit.begin('soldier',73);Kit.clear();Kit.world();
  // ---- the game: none of either, nothing kept, nothing saved, the day's order as it was with the gatherings' check last
  {for(let i=0;i<2;i++)t.dayTick();Kit.world();const keys=Object.keys(t.worldSave());
-  ok(t.Kinds.all('thread').filter(k=>!k.book).map(k=>k.id).join()==='wounded'&&!t.Kinds.all('gathering').length,'the game registers one thread kind (its first chain, The Wounded Traveller: story/wounded.js) and no gathering kind');
+  ok(t.Kinds.all(t.QUESTCHAIN_SHAPE).filter(k=>!k.book).map(k=>k.id).join()==='wounded'&&!t.Kinds.all('gathering').length,'the game registers one quest chain kind (its first chain, The Wounded Traveller: story/wounded.js) and no gathering kind');
   ok(!W.story&&!keys.includes('threads')&&!keys.includes('gatherings'),'two days on, no story store is made and a save holds neither key');
   const day=t.Systems.names('day');ok(day[day.length-1]==='gatherings'&&day[day.length-2]==='incidents','the gatherings\' day check comes after every other day system')}
  Kit.storyKinds();
- const ash=t.townBy('Ashford'),ended=[],fn=ev=>ended.push(ev);t.worldOn('thread:ended',fn);
+ const ash=t.townBy('Ashford'),ended=[],fn=ev=>ended.push(ev);t.worldOn('questchain:ended',fn);
  try{
-  // ---- the thread: started by an outcome, its first step a job at the town its memory names
+  // ---- the quest chain: started by an outcome, its first step a job at the town its memory names
   Kit.clear();Kit.goHome(ash);P.quests=[];P.gold=300;
-  const o={start:{thread:'test_thread',memory:{town:'Ashford',x:P.x+60,y:P.y}}};
-  ok(t.describeOutcome(o)==='then: a test thread','an outcome starts a thread (start: {thread, memory}), and says so');
+  const o={start:{questChain:'test_questchain',memory:{town:'Ashford',x:P.x+60,y:P.y}}};
+  ok(t.describeOutcome(o)==='then: a test quest chain','an outcome starts a quest chain (start: {quest chain, memory}), and says so');
   let th=Kit.seeded(21,()=>t.Outcome.apply(o,{}).started);
   ok(th instanceof Th&&th.at==='job'&&th.memory.town==='Ashford'&&W.story.threads.on.includes(th)&&th.past.length===0,'begun: its first step under way, its memory as given');
   let q=P.quests[0];
@@ -26,7 +26,7 @@ Kit.suite(({ok,info})=>{
   ok(th.at==='job'&&!ended.length,'another job\'s end, or an encounter\'s of the same number, is not its own');
   // ---- saved and loaded while the job is under way
   {const snap=JSON.stringify(th),qs=JSON.stringify(P.quests);t.saveGame(true);t.loadGame();const z=W.story.threads.on[0];
-   ok(z&&z!==th&&z instanceof Th&&JSON.stringify(z)===snap&&JSON.stringify(P.quests)===qs,'saved and loaded at its first step: the same record, a Thread again, its job with it');th=z;q=t.Quest.as(P.quests[0])}
+   ok(z&&z!==th&&z instanceof Th&&JSON.stringify(z)===snap&&JSON.stringify(P.quests)===qs,'saved and loaded at its first step: the same record, a QuestChain again, its job with it');th=z;q=t.Quest.as(P.quests[0])}
   // ---- paid: it remembers who gave it, and meets an encounter where its memory says
   t.invAdd('good',q.good,q.n);Kit.seeded(23,()=>q.turnIn(ash));
   const e=t.roadList().find(x=>x.i===(th.wait&&th.wait.id));
@@ -34,18 +34,18 @@ Kit.suite(({ok,info})=>{
   {const snap=JSON.stringify(th);Kit.world();t.saveGame(true);t.loadGame();const z=W.story.threads.on[0],e2=t.roadList().find(x=>x.i===e.i);
    ok(z instanceof Th&&JSON.stringify(z)===snap&&e2&&e2!==e,'saved and loaded midway (its encounter on the road): the same record');th=z;
    e2.done=1;e2.over()}
-  ok(ended.length===1&&ended[0].e===th&&ended[0].how==='done'&&!th.at&&!W.story.threads.on.length&&th.past.map(p=>p.join(':')).join()==='job:paid,meet:done','the encounter dealt with and gone: the thread ends, once (thread:ended, its last key)');
+  ok(ended.length===1&&ended[0].e===th&&ended[0].how==='done'&&!th.at&&!W.story.threads.on.length&&th.past.map(p=>p.join(':')).join()==='job:paid,meet:done','the encounter dealt with and gone: the quest chain ends, once (questchain:ended, its last key)');
   // ---- the other branch: the job failed, its page
   Kit.world();P.quests=[];W.road=null;
-  const th2=Kit.seeded(24,()=>Th.start('test_thread',{town:'Ashford'})),q2=t.Quest.as(P.quests.find(x=>x.id===th2.wait.id));
-  ok(th2.i===th.i+1,'each thread its own number ('+th.i+', '+th2.i+')');
+  const th2=Kit.seeded(24,()=>Th.start('test_questchain',{town:'Ashford'})),q2=t.Quest.as(P.quests.find(x=>x.id===th2.wait.id));
+  ok(th2.i===th.i+1,'each quest chain its own number ('+th.i+', '+th2.i+')');
   q2.fail('Given up.');
-  ok(th2.at==='regret'&&th2.past.map(p=>p.join(':')).join()==='job:failed'&&G.mode==='story'&&G.thread===th2&&/Word from the giver/.test(Kit.panel())&&/Ashford is disappointed in you/.test(Kit.panel()),'the job failed: the branch to its page, shown at once (its text from the memory)');
-  ok(t.Thread.paged().includes(th2)&&!Kit.q('#panel [data-nav="close"]'),'a page waiting is listed (Thread.paged), with no way out till chosen');
+  ok(th2.at==='regret'&&th2.past.map(p=>p.join(':')).join()==='job:failed'&&G.mode==='story'&&G.questChain===th2&&/Word from the giver/.test(Kit.panel())&&/Ashford is disappointed in you/.test(Kit.panel()),'the job failed: the branch to its page, shown at once (its text from the memory)');
+  ok(t.QuestChain.paged().includes(th2)&&!Kit.q('#panel [data-nav="close"]'),'a page waiting is listed (QuestChain.paged), with no way out till chosen');
   const g0=P.gold;t.act('thr-do','0');
-  ok(P.gold===g0-5&&G.mode==='world'&&!G.thread&&ended.length===2&&ended[1].e===th2&&ended[1].how==='amends','its choice done (−5 gold), the page closed, and the thread ended by that choice (amends)');
-  ok(!t.worldSave().threads.on.length&&t.worldSave().threads.n===2,'once begun, the save keeps the threads\' count, none live')}
- finally{t.worldOff('thread:ended',fn)}
+  ok(P.gold===g0-5&&G.mode==='world'&&!G.questChain&&ended.length===2&&ended[1].e===th2&&ended[1].how==='amends','its choice done (−5 gold), the page closed, and the quest chain ended by that choice (amends)');
+  ok(!t.worldSave().threads.on.length&&t.worldSave().threads.n===2,'once begun, the save keeps the quest chains\' count, none live')}
+ finally{t.worldOff('questchain:ended',fn)}
  // ---- the gathering: three holdings, every 12 days, told of 3 days ahead, open for 2
  {Kit.world();delete t.storyW().gatherings;const K=t.kindOf('gathering','test_fair'),places=K.places(),d0=G.day,log=[];
   const ears=['announced','opened','closed'].map(w=>[w,t.worldOn('gathering:'+w,d=>log.push([G.day,w,d.at,d.day].join(' ')))]);

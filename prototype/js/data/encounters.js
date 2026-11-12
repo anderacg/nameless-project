@@ -87,7 +87,7 @@ const ENC_TUNE={wagon:{gold:15},traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5
    from its place that is there (a holding's middle, a lot's door); who: each kind of passenger (n: its name, ico, eat: food a
    day, say: its own lines, else ESCORT.say's: {N} its name, capitalised, {n}, {to} its place, {town} the holding); say: the
    lines (arrive, and each fate: late (its due day passed: it goes on alone), captured (a battle lost: carried off by the
-   victors), left (abandoned: set down)); offer: a traveller's escort offered at a holding (a job of its own, or a thread's
+   victors), left (abandoned: set down)); offer: a traveller's escort offered at a holding (a job of its own, or a quest chain's
    step): his place min–max tiles off, gold + per a tile, rep in the giver's holding; forfeit: reputation lost at its place
    when one fails, unless its spec says */
 // trip: an escort met on the road goes min-max tiles from where it begins (the owner, 2026-11-05: an escort "within 2 grid far the

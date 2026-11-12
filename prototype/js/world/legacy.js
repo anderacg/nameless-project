@@ -104,7 +104,7 @@ class Legacy{
     Grave.bury(old,this.raised);said.push('Their body lies where they fell'+(this.raised?': '+COMPS[this.raised.heir.cid].short+' will come for it.':', for whoever finds it.'));
     // (the quests' marks on the world gone with them; your stories ended)
     const ids=new Set(P.quests.map(q=>q.id));for(const o of [...W.monsters,...bandits,...W.sites,...W.sites.flatMap(s=>s.bands||[]),...W.caravans,...W.lords])if(o&&o.qid!=null&&ids.has(o.qid))delete o.qid;// (bands gone to ground in a site and caravans too)
-    for(const th of Thread.list().on.slice())th.end('left');
+    for(const th of QuestChain.list().on.slice())th.end('left');
     const faces=typeof Faces!=='undefined'?Faces.save():undefined;
     // (the new hero none of the old one's: not in the lord's host he followed, no lord in his own, his quests' numbers not begun again;
     // and its waterskins, as a new game's hero has: skinsStart, supply.js)

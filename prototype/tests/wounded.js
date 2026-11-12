@@ -5,22 +5,22 @@
 // the gang, the trail where you found him binds the chain to the nearest hideout of their band (marked), cleared (or retargeted,
 // or gone), and back at the family the heirloom (once a game) or, for Ander, a companion. Each step in your Quests (its note) and
 // on the map, saved and loaded at every step. Ander is rare, never twice a game; the developer commands force him. The step
-// kinds visit, deliver and lair reused by a test thread. A side story's stage is never yours to abandon (q-abandon refuses it:
+// kinds visit, deliver and lair reused by a test quest chain. A side story's stage is never yours to abandon (q-abandon refuses it:
 // tests/quests.js), so its 'left' ends are walked by giving the stage up directly (abandon). Written on the test kit (tests/kit.js).
 Kit.suite(({ok,info})=>{
- const t=T,G=t.G,P=t.P,W=t.W,Th=t.Thread,WD=t.WOUNDED,U='hum_levy';Kit.begin('soldier',23);Kit.clear();Kit.world();
+ const t=T,G=t.G,P=t.P,W=t.W,Th=t.QuestChain,WD=t.WOUNDED,U='hum_levy';Kit.begin('soldier',23);Kit.clear();Kit.world();
  const ash=t.townBy('Ashford'),p0=WD.ander.p;WD.ander.p=0;
- const fresh=()=>{Kit.world();Kit.clear();G.road=null;G.chase=null;G.enc=null;G.encAgain=null;G.encCool=0;G.thread=null;W.road=null;P.quests=[];P.gold=300;P.renown=5;P.morale=50;
-  P.troops={[U]:6};P.wounded={};P.inv=Array(t.INV_SIZE).fill(null);t.invAdd('good','grain',30);delete P.comps.ander;G.clock=t.DAY*.4;const L=t.Thread.store();L.on=[];Kit.goHome(ash)};
+ const fresh=()=>{Kit.world();Kit.clear();G.road=null;G.chase=null;G.enc=null;G.encAgain=null;G.encCool=0;G.questChain=null;W.road=null;P.quests=[];P.gold=300;P.renown=5;P.morale=50;
+  P.troops={[U]:6};P.wounded={};P.inv=Array(t.INV_SIZE).fill(null);t.invAdd('good','grain',30);delete P.comps.ander;G.clock=t.DAY*.4;const L=t.QuestChain.store();L.on=[];Kit.goHome(ash)};
  const spawn=()=>{const D=t.kindOf('encounter','traveller');for(const z of [ash,...t.TOWNS]){fresh();Kit.goHome(z);const p=t.roadSpot(D.on,0,D.near),e=p&&t.roadSpawn('traveller',p[0],p[1]);if(e)return e}
   for(let i=0;i<8;i++){fresh();const e=t.roadSpawn('traveller',P.x+12+i*20,P.y+(i%3)*16);if(e)return e}return null};
- const save=()=>{G.thread=null;Kit.world();const a=JSON.stringify(P.quests),b=JSON.stringify(W.story.threads.on);t.saveGame(true);P.quests=[];W.story.threads.on=[];t.loadGame();Kit.world();
+ const save=()=>{G.questChain=null;Kit.world();const a=JSON.stringify(P.quests),b=JSON.stringify(W.story.threads.on);t.saveGame(true);P.quests=[];W.story.threads.on=[];t.loadGame();Kit.world();
   return JSON.stringify(P.quests)===a&&JSON.stringify(W.story.threads.on)===b&&W.story.threads.on.every(x=>x instanceof Th)};
  const live=()=>W.story.threads.on.find(x=>x.k==='wounded');
  const step=()=>{const th=live();return th&&th.wait&&th.wait.shape==='quest'?t.Quest.as(P.quests.find(q=>q.id===th.wait.id)):null};
  const frame=()=>t.updateRoad(.05);
  const there=q=>{P.x=q.to.x;P.y=q.to.y+(q.to.k==='spot'?0:10);P.tx=null;frame()};
- const ended=[],ear=t.worldOn('thread:ended',ev=>ended.push(ev)),encEnd=[],ear2=t.worldOn('encounter:ended',ev=>encEnd.push(ev));
+ const ended=[],ear=t.worldOn('questchain:ended',ev=>ended.push(ev)),encEnd=[],ear2=t.worldOn('encounter:ended',ev=>encEnd.push(ev));
  const ends=th=>ended.filter(x=>x.e===th).map(x=>x.how);
  // (a healed traveller: met, Tend his wounds)
  const heal=e=>{t.roadMeet(e);t.act('enc-do','0');return e};
@@ -32,7 +32,7 @@ Kit.suite(({ok,info})=>{
  const home=()=>{const e=heal(spawn());t.act('enc-do',pick('Escort home'));t.act('enc-leave');return {e,th:live(),q:step()}};
  try{
   // ---- what it is made of: the chain's steps, the step kinds, Ander's entries, the heirloom
-  {const K=t.kindOf('thread','wounded');ok(!!K&&K.steps.map(s=>s.id).join()==='escort,family,tracks,trail,clear,back,reward,held,call'&&['visit','deliver','lair','held'].every(k=>t.kindOf('step',k))&&!t.kindOf('quest','visit'),
+  {const K=t.kindOf(t.QUESTCHAIN_SHAPE,'wounded');ok(!!K&&K.steps.map(s=>s.id).join()==='escort,family,tracks,trail,clear,back,reward,held,call'&&['visit','deliver','lair','held'].every(k=>t.kindOf('step',k))&&!t.kindOf('quest','visit'),
     'the chain: escort, family, tracks, trail, clear, back, reward, and its rescue (held, call); the step kinds visit, deliver, lair, held (no board offers them)');
    const I=t.ITEMS.hearthring;ok(I&&I.heirloom&&I.slot==='ring'&&t.ITEM_KINDS.gear.catId({id:'hearthring'})==='armour'&&I.m.sk.med===1&&I.m.regen>0,'the heirloom: the '+I.n+', a ring (Armour): '+I.d);
    ok(t.COMPS.ander.story&&!Object.keys(t.COMPS).includes('ander')&&t.ST.ander.tier===3&&t.compTown('ander')==null&&!t.TOWNS.some(z=>t.compsHere(z).includes('ander'))&&t.unitSprite('ander',0,false).width>0&&t.portrait('ander').length>0&&t.PEOPLE_LOOK.ander.scar&&t.PEOPLE_LOOK.ander.cape==='dark',
@@ -65,15 +65,15 @@ Kit.suite(({ok,info})=>{
    ok(save(),'saved and loaded on the escort step');C={...C,th:live(),q:step()}}
   // ---- 3/4. arrival: no page of the escort's own; his family's page
   {const {th,q}=C,r0=t.repAt(th.memory.town),m0=G.msgs.length;there(q);
-   ok(q.fate==='arrived'&&th.at==='family'&&G.mode==='story'&&G.thread===th&&!G.escort&&t.repAt(th.memory.town)===r0+WD.escort.rep,'at his door: arrived (reputation +'+WD.escort.rep+'), and his family’s page at once (no escort page of its own)');
+   ok(q.fate==='arrived'&&th.at==='family'&&G.mode==='story'&&G.questChain===th&&!G.escort&&t.repAt(th.memory.town)===r0+WD.escort.rep,'at his door: arrived (reputation +'+WD.escort.rep+'), and his family’s page at once (no escort page of its own)');
    ok(G.msgs.slice(m0).some(m=>/is home: the door of/.test(m.m))&&pageHas(th.memory.name+'’s family',th.memory.gang,'Promise to find them','Ride on')&&!Kit.q('#panel [data-nav="close"]'),'his line; his family names the gang: '+th.memory.gang);// (the family's page has no way out of its own; the escort's reward window over it has its Continue: ui/questreward.js, 2026-10-31)
-   ok(save()&&live().at==='family'&&G.mode==='world','saved and loaded with the family’s page waiting');frame();ok(G.mode==='story'&&G.thread===live(),'back on the map: the page waiting is shown');
+   ok(save()&&live().at==='family'&&G.mode==='world','saved and loaded with the family’s page waiting');frame();ok(G.mode==='story'&&G.questChain===live(),'back on the map: the page waiting is shown');
    C.th=live();t.act('thr-do','0');ok(C.th.at==='tracks'&&G.mode==='world','promised: the next step, back to where you found him')}
   // ---- 5. the investigation: to where you found him; the trail binds the chain to a hideout and marks it
   {const {th}=C,q=step();ok(q&&q.type==='visit'&&q.to.k==='spot'&&q.to.x===th.memory.at.x&&!q.homeMark()&&t.questGoal(q).x===q.to.x,'a visit: to where you found him (the quests’ "!" there, the minimap’s dot)');
    t.openQuests();ok(pageHas('Find the trail where you found','Go to where you found')&&!/0 days left/.test(Kit.text()),'in your Quests: where to go, no due day');Kit.world();
    ok(save(),'saved and loaded on the way');C.th=live();const q2=step();there(q2);const m=C.th.memory,s=m.site!=null&&W.sites.find(x=>x.i===m.site);
-   ok(q2.fate==='arrived'&&C.th.at==='trail'&&s&&s instanceof t.Hideout&&!s.cleared&&s.seen&&m.lair===s.name&&G.thread===C.th&&pageHas('Ride for their hideout',s.name),'there: the trail leads to the '+s.name+' ('+s.band+'; his attackers were '+m.band+'), marked on your map; its page');
+   ok(q2.fate==='arrived'&&C.th.at==='trail'&&s&&s instanceof t.Hideout&&!s.cleared&&s.seen&&m.lair===s.name&&G.questChain===C.th&&pageHas('Ride for their hideout',s.name),'there: the trail leads to the '+s.name+' ('+s.band+'; his attackers were '+m.band+'), marked on your map; its page');
    const near=t.LairQuest.near(m.at,m.band);ok(near===s,'the nearest hideout of their band');
    ok(save(),'saved and loaded with the trail’s page');frame();C.th=live();t.act('thr-do','0');ok(C.th.at==='clear','Ride for their hideout: the next step')}
   // ---- 6. clear their hideout: by the very fight (its own, not another's)
@@ -115,7 +115,7 @@ Kit.suite(({ok,info})=>{
    else info('  (no other hideout within '+t.STEP.retarget+' tiles: retargeting not seen here)');
    const hs=W.sites.filter(x=>x instanceof t.Hideout&&!x.cleared);hs.forEach(x=>x.cleared=true);try{t.questDay();ok(q.fate==='gone'&&c.th.at==='back'&&!P.quests.includes(q),'none left within reach: the step is over (gone), back to the family')}finally{hs.forEach(x=>x.cleared=false);s.cleared=false}}
   // ---- Ander The Fallen: rare, forced by the developer command; escort AND clear, then he joins as a companion; never twice
-  {fresh();const D=t.DevConsole,x=c=>{try{return D.execute(c)}catch(e){return 'ERR '+e.message}};delete t.Thread.store().once;
+  {fresh();const D=t.DevConsole,x=c=>{try{return D.execute(c)}catch(e){return 'ERR '+e.message}};delete t.QuestChain.store().once;
    const s0=x('ander'),e=t.roadList().find(o=>o.k==='traveller'&&o.ander);ok(/Ander The Fallen lies wounded/.test(s0)&&e&&e.race==='human'&&t.ROAD_ENC.traveller.scene(e)[0][1]==='ander','the command ander: Ander The Fallen lies wounded near you ('+s0+')');
    ok(/^ERR .*never twice/.test(x('enc wounded ander')),'one at a time: another refused while he lies there');
    t.roadMeet(e);ok(pageHas('A tall man in a dark cloak'),'his own page');t.act('enc-do','0');
@@ -131,7 +131,7 @@ Kit.suite(({ok,info})=>{
    // (never twice: the chance at its fullest, and no second Ander comes; the command refuses; kept through a save)
    ok(/^ERR .*never twice/.test(x('ander'))&&!t.Wounded.anderFree(),'never twice: the command refuses');
    WD.ander.p=1;try{const e2=spawn();ok(e2&&!e2.ander,'with every traveller his chance, no second Ander comes');t.saveGame(true);t.loadGame();Kit.world();ok(Th.once('ander')>=1&&!t.Wounded.anderFree(),'his once kept through a save');
-    delete t.Thread.store().once;const e3=spawn();ok(e3&&e3.ander,'(a game where he was never met: the chance makes one Ander)')}finally{WD.ander.p=0}
+    delete t.QuestChain.store().once;const e3=spawn();ok(e3&&e3.ander,'(a game where he was never met: the chance makes one Ander)')}finally{WD.ander.p=0}
    delete P.comps.ander}
   // ---- the rescue (the owner, 2026-10-23): carried off and held, no deadline; freed by you, the escort again
   const lose=e=>{Kit.meet(e);Kit.seeded(4,()=>t.concludeEncounter(false,{},0,true,[]));Kit.done({cont:true,world:true})};
@@ -141,7 +141,7 @@ Kit.suite(({ok,info})=>{
   const lordNear=()=>{const l=W.lords.find(x=>!x.dead&&!x.inside&&t.fiefsOf(x.fac).length);l.x=P.x+10;l.y=P.y;return l};
   const vsLord=l=>({kind:'lord',ref:l,list:l.troops.slice()});
   const drop=()=>{const q=step();if(q)t.Quest.as(q).abandon()};
-  // (saved and loaded: the quests, the threads and what is kept aside, Ander wandering, as they were)
+  // (saved and loaded: the quests, the quest chains and what is kept aside, Ander wandering, as they were)
   const saved=()=>{const a=JSON.stringify(Th.store().aside||null);return save()&&JSON.stringify(Th.store().aside||null)===a};
   {C=home();const b=band();lose(vsBand(b));const th=C.th,q=step();
    ok(C.q.fate==='captured'&&th.at==='held'&&q&&q.type==='held'&&q.held.k==='band'&&t.carries(b,q.held.cap)&&th.memory.held.k==='band'&&!q.days&&t.bandits.includes(b),'captured by bandits: held by the band that beat you (it carries him); his rescue in your Quests, no due day');
@@ -223,14 +223,14 @@ Kit.suite(({ok,info})=>{
    ok(new RegExp(C.th.i+', The Wounded Traveller \\(wounded\\), step escort').test(x('chains')),'chains lists it');
    const j=x('chain '+C.th.i+' go');ok(/Teleported/.test(j)&&Math.hypot(P.x-C.q.to.x,P.y-C.q.to.y)<=t.ESCORT.reach.lot+t.TILE,'chain '+C.th.i+' go: to where its step points ('+j+')');
    frame();ok(C.th.at==='family'&&/its page waits/.test(x('chain '+C.th.i+' go')),'there; a page step points nowhere: it says so');t.act('thr-do','1')}
-  // ---- the step kinds, reused by another thread: a visit to a spot, a delivery
-  {fresh();if(!t.kindOf('thread','test_steps'))t.defineKind('thread','test_steps',{n:'Steps test',steps:[
+  // ---- the step kinds, reused by another quest chain: a visit to a spot, a delivery
+  {fresh();if(!t.kindOf(t.QUESTCHAIN_SHAPE,'test_steps'))t.defineKind(t.QUESTCHAIN_SHAPE,'test_steps',{n:'Steps test',steps:[
     {id:'go',start:{step:'visit',spec:th=>({to:{x:th.memory.x,y:th.memory.y,name:'the old well'}})},how:d=>d.e.fate||d.how,then:{arrived:'bring'}},
     {id:'bring',start:{step:'deliver',spec:{to:{town:'Ashford'},give:{grain:5},prize:{gold:7}}},how:d=>d.e.fate||d.how,then:{arrived:null}}]});
    P.inv=Array(t.INV_SIZE).fill(null);Kit.goHome(ash);const th=Th.start('test_steps',{town:'Ashford',x:ash.x+300,y:ash.y}),q=step0=>t.Quest.as(P.quests[0]);
    ok(q().type==='visit'&&q().to.name==='the old well'&&q().title==='Go to the old well','a visit: to a spot, by its own name');there(q());ok(th.at==='bring','there: arrived');
    const d=q(),g0=P.gold;ok(d.type==='deliver'&&!d.ready()&&d.progress()==='0 / 5 grain'&&/Bring 5 grain to Ashford/.test(d.title),'a delivery: '+d.title+' ('+d.progress()+')');
    there(d);t.enterTown(ash);G.town=null;Kit.world();ok(P.quests.includes(d)&&th.at==='bring','there without the goods: not yet');
-   t.invAdd('good','grain',6);ok(d.ready(),'carrying them: ready');P.x=ash.x;P.y=ash.y;frame();ok(!P.quests.length&&t.goodN('grain')===1&&P.gold===g0+7&&ends(th).join()==='arrived','there with them: handed over, its prize, the thread on')}
- }finally{t.worldOff('thread:ended',ear);t.worldOff('encounter:ended',ear2);WD.ander.p=p0;P.quests=[];Kit.world()}
+   t.invAdd('good','grain',6);ok(d.ready(),'carrying them: ready');P.x=ash.x;P.y=ash.y;frame();ok(!P.quests.length&&t.goodN('grain')===1&&P.gold===g0+7&&ends(th).join()==='arrived','there with them: handed over, its prize, the quest chain on')}
+ }finally{t.worldOff('questchain:ended',ear);t.worldOff('encounter:ended',ear2);WD.ander.p=p0;P.quests=[];Kit.world()}
 });

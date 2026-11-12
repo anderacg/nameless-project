@@ -52,7 +52,7 @@ const Outcome={
       },
       text:v=>'a '+ITEMS[v].n,
     },
-    // item: {give: id}, a quest item (QUEST_ITEMS) into your bag, bound to the quest or thread this is part of (core/items.js
+    // item: {give: id}, a quest item (QUEST_ITEMS) into your bag, bound to the quest or quest chain this is part of (core/items.js
     // QuestItem: gone when it ends; res.item: it); {take: id}, one out of it (handed over)
     item:{
       apply(v,ctx,res){
@@ -230,13 +230,13 @@ const Outcome={
       },
       text:()=>'',
     },
-    // start: another happening (res.started): {k, x, y} an encounter of kind k there (road.js roadSpawn); {thread, memory}
-    // a thread of that kind, what it knows to begin with (story/thread.js Thread.start)
+    // start: another happening (res.started): {k, x, y} an encounter of kind k there (road.js roadSpawn); {questChain, memory}
+    // a quest chain of that kind (thread, its old name, read too: a saved quest's reward may carry it), what it knows to begin with (story/questchain.js QuestChain.start)
     start:{
       apply(v,ctx,res){
-        res.started=v.thread?Thread.start(v.thread,v.memory):roadSpawn(v.k,v.x,v.y);
+        res.started=(v.questChain||v.thread)?QuestChain.start(v.questChain||v.thread,v.memory):roadSpawn(v.k,v.x,v.y);
       },
-      text:v=>'then: '+(v.thread?kindOf('thread',v.thread):kindOf('encounter',v.k)).n.toLowerCase(),
+      text:v=>'then: '+((v.questChain||v.thread)?kindOf(QUESTCHAIN_SHAPE,v.questChain||v.thread):kindOf('encounter',v.k)).n.toLowerCase(),
     },
     // passenger: a spec ({who, to, prize, forfeit, days, at}: world/escort.js), one who rides in your band to be seen safe to its
     // place, an escort begun (res.escort: the quest, or null); its prize comes on arrival

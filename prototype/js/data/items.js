@@ -42,7 +42,7 @@ const VALUE_FINDS={cave:{p:.5,n:[1,2],r:['common','rare']},ruin:{p:.8,n:[1,2],r:
   chief:{p:.5,n:[1,2],r:['common','rare']},lord:{p:.9,n:[1,3],r:['common','rare','epic']}};
 const VALUE_RARITY={common:6,rare:3,epic:1};
 
-/* quest items (§4; core/items.js QuestItem): bound to the quest or thread that gave them, gone when it ends; given and taken by the
+/* quest items (§4; core/items.js QuestItem): bound to the quest or quest chain that gave them, gone when it ends; given and taken by the
    story's outcomes (story/outcome.js item). n, icon, col, d */
 const QUEST_ITEMS={
   heirloom:{n:'Family heirloom',icon:'ring',col:'#e8b94a',d:'A ring a traveller begged you to carry home for him.'},

@@ -30,14 +30,14 @@
    | fight:ended      | {fight, won, lost}      | a battle on the map: world/fights.js endFight           | news (fight, band)|
    | trace:left       | {e, trace}              | an encounter's trace: story/happening.js drop           | news (trace)      |
    | land:threat      | {town, foe}             | a beast or band on its land: world/defence.js           | news (beast, band)|
-   | encounter:ended  | {e, how}                | story/encounter.js (Encounter#finish): done, left, timeout, caught, escaped, won, lost, fled| threads' steps    |
+   | encounter:ended  | {e, how}                | story/encounter.js (Encounter#finish): done, left, timeout, caught, escaped, won, lost, fled| quest chains' steps    |
    | encounter:fought | {e}                     | story/encounter.js (Encounter#fought)                    | (none yet)        |
    | battle:ended     | {enc, how}              | battle/resolution.js: won, lost, withdrawn, rundown      | encounters, escorts |
    | incident:ended   | {e}                     | story/incident.js                                       | (none yet)        |
    | weather:changed  | {k, was, x, y}          | world/weather.js (the weather where you are, each hour) | (none yet)        |
-   | quest:ended      | {e, how: paid or failed}| story/quest.js (paid or failed)                         | threads' steps    |
-   | page:chosen      | {e, how}                | story/thread.js (a thread's page: the choice's how)     | threads' steps    |
-   | thread:ended     | {e, how}                | story/thread.js (its last step ended: that step's key)  | (none yet)        |
+   | quest:ended      | {e, how: paid or failed}| story/quest.js (paid or failed)                         | quest chains' steps    |
+   | page:chosen      | {e, how}                | story/questchain.js (a quest chain's page: the choice's how)     | quest chains' steps    |
+   | quest chain:ended     | {e, how}                | story/questchain.js (its last step ended: that step's key)  | (none yet)        |
    | gathering:announced | {e, at, day}         | story/gathering.js (told of: its place, the day it opens)| (none yet)       |
    | gathering:opened | {e, at, day}            | story/gathering.js                                      | (none yet)        |
    | gathering:closed | {e, at, day}            | story/gathering.js (its end: the day it closed)         | (none yet)        |

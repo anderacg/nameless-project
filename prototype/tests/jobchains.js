@@ -1,5 +1,5 @@
 'use strict';
-// The chains that grow from jobs (doc/QUESTS_DESIGN.md §8, Q7; story/chains.js): each begun by how a real job ended and walked
+// The chains that grow from jobs (doc/QUESTS_DESIGN.md §8, Q7; story/jobchains.js): each begun by how a real job ended and walked
 // to its end on the world as it is. The chief who ran (a bounty paid, its chief got away: he is the hideout's chieftain, a real
 // lord's letter among his plunder); Something bigger (a beast hunt paid, a cave near); The empty larder (a supply run paid whose
 // caravan was robbed: the goods back into its stores); A sealed hand (a courier's letter read that orders an attack: the holding
@@ -9,12 +9,12 @@ Kit.suite(({ok})=>{
  const ash=t.townBy('Ashford'),live=k=>W.story?.threads?.on.find(th=>th.k===k)||null;P.quests=[];
  const facs=Object.keys(t.FACS).filter(f=>f!=='player');for(const a of facs)for(const b of facs)if(a<b)W.rel[t.rk(a,b)]={s:'war',since:G.day};W.lords.forEach(l=>{l.dead=false});
  // (a page waiting: shown, choice i taken)
- const choose=i=>{Kit.world();t.Thread.showWaiting();const ok0=G.mode==='story';t.act('thr-do',String(i));Kit.world();return ok0};
+ const choose=i=>{Kit.world();t.QuestChain.showWaiting();const ok0=G.mode==='story';t.act('thr-do',String(i));Kit.world();return ok0};
  const cleared=th=>{const q=P.quests.find(x=>x.id===th.wait?.id),s=q&&W.sites[q.site];if(s)t.worldEmit('site:cleared',{site:s});return !!s};
  const bandAt=(x,y,n)=>{const b=t.asParty({x,y,n,kind:'bandits',list:t.makeEnemies(n,false,'bandits'),t:0,a:0,idle:true,cool:99,ld:t.newChief('bandits',2)});t.bandits.push(b);return b};
  // ======== The chief who ran
  {const b=bandAt(ash.x+240,ash.y+60,5),q=t.makeQuest('bounty',ash);q.accept();q.done=true;t.payQuest(q,ash.name);ok(!live('chief'),'his chief taken or slain: no chain');
-  t.Chains.live('chief','x');const b2=bandAt(ash.x+240,ash.y+60,5),q2=t.makeQuest('bounty',ash);q2.accept();(W.exiles=W.exiles||[]).push({ld:b2.ld,back:G.day+6});q2.done=true;t.payQuest(q2,ash.name);
+  t.JobChains.live('chief','x');const b2=bandAt(ash.x+240,ash.y+60,5),q2=t.makeQuest('bounty',ash);q2.accept();(W.exiles=W.exiles||[]).push({ld:b2.ld,back:G.day+6});q2.done=true;t.payQuest(q2,ash.name);
   const th=live('chief'),s=th&&W.sites[th.memory.site];
   ok(th&&s&&s.ld===b2.ld&&W.exiles.find(x=>x.ld===b2.ld).done&&th.memory.patron,'its chief got away: The chief who ran; he is the chieftain of the '+(s&&s.name)+' now, his exile over; the patron: '+(th&&th.memory.patron));
   const rel0=t.relWith(W.lords.find(l=>l.name===th.memory.patron)),rep0=t.repAt('Ashford');
@@ -38,9 +38,9 @@ Kit.suite(({ok})=>{
  {Kit.clear();P.quests=[];let q=null;for(let k=0;k<10&&!q;k++)q=t.makeQuest('courier',ash);q.accept();const L=q.carried(),tg=t.TOWNS.find(z=>z.owner&&z.owner!==L.fac&&z.owner!=='player'&&!z.gone);
   L.kind='attack';L.vs=tg.owner;L.tgt=tg.name;t.LETTER.read(L);const th=live('sealed');ok(th&&th.memory.tgt===tg.name,'a courier\'s letter read, an attack on '+tg.name+' in it: A sealed hand');
   ok(choose(0)&&th.at==='warn','"Warn '+tg.name+'": ride there');tg.gar=Math.max(1,tg.T.gar-6);const g0=tg.gar;P.x=tg.x;P.y=tg.y+10;t.Steps.frame();
-  ok(th.at==='warned'&&choose(0)&&!live('sealed')&&tg.gar===g0+t.CHAINS.gar,'there, for the people in it: its garrison readied (+'+t.CHAINS.gar+')')}
+  ok(th.at==='warned'&&choose(0)&&!live('sealed')&&tg.gar===g0+t.JOB_CHAINS.gar,'there, for the people in it: its garrison readied (+'+t.JOB_CHAINS.gar+')')}
  // ======== none twice at once
- {const m={town:'Ashford',fac:ash.owner,giver:'x',gn:'y',chief:'c',band:'b',lair:'l',site:0,dir:'',patron:'p',prealm:'r'};t.Chains.begin('chief',m);ok(t.Chains.begin('chief',m)===null,'one of a kind at a time for a holding')}
+ {const m={town:'Ashford',fac:ash.owner,giver:'x',gn:'y',chief:'c',band:'b',lair:'l',site:0,dir:'',patron:'p',prealm:'r'};t.JobChains.begin('chief',m);ok(t.JobChains.begin('chief',m)===null,'one of a kind at a time for a holding')}
  P.quests=[];Kit.clear();
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

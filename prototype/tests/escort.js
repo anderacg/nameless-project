@@ -1,6 +1,6 @@
 'use strict';
 // Escorts (world/escort.js; doc/IMPLEMENTATION_PLAN.md §10.7): a passenger rides inside your band, begun by an outcome
-// ({passenger}), a thread's step or a job offered at a holding. It is on the party card and in the Party window, eats with you,
+// ({passenger}), a quest chain's step or a job offered at a holding. It is on the party card and in the Party window, eats with you,
 // takes no troop slot and is no target of its own; it ends on arrival (paid, its page), on its due day (late), with a battle
 // lost (captured) or given up (left: never by your Abandon, a side quest is not abandonable), each its line, quest:ended once;
 // saved and loaded at every stage. Its place is marked on
@@ -43,7 +43,7 @@ Kit.suite(({ok,info})=>{
   {fresh();const r0=t.repAt('Ashford'),q4=E.start({who:'child',to:{town:'Ashford',lot:'house',i:0},prize:{morale:5},forfeit:{rep:['Ashford',-3]}});
    G.day=q4.due;t.questDay();ok(P.quests.length===1,'on its due day: still aboard');ok(save(),'saved and loaded on its last day');
    G.day=q4.due+1;t.questDay();ok(!P.quests.length&&ends(q4).join()==='failed'&&t.repAt('Ashford')===r0-3&&G.msgs.some(m=>/^Quest failed: Escort the lost child.*slips away/.test(m.m)),'a day past it: failed (late), reputation −3 at Ashford, her line');
-   const z=ended.find(x=>x.e.id===q4.id);ok(z&&z.e.fate==='late','quest:ended says how: fate late (a thread\'s step branches by it)')}
+   const z=ended.find(x=>x.e.id===q4.id);ok(z&&z.e.fate==='late','quest:ended says how: fate late (a quest chain\'s step branches by it)')}
   // ---- a battle lost with them aboard: carried off; withdrawn or won: still aboard
   {fresh();const band=()=>{const b=t.asParty({x:P.x+10,y:P.y,n:4,kind:'bandits',cool:0,t:0,a:0});t.bandits.push(b);return Kit.meet({kind:'party',ref:b,n:4,list:b.troops.slice(),band:'bandits'})};
    const q5=E.start(spec());band();Kit.seeded(4,()=>t.concludeEncounter(true,{},0,true,[]));Kit.done({cont:true,world:true});ok(P.quests.includes(q5),'a battle won: still aboard');
@@ -58,21 +58,21 @@ Kit.suite(({ok,info})=>{
    ok(jobs===4&&!!E.start(spec())&&t.Quest.jobs()===4,'with four jobs taken (the limit), an escort is taken all the same: it is no job')}
   // ---- a job offered at a holding (no spec): a traveller to another holding
   {fresh();const o=Kit.seeded(3,()=>t.makeQuest('escort',ash));ok(o&&o.who==='traveller'&&o.to.k==='holding'&&o.to.town!=='Ashford'&&o.reward.gold>0&&o.prize.rep[0]==='Ashford'&&Object.keys(o.reward).join()==='gold,rep,honor,xp','offered at Ashford: a traveller to '+(o&&o.to.name)+', '+(o&&o.reward.gold)+' gold there')}
-  // ---- a thread's step: escort to X, branching by how it ended
-  {fresh();if(!t.kindOf('thread','test_escort'))t.defineKind('thread','test_escort',{n:'An escort test',steps:[{id:'ride',start:{quest:'escort',town:'Ashford',spec:th=>({who:'traveller',to:{town:th.memory.to},prize:{gold:5}})},how:d=>d.e.fate,then:{arrived:null,late:null}}]});
-   const th=t.Thread.start('test_escort',{to:far.name}),qq=P.quests[0],te=[],fn=t.worldOn('thread:ended',ev=>te.push(ev));
-   try{ok(th.wait&&th.wait.shape==='quest'&&qq&&qq.type==='escort'&&th.wait.id===qq.id&&qq.to.town===far.name,'a thread\'s step: {quest: \'escort\', spec}, the traveller aboard, waited for');
-    const snap=JSON.stringify(W.story.threads);ok(save()&&JSON.stringify(W.story.threads)===snap,'saved and loaded midway: the thread and its passenger');
-    P.x=far.x;P.y=far.y;t.updateRoad(.05);ok(te.length===1&&te[0].how==='arrived','arrived: the thread ends by its fate (arrived)');t.act('pas-close')}finally{t.worldOff('thread:ended',fn)}}
+  // ---- a quest chain's step: escort to X, branching by how it ended
+  {fresh();if(!t.kindOf(t.QUESTCHAIN_SHAPE,'test_escort'))t.defineKind(t.QUESTCHAIN_SHAPE,'test_escort',{n:'An escort test',steps:[{id:'ride',start:{quest:'escort',town:'Ashford',spec:th=>({who:'traveller',to:{town:th.memory.to},prize:{gold:5}})},how:d=>d.e.fate,then:{arrived:null,late:null}}]});
+   const th=t.QuestChain.start('test_escort',{to:far.name}),qq=P.quests[0],te=[],fn=t.worldOn('questchain:ended',ev=>te.push(ev));
+   try{ok(th.wait&&th.wait.shape==='quest'&&qq&&qq.type==='escort'&&th.wait.id===qq.id&&qq.to.town===far.name,'a quest chain\'s step: {quest: \'escort\', spec}, the traveller aboard, waited for');
+    const snap=JSON.stringify(W.story.threads);ok(save()&&JSON.stringify(W.story.threads)===snap,'saved and loaded midway: the quest chain and its passenger');
+    P.x=far.x;P.y=far.y;t.updateRoad(.05);ok(te.length===1&&te[0].how==='arrived','arrived: the quest chain ends by its fate (arrived)');t.act('pas-close')}finally{t.worldOff('questchain:ended',fn)}}
   // ---- the developer commands (ui/developer.js), story's
   {fresh();const D=t.DevConsole,x=c=>{try{return D.execute(c)}catch(e){return 'ERR '+e.message}};
    ok(/child \(Lost child\)/.test(x('enc'))&&/escort/.test(x('quest')),'enc and quest list the kinds');
    const n0=t.roadList().length,s=x("enc('lostChild')");ok(/Lost child \(child\) spawned/.test(s)&&t.roadList().length===n0+1&&t.roadList().some(e=>e.k==='child'),'enc(\'lostChild\'): one spawned near you ('+s+')');
    ok(/^ERR No encounter kind/.test(x('enc dragon')),'an unknown kind: why');
    const s2=x('quest bounty');ok(/taken: Bounty/.test(s2)&&P.quests.some(q=>q.type==='bounty'),'quest bounty: offered at the nearest holding and taken ('+s2+')');
-   ok(/No thread under way/.test(x('chains')),'chains: none under way, and the kinds');
-   Kit.storyKinds();const th=Kit.seeded(21,()=>t.Thread.start('test_thread',{town:'Ashford'})),c=x('chains'),one=x('chain '+th.i);
-   ok(new RegExp(th.i+', A test thread \\(test_thread\\), step job, waits for quest').test(c)&&one.step==='job'&&one.starts==='quest'&&one.until==='quest:ended'&&one.memory.town==='Ashford','chains lists it; chain '+th.i+': its step, what it began, what it waits for, its memory');
+   ok(/No quest chain under way/.test(x('chains')),'chains: none under way, and the kinds');
+   Kit.storyKinds();const th=Kit.seeded(21,()=>t.QuestChain.start('test_questchain',{town:'Ashford'})),c=x('chains'),one=x('chain '+th.i);
+   ok(new RegExp(th.i+', A test quest chain \\(test_questchain\\), step job, waits for quest').test(c)&&one.step==='job'&&one.starts==='quest'&&one.until==='quest:ended'&&one.memory.town==='Ashford','chains lists it; chain '+th.i+': its step, what it began, what it waits for, its memory');
    P.quests=P.quests.filter(q=>q.type!=='supply');W.story.threads.on=[];
    const q7=E.start(spec()),p=x('passengers');ok(new RegExp(q7.id+', the refugee family \\(refugees\\) to '+far.name).test(p),'passengers: who, where, when due');
    const j=x('escort');ok(/Teleported/.test(j)&&Math.hypot(P.x-q7.to.x,P.y-q7.to.y)<=t.ESCORT.reach.holding,'escort: to its place ('+j+')');t.updateRoad(.05);ok(q7.fate==='arrived','and there once the world runs');t.act('pas-close')}

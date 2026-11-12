@@ -21,13 +21,13 @@
    the boards: givenBy(), timing(), reportLine(), steps(), abandonCost(). A kind made by another (an escort: world/escort.js)
    is given its spec (make's, setup's). There is no cap on the jobs you hold (the boards limit the work); one that is not a
    job is counted false (Quest.jobs: the plain count), and a kind may have its own limit (full: an escort's).
-   The quest model (the owner, 2026-10-23; doc/STORY_DESIGN.md QM), read the same way by every quest and story (story/thread.js):
+   The quest model (the owner, 2026-10-23; doc/STORY_DESIGN.md QM), read the same way by every quest and story (story/questchain.js):
    - cat, its category (QUEST_CATS, data/quests.js): 'job' (the boards' and lords', JobQuest), 'side' (a step kind: an escort
-     from the road, StepQuest), 'main' (a story kind marked main: Thread). Only a job can be given up (abandonable), at a cost
+     from the road, StepQuest), 'main' (a story kind marked main: QuestChain). Only a job can be given up (abandonable), at a cost
      (penalty(fate): what failing it costs, as an outcome; a job's grows with its size) and never while it is a story's stage;
    - state (QUEST_STATES): an offer 'locked' (needs(): what it asks of you, unmet) or 'available'; taken, 'active', or
      'completed' (ready: report it); over, its archive entry's: 'done', 'failed' or 'abandoned' (endState);
-   - story: the story it is a stage of (a live thread waiting on it), or null: listed and archived as its story, not alone;
+   - story: the story it is a stage of (a live quest chain waiting on it), or null: listed and archived as its story, not alone;
    - over (announceEnd): kept in the archive (QuestArchive, below: P.archive), unless it is a story's stage. */
 class Quest extends Happening{
   get shape(){
@@ -78,7 +78,7 @@ class Quest extends Happening{
     return 'job';
   }
   get story(){
-    return Thread.list().on.find(th=>th.waits({e:this}))||null;
+    return QuestChain.list().on.find(th=>th.waits({e:this}))||null;
   }
   get abandonable(){
     return this.cat==='job'&&!this.story;

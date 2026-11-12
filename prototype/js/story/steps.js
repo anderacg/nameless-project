@@ -1,8 +1,8 @@
 'use strict';
 /* ---------- a story's steps: the reusable step kinds of a chain (doc/STORY_DESIGN.md §9; the story batch, ST2) ----------
-   A chain is a thread (story/thread.js); most of its steps are quests a story begins, never offered on a board: each one is in
+   A chain is a quest chain (story/questchain.js); most of its steps are quests a story begins, never offered on a board: each one is in
    your Quests (C) with where to go, marked on the map, saved with P.quests as every quest is, and its end told on the bus
-   (quest:ended {e, how: 'paid' | 'failed'}; e.fate says which way, what a step branches by). A thread's step begins one with
+   (quest:ended {e, how: 'paid' | 'failed'}; e.fate says which way, what a step branches by). A quest chain's step begins one with
    {step: kind, town, spec} (or {quest: 'escort', …}: the escort is a job kind too); its kinds are of the shape 'step' (not jobs:
    the boards never offer them and Quest.jobs never counts them; Quest.make and Quest.as find them).
    - StepQuest, the base (on the Quest shape, story/quest.js): a side quest, not a job (counted false), never reported (it ends where it
@@ -21,7 +21,7 @@
      (HeldQuest, a rescue: free a captive of yours from the band that carries him, the hideout that keeps him or a holding's
      gaol: freed; his holder destroyed by another: gone; no deadline). Over another way than done or failed (over(fate, k)):
      its line, quest:ended (paid).
-   Steps.frame, each moment on the map (world/road.js updateRoad): a thread's page that waits is shown once you are
+   Steps.frame, each moment on the map (world/road.js updateRoad): a quest chain's page that waits is shown once you are
    free, else the first step at its place is reached; true when something opened. ---------- */
 class StepQuest extends Quest{
   // (a side quest: not a job, never given up by you; a story's stage is its story's)
@@ -437,12 +437,12 @@ defineKinds('step',{},{
   beasts:{cls:BeastsQuest},
   foe:{cls:FoeQuest},
 });
-/* each moment on the map: a thread's page that waits shown once you are free; else the first step at its place reached (one a
+/* each moment on the map: a quest chain's page that waits shown once you are free; else the first step at its place reached (one a
    moment); true: something opened (the moment ends there) */
 const Steps={
   frame(){
     if(G.mode!=='world')return false;
-    if(Thread.showWaiting())return true;
+    if(QuestChain.showWaiting())return true;
     for(const q of P.quests){
       const Q=Quest.as(q);
       if(Q.reaches&&Q.near()){

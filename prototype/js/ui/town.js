@@ -441,7 +441,7 @@ class Storehouse extends Place{
   store(a,arg){
     const t=G.town&&G.town.ref;if(!t||t.owner!=='player')return;ensureEcon(t);const [g,ns]=String(arg).split(':');if(!GOODS[g])return;const st=Math.floor(t.stock[g]||0);
     if(a==='st-put'){const n=Math.min(ns==='all'?Infinity:+ns,goodN(g),Math.max(0,Math.round(storeCap(t))-st));const k=n>0?goodTake(g,n):0;t.stock[g]=(t.stock[g]||0)+k;if(k)toast('You store '+k+' '+GOODS[g].n.toLowerCase()+' in '+t.name+'.')}
-    if(a==='st-take'){const n=Math.min(ns==='all'?Infinity:+ns,st,goodRoom(g));const k=n>0?invAdd('good',g,n):0;t.stock[g]-=k;if(k)toast('You take '+k+' '+GOODS[g].n.toLowerCase()+' from the stores of '+t.name+'.')}
+    if(a==='st-take'){const n=Math.min(ns==='all'?Infinity:+ns,st,goodRoom(g));const k=n>0?keptIn(g,n,n):0;t.stock[g]-=k;if(k)toast('You take '+k+' '+GOODS[g].n.toLowerCase()+' from the stores of '+t.name+'.')}
     updateHUD(true);renderTown();
   }
 }

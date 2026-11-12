@@ -33,8 +33,8 @@ Kit.suite(({ok,info})=>{
   {const q={reward:{gold:100}},g={pays:.5},k=t.GIVER_PAY[0];for(const x of t.GIVER_PAY)fief.stock[x]=0;fief.stock[k]=1;t.Quest.purse?t.Quest.purse(q,g,fief):t.JobQuest.purse(q,g,fief);
    const worth=q.reward.goods?q.reward.goods[1]*t.marketPrice(fief,k):0;ok(q.reward.goods&&q.reward.gold===Math.max(50,Math.round(100-worth)),'a reeve with one '+k+': the gold less only what it is worth ('+q.reward.gold+' gold and '+(q.reward.goods||[])[1]+')')}
   // ---- the heirloom
-  {const home=t.Wounded.home,was=t.Thread.once('heirloom');t.Wounded.home=()=>({town:fief.name});P.inv=P.inv.map(()=>null);while(t.invAdd('good','iron',50)>0);
-   const o=t.Wounded.gift({});if(!was&&o.gear){t.Outcome.apply(o,{});ok(!t.Thread.once('heirloom'),'the heirloom with a full bag: not marked given, still to come')}else info('heirloom given already: not tried');
+  {const home=t.Wounded.home,was=t.QuestChain.once('heirloom');t.Wounded.home=()=>({town:fief.name});P.inv=P.inv.map(()=>null);while(t.invAdd('good','iron',50)>0);
+   const o=t.Wounded.gift({});if(!was&&o.gear){t.Outcome.apply(o,{});ok(!t.QuestChain.once('heirloom'),'the heirloom with a full bag: not marked given, still to come')}else info('heirloom given already: not tried');
    t.Wounded.home=home;P.inv=P.inv.map(()=>null)}
   // ---- hunger
   {const H=t.SUPPLY.hunger,B=t.BAND;B.hungry=71;B.lean=0;const fed=()=>{if(B.lean||B.hungry){const l=Math.max(B.lean||0,B.hungry)-H.recover;if(l>0)B.lean=l;else delete B.lean}B.hungry=0};fed();ok(B.hungry===0&&B.lean===71-H.recover,'fed an hour after 71 hungry: '+B.lean+' hungry hours left to wear off');

@@ -78,11 +78,12 @@ function renderLoot(){
 const lootEnd=()=>{G.loot=null;G.lootView=null};
 function lootAct(a,arg){
   const L=G.loot,V=G.lootView;if(!L||!V)return;
-  const take=s=>{const n=lootRoom(s);if(!n)return 0;const got=playerInventory.add(s.k,s.id,n,lootBound(s));s.n-=got;if(got)L.took=true;return got};
+  // (mine: how many of a stack you set down there yourself: taken up again, no cheer for them, supply.js keptIn)
+  const take=s=>{const n=lootRoom(s);if(!n)return 0;DRINK_KEEP=Math.min(n,s.mine||0);let got;try{got=playerInventory.add(s.k,s.id,n,lootBound(s))}finally{DRINK_KEEP=0}if(s.mine)s.mine=Math.max(0,s.mine-got);s.n-=got;if(got)L.took=true;return got};
   if(a==='lt-take'){const s=L.pile[+arg];if(s){take(s);L.pile=L.pile.filter(x=>x.n>0)}}
   if(a==='lt-all'){for(const s of L.pile)take(s);L.pile=L.pile.filter(x=>x.n>0)}
   // (a quest item stays in the bag: bound, as a letter, whose record goes nowhere else)
-  if(a==='lt-drop'){const s=P.inv[+arg];if(s&&!lootBound(s)){P.inv[+arg]=null;if(s.k==='gear')L.pile.push({k:'gear',id:s.id,n:1});else{const x=L.pile.find(p=>p.k===s.k&&p.id===s.id);if(x)x.n+=s.n;else L.pile.push({...s})}}}
+  if(a==='lt-drop'){const s=P.inv[+arg];if(s&&!lootBound(s)){P.inv[+arg]=null;if(s.k==='gear')L.pile.push({k:'gear',id:s.id,n:1});else{const x=L.pile.find(p=>p.k===s.k&&p.id===s.id);if(x){x.n+=s.n;x.mine=(x.mine||0)+s.n}else L.pile.push({...s,mine:s.n})}}}
   if(a==='lt-leave'){const left=L.pile.map(s=>(s.n>1?s.n+' ':'')+itemDef(s).n.toLowerCase());if(left.length)log('You leave '+left.join(', ')+' behind.','bad');const next=V.next;lootEnd();return act(next)}
   renderLoot();
 }

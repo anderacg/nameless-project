@@ -53,7 +53,7 @@ escape = base + Agility × a + (Athletics on foot | Riding mounted) × b + night
 | **A lord at war with your realm** | your rank, his relation to you, your honour | ransom (to your realm or you), prison in his castle; parole for the honourable |
 | **A lord not at war** (you attacked him, or are hostile) | relation, honour, why you fought | persuasion works best; a fine and a release |
 
-**A captivity page** (the frame rule; the story system's page: `ChoicePage`, choices with their odds and outcomes; it is a **Thread** of the story system, held across days) opens with the captor's leader. The choices offered depend on how they see you:
+**A captivity page** (the frame rule; the story system's page: `ChoicePage`, choices with their odds and outcomes; it is a **QuestChain** of the story system, held across days) opens with the captor's leader. The choices offered depend on how they see you:
 
 | Choice | When offered | Check | Outcome |
 |---|---|---|---|
@@ -93,7 +93,7 @@ Held in the captor's holding (a lord's castle dungeon) or camp (a cage).
 
 - `battle/resolution.js` `conclude`: a defeat with your hero alive goes to the escape roll, then captivity (no more "wake up near").
 - `world/captivity.js` (new): the escape roll, the captor's view, the page's choices, prison days, the stash, scattered troops' return.
-- The story system: captivity as a **Thread** (it spans days), its page a `ChoicePage`, its choices and outcomes (`story/outcome.js` gains `ransom`, `fine`, `confiscate`, `scatter`, `serve`), the stash quest on the quest board.
+- The story system: captivity as a **QuestChain** (it spans days), its page a `ChoicePage`, its choices and outcomes (`story/outcome.js` gains `ransom`, `fine`, `confiscate`, `scatter`, `serve`), the stash quest on the quest board.
 - Traits: Slippery, Silver tongue, Old soldier in the tree (`data/tree.js`); companions' (PROGRESSION_DESIGN.md).
 - **Saves:** `P.captivity` (the captor, the day it began, the prison's state), the stashes in the world part; no migration.
 - **Fingerprints:** the battle suites' defeat cases (`battleresolution`) move once, on purpose.

@@ -105,15 +105,16 @@ function drinkOrder(L){const o=SUPPLY.drink.order;return L&&L.desert?['water']:B
 const drinkStock=L=>drinkOrder(L).reduce((a,k)=>a+goodN(k),0);
 const drinkNext=L=>drinkOrder(L).find(k=>goodN(k)>0)||null;
 // n of a drink come into your stores (the bag: core/items.js Good gained): its morale, once (SUPPLY.drink: ale and liquor lift it)
-// (once: only for more of it than you have held since you last drank or sold some (P.cheer, the most held of each): the same ale
-// put on a pile, or in a fief's stores, and taken up again lifts no one twice. drinkOut: n of it drunk or sold)
-function drinkIn(id,n){const D=SUPPLY.drink[id];if(!D||!D.morale)return;const C=P.cheer||(P.cheer={}),have=goodN(id),was=C[id]||0,k=SUPPLY.drink.once?Math.min(n,Math.max(0,have-was)):n;
-  C[id]=Math.max(was,have);if(k)P.morale=clamp(P.morale+D.morale*k,0,100)}
-function drinkOut(id,n){const C=P.cheer;if(C&&C[id]&&n>0)C[id]=Math.max(0,C[id]-n)}
+// (once: none for what was yours already, set down where only you take it up again (a fief's or a castle's stores, a battle's pile):
+// the same ale taken up again lifted the band each time. DRINK_KEEP: how many of the next lot in were yours already, keptIn)
+let DRINK_KEEP=0;
+function drinkIn(id,n){const D=SUPPLY.drink[id],kept=DRINK_KEEP;DRINK_KEEP=0;if(!D||!D.morale)return;const k=SUPPLY.drink.once?Math.max(0,n-kept):n;if(k)P.morale=clamp(P.morale+D.morale*k,0,100)}
+// (n of a good back into your bag, kept of them yours already: no cheer for those)
+function keptIn(g,n,kept){DRINK_KEEP=kept;try{return invAdd('good',g,n)}finally{DRINK_KEEP=0}}
 // n drunk, in order: the drink it was on (the first that gave any), or null with none to drink. Each water drunk leaves its
 // waterskin empty in the bag (never lost: past the bag's limit too)
 function drinkTake(n,L){let left=n,first=null;
-  for(const k of drinkOrder(L)){if(!left)break;const m=goodTake(k,left);if(m){drinkOut(k,m);if(!first)first=k;if(k===SKIN.full)playerInventory.add('good',SKIN.empty,m,true)}left-=m}
+  for(const k of drinkOrder(L)){if(!left)break;const m=goodTake(k,left);if(m){if(!first)first=k;if(k===SKIN.full)playerInventory.add('good',SKIN.empty,m,true)}left-=m}
   return first}
 /* ---------- the waterskins (the owner, 2026-10-24: data/places.js CONTAINERS, today one kind, the waterskin: full, one person's
    day of drink, the good water; empty, skin_empty). A new hero sets out with SUPPLY.skins.start full ones (skinsStart); each

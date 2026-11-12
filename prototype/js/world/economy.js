@@ -141,7 +141,6 @@ class Economy{
   sell(g,n){
     const t=this.t;this.ensure();let sold=0,earned=0;if(TRADE_FAIR.own&&t.owner==='player')return{sold,earned};
     for(let i=0;i<n;i++){if(goodN(g)<1)break;const p=this.sellPrice(g);goodTake(g,1);t.stock[g]=(t.stock[g]||0)+1;P.gold+=p;earned+=p;sold++}
-    drinkOut(g,sold);
     return{sold,earned}}
 
   /* building materials from its stock: what is short of a project's (as words), and taking them */
@@ -271,7 +270,7 @@ function fiefEconBody(t){
 function fiefEconAct(a,arg,t){
   if(a==='fief-tax'){t.tax=clamp(+arg,0,2);return true}
   if(a==='fief-store'){const [g,n]=arg.split(':');const k=goodTake(g,+n);ensureEcon(t);t.stock[g]=(t.stock[g]||0)+k;if(k)log('You store '+k+' '+GOODS[g].n.toLowerCase()+' in '+t.name+'.');return true}
-  if(a==='fief-take'){const [g,n]=arg.split(':');ensureEcon(t);const k=invAdd('good',g,Math.min(+n,t.stock[g]||0));t.stock[g]-=k;if(k)log('You take '+k+' '+GOODS[g].n.toLowerCase()+' from the stores of '+t.name+'.');return true}
+  if(a==='fief-take'){const [g,n]=arg.split(':');ensureEcon(t);const m=Math.min(+n,t.stock[g]||0),k=keptIn(g,m,m);t.stock[g]-=k;if(k)log('You take '+k+' '+GOODS[g].n.toLowerCase()+' from the stores of '+t.name+'.');return true}
   if(a==='fief-cv'){const v=id=>{const e=panel.querySelector('#'+id);return e?(e.type==='checkbox'?e.checked:e.value):''};
     const cargo={};[['cv-g1','cv-n1'],['cv-g2','cv-n2']].forEach(([g,n])=>{if(v(g))cargo[v(g)]=(cargo[v(g)]||0)+(+v(n)||0)});
     const err=hireCaravan(t.name,v('cv-to'),cargo,+v('cv-guards')||3,v('cv-rep'));if(err)log(err,'bad');return true}

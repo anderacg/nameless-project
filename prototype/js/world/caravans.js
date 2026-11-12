@@ -110,7 +110,7 @@ class CaravanParty extends Party{
     if(a==='cv-buy'){const g=arg,p=c.price(g),n=Math.min(5,c.goods[g]||0);if(n&&P.gold>=p*n&&goodRoom(g)>=n){P.gold-=p*n;c.goods[g]-=n;if(!c.goods[g])delete c.goods[g];invAdd('good',g,n);train('trade',n*p/40);log('You buy '+n+' '+GOODS[g].n.toLowerCase()+' from the caravan.')}
       if(!Object.keys(c.goods).length){c.gone=true;W.caravans=W.caravans.filter(x=>x!==c);G.cv=null;G.mode='world';hidePanel();log('The caravan sold out and turns home.');return true}
       c.meet();updateHUD(true);return true}
-    if(a==='cv-sell'){const g=arg,p=c.pays(g),n=goodTake(g,Math.min(5,goodN(g)));if(n){P.gold+=p*n;c.goods[g]=(c.goods[g]||0)+n;drinkOut(g,n);train('trade',n*p/40);log('You sell '+n+' '+GOODS[g].n.toLowerCase()+' to the caravan.')}c.meet();updateHUD(true);return true}
+    if(a==='cv-sell'){const g=arg,p=c.pays(g),n=goodTake(g,Math.min(5,goodN(g)));if(n){P.gold+=p*n;c.goods[g]=(c.goods[g]||0)+n;train('trade',n*p/40);log('You sell '+n+' '+GOODS[g].n.toLowerCase()+' to the caravan.')}c.meet();updateHUD(true);return true}
     if(a==='cv-repeat'&&c.mine){c.repeat=!c.repeat;c.meet();return true}
     if(a==='cv-disband'&&c.mine){if(c.purse){P.gold+=c.purse;c.purse=0}const got=Object.keys(c.goods).map(g=>invAdd('good',g,c.goods[g])).reduce((x,y)=>x+y,0);W.caravans=W.caravans.filter(x=>x!==c);G.cv=null;G.mode='world';hidePanel();log('You disband the caravan'+(got?' and take '+got+' goods into your bag':'')+'.');updateHUD(true);return true}
     if(a==='cv-attack'&&!c.mine&&P.fac!==c.fac){realmOf(c.fac).provoke(20,10);G.cv=null;

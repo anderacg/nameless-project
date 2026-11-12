@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- item kinds: what each thing in a bag is (doc/STORY_DESIGN.md §7, wave C), and its category (doc/ITEMS_DESIGN.md) ----------
    A bag (P.inv, a loot pile) holds plain saved records {k, id, n} (a letter's with its own record L; a quest item's with by, the
-   quest or thread it is bound to), saved exactly as they always were. What a record is comes from its kind, one object per kind,
+   quest or quest chain it is bound to), saved exactly as they always were. What a record is comes from its kind, one object per kind,
    read with the record:
      Gear (k 'gear': ITEMS, data/monsters.js, and the generated g_* pieces of data/gear.js);
      Mount (a Gear whose slot is 'mount': the m_* of data/gear.js, sold at stables);
@@ -9,7 +9,7 @@
      Good (k 'good': GOODS, data/places.js: food, drink and wares; a holding's old arrows and bolts are no item);
      Trophy (k 'mat': MATS, data/monsters.js: what beasts leave);
      Valuable (k 'val': VALUABLES, data/items.js: jewels, rings, relics);
-     QuestItem (k 'quest': QUEST_ITEMS, data/items.js: bound to the quest or thread that gave it);
+     QuestItem (k 'quest': QUEST_ITEMS, data/items.js: bound to the quest or quest chain that gave it);
      Letter (k 'letter': a robbed messenger's, world/letters.js).
    Each knows its data entry (def), name and description, its category (cat: one of ITEM_CATS, data/items.js, by catId: its data's
    cat, else its kind's; none: not an item, never carried), its stack size, its worth (its data's value), its price (what a market
@@ -256,9 +256,9 @@ class Valuable extends ItemKind{
   lootLine(s){return 'Valuable, '+VALUABLES[s.id].v+'g'}
   verbSpecs(){return [SELL_VERB,DROP_VERB]}
 }
-/* quest items (doc/ITEMS_DESIGN.md §4): bound to the quest or thread that gave them (by: its key, 'quest:3', 'thread:1'; none:
+/* quest items (doc/ITEMS_DESIGN.md §4): bound to the quest or quest chain that gave them (by: its key, 'quest:3', 'thread:1' (QUESTCHAIN_SHAPE, a quest chain's); none:
    bound to nothing), so neither sold nor dropped; each takes a bag slot, never refused (past the bag's limit too: core/inventory.js),
-   and is gone when its quest or thread ends (the bus's 'quest:ended', 'thread:ended'). Given and taken by the story's outcomes
+   and is gone when its quest or quest chain ends (the bus's 'quest:ended', 'questchain:ended'). Given and taken by the story's outcomes
    (story/outcome.js item) */
 class QuestItem extends ItemKind{
   constructor(){super('quest')}
@@ -267,16 +267,16 @@ class QuestItem extends ItemKind{
   title(s){return this.name(s)+', a quest item'}
   some(s){return 'the '+this.name(s).toLowerCase()}
   verbSpecs(){return []}
-  // the key of what a happening binds it to: a quest or a thread; an encounter a thread began, that thread; else nothing
+  // the key of what a happening binds it to: a quest or a quest chain; an encounter a quest chain began, that quest chain; else nothing
   boundTo(e){
     if(!e||!e.shape)return null;
-    if(e.shape==='quest'||e.shape==='thread')return e.shape+':'+e.id;
-    const th=typeof Thread!=='undefined'?Thread.list().on.find(th=>th.waits({e})):null;
-    return th?'thread:'+th.i:null}
+    if(e.shape==='quest'||e.shape===QUESTCHAIN_SHAPE)return e.shape+':'+e.id;
+    const th=typeof QuestChain!=='undefined'?QuestChain.list().on.find(th=>th.waits({e})):null;
+    return th?QUESTCHAIN_SHAPE+':'+th.i:null}
   // given (into your bag, never left behind) and taken back: how many
   give(id,e){return playerInventory.add('quest',id,1,true,{by:this.boundTo(e)})}
   take(id){return playerInventory.take('quest',id,1)}
-  // its quest or thread over (e): what it gave is gone from your bag
+  // its quest or quest chain over (e): what it gave is gone from your bag
   ended(e){
     const key=e&&e.shape+':'+e.id;
     if(!key)return;
@@ -285,7 +285,7 @@ class QuestItem extends ItemKind{
 }
 const ITEM_KINDS={gear:new Gear(),mount:new Mount(),quiver:new Quiver(),good:new Good(),mat:new Trophy(),val:new Valuable(),quest:new QuestItem()};
 // (the sealed letter's kind, Letter, is world/letters.js's: ITEM_KINDS.letter)
-for(const ev of ['quest:ended','thread:ended'])worldOn(ev,d=>ITEM_KINDS.quest.ended(d&&d.e));
+for(const ev of ['quest:ended','questchain:ended'])worldOn(ev,d=>ITEM_KINDS.quest.ended(d&&d.e));
 // the kind of a bag record {k, id}: a mount or a quiver is the gear for its slot; any other kind reads as a trophy, as it always did
 function itemKind(s){
   if(s.k==='gear'){const sl=ITEMS[s.id]&&ITEMS[s.id].slot;return sl==='mount'?ITEM_KINDS.mount:sl==='quiver'?ITEM_KINDS.quiver:ITEM_KINDS.gear}

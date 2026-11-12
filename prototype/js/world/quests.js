@@ -371,7 +371,7 @@ class BountyQuest extends JobQuest{
     super.pay(where);
     const t=townBy(this.home);
     if(t&&!this.lord)Quiet.set(t,'band','the '+this.band);
-    Chains.bounty(this);// (its chief got away: The chief who ran, story/chains.js)
+    JobChains.bounty(this);// (its chief got away: The chief who ran, story/jobchains.js)
   }
   // (broken by another: none of its quarry is left anywhere)
   gone(){
@@ -447,7 +447,7 @@ class BeastQuest extends JobQuest{
     super.pay(where);
     const t=townBy(this.home);
     if(t&&!this.lord)Quiet.set(t,'beast','the '+MONSTERS[this.mon].n.toLowerCase());
-    Chains.beast(this);// (a cave near: Something bigger, story/chains.js)
+    JobChains.beast(this);// (a cave near: Something bigger, story/jobchains.js)
   }
   seek(){
     const m=this.target();
@@ -560,7 +560,7 @@ class SupplyQuest extends JobQuest{
   }
   pay(where){
     super.pay(where);
-    Chains.supply(this);// (its caravan robbed: The empty larder, story/chains.js)
+    JobChains.supply(this);// (its caravan robbed: The empty larder, story/jobchains.js)
   }
   goneWhy(){
     return super.gone()?super.goneWhy():this.home+' has its '+GOODS[this.good].n.toLowerCase()+' again.';
@@ -1352,7 +1352,7 @@ const QuestTrack={
     return P.track||null;
   },
   list(){
-    return (P.tracks||(P.track?[P.track]:[])).filter(k=>this.quest(k)||this.thread(k));
+    return (P.tracks||(P.track?[P.track]:[])).filter(k=>this.quest(k)||this.questChain(k));
   },
   set(k){
     const t=P.tracks||(P.tracks=P.track?[P.track]:[]);
@@ -1361,15 +1361,15 @@ const QuestTrack={
   },
   drop(k){
     const t=P.tracks,was=P.track===k;if(t){const i=t.indexOf(k);if(i>=0)t.splice(i,1)}
-    if(!was)return;const next=(t||[]).find(x=>this.quest(x)||this.thread(x));if(next)P.track=next;else delete P.track;
+    if(!was)return;const next=(t||[]).find(x=>this.quest(x)||this.questChain(x));if(next)P.track=next;else delete P.track;
   },
-  thread(k){
-    return k&&k[0]==='t'?Thread.list().on.find(th=>th.i===+k.slice(1))||null:null;
+  questChain(k){
+    return k&&k[0]==='t'?QuestChain.list().on.find(th=>th.i===+k.slice(1))||null:null;
   },
   quest(k){
     if(!k)return null;
     if(k[0]==='q')return questBy(+k.slice(1))||null;
-    const th=this.thread(k),w=th&&th.wait;
+    const th=this.questChain(k),w=th&&th.wait;
     return w&&w.shape==='quest'&&questBy(w.id)||null;
   },
   goal(k){
@@ -1383,7 +1383,7 @@ const QuestTrack={
   },
 };
 worldOn('quest:ended',d=>{if(d&&d.e)QuestTrack.drop('q'+d.e.id)});
-worldOn('thread:ended',d=>{if(d&&d.e)QuestTrack.drop('t'+d.e.i)});
+worldOn('questchain:ended',d=>{if(d&&d.e)QuestTrack.drop('t'+d.e.i)});
 /* panels */
 const rewardText=r=>'<span class="gold">'+r.gold+' gold</span>'+(r.goods&&GOODS[r.goods[0]]?', '+r.goods[1]+' '+GOODS[r.goods[0]].n.toLowerCase():'')+(r.rep?', +'+r.rep+' reputation':'')+(r.honor?', +'+r.honor+' honor':'')+(r.xp?', '+r.xp+' XP':'');
 // a quest's facts, [label, html] each: who gave it, the day taken, its timing, where it is turned in, its reward (a late one's
