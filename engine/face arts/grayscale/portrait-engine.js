@@ -39,6 +39,7 @@
     return OPTIONS.hair[OPTIONS.hair.length-1];
   }
   const CLOSED_HELMS=Object.freeze(['barrel-great-helm','rivet-banded-helm','fluted-knight-helm','horned-closed-helm','leaf-visor-helm','tusked-closed-helm','great-helm','closed-knight-helm','visored-bascinet','closed-sallet','beaked-bascinet','slit-mask-helm']);
+  const SOFT_HEADWEAR=new Set(['none','hood','cap','beret','wrapped-hood','headband','veil','fur-cap','arming-cap','chaperon','straw-hat','feathered-cap','turban','linen-wrap','draped-veil','pearl-hood','heraldic-cap']);
   const HEADWEAR_GROUPS=Object.freeze({
     Open:Object.freeze(['none','headband','circlet','coronet','leaf-circlet','warband','vine-diadem']),
     'Caps and helmets':Object.freeze(['cap','nasal','kettle','beret','fur-cap','arming-cap','chaperon','straw-hat','feathered-cap','round-helm','turban','heraldic-cap','forge-helm','horned-helm','elf-winged-helm']),
@@ -1155,7 +1156,7 @@
     const x=a.cx,w=a.w;
     surface(g,a.outline,(px,py)=>{
       const u=(px-x)/w,dome=Math.sqrt(Math.max(0,1-u*u));
-      let v=95+77*dome-29*u;
+      let v=77+96*dome-36*u;
       v+=19*falloff(px,py,x-4,37,w*.8,11);
       v+=15*falloff(px,py,x-13,63,8,7);
       v+=8*falloff(px,py,x+13,62,7,7);
@@ -1166,7 +1167,7 @@
       v-=10*falloff(px,py,x+7,70,3,5);
       v+=11*falloff(px,py,x-3,58,3,12);
       for(const eye of a.eyes) {
-        v-=(37-10*a.definition-14*a.softness+(c.race==='dwarf'?10:0))*falloff(px,py,eye.x,eye.y-1,7,4);
+        v-=(46-10*a.definition-14*a.softness+(c.race==='dwarf'?10:0))*falloff(px,py,eye.x,eye.y-1,7,4);
         v+=(c.race==='dwarf'?22:12)*falloff(px,py,eye.x-1,eye.y-(c.race==='dwarf'?4:6),c.race==='dwarf'?8:7,2.5);
         v+=9*falloff(px,py,eye.x-1,eye.y+5,6,2);
       }
@@ -1176,7 +1177,16 @@
         v-=16*falloff(px,py,x+14,a.mouth.y-1,5,6);
         v+=15*falloff(px,py,x-4,a.chinY-4,11,4);
       }
-      return v+grain(Math.floor(px),Math.floor(py),c.seed)*(3-.8*a.softness);
+      // Broad facial planes follow the existing rig, with a lit cheek above its hollow.
+      const ey=a.eyes[0].y,ny=a.nose.y,my=a.mouth.y;
+      for(const side of [-1,1]){
+        v+=(side<0?19:9)*falloff(px,py,x+side*w*.53,ey+8,w*.26,4);
+        v-=(16-6*a.softness)*falloff(px,py,x+side*w*.65,ny+6,w*.19,7);
+        v-=13*falloff(px,py,x+side*w*.83,ey-6,w*.17,12);
+      }
+      v+=12*falloff(px,py,x-5,ey-13,w*.48,7);
+      v-=15*falloff(px,py,x,my+3,8,1.8);
+      return v;
     });
     if(c.race==='orc')clip(g,a.outline,()=>{
       for(const side of [-1,1]){
@@ -1393,7 +1403,7 @@
     const g=layers.iris.getContext('2d');g.save();g.globalCompositeOperation='destination-in';g.drawImage(layers.eyes,0,0);g.globalCompositeOperation='destination-out';g.drawImage(layers.eyelids,0,0);g.restore();
     return layers;
   }
-  // Coarse shading and equipment share a two-pixel grid; facial contours stay native.
+  // Native facial and garment contours retain detail at the 128-pixel source size.
   const PIXEL_STYLE=Object.freeze({orcScale:.875,orcHeavyScale:.75,tones:Object.freeze([32,64,96,128,160,192,224,248])});
   function headPlacement(c){const s=c.face==='orc-heavy'?PIXEL_STYLE.orcHeavyScale:PIXEL_STYLE.orcScale;return {s,dx:64*(1-s),dy:96*(1-s)};}
   function headRig(a,c) {
@@ -1586,12 +1596,12 @@
   }
   function pixelPortrait(p) {
     const layers={...p.layers},a=p.anchors;
-    layers.torso=pixelLayer(p.layers.torso,2,16);
-    for(const id of ['hairBack','hairFront','beard'])layers[id]=pixelLayer(p.layers[id],2,51,1);
-    if(p.config.hair==='war-crest')layers.hairFront=pixelLayer(p.layers.hairFront,1,51);
+    layers.torso=pixelLayer(p.layers.torso,1,16);
+    for(const id of ['hairBack','hairFront','beard'])layers[id]=pixelLayer(p.layers[id],1,32,1);
+    if(p.config.hair==='war-crest')layers.hairFront=pixelLayer(p.layers.hairFront,1);
     if(p.config.hair==='slick-side'){const g=layers.hairFront.getContext('2d');g.save();g.globalCompositeOperation='source-atop';for(let n=0;n<5;n++){rect(g,a.cx-6+n,a.top+2+n*2,2,2,32);rect(g,a.cx-4+n,a.top+2+n*2,2,2,102);}g.restore();}
     for(const id of ['ears','eyes','iris','eyelids','brows','nose','mouth','teeth','marks'])layers[id]=pixelLayer(p.layers[id],1);
-    for(const id of ['headwearBack','headwearFront','clothing','armor'])layers[id]=pixelLayer(p.layers[id],2);
+    for(const id of ['headwearBack','headwearFront','clothing','armor'])layers[id]=pixelLayer(p.layers[id],id.startsWith('headwear')?2:1);
     if(['rune-mail','mail','leather-mail','ruffled-mail'].includes(p.config.clothing))pixelMail(p,layers.armor);
     if(p.config.headwear==='dwarf-rune-helm'){
       const src=p.layers.headwearFront.getContext('2d').getImageData(0,0,SIZE,SIZE).data,g=layers.headwearFront.getContext('2d'),drop=a.offsetY||0;
@@ -1600,7 +1610,7 @@
     if(['stubble','close-beard','chin-bristle'].includes(p.config.beard))layers.beard=p.layers.beard;
     const bg=layers.beard.getContext('2d'),x=Math.floor(a.mouth.x-13),y=Math.floor(a.mouth.y-6),beard=pixelLayer(p.layers.beard,1);
     if(!['stubble','close-beard','chin-bristle'].includes(p.config.beard)){bg.clearRect(x,y,26,14);bg.drawImage(beard,x,y,26,14,x,y,26,14);}
-    layers.face=pixelLayer(p.layers.face,2,16);
+    layers.face=pixelLayer(p.layers.face,1,16);
     const fg=layers.face.getContext('2d'),im=fg.getImageData(0,0,SIZE,SIZE),d=im.data,counts=new Map();
     for(let Y=Math.ceil(a.top);Y<=a.chinY;Y++)for(let X=0;X<SIZE;X++){const k=(Y*SIZE+X)*4;if(d[k+3])counts.set(d[k],(counts.get(d[k])||0)+1);}
     const tones=[...counts.keys()].sort((a,b)=>a-b),candidates=tones.slice(1,-1).filter(v=>v>=112);
@@ -1627,7 +1637,39 @@
       // Rear lining stays inside the shell instead of forming an extra cheek/neck rim.
       const back=layers.headwearBack.getContext('2d');back.save();back.globalCompositeOperation='destination-in';back.drawImage(layers.headwearFront,0,0);back.restore();helmetOutline(layers.headwearBack);
     }
+    portraitMaterials(layers,a,p.config);
+    if(CLOSED_HELMS.includes(p.config.headwear))for(const id of ['headwearFront','headwearBack'])helmetOutline(layers[id]);
     return {...p,layers};
+  }
+  // Material relief stays inside each existing mask at its native drawing scale.
+  function portraitMaterials(layers,a,c){
+    for(const id of ['face','torso','hairBack','hairFront','beard','clothing','armor','headwearBack','headwearFront']){
+      const g=layers[id].getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data;
+      const hair=['hairBack','hairFront','beard'].includes(id),metal=id==='armor'||id.startsWith('headwear')&&!SOFT_HEADWEAR.has(c.headwear);
+      const skin=id==='face'||id==='torso';
+      const step=id.startsWith('headwear')?2:1;
+      for(let y=0;y<SIZE;y+=step)for(let x=0;x<SIZE;x+=step){
+        const k=(y*SIZE+x)*4;if(!d[k+3])continue;
+        let v=d[k];
+        if(skin){
+          const ey=a.eyes[0].y;
+          v+=22*falloff(x,y,a.cx-10,ey-11,a.w*.5,9)+22*falloff(x,y,a.cx-a.w*.5,ey+9,a.w*.27,5);
+          v-=28*falloff(x,y,a.cx+a.w*.65,ey+9,a.w*.35,21);
+          if(id==='torso')v-=16*falloff(x,y,a.cx,99,12,7);
+          // Broad planes, rather than noise or dithering, describe the skin.
+          v=Math.max(48,Math.min(224,Math.round(v/16)*16));
+        }else if(hair){
+          // Preserve the drawn locks; brighter grouped ridges emerge from dark roots.
+          v=40+(v-32)*1.45+14*falloff(x,y,a.cx-14,a.top+15,22,22)-10*falloff(x,y,a.cx+23,65,16,35);
+        }else if(metal){
+          // Existing seams and vents keep their dark values; raised surfaces catch light.
+          if(v>=96)v=128+(v-128)*1.22+14*falloff(x,y,id==='armor'?37:a.cx-15,id==='armor'?106:a.top+18,18,13)-12*falloff(x,y,93,79,20,43);
+        }else v=128+(v-128)*1.15;
+        const tone=skin?v:PIXEL_STYLE.tones.reduce((best,n)=>Math.abs(n-v)<Math.abs(best-v)?n:best,PIXEL_STYLE.tones[0]);
+        for(let j=0;j<step;j++)for(let i=0;i<step;i++){const q=((y+j)*SIZE+x+i)*4;if(!d[q+3])continue;d[q]=d[q+1]=d[q+2]=tone;}
+      }
+      g.putImageData(im,0,0);
+    }
   }
   function build(input) {
     const config=normalize(input),anchors=rig(config.face,config.adjustments,config.race),layers={};
@@ -1660,11 +1702,15 @@
     if(drop)for(const spec of LAYERS){if(spec.id==='clothing'||spec.id==='armor'||spec.id==='torso')continue;const shifted=canvas();shifted.getContext('2d').drawImage(layers[spec.id],0,drop);layers[spec.id]=shifted;}
     return pixelPortrait(smallerHead({config,anchors:placedRig(anchors,drop),layers}));
   }
-  function tint(source,color) {
+  function tint(source,color,channel=null) {
     if(!/^#[0-9a-f]{6}$/i.test(color))throw new Error('A tint must be a six-digit hex color');
     const out=canvas(),g=out.getContext('2d');g.drawImage(source,0,0);const im=g.getImageData(0,0,SIZE,SIZE),p=im.data;
     const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
-    for(let i=0;i<p.length;i+=4){const v=p[i]/255;for(let k=0;k<3;k++)p[i+k]=Math.round(v<.5?rgb[k]*(.22+v*1.56):rgb[k]+(255-rgb[k])*(v-.5)*1.35);}
+    const metal=channel==='metal'||channel==='headwear',shadow=[24,31,43].map((v,k)=>Math.min(v,rgb[k]*.5)),light=(metal?[218,235,247]:[255,228,187]).map((v,k)=>Math.max(v,rgb[k]));
+    for(let i=0;i<p.length;i+=4){if(!p[i+3])continue;const v=p[i]/255,shade=Math.max(0,1-v*2),shine=Math.max(0,v*2-1);for(let k=0;k<3;k++){
+      const base=rgb[k]*(1-shade*.78),cool=shade*.32;
+      p[i+k]=Math.round(Math.max(0,Math.min(255,(base*(1-cool)+shadow[k]*cool)*(1-shine*.8)+light[k]*shine*.8)));
+    }}
     g.putImageData(im,0,0);return out;
   }
   function hairFitMask(portrait,rule) {
@@ -1688,7 +1734,8 @@
       if(isHair&&(rule.hair==='hide'||rule.hair==='frame'&&spec.id==='hairBack'))continue;
       let src=portrait.layers[spec.id];
       if(isHair&&mask){const fitted=canvas(),fg=fitted.getContext('2d');fg.drawImage(src,0,0);fg.globalCompositeOperation='destination-in';fg.drawImage(mask,0,0);src=fitted;}
-      g.drawImage(colors&&spec.channel?tint(src,colors[spec.channel]||COLORS[spec.channel]):src,0,0);
+      const material=spec.channel==='headwear'&&SOFT_HEADWEAR.has(portrait.config.headwear)?'cloth':spec.channel;
+      g.drawImage(colors&&spec.channel?tint(src,colors[spec.channel]||COLORS[spec.channel],material):src,0,0);
     }
     // Visor depth shades the exposed eyes without changing their source artwork.
     if(rule.face==='covered'&&(!visible||visible.headwearFront!==false)) {

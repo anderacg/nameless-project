@@ -1,5 +1,8 @@
 # Pixel portraits — implemented
 
+Reference art pass (2026-11-12): the original `prototype/art/portrait/hum_sword.png` guides lighting, pixel detail and material color. Composition stays front-facing: the same rig, framing, head proportions, editable layers and version-7 recipes. Native skin, hair and garment contours preserve finer detail; facial planes have deeper sockets and clear cheek highlights. Helmet silhouettes keep their established two-pixel grid, blended contour and open vision slits. Material tints use warm highlights for skin/cloth and cool reflections for steel, with cool shadows and monotonic brightness for extreme colors. This replaces the earlier coarse skin/hair treatment described below. No reference image is loaded at runtime. Both offline workshop bundles are rebuilt from the shared engine.
+
+
 The approved portrait style replaces the previous generated appearance in the shared engine, game face maker and world portraits. It uses simpler skin and hair shading, sharp facial contours, and equipment texture at the same two-pixel scale. Portrait canvases remain 128 × 128 with independent grayscale layers and runtime tinting. The original part selections and version-7 recipes remain valid.
 
 Skin follows the existing light direction and face volumes. One intermediate skin shade is merged without changing highlights or the deepest shadow. Ear separation comes from a small contact shadow inside the ear root; the rejected cheek outline is absent. Age lines and short facial hair retain their subtle coverage. Mouth and moustache silhouettes stay readable.
