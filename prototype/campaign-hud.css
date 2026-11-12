@@ -71,7 +71,7 @@
 .campaign-world.mobile-world :is(.mwh-speeds,.mwh-map) button{border:3px solid transparent;border-image:var(--campaign-frame) 176/6px;border-radius:0;font-family:var(--hud-font)}
 
 /* Army identity replaces the game logo; supplies carry their own warnings. */
-.campaign-brand{display:flex;align-items:center;gap:8px;flex-basis:240px;min-width:0;height:50px;margin:3px 0;padding:2px 6px;border:7px solid transparent;border-image:var(--campaign-frame) 176/10px;border-radius:0;background:var(--campaign-surface);background-size:auto,640px 320px;background-clip:padding-box;filter:none;color:var(--hud-ink);text-align:left;cursor:pointer;font:700 16px var(--hud-font)}
+.campaign-brand{display:flex;align-items:center;gap:8px;flex-basis:240px;min-width:0;height:50px;margin:3px 0;padding:2px 6px;border:0;border-image:none;border-radius:0;background:none;box-shadow:none;filter:none;color:var(--hud-ink);text-align:left;cursor:pointer;font:700 16px var(--hud-font)}
 .campaign-army-flag{display:flex;align-items:center;justify-content:center;flex:none;width:28px;height:30px}.campaign-army-flag .tipflag{position:static;inset:auto;width:auto;height:30px;max-width:28px;object-fit:contain;image-rendering:pixelated;filter:none}
 .campaign-army-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.campaign-resource-art{width:24px;height:24px}
 .campaign-resource[data-supply]{appearance:none;cursor:pointer}.campaign-resource small{white-space:nowrap}.campaign-resource-alert{display:inline-block;margin-left:4px;padding:1px 3px;border:1px solid #c28b5e;border-radius:2px;background:#6b3022;color:#ffe4b7;font:700 8px/10px var(--hud-font);vertical-align:middle}

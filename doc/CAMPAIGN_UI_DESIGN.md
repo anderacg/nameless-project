@@ -6,7 +6,7 @@ Status: shared campaign HUD implemented on codex. Desktop and phone use the same
 
 `ui/campaignhud.js` owns the live resource rail, company detail toggle, nearby-holding card and map frames. Its condition component renders the same fitness heart, morale standard, stamina bolt, Arial label, numeric value and gauge in the company card and phone strip. The narrower phone status layout hides only redundant names when needed; its full accessible party-status label remains.
 
-The desktop header shows the current army name and its actual map flag; clicking it opens the existing naming window. Resource icons fit within the rail. Low food or drink has a tinted cell and LOW badge in that rail, with no separate floating warning; supply cells open inventory. Gauges cover up to three days.
+The unframed desktop header shows only the current army name and its actual map flag, with no button background; clicking it opens the existing naming window. Resource icons fit within the rail. Low food or drink has a tinted cell and LOW badge in that rail, with no separate floating warning; supply cells open inventory. Gauges cover up to three days.
 
 The desktop company card has no portrait. Stamina occupies its former left slot, beside fitness and morale; the detail toggle retains the full party information. Six illustrated commands and utility Help retain their original IDs and handlers. Nearby holdings show real faction, garrison and gate state; their buttons delegate to existing travel/gate rules and the full map. Time controls share one frame with an underline for selected speed. Day/weather has extra leading padding on desktop and phone.
 
