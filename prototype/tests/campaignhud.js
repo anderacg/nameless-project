@@ -4,6 +4,7 @@
 Kit.suite(({ok})=>{
  const t=T;window.requestAnimationFrame=()=>0;Kit.begin('soldier',23);Kit.clear();Kit.world();t.G.paused=true;const home=Kit.goHome('Ashford');t.P.x=home.x+40;t.P.y=home.y+30;t.updateHUD(true);t.frame();t.MainMenu.frame(performance.now());
  const hud=window.campaignHud,screen=document.getElementById('screen'),rect=e=>e.getBoundingClientRect(),visible=e=>!!e.getClientRects().length&&getComputedStyle(e).display!=='none';
+ ok(!t.HOLD_PLAQUE.on,'holding banners are hidden by default while their artwork remains available');
  ok(hud&&hud.desktop&&visible(hud.resources),'desktop campaign uses the live resource rail');
  ok(hud.brand.textContent.includes(t.bandName())&&hud.brand.querySelector('.tipflag')&&hud.companyHeader.contains(hud.brand),'army header shows the current band name and real map flag');
  ok(!visible(document.querySelector('#stats .pc-pic'))&&hud.company.contains(hud.resources)&&hud.company.contains(document.getElementById('stats')),'resources and portrait-free conditions share one panel');

@@ -67,10 +67,10 @@ Kit.suite(({ok,info})=>{
   {Kit.goTo(city.x,city.y+60);let err=null;try{t.drawWorld()}catch(e){err=e}ok(!err&&!t.Gates.admits(city).ok,'the map draws a refused holding’s lock')}
   // ---- the padlock over a gate that will not have you (the owner, 2026-11-08: "make the lock city icon animated and more cool, it should
   // floating around castle"; gfx/structures.js gateLock): gold, floating over the holding's top, never still
-  {const h=t.TOWNS.find(x=>!t.Gates.admits(x).ok)||t.TOWNS[0],o0=t.Gates.admits,on=t.GATES.on;t.GATES.on=true;t.Gates.admits=()=>({ok:false,why:'shut'});const c=t.ctx;
+  {const h=t.TOWNS.find(x=>!t.Gates.admits(x).ok)||t.TOWNS[0],o0=t.Gates.admits,on=t.GATES.on,pl=t.HOLD_PLAQUE.on;t.HOLD_PLAQUE.on=true;t.GATES.on=true;t.Gates.admits=()=>({ok:false,why:'shut'});const c=t.ctx;
    try{c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,200,60);t.PLAQUEQ.length=0;t.holdingPlaque(h,{x:h.x-100,y:h.y-60},60,true);t.drawPlaques({x:h.x-100,y:h.y-60});const d=c.getImageData(0,0,200,60).data;c.restore();
     let gold=0;for(let i=0;i<d.length;i+=4)if(d[i]>200&&d[i+1]>150&&d[i+2]<120&&d[i+3]>200)gold++;
-    ok(gold>10,'a gate that will not have you: a gold padlock in the holding\'s bar ('+gold+' gold px)')}finally{t.Gates.admits=o0;t.GATES.on=on}}
+    ok(gold>10,'a gate that will not have you: a gold padlock in the holding\'s bar ('+gold+' gold px)')}finally{t.Gates.admits=o0;t.GATES.on=on;t.HOLD_PLAQUE.on=pl}}
   // ---- off: as before
   {X.on=false;LA.on=false;near(city);t.approachHolding(city);ok(G.mode==='town','off: every gate as before');t.act('leave')}
  }finally{X.on=on[0];LA.on=on[1]}

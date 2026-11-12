@@ -128,7 +128,7 @@ function holdingLabel(t,cam,X,Y,N,fy=0){holdingPlaque(t,cam,Y-N+Math.min(0,fy),t
    wood with its grain, a gold trim over it and its owner's colour under it, rivets, its owner's ribbon swallow-tailed at both ends and
    its owner's small shield before its name (plaqueShield; free folk's in plain brown). HOLD_PLAQUE: its size (px), colours, at most
    so many crowns */
-const HOLD_PLAQUE={h:16,pad:6,gap:3,over:8,most:4,ribbon:8,tail:9,drop:3,droop:4,bg:'#2a1c10',grain:'#3b2915',edge:'#120b05',trim:'#c9a25a',trimLow:'#8a6a30',rivet:'#f0dca0',
+const HOLD_PLAQUE={on:false,h:16,pad:6,gap:3,over:8,most:4,ribbon:8,tail:9,drop:3,droop:4,bg:'#2a1c10',grain:'#3b2915',edge:'#120b05',trim:'#c9a25a',trimLow:'#8a6a30',rivet:'#f0dca0',
   name:'#f0e2b8',kind:'#a39a86',siege:'#ff6a60',free:'#8a7a5a',dim:.78};
 let PLAQUEQ=[];
 function holdingPlaque(t,cam,top,live){PLAQUEQ.push({t,top:top+cam.y,live})}
@@ -164,7 +164,7 @@ function drawPlaqueRibbon(x0,y0,w,own,seed){const H=HOLD_PLAQUE,y1=y0+H.h,E=H.ri
   r(cx-3,y0,7,1,H.trim);r(cx,y0-3,1,1,H.rivet);r(cx,y0-1,1,1,own);r(cx-1,y0-1,1,1,PX.shade(own,.7))}
 // (the bars queued this frame, onto the screen with the map's words: render.js; the ctx's transform the world's). Each a plank of dark
 // wood, its grain, a gold trim over and its owner's colour under, rivets at its corners and its owner's ribbon tails at its ends
-function drawPlaques(cam){const Q=PLAQUEQ;PLAQUEQ=[];if(!Q.length)return;const H=HOLD_PLAQUE,m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf();
+function drawPlaques(cam){const Q=PLAQUEQ;PLAQUEQ=[];if(!HOLD_PLAQUE.on||!Q.length)return;const H=HOLD_PLAQUE,m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf();
   for(const p of Q){const t=p.t,lock=GATES.on&&!Gates.admits(t).ok,cr=p.live?lordsInside(t).slice(0,H.most).map(l=>FACS[l.fac].col):[],sg=p.live&&besieged(t);
     const known=Discovery.named(t),name=Discovery.nameOf(t),col=known?H.name:H.kind,pic=mapTxtPic(name,col,'left',sc,dpr),tw=(pic.width-2*pic.ox)/sc,asc=(pic.oy-pic.ox)/sc;
     const own=t.owner&&(t.owner==='player'||FACS[t.owner])?(p.live?facCol(t):t._memCol||facCol(t)):H.free,sh=plaqueShield(own),lp=lock?lockPic():null;

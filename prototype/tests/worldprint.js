@@ -734,7 +734,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again 2026-11-12, on purpose: the owner moved the desktop minimap from the bottom console back to the
 //  upper-right, with zoom controls on its frame. drawWorld uses the framed slot's shared draw/hit rectangle.
 //  Targeted W1-W6 measurement: W1-W5 hold; W6 a1a8a0c9 replaces 821e075c. No simulation or generation changes.)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'a1a8a0c9',W7:'900f09fc',W8:'850e9451',B2:'4df790ec'};
+// (W6 again 2026-11-12, on purpose: the owner temporarily removed the banners above holdings. HOLD_PLAQUE.on
+//  is false, so the view omits their name/ribbon/lock/crown plaques. W1-W5 hold; W6 6d45a75b replaces a1a8a0c9.)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'6d45a75b',W7:'900f09fc',W8:'850e9451',B2:'4df790ec'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

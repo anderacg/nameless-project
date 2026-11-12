@@ -17,3 +17,7 @@ Map frames hug their live canvases with no padded wood plate. Desktop panels use
 The previous desktop minimap relocation changed W6 from `8d7629ca` to `92f27da3`. This spacing pass deliberately realigns the desktop map with the other panel edges, updating W6 to `821e075c`. The targeted W1–W6 check covers that view change; the full worldprint run exceeded this runner’s 600s timeout. The requested upper-right relocation on 2026-11-12 changes W6 from `821e075c` to `a1a8a0c9`; the targeted measurement confirms W1–W5 still match. No generation, simulation, save or battle rules are changed.
 
 Review targets: 1440×900, 1200×800 and 844×390 touch. Targeted checks and captures are exported under `/workspace/artifacts`.
+
+Holding banners are temporarily hidden (`gfx/structures.js` `HOLD_PLAQUE.on: false`). The region panel remains in the top bar; holding art, discovery, interaction and gate rules are unchanged. The original plaque artwork can be restored with its display switch.
+
+The banner removal intentionally changes W6 from `a1a8a0c9` to `6d45a75b`; targeted measurement confirms W1–W5 still match. HUD 32, gates 35 and discovery 17 checks pass.
