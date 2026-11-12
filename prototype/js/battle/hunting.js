@@ -72,7 +72,7 @@ class HuntBattleArea extends WorldBattleArea{
     BATTLE_MOOD=null;const saved=heal(lost,groupLosses);for(const g of groupLosses)if(g.count)partyRoster(P).remove(g.type,g.count,g.id);
     const dead=this.animals.filter(u=>u.hp<=0&&!u.left),escaped=this.animals.filter(u=>u.left).length;
     for(const c of this.herds){const n=dead.filter(u=>u.herd===c).length;if(n)huntRewards(c,n)}
-    const e=G.enc;G.enc=null;G.encCool=3;G.mode='dialog';WildHunt.controls();worldEmit('battle:ended',{enc:e,how:b.retreat?'withdrawn':'won'});
+    const e=G.enc;G.enc=null;G.encCool=3;G.mode='dialog';worldEmit('battle:ended',{enc:e,how:b.retreat?'withdrawn':'won'});
     const report={groups:groupLosses.map(g=>({id:g.id,type:g.type,name:g.name,start:g.start,fit:g.start-g.count,wounded:g.wounded,killed:g.count-g.wounded,saved:g.saved,rearguard:0})),characters:[]};
     lootShow('<h2>Hunt complete</h2><p>'+dead.length+' animal'+(dead.length===1?'':'s')+' killed, '+escaped+' escaped, '+(this.animals.length-dead.length-escaped)+' still alive. Only kills provide meat and species trophies.</p>',lost,saved,'cont',report);updateHUD(true);
   }
@@ -94,6 +94,6 @@ class HuntBattleSetup extends WorldBattleSetup{
     for(const [id,g] of Object.entries(B.groups))if(!g.player){const m=B.units.filter(u=>u.grp===id);for(const u of m){const c=u.herd;if(!c)continue;const index=a.animals.filter(v=>v.herd===c).indexOf(u),offset=index?Math.ceil(index/2)*3:0;Object.assign(u,a.field({x:c.x+(index%2?-1:1)*offset,y:c.y-offset*.3}));u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;delete u.rout;delete u.left;u.hp=u.max;u.sx=u.sy=0;a.tracks.sight(u)}if(m.length){const p=centroid(m);g.ax=p.x;g.ay=p.y;g.order='hold'}}
     B.sight=null;sightStep(true);
   }
-  survey(){super.survey();this.env.name='Hunting area';this.env.text='Auto Hunt is on for your whole army. Give orders or use AI to take command. Wildlife can escape beyond the circle; kills provide meat and trophies.'}
+  survey(){super.survey();this.env.name='Wildlife hunt';this.env.text='Auto Hunt is on for your whole army. Give orders or use AI to take command. Wildlife can escape beyond the circle; kills provide meat and trophies.'}
   present(){super.present();let end=document.getElementById('huntEnd');if(!end){end=document.createElement('button');end.id='huntEnd';end.type='button';end.className='btn sm';end.textContent='End hunt';end.addEventListener('click',()=>B?.hunt?.end());bbar.querySelector('.btime').appendChild(end)}end.hidden=false;window.mobileBattleHud?.sync();autoUI()}
 }

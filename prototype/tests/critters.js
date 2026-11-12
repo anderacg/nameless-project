@@ -41,7 +41,7 @@ try{
  deer.escapeSta=0;const x1=deer.x,y1=deer.y;t.updateCritters(.1);const tired=Math.hypot(deer.x-x1,deer.y-y1);ok(tired>0&&tired<run*.8,'and slow down once tired ('+run.toFixed(2)+' px a moment fresh, '+tired.toFixed(2)+' spent)');
  // hunting: a whole-army hunt, a world battle round the herd (the owner, 4b309d5: world/hunting.js WildHunt, battle/hunting.js;
  // its own checks: tests/wildhunt.js); Auto Hunt runs it, the kills' meat and trophies come in the loot
- const hunted=c=>{c.cool=0;Kit.world();t.hunt(c);t.act('hunt-start');const b=t.B;if(!b||!b.hunt)return null;t.setAuto(true,true);let i=0;
+ const hunted=c=>{c.cool=0;Kit.world();t.hunt(c);const b=t.B;if(!b||!b.hunt)return null;t.setAuto(true,true);let i=0;
    for(;t.B===b&&i<3000;i++){t.updateBattle(.05);if(t.B===b&&b.hunt.animals.every(u=>u.hp<=0||u.left))b.hunt.end()}if(t.B===b)b.hunt.end();t.setAuto(false,true);
    const meat=(G.loot&&G.loot.pile||[]).filter(q=>q.k==='good'&&q.id==='meat').reduce((n,q)=>n+q.n,0),kills=b.kills;if(G.loot)t.act('lt-all');Kit.done({world:true});return{b,kills,meat,hunters:b.units.filter(u=>!u.team).length}};
  empty();P.troops={hum_bow:8};P.sk.hunt.lv=3*PROF.per;deer.x=deer.hx=P.x+20;deer.y=deer.hy=P.y;deer.n=3;deer.tire=0;deer.escapeSta=undefined;

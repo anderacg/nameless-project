@@ -293,7 +293,6 @@ function drawWorld(){
     ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(L.x-r,L.y-r,2*r,2*r);ctx.restore();const f=Math.floor(now/120+L.x)%2;rect(ctx,'#e8803a',L.x-1+f,L.y-2,2,2);rect(ctx,'#ffe090',L.x,L.y-1-f,1,1)}}
   ambientGlow(cam);// (the fireflies' light: ambient.js)
   wuiUnder(cam);// (the way you walk, your goal's ring, a click's ripple, the ring round what you chase: worldui.js)
-  WildHunt.drawArea(cam);
   drawTravelConcealment(cam);
   drawTravelPace(cam);
   drawTravelDetection(cam);

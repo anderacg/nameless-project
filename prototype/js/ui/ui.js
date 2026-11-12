@@ -3,7 +3,7 @@
 // (key: the window it is; the same one drawn again while shown changes in place (window.js morph), keeping what stays the same:
 // the button under a finger, its focus, the scroll; none, or another window, drawn afresh, the first button in focus). Any window
 // opened closes the map's action ring (ring.js)
-function showPanel(html,key){if(typeof ActionRing==='function')ActionRing.close();if(typeof GearCompare!=='undefined'){GearCompare.hide();SlotMenu.close()}const same=key&&!ov.hidden&&panel.dataset.win===key;panel.classList.remove('wide','railed','paged','fmap','wsp','hunt-setup');panel.dataset.win=key||'';
+function showPanel(html,key){if(typeof ActionRing==='function')ActionRing.close();if(typeof GearCompare!=='undefined'){GearCompare.hide();SlotMenu.close()}const same=key&&!ov.hidden&&panel.dataset.win===key;panel.classList.remove('wide','railed','paged','fmap','wsp');panel.dataset.win=key||'';
   if(same){const t=document.createElement('div');t.innerHTML=html;morphKids(panel,t)}else panel.innerHTML=html;ov.hidden=false;G.modal=true;
   if(!same){const b=panel.querySelector('button:not([disabled]),.card');if(b)b.focus({preventScroll:true})}}
 function hidePanel(){ov.hidden=true;G.modal=false;if(typeof GearCompare!=='undefined'){GearCompare.hide();GearCompare.close();SlotMenu.close()}}

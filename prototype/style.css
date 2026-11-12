@@ -1601,9 +1601,6 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .abils::before{content:'Skills';font:700 10px/1.3 Arial,sans-serif;color:var(--accent);max-width:58px;text-align:center;align-self:center}
 .mobile-battle-hud .abils::before{display:none}
 
-.overlay:has(.hunt-setup){align-items:flex-end;background:#0002;padding:8px}
-.panel.hunt-setup{height:auto;max-height:55dvh;width:min(620px,100%);gap:7px;padding:12px}
-@media(max-height:500px){.panel.hunt-setup{max-height:85dvh}}
 
 /* Battle army relationships and reinforcement notices. */
 .army-intel{position:static;width:100%;pointer-events:auto;font-family:Arial,sans-serif}
