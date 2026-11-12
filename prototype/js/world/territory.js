@@ -162,7 +162,9 @@ const LandArt={
     ctx.restore()},
   // the tint: each tile, its corner cut where it stands out by its realm's colour, that corner the others'; a path a colour, filled
   // once (a run of a row's whole tiles one rect)
-  tint(x0,y0,x1,y1,T,h){const P=new Map(),path=c=>P.get(c)||(P.set(c,new Path2D()),P.get(c)),C=(x,y)=>this.col(this.at(x,y));
+  // (src: where the ids, colours and line widths come from, at(x, y), col(i), side(a, b, bx, by), ink(i) a line's colour if not col's:
+  // this, the world's; the full map gives its own, ui/map.js)
+  tint(x0,y0,x1,y1,T,h,src=this){const P=new Map(),path=c=>P.get(c)||(P.set(c,new Path2D()),P.get(c)),C=(x,y)=>src.col(src.at(x,y));
     // (a tile's four corners: 0 top left … 3 bottom right; at each, the four colours round that vertex)
     const ring=(x,y,v)=>{const vx=x+(v&1),vy=y+(v>>1);return [C(vx-1,vy-1),C(vx,vy-1),C(vx-1,vy),C(vx,vy)]};
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const c=C(x,y);if(!c)continue;const X=x*T,Y=y*T,cut=[0,1,2,3].map(v=>{const r=ring(x,y,v);return this.odd(r)===3-v});
@@ -176,11 +178,11 @@ const LandArt={
       const X=vx*T,Y=vy*T,sx=o&1?1:-1,sy=o>>1?1:-1,p=path(m);p.moveTo(X,Y);p.lineTo(X+sx*h,Y);p.lineTo(X,Y+sy*h);p.closePath()}
     return P},
   // the lines: at each vertex its border arms joined as the head says; each side offset into its own tile by half its width
-  lines(x0,y0,x1,y1,T,h){const P=new Map(),A=(x,y)=>this.at(x,y);
-    const seg=(px,py,qx,qy,ax,ay,bx,by)=>{for(const [sx,sy,ox,oy] of [[ax,ay,bx,by],[bx,by,ax,ay]]){const a=A(sx,sy),L=this.side(a,A(ox,oy),ox,oy);if(!L)continue;
+  lines(x0,y0,x1,y1,T,h,src=this){const P=new Map(),A=(x,y)=>src.at(x,y),ink=i=>src.ink?src.ink(i):src.col(i);
+    const seg=(px,py,qx,qy,ax,ay,bx,by)=>{for(const [sx,sy,ox,oy] of [[ax,ay,bx,by],[bx,by,ax,ay]]){const a=A(sx,sy),L=src.side(a,A(ox,oy),ox,oy);if(!L)continue;
         // (the normal toward the side's own tile's middle)
         let nx=-(qy-py),ny=qx-px;const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;const mx=(sx+.5)*T-(px+qx)/2,my=(sy+.5)*T-(py+qy)/2;if(nx*mx+ny*my<0){nx=-nx;ny=-ny}
-        const k=this.col(a)+'|'+L[0]+'|'+L[1];let e=P.get(k);if(!e)P.set(k,e={c:this.col(a),L,p:new Path2D()});const o=L[0]/2;e.p.moveTo(px+nx*o,py+ny*o);e.p.lineTo(qx+nx*o,qy+ny*o)}};
+        const k=ink(a)+'|'+L[0]+'|'+L[1];let e=P.get(k);if(!e)P.set(k,e={c:ink(a),L,p:new Path2D()});const o=L[0]/2;e.p.moveTo(px+nx*o,py+ny*o);e.p.lineTo(qx+nx*o,qy+ny*o)}};
     for(let vy=y0;vy<=y1+1;vy++)for(let vx=x0;vx<=x1+1;vx++){const r=[A(vx-1,vy-1),A(vx,vy-1),A(vx-1,vy),A(vx,vy)];if(r[0]===r[1]&&r[1]===r[2]&&r[2]===r[3])continue;
       const X=vx*T,Y=vy*T,tiles=[[vx-1,vy-1],[vx,vy-1],[vx-1,vy],[vx,vy]],
         // (the arms: its end, and its two tiles' corners: up 0|1, right 1|3, down 2|3, left 0|2)
