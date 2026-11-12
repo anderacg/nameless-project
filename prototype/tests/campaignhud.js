@@ -20,7 +20,7 @@ Kit.suite(({ok})=>{
  ok(document.querySelectorAll('#stats .campaign-condition-art').length===3,'desktop fitness, morale and stamina share illustrated condition icons');
  ok(t.fullMapHit({x:r.x+r.w/2,y:r.y+r.h/2})&&!t.fullMapHit({x:r.x-5,y:r.y-5}),'minimap hit testing uses the new drawing rectangle');
  ok(document.elementFromPoint(slot.left+slot.width/2,slot.top+slot.height/2)===hud.slot,'the framed minimap has a click target aligned with its picture ('+document.elementsFromPoint(slot.left+slot.width/2,slot.top+slot.height/2).map(e=>e.tagName+'#'+e.id+'.'+e.className).join(' / ')+')');
- ok(document.elementFromPoint(canvas.left+40,canvas.bottom-6)?.id!=='game','clicking the timber console does not issue a travel order behind it');
+ ok(getComputedStyle(document.querySelector('.campaign-console')).display==='none'&&document.elementFromPoint(rect(hud.company).right+8,canvas.bottom-40)?.id==='game','the bottom backdrop is removed and gaps between floating panels reach the world');
  const dock=rect(document.querySelector('.dock')),stats=rect(document.getElementById('stats')),mini=rect(document.querySelector('.campaign-survey'));
  ok(rect(hud.company).right<dock.left&&mini.top<canvas.top+100&&mini.bottom<dock.top,'status and commands have separate space with the minimap at upper right');
  ok(hud.mapZoom.contains(document.getElementById('zoomIn'))&&hud.mapZoom.contains(document.getElementById('zoomOut'))&&rect(document.querySelector('.dockrow.sys')).bottom<canvas.top+65,'zoom controls follow the map frame and utility controls occupy the top bar');
