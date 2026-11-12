@@ -14,6 +14,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     const ash=t.townBy('Ashford');P.gold=2000;P.quests=[];world();
     // ---- the rail: the places, each an icon, an area's name and a number key
     t.enterTown(ash);const places=t.townPlaces(ash);
+    // (the owner, 2026-11-12: "again why there's gold under the town name": your purse at the window's top, not under the holding's name)
+    {const h=q('.rail-head');ok(h&&h.textContent.includes(ash.name)&&!/gold/.test(h.textContent)&&!!q('.rw-gold'),'the rail\'s header: the holding\'s name and kind, no gold; your gold at the window\'s top ('+(h&&h.textContent.trim())+')')}
     ok(G.mode==='town'&&G.town.tab===null&&q('#panel.railed')&&q('.rail')&&q('.rwin'),'entering opens the overview with the rail beside it');
     ok(['trade','tavern','smith','stable','recruit','hall','jobs','garrison'].every(k=>places.includes(k))&&!places.includes('siege')&&/data-act="siege-ask"/.test(panel())&&(!ash.T.tourney||places.includes('tourney')),'Ashford\'s places (the attack on the whole town on its overview): '+places.join(', '));
     {const b=q('.rwbody .rkact[data-act="siege-ask"]');ok(b&&b.dataset.rk==='q'&&/plan an attack/.test(b.title)&&/power \d+ vs \d+/.test(b.textContent),'the attack: a key action on the overview, its odds under it, Q ('+(b&&b.querySelector('small').textContent)+')');

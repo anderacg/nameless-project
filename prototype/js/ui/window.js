@@ -28,7 +28,7 @@ function railWindow(o){
     ' title="'+htmlText(x.n)+'"'+(x.on?' aria-current="page"':'')+'><span class="ri-ico">'+icon(x.ico,18)+'</span><span class="ri-t"><b><span class="ri-n">'+x.n+'</span><span class="ri-s">'+(x.short||x.n)+'</span></b></span>'+
     (x.dot?'<i class="ri-dot" aria-hidden="true"></i>':'')+(i<RAIL_KEYS.length?'<kbd>'+RAIL_KEYS[i]+'</kbd>':'')+'</button>';
   return '<nav class="rail" aria-label="'+htmlText(o.label||'Places')+'"><button class="rail-head" type="button" data-act="'+h.act[0]+'" data-arg="'+h.act[1]+'"'+(h.on?' aria-current="page"':'')+'>'+
-    '<span class="rh-flag">'+(h.ico?icon(h.ico,22):facFlag(h.fac,22))+'</span><span class="rh-t"><b>'+(h.back?'‹ ':'')+h.name+'</b><small>'+h.sub+'</small>'+(h.gold===false?'':'<small class="gold">'+P.gold+' gold</small>')+'</span></button>'+
+    '<span class="rh-flag">'+(h.ico?icon(h.ico,22):facFlag(h.fac,22))+'</span><span class="rh-t"><b>'+(h.back?'‹ ':'')+h.name+'</b><small>'+h.sub+'</small></span></button>'+
     (o.label?'<div class="rail-lab">'+o.label+'</div>':'')+o.items.map(item).join('')+'</nav>'+
     '<section class="rwin"><div class="top"><div class="rw-h"><h2>'+o.title+'</h2>'+(o.sub?'<span class="muted">'+o.sub+'</span>':'')+'</div>'+(o.gold?'<span class="gold rw-gold">'+icon('gold',14)+' '+P.gold+' gold</span>':'')+'</div>'+
     '<div class="rwbody">'+o.body+'</div>'+nav(o.back,o.close)+'</section>';
