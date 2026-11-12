@@ -65,7 +65,7 @@ function horseSprite(L){const key='hz'+L.mount+(L.mountC||'')+L.team+(L.barded?'
    crisp; a rider thrown from his mount, which lies low beside him; a beast slumped where it stood. stand: him upright (his fall
    turns it about his feet), body: him lying, ax, ay: his feet in it; wk: the weapon he dropped; mount: his mount standing, down:
    lying */
-const CORPSES=new WeakMap(),BEAST_FALL={troll:'over',spider:'back',scorpion:'back',slime:'melt'};
+const CORPSES=new WeakMap(),BEAST_FALL=breedsInto({troll:'over',spider:'back',scorpion:'back',slime:'melt'});
 // (whose mount each lying one is, for its deaths: horseDeathOf)
 const DOWN_LOOK=new WeakMap();
 /* the beasts and monsters (engine/beasts.js PX.beast): the people's style, side-on, in a power-of-two cell (the dragon 64, a troll
@@ -90,7 +90,7 @@ function beastPose(u,moved){
 // a monster on the world map (engine/beasts.js PX.beastMap): the dragon on the wing (its own small figure in a 32 cell, wings up,
 // then level: it should look huge: f 0-1); the rest their own small figures in a 16 cell, f their step (PX.MAP_STEPS of them to a
 // body length walked: monsters.js)
-function monsterMapSprite(id,f,alpha=false){const M=MONSTERS[id],type=alpha&&id==='wolf'?WOLF_ALPHA.unit:M.unit,n=M.mythic?2:PX.MAP_STEPS,k='mm'+type+((f||0)%n);if(spr[k])return spr[k];return spr[k]=cellOf(PX.beastMap(type,(f||0)%n))}
+function monsterMapSprite(id,f,alpha=false,unit){const M=MONSTERS[id],type=unit&&unit!==M.unit?unit:alpha&&id==='wolf'?WOLF_ALPHA.unit:M.unit,n=M.mythic?2:PX.MAP_STEPS,k='mm'+type+((f||0)%n);if(spr[k])return spr[k];return spr[k]=cellOf(PX.beastMap(type,(f||0)%n))}
 function corpseOf(u){
   const base=actorSprite(u,0,true);let c=CORPSES.get(base);if(c)return c;
   // (a beast: it sinks as it falls (a troll over as a man does, a spider or a scorpion onto its back, a slime running flat, the rest
@@ -127,10 +127,10 @@ const DEATHS={on:true,man:{face:3,back:3,curl:2,knees:2,flung:2},helm:.35,hats:[
   // tones middle to edge and a fleck in it (gore; vfx.js poolSprite); red (GORE.col) for the rest, people, horses, wolves, bears,
   // boars and the game; none, no pool, for the undead and the made (dust and chips: vfx.js undead); slime, a puddle of its own coat
   blood:{spider:'ichor',scorpion:'ichor',slime:'slime',troll:'murk',wyrm:'fire',dragon:'fire'},
-  gore:{ichor:{col:['#3e4a10','#5e7018','#86a028']},murk:{col:['#1e2a1a','#2e3a22','#44502c']},fire:{col:['#4a1008','#7a240c','#b04416'],fleck:'#f0a040'}}};
+  gore:{ichor:{col:['#3e4a10','#5e7018','#86a028']},murk:{col:['#1e2a1a','#2e3a22','#44502c']},fire:{col:['#4a1008','#7a240c','#b04416'],fleck:'#f0a040'}}};breedsInto(DEATHS.blood);
 // (one's blood: {key, col, fleck}, or null: none)
 function bloodOf(u){const n=DEATHS.blood[u.type]||(undead(u)?'none':'red');if(n==='none')return null;
-  if(n==='slime'){const v=(u.v||0)%3,R=PX.ramp(PX._beastKit.KINDS.slime.coats[v]);return{key:'slime'+v,col:[R[3],R[2],R[1]]}}
+  if(n==='slime'){const v=(u.v||0)%3,K=PX._beastKit.KINDS,R=PX.ramp((K[u.type]||K.slime).coats[v]);return{key:u.type+v,col:[R[3],R[2],R[1]]}}
   return DEATHS.gore[n]?{key:n,...DEATHS.gore[n]}:{key:'red',col:GORE.col}}
 // (a name of table W by its weight, by a hash of id and salt: each choice its own salt)
 function deathPick(id,W,salt){let s=0;for(const k in W)s+=W[k];let r=PX.hash(id|0,salt,7177)*s;for(const k in W)if((r-=W[k])<0)return k;return Object.keys(W)[0]}

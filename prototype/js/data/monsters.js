@@ -39,6 +39,46 @@ const MATS={pelt:{n:'Wolf Pelt',v:12,icon:'pelt',col:'#9aa3ad'},tusk:{n:'Boar Tu
   bearhide:{n:'Bear Hide',v:40,icon:'pelt',col:'#6e4e36'},silk:{n:'Spider Silk',v:18,icon:'silk',col:'#e4e0cf'},trollhide:{n:'Troll Hide',v:70,icon:'pelt',col:'#6a8a6a'},
   hide:{n:'Deer Hide',v:10,icon:'pelt',col:'#b08050'},antler:{n:'Antler',v:22,icon:'tusk',col:'#e0d0b0'},rabbitfur:{n:'Rabbit Fur',v:4,icon:'pelt',col:'#c8b8a0'},
   goo:{n:'Slime Jelly',v:9,icon:'vial',col:'#a0e060'},venom:{n:'Venom Sac',v:20,icon:'vial',col:'#78c474'},scale:{n:'Wyrm Scale',v:120,icon:'scale',col:'#e0b870'},feather:{n:'Griffin Feather',v:55,icon:'feather',col:'#e8dcc0'}};
+// breeds (the owner, 2026-11-12: "add more monster variations"): a lair of a kind may be one of its breeds, by the ground it lies on.
+// kind: whose it is (its figure, deaths, mind, prints and portrait its kind's, drawn in its own coats); where: its ground, where it
+// may lair besides its kind's; w: how often it takes a lair there, its kind's own 1; unit: its fighter, its kind's changed; dt, resist,
+// armor, tags: its kind's unless given (data/matchups.js); the rest (n, xp, mat, gear, meat, d) as in MONSTERS, its kind's if left
+// out. The wolf and the tiger are painted (engine/wolf.js, tiger.js): no breeds. on false: none, every lair its kind's own
+const MONSTER_BREEDS={on:true,kinds:{
+  frost_slime:{kind:'slime',n:'Frost slimes',where:['frost'],w:1,coats:['#6aa8d0','#8cc4dc','#5a88c0'],xp:14,mat:'rime',
+    unit:{n:'Frost Slime',hp:28,bolt:'#bfe6f4',home:['frost']},resist:{fire:1.6,frost:.2},d:'Spit freezing slime. Fire boils them away; cold does little.'},
+  ember_slime:{kind:'slime',n:'Ember slimes',where:['desert'],w:1,coats:['#d0602a','#e08a30','#b8402e'],xp:14,mat:'ember',
+    unit:{n:'Ember Slime',hp:22,dmg:6,bolt:'#ffa040',home:['desert']},dt:'fire',resist:{fire:.2,frost:1.6},d:'Spit burning embers. Frost puts them out.'},
+  snow_spider:{kind:'spider',n:'Snow spiders',where:['snowwood'],w:1,coats:['#d4d8e2','#c2cad8','#b4bccc'],xp:17,
+    unit:{n:'Snow Spider',hp:34,home:['frost']},resist:{fire:1.5,frost:.4},d:'Pale as the drifts they hide in. Their webs slow whoever they hit.'},
+  widow:{kind:'spider',n:'Blood widows',where:['forest','swamp'],w:.5,coats:['#7a2a34','#6a2430','#863040'],xp:22,mat:'venom',gear:[['silkvest',.1]],
+    unit:{n:'Blood Widow',hp:26,dmg:7,cd:1.6},d:'Smaller than their kin, and their bite runs deeper.'},
+  ironhide:{kind:'boar',n:'Ironhide boars',where:['hills'],w:.6,coats:['#5c6066','#4e5258','#686c72'],xp:19,
+    unit:{n:'Ironhide Boar',hp:62,spd:50},tags:['heavy'],d:'Hides like iron: arrows glance off. Slow to anger, hard to stop.'},
+  ice_bear:{kind:'bear',n:'Ice bear',where:['frost'],w:1.2,coats:['#e2e0d8','#d6d2c6','#cac6ba'],xp:56,mat:'whitepelt',
+    unit:{n:'Ice Bear',hp:250,dmg:19,home:['frost']},resist:{frost:.4},d:'White as the snow, and bigger than the bears of the woods.'},
+  frost_troll:{kind:'troll',n:'Frost troll',where:['frost'],w:1,coats:['#96aebe','#a2b2c0','#8aa2b6'],xp:100,
+    unit:{n:'Frost Troll',hp:300},resist:{fire:1.8,frost:.2},d:'Rimed with ice. Fire is the only thing it fears.'},
+  bog_troll:{kind:'troll',n:'Bog troll',where:['swamp'],w:1,coats:['#4e6a3e','#5a6e3a','#46603e'],xp:85,
+    unit:{n:'Bog Troll',hp:250,dmg:15,spd:34,home:['swamp']},d:'Rises dripping out of the mire. Its wounds close as you watch.'},
+  black_scorpion:{kind:'scorpion',n:'Black scorpions',where:['desert'],w:.6,coats:['#3e383c','#322e34','#48403e'],xp:26,gear:[['scorpplate',.14]],
+    unit:{n:'Black Scorpion',hp:58,dmg:10},d:'The dunes\u2019 night hunters. Their plates turn a blade.'},
+  snow_griffin:{kind:'griffin',n:'Snow griffin',where:['frost'],w:.8,coats:['#d6dade','#c6cad2','#ded8cc'],xp:65,
+    unit:{n:'Snow Griffin',hp:180},resist:{frost:.4},d:'Dives out of the white sky onto lone fighters.'},
+  ice_wyrm:{kind:'wyrm',n:'Ice wyrm',where:['frost'],w:.4,coats:['#a6c2d2','#98b6c8','#b4cad6'],xp:160,
+    unit:{n:'Ice Wyrm',hp:620,home:['frost']},resist:{fire:1.4,frost:.3},d:'A serpent of the frozen wastes. Few who see it return.'}}};
+Object.assign(MATS,{rime:{n:'Rime Jelly',v:12,icon:'vial',col:'#a8dcf0'},ember:{n:'Ember Jelly',v:14,icon:'vial',col:'#f09040'},
+  whitepelt:{n:'Ice Bear Pelt',v:60,icon:'pelt',col:'#ece8dc'}});
+// each breed's fighter (its kind's, changed: ST[id].breed its kind) and figure (engine/beasts.js PX.breed)
+for(const [id,b] of Object.entries(MONSTER_BREEDS.kinds)){const K=MONSTERS[b.kind];ST[id]={...ST[K.unit],...b.unit,breed:b.kind};if(window.PX&&PX.breed)PX.breed(id,K.unit,b.coats)}
+// a table by unit kind (resistances, minds, prints, how it falls): each breed's own (b[own]) or its kind's
+function breedsInto(T,own){for(const [id,b] of Object.entries(MONSTER_BREEDS.kinds)){const u=MONSTERS[b.kind].unit,v=own&&b[own]!=null?b[own]:T[u];if(v!=null&&T[id]==null)T[id]=v}return T}
+// (a unit's kind: a breed's, else its own)
+const breedOf=t=>ST[t]?.breed?MONSTERS[ST[t].breed].unit:t;
+// a lair's record (its kind's, or its breed's over it); monOf(m) a lair's on the map
+const MON_RECS={};
+const monRec=(id,breed)=>{const b=breed&&MONSTER_BREEDS.kinds[breed];if(!b)return MONSTERS[id];return MON_RECS[breed]||(MON_RECS[breed]={...MONSTERS[id],...b,unit:breed,breed})};
+const monOf=m=>monRec(m.id,m.breed);
 // gear for the hero. m: hp, dmg, reach (flat); cd, spd, crit, block, vis, travel (fractions); regen (health per second); sk (skill levels)
 const ITEMS={
   fangdagger:{n:'Fang Dagger',slot:'weapon',r:'common',d:'Swings 12% faster.',m:{cd:-.12},v:60,icon:'dagger',col:'#e8e4d0'},

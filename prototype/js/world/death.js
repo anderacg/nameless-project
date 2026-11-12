@@ -29,7 +29,7 @@ class Death{
   static alone(){return !this.with().length&&!troopCount()&&!(P.woundedGroups||[]).some(w=>w.count>0)}
   // your chance to live, and what moved it
   static odds(e){
-    const X=DEATH.shift,m=e.kind==='monster'?e.ref:null,M=m&&MONSTERS[m.id],h=Spatial.nearestHolding(P.x,P.y),night=Clock.isNight,why=[];let ch=DEATH.live;
+    const X=DEATH.shift,m=e.kind==='monster'?e.ref:null,M=m&&monOf(m),h=Spatial.nearestHolding(P.x,P.y),night=Clock.isNight,why=[];let ch=DEATH.live;
     const add=(v,w)=>{if(v){ch+=v;why.push([w,v])}};
     add(Math.max(skill('med'),...this.with().map(id=>compSkill(id,'med')))*X.med,'Medicine');
     add(X.armor[itemArmor(P.gear.body)]||0,'your armour');
@@ -74,7 +74,7 @@ class Death{
       '<p>Your remains lie where you fell, with your gear ('+s.items+' piece'+(s.items===1?'':'s')+') and '+s.gold+' gold: whoever finds them first may take them. Men will put a price on '+htmlText(s.by)+'.</p>'+
       '<p class="muted">The world goes on without them. Go on in it as someone new, or load a save.</p><div class="btns"><button class="btn sm" type="button" data-act="death-load">Load a save</button><button class="btn sm" type="button" data-act="death-menu">Main menu</button></div>'+
       nav(null,['death-new',null,'Go on as someone new']))}// (Esc: on as someone new, never out of the game)
-  static beastName(e){const M=e.kind==='monster'&&e.ref&&MONSTERS[e.ref.id];return M?M.n.toLowerCase()+((e.list||[]).length>1&&!/s$/.test(M.n)?'s':''):'beasts'}
+  static beastName(e){const M=e.kind==='monster'&&e.ref&&MONSTERS[e.ref.id]&&monOf(e.ref);return M?M.n.toLowerCase()+((e.list||[]).length>1&&!/s$/.test(M.n)?'s':''):'beasts'}
   // your army gone for good: the fit, the wounded
   static dismiss(){const r=partyRoster(P);let n=0;for(const g of r.groups.slice()){n+=g.count;r.remove(g.type,g.count,g.id)}
     n+=(P.woundedGroups||[]).reduce((a,w)=>a+(w.count||0),0);P.woundedGroups=[];

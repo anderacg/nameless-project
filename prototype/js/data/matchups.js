@@ -22,7 +22,7 @@ const TAGS={
   ranger:['mobile'],hum_hbow:['mobile'],orc_wolfbow:['mobile'],
   tiger:['shock'],bear:['heavy'],troll:['heavy'],scorpion:['heavy','pierce'],wyrm:['heavy']
 };
-Object.entries(TAGS).forEach(([k,t])=>{ST[k].tags=t});
+Object.entries(TAGS).forEach(([k,t])=>{ST[k].tags=t});breedsInto(TAGS,'tags');for(const k of Object.keys(MONSTER_BREEDS.kinds))if(TAGS[k])ST[k].tags=TAGS[k];
 /* ---------- damage types and armour. Every blow, shot and spell is physical (slash, pierce, blunt) or magical (fire, frost,
    arcane). Physical damage is stopped in part by armour: its value (ARMOR v, 0-100; a unit's own av over its kind's), of which
    each kind is stopped by its share (ARMOR_PEN): what is left is 1 - value/100 x share; an armour-piercing weapon (the 'pierce'
@@ -34,12 +34,12 @@ const DMG={slash:{n:'Slash',main:'physical'},pierce:{n:'Pierce',main:'physical'}
 const ARMOR={none:{n:'Unarmoured',v:0},leather:{n:'Leather',v:15},mail:{n:'Mail',v:35},plate:{n:'Plate',v:55},hide:{n:'Hide / scales',v:20}};
 const ARMOR_PEN={slash:1,pierce:.7,blunt:.55};
 const WARD=.6,AP=.5;// (a ward keeps 60% of magic; armour-piercing: armour stops half as much)
-const RESIST={troll:{fire:1.5,frost:.5},wolf:{fire:1.3,frost:.3},alpha_wolf:{fire:1.3,frost:.3},dragon:{fire:.2},wyrm:{fire:.6},slime:{fire:1.3,frost:.6},spider:{fire:1.3}};
+const RESIST={troll:{fire:1.5,frost:.5},wolf:{fire:1.3,frost:.3},alpha_wolf:{fire:1.3,frost:.3},dragon:{fire:.2},wyrm:{fire:.6},slime:{fire:1.3,frost:.6},spider:{fire:1.3}};breedsInto(RESIST,'resist');
 const RACE_RESIST={elf:{arcane:.85},dwarf:{fire:.85},orc:{frost:.85}};
 const WEAPON_DT={sword:'slash',great:'slash',axe:'slash',bigaxe:'slash',spear:'pierce',pike:'pierce',lance:'pierce',javelin:'pierce',hammer:'blunt',bow:'pierce',longbow:'pierce',xbow:'pierce',sling:'blunt',staff:'arcane'};
-const UNIT_DT={hum_mage:'fire',orc_shaman:'fire',hedge:'frost',dw_rune:'arcane',elf_weaver:'arcane',elske:'arcane',slime:'frost',wolf:'slash',tiger:'slash',bear:'slash',griffin:'slash',dragon:'slash',boar:'pierce',spider:'pierce',scorpion:'pierce',wyrm:'pierce',troll:'blunt'};
+const UNIT_DT={hum_mage:'fire',orc_shaman:'fire',hedge:'frost',dw_rune:'arcane',elf_weaver:'arcane',elske:'arcane',slime:'frost',wolf:'slash',tiger:'slash',bear:'slash',griffin:'slash',dragon:'slash',boar:'pierce',spider:'pierce',scorpion:'pierce',wyrm:'pierce',troll:'blunt'};breedsInto(UNIT_DT,'dt');
 const OUTER_ARMOR={steel:'mail',iron:'mail',silver:'mail',gold:'mail',rust:'mail',leather:'leather',fur:'leather',skull:'leather'};
-const UNIT_ARMOR={chief:'mail',elf_eternal:'mail',elf_blade:'leather',slime:'none'};
+const UNIT_ARMOR={chief:'mail',elf_eternal:'mail',elf_blade:'leather',slime:'none'};breedsInto(UNIT_ARMOR,'armor');
 const ITEM_DT={sword:'slash',greatsword:'slash',axe:'slash',spear:'pierce',dagger:'pierce',warhammer:'blunt',bow:'pierce',crossbow:'pierce',staff:'arcane',wand:'arcane'};
 const ITEM_ARMOR={bearcoat:'hide',trollhide:'hide',silkvest:'leather',scorpplate:'plate'};
 // (a weapon's damage type, a body armour's class, by its id: core/items.js Gear.damageType, armourClass; itemDt, itemArmor)

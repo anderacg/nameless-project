@@ -203,3 +203,5 @@ function beastGrips(g,m,team){return PackMind.grips(g,m,team)}
 function beastCover(c,C,R){return c.cover(C,R)}
 function captainBeasts(team,ck,S,ids){return PackMind.think(team,ck,S,ids)}
 function packDread(c){return c.dread()}
+// (a breed: its tactics its kind's, data/monsters.js)
+breedsInto(BEAST_TACTICS.kinds);

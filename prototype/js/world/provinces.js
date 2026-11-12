@@ -18,7 +18,7 @@ class Provinces{
   // its danger: {lv (0-3), word, foes (their power), what (its strongest, in words)}
   static danger(p){
     const X=PROVINCE,R=X.reach*TILE,on=o=>p.holdings.some(t=>Math.hypot(t.x-o.x,t.y-o.y)<=R),list=[];
-    for(const m of W.monsters||[])if(!m.dead&&on(m))list.push([m.power(),(MONSTERS[m.id]&&MONSTERS[m.id].n||'beasts')]);
+    for(const m of W.monsters||[])if(!m.dead&&on(m))list.push([m.power(),(MONSTERS[m.id]&&monOf(m).n||'beasts')]);
     for(const b of bandits)if(!b.gone&&on(b))list.push([b.power(),'a band of '+(b.kind||'bandits')]);
     for(const l of W.lords||[])if(!l.dead&&!l.inside&&hostileTo(l.fac)&&on(l))list.push([rating(l.troops),lordName(l)+'’s army']);
     for(const s of W.sites||[])if((s.type==='camp'||s.type==='hideout')&&!s.cleared&&on(s))list.push([X.lair,s.type==='camp'?'a bandit camp':'a hideout']);

@@ -38,6 +38,7 @@ const NAMED_PORTRAITS={
 // the new kinds' paintings till their own are made (doc/TROOPS_DESIGN.md): the Lancer a Squire's, the Crossbowman an Arbalester's
 const PORTRAIT_LIKE={hum_lancer:'hum_squire',hum_crossbow:'hum_xbow',gob_stab:'orc_shield',gob_spear:'orc_grunt',gob_bow:'orc_hunter',gob_boss:'orc_brute',// (the goblins the orcs' until theirs are painted)
   band_looter:'militia',band_cutthroat:'militia',band_brigand:'militia',band_highway:'spearman',band_poacher:'archer',alpha_wolf:'wolf'};// (the outlaws the old bandits', the alpha a wolf: with faces off, every kind its picture)
+for(const k of Object.keys(MONSTER_BREEDS.kinds))PORTRAIT_LIKE[k]??=breedOf(k);// (a breed its kind's painting)
 class NamedPortraits{
   static of(key){if(!Object.hasOwn(NAMED_PORTRAITS,key)&&typeof lordListed==='function')key=lordListed(key);return Object.hasOwn(NAMED_PORTRAITS,key)?'art/portrait/game/'+NAMED_PORTRAITS[key]:''}// (a retitled lord by her listed name: data/factions.js)
   // (a troop's: its kind's painted portrait, data/unitportraits.js, after a named one)

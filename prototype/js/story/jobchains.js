@@ -28,7 +28,7 @@ const JobChains={
     ex.done=true;s.ld=ex.ld;// (he went to ground there: its chieftain now)
     return this.begin('chief',{town:t.name,fac:t.owner,...this.giverOf(q),chief:q.chief,band:q.band,lair:s.name,site:s.i,dir:this.dir(s,t),lord:pat.name,patron:pat.name,prealm:FACS[pat.fac].n})},
   beast(q){const t=townBy(q.home),c=t&&W.sites.filter(s=>s.type==='cave'&&!s.cleared&&Math.hypot(s.x-t.x,s.y-t.y)/TILE<TROUBLE.lair).sort((a,b)=>Math.hypot(a.x-t.x,a.y-t.y)-Math.hypot(b.x-t.x,b.y-t.y))[0];
-    if(!t||q.lord||!c)return null;return this.begin('bigger',{town:t.name,fac:t.owner,...this.giverOf(q),mon:MONSTERS[q.mon].n.toLowerCase(),cave:c.name,site:c.i,dir:this.dir(c,t)})},
+    if(!t||q.lord||!c)return null;return this.begin('bigger',{town:t.name,fac:t.owner,...this.giverOf(q),mon:monRec(q.mon,q.breed).n.toLowerCase(),cave:c.name,site:c.i,dir:this.dir(c,t)})},
   supply(q){const t=townBy(q.home),s=t&&Troubles.lairs(t)[0];if(!t||!s||!/^They robbed a caravan/.test(q.cause||''))return null;
     const N=FOLK_NAMES[(t.races&&t.races[0])||'human']||FOLK_NAMES.human;
     return this.begin('larder',{town:t.name,fac:t.owner,...this.giverOf(q),good:GOODS[q.good].n.toLowerCase(),gk:q.good,n:q.n,lair:s.name,site:s.i,dir:this.dir(s,t),informer:N[folkHash(t.name+':informer')%N.length]})},

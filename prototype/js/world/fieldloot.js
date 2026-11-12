@@ -8,12 +8,12 @@
 const FIELD_LOOT={days:5,guard:60,seek:320,lure:.35,take:10};
 // what the fight would have paid (resolution.js conclude, monsters.js monsterLoot), nothing yet in the bag: gold for each man slain,
 // the beast's own (mats, meat, the wolves' furs) and its gear by its rolls
-function fieldSpoils(slain,m){const M=MONSTERS[m.id],n=slain.filter(k=>k===M.unit).length,items=[];let gold=0;for(const k of slain)if(!ST[k]?.beast)gold+=rint(2,6);
+function fieldSpoils(slain,m){const M=monOf(m),n=slain.filter(k=>k===M.unit).length,items=[];let gold=0;for(const k of slain)if(!ST[k]?.beast)gold+=rint(2,6);
   if(n&&M.mat)items.push(['mat',M.mat,n]);if(n&&M.meat)items.push(['good','meat',n*M.meat]);const furs=Math.floor(slain.filter(k=>k==='wolf').length/2);if(furs)items.push(['good','furs',furs]);
   for(const [it,ch] of M.gear||[])if(monRng().chance(ch*(1+.1*((m.lv||1)-1))))items.push(['gear',it,1]);return{gold:Math.round(gold*(1+tm('loot'))),items}}
 // the spoils left at x, y by the beast m (its lair there now) and the quest to take them back; null when there is nothing to leave
 function leaveFieldLoot(x,y,slain,m){if(!m||!MONSTERS[m.id]||!slain?.length)return null;const s=fieldSpoils(slain,m);if(!s.gold&&!s.items.length)return null;
-  if(!MONSTERS[m.id].mythic){m.hx=x;m.hy=y}const q=Quest.make('fieldloot',Spatial.nearestHolding(x,y),null,{x,y,gold:s.gold,items:s.items,beast:MONSTERS[m.id].n.toLowerCase()});return q&&q.accept()?q:null}
+  if(!MONSTERS[m.id].mythic){m.hx=x;m.hy=y}const q=Quest.make('fieldloot',Spatial.nearestHolding(x,y),null,{x,y,gold:s.gold,items:s.items,beast:monOf(m).n.toLowerCase()});return q&&q.accept()?q:null}
 // (its line under the battle's report)
 const fieldLootLine=q=>'<p class="gold">Your spoils ('+q.what()+') stay on the field, the '+q.beast+' over them: come back for them (Quests).</p>';
 const lootName=(k,id)=>(k==='gear'?ITEMS:k==='mat'?MATS:GOODS)[id].n.toLowerCase();

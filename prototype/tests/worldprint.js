@@ -733,7 +733,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W7 re-recorded 2026-11-11, on purpose: a besieged holding works a quarter of its land and estates, and its gate is barred to
 //  caravans (world/economy.js SIEGE_SHUT; a review of the rules: "then the garrison starves" never came, its farms fed it): a siege laid
 //  in the three days moves the save. Was 900f09fc; checked: with SIEGE_SHUT.on false it is 900f09fc again, and W1-W6, W8 and B2 hold either way)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'d9d0c82c',W7:'8804095d',W8:'850e9451',B2:'4df790ec'};
+// (W7, W8 and B2 re-recorded 2026-11-12, on purpose: the owner, "add more monster variations": a lair may be one of its kind's breeds
+//  by the ground it lies on (data/monsters.js MONSTER_BREEDS), and slimes, trolls, griffins and wyrms may now lair on their breeds'
+//  ground too. B2: the lairs made at the start are other kinds in other places, the breeds saved with them; W7: those lairs and their
+//  stronger fighters three days on; W8: the beasts and those they meet stand elsewhere after 600 frames. Was W7 8804095d, W8 850e9451,
+//  B2 4df790ec; checked: with MONSTER_BREEDS.on false they are those again, and W1-W6 hold either way)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'d9d0c82c',W7:'311da16e',W8:'c590650a',B2:'ba5f45e6'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

@@ -20,7 +20,7 @@ try{
  {const loose=c=>{const w=c.width,h=c.height,d=data(c),seen=new Uint8Array(w*h),n=[];for(let i=0;i<w*h;i++){if(seen[i]||!d[i*4+3])continue;const q=[i];let m=0;seen[i]=1;
      while(q.length){const j=q.pop(),x=j%w,y=(j/w)|0;m++;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=w||Y>=h)continue;const k=Y*w+X;if(!seen[k]&&d[k*4+3]){seen[k]=1;q.push(k)}}}n.push(m)}
      n.sort((a,b)=>b-a);return n.slice(1).some(m=>m<=8)},bad=[];
-  for(const k of PX.BEAST_KINDS)for(const p of [...PX.BEAST_POSES,PX.BEAST_DEAD,PX.BEAST_DEAD+1,PX.BEAST_DEAD+2])if(!(k==='slime'&&p===PX.BEAST_DEAD+1)&&loose(PX.beast(k,{v:1,pose:p,team:0})))bad.push(k+' '+p);
+  for(const k of PX.BEAST_KINDS)for(const p of [...PX.BEAST_POSES,PX.BEAST_DEAD,PX.BEAST_DEAD+1,PX.BEAST_DEAD+2])if(!(t.breedOf(k)==='slime'&&p===PX.BEAST_DEAD+1)&&loose(PX.beast(k,{v:1,pose:p,team:0})))bad.push(k+' '+p);
   for(const k of Object.keys(t.ST).filter(k=>!t.ST[k].beast))for(const p of [0,2,3,6,7,8,9,10,11,12,13,14,15,16])if(loose(t.unitSprite(k,1,false,0,p)))bad.push(k+' '+p);
   ok(!bad.length,'nothing loose: no piece cut off from a figure, a beast\'s or a soldier\'s, in any pose'+(bad.length?' ('+bad.slice(0,6).join('; ')+')':''))}
  // ---- every kind: the new figure, from the engine

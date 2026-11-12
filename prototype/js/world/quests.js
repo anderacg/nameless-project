@@ -388,6 +388,7 @@ class BeastQuest extends JobQuest{
     const m=Troubles.packs(t).find(x=>!x.qid&&MONSTERS[x.id]);
     if(m){
       this.mon=m.id;
+      if(m.breed)this.breed=m.breed;
       this.n=m.n;
       this.lv=m.lv;
       this.mx=Math.round(m.hx??m.x);
@@ -407,7 +408,7 @@ class BeastQuest extends JobQuest{
       this.stage=true;
       this.cause='Tracks and torn fleeces: something has made its lair '+Math.round(qTiles(p,t))+' tiles '+compass(p.x-t.x,p.y-t.y)+' of '+t.name+'.';
     }
-    const M=MONSTERS[this.mon];
+    const M=monRec(this.mon,this.breed);
     this.title='Beasts at the folds: '+M.n.toLowerCase();
     this.text=(this.n>1?cap1(M.n.toLowerCase())+' have':'A '+M.n.toLowerCase()+' has')+' been taking livestock outside '+t.name+'. Kill '+(this.n>1?'them':'it')+'.';
     this.pays(40+M.xp*this.n*.9,8,2,0);
@@ -425,7 +426,7 @@ class BeastQuest extends JobQuest{
     if(this.mx==null)return false;
     // (the pack it named already another's work (a neighbour's board): no second pack at its lair)
     if(W.monsters.some(o=>o.qid&&o.id===this.mon&&Math.hypot((o.hx??o.x)-this.mx,(o.hy??o.y)-this.my)<BOUNTY.near*TILE)){log('Someone has already taken that work.','muted','story');return false}
-    W.monsters.push(asMonster({id:this.mon,x:this.mx,y:this.my,hx:this.mx,hy:this.my,lv:this.lv,n:this.n,t:0,a:0,cool:0,qid:this.id}));
+    W.monsters.push(asMonster({id:this.mon,x:this.mx,y:this.my,hx:this.mx,hy:this.my,lv:this.lv,n:this.n,t:0,a:0,cool:0,qid:this.id,...(this.breed?{breed:this.breed}:{})}));
     this.x=this.mx;
     this.y=this.my;
     this.markLead({x:this.mx,y:this.my});
@@ -437,7 +438,7 @@ class BeastQuest extends JobQuest{
     return W.monsters.find(x=>x.qid===this.id)||null;
   }
   quarryName(){
-    return 'the '+MONSTERS[this.mon].n.toLowerCase();
+    return 'the '+monRec(this.mon,this.breed).n.toLowerCase();
   }
   aim(){
     return 'Slay '+this.quarryName()+' at the folds';
@@ -446,14 +447,14 @@ class BeastQuest extends JobQuest{
   pay(where){
     super.pay(where);
     const t=townBy(this.home);
-    if(t&&!this.lord)Quiet.set(t,'beast','the '+MONSTERS[this.mon].n.toLowerCase());
+    if(t&&!this.lord)Quiet.set(t,'beast','the '+monRec(this.mon,this.breed).n.toLowerCase());
     JobChains.beast(this);// (a cave near: Something bigger, story/jobchains.js)
   }
   seek(){
     const m=this.target();
     if(!m)return null;
     const s=this.spot();
-    return s?{...s,name:MONSTERS[this.mon].n.toLowerCase()}:{x:m.x,y:m.y,name:MONSTERS[this.mon].n.toLowerCase()};
+    const n=monRec(this.mon,this.breed).n.toLowerCase();return s?{...s,name:n}:{x:m.x,y:m.y,name:n};
   }
   get deed(){
     return 'monster:slain';
@@ -468,7 +469,7 @@ class BeastQuest extends JobQuest{
     return super.gone()||!W.monsters.some(m=>m.qid===this.id);
   }
   goneWhy(){
-    return super.gone()?super.goneWhy():'Someone else killed the '+MONSTERS[this.mon].n.toLowerCase()+'.';
+    return super.gone()?super.goneWhy():'Someone else killed the '+monRec(this.mon,this.breed).n.toLowerCase()+'.';
   }
 }
 // a clearance: the nearest lair or camp, marked on your map, while what comes out of it troubles the holding (troubles.js: its

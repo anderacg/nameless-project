@@ -121,7 +121,7 @@ class BattleResolution{
       bounty+=reinfCut(e,res,this.battle?.sides);// (the lords and watches beside you take their share of the gold, and of the renown: engage.js)
       P.gold+=res.gold;
       const fame=res.fame==null?Math.max(2,Math.round(kills/2)):res.fame;if(fame)repNear(P.x,P.y,fame);
-      html='<h2>Victory</h2><p>You defeated '+(e.kind==='monster'?(kills>1?kills+' ':'the ')+MONSTERS[e.ref.id].n.toLowerCase():kills+' '+(e.kind==='lord'?(kills===1?'soldier':'soldiers'):(kills===1?'foe':'foes')))+(taken?' and took '+taken+' prisoner'+(taken>1?'s':''):'')+'.'+bounty+'</p>'+moodLine;
+      html='<h2>Victory</h2><p>You defeated '+(e.kind==='monster'?(kills>1?kills+' ':'the ')+monOf(e.ref).n.toLowerCase():kills+' '+(e.kind==='lord'?(kills===1?'soldier':'soldiers'):(kills===1?'foe':'foes')))+(taken?' and took '+taken+' prisoner'+(taken>1?'s':''):'')+'.'+bounty+'</p>'+moodLine;
       log('Victory. +'+res.gold+' gold, renown now '+P.renown+'.','good','war');mood('win');
     }else if(retreat){
       if(G.capWith)G.capWith=null;// (a storm you joined and left: its realm leads no later taking of yours, world/siege.js showCapture)
