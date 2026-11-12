@@ -257,6 +257,7 @@ class Grave extends Remains{
     // (a beast guarding them: no one comes, your heir waits: world/claims.js)
     for(const g of Remains.list.filter(o=>o.grave&&o.unburied)){if(!Grave.unseen(g)||Claims.guard(g))continue;const lord=g.heir&&W.lords.find(l=>l.id===g.heir&&!l.dead&&!l.gone);
       if(lord&&G.day>=g.fetch){Grave.rest(g,lord,'heir');log(cap1(lord.name)+' comes for the body of '+g.who+', and buries them'+(g.at?' at '+g.at:'')+'.','gold','story');continue}
+      Claims.seize(g);// (a lord who forces his claim takes their things first: world/claims.js)
       const h=Spatial.nearestHolding(g.x,g.y,t=>!t.gone),near=h&&Math.hypot(h.x-g.x,h.y-g.y)/TILE<=DEATH.grave.tiers.far||RoadBand.on(g.x,g.y),ch=(near?F.near:F.far)+(g.life?.renown||0)*F.renown;
       if(Math.random()<Math.min(F.max,ch)){Grave.rest(g,null,'found');if(Math.hypot(P.x-g.x,P.y-g.y)<vis()*2||g.at)log('Someone has buried '+g.who+(g.at?', at '+g.at:'')+'.','muted','story')}}
     Claims.daily()}// (those left unburied waste, lords and companions come to them: world/claims.js)

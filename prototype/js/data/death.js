@@ -40,8 +40,12 @@
    theirs, its share, and the standing lost at the family's holding for taking their things; rest: the experience by where they lie
    (the family plot's and each kind's: the most kept); wild: each day a body lies unburied, the share of its first experience lost
    (never below floor of it), of its gold, and the chance each piece is lost; lord: how near a lord's army finds an unburied body
-   (seek px), its chance a day, his steward's price (a share of their worth: kin, a stranger); comp: the fallen's companions, how
-   near their tavern (tiles), the chance a day, a stranger's price; guard: a beast whose lair lies this near (tiles) guards a body */
+   (seek px), its chance a day, the tempers that force their claim before any passer-by buries it (force; the others leave it to
+   the passer-by: the owner, "if that lord is greedy or not elegant then they can force their power to claim it, otherwise the
+   passer"), his steward's price (a share of their worth: kin, a stranger); heir: your heir's chance a day near it (lord.seek px);
+   comp: the fallen's companions, how near their tavern (tiles), the chance a day, a stranger's price, and another companion's
+   price to anyone (other: only when neither the heir nor any of the fallen's companions is left); guard: a beast whose lair lies
+   this near (tiles) guards a body */
 const DEATH={on:true,die:true,live:.3,min:.1,max:.6,
   shift:{med:.03,armor:{leather:.03,mail:.06,plate:.1},day:.05,night:-.05,near:.08,road:.04,lv:.02,big:.08,mythic:.2,frost:.06,alone:.05},near:12,
   wake:24,hp:.2,weak:{days:3,dmg:.85,spd:.9},food:.6,horse:.5,
@@ -71,5 +75,5 @@ const DEATH={on:true,die:true,live:.3,min:.1,max:.6,
       flowers:['#e06a6a','#f2d16b','#f4f0e6','#b88ae0'],blade:'#c8ccd2',guard:'#b08a3a',grip:'#5a3a22',cloth:'#f0d060',wood:'#6a4a2e',cloak:'#4a3a30',iron:'#3a3c42',bone:'#e8dfc8',wood2:'#4e3520',carve:'#5c5e64',wax:'#f3ead2',flame:'#ffb347',flame2:'#fff2a8',fly:'#d8ff8a',
       glow:'#ffe7a0',mote:'#ffd54a',mote2:'#9fd8ff',core:'#fffbe6',text:'#ffe08a'}},pass:.5,remains:{gold:.6,seek:160,find:.15,col:{cloth:'#5b4a3a',bone:'#e8dfc8',steel:'#9aa4ad',glint:'#ffffff'}},
   claim:{on:true,kin:{xp:1},stranger:{xp:.5,rep:5},rest:{plot:1.15,grave:1.1,tomb:1.3},wild:{xp:.05,floor:.5,gold:.08,item:.05},
-    lord:{seek:140,find:.2,price:{kin:.4,stranger:.8}},comp:{near:25,find:.15,price:.3},guard:4},
+    lord:{seek:140,find:.2,force:['greedy','cunning','proud'],price:{kin:.4,stranger:.8}},heir:{find:.3},comp:{near:25,find:.15,price:.3,other:.5},guard:4},
   eater:{chance:.6,lv:2,n:1,bounty:1.5,renown:12,slayer:{base:100,lv:30},first:['Grey','Red','Black','Old','Scarred','Pale','Hollow','Silent'],last:['Widow','Maw','Hunger','Shadow','Fang','Reaver','Ghost','Butcher']}};
