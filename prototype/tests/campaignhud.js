@@ -5,7 +5,7 @@ Kit.suite(({ok})=>{
  const t=T;window.requestAnimationFrame=()=>0;Kit.begin('soldier',23);Kit.clear();Kit.world();t.G.paused=true;const home=Kit.goHome('Ashford');t.P.x=home.x+40;t.P.y=home.y+30;t.updateHUD(true);t.frame();t.MainMenu.frame(performance.now());
  const hud=window.campaignHud,screen=document.getElementById('screen'),rect=e=>e.getBoundingClientRect(),visible=e=>!!e.getClientRects().length&&getComputedStyle(e).display!=='none';
  ok(hud&&hud.desktop&&visible(hud.resources),'desktop campaign uses the live resource rail');
- ok(hud.brand.textContent.includes(t.bandName())&&hud.brand.querySelector('.tipflag'),'army header shows the current band name and real map flag');
+ ok(hud.brand.textContent.includes(t.bandName())&&hud.brand.querySelector('.tipflag')&&hud.companyHeader.contains(hud.brand),'army header shows the current band name and real map flag');
  ok(!visible(document.querySelector('#stats .pc-pic'))&&hud.company.contains(hud.resources)&&hud.company.contains(document.getElementById('stats')),'resources and portrait-free conditions share one panel');
  ok(!hud.townCard.hidden&&hud.townCard.querySelector('h3').textContent===home.name&&hud.townCard.textContent.includes(String(home.gar)),'nearby holding card uses its real name and garrison');
  const approach0=window.worldApproach;let approached=null;try{window.worldApproach=o=>{approached=o};hud.townCard.querySelector('[data-town-action="approach"]').click()}finally{window.worldApproach=approach0}ok(approached===home,'the holding action delegates to normal travel and gate rules');
@@ -26,6 +26,8 @@ Kit.suite(({ok})=>{
  ok(hud.mapZoom.contains(document.getElementById('zoomIn'))&&hud.mapZoom.contains(document.getElementById('zoomOut'))&&rect(document.querySelector('.dockrow.sys')).bottom<canvas.top+65,'zoom controls follow the map frame and utility controls occupy the top bar');
  const buttons=[...document.querySelectorAll('.dockrow:not(.sys) .dbtn')].filter(visible);ok(buttons.length===5&&buttons.every(b=>rect(b).width>=44&&rect(b).height>=44),'five illustrated commands have usable targets and no redundant Map button');
  ok(document.querySelector('.dockrow.sys').contains(document.getElementById('helpBtn')),'Help remains available in the utility row');
+ ok(document.querySelector('.dockrow.sys').firstElementChild.id==='menuBtn'&&rect(document.getElementById('menuBtn')).left<canvas.left+30,'Settings/Menu is the first control at the far left of the top rail');
+ ok(rect(document.getElementById('menuBtn')).height===rect(document.getElementById('wday')).height&&getComputedStyle(hud.townCard.querySelector('h3')).textTransform==='none'&&hud.townCard.querySelector('header small').textContent==='Nearby holding','top controls share height and holding text uses the common casing convention');
  hud.details.click();ok(screen.classList.contains('company-details')&&hud.details.getAttribute('aria-expanded')==='true'&&visible(document.querySelector('.pc-res')),'company details exposes the complete original supply and condition information');hud.details.click();
  ok(getComputedStyle(document.querySelector('.wtop [data-speed="2"]')).borderImageSource==='none','time controls do not have nested square frames');
  document.getElementById('pause').click();ok(!t.G.paused,'the original pause button still controls the clock');document.getElementById('pause').click();

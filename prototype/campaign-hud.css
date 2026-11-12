@@ -124,3 +124,24 @@
 .campaign-world:not(.mobile-world) .dockrow:not(.sys) .campaign-command-art{width:38px;height:42px}.campaign-world:not(.mobile-world) .dockrow:not(.sys) .dl{font-size:12px}
 @media(max-width:1250px){.campaign-world:not(.mobile-world){--company-width:440px}.campaign-world:not(.mobile-world) .campaign-company{gap:14px;padding:12px}.campaign-world:not(.mobile-world) .dockrow:not(.sys){gap:10px}}
 @media(max-width:1020px){.campaign-world:not(.mobile-world){--company-width:340px}.campaign-world:not(.mobile-world) .campaign-company{gap:10px;padding:12px 8px}.campaign-world:not(.mobile-world) .campaign-company .campaign-resource small{font-size:11px}.campaign-world:not(.mobile-world) .campaign-company .campaign-resource-art{width:20px;height:22px}.campaign-world:not(.mobile-world) .dockrow:not(.sys){gap:8px}.campaign-world:not(.mobile-world) .dockrow:not(.sys) .dbtn{flex-basis:70px;max-width:70px;min-height:90px}.campaign-world:not(.mobile-world) .dockrow:not(.sys) .campaign-command-art{width:32px;height:36px}}
+
+/* Shared header hierarchy and label/value conventions. */
+.campaign-world:not(.mobile-world){--campaign-console:240px;--hud-label-size:12px;--hud-heading-size:18px}
+.campaign-world:not(.mobile-world) .campaign-company{row-gap:12px}
+.campaign-world:not(.mobile-world) .campaign-company-header{grid-column:1/-1;grid-row:1;min-width:0;border-bottom:1px solid #a1814355;padding-bottom:8px}
+.campaign-world:not(.mobile-world) .campaign-company-header .campaign-brand{width:100%;height:34px;margin:0;padding:0;gap:9px;font:700 var(--hud-heading-size) var(--hud-font)}
+.campaign-world:not(.mobile-world) .campaign-company>.campaign-resources{grid-column:1;grid-row:2}.campaign-world:not(.mobile-world) .campaign-company>#stats{grid-column:2;grid-row:2}
+.campaign-world.company-details:not(.mobile-world) .campaign-company>.campaign-resources{grid-column:1/-1}.campaign-world.company-details:not(.mobile-world) .campaign-company>#stats{grid-column:1/-1;grid-row:3}
+.campaign-world:not(.mobile-world) .campaign-rail>.dockrow.sys{left:var(--e-l);right:auto;top:10px;gap:6px}
+.campaign-world:not(.mobile-world) .campaign-rail .dbtn{width:36px;min-width:36px;height:36px;min-height:36px;padding:4px;font:700 var(--hud-label-size) var(--hud-font)}
+.campaign-world:not(.mobile-world) .campaign-rail .dbtn .gico,.campaign-world:not(.mobile-world) .wtop .gico{width:18px;height:18px}
+.campaign-world:not(.mobile-world) .wtop{top:10px;height:36px;max-width:none;gap:8px;padding:0;border:0;border-image:none;background:none}
+.campaign-world:not(.mobile-world) .wday,.campaign-world:not(.mobile-world) .wtime{display:flex;align-items:center;height:36px;min-height:36px;box-sizing:border-box;border:3px solid transparent;border-image:var(--campaign-frame) 176/6px;background:var(--campaign-surface);background-size:auto,640px 320px;color:var(--hud-ink);font:700 var(--hud-label-size) var(--hud-font)}
+.campaign-world:not(.mobile-world) .wday{width:190px;padding:0 12px}.campaign-world:not(.mobile-world) .wtime{margin:0;padding:0 4px;gap:3px}.campaign-world:not(.mobile-world) .wtop .wtime .tbtn{min-height:28px;height:28px;font:700 var(--hud-label-size) var(--hud-font)}
+.campaign-world:not(.mobile-world) .campaign-town header{gap:9px;padding-bottom:8px}.campaign-world:not(.mobile-world) .campaign-town h3{margin:3px 0 0;text-transform:none;letter-spacing:normal;font:700 var(--hud-heading-size) var(--hud-font)}
+.campaign-world:not(.mobile-world) .campaign-town header small{font:var(--hud-label-size) var(--hud-font);letter-spacing:normal;color:var(--hud-muted)}
+.campaign-world:not(.mobile-world) .campaign-town-line{display:grid;grid-template-columns:18px auto minmax(0,1fr);gap:8px;min-height:29px;font:var(--hud-label-size) var(--hud-font)}.campaign-world:not(.mobile-world) .campaign-town-line>span{color:var(--hud-muted)}.campaign-world:not(.mobile-world) .campaign-town-line>b{text-align:right;font-weight:700;overflow-wrap:anywhere}
+.campaign-world:not(.mobile-world) .campaign-company .campaign-resource small,.campaign-world:not(.mobile-world) .campaign-company .campaign-condition-name{color:var(--hud-muted)}
+
+.campaign-world:not(.mobile-world) .campaign-company .campaign-resource b,.campaign-world:not(.mobile-world) .campaign-company .campaign-condition strong,.campaign-world:not(.mobile-world) .campaign-company #stats .bar.sta strong,.campaign-world:not(.mobile-world) .campaign-town-line>b{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.campaign-world:not(.mobile-world) .campaign-town{top:max(236px,calc(50% - 140px));bottom:auto}.campaign-world:not(.mobile-world) .campaign-town footer button{font:700 var(--hud-label-size) var(--hud-font)}
