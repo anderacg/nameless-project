@@ -185,6 +185,7 @@ class Tavern extends Place{
       t.T.broker&&{pic:personPic('merchant',race,1),name:'The ransom broker',role:'Buys prisoners you bring in',facts:[prisonerCount()?prisonerCount()+' prisoners with you':'No prisoners with you',prisonerCount()?['Worth '+ransomValue()+'g','gold']:''],acts:[['ransom-pick',null,'Ransom',prisonerCount()?'':'No prisoners']]},
       Captivity.fenceCard(t,race),// (your gear from a captor's stash: world/captivity.js)
       ...Death.cards(t),// (your companions lost after the beasts, waiting or gone from your service: world/death.js)
+      ...Claims.cards(t),// (what of your line's a companion keeps, or a lord's steward sells, or hangs as a trophy: world/claims.js)
       ...Questbook.offers('tavern',Stories.ctx({town:t.name})).map(id=>Questbook.card(id,t)),// (the questbook's: story/questbook.js)
       ...compsHere(t).map(id=>{const c=COMPS[id],quote=recruitment.quoteCompanion(t,id);return {pic:portrait(id),name:c.n,role:'Companion, looking for work',note:c.d,acts:[['hire-comp',id,'Hire '+c.cost+'g',quote.ok?'':recruitmentWhy(quote)||'Not available']]}}),
       Wanderer.card(t)].filter(Boolean))+

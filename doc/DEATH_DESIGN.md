@@ -37,6 +37,14 @@ Status: **design** (2026-11-09); every question answered (round 5). **Phase 1, l
 - **Companions left too long leave you**, and must be won back.
 - **Kept as proposed:** the chance to live (about 30%, 10–60%); the heir only if loyal, the others with them if content; fiefs to the heir if the realm's ruler accepts them; a spent grave stays on the map; graves never fade.
 
+## Decisions, round 6 (owner, 2026-11-12)
+
+- **Anyone may claim the remains; what they get depends on who and where:** "anyone can get it just that they reward differently based on the situations"; of the options offered, "Do 1, 2 and 4". Built (`world/claims.js` `Claims`, `DEATH.claim`; tests `deathclaims`):
+  - **Who claims.** Kin of the fallen (their blood through each life: `Legacy.kinTo`; a stranger in the line breaks it) pray for all the experience left and take the grave goods freely. A stranger prays for half (`stranger.xp`), and taking the goods costs 5 standing at the family's holding (where they lie, else the fallen's home).
+  - **Where they lie.** The family plot gives more experience (×1.15), a fenced grave ×1.1, a tomb ×1.3 (`rest`). A body left unburied wastes each day: 5% of its first experience (never below half), 8% of its gold, a 5% chance for each piece (`wild`).
+  - **Others claiming.** A lord's army passing a body left unburied, unseen by you, carries its goods to his nearest holding (`lord`: 140 px, 20% a day): his steward sells them back in its tavern (80% of their worth to a stranger, 40% to kin), or a proud lord, or one at war with the realm your line served, hangs them in his hall as a trophy, yours only when the holding is. One of the fallen's own companions, their tavern within 25 tiles, may find the body (15% a day) and keep its goods there for the family: kin take them for nothing, a stranger pays 30% of their worth. A beast whose lair is within 4 tiles guards a body in the wild: no one prays, takes, robs or buries there (the heir waits) until it is slain or gone; the body still wastes.
+  - What lords and companions keep is saved with the legacy (`Legacy.held`). Off (`DEATH.claim.on` false): the same for anyone, as before.
+
 ## 1. When it applies
 
 - **A loss to beasts only:** the foe's side is all beasts or monsters (`mapKind` 'monster', a wildlife fight, a den or a beast lair). If any man stands on the foe's side (bandits with war dogs, a beast tamer), it is a loss to men, and capture works as today (`Captivity.defeat` → `captor`).
@@ -209,6 +217,7 @@ Status: **design** (2026-11-09); every question answered (round 5). **Phase 1, l
 3. **A new person:** the old hero's things handed out, the heir and their company, the realm's crown, the new person in the same world, the main story restarting.
 4. **Graves:** where they lie, the remains in them, grave robbers, their rumours, paying respects.
 5. **The skirmish:** the same rule once real-time fights are built.
+6. **Claims (built, 2026-11-12):** who comes to the remains and what each gets: kin or a stranger, where they lie, a body wasting in the wild, lords' stewards and trophies, companions keeping them, beasts guarding them (round 6).
 
 ## 10. Open questions
 
