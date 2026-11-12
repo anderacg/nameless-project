@@ -180,12 +180,13 @@ function mapDots(V,fn){const T=LOD_TAG,G=lodGrid(),L=MAP_NEAR,r=V+WORLD_LOD.lag,
 const MAP_FRAME={bg:'#141116',edge:'#967744',light:'#c9a24e',view:'#e7d7b3',muted:'#b5a88e'};
 function drawMapFrame(r){ctx.save();ctx.fillStyle=MAP_FRAME.edge;ctx.fillRect(r.x-2,r.y-2,r.w+4,r.h+4);
   ctx.fillStyle=MAP_FRAME.light;ctx.fillRect(r.x-2,r.y-2,r.w+4,1);ctx.fillStyle=MAP_FRAME.bg;ctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2);ctx.restore()}
-// the minimap's rectangle on the screen, in game pixels: the top right corner, 112 wide at any map size, the same size on the
-// screen at any map zoom (zk, core.js MAPZOOM); s: its pixels a tile (drawWorld draws it here, the full map's tap reads it)
+// The campaign's desktop slot, in game pixels; its drawing and full-map tap share this rectangle.
+// With no visible slot (mobile or before the HUD's first frame), use the original top-right map.
+// s: pixels a tile; the fallback keeps the same screen size at every map zoom (zk, core.js MAPZOOM).
 // (on a real screen: kept clear of the screen's edge and a phone's notch as the HUD is (--edge and the safe insets, CSS px), and no
 // narrower than the panel under it (underway.js UW_MIN), so on a phone their edges meet (the owner, 2026-11-08: "the top right on
-// mobile is not well aligned"); the tests' fixed view as before)
-function worldMiniRect(){const zk=MAPZOOM.k();let s=112*zk/MW,mx=Math.round(6*zk),my=mx;
+// mobile is not well aligned"); the fallback fixed view as before)
+function worldMiniRect(){const campaign=window.campaignHud?.miniRect();if(campaign)return campaign;const zk=MAPZOOM.k();let s=112*zk/MW,mx=Math.round(6*zk),my=mx;
   if(!FIXED_VIEW&&typeof safeInsets==='function'){const g=dprOf()/VS,I=safeInsets(),e=hudEdge();mx=Math.max(mx,Math.ceil((e+I.r)*g)+UW_FRAME);my=Math.max(my,Math.ceil((e+I.t)*g)+UW_FRAME);s=Math.max(s,(uwMin()*g-2*UW_FRAME)/MW)}// (its frame, UW_FRAME, outside its map)
   const w=Math.round(MW*s),h=Math.round(MH*s);return{x:VW-w-mx,y:my,w,h,s}}
 /* the minimap a piece of the full map, zoomed in (the owner, 2026-11-08: "the map show on the worldmap should be a zoomed in version
@@ -342,7 +343,7 @@ function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y
   for(const m of rumourMarks())if(rumourFade(m)>0)dot(m.x,m.y,RUMOUR_COL,2);
   if(B?.world){for(const un of B.units)if(un.hp>0&&seenBy(0,un)){const p=B.world.world(un);dot(p.x,p.y,un.hero?'#fff':sideCol(un,'ui'),un.hero?3:1)}}
   else{const r=2.4*u;g.beginPath();g.arc(X(P.x),Y(P.y),r,0,Math.PI*2);g.fillStyle=M.you;g.fill();g.lineWidth=u;g.strokeStyle=M.ring;g.stroke();g.beginPath();g.arc(X(P.x),Y(P.y),r+u,0,Math.PI*2);g.lineWidth=.6*u;g.strokeStyle=M.ink;g.stroke()}
-  drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh)}
+  drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh);window.campaignHud?.presentMini(MINI_FACE)}
 // how long a unit holds its attack pose after it strikes
 const ATK_ANIM=.36;
 // the body's small life (drawUnit): a flinch for flinch s after a blow; standing (the owner, 2026-10-31: "idle animation for
@@ -614,7 +615,7 @@ function drawBattle(){
 }
 function frame(){
   {const sc=document.getElementById('screen');if(sc&&sc.dataset.mode!==G.mode){sc.dataset.mode=G.mode;updateHint();hideTip()}}
-  window.mobileWorldHud?.sync();window.mobileBattleHud?.sync();
+  window.mobileWorldHud?.sync();window.mobileBattleHud?.sync();window.campaignHud?.sync();
   // (loading: the overlay over the last frame, nothing drawn under it, so no effect draws a random number meanwhile: ui/loading.js)
   if(G.mode==='loading'){if(typeof loadingFrame==='function')loadingFrame();return}
   const bat=B&&(G.mode==='battle'||G.mode==='esc'&&G.esc&&G.esc.mode==='battle'),scn=!bat&&G.scene&&(G.mode==='scene'||G.mode==='town'&&G.town&&G.town.inScene||G.mode==='esc'&&G.esc&&(G.esc.mode==='scene'||G.esc.mode==='town'&&G.town&&G.town.inScene)),map=(!bat||!!B?.world)&&!scn;
@@ -654,7 +655,7 @@ function lvBox(){const el=$('#lgroup');if(!el)return;const n=typeof treePending=
 function updateHUD(force){
   lvBox();
   const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=bandFitness(),fp=Math.round(F.pct),mo=Math.round(P.morale),lh=landHold(P.x,P.y),sp=bandPace();
-  const bar=(v,cls,txt,title)=>'<div class="bar '+cls+'" title="'+title+'"><i style="width:'+Math.max(0,Math.min(100,Math.round(v)))+'%"></i><em>'+txt+'</em></div>';
+  const bar=(v,cls,txt,title)=>'<div class="bar '+cls+'" title="'+title+'"><i style="width:'+Math.max(0,Math.min(100,Math.round(v)))+'%"></i><em>'+(window.campaignHud?window.campaignHud.condition(cls.split(' ')[0],v):txt)+'</em></div>';
   const chip=(ic,val,title,warn,cls)=>'<span class="chip'+(warn?' warn':'')+'" title="'+title+'">'+icon(ic,14)+'<span'+(cls?' class="'+cls+'"':'')+'>'+val+'</span></span>';
   const days=d=>(d>=10?Math.floor(d):Math.floor(d*10)/10)+'d',rate=S.r.n,go=S.go?'on the march':'at rest';
   const arrow=rate<0?' ▼':rate>0&&P.bsta<100?' ▲':'',word={tired:'Tired',exhausted:'Exhausted'}[S.st],hurt=BAND.hurt.map(h=>h.why).join(', ');
@@ -685,6 +686,7 @@ function updateHUD(force){
   const d=$('#wday');if(d){const w=WEATHER.on?ambWeather():null,K=w&&WEATHER.kinds[w],sky=icon(darkness()>.3?'moon':'sun',16);
     setHtml(d,(K?'<i class="wx" title="Weather: '+Weather.name(w)+', travel ×'+K.speed+', sight ×'+K.sight+'">'+(w==='clear'?sky:icon('wx_'+w,16))+'</i>':sky)+'<span>Day '+G.day+(K?', '+Weather.season().n:'')+', '+timeOfDay()+(K?', '+Weather.name(w):'')+'</span><b'+(G.paused?'':' class="off"')+'>Paused</b>')}
   window.mobileWorldHud?.update(fp,mo,Math.round(P.bsta));
+  window.campaignHud?.update(S,cnt);
   const cb=$('#campBtn');if(cb){cb.classList.toggle('on',!!P.camp);cb.setAttribute('aria-pressed',String(!!P.camp))}
   questTrackHUD();// (the quests you track, under the band card as it now stands: ui/questtrack.js)
   underwayHUD();// (what your band is doing, under the minimap: ui/underway.js)

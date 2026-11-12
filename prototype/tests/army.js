@@ -17,7 +17,7 @@ Kit.suite(({ok})=>{
  t.cpGive('tavi','hum_levy',3);ok(!!tavi.party,'Tavi leads a party of his own (away from the band)');
  t.rankGain(foot,t.RANKS.xp[1][0]+10);t.rankGain(knight,1e6);t.vitals();P.morale=55;P.bsta=60;
  const world=()=>Kit.world(),open=()=>{world();G.char='roster';t.openChar()};
- const fills=svg=>[...svg.querySelectorAll('rect')].map(x=>x.getAttribute('fill')).join(),iconFills=k=>{const d=document.createElement('div');d.innerHTML=t.icon(k,14);return fills(d.firstChild)};
+ const fills=svg=>svg.getAttribute('viewBox')+'|'+svg.querySelector('image')?.getAttribute('href'),iconFills=k=>{const d=document.createElement('div');d.innerHTML=t.icon(k,14);return fills(d.firstChild)};
  try{
   // ---- the window: the band's name, its tabs
   open();ok(G.mode==='char'&&q('.fb-head h2').textContent==='Iron <Band>'&&!q('Band')&&q('.fb-head small').textContent==='Army','the Army window, titled with the band’s name (literal text)');
@@ -50,7 +50,7 @@ Kit.suite(({ok})=>{
    ok(kindIcon('hero')===iconFills('rosterhero')&&kindIcon('comp_brann')===iconFills('rostercomp')&&new Set(['rosterhero','rostercomp'].map(iconFills)).size===2,'its icon: a crown for the hero, a star for a companion');
    const glyph=k=>{const d=document.createElement('div');d.innerHTML=t.glyphSVG(k,14);return d.querySelector('svg').innerHTML.replace(/\s+/g,'')};
    ok([foot,knight].every(g=>q('.fb-unit[data-army-group="'+g.id+'"] .fb-unit-kind svg').innerHTML.replace(/\s+/g,'')===glyph(t.iconOfType(g.type)))&&t.iconOfType(foot.type)!==t.iconOfType(knight.type),'a troop group\'s: its type\'s, as on its banner in battle ('+t.iconOfType(foot.type)+', '+t.iconOfType(knight.type)+')');
-   ok(['rosterhero','rostercomp','rostertroop'].every(k=>t.ICONS[k].px.length===9&&t.ICONS[k].px.every(row=>row.length===9&&[...row].every(c=>c==='.'||t.ICONS[k].p[c]))),'the three are pixel icons of the game’s set (9 × 9, each colour its palette’s)')}
+   ok(['rosterhero','rostercomp','rostertroop'].every(k=>t.UI_ILLUSTRATIONS[k]&&t.icon(k,14).includes('<image')),'the three use the shared illustrated icon family')}
   {const xp=id=>q('.fb-unit[data-army-group="'+id+'"] .fb-unit-xp'),val=e=>[+e.getAttribute('aria-valuenow'),+e.getAttribute('aria-valuemax')].join('/'),txt=id=>q('.fb-unit[data-army-group="'+id+'"] .fb-unit-xptxt').textContent;
    ok(cards.every(c=>c.querySelector('.fb-unit-xp[role="meter"]')),'every card has an experience bar');
    {const n=t.leaderOf(P).xpNeed();ok(val(xp('hero'))===P.xp+'/'+n&&txt('hero')==='Lv. '+P.level+', '+Math.round(100*P.xp/n)+'% to '+(P.level+1),'the hero’s: progress to the next level ('+txt('hero')+')')}

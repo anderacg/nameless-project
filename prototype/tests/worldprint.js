@@ -725,6 +725,17 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  Faces.start), as a fresh page made them; they were made before the game's number was drawn, from the last game's, so a second
 //  begin's faces were not a fresh page's (worldsave). B2 is that second begin: its faces' seed in the save. W1-W8 hold. Proof:
 //  Rng.seedOf back in Faces.start gives B2 as before. Was B2 93e3e0b7)
+// (W6 again 2026-11-11, on purpose: the approved campaign HUD places its desktop minimap inside the bottom console
+//  instead of the top-right corner. worldMiniRect shares the DOM slot with drawing and hit testing; campaignhud checks
+//  that alignment. W1-W5, W7-W8, B2 and all generator sums hold. Was W6 8d7629ca.)
+// (W6 again 2026-11-11, on purpose: the shared HUD removes the desktop map's padded wood surround and aligns its
+//  rim with the other console panels. The live map rectangle follows that tighter layout; W1-W5 hold in the targeted
+//  world/view check. The full worldprint suite exceeded this runner's 600s timeout. Was W6 92f27da3.)
+// (W6 again 2026-11-12, on purpose: the owner moved the desktop minimap from the bottom console back to the
+//  upper-right, with zoom controls on its frame. drawWorld uses the framed slot's shared draw/hit rectangle.
+//  Targeted W1-W6 measurement: W1-W5 hold; W6 a1a8a0c9 replaces 821e075c. No simulation or generation changes.)
+// (W6 again 2026-11-12, on purpose: the owner temporarily removed the banners above holdings. HOLD_PLAQUE.on
+//  is false, so the view omits their name/ribbon/lock/crown plaques. W1-W5 hold; W6 6d45a75b replaces a1a8a0c9.)
 // (W6 again 2026-11-11, on purpose: the owner, "the holding or castles name ribbon seems a bit off and not like ui": a holding's bar a
 //  plate of the HUD's own (a dark face in a thin gold frame, a diamond at each end, its name in the titles' face), on the screen's
 //  pixels at one size whatever the zoom, its cloth ribbon and plank gone (gfx/structures.js drawPlaques, drawPlaquePlate), on the
@@ -738,11 +749,16 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  ground too. B2: the lairs made at the start are other kinds in other places, the breeds saved with them; W7: those lairs and their
 //  stronger fighters three days on; W8: the beasts and those they meet stand elsewhere after 600 frames. Was W7 8804095d, W8 850e9451,
 //  B2 4df790ec; checked: with MONSTER_BREEDS.on false they are those again, and W1-W6 hold either way)
+// Merge 2026-11-12: keep the requested hidden holding banners and HUD map geometry (W6), alongside the remote
+// monster-breed and siege/save baselines (W7, W8, B2). Targeted combined world/view checks verify W1-W6.
 // (W6 re-recorded 2026-11-12, on purpose: the owner, "make territory boundaries not look squared": the land's borders lines through its
 //  tiles' edges' middles, cut at 45° where a tile stands out at a corner, the tint cut the same (world/territory.js LandArt,
 //  data/world.js LAND_SMOOTH); the three spots show borders. Was d9d0c82c; checked: with LAND_SMOOTH.on false it is d9d0c82c again,
 //  and W1-W5, W7, W8 and B2 hold either way)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'f95de12a',W7:'311da16e',W8:'c590650a',B2:'ba5f45e6'};
+// (W6 again after merging the two, 2026-11-12: the hidden banners and HUD geometry, and the smooth borders, both on the three spots.
+//  Measured here: origin/codex alone (1dfa38a) gives 81e7015b, not its 6d45a75b (recorded on another machine?); merged with
+//  LAND_SMOOTH.on false it is 81e7015b too, so the borders are all this side adds; on, d598257f)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'d598257f',W7:'311da16e',W8:'c590650a',B2:'ba5f45e6'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

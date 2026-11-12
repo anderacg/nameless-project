@@ -30,8 +30,8 @@ Kit.suite(({ok})=>{
    // known; a lord inside a small crown)
    {const g=t.TOWNS.filter(h=>!D.named(h)&&h!==far)[0],px=P.x,py=P.y;if(g){const Gt=t.Gates,o0=Gt.admits;Gt.admits=()=>({ok:false,why:'shut'});try{P.x=g.x+60*t.TILE;P.y=g.y;G.mode='world';t.approachHolding(g)}finally{Gt.admits=o0}
      ok(D.named(g)&&G.mode==='gate','come to the gate of '+g.name+', shut to you: known at once')}t.hidePanel();G.mode='world';G.gate=null;P.x=px;P.y=py}
-   {const said=[],o0=window.mapTxt;window.mapTxt=function(s,...a){said.push(String(s));return o0.call(this,s,...a)};const gs=t.GATES.on;t.GATES.on=true;let hs=[];
-    try{for(const h of t.TOWNS){const ents=[],cam={x:h.x-200,y:h.y-120},SA=t.seenArr(),MW=t.MW;for(const l of h.lots||[])for(let x=l.x;x<l.x+l.n;x++)for(let y=l.y;y<l.y+l.n;y++)SA[y*MW+x]=1;t.PLAQUEQ.length=0;t.holdingEnts(h,ents,cam,1e5);for(const e of ents)e.f();t.drawPlaques(cam);hs.push(h)}}finally{window.mapTxt=o0;t.GATES.on=gs}
+   {const said=[],o0=window.mapTxt;window.mapTxt=function(s,...a){said.push(String(s));return o0.call(this,s,...a)};const gs=t.GATES.on,pl=t.HOLD_PLAQUE.on;t.HOLD_PLAQUE.on=true;t.GATES.on=true;let hs=[];
+    try{for(const h of t.TOWNS){const ents=[],cam={x:h.x-200,y:h.y-120},SA=t.seenArr(),MW=t.MW;for(const l of h.lots||[])for(let x=l.x;x<l.x+l.n;x++)for(let y=l.y;y<l.y+l.n;y++)SA[y*MW+x]=1;t.PLAQUEQ.length=0;t.holdingEnts(h,ents,cam,1e5);for(const e of ents)e.f();t.drawPlaques(cam);hs.push(h)}}finally{window.mapTxt=o0;t.GATES.on=gs;t.HOLD_PLAQUE.on=pl}
     const known=hs.filter(h=>D.named(h)),unknown=hs.filter(h=>!D.named(h));
     ok(known.length&&known.every(h=>said.includes(h.name))&&unknown.every(h=>!said.includes(h.name)&&said.includes(D.nameOf(h))),'each holding\'s bar: its name once discovered ('+known.length+'), else only its kind ('+unknown.length+'), in sight or as you last saw it')}
    {const c=t.lordCrown('#4cc0a8');ok(c.width===9&&c.height===8&&c===t.lordCrown('#4cc0a8'),'a lord inside: a small gold crown set with his colours (9 x 8, made once)')}

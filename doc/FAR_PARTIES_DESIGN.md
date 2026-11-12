@@ -165,4 +165,3 @@ The design was read again beside the code and a profile. What was wrong, and wha
 | F3's exceptions | Fights with yours in them, fights told of | Listed in §6 |
 
 Also read again, with no flaw found: the two speedups already in (`WORLD_FAST`). The sites' list only grows or is made anew, so the outposts' list cannot go stale; no beast's moment changes an owner or an outpost; no fight ends inside the bands' pass, so the sweep of stale fight marks at the pass's first look does what every look did.
-

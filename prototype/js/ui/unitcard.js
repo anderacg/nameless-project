@@ -36,10 +36,9 @@ function kitChips(rec){if(!RANKS.statsOnly||!ST[rec.type])return null;const K=Un
   return{stances:K.slots.map((id,i)=>[(SS[i]?SS[i]+', ':'')+STANCES[id].n,STANCES[id].ch.map(c=>c.d||c.n).join(' / ')]),
     skills:K.skills.map((x,i)=>{const A=UNIT_SKILLS[x.id];return [(SK[i]?SK[i]+', ':'')+A.n+(x.idle?' (idle)':''),A.d+' '+from[x.from]+(x.idle?' Not for their kind.':'')]}),
     perks:K.perks.map(p=>['★ '+p.n,p.d+' Earned by mastery.'])}}
-// the type icon (ui/moraleicons.js UNIT_GLYPH) as SVG
-function glyphSVG(kind,size){const G=UNIT_GLYPH[kind];if(!G)return '';size=size||18;
-  return '<svg class="uc-ico" viewBox="0 0 13 13" width="'+size+'" height="'+size+'" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="13" height="13" fill="#0a0c12"/><rect x="1" y="1" width="11" height="11" fill="#3466c0"/>'+
-    G.map((r,y)=>[...r].map((c,x)=>c==='g'?'<rect x="'+(x+2)+'" y="'+(y+2)+'" width="1" height="1" fill="#f4efe0"/>':'').join('')).join('')+'</svg>'}
+// Troop types use the shared illustration family.
+function glyphSVG(kind,size){return icon(UI_UNIT_ART[kind],size||18,'uc-ico')}
+
 const iconOfType=k=>ST[k]?unitIcon('',[{type:k,s:ST[k]}]):'hero';
 const CLASS_N={spear:'Spear infantry',foot:'Melee infantry',ranged:'Missile infantry',magic:'Caster',cav:'Cavalry'};
 const classN=s=>s.mounted&&s.range?'Missile cavalry':tagsOf(s).includes('shield')&&unitClass(s)==='foot'?'Shield infantry':CLASS_N[unitClass(s)];

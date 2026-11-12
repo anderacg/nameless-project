@@ -94,7 +94,7 @@ const SlotDrag={
   },
   start(x,y){
     const b=this.src;if(!b||!b.isConnected)return this.end();this.on=true;GearCompare.hide();clearTimeout(this.timer);
-    const g=document.createElement('div');g.className='slot-ghost';const c=b.querySelector('canvas');if(c){const k=document.createElement('canvas');k.width=c.width;k.height=c.height;k.getContext('2d').drawImage(c,0,0);g.appendChild(k)}
+    const g=document.createElement('div');g.className='slot-ghost';const art=b.querySelector('.item-illustration'),c=b.querySelector('canvas');if(art)g.appendChild(art.cloneNode(true));else if(c){const k=document.createElement('canvas');k.width=c.width;k.height=c.height;k.getContext('2d').drawImage(c,0,0);g.appendChild(k)}
     document.body.appendChild(g);this.ghost=g;b.classList.add('dragging');this.move(x,y);
   },
   move(x,y){

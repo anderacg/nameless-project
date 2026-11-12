@@ -98,9 +98,9 @@ try{
    {const c=t.wuiSwords(),I=t.ICONS.attack,d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data,hx=v=>'#'+[0,1,2].map(k=>d[v+k].toString(16).padStart(2,'0')).join('');let red=0,navy=0,other=0;
     for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;const h=hx(i);if(h===t.PEOPLE_OUT)navy++;else if(Object.values(I.p).includes(h))red++;else other++}
     const it=t.partyRingItems(b,0,0)[0],svg=t.icon('attack',22);
-    ok(red>=30&&navy>=30&&!other&&I.p.r===t.WUI_K.col.foe,'the swords: the attack icon, '+red+' px in the red of foes, outlined by '+navy+' px of the navy of the figures, drawn in code');
-    ok(it.label==='Attack'&&it.icon==='attack'&&/viewBox="0 0 11 11"/.test(svg)&&(svg.match(/<rect/g)||[]).length===red,'the Attack of the ring shows the same crossed swords ('+it.icon+', '+(svg.match(/<rect/g)||[]).length+' px)');
-    ok((t.icon('sword',16).match(/viewBox="0 0 9 9"/)||[]).length===1,'the 9 x 9 icons are drawn as before')}
+    ok((c.uiIcon==='attack'||red>=30&&navy>=30&&!other)&&I.p.r===t.WUI_K.col.foe,'the attack marker uses shared art or its loading glyph, retaining the hostile colour');
+    ok(it.label==='Attack'&&it.icon==='attack'&&/data-ui-icon="attack"/.test(svg)&&svg.includes('icons-interface.png'),'the Attack ring action uses the shared crossed-sword illustration');
+    ok(/data-ui-icon="sword"/.test(t.icon('sword',16))&&t.icon('sword',16).includes('width="16"'),'standard interface symbols use the shared atlas at their requested size')}
    // (zoomed far out on a phone, 2 device px a game px at a devicePixelRatio of 3: drawn twice the size, at least WUI_K.swords CSS px;
    // at Resolution Full, RENDER.cap: Balanced, the default since 2026-10-29, draws a 3x screen at 2, a game px a CSS px)
    {const dp=Object.getOwnPropertyDescriptor(window,'devicePixelRatio'),cap=t.RENDER.cap;Object.defineProperty(window,'devicePixelRatio',{value:3,configurable:true});t.RENDER.cap=Infinity;ev('VS=2');let a;try{frame(16);a=swords()[0]}finally{ev('VS=1');t.RENDER.cap=cap;if(dp)Object.defineProperty(window,'devicePixelRatio',dp);else delete window.devicePixelRatio}

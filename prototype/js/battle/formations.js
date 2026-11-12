@@ -252,5 +252,5 @@ function formIcon(f,w,h){
   const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),k=Math.min((w-4)/Math.max(1,x1-x0),(h-4)/Math.max(1,y1-y0),.35);
   const dots=S.map(([x,y])=>{const px=(w/2+(x-(x0+x1)/2)*k).toFixed(1),py=(h/2+(y-(y0+y1)/2)*k).toFixed(1);
     return f==='wall'?'<rect x="'+(px-1.5)+'" y="'+(py-1.5)+'" width="3" height="3" fill="currentColor"/>':'<circle cx="'+px+'" cy="'+py+'" r="1.3" fill="currentColor"/>'}).join('');
-  return '<svg class="ficon" viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'" aria-hidden="true">'+dots+'</svg>';
+  return '<svg class="ficon" data-ui-formation="'+f+'" viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'" aria-hidden="true"><defs><linearGradient id="formation-metal-'+f+'" x2="0" y2="1"><stop stop-color="#ffe0a0"/><stop offset=".45" stop-color="#c39a4b"/><stop offset="1" stop-color="#72552e"/></linearGradient></defs>'+dots.replace(/fill="currentColor"/g,'fill="url(#formation-metal-'+f+')" stroke="#3f3220" stroke-width=".35"')+'</svg>';
 }

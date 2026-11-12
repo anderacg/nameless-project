@@ -132,7 +132,7 @@ function holdingLabel(t,cam,X,Y,N,fy=0){holdingPlaque(t,cam,Y-N+Math.min(0,fy),t
    HOLD_PLAQUE, screen px at full size: its height, its sides' padding, the gap between its marks, how far over the holding it
    stands, at most so many crowns; art: screen px a pixel of its marks' pictures; text: its name's size; full: the zoom (screen px a
    map px) from which it is full size, least: its least share of that zoomed further out; stud: a diamond's side; its colours */
-const HOLD_PLAQUE={h:30,pad:11,gap:5,over:10,most:4,art:2,text:15,full:2,least:.7,stud:7,
+const HOLD_PLAQUE={on:false,h:30,pad:11,gap:5,over:10,most:4,art:2,text:15,full:2,least:.7,stud:7,
   face:['#2c241b','#14100c'],band:'#2b2218',edge:'#000000',trim:'#9a7a3e',trimHi:'#e2bd68',studFace:'#15110c',shadow:'rgba(0,0,0,.45)',
   name:'#f3e4bd',kind:'#a39a86',siege:'#ff6a60',free:'#8a7a5a',dim:.78};
 // (the titles' face, read once off the page: style.css --display; a serif where there is none)
@@ -154,7 +154,7 @@ function drawPlaquePlate(x0,y0,w){const H=HOLD_PLAQUE,h=H.h,s=H.stud,r=(x,y,ww,h
 /* (the bars queued this frame, onto the screen with the map's words: render.js; the ctx's transform the world's). Each on the screen's
    own pixels, k of its full size by the zoom (HOLD_PLAQUE full, least), standing over its holding: its plate, then in a row its
    owner's shield, the padlock, its name (mapTxt, by that name: tests listen to it), the crowns, the siege's mark */
-function drawPlaques(cam){const Q=PLAQUEQ;PLAQUEQ=[];if(!Q.length)return;const H=HOLD_PLAQUE,m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf(),k=clamp(sc/dpr/H.full,H.least,1),U=dpr*k,A=H.art,st={font:plaqueFont(),px:H.text*k,weight:700};
+function drawPlaques(cam){const Q=PLAQUEQ;PLAQUEQ=[];if(!HOLD_PLAQUE.on||!Q.length)return;const H=HOLD_PLAQUE,m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf(),k=clamp(sc/dpr/H.full,H.least,1),U=dpr*k,A=H.art,st={font:plaqueFont(),px:H.text*k,weight:700};
   for(const p of Q){const t=p.t,lock=GATES.on&&!Gates.admits(t).ok,cr=p.live?lordsInside(t).slice(0,H.most).map(l=>FACS[l.fac].col):[],sg=p.live&&besieged(t);
     const known=Discovery.named(t),name=Discovery.nameOf(t),col=known?H.name:H.kind,pic=mapTxtPic(name,col,'left',sc,dpr,st),tw=(pic.width-2*pic.ox)/U,asc=(pic.oy-pic.ox)/U;
     const own=t.owner&&(t.owner==='player'||FACS[t.owner])?(p.live?facCol(t):t._memCol||facCol(t)):H.free,sh=plaqueShield(own),lp=lock?lockPic():null,cw=LORD_CROWN[0].length*A;

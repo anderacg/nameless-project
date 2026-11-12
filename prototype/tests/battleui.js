@@ -21,10 +21,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,L=t
   const shown=c=>{const k=c.cloneNode(true);k.querySelectorAll('title').forEach(e=>e.remove());return k.textContent.trim()};
   const sts=c=>[...c.querySelectorAll('.cmi .si')].map(e=>e.dataset.st);
   // (every icon on every card, gathered as the test goes (peek): a round badge is BADGE's shape, its rim all one colour (its
-  // key's, BADGE_RIM), a dark inside and its own glyph in white)
+  // key's, BADGE_RIM), a dark inside and its shared material illustration)
   const seen=[],peek=()=>document.querySelectorAll('.bcards .cmi .si').forEach(e=>seen.push({k:e.dataset.st,svg:e.querySelector('svg')}));
-  const isBadge=({k,svg})=>{if(!svg||!svg.classList.contains('mico')||svg.getAttribute('viewBox')!=='0 0 9 9'||!t.GLYPH[k])return false;const px={};svg.querySelectorAll('rect').forEach(r=>px[r.getAttribute('x')+','+r.getAttribute('y')]=r.getAttribute('fill'));
-   return Object.keys(px).length===t.BADGE.join('').replace(/\./g,'').length&&t.BADGE.every((row,y)=>[...row].every((ch,x)=>{const c=px[x+','+y];if(ch==='.')return c===undefined;if(ch==='x')return c===t.BADGE_RIM[k];return c===((t.GLYPH[k][y-2]||'')[x-2]==='g'?'#ffffff':'#141822')}))};
+  const isBadge=({k,svg})=>!!svg&&svg.classList.contains('mico')&&svg.dataset.uiStatus===k&&!!svg.querySelector('[data-ui-icon]')&&svg.querySelector('circle').getAttribute('stroke')===t.BADGE_RIM[k];
   const words=c=>[...c.querySelectorAll('.cmi .si')].map(e=>e.querySelector('svg title').textContent);
   put(foot,mid.x-160,mid.y);put(bow,mid.x-160,mid.y+60);put(kn,mid.x-160,mid.y-70);put(e1,mid.x+160,mid.y);put(e2,mid.x+160,mid.y+70);t.setOrderUI();
 
@@ -94,8 +93,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,L=t
   // ---- one style: every card icon the same round badge, its rim by its kind
   {B.groups[bow].useAbility('rapid');t.setOrderUI();peek();const f=card(bow).querySelector('.si[data-st=rapid]');// (Rapid shot: the bows' own, doc/UNIT_KITS_DESIGN.md §5)
    ok(f&&f.className==='si si-g'&&f.querySelector('title').textContent===t.UNIT_ABILITIES.rapid.n+' on','an ability on: its badge, its words ('+(f&&f.querySelector('title').textContent)+')');
-   const bad=seen.filter(o=>!isBadge(o));ok(seen.length>15&&!bad.length,'every icon on the cards ('+seen.length+': '+[...new Set(seen.map(o=>o.k))].join(', ')+') is a round badge: BADGE\u2019s shape, its rim, a dark inside, its white glyph'+(bad.length?' (not: '+bad.map(o=>o.k).join()+')':''));
-   ok(!document.querySelector('.bcards .cmi svg.oico')&&[...document.querySelectorAll('.obtn[data-order] svg,.obtn[data-flag] svg,.obtn[data-abil] svg')].every(e=>e.classList.contains('oico')),'no bare glyph left on a card; the order bar\u2019s buttons keep their own icons');
+   const bad=seen.filter(o=>!isBadge(o));ok(seen.length>15&&!bad.length,'every icon on the cards ('+seen.length+': '+[...new Set(seen.map(o=>o.k))].join(', ')+') is a round badge: a coloured rim, dark inside and shared illustration'+(bad.length?' (not: '+bad.map(o=>o.k).join()+')':''));
+   ok(!document.querySelector('.bcards .cmi svg.oico')&&[...document.querySelectorAll('.obtn[data-order]>svg,.obtn[data-flag]>svg,.obtn[data-abil]>svg')].every(e=>e.classList.contains('oico')),'no bare glyph left on a card; the order bar\u2019s buttons keep their own icons');
    // (every key cardStatus can show: the ones it names, the morale states, the weaknesses and the abilities; hold has no icon)
    const keys=new Set();for(const m of String(t.cardStatus).matchAll(/add\(\d+,([^,]+),/g))for(const q of m[1].matchAll(/'(\w+)'/g))keys.add(q[1]);
    ['wavering','breaking','routing','rallying','shattered','confident','standfast',...Object.keys(t.WEAK_N),...t.UNIT_ABIL_ORDER].forEach(k=>keys.add(k));keys.delete('hold');
@@ -109,7 +108,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,L=t
    const wrong=Object.entries(KIND).flatMap(([c,ks])=>ks.filter(k=>t.BADGE_KIND[k]!==c||t.BADGE_RIM[k]!==t.BADGE_CAT[c]));
    ok(!wrong.length&&new Set(Object.values(t.BADGE_CAT)).size===Object.keys(KIND).length,'each kind its own rim: order '+t.BADGE_CAT.order+', pace '+t.BADGE_CAT.pace+', ability '+t.BADGE_CAT.ability+', warning '+t.BADGE_CAT.warning+', bad '+t.BADGE_CAT.bad+', flag '+t.BADGE_CAT.flag+', sight '+t.BADGE_CAT.sight+', AI '+t.BADGE_CAT.ai+(wrong.length?' (wrong: '+wrong+')':''));
    const own=[...keys].filter(k=>!t.BADGE_KIND[k]);ok(own.every(k=>t.BADGE_RIM[k])&&t.BADGE_RIM.routing==='#f2efe6'&&t.BADGE_RIM.wavering==='#ffa040'&&t.BADGE_RIM.flanked==='#e0605a'&&t.BADGE_RIM.confident==='#70dfb0','morale and weaknesses keep their own rims ('+own.join(', ')+')');
-   ok(seen.every(o=>o.svg.querySelector('rect').getAttribute('fill')===(t.BADGE_KIND[o.k]?t.BADGE_CAT[t.BADGE_KIND[o.k]]:t.BADGE_RIM[o.k])),'on the cards, each badge\u2019s rim the colour of its kind')}
+   ok(seen.every(o=>o.svg.querySelector('circle').getAttribute('stroke')===(t.BADGE_KIND[o.k]?t.BADGE_CAT[t.BADGE_KIND[o.k]]:t.BADGE_RIM[o.k])),'on the cards, each badge\u2019s rim the colour of its kind')}
   // ---- reading only: no Math.random, nothing of the battle changed
   {const r0=Math.random;let n=0;Math.random=()=>{n++;return r0()};const snap=JSON.stringify(B.units.map(u=>[u.x,u.y,u.hp,u.tgt&&u.tgt.id,u.ch]));
    try{t.setOrderUI();lay(.1);t.drawUnitIcons()}finally{Math.random=r0}

@@ -85,7 +85,7 @@ function treeSvg(S,k){
     const body=N.t==='k'?'<rect x="'+(x-r*.8).toFixed(1)+'" y="'+(y-r*.8).toFixed(1)+'" width="'+(r*1.6).toFixed(1)+'" height="'+(r*1.6).toFixed(1)+'" rx="3" transform="rotate(45 '+x.toFixed(1)+' '+y.toFixed(1)+')" class="tp-body"/>':'<polygon points="'+hexPts(x,y,r)+'" class="tp-body"/>';
     svg+='<g class="'+cls+'" data-act="tree-sel" data-arg="'+id+'" role="button" tabindex="'+(cur?0:-1)+'" aria-pressed="'+(G.skSel===id)+'" aria-label="'+htmlText(N.n)+' ('+(have?'learned':can?'can learn':ok?'no point left':'not reached yet')+')" style="--d:'+del(x,y)+';--fx:'+(-x).toFixed(0)+'px;--fy:'+(-y).toFixed(0)+'px">'+
       '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+16)+'" fill="url(#tpGlow)" class="tp-aura"/>'+(N.t==='a'?'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+6)+'" class="tp-ring"/>':'')+'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+10)+'" class="tp-burst"/>'+body+
-      (NODE_GLYPH[N.t]?'<text x="'+x.toFixed(1)+'" y="'+(y+5).toFixed(1)+'" text-anchor="middle" class="tp-glyph"'+up(x,y)+'>'+NODE_GLYPH[N.t]+'</text>':'')+
+      (NODE_GLYPH[N.t]?icon(N.t==='s'?'stamina':N.t==='n'?'gem':N.t==='a'?'skills':'ward',r*1.1,'tp-glyph').replace('<svg ','<svg x="'+(x-r*.55).toFixed(1)+'" y="'+(y-r*.55).toFixed(1)+'" '+up(x,y)+' '):'')+
       '</g>';if(N.t!=='b'&&!whole&&cur){const side=PROF_TREE[N.prof][N.tier][0][0]===id?-1:1;labs+='<g class="tp-lab '+(have?'have':can?'open':ok?'wait':'locked')+'" style="--d:'+del(x,y)+'"><text text-anchor="'+(side<0?'end':'start')+'" class="tp-name"'+up(x,y)+'>'+nameLines(N.n,x,y,side)+'</text></g>'}}
   svg+=labs;
   // the view: the shown slice turned up, from just under its foot to over its rim (or the whole circle)

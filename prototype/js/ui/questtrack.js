@@ -15,6 +15,7 @@ function qtLines(k){
 }
 // (where it stands: under the band card while it shows (all of it, its lines past its box too), else at the top left)
 function qtPlace(el){
+  if(window.campaignHud?.desktop){el.style.top='76px';el.style.left='auto';el.style.right='var(--e-r)';return}el.style.right='';
   const s=document.getElementById('stats'),phone=document.getElementById('screen')?.classList.contains('mobile-world'),up=!phone&&s&&s.offsetParent&&!s.hidden&&getComputedStyle(s).display!=='none';// (a phone: the card a sheet over the bottom bar, the tracker at the top)
   el.style.top=up?s.offsetTop+Math.max(s.offsetHeight,s.scrollHeight)+QTRACK.gap+'px':'';el.style.left=up?s.offsetLeft+'px':'';
 }
