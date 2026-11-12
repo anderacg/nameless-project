@@ -15,7 +15,9 @@
 // boxes [x0, y0, x1, y1 (the kept scene's pixels: the screen's game pixels on the camera's whole pixels), feet y, own]. The
 // screen may be at a finer scale than the game's pixels (core.js VS): the box a figure drew in is taken back to the scene's game
 // pixels, its mask made there, and laid over him scaled up as the scene was.
-const WDEPTH={on:true,fade:.3,trk:false,di:null,fr:null,pics:[],al:new Map(),cov:new Set(),t:0,cv:null,img:null,C:[],box:[0,0,0,0],boxes:[]};
+// dash (the owner, 2026-11-12: "when unit is under something can we use highlight with dash to indicate that"): a figure under a tree or a
+// building (one asking it: e.hl, its colour's key) has its outline drawn in dashes over what covers it, where it covers it; col by side
+const WDEPTH={on:true,fade:.3,dash:{on:true,r:2,col:{own:'#ffd870',ally:'#8ac8ff',foe:'#ff6a5a'}},rec:null,sc:null,mk:null,trk:false,di:null,fr:null,pics:[],al:new Map(),cov:new Set(),t:0,cv:null,img:null,C:[],box:[0,0,0,0],boxes:[]};
 // a structure's picture as drawn this frame at (x, y) on the screen (before the shake): its opaque pixels stand by their feet
 function depthPic(img,x,y){if(img&&WDEPTH.on)WDEPTH.pics.push([img,Math.round(x),Math.round(y)])}
 // (a picture's feet: for each opaque pixel the row its column's run of opaque pixels ends on, -1 where it is clear; kept on it)
@@ -26,7 +28,7 @@ function picFeet(img){if(img._df)return img._df;const w=img.width,h=img.height,d
 // own drawImage and fillRect wrapped over the pass, whatever they are, and put back after it)
 function dbAdd(x,y,w,h){if(!WDEPTH.trk)return;const m=ctx.getTransform(),a=m.a*x+m.c*y+m.e,b=m.b*x+m.d*y+m.f,c=m.a*(x+w)+m.c*(y+h)+m.e,d=m.b*(x+w)+m.d*(y+h)+m.f,B=WDEPTH.box;
   B[0]=Math.min(B[0],a,c);B[1]=Math.min(B[1],b,d);B[2]=Math.max(B[2],a,c);B[3]=Math.max(B[3],b,d)}
-function dbImage(s,a1,a2,a3,a4,a5,a6,a7,a8){const n=arguments.length;
+function dbImage(s,a1,a2,a3,a4,a5,a6,a7,a8){const n=arguments.length;if(WDEPTH.trk&&WDEPTH.rec&&s&&s.getContext)dashNote(this,s,arguments);
   if(n>=9)dbAdd(a5,a6,a7,a8);else if(n>=5)dbAdd(a1,a2,a3,a4);else{const o=s.getContext&&s.width<=96&&s.height<=96?opaqueBox(s):null;if(o)dbAdd(a1+o[0],a2+o[1],o[2]-o[0]+1,o[3]-o[1]+1);else dbAdd(a1,a2,s.width,s.height)}
   return WDEPTH.di.apply(this,arguments)}
 function dbRect(x,y,w,h){dbAdd(x,y,w,h);return WDEPTH.fr.call(this,x,y,w,h)}
@@ -49,9 +51,9 @@ function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
     else{const [img,px,py]=k,D=picFeet(img),F=D.F,X=px+cam.x,Y=py+cam.y;key=img;const A=Math.round((AL.has(key)?AL.get(key):1)*255);
       for(let y=Math.max(wy0,Y+D.top);y<=Math.min(wy1,Y+D.h-1);y++){const ro=(y-Y)*D.w-X,mo=(y-wy0)*st-wx0;for(let x=Math.max(wx0,X);x<=Math.min(wx1,X+D.w-1);x++){const f=F[ro+x];if(f>=0&&Y+f>fy){M[(mo+x)*4+3]=A;n++}}}}
     if(n){any=1;if(!nf)WDEPTH.cov.add(key)}}
-  if(!any)return;
+  if(!any)return false;
   const cv=WDEPTH.cv,g=cv.getContext('2d', { willReadFrequently: true });g.putImageData(I,0,0,0,0,w,h);g.globalCompositeOperation='source-in';g.drawImage(memCv(),x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
-  ctx.drawImage(cv,0,0,w,h,x0,y0,w,h)}
+  ctx.drawImage(cv,0,0,w,h,x0,y0,w,h);return true}
 // the figures, by their feet (render.js drawWorld's ents that move: {y, f, own, top}), each with what stands in front of it put
 // back over it; those in flight after them all; each at its own place to the screen's pixel (render.js drawMover). The context's
 // transform: the kept scene's game pixels onto the screen. The fades step first, toward what covered your own last frame
@@ -61,11 +63,34 @@ function worldOverdraw(list,cam){
   for(const [k,a] of AL){const to=cov.has(k)?WDEPTH.fade:1,v=a<to?Math.min(to,a+st):Math.max(to,a-st);if(v>=1&&to>=1)AL.delete(k);else AL.set(k,v)}
   cov.clear();WDEPTH.boxes.length=0;const top=[],m=ctx.getTransform(),k=m.a||1,mem=memCv(),cw=mem.width,ch=mem.height,B=WDEPTH.box;
   const own=k=>Object.prototype.hasOwnProperty.call(ctx,k),di=own('drawImage'),fr=own('fillRect');WDEPTH.di=ctx.drawImage;WDEPTH.fr=ctx.fillRect;if(WDEPTH.on){ctx.drawImage=dbImage;ctx.fillRect=dbRect}
+  const D=WDEPTH.dash;
   try{for(const e of list){if(e.top){top.push(e);continue}if(!WDEPTH.on){drawMover(e);continue}
-    B[0]=B[1]=1e9;B[2]=B[3]=-1e9;WDEPTH.trk=true;drawMover(e);WDEPTH.trk=false;
+    // (its dash asked: the biggest picture it draws noted, its body, for its outline)
+    const dash=D.on&&!!e.hl;WDEPTH.rec=dash?{a:0}:null;
+    B[0]=B[1]=1e9;B[2]=B[3]=-1e9;WDEPTH.trk=true;drawMover(e);WDEPTH.trk=false;const rec=WDEPTH.rec;WDEPTH.rec=null;
     const x0=Math.max(0,Math.floor((B[0]-m.e)/k)),y0=Math.max(0,Math.floor((B[1]-m.f)/k)),x1=Math.min(cw,Math.ceil((B[2]-m.e)/k))-1,y1=Math.min(ch,Math.ceil((B[3]-m.f)/k))-1;
-    if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam,!!e.nf)}}}
+    if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);const cov=overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam,!!e.nf);
+      if(dash&&cov&&rec&&rec.s)dashDraw(rec,m,x0,y0,x1,y1,D.col[e.hl]||D.col.own)}}}
   finally{WDEPTH.trk=false;if(di)ctx.drawImage=WDEPTH.di;else delete ctx.drawImage;if(fr)ctx.fillRect=WDEPTH.fr;else delete ctx.fillRect}
   for(const e of top)drawMover(e);WDEPTH.pics.length=0}
+// (the picture drawn while a figure is tracked: the biggest on the screen is its body, kept with the transform and the arguments it had)
+function dashNote(g,s,A){const T=g.getTransform(),n=A.length,w=n>=9?A[7]:n>=5?A[3]:s.width,h=n>=9?A[8]:n>=5?A[4]:s.height,a=Math.abs(w*h*(T.a*T.d-T.b*T.c));
+  const R=WDEPTH.rec;if(a>R.a){R.a=a;R.s=s;R.T=T;R.A=Array.prototype.slice.call(A,1)}}
+// (a picture's dashed ring: the pixels within dash.r of its body, outside it, two on and two off along the diagonals; white, kept)
+const DASH_RINGS=new WeakMap();
+function dashRing(s){let c=DASH_RINGS.get(s);if(c)return c;const w=s.width,h=s.height,d=s.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data,r=WDEPTH.dash.r,on=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&d[(y*w+x)*4+3]>96;
+  c=mkc(w,h,g=>{const I=g.createImageData(w,h),o=I.data;for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(on(x,y)||((x+y)>>1)%2)continue;let near=false;
+      for(let dy=-r;dy<=r&&!near;dy++)for(let dx=-r;dx<=r;dx++)if(on(x+dx,y+dy)){near=true;break}if(near){const p=(y*w+x)*4;o[p]=o[p+1]=o[p+2]=o[p+3]=255}}g.putImageData(I,0,0)});
+  DASH_RINGS.set(s,c);return c}
+// (its outline in dashes where something covers it: its body's ring, drawn as the body was, on a small canvas the size of its box,
+// coloured, kept only where the cover's mask (overdrawBox's) holds, then laid on the screen; no pixel read back from it)
+function dashDraw(rec,m,x0,y0,x1,y1,col){const k=m.a||1,w=x1-x0+1,h=y1-y0+1,W=Math.ceil(w*k),H=Math.ceil(h*k),M=WDEPTH.img.data,st=WDEPTH.img.width;
+  let K=WDEPTH.mk;if(!K||K.c.width<w||K.c.height<h){const c=mkc(Math.max(w,64),Math.max(h,64),()=>{});K=WDEPTH.mk={c,g:c.getContext('2d'),I:null}}
+  if(!K.I||K.I.width<w||K.I.height<h)K.I=K.g.createImageData(Math.max(w,64),Math.max(h,64));const I=K.I.data,si=K.I.width;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)I[(y*si+x)*4+3]=M[(y*st+x)*4+3]?255:0;K.g.putImageData(K.I,0,0,0,0,w,h);
+  let S=WDEPTH.sc;if(!S||S.c.width<W||S.c.height<H){const c=mkc(Math.max(W,128),Math.max(H,128),()=>{});S=WDEPTH.sc={c,g:c.getContext('2d')}}const g=S.g,ox=x0*k+m.e,oy=y0*k+m.f,T=rec.T;
+  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);g.imageSmoothingEnabled=false;g.setTransform(T.a,T.b,T.c,T.d,T.e-ox,T.f-oy);g.drawImage(dashRing(rec.s),...rec.A);
+  g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-in';g.fillStyle=col;g.fillRect(0,0,W,H);g.globalCompositeOperation='destination-in';g.drawImage(K.c,0,0,w,h,0,0,W,H);g.globalCompositeOperation='source-over';
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);WDEPTH.di.call(ctx,S.c,0,0,W,H,ox,oy,W,H);ctx.restore()}
 // a world goes in: no fades carried over
 onWorld(()=>{WDEPTH.al.clear();WDEPTH.cov.clear();WDEPTH.t=0});

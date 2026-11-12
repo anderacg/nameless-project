@@ -17,9 +17,19 @@ Kit.suite(({ok,info})=>{
  const mine=D.boxes.filter(x=>x[5]),covered=D.cov.size;
  ok(mine.length>0,'your soldiers are drawn as the map\'s figures are, each with what stands in front of him ('+D.boxes.length+' boxes, '+mine.length+' yours)');
  ok(covered>0,'one in the wood: the trees in front of him drawn over him, faded ('+covered+' trees over your men)');
+ // dashes (WDEPTH.dash): the men under trees outlined in dashes by their side's colour, over what covers them; none in the open, none off
+ {const d0=window.dashDraw,seen=[];window.dashDraw=function(rec,m,x0,y0,x1,y1,col){seen.push(col);return d0.apply(this,arguments)};
+  try{t.frame();ok(seen.includes(D.dash.col.own),'your men under the trees: outlined in dashes, your colour ('+seen.length+' outlines)');
+   const n=seen.length;b.units.forEach(x=>{if(x!==u)x.x=x.y=-9999});t.frame();const one=seen.length-n;
+   let op=null;const O=(x,y)=>t.WM.kind[y*t.MW+x]===t.T_OPEN&&!(t.WM.forest&&t.WM.forest[y*t.MW+x]);
+   for(let r=1;r<20&&!op;r++)for(let j=-r;j<=r&&!op;j++)for(let i=-r;i<=r&&!op;i++){const x=at%t.MW+i,y=Math.floor(at/t.MW)+j;let all=true;for(let a=-2;a<=2&&all;a++)for(let c=-2;c<=2;c++)if(!O(x+c,y+a)){all=false;break}if(all)op={x:(x+.5)*t.TILE,y:(y+.5)*t.TILE}}
+   const q=b.world.field(op||{x:wx,y:wy+5*t.TILE});u.x=q.x;u.y=q.y;t.camCentre(u.x,u.y);t.frame();const open=seen.length-n-one;
+   ok(one>=1&&open===0,'one man in the wood outlined ('+one+'), the same man in the open not ('+open+')');
+   u.x=p.x;u.y=p.y;t.camCentre(u.x,u.y);D.dash.on=false;const m0=seen.length;t.frame();ok(seen.length===m0,'and none with the switch off')}
+  finally{window.dashDraw=d0;D.dash.on=true}}
  // (its cost, INFO: a frame with and without, sixty a side in the wood)
  {const pn=()=>performance.now();
   const ms=on=>{D.on=on;const a=pn();for(let i=0;i<20;i++)t.frame();return (pn()-a)/20};const b2=t.B;b2.units.forEach((u,i)=>{const q=b2.world.field({x:wx+(i%10-5)*6,y:wy+(Math.floor(i/10)-1)*6});u.x=q.x;u.y=q.y});
-  const off=ms(false),on=ms(true);D.on=true;info('a frame in the wood: '+on.toFixed(2)+' ms with the trees over them, '+off.toFixed(2)+' ms without ('+b2.units.length+' on the field)')}
+  const off=ms(false),on=ms(true);D.dash.on=false;const nd=ms(true);D.dash.on=true;D.on=true;info('a frame in the wood: '+on.toFixed(2)+' ms with the trees over them and dashes, '+nd.toFixed(2)+' ms without dashes, '+off.toFixed(2)+' ms without either ('+b2.units.length+' on the field)')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

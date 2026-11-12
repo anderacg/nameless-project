@@ -251,7 +251,7 @@ function drawWorld(){
   // (you, not while you camp: on foot, a step each WALK.foot px you walk; mounted, your horse on the same feet, a step each WALK.ride px; your host behind, as a lord's: drawParties)
   // (marching: you are one of your army, in your own place in it: march.js)
   if(!P.stay&&!P.camp&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam)}
-    else ents.push({y:P.y,own:1,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
+    else ents.push({y:P.y,own:1,id:P,hl:'own',f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore()}}); }
   drawFolk(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
   ambientWorld(ents,cam,V);// (the birds, critters and butterflies on the ground, with everyone; the rest stepped: ambient.js)
@@ -575,7 +575,7 @@ function drawBattle(){
   obstacleGround();{const draw=o=>o.kind?drawObstacle(o):o.dk?drawProp(o):o.isHorse?o.draw():drawUnit(o),E=battleEnts();
     // (the overdraw reckons in the map scene's pixels: under that transform, each drawn under the field's own)
     if(B.world){const T=ctx.getTransform(),w=B.world,k=T.a*w.scale;ctx.save();ctx.setTransform(k,0,0,k,T.e+k*(G.cam.x-w.x0),T.f+k*(G.cam.y-w.y0));
-      try{worldOverdraw(E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,f:()=>{ctx.setTransform(T);draw(o)}})),G.cam)}finally{ctx.restore()}}else E.forEach(draw)}
+      try{worldOverdraw(E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,id:o,hl:o.kind||o.dk||o.isHorse||!(o.hp>0)?null:o.team===0?'own':o.team===1?'foe':'ally',f:()=>{ctx.setTransform(T);draw(o)}})),G.cam)}finally{ctx.restore()}}else E.forEach(draw)}
   for(const a of B.arrows){if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50),kind=missileOf(a);
       ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';const k=B.world?WORLD_BATTLE.sprite:1;ctx.fillRect(Math.round(a.x-2*k),Math.round(a.y),4*k,k);
       ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-4-z));ctx.scale(k,k);
