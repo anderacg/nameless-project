@@ -5,6 +5,9 @@ class CampaignHud{
     this.screen=$('#screen');this.root=document.createElement('div');this.root.className='campaign-chrome';
     this.root.innerHTML='<div class="campaign-rail"><button type="button" class="campaign-brand" aria-label="Your army"></button><div class="campaign-resources" role="group" aria-label="Company supplies"></div></div><div class="campaign-console" aria-hidden="true"><span>◆</span></div><div class="campaign-survey"><span aria-hidden="true">N</span><button type="button" class="campaign-mini-slot" aria-label="Open full map"></button><small aria-hidden="true">LOCAL MAP</small></div><button class="campaign-details" type="button" aria-controls="stats" aria-expanded="false">Company details ▴</button>';
     $('.hudlayer').appendChild(this.root);this.resources=this.root.querySelector('.campaign-resources');this.slot=this.root.querySelector('.campaign-mini-slot');this.details=this.root.querySelector('.campaign-details');this.brand=this.root.querySelector('.campaign-brand');
+    this.company=document.createElement('section');this.company.className='campaign-company';this.company.setAttribute('aria-label','Company status and supplies');this.root.appendChild(this.company);
+    this.mapZoom=document.createElement('div');this.mapZoom.className='campaign-map-zoom';this.mapZoom.setAttribute('role','group');this.mapZoom.setAttribute('aria-label','Map zoom');this.slot.parentNode.appendChild(this.mapZoom);
+    this.moves=[['#stats',this.company],['.dockrow.sys',this.root.querySelector('.campaign-rail')],['#zoomOut',this.mapZoom],['#zoomIn',this.mapZoom]].map(([selector,to])=>{const el=document.querySelector(selector),home=document.createComment('campaign control home');el.before(home);return{el,home,to}});
     this.help=document.getElementById('helpBtn');this.helpHome=document.createComment('campaign help home');this.help.before(this.helpHome);
     this.brand.addEventListener('click',()=>act('nm-open'));
     this.resources.addEventListener('click',e=>{if(e.target.closest('[data-supply]'))document.getElementById('invBtn').click()});
@@ -23,7 +26,14 @@ class CampaignHud{
   }
   get phone(){return G.mode==='world'&&!G.modal&&!!window.mobileWorldHud?.media.matches}
   get desktop(){return G.mode==='world'&&!G.modal&&!window.mobileWorldHud?.media.matches}
-  sync(){this.mobileMini.hidden=!this.phone;if(!this.iconsReady){for(const [id,box] of this.commandArt)document.getElementById(id).insertAdjacentHTML('afterbegin',this.art(box,'campaign-command-art'));this.iconsReady=true}this.screen.classList.toggle('campaign-world',G.mode==='world'&&!G.modal);const home=this.desktop?document.querySelector('.dockrow.sys'):this.helpHome.parentNode;if(this.help.parentNode!==home){if(this.desktop)home.appendChild(this.help);else this.helpHome.after(this.help)}}
+  sync(){
+    this.mobileMini.hidden=!this.phone;
+    for(const n of this.moves){if(this.desktop){if(n.el.parentNode!==n.to)n.to.appendChild(n.el)}else if(n.el.parentNode===n.to)n.home.after(n.el)}
+    const resourceHome=this.desktop?this.company:this.root.querySelector('.campaign-rail');if(this.resources.parentNode!==resourceHome)resourceHome.prepend(this.resources);
+    if(!this.iconsReady){for(const [id,box] of this.commandArt)document.getElementById(id).insertAdjacentHTML('afterbegin',this.art(box,'campaign-command-art'));this.iconsReady=true}
+    this.screen.classList.toggle('campaign-world',G.mode==='world'&&!G.modal);
+    const home=this.desktop?document.querySelector('.dockrow.sys'):this.helpHome.parentNode;if(this.help.parentNode!==home){if(this.desktop)home.appendChild(this.help);else this.helpHome.after(this.help)}
+  }
   update(S,cnt){
     this.sync();
     if(G.mode!=='world')return;

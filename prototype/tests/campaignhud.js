@@ -6,7 +6,7 @@ Kit.suite(({ok})=>{
  const hud=window.campaignHud,screen=document.getElementById('screen'),rect=e=>e.getBoundingClientRect(),visible=e=>!!e.getClientRects().length&&getComputedStyle(e).display!=='none';
  ok(hud&&hud.desktop&&visible(hud.resources),'desktop campaign uses the live resource rail');
  ok(hud.brand.textContent.includes(t.bandName())&&hud.brand.querySelector('.tipflag'),'army header shows the current band name and real map flag');
- ok(!visible(document.querySelector('#stats .pc-pic'))&&rect(document.querySelector('#stats .bar.sta')).left<rect(document.querySelector('#stats .bar.fit')).left,'stamina occupies the removed portrait slot');
+ ok(!visible(document.querySelector('#stats .pc-pic'))&&hud.company.contains(hud.resources)&&hud.company.contains(document.getElementById('stats')),'resources and portrait-free conditions share one panel');
  ok(!hud.townCard.hidden&&hud.townCard.querySelector('h3').textContent===home.name&&hud.townCard.textContent.includes(String(home.gar)),'nearby holding card uses its real name and garrison');
  const approach0=window.worldApproach;let approached=null;try{window.worldApproach=o=>{approached=o};hud.townCard.querySelector('[data-town-action="approach"]').click()}finally{window.worldApproach=approach0}ok(approached===home,'the holding action delegates to normal travel and gate rules');
  ok(document.querySelectorAll('.dockrow:not(.sys) .campaign-command-art').length===6,'illustrated command icons survive input initialization');
@@ -22,8 +22,9 @@ Kit.suite(({ok})=>{
  ok(document.elementFromPoint(slot.left+slot.width/2,slot.top+slot.height/2)===hud.slot,'the framed minimap has a click target aligned with its picture ('+document.elementsFromPoint(slot.left+slot.width/2,slot.top+slot.height/2).map(e=>e.tagName+'#'+e.id+'.'+e.className).join(' / ')+')');
  ok(document.elementFromPoint(canvas.left+40,canvas.bottom-6)?.id!=='game','clicking the timber console does not issue a travel order behind it');
  const dock=rect(document.querySelector('.dock')),stats=rect(document.getElementById('stats')),mini=rect(document.querySelector('.campaign-survey'));
- ok(stats.right<dock.left&&dock.right<mini.left,'company, command buttons and minimap have separate console space');
- const buttons=[...document.querySelectorAll('.dockrow:not(.sys) .dbtn')];ok(buttons.length===6&&buttons.every(b=>rect(b).width>=44&&rect(b).height>=44),'six illustrated command buttons have usable targets');
+ ok(rect(hud.company).right<dock.left&&mini.top<canvas.top+100&&mini.bottom<dock.top,'status and commands have separate space with the minimap at upper right');
+ ok(hud.mapZoom.contains(document.getElementById('zoomIn'))&&hud.mapZoom.contains(document.getElementById('zoomOut'))&&rect(document.querySelector('.dockrow.sys')).bottom<canvas.top+65,'zoom controls follow the map frame and utility controls occupy the top bar');
+ const buttons=[...document.querySelectorAll('.dockrow:not(.sys) .dbtn')].filter(visible);ok(buttons.length===5&&buttons.every(b=>rect(b).width>=44&&rect(b).height>=44),'five illustrated commands have usable targets and no redundant Map button');
  ok(document.querySelector('.dockrow.sys').contains(document.getElementById('helpBtn')),'Help remains available in the utility row');
  hud.details.click();ok(screen.classList.contains('company-details')&&hud.details.getAttribute('aria-expanded')==='true'&&visible(document.querySelector('.pc-res')),'company details exposes the complete original supply and condition information');hud.details.click();
  ok(getComputedStyle(document.querySelector('.wtop [data-speed="2"]')).borderImageSource==='none','time controls do not have nested square frames');
