@@ -21,6 +21,9 @@ try{
    ok(t.skill('scout')===n&&t.insightLv()===l&&h.includes(w)&&['VAGUE','ROUGH','EXACT'].filter(x=>x!==w).every(x=>!h.includes(x))&&(l<2?h.includes('title="Scouting '+(l?t.INSIGHT.exact:t.INSIGHT.rough)+': know more"'):!/title=/.test(h)),
      'Insight at Scouting '+n+': the '+w.toLowerCase()+' read'+(l<2?', its tooltip "Scouting '+(l?t.INSIGHT.exact:t.INSIGHT.rough)+': know more"':', no tooltip')+' (thresholds '+t.INSIGHT.rough+', '+t.INSIGHT.exact+')')}
 
+ // ---- a reading too dim to give: nothing shown, no "you cannot tell" (2026-11-12, the owner: "remove, you cannot tell your odds")
+ {scout(0);ok(t.insight([null,'ROUGH','EXACT'],'know the odds')===''&&t.andRead('')===''&&t.andRead('x')===', x','Scouting 0, no reading to give: nothing, and the label it follows alone ("Break out", not "Break out, ")');
+  scout(3);ok(/ROUGH/.test(t.insight([null,'ROUGH','EXACT'],'know the odds')),'Scouting 3: its rough reading as ever')}
  // ---- robbing villagers: a holding not yours with workers at an estate
  const wt=t.TOWNS.find(x=>x.owner&&x.owner!=='player'&&!x.sacked&&!x.raided&&Object.keys(t.bldSpots(x)).some(k=>t.bldLv(x,k)&&t.ESTATES[k].work));
  const spawn=()=>{world();W.folk=[];t.FOLK_SEEN.clear();wt.fear=0;wt.lost={};delete wt.mem;wt.crime=null;P.hostile={};P.x=wt.x+30;P.y=wt.y+30;G.clock=t.DAY*.25;for(let i=0;i<300;i++)t.updateFolk(.05);

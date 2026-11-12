@@ -115,7 +115,7 @@ class Captivity{
     (c.tried.includes('persuade')?'<p class="bad">Your words failed'+(c.took?'.':': they ask more now.')+'</p>':'')}
   static replies(c){const odds=this.persuadeChance(c),tried=k=>c.tried.includes(k);
     return [!c.took&&{act:'held-pay',label:'Pay the ransom, '+c.ransom+'g',why:P.gold<c.ransom?'You have '+P.gold+'g':'',primary:true},
-      !tried('persuade')&&{act:'held-persuade',why:goblinTongueWhy(c.band==='goblins',true),label:'Persuade them to let you go, '+insight(['you cannot tell your odds',odds>=.5?'they may well listen':'they might listen','about '+Math.round(odds*100)+'%'],'know the odds')},
+      !tried('persuade')&&{act:'held-persuade',why:goblinTongueWhy(c.band==='goblins',true),label:'Persuade them to let you go'+andRead(insight([null,odds>=.5?'they may well listen':'they might listen','about '+Math.round(odds*100)+'%'],'know the odds'))},
       this.serves(c)&&{act:'held-serve',label:(c.k==='band'?'Ride with the band':c.k==='broker'?'Work off your price':'Serve '+c.name)+' for some days'},
       this.realmPays(c)&&{act:'held-realm',label:'Wait for the '+FACS[P.fac].n+' to pay for you'}].filter(Boolean)}
   static act(a){const c=this.held;if(!c)return;if(c.prison)return this.cellAct(a);
@@ -141,7 +141,7 @@ class Captivity{
   // owner, 2026-10-29)
   static fellows(c){return c?.at?Prisons.of(Prisons.keyOf(c.at)).reduce((n,r)=>n+(r.k==='men'?r.n:1),0):0}
   static cell(){const c=this.held,q=c.prison,X=CAPTIVITY.prison,br=this.breakChance(q),bb=this.bribe(q),pk=this.prisonOf(c),realm=this.realmPays(c)&&FACS[P.fac].n;G.mode='dialog';
-    const btns=[dlgBtn('held-break',null,'Try to break out, '+insight(['you cannot tell your odds',br>=.3?'you might make it':'it is a long chance','about '+Math.round(br*100)+'%'],'know the odds'),this.breakWhy(q),true),
+    const btns=[dlgBtn('held-break',null,'Try to break out'+andRead(insight([null,br>=.3?'you might make it':'it is a long chance','about '+Math.round(br*100)+'%'],'know the odds')),this.breakWhy(q),true),
       dlgBtn('held-bribe',null,'Bribe a guard, '+bb.cost+'g',q.hidden<bb.cost?'You hid '+q.hidden+'g':''),
       dlgBtn('held-talk',null,'Talk with the other prisoners',!this.fellows(c)?'No one else is held here':q.talked?'Not again today':''),
       !c.took&&dlgBtn('held-pay',null,(c.war?'Pay the war price, ':'Pay what they ask now, ')+q.offer+'g',P.gold<q.offer?'You have '+P.gold+'g':'')].filter(Boolean);

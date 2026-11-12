@@ -68,7 +68,7 @@ class Stories{
     const choices=st.choose.map((o,i)=>{const k=o.how||'c'+i,odds=o.check&&this.check(K.id,sid,i,o.check),c={icon:o.icon||'scroll',label:o.label,tip:o.tip,ask:o.ask,
         when:o.when?th=>Stories.holds(o.when,Stories.ctxOf(th),th):undefined,need:th=>(o.gold&&P.gold<o.gold?'You have '+P.gold+'g':'')||Stories.why(o.need,Stories.ctxOf(th),th)};
       if(odds){then[k+'w']=o.win||null;then[k+'l']=o.lose||null;
-        return {...c,odds,facts(th){return [statRead(odds,{vague:'you cannot tell your odds',what:'to succeed'}),statHelps(odds)]},
+        return {...c,odds,facts(th){return [statRead(odds,{vague:null,what:'to succeed'}),statHelps(odds)]},
           run(th,ch){const won=ch.roll();th.memory.bk=k+(won?'w':'l');const r=Stories.outcome(won?o.winOut:o.loseOut,th);r.say=Stories.fill(won?o.winSay:o.loseSay,th)||r.say||(won?'You succeed.':'You fail.');return r}}}
       then[k]=o.next||null;
       return {...c,how:k,also:o.also,out:th=>{const r=Stories.outcome(o.out,th);if(o.gold)r.gold=-o.gold+(r.gold||0);if(o.say)r.say=Stories.fill(o.say,th);return r}}});

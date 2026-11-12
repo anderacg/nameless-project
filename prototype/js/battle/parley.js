@@ -9,7 +9,7 @@ function parley(o,kind){
   G.par={o,kind};G.mode='dialog';P.tx=null;G.chase=null;const lord=kind==='lord',n=lord?o.troops.length:o.n,ch=Math.round(yieldChance(o,kind)*100);
   showPanel('<h2>'+(lord?o.name+' is cornered':'The '+(o.kind==='raiders'?'raiders':o.kind==='bog'?'bog raiders':o.kind==='goblins'?'goblins':'bandits')+' are cornered')+'</h2>'+
     '<p>They ran from you, but you have caught them. '+n+' '+(lord?'soldiers of the '+FACS[o.fac].n:'fighters')+' (power '+o.power()+') against your '+partyPower()+'.</p>'+
-    '<p class="muted">'+goblinTongueSay(o.kind==='goblins')+'Call on them to yield ('+insight(['you cannot tell whether they would','they '+(ch>=50?'may well':'might')+' yield','about '+ch+'% they do'],'know the odds')+'; if not, they fight), attack at once, or let them go.</p><div class="btns">'+
+    '<p class="muted">'+goblinTongueSay(o.kind==='goblins')+'Call on them to yield ('+(r=>r?r+'; ':'')(insight([null,'they '+(ch>=50?'may well':'might')+' yield','about '+ch+'% they do'],'know the odds'))+'if not, they fight), attack at once, or let them go.</p><div class="btns">'+
     dlgBtn('pl-yield',null,'Demand surrender',kind!=='lord'?goblinTongueWhy(o.kind==='goblins')||null:null,true)+dlgBtn('pl-fight',null,'Attack')+dlgBtn('pl-go',null,'Let them go')+'</div>'+
     '<p class="muted" style="font-size:13px">'+YIELD_WHY+'</p>');
 }

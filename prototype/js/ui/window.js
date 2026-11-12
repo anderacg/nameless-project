@@ -81,7 +81,7 @@ function pickShow(focus){
 onAct('pk-',(a,arg)=>{if(a!=='pk-set'||!PICK||!panel.classList.contains('picker'))return;const i=String(arg).lastIndexOf(':'),id=arg.slice(0,i),x=PICK.o.items.find(y=>String(y.id)===id);if(!x)return;
   PICK.sel[x.id]=Math.min(x.max,Math.max(0,+arg.slice(i+1)));pickShow(id)});
 function railConfirm(o){PICK=null;showPanel('<div class="top"><h2>'+o.title+'</h2>'+(o.sub?'<span class="muted">'+o.sub+'</span>':'')+'</div>'+(o.text?'<p>'+o.text+'</p>':'')+
-  (o.facts&&o.facts.length?'<ul class="tnotes">'+o.facts.map(f=>'<li>'+f+'</li>').join('')+'</ul>':'')+nav(o.back,o.confirm));panel.classList.add('picker','confirm')}
+  (o.facts&&o.facts.filter(Boolean).length?'<ul class="tnotes">'+o.facts.filter(Boolean).map(f=>'<li>'+f+'</li>').join('')+'</ul>':'')+nav(o.back,o.confirm));panel.classList.add('picker','confirm')}
 const railQty=(n,a)=>'<div class="qty" role="group" aria-label="How many">'+[1,5].map(k=>'<button class="btn sm'+(n===k?' on':'')+'" type="button" data-act="'+a+'" data-arg="'+k+'" aria-pressed="'+(n===k)+'">×'+k+'</button>').join('')+'<input class="qty-n'+(n!==1&&n!==5?' on':'')+'" type="number" inputmode="numeric" min="1" max="'+QTY_MAX+'" step="1" value="'+n+'" data-qty="'+a+'" aria-label="How many"></div>';
 const QTY_MAX=999;
 /* a rail screen's first page (its overview), past its own description and key actions: what is in each area, as a short list.
@@ -107,6 +107,7 @@ class PageScreen extends RailScreen{
 }
 const PAGE_SCREEN=new PageScreen();
 // a page's line of what you know at a glance: its parts (words, or markup) side by side
+const andRead=r=>r?', '+r:'';
 const pageFacts=ps=>'<p class="pg-facts">'+ps.filter(Boolean).join(', ')+'</p>';
 /* Insight (doc/CONDUCT_RUINS_DESIGN.md §1): how much you can tell before you act, by Scouting, the same everywhere (robbing
    villagers, a camp's or a cave's page before your scouts look, a parley's odds, the ruins' checks). INSIGHT: the levels of a
@@ -116,7 +117,9 @@ const pageFacts=ps=>'<p class="pg-facts">'+ps.filter(Boolean).join(', ')+'</p>';
    oddsWord(p): a chance in rough words */
 const INSIGHT={rough:2,exact:5};
 const insightLv=()=>{const s=skill('scout');return s>=INSIGHT.exact?2:s>=INSIGHT.rough?1:0};
-function insight(reads,more){const l=insightLv();if(l===2)return reads[2];return '<span class="ins" title="Scouting '+(l?INSIGHT.exact:INSIGHT.rough)+': '+htmlText(more||'know more')+'">'+reads[l]+'</span>'}
+// (a reading too dim to give (null: the owner, 2026-11-12, "remove, you cannot tell your odds"): nothing at all, no line saying so;
+// andRead: a label and its reading after a comma, the label alone with none)
+function insight(reads,more){const l=insightLv();if(l===2)return reads[2];if(reads[l]==null||reads[l]==='')return '';return '<span class="ins" title="Scouting '+(l?INSIGHT.exact:INSIGHT.rough)+': '+htmlText(more||'know more')+'">'+reads[l]+'</span>'}
 const oddsWord=p=>p<.2?'little chance':p<.45?'some chance':p<.7?'a fair chance':'a good chance';
 /* a page's banner picture: PAGE_BANNER w × h map pixels round the place's point (b.x, b.y: its foot, foot pixels from the top),
    the painted world there (WorldArt's chunks: the ground, the woods, rock and roads), then its pictures (b.ps: [canvas, x, y,

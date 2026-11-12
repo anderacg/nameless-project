@@ -182,7 +182,7 @@ class Cave extends Site{
   power(lv){const {M,n}=this.lair;return rating(Array(n).fill(M.unit),lv)}
   page(r){const {M,U,n}=this.lair,y=this.spied(),loot=y&&['trophy: '+MATS[M.mat].n.toLowerCase(),...M.gear.map(([it,ch])=>ITEMS[it].n+' ('+Math.round(Math.min(1,ch*(1+.1*(y.lv-1)))*100)+'%)'),'a chest'].join(', ');
     return{body:this.about(r)+(y?'<div class="lab">What your scouts saw</div>'+railCards([{pic:portrait(M.unit),name:U.n,role:'Lairing in the cave',n,facts:['Level '+y.lv,['Stronger than usual','bad'],'Power '+this.power(y.lv)+' vs your '+partyPower()],note:'Likely loot: '+loot+'.'}]):
-        pageFacts([insight(['tracks and bones',cap1(fewSay(n))+', '+beastSize(M.unit),n+' × '+U.n.toLowerCase()+', power '+this.power(this.lvAbout)+' vs your '+partyPower()],'know what lairs there'),insightLv()<2&&'you cannot tell what without a closer look',!this.within&&'a chest, they say'])),
+        pageFacts([insight(['tracks and bones',cap1(fewSay(n))+', '+beastSize(M.unit),n+' × '+U.n.toLowerCase()+', power '+this.power(this.lvAbout)+' vs your '+partyPower()],'know what lairs there'),!this.within&&'a chest, they say'])),
       acts:[this.scoutDeed(),{icon:'cave',label:'Enter',act:'site-ask',facts:[y?'power '+this.power(y.lv)+' vs '+partyPower():insightLv()===2?'power about '+this.power(this.lvAbout)+' vs '+partyPower():'what lairs there: unknown',!this.within&&'a chest'],tip:'Go in and fight whatever lairs there. It asks you first.'}],
       note:'Whatever lairs here fights harder than in the open.'}}
   act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const y=this.spied(),{U,n}=this.lair;
@@ -425,14 +425,14 @@ class Lair extends Site{
     return{body:'<p class="muted">'+s.T.d+'</p>'+Prisons.siteNote(s)+(y?'<div class="lab">What your scouts saw</div>'+railCards(Object.entries(countsOf(all)).map(([k,n])=>({pic:portrait(k),name:k==='chief'&&ld?chiefLabel(ld):ST[k].n,role:k==='chief'?'Their chieftain, bounty '+bountyOf(ld)+'g':'Tier '+ST[k].tier,n})))+
         '<ul class="tnotes"><li>Power <b>'+pw+'</b> vs your '+partyPower()+'.</li><li>Loot: '+s.lootSay(all.length)+', and '+(ld?ld.name:'their chieftain')+' to take captive ('+bountyOf(ld)+'g bounty).</li></ul>':
         pageFacts([insight([band+' in their tents',cap1(roughly(g.n))+' '+band.toLowerCase(),g.n+' '+band.toLowerCase()+' and their chieftain'],'know their numbers')+(s.sheltering().length?', bands among them sheltering for the night':''),
-          insight(['you cannot tell how strong','<span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>','power '+g.pw+' vs your '+partyPower()],'know their strength')])+
+          insight([null,'<span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>','power '+g.pw+' vs your '+partyPower()],'know their strength')])+
         '<ul class="tnotes"><li>Led by '+(ld?chiefLabel(ld)+', '+bountyOf(ld)+' gold on '+pr(ld).his+' head':'a chieftain')+'.</li><li>Talk of plunder piled in the tents.</li></ul>'),
       acts:[s.scoutDeed(),{icon:'attack',label:'Attack',act:'site-ask',facts:[y?'power '+pw+' vs '+partyPower():insight(['what waits inside: unknown',lk[0].replace('They look ',''),'power about '+pw+' vs '+partyPower()],'know their strength')],tip:'Storm it: its fighters, its chieftain and any band sheltering there. It asks you first.'},
         {icon:'truce',label:'Parley',act:'site-tab',arg:'parley',facts:['pay them off','or make them yield'],tip:'Talk: pay them to break camp, or, if they fear you, demand their surrender.'}]}}
   act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const s=this,y=s.spied();
     if(a==='site-ask'&&INTERIOR.on&&s instanceof Hideout&&(s.tunnel||s.within)){Interior.show(s);return true}// (a bandit lair, or a den in ruins, is stormed inside: who goes in with you, battle/interior.js)
     if(a==='site-ask'){const g=s.guess(),all=y&&s.all(y.list);railConfirm({title:'Attack the '+s.T.n.toLowerCase()+'?',sub:s.name,text:'You storm it: '+(all?all.length+' fighters':roughly(g.n)+' of them, as far as you can tell')+', their chieftain at their head.',
-      facts:[all?'Power '+s.power(all)+' vs your '+partyPower():insight(['You cannot tell how strong they are',looks(g.pw/Math.max(1,partyPower()))[0],'Power about '+g.pw+' vs your '+partyPower()],'know their strength'),'You may still call it off before the first blow'],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
+      facts:[all?'Power '+s.power(all)+' vs your '+partyPower():insight([null,looks(g.pw/Math.max(1,partyPower()))[0],'Power about '+g.pw+' vs your '+partyPower()],'know their strength'),'You may still call it off before the first blow'],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
     if(a==='site-attack'){s.fight(true,y&&y.list);return true}
     if((a==='site-pay'||a==='site-yield')&&goblinTongueWhy(s.bandKind==='goblins'))return true;
     if(a==='site-pay'){const m=lairPay(s);if(m){G.siteTab=null;done(m)}return true}
