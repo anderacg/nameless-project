@@ -201,7 +201,8 @@ function manDeath(c,L,how,helm,ride,lie){
    rest (a ram, a wolf, a warg): its own standing figure laid down, its head sunk to its back, its legs out stiff or folded away.
    The size of drawMountDown's, its ground on the same row) */
 function mountDown(L,lie){const G=19,belly=lie==='belly';let d;
-  if(L.mount==='wolf'||L.mount==='warg'){const box=mountMetrics(L.mount);d=pgrid(box.w,box.downH);drawMountDown(d,L,lie)}
+  // (a wolf, a warg, a ram: its own lying art, engine/beasts.js PX.mountArt; the ram's standing one laid down floated, its legs not found)
+  if(L.mount==='wolf'||L.mount==='warg'||L.mount==='ram'&&PX.mountArt?.('ram',0,{C:pal('fleece'),M:pal('wool')},true)){const box=mountMetrics(L.mount);d=pgrid(box.w,box.downH);drawMountDown(d,L,lie)}
   else if(horseArt(L.mount)){d=pgrid(32,22);drawMountDown(d,L);if(belly)d=pmove(d,(x,y)=>y>15?null:[0,4]);
     if(L.mount==='stag')for(const [x,y] of [[27,12],[26,11],[28,11],[25,10],[29,10],[24,9]])pset(d,x,y+(belly?4:0),PPAL.cloth[0])}
   else{const m=pgrid(32,32);drawMount(m,L,-1);const n=y=>{let k=0;for(let x=0;x<32;x++)if(m.p[y*32+x])k++;return k};

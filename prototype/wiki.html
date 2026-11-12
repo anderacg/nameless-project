@@ -615,14 +615,15 @@ section('gear','Gear and inventory','Press I. Your equipment sits on a body: slo
   sub('Trophies','Sell them at any market.',table(['Trophy','Value','From'],Object.keys(MATS).map(k=>['<b>'+MATS[k].n+'</b>',MATS[k].v+'g','<span class="muted">'+[...Object.keys(MONSTERS).filter(m=>MONSTERS[m].mat===k).map(m=>MONSTERS[m].n),...Object.keys(MONSTER_BREEDS.kinds).map(b=>monRec(MONSTER_BREEDS.kinds[b].kind,b)).filter(B=>B.mat===k&&MONSTER_BREEDS.kinds[B.breed].mat).map(B=>B.n),...Object.keys(CRITTERS).filter(c=>CRITTERS[c].mat&&CRITTERS[c].mat[0]===k).map(c=>CRITTERS[c].n)].join(', ')+'</span>']),[1])));
 
 /* hero */
-const branchOf=k=>TREE_BRANCHES.find(b=>b.k===k);
-section('hero','Your hero','Your past sets your weapon, purse and starting place on the skill tree. Your proficiencies grow as you use them, from 0 to 99, and your level grows with them: each level a tree point. Battles, tournaments, hunts and quests train the proficiencies they use. Your past starts one or two higher, free: those levels do not count toward your level.',
-  '<div class="sub"><h3>Pasts</h3><div class="grid">'+Object.keys(BGS).map(k=>{const B=BGS[k],O=TREE['o_'+k];return '<article class="card entry"><h3>'+B.n+'</h3><p class="muted">'+B.d+'</p>'+kv([['Weapon',(B.weapon?BASES[B.weapon].n:'Bare hands')+(B.ammo?' and '+B.ammo[1]+' '+B.ammo[0]:'')],['Gold',B.gold],['Origin',O?O.n+' <span class="muted">'+O.d+'</span>':'—']])+'</article>'}).join('')+'</div></div>'+
-  sub('The skill tree','Start at your origin and spend points outward: a node can be taken once it touches one you have, and refunded if nothing beyond needs it. Four paths branch from the Crossroads, joined by hybrid nodes between them.',
-    table(['Path','Attribute','Nodes','Notables','Abilities','Keystones'],TREE_BRANCHES.map(b=>{const ns=Object.values(TREE).filter(N=>N.br===b.k);return ['<span class="sw" style="background:'+b.col+'"></span><b>'+b.n+'</b>',ATTRS[b.a][0],ns.length,ns.filter(N=>N.t==='n').length,ns.filter(N=>N.t==='a').length,ns.filter(N=>N.t==='k').map(N=>N.n).join(', ')]}),[2,3,4])+
-    '<div class="grid">'+Object.values(TREE).filter(N=>N.t==='k').map(N=>'<article class="card entry"><h3>'+N.n+'</h3><span class="chip">'+(branchOf(N.br)?branchOf(N.br).n:'')+' keystone</span><p class="muted">'+N.d+'</p></article>').join('')+'</div>')+
-  sub('Proficiencies','The skill tree and gear add to them in tens: +1 is worth 10 levels. Riding, Woodcraft, Survival, Stewardship and Athletics count 80% toward your level, Scouting and Trade 60%. The same practice over and over within an hour gives less.',table(['Proficiency','Attribute','Does'],Object.keys(SKILLS).map(k=>['<b>'+SKILLS[k].n+'</b>',ATTRS[SKILLS[k].a][0],SKILLS[k].d])))+
-  sub('Attributes','Raised by nodes on the tree.',kv(Object.keys(ATTRS).map(k=>[ATTRS[k][0],ATTRS[k][1]]))));
+// (the trees: one for each proficiency, data/tree.js PROF_TREE; a node's kind, KIND_N)
+const KIND_N={s:'small',n:'notable',k:'keystone',a:'ability',b:'bonus'},treeOf=p=>Object.values(TREE).filter(N=>N.prof===p);
+section('hero','Your hero','Your past sets your weapon, your purse and the proficiencies you start ahead in. Every proficiency grows as you use it. Your level rises with experience: from battles, quests, beasts and lore, and from each level a proficiency reaches. Each level gives '+LEVEL.pts+' skill point to spend on any proficiency’s tree. A node gives more the higher its proficiency: '+pct(TREE_SCALE.lo)+' at 0, all of it at '+TREE_SCALE.full+', more past that.',
+  '<div class="sub"><h3>Pasts</h3><div class="grid">'+Object.keys(BGS).map(k=>{const B=BGS[k],O=TREE['o_'+k];return '<article class="card entry"><h3>'+B.n+'</h3><p class="muted">'+B.d+'</p>'+kv([['Weapon',(B.weapon?BASES[B.weapon].n:'Bare hands')+(B.ammo?' and '+B.ammo[1]+' '+B.ammo[0]:'')],['Gold',B.gold],['Starts ahead in',Object.keys(B.sk||{}).map(s=>SKILLS[s].n+' '+Math.min(PROF.made,Math.round(PROF.pastPer*B.sk[s]))).join(', ')||'—'],['Origin',O?O.n+' <span class="muted">'+O.d+'</span>':'—']])+'</article>'}).join('')+'</div></div>'+
+  sub('The skill trees','Each proficiency has its own tree: tiers of two nodes, each grown from both below it, with bonus nodes between them. Spend your points on any tree; a node can be taken once it touches one you have.',
+    table(['Proficiency','Nodes','Abilities','Notables','Keystones'],Object.keys(PROF_TREE).map(p=>{const ns=treeOf(p);return ['<b>'+(SKILLS[p]?SKILLS[p].n:p)+'</b>',ns.length,ns.filter(N=>N.t==='a').map(N=>N.n).join(', ')||'—',ns.filter(N=>N.t==='n').length,ns.filter(N=>N.t==='k').map(N=>N.n).join(', ')||'—']}),[1,3])+
+    '<div class="grid">'+Object.values(TREE).filter(N=>N.t==='k').map(N=>'<article class="card entry"><h3>'+N.n+'</h3><span class="chip">'+(SKILLS[N.prof]?SKILLS[N.prof].n:'')+' '+KIND_N.k+'</span><p class="muted">'+N.d+'</p></article>').join('')+'</div>')+
+  sub('Proficiencies','The trees and gear add to them in tens: +1 is worth 10 levels. The same practice over and over within an hour gives less.',table(['Proficiency','Does'],Object.keys(SKILLS).map(k=>['<b>'+SKILLS[k].n+'</b>',SKILLS[k].d])))+
+  sub('Checks','A check that names a strength (an encounter’s odds, a story’s condition) reads the best of these proficiencies.',kv(Object.keys(ATTRS).map(k=>[ATTRS[k].n,ATTRS[k].profs.map(p=>SKILLS[p]?SKILLS[p].n:p).join(', ')]))));
 
 /* threats */
 const abil={pounce:'Pounces on a fighter 24–110 px away for 1.6× damage, then waits 4.5 s.',web:'Spits webs (range 60) that halve the target’s speed for 2 s.',regen:'Regenerates 4 health per second.'};
@@ -741,11 +742,16 @@ document.querySelectorAll('[data-spr]').forEach(e=>{
 });
 
 /* the map: painted terrain, each realm's land, and the holdings */
-const mc=document.getElementById('worldmap');mc.width=MW*TILE;mc.height=MH*TILE;const mg=mc.getContext('2d', { willReadFrequently: true });mg.imageSmoothingEnabled=false;mg.drawImage(worldCv(),0,0);
+// (from the minimap, MAP_PX px a tile: the whole painted world, WorldArt.whole, took half a minute to paint)
+const MAP_PX=4,mc=document.getElementById('worldmap');mc.width=MW*MAP_PX;mc.height=MH*MAP_PX;const mg=mc.getContext('2d', { willReadFrequently: true });mg.imageSmoothingEnabled=false;mg.drawImage(WorldArt.mini(1),0,0,mc.width,mc.height);
+mg.save();mg.scale(MAP_PX/TILE,MAP_PX/TILE);
 mg.globalAlpha=.28;landFresh();for(let k=0;k<LAND.length;k++){const i=LAND[k];if(i<0||!FACS[TOWNS[i].owner])continue;mg.fillStyle=FACS[TOWNS[i].owner].col;mg.fillRect((k%MW)*TILE,Math.floor(k/MW)*TILE,TILE,TILE)}mg.globalAlpha=1;
-mg.font='bold 26px "Atkinson Hyperlegible",sans-serif';mg.textAlign='center';
-for(const t of TOWNS){for(const l of t.lots||[]){const s=lotSprite(t,l);mg.globalAlpha=SHADOW.a;mg.drawImage(s.sh,l.x*TILE,l.y*TILE);mg.globalAlpha=1;mg.drawImage(s,l.x*TILE,l.y*TILE)}// (its placed buildings, as the game draws them)
-  mg.fillStyle='rgba(0,0,0,.75)';mg.fillText(t.name,t.x+2,t.y+36);mg.fillStyle='#fff';mg.fillText(t.name,t.x,t.y+34)}
+mg.restore();
+// (each holding a square in its realm's colour, a free one grey, bigger for a town; its name over it, in the map's own px: the lots'
+// buildings were specks at this size, and slow to build)
+mg.font='bold 15px "Atkinson Hyperlegible",sans-serif';mg.textAlign='center';mg.lineWidth=3;mg.strokeStyle='rgba(0,0,0,.8)';
+for(const t of TOWNS){const x=t.x*MAP_PX/TILE,y=t.y*MAP_PX/TILE,r=/town|city|castle|fort/.test(t.kind)?5:3,c=FACS[t.owner]?FACS[t.owner].col:'#b8b2a6';
+  mg.fillStyle='#14110c';mg.fillRect(x-r-1,y-r-1,2*r+2,2*r+2);mg.fillStyle=c;mg.fillRect(x-r,y-r,2*r,2*r);mg.strokeText(t.name,x,y-r-4);mg.fillStyle='#fff';mg.fillText(t.name,x,y-r-4)}
 
 /* search */
 const q=document.getElementById('q'),info=document.getElementById('qinfo');
