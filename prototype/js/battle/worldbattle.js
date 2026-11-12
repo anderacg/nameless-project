@@ -22,7 +22,10 @@ const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,ap
 // these kinds opens no window first (no talk, no Attack, Auto-resolve or Flee: withdraw in the fight), and the armies form up where
 // they stand, no muster (BattleMuster); sieges, raids, tournaments and caves keep their own. on false: the window and the muster, as before
 const SEAMLESS={on:true,kinds:['party','lord','patrol','caravan','monster','field','villagers','estate','camp','ruin','outpost']};
-const seamless=e=>!!(SEAMLESS.on&&WORLD_BATTLE.on&&e&&SEAMLESS.kinds.includes(e.kind)&&!Interior.on(e)&&!SiegeWorks.on(e));
+// (a party or beast you held on and chose Talk (Choose, a beast) in its ring: its meeting opens its window, its talk and its choices, once;
+// the owner, 2026-11-12: "can we use hold to talk or take action instead of remove them completely")
+const Talk={o:null,set(o){this.o=o},of(o){return!!o&&!!this.o&&(this.o===o||this.o===o.src)},clear(){this.o=null}};
+const seamless=e=>!!(SEAMLESS.on&&WORLD_BATTLE.on&&e&&SEAMLESS.kinds.includes(e.kind)&&!Interior.on(e)&&!SiegeWorks.on(e)&&!Talk.of(e.ref));
 // Only local avoidance runs while campaign time is paused. Existing work/travel orders stay on their owners.
 class BattleBystanders{
   constructor(area){this.area=area;this.time=0;this.next=0;this.entries=new Map();this.navs=new Map()}

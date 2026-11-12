@@ -22,6 +22,17 @@ Kit.suite(({ok,info})=>{const t=T,P=t.P,G=t.G,W=t.W;Kit.begin('soldier',1);Kit.c
   // ---- a cornered band: no parley first, the fight at once
   {const band=t.asParty({kind:'bandits',troops:['militia'],x:P.x+20,y:P.y,cool:0});t.bandits.length=0;t.bandits.push(band);const c0=window.cornered;window.cornered=()=>true;
    try{t.meetBand(band);ok(G.mode==='battle'&&!G.par,'a cornered band: no parley, the fight at once')}finally{window.cornered=c0}end()}
+  // ---- held: its ring, Attack or Talk (a beast: Choose); Talk opens its window when you meet, its talk and choices, once
+  {const band=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x+30,y:P.y,cool:0});t.bandits.length=0;t.bandits.push(band);t.frame();
+   const labels=t.partyRingItems(band,0,0).map(i=>i.label);ok(labels[0]==='Attack'&&labels.includes('Talk'),'a foe held: its ring, '+labels.join(', '));
+   t.partyRingItems(band,0,0).find(i=>i.label==='Talk').run();if(G.mode==='world'){G.encCool=0;t.startEncounter({kind:'party',ref:band,list:band.troops.slice()})}
+   ok(G.mode==='dialog'&&(!!document.querySelector('#panel [data-act="fight"]')||!!G.par),'Talk: its window when you meet, its words and choices ('+(G.par?'a parley: they are cornered':'Fight, Flee')+')');
+   ok(!t.Talk.o,'and only that once');end();
+   const m=t.asMonster({id:'boar',x:P.x+30,y:P.y,hx:P.x+30,hy:P.y,lv:1,n:2,t:0,a:0,cool:0});W.monsters=[m];const ml=t.partyRingItems(m,0,0).map(i=>i.label);
+   ok(ml[0]==='Attack'&&ml.includes('Choose'),'a beast held: '+ml.join(', '));W.monsters=[];end()}
+  // ---- a foe clicked or tapped: attacked at once, no ring
+  {const band=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x+70,y:P.y,cool:0});t.bandits.length=0;t.bandits.push(band);t.frame();
+   if(t.wuiKind(band)==='foe'){t.worldGo(band.x,band.y-3);ok((G.chase===band||G.mode==='battle')&&!t.ActionRing.now,'a foe clicked: your band goes at it at once, no ring ('+(G.chase===band?'chasing':G.mode)+')')}else info('band not a foe here: '+t.wuiKind(band));end()}
   ok(!t.seamless({kind:'siege'})&&!t.seamless({kind:'tourney'})&&!t.seamless({kind:'raid'})&&t.seamless({kind:'lord'}),'a siege, a raid and a tournament keep their own; a lord\'s army does not');
  }finally{t.SEAMLESS.on=false}
 });

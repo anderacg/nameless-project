@@ -460,8 +460,9 @@ function mapRingItems(wx,wy,o,cx,cy){
 
 // a click on another party (ui/input.js partyRing): Approach (today's chase: Attack one hostile, its crossed swords as the marker
 // over it while you go: icons.js ICONS.attack, else Meet), Follow (or Stop following, lit), and the map ring's Look on it
-function partyRingItems(o,cx,cy){const foe=wuiKind(o)==='foe';
-  return[{icon:foe?'attack':'people',label:foe?'Attack':'Meet',run:()=>worldApproach(o)},followItem(o),...mapRingItems(o.x,o.y,o,cx,cy).filter(it=>it.icon==='eye')].filter(Boolean)}
+function partyRingItems(o,cx,cy){const foe=wuiKind(o)==='foe'||objKind(o)==='monster',beast=objKind(o)==='monster';
+  // (a foe: Attack, the fight at once; Talk (a beast: Choose), its window when you meet, its talk and choices: SEAMLESS, Talk)
+  return[{icon:foe?'attack':'people',label:foe?'Attack':'Meet',run:()=>{Talk.clear();worldApproach(o)}},foe&&SEAMLESS.on&&{icon:beast?'eye':'people',label:beast?'Choose':'Talk',run:()=>{Talk.set(o);worldApproach(o)}},followItem(o),...mapRingItems(o.x,o.y,o,cx,cy).filter(it=>it.icon==='eye')].filter(Boolean)}
 
 /* ---------- the tavern's tapster (ui/town.js Tavern): liquor for the road and empty waterskins, at their base prices, and the
    well's water into your empty skins, free ---------- */

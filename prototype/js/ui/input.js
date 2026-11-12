@@ -142,11 +142,13 @@ function dragCancel(){if(G.mode!=='battle'||!B||!(B.rdrag||B.box||TOUCH.lp))retu
 // the map's click or tap (ring.js ringUp, touchUp): on another party, its ring (partyRing); else worldMove
 function worldGo(wx,wy){
   if(G.mode!=='world'||G.modal)return;
+  // (seamless: a foe clicked or tapped is attacked at once; held, its ring: Attack, Talk, Follow, Look: ring.js ringOpen)
+  {const o=pickAt(wx,wy);if(SEAMLESS.on&&o&&wuiKind(o)==='foe'&&!o.fight){Talk.clear();return worldApproach(o)}}
   if(!partyRing(pickAt(wx,wy),wx,wy))worldMove(wx,wy);
 }
 // travel to a point, or meet what is there (Follow ends: world.js followStop)
 // (a new trip: by road, if that mode is on, asks again whether a road is near: world.js byRoadTo)
-function worldMove(wx,wy){followStop();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){const s=Router.open(clamp(wx,8,MW*TILE-8),clamp(wy,8,MH*TILE-8),P);P.tx=s.x;P.ty=s.y;P.stuck=0;Provinces.warn(P.tx,P.ty)}wuiClick(wx,wy)}// (a deadly province ahead: its warning, world/provinces.js)// (the click's ripple: worldui.js)
+function worldMove(wx,wy){followStop();Talk.clear();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){const s=Router.open(clamp(wx,8,MW*TILE-8),clamp(wy,8,MH*TILE-8),P);P.tx=s.x;P.ty=s.y;P.stuck=0;Provinces.warn(P.tx,P.ty)}wuiClick(wx,wy)}// (a deadly province ahead: its warning, world/provinces.js)// (the click's ripple: worldui.js)
 /* a click or a tap on another party (the owner, 2026-10-23: Follow "can be used when you click at the other unit in the world
    map"): its ring at it (ActionRing; supply.js partyRingItems: Approach, today's chase, Follow, Look), nothing done yet; Esc or a
    press elsewhere closes it (ring.js). A second press on it within PARTY_CLICK.dbl ms (a double click or tap) approaches it at
@@ -154,7 +156,7 @@ function worldMove(wx,wy){followStop();G.pitch=null;G.byRoad=null;if(!(clickAt(w
    click opened, its party, when. At (wx, wy), where you clicked it (the owner, 2026-11-01: a big army clicked on its flank opened its
    ring far off at its middle); none given, at the party */
 const PARTY_CLICK={dbl:400,r:16,last:null};
-function partyRing(o,wx,wy){if(!o||!FOLLOW.kinds.includes(objKind(o))||o.fight||G.mode!=='world'||G.modal)return false;
+function partyRing(o,wx,wy){if(!o||!(FOLLOW.kinds.includes(objKind(o))||SEAMLESS.on&&objKind(o)==='monster')||o.fight||G.mode!=='world'||G.modal)return false;
   const at=Number.isFinite(wx)&&Number.isFinite(wy),x=at?wx:o.x,y=at?wy:o.y-6,r=cv.getBoundingClientRect(),cx=r.left+(x-G.cam.x)*r.width/VW,cy=r.top+(y-G.cam.y)*r.height/VH,items=partyRingItems(o,cx,cy);if(!items.length)return false;
   const R=new ActionRing(cx,cy,items).open();PARTY_CLICK.last={R,o,t:performance.now()};return true}
 // (a press at canvas point p with a ring open: the party it is on, if a click opened that ring on it within PARTY_CLICK.dbl ms)

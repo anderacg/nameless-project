@@ -4,7 +4,7 @@
 const cornered=(o,kind)=>(kind==='lord'?hostileTo(o.fac):true)&&stance(o.power())==='afraid';
 // how likely they are to yield: the weaker they are against you, the likelier, and a famous name helps
 const yieldChance=(o,kind)=>{const r=o.power()/Math.max(1,partyPower());return clamp(1.15-1.9*r+P.renown/600+.03*skill('pers')-(kind==='lord'?.15-relWith(o)/400:0),.05,.95)};
-function parley(o,kind){
+function parley(o,kind){Talk.clear();
   if(kind==='lord'&&W.lords.includes(o))KNOWLEDGE.sight(o);
   G.par={o,kind};G.mode='dialog';P.tx=null;G.chase=null;const lord=kind==='lord',n=lord?o.troops.length:o.n,ch=Math.round(yieldChance(o,kind)*100);
   showPanel('<h2>'+(lord?o.name+' is cornered':'The '+(o.kind==='raiders'?'raiders':o.kind==='bog'?'bog raiders':o.kind==='goblins'?'goblins':'bandits')+' are cornered')+'</h2>'+
@@ -116,6 +116,6 @@ function lairFate(s,list,how){lootStart();const ld=s.ld,men=list.filter(u=>u!=='
 // (a chieftain taken: what to do with him)
 const chiefCaught=ld=>'You take '+chiefLabel(ld)+' captive: hand '+pr(ld).him+' over for '+bountyOf(ld)+' gold, or let '+pr(ld).him+' go (Hero, Party).'
 // what happens when you reach a roaming party: a hostile one that fears you is cornered; else the fight it wants
-function meetBand(b){if(cornered(b,'band')&&!seamless({kind:'party'}))return parley(b,'band');// (seamless: no talk, the fight at once: SEAMLESS)
+function meetBand(b){if(cornered(b,'band')&&!seamless({kind:'party',ref:b}))return parley(b,'band');// (seamless: no talk, the fight at once: SEAMLESS)
   startEncounter({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:b.kind||'bandits',word:b.word})}
 onAct('pl-',parleyAct);
