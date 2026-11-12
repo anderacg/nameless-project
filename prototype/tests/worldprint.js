@@ -758,7 +758,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 again after merging the two, 2026-11-12: the hidden banners and HUD geometry, and the smooth borders, both on the three spots.
 //  Measured here: origin/codex alone (1dfa38a) gives 81e7015b, not its 6d45a75b (recorded on another machine?); merged with
 //  LAND_SMOOTH.on false it is 81e7015b too, so the borders are all this side adds; on, d598257f)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'d598257f',W7:'311da16e',W8:'c590650a',B2:'ba5f45e6'};
+// (W5, 2026-11-12: a pond's ring in the frost no longer a meadow's green (the owner: "why green in snow when neighbor tiles is also
+//  snow"; engine/worldnature.js PX.WN_RING.frost): the 19 spring ponds there painted as trodden snow, their water iced. Was c817e41c;
+//  checked: with the engine's change taken out it is c817e41c again, and W1-W4, W6-W8 and B2 hold either way)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'e41cdb7c',W6:'d598257f',W7:'311da16e',W8:'c590650a',B2:'ba5f45e6'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
