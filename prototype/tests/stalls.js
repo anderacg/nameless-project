@@ -15,14 +15,16 @@ Kit.suite(({ok,info})=>{
    t.Router.reach=reach;Object.assign(l,keep)}
   // ---- stalled: sent another way, and kept
   {const l=W.lords.find(x=>!x.dead&&!x.gone&&!x.inside&&!x.with),keep={state:l.state,tgt:l.tgt,x:l.x,y:l.y};l.state='home';l.tgt=t.Spatial.nearest(t.fiefsOf(l.fac),l.x,l.y).name;const was=l.tgt;
-   S.rec=new WeakMap();S.seen=[];const h0=t.Clock.hours(),hours=t.Clock.hours;let h=h0;t.Clock.hours=()=>h;
+   S.rec=new WeakMap();S.seen=[];const h0=t.Clock.hours(),hours=t.Clock.hours;let h=h0;t.Clock.hours=()=>h;const L0=W.lords,C0=W.caravans,P0=W.patrols;W.lords=[l];W.caravans=[];W.patrols=[];// (him alone watched: the clock run on with the world still)
    try{S.hour();for(let i=0;i<X.hours-1;i++){h++;S.hour()}ok(!S.seen.length,'still for '+(X.hours-1)+' hours: not yet');
     h++;S.hour();const r=S.seen[0];ok(r&&r.k==='lord'&&/home/.test(r.was)&&l.tgt!==was,'still for '+X.hours+' hours on his way home: he thinks again, that holding put aside ('+(r?r.was+' → '+r.now:'none')+')');
     S.seen=[];S.rec=new WeakMap();l.state='home';l.tgt=was;S.hour();for(let i=0;i<X.hours;i++){h++;l.x+=X.px+1;S.hour()}ok(!S.seen.length,'one that keeps moving: never')}
-   finally{t.Clock.hours=hours;Object.assign(l,keep)}}
-  {G.speed=8;for(let i=0;i<4000&&(!W.caravans.some(x=>!x.mine&&!x.idle&&!x.gone)||!W.patrols.some(x=>!x.gone));i++){G.encCool=1e9;if(G.mode!=='world'){t.hidePanel();G.mode='world';G.modal=false;G.road=null}t.updateWorld(.05)}}// (the world on a while: caravans and patrols out)
+   finally{t.Clock.hours=hours;W.lords=L0;W.caravans=C0;W.patrols=P0;Object.assign(l,keep)}}
+  {S.n=0;S.seen=[];G.speed=8;for(let i=0;i<4000&&(!W.caravans.some(x=>!x.mine&&!x.idle&&!x.gone)||!W.patrols.some(x=>!x.gone));i++){G.encCool=1e9;if(G.mode!=='world'){t.hidePanel();G.mode='world';G.modal=false;G.road=null}t.updateWorld(.05)}}// (the world on a while: caravans and patrols out)
   {const c=W.caravans.find(x=>!x.mine&&!x.idle&&!x.gone);if(c){const to=c.to;S.free(c);ok(c.to!==to||c.gone,'a caravan stalled: on to another holding of its realm, or home ('+to+' → '+(c.gone?'home':c.to)+')');c.to=to;c.gone=false}else info('no caravan on the road')}
   {const p=W.patrols.find(x=>!x.gone);if(p){S.free(p);ok(p.gone,'a patrol stalled: back inside its holding');W.patrols=W.patrols.filter(x=>x!==p)}else info('no patrol out')}
+  // ---- the console's: what stalled lately, and every party near you
+  {const st=t.DevConsole.execute('stalls'),nb=t.DevConsole.execute('nearby');ok(st&&typeof st.sent==='number'&&Array.isArray(st.last)&&Array.isArray(nb)&&nb.every(r=>r.kind&&'still' in r&&'tiles' in r),'the console: "stalls" ('+st.sent+' sent on), "nearby" ('+nb.length+' parties near you, what each is doing and how long it has stood)')}
   ok(!S.going({mapKind:'lord',state:'siege'})&&!S.going({mapKind:'lord',state:'home',with:'x'})&&!S.going({mapKind:'caravan',mine:true})&&S.going({mapKind:'patrol'}),'not watched: a siege laid, a lord in a campaign\'s column, your own caravan');
  }finally{t.Router.reach=reach}
 });
