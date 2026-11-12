@@ -217,15 +217,21 @@ function setRel(a,b,s,chain){realmOf(a).setRel(b,s,chain)}
    sets off again; he cannot get into a holding under siege, and does not leave one he is defending. */
 const lordsInside=t=>W.lords.filter(l=>!l.dead&&l.inside===t.name);
 const insideTroops=t=>lordsInside(t).flatMap(l=>l.troops);
-// (a lord shelters as every party does: parties.js shelterWhy, enter, leave)
-function lordThink(l){
+// (the holdings of a list a party can walk to (Router.reach: the same land; a lord sent to one across the water walked straight at
+// it and stood at the shore for good); nearestReach: the nearest of them, null with none; avoid: one not to choose, by name)
+const walkable=(o,L,avoid)=>L.filter(t=>t.name!==avoid&&Router.reach(o,t));
+const nearestReach=(o,L,avoid)=>Spatial.nearest(walkable(o,L,avoid),o.x,o.y)||null;
+// (a lord shelters as every party does: parties.js shelterWhy, enter, leave. avoid: a holding he could not get to (world/stalls.js))
+function lordThink(l,avoid){
   if(l.inside){const h=townBy(l.inside);if(h&&besieged(h)&&h.owner===l.fac){l.state='rest';l.tgt=h.name;return}}
   const own=fiefsOf(l.fac);if(!own.length){l.dead=true;l.gone=true;return}
-  const foes=TOWNS.filter(t=>atWar(l.fac,t.owner)),hit=own.find(besieged);
+  // (each choice among those he can walk to; none of his own he can reach: he rests where he is (tgt none), and thinks again later)
+  const mine=walkable(l,own,avoid),foes=walkable(l,TOWNS.filter(t=>atWar(l.fac,t.owner)),avoid),hit=mine.find(besieged);
+  if(!mine.length){l.state='rest';l.tgt=null;return}
   if(hit&&l.troops.length>=9){l.state='relieve';l.tgt=hit.name;return}
-  if(l.troops.length<9||(!foes.length&&l.troops.length<lcapOf(l)-4)){const open=own.filter(t=>!besieged(t));l.state='home';l.tgt=Spatial.nearest(open.length?open:own,l.x,l.y).name;return}// (home to a holding not besieged, if there is one)
+  if(l.troops.length<9||(!foes.length&&l.troops.length<lcapOf(l)-4)){const open=mine.filter(t=>!besieged(t));l.state='home';l.tgt=Spatial.nearest(open.length?open:mine,l.x,l.y).name;return}// (home to a holding not besieged, if there is one)
   if(foes.length){l.state='march';l.tgt=Spatial.nearest(foes,l.x,l.y).name;return}
-  l.state='patrol';l.tgt=own[rint(0,own.length-1)].name;
+  l.state='patrol';l.tgt=mine[rint(0,mine.length-1)].name;
 }
 // you beat a lord's army: a bounty from your employer, a broken siege, and honor with his enemies (from ON_WIN)
 // (take: he is yours to ransom; not (your army all down: resolution.js armyDown), he gets away and rides home to raise another)

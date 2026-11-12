@@ -103,6 +103,8 @@ const GATE_WAYS={letter:80,writ:{town:60,city:160,rep:0},bribe:{town:25,city:60,
 // 2026-11-11: "a bit shorter distance": 6, then 4; 2026-11-12, "still discover too easy need a bit more near holding": 2), site
 // for a cave, ruins, a shrine or a hideout (3, was 4), start what a game begins knowing round you; scout: the Scouting practice a place gives;
 // show: seconds its title stays over the map
+// a party stalled on its way (world/stalls.js): hours still, within px, before it is sent another way; keep: how many kept to read
+const WORLD_STALL={on:true,hours:12,px:16,keep:40};
 const DISCOVER={on:true,r:2,site:3,start:10,scout:6,show:4.2};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,

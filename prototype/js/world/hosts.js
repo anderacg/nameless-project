@@ -158,8 +158,8 @@ class Host{
   // (inside a besieged holding of his realm: he does not leave one he is defending, realms.js lordThink; a campaign called him out)
   static defending(l){const h=l.inside&&townBy(l.inside);return !!h&&besieged(h)&&h.owner===l.fac}
   static campaign(f){const C=HOSTS.camp,free=lordsOf(f).filter(l=>!l.dead&&!l.gone&&!l.held&&!l.follow&&!l.with&&!l.campaign&&!l.fight&&l.troops.length>=C.troops&&!['siege','relieve'].includes(l.state)&&this.leader()!==l&&!Host.defending(l));
-    if(free.length<C.min)return null;const L=free.reduce((a,b)=>b.power()>a.power()?b:a),foes=TOWNS.filter(t=>!t.gone&&t.owner&&atWar(f,t.owner)),t=Spatial.nearest(foes,L.x,L.y);if(!t)return null;
-    const ms=free.filter(l=>l!==L&&Math.hypot(l.x-L.x,l.y-L.y)<=C.reach).sort((a,b)=>Math.hypot(a.x-L.x,a.y-L.y)-Math.hypot(b.x-L.x,b.y-L.y)).slice(0,C.members[1]);if(ms.length<C.members[0])return null;
+    if(free.length<C.min)return null;const L=free.reduce((a,b)=>b.power()>a.power()?b:a),foes=TOWNS.filter(t=>!t.gone&&t.owner&&atWar(f,t.owner)),t=nearestReach(L,foes);if(!t)return null;
+    const ms=free.filter(l=>l!==L&&Math.hypot(l.x-L.x,l.y-L.y)<=C.reach&&Router.reach(l,L)).sort((a,b)=>Math.hypot(a.x-L.x,a.y-L.y)-Math.hypot(b.x-L.x,b.y-L.y)).slice(0,C.members[1]);if(ms.length<C.members[0])return null;
     if(L.inside)L.leave();L.campaign={tgt:t.name,since:G.day,until:G.day+C.days};L.state='march';L.tgt=t.name;ms.forEach((m,i)=>{m.with=L.id;m.wseq=i+1;m.state='march';m.tgt=t.name});
     worldEvent({text:'The '+FACS[f].n+' make '+L.name+' their marshal: '+(ms.length+1)+' lords march on '+t.name+'.',fac:[f,t.owner],x:L.x,y:L.y,towns:[t],cls:t.owner===P.fac||t.owner==='player'?'bad':f===P.fac?'good':'',
       past:L.name+' of the '+FACS[f].n+' led '+(ms.length+1)+' lords on '+t.name});

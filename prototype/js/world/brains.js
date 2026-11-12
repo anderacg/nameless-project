@@ -39,11 +39,11 @@ class LordBrain extends Brain{
     if(l.waylay||['march','home','patrol'].includes(l.state)&&!TravelAwareness.sees(l)&&Waylay.consider(l,d,true)){const r=Waylay.step(l,moveStep(lordSpeed(l),d),d);if(r==='met')return true;if(r)return false}
     const v=this.look(l),pd=v.d,hostile=hostileTo(l.fac)&&!lordSpares(l),mul=lordSpeed(l)/26*Host.paceFor(l);// (26: a lord's old pace; a marshal's, his host's: hosts.js)
     const relief=hostile&&l.state==='relieve'&&!!P.siege&&P.siege.town===l.tgt,st=hostile?(relief?'attack':stance(l.power(),l)):null,see=TravelAwareness.sees(l)?travelDetection(l).range:0;
-    if(st==='afraid'&&l.state==='siege'&&pd<see){l.state='home';l.tgt=Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name;log(l.name+' abandons the siege as your band approaches.','good')}
+    if(st==='afraid'&&l.state==='siege'&&pd<see){const h=nearestReach(l,fiefsOf(l.fac));l.state=h?'home':'rest';l.tgt=h?h.name:null;log(l.name+' abandons the siege as your band approaches.','good')}
     const dread=W.lords.find(o=>!o.dead&&!o.inside&&o!==l&&atWar(o.fac,l.fac)&&Math.hypot(o.x-l.x,o.y-l.y)<WORLD_SCALE.ai.dread&&o.power()>=l.power()*1.5);
-    if(dread&&l.state==='march'&&fiefsOf(l.fac).length){l.state='home';l.tgt=Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name}
+    if(dread&&l.state==='march'&&fiefsOf(l.fac).length){const h=nearestReach(l,fiefsOf(l.fac));if(h){l.state='home';l.tgt=h.name}}
     if(!(hostile&&l.cool<=0&&l.state!=='siege'&&stanceMove(l,st,pd,v.dx,v.dy,see,moveStep(26*mul,d),true))){
-      let t=townBy(l.tgt);if(!t){lordThink(l);return false}
+      let t=townBy(l.tgt);if(!t){if(l.tgt||l.state!=='rest'||(l.thinkAt||0)<=G.day){l.thinkAt=G.day+1;lordThink(l)}return false}// (none he can reach: he thinks again each day)
       // (afraid of you (fearOf) or of a lord far stronger (dread): never home through him; another fief of his that is safe, else away
       // from him (the owner, 2026-11-01: "same goes for all entity"; engage.js safeRefuge))
       {const f=hostile&&fearOf(l,st)||dread;if(f&&l.state!=='siege'&&!safeRefuge(l,{x:t.x,y:t.y+12},f)){const alt=Spatial.nearest(fiefsOf(l.fac).filter(h=>h!==t&&safeRefuge(l,{x:h.x,y:h.y+12},f)),l.x,l.y);
