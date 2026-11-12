@@ -4,7 +4,7 @@
 // × the chance of every hidden thing (a rare variant met on the road: Ander The Fallen), 1 by default (0: never)
 const HIDDEN_RATE=1;
 /* the steps (story/steps.js): retarget, tiles from its hideout a clear step looks for another of its band once it is gone or
-   cleared by another; keep, the ended threads kept (how each went); say, a step's lines when its spec
+   cleared by another; keep, the ended quest chains kept (how each went); say, a step's lines when its spec
    has none ({to} its place) */
 const STEP={retarget:40,keep:12,
   say:{arrive:'You reach {to}.',late:'You took too long.',left:'You give it up.',cleared:'{to} is cleared.',gone:'{to} is no more.',

@@ -69,7 +69,7 @@ class Missile{
     const a=this.a,mu=matchup(a.src||{},e.s);let dm=a.dmg*mu;
     if(Actor.of(e).guards(a.a+Math.PI,dm))dm=this.blocked(dm);
     if(a.web){e.slow=2;B.floats.push({x:e.x,y:e.y-20,t:'Webbed',life:.6,c:'#e4e0cf'})}this.trains();
-    {const O={x:a.x-a.vx,y:a.y-a.vy,arrow:!a.magic},was=e.hp;e.shotAt=B.t;Actor.of(e).wound(dm*formTaken(e,O)*flankMul(e,O),mu,dtOf(a.src),a.by,true);vfxHit(O,e,dm,{arrow:!a.magic,magic:a.magic,col:a.col||(a.src&&a.src.bolt)});if(a.src&&a.src.fireArrow)fireSparks(e.x,e.y-7);if(sfxOn())blowSound(O,e,true,a.magic);if(!a.magic)stickArrow(e,a);earnXp(a.by,e,was)}a.life=0;
+    {const O={x:a.x-a.vx,y:a.y-a.vy,arrow:!a.magic},was=e.hp;e.shotAt=B.t;Actor.of(e).wound(dm*formTaken(e,O)*flankMul(e,O)*(B.works?B.works.cover(e,a.by):1),mu,dtOf(a.src),a.by,true);vfxHit(O,e,dm,{arrow:!a.magic,magic:a.magic,col:a.col||(a.src&&a.src.bolt)});if(a.src&&a.src.fireArrow)fireSparks(e.x,e.y-7);if(sfxOn())blowSound(O,e,true,a.magic);if(!a.magic)stickArrow(e,a);earnXp(a.by,e,was)}a.life=0;
   }
 }
 // an arrow, javelin, stone or web: trees catch it only low, it hits on the way down, a miss sticks in the ground

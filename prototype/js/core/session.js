@@ -78,9 +78,9 @@ function startGame(k,b){
   // (a new game on the map: every system's world reset first, onWorld; the game's number for its random streams, core/rng.js,
   // drawn before the wild game and the beasts are placed from them)
   // (a generated world but the classic one: its first sites, herds, bands and beasts from its seed, seededStart)
-  // (then the realms' standards: a pure reckoning of the map, no draw, world/standards.js)
+  // (then the realms' outposts: a pure reckoning of the map, no draw, world/outposts.js)
   const own=seededStart();useWorld(WM);initWorld();if(own)Rng.reset();
-  startDraws(own,()=>{W.sites=genSites()});W.sites.push(...Standards.place());Standards.reserve();fogReset();if(!own)Rng.newGame();startDraws(own,initCritters);
+  startDraws(own,()=>{W.sites=genSites()});W.sites.push(...Outposts.place());Outposts.reserve();fogReset();if(!own)Rng.newGame();startDraws(own,initCritters);
   const {S,home}=heroHome(k,b),rc=RACES[P.race];
   startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);goblinsStart();
     for(let i=0,n=Math.round(density(WM).monsterStart*spawnMul('monsters'));i<n;i++)spawnMonster(true)});

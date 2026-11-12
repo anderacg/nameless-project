@@ -3,7 +3,7 @@
 // from its data or its kind; the category's rules (bag room, route, sell, drop, tab) decide what the verbs offer; a holding's old
 // arrows and bolts are no item; the bag's tabs, its sort, the market and the loot screen go by category; ale and liquor lift morale
 // once, as they come into your stores (water none), and no longer slow the drain; quest items are bound (no Sell, no Drop), take a
-// slot, come and go with the story's outcomes, and are gone when their quest or thread ends; the sealed letter is one.
+// slot, come and go with the story's outcomes, and are gone when their quest or quest chain ends; the sealed letter is one.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,C=t.ITEM_CATS,cat=(k,id)=>t.itemKind({k,id}).catId({k,id});
@@ -58,20 +58,20 @@ try{
  P.morale=99.5;t.invAdd('good','liquor',5);ok(P.morale===100,'never over 100');
  {const L=t.supplyLand(),r=d=>t.staminaRate(true,d,L).n;ok(r('water')===r('ale')&&r('ale')===r('liquor'),'on the march every drink keeps the drain at its rate ('+r('water')+')')}
  {const hour=g=>{empty();t.invAdd('good',g,10);(0,eval)('BAND=freshBand()');P.morale=50;P.bsta=100;t.supplyHour();return P.morale};const a=hour('ale'),w=hour('water');ok(a===w,'drinking ale by the hour lifts no morale now (ale '+a+', water '+w+')')}
- // ---- quest items: the story's outcomes give and take them; bound to their quest or thread, gone when it ends
+ // ---- quest items: the story's outcomes give and take them; bound to their quest or quest chain, gone when it ends
  empty();Kit.storyKinds();
  {const r=t.applyOutcome({item:{give:'map'},say:'You take the map.'},{e:null});ok(r.item==='map'&&t.invCount('quest','map')===1&&t.describeOutcome({item:{give:'map'}})==='the old map'&&t.describeOutcome({item:{take:'map'}})==='you hand over the old map','the outcome item {give}: into your bag ('+t.describeOutcome({item:{give:'map'}})+')');
   t.applyOutcome({item:{take:'map'}},{});ok(t.invCount('quest','map')===0,'and {take}: handed over')}
- {const q={shape:'quest',id:901},th={shape:'thread',id:902,i:902};
+ {const q={shape:'quest',id:901},th={shape:t.QUESTCHAIN_SHAPE,id:902,i:902};
   t.applyOutcome({item:{give:'heirloom'}},{e:th});t.applyOutcome({item:{give:'map'}},{e:q});
   const s1=P.inv.find(s=>s&&s.id==='heirloom'),s2=P.inv.find(s=>s&&s.id==='map');
-  ok(s1&&s1.by==='thread:'+th.i&&s2&&s2.by==='quest:'+q.id,'bound to what gave it: a thread ('+s1.by+'), a quest ('+s2.by+')');
-  t.worldEmit('quest:ended',{e:q,how:'failed'});ok(!P.inv.some(s=>s&&s.id==='map')&&P.inv.some(s=>s&&s.id==='heirloom'),'its quest over: the map is gone, the thread\'s heirloom kept');
-  t.worldEmit('thread:ended',{e:th,how:'over'});ok(!P.inv.some(s=>s&&s.k==='quest'),'its thread over: the heirloom gone too');
-  const enc=t.roadSpawn('merchant',P.x+40,P.y),live=t.Thread.as({k:'test_thread',i:903,day:G.day,at:'meet',wait:{shape:'encounter',id:enc.i},memory:{},past:[]});t.Thread.store().on.push(live);
+  ok(s1&&s1.by===t.QUESTCHAIN_SHAPE+':'+th.i&&s2&&s2.by==='quest:'+q.id,'bound to what gave it: a quest chain ('+s1.by+'), a quest ('+s2.by+')');
+  t.worldEmit('quest:ended',{e:q,how:'failed'});ok(!P.inv.some(s=>s&&s.id==='map')&&P.inv.some(s=>s&&s.id==='heirloom'),'its quest over: the map is gone, the quest chain\'s heirloom kept');
+  t.worldEmit('questchain:ended',{e:th,how:'over'});ok(!P.inv.some(s=>s&&s.k==='quest'),'its quest chain over: the heirloom gone too');
+  const enc=t.roadSpawn('merchant',P.x+40,P.y),live=t.QuestChain.as({k:'test_questchain',i:903,day:G.day,at:'meet',wait:{shape:'encounter',id:enc.i},memory:{},past:[]});t.QuestChain.store().on.push(live);
   t.applyOutcome({item:{give:'map'}},{e:enc});const s3=P.inv.find(s=>s&&s.id==='map');
-  ok(s3&&s3.by==='thread:903','given by an encounter a thread began: bound to that thread');P.inv[P.inv.indexOf(s3)]=null;
-  t.Thread.store().on=t.Thread.store().on.filter(x=>x!==live);enc.gone=1}
+  ok(s3&&s3.by===t.QUESTCHAIN_SHAPE+':903','given by an encounter a quest chain began: bound to that quest chain');P.inv[P.inv.indexOf(s3)]=null;
+  t.QuestChain.store().on=t.QuestChain.store().on.filter(x=>x!==live);enc.gone=1}
  // ---- a quest item takes a slot, and is never refused (past the bag's limit too)
  empty();for(let i=0;i<t.invCap()+t.BAG.maxOver;i++)t.invAdd('mat','pelt',t.STACK);
  ok(t.invAdd('mat','pelt',1)===0&&t.ITEM_KINDS.quest.give('heirloom',null)===1&&P.inv.filter(Boolean).length===t.invCap()+t.BAG.maxOver+1,'at the bag\'s limit nothing more goes in, but a quest item still does (a slot of its own)');

@@ -89,7 +89,7 @@ class BattleResolution{
     if(!o.tournament){const K=b.grpKills||{};this.unitOfBattle=Object.values(b.groups).filter(g=>g.player&&g.sourceGroupId).map(g=>({id:g.sourceGroupId,name:g.name,kills:K[g.id]||0,damage:Math.round(g.resolve?.damageDealt||0)}))
       .filter(x=>x.kills||x.damage).sort((x,y)=>y.kills-x.kills||y.damage-x.damage)[0]||null}
     const armies=o.tournament?null:new ArmyReport(b);// (read off the field before it goes)
-    this.wallsFell=b.units.filter(u=>u.team===1&&u.hp<=0&&!u.leader&&String(u.grp||'').startsWith('e0_')).length;// (the walls' own men slain: siege.js siegeFallen)
+    this.wallsFell=b.units.filter(u=>u.team===1&&u.hp<=0&&!u.left&&!u.leader&&String(u.grp||'').startsWith('e0_')).length;// (the walls' own men slain: siege.js siegeFallen)
     B=null;fieldDone();updateHint();// (the field back to today's height: setup.js)
     if(o.tournament){
       let html;if(win){P.gold+=45;P.renown+=6;gainXp(25,'tourney');if(G.town)addRep(G.town.ref.name,8);html='<h2>Champion</h2><p>The crowd chants your name. You take <strong class="gold">45 gold</strong> and gain renown.</p>';log('You win the tournament.','good')}
@@ -121,9 +121,10 @@ class BattleResolution{
       bounty+=reinfCut(e,res,this.battle?.sides);// (the lords and watches beside you take their share of the gold, and of the renown: engage.js)
       P.gold+=res.gold;
       const fame=res.fame==null?Math.max(2,Math.round(kills/2)):res.fame;if(fame)repNear(P.x,P.y,fame);
-      html='<h2>Victory</h2><p>You defeated '+(e.kind==='monster'?(kills>1?kills+' ':'the ')+MONSTERS[e.ref.id].n.toLowerCase():kills+' '+(e.kind==='lord'?(kills===1?'soldier':'soldiers'):(kills===1?'foe':'foes')))+(taken?' and took '+taken+' prisoner'+(taken>1?'s':''):'')+'.'+bounty+'</p>'+moodLine;
+      html='<h2>Victory</h2><p>You defeated '+(e.kind==='monster'?(kills>1?kills+' ':'the ')+monOf(e.ref).n.toLowerCase():kills+' '+(e.kind==='lord'?(kills===1?'soldier':'soldiers'):(kills===1?'foe':'foes')))+(taken?' and took '+taken+' prisoner'+(taken>1?'s':''):'')+'.'+bounty+'</p>'+moodLine;
       log('Victory. +'+res.gold+' gold, renown now '+P.renown+'.','good','war');mood('win');
     }else if(retreat){
+      if(G.capWith)G.capWith=null;// (a storm you joined and left: its realm leads no later taking of yours, world/siege.js showCapture)
       // as fleeing on the map (fleeOdds): a fight you started you simply leave; else a race. Got away, they lose your trail for a
       // while; run down, your rearguard pays and you must face them again. The foes you slew stay dead either way.
       const o=e.ref;slain=slain||[];if(!this.primaryLossesApplied&&o&&(e.kind==='lord'||e.kind==='patrol'||e.kind==='party'))for(const k of slain)if(formsFit(o))o.remove(k,1);

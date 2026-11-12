@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- brains: how each kind of party behaves on the map. Every moment each party's brain takes the same steps: its
-   cool-down runs, it sizes you up (how far, whether it can see you: hidden in woods or hills you are harder to see, inside a
+   cool-down runs, it sizes you up (how far, whether it can see you: hidden in woods you are harder to see (map.js hiddenAt: forest only; on hills one sees further), inside a
    holding not at all), then it does what its kind does: hunt you, keep clear of you, or go about its business. One class per
    kind; the party's own data stays on the party. think(o, d) returns true when it opened an encounter (the world stops there).
    updateParties(d) runs them all, kind by kind, each party by its tier (parties.js lodEach; a far one would take its brain's
@@ -39,11 +39,11 @@ class LordBrain extends Brain{
     if(l.waylay||['march','home','patrol'].includes(l.state)&&!TravelAwareness.sees(l)&&Waylay.consider(l,d,true)){const r=Waylay.step(l,moveStep(lordSpeed(l),d),d);if(r==='met')return true;if(r)return false}
     const v=this.look(l),pd=v.d,hostile=hostileTo(l.fac)&&!lordSpares(l),mul=lordSpeed(l)/26*Host.paceFor(l);// (26: a lord's old pace; a marshal's, his host's: hosts.js)
     const relief=hostile&&l.state==='relieve'&&!!P.siege&&P.siege.town===l.tgt,st=hostile?(relief?'attack':stance(l.power(),l)):null,see=TravelAwareness.sees(l)?travelDetection(l).range:0;
-    if(st==='afraid'&&l.state==='siege'&&pd<see){l.state='home';l.tgt=Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name;log(l.name+' abandons the siege as your band approaches.','good')}
+    if(st==='afraid'&&l.state==='siege'&&pd<see){const h=nearestReach(l,fiefsOf(l.fac));l.state=h?'home':'rest';l.tgt=h?h.name:null;log(l.name+' abandons the siege as your band approaches.','good')}
     const dread=W.lords.find(o=>!o.dead&&!o.inside&&o!==l&&atWar(o.fac,l.fac)&&Math.hypot(o.x-l.x,o.y-l.y)<WORLD_SCALE.ai.dread&&o.power()>=l.power()*1.5);
-    if(dread&&l.state==='march'&&fiefsOf(l.fac).length){l.state='home';l.tgt=Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name}
+    if(dread&&l.state==='march'&&fiefsOf(l.fac).length){const h=nearestReach(l,fiefsOf(l.fac));if(h){l.state='home';l.tgt=h.name}}
     if(!(hostile&&l.cool<=0&&l.state!=='siege'&&stanceMove(l,st,pd,v.dx,v.dy,see,moveStep(26*mul,d),true))){
-      let t=townBy(l.tgt);if(!t){lordThink(l);return false}
+      let t=townBy(l.tgt);if(!t){if(l.tgt||l.state!=='rest'||(l.thinkAt||0)<=G.day){l.thinkAt=G.day+1;lordThink(l)}return false}// (none he can reach: he thinks again each day)
       // (afraid of you (fearOf) or of a lord far stronger (dread): never home through him; another fief of his that is safe, else away
       // from him (the owner, 2026-11-01: "same goes for all entity"; engage.js safeRefuge))
       {const f=hostile&&fearOf(l,st)||dread;if(f&&l.state!=='siege'&&!safeRefuge(l,{x:t.x,y:t.y+12},f)){const alt=Spatial.nearest(fiefsOf(l.fac).filter(h=>h!==t&&safeRefuge(l,{x:h.x,y:h.y+12},f)),l.x,l.y);
@@ -73,6 +73,7 @@ const HAUNT={r:8};
 class BandBrain extends Brain{
   think(b,d,night){
     if(inFight(b))return false;
+    if(b.wave)return holdWaveStep(b,d,this);// (a wave marching on an outpost you hold: world/quests.js HoldQuest)
     const v=this.look(b);this.cool(b,d);
     const st=stance(b.power()*b.nerve,b),fear=fearOf(b,st),sp=moveStep(partySpeed(b,b.troops),d);
     if(!fear&&this.hunt(b,sp)){b.waylay=null;return false}// (a caravan it can take, ridden down before all else but its fear of you: BAND_HUNT)
@@ -89,14 +90,36 @@ class BandBrain extends Brain{
   // the fight when it is upon it (CaravanBrain: its guards against it), data/outlaws.js BAND_HUNT)
   // (goblins against every other band: the nearest rival in sight it thinks it can take, ridden down (true); one within X.meet of it,
   // fought there and then, whichever is the stronger)
-  feud(b,sp){const X=BAND_FEUD;if(!X.on||b.cool>0||b.cvT)return false;const gob=b.kind==='goblins',mine=b.power()*(b.nerve||1)*X.dare;let r=null,bd=X.see;
-    for(const o of bandits){if(o===b||o.gone||inFight(o)||(o.kind==='goblins')===gob)continue;const dd=Math.hypot(o.x-b.x,o.y-b.y);if(dd<bd&&(dd<X.meet||o.power()<=mine)){bd=dd;r=o}}
-    if(!r)return false;if(bd<X.meet){startFight([b],[r]);return true}
+  feud(b,sp){const X=BAND_FEUD;if(!X.on||b.cool>0||b.cvT)return false;const f=this.rival(b);if(!f)return false;const r=f.r,bd=f.bd;
+    if(bd<X.meet){startFight([b],[r]);return true}
     b.idle=false;const x0=b.x,y0=b.y;if(!Router.travel(b,{x:r.x,y:r.y},sp)||b.x===x0&&b.y===y0)walk(b,r.x-b.x,r.y-b.y,Math.min(bd,sp));return true}
+  // (the rival it rides at, {r, bd: how far}: the nearest of the other kind in sight it thinks it can take, or one right on it; null: none)
+  rival(b){const X=BAND_FEUD,gob=b.kind==='goblins',mine=b.power()*(b.nerve||1)*X.dare;let r=null,bd=X.see;
+    for(const o of this.near(b)){if(o===b||o.gone||inFight(o)||(o.kind==='goblins')===gob)continue;const dd=Math.hypot(o.x-b.x,o.y-b.y);if(dd<bd&&(dd<X.meet||o.power()<=mine)){bd=dd;r=o}}
+    return r?{r,bd}:null}
+  /* (the bands a feud's look goes through: every band (WORLD_FAST.feud off, as before), else those filed in the cells within
+     BAND_FEUD.see of b, in the bands' own order: none further off can be picked, so the pick is the old one. The cells (cs px a
+     side) are filed once a pass over the bands (updateBands counts them; again when the bands' list is another, or longer or
+     shorter), and each band filed again after its own moment (moved): only the band whose moment it is moves. The old look went
+     through every band and so cleared each one's stale mark of a fight that is gone (fights.js inFight): done here for them all as
+     the cells are filed and whenever a fight has gone) */
+  near(b){if(!WORLD_FAST.feud)return bandits;const C=BandBrain.cells,S=BAND_FEUD.see,cs=C.cs;
+    if(C.of!==bandits||C.n!==bandits.length||C.pass!==BandBrain.pass){C.of=bandits;C.n=bandits.length;C.pass=BandBrain.pass;C.by.clear();C.at.clear();C.ix.clear();C.fights=-1;
+      bandits.forEach((o,i)=>{const k=BandBrain.cell(o);C.ix.set(o,i);C.at.set(o,k);const L=C.by.get(k);if(L)L.push(o);else C.by.set(k,[o])})}
+    if(C.fights!==W.fights.length){C.fights=W.fights.length;for(const o of bandits)if(o.fight&&!o.gone)inFight(o)}
+    const x0=Math.floor((b.x-S)/cs),x1=Math.floor((b.x+S)/cs),y0=Math.floor((b.y-S)/cs),y1=Math.floor((b.y+S)/cs),out=C.out;out.length=0;
+    for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){const L=C.by.get(cx+cy*8192);if(L)for(const o of L)out.push(o)}
+    if(out.length>1)out.sort((p,q)=>C.ix.get(p)-C.ix.get(q));return out}
+  // (a band's moment over: filed where it stands now, if it left its cell)
+  moved(o){const C=BandBrain.cells;if(C.of!==bandits||C.pass!==BandBrain.pass)return;const k0=C.at.get(o);if(k0===undefined)return;const k=BandBrain.cell(o);if(k===k0)return;
+    const L=C.by.get(k0),i=L.indexOf(o);L[i]=L[L.length-1];L.pop();C.at.set(o,k);const N=C.by.get(k);if(N)N.push(o);else C.by.set(k,[o])}
   hunt(b,sp){const X=BAND_HUNT;if(!X.on||b.cool>0||b.cvT)return false;const mine=b.power()*(b.nerve||1)*X.dare;let c=null,bd=X.see;
     for(const o of W.caravans){if(o.gone||o.idle||inFight(o))continue;const dd=Math.hypot(o.x-b.x,o.y-b.y);if(dd<bd&&o.power()<=mine){bd=dd;c=o}}
     if(!c)return false;b.idle=false;const s=sp*X.pace,x0=b.x,y0=b.y;if(!Router.travel(b,{x:c.x,y:c.y},s)||b.x===x0&&b.y===y0)walk(b,c.x-b.x,c.y-b.y,Math.min(bd,s));return true}
 }
+// (the feuds' cells: near; the passes over the bands counted)
+BandBrain.pass=0;BandBrain.cells={cs:128,of:null,n:-1,pass:-1,fights:-1,by:new Map(),at:new Map(),ix:new Map(),out:[]};
+BandBrain.cell=o=>Math.floor(o.x/128)+Math.floor(o.y/128)*8192;
 // (a band that fought in your battle, against you or beside you, knows where your army stands: the weaker leaves the field
 // remembering every group of it (TravelAwareness), afraid of it as if it had just seen it; battle/sides.js puts it back on the map.
 // Its power weighed without caching it (pw), so the battle's outcome stays as it was)
@@ -182,7 +205,7 @@ class CaravanBrain extends Brain{
     else if(scared){const ox=c.x;Router.flee(c,{x:c.x+v.dx,y:c.y+v.dy},moveStep(CARAVAN_SPD*.9,d));this.face(c,ox)}
     else{const ox=c.x,oy=c.y;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*armyGround(c,caravanGround)*(this.behind(c,gate,gd)?CARAVAN_GAP.slow:1),d));c.dir=c.x>=ox?1:-1;
       const m=Math.hypot(c.x-ox,c.y-oy);if(m>0)CARAVAN_HEAD.set(c,[(c.x-ox)/m,(c.y-oy)/m])}
-    if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.arrive(to))c.gone=true;return false}
+    if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(SIEGE_SHUT.on&&!c.mine&&besieged(to)){const alt=Spatial.nearest(TOWNS.filter(t=>t!==to&&!t.gone&&t.owner===c.fac&&!besieged(t)),c.x,c.y);if(alt){c.to=alt.name;return false}}if(c.arrive(to))c.gone=true;return false}// (a besieged gate barred to it: on to another of its realm)
     // preyed on: bandits close by, or a lord at war with its owner; the guards fight it out (fights.js)
     const b=bandits.find(o=>Math.hypot(o.x-c.x,o.y-c.y)<12&&!o.cvT);
     const l=!b&&W.lords.find(o=>!o.dead&&!o.inside&&o.state!=='siege'&&(c.mine?hostileTo(o.fac):atWar(o.fac,c.fac))&&Math.hypot(o.x-c.x,o.y-c.y)<14);
@@ -196,7 +219,8 @@ const BRAINS={lord:new LordBrain(),band:new BandBrain(),cparty:new CompanionBrai
 /* each kind's moment, and then what the kind does together */
 function updateBands(d){
   // bands shelter in a camp at night (its site's bands, sites.js) and ride out at dawn
-  const night=Clock.isNight;if(!night)nightCamps().forEach(campEmpty);const met=lodEach(bandits,BRAINS.band,d,night);
+  const night=Clock.isNight;if(!night)nightCamps().forEach(campEmpty);// (each band in turn by its tier, as lodEach has them, and filed again where its moment left it: BandBrain moved)
+  BandBrain.pass++;let met=false,k=0;const by=BRAINS.band;for(const o of bandits){const m=lodThink(by,o,k++,d,night);by.moved(o);if(m){met=true;break}}
   if(bandits.some(b=>b.gone))bandits=bandits.filter(b=>!b.gone);return met;
 }
 function updateLords(d){

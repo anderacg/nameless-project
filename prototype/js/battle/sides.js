@@ -142,7 +142,8 @@ class BattleSides{
   // (the owner, 2026-10-30: won, "the split shared based on army performance"; lost or withdrawn, "no reward beside exp": only the
   // experience your army earned, its kills', BATTLE_SPOILS.lostXp of them)
   const down=noneTake(b,e),sh=b.win?this.shares():null,mine=sh?.get(credit)||0,spoils=sh?[...sh.keys()].flatMap(r=>r.kills):[];gainXp(kills.length*(b.win?8:BATTLE_SPOILS.lostXp));
-  if(b.win){let gold=0;for(const k of spoils)if(!ST[k].beast)gold+=rint(2,6);gold=Math.round(gold*mine*(1+tm('loot')));P.gold+=gold;P.renown+=Math.round(spoils.length*mine);if(!down)takePrisoners(spoils.slice(0,Math.round(spoils.length*mine)));
+  const F=DROPS.on&&DROPS.loot?BattleDrops.of(b).tally:null;if(F&&e)e.field=F;// (what the field gave already, off the spoils as resolution.js conclude takes it: drops.js)
+  if(b.win){let gold=0;for(const k of spoils)if(!ST[k].beast)gold+=rint(2,6);gold=Math.round(gold*mine*(1+tm('loot')));if(F)gold=Math.max(0,gold-F.gold);P.gold+=gold;P.renown+=Math.round(spoils.length*mine);if(!down)takePrisoners(spoils.slice(0,Math.round(spoils.length*mine)));
    for(const r of this.records)if(r.owner.mapKind==='monster'&&r.playerKills.length)monsterLoot(r.owner,r.playerKills)}
   if(b.win)for(const r of this.records){if(r.owner===P||!r.joined||this.survivors(r).length||!r.playerKills.length)continue;const o=r.owner;
    if(o.mapKind==='lord'&&r.playerLeader){spoilsWon({kind:'lord',ref:o});const res={gold:0,fame:0};lordWon(o,res,!down);P.gold+=res.gold||0;r.handled=true}

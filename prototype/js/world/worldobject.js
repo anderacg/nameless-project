@@ -9,7 +9,7 @@
    only: saves keep plain data, made one of its kind again on loading or when the map next asks (asClass; world.js
    asWorldObject, worldObjects). The parties and caravans (here), holdings (holding.js) and estates (estates.js), sites, beasts (monsters.js),
    herds (critters.js), refugees, workers (folk.js) and ships are world objects. ---------- */
-// (in sight: within your sight (any of your men's: fog.js Sight), or nearer one of them where it hides in woods or hills; an army
+// (in sight: within your sight (any of your men's: fog.js Sight), or nearer one of them where it hides in woods (map.js hiddenAt); an army
 // marched man by man (march.js marchMen), while any of its men is, each by his own ground (the owner, 2026-11-01: "a huge army
 // roaming around but suddenly disappear even with in just few feet away. and even weird when in the forest"): its middle first,
 // then, its men's reach touching your sight (MarchArmy.spread), man by man. SIGHT_EYES.armies off: by its middle alone, as before)
@@ -134,6 +134,13 @@ function unpackRec(a,keys,o={}){keys.forEach((k,i)=>{if(a[i]!==null)o[k]=a[i]});
    one near, every frame, as before the tiers (the tests). lag: px the grid may be behind (what moved since it was filed): asked
    with that margin. (n: frames so far in this world or since this load, so the same game thinks on the same frames; t: till the
    next sorting, 0 with a new world; cx, cy: your chunk then) */
+/* the same world, reckoned with less work (a code review's measure, 2026-11-11: a Huge world's moment 16 ms, a fifth of it the bands'
+   feuds, a twelfth the land looked at afresh by every beast). Each gives what the old reckoning gave (tests/worldfast.js runs a
+   world both ways and sets them side by side); off, the old reckoning itself.
+   feud: a band looks for a rival among the bands filed near it (brains.js BandBrain near: cells filed once a pass over the bands,
+   each band filed again after its moment), not through every band; land: the land looked at once before the beasts' moments and held through them (territory.js
+   landHeldFor: none of them changes it), and an outpost's part of its key from the outposts alone (outposts.js) */
+const WORLD_FAST={feud:true,land:true};
 const WORLD_LOD={on:true,chunk:512,near:1,mid:4,midEvery:4,every:.5,lag:512,t:0,n:0,cx:0,cy:0,grid:null},TIERS=new WeakMap();
 WORLD_LOD.grid=new ChunkGrid(WORLD_LOD.chunk);
 // (a world goes in, or a game is loaded: its movers are other objects, filed afresh when next asked, the frames counted afresh; never saved)

@@ -35,7 +35,7 @@ function qwCompact(){
 // the offers you know of, the archive (newest first)
 function qwItems(){
   const qs=P.quests.map(q=>Quest.as(q)).filter(q=>!q.story).map(q=>({k:'q'+q.id,q,tab:q.cat,state:q.state}));
-  const ths=Thread.list().on.map(th=>({k:'t'+th.i,th,tab:th.cat,state:th.state}));
+  const ths=QuestChain.list().on.map(th=>({k:'t'+th.i,th,tab:th.cat,state:th.state}));
   const past=QuestArchive.list().slice().reverse().map(e=>({k:'a'+e.k,e,tab:'past',state:e.state}));
   return [...qs,...ths,...qwOffers(),...past];
 }

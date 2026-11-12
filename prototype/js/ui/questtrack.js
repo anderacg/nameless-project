@@ -9,7 +9,7 @@ const QTRACK={show:10,fade:.3,gap:8,stack:3};
 const QT={el:null,pops:[]};
 // (a tracked one's lines: its title, what to do, the way to it)
 function qtLines(k){
-  const q=QuestTrack.quest(k),th=QuestTrack.thread(k),g=QuestTrack.goal(k);
+  const q=QuestTrack.quest(k),th=QuestTrack.questChain(k),g=QuestTrack.goal(k);
   const title=th?qwStoryName(th):q?q.title:'',todo=th?th.note||'Under way.':q.state==='completed'?'Return to '+qwReturnTo(q)+' for your reward':q.handsOver?q.aim():q.todo();
   return{title,todo,way:g?questWay(g):''};
 }

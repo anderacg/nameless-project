@@ -64,3 +64,5 @@ class Moveset{
 }
 // (a shield on t's front toward u: a shielded kind, a character's shield)
 const shieldToward=(t,u)=>(isChar(t)?charShield(t):tagsOf(t.s).includes('shield'))&&sideOf(t,u)==='front';
+// (a breed: its moves its kind's, data/monsters.js)
+breedsInto(MOVESETS.kinds);

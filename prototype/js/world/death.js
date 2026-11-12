@@ -29,7 +29,7 @@ class Death{
   static alone(){return !this.with().length&&!troopCount()&&!(P.woundedGroups||[]).some(w=>w.count>0)}
   // your chance to live, and what moved it
   static odds(e){
-    const X=DEATH.shift,m=e.kind==='monster'?e.ref:null,M=m&&MONSTERS[m.id],h=Spatial.nearestHolding(P.x,P.y),night=Clock.isNight,why=[];let ch=DEATH.live;
+    const X=DEATH.shift,m=e.kind==='monster'?e.ref:null,M=m&&monOf(m),h=Spatial.nearestHolding(P.x,P.y),night=Clock.isNight,why=[];let ch=DEATH.live;
     const add=(v,w)=>{if(v){ch+=v;why.push([w,v])}};
     add(Math.max(skill('med'),...this.with().map(id=>compSkill(id,'med')))*X.med,'Medicine');
     add(X.armor[itemArmor(P.gear.body)]||0,'your armour');
@@ -74,7 +74,7 @@ class Death{
       '<p>Your remains lie where you fell, with your gear ('+s.items+' piece'+(s.items===1?'':'s')+') and '+s.gold+' gold: whoever finds them first may take them. Men will put a price on '+htmlText(s.by)+'.</p>'+
       '<p class="muted">The world goes on without them. Go on in it as someone new, or load a save.</p><div class="btns"><button class="btn sm" type="button" data-act="death-load">Load a save</button><button class="btn sm" type="button" data-act="death-menu">Main menu</button></div>'+
       nav(null,['death-new',null,'Go on as someone new']))}// (Esc: on as someone new, never out of the game)
-  static beastName(e){const M=e.kind==='monster'&&e.ref&&MONSTERS[e.ref.id];return M?M.n.toLowerCase()+((e.list||[]).length>1&&!/s$/.test(M.n)?'s':''):'beasts'}
+  static beastName(e){const M=e.kind==='monster'&&e.ref&&MONSTERS[e.ref.id]&&monOf(e.ref);return M?M.n.toLowerCase()+((e.list||[]).length>1&&!/s$/.test(M.n)?'s':''):'beasts'}
   // your army gone for good: the fit, the wounded
   static dismiss(){const r=partyRoster(P);let n=0;for(const g of r.groups.slice()){n+=g.count;r.remove(g.type,g.count,g.id)}
     n+=(P.woundedGroups||[]).reduce((a,w)=>a+(w.count||0),0);P.woundedGroups=[];
@@ -96,7 +96,7 @@ class Death{
   static passengers(){const out=[];
     for(const q of Escort.list()){if(q.wait)continue;
       if(Math.random()<DEATH.pass){const t=Spatial.nearestHolding(P.x,P.y,t=>!t.gone);if(t){q.wait=t.name;out.push(cap1(q.pn)+' got away to '+t.name+', and waits for you there.');continue}}
-      out.push(cap1(q.pn)+' did not live.');q.fail(cap1(q.pn)+' was killed by the beasts.','slain')}
+      out.push(cap1(q.pn)+' did not live.');q.fail(cap1(q.pn)+' was killed by the beasts.','dead')}
     return out.join(' ')}
   // the beast that beat you may become a man-eater: its name, stronger, its bounty raised, talked of
   // (slew: the hero it killed, a man-eater for sure then, a bounty on it (slayer gold), told by the news)
@@ -112,7 +112,7 @@ class Death{
   // the report shown: the day passes, you wake, the beast is gone; quests told
   static after(){
     const p=this.pending;if(!p)return;this.pending=null;const m=p.m;this.home(p);if(p.slain)return;
-    Clock.passHours(DEATH.wake);
+    Clock.passHours(DEATH.wake);if(G.dead)return;// (dead of cold or thirst as you lay: supply.js heroDies)
     const [max]=vitals();P.hp=Math.max(1,Math.round(max*DEATH.hp));Timed.of(P).set('weak',DEATH.weak.days);
     worldEmit('hero:fell',{lived:true,monster:m});updateHUD(true)}
   // (the beast gone home: its lair, or away from it when it fought you there)
@@ -201,7 +201,7 @@ class Remains extends WorldObject{
     if(a==='death-take'){const got=r.take();if(got)log('From the '+(r.grave?r.kind:'remains')+' of '+r.who+': '+got+'.','gold');if(r.grave)return r.meet()}
     hidePanel();toWorld()}
   // (taken by you: the gold, and what fits in your bag; the rest left)
-  take(){const g=this.gold;P.gold+=g;this.gold=0;let n=0;this.items=this.items.filter(([k,id,c])=>{const put=invAdd(k,id,c);n+=put;return put<c});
+  take(){const g=this.gold;P.gold+=g;this.gold=0;let n=0;this.items=this.items.filter(it=>{const put=invAdd(it[0],it[1],it[2]);n+=put;it[2]-=put;return it[2]>0});
     return [g&&g+' gold',n&&n+' piece'+(n>1?'s':'')].filter(Boolean).join(' and ')}
   draw(ents,cam,V){if(!this.inView(V))return;const r=this;
     ents.push({y:r.y,f:()=>{const x=Math.round(r.x-cam.x),y=Math.round(r.y-cam.y),C=DEATH.remains.col;

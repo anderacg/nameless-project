@@ -10,7 +10,7 @@
 // covered the day it is registered. The story wave's S2 and S3 kinds too: every Incident kind (the incidents) comes somewhere,
 // befalls you as its outcome says (every race, both ways of a roll), its line logged, over at once; every Quest kind (the jobs)
 // is offered somewhere, taken, saved and loaded as it was, done by its own deed heard on the bus (no other's), reported and
-// paid, or failed on its due day. S5: every Thread kind (its steps hold together; every way through it, answered on the bus, saved
+// paid, or failed on its due day. S5: every QuestChain kind (its steps hold together; every way through it, answered on the bus, saved
 // and loaded at each step, ended once) and every Gathering kind (a year of its calendar, on schedule and in order; its page): the
 // game registers none yet, so the test kinds (Kit.storyKinds). Written on the test kit (tests/kit.js).
 Kit.suite(({ok,info})=>{
@@ -169,14 +169,14 @@ Kit.suite(({ok,info})=>{
     else{G.day=q2.due+1;t.questDay();G.day=d0;if(P.quests.length||ended.filter(z=>z===q2).length!==1||!G.msgs.slice(G.msgs.indexOf(m0)+1).some(m=>/^Quest failed/.test(m.m)))bad.push(k+' (failed)')}}else bad.push(k+' (a second not taken)')}
    P.quests=[];Kit.world()}}finally{t.worldOff('quest:ended',fn)}
   ok(!bad.length,'every job kind is offered in a fitting place, taken, saved and loaded as it was, done by its own deed on the bus (and no other), reported and paid; a job never failed for time, an escort failed on its due day'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
- // ================= the Thread kinds (story/thread.js), every one (the game registers none yet: the test kind, tests/kit.js
+ // ================= the QuestChain kinds (story/questchain.js), every one (the game registers none yet: the test kind, tests/kit.js
  // Kit.storyKinds): its steps are data that hold together; every way through it (each branch) walked, each step answered by its
  // own event on the bus (another's ignored), its record saved and loaded at each step; it ends once, by its last step's key
- {Kit.storyKinds();const SH='thread',Th=t.Thread,all=K.all(SH).filter(D=>!D.book),bad=[];// (the questbook's: tests/questbook.js walks them)
+ {Kit.storyKinds();const SH=t.QUESTCHAIN_SHAPE,Th=t.QuestChain,all=K.all(SH).filter(D=>!D.book),bad=[];// (the questbook's: tests/questbook.js walks them)
  let nPaths=0;Kit.world();Kit.clear();Kit.goHome();
   const nexts=s=>s.then==null?[]:typeof s.then==='string'?[s.then]:Object.values(s.then).filter(Boolean);
   const keys=s=>s.then&&typeof s.then==='object'?Object.keys(s.then):['done'];
-  const ended=[],fn=ev=>ended.push(ev);t.worldOn('thread:ended',fn);
+  const ended=[],fn=ev=>ended.push(ev);t.worldOn('questchain:ended',fn);
   try{for(const D of all){const ids=D.steps.map(s=>s.id),first=D.first||ids[0];
    if(!D.n||!ids.length||new Set(ids).size!==ids.length)bad.push(D.id+' (its name, or its steps)');
    for(const s of D.steps){const k=Th.starterOf(s);
@@ -201,8 +201,8 @@ Kit.suite(({ok,info})=>{
      t.worldEmit(type,{e:{shape:w&&w.shape,id:w&&w.id},how:k});Kit.world()}
     const got=ended.slice(n0),last=path[path.length-1];
     if(got.length!==1||got[0].e!==z||got[0].how!==last[1]||z.at||W.story.threads.on.includes(z)||z.past.map(p=>p.join(':')).join()!==path.map(p=>p.join(':')).join())bad.push(D.id+' '+path.map(p=>p.join(':')).join('>')+' (ended '+got.length+'×, past '+z.past.map(p=>p.join(':')).join()+')')}
-   Kit.world();P.quests=[];W.road=null}}finally{t.worldOff('thread:ended',fn)}
-  ok(all.length>=1&&!bad.length,'every thread kind: its steps hold together, every way through it walked step by step on the bus (another\'s event ignored), saved and loaded at each step, ended once by its last step ('+all.length+' kinds, '+nPaths+' ways)'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
+   Kit.world();P.quests=[];W.road=null}}finally{t.worldOff('questchain:ended',fn)}
+  ok(all.length>=1&&!bad.length,'every quest chain kind: its steps hold together, every way through it walked step by step on the bus (another\'s event ignored), saved and loaded at each step, ended once by its last step ('+all.length+' kinds, '+nPaths+' ways)'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
  // ================= the Gathering kinds (story/gathering.js), every one (the test kind, as above): a year of its calendar, every
  // place told of it, open and closed on its schedule in that order, the calendar sorted all the while, saved and loaded midway;
  // its page, and entering it

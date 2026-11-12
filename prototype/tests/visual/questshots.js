@@ -25,11 +25,11 @@ window.RUN=()=>{
  if(shot==='side'){const th=story();jobs();t.QuestTrack.set('t'+th.i);open('side','t'+th.i);return}
  if(shot==='main'){
   const page=(title,cs)=>({page:{title,text:title+'.',choices:cs.map(([label,how])=>({label,how,out:()=>({})}))}});
-  t.defineKind('thread','qm_shot',{n:'A Name on the Road (test)',main:true,who:()=>'you',steps:[
+  t.defineKind(t.QUESTCHAIN_SHAPE,'qm_shot',{n:'A Name on the Road (test)',main:true,who:()=>'you',steps:[
    {id:'road',stage:'Reach Ashford',checkpoint:true,how:d=>d.e.fate,start:{step:'visit',town:'Ashford',spec:{to:{town:'Ashford'},title:'Reach Ashford'}},note:'Go to Ashford.',then:{arrived:'grain'}},
    {id:'grain',stage:'Recover the grain',checkpoint:true,fail:['lost'],setback:'The deserters beat you back. The grain is still theirs.',start:{step:'visit',town:'Ashford',spec:{to:{x:ash.x+300,y:ash.y+200,name:'the deserters’ camp'},title:'Recover the grain'}},how:d=>d.e.fate==='arrived'?'won':'lost',note:'Recover the grain from the deserters.',then:{won:'home'}},
    {id:'home',stage:'Home',start:page('Home',[['Rest','rest']]),note:'Rest.'}]});
-  Kit.goHome(ash);const th=t.Thread.start('qm_shot',{town:'Ashford'}),sq=()=>t.Quest.as(P.quests.find(x=>x.id===th.wait.id));sq().arrive(ash);sq().abandon();jobs();open('main','t'+th.i);return}
+  Kit.goHome(ash);const th=t.QuestChain.start('qm_shot',{town:'Ashford'}),sq=()=>t.Quest.as(P.quests.find(x=>x.id===th.wait.id));sq().arrive(ash);sq().abandon();jobs();open('main','t'+th.i);return}
  if(shot==='jobs'){story();const {qc}=jobs();P.level=1;t.QuestTrack.set('q'+qc.id);open('job','oAshford:1');return}
  if(shot==='archive'){story();const {qb,qc,qs}=jobs();t.turnIn(qs,ash);t.Quest.as(qb).abandon();qc.fail('The seal was broken.');delete P.shut;open('past','aq'+qb.id);return}
  if(shot==='board'){P.level=1;Kit.goHome(ash);P.jobs={Ashford:{day:G.day,list:[t.makeQuest('bounty',ash),t.makeQuest('troops',ash)]}};P.x=ash.x;P.y=ash.y+5;Kit.world();G.lastTown=null;t.updateWorld(.01);t.act('tab','jobs');q0();if(u.get('open'))document.querySelector('.row.locked').scrollIntoView()}

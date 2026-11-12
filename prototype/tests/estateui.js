@@ -34,7 +34,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     ok(menus().join()===[t.ESTATES[k0].work&&'folk',A0.works&&'works'].filter(Boolean).join()&&names().join()===[t.ESTATES[k0].work&&A0.folk,A0.works].filter(Boolean).join()&&!menus().some(k=>ESTS.includes(k))&&qa('.rail-i').every(b=>b.querySelector('.ri-ico svg')&&!b.querySelector('small')),
       'the rail: its own areas, an icon and a name, no status, no other estate: '+names().join(', '));
     if(A0.works){t.act('es-tab','works');ok(h2()===A0.works&&/Production|Nothing made/.test(panel())&&/In store/.test(panel()),'its '+A0.works+': what it made yesterday and its stores');t.act('es-tab','home')}
-    ok(q('.rail-head').textContent.includes(t.ESTATES[k0].n)&&q('.rail-head .rh-flag .gflag')&&q('.rail-head .gold'),'the rail\'s header: the estate, its owner\'s banner and your gold');
+    ok(q('.rail-head').textContent.includes(t.ESTATES[k0].n)&&q('.rail-head .rh-flag .gflag')&&(z.owner==='player')===!!q('.rail-head .gold')&&(z.owner==='player')===!!q('.rw-gold'),'the rail\'s header: the estate, its owner\'s banner, and your gold only if it is yours (2026-11-12, the owner: "why show gold in this menu?")');
     ok(!q('.nav [data-nav="back"]')&&/Leave/.test(q('.nav [data-nav="close"]').textContent),'no Back, Leave on the right');
     ok(G.estTab===null&&!menus().includes('raid')&&['sabotage','plunder','burn'].every(a=>q('.rwbody [data-act="es-ask"][data-arg="'+a+'"]'))&&/guards watch it \(power/.test(panel())&&/Plunder its stores/.test(panel())&&!q('.nav [data-nav="back"]')&&/Leave/.test(q('.nav [data-nav="close"]').textContent),
       'the raid is on the overview (no Outskirts area): its guards and power, Sabotage, Plunder and Burn; Leave on the right');

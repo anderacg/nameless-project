@@ -42,7 +42,7 @@ const NEWS_VAGUE={on:true,tiles:40,days:2,max:3,inflate:.5};
 const newsW=()=>W.news||(W.news={items:[],n:0,heard:{},told:{},marks:[]});
 const facN=f=>FACS[f]?FACS[f].n:'a realm';
 // (a beast's name in a sentence: "A wolf pack" has, "Dire boars" have)
-const beastN=d=>{const n=MONSTERS[d.id]?MONSTERS[d.id].n:'Beasts',pl=/s$/.test(n);return [pl?n:cap1(an(n.toLowerCase())),pl]};
+const beastN=d=>{const n=MONSTERS[d.id]?monRec(d.id,d.breed).n:'Beasts',pl=/s$/.test(n);return [pl?n:cap1(an(n.toLowerCase())),pl]};
 // (how many, in words, swollen by the talk's vagueness v)
 const NEWS_MANY=[[9,'half a dozen'],[16,'a dozen'],[26,'a score'],[70,'scores'],[Infinity,'hundreds']];
 const newsMany=(n,v)=>{const m=n*(1+NEWS_VAGUE.inflate*(v||0));return NEWS_MANY.find(x=>m<x[0])[1]};
@@ -157,7 +157,7 @@ function newsFight(f,won,lost){
 // a threat on a holding's land (defence.js landDefence): a beast, or a band strong enough to talk of (its strength worked out
 // here, its own cache left as it was)
 function newsThreat(o){
-  if(o.mapKind==='monster')return newsRecord('beast',o,{id:o.id,n:o.n});
+  if(o.mapKind==='monster')return newsRecord('beast',o,{id:o.id,n:o.n,...(o.breed?{breed:o.breed}:{})});
   if(o.mapKind==='band'&&rating(o.troops,chiefLv(o))>=NEWS.band)newsRecord('band',o,{chief:o.ld?o.ld.name:'',label:o.label(),n:o.troops.length});
 }
 /* what it hears: each world event (core/bus.js) recorded as its kind, with its facts (names, never objects), at the moment it

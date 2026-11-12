@@ -3,6 +3,12 @@
 // Actors execute their group's orders; commanders and BattleControl retain command authority.
 // (the grid open: the same pick from the buckets round him, spatial.js)
 const nearest=u=>{if(spatialOn())return SG.nearest(u);let best=null,bd=1e9;for(const e of B.units){if(e.hp<=0||!battleEnemy(e,u)||!ArmyTactics.local(u,e))continue;const d=((e.x-u.x)**2+(e.y-u.y)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
+/* (nearest's pick where it stands within r of him, by the buckets his box of r touches (the grid open; else nearest itself): a foe
+   within r weighs under r² unless he routs, one outside it r² or more, so whenever nearest's own pick stands within r and does
+   not rout it is the least here too, by the same sum and the same order on a tie; and when this one's is a router or stands
+   further off, nearest's is too. For a test that takes only a foe within r who does not rout (step: the foe right on top of him) */
+const nearWithin=(u,r)=>{if(!spatialOn())return nearest(u);const ix=SG.box(u.x-r,u.y-r,u.x+r,u.y+r,u.team,true),U=SG.U,ux=u.x,uy=u.y;let best=null,bd=1e9;
+  for(let k=0;k<ix.length;k++){const e=U[ix[k]];if(e.hp<=0||!battleEnemy(u.team,e)||!ArmyTactics.local(u,e))continue;const d=((e.x-ux)**2+(e.y-uy)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
 // strike: how it hits (a character: combos, the bow and casts, charmind.js charStrike); else a troop's attack
 /* every shooter's shot, as in Total War: they shoot only in a forward arc (SHOOT.arc), where their group faces; turning it is
    yours or their commander's call (a move, a dragged line, the commander's facing: commander.js), never theirs; mages (their bolt; their spells have their own shapes), riders and units marked 'circle' shoot all round. The moment a foe is in range and in the arc (and
@@ -37,8 +43,11 @@ const MELEE_HOLD={on:true,slack:1};const MELEE_HELD=new WeakMap();// (whom each 
 const blowsToFell=(u,e)=>Math.ceil(e.hp/Math.max(.5,u.s.dmg*matchup(u.s,e.s)));
 /* (a foe his side cannot see, hidden in woods or behind a rise, is no one's pick: terrain.js seenBy; the nearest he can see. With
    no terrain everyone is seen and this is nearest itself) */
-const nearestSeen=u=>{const n=nearest(u);if(!n||seenBy(u.team,n))return n;let best=null,bd=1e9;
-  for(const e of B.units){if(e.hp<=0||!battleEnemy(e,u)||!ArmyTactics.local(u,e)||!seenBy(u.team,e))continue;const d=((e.x-u.x)**2+(e.y-u.y)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
+// (a code review's measure, 2026-11-11: a soldier with no foe in sight looked for one every frame, the whole battle sifted each
+// time. The same pick from fewer: only those his side is not hidden from can pass (terrain.js BattleSight shown, B.units' order
+// kept), and with none of them there is no one to find)
+const nearestSeen=u=>{const S=B.sight,L=S&&S.shown?S.shown(u.team):null;if(L&&!L.length)return null;const n=nearest(u);if(!n||seenBy(u.team,n))return n;let best=null,bd=1e9;
+  for(const e of L||B.units){if(e.hp<=0||!battleEnemy(e,u)||!ArmyTactics.local(u,e)||!seenBy(u.team,e))continue;const d=((e.x-u.x)**2+(e.y-u.y)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
 const meleeTarget=u=>nearestSeen(u);// named targeting contract, also used by the RTS tests
 function shooterTarget(u){
   const R=u.s.range,d=e=>Math.hypot(e.x-u.x,e.y-u.y),inR=(spatialOn()?SG.near(u.x,u.y,R+1,u.team,true):B.units).filter(e=>e.hp>0&&battleEnemy(e,u)&&ArmyTactics.local(u,e)&&!e.rout&&d(e)<=R&&seenBy(u.team,e));if(!inR.length)return nearestSeen(u);
@@ -172,8 +181,9 @@ class Actor extends Fighter{
       const member=e=>e&&e.hp>0&&!e.left&&battleEnemy(e,u)&&(g.targetGroupId!==null?e.grp===g.targetGroupId:e.id===g.targetUnitId);
       if(u.rt<=0||!member(u.tgt)){u.tgt=orderedTarget(u,g,s);u.rt=.4;u.near=null}
       // (your hero and companions, sent at a foe, go for him: they do not turn on whoever they brush past on the way; soldiers do)
-      const n=nearest(u),close=s.range?30:(s.reach||11)+8;
-      u.near=this.turnsOn(g)&&n&&!n.rout&&!member(n)&&Math.hypot(n.x-u.x,n.y-u.y)<close?n:null;
+      // (the nearest foe looked for only within close: one further off is never turned on, and no nearer one is missed: nearWithin)
+      const close=s.range?30:(s.reach||11)+8,n=this.turnsOn(g)?nearWithin(u,close):null;
+      u.near=n&&!n.rout&&!member(n)&&Math.hypot(n.x-u.x,n.y-u.y)<close?n:null;
       if(u.near)u.tgt=u.near;
       if(DUEL.on&&!s.range){const p=Duel.of(u);if(p&&member(p))u.tgt=p}// (in a duel, his partner if one of those he was sent at: duel.js)
     }

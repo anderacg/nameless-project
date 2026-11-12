@@ -65,7 +65,7 @@ function horseSprite(L){const key='hz'+L.mount+(L.mountC||'')+L.team+(L.barded?'
    crisp; a rider thrown from his mount, which lies low beside him; a beast slumped where it stood. stand: him upright (his fall
    turns it about his feet), body: him lying, ax, ay: his feet in it; wk: the weapon he dropped; mount: his mount standing, down:
    lying */
-const CORPSES=new WeakMap(),BEAST_FALL={troll:'over',spider:'back',scorpion:'back',slime:'melt'};
+const CORPSES=new WeakMap(),BEAST_FALL=breedsInto({troll:'over',spider:'back',scorpion:'back',slime:'melt'});
 // (whose mount each lying one is, for its deaths: horseDeathOf)
 const DOWN_LOOK=new WeakMap();
 /* the beasts and monsters (engine/beasts.js PX.beast): the people's style, side-on, in a power-of-two cell (the dragon 64, a troll
@@ -90,7 +90,7 @@ function beastPose(u,moved){
 // a monster on the world map (engine/beasts.js PX.beastMap): the dragon on the wing (its own small figure in a 32 cell, wings up,
 // then level: it should look huge: f 0-1); the rest their own small figures in a 16 cell, f their step (PX.MAP_STEPS of them to a
 // body length walked: monsters.js)
-function monsterMapSprite(id,f,alpha=false){const M=MONSTERS[id],type=alpha&&id==='wolf'?WOLF_ALPHA.unit:M.unit,n=M.mythic?2:PX.MAP_STEPS,k='mm'+type+((f||0)%n);if(spr[k])return spr[k];return spr[k]=cellOf(PX.beastMap(type,(f||0)%n))}
+function monsterMapSprite(id,f,alpha=false,unit){const M=MONSTERS[id],type=unit&&unit!==M.unit?unit:alpha&&id==='wolf'?WOLF_ALPHA.unit:M.unit,n=M.mythic?2:PX.MAP_STEPS,k='mm'+type+((f||0)%n);if(spr[k])return spr[k];return spr[k]=cellOf(PX.beastMap(type,(f||0)%n))}
 function corpseOf(u){
   const base=actorSprite(u,0,true);let c=CORPSES.get(base);if(c)return c;
   // (a beast: it sinks as it falls (a troll over as a man does, a spider or a scorpion onto its back, a slime running flat, the rest
@@ -127,10 +127,10 @@ const DEATHS={on:true,man:{face:3,back:3,curl:2,knees:2,flung:2},helm:.35,hats:[
   // tones middle to edge and a fleck in it (gore; vfx.js poolSprite); red (GORE.col) for the rest, people, horses, wolves, bears,
   // boars and the game; none, no pool, for the undead and the made (dust and chips: vfx.js undead); slime, a puddle of its own coat
   blood:{spider:'ichor',scorpion:'ichor',slime:'slime',troll:'murk',wyrm:'fire',dragon:'fire'},
-  gore:{ichor:{col:['#3e4a10','#5e7018','#86a028']},murk:{col:['#1e2a1a','#2e3a22','#44502c']},fire:{col:['#4a1008','#7a240c','#b04416'],fleck:'#f0a040'}}};
+  gore:{ichor:{col:['#3e4a10','#5e7018','#86a028']},murk:{col:['#1e2a1a','#2e3a22','#44502c']},fire:{col:['#4a1008','#7a240c','#b04416'],fleck:'#f0a040'}}};breedsInto(DEATHS.blood);
 // (one's blood: {key, col, fleck}, or null: none)
 function bloodOf(u){const n=DEATHS.blood[u.type]||(undead(u)?'none':'red');if(n==='none')return null;
-  if(n==='slime'){const v=(u.v||0)%3,R=PX.ramp(PX._beastKit.KINDS.slime.coats[v]);return{key:'slime'+v,col:[R[3],R[2],R[1]]}}
+  if(n==='slime'){const v=(u.v||0)%3,K=PX._beastKit.KINDS,R=PX.ramp((K[u.type]||K.slime).coats[v]);return{key:u.type+v,col:[R[3],R[2],R[1]]}}
   return DEATHS.gore[n]?{key:n,...DEATHS.gore[n]}:{key:'red',col:GORE.col}}
 // (a name of table W by its weight, by a hash of id and salt: each choice its own salt)
 function deathPick(id,W,salt){let s=0;for(const k in W)s+=W[k];let r=PX.hash(id|0,salt,7177)*s;for(const k in W)if((r-=W[k])<0)return k;return Object.keys(W)[0]}
@@ -434,8 +434,9 @@ function txtPic(s,col,al){s=String(s);const k=s+'|'+col+'|'+al;let c=TXTC.get(k)
 /* World labels are cached at their final device-pixel size, never enlarged from the 8px text above. Arial matches the UI;
    a small CSS-size floor keeps phones readable. The outline is part of the cached picture, not a blurred canvas shadow. */
 const MAP_TEXT={size:8,min:11,font:'Arial, sans-serif',weight:600,edge:'#09080a'};
-function mapTxtPic(s,col,al,scale,dpr){
-  s=String(s);const size=Math.max(Math.ceil(MAP_TEXT.min*dpr),Math.round(MAP_TEXT.size*scale)),line=Math.max(2,Math.round(2*dpr)),font=MAP_TEXT.weight+' '+size+'px '+MAP_TEXT.font,k='map|'+size+'|'+line+'|'+s+'|'+col+'|'+al;
+function mapTxtPic(s,col,al,scale,dpr,o){
+  // (o: a face and a size of its own, screen px whatever the zoom: {font, px, weight} (a holding's bar: structures.js drawPlaques))
+  s=String(s);const size=o?Math.max(6,Math.round(o.px*dpr)):Math.max(Math.ceil(MAP_TEXT.min*dpr),Math.round(MAP_TEXT.size*scale)),line=Math.max(2,Math.round(2*dpr)),font=(o?o.weight||MAP_TEXT.weight:MAP_TEXT.weight)+' '+size+'px '+(o?o.font:MAP_TEXT.font),k='map|'+size+'|'+line+'|'+s+'|'+col+'|'+al+(o?'|'+o.font+'|'+(o.weight||''):'');
   let c=TXTC.get(k);if(c)return c;if(TXTC.size>600)TXTC.clear();
   const m=TXTM||(TXTM=mkc(1,1,()=>{}).getContext('2d', { willReadFrequently: true }));m.font=font;m.textAlign='left';m.textBaseline='alphabetic';
   const metric=m.measureText(s),w=Math.ceil(metric.width),up=Math.ceil(metric.actualBoundingBoxAscent||size),down=Math.ceil(metric.actualBoundingBoxDescent||0),pad=Math.ceil(line/2)+2,ox=pad+(al==='center'?Math.ceil(w/2):al==='right'?w:0),oy=pad+up;
@@ -443,8 +444,8 @@ function mapTxtPic(s,col,al,scale,dpr){
   c.ox=ox;c.oy=oy;c.deviceText=true;c.labelSize=size;TXTC.set(k,c);return c;
 }
 // A queued map label's anchor passes through the current camera transform, then the finished picture is copied 1:1.
-function mapTxt(s,x,y,col,al){
-  const g=ctx,m=g.getTransform(),dpr=dprOf(),c=mapTxtPic(s,col,al,Math.hypot(m.a,m.b),dpr),px=Math.round(m.a*x+m.c*y+m.e),py=Math.round(m.b*x+m.d*y+m.f);
+function mapTxt(s,x,y,col,al,o){
+  const g=ctx,m=g.getTransform(),dpr=dprOf(),c=mapTxtPic(s,col,al,Math.hypot(m.a,m.b),dpr,o),px=Math.round(m.a*x+m.c*y+m.e),py=Math.round(m.b*x+m.d*y+m.f);
   g.save();try{g.setTransform(1,0,0,1,0,0);g.shadowBlur=0;g.drawImage(c,px-c.ox,py-c.oy)}finally{g.restore()}
 }
 

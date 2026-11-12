@@ -18,7 +18,7 @@
 class Legacy{
   static realms={};static kept={};static raised=null;static fallen=0;static plot=null;static restN=0;static family='';static line=[];static kin=null;// (family: your line's name; line: each of it who fell, Legacy.record)// (fallen: how many of your line have died; plot: your family's, world/death.js Grave.inPlot)
   // the heir: the most loyal companion with you, at least DEATH.heir.ap, a tie to the higher level; null: none
-  static heirOf(comps){return Object.keys(comps).filter(id=>(comps[id].ap||0)>=DEATH.heir.ap&&!comps[id].jail)
+  static heirOf(comps){return Object.keys(comps).filter(id=>(comps[id].ap||0)>=DEATH.heir.ap&&!comps[id].jail&&!comps[id].lost)
     .sort((a,b)=>(comps[b].ap-comps[a].ap)||((comps[b].lv||0)-(comps[a].lv||0)))[0]||null}
   // (the heirs' lords now, and whether a companion rides with one)
   static lords(){return W.lords.filter(l=>l.heir&&!l.dead&&!l.gone)}
@@ -103,11 +103,14 @@ class Legacy{
     // (your remains buried: a grave at your heir's holding, else a cairn where you fell: world/death.js Grave)
     Grave.bury(old,this.raised);said.push('Their body lies where they fell'+(this.raised?': '+COMPS[this.raised.heir.cid].short+' will come for it.':', for whoever finds it.'));
     // (the quests' marks on the world gone with them; your stories ended)
-    const ids=new Set(P.quests.map(q=>q.id));for(const o of [...W.monsters,...bandits,...W.sites,...W.lords])if(o&&o.qid!=null&&ids.has(o.qid))delete o.qid;
-    for(const th of Thread.list().on.slice())th.end('left');
+    const ids=new Set(P.quests.map(q=>q.id));for(const o of [...W.monsters,...bandits,...W.sites,...W.sites.flatMap(s=>s.bands||[]),...W.caravans,...W.lords])if(o&&o.qid!=null&&ids.has(o.qid))delete o.qid;// (bands gone to ground in a site and caravans too)
+    for(const th of QuestChain.list().on.slice())th.end('left');
     const faces=typeof Faces!=='undefined'?Faces.save():undefined;
-    gameSession.resetPlayer();Captivity.held=null;Captivity.scattered=[];Death.slain=null;Death.pending=null;
-    heroFrom(k,b);P.born=G.day;if(typeof Faces!=='undefined')Faces.next(faces,kin&&old.face,this.fallen,!!kin);this.kin=kin?{rel:kin,of:old.n}:{rel:null,of:old.n};
+    // (the new hero none of the old one's: not in the lord's host he followed, no lord in his own, his quests' numbers not begun again;
+    // and its waterskins, as a new game's hero has: skinsStart, supply.js)
+    for(const l of Host.lords())Host.release(l);Host.under=null;Host.paused=false;G.follow=null;G.chase=null;const qid=P.qid||0;
+    gameSession.resetPlayer();P.qid=qid;Captivity.held=null;Captivity.scattered=[];Death.slain=null;Death.pending=null;
+    heroFrom(k,b);skinsStart();P.born=G.day;if(typeof Faces!=='undefined')Faces.next(faces,kin&&old.face,this.fallen,!!kin);this.kin=kin?{rel:kin,of:old.n}:{rel:null,of:old.n};
     fogReset();Discovery.reset();KNOWLEDGE.reset();for(const s of W.sites)s.seen=false;
     let {home}=heroHome(k,b);
     // (kin: a share of their renown, half what their lords thought of them, the grudges against them half held against you; where the

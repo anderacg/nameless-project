@@ -11,4 +11,4 @@ function addRep(name,n,quiet){
   if(!quiet&&Math.round(repAt(name))!==before)log((n>0?'Your name grows in ':'Your name sours in ')+name+' ('+(n>0?'+':'')+Math.round(n)+' reputation).',n>0?'good':'bad');
 }
 // deeds in the field count for the nearest holding within law.repNear tiles (data/world.js), and a little for its owner
-function repNear(x,y,n){const t=Spatial.nearestHolding(x,y);if(t&&Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.law.repNear*TILE){addRep(t.name,n);addHonor(t.owner,Math.max(1,Math.round(n/3)),true)}}
+function repNear(x,y,n){const t=Spatial.nearestHolding(x,y);if(t&&Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.law.repNear*TILE){addRep(t.name,n);addHonor(t.owner,(n<0?-1:1)*Math.max(1,Math.round(Math.abs(n)/3)),true)}}

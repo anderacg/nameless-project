@@ -19,7 +19,7 @@
      'monsters'   the beasts (world/monsters.js: spawning, levels, wandering, the mythic ones' lairs, scorching and roaming, the
                   loot);
      'talk'       conversations (story/conversation.js: a lord's temper, drawn at your first meeting; the checks' rolls).
-   The news, the threads and the gatherings draw nothing. The world's simulation and the battles (the AI, fights, the economy,
+   The news, the quest chains and the gatherings draw nothing. The world's simulation and the battles (the AI, fights, the economy,
    lords, bands, sites) stay on Math.random.
    Rng.use(name, fn): fn run with Math.random drawing from the stream, for a shared helper a content system calls (makeEnemies,
    randomGear, newChief…), so its draws stay on that system's stream too. */

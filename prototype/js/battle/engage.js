@@ -205,7 +205,7 @@ function startEncounter(e){
   const inside=Interior.on(e)&&e.inside,mine=inside?Interior.list(inside):playerList();// (inside a cave: only those who went in, battle/interior.js)
   const ratio=(power(e.list)*lvPow(e.lv)+power(lordTroops(e.foes)))/(power(mine)+power(lordTroops(e.allies))),threat=ratio<.6?'Easy':ratio<1?'Even':ratio<1.5?'Risky':'Deadly';
   const vm=vitals(),hurt=reinfHtml(e)+(P.hp<vm[0]*.6?'<p class="bad">You are wounded: '+Math.round(P.hp)+' / '+vm[0]+' health. Rest at an inn or travel to recover.</p>':''),cls=ratio<.6?'good':ratio<1?'gold':'bad',vs='Your power <strong>'+(inside?rating(mine):partyPower())+'</strong> vs <strong>'+rating(e.list,e.lv)+'</strong>, threat <strong class="'+cls+'">'+threat+'</strong>',lord=e.kind==='lord'&&e.ref,f=lord&&FACS[lord.fac];
-  if(e.kind==='monster'||e.kind==='cave'){const M=MONSTERS[e.ref.id],u=ST[M.unit],Y=M.mythic;
+  if(e.kind==='monster'||e.kind==='cave'){const M=monOf(e.ref),u=ST[M.unit],Y=M.mythic;
     const finds=[M.mat&&'Trophy: '+MATS[M.mat].n+'.',M.gear.length&&'Rare finds: '+M.gear.map(([it])=>'<span style="color:'+RARITY[ITEMS[it].r]+'">'+ITEMS[it].n+'</span>').join(', ')+'.',Y&&Y.hoard&&'It guards a hoard of about '+Y.hoard.gold+' gold.'].filter(Boolean).join(' ');
     return showPanel('<h2>'+(Y?Y.title:(e.kind==='cave'?e.ref.name+': ':'')+M.n+'<span class="muted">, level '+e.lv+'</span>')+'</h2><p>'+M.d+'</p><p>'+(e.ref.id==='wolf'&&e.list.includes(WOLF_ALPHA.unit)?Object.entries(countsOf(e.list)).map(([k,n])=>n+' × '+ST[k].n+' ('+ST[k].hp+' hp)').join(', '):e.list.length+' × '+u.n+' ('+u.hp+' hp'+(e.lv>1?', stronger with level':'')+')')+'. '+vsLine(u)+(inside?'. You go in with <strong>'+(mine.length-1)+'</strong> of your band; the rest wait outside.</p>':'. You have <strong>'+P.fighters+'</strong> fighters.</p>')+ground+typeHtml(e)+
       (finds?'<p class="muted">'+finds+'</p>':'')+hurt+'<p>'+vs+'</p>'+
@@ -224,7 +224,7 @@ function chaserSpeed(e){const o=e.ref,k=e.kind,at=Math.max(.45,speedAt(P.x,P.y)|
   if(k==='lord')return lordSpeed(o);if(k==='party')return partySpeed(o,o.troops);if(k==='patrol')return partySpeed(o,o.troops)*.75*1.25;
   return (k==='camp'?30:k==='caravan'?CARAVAN_SPD:k==='estate'?22:26)*at}
 function fleeOdds(e){
-  if(['siege','raid','field','tourney','cave'].includes(e.kind)||e.mine&&!(e.ref&&e.ref.sab))return{leave:true,ch:1};
+  if(['siege','raid','field','tourney','cave'].includes(e.kind)||e.mine&&!e.sally&&!(e.ref&&e.ref.sab))return{leave:true,ch:1};// (sally: out of a besieged holding you stayed in, world/stay.js: no free leave past its odds to slip out)
   if(e.btype&&e.btype.kind==='ambush'&&e.btype.hid===1)return{ch:0,why:'They have you in their trap'};// (an ambush: no way out but through)
   const pw=['lord','party','patrol'].includes(e.kind)?e.ref.power():null;if(pw!=null&&stance(pw)==='afraid')return{leave:true,ch:1};
   if(e.noFlee)return{ch:0,why:'They caught you'};
@@ -262,9 +262,9 @@ const gearTop=()=>Math.min(MATERIALS.length-1,1+Math.floor(G.day/20));
 const clearPlace=(o,days)=>{o.cleared=true;o.back=G.day+days;pacify(o.x,o.y)};
 const ON_WIN={
   party:{drop:()=>Math.random()<.3?randomGear(0,gearTop()):null,won:e=>{worldEmit('band:beaten',{band:e.ref});bandits=bandits.filter(x=>x!==e.ref);return ''}},
-  camp:{big:true,fame:10,drop:()=>Math.random()<.8?randomGear(0,gearTop()):null,won:(e,slain,res)=>{worldEmit('site:cleared',{site:e.ref});(e.ref.bands||[]).forEach(b=>{worldEmit('band:beaten',{band:b});chiefEscapes(b.ld)});e.ref.bands=[];clearPlace(e.ref,e.ref.T?.respawn||10);return e.ref.plunder(res)}},
+  camp:{big:true,fame:10,drop:()=>Math.random()<.8?randomGear(0,gearTop()):null,won:(e,slain,res)=>{worldEmit('site:cleared',{site:e.ref});(e.ref.bands||[]).forEach(b=>{worldEmit('band:beaten',{band:b});chiefEscapes(b.ld)});e.ref.bands=[];clearPlace(e.ref,e.ref.T?.respawn||10);return e.ref.plunder(res)},lost:e=>e.ref.worn&&e.ref.worn(e)},
   monster:{won:(e,slain,res)=>{const m=e.ref;worldEmit('monster:slain',{monster:m});W.monsters=W.monsters.filter(x=>x!==m);gainXp(monsterXp(m,slain),'monster');return monsterLoot(m,slain)+(MONSTERS[m.id].mythic?mythicSlain(m,res):'')}},
-  standard:{fame:4,won:e=>e.ref.beaten(),lost:(e,slain)=>e.ref.held(slain)},
+  outpost:{fame:4,won:e=>e.ref.beaten(),lost:(e,slain)=>e.ref.held(slain)},
   cave:{won:(e,slain)=>{worldEmit('site:cleared',{site:e.ref});gainXp(monsterXp(e.ref,slain),'monster');return monsterLoot(e.ref,slain)+e.ref.lairWon()},lost:e=>e.ref.lairLost(e)},
   lord:{big:true,fame:0,drop:()=>Math.random()<.6?randomGear(1,gearTop()+1):null,won:(e,slain,res)=>lordWon(e.ref,res,!res.down)},
   caravan:{fame:0,won:e=>e.seize?e.ref.seize():e.ref.loot()},

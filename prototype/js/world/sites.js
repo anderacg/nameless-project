@@ -128,6 +128,10 @@ class Site extends WorldObject{
   // its beasts beaten (engage.js ON_WIN.cave): its chest, and it lies empty; withdrawn from or beaten by them: nothing kept
   lairWon(){const x=siteChest(this);clearPlace(this,this.T.respawn);return x}
   lairLost(e){}
+  // (a camp or a hideout you withdrew from or lost to: its fighters left (not its chieftain), for CAMP_WORN.days, as each attack takes
+  // them (keep): it was at full strength again at once, and a free withdrawal could be had again and again)
+  worn(e){if(!CAMP_WORN.on||!e||!e.list)return;const n=e.list.filter(k=>k!=='chief').length;this.wear={n:Math.max(1,n),until:G.day+CAMP_WORN.days}}
+  keep(list){const w=this.wear;if(!w||!list)return list;if(G.day>=w.until){this.wear=null;return list}const ch=list.filter(k=>k==='chief'),rest=list.filter(k=>k!=='chief');return rest.slice(0,w.n).concat(ch)}
   // on the map: its banner's colour, a banner of its own (travellers), clicked where (its yard under it: structures.js siteSprite gr)
   // (its flag on the map (structures.js flagSprite): an outlaw's black rag, its skull)
   flag(){return{k:'rag',col:'#2a1e14',dev:'skull'}}
@@ -178,7 +182,7 @@ class Cave extends Site{
   power(lv){const {M,n}=this.lair;return rating(Array(n).fill(M.unit),lv)}
   page(r){const {M,U,n}=this.lair,y=this.spied(),loot=y&&['trophy: '+MATS[M.mat].n.toLowerCase(),...M.gear.map(([it,ch])=>ITEMS[it].n+' ('+Math.round(Math.min(1,ch*(1+.1*(y.lv-1)))*100)+'%)'),'a chest'].join(', ');
     return{body:this.about(r)+(y?'<div class="lab">What your scouts saw</div>'+railCards([{pic:portrait(M.unit),name:U.n,role:'Lairing in the cave',n,facts:['Level '+y.lv,['Stronger than usual','bad'],'Power '+this.power(y.lv)+' vs your '+partyPower()],note:'Likely loot: '+loot+'.'}]):
-        pageFacts([insight(['tracks and bones',cap1(fewSay(n))+', '+beastSize(M.unit),n+' × '+U.n.toLowerCase()+', power '+this.power(this.lvAbout)+' vs your '+partyPower()],'know what lairs there'),insightLv()<2&&'you cannot tell what without a closer look',!this.within&&'a chest, they say'])),
+        pageFacts([insight(['tracks and bones',cap1(fewSay(n))+', '+beastSize(M.unit),n+' × '+U.n.toLowerCase()+', power '+this.power(this.lvAbout)+' vs your '+partyPower()],'know what lairs there'),!this.within&&'a chest, they say'])),
       acts:[this.scoutDeed(),{icon:'cave',label:'Enter',act:'site-ask',facts:[y?'power '+this.power(y.lv)+' vs '+partyPower():insightLv()===2?'power about '+this.power(this.lvAbout)+' vs '+partyPower():'what lairs there: unknown',!this.within&&'a chest'],tip:'Go in and fight whatever lairs there. It asks you first.'}],
       note:'Whatever lairs here fights harder than in the open.'}}
   act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const y=this.spied(),{U,n}=this.lair;
@@ -421,14 +425,14 @@ class Lair extends Site{
     return{body:'<p class="muted">'+s.T.d+'</p>'+Prisons.siteNote(s)+(y?'<div class="lab">What your scouts saw</div>'+railCards(Object.entries(countsOf(all)).map(([k,n])=>({pic:portrait(k),name:k==='chief'&&ld?chiefLabel(ld):ST[k].n,role:k==='chief'?'Their chieftain, bounty '+bountyOf(ld)+'g':'Tier '+ST[k].tier,n})))+
         '<ul class="tnotes"><li>Power <b>'+pw+'</b> vs your '+partyPower()+'.</li><li>Loot: '+s.lootSay(all.length)+', and '+(ld?ld.name:'their chieftain')+' to take captive ('+bountyOf(ld)+'g bounty).</li></ul>':
         pageFacts([insight([band+' in their tents',cap1(roughly(g.n))+' '+band.toLowerCase(),g.n+' '+band.toLowerCase()+' and their chieftain'],'know their numbers')+(s.sheltering().length?', bands among them sheltering for the night':''),
-          insight(['you cannot tell how strong','<span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>','power '+g.pw+' vs your '+partyPower()],'know their strength')])+
+          insight([null,'<span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>','power '+g.pw+' vs your '+partyPower()],'know their strength')])+
         '<ul class="tnotes"><li>Led by '+(ld?chiefLabel(ld)+', '+bountyOf(ld)+' gold on '+pr(ld).his+' head':'a chieftain')+'.</li><li>Talk of plunder piled in the tents.</li></ul>'),
       acts:[s.scoutDeed(),{icon:'attack',label:'Attack',act:'site-ask',facts:[y?'power '+pw+' vs '+partyPower():insight(['what waits inside: unknown',lk[0].replace('They look ',''),'power about '+pw+' vs '+partyPower()],'know their strength')],tip:'Storm it: its fighters, its chieftain and any band sheltering there. It asks you first.'},
         {icon:'truce',label:'Parley',act:'site-tab',arg:'parley',facts:['pay them off','or make them yield'],tip:'Talk: pay them to break camp, or, if they fear you, demand their surrender.'}]}}
   act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const s=this,y=s.spied();
     if(a==='site-ask'&&INTERIOR.on&&s instanceof Hideout&&(s.tunnel||s.within)){Interior.show(s);return true}// (a bandit lair, or a den in ruins, is stormed inside: who goes in with you, battle/interior.js)
     if(a==='site-ask'){const g=s.guess(),all=y&&s.all(y.list);railConfirm({title:'Attack the '+s.T.n.toLowerCase()+'?',sub:s.name,text:'You storm it: '+(all?all.length+' fighters':roughly(g.n)+' of them, as far as you can tell')+', their chieftain at their head.',
-      facts:[all?'Power '+s.power(all)+' vs your '+partyPower():insight(['You cannot tell how strong they are',looks(g.pw/Math.max(1,partyPower()))[0],'Power about '+g.pw+' vs your '+partyPower()],'know their strength'),'You may still call it off before the first blow'],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
+      facts:[all?'Power '+s.power(all)+' vs your '+partyPower():insight([null,looks(g.pw/Math.max(1,partyPower()))[0],'Power about '+g.pw+' vs your '+partyPower()],'know their strength'),'You may still call it off before the first blow'],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
     if(a==='site-attack'){s.fight(true,y&&y.list);return true}
     if((a==='site-pay'||a==='site-yield')&&goblinTongueWhy(s.bandKind==='goblins'))return true;
     if(a==='site-pay'){const m=lairPay(s);if(m){G.siteTab=null;done(m)}return true}
@@ -463,6 +467,7 @@ function wildGround(tx,ty){const H=HIDEOUT_PLACE,c=climate[ty*MW+tx];let n=0,r=0
    of another piece of gear past a camp's (4 in 5; the den's 1.5 x: 1.2 a fight) */
 // (a bandit lair: the share of hideouts that are (salt: its hash's), the hills or peaks within r tiles of it that make its mouth a cave; its type's words)
 const HIDEOUT_LAIR={share:.45,salt:7171,r:3,hills:4,names:{bandits:'Bandit lair',raiders:'Raider tunnels',bog:'Bog raider warren'},T:{n:'Bandit lair',ico:'cave',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, dug in underground, their plunder deep in its tunnels.'}};
+const CAMP_WORN={on:true,days:7};// (a camp's losses kept after you withdrew: Lair worn, keep)
 const HIDEOUT_BAND={den:{size0:8,foes:[7,9],chief:[2,5],gold:1.5,gear:.4},ruin:{size0:6,foes:[5,7],chief:[1,3],gold:1,gear:0}};
 class Hideout extends Lair{
   static ground(tx,ty){return wildLand().at[ty*MW+tx]===1}
@@ -489,7 +494,7 @@ class Hideout extends Lair{
   foes(){return makeEnemies(this.garrison(),true,this.band)}
   garrison(){return rint(...this.tune.foes)+Math.floor(G.day/15)}
   // (inside: who goes in with you, battle/interior.js; none chosen, the best of your band)
-  attack(own,inside){const I={inside:inside||Interior.pick()};startEncounter(own?{kind:'camp',ref:this,n:own.length-1,list:own,band:this.band,...I}:{kind:'camp',ref:this,n:this.garrison(),band:this.band,...I})}
+  attack(own,inside){const I={inside:inside||Interior.pick()},L=this.keep(own||this.foes());startEncounter({kind:'camp',ref:this,n:L.length-1,list:L,band:this.band,...I})}
   // (its plunder: the gold x tune's, and maybe another piece of gear)
   plunder(res){const T=this.tune;res.gold=Math.round(res.gold*T.gold);if(!T.gear||Math.random()>=T.gear)return '';const id=randomGear(0,gearTop());
     return invAdd('gear',id,1)?' Among their plunder: a <span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEMS[id].n+'</span>.':' '+BAG_FULL+'. You leave a '+ITEMS[id].n+' behind.'}
@@ -506,7 +511,7 @@ class BanditCamp extends Lair{
   get size0(){return 8}
   // its own raiders and chieftain, as campFight makes them (the bands sheltering join at the fight: world.js campFight)
   foes(){return makeEnemies(rint(7,9)+Math.floor(G.day/15),true)}
-  attack(own){campFight(this,own)}
+  attack(own){campFight(this,this.keep(own||this.foes()))}
   pickable(){return this.known()&&!this.cleared}
   tip(){return '<b>Bandit camp</b>'+(this.cleared?'':chiefTip(this))+'<small>'+(this.cleared?'Cleared':'Its bands shelter here by night')+'</small>'+(this.cleared?'':'<span class="act">Click: ride up to it</span>')}
 }
@@ -599,7 +604,7 @@ class GoblinCamp extends Hideout{
     n=camp(unusedName(free.length?free:GOBLINS.names,[]));this.name=this.tunnel?n.replace(/ Camp$/,' Warren'):n;this.ld=newChief('goblins',this.newLv(),sites)}
   shelters(b){return b.camp===this.i}
   // (stormed: its own, as scouted or rolled now, and its warbands sheltering in it tonight, as a bandit camp's: world.js campFight)
-  attack(own,inside){startEncounter({kind:'camp',ref:this,list:(own||this.foes()).concat(this.sheltering()),band:this.band,inside:inside||Interior.pick()})}
+  attack(own,inside){startEncounter({kind:'camp',ref:this,list:this.keep(own||this.foes()).concat(this.sheltering()),band:this.band,inside:inside||Interior.pick()})}
   flag(){return{k:'rag',col:GOBLINS.col,dev:'skull'}}
   // (a hideout's plunder, and their pile of stolen goods: one of GOBLINS.loot)
   plunder(res){const L=GOBLINS.loot,g=L.goods[rint(0,L.goods.length-1)],n=invAdd('good',g,rint(L.n[0],L.n[1]));

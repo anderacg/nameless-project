@@ -8,7 +8,7 @@ function spawnBandit(initial,ld){// (ld: a chieftain coming back)
   for(let tries=0;tries<80;tries++){
     const x=rint(3,MW-4)*TILE+8,y=rint(3,MH-4)*TILE+8;
     if(!passable(terrAt(x,y)))continue;
-    if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.bandit[initial?0:1]||!farFromHomes(x,y,WORLD_SCALE.spawn.away)||Standards.guarded(x,y))continue;// (none by a held standard: world/standards.js)
+    if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.bandit[initial?0:1]||!farFromHomes(x,y,WORLD_SCALE.spawn.away)||Outposts.guarded(x,y))continue;// (none by a held standard: world/outposts.js)
     const c=climAt(x,y),n=rint(3,5)+Math.floor(G.day/12),kind=c==='desert'?'raiders':c==='swamp'?'bog':'bandits';bandits.push(asParty({x,y,n,kind,list:makeEnemies(n,false,kind),t:0,a:0,idle:false,cool:0,ld:ld||newChief(kind,1+Math.floor(G.day/25)+(Math.random()<.3?1:0))}));if(ld&&Math.hypot(x-P.x,y-P.y)<vis()*3)log(ld.name+' is back on the roads with a new band.','bad');return;
   }
 }
@@ -241,11 +241,15 @@ function dayTick(){
 // your band's wages for the day (everyone paid, each by his tier), and its larder: fresh food spoils; a varied larder (3 or more kinds) lifts
 // spirits. (It eats by the hour: world/supply.js)
 // (a soldier's wage a day by his kind's tier (the owner, 2026-10-30: "scale by tier"): peasants, then tiers 1 to 3; a fit rider more)
-const BAND_PAY={tier:[.25,.5,1,2],mounted:.5,companion:2};
+// (garrison: a man a day in a fief of yours, as a realm pays for its own, economy.js realmDay. merc: a realm's contract pays this share
+// of your soldiers' wages, from its treasury (it paid a gold a man, more than a levy's wage, out of nothing); a realm short of gold pays none)
+const BAND_PAY={tier:[.25,.5,1,2],mounted:.5,companion:2,garrison:.4,merc:1.25};
 const soldierPay=k=>BAND_PAY.tier[clamp(ST[k]?.tier||0,0,3)];
 function bandPayroll(){const counts=[P.troops,P.wounded||{},...cparties().map(p=>countsOf(p.troops))],detached=cparties().reduce((a,p)=>a+p.troops.length,0),
-    base=counts.reduce((a,c)=>a+Object.entries(c).reduce((b,[k,n])=>b+n*soldierPay(k),0),0),mounts=mountedN()*BAND_PAY.mounted,companions=compCount()*BAND_PAY.companion,raw=base+mounts+companions;return{base,mounts,companions,detached,raw,total:Math.ceil(raw)}}
+    base=counts.reduce((a,c)=>a+Object.entries(c).reduce((b,[k,n])=>b+n*soldierPay(k),0),0),mounts=mountedN()*BAND_PAY.mounted,companions=compCount()*BAND_PAY.companion,garrison=playerFiefs().reduce((a,t)=>a+(t.gar||0),0)*BAND_PAY.garrison,raw=base+mounts+companions+garrison;return{base,mounts,companions,garrison,detached,raw,total:Math.ceil(raw)}}
 // (none while you are held captive: you are not with your band, world/captivity.js)
+// (a realm's contract for your band a day: BAND_PAY.merc of your fit soldiers' wages)
+const mercPay=()=>Math.round(Object.entries(P.troops).reduce((a,[k,n])=>a+n*soldierPay(k),0)*BAND_PAY.merc);
 function bandWages(){if(Captivity.held)return;const wage=bandPayroll().total;
   if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad','band');mood('unpaid')}}}
 function bandLarder(){
@@ -266,7 +270,7 @@ function bandDay(){
   P.morale=clamp(P.morale,Math.min(30,skill('lead')*3)+tm('morale'),100);
   {const D=density(WM);for(let k=0;k<D.daily.bandits;k++)if(roamers().length<D.bandits&&Math.random()<.6)spawnBandit(false)}// (the world's: data/world.js)
   if(P.renown>=250&&!G.rankSeen){G.rankSeen=1;log('Your name carries across Ashmark. A throne is within reach.','gold')}
-  if(P.fac){P.gold+=troopCount();addHonor(P.fac,1,true)}
+  if(P.fac){const pay=mercPay();if(pay&&payRealm(P.fac,pay)){P.gold+=pay}else if(pay)log('The '+FACS[P.fac].n+' cannot pay your contract today.','bad','band');addHonor(P.fac,1,true)}
 }
 /* the speed you set holds till you change it (the owner, 2026-10-19): no drop to 1x on arriving, on danger in sight, or when an
    event or a window opens (windows pause the map anyway). dangerInSight stays for whoever asks what is about */
@@ -277,8 +281,11 @@ function dangerInSight(){const V=vis();
   return ''}
 // (main.js calls this every frame, whatever is shown): following a party is watched here (followWatch)
 function fastWatch(){followWatch()}
+// (your band on ground it cannot stand on and no step to take: a ferry's crossing given up mid-water. To the nearest ground, its army with it)
+function heroAshore(){unstick(P);const a=MARCH_ARMIES.get(P);if(a)a.relocate(P.x,P.y);log('Your band makes for the nearest bank.')}
 function updateWorld(dt){
-  if(G.paused||G.dead)return;
+  if(G.dead){if(G.mode!=='dead')showDeath();return}// (dead in hours passed off the map, a cage's day or a wake: the death's page, not a map that never moves again)
+  if(G.paused)return;
   fastWatch();KNOWLEDGE.watch();// (last-known sightings: knowledge.js)
   const d=dt*G.speed*WORLD_PACE;lodTick(dt);
   Clock.advance(dt*G.speed*DAY/DAY_SECONDS);// (a new day: dayTick; a new hour: Systems.hour; core/clock.js)
@@ -306,7 +313,7 @@ function marchStep(d){
     else{
       const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*Host.yourPace());// (your host's slowest: hosts.js)
       P.dir=dx>=0?1:-1;
-      const x0=P.x,y0=P.y;if(heroStep(dx,dy,dist,step)){P.stuck=0;const moved=Math.hypot(P.x-x0,P.y-y0);if(moved>0){train('scout',moved/TILE*.08);if(mountDef())train('ride',moved/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',moved/TILE*WOODCRAFT.xp)}}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0;campArrive()}}
+      const x0=P.x,y0=P.y;if(heroStep(dx,dy,dist,step)){P.stuck=0;const moved=Math.hypot(P.x-x0,P.y-y0);if(moved>0){train('scout',moved/TILE*.08);if(mountDef())train('ride',moved/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',moved/TILE*WOODCRAFT.xp)}}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0;if(!passable(terrAt(P.x,P.y)))heroAshore();campArrive()}}
     }
   }
 }

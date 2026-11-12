@@ -87,7 +87,8 @@ class CaravanParty extends Party{
   /* meeting a caravan: trade, toll, attack or seize */
   // what its merchants charge and pay: the going rate where they came from, a little either way
   price(g){const t=townBy(this.from);return Math.max(2,Math.round((t?marketPrice(t,g):GOODS[g].base)*1.05))}
-  pays(g){const t=townBy(this.to);return Math.max(1,Math.round((t?marketPrice(t,g):GOODS[g].base)*.8))}
+  // (never as much as it charges for the same good: economy.js TRADE_FAIR)
+  pays(g){const t=townBy(this.to),p=Math.max(1,Math.round((t?marketPrice(t,g):GOODS[g].base)*.8));return TRADE_FAIR.on?Math.max(1,Math.min(p,this.price(g)-1)):p}
   meet(){
     const c=this;G.cv=c;G.mode='dialog';P.tx=null;G.chase=null;c.cool=4;const f=c.fac==='player'?FACS.player:FACS[c.fac],hostile=!c.mine&&hostileTo(c.fac),mine=c.mine;
     const btn=(act,arg,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
@@ -144,7 +145,7 @@ class CaravanParty extends Party{
   // a beaten caravan becomes yours: it drives its cargo to your nearest fief and is then yours to send again
   seize(){
     const c=this,home=Spatial.nearest(playerFiefs(),c.x,c.y);if(!home)return c.loot();
-    addRep(c.from,-8,true);// (the holding it came from resents it, before the carts become yours)
+    addRep(c.from,-8,true);worldEmit('caravan:robbed',{caravan:c});// (the holding it came from resents it, before the carts become yours; robbed by you: a convoy job of it fails)
     Object.assign(c,{mine:true,fac:'player',home:home.name,to:home.name,dest:home.name,from:home.name,leg:'out',repeat:false,order:{},guards:Math.max(1,Math.floor(c.guards/2)),cool:4,purse:0});
     return ' Your soldiers take the carts and drive them to '+home.name+': '+cargoText(c)+'.';
   }

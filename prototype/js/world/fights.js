@@ -39,7 +39,7 @@ function startFight(A,B){
 }
 function joinFight(f,o,s){if(s<0||o.fight||fightParties(f).length>=BATTLE_JOIN.armies||fightParties(f).reduce((n,p)=>n+p.fighters,0)+o.fighters>BATTLE_JOIN.fighters)return false;if(s>=2&&!f.multi){f.multi=true;f.wars=[];for(const a of sideParties(f,0))for(const b of sideParties(f,1))f.wars.push([uidOf(a),uidOf(b)])}if(!f.sides[s])f.sides[s]=[];f.sides[s].push(uidOf(o));o.fight=f.id;const k=o.troops.length;f.n0=(f.n0||0)+k;f.dur+=FIGHT.per*k;if(!f.multi)fightPlace(f);return true}
 // the two lines face each other across the fight
-function fightPlace(f){for(const s of [0,1])sideParties(f,s).forEach((o,i)=>{const x=f.x+(s?14:-14)+(s?1:-1)*(i>>1)*10,y=f.y+(i%2?8:-4)+(i>>1)*3,army=MARCH_ARMIES.get(o);if(army)army.relocate(x,y);else{o.x=x;o.y=y}o.dir=s?-1:1})}
+function fightPlace(f){for(const s of [0,1])sideParties(f,s).forEach((o,i)=>{const x=f.x+(s?14:-14)+(s?1:-1)*(i>>1)*10,y=f.y+(i%2?8:-4)+(i>>1)*3,army=MARCH_ARMIES.get(o),p={x,y};unstick(p);if(army)army.relocate(p.x,p.y);else{o.x=p.x;o.y=p.y}o.dir=s?-1:1})}// (unstick: the nearest ground one may stand on, map.js: a fight on a bridge set its lines in the river, for good)
 // whose side a party would take: its realm's and allies', against its enemies; bands stick together; lawful men fight bands
 function sideFor(f,o){
   const sides=f.sides.map((_,i)=>sideParties(f,i));if(fightParties(f).length>=BATTLE_JOIN.armies||fightParties(f).reduce((n,p)=>n+p.fighters,0)+o.fighters>BATTLE_JOIN.fighters)return -1;
@@ -67,6 +67,10 @@ function routParty(o,winners){
 }
 // a party that came through: free to go on its way
 // (a lord who rode out to defend his land goes back to what he was doing: defence.js)
+// (a truce between realms a and b: their fights with each other on the map end, both sides let go (a lord was routed, even slain,
+// by a realm at peace with his))
+function truceFights(a,b){for(const f of [...W.fights]){if(f.multi)continue;const F=s=>sideParties(f,s).map(o=>o.fac),A=F(0),B2=F(1),is=(L,x)=>L.length&&L.every(y=>y===x);
+  if(is(A,a)&&is(B2,b)||is(A,b)&&is(B2,a)){for(const s of [0,1])sideParties(f,s).forEach(freeParty);W.fights=W.fights.filter(x=>x!==f)}}}
 function freeParty(o){o.fight=null;o.cool=3;const k=o.mapKind;if(k==='band'){o.n=o.size;o.pw=0}if(k==='caravan'&&!o.guards)o.guards=1;if(k==='lord'){if(o.defend)lordDefended(o);else if(o.state!=='siege')lordThink(o)}}
 function endFight(f,win){
   const W0=sideParties(f,win),L=sideParties(f,1-win),lw=W0.filter(o=>o.mapKind==='lord'),ll=L.filter(o=>o.mapKind==='lord');

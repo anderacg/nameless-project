@@ -397,7 +397,7 @@
       if(o.team===0){put(g,12,Y-6+b,TEAM[0]);put(g,13,Y-6+b,TEAM[1]);put(g,14,Y-6+b,TEAM[1])}}};
   // a bog slime: a blob that squashes and stretches as it hops; it rears up and spits
   // (dead, PX.BEAST_DEATHS: melted flat; burst, a thin splash and its drops thrown round it; sagging, a lump gone soft, its sides
-  // run out, its eyes shut)
+  // run out)
   // (the owner, 2026-11-07: "fix slime sprite": teal, acid green or bog violet, so it stands off the grass; a glossy dome over a
   // puddle lip, a lit rim, its dark core seen through it, a white gloss)
   KINDS.slime={W:16,H:16,loose:true,coats:['#3e9e9a','#9ab83a','#8a62a8'],deaths:['melt','burst','sag'],
@@ -405,7 +405,7 @@
       if(F.dead&&i===1){const m=mask().ell(8,Y-.2,7,1.1);shade(g,m,C);put(g,7,Y,C[2]);put(g,9,Y-1,C[2]);put(g,4,Y-1,C[0]);
         for(const [x,y] of [[2,Y-3],[13,Y-3],[6,Y-4],[11,Y-5],[4,Y-6]])put(g,x,y,C[y<Y-4?0:1]);return}
       if(F.dead&&i===2){const m=mask().ell(8,Y-1.4,5.4,2.6).ell(8,Y-.4,7,1.2);for(const [x,y] of m.pts())if(y>Y)m.s.delete(K(x,y));shade(g,m,C);
-        put(g,5,Y-3,'#eef4d8');put(g,6,Y-3,C[0]);put(g,9,Y-2,'#2c2430');put(g,10,Y-2,'#2c2430');put(g,12,Y-2,'#2c2430');put(g,7,Y-1,C[2]);return}
+        put(g,5,Y-3,'#eef4d8');put(g,6,Y-3,C[0]);put(g,7,Y-1,C[2]);return}
       if(F.dead){const m=mask().ell(8,Y-.5,7,1.6);shade(g,m,C);put(g,5,Y-1,C[0]);return}
       const sq=a==='idle'?[0,.5][i]:a==='walk'||a==='run'?[0,-1,.5,-1][i]:[-1.5,1,.5][i],up=a==='run'&&i%2?2:0,rx=5.4+sq*.5,ry=4.6-sq*.7,cx=8+(a==='atk'||a==='alt'?[-.5,.5,0][i]:0),cy=Y-ry+.5-up;
       // (a gumdrop: widening from its top to its widest on the ground; in the air, round)
@@ -416,9 +416,9 @@
         // (the rim lit on the top and the left, shaded on the right and under it; inside, lighter toward the light; its core darker)
         let c=C[1];if(y===y1)c=C[3];else if(edgeL&&nx<.3)c=C[0];else if(edgeR)c=C[2];else if(ny<-.25&&nx<.25)c=mid;
         if(!edgeL&&!edgeR&&y<y1&&((x+.5-cx+.4)/(rx*.38))**2+((y+.5-(cy+ry*.45))/(ry*.26))**2<=1)c=core;put(g,x,y,c)}
-      // (its gloss, its eyes on its front, a mouth open as it spits)
+      // (its gloss; no eyes (the owner, 2026-11-12: "remove eye from slimes"); a mouth open on its front as it spits)
       const tx=Math.round(cx-rx*.5),ty=y0+1;put(g,tx,ty,'#f4fbf0');put(g,tx+1,ty,'#f4fbf0');put(g,tx,ty+1,C[0]);put(g,tx-1,ty+2,mid);
-      const ex=Math.round(cx+rx*.25),ey=Math.round(cy-ry*.1);put(g,ex,ey,'#1e1a24');put(g,ex+2,ey,'#1e1a24');put(g,ex,ey-1,'#e8f0e8');put(g,ex+2,ey-1,'#e8f0e8');
+      const ex=Math.round(cx+rx*.25),ey=Math.round(cy-ry*.1);
       if((a==='atk'||a==='alt')&&i===1){put(g,ex+1,ey+2,'#3a2430');put(g,ex+2,ey+2,'#3a2430');put(g,ex+3,ey+1,C[0])}
       if(o.team===0){put(g,Math.round(cx),y0,TEAM[1]);put(g,Math.round(cx)+1,y0,TEAM[2])}}};
   // a troll: twice a man's height, hunched, long-armed, a small head thrust forward with a big nose and tusks; a club it slams down
@@ -587,4 +587,8 @@
   // figures (MAPF), f their step (0 to PX.MAP_STEPS-1)
   PX.beastMap=(kind,f)=>{f=f||0;if(kind!=='dragon')return mapBeast(kind,f);const c=canvas(figure(DRAKE,'drake',{pose:15+(f%2),team:1},true));c.fh=c.height;c.kind='drake';return c};
   PX._beastKit={grid,put,at,mask,shade,flat,outline,canvas,R,gait,quad,quadDead,tube,wing,turn,TEAM,KINDS};
+  // PX.breed(name, kind, coats): a breed of a kind (the game's MONSTER_BREEDS): its kind's figure in its own coats, its kind's size,
+  // deaths and map figure; once
+  PX.breed=(name,kind,coats)=>{const B=KINDS[kind];if(!B||KINDS[name])return false;KINDS[name]=Object.assign(Object.create(B),{coats});
+    PX.BEAST_KINDS.push(name);PX.BEAST_DEATHS[name]=PX.BEAST_DEATHS[kind];if(MAPF[kind]){MAPF[name]=MAPF[kind];PX.MAP_BEASTS.push(name)}return true};
 })(window.PX=window.PX||{});

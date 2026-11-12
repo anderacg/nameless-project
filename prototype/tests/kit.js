@@ -181,12 +181,12 @@ const Kit={
     T.startEncounter(e);
     return e;
   },
-  // ---- the story's test kinds (doc/STORY_DESIGN.md S5): the game registers no thread nor gathering yet, so the suites that prove
-  // their frameworks (threads, kinds) register these, once, inside the test page only
+  // ---- the story's test kinds (doc/STORY_DESIGN.md S5): the game registers no quest chain nor gathering yet, so the suites that prove
+  // their frameworks (quest chains, kinds) register these, once, inside the test page only
   storyKinds(){
-    if(T.kindOf('thread','test_thread'))return;
-    // a thread: a job taken at the memory's town; paid, an encounter where the memory says; failed, a page of two choices
-    T.defineKind('thread','test_thread',{n:'A test thread',steps:[
+    if(T.kindOf(T.QUESTCHAIN_SHAPE,'test_questchain'))return;
+    // a quest chain: a job taken at the memory's town; paid, an encounter where the memory says; failed, a page of two choices
+    T.defineKind(T.QUESTCHAIN_SHAPE,'test_questchain',{n:'A test quest chain',steps:[
       {id:'job',start:{quest:'supply',town:th=>th.memory.town},remember:d=>({giver:d.e.giver}),then:{paid:'meet',failed:'regret'}},
       {id:'meet',start:{encounter:'merchant',x:th=>th.memory.x,y:th=>th.memory.y}},
       {id:'regret',start:{page:{title:'Word from the giver',text:th=>(th.memory.giver||'The giver')+' is disappointed in you.',choices:[

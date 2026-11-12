@@ -112,7 +112,7 @@ const DIALOGUE={
     {a:'brann',b:'elske',lines:['A prisoner is gold walking, sister.','A prisoner is a man, Brann.']}],
   banterDay:.4,
   // (phase 4: your captor's words (world/captivity.js): first, by who holds you; persuaded and refused: you, then theirs)
-  captor:{band:'Well, well. What is a fine captain worth, I wonder?',lord:'You are my prisoner, {you}. Let us speak of your ransom.',
+  captor:{band:'Well, well. What is a fine captain worth, I wonder?',robbed:'Your purse is ours already, and your pack with it. Now, what shall we do with you?',lord:'You are my prisoner, {you}. Let us speak of your ransom.',
     realm:'You will be held until someone pays for you.',broker:'I paid good silver for you. Now you will pay me back, with a little on top.',
     you:'Let me go. You will gain nothing by holding me.',no:'You talk too much. The price just went up.'}
 };

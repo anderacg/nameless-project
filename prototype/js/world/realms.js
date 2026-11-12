@@ -47,7 +47,7 @@ class Realm{
       if(C.relWith(a).s==='ally'&&C.relWith(b).s==='peace')C.setRel(b,'war',1);
       if(C.relWith(b).s==='ally'&&C.relWith(a).s==='peace')C.setRel(a,'war',1);
     });
-    if(prev==='war'&&s!=='war')Prisons.peace(a,b);// (peace frees their prisoners: world/prisons.js)
+    if(prev==='war'&&s!=='war'){Prisons.peace(a,b);truceFights(a,b)}// (peace frees their prisoners: world/prisons.js)
     W.lords.forEach(l=>{if(!l.dead&&(l.fac===a||l.fac===b)&&l.state!=='siege')lordThink(l)});
   }
   // one day between it and realm g (after it in FIDS): a peace of six days or more may break into war; a war of eight days or
@@ -217,15 +217,21 @@ function setRel(a,b,s,chain){realmOf(a).setRel(b,s,chain)}
    sets off again; he cannot get into a holding under siege, and does not leave one he is defending. */
 const lordsInside=t=>W.lords.filter(l=>!l.dead&&l.inside===t.name);
 const insideTroops=t=>lordsInside(t).flatMap(l=>l.troops);
-// (a lord shelters as every party does: parties.js shelterWhy, enter, leave)
-function lordThink(l){
+// (the holdings of a list a party can walk to (Router.reach: the same land; a lord sent to one across the water walked straight at
+// it and stood at the shore for good); nearestReach: the nearest of them, null with none; avoid: one not to choose, by name)
+const walkable=(o,L,avoid)=>L.filter(t=>t.name!==avoid&&Router.reach(o,t));
+const nearestReach=(o,L,avoid)=>Spatial.nearest(walkable(o,L,avoid),o.x,o.y)||null;
+// (a lord shelters as every party does: parties.js shelterWhy, enter, leave. avoid: a holding he could not get to (world/stalls.js))
+function lordThink(l,avoid){
   if(l.inside){const h=townBy(l.inside);if(h&&besieged(h)&&h.owner===l.fac){l.state='rest';l.tgt=h.name;return}}
   const own=fiefsOf(l.fac);if(!own.length){l.dead=true;l.gone=true;return}
-  const foes=TOWNS.filter(t=>atWar(l.fac,t.owner)),hit=own.find(besieged);
+  // (each choice among those he can walk to; none of his own he can reach: he rests where he is (tgt none), and thinks again later)
+  const mine=walkable(l,own,avoid),foes=walkable(l,TOWNS.filter(t=>atWar(l.fac,t.owner)),avoid),hit=mine.find(besieged);
+  if(!mine.length){l.state='rest';l.tgt=null;return}
   if(hit&&l.troops.length>=9){l.state='relieve';l.tgt=hit.name;return}
-  if(l.troops.length<9||(!foes.length&&l.troops.length<lcapOf(l)-4)){l.state='home';l.tgt=Spatial.nearest(own,l.x,l.y).name;return}
+  if(l.troops.length<9||(!foes.length&&l.troops.length<lcapOf(l)-4)){const open=mine.filter(t=>!besieged(t));l.state='home';l.tgt=Spatial.nearest(open.length?open:mine,l.x,l.y).name;return}// (home to a holding not besieged, if there is one)
   if(foes.length){l.state='march';l.tgt=Spatial.nearest(foes,l.x,l.y).name;return}
-  l.state='patrol';l.tgt=own[rint(0,own.length-1)].name;
+  l.state='patrol';l.tgt=mine[rint(0,mine.length-1)].name;
 }
 // you beat a lord's army: a bounty from your employer, a broken siege, and honor with his enemies (from ON_WIN)
 // (take: he is yours to ransom; not (your army all down: resolution.js armyDown), he gets away and rides home to raise another)
@@ -235,8 +241,9 @@ function lordWon(l,res,take=true){
   if(l.state==='siege'){const st=townBy(l.tgt);if(st&&!hostileTo(st.owner)){addRep(st.name,10,true);if(st.owner!=='player')addHonor(st.owner,8,true);lordsInside(st).forEach(o=>changeRel(o,RELATION.breakSiege,'you broke the siege of '+st.name));txt+=' You break the siege of '+st.name+'. Its people cheer you in.'}}
   rippleRel(l,RELATION.beatThem,'you beat them in battle');worldEmit('lord:beaten',{lord:l});
   // (now and then he dies in the fighting: gone for good, his house buries him and holds it against you, world/lineage.js)
-  if(take&&Houses.slain(l,true)){txt+=' '+l.name+' falls in the fighting. '+cap1(pr(l).his)+' house will not forget it.';take=false}
-  if(take){captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom '+pr(l).him+' or let '+pr(l).him+' go (Hero, Party).'}else{defeatLord(l);txt+=getsAway(l.name)}
+  // (slain: neither taken nor away. He was also told to get away, and beaten a second time)
+  const fell=take&&Houses.slain(l,true);if(fell)txt+=' '+l.name+' falls in the fighting. '+cap1(pr(l).his)+' house will not forget it.';
+  else if(take){captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.',undefined,'war');txt+=' You take '+l.name+' captive: ransom '+pr(l).him+' or let '+pr(l).him+' go (Hero, Party).'}else{defeatLord(l);txt+=getsAway(l.name)}
   FIDS.filter(f=>atWar(f,l.fac)).forEach(f=>addHonor(f,5));addHonor(l.fac,-10);
   return txt;
 }
@@ -283,7 +290,8 @@ function worldDay(){
     if(l.gone)continue;
     if(l.dead){
       if(G.day<l.back)continue;const own=fiefsOf(l.fac);if(!own.length){l.gone=true;continue}
-      const h=own.slice().sort((a,b)=>(b.vol||0)-(a.vol||0))[0];ensureEcon(h);const can=Math.min(9,Math.floor(h.vol||0),Math.floor((h.pop||0)-GUARD_FLOOR));if(can<3||!payRealm(l.fac,90,h,9))continue;
+      const open=own.filter(t=>!besieged(t));if(!open.length)continue;// (none raised outside barred gates, beside the besiegers: when one is free)
+      const h=open.slice().sort((a,b)=>(b.vol||0)-(a.vol||0))[0];ensureEcon(h);const can=Math.min(9,Math.floor(h.vol||0),Math.floor((h.pop||0)-GUARD_FLOOR));if(can<3||!payRealm(l.fac,90,h,9))continue;
       const raised=[];for(let i=draftLocals(h,can);i>0;i--){const c=RACES[h.races[rint(0,h.races.length-1)]];raised.push(Math.random()<.6?c.melee:c.ranged)}
       Object.assign(l,{dead:false,x:h.x,y:h.y+14,troops:raised,state:'rest',tgt:h.name,cool:3});if(!l.shelterWhy(h))l.enter(h);
       worldEvent({text:l.name+' raises a new army at '+h.name+'.',x:h.x,y:h.y,fac:[l.fac],towns:[h],news:['army',h,{lord:l.name,fac:l.fac,town:h.name,n:raised.length}],past:l.name+' raised a new army at '+h.name});continue;

@@ -375,17 +375,24 @@ class Commander{
       for(let j=0;j<=n;j++){const qx=x+(bx-x)*j/n,qy=y+(by-y)*j/n;if(lineClear(gr,qx,qy,to.x,to.y,255)&&!(T.blocksView&&T.blocksView({x:qx,y:qy},to)))return{x:qx,y:qy}}x=bx;y=by}
     return{x:at.x,y:at.y}}
   /* a siege's assault (battle/siegeworks.js; the owner, 2026-11-08: "a fort ... make sure they order the unit based on available
-     path"): its attacker's foot (yours under the AI) work the ram and climb the ladders, the only ways over a shut gate's wall: the
+     path"): its attacker's foot (yours under the AI) work the ram (while the wall stands whole) and climb the ladders, the only ways over a shut gate's wall: the
      nearest SIEGE_AI.ram share of its foot groups to the gate's face, in SIEGE_AI.files files so every man of them is at the ram;
-     the rest spread over the ladders, each to the foot of its own (SIEGE_AI.foot px out from the wall), then at the nearest foe
-     up its ladder; its shooters as ever (their places along the way, pathPlace). The gate down: every group as ever, through it */
-  siege(N){const w=B.works;if(!SIEGE_AI.on||!w||w.open||this.team!==0||!N||!N.inf)return;
-    const live=id=>grpUnits(id).filter(u=>u.hp>0&&!u.rout&&!u.left),foot=N.inf.filter(id=>{const m=live(id);return m.length&&m.some(u=>!u.s.range)&&B.groups[id].order!=='withdraw'});if(!foot.length)return;
+     the rest spread over the breaches (twice) and the ladders, each to the foot of its own (SIEGE_AI.foot px out from the wall), then
+     at the nearest foe up or through it; its shooters as ever (their places along the way, pathPlace). The gate down and no breach:
+     every group as ever, through it */
+  siege(N){const w=B.works;if(!SIEGE_AI.on||!w||this.team!==0||!N||!N.inf)return;const cs0=w.cs,gaps=(w.secs||[]).filter(q=>q.down).map(q=>({x:w.x0-SIEGE_AI.foot,y:(q.r0+q.r1+1)/2*cs0}));
+    // (a group inside the wall with no one to fight: at the lord's standard in the court, to take it (SIEGE_FIGHT.flag); never back out to a ladder)
+    const f=w.flag,inside=id=>{const m=grpUnits(id).filter(u=>u.hp>0&&!u.rout&&!u.left);return m.length&&centroid(m).x>w.x1-4};
+    for(const id of N.inf){if(!inside(id))continue;const g=B.groups[id];if(f&&!f.taken&&!g.hasTarget&&(g.order!=='hold'||Math.hypot(g.ax-f.x,g.ay-f.y)>4))g.standAt(f.x,f.y)}
+    if(w.open&&!gaps.length)return;// (the gate down and the wall whole: as ever; breaches: SiegeWorks collapse)
+    // (d2: how far apart, px; it was called here and defined nowhere, so the siege's orders threw and none were given)
+    const d2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),live=id=>grpUnits(id).filter(u=>u.hp>0&&!u.rout&&!u.left),foot=N.inf.filter(id=>{const m=live(id);return m.length&&m.some(u=>!u.s.range)&&B.groups[id].order!=='withdraw'&&!inside(id)});if(!foot.length)return;
     const cs=w.cs,ram={x:w.x0-SIEGE_WALL.ramR*.5,y:(w.gy0+w.gy1)/2},by=foot.map(id=>({id,C:centroid(live(id))})).sort((a,b)=>d2(a.C,ram)-d2(b.C,ram)),
-      nRam=w.ram?Math.max(1,Math.round(by.length*SIEGE_AI.ram)):0,foes=B.units.filter(u=>battleEnemy(0,u)&&u.hp>0&&!u.rout&&!u.left);
+      nRam=w.ram&&!w.open&&!gaps.length?Math.max(1,Math.round(by.length*SIEGE_AI.ram)):0,foes=B.units.filter(u=>battleEnemy(0,u)&&u.hp>0&&!u.rout&&!u.left);
     by.forEach((o,i)=>{const g=B.groups[o.id];
       if(i<nRam){if(g.order!=='hold'||Math.hypot(g.ax-ram.x,g.ay-ram.y)>4)g.standAt(ram.x,ram.y);if((g.files||0)!==SIEGE_AI.files)g.setForm(g.form,{files:SIEGE_AI.files});return}
-      if(!w.ladders.length)return;const r=w.ladders[(i-nRam)%w.ladders.length],at={x:w.x0-SIEGE_AI.foot,y:(r+.5)*cs};
+      // (the rest at the breaches first, each worth two of the ladders, then the ladders)
+      const ways=[...gaps,...gaps,...w.ladders.map(r=>({x:w.x0-SIEGE_AI.foot,y:(r+.5)*cs}))];if(!ways.length)return;const at=ways[(i-nRam)%ways.length];
       if(d2(o.C,at)>SIEGE_AI.near){if(!g.hasTarget&&(g.order!=='hold'||Math.hypot(g.ax-at.x,g.ay-at.y)>4))g.standAt(at.x,at.y)}
       else if(!g.hasTarget&&foes.length){const e=foes.reduce((a,u)=>d2(u,at)<d2(a,at)?u:a);g.attack(e)}})}
   // (of points P, the one nearest p: the army's middle on ground it stands on, not between two groups in the rock)
@@ -403,7 +410,7 @@ class Commander{
   // beside, never its to order)
   groups(){const {team,key}=this;
     if(B.sides?.active&&team>0)return Object.fromEntries(['inf','arc','mag','cav','hero'].map(role=>[role,Object.keys(B.groups).filter(id=>B.groups[id].team===team&&B.groups[id].role===role&&!B.groups[id].post)]));
-    const ids=Object.keys(B.groups).filter(id=>{const g=B.groups[id];return g.team===team&&(team===1||key==='ally'?team===1||g.ally:aiHas(g))&&!g.post&&(!insideHolds(team)||insideRoused(g))});// (g.post: men at their post, an outpost's tower: world/standards.js StandardTower; inside, a group waits in its chamber till roused: battle/interior.js)
+    const ids=Object.keys(B.groups).filter(id=>{const g=B.groups[id];return g.team===team&&(team===1||key==='ally'?team===1||g.ally:aiHas(g))&&!g.post&&(!insideHolds(team)||insideRoused(g))});// (g.post: men at their post, an outpost's tower: world/outposts.js OutpostTower; inside, a group waits in its chamber till roused: battle/interior.js)
     return Object.fromEntries(['inf','arc','mag','cav','hero'].map(role=>[role,ids.filter(id=>B.groups[id].role===role)]));
   }
   /* one side's captain. It reads the whole battle (assess): each side's strength (health by tier), how much of it shoots, how

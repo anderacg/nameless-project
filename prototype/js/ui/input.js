@@ -119,6 +119,7 @@ cv.addEventListener('pointerdown',e=>{
     else if(mh&&e.button===0)camCentre(mh.x,mh.y);
     else if(e.button===2&&e.pointerType==='mouse'){B.rdrag={x0:q.x,y0:q.y,x1:q.x,y1:q.y,shift:e.shiftKey};if(e.ctrlKey)B.rdrag.am=true}// (let go: an order, or a line if dragged; Ctrl: an attack-move)
     else if(e.pointerType!=='mouse'&&B.sel!=='all'&&selGroups().length&&!rtsUnitAt(q.x,q.y,0))rtsOrder(q.x,q.y)
+    else if(e.button===0&&B.works&&!rtsUnitAt(q.x,q.y,0)&&B.works.aimAt(q.x,q.y)){}// (a click on a siege's wall, no man there: your engines' mark, battle/siegeworks.js)
     else if(e.button===0)B.box={x0:q.x,y0:q.y,x1:q.x,y1:q.y,add:e.shiftKey}
     /* the manual control, set aside for now: if(e.pointerType==='mouse'){if(e.button===2)shove();else if(e.button===0){if(isBow())drawStart();else swing()}}else B.mt={x:p.x,y:p.y} */}
 });

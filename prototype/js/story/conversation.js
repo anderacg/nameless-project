@@ -201,7 +201,7 @@ class CaptorSpeaker extends Speaker{
   name(){const c=this.o;return this.lord?.name||(c.k==='broker'?cap1(c.name):c.k==='band'?'Their chief':'Their captain')}
   sub(){const c=this.o;return c.k==='broker'?'Holds you, bought from your captors':'Holds you: '+c.name}
   pic(){return this.lord?TALK_PIC.lord(this.lord):TALK_PIC.captor(this.o)}
-  greet(){return this.fill(DIALOGUE.captor[this.o.k]||'')}
+  greet(){return this.fill(DIALOGUE.captor[this.o.took?'robbed':this.o.k]||'')}
   facts(){return Captivity.facts(this.o)}
   replies(){return Captivity.replies(this.o)}
 }

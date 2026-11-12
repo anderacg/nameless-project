@@ -74,7 +74,7 @@ function vfxDeath(t,corpse){
 // (DYING: how far through his fall (q) each frame of a man's dying lasts: the stagger, to his knees, the landing a pixel up)
 const DYING={stagger:.25,kneel:.6,land:.75};
 const GORE={fall:.65,pool:2.5,col:['#4a0c0c','#68140f','#7e1c14'],tile:256};
-const undead=u=>!!(u&&(u.type==='slime'||u.s&&(u.s.undead||u.s.race==='undead')||/skel|ghoul|wraith|golem|zomb/.test(u.type||'')));
+const undead=u=>!!(u&&(breedOf(u.type)==='slime'||u.s&&(u.s.undead||u.s.race==='undead')||/skel|ghoul|wraith|golem|zomb/.test(u.type||'')));
 /* the blood layer (B.gore, R16): by tiles of GORE.tile px, each made only where blood falls or one of the fallen is painted in, and
    kept for the battle (blood is never painted twice; the ground's tiles come and go apart from it). each(x0,y0,x1,y1,f): f(g) for
    every tile the box touches, g in field px; drawView: those in view; getContext('2d', { willReadFrequently: true }): read as one picture (getImageData), cleared

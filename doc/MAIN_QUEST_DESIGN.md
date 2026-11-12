@@ -14,7 +14,7 @@
 **Words used here:**
 - **The home realm:** the realm whose land the opening's village lies in. If the village belongs to no realm, the realm nearest to it.
 - **Your patron:** the person your chosen lead introduced at the end of the opening: the village head (more local work), the grain factor at the marked market (a merchant's living) or the lord (a lord's service).
-- **The cast:** the story's people and places, chosen when the story needs them and kept in the thread's memory (§1.4).
+- **The cast:** the story's people and places, chosen when the story needs them and kept in the quest chain's memory (§1.4).
 
 ---
 
@@ -45,7 +45,7 @@ The opening's three deserters were not alone. Across the land, soldiers are bein
 
 ### 1.4 The cast (roles, bound at runtime)
 
-The world is generated, so no person or place is hand-placed. Each role is chosen when its quest begins, kept in the thread's memory, and **rebound** if the world takes it away. This is the same rule as the opening ("bind targets by identity", "rebind safely").
+The world is generated, so no person or place is hand-placed. Each role is chosen when its quest begins, kept in the quest chain's memory, and **rebound** if the world takes it away. This is the same rule as the opening ("bind targets by identity", "rebind safely").
 
 | Role | Who or what | Chosen as | If the world takes it away |
 |---|---|---|---|
@@ -61,7 +61,7 @@ The world is generated, so no person or place is hand-placed. Each role is chose
 | **The council place** | Neutral ground: the Grand Stadium (designed, not built); else a monastery (designed, not built); else the hall of a holding whose realm is at peace with every side | Q10 | Changed hands: the next candidate |
 | **The home realm** | See "Words used here" | The opening | It falls: the realm that conquered its last holding inherits the Company's grievance ("they took the land, they can take the debt") |
 
-**Names (the owner, 2026-10-23: "use the band name from user input"):** your band's name is always the one you chose (`P.band`, the band card; its random names and its default included). The story's own names give way to it, never the other way: if your band's name matches the Company's ("the Grey Company") or an ending's title ("The Free Company"), the story uses another for its side ("the Grey Banner", "the Unpaid"), chosen when the role is bound and kept in the thread's memory.
+**Names (the owner, 2026-10-23: "use the band name from user input"):** your band's name is always the one you chose (`P.band`, the band card; its random names and its default included). The story's own names give way to it, never the other way: if your band's name matches the Company's ("the Grey Company") or an ending's title ("The Free Company"), the story uses another for its side ("the Grey Banner", "the Unpaid"), chosen when the role is bound and kept in the quest chain's memory.
 
 ### 1.5 The three leads: one destination, three routes
 
@@ -104,7 +104,7 @@ Eleven quests, three acts. **Act II has an open middle:** Q4, Q5 and Q6 can be t
 - **N4.** Staged map actions: a band that holds a spot, a scripted raid, a staged siege camp, a truce zone.
 - **N5.** Endings: the closing pages, the world's changes, a title, the sandbox after.
 
-Everything else in the line uses what is built: threads and their step kinds (`visit`, `deliver`, `lair`, `escort`, `held`), pages and choices with odds, outcomes, the bus, bands and hideouts, parley and yielding, sieges and capture, fiefs, contracts, lords' relations, honour, reputation, renown, letters and messengers, rumours, refugees, the economy's stocks, ruins, the toll encounter (ST3), the lists, the dragon, and the `companion` outcome (Ander's).
+Everything else in the line uses what is built: quest chains and their step kinds (`visit`, `deliver`, `lair`, `escort`, `held`), pages and choices with odds, outcomes, the bus, bands and hideouts, parley and yielding, sieges and capture, fiefs, contracts, lords' relations, honour, reputation, renown, letters and messengers, rumours, refugees, the economy's stocks, ruins, the toll encounter (ST3), the lists, the dragon, and the `companion` outcome (Ander's).
 
 **How to read the stage tables:** each stage has an objective and a **checkpoint**: what failing it rolls back to, and what the world says. "Fail forward" marks a stage whose failure changes the story instead of rolling back (§6.2).
 
@@ -118,7 +118,7 @@ Everything else in the line uses what is built: threads and their step kinds (`v
 
 As designed in doc/OPENING_STORY_DESIGN.md, unchanged. It becomes the first Main quest: it can't be abandoned, and its "Find my own way" choice only delays it (the roadkeeper still offers it).
 
-**What the main line takes from it** (kept in the thread's memory when Q1 ends):
+**What the main line takes from it** (kept in the quest chain's memory when Q1 ends):
 - the opening's village, the home realm and the region;
 - how the deserters were dealt with: **deal** (paid from the contract), **fought** (beaten in battle) or **yielded** (a stronger band, by parley);
 - the Deserter's fate: free (deal), a prisoner (yielded and kept), dead or fled (fought);
@@ -138,7 +138,7 @@ Whatever lead you chose, your patron has a problem that smells the same. More ca
 **Choices and what lasts:**
 - **The deserters on the road (local, lord):** fight, take their yield (parley), or let them go. **Handed to the lord** (lord route): he hangs them, lord relation +6, the Company's trust −1 (they hear of it). **Let go:** lord relation −5 if he asked, the Company's trust +1; they vouch for you at the muster.
 - **The quartermaster (merchant):** buy his grain (cheap; the factor sees you trade with them) or turn him in to the holding's watch (reputation +3 there, the Company's trust −1).
-- **The Company's trust** is a story number from −3 to +3, kept in the thread's memory (not a new system: a memory field). It opens and shuts choices later.
+- **The Company's trust** is a story number from −3 to +3, kept in the quest chain's memory (not a new system: a memory field). It opens and shuts choices later.
 
 **Systems:** `deliver`, `visit` steps; a story-placed band (a quest's quarry, `Quest.quarry`); parley and yielding; prisoners handed to a lord (a small outcome on top of the existing hand-over of leaders) [N3 for the band kind].
 **Requirements (Locked):** Q1 done.
@@ -343,7 +343,7 @@ The council's result, with your route, gives the ending (§3.1).
 
 #### Q11. A Name Remembered · S
 
-The epilogue, in the opening's village. The roadkeeper, the carter, the village head. A short page for each thread you touched: the village, the Deserter, the Steward, the burnt village, the Lieutenant, the Captain, the Company's soldiers. Then a title for your name, and the sandbox goes on.
+The epilogue, in the opening's village. The roadkeeper, the carter, the village head. A short page for each quest chain you touched: the village, the Deserter, the Steward, the burnt village, the Lieutenant, the Captain, the Company's soldiers. Then a title for your name, and the sandbox goes on.
 
 | Stage | Objective | Checkpoint |
 |---|---|---|
@@ -466,7 +466,7 @@ Three kinds of failure, each with one rule:
 
 **What the world says:** every rollback writes one log line and, where people would talk, a rumour ("The grey toll still stands at {crossing}"). The journal's objective shows the checkpoint's objective again.
 
-**Saving:** each stage, its choice and its outcome happen at most once and survive save and load, as the opening requires. The thread's memory holds the cast, the Company's trust and strength, and every choice.
+**Saving:** each stage, its choice and its outcome happen at most once and survive save and load, as the opening requires. The quest chain's memory holds the cast, the Company's trust and strength, and every choice.
 
 ### 6.3 Hero death
 
@@ -475,7 +475,7 @@ The campaign's rule today: **a hero whose health runs out outside a battle ends 
 ### 6.4 Capture
 
 Captivity is designed, not built (CAPTIVITY_DESIGN.md).
-- **Built:** captured during a main stage, the captivity thread runs first; the main stage **pauses**, and its clocks pause with it (fair to the player). Once you are free, the stage resumes at its checkpoint.
+- **Built:** captured during a main stage, the captivity quest chain runs first; the main stage **pauses**, and its clocks pause with it (fair to the player). Once you are free, the stage resumes at its checkpoint.
 - **Special cases:** taken by the Company with its trust 1+, they let you go the next morning (a page; "light" terms, nothing taken). Taken by the Lieutenant's men, you are held; the Captain (trust 1+) or the Deserter (S3) may free you.
 - **Not built (today):** a lost battle is a rollback as above. Nothing in the main line needs captivity.
 
@@ -504,7 +504,7 @@ Captivity is designed, not built (CAPTIVITY_DESIGN.md).
 | # | System | What | Size |
 |---|---|---|---|
 | N1 | Main quests and checkpoints | QM's model; a stage's checkpoint, its clock and its pause rules | (QM) |
-| N2 | The cast | Story roles in the thread's memory; their pickers (nearest ruin, a crossing, the granary holding, a castle, the council place); rebinding on the bus (`lord:routed`, `holding:taken`, a realm's fall) | S–M |
+| N2 | The cast | Story roles in the quest chain's memory; their pickers (nearest ruin, a crossing, the granary holding, a castle, the council place); rebinding on the bus (`lord:routed`, `holding:taken`, a realm's fall) | S–M |
 | N3 | The Grey Company | A band kind `company` (grey pennant, mixed peoples' troops from each realm's `RACES` kinds); its strength (a story number) and its bands, spawned at its site at the stages that say so; its stance per realm (leave alone, hunt, raid), read by the band brain; unlisted Captain and Lieutenant (as Ander) | M |
 | N4 | Staged map actions | A band that holds a spot (the toll; the siege camp); a `raid` outcome for a band, on today's raid code; the Company's bands as allies in your siege; a truce zone round the council place | M |
 | N5 | Endings | The council's rounds (pages, built); the ending's world changes (fief granted, garrison and people, recruits, terms as relations and honour, remnants); a title on your character; the epilogue's pages | M |
@@ -524,7 +524,7 @@ Captivity is designed, not built (CAPTIVITY_DESIGN.md).
 | **MQ4** | Act III (Q9, Q10, Q11): the staged siege, allies in your siege, the truce, the council, endings (N5), the sandbox after | MQ3 | 4–5 |
 | **MQ5** | Side quests S2–S8 (S1 built); one session each, in any order after the act each hangs off | its act | 1 each |
 
-**About 16 sessions after the opening.** By file ownership, MQ5's side quests can run in parallel with MQ2–MQ4 (up to the owner's five agents). Suggested files: `js/story/mainline.js` (the thread kinds, one per act at most), `js/data/mainline.js` (one tunables table, `MAIN`: sizes, sums, days, odds), `js/world/company.js` (N3). Every number in `MAIN`, so the play-tests can tune it.
+**About 16 sessions after the opening.** By file ownership, MQ5's side quests can run in parallel with MQ2–MQ4 (up to the owner's five agents). Suggested files: `js/story/mainline.js` (the quest chain kinds, one per act at most), `js/data/mainline.js` (one tunables table, `MAIN`: sizes, sums, days, odds), `js/world/company.js` (N3). Every number in `MAIN`, so the play-tests can tune it.
 
 **Fingerprints:** nothing here runs until the opening ends, and the story draws from its own stream, so the world and battle fingerprints should hold. N3's band kind adds a band brain branch; its suites must show no change while no Company band exists.
 

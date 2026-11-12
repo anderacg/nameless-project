@@ -13,7 +13,7 @@ Kit.suite(({ok,info})=>{
  Kit.begin('soldier',23);Kit.clear();Kit.world();P.renown=100;P.level=3;
  const ash=t.townBy('Ashford');
  // ---- a story under way: a wounded traveller met near a holding, tended and taken home (story/wounded.js), as tests/wounded.js
- const fresh=z=>{Kit.world();Kit.clear();G.road=null;G.enc=null;G.encCool=0;W.road=null;P.quests=[];P.troops={hum_levy:6};G.clock=t.DAY*.4;t.Thread.store().on=[];Kit.goHome(z)};
+ const fresh=z=>{Kit.world();Kit.clear();G.road=null;G.enc=null;G.encCool=0;W.road=null;P.quests=[];P.troops={hum_levy:6};G.clock=t.DAY*.4;t.QuestChain.store().on=[];Kit.goHome(z)};
  const pick=label=>String(t.ROAD_ENC.traveller.acts.findIndex(c=>c.label===label));
  let th=null;
  {const D=t.kindOf('encounter','traveller'),p0=t.WOUNDED.ander.p;t.WOUNDED.ander.p=0;

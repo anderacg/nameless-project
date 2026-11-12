@@ -34,9 +34,10 @@ class RecruitmentService{
   }
   reinforce(t,id){
     const r=this.rules.roster(),g=r.groups.find(g=>g.id===id);if(!g)return null;
-    const cost=this.hireCost(g.type),room=r.groupRoom(g.type,id),funds=cost>0?Math.floor(this.player.gold/cost):room;
+    // (the new men's share of the group's upgrades too, as at the hiring desk: world/buffs.js perMan. Auto-refill paid only the hire)
+    const extra=typeof Buffs!=='undefined'?Buffs.perMan(id):0,cost=this.hireCost(g.type),each=cost+extra,room=r.groupRoom(g.type,id),funds=each>0?Math.floor(this.player.gold/each):room;
     const n=Math.max(0,Math.floor(Math.min(room,t.vol||0,this.rules.capacity()-this.rules.size(),funds)));
-    return n>0?this.hire(t,g.type,n,id):null;
+    const q=n>0?this.hire(t,g.type,n,id):null;if(q?.ok&&extra){const x=extra*q.count;this.player.gold-=x;q.cost+=x}return q;
   }
   // (it moves at most one full unit of its new kind, the rest staying behind (core/army.js ArmyRoster#upgrade): count, the men who
   // go, priced and horsed alone; stay, the rest; split, a new unit for them, which needs a free unit slot (slot))

@@ -88,13 +88,13 @@ class Prisons{
   static bribeWhy(r,key,t){return crimeAt(t)?'The watch wants you here':this.alarmed(key)?'The guards are on alert':r&&r.bribed===G.day?'Tried today':''}
   static breakWhy(key){return this.alarmed(key)?'The guards are on alert':''}
   static breakChance(key){const k=this.kind(key)||{brk:0},X=PRISON.brk;return clamp(X.base+skill('athl')*X.athl+k.brk-this.watch(key)*X.watch,.05,.85)}
-  static odds(ch){return insight(['you cannot tell your odds',ch>=.5?'a fair chance':'a long chance','about '+Math.round(ch*100)+'%'],'know the odds')}
+  static odds(ch){return insight([null,ch>=.5?'a fair chance':'a long chance','about '+Math.round(ch*100)+'%'],'know the odds')}
   static body(t){const key=t.name,k=this.kind(key),mine=this.mine(t),list=this.of(key),qs=this.quests(t),i=r=>list.indexOf(r);
     const head='<p class="muted">'+(k?'The '+k.name+' of '+t.name+': '+['its keepers a few men of the '+t.T.n,'kept by the watch','kept by a strong guard','kept by the garrison'][Math.max(0,['village','town','city','castle'].indexOf(t.kind==='fort'?'castle':t.kind))]+'. ':'')+
       (list.filter(r=>r.k!=='men').length)+' of '+(k?.holds||0)+' cells taken'+(mine&&k?.men?', '+(k.men-this.menRoom(key))+' of '+k.men+' places for soldiers':'')+'.</p>';
     const theirs=list.filter(r=>r.keep!=='player'),yours=list.filter(r=>r.keep==='player');
     const cards=[...qs.map(q=>({pic:personPic('folk',t.races?.[0]||'human',1),name:cap1(q.pn),role:q.title,facts:[[q.price+'g asked','gold']],note:q.say('gaol')||'Held here until someone pays.',
-        acts:[['pz-quest',q.id,'Pay '+q.price+'g',P.gold<q.price?'You have '+P.gold+'g':''],!mine&&['pz-qbreak',q.id,'Break out, '+this.odds(this.breakChance(key)),this.breakWhy(key)]]})),
+        acts:[['pz-quest',q.id,'Pay '+q.price+'g',P.gold<q.price?'You have '+P.gold+'g':''],!mine&&['pz-qbreak',q.id,'Break out'+andRead(this.odds(this.breakChance(key))),this.breakWhy(key)]]})),
       ...theirs.map(r=>this.card(r,i(r),key,t,mine))];
     const lock=mine&&this.lockCards(key);
     return head+(cards.length?railCards(cards):'<p class="muted">No one is held here now.</p>')+
@@ -103,7 +103,7 @@ class Prisons{
       (!mine?'<p class="muted">Paying, bribing and breaking out take place at once. The gaoler costs less than the ransom, but he may refuse (your coin back) or report you: then your coin is gone, the watch wants a fine, and the guards are on alert for days. A break-out is a crime against the '+(FACS[t.owner]?.n||'holding')+'.'+(this.alarmed(key)?' <b>The guards are on alert.</b>':'')+'</p>':'')}
   // (one held by others: a lord, your companion; what you can do for him)
   static card(r,i,key,t,mine){const pay=this.ransomOf(r),bb=this.bribe(r,key),br=this.breakChance(key),l=r.k==='lord'&&this.lordOf(r),
-      acts=mine?[]:[['pz-pay',i,'Pay '+pay+'g',P.gold<pay?'You have '+P.gold+'g':''],['pz-bribe',i,'Bribe the gaoler, '+bb.cost+'g, '+this.odds(bb.ch),this.bribeWhy(r,key,t)||(P.gold<bb.cost?'You have '+P.gold+'g':'')],['pz-break',i,'Break out, '+this.odds(br),this.breakWhy(key)]];
+      acts=mine?[]:[['pz-pay',i,'Pay '+pay+'g',P.gold<pay?'You have '+P.gold+'g':''],['pz-bribe',i,'Bribe the gaoler, '+bb.cost+'g'+andRead(this.odds(bb.ch)),this.bribeWhy(r,key,t)||(P.gold<bb.cost?'You have '+P.gold+'g':'')],['pz-break',i,'Break out, '+this.odds(br),this.breakWhy(key)]];
     if(r.k==='lord')return{fac:r.fac,pic:lordPic(l||r),name:this.who(r),role:cap1(lordWord(r))+' of the '+FACS[r.fac].n+', held by the '+FACS[r.keep].n,facts:['Lv '+r.lv,'since day '+r.since,l&&['Relation '+relWith(l),relWith(l)>=0?'good':'bad']],
       acts:[['pz-visit',i,'Visit',r.seen!=null&&G.day-r.seen<PRISON.visit.days?'Not again so soon':''],...acts]};
     return{pic:portrait(r.id),name:this.who(r),role:'Your companion, held by '+(FACS[r.keep]?'the '+FACS[r.keep].n:r.keep==='broker'?'the ransom broker':'the band'),facts:['since day '+r.since],note:'Get '+pr(r.id).him+' out, or '+pr(r.id).he+' may slip away in time.',acts}}

@@ -1,8 +1,8 @@
 'use strict';
 /* ---------- escorts: a passenger in your band, seen safe to a place (doc/IMPLEMENTATION_PLAN.md §10.7, doc/STORY_DESIGN.md §9) ----------
    An escort is a quest kind, 'escort' (EscortQuest, on the Quest shape: story/quest.js), begun by a choice's outcome
-   ({passenger: spec}: story/outcome.js; the lost child, the refugees: world/encounters.js roadEscort), by a thread's step
-   ({start: {quest: 'escort', spec}}: story/thread.js), or offered at a holding as a job (no spec: a traveller of the holding to
+   ({passenger: spec}: story/outcome.js; the lost child, the refugees: world/encounters.js roadEscort), by a quest chain's step
+   ({start: {quest: 'escort', spec}}: story/questchain.js), or offered at a holding as a job (no spec: a traveller of the holding to
    another, ESCORT.offer). Its numbers and lines: data/encounters.js ESCORT.
    - The passenger rides inside your band: listed on the party card (world/supply.js supplyNow's tag) and in the Army window's Passengers
      (Escort.html), eating with you (Escort.foodHour, world/supply.js), never fighting, taking no troop slot, no target of its
@@ -25,7 +25,7 @@
        victors; a rescue's holder kept on its record, by: his chain rescues him, story/wounded.js);
      given up (abandon: a story dropping its stage; never your Quests' Abandon): failed, fate 'left' (set down by the road).
      A failure applies its forfeit. Then the bus's quest:ended {e, how: 'paid' or 'failed'}, and e.fate says which way: what a
-     thread's step branches by (how: d=>d.e.fate). ---------- */
+     quest chain's step branches by (how: d=>d.e.fate). ---------- */
 class EscortQuest extends StepQuest{
   // (not a job: its own limit, ESCORT.max)
   full(){

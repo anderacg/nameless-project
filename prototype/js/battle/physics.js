@@ -162,3 +162,5 @@ const PHYS_LEAN=new WeakMap();
 function physLeanDrawn(u,h){const F=PHYSICS.feel,want=physLean(u);if(!F.leanStep)return want;let L=PHYS_LEAN.get(u);if(!L){L={v:want,t:B.t,px:Math.round(want*h)};PHYS_LEAN.set(u,L)}
   const dt=Math.max(0,B.t-L.t);L.t=B.t;L.v+=(want-L.v)*Math.min(1,dt/F.leanEase);const p=L.v*h;if(Math.abs(p-L.px)>F.leanHold)L.px=Math.round(p);return L.px/h}
 function physDownPose(u){if(!PHYSICS.on||!(u.down>0))return null;const F=PHYSICS.feel,since=(u.downFor||u.down)-u.down;return Math.min(1,since/F.downFall,u.down/F.downRise)}
+// (a breed: its mass its kind's, data/monsters.js)
+breedsInto(PHYSICS.mass.kinds);

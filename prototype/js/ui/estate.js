@@ -27,7 +27,9 @@ function estateMenus(o){
 const areaShort=n=>{const w=n.split(' ');return w.length>1?cap1(w[w.length-1]):n};
 // the rail round a window w ({title, sub, body, back, close}): tab the area chosen
 function estateRail(o,tab,w,key){const t=townBy(o.town),lv=bldLv(t,o.k);
-  showRail({head:{act:['es-tab','home'],on:!tab,fac:t.owner,name:ESTATES[o.k].n,sub:(lv?'Level '+lv:'Not built')+', '+ownerTag(t),back:!!tab},label:'Estate of '+t.name,gold:true,...w,
+  // (your gold only on an estate of yours, where building it up costs some: on another's, nothing there is paid in gold)
+  const mine=t.owner==='player';
+  showRail({head:{act:['es-tab','home'],on:!tab,fac:t.owner,name:ESTATES[o.k].n,sub:(lv?'Level '+lv:'Not built')+', '+ownerTag(t),back:!!tab,gold:mine},label:'Estate of '+t.name,gold:mine,...w,
     items:estateMenus(o).map(([k,n,ico])=>({act:'es-tab',arg:k,ico,n,short:areaShort(n),on:k===tab}))},'est:'+t.name+':'+o.k+':'+(tab||'')+':'+(key||''));
 }
 function estateMeet(o){
@@ -75,7 +77,7 @@ function estateDeedList(t,k){const E=ESTATES[k],lv=bldLv(t,k);
   if(t.owner==='player'){const cap=bldCap(t,k),c=bldCost(k,lv+1),mats=ESTATE_MAT(k,lv+1),short=matsLacking(t,mats),w=t.work;
     return [cap&&lv<cap&&{icon:'house',label:lv?'Upgrade':'Place',act:'fief-build',arg:k,facts:[c+'g, '+workDays(t,lv+1)+' days','to level '+(lv+1),matsText(mats)],tip:(lv?'Upgrade':'Place')+' the '+E.n.toLowerCase()+': '+mt0(t,mats),
         why:w?'Already building':!lv&&!needsMet(t,k)?'Needs '+needsText(k):P.gold<c?'Not enough gold':short.length?'Short of '+short.join(', '):''},
-      lv&&{icon:'axe',label:'Pull down',act:'es-ask',arg:'demolish',go:['fief-demolish',k],facts:['+'+Math.floor(bldCost(k,Math.max(1,lv))/2)+'g back','gone for good'],tip:'Pull the '+E.n.toLowerCase()+' down: half its last level’s cost back; it is gone for good'}].filter(Boolean)}
+      lv&&{icon:'axe',label:'Pull down',act:'es-ask',arg:'demolish',go:['fief-demolish',k],facts:['+'+(REFUND.paid?Math.min(Math.floor(bldCost(k,Math.max(1,lv))/2),Math.floor((t.paid&&t.paid[k]||0)/2)):Math.floor(bldCost(k,Math.max(1,lv))/2))+'g back','gone for good'],tip:'Pull the '+E.n.toLowerCase()+' down: half its last level’s cost back; it is gone for good'}].filter(Boolean)}
   const g=estateGuards(t,k),no=troopCount()<3?'Need 3 troops':'',host=foeAt(t),pb=CONDUCT.plunderEstate,bn=CONDUCT.burnEstate;
   return [{icon:'moon',label:'Sabotage',act:'es-ask',arg:'sabotage',go:['es-sabotage'],facts:[Math.round(sabotageChance(t,k)*100)+'% unseen','idle '+(3+2*lv)+' days'],why:sabotaged(t,k)?'Already wrecked':'',
       tip:'Sabotage it: slip in and wreck its work, so it makes nothing for '+(3+2*lv)+' days. Unseen, only rumour follows you (reputation −'+CONDUCT.sabotageEstate.rep+'); caught, you fight its guards and pay as for a plunder. Night, Scouting and Agility help; a big band and a big estate make it harder.'},

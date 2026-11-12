@@ -14,6 +14,11 @@ const bldLv=(t,k)=>t.bld&&t.bld[k]||0;
 /* what a holding has built (t.buildings): its estates' levels (t.bld: {farm: lv, …}, 0 none, up to its kind's estMax), its walls
    (t.wall) and the project underway (t.work). A part of the holding, kept aside (never saved), over its own plain fields */
 const BUILDINGS=new WeakMap();
+// (what you paid for a holding's buildings, kind by kind (t.paid, saved with it); and what pulling one down gives back: half its cost, at
+// most half of what is left of what you paid. REFUND.paid false: half its cost, as before)
+const REFUND={paid:true};
+const paidFor=(t,k,g)=>{(t.paid||(t.paid={}))[k]=(t.paid[k]||0)+g};
+const refundOf=(t,k,cost)=>{const half=Math.floor(cost/2);if(!REFUND.paid)return half;const p=t.paid&&t.paid[k]||0,back=Math.min(half,Math.floor(p/2));if(back)t.paid[k]=Math.max(0,p-cost);return back};
 class Buildings{
   constructor(t){this.t=t}
   // a holding's buildings (made once and kept aside)
@@ -120,6 +125,7 @@ class Buildings{
     const t=this.t;
     if(t.work||P.gold<HOUSE_COST.gold||t.econ.lacking(HOUSE_COST.mats).length)return false;P.gold-=HOUSE_COST.gold;
     if(!this.start('house',HOUSE_DAYS,at)){P.gold+=HOUSE_COST.gold;return false}
+    paidFor(t,'house',HOUSE_COST.gold);
     t.econ.take(HOUSE_COST.mats);
     log('Builders start on a new house in '+t.name+'.');
     return true;
@@ -132,13 +138,14 @@ class Buildings{
     if(k==='wall'){const n=wallOf(t)+1;if(n>t.T.wallMax||P.gold<WALL_COST[n]||t.econ.lacking(WALL_MAT[n]).length)return;P.gold-=WALL_COST[n];t.econ.take(WALL_MAT[n]);this.start(k,n);log('Masons start on '+WALL_N[n].toLowerCase()+' at '+t.name+'.');return}
     if(!ESTATES[k])return;at=at||null;const lv=bldLv(t,k);if(lv>=this.cap(k)||!lv&&!this.needsMet(k))return;
     const c=bldCost(k,lv+1),mats=ESTATE_MAT(k,lv+1);if(P.gold<c||t.econ.lacking(mats).length)return;
-    P.gold-=c;t.econ.take(mats);this.start(k,lv+1,at);log('Work starts on the '+ESTATES[k].n.toLowerCase()+' of '+t.name+'.')}
-  // pull a building down: half of what it last cost comes back; its estate is gone
+    P.gold-=c;paidFor(t,k,c);t.econ.take(mats);this.start(k,lv+1,at);log('Work starts on the '+ESTATES[k].n.toLowerCase()+' of '+t.name+'.')}
+  // pull a building down: half of what it last cost comes back, at most half of what you paid for it (t.paid: a holding taken has
+  // buildings you never paid for, each pulled down for gold); its estate is gone
   demolish(l){
     const t=this.t;
     if(!l||l.k==='centre')return;
-    if(ESTATES[l.k]){const lv=bldLv(t,l.k),back=Math.floor(bldCost(l.k,Math.max(1,lv))/2);t.bld[l.k]=0;if(t.work&&t.work.k===l.k)t.work=null;P.gold+=back;t.layout.drop(l);log('The '+ESTATES[l.k].n.toLowerCase()+' of '+t.name+' is pulled down (+'+back+' gold).');return}
-    if(t.work&&t.work.lot===l.id)t.work=null;P.gold+=HOUSE_COST.gold>>1;t.layout.drop(l);log('A house in '+t.name+' is pulled down (+'+(HOUSE_COST.gold>>1)+' gold).')}
+    if(ESTATES[l.k]){const lv=bldLv(t,l.k),back=refundOf(t,l.k,bldCost(l.k,Math.max(1,lv)));t.bld[l.k]=0;if(t.work&&t.work.k===l.k)t.work=null;P.gold+=back;t.layout.drop(l);log('The '+ESTATES[l.k].n.toLowerCase()+' of '+t.name+' is pulled down (+'+back+' gold).');return}
+    const back=refundOf(t,'house',HOUSE_COST.gold);if(t.work&&t.work.lot===l.id)t.work=null;P.gold+=back;t.layout.drop(l);log('A house in '+t.name+' is pulled down'+(back?' (+'+back+' gold)':'')+'.')}
 }
 // (the older names: the buildings' methods)
 const needsMet=(t,k)=>Buildings.of(t).needsMet(k);

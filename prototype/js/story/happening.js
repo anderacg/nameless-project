@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- happenings: the base of every shape (doc/STORY_DESIGN.md §2, §3.8–3.10; the story wave, S1) ----------
    A Happening is one running thing of the story: an encounter on the road, an incident (story/incident.js), a quest
-   (story/quest.js), a thread (story/thread.js), a gathering (story/gathering.js): each its shape, a subclass. Its record is plain data, saved as it is ({k, i,
+   (story/quest.js), a quest chain (story/questchain.js), a gathering (story/gathering.js): each its shape, a subclass. Its record is plain data, saved as it is ({k, i,
    ...its state}; a quest's names its kind type and its number id, as it always did: kindId); the class is put on it
    in place (Happening.as), the class its kind names (story/kinds.js: spec.cls) or its shape's. Every happening is a thing of
    the world (parties.js WorldObject), so the map's lists take an encounter as any other thing.
@@ -33,7 +33,7 @@ class Happening extends WorldObject{
     return null;
   }
   // its lines (the chronicle: core/state.js log): their kind, for the Chronicle's filters, and what they link to in the Journal
-  // (its key there); none: null (a quest's and a story's: story/quest.js, thread.js; an incident's: your band's)
+  // (its key there); none: null (a quest's and a story's: story/quest.js, questchain.js; an incident's: your band's)
   get logKind(){
     return null;
   }
@@ -52,7 +52,7 @@ class Happening extends WorldObject{
     return this.shape+':ended';
   }
   // over: {e} on the bus, and how it ended when its shape says (a quest 'paid' or 'failed'; an encounter its finish's: 'done',
-  // 'left', 'timeout', 'caught', 'escaped', 'won', 'lost', 'fled'), the key a thread's step branches by (story/thread.js)
+  // 'left', 'timeout', 'caught', 'escaped', 'won', 'lost', 'fled'), the key a quest chain's step branches by (story/questchain.js)
   announceEnd(how){
     worldEmit(this.endEvent,how===undefined?{e:this}:{e:this,how});
   }
@@ -83,6 +83,6 @@ class Happening extends WorldObject{
     return this.as(rec);
   }
 }
-// the story's own store in the world (§3.8): W.story, made with the first thing in it (a thread, a gathering's calendar), saved by
-// each shape's own piece (story/thread.js, story/gathering.js) only once it holds anything
+// the story's own store in the world (§3.8): W.story, made with the first thing in it (a quest chain, a gathering's calendar), saved by
+// each shape's own piece (story/questchain.js, story/gathering.js) only once it holds anything
 const storyW=()=>W.story||(W.story={});

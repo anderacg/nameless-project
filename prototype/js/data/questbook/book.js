@@ -18,7 +18,7 @@
        an end {end: {reward, say, failed (true: the quest failed)}}.
    Outcomes (reward, out, winOut, loseOut): story/outcome.js's keys, and rep, honor, rel as plain numbers (at the giver's holding,
    with its realm, with the lord who gave it).
-   The checks a choice may name: QUEST_CHECKS (data/chains.js). QUESTBOOK_OFFER: how many a giver shows at once (offers), a road's chance of
+   The checks a choice may name: QUEST_CHECKS (data/jobchains.js). QUESTBOOK_OFFER: how many a giver shows at once (offers), a road's chance of
    one a day (road). ---------- */
 const QUESTBOOK={};
 const QUESTBOOK_OFFER={offers:2,road:.04};

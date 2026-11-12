@@ -15,10 +15,11 @@ class BattleDrops{
   static of(b){if(!b)return null;let d=DROP_OF.get(b);if(!d)DROP_OF.set(b,d=new BattleDrops());return d}
   // (who struck the blow that felled t: attacks.js earnXp)
   static struck(t,u){if(t&&u)DROP_BY.set(t,u)}
-  // each moment: a foe newly fallen bursts; the dots fly; what lies near your hero or a companion is drawn in
+  // each moment: a foe newly fallen bursts (not one who left the field alive, nor one not yet come onto it); the dots fly; what
+  // lies near your hero or a companion is drawn in
   step(dt){
     const D=DROPS,k=worldEffectScale(),h=B.hero;
-    for(const u of B.units){if(u.hp>0||u.team===0||this.done.has(u)||(h?!battleEnemy(h,u):false))continue;this.done.add(u);this.fall(u)}
+    for(const u of B.units){if(u.hp>0||u.team===0||u.left||u.waiting||this.done.has(u)||(h?!battleEnemy(h,u):false))continue;this.done.add(u);this.fall(u)}
     for(const o of this.orbs){o.t+=dt;if(o.t<o.wait){o.x+=o.vx*dt;o.y+=o.vy*dt;o.vx*=.92;o.vy=o.vy*.92+60*k*dt;continue}
       const to=o.to&&o.to.hp>0?o.to:null;if(!to){o.gone=true;if(o.item)this.ground.push(o.item);continue}
       const tx=to.x,ty=to.y-8*k,dx=tx-o.x,dy=ty-o.y,d=Math.hypot(dx,dy),v=D.speed*k*(1+2*(o.t-o.wait));

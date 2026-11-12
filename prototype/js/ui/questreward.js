@@ -25,13 +25,15 @@ const QuestReward={el:null,list:[],
     if(o.rep)out.push(it('rep',o.rep[1],o.rep[0]));if(o.honor)out.push(it('honor',o.honor[1],FACS[o.honor[0]]?.n));if(o.rel)out.push(it('rel',o.rel[1],o.rel[0]));
     this.add(title,out)},
   open(){return !!this.el&&!this.el.hidden},
+  // (several at once: what they gave in all, by kind and where, as each's own)
+  total(){const m=new Map();for(const q of this.list)for(const [ic,n,lab,where] of q.items){const k=ic+'|'+lab+'|'+(where||'');const x=m.get(k);if(x)x[1]+=n;else m.set(k,[ic,n,lab,where])}return [...m.values()]},
   // (one reward: its icon (an item's picture: loot.js fillIcons), the amount, what it is and where)
   item([ic,n,lab,where]){return '<div class="qrw-item">'+(ic.includes(':')?'<span data-icon="'+ic+'"></span>':icon(ic,28))+'<b>+'+n+'</b><small>'+htmlText(lab)+(where?'<br>'+htmlText(where):'')+'</small></div>'},
   card({title,items}){return '<div class="qrw-quest"><div class="lab">'+htmlText(title)+'</div><div class="qrw-items">'+items.map(x=>this.item(x)).join('')+'</div></div>'},
   show(){let el=this.el;if(!el){el=this.el=document.createElement('div');el.className='overlay qrw';el.id='qreward';ov.parentElement.appendChild(el);
       el.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b){e.stopPropagation();act(b.dataset.act,b.dataset.arg)}})}
     const n=this.list.length;el.innerHTML='<div class="panel qrw-card" role="dialog" aria-label="Quest complete"><div class="top"><h2>'+(n>1?n+' quests complete':'Quest complete')+'</h2></div>'+
-      '<div class="qrw-body">'+this.list.map(q=>this.card(q)).join('')+'</div>'+nav(null,['qrw-close',null,'Continue'])+'</div>';fillIcons(el);el.hidden=false;uiSfx('good')},
+      '<div class="qrw-body">'+(n>1?this.card({title:'In all',items:this.total()}):'')+this.list.map(q=>this.card(q)).join('')+'</div>'+nav(null,['qrw-close',null,'Continue'])+'</div>';fillIcons(el);el.hidden=false;uiSfx('good')},
   close(){this.list=[];if(this.el){this.el.hidden=true;this.el.innerHTML=''}},
   // (Esc: its Continue, while it is open: ui.js escDismiss)
   esc(){return this.open()?this.el.querySelector('[data-act="qrw-close"]'):null}};

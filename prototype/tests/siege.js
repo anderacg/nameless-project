@@ -37,7 +37,7 @@ try{
  at(town);t.updateWorld(.01);ok(G.mode==='town'&&/Steward’s office/.test(panel())&&/turmoil/.test(panel()),'entering your fief shows the Fief tab');
  t.act('tab','recruit');ok(/No one will enlist/.test(panel()),'no recruits while it is in turmoil');
  t.act('tab','fief');const gar=town.gar,kn=P.troops.hum_knight;t.act('fief-station','hum_knight:5');ok(town.gar===gar+5&&P.troops.hum_knight===kn-5,'station 5 knights in the garrison');
- t.act('leave');done();P.troops={};P.wounded={};const gold=P.gold;G.day=town.turmoil;t.dayTick();ok(P.gold-gold>=t.fiefIncome(town)-1&&t.fiefIncome(town)>0,'your fief pays its taxes: '+t.fiefIncome(town)+' gold a day');
+ t.act('leave');done();P.troops={};P.wounded={};const gold=P.gold,wage=t.bandPayroll().total;G.day=town.turmoil;t.dayTick();ok(P.gold-gold>=t.fiefIncome(town)-wage-1&&t.fiefIncome(town)>0,'your fief pays its taxes: '+t.fiefIncome(town)+' gold a day (less its garrison\'s wage, '+wage+'g: world.js BAND_PAY.garrison)');
  // a faction hostile to you comes for it
  t.addMissingLords();const karnLord=W.lords.find(l=>l.fac==='karn');ok(karnLord,'karn has a lord');t.lordThink(karnLord);
  ok(karnLord.state==='march'&&t.atWar('karn','player'),'the Karn Clans march on your fief ('+karnLord.tgt+')');

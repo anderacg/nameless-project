@@ -1,31 +1,31 @@
 'use strict';
-/* ---------- a story's step forms: one way to write any story (doc/QUESTBOOK_DESIGN.md §10; on the Thread shape, story/thread.js) ----------
-   defineStory(id, spec) defines a thread kind whose steps may be written in three short forms besides the thread's own
+/* ---------- a story's step forms: one way to write any story (doc/QUESTBOOK_DESIGN.md §10; on the QuestChain shape, story/questchain.js) ----------
+   defineStory(id, spec) defines a quest chain kind whose steps may be written in three short forms besides the quest chain's own
    ({start, until, how, remember, then}, kept as written):
    - a goal: {goal (a goal kind: visit, deliver, escort, track, clear, beat, hunt, rescue, kill; Stories.goals), its fields (to, give,
      band, n, mon, held, lord, site, near, at…), spec (more of its quest's spec, or all of it: an object or a function of the
-     thread), title, text, note, stage, say, days, reward, next (the step after it is done; none: the end), failed (the step if it
+     quest chain), title, text, note, stage, say, days, reward, next (the step after it is done; none: the end), failed (the step if it
      fails; none: the story failed), on ({key: step}: its other ends, an escort's captured (taken by those who beat you: memory.held)
-     or lost (taken by no one); a key named here is kept as it is, done or not), key (a function of the event and the thread: its
+     or lost (taken by no one); a key named here is kept as it is, done or not), key (a function of the event and the quest chain: its
      end's key in place of its quest's fate, read against on, then done or failed as ever)};
    - a choice: {choose: [options], title, text, who, note, stage}: an option {label, icon, tip, ask, when, need (conditions, or
-     functions of the thread), gold (its cost), out (an outcome, or a function), say, how (its key; none: c<i>), next; or a check:
-     check (a QUEST_CHECKS name, or {base, parts, cap}: data/chains.js), win, lose, winOut, loseOut, winSay, loseSay};
+     functions of the quest chain), gold (its cost), out (an outcome, or a function), say, how (its key; none: c<i>), next; or a check:
+     check (a QUEST_CHECKS name, or {base, parts, cap}: data/jobchains.js), win, lose, winOut, loseOut, winSay, loseSay};
    - an end: {end: {reward, say, failed}}.
-   Every field may be a function of the thread (a computed place, a line from what it remembers), and any step may remember
+   Every field may be a function of the quest chain (a computed place, a line from what it remembers), and any step may remember
    (remember(d, th)) what it learnt. Words: {town} {realm} {lord} {you} {to}, and {key} for any other plain field of its memory.
    Outcomes: story/outcome.js's, with rep, honor, rel, approve as plain numbers (at its holding, with its realm, its lord, its
-   companion) and once ({once: key, first, then}: first the first time in a game, then after: Thread.once).
+   companion) and once ({once: key, first, then}: first the first time in a game, then after: QuestChain.once).
    The story's own fields: n (its name), title, text, ico (its pages'), speaker (who speaks on its pages: a function of the
-   thread, {name, pic, sub}), fail ({days, say, out}: a deadline for the whole of it, memory.due from the day it begins; passed,
+   quest chain, {name, pic, sub}), fail ({days, say, out}: a deadline for the whole of it, memory.due from the day it begins; passed,
    what it waits on is dropped and it fails, ended 'expired': Stories.expire, each day), resume ({key: step}: ended with that key,
-   it is picked up again in a new thread at that step, with its memory; not archived).
+   it is picked up again in a new quest chain at that step, with its memory; not archived).
    Two registries, a new kind one call: defineGoal(id, {start(step, th), remember?}), defineCond(id, test(v, ctx), why(v)).
    Nothing here draws Math.random: a check rolls the road's stream (Choice.roll), a band's numbers the quests' (questRng) ---------- */
 // (the fates a goal's quest ends with: done, on to next; failed, to failed or the story failed)
-const STORY_OK=['arrived','cleared','beaten','slain','gone','freed'],STORY_BAD=['late','left','captured','scattered'];
+const STORY_OK=['arrived','cleared','beaten','slain','gone','freed'],STORY_BAD=['late','left','captured','scattered','dead'];// (dead: a passenger the beasts killed, world/death.js: 'slain' is a beast hunt's done)
 class Stories{
-  // ---- a field: plain, or a function of the thread
+  // ---- a field: plain, or a function of the quest chain
   static val(x,th){return typeof x==='function'?x(th):x}
   // (a goal's fields resolved, its hooks kept)
   static vals(st,th){const o={};for(const [k,v] of Object.entries(st))o[k]=['remember','how','then','on','when','need'].includes(k)?v:this.val(v,th);return o}
@@ -36,11 +36,11 @@ class Stories{
       typeof m[k]==='string'||typeof m[k]==='number'?String(m[k]):all)}
   // ---- an outcome from a story's (plain numbers by its memory; once: the first time, then after)
   static outcome(o,th){o=this.val(o,th);if(!o)return {};const m=th?.memory||{};
-    if(o.once){const first=Thread.once(o.once)==null,r=this.outcome(first?o.first:o.then,th);if(first){const key=o.once,call=r.call;r.call=c=>{Thread.mark(key);if(call)call(c)}}return r}
+    if(o.once){const first=QuestChain.once(o.once)==null,r=this.outcome(first?o.first:o.then,th);if(first){const key=o.once,call=r.call;r.call=c=>{QuestChain.mark(key);if(call)call(c)}}return r}
     const r={...o},l=m.lord&&W.lords.find(x=>x.name===m.lord);
     if(typeof o.rep==='number')r.rep=[m.town,o.rep];if(typeof o.honor==='number')r.honor=[m.fac&&FACS[m.fac]?m.fac:null,o.honor];if(typeof o.rel==='number')r.rel=[l,o.rel,'the work you did'];
     if(typeof o.approve==='number')r.approve=[m.comp||th?.kind?.comp,o.approve];if(typeof o.say==='string')r.say=this.fill(o.say,th);return r}
-  // ---- conditions: every one of c holds (none: true; a function of the thread: its own); not: none of its own do
+  // ---- conditions: every one of c holds (none: true; a function of the quest chain: its own); not: none of its own do
   static holds(c,ctx,th){if(!c)return true;if(typeof c==='function')return !!c(th);return Object.entries(c).every(([k,v])=>{if(k==='not')return !Object.keys(v).some(x=>this.holds({[x]:v[x]},ctx));
     const C=kindOf('cond',k);if(!C)throw new Error('No story condition '+k);return C.test(v,ctx)})}
   static why(c,ctx,th){if(!c)return '';if(typeof c==='function')return c(th)||'';const k=Object.keys(c).find(k=>!this.holds({[k]:c[k]},ctx));return k?(kindOf('cond',k).why?.(c[k],ctx)||'Not yet'):''}
@@ -53,7 +53,7 @@ class Stories{
   // ---- a story defined: its steps in any form (a list with ids, or {id: step}); its first; resumed ends not archived
   static define(id,spec){const S=spec.steps,list=Array.isArray(S)?S.map(s=>[s.id,s]):Object.entries(S||{});if(!list.length)throw new Error('The story '+id+' has no steps');
     const K={...spec,id,n:spec.n||spec.title,first:spec.first||(list.some(([s])=>s==='start')?'start':list[0][0])};if(spec.resume)K.resumes=[...new Set([...(spec.resumes||[]),...Object.keys(spec.resume)])];
-    K.steps=list.map(([sid,st])=>this.step(K,sid,st));return defineKind('thread',id,K)}
+    K.steps=list.map(([sid,st])=>this.step(K,sid,st));return defineKind(QUESTCHAIN_SHAPE,id,K)}
   static step(K,sid,st){if(!st.goal&&!st.choose&&!st.end)return {...st,id:sid};
     const left=th=>th.memory.due!=null?' ('+Math.max(0,th.memory.due-G.day)+' days left)':'',
       note=th=>Stories.fill(st.note||st.title||K.title||K.n,th)+left(th),stage=th=>Stories.fill(st.stage||st.title||st.note||sid,th);
@@ -68,7 +68,7 @@ class Stories{
     const choices=st.choose.map((o,i)=>{const k=o.how||'c'+i,odds=o.check&&this.check(K.id,sid,i,o.check),c={icon:o.icon||'scroll',label:o.label,tip:o.tip,ask:o.ask,
         when:o.when?th=>Stories.holds(o.when,Stories.ctxOf(th),th):undefined,need:th=>(o.gold&&P.gold<o.gold?'You have '+P.gold+'g':'')||Stories.why(o.need,Stories.ctxOf(th),th)};
       if(odds){then[k+'w']=o.win||null;then[k+'l']=o.lose||null;
-        return {...c,odds,facts(th){return [statRead(odds,{vague:'you cannot tell your odds',what:'to succeed'}),statHelps(odds)]},
+        return {...c,odds,facts(th){return [statRead(odds,{vague:null,what:'to succeed'}),statHelps(odds)]},
           run(th,ch){const won=ch.roll();th.memory.bk=k+(won?'w':'l');const r=Stories.outcome(won?o.winOut:o.loseOut,th);r.say=Stories.fill(won?o.winSay:o.loseSay,th)||r.say||(won?'You succeed.':'You fail.');return r}}}
       then[k]=o.next||null;
       return {...c,how:k,also:o.also,out:th=>{const r=Stories.outcome(o.out,th);if(o.gold)r.gold=-o.gold+(r.gold||0);if(o.say)r.say=Stories.fill(o.say,th);return r}}});
@@ -78,7 +78,7 @@ class Stories{
   static spec(st,th){const K=th.kind,s=typeof st.say==='string'?this.fill(st.say,th):null;
     return {title:this.fill(st.title||K.title||K.n,th),text:this.fill(st.text||st.note||K.text,th),prize:this.outcome(st.reward,th),days:st.days||0,
       say:st.say&&typeof st.say==='object'?st.say:s?{arrive:s,cleared:s,beaten:s,slain:s,band:s,lair:s,paid:s,taken:s}:undefined,...(st.spec||{})}}
-  static quest(kind,st,th,more){const r=Thread.starters.quest.start({quest:kind,town:st.town,spec:{...this.spec(st,th),...more,...(st.spec||{})}},th),q=r&&P.quests.find(x=>x.id===r.id);
+  static quest(kind,st,th,more){const r=QuestChain.starters.quest.start({quest:kind,town:st.town,spec:{...this.spec(st,th),...more,...(st.spec||{})}},th),q=r&&P.quests.find(x=>x.id===r.id);
     if(q?.to?.name)th.memory.to=q.to.name;return r}
   // (a goal's place: {town (filled), lot}, a spot {x, y, name}, or pick: 'realm' (another holding of its realm) or 'any' (another
   // not hostile to you), the nearest some way off)
@@ -102,7 +102,7 @@ class Stories{
   // ly}; none: site null, the trail cold)
   static bind(st,th){const s=LairQuest.near(st.at||th.memory.at||{x:th.memory.x,y:th.memory.y},st.band||'bandits');if(!s)return {site:null};s.seen=true;return {site:s.i,lair:s.name,lx:s.x,ly:s.y}}
   // ---- each day: a story whose days are up fails
-  static day(){for(const th of Thread.list().on.slice())if(th.memory.due!=null&&G.day>th.memory.due)this.expire(th)}
+  static day(){for(const th of QuestChain.list().on.slice())if(th.memory.due!=null&&G.day>th.memory.due)this.expire(th)}
   // (out of time: what it waits on dropped (a quest off your list, its quarry unmarked), its forfeit, its line; ended, failed)
   static expire(th){const F=th.kind.fail||{},w=th.wait,q=w?.shape==='quest'&&P.quests.find(x=>x.id===w.id);if(q){P.quests=P.quests.filter(x=>x!==q);Quest.unmark(q.id)}
     if(F.out)Outcome.apply(this.outcome(F.out,th),{e:th});log('Quest failed: '+th.title+'. '+(this.fill(F.say,th)||'You ran out of time.'),'bad','story',th.journalKey);th.end('expired')}
@@ -110,8 +110,8 @@ class Stories{
 const defineStory=(id,spec)=>Stories.define(id,spec);
 const defineGoal=(id,spec)=>defineKind('goal',id,spec);
 const defineCond=(id,test,why)=>defineKind('cond',id,{test,why});
-// (a goal step's starter: its form's goal, story/thread.js Thread.starters)
-Thread.starters.goal={until:'quest:ended',start:(v,th)=>{const st=Stories.vals(th.current.form,th);return kindOf('goal',v.goal).start(st,th)}};
+// (a goal step's starter: its form's goal, story/questchain.js QuestChain.starters)
+QuestChain.starters.goal={until:'quest:ended',start:(v,th)=>{const st=Stories.vals(th.current.form,th);return kindOf('goal',v.goal).start(st,th)}};
 // ---- the goals: a quest of an existing kind (story/steps.js, world/escort.js); an end pays at once
 defineGoal('end',{start(st,th){const E=st.end,o=Stories.outcome(E.reward,th),r=Outcome.apply(o,{e:th}),s=Stories.fill(E.say,th)||r.say;
   if(s)log(s,E.failed?'bad':'good','story',th.journalKey);log((E.failed?'Quest failed: ':'Quest complete: ')+th.title+'.'+(r.say&&r.say!==s?' '+r.say:''),E.failed?'bad':'good','story',th.journalKey);
@@ -140,7 +140,7 @@ defineCond('kind',(v,c)=>[].concat(v).includes(c.kind));
 defineCond('culture',(v,c)=>[].concat(v).includes(c.culture));
 defineCond('day',(v)=>G.day>=v,v=>'Not before day '+v);
 defineCond('has',(v)=>!!P.inv.some(s=>s&&s.id===v),v=>'You need '+(ITEMS[v]?.n||v));
-defineCond('done',(v)=>Thread.once('book:'+v)!=null||Thread.once(v)!=null);
+defineCond('done',(v)=>QuestChain.once('book:'+v)!=null||QuestChain.once(v)!=null);
 defineCond('comp',(v)=>compsInBand().includes(v),v=>(COMPS[v]?.short||v)+' must ride with you');
 defineCond('approve',(v,c)=>(P.comps[c.comp]?.ap??-99)>=v,v=>'Approval '+v);
 defineCond('gold',(v)=>P.gold>=v,v=>'You need '+v+'g');
@@ -154,5 +154,5 @@ defineCond('short',(v,c)=>{const t=condTown(c);return !!t&&Troubles.short(t).inc
 const STORY_POOR=40;
 defineCond('poor',(v,c)=>{const t=condTown(c);return !!t&&((t.pros||0)<STORY_POOR)===!!v},v=>v?'This place is not poor':'This place is poor');
 // (a story begun: its deadline from today; ended with a key its kind resumes at: picked up again there, with its memory)
-worldOn('thread:ended',d=>{const th=d?.e,at=th?.kind?.resume?.[d.how];if(at)Thread.start(th.k,th.memory,at)});
+worldOn('questchain:ended',d=>{const th=d?.e,at=th?.kind?.resume?.[d.how];if(at)QuestChain.start(th.k,th.memory,at)});
 Systems.add({name:'deadlines',order:{day:214},day:()=>Stories.day()});

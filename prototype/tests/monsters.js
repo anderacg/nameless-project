@@ -9,7 +9,7 @@ Kit.suite(({ok})=>{
  t.act('begin','soldier');W.critters=[];W.sites=[];W.lords.forEach(l=>{l.x=-999;l.y=-999});// nothing else in the way of the chases
  ok(W.monsters.length===t.density(t.WM).monsterStart,t.density(t.WM).monsterStart+' monsters roam a new world (its density: data/world.js; a bigger one: tests/wilddensity.js)');
  for(let d=0;d<40;d++){G.day++;t.monsterDay()}
- ok(W.monsters.filter(m=>!MONSTERS[m.id].mythic).every(m=>MONSTERS[m.id].where.some(w=>t.habitatAt(m.hx,m.hy).includes(w))),'every monster spawned in its habitat ('+W.monsters.length+' now)');
+ ok(W.monsters.filter(m=>!MONSTERS[m.id].mythic).every(m=>t.monOf(m).where.some(w=>t.habitatAt(m.hx,m.hy).includes(w))),'every monster spawned in its habitat ('+W.monsters.length+' now)');
  ok(new Set(W.monsters.map(m=>m.id)).size>=5,'variety: '+[...new Set(W.monsters.map(m=>m.id))].join(', '));
  // hunting vs waiting (on the generated world, out in the wild: a beast by a holding draws its watch, the land defence)
  {let w=null;for(let ty=10;ty<t.MH-10&&!w;ty+=3)for(let tx=10;tx<t.MW-10&&!w;tx+=3){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.tAt(tx+3,ty)===t.T_OPEN&&t.TOWNS.every(h=>Math.hypot(h.x-x,h.y-y)>400))w=[x,y]}if(w){P.x=w[0];P.y=w[1];P.tx=null}}

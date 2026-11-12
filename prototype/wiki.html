@@ -141,7 +141,7 @@ tr:last-child td{border-bottom:0}
 <script src="js/data/factions.js"></script>
 <script src="js/data/units.js"></script>
 <script src="js/data/goblins.js"></script>
-<script src="js/data/standards.js"></script>
+<script src="js/data/outposts.js"></script>
 <script src="js/data/outlaws.js"></script>
 <script src="js/data/ranks.js"></script>
 <script src="js/data/trainers.js"></script>
@@ -162,7 +162,7 @@ tr:last-child td{border-bottom:0}
 <script src="js/data/abilities.js"></script>
 <script src="js/data/kits.js"></script>
 <script src="js/data/encounters.js"></script>
-<script src="js/data/chains.js"></script>
+<script src="js/data/jobchains.js"></script>
 <script src="js/data/quests.js"></script>
 <script src="js/data/names.js"></script>
 <script src="js/data/tracks.js"></script>
@@ -266,12 +266,12 @@ tr:last-child td{border-bottom:0}
 <script src="js/story/encounter.js"></script>
 <script src="js/story/incident.js"></script>
 <script src="js/story/quest.js"></script>
-<script src="js/story/thread.js"></script>
+<script src="js/story/questchain.js"></script>
 <script src="js/story/gathering.js"></script>
 <script src="js/story/steps.js"></script>
 <script src="js/story/forms.js"></script>
 <script src="js/story/wounded.js"></script>
-<script src="js/story/chains.js"></script>
+<script src="js/story/jobchains.js"></script>
 <script src="js/story/questbook.js"></script>
 <script src="js/world/incidents.js"></script>
 <script src="js/world/sites.js"></script>
@@ -304,6 +304,7 @@ tr:last-child td{border-bottom:0}
 <script src="js/world/fights.js"></script>
 <script src="js/world/brains.js"></script>
 <script src="js/world/hosts.js"></script>
+<script src="js/world/stalls.js"></script>
 <script src="js/world/waylay.js"></script>
 <script src="js/world/defence.js"></script>
 <script src="js/world/captives.js"></script>
@@ -322,7 +323,7 @@ tr:last-child td{border-bottom:0}
 <script src="js/world/death.js"></script>
 <script src="js/world/legacy.js"></script>
 <script src="js/world/lineage.js"></script>
-<script src="js/world/standards.js"></script>
+<script src="js/world/outposts.js"></script>
 <script src="js/ui/family.js"></script>
 <script src="js/gfx/graveart.js"></script>
 <script src="js/world/news.js"></script>
@@ -414,7 +415,7 @@ AUDIO.on=false;// (the wiki is silent: it loads the game's scripts, sound among 
 // a world to read from: owners, estates, stores and people as a new game starts (no game is started or saved)
 P.x=(startHolding().tx+.5)*TILE;P.y=(startHolding().ty+2.5)*TILE;G.mode='wiki';initWorld();
 const main=document.getElementById('wiki');
-const L={grass:'Grassland',frost:'Frost',desert:'Desert',swamp:'Swamp',forest:'Forest',hills:'Hills',open:'Open ground',rock:'Hills or mountain',shore:'Shoreline'};
+const L={grass:'Grassland',frost:'Frost',desert:'Desert',swamp:'Swamp',forest:'Forest',hills:'Hills',snowwood:'Snowy woods',open:'Open ground',rock:'Hills or mountain',shore:'Shoreline'};
 const pct=x=>Math.round(x*100)+'%';
 // the kinds of holding (holdings.js), and their plurals
 const HT=HOLDING_TYPES,HK=Object.keys(HT),kinds=k=>k==='city'?'cities':k+'s';
@@ -425,7 +426,7 @@ const g$=g=>GOODS[g]?GOODS[g].n:g;
 const stats=s=>'<span>HP <b>'+s.hp+'</b></span><span>DMG <b>'+(+(s.dmg||0).toFixed(1))+'</b></span><span>SPD <b>'+s.spd+'</b></span>'+
   (s.range?'<span>Range <b>'+s.range+'</b></span>':'<span>Reach <b>'+(s.reach||0)+'</b></span>')+'<span>Every <b>'+(s.cd||0).toFixed(2)+'s</b></span>'+(keyOf(s)?'<span>Power <b>'+rating([keyOf(s)])+'</b></span>':'');
 const spr=(type,team,scale)=>'<span data-spr="'+type+'" data-team="'+(team||0)+'" data-scale="'+(scale||3)+'"></span>';
-const fac=f=>f==='player'?'<span class="sw" style="background:'+FACS.player.col+'"></span>You':'<span class="sw" style="background:'+FACS[f].col+'"></span>'+FACS[f].n;
+const fac=f=>!FACS[f]&&f!=='player'?'<span class="muted">Free folk</span>':f==='player'?'<span class="sw" style="background:'+FACS.player.col+'"></span>You':'<span class="sw" style="background:'+FACS[f].col+'"></span>'+FACS[f].n;
 const table=(head,rows,num)=>'<div class="scroll"><table><thead><tr>'+head.map((h,i)=>'<th'+((num||[]).includes(i)?' class="n"':'')+'>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr class="entry">'+r.map((c,i)=>'<td'+((num||[]).includes(i)?' class="n"':'')+'>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
 const kv=pairs=>'<dl class="kv">'+pairs.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>';
 const sub=(title,lead,html)=>'<div class="sub"><h3>'+title+'</h3>'+(lead?'<p class="muted">'+lead+'</p>':'')+html+'</div>';
@@ -438,7 +439,7 @@ const statText=m=>Object.keys(m||{}).filter(k=>GEAR_STAT[k]&&m[k]).map(k=>{const
 
 /* counts */
 const raceUnits=Object.keys(ST).filter(k=>ST[k].race).length,mercs=['militia','spearman','archer','ranger','horse'];
-document.getElementById('counts').innerHTML=[[MW+'×'+MH,'tiles'],[TOWNS.length,'holdings'],[FIDS.length,'realms'],[Object.keys(RACES).length,'races'],[raceUnits+mercs.length,'troop types'],[Object.keys(MONSTERS).length,'monsters'],
+document.getElementById('counts').innerHTML=[[MW+'×'+MH,'tiles'],[TOWNS.length,'holdings'],[FIDS.length,'realms'],[Object.keys(RACES).length,'races'],[raceUnits+mercs.length,'troop types'],[Object.keys(MONSTERS).length+Object.keys(MONSTER_BREEDS.kinds).length,'monsters'],
   [Object.keys(GOODS).length,'goods'],[Object.keys(ESTATES).length,'estates'],[Object.keys(ITEMS).length,'items'],[Object.keys(TREE).length,'skill nodes']].map(([n,l])=>'<span><b>'+n+'</b>'+l+'</span>').join('');
 document.getElementById('loading').remove();
 
@@ -610,10 +611,10 @@ section('gear','Gear and inventory','Press I. Your equipment sits on a body: slo
   sub('Holding weapons','One-handed weapons leave the off hand free for a shield, a tome, a torch or a second weapon (dual wield: the off-hand weapon adds half its damage, and your combo turns quick). Two-handed weapons need both hands and send your off-hand item to the bag. Hybrid weapons (spears) are held in two hands when the off hand is empty (+20% damage, +4 reach) and in one with a shield.',
     table(['Piece','Slot','Grip','Wooden (tier 0)','Silver (tier 3)','Adamant (tier 6)'],Object.keys(BASES).map(b=>{const B=BASES[b];return ['<b>'+B.n+'</b>',SLOTS[B.slot],B.hand?handN[B.hand]:'—',...[0,3,6].map(t=>'<span class="muted" style="font-size:12px">'+statText(ITEMS[gearId(b,t)].m)+'</span>')]})))+
   callout('Materials run '+MATERIALS.map(m=>m.n).join(', ')+'; value doubles with each step. Smiths stock pieces up to a tier that rises with the days (castles forge one higher), and enemies drop them.')+
-  sub('Rare gear','Dropped by monsters.',table(['Item','Slot','Rarity','Effect','Value','Dropped by'],Object.keys(ITEMS).filter(k=>ITEMS[k].tier==null&&ITEMS[k].slot!=='mount').map(k=>{const I=ITEMS[k];return ['<span class="rare" style="background:'+RARITY[I.r]+'"></span><b>'+I.n+'</b>',SLOTS[I.slot]+(I.hand?', '+handN[I.hand]:''),I.r,I.d,I.v+'g',Object.keys(MONSTERS).filter(m=>MONSTERS[m].gear.some(x=>x[0]===k)).map(m=>MONSTERS[m].n).join(', ')||'—']}),[4]))+
+  sub('Rare gear','Dropped by monsters.',table(['Item','Slot','Rarity','Effect','Value','Dropped by'],Object.keys(ITEMS).filter(k=>ITEMS[k].tier==null&&ITEMS[k].slot!=='mount').map(k=>{const I=ITEMS[k];return ['<span class="rare" style="background:'+RARITY[I.r]+'"></span><b>'+I.n+'</b>',SLOTS[I.slot]+(I.hand?', '+handN[I.hand]:''),I.r,I.d,I.v+'g',[...Object.keys(MONSTERS).filter(m=>MONSTERS[m].gear.some(x=>x[0]===k)).map(m=>MONSTERS[m].n),...Object.entries(MONSTER_BREEDS.kinds).filter(([,b])=>(b.gear||[]).some(x=>x[0]===k)).map(([,b])=>b.n)].join(', ')||'—']}),[4]))+
   sub('Mounts','Stables sell them; rare beasts need standing '+REP_NEED[2]+' and the right place. A mount speeds your travel; some ignore a biome.',
     table(['Mount','Rarity','Effect','Ignores','Where','Price'],Object.keys(MOUNTS).map(k=>{const M=MOUNTS[k];return ['<b>'+M.n+'</b>',M.r,statText(M.m)+(M.fly?', flies':''),(M.ign||[]).map(x=>L[x]).join(', ')||'—',M.drop?'only as loot':M.where==='any'?'any stable':M.where?M.where+' stables':M.race?RACES[M.race].n+' holdings':L[M.clim]+' holdings',M.drop?'—':Math.round(M.v*1.2)+'g']}),[5]))+
-  sub('Trophies','Sell them at any market.',table(['Trophy','Value','From'],Object.keys(MATS).map(k=>['<b>'+MATS[k].n+'</b>',MATS[k].v+'g','<span class="muted">'+[...Object.keys(MONSTERS).filter(m=>MONSTERS[m].mat===k).map(m=>MONSTERS[m].n),...Object.keys(CRITTERS).filter(c=>CRITTERS[c].mat&&CRITTERS[c].mat[0]===k).map(c=>CRITTERS[c].n)].join(', ')+'</span>']),[1])));
+  sub('Trophies','Sell them at any market.',table(['Trophy','Value','From'],Object.keys(MATS).map(k=>['<b>'+MATS[k].n+'</b>',MATS[k].v+'g','<span class="muted">'+[...Object.keys(MONSTERS).filter(m=>MONSTERS[m].mat===k).map(m=>MONSTERS[m].n),...Object.keys(MONSTER_BREEDS.kinds).map(b=>monRec(MONSTER_BREEDS.kinds[b].kind,b)).filter(B=>B.mat===k&&MONSTER_BREEDS.kinds[B.breed].mat).map(B=>B.n),...Object.keys(CRITTERS).filter(c=>CRITTERS[c].mat&&CRITTERS[c].mat[0]===k).map(c=>CRITTERS[c].n)].join(', ')+'</span>']),[1])));
 
 /* hero */
 const branchOf=k=>TREE_BRANCHES.find(b=>b.k===k);
@@ -627,13 +628,14 @@ section('hero','Your hero','Your past sets your weapon, purse and starting place
 
 /* threats */
 const abil={pounce:'Pounces on a fighter 24–110 px away for 1.6× damage, then waits 4.5 s.',web:'Spits webs (range 60) that halve the target’s speed for 2 s.',regen:'Regenerates 4 health per second.'};
-const monCard=id=>{const M=MONSTERS[id],s=ST[M.unit],traits=[s.ability&&abil[s.ability],s.charge&&'Charges for 1.9× damage at full speed.',s.big&&'Huge: takes up more room and ignores battleground rules.'].filter(Boolean);
+const monCard=(id,M=MONSTERS[id])=>{const s=ST[M.unit],traits=[s.ability&&abil[s.ability],s.charge&&'Charges for 1.9× damage at full speed.',s.big&&'Huge: takes up more room and ignores battleground rules.'].filter(Boolean);
   return '<article class="card entry"><div class="head">'+spr(M.unit,1,s.big?2:3)+'<div><h3>'+M.n+'</h3><span class="muted">'+M.d+'</span></div></div>'+
-  '<div class="chips"><span class="chip '+(M.aggro?'hot':'calm')+'">'+(M.aggro?'Hunts you':'Waits')+'</span>'+M.where.map(w=>'<span class="chip">'+L[w]+'</span>').join('')+'<span class="chip">Group of '+(M.count[0]===M.count[1]?M.count[0]:M.count[0]+'–'+M.count[1])+'</span></div>'+
+  '<div class="chips">'+(M.breed?'<span class="chip">A breed of '+MONSTERS[M.kind].n.toLowerCase()+'</span>':'')+'<span class="chip '+(M.aggro?'hot':'calm')+'">'+(M.aggro?'Hunts you':'Waits')+'</span>'+M.where.map(w=>'<span class="chip">'+L[w]+'</span>').join('')+'<span class="chip">Group of '+(M.count[0]===M.count[1]?M.count[0]:M.count[0]+'–'+M.count[1])+'</span></div>'+
   '<div class="stats">'+stats(s)+'</div><p class="vs">'+vsLine(s)+'</p>'+(traits.length?'<p class="muted" style="font-size:14px">'+traits.join(' ')+'</p>':'')+
   kv([['XP',M.xp+' each'],['Trophy',MATS[M.mat].n+' ('+MATS[M.mat].v+'g)'+(id==='wolf'?' and 1 fur per 2 wolves':'')],['Rare drops',M.gear.map(([it,ch])=>'<span class="rare" style="background:'+RARITY[ITEMS[it].r]+'"></span>'+ITEMS[it].n+' '+pct(ch)).join(', ')]])+'</article>'};
 section('threats','Monsters and threats','Up to '+density(WM).monsterCap+' monsters roam at a time in the classic world (a bigger world holds as many to each stretch of land, so more in all), each near its lair in its own habitat, out in the wilds: never on a holding’s land, unless their ground is found nowhere else, and then only at a land’s far edge, away from its holding and estates. Wild game is no threat to anyone. They level up as the days pass: each level adds 20% health, 12% damage, 25% more XP and better drop chances.',
-  '<div class="grid">'+Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic).map(monCard).join('')+'</div>'+
+  '<div class="grid">'+Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic).map(id=>monCard(id)).join('')+'</div>'+
+  '<div class="sub"><h3>Breeds</h3><p class="muted">A lair may hold one of its kind\u2019s breeds instead, by the ground it lies on: its own colours, strengths and trophies.</p><div class="grid">'+Object.keys(MONSTER_BREEDS.kinds).map(k=>monCard(MONSTER_BREEDS.kinds[k].kind,monRec(MONSTER_BREEDS.kinds[k].kind,k))).join('')+'</div></div>'+
   '<div class="sub"><h3>Mythic monsters</h3><p class="muted">One of each at a time, roaming the whole map rather than a lair. Slain, another comes some days later.</p>'+Object.keys(MONSTERS).filter(id=>MONSTERS[id].mythic).map(id=>{const M=MONSTERS[id],Y=M.mythic,s=ST[M.unit],H=Y.hoard||{};
     return '<article class="card entry"><div class="head">'+spr(M.unit,1,3)+'<div><h3>'+M.n+'</h3><span class="muted">'+M.d+'</span></div></div><div class="stats">'+stats(s)+'</div>'+
     kv([['Appears','From day '+Y.first+', in the '+Y.lair.join(' or ')+'. Another comes '+Y.back+' days after one is slain.'],['Hunts','Spots you within '+Y.see+' px'+(Y.fly?' and flies over anything':'')+'.'],
@@ -742,7 +744,7 @@ document.querySelectorAll('[data-spr]').forEach(e=>{
 
 /* the map: painted terrain, each realm's land, and the holdings */
 const mc=document.getElementById('worldmap');mc.width=MW*TILE;mc.height=MH*TILE;const mg=mc.getContext('2d', { willReadFrequently: true });mg.imageSmoothingEnabled=false;mg.drawImage(worldCv(),0,0);
-mg.globalAlpha=.28;landFresh();for(let k=0;k<LAND.length;k++){const i=LAND[k];if(i<0)continue;mg.fillStyle=FACS[TOWNS[i].owner].col;mg.fillRect((k%MW)*TILE,Math.floor(k/MW)*TILE,TILE,TILE)}mg.globalAlpha=1;
+mg.globalAlpha=.28;landFresh();for(let k=0;k<LAND.length;k++){const i=LAND[k];if(i<0||!FACS[TOWNS[i].owner])continue;mg.fillStyle=FACS[TOWNS[i].owner].col;mg.fillRect((k%MW)*TILE,Math.floor(k/MW)*TILE,TILE,TILE)}mg.globalAlpha=1;
 mg.font='bold 26px "Atkinson Hyperlegible",sans-serif';mg.textAlign='center';
 for(const t of TOWNS){for(const l of t.lots||[]){const s=lotSprite(t,l);mg.globalAlpha=SHADOW.a;mg.drawImage(s.sh,l.x*TILE,l.y*TILE);mg.globalAlpha=1;mg.drawImage(s,l.x*TILE,l.y*TILE)}// (its placed buildings, as the game draws them)
   mg.fillStyle='rgba(0,0,0,.75)';mg.fillText(t.name,t.x+2,t.y+36);mg.fillStyle='#fff';mg.fillText(t.name,t.x,t.y+34)}

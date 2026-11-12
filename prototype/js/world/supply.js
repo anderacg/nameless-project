@@ -49,8 +49,8 @@
 const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
   rest:{stop:4,camp:16,stay:20},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
-  eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
-  drink:{perDay:1,rest:.5,order:['water','ale','liquor'],water:{morale:0},ale:{morale:2},liquor:{morale:6}},skins:{start:4,recruit:1,lot:5},
+  eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,recover:4,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
+  drink:{perDay:1,rest:.5,once:true,order:['water','ale','liquor'],water:{morale:0},ale:{morale:2},liquor:{morale:6}},skins:{start:4,recruit:1,lot:5},
   thirst:{desert:2,parched:12,pace:.85,morale:1,dying:24,death:48,toll:6,hero:{hp:.1,mp:.1}},lost:{days:7,keep:20},
   fill:{days:2,near:.5,well:1.5,timed:true,minPerDay:15,min:5,max:180},furPer:5,frost:{every:6,morale:1},
   battleMin:25,camp:{heal:1.5,caught:8,r:12,step:8,hop:2,across:4,m:2,road:4,lot:0,ring:1,site:4,pole:[20,1]},hint:60,hurt:3,fever:{sick:.5,die:.2,dieMin:.05,med:.02}};
@@ -105,7 +105,12 @@ function drinkOrder(L){const o=SUPPLY.drink.order;return L&&L.desert?['water']:B
 const drinkStock=L=>drinkOrder(L).reduce((a,k)=>a+goodN(k),0);
 const drinkNext=L=>drinkOrder(L).find(k=>goodN(k)>0)||null;
 // n of a drink come into your stores (the bag: core/items.js Good gained): its morale, once (SUPPLY.drink: ale and liquor lift it)
-function drinkIn(id,n){const m=SUPPLY.drink[id]?SUPPLY.drink[id].morale*n:0;if(m)P.morale=clamp(P.morale+m,0,100)}
+// (once: none for what was yours already, set down where only you take it up again (a fief's or a castle's stores, a battle's pile):
+// the same ale taken up again lifted the band each time. DRINK_KEEP: how many of the next lot in were yours already, keptIn)
+let DRINK_KEEP=0;
+function drinkIn(id,n){const D=SUPPLY.drink[id],kept=DRINK_KEEP;DRINK_KEEP=0;if(!D||!D.morale)return;const k=SUPPLY.drink.once?Math.max(0,n-kept):n;if(k)P.morale=clamp(P.morale+D.morale*k,0,100)}
+// (n of a good back into your bag, kept of them yours already: no cheer for those)
+function keptIn(g,n,kept){DRINK_KEEP=kept;try{return invAdd('good',g,n)}finally{DRINK_KEEP=0}}
 // n drunk, in order: the drink it was on (the first that gave any), or null with none to drink. Each water drunk leaves its
 // waterskin empty in the bag (never lost: past the bag's limit too)
 function drinkTake(n,L){let left=n,first=null;
@@ -295,12 +300,14 @@ function supplyHour(){
   if(st!=='fresh'){if(++u.tired%S.tiredMorale.every===0)P.morale-=S.tiredMorale.n}else u.tired=0;
   if(st==='exhausted'){if(++u.worn%S.worn.every===0)supplyHurt('exhaustion')}else u.worn=0;
   // hunger, by its stages (SUPPLY.hunger): morale, then Starving, then men desert, fall sick and at last die
-  if(hungry){const H=S.hunger,h=++u.hungry;if(h===1){log('Your band goes hungry. Buy food in a town, or hunt.','bad','band');mood('hungry')}
+  // (fed, the hungry hours wear off recover an hour (u.lean); hungry again soon, it goes on from what is left: one ration bought
+  // at the 71st hour began it all again)
+  if(hungry){const H=S.hunger;if(!u.hungry&&u.lean){u.hungry=u.lean;u.lean=0}const h=++u.hungry;if(h===1){log('Your band goes hungry. Buy food in a town, or hunt.','bad','band');mood('hungry')}
     if(h>=H.starving){P.morale-=H.starveMorale;if(h===H.starving)log('Your band is starving: the march drains it more, and soon men will leave.','bad','band')}else if(h%H.every===0)P.morale-=H.morale;
     if(passed(h-1,h,H.desert,H.toll))supplyHurt('hunger',true);
     if(passed(h-1,h,H.sick,H.toll))supplyHurt('hunger');
     if(passed(h-1,h,H.die,H.toll))supplyDie('hunger');
-    if(passed(h-1,h,H.starving,H.hero.every)){log('Hunger gnaws at you.','bad','band');heroHurt(H.hero.hp,H.hero.mp,'hunger')}}else u.hungry=0;
+    if(passed(h-1,h,H.starving,H.hero.every)){log('Hunger gnaws at you.','bad','band');heroHurt(H.hero.hp,H.hero.mp,'hunger')}}else{if(u.lean||u.hungry){const l=Math.max(u.lean||0,u.hungry)-S.hunger.recover;if(l>0)u.lean=l;else delete u.lean}u.hungry=0}// (kept only while some is left: a fed band saves as ever)
   // thirst, by its stages (SUPPLY.thirst; the desert's hours count double): Parched, then men fall sick, then they die
   if(!dr){const T=S.thirst,a=u.dry,h=u.dry+=L.desert?T.desert:1;
     if(!a)log(L.desert?'No water in the desert: your band thirsts. Find an oasis, a river or a holding.':'Nothing to drink: your band thirsts. Find a river, a lake or a holding’s well.','bad','band');
@@ -309,8 +316,9 @@ function supplyHour(){
     for(let i=passed(a,h,T.dying,T.toll);i>0;i--){supplyHurt('thirst');log('Thirst saps your strength.','bad','band');heroHurt(T.hero.hp,T.hero.mp,'thirst')}
     for(let i=passed(a,h,T.death,T.toll);i>0;i--)supplyDie('thirst')}else u.dry=0;
   sickTrim();
-  // (frostbite: the hours short of furs, weighted by how short, until a man is bitten)
-  const cold=L.frost?coldShare():0;if(cold){u.cold+=cold;if(u.cold>=S.frost.every){u.cold-=S.frost.every;supplyHurt('frostbite')}}else u.cold=0;
+  // (frostbite: the hours short of furs, weighted by how short, until a man is bitten; not in your captors' keeping (free): a day
+  // in a cage in the north killed you, and the cage's page went on over it)
+  const cold=!free&&L.frost?coldShare():0;if(cold){u.cold+=cold;if(u.cold>=S.frost.every){u.cold-=S.frost.every;supplyHurt('frostbite')}}else u.cold=0;
   P.morale=clamp(P.morale,0,100);
   if(!u.hint&&P.bsta<S.hint){u.hint=true;toast('Marching tires your band. Stop, or Make camp, to rest.','gold','band')}
 }

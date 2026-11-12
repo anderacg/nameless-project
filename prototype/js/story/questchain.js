@@ -1,9 +1,9 @@
 'use strict';
-/* ---------- the Thread shape (doc/STORY_DESIGN.md §2, §3.6, §3.10; the story wave, S5: the framework only) ----------
-   A thread is a story tying several happenings into steps, sharing what it knows (its memory: who, where, what was found). Its
-   kinds (defineKind('thread', id, {n, steps, first})) are data: the chains (the first, The Wounded Traveller and Ander The
+/* ---------- the QuestChain shape (doc/STORY_DESIGN.md §2, §3.6, §3.10; the story wave, S5: the framework only) ----------
+   A quest chain is a story tying several happenings into steps, sharing what it knows (its memory: who, where, what was found). Its
+   kinds (defineKind(QUESTCHAIN_SHAPE, id, {n, steps, first})) are data: the chains (the first, The Wounded Traveller and Ander The
    Fallen: story/wounded.js; doc/IMPLEMENTATION_PLAN.md §10.7–10.8). Each step: {id, start, until, how, remember, then, note}:
-   - start: what the step begins (Thread.starters), its fields plain or functions of the thread (th=>th.memory.town):
+   - start: what the step begins (QuestChain.starters), its fields plain or functions of the quest chain (th=>th.memory.town):
        {quest: kind, town, lord, spec}: a job offered at the town (none: the memory's town), by the lord if named, and taken;
          spec: what a kind made by another is given (an escort: {quest: 'escort', spec: {who, to, …}}, world/escort.js);
        {step: kind, town, spec}: a step of a chain begun the same way, a quest no board offers (visit, deliver, lair:
@@ -18,27 +18,35 @@
    - how(d, th): the key it branches by (none: the event's own how: a quest 'paid' or 'failed', an encounter 'done' or 'left',
      a page's choice its how);
    - remember(d, th): what it learnt, put into the memory;
-   - then: the next step's id, or {how: id} a branch (a key not there, or null: the thread ends);
+   - then: the next step's id, or {how: id} a branch (a key not there, or null: the quest chain ends);
    - note(th): what to do now, in a few words (your Quests: ui/questwindow.js);
    - stage(th): its name among the stages done so far (your Quests; none: its note);
    - fail: the keys that fail it ([how, …]): a side story's end there is failed (else done; 'left', abandoned); a main story's
      stage failed never ends it: it falls back (setback) to its last checkpoint, with a line (setback(th): what happened);
-   - checkpoint: true, a main story's stage it falls back to once begun (the thread's cp).
+   - checkpoint: true, a main story's stage it falls back to once begun (the quest chain's cp).
    Ended 'expired' (out of time: story/questbook.js Questbook.expire) or 'unstarted', it failed.
    Its record (W.story.threads.on): {k, i, day (begun), at (the step under way), wait ({shape, id}: what it waits for), memory,
-   past ([step, how] each done); a main story's cp once it has passed a checkpoint}. Thread.start(id, memory) begins one (or an
-   outcome's start: {thread, memory}). Never ticked: it hears the bus (Thread.heard), only for the events its steps wait for; it
-   ends when its last step ends ('thread:ended', {e, how}), its end kept (W.story.threads.ended: {k, i, how, day, memory}, the
+   past ([step, how] each done); a main story's cp once it has passed a checkpoint}. QuestChain.start(id, memory) begins one (or an
+   outcome's start: {quest chain, memory}). Never ticked: it hears the bus (QuestChain.heard), only for the events its steps wait for; it
+   ends when its last step ends ('questchain:ended', {e, how}), its end kept (W.story.threads.ended: {k, i, how, day, memory}, the
    last STEP.keep: how each went, what each knew; the chains' memory, apart from your Quests' archive).
-   W.story.threads.once: what may come once a game, and the day it came (Thread.once, Thread.mark: Ander);
-   aside: what a chain keeps between its threads, by key (Ander wandering the taverns: story/wounded.js Wanderer).
+   W.story.threads.once: what may come once a game, and the day it came (QuestChain.once, QuestChain.mark: Ander);
+   aside: what a chain keeps between its quest chains, by key (Ander wandering the taverns: story/wounded.js Wanderer).
    In your Quests a story is one quest (the quest model: story/quest.js): its category (cat: its kind's main, else 'side'), its
    state ('active' till it ends; then its archive entry's, endState), its stages done (stages()) and its objective (its step's
    note, and the quest that step waits on: where to go, how far along). Its end is kept in the quests' archive (QuestArchive),
-   but for an end its kind picks up again in a new thread (resumes: [how, …]). */
-class Thread extends Happening{
+   but for an end its kind picks up again in a new quest chain (resumes: [how, …]). */
+// (a quest chain's shape and kind registry name, as saves keep it in what waits on one ({shape, id}) and in what one gave (an item's by):
+// the word it was first named by ("thread", renamed 2026-11-12: the owner, "refactor thread, threads to something else such as
+// questchain"), kept so an older save still loads; so too its save key 'threads' and W.story.threads)
+const QUESTCHAIN_SHAPE='thread';
+class QuestChain extends Happening{
   get shape(){
-    return 'thread';
+    return QUESTCHAIN_SHAPE;
+  }
+  // (its end on the bus by its own name, not its saved shape's)
+  get endEvent(){
+    return 'questchain:ended';
   }
   get logKind(){
     return 'story';
@@ -70,9 +78,9 @@ class Thread extends Happening{
     return this.param(s.stage||s.note)||s.id;
   }
   stages(){
-    return this.past.map(([id,how])=>{const s=this.step(id);return [s?this.stageName(s):id,how,!!s&&Thread.fails(s,how)]});
+    return this.past.map(([id,how])=>{const s=this.step(id);return [s?this.stageName(s):id,how,!!s&&QuestChain.fails(s,how)]});
   }
-  // (a field of a step: plain, or a function of the thread)
+  // (a field of a step: plain, or a function of the quest chain)
   param(v){
     return typeof v==='function'?v(this):v;
   }
@@ -82,11 +90,11 @@ class Thread extends Happening{
     this.at=id;
     if(s.checkpoint&&this.cat==='main')this.cp=id;
     this.wait=null;
-    Thread.hear(Thread.until(s));
+    QuestChain.hear(QuestChain.until(s));
     if(!s.start)return;
     const v={};
     for(const [f,x] of Object.entries(s.start))v[f]=f==='page'?x:this.param(x);
-    const r=Thread.starters[Thread.starterOf(s)].start(v,this);
+    const r=QuestChain.starters[QuestChain.starterOf(s)].start(v,this);
     if(r&&r.shape)this.wait=r;
     else this.passed(r?r.how:'unstarted');
   }
@@ -100,8 +108,8 @@ class Thread extends Happening{
     const s=this.current;
     if(s.remember)Object.assign(this.memory,s.remember(d,this));
     this.past.push([s.id,how]);
-    if(this.cat==='main'&&Thread.fails(s,how))return this.setback(s);
-    const next=Thread.next(s,how);
+    if(this.cat==='main'&&QuestChain.fails(s,how))return this.setback(s);
+    const next=QuestChain.next(s,how);
     if(next)this.begin(next);
     else this.end(how);
   }
@@ -117,7 +125,7 @@ class Thread extends Happening{
     this.at=null;
     this.wait=null;
     this.how=how;
-    const L=Thread.list();
+    const L=QuestChain.list();
     L.on=L.on.filter(x=>x!==this);
     L.ended=(L.ended||[]).concat([{k:this.k,i:this.i,how,day:G.day,memory:this.memory}]).slice(-STEP.keep);
     this.announceEnd(how);
@@ -127,7 +135,7 @@ class Thread extends Happening{
     return {k:'t'+this.i,cat:this.cat,title:this.title,giver:this.who,state:this.endState(how,s),day:G.day,got:s?this.stageName(s):''};
   }
   endState(how,s){
-    return how==='left'?'abandoned':how==='unstarted'||how==='expired'||s&&Thread.fails(s,how)?'failed':'done';
+    return how==='left'?'abandoned':how==='unstarted'||how==='expired'||s&&QuestChain.fails(s,how)?'failed':'done';
   }
   // (what to do now: its step's note)
   get note(){
@@ -149,15 +157,15 @@ class Thread extends Happening{
     return {ico:p.ico||'scroll',title:this.param(p.title)||K.n,sub:K.n+', day '+G.day,msg:'',text:this.param(p.text)||'',who:p.who?this.param(p.who):null,
       choices:this.choices(),subject:this,act:'thr-do',done:false,close:null};
   }
-  // shown when you are free on the map (true); else it waits for whoever opens it later (Thread.paged)
+  // shown when you are free on the map (true); else it waits for whoever opens it later (QuestChain.paged)
   showPage(){
     if(G.modal||G.mode!=='world'||!this.pageSpec)return false;
-    G.thread=this;
+    G.questChain=this;
     G.mode='story';
-    CHOICE_PAGE.show(this.page(),'thread:'+this.i);
+    CHOICE_PAGE.show(this.page(),QUESTCHAIN_SHAPE+':'+this.i);
     return true;
   }
-  // ---- the live threads (W.story.threads: {n (the last number given), on}), and starting one
+  // ---- the live quest chains (W.story.threads: {n (the last number given), on}), and starting one
   static store(){
     const S=storyW();
     return S.threads||(S.threads={n:0,on:[]});
@@ -167,7 +175,7 @@ class Thread extends Happening{
   }
   // (at: the step it begins at, a chain picked up again where it was left: Ander's; none, its first)
   static start(id,memory,at){
-    const K=kindOf('thread',id);
+    const K=kindOf(QUESTCHAIN_SHAPE,id);
     if(!K)return null;
     const L=this.store(),th=this.as({k:id,i:++L.n,day:G.day,at:null,wait:null,memory:{...(memory||{})},past:[]});
     if(K.fail?.days&&th.memory.due==null)th.memory.due=G.day+K.fail.days;// (a deadline for the whole of it: story/forms.js)
@@ -216,22 +224,22 @@ class Thread extends Happening{
   static hear(type){
     if(!type||this.ears.has(type))return;
     this.ears.add(type);
-    worldOn(type,d=>Thread.heard(type,d));
+    worldOn(type,d=>QuestChain.heard(type,d));
   }
-  // (an event heard: every live thread whose step waits for it, in order, decides whether it is its own)
+  // (an event heard: every live quest chain whose step waits for it, in order, decides whether it is its own)
   static heard(type,d){
     for(const th of this.list().on.slice()){
       const s=th.current;
-      if(!s||Thread.until(s)!==type)continue;
+      if(!s||QuestChain.until(s)!==type)continue;
       const u=s.until,hit=u&&u.match?u.match(d,th):th.waits(d);
       if(hit)th.passed(s.how?s.how(d,th):d&&d.how,d);
     }
   }
 }
-Thread.ears=new Set();
+QuestChain.ears=new Set();
 /* the starters: what a step can begin; each start(v, th) gives what to wait for ({shape, id}), or {how} when it is over already,
    or null when it could not be begun; until: the event that ends what it began */
-Thread.starters={
+QuestChain.starters={
   quest:{
     until:'quest:ended',
     start(v,th){
@@ -257,7 +265,7 @@ Thread.starters={
   page:{
     until:'page:chosen',
     start(v,th){
-      th.wait={shape:'thread',id:th.i};
+      th.wait={shape:QUESTCHAIN_SHAPE,id:th.i};
       th.showPage();
       return th.wait;
     },
@@ -266,14 +274,14 @@ Thread.starters={
   step:{
     until:'quest:ended',
     start(v,th){
-      return Thread.starters.quest.start({...v,quest:v.step},th);
+      return QuestChain.starters.quest.start({...v,quest:v.step},th);
     },
   },
 };
 /* a page's choice (thr-do, its place in the list; '!' once its confirm is answered): done, the page closed, and the step told
    on the bus ('page:chosen', {e, how: the choice's how, else its place}) */
-function threadAct(a,arg){
-  const th=G.thread;
+function questChainAct(a,arg){
+  const th=G.questChain;
   if(G.mode!=='story'||!th)return;
   if(a==='thr-back'){
     th.showPage();
@@ -286,7 +294,7 @@ function threadAct(a,arg){
   if(c.asks(th)&&!String(arg).endsWith('!'))return CHOICE_PAGE.confirm(c,th,{sub:th.kind.n,act:'thr-do',i,back:['thr-back',null,'Back']});
   const m=c.perform(th);
   if(m)log(m,undefined,'story',th.journalKey);
-  G.thread=null;
+  G.questChain=null;
   // (closed, unless what it did opened something else: a fight)
   if(G.mode==='story'){
     G.mode='world';
@@ -295,7 +303,7 @@ function threadAct(a,arg){
   updateHUD(true);
   worldEmit('page:chosen',{e:th,how:c.how!==undefined?c.how:String(i)});
 }
-onAct('thr-',threadAct);
+onAct('thr-',questChainAct);
 /* the save: W.story.threads once one has begun or something has come once (none: as every save before it; the save registry,
    core/saves.js), the ended and the once only when there are any; each loaded wrapped by its kind's class (one whose kind is
    gone dropped), and the events its steps wait for listened to again */
@@ -311,7 +319,7 @@ Saves.add({key:'threads',order:250,defaults:null,
   },
   load:v=>{
     if(!v)return;
-    v.on=v.on.map(r=>Thread.load(r)).filter(th=>th&&th.current);
+    v.on=v.on.map(r=>QuestChain.load(r)).filter(th=>th&&th.current);
     storyW().threads=v;
-    for(const th of v.on)Thread.hear(Thread.until(th.current));
+    for(const th of v.on)QuestChain.hear(QuestChain.until(th.current));
   }});

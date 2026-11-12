@@ -5,11 +5,11 @@
 // cool; the console's book.
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,W=t.W,B=t.QUESTBOOK,Q=t.Questbook;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;
- const ids=Object.keys(B),panel=()=>document.getElementById('panel').innerHTML,live=id=>t.Thread.list().on.find(th=>th.k==='book:'+id);
- const reset=()=>{Kit.world();t.Thread.store().on=[];delete t.Thread.store().once;P.quests=[];P.gold=5000;P.fac=null};
+ const ids=Object.keys(B),panel=()=>document.getElementById('panel').innerHTML,live=id=>t.QuestChain.list().on.find(th=>th.k==='book:'+id);
+ const reset=()=>{Kit.world();t.QuestChain.store().on=[];delete t.QuestChain.store().once;P.quests=[];P.gold=5000;P.fac=null};
  // ---- every entry: its steps linked, everything it names known
  {const bad=[];for(const id of ids){const E=B[id],S=E.steps||{},has=s=>s==null||!!S[s];
-   if(!t.kindOf('thread','book:'+id))bad.push(id+': no thread');if(!t.kindOf('giver',E.giver?.by))bad.push(id+': giver '+E.giver?.by);
+   if(!t.kindOf(t.QUESTCHAIN_SHAPE,'book:'+id))bad.push(id+': no quest chain');if(!t.kindOf('giver',E.giver?.by))bad.push(id+': giver '+E.giver?.by);
    for(const [c] of Object.entries({...E.when,...E.giver?.at}))if(c!=='not'&&!t.kindOf('cond',c))bad.push(id+': condition '+c);
    for(const [sid,s] of Object.entries(S)){if(s.goal&&!t.kindOf('goal',s.goal))bad.push(id+'.'+sid+': goal '+s.goal);if(!has(s.next)||!has(s.failed))bad.push(id+'.'+sid+': next');
     for(const o of s.choose||[]){if(!has(o.next)||!has(o.win)||!has(o.lose))bad.push(id+'.'+sid+': '+o.label);if(typeof o.check==='string'&&!t.QUEST_CHECKS[o.check])bad.push(id+'.'+sid+': check '+o.check)}}}
@@ -25,7 +25,7 @@ Kit.suite(({ok})=>{
  const options=th=>{if(th.pageSpec)return th.choices().flatMap((c,i)=>c.shown(th)&&!c.why(th)?(c.odds?[i+'w',i+'l']:[String(i)]):[]);return th.wait?['ok','fail']:[]};
  for(const id of ids){const ends=[],stuck=[];let n=0;
   const walk=path=>{if(++n>60)return;const th=begin(id);if(!th){stuck.push('not begun');return}let cur=th;
-   for(const k of path){if(!live(id))break;const snap=JSON.stringify(cur),y=t.Thread.load(JSON.parse(JSON.stringify(cur.save())));if(!y||JSON.stringify(y)!==snap)stuck.push(path.join('>')+' (its record)');
+   for(const k of path){if(!live(id))break;const snap=JSON.stringify(cur),y=t.QuestChain.load(JSON.parse(JSON.stringify(cur.save())));if(!y||JSON.stringify(y)!==snap)stuck.push(path.join('>')+' (its record)');
     if(!step(cur,k)){stuck.push(path.join('>'));return}cur=live(id)||cur}
    const on=live(id);if(!on){ends.push(path.join('>')+'='+th.how);return}const os=options(on);if(!os.length){stuck.push(path.join('>')+' at '+on.at);return}for(const k of os)walk(path.concat(k))};
   walk([]);ok(ends.length&&!stuck.length,id+': every branch reaches an end, saved and loaded at each step ('+ends.length+': '+ends.join(', ')+')'+(stuck.length?'; stuck: '+stuck.join(', '):''))}
@@ -39,7 +39,7 @@ Kit.suite(({ok})=>{
  {const th=begin('shepherds_wolves');step(th,'0w');const q=P.quests.find(x=>x.id===live('shepherds_wolves')?.wait?.id),m=q&&W.monsters.find(x=>x.qid===q.id);
   ok(q&&q.type==='beasts'&&m,'the trail found: '+(m&&t.MONSTERS[m.id].n.toLowerCase())+' set near '+q?.home);t.worldEmit('monster:slain',{monster:m});ok(!live('shepherds_wolves'),'slain: the quest ends')}
  // ---- a check's odds on its button, read by Insight
- {const th=begin('millers_debt');step(th,'ok');const on=live('millers_debt');Kit.world();on.showPage();ok(G.mode==='story'&&/Talk them out of it/.test(panel())&&/Persuasion/.test(panel()),'a check on its button: the stats that help');t.Thread.store().on=[];Kit.world()}
+ {const th=begin('millers_debt');step(th,'ok');const on=live('millers_debt');Kit.world();on.showPage();ok(G.mode==='story'&&/Talk them out of it/.test(panel())&&/Persuasion/.test(panel()),'a check on its button: the stats that help');t.QuestChain.store().on=[];Kit.world()}
  // ---- the givers: a tavern's card, a board's row, a lord's reply, the road
  reset();{const town=t.TOWNS.find(x=>x.T.tabs.includes('tavern')&&(x.kind==='village'||x.kind==='town'));Kit.goHome(town);t.enterTown(town);t.act('tab','tavern');
   ok(/The miller/.test(panel())&&document.querySelector('[data-act="qb-take"][data-arg="millers_debt"]'),'a tavern of '+town.name+': the miller’s card');t.act('qb-take','millers_debt');ok(!!live('millers_debt')&&!document.querySelector('[data-arg="millers_debt"]'),'taken: under way, offered no more');t.toWorld()}
@@ -71,7 +71,7 @@ Kit.suite(({ok})=>{
  reset();{const town=t.TOWNS.find(x=>x.T.temple);ok(town&&/qb-take.*pilgrim_taken/.test(Q.priest(town)),'the priest of '+town?.name+' asks for help')}
  reset();{P.comps={elske:{ap:2,role:''}};t.compInit('elske');const r=Q.compReplies('elske');ok(r.some(x=>x.arg==='elske_fever#elske'),'Elske, approving: something on her mind');
   t.act('qb-take','elske_fever#elske');const th=live('elske_fever');ok(th&&th.memory.comp==='elske','taken from her talk');Kit.world();th.showPage();t.act('thr-do','1');ok(!live('elske_fever')&&P.comps.elske.ap===1,'turned down: her approval −1');P.comps={}}
- ok(t.kindOf('thread','book:lords_enemy').steps[0].stage({memory:{}})==='The enemy lord','a step’s own stage name');
+ ok(t.kindOf(t.QUESTCHAIN_SHAPE,'book:lords_enemy').steps[0].stage({memory:{}})==='The enemy lord','a step’s own stage name');
  // ---- the console
  reset();{const D=t.DevConsole,out=D.execute('book');ok(/millers_debt/.test(out),'book: the entries');const m=D.execute('book millers_debt what');ok(live('millers_debt')?.at==='what'&&/Begun/.test(m),'book millers_debt what: begun at that step')}
  reset();
