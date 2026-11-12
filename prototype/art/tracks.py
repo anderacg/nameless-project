@@ -101,7 +101,7 @@ def inside(polys,x,y):
             if ay<=y<by and (bx-ax)*(y-ay)-(x-ax)*(by-ay)>0:w+=1
             elif by<=y<ay and (bx-ax)*(y-ay)-(x-ax)*(by-ay)<0:w-=1
     return w!=0
-PX_ON,PX_FULL,PX_DETAIL,PX_SS=.08,.6,.5,6
+PX_ON,PX_FULL,PX_DETAIL,PX_SS,PX_SMALL=.08,.6,.5,6,2.2
 TJS=open(os.path.join(ROOT,'js','data','tracks.js')).read()
 import re
 def table(name):
@@ -124,8 +124,12 @@ def pixelate(id,way,alt):
             n=PX_SS*PX_SS
             if on:cov[(i,j)]=(on/n,de/n)
     # (as many pixels as the art's ink covers, the most covered first: a small print keeps its shape's weight, never under PX_ON of a pixel's)
-    keep=max(round(sum(a for a,d in cov.values())),round(px*.8));cells={};last=1
+    # (a print PX_SMALL px long or less: exactly as many pixels as its length, so a 2 px one is 2 (its rounding's two half pixels both
+    # kept, it came out 3 long, a dash: the owner, 2026-11-12, "make the footprints track a bit short right now it's like a long dash"))
+    small=px<=PX_SMALL and not line
+    keep=max(1,round(px)) if small else max(round(sum(a for a,d in cov.values())),round(px*.8));cells={};last=1
     for c,(a,d) in sorted(cov.items(),key=lambda kv:-kv[1][0]):
+        if small and len(cells)>=keep:break
         if len(cells)>=keep and a<PX_FULL and a<last-.03:break# (one as covered as the last kept goes too: a print's two sides alike)
         last=a
         if a<PX_ON:break

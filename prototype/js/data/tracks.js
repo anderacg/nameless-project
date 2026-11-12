@@ -47,7 +47,8 @@ const TRACKS={on:true,head:true,// (head: laid at a marched army's foremost man,
   art:{who:{you:'hobnail',lord:'hobnail',patrol:'hobnail',cparty:'hobnail',band:'boot',refugee:'barefoot',caravan:'ruts'},mounted:'horse',
     beast:{wolf:'wolf',boar:'cloven',tiger:'cat',bear:'bear',spider:'talon',troll:'troll',scorpion:'talon',wyrm:'dragon',slime:'drag',griffin:'talon'},
     game:{big:'cloven',small:'wolf'},style:{foot:'boot',hoof:'hoof',paw:'wolf',rut:'ruts',drag:'drag'},
-    px:{hobnail:3,boot:3,barefoot:3,horse:3,hoof:3,cloven:2.5,wolf:2,bear:3.5,cat:2.5,troll:6,talon:3,dragon:7,ruts:5,drag:3}},// (at the figures' scale: a man some 10 px tall, his print a sixth of him (the owner, 2026-11-01: "make it realistic with sprite scale"); were hobnail 7, boot 7, barefoot 6, horse 6, hoof 6, cloven 5, wolf 4.5, bear 7, cat 5, troll 11, talon 6, dragon 12, ruts 7; lanes 7, stagger 3, steps foot 13, hoof 13, paw 12)
+    px:{hobnail:2,boot:2,barefoot:2,horse:3,hoof:3,cloven:2.5,wolf:2,bear:3.5,cat:2.5,troll:6,talon:3,dragon:7,ruts:5,drag:3}},// (a man's prints 2 px, 2026-11-12, the owner: "make the footprints track a bit short right now it's like a long dash"; were 3)
+  // (at the figures' scale: a man some 10 px tall, his print a sixth of him (the owner, 2026-11-01: "make it realistic with sprite scale"); were hobnail 7, boot 7, barefoot 6, horse 6, hoof 6, cloven 5, wolf 4.5, bear 7, cat 5, troll 11, talon 6, dragon 12, ruts 7; lanes 7, stagger 3, steps foot 13, hoof 13, paw 12)
   // what the card calls each style (mounted people: mounted)
   how:{foot:'on foot',hoof:'hooves',paw:'paws',rut:'wagon wheels',drag:'something dragged',mounted:'mounted'}
 };
