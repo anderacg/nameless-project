@@ -573,9 +573,10 @@ function drawBattle(){
   // it drawn back over it, as the map's own figures are, those over your men faded: depth.js worldOverdraw; the owner, 2026-10-31:
   // "the forest seems not to cover units")
   obstacleGround();{const draw=o=>o.kind?drawObstacle(o):o.dk?drawProp(o):o.isHorse?o.draw():drawUnit(o),E=battleEnts();
-    // (the overdraw reckons in the map scene's pixels: under that transform, each drawn under the field's own)
-    if(B.world){const T=ctx.getTransform(),w=B.world,k=T.a*w.scale;ctx.save();ctx.setTransform(k,0,0,k,T.e+k*(G.cam.x-w.x0),T.f+k*(G.cam.y-w.y0));
-      try{worldOverdraw(E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,id:o,hl:o.kind||o.dk||o.isHorse||!(o.hp>0)?null:o.team===0?'own':o.team===1?'foe':'ally',f:()=>{ctx.setTransform(T);draw(o)}})),G.cam)}finally{ctx.restore()}}else E.forEach(draw)}
+    // (the overdraw reckons in the map scene's pixels, on the camera's whole pixels as drawWorld keeps the scene (a fraction there
+    //  left every pixel of the cover's mask off its grid: no tree drawn over anyone): under that transform, each drawn under the field's own)
+    if(B.world){const T=ctx.getTransform(),w=B.world,k=T.a*w.scale,cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)};ctx.save();ctx.setTransform(k,0,0,k,T.e+k*(cam.x-w.x0),T.f+k*(cam.y-w.y0));
+      try{worldOverdraw(E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,id:o,hl:o.kind||o.dk||o.isHorse||!(o.hp>0)?null:o.team===0?'own':o.team===1?'foe':'ally',f:()=>{ctx.setTransform(T);draw(o)}})),cam)}finally{ctx.restore()}}else E.forEach(draw)}
   for(const a of B.arrows){if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50),kind=missileOf(a);
       ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';const k=B.world?WORLD_BATTLE.sprite:1;ctx.fillRect(Math.round(a.x-2*k),Math.round(a.y),4*k,k);
       ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-4-z));ctx.scale(k,k);

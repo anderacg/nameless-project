@@ -16,8 +16,10 @@
 // screen may be at a finer scale than the game's pixels (core.js VS): the box a figure drew in is taken back to the scene's game
 // pixels, its mask made there, and laid over him scaled up as the scene was.
 // dash (the owner, 2026-11-12: "when unit is under something can we use highlight with dash to indicate that"): a figure under a tree or a
-// building (one asking it: e.hl, its colour's key) has its outline drawn in dashes over what covers it, where it covers it; col by side
-const WDEPTH={on:true,fade:.3,dash:{on:true,r:2,col:{own:'#ffd870',ally:'#8ac8ff',foe:'#ff6a5a'}},rec:null,sc:null,mk:null,trk:false,di:null,fr:null,pics:[],al:new Map(),cov:new Set(),t:0,cv:null,img:null,C:[],box:[0,0,0,0],boxes:[]};
+// building (one asking it: e.hl, its colour's key) has its outline drawn in dashes over what covers it, where it covers it; col by side.
+// Its line w world px thick and its dashes len long (on and off), times the camera's scale, so it grows and shrinks with the zoom
+// (the owner: "make the dash smaller and scale based on camera"); at least a screen pixel; a its strength
+const WDEPTH={on:true,fade:.3,dash:{on:true,w:.5,len:3,a:.75,col:{own:'#ffd870',ally:'#8ac8ff',foe:'#ff6a5a'}},rec:null,sc:null,mk:null,trk:false,di:null,fr:null,pics:[],al:new Map(),cov:new Set(),t:0,cv:null,img:null,C:[],box:[0,0,0,0],boxes:[]};
 // a structure's picture as drawn this frame at (x, y) on the screen (before the shake): its opaque pixels stand by their feet
 function depthPic(img,x,y){if(img&&WDEPTH.on)WDEPTH.pics.push([img,Math.round(x),Math.round(y)])}
 // (a picture's feet: for each opaque pixel the row its column's run of opaque pixels ends on, -1 where it is clear; kept on it)
@@ -76,21 +78,27 @@ function worldOverdraw(list,cam){
 // (the picture drawn while a figure is tracked: the biggest on the screen is its body, kept with the transform and the arguments it had)
 function dashNote(g,s,A){const T=g.getTransform(),n=A.length,w=n>=9?A[7]:n>=5?A[3]:s.width,h=n>=9?A[8]:n>=5?A[4]:s.height,a=Math.abs(w*h*(T.a*T.d-T.b*T.c));
   const R=WDEPTH.rec;if(a>R.a){R.a=a;R.s=s;R.T=T;R.A=Array.prototype.slice.call(A,1)}}
-// (a picture's dashed ring: the pixels within dash.r of its body, outside it, two on and two off along the diagonals; white, kept)
-const DASH_RINGS=new WeakMap();
-function dashRing(s){let c=DASH_RINGS.get(s);if(c)return c;const w=s.width,h=s.height,d=s.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data,r=WDEPTH.dash.r,on=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&d[(y*w+x)*4+3]>96;
-  c=mkc(w,h,g=>{const I=g.createImageData(w,h),o=I.data;for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(on(x,y)||((x+y)>>1)%2)continue;let near=false;
-      for(let dy=-r;dy<=r&&!near;dy++)for(let dx=-r;dx<=r;dx++)if(on(x+dx,y+dy)){near=true;break}if(near){const p=(y*w+x)*4;o[p]=o[p+1]=o[p+2]=o[p+3]=255}}g.putImageData(I,0,0)});
-  DASH_RINGS.set(s,c);return c}
-// (its outline in dashes where something covers it: its body's ring, drawn as the body was, on a small canvas the size of its box,
-// coloured, kept only where the cover's mask (overdrawBox's) holds, then laid on the screen; no pixel read back from it)
-function dashDraw(rec,m,x0,y0,x1,y1,col){const k=m.a||1,w=x1-x0+1,h=y1-y0+1,W=Math.ceil(w*k),H=Math.ceil(h*k),M=WDEPTH.img.data,st=WDEPTH.img.width;
+// (the dashes: a canvas of diagonal stripes p screen px apart, half of them on; kept by p, with its pattern. The ways a silhouette is
+// laid round itself: four at a pixel out, eight farther)
+const DASH_OUT4=[[1,0],[-1,0],[0,1],[0,-1]],DASH_OUT8=[...DASH_OUT4,[1,1],[1,-1],[-1,1],[-1,-1]];
+const DASH_STRIPES=new Map();
+function dashStripes(p){let c=DASH_STRIPES.get(p);if(c)return c;c=mkc(p,p,g=>{const I=g.createImageData(p,p),o=I.data;for(let y=0;y<p;y++)for(let x=0;x<p;x++)if((x+y)%p<p/2)o[(y*p+x)*4+3]=255;g.putImageData(I,0,0)});DASH_STRIPES.set(p,c);return c}
+// (its outline in dashes where something covers it, all at the screen's pixels: its body drawn as it was on a small canvas the size
+// of its box, laid round itself t px out, then itself cut away (the ring outside it), cut to the stripes
+// (fixed to the map, so they hold as it scrolls), coloured, kept only where the cover's mask (overdrawBox's) holds, then laid on the
+// screen; no pixel read back)
+function dashDraw(rec,m,x0,y0,x1,y1,col){const D=WDEPTH.dash,k=m.a||1,w=x1-x0+1,h=y1-y0+1,W=Math.ceil(w*k),H=Math.ceil(h*k),M=WDEPTH.img.data,st=WDEPTH.img.width;
+  const t=Math.max(1,Math.round(D.w*k)),p=Math.max(2,Math.round(2*D.len*k));
   let K=WDEPTH.mk;if(!K||K.c.width<w||K.c.height<h){const c=mkc(Math.max(w,64),Math.max(h,64),()=>{});K=WDEPTH.mk={c,g:c.getContext('2d'),I:null}}
   if(!K.I||K.I.width<w||K.I.height<h)K.I=K.g.createImageData(Math.max(w,64),Math.max(h,64));const I=K.I.data,si=K.I.width;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++)I[(y*si+x)*4+3]=M[(y*st+x)*4+3]?255:0;K.g.putImageData(K.I,0,0,0,0,w,h);
-  let S=WDEPTH.sc;if(!S||S.c.width<W||S.c.height<H){const c=mkc(Math.max(W,128),Math.max(H,128),()=>{});S=WDEPTH.sc={c,g:c.getContext('2d')}}const g=S.g,ox=x0*k+m.e,oy=y0*k+m.f,T=rec.T;
-  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);g.imageSmoothingEnabled=false;g.setTransform(T.a,T.b,T.c,T.d,T.e-ox,T.f-oy);g.drawImage(dashRing(rec.s),...rec.A);
-  g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-in';g.fillStyle=col;g.fillRect(0,0,W,H);g.globalCompositeOperation='destination-in';g.drawImage(K.c,0,0,w,h,0,0,W,H);g.globalCompositeOperation='source-over';
-  ctx.save();ctx.setTransform(1,0,0,1,0,0);WDEPTH.di.call(ctx,S.c,0,0,W,H,ox,oy,W,H);ctx.restore()}
+  const two=n=>{let S=WDEPTH[n];if(!S||S.c.width<W||S.c.height<H){const c=mkc(Math.max(W,128),Math.max(H,128),()=>{});S=WDEPTH[n]={c,g:c.getContext('2d')}}return S};
+  const R=two('sc'),g=R.g,ox=x0*k+m.e,oy=y0*k+m.f,T=rec.T,at=(dx,dy)=>{g.setTransform(T.a,T.b,T.c,T.d,T.e-ox+dx,T.f-oy+dy);g.drawImage(rec.s,...rec.A)};
+  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);g.imageSmoothingEnabled=false;
+  for(let r=1;r<=t;r++)for(const [dx,dy] of r>1?DASH_OUT8:DASH_OUT4)at(dx*r,dy*r);
+  g.globalCompositeOperation='destination-out';at(0,0);g.setTransform(1,0,0,1,0,0);
+  const pt=dashStripes(p),pat=pt.pat||(pt.pat=g.createPattern(pt,'repeat'));pat.setTransform(new DOMMatrix([1,0,0,1,((m.e-ox)%p+p)%p,((m.f-oy)%p+p)%p]));g.globalCompositeOperation='destination-in';g.fillStyle=pat;g.fillRect(0,0,W,H);
+  g.globalCompositeOperation='source-in';g.fillStyle=col;g.fillRect(0,0,W,H);g.globalCompositeOperation='destination-in';g.drawImage(K.c,0,0,w,h,0,0,W,H);g.globalCompositeOperation='source-over';
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha*=D.a;WDEPTH.di.call(ctx,R.c,0,0,W,H,ox,oy,W,H);ctx.restore()}
 // a world goes in: no fades carried over
 onWorld(()=>{WDEPTH.al.clear();WDEPTH.cov.clear();WDEPTH.t=0});
