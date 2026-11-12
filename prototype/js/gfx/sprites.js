@@ -67,7 +67,16 @@ function horseSprite(L){const key='hz'+L.mount+(L.mountC||'')+L.team+(L.barded?'
    turns it about his feet), body: him lying, ax, ay: his feet in it; wk: the weapon he dropped; mount: his mount standing, down:
    lying */
 // (a hunted animal's battle figure, its kind's (engine/wildlife.js 'w_' + its look), while WILD_ART is on; else null: its map figure)
-const wildKind=type=>{const id=ST[type]?.wildlife;if(!id||!WILD_ART.on||!PX.WILD_KINDS)return null;const D=CRITTERS[id],k='w_'+(D&&D.look||id);return PX.WILD_KINDS.includes(k)?k:null};
+const wildKindOf=id=>{if(!id||!WILD_ART.on||!PX.WILD_KINDS)return null;const D=CRITTERS[id],k='w_'+(D&&D.look||id);return PX.WILD_KINDS.includes(k)?k:null},wildKind=type=>wildKindOf(ST[type]?.wildlife);
+// an animal on the map as in a battle (the owner, 2026-11-12: "the sprite in world map should be the same as battle"): its battle figure, s,
+// drawn at k (the marchers' scale: march.js), w its body's width there and h its height; its map step fr (0 standing) a walking pose;
+// v its coat. WILD_ART off: its map figure, at 1
+function critterArt(id,fr,v){const kd=wildKindOf(id);if(!kd){const s=critterSprite(id,fr);return{s,k:1,w:s.cw,h:s.ch}}
+  const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,s=beastSprite(kd,1,v,fr?2+(fr>>1)%4:0),[bw,bh]=artBox(s);return{s,k,w:Math.ceil(bw*k),h:Math.ceil(bh*k)}}
+// (a picture's drawn width, and its height over its feet: its pixels' box, kept)
+const ART_BOX=new WeakMap();
+function artBox(c){let b=ART_BOX.get(c);if(b)return b;const d=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data;let x0=c.width,x1=-1,y0=c.height;
+  for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(d[(y*c.width+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y}b=x1<0?[0,0]:[x1-x0+1,c.height-y0];ART_BOX.set(c,b);return b}
 const CORPSES=new WeakMap(),BEAST_FALL=breedsInto({troll:'over',spider:'back',scorpion:'back',slime:'melt'});
 // (whose mount each lying one is, for its deaths: horseDeathOf)
 const DOWN_LOOK=new WeakMap();

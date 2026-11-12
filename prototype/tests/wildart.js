@@ -17,5 +17,8 @@ Kit.suite(({ok,info})=>{const t=T,PX=t.PX;Kit.begin('soldier');
   const u={type:key,team:1,id:7,v:0,s:t.ST[key]},s=t.unitSprite(key,1,false,0,0),m=t.critterSprite(id,0);
   ok(t.wildKind(key)==='w_deer'&&s.width>=32&&s.height>=32&&s.toDataURL()!==m.toDataURL(),'a hunted deer drawn by its battle figure ('+s.width+'x'+s.height+'), not its map one ('+m.width+'x'+m.height+')');
   const D=t.deathOf(u);ok(D&&D.down&&t.PX.BEAST_DEATHS.w_deer.includes(D.name),'it dies as the beasts do: '+D.name);
-  t.WILD_ART.on=false;try{ok(t.wildKind(key)===null&&t.unitSprite(key,1,false,0,0).width<32,'off: its map figure, as before')}finally{t.WILD_ART.on=true}}
+  // (on the map too: the same figure, at the marchers' scale; the owner, 2026-11-12: "the sprite in world map should be the same as battle")
+  {const A=t.critterArt(id,0,0),B0=t.unitSprite(key,1,false,0,0),k=t.WORLD_BATTLE.sprite/t.WORLD_BATTLE.scale;ok(A.s===B0&&A.k===k&&A.w>0&&A.h>0,'on the map the same figure as in its hunt, at the marchers\' scale ('+k+'): '+A.w+'x'+A.h+' px');
+   ok(t.critterArt(id,3,0).s!==A.s,'and walking there as it walks in battle')}
+  t.WILD_ART.on=false;try{ok(t.wildKind(key)===null&&t.unitSprite(key,1,false,0,0).width<32&&t.critterArt(id,0,0).s===t.critterSprite(id,0),'off: its map figure, on the map and in its hunt, as before')}finally{t.WILD_ART.on=true}}
 });
