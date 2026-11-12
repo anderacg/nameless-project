@@ -696,30 +696,30 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  columns from the pole and plain cloth after it before a deeper swallow tail (gfx/sprites.js BANNER, gfx/marchgear.js
 //  BATTLE_BANNER: dev, notch 3), on the holdings and the marchers in the view. 81e88a7 gives W6 as before. Was W6 8904cbc4)
 // (W7 and B2 again 2026-11-10, on purpose: the owner, "every factions will also have a static flag in their territory": the
-//  realms' standards (world/standards.js, doc/STANDARDS_DESIGN.md phase 1), placed when a game begins by a pure reckoning of the
+//  realms' standards (world/outposts.js, doc/OUTPOSTS_DESIGN.md phase 1), placed when a game begins by a pure reckoning of the
 //  map (no random draw, so every site, band, beast and herd stands where it did), among the sites in the save after begin and
-//  after three days. W1-W6 and W8 hold. Proof: STANDARD.on false gives W7 and B2 as before. Were W7 fa8834d8, B2 90225f8a)
-// (W5 and W6 again 2026-11-10, on purpose: a standard's tiles kept from every holding's building (world/standards.js
-//  Standards.reserve, lots.js occReserve: the owner's "check edge cases"), so the life on the ground (gfx/ambient.js ambLot) leaves
-//  them bare as it does a camp's ground, in the painted world (W5) and the view (W6). Proof: Standards.reserve doing nothing gives
+//  after three days. W1-W6 and W8 hold. Proof: OUTPOST.on false gives W7 and B2 as before. Were W7 fa8834d8, B2 90225f8a)
+// (W5 and W6 again 2026-11-10, on purpose: a standard's tiles kept from every holding's building (world/outposts.js
+//  Outposts.reserve, lots.js occReserve: the owner's "check edge cases"), so the life on the ground (gfx/ambient.js ambLot) leaves
+//  them bare as it does a camp's ground, in the painted world (W5) and the view (W6). Proof: Outposts.reserve doing nothing gives
 //  W5 and W6 as before. Were W5 eed44484, W6 1c401aea)
-// (W7 again 2026-11-10, on purpose: standards phase 2 (doc/STANDARDS_DESIGN.md): each standard's works a day (world/standards.js
-//  Standard#work: growth paid in timber and stone, a broken tower mended), what it waits on kept with it in the save after three
+// (W7 again 2026-11-10, on purpose: standards phase 2 (doc/OUTPOSTS_DESIGN.md): each standard's works a day (world/outposts.js
+//  Outpost#work: growth paid in timber and stone, a broken tower mended), what it waits on kept with it in the save after three
 //  days. W1-W6, W8 and B2 hold. Proof: its day without work() gives W7 as before. Was W7 65bc6abf)
 // (W7, W8 and B2 again 2026-11-10, on purpose. W7: the owner's 216886a (six shared full helmets and military preferences: the
-//  world's faces in the save) gives W7 bc80b8b9 (checked at that commit); then standards phase 3 (doc/STANDARDS_DESIGN.md): no
-//  band is raised within STANDARD.safe tiles of a held standard (world.js spawnBandit), so the first bands stand elsewhere: the
-//  save after begin (B2), the 600 frames (W8) and the three days (W7). Proof: STANDARD.safe 0 gives W8 and B2 as before and W7
+//  world's faces in the save) gives W7 bc80b8b9 (checked at that commit); then standards phase 3 (doc/OUTPOSTS_DESIGN.md): no
+//  band is raised within OUTPOST.safe tiles of a held standard (world.js spawnBandit), so the first bands stand elsewhere: the
+//  save after begin (B2), the 600 frames (W8) and the three days (W7). Proof: OUTPOST.safe 0 gives W8 and B2 as before and W7
 //  bc80b8b9. Were W7 2ad6afe1, W8 c6df5ce6, B2 cdc4c20b)
-// (W7 and B2 again 2026-11-10, on purpose: standards phase 4 (doc/STANDARDS_DESIGN.md), outposts to the player (the owner: "can
+// (W7 and B2 again 2026-11-10, on purpose: standards phase 4 (doc/OUTPOSTS_DESIGN.md), outposts to the player (the owner: "can
 //  we rename it to something more straightforward?"): each one's name ends in "outpost" and keeps the realm it began with (home0,
 //  for a quest to retake it), both in the save, after begin (B2) and after three days (W7). W1-W6 and W8 hold. Proof: its name
 //  without "outpost" and no home0 give W7 and B2 as before. Were W7 4385273b, B2 80f263f5)
-// (W4, W6, W7, W8 and B2 again 2026-11-10, on purpose: outposts claim the land round them (doc/STANDARDS_DESIGN.md §4; the owner's
+// (W4, W6, W7, W8 and B2 again 2026-11-10, on purpose: outposts claim the land round them (doc/OUTPOSTS_DESIGN.md §4; the owner's
 //  answer: "Yes" to land, sight, safety and renown): each held one's tiles its realm's nearest holding's (world/territory.js
-//  landCompute, Standards.claims), so the land (W4: 176 more tiles claimed), its borders and tint drawn (W6), and what stands on
+//  landCompute, Outposts.claims), so the land (W4: 176 more tiles claimed), its borders and tint drawn (W6), and what stands on
 //  whose land after begin and through the days (B2, W8, W7: where bands are raised, whose land a party crosses). W1-W3 and W5 hold.
-//  Proof: no claims (Standards.claims none) gives every one as before. Were W4 55a05137, W6 08c052b5, W7 6e5fbaa2, W8 c7207a9e,
+//  Proof: no claims (Outposts.claims none) gives every one as before. Were W4 55a05137, W6 08c052b5, W7 6e5fbaa2, W8 c7207a9e,
 //  B2 f41e4976)
 // (B2 again 2026-11-10, on purpose: a game's first faces from the world's seed alone (core/rng.js Rng.worldOf, ui/faces.js
 //  Faces.start), as a fresh page made them; they were made before the game's number was drawn, from the last game's, so a second

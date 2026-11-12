@@ -40,7 +40,7 @@ Kit.suite(({ok,info})=>{
   {const H=t.SUPPLY.hunger,B=t.BAND;B.hungry=71;B.lean=0;const fed=()=>{if(B.lean||B.hungry){const l=Math.max(B.lean||0,B.hungry)-H.recover;if(l>0)B.lean=l;else delete B.lean}B.hungry=0};fed();ok(B.hungry===0&&B.lean===71-H.recover,'fed an hour after 71 hungry: '+B.lean+' hungry hours left to wear off');
    ok(/u\.lean/.test(String(t.supplyHour)),'the hour\'s rule keeps them');delete B.lean;B.hungry=0}
   // ---- a ruined job
-  {const s=t.Standards.all().find(x=>x.realm&&x.realm!=='player');if(s){const town=t.TOWNS.find(h=>h.owner===s.realm&&!h.gone),q=Object.create(t.HoldQuest.prototype);Object.assign(q,{fac:s.realm,home:town.name,site:s.i,left:false,on:true,done:false});
+  {const s=t.Outposts.all().find(x=>x.realm&&x.realm!=='player');if(s){const town=t.TOWNS.find(h=>h.owner===s.realm&&!h.gone),q=Object.create(t.HoldQuest.prototype);Object.assign(q,{fac:s.realm,home:town.name,site:s.i,left:false,on:true,done:false});
     ok(!q.ruined(),'a post held: not ruined');q.left=true;ok(q.ruined(),'a post you left: your doing, failed, not paid for your trouble');q.left=false;q.on=false;const r0=s.owner;s.owner=null;ok(!q.ruined(),'one that fell before you took your post: not your doing');s.owner=r0}else info('no realm outpost')}
  }finally{fief.owner=own0}
 });

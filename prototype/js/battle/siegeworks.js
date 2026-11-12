@@ -220,9 +220,9 @@ class SiegeWorks{
    the walk's heaps (stones, arrows, a barrel, a brazier) one in so many rows (cells); spent: one spent arrow in the field before the
    wall for so many px of it; wallZ: the walk's height drawn (px, by the walls: the men on it drawn up so, the ladders leaning to
    it); brick: a brick's [length, height] (px); hang: a hanging of the lord's colours on the outer face one in so many rows, torch: a
-   torch in its sconce one in so many; moss: the foot's growth by climate; ladder: your ladders (SiegeArt#ladPic: w px wide, a rung every step px; STANDARD_ART.ladder's colours) */
+   torch in its sconce one in so many; moss: the foot's growth by climate; ladder: your ladders (SiegeArt#ladPic: w px wide, a rung every step px; OUTPOST_ART.ladder's colours) */
 const SIEGE_ART={rise:18,riseL:8,foot:6,plinth:14,wallZ:[0,15,22,26],brick:[7,3],hang:11,torch:7,merlon:[6,4],face:2,shadow:14,clutter:5,spent:5,
-  moss:{grass:'#5e6e3c',swamp:'#4e6038',forest:'#556a36',frost:'#e6ecf0',desert:'#cbb27c'},ladder:{...STANDARD_ART.ladder,w:11,step:5,broken:.3}};
+  moss:{grass:'#5e6e3c',swamp:'#4e6038',forest:'#556a36',frost:'#e6ecf0',desert:'#cbb27c'},ladder:{...OUTPOST_ART.ladder,w:11,step:5,broken:.3}};
 class SiegeArt{
   constructor(w,base){this.w=w;this.base=base;this.cv=null;const t=w.t,A=TOURNEY_ARENA.walls,cul=holdingCulture(t),own=t.owner&&FACS[t.owner];
     this.cul=cul;this.col=own?own.col:'#9a9a9a';this.dev=own&&t.owner!=='player'?t.owner:'star';
@@ -316,9 +316,9 @@ class SiegeArt{
       g.fillStyle=j?C[2]:v<.2?shade(C[1],.9):v>.85?shade(C[1],1.05):C[1];g.fillRect(x,y,1,1)}
     rect(g,C[3],f.x-R-1,f.y-R-1,2*R+2,1);rect(g,C[3],f.x-R-1,f.y+R,2*R+2,2);rect(g,C[3],f.x-R-1,f.y-R,1,2*R);rect(g,C[3],f.x+R,f.y-R,1,2*R);
     for(const [dx,dy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){const x=f.x+dx*(R-8),y=f.y+dy*(R-8);rect(g,'rgba(10,12,18,.3)',x-3,y+1,7,3);rect(g,'#2a2a30',x-2,y-2,5,4);rect(g,'#7a2a10',x-1,y-2,3,2);this.braziers.push({x,y:y-2})}}
-  // (the standard, standing: world/standards.js standardSprite of its owner (or yours, taken), SIEGE_FIGHT.flag.k times; a prop)
-  flagProp(mine){const f=this.w.flag,t=this.w.t;if(!f||!SIEGE_FIGHT.flag.on||typeof standardSprite!=='function')return null;const k=SIEGE_FIGHT.flag.k,own=mine?'player':t.owner;
-    const sp=standardSprite({realm:own,band:false,col:()=>(FACS[own]&&FACS[own].col)||this.col,lv:1,seed:this.w.seed,broken:false}),cv=mkcv(sp.width*k,sp.height*k),q=cv.getContext('2d');q.imageSmoothingEnabled=false;q.drawImage(sp,0,0,cv.width,cv.height);
+  // (the standard, standing: world/outposts.js outpostSprite of its owner (or yours, taken), SIEGE_FIGHT.flag.k times; a prop)
+  flagProp(mine){const f=this.w.flag,t=this.w.t;if(!f||!SIEGE_FIGHT.flag.on||typeof outpostSprite!=='function')return null;const k=SIEGE_FIGHT.flag.k,own=mine?'player':t.owner;
+    const sp=outpostSprite({realm:own,band:false,col:()=>(FACS[own]&&FACS[own].col)||this.col,lv:1,seed:this.w.seed,broken:false}),cv=mkcv(sp.width*k,sp.height*k),q=cv.getContext('2d');q.imageSmoothingEnabled=false;q.drawImage(sp,0,0,cv.width,cv.height);
     const X=Math.round(f.x-sp.ax*k),Y=Math.round(f.y-sp.ay*k);return{dk:6,flag:true,x:f.x,y:f.y+2,s:cv,dx:X,dy:Y,box:[X,Y,X+cv.width,f.y+2]}}
   raiseFlag(){const p=this.flagProp(true);if(!p)return;this.props=this.props.filter(q=>!q.flag);this.props.push(p);this.props.sort((a,b)=>a.y-b.y)}
   // (spent arrows stuck in the field before the wall, thicker near it, leaning back toward it, their fletching up)

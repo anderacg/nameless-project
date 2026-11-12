@@ -1,7 +1,7 @@
 'use strict';
 // Rules that gave the wrong result (a review of the rules, 2026-11-11). No autosave over a death by beasts (save.js: a load of it had
 // the hero alive again); a passenger the beasts killed is dead, not delivered (death.js, forms.js STORY_BAD); a band that moves into
-// an outpost is not beaten by you, and a quest's quarry is not taken off the map so (standards.js contest); yours on the field are
+// an outpost is not beaten by you, and a quest's quarry is not taken off the map so (outposts.js contest); yours on the field are
 // your own band, not an ally's leader, and a router off the field is no withdrawal (morale.js yourOwn, leaveField, retreating); a deed
 // that costs standing costs honour too (reputation.js repNear); outside a gate that will not have you there is no lodging (stay.js);
 // a sally out of a besieged holding is no free way out (engage.js fleeOdds); no siege kept by a captive (siege.js siegeDay,
@@ -17,7 +17,7 @@ Kit.suite(({ok,info})=>{
   // ---- a passenger dead is not a goal done
   ok(t.STORY_BAD.includes('dead')&&!t.STORY_OK.includes('dead')&&/'dead'\)/.test(String(t.Death.passengers)),'a passenger the beasts killed ends its quest dead, a story\'s bad end, not slain (a beast hunt\'s done)');
   // ---- an outpost taken by a band: no band beaten by you; a quest's quarry left on the map
-  {const s=t.Standards.all()[0];if(!s)info('no outpost in this world: the contest not tried');else{const keep={owner:s.owner,guards:s.guards,ld:s.ld,taking:s.taking,choose:s.choose},L=W.lords,bs=t.bandits.slice();
+  {const s=t.Outposts.all()[0];if(!s)info('no outpost in this world: the contest not tried');else{const keep={owner:s.owner,guards:s.guards,ld:s.ld,taking:s.taking,choose:s.choose},L=W.lords,bs=t.bandits.slice();
     let heard=0;const off=t.worldOn('band:beaten',()=>heard++);W.lords=[];s.owner=null;s.guards=0;s.taking=null;s.choose=false;window.Math.random=()=>0;
     const mk=q=>{const b=t.asParty({kind:'bandits',x:s.x+10,y:s.y,troops:Array(5).fill('militia')});if(q)b.qid=q;t.bandits.push(b);return b};
     const q=mk(7);s.contest();ok(t.bandits.includes(q)&&!s.band,'a quest\'s quarry by an empty outpost: left on the map, the outpost not its lair');

@@ -623,7 +623,7 @@ class BattleTerrain{
   ix(x,y){return tIx(this,x,y)}
   kindAt(x,y){return this.kind[tIx(this,x,y)]}
   levelAt(x,y){return this.lvl[tIx(this,x,y)]}
-  // (a and b one on a raised place (lift: an outpost's tower, world/standards.js StandardTower), one off it: no blade between them)
+  // (a and b one on a raised place (lift: an outpost's tower, world/outposts.js OutpostTower), one off it: no blade between them)
   apart(a,b){const L=this.lift;return !!L&&(L[tIx(this,a.x,a.y)]>0)!==(L[tIx(this,b.x,b.y)]>0)}
   // (the rules of the ground there (TERRAIN_GROUND), or null: open ground or a bridge)
   rulesAt(x,y){return TGROUND[this.kind[tIx(this,x,y)]]||null}
@@ -756,7 +756,7 @@ class BattleTerrain{
   update(){
     const T=this,st=T.steep;
     for(const u of B.units){if(u.hp<=0)continue;const i=tIx(T,u.x,u.y),lv=T.lvl[i];u.gk=T.kind[i];u.glv=lv;if(u.gk===TKIND.deep&&u.run)u.run=0;
-      if(T.lift){const z=T.lift[i];if(z||u.lifted){u.z=z;u.lifted=z>0}}// (on a raised place he is drawn up on, an outpost's tower: world/standards.js StandardTower)
+      if(T.lift){const z=T.lift[i];if(z||u.lifted){u.z=z;u.lifted=z>0}}// (on a raised place he is drawn up on, an outpost's tower: world/outposts.js OutpostTower)
       if(st&&st[i]&2){const up=u.dir!=null&&u.spdNow>0&&T.slope(i,Math.cos(u.dir),Math.sin(u.dir))>0;if(up)u.stc=B.t;if(u.run&&(up||st[i]&4&&u.s.mounted))u.run=0}
       let s=u.s;if(!s||!(s.range>0))continue;
       if(u.rS!==s){const r0=u.rS?s.range/(u.rm||1+HILL.range*(u.rl||0)):s.range;s=u.s={...s};u.rS=s;u.r0=r0;u.rl=-1}

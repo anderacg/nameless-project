@@ -410,7 +410,7 @@ class Commander{
   // beside, never its to order)
   groups(){const {team,key}=this;
     if(B.sides?.active&&team>0)return Object.fromEntries(['inf','arc','mag','cav','hero'].map(role=>[role,Object.keys(B.groups).filter(id=>B.groups[id].team===team&&B.groups[id].role===role&&!B.groups[id].post)]));
-    const ids=Object.keys(B.groups).filter(id=>{const g=B.groups[id];return g.team===team&&(team===1||key==='ally'?team===1||g.ally:aiHas(g))&&!g.post&&(!insideHolds(team)||insideRoused(g))});// (g.post: men at their post, an outpost's tower: world/standards.js StandardTower; inside, a group waits in its chamber till roused: battle/interior.js)
+    const ids=Object.keys(B.groups).filter(id=>{const g=B.groups[id];return g.team===team&&(team===1||key==='ally'?team===1||g.ally:aiHas(g))&&!g.post&&(!insideHolds(team)||insideRoused(g))});// (g.post: men at their post, an outpost's tower: world/outposts.js OutpostTower; inside, a group waits in its chamber till roused: battle/interior.js)
     return Object.fromEntries(['inf','arc','mag','cav','hero'].map(role=>[role,ids.filter(id=>B.groups[id].role===role)]));
   }
   /* one side's captain. It reads the whole battle (assess): each side's strength (health by tier), how much of it shoots, how

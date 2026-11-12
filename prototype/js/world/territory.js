@@ -30,7 +30,7 @@ function heapPop(h){const top=h[0],last=h.pop();if(h.length){h[0]=last;let i=0;f
 const landLim=t=>t.gone?0:landReach(t);
 const landBox=(t,lim)=>{const r=Math.ceil(lim/LAND_STEP)+1;return[Math.max(0,t.tx-r),Math.max(0,t.ty-r),Math.min(MW-1,t.tx+r),Math.min(MH-1,t.ty+r)]};// (t: a holding, or any {tx, ty})
 const boxMeets=(a,b)=>a[0]<=b[2]&&b[0]<=a[2]&&a[1]<=b[3]&&b[1]<=a[3];
-// one holding's run: its reach spreads from its tile (or at: an outpost's claim for it, Standards.claims) by the cost of the land,
+// one holding's run: its reach spreads from its tile (or at: an outpost's claim for it, Outposts.claims) by the cost of the land,
 // taking each tile where more of it is left than of any holding's before it
 function landRun(i,lim,at=TOWNS[i]){
   const t=at,s0=t.ty*MW+t.tx,h=[[0,s0]],used=[s0],tk=[],tv=[];landDist[s0]=0;
@@ -48,8 +48,8 @@ function landCompute(S){
     if(S&&!S.has(i)&&!(box&&D.some(b=>boxMeets(b,box)))){if(was)for(let j=0;j<was.k.length;j++){landBest[was.k[j]]=was.v[j];LAND[was.k[j]]=i}return}
     if(was)D.push(was.box);if(box)D.push(box);runs[i]=lim>0?landRun(i,lim):null});
   runs.length=TOWNS.length;landRuns=runs;
-  // (then the outposts' claims, after every holding's, each for its realm's nearest holding: world/standards.js Standards.claims)
-  for(const r of landClaims||[])D.push(r.box);landClaims=(typeof Standards!=='undefined'?Standards.claims():[]).map(c=>{const r=landRun(c.i,c.lim,c.s);D.push(r.box);return r});
+  // (then the outposts' claims, after every holding's, each for its realm's nearest holding: world/outposts.js Outposts.claims)
+  for(const r of landClaims||[])D.push(r.box);landClaims=(typeof Outposts!=='undefined'?Outposts.claims():[]).map(c=>{const r=landRun(c.i,c.lim,c.s);D.push(r.box);return r});
   landTiles=TOWNS.map(()=>0);for(let k=0;k<LAND.length;k++)if(LAND[k]>=0)landTiles[LAND[k]]++;
   return D;
 }
@@ -63,7 +63,7 @@ function landEdges(b){
 }
 // look again when an owner, a reach (a whole step of growth) or a holding's tile changes: the claims changed run again, the
 // borders are drawn afresh round them and round a holding that changed hands
-// (or an outpost's holder or level: Standards.landKey)
+// (or an outpost's holder or level: Outposts.landKey)
 // (what the land hangs on, as a number: each holding's owner, reach and tile mixed in turn, no string made (it is looked at on every
 // look at the land, landIdx); an owner by its number in landOwn; no holdings 0, as the unset sig (the old key's '': what the
 // world's reckoning while it is made waits on))
@@ -75,7 +75,7 @@ let landHeld=false;
 function landHeldFor(f){if(!WORLD_FAST.land||landHeld)return f();landFresh();landHeld=true;try{return f()}finally{landHeld=false}}
 function landFresh(){
   if(landHeld&&landSig)return;
-  const s=landSigOf(),k=typeof Standards!=='undefined'?Standards.landKey():0;if(s===landSig&&k===landKey&&landWas)return;
+  const s=landSigOf(),k=typeof Outposts!=='undefined'?Outposts.landKey():0;if(s===landSig&&k===landKey&&landWas)return;
   const now=TOWNS.map(t=>({own:t.owner,lim:landLim(t),at:t.ty*MW+t.tx}));landVer++;
   // (a world put back as it first stood: its land as kept, reckoned afresh at the next change)
   if(s===landSig&&k===landKey){landWas=now;landEdges([0,0,MW-1,MH-1]);return}
