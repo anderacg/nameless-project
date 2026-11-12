@@ -1472,7 +1472,8 @@ function lordJobHtml(l){
   if(l.asked===G.day)return '';
   if(!G.lordJob||G.lordJob.giver!==l.name)G.lordJob=lordJob(l);
   const q=G.lordJob&&Quest.as(G.lordJob);
-  if(!q)return '<p class="muted">'+l.name+' has no work for you.</p>';
+  // (none to offer: still why, while you are shut out of his work)
+  if(!q){const w={lord:true,giver:l.name},s=QuestShut.of(w);return '<p class="muted">'+(s?QuestShut.line(w,s):l.name+' has no work for you')+'.</p>'}
   if(q.state==='available')return offerRow(q,'q-lord','');
   const s=QuestShut.of(q);
   return '<p class="muted">'+(s?QuestShut.line(q,s):l.name+' has no work for you yet')+'.</p>'+offerRow(q,'q-lord','');

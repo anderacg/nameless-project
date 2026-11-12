@@ -336,10 +336,11 @@
       tail:(g,F,c,y)=>{put(g,2,y(g.h-2-6),c.a);put(g,1,y(g.h-2-5),c.b)},
       jaw:(g,x,y,n)=>{for(let xx=x;xx<x+3;xx++)put(g,xx,y,'#3a2430')}}};
   // PX.mountArt(kind, walk, pal, down): its grid (w, h, p: colours) and its bob; walk -1 standing, 0-3 walking, 4-7 galloping;
-  // down: lying dead on its side (a 32x21 grid, its feet on row 19); null for a mount drawn otherwise (the horse's, the stag's)
+  // down: lying dead on its side (a 32x21 grid, its feet on row 19), 'belly' slumped forward on its folded legs; null for a mount
+  // drawn otherwise (the horse's, the stag's)
   PX.MOUNT_ART=Object.keys(MOUNT_ART);
   PX.mountArt=(kind,walk,pal,down)=>{const D=MOUNT_ART[kind==='warg'?'wolf':kind];if(!D)return null;const g=grid(32,down?21:32),
-      F=down?{a:'dead',i:0,dead:true,how:'side'}:walk==null||walk<0?gait('idle',0):walk>=4?gait('run',(walk-4)%4):gait('walk',walk%4);
+      F=down?{a:'dead',i:0,dead:true,how:down==='belly'?'slump':'side'}:walk==null||walk<0?gait('idle',0):walk>=4?gait('run',(walk-4)%4):gait('walk',walk%4);
     handBeast(g,D,F,{v:0,pal});const y0=g.h-2-D.top+(down?D.legH:F.bob);return{g,bob:down?0:F.bob,seat:g.h-2-D.top+D.seat+(down?0:F.bob),body:[y0,y0+D.rows.length-1]}};
   // a griffin: a lion's hindquarters, an eagle's head, breast, forelegs and wings (folded up its back, spread to run and to strike)
   KINDS.griffin={W:32,H:25,coats:['#b8905a','#c09a5a','#8a7a66'],deaths:WING_DEATHS,
