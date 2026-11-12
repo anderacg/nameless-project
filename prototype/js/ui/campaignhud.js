@@ -9,16 +9,16 @@ class CampaignHud{
     this.companyHeader=document.createElement('header');this.companyHeader.className='campaign-company-header';this.company.appendChild(this.companyHeader);
     const tools=document.querySelector('.dockrow.sys');tools.prepend(document.getElementById('menuBtn'));
     this.mapZoom=document.createElement('div');this.mapZoom.className='campaign-map-zoom';this.mapZoom.setAttribute('role','group');this.mapZoom.setAttribute('aria-label','Map zoom');this.slot.parentNode.appendChild(this.mapZoom);
-    this.moves=[['.campaign-brand',this.companyHeader],['#stats',this.company],['.dockrow.sys',this.root.querySelector('.campaign-rail')],['#zoomOut',this.mapZoom],['#zoomIn',this.mapZoom]].map(([selector,to])=>{const el=document.querySelector(selector),home=document.createComment('campaign control home');el.before(home);return{el,home,to}});
+    this.moves=[['.campaign-brand',this.companyHeader],['#stats',this.company],['.dockrow.sys',this.root.querySelector('.campaign-rail')],['#zoomOut',this.mapZoom],['#zoomIn',this.mapZoom],['.campaign-details',document.getElementById('stats')]].map(([selector,to])=>{const el=document.querySelector(selector),home=document.createComment('campaign control home');el.before(home);return{el,home,to}});
     this.help=document.getElementById('helpBtn');this.helpHome=document.createComment('campaign help home');this.help.before(this.helpHome);
     this.brand.addEventListener('click',()=>act('nm-open'));
     this.resources.addEventListener('click',e=>{if(e.target.closest('[data-supply]'))document.getElementById('invBtn').click()});
     this.commandArt=[['campBtn','fire'],['mapBtn','map'],['mapToggle','map'],['charBtn','troops'],['skillBtn','skills'],['invBtn','bag'],['journalBtn','book']];
     this.regionCard=document.createElement('aside');this.regionCard.className='campaign-region';this.regionCard.hidden=true;this.regionCard.setAttribute('aria-label','Current region');this.regionCard.setAttribute('aria-live','polite');this.regionCard.setAttribute('aria-atomic','true');this.root.querySelector('.campaign-rail').appendChild(this.regionCard);
-    this.details.textContent='⋯';this.details.setAttribute('aria-label','Company details');this.details.title='Company details';
+    this.details.textContent='Details';this.details.setAttribute('aria-label','Company details');this.details.title='Company details';
     this.mobileMini=document.createElement('button');this.mobileMini.type='button';this.mobileMini.className='campaign-mobile-survey';this.mobileMini.hidden=true;this.mobileMini.setAttribute('aria-label','Open full map');$('.hudlayer').appendChild(this.mobileMini);this.mobileMini.addEventListener('click',()=>document.getElementById('mapBtn').click());
     this.slot.addEventListener('click',()=>document.getElementById('mapBtn').click());
-    this.details.addEventListener('click',()=>{const open=this.screen.classList.toggle('company-details');this.details.setAttribute('aria-expanded',String(open));this.details.textContent=open?'×':'⋯'});
+    this.details.addEventListener('click',()=>{const open=this.screen.classList.toggle('company-details');this.details.setAttribute('aria-expanded',String(open));this.details.textContent=open?'Close details':'Details'});
   }
   art(name,cls){return icon(name,52,cls)}
   condition(kind,value){

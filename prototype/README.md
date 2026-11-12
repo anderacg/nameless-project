@@ -1806,3 +1806,5 @@ The bottom-left panel header shows the army name and actual flag above a subtle 
 Map frames hug the live minimap canvas without a wooden spacer. Console sections use common safe margins and have no gray end strips. `tests/campaignhud.js` covers controls, data and map alignment; `tests/mobilehud.js` also checks shared condition widgets, expanded meter width and the compact touch layout.
 
 Holding banners above map buildings are temporarily disabled by `HOLD_PLAQUE.on` in `gfx/structures.js`; the top-bar region section remains. The artwork is retained for later use.
+
+The desktop company panel aligns Supplies and Condition on a shared row grid, with inset segmented meters, distinct muted condition colors, a center divider and a framed Details control in the final right-hand row.

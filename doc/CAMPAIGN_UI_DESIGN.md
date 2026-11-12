@@ -21,3 +21,5 @@ Review targets: 1440×900, 1200×800 and 844×390 touch. Targeted checks and cap
 Holding banners are temporarily hidden (`gfx/structures.js` `HOLD_PLAQUE.on: false`). The region panel remains in the top bar; holding art, discovery, interaction and gate rules are unchanged. The original plaque artwork can be restored with its display switch.
 
 The banner removal intentionally changes W6 from `a1a8a0c9` to `6d45a75b`; targeted measurement confirms W1–W5 still match. HUD 32, gates 35 and discovery 17 checks pass.
+
+The company ledger uses Supplies and Condition sections with a subtle center divider, shared 36px row heights, aligned icons/labels/right-aligned values and matching 7px inset segmented meters. Fitness is olive, stamina amber and morale muted blue; warnings retain their alert colors. The existing Details control fills the fourth condition-side row. The header gains a subtle wash and a small divider ornament. Phone metrics retain their compact shared component layout.
