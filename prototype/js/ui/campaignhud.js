@@ -14,7 +14,7 @@ class CampaignHud{
     this.brand.addEventListener('click',()=>act('nm-open'));
     this.resources.addEventListener('click',e=>{if(e.target.closest('[data-supply]'))document.getElementById('invBtn').click()});
     this.commandArt=[['campBtn','fire'],['mapBtn','map'],['mapToggle','map'],['charBtn','troops'],['skillBtn','skills'],['invBtn','bag'],['journalBtn','book']];
-    this.regionCard=document.createElement('aside');this.regionCard.className='campaign-region';this.regionCard.hidden=true;this.regionCard.setAttribute('aria-label','Current region');this.regionCard.setAttribute('aria-live','polite');this.regionCard.setAttribute('aria-atomic','true');this.root.appendChild(this.regionCard);
+    this.regionCard=document.createElement('aside');this.regionCard.className='campaign-region';this.regionCard.hidden=true;this.regionCard.setAttribute('aria-label','Current region');this.regionCard.setAttribute('aria-live','polite');this.regionCard.setAttribute('aria-atomic','true');this.root.querySelector('.campaign-rail').appendChild(this.regionCard);
     this.details.textContent='⋯';this.details.setAttribute('aria-label','Company details');this.details.title='Company details';
     this.mobileMini=document.createElement('button');this.mobileMini.type='button';this.mobileMini.className='campaign-mobile-survey';this.mobileMini.hidden=true;this.mobileMini.setAttribute('aria-label','Open full map');$('.hudlayer').appendChild(this.mobileMini);this.mobileMini.addEventListener('click',()=>document.getElementById('mapBtn').click());
     this.slot.addEventListener('click',()=>document.getElementById('mapBtn').click());
