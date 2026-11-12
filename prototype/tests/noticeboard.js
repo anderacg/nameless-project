@@ -23,12 +23,11 @@ Kit.suite(({ok})=>{
   ok(n&&/Requires level 3/.test(n.querySelector('.nb-stamp').textContent)&&n.querySelector('[data-act="q-accept"]').disabled,'a locked one faded, stamped "'+(n&&n.querySelector('.nb-stamp').textContent)+'", its Accept off')}
  // ---- empty
  {P.jobs={Ashford:{day:G.day,list:[],none:true}};open();const b=q('.nb');const book=b.querySelectorAll('.nb-note').length;ok(b&&q('.nb-plaque')&&!b.querySelector('.nb-empty')&&!b.querySelector('[data-act="q-accept"]')&&(book||b.classList.contains('bare'))&&b.getBoundingClientRect().height>=200,'no work: no paper saying so, the board '+(book?'with only the questbook\'s '+book:'bare')+' under its plaque ('+Math.round(b.getBoundingClientRect().height)+' px tall)')}
- // ---- your quests here, in full: who gave it and why, its cause, its words, its steps (the one to do now in bold), its facts;
- // Report greyed with why till it is done
+ // ---- your quests here, not done yet: no Report, what is left said, the whole card (who, cause, steps, facts) folded under Details
  {P.jobs={};P.level=5;P.quests=[];open();const j=t.jobsAt(ash).find(x=>t.Quest.as(x).state==='available');t.acceptQuest(j);open();
-  const r=qa('.row').find(x=>x.querySelector('[data-act="q-turnin"]')),Q=t.Quest.as(j),b=r&&r.querySelector('[data-act="q-turnin"]');
-  ok(r&&r.querySelector('.qw-who')&&(!Q.causeLine()||r.textContent.includes(Q.causeLine()))&&r.querySelector('.qw-steps li.now')&&/Taken/.test(r.textContent)&&/Turn in/.test(r.textContent)&&/Reward/.test(r.textContent),'yours here, in full: '+(r&&r.querySelector('strong').textContent)+', '+(r&&r.querySelector('.qw-steps').textContent));
-  ok(b&&b.disabled&&/^Not done yet|^You have/.test(b.title),'Report greyed till it is done: "'+(b&&b.title)+'"');P.quests=[]}
+  const r=q('.row.qw-later'),Q=t.Quest.as(j),d=r&&r.querySelector('details.qw-more');
+  ok(r&&!r.querySelector('[data-act="q-turnin"]')&&/^(Still to do:|You have) /.test(r.querySelector('.info>small').textContent),'yours here, not done: no Report, "'+(r&&r.querySelector('.info>small').textContent)+'"');
+  ok(d&&!d.open&&d.querySelector('.qw-who')&&(!Q.causeLine()||d.textContent.includes(Q.causeLine()))&&d.querySelector('.qw-steps li.now')&&/Taken/.test(d.textContent)&&/Turn in/.test(d.textContent)&&/Reward/.test(d.textContent),'its whole card folded under Details: '+(d&&d.querySelector('.qw-steps')?.textContent));P.quests=[]}
  // ---- it fits
  {P.jobs={};P.level=5;open();const b=q('.nb').getBoundingClientRect(),c=q('.nb').parentElement.getBoundingClientRect();ok(b.right<=c.right+1&&b.left>=c.left-1,'the board fits its window (no sideways scroll)')}
  t.toWorld();Kit.clear();

@@ -1297,6 +1297,12 @@ body:has(.overlay:not([hidden])) .discover{visibility:hidden}
 /* an offer's giver and the true thing it is about (world/givers.js, world/troubles.js) */
 .qw-who{display:block;color:var(--fg-2);font-style:italic}
 .qw-cause{color:var(--accent)}
+/* a quest ready to report at a holding: short, its reward and Report first, the whole folded under Details (world/quests.js readyRow) */
+.qw-ready{border-left:3px solid var(--good);padding-left:9px}
+.qw-pay{margin:6px 0 0;color:var(--trim-hi);font-size:var(--fs-md)}
+.qw-all{display:flex;align-items:center;gap:10px;margin:4px 0 8px}.qw-all small{color:var(--muted)}
+.qw-more{margin-top:6px}.qw-more summary{cursor:pointer;color:var(--muted);font-size:var(--fs-sm)}.qw-more[open] summary{margin-bottom:6px}
+.qw-later .info>small{color:var(--fg-2)}
 .qfacts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:5px 12px;margin:0;font-size:var(--fs-md);line-height:1.35}
 .qfacts dt{padding-top:1px;font-size:var(--fs-xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .qfacts dd{margin:0;min-width:0;overflow-wrap:anywhere}

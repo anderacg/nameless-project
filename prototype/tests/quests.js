@@ -46,7 +46,7 @@ Kit.suite(({ok})=>{
    if(s.type==='cave')t.caveFight(s);else t.startEncounter({kind:'camp',ref:s,n:5,band:s.band});win();ok(qc.done,'clearing it finishes the quest')}else ok(true,'no lair near Ashford (skipped)');
  P.quests=[];
  // supply
- const qs=t.makeQuest('supply',ash);t.acceptQuest(qs);near(ash);t.updateWorld(.01);t.act('tab','jobs');ok(document.querySelector('[data-act="q-turnin"]').disabled,'a supply run cannot be handed in empty');
+ const qs=t.makeQuest('supply',ash);t.acceptQuest(qs);near(ash);t.updateWorld(.01);t.act('tab','jobs');ok(!document.querySelector('[data-act="q-turnin"]')&&/You have /.test(Kit.text()),'a supply run cannot be handed in empty: no Hand over, "You have …" said');
  t.act('leave');done();P.inv=P.inv.map(()=>null);t.invAdd('good',qs.good,qs.n+2);near(ash);t.updateWorld(.01);t.act('q-turnin',String(qs.id));
  ok(!P.quests.length&&t.goodN(qs.good)===2,'handing over '+qs.n+' '+qs.good+' completes it');t.act('leave');done();
  // hunt (hides)

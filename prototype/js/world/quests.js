@@ -1410,6 +1410,17 @@ function offerRow(q,act,arg){
   return '<div class="row'+(lock?' locked':'')+'"><div class="info"><strong>'+title+(lock?' <span class="qw-st locked">'+QUEST_STATES.locked+'</span>':'')+'</strong>'+who+'<small>'+(why?'<span class="qw-cause">'+htmlText(why)+'</span> ':'')+text+'</small>'+questFactsHtml(q)+'</div>'+
     '<div class="acts"><button class="btn sm" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(lock?' disabled title="'+htmlText(q.needs().filter(n=>!n.met).map(n=>n.what).join('; '))+'"':'')+'>Accept</button></div></div>';
 }
+// (a quest of yours ready to report here, short (the owner, 2026-11-12: "make quest submission at holdings more better"): its title,
+// who gave it, what you get, Report or Hand over first; the whole of it folded under Details (hereRow's). Not ready: its title and
+// what is left to do, the whole folded too)
+function readyRow(q){q=Quest.as(q);const g=q.person,hand=q.handsOver,late=!!q.reward&&q.reward.gold>0&&q.earned()<q.reward.gold;// (late: it pays less now)
+  return '<div class="row qw-ready"><div class="info"><strong>'+htmlText(q.title)+' <span class="qw-st done">Ready</span></strong>'+(g?'<small class="qw-who">'+htmlText(g.name+', the '+g.n)+'</small>':q.giver?'<small class="qw-who">'+htmlText(q.giver)+'</small>':'')+
+    '<p class="qw-pay">'+icon('gold',14)+' '+q.rewardLine()+(late?' <span class="bad">(late: '+q.earned()+' gold)</span>':'')+'</p>'+qwMore(q)+'</div>'+
+    '<div class="acts"><button class="btn primary" type="button" data-act="q-turnin" data-arg="'+q.id+'">'+(hand?'Hand over':'Report')+'</button></div></div>'}
+function laterRow(q){q=Quest.as(q);
+  return '<div class="row qw-later"><div class="info"><strong>'+htmlText(q.title)+'</strong><small>'+htmlText(q.handsOver?'You have '+q.progress():'Still to do: '+q.todo())+'</small>'+qwMore(q)+'</div></div>'}
+// (the whole of a quest, folded: hereRow's info without its title)
+const qwMore=q=>'<details class="qw-more"><summary>Details</summary>'+hereRow(q).replace(/^<div class="row"><div class="info"><strong>.*?<\/strong>/,'<div><div>').replace(/<div class="acts">.*$/,'')+'</div></details>';
 // (a quest of yours reported here, in full: who gave it and why, the true thing it is about, its words, its steps (done ticked,
 // the one to do now in bold, where it is from you), its facts (taken, timing, where it is turned in, its reward, less if late);
 // Report or Hand over, greyed with why while it is not ready)
@@ -1425,8 +1436,11 @@ function hereRow(q){
 }
 // the notice board: your quests to report here, then the work offered (none for you a while after you gave up one of theirs)
 function jobsBody(t){
-  const here=P.quests.filter(q=>canReportAt(q,t)),offers=jobsAt(t),n=Quest.jobs(),shut=QuestShut.of({home:t.name});
-  return '<div class="lab">Your quests here</div>'+(here.length?here.map(hereRow).join(''):'<p class="muted">None.</p>')+
+  const here=P.quests.filter(q=>canReportAt(q,t)),ready=here.filter(questReady),later=here.filter(q=>!questReady(q)),offers=jobsAt(t),n=Quest.jobs(),shut=QuestShut.of({home:t.name});
+  // (ready first, short, Report all with two or more; then those reported here still to do; none: a line)
+  const all=ready.length>1?'<div class="qw-all"><button class="btn primary" type="button" data-act="q-turnall">Report all '+ready.length+'</button><small>'+ready.reduce((a,q)=>a+Quest.as(q).earned(),0)+' gold in all</small></div>':'';
+  return (ready.length?'<div class="lab">Ready to report</div>'+all+ready.map(readyRow).join(''):'')+(later.length?'<div class="lab"'+(ready.length?' style="margin-top:6px"':'')+'>Reported here, not done yet</div>'+later.map(laterRow).join(''):'')+
+    (here.length?'':'<div class="lab">Your quests here</div><p class="muted">None.</p>')+
     '<div class="lab" style="margin-top:6px">Work offered, you hold '+n+' job'+(n===1?'':'s')+'</div>'+
     (shut?'<p class="bad">'+QuestShut.line({home:t.name},shut)+'.</p>':'')+
     NoticeBoard.html(t,offers);// (a cork board, its papers pinned: ui/noticeboard.js; the questbook's among them: story/questbook.js)
@@ -1436,6 +1450,8 @@ function questAct(a,arg,t){
   if(!a.startsWith('q-'))return false;
   if(a==='q-accept'&&t){const list=jobsAt(t),q=list[+arg];if(q&&Quest.as(q).state==='available'&&(acceptQuest(q)||Quest.as(q).needless()))list.splice(+arg,1)}// (taken, or its need passed: off the board)
   else if(a==='q-turnin'&&t){const q=questBy(+arg);if(q&&canReportAt(q,t)){if(q.done&&!Quest.as(q).handsOver)payQuest(q,t.name);else turnIn(q,t)}}
+  // (every one ready here, in turn: one reward window for them all, ui/questreward.js)
+  else if(a==='q-turnall'&&t){for(const q of P.quests.filter(q=>canReportAt(q,t)&&questReady(q)))if(q.done&&!Quest.as(q).handsOver)payQuest(q,t.name);else turnIn(q,t)}
   // (only a job may be given up: never a main or side quest, nor a story's stage)
   else if(a==='q-abandon'){const q=questBy(+arg);if(q&&Quest.as(q).abandonable)Quest.as(q).abandon()}
   else if(a==='q-lord'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref;if(G.lordJob&&Quest.as(G.lordJob).state==='available'){if(acceptQuest(G.lordJob))l.asked=G.day;else Quest.as(G.lordJob).needless();G.lordJob=null}lordMeet(l);return true}// (taken, or its need passed: another next time)
