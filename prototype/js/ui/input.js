@@ -1,4 +1,17 @@
 'use strict';
+// Keep quick taps visible after release, without changing actions or stealing focus.
+{
+ const timers=new WeakMap(),selector='button,.btn,[role="button"],input[type="button"],input[type="submit"]';
+ document.addEventListener('click',e=>{
+  const b=e.target.closest?.(selector);if(!b||b.matches(':disabled,[aria-disabled="true"]'))return;
+  queueMicrotask(()=>{
+   const target=b.isConnected?b:(b.id?document.getElementById(b.id):null);
+   if(e.defaultPrevented||!target?.matches(selector)||target.matches(':disabled,[aria-disabled="true"]'))return;
+   clearTimeout(timers.get(target));target.classList.add('ui-clicked');
+   timers.set(target,setTimeout(()=>{target.classList.remove('ui-clicked');timers.delete(target)},180));
+  });
+ },true);
+}
 /* ---------- actions ---------- */
 function act(a,arg){
   if(a==='begin')return begin(arg);
