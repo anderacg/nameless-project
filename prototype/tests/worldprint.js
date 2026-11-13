@@ -761,12 +761,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W5, 2026-11-12: a pond's ring in the frost no longer a meadow's green (the owner: "why green in snow when neighbor tiles is also
 //  snow"; engine/worldnature.js PX.WN_RING.frost): the 19 spring ponds there painted as trodden snow, their water iced. Was c817e41c;
 //  checked: with the engine's change taken out it is c817e41c again, and W1-W4, W6-W8 and B2 hold either way)
-// (W1, W3-W8 and B2 re-recorded 2026-11-13, on purpose: the owner, "make the area bigger" (a pasture's): its pen 4, 6, 8 tiles a
-//  level, was 2, 3, 4 (world/estates.js PLOTS, PLOTS_AT), so every holding with a pasture lays its lots, fields and tracks otherwise
-//  (W1 the layout, W3-W8 what stands and walks on it, B2 the save of it). Was W1 98411198, W3 7fd84ad4, W4 50f147c1, W5 e41cdb7c,
-//  W6 d598257f, W7 311da16e, W8 c590650a, B2 ba5f45e6; checked: with the pens back at 2, 3, 4 (the camel, the pens' ground and
-//  fieldsOffRoads kept) they are those again, all 16 holding)
-const EXPECT={W1:'f07c3900',W2:'8e3ee885',W3:'6a70e085',W4:'c706963d',W5:'1bd94677',W6:'26a60462',W7:'736750d1',W8:'8ded5736',B2:'c6d22dc6'};
+// (W3, W5-W8 and B2 re-recorded 2026-11-13, on purpose: the owner, "make the area bigger" (a pasture's): its pen 4, 6, 8 tiles a level,
+//  was 2, 3, 4 (world/estates.js PLOTS_AT), grown to 8 once its holding's tracks are laid (world/lots.js pensGrow, PLOTS_GROW), so the
+//  buildings and tracks lie as they did (W1, W2, W4 hold). W3 the pens' tiles on the lots, W5 and W6 more fenced ground in the spots,
+//  W7 and W8 more of each herd grazing in them, B2 the grown tiles in the save. Was W3 7fd84ad4, W5 e41cdb7c, W6 d598257f, W7
+//  311da16e, W8 c590650a, B2 ba5f45e6; checked: with PLOTS_GROW.pasture 4 and PLOTS_AT.pasture lv+1 (the camel, the pens' ground and
+//  the code that grows them kept) they are those again, all 16 holding)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'7ddeb99d',W7:'c9c49005',W8:'83997cd6',B2:'83d3c7bb'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

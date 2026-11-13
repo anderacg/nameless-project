@@ -13,7 +13,8 @@ Kit.suite(({ok,info})=>{const t=T,PX=t.PX;Kit.begin('soldier');
  {let red=0,all=0;for(const v of [0,1,2]){const c=PX.beast('w_camel',{v,pose:0,team:1}),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
    for(let i=0;i<d.length;i+=4)if(d[i+3]){all++;if(d[i]>d[i+1]*1.5&&d[i]>90)red++}}
   ok(all>0&&red===0,'a camel\'s coats shaded brown: '+red+' red pixels of '+all);
-  ok([1,2,3].map(lv=>t.PLOTS_AT.pasture(lv)).join()==='4,6,8'&&t.PLOTS.pasture===8,'a pasture\'s pen 4, 6, 8 tiles a level (was 2, 3, 4)')}
+  const pens=t.TOWNS.map(z=>t.lotAt(z,'pasture')).filter(Boolean),big=pens.filter(l=>l.plots.length>=t.PLOTS_AT.pasture(2)).length;
+  ok([1,2,3].map(lv=>t.PLOTS_AT.pasture(lv)).join()==='4,6,8'&&t.PLOTS_GROW.pasture===8&&big>=pens.length*.75,'a pasture\'s pen 4, 6, 8 tiles a level (was 2, 3, 4): '+big+' of '+pens.length+' pens fenced to 6 tiles or more')}
  // ---- its size beside a man's: a deer's head about a man's, a cow long and low, a rabbit small
  {const top=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(d[(y*c.width+x)*4+3])return c.height-y;return 0};
   const man=top(t.unitSprite('hum_spear',1,false,0,0)),h=k=>top(PX.beast(k,{v:0,pose:0,team:1}));
