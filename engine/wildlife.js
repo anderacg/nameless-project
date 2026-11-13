@@ -69,7 +69,7 @@
     // ahead of it (not up, a giraffe's); its coats' own tones, shaded brown (the made ramp's shade turns a sandy
     // coat red), a shade darker than the sand (its pen's sand took the rest: the owner, 2026-11-13, "fix the sprites in pasture")
     w_camel:hoofed(32,25,[['#d4ae7c','#b48a5a','#86603a','#5a3e26'],['#c49c6c','#a47c4e','#785634','#503822'],['#dcbc8c','#c09868','#946e46','#664a2e']],C=>({hip:7,sho:16,back:[12,12],belly:7,ry:3.6,rh:3.8,rc:4,hump:[4,3.5,5],legs:[3,2,1],fore:[2,2,0],C,D:R('#5a4430'),
-      head:{lit:1,x:9,y:14,w:4,h:3,snout:[3,2],sy:1,M:R('#a88050'),eye:'#1e1814',ear:(g,x,y)=>{put(g,x-2,y-2,C[2])}},
+      head:{lit:1,x:9,y:14,w:4,h:3,snout:[3,2],sy:1,M:['#c8a070','#a88050','#7e5a38','#563c24'],eye:'#1e1814',ear:(g,x,y)=>{put(g,x-2,y-2,C[2])}},
       tail:(g,x,y)=>{put(g,x,y+1,C[2]);put(g,x,y+2,C[3])}})),
     // a rabbit: small and round, long ears laid back, a white scut; a snow hare white, its ears tipped black
     w_rabbit:hoofed(16,13,['#b8a088','#9a8470','#c8b49a'],C=>({hip:3,sho:6,back:[4,3],belly:1,ry:2,rh:2.6,rc:2,legs:[1,1,0],fore:[1,1,0],C,D:R('#6a5a4a'),
