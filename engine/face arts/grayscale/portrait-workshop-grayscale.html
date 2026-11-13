@@ -1858,10 +1858,10 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
  function put(d,i,rgb,alpha){d[i]=rgb[0];d[i+1]=rgb[1];d[i+2]=rgb[2];d[i+3]=alpha;}
  // Keep the lower painted jaw separate from the narrower neck rather than extending its rim.
  function skinShape(p){
-  const A=p.anchors,c=p.config,out=canvas(N),g=out.getContext('2d'),cut=c.race==='dwarf'?2:3,end=A.chinY-cut,start=A.mouth.y+1,points=A.outline.map(([x,y])=>[x,y>start?start+(y-start)*(end-start)/(A.chinY-start):y]);
+  const A=p.anchors,c=p.config,out=canvas(N),g=out.getContext('2d'),cut=c.race==='dwarf'?2:3,end=A.chinY-cut,start=A.mouth.y-2,points=A.outline.map(([x,y])=>{if(y<=start)return[x,y];const t=Math.min(1,(y-start)/(A.chinY-start)),inset=(c.race==='dwarf'?2:c.race==='orc'?3:4)*Math.sin(Math.PI*t),dx=x-A.cx;return[A.cx+Math.sign(dx)*Math.max(0,Math.abs(dx)-inset),start+(y-start)*(end-start)/(A.chinY-start)];});
   g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();
-  const scale=c.race==='orc'?(c.face==='orc-heavy'?.75:.875):1,half=c.race==='dwarf'?Math.max(16,Math.min(18,A.jaw*.55+2)):Math.max(9*scale,Math.min(12*scale,A.jaw*.45+2*scale)),flare=91+(A.offsetY||0);
-  g.fillRect(A.cx-half,end-5,half*2,N-end+5);g.fillRect(0,flare,N,N-flare);return g.getImageData(0,0,N,N).data;
+  const scale=c.race==='orc'?(c.face==='orc-heavy'?.75:.875):1,half=c.race==='dwarf'?16:c.race==='orc'?11.5*scale:Math.max(7.5*scale,Math.min((c.profile==='female'?8.5:9.5)*scale,A.jaw*.4)),collar=[[80,94],[75,99],[70,102],[64,103],[58,102],[53,99],[48,94]].map(([x,y])=>[A.cx+(x-64)*scale,y*scale+96*(1-scale)]);
+  g.beginPath();g.moveTo(A.cx-half,end-6);g.lineTo(A.cx+half,end-6);g.bezierCurveTo(A.cx+half,end+1,A.cx+half,collar[0][1]-3,...collar[0]);for(const point of collar.slice(1))g.lineTo(...point);g.bezierCurveTo(A.cx-half,collar[6][1]-3,A.cx-half,end+1,A.cx-half,end-6);g.closePath();g.fill();return g.getImageData(0,0,N,N).data;
  }
  function paintMask(p,spec,colors,size){
   const id=spec.id,src=part(id,p.config),out=canvas(size),g=out.getContext('2d');g.imageSmoothingEnabled=false;
