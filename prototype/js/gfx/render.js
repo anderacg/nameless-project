@@ -268,7 +268,7 @@ function drawWorld(){
   ctx.drawImage(low,-fx,-fy);ctx.save();ctx.translate(-fx,-fy);
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
-  ambientFlat(cam);worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);ambientAir(cam);// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
+  ambientFlat(cam);worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);ambientAir(cam);BlessFx.draw(cam);// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
   // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}

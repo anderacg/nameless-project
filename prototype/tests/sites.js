@@ -45,7 +45,8 @@ try{
  ok(fights&&chests&&lore,'searching ruins finds chests ('+chests+'), lore ('+lore+') or guardians ('+fights+')');
  // shrine
  const sh=of('shrine')[0];go(sh);const m=t.vitals();P.sp=1;P.mp=1;t.act('site-pray','0');ok(P.sp===m[1]&&P.mp===m[2]&&sh.back===G.day+7,'praying restores stamina and mana');
- t.act('site-tab','pray');ok(document.querySelector('[data-act="site-pray"]').disabled,'and only once a week');t.act('site-leave');
+ ok(G.mode==='world'&&!t.G.site&&t.BlessFx.list.length===1,'its page closes on the map, where its light flows into your men (BlessFx; the owner 2026-11-13)');
+ go(sh);ok(document.querySelector('[data-act="site-pray"]').disabled,'and only once a week');t.act('site-leave');t.BlessFx.list=[];
  // travellers
  const tr=of('travelers').find(s=>t.TRAVELERS[s.kind].race)||of('travelers')[0];if(!t.TRAVELERS[tr.kind].race){tr.kind=0;tr.stockUp()}
  go(tr);ok(G.mode==='site'&&new RegExp(tr.name).test(panel()),'a camp of '+tr.name.toLowerCase());

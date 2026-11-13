@@ -87,7 +87,7 @@ class Outpost extends Site{
   // (not while a battle is fought on the map: its guards are in it, OutpostTower)
   draw(ents,cam,V){super.draw(ents,cam,V);const X=OUTPOST.sentries,n=Math.min(X.most,this.guards),f=this.realm;if(!n||!f||B&&B.world||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
     const type=this.sentryType(),col=FACS[f].col,mins=(G.day+Clock.frac)*1440;
-    for(let i=0;i<n;i++){const p=this.sentryAt(i,n,mins);if(p.inside)continue;const x=p.x,y=p.y,dir=p.dir,step=p.moving?2+Math.floor(mins/X.stride+i)%4:Math.floor(mins/X.stride/4+i)%2;// (walking: its stride; at a post: breathing)
+    for(let i=0;i<n;i++){const p=this.sentryAt(i,n,mins);if(p.inside)continue;const x=p.x,y=p.y,dir=p.dir,step=p.moving?2+(Math.floor(p.walked/(WALK.foot*WALK.step))+i)%4:Math.floor(mins/X.stride/4+i)%2;// (walking: a step each WALK.foot × step px of its beat, as a marcher's (march.js marcherStep; by the clock's minutes it stepped once a second: the owner, 2026-11-13, "Why the outpost guards looks low framerate"); at a post: breathing)
       ents.push({y,f:()=>reduced(()=>{const s=unitSprite(type,0,false,(this.seed+i)%6,step,false,false,col),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
         ctx.save();ctx.translate(Math.round(x-cam.x),Math.round(y-cam.y));ctx.scale(dir*k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore()})})}}
   // (its beat: the posts round the flag, each outpost's turned by its seed; its tower's door, where a sentry goes in to rest, or the
@@ -105,8 +105,9 @@ class Outpost extends Site{
     const way=[...Array(k).keys()].map(j=>P[(s0+j)%k]).concat([P[s0],D]),legs=[];let at=D;
     way.forEach((to,j)=>{const st=j<k?X.stand[0]+((this.seed||0)*7+j*13)%(X.stand[1]-X.stand[0]+1):0,via=this.around(at,to);
       for(const v of via)legs.push({from:at,to:v,w:Math.hypot(v.x-at.x,v.y-at.y)/X.pace,st:0}),at=v;legs.push({from:at,to,w:Math.hypot(to.x-at.x,to.y-at.y)/X.pace,st});at=to});
-    const round=legs.reduce((a,l)=>a+l.w+l.st,0),rest=Math.min(X.rest,round),cyc=round+rest;let t=((mins+i*cyc/n)%cyc+cyc)%cyc;
-    for(const l of legs){if(t<l.w){const u=t/l.w,dx=l.to.x-l.from.x;return{x:l.from.x+dx*u,y:l.from.y+(l.to.y-l.from.y)*u,dir:dx<0?-1:1,moving:true,inside:false}}t-=l.w;
+    const round=legs.reduce((a,l)=>a+l.w+l.st,0),rest=Math.min(X.rest,round),cyc=round+rest;let t=((mins+i*cyc/n)%cyc+cyc)%cyc,walked=0;
+    // (walked: how far along its beat, px, for its stride)
+    for(const l of legs){if(t<l.w){const u=t/l.w,dx=l.to.x-l.from.x;return{x:l.from.x+dx*u,y:l.from.y+(l.to.y-l.from.y)*u,dir:dx<0?-1:1,moving:true,inside:false,walked:walked+l.w*X.pace*u}}t-=l.w;walked+=l.w*X.pace;
       if(t<l.st)return{x:l.to.x,y:l.to.y,dir:l.to.x<this.x?1:-1,moving:false,inside:false};t-=l.st}
     return{x:D.x,y:D.y,dir:i%2?-1:1,moving:false,inside:D.tower}}
   // (the corners to walk by from a to b, if the straight way crosses its plinth or tower: [] none, else those of the box in the way

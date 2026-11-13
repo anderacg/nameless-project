@@ -370,10 +370,12 @@ class Shrine extends Site{
   page(r){const ready=G.day>=this.back;
     return{body:this.about(r)+'<ul class="tnotes"><li>Pray at the altar: your stamina and mana restored, some health, morale +6.</li><li>Leave 25 gold on the offering stone: fully restored, morale +10, +40 XP.</li><li>'+(ready?'You may pray: once a week.':'<span class="gold">You may pray again in '+(this.back-G.day)+' days.</span>')+'</li></ul>',
       acts:CHOICE_PAGE.buttons(SHRINE_CHOICES,this,'site-pray')}}
-  // (arg 1: the offering, anything else the prayer; then a week before the next)
+  // (arg 1: the offering, anything else the prayer; then a week before the next. Its page closes on the map, where its light flows
+  // into your men (gfx/blessing.js BlessFx; the owner, 2026-11-13: "make a cool animations flow into the units"), its words in the log)
   act(a,arg,done){
     if(a!=='site-pray'||G.day<this.back)return false;const offer=arg==='1';
-    if(offer&&P.gold<25)return true;const m=SHRINE_CHOICES[offer?1:0].perform(this);this.back=G.day+7;done(m);return true}
+    if(offer&&P.gold<25)return true;const m=SHRINE_CHOICES[offer?1:0].perform(this);this.back=G.day+7;
+    G.site=null;G.siteHire=null;G.siteMsg='';G.mode='world';hidePanel();log(m.replace(/<[^>]+>/g,''));updateHUD(true);BlessFx.start(this);saveGame(true);return true}
 }
 
 /* a bandit lair, a hideout or a camp: a chieftain and his raiders. Clicked, it opens its page: what you can see from outside

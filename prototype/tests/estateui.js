@@ -120,8 +120,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       ok(!bad.length,'the banner spans the window at 1280 × 720 (×4, '+t.PAGE_BANNER.h*4+' px high), 844 × 390 and 420 × 900 (×2), crisp'+(bad.length?': '+bad.join('; '):''));
       // the shrine: Pray and Offer as its key actions, what they give in its body
       P.sp=1;ok(/Pray at the altar/.test(q('.rwbody').textContent)&&/offering stone/.test(q('.rwbody').textContent),'the shrine: what praying and an offering give, in its body');
-      key('KeyQ','q');ok(sh.back===G.day+7&&P.sp>1&&G.mode==='site'&&q('#panel.paged')&&q('.rkact[data-act="site-pray"][data-arg="0"]').disabled,'Q prays: restored, then once a week (Pray greyed)');
-      const g0=P.gold;key('KeyW','w');ok(P.gold===g0,'W is taken by the greyed Offer: nothing happens');t.act('site-leave')}
+      key('KeyQ','q');ok(sh.back===G.day+7&&P.sp>1&&G.mode==='world'&&t.BlessFx.list.length,'Q prays: restored, the page closed on its light flowing into your men (the owner, 2026-11-13)');
+      G.lastSite=null;t.enterSite(sh);ok(q('.rkact[data-act="site-pray"][data-arg="0"]').disabled,'then once a week (Pray greyed)');
+      const g0=P.gold;key('KeyW','w');ok(P.gold===g0,'W is taken by the greyed Offer: nothing happens');t.act('site-leave');t.BlessFx.list=[]}
     {const cv=of('cave');cv.cleared=false;world();G.lastSite=null;t.enterSite(cv);const ks=qa('.rwbody .rkacts .rkact');
       ok(ks.map(b=>b.dataset.act+':'+b.dataset.rk).join()==='site-scout:q,site-ask:w'&&!q('.rwbody .rt-act')&&!q('.rwbody [data-key]'),'the cave: Scout (Q) and Enter (W) as its key actions; no tile action, no digits');
       key('KeyW','w');ok(q('#panel.confirm')&&!G.enc&&q('.nav [data-nav="close"]').dataset.act==='site-fight','W: Enter asks first');t.onEscape();ok(q('#panel.paged')&&G.site===cv,'Back: the cave\'s page again');t.act('site-leave')}
