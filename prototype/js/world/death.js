@@ -69,8 +69,9 @@ class Death{
   /* the Slain page (the owner, 2026-11-13: "After you die Make a cool spirit glowing and moving around at the center of the screen and
      make a choices around it to select whether to load, new character or go to the void (exit game)"; "make it like 3 circle in
      triangle arrangement"; "Just make it full black screen with scrollable summary of your life on the left and spirit panel on the
-     right without having a brown ui"): the whole screen black, no window's frame. On the left, to scroll, their life: who they were,
-     how they fell, its numbers, what they left behind, and those of your line who fell before them. On the right the spirit's stage
+     right without having a brown ui"): the whole screen black, no window's frame. Below, to scroll ("make spirit section above and
+     scrollable stats below", on every screen), their life: who they were,
+     how they fell, its numbers, what they left behind, and those of your line who fell before them. Above it the spirit's stage
      (gfx/spirit.js Spirit), its three ways round it, circles in a triangle: a new life in the same world (above, world/legacy.js), a
      save (lower left), the void (lower right: the game left, as the menu's Exit game). The bottom bar's way out, kept for Esc (on as
      someone new, never out of the game), hidden: the circles are the page's ways out */

@@ -1375,19 +1375,21 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 
 /* ---------- 8f. the Slain page (world/death.js Death.open, gfx/spirit.js): the whole screen black, no window's frame (the owner,
    2026-11-13: "full black screen with scrollable summary of your life on the left and spirit panel on the right without having a
-   brown ui"); their life on the left, to scroll; the spirit's stage on the right, its three ways round it as circles in a triangle
+   brown ui"); then, on every screen, the spirit's stage above and their life below, to scroll (the owner, 2026-11-13: "make spirit
+   section above and scrollable stats below", first for a phone upright, then "do the same" for all), its lines kept to a readable
+   column in the middle of a wide screen; the spirit's three ways round it as circles in a triangle
    ("make it like 3 circle in triangle arrangement"): a new life at the top, a save at the lower left, the void at the lower right,
    the spirit at its middle. Each circle's middle --r from the stage's (its height, cqh, less a circle and a margin; never past --rmax),
-   at 90°, 210° and 330° round --cx across (never past the stage's sides, cqw) (the owner: on a PC "make it a bit more to the right"; a short screen's, the middle),
+   at 90°, 210° and 330° round --cx across (never past the stage's sides, cqw),
    the lower two spread --sx wider; each a breathing orb of light, no border ("Make the choices glowing too
    nonbirder for circle"), its colour --glow (the void's violet). The bottom bar kept for Esc but hidden ---------- */
 .overlay:has(> .panel.slain){padding:0;background:#000}
-.panel.slain{width:100%;height:100%;max-width:none;max-height:none;display:grid;grid-template-columns:minmax(240px,34%) minmax(0,1fr);gap:0;padding:0;
+.panel.slain{width:100%;height:100%;max-width:none;max-height:none;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,58%) minmax(0,1fr);gap:0;padding:0;
   background:#000;border:0;border-radius:0;box-shadow:none;animation:slain-in .6s ease-out}
 @keyframes slain-in{from{opacity:0}to{opacity:1}}
 .panel.slain .nav{display:none}
 .slain-life{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#2b3d66 transparent;
-  padding:calc(36px + var(--sa-t)) 28px calc(28px + var(--sa-b)) calc(32px + var(--sa-l));color:#c9d6ea;border-right:1px solid #ffffff12}
+  padding:20px max(calc(20px + var(--sa-r)),calc(50% - 380px)) calc(24px + var(--sa-b)) max(calc(20px + var(--sa-l)),calc(50% - 380px));color:#c9d6ea;border-top:1px solid #ffffff12}
 .panel.slain .slain-life h2{color:#eef4ff;text-shadow:0 0 18px #4fa8ff55;letter-spacing:.08em}
 .slain-day{display:block;margin-top:2px;color:#6f84a6;font-size:var(--fs-xs);letter-spacing:.12em;text-transform:uppercase}
 .panel.slain .slain-life h3{margin:22px 0 6px;color:#dfe9fa;font-size:var(--fs-lg)}
@@ -1396,7 +1398,7 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .slain-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px solid #ffffff0d;font-size:var(--fs-sm)}
 .slain-row span{color:#9aa9c2}.slain-row small{display:block;color:#62708a;font-size:var(--fs-2xs)}.slain-row b{color:#e4edfb;font-weight:600;white-space:nowrap}
 .panel.slain .slain-note{margin-top:10px;color:#7f8ca4;font-size:var(--fs-sm)}
-.spirit-stage{position:relative;container-type:size;--d:120px;--r:min(calc(50cqh - var(--d) / 2 - 10px),calc((50cqw - var(--d) / 2 - 10px) / .866 / var(--sx)),230px);--sx:1;--cx:58%;min-height:0;height:100%;overflow:hidden;
+.spirit-stage{position:relative;container-type:size;--d:120px;--r:min(calc(50cqh - var(--d) / 2 - 10px),calc((50cqw - var(--d) / 2 - 10px) / .866 / var(--sx)),230px);--sx:1;--cx:50%;order:-1;min-height:0;height:100%;overflow:hidden;
   background:radial-gradient(ellipse at var(--cx) 52%,#0d1a36 0%,#050912 45%,#000 80%)}
 .spirit-cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
 .spirit-way{--glow:111,216,255;position:absolute;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:var(--d);height:var(--d);padding:8px;
@@ -1415,14 +1417,12 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .sw-load{left:calc(var(--cx) - var(--r) * .866 * var(--sx));top:calc(50% + var(--r) / 2)}
 .sw-void{left:calc(var(--cx) + var(--r) * .866 * var(--sx));top:calc(50% + var(--r) / 2)}
 .sw-void{--glow:186,150,255}.sw-void strong{color:#e6dcff}
-@media (max-height:500px){.panel.slain{grid-template-columns:minmax(200px,36%) minmax(0,1fr)}.slain-life{padding:calc(16px + var(--sa-t)) 16px calc(16px + var(--sa-b)) calc(18px + var(--sa-l))}
+/* (a short screen, a phone on its side: smaller circles spread wider, closer lines) */
+@media (max-height:500px){.panel.slain{grid-template-rows:minmax(0,60%) minmax(0,1fr)}.slain-life{padding-top:12px;padding-bottom:calc(14px + var(--sa-b))}
   .panel.slain .slain-life h3{margin-top:12px}.slain-lab{margin-top:12px}.slain-row{padding:4px 0}
-  .spirit-stage{--d:80px;--r:calc(50cqh - var(--d) / 2 - 8px);--sx:1.15;--cx:50%}.spirit-way{padding:4px}.spirit-way span{display:none}}
-/* (a phone upright (the owner: "On the mobile vertical it's got cut"): the spirit above, its three round it, their life below, to scroll) */
-@media (orientation:portrait){.panel.slain{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,58%) minmax(0,1fr)}
-  .panel.slain .spirit-stage{order:-1;--d:104px;--cx:50%;--sx:1}
-  .slain-life{border-right:0;border-top:1px solid #ffffff12;padding:20px calc(20px + var(--sa-r)) calc(20px + var(--sa-b)) calc(20px + var(--sa-l))}
-  .panel.slain .slain-life h3{margin-top:12px}.slain-lab{margin-top:14px}}
+  .spirit-stage{--d:80px;--r:calc(50cqh - var(--d) / 2 - 8px);--sx:1.15}.spirit-way{padding:4px}.spirit-way span{display:none}}
+/* (a phone upright (the owner: "On the mobile vertical it's got cut"): circles a little smaller) */
+@media (orientation:portrait){.panel.slain .spirit-stage{--d:104px}.panel.slain .slain-life h3{margin-top:12px}.slain-lab{margin-top:14px}}
 
 /* ---------- 9. responsive ---------- */
 /* a touch screen: everything you press at least 44 px, and nothing that only hovering shows */
