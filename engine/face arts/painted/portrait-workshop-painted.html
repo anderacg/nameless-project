@@ -1853,6 +1853,27 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
    }
   }for(const id of outputs)layers[id].getContext('2d').putImageData(images[id],0,0);
  }
+ const SKIN_DETAIL=Object.freeze({age:{radius:2,sigma:.9,depth:.095},scar:{radius:2,sigma:.7,depth:.09},spot:{radius:1,sigma:.55,depth:.11}});
+ // Skin relief inherits the color and texture at each pixel instead of tinting gray strokes.
+ function skinDetails(p,layers,size){
+  const scale=size/N,face=layers.face.getContext('2d').getImageData(0,0,size,size).data,eyes=layers.eyes.getContext('2d').getImageData(0,0,size,size).data,iris=layers.iris.getContext('2d').getImageData(0,0,size,size).data;
+  const ageStrength={young:0,mature:.35,seasoned:.7,elder:1,weathered:1.05}[p.config.age],A=p.anchors;
+  let aged=face;
+  for(const id of ['age','marks']){
+   const scar=id==='marks'&&/scar/.test(p.config.marks),spot=id==='marks'&&!scar,rule=SKIN_DETAIL[id==='age'?'age':scar?'scar':'spot'],raw=p.layers[id].getContext('2d').getImageData(0,0,N,N).data,field=new Float32Array(N*N),out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data;
+   for(let y=0;y<N;y++)for(let x=0;x<N;x++){const k=(y*N+x)*4;if(!raw[k+3])continue;const value=(spot?1:(172-raw[k])/58)*raw[k+3]/255;
+    for(let dy=-rule.radius;dy<=rule.radius;dy++)for(let dx=-rule.radius;dx<=rule.radius;dx++){const X=x+dx,Y=y+dy;if(X<0||X>=N||Y<0||Y>=N)continue;field[Y*N+X]+=value*Math.exp(-(dx*dx+dy*dy)/(2*rule.sigma*rule.sigma));}
+   }
+   const sample=(x,y)=>{x=Math.max(0,Math.min(N-1,x));y=Math.max(0,Math.min(N-1,y));const X=Math.floor(x),Y=Math.floor(y),u=x-X,v=y-Y;return field[Y*N+X]*(1-u)*(1-v)+field[Y*N+Math.min(N-1,X+1)]*u*(1-v)+field[Math.min(N-1,Y+1)*N+X]*(1-u)*v+field[Math.min(N-1,Y+1)*N+Math.min(N-1,X+1)]*u*v;};
+   for(let y=0;y<size;y++)for(let x=0;x<size;x++){const k=(y*size+x)*4;if(!face[k+3]||eyes[k+3]||iris[k+3])continue;const X=(x+.5)/scale-.5,Y=(y+.5)/scale-.5;let f=sample(X,Y),volume=0;
+    if(id==='age'){if(!ageStrength)continue;for(const eye of A.eyes)volume+=.32*Math.exp(-Math.pow((X-eye.x)/5.5,2)-Math.pow((Y-eye.y-5)/2.2,2));f=(f*.8+volume)*ageStrength;}
+    const beauty=spot&&p.config.marks==='beauty-mark',strength=beauty?1.7:spot&&p.config.marks==='weathering'?.65:1,shade=Math.max(-.4,Math.min(1.4,f))*rule.depth*strength,rim=scar||id==='age'?sample(X,Y-1.1)*.012:0;
+    let changed=false;for(let c=0;c<3;c++){const base=aged[k+c],warm=spot?[.75,1,1.12][c]:1,tint=scar?(c===0?1.5:c===1?-.5:-.3)*Math.max(0,f):0,delta=Math.round((-base*shade*warm+base*rim+tint)/2)*2;d[k+c]=clamp(base+delta);if(delta)changed=true;}if(changed)d[k+3]=face[k+3];
+   }
+   g.putImageData(im,0,0);layers[id]=out;
+   if(id==='age'){aged=new Uint8ClampedArray(face);for(let k=0;k<d.length;k+=4)if(d[k+3])for(let c=0;c<3;c++)aged[k+c]=d[k+c];}
+  }
+ }
  // Ease the cut top of the authored nose into the forehead without softening its nostrils.
  function noseRoot(layers,size){
   const g=layers.nose.getContext('2d'),im=g.getImageData(0,0,size,size),d=im.data,skin=layers.face.getContext('2d').getImageData(0,0,size,size).data;let top=size,bottom=0;
@@ -1875,7 +1896,7 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
   if(!loaded)throw Error('Painted portrait artwork is not ready');if(![128,256,512].includes(size))throw Error('Unsupported portrait size');
   colors=Object.fromEntries(Object.entries(E.colors).map(([key,value])=>[key,/^#[a-f0-9]{6}$/i.test(colors[key]||'')?colors[key]:value]));
   const layers={};for(const spec of E.order)layers[spec.id]=['eyes','iris','eyelids','mouth'].includes(spec.id)?canvas(size):paintMask(p,spec,colors,size);
-  noseRoot(layers,size);feature(p,colors,size,'eyes',layers);feature(p,colors,size,'mouth',layers);
+  noseRoot(layers,size);feature(p,colors,size,'eyes',layers);feature(p,colors,size,'mouth',layers);skinDetails(p,layers,size);
   if(['small-tusks','heavy-tusks'].includes(p.config.mouth))layers.teeth=tusks(p,size);
   return {config:p.config,anchors:p.anchors,colors,layers,size,coordinateScale:size/N,template:p,style:'painted-parts'};
  }
