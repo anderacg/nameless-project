@@ -82,8 +82,10 @@ class WorldMap{
       if(k!==T_WATER&&k!==T_MOUNT&&!(this.river[j]&3)&&(this.flow[j]&31)>=BK){o.brook={on:!dx&&!dy||(this.flow[i]&31)>=BK&&!(this.river[i]&3)};break}}
     if(this.kind[i]===T_ROAD){let n=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if((dx||dy)&&this.kindAt(tx+dx,ty+dy)===T_FOREST)n++;const tr=!!(this.feat[i]&128);if(tr||n>=N.wood)o.lane={track:tr,wood:n}}
     if(typeof lotOf==='function'&&this===WM){const seen=new Set(),L=[],r=N.lots;
-      for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const l=lotOf(tx+dx,ty+dy);if(!l||seen.has(l)||l.st==='ruined')continue;seen.add(l);const t=TOWNS.find(q=>q.lots&&q.lots.includes(l));
-        L.push({k:l.k,type:l.type,people:t?lotPeople(t,l):'human',culture:t?holdingCulture(t):null,seed:l.seed|0,dx:l.x-tx,dy:l.y-ty,n:l.n,plots:(l.plots||[]).map(([x,y])=>[x-tx,y-ty]).filter(([a,b])=>Math.abs(a)<=r+1&&Math.abs(b)<=r+1)})}
+      // (a pen as its layout kept it: its grown tiles (lots.js pensGrow, 2026-11-13) neither bring it into a fight nor stand in one, so
+      //  the ground beside a fight lies as it did)
+      for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const l=lotOf(tx+dx,ty+dy);if(!l||seen.has(l)||l.st==='ruined'||l.grow&&l.plots.slice(-l.grow).some(([x,y])=>x===tx+dx&&y===ty+dy))continue;seen.add(l);const t=TOWNS.find(q=>q.lots&&q.lots.includes(l));
+        L.push({k:l.k,type:l.type,people:t?lotPeople(t,l):'human',culture:t?holdingCulture(t):null,seed:l.seed|0,dx:l.x-tx,dy:l.y-ty,n:l.n,plots:keptPlots(l).map(([x,y])=>[x-tx,y-ty]).filter(([a,b])=>Math.abs(a)<=r+1&&Math.abs(b)<=r+1)})}
       if(L.length)o.lots=L}
     return o}
   // (the climates' covers as the art paints them (worldart.js coverOf: the desert's, the swamp's, the frost's snow), made once a map,
