@@ -72,7 +72,7 @@ const worldBattleReach=o=>{if(!WORLD_BATTLE.on||!o||o===P)return REACH;const b=m
 // and how far that reaches from its point toward you (WorldObject reachRadius: REACH for one with none; null, at touching distance
 // only: a holding at war with you, its siege's leash as it was). Your army halts at its edge; your hero never walks into it. Your
 // army marched man by man, when your outline does: your man nearest its point, his disc and WORLD_BATTLE.interaction past him
-function ringReach(o){const r=o.reachRadius?o.reachRadius():REACH;if(r==null)return REACH;const g=marchPlaceGap(o,r);return g!=null?Math.hypot(o.x-P.x,o.y-P.y)-g:marchInteractRadius(P)+r}
+function ringReach(o){const r=o.reachRadius?o.reachRadius():REACH;if(r==null||!Number.isFinite(r))return REACH;const g=marchPlaceGap(o,r);return g!=null?Math.hypot(o.x-P.x,o.y-P.y)-g:marchInteractRadius(P)+r}
 // (an army marched man by man now: its MarchArmy with men, not left behind by a leap, yours not in camp or a holding; null with
 // MARCH_RING.meet off: the circles. Its men stand where they did, carried by how far its middle went since it last stepped)
 function marchLive(o){const a=MARCH_RING.meet&&MARCH_ARMIES.get(o);return a&&a.units.length&&Math.hypot(o.x-a.x,o.y-a.y)<=MARCH_MOVE.teleport&&!(o===P&&(P.stay||P.camp))?a:null}

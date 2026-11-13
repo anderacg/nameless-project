@@ -174,7 +174,12 @@ class RestSite extends Site{
   draw(){}
   view(){const ms=this.members(),ps=[];for(const g of ms){const S=GraveArt.sprite(g.kind,g.seed||1);ps.push([S.ground,g.x-S.ax,g.y-S.ay],[S.cv,g.x-S.ax,g.y-S.ay])}
     return{key:'rest:'+this.i+':'+ms.length+':'+ms.filter(g=>g.spent).length,x:this.x,y:this.y+8,alt:this.name,ps}}
-  box(box){const ms=this.members();if(!ms.length)return;box(this,Math.min(...ms.map(g=>g.x))-12,Math.min(...ms.map(g=>g.y))-14,Math.max(...ms.map(g=>g.x))+12,Math.max(...ms.map(g=>g.y))+8)}
+  box(box){const b=this.bounds();if(b)box(this,b.x0,b.y0,b.x1,b.y1)}
+  // (its graves' ground, and the reach your army meets it at (march.js ringReach): from its graves, not a site's picture, which it has
+  // none of (its reach was not a number, so walking up to remains, a grave or a crypt opened nothing: the owner, "cant claim it by
+  // pressing at the remains"))
+  bounds(){const ms=this.members();return ms.length?{x0:Math.min(...ms.map(g=>g.x))-12,y0:Math.min(...ms.map(g=>g.y))-14,x1:Math.max(...ms.map(g=>g.x))+12,y1:Math.max(...ms.map(g=>g.y))+8}:null}
+  reachRadius(){const b=this.bounds();return b?boxReach(this,b):REACH}
   tip(){const n=this.members().length;return '<b>'+Discovery.nameOf(this)+'</b><small>'+this.T.n+(this.kind==='plot'?', '+n+' of your line':this.kind==='crypt'?', '+(Houses.byId(this.ref)?.dead.length||0)+' lords':'')+'</small><span class="act">Click: go there</span>'}
   about(){const ms=this.members(),g=ms[0];
     if(this.kind==='plot')return '<p>The plot of the family of '+htmlText(g?.family||Legacy.plot?.family||'your line')+', by '+htmlText(g?.at||'')+': '+ms.length+' of your line lie here, within its low wall.</p>';

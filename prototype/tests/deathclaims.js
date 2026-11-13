@@ -73,6 +73,11 @@ Kit.suite(({ok,info})=>{
    ok(Cl.guard(g)===m&&!g.pray()&&g.take()===''&&!g.robbable()&&!L.held.length&&g.gold===50-Math.ceil(50*C.wild.gold)&&g.unburied,'wolves lair by '+g.who+': no prayer, nothing taken, no robbers, the lord\'s men pass it by, no one buries it (it still wastes)');
    const site=W.sites.find(o=>o.type==='rest'&&o.members().includes(g));G.mode='world';G.modal=false;if(site){site.meet();ok(/guards them/.test(panel()),'its page: "'+(Cl.guardWhy(g))+'", its deeds shut')}
    Kit.world();m.n=0;const xp=Cl.xp(g);ok(!Cl.guard(g)&&g.pray()&&xp>0,'the wolves slain: you pray, +'+xp+' XP');l.x=-9999;l.y=-9999;W.monsters=[]}
+  // ---- tapped on the map: your band walks up to the body and its page opens (a resting place's reach from its graves: it was not a
+  // number, so nothing opened; the owner: "cant claim it by pressing at the remains")
+  {t.Remains.list=[];W.monsters=[];const g=grave({gold:30,x:P.x+90,y:P.y});const site=W.sites.find(o=>o.type==='rest'&&o.members().includes(g));Kit.world();G.encCool=0;for(let i=0;i<2;i++)t.frame();
+   const r=site&&t.worldBattleReach(site);t.worldGo(g.x,g.y-3);let n=0;for(;n<800&&G.mode==='world';n++)t.updateWorld(.05);
+   ok(Number.isFinite(r)&&G.mode==='site'&&/site-rest/.test(panel())&&/Take what lies with/.test(panel()),'tapped, walked to: its page opens, to pray and take (reach '+Math.round(r)+' px, '+n+' steps, '+G.mode+')');Kit.world()}
   // ---- saved: what lords and companions keep
   {L.held=[{id:7,who:'Ada',n:1,day:1,gold:5,items:[],by:'comp',cid:'brann',at:'X'}];L.heldN=7;L.fallen=Math.max(1,L.fallen);const sv=JSON.parse(JSON.stringify(L.save()));L.clear();L.load(sv);ok(L.held.length===1&&L.heldN===7,'saved and loaded: what they keep for you');L.held=[]}
   // ---- off: the same for anyone, as before
