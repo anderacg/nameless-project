@@ -39,7 +39,7 @@ class Fighter{
     if(B.sight)sightStruck(source,t);// (whoever strikes or shoots at a side is seen by it: terrain.js)
     if(this.dodging()>0){B.floats.push({x:t.x,y:t.y-16,t:'Dodge',life:.4,c:'#cfe0ff'});return}// (rolling, leaping, dashing: unhurt)
     amt=Dismount.share(t,this.taken(amt),source,missile,dt);// (a rider's horse takes its share: battle/dismount.js)
-    amt=Math.max(1,Math.round(amt));const wasHp=t.hp,effective=Math.min(Math.max(0,wasHp),amt);if(B.opts.sandbox&&BattleLab.active)BattleLab.damage(t,effective,source);t.hp-=amt;B.lastHit=B.t;t.flash=.1;t.hitAt=B.t;Duel.struck(t,amt);moraleHurt(t,effective,source,missile);
+    amt=Math.max(1,Math.round(amt));const wasHp=t.hp,effective=Math.min(Math.max(0,wasHp),amt);if(B.opts.sandbox&&BattleLab.active)BattleLab.damage(t,effective,source);t.hp-=amt;B.lastHit=B.t;if(B.inside||B.holds)Interior.din(t);t.flash=.1;t.hitAt=B.t;Duel.struck(t,amt);moraleHurt(t,effective,source,missile);
     B.floats.push({x:t.x,y:t.y-14,t:String(amt),life:.7,c:m>=1.25?'#ffb04a':m&&m<=.8?'#9aa3ad':isMagical(dt)?'#c8a0ff':t.team?'#ffe08a':'#ff9a90'});// (telling: orange, dulled: grey, magic: violet)
     if(BLOOD.on&&!undead(t))for(let i=0;i<2;i++)vfx({k:'blood',x:t.x,y:t.y,z:7,vx:(Math.random()-.5)*60,vy:(Math.random()-.5)*30,vz:20+Math.random()*50,life:1.2});// (gfx/vfx.js; none with Blood off)
     B.sides?.damage(t,effective,source);

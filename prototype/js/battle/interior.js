@@ -19,7 +19,9 @@
    way in's width (more than EXITS.min, morale.js: the one way off the field); loop: the chance of a passage joining two chambers past the next; jag: how ragged the walls (0 straight);
    box: square-cut chambers and passages; edge: rock kept between a chamber and the field's rows (px); bones, props: how many
    painted in a chamber [least, most]; look: the floor's [dark, mid, light] and the rock's five shades (RGB, dark first) */
-const INTERIOR={on:true,men:8,sight:.5,dark:.9,notice:180,alarm:150,holdCamp:true,files:2,zoom:2.4,squad:3,face:10,margin:[96,64],
+// (hear: the din of a fight wakes those who hear it, a blow landing within r[its kind] px of one of their men, these keep s back; a
+//  cave's beasts and a siege's defenders hear none: the owner, 2026-11-13, "Make the hideout bandits come out when they hear fighting")
+const INTERIOR={on:true,men:8,sight:.5,dark:.9,notice:180,alarm:150,hear:{keep:2,r:{hideout:1200,den:1200,camp:900}},holdCamp:true,files:2,zoom:2.4,squad:3,face:10,margin:[96,64],
   cave:{rooms:[4,6],r:[76,108],mouthR:80,deep:128,pass:[40,52],mouth:68,loop:.5,jag:.22,edge:26,bones:[2,5],props:[2,4],
     look:{floor:[[44,40,36],[60,55,48],[78,72,62]],rock:[[18,17,16],[30,28,26],[48,45,41],[74,69,62],[102,95,84]]}},
   cellar:{rooms:[4,5],r:[68,92],mouthR:72,deep:104,pass:[32,40],mouth:64,loop:.35,jag:0,box:true,edge:26,bones:[0,2],props:[2,4],
@@ -153,6 +155,9 @@ class InteriorArt{
    then your best foot, then the rest, INTERIOR.men in all), what that band is worth, the page that chooses (Inside: the cave's
    Enter; Back to its page, Enter to fight) ---------- */
 class Interior{
+  // (a blow landed on t: the din of it, where and when, the last INTERIOR.hear.keep s of it kept; and the kind of place it is heard in)
+  static din(t){const D=B.din||(B.din=[]);D.push({x:t.x,y:t.y,t:B.t});while(D.length>24||D.length&&B.t-D[0].t>INTERIOR.hear.keep)D.shift()}
+  static heardIn(){return B.inside||(B.holds&&G.enc&&G.enc.kind==='camp'?'camp':null)}
   static on(e){return INTERIOR.on&&!!e&&(e.kind==='cave'||e.kind==='camp'&&e.ref instanceof Hideout&&(e.ref.tunnel||!!e.ref.within))}// (a hideout's camp of tents is fought on the map; a bandit lair, or a den in ruins, inside)
   static styleOf(e){const r=e&&e.ref,cel=r instanceof Ruins||r&&r.within;return r instanceof Hideout?cel?'den':'hideout':cel?'cellar':'cave'}
   // (its size: by what lairs in it (INTERIOR.sizes), now and then one larger by its place; the same every visit; a camp's, a cave)
@@ -232,7 +237,9 @@ const insideHolds=team=>!!B&&(!!B.inside||!!B.holds)&&team!==0;// (B.holds: a si
 // (the owner, 2026-11-08: "the player party may be the one who will search while those goblins, bandits or monsters may stay at
 // their place if not alerted or detected": alarm, a group of theirs roused within INTERIOR.alarm px of one of its men rouses it too,
 // as a shout would; holdCamp: a camp's fight on the open field (a hideout's tents, a goblin camp) held the same way, setup.js)
-function insideRoused(g){if(g.roused)return true;const m=grpUnits(g.id),N=INTERIOR.notice,A=INTERIOR.alarm;
+// (hear: the din of a fight within earshot, INTERIOR.hear; they come to it: Commander#search)
+function insideRoused(g){if(g.roused)return true;const m=grpUnits(g.id),N=INTERIOR.notice,A=INTERIOR.alarm,H=INTERIOR.hear,r=H.r[Interior.heardIn()]||0;
+  if(r>0&&B.din&&B.din.some(d=>B.t-d.t<=H.keep&&m.some(u=>u.hp>0&&Math.hypot(d.x-u.x,d.y-u.y)<r)))return g.roused=true;
   if(A>0&&Object.values(B.groups).some(o=>o!==g&&o.team===g.team&&o.roused&&grpUnits(o.id).some(v=>v.hp>0&&m.some(u=>Math.hypot(v.x-u.x,v.y-u.y)<A))))return g.roused=true;
   if(m.some(u=>u.hp<u.max)||B.units.some(e=>e.team!==g.team&&e.hp>0&&!e.left&&seenBy(g.team,e)&&m.some(u=>Math.abs(e.x-u.x)<N&&Math.abs(e.y-u.y)<N&&Math.hypot(e.x-u.x,e.y-u.y)<N)))g.roused=true;
   return !!g.roused}

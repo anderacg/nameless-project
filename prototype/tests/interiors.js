@@ -60,6 +60,12 @@ Kit.suite(({ok,info})=>{
    ok(Object.values(b.groups).filter(g=>g.team===1&&g.role!=='hero').every(g=>t.grpUnits(g.id).length<=X.squad),'its men in squads of '+X.squad+' or fewer');
    const chief=b.units.find(u=>u.leader),deep=L.rooms[L.deep];ok(chief&&Math.hypot(chief.x-deep.x,chief.y-deep.y)<deep.rx*1.2,'their chieftain in the deepest chamber');
    t.sightStep(true);const f=L.fires[0],fg=b.sight.fog,i=Math.floor(f.y/fg.cs)*fg.C+Math.floor(f.x/fg.cs);ok(fg.vis[0][i]===1,'a fire’s light: you see whoever stands by it');
+   // (they hear a fight: a blow landing within earshot wakes a squad that has seen no one, and roused, with no one seen, it makes
+   // for the din (the owner, 2026-11-13: "Make the hideout bandits come out when they hear fighting"); a cave's beasts hear none)
+   {const H=t.INTERIOR.hear,g=Object.values(b.groups).find(q=>q.team===1&&!q.roused&&!t.insideRoused(q)),m=g&&t.grpUnits(g.id)[0];
+    const dx=m&&m.x-H.r.hideout*.8;b.din=[{x:dx,y:m&&m.y,t:b.t}];ok(g&&t.insideRoused(g),'a squad of theirs hears a fight '+Math.round(H.r.hideout*.8)+' px off and comes out');
+    const g2=Object.values(b.groups).find(q=>q.team===1&&!q.roused&&q!==g),m2=g2&&t.grpUnits(g2.id)[0];if(g2){const was=b.inside;b.inside='cave';b.din=[{x:m2.x-40,y:m2.y,t:b.t}];try{ok(!t.insideRoused(g2),'a cave’s beasts hear none: they wait to be found')}finally{b.inside=was}}
+    b.din=[]}
    t.B=null;t.fieldDone();Kit.world()}
   // ---- off: the field as before
   {X.on=false;Kit.world();Kit.goTo(cave.x,cave.y+30);t.caveFight(cave,2);t.act('fight');const b=B();ok(b&&!b.inside,'off: the cave fought on the field as before');t.B=null;t.fieldDone();Kit.world()}

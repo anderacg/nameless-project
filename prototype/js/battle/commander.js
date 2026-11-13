@@ -520,10 +520,11 @@ class Commander{
     const X=UNIT_SKILLS.scout;if(!(S.foes.length===0||B.t<X.aiEarly)||!B.units.some(u=>battleEnemy(team,u)&&fighting(u)&&!seenBy(team,u)))return;
     for(const id of Object.values(N).flat()){const g=B.groups[id];if(g&&!abilityWhyNot(g,'scout'))g.useAbility('scout')}}
   // (where it goes looking: where the foe was last seen, else the far side of the field (a world battle: its ring's middle); inside
-  // a cave, a lair, a camp or a fort it goes in at once, its chambers swept (sweepTo))
+  // a cave, a lair, a camp or a fort it goes in at once, its chambers swept (sweepTo); its holders, roused, to the din of the fight
+  // (interior.js Interior.din))
   search(N){const team=this.team;
     const hid=B.units.filter(u=>battleEnemy(team,u)&&fighting(u));if(!hid.length)return;let x=0,y=0,c=0;for(const u of hid){const p=lastSeen(team,u);if(p){x+=p.x;y+=p.y;c++}}
-    const Z=BFIELD&&fieldZone(1-team),far=this.sweeps()?this.sweepTo(N):B.world?{x:B.world.cx,y:B.world.cy}:{x:Z?(Z.x0+Z.x1)/2:team?BW*.15:BW*.85,y:(fieldTop()+fieldBot())/2},ids=Object.values(N).flat().filter(id=>B.groups[id]&&B.groups[id].order!=='withdraw'&&grpUnits(id).length);
+    const Z=BFIELD&&fieldZone(1-team),din=insideHolds(team)&&B.din&&B.din[B.din.length-1],far=this.sweeps()?this.sweepTo(N):din?{x:din.x,y:din.y}:B.world?{x:B.world.cx,y:B.world.cy}:{x:Z?(Z.x0+Z.x1)/2:team?BW*.15:BW*.85,y:(fieldTop()+fieldBot())/2},ids=Object.values(N).flat().filter(id=>B.groups[id]&&B.groups[id].order!=='withdraw'&&grpUnits(id).length);
     if(B.fog&&!c){const C=ids.map(id=>B.groups[id].centre()),dir=team?-1:1,mx=C.reduce((a,p)=>a+p.x,0)/Math.max(1,C.length),mid=nearestTo(C,{x:mx,y:C.reduce((a,p)=>a+p.y,0)/Math.max(1,C.length)});
       ids.forEach((id,i)=>{const g=B.groups[id],back=g.role==='arc'||g.role==='mag'?FOE_CMD.behind:0,q=this.pathStep(mid,far,FOG.probe-back);// (ground that blocks: on along the way toward their side from the army's middle, all of it together, pathStep)
         if(q)g.standAt(q.x,q.y);else g.standAt(clamp(mx+dir*(FOG.probe-back),BW*.1,BW*.9),C[i].y)});return}
