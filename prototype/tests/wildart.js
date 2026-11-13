@@ -8,6 +8,12 @@ Kit.suite(({ok,info})=>{const t=T,PX=t.PX;Kit.begin('soldier');
  {const bad=[];for(const k of PX.WILD_KINDS){const f=PX._beastFit(k);if(!f.ok)bad.push(k+' fit');if(PX.BEAST_DEATHS[k].length<3)bad.push(k+' deaths');
    const key=p=>PX.beast(k,{v:0,pose:p,team:1}).toDataURL(),d=[0,1,2].map(i=>key(PX.BEAST_DEAD+i));if(new Set(d).size<3)bad.push(k+' deaths alike');if(key(0)===key(3)||key(3)===key(16))bad.push(k+' poses alike')}
   ok(!bad.length,'each fits its canvas in every pose, walks, runs and dies three ways'+(bad.length?': '+bad.join(', '):''))}
+ // ---- a camel shaded brown, never red (the owner, 2026-11-13: "fix the sprites in pasture": the made ramp's shade turned its sandy
+ // coat red), and its pens 4, 6, 8 tiles a level
+ {let red=0,all=0;for(const v of [0,1,2]){const c=PX.beast('w_camel',{v,pose:0,team:1}),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+   for(let i=0;i<d.length;i+=4)if(d[i+3]){all++;if(d[i]>d[i+1]*1.5&&d[i]>90)red++}}
+  ok(all>0&&red===0,'a camel\'s coats shaded brown: '+red+' red pixels of '+all);
+  ok([1,2,3].map(lv=>t.PLOTS_AT.pasture(lv)).join()==='4,6,8'&&t.PLOTS.pasture===8,'a pasture\'s pen 4, 6, 8 tiles a level (was 2, 3, 4)')}
  // ---- its size beside a man's: a deer's head about a man's, a cow long and low, a rabbit small
  {const top=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(d[(y*c.width+x)*4+3])return c.height-y;return 0};
   const man=top(t.unitSprite('hum_spear',1,false,0,0)),h=k=>top(PX.beast(k,{v:0,pose:0,team:1}));

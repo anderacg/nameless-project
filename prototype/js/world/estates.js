@@ -113,9 +113,10 @@ const GROUND={
   rock:(x,y)=>passable(tAt(x,y))&&(tAt(x,y)===T_HILL||[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>tAt(x+a,y+b)===T_MOUNT)),
   shore:(x,y)=>passable(tAt(x,y))&&tAt(x,y)!==T_ROAD&&[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>tAt(x+a,y+b)===T_WATER)
 };
-// the field tiles an estate keeps (farms, pastures, quarries), and those in use at a level (Estate plots, plotsAt)
-const PLOTS={farm:6,pasture:4,quarry:3};
-const PLOTS_AT={farm:lv=>2*lv,pasture:lv=>lv+1,quarry:lv=>lv};
+// the field tiles an estate keeps (farms, pastures, quarries), and those in use at a level (Estate plots, plotsAt); a pasture's
+// pen 4, 6, 8 tiles (the owner, 2026-11-13: "make the area bigger"; was 2, 3, 4: a camel or a cow to a tile, its herd showed half)
+const PLOTS={farm:6,pasture:8,quarry:3};
+const PLOTS_AT={farm:lv=>2*lv,pasture:lv=>2*lv+2,quarry:lv=>lv};
 // on an estate's worked fields (Estate fields: a little inside each tile's edge), and a spot somewhere on them
 const onFields=(F,x,y)=>F.tiles.some(([tx,ty])=>x>=tx*TILE+2&&x<tx*TILE+TILE-2&&y>=ty*TILE+4&&y<ty*TILE+TILE-1);
 const fieldSpot=F=>{const [tx,ty]=F.tiles[rint(0,F.tiles.length-1)];return{x:tx*TILE+rint(3,TILE-4),y:ty*TILE+rint(6,TILE-2)}};

@@ -193,7 +193,7 @@ function pierOf(t){
 // Both fade out toward an edge with no plot beyond (soft: px)
 const FURROW={frost:[[228,234,242],.85],swamp:[[70,92,96],.3]},EDGE_SOFT=4;
 const PEN={grass:{a:[[132,152,72],[150,164,84]],b:[[118,100,62],[100,86,54]]},frost:{a:[[112,124,92],[94,108,78]],b:[[190,198,212],[166,176,194]]},
-  desert:{a:[[170,160,84],[142,134,66]],b:[[188,154,96],[168,136,84]]},swamp:{a:[[86,112,56],[70,94,46]],b:[[70,60,40],[84,106,108]]}};
+  desert:{a:[[170,160,84],[142,134,66]],b:[[156,124,80],[138,108,68]]},swamp:{a:[[86,112,56],[70,94,46]],b:[[70,60,40],[84,106,108]]}};
 // the flat part of an estate at its level, as one picture placed at (cv.x, cv.y) on the map; kept on its lot (l._eg) until its level
 // changes: an estate pulled down and placed again elsewhere, or another world's holding of the same name, draws its own
 function estateGround(t,k,lv){

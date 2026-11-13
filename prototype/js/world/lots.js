@@ -1,8 +1,8 @@
 'use strict';
 /* ---------- placed structures: every holding is a set of buildings, each standing on its own tiles of the grid ---------- */
-// t.lots: [{id, k, type, x, y, n, lv, seed, st, plots}]
+// t.lots: [{id, k, type, x, y, n, lv, seed, st, plots, off}]
 //   k: what it is for: 'centre' (keep, citadel or hall: its walls are its fortification, wallOf), 'house', an estate key (farm...)
-//   (x, y): its top-left tile; it covers n x n tiles (1, 2 or 4); st: 'built' | 'building' | 'ruined'; plots: the field tiles it keeps (farms...)
+//   (x, y): its top-left tile; it covers n x n tiles (1, 2 or 4); st: 'built' | 'building' | 'ruined'; plots: the field tiles it keeps (farms...); off: those a road's painted line crossed, kept but unworked (fieldsOffRoads)
 // OCC holds for every tile the id of the lot standing on it, or keeping it as a field; 0 when free. Two lots never share a tile.
 // A holding is laid out from its centre: houses round it (enough for its people), the buildings of its estates, then its
 // fields, herds, mines and docks outside (clear of the town). Its walls are the centre's own: Fortify upgrades it. Every layout is the
@@ -13,7 +13,7 @@ let OCC=null,lotN=1;const LOT={},EST_TRACKS=new WeakMap();// (EST_TRACKS: each m
 onWorld(m=>{tracksUp(m);const F=m.first;OCC=F?F.occ.slice():new Int32Array(MW*MH);for(const k in LOT)delete LOT[k];lotN=F?F.lotN:1;if(F)for(const t of TOWNS)for(const l of t.lots||[])LOT[l.id]=l});
 const occAt=(x,y)=>x<0||y<0||x>=MW||y>=MH?-1:OCC[y*MW+x];
 const lotTiles=(l,f)=>{for(let j=0;j<l.n;j++)for(let i=0;i<l.n;i++)f(l.x+i,l.y+j)};
-function occMark(l,v){lotTiles(l,(x,y)=>{OCC[y*MW+x]=v});(l.plots||[]).forEach(([x,y])=>{OCC[y*MW+x]=v})}
+function occMark(l,v){lotTiles(l,(x,y)=>{OCC[y*MW+x]=v});for(const [x,y] of [...l.plots||[],...l.off||[]])OCC[y*MW+x]=v}
 const lotAdd=(t,l)=>Layout.of(t).add(l);// (the old names: Layout add, drop, below)
 const lotDrop=(t,l)=>Layout.of(t).drop(l);
 // rebuild the grid from every holding's lots (after a load)
@@ -441,7 +441,14 @@ function tracksUp(m){const L=EST_TRACKS.get(m);if(!L)return;
 // (every track laid: each mine and quarry with rock to one side turns its back to it again, as the land lies under all of them now:
 // a track laid later, or a later holding's works, may have left one facing its first track)
 function rockFaces(){for(const t of TOWNS)for(const l of t.lots||[]){const y=rockYaw(l);if(y!=null&&y!==l.yaw){l.yaw=y;relot(l)}}}
-function tracksDone(){rockFaces();wayRechart();computeLand()}
+function tracksDone(){rockFaces();fieldsOffRoads();wayRechart();computeLand()}
+// (no field where a road is painted, the art's line 2 px or more inside it: a track laid after the fields, its line as the art
+// rounds it to the way it joins, can cross a corner of them; that field left unworked, still its estate's (off: the same tracks
+// laid again from a save))
+function fieldsOffRoads(){if(typeof artGenPlan!=='function')return;const P={tramples:[]},hit=new Uint8Array(MW*MH);artGenPlan(P,()=>{});const S=P.segs;
+  for(let k=0;k<S.length;k+=5){const a=S[k],b=S[k+1],c=S[k+2],d=S[k+3],n=Math.max(1,Math.ceil(Math.hypot(c-a,d-b)));
+    for(let s=0;s<=n;s++){const x=a+(c-a)*s/n,y=b+(d-b)*s/n,fx=x%TILE,fy=y%TILE;if(Math.min(fx,fy,TILE-fx,TILE-fy)>=2)hit[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]=1}}
+  for(const t of TOWNS)for(const l of t.lots||[])if(l.plots){const on=([x,y])=>hit[y*MW+x]||tiles[y*MW+x]===T_ROAD,o=l.plots.filter(on);if(o.length){l.plots=l.plots.filter(q=>!on(q));l.off=[...l.off||[],...o]}}}
 // (the tiles under a line through points pts (tiles), 8-connected and thin: as worldplace.js genRoads lays its roads)
 function lineTiles(pts){const T=[];
   for(let k=1;k<pts.length;k++){const [ax,ay]=pts[k-1],[bx,by]=pts[k],st=Math.max(1,Math.ceil(Math.hypot(bx-ax,by-ay)*4));
@@ -471,7 +478,7 @@ function estTrack(t,l){
   // brings its workers home soonest, not merely the nearest (one not joined to the gate there: LOT_TRACK.cut more))
   const G=new Float64Array(N*N).fill(Infinity),g0=(t.ty+1)*MW+t.tx;if(L(g0)>=0&&way(g0)){G[L(g0)]=0;H.push(0,g0)}
   while(H.n){const d=H.top,i=H.pop();if(d>G[L(i)])continue;for(const [dx,dy] of DIR8){const j=i+dx+dy*MW,r=L(j);if(r<0||!way(j))continue;const c=d+C.road*(dx&&dy?1.4142:1);if(c<G[r]){G[r]=c;H.push(c,j)}}}
-  const own=[];lotTiles(l,(x,y)=>own.push(y*MW+x));for(const [x,y] of l.plots||[])own.push(y*MW+x);const mine=new Set(own);
+  const own=[];lotTiles(l,(x,y)=>own.push(y*MW+x));for(const [x,y] of [...l.plots||[],...l.off||[]])own.push(y*MW+x);const mine=new Set(own);
   for(const o of own)for(const s of [MW,-1,1,-MW]){const i=o+s,q=L(i),[x,y]=xy(i);if(q<0||!free(i))continue;const c=C.side*(Math.abs(x-fx)+Math.abs(y-fy));if(c<D[q]){D[q]=c;H.push(c,i)}}
   let to=-1,best=Infinity;
   // (never from a way beside or behind the centre, in the yard the art leads a road's end round to the gate (worldart.js gateLead,
