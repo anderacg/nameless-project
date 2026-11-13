@@ -264,16 +264,23 @@ function bandFor(t,n,name,qid,more){
   return bandOut(t,n,name,qid,null,more);
 }
 // (a pack of mon (none: any) by t's fields, unmarked, marked qid; else one of mon (none: of its land) moved into a spot of its
-// habitat there (by its fields, else within PACK_FAR tiles); null when no such beast lives there)
-const PACK_FAR=26;// (no habitat by its fields: as far as this many tiles, where such beasts live)
+// habitat (beastSpot); null when no such beast lives there)
+// (where a beast a job names makes its lair: in its habitat (fit), far from every holding as the wild's are (WORLD_SCALE.spawn
+// monsterHold: 16 tiles; the owner, 2026-11-13: "Make sure the monster hunt quest spawn the monster far away from village"; it was 7
+// to 14 tiles out, by the fields), within QUEST_BEAST.far[0] tiles of t, else far[1])
+const QUEST_BEAST={far:[26,38]};
+function beastSpot(t,fit){const H=WORLD_SCALE.spawn.monsterHold,lo=Math.ceil(H/TILE),ok=(x,y)=>TOWNS.every(o=>o.gone||Math.hypot(o.x-x,o.y-y)>=H)&&(!fit||fit(x,y));
+  return spotNear(t,lo,QUEST_BEAST.far[0],ok)||spotNear(t,lo,QUEST_BEAST.far[1],ok)}
+// (of the beasts ids, the first, in a draw's order, with such a spot: [its id, the spot], else null; its habitat where it lives)
+function beastLair(t,ids){const R=questRng(),left=ids.slice();while(left.length){const id=left.splice(R.int(0,left.length-1),1)[0],M=MONSTERS[id];
+  const p=M&&beastSpot(t,(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)));if(p)return [id,p]}return null}
 function packFor(t,mon,n,lv,qid){
   const m=Troubles.packs(t).find(o=>!o.qid&&(!mon||o.id===mon));
   if(m){m.qid=qid;return m}
   if(Quiet.is(t,'beast'))return null;
   const ids=mon?[mon]:Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic&&(MONSTERS[id].where.includes(t.clim)||MONSTERS[id].where.includes('forest')&&t.clim==='grass'));
   if(!ids.length||!MONSTERS[ids[0]])return null;
-  const id=mon||questRng().pick(ids),M=MONSTERS[id],fit=(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)),p=spotNear(t,7,TROUBLE.folds,fit)||spotNear(t,7,PACK_FAR,fit);
-  if(!p)return null;
+  const L=beastLair(t,ids);if(!L)return null;const [id,p]=L,M=MONSTERS[id];
   const o=asMonster({id,x:p.x,y:p.y,hx:p.x,hy:p.y,lv,n:n||Math.max(...M.count),t:0,a:0,cool:0,qid});
   W.monsters.push(o);
   return o;
@@ -398,9 +405,8 @@ class BeastQuest extends JobQuest{
       if(Quiet.is(t,'beast'))return false;
       const c=t.clim,ids=Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic&&(MONSTERS[id].where.includes(c)||MONSTERS[id].where.includes('forest')&&c==='grass'));
       if(!ids.length)return false;
-      this.mon=questRng().pick(ids);
-      const M=MONSTERS[this.mon],p=spotNear(t,7,TROUBLE.folds,(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)));
-      if(!p)return false;
+      const L=beastLair(t,ids);if(!L)return false;const p=L[1];this.mon=L[0];
+      const M=MONSTERS[this.mon];
       this.n=Math.max(M.count[0],M.count[1]);
       this.lv=monLevel(questRng())+1;
       this.mx=Math.round(p.x);
