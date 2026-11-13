@@ -21,10 +21,9 @@
     for(let x=0;x<w;x++){const k=y*w+x;if(x<left||x>right){alpha[k]=0;continue;}const edge=Math.min(x-left,right-x);if(edge>=band)continue;const from=x-left<right-x?Math.min(right,left+band):Math.max(left,right-band),weight=(1-edge/band)*Math.sin(Math.PI*t);for(let c=0;c<3;c++)d[k*4+c]=clamp(d[k*4+c]*(1-weight)+d[(y*w+from)*4+c]*weight);}
    }
   }
-  // The male master has neck underpainting outside its visible jaw; retain the jaw line, not that backing.
-  if(sheet===0&&index===0){const line=[[.65,.142],[.7,.16],[.75,.26],[.8,.39],[.82,.455]],neck=.28;
-   for(let y=Math.floor(h*.65);y<h*.95;y++){const v=y/h;let edge=neck;if(v<.82){const i=line.findIndex((a,n)=>n&&v<=a[0]),a=line[Math.max(0,i-1)],b=line[Math.max(1,i)],t=Math.max(0,Math.min(1,(v-a[0])/(b[0]-a[0])));edge=Math.min(neck,a[1]+(b[1]-a[1])*t);}else if(v>.85)edge=neck*(1-(v-.85)/.1);for(let x=0;x<w;x++)if((x+.5)/w<edge||(x+.5)/w>1-edge)alpha[y*w+x]=0;}
-  }
+  // Trace the painted jaw first; neck backing may widen only below the chin.
+  const jaw=sheet===0?{0:[[.65,.142],[.7,.16],[.75,.26],[.8,.39],[.82,.455],[.84,.36],[.88,.28],[.95,0]],4:[[.6,.16],[.65,.2],[.7,.26],[.75,.34],[.79,.43],[.8,.47],[.82,.4],[.86,.28],[.95,0]]}[index]:null;
+  if(jaw)for(let y=Math.floor(h*jaw[0][0]);y<h*jaw.at(-1)[0];y++){const v=y/h,i=jaw.findIndex((a,n)=>n&&v<=a[0]),a=jaw[Math.max(0,i-1)],b=jaw[Math.max(1,i)],t=Math.max(0,Math.min(1,(v-a[0])/(b[0]-a[0]))),edge=Math.min(a[1]+(b[1]-a[1])*t,index===0?.32:.34);for(let x=0;x<w;x++)if((x+.5)/w<edge||(x+.5)/w>1-edge)alpha[y*w+x]=0;}
   const top=new Uint16Array(w).fill(h);for(let Y=0;Y<h;Y++)for(let X=0;X<w;X++)if(alpha[Y*w+X])top[X]=Math.min(top[X],Y);
   const out={w,h,d,alpha,top};fields.set(key,out);return out;
  }
