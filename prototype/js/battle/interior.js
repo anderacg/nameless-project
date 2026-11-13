@@ -28,13 +28,26 @@ const INTERIOR={on:true,men:8,sight:.5,dark:.9,notice:180,alarm:150,holdCamp:tru
 // light (px), the palisade's gap and thickness (px))
 INTERIOR.hideout={...INTERIOR.cave,rooms:[5,6],r:[80,108],deep:134,pass:[42,54],bones:[0,1],camp:true,tents:[1,3],light:110,gap:40,thick:10};
 INTERIOR.den={...INTERIOR.cellar,rooms:[5,5],deep:110,bones:[0,1],camp:true,tents:[1,2],light:100,gap:40,thick:10};
+/* (a cave's size (the owner, 2026-11-13: "Does a cave have variations? Like small cave with 1 room"; "Ok"), by what lairs in it
+   (Interior.sizeOf): a hollow, one chamber, for one or two of a lone beast's kind (a tiger, a bear, a griffin); a small cave, two or
+   three, for a few (boars); a cave, as the style makes it, for a pack (wolves, spiders, scorpions, slimes); a great cave, seven to
+   nine and side chambers off them (side), for a great beast or one of legend (a troll, a wyrm, a dragon). grow: the chance, by the
+   cave's place, it is one size larger. Each: its name, its field (setup.js FIELD_SIZES), the most of your band going in (men), what
+   it changes of its style (rooms; mouthR, the one chamber's radius; side [least, most]). A hideout, a den: a cave, always (its camp
+   needs its chambers) */
+INTERIOR.sizes={order:['hollow','small','cave','great'],grow:.25,
+  hollow:{n:'A hollow',field:'cave_h',men:4,rooms:[1,1],mouthR:118},
+  small:{n:'A small cave',field:'cave_s',men:6,rooms:[2,3]},
+  cave:{n:'A cave',field:'cave',men:8},
+  great:{n:'A great cave',field:'cave_l',men:12,rooms:[7,9],side:[1,2]}};
 // (its field: FIELD_SIZES.cave, setup.js)
 /* ---------- the layout: chambers {x, y, rx, ry} (the first the mouth's, the last the deepest), passages (segments, each
    {ax, ay, bx, by, h}: its half width), and d(x, y): under 1 open ground, 1 or more rock ---------- */
 class InteriorLayout{
-  constructor(style,seed,W,top,bot){Object.assign(this,{style,seed,W,top,bot});this.X=INTERIOR[style];this.make()}
+  constructor(style,seed,W,top,bot,size='cave'){const Z=INTERIOR.sizes[size]||{};Object.assign(this,{style,seed,W,top,bot,size});
+    this.X={...INTERIOR[style],...(Z.rooms?{rooms:Z.rooms}:{}),...(Z.mouthR?{mouthR:Z.mouthR}:{}),...(Z.side?{side:Z.side}:{})};this.make()}
   // (a layout whose every chamber is reached from the mouth on the field's cells, by the seed or the next few)
-  static make(style,seed,W,top,bot,cs=TERRAIN.cs){let L=null;for(let k=0;k<6;k++){L=new InteriorLayout(style,(seed+k*7919)>>>0,W,top,bot);if(L.joined(cs))break}return L}
+  static make(style,seed,W,top,bot,cs=TERRAIN.cs,size='cave'){let L=null;for(let k=0;k<6;k++){L=new InteriorLayout(style,(seed+k*7919)>>>0,W,top,bot,size);if(L.joined(cs))break}return L}
   make(){const X=this.X,R=seeded(this.seed||1),rf=(a,b)=>a+R()*(b-a),ri=(a,b)=>a+Math.floor(R()*(b-a+1)),{W,top,bot}=this,mid=(top+bot)/2,H=bot-top;
     const n=ri(X.rooms[0],X.rooms[1]),rooms=[],fit=(r,y)=>clamp(y,top+r+X.edge,bot-r-X.edge);
     {const r=X.mouthR;rooms.push({x:X.mouth+r+40,y:fit(r*.85,mid+rf(-.12,.12)*H),rx:r,ry:r*.85})}
@@ -47,6 +60,9 @@ class InteriorLayout{
       else{const dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1,k=rf(-.3,.3)*l,mx=(a.x+b.x)/2-dy/l*k,my=fit(h,(a.y+b.y)/2+dx/l*k);segs.push({ax:a.x,ay:a.y,bx:mx,by:my,h},{ax:mx,ay:my,bx:b.x,by:b.y,h})}};
     for(let i=1;i<n;i++)link(rooms[i-1],rooms[i],rf(X.pass[0],X.pass[1]));
     if(n>=4&&R()<X.loop){const a=ri(0,n-3);link(rooms[a],rooms[a+2],rf(X.pass[0],X.pass[0]+8))}
+    // (a great cave's side chambers: off one of its middle ones, up or down from it, the way it does not lean)
+    if(X.side&&n>=4)for(let k=ri(X.side[0],X.side[1]);k>0;k--){const j=ri(1,n-2),a=rooms[j],r=rf(X.r[0],X.r[1])*.85,ry=Math.min(r*rf(.72,.9),H/2-X.edge-4),up=a.y>mid;
+      const m={x:clamp(a.x+rf(-50,50),rooms[0].x+X.mouthR,W-r-X.edge),y:fit(ry,mid+(up?-1:1)*rf(.3,.4)*H),rx:r,ry};rooms.push(m);link(a,m,rf(X.pass[0],X.pass[1]))}
     this.segs=segs;this.ns=Math.floor(R()*997);
     // (a camp's palisade across the way from the first chamber to the next: the middle of that passage's first stretch; its fires, one a chamber past the first)
     if(X.camp){const s=segs[1],dx=s.bx-s.ax,dy=s.by-s.ay,l=Math.hypot(dx,dy)||1;this.pal={x:s.ax+dx*.55,y:s.ay+dy*.55,ux:dx/l,uy:dy/l,h:s.h};
@@ -139,6 +155,11 @@ class InteriorArt{
 class Interior{
   static on(e){return INTERIOR.on&&!!e&&(e.kind==='cave'||e.kind==='camp'&&e.ref instanceof Hideout&&(e.ref.tunnel||!!e.ref.within))}// (a hideout's camp of tents is fought on the map; a bandit lair, or a den in ruins, inside)
   static styleOf(e){const r=e&&e.ref,cel=r instanceof Ruins||r&&r.within;return r instanceof Hideout?cel?'den':'hideout':cel?'cellar':'cave'}
+  // (its size: by what lairs in it (INTERIOR.sizes), now and then one larger by its place; the same every visit; a camp's, a cave)
+  static sizeOf(o){const s=o&&o.ref!==undefined&&o.kind?o.ref:o,Z=INTERIOR.sizes,O=Z.order;if(!s||s instanceof Hideout)return 'cave';const M=MONSTERS[s.id];if(!M)return 'cave';
+    const U=ST[M.unit],n=((M.count||[1,1])[1]||1)+1;let i=O.indexOf(M.mythic||U&&U.big?'great':n<=2?'hollow':n<=4?'small':'cave');
+    if(i<O.length-1&&hash(Math.floor(s.x||0),Math.floor(s.y||0),913)<Z.grow)i++;return O[i]}
+  static menOf(o){return (INTERIOR.sizes[Interior.sizeOf(o)]||{}).men||INTERIOR.men}
   static seedOf(e){const r=e&&e.ref||{};return Math.floor(hash(Math.floor(r.x||0),Math.floor(r.y||0),911+(r.cyc||0))*4294967296)>>>0}
   // (your troop groups by who should go first: foot before riders and shooters, the better tier first)
   static order(){return partyRoster(P).groups.filter(g=>g.count>0).map(g=>({g,u:ST[g.type]})).filter(x=>x.u).sort((a,b)=>(!!a.u.range-!!b.u.range)||(!!a.u.mounted-!!b.u.mounted)||(b.u.tier-a.u.tier)).map(x=>x.g)}
@@ -152,13 +173,13 @@ class Interior{
   // the page: who goes in with you
   // (what waits inside as your scouts saw it: its power; none known, null)
   static theirs(site,lv){if(site instanceof Hideout){const y=site.spied();return y?site.power(site.all(y.list)):null}return site.spied&&site.spied()?site.power(lv||site.spied().lv):null}
-  static show(site,lv){const I=G.inside&&G.inside.site===site?G.inside:(G.inside={site,lv,k:Interior.pick()}),k=I.k,max=INTERIOR.men,n=Interior.count(k),r=partyRoster(P);
+  static show(site,lv){const max=Interior.menOf(site),I=G.inside&&G.inside.site===site?G.inside:(G.inside={site,lv,k:Interior.pick(max)}),k=I.k,n=Interior.count(k),r=partyRoster(P);
     const row=(label,sub,have,act,arg,can)=>'<div class="in-row"><span class="in-n">'+label+(sub?' <span class="muted">'+sub+'</span>':'')+'</span><span class="in-q">'+
       '<button class="btn sm" type="button" data-act="'+act+'-" data-arg="'+arg+'"'+(have>0?'':' disabled')+' aria-label="Fewer">−</button><b>'+have+'</b>'+
       '<button class="btn sm" type="button" data-act="'+act+'+" data-arg="'+arg+'"'+(can?'':' disabled')+' aria-label="More">+</button></span></div>';
     const comps=compsInBand().map(id=>row(COMPS[id].n,'companion',k.comps.includes(id)?1:0,'in-c',id,!k.comps.includes(id)&&n<max)).join('');
     const men=r.groups.filter(g=>g.count>0&&ST[g.type]).map(g=>{const have=k.g[g.id]||0;return row(htmlText(r.nameOf(g.id)||ST[g.type].n),ST[g.type].n+', '+g.count+' in your band'+(ST[g.type].mounted?', on foot inside':''),have,'in-g',g.id,have<g.count&&n<max)}).join('');
-    showPanel('<div class="top"><h2>Into the '+site.name+'</h2><span class="muted">Up to '+max+' go in with you; the rest wait outside</span></div>'+
+    showPanel('<div class="top"><h2>Into the '+site.name+'</h2><span class="muted">'+(site instanceof Hideout?'':INTERIOR.sizes[Interior.sizeOf(site)].n+': ')+'up to '+max+' go in with you; the rest wait outside</span></div>'+
       '<p>'+(site instanceof Hideout?'Their camp lies deep inside, behind a palisade of stakes. ':'')+'The way in is narrow and dark. Riders go on foot; your shooters will find few clear shots between the rocks.</p>'+
       '<div class="in-list">'+(comps+men||'<p class="muted">You go in alone.</p>')+'</div>'+
       '<p class="muted">Going in: you and '+n+' of '+max+'. Power '+rating(Interior.list(k))+(Interior.theirs(site,lv)!=null?' vs '+Interior.theirs(site,lv):'')+'.</p>'+
@@ -166,7 +187,7 @@ class Interior{
 }
 // (the camera close on you: the camera's step nearest under INTERIOR.zoom × the whole field's (BCAM.zooms): the dark is near)
 Interior.look=()=>{camInit();const c=B.cam,V=bview(),h=B.hero;c.fit=false;const f=camFar();c.z=Math.max(f,BCAM.zooms.filter(z=>z<=f*INTERIOR.zoom).pop()||f);if(h){c.x=h.x-V.w/c.z*.3;c.y=h.y-V.h/c.z/2}camClamp()};
-onAct('in-',(a,arg)=>{const I=G.inside;if(!I)return false;const k=I.k,r=partyRoster(P),n=Interior.count(k),max=INTERIOR.men;
+onAct('in-',(a,arg)=>{const I=G.inside;if(!I)return false;const k=I.k,r=partyRoster(P),n=Interior.count(k),max=Interior.menOf(I.site);
   if(a==='in-c+'&&n<max&&!k.comps.includes(arg))k.comps.push(arg);else if(a==='in-c-')k.comps=k.comps.filter(x=>x!==arg);
   else if(a==='in-g+'){const g=r.groups.find(x=>String(x.id)===String(arg));if(g&&n<max&&(k.g[g.id]||0)<g.count)k.g[g.id]=(k.g[g.id]||0)+1}
   else if(a==='in-g-'){const g=r.groups.find(x=>String(x.id)===String(arg));if(g&&k.g[g.id]>0){k.g[g.id]--;if(!k.g[g.id])delete k.g[g.id]}}
@@ -174,8 +195,8 @@ onAct('in-',(a,arg)=>{const I=G.inside;if(!I)return false;const k=I.k,r=partyRos
   Interior.show(I.site,I.lv);return true});
 /* ---------- the battle inside (startBattle: the encounter Interior.on): BattleSetup's steps on its own ground ---------- */
 class InteriorSetup extends BattleSetup{
-  constructor(opts){super({...opts,deploy:false});const e=G.enc;this.style=Interior.styleOf(e);this.pick=e.inside||Interior.pick();this.seed=Interior.seedOf(e)}
-  fieldSize(){return 'cave'}
+  constructor(opts){super({...opts,deploy:false});const e=G.enc;this.style=Interior.styleOf(e);this.size=Interior.sizeOf(e);this.pick=e.inside||Interior.pick(Interior.menOf(e));this.seed=Interior.seedOf(e)}
+  fieldSize(){return (INTERIOR.sizes[this.size]||{}).field||'cave'}
   // (its ground (the layout is made once the field's rows are measured: terrain); in the dark, on stone: no climate's rule, no weather)
   groundSpec(){const E=this.env,w=this.style==='cellar'?'cellars':'cave';E.c='grass';E.t=T_OPEN;delete E.w;E.name=this.style==='cellar'?'Cellars':'Cave';
     E.name=this.style==='hideout'||this.style==='den'?'Hideout':E.name;
@@ -184,7 +205,7 @@ class InteriorSetup extends BattleSetup{
   createUnits(){super.createUnits();const k=this.pick,left=new Map(Object.entries(k.g||{}).map(([id,n])=>[String(id),n]));
     this.units=this.units.filter(u=>{if(u.team!==0||u.hero||u.lord||u.leader)return true;if(u.comp)return (k.comps||[]).some(id=>u.grp==='comp_'+id);
       const id=String(u.sourceGroupId),n=left.get(id)||0;if(n<=0)return false;left.set(id,n-1);return true})}
-  terrain(){const FI=this.field;this.lay=InteriorLayout.make(this.style,this.seed,BW,FI.top,FI.bot);return this.TR=buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot,interior:this.lay})}
+  terrain(){const FI=this.field;this.lay=InteriorLayout.make(this.style,this.seed,BW,FI.top,FI.bot,TERRAIN.cs,this.size);return this.TR=buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot,interior:this.lay})}
   *paint(){const e=G.enc,chest=this.style==='cave'&&!(e&&e.ref&&e.ref.within)||this.style==='hideout'||this.style==='den';this.painted=yield* new InteriorArt(this.lay,chest).paintSteps()}
   fogOn(){return true}
   muster(){super.muster();B.inside=this.style;B.interior=this.lay;B.dark=INTERIOR.dark;B.sightK=INTERIOR.sight;if(this.lay.fires)B.lights=this.lay.fires.map(f=>({x:f.x,y:f.y,r:this.lay.X.light}));
@@ -199,10 +220,10 @@ class InteriorSetup extends BattleSetup{
   place(){const L=this.lay,R=L.rooms;if(L.X.camp)this.squads();const gs=Object.values(B.groups).filter(g=>grpUnits(g.id).length),mine=gs.filter(g=>g.team===0),foes=gs.filter(g=>g.team!==0);
     const put=(g,x,y,face)=>{const m=grpUnits(g.id);if(g.role!=='hero'&&g.form!=='pack'){g.form='line';g.files=Math.max(1,Math.min(INTERIOR.files,m.length))}g.face=g.currentFacing=face;g.ax=x;g.ay=y;g.tgt=null;g.queue=[];
       const S=formSlots(g.form,m.length,face,g.files);m.forEach((u,i)=>{u.sx=S[i][0];u.sy=S[i][1];u.x=x+u.sx;u.y=y+u.sy;u.dir=face;u.face=Math.cos(face)>=0?1:-1})};
-    const a=R[0];mine.forEach((g,i)=>{const k=i-(mine.length-1)/2;put(g,a.x-a.rx*.25+(Math.abs(k)>1.6?-24:0),a.y+k*Math.min(26,a.ry*1.4/Math.max(1,mine.length)),0)});
-    // (their chieftain, if any, in the deepest)
-    const w=g=>grpUnits(g.id).reduce((s,u)=>s+u.max,0)+(grpUnits(g.id).some(u=>u.leader)?1e6:0),order=[];for(let i=R.length-1;i>=1;i--)order.push(i);
-    foes.sort((x,y)=>w(y)-w(x)).forEach((g,i)=>{const m=R[order[i%order.length]],same=Math.floor(i/order.length);put(g,m.x+(same?-m.rx*.35:m.rx*.1),m.y+(same?m.ry*.3*(same%2?1:-1):0),Math.PI)})}
+    const a=R[0],one=R.length===1;mine.forEach((g,i)=>{const k=i-(mine.length-1)/2;put(g,a.x-a.rx*(one?.55:.25)+(Math.abs(k)>1.6?-24:0),a.y+k*Math.min(26,a.ry*1.4/Math.max(1,mine.length)),0)});
+    // (their chieftain, if any, in the deepest (L.deep: a great cave's side chambers come after it); a hollow's, its one chamber's far side)
+    const w=g=>grpUnits(g.id).reduce((s,u)=>s+u.max,0)+(grpUnits(g.id).some(u=>u.leader)?1e6:0),order=one?[0]:[L.deep];for(let i=R.length-1;i>=1;i--)if(i!==L.deep)order.push(i);
+    foes.sort((x,y)=>w(y)-w(x)).forEach((g,i)=>{const m=R[order[i%order.length]],same=Math.floor(i/order.length),far=one?m.rx*.45:m.rx*.1;put(g,m.x+(same?far-m.rx*.45:far),m.y+(same?m.ry*.3*(same%2?1:-1):0),Math.PI)})}
 }
 // (inside, the foes wait in their chambers until they see you: Commander#typeHolds, PackMind.think)
 const insideHolds=team=>!!B&&(!!B.inside||!!B.holds)&&team!==0;// (B.holds: a siege's defenders at their posts, battle/siegeworks.js)

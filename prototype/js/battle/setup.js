@@ -19,6 +19,7 @@ const FIELD_SIZES={on:true,order:['small','big','large','vlarge','huge'],
   small:{n:'Small',w:960,h:544,back:32,depth:288,band:0},big:{n:'Big',w:1280,h:720,back:96,depth:320,band:0},
   large:{n:'Large',w:1792,h:1008,back:256,depth:352,band:760},vlarge:{n:'Very large',w:2400,h:1344,back:512,depth:384,band:840},
   huge:{n:'Huge',w:3200,h:1792,back:832,depth:416,band:920},tourney:{n:'Arena',w:448,h:256,back:57,depth:64,band:0},cave:{n:'Cave',w:1280,h:720,back:32,depth:200,band:0},
+  cave_h:{n:'Hollow',w:512,h:416,back:32,depth:160,band:0},cave_s:{n:'Small cave',w:768,h:544,back:32,depth:180,band:0},cave_l:{n:'Great cave',w:1792,h:1008,back:32,depth:240,band:0},// (the caves' by their size: battle/interior.js INTERIOR.sizes)
   heads:[60,150,300,600],types:{bridge:['big','large'],ambush:['small','big']}};
 let BFIELD=null;
 // (the size for a battle of heads soldiers on world tile r (its BattleSite: t, c; none for a tournament), of battle type kind)

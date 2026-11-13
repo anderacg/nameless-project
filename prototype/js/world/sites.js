@@ -326,7 +326,7 @@ class Ruins extends Site{
   lore(){const y=G.siteSpy;return y&&y.s===this&&y.ok&&y.id?y:null}
   loreTried(){const y=G.siteSpy;return !!(y&&y.s===this&&y.lore)}
   guardRoll(){const id=caveMonster(this.x,this.y);return{id,n:MONSTERS[id].count[1]+1,lv:monLevel()+1}}
-  guardFight(g,sealed){G.site=null;this.id=g.id;this.lv=g.lv;startEncounter({kind:'cave',ref:this,lv:g.lv,list:Array(g.n).fill(MONSTERS[g.id].unit),sealed:sealed||null,inside:Interior.pick()})}
+  guardFight(g,sealed){G.site=null;this.id=g.id;this.lv=g.lv;startEncounter({kind:'cave',ref:this,lv:g.lv,list:Array(g.n).fill(MONSTERS[g.id].unit),sealed:sealed||null,inside:Interior.pick(Interior.menOf(this))})}
   // searching: woken (unless you hear them first: stirs, or go unheard), the fight at once; else the chest or the old lore
   search(done){const r=Math.random(),wake=this.stirs||r<RUIN.wake;
     if(wake&&!this.stirs&&Math.random()<awareChance()){this.stirs=true;train('scout',3);return done('Something stirs below… Your scouts hear it first: whatever guards the treasure is waking. Search anyway, or leave.')}
@@ -696,7 +696,7 @@ function valuablesFound(where,who){
 // (inside: who went in with you, battle/interior.js Interior.pick; none chosen, the best of your band)
 function caveFight(s,lv,inside){
   const M=MONSTERS[s.id];s.lv=lv||monLevel()+1;
-  startEncounter({kind:'cave',ref:s,lv:s.lv,list:Array(M.count[1]+1).fill(M.unit),inside:inside||Interior.pick()});
+  startEncounter({kind:'cave',ref:s,lv:s.lv,list:Array(M.count[1]+1).fill(M.unit),inside:inside||Interior.pick(Interior.menOf(s))});
 }
 
 /* the window (window.js): a page (PAGE_SCREEN: the site's page, G.siteTab a step inside it), or the site's areas down the rail,

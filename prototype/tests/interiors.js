@@ -6,10 +6,11 @@
 // always on, sight × B.sightK); the foes wait in their chambers till roused, the strongest deepest; auto-resolved, only those who
 // went in can fall; a hideout's palisade (a gap to pass), its fires' light seen; off, the field as before.
 Kit.suite(({ok,info})=>{
- const t=T,G=t.G,P=t.P,W=t.W,X=t.INTERIOR,on0=X.on,ex0=t.EXITS.on,B=()=>t.B;
+ const t=T,G=t.G,P=t.P,W=t.W,X=t.INTERIOR,on0=X.on,ex0=t.EXITS.on,B=()=>t.B,size0=t.Interior.sizeOf;
  const units=(team)=>B().units.filter(u=>u.team===team);
  try{
-  X.on=true;Kit.begin('soldier',5);Kit.clear();Kit.world();
+  X.on=true;t.Interior.sizeOf=()=>'cave';// (the classic cave here, every size its own: tests/cavesizes.js)
+  Kit.begin('soldier',5);Kit.clear();Kit.world();
   {const r=t.partyRoster(P);r.add('archer',4);r.add('horse',3)}
   const cave=W.sites.find(s=>s instanceof t.Cave&&!s.within&&!s.cleared);Kit.goTo(cave.x,cave.y+30);
   const band0=t.troopCount();
@@ -62,5 +63,5 @@ Kit.suite(({ok,info})=>{
    t.B=null;t.fieldDone();Kit.world()}
   // ---- off: the field as before
   {X.on=false;Kit.world();Kit.goTo(cave.x,cave.y+30);t.caveFight(cave,2);t.act('fight');const b=B();ok(b&&!b.inside,'off: the cave fought on the field as before');t.B=null;t.fieldDone();Kit.world()}
- }finally{X.on=on0;t.EXITS.on=ex0}
+ }finally{X.on=on0;t.EXITS.on=ex0;t.Interior.sizeOf=size0}
 });

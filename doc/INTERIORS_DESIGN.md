@@ -16,9 +16,10 @@ Every battle but caves, ruin guardians, sieges, raids, tournaments and the Battl
 
 | Part | As built |
 |---|---|
-| Ground | `InteriorLayout`: 4–6 chambers joined by passages, one loop at times, a mouth from the west edge, seeded by the place. Cave ragged, cellars square-cut |
+| Ground | `InteriorLayout`: chambers joined by passages, one loop at times, a mouth from the west edge, seeded by the place. Cave ragged, cellars square-cut |
+| Size | (2026-11-13; the owner: "Does a cave have variations? Like small cave with 1 room"; "Ok") `INTERIOR.sizes`, `Interior.sizeOf`, by what lairs in it: a hollow (1 chamber, a 512×416 field, 4 go in) for one or two of a lone beast's kind (tiger, bear, griffin); a small cave (2–3, 768×544, 6) for boars; a cave (4–6, 1280×720, 8) for a pack (wolves, spiders, scorpions, slimes); a great cave (7–9 and 1–2 side chambers, 1792×1008, 12) for a troll, a wyrm or a dragon. One in four (by its place) one size larger; the same every visit. A hideout or a den: a cave, always. Tests: cavesizes |
 | Rules | Its rock is the battle terrain's rock, so routes, sight, missiles and the ways off the field obey it. The mouth is the only way out |
-| Who goes in | The page: up to `INTERIOR.men` (8, companions count), Back and Enter. The rest wait outside and cannot fall |
+| Who goes in | The page: up to the size's `men` (4, 6, 8 or 12; companions count), Back and Enter. The rest wait outside and cannot fall |
 | Riders | On foot inside |
 | Dark | Fog always on, sight × 0.5, the unseen darker |
 | Foes | Wait in their chambers until roused (a foe seen within 180 px, or hurt); the strongest deepest, with the chest |
