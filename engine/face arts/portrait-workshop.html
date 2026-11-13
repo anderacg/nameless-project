@@ -1856,22 +1856,14 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
  function baseFor(sheet,index,id){if(id==='hairFront'||id==='hairBack'||id==='beard'||id==='brows')return BASE.hair;if(id==='mouth')return index===23?BASE.orc:BASE.lips;if(sheet===0||id==='torso')return sheet===0&&[3,7,19].includes(index)?BASE.orc:BASE.skin;return index===10?BASE.cloth:[14,16,21].includes(index)?BASE.leather:index===22?BASE.fur:BASE.metal;}
  function sample(f,u,v){const x=Math.max(0,Math.min(f.w-1,Math.floor(u*f.w))),y=Math.max(0,Math.min(f.h-1,Math.floor(v*f.h))),i=y*f.w+x;return {rgb:[f.d[i*4],f.d[i*4+1],f.d[i*4+2]],alpha:f.alpha[i]};}
  function put(d,i,rgb,alpha){d[i]=rgb[0];d[i+1]=rgb[1];d[i+2]=rgb[2];d[i+3]=alpha;}
- // Keep the lower painted jaw separate from the narrower neck rather than extending its rim.
- function skinShape(p){
-  const A=p.anchors,c=p.config,out=canvas(N),g=out.getContext('2d'),cut=c.race==='dwarf'?2:3,end=A.chinY-cut,start=A.mouth.y-2,points=A.outline.map(([x,y])=>{if(y<=start)return[x,y];const t=Math.min(1,(y-start)/(A.chinY-start)),inset=(c.race==='dwarf'?2:c.race==='orc'?3:4)*Math.sin(Math.PI*t),dx=x-A.cx;return[A.cx+Math.sign(dx)*Math.max(0,Math.abs(dx)-inset),start+(y-start)*(end-start)/(A.chinY-start)];});
-  g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();
-  const scale=c.race==='orc'?(c.face==='orc-heavy'?.75:.875):1,half=c.race==='dwarf'?16:c.race==='orc'?11.5*scale:Math.max(7.5*scale,Math.min((c.profile==='female'?8.5:9.5)*scale,A.jaw*.4)),collar=[[80,94],[75,99],[70,102],[64,103],[58,102],[53,99],[48,94]].map(([x,y])=>[A.cx+(x-64)*scale,y*scale+96*(1-scale)]);
-  g.beginPath();g.moveTo(A.cx-half,end-6);g.lineTo(A.cx+half,end-6);g.bezierCurveTo(A.cx+half,end+1,A.cx+half,collar[0][1]-3,...collar[0]);for(const point of collar.slice(1))g.lineTo(...point);g.bezierCurveTo(A.cx-half,collar[6][1]-3,A.cx-half,end+1,A.cx-half,end-6);g.closePath();g.fill();return g.getImageData(0,0,N,N).data;
- }
  function paintMask(p,spec,colors,size){
   const id=spec.id,src=part(id,p.config),out=canvas(size),g=out.getContext('2d');g.imageSmoothingEnabled=false;
   if(!src){g.drawImage(spec.channel?E.tint(p.layers[id],colors[spec.channel]):p.layers[id],0,0,size,size);return out;}
   const a=p.layers[id].getContext('2d').getImageData(0,0,N,N).data,im=g.createImageData(size,size),d=im.data,pair=id==='ears'||id==='brows',scale=size/N,target=hex(colors[spec.channel]),base=baseFor(...src,id),contrast=id==='face'?(p.anchors.definition-.4)*.07-(p.anchors.softness-.5)*.025:0;
-  const skin=id==='face'?skinShape(p):null;
   const bodyTops=new Uint16Array(N).fill(N);if(['torso','clothing','armor'].includes(id)){const masks=id==='torso'?[a]:['clothing','armor'].map(key=>p.layers[key].getContext('2d').getImageData(0,0,N,N).data);for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(masks.some(d=>d[(y*N+x)*4+3]))bodyTops[x]=Math.min(bodyTops[x],y);}
   for(const side of pair?[0,1]:[null]){const b=bounds(a,side);if(!b)continue;const f=frame(...src,side,id.startsWith('headwear')),body=['torso','clothing','armor'].includes(id);
    for(let Y=Math.floor(b.y*scale);Y<Math.ceil((b.y+b.h)*scale);Y++)for(let X=Math.floor(b.x*scale);X<Math.ceil((b.x+b.w)*scale);X++){
-    const x=(X+.5)/scale,y=(Y+.5)/scale,k=(Math.floor(y)*N+Math.floor(x))*4;if(!a[k+3]||skin&&skin[k+3]<128)continue;
+    const x=(X+.5)/scale,y=(Y+.5)/scale,k=(Math.floor(y)*N+Math.floor(x))*4;if(!a[k+3])continue;
     let u=(x-b.x)/b.w,v=(y-b.y)/b.h;
     if(body){u=(x-4)/120;const X=Math.max(0,Math.min(f.w-1,Math.floor(u*f.w))),top=f.top[X];v=(top+(y-bodyTops[Math.floor(x)])*f.w/120)/f.h;}
     if(id==='face'){const A=p.anchors,eye=A.eyes[0].y;v=y<eye?(y-A.top)/(eye-A.top)*.4:y<A.chinY?.4+(y-eye)/(A.chinY-eye)*.42:.82+(y-A.chinY)/(103-A.chinY)*.18;}
@@ -1883,15 +1875,10 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
    }
   }g.putImageData(im,0,0);return out;
  }
- // One cleaned skin edge controls the face, short facial hair and the neck beneath it.
- function alignSkin(p,layers,size){
-  const g=layers.face.getContext('2d'),im=g.getImageData(0,0,size,size),d=im.data,mask=new Uint8Array(size*size),inner=new Uint8Array(size*size),scale=size/N,r=Math.max(1,Math.round(scale)),inset=Math.max(1,Math.round(scale*.5)),top=Math.max(0,Math.floor((p.anchors.eyes[0].y+8)*scale)),bottom=Math.min(size,Math.ceil(94*scale)),left=Math.max(0,Math.floor((p.anchors.cx-p.anchors.w-2)*scale)),right=Math.min(size,Math.ceil((p.anchors.cx+p.anchors.w+2)*scale));
-  for(let k=0;k<mask.length;k++)mask[k]=d[k*4+3]?1:0;
-  const disk=radius=>{const a=[];for(let y=-radius;y<=radius;y++)for(let x=-radius;x<=radius;x++)if(x*x+y*y<=radius*radius)a.push([x,y]);return a;},cut=disk(r+inset),round=disk(r);
-  for(let y=Math.max(0,top-r);y<Math.min(size,bottom+r);y++)for(let x=left;x<right;x++)inner[y*size+x]=cut.every(([dx,dy])=>x+dx>=0&&x+dx<size&&y+dy>=0&&y+dy<size&&mask[(y+dy)*size+x+dx])?1:0;
-  for(let y=top;y<bottom;y++)for(let x=left;x<right;x++){const k=y*size+x;if(mask[k]&&!round.some(([dx,dy])=>x+dx>=0&&x+dx<size&&y+dy>=0&&y+dy<size&&inner[(y+dy)*size+x+dx]))d[k*4+3]=0;}
-  g.putImageData(im,0,0);
-  const t=layers.torso.getContext('2d'),torso=t.getImageData(0,0,size,size);for(let y=0;y<bottom;y++)for(let x=0;x<size;x++){const k=(y*size+x)*4;if(!d[k+3])torso.data[k+3]=0;}t.putImageData(torso,0,0);
+ // The original painted face edge is authoritative; clip the neck beneath it without reshaping it.
+ function clipNeck(layers,size){
+  const face=layers.face.getContext('2d').getImageData(0,0,size,size).data,g=layers.torso.getContext('2d'),im=g.getImageData(0,0,size,size),bottom=Math.ceil(94*size/N);
+  for(let y=0;y<bottom;y++)for(let x=0;x<size;x++){const k=(y*size+x)*4;if(!face[k+3])im.data[k+3]=0;}g.putImageData(im,0,0);
  }
  // Feature envelopes retain every existing eye and mouth shape; painted folds sit around their openings.
  function feature(p,colors,size,kind,layers){
@@ -1955,9 +1942,9 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
   if(!loaded)throw Error('Painted portrait artwork is not ready');if(![128,256,512].includes(size))throw Error('Unsupported portrait size');
   colors=Object.fromEntries(Object.entries(E.colors).map(([key,value])=>[key,/^#[a-f0-9]{6}$/i.test(colors[key]||'')?colors[key]:value]));
   const layers={};for(const spec of E.order)layers[spec.id]=['eyes','iris','eyelids','mouth'].includes(spec.id)?canvas(size):paintMask(p,spec,colors,size);
-  alignSkin(p,layers,size);noseRoot(layers,size);feature(p,colors,size,'eyes',layers);feature(p,colors,size,'mouth',layers);skinDetails(p,layers,size);
+  clipNeck(layers,size);noseRoot(layers,size);feature(p,colors,size,'eyes',layers);feature(p,colors,size,'mouth',layers);skinDetails(p,layers,size);
   if(['small-tusks','heavy-tusks'].includes(p.config.mouth))layers.teeth=tusks(p,size);
-  if(['stubble','close-beard','chin-bristle'].includes(p.config.beard)){const g=layers.beard.getContext('2d');g.save();g.globalCompositeOperation='destination-in';g.drawImage(layers.face,0,0);g.restore();}
+  for(const id of ['nose','eyelids',...(['stubble','close-beard','chin-bristle'].includes(p.config.beard)?['beard']:[])]){const g=layers[id].getContext('2d');g.save();g.globalCompositeOperation='destination-in';g.drawImage(layers.face,0,0);g.restore();}
   return {config:p.config,anchors:p.anchors,colors,layers,size,coordinateScale:size/N,template:p,style:'painted-parts'};
  }
  function composite(p,{visible=null}={}){
