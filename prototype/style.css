@@ -1378,7 +1378,7 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
    brown ui"); their life on the left, to scroll; the spirit's stage on the right, its three ways round it as circles in a triangle
    ("make it like 3 circle in triangle arrangement"): a new life at the top, a save at the lower left, the void at the lower right,
    the spirit at its middle. Each circle's middle --r from the stage's (its height, cqh, less a circle and a margin; never past --rmax),
-   at 90°, 210° and 330° round --cx across (the owner: on a PC "make it a bit more to the right"; a short screen's, the middle),
+   at 90°, 210° and 330° round --cx across (never past the stage's sides, cqw) (the owner: on a PC "make it a bit more to the right"; a short screen's, the middle),
    the lower two spread --sx wider; each a breathing orb of light, no border ("Make the choices glowing too
    nonbirder for circle"), its colour --glow (the void's violet). The bottom bar kept for Esc but hidden ---------- */
 .overlay:has(> .panel.slain){padding:0;background:#000}
@@ -1396,7 +1396,7 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .slain-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px solid #ffffff0d;font-size:var(--fs-sm)}
 .slain-row span{color:#9aa9c2}.slain-row small{display:block;color:#62708a;font-size:var(--fs-2xs)}.slain-row b{color:#e4edfb;font-weight:600;white-space:nowrap}
 .panel.slain .slain-note{margin-top:10px;color:#7f8ca4;font-size:var(--fs-sm)}
-.spirit-stage{position:relative;container-type:size;--d:120px;--r:min(calc(50cqh - var(--d) / 2 - 10px),230px);--sx:1;--cx:58%;min-height:0;height:100%;overflow:hidden;
+.spirit-stage{position:relative;container-type:size;--d:120px;--r:min(calc(50cqh - var(--d) / 2 - 10px),calc((50cqw - var(--d) / 2 - 10px) / .866 / var(--sx)),230px);--sx:1;--cx:58%;min-height:0;height:100%;overflow:hidden;
   background:radial-gradient(ellipse at var(--cx) 52%,#0d1a36 0%,#050912 45%,#000 80%)}
 .spirit-cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
 .spirit-way{--glow:111,216,255;position:absolute;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:var(--d);height:var(--d);padding:8px;
@@ -1418,6 +1418,11 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 @media (max-height:500px){.panel.slain{grid-template-columns:minmax(200px,36%) minmax(0,1fr)}.slain-life{padding:calc(16px + var(--sa-t)) 16px calc(16px + var(--sa-b)) calc(18px + var(--sa-l))}
   .panel.slain .slain-life h3{margin-top:12px}.slain-lab{margin-top:12px}.slain-row{padding:4px 0}
   .spirit-stage{--d:80px;--r:calc(50cqh - var(--d) / 2 - 8px);--sx:1.15;--cx:50%}.spirit-way{padding:4px}.spirit-way span{display:none}}
+/* (a phone upright (the owner: "On the mobile vertical it's got cut"): the spirit above, its three round it, their life below, to scroll) */
+@media (orientation:portrait){.panel.slain{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,58%) minmax(0,1fr)}
+  .panel.slain .spirit-stage{order:-1;--d:104px;--cx:50%;--sx:1}
+  .slain-life{border-right:0;border-top:1px solid #ffffff12;padding:20px calc(20px + var(--sa-r)) calc(20px + var(--sa-b)) calc(20px + var(--sa-l))}
+  .panel.slain .slain-life h3{margin-top:12px}.slain-lab{margin-top:14px}}
 
 /* ---------- 9. responsive ---------- */
 /* a touch screen: everything you press at least 44 px, and nothing that only hovering shows */
