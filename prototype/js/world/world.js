@@ -243,7 +243,7 @@ function dayTick(){
 // (a soldier's wage a day by his kind's tier (the owner, 2026-10-30: "scale by tier"): peasants, then tiers 1 to 3; a fit rider more)
 // (garrison: a man a day in a fief of yours, as a realm pays for its own, economy.js realmDay. merc: a realm's contract pays this share
 // of your soldiers' wages, from its treasury (it paid a gold a man, more than a levy's wage, out of nothing); a realm short of gold pays none)
-const BAND_PAY={tier:[.25,.5,1,2],mounted:.5,companion:2,garrison:.4,merc:1.25};
+const BAND_PAY={tier:[.5,1,2,4],mounted:.5,companion:2,garrison:.4,merc:1.25};
 const soldierPay=k=>BAND_PAY.tier[clamp(ST[k]?.tier||0,0,3)];
 function bandPayroll(){const counts=[P.troops,P.wounded||{},...cparties().map(p=>countsOf(p.troops))],detached=cparties().reduce((a,p)=>a+p.troops.length,0),
     base=counts.reduce((a,c)=>a+Object.entries(c).reduce((b,[k,n])=>b+n*soldierPay(k),0),0),mounts=mountedN()*BAND_PAY.mounted,companions=compCount()*BAND_PAY.companion,garrison=playerFiefs().reduce((a,t)=>a+(t.gar||0),0)*BAND_PAY.garrison,raw=base+mounts+companions+garrison;return{base,mounts,companions,garrison,detached,raw,total:Math.ceil(raw)}}

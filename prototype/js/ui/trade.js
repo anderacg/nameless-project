@@ -24,7 +24,7 @@ const Buyback={
   of(id){return this.list().find(b=>b.id===+id)||null},
   price(b){return Math.round(b.gold*(1+BUYBACK.markup))},
   // (bought back: into your bag as it was; false, gone or no room or gold)
-  take(id){const b=this.of(id),p=b&&this.price(b);if(!b||P.gold<p||playerInventory.put({...b.x})<0)return false;P.gold-=p;P.buyback=P.buyback.filter(o=>o!==b);return b},
+  take(id){const b=this.of(id),p=b&&this.price(b);if(!b||P.gold<p||playerInventory.put({...b.x,back:1})<0)return false;P.gold-=p;P.buyback=P.buyback.filter(o=>o!==b);return b},
 };
 class TradeDeal{
   constructor(o){Object.assign(this,{sell:{},buy:{},own:[],quiver:{},skin:0,rebuy:[]},o||{})}

@@ -5,8 +5,8 @@
    purse and bag), else drawn only; xp: the experience a kill is worth to your hero, shown (the end of the fight pays it, as ever);
    dots: how many dots a kill bursts into, gold to your hero, blue to the soldier who struck it; speed: the dots' flight (px a second, ×
    the map's scale in a battle on the map); coin: the chance of coins from a man, and how many (a range); gear: the chance he drops his
-   gear (a piece of his tier); beast: the chance a beast leaves its hide (its kind's: data/monsters.js MATS); pick: how near your hero or
+   gear (a piece of his tier), gears at most a fight (the 2026-11-13 balance: .1 a man, a lord's battle of 50 left 5 pieces); beast: the chance a beast leaves its hide (its kind's: data/monsters.js MATS); pick: how near your hero or
    a companion draws them in (px); bob: the ground's icons' bob (px) and glint period (s); col: the dots' and coins' colours */
 // (art: px a ground item's picture is drawn, the inventory's illustration: battle/drops.js)
-const DROPS={on:true,art:14,loot:true,xp:8,dots:{xp:6,troop:3},speed:220,coin:{chance:.6,n:[1,4]},gear:.1,beast:.6,pick:26,bob:[1.5,1.6],
+const DROPS={on:true,art:14,loot:true,xp:8,dots:{xp:6,troop:3},speed:220,coin:{chance:.6,n:[1,4]},gear:.03,gears:2,beast:.6,pick:26,bob:[1.5,1.6],
   col:{xp:'#ffd54a',xpCore:'#fff6c8',troop:'#7fc8ff',troopCore:'#e6f6ff',coin:'#f2c94c',coinEdge:'#a8781c'}};

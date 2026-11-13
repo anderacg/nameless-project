@@ -76,7 +76,7 @@ class Claims{
   // (a trophy's holding yours: what hangs there is yours again)
   static home2(){for(const h of Legacy.held.filter(h=>h.trophy&&townBy(h.at)?.owner==='player')){const got=this.give(h);log('In the hall of '+h.at+' hang the things of '+h.who+', yours again: '+(got||'nothing you can carry')+'.','gold','story')}}
   // ---- what they keep, and getting it back
-  static worth(h){return (h.gold||0)+h.items.reduce((n,[k,id,c])=>n+(ITEM_KINDS[k]?.cost?.({id})||5)*c,0)}
+  static worth(h){return (h.gold||0)+h.items.reduce((n,[k,id,c])=>n+(ITEM_KINDS[k]?.worth?.({id})||0)*c,0)}// (each piece its worth (core/items.js): priced by cost, goods threw and a valuable or a trophy counted 5g, 2026-11-13)
   // (its price to you: a lord's steward's (kin less); your heir's or the fallen's companion's (kin nothing); another companion's, the same to anyone)
   static price(h){const C=DEATH.claim,kin=Legacy.kinTo(h.n),s=h.by==='lord'?C.lord.price[kin?'kin':'stranger']:h.by==='other'?C.comp.other:kin?0:C.comp.price;return s?Math.max(5,Math.round(this.worth(h)*s/5)*5):0}
   static what(h){const g=h.items.reduce((n,[k,,c])=>n+(k==='gear'?c:0),0),o=h.items.reduce((n,[k,,c])=>n+(k==='gear'?0:c),0);

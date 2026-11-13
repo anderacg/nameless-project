@@ -709,7 +709,8 @@ try{
   P.morale=100;const B=fight(['militia']);const lv=B.units.find(u=>u.type==='hum_spear'),ar=B.units.find(u=>u.type==='hum_bow');ok(lv.mor0===Math.round(M(ST.hum_spear))&&ar.mor0===Math.round(M(ST.hum_bow)),'in battle, each starts from his own Morale (your band in full heart: ×1)');
   const a=new t.BattleResolve(null,0,[{s:ST.hum_levy,max:20}],-1),k=new t.BattleResolve(null,0,[{s:ST.hum_knight,max:20}],-2);a.mor=k.mor=50;a.hurt(5);k.hurt(5);ok(50-a.mor>50-k.mor,'the same wound shakes a levy more than a knight ('+(50-a.mor).toFixed(1)+' vs '+(50-k.mor).toFixed(1)+')');
   B.over=true;B.endT=0;t.B=null;
-  P.troops={hum_knight:6};P.morale=40;const n=t.bandNerve(),m0=P.morale;t.dayTick();ok(n>60&&P.morale>m0,'a band of veterans lifts its own spirits day by day (nerve '+Math.round(n)+', '+m0+' → '+Math.round(P.morale)+')');
+  // (paid: their wages doubled in the 2026-11-13 balance, the band unpaid lost heart, which is no part of this)
+  P.troops={hum_knight:6};P.morale=40;P.gold=Math.max(P.gold,500);const n=t.bandNerve(),m0=P.morale;t.dayTick();ok(n>60&&P.morale>m0,'a band of veterans lifts its own spirits day by day (nerve '+Math.round(n)+', '+m0+' → '+Math.round(P.morale)+')');
   P.troops={hum_levy:6};P.morale=90;const m1=P.morale;t.dayTick();ok(P.morale<m1,'a band of levies sags ('+m1+' → '+Math.round(P.morale)+')');}
  // an army with shooters never sits out of reach: defending, but nobody in reach a few seconds, it goes up
  {P.troops={hum_spear:6};const L=['hum_bow','hum_bow','hum_bow','hum_foot','hum_foot'];G.mode='world';G.modal=false;t.hidePanel();

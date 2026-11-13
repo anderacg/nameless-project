@@ -11,7 +11,9 @@
 const BAND_NAMES=['Red Vipers','Ash Crows','Black Hounds','Grey Wolves','Bone Saws','Mud Rats','Iron Jaws','Night Owls','Rusty Knives','Hollow Men','Crooked Spears','Burnt Hands'];
 // (the jobs' own dice: the stream 'quests', core/rng.js, so a job kind added or changed never moves the world's Math.random)
 const questRng=()=>rngOf('quests');
-const qScale=()=>1+G.day/60,qTiles=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)/TILE;
+// (a job's pay grows with the days, 1 + day/days, at most most times: it grew without end while a fight's gold and ransoms do not)
+const QUEST_PAY={days:90,most:2.5};
+const qScale=()=>Math.min(QUEST_PAY.most,1+G.day/QUEST_PAY.days),qTiles=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)/TILE;
 const questBy=id=>P.quests.find(q=>q.id===id);
 // (the way to a goal from you, in words: "here", or "12 tiles NE")
 const questWay=g=>{const d=Math.round(qTiles(g,P));return d<2?'here':d+' tiles '+compass(g.x-P.x,g.y-P.y)};
@@ -527,7 +529,7 @@ class ClearQuest extends JobQuest{
 // a supply run: a lasting good the holding is short of, handed over into its stock; its days by how long its stock lasts
 // (SUPPLY_JOB.days: from min, the emptier the sooner, up to max), paid by its price there (× price) at the least as before;
 // as many as about worth gold of it buys at its price there (8–15 of a cheap good, least of a dear one: silver, wine)
-const SUPPLY_JOB={days:[5,16,20],price:1.25,worth:240,least:2};
+const SUPPLY_JOB={days:[5,16,20],price:1,cap:2,worth:240,least:2};// (price: × the holding's price for it, at most cap × its base: a regional ore short far from its veins paid ~200g for 2, 2026-11-13)
 class SupplyQuest extends JobQuest{
   // (its need read off the world: passed before it is taken, no work: story/quest.js accept)
   needless(){
@@ -546,7 +548,7 @@ class SupplyQuest extends JobQuest{
     this.cause=causeOf(Troubles.news(t,['caravan','siege','raid'])[0],t)||'Its stores of '+GOODS[this.good].n.toLowerCase()+' run low.';
     this.title='Supply run: '+GOODS[this.good].n.toLowerCase();
     this.text=t.name+' is short of '+GOODS[this.good].n.toLowerCase()+'. Bring '+this.n+' here.';
-    this.pays(Math.max(GOODS[this.good].base*1.6,marketPrice(t,this.good)*SUPPLY_JOB.price)*this.n,8,2,15);
+    this.pays(Math.max(GOODS[this.good].base*1.6,Math.min(marketPrice(t,this.good),GOODS[this.good].base*SUPPLY_JOB.cap)*SUPPLY_JOB.price)*this.n,8,2,15);
   }
   get handsOver(){
     return true;
@@ -596,7 +598,7 @@ class HuntQuest extends JobQuest{
     this.cause=cap1(K.n.toLowerCase())+' graze '+Math.round(qTiles(c,t))+' tiles '+compass(c.x-t.x,c.y-t.y)+' of '+t.name+'.';
     this.title=hides?'Hides for the tanner':'Meat for the table';
     this.text=hides?'The tanner of '+t.name+' wants '+this.n+' '+K.one+' hides.':t.name+' wants '+this.n+' meat for its tables.';
-    this.pays(hides?this.n*28:this.n*13,8,1,15);
+    this.pays(hides?this.n*28:this.n*20,8,1,15);
   }
   get handsOver(){
     return true;

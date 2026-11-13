@@ -35,10 +35,10 @@ const MONSTERS={
       hoard:{gold:250,renown:40,gear:[4,5],egg:['m_drake',.35],text:'You claim the dragon’s hoard. Bards will sing of this.'}}}
 };
 // trophies sell at any town market. icon and col pick the pixel icon drawn for the inventory
-const MATS={pelt:{n:'Wolf Pelt',v:12,icon:'pelt',col:'#9aa3ad'},tusk:{n:'Boar Tusk',v:14,icon:'tusk',col:'#e8e4d0'},tigerpelt:{n:'Tiger Pelt',v:45,icon:'pelt',col:'#e08a2a'},
-  bearhide:{n:'Bear Hide',v:40,icon:'pelt',col:'#6e4e36'},silk:{n:'Spider Silk',v:18,icon:'silk',col:'#e4e0cf'},trollhide:{n:'Troll Hide',v:70,icon:'pelt',col:'#6a8a6a'},
+const MATS={pelt:{n:'Wolf Pelt',v:12,icon:'pelt',col:'#9aa3ad'},tusk:{n:'Boar Tusk',v:14,icon:'tusk',col:'#e8e4d0'},tigerpelt:{n:'Tiger Pelt',v:90,icon:'pelt',col:'#e08a2a'},
+  bearhide:{n:'Bear Hide',v:40,icon:'pelt',col:'#6e4e36'},silk:{n:'Spider Silk',v:25,icon:'silk',col:'#e4e0cf'},trollhide:{n:'Troll Hide',v:70,icon:'pelt',col:'#6a8a6a'},
   hide:{n:'Deer Hide',v:10,icon:'pelt',col:'#b08050'},antler:{n:'Antler',v:22,icon:'tusk',col:'#e0d0b0'},rabbitfur:{n:'Rabbit Fur',v:4,icon:'pelt',col:'#c8b8a0'},
-  goo:{n:'Slime Jelly',v:9,icon:'vial',col:'#a0e060'},venom:{n:'Venom Sac',v:20,icon:'vial',col:'#78c474'},scale:{n:'Wyrm Scale',v:120,icon:'scale',col:'#e0b870'},feather:{n:'Griffin Feather',v:55,icon:'feather',col:'#e8dcc0'}};
+  goo:{n:'Slime Jelly',v:9,icon:'vial',col:'#a0e060'},venom:{n:'Venom Sac',v:20,icon:'vial',col:'#78c474'},scale:{n:'Wyrm Scale',v:260,icon:'scale',col:'#e0b870'},feather:{n:'Griffin Feather',v:100,icon:'feather',col:'#e8dcc0'}};
 // breeds (the owner, 2026-11-12: "add more monster variations"): a lair of a kind may be one of its breeds, by the ground it lies on.
 // kind: whose it is (its figure, deaths, mind, prints and portrait its kind's, drawn in its own coats); where: its ground, where it
 // may lair besides its kind's; w: how often it takes a lair there, its kind's own 1; unit: its fighter, its kind's changed; dt, resist,

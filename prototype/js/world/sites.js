@@ -677,8 +677,11 @@ const enterSite=s=>s.enter();
 // the day's changes: emptied places fill again, travellers pack up and move on
 function siteDay(){for(const s of W.sites)s.day()}
 // a cave or ruin's chest: gold that grows with the days, usually a piece of gear, and maybe valuables
+// (a chest's gold: its own, more each day (day a day, at most most), × its cave's size (a hollow's less, a great cave's more: interior.js
+// INTERIOR.sizes; the 2026-11-13 balance: a hollow of 4 men paid as a great cave of 12))
+const SITE_CHEST={day:2,most:120,size:{hollow:.6,small:.8,cave:1,great:1.5}};
 function siteChest(s){
-  const C=s.chest,top=Math.min(MATERIALS.length-1,1+Math.floor(G.day/20)),gold=rint(30,70)+G.day*2+C.gold;P.gold+=gold;
+  const C=s.chest,top=Math.min(MATERIALS.length-1,1+Math.floor(G.day/20)),X=SITE_CHEST,sz=s instanceof Cave&&INTERIOR.on?X.size[Interior.sizeOf(s)]||1:1,gold=Math.round((rint(30,70)+Math.min(X.most,G.day*X.day)+C.gold)*sz);P.gold+=gold;
   let x=' The chest holds <strong class="gold">'+gold+' gold</strong>';
   if(Math.random()<C.gear){const id=randomGear(Math.max(0,top-1),Math.min(MATERIALS.length-1,top+1));
     x+=invAdd('gear',id,1)?' and a <span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEMS[id].n+'</span>':'. '+BAG_FULL+': you leave the '+ITEMS[id].n;}

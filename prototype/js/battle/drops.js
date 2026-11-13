@@ -35,9 +35,11 @@ class BattleDrops{
     if(h&&h.hp>0)for(let i=0;i<D.dots.xp;i++)this.burst(u,h,D.col.xp,D.col.xpCore,i?null:()=>B.floats.push({x:h.x,y:h.y-28*k,t:'+'+D.xp+' XP',life:.9,c:D.col.xp}));
     if(by&&by.team===0&&!by.hero&&!by.comp&&by.hp>0)for(let i=0;i<D.dots.troop;i++)this.burst(u,by,D.col.troop,D.col.troopCore,null);
     const spot=()=>({x:u.x+(Math.random()-.5)*14*k,y:u.y+(Math.random()-.5)*8*k,ph:Math.random()*6.283}),M=Object.values(MONSTERS).find(m=>m.unit===u.type);
-    if(M){if(M.mat&&Math.random()<D.beast)this.ground.push({k:'mat',id:M.mat,...spot()});return}
+    // (a beast leaves its hide or nothing, never coins nor gear: a hunted animal (its meat and trophies the hunt's), a breed, an alpha
+    // with no monster of its own type (they dropped a man's coins and gear, 2026-11-13))
+    if(M||ST[u.type]?.beast||ST[u.type]?.wildlife){if(M&&M.mat&&Math.random()<D.beast)this.ground.push({k:'mat',id:M.mat,...spot()});return}
     if(Math.random()<D.coin.chance)this.ground.push({k:'gold',n:rint(D.coin.n[0],D.coin.n[1]),...spot()});
-    if(Math.random()<D.gear)this.ground.push({k:'gear',id:randomGear(0,gearTop()),...spot()})}
+    if(Math.random()<D.gear&&(this.gears||0)<D.gears){this.gears=(this.gears||0)+1;this.ground.push({k:'gear',id:randomGear(0,gearTop()),...spot()})}}
   // (dots from u to whom they go: out in a burst, then home on him)
   burst(u,to,c,c2,on){const k=worldEffectScale(),a=Math.random()*6.283,v=(40+Math.random()*70)*k;
     this.orbs.push({x:u.x,y:u.y-6*k,vx:Math.cos(a)*v,vy:Math.sin(a)*v-50*k,t:0,wait:.3+Math.random()*.25,to,c,c2,on})}

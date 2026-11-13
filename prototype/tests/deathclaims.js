@@ -84,5 +84,9 @@ Kit.suite(({ok,info})=>{
   {t.Remains.list=[];C.on=false;try{L.kin={rel:null,of:1};const g=grave({rest:'tomb',unburied:0}),m=t.asMonster({id:'wolf',n:2,lv:1,x:g.x,y:g.y,hx:g.x,hy:g.y,cool:0,t:0,a:0});W.monsters=[m];
    ok(Cl.xp(g)===g.xp&&!Cl.guard(g)&&!Cl.cost(g)&&!Cl.cards(t.TOWNS[0]).length,'off: the whole of it for anyone, no cost, nothing guards it')}finally{C.on=true;W.monsters=[]}}
  }finally{window.Math.random=rnd;D.unseenAt=unseen0;X.on=on0;X.die=die0;[X.min,X.max]=mm;D.slain=null;t.Remains.list=[];W.sites=W.sites.filter(o=>o.type!=='rest');W.lords=W.lords.filter(l=>!l.heir);for(const x of t.TOWNS)if(L.realms[x.owner])x.owner=t.FIDS[0];L.clear();P.comps={}}
+ // (what remains is worth: each piece its worth, goods and valuables too (priced by cost, goods threw and a valuable counted 5g: the
+ // 2026-11-13 balance))
+ {const v=Object.keys(t.VALUABLES)[0],w=Cl.worth({gold:10,items:[['good','grain',8],['val',v,1],['gear',Object.keys(t.ITEMS)[0],1]]});
+  ok(w===10+8*t.GOODS.grain.base+t.VALUABLES[v].v+t.ITEMS[Object.keys(t.ITEMS)[0]].v,'remains are worth their gold and each piece\'s worth, goods and valuables too ('+w+'g)')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

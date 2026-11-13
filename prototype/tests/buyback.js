@@ -24,6 +24,11 @@ Kit.suite(({ok})=>{const t=T,P=t.P,G=t.G,B=t.BUYBACK,BB=t.Buyback;Kit.begin('sol
   // ---- no room in your bag: not to be struck
   {const I=t.playerInventory;while(I.spare>0)I.put({k:'mat',id:'pelt',n:1});G.lastTown=null;t.enterTown(ash);t.act('tab','trade');t.act('deal','r:'+P.buyback[0].id);
    ok(t.TradeDeal.of().why(ash)===t.BAG_FULL,'your bag full: "'+t.BAG_FULL+'"');t.act('deal-clear');P.inv=P.inv.map(q=>q&&q.id==='pelt'?null:q)}
+  // ---- a thing bought back trains no Trading sold again (sold and bought back over and over, it trained it for nothing: the 2026-11-13 balance)
+  {const tr0=window.train;let n=0;window.train=(k,v)=>{if(k==='trade')n++;return tr0(k,v)};
+   try{P.buyback=undefined;P.gold=500;t.invAdd('gear',gid,1);G.lastTown=null;t.enterTown(ash);t.act('tab','trade');t.act('deal','o:'+slotOf(gid));t.act('deal-ok');const n1=n;
+    t.act('deal','r:'+BB.here(ash)[0].id);t.act('deal-ok');ok(P.inv[slotOf(gid)]?.back,'bought back: marked so');t.act('deal','o:'+slotOf(gid));t.act('deal-ok');ok(n1===1&&n===1,'its sale trained Trading once; sold again after buying it back, not again')}
+   finally{window.train=tr0;P.buyback=undefined}}
   // ---- off: nothing kept
   {B.on=false;try{P.buyback=undefined;ok(!BB.note({k:'gear',id:gid,n:1},5,ash)&&!P.buyback,'off: nothing kept, as before')}finally{B.on=true}}
  }finally{P.buyback=undefined;Kit.world()}
