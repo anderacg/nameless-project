@@ -1840,11 +1840,10 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
   const form=kind==='eyes'?E.eyeForms[c.eyes]:E.mouthForms[c.mouth];
   for(const side of kind==='eyes'?[0,1]:[null]){const b=bounds(raw,side);if(!b)continue;const index=kind==='eyes'?({human:c.profile==='female'?10:9,dwarf:11,orc:12,elf:13}[c.race]||9):part('mouth',c)[1],f=frame(0,index,side),pad=kind==='eyes'?.8+form[1]:.5+form[1]*.16,target=hex(colors[kind==='eyes'?'skin':'lips']),base=kind==='eyes'&&index===12||kind==='mouth'&&index===23?BASE.orc:kind==='eyes'?BASE.skin:BASE.lips;
    for(let X=Math.max(0,Math.floor((b.x-1)*scale));X<Math.min(size,Math.ceil((b.x+b.w+1)*scale));X++){
-    const x=(X+.5)/scale,col=Math.max(b.x,Math.min(b.x+b.w-1,Math.floor(x)));let top=N,bottom=-1;
-    for(let y=b.y;y<b.y+b.h;y++)if(raw[(y*N+col)*4+3]){top=Math.min(top,y);bottom=Math.max(bottom,y);}if(bottom<0){top=b.y;bottom=b.y+b.h-1;}
+    const x=(X+.5)/scale,top=b.y,bottom=b.y+b.h-1;
     for(let Y=Math.max(0,Math.floor((top-pad)*scale));Y<Math.min(size,Math.ceil((bottom+1+pad)*scale));Y++){
      const y=(Y+.5)/scale,local=(x-b.x+1)/(b.w+2),u=kind==='eyes'?.5+(local-.5)*4.85/form[0]:local,bend=kind==='eyes'?(local-.5)*form[2]*(side===0?1:-1):form[2]*((local-.5)*2)**2*.5,v=(y-top+pad-bend)/(bottom-top+1+pad*2),s=sample(f,u,v);if(!s.alpha)continue;const rgb=s.rgb,i=(Y*size+X)*4;
-     if(kind==='mouth'){put(images.mouth.data,i,recolor(rgb,target,base),s.alpha);continue;}
+     if(kind==='mouth'){const lip=index===23?hex(colors.skin).map((v,k)=>v*.8+target[k]*.2):target;put(images.mouth.data,i,recolor(rgb,lip,base),s.alpha);continue;}
      const high=Math.max(...rgb),low=Math.min(...rgb),sat=(high-low)/(high||1),circle=((u-.5)/.2)**2+((v-.56)/.32)**2<1,inner=((u-.5)/.11)**2+((v-.56)/.23)**2<1;
      const iris=circle&&(index===12?rgb[0]>rgb[1]*1.1&&rgb[1]>rgb[2]*1.3:index===13?rgb[1]>rgb[0]*.98&&rgb[1]>rgb[2]*1.1:rgb[2]>rgb[0]*1.08&&sat>.18)||inner&&high<65;
      if(iris){const ib=index===12?[184,131,48]:index===13?[99,108,62]:[74,108,129];put(images.eyes.data,i,[158,163,164],255);put(images.iris.data,i,high<55?rgb:recolor(rgb,hex(colors.iris),ib),s.alpha);}
@@ -1854,11 +1853,30 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
    }
   }for(const id of outputs)layers[id].getContext('2d').putImageData(images[id],0,0);
  }
+ // Ease the cut top of the authored nose into the forehead without softening its nostrils.
+ function noseRoot(layers,size){
+  const g=layers.nose.getContext('2d'),im=g.getImageData(0,0,size,size),d=im.data,skin=layers.face.getContext('2d').getImageData(0,0,size,size).data;let top=size,bottom=0;
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++)if(d[(y*size+x)*4+3]){top=Math.min(top,y);bottom=Math.max(bottom,y);}
+  const depth=Math.max(2,(bottom-top+1)*.22);for(let y=top;y<Math.min(size,top+depth);y++)for(let x=0;x<size;x++){const k=(y*size+x)*4;if(!d[k+3]||!skin[k+3])continue;const t=Math.min(1,(y-top)/depth);for(let c=0;c<3;c++)d[k+c]=clamp(skin[k+c]*(1-t)+d[k+c]*t);}g.putImageData(im,0,0);
+ }
+ // Paired lower canines keep their rig placement, with pointed tips and warm ivory planes.
+ function tusks(p,size){
+  const out=canvas(size),g=out.getContext('2d'),raw=p.layers.teeth.getContext('2d').getImageData(0,0,N,N).data,scale=size/N;
+  for(const side of [0]){const b=bounds(raw,side);if(!b)continue;
+   const x=(side===0?b.x:b.x+b.w)*scale,y=b.y*scale,w=b.w*scale,h=b.h*scale,sign=side===0?1:-1;
+   g.save();g.translate(x,y);g.scale(sign,1);g.beginPath();g.moveTo(w*.16,h*.95);g.bezierCurveTo(w*.23,h*.7,w*.08,h*.24,w*.32,0);g.bezierCurveTo(w*.49,h*.16,w*.57,h*.37,w*.7,h*.56);g.quadraticCurveTo(w*.9,h*.82,w*.86,h*.98);g.closePath();g.clip();
+   const light=g.createLinearGradient(0,0,w,0);light.addColorStop(0,'#91866b');light.addColorStop(.32,'#e3ddbb');light.addColorStop(.55,'#cfc6a4');light.addColorStop(1,'#9c9272');g.fillStyle=light;g.fillRect(0,0,w,h);
+   const root=g.createLinearGradient(0,h*.66,0,h);root.addColorStop(0,'rgba(92,76,49,0)');root.addColorStop(1,'rgba(92,76,49,.45)');g.fillStyle=root;g.fillRect(0,h*.66,w,h*.34);g.restore();
+  }
+  const im=g.getImageData(0,0,size,size);for(let k=3;k<im.data.length;k+=4)im.data[k]=im.data[k]>=128?255:0;
+  const mid=Math.round(p.anchors.mouth.x*scale);for(let y=0;y<size;y++)for(let x=0;x<mid;x++){const other=mid*2-1-x;if(other<0||other>=size)continue;const k=(y*size+x)*4,j=(y*size+other)*4;for(let c=0;c<4;c++)im.data[j+c]=im.data[k+c];}g.putImageData(im,0,0);return out;
+ }
  function fromTemplate(p,{colors={},size=256}={}){
   if(!loaded)throw Error('Painted portrait artwork is not ready');if(![128,256,512].includes(size))throw Error('Unsupported portrait size');
   colors=Object.fromEntries(Object.entries(E.colors).map(([key,value])=>[key,/^#[a-f0-9]{6}$/i.test(colors[key]||'')?colors[key]:value]));
   const layers={};for(const spec of E.order)layers[spec.id]=['eyes','iris','eyelids','mouth'].includes(spec.id)?canvas(size):paintMask(p,spec,colors,size);
-  feature(p,colors,size,'eyes',layers);feature(p,colors,size,'mouth',layers);
+  noseRoot(layers,size);feature(p,colors,size,'eyes',layers);feature(p,colors,size,'mouth',layers);
+  if(['small-tusks','heavy-tusks'].includes(p.config.mouth))layers.teeth=tusks(p,size);
   return {config:p.config,anchors:p.anchors,colors,layers,size,coordinateScale:size/N,template:p,style:'painted-parts'};
  }
  function composite(p,{visible=null}={}){

@@ -13,3 +13,5 @@ The game uses these bundled local images directly, with no generation service or
 Open `portrait-workshop-painted.html` for the focused 256-pixel editor: part selectors, proportion controls, seven colors, layer toggles, PNG, RGBA parts sheet and recipe exports. The parent `../portrait-workshop.html` retains the full player reservation, NPC generation, favorites and collection tools; its layer exports also use painted art.
 
 Run `python ../build.py` from this folder to regenerate embedded data and both offline editors. `workshop-adapter.js` bridges the full studio to painted rendering without replacing its character-generation API.
+
+Facial fitting uses one consistent envelope per feature, avoiding column-dependent lip and eyelid distortion. Orc lips retain skin-family color, and the two tusk options use separately exported mirrored ivory canines with pointed tips and root shading. Nose-root RGB blends into the forehead without changing its silhouette or nostrils.
