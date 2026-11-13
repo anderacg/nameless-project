@@ -771,7 +771,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  (a troll, a griffin, a wyrm: weight WORLD_SCALE.spawn.rare or less) lairs rareK (2) times as far from the holdings and from you,
 //  a mythic one away from the holdings too (world/monsters.js spawnMonster, spawnMythic), so the beasts on the map stand elsewhere
 //  (the land, holdings and herds hold: W1-W6). Was W7 c9c49005, W8 83997cd6, B2 83d3c7bb)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'7ddeb99d',W7:'4e3e79b8',W8:'da69073e',B2:'2578c11d'};
+// (W7 and B2 re-recorded 2026-11-13, on purpose: the owner, "starting hero power seems too strong", "reduce stats or attributes
+//  bonus", "make skill harder to unlock": your hero's numbers lower (data/progression.js HERO_BASE, LEVEL.dmg, a past's bonus), the
+//  origins halved, a node 60% at its proficiency's 100 (TREE_SCALE.most), nodes cost by kind and open at a proficiency's level
+//  (data/tree.js TREE_COST, TREE_GATE): the lords' trees and numbers, and yours in the save. Checked: with those put back (the new
+//  tiers kept) all 16 hold. Was W7 4e3e79b8, B2 2578c11d)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'7ddeb99d',W7:'0f3b0aa9',W8:'da69073e',B2:'d81ddd1f'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

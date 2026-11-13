@@ -39,8 +39,22 @@ function skTreeOf(S){const L=skProfs(S);if(L.includes(G.skTree))return G.skTree;
    open pulsing, reachable bronze, not yet dark. Shown anew (G.skGrow) the nodes fly out of the middle; one just learned (G.skJust)
    bursts. TREE_ROUND: its numbers, in the view's units (r0 far enough out that the first ring's nodes, evenly spaced, never touch:
    the owner, 2026-11-09, "make the node not overlap") */
-const TREE_ROUND={r0:400,dr:46,gap:.6,spread:.25,top:46,foot:92,half:250,r:{s:17,n:19,k:22,a:20,b:9}};
-const NODE_GLYPH={s:'+',n:'◆',k:'✸',a:'✦',b:''};
+const TREE_ROUND={r0:400,dr:46,gap:.6,spread:.25,top:46,foot:92,half:250,motes:24,r:{s:17,n:19,k:22,a:20,b:9}};
+/* each node's icon (the owner, 2026-11-13: "use appropriate icons"), from what it mainly does (ui/icons.js UI_ILLUSTRATIONS): the
+   active skill it unlocks or upgrades, its finisher, its perk, else its first effect (a proficiency's skill by that proficiency); a
+   bonus node none */
+const NODE_ICON={
+  ability:{whirl:'blade',dash:'dagger',leap:'hammer',quake:'stone',volley:'volley',fireball:'fire',nova:'wand',heal:'vial',cry:'rally',banner:'banner'},
+  fin:{stun:'mask',push:'hammer'},
+  perk:{shieldwall:'shieldWall',bloodlust:'attack',guide:'eye',rearguard:'withdraw',slippery:'boots',drill:'anvil',silver:'coin',oldsoldier:'crest',warden:'prisoners',
+    vanish:'cloak',forced:'boots',path:'map',quarter:'food'},
+  sk:{archery:'bow',spell:'staff',lead:'leader',tact:'map',med:'vial',eng:'tools',pers:'scroll',trade:'coin',stew:'crown',scout:'scout',hunt:'pelt',wood:'axe',surv:'fire',ride:'mount',athl:'stamina'},
+  stat:{combo3:'sword',dmg:'sword',dmgPct:'sword',hp:'fitness',hpPct:'fitness',dr:'shield',block:'shield',crit:'dagger',reach:'spear',cd:'speed',spd:'speed',sp:'stamina',spRegen:'stamina',
+    mp:'tome',mpPct:'tome',mpRegen:'tome',regen:'vial',travel:'boots',vis:'eye',slots:'troops',tHp:'garrison',tDmg:'attack',food:'food',hire:'recruit',train:'anvil',prison:'prisoners',
+    morale:'morale',loot:'gold',kick:'boots',fistPct:'gloves',fistCd:'gloves',grabCd:'gloves',grabDown:'gloves',dodgeCost:'move',dodgeCd:'move'}};
+const nodeIcon=N=>{const m=N.m,I=NODE_ICON,ks=Object.keys(m),ab=m.unlock||ks.map(q=>Object.keys(I.ability).find(a=>q!==a&&q.startsWith(a))).find(Boolean);
+  if(ab)return I.ability[ab];if(m.fin)return I.fin[m.fin];if(m.perk)return I.perk[m.perk]||'skills';
+  const q=ks.find(q=>q==='sk'||I.stat[q]);return q==='sk'?I.sk[Object.keys(m.sk)[0]]||'book':I.stat[q]||'skills'};
 // (a hexagon of radius r round x, y)
 const hexPts=(x,y,r)=>[0,1,2,3,4,5].map(i=>{const a=Math.PI/3*i+Math.PI/6;return (x+r*Math.cos(a)).toFixed(1)+','+(y+r*Math.sin(a)).toFixed(1)}).join(' ');
 // (every node's place, each slice's angle (a, radians, 0 east), width and rim; made once)
@@ -64,8 +78,8 @@ function treeSvg(S,k){
   const del=(x,y)=>grow?(.1+Math.hypot(x,y)/rim*.7).toFixed(2)+'s':'0s',up=(x,y)=>' transform="rotate('+(-spin).toFixed(2)+' '+x.toFixed(1)+' '+y.toFixed(1)+')"';
   let defs='<defs><radialGradient id="tpGlow"><stop offset="0" stop-color="#ffe08a" stop-opacity=".55"/><stop offset="1" stop-color="#ffe08a" stop-opacity="0"/></radialGradient></defs>';
   // the field: faint motes; the rings each tier stands on
-  let svg='';for(let n=0;n<=9;n+=3)svg+='<circle cx="0" cy="0" r="'+(R.r0+n*R.dr)+'" class="tw-ring"/>';
-  svg+=[...Array(60)].map((_,i)=>{const a=hash(i,1,53)*Math.PI*2,r=hash(i,2,53)*(rim+60);return '<circle class="tp-mote" cx="'+(r*Math.cos(a)).toFixed(0)+'" cy="'+(r*Math.sin(a)).toFixed(0)+'" r="'+(hash(i,3,53)<.3?2:1.3)+'" style="--t:'+(hash(i,4,53)*4).toFixed(2)+'s"/>'}).join('');
+  let svg='';const top=Math.max(...Object.values(TREE).map(N=>N.ring||0));for(let n=0;n<=top;n+=3)svg+='<circle cx="0" cy="0" r="'+(R.r0+n*R.dr)+'" class="tw-ring"/>';
+  svg+=[...Array(TREE_ROUND.motes)].map((_,i)=>{const a=hash(i,1,53)*Math.PI*2,r=hash(i,2,53)*(rim+60);return '<circle class="tp-mote" cx="'+(r*Math.cos(a)).toFixed(0)+'" cy="'+(r*Math.sin(a)).toFixed(0)+'" r="'+(hash(i,3,53)<.3?2:1.3)+'" style="--t:'+(hash(i,4,53)*4).toFixed(2)+'s"/>'}).join('');
   // each slice: its spoke from the middle, its proficiency's name and level at its foot, the shown one lit
   for(const q in sec){const s=sec[q],x=Math.cos(s.a),y=Math.sin(s.a),lx=(R.r0-62)*x,ly=(R.r0-62)*y,on=q===k,lv=TS.profLv(q);if(!whole&&!on){svg+='<line x1="'+(48*x).toFixed(1)+'" y1="'+(48*y).toFixed(1)+'" x2="'+((R.r0-26)*x).toFixed(1)+'" y2="'+((R.r0-26)*y).toFixed(1)+'" class="tw-spoke"/>';continue}
     svg+='<line x1="'+(48*x).toFixed(1)+'" y1="'+(48*y).toFixed(1)+'" x2="'+((R.r0-26)*x).toFixed(1)+'" y2="'+((R.r0-26)*y).toFixed(1)+'" class="tw-spoke'+(on?' on':'')+'"/>'+
@@ -73,7 +87,7 @@ function treeSvg(S,k){
   // the groups, named outside the rim at their middle
   for(const [g,L] of TREE_RING){const a=(sec[L[0]].a+sec[L[L.length-1]].a)/2,r=rim+70,x=r*Math.cos(a),y=r*Math.sin(a);svg+='<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" text-anchor="middle" class="tw-group"'+up(x,y)+'>'+htmlText(g)+'</text>'}
   // the links, behind the nodes: each once, the first pairs' to the middle
-  const st=id=>treeHasOf(S,id),done=new Set(),ids=Object.keys(P),linkOf=(x1,y1,x2,y2,a,b,open,cur)=>'<path class="tp-link'+(a&&b?' lit':open?' open':'')+(cur?'':' far')+'" pathLength="1" d="M'+x1.toFixed(1)+' '+y1.toFixed(1)+' L'+x2.toFixed(1)+' '+y2.toFixed(1)+'" style="--d:'+del(x2,y2)+'"/>'+(a&&b?'<path class="tp-flow" pathLength="1" d="M'+x1.toFixed(1)+' '+y1.toFixed(1)+' L'+x2.toFixed(1)+' '+y2.toFixed(1)+'" style="--t:'+(hash(Math.round(x2),Math.round(y2),7)*1.4).toFixed(2)+'s"/>':'');
+  const st=id=>treeHasOf(S,id),done=new Set(),ids=Object.keys(P),linkOf=(x1,y1,x2,y2,a,b,open,cur)=>'<path class="tp-link'+(a&&b?' lit':open?' open':'')+(cur?'':' far')+'" pathLength="1" d="M'+x1.toFixed(1)+' '+y1.toFixed(1)+' L'+x2.toFixed(1)+' '+y2.toFixed(1)+'" style="--d:'+del(x2,y2)+'"/>'+(a&&b&&cur&&!whole?'<path class="tp-flow" pathLength="1" d="M'+x1.toFixed(1)+' '+y1.toFixed(1)+' L'+x2.toFixed(1)+' '+y2.toFixed(1)+'" style="--t:'+(hash(Math.round(x2),Math.round(y2),7)*1.4).toFixed(2)+'s"/>':'');
   for(const id of ids){const N=TREE[id],[x,y]=P[id],cur=N.prof===k||whole;
     if(N.entry){const s=sec[N.prof],sx=(R.r0-26)*Math.cos(s.a),sy=(R.r0-26)*Math.sin(s.a);svg+=linkOf(sx,sy,x,y,true,st(id),canTakeOf(S,id),cur)}
     for(const l of N.links){if(done.has(l+'|'+id)||!P[l])continue;done.add(id+'|'+l);const [x2,y2]=P[l],a=st(id),b=st(l);svg+=linkOf(x,y,x2,y2,a,b,a&&canTakeOf(S,l)||b&&canTakeOf(S,id),cur)}}
@@ -83,9 +97,11 @@ function treeSvg(S,k){
   let labs='';for(const id of ids){const N=TREE[id],[x,y]=P[id],have=st(id),can=canTakeOf(S,id),ok=TS.reach(id),r=R.r[N.t]||16,cur=N.prof===k;
     const cls='tp-node '+(have?'have':can?'open':ok?'wait':'locked')+(N.t==='b'?' bonus':'')+(cur||whole?'':' far')+(G.skSel===id?' sel':'')+(G.skJust===id?' just':'');
     const body=N.t==='k'?'<rect x="'+(x-r*.8).toFixed(1)+'" y="'+(y-r*.8).toFixed(1)+'" width="'+(r*1.6).toFixed(1)+'" height="'+(r*1.6).toFixed(1)+'" rx="3" transform="rotate(45 '+x.toFixed(1)+' '+y.toFixed(1)+')" class="tp-body"/>':'<polygon points="'+hexPts(x,y,r)+'" class="tp-body"/>';
-    svg+='<g class="'+cls+'" data-act="tree-sel" data-arg="'+id+'" role="button" tabindex="'+(cur?0:-1)+'" aria-pressed="'+(G.skSel===id)+'" aria-label="'+htmlText(N.n)+' ('+(have?'learned':can?'can learn':ok?'no point left':'not reached yet')+')" style="--d:'+del(x,y)+';--fx:'+(-x).toFixed(0)+'px;--fy:'+(-y).toFixed(0)+'px">'+
-      '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+16)+'" fill="url(#tpGlow)" class="tp-aura"/>'+(N.t==='a'?'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+6)+'" class="tp-ring"/>':'')+'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+10)+'" class="tp-burst"/>'+body+
-      (NODE_GLYPH[N.t]?icon(N.t==='s'?'stamina':N.t==='n'?'gem':N.t==='a'?'skills':'ward',r*1.1,'tp-glyph').replace('<svg ','<svg x="'+(x-r*.55).toFixed(1)+'" y="'+(y-r*.55).toFixed(1)+'" '+up(x,y)+' '):'')+
+    // (the shown slice's in full: its glow, its ring, its burst, its icon; the rest, and the whole wheel, the body alone: TREE_ROUND)
+    const full=cur&&!whole,lit=full&&(have||can);
+    svg+='<g class="'+cls+'" data-act="tree-sel" data-arg="'+id+'" role="button" tabindex="'+(cur?0:-1)+'" aria-pressed="'+(G.skSel===id)+'" aria-label="'+htmlText(N.n)+' ('+(have?'learned':can?'can learn':ok?(TS.gated(id)?'needs '+SKILLS[N.prof].n+' '+TS.gate(id):'not enough points'):'not reached yet')+')"'+(grow?' style="--d:'+del(x,y)+';--fx:'+(-x).toFixed(0)+'px;--fy:'+(-y).toFixed(0)+'px"':'')+'>'+
+      (lit?'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+16)+'" fill="url(#tpGlow)" class="tp-aura"/>':'')+(full&&N.t==='a'?'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+6)+'" class="tp-ring"/>':'')+(G.skJust===id?'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r+10)+'" class="tp-burst"/>':'')+body+
+      (full&&N.t!=='b'?icon(nodeIcon(N),r*1.15,'tp-glyph').replace('<svg ','<svg x="'+(x-r*.575).toFixed(1)+'" y="'+(y-r*.575).toFixed(1)+'" '+up(x,y)+' '):'')+
       '</g>';if(N.t!=='b'&&!whole&&cur){const side=PROF_TREE[N.prof][N.tier][0][0]===id?-1:1;labs+='<g class="tp-lab '+(have?'have':can?'open':ok?'wait':'locked')+'" style="--d:'+del(x,y)+'"><text text-anchor="'+(side<0?'end':'start')+'" class="tp-name"'+up(x,y)+'>'+nameLines(N.n,x,y,side)+'</text></g>'}}
   svg+=labs;
   // the view: the shown slice turned up, from just under its foot to over its rim (or the whole circle)
@@ -93,15 +109,18 @@ function treeSvg(S,k){
   return '<svg class="tr-svg tp tw'+(grow?' grow':'')+(whole?' whole':'')+'" data-key="'+twKey(k)+'" viewBox="'+vb.map(v=>+v.toFixed(1)).join(' ')+'" preserveAspectRatio="xMidYMid meet" role="group" aria-label="The skill tree, '+SKILLS[k].n+' shown">'+defs+
     '<g class="tw-wheel" style="--from:'+from.toFixed(2)+'deg;--to:'+spin.toFixed(2)+'deg;transform:rotate('+spin.toFixed(2)+'deg)">'+svg+'</g></svg>';
 }
+// (what a node gives by its proficiency's level, in words: data/progression.js TREE_SCALE)
+const treeScaleText=()=>Math.round(100*treeScale(0))+'% at 0, '+Math.round(100*treeScale(TREE_SCALE.full))+'% at '+TREE_SCALE.full+', more past it';
 // the node chosen on the tree: what it does, its kind and tier, how strong it is at its proficiency now, Learn (a point) or Unlearn
 // (gold), or why not yet
 function treeNodePane(S,k){
   const id=G.skSel&&TREE[G.skSel]&&TREE[G.skSel].prof===k?G.skSel:null;if(!id)return '<aside class="tr-pane"><p class="muted">Choose a node on the tree to see it.</p></aside>';
   const N=TREE[id],T=talentsOf(S),have=T.has(id),can=T.canTake(id),pts=T.points(),u=N.m.unlock,refund=T.quoteRefund(id),lv=T.profLv(k),sc=Math.round(100*treeScale(lv));
-  const why=have?(refund.ok?'':refund.code==='gold'?'Not enough gold to unlearn it.':'A node above grows from it: unlearn that first.'):N.tier&&!T.tierHas(k,N.tier-1)?'Learn a node of the tier below first.':!pts.left?'No skill points left: one each level.':'';
-  const str=Object.keys(N.m).some(q=>typeof N.m[q]==='number'||q==='sk')?'<p class="muted">At '+SKILLS[k].n+' '+lv+' it gives '+sc+'% of this (a quarter at 0, whole at 100, more past it).</p>':'';
-  return '<aside class="tr-pane"><small>'+NODE_KIND(N)+', '+SKILLS[k].n+(N.hub?' path, after tier '+(N.tier+1):' tier '+(N.tier+1))+'</small><h3>'+htmlText(N.n)+'</h3><p>'+N.d+'</p>'+str+(u&&S===P?'<p class="muted">'+skillStats(u)+'.</p>':'')+
-    (have?'<p class="good">Learned</p>'+fbBtn('tree-refund',id,'Unlearn, '+refundCost()+'g',refund.ok?'':'x'):fbBtn('tree-take',id,fbIcon('skills')+' Learn, 1 point',can?'':'x','primary'))+(why?'<p class="muted">'+why+'</p>':'')+'</aside>'}
+  const cost=T.cost(id),gate=T.gate(id),why=have?(refund.ok?'':refund.code==='gold'?'Not enough gold to unlearn it.':'A node above grows from it: unlearn that first.'):!T.reach(id)?'Learn a node linked to it first.':
+    T.gated(id)?'Needs '+SKILLS[k].n+' '+gate+' (now '+lv+').':pts.left<cost?'Needs '+cost+' skill point'+(cost>1?'s':'')+', you have '+pts.left+': one each level.':'';
+  const str=Object.keys(N.m).some(q=>typeof N.m[q]==='number'||q==='sk')?'<p class="muted">At '+SKILLS[k].n+' '+lv+' it gives '+sc+'% of this ('+treeScaleText()+').</p>':'';
+  return '<aside class="tr-pane"><small>'+NODE_KIND(N)+', '+SKILLS[k].n+(N.hub?' path, after tier '+(N.tier+1):' tier '+(N.tier+1))+', '+cost+' point'+(cost>1?'s':'')+(gate?', at '+gate:'')+'</small><h3>'+htmlText(N.n)+'</h3><p>'+N.d+'</p>'+str+(u&&S===P?'<p class="muted">'+skillStats(u)+'.</p>':'')+
+    (have?'<p class="good">Learned</p>'+fbBtn('tree-refund',id,'Unlearn, '+refundCost()+'g',refund.ok?'':'x'):fbBtn('tree-take',id,fbIcon(nodeIcon(N))+' Learn, '+cost+' point'+(cost>1?'s':''),can?'':'x','primary'))+(why?'<p class="muted">'+why+'</p>':'')+'</aside>'}
 /* the traits (were Basics; the owner, 2026-11-08): the moves everyone has from the start, and what your race and your past are. The
    combo's Third Blow and its finishers are nodes of the weapons' trees (data/tree.js combo3, fin) */
 const HERO_TRAITS=[
@@ -142,7 +161,7 @@ function profBody(){
   const head='<div class="row fb-prof-level"><div class="info"><strong>Level '+lvl+(pts.left?', <span class="gold">'+pts.left+' skill point'+(pts.left===1?'':'s')+' to spend</span>':'')+'</strong><small>Experience comes from battles, quests, beasts and lore, and from every level your proficiencies reach. Each level: '+LEVEL.pts+' skill point for the tree (Skill trees).</small><div class="bar" role="progressbar" aria-label="Level progress" aria-valuenow="'+pc+'"><i style="width:'+pc+'%"></i></div><small>'+xp+' / '+Math.round(need)+' XP to level '+(lvl+1)+'</small></div></div>';
   const row=k=>{const s=S.sk[k];if(!s)return '';const lv=s.lv,pw=profPow(lv),bonus=who?0:skill(k)-pw,pc2=Math.round(100*s.xp/SK_XP(lv)),apt=!who&&P.apt&&P.apt[k];
     return '<div class="row"><div class="info"><strong>'+SKILLS[k].n+(apt?' <span class="good" style="font-size:12px">knack +'+Math.round(apt*100)+'%</span>':'')+'</strong><small>'+SKILLS[k].d+', power '+pw.toFixed(1)+(bonus>=.05?' <span class="good">+'+bonus.toFixed(1)+'</span> from your tree, gear and roles':'')+'</small><div class="bar" role="progressbar" aria-label="'+SKILLS[k].n+' progress" aria-valuenow="'+pc2+'"><i style="width:'+pc2+'%"></i></div></div><span class="own">'+lv+'</span></div>'};
-  return head+'<p class="muted" style="font-size:13px">Proficiencies rise as you use them, with no top. The higher one is, the stronger the nodes of its tree (a quarter at 0, whole at 100).</p>'+PROF_GROUPS.map(([g,L])=>{const r=L.filter(k=>!keys||keys.includes(k)).map(row).join('');return r?'<div class="lab">'+g+'</div>'+r:''}).join('');
+  return head+'<p class="muted" style="font-size:13px">Proficiencies rise as you use them, with no top. The higher one is, the stronger the nodes of its tree ('+treeScaleText()+'), and its tiers open at '+TREE_GATE.slice(1).join(', ')+'.</p>'+PROF_GROUPS.map(([g,L])=>{const r=L.filter(k=>!keys||keys.includes(k)).map(row).join('');return r?'<div class="lab">'+g+'</div>'+r:''}).join('');
 }
 // the Skill trees tab: the shown one's tree, the main thing, and the chosen node; under it the switch between the proficiencies (the
 // owner, 2026-11-08: "the selection between proficiency should be at the bottom and have an arrow to click or swap between them. Or
@@ -157,7 +176,7 @@ function skTreeBody(){
    fbBtn('tree-prof',p,'<strong>'+SKILLS[p].n+'</strong><small>'+S.sk[p].lv+'</small>'+treeWait(T.pending(p).length?'•':0),'',p===k?'on':'')).join('')+'</nav>';
  const sw='<div class="fb-tree-switch">'+side(-1)+tsBtn('tree-list',null,'<strong>'+SKILLS[k].n+'</strong><small>'+T.profLv(k)+'</small>'+treeWait(pts.left)+'<i class="fb-ts-more'+(more?' wait':'')+'" aria-hidden="true">'+(open?'▴':'▾')+'</i>',open?'Hide the list':'All proficiencies','fb-ts-now'+(open?' on':''))+side(1)+'</div>';
  const out='<div class="fb-skill-work fb-trees"><section class="fb-tree-pane" aria-label="'+SKILLS[k].n+' skill tree"><div class="fb-tree-head"><strong>'+SKILLS[k].n+', '+T.profLv(k)+'</strong><small>'+
-   '<b class="'+(pts.left?'gold':'')+'">'+pts.left+' skill point'+(pts.left===1?'':'s')+' to spend</b>, one each level, on any tree, its nodes '+Math.round(100*treeScale(T.profLv(k)))+'% strong at '+SKILLS[k].n+' '+T.profLv(k)+'</small></div>'+
+   '<b class="'+(pts.left?'gold':'')+'">'+pts.left+' skill point'+(pts.left===1?'':'s')+' to spend</b>, one each level, on any tree (a passive 1, a notable or a skill 2, a keystone 3), its nodes '+Math.round(100*treeScale(T.profLv(k)))+'% strong at '+SKILLS[k].n+' '+T.profLv(k)+'</small></div>'+
    '<div class="tr-stage">'+treeSvg(S,k)+'<div class="tw-tools">'+tsBtn('tree-whole',null,G.skWhole?'◉':'◎',G.skWhole?'Back to '+SKILLS[k].n:'The whole tree','fb-ts-whole'+(G.skWhole?' on':''))+tsBtn('tree-zoom','in','+','Zoom in','tw-zoom')+tsBtn('tree-zoom','out','−','Zoom out','tw-zoom')+'</div>'+treeNodePane(S,k)+list+'</div>'+sw+'</section></div>';
  G.skGrow=false;G.skJust=null;return out;
 }
@@ -167,6 +186,10 @@ function renderSkills(){
  const body=tab==='talents'?skTreeBody():'<div class="fb-scroll" data-fb-scroll="skills:'+tab+'">'+(tab==='abilities'?skillBarBody():tab==='traits'?traitBody():profBody())+'</div>';
  fbShow(who?COMPS[who].short+'’s skills':'Skills','Level '+(who?S.lv:P.level)+', '+pts,tabs,body,['sk-close',null,'Back to '+(who?COMPS[who].short:'Army')],['sk-map',null,'Back to map'],'fb-skills','Army, '+htmlText(bandName()));
 }
+// (a node of the shown slice chosen: marked and its pane shown in place, the wheel kept as it is, not drawn anew)
+function treeSelect(id){const g=panel.querySelector('svg.tw .tp-node[data-arg="'+id+'"]'),pane=panel.querySelector('.tr-pane');if(!g||!pane)return false;
+  for(const e of panel.querySelectorAll('svg.tw .tp-node.sel')){e.classList.remove('sel');e.setAttribute('aria-pressed','false')}
+  G.skSel=id;g.classList.add('sel');g.setAttribute('aria-pressed','true');const S=skSubj();pane.outerHTML=treeNodePane(S,skTreeOf(S));return true}
 function skillsAct(a,arg){
   if(!a.startsWith('sk-')&&!a.startsWith('tree-')&&!a.startsWith('lv-')&&a!=='slot-set')return false;
   if(a==='sk-map'){G.skWho=null;G.mode='world';hidePanel();return true}
@@ -176,7 +199,7 @@ function skillsAct(a,arg){
   else if(a==='tree-prof'&&PROF_TREE[arg]){if(G.skTree!==arg)G.skGrow=true;G.skTree=arg;G.skSel=null;G.skTreeList=false}
   else if(a==='tree-step'){const S=skSubj(),L=skProfs(S),i=L.indexOf(skTreeOf(S)),p=L[(i+(+arg<0?-1:1)+L.length)%L.length];if(p&&p!==G.skTree){G.skGrow=true;G.skTree=p;G.skSel=null}G.skTreeList=false}
   else if(a==='tree-list')G.skTreeList=!G.skTreeList;
-  else if(a==='tree-sel'&&TREE[arg]){G.skSel=arg;if(TREE[arg].prof&&TREE[arg].prof!==G.skTree){G.skTree=TREE[arg].prof;G.skWhole=false}}// (another slice's node: the wheel turns to it)
+  else if(a==='tree-sel'&&TREE[arg]){if(TREE[arg].prof===skTreeOf(skSubj())&&!G.skWhole&&treeSelect(arg))return true;G.skSel=arg;if(TREE[arg].prof&&TREE[arg].prof!==G.skTree){G.skTree=TREE[arg].prof;G.skWhole=false}}// (another slice's node: the wheel turns to it)
   else if(a==='tree-whole')G.skWhole=!G.skWhole;
   else if(a==='tree-zoom'){const svg=panel.querySelector('svg.tw');if(svg)twZoom(svg,arg==='in'?1/TREE_PAN.step:TREE_PAN.step)}
   else if(a==='tree-focus'&&PROF_TREE[arg]){if(G.skTree!==arg)G.skSel=null;G.skTree=arg;G.skWhole=false}// (a slice's name: the wheel turns to it, close)

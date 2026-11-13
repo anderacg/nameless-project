@@ -195,6 +195,9 @@
 .tw-lv{font-size:12px;fill:#8a8270}.tw-sec.on .tw-lv{fill:#e8b94a}
 .tw-group{font:italic 700 22px Georgia,'Times New Roman',serif;fill:#5a5040;letter-spacing:.06em}
 .tp-node.far{opacity:.38}.tp-node.far .tp-name{display:none}.tp-link.far{opacity:.35}
+/* (the slices not shown, and the whole wheel: plain shapes, no glow or shadow to paint: ui/talents.js treeSvg) */
+.tp-node.far .tp-body,.tp-link.far,.tw.whole .tp-body,.tw.whole .tp-link{filter:none}
+.tp-glyph{opacity:1}.tp-node.locked .tp-glyph{opacity:.45}.tp-node.wait .tp-glyph{opacity:.75}
 .tw .tp-name{font-size:15px;stroke-width:5px}.tw .tp-glyph{font-size:15px}.tw.whole .tw-sec text{font-size:13px}.tw.whole .tw-sec.on text{font-size:16px}
 .tp-node.bonus .tp-body{stroke-width:2}.tp-node.bonus.have .tp-body{filter:drop-shadow(0 0 4px #e8b94acc)}
 .tp-roottext{font-size:13px}

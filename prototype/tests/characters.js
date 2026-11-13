@@ -48,7 +48,7 @@ try{
  // the kit: every character but your hero has its own skill tree, fighting skills and gear; one formula for them all
  {const L2=W.lords.find(l=>l!==L)||L;for(const k of ['kit','tree','slots','gear','gearT'])delete L2[k];L2.lv=7;L2.sk={lead:{lv:1,xp:0}};const c2=new t.Lord(L2);t.charKit(c2);
   {const want=7*t.LEVEL.pts;
-  ok(L2.tree.length===1+want&&!t.treePendingOf(L2).length,'a lord at 7 has grown his trees himself: a skill point a level ('+want+'), spent by a '+c2.cls()+' ('+L2.tree.slice(1).join(', ')+')')}
+  ok(t.talentsOf(L2).points().spent>want-t.TREE_COST.k&&!t.treePendingOf(L2).length,'a lord at 7 has grown his trees himself: a skill point a level ('+want+', '+t.talentsOf(L2).points().spent+' spent, each node its cost), spent by a '+c2.cls()+' ('+L2.tree.slice(1).join(', ')+')')}
   ok(c2.actives().length>0,'its skills in his slots ('+c2.actives().join(', ')+')');
   ok(L2.gear.weapon===t.gearId(t.OUTFIT[c2.race][0],2)&&L2.gear.body===t.gearId('mail',2)&&L2.gear.head===t.gearId('helm',2),'and wears gear of his level (tier 2: '+[L2.gear.weapon,L2.gear.body,L2.gear.head].join(', ')+')');
   ok(t.FIGHT_SK.every(k=>L2.sk[k]&&Math.abs(L2.sk[k].lv-Math.round(2*PROF.per))<1e-9),'and fights with the skills of his level (One-Handed, Two-Handed, Archery 2 in power)');
@@ -58,20 +58,20 @@ try{
  {P.comps={brann:{ap:0,role:''}};const cb=t.compInit('brann');cb.lv=1;cb.xp=0;const cc=t.charOf(cb,'brann');t.charKit(cc);
   ok(same(t.compStats('brann'),t.charStats(cc)),'a companion\u2019s numbers are the same formula');
   const n0=cb.tree.length,l0=cb.lv;let k=0;while(cb.lv<l0+2&&k++<3000)cc.train('oneh',5,true);const left=t.talentsOf(cb).points().left;ok(cb.lv>=l0+2&&cb.tree.length===n0&&left===cb.lv*t.LEVEL.pts-t.talentsOf(cb).points().spent&&left>=2&&t.treePendingOf(cb).length===left,'with you, its levels (from its practice) give skill points for you to spend ('+left+'; it does not spend them itself)');
-  ok(t.takeNodeOf(cb,'oneh_str',true)&&t.talentsOf(cb).points().left===left-1,'you spend one in its tree (Strength)');
+  ok(t.takeNodeOf(cb,'block_tough',true)&&t.talentsOf(cb).points().left===left-1,'you spend one in its tree (Toughness, a passive)');
   const hb=t.charStats(cc).hp;cb.tree.push('block_skin');const ha=t.charStats(cc).hp;cb.tree.pop();ok(ha>hb,'and what its trees give shows in its numbers (Thick Skin: '+hb+' \u2192 '+ha+' health)')}
  // the window: a companion's card, its tree to grow (the Skills page, for it), its slots
  {P.comps={brann:{ap:0,role:''}};const cb=t.compInit('brann');cb.lv=0;cb.xp=0;t.charKit(t.charOf(cb,'brann'));cb.lv=3;cb.sk.oneh.lv=45;// (a newcomer spends what its level has given it at once: kit; the rest is yours)
-cb.lv=4;['oneh_third','oneh_p1','oneh_p2','oneh_whirl'].forEach(id=>t.takeNodeOf(cb,id,true));G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');const pn=()=>document.getElementById('panel');
+cb.lv=6;['oneh_third','oneh_p1','oneh_p2','oneh_whirl'].forEach(id=>t.takeNodeOf(cb,id,true));G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');const pn=()=>document.getElementById('panel');
   ok((card=>card&&card.querySelectorAll('.ucard-x .uc-stats .uc-stat').length>=8&&card.querySelector('[data-unit-tab="character"]')&&/Whirlwind/.test(card.innerHTML))(pn().querySelector('.fb-comp-detail')),'a companion\u2019s window shows its card: its numbers, abilities and its skills');
-  const P0=P.tree.slice();cb.sk.oneh.lv=60;t.renderComp();cb.lv=7;t.act('party-comp-tab','skills');ok(/Skill points to spend<\/span><strong>3<\/strong>/.test(pn().querySelector('.fb-skills-summary').innerHTML)&&pn().querySelector('.fb-unit-actions [data-act="cm-tree"]'),'its points to spend (level 7: seven, four spent), and its trees to open');
+  const P0=P.tree.slice();cb.sk.oneh.lv=60;t.renderComp();cb.lv=9;t.act('party-comp-tab','skills');ok(/Skill points to spend<\/span><strong>3<\/strong>/.test(pn().querySelector('.fb-skills-summary').innerHTML)&&pn().querySelector('.fb-unit-actions [data-act="cm-tree"]'),'its points to spend (level 9: nine, six spent), and its trees to open');
   t.act('cm-tree');ok(G.mode==='skills'&&G.skWho==='brann'&&/Brann’s skills/.test(pn().innerHTML)&&/Back to Brann/.test(pn().innerHTML)&&!/Special skills/.test(pn().innerHTML),'the Skills page opens on Brann\u2019s own tree');
-  const nd='oneh_dash';t.act('tree-take',nd);ok(cb.tree.includes(nd)&&t.talentsOf(cb).points().left===2&&P.tree.join()===P0.join(),'learning there grows Brann\u2019s tree, not yours ('+nd+')');
+  const nd='oneh_dash';t.act('tree-take',nd);ok(cb.tree.includes(nd)&&t.talentsOf(cb).points().left===3-t.TREE_COST.a&&P.tree.join()===P0.join(),'learning there grows Brann\u2019s tree, not yours ('+nd+')');
   t.act('sk-tab','abilities');const PS=JSON.stringify(P.slots);t.act('slot-set','4:whirl');ok(cb.slots[4]==='whirl'&&JSON.stringify(P.slots)===PS,'its skill bar sets its own slots');
   t.act('sk-close');ok(G.mode==='char'&&t.compShown()&&/Brann the Wolf/.test(pn().innerHTML),'and Back returns to its card in the Army window');
   t.act('char-close');t.openSkills('talents');ok(!G.skWho&&/<h2>Skills<\/h2>/.test(pn().innerHTML),'your own Skills page is still yours');t.act('sk-close')}
  // recruiting: a chieftain right away (if your honor allows); a lord when his realm has fallen or he is disgraced
- {G.mode='world';G.modal=false;t.hidePanel();P.comps={};P.troops={};P.captives=[];P.fac=null;P.gold=0;const ch2=t.newChief('bandits',5);t.captureChief(ch2);const C0=t.charOf(ch2);t.charKit(C0);
+ {G.mode='world';G.modal=false;t.hidePanel();P.comps={};P.troops={};P.captives=[];P.fac=null;P.gold=0;const ch2=t.newChief('bandits',8);t.captureChief(ch2);const C0=t.charOf(ch2);t.charKit(C0);
   const lv=ch2.lv,tree=ch2.tree.slice(),h0=t.charStats(C0).hp;
   P.fac=t.FIDS[0];P.honor[P.fac]=2;ok(/will not stand/.test(t.recruitWhy(P.captives[0])),'a realm you serve will not stand for an outlaw in your band (honor 2)');
   P.fac=null;const hon=t.FIDS.map(f=>t.honorWith(f));ok(t.recruitWhy(P.captives[0])===''&&t.recruitCaptive(0),'free of any realm, the chieftain may join you');

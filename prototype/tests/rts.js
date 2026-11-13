@@ -303,7 +303,7 @@ try{
  {P.slots=Array(10).fill(null);P.gear.weapon=t.gearId('bow',1);P.gear.quiver='q_soldier';const B=fight(['militia']);const h=B.hero,e=B.units.find(u=>u.team===1);e.x=h.x+120;e.y=h.y;e.cd=99;e.hp=e.max=9999;e.s={...e.s,spd:0};
   const X=t.heroState();X.sp=999;let shot=0,hit=0,last=e.hp;run(150,()=>{shot=Math.max(shot,B.arrows.length);if(e.hp<last-.01)hit++;last=e.hp});/* (a hit: its hp falls; it may mend over the time) */ok(shot>0&&hit>0,'with a bow they draw, loose and hit ('+hit+' hits)');P.gear.weapon=t.gearId('sword',1);if(t.B){t.B.over=true;t.B.endT=0;t.B=null}}
  // champions: lords, chieftains and companions fight as your hero does
- {P.slots=Array(10).fill(null);P.comps={brann:{ap:0,role:''}};{const cr=t.compInit('brann');cr.lv=0;t.charKit(t.charOf(cr,'brann'));cr.lv=4;cr.sk.oneh.lv=35;// (four points for you to spend: a newcomer spends what it joins with)
+ {P.slots=Array(10).fill(null);P.comps={brann:{ap:0,role:''}};{const cr=t.compInit('brann');cr.lv=0;t.charKit(t.charOf(cr,'brann'));cr.lv=6;cr.sk.oneh.lv=35;// (six points for you to spend: a newcomer spends what it joins with)
 ['oneh_third','oneh_p1','oneh_p2','oneh_whirl'].forEach(id=>t.takeNodeOf(cr,id,true))}const B=fight(['militia','militia']);const c=B.units.find(u=>u.comp),fs=B.units.filter(u=>u.team===1);
   fs.forEach((u,i)=>{u.x=c.x+10;u.y=c.y+(i?6:-6);u.cd=99;u.hp=u.max=9999;u.s={...u.s,spd:0};u.grp=null});B.hero.x=10;B.hero.y=10;const C=t.champ(c);C.sp=999;C.cds={whirl:99};
   const steps=[];for(let i=0;i<3;i++){c.cd=0;t.champStrike(c,fs[0]);steps.push(C.step)}ok(steps.join()==='0,1,2'&&fs[0].hp<9999,'a companion swings the whole combo of their weapon ('+t.champCombo(c).map(x=>x.n).join(' → ')+')');

@@ -16,7 +16,7 @@ try{
  // combo (all three blows: Third Blow from the Tree)
  if(!P.tree.includes('oneh_third'))P.tree.push('oneh_third');let B=fresh(['chief','chief']);B.noMorale=true;B.units.filter(u=>u.team===1).forEach(u=>u.hp=u.max=9999);// (nobody routs or falls: the combo is what is tested)
  const X=()=>B.hx||t.heroState(),h=B.hero,steps=[];
- t.swing();steps.push(X().step);tick(B,.42);t.swing();steps.push(X().step);tick(B,.42);const e0=B.units.find(u=>u.team===1&&u.hp>0),hp0=e0.hp;t.swing();steps.push(X().step);
+ t.swing();steps.push(X().step);tick(B,.5);t.swing();steps.push(X().step);tick(B,.5);const e0=B.units.find(u=>u.team===1&&u.hp>0),hp0=e0.hp;t.swing();steps.push(X().step);
  ok(steps.join(',')==='0,1,2','three presses inside the window chain Slash → Sweep → Finisher ('+steps.join(',')+')');
  ok(X().stop>0&&B.units.some(u=>u.team===1&&(u.stun>0||u.kx)),'the finisher knocks back, staggers and triggers hit-stop');
  const ux=B.units.filter(u=>u.team===1).map(u=>u.x).join();t.updateBattle(.01);ok(B.units.filter(u=>u.team===1).map(u=>u.x).join()===ux,'hit-stop freezes the fight for a moment');

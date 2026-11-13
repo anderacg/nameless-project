@@ -39,8 +39,8 @@ try{
  {const s0=P.sk.pers.lv+P.sk.pers.xp/1e3;t.gainXp(40,'talk');ok(P.sk.pers.lv+P.sk.pers.xp/1e3>s0,'a talk trains Persuasion');}
  ok(t.QUEST_TRAIN.CourierQuest==='trade'&&t.QUEST_TRAIN.MissingQuest==='search','quests train by kind (deliveries Trade, the missing Scouting)');
  // the combo's upgrades in the weapons' trees (One-Handed: Third Blow at 15, the finishers at 60)
- P.tree=[P.origin];P.sk.oneh.lv=20;ok(t.heroCombo().length===2,'the combo is two blows to begin with');
- ok(t.canTakeOf(P,'oneh_third')&&!t.canTakeOf(P,'oneh_push'),'Third Blow at One-Handed 15, the finishers not before 60');
+ P.tree=[P.origin];P.sk.oneh.lv=20;P.level=Math.max(P.level,t.TREE_COST.a);ok(t.heroCombo().length===2,'the combo is two blows to begin with');
+ ok(t.canTakeOf(P,'oneh_third')&&!t.canTakeOf(P,'oneh_push'),'Third Blow on the first tier ('+t.TREE_COST.a+' points), the finishers beyond it');
  t.takeNode('oneh_third');ok(t.heroCombo().length===3,'Third Blow: a third blow');
  P.level=30;P.sk.oneh.lv=60;t.talentsOf(P).pathTo('oneh_push').forEach(id=>t.takeNode(id));ok(t.heroFin()==='push','Crushing Finisher: its style');t.takeNode('oneh_stun');ok(t.heroFin()==='push','with both, the first learned rules');
  P.tree=[P.origin];P.sk.twoh.lv=60;t.takeNode('twoh_tough');t.talentsOf(P).pathTo('twoh_stun').forEach(id=>t.takeNode(id));ok(t.heroCombo().length===3&&t.heroFin()==='stun','a finisher without a Third Blow (Two-Handed 60) brings its third blow');P.tree=[P.origin];

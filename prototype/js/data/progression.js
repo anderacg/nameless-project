@@ -1,11 +1,11 @@
 'use strict';
 /* ---------- data: backgrounds, attributes, skills, perks and companions ---------- */
-// A past decides your weapon (in wood), your purse and your strengths. weapon: a gear base (none: your bare hands, combat.js
+// A past decides your weapon (in wood), your purse and your strengths (bonus: damage, halved 2026-11-13: was 2, 1, 1). weapon: a gear base (none: your bare hands, combat.js
 // FISTS); gear: what else you wear ({slot: item}: a shooter's first quiver).
 const BGS={
-  soldier:{n:'Veteran soldier',weapon:'sword',d:'A sword and 60 gold. Known in your home town, so you can hire there right away. One-Handed and Leadership.',gold:60,cargo:{grain:8},troops:{},bonus:2,sk:{oneh:2,lead:1},rep:12},
-  guard:{n:'Village guard',weapon:'spear',d:'A spear and 45 gold. Steady against riders and beasts. Leadership.',gold:45,cargo:{grain:8},troops:{},bonus:1,sk:{lead:2},rep:6},
-  woodcutter:{n:'Woodcutter',weapon:'axe',d:'An axe, 35 gold and a load of timber. Tough and at home in the woods. Athletics.',gold:35,cargo:{grain:6,timber:6},troops:{},bonus:1,sk:{athl:2}},
+  soldier:{n:'Veteran soldier',weapon:'sword',d:'A sword and 60 gold. Known in your home town, so you can hire there right away. One-Handed and Leadership.',gold:60,cargo:{grain:8},troops:{},bonus:1,sk:{oneh:2,lead:1},rep:12},
+  guard:{n:'Village guard',weapon:'spear',d:'A spear and 45 gold. Steady against riders and beasts. Leadership.',gold:45,cargo:{grain:8},troops:{},bonus:.5,sk:{lead:2},rep:6},
+  woodcutter:{n:'Woodcutter',weapon:'axe',d:'An axe, 35 gold and a load of timber. Tough and at home in the woods. Athletics.',gold:35,cargo:{grain:6,timber:6},troops:{},bonus:.5,sk:{athl:2}},
   exile:{n:'Exiled archer',weapon:'bow',gear:{quiver:'q_worn'},d:'A bow, a worn quiver of 20 arrows and 45 gold. Moves unseen and sees far. Scouting and Archery.',gold:45,cargo:{grain:6},troops:{},bonus:0,sk:{scout:1,archery:1}},
   merchant:{n:'Merchant\u2019s child',weapon:'crossbow',gear:{quiver:'q_wornCase'},d:'A crossbow, a worn case of 20 bolts, 110 gold and a small cart to trade. Trade.',gold:110,cargo:{grain:10,cloth:4},troops:{},bonus:0,sk:{trade:2}},
   hedge:{n:'Hedge mage',weapon:'staff',d:'A staff and 40 gold. Your spells hit hard; your purse is light. Spellcraft.',gold:40,cargo:{grain:6},troops:{},bonus:0,sk:{spell:2}},
@@ -84,14 +84,17 @@ const profPow=lv=>lv<=PROF.lin?lv*PROF.k:PROF.lin*PROF.k+PROF.log*Math.log(lv/PR
    skill point to be spent on the proficiency trees"): experience from what you do (battles, quests, beasts, lore: gainXp) and from
    each level a proficiency reaches (prof × that level); base + per × your level to the next (75, 125, 175…: about level 10 in two or
    three hours, 30 in fifteen, 50 in forty); each level pts skill points for the tree (no health, stamina or mana to choose: the
-   tree's nodes give them); dmg: your hero's damage a level (was 2). A companion's the same; a lord's or chieftain's as ever (LV_XP) */
-const LEVEL={base:75,per:50,prof:1,pts:1,dmg:1};
-// a node's strength by its proficiency's level (the owner: "quarter at 0"): lo at 0, 1 at full, then past × ln(level / full) more;
-// whole: what is counted whole, never part of one (a unit slot, a prisoner), at its full number from the start
-const TREE_SCALE={lo:.25,full:100,past:.5,whole:['slots','prison']};
-const treeScale=lv=>lv<=TREE_SCALE.full?TREE_SCALE.lo+(1-TREE_SCALE.lo)*lv/TREE_SCALE.full:1+TREE_SCALE.past*Math.log(lv/TREE_SCALE.full);
-// your hero's numbers before gear and tree (as the old start's, every attribute 2): health, damage, battle speed, swing time, stamina, mana
-const HERO_BASE={hp:58,dmg:9,spd:52,cd:.423,sp:70,mp:42};
+   tree's nodes give them); dmg: your hero's damage a level (was 2, then 1 till 2026-11-13). A companion's the same; a lord's or chieftain's as ever (LV_XP) */
+const LEVEL={base:75,per:50,prof:1,pts:1,dmg:.5};
+// a node's strength by its proficiency's level (the owner: "quarter at 0"): most × (lo at 0, 1 at full, then past × ln(level / full)
+// more); whole: what is counted whole, never part of one (a unit slot, a prisoner), at its full number from the start. (most .6,
+// 2026-11-13, the owner: "reduce stats or attributes bonus": 15% of a node at 0, 60% at 100; was 1, a quarter at 0, whole at 100)
+const TREE_SCALE={lo:.25,full:100,past:.5,most:.6,whole:['slots','prison']};
+const treeScale=lv=>TREE_SCALE.most*(lv<=TREE_SCALE.full?TREE_SCALE.lo+(1-TREE_SCALE.lo)*lv/TREE_SCALE.full:1+TREE_SCALE.past*Math.log(lv/TREE_SCALE.full));
+// your hero's numbers before gear and tree: health, damage, battle speed, swing time, stamina, mana (2026-11-13, the owner: "starting
+// hero power seems too strong": a veteran soldier 55 health and about 19 damage a second, was 67 and 31; a footman 32 and 7. Was hp
+// 58, dmg 9, spd 52, cd .423, sp 70, mp 42, as the old start's, every attribute 2)
+const HERO_BASE={hp:46,dmg:6,spd:50,cd:.48,sp:60,mp:36};
 const REWARD_TRAIN={battle:[['weapon',.6],['lead',.2],['tact',.2]],tourney:[['weapon',.7],['athl',.3]],monster:[['weapon',1]],hunt:[['hunt',1]],
   fight:[['weapon',.6],['lead',.4]],talk:[['pers',1]],search:[['scout',1]],trade:[['trade',1]],command:[['lead',1]],lore:[['scout',.5],['tact',.5]],story:[['pers',.5],['scout',.5]]};
 // (a quest's kind of practice, by its class: what doing it is)
