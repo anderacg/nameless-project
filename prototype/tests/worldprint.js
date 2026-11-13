@@ -767,7 +767,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  W7 and W8 more of each herd grazing in them, B2 the grown tiles in the save. Was W3 7fd84ad4, W5 e41cdb7c, W6 d598257f, W7
 //  311da16e, W8 c590650a, B2 ba5f45e6; checked: with PLOTS_GROW.pasture 4 and PLOTS_AT.pasture lv+1 (the camel, the pens' ground and
 //  the code that grows them kept) they are those again, all 16 holding)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'7ddeb99d',W7:'c9c49005',W8:'83997cd6',B2:'83d3c7bb'};
+// (W7, W8 and B2 re-recorded 2026-11-13, on purpose: the owner, "Griffin or rare monster should be spawn in far away": a rare beast
+//  (a troll, a griffin, a wyrm: weight WORLD_SCALE.spawn.rare or less) lairs rareK (2) times as far from the holdings and from you,
+//  a mythic one away from the holdings too (world/monsters.js spawnMonster, spawnMythic), so the beasts on the map stand elsewhere
+//  (the land, holdings and herds hold: W1-W6). Was W7 c9c49005, W8 83997cd6, B2 83d3c7bb)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'7ddeb99d',W7:'4e3e79b8',W8:'da69073e',B2:'2578c11d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

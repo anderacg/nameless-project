@@ -66,10 +66,13 @@ function spawnMonster(initial){
   let r=R.next()*ids.reduce((a,id)=>a+wt(id),0),id=ids[0];for(const f of ids){r-=wt(f);if(r<=0){id=f;break}}
   const M=MONSTERS[id];
   // (in the wilds, far from every holding (monsterHold px: the owner, 2026-11-05, "monsters should spawn far away from holdings"; half
-  // that after 300 tries); after 200 tries, its ground not found there, at a land's far edge: lairLand)
+  // that after 300 tries); after 200 tries, its ground not found there, at a land's far edge: lairLand. A rare kind (its w rare or
+  // less: a troll, a griffin, a wyrm) rareK times as far from them and from you, never nearer the holdings than monsterHold: the
+  // owner, 2026-11-13, "Griffin or rare monster should be spawn in far away")
+  const S=WORLD_SCALE.spawn,far=M.w<=S.rare?S.rareK:1;
   for(let k=0;k<400;k++){
-    const x=R.int(2,MW-3)*TILE+8,y=R.int(2,MH-3)*TILE+8,tags=habitatAt(x,y),hold=WORLD_SCALE.spawn.monsterHold*(k>=300?.5:1);
-    if(!lairWhere(id).some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.monster[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<hold)||!lairLand(x,y,k>=200))continue;
+    const x=R.int(2,MW-3)*TILE+8,y=R.int(2,MH-3)*TILE+8,tags=habitatAt(x,y),hold=S.monsterHold*Math.max(far>1?1:0,far*(k>=300?.5:1));
+    if(!lairWhere(id).some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<S.monster[initial?0:1]*far||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<hold)||!lairLand(x,y,k>=200))continue;
     const m=asMonster({id,x,y,hx:x,hy:y,lv:monLevel(R),n:R.int(M.count[0],M.count[1]),t:0,a:0,cool:0});if(wolfAlphaAt(m))m.alpha=1;{const br=breedAt(id,x,y,tags);if(br)m.breed=br}W.monsters.push(m);return;
   }
 }
@@ -155,7 +158,8 @@ function spawnMythic(id){
   // its favorite ground first; the others only if that keeps failing; in the wilds, or late at a land's far edge (lairLand)
   const R=monRng();
   for(let k=0;k<160;k++){const tx=R.int(3,MW-4),ty=R.int(3,MH-4),tt=tAt(tx,ty),ok=k<100?tt===lairs[0]:lairs.includes(tt);if(!ok)continue;
-    const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.mythic||!lairLand(x,y,k>=130))continue;
+    // (far from you, and as a rare beast's far from every holding while its ground allows: WORLD_SCALE.spawn rareK)
+    const S=WORLD_SCALE.spawn,x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(Math.hypot(x-P.x,y-P.y)<S.mythic||k<130&&TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<S.monsterHold*S.rareK)||!lairLand(x,y,k>=130))continue;
     const m=asMonster({id,x,y,hx:x,hy:y,tx:x,ty:y,lv:1,n:1,t:0,a:0,cool:5,dir:1});W.monsters.push(m);
     log(cap1(an(M.n.toLowerCase()))+' has been sighted near '+Spatial.nearestHolding(m.x,m.y).name+'!','bad');return m}
   W.mythic[id]={back:G.day+2};return null;
