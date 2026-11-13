@@ -46,6 +46,10 @@ function penSpots(t,now){const c=herdOf(t),F=c&&fieldsOf(t,'pasture');if(!F)retu
   for(let j=0;j<Math.min(c.n,T.length*per);j++){const [tx,ty]=T[j%T.length],ph=now/2600+hash(tx,ty,t.seed+j)*6.283,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now*PX.MAP_STEPS/(2*D_STEP)+j*3)%PX.MAP_STEPS:0,
     a=critterArt(c.id,fr,j),amp=Math.max(0,Math.min(3,(TILE-4-a.w)>>1));out.push({x:tx*TILE+TILE/2+Math.sin(ph)*amp,y:ty*TILE+(j<T.length?TILE-3:TILE-8),a,flip:mv<0,tx,ty})}
   return out}
+// (PEN_ENTS: the pens' animals, handed from the holdings' pass (structures.js, drawn into the scene at the game's pixels, where a figure at
+// the marchers' scale lost every other pixel: "sticks") to those who move (render.js drawWorld), drawn at the screen's pixels as
+// in a battle; the owner, 2026-11-13: "For pasture use the same drawing in battle")
+const PEN_ENTS=[];
 function penEnts(t,ents,cam){penSpots(t,0).forEach((s0,j)=>ents.push({y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;ctx.save();subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),w=Math.max(4,s.a.w-2);// (its fraction of a pixel kept inside save/restore: drawn into the scene, a shift left over would pile up frame on frame)
   ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.translate(x,sy);ctx.scale(s.flip?-s.a.k:s.a.k,s.a.k);ctx.drawImage(s.a.s,-(s.a.s.width>>1),-s.a.s.height+(s.a.k<1?2:1));ctx.restore()}}))}
 // (the wild game's and the herds' own dice: the stream 'critters', core/rng.js, so a kind added or a spawning rule changed never

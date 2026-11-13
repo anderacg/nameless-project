@@ -23,19 +23,11 @@ Kit.suite(({ok,info})=>{
    if(r){boxes++;const I=D.img,w=x1-x0+1,h=y1-y0+1;let c=0;for(let y=0;y<h&&!c;y++)for(let x=0;x<w;x++)if(I.data[(y*I.width+x)*4+3]){c=1;break}filled+=c}return r};
   try{G.cam.x=Math.floor(G.cam.x)+.37;G.cam.y=Math.floor(G.cam.y)+.61;t.frame();ok(boxes>0&&filled===boxes,'the camera at a fraction of a pixel: every man under the trees has them drawn over him ('+filled+' of '+boxes+')')}
   finally{window.overdrawBox=o0;G.cam.x=G0.x;G.cam.y=G0.y}}
- // dashes (WDEPTH.dash): the men under trees outlined in dashes by their side's colour, over what covers them; none in the open, none off
- {const d0=window.dashDraw,seen=[];window.dashDraw=function(rec,m,x0,y0,x1,y1,col){seen.push(col);return d0.apply(this,arguments)};
-  try{t.frame();ok(seen.includes(D.dash.col.own),'your men under the trees: outlined in dashes, your colour ('+seen.length+' outlines)');
-   const n=seen.length;b.units.forEach(x=>{if(x!==u)x.x=x.y=-9999});t.frame();const one=seen.length-n;
-   let op=null;const O=(x,y)=>t.WM.kind[y*t.MW+x]===t.T_OPEN&&!(t.WM.forest&&t.WM.forest[y*t.MW+x]);
-   for(let r=1;r<20&&!op;r++)for(let j=-r;j<=r&&!op;j++)for(let i=-r;i<=r&&!op;i++){const x=at%t.MW+i,y=Math.floor(at/t.MW)+j;let all=true;for(let a=-2;a<=2&&all;a++)for(let c=-2;c<=2;c++)if(!O(x+c,y+a)){all=false;break}if(all)op={x:(x+.5)*t.TILE,y:(y+.5)*t.TILE}}
-   const q=b.world.field(op||{x:wx,y:wy+5*t.TILE});u.x=q.x;u.y=q.y;t.camCentre(u.x,u.y);t.frame();const open=seen.length-n-one;
-   ok(one>=1&&open===0,'one man in the wood outlined ('+one+'), the same man in the open not ('+open+')');
-   u.x=p.x;u.y=p.y;t.camCentre(u.x,u.y);D.dash.on=false;const m0=seen.length;t.frame();ok(seen.length===m0,'and none with the switch off')}
-  finally{window.dashDraw=d0;D.dash.on=true}}
+ // (no dashed outline round a man under the trees: the owner, 2026-11-13, "Remove that outline" (it was WDEPTH.dash, from 2026-11-12))
+ ok(typeof window.dashDraw==='undefined'&&!('dash' in D),'no dashed outline round the men under the trees (removed)');
  // (its cost, INFO: a frame with and without, sixty a side in the wood)
  {const pn=()=>performance.now();
   const ms=on=>{D.on=on;const a=pn();for(let i=0;i<20;i++)t.frame();return (pn()-a)/20};const b2=t.B;b2.units.forEach((u,i)=>{const q=b2.world.field({x:wx+(i%10-5)*6,y:wy+(Math.floor(i/10)-1)*6});u.x=q.x;u.y=q.y});
-  const off=ms(false),on=ms(true);D.dash.on=false;const nd=ms(true);D.dash.on=true;D.on=true;info('a frame in the wood: '+on.toFixed(2)+' ms with the trees over them and dashes, '+nd.toFixed(2)+' ms without dashes, '+off.toFixed(2)+' ms without either ('+b2.units.length+' on the field)')}
+  const off=ms(false),on=ms(true);D.on=true;info('a frame in the wood: '+on.toFixed(2)+' ms with the trees over them, '+off.toFixed(2)+' ms without ('+b2.units.length+' on the field)')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

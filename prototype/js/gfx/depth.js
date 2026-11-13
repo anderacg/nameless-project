@@ -15,11 +15,7 @@
 // boxes [x0, y0, x1, y1 (the kept scene's pixels: the screen's game pixels on the camera's whole pixels), feet y, own]. The
 // screen may be at a finer scale than the game's pixels (core.js VS): the box a figure drew in is taken back to the scene's game
 // pixels, its mask made there, and laid over him scaled up as the scene was.
-// dash (the owner, 2026-11-12: "when unit is under something can we use highlight with dash to indicate that"): a figure under a tree or a
-// building (one asking it: e.hl, its colour's key) has its outline drawn in dashes over what covers it, where it covers it; col by side.
-// Its line w world px thick and its dashes len long (on and off), times the camera's scale, so it grows and shrinks with the zoom
-// (the owner: "make the dash smaller and scale based on camera"); at least a screen pixel; a its strength
-const WDEPTH={on:true,fade:.3,dash:{on:true,w:.5,len:3,a:.75,col:{own:'#ffd870',ally:'#8ac8ff',foe:'#ff6a5a'}},rec:null,sc:null,mk:null,trk:false,di:null,fr:null,pics:[],al:new Map(),cov:new Set(),t:0,cv:null,img:null,C:[],box:[0,0,0,0],boxes:[]};
+const WDEPTH={on:true,fade:.3,trk:false,di:null,fr:null,pics:[],al:new Map(),cov:new Set(),t:0,cv:null,img:null,C:[],box:[0,0,0,0],boxes:[]};
 // a structure's picture as drawn this frame at (x, y) on the screen (before the shake): its opaque pixels stand by their feet
 function depthPic(img,x,y){if(img&&WDEPTH.on)WDEPTH.pics.push([img,Math.round(x),Math.round(y)])}
 // (a picture's feet: for each opaque pixel the row its column's run of opaque pixels ends on, -1 where it is clear; kept on it)
@@ -30,7 +26,7 @@ function picFeet(img){if(img._df)return img._df;const w=img.width,h=img.height,d
 // own drawImage and fillRect wrapped over the pass, whatever they are, and put back after it)
 function dbAdd(x,y,w,h){if(!WDEPTH.trk)return;const m=ctx.getTransform(),a=m.a*x+m.c*y+m.e,b=m.b*x+m.d*y+m.f,c=m.a*(x+w)+m.c*(y+h)+m.e,d=m.b*(x+w)+m.d*(y+h)+m.f,B=WDEPTH.box;
   B[0]=Math.min(B[0],a,c);B[1]=Math.min(B[1],b,d);B[2]=Math.max(B[2],a,c);B[3]=Math.max(B[3],b,d)}
-function dbImage(s,a1,a2,a3,a4,a5,a6,a7,a8){const n=arguments.length;if(WDEPTH.trk&&WDEPTH.rec&&s&&s.getContext)dashNote(this,s,arguments);
+function dbImage(s,a1,a2,a3,a4,a5,a6,a7,a8){const n=arguments.length;
   if(n>=9)dbAdd(a5,a6,a7,a8);else if(n>=5)dbAdd(a1,a2,a3,a4);else{const o=s.getContext&&s.width<=96&&s.height<=96?opaqueBox(s):null;if(o)dbAdd(a1+o[0],a2+o[1],o[2]-o[0]+1,o[3]-o[1]+1);else dbAdd(a1,a2,s.width,s.height)}
   return WDEPTH.di.apply(this,arguments)}
 function dbRect(x,y,w,h){dbAdd(x,y,w,h);return WDEPTH.fr.call(this,x,y,w,h)}
@@ -65,50 +61,11 @@ function worldOverdraw(list,cam){
   for(const [k,a] of AL){const to=cov.has(k)?WDEPTH.fade:1,v=a<to?Math.min(to,a+st):Math.max(to,a-st);if(v>=1&&to>=1)AL.delete(k);else AL.set(k,v)}
   cov.clear();WDEPTH.boxes.length=0;const top=[],m=ctx.getTransform(),k=m.a||1,mem=memCv(),cw=mem.width,ch=mem.height,B=WDEPTH.box;
   const own=k=>Object.prototype.hasOwnProperty.call(ctx,k),di=own('drawImage'),fr=own('fillRect');WDEPTH.di=ctx.drawImage;WDEPTH.fr=ctx.fillRect;if(WDEPTH.on){ctx.drawImage=dbImage;ctx.fillRect=dbRect}
-  const D=WDEPTH.dash;
   try{for(const e of list){if(e.top){top.push(e);continue}if(!WDEPTH.on){drawMover(e);continue}
-    // (its dash asked: the biggest picture it draws noted, its body, for its outline)
-    const dash=D.on&&!!e.hl;WDEPTH.rec=dash?{a:0}:null;
-    B[0]=B[1]=1e9;B[2]=B[3]=-1e9;WDEPTH.trk=true;drawMover(e);WDEPTH.trk=false;const rec=WDEPTH.rec;WDEPTH.rec=null;
+    B[0]=B[1]=1e9;B[2]=B[3]=-1e9;WDEPTH.trk=true;drawMover(e);WDEPTH.trk=false;
     const x0=Math.max(0,Math.floor((B[0]-m.e)/k)),y0=Math.max(0,Math.floor((B[1]-m.f)/k)),x1=Math.min(cw,Math.ceil((B[2]-m.e)/k))-1,y1=Math.min(ch,Math.ceil((B[3]-m.f)/k))-1;
-    if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);const cov=overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam,!!e.nf);
-      if(dash&&cov&&rec&&rec.s)dashDraw(rec,m,x0,y0,x1,y1,D.col[e.hl]||D.col.own)}}}
+    if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam,!!e.nf)}}}
   finally{WDEPTH.trk=false;if(di)ctx.drawImage=WDEPTH.di;else delete ctx.drawImage;if(fr)ctx.fillRect=WDEPTH.fr;else delete ctx.fillRect}
   for(const e of top)drawMover(e);WDEPTH.pics.length=0}
-// (the picture drawn while a figure is tracked: the biggest on the screen is its body, kept with the transform and the arguments it had)
-function dashNote(g,s,A){const T=g.getTransform(),n=A.length,w=n>=9?A[7]:n>=5?A[3]:s.width,h=n>=9?A[8]:n>=5?A[4]:s.height,a=Math.abs(w*h*(T.a*T.d-T.b*T.c));
-  const R=WDEPTH.rec;if(a>R.a){R.a=a;R.s=s;R.T=T;R.A=Array.prototype.slice.call(A,1)}}
-// (the dashes: a canvas of diagonal stripes p screen px apart, half of them on; kept by p, with its pattern. The ways a silhouette is
-// laid round itself: four at a pixel out, eight farther)
-const DASH_OUT4=[[1,0],[-1,0],[0,1],[0,-1]],DASH_OUT8=[...DASH_OUT4,[1,1],[1,-1],[-1,1],[-1,-1]];
-const DASH_STRIPES=new Map();
-function dashStripes(p){let c=DASH_STRIPES.get(p);if(c)return c;c=mkc(p,p,g=>{const I=g.createImageData(p,p),o=I.data;for(let y=0;y<p;y++)for(let x=0;x<p;x++)if((x+y)%p<p/2)o[(y*p+x)*4+3]=255;g.putImageData(I,0,0)});DASH_STRIPES.set(p,c);return c}
-// (its outline in dashes where something covers it, at the screen's pixels: the cover (overdrawBox's picture of it, WDEPTH.cv) laid on
-// a scratch canvas, its fades made whole by laying it on itself to DASH_FILL times, its ring (dashRing) kept only there, laid where
-// its body was drawn, then laid on the screen; no pixel read back nor sent up. Built each frame from its body before (12 draws, a mask sent up from the
-// cover's bytes): a battle by a wood lost half its frame to it, the owner 2026-11-13: "Battle lag very much is it because of outline
-// when near tree?")
-const DASH_FILL=4;
-function dashDraw(rec,m,x0,y0,x1,y1,col){const D=WDEPTH.dash,k=m.a||1,w=x1-x0+1,h=y1-y0+1,W=Math.ceil(w*k),H=Math.ceil(h*k),R=dashRing(rec,k,col);if(!R)return;
-  let S=WDEPTH.sc;if(!S||S.c.width<W||S.c.height<H){const c=mkc(Math.max(W,128),Math.max(H,128),()=>{});S=WDEPTH.sc={c,g:c.getContext('2d')}}
-  const g=S.g,ox=x0*k+m.e,oy=y0*k+m.f;g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.globalCompositeOperation='copy';g.drawImage(WDEPTH.cv,0,0,w,h,0,0,W,H);
-  g.globalCompositeOperation='lighter';for(let i=1;i<DASH_FILL;i*=2)g.drawImage(S.c,0,0,W,H,0,0,W,H);
-  g.globalCompositeOperation='source-in';g.drawImage(R.c,Math.round(rec.T.e+R.ox-ox),Math.round(rec.T.f+R.oy-oy));g.globalCompositeOperation='source-over';
-  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha*=D.a;WDEPTH.di.call(ctx,S.c,0,0,W,H,ox,oy,W,H);ctx.restore()}
-// (a body's dashed ring, once for each of its pictures at its turn and scale and in each colour: its body laid round itself t px out,
-// itself cut away, cut to the stripes (fixed to it, so they hold as it walks), coloured; ox, oy: its corner from the body's origin)
-const DASH_RINGS=new WeakMap();
-function dashRing(rec,k,col){const D=WDEPTH.dash,T=rec.T,A=rec.A,t=Math.max(1,Math.round(D.w*k)),p=Math.max(2,Math.round(2*D.len*k)),key=[T.a,T.b,T.c,T.d,...A,col,t,p].join();
-  let M=DASH_RINGS.get(rec.s);if(!M)DASH_RINGS.set(rec.s,M=new Map());let R=M.get(key);if(R)return R;
-  const n=A.length,[dx,dy,dw,dh]=n>=8?[A[4],A[5],A[6],A[7]]:n>=4?A:[A[0],A[1],rec.s.width,rec.s.height];
-  const cs=[[dx,dy],[dx+dw,dy],[dx,dy+dh],[dx+dw,dy+dh]].map(([x,y])=>[T.a*x+T.c*y,T.b*x+T.d*y]),pad=t+1;
-  const bx0=Math.floor(Math.min(...cs.map(c=>c[0])))-pad,by0=Math.floor(Math.min(...cs.map(c=>c[1])))-pad,bx1=Math.ceil(Math.max(...cs.map(c=>c[0])))+pad,by1=Math.ceil(Math.max(...cs.map(c=>c[1])))+pad;
-  const W=bx1-bx0,H=by1-by0;if(W<=0||H<=0||W*H>1e6)return null;
-  const c=mkc(W,H,g=>{g.imageSmoothingEnabled=false;const at=(ax,ay)=>{g.setTransform(T.a,T.b,T.c,T.d,ax-bx0,ay-by0);g.drawImage(rec.s,...A)};
-    for(let r=1;r<=t;r++)for(const [ax,ay] of r>1?DASH_OUT8:DASH_OUT4)at(ax*r,ay*r);
-    g.globalCompositeOperation='destination-out';at(0,0);g.setTransform(1,0,0,1,0,0);
-    g.globalCompositeOperation='destination-in';g.fillStyle=g.createPattern(dashStripes(p),'repeat');g.fillRect(0,0,W,H);
-    g.globalCompositeOperation='source-in';g.fillStyle=col;g.fillRect(0,0,W,H);g.globalCompositeOperation='source-over'});
-  R={c,ox:bx0,oy:by0};if(M.size>64)M.clear();M.set(key,R);return R}
 // a world goes in: no fades carried over
 onWorld(()=>{WDEPTH.al.clear();WDEPTH.cov.clear();WDEPTH.t=0});
