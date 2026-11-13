@@ -97,5 +97,6 @@ try{
   const strays=herds.filter(c=>W.critters.includes(c)&&!t.grazeOk(c.id,c.x,c.y,c.pen));ok(!strays.length,'after a long while grazing, none has strayed onto ground it cannot use'+(strays.length?': '+strays.map(c=>c.id+'@'+c.home).join(', '):''));
   const wild=W.critters.filter(c=>!c.home),out=wild.filter(c=>!t.habitatOk(c.id,c.x,c.y));ok(out.length<=wild.length*.1,'wild game keeps to its habitat when undisturbed ('+out.length+' of '+wild.length+' outside)')}
  W.critters.forEach(c=>{c.x=P.x+20;c.y=P.y});t.frame();
+ {const c=W.critters.find(q=>!q.pen),draw=()=>{const E=[];c.draw(E,{x:Math.round(c.x-100),y:Math.round(c.y-100)},{x:c.x-200,y:c.y-200,w:400,h:400});E.forEach(e=>e.f())};let v;if(c){c.inView=()=>true;draw();v=c.coat;c.hx+=37;c.hy+=11;draw();delete c.inView}ok(c&&v!=null&&c.coat===v,'a herd keeps its coats while its home moves (a fleeing herd\'s moves every frame: its coats flashed, the owner 2026-11-13)')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

@@ -20,8 +20,10 @@ class Herd extends WorldObject{
   // up to three of its animals, behind and beside the first, a walk of PX.MAP_STEPS frames to a body length walked (critterSprite;
   // render.js stepOf), its count near you; each at its own place to the screen's pixel (render.js subT)
   draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const c=this;if(WORLD_BATTLE.on)marchCircle(ents,c,cam,Math.max(WORLD_BATTLE.outer,WORLD_BATTLE.inner+Math.sqrt(c.n||1)*2),'#b4c985');
-    // (each animal its battle figure, as it is in a hunt, at the marchers' scale (gfx/sprites.js critterArt), its own coat)
-    ents.push({y:c.y,f:()=>{subT(c);const v0=Math.floor((c.hx||0)+(c.hy||0)),A=critterArt(c.id,0,v0),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(A.w*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
+    // (each animal its battle figure, as it is in a hunt, at the marchers' scale (gfx/sprites.js critterArt), its own coat: the herd's
+    // coat picked once (coat), not from its home (hx, hy), which a fleeing herd moves every frame: its coats flashed, the owner
+    // 2026-11-13: "The wildlife sprite flashing, like it changes the color")
+    ents.push({y:c.y,f:()=>{subT(c);const v0=c.coat??(c.coat=Math.floor((c.hx||0)+(c.hy||0))),A=critterArt(c.id,0,v0),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(A.w*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
       for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,A.w)/N,N)+i*3)%N:0,a=critterArt(c.id,fr,v0+i),w=Math.max(4,a.w-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
         ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);ctx.scale(c.dir<0?-a.k:a.k,a.k);ctx.drawImage(a.s,-(a.s.width>>1),-a.s.height+(a.k<1?2:1));ctx.restore()}
