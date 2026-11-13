@@ -218,9 +218,10 @@ function drawMarcherAt(u,o,cam){
 // instead (MarchOutline, MARCH_RING), drawn as the circles are, about its middle
 function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDetectionColor(travelDetectionState()):o.look().col,army=null){
   const L=army&&MARCH_RING.on&&army.units.length?army.ring||(army.ring=new MarchOutline()):null;
-  if(L){L.update(army);ents.push({y:o.y+L.top,f:()=>{const x=o.x-cam.x,y=o.y-cam.y;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;L.path(L.out[0],x,y);ctx.stroke();
+  // (MARCH_RING.draw off: no ring drawn, its outline kept for the rules all the same)
+  if(L){L.update(army);if(!MARCH_RING.draw)return;ents.push({y:o.y+L.top,f:()=>{const x=o.x-cam.x,y=o.y-cam.y;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;L.path(L.out[0],x,y);ctx.stroke();
     ctx.globalAlpha=.28;ctx.setLineDash(RING_DASH);L.path(L.out[1],x,y);ctx.stroke();ctx.restore()}});return}
-  const m=MARCH_ARMIES.get(o)?.mid,c=m&&Math.hypot(m.x-o.x,m.y-o.y)<r?m:o;
+  if(!MARCH_RING.draw)return;const m=MARCH_ARMIES.get(o)?.mid,c=m&&Math.hypot(m.x-o.x,m.y-o.y)<r?m:o;
   ents.push({y:c.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,marchInteractRadius(o,r),0,Math.PI*2);ctx.stroke();ctx.restore()}});
 }
 
@@ -275,8 +276,11 @@ const MARCH_MOVE={slit:8,formGiveUp:true,formTry:5,formMove:8,formGain:2,cell:4,
    px about the middle, or while it eases (every cell within eps: settled); at most most cells (a straggler far off: coarser).
    Made afresh, no easing from its old shape, when a man moved jump px about the middle at once, or men moved with no time gone
    (a battle's end puts its survivors where they fought, a fallen man is left out: the outline round them at once).
-   Drawn only, for armies on screen: the rules (meetings, reach, interaction) measure the circle (marchOuter). on false: the circles */
-const MARCH_RING={on:true,meet:true,pad:2,merge:10,cell:3,grow:14,shrink:4,threshold:1,tol:.4,jump:12,eps:.004,most:30000};
+   Drawn only, for armies on screen: the rules (meetings, reach, interaction) measure the circle (marchOuter). on false: the circles.
+   draw: the rings (these outlines, or the circles) drawn on the map at all, off but for ring mode (the owner, 2026-11-13: "the army
+   rings on the map only draw when ring mode is on (enable by console)": MARCH_RING.draw=true in the console); off, the outline
+   is kept all the same, for a click on an army's ground (marchPicked) */
+const MARCH_RING={on:true,draw:false,meet:true,pad:2,merge:10,cell:3,grow:14,shrink:4,threshold:1,tol:.4,jump:12,eps:.004,most:30000};
 // (each corner case of a cell, tl 8, tr 4, br 2, bl 1 inside: its outline's pieces, from edge to edge, the inside on the right; edges
 // top 0, right 1, bottom 2, left 3; the two saddles, 5 and 10, by the cell's middle: MarchOutline trace)
 const RING_SEGS=[[],[3,2],[2,1],[3,1],[1,0],null,[2,0],[3,0],[0,3],[0,2],null,[0,1],[1,3],[1,2],[2,3],[]],RING_DASH=[3,4];
