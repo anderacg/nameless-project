@@ -14,6 +14,9 @@ window.RUN=()=>{const R=Kit.report(),{ok}=R,t=T,P=t.P,G=t.G,W=t.W,D=t.Death,X=t.
   const mid=b=>[b.left+b.width/2,b.top+b.height/2],[nx,ny]=mid(B[0]),[lx,ly]=mid(B[1]),[vx,vy]=mid(B[2]),cx=S.left+S.width/2,cy=S.top+S.height/2,round=[...st.querySelectorAll('.spirit-way')].every(b=>getComputedStyle(b).borderRadius==='50%'&&Math.abs(b.offsetWidth-b.offsetHeight)<2);
   const d=[[nx,ny],[lx,ly],[vx,vy]].map(([x,y])=>Math.hypot(x-cx,y-cy)),even=Math.abs(d[1]-d[2])<3&&Math.abs((cx-lx)-(vx-cx))<3;
   ok(inside&&apart&&round&&even&&ny<cy&&Math.abs(nx-cx)<2&&lx<cx&&vx>cx&&ly>cy&&vy>cy&&Math.abs(ly-vy)<2,'three circles in a triangle round the middle, its lower two alike: a new life above, a save lower left, the void lower right ('+d.map(Math.round).join(', ')+' px out), none over another');
+  {const pn=q('#panel'),cs=getComputedStyle(pn),ov=getComputedStyle(q('#ov')),life=q('#panel .slain-life'),L=life&&life.getBoundingClientRect(),SC=q('#ov').getBoundingClientRect(),W=Math.round(SC.width),H=Math.round(SC.height),P0=pn.getBoundingClientRect();
+   ok(cs.backgroundColor==='rgb(0, 0, 0)'&&ov.backgroundColor==='rgb(0, 0, 0)'&&cs.borderTopWidth==='0px'&&cs.boxShadow==='none'&&P0.width>=W-2&&P0.height>=H-2,'the whole game screen black, no window frame ('+Math.round(P0.width)+'x'+Math.round(P0.height)+' of '+W+'x'+H+')');
+   ok(life&&L.right<=S.left+1&&/auto|scroll/.test(getComputedStyle(life).overflowY)&&/Their life/.test(life.textContent)&&/Left behind/.test(life.textContent),'their life on the left, to scroll ("Their life", "Left behind"); the spirit on the right')}
   const nav=q('#panel .nav [data-nav="close"]');ok(nav&&nav.dataset.act==='death-new'&&getComputedStyle(q('#panel .nav')).display==='none','the bottom bar kept for Esc (a new life), hidden');
   img0=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data.slice()}
  catch(e){R.exc(e)}

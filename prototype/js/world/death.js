@@ -67,21 +67,27 @@ class Death{
   // (your life in a few numbers, for the Slain page and the chronicle)
   static life(by){const h=Spatial.nearestHolding(P.x,P.y);return {who:heroName()||'a wanderer',day:G.day,born:P.born||1,days:G.day-(P.born||1)+1,level:P.level,renown:Math.round(P.renown||0),earned:Math.round(P.xpEarned||0),by,near:h?.name||'',race:P.race,bg:P.bg,g:P.gender==='f'?'f':'m',face:typeof Faces!=='undefined'?Faces.yours():null}}
   /* the Slain page (the owner, 2026-11-13: "After you die Make a cool spirit glowing and moving around at the center of the screen and
-     make a choices around it to select whether to load, new character or go to the void (exit game)"): their life in a line and a
-     few numbers, then the spirit's stage (gfx/spirit.js Spirit), its three ways round it, circles in a triangle ("make it like 3
-     circle in triangle arrangement"): a new life in the same world (above, world/legacy.js), a save (lower left), the void (lower
-     right: the game left, as the menu's Exit game). The bottom bar's way out, kept for Esc
-     (on as someone new, never out of the game), hidden: the choices round the spirit are the page's ways out */
+     make a choices around it to select whether to load, new character or go to the void (exit game)"; "make it like 3 circle in
+     triangle arrangement"; "Just make it full black screen with scrollable summary of your life on the left and spirit panel on the
+     right without having a brown ui"): the whole screen black, no window's frame. On the left, to scroll, their life: who they were,
+     how they fell, its numbers, what they left behind, and those of your line who fell before them. On the right the spirit's stage
+     (gfx/spirit.js Spirit), its three ways round it, circles in a triangle: a new life in the same world (above, world/legacy.js), a
+     save (lower left), the void (lower right: the game left, as the menu's Exit game). The bottom bar's way out, kept for Esc (on as
+     someone new, never out of the game), hidden: the circles are the page's ways out */
   static open(){const s=this.slain;if(!s)return;G.mode='dialog';
     const way=(act,cls,h,sub)=>'<button class="spirit-way '+cls+'" type="button" data-act="'+act+'" data-spirit-to><strong>'+h+'</strong><span>'+sub+'</span></button>';
-    showPanel('<div class="top"><h2>Slain</h2><span class="muted">Day '+s.day+'</span></div>'+
-      '<p class="spirit-say"><b>'+htmlText(cap1(s.who))+'</b> fell to '+htmlText(s.by)+(s.near?' near '+htmlText(s.near):'')+'.'+(s.n>1?' The '+ordinal(s.n)+' of your line to fall.':'')+'</p>'+
-      '<div class="loot-stats">'+[['Days on the road',s.days],['Level',s.level],['Renown',s.renown],['Experience gained',s.earned]].map(([k,v])=>'<span><b>'+k+'</b><span>'+v+'</span></span>').join('')+'</div>'+
-      '<div class="spirit-stage" data-spirit><canvas class="spirit-cv" aria-hidden="true"></canvas>'+
+    const row=(k,v)=>'<div class="slain-row"><span>'+k+'</span><b>'+v+'</b></div>',bg=BGS[s.bg]?.n,race=RACES[s.race]?.n;
+    const before=Legacy.line.filter(L=>L.n!==s.n).slice().reverse();
+    showPanel('<section class="slain-life" data-fb-scroll="slain"><h2>Slain</h2><small class="slain-day">Day '+s.day+'</small>'+
+      '<h3>'+htmlText(cap1(s.who))+'</h3><p>'+[race,bg&&bg.toLowerCase()].filter(Boolean).join(', ')+(race||bg?'. ':'')+'Fell to '+htmlText(s.by)+(s.near?' near '+htmlText(s.near):'')+' on day '+s.day+'.'+(s.n>1?' The '+ordinal(s.n)+' of your line to fall.':'')+'</p>'+
+      '<div class="slain-lab">Their life</div>'+row('Set out','day '+(s.born||1))+row('Days on the road',s.days)+row('Level',s.level)+row('Renown',s.renown)+row('Experience gained',s.earned)+
+      '<div class="slain-lab">Left behind</div>'+row('Gear and goods',s.items+' piece'+(s.items===1?'':'s'))+row('Gold',s.gold)+
+      '<p class="slain-note">Their remains lie where they fell: whoever finds them first may take them. Men will put a price on '+htmlText(s.by)+'.</p>'+
+      (before.length?'<div class="slain-lab">Fallen before them</div>'+before.map(L=>'<div class="slain-row"><span>'+htmlText(cap1(L.who))+'<small>day '+L.day+', to '+htmlText(L.by||'beasts')+'</small></span><b>level '+(L.level||0)+'</b></div>').join(''):'')+
+      '</section><section class="spirit-stage" data-spirit><canvas class="spirit-cv" aria-hidden="true"></canvas>'+
         way('death-new','sw-new','A new life','Someone new, here')+
         way('death-load','sw-load','Load a save','A moment you kept')+
-        way('death-void','sw-void','Into the void','Leave the game')+'</div>'+
-      '<p class="muted spirit-note">Your remains lie where you fell, with your gear ('+s.items+' piece'+(s.items===1?'':'s')+') and '+s.gold+' gold: whoever finds them first may take them. Men will put a price on '+htmlText(s.by)+'.</p>'+
+        way('death-void','sw-void','Into the void','Leave the game')+'</section>'+
       nav(null,['death-new',null,'Go on as someone new']));
     panel.classList.add('slain');const st=panel.querySelector('[data-spirit]');if(st)new Spirit(st.querySelector('canvas'),st).start()}
   static beastName(e){const M=e.kind==='monster'&&e.ref&&MONSTERS[e.ref.id]&&monOf(e.ref);return M?M.n.toLowerCase()+((e.list||[]).length>1&&!/s$/.test(M.n)?'s':''):'beasts'}
