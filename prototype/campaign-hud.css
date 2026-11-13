@@ -82,8 +82,8 @@
 /* One time strip, without nested button frames. */
 .campaign-world .wtime{border-left:1px solid #8b744666;padding-left:6px;margin-left:2px}
 .campaign-world .wtime .tbtn{border:0;border-image:none;border-radius:0;background:none;box-shadow:none;padding:2px 5px;color:var(--hud-ink)}
-.campaign-world .wtime .tbtn.on{border:0;border-image:none;background:none;box-shadow:inset 0 -2px #c9a65c;color:#f0d28c}
-.campaign-world:not(.mobile-world) .wtop .wtime .tbtn{border:0;border-image:none;background:none;box-shadow:none}.campaign-world:not(.mobile-world) .wtop .wtime .tbtn.on{box-shadow:inset 0 -2px #c9a65c}
+.campaign-world .wtime .tbtn.on{border:0;border-image:none;background:none;box-shadow:none;color:#f0d28c}
+.campaign-world:not(.mobile-world) .wtop .wtime .tbtn{border:0;border-image:none;background:none;box-shadow:none}.campaign-world:not(.mobile-world) .wtop .wtime .tbtn.on{box-shadow:none}
 .campaign-world:not(.mobile-world) .wday{padding-left:12px}.campaign-world.mobile-world .mwh-status>[data-place="day"]{padding-left:8px}
 @media(max-width:1250px){.campaign-brand{flex-basis:200px;font-size:14px}.campaign-resource-art{width:20px;height:20px}}
 @media(max-width:1020px){.campaign-brand{flex-basis:150px;font-size:12px}.campaign-army-flag{width:20px}.campaign-army-flag .tipflag{max-width:20px;height:26px}.campaign-world:not(.mobile-world) #stats .bars{grid-template-columns:70px minmax(0,1fr);column-gap:8px}.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition{grid-template-columns:14px 1fr}.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition-art{width:14px;height:16px}.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition-name{font-size:10px}}
@@ -179,8 +179,8 @@
 /* Shared interaction lighting survives the illustrated frames on desktop and touch. */
 :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]){transition:filter .12s ease,translate .08s ease,outline-color .12s ease,border-color .12s ease,color .12s ease}
 :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):is(.on,.selected,[aria-pressed="true"],[aria-selected="true"],[aria-expanded="true"]):not(:disabled,[aria-disabled="true"]){outline:1px solid #dfbd75;outline-offset:-3px;filter:brightness(1.12) saturate(1.12)}
-.campaign-world .wtime button.on:not(:active,.ui-clicked,:focus-visible){outline:none}
-#screen.campaign-world .wtop .wtime .tbtn.on{box-shadow:inset 0 -2px #dfbd75}
+.campaign-world :is(.wtime button,.mwh-speeds [data-speed]).on:not(:active,.ui-clicked,:focus-visible){outline:none}
+#screen.campaign-world .wtop .wtime .tbtn.on,#screen.campaign-world .mwh-speeds [data-speed].on{background:radial-gradient(ellipse at 50% 45%,#d0a64f5c,#9e71372b 70%,transparent);box-shadow:none;border-radius:3px;color:#ffe4a8}
 @media(hover:hover) and (pointer:fine){
  :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):hover:not(:disabled,[aria-disabled="true"]){filter:brightness(1.2) saturate(1.08)}
 }
