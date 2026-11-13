@@ -722,8 +722,10 @@
       }
     });
   }
+  const EYE_FORMS=Object.freeze({calm:[4.6,1.15,.1],keen:[4.5,.85,-.2],heavy:[4.8,.75,.1],wide:[4.7,1.65,.1],downturned:[4.6,1.1,.55],almond:[4.8,1.2,-.35],clear:[4.6,1.4,0],hooded:[4.9,1.05,.1],upturned:[4.8,1.4,-.65],'deep-set':[4.5,1.2,-.05],relaxed:[5,1.15,.25],round:[4.45,1.95,0],smiling:[4.9,1.05,-.3],focused:[4.55,.95,-.4],'soft-lidded':[4.9,1.5,-.18],'natural-wide':[4.75,1.8,.15],'deep-almond':[5,1.45,-.45],'human-steady':[4.85,1.35,-.08],'elf-slanted':[5.15,1.35,-.65],'dwarf-deep':[5.2,1.02,-.08],'dwarf-squint':[5.5,.78,-.18]});
+  Object.values(EYE_FORMS).forEach(Object.freeze);
   function eyeForm(g,e,a,kind) {
-    const forms={calm:[4.6,1.15,.1],keen:[4.5,.85,-.2],heavy:[4.8,.75,.1],wide:[4.7,1.65,.1],downturned:[4.6,1.1,.55],almond:[4.8,1.2,-.35],clear:[4.6,1.4,0],hooded:[4.9,1.05,.1],upturned:[4.8,1.4,-.65],'deep-set':[4.5,1.2,-.05],relaxed:[5,1.15,.25],round:[4.45,1.95,0],smiling:[4.9,1.05,-.3],focused:[4.55,.95,-.4],'soft-lidded':[4.9,1.5,-.18],'natural-wide':[4.75,1.8,.15],'deep-almond':[5,1.45,-.45],'human-steady':[4.85,1.35,-.08],'elf-slanted':[5.15,1.35,-.65],'dwarf-deep':[5.2,1.02,-.08],'dwarf-squint':[5.5,.78,-.18]};
+    const forms=EYE_FORMS;
     const [baseWidth,baseOpening,baseTilt]=forms[kind],tilt=a.orcEyes?(kind==='keen'?-.8:Math.min(-.35,baseTilt-.1)):baseTilt,w=baseWidth*1.15*(a.eyeScale||1),open=a.orcEyes?Math.max(1.35,Math.min(1.65,baseOpening*1.6*(a.eyeScale||1)*.70)):baseOpening*1.6*(a.eyeScale||1),dir=e.x<a.cx?1:-1,x=e.x+.5,y=e.y+.5;
     g.beginPath();g.moveTo(x-dir*w,y+tilt);
     g.bezierCurveTo(x-dir*1.8,y-open,x+dir*1.7,y-open,x+dir*(w-.35),y+.1);
@@ -1770,5 +1772,5 @@
     return normalize(c);
   }
   function geometry(input){const c=normalize(input);return headRig(placedRig(rig(c.face,c.adjustments,c.race),c.race==='dwarf'?DWARF_HEAD_DROP:0),c);}
-  root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,partLabels:PART_LABELS,engravingPatterns:Object.freeze(ENGRAVINGS.map(p=>p.name)),soldierEquipment:SOLDIER_EQUIPMENT,soldierPresets:SOLDIER_PRESETS,adjustments:ADJUSTMENTS,geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,hairPreferences:HAIR_PREFERENCES,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,faceCoveringHelmets:CLOSED_HELMS,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
+  root.PortraitEngine=Object.freeze({version:VERSION,size:SIZE,partLabels:PART_LABELS,engravingPatterns:Object.freeze(ENGRAVINGS.map(p=>p.name)),soldierEquipment:SOLDIER_EQUIPMENT,soldierPresets:SOLDIER_PRESETS,adjustments:ADJUSTMENTS,eyeForms:EYE_FORMS,mouthForms:Object.freeze(Object.fromEntries(Object.entries(MOUTHS).map(([k,v])=>[k,Object.freeze([...v])]))),geometry,options:OPTIONS,hairGroups:HAIR_GROUPS,hairPreferences:HAIR_PREFERENCES,headwearGroups:HEADWEAR_GROUPS,headwearRules:HEADWEAR_RULES,faceCoveringHelmets:CLOSED_HELMS,races:OPTIONS.race,raceParts:RACE_PARTS,partsFor,profiles:PROFILES,presets:PRESETS,defaults:DEFAULTS,colors:COLORS,order:LAYERS,normalize,startProfile,startRace,build,composite,tint,random});
 })(globalThis);

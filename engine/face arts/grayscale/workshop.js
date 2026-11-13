@@ -1,7 +1,8 @@
 (function () {
   'use strict';
   const E=PortraitEngine,$=id=>document.getElementById(id),names={race:'Race',ears:'Ear shape',face:'Face shape',hair:'Hairstyle',eyes:'Eyes',brows:'Eyebrows',nose:'Nose',mouth:'Mouth',beard:'Facial hair',age:'Age',marks:'Skin marks',clothing:'Clothing / armor',headwear:'Headwear / helmet'};
-  const state={config:{...E.defaults},colors:{...E.colors},colored:false,visible:Object.fromEntries(E.order.map(s=>[s.id,true])),selected:'hairFront',portrait:null};
+  const state={config:{...E.defaults},colors:{...E.colors},colored:true,visible:Object.fromEntries(E.order.map(s=>[s.id,true])),selected:'hairFront',portrait:null,painted:null};
+  function layer(id){if(!state.painted)return state.portrait.layers[id];const src=state.painted.layers[id];return state.colored?src:paintedPortraitGrayscale(src);}
   const selectors={},checks={},tiles={};
   function copy(src,target){const g=target.getContext('2d');g.clearRect(0,0,E.size,E.size);g.imageSmoothingEnabled=false;g.drawImage(src,0,0);}
   function title(s){const label={coif:'Mail coif',nasal:'Nasal helm',kettle:'Kettle helm',cap:'Wool cap',gambeson:'Quilted gambeson',mail:'Mail shirt',tunic:'Laced tunic',surcoat:'Surcoat / mail',fur:'Fur mantle'};return E.partLabels?.[s]||label[s]||s.split('-').map(v=>v.charAt(0).toUpperCase()+v.slice(1)).join(' ');}
@@ -14,7 +15,7 @@
   function inspect(id) {
     state.selected=id;
     for(const spec of E.order)tiles[spec.id].classList.toggle('selected',spec.id===id);
-    const src=state.portrait.layers[id];
+    const src=layer(id);
     const pixels=src.getContext('2d').getImageData(0,0,E.size,E.size).data;
     let x0=E.size,y0=E.size,x1=-1,y1=-1;
     for(let y=0;y<E.size;y++)for(let x=0;x<E.size;x++) {
@@ -30,21 +31,23 @@
       const cx=(x0+x1+1)/2,cy=(y0+y1+1)/2;
       g.drawImage(src,cx-size/2,cy-size/2,size,size,0,0,E.size,E.size);
     }
-    $('layer-title').textContent=E.order.find(spec=>spec.id===id).name+' · grayscale source';
+    $('layer-title').textContent=E.order.find(spec=>spec.id===id).name+(state.colored?' · painted artwork':' · grayscale artwork');
   }
   function render(rebuild=false){
     state.config=E.normalize(state.config);
     if(controlsRace!==state.config.race){for(const [key,select] of Object.entries(selectors))fillOptions(select,key,state.config.race);controlsRace=state.config.race;}
     if(rebuild||!state.portrait)state.portrait=E.build(state.config);
-    copy(E.composite(state.portrait,{colors:state.colored?state.colors:null,visible:state.visible}),$('portrait'));
+    state.painted=globalThis.PortraitArtwork?.loaded?PortraitArtwork.fromTemplate(state.portrait,{colors:state.colored?state.colors:E.colors,size:E.size}):null;
+    const image=state.painted?PortraitArtwork.composite(state.painted,{visible:state.visible}):E.composite(state.portrait,{colors:state.colored?state.colors:null,visible:state.visible});
+    copy(state.painted&&!state.colored?paintedPortraitGrayscale(image):image,$('portrait'));
     for(const profile of E.profiles)$('profile-'+profile).setAttribute('aria-pressed',String(state.config.profile===profile));
     const rule=E.headwearRules[state.config.headwear],fit=rule.hair;$('headwear-note').textContent=rule.face==='covered'?'Face-covering helmet; hair, ears and beard stay inside.':{show:'Hair remains visible.',tuck:'Crown hair tucked under this headwear.',hide:'Hair and ears concealed by this headwear.',frame:'Hair stays within the veil; back hair and ears are covered.'}[fit];
     anchors();$('gray').setAttribute('aria-pressed',String(!state.colored));$('color').setAttribute('aria-pressed',String(state.colored));
     $('preset').value=String(E.presets.findIndex(p=>JSON.stringify(state.config)===JSON.stringify(E.normalize(p.config)))).replace('-1','');for(const key of Object.keys(selectors))selectors[key].value=state.config[key];$('seed').value=state.config.seed;$('engraving-control').style.display=state.config.race==='dwarf'?'grid':'none';$('engraving-pattern').value=String(state.config.seed%E.engravingPatterns.length);
-    for(const s of E.order){checks[s.id].checked=state.visible[s.id];copy(state.portrait.layers[s.id],tiles[s.id].querySelector('canvas'));}
+    for(const s of E.order){checks[s.id].checked=state.visible[s.id];copy(layer(s.id),tiles[s.id].querySelector('canvas'));}
     inspect(state.selected);
     $('color-hint').textContent=state.colored?'Applied to preview only':'Enable tint preview to apply';
-    $('status').textContent=state.colored?'Tinted composite · grayscale source layers preserved':'Grayscale composite · 32-value shading';
+    $('status').textContent=state.painted?(state.colored?'Painted composite · independent art layers':'Painted artwork · grayscale view'):'Loading painted parts · procedural fallback';
     window.portraitWorkshop=Object.freeze({state,render,engine:E});
     document.dispatchEvent(new Event('portrait:change'));
   }
@@ -81,9 +84,9 @@
   $('random').onclick=()=>{state.config=E.random((state.config.seed+0x9e3779b9)>>>0,state.config.profile,state.config.race);for(const s of E.order)state.visible[s.id]=true;render(true);};
   $('blank').onclick=()=>{for(const s of E.order)state.visible[s.id]=s.id==='face'||s.id==='clothing';render();};
   $('restore').onclick=()=>{for(const s of E.order)state.visible[s.id]=true;render();};
-  $('download-layer').onclick=()=>download('portrait-'+state.selected+'-grayscale.png',state.portrait.layers[state.selected].toDataURL('image/png'));
+  $('download-layer').onclick=()=>download('portrait-'+state.selected+'-'+(state.colored?'painted':'grayscale')+'.png',layer(state.selected).toDataURL('image/png'));
   $('download-portrait').onclick=()=>download('portrait-'+(state.colored?'tinted':'grayscale')+'.png',$('portrait').toDataURL('image/png'));
-  $('download-atlas').onclick=()=>{const c=document.createElement('canvas');c.width=E.size*E.order.length;c.height=E.size;const g=c.getContext('2d');E.order.forEach((s,i)=>g.drawImage(state.portrait.layers[s.id],i*E.size,0));download('portrait-grayscale-atlas.png',c.toDataURL('image/png'));};
+  $('download-atlas').onclick=()=>{const c=document.createElement('canvas');c.width=E.size*E.order.length;c.height=E.size;const g=c.getContext('2d');E.order.forEach((s,i)=>g.drawImage(layer(s.id),i*E.size,0));download('portrait-'+(state.colored?'painted':'grayscale')+'-atlas.png',c.toDataURL('image/png'));};
   $('import-json').onclick=()=>$('recipe-file').click();
   $('recipe-file').onchange=async()=>{const f=$('recipe-file').files[0];if(!f)return;try{if(f.size>100000)throw Error('Recipe is too large');const r=JSON.parse(await f.text());if(![4,5,6,E.version].includes(r.version)||!r.config||typeof r.config!=='object')throw Error('Choose a version 4–7 portrait recipe');state.config=E.normalize(r.config);for(const key of Object.keys(E.colors)){const color=r.colors?.[key];state.colors[key]=/^#[0-9a-f]{6}$/i.test(color)?color:E.colors[key];$('tint-'+key).value=state.colors[key];}for(const s of E.order)state.visible[s.id]=r.visible?.[s.id]!==false;state.colored=r.colored===true;render(true);}catch(e){$('status').textContent='Could not load recipe: '+e.message;}finally{$('recipe-file').value='';}};
   $('download-json').onclick=()=>blob('portrait-recipe.json',JSON.stringify({version:E.version,size:E.size,config:state.config,headwearFit:E.headwearRules[state.config.headwear],colors:state.colors,colored:state.colored,visible:state.visible,anchors:state.portrait.anchors,drawOrder:E.order.map((s,i)=>({...s,frame:{x:i*E.size,y:0,width:E.size,height:E.size},origin:{x:0,y:0}}))},null,2));

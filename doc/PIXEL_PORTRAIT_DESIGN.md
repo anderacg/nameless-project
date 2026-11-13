@@ -1,5 +1,9 @@
 # Pixel portraits — implemented
 
+Painted component redesign (2026-11-13): 50 authored face, hair and equipment components now supply actual RGB artwork through the existing fit masks, assembled as 19 editable transparent layers. Production game portraits use the new 256-pixel renderer. Composition, normalized version-7 recipes, current options, race proportions and seven tint channels remain. Continuous eye/mouth forms preserve every expression choice. Source atlases are bundled locally; no external generation service runs in game. The full offline player/NPC/collection workshop remains, with painted layer inspection/export, plus a focused 256-pixel art editor. The older procedural engine remains the geometry and loading fallback. Targeted checks cover every eye/mouth choice, fit masks across races/profiles/helmets, part independence, tinting, deterministic rendering, game integration and studio collection round trips.
+
+The following records describe the preceding procedural art passes.
+
 Reference art pass (2026-11-12): the original `prototype/art/portrait/hum_sword.png` guides lighting, pixel detail and material color. Composition stays front-facing: the same rig, framing, head proportions, editable layers and version-7 recipes. Native skin, hair and garment contours preserve finer detail; facial planes have deeper sockets and clear cheek highlights. Helmet silhouettes keep their established two-pixel grid, blended contour and open vision slits. Material tints use warm highlights for skin/cloth and cool reflections for steel, with cool shadows and monotonic brightness for extreme colors. This replaces the earlier coarse skin/hair treatment described below. No reference image is loaded at runtime. Both offline workshop bundles are rebuilt from the shared engine.
 
 

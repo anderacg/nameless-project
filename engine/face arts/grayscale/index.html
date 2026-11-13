@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ashmark · Grayscale portrait workshop</title><link rel="stylesheet" href="style.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ashmark · Painted portrait workshop</title><link rel="stylesheet" href="style.css"></head>
 <body><main>
-<header><div class="eyebrow">ASHMARK <span>/</span> CHARACTER STUDIO · PLAYER & NPC RECIPES</div><h1>A face, piece by piece.</h1><p>Create a player, explore variations, and build distinct characters for your world. Every source part remains grayscale and editable.</p></header>
+<header><div class="eyebrow">ASHMARK <span>/</span> CHARACTER STUDIO · PLAYER & NPC RECIPES</div><h1>A face, piece by piece.</h1><p>Create a player, explore variations, and build distinct characters for your world. Artist-painted parts remain independently editable, with color and grayscale exports.</p></header>
 <div class="workspace">
 <section class="portrait-panel" aria-label="Assembled portrait">
-<div class="panel-heading"><span class="eyebrow">ASSEMBLED PORTRAIT</span><div class="segments" aria-label="Portrait coloring"><button id="gray" aria-pressed="true">Grayscale</button><button id="color" aria-pressed="false">Tint preview</button></div></div>
-<div class="stage checker"><canvas id="portrait" width="128" height="128" aria-label="Portrait assembled from independent grayscale layers"></canvas><canvas id="anchors" width="128" height="128" aria-hidden="true"></canvas></div>
+<div class="panel-heading"><span class="eyebrow">ASSEMBLED PORTRAIT</span><div class="segments" aria-label="Portrait coloring"><button id="gray" aria-pressed="false">Grayscale</button><button id="color" aria-pressed="true">Painted color</button></div></div>
+<div class="stage checker"><canvas id="portrait" width="128" height="128" aria-label="Portrait assembled from independent painted layers"></canvas><canvas id="anchors" width="128" height="128" aria-hidden="true"></canvas></div>
 <div class="portrait-meta"><span id="summary">128 × 128 · separate transparent layers</span><label class="check"><input type="checkbox" id="show-anchors"> Show alignment</label></div>
 <div class="actions"><button class="primary" id="random">Random face</button><button id="blank">Blank face</button><button id="restore">Restore layers</button></div>
 <p id="status" class="status" role="status">Loading the drawing engine…</p>
@@ -33,4 +33,4 @@
 <section class="layer-section"><div class="section-heading"><div><div class="eyebrow">THE COMPONENTS</div><h2>Drawn apart. Aligned together.</h2></div><p>Tap a layer to inspect or export it. Checkboxes control the assembled face.</p></div><div id="layers" class="layers"></div></section>
 <section class="bottom-panel"><div><h2 id="layer-title">Inspect a layer</h2><p>Every part has the same canvas and origin. Hair is split behind and in front of the face so it overlaps correctly. The inspector magnifies small parts; exported layers keep their original canvas.</p><div class="actions wrap"><button id="download-layer">Export selected layer</button><button id="download-atlas">Export grayscale atlas</button></div></div><div class="inspection checker"><canvas id="inspection" width="128" height="128" aria-label="Selected grayscale layer"></canvas></div></section>
 <footer><div><strong>Keep the pieces editable.</strong><p>Export a portrait, or save its recipe and layer positions. This workshop runs offline and does not change the game.</p></div><div class="actions wrap"><button id="import-json">Load recipe</button><input id="recipe-file" type="file" accept="application/json,.json" hidden><button id="download-json">Save recipe + rig</button><button class="primary" id="download-portrait">Export portrait</button></div></footer>
-</main><script src="portrait-engine.js"></script><script src="portrait-generation.js"></script><script src="workshop.js"></script><script src="studio.js"></script></body></html>
+</main><script src="portrait-engine.js"></script><script src="../painted/painted-data.js"></script><script src="../painted/painted-engine.js"></script><script src="../painted/workshop-adapter.js"></script><script src="portrait-generation.js"></script><script src="workshop.js"></script><script src="studio.js"></script></body></html>

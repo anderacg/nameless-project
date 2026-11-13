@@ -1,8 +1,8 @@
-# Grayscale procedural portrait workshop v7
+# Portrait geometry and full character workshop v7
 
-Open **portrait-workshop-grayscale.html** directly in a browser. It is entirely offline: no server, installation or PNG assets required. The same drawing engine is shared by the in-game face maker. The parent v3 image kit is unchanged.
+Open **portrait-workshop-grayscale.html** directly in a browser. It is entirely offline: the rebuilt bundle embeds its painted PNG masters and renderer. The full player/NPC/collection studio now defaults to painted color artwork. Layer inspection and exports use the actual painted parts; grayscale view converts those same parts to luminance. The parent v3 image kit is unchanged.
 
-All artwork is drawn by JavaScript into separate transparent **128 × 128** canvases. The source drawings use 32 neutral grayscale values before the pixel treatment reduces shading by part. Final facial and equipment contours use binary alpha; Mature skin lines and short beards retain subtle edge coverage. Color is applied at runtime without altering source layers. Classic drawing detail has been removed; old v4/v5/v6 recipes import into the current drawing style.
+The underlying geometry/fallback engine draws separate transparent **128 × 128** canvases. Its masks drive the new [painted renderer](../painted/README.md); the procedural rendering details below describe that underlying engine. The source drawings use 32 neutral grayscale values before the pixel treatment reduces shading by part. Final facial and equipment contours use binary alpha; Mature skin lines and short beards retain subtle edge coverage. Color is applied at runtime without altering source layers. Classic drawing detail has been removed; old v4/v5/v6 recipes import into the current drawing style.
 
 ## Pixel style and head proportions
 

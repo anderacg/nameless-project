@@ -1862,3 +1862,6 @@ Shared button feedback (2026-11-13): `campaign-hud.css` supplies hover, held pre
 Phone speed selection: the compact speed button fills warmly while its drawer is open; selected speed options retain their full forged frames. There is no extra inner underline or selection stripe.
 
 The phone speed picker is a compact 192px popover joined directly to its main speed button, with four 44px targets. It follows that control across orientation changes rather than spanning the full HUD.
+
+
+Painted portrait components (2026-11-13): `engine/face arts/painted/` supplies 50 local authored masters fitted into the current 19 dynamic portrait layers. `painted-data.js` embeds the source PNGs; `painted-engine.js` follows the existing geometry engine in both game entry points. `Faces.url` uses the painted renderer at 256 pixels, refreshing any loading-time fallback portraits when art is ready. Saved recipes, race choices, equipment fit and character identities are unchanged. The full offline NPC studio and focused artwork editor expose actual painted layer exports. Checks: `paintedportraits` (all races and eye/mouth options, independent parts/tints and fit), `faces`, `portraits`, `structure`, offline studio and collection round trips.

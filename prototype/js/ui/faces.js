@@ -174,7 +174,7 @@ class Faces{
   static load(v){this.R=null;this.pics=new Map();if(!this.ok())return;if(!v){this.start();return}try{this.R=PortraitCharacters.Roster.restore(v)}catch(e){this.R=null}}
   // (a recipe's picture: drawn once, FACES.px a side, pixel for pixel, kept by its recipe)
   static url(rec,draft){const key=JSON.stringify(rec);this.pics??=new Map();let u=this.pics.get(key);if(u)return u;
-    const src=PortraitEngine.composite(PortraitEngine.build(rec.config),{colors:rec.colors}),n=FACES.px;
+    const src=globalThis.PortraitArtwork?.loaded?PortraitArtwork.render(rec.config,{colors:rec.colors}):PortraitEngine.composite(PortraitEngine.build(rec.config),{colors:rec.colors}),n=FACES.px;
     u=mkc(n,n,g=>{g.imageSmoothingEnabled=false;g.drawImage(src,0,0,n,n)}).toDataURL();if(!draft)this.pics.set(key,u);return u}
   // ---- the faces: yours, a lord's, a companion's (null: none, the old pictures stand)
   static you(){return this.R?this.R.player:null}
@@ -237,6 +237,8 @@ class Faces{
     return{hairStyle:FACE_HAIR.bun.includes(c.hair)?'cropBun':FACE_HAIR[grp],hair:col,beard:bearded?col:null,beardStyle:bearded?'beardF':null}}// (no eye drawn on the figure: the owner, 2026-11-07)
 }
 Saves.add({key:'faces',order:365,save:()=>Faces.save(),load:v=>Faces.load(v)});
+// A face requested before the bundled art decoded refreshes in place when it is ready.
+addEventListener('portrait-art-ready',()=>{const previous=new Map();for(const [key,url] of Faces.pics||[])previous.set(url,key);Faces.pics=new Map();for(const img of document.images){const key=previous.get(img.getAttribute('src'));if(key)img.src=Faces.url(JSON.parse(key));}Faces.refresh()});
 onAct('fm-',(a,arg)=>{
   if(a==='fm-random')Faces.reroll();else return false;
   const y=panel.scrollTop;showTitle('new');panel.scrollTop=y;return true});
