@@ -20,11 +20,13 @@ class Spirit{
   static hash(i,k){const v=Math.sin(i*127.1+k*311.7)*43758.5453;return v-Math.floor(v)}
   // (its first frame now, then each the browser gives until its canvas leaves the page)
   start(){const step=now=>{if(!this.cv.isConnected)return;const dt=this.last?Math.min(.05,(now-this.last)/1000):0;this.last=now;this.frame(dt);requestAnimationFrame(step)};this.frame(0);requestAnimationFrame(step)}
+  // (the middle it keeps to, across: its stage's --cx (style.css 8f, where the three circles stand round), else the middle)
+  cx(){if(this._cx==null||this._cw!==this.cv.width){const v=parseFloat(getComputedStyle(this.stage).getPropertyValue('--cx'));this._cx=Number.isFinite(v)?v/100:.5;this._cw=this.cv.width}return this._cx}
   // (sized to its stage, in game pixels)
   fit(){const r=this.cv.getBoundingClientRect(),k=Math.max(2,Math.min(SPIRIT.most,Math.round(r.height/SPIRIT.h))),w=Math.max(40,Math.round(r.width/k)),h=Math.max(30,Math.round(r.height/k));if(this.cv.width!==w||this.cv.height!==h){this.cv.width=w;this.cv.height=h}return{w,h}}
   frame(dt){const {w,h}=this.fit(),S=SPIRIT,g=this.g;this.t+=this.still?dt*.2:dt;const t=this.t;
     // (where it wanders: a figure of eight round the middle, bobbing; drawn toward the choice pointed at)
-    const cx=w/2,cy=h/2,ax=this.still?0:h*S.wander[0],ay=this.still?0:h*S.wander[1];
+    const cx=w*this.cx(),cy=h/2,ax=this.still?0:h*S.wander[0],ay=this.still?0:h*S.wander[1];
     let tx=cx+ax*Math.sin(t*S.speed[0]),ty=cy+ay*Math.sin(t*S.speed[1])+S.bob[0]*Math.sin(t*S.bob[1]);
     const R=this.stage.getBoundingClientRect(),b=this.to&&this.to.getBoundingClientRect();
     const lx=b?((b.left+b.width/2-R.left)/R.width*w-cx)*S.lean:0,ly=b?((b.top+b.height/2-R.top)/R.height*h-cy)*S.lean:0,e=Math.min(1,dt*S.ease);
