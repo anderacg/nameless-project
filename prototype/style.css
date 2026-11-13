@@ -1378,7 +1378,8 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
    brown ui"); their life on the left, to scroll; the spirit's stage on the right, its three ways round it as circles in a triangle
    ("make it like 3 circle in triangle arrangement"): a new life at the top, a save at the lower left, the void at the lower right,
    the spirit at its middle. Each circle's middle --r from the stage's (its height, cqh, less a circle and a margin; never past --rmax),
-   at 90°, 210° and 330°, the lower two spread --sx wider. The bottom bar kept for Esc but hidden ---------- */
+   at 90°, 210° and 330°, the lower two spread --sx wider; each a breathing orb of light, no border ("Make the choices glowing too
+   nonbirder for circle"), its colour --glow (the void's violet). The bottom bar kept for Esc but hidden ---------- */
 .overlay:has(> .panel.slain){padding:0;background:#000}
 .panel.slain{width:100%;height:100%;max-width:none;max-height:none;display:grid;grid-template-columns:minmax(240px,34%) minmax(0,1fr);gap:0;padding:0;
   background:#000;border:0;border-radius:0;box-shadow:none;animation:slain-in .6s ease-out}
@@ -1397,16 +1398,22 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .spirit-stage{position:relative;container-type:size;--d:120px;--r:min(calc(50cqh - var(--d) / 2 - 10px),230px);--sx:1;min-height:0;height:100%;overflow:hidden;
   background:radial-gradient(ellipse at 50% 52%,#0d1a36 0%,#050912 45%,#000 80%)}
 .spirit-cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
-.spirit-way{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:var(--d);height:var(--d);padding:8px;
-  transform:translate(-50%,-50%);text-align:center;cursor:pointer;font:inherit;color:#e4f6ff;background:radial-gradient(circle at 50% 40%,#14295ccc,#060d1ee6 70%);
-  border:1px solid #3d7fd6;border-radius:50%;box-shadow:0 0 0 1px #000,0 0 18px #2a6cff55;transition:box-shadow .2s,border-color .2s,background .2s}
+.spirit-way{--glow:111,216,255;position:absolute;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:var(--d);height:var(--d);padding:8px;
+  transform:translate(-50%,-50%);text-align:center;cursor:pointer;font:inherit;color:#eef9ff;border:0;border-radius:50%;background:none;box-shadow:none;
+  text-shadow:0 0 10px rgba(var(--glow),.9),0 0 2px #000;transition:transform .25s,filter .25s}
+.spirit-way::before{content:"";position:absolute;inset:-28%;z-index:-1;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle closest-side,rgba(var(--glow),.42) 0%,rgba(var(--glow),.2) 38%,rgba(var(--glow),.07) 66%,rgba(var(--glow),0) 100%);
+  animation:way-breathe 3.6s ease-in-out infinite}
 .spirit-way strong{font-size:var(--fs-sm);letter-spacing:.03em;line-height:1.15}
-.spirit-way span{font-size:var(--fs-2xs);line-height:1.2;color:#9fc6ea}
-.spirit-way:hover,.spirit-way:focus-visible{outline:none;border-color:#9fe8ff;background:radial-gradient(circle at 50% 40%,#244a96e6,#0e1d44f0 70%);box-shadow:0 0 0 1px #000,0 0 28px #6fd8ffaa}
+.spirit-way span{font-size:var(--fs-2xs);line-height:1.2;color:#bfe3f7}
+.spirit-way:hover,.spirit-way:focus-visible{outline:none;transform:translate(-50%,-50%) scale(1.08);filter:brightness(1.5)}
+@keyframes way-breathe{0%,100%{opacity:.7;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
+.sw-load::before{animation-delay:-1.2s}.sw-void::before{animation-delay:-2.4s}
+@media (prefers-reduced-motion:reduce){.spirit-way::before{animation:none}}
 .sw-new{left:50%;top:calc(50% - var(--r))}
 .sw-load{left:calc(50% - var(--r) * .866 * var(--sx));top:calc(50% + var(--r) / 2)}
 .sw-void{left:calc(50% + var(--r) * .866 * var(--sx));top:calc(50% + var(--r) / 2)}
-.sw-void strong{color:#c9b8ff}
+.sw-void{--glow:186,150,255}.sw-void strong{color:#e6dcff}
 @media (max-height:500px){.panel.slain{grid-template-columns:minmax(200px,36%) minmax(0,1fr)}.slain-life{padding:calc(16px + var(--sa-t)) 16px calc(16px + var(--sa-b)) calc(18px + var(--sa-l))}
   .panel.slain .slain-life h3{margin-top:12px}.slain-lab{margin-top:12px}.slain-row{padding:4px 0}
   .spirit-stage{--d:80px;--r:calc(50cqh - var(--d) / 2 - 8px);--sx:1.15}.spirit-way{padding:4px}.spirit-way span{display:none}}
