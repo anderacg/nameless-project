@@ -213,3 +213,11 @@
   .tr-pane small{font-size:12px}.tr-pane h3{font-size:20px}.tr-pane p{font-size:15px}.tr-pane .btn{align-self:stretch;justify-content:center;font-size:15px;min-height:40px}}
 @container ovl (max-height:430px){.fb-tree-switch{padding:3px 6px}.fb-tree-switch .btn{min-height:28px}}
 @container ovl (max-height:430px){.fb-tree-head{padding:4px 8px}.fb-tree-head small{display:none}}
+/* Spacing (the owner, 2026-11-13: "reassess the menu margin for each sections and make sure that all follows the same"): one rhythm
+   in every field-book window: 8px within a group (a heading to what it heads, a field to its buttons, one row of buttons to the next),
+   12px between the groups of a section, 16px before a section's label */
+.fb-shell{--fb-s:8px;--fb-m:12px;--fb-l:16px}
+.fb-shell .lab{margin:var(--fb-l) 0 var(--fb-s)}.fb-shell .lab:first-child{margin-top:0}
+.fb-shell .fb-details>h3{margin:var(--fb-m) 0 var(--fb-s)}.fb-shell .fb-details>:is(.btn,.btns)+p{margin-top:var(--fb-s)}
+.fb-shell .army-editor>*+*{margin-top:var(--fb-s)}.fb-shell .army-editor>:is(.fb-edit-actions,.fb-details){margin-top:var(--fb-m)}.fb-shell .army-editor>.btns{margin-bottom:0}.fb-shell .army-editor :is(.btns,.fb-edit-actions){gap:var(--fb-s)}
+.fb-shell .fb-condition-tags:empty{display:none}.fb-shell .fb-condition-facts+.fb-note{margin-top:var(--fb-m)}
