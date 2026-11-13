@@ -31,3 +31,5 @@ Button feedback (2026-11-13): shared interaction lighting applies to native butt
 Selected-speed refinement (2026-11-13): removed the flat gold underline. The selected speed now uses a soft amber material highlight and brighter gold text, preserving the single outer time frame, press feedback and keyboard focus.
 
 Phone speed refinement (2026-11-13): the compact speed drawer button uses a warm filled surface while open, without an extra inset outline. The selected drawer option retains the same complete forged frame as the other choices; desktop time-strip border-removal rules no longer strip its frame. No underline or bottom selection stripe is used.
+
+Compact phone speed popover (2026-11-13): the four speed choices form a 192px strip attached directly above the main speed button, sharing a relative-positioned wrapper with it. Every choice retains a 44px touch target and its full frame. The old full-width floating bar and its gap are removed. Anchoring follows the dock automatically in landscape, portrait and after resize; selection, outside dismissal, Escape and desktop restoration retain their original handlers.

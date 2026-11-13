@@ -1860,3 +1860,5 @@ Portrait reference art pass (2026-11-12): the shared grayscale portrait engine n
 Shared button feedback (2026-11-13): `campaign-hud.css` supplies hover, held press, selected/expanded, keyboard-focus and disabled lighting for the illustrated controls throughout the game. `ui/input.js` retains quick click feedback for 180ms and follows stable ids across redraws without changing control actions. Phone taps use the same states without sticky hover; reduced-motion mode removes movement and transitions. Time-strip selection uses a warm inset glow and brighter text, without an underline or nested frame. Tests: `buttonstates`, `campaignhud`, `mobilehud`, plus real mouse/keyboard/touch review.
 
 Phone speed selection: the compact speed button fills warmly while its drawer is open; selected speed options retain their full forged frames. There is no extra inner underline or selection stripe.
+
+The phone speed picker is a compact 192px popover joined directly to its main speed button, with four 44px targets. It follows that control across orientation changes rather than spanning the full HUD.

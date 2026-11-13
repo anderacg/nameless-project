@@ -185,6 +185,10 @@
 #screen.campaign-world.mobile-world .mwh-speeds .wtime .tbtn{border:3px solid transparent;border-image:var(--campaign-frame) 176/6px;border-radius:0;box-shadow:none;text-decoration:none}
 #screen.campaign-world.mobile-world #speedToggle[aria-expanded="true"]{background:linear-gradient(#b69b5a75,#6f542b75),var(--campaign-wood);background-size:auto,640px 320px;color:#ffe4a8;box-shadow:none;text-decoration:none}
 #screen.campaign-world.mobile-world #speedToggle[aria-expanded="true"]:not(:active,.ui-clicked,:focus-visible){outline:none}
+#screen.campaign-world.mobile-world .mwh-speed-control{position:relative}
+#screen.campaign-world.mobile-world .mwh-speed-control .mwh-speeds{bottom:calc(100% - 3px);left:50%;right:auto;transform:translateX(-50%);width:192px;padding:2px;border:3px solid transparent;border-image:var(--campaign-frame) 176/6px;z-index:3}
+#screen.campaign-world.mobile-world .mwh-speed-control .wtime{width:100%;margin:0;padding:0;border:0;gap:2px;grid-template-columns:repeat(4,44px)}
+#screen.campaign-world.mobile-world .mwh-speed-control .tbtn{width:44px;min-width:44px;height:44px;min-height:44px;padding:2px}
 @media(hover:hover) and (pointer:fine){
  :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):hover:not(:disabled,[aria-disabled="true"]){filter:brightness(1.2) saturate(1.08)}
 }
