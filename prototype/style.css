@@ -1373,6 +1373,24 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .pg-talk{margin:var(--sp-2) 0}.talk-line.did{color:var(--muted)}.talk-line.did b{color:inherit}
 .talk-not{margin:0 0 var(--sp-2);color:var(--faint);font-size:var(--fs-xs)}.talk-not i{font-style:normal;color:var(--muted)}
 
+/* ---------- 8f. the Slain page (world/death.js Death.open, gfx/spirit.js): the spirit's dark stage, its three ways round it (a save,
+   a new life, the void), the bottom bar kept for Esc but hidden ---------- */
+.panel.slain .nav{display:none}
+.spirit-say{margin:0 0 var(--sp-2)}
+.spirit-stage{position:relative;height:min(46vh,300px);min-height:190px;margin:var(--sp-3) 0;border:1px solid #2c3d63;border-radius:6px;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 55%,#152447 0%,#0a1023 48%,#05060c 100%);box-shadow:inset 0 0 40px #000c}
+.spirit-cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+.spirit-way{position:absolute;display:flex;flex-direction:column;gap:2px;min-width:150px;max-width:34%;padding:10px 14px;text-align:center;cursor:pointer;
+  font:inherit;color:#e4f6ff;background:#0b1630cc;border:1px solid #3d7fd6;border-radius:6px;box-shadow:0 0 0 1px #0008,0 0 14px #2a6cff44;transition:box-shadow .2s,border-color .2s,background .2s}
+.spirit-way strong{font-size:var(--fs-base);letter-spacing:.04em}
+.spirit-way span{font-size:var(--fs-xs);color:#9fc6ea}
+.spirit-way:hover,.spirit-way:focus-visible{outline:none;border-color:#9fe8ff;background:#112450e6;box-shadow:0 0 0 1px #000a,0 0 22px #6fd8ffaa}
+.sw-load{left:4%;top:50%;transform:translateY(-50%)}
+.sw-new{right:4%;top:50%;transform:translateY(-50%)}
+.sw-void{left:50%;bottom:6%;transform:translateX(-50%)}
+.sw-void strong{color:#c9b8ff}
+@media (max-height:500px){.spirit-stage{height:min(56vh,230px);min-height:170px;margin:var(--sp-2) 0}.spirit-way{min-width:0;max-width:30%;padding:6px 12px}.spirit-way span{display:none}.spirit-note{display:none}.sw-void{bottom:5%}}
+
 /* ---------- 9. responsive ---------- */
 /* a touch screen: everything you press at least 44 px, and nothing that only hovering shows */
 @media (pointer:coarse){

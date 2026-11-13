@@ -66,14 +66,23 @@ class Death{
     return {how:'slain',text:'The '+this.beastName(e)+' tear through the last of you, and you do not rise again ('+Math.round(o.ch*100)+'% chance to live).'}}
   // (your life in a few numbers, for the Slain page and the chronicle)
   static life(by){const h=Spatial.nearestHolding(P.x,P.y);return {who:heroName()||'a wanderer',day:G.day,born:P.born||1,days:G.day-(P.born||1)+1,level:P.level,renown:Math.round(P.renown||0),earned:Math.round(P.xpEarned||0),by,near:h?.name||'',race:P.race,bg:P.bg,g:P.gender==='f'?'f':'m',face:typeof Faces!=='undefined'?Faces.yours():null}}
-  // the Slain page (the frame: its way out a new person in the same world, world/legacy.js; else a save, or the main menu)
+  /* the Slain page (the owner, 2026-11-13: "After you die Make a cool spirit glowing and moving around at the center of the screen and
+     make a choices around it to select whether to load, new character or go to the void (exit game)"): their life in a line and a
+     few numbers, then the spirit's stage (gfx/spirit.js Spirit), its three ways round it: a save (left), a new life in the same
+     world (right, world/legacy.js), the void (below: the game left, as the menu's Exit game). The bottom bar's way out, kept for Esc
+     (on as someone new, never out of the game), hidden: the choices round the spirit are the page's ways out */
   static open(){const s=this.slain;if(!s)return;G.mode='dialog';
+    const way=(act,cls,h,sub)=>'<button class="spirit-way '+cls+'" type="button" data-act="'+act+'" data-spirit-to><strong>'+h+'</strong><span>'+sub+'</span></button>';
     showPanel('<div class="top"><h2>Slain</h2><span class="muted">Day '+s.day+'</span></div>'+
-      '<p><b>'+htmlText(cap1(s.who))+'</b> fell to '+htmlText(s.by)+(s.near?' near '+htmlText(s.near):'')+'.'+(s.n>1?' The '+ordinal(s.n)+' of your line to fall.':'')+'</p>'+
+      '<p class="spirit-say"><b>'+htmlText(cap1(s.who))+'</b> fell to '+htmlText(s.by)+(s.near?' near '+htmlText(s.near):'')+'.'+(s.n>1?' The '+ordinal(s.n)+' of your line to fall.':'')+'</p>'+
       '<div class="loot-stats">'+[['Days on the road',s.days],['Level',s.level],['Renown',s.renown],['Experience gained',s.earned]].map(([k,v])=>'<span><b>'+k+'</b><span>'+v+'</span></span>').join('')+'</div>'+
-      '<p>Your remains lie where you fell, with your gear ('+s.items+' piece'+(s.items===1?'':'s')+') and '+s.gold+' gold: whoever finds them first may take them. Men will put a price on '+htmlText(s.by)+'.</p>'+
-      '<p class="muted">The world goes on without them. Go on in it as someone new, or load a save.</p><div class="btns"><button class="btn sm" type="button" data-act="death-load">Load a save</button><button class="btn sm" type="button" data-act="death-menu">Main menu</button></div>'+
-      nav(null,['death-new',null,'Go on as someone new']))}// (Esc: on as someone new, never out of the game)
+      '<div class="spirit-stage" data-spirit><canvas class="spirit-cv" aria-hidden="true"></canvas>'+
+        way('death-load','sw-load','Load a save','Back to a moment you kept')+
+        way('death-new','sw-new','A new life','Someone new, in the same world')+
+        way('death-void','sw-void','Into the void','Leave the game')+'</div>'+
+      '<p class="muted spirit-note">Your remains lie where you fell, with your gear ('+s.items+' piece'+(s.items===1?'':'s')+') and '+s.gold+' gold: whoever finds them first may take them. Men will put a price on '+htmlText(s.by)+'.</p>'+
+      nav(null,['death-new',null,'Go on as someone new']));
+    panel.classList.add('slain');const st=panel.querySelector('[data-spirit]');if(st)new Spirit(st.querySelector('canvas'),st).start()}
   static beastName(e){const M=e.kind==='monster'&&e.ref&&MONSTERS[e.ref.id]&&monOf(e.ref);return M?M.n.toLowerCase()+((e.list||[]).length>1&&!/s$/.test(M.n)?'s':''):'beasts'}
   // your army gone for good: the fit, the wounded
   static dismiss(){const r=partyRoster(P);let n=0;for(const g of r.groups.slice()){n+=g.count;r.remove(g.type,g.count,g.id)}
@@ -146,6 +155,7 @@ class Death{
   static act(a,id){
     if(a==='death-load')return toTitle('load');
     if(a==='death-menu')return toTitle();
+    if(a==='death-void'){try{window.close()}catch(e){}return toTitle('exit')}// (the void: the game left, as the menu's Exit game; the farewell if the tab stays)
     if(a==='death-take'||a==='death-leave')return Remains.act(a,id);
     if(['death-new','death-slain','death-race','death-past'].includes(a))return Legacy.act(a,id);
     if(a==='death-respect'){const c=G.remains;if(c instanceof Crypt){c.respect();c.meet()}return}

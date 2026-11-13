@@ -66,7 +66,7 @@ Kit.suite(({ok})=>{
    ok(r&&r.gold===Math.floor(g0*X.remains.gold)&&r.items.length===n0&&!P.gold&&!Object.values(P.gear).some(Boolean)&&!P.inv.some(Boolean)&&Math.hypot(r.x-P.x,r.y-P.y)<1,'your remains where you fell: all you wore and carried ('+r.items.length+' things) and '+r.gold+' of your '+g0+' gold');
    ok(m.eater&&m.eater.slew===S.who&&m.bounty>0&&t.newsW().items.some(it=>it.k==='maneater'&&it.detail.slew===S.who),'the wolves a man-eater for it ('+D.nameOf(m)+'), a bounty of '+m.bounty+' gold on them, talked of');
    ok(G.msgs.slice(msgs).some(x=>x.kind==='story'&&/fell to/.test(x.m)),'the chronicle keeps it: "'+(G.msgs.slice(msgs).find(x=>/fell to/.test(x.m))||{}).m+'"');
-   t.act('cont');ok(G.mode==='dialog'&&/<h2>Slain<\/h2>/.test(panel())&&/Days on the road/.test(panel())&&/data-act="death-load"/.test(panel())&&/data-act="death-menu"/.test(panel()),'the Slain page: your life in numbers; its way out a save or the main menu');
+   t.act('cont');ok(G.mode==='dialog'&&/<h2>Slain<\/h2>/.test(panel())&&/Days on the road/.test(panel())&&/data-act="death-load"/.test(panel())&&/data-act="death-void"/.test(panel()),'the Slain page: your life in numbers; its ways out a save, a new life or the void');
    G.mode='world';G.modal=false;t.hidePanel();D.hour();ok(/<h2>Slain<\/h2>/.test(panel()),'no going on in the world while slain: the page comes back');
    ok(t.worldObjects().includes(r)&&/remains of/.test(r.tip()),'your remains on the map ("'+r.tip().replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()+'")');
    const sv=JSON.parse(JSON.stringify(R.save()));R.load(sv);const r2=R.list[0];ok(r2 instanceof t.Remains&&r2.gold===r.gold&&r2.items.length===r.items.length,'saved and loaded with the world');
