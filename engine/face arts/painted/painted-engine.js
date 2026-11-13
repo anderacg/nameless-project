@@ -14,6 +14,17 @@
   const d=new Uint8ClampedArray(raw),alpha=new Uint8Array(w*h),seen=new Uint8Array(w*h),queue=new Uint32Array(w*h);let end=0;
   for(let i=0;i<alpha.length;i++){const k=i*4,lum=(d[k]+d[k+1]+d[k+2])/3;alpha[i]=d[k+3]>=128?255:0;if(alpha[i]&&(!metal||lum>=50)){seen[i]=1;queue[end++]=i;}}
   for(let at=0;at<end;at++){const i=queue[at],X=i%w,Y=Math.floor(i/w);for(const j of [X?i-1:-1,X<w-1?i+1:-1,Y?i-w:-1,Y<h-1?i+w:-1])if(j>=0&&!seen[j]){for(let k=0;k<3;k++)d[j*4+k]=d[i*4+k];seen[j]=1;queue[end++]=j;}}
+  // Head masters include ear underpainting; only the separate ear component may supply it.
+  if(sheet===0&&index<5){
+   const row=y=>{let l=w,r=-1;for(let x=0;x<w;x++)if(alpha[y*w+x]){l=Math.min(l,x);r=x;}return[l,r];},start=Math.floor(h*.25),end=Math.floor(h*.65),a=row(start),b=row(end),band=Math.max(4,Math.round(w*.06));
+   for(let y=start;y<=end;y++){const t=(y-start)/(end-start),left=Math.round(a[0]*(1-t)+b[0]*t),right=Math.round(a[1]*(1-t)+b[1]*t);
+    for(let x=0;x<w;x++){const k=y*w+x;if(x<left||x>right){alpha[k]=0;continue;}const edge=Math.min(x-left,right-x);if(edge>=band)continue;const from=x-left<right-x?Math.min(right,left+band):Math.max(left,right-band),weight=(1-edge/band)*Math.sin(Math.PI*t);for(let c=0;c<3;c++)d[k*4+c]=clamp(d[k*4+c]*(1-weight)+d[(y*w+from)*4+c]*weight);}
+   }
+  }
+  // The male master has neck underpainting outside its visible jaw; retain the jaw line, not that backing.
+  if(sheet===0&&index===0){const line=[[.65,.13],[.7,.145],[.75,.24],[.8,.37],[.82,.44]],neck=.27;
+   for(let y=Math.floor(h*.65);y<h*.95;y++){const v=y/h;let edge=neck;if(v<.82){const i=line.findIndex((a,n)=>n&&v<=a[0]),a=line[Math.max(0,i-1)],b=line[Math.max(1,i)],t=Math.max(0,Math.min(1,(v-a[0])/(b[0]-a[0])));edge=Math.min(neck,a[1]+(b[1]-a[1])*t);}else if(v>.85)edge=neck*(1-(v-.85)/.1);for(let x=0;x<w;x++)if(x/w<edge||x/w>1-edge)alpha[y*w+x]=0;}
+  }
   const top=new Uint16Array(w).fill(h);for(let Y=0;Y<h;Y++)for(let X=0;X<w;X++)if(alpha[Y*w+X])top[X]=Math.min(top[X],Y);
   const out={w,h,d,alpha,top};fields.set(key,out);return out;
  }
@@ -44,7 +55,7 @@
     const x=(X+.5)/scale,y=(Y+.5)/scale,k=(Math.floor(y)*N+Math.floor(x))*4;if(!a[k+3])continue;
     let u=(x-b.x)/b.w,v=(y-b.y)/b.h;
     if(body){u=(x-4)/120;const X=Math.max(0,Math.min(f.w-1,Math.floor(u*f.w))),top=f.top[X];v=(top+(y-bodyTops[Math.floor(x)])*f.w/120)/f.h;}
-    if(id==='face'){const A=p.anchors,eye=A.eyes[0].y;v=y<eye?(y-A.top)/(eye-A.top)*.4:y<A.chinY?.4+(y-eye)/(A.chinY-eye)*.42:.82+(y-A.chinY)/(103-A.chinY)*.18;}
+    if(id==='face'){const A=p.anchors,eye=A.eyes[0].y;v=y<eye?(y-b.y)/(eye-b.y)*.4:y<A.chinY?.4+(y-eye)/(A.chinY-eye)*.42:.82+(y-A.chinY)/(103-A.chinY)*.18;}
     const sampled=sample(f,u,v);if(id==='face'&&!sampled.alpha)continue;
     const raw=sampled.rgb,warm=raw[0]>raw[1]*1.08&&raw[1]>raw[2]*1.3&&raw[0]>90;let rgb=(id==='armor'||id.startsWith('headwear'))&&warm?raw:recolor(raw,target,base,contrast);
     if(id==='armor'||id==='clothing'||id.startsWith('headwear')){if(a[k]<=48)rgb=rgb.map(v=>clamp(v*(id.startsWith('headwear')?.24:.7)));else if(a[k]<=64)rgb=rgb.map(v=>clamp(v*.8));else if(a[k]>=224)rgb=rgb.map(v=>clamp(v*1.08+10));else rgb=rgb.map(v=>clamp(v+(a[k]-128)*.1));}
