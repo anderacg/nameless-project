@@ -1,12 +1,12 @@
 'use strict';
 /* ---------- the spirit on the Slain page (the owner, 2026-11-13: "After you die Make a cool spirit glowing and moving around at the
    center of the screen and make a choices around it to select whether to load, new character or go to the void"; world/death.js
-   Death.open). A wisp of light drawn small and laid on its stage pixel by pixel (SPIRIT.px game pixels to one), so it is of the
-   game's world: a teardrop flame, its core near white, its glow added in light; it wanders a slow figure of eight round the middle,
+   Death.open). A wisp of light drawn small and laid on its stage pixel by pixel (its stage SPIRIT.h game pixels tall, so it
+   grows with its stage), so it is of the game's world: a teardrop flame, its core near white, its glow added in light; it wanders a slow figure of eight round the middle of the three (by its stage's height, SPIRIT.wander),
    bobbing, leaning into its way, a trail of light behind it, sparks shed upward, three motes about it, faint stars drifting up; a
    choice pointed at or focused draws it toward that choice (lean), and it brightens. Its loop runs while its canvas is on the page,
    and stops of itself when it is gone. Prefers less motion: it hangs still in the middle, breathing ---------- */
-const SPIRIT={px:4,wander:[.17,.13],speed:[.45,.9],bob:[2.2,1.6],lean:.32,ease:2.4,trail:22,sparks:{n:60,rate:26,life:[.8,1.8],rise:[6,16]},motes:3,stars:40,
+const SPIRIT={h:110,wander:[.12,.08],speed:[.45,.9],bob:[2.2,1.6],lean:.32,ease:2.4,trail:22,sparks:{n:60,rate:26,life:[.8,1.8],rise:[6,16]},motes:3,stars:40,
   size:11,col:{core:'#f4feff',inner:'#a9f0ff',glow:'#47c8ff',outer:'#2a5cff',spark:'#bfefff',star:'#7fa8ff',eye:'#0d2a52'}};
 class Spirit{
   // (its stage: the canvas, and the choices that draw it toward them)
@@ -21,10 +21,10 @@ class Spirit{
   // (its first frame now, then each the browser gives until its canvas leaves the page)
   start(){const step=now=>{if(!this.cv.isConnected)return;const dt=this.last?Math.min(.05,(now-this.last)/1000):0;this.last=now;this.frame(dt);requestAnimationFrame(step)};this.frame(0);requestAnimationFrame(step)}
   // (sized to its stage, in game pixels)
-  fit(){const r=this.cv.getBoundingClientRect(),k=SPIRIT.px,w=Math.max(40,Math.round(r.width/k)),h=Math.max(30,Math.round(r.height/k));if(this.cv.width!==w||this.cv.height!==h){this.cv.width=w;this.cv.height=h}return{w,h}}
+  fit(){const r=this.cv.getBoundingClientRect(),k=Math.max(2,Math.round(r.height/SPIRIT.h)),w=Math.max(40,Math.round(r.width/k)),h=Math.max(30,Math.round(r.height/k));if(this.cv.width!==w||this.cv.height!==h){this.cv.width=w;this.cv.height=h}return{w,h}}
   frame(dt){const {w,h}=this.fit(),S=SPIRIT,g=this.g;this.t+=this.still?dt*.2:dt;const t=this.t;
     // (where it wanders: a figure of eight round the middle, bobbing; drawn toward the choice pointed at)
-    const cx=w/2,cy=h/2,ax=this.still?0:w*S.wander[0],ay=this.still?0:h*S.wander[1];
+    const cx=w/2,cy=h/2,ax=this.still?0:h*S.wander[0],ay=this.still?0:h*S.wander[1];
     let tx=cx+ax*Math.sin(t*S.speed[0]),ty=cy+ay*Math.sin(t*S.speed[1])+S.bob[0]*Math.sin(t*S.bob[1]);
     const R=this.stage.getBoundingClientRect(),b=this.to&&this.to.getBoundingClientRect();
     const lx=b?((b.left+b.width/2-R.left)/R.width*w-cx)*S.lean:0,ly=b?((b.top+b.height/2-R.top)/R.height*h-cy)*S.lean:0,e=Math.min(1,dt*S.ease);

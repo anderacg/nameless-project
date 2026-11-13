@@ -8,10 +8,12 @@ window.RUN=()=>{const R=Kit.report(),{ok}=R,t=T,P=t.P,G=t.G,W=t.W,D=t.Death,X=t.
   const m=t.asMonster({id:'wolf',n:3,lv:1,x:P.x+20,y:P.y,hx:P.x+3000,hy:P.y,cool:0,t:0,a:0});W.monsters=[m];
   t.startEncounter({kind:'monster',ref:m,lv:1,list:m.troops.slice(),allies:[],foes:[]});t.concludeEncounter(false,{},0,true,[],null,{});[X.min,X.max]=mm;t.act('cont');
   st=q('#panel [data-spirit]');cv=st&&st.querySelector('canvas');const ways=st?[...st.querySelectorAll('.spirit-way')].map(b=>b.dataset.act):[];
-  ok(/<h2>Slain<\/h2>/.test(q('#panel').innerHTML)&&st&&cv&&ways.join()==='death-load,death-new,death-void','slain: the spirit\'s stage, its three ways round it ('+ways.join(', ')+')');
+  ok(/<h2>Slain<\/h2>/.test(q('#panel').innerHTML)&&st&&cv&&ways.join()==='death-new,death-load,death-void','slain: the spirit\'s stage, its three ways round it ('+ways.join(', ')+')');
   const S=st.getBoundingClientRect(),B=[...st.querySelectorAll('.spirit-way')].map(b=>b.getBoundingClientRect()),inside=B.every(b=>b.left>=S.left-1&&b.right<=S.right+1&&b.top>=S.top-1&&b.bottom<=S.bottom+1);
   const apart=B.every((a,i)=>B.every((b,j)=>i===j||a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top));
-  ok(inside&&apart&&B[0].right<S.left+S.width/2&&B[1].left>S.left+S.width/2&&B[2].top>S.top+S.height/2,'its ways round it: a save on the left, a new life on the right, the void below, none over another');
+  const mid=b=>[b.left+b.width/2,b.top+b.height/2],[nx,ny]=mid(B[0]),[lx,ly]=mid(B[1]),[vx,vy]=mid(B[2]),cx=S.left+S.width/2,cy=S.top+S.height/2,round=[...st.querySelectorAll('.spirit-way')].every(b=>getComputedStyle(b).borderRadius==='50%'&&Math.abs(b.offsetWidth-b.offsetHeight)<2);
+  const d=[[nx,ny],[lx,ly],[vx,vy]].map(([x,y])=>Math.hypot(x-cx,y-cy)),even=Math.abs(d[1]-d[2])<3&&Math.abs((cx-lx)-(vx-cx))<3;
+  ok(inside&&apart&&round&&even&&ny<cy&&Math.abs(nx-cx)<2&&lx<cx&&vx>cx&&ly>cy&&vy>cy&&Math.abs(ly-vy)<2,'three circles in a triangle round the middle, its lower two alike: a new life above, a save lower left, the void lower right ('+d.map(Math.round).join(', ')+' px out), none over another');
   const nav=q('#panel .nav [data-nav="close"]');ok(nav&&nav.dataset.act==='death-new'&&getComputedStyle(q('#panel .nav')).display==='none','the bottom bar kept for Esc (a new life), hidden');
   img0=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data.slice()}
  catch(e){R.exc(e)}
