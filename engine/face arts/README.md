@@ -2,7 +2,7 @@
 
 Open **[portrait-workshop.html](portrait-workshop.html)** directly in a browser. It works offline and includes the full generator. `index.html` opens the same workshop when this folder is served.
 
-The default renderer fits **50 authored painted components** into the existing **19 independent layers**. It keeps the frontal composition, version-7 recipes, proportions, tint channels and Human, Dwarf, Orc and Elf controls. The game renders at 256 × 256; the full character/NPC studio retains its 128 × 128 editing rig. Race compatibility and fitted hair, ears and headwear remain. [Painted artwork sources and API](painted/README.md).
+The default renderer fits **53 active painted components, including eight newly redrawn skin bases** into the existing **19 independent layers**. It keeps the frontal composition, version-7 recipes, proportions, tint channels and Human, Dwarf, Orc and Elf controls. All face selectors remain available across 64 race/profile/shape combinations. The game renders at 256 × 256; the full character/NPC studio retains its 128 × 128 editing rig. Race compatibility and fitted hair, ears and headwear remain. [Painted artwork sources and API](painted/README.md).
 
 ## Character creation and world generation
 

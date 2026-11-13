@@ -155,7 +155,29 @@
       ]
     ],
     "file": "parts-faces.png",
-    "sha256": "b26d4636fc74d257a0bc91b70153257b09568037d604e7f9a5ca8b0a907260a9"
+    "sha256": "b26d4636fc74d257a0bc91b70153257b09568037d604e7f9a5ca8b0a907260a9",
+    "activeFrames": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24
+    ]
   },
   {
     "width": 1261,
@@ -314,5 +336,179 @@
     ],
     "file": "parts-equipment.png",
     "sha256": "ee4d7ccb17ab3b548b8b6ae0c7da36bd0e3909695977890231881979371edde8"
+  },
+  {
+    "file": "heads-human-male.png",
+    "sha256": "85caa0b5f366fb5006dc42814773fe0a1359a9028f86a7cfd1b4d3592a9029c9",
+    "width": 1254,
+    "height": 1254,
+    "frames": [
+      [
+        389,
+        188,
+        469,
+        886
+      ]
+    ],
+    "heads": [
+      {
+        "race": "human",
+        "profile": "male",
+        "referenceFace": "balanced",
+        "skinBase": [
+          184,
+          139,
+          105
+        ],
+        "eye": 0.4,
+        "chin": 0.82
+      }
+    ]
+  },
+  {
+    "file": "heads-human-dwarf-orc.png",
+    "sha256": "4817687d7729958cd7ffa4a1d4a5a3bf3b3b52f0156ba2e68b458132aff7f815",
+    "width": 2172,
+    "height": 724,
+    "frames": [
+      [
+        127,
+        61,
+        339,
+        626
+      ],
+      [
+        598,
+        124,
+        433,
+        564
+      ],
+      [
+        1149,
+        135,
+        388,
+        553
+      ],
+      [
+        1655,
+        59,
+        444,
+        630
+      ]
+    ],
+    "heads": [
+      {
+        "race": "human",
+        "profile": "female",
+        "referenceFace": "heart",
+        "skinBase": [
+          184,
+          139,
+          105
+        ],
+        "eye": 0.4,
+        "chin": 0.82
+      },
+      {
+        "race": "dwarf",
+        "profile": "male",
+        "referenceFace": "dwarven",
+        "skinBase": [
+          184,
+          139,
+          105
+        ],
+        "eye": 0.4,
+        "chin": 0.82
+      },
+      {
+        "race": "dwarf",
+        "profile": "female",
+        "referenceFace": "dwarven",
+        "skinBase": [
+          184,
+          139,
+          105
+        ],
+        "eye": 0.4,
+        "chin": 0.82
+      },
+      {
+        "race": "orc",
+        "profile": "male",
+        "referenceFace": "orcish",
+        "skinBase": [
+          130,
+          137,
+          76
+        ],
+        "eye": 0.4,
+        "chin": 0.82
+      }
+    ]
+  },
+  {
+    "file": "heads-orc-elf.png",
+    "sha256": "07ae69eb1cd0c8edb93114b054c3d295f76d56b40539c9bb31ce7bd9b5114d4b",
+    "width": 2172,
+    "height": 724,
+    "frames": [
+      [
+        200,
+        62,
+        398,
+        635
+      ],
+      [
+        896,
+        41,
+        379,
+        656
+      ],
+      [
+        1602,
+        75,
+        363,
+        623
+      ]
+    ],
+    "heads": [
+      {
+        "race": "orc",
+        "profile": "female",
+        "referenceFace": "orcish",
+        "skinBase": [
+          130,
+          137,
+          76
+        ],
+        "eye": 0.4,
+        "chin": 0.82
+      },
+      {
+        "race": "elf",
+        "profile": "male",
+        "referenceFace": "elven",
+        "skinBase": [
+          184,
+          139,
+          105
+        ],
+        "eye": 0.4,
+        "chin": 0.82
+      },
+      {
+        "race": "elf",
+        "profile": "female",
+        "referenceFace": "elven",
+        "skinBase": [
+          184,
+          139,
+          105
+        ],
+        "eye": 0.4,
+        "chin": 0.82
+      }
+    ]
   }
 ]
