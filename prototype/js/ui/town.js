@@ -237,7 +237,7 @@ function buffShop(t,place){const ids=Buffs.offer(t,place),L='<div class="lab">Up
 function buffBuy(arg,t,place){const [id,b]=String(arg).split('|');if(Buffs.buy(t,place,id,b))log(armyGroupLabel(id)+': '+BUFFS[b].n+' at '+t.name+'.','gold')}
 class Smithy extends Place{
   constructor(id){
-    super(id,{n:'Smithy',ico:'anvil',verbs:{'buy-gear':'buyGear','buy-quiver':'buyQuiver','buff-buy':'buyBuff'}});
+    super(id,{n:'Smithy',ico:'anvil',verbs:{'buy-gear':'buyGear','buy-quiver':'buyQuiver','buff-buy':'buyBuff','mend-gear':'mendGear'}});
   }
   shut(t){
     const closed=Place.closed(t);
@@ -257,8 +257,19 @@ class Smithy extends Place{
     return railCards([{pic:personPic('smith',t.races[0]),name:'The smith',role:'At the forge of '+t.name,facts:[st.length?st.length+' pieces for sale':'Sold out','New stock in '+(7-Clock.daysSince(W.shops[t.name].day)%7)+' days'],
       note:forgeText(t)+' Bring copper and tin, silver, gold, mithril or adamantite to its market and the smith will forge with them.'}])+'<div class="lab">For sale</div>'+(st.length?st.map((id,i)=>{const I=ITEMS[id],p=gearPrice(id);
       return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+SLOTS[I.slot]+', '+I.d+'</small><small class="diff">'+(gearDiff(id).join(', ')||'<span class="muted">No change from what you wear.</span>')+'</small></div><div class="acts">'+railBtn('buy-gear',i,'Buy',P.gold<p?'Not enough gold':playerInventory.room('gear',id)<1?BAG_FULL:'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')
-      :'<p class="muted">Sold out until the next delivery.</p>')+quiverRows(t,'smith','buy-quiver');
+      :'<p class="muted">Sold out until the next delivery.</p>')+this.mendRows()+quiverRows(t,'smith','buy-quiver');
   }
+  /* mending (the owner, 2026-11-13: damaged gear, data/gear.js DAMAGED): each damaged piece you carry or wear, once of a kind, made
+     whole for mend × the difference of their prices */
+  mendable(){const ids=new Set();for(const s of P.inv)if(s&&s.k==='gear'&&ITEMS[s.id]?.damaged)ids.add(s.id);for(const sl in P.gear)if(ITEMS[P.gear[sl]]?.damaged)ids.add(P.gear[sl]);return [...ids]}
+  mendPrice(id){const I=ITEMS[id];return Math.max(1,Math.round(DAMAGED.mend*(gearPrice(I.whole)-gearPrice(id))))}
+  mendRows(){const L=this.mendable();if(!L.length)return '';
+    return '<div class="lab">Mending</div>'+L.map(id=>{const I=ITEMS[id],W=ITEMS[I.whole],p=this.mendPrice(id),worn=Object.values(P.gear).includes(id);
+      return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+(worn?' <small class="muted">(worn)</small>':'')+'</strong><small>Mended: '+W.n+', '+W.d+'</small></div><div class="acts">'+railBtn('mend-gear',id,'Mend',P.gold<p?'Not enough gold':'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')}
+  // (one mended: the one you wear first, else one in your bag, made whole in its place)
+  mendGear(id,t){const I=ITEMS[id];if(!I||!I.damaged)return;const p=this.mendPrice(id);if(P.gold<p)return;const sl=Object.keys(P.gear).find(k=>P.gear[k]===id);
+    if(sl)P.gear[sl]=I.whole;else{const s=P.inv.find(s=>s&&s.k==='gear'&&s.id===id);if(!s)return;playerInventory.take('gear',id,1);invAdd('gear',I.whole,1)}
+    P.gold-=p;addRep(t.name,p/200,true);log('The smith mends your '+I.n.replace(/^Damaged /,'').toLowerCase()+' for '+p+' gold.','gold');if(typeof updateHUD==='function')updateHUD(true)}
   buyBuff(arg,t){buffBuy(arg,t,this.id)}
   // a piece (its place in the stock): yours, your standing up a little
   buyGear(arg,t){

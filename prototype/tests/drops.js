@@ -44,7 +44,14 @@ Kit.suite(({ok})=>{
   // (the 2026-11-13 balance)
   {const {b,h,foes,d}=fight(),bt=Object.keys(t.ST).find(k=>t.ST[k].beast&&!Object.values(t.MONSTERS).some(m=>m.unit===k));
    if(bt){const f=foes[0],ty=f.type;f.type=bt;d.ground=[];try{for(let i=0;i<20;i++)d.fall(f)}finally{f.type=ty}ok(!d.ground.some(g=>g.k==='gold'||g.k==='gear'),'a beast of no monster\'s own type ('+bt+') leaves no coins nor gear')}
-   d.ground=[];d.gears=0;for(let i=0;i<12;i++)d.fall(foes[i%foes.length]);ok(d.ground.filter(g=>g.k==='gear').length===D.gears,'at most '+D.gears+' pieces of gear a fight, every man sure to drop his');t.B=null;G.mode='world';Kit.clear()}
+   d.ground=[];d.gears=0;for(let i=0;i<12;i++)d.fall(foes[i%foes.length]);ok(d.ground.filter(g=>g.k==='gear'&&!t.ITEMS[g.id].damaged).length===D.gears,'at most '+D.gears+' pieces of gear a fight, every man sure to drop his');t.B=null;G.mode='world';Kit.clear()}
+  // ---- damaged gear and junk (the owner, 2026-11-13: "make drops for junk gears / damaged gear"): now and then, at most worn.most a
+  // fight; a damaged piece is not the fight's gear (its end loot still comes)
+  {const {foes,d}=fight(),W=D.worn,kw={...W};try{D.gear=0;W.damaged=.5;W.junk=.5;d.ground=[];d.worn=0;for(let i=0;i<20;i++)d.fall(foes[i%foes.length]);
+    const dm=d.ground.filter(g=>g.k==='gear'),jk=d.ground.filter(g=>g.k==='mat');
+    ok(dm.length&&jk.length&&dm.every(g=>t.ITEMS[g.id].damaged)&&jk.every(g=>t.MATS[g.id].junk)&&dm.length+jk.length===W.most,'men leave damaged pieces and junk ('+dm.length+' damaged, '+jk.length+' junk: '+[...new Set(d.ground.filter(g=>g.id).map(g=>(t.ITEMS[g.id]||t.MATS[g.id]).n))].slice(0,4).join(', ')+'), '+W.most+' at most a fight');
+    const g0=d.tally.gear;d.gain(dm[0]);d.gain(jk[0]);ok(d.tally.gear===g0&&d.tally.names.includes(t.ITEMS[dm[0].id].n)&&d.tally.mats[jk[0].id]===1,'taken: in the report\'s list, but not the fight\'s gear (its end loot still comes)')}
+   finally{Object.assign(W,kw);D.gear=1}t.B=null;G.mode='world';Kit.clear()}
   // ---- off: nothing falls
   {D.on=false;const {b,h,foes,d}=fight(),f=foes[0];f.hp=0;run(5);ok(!d.ground.length&&!d.orbs.length,'off (the tests\' harness): nothing falls');t.B=null;G.mode='world';Kit.clear()}
  }finally{D.on=keep.on;D.loot=keep.loot;D.coin.chance=keep.coin;D.gear=keep.gear}

@@ -51,6 +51,15 @@ const HAND_NOTE={one:' One-handed: pair it with a shield or a second weapon.',tw
 Object.keys(BASES).forEach(b=>MATERIALS.forEach((mat,t)=>{const B=BASES[b],m=B.m(t),tag=B.tag||(B.heavyFrom!=null&&t>=B.heavyFrom?'heavy':undefined);
   ITEMS['g_'+b+'_'+t]={n:mat.n+' '+B.n,slot:B.slot,r:mat.k,tier:t,base:b,m,tag,v:B.v*2**t,icon:B.icon,col:mat.col,kind:B.kind,shot:B.shot,hand:B.hand,d:describeGear(m,tag)+HAND_NOTE[B.hand||(MOUNT_KEYS.includes(B.slot)?'mount':'')]+(B.kind==='ranged'?' Your attacks shoot arrows (stamina).':B.kind==='magic'?' Your attacks cast bolts of magic that splash (mana).':'')}}));
 const gearId=(b,t)=>'g_'+b+'_'+t;
+/* damaged gear (the owner, 2026-11-13: "make drops for junk gears / damaged gear"; battle/drops.js): each ordinary piece in a damaged
+   form, gd_<base>_<tier>, worn as it is: m × its good numbers (a slower swing or a heavier barding's slowness kept, a tome's Spellcraft lost), v
+   × its worth; a smith mends it into the whole piece for mend × the difference of their prices (ui/town.js Smithy) */
+const DAMAGED={m:.5,v:.3,mend:.6};
+const damagedId=(b,t)=>'gd_'+b+'_'+t;
+Object.keys(BASES).forEach(b=>MATERIALS.forEach((mat,t)=>{const W=ITEMS[gearId(b,t)],m={};
+  for(const k in W.m){const v=W.m[k];if(typeof v!=='number')continue;m[k]=(v>0)!==(GEAR_STAT[k]?.[2]===-1)?+(v*DAMAGED.m).toFixed(k==='hp'||k==='mp'||k==='slots'||k==='reach'?0:2)||v:v}
+  ITEMS[damagedId(b,t)]={...W,n:'Damaged '+W.n,m,v:Math.max(1,Math.round(W.v*DAMAGED.v)),damaged:true,whole:gearId(b,t),
+    d:'Damaged: '+describeGear(m,W.tag).replace(/^./,c=>c.toLowerCase())+' A smith can mend it.'+W.d.slice(describeGear(W.m,W.tag).length)}}));
 // a random ordinary piece of a tier in [lo, hi]
 const randomGear=(lo,hi)=>gearId(Object.keys(BASES)[rint(0,Object.keys(BASES).length-1)],rint(lo,Math.min(hi,MATERIALS.length-1)));
 
