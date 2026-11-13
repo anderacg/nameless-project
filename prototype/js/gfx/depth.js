@@ -83,22 +83,32 @@ function dashNote(g,s,A){const T=g.getTransform(),n=A.length,w=n>=9?A[7]:n>=5?A[
 const DASH_OUT4=[[1,0],[-1,0],[0,1],[0,-1]],DASH_OUT8=[...DASH_OUT4,[1,1],[1,-1],[-1,1],[-1,-1]];
 const DASH_STRIPES=new Map();
 function dashStripes(p){let c=DASH_STRIPES.get(p);if(c)return c;c=mkc(p,p,g=>{const I=g.createImageData(p,p),o=I.data;for(let y=0;y<p;y++)for(let x=0;x<p;x++)if((x+y)%p<p/2)o[(y*p+x)*4+3]=255;g.putImageData(I,0,0)});DASH_STRIPES.set(p,c);return c}
-// (its outline in dashes where something covers it, all at the screen's pixels: its body drawn as it was on a small canvas the size
-// of its box, laid round itself t px out, then itself cut away (the ring outside it), cut to the stripes
-// (fixed to the map, so they hold as it scrolls), coloured, kept only where the cover's mask (overdrawBox's) holds, then laid on the
-// screen; no pixel read back)
-function dashDraw(rec,m,x0,y0,x1,y1,col){const D=WDEPTH.dash,k=m.a||1,w=x1-x0+1,h=y1-y0+1,W=Math.ceil(w*k),H=Math.ceil(h*k),M=WDEPTH.img.data,st=WDEPTH.img.width;
-  const t=Math.max(1,Math.round(D.w*k)),p=Math.max(2,Math.round(2*D.len*k));
-  let K=WDEPTH.mk;if(!K||K.c.width<w||K.c.height<h){const c=mkc(Math.max(w,64),Math.max(h,64),()=>{});K=WDEPTH.mk={c,g:c.getContext('2d'),I:null}}
-  if(!K.I||K.I.width<w||K.I.height<h)K.I=K.g.createImageData(Math.max(w,64),Math.max(h,64));const I=K.I.data,si=K.I.width;
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++)I[(y*si+x)*4+3]=M[(y*st+x)*4+3]?255:0;K.g.putImageData(K.I,0,0,0,0,w,h);
-  const two=n=>{let S=WDEPTH[n];if(!S||S.c.width<W||S.c.height<H){const c=mkc(Math.max(W,128),Math.max(H,128),()=>{});S=WDEPTH[n]={c,g:c.getContext('2d')}}return S};
-  const R=two('sc'),g=R.g,ox=x0*k+m.e,oy=y0*k+m.f,T=rec.T,at=(dx,dy)=>{g.setTransform(T.a,T.b,T.c,T.d,T.e-ox+dx,T.f-oy+dy);g.drawImage(rec.s,...rec.A)};
-  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);g.imageSmoothingEnabled=false;
-  for(let r=1;r<=t;r++)for(const [dx,dy] of r>1?DASH_OUT8:DASH_OUT4)at(dx*r,dy*r);
-  g.globalCompositeOperation='destination-out';at(0,0);g.setTransform(1,0,0,1,0,0);
-  const pt=dashStripes(p),pat=pt.pat||(pt.pat=g.createPattern(pt,'repeat'));pat.setTransform(new DOMMatrix([1,0,0,1,((m.e-ox)%p+p)%p,((m.f-oy)%p+p)%p]));g.globalCompositeOperation='destination-in';g.fillStyle=pat;g.fillRect(0,0,W,H);
-  g.globalCompositeOperation='source-in';g.fillStyle=col;g.fillRect(0,0,W,H);g.globalCompositeOperation='destination-in';g.drawImage(K.c,0,0,w,h,0,0,W,H);g.globalCompositeOperation='source-over';
-  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha*=D.a;WDEPTH.di.call(ctx,R.c,0,0,W,H,ox,oy,W,H);ctx.restore()}
+// (its outline in dashes where something covers it, at the screen's pixels: the cover (overdrawBox's picture of it, WDEPTH.cv) laid on
+// a scratch canvas, its fades made whole by laying it on itself to DASH_FILL times, its ring (dashRing) kept only there, laid where
+// its body was drawn, then laid on the screen; no pixel read back nor sent up. Built each frame from its body before (12 draws, a mask sent up from the
+// cover's bytes): a battle by a wood lost half its frame to it, the owner 2026-11-13: "Battle lag very much is it because of outline
+// when near tree?")
+const DASH_FILL=4;
+function dashDraw(rec,m,x0,y0,x1,y1,col){const D=WDEPTH.dash,k=m.a||1,w=x1-x0+1,h=y1-y0+1,W=Math.ceil(w*k),H=Math.ceil(h*k),R=dashRing(rec,k,col);if(!R)return;
+  let S=WDEPTH.sc;if(!S||S.c.width<W||S.c.height<H){const c=mkc(Math.max(W,128),Math.max(H,128),()=>{});S=WDEPTH.sc={c,g:c.getContext('2d')}}
+  const g=S.g,ox=x0*k+m.e,oy=y0*k+m.f;g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.globalCompositeOperation='copy';g.drawImage(WDEPTH.cv,0,0,w,h,0,0,W,H);
+  g.globalCompositeOperation='lighter';for(let i=1;i<DASH_FILL;i*=2)g.drawImage(S.c,0,0,W,H,0,0,W,H);
+  g.globalCompositeOperation='source-in';g.drawImage(R.c,Math.round(rec.T.e+R.ox-ox),Math.round(rec.T.f+R.oy-oy));g.globalCompositeOperation='source-over';
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha*=D.a;WDEPTH.di.call(ctx,S.c,0,0,W,H,ox,oy,W,H);ctx.restore()}
+// (a body's dashed ring, once for each of its pictures at its turn and scale and in each colour: its body laid round itself t px out,
+// itself cut away, cut to the stripes (fixed to it, so they hold as it walks), coloured; ox, oy: its corner from the body's origin)
+const DASH_RINGS=new WeakMap();
+function dashRing(rec,k,col){const D=WDEPTH.dash,T=rec.T,A=rec.A,t=Math.max(1,Math.round(D.w*k)),p=Math.max(2,Math.round(2*D.len*k)),key=[T.a,T.b,T.c,T.d,...A,col,t,p].join();
+  let M=DASH_RINGS.get(rec.s);if(!M)DASH_RINGS.set(rec.s,M=new Map());let R=M.get(key);if(R)return R;
+  const n=A.length,[dx,dy,dw,dh]=n>=8?[A[4],A[5],A[6],A[7]]:n>=4?A:[A[0],A[1],rec.s.width,rec.s.height];
+  const cs=[[dx,dy],[dx+dw,dy],[dx,dy+dh],[dx+dw,dy+dh]].map(([x,y])=>[T.a*x+T.c*y,T.b*x+T.d*y]),pad=t+1;
+  const bx0=Math.floor(Math.min(...cs.map(c=>c[0])))-pad,by0=Math.floor(Math.min(...cs.map(c=>c[1])))-pad,bx1=Math.ceil(Math.max(...cs.map(c=>c[0])))+pad,by1=Math.ceil(Math.max(...cs.map(c=>c[1])))+pad;
+  const W=bx1-bx0,H=by1-by0;if(W<=0||H<=0||W*H>1e6)return null;
+  const c=mkc(W,H,g=>{g.imageSmoothingEnabled=false;const at=(ax,ay)=>{g.setTransform(T.a,T.b,T.c,T.d,ax-bx0,ay-by0);g.drawImage(rec.s,...A)};
+    for(let r=1;r<=t;r++)for(const [ax,ay] of r>1?DASH_OUT8:DASH_OUT4)at(ax*r,ay*r);
+    g.globalCompositeOperation='destination-out';at(0,0);g.setTransform(1,0,0,1,0,0);
+    g.globalCompositeOperation='destination-in';g.fillStyle=g.createPattern(dashStripes(p),'repeat');g.fillRect(0,0,W,H);
+    g.globalCompositeOperation='source-in';g.fillStyle=col;g.fillRect(0,0,W,H);g.globalCompositeOperation='source-over'});
+  R={c,ox:bx0,oy:by0};if(M.size>64)M.clear();M.set(key,R);return R}
 // a world goes in: no fades carried over
 onWorld(()=>{WDEPTH.al.clear();WDEPTH.cov.clear();WDEPTH.t=0});
