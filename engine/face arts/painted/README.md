@@ -16,4 +16,6 @@ The game and wiki use locally bundled image data, with no image-generation servi
 
 Run `python ../build.py` here to rebuild local data and all portable editors. `workshop-adapter.js` preserves the full studio's existing character API. Asset PNGs should remain unchanged; edit the manifest/renderer and regenerate bundles when updating source artwork.
 
+Helmet refinement (2026-11-14): all 27 helmet/coif styles use interior material samples, with their own rig shading defining reflections, vents, seams, horns and edges. Transparent atlas margins and unrelated crown/faceplate imagery are no longer stretched across those shapes. Default steel retains its material colors; the headwear tint applies as a relative change. Mail lining uses a consistent texture scale. Closed-helmet eye openings receive dark lining only inside the existing outer silhouette. Headwear layers remain independently exportable; no source PNGs or other portrait parts change.
+
 Facial expressions retain all current eye/mouth forms. Orc lips and independent ivory tusks keep their prior refinements. Age and complexion marks inherit local skin texture with shallow relief; their choices and seven tint channels remain dynamic. Armor material fitting retains its collar alignment and original geometry.

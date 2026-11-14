@@ -1846,8 +1846,29 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
    for(let X=0;X<size;X++){const x=(X+.5)/scale,u=.5+(x-A.cx)/(half*2*warp);if(u<0||u>=1)continue;const s=sample(f,u,v);if(s.alpha)put(d,(Y*size+X)*4,recolor(s.rgb,target,h.skinBase,contrast),255);}
   }g.putImageData(im,0,0);return fitHeadToBody(out,size);
  }
+ const isHelmet=c=>/helm|bascinet|sallet|nasal|kettle|coif/.test(c.headwear);
+ // Helmet contours and fittings come from their own rig; atlas borders are never stretched into metal.
+ function paintedHelmet(p,colors,size,id){
+  const out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,scale=size/N,A=p.anchors,c=p.config,mask=p.layers[id].getContext('2d').getImageData(0,0,N,N).data,steel=frame(1,19),horn=frame(1,18),mail=frame(1,11),target=hex(colors.headwear),base=hex(E.colors.headwear),b=bounds(mask);if(!b)return out;
+  const chain=c.headwear==='coif'||id==='headwearBack'&&/bascinet|dwarf|great-helm/.test(c.headwear),closed=E.faceCoveringHelmets.includes(c.headwear);
+  const outside=new Uint8Array(N*N),queue=[];if(closed&&id==='headwearFront'){for(let y=0;y<N;y++)for(let x=0;x<N;x++)if((!x||!y||x===N-1||y===N-1)&&!mask[(y*N+x)*4+3]){const i=y*N+x;outside[i]=1;queue.push(i);}for(let at=0;at<queue.length;at++){const i=queue[at],x=i%N,y=Math.floor(i/N);for(const j of [x?i-1:-1,x<N-1?i+1:-1,y?i-N:-1,y<N-1?i+N:-1])if(j>=0&&!outside[j]&&!mask[j*4+3]){outside[j]=1;queue.push(j);}}}
+  for(let Y=0;Y<size;Y++)for(let X=0;X<size;X++){
+   const x=(X+.5)/scale,y=(Y+.5)/scale,k=(Math.floor(y)*N+Math.floor(x))*4;if(!mask[k+3]){if(closed&&id==='headwearFront'&&!outside[k/4]&&Math.abs(y-A.eyes[0].y)<5)put(d,(Y*size+X)*4,x<A.cx?[32,38,43]:[25,30,35],255);continue;}
+   const u=(x-b.x)/b.w,v=(y-b.y)/b.h;
+   let rgb;
+   if(chain){const s=sample(mail,.12+x/N*.76,.4+(y%34)/34*.5);rgb=recolor(s.rgb,target,base);}
+   else{
+    const ivory=/horned|tusked/.test(c.headwear)&&Math.abs(x-A.cx)>A.w+1&&y<A.eyes[0].y-7;
+    const s=ivory?sample(horn,x<A.cx?.11:.89,.23):sample(steel,.28+u*.42,.14+v*.2),raw=s.alpha?s.rgb:sample(steel,.42,.3).rgb,lum=raw.reduce((a,b)=>a+b,0)/3;
+    const tone=mask[k],light=Math.max(24,Math.min(245,24+tone*.85+(lum-145)*.28));
+    rgb=raw.map(n=>clamp(n*light/Math.max(1,lum)));if(!ivory)rgb=recolor(rgb,target,base);
+   }
+   put(d,(Y*size+X)*4,rgb,255);
+  }
+  g.putImageData(im,0,0);return out;
+ }
  function paintMask(p,spec,colors,size){
-  const id=spec.id;if(id==='face')return paintedHead(p,colors,size);const src=part(id,p.config),out=canvas(size),g=out.getContext('2d');g.imageSmoothingEnabled=false;
+  const id=spec.id;if(id==='face')return paintedHead(p,colors,size);if(id.startsWith('headwear')&&isHelmet(p.config))return paintedHelmet(p,colors,size,id);const src=part(id,p.config),out=canvas(size),g=out.getContext('2d');g.imageSmoothingEnabled=false;
   if(!src){g.drawImage(spec.channel?E.tint(p.layers[id],colors[spec.channel]):p.layers[id],0,0,size,size);return out;}
   const a=p.layers[id].getContext('2d').getImageData(0,0,N,N).data,im=g.createImageData(size,size),d=im.data,pair=id==='ears'||id==='brows',scale=size/N,target=hex(colors[spec.channel]),base=baseFor(...src,id),contrast=0;
   const bodyTops=new Uint16Array(N).fill(N);if(['torso','clothing','armor'].includes(id)){const masks=id==='torso'?[a]:['clothing','armor'].map(key=>p.layers[key].getContext('2d').getImageData(0,0,N,N).data);for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(masks.some(d=>d[(y*N+x)*4+3]))bodyTops[x]=Math.min(bodyTops[x],y);}
