@@ -10,13 +10,17 @@ try{
  const panel=()=>document.getElementById('panel').innerHTML;
  t.act('begin','soldier');
  const S=W.sites,of=ty=>S.filter(s=>s.type===ty),want=Object.keys(t.SITE_TYPES).filter(ty=>!t.SITE_TYPES[ty].made);// (none made in play: a resting place, world/lineage.js)
- // (as many as the world holds, data/world.js density: at least 9 in 10, the travellers wanting a roadside)
- ok(want.every(ty=>{const n=of(ty).length,w=t.SITE_TYPES[ty].spots?t.CAMP_SPOTS.length:t.density(t.WM).sites[ty];return n<=w&&n>=w*.9}),'every kind placed: '+want.map(ty=>of(ty).length+' '+ty).join(', '));
- // (the travellers' camps (the owner's play-test, 2026-10-22: "too many pilgrim and wanderer camps"): as many as the world's road
- // holds (data/world.js DENSITY.grow roads), each by a road, SITE_GAP's tiles from another and from the outlaws' camps and hideouts)
+ // (as many as the world holds, data/world.js density: at least 9 in 10; the camps where people live by kind, data/encampments.js)
+ const nEnc=t.ENCAMP_KINDS.reduce((n,K,i)=>n+t.Encampment.count(i,t.WM),0);
+ ok(want.every(ty=>{const n=of(ty).length,w=t.SITE_TYPES[ty].spots?t.CAMP_SPOTS.length:ty==='travelers'?nEnc:t.density(t.WM).sites[ty];return n<=w&&n>=w*.9}),'every kind placed: '+want.map(ty=>of(ty).length+' '+ty).join(', '));
+ // (the camps where people live (doc/ENCAMPMENTS_DESIGN.md §9; the owner: "at least one for each and scale based on the world"):
+ // each kind as many as the land gives, one at least, each on its kind's ground, SITE_GAP's tiles from another and from the outlaws'
+ // camps and hideouts)
  {const tv=of('travelers'),G2=t.SITE_GAP.travelers,near=(a,L)=>Math.min(...L.filter(b=>b!==a).map(b=>Math.hypot(a.tx-b.tx,a.ty-b.ty))),bc=[...of('camp'),...of('hideout')];
   const d1=Math.min(...tv.map(a=>near(a,tv))),d2=Math.min(...tv.map(a=>near(a,bc)));
-  ok(tv.length===t.density(t.WM).sites.travelers&&tv.every(s=>t.TravellersCamp.ground(s.tx,s.ty))&&d1>=G2.travelers&&d2>=Math.min(G2.camp,G2.hideout),'the travellers\u2019 camps: '+tv.length+' by '+t.worldRoads(t.WM)+' tiles of road (a track\u2019s a half), each by a road, '+d1.toFixed(1)+' tiles apart at the least ('+G2.travelers+'), '+d2.toFixed(1)+' from the outlaws\u2019 camps and hideouts ('+G2.camp+')')}
+  const by=t.ENCAMP_KINDS.map((K,i)=>tv.filter(s=>s.kind===i).length),land=t.worldMeasures(t.WM).land,want=t.ENCAMP_KINDS.map((K,i)=>Math.max(1,Math.round(K.count*Math.sqrt(land))));
+  ok(tv.length===nEnc&&by.every((n,i)=>n===want[i]||t.ENCAMP_KINDS[i].ground==='desert'&&n<=want[i])&&tv.every(s=>t.Encampment.spec(s.kind).ground(s.tx,s.ty))&&d1>=G2.travelers&&d2>=Math.min(G2.camp,G2.hideout),
+   'the camps: '+tv.length+' on land '+land.toFixed(2)+' times the base, by kind '+t.ENCAMP_KINDS.map((K,i)=>K.key+' '+by[i]).join(', ')+', each on its ground, '+d1.toFixed(1)+' tiles apart at the least ('+G2.travelers+'), '+d2.toFixed(1)+' from the outlaws\u2019 camps and hideouts ('+G2.camp+')')}
  const at=s=>s.type==='cave'?s.ty+1:s.ty;ok(S.every(s=>t.passable(t.tAt(s.tx,at(s)))&&t.Router.reach(t.TOWNS[0],{x:(s.tx+.5)*t.TILE,y:(at(s)+.5)*t.TILE})),'all '+S.length+' sites stand on ground you can reach (a cave: the ground at its mouth)');
  const quad=[0,1,2,3].map(q=>S.filter(s=>(s.tx<MW/2?0:1)+(s.ty<MH/2?0:2)===q).length);ok(quad.every(n=>n>=4),'spread over the whole map (per quarter: '+quad.join(', ')+')');
  ok(S.every(s=>t.TOWNS.every(w=>Math.hypot(w.tx-s.tx,w.ty-s.ty)>=6)),'none sit on top of a holding');
@@ -56,7 +60,10 @@ try{
  const seen0=S.filter(s=>s.seen).length;t.act('site-news');ok(S.filter(s=>s.seen).length===seen0+2&&/on your map/.test(panel()),'news puts two new places on your map');
  t.invAdd('mat','pelt',3);const g1=P.gold;t.act('site-sell');ok(P.gold>g1&&!t.invCount('mat','pelt'),'they buy trophies');
  t.act('site-leave');ok(G.mode==='world','Leave returns to the map');
- const x0=tr.x,y0=tr.y;G.day=tr.until;G.lastSite=null;t.siteDay();ok((tr.x!==x0||tr.y!==y0)&&!tr.seen&&tr.until>G.day,'travellers pack up and move on');
+ const x0=tr.x,y0=tr.y;G.day=tr.until;G.lastSite=null;t.siteDay();ok(tr.x===x0&&tr.y===y0,'in your sight, travellers stay past their time');
+ {const h=t.TOWNS.reduce((a,b)=>Math.hypot(b.x-x0,b.y-y0)>Math.hypot(a.x-x0,a.y-y0)?b:a);P.x=h.x;P.y=h.y}
+ t.siteDay();ok((tr.x!==x0||tr.y!==y0)&&!tr.seen&&tr.until>G.day&&t.Encampment.spec(tr.kind).ground(tr.tx,tr.ty),'out of it, they pack up and move on, to their kind\u2019s ground elsewhere');
+ {const st=of('travelers').find(s=>s.settled),u0=st&&st.until;if(st){G.day+=60;t.siteDay();ok(st.until==null&&u0==null,'a settled camp ('+st.name+') stays')}}
  // save and load
  G.mode='world';t.saveGame();const snap=JSON.stringify(S.map(s=>[s.type,s.x,s.y,s.seen,s.cleared]));W.sites=[];t.act('load');
  ok(JSON.stringify(W.sites.map(s=>[s.type,s.x,s.y,s.seen,s.cleared]))===snap,'sites, what you found and what you cleared survive a reload');
@@ -89,7 +96,7 @@ try{
   const lucky=(a,arg,r)=>{const r0=Math.random;let f=true;const s=t.seeded(91);Math.random=()=>f?(f=false,r):s();try{t.act(a,arg)}finally{Math.random=r0}};
   const c=t.camps()[1],acts=()=>qa('.rwbody .rkact').map(b=>b.dataset.act+':'+b.dataset.rk).join();P.troops={hum_knight:4,hum_long:4};P.gold=2000;P.sk.scout.lv=3*PROF.per;// (a rough read before scouting: window.js insight; tests/conduct.js reads every level)
   world();c.cleared=false;c.bands=[];P.x=c.x;P.y=c.y+6;t.updateSites();ok(G.mode==='world'&&!G.site,'walking up to it, unclicked, opens nothing');t.interact(c);
-  ok(G.mode==='site'&&G.site===c&&!G.enc&&q('#panel.paged')&&!q('.rail')&&q('.rwin h2').textContent===c.name&&acts()==='site-scout:q,site-ask:w,site-tab:e'&&/Fewer than|handful|dozen|score|fifteen|dozens/.test(q('.pg-facts').textContent)&&q('.rwbody>.pg-banner')&&!q('.pg-banner').textContent.trim(),
+  ok(G.mode==='site'&&G.site===c&&!G.enc&&q('#panel.paged')&&!q('.rail')&&q('.rwin h2').textContent===c.name&&acts()==='site-scout:q,site-ask:w,site-tab:e'&&/fewer than|handful|dozen|score|fifteen|dozens/i.test(q('.pg-facts').textContent)&&q('.rwbody>.pg-banner')&&!q('.pg-banner').textContent.trim(),
     'a bandit camp clicked opens its page: no fight, its picture (a banner, no words), what you can see ('+q('.pg-facts').textContent+'), Scout, Attack and Parley (Q W E)');
   {const g=c.guess(),txt=q('.rwbody').textContent;ok(new RegExp(t.roughly(g.n),'i').test(txt)&&/they look/i.test(txt)&&/Talk of plunder/.test(txt)&&c.ld&&txt.includes(c.ld.name)&&!/Power \d/.test(txt)&&!/Tier \d/.test(txt)&&!/×\d/.test(txt),'before scouting all of it vague: '+t.roughly(g.n)+', how strong they look, a rumour of loot, their chief by name; no counts, kinds or power')}
   // Scout: unseen, the exact numbers, kinds and loot, and the fight is the one they saw
@@ -134,7 +141,8 @@ try{
     world();t.enterSite(cv);lucky('site-scout',null,.999);ok(G.enc&&G.enc.kind==='cave'&&!G.site,'seen, the beasts wake: the fight at once');t.act('flee')}
   // bands that catch you on the road: as before, the fight (or, cornered, their parley), never a page
   {world();P.troops={hum_levy:1};t.bandits.length=0;{const h=t.TOWNS[0];P.x=(h.tx+.5)*TILE;P.y=(h.ty+2.5)*TILE}const b=t.asParty({x:P.x+24,y:P.y,n:14,kind:'bandits',list:t.makeEnemies(14,false,'bandits'),t:0,a:0,idle:false,cool:0,ld:null});t.bandits.push(b);G.clock=t.DAY*.3;t.TravelAwareness.notice(b);// (it has seen you: worldobject.js TravelAwareness)
-    for(let i=0;i<200&&!G.enc;i++)t.updateBands(.05);ok(G.enc&&G.enc.kind==='party'&&G.enc.ref===b&&!q('#panel.paged'),'a band that catches you on the road: the fight, as before'+(G.enc?'':' (none: '+[Math.round(Math.hypot(b.x-P.x,b.y-P.y)),t.stance(b.power()),G.mode,G.par?'par':'',b.cool,b.gone].join()+')'));t.act('flee');world();
+    // (by the holding: no band shy of its guards for this, data/outlaws.js BAND_SHY)
+    const shy=t.BAND_SHY.on;t.BAND_SHY.on=false;try{for(let i=0;i<200&&!G.enc;i++)t.updateBands(.05)}finally{t.BAND_SHY.on=shy}ok(G.enc&&G.enc.kind==='party'&&G.enc.ref===b&&!q('#panel.paged'),'a band that catches you on the road: the fight, as before'+(G.enc?'':' (none: '+[Math.round(Math.hypot(b.x-P.x,b.y-P.y)),t.stance(b.power()),G.mode,G.par?'par':'',b.cool,b.gone].join()+')'));t.act('flee');world();
     P.troops={hum_knight:40};b.pw=0;t.meetBand(b);ok(G.par&&q('[data-act="pl-yield"]')&&!q('#panel.paged'),'a band you corner: its parley, as before');world();t.bandits.length=0}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

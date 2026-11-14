@@ -369,8 +369,8 @@ function campXings(){const L=WM.crossings||[];let X=CAMP_X.get(L);if(!X){X=new S
 function campRing(t){const b=centreBox(t),r=[b.x,b.y,b.x+b.n-1,b.y+b.n-1],g=SUPPLY.camp.ring;
   for(const l of t.lots||[])if(l.k==='centre'||l.k==='house'){r[0]=Math.min(r[0],l.x);r[1]=Math.min(r[1],l.y);r[2]=Math.max(r[2],l.x+l.n-1);r[3]=Math.max(r[3],l.y+l.n-1)}
   return[r[0]-g,r[1]-g,r[2]+g,r[3]+g]}
-// (a site's picture on the map, px: its sprite and yard where Site draw lays them, structures.js siteSprite)
-function siteBox(s){const sp=siteSprite(s),X=Math.round(s.x)-sp.ax,Y=Math.round(s.y)+8-sp.ay,a=opaqueBox(sp),g=sp.gr?opaqueBox(sp.gr):a;
+// (a site's picture on the map, px: its sprite and yard where Site draw lays them, structures.js siteSprite; a camp's ground: its area)
+function siteBox(s){if(s.area)return s.area();const sp=siteSprite(s),X=Math.round(s.x)-sp.ax,Y=Math.round(s.y)+8-sp.ay,a=opaqueBox(sp),g=sp.gr?opaqueBox(sp.gr):a;
   return[X+Math.min(a[0],g[0]),Y+Math.min(a[1],g[1]),X+Math.max(a[2],g[2]),Y+Math.max(a[3],g[3])]}
 // (any pixel of the px box the art keeps clear: worldart.js plan.clear, a PX.TileMask)
 function campKeptClear(x0,y0,x1,y1){const M=WorldArt.ensure().clear,ts=M.ts;x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.floor(x1);y1=Math.floor(y1);

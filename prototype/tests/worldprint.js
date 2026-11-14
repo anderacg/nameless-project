@@ -786,7 +786,15 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  the transparent building, tree looks obvious": what covers your men fades to WDEPTH.fade 0.5 (was 0.3) and their hidden part shows
 //  as a ghost; a building no longer fades over another's (gfx/depth.js). The spots' figures drawn so. Checked: with depth.js as it
 //  was (the new boats, fish and gates kept) all 16 hold. Was 7ddeb99d)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'9899ee85',W7:'5d33eddc',W8:'63276c56',B2:'d81ddd1f'};
+// (W6, W7, W8 and B2 re-recorded 2026-11-14, on purpose: the camps where people live (doc/ENCAMPMENTS_DESIGN.md, the owner: "make a
+//  camp or location like actual places", "at least one for each and scale based on the world"): ten kinds, each as many as the land
+//  gives (26 on this seed, were 21 travellers' camps), each on its kind's ground with its people (world/encampments.js). Placed from
+//  the start stream (core/session.js startDraws), they move every draw after them: the hideouts, ruins and shrines, the herds, the
+//  bands and the beasts stand elsewhere, so the spots draw other things (W6), the save holds other sites and a world 3 days on
+//  (W7), the parties move elsewhere (W8), and begin twice draws so (B2). Checked: with the old travellers' placement put back over
+//  everything else of this change (their class, DENSITY's 21 by the road, SITE_GAP 30) all nine hold. Was W6 9899ee85, W7
+//  5d33eddc, W8 63276c56, B2 d81ddd1f; W1-W5 unchanged)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'6a9152f3',W7:'114de65b',W8:'de15fa32',B2:'3db1d068'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

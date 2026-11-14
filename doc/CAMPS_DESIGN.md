@@ -1,6 +1,6 @@
 # Mobile camps and beast dens: design
 
-Status: **design only, revision 2** (agent MCD, 2026-10-23, written against `main` at 0a5f569, with HO's hideouts merged at 9205094). Nothing here is built, and the owner said "do not start implementation yet". The owner answered every open question of revision 1; his answers are in **Decisions** below and are folded into the rules. §11 lists the few questions that are new.
+Status: **folded into `doc/ENCAMPMENTS_DESIGN.md`** (2026-11-14, the owner: "same mechanic just different purpose"); its decisions D1–D13 hold there. Was: **design only, revision 2** (agent MCD, 2026-10-23, written against `main` at 0a5f569, with HO's hideouts merged at 9205094). Nothing here is built, and the owner said "do not start implementation yet". The owner answered every open question of revision 1; his answers are in **Decisions** below and are folded into the rules. §11 lists the few questions that are new.
 
 **Readers:** the owner, and the agents who will build it in the phases of §9.
 

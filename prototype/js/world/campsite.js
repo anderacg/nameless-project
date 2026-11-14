@@ -16,7 +16,7 @@ class CampSite{
   // (its pitching begins now, unless it has begun)
   static pitch(key){if(!this.t0.has(key))this.t0.set(key,performance.now()/1000)}
   static strike(key){this.t0.delete(key);this.lay.delete(key);this.spots.delete(key);this.seen.delete(key)}
-  static tents(n){return clamp(Math.ceil((n||1)/CAMP_SITE.men),1,CAMP_SITE.most)}
+  static tents(n,per=CAMP_SITE.men,most=CAMP_SITE.most){return clamp(Math.ceil((n||1)/per),1,most)}
   // (its pitching's length, s; whether it goes up still)
   static span(k){const X=CAMP_SITE;return (k-1)*X.gap+X.pole+X.rise+X.fire}
   static pitching(key,n){const t=this.t0.get(key);return t!=null&&performance.now()/1000-t<this.span(this.tents(n))}
@@ -33,7 +33,7 @@ class CampSite{
     for(let r=1;p.length<k&&r<=5;r++){const m=Math.max(1,Math.round(2*Math.PI*r*X.ring/X.space));
       for(let j=0;j<m&&p.length<k;j++){const a=(j+(r%2)*.5)/m*2*Math.PI,px=Math.round(x+Math.cos(a)*r*X.ring),py=Math.round(y+Math.sin(a)*r*X.ring*X.squash);if(this.tentOk(px,py))p.push({x:px,y:py,s:Math.abs(j*7+r*13+Math.round(x))%9})}}
     return p}
-  static layout(key,x,y,n){const k=this.tents(n),L=this.lay.get(key);if(L&&L.x===x&&L.y===y&&L.k===k)return L.p;const p=this.place(x,y,k);this.lay.set(key,{x,y,k,p});return p}
+  static layout(key,x,y,n,per,most){const k=this.tents(n,per,most),L=this.lay.get(key);if(L&&L.x===x&&L.y===y&&L.k===k)return L.p;const p=this.place(x,y,k);this.lay.set(key,{x,y,k,p});return p}
   // (its ground by a holding: the spot nearest its gate where need of its tents stand and you can walk to it; null: none)
   static spotNear(t,n,key){if(key&&this.spots.has(key))return this.spots.get(key);const X=CAMP_SITE.spot,k=this.tents(n),g=gateGoal(t),c=[];
     for(let j=-X.r;j<=X.r;j++)for(let i=-X.r;i<=X.r;i++){const x=Math.round(g.x+i*X.step),y=Math.round(g.y+j*X.step),d=Math.hypot(x-g.x,y-g.y);if(d>=X.near&&d<=X.r*X.step)c.push([d,x,y])}
@@ -42,9 +42,10 @@ class CampSite{
     if(key)this.spots.set(key,s);return s}
   // (a tent's picture: the engine's, of the ground's climate)
   static pic(s,clim){const k='ctent'+s+clim;if(spr[k])return spr[k];const m=PX.buildingModel({type:'tent',seed:s+1,env:clim,snow:clim==='frost'?1:0});return spr[k]=siteCanvas(m,m.cell/2,m.cell)}
-  /* a camp on the map: c {key, x, y (its fire), n (its men), banner (its banner's look, or none), seed}. Each tent by its feet among
+  /* a camp on the map: c {key, x, y (its fire), n (its men), per (men to a tent: CAMP_SITE.men unless said), most (tents at most),
+     banner (its banner's look, or none), seed}. Each tent by its feet among
      everyone, going up in its turn; the fire and the banner's pole at its middle */
-  static draw(ents,cam,c){const X=CAMP_SITE,now=performance.now()/1000,t0=this.t0.get(c.key),T=t0==null?1e9:now-t0,L=this.layout(c.key,c.x,c.y,c.n),clim=CLIMS[climate[Math.floor(c.y/TILE)*MW+Math.floor(c.x/TILE)]]||'grass';this.seen.set(c.key,now);
+  static draw(ents,cam,c){const X=CAMP_SITE,now=performance.now()/1000,t0=this.t0.get(c.key),T=t0==null?1e9:now-t0,L=this.layout(c.key,c.x,c.y,c.n,c.per,c.most),clim=CLIMS[climate[Math.floor(c.y/TILE)*MW+Math.floor(c.x/TILE)]]||'grass';this.seen.set(c.key,now);
     L.forEach((q,i)=>{const p=T-i*X.gap;if(p<=0)return;const pic=this.pic(q.s,clim);ents.push({y:q.y,nf:1,f:()=>this.tent(pic,q,p,cam)})});
     const lit=(L.length-1)*X.gap+X.pole+X.rise;
     ents.push({y:c.y+1,nf:1,f:()=>{const fx=Math.round(c.x-cam.x),fy=Math.round(c.y-cam.y);

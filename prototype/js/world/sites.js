@@ -7,7 +7,8 @@
 const SITE_TYPES={
   camp:{n:'Bandit camp',ico:'sword',spots:true,col:'#e0605a',respawn:10,d:'A big camp in plain sight: raiders and their chieftain, and the roving bands that shelter here by night.'},
   cave:{n:'Cave',ico:'cave',col:'#c58af0',respawn:25,d:'A monster lair cut into a hill or mountain. Beat its beasts for their trophies and a treasure chest.'},
-  travelers:{n:'Travellers',ico:'fire',col:'#78c474',d:'A camp on the road. Trade, hire sellswords, rest by the fire and hear news. They move on after a few days.'},
+  // (the camps where people live (world/encampments.js Encampment): each kind as many as the world's land gives, placed by kind: place)
+  travelers:{n:'Camp',ico:'fire',col:'#78c474',place:sites=>Encampment.genAll(sites),d:'A camp where people live: travellers, hunters, pilgrims, refugees. Trade, hire, rest by the fire and hear news. Some move on after a few days.'},
   hideout:{n:'Bandit hideout',ico:'sword',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, guarding their plunder.'},
   ruins:{n:'Ruins',ico:'ruin',col:'#e8d8a0',respawn:40,d:'Old treasure, found only once, and guardians that may wake. Once searched, others move in.'},
   shrine:{n:'Shrine',ico:'altar',col:'#7fd8e8',d:'Pray once a week to recover and gain insight.'},
@@ -18,15 +19,6 @@ const CAVE_NAMES=['Wolfden','Bonehollow','Darkmaw','Echo Cave','Gloomhole','Drip
 const RUIN_NAMES=['Fallen Tower','Old Watchfort','Sunken Temple','Broken Arch','Kingsgrave','Ruined Abbey','Lost Hall','Crumbled Keep','Elder Barrow','Shattered Gate'];
 const SHRINE_NAMES={grass:'Standing Stones',forest:'Moon Grove',frost:'Frost Altar',desert:'Sun Obelisk',swamp:'Bog Idol'};
 const HIDEOUT_NAMES={bandits:'Bandit hideout',raiders:'Raider den',bog:'Bog raider camp'};
-// who you can meet on the road: their goods, their sellswords (by race) and anything special they offer
-const TRAVELERS=[
-  {n:'Merchant caravan',race:'human',goods:['cloth','spice'],col:'#3d74d6',d:'Wagons circled for the night, guards dozing by the fire.'},
-  {n:'Dwarf prospectors',race:'dwarf',goods:['iron','cheese'],col:'#8a6a4a',d:'Dwarves with picks and pack ponies, arguing over a map.'},
-  {n:'Elf wanderers',race:'elf',goods:['timber','fruit'],col:'#3f8a3e',d:'A quiet camp under lanterns. They watch you a while before they greet you.'},
-  {n:'Orc hunters',race:'orc',goods:['furs','meat'],col:'#7e2a26',d:'Meat on spits and trophies on poles. They laugh loudly as you ride in.'},
-  {n:'Pilgrims',race:null,goods:['grain','fruit'],col:'#e8e4d0',special:'bless',d:'Robed pilgrims singing softly. They offer bread and blessings.'},
-  {n:'Minstrels',race:null,goods:['cloth','spice'],col:'#c58af0',special:'song',d:'Painted wagons and a fiddle. They trade songs for coin and news.'}
-];
 const COMPASS=['east','southeast','south','southwest','west','northwest','north','northeast'];
 const compass=(dx,dy)=>COMPASS[(Math.round(Math.atan2(dy,dx)/(Math.PI/4))+8)%8];
 
@@ -232,7 +224,7 @@ const RUIN_OCC={
       if(a==='site-chased'){if(f)addHonor(f,-CONDUCT.chaseRefugees.honor,true);mood('cruel');s.occGone();done('They stumble off into the wilds.'+(f?' The '+FACS[f].n+' will hear of it (honor −'+CONDUCT.chaseRefugees.honor+').':''));return true}
       return false}},
   travellers:{w:2,land:{held:1.4,wild:.6},line:'Travellers have pitched their camp among the broken walls.',
-    make:(s,o,R)=>{const c=occupantSite(s,'travelers');c.kind=Math.floor(R()*TRAVELERS.length);c.stockUp();c.until=s.back;o.s=c}},
+    make:(s,o,R)=>{const c=occupantSite(s,'travelers',{kind:Math.floor(R()*ENCAMP.travellers)});c.stockUp();c.until=s.back;o.s=c}},
   hermit:{w:1.5,clim:{frost:1.3,swamp:1.3},land:{held:.6,wild:1.5},line:'A hermit has made his home in the old cellars, alone with his books and bones.',
     make:(s,o,R)=>{const h=ruinHold(s);o.race=h?h.races[0]:'human';o.v=Math.floor(R()*6)},
     page:(s,o)=>{const H=RUIN.hermit,y=G.siteSpy,told=y&&y.s===s&&y.told,why=told?'He has said his piece for today':'';
@@ -283,7 +275,7 @@ function ruinOccupant(s){const R=seeded((s.seed*7919+(s.cyc||0)*104729)>>>0),c=c
   const o={k};if(RUIN_OCC[k].make)RUIN_OCC[k].make(s,o,R);return o}
 // occupants that are a site of their own: one of its kind on the ruin's point, of the ruin (within: its name, set before its setup
 // reads it: a hideout's band), made as genSites makes one
-function occupantSite(s,type){const o=Object.assign(Object.create(SITE_CLASS[type].prototype),{i:s.i,type,tx:s.tx,ty:s.ty,x:s.x,y:s.y,seed:s.seed,seen:true,cleared:false,back:0,within:s.name});o.setup(W.sites,climAt(s.x,s.y));return o}
+function occupantSite(s,type,more){const o=Object.assign(Object.create(SITE_CLASS[type].prototype),{i:s.i,type,tx:s.tx,ty:s.ty,x:s.x,y:s.y,seed:s.seed,seen:true,cleared:false,back:0,within:s.name},more);o.setup(W.sites,climAt(s.x,s.y));return o}
 class Ruins extends Site{
   // (its picture two tiles wide and deep since stage 3, structures.js siteSprite: no road on the tiles round it it may stand on)
   static clear(tx,ty){if(!super.clear(tx,ty))return false;for(let j=-1;j<=0;j++)for(let i=-1;i<=1;i++)if(tAt(tx+i,ty+j)===T_ROAD)return false;return true}
@@ -518,79 +510,6 @@ class BanditCamp extends Lair{
   tip(){return '<b>Bandit camp</b>'+(this.cleared?'':chiefTip(this))+'<small>'+(this.cleared?'Cleared':'Its bands shelter here by night')+'</small>'+(this.cleared?'':'<span class="act">Click: ride up to it</span>')}
 }
 
-// travellers: a camp by the road; trade, sellswords, a fire, news; they move on after a few days
-const travPrice=g=>Math.max(2,Math.ceil(GOODS[g].base*1.1*(1-.015*skillSafe('trade'))));
-// (a sellsword a tier up costs his training too)
-const mercCost=(k,u)=>Math.round((hireCost(u||k)+(u&&u!==k?trainCost(k):0))*1.3);
-const SWORD_BYNAMES=['the Tall','Redhand','Ashfoot','the Quiet','Longstride','of the Marches','Two-Blades','the Grey','Stonefist','the Lucky','Crowfeather','Half-Ear'];
-class TravellersCamp extends Site{
-  static ground(tx,ty){return tAt(tx,ty)!==T_ROAD&&nearTile(tx,ty,T_ROAD,1)}
-  // (by a road: a tile beside one of the world's road tiles, drawn among them; ROAD_TILES, kept for the world)
-  static pick(){const R=ROAD_TILES||(ROAD_TILES=tiles.reduce((a,k,i)=>(k===T_ROAD&&a.push(i),a),[]));if(!R.length)return super.pick();const i=R[rint(0,R.length-1)];return[i%MW+rint(-1,1),(i-i%MW)/MW+rint(-1,1)]}
-  static clear(tx,ty){return campClear('travelers',tx,ty)}
-  get TR(){return TRAVELERS[this.kind]||TRAVELERS[0]}
-  setup(){this.kind=rint(0,TRAVELERS.length-1);this.stockUp()}
-  // who they are this time: their goods, their sellswords, and the days until they move on
-  stockUp(){const T=this.TR;this.name=T.n;this.until=G.day+rint(6,10);this.stock=Object.fromEntries(T.goods.map(g=>[g,rint(8,20)]));
-    this.unit=T.race?(Math.random()<.5?RACES[T.race].melee:RACES[T.race].ranged):null;this.mercs=T.race?rint(2,4):0;this.news=false;this.special=false;this.fire=0;delete this.hired}
-  // its sellswords (mercs: how many are still willing), each someone, seeded from the camp (its seed) and their place in line: a
-  // name of their people, a look, and one in three a tier higher (dearer). Those hired leave the fire (hired: their places, kept
-  // only once one is: the save is as it was until then)
-  swords(){const u=this.unit,h=this.hired||[];if(!u)return [];const R=seeded(this.seed*977+31),N=FOLK_NAMES[this.TR.race]||FOLK_NAMES.human,used=new Set(),out=[];
-    for(let i=0;i<this.mercs+h.length;i++){const k=R()<.34&&UP[u]&&UP[u][0]||u;let nm='';for(let j=0;j<20&&(!nm||used.has(nm));j++)nm=N[Math.floor(R()*N.length)]+' '+SWORD_BYNAMES[Math.floor(R()*SWORD_BYNAMES.length)];used.add(nm);
-      const v=Math.floor(R()*6);if(!h.includes(i))out.push({i,k,name:nm,v,c:mercCost(k,u)})}return out}
-  scoutLine(){return 'a camp of '+this.name.toLowerCase()}
-  get empties(){return false}
-  day(){super.day();if(G.day>=this.until&&G.site!==this){const p=siteSpot('travelers',W.sites.filter(o=>o!==this),9);if(p){this.tx=p[0];this.ty=p[1];this.placed()}
-    this.kind=rint(0,TRAVELERS.length-1);this.seed=rint(1,99999);this.seen=false;this.stockUp();if(G.lastSite===this)G.lastSite=null}}
-  // (its flag: a travelling band's pennant in its colour, its people's device (figures.js SHIELD_ART))
-  flag(){return{k:'pennant',col:this.TR.col,dev:SHIELD_ART.dev[this.TR.race]||null}}
-  banner(){return this.TR.col}
-  box(box,camp){camp(this,siteSprite(this))}
-  about(r){return '<p>'+this.TR.d+'</p><p class="muted">They break camp in '+Math.max(1,this.until-G.day)+' days.</p>'}
-  // their wagons (the traders: their goods, your trophies) and their campfire (each sellsword, the pilgrims or minstrels, whoever
-  // has news, and the fire to rest by)
-  // (its sellswords at the hiring desk, as a town's barracks (ui/hiredesk.js, acts site-rec-*): a row for each kind, those of it
-  // by name; hired, the first in line of that kind take your coin. The order (G.siteHire) belongs to this visit)
-  deskOf(){const s=this,sw=s.swords(),of=k=>sw.filter(w=>w.k===k);
-    return new HireDesk('site-rec-',{state:G.siteHire||(G.siteHire={}),kinds:[...new Set(sw.map(w=>w.k))],cost:k=>mercCost(k,s.unit),avail:k=>of(k).length,willing:s.mercs,
-      line:k=>of(k).map(w=>w.name).join(', '),note:'Sellswords need no standing, only coin. Too few for a unit of their own, they can still refill yours. They move on with the camp in '+Math.max(1,s.until-G.day)+' days.',
-      hire:(k,n,tgt)=>{const ws=of(k).slice(0,n),cost=ws.reduce((a,w)=>a+w.c,0);
-        if(ws.length<n)return {ok:false,why:'Not that many willing'};if(P.gold<cost)return {ok:false,why:'Not enough gold'};if(partySize()+n>partyCap())return {ok:false,why:'No room in your band'};
-        if(partyRoster(P).add(k,n,tgt)!==n)return {ok:false,why:'No room in a group for more '+ST[k].n};
-        P.gold-=cost;s.mercs-=n;(s.hired=s.hired||[]).push(...ws.map(w=>w.i));log(ws.map(w=>w.name).join(', ')+(n>1?' take':' takes')+' your coin and '+(n>1?'join':'joins')+' you as '+(n>1?n+' × '+ST[k].n:an(ST[k].n.toLowerCase()))+'.');return {ok:true,cost}}})}
-  places(r){const TR=this.TR,s=this,left=Object.keys(s.stock).filter(g=>s.stock[g]>0).length,race=TR.race||'human',u=s.unit;
-    return [{k:'trade',n:'Wagons',ico:'stall',note:left?left+' goods for sale':'sold out',
-      body:railCards([{pic:personPic('merchant',race),name:'The traders',role:TR.n,facts:[left?left+' goods for sale':['Sold out','bad'],'They move on in '+Math.max(1,s.until-G.day)+' days']}])+'<div class="lab">Goods</div>'+
-        Object.keys(s.stock).map(g=>{const p=travPrice(g),n=s.stock[g],k=Math.min(5,n);return railRow(GOODS[g].n,p+'g each, '+n+' left, you have '+goodN(g)+(k?', '+k+' for '+p*k+'g':''),railBtn('site-buy',g,'Buy',!k?'Sold out':P.gold<p*k?'Not enough gold':goodRoom(g)<k?'No room in your bag':''))}).join('')+
-        (P.inv.some(x=>x&&x.k==='mat')?railRow('Your trophies','They pay a little less than a town market: '+Math.round(P.inv.reduce((a,x)=>a+(x&&x.k==='mat'?matPrice(x.id)*x.n:0),0)*.85)+'g for all',railBtn('site-sellpick',null,'Sell')):'')},
-      u&&{k:'hire',n:'Sellswords',short:'Hire',ico:'shield',note:s.mercs?s.mercs+' sellsword'+(s.mercs>1?'s':'')+' willing':'no sellswords left',
-        body:'<div class="top rec-top"><span class="lab">'+RACES[race].n+' sellswords, '+unitsLine()+'</span><span class="lab">'+s.mercs+' willing</span></div>'+
-          (s.mercs?s.deskOf().body():'<p class="muted">No one is left to hire: the sellswords went with their pay.</p>')},
-      {k:'fire',n:'Campfire',short:'Fire',ico:'fire',note:[TR.special&&!s.special&&(TR.special==='bless'?'a blessing':'a song'),s.news===G.day?'':'news',s.fire===G.day?'rested today':'rest'].filter(Boolean).join(', '),
-      body:railCards([
-        TR.special==='bless'&&{pic:personPic('priest',race),name:'The pilgrims',role:'Robed, singing softly',facts:[s.special?'They have blessed you':'A blessing: your mana restored, morale +8'],acts:[['site-bless',null,'Kneel',s.special?'They have blessed you already':'']]},
-        TR.special==='song'&&{pic:personPic('innkeeper',race,2),name:'The minstrels',role:'A fiddle and painted wagons',facts:[s.special?'They sing of you already':'15 gold: renown +3, morale +5'],acts:[['site-song',null,'Pay 15g',s.special?'They already sing of you':P.gold<15?'Not enough gold':'']]},
-        {pic:personPic('folk',race,5),name:'A greybeard by the fire',role:'Knows the roads',facts:[s.news===G.day?'You have heard his news today':s.news?'Tells what he hears on the roads':'Tells of places you have not found'],acts:[['site-news',null,'Ask for news',s.news===G.day?'You have heard their news today':'']]}])+
-        '<div class="lab">The fire</div>'+railRow('Share their fire','Recover half your missing health, stamina and mana. Morale +5',railBtn('site-fire',null,'Rest',s.fire===G.day?'You rested here today':''))}]}
-  act(a,arg,done){const s=this;
-    if(a==='site-buy'){const g=arg,p=travPrice(g),k=Math.min(5,s.stock[g]||0);if(k&&P.gold>=p*k&&goodRoom(g)>=k){P.gold-=p*k;s.stock[g]-=k;invAdd('good',g,k);train('trade',k*p/40);done('You buy '+k+' '+GOODS[g].n.toLowerCase()+' for '+p*k+' gold.')}}
-    // (Sell chooses first: which trophies; its Confirm sends site-sell with the bag's slots)
-    else if(a==='site-sellpick'){const it=P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k==='mat');if(it.length)railPicker({title:'Sell trophies',sub:s.name,total:'They pay',unit:'g',confirm:['site-sell','Sell'],back:['site-tab','trade','Back'],encode:sel=>Object.keys(sel).filter(i=>sel[i]).join(','),
-      items:it.map(([x,i])=>({id:i,name:MATS[x.id].n+' ×'+x.n,sub:Math.round(matPrice(x.id)*x.n*.85)+'g',max:1,unit:Math.round(matPrice(x.id)*x.n*.85)}))});return true}
-    else if(a==='site-sell'){let g=0;const pick=arg?String(arg).split(',').map(Number):null;P.inv.forEach((x,i)=>{if(x&&x.k==='mat'&&(!pick||pick.includes(i))){g+=matPrice(x.id)*x.n;P.inv[i]=null}});g=Math.round(g*.85);if(g){P.gold+=g;train('trade',g/20);done('The travellers buy your trophies for '+g+' gold.')}}
-    // (one sellsword, by his place in line: his card goes)
-    // (the hiring desk's acts: drawn again where it was, the focus back on the button pressed, or the list where you left it)
-    else if(a.startsWith('site-rec-')){const d=s.deskOf();if(!d.act(a,arg))return true;updateHUD(true);const keep=panelScroll();showSite();panelScroll(keep);if(!d.focus(a))railFocus(a,arg);return true}
-    else if(a==='site-fire'&&s.fire!==G.day){const m=vitals();s.fire=G.day;P.hp+=(m[0]-P.hp)/2;P.sp+=(m[1]-P.sp)/2;P.mp+=(m[2]-P.mp)/2;P.morale=clamp(P.morale+5,0,100);done('You share their fire and their stew. Everyone sleeps well.')}
-    else if(a==='site-news'&&s.news!==G.day){const first=!s.news;s.news=G.day;
-      const far=first?W.sites.filter(o=>!o.seen&&o.scoutable&&!(o instanceof TravellersCamp)).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y)).slice(0,2):[];
-      far.forEach(o=>o.seen=true);const it=rumourFrom(rumourSource('camp',s.tx+','+s.ty,s)).today[0];
-      done([far.length?'They tell you of '+far.map(o=>'the '+o.label+' to the '+compass(o.x-s.x,o.y-s.y)).join(', and ')+'. '+(far.length>1?'Both are':'It is')+' on your map now.':'',it?'“'+rumourText(it)+'”':''].filter(Boolean).join(' ')||'They have no news you have not heard.')}
-    else if(a==='site-bless'&&!s.special){s.special=true;vitals();P.mp=maxMP();P.morale=clamp(P.morale+8,0,100);done('The pilgrims pray over you. Your mind is clear.')}
-    else if(a==='site-song'&&!s.special&&P.gold>=15){s.special=true;P.gold-=15;P.renown+=3;P.morale=clamp(P.morale+5,0,100);done('By the next town, children are singing of you. (+3 renown)')}
-    return true}
-}
 /* a goblin camp (data/goblins.js GOBLINS): a hideout of the goblins' own, on the same wild land, never a timbered tunnel; the Ashgor
    Horde's yurts in a ring of stakes (structures.js SITE_CULTURE); or, among hills (hilly: the owner, 2026-11-08, "add goblin warrens
    near hills"), a warren, its mouth a cave in the hillside, stormed inside as a bandit lair is (battle/interior.js; GOBLINS.warren).
@@ -613,7 +532,8 @@ class GoblinCamp extends Hideout{
     return super.plunder(res)+(n?' In their pile of stolen goods: '+n+' '+GOODS[g].n.toLowerCase()+'.':'')}
   lootSay(n){return super.lootSay(n)+', and a pile of stolen goods'}
 }
-const SITE_CLASS={camp:BanditCamp,cave:Cave,travelers:TravellersCamp,hideout:Hideout,ruins:Ruins,shrine:Shrine,goblins:GoblinCamp};
+// (the travellers' camps: world/encampments.js Encampment, set there)
+const SITE_CLASS={camp:BanditCamp,cave:Cave,hideout:Hideout,ruins:Ruins,shrine:Shrine,goblins:GoblinCamp};
 // a site of its kind again (from a save)
 const siteOf=s=>{if(s instanceof Site)return s;Object.setPrototypeOf(s,SITE_CLASS[s.type].prototype);s.restore();return s};
 const camps=()=>W.sites.filter(s=>s instanceof BanditCamp);
@@ -625,13 +545,13 @@ const nightCamps=()=>W.sites.filter(s=>s instanceof BanditCamp||s instanceof Gob
 // "too many pilgrim and wanderer camps"): a travellers' camp far from another, and from the outlaws' camps and hideouts (no
 // traders' fire beside a bandits' den; a bandit camp stands on its spot first, a hideout keeps the gap to the travellers before it);
 // a hideout far from another and from the bandit camps (the owner, 2026-10-23: deep in the wilds, each its own stretch of them)
-const SITE_GAP={travelers:{travelers:30,camp:16,hideout:16},hideout:{travelers:16,camp:16,hideout:20},goblins:{travelers:16,camp:16,hideout:16,goblins:20}};
+const SITE_GAP={travelers:{travelers:ENCAMP.gap,camp:16,hideout:16},hideout:{travelers:16,camp:16,hideout:20},goblins:{travelers:16,camp:16,hideout:16,goblins:20}};
 const siteGap=(a,b)=>SITE_GAP[a]&&SITE_GAP[a][b]||0;
 // a free tile for a site of this kind: reachable from the roads, on its ground, clear of holdings and other sites (the camps among
 // them; SITE_GAP's kinds farther); each try a tile its kind picks (Site pick)
 let ROAD_TILES=null;onWorld(()=>{ROAD_TILES=null});
-function siteSpot(type,sites,gap){
-  const C=SITE_CLASS[type],from=startHolding();
+function siteSpot(type,sites,gap,C=SITE_CLASS[type]){
+  const from=startHolding();
   for(let k=0;k<5000;k++){
     const g=k<2500?gap:gap*.6,[tx,ty]=C.pick(),fy=C.reachRow(ty);// where parties reach it
     if(tx<3||ty<3||tx>MW-4||ty>MH-4)continue;
@@ -646,15 +566,15 @@ function caveMonster(x,y){
   const tags=[...habitatAt(x,y),climAt(x,y)],ids=Object.keys(MONSTERS).filter(id=>MONSTERS[id].where.some(w=>tags.includes(w)));
   if(!ids.length)return'bear';let r=Math.random()*ids.reduce((a,id)=>a+MONSTERS[id].w,0);for(const id of ids){r-=MONSTERS[id].w;if(r<=0)return id}return ids[0];
 }
-function makeSite(type,tx,ty,sites){
-  const C=SITE_CLASS[type],[x,y]=C.point(tx,ty),s=Object.assign(Object.create(C.prototype),{i:sites.length,type,tx,ty,x,y,seed:rint(1,99999),seen:false,cleared:false,back:0});
+function makeSite(type,tx,ty,sites,more){
+  const C=SITE_CLASS[type],[x,y]=C.point(tx,ty),s=Object.assign(Object.create(C.prototype),{i:sites.length,type,tx,ty,x,y,seed:rint(1,99999),seen:false,cleared:false,back:0},more);
   s.setup(sites,climAt(x,y));return s;
 }
 // a world's sites: a camp on each of its camp spots, then of each other kind as many as the world holds (density(WM), data/world.js)
 function genSites(){
   const sites=[],N=density(WM).sites;for(const c of CAMP_SPOTS)sites.push(makeSite('camp',c.tx,c.ty,sites));
   // (a kind with a switch (on) only while it is on; one with its own stream (stream: core/rng.js) placed from it)
-  for(const type of Object.keys(SITE_TYPES)){const T=SITE_TYPES[type];if(T.spots||T.on&&!T.on())continue;
+  for(const type of Object.keys(SITE_TYPES)){const T=SITE_TYPES[type];if(T.spots||T.on&&!T.on())continue;if(T.place){T.place(sites);continue}
     const place=()=>{for(let n=0;n<(N[type]||0);n++){const p=siteSpot(type,sites,9);if(p)sites.push(makeSite(type,p[0],p[1],sites))}};if(T.stream)Rng.use(T.stream,place);else place()}
   return sites;
 }
