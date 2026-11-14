@@ -816,7 +816,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 re-recorded 2026-11-14, on purpose: the owner, “remove the numbers above the group, make it available for dev mode only”: the
 //  count over an army's, a herd's or a caravan's banner and the tally over a fight drawn only in dev mode (ui/ui.js PREFS.dev, off),
 //  so the spots' pictures lose them. Proof: dev mode on by default gives it again. Was W6 18ff93ef)
-const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'7acf9f33',W6:'b43ed88c',W7:'66401fd1',W8:'b871b922',B2:'f55d6365'};
+// (W7 and B2 re-recorded 2026-11-14, on purpose, for another's change: c6dc154 "Repair portrait creator combinations and full-jaw hood
+//  fitting" (engine/face arts/painted: which parts go together), so the faces the world draws for its people, kept in the save,
+//  differ (W7), and begin twice with them (B2). Proof: its parent, 229fb68, gives both again (all 16 hold). Were W7 66401fd1, B2
+//  f55d6365)
+const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'7acf9f33',W6:'b43ed88c',W7:'0cc26fac',W8:'b871b922',B2:'c315aa9a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
