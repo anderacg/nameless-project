@@ -136,6 +136,7 @@
    for(let Y=Math.floor(b.y*scale);Y<Math.ceil((b.y+b.h)*scale);Y++)for(let X=Math.floor(b.x*scale);X<Math.ceil((b.x+b.w)*scale);X++){
     const x=(X+.5)/scale,y=(Y+.5)/scale,k=(Math.floor(y)*N+Math.floor(x))*4;if(!a[k+3])continue;
     let u=(x-b.x)/b.w,v=(y-b.y)/b.h;
+    if(id==='nose'&&['crooked','dwarf-broken'].includes(p.config.nose)){const t=(y-b.y)/b.h,bend=(p.config.nose==='crooked'?.8:-.8)*Math.sin(Math.PI*t);u-=bend/b.w;}
     if(body){u=(x-4)/120;if(id==='torso'){const X=Math.max(0,Math.min(f.w-1,Math.floor(u*f.w))),top=f.top[X];v=(top+(y-bodyTops[Math.floor(x)])*f.w/120)/f.h;}else{u=(anchor.x+(x-p.anchors.cx)/60*anchor.half)/f.w;v=(y<103?(y-94)/9*anchor.y:anchor.y+(y-103)/25*(f.h-anchor.y))/f.h;}}
     if((id==='clothing'||id==='armor')&&LEATHER_ARMOR.has(p.config.clothing)){put(d,(Y*size+X)*4,leatherMaterial(p,colors,id,x,y,a[k]),a[k+3]);continue;}
     const sampled=sample(f,u,v);
