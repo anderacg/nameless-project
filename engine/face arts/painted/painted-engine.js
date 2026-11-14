@@ -28,7 +28,7 @@
   if(id==='beard'){if(['none','stubble','close-beard','chin-bristle'].includes(c.beard))return null;return [1,/moustache|walrus/.test(c.beard)?8:/goatee/.test(c.beard)?9:c.race==='dwarf'||/fork|braid/.test(c.beard)?7:6];}
   if(id.startsWith('hair'))return [1,c.hair==='war-crest'?4:/ponytail|bun|topknot/.test(c.hair)?24:/braid/.test(c.hair)?5:/long|shoulder|loose|half-up/.test(c.hair)?id==='hairBack'?2:3:/wave|swept|curtain|shag|curl/.test(c.hair)?1:0];
   if(id.startsWith('headwear'))return [1,c.headwear==='coif'?11:/hood|cap|veil|wrap|turban|hat|beret/.test(c.headwear)?16:/horn|dwarf|forge/.test(c.headwear)?18:/closed|great|bascinet|sallet|mask|visor/.test(c.headwear)?19:17];
-  if(id==='armor'||id==='clothing'){let n=bodyPart(c);if(id==='armor'&&[10,14,20,21,22].includes(n))n=12;return [1,n];}return null;
+  if(id==='armor'||id==='clothing'){if(id==='clothing'&&(E.soldierEquipment.armor.includes(c.clothing)||['scale','lamellar','plate','brigandine'].includes(c.clothing))&&[12,13,15].includes(bodyPart(c)))return [1,c.clothing==='brigandine'||c.clothing==='orc-lamellar'?21:10];if(c.clothing==='coat-of-plates')return [1,id==='clothing'?10:11];if(id==='armor'&&['surcoat','leather-mail'].includes(c.clothing))return [1,11];let n=bodyPart(c);if(id==='armor'&&[10,14,20,21,22].includes(n))n=12;return [1,n];}return null;
  }
  function baseFor(sheet,index,id){if(id==='hairFront'||id==='hairBack'||id==='beard'||id==='brows')return BASE.hair;if(id==='mouth')return index===23?BASE.orc:BASE.lips;if(sheet===0||id==='torso')return sheet===0&&[3,7,19].includes(index)?BASE.orc:BASE.skin;return index===10?BASE.cloth:[14,16,21].includes(index)?BASE.leather:index===22?BASE.fur:BASE.metal;}
  function sample(f,u,v){const x=Math.max(0,Math.min(f.w-1,Math.floor(u*f.w))),y=Math.max(0,Math.min(f.h-1,Math.floor(v*f.h))),i=y*f.w+x;return {rgb:[f.d[i*4],f.d[i*4+1],f.d[i*4+2]],alpha:f.alpha[i]};}
@@ -93,16 +93,24 @@
   }
   g.putImageData(im,0,0);return out;
  }
+ // Leather geometry defines straps and fittings; material samples never add a second harness.
+ const LEATHER_ARMOR=new Set(['orc-bare-cross-harness','orc-bare-ring-harness','orc-leather-vest','orc-studded-leather','orc-cross-harness','orc-ring-harness','orc-layered-hide','orc-leather-guard','hide-harness']);
+ function leatherMaterial(p,colors,id,x,y,tone){
+  const leather=frame(1,21),metal=frame(1,12),u=Math.abs(x-64)/60,v=Math.max(0,Math.min(1,(y-94)/34)),su=x<64?.15+u*.2:.65+u*.2,hardware=id==='armor';
+  if(hardware&&tone>80){const s=sample(metal,.38+u*.2,.42+v*.35),rgb=s.rgb.map(n=>clamp(n*(.35+tone/450)));return recolor(rgb,hex(colors.metal),BASE.metal);}
+  const s=sample(leather,su,.28+v*.55),rgb=s.rgb.map(n=>clamp(n+(tone-112)*.45));return recolor(rgb,hex(colors.cloth),BASE.leather);
+ }
  function paintMask(p,spec,colors,size){
   const id=spec.id;if(id==='face')return paintedHead(p,colors,size);if(id.startsWith('headwear')&&isHelmet(p.config))return paintedHelmet(p,colors,size,id);const src=part(id,p.config),out=canvas(size),g=out.getContext('2d');g.imageSmoothingEnabled=false;
   if(!src){g.drawImage(spec.channel?E.tint(p.layers[id],colors[spec.channel]):p.layers[id],0,0,size,size);return out;}
   const a=p.layers[id].getContext('2d').getImageData(0,0,N,N).data,im=g.createImageData(size,size),d=im.data,pair=id==='ears'||id==='brows',scale=size/N,target=hex(colors[spec.channel]),base=baseFor(...src,id),contrast=0;
-  const bodyTops=new Uint16Array(N).fill(N);if(['torso','clothing','armor'].includes(id)){const masks=id==='torso'?[a]:['clothing','armor'].map(key=>p.layers[key].getContext('2d').getImageData(0,0,N,N).data);for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(masks.some(d=>d[(y*N+x)*4+3]))bodyTops[x]=Math.min(bodyTops[x],y);}
-  for(const side of pair?[0,1]:[null]){const b=bounds(a,side);if(!b)continue;const f=frame(...src,side,id.startsWith('headwear')),body=['torso','clothing','armor'].includes(id);
+  const bodyTops=new Uint16Array(N).fill(N);if(id==='torso')for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(a[(y*N+x)*4+3])bodyTops[x]=Math.min(bodyTops[x],y);
+  for(const side of pair?[0,1]:[null]){const b=bounds(a,side);if(!b)continue;const f=frame(...src,side,id.startsWith('headwear')),body=['torso','clothing','armor'].includes(id),collar=Array.from({length:5},(_,i)=>f.top[Math.max(0,Math.min(f.w-1,Math.floor(f.w/2)+i-2))]).reduce((a,b)=>a+b,0)/5;
    for(let Y=Math.floor(b.y*scale);Y<Math.ceil((b.y+b.h)*scale);Y++)for(let X=Math.floor(b.x*scale);X<Math.ceil((b.x+b.w)*scale);X++){
     const x=(X+.5)/scale,y=(Y+.5)/scale,k=(Math.floor(y)*N+Math.floor(x))*4;if(!a[k+3])continue;
     let u=(x-b.x)/b.w,v=(y-b.y)/b.h;
-    if(body){u=(x-4)/120;const X=Math.max(0,Math.min(f.w-1,Math.floor(u*f.w))),top=f.top[X];v=(top+(y-bodyTops[Math.floor(x)])*f.w/120)/f.h;}
+    if(body){u=(x-4)/120;if(id==='torso'){const X=Math.max(0,Math.min(f.w-1,Math.floor(u*f.w))),top=f.top[X];v=(top+(y-bodyTops[Math.floor(x)])*f.w/120)/f.h;}else v=(y<103?(y-94)/9*collar:collar+(y-103)/25*(f.h-collar))/f.h;}
+    if((id==='clothing'||id==='armor')&&LEATHER_ARMOR.has(p.config.clothing)){put(d,(Y*size+X)*4,leatherMaterial(p,colors,id,x,y,a[k]),a[k+3]);continue;}
     const sampled=sample(f,u,v);
     const raw=sampled.rgb,warm=raw[0]>raw[1]*1.08&&raw[1]>raw[2]*1.3&&raw[0]>90;let rgb=(id==='armor'||id.startsWith('headwear'))&&warm?raw:recolor(raw,target,base,contrast);
     if(id==='armor'||id==='clothing'||id.startsWith('headwear')){if(a[k]<=48)rgb=rgb.map(v=>clamp(v*(id.startsWith('headwear')?.24:.7)));else if(a[k]<=64)rgb=rgb.map(v=>clamp(v*.8));else if(a[k]>=224)rgb=rgb.map(v=>clamp(v*1.08+10));else rgb=rgb.map(v=>clamp(v+(a[k]-128)*.1));}
