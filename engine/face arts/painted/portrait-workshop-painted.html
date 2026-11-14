@@ -1831,6 +1831,11 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
   for(let Y=Math.floor(21*scale);Y<Math.min(size,103*scale);Y++)for(let X=0;X<size;X++){const u=.5+((X+.5)/scale-64)/width,v=((Y+.5)/scale-21)/height;if(u<0||u>=1||v<0||v>=1)continue;const s=sample(f,u,v);if(s.alpha)put(im.data,(Y*size+X)*4,recolor(s.rgb,target,h.skinBase),255);}
   g.putImageData(im,0,0);return out;
  }
+ function elfSide(a,c,y,full,reference){
+  const start=a.mouth.y-2;if(y<=start||y>=94)return full;
+  const jawTop=a.mouth.y-6,tJaw=Math.max(0,(y-jawTop)/(a.chinY-jawTop)),jaw=a.w*(.8+.35*(a.jaw/a.w-reference.jaw/reference.w))*Math.sqrt(Math.max(0,1-tJaw*tJaw)),waist=a.chinY-1,root=a.w*(c.profile==='female'?.48:.56),tNeck=(y-waist)/(y<=waist?12:94-waist),neck=y<=waist?root+1.4*tNeck*tNeck:root+(16-root)*tNeck*tNeck,joined=(jaw+neck+Math.hypot(jaw-neck,.8))/2,t=Math.max(0,Math.min(1,(y-start)/6)),blend=t*t*(3-2*t);
+  return full+(joined-full)*blend;
+ }
  // Elf necks taper gradually below the jaw; keep clavicle shading down by the collar.
  function paintedHead(p,colors,size){
   if(p.config.race==='human'&&p.config.profile!=='female')return referenceHead(headSpec(p.config),colors,size);
@@ -1843,8 +1848,8 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
    else if(y<A.chinY){const t=(y-eye)/(A.chinY-eye);v=h.eye+t*(chin-h.eye);refY=refEye+t*(B.chinY-refEye);const bw=headWidth(B,refY)/B.w,aw=headWidth(A,y)/A.w,ratio=bw>.05?Math.max(.65,Math.min(1.4,aw/bw)):1,fade=Math.min(1,(y-eye)/4,(A.chinY-y)/4);warp=1+(ratio-1)*Math.max(0,fade);const blend=elf?8:4,tJoin=Math.max(0,Math.min(1,(y-(A.chinY-blend))/blend)),join=elf?tJoin*tJoin*(3-2*tJoin):tJoin;warp=warp*(1-join)+neck*join;}
    else{const t=(y-A.chinY)/(103-A.chinY);v=chin+(elf?t*t:t)*(1-chin);warp=neck;}
    if(y>A.chinY)warp*=1-(1-collarFit)*Math.min(1,(y-A.chinY)/Math.max(1,94-A.chinY));
-   if(v<0||v>=1)continue;
-   for(let X=0;X<size;X++){const x=(X+.5)/scale,u=.5+(x-A.cx)/(half*2*warp);if(u<0||u>=1)continue;const s=sample(f,u,v);if(s.alpha)put(d,(Y*size+X)*4,recolor(s.rgb,target,h.skinBase,contrast),255);}
+   if(v<0||v>=1)continue;const side=elf?elfSide(A,c,y,half*warp,B):Infinity;
+   for(let X=0;X<size;X++){const x=(X+.5)/scale;if(Math.abs(x-A.cx)>side)continue;const u=.5+(x-A.cx)/(half*2*warp);if(u<0||u>=1)continue;const s=sample(f,u,v);if(s.alpha){let rgb=recolor(s.rgb,target,h.skinBase,contrast);if(elf&&y>A.mouth.y-2&&y<94){const edge=Math.max(0,1-(side-Math.abs(x-A.cx))/1.5),fade=Math.max(0,Math.min(1,(94-y)/4)),shade=1-edge*edge*fade*(x<A.cx?.04:.07);rgb=rgb.map(n=>clamp(n*shade));}put(d,(Y*size+X)*4,rgb,255);}}
   }g.putImageData(im,0,0);return fitHeadToBody(out,size);
  }
  const isHelmet=c=>/helm|bascinet|sallet|nasal|kettle|coif/.test(c.headwear);
