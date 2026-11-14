@@ -2,7 +2,8 @@
 /* ---------- a camp's tents (the owner, 2026-11-14: "the tent should not on the road when auto camp", "making the camp require some
    animations for preparations", "making the camp will require larger area and more tents based on army size") ----------
    A camp of n men pitches a tent for every CAMP_SITE.men of them (one at least, most at most) round its fire, ring after ring
-   (ring px out, squash of it down the screen, the tents space px apart round it), each where the ground lets it stand (tentOk: no
+   (ring px out, squash of it down the screen, the tents space px apart round it; a tent's ground tent px: half across, up from its
+   feet: a tent a man can stand in, at the figures' 5 px a metre), each where the ground lets it stand (tentOk: no
    road or track, nor within road of its band as drawn (roadband.js), water (a wood's clearing will do: no tree on it),
    peak or ford under it, no lot or field, nothing the map's art keeps clear (worldart.js plan.clear: the roads' bands, the gates),
    nothing standing on it, none in a holding's heart). By a holding it looks for its ground nearest the gate (spotNear: where need
@@ -10,7 +11,7 @@
    poles raised over pole s, its cloth hauled up over rise s; the fire lit when the last stands, smoke before it. Its men stand by
    while it goes up (yours: render.js drawWorld, pitching). Drawn only, on the real clock: a camp whose pitching was not seen (one
    loaded, one come upon) stands pitched; one not drawn for forget s is struck ---------- */
-const CAMP_SITE={men:8,most:14,ring:24,squash:.62,space:21,road:.25,gap:.4,pole:.3,rise:.55,fire:.5,forget:3,spot:{r:30,step:8,near:24,need:.7}};
+const CAMP_SITE={men:8,most:14,ring:28,squash:.62,space:25,tent:[9,16],road:.25,gap:.4,pole:.3,rise:.55,fire:.5,forget:3,spot:{r:30,step:8,near:24,need:.7}};
 class CampSite{
   static t0=new Map();static seen=new Map();static lay=new Map();static spots=new Map();
   // (its pitching begins now, unless it has begun)
@@ -21,7 +22,7 @@ class CampSite{
   static span(k){const X=CAMP_SITE;return (k-1)*X.gap+X.pole+X.rise+X.fire}
   static pitching(key,n){const t=this.t0.get(key);return t!=null&&performance.now()/1000-t<this.span(this.tents(n))}
   // ground a tent may stand on, its feet at (x, y)
-  static tentOk(x,y){const x0=x-7,x1=x+7,y0=y-12,y1=y+1,tx0=Math.floor(x0/TILE),tx1=Math.floor(x1/TILE),ty0=Math.floor(y0/TILE),ty1=Math.floor(y1/TILE);
+  static tentOk(x,y){const T=CAMP_SITE.tent,x0=x-T[0],x1=x+T[0],y0=y-T[1],y1=y+1,tx0=Math.floor(x0/TILE),tx1=Math.floor(x1/TILE),ty0=Math.floor(y0/TILE),ty1=Math.floor(y1/TILE);
     for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){const k=tAt(tx,ty);if(k===T_WATER||k===T_MOUNT||k===T_FORD||k===T_ROAD||occAt(tx,ty))return false}// (a wood's clearing will do: its trees are what stands, below)
     for(const t of TOWNS){if(Math.abs(t.x-x)>240||Math.abs(t.y-y)>240)continue;const b=centreBox(t);if(tx1>=b.x&&tx0<b.x+b.n&&ty1>=b.y&&ty0<b.y+b.n)return false}
     if(campKeptClear(x0,y0,x1,y1))return false;
