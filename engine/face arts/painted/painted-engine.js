@@ -42,7 +42,13 @@
   if(!bodyFootprint){bodyFootprint=canvas(N);const g=bodyFootprint.getContext('2d'),p=E.build({...E.defaults,race:'human',face:'angular',clothing:'gambeson',headwear:'none',beard:'none',age:'young',marks:'none'});for(const id of ['face','torso','clothing','armor'])g.drawImage(p.layers[id],0,0);g.fillStyle='#fff';g.fillRect(0,0,N,94);}
   const g=out.getContext('2d');g.save();g.globalCompositeOperation='destination-in';g.imageSmoothingEnabled=false;g.drawImage(bodyFootprint,0,0,size,size);g.restore();return out;
  }
+ function referenceHead(h,colors,size){
+  const f=frame(h.sheet,h.index),out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),scale=size/N,height=82,width=height*f.w/f.h,target=hex(colors.skin);
+  for(let Y=Math.floor(21*scale);Y<Math.min(size,103*scale);Y++)for(let X=0;X<size;X++){const u=.5+((X+.5)/scale-64)/width,v=((Y+.5)/scale-21)/height;if(u<0||u>=1||v<0||v>=1)continue;const s=sample(f,u,v);if(s.alpha)put(im.data,(Y*size+X)*4,recolor(s.rgb,target,h.skinBase),255);}
+  g.putImageData(im,0,0);return out;
+ }
  function paintedHead(p,colors,size){
+  if(p.config.race==='human'&&p.config.profile!=='female')return referenceHead(headSpec(p.config),colors,size);
   const c=p.config,h=headSpec(c),f=frame(h.sheet,h.index),A=p.anchors,key=c.race+'/'+h.profile;let B=headRigs.get(key);if(!B){B=E.geometry({...E.startRace(c.race,E.startProfile(h.profile)),profile:h.profile,face:h.referenceFace,adjustments:{}});headRigs.set(key,B);}
   const out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,scale=size/N,top=Math.min(...A.outline.map(q=>q[1])),refTop=Math.min(...B.outline.map(q=>q[1])),eye=A.eyes[0].y,refEye=B.eyes[0].y,target=hex(colors.skin),contrast=(A.definition-B.definition)*.07-(A.softness-B.softness)*.025,neck=Math.max(.85,Math.min(1.15,(A.jaw/A.w)/(B.jaw/B.w))),half=(103-refTop)*f.w/f.h/2*A.w/B.w;
   const collarRow=Math.max(0,Math.min(f.h-1,Math.floor((h.chin+(94-A.chinY)/(103-A.chinY)*(1-h.chin))*f.h)));let collarSpan=0;for(let x=0;x<f.w;x++)if(f.alpha[collarRow*f.w+x])collarSpan++;const collarFit=Math.min(1,32/Math.max(1,half*2*neck*collarSpan/f.w));
@@ -155,14 +161,19 @@
   for(const id of ['nose','eyes','iris','eyelids','mouth','teeth',...(['stubble','close-beard','chin-bristle'].includes(p.config.beard)?['beard']:[])]){const g=layers[id].getContext('2d');g.save();g.globalCompositeOperation='destination-in';g.drawImage(layers.face,0,0);g.restore();}
   return {config:p.config,anchors:p.anchors,colors,layers,size,coordinateScale:size/N,template:p,headMaster:{file:root.PAINTED_PORTRAIT_ASSETS[headSpec(p.config).sheet].file,frame:headSpec(p.config).index,profile:headSpec(p.config).profile},style:'painted-parts'};
  }
+ const fittedLayers=new WeakMap();
+ function exportLayers(p){
+  if(p.config.race!=='human'||p.config.profile==='female')return p.layers;
+  if(!fittedLayers.has(p)){const layers={...p.layers};for(const id of ['face','age','marks','nose','eyelids']){const c=canvas(p.size);c.getContext('2d').drawImage(layers[id],0,0);layers[id]=fitHeadToBody(c,p.size);}fittedLayers.set(p,layers);}return fittedLayers.get(p);
+ }
  function composite(p,{visible=null}={}){
-  const out=canvas(p.size),g=out.getContext('2d'),wearing=!visible||visible.headwearFront!==false||visible.headwearBack!==false,rule=wearing?E.headwearRules[p.config.headwear]:E.headwearRules.none,template=p.template;g.imageSmoothingEnabled=false;
+  const layers=exportLayers(p),out=canvas(p.size),g=out.getContext('2d'),wearing=!visible||visible.headwearFront!==false||visible.headwearBack!==false,rule=wearing?E.headwearRules[p.config.headwear]:E.headwearRules.none,template=p.template;g.imageSmoothingEnabled=false;
   let mask=null;if(rule.hair==='tuck'||rule.hair==='frame'){mask=canvas(p.size);const q=mask.getContext('2d');if(rule.hair==='frame'){for(const id of ['face','headwearFront','headwearBack'])q.drawImage(p.layers[id],0,0);}else{const s=p.config.race==='orc'?(p.config.face==='orc-heavy'?.75:.875):1,dy=96*(1-s),rim=rule.rim*s+dy+(p.anchors.offsetY||0);q.fillStyle='#fff';q.fillRect(0,rim*p.coordinateScale,p.size,p.size);}}
-  for(const spec of DRAW_ORDER){const id=spec.id;if(visible&&visible[id]===false||id==='ears'&&rule.ears==='hide'||id==='beard'&&rule.beard==='hide'||spec.feature==='hair'&&(rule.hair==='hide'||rule.hair==='frame'&&id==='hairBack'))continue;let src=p.layers[id];if(spec.feature==='hair'&&mask){const c=canvas(p.size),q=c.getContext('2d');q.drawImage(src,0,0);q.globalCompositeOperation='destination-in';q.drawImage(mask,0,0);src=c;}g.drawImage(src,0,0);}
+  for(const spec of DRAW_ORDER){const id=spec.id;if(visible&&visible[id]===false||id==='ears'&&rule.ears==='hide'||id==='beard'&&rule.beard==='hide'||spec.feature==='hair'&&(rule.hair==='hide'||rule.hair==='frame'&&id==='hairBack'))continue;let src=layers[id];if(spec.feature==='hair'&&mask){const c=canvas(p.size),q=c.getContext('2d');q.drawImage(src,0,0);q.globalCompositeOperation='destination-in';q.drawImage(mask,0,0);src=c;}g.drawImage(src,0,0);}
   if(rule.face==='covered'&&(!visible||visible.headwearFront!==false)){const c=canvas(p.size),q=c.getContext('2d');q.drawImage(template.layers.eyes,0,0,p.size,p.size);q.globalCompositeOperation='source-in';q.fillStyle='rgba(5,6,9,.78)';q.fillRect(0,0,p.size,p.size);q.globalCompositeOperation='destination-out';q.drawImage(p.layers.headwearFront,0,0);g.drawImage(c,0,0);}
   return out;
  }
- const API={version:2,partCount:53,headCount:8,order:DRAW_ORDER,get loaded(){return loaded},get error(){return error},fromTemplate,build:(input,options)=>fromTemplate(E.build(input),options),composite,render:(input,options={})=>composite(fromTemplate(E.build(input),options),options)};
+ const API={version:2,partCount:53,headCount:8,order:DRAW_ORDER,get loaded(){return loaded},get error(){return error},fromTemplate,exportLayers,build:(input,options)=>fromTemplate(E.build(input),options),composite,render:(input,options={})=>composite(fromTemplate(E.build(input),options),options)};
  API.ready=Promise.all(root.PAINTED_PORTRAIT_ASSETS.map(async A=>{const im=new Image();im.src=A.src;await im.decode();const c=canvas(im.width),g=c.getContext('2d',{willReadFrequently:true});c.height=im.height;g.drawImage(im,0,0);return g;})).then(images=>{atlases.push(...images);loaded=true;root.dispatchEvent(new Event('portrait-art-ready'));return API}).catch(e=>{error=e.message;console.warn('Painted portraits unavailable:',e.message);return null});
  root.PortraitArtwork=Object.freeze(API);
 })(globalThis);
