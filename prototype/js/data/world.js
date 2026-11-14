@@ -32,7 +32,7 @@ const WORLD_SCALE={
   // its lair in the wilds, on no holding's land, or, its kind's ground not found there this time, within rim tiles of a land's
   // edge and away from every holding and estate (monsters.js lairLand); a rare kind (its weight w at most rare: a troll, a griffin, a
   // wyrm) and a mythic one rareK times as far from the holdings, a rare one from you too (2026-11-13)
-  spawn:{bandit:[220,260],monster:[180,240],monsterHold:256,mythic:200,rare:1.2,rareK:2,critter:[120,200],critterHold:56,away:120,rim:3},
+  spawn:{bandit:[220,260],monster:[180,240],monsterHold:352,mythic:200,rare:1.2,rareK:2,critter:[120,200],critterHold:56,away:120,rim:3},
   // trade and work (tiles): realm caravans' range and their cost of distance, where refugees go, a holding's veins and its own
   econ:{caravanNear:10,caravanFar:90,caravanCost:150,refuge:70,resRange:10,homeRange:24},
   // deeds and who hears of them (tiles): field deeds and road events count for a holding this near, a sack angers those this near
@@ -115,6 +115,10 @@ const LAND_SMOOTH={on:true,tint:.08,line:[[1,.22],[2,.7]],margin:16};
 // "need to be very close to the holding"); site tiles from a site; start: what a game begins near, known at once; scout: Scouting
 // practice for each; show: its title's seconds on the screen
 const DISCOVER={on:true,r:1,site:3,start:10,scout:6,show:4.2,core:['centre','house','nook','market']};
+// how far (tiles) a site of a kind stands from every holding (world/sites.js siteSpot; the owner, 2026-11-14: "camps are not too close
+// to the holding. Caves, monster lair should be more far away as well"): any (were all 6), caves 20, camps where people live 14 (a kind
+// may set its own: data/encampments.js away)
+const SITE_AWAY={any:6,cave:20,travelers:14};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}},

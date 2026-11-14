@@ -794,7 +794,14 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  (W7), the parties move elsewhere (W8), and begin twice draws so (B2). Checked: with the old travellers' placement put back over
 //  everything else of this change (their class, DENSITY's 21 by the road, SITE_GAP 30) all nine hold. Was W6 9899ee85, W7
 //  5d33eddc, W8 63276c56, B2 d81ddd1f; W1-W5 unchanged)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'6a9152f3',W7:'114de65b',W8:'de15fa32',B2:'3db1d068'};
+// (all nine re-recorded 2026-11-14, on purpose: the owner, “make sure that holdings are not too close to each other (spread out
+//  more) and camps are not too close to the holding. Caves, monster lair should be more far away as well”: the holdings about 1.3
+//  times as far apart (worldplace.js PLACE_GAP; a hamlet's margin 6, was 3), so every world's holdings, roads and land differ (W1-W5),
+//  and the sites further out (data/world.js SITE_AWAY: a camp where people live 14 tiles from every holding, refugees 10, a cave 20,
+//  were all 6; sites.js HIDEOUT_PLACE a hideout 18 from a hamlet, was 12; a monster's lair 352 px from one, monsterHold, was 256),
+//  so the spots, the save, the parties and begin twice differ (W6-W8, B2). Checked: with those numbers put back all nine and the five
+//  sums hold. Were W1 98411198, W2 8e3ee885, W3 781cbbb1, W4 50f147c1, W5 12a104e8, W6 6a9152f3, W7 114de65b, W8 de15fa32, B2 3db1d068)
+const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'9bb821e8',W5:'e1408b54',W6:'99c0f3f4',W7:'7bc521e3',W8:'8d52d85b',B2:'2c5e4c3d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -851,7 +858,9 @@ const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104
 //  Were classic c2e6ebf4, Normal s1 7de4f831, s2 994d7cb0, s3 d0b32a24, Large s1 03a19dc7)
 // (all five re-recorded 2026-11-06, on purpose: the forts (above). Proof: no forts gives all five again. Were classic 313f5680,
 //  Normal s1 c05c2a0b, s2 71336fed, s3 88b17161, Large s1 66607a42)
-const SUMS={classic:'376eb788','Normal s1':'0620ac51','Normal s2':'8d537d0c','Normal s3':'3c103cb4','Large s1':'1a0f554e'};
+// (all five re-recorded 2026-11-14, on purpose: the holdings spread out (W1-W8 above). Proof: the old gaps give all five again.
+//  Were classic 376eb788, Normal s1 0620ac51, Normal s2 8d537d0c, Normal s3 3c103cb4, Large s1 1a0f554e)
+const SUMS={classic:'759ca6f8','Normal s1':'2d3eb194','Normal s2':'812260ff','Normal s3':'175fcc04','Large s1':'3b4ad7bf'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

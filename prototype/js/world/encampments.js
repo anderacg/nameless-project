@@ -33,7 +33,7 @@ class Encampment extends Site{
   static spec(i){const K=ENCAMP_KINDS[i],g=ENCAMP_GROUND[K.ground]||ENCAMP_GROUND.road;
     const pick=K.ground==='road'||K.ground==='water'?()=>{const R=ROAD_TILES||(ROAD_TILES=tiles.reduce((a,k,i)=>(k===T_ROAD&&a.push(i),a),[]));if(!R.length)return Site.pick();const j=R[rint(0,R.length-1)];return[j%MW+rint(-4,4),(j-j%MW)/MW+rint(-4,4)]}:
       K.ground==='wild'?()=>{const L=wildLand().list;if(!L.length)return Site.pick();const j=L[rint(0,L.length-1)];return[j%MW,(j-j%MW)/MW]}:()=>Site.pick();
-    return{pick,ground:g,clear:encampClear,fits:()=>true,reachRow:ty=>ty,point:Site.point}}
+    return{pick,ground:g,clear:encampClear,fits:()=>true,reachRow:ty=>ty,point:Site.point,away:K.away||SITE_AWAY.travelers}}
   // (how many of kind i world m holds: its count grown by the land, at least one (the owner: "at least one for each and scale based
   // on the world"); no world: the base)
   static count(i,m){const K=ENCAMP_KINDS[i];return m?Math.max(1,Math.round(K.count*Math.pow(worldMeasures(m).land,ENCAMP.count.pow))):K.count}

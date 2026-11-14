@@ -14,7 +14,7 @@ try{
  const S=W.sites,of=ty=>S.filter(s=>s.type===ty),hid=of('hideout'),wl=t.wildLand(),N=t.density(t.WM).sites.hideout;
  // ---- how many: by the wild land; about half what the land gave (24 x (land / the base's)^.8)
  {const L=t.worldLand(t.WM),was=Math.round(C.sites.hideout*Math.pow(L/g.land,.8)),r=N/was;
-  ok(hid.length===N&&N===Math.round(C.sites.hideout*wl.n/g.wild)&&t.worldWild(t.WM)===wl.n&&r>=.35&&r<=.6,/* (.35, was .4, 2026-11-05: the hamlets take fringe land and keep 12 tiles round them out of the wild, sites.js HIDEOUT_PLACE.hamlet: 38% on the classic seed) */
+  ok(hid.length===N&&N===Math.round(C.sites.hideout*wl.n/g.wild)&&t.worldWild(t.WM)===wl.n&&r>=.3&&r<=.6,/* (.35, was .4, 2026-11-05: the hamlets take fringe land and keep 12 tiles round them out of the wild, sites.js HIDEOUT_PLACE.hamlet: 38% on the classic seed; .3 since 2026-11-14: the owner, "monster lair should be more far away": 18 tiles round a hamlet, the holdings spread further (worldplace.js PLACE_GAP), 34%) */
    hid.length+' hideouts by the wild land ('+wl.n+' tiles of '+L+' land, the base '+g.wild+'), '+(r*100).toFixed(0)+'% of the '+was+' the land gave');
   const other={kind:new Uint8Array(100),roads:[]};ok(t.worldWild(other)===g.wild&&t.density(other).sites.hideout===C.sites.hideout,'a world not in counts the base\'s wild land ('+g.wild+'): the base\'s '+C.sites.hideout+' hideouts')}
  // ---- where: far from every holding and road, on the wild land, off the estates and lots

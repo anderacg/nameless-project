@@ -92,7 +92,7 @@ Kit.suite(({ok,info})=>{
   {const rf=of(9)[0],tabs=go(rf);t.act('site-tab','fire');ok(G.site===rf&&tabs==='Volunteers,Campfire'&&q('[data-act="site-alms"]'),'the refugees’ camp: volunteers and alms by the fire ('+tabs+')');
    const r0=P.renown,g0=P.gold;t.act('site-alms');ok(P.renown===r0+1&&P.gold===g0-20&&rf.helped===1,'alms: 20 gold, renown +1');
    ok(rf.unit===t.peasantLevy(rf.folkRace),'its volunteers are levies of its people ('+t.ST[rf.unit].n+')');
-   const n0=rf.pop,w=rf.swords()[0];P.troops={};t.act('site-tab','hire');t.partyRoster(P).add(w.k,1,'new');const ug=t.partyRoster(P).groups.find(x=>x.type===w.k);t.act('site-rec-refill',ug.id);ok(rf.pop===n0-1,'one who follows you leaves the camp ('+n0+' → '+rf.pop+')')}
+   const n0=rf.pop,m0=rf.mercs,w=rf.swords()[0];P.troops={};t.act('site-tab','hire');t.partyRoster(P).add(w.k,1,'new');const ug=t.partyRoster(P).groups.find(x=>x.type===w.k);t.act('site-rec-refill',ug.id);ok(rf.mercs<m0&&rf.pop===n0-(m0-rf.mercs),'those who follow you leave the camp ('+n0+' → '+rf.pop+', '+(m0-rf.mercs)+' went)')}
   {const tabs=go(of(0)[0]);ok(/^Wagons,Sellswords,Campfire$/.test(tabs),'a merchants’ camp: wagons, sellswords, the fire ('+tabs+')')}
   {const tabs=go(of(6)[0]);ok(tabs==='Wagons,Campfire'&&/stay/i.test(panel()),'charcoal burners: their wares and fire; they stay ('+tabs+')')}
   t.act('site-leave');

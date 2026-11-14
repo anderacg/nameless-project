@@ -439,7 +439,7 @@ class Lair extends Site{
    ford (an estate's too), a hamlet's hamlet tiles (its few folk keep them back less far); of draw tiles drawn from it, one on clear ground and wild (wildGround) first. Wild: woods, hills or
    peaks rough of the tiles within near of it (a clearing in the wilds), or deep in the swamp or the desert (its climate deep
    tiles out every way). Another hideout 20 tiles off at least (SITE_GAP). How many: by the wild land (data/world.js DENSITY) */
-const HIDEOUT_PLACE={far:22,hamlet:12,road:8,draw:48,near:10,rough:.2,deep:6};
+const HIDEOUT_PLACE={far:22,hamlet:18,road:8,draw:48,near:10,rough:.2,deep:6};
 // the wild land of the world in: at (a byte a tile: 1 on it), list (its tiles), n; kept on the map till its holdings or roads
 // change (an estate's track laid or lifted: as data/world.js worldRoads; never on its lists or hashes)
 function wildLand(){const m=WM,R=m.roads||[],key=TOWNS.length+' '+R.length+' '+R.reduce((n,r)=>n+r.path.length,0);if(m._wild&&m._wild.key===key)return m._wild;
@@ -547,7 +547,8 @@ const nightCamps=()=>W.sites.filter(s=>s instanceof BanditCamp||s instanceof Gob
 // a hideout far from another and from the bandit camps (the owner, 2026-10-23: deep in the wilds, each its own stretch of them)
 const SITE_GAP={travelers:{travelers:ENCAMP.gap,camp:16,hideout:16},hideout:{travelers:16,camp:16,hideout:20},goblins:{travelers:16,camp:16,hideout:16,goblins:20}};
 const siteGap=(a,b)=>SITE_GAP[a]&&SITE_GAP[a][b]||0;
-// a free tile for a site of this kind: reachable from the roads, on its ground, clear of holdings and other sites (the camps among
+// a free tile for a site of this kind: reachable from the roads, on its ground, its kind's tiles from every holding (C.away, else
+// data/world.js SITE_AWAY), clear of other sites (the camps among
 // them; SITE_GAP's kinds farther); each try a tile its kind picks (Site pick)
 let ROAD_TILES=null;onWorld(()=>{ROAD_TILES=null});
 function siteSpot(type,sites,gap,C=SITE_CLASS[type]){
@@ -556,7 +557,7 @@ function siteSpot(type,sites,gap,C=SITE_CLASS[type]){
     const g=k<2500?gap:gap*.6,[tx,ty]=C.pick(),fy=C.reachRow(ty);// where parties reach it
     if(tx<3||ty<3||tx>MW-4||ty>MH-4)continue;
     if(!passable(tAt(tx,fy))||!Router.reach(from,{x:(tx+.5)*TILE,y:(fy+.5)*TILE})||!C.ground(tx,ty)||!C.clear(tx,ty)||!C.fits(tx,ty))continue;
-    if(TOWNS.some(t=>Math.hypot(t.tx-tx,t.ty-ty)<6)||sites.some(s=>Math.hypot(s.tx-tx,s.ty-ty)<Math.max(g,siteGap(type,s.type))))continue;
+    if(TOWNS.some(t=>Math.hypot(t.tx-tx,t.ty-ty)<(C.away||SITE_AWAY[type]||SITE_AWAY.any))||sites.some(s=>Math.hypot(s.tx-tx,s.ty-ty)<Math.max(g,siteGap(type,s.type))))continue;
     return[tx,ty];
   }
   return null;

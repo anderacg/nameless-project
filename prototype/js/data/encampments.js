@@ -7,7 +7,7 @@
    seasonal or wandering (moves on after stay days); ground: where it pitches (road: 2-4 tiles off a road; wood: a wood's edge;
    hills: under the mountains; desert; wild: far from holdings and roads; water: by water, near a road); roles: who lives there,
    [role, share], filled in order (ENCAMP_ROLES); count: how many on the base world (ENCAMP.count); mercs: sellswords to hire
-   (levy: its own folk as levies); beasts: its pack animals and herds grazing by it ([critter, how many]: data/critters.js); props: its pieces round the tents (ENCAMP_PROPS), [kind, how many]; tents: their look (gfx/campart.js:
+   (levy: its own folk as levies); beasts: its pack animals and herds grazing by it ([critter, how many]: data/critters.js); away: its tiles from every holding at least (else data/world.js SITE_AWAY's camps'; refugees nearer, by the people they fled to); props: its pieces round the tents (ENCAMP_PROPS), [kind, how many]; tents: their look (gfx/campart.js:
    styles, the first its biggest tent's, then by each tent's seed; cloth and trim colours) */
 const ENCAMP_KINDS=[
   {key:'merchants',props:[['wagon',2],['crates',3],['barrels',2]],tents:{styles:['pavilion','marquee','ridge','porch','bell'],cloth:['#d8ccb0','#c8b890','#3d74d6'],trim:['#b03a2a','#d8a840']},n:'Merchant caravan',race:'human',goods:['cloth','spice'],col:'#3d74d6',pop:[8,14],life:'wandering',ground:'road',count:2,mercs:true,
@@ -28,7 +28,7 @@ const ENCAMP_KINDS=[
     roles:[['herder',.35],['guard',.25],['trader',.2],['child',.2]],d:'Wide tents of dyed wool, goats, and veiled riders who greet you with water.'},
   {key:'hermit',props:[['woodpile',1]],tents:{styles:['leanto','hut'],cloth:['#8a7a5a'],trim:['#5a4a3a']},n:'Hermit',race:'human',goods:[],col:'#9a8a6a',special:'counsel',pop:[1,1],life:'settled',ground:'wild',count:1,see:'a hermit’s camp',
     roles:[['hermit',1]],d:'One small tent, a fire and a bent old man who seems to have been expecting you.'},
-  {key:'refugees',props:[['cart',1],['sacks',3],['barrels',1]],tents:{styles:['leanto','pup','ridge','hut'],cloth:['#a89a80','#8a8270','#b0a490'],trim:['#6a5a4a','#8a6040']},n:'Refugees',race:null,goods:[],col:'#b0a890',special:'alms',pop:[6,14],life:'settled',ground:'water',count:1,levy:true,
+  {key:'refugees',away:10,props:[['cart',1],['sacks',3],['barrels',1]],tents:{styles:['leanto','pup','ridge','hut'],cloth:['#a89a80','#8a8270','#b0a490'],trim:['#6a5a4a','#8a6040']},n:'Refugees',race:null,goods:[],col:'#b0a890',special:'alms',pop:[6,14],life:'settled',ground:'water',count:1,levy:true,
     roles:[['folk',.55],['child',.3],['guard',.15]],d:'Ragged tents by the water, folk who fled their homes. They look at your band with hope and fear.'}
 ];
 const TRAVELERS=ENCAMP_KINDS;// (the old name)

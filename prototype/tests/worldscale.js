@@ -15,9 +15,11 @@ try{
  const want={move:.68,travel:1.6,sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
   ai:{graceGap:24,grace:1.47,dread:70,bandCamp:220,refugeAt:24,refugeLane:24,lairHunt:140,lairLeash:60,mythicRoam:[120,90],mythicScorch:200,gameLeash:50,herdLeash:24,penLeash:99,
    compFoes:90,compFlee:70,compBeat:[80,60],compTake:60,compDraft:120,folkNear:520,folkForget:120,folkBandit:70,folkFear:90,slipAway:40},
-  spawn:{bandit:[220,260],monster:[180,240],monsterHold:256,mythic:200,rare:1.2,rareK:2,critter:[120,200],critterHold:56,away:120,rim:3},
+  spawn:{bandit:[220,260],monster:[180,240],monsterHold:352,mythic:200,rare:1.2,rareK:2,critter:[120,200],critterHold:56,away:120,rim:3},
   econ:{caravanNear:10,caravanFar:90,caravanCost:150,refuge:70,resRange:10,homeRange:24},
   law:{repNear:15,eventNear:15,siegeOutrage:20},land:{shelter:48,healNear:80,estateGuard:7,friendly:50,pacify:35},war:{front:60,raidLeash:80,siegeLeash:80},battle:{elfR:10,bridge:2}};
+ // (spawn.monsterHold 352, was 256, 2026-11-14: the owner, "Caves, monster lair should be more far away as well": beasts' homes 22 tiles from
+ //  every holding, were 16)
  ok(JSON.stringify(S)===JSON.stringify(want),'WORLD_SCALE holds every moved distance at today\'s value, the lever and the grace at Phase 1\'s, campaign travel 1.6 times the base (twice at 696de87; 20% less, the owner, 2026-10-31) ('+Object.keys(S).join(', ')+')');
  const classic={bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,sites:{cave:30,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}};
  ok(JSON.stringify(D.classic)===JSON.stringify(classic)&&t.density()===D.classic,'DENSITY.classic holds today\'s caps, and it is the one in use (the classic world: the classic seed)');
