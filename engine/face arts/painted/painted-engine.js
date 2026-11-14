@@ -93,6 +93,13 @@
   }
   g.putImageData(im,0,0);return out;
  }
+ // Source rectangles can be asymmetric; register clothing to its actual neckline opening.
+ const bodyAnchors=new WeakMap();
+ function bodyAnchor(f){
+  if(bodyAnchors.has(f))return bodyAnchors.get(f);let seed=Math.floor(f.w/2);const centers=[];
+  for(let y=Math.floor(f.h*.05);y<f.h*.32;y++){if(f.alpha[y*f.w+seed])break;let left=seed,right=seed;while(left>0&&!f.alpha[y*f.w+left-1])left--;while(right<f.w-1&&!f.alpha[y*f.w+right+1])right++;if(left>0&&right<f.w-1){centers.push((left+right+1)/2);seed=Math.floor((left+right)/2);}}
+  centers.sort((a,b)=>a-b);const x=centers.length?centers[Math.floor(centers.length/2)]:f.w/2,y=Array.from({length:5},(_,i)=>f.top[Math.max(0,Math.min(f.w-1,Math.floor(x)+i-2))]).reduce((a,b)=>a+b,0)/5,anchor={x,y,half:Math.min(x,f.w-x)};bodyAnchors.set(f,anchor);return anchor;
+ }
  // Leather geometry defines straps and fittings; material samples never add a second harness.
  const LEATHER_ARMOR=new Set(['orc-bare-cross-harness','orc-bare-ring-harness','orc-leather-vest','orc-studded-leather','orc-cross-harness','orc-ring-harness','orc-layered-hide','orc-leather-guard','hide-harness']);
  function leatherMaterial(p,colors,id,x,y,tone){
@@ -105,11 +112,11 @@
   if(!src){g.drawImage(spec.channel?E.tint(p.layers[id],colors[spec.channel]):p.layers[id],0,0,size,size);return out;}
   const a=p.layers[id].getContext('2d').getImageData(0,0,N,N).data,im=g.createImageData(size,size),d=im.data,pair=id==='ears'||id==='brows',scale=size/N,target=hex(colors[spec.channel]),base=baseFor(...src,id),contrast=0;
   const bodyTops=new Uint16Array(N).fill(N);if(id==='torso')for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(a[(y*N+x)*4+3])bodyTops[x]=Math.min(bodyTops[x],y);
-  for(const side of pair?[0,1]:[null]){const b=bounds(a,side);if(!b)continue;const f=frame(...src,side,id.startsWith('headwear')),body=['torso','clothing','armor'].includes(id),collar=Array.from({length:5},(_,i)=>f.top[Math.max(0,Math.min(f.w-1,Math.floor(f.w/2)+i-2))]).reduce((a,b)=>a+b,0)/5;
+  for(const side of pair?[0,1]:[null]){const b=bounds(a,side);if(!b)continue;const f=frame(...src,side,id.startsWith('headwear')),body=['torso','clothing','armor'].includes(id),anchor=body&&id!=='torso'?bodyAnchor(f):null;
    for(let Y=Math.floor(b.y*scale);Y<Math.ceil((b.y+b.h)*scale);Y++)for(let X=Math.floor(b.x*scale);X<Math.ceil((b.x+b.w)*scale);X++){
     const x=(X+.5)/scale,y=(Y+.5)/scale,k=(Math.floor(y)*N+Math.floor(x))*4;if(!a[k+3])continue;
     let u=(x-b.x)/b.w,v=(y-b.y)/b.h;
-    if(body){u=(x-4)/120;if(id==='torso'){const X=Math.max(0,Math.min(f.w-1,Math.floor(u*f.w))),top=f.top[X];v=(top+(y-bodyTops[Math.floor(x)])*f.w/120)/f.h;}else v=(y<103?(y-94)/9*collar:collar+(y-103)/25*(f.h-collar))/f.h;}
+    if(body){u=(x-4)/120;if(id==='torso'){const X=Math.max(0,Math.min(f.w-1,Math.floor(u*f.w))),top=f.top[X];v=(top+(y-bodyTops[Math.floor(x)])*f.w/120)/f.h;}else{u=(anchor.x+(x-p.anchors.cx)/60*anchor.half)/f.w;v=(y<103?(y-94)/9*anchor.y:anchor.y+(y-103)/25*(f.h-anchor.y))/f.h;}}
     if((id==='clothing'||id==='armor')&&LEATHER_ARMOR.has(p.config.clothing)){put(d,(Y*size+X)*4,leatherMaterial(p,colors,id,x,y,a[k]),a[k+3]);continue;}
     const sampled=sample(f,u,v);
     const raw=sampled.rgb,warm=raw[0]>raw[1]*1.08&&raw[1]>raw[2]*1.3&&raw[0]>90;let rgb=(id==='armor'||id.startsWith('headwear'))&&warm?raw:recolor(raw,target,base,contrast);
