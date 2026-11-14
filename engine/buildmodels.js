@@ -606,7 +606,7 @@
     PX.MODEL_SIZES={types:Object.fromEntries(Object.entries(SIZE.types).map(([k,[cell,dwellings]])=>[k,{cell,dwellings}])),clusters:SIZE.clusters};
     PX.MODEL_OBJECTS=TYPES.filter(k=>SIZE.types[k][0]===16&&k!=='shrine');
     PX.MODEL_TYPES=PX.BUILDING_TYPES.filter(k=>T[k]).concat(TYPES.filter(k=>!PX.BUILDING_TYPES.includes(k)&&!SITES.includes(k)));
-    PX.CLUSTER_MODELS=Object.keys(CL);LOOKS.clear();CACHE.clear();PX.MODEL_CULTURES=Object.keys(STYLES);
+    PX.CLUSTER_MODELS=Object.keys(CL);LOOKS.clear();CACHE.clear();PX.MODEL_CULTURES=Object.keys(STYLES).filter(k=>!STYLES[k].set);
     PX.MODEL_LOOK=Object.fromEntries(PX.MODEL_CULTURES.map(c=>[c,lookOf(c)]));PX.MODEL_OWN=Object.fromEntries(PX.MODEL_CULTURES.map(c=>[c,line(c).flatMap(s=>Object.keys(s.own&&s.own.types||{}))]))}
   index();
   // what a style file builds with: the plan, the shared proportions, the common pieces, the generic plans and the cluster helpers

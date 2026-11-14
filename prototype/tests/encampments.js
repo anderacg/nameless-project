@@ -60,13 +60,15 @@ Kit.suite(({ok,info})=>{
    ok(moved>0&&far<=G2.r+.5,'by day it grazes round its tether (walked '+b.walked.toFixed(1)+' px, at most '+far.toFixed(1)+' px out)');
    G.clock=t.DAY*.7;const w0=b.walked;for(let i=0;i<100;i++)t.CampFolk.step(.1);ok(b.walked===w0,'by night it stands');
    const no=of(7)[0];if(no){no.seen=true;const N2=near(no,.2);ok(N2.beasts.some(z=>z.id==='camel')&&N2.beasts.some(z=>z.id==='goat'),'the nomads\u2019 camels and goats ('+N2.beasts.map(z=>z.id).join(', ')+')')}
-   const one=t.CampArt.prop('barrels',1,2,'grass'),three=t.CampArt.prop('barrels',3,2,'grass'),five=t.CampArt.prop('crates',5,2,'grass');
-   ok(three.height>one.height-1&&three.width>one.width&&five.width>=three.width-4&&t.CampArt.prop('woodpile',3,2,'grass').width>t.CampArt.prop('woodpile',1,2,'grass').width,'a heap grows with its count: '+[one,three,five].map(c=>c.width+'x'+c.height).join(', '))}
+   const fill=c=>{const d=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i])n++;return n},hp=(ty,n)=>fill(t.CampArt.prop(ty,n,2,'grass'));
+   const hb=[1,3,5].map(n=>hp('barrels',n)),hc=[1,3,5].map(n=>hp('crates',n)),hl=[1,5].map(n=>hp('woodpile',n));
+   ok(hb[1]>hb[0]&&hb[2]>hb[1]&&hc[1]>hc[0]&&hc[2]>=hc[1]&&hl[1]>hl[0],'a heap grows with its count, its pieces sitting on one another (pixels: barrels '+hb.join(', ')+'; crates '+hc.join(', ')+'; logs '+hl.join(', ')+')')}
   // ---- tents: each kind's own styles and colours (the owner: "make more tent variety"); an army's plain canvas, its commander's a pavilion
   {const styles=new Set(),bad=[];for(const x of camps()){const T=x.TR.tents;for(let i=0;i<x.tents;i++){const L=x.look(i,i);styles.add(L.style);if(!T.styles.includes(L.style)||!T.cloth.includes(L.cloth))bad.push(x.name)}if(x.look(0).style!==T.styles[0])bad.push(x.name+' first')}
    ok(!bad.length&&styles.size>=6&&Object.keys(t.CAMP_TENTS).length===7,'every camp’s tents in its kind’s styles and cloth: '+[...styles].join(', ')+(bad.length?' (wrong: '+bad.join(', ')+')':''));
-   ok(t.CampArt.tent('tepee',{cloth:'#a07850',trim:'#7e2a26'},1,'grass').width===16&&t.CampArt.tent('pavilion',{cloth:'#c58af0',trim:'#f0e070'},1,'grass').width===20,'each style its own size: a tepee 16 wide, a pavilion 20');
-   const a0=t.CampSite.pic(3,'grass',0,{faction:'vale'}),a1=t.CampSite.pic(3,'grass',1,{faction:'vale'});ok(a0.width===20&&a1.width<20,'an army’s first tent a pavilion in its colours, the rest plain canvas')}
+   {const L={cloth:'#a07850',trim:'#7e2a26'},pics=Object.keys(t.CAMP_TENTS).map(k=>t.CampArt.tent(k,L,1,'grass')),sig=c=>c.toDataURL();
+    ok(Object.values(t.CAMP_TENTS).every(k=>t.PX.CAMP_TYPES.includes(k))&&pics.every(c=>c.width===16)&&new Set(pics.map(sig)).size===pics.length,'each style an engine model of its own (engine/build-camp.js), in the map\u2019s top-down view, 16 px like the other camp objects')}
+   const a0=t.CampSite.pic(3,'grass',0,{faction:'vale'}),a1=t.CampSite.pic(3,'grass',1,{faction:'vale'});ok(a0===t.CampArt.tent('pavilion',{cloth:t.CAMP_ART.canvas[0],trim:t.FACS.vale.col},3,'grass')&&a1!==a0,'an army’s first tent a pavilion in its colours, the rest plain canvas')}
   // ---- a click on one of them: his name, and the camp's page at his place there, his greeting over it
   {const m=of(0)[0];m.seen=true;W.monsters=W.monsters.filter(z=>Math.hypot(z.x-m.x,z.y-m.y)>F.danger*3);const D=near(m,.2);t.drawWorld();
    const talk=role=>{const p=D.ppl.find(z=>z.role===role&&!z.hid);if(!p)return null;Kit.world();G.lastSite=null;P.x=p.x;P.y=p.y+8;const o=t.pickAt(p.x,p.y-4);if(o!==p)return 'picked '+(o&&(o.name||o.mapKind));t.interact(o);return p};

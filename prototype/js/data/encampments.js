@@ -12,7 +12,7 @@
 const ENCAMP_KINDS=[
   {key:'merchants',props:[['wagon',2],['crates',3],['barrels',2]],tents:{styles:['ridge','pavilion','bell'],cloth:['#d8ccb0','#c8b890','#3d74d6'],trim:['#b03a2a','#d8a840']},n:'Merchant caravan',race:'human',goods:['cloth','spice'],col:'#3d74d6',pop:[8,14],life:'wandering',ground:'road',count:2,mercs:true,
     roles:[['trader',.3],['guard',.3],['drover',.25],['cook',.15]],d:'Wagons circled for the night, guards dozing by the fire.'},
-  {key:'prospectors',beasts:[['goat',2]],props:[['cart',1],['barrels',3],['sacks',2]],tents:{styles:['ridge','wedge'],cloth:['#9a7a58','#8a6a4a','#b09070'],trim:['#5a4a3a','#c08040']},n:'Dwarf prospectors',race:'dwarf',goods:['iron','cheese'],col:'#8a6a4a',pop:[5,10],life:'seasonal',ground:'hills',count:1,mercs:true,
+  {key:'prospectors',beasts:[['goat',2]],props:[['cart',1],['barrels',3],['sacks',2]],tents:{styles:['ridge','pup'],cloth:['#9a7a58','#8a6a4a','#b09070'],trim:['#5a4a3a','#c08040']},n:'Dwarf prospectors',race:'dwarf',goods:['iron','cheese'],col:'#8a6a4a',pop:[5,10],life:'seasonal',ground:'hills',count:1,mercs:true,
     roles:[['miner',.5],['guard',.25],['smith',.15],['cook',.1]],d:'Dwarves with picks and pack ponies, arguing over a map.'},
   {key:'wanderers',props:[['woodpile',1],['sacks',2]],tents:{styles:['pavilion','bell'],cloth:['#5a9a6a','#4f8a4e','#9ac8a8'],trim:['#e8e0b0','#c8d8e8']},n:'Elf wanderers',race:'elf',goods:['timber','fruit'],col:'#3f8a3e',pop:[5,9],life:'wandering',ground:'wood',count:1,mercs:true,
     roles:[['ranger',.5],['singer',.3],['cook',.2]],d:'A quiet camp under lanterns. They watch you a while before they greet you.'},
@@ -28,7 +28,7 @@ const ENCAMP_KINDS=[
     roles:[['herder',.35],['guard',.25],['trader',.2],['child',.2]],d:'Wide tents of dyed wool, goats, and veiled riders who greet you with water.'},
   {key:'hermit',props:[['woodpile',1]],tents:{styles:['leanto'],cloth:['#8a7a5a'],trim:['#5a4a3a']},n:'Hermit',race:'human',goods:[],col:'#9a8a6a',special:'counsel',pop:[1,1],life:'settled',ground:'wild',count:1,see:'a hermit’s camp',
     roles:[['hermit',1]],d:'One small tent, a fire and a bent old man who seems to have been expecting you.'},
-  {key:'refugees',props:[['cart',1],['sacks',3],['barrels',1]],tents:{styles:['leanto','wedge','ridge'],cloth:['#a89a80','#8a8270','#b0a490'],trim:['#6a5a4a','#8a6040']},n:'Refugees',race:null,goods:[],col:'#b0a890',special:'alms',pop:[6,14],life:'settled',ground:'water',count:1,levy:true,
+  {key:'refugees',props:[['cart',1],['sacks',3],['barrels',1]],tents:{styles:['leanto','pup','ridge'],cloth:['#a89a80','#8a8270','#b0a490'],trim:['#6a5a4a','#8a6040']},n:'Refugees',race:null,goods:[],col:'#b0a890',special:'alms',pop:[6,14],life:'settled',ground:'water',count:1,levy:true,
     roles:[['folk',.55],['child',.3],['guard',.15]],d:'Ragged tents by the water, folk who fled their homes. They look at your band with hope and fear.'}
 ];
 const TRAVELERS=ENCAMP_KINDS;// (the old name)
