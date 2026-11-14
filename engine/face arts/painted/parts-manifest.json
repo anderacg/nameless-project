@@ -667,5 +667,50 @@
       "warband",
       "vine-diadem"
     ]
+  },
+  {
+    "file": "headwear-medieval.png",
+    "width": 2172,
+    "height": 724,
+    "sha256": "2c09dbc7a3777219689aabedb1e4e25e3065d48805cd89df869c1c733a5bc5de",
+    "frames": [
+      [
+        46,
+        213,
+        355,
+        260
+      ],
+      [
+        458,
+        199,
+        385,
+        328
+      ],
+      [
+        894,
+        182,
+        384,
+        325
+      ],
+      [
+        1331,
+        172,
+        378,
+        330
+      ],
+      [
+        1756,
+        157,
+        394,
+        402
+      ]
+    ],
+    "headwear": [
+      "wool-skullcap",
+      "liripipe-cap",
+      "fur-trimmed-cap",
+      "bycocket",
+      "noble-chaperon"
+    ]
   }
 ]

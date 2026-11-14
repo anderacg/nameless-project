@@ -85,10 +85,10 @@
  }
  // Each cloth hat and crown has its own authored picture, uniformly fitted to the brow.
  const HEADWEAR=new Map(root.PAINTED_PORTRAIT_ASSETS.flatMap((a,sheet)=>(a.headwear||[]).map((id,index)=>[id,{sheet,index}])));
- const HEADWEAR_FIT={hood:[4.1,.39,.835],'wrapped-hood':[3.6,.26,.748],veil:[3.6,.18],'draped-veil':[3.6,.28],'pearl-hood':[3.9,.23,.78],'linen-wrap':[3.4,.42],'arming-cap':[2.35,.55],chaperon:[2.9,.42],turban:[2.4,.8],'straw-hat':[3.1,.95],'feathered-cap':[2.5,.94]};
+ const HEADWEAR_FIT={'wool-skullcap':[2.35,.94],'liripipe-cap':[2.9,.7],'fur-trimmed-cap':[2.55,.95],bycocket:[2.65,.94],'noble-chaperon':[2.95,.6],hood:[4.1,.39,.835],'wrapped-hood':[3.6,.26,.748],veil:[3.6,.18],'draped-veil':[3.6,.28],'pearl-hood':[3.9,.23,.78],'linen-wrap':[3.4,.42],'arming-cap':[2.35,.55],chaperon:[2.9,.42],turban:[2.4,.8],'straw-hat':[3.1,.95],'feathered-cap':[2.5,.94]};
  function paintedHeadwear(p,colors,size,id){
   const out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,h=HEADWEAR.get(p.config.headwear);if(!h)return out;
-  const f=frame(h.sheet,h.index),A=p.anchors,[width,brow,opening]=HEADWEAR_FIT[p.config.headwear]||[2.35,.96],fit=Math.max(A.w*width/f.w,opening?(A.mouth.y-A.eyes[0].y+19)/(f.h*(opening-brow)):0),top=Math.max(1,A.eyes[0].y-14-f.h*brow*fit),left=A.cx-f.w*fit/2,scale=size/N,target=hex(colors.headwear),base=hex(E.colors.headwear);
+  const f=frame(h.sheet,h.index),A=p.anchors,[width,brow,opening]=HEADWEAR_FIT[p.config.headwear]||[2.35,.96],wanted=Math.max(A.w*width/f.w,opening?(A.mouth.y-A.eyes[0].y+19)/(f.h*(opening-brow)):0),fit=['fur-trimmed-cap','bycocket'].includes(p.config.headwear)?Math.min(wanted,(A.eyes[0].y-16)/(f.h*brow)):wanted,top=Math.max(1,A.eyes[0].y-14-f.h*brow*fit),left=A.cx-f.w*fit/2,scale=size/N,target=hex(colors.headwear),base=hex(E.colors.headwear);
   for(let Y=Math.max(0,Math.floor(top*scale));Y<Math.min(size,Math.ceil((top+f.h*fit)*scale));Y++)for(let X=Math.max(0,Math.floor(left*scale));X<Math.min(size,Math.ceil((left+f.w*fit)*scale));X++){
    const x=(X+.5)/scale,y=(Y+.5)/scale;if((id==='headwearBack')!==(y>=94))continue;
    const u=(x-left)/(f.w*fit),v=(y-top)/(f.h*fit);if(u<0||u>=1||v<0||v>=1)continue;const s=sample(f,u,v);if(s.alpha)put(d,(Y*size+X)*4,recolor(s.rgb,target,base),255);
@@ -243,7 +243,7 @@
   if(rule.face==='covered'&&(!visible||visible.headwearFront!==false)){const c=canvas(p.size),q=c.getContext('2d');q.drawImage(template.layers.eyes,0,0,p.size,p.size);q.globalCompositeOperation='source-in';q.fillStyle='rgba(5,6,9,.78)';q.fillRect(0,0,p.size,p.size);q.globalCompositeOperation='destination-out';q.drawImage(p.layers.headwearFront,0,0);g.drawImage(c,0,0);}
   return out;
  }
- const API={version:2,partCount:74,headCount:8,order:DRAW_ORDER,get loaded(){return loaded},get error(){return error},fromTemplate,exportLayers,build:(input,options)=>fromTemplate(E.build(input),options),composite,render:(input,options={})=>composite(fromTemplate(E.build(input),options),options)};
+ const API={version:2,partCount:79,headCount:8,order:DRAW_ORDER,get loaded(){return loaded},get error(){return error},fromTemplate,exportLayers,build:(input,options)=>fromTemplate(E.build(input),options),composite,render:(input,options={})=>composite(fromTemplate(E.build(input),options),options)};
  API.ready=Promise.all(root.PAINTED_PORTRAIT_ASSETS.map(async A=>{const im=new Image();im.src=A.src;await im.decode();const c=canvas(im.width),g=c.getContext('2d',{willReadFrequently:true});c.height=im.height;g.drawImage(im,0,0);return g;})).then(images=>{atlases.push(...images);loaded=true;root.dispatchEvent(new Event('portrait-art-ready'));return API}).catch(e=>{error=e.message;console.warn('Painted portraits unavailable:',e.message);return null});
  root.PortraitArtwork=Object.freeze(API);
 })(globalThis);
