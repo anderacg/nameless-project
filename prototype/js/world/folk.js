@@ -207,7 +207,7 @@ function updateFolk(d){
       const key=t.name+'|'+k,first=!FOLK_SEEN.has(key),most=Math.min(3,lv+1)-lostHands(t,k),want=first?Math.min(most,1+folkHash(key+'|'+G.day)%Math.max(1,most)):most;FOLK_SEEN.add(key);
       for(let have=W.folk.filter(f=>f.home===t.name&&f.k===k).length;have<want&&(first||Math.random()<d*.02);have++){const no=(FOLK_COUNT.get(key)||0)+1;FOLK_COUNT.set(key,no);const at=folkDoor(t,k),leave=DELIVER.from+Math.random()*(DELIVER.to-DELIVER.from);
         W.folk.push(asWorker(folkName({id:key+'|'+no,folk:true,home:t.name,k,job,x:at.x,y:at.y,tx:at.x,ty:at.y,st:'in',leave,done:now>leave?G.day:-1,dir:1,ph:Math.random()*6,fresh:first},t.races[0])))}}}
-  for(const f of W.folk){
+  for(const f of W.folk){if(fightHolds(f))continue;// (stepped aside from a fight on the map: worldbattle.js BattleBystanders)
     const t=townBy(f.home),fresh=f.fresh;f.fresh=false;if(!t){f.gone=true;continue}
     const threat=folkThreat(f.x,f.y,A.folkBandit)||Timed.of(t).has('fear')&&TravelAwareness.sees(asWorker(f));
     // at work inside: out with the day's load at his hour (not while the holding is besieged or afraid); in the field hours, out

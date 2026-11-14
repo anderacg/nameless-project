@@ -34,7 +34,7 @@ Party contact uses both armies' outer radii plus their interaction bands. It ope
 
 ## Fixed battle area
 
-Since 2026-11-14 (doc/OPEN_FIGHTS_DESIGN.md): no circle is drawn (`OPEN_FIGHT.ring`), the area is 1.3 times as wide, the world keeps running through the fight, and the fallen lie on the map with their loot (`world/carcasses.js`). What follows is the area as first built.
+Since 2026-11-14 (doc/OPEN_FIGHTS_DESIGN.md): no circle is drawn (`OPEN_FIGHT.ring`), the area is 2.2 times as wide, the world keeps running through the fight (those near it step aside), and the fallen lie on the map with their loot (`world/carcasses.js`). What follows is the area as first built.
 
 
 The initial circle encloses the two starting parties' formation circles and their actual marching soldiers. Its centre and radius stay fixed. Hero movement and reinforcements cannot move or enlarge it. A small apron outside the boundary allows escape and regrouping. Tracked soldiers enter combat at their actual travel positions; surviving soldiers resume travel where combat leaves them.

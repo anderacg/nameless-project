@@ -45,7 +45,7 @@ function refugeesArrive(r,to){
   if(to.owner==='player')log(r.n+' refugees from '+r.from+' settle in '+to.name+'.','good');
 }
 function updateRefugees(d){
-  for(const r of W.refugees){
+  for(const r of W.refugees){if(fightHolds(r))continue;// (stepped aside from a fight on the map: worldbattle.js BattleBystanders)
     r.cool=Math.max(0,r.cool-d);let to=townBy(r.to);
     if(!to||besieged(to)||to.owner!=='player'&&atWar(to.owner,(townBy(r.from)||{}).owner)){const f=townBy(r.from);to=f&&refuge(f);if(!to){r.gone=true;continue}r.to=to.name}
     // (afraid of you: away while they see you or remember you (engage.js fearSeen), and never on to their refuge through you: safeRefuge)

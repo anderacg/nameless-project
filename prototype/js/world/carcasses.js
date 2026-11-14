@@ -5,7 +5,8 @@
    fight gave in things (its pile: ui/loot.js) lies on them, not in your bag: a beast's meat, hide and trophies on its own kind,
    gear and goods on the men (share). A click on one walks you there; met, the window (the spoils' own: ui/loot.js renderLoot) holds
    all on the fallen within CARCASS.near of it, beside your bag: look each over, take what you want, the rest stays on them (keep).
-   They rot: CARCASS.days with anything on them, bare once picked clean (day), at most CARCASS.most on the map. Saved (their
+   They rot: CARCASS.days with anything on them, bare once picked clean (day), at most CARCASS.most on the map. A band near ones
+   you cannot see picks them over (hour: its plunder, yours if you beat it, as the remains': world/death.js). Saved (their
    picture with them only till the game is closed: their fall as the fight drew it, corpse; after a load a plain one) ---------- */
 class Carcass extends WorldObject{
   static list=[];
@@ -18,13 +19,13 @@ class Carcass extends WorldObject{
   get beast(){return !!(this.wild||this.mon||this.bst)}
   name(){return this.wild?CRITTERS[this.wild]?.n||'Beast':this.mon?MONSTERS[this.mon]?.n||'Beast':ST[this.type]?.n||'Foe'}
   label(){return (this.beast?'A '+this.name().toLowerCase()+'’s carcass':'A fallen '+this.name().toLowerCase())}
-  what(){const n=this.items.reduce((a,s)=>a+s.n,0);return n?n+' thing'+(n>1?'s':'')+' on '+(this.beast?'it':'him'):'picked clean'}
+  what(){const n=this.items.reduce((a,s)=>a+s.n,0);return n?n+' thing'+(n>1?'s':'')+' on '+(this.beast?'it':'him'):'picked clean'+(this.robbed?' by '+this.robbed:'')}
   ago(){const d=Math.floor(G.day+Clock.frac-this.day);return d<1?'fell today':d===1?'fell yesterday':'fell '+d+' days ago'}
   tip(){return '<b>'+htmlText(this.label())+'</b><small>'+htmlText(cap1(this.ago()))+', '+this.what()+'</small>'+(this.empty()?'':'<span class="act">Click: go there and look</span>')}
   // (all with anything on them within CARCASS.near of it: what one click opens)
   near(){return Carcass.list.filter(c=>!c.empty()&&Math.hypot(c.x-this.x,c.y-this.y)<=CARCASS.near)}
   // met: the window of what lies on the fallen here, beside your bag (ui/loot.js), the rest left on this one
-  meet(){const here=this.near();if(!here.length){toast(cap1(this.label())+': picked clean.');return}
+  meet(){const here=this.near();if(!here.length){toast(cap1(this.label())+': '+this.what()+'.');return}
     lootEnd();G.mode='dialog';G.loot={from:lootSnap(),pile:[],capture:false};for(const c of here)for(const s of c.items)lootPile(s.k,s.id,s.n);
     const kinds=[...new Set(here.map(c=>c.name().toLowerCase()))],n=here.length,beasts=here.every(c=>c.beast),self=this;
     G.lootView={head:'<div class="top"><h2>'+(n>1?'The fallen':beasts?'A carcass':'The fallen')+'</h2><span class="muted">'+htmlText(n>1?n+' here: '+kinds.join(', '):cap1(this.name().toLowerCase()))+', '+this.ago()+'</span></div>'+
@@ -51,6 +52,10 @@ class Carcass extends WorldObject{
   // (rotted: CARCASS.days with anything on them, bare once picked clean; the oldest first past CARCASS.most)
   static prune(){const X=CARCASS,now=G.day+Clock.frac;this.list=this.list.filter(c=>now-c.day<(c.empty()?X.bare:X.days));if(this.list.length>X.most)this.list=this.list.slice(-X.most)}
   static day(){this.prune()}
+  // each hour: a band near the fallen you cannot see takes all on them within CARCASS.near of one (its plunder: Remains.beaten)
+  static hour(){const X=CARCASS;
+    for(const c of this.list){if(c.empty()||!Death.unseenAt(c.x,c.y))continue;const b=bandits.find(o=>!o.dead&&!o.gone&&!fightHolds(o)&&Math.hypot(o.x-c.x,o.y-c.y)<X.seek);if(!b||Math.random()>=X.find)continue;
+      const p=b.plunder||(b.plunder={gold:0,items:[],of:[]}),who=robberOf(b);for(const o of c.near()){for(const s of o.items)p.items.push([s.k,s.id,s.n]);o.items=[];o.robbed=who}if(!p.of.includes('the fallen of your fight'))p.of.push('the fallen of your fight')}}
   // drawn where it lies: its fall as the fight drew it (vfx.js drawBody, at the fight's scale), else a plain one; a glint while
   // anything is on it
   draw(ents,cam,V){if(!this.inView(V))return;const c=this;
@@ -64,6 +69,6 @@ class Carcass extends WorldObject{
 }
 const asCarcass=asClass(Carcass);
 onAct('carc-',()=>Carcass.done());
-Systems.add({name:'carcasses',order:{day:235},day:()=>Carcass.day()});
+Systems.add({name:'carcasses',order:{hour:168,day:235},hour:()=>Carcass.hour(),day:()=>Carcass.day()});
 Saves.add({key:'carcasses',order:333,defaults:null,save:()=>Carcass.save(),load:v=>Carcass.load(v)});
 onWorld(()=>{Carcass.list=[]});

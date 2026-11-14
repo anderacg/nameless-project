@@ -20,14 +20,17 @@ const JOIN_RULES={reach:120,every:5,hear:{base:20,per:.5,max:60},band:{small:12,
 const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1,clear:24};
 /* a fight on the map in the open (doc/OPEN_FIGHTS_DESIGN.md; the owner, 2026-11-14: "remove the battle area for hunting ... the
    same world speed", "the same as monsters", every fight on the map): ring: its circle drawn (false: none); reach: its field this
-   much wider than the ring was, an edge past your sight that no one sees (a foe past it has got away, yours stop at it); world: the
+   much wider than the ring was, its edge twice your sight and more past where it began, that no one sees (a foe past it has got
+   away, yours stop at it); lost: s a hunted beast none of yours sees may stay unseen before it has got away; world: the
    world runs on through it (openFightWorld): its clock and every other party, each frame's systems but still's (yours: your march,
    a holding or the road reached, your camp's), the days and hours of held's (your band's: its wages, its wounded, its food) kept
    till the fight is over, then run (Systems.hold). on false: as before (the ring, the world still) */
-const OPEN_FIGHT={on:true,ring:false,reach:1.3,world:true,still:['march','arrival','road','stay','capture','march guides','supply','raids','auto reinforce','travel awareness'],held:['band','wounded','companions','supply']};
+const OPEN_FIGHT={on:true,ring:false,reach:2.2,lost:20,world:true,still:['march','arrival','road','stay','capture','march guides','supply','raids','auto reinforce','travel awareness'],held:['band','wounded','companions','supply']};
 // (in the fight on the map now: you, or a party, a beast or a herd in it or riding to it; the world's own moments leave it be:
 // worldobject.js lodThink, march.js)
 const inMapFight=o=>!!B?.world&&!!o&&(o===P||B.world.participants?.has(o));
+// (held by it: in it, or one it has stepped aside out of its way (BattleBystanders), waiting there till it is over)
+const fightHolds=o=>inMapFight(o)||!!B?.world?.bystanders?.entries.has(o);
 // (the world's moment in a fight on the map (main.js, after the fight's): its clock and the systems but OPEN_FIGHT.still, your
 // band's days and hours held; nothing while the fight is paused, forming up or over)
 function openFightWorld(rt){const O=OPEN_FIGHT;if(!O.on||!O.world||!B?.world||B.paused||B.deploy||B.muster?.active||B.over||G.dead||G.modal)return;
@@ -40,7 +43,8 @@ const SEAMLESS={on:true,kinds:['party','lord','patrol','caravan','monster','fiel
 // the owner, 2026-11-12: "can we use hold to talk or take action instead of remove them completely")
 const Talk={o:null,set(o){this.o=o},of(o){return!!o&&!!this.o&&(this.o===o||this.o===o.src)},clear(){this.o=null}};
 const seamless=e=>!!(SEAMLESS.on&&WORLD_BATTLE.on&&e&&SEAMLESS.kinds.includes(e.kind)&&!Interior.on(e)&&!SiegeWorks.on(e)&&!Talk.of(e.ref));
-// Only local avoidance runs while campaign time is paused. Existing work/travel orders stay on their owners.
+// Those near a fight on the map step aside out of its way and wait there till it is over (their own moments held: fightHolds), the
+// world running on or not. Existing work/travel orders stay on their owners.
 class BattleBystanders{
   constructor(area){this.area=area;this.time=0;this.next=0;this.entries=new Map();this.navs=new Map()}
   eligible(o){

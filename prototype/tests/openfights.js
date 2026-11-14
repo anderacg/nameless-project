@@ -31,5 +31,11 @@ Kit.suite(({ok,info})=>{
   S.release();ok(!S.hold&&!S.waiting.length,'the fight over, your band\'s day is run')}
  {const other=t.asParty({kind:'bandits',troops:['militia'],x:P.x-60,y:P.y,cool:0}),e=G.enc;ok(t.startEncounter({kind:'party',ref:other,n:1})===false&&G.enc===e&&G.mode==='battle','no encounter opens while the fight goes on')}
  {const was=O.world;O.world=false;const c1=G.day+t.Clock.frac;for(let i=0;i<20;i++)t.openFightWorld(.05);ok(G.day+t.Clock.frac===c1,'world off: the world waits through the fight, as before');O.world=was}
+ // (one near the fight, not in it: steps aside out of its way, its own moment held till the fight is over)
+ {const cv=W.caravans.find(c=>!c.gone);if(!cv){ok(false,'a caravan to stand by');return}
+  const d0=a.r+4;cv.x=a.x+d0;cv.y=a.y;for(let i=0;i<60&&t.B===b;i++)t.updateBattle(.05);
+  const held=a.bystanders?.entries.has(cv),d=Math.hypot(cv.x-a.x,cv.y-a.y),p=[cv.x,cv.y];for(let i=0;i<60;i++)t.openFightWorld(.05);
+  ok(held&&t.fightHolds(cv)&&!a.participants.has(cv)&&d>d0,'a caravan by the fight steps aside out of its way ('+Math.round(d0)+' → '+Math.round(d)+' px from its middle)');
+  ok(cv.x===p[0]&&cv.y===p[1],'and waits there: the world running on leaves it be till the fight is over')}
  t.Systems.hold=null;t.Systems.waiting.length=0;
 });

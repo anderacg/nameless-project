@@ -8,6 +8,9 @@ Kit.suite(({ok,info})=>{
  t.WorldArt.invalidate();P.troops={hum_foot:6,hum_bow:4};
  const enemy=t.asParty({kind:'bandits',troops:['militia','militia','militia','archer'],x:P.x+70,y:P.y,cool:0,n:4});t.bandits.push(enemy);
  const helper=W.lords.find(l=>l.fac==='vale');helper.dead=false;helper.inside=null;helper.fight=null;helper.x=P.x-150;helper.y=P.y+15;helper.troops=['hum_foot','hum_bow'];// (beyond the battle circle, sized by sight since 25dd918)
+ // (the field as wide as the ring was: an ally on this ground walking in from past the edge of the open field, OPEN_FIGHT.reach,
+ // meets ground it cannot cross; its open field: tests/openfights.js)
+ const reach=t.OPEN_FIGHT.reach;t.OPEN_FIGHT.reach=1;
  G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[helper],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false,deploy:true});const b=t.B,a=b.world;
  const pending=b.units.filter(u=>u.waiting),start=b.units.length;ok(pending.length===3&&pending.every(u=>u.hp===0&&u.left),'an ally named in the encounter waits at its real approach position, including its lord');
  for(let i=0;i<4000&&b.muster?.active;i++)t.updateBattle(.05);t.beginFight();
@@ -21,5 +24,5 @@ Kit.suite(({ok,info})=>{
  ok(pending.every(u=>!u.waiting)&&b.units.length===start,'a waiting army activates its original troops and character without spawning duplicates');
  ok(t.B===null&&G.mode==='dialog'&&Kit.text().includes('Victory'),'the world battle reaches campaign victory and its normal report');
  ok(!t.bandits.includes(enemy)&&P.troopCount()<=10&&P.troopCount()>0,'campaign settlement removes the defeated party and retains surviving player troops');
- info('World battle completed after '+frames+' normal frames; '+b.kills+' enemies slain.');
+ info('World battle completed after '+frames+' normal frames; '+b.kills+' enemies slain.');t.OPEN_FIGHT.reach=reach;
 });
