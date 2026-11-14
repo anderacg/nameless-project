@@ -12,7 +12,9 @@
   let raw=atlases[sheet].getImageData(x,y,w,h).data;
   if(side!==null){let l=w,t=h,r=-1,b=-1;for(let Y=0;Y<h;Y++)for(let X=0;X<w;X++)if(raw[(Y*w+X)*4+3]>=128){l=Math.min(l,X);r=Math.max(r,X);t=Math.min(t,Y);b=Math.max(b,Y);}if(r>=0){x+=l;y+=t;w=r-l+1;h=b-t+1;raw=atlases[sheet].getImageData(x,y,w,h).data;}}
   const d=new Uint8ClampedArray(raw),alpha=new Uint8Array(w*h),seen=new Uint8Array(w*h),queue=new Uint32Array(w*h);let end=0;
-  for(let i=0;i<alpha.length;i++){const k=i*4,lum=(d[k]+d[k+1]+d[k+2])/3;alpha[i]=d[k+3]>=128?255:0;if(alpha[i]&&(!metal||lum>=50)){seen[i]=1;queue[end++]=i;}}
+  for(let i=0;i<alpha.length;i++)alpha[i]=d[i*4+3]>=128?255:0;
+  if(A.headwear)for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!alpha[i])continue;let linked=false;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if((dx||dy)&&x+dx>=0&&x+dx<w&&y+dy>=0&&y+dy<h&&alpha[(y+dy)*w+x+dx])linked=true;if(!linked)alpha[i]=0;}
+  for(let i=0;i<alpha.length;i++){const k=i*4,lum=(d[k]+d[k+1]+d[k+2])/3;if(alpha[i]&&(!metal||lum>=50)){seen[i]=1;queue[end++]=i;}}
   for(let at=0;at<end;at++){const i=queue[at],X=i%w,Y=Math.floor(i/w);for(const j of [X?i-1:-1,X<w-1?i+1:-1,Y?i-w:-1,Y<h-1?i+w:-1])if(j>=0&&!seen[j]){for(let k=0;k<3;k++)d[j*4+k]=d[i*4+k];seen[j]=1;queue[end++]=j;}}
   const top=new Uint16Array(w).fill(h);for(let Y=0;Y<h;Y++)for(let X=0;X<w;X++)if(alpha[Y*w+X])top[X]=Math.min(top[X],Y);
   const out={w,h,d,alpha,top};fields.set(key,out);return out;
@@ -27,7 +29,6 @@
   if(id==='mouth')return [0,c.race==='orc'?23:c.race==='dwarf'?24:/full|cupid|pout|bow/.test(c.mouth)||c.profile==='female'?22:21];
   if(id==='beard'){if(['none','stubble','close-beard','chin-bristle'].includes(c.beard))return null;return [1,/moustache|walrus/.test(c.beard)?8:/goatee/.test(c.beard)?9:c.race==='dwarf'||/fork|braid/.test(c.beard)?7:6];}
   if(id.startsWith('hair'))return [1,c.hair==='war-crest'?4:/ponytail|bun|topknot/.test(c.hair)?24:/braid/.test(c.hair)?5:/long|shoulder|loose|half-up/.test(c.hair)?id==='hairBack'?2:3:/wave|swept|curtain|shag|curl/.test(c.hair)?1:0];
-  if(id.startsWith('headwear'))return [1,c.headwear==='coif'?11:/hood|cap|veil|wrap|turban|hat|beret/.test(c.headwear)?16:/horn|dwarf|forge/.test(c.headwear)?18:/closed|great|bascinet|sallet|mask|visor/.test(c.headwear)?19:17];
   if(id==='armor'||id==='clothing'){if(id==='clothing'&&(E.soldierEquipment.armor.includes(c.clothing)||['scale','lamellar','plate','brigandine'].includes(c.clothing))&&[12,13,15].includes(bodyPart(c)))return [1,c.clothing==='brigandine'||c.clothing==='orc-lamellar'?21:10];if(c.clothing==='coat-of-plates')return [1,id==='clothing'?10:11];if(id==='armor'&&['surcoat','leather-mail'].includes(c.clothing))return [1,11];let n=bodyPart(c);if(id==='armor'&&[10,14,20,21,22].includes(n))n=12;return [1,n];}return null;
  }
  function baseFor(sheet,index,id){if(id==='hairFront'||id==='hairBack'||id==='beard'||id==='brows')return BASE.hair;if(id==='mouth')return index===23?BASE.orc:BASE.lips;if(sheet===0||id==='torso')return sheet===0&&[3,7,19].includes(index)?BASE.orc:BASE.skin;return index===10?BASE.cloth:[14,16,21].includes(index)?BASE.leather:index===22?BASE.fur:BASE.metal;}
@@ -82,6 +83,18 @@
  function helmetShade(light,x,y){
   x=Math.max(0,Math.min(N-1,x-.5));y=Math.max(0,Math.min(N-1,y-.5));const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,right=Math.min(N-1,ix+1),bottom=Math.min(N-1,iy+1);return (light[iy*N+ix]*(1-fx)+light[iy*N+right]*fx)*(1-fy)+(light[bottom*N+ix]*(1-fx)+light[bottom*N+right]*fx)*fy;
  }
+ // Each cloth hat and crown has its own authored picture, uniformly fitted to the brow.
+ const HEADWEAR=new Map(root.PAINTED_PORTRAIT_ASSETS.flatMap((a,sheet)=>(a.headwear||[]).map((id,index)=>[id,{sheet,index}])));
+ const HEADWEAR_FIT={hood:[4.1,.39,.835],'wrapped-hood':[3.6,.26,.748],veil:[3.6,.18],'draped-veil':[3.6,.28],'pearl-hood':[3.9,.23,.78],'linen-wrap':[3.4,.42],'arming-cap':[2.35,.55],chaperon:[2.9,.42],turban:[2.4,.8],'straw-hat':[3.1,.95],'feathered-cap':[2.5,.94]};
+ function paintedHeadwear(p,colors,size,id){
+  const out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,h=HEADWEAR.get(p.config.headwear);if(!h)return out;
+  const f=frame(h.sheet,h.index),A=p.anchors,[width,brow,opening]=HEADWEAR_FIT[p.config.headwear]||[2.35,.96],fit=Math.max(A.w*width/f.w,opening?(A.mouth.y-A.eyes[0].y+19)/(f.h*(opening-brow)):0),top=Math.max(1,A.eyes[0].y-14-f.h*brow*fit),left=A.cx-f.w*fit/2,scale=size/N,target=hex(colors.headwear),base=hex(E.colors.headwear);
+  for(let Y=Math.max(0,Math.floor(top*scale));Y<Math.min(size,Math.ceil((top+f.h*fit)*scale));Y++)for(let X=Math.max(0,Math.floor(left*scale));X<Math.min(size,Math.ceil((left+f.w*fit)*scale));X++){
+   const x=(X+.5)/scale,y=(Y+.5)/scale;if((id==='headwearBack')!==(y>=94))continue;
+   const u=(x-left)/(f.w*fit),v=(y-top)/(f.h*fit);if(u<0||u>=1||v<0||v>=1)continue;const s=sample(f,u,v);if(s.alpha)put(d,(Y*size+X)*4,recolor(s.rgb,target,base),255);
+  }
+  g.putImageData(im,0,0);return out;
+ }
  function paintedHelmet(p,colors,size,id){
   const out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,scale=size/N,A=p.anchors,c=p.config,mask=p.layers[id].getContext('2d').getImageData(0,0,N,N).data,steel=frame(1,19),plate=frame(1,12),horn=frame(1,18),mail=frame(1,11),target=hex(colors.headwear),base=hex(E.colors.headwear),b=bounds(mask);if(!b)return out;const lighting=helmetLight(p.layers[id],mask);
   const chain=c.headwear==='coif'||id==='headwearBack'&&/bascinet|dwarf|great-helm/.test(c.headwear),closed=E.faceCoveringHelmets.includes(c.headwear);
@@ -115,7 +128,7 @@
   const s=sample(leather,su,.28+v*.55),rgb=s.rgb.map(n=>clamp(n+(tone-112)*.45));return recolor(rgb,hex(colors.cloth),BASE.leather);
  }
  function paintMask(p,spec,colors,size){
-  const id=spec.id;if(id==='face')return paintedHead(p,colors,size);if(id.startsWith('headwear')&&isHelmet(p.config))return paintedHelmet(p,colors,size,id);const src=part(id,p.config),out=canvas(size),g=out.getContext('2d');g.imageSmoothingEnabled=false;
+  const id=spec.id;if(id==='face')return paintedHead(p,colors,size);if(id.startsWith('headwear'))return isHelmet(p.config)?paintedHelmet(p,colors,size,id):paintedHeadwear(p,colors,size,id);const src=part(id,p.config),out=canvas(size),g=out.getContext('2d');g.imageSmoothingEnabled=false;
   if(!src){g.drawImage(spec.channel?E.tint(p.layers[id],colors[spec.channel]):p.layers[id],0,0,size,size);return out;}
   const a=p.layers[id].getContext('2d').getImageData(0,0,N,N).data,im=g.createImageData(size,size),d=im.data,pair=id==='ears'||id==='brows',scale=size/N,target=hex(colors[spec.channel]),base=baseFor(...src,id),contrast=0;
   const bodyTops=new Uint16Array(N).fill(N);if(id==='torso')for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(a[(y*N+x)*4+3])bodyTops[x]=Math.min(bodyTops[x],y);
@@ -215,7 +228,8 @@
   fitEars(p,layers,size);clipNeck(p,layers,size);noseRoot(layers,size);feature(p,colors,size,'eyes',layers);feature(p,colors,size,'mouth',layers);skinDetails(p,layers,size);
   if(['small-tusks','heavy-tusks'].includes(p.config.mouth))layers.teeth=tusks(p,size);
   for(const id of ['nose','eyes','iris','eyelids','mouth','teeth',...(['stubble','close-beard','chin-bristle'].includes(p.config.beard)?['beard']:[])]){const g=layers[id].getContext('2d');g.save();g.globalCompositeOperation='destination-in';g.drawImage(layers.face,0,0);g.restore();}
-  return {config:p.config,anchors:p.anchors,colors,layers,size,coordinateScale:size/N,template:p,headMaster:{file:root.PAINTED_PORTRAIT_ASSETS[headSpec(p.config).sheet].file,frame:headSpec(p.config).index,profile:headSpec(p.config).profile},style:'painted-parts'};
+  const gear=HEADWEAR.get(p.config.headwear);
+  return {config:p.config,anchors:p.anchors,colors,layers,size,coordinateScale:size/N,template:p,headMaster:{file:root.PAINTED_PORTRAIT_ASSETS[headSpec(p.config).sheet].file,frame:headSpec(p.config).index,profile:headSpec(p.config).profile},headwearMaster:gear?{file:root.PAINTED_PORTRAIT_ASSETS[gear.sheet].file,frame:gear.index}:null,style:'painted-parts'};
  }
  const fittedLayers=new WeakMap();
  function exportLayers(p){
@@ -229,7 +243,7 @@
   if(rule.face==='covered'&&(!visible||visible.headwearFront!==false)){const c=canvas(p.size),q=c.getContext('2d');q.drawImage(template.layers.eyes,0,0,p.size,p.size);q.globalCompositeOperation='source-in';q.fillStyle='rgba(5,6,9,.78)';q.fillRect(0,0,p.size,p.size);q.globalCompositeOperation='destination-out';q.drawImage(p.layers.headwearFront,0,0);g.drawImage(c,0,0);}
   return out;
  }
- const API={version:2,partCount:53,headCount:8,order:DRAW_ORDER,get loaded(){return loaded},get error(){return error},fromTemplate,exportLayers,build:(input,options)=>fromTemplate(E.build(input),options),composite,render:(input,options={})=>composite(fromTemplate(E.build(input),options),options)};
+ const API={version:2,partCount:74,headCount:8,order:DRAW_ORDER,get loaded(){return loaded},get error(){return error},fromTemplate,exportLayers,build:(input,options)=>fromTemplate(E.build(input),options),composite,render:(input,options={})=>composite(fromTemplate(E.build(input),options),options)};
  API.ready=Promise.all(root.PAINTED_PORTRAIT_ASSETS.map(async A=>{const im=new Image();im.src=A.src;await im.decode();const c=canvas(im.width),g=c.getContext('2d',{willReadFrequently:true});c.height=im.height;g.drawImage(im,0,0);return g;})).then(images=>{atlases.push(...images);loaded=true;root.dispatchEvent(new Event('portrait-art-ready'));return API}).catch(e=>{error=e.message;console.warn('Painted portraits unavailable:',e.message);return null});
  root.PortraitArtwork=Object.freeze(API);
 })(globalThis);
