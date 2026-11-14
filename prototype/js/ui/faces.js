@@ -141,7 +141,7 @@ class Faces{
     const tint=([k,n])=>'<label class="fm-tint"><input type="color" data-fm-tint="'+k+'" value="'+(rec.colors[k]||E.colors[k])+'"><span>'+n+'</span></label>';
     const adj=([k,A])=>'<label class="fm-row"><span>'+A.name+'</span><input type="range" data-fm-adj="'+k+'" min="'+A.min+'" max="'+A.max+'" step="1" value="'+(c.adjustments?.[k]||0)+'"><b>'+(c.adjustments?.[k]||0)+'</b></label>';
     const pre=(E.presets||[]).map((p,i)=>[p,i]).filter(([p])=>this.raceOf(p.config?.race)===r);
-    return '<div class="face-maker"><div class="fm-side"><img class="fm-pic" src="'+this.url(rec,true)+'" alt="Your face"><button class="btn sm" type="button" data-act="fm-random">Random face</button>'+
+    return '<div class="face-maker"><div class="fm-side"><img class="fm-portrait" src="'+this.url(rec,true)+'" alt="Your face"><button class="btn sm" type="button" data-act="fm-random">Random face</button>'+
       (pre.length?'<select data-fm-preset aria-label="Preset"><option value="">Preset…</option>'+pre.map(([p,i])=>'<option value="'+i+'">'+htmlText(p.name)+'</option>').join('')+'</select>':'')+'</div>'+
       '<div class="fm-main"><div class="fm-rows">'+FACE_PARTS.map(part).join('')+'</div><div class="fm-tints">'+FACE_TINTS.map(tint).join('')+'</div><div class="fm-rows fm-adj">'+Object.entries(E.adjustments).map(adj).join('')+'</div></div></div>'}
   static partName(v){return (typeof PortraitEngine!=='undefined'&&PortraitEngine.partLabels?.[v])||String(v).replace(/-/g,' ').replace(/^./,s=>s.toUpperCase())}
@@ -153,7 +153,7 @@ class Faces{
   static preset(i){const D=this.draft,p=PortraitEngine.presets?.[+i];if(!D||!p)return;D.rec=PortraitCharacters.recipe({config:PortraitEngine.startRace(this.raceOf(D.race),PortraitEngine.normalize(p.config)),colors:D.rec.colors})}
   static reroll(){const D=this.draft;if(D)D.rec=this.random(Math.random()*4294967296,D.race,D.g,true)}
   // (the portrait shown again as a picker or a slider moves, the page kept as it is)
-  static refresh(){const img=panel.querySelector('.fm-pic');if(img&&this.draft)img.src=this.url(this.draft.rec,true)}
+  static refresh(){const img=panel.querySelector('.fm-portrait');if(img&&this.draft)img.src=this.url(this.draft.rec,true)}
   // ---- the world's roster: made as the game starts (your face the page's, else one drawn by your race and gender), or loaded
   // (from the world's seed alone (Rng.worldOf): made before the game's number is drawn, from the last game's it made a second new
   // game's faces unlike a fresh page's, worldsave)

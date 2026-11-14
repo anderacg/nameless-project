@@ -534,7 +534,7 @@ body:has(.overlay:not([hidden])) .discover{visibility:hidden}
 .fm-side{display:grid;gap:6px;flex:0 0 130px;width:130px;min-width:0}
 .fm-side>*{width:100%;min-width:0;box-sizing:border-box}
 .fm-side select{min-height:var(--tap);font:inherit;font-size:var(--fs-sm);color:var(--fg);background:var(--shade);border:1px solid var(--line-2);border-radius:4px}
-.fm-pic{width:128px;height:128px;image-rendering:pixelated;background:var(--shade);border:1px solid var(--line-2);border-radius:4px}
+.fm-portrait{display:block;width:128px;height:128px;image-rendering:pixelated;background:var(--shade);border:1px solid var(--line-2);border-radius:4px}
 .fm-main{display:grid;gap:8px;flex:1 1 0;min-width:0}
 .fm-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:3px 12px}
 .fm-row{display:grid;grid-template-columns:82px 1fr auto;align-items:center;gap:6px;font-size:var(--fs-sm);color:var(--muted)}
@@ -544,7 +544,7 @@ body:has(.overlay:not([hidden])) .discover{visibility:hidden}
 .fm-tints{display:flex;flex-wrap:wrap;gap:4px 12px}
 .fm-tint{display:flex;align-items:center;gap:5px;font-size:var(--fs-sm);color:var(--muted)}
 .fm-tint input{width:34px;height:28px;padding:0;border:1px solid var(--line-2);border-radius:4px;background:var(--shade);cursor:pointer}
-@media (max-height:430px){.fm-side{flex-basis:100px;width:100px}.fm-pic{width:100px;height:100px}}
+@media (max-height:430px){.fm-side{flex-basis:100px;width:100px}.fm-portrait{width:100px;height:100px}}
 .nm-win{display:grid;gap:10px}.nm-win .nm-fields{grid-template-columns:minmax(0,1fr);max-width:520px;margin:0}
 /* the Hero window's own bars (character.js): your hero's health, stamina (the band's) and mana */
 .hvit{display:grid;gap:3px;margin-bottom:4px;max-width:420px}

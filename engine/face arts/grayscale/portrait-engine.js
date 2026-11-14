@@ -1766,10 +1766,15 @@
     const next=normalize({...current,...(PROFILE_FEATURES[selected]||{}),profile:selected});
     return selected!=='custom'&&next.race!=='human'?startRace(next.race,next):next;
   }
+  // Coherent generated combinations; every part remains available to manual recipes.
+  const PROFILE_CHOICES=Object.freeze({
+    male:{eyes:['calm','keen','focused','human-steady','clear','almond','deep-set','dwarf-deep','dwarf-squint','elf-slanted'],brows:['bold','natural','flat','sculpted','dwarf-bushy','dwarf-straight'],nose:['straight','broad','aquiline','roman','defined-tip','dwarf-bulb','dwarf-broad-bridge','orc-flat','orc-broad'],mouth:['neutral','stern','thin','gentle-smile','reserved-smile','slight-smile','broad-smile','downturned','small-tusks','heavy-tusks']},
+    female:{eyes:['calm','almond','clear','soft-lidded','natural-wide','deep-almond','elf-slanted','dwarf-deep'],brows:['natural','soft','sculpted','full-soft','low-arch','dwarf-straight'],nose:['straight','slender','soft-tip','defined-tip','rounded','dwarf-bulb','orc-flat','orc-broad'],mouth:['neutral','full','gentle-smile','cupid','reserved-smile','soft-full','relaxed-bow','small-tusks','heavy-tusks']}
+  });
   function random(seed,profile='custom',race='human') {
     const selected=PROFILES.includes(profile)?profile:'custom',kind=OPTIONS.race.includes(race)?race:'human',R=rng(seed),c={seed:seed>>>0,profile:selected,race:kind};
     const pick=values=>values[Math.floor(R()*values.length)];
-    for(const key of Object.keys(RACE_PARTS[kind]))c[key]=key==='hair'?randomHair(R,kind,selected):pick(partsFor(kind,key));
+    for(const key of Object.keys(RACE_PARTS[kind])){const allowed=partsFor(kind,key),preferred=((PROFILE_CHOICES[selected]||PROFILE_CHOICES.male)[key]||[]).filter(v=>allowed.includes(v));if(key==='hair')c[key]=randomHair(R,kind,selected);else if(key==='mouth'&&preferred.length)c[key]=pick(preferred);else{let n=R()*allowed.reduce((sum,v)=>sum+(preferred.includes(v)?4:1),0);c[key]=allowed.find(v=>(n-=preferred.includes(v)?4:1)<0)||allowed[allowed.length-1];}}
     if(selected==='female'){c.beard='none';c.hair=randomHair(R,kind,selected);}
     if(kind==='dwarf'&&selected!=='female'&&R()<.9)c.beard=pick(['full','forked','braided','bound-beard','rounded','dwarf-fan','dwarf-twin-braids']);
     if(kind==='orc'){if(R()<.7)c.mouth=pick(['small-tusks','heavy-tusks']);if(R()<.7)c.beard='none';}
