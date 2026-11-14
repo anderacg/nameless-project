@@ -30,7 +30,8 @@ try{
  // ---- the wilds: most in a clearing among woods and hills, or deep in the swamp or the desert; raiders by the climate
  {const wild=hid.filter(s=>t.wildGround(s.tx,s.ty)),cl=s=>t.climAt(s.x,s.y),deep=wild.filter(s=>['swamp','desert'].includes(cl(s))).length;
   ok(wild.length>=hid.length*.6,wild.length+' of '+hid.length+' on wild ground ('+deep+' of them in the swamp or the desert)');
-  ok(hid.every(s=>s.band===(cl(s)==='desert'?'raiders':cl(s)==='swamp'?'bog':'bandits')&&s.name===t.HIDEOUT_NAMES[s.band]),'their raiders by the climate: '+['bandits','raiders','bog'].map(b=>hid.filter(s=>s.band===b).length+' '+b).join(', '))}
+  // (a lair (HIDEOUT_LAIR.share of them, 2026-11-06) its own name: Bandit lair, Raider tunnels, Bog raider warren)
+  ok(hid.every(s=>s.band===(cl(s)==='desert'?'raiders':cl(s)==='swamp'?'bog':'bandits')&&s.name===(s.tunnel?t.HIDEOUT_LAIR.names:t.HIDEOUT_NAMES)[s.band]),'their raiders by the climate: '+['bandits','raiders','bog'].map(b=>hid.filter(s=>s.band===b).length+' '+b).join(', '))}
  // ---- spacing (SITE_GAP): from another hideout, the bandit camps and the travellers
  {const G2=t.SITE_GAP.hideout,near=(a,L)=>Math.min(Infinity,...L.filter(b=>b!==a).map(b=>Math.hypot(a.tx-b.tx,a.ty-b.ty))),d=k=>Math.min(...hid.map(a=>near(a,of(k))));
   ok(G2.hideout===20&&d('hideout')>=G2.hideout&&d('camp')>=G2.camp&&d('travelers')>=G2.travelers,'apart: '+d('hideout').toFixed(1)+' tiles from another hideout at the least ('+G2.hideout+'), '+d('camp').toFixed(1)+' from a bandit camp ('+G2.camp+'), '+d('travelers').toFixed(1)+' from the travellers ('+G2.travelers+')')}

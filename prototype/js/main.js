@@ -25,7 +25,9 @@ function loop(now){
   // cards, details and top bar every other one (setOrderUI redraws the abilities too: battlehud.js bhudTop))
   // (one HUD that throws never stops the game: the loop goes on, the error still raised a moment later for the tests and the console;
   // the owner, 2026-11-01: a skill bar written over froze the game mid-battle)
-  G.hudT+=dt;if(G.hudT>.25&&WM){G.hudT=0;try{updateHUD();if(G.mode==='battle'){updateSkillBar();if(B&&(hudCards=!hudCards))setOrderUI();else bhudAbilities()}}catch(e){setTimeout(()=>{throw e})}}
+  // (none while loading, between its slices: the world half made, a HUD's look made the map's art plan from it and kept it (supply.js
+  // waterEdge: WorldArt.ensure), a new game in steps painted otherwise than at once; loading.js runSteps refreshes it at its end)
+  G.hudT+=dt;if(G.hudT>.25&&WM&&G.mode!=='loading'){G.hudT=0;try{updateHUD();if(G.mode==='battle'){updateSkillBar();if(B&&(hudCards=!hudCards))setOrderUI();else bhudAbilities()}}catch(e){setTimeout(()=>{throw e})}}
   audioWatch();// (the music follows the scene; a town, a meeting, a new day, a battle's start are heard: music.js)
   // (the main menu draws its own scene, never the world: ui/mainmenu.js; anything else, the game's frame)
   const t1=FRAMEPROF.on?performance.now():0;try{MainMenu.frame(now);if(G.mode!=='title')frame()}catch(e){loopError(e);ctx.setTransform(1,0,0,1,0,0)}if(FRAMEPROF.on)FrameProf.frame(t1-t0,performance.now()-t1);requestAnimationFrame(loop);

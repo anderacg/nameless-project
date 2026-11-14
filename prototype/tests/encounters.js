@@ -480,7 +480,7 @@ try{
    cleanBag();goHome();R().on=[];const mu=t.roadSpawn('messenger',P.x+20,P.y);t.roadMeet(mu);pickA(1);stub(.999,()=>sure());const s2=P.inv.find(x=>x&&x.k==='letter');ok(s2&&s2.L.seen===0&&/Nobody saw you/.test(panel()),'unseen: “nobody saw you”');world();cleanBag()}
   // its page from the bag: its verbs (Back to the bag, the way out to the map)
   const put=L=>{cleanBag();P.inv[3]={k:'letter',id:L.id,n:1,L};return P.inv[3]};
-  {world();const L=mk('army');put(L);t.openInv();t.act('inv-sel','3');ok(/Sealed letter/.test(panel())&&q('[data-act="ltr-open"]')&&q('.invgrid canvas'),'in the bag: a sealed letter (its icon), and Look it over');
+  {world();const L=mk('army');put(L);t.openInv();t.act('inv-sel','3');ok(/Sealed letter/.test(panel())&&q('[data-act="ltr-open"]')&&q('.invgrid canvas, .invgrid svg.item-illustration'),'in the bag: a sealed letter (its icon, or its illustration: ui/icons.js itemIllustration), and Look it over');
    t.act('ltr-open',L.id);ok(G.mode==='letter'&&q('#panel.paged')&&q('.rwin h2').textContent==='Sealed letter'&&acts().join('|')==='Break the seal|Sell it to a rival|Deliver it|Burn it'&&q('.nav [data-nav="back"]').textContent==='Back to the bag'&&q('.nav [data-nav="close"]').textContent==='Back to map','its page: Break the seal, Sell it to a rival, Deliver it, Burn it; Back to the bag, Back to map');
    ok(qa('.rkact')[1].disabled&&qa('.rkact')[2].disabled&&/Only in a holding of a realm at war with/.test(panel())&&new RegExp('Only at '+L.to).test(panel())&&!/ltr-text/.test(panel()),'on the map: no selling, no delivering, and why; its words unread');
    const n0=G.msgs.length;t.act('ltr-do','0');const at=t.townBy(L.tgt);
