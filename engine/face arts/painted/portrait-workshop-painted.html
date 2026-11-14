@@ -1831,16 +1831,17 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
   for(let Y=Math.floor(21*scale);Y<Math.min(size,103*scale);Y++)for(let X=0;X<size;X++){const u=.5+((X+.5)/scale-64)/width,v=((Y+.5)/scale-21)/height;if(u<0||u>=1||v<0||v>=1)continue;const s=sample(f,u,v);if(s.alpha)put(im.data,(Y*size+X)*4,recolor(s.rgb,target,h.skinBase),255);}
   g.putImageData(im,0,0);return out;
  }
+ // Elf necks taper gradually below the jaw; keep clavicle shading down by the collar.
  function paintedHead(p,colors,size){
   if(p.config.race==='human'&&p.config.profile!=='female')return referenceHead(headSpec(p.config),colors,size);
-  const c=p.config,h=headSpec(c),f=frame(h.sheet,h.index),A=p.anchors,key=c.race+'/'+h.profile;let B=headRigs.get(key);if(!B){B=E.geometry({...E.startRace(c.race,E.startProfile(h.profile)),profile:h.profile,face:h.referenceFace,adjustments:{}});headRigs.set(key,B);}
-  const out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,scale=size/N,top=Math.min(...A.outline.map(q=>q[1])),refTop=Math.min(...B.outline.map(q=>q[1])),eye=A.eyes[0].y,refEye=B.eyes[0].y,target=hex(colors.skin),contrast=(A.definition-B.definition)*.07-(A.softness-B.softness)*.025,neck=Math.max(.85,Math.min(1.15,(A.jaw/A.w)/(B.jaw/B.w))),half=(103-refTop)*f.w/f.h/2*A.w/B.w;
-  const collarRow=Math.max(0,Math.min(f.h-1,Math.floor((h.chin+(94-A.chinY)/(103-A.chinY)*(1-h.chin))*f.h)));let collarSpan=0;for(let x=0;x<f.w;x++)if(f.alpha[collarRow*f.w+x])collarSpan++;const collarFit=Math.min(1,32/Math.max(1,half*2*neck*collarSpan/f.w));
+  const c=p.config,h=headSpec(c),f=frame(h.sheet,h.index),A=p.anchors,key=c.race+'/'+h.profile,elf=c.race==='elf',chin=h.chin;let B=headRigs.get(key);if(!B){B=E.geometry({...E.startRace(c.race,E.startProfile(h.profile)),profile:h.profile,face:h.referenceFace,adjustments:{}});headRigs.set(key,B);}
+  const out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,scale=size/N,top=Math.min(...A.outline.map(q=>q[1])),refTop=Math.min(...B.outline.map(q=>q[1])),eye=A.eyes[0].y,refEye=B.eyes[0].y,target=hex(colors.skin),contrast=(A.definition-B.definition)*.07-(A.softness-B.softness)*.025,neck=Math.max(.85,Math.min(1.15,(A.jaw/A.w)/(B.jaw/B.w)))*(elf?.8:1),half=(103-refTop)*f.w/f.h/2*A.w/B.w;
+  const collarT=(94-A.chinY)/(103-A.chinY),collarRow=Math.max(0,Math.min(f.h-1,Math.floor((chin+(elf?collarT*collarT:collarT)*(1-chin))*f.h)));let collarSpan=0;for(let x=0;x<f.w;x++)if(f.alpha[collarRow*f.w+x])collarSpan++;const collarFit=Math.min(1,32/Math.max(1,half*2*neck*collarSpan/f.w));
   for(let Y=Math.max(0,Math.floor(top*scale));Y<Math.min(size,103*scale);Y++){
    const y=(Y+.5)/scale;let v,refY,warp=1;
    if(y<eye){v=(y-top)/(eye-top)*h.eye;refY=refTop+(y-top)/(eye-top)*(refEye-refTop);}
-   else if(y<A.chinY){const t=(y-eye)/(A.chinY-eye);v=h.eye+t*(h.chin-h.eye);refY=refEye+t*(B.chinY-refEye);const bw=headWidth(B,refY)/B.w,aw=headWidth(A,y)/A.w,ratio=bw>.05?Math.max(.65,Math.min(1.4,aw/bw)):1,fade=Math.min(1,(y-eye)/4,(A.chinY-y)/4);warp=1+(ratio-1)*Math.max(0,fade);const join=Math.max(0,Math.min(1,(y-(A.chinY-4))/4));warp=warp*(1-join)+neck*join;}
-   else{v=h.chin+(y-A.chinY)/(103-A.chinY)*(1-h.chin);warp=neck;}
+   else if(y<A.chinY){const t=(y-eye)/(A.chinY-eye);v=h.eye+t*(chin-h.eye);refY=refEye+t*(B.chinY-refEye);const bw=headWidth(B,refY)/B.w,aw=headWidth(A,y)/A.w,ratio=bw>.05?Math.max(.65,Math.min(1.4,aw/bw)):1,fade=Math.min(1,(y-eye)/4,(A.chinY-y)/4);warp=1+(ratio-1)*Math.max(0,fade);const blend=elf?8:4,tJoin=Math.max(0,Math.min(1,(y-(A.chinY-blend))/blend)),join=elf?tJoin*tJoin*(3-2*tJoin):tJoin;warp=warp*(1-join)+neck*join;}
+   else{const t=(y-A.chinY)/(103-A.chinY);v=chin+(elf?t*t:t)*(1-chin);warp=neck;}
    if(y>A.chinY)warp*=1-(1-collarFit)*Math.min(1,(y-A.chinY)/Math.max(1,94-A.chinY));
    if(v<0||v>=1)continue;
    for(let X=0;X<size;X++){const x=(X+.5)/scale,u=.5+(x-A.cx)/(half*2*warp);if(u<0||u>=1)continue;const s=sample(f,u,v);if(s.alpha)put(d,(Y*size+X)*4,recolor(s.rgb,target,h.skinBase,contrast),255);}
@@ -1920,10 +1921,13 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
   }layers.ears=out;
  }
  // The original painted face edge is authoritative; clip the neck beneath it without reshaping it.
- function clipNeck(layers,size){
-  const face=layers.face.getContext('2d').getImageData(0,0,size,size).data,g=layers.torso.getContext('2d'),im=g.getImageData(0,0,size,size),bottom=Math.ceil(94*size/N);
-  for(let y=0;y<bottom;y++)for(let x=0;x<size;x++){const k=(y*size+x)*4;if(!face[k+3])im.data[k+3]=0;}g.putImageData(im,0,0);
+ let neckOpening=null;
+ function clipNeck(p,layers,size){
+  const elf=p.config.race==='elf',scale=size/N;if(elf&&!neckOpening){const body=E.build({...E.defaults,race:'human',face:'angular',clothing:'gambeson',headwear:'none'}).layers.clothing.getContext('2d').getImageData(0,0,N,N).data;neckOpening=new Uint8Array(N*N);for(let y=94;y<103;y++){let left=N,right=-1;for(let x=0;x<N;x++)if(body[(y*N+x)*4+3]){left=Math.min(left,x);right=Math.max(right,x);}for(let x=left;x<=right;x++)if(!body[(y*N+x)*4+3])neckOpening[y*N+x]=1;}}
+  const face=layers.face.getContext('2d').getImageData(0,0,size,size).data,g=layers.torso.getContext('2d'),im=g.getImageData(0,0,size,size),bottom=Math.ceil((elf?103:94)*scale);
+  for(let y=0;y<bottom;y++)for(let x=0;x<size;x++){const k=(y*size+x)*4;if(!face[k+3]&&(y<94*scale||elf&&neckOpening[Math.floor(y/scale)*N+Math.floor(x/scale)]))im.data[k+3]=0;}g.putImageData(im,0,0);
  }
+
  // Feature envelopes retain every existing eye and mouth shape; painted folds sit around their openings.
  function feature(p,colors,size,kind,layers){
   const scale=size/N,raw=p.layers[kind].getContext('2d').getImageData(0,0,N,N).data,outputs=kind==='eyes'?['eyes','iris','eyelids']:['mouth'],images=Object.fromEntries(outputs.map(id=>[id,layers[id].getContext('2d').createImageData(size,size)])),c=p.config;
@@ -1986,7 +1990,7 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
   if(!loaded)throw Error('Painted portrait artwork is not ready');if(![128,256,512].includes(size))throw Error('Unsupported portrait size');
   colors=Object.fromEntries(Object.entries(E.colors).map(([key,value])=>[key,/^#[a-f0-9]{6}$/i.test(colors[key]||'')?colors[key]:value]));
   const layers={};for(const spec of E.order)layers[spec.id]=['eyes','iris','eyelids','mouth'].includes(spec.id)?canvas(size):paintMask(p,spec,colors,size);
-  fitEars(p,layers,size);clipNeck(layers,size);noseRoot(layers,size);feature(p,colors,size,'eyes',layers);feature(p,colors,size,'mouth',layers);skinDetails(p,layers,size);
+  fitEars(p,layers,size);clipNeck(p,layers,size);noseRoot(layers,size);feature(p,colors,size,'eyes',layers);feature(p,colors,size,'mouth',layers);skinDetails(p,layers,size);
   if(['small-tusks','heavy-tusks'].includes(p.config.mouth))layers.teeth=tusks(p,size);
   for(const id of ['nose','eyes','iris','eyelids','mouth','teeth',...(['stubble','close-beard','chin-bristle'].includes(p.config.beard)?['beard']:[])]){const g=layers[id].getContext('2d');g.save();g.globalCompositeOperation='destination-in';g.drawImage(layers.face,0,0);g.restore();}
   return {config:p.config,anchors:p.anchors,colors,layers,size,coordinateScale:size/N,template:p,headMaster:{file:root.PAINTED_PORTRAIT_ASSETS[headSpec(p.config).sheet].file,frame:headSpec(p.config).index,profile:headSpec(p.config).profile},style:'painted-parts'};
