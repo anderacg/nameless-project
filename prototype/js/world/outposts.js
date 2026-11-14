@@ -217,8 +217,10 @@ const Outposts={
   // (open ground by a spot to stand on: off the road, nothing built, a clear tile under the plinth and in front)
   stand(tx,ty){const N=OUTPOST_PLACE.near;let best=null,bd=1e9;
     for(let j=-N;j<=N;j++)for(let i=-N;i<=N;i++){const x=tx+i,y=ty+j;if(x<2||y<2||x>=MW-2||y>=MH-2)continue;const k=tAt(x,y),f=tAt(x,y+1);
-      const oc=(a,b)=>{const v=occAt(a,b);return v&&v!==-3};if(k!==T_OPEN||!passable(f)||oc(x,y)||oc(x,y+1)||oc(x-1,y))continue;const d=i*i+j*j+(hash(x,y,9301)*.5);if(d<bd){bd=d;best=[x,y]}}
+      const oc=(a,b)=>{const v=occAt(a,b);return v&&v!==-3};if(k!==T_OPEN||!passable(f)||oc(x,y)||oc(x,y+1)||oc(x-1,y)||this.onRoad(x,y))continue;const d=i*i+j*j+(hash(x,y,9301)*.5);if(d<bd){bd=d;best=[x,y]}}
     return best},
+  // (a road under the picture it will have at its biggest: OUTPOST_PLACE.foot)
+  onRoad(tx,ty){const [x0,y0,x1,y1]=OUTPOST_PLACE.foot;for(let j=y0;j<=y1;j++)for(let i=x0;i<=x1;i++)if(tAt(tx+i,ty+j)===T_ROAD)return true;return false},
   // (anything built within OUTPOST_PLACE.clear tiles: a holding's lots, its estates, its walls)
   built(tx,ty){const r=OUTPOST_PLACE.clear;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(occAt(tx+i,ty+j)>0)return true;return false},
   // (the realm holding the land at a tile, and whether another realm's land lies within r tiles)

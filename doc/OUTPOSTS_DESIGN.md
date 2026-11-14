@@ -83,3 +83,5 @@ Its name by where it stands: "the Highmoor ford outpost", "the Iron Hill outpost
 5. **Its tower in battle.**
 
 Each phase: tests in its own suite (`tests/outposts.js`), fingerprints held or re-recorded with their reasons, README and this status line.
+
+**Off the roads, 2026-11-14** (the owner's rule, nothing built on a road): an outpost stands where none of the tiles its picture covers at its biggest (its tower to the left of its flag: `OUTPOST_PLACE.foot`, x −3 to 1, y −2 to 0) is a road (`Outposts.onRoad`, in `stand`); only its flag's tile was looked at, and 9 of seed 1's 21 lay partly on a road. Some stand a tile or two farther from their crossing; two crossroads with no room have none (19 on seed 1). Test: `tests/holdings.js` (nothing on a road) passes again.
