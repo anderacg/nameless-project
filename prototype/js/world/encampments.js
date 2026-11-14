@@ -152,6 +152,8 @@ const ENC_PROPS=new Map();onWorld(()=>ENC_PROPS.clear());
 // (a piece's picture: the engine's model of its type, of the ground's climate; a drying rack of hides, a charcoal mound, drawn here)
 function propPic(q,clim){const k='eprop'+q.type+q.s+clim;if(spr[k])return spr[k];let cv;
   if(ENCAMP_PROPS[q.type].model){const m=PX.buildingModel({type:q.type,seed:q.s+1,env:clim,snow:clim==='frost'?1:0});cv=siteCanvas(m,m.cell/2,m.cell)}
+  else if(q.type==='woodpile')cv=mkc(16,16,g=>{const end=(x,y)=>{g.fillStyle='#7a5230';g.fillRect(x,y,3,3);g.fillStyle='#c8a070';g.fillRect(x+1,y+1,1,1);g.fillStyle='#a07848';g.fillRect(x,y,1,1)};
+    g.fillStyle='#5a4028';g.fillRect(1,9,14,6);for(let i=0;i<4;i++)end(1+i*3.5|0,12);for(let i=0;i<3;i++)end(3+i*3.5|0,9);end(5,6);end(8,6);g.fillStyle='#3e2c1c';g.fillRect(1,15,14,1)});
   else if(q.type==='rack')cv=mkc(16,16,g=>{g.fillStyle='#5a4028';g.fillRect(3,4,1,12);g.fillRect(12,4,1,12);g.fillRect(2,4,12,1);
     [['#8a5a3a',4,5,3,6],['#b08050',8,5,3,5],['#6e4630',11,5,1,4]].forEach(([c,x,y,w,h])=>{g.fillStyle=c;g.fillRect(x,y,w,h)});g.fillStyle='#d8d0bc';g.fillRect(5,11,1,1)});
   else cv=mkc(16,16,g=>{const rows=[[6,9],[4,11],[3,12],[2,13],[2,13],[1,14]];rows.forEach(([a,b],i)=>{g.fillStyle=i<2?'#4e4640':'#3a3430';g.fillRect(a,10+i,b-a+1,1)});
@@ -189,7 +191,7 @@ class CampFolk{
     const N=FOLK_NAMES[s.folkRace]||FOLK_NAMES.human,ppl=roles.map((role,i)=>{const a=(i+.5)/n*Math.PI*2,q=L[i%L.length];return Object.assign(new CampDweller(),{site:s,name:N[folkHash(s.seed+'|'+i)%N.length],role,R:ENCAMP_ROLES[role],i,v:Math.floor(R()*7),door:{x:q.x+3,y:q.y+3},seat:{x:s.x+Math.cos(a)*F.seat,y:s.y+3+Math.sin(a)*F.seat*CAMP_SITE.squash},
       x:s.x,y:s.y,tx:s.x,ty:s.y,wait:0,walked:0,dir:R()<.5?-1:1,mode:null,hid:false,R2:seeded(s.seed*31+i*977+5)})});
     const watch=ppl.filter(p=>p.R.watch);watch.forEach((p,j)=>p.watch=j===0?'fire':j===1?'ring':null);
-    const C={s,L,ppl,P:s.props(),ring:Math.max(...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/CAMP_SITE.squash)),8)+F.ring};this.of.set(s,C);
+    const C={s,L,ppl,P:s.props(),beasts:this.herd(s,L,s.props()),ring:Math.max(...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/CAMP_SITE.squash)),8)+F.ring};this.of.set(s,C);
     // (placed where the hour has them: as if you had watched all along)
     for(const p of ppl){this.aim(C,p,this.mode(C,p),true);p.x=p.tx;p.y=p.ty;p.wait=p.R2()*2;if(p.mode==='sleep')p.hid=true}
     return C}
@@ -199,6 +201,19 @@ class CampFolk{
     if(night)return p.watch==='fire'?'seat':p.watch==='ring'?'ring':'sleep';
     if(f<D.dawn||f>=D.work)return 'seat';
     return 'work'}
+  // (its animals (ENCAMP_KINDS beasts: the prospectors' goats, the nomads' camels and goats): each tethered past the tents on ground
+  // it may stand (not water, rock or a road, clear of tents and pieces), grazing round it)
+  static herd(s,L,P){const G=ENCAMP.folk.graze,R=seeded(s.seed*577+29),out=[],r0=Math.max(10,...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/CAMP_SITE.squash)))+G.out;
+    const ok=(x,y)=>{const t=tAt(Math.floor(x/TILE),Math.floor(y/TILE));return passable(t)&&t!==T_ROAD&&t!==T_FORD&&[...L,...P,...out].every(q=>Math.hypot(q.x-x,q.y-y)>=10)};
+    for(const [id,n] of s.TR.beasts||[]){if(!CRITTERS[id])continue;const a0=R()*Math.PI*2;for(let k=0;k<n;k++){let put=null;
+      for(let j=0;j<24&&!put;j++){const a=a0+(k*.35+j/24)*Math.PI*2,x=s.x+Math.cos(a)*r0,y=s.y+Math.sin(a)*r0*CAMP_SITE.squash;if(ok(x,y))put={id,x,y,hx:x,hy:y,tx:x,ty:y,wait:R()*G.pause[1],walked:0,dir:R()<.5?-1:1,v:Math.floor(R()*5),R:seeded(s.seed*13+out.length*101+7)}}
+      if(put)out.push(put)}}
+    return out}
+  // (an animal's moment: by day it grazes, a few px at a time round its tether; by night, or with danger near, it stands)
+  static graze(C,b,d){const G=ENCAMP.folk.graze,f=Clock.frac;b.moving=false;if(f>=ENCAMP.day.dusk||C.danger)return;if(b.wait>0){b.wait-=d;return}
+    const dx=b.tx-b.x,dy=b.ty-b.y,dd=Math.hypot(dx,dy);
+    if(dd>.5){const st=Math.min(dd,moveStep(G.speed,d));b.x+=dx/dd*st;b.y+=dy/dd*st;b.walked+=st;if(Math.abs(dx)>.2)b.dir=dx>0?1:-1;b.moving=true;return}
+    const a=b.R()*Math.PI*2,r=b.R()*G.r,x=b.hx+Math.cos(a)*r,y=b.hy+Math.sin(a)*r*.7;if(passable(tAt(Math.floor(x/TILE),Math.floor(y/TILE)))){b.tx=x;b.ty=y}b.wait=G.pause[0]+b.R()*(G.pause[1]-G.pause[0])}
   // (where he goes next for that, from where he is; fresh: placed there at once)
   static aim(C,p,mode,fresh){const s=C.s,F=ENCAMP.folk,R=p.R2,w=p.R.work,f=Clock.frac,pray=f>=ENCAMP.day.pray[0]&&f<ENCAMP.day.pray[1];p.mode=mode;p.kneel=false;p.play=false;
     const go=(x,y,wait)=>{p.tx=x;p.ty=y;p.wait=wait||0};
@@ -236,7 +251,7 @@ class CampFolk{
   static step(d){const F=ENCAMP.folk;if(!W.sites)return;
     for(const [s] of this.of)if(!W.sites.includes(s)||s.cleared||Math.hypot(s.x-P.x,s.y-P.y)>F.near+120)this.of.delete(s);
     for(const s of W.sites){if(!(s instanceof Encampment)||s.cleared||!s.known()||Math.hypot(s.x-P.x,s.y-P.y)>F.near)continue;
-      const C=this.of.get(s)||this.make(s);C.danger=folkThreat(s.x,s.y,F.danger);
+      const C=this.of.get(s)||this.make(s);C.danger=folkThreat(s.x,s.y,F.danger);for(const b of C.beasts)this.graze(C,b,d);
       for(const p of C.ppl){const m=this.mode(C,p);if(m!==p.mode){if(p.hid&&m!=='sleep'){p.hid=false;p.x=p.door.x;p.y=p.door.y}this.aim(C,p,m)}
         if(p.hid){p.moving=false;continue}
         if(p.wait>0){p.wait-=d;p.moving=false;continue}
@@ -252,6 +267,9 @@ class CampFolk{
   // (its people within your sight, each by his feet: a soldier of their people for a guard, a hunter or a ranger, else in their dress
   // (people.js folkLook); sitting or kneeling at the fire: his legs hidden; a child smaller; the players bob to their tune)
   static draw(s,ents,cam,V){const C=this.of.get(s);if(!C)return;const S=yourSight(V),k0=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,race=s.folkRace,now=performance.now()/1000;
+    // (its animals as the herds are drawn (critters.js, gfx/sprites.js critterArt): their battle figure at the marchers' scale)
+    for(const b of C.beasts){if(!S.sees(b.x,b.y,1.2))continue;ents.push({y:b.y,f:()=>{const A0=critterArt(b.id,0,b.v),N=PX.MAP_STEPS,fr=b.moving?Math.floor(b.walked/Math.max(4,A0.w)*N)%N:0,A=critterArt(b.id,fr,b.v),sx=Math.round(b.x-cam.x),sy=Math.round(b.y-cam.y),w=Math.max(4,A.w-2);
+      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-(w>>1),sy-1,w,2);ctx.save();ctx.translate(sx,sy);ctx.scale(b.dir<0?-A.k:A.k,A.k);ctx.drawImage(A.s,-(A.s.width>>1),-A.s.height+(A.k<1?2:1));ctx.restore()}})}
     for(const p of C.ppl){if(p.hid||!S.sees(p.x,p.y,1.2))continue;
       ents.push({y:p.y,f:()=>{const pose=p.moving?2+Math.floor(p.walked/WALK.foot)%4:0,sp=p.R.unit?unitSprite(RACES[race][p.R.unit],0,false,p.v,pose,false,false,s.TR.col):personSprite(p.R.look,race,p.v+p.i,pose),
         k=k0*(p.R.child?.72:1),low=!p.moving&&(p.kneel||p.mode==='seat'&&!p.R.watch&&!p.play)?4:0,bob=p.play&&!p.moving&&Math.floor(now*3+p.i)%2?1:0,sx=Math.round(p.x-cam.x),sy=Math.round(p.y-cam.y),W2=sp.width,H=sp.height;

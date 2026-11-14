@@ -52,6 +52,15 @@ Kit.suite(({ok,info})=>{
      if(pr.length>want||pr.some(q=>!t.CampSite.tentOk(q.x,q.y)||L.some(z=>Math.hypot(z.x-q.x,z.y-q.y)<t.ENCAMP_PROPS.gap)))bad.push(x.name)}
    ok(!bad.length&&n>=w*.85,'each camp’s pieces (wagons, racks of hides, charcoal mounds...) round its tents: '+n+' of '+w+' laid'+(bad.length?' (wrong: '+bad.join(', ')+')':''));
    const bu=of(6)[0];ok(bu.props().some(q=>q.type==='mound')&&t.propPic({type:'mound',s:1},'grass').width===16&&t.propPic({type:'rack',s:1},'grass').width===16&&t.propPic({type:'wagon',s:1},'grass').width>0,'the charcoal burners’ mounds, the hunters’ racks drawn here, the wagons the engine’s')}
+  // ---- their animals: the prospectors' goats, the nomads' camels and goats, tethered past the tents on ground they may stand,
+  // grazing round it by day, still by night; and the woodpile drawn here, logs stacked
+  {const pr=of(1)[0];pr.seen=true;W.monsters=W.monsters.filter(z=>Math.hypot(z.x-pr.x,z.y-pr.y)>F.danger*3);const A=near(pr,.2),b=A.beasts[0],G2=t.ENCAMP.folk.graze;
+   ok(A.beasts.length===2&&A.beasts.every(z=>z.id==='goat'&&t.passable(t.tAt(Math.floor(z.x/t.TILE),Math.floor(z.y/t.TILE)))&&A.L.every(q=>Math.hypot(q.x-z.x,q.y-z.y)>=10)),'the prospectors\u2019 two pack goats, tethered clear of the tents ('+A.beasts.map(z=>z.id).join(', ')+')');
+   let far=0,moved=0;const x0=b.x,y0=b.y;for(let i=0;i<300;i++){t.CampFolk.step(.1);far=Math.max(far,Math.hypot(b.x-b.hx,b.y-b.hy))}moved=Math.hypot(b.x-x0,b.y-y0)+b.walked;
+   ok(moved>0&&far<=G2.r+.5,'by day it grazes round its tether (walked '+b.walked.toFixed(1)+' px, at most '+far.toFixed(1)+' px out)');
+   G.clock=t.DAY*.7;const w0=b.walked;for(let i=0;i<100;i++)t.CampFolk.step(.1);ok(b.walked===w0,'by night it stands');
+   const no=of(7)[0];if(no){no.seen=true;const N2=near(no,.2);ok(N2.beasts.some(z=>z.id==='camel')&&N2.beasts.some(z=>z.id==='goat'),'the nomads\u2019 camels and goats ('+N2.beasts.map(z=>z.id).join(', ')+')')}
+   ok(t.propPic({type:'woodpile',s:2},'grass').width===16&&!t.ENCAMP_PROPS.woodpile.model,'a woodpile drawn here: logs stacked, their cut ends out')}
   // ---- a click on one of them: his name, and the camp's page at his place there, his greeting over it
   {const m=of(0)[0];m.seen=true;W.monsters=W.monsters.filter(z=>Math.hypot(z.x-m.x,z.y-m.y)>F.danger*3);const D=near(m,.2);t.drawWorld();
    const talk=role=>{const p=D.ppl.find(z=>z.role===role&&!z.hid);if(!p)return null;Kit.world();G.lastSite=null;P.x=p.x;P.y=p.y+8;const o=t.pickAt(p.x,p.y-4);if(o!==p)return 'picked '+(o&&(o.name||o.mapKind));t.interact(o);return p};

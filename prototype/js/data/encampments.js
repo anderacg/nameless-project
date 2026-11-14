@@ -7,11 +7,11 @@
    seasonal or wandering (moves on after stay days); ground: where it pitches (road: 2-4 tiles off a road; wood: a wood's edge;
    hills: under the mountains; desert; wild: far from holdings and roads; water: by water, near a road); roles: who lives there,
    [role, share], filled in order (ENCAMP_ROLES); count: how many on the base world (ENCAMP.count); mercs: sellswords to hire
-   (levy: its own folk as levies); props: its pieces round the tents (ENCAMP_PROPS), [kind, how many] */
+   (levy: its own folk as levies); beasts: its pack animals and herds grazing by it ([critter, how many]: data/critters.js); props: its pieces round the tents (ENCAMP_PROPS), [kind, how many] */
 const ENCAMP_KINDS=[
   {key:'merchants',props:[['wagon',2],['crates',1]],n:'Merchant caravan',race:'human',goods:['cloth','spice'],col:'#3d74d6',pop:[8,14],life:'wandering',ground:'road',count:2,mercs:true,
     roles:[['trader',.3],['guard',.3],['drover',.25],['cook',.15]],d:'Wagons circled for the night, guards dozing by the fire.'},
-  {key:'prospectors',props:[['cart',1],['barrels',1]],n:'Dwarf prospectors',race:'dwarf',goods:['iron','cheese'],col:'#8a6a4a',pop:[5,10],life:'seasonal',ground:'hills',count:1,mercs:true,
+  {key:'prospectors',beasts:[['goat',2]],props:[['cart',1],['barrels',1]],n:'Dwarf prospectors',race:'dwarf',goods:['iron','cheese'],col:'#8a6a4a',pop:[5,10],life:'seasonal',ground:'hills',count:1,mercs:true,
     roles:[['miner',.5],['guard',.25],['smith',.15],['cook',.1]],d:'Dwarves with picks and pack ponies, arguing over a map.'},
   {key:'wanderers',props:[['woodpile',1]],n:'Elf wanderers',race:'elf',goods:['timber','fruit'],col:'#3f8a3e',pop:[5,9],life:'wandering',ground:'wood',count:1,mercs:true,
     roles:[['ranger',.5],['singer',.3],['cook',.2]],d:'A quiet camp under lanterns. They watch you a while before they greet you.'},
@@ -23,7 +23,7 @@ const ENCAMP_KINDS=[
     roles:[['player',.6],['dancer',.25],['cook',.15]],d:'Painted wagons and a fiddle. They trade songs for coin and news.'},
   {key:'burners',props:[['mound',2],['woodpile',2]],n:'Charcoal burners',race:'human',goods:['timber','tools'],col:'#5a5650',pop:[4,8],life:'settled',ground:'wood',count:1,
     roles:[['burner',.4],['woodcutter',.35],['child',.25]],d:'Smoking mounds of earth by the trees, and soot-black folk tending them.'},
-  {key:'nomads',props:[['crates',1],['barrels',2]],n:'Desert nomads',race:'human',goods:['spice','cloth'],col:'#d8a040',pop:[8,16],life:'seasonal',ground:'desert',count:1,mercs:true,
+  {key:'nomads',beasts:[['camel',2],['goat',3]],props:[['crates',1],['barrels',2]],n:'Desert nomads',race:'human',goods:['spice','cloth'],col:'#d8a040',pop:[8,16],life:'seasonal',ground:'desert',count:1,mercs:true,
     roles:[['herder',.35],['guard',.25],['trader',.2],['child',.2]],d:'Wide tents of dyed wool, goats, and veiled riders who greet you with water.'},
   {key:'hermit',props:[['woodpile',1]],n:'Hermit',race:'human',goods:[],col:'#9a8a6a',special:'counsel',pop:[1,1],life:'settled',ground:'wild',count:1,see:'a hermit’s camp',
     roles:[['hermit',1]],d:'One small tent, a fire and a bent old man who seems to have been expecting you.'},
@@ -52,13 +52,15 @@ const ENCAMP_ROLES={
    for each and scale based on the world"); tents (a tent for every per people, most at most); stay (days a seasonal or wandering
    camp stays: [least, most]); gap (tiles to the next camp); the day (Clock.frac): dawn, work till work, dusk till dusk (then night,
    core.js NIGHT_AT); pray (the midday prayer, from to); folk (their pace px, a child's run x, how long they stop [least, most],
-   how far out to work, tiles [least, most], how long at it, route: a walk longer than this (tiles) goes by the router (its ways
+   how far out to work, tiles [least, most], how long at it; graze: its animals' tether (out px past the tents) and how far
+   they wander from it (r px), their pace and stops; route: a walk longer than this (tiles) goes by the router (its ways
    round water and rock), near: how far a camp's people are kept for (px from you), most drawn,
    seat: the ring round the fire, px; danger px: a band or beast that near sends them in); travellers: the first kinds who travel
    and may camp anywhere, among a ruin's broken walls too (sites.js RUIN_OCC) */
-/* a camp's pieces: model (the engine's 16 px building of that type: engine/buildmodels.js) or drawn here (rack: a drying rack of hides;
+/* a camp's pieces: model (the engine's 16 px building of that type: engine/buildmodels.js) or drawn here (rack: a drying rack of hides; woodpile: logs
+   stacked, their cut ends out;
    mound: a charcoal burner's smoking mound); ring: px past the tents they stand at; gap: px kept from a tent and from one another */
-const ENCAMP_PROPS={wagon:{model:true},cart:{model:true},crates:{model:true},barrels:{model:true},woodpile:{model:true},shrine:{model:true},stall:{model:true},rack:{},mound:{smoke:true},ring:12,gap:13};
+const ENCAMP_PROPS={wagon:{model:true},cart:{model:true},crates:{model:true},barrels:{model:true},woodpile:{},shrine:{model:true},stall:{model:true},rack:{},mound:{smoke:true},ring:12,gap:13};
 const ENCAMP={travellers:6,count:{pow:.5},tents:{per:3,most:8},stay:{seasonal:[20,40],wandering:[3,8]},gap:24,
   day:{dawn:.06,work:.4,dusk:.5,pray:[.18,.28]},
-  folk:{route:2,speed:20,run:1.5,pause:[1.5,4],out:[3,6],work:[4,9],near:520,most:16,seat:13,danger:90,ring:10}};
+  folk:{graze:{r:10,speed:5,pause:[3,9],out:22},route:2,speed:20,run:1.5,pause:[1.5,4],out:[3,6],work:[4,9],near:520,most:16,seat:13,danger:90,ring:10}};
