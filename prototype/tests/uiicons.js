@@ -6,6 +6,7 @@ window.RUN=async()=>{const {ok,exc,out}=Kit.report(),t=T,parse=s=>{const e=docum
   const icons=Object.keys(t.UI_ILLUSTRATIONS).map(k=>[k,parse(t.icon(k,18))]);
   ok(icons.every(([k,e])=>e?.dataset.uiIcon===k&&e.querySelector('image')&&e.getAttribute('aria-hidden')==='true'&&e.getAttribute('width')==='18'),'shared icons preserve their size, transparent image rendering and decorative accessibility contract');
   ok(icons.every(([k,e])=>e.getAttribute('viewBox')===t.UI_ILLUSTRATIONS[k].slice(0,4).join(' ')),'native atlas crops retain each illustration’s proportions');
+  {const e=parse(t.icon('ai',24));ok(e?.textContent==='AI'&&!e.querySelector('image')&&t.uiIconReady('ai'),'AI is a transparent text-only mark and does not depend on loading an illustration');}
   const defs=[...Object.values(t.ITEMS),...Object.values(t.MATS),...Object.values(t.GOODS)];
   ok(defs.every(d=>parse(t.itemIllustration(d,26))?.querySelector('[data-ui-icon]')),'every equipment, material and good definition renders an illustrated inventory icon');
   {const e=document.createElement('div'),id=Object.keys(t.ITEMS)[0];e.innerHTML='<span data-icon="gear:'+id+'"></span>';t.fillIcons(e);ok(!!e.querySelector('.item-illustration image')&&!e.querySelector('canvas,[data-icon]'),'inventory placeholders resolve to shared illustrated art');}

@@ -105,7 +105,7 @@ function bhudPowers(){
   const bar=typeof document!=='undefined'&&document.getElementById('bbar');if(!bar||!B)return;let el=document.getElementById('bCmd');
   if(!el){el=document.createElement('div');el.id='bCmd';el.className='cmdbar';el.setAttribute('role','group');el.setAttribute('aria-label','Commander powers (R rally the line, S stand fast) and the AI (A)');
     el.innerHTML='<span class="cmdh" title="Your hero commands nearby friendly groups; selecting a unit does not limit these abilities.">Commander abilities</span>'+POWER_ORDER.map(id=>'<button type="button" class="cbtn" data-power="'+id+'"><i class="ccd" aria-hidden="true"></i>'+pixelSVG(POWER_ICON[id],20)+'<span class="ct" aria-hidden="true"></span><span class="k">'+kitKey(id)+'</span></button>').join('')+
-      '<button type="button" class="cbtn cai" id="bAuto" aria-pressed="false" title="'+AI_TIP+'" aria-label="'+AI_TIP+'">'+pixelSVG(POWER_ICON.ai,20)+'<span class="k">A</span></button>';
+      '<button type="button" class="cbtn cai" id="bAuto" aria-pressed="false" title="'+AI_TIP+'" aria-label="'+AI_TIP+'">'+icon('ai',24)+'</button>';
     el.addEventListener('click',e=>{if(e.target.closest('#bAuto')){autoKey();return}const b=e.target.closest('[data-power]');if(b)commandPower(b.dataset.power)});
     el.addEventListener('pointerover',e=>{const b=e.target.closest('[data-power]');if(B)B.cmdHov=b?b.dataset.power:null});el.addEventListener('pointerleave',()=>{if(B)B.cmdHov=null});
     bar.appendChild(el);autoUI()}
