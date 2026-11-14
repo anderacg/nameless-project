@@ -538,6 +538,15 @@ function* artGenRoads(P,D,x0,y0,w,h){const S=P.segs,K=P.wk,B=P.box,G=GENART,RD=G
 function roadPal(cv,o){const [lo,hi]=GENART.rblend,G=ROAD_RGB.grass,DG=DIRT.grass;for(let n=0;n<3;n++){o[n][0]=G[n][0];o[n][1]=G[n][1];o[n][2]=G[n][2]}o[3][0]=DG[0];o[3][1]=DG[1];o[3][2]=DG[2];
   for(let k=0;k<3;k++){const u=Math.max(0,Math.min(1,(cv[k]-lo)/(hi-lo)));if(!u)continue;const c=COVERS[k].c,R=ROAD_RGB[c],Dd=DIRT[c];for(let n=0;n<4;n++){const a=o[n],b=n<3?R[n]:Dd;a[0]+=(b[0]-a[0])*u;a[1]+=(b[1]-a[1])*u;a[2]+=(b[2]-a[2])*u}}
   return o}
+/* a bridge in detail (artGenXing; the owner, 2026-11-14: "enhance the bridge to get more detail"): stone: its shade on the water,
+   arches (arch px apart: dark under the deck, a gleam on the water), piers between them (pier: lit, body) cut to a point upstream
+   with foam, setts on the deck (deck: their greys) with dark joints, worn pale down the middle, parapets of coping stones (cope:
+   lit top, body, joint, a joint every cope[3] px); wood: its shade on the water, piles (pile px apart) with a ripple either side,
+   planks of plank's tones with a gap between, nails, knots, the wheels' wear, rails on posts (postAt px apart;
+   rail and post: lit, dark). on false: as before */
+const BRIDGE_ART={on:true,
+  stone:{shade:'#24323e',dark:'#121c26',gleam:'#3a5266',foam:'#e4eef4',arch:10,pier:['#b4ac9a','#7e7666'],deck:['#a69e8e','#a29a8a','#aaa292','#9e9686'],joint:'#928a7a',worn:'#b4ac9c',cope:['#d0c8b6','#7e7666','#544e46',5]},
+  wood:{shade:'#22384c',ripple:'#8eb4cc',pile:8,plank:['#8a6038','#906640','#845c36','#94683e','#88603a'],gap:'#664426',nail:'#5a3c22',knot:'#704c2c',worn:'#9c7248',rail:['#b08458','#5a3c22'],post:['#c09464','#2a1a10'],postAt:6}};
 // a crossing over the window (OVER): a bridge's deck from bank to bank (stone: grey courses, parapets, the arches' shade on the
 // water below; wood: planks, rails, posts) on an abutment at each end (abut: the owner's fourth play-test, no wider than the deck), a ford's rocks (a few, scattered over its shallows, never in a row: 1 to 3 px, lit,
 // a dark waterline under each and foam on its downstream side; capped with snow in the frost, mossy in the swamp) and a swamp
@@ -552,7 +561,37 @@ function artGenXing(P,r,c){const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/
     const AB=c.stone?['#6e665a','#c8c0ae','#9a9282','#7e7666']:['#2a1a10','#7a5432','#5a3c22','#3e2818'];
     const abut=(e,d)=>{for(let k=0;k<4;k++){const u=e-d*(1-k);for(let v=mid-hw;v<mid+hw;v++){const x=hor?u:v,y=hor?v:u;if(k>=2&&wpx(K,x,y)||k===3&&hs(x,y,c.i+91)<.4)continue;
       R(k===2&&hs(x,y,c.i+92)<.15?AB[0]:AB[k],u,u+1,v,v+1)}}};
-    if(c.stone){R('#24323e',u0+4,u1-4,mid+hw,mid+hw+2);R('#a69e8e',u0,u1,mid-hw,mid+hw);
+    // (in detail, BRIDGE_ART: the owner, 2026-11-14, "enhance the bridge to get more detail"; off, as it was, below)
+    if(BRIDGE_ART.on){const Q=(col,a,e,v0,v1)=>{if(e>a&&v1>v0)R(col,a,e,v0,v1)},h=(a,b,n)=>hs(a,b,c.i*7+n),pk=(L,a,b,n)=>L[Math.floor(h(a,b,n)*L.length)];
+      if(c.stone){const S=BRIDGE_ART.stone,at=[];
+        // (its shadow on the water below; its piers, each cut to a point upstream with the water broken white round it, the arches
+        //  between them dark under the deck, their light on the water)
+        Q(S.shade,u0+4,u1-4,mid+hw,mid+hw+2);
+        for(let u=u0+8;u<u1-6;u+=S.arch)at.push(u);
+        for(const u of at){Q(S.dark,u,u+4,mid+hw,mid+hw+1);Q(S.gleam,u+1,u+3,mid+hw+1,mid+hw+2)}
+        for(let k=0;k+1<at.length;k++){const u=at[k]+5;Q(S.pier[1],u,u+3,mid+hw,mid+hw+2);Q(S.pier[0],u,u+3,mid+hw,mid+hw+1);Q(S.pier[1],u+1,u+2,mid-hw-1,mid-hw);Q(S.foam,u,u+1,mid-hw-1,mid-hw);Q(S.foam,u+2,u+3,mid+hw+2,mid+hw+3)}
+        // (the deck's setts, each its own grey, their joints dark, worn pale down the middle; its parapets of coping stones, lit on
+        //  top, a joint every few)
+        Q(S.deck[0],u0,u1,mid-hw,mid+hw);
+        for(let u=u0;u<u1;u+=3)for(let v=mid-hw+2,r0=0;v<mid+hw-2;v+=2,r0++){const o=(r0&1)?1:0,a=u+o;Q(pk(S.deck,a,v,11),a,Math.min(a+2,u1),v,v+2);Q(S.joint,a+2,Math.min(a+3,u1),v,v+2);if(h(a,v,12)<.15)Q(S.joint,a,Math.min(a+2,u1),v+1,v+2)}
+        for(let u=u0+1;u<u1-1;u++)for(const v of [mid-1,mid])if(h(u,v,13)<.45)Q(S.worn,u,u+1,v,v+1);
+        for(const [v0,lit] of [[mid-hw,mid-hw],[mid+hw-2,mid+hw-2]]){Q(S.cope[1],u0,u1,v0,v0+2);Q(S.cope[0],u0,u1,lit,lit+1);for(let u=u0+2+Math.floor(h(v0,0,14)*3);u<u1-1;u+=S.cope[3])Q(S.cope[2],u,u+1,v0,v0+2)}
+        abut(u0,-1);abut(u1-1,1)}
+      else{const Wd=BRIDGE_ART.wood;
+        // (its shadow on the water below, and its piles standing in it, a ripple either side of each)
+        Q(Wd.shade,u0+3,u1-3,mid+hw+1,mid+hw+3);
+        for(let u=u0+6;u<u1-5;u+=Wd.pile){Q(Wd.post[1],u,u+2,mid+hw+1,mid+hw+3);Q(Wd.post[0],u,u+1,mid+hw+1,mid+hw+2);Q(Wd.ripple,u-1,u,mid+hw+3,mid+hw+4);Q(Wd.ripple,u+2,u+3,mid+hw+3,mid+hw+4)}
+        // (its planks across it, 2 px each and a dark gap, each its own tone, ragged at the ends, nailed at each, a knot here and
+        //  there; the wheels' wear down it)
+        for(let u=u0,k=0;u<u1;u+=3,k++){const a=h(k,1,2)<.3?1:0,b=h(k,1,3)<.3?1:0,e=Math.min(u+2,u1);Q(pk(Wd.plank,k,1,1),u,e,mid-hw+a,mid+hw-b);Q(Wd.gap,e,Math.min(e+1,u1),mid-hw,mid+hw);
+          if(h(k,1,4)<.5){Q(Wd.nail,u,u+1,mid-hw+1,mid-hw+2);Q(Wd.nail,e-1,e,mid+hw-2,mid+hw-1)}if(h(k,1,5)<.1){const v=mid-3+Math.floor(h(k,1,6)*6);Q(Wd.knot,u+(h(k,1,7)<.5?0:1),u+(h(k,1,7)<.5?1:2),v,v+1)}}
+        for(let u=u0+1;u<u1-1;u++)for(const v of [mid-2,mid+1])if(h(u,v,8)<.35)Q(Wd.worn,u,u+1,v,v+1);
+        // (a rail each side on posts, off the deck: the far one on its beam above it, the near one along its foot, lit on top; within 2
+        //  px of the deck, none over the water beside it)
+        Q(Wd.rail[0],u0,u1,mid-hw-2,mid-hw-1);Q(Wd.rail[1],u0,u1,mid-hw-1,mid-hw);Q(Wd.rail[0],u0,u1,mid+hw,mid+hw+1);Q(Wd.rail[1],u0,u1,mid+hw+1,mid+hw+2);
+        for(let u=u0+2;u<u1-1;u+=Wd.postAt){Q(Wd.post[0],u,u+1,mid-hw-2,mid-hw-1);Q(Wd.post[1],u,u+1,mid-hw-1,mid-hw+1);Q(Wd.post[0],u,u+1,mid+hw,mid+hw+1);Q(Wd.post[1],u,u+1,mid+hw+1,mid+hw+3)}
+        abut(u0,-1);abut(u1-1,1)}}
+    else if(c.stone){R('#24323e',u0+4,u1-4,mid+hw,mid+hw+2);R('#a69e8e',u0,u1,mid-hw,mid+hw);
       for(let u=u0;u<u1;u++)for(let v=mid-hw+2;v<mid+hw-2;v++)if((v-mid)%3===0||(u+((v-mid+12)/3|0)*3)%6===0)R('#8e8676',u,u+1,v,v+1);
       R('#6e665a',u0,u1,mid-hw,mid-hw+2);R('#c8c0ae',u0,u1,mid-hw,mid-hw+1);R('#6e665a',u0,u1,mid+hw-2,mid+hw);R('#c8c0ae',u0,u1,mid+hw-2,mid+hw-1);
       for(let u=u0+8;u<u1-6;u+=10)R('#121c26',u,u+4,mid+hw,mid+hw+1);abut(u0,-1);abut(u1-1,1)}

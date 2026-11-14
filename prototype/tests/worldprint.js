@@ -809,7 +809,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  tile was looked at), so some stand elsewhere and two crossroads find no room (19 on seed 1, were 21): their land, the map's
 //  picture, the save and the parties' ways differ. Checked: with foot [0,0,0,0] (its flag's tile alone) all six are as before.
 //  Were W4 9bb821e8, W5 e1408b54, W6 99c0f3f4, W7 8d39cdc0, W8 8d52d85b, B2 447d8fea)
-const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'d9c9b503',W6:'3686da11',W7:'66401fd1',W8:'b871b922',B2:'f55d6365'};
+// (W5, W6 re-recorded 2026-11-14, on purpose: the owner, “enhance the bridge to get more detail”: every bridge painted in detail
+//  (gfx/worldart.js BRIDGE_ART: a wooden one's planks, nails, rails on posts, piles and shade on the water; a stone one's setts,
+//  coping, piers with foam, arches), so the painted world and its picture change. Proof: BRIDGE_ART.on false gives both again (all
+//  16 hold). Were W5 d9c9b503, W6 3686da11)
+const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'7acf9f33',W6:'18ff93ef',W7:'66401fd1',W8:'b871b922',B2:'f55d6365'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
