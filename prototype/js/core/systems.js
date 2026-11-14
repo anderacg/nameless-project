@@ -61,11 +61,12 @@ const Systems={
     this.slices=this.slices.filter(j=>j.i<j.list.length);
   },
   // each moment on the map: every system's step in its order (but those named in still); true when one of them ended the frame
-  frame(d,dt,still){
+  // (through: none ends it: a fight on the map, where nothing opens and a party that would meet you must not stop the rest)
+  frame(d,dt,still,through){
     if(this.slices.length)this.drain(false);
     for(const s of this.of('frame')){
       if(still&&still.includes(s.name))continue;
-      if(this.run(s,'frame',()=>s.frame(d,dt))&&s.ends)return true;
+      if(this.run(s,'frame',()=>s.frame(d,dt))&&s.ends&&!through)return true;
     }
     return false;
   },

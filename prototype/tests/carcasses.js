@@ -30,5 +30,9 @@ Kit.suite(({ok,info})=>{
  // (saved; rotted)
  t.saveGame(true);C.list=[];t.loadGame();ok(C.list.length===2&&C.list.some(o=>o.items.some(s=>s.id==='meat'))&&C.list.every(o=>o instanceof C&&!o.corpse),'the fallen are saved (their picture a plain one after a load)');
  {const d=G.day;G.day+=t.CARCASS.bare;C.day();ok(C.list.length===1&&!C.list[0].empty(),'picked clean, one rots in '+t.CARCASS.bare+' day');G.day=d+t.CARCASS.days;C.day();ok(!C.list.length,'with things on it, in '+t.CARCASS.days+' days');G.day=d}
+ // (a quest item the fight gave stays in its window, yours: never left on the fallen to rot)
+ {const q=Object.keys(t.QUEST_ITEMS)[0];G.loot={from:t.lootSnap(),pile:[{k:'quest',id:q,n:1,by:'quest:0'},{k:'good',id:'meat',n:2}],capture:false};G.lootView={head:'<h2>x</h2>',next:'cont'};
+  const n0=C.list.length;C.lay([{x:P.x,y:P.y,type:'militia',wild:null,mon:null,bst:false,face:1}]);const c=C.list[C.list.length-1];
+  ok(C.list.length===n0+1&&c.items.some(s=>s.id==='meat')&&!c.items.some(s=>s.k==='quest')&&G.loot.pile.length===1&&G.loot.pile[0].k==='quest','a quest item the fight gave stays in its window, the rest on the fallen');t.lootEnd();t.hidePanel();G.mode='world';C.list.pop()}
  {const was=t.CARCASS.on;t.CARCASS.on=false;ok(t.Carcass.from({world:{},corpses:[]})===null,'CARCASS off: none laid, the window as before');t.CARCASS.on=was}
 });

@@ -17,7 +17,7 @@ function loop(now){
   const t0=FRAMEPROF.on?performance.now():0;// (the frame timings: ui/frameprof.js)
   if(!DevConsole.opened)try{
     if(G.mode==='battle'&&B){updateBattle(heroBeat(dt));openFightWorld(dt)}// (a crit's or a kill's beat of slow motion: gfx/herofx.js; the world on round a fight on the map: worldbattle.js)
-    else if(Systems.hold)Systems.release();// (the fight over: your band's days and hours kept through it)
+    else openFightOver();// (the fight over: your band's days and hours kept through it, worldbattle.js)
     if(G.mode==='scene')updateScene(dt);
     else if(G.mode==='world')updateWorld(dt);
   }catch(e){loopError(e)}

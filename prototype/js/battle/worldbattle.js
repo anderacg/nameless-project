@@ -34,7 +34,9 @@ const fightHolds=o=>inMapFight(o)||!!B?.world?.bystanders?.entries.has(o);
 // (the world's moment in a fight on the map (main.js, after the fight's): its clock and the systems but OPEN_FIGHT.still, your
 // band's days and hours held; nothing while the fight is paused, forming up or over)
 function openFightWorld(rt){const O=OPEN_FIGHT;if(!O.on||!O.world||!B?.world||B.paused||B.deploy||B.muster?.active||B.over||G.dead||G.modal)return;
-  Systems.hold=Systems.hold||new Set(O.held);lodTick(rt);Clock.advance(rt*G.speed*DAY/DAY_SECONDS);if(G.dead||!B)return;Systems.frame(rt*G.speed*WORLD_PACE,rt,O.still)}
+  Systems.hold=Systems.hold||new Set(O.held);lodTick(rt);Clock.advance(rt*G.speed*DAY/DAY_SECONDS);if(G.dead||!B)return;Systems.frame(rt*G.speed*WORLD_PACE,rt,O.still,true)}
+// (the fight over, B gone: your band's days and hours held through it run now; never while its Esc menu is up over it)
+function openFightOver(){if(Systems.hold&&!B)Systems.release()}
 // a fight on the map begun at once (the owner, 2026-11-12: "make battle seamless without preparations, no talking"): an encounter of
 // these kinds opens no window first (no talk, no Attack, Auto-resolve or Flee: withdraw in the fight), and the armies form up where
 // they stand, no muster (BattleMuster); sieges, raids, tournaments and caves keep their own. on false: the window and the muster, as before

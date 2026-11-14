@@ -36,12 +36,14 @@ class Carcass extends WorldObject{
   static done(){const V=G.lootView;if(V?.keep)V.keep(G.loot?.pile||[]);lootEnd();hidePanel();toWorld()}
   // the foes fallen in a fight on the map, read off its field before it goes (resolution.js finish): each where his body lies
   static from(b){if(!CARCASS.on||!OPEN_FIGHT.on||!b?.world||!b.corpses)return null;const out=[];
-    for(const c of b.corpses){const u=DEATH_OF.get(c);if(!u||u.team===0||u.hp>0||u.left||u.waiting)continue;const p=b.world.world(c),M=Object.keys(MONSTERS).find(k=>MONSTERS[k].unit===u.type);
+    // (your foes' only: an ally's fallen hold nothing of yours)
+    for(const c of b.corpses){const u=DEATH_OF.get(c);if(!u||u.hp>0||u.left||u.waiting||!battleEnemy(0,u))continue;const p=b.world.world(c),M=Object.keys(MONSTERS).find(k=>MONSTERS[k].unit===u.type);
       out.push({x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,type:u.type,wild:u.wildlife||null,mon:M||null,bst:!!ST[u.type]?.beast,face:c.face||1,corpse:c})}
     return out}
   // laid on the map once the fight is settled: what its window would have held shared among them (share), the window told
   static lay(fell){if(!fell?.length)return;const cs=fell.map(f=>asCarcass({cc:1,...f,day:G.day+Clock.frac,items:[]})),L=G.loot,V=G.lootView;this.list.push(...cs);
-    if(L&&!L.capture&&L.pile.length&&V&&!V.keep){const n=L.pile.reduce((a,s)=>a+s.n,0);for(const s of L.pile)this.share(cs,s);L.pile=[];
+    // (a quest item stays in the window, yours: never left to rot, core/items.js QuestItem)
+    const on=L&&!L.capture&&V&&!V.keep?L.pile.filter(s=>!lootBound(s)):[];if(on.length){const n=on.reduce((a,s)=>a+s.n,0);for(const s of on)this.share(cs,s);L.pile=L.pile.filter(lootBound);
       V.head+='<p class="fb-carcass gold">'+n+' thing'+(n>1?'s':'')+' lie on the fallen: walk to them and click one to look them over.</p>';renderLoot()}
     this.prune()}
   // (a pile entry onto the fallen it belongs to: meat, furs and a beast's trophy on beasts (its own kind's first), gear and goods
@@ -59,7 +61,7 @@ class Carcass extends WorldObject{
   // drawn where it lies: its fall as the fight drew it (vfx.js drawBody, at the fight's scale), else a plain one; a glint while
   // anything is on it
   draw(ents,cam,V){if(!this.inView(V))return;const c=this;
-    ents.push({y:c.y,f:()=>{const x=c.x-cam.x,y=c.y-cam.y,C=CARCASS.col,k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
+    ents.push({y:c.y,f:()=>{const x=c.x-cam.x,y=c.y-cam.y,C=CARCASS.col,k=(B?.world?1:WORLD_BATTLE.sprite)/WORLD_BATTLE.scale;// (in a fight on the map drawBody makes it the fight's size itself)
       if(c.corpse?.sp){ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.translate(-c.corpse.x,-c.corpse.y);try{drawBody(ctx,c.corpse,1,1)}finally{ctx.restore()}}
       else{const X=Math.round(x),Y=Math.round(y),f=c.face<0?-1:1;ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(X-5,Y,10,2);ctx.fillStyle=c.beast?C.hide:C.cloth;ctx.fillRect(X-4,Y-3,8,3);ctx.fillStyle=C.bone;ctx.fillRect(X+(f>0?3:-5),Y-3,2,2)}
       if(!c.empty()){const t=performance.now()/1000,g=(Math.sin(t*3+c.x)+1)/2;ctx.globalAlpha=.4+.5*g;ctx.fillStyle=C.glint;ctx.fillRect(Math.round(x)+1,Math.round(y)-5,1,1);ctx.globalAlpha=1}}})}
