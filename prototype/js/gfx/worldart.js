@@ -407,8 +407,8 @@ function* wdist(M,W,H){const D=new Float32Array(W*H).fill(16),BW=(W+15)>>4,BH=(H
 //  there is no other; -1 none)
 const WNEAR=[[0,0],[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
 function wnear(K,tx,ty,no){for(const [a,b] of WNEAR){const u=tx+a,v=ty+b;if(u>=0&&v>=0&&u<MW&&v<MH&&K[v*MW+u]&&K[v*MW+u]!==no)return v*MW+u}return no?wnear(K,tx,ty):-1}
-// the ground of the window x0, y0, w×h (px) into D, its RGBA, a row of pixels a step; only its pixels in I (the rect kept of it,
-// paintSteps' chunk) painted, what lies round them read alike (nothing over the ground reads another pixel's)
+// the ground of the window x0, y0, w×h (px) into D, its RGBA, a row of pixels a step; only its pixels in I painted, what lies round
+// them read alike (paintSteps: the whole window, its apron too, since a range's foot and rim read the ground beside them)
 function* artGenGround(P,D,x0,y0,w,h,I){
   const MG=GENART.margin,X0=x0-MG,Y0=y0-MG,RW=w+2*MG,RH=h+2*MG,M=new Uint8Array(RW*RH),N9=new Uint8Array(9),K=P.wk,Rv=WM.river,G=GENART;
   // (a tile whose 8 neighbours are all its kind is that kind to its every pixel: only the tiles at an edge are worked a pixel at a time)
@@ -653,7 +653,7 @@ const OVER=[
 // counts of what it painted (and how long it took) into rec
 function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
   const t0=performance.now(),Wp=MW*TILE,Hp=MH*TILE,AP=PX.WN_APRON,x0=Math.max(0,X-AP),y0=Math.max(0,Y-AP),ww=Math.min(Wp,X+w+AP)-x0,wh=Math.min(Hp,Y+h+AP)-y0,img=new ImageData(ww,wh),D=img.data,NT=NATURE_TOUCH;
-  yield* artGenGround(P,D,x0,y0,ww,wh,{x:X,y:Y,w,h});
+  yield* artGenGround(P,D,x0,y0,ww,wh,{x:x0,y:y0,w:ww,h:wh});
   for(const t of P.tramples)trample(P,D,x0,y0,ww,wh,t);
   yield* townGround(P,D,x0,y0,ww,wh);
   const road=yield* artGenRoads(P,D,x0,y0,ww,wh);
