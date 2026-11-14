@@ -85,7 +85,7 @@
  }
  // Each cloth hat and crown has its own authored picture, uniformly fitted to the brow.
  const HEADWEAR=new Map(root.PAINTED_PORTRAIT_ASSETS.flatMap((a,sheet)=>(a.headwear||[]).map((id,index)=>[id,{sheet,index}])));
- const HEADWEAR_FIT={'wool-skullcap':[2.35,.94],'liripipe-cap':[2.9,.7],'fur-trimmed-cap':[2.55,.95],bycocket:[2.65,.94],'noble-chaperon':[2.95,.6],hood:[4.1,.39,.835],'wrapped-hood':[3.6,.26,.748],veil:[3.6,.18],'draped-veil':[3.6,.28],'pearl-hood':[3.9,.23,.78],'linen-wrap':[3.4,.42],'arming-cap':[2.35,.55],chaperon:[2.9,.42],turban:[2.4,.8],'straw-hat':[3.1,.95],'feathered-cap':[2.5,.94]};
+ const HEADWEAR_FIT={'wool-skullcap':[2.35,.94],'liripipe-cap':[2.9,.7],'fur-trimmed-cap':[2.55,.95],bycocket:[2.65,.94],'noble-chaperon':[2.95,.6],hood:[4.1,.39,.835],'wrapped-hood':[3.6,.26,.748],veil:[3.6,.18],'draped-veil':[3.6,.28],'pearl-hood':[3.9,.23,.78],'linen-wrap':[3.4,.42],'arming-cap':[2.35,.55],chaperon:[2.9,.42],turban:[2.4,.8],'straw-hat':[3.6,.69],'feathered-cap':[2.5,.94]};
  function paintedHeadwear(p,colors,size,id){
   const out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,h=HEADWEAR.get(p.config.headwear);if(!h)return out;
   const f=frame(h.sheet,h.index),A=p.anchors,[width,brow,opening]=HEADWEAR_FIT[p.config.headwear]||[2.35,.96],wanted=Math.max(A.w*width/f.w,opening?(A.mouth.y-A.eyes[0].y+19)/(f.h*(opening-brow)):0),fit=['fur-trimmed-cap','bycocket'].includes(p.config.headwear)?Math.min(wanted,(A.eyes[0].y-16)/(f.h*brow)):wanted,top=Math.max(1,A.eyes[0].y-14-f.h*brow*fit),left=A.cx-f.w*fit/2,scale=size/N,target=hex(colors.headwear),base=hex(E.colors.headwear);

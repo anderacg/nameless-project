@@ -666,6 +666,28 @@
       "leaf-circlet",
       "warband",
       "vine-diadem"
+    ],
+    "activeFrames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
     ]
   },
   {
@@ -711,6 +733,23 @@
       "fur-trimmed-cap",
       "bycocket",
       "noble-chaperon"
+    ]
+  },
+  {
+    "file": "headwear-straw-front.png",
+    "width": 1928,
+    "height": 815,
+    "sha256": "4787c157d272304f8ed8b5d03bc9bb1d6d9c432f685e9661c668da2825d3984f",
+    "frames": [
+      [
+        269,
+        84,
+        1390,
+        612
+      ]
+    ],
+    "headwear": [
+      "straw-hat"
     ]
   }
 ]
