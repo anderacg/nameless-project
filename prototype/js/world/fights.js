@@ -160,6 +160,8 @@ class Fight extends WorldObject{
       ctx.strokeStyle='#e4e0cf';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(sx-3,sy-17);ctx.lineTo(sx+3,sy-11);ctx.moveTo(sx+3,sy-17);ctx.lineTo(sx-3,sy-11);ctx.stroke();
       // the tally: each side's fighters in its colours
       const col=s=>{const p=sideParties(f,s)[0],fc=p&&p.faction;return fc?(fc==='player'?FACS.player.col:FACS[fc].col):'#ff9a90'};
+      // (the tally: dev mode only, ui/ui.js PREFS.dev)
+      if(!DEV.on)return;
       if(f.multi){txt(fightParties(f).length+' armies',sx,sy-20,'#e4c876','center');return}
       txt(String(sideTroops(f,0).length),sx-6,sy-20,col(0),'right');txt('vs',sx,sy-20,'#e4e0cf','center');txt(String(sideTroops(f,1).length),sx+6,sy-20,col(1),'left')}})}
 }

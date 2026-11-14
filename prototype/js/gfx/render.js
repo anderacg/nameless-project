@@ -135,8 +135,9 @@ function drawTravelDetection(cam){
 // real time, still under reducedMotion (vfx.js), the only one drawn on the map: not a party's (a WorldObject), whose is on its card)
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
-  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}
-    if(q.o instanceof WorldObject){if(q.label){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}continue}
+  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1&&DEV.on)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}// (its count: dev mode only, ui/ui.js PREFS.dev)
+    // (a party's or caravan's label, its count (a band's chief and level with it): dev mode only, ui/ui.js PREFS.dev)
+    if(q.o instanceof WorldObject){if(q.label&&DEV.on){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}continue}
     const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(B){const d=VS>1?subOf(B.c):[0,0];ctx.drawImage(B.s,B.x-cam.x+d[0],B.y-cam.y+d[1])}}
   BANNERQ=[]}
 // (an animal's step on the map, ms a frame)

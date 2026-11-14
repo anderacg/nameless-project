@@ -27,7 +27,7 @@ class Herd extends WorldObject{
       for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,A.w)/N,N)+i*3)%N:0,a=critterArt(c.id,fr,v0+i),w=Math.max(4,a.w-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
         ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);ctx.scale(c.dir<0?-a.k:a.k,a.k);ctx.drawImage(a.s,-(a.s.width>>1),-a.s.height+(a.k<1?2:1));ctx.restore()}
-      if(WORLD_BATTLE.on)BANNERQ.push({o:c,marker:{h:A.h,col:'#b4c985'}});else if(c.n>1&&c.fromYou()<90)txt(String(c.n),sx,sy-A.h-4,'#c8e0a0','center')}})}
+      if(WORLD_BATTLE.on)BANNERQ.push({o:c,marker:{h:A.h,col:'#b4c985'}});else if(c.n>1&&DEV.on&&c.fromYou()<90)txt(String(c.n),sx,sy-A.h-4,'#c8e0a0','center')}})}
   tip(){const D=CRITTERS[this.id];return this.wild?'<b>'+D.n+(this.n>1?' ×'+this.n:'')+'</b><small>Wild game</small><span class="act">Click: hunt</span>':''}// (livestock: never hovered)
 }
 const asHerd=asClass(Herd);
