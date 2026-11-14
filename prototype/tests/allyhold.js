@@ -15,9 +15,13 @@ Kit.suite(({ok})=>{
   // (two-sided: the watch is on your side)
   {const {b,watch}=fight();ok(watch.length&&watch.every(u=>u.team===0),'the watch joins on your side');t.skipBattle();t.resolveBattle();ok(!b.over,'your army still fighting: no skip, no auto-resolve');
    for(const u of b.units)if(u.team===0&&!watch.includes(u))u.hp=0;t.checkBattleOver();ok(!b.over,'two-sided: your army down, the watch fights on');
-   t.bhudSkip();const bar=document.getElementById('bSkip');ok(bar&&!bar.hidden&&bar.querySelector('[data-bskip]')&&bar.querySelector('[data-bres]'),'(the owner, 2026-10-30) your army down in any battle: Skip to the end and Auto-resolve');
-   window.Math.random=()=>.01;try{bar.querySelector('[data-bres]').click()}finally{window.Math.random=rnd}ok(b.over&&b.win,'Auto-resolve: settled at once by the strength left (the twelve of the watch against two)');t.finishBattle();t.bhudSkip();ok(!t.B&&(!document.getElementById('bSkip')||document.getElementById('bSkip').hidden),'and the bar is gone')}
+   /* (one button: Auto-resolve beside it was the same choice, the owner, 2026-11-14, "redundant"; resolveBattle still settles at once) */
+   t.bhudSkip();const bar=document.getElementById('bSkip');ok(bar&&!bar.hidden&&bar.querySelector('[data-bskip]')&&!bar.querySelector('[data-bres]'),'(the owner, 2026-10-30) your army down in any battle: Skip to the end, one button (2026-11-14)');
+   window.Math.random=()=>.01;try{t.resolveBattle()}finally{window.Math.random=rnd}ok(b.over&&b.win,'settled at once by the strength left (the twelve of the watch against two)');t.finishBattle();t.bhudSkip();ok(!t.B&&(!document.getElementById('bSkip')||document.getElementById('bSkip').hidden),'and the bar is gone')}
   {const {b,watch}=fight();for(const u of b.units)if(u.team===0&&!watch.includes(u))u.hp=0;t.checkBattleOver();t.skipBattle();ok(b.over&&b.win,'Skip to the end in a battle of two: fought out at once');t.finishBattle()}
+  // (no one fights on for you: no bar, not even for the moment before the fight is called over; the owner, 2026-11-14)
+  {const {b}=fight();for(const u of b.units)if(u.team===0)u.hp=0;const el=document.getElementById('bSkip');if(el)el.hidden=true;t.bhudSkip();
+   ok(!b.over&&(!document.getElementById('bSkip')||document.getElementById('bSkip').hidden),'your army and every ally down, the fight not yet called over: no Skip bar for that moment');t.checkBattleOver();ok(b.over,'and it is over');t.finishBattle()}
   // (several armies: your army down, they fight on; they win: Victory)
   {const {b,watch}=fight();b.sides.activate();ok(b.sides.active&&watch.every(u=>u.team!==0&&b.sides.relation(0,u.team)>0),'several armies: the watch is its own army, beside you');
    for(const u of b.units)if(u.team===0)u.hp=0;t.checkBattleOver();ok(!b.over,'your army down: the battle goes on while the watch fights');
