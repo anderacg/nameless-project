@@ -1886,8 +1886,19 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
  }
  const isHelmet=c=>/helm|bascinet|sallet|nasal|kettle|coif/.test(c.headwear);
  // Helmet contours and fittings come from their own rig; atlas borders are never stretched into metal.
+ // Smooth only the lighting field; material pixels and silhouette alpha keep their native detail.
+ const helmetLights=new WeakMap();
+ function helmetLight(layer,mask){
+  if(helmetLights.has(layer))return helmetLights.get(layer);const weights=[1,3,6,7,6,3,1],sum=new Float32Array(N*N),coverage=new Float32Array(N*N),light=new Float32Array(N*N);
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++)for(let i=-3;i<=3;i++){const xx=x+i;if(xx<0||xx>=N)continue;const k=(y*N+xx)*4;if(mask[k+3]){sum[y*N+x]+=mask[k]*weights[i+3];coverage[y*N+x]+=weights[i+3];}}
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){let value=0,total=0;for(let i=-3;i<=3;i++){const yy=y+i;if(yy<0||yy>=N)continue;const k=yy*N+x;value+=sum[k]*weights[i+3];total+=coverage[k]*weights[i+3];}light[y*N+x]=total?value/total:128;}
+  helmetLights.set(layer,light);return light;
+ }
+ function helmetShade(light,x,y){
+  x=Math.max(0,Math.min(N-1,x-.5));y=Math.max(0,Math.min(N-1,y-.5));const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,right=Math.min(N-1,ix+1),bottom=Math.min(N-1,iy+1);return (light[iy*N+ix]*(1-fx)+light[iy*N+right]*fx)*(1-fy)+(light[bottom*N+ix]*(1-fx)+light[bottom*N+right]*fx)*fy;
+ }
  function paintedHelmet(p,colors,size,id){
-  const out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,scale=size/N,A=p.anchors,c=p.config,mask=p.layers[id].getContext('2d').getImageData(0,0,N,N).data,steel=frame(1,19),horn=frame(1,18),mail=frame(1,11),target=hex(colors.headwear),base=hex(E.colors.headwear),b=bounds(mask);if(!b)return out;
+  const out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,scale=size/N,A=p.anchors,c=p.config,mask=p.layers[id].getContext('2d').getImageData(0,0,N,N).data,steel=frame(1,19),plate=frame(1,12),horn=frame(1,18),mail=frame(1,11),target=hex(colors.headwear),base=hex(E.colors.headwear),b=bounds(mask);if(!b)return out;const lighting=helmetLight(p.layers[id],mask);
   const chain=c.headwear==='coif'||id==='headwearBack'&&/bascinet|dwarf|great-helm/.test(c.headwear),closed=E.faceCoveringHelmets.includes(c.headwear);
   const outside=new Uint8Array(N*N),queue=[];if(closed&&id==='headwearFront'){for(let y=0;y<N;y++)for(let x=0;x<N;x++)if((!x||!y||x===N-1||y===N-1)&&!mask[(y*N+x)*4+3]){const i=y*N+x;outside[i]=1;queue.push(i);}for(let at=0;at<queue.length;at++){const i=queue[at],x=i%N,y=Math.floor(i/N);for(const j of [x?i-1:-1,x<N-1?i+1:-1,y?i-N:-1,y<N-1?i+N:-1])if(j>=0&&!outside[j]&&!mask[j*4+3]){outside[j]=1;queue.push(j);}}}
   for(let Y=0;Y<size;Y++)for(let X=0;X<size;X++){
@@ -1897,9 +1908,8 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
    if(chain){const s=sample(mail,.12+x/N*.76,.4+(y%34)/34*.5);rgb=recolor(s.rgb,target,base);}
    else{
     const ivory=/horned|tusked/.test(c.headwear)&&Math.abs(x-A.cx)>A.w+1&&y<A.eyes[0].y-7;
-    const s=ivory?sample(horn,x<A.cx?.11:.89,.23):sample(steel,.28+u*.42,.14+v*.2),raw=s.alpha?s.rgb:sample(steel,.42,.3).rgb,lum=raw.reduce((a,b)=>a+b,0)/3;
-    const tone=mask[k],light=Math.max(24,Math.min(245,24+tone*.85+(lum-145)*.28));
-    rgb=raw.map(n=>clamp(n*light/Math.max(1,lum)));if(!ivory)rgb=recolor(rgb,target,base);
+    const s=ivory?sample(horn,x<A.cx?.11:.89,.23):sample(steel,.17+u*.27,.12+v*.28),raw=s.alpha?s.rgb:sample(steel,.42,.3).rgb,grain=sample(plate,.37+u*.28,.42+v*.42).rgb,light=helmetShade(lighting,x,y),detail=Math.max(-75,Math.min(28,mask[k]-light));
+    rgb=raw.map((n,i)=>clamp(Math.max(20+n*.1,n*.65+grain[i]*.35+(light-180)*1.35+detail*.6)));if(mask[k]<=48)rgb=rgb.map(n=>clamp(n*.28));if(!ivory)rgb=recolor(rgb,target,base);
    }
    put(d,(Y*size+X)*4,rgb,255);
   }
