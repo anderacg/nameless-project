@@ -122,7 +122,7 @@ function loadGame(slot){
     ...(made?forgeSteps(M.gen,M.settings,r=>made.r=r):[]),
     {id:'apply',label:'Restoring holdings and parties',w:160,run:()=>{const r=made&&made.r;
       if(d.world.map.sum!==(r?r.map.sum:WM.sum))throw new Error(OTHER_WORLD);worldFits(d.world,r&&r.holdings);if(r)forgeInstall(r);applySave(d)}},
-    {id:'paint',label:'Painting the land',w:120,run:()=>{paintView();G.saved={day:d.day,sig:saveSig(saveRecord())}}},{id:'walls',label:'Raising the walls',w:120,run:holdShutWarm}],// (as loaded: nothing to lose yet)
+    {id:'paint',label:'Painting the land',w:120,run:function*(){yield* paintViewSteps();G.saved={day:d.day,sig:saveSig(saveRecord())}}},{id:'near',label:'Building the villages',w:40,run:buildNear},{id:'walls',label:'Raising the walls',w:120,run:holdShutWarm}],// (as loaded: nothing to lose yet)
     {back:['Back to your saves',()=>showTitle('load')]}).catch(()=>{});// (a failure shows itself)
 }
 // Schema v3 only. No conversion, old gear/roster aliases or legacy-world migration.

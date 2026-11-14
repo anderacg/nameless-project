@@ -39,5 +39,12 @@ Kit.suite(({ok,info})=>{
   const held=a.bystanders?.entries.has(cv),d=Math.hypot(cv.x-a.x,cv.y-a.y),p=[cv.x,cv.y];for(let i=0;i<60;i++)t.openFightWorld(.05);
   ok(held&&t.fightHolds(cv)&&!a.participants.has(cv)&&d>d0,'a caravan by the fight steps aside out of its way ('+Math.round(d0)+' → '+Math.round(d)+' px from its middle)');
   ok(cv.x===p[0]&&cv.y===p[1],'and waits there: the world running on leaves it be till the fight is over')}
+ // (a party that would meet you, turned away, never stops the rest of the world's moment: Systems.frame through)
+ {const S=t.Systems,L=S.list,pa=L.find(s=>s.name==='parties'),pm=L.find(s=>s.name==='patrol moves'),f0=pa.frame,f1=pm.frame;let n=0;b.paused=false;
+  pa.frame=()=>true;pm.frame=()=>{n++};try{t.openFightWorld(.05)}finally{pa.frame=f0;pm.frame=f1}ok(n===1,'a party that would meet you (and is turned away) does not stop the systems after it in a fight')}
+ // (Esc's menu over the fight: your band's days still held; the fight gone, they run)
+ {const S=t.Systems;S.hold=new Set(t.OPEN_FIGHT.held);S.waiting.length=0;S.waiting.push([S.list.find(s=>s.name==='band'),'day']);const m=G.mode;G.mode='esc';
+  t.openFightOver();ok(S.hold&&S.waiting.length===1,'Esc\'s menu over the fight: your band\'s day still held');G.mode=m;
+  window.__b0=t.B;window.eval('B=null');S.waiting.length=0;t.openFightOver();window.eval('B=window.__b0');ok(!S.hold,'the fight gone: they run')}
  t.Systems.hold=null;t.Systems.waiting.length=0;
 });
