@@ -1,4 +1,17 @@
 'use strict';
+// Keep quick taps visible after release, without changing actions or stealing focus.
+{
+ const timers=new WeakMap(),selector='button,.btn,[role="button"],input[type="button"],input[type="submit"]';
+ document.addEventListener('click',e=>{
+  const b=e.target.closest?.(selector);if(!b||b.matches(':disabled,[aria-disabled="true"]'))return;
+  queueMicrotask(()=>{
+   const target=b.isConnected?b:(b.id?document.getElementById(b.id):null);
+   if(e.defaultPrevented||!target?.matches(selector)||target.matches(':disabled,[aria-disabled="true"]'))return;
+   clearTimeout(timers.get(target));target.classList.add('ui-clicked');
+   timers.set(target,setTimeout(()=>{target.classList.remove('ui-clicked');timers.delete(target)},180));
+  });
+ },true);
+}
 /* ---------- actions ---------- */
 function act(a,arg){
   if(a==='begin')return begin(arg);
@@ -345,8 +358,7 @@ class MobileWorldHud{
     this.screen=$('#screen');this.enabled=false;
     this.root=document.createElement('div');this.root.className='mobile-world-hud';this.root.hidden=true;
     this.root.innerHTML='<div class="mwh-status"><div data-place="day"></div><button type="button" id="partyToggle" aria-controls="stats" aria-expanded="false"><span>Party status</span> <b aria-hidden="true">▴</b></button></div>'+
-      '<nav class="mwh-dock" aria-label="World controls"><div data-place="pause"></div><button type="button" id="speedToggle" aria-controls="worldSpeedChoices" aria-expanded="false"><strong>1× ▴</strong><small>Speed</small></button><div data-place="map"></div><div data-place="army"></div><div data-place="menu"></div></nav>'+
-      '<div id="worldSpeedChoices" class="mwh-speeds" role="group" aria-label="Travel speed" hidden></div>';
+      '<nav class="mwh-dock" aria-label="World controls"><div data-place="pause"></div><div class="mwh-speed-control"><button type="button" id="speedToggle" aria-controls="worldSpeedChoices" aria-expanded="false"><strong>1× ▴</strong><small>Speed</small></button><div id="worldSpeedChoices" class="mwh-speeds" role="group" aria-label="Travel speed" hidden></div></div><div data-place="map"></div><div data-place="army"></div><div data-place="menu"></div></nav>';
     $('.hudlayer').appendChild(this.root);
     this.speedButton=$('#speedToggle');this.partyButton=$('#partyToggle');this.choices=$('#worldSpeedChoices');
     this.mapChoices=document.createElement('div');this.mapChoices.id='worldMapChoices';this.mapChoices.className='mwh-map';this.mapChoices.hidden=true;this.mapChoices.setAttribute('role','group');this.mapChoices.setAttribute('aria-label','Map view and zoom');this.mapChoices.innerHTML='<strong>Map view</strong><div class="mwh-map-actions"><div data-place="mapOut"></div><div data-place="mapIn"></div><div data-place="mapFull"></div></div>';this.root.appendChild(this.mapChoices);this.mapChoices.addEventListener('click',e=>{if(e.target.closest('[data-act="hunt-area"]')){WildHunt.toggle();this.close()}});

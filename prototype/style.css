@@ -118,7 +118,7 @@ button,.btn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none
   background:var(--button-face);border:1px solid var(--trim);border-radius:var(--r-sm);box-shadow:var(--plate),0 2px 0 #000;text-shadow:0 1px 0 #000;cursor:pointer;
   transition:background .12s,border-color .12s,color .12s}
 @media (hover:hover){.btn:hover:not(:disabled){border-color:var(--trim-hi);color:#fff7df;background:var(--button-hi)}}
-.btn:active:not(:disabled){transform:translateY(1px);box-shadow:var(--plate),0 1px 0 #000}
+.btn:active:not(:disabled){box-shadow:var(--plate),0 1px 0 #000}
 .btn:disabled{opacity:.42;cursor:not-allowed}
 /* (the way on: gilt) */
 .btn.primary{background:var(--button-gilt);color:#fff3cf;border-color:var(--trim-hi)}

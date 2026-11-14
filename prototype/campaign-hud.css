@@ -32,7 +32,7 @@
 .campaign-world:not(.mobile-world) .dockrow:not(.sys) .campaign-command-art{display:block;width:52px;height:53px}.campaign-world:not(.mobile-world) .dockrow:not(.sys) .dbtn>.gico{display:none}.campaign-world:not(.mobile-world) .dockrow:not(.sys) .dl{font:13px var(--hud-font)}
 .campaign-world:not(.mobile-world) .dbtn kbd{top:-8px;right:calc(50% - 9px);padding:1px 4px;border:1px solid #9c824f;background:#26251c;color:#e1cc92;font:700 10px/13px var(--hud-font)}
 .campaign-world:not(.mobile-world) .dockrow.sys .dbtn{min-width:38px;min-height:32px;padding:1px 7px;border:4px solid transparent;border-image:var(--campaign-frame) 176/7px;border-radius:0;color:var(--hud-ink)}
-.campaign-world button:focus-visible{outline:2px solid #f1d88b;outline-offset:2px}.campaign-world .dbtn:active{transform:translateY(1px)}
+.campaign-world button:focus-visible{outline:2px solid #f1d88b;outline-offset:2px}
 .campaign-survey{position:absolute;right:var(--e-r);bottom:var(--e-b);width:var(--survey-width);padding:0;border:10px solid transparent;border-image:var(--campaign-frame) 176/10px;pointer-events:none}
 .campaign-survey>span{position:absolute;top:-8px;left:calc(50% - 12px);width:24px;padding:1px;text-align:center;border:1px solid #a0834b;border-radius:2px;background:#26251c;color:#d7bd7a;font:700 11px var(--hud-font);z-index:1}.campaign-survey small{display:none}
 .campaign-mini-slot{position:relative;display:block;width:100%;aspect-ratio:1.4;appearance:none;margin:0;padding:0;border:0;background:transparent;box-shadow:none;pointer-events:auto;cursor:pointer}
@@ -82,8 +82,8 @@
 /* One time strip, without nested button frames. */
 .campaign-world .wtime{border-left:1px solid #8b744666;padding-left:6px;margin-left:2px}
 .campaign-world .wtime .tbtn{border:0;border-image:none;border-radius:0;background:none;box-shadow:none;padding:2px 5px;color:var(--hud-ink)}
-.campaign-world .wtime .tbtn.on{border:0;border-image:none;background:none;box-shadow:inset 0 -2px #c9a65c;color:#f0d28c}
-.campaign-world:not(.mobile-world) .wtop .wtime .tbtn{border:0;border-image:none;background:none;box-shadow:none}.campaign-world:not(.mobile-world) .wtop .wtime .tbtn.on{box-shadow:inset 0 -2px #c9a65c}
+.campaign-world .wtime .tbtn.on{border:0;border-image:none;background:none;box-shadow:none;color:#f0d28c}
+.campaign-world:not(.mobile-world) .wtop .wtime .tbtn{border:0;border-image:none;background:none;box-shadow:none}.campaign-world:not(.mobile-world) .wtop .wtime .tbtn.on{box-shadow:none}
 .campaign-world:not(.mobile-world) .wday{padding-left:12px}.campaign-world.mobile-world .mwh-status>[data-place="day"]{padding-left:8px}
 @media(max-width:1250px){.campaign-brand{flex-basis:200px;font-size:14px}.campaign-resource-art{width:20px;height:20px}}
 @media(max-width:1020px){.campaign-brand{flex-basis:150px;font-size:12px}.campaign-army-flag{width:20px}.campaign-army-flag .tipflag{max-width:20px;height:26px}.campaign-world:not(.mobile-world) #stats .bars{grid-template-columns:70px minmax(0,1fr);column-gap:8px}.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition{grid-template-columns:14px 1fr}.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition-art{width:14px;height:16px}.campaign-world:not(.mobile-world) #stats .bar.sta .campaign-condition-name{font-size:10px}}
@@ -175,3 +175,27 @@
 .slot .item-illustration{width:28px;height:28px}.doll .slot .item-illustration,.invgrid .slot .item-illustration{width:26px;height:26px}.slot.ring .item-illustration{width:22px;height:22px}.doll .slot.ring .item-illustration{width:18px;height:18px}.loot-item .slot .item-illustration{width:24px;height:24px}.gc-item .item-illustration{width:32px;height:32px}.gc-tip .gc-item .item-illustration{width:24px;height:24px}.qrw-item .item-illustration{width:20px;height:20px}.fb-gear-row .item-illustration{width:36px;height:36px}.fb-shell .slot .item-illustration{width:32px;height:32px}.fb-item-summary .item-illustration{width:48px;height:48px}
 
 .slot-ghost .item-illustration{width:32px;height:32px}
+
+/* Shared interaction lighting survives the illustrated frames on desktop and touch. */
+:where(button,.btn,[role="button"],input[type="button"],input[type="submit"]){transition:filter .12s ease,translate .08s ease,outline-color .12s ease,border-color .12s ease,color .12s ease}
+:where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):is(.on,.selected,[aria-pressed="true"],[aria-selected="true"],[aria-expanded="true"]):not(:disabled,[aria-disabled="true"]){outline:1px solid #dfbd75;outline-offset:-3px;filter:brightness(1.12) saturate(1.12)}
+.campaign-world :is(.wtime button,.mwh-speeds [data-speed]).on:not(:active,.ui-clicked,:focus-visible){outline:none}
+#screen.campaign-world .wtop .wtime .tbtn.on,#screen.campaign-world .mwh-speeds [data-speed].on{background:radial-gradient(ellipse at 50% 45%,#d0a64f5c,#9e71372b 70%,transparent);box-shadow:none;border-radius:3px;color:#ffe4a8}
+/* Phone speed controls keep one complete frame; open/selected state fills the surface. */
+#screen.campaign-world.mobile-world .mwh-speeds .wtime .tbtn{border:3px solid transparent;border-image:var(--campaign-frame) 176/6px;border-radius:0;box-shadow:none;text-decoration:none}
+#screen.campaign-world.mobile-world #speedToggle[aria-expanded="true"]{background:linear-gradient(#b69b5a75,#6f542b75),var(--campaign-wood);background-size:auto,640px 320px;color:#ffe4a8;box-shadow:none;text-decoration:none}
+#screen.campaign-world.mobile-world #speedToggle[aria-expanded="true"]:not(:active,.ui-clicked,:focus-visible){outline:none}
+#screen.campaign-world.mobile-world .mwh-speed-control{position:relative}
+#screen.campaign-world.mobile-world .mwh-speed-control .mwh-speeds{bottom:calc(100% - 3px);left:50%;right:auto;transform:translateX(-50%);width:192px;padding:2px;border:3px solid transparent;border-image:var(--campaign-frame) 176/6px;z-index:3}
+#screen.campaign-world.mobile-world .mwh-speed-control .wtime{width:100%;margin:0;padding:0;border:0;gap:2px;grid-template-columns:repeat(4,44px)}
+#screen.campaign-world.mobile-world .mwh-speed-control .tbtn{width:44px;min-width:44px;height:44px;min-height:44px;padding:2px}
+@media(hover:hover) and (pointer:fine){
+ :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):hover:not(:disabled,[aria-disabled="true"]){filter:brightness(1.2) saturate(1.08)}
+}
+:where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):is(:active,.ui-clicked):not(:disabled,[aria-disabled="true"]){filter:brightness(1.4) saturate(1.12);translate:0 1px;outline:2px solid #f1d394;outline-offset:-3px;transition-duration:.04s}
+:where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):focus-visible{outline:2px solid #ffe0a0!important;outline-offset:3px!important}
+:where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):is(:disabled,[aria-disabled="true"]){filter:brightness(.7) saturate(.45);opacity:.55;cursor:not-allowed}
+@media(prefers-reduced-motion:reduce){
+ :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]){transition:none!important}
+ :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):is(:active,.ui-clicked){translate:none!important}
+}

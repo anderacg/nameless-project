@@ -18,7 +18,8 @@ Kit.suite(({ok})=>{
  const buttons=[document.getElementById('pause'),speed,...['mapToggle','charBtn','menuBtn'].map(id=>document.getElementById(id))],r=rect(root);
  ok(buttons.every(b=>{const p=rect(b);return root.contains(b)&&p.width>=44&&p.height>=44&&p.left>=r.left&&p.right<=r.right&&p.bottom<=r.bottom})&&buttons.every((b,i)=>!i||rect(b).left>=rect(buttons[i-1]).right),'the five thumb-sized controls fit in one row without overlapping');
  {const sc=rect(document.getElementById('screen'));ok(r.bottom<=sc.bottom+.5&&r.top>sc.top+sc.height/2,'the dock stays inside the screen at the bottom (the game’s screen: the tests’ fixed view)')}
- click('speedToggle');const choices=hud.choices;ok(!choices.hidden&&speed.getAttribute('aria-expanded')==='true'&&rect(choices).bottom<=r.top,'speed choices expand above the dock');
+ click('speedToggle');const choices=hud.choices,cr=rect(choices),sr=rect(speed);ok(!choices.hidden&&speed.getAttribute('aria-expanded')==='true'&&Math.abs(cr.left+cr.width/2-sr.left-sr.width/2)<1&&cr.bottom>=sr.top&&cr.bottom<=sr.top+4&&cr.width<=200,'compact speed choices connect directly above their own button');
+ ok([...choices.querySelectorAll('[data-speed]')].every(b=>rect(b).width>=44&&rect(b).height>=44)&&cr.left>=rect(document.getElementById('screen')).left&&cr.right<=rect(document.getElementById('screen')).right,'compact speed choices preserve thumb targets and stay on screen');
  choices.querySelector('[data-speed="4"]').click();ok(G.speed===4&&choices.hidden&&speed.textContent.includes('4×'),'choosing a speed updates the existing clock and collapses the picker');
  click('pause');ok(!G.paused&&G.speed===4,'Pause/Play stays directly accessible without changing the selected speed');click('pause');
  click('speedToggle');cv.click();ok(choices.hidden,'tapping the map dismisses the speed picker');
