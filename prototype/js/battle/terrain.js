@@ -336,7 +336,7 @@ class BattleTerrain{
     return o}
   /* (the river down the field, or null; water: the neighbouring tiles of water. Water near runs a river ({bridge: a road bridge
      within TERRAIN_RIVER.near tiles, frozen: in the frost}); a swamp with none near has a ford-only stream at streamP ({stream}), a
-     frost field a frozen river at frostP; a desert never (its oasis). World Phase 2: BattleSite's river (a generated world's)
+     frost field a frozen river at frostP (none by a pond: its water); a desert never (its oasis). World Phase 2: BattleSite's river (a generated world's)
      runs one by its crossing (the nearest within WORLD_SCALE.battle.bridge tiles): a bridge (the world's bridge: the field's one
      bridge, and a ford), a ford (fords only), a ferry (one ford at its landing), or none (fords only, as with no bridge); its
      width and wet ground: worldOf) */
@@ -345,6 +345,7 @@ class BattleTerrain{
     if(S.river){const k=S.crossing&&S.crossing.kind;return{bridge:k==='bridge',...(k==='ferry'?{ferry:true}:{}),frozen:env.c==='frost'}}
     if(water>0)return{bridge:S.bridge!==null&&S.bridge<=TERRAIN_RIVER.near,frozen:env.c==='frost'};
     if(S.brook)return{stream:true};// (a brook (World Phase 2b): a stream crossed anywhere)
+    if(S.pond)return null;// (a pond by it (World Phase 2b) is its water near: no stream or frozen river by chance, over its pool)
     if(recipe==='swamp'&&hash(S.tx,S.ty,code+101)<TERRAIN_RIVER.streamP)return{stream:true};
     if(env.c==='frost'&&hash(S.tx,S.ty,code+103)<TERRAIN_RIVER.frostP)return{frozen:true};
     return null}

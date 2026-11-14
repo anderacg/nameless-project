@@ -24,9 +24,11 @@ Kit.suite(({ok})=>{
  ok(!u.regroup&&!u.left&&!u.rout&&u.hp===hp&&u.sta===sta&&a.inside(u,17),'routed unit physically returns and accepts orders without healing or fatigue reset');
  gr.resolve.worldReturns=t.WORLD_BATTLE.returns;gr.resolve.routed=true;u.rout=true;u.shattered=true;u.x=a.cx+a.radius+4;u.y=a.cy;a.escape(u,.01);
  ok(u.left&&!u.regroup,'a second rout leaves permanently rather than looping at the boundary');t.WORLD_BATTLE.returns=returns;
- const ctx=t.ctx,fill=ctx.fillRect,arrows=b.arrows.slice(),scale=t.WORLD_BATTLE.sprite;
+ // (an arrow in flight is its own picture since b4d4bf1 (weapons.js missileSprite, flying east here: angle 0), no longer a pale
+ // fillRect: its scale read where that picture is drawn)
+ const ctx=t.ctx,draw=ctx.drawImage,arrows=b.arrows.slice(),scale=t.WORLD_BATTLE.sprite,pic=t.missileSprite('arrow',0);
  try{for(const arc of [false,true]){const shapes=[];b.arrows=[{arc,x:b.hero.x,y:b.hero.y,z:0,a:0,vx:1,vy:0,vz:0,t:0,by:{type:'hum_bow'}}];
-   ctx.fillRect=function(x,y,w,h){if(this.fillStyle==='#e8e4d0'&&x===-4&&w===7)shapes.push(this.getTransform().a);return fill.call(this,x,y,w,h)};
+   ctx.drawImage=function(img,...r){if(img===pic)shapes.push(this.getTransform().a);return draw.call(this,img,...r)};
    t.drawBattle();ok(shapes.some(k=>Math.abs(Math.abs(k)-b.cam.z*scale)<.0001),'physical '+(arc?'arcing':'direct')+' arrow draws at world character scale');
-  }}finally{ctx.fillRect=fill;b.arrows=arrows}
+  }}finally{ctx.drawImage=draw;b.arrows=arrows}
 });

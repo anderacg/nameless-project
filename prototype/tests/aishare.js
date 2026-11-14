@@ -108,9 +108,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
    const bt=document.getElementById('bAuto');ok(bt.getAttribute('aria-pressed')==='mixed'&&bt.classList.contains('some'),'the AI button shows some of your army the AI’s');
    t.setOrderUI();const card=g=>document.querySelector('.ucard[data-grp="'+g+'"]');
    ok(card(inf).querySelector('[data-st="ai"]')&&card(arc).querySelector('[data-st="ai"]')&&!card(cav).querySelector('[data-st="ai"]')&&/the AI in command/.test(card(inf).title),'their unit cards carry the AI badge, yours none'+' ('+[inf,arc,cav].map(g=>g+': '+(card(g)?card(g).title:'no card')).join(' | ')+')');
-   // (the field icon: the badge first beside it, its violet rim drawn)
+   // (the field icon: the badge first beside it, its violet rim drawn; a pixel within 30 of the rim's colour: since cd4ec51 the badge
+   // is round (ui/icons.js uiCanvasBadge; the AI's, its "AI" lettering, since 564e5ce always so), its rim a stroke drawn smooth, so
+   // its pixels are blended at its edges, none of them the exact colour; the pixel badge, as ever, too)
    t.frame();const it=t.iconLayout(0).find(x=>x.g===inf);t.frame();const ic=B.icons.find(r=>r.g===inf),cx=document.querySelector('canvas').getContext('2d', { willReadFrequently: true });
-   let violet=0;if(ic){const K=t.unitIconScale(),S=t.UICON.s,d=cx.getImageData(ic.x+(S+2)*K,ic.y,9*K,9*K).data;for(let i=0;i<d.length;i+=4)if(d[i]===0xb4&&d[i+1]===0x8c&&d[i+2]===0xf0)violet++}
+   let violet=0;if(ic){const K=t.unitIconScale(),S=t.UICON.s,d=cx.getImageData(ic.x+(S+2)*K,ic.y,9*K,9*K).data;for(let i=0;i<d.length;i+=4)if(Math.hypot(d[i]-0xb4,d[i+1]-0x8c,d[i+2]-0xf0)<30)violet++}
    ok(it&&it.st[0]==='ai'&&violet>=10,'and their icons on the field: the AI badge beside it ('+violet+' violet rim pixels)');
    // (who gives the AI's orders to whom: every order to a group of yours while the captains think, command())
    const M=['hold','moveTo','toHold','queueTo','placeAt','standAt','attack','charge','advance','withdraw','setWalk','setRun','setFlag','setForm','useAbility','faceTo'],P0={},got={};let inCmd=false;
