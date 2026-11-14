@@ -801,7 +801,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  were all 6; sites.js HIDEOUT_PLACE a hideout 18 from a hamlet, was 12; a monster's lair 352 px from one, monsterHold, was 256),
 //  so the spots, the save, the parties and begin twice differ (W6-W8, B2). Checked: with those numbers put back all nine and the five
 //  sums hold. Were W1 98411198, W2 8e3ee885, W3 781cbbb1, W4 50f147c1, W5 12a104e8, W6 6a9152f3, W7 114de65b, W8 de15fa32, B2 3db1d068)
-const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'9bb821e8',W5:'e1408b54',W6:'99c0f3f4',W7:'7bc521e3',W8:'8d52d85b',B2:'2c5e4c3d'};
+// (W7 and B2 re-recorded 2026-11-14, on purpose: the owner, “make sure the standard term is the outpost”: an outpost's site type
+//  in the save 'outpost' (data/outposts.js OUTPOST_TYPE, was 'standard'), so the save's words change; the world and its outposts
+//  as before. Checked: with OUTPOST_TYPE 'standard' both are as recorded above. Were W7 7bc521e3, B2 2c5e4c3d)
+const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'9bb821e8',W5:'e1408b54',W6:'99c0f3f4',W7:'8d39cdc0',W8:'8d52d85b',B2:'447d8fea'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

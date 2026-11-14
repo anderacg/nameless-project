@@ -10,8 +10,8 @@
 // garrison"): posts in an arc in front of the flag, r px either side, walked at pace px a game minute, a stand of stand game
 // minutes at each; after a round of them, rest game minutes in its tower (none standing: by the flag's foot), each sentry's turn
 // a share of the round apart, so one rests while the others walk
-// (an outpost's site type in W.sites, as saves keep it: the word it was first named by, kept so a save before the rename still loads)
-const OUTPOST_TYPE='standard';
+// (an outpost's site type in W.sites, as saves keep it; 'standard' till 2026-11-14, the owner: "make sure the standard term is the outpost")
+const OUTPOST_TYPE='outpost';
 const OUTPOST={on:true,guards:[0,3,6,10],hold:4,r:44,renown:4,thanks:6,regrow:1,I0:200000,hostile:{days:20,honor:-10},
   grow:{days:[0,8,14],cost:{2:{timber:14},3:{timber:8,stone:20}}},repair:{days:4,cost:{timber:6,stone:6}},sentries:{most:3,r:28,stride:2,posts:4,pace:4,stand:[20,40],rest:120,walk:16,snap:40},
   // (phase 3) capture: a lord with more times its guards within r tiles takes it, chance a day; a band takes one held by weak guards
@@ -28,7 +28,7 @@ const OUTPOST={on:true,guards:[0,3,6,10],hold:4,r:44,renown:4,thanks:6,regrow:1,
   // land: the land a held one claims round it for its realm (world/territory.js, as a holding's reach: travel cost from its tile),
   // reach[lv] by its level (one fewer while its tower lies broken); its tiles its realm's nearest holding's
   land:{reach:[0,5,7,9]},
-  T:{n:'Outpost',ico:'banner',col:'#e8b94a',d:'A realm’s outpost on its land: a tall flag pole on a stepped stone plinth, its banners hung from a crossbar, its guards beside it.'}};// (an outpost to the player, a standard in the code)
+  T:{n:'Outpost',ico:'banner',col:'#e8b94a',d:'A realm’s outpost on its land: a tall flag pole on a stepped stone plinth, its banners hung from a crossbar, its guards beside it.'}};
 // OUTPOST_PLACE: where they stand (doc §2). score: by why (a deposit, a pass, a ford, a road crossing), and add more on a border with
 // another realm's land (within border.r tiles); town: tiles from any holding, clear: tiles to anything built; gap: tiles between two; per province base + one for
 // each per of its holdings, most at most, one more where it borders another realm, a kind it has already worth same less (its

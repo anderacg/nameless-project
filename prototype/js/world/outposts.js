@@ -9,7 +9,7 @@
    peace it grows a level, paid in timber and stone from its realm's nearest holding (OUTPOST.grow); taken, its tower is broken
    (fewer guards) and mended slowly, again on timber and stone (OUTPOST.repair) ---------- */
 // (what stands there by its level, in words: the owner, 2026-11-10, "can we rename it to something more straightforward?": an outpost;
-// in the code too since 2026-11-12, "refactor the name standards to outpost", its sites' saved type still 'standard': OUTPOST_TYPE)
+// in the code too since 2026-11-12, "refactor the name standards to outpost", and its sites' saved type since 2026-11-14: OUTPOST_TYPE)
 const OUTPOST_LV=['','a flag post','a flag post and a watchtower','a flag post and a stone tower'];
 // (each outpost's sentries as they walk on the map: drawn only, never saved)
 const SENTRY_MEN=new WeakMap();
@@ -205,7 +205,7 @@ const Outposts={
   landKey(){if(!this.live)return 0;let h=1,n=0;for(const s of this.posts())if(s.type===OUTPOST_TYPE){n++;h=Math.imul(h^landOwnId(s.owner)*8^s.lv*2^(s.broken?1:0)^(s.choose?64:0),0x9e3779b1)+s.i|0}return n?h>>>0||1:0},
   of(i){return this.all().find(s=>s.i===i)||null},
   // (their tiles kept free of every holding's building: lots.js occReserve, lotFits)
-  reserve(){this.live=true;if(typeof OCC==='undefined'||!OCC)return;for(const s of this.all())for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},// (-3: a standard's, no lot's: Outposts.stand looks past them)
+  reserve(){this.live=true;if(typeof OCC==='undefined'||!OCC)return;for(const s of this.all())for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},// (-3: an outpost's, no lot's: Outposts.stand looks past them)
   spots(){const S=OUTPOST_PLACE,road=(x,y)=>{const k=tAt(x,y);return k===T_ROAD||k===T_FORD},peak=(x,y)=>tAt(x,y)===T_MOUNT,out=[];
     for(let ty=3;ty<MH-3;ty++)for(let tx=3;tx<MW-3;tx++){const k=tAt(tx,ty);let why=null;
       if(k===T_FORD)why='ford';
