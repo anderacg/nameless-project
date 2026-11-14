@@ -394,11 +394,11 @@ function makeCamp(){if(P.camp||campWhy())return false;const s=campSpot();G.chase
   if(!s){toast('No clear ground to camp here.','bad','band');return false}
   if(!s.across&&Math.hypot(s.x-P.x,s.y-P.y)<=SUPPLY.camp.hop*TILE){P.x=s.x;P.y=s.y;P.stuck=0;return pitchCamp()}
   P.tx=s.x;P.ty=s.y;P.stuck=0;G.pitch={x:s.x,y:s.y};toast('Your band makes for clear ground to camp.',undefined,'band');return true}
-function pitchCamp(){G.pitch=null;P.camp={at:Clock.hours()};P.tx=P.ty=null;G.chase=null;
+function pitchCamp(){G.pitch=null;P.camp={at:Clock.hours()};CampSite.strike('you');CampSite.pitch('you');P.tx=P.ty=null;G.chase=null;
   toast('Your band makes camp. Stamina comes back faster, and the wounded mend.','good','band');updateHUD(true);return true}
 // your march ends (world.js marchStep): at the clear ground you made for, the band pitches; anywhere else the plan is dropped
 function campArrive(){const p=G.pitch;if(!p)return;G.pitch=null;if(Math.hypot(p.x-P.x,p.y-P.y)<3&&!campWhy()){P.x=p.x;P.y=p.y;pitchCamp()}}
-function breakCamp(why){if(!P.camp)return false;P.camp=null;toast(why||'Your band breaks camp.',undefined,'band');updateHUD(true);return true}
+function breakCamp(why){if(!P.camp)return false;P.camp=null;CampSite.strike('you');toast(why||'Your band breaks camp.',undefined,'band');updateHUD(true);return true}
 function toggleCamp(){return P.camp?breakCamp():makeCamp()}
 // each moment in camp (world.js marchStep): a travel order breaks it (true: the march goes on), but not a press on the map that may
 // yet open the action ring (ui/ring.js RING.press); going faster than 1x, anything hostile in sight brings it back to 1x
@@ -414,8 +414,8 @@ function campCaught(opts){if(!P.camp||opts.tournament||opts.sandbox)return;P.cam
    drawn while you camp (the owner, 2026-10-23: render.js drawWorld pushes this instead), and stand there again when it breaks. In
    the depth order by its feet as everyone is (depth.js worldOverdraw: the trees in front of it drawn over it, whole: nf, none
    faded for it) */
-function bandCampEnt(cam){const c=campAt(P.x,P.y);return{y:c.box[3],nf:1,f:()=>{subT(P);const s=c.s,X=Math.round(c.X-cam.x),Y=Math.round(c.Y-cam.y);
-  ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);BANNERQ.push({o:campPole(c)})}}}
+// (2026-11-14: its tents as many as your army needs, pitched one after another round the fire, world/campsite.js)
+function bandCampEnts(ents,cam){CampSite.draw(ents,cam,{key:'you',x:P.x,y:P.y,n:partySize(),banner:()=>P.banner(),seed:0})}
 // (your banner's pole in the camp: its foot on the ground SUPPLY.camp.pole px from the fire, drawn as yours with the parties'
 // banners, render.js drawBanners: bannerAt lays the pole 2 px right of x - 4, its foot BANNER_GAP over headY)
 const campPole=c=>{const f=c.s.fire,d=SUPPLY.camp.pole;return{x:c.X+f[0]+d[0]+2,y:P.y,faction:'player',banner:()=>P.banner(),headY:()=>Math.round(c.Y+f[1]+d[1])+BANNER_GAP}}

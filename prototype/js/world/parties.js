@@ -85,7 +85,7 @@ class CompanionParty extends Party{
   get brain(){return BRAINS.cparty}
   shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)}
   // (no room for its men (gatefile.js roomFor): it camps by the gate, on the map, its tents pitched there: campOut)
-  enter(t){if(STAY_CAMP.on&&roomFor(t,this.troops.length)){this.campOut=t.name;return}this.campOut=null;GateFile.start(this,t);this.inside=t.name;this.x=t.x;this.y=t.y}
+  enter(t){if(STAY_CAMP.on&&roomFor(t,this.troops.length)){this.campOut=t.name;CampSite.pitch('c:'+this.cid);return}this.campOut=null;GateFile.start(this,t);this.inside=t.name;this.x=t.x;this.y=t.y}
   leave(){this.campOut=null;super.leave()}
   inView(V){return this.onMap()&&yourSight(V).sees(this.x,this.y)}// (yours: always in sight)
   banner(){return{k:'banner',col:FACS.player.col,dev:'star'}}// (yours, a companion's mark on it)

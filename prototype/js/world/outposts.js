@@ -11,6 +11,8 @@
 // (what stands there by its level, in words: the owner, 2026-11-10, "can we rename it to something more straightforward?": an outpost;
 // in the code too since 2026-11-12, "refactor the name standards to outpost", its sites' saved type still 'standard': OUTPOST_TYPE)
 const OUTPOST_LV=['','a flag post','a flag post and a watchtower','a flag post and a stone tower'];
+// (each outpost's sentries as they walk on the map: drawn only, never saved)
+const SENTRY_MEN=new WeakMap();
 class Outpost extends Site{
   get T(){return OUTPOST.T}
   get screen(){return PAGE_SCREEN}
@@ -87,9 +89,18 @@ class Outpost extends Site{
   // (not while a battle is fought on the map: its guards are in it, OutpostTower)
   draw(ents,cam,V){super.draw(ents,cam,V);const X=OUTPOST.sentries,n=Math.min(X.most,this.guards),f=this.realm;if(!n||!f||B&&B.world||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
     const type=this.sentryType(),col=FACS[f].col,mins=(G.day+Clock.frac)*1440;
-    for(let i=0;i<n;i++){const p=this.sentryAt(i,n,mins);if(p.inside)continue;const x=p.x,y=p.y,dir=p.dir,step=p.moving?2+(Math.floor(p.walked/(WALK.foot*WALK.step))+i)%4:Math.floor(mins/X.stride/4+i)%2;// (walking: a step each WALK.foot × step px of its beat, as a marcher's (march.js marcherStep; by the clock's minutes it stepped once a second: the owner, 2026-11-13, "Why the outpost guards looks low framerate"); at a post: breathing)
-      ents.push({y,f:()=>reduced(()=>{const s=unitSprite(type,0,false,(this.seed+i)%6,step,false,false,col),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
-        ctx.save();ctx.translate(Math.round(x-cam.x),Math.round(y-cam.y));ctx.scale(dir*k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore()})})}}
+    /* (each walks as a marcher of an army does (the owner, 2026-11-14: "the outpost patrol still walking weird why dont use the same
+       concepts as guard or sentry"): a man of his own, kept (SENTRY_MEN), on toward where his beat has him now (sentryAt) on the real
+       clock, at least X.walk px a second, his steps by the way he has walked, facing the way he goes, standing his fidgets at a post,
+       drawn as the map's men are, the battle's figure with his weapon in hand (march.js drawMarcher)) */
+    const now=performance.now()/1000,men=SENTRY_MEN.get(this)||(SENTRY_MEN.set(this,[]),SENTRY_MEN.get(this)),o=this.sentryOwner();
+    for(let i=0;i<n;i++){const p=this.sentryAt(i,n,mins);let u=men[i];if(p.inside){if(u)u.gone=true;continue}
+      if(!u||u.gone||Math.hypot(u.x-p.x,u.y-p.y)>X.snap)u=men[i]={id:(this.seed||0)*7+i,type,x:p.x,y:p.y,walk:0,walking:false,dir:p.dir<0?Math.PI:0,t:now};
+      const dt=clamp(now-u.t,0,.1),dx=p.x-u.x,dy=p.y-u.y,d=Math.hypot(dx,dy),s=Math.min(d,Math.max(X.walk*dt,d*Math.min(1,dt*6)));u.t=now;u.type=type;
+      if(s>.02){u.x+=dx/d*s;u.y+=dy/d*s;u.walk+=s;u.walking=true;if(Math.abs(dx)>.3)u.dir=dx<0?Math.PI:0}else{u.walking=p.moving&&d>.5;if(!p.moving)u.dir=p.dir<0?Math.PI:0}
+      ents.push({y:u.y,f:()=>drawMarcher(u,o,cam)})}}
+  // (who the sentries march for, as drawMarcher reads an army: its realm's colours, where it stands)
+  sentryOwner(){const f=this.realm,col=FACS[f].col;return{x:this.x,y:this.y,fac:f,faction:f,mapKind:'patrol',look:()=>({col,dir:1}),banner:()=>({k:'banner',col,dev:f})}}
   // (its beat: the posts round the flag, each outpost's turned by its seed; its tower's door, where a sentry goes in to rest, or the
   // flag's foot with no tower standing)
   // (its beat's posts: an arc in front of it (the map draws its sentries over the outpost, so none may stand behind the flag or the

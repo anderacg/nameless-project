@@ -27,7 +27,7 @@ function sendCaravan(t){
   const sur=surplusOf(t);for(const [g,n] of sur){const to=neediest(t,g);if(!to)continue;const load={[g]:Math.min(n,25)};
     const second=sur.find(([h,m])=>h!==g&&targetStock(to,h)>(to.stock[h]||0));if(second)load[second[0]]=Math.min(second[1],15);
     for(const k in load)t.stock[k]-=load[k];
-    const c=asParty({cv:true,fac:t.owner,from:t.name,to:to.name,x:t.x+rint(-6,6),y:t.y+14,goods:load,guards:rint(3,5)+t.T.guards,cool:0,dir:1});W.caravans.push(c);return c}
+    const c=asParty({cv:true,fac:t.owner,from:t.name,to:to.name,x:t.x+rint(-6,6),y:t.y+14,goods:load,guards:rint(3,5)+t.T.guards,cool:0,dir:1});W.caravans.push(c);GateFile.out(c,t);return c}
   return null;
 }
 function caravanDay(){
@@ -82,7 +82,7 @@ class CaravanParty extends Party{
   rollGuards(){const f=this.fac==='player'?null:this.fac;return f?armyOf(f,this.guards):Array(this.guards).fill('militia')}
   look(){return{col:caravanCol(this),dir:this.dir||1,moving:!this.idle,seed:0,label:'Caravan',labelCol:hostileTo(this.fac)?'#ff9a90':'#e8d8a0'}}
   // where it is bound (CaravanBrain): true when it is done there (a realm's unloads; yours ends a leg: endLeg)
-  arrive(to){if(this.mine)return this.endLeg(to);caravanArrive(this,to);worldEmit('caravan:arrived',{caravan:this,to});return true}
+  arrive(to){GateFile.start(this,to);if(this.mine)return this.endLeg(to);caravanArrive(this,to);worldEmit('caravan:arrived',{caravan:this,to});return true}
 
   /* meeting a caravan: trade, toll, attack or seize */
   // what its merchants charge and pay: the going rate where they came from, a little either way
@@ -179,7 +179,7 @@ function hireCaravan(from,to,cargo,guards,repeat){
   const load={};for(const g in cargo){const n=Math.min(cargo[g],t.stock[g]||0);if(n>0)load[g]=n}if(!Object.keys(load).length)return 'Nothing to carry: '+t.name+' has none of that in stock.';
   for(const g in load)t.stock[g]-=load[g];P.gold-=cost;
   const c=asParty({cv:true,mine:true,fac:'player',from,to,dest:to,home:from,goods:load,order:{...cargo},guards,repeat:!!repeat,leg:'out',x:t.x+rint(-6,6),y:t.y+14,cool:0,dir:1});
-  W.caravans.push(c);log('A caravan leaves '+from+' for '+to+' with '+cargoText(c)+'.','gold');return '';
+  W.caravans.push(c);GateFile.out(c,t);log('A caravan leaves '+from+' for '+to+' with '+cargoText(c)+'.','gold');return '';
 }
 function caravanUpkeep(){const mine=myCaravans();if(!mine.length)return;const cost=mine.reduce((a,c)=>a+PCV.upkeep+c.guards*PCV.guardUp,0);P.gold=Math.max(0,P.gold-cost)}
 

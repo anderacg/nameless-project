@@ -247,11 +247,12 @@ function drawWorld(){
   // (your siege camp, raid and camp: not while a battle is fought on the map round you (B.world): its men stand there instead)
   if(P.raid&&!B?.world)ents.push({y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
   if(P.siege&&!B?.world)ents.push({y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(P.banner(),X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
-  if(P.camp&&!B?.world){if(WORLD_BATTLE.on)marchCircle(ents,P,cam);ents.push(bandCampEnt(cam));}
-  if(P.stay&&P.stay.camp&&!B?.world)ents.push(stayCampEnt(cam));// (your army camped by the gate while you stay: world/stay.js STAY_CAMP)// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
+  if(P.camp&&!B?.world){if(WORLD_BATTLE.on)marchCircle(ents,P,cam);bandCampEnts(ents,cam);}
+  if(P.stay&&P.stay.camp&&!B?.world)stayCampEnts(ents,cam);// (your army camped by the gate while you stay: world/stay.js STAY_CAMP)// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
   // (you, not while you camp: on foot, a step each WALK.foot px you walk; mounted, your horse on the same feet, a step each WALK.ride px; your host behind, as a lord's: drawParties)
   // (marching: you are one of your army, in your own place in it: march.js)
-  if(!P.stay&&!P.camp&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam)}
+  // (pitching camp: your men stand by while the tents go up, world/campsite.js)
+  if(!P.stay&&(!P.camp||WORLD_BATTLE.on&&CampSite.pitching('you',partySize()))&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam)}
     else ents.push({y:P.y,own:1,id:P,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore()}}); }
   GateFile.draw(ents,cam);GateFile.camps(ents,cam,V);// (armies filing in at a gate, camps by a gate with no room: world/gatefile.js)

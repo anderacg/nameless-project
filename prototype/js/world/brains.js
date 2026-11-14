@@ -58,6 +58,7 @@ class LordBrain extends Brain{
         else lordThink(l);
       }else if(l.state==='home'||l.state==='patrol'||l.state==='relieve'){l.state='rest';if(!l.shelterWhy(t))l.enter(t)}
       else if(l.state==='rest'&&!l.shelterWhy(t))l.enter(t);
+      else if(l.state==='rest'&&roomFor(t,l.troops.length))CampSite.pitch('l:'+l.id);// (no room for his men: his camp goes up by the gate, world/campsite.js)
     }
     if(hostile&&st==='attack'&&this.canMeet(l,pd)){startEncounter({kind:'lord',ref:l,list:l.troops.slice()});return true}
     return false;

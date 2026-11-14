@@ -4,7 +4,9 @@
    with in just a small house?") ----------
    An army you see marched man by man (march.js) going into a holding files in at its gate: its men, the nearest first, a man every
    gap s, walk to the gate at pace px a second, each fading over his last fade px (at most most of them). Coming out, its march is
-   laid afresh with every man at the gate, and they walk out to their places in it. Drawn only: the army's own march is idle while it
+   laid afresh with every man at the gate, and they step out one after another, a man every gap s (each unseen till his turn:
+   march.js u.gateAt), to their places in it. So every army: a lord's, a companion's, the watch's patrols, caravans, and yours
+   when you stay inside and leave. Drawn only: the army's own march is idle while it
    is in (march formations), nothing of the world's moves.
    A holding quarters at most its kind's quarter men (data/holdings.js HOLDING_TYPES; roomFor: why not, ''); an army with more
    (yours, a companion's, a lord's) stays outside, camped by its gate: a lord at rest there has his tents pitched beside it, by
@@ -20,7 +22,7 @@ class GateFile{
     if(men.length)this.list.push({o,g,men,t:0})}
   // (o out of t: its march laid afresh, every man at the gate, a step apart, to walk out to his place)
   static out(o,t){const X=GATE_FILE;if(!X.on||!X.out||!WORLD_BATTLE.on||!t||typeof MarchArmy==='undefined'||Math.hypot(o.x-P.x,o.y-P.y)>vis()+MARCH_MOVE.active)return;
-    MARCH_ARMIES.delete(o);const a=MarchArmy.of(o),g=gateGoal(t);a.units.forEach((u,i)=>{u.x=g.x+((i%3)-1)*X.spread;u.y=g.y+Math.floor(i/3)%3;u.plan=null;u.walking=false})}
+    MARCH_ARMIES.delete(o);const a=MarchArmy.of(o),g=gateGoal(t);a.units.forEach((u,i)=>{u.x=g.x+((i%3)-1)*X.spread;u.y=g.y+Math.floor(i/3)%3;u.plan=null;u.walking=false;u.gateAt=i?a.time+i*X.gap:0})}
   static step(d){const X=GATE_FILE;
     for(const f of this.list){f.t+=d;for(const u of f.men){if(f.t<u.wait)continue;const dx=f.g.x-u.x,dy=f.g.y-u.y,l=Math.hypot(dx,dy),s=Math.min(l,X.pace*d);if(l<.5){u.gone=true;continue}
       u.walking=true;u.x+=dx/l*s;u.y+=dy/l*s;u.walk=(u.walk||0)+s;u.dir=Math.atan2(dy,dx)}f.men=f.men.filter(u=>!u.gone)}
@@ -30,10 +32,11 @@ class GateFile{
     for(const u of f.men){const a=Math.min(1,Math.hypot(f.g.x-u.x,f.g.y-u.y)/X.fade);ents.push({y:u.y,own,f:()=>{ctx.save();ctx.globalAlpha*=a;drawMarcher(u,f.o,cam);ctx.restore()}})}}}
   // (a lord at rest outside a holding with no room for his men, or a companion's party told to stay there: its camp beside its
   // gate, in your sight)
-  static camps(ents,cam,V){if(!GATE_FILE.camp)return;const S=yourSight(V);
+  static camps(ents,cam,V){if(!GATE_FILE.camp){CampSite.purge();return}const S=yourSight(V);
     for(const l of [...W.lords.filter(l=>l.state==='rest'),...cparties().filter(p=>p.order==='stay'&&p.campOut)]){if(l.dead||l.inside||l.fight)continue;const t=townBy(l.mapKind==='cparty'?l.campOut:l.tgt),g=t&&gateGoal(t);if(!g||Math.hypot(l.x-g.x,l.y-g.y)>16||!roomFor(t,l.troops.length)||!S.sees(l.x,l.y))continue;
-      const id=String(l.id||l.cid||''),side=(id.length%2?1:-1),s=campSprite(id.length*13+3,'travelers'),X=g.x+side*26,Y=g.y+6;
-      ents.push({y:Y,f:()=>{const x=Math.round(X-s.ax-cam.x),y=Math.round(Y-s.ay-cam.y);if(s.sh){ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,x,y);ctx.globalAlpha=1}ctx.drawImage(s,x,y)}})}}
+      const key=(l.mapKind==='cparty'?'c:'+l.cid:'l:'+l.id),n=l.troops.length,s=CampSite.spotNear(t,n,key);if(!s)continue;
+      CampSite.draw(ents,cam,{key,x:s.x,y:s.y,n,banner:l.banner?()=>l.banner():null,faction:l.mapKind==='cparty'?'player':l.fac,seed:n})}
+    CampSite.purge()}
 }
 onWorld(()=>{GateFile.list=[]});
 // its work in the world's frame (core/systems.js): after the armies' marches

@@ -200,7 +200,7 @@ function marchDraw(ents,o,cam){
   const u0=army.units[0];if(u0&&o.mapKind==='monster')ents.push({y:o.y,f:()=>BANNERQ.push({o,marker:{h:marchSprite(u0,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})});return true;
 }
 // (drawn small without losing its lines when zoomed out: render.js reduced)
-function drawMarcher(u,o,cam){return reduced(()=>drawMarcherAt(u,o,cam))}
+function drawMarcher(u,o,cam){if(u.gateAt)return;return reduced(()=>drawMarcherAt(u,o,cam))}// (waiting his turn at a gate: unseen, gatefile.js)
 function drawMarcherAt(u,o,cam){
   // (standing: his fidgets, as in battle: render.js idleLife, on the real clock)
   const S=ST[u.type]||{},I=!marchWalks(u)?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
@@ -778,7 +778,8 @@ class MarchArmy{
     requests.sort((a,b)=>a.needAt-b.needAt||a.id-b.id);for(const u of requests.slice(0,MARCH_MOVE.queries)){this.queries++;if(u.rescue)u.rescue=2;const p=nav.path(u,u.goal);delete u.needAt;
       const cf=PATHS.corridor&&marching&&!u.rescue&&u.cf&&this.cor&&u.cf.cid===this.cor.id?u.cf:null;if(cf&&marchStrays(this.cor.pts,u,p)){u.flow=cf;u.plan=null;continue}
       u.plan={ground:nav,p,i:0,goal:u.goal,at:this.time+MARCH_MOVE.repath+u.id%7*.025}}
-    for(const u of this.units){u.squeeze=false;const goal=u.goal,gd=goal?Math.hypot(goal.x-u.x,goal.y-u.y):0;if(!goal||gd<=MARCH_MOVE.settle){u.rest=!!goal;continue}
+    for(const u of this.units){u.squeeze=false;if(u.gateAt){if(this.time<u.gateAt){u.rest=true;continue}u.gateAt=0}// (out of a gate: he waits his turn there, unseen: gatefile.js out)
+      const goal=u.goal,gd=goal?Math.hypot(goal.x-u.x,goal.y-u.y):0;if(!goal||gd<=MARCH_MOVE.settle){u.rest=!!goal;continue}
       // (formGiveUp: one given up stands where he is, at rest)
       if(u.gave){u.rest=true;u.vel=0;continue}if(u.rest&&moved<=.001&&!this.loop&&gd<MARCH_MOVE.wake&&(!C||Math.abs(gap)<1e-3))continue;u.rest=false;
       // (PATHS.slide: one held by a wall (his step met one within PATHS.stuck s: u.wt; not a column's on the march, along its way),
