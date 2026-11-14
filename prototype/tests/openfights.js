@@ -15,6 +15,8 @@ Kit.suite(({ok,info})=>{
  t.startBattle({enemies:G.enc.list,tournament:false,deploy:false});const b=t.B,a=b?.world;if(!a){ok(false,'a fight on the map begins');info(JSON.stringify(G.msgs.slice(-3)));return}
  {const arc=t.ctx.arc,rs=[];t.ctx.arc=function(x,y,r,...z){rs.push(r);return arc.call(this,x,y,r,...z)};try{a.draw()}finally{t.ctx.arc=arc}ok(!rs.some(r=>Math.abs(r-a.radius)<.5),'no ring drawn round the fight')
   O.ring=true;rs.length=0;t.ctx.arc=function(x,y,r,...z){rs.push(r);return arc.call(this,x,y,r,...z)};try{a.draw()}finally{t.ctx.arc=arc;O.ring=false}ok(rs.some(r=>Math.abs(r-a.radius)<.5),'with ring on, as before')}
+ // (who hears of it: from the ring's edge as ever, not the open field's)
+ {const J=t.WORLD_BATTLE.join,at=d=>({mapKind:'cparty',x:a.x+d,y:a.y});ok(a.ring<a.r&&a.knows(at(a.ring+J-5),0)&&!a.knows(at(a.ring+J+5),0),'armies hear of it and join from the ring\'s edge as before ('+Math.round(a.ring+J)+' px from its middle, not '+Math.round(a.r+J)+')')}
  // (the world's moment beside the fight's)
  b.paused=false;b.deploy=false;if(b.muster)b.muster.active=false;
  const others=W.lords.filter(l=>!l.dead&&!l.inside&&!a.participants.has(l)).slice(0,12),at=others.map(l=>[l.x,l.y]),e0=[enemy.x,enemy.y],p0=[P.x,P.y],c0=G.day+t.Clock.frac;

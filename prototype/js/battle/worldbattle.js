@@ -97,7 +97,9 @@ class WorldBattleArea{
     this.viewport={x:G.cam.x,y:G.cam.y};this.scale=WORLD_BATTLE.scale;this.x=r0>=d+r1?a.x:r1>=d+r0?b.x:a.x+(b.x-a.x)*at;this.y=r0>=d+r1?a.y:r1>=d+r0?b.y:a.y+(b.y-a.y)*at;this.r=r;
     // A joined fight has several existing armies, each with its own formation footprint.
     if(this.fight)for(const o of this.initial){if(o===P)continue;const reach=Math.max(marchOuter(o),MarchArmy.spread(o)),dx=o.x-this.x,dy=o.y-this.y,dist=Math.hypot(dx,dy);if(dist+reach<=this.r)continue;if(reach>=dist+this.r){this.x=o.x;this.y=o.y;this.r=reach}else{const size=(this.r+dist+reach)/2,k=dist?(size-this.r)/dist:0;this.x+=dx*k;this.y+=dy*k;this.r=size}}
-    this.r=Math.max(this.r,this.sightRadius*WORLD_BATTLE.sightBase+Math.sqrt(this.fighters)*WORLD_BATTLE.perFighter)*(OPEN_FIGHT.on?OPEN_FIGHT.reach:1);
+    // (ring: the field as the ring had it, who hears of the fight measured from it as ever (knows: the owner, 2026-11-14, "the join range
+    // should be not that far, reduce to the original range"); r: the field, OPEN_FIGHT.reach as wide in the open)
+    this.ring=Math.max(this.r,this.sightRadius*WORLD_BATTLE.sightBase+Math.sqrt(this.fighters)*WORLD_BATTLE.perFighter);this.r=this.ring*(OPEN_FIGHT.on?OPEN_FIGHT.reach:1);
     this.span=Math.ceil(2*(this.r+WORLD_BATTLE.apron));this.x0=this.x-this.span/2;this.y0=this.y-this.span/2;this.cx=this.cy=this.span*this.scale/2;this.radius=this.r*this.scale;
     this.joinedFight=!!this.fight;this.made=made;this.held=other;this.starts=[a,{x:b.x,y:b.y,facing:other instanceof Party?marchFacing(other):Math.atan2(a.y-b.y,a.x-b.x)}];this.participants=new Set([...this.initial,other,this.fight,...(e.kind==='villagers'?other?.ws||[]:[])]);this.pending=[];this.turned=new Set();this.arrivals=[];this.serial=0;this.marchClamp=p=>this.world(this.constrain(this.field(p),18));this.marchInside=p=>this.inside(this.field(p),6);
   }
@@ -260,8 +262,8 @@ class WorldBattleArea{
   /* whether o knows of the fight: its edge within o's own sight (WORLD_SCALE.sight, by its kind) and the fight's noise (JOIN_RULES.hear:
      louder the more fight it), never past the reach of old (reach for bands and beasts, WORLD_BATTLE.join for the rest); your
      companions' parties and the lords riding in your host are with you: they know, as ever */
-  knows(o,hear){const d=Math.hypot(o.x-this.x,o.y-this.y);if(d>this.r+(JOIN_RULES.wild(o)?JOIN_RULES.reach:WORLD_BATTLE.join))return false;
-    return o.mapKind==='cparty'||!!o.follow||d-this.r<=(WORLD_SCALE.sight[o.mapKind]??WORLD_SCALE.sight.lord)+hear}
+  knows(o,hear){const d=Math.hypot(o.x-this.x,o.y-this.y),r=this.ring??this.r;if(d>r+(JOIN_RULES.wild(o)?JOIN_RULES.reach:WORLD_BATTLE.join))return false;
+    return o.mapKind==='cparty'||!!o.follow||d-r<=(WORLD_SCALE.sight[o.mapKind]??WORLD_SCALE.sight.lord)+hear}
   reinforce(dt){
     const H=JOIN_RULES.hear,hear=Math.min(H.max,H.base+H.per*B.units.reduce((n,u)=>n+(fighting(u)?1:0),0));
     for(const o of [...W.lords,...W.patrols,...cparties(),...bandits,...W.monsters.map(asMonster)]){if(this.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!o.troops.length||!this.knows(o,hear)||!this.tempted(o))continue;const team=this.teamFor(o);if(team<0)continue;this.participants.add(o);this.pending.push({o,team});if(this.sides){const r=this.sides.byOwner.get(o);log(this.sides.label(r)+' approaches: '+this.sides.intent(r)+'.',battleEnemy(0,team)?'bad':'gold','war')}}

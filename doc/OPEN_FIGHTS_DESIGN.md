@@ -10,6 +10,7 @@ Every fight on the map (a hunt, a beast, a band, a lord, a patrol, a caravan, a 
 
 - The fight's field is `OPEN_FIGHT.reach` (2.2) times as wide as the ring was. A band fight on seed 51 has a radius of about 296 px (was 134), and a hunt 242 px (`HUNT_AREA.radius` 110 × 2.2). Your sight is 110 px, so the edge lies far past what you see. A fight costs about the same per step: on seed 51, 2.5 ms at reach 1.3 and 2.7 ms at 2.
 - Nobody sees the edge. A foe that runs past it has got away; your men stop at it.
+- Who hears of the fight and joins it is measured from the ring's edge as before (`WorldBattleArea#ring`, `knows`: the owner, "the join range should be not that far, reduce to the original range"), not the wide field's. So a lord within 220 px of the old ring joins, as ever; one within hearing is usually inside the wide field already and comes in where it stands.
 - A hunted beast that none of your men has seen for `OPEN_FIGHT.lost` (20 s) has got away too (`HuntBattleArea#turn`), so a hunt never drags on after game hidden far off.
 - The fight ends as before: when one side has nobody left in it (dead, fled or past the edge), or by End hunt or a withdrawal.
 - The arrival markers still show where a joining army comes in.
@@ -44,4 +45,4 @@ Every foe who falls in a fight on the map lies where he fell, as the fight drew 
 ## Left
 
 - The field is still a fixed window, though now 2.2 times as wide. Moving it with the chase would mean moving every position the fight keeps (its men's ways and goals, groups, missiles, corpses, the blood layer, fog, the terrain grid, the tracks, the captains' memory), so a chase past its edge still ends there: the foe has got away.
-- An ally riding in from farther off walks straight at the fight, and ground it cannot cross can stop it. The wider field makes that more likely (`tests/worldbattleplay.js` runs its ally at the old width).
+- An ally riding in walks straight at the fight, and ground it cannot cross can stop it (`tests/worldbattle.js` and `tests/worldbattleplay.js` check an ally walking in at the old width).
