@@ -41,6 +41,8 @@ const PPAL={
   cloth:['#e7d494','#cea65f','#9c8850','#6f4d2b'],linen:['#f0ead8','#d8cdb4','#b0a488','#857a62'],dark:['#44563e','#37403c','#404945','#27272c'],
   white:['#faf8db','#dacdc1','#b3a49a','#75776c'],purple:['#dfb2c6','#9b6aa2','#6a4a8a','#3a2a5a'],forest:['#8cd590','#4a9a5a','#2e6a40','#1e4a2e'],
   rust:['#e0905a','#b8603a','#8a3a24','#5a2418'],
+  // (villagers' natural cloth, data/dress.js FOLK_DRESS: undyed hemp, ash-grey wool, sun-pale sand)
+  hemp:['#e4d6b0','#c4b088','#988660','#6a5c40'],ash:['#d8d6d0','#b0aca4','#868278','#5c5a54'],reed:['#a8a878','#828458','#5e623c','#404428'],sand:['#f2e2bc','#d8c294','#b09a6c','#7a6a48'],
   blue:['#a9d4fb','#398dd5','#3056ac','#353287'],red:['#ea7e82','#c74453','#aa1e42','#891a37'],
   horse:['#cb804a','#a15735','#682a19','#4a1c10'],chestnut:['#e0905a','#b8603a','#7a3a1e','#4e2412'],horseW:['#faf8db','#dacdc1','#b3a49a','#75776c'],
   horseB:['#67656d','#3d3f4b','#27272c','#1a1c26'],horseG:['#d8dce6','#a8aebc','#7e8494','#565a68'],stag:['#e8b880','#c08a52','#8a5a30','#5a381c'],
@@ -775,13 +777,13 @@ const WORK_LOOK={farmer:{helm:'straw',outer:'cloth',team:'linen',weapon:'hoe'},h
   builder:{helm:'cap',helmC:'leather',outer:'linen',team:'leather',weapon:'hammer'}};
 // (the peasants recruited from the estates wear their trade's clothes and carry its tool: data/units.js TRADES)
 for(const k in ST)if(ST[k].peasant){const {team,...L}=WORK_LOOK[ST[k].peasant]||{...WORK_LOOK.miner,weapon:'hammer'};PEOPLE_LOOK[k]=L}
-function workerSprite(job,f,race,v,carry){v=(v||0)%4;f=(f||0)%PEOPLE_STEPS;race=race||'human';const k='wk'+job+f+race+v+(carry?'c':''),c=FIGURES.get(k);if(c)return c;
+function workerSprite(job,f,race,v,carry){v=(v||0)%4;f=(f||0)%PEOPLE_STEPS;race=race||'human';const k='wk'+job+f+race+v+(carry?'c':'')+(DRESS.clim||''),c=FIGURES.get(k);if(c)return c;
   return FIGURES.set(k,mapPerson(workerLook(job,race,v,carry),f))}
-const workerLook=(job,race,v,carry)=>{const L={...folkLook('folk',race,v*3+1),robe:false,...(WORK_LOOK[job]||WORK_LOOK.farmer)};if(carry){L.weapon=null;L.load=job}return L};// (loaded: his tool left behind)
+const workerLook=(job,race,v,carry)=>{const L=folkDress({...folkLook('folk',race,v*3+1),robe:false,...(WORK_LOOK[job]||WORK_LOOK.farmer)},DRESS.clim||'grass',v*3+1,true);if(carry){L.weapon=null;L.load=job}return L};// (loaded: his tool left behind)
 // a refugee: worn clothes, a hood, a rolled blanket on the back, a walking stick now and then
-function refugeeSprite(f,v){v=(v||0)%4;f=(f||0)%PEOPLE_STEPS;const k='rf'+f+v,c=FIGURES.get(k);if(c)return c;
+function refugeeSprite(f,v){v=(v||0)%4;f=(f||0)%PEOPLE_STEPS;const k='rf'+f+v+(DRESS.clim||''),c=FIGURES.get(k);if(c)return c;
   return FIGURES.set(k,mapPerson(refugeeLook(v,'human'),f))}
-const refugeeLook=(v,race)=>({...folkLook('folk',race,v*5+2),robe:false,helm:v%2?'hood':'bare',hood:'linen',outer:['linen','cloth','leather','linen'][v],team:'dark',cape:'leather',weapon:v===1||v===3?'crook':null});
+const refugeeLook=(v,race)=>folkDress({...folkLook('folk',race,v*5+2),robe:false,helm:v%2?'hood':'bare',hood:'linen',outer:['linen','cloth','leather','linen'][v],team:'dark',cape:'leather',weapon:v===1||v===3?'crook':null},DRESS.clim||'grass',v*5+2,true);// (worn clothes, their land's in the frost and the desert)
 
 /* townsfolk: the same figures in their trade's clothes (and folk in all sorts, a dress now and then), their race's skin and hair */
 const FOLK_CLOTH=['cloth','linen','olive','teal','violet','rust','forest','leather','blue','red'];
@@ -791,8 +793,14 @@ function folkLook(look,race,v){
     inner:'dark',team:FOLK_CLOTH[(n*3+2)%FOLK_CLOTH.length],shortHair:n%2===0,robe:look==='folk'&&n%3===0};
   const T={smith:{outer:'leather',team:'dark',weapon:'hammer',beard:o.beard||R.hair[0]},innkeeper:{outer:'linen',team:'white'},merchant:{outer:'purple',team:'gold',helm:'hood',hood:'purple'},
     priest:{outer:'white',team:'gold',robe:true,helm:'hood',hood:'white',beard:null},steward:{outer:'blue',team:'gold',robe:true},groom:{outer:'cloth',team:'leather',helm:'kettle',helmC:'#d8c060'}}[look];
-  return T?{...o,...T}:o;
+  return folkDress(T?{...o,...T}:o,DRESS.clim||'grass',n,!!T);
 }
+/* (a villager dressed for the land he lives in, data/dress.js FOLK_DRESS: by his variant n, his coat, his shirt, his head, a robe, a
+   fur cloak in the frost; trade: a trade's own coat kept, but where the land's dress is a trade's too (the frost, the desert)) */
+function folkDress(L,clim,n,trade){const X=FOLK_DRESS;if(!X||!X.on)return L;const D=X[clim]||X.grass,o={...L},k=((n>>>0)*7+3)>>>0,pick=(a,i)=>a[(k+i*5)%a.length],share=(p,i)=>((k*13+i*7)%20)/20<p;
+  if(!trade||D.trade)o.outer=pick(D.outer,0);o.team=pick(D.inner,1);if(o.inner!=='linen')o.inner=pick(D.inner,2);
+  if(o.helm==='bare'||o.helm==='straw'&&clim!=='grass'||(!trade||D.trade)&&o.helm==='hood'){o.helm=pick(D.head,3);if(o.helm==='hood')o.hood=pick(D.hood,4)}
+  if(!trade&&o.robe!==true&&o.weapon==null)o.robe=share(D.robe||0,5);if(D.cape&&share(D.cloak||0,6))o.cape=pick(D.cape,7);return o}
 
 /* ---------- the map's people in the battle's figures (the owner, 2026-11-01: "can you update encounters and old sprites to look
    like current sprite designs?"). Every person on the world map is drawn as its marchers are (march.js drawMarcher): the battle's
@@ -821,13 +829,13 @@ const figOf=(L,pose)=>cellOf(peopleSprite(L,pose));
 // encounter (ENC_LOOK[key]) on foot or riding (on a horse of coat, in col), a saddled horse no one rides
 function figFollower(col,v,race,band,pose){v=(v||0)%6;race=race||'human';return figKeep('mfw'+col+v+race+(band?'b':'')+'p'+pose,()=>figOf(followerLook(col,v,race,band),pose))}
 function figWorker(job,race,v,pose,carry){v=(v||0)%4;race=race||'human';return figKeep('mwk'+job+race+v+(carry?'c':'')+'p'+pose,()=>figOf(workerLook(job,race,v,carry),pose))}
-function figRefugee(v,race,pose){v=(v||0)%4;race=race||'human';return figKeep('mrf'+v+race+'p'+pose,()=>figOf({...refugeeLook(v,race),load:'bundle'},pose))}
-function figRoad(key,race,v,pose){return figKeep('mrp'+key+race+v+'p'+pose,()=>figOf(ENC_LOOK[key](race,v),pose))}
+function figRefugee(v,race,pose){v=(v||0)%4;race=race||'human';return figKeep('mrf'+v+race+'p'+pose+(DRESS.clim||''),()=>figOf({...refugeeLook(v,race),load:'bundle'},pose))}
+function figRoad(key,race,v,pose){return figKeep('mrp'+key+race+v+'p'+pose+(DRESS.clim||''),()=>figOf(ENC_LOOK[key](race,v),pose))}
 function figRider(key,race,v,col,coat,pose){return figKeep('mrr'+key+race+v+col+coat+'p'+pose,()=>figOf({...ENC_LOOK[key](race,v),team:col||'leather',mount:'horse',mountC:coat||'horse'},pose))}
 function figHorse(coat,pose){return figKeep('mrh'+coat+'p'+pose,()=>{const g=pgrid(32,32);g.edge=true;drawMount(g,{mount:'horse',mountC:coat,team:'red',saddled:true},pose>=2?pose-2:-1);poutline(g);return cellOf(pcanvas(g))})}
 // a worker on the march's map carrying his load to his holding (folk.js): his trade's battle kind (type, v) in his holding's
 // cloth (tint), his tool left behind
-function figCarrier(type,v,tint,job,pose){return figKeep('mca'+type+v+tint+job+'p'+pose,()=>figOf({...lookOf(type,0,false,v%6),team:tint,weapon:null,load:job},pose))}
+function figCarrier(type,v,tint,job,pose){const cl=ST[type]?.peasant?DRESS.clim:null;return figKeep('mca'+type+v+tint+job+'p'+pose+(cl||''),()=>{const L=lookOf(type,0,false,v%6);return figOf({...(cl?folkDress(L,cl,(v%6)*3+1,true):L),team:tint,weapon:null,load:job},pose)})}
 /* kneeling: the body FIG_KNEEL rows down, sat back on its heels, the near knee forward and the far foot out behind (a robe's hem on
    the ground); lying: the standing figure turned a quarter, head to the right, as the battle's fallen are (sprites.js corpseOf);
    blood: in a pool of it (FIG_BLOOD: [colour, x, y, w, h] in a 16 cell's px, as the map's was, grown to its own) */

@@ -173,7 +173,7 @@ const marchCart=(o,at=o)=>{const d=o.dir<0?-1:1;return MARCH_CART.map(([x,r])=>(
 // off, drawn apart: a flag's spear, gfx/marchgear.js).
 // (his look, as his sprite's: sprites.js spriteLook, kept on him)
 function marchLook(u,o){const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',col=o.look().col;
-  const cold=coldAt(o.x,o.y);if(!u.mLook||u.mLookC!==col||u.mLookW!==cold){u.mLook=dressed(cold,()=>spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col));u.mLookC=col;u.mLookW=cold}return u.mLook}
+  const cl=dressClimAt(o.x,o.y);if(!u.mLook||u.mLookC!==col||u.mLookW!==cl){u.mLook=dressedIn(cl,()=>spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col));u.mLookC=col;u.mLookW=cl}return u.mLook}
 // (his stride's frame on the march, 0-3: by the way he has walked, a step each WALK.foot × WALK.step px, so his feet keep to the ground)
 const marcherStep=u=>(Math.floor((u.walk||0)/(WALK.foot*WALK.step))+u.id)%4;
 // (drawn walking: stepping, and not yet at his place: there, he stands at once, not on his last stride frozen for the rest of
@@ -181,7 +181,7 @@ const marcherStep=u=>(Math.floor((u.walk||0)/(WALK.foot*WALK.step))+u.id)%4;
 const marchWalks=u=>!!u.walking&&!(u.tg&&Math.hypot(u.x-u.tg.x,u.y-u.tg.y)<MARCH_MOVE.home);
 function marchSprite(u,o,pose,bare){
   const type=chiefLookType(u.character?u.type.replace(/^comp_/,''):u.type,o.ld?.band),hero=type==='hero',lead=hero||u.row==='leader';
-  return dressed(coldAt(o.x,o.y),()=>unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(marchWalks(u)?2+marcherStep(u):0),!!bare,false,o.look().col));
+  return dressedIn(dressClimAt(o.x,o.y),()=>unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(marchWalks(u)?2+marcherStep(u):0),!!bare,false,o.look().col));
 }
 // Leaders use the same character kind and equipment as battle; cached cells also serve map picking and banner height.
 const MARCH_LEADERS=new WeakMap();

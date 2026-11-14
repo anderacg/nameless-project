@@ -274,14 +274,14 @@ class CampFolk{
         this.aim(C,p,p.mode)}}}
   // (its people within your sight, each by his feet: a soldier of their people for a guard, a hunter or a ranger, else in their dress
   // (people.js folkLook); sitting or kneeling at the fire: his legs hidden; a child smaller; the players bob to their tune)
-  static draw(s,ents,cam,V){const C=this.of.get(s);if(!C)return;const S=yourSight(V),k0=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,race=s.folkRace,now=performance.now()/1000;
+  static draw(s,ents,cam,V){const C=this.of.get(s);if(!C)return;const cl=dressClimAt(s.x,s.y),S=yourSight(V),k0=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,race=s.folkRace,now=performance.now()/1000;
     // (its animals as the herds are drawn (critters.js, gfx/sprites.js critterArt): their battle figure at the marchers' scale)
     for(const b of C.beasts){if(!S.sees(b.x,b.y,1.2))continue;ents.push({y:b.y,f:()=>{const A0=critterArt(b.id,0,b.v),N=PX.MAP_STEPS,fr=b.moving?Math.floor(b.walked/Math.max(4,A0.w)*N)%N:0,A=critterArt(b.id,fr,b.v),sx=Math.round(b.x-cam.x),sy=Math.round(b.y-cam.y),w=Math.max(4,A.w-2);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-(w>>1),sy-1,w,2);ctx.save();ctx.translate(sx,sy);ctx.scale(b.dir<0?-A.k:A.k,A.k);ctx.drawImage(A.s,-(A.s.width>>1),-A.s.height+(A.k<1?2:1));ctx.restore()}})}
     for(const p of C.ppl){if(p.hid||!S.sees(p.x,p.y,1.2))continue;
-      ents.push({y:p.y,f:()=>{const pose=p.moving?2+Math.floor(p.walked/WALK.foot)%4:0,sp=p.R.unit?unitSprite(RACES[race][p.R.unit],0,false,p.v,pose,false,false,s.TR.col):personSprite(p.R.look,race,p.v+p.i,pose),
+      ents.push({y:p.y,f:()=>dressedIn(cl,()=>{const pose=p.moving?2+Math.floor(p.walked/WALK.foot)%4:0,sp=p.R.unit?unitSprite(RACES[race][p.R.unit],0,false,p.v,pose,false,false,s.TR.col):personSprite(p.R.look,race,p.v+p.i,pose),
         k=k0*(p.R.child?.72:1),low=!p.moving&&(p.kneel||p.mode==='seat'&&!p.R.watch&&!p.play)?4:0,bob=p.play&&!p.moving&&Math.floor(now*3+p.i)%2?1:0,sx=Math.round(p.x-cam.x),sy=Math.round(p.y-cam.y),W2=sp.width,H=sp.height;
-        ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy-bob);ctx.scale(p.dir<0?-k:k,k);ctx.drawImage(sp,0,0,W2,H-low,-Math.floor(W2/2),-H+2+low,W2,H-low);ctx.restore()}})}}
+        ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy-bob);ctx.scale(p.dir<0?-k:k,k);ctx.drawImage(sp,0,0,W2,H-low,-Math.floor(W2/2),-H+2+low,W2,H-low);ctx.restore()})})}}
 }
 Systems.add({name:'camp folk',order:{frame:141},frame:d=>CampFolk.step(d)});
 onWorld(()=>CampFolk.of.clear());
