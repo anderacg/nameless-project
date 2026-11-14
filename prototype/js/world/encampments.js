@@ -77,11 +77,24 @@ class Encampment extends Site{
   footing(){return []}// (walked among: its tents are cloth)
   inView(V){return this.known()}
   draw(ents,cam,V){if(!this.inView(V))return;const a=this.area();if(a[2]<cam.x-16||a[0]>cam.x+VW+16||a[3]<cam.y-16||a[1]>cam.y+VH+40)return;
-    CampSite.draw(ents,cam,{key:this.key,x:this.x,y:this.y,n:this.pop,per:ENCAMP.tents.per,most:ENCAMP.tents.most,seed:this.seed});CampFolk.draw(this,ents,cam,V)}
+    CampSite.draw(ents,cam,{key:this.key,x:this.x,y:this.y,n:this.pop,per:ENCAMP.tents.per,most:ENCAMP.tents.most,seed:this.seed});this.drawProps(ents,cam);CampFolk.draw(this,ents,cam,V)}
+  /* its pieces (ENCAMP_KINDS props: wagons, carts, crates, a shrine, drying racks, charcoal mounds), each where the ground lets it
+     stand round its tents (CampSite.tentOk), ENCAMP_PROPS.gap from a tent and from one another, laid once from its seed */
+  props(){const s=this,c=ENC_PROPS.get(s.key);if(c&&c.x===s.x&&c.y===s.y)return c.p;const X=ENCAMP_PROPS,sq=CAMP_SITE.squash,R=seeded(s.seed*131+71),out=[],
+      L=CampSite.layout(s.key,s.x,s.y,s.pop,ENCAMP.tents.per,ENCAMP.tents.most),r0=Math.max(10,...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/sq)))+X.ring,
+      free=(x,y)=>Math.hypot(x-s.x,y-s.y)>=X.gap&&L.every(q=>Math.hypot(q.x-x,q.y-y)>=X.gap)&&out.every(q=>Math.hypot(q.x-x,q.y-y)>=X.gap)&&CampSite.tentOk(x,y);
+    for(const [type,n] of s.TR.props||[])for(let k=0;k<n;k++){const a0=R()*Math.PI*2;let put=null;
+      for(let r=r0-X.ring*.6;r<=r0+X.ring&&!put;r+=6)for(let j=0;j<16&&!put;j++){const a=a0+j/16*Math.PI*2,x=Math.round(s.x+Math.cos(a)*r),y=Math.round(s.y+Math.sin(a)*r*sq);if(free(x,y))put={type,x,y,s:Math.floor(R()*9)}}
+      if(put)out.push(put)}
+    ENC_PROPS.set(s.key,{x:s.x,y:s.y,p:out});return out}
+  drawProps(ents,cam){const clim=CLIMS[climate[Math.floor(this.y/TILE)*MW+Math.floor(this.x/TILE)]]||'grass';
+    for(const q of this.props()){const pic=propPic(q,clim);ents.push({y:q.y,nf:1,f:()=>{const x=Math.round(q.x-cam.x-pic.ax),y=Math.round(q.y-cam.y-pic.ay+1);
+      if(pic.sh){ctx.globalAlpha=SHADOW.a;ctx.drawImage(pic.sh,x,y);ctx.globalAlpha=1}ctx.drawImage(pic,x,y);if(ENCAMP_PROPS[q.type].smoke)propSmoke(x+8,y+9,q.s)}})}}
   // (its picture on its page: its tents and fire as they stand)
   view(){const s=this,L=CampSite.layout(s.key,s.x,s.y,s.pop,ENCAMP.tents.per,ENCAMP.tents.most),clim=CLIMS[climate[Math.floor(s.y/TILE)*MW+Math.floor(s.x/TILE)]]||'grass',fl=campFlame();
     if(!L.length)return super.view();
-    return{key:'enc:'+s.seed+':'+s.kind+':'+L.length,x:s.x,y:s.y,alt:s.name,ps:[...L.slice().sort((a,b)=>a.y-b.y).map(q=>{const p=CampSite.pic(q.s,clim);return[p,q.x-p.ax,q.y-p.ay+1]}),fl&&[fl.img,s.x-fl.ax,s.y-fl.ay]].filter(Boolean)}}
+    const all=[...L.map(q=>[q,CampSite.pic(q.s,clim)]),...s.props().map(q=>[q,propPic(q,clim)])].sort((a,b)=>a[0].y-b[0].y);
+    return{key:'enc:'+s.seed+':'+s.kind+':'+all.length,x:s.x,y:s.y,alt:s.name,ps:[...all.map(([q,p])=>[p,q.x-p.ax,q.y-p.ay+1]),fl&&[fl.img,s.x-fl.ax,s.y-fl.ay]].filter(Boolean)}}
   about(r){const T=this.TR;return '<p>'+T.d+'</p><p class="muted">'+(this.pop>1?'About '+this.pop+' people live here, in '+this.tents+' tent'+(this.tents>1?'s':'')+'.':'He lives here alone.')+
     (this.until!=null?' They break camp in '+Math.max(1,this.until-G.day)+' days.':' They stay.')+'</p>'}
   get stayLine(){return this.until!=null?'They move on in '+Math.max(1,this.until-G.day)+' days':'They stay here'}
@@ -135,6 +148,29 @@ class Encampment extends Site{
     return true}
 }
 const TravellersCamp=Encampment;// (the old name)
+const ENC_PROPS=new Map();onWorld(()=>ENC_PROPS.clear());
+// (a piece's picture: the engine's model of its type, of the ground's climate; a drying rack of hides, a charcoal mound, drawn here)
+function propPic(q,clim){const k='eprop'+q.type+q.s+clim;if(spr[k])return spr[k];let cv;
+  if(ENCAMP_PROPS[q.type].model){const m=PX.buildingModel({type:q.type,seed:q.s+1,env:clim,snow:clim==='frost'?1:0});cv=siteCanvas(m,m.cell/2,m.cell)}
+  else if(q.type==='rack')cv=mkc(16,16,g=>{g.fillStyle='#5a4028';g.fillRect(3,4,1,12);g.fillRect(12,4,1,12);g.fillRect(2,4,12,1);
+    [['#8a5a3a',4,5,3,6],['#b08050',8,5,3,5],['#6e4630',11,5,1,4]].forEach(([c,x,y,w,h])=>{g.fillStyle=c;g.fillRect(x,y,w,h)});g.fillStyle='#d8d0bc';g.fillRect(5,11,1,1)});
+  else cv=mkc(16,16,g=>{const rows=[[6,9],[4,11],[3,12],[2,13],[2,13],[1,14]];rows.forEach(([a,b],i)=>{g.fillStyle=i<2?'#4e4640':'#3a3430';g.fillRect(a,10+i,b-a+1,1)});
+    g.fillStyle='#c0602a';g.fillRect(5,13,1,1);g.fillRect(10,12,1,1);g.fillStyle='#5a4028';g.fillRect(13,14,2,1)});
+  cv.ax=cv.ax??8;cv.ay=cv.ay??16;return spr[k]=cv}
+// (a mound's thin smoke, rising and fading on the real clock)
+function propSmoke(x,y,s){const t=performance.now()/1000;ctx.save();for(let k=0;k<3;k++){const u=(t*.4+k/3+s*.1)%1;ctx.globalAlpha=.45*(1-u);ctx.fillStyle='#bdb6a8';ctx.fillRect(Math.round(x+Math.sin(u*5+s)*2),Math.round(y-u*14),1,1)}ctx.restore()}
+/* a camp's person on the map (CampFolk makes them): a world object you can click within your sight, to talk to him: the camp's page
+   opens at his place there (ENCAMP_ROLES at), his greeting over it */
+class CampDweller extends WorldObject{
+  get mapKind(){return 'dweller'}
+  here(){const C=CampFolk.of.get(this.site);return !!C&&C.ppl.includes(this)}
+  get meetsAnyTime(){return true}
+  inView(V){return !this.hid&&yourSight(V).sees(this.x,this.y,1.2)}
+  pick(at){if(this.inView(at.V))at.add(this,6,4)}
+  meet(){CampFolk.meet(this)}
+  get calling(){return this.role==='folk'?'one of the '+this.site.name.toLowerCase():an(this.role)}
+  tip(){return '<b>'+this.name+'</b><small>'+cap1(this.calling)+', of the '+this.site.name.toLowerCase()+'</small><span class="act">Click: talk</span>'}
+}
 SITE_CLASS.travelers=Encampment;
 
 /* ---------- a camp's people (doc §4): made from its seed when it comes near you (ENCAMP.folk.near), never saved, as the estates'
@@ -150,10 +186,10 @@ class CampFolk{
   static make(s){const T=s.TR,F=ENCAMP.folk,n=Math.min(s.pop,F.most),L=CampSite.layout(s.key,s.x,s.y,s.pop,ENCAMP.tents.per,ENCAMP.tents.most).slice(),R=seeded(s.seed*7919+13),roles=[];
     for(const [r,sh] of T.roles){const k=Math.max(1,Math.round(sh*n));for(let j=0;j<k&&roles.length<n;j++)roles.push(r)}while(roles.length<n)roles.push(T.roles[0][0]);
     if(!L.length)L.push({x:s.x+10,y:s.y-4});
-    const ppl=roles.map((role,i)=>{const a=(i+.5)/n*Math.PI*2,q=L[i%L.length];return{role,R:ENCAMP_ROLES[role],i,v:Math.floor(R()*7),door:{x:q.x+3,y:q.y+3},seat:{x:s.x+Math.cos(a)*F.seat,y:s.y+3+Math.sin(a)*F.seat*CAMP_SITE.squash},
-      x:s.x,y:s.y,tx:s.x,ty:s.y,wait:0,walked:0,dir:R()<.5?-1:1,mode:null,hid:false,R2:seeded(s.seed*31+i*977+5)}});
+    const N=FOLK_NAMES[s.folkRace]||FOLK_NAMES.human,ppl=roles.map((role,i)=>{const a=(i+.5)/n*Math.PI*2,q=L[i%L.length];return Object.assign(new CampDweller(),{site:s,name:N[folkHash(s.seed+'|'+i)%N.length],role,R:ENCAMP_ROLES[role],i,v:Math.floor(R()*7),door:{x:q.x+3,y:q.y+3},seat:{x:s.x+Math.cos(a)*F.seat,y:s.y+3+Math.sin(a)*F.seat*CAMP_SITE.squash},
+      x:s.x,y:s.y,tx:s.x,ty:s.y,wait:0,walked:0,dir:R()<.5?-1:1,mode:null,hid:false,R2:seeded(s.seed*31+i*977+5)})});
     const watch=ppl.filter(p=>p.R.watch);watch.forEach((p,j)=>p.watch=j===0?'fire':j===1?'ring':null);
-    const C={s,L,ppl,ring:Math.max(...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/CAMP_SITE.squash)),8)+F.ring};this.of.set(s,C);
+    const C={s,L,ppl,P:s.props(),ring:Math.max(...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/CAMP_SITE.squash)),8)+F.ring};this.of.set(s,C);
     // (placed where the hour has them: as if you had watched all along)
     for(const p of ppl){this.aim(C,p,this.mode(C,p),true);p.x=p.tx;p.y=p.ty;p.wait=p.R2()*2;if(p.mode==='sleep')p.hid=true}
     return C}
@@ -172,9 +208,11 @@ class CampFolk{
     if(mode==='ring')return ring();
     if(w==='ring')return ring();
     if(w==='fire')return go(s.x+(p.i%2?7:-7),s.y+2+R()*2,F.pause[0]);
-    if(w==='goods'){const q=C.L[0];return go(q.x-10+R()*4,q.y+6,F.pause[0]+R()*F.pause[1])}
-    if(w==='tend'){const q=C.L[0];return go(q.x-14+R()*10,q.y+8+R()*4,F.pause[0]+R()*F.pause[1])}
-    if(w==='tent')return go(p.door.x+4,p.door.y,F.pause[1]);
+    // (by the wares: a wagon, a stall or the crates; about the carts and barrels; a burner at his mound; else by the first tent)
+    const by=ks=>C.P.find(q=>ks.includes(q.type));
+    if(w==='goods'){const q=by(['stall','wagon','crates'])||C.L[0];return go(q.x-8+R()*4,q.y+5,F.pause[0]+R()*F.pause[1])}
+    if(w==='tend'){const q=by(['wagon','cart','barrels'])||C.L[0];return go(q.x-12+R()*10,q.y+6+R()*3,F.pause[0]+R()*F.pause[1])}
+    if(w==='tent'){const q=p.role==='burner'&&by(['mound']);if(q)return go(q.x+(p.i%2?9:-9),q.y+2,F.pause[1]);return go(p.door.x+4,p.door.y,F.pause[1])}
     if(w==='pray'){if(pray){p.kneel=true;return go(p.seat.x,p.seat.y,F.pause[1])}return go(p.door.x+R()*6-3,p.door.y+2,F.pause[0]+R()*F.pause[1])}
     if(w==='play'){p.play=true;return go(p.seat.x+R()*4-2,p.seat.y,F.pause[1])}
     if(w==='run'){const q=C.L[Math.floor(R()*C.L.length)];return go(q.x+R()*10-5,q.y+4+R()*4,R()*F.pause[0])}
@@ -182,12 +220,17 @@ class CampFolk{
       if(!p.spot||p.spotDay!==G.day){p.spot=this.spot(C,p);p.spotDay=G.day}
       if(fresh||!p.leg||p.leg==='back'){p.leg='go';return go(p.spot.x,p.spot.y,fresh?0:F.pause[0]+R()*F.pause[1])}p.leg='back';return go(p.door.x,p.door.y)}
     const q=C.L[Math.floor(R()*C.L.length)];return go(q.x+R()*16-8,q.y+6+R()*6,F.pause[0]+R()*F.pause[1])}
-  // (his work spot: a tile of his kind of ground (to) out ENCAMP.folk.out tiles, one he can walk to straight; none: near the camp)
+  // (his work spot: a tile of his kind of ground (to) out ENCAMP.folk.out tiles, one he can walk to (Router.reach: round water and rock
+  // by the router's ways, step); none: near the camp)
   static spot(C,p){const s=C.s,F=ENCAMP.folk,R=p.R2,to=p.R.to,ok=k=>to==='wood'?k===T_FOREST:to==='rock'?k===T_HILL||k===T_MOUNT:to==='grass'?k===T_OPEN:k!==T_WATER&&k!==T_ROAD&&k!==T_FORD;
     for(let k=0;k<40;k++){const a=R()*Math.PI*2,d=(F.out[0]+R()*(F.out[1]-F.out[0]))*TILE,x=s.x+Math.cos(a)*d,y=s.y+Math.sin(a)*d,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),t=tAt(tx,ty);
-      if(!ok(t)||t===T_MOUNT&&!nearTile(tx,ty,T_HILL,0))continue;let clear=true;for(let j=1;j<8&&clear;j++){const u=tAt(Math.floor((s.x+(x-s.x)*j/8)/TILE),Math.floor((s.y+(y-s.y)*j/8)/TILE));if(u===T_WATER||u===T_MOUNT)clear=false}
-      if(clear)return{x,y}}
+      if(!ok(t)||t===T_MOUNT&&!nearTile(tx,ty,T_HILL,0)||!passable(t))continue;if(Router.reach({x:s.x,y:s.y},{x,y}))return{x,y}}
     return{x:s.x+(R()<.5?-1:1)*TILE*2,y:s.y+TILE}}
+  // (everyone out of his tent, for a click: world.js worldObjects)
+  static all(){const out=[];for(const C of this.of.values())for(const p of C.ppl)if(!p.hid)out.push(p);return out}
+  // (talked to: his camp's page, at his place in it if it has one (no wares: its fire), his greeting over it)
+  static meet(p){const s=p.site,at=p.R.at==='trade'&&!s.TR.goods.length||p.R.at==='hire'&&!s.unit?'fire':p.R.at;s.meet();if(G.site!==s)return;
+    G.siteTab=at;G.siteMsg=htmlText(p.name)+', '+p.calling+', '+p.R.say+'.';showSite()}
   // each moment: the camps near you have their people, those far forget them; each walks to where he is going, stops a while, and
   // goes on to the next; going to sleep, he goes into his tent at its door (unseen), and out of it again when he wakes
   static step(d){const F=ENCAMP.folk;if(!W.sites)return;
@@ -198,7 +241,10 @@ class CampFolk{
         if(p.hid){p.moving=false;continue}
         if(p.wait>0){p.wait-=d;p.moving=false;continue}
         const dx=p.tx-p.x,dy=p.ty-p.y,dd=Math.hypot(dx,dy);
-        if(dd>1){const st=Math.min(dd,moveStep(F.speed*(p.R.child?F.run:1)*(C.danger?1.6:1),d));p.x+=dx/dd*st;p.y+=dy/dd*st;p.walked+=st;if(Math.abs(dx)>.3)p.dir=dx>0?1:-1;p.moving=true;continue}
+        // (a long walk, out to his work or home from it, by the router's ways (WAY.folk: a worker's); within the camp, or none found, straight)
+        if(dd>1){const st=Math.min(dd,moveStep(F.speed*(p.R.child?F.run:1)*(C.danger?1.6:1),d)),x0=p.x,y0=p.y;
+          if(!(dd>F.route*TILE&&Router.travel(p,{x:p.tx,y:p.ty,road:WAY.folk},st)&&Math.hypot(p.x-x0,p.y-y0)>st*.2)){p.x=x0+dx/dd*st;p.y=y0+dy/dd*st}
+          const m=Math.hypot(p.x-x0,p.y-y0);p.walked+=m;if(Math.abs(p.x-x0)>.05)p.dir=p.x>x0?1:-1;p.moving=true;continue}
         p.moving=false;if(p.mode==='sleep'){p.hid=true;continue}
         // (there: at work out on his ground a while; else on to the next of his round)
         if(p.R.work==='out'&&p.mode==='work'&&p.leg==='go'){p.wait=F.work[0]+p.R2()*(F.work[1]-F.work[0]);p.leg='at';continue}

@@ -47,6 +47,23 @@ Kit.suite(({ok,info})=>{
    ok(n0>0&&ents.length>=n0,'its people drawn about their tents ('+n0+' in sight)');
    const sv=S.sees;try{S.sees=()=>false;const e2=[];s.draw(e2,cam,t.vis());ok(e2.length===ents.length-n0,'out of your sight, its tents but none of them')}finally{S.sees=sv}
    const far=t.TOWNS.reduce((a,b)=>Math.hypot(b.x-s.x,b.y-s.y)>Math.hypot(a.x-s.x,a.y-s.y)?b:a);Kit.goTo(far.x,far.y);t.CampFolk.step(.05);ok(!t.CampFolk.of.has(s),'far off, they are forgotten (made again from its seed when you come back)')}
+  // ---- each kind's pieces round its tents: as many as it has, where the ground lets them stand, clear of its tents and one another
+  {const bad=[];let n=0,w=0;for(const x of camps()){const L=t.CampSite.layout(x.key,x.x,x.y,x.pop,t.ENCAMP.tents.per,t.ENCAMP.tents.most),pr=x.props(),want=x.TR.props.reduce((a,b)=>a+b[1],0);n+=pr.length;w+=want;
+     if(pr.length>want||pr.some(q=>!t.CampSite.tentOk(q.x,q.y)||L.some(z=>Math.hypot(z.x-q.x,z.y-q.y)<t.ENCAMP_PROPS.gap)))bad.push(x.name)}
+   ok(!bad.length&&n>=w*.85,'each camp’s pieces (wagons, racks of hides, charcoal mounds...) round its tents: '+n+' of '+w+' laid'+(bad.length?' (wrong: '+bad.join(', ')+')':''));
+   const bu=of(6)[0];ok(bu.props().some(q=>q.type==='mound')&&t.propPic({type:'mound',s:1},'grass').width===16&&t.propPic({type:'rack',s:1},'grass').width===16&&t.propPic({type:'wagon',s:1},'grass').width>0,'the charcoal burners’ mounds, the hunters’ racks drawn here, the wagons the engine’s')}
+  // ---- a click on one of them: his name, and the camp's page at his place there, his greeting over it
+  {const m=of(0)[0];m.seen=true;W.monsters=W.monsters.filter(z=>Math.hypot(z.x-m.x,z.y-m.y)>F.danger*3);const D=near(m,.2);t.drawWorld();
+   const talk=role=>{const p=D.ppl.find(z=>z.role===role&&!z.hid);if(!p)return null;Kit.world();G.lastSite=null;P.x=p.x;P.y=p.y+8;const o=t.pickAt(p.x,p.y-4);if(o!==p)return 'picked '+(o&&(o.name||o.mapKind));t.interact(o);return p};
+   const tr=talk('trader');ok(tr&&tr.name&&G.site===m&&G.siteTab==='trade'&&panel().includes(tr.name)&&/wares/.test(panel()),'a trader clicked: '+(tr&&tr.name)+' opens the camp at its wagons, greeting you');
+   ok(/Click: talk/.test(tr.tip())&&tr.tip().includes(tr.name),'his tip: his name and calling ('+tr.tip().replace(/<[^>]+>/g,' ').trim()+')');
+   const gd=talk('guard');ok(gd&&G.site===m&&G.siteTab==='hire'&&panel().includes(gd.name),'a guard: the sellswords');
+   const ck=talk('cook');ok(ck&&G.siteTab==='fire'&&/bowl/.test(panel()),'the cook: the fire');t.act('site-leave');
+   const hd=D.ppl.find(z=>z.role==='trader');hd.hid=true;ok(!t.CampFolk.all().includes(hd)&&!hd.inView(t.vis()),'one in his tent cannot be clicked');hd.hid=false}
+  // ---- out to work by the router's ways: round water and rock, on ground one may walk
+  {const hu=of(3)[1]||of(3)[0];hu.seen=true;W.monsters=W.monsters.filter(z=>Math.hypot(z.x-hu.x,z.y-hu.y)>F.danger*3);const H=near(hu,.1),p=H.ppl.find(z=>z.R.work==='out');
+   p.x=p.door.x;p.y=p.door.y;p.leg='back';t.CampFolk.aim(H,p,'work');const d0=Math.hypot(p.x-p.spot.x,p.y-p.spot.y);let wet=0,steps=0;for(let i=0;i<600&&Math.hypot(p.x-p.tx,p.y-p.ty)>1.5;i++){t.CampFolk.step(.1);steps++;if(!t.passable(t.tAt(Math.floor(p.x/t.TILE),Math.floor(p.y/t.TILE))))wet++}
+   ok(d0>t.ENCAMP.folk.route*t.TILE&&Math.hypot(p.x-p.spot.x,p.y-p.spot.y)<=1.5&&!wet&&t.Router.reach({x:hu.x,y:hu.y},p.spot),'a hunter walks out to his spot by the router’s ways, never over water or rock ('+(d0/t.TILE).toFixed(1)+' tiles, '+steps+' steps)')}
   // ---- the pages: each kind's places
   const go=x=>{Kit.world();x.seen=true;P.x=x.x;P.y=x.y+20;G.lastSite=null;t.interact(x);return [...document.querySelectorAll('.rail-i .ri-n')].map(b=>b.textContent).join()};
   P.gold=500;
