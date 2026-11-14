@@ -20,8 +20,8 @@ class EstateWorker extends WorldObject{
   // (MAP_FIGS), the same man with his load on his back, his tool left behind (people.js figCarrier). His fraction of a pixel
   // (subT) kept inside save/restore
   draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const f=this;
-    ents.push({y:f.y,f:()=>{ctx.save();subT(f);const fr=f.moving&&mapStepping(f)?(frameOf(f,WALK.foot,WALK.n)+Math.floor(f.ph*WALK.n))%WALK.n:0,t=townBy(f.home),carry=f.st==='out'||f.load,s=WORLD_BATTLE.on?null:folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),carry),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
-      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);if(WORLD_BATTLE.on){const L=workerAppearance(f),pose=f.moving&&mapStepping(f)?2+Math.floor((WALKED.get(f)||0)/WALK.foot)%4:0,sp=carry&&figsOn()?figCarrier(L.type,L.v,L.tint,f.job,pose):unitSprite(L.type,0,false,L.v,pose,false,false,L.tint),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;ctx.scale(f.dir<0?-k:k,k);ctx.drawImage(sp,-Math.floor(sp.width/2),-sp.height+2)}else{if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14)}ctx.restore();ctx.restore()}})}
+    ents.push({y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{ctx.save();subT(f);const fr=f.moving&&mapStepping(f)?(frameOf(f,WALK.foot,WALK.n)+Math.floor(f.ph*WALK.n))%WALK.n:0,t=townBy(f.home),carry=f.st==='out'||f.load,s=WORLD_BATTLE.on?null:folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),carry),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
+      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);if(WORLD_BATTLE.on){const L=workerAppearance(f),pose=f.moving&&mapStepping(f)?2+Math.floor((WALKED.get(f)||0)/WALK.foot)%4:0,sp=carry&&figsOn()?figCarrier(L.type,L.v,L.tint,f.job,pose):unitSprite(L.type,0,false,L.v,pose,false,false,L.tint),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;ctx.scale(f.dir<0?-k:k,k);ctx.drawImage(sp,-Math.floor(sp.width/2),-sp.height+2)}else{if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14)}ctx.restore();ctx.restore()})})}
   tip(){return '<b>'+(this.name?this.name+', '+this.job:cap1(this.job))+'</b><small>Of '+this.home+'</small><span class="act">Click: talk</span>'}
 }
 const asWorker=asClass(EstateWorker);
@@ -207,7 +207,7 @@ function updateFolk(d){
       const key=t.name+'|'+k,first=!FOLK_SEEN.has(key),most=Math.min(3,lv+1)-lostHands(t,k),want=first?Math.min(most,1+folkHash(key+'|'+G.day)%Math.max(1,most)):most;FOLK_SEEN.add(key);
       for(let have=W.folk.filter(f=>f.home===t.name&&f.k===k).length;have<want&&(first||Math.random()<d*.02);have++){const no=(FOLK_COUNT.get(key)||0)+1;FOLK_COUNT.set(key,no);const at=folkDoor(t,k),leave=DELIVER.from+Math.random()*(DELIVER.to-DELIVER.from);
         W.folk.push(asWorker(folkName({id:key+'|'+no,folk:true,home:t.name,k,job,x:at.x,y:at.y,tx:at.x,ty:at.y,st:'in',leave,done:now>leave?G.day:-1,dir:1,ph:Math.random()*6,fresh:first},t.races[0])))}}}
-  for(const f of W.folk){
+  for(const f of W.folk){if(fightHolds(f))continue;// (stepped aside from a fight on the map: worldbattle.js BattleBystanders)
     const t=townBy(f.home),fresh=f.fresh;f.fresh=false;if(!t){f.gone=true;continue}
     const threat=folkThreat(f.x,f.y,A.folkBandit)||Timed.of(t).has('fear')&&TravelAwareness.sees(asWorker(f));
     // at work inside: out with the day's load at his hour (not while the holding is besieged or afraid); in the field hours, out

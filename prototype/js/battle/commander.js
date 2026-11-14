@@ -10,7 +10,7 @@
 // at what is within this share of their range; regroup: cavalry pulls back this far after a charge, recharge: after this long
 // in the melee; attackAt / defendAt: the strength ratios to attack or hold at (hold: an attack goes on down to attackAt-hold, a defence up to defendAt+hold); stall: a standoff turns into an attack after this;
 // lull: no blow struck anywhere for this long (two sides that cannot reach each other), and every group goes in
-const FOE_CMD={think:.5,clash:70,behind:50,outgun:.8,volley:12,screen:20,replan:3,moved:30,flankY:110,flankAt:40,flankMax:8,advance:22,threat:70,reach:.97,regroup:90,recharge:3,attackAt:1.15,hold:.1,defendAt:.85,stall:30,lull:10,patience:6,beaten:.4,broken:30,hopeless:.15};
+const FOE_CMD={think:.5,clash:70,behind:50,outgun:.8,volley:12,screen:20,replan:3,moved:30,flankY:110,flankAt:40,flankMax:8,advance:22,threat:70,reach:.97,regroup:90,recharge:3,attackAt:1.15,hold:.1,defendAt:.85,stall:30,lull:10,patience:6,beaten:.4,broken:30,hopeless:.15,sweep:.5};
 // unit-level morale (each captain's, a group's own resolve): an infantry group under pullAt with a steady one (backAt) beside it
 // steps pullDist back to recover, till backAt or maxRecover s, the nearest steady one free going into the gap; riders under
 // chargeAt start no new charge, standing off cavRecover s at most (short: riders out of the fight get their breath back and come
@@ -453,7 +453,7 @@ class Commander{
     this.scout(N0,S);// (its scouts range ahead while the foe is unseen)
     // (no foe in sight that still fights: those leaving the field, withdrawing, are none, so it goes looking, not charging at them;
     // its riders' rides end, with no mark left to ride at (CavalryRide): they finish the leg they are on, and plan anew on sight)
-    if(!foes.some(e=>!withdrawing(e))){for(const id of N0.cav)delete B.groups[id].ridePlan;const seen=B.fog&&B.captains&&B.captains[ck]&&B.captains[ck].seen||0;if(!this.typeHolds(S)&&(B.t-Math.max(B.lastHit||0,seen)>FOE_CMD.lull||B.fog&&B.t>FOG.scout&&!foesKnown(team)))this.search(N0);return N0}
+    if(!foes.some(e=>!withdrawing(e))){for(const id of N0.cav)delete B.groups[id].ridePlan;const seen=B.fog&&B.captains&&B.captains[ck]&&B.captains[ck].seen||0;if(!this.typeHolds(S)&&(B.t-Math.max(B.lastHit||0,seen)>FOE_CMD.lull||B.fog&&(B.t>FOG.scout||this.sweeps())&&!foesKnown(team)))this.search(N0);return N0}
     // (its temperament, once, from its army's troops (temperFor); the enemy's style told as the battle opens)
     const Q=this.Q;if(B.fog&&Q.seen==null)Q.seen=B.t;if(Q.temper===undefined){Q.temper=this.temperFor();this.announce(Q.temper)}
     // (a beaten enemy army falls back as one, rather than fighting to the last man; once begun it does not turn round)
@@ -481,6 +481,8 @@ class Commander{
   fallBack(N0){if(B.sides?.active){(B.fallBackTeams||(B.fallBackTeams=new Set())).add(this.team);battleEvent('fallback',{team:this.team});for(const id of Object.values(N0).flat())B.groups[id].withdraw();return}if(!B.fallBack){B.fallBack=true;log('The enemy falls back.','good');battleEvent('fallback',{team:this.team})}for(const id of Object.values(N0).flat())B.groups[id].withdraw()}
   // (attacking, it keeps attacking down to FOE_CMD.hold under attackAt: no flip on noise)
   posture(S){const ck=this.ck;
+    // (inside, those who came in attack: its holders wait in their chambers to be found (insideHolds), a defence only stares at them)
+    if(this.sweeps())return 'attack';
     // (bt: the battle's time, or, in the fog (battlefog.js), the time since this captain first saw the foe: Q.seen)
     const Q=this.Q,P_=Q.post,T=this.T,F=FOE_CMD,stall=tun(T,F,'stall'),bt=B.t-(Q.seen||0);
     if(S.shootFoe>S.shootMe+.15||S.ratio>=tun(T,F,'attackAt')-(P_==='attack'?F.hold:0))return 'attack';
@@ -517,16 +519,27 @@ class Commander{
   scout(N,S){const team=this.team;
     const X=UNIT_SKILLS.scout;if(!(S.foes.length===0||B.t<X.aiEarly)||!B.units.some(u=>battleEnemy(team,u)&&fighting(u)&&!seenBy(team,u)))return;
     for(const id of Object.values(N).flat()){const g=B.groups[id];if(g&&!abilityWhyNot(g,'scout'))g.useAbility('scout')}}
-  // (where it goes looking: where the foe was last seen, else the far side of the field (a world battle: its ring's middle))
+  // (where it goes looking: where the foe was last seen, else the far side of the field (a world battle: its ring's middle); inside
+  // a cave, a lair, a camp or a fort it goes in at once, its chambers swept (sweepTo); its holders, roused, to the din of the fight
+  // (interior.js Interior.din))
   search(N){const team=this.team;
     const hid=B.units.filter(u=>battleEnemy(team,u)&&fighting(u));if(!hid.length)return;let x=0,y=0,c=0;for(const u of hid){const p=lastSeen(team,u);if(p){x+=p.x;y+=p.y;c++}}
-    const Z=BFIELD&&fieldZone(1-team),far=B.world?{x:B.world.cx,y:B.world.cy}:{x:Z?(Z.x0+Z.x1)/2:team?BW*.15:BW*.85,y:(fieldTop()+fieldBot())/2},ids=Object.values(N).flat().filter(id=>B.groups[id]&&B.groups[id].order!=='withdraw'&&grpUnits(id).length);
+    const Z=BFIELD&&fieldZone(1-team),din=insideHolds(team)&&B.din&&B.din[B.din.length-1],far=this.sweeps()?this.sweepTo(N):din?{x:din.x,y:din.y}:B.world?{x:B.world.cx,y:B.world.cy}:{x:Z?(Z.x0+Z.x1)/2:team?BW*.15:BW*.85,y:(fieldTop()+fieldBot())/2},ids=Object.values(N).flat().filter(id=>B.groups[id]&&B.groups[id].order!=='withdraw'&&grpUnits(id).length);
     if(B.fog&&!c){const C=ids.map(id=>B.groups[id].centre()),dir=team?-1:1,mx=C.reduce((a,p)=>a+p.x,0)/Math.max(1,C.length),mid=nearestTo(C,{x:mx,y:C.reduce((a,p)=>a+p.y,0)/Math.max(1,C.length)});
       ids.forEach((id,i)=>{const g=B.groups[id],back=g.role==='arc'||g.role==='mag'?FOE_CMD.behind:0,q=this.pathStep(mid,far,FOG.probe-back);// (ground that blocks: on along the way toward their side from the army's middle, all of it together, pathStep)
         if(q)g.standAt(q.x,q.y);else g.standAt(clamp(mx+dir*(FOG.probe-back),BW*.1,BW*.9),C[i].y)});return}
     ids.forEach((id,i)=>{const g=B.groups[id],C=g.centre();let at=c?{x:x/c,y:y/c}:far;if(Math.hypot(C.x-at.x,C.y-at.y)<FOE_CMD.moved*2)at=far;
       const q=this.ground()?.blocky&&PATH_PLACE.on&&!lineClear(this.ground().route.foot,C.x,C.y,at.x,at.y)?at:null;// (ground that blocks: to the spot itself, its way laid round the rock, not spread across into it)
       if(q)g.standAt(q.x,q.y);else g.standAt(at.x,at.y+(i-(ids.length-1)/2)*FOE_CMD.screen*2)})}
+  /* inside (interior.js: a cave, a lair, a camp, a fort), those who came in (not its holders, insideHolds) know the foe is there:
+     they go looking at once, not after FOG.scout s, chamber by chamber, the nearest not yet swept first (a chamber swept once one
+     of its groups stands within FOE_CMD.sweep of its middle, at its share of its size), the deepest last, then the deepest again;
+     never the far side of the field, where the rock is (the owner, 2026-11-13: "Why cave fight ai stuck at the start") */
+  sweeps(){return !!(B.inside&&B.interior&&B.interior.rooms&&!insideHolds(this.team))}
+  sweepTo(N){const L=B.interior,R=L.rooms,Q=this.Q,done=Q.swept||(Q.swept=new Set([0])),C=Object.values(N).flat().map(id=>B.groups[id]).filter(g=>g&&grpUnits(g.id).length).map(g=>g.centre());
+    R.forEach((m,i)=>{if(C.some(p=>Math.hypot((p.x-m.x)/m.rx,(p.y-m.y)/m.ry)<FOE_CMD.sweep))done.add(i)});
+    const mid=C.length?{x:C.reduce((a,p)=>a+p.x,0)/C.length,y:C.reduce((a,p)=>a+p.y,0)/C.length}:R[0],left=R.map((m,i)=>i).filter(i=>!done.has(i));
+    const i=left.length?left.reduce((b,j)=>Math.hypot(R[j].x-mid.x,R[j].y-mid.y)<Math.hypot(R[b].x-mid.x,R[b].y-mid.y)?j:b,left[0]):L.deep;return{x:R[i].x,y:R[i].y}}
   /* battle types (setup.js BTYPE; with none, null and false: every captain as ever). A bridge's holders defend while the river lies
      between the armies (TERRAIN_AI's river hold: their bank at the crossings, the bridge first), and wait there, no lull, idle
      shooters or search sending them over, till BTYPE.wait s pass with no blow struck; its takers always attack. An ambush's men

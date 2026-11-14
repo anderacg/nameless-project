@@ -17,6 +17,14 @@ Kit.suite(({ok,info})=>{
  const mine=D.boxes.filter(x=>x[5]),covered=D.cov.size;
  ok(mine.length>0,'your soldiers are drawn as the map\'s figures are, each with what stands in front of him ('+D.boxes.length+' boxes, '+mine.length+' yours)');
  ok(covered>0,'one in the wood: the trees in front of him drawn over him, faded ('+covered+' trees over your men)');
+ // the camera off its whole pixels (a battle's camera glides): the cover still drawn over them (its mask once lost every pixel to a
+ // fraction of the camera: no tree drawn over anyone)
+ {const o0=window.overdrawBox,G0={x:G.cam.x,y:G.cam.y};let boxes=0,filled=0;window.overdrawBox=function(x0,y0,x1,y1){const r=o0.apply(this,arguments);
+   if(r){boxes++;const I=D.img,w=x1-x0+1,h=y1-y0+1;let c=0;for(let y=0;y<h&&!c;y++)for(let x=0;x<w;x++)if(I.data[(y*I.width+x)*4+3]){c=1;break}filled+=c}return r};
+  try{G.cam.x=Math.floor(G.cam.x)+.37;G.cam.y=Math.floor(G.cam.y)+.61;t.frame();ok(boxes>0&&filled===boxes,'the camera at a fraction of a pixel: every man under the trees has them drawn over him ('+filled+' of '+boxes+')')}
+  finally{window.overdrawBox=o0;G.cam.x=G0.x;G.cam.y=G0.y}}
+ // (no dashed outline round a man under the trees: the owner, 2026-11-13, "Remove that outline" (it was WDEPTH.dash, from 2026-11-12))
+ ok(typeof window.dashDraw==='undefined'&&!('dash' in D),'no dashed outline round the men under the trees (removed)');
  // (its cost, INFO: a frame with and without, sixty a side in the wood)
  {const pn=()=>performance.now();
   const ms=on=>{D.on=on;const a=pn();for(let i=0;i<20;i++)t.frame();return (pn()-a)/20};const b2=t.B;b2.units.forEach((u,i)=>{const q=b2.world.field({x:wx+(i%10-5)*6,y:wy+(Math.floor(i/10)-1)*6});u.x=q.x;u.y=q.y});

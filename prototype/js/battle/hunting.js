@@ -24,7 +24,7 @@ class HuntTracks{
 }
 class HuntBattleArea extends WorldBattleArea{
   constructor(e){
-    super(e);const a=e.hunt;this.herds=a.herds;this.x=a.x;this.y=a.y;this.r=HUNT_AREA.radius;this.span=Math.ceil(2*(this.r+WORLD_BATTLE.apron));this.x0=this.x-this.span/2;this.y0=this.y-this.span/2;this.cx=this.cy=this.span*this.scale/2;this.radius=this.r*this.scale;
+    super(e);const a=e.hunt;this.herds=a.herds;this.x=a.x;this.y=a.y;this.r=HUNT_AREA.radius*(OPEN_FIGHT.on?OPEN_FIGHT.reach:1);this.span=Math.ceil(2*(this.r+WORLD_BATTLE.apron));this.x0=this.x-this.span/2;this.y0=this.y-this.span/2;this.cx=this.cy=this.span*this.scale/2;this.radius=this.r*this.scale;
     this.initial=new Set([P,...this.herds]);this.participants=new Set(this.initial);this.pending=[];this.animals=[];this.joinedFight=false;this.tracks=new HuntTracks();
   }
   reinforce(){}
@@ -49,6 +49,8 @@ class HuntBattleArea extends WorldBattleArea{
     const hunters=B.units.filter(v=>v.team===0&&v.hp>0&&!v.left&&!v.rout),near=Spatial.nearest(hunters,u.x,u.y),previous=u.huntThreat,dist=v=>v?Math.hypot(u.x-v.x,u.y-v.y):Infinity,threat=previous&&hunters.includes(previous)&&dist(previous)<=dist(near)/WILDLIFE_AWARE.switch?previous:near,D=CRITTERS[u.wildlife],seconds=dt/(WORLD_PACE*WORLD_SCALE.move*this.scale),distance=dist(threat),point=threat&&this.world(threat),hidden=point&&hiddenAt(point.x,point.y);u.huntThreat=threat;
     if(u.hp<u.max||distance<D.shy*this.scale*(hidden?WILDLIFE_AWARE.cover:1))u.alert=Math.min(1,u.alert+seconds/(hidden?HUNT_AREA.alertCover:HUNT_AREA.alertOpen));
     if(distance<WORLD_BATTLE.interaction*this.scale||u.hp<u.max)u.alert=1;
+    // (out of sight of all of yours OPEN_FIGHT.lost s: got away, the field open round it)
+    if(OPEN_FIGHT.on){if(seenBy(0,u))u.unseen=0;else if((u.unseen=(u.unseen||0)+seconds)>OPEN_FIGHT.lost)return this.depart(u)}
     u.spdNow=0;if(!threat||u.alert<1){u.rest=(u.rest||0)+seconds;if(u.rest>ESCAPE_STAMINA.delay)u.escapeSta=Math.min(u.escapeCap,u.escapeSta+u.escapeCap*ESCAPE_STAMINA.recovery*seconds);u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;return}
     u.rest=0;const way=this.flight(u,threat),dir=this.escapeWay(u,way);if(!dir)return;const ratio=clamp(u.escapeSta/u.escapeCap,0,1),factor=ratio>=.6?1:ratio>=.25?.8+(ratio-.25)/.35*.2:ESCAPE_STAMINA.floor+ratio/.25*(.8-ESCAPE_STAMINA.floor),step=Math.min(dir[2],u.s.spd*factor*dt);
     const x=u.x+dir[0]*step,y=u.y+dir[1]*step;if(!lineClear(way.g,u.x,u.y,x,y))return;u.x=x;u.y=y;this.tracks.step(u);u.dir=Math.atan2(dir[1],dir[0]);u.face=dir[0]>=0?1:-1;u.spdNow=step/dt;u.escapeSta=Math.max(0,u.escapeSta-seconds);u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;
@@ -72,7 +74,7 @@ class HuntBattleArea extends WorldBattleArea{
     BATTLE_MOOD=null;const saved=heal(lost,groupLosses);for(const g of groupLosses)if(g.count)partyRoster(P).remove(g.type,g.count,g.id);
     const dead=this.animals.filter(u=>u.hp<=0&&!u.left),escaped=this.animals.filter(u=>u.left).length;
     for(const c of this.herds){const n=dead.filter(u=>u.herd===c).length;if(n)huntRewards(c,n)}
-    const e=G.enc;G.enc=null;G.encCool=3;G.mode='dialog';WildHunt.controls();worldEmit('battle:ended',{enc:e,how:b.retreat?'withdrawn':'won'});
+    const e=G.enc;G.enc=null;G.encCool=3;G.mode='dialog';worldEmit('battle:ended',{enc:e,how:b.retreat?'withdrawn':'won'});
     const report={groups:groupLosses.map(g=>({id:g.id,type:g.type,name:g.name,start:g.start,fit:g.start-g.count,wounded:g.wounded,killed:g.count-g.wounded,saved:g.saved,rearguard:0})),characters:[]};
     lootShow('<h2>Hunt complete</h2><p>'+dead.length+' animal'+(dead.length===1?'':'s')+' killed, '+escaped+' escaped, '+(this.animals.length-dead.length-escaped)+' still alive. Only kills provide meat and species trophies.</p>',lost,saved,'cont',report);updateHUD(true);
   }
@@ -94,6 +96,6 @@ class HuntBattleSetup extends WorldBattleSetup{
     for(const [id,g] of Object.entries(B.groups))if(!g.player){const m=B.units.filter(u=>u.grp===id);for(const u of m){const c=u.herd;if(!c)continue;const index=a.animals.filter(v=>v.herd===c).indexOf(u),offset=index?Math.ceil(index/2)*3:0;Object.assign(u,a.field({x:c.x+(index%2?-1:1)*offset,y:c.y-offset*.3}));u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;delete u.rout;delete u.left;u.hp=u.max;u.sx=u.sy=0;a.tracks.sight(u)}if(m.length){const p=centroid(m);g.ax=p.x;g.ay=p.y;g.order='hold'}}
     B.sight=null;sightStep(true);
   }
-  survey(){super.survey();this.env.name='Hunting area';this.env.text='Auto Hunt is on for your whole army. Give orders or use AI to take command. Wildlife can escape beyond the circle; kills provide meat and trophies.'}
+  survey(){super.survey();this.env.name='Wildlife hunt';this.env.text='Auto Hunt is on for your whole army. Give orders or use AI to take command. '+(OPEN_FIGHT.on?'Game that runs out of reach gets away; what you kill lies where it fell: click it to take its meat and trophies.':'Wildlife can escape beyond the circle; kills provide meat and trophies.')}
   present(){super.present();let end=document.getElementById('huntEnd');if(!end){end=document.createElement('button');end.id='huntEnd';end.type='button';end.className='btn sm';end.textContent='End hunt';end.addEventListener('click',()=>B?.hunt?.end());bbar.querySelector('.btime').appendChild(end)}end.hidden=false;window.mobileBattleHud?.sync();autoUI()}
 }

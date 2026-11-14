@@ -8,7 +8,7 @@ function spawnBandit(initial,ld){// (ld: a chieftain coming back)
   for(let tries=0;tries<80;tries++){
     const x=rint(3,MW-4)*TILE+8,y=rint(3,MH-4)*TILE+8;
     if(!passable(terrAt(x,y)))continue;
-    if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.bandit[initial?0:1]||!farFromHomes(x,y,WORLD_SCALE.spawn.away)||Outposts.guarded(x,y))continue;// (none by a held standard: world/outposts.js)
+    if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.bandit[initial?0:1]||!farFromHomes(x,y,WORLD_SCALE.spawn.away)||Outposts.guarded(x,y))continue;// (none by a held outpost: world/outposts.js)
     const c=climAt(x,y),n=rint(3,5)+Math.floor(G.day/12),kind=c==='desert'?'raiders':c==='swamp'?'bog':'bandits';bandits.push(asParty({x,y,n,kind,list:makeEnemies(n,false,kind),t:0,a:0,idle:false,cool:0,ld:ld||newChief(kind,1+Math.floor(G.day/25)+(Math.random()<.3?1:0))}));if(ld&&Math.hypot(x-P.x,y-P.y)<vis()*3)log(ld.name+' is back on the roads with a new band.','bad');return;
   }
 }
@@ -41,7 +41,7 @@ const REACH=14;
 // holding then its built estates, the parties (lords, bands, patrols, your companions'), the beasts, the sites, the herds, the
 // caravans, the refugees, the encounters on the road, the workers, the ships (never clicked), then the fights (none picked: a click on a party in one meets
 // it, interact). Not you.
-const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...roadList(),...W.folk.map(asWorker),...W.ships.map(asShip),...W.fights.map(asFight),...Remains.list];
+const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...roadList(),...W.folk.map(asWorker),...CampFolk.all(),...W.ships.map(asShip),...W.fights.map(asFight),...Remains.list,...Carcass.list];
 // a thing on the map made one of its kind if it is still plain data (new, from a save or a test), by its fields: a herd (crit),
 // refugees (rf), an encounter on the road (rd), a worker (folk), a ship (its path over the water), a beast (a MONSTERS kind). Parties are made theirs by asParty
 const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRefugees(o):o.rd?asRoadEnc(o):o.folk?asWorker(o):o.path?asShip(o):MONSTERS[o.id]&&!o.type?asMonster(o):o;
@@ -77,7 +77,7 @@ function pickAt(wx,wy){
 const objKind=o=>(o=asWorldObject(o)) instanceof WorldObject&&o.here()?o.mapKind:null;
 // meet whatever you have reached, each its own way (WorldObject meet; G.youAttack: you started whatever fight this opens at once:
 // engage.js startEncounter)
-function interact(o){
+function interact(o){if(B&&G.mode==='battle')return false;// (none while a fight goes on: worldbattle.js openFightWorld)
   const k=objKind(o);P.tx=null;G.chase=null;G.youAttack=true;if(k)breakCamp();
   try{
     if(o&&o.fight&&fightOf(o)){fightMeet(fightOf(o));return true}
@@ -243,7 +243,7 @@ function dayTick(){
 // (a soldier's wage a day by his kind's tier (the owner, 2026-10-30: "scale by tier"): peasants, then tiers 1 to 3; a fit rider more)
 // (garrison: a man a day in a fief of yours, as a realm pays for its own, economy.js realmDay. merc: a realm's contract pays this share
 // of your soldiers' wages, from its treasury (it paid a gold a man, more than a levy's wage, out of nothing); a realm short of gold pays none)
-const BAND_PAY={tier:[.25,.5,1,2],mounted:.5,companion:2,garrison:.4,merc:1.25};
+const BAND_PAY={tier:[.5,1,2,4],mounted:.5,companion:2,garrison:.4,merc:1.25};
 const soldierPay=k=>BAND_PAY.tier[clamp(ST[k]?.tier||0,0,3)];
 function bandPayroll(){const counts=[P.troops,P.wounded||{},...cparties().map(p=>countsOf(p.troops))],detached=cparties().reduce((a,p)=>a+p.troops.length,0),
     base=counts.reduce((a,c)=>a+Object.entries(c).reduce((b,[k,n])=>b+n*soldierPay(k),0),0),mounts=mountedN()*BAND_PAY.mounted,companions=compCount()*BAND_PAY.companion,garrison=playerFiefs().reduce((a,t)=>a+(t.gar||0),0)*BAND_PAY.garrison,raw=base+mounts+companions+garrison;return{base,mounts,companions,garrison,detached,raw,total:Math.ceil(raw)}}

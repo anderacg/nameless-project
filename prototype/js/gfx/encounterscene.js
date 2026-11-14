@@ -11,7 +11,7 @@
    smoke and notes (music) drawn live), each its feet at its point (o.at: at that point of the map, not with the encounter: one
    left behind as it runs), for the map (draw: each piece by its feet in the depth order, at the encounter's own place to the
    screen's pixel: subT) and for its page's banner (pics). The new kinds' pieces are stand-ins until the props of phase 3 */
-function roadPerson(key,race,v,f){const k='rp'+key+race+v+f;return spr[k]||(spr[k]=mapPerson(ENC_LOOK[key](race,v),f))}
+function roadPerson(key,race,v,f){const k='rp'+key+race+v+f+(DRESS.clim||'');return spr[k]||(spr[k]=mapPerson(ENC_LOOK[key](race,v),f))}
 function roadRider(key,race,v,f,col,coat){const k='rr'+key+race+v+f+col+coat;return spr[k]||(spr[k]=mapFigure({...ENC_LOOK[key](race,v),team:col||'leather'},f,coat||'horse'))}
 // (a saddled horse with no rider: the map's horse, a saddle and its blanket on its back, a stirrup hanging)
 function roadHorse(coat,f){const k='rh'+coat+f;if(spr[k])return spr[k];const g=pgrid(15,8),hs=drawMapHorse(g,coat,f,2,1),L=pal('leather'),R=pal('red');
@@ -55,7 +55,7 @@ class EncounterScene{
   // its pieces now: {k, s (the picture, null for one drawn live), x, y (its feet on the map), face, a, o}; still: standing (the banner)
   lay(e,still){const m=e.dir<0?-1:1,go=!still&&mapStepping(e),f=go?frameOf(e,WALK.foot,WALK.n):0,out=[];
     for(const [k,w,dx,dy,o={}] of roadPieces(e)){const fr=go&&!o.at?(f+(o.v||0)*3)%WALK.n:0;
-      out.push({k,s:ROAD_LIVE.includes(k)?null:this.pic(k,w,e,o,fr,go&&!o.at),x:o.at?o.at[0]:e.x+dx*m,y:o.at?o.at[1]:e.y+dy,face:(o.face||1)*(o.at?1:m),a:o.a??1,o})}
+      out.push({k,s:ROAD_LIVE.includes(k)?null:dressedIn(dressClimAt(e.x,e.y),()=>this.pic(k,w,e,o,fr,go&&!o.at)),x:o.at?o.at[0]:e.x+dx*m,y:o.at?o.at[1]:e.y+dy,face:(o.face||1)*(o.at?1:m),a:o.a??1,o})}
     return out}
   pic(k,w,e,o,f,go){const r=e.race||'human',v=o.v||0;
     if(figsOn()){const s=this.fig(k,w,r,v,o,figPose(f,go));if(s)return s}

@@ -20,11 +20,14 @@ class Herd extends WorldObject{
   // up to three of its animals, behind and beside the first, a walk of PX.MAP_STEPS frames to a body length walked (critterSprite;
   // render.js stepOf), its count near you; each at its own place to the screen's pixel (render.js subT)
   draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const c=this;if(WORLD_BATTLE.on)marchCircle(ents,c,cam,Math.max(WORLD_BATTLE.outer,WORLD_BATTLE.inner+Math.sqrt(c.n||1)*2),'#b4c985');
-    ents.push({y:c.y,f:()=>{subT(c);const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
-      for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,s.cw)/N,N)+i*3)%N:0,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
+    // (each animal its battle figure, as it is in a hunt, at the marchers' scale (gfx/sprites.js critterArt), its own coat: the herd's
+    // coat picked once (coat), not from its home (hx, hy), which a fleeing herd moves every frame: its coats flashed, the owner
+    // 2026-11-13: "The wildlife sprite flashing, like it changes the color")
+    ents.push({y:c.y,f:()=>{subT(c);const v0=c.coat??(c.coat=Math.floor((c.hx||0)+(c.hy||0))),A=critterArt(c.id,0,v0),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(A.w*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
+      for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,A.w)/N,N)+i*3)%N:0,a=critterArt(c.id,fr,v0+i),w=Math.max(4,a.w-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
-        ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}
-      if(WORLD_BATTLE.on)BANNERQ.push({o:c,marker:{h:s.ch,col:'#b4c985'}});else if(c.n>1&&c.fromYou()<90)txt(String(c.n),sx,sy-s.ch-4,'#c8e0a0','center')}})}
+        ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);ctx.scale(c.dir<0?-a.k:a.k,a.k);ctx.drawImage(a.s,-(a.s.width>>1),-a.s.height+(a.k<1?2:1));ctx.restore()}
+      if(WORLD_BATTLE.on)BANNERQ.push({o:c,marker:{h:A.h,col:'#b4c985'}});else if(c.n>1&&c.fromYou()<90)txt(String(c.n),sx,sy-A.h-4,'#c8e0a0','center')}})}
   tip(){const D=CRITTERS[this.id];return this.wild?'<b>'+D.n+(this.n>1?' ×'+this.n:'')+'</b><small>Wild game</small><span class="act">Click: hunt</span>':''}// (livestock: never hovered)
 }
 const asHerd=asClass(Herd);
@@ -41,10 +44,14 @@ function drawHerds(ents,cam,V){for(const c of W.critters.map(asHerd))if(c.wild)c
 // (estates.js), its Pens tell of the herd
 function penSpots(t,now){const c=herdOf(t),F=c&&fieldsOf(t,'pasture');if(!F)return [];const T=F.tiles,per=CRITTERS[c.id].size>=3?1:2,out=[];
   for(let j=0;j<Math.min(c.n,T.length*per);j++){const [tx,ty]=T[j%T.length],ph=now/2600+hash(tx,ty,t.seed+j)*6.283,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now*PX.MAP_STEPS/(2*D_STEP)+j*3)%PX.MAP_STEPS:0,
-    a=critterSprite(c.id,fr),amp=Math.max(0,Math.min(3,(TILE-4-a.cw)>>1));out.push({x:tx*TILE+TILE/2+Math.sin(ph)*amp,y:ty*TILE+(j<T.length?TILE-3:TILE-8),a,flip:mv<0,tx,ty})}
+    a=critterArt(c.id,fr,j),amp=Math.max(0,Math.min(3,(TILE-4-a.w)>>1));out.push({x:tx*TILE+TILE/2+Math.sin(ph)*amp,y:ty*TILE+(j<T.length?TILE-3:TILE-8),a,flip:mv<0,tx,ty})}
   return out}
-function penEnts(t,ents,cam){penSpots(t,0).forEach((s0,j)=>ents.push({y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;ctx.save();subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),w=Math.max(4,s.a.cw-2);// (its fraction of a pixel kept inside save/restore: drawn into the scene, a shift left over would pile up frame on frame)
-  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.translate(x,sy);if(s.flip)ctx.scale(-1,1);ctx.drawImage(s.a,-(s.a.width>>1),-s.a.height+1);ctx.restore()}}))}
+// (PEN_ENTS: the pens' animals, handed from the holdings' pass (structures.js, drawn into the scene at the game's pixels, where a figure at
+// the marchers' scale lost every other pixel: "sticks") to those who move (render.js drawWorld), drawn at the screen's pixels as
+// in a battle; the owner, 2026-11-13: "For pasture use the same drawing in battle")
+const PEN_ENTS=[];
+function penEnts(t,ents,cam){penSpots(t,0).forEach((s0,j)=>ents.push({y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;ctx.save();subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),w=Math.max(4,s.a.w-2);// (its fraction of a pixel kept inside save/restore: drawn into the scene, a shift left over would pile up frame on frame)
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.translate(x,sy);ctx.scale(s.flip?-s.a.k:s.a.k,s.a.k);ctx.drawImage(s.a.s,-(s.a.s.width>>1),-s.a.s.height+(s.a.k<1?2:1));ctx.restore()}}))}
 // (the wild game's and the herds' own dice: the stream 'critters', core/rng.js, so a kind added or a spawning rule changed never
 // moves the world's Math.random)
 const critRng=()=>rngOf('critters');

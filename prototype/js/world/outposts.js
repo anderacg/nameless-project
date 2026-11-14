@@ -9,8 +9,10 @@
    peace it grows a level, paid in timber and stone from its realm's nearest holding (OUTPOST.grow); taken, its tower is broken
    (fewer guards) and mended slowly, again on timber and stone (OUTPOST.repair) ---------- */
 // (what stands there by its level, in words: the owner, 2026-11-10, "can we rename it to something more straightforward?": an outpost;
-// in the code too since 2026-11-12, "refactor the name standards to outpost", its sites' saved type still 'standard': OUTPOST_TYPE)
+// in the code too since 2026-11-12, "refactor the name standards to outpost", and its sites' saved type since 2026-11-14: OUTPOST_TYPE)
 const OUTPOST_LV=['','a flag post','a flag post and a watchtower','a flag post and a stone tower'];
+// (each outpost's sentries as they walk on the map: drawn only, never saved)
+const SENTRY_MEN=new WeakMap();
 class Outpost extends Site{
   get T(){return OUTPOST.T}
   get screen(){return PAGE_SCREEN}
@@ -87,9 +89,18 @@ class Outpost extends Site{
   // (not while a battle is fought on the map: its guards are in it, OutpostTower)
   draw(ents,cam,V){super.draw(ents,cam,V);const X=OUTPOST.sentries,n=Math.min(X.most,this.guards),f=this.realm;if(!n||!f||B&&B.world||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
     const type=this.sentryType(),col=FACS[f].col,mins=(G.day+Clock.frac)*1440;
-    for(let i=0;i<n;i++){const p=this.sentryAt(i,n,mins);if(p.inside)continue;const x=p.x,y=p.y,dir=p.dir,step=p.moving?2+Math.floor(mins/X.stride+i)%4:Math.floor(mins/X.stride/4+i)%2;// (walking: its stride; at a post: breathing)
-      ents.push({y,f:()=>reduced(()=>{const s=unitSprite(type,0,false,(this.seed+i)%6,step,false,false,col),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
-        ctx.save();ctx.translate(Math.round(x-cam.x),Math.round(y-cam.y));ctx.scale(dir*k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore()})})}}
+    /* (each walks as a marcher of an army does (the owner, 2026-11-14: "the outpost patrol still walking weird why dont use the same
+       concepts as guard or sentry"): a man of his own, kept (SENTRY_MEN), on toward where his beat has him now (sentryAt) on the real
+       clock, at least X.walk px a second, his steps by the way he has walked, facing the way he goes, standing his fidgets at a post,
+       drawn as the map's men are, the battle's figure with his weapon in hand (march.js drawMarcher)) */
+    const now=performance.now()/1000,men=SENTRY_MEN.get(this)||(SENTRY_MEN.set(this,[]),SENTRY_MEN.get(this)),o=this.sentryOwner();
+    for(let i=0;i<n;i++){const p=this.sentryAt(i,n,mins);let u=men[i];if(p.inside){if(u)u.gone=true;continue}
+      if(!u||u.gone||Math.hypot(u.x-p.x,u.y-p.y)>X.snap)u=men[i]={id:(this.seed||0)*7+i,type,x:p.x,y:p.y,walk:0,walking:false,dir:p.dir<0?Math.PI:0,t:now};
+      const dt=clamp(now-u.t,0,.1),dx=p.x-u.x,dy=p.y-u.y,d=Math.hypot(dx,dy),s=Math.min(d,Math.max(X.walk*dt,d*Math.min(1,dt*6)));u.t=now;u.type=type;
+      if(s>.02){u.x+=dx/d*s;u.y+=dy/d*s;u.walk+=s;u.walking=true;if(Math.abs(dx)>.3)u.dir=dx<0?Math.PI:0}else{u.walking=p.moving&&d>.5;if(!p.moving)u.dir=p.dir<0?Math.PI:0}
+      ents.push({y:u.y,f:()=>drawMarcher(u,o,cam)})}}
+  // (who the sentries march for, as drawMarcher reads an army: its realm's colours, where it stands)
+  sentryOwner(){const f=this.realm,col=FACS[f].col;return{x:this.x,y:this.y,fac:f,faction:f,mapKind:'patrol',look:()=>({col,dir:1}),banner:()=>({k:'banner',col,dev:f})}}
   // (its beat: the posts round the flag, each outpost's turned by its seed; its tower's door, where a sentry goes in to rest, or the
   // flag's foot with no tower standing)
   // (its beat's posts: an arc in front of it (the map draws its sentries over the outpost, so none may stand behind the flag or the
@@ -105,8 +116,9 @@ class Outpost extends Site{
     const way=[...Array(k).keys()].map(j=>P[(s0+j)%k]).concat([P[s0],D]),legs=[];let at=D;
     way.forEach((to,j)=>{const st=j<k?X.stand[0]+((this.seed||0)*7+j*13)%(X.stand[1]-X.stand[0]+1):0,via=this.around(at,to);
       for(const v of via)legs.push({from:at,to:v,w:Math.hypot(v.x-at.x,v.y-at.y)/X.pace,st:0}),at=v;legs.push({from:at,to,w:Math.hypot(to.x-at.x,to.y-at.y)/X.pace,st});at=to});
-    const round=legs.reduce((a,l)=>a+l.w+l.st,0),rest=Math.min(X.rest,round),cyc=round+rest;let t=((mins+i*cyc/n)%cyc+cyc)%cyc;
-    for(const l of legs){if(t<l.w){const u=t/l.w,dx=l.to.x-l.from.x;return{x:l.from.x+dx*u,y:l.from.y+(l.to.y-l.from.y)*u,dir:dx<0?-1:1,moving:true,inside:false}}t-=l.w;
+    const round=legs.reduce((a,l)=>a+l.w+l.st,0),rest=Math.min(X.rest,round),cyc=round+rest;let t=((mins+i*cyc/n)%cyc+cyc)%cyc,walked=0;
+    // (walked: how far along its beat, px, for its stride)
+    for(const l of legs){if(t<l.w){const u=t/l.w,dx=l.to.x-l.from.x;return{x:l.from.x+dx*u,y:l.from.y+(l.to.y-l.from.y)*u,dir:dx<0?-1:1,moving:true,inside:false,walked:walked+l.w*X.pace*u}}t-=l.w;walked+=l.w*X.pace;
       if(t<l.st)return{x:l.to.x,y:l.to.y,dir:l.to.x<this.x?1:-1,moving:false,inside:false};t-=l.st}
     return{x:D.x,y:D.y,dir:i%2?-1:1,moving:false,inside:D.tower}}
   // (the corners to walk by from a to b, if the straight way crosses its plinth or tower: [] none, else those of the box in the way
@@ -193,7 +205,7 @@ const Outposts={
   landKey(){if(!this.live)return 0;let h=1,n=0;for(const s of this.posts())if(s.type===OUTPOST_TYPE){n++;h=Math.imul(h^landOwnId(s.owner)*8^s.lv*2^(s.broken?1:0)^(s.choose?64:0),0x9e3779b1)+s.i|0}return n?h>>>0||1:0},
   of(i){return this.all().find(s=>s.i===i)||null},
   // (their tiles kept free of every holding's building: lots.js occReserve, lotFits)
-  reserve(){this.live=true;if(typeof OCC==='undefined'||!OCC)return;for(const s of this.all())for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},// (-3: a standard's, no lot's: Outposts.stand looks past them)
+  reserve(){this.live=true;if(typeof OCC==='undefined'||!OCC)return;for(const s of this.all())for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},// (-3: an outpost's, no lot's: Outposts.stand looks past them)
   spots(){const S=OUTPOST_PLACE,road=(x,y)=>{const k=tAt(x,y);return k===T_ROAD||k===T_FORD},peak=(x,y)=>tAt(x,y)===T_MOUNT,out=[];
     for(let ty=3;ty<MH-3;ty++)for(let tx=3;tx<MW-3;tx++){const k=tAt(tx,ty);let why=null;
       if(k===T_FORD)why='ford';
@@ -205,8 +217,10 @@ const Outposts={
   // (open ground by a spot to stand on: off the road, nothing built, a clear tile under the plinth and in front)
   stand(tx,ty){const N=OUTPOST_PLACE.near;let best=null,bd=1e9;
     for(let j=-N;j<=N;j++)for(let i=-N;i<=N;i++){const x=tx+i,y=ty+j;if(x<2||y<2||x>=MW-2||y>=MH-2)continue;const k=tAt(x,y),f=tAt(x,y+1);
-      const oc=(a,b)=>{const v=occAt(a,b);return v&&v!==-3};if(k!==T_OPEN||!passable(f)||oc(x,y)||oc(x,y+1)||oc(x-1,y))continue;const d=i*i+j*j+(hash(x,y,9301)*.5);if(d<bd){bd=d;best=[x,y]}}
+      const oc=(a,b)=>{const v=occAt(a,b);return v&&v!==-3};if(k!==T_OPEN||!passable(f)||oc(x,y)||oc(x,y+1)||oc(x-1,y)||this.onRoad(x,y))continue;const d=i*i+j*j+(hash(x,y,9301)*.5);if(d<bd){bd=d;best=[x,y]}}
     return best},
+  // (a road under the picture it will have at its biggest: OUTPOST_PLACE.foot)
+  onRoad(tx,ty){const [x0,y0,x1,y1]=OUTPOST_PLACE.foot;for(let j=y0;j<=y1;j++)for(let i=x0;i<=x1;i++)if(tAt(tx+i,ty+j)===T_ROAD)return true;return false},
   // (anything built within OUTPOST_PLACE.clear tiles: a holding's lots, its estates, its walls)
   built(tx,ty){const r=OUTPOST_PLACE.clear;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(occAt(tx+i,ty+j)>0)return true;return false},
   // (the realm holding the land at a tile, and whether another realm's land lies within r tiles)

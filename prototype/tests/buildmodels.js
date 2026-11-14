@@ -48,6 +48,15 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // roof over its battlements) and its turrets rise over it, its low windows left off where its walls' towers stand. Were keep 1b27855b,
 // vale dc351a52, league 3e85bdbb. Proof: 6e16d3b (the commit before) gives the old values)
 const EXPECT={
+ // (the camp's tents and pieces recorded 2026-11-14, new types (engine/build-camp.js: the owner, "make more tent variety", "it should
+ //  be top down view"); every other type and cluster unchanged)
+ // (camp_ridge, camp_bell, camp_tepee, camp_yurt, camp_pavilion, camp_leanto, camp_wagon, camp_stall re-recorded the same day, on purpose,
+ //  here and in every culture's block: the owner, "so their portion fit with the unit sprites?": 32 px cells at the figures' 5 px a
+ //  metre, a man walking through a tent's door, a yurt's wall a man high; the camp set keeps the objects' rules)
+ // (camp_ridge, camp_bell, camp_tepee, camp_yurt, camp_pavilion, camp_leanto, camp_pup re-recorded and camp_marquee, camp_porch, camp_hut
+ //  recorded the same day, on purpose, here and in every culture's block: the owner, "also please add the tent variety": each tent
+ //  varies by its seed (its size, its door, a porch, bands, a store yurt, gear before it), and three styles more)
+ camp_ridge:'eb9dca82', camp_bell:'c49c5a68', camp_tepee:'6fe3dea3', camp_yurt:'cf0f58bd', camp_pavilion:'dfedf669', camp_leanto:'946cec6c', camp_pup:'c4226c77',camp_marquee:'a5ef8423',camp_porch:'145611ee',camp_hut:'6d04f737', camp_barrels:'ff4a8816', camp_crates:'84e17250', camp_sacks:'0fa03893', camp_logs:'c64381fe', camp_wagon:'4a2609cc', camp_cart:'feb6232a', camp_stall:'e405f09e', camp_shrine:'d233aea2', camp_rack:'cfb1cc8a', camp_mound:'cf56eac3',
  cottage:'566a0878',townhouse:'fb9511de',fisherhut:'2d6d2bf1',chapel:'762d3bbe',stall:'48ec423e',tower:'6acd7ef2',yurt:'86b1b101',
  longhouse:'d3212831',tavern:'f53264e7',smithy:'75f35aaf',church:'cc12a724',barn:'6e101819',granary:'de56ef0e',windmill:'b61f4af0',
  watermill:'830ea6cc',warehouse:'e1d6564f',gatehouse:'086b156b',hidehall:'29442873',watchtower:'fee9afe9',treehouse:'15172543',
@@ -64,7 +73,7 @@ const EXPECT={
 // each culture's own block, which only its own file changes: re-record only that block (its INFO line 'culture <name>: ...')
 const EXPECT_CULTURE={
  // vale (build-vale.js)
- vale:{cottage:'596a2542',townhouse:'493f1766',fisherhut:'cded18e1',chapel:'e009cbba',stall:'34446497',tower:'392e5970',
+ vale:{camp_ridge:'fb5ea35e', camp_bell:'30d1f9cd', camp_tepee:'9197c783', camp_yurt:'cf501643', camp_pavilion:'a0547ffe', camp_leanto:'aed79f48', camp_pup:'61676863',camp_marquee:'6d11d41e',camp_porch:'80fb8198',camp_hut:'9ecadbdf', camp_barrels:'41982d39', camp_crates:'85141062', camp_sacks:'75b1d4ee', camp_logs:'2b5b1346', camp_wagon:'79bf75d0', camp_cart:'1b938449', camp_stall:'b41488e9', camp_shrine:'c49bb3f1', camp_rack:'5306c85e', camp_mound:'5adb8995',cottage:'596a2542',townhouse:'493f1766',fisherhut:'cded18e1',chapel:'e009cbba',stall:'34446497',tower:'392e5970',
   longhouse:'150da3e0',tavern:'a2e66800',smithy:'5e056d49',church:'5c23d20b',barn:'2d350b53',granary:'4443b66b',windmill:'beca74c4',
   watermill:'a20a03ac',warehouse:'e5ea1bf1',gatehouse:'aea9c5e4',keep:'e712bce0',citadel:'31572182',well:'b9d0bf82',tent:'ae51fca4',
   wagon:'7f883ead',minehead:'e3a3c641',lumbershed:'3424207a',crane:'3684fe3d',village:'9b82ff3d',signpost:'6aa0a05a',
@@ -76,7 +85,7 @@ const EXPECT_CULTURE={
   'cluster:workshop':'9a2b5a9d','cluster:quarter':'aabf0a35','cluster:camp':'8e0c1bce','cluster:hideout':'266cc5ac',
   'cluster:travelers':'6db648a9','cluster:townhall':'4a86be91','cluster:fort':'468efc26'},
  // league (build-vale.js, on the Vale’s)
- league:{cottage:'ac264369',townhouse:'5dc0a33c',fisherhut:'10e0915a',chapel:'c2560107',stall:'7a3166a8',tower:'4b3e2e96',
+ league:{camp_ridge:'fb5ea35e', camp_bell:'30d1f9cd', camp_tepee:'9197c783', camp_yurt:'cf501643', camp_pavilion:'a0547ffe', camp_leanto:'aed79f48', camp_pup:'61676863',camp_marquee:'6d11d41e',camp_porch:'80fb8198',camp_hut:'9ecadbdf', camp_barrels:'41982d39', camp_crates:'85141062', camp_sacks:'75b1d4ee', camp_logs:'2b5b1346', camp_wagon:'79bf75d0', camp_cart:'1b938449', camp_stall:'b41488e9', camp_shrine:'c49bb3f1', camp_rack:'5306c85e', camp_mound:'5adb8995',cottage:'ac264369',townhouse:'5dc0a33c',fisherhut:'10e0915a',chapel:'c2560107',stall:'7a3166a8',tower:'4b3e2e96',
   longhouse:'4e06b740',tavern:'6f8e047b',smithy:'69744288',church:'307a7d73',barn:'2c5e5154',granary:'fdc46d73',windmill:'ceab0d14',
   watermill:'ad359c76',warehouse:'67233d64',gatehouse:'517ba774',keep:'5c0c5c8d',citadel:'3f21cca9',well:'df8286cb',tent:'b51b91e2',
   wagon:'7f883ead',minehead:'e3a3c641',lumbershed:'7c51be02',crane:'d1abb9f9',village:'b7c4d6b0',signpost:'6aa0a05a',
@@ -88,7 +97,7 @@ const EXPECT_CULTURE={
   'cluster:workshop':'6139d9fa','cluster:quarter':'d8aed571','cluster:camp':'896e7cce','cluster:hideout':'a27af816',
   'cluster:travelers':'74b15e56','cluster:townhall':'fada6cef','cluster:fort':'5896a98e'},
  // karn (build-karn.js)
- karn:{cottage:'8a5cd67f',townhouse:'5513b821',fisherhut:'7fbeb008',chapel:'ea458768',stall:'f4079858',tower:'81c477b4',
+ karn:{camp_ridge:'fb5ea35e', camp_bell:'30d1f9cd', camp_tepee:'9197c783', camp_yurt:'cf501643', camp_pavilion:'a0547ffe', camp_leanto:'aed79f48', camp_pup:'61676863',camp_marquee:'6d11d41e',camp_porch:'80fb8198',camp_hut:'9ecadbdf', camp_barrels:'41982d39', camp_crates:'85141062', camp_sacks:'75b1d4ee', camp_logs:'2b5b1346', camp_wagon:'79bf75d0', camp_cart:'1b938449', camp_stall:'b41488e9', camp_shrine:'c49bb3f1', camp_rack:'5306c85e', camp_mound:'5adb8995',cottage:'8a5cd67f',townhouse:'5513b821',fisherhut:'7fbeb008',chapel:'ea458768',stall:'f4079858',tower:'81c477b4',
   longhouse:'dd6027ed',tavern:'5462b3a2',smithy:'d5993b4b',church:'3869f8e0',barn:'8f2323ad',granary:'5e37c04b',windmill:'a74c05f5',
   watermill:'69fc95ef',warehouse:'ef03b828',gatehouse:'469e4902',stonehall:'3da7d6a2',forge:'d5993b4b',keep:'2eb70a33',
   citadel:'74d12b1c',well:'cd20df02',tent:'d5e846c9',wagon:'7f883ead',minehead:'bb61184a',lumbershed:'c61b276b',crane:'c85dbed4',
@@ -100,7 +109,7 @@ const EXPECT_CULTURE={
   'cluster:granary':'f2bd699f','cluster:workshop':'529f9af2','cluster:quarter':'75fd632e','cluster:camp':'04081813',
   'cluster:hideout':'29a74435','cluster:travelers':'aef56f8d','cluster:townhall':'287bbe84','cluster:fort':'fd167952'},
  // ashgor (build-ashgor.js)
- ashgor:{cottage:'b17b9fb1',townhouse:'1550b382',fisherhut:'d708d2b4',chapel:'d7c681c6',stall:'9ac45d76',tower:'afb99a51',yurt:'21f7117d',
+ ashgor:{camp_ridge:'fb5ea35e', camp_bell:'30d1f9cd', camp_tepee:'9197c783', camp_yurt:'cf501643', camp_pavilion:'a0547ffe', camp_leanto:'aed79f48', camp_pup:'61676863',camp_marquee:'6d11d41e',camp_porch:'80fb8198',camp_hut:'9ecadbdf', camp_barrels:'41982d39', camp_crates:'85141062', camp_sacks:'75b1d4ee', camp_logs:'2b5b1346', camp_wagon:'79bf75d0', camp_cart:'1b938449', camp_stall:'b41488e9', camp_shrine:'c49bb3f1', camp_rack:'5306c85e', camp_mound:'5adb8995',cottage:'b17b9fb1',townhouse:'1550b382',fisherhut:'d708d2b4',chapel:'d7c681c6',stall:'9ac45d76',tower:'afb99a51',yurt:'21f7117d',
   longhouse:'4b1c638a',tavern:'6058997f',smithy:'0b9b85de',church:'2b0a3357',barn:'1c30bfd1',granary:'331ae95b',windmill:'9022c5cc',
   watermill:'0ce37d8f',warehouse:'efeb83b4',gatehouse:'e41e61a5',hidehall:'de00969a',watchtower:'5d7bcadc',keep:'1735c8a4',
   citadel:'7d4d5948',well:'3056a38a',tent:'81523c0e',wagon:'7f883ead',minehead:'af48187f',lumbershed:'b1e5fcb5',crane:'5beb8a76',
@@ -112,7 +121,7 @@ const EXPECT_CULTURE={
   'cluster:pasture':'5df02688','cluster:brewery':'1a8193b1','cluster:granary':'44faa862','cluster:workshop':'6dd65b34',
   'cluster:quarter':'9153b352','cluster:camp':'ea7a6c6f','cluster:hideout':'0a9ac9b4','cluster:travelers':'26b7209a','cluster:townhall':'f657025a','cluster:fort':'d8cafa80'},
  // sylvan (build-sylvan.js)
- sylvan:{cottage:'1e3b72af',townhouse:'c3a1a81c',fisherhut:'81764468',chapel:'e048514e',stall:'715229ce',tower:'fb52ea5a',
+ sylvan:{camp_ridge:'fb5ea35e', camp_bell:'30d1f9cd', camp_tepee:'9197c783', camp_yurt:'cf501643', camp_pavilion:'a0547ffe', camp_leanto:'aed79f48', camp_pup:'61676863',camp_marquee:'6d11d41e',camp_porch:'80fb8198',camp_hut:'9ecadbdf', camp_barrels:'41982d39', camp_crates:'85141062', camp_sacks:'75b1d4ee', camp_logs:'2b5b1346', camp_wagon:'79bf75d0', camp_cart:'1b938449', camp_stall:'b41488e9', camp_shrine:'c49bb3f1', camp_rack:'5306c85e', camp_mound:'5adb8995',cottage:'1e3b72af',townhouse:'c3a1a81c',fisherhut:'81764468',chapel:'e048514e',stall:'715229ce',tower:'fb52ea5a',
   longhouse:'f695c381',tavern:'00c9616e',smithy:'4f5997a2',church:'213adec0',barn:'23f3b7e8',granary:'79f64200',windmill:'d62672b9',
   watermill:'9a79d992',warehouse:'d7ea4d02',gatehouse:'f3b5f2b8',treehouse:'994d39b3',elfhall:'1900a0d5',spire:'39f2950a',
   keep:'1c46113b',citadel:'320dfc10',well:'958f322d',tent:'6edac7e0',wagon:'f893a049',minehead:'4152beca',lumbershed:'73c6e961',
@@ -147,7 +156,11 @@ try{
    return a.join()};
  const LOOKS=['shrine','ruins','cave','smithy','barn','granary','warehouse','chapel','windmill','watermill','townhouse','elfhall','treehouse','lumbershed','yurt','hidehall','stonehall'];
  const t0=performance.now();let n=0;const plan=[],scl=[],front=[],share=[];
- for(const type of all){const N=SZ[type].cell,isB=N>=32&&!sites.includes(type);
+ // (a camp's tents, wagon and stall (engine/build-camp.js) are 32 px to stand at a man's scale (the owner, 2026-11-14: "so their
+ // portion fit with the unit sprites?"), but are no buildings: a tent's walls are its roof, a pavilion wider than it is deep;
+ // they keep the objects' rules)
+ const CAMP=PX.CAMP_TYPES||[];
+ for(const type of all){const N=SZ[type].cell,isB=N>=32&&!sites.includes(type)&&!CAMP.includes(type);
    // (the types in several looks by their dice (the sites, and since 2026-11-08 the smithy, barn, granary, warehouse, chapel,
    // windmill, watermill, and the cultures' townhouse, elf hall, treehouse, lumber shed, yurt, hide hall, stone hall): more seeds, so
    // every look meets the rules)
@@ -179,8 +192,8 @@ try{
   const stick=b=>{const N=b.cell,B=(x,y)=>x>=0&&y>=0&&x<N&&y<N&&b.mask[y*N+x]===1,one=(x,y)=>B(x,y)&&!B(x-1,y)&&!B(x+1,y);
     for(let x=0;x<N;x++){let y=0;while(y<N&&!B(x,y))y++;let k=0;while(one(x,y+k))k++;if(k>=2&&B(x,y+k))return x+','+y}return null};
   for(const type of all)for(const people of P)for(const seed of [1,2]){const ws=[];for(const yaw of yaws(type)){const b=PX.buildingModel({type,people,seed,yaw,fort:2}),s=stick(b);if(s)lines.push(type+'/'+people+'/'+seed+'/'+yaw+' at '+s);ws.push(width(b));
-      if(yaw===0&&people==='human'){const n={},N=b.cell;let t=0;for(let i=0;i<N*N;i++)if(b.mask[i]===1){t++;const m=MAT[b.px.m[i]];n[m]=(n[m]||0)+1}if(t&&Object.values(n).filter(c=>c>=t*.03).length<(N>=32?3:2))mono.push(type+'/'+seed+' '+Object.keys(n).join('/'))}}
-    if(ws.length===4&&SZ[type].cell>=32&&!LONG[type]){const r=Math.min(ws[1],ws[3])/ws[0];if(r<least){least=r;lt=type+'/'+people+'/'+seed}if(r<.75)thin.push(type+'/'+people+'/'+seed+' '+ws.join('/'))}}
+      if(yaw===0&&people==='human'){const n={},N=b.cell;let t=0;for(let i=0;i<N*N;i++)if(b.mask[i]===1){t++;const m=MAT[b.px.m[i]];n[m]=(n[m]||0)+1}if(t&&Object.values(n).filter(c=>c>=t*.03).length<(N>=32&&!CAMP.includes(type)?3:2))mono.push(type+'/'+seed+' '+Object.keys(n).join('/'))}}
+    if(ws.length===4&&SZ[type].cell>=32&&!LONG[type]&&!CAMP.includes(type)){const r=Math.min(ws[1],ws[3])/ws[0];if(r<least){least=r;lt=type+'/'+people+'/'+seed}if(r<.75)thin.push(type+'/'+people+'/'+seed+' '+ws.join('/'))}}
   ok(!thin.length,'every building\'s side views at least three quarters as wide as its front (least '+(100*least).toFixed(0)+'%, '+lt+'; the long and thin aside: '+Object.keys(LONG).join(', ')+')'+(thin.length?': '+thin.slice(0,8).join(', '):''));
   ok(!lines.length,'never a 1 px stick above a roof (a finial, a cone\'s tip, a pole: 2 px or more)'+(lines.length?': '+lines.slice(0,8).join(', '):''));
   ok(!mono.length,'no sprite of one material: a building shows 3 or more, an object 2 or more'+(mono.length?': '+mono.slice(0,8).join(', '):''))}

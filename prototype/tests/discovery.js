@@ -5,6 +5,10 @@
 // comes near it: then its name, its title over the map, a line in the log and Scouting practice; saved and loaded.
 Kit.suite(({ok})=>{
  const t=T,G=t.G,P=t.P,D=t.Discovery,DC=t.DISCOVER;
+ // (a holding's edge: its heart, houses and market, never its estates out in the fields: the owner, 2026-11-12, "need to be very close")
+ {const T2=t.TOWNS.filter(o=>(o.lots||[]).some(l=>!DC.core.includes(l.k))),far=o=>Math.max(...o.lots.map(l=>Math.hypot((l.x+l.n/2)*t.TILE-o.x,(l.y+l.n/2)*t.TILE-o.y)+l.n*t.TILE/2)),
+   core=o=>Math.max(0,...o.lots.filter(l=>DC.core.includes(l.k)).map(l=>Math.hypot((l.x+l.n/2)*t.TILE-o.x,(l.y+l.n/2)*t.TILE-o.y)+l.n*t.TILE/2));
+  ok(DC.r<=1&&T2.length&&T2.every(o=>Math.abs(D.reach(o)-core(o))<.01)&&T2.some(o=>D.reach(o)<far(o)-3*t.TILE),'a holding is learnt within '+DC.r+' tile of its houses, not out in its fields (its edge on average '+(T2.reduce((a,o)=>a+D.reach(o),0)/T2.length/t.TILE).toFixed(1)+' tiles out, its fields '+(T2.reduce((a,o)=>a+far(o),0)/T2.length/t.TILE).toFixed(1)+')')}
  Kit.begin('soldier',1);Kit.world();
  // ---- off (the harness's): every name known, nothing kept
  {const far=t.TOWNS[t.TOWNS.length-1];ok(!DC.on&&D.named(far)&&D.nameOf(far)===far.name&&!('found' in t.Saves.save()),'off: every place known by its name, nothing saved')}

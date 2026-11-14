@@ -1,6 +1,6 @@
 'use strict';
 // Quests: holdings offer jobs that refresh weekly; bounties, beast hunts and clearances spawn or mark their targets and finish when
-// the deed is done; supplies, hunts and reinforcements are handed in; couriers pay on arrival; lords give war work. No cap on the
+// the deed is done; supplies, hunts and reinforcements are handed in; couriers pay as they hand the letter over at its holding; lords give war work. No cap on the
 // jobs you hold; none fails for time (a timed one pays less late); the world may close one (a consolation); the tracked one saved.
 // The quest model (QM): the categories (job, side, main), every state (locked, available, active, completed, done, failed,
 // abandoned) and the archive (kept, capped, saved); a board's locked offers greyed with what they require, then available;
@@ -54,7 +54,8 @@ Kit.suite(({ok})=>{
  t.invAdd('mat','hide',qh.n);near(vil);t.updateWorld(.01);t.act('q-turnin',String(qh.id));ok(!P.quests.length&&!t.invCount('mat','hide'),'the tanner takes '+qh.n+' deer hides');t.act('leave');done();
  // courier
  let qr=null;for(let k=0;k<10&&!qr;k++)qr=t.makeQuest('courier',ash);t.acceptQuest(qr);const dest=t.townBy(qr.to),g1=P.gold;near(dest);t.updateWorld(.01);
- ok(!P.quests.length&&P.gold>=g1+qr.reward.gold,'the letter is paid for on arrival at '+qr.to);t.act('leave');done();
+ ok(P.quests.length===1&&P.gold===g1&&G.town?.tab==='jobs'&&/Hand over/.test(document.getElementById('panel').innerHTML)&&/For the steward of/.test(document.getElementById('panel').innerHTML),'come to '+qr.to+': nothing paid yet, its Jobs open on the letter, for its steward, to hand over (the owner, 2026-11-14)');
+ t.act('q-turnin',String(qr.id));ok(!P.quests.length&&P.gold>=g1+qr.reward.gold,'handed to the steward: the letter is paid for');t.act('leave');done();
  // troops
  const cas=t.TOWNS.find(x=>x.kind==='castle'&&x.owner==='vale');cas.gar=2;const qt=t.makeQuest('troops',cas);t.acceptQuest(qt);P.troops={hum_levy:5,hum_spear:qt.n+1};const gar=cas.gar=4;
  near(cas);t.updateWorld(.01);t.act('q-turnin',String(qt.id));ok(!P.quests.length&&P.troops.hum_spear===1&&P.troops.hum_levy===5&&cas.gar===gar+qt.n,qt.n+' men-at-arms join the garrison (levies are too green)');t.act('leave');done();
@@ -88,7 +89,7 @@ Kit.suite(({ok})=>{
  ok(qr2.timed&&qr2.due===d0+qr2.days&&qr2.taken===d0,'a courier taken: best by day '+qr2.due);
  ok(at(qr2.due)===R&&at(qr2.due+1)===Math.round(R*.9)&&at(qr2.due+3)===Math.round(R*.7)&&at(qr2.due+5)===Math.round(R*.5)&&at(qr2.due+12)===Math.round(R*.5),'its pay: '+R+' on time, -10% a day past it, never under half ('+[0,1,3,5,12].map(d=>at(qr2.due+d)).join(', ')+')');
  G.day=qr2.due+2;t.questDay();ok(P.quests.includes(qr2)&&/2 days past: it pays 80% now/.test(qr2.timing()),'two days past its best-by day: still yours, '+qr2.timing());
- {const g=P.gold;t.questArrive(t.townBy(qr2.to));ok(!P.quests.includes(qr2)&&P.gold-g===Math.round(R*.8),'delivered two days late: paid '+(P.gold-g)+' of '+R)}
+ {const g=P.gold;t.questArrive(t.townBy(qr2.to));t.turnIn(qr2,t.townBy(qr2.to));ok(!P.quests.includes(qr2)&&P.gold-g===Math.round(R*.8),'delivered two days late: paid '+(P.gold-g)+' of '+R)}
  G.day=d0;
  // the world closes one: the bounty band broken by others, a consolation once, not a failure
  world();P.quests=[];const qc2=t.makeQuest('bounty',ash);t.acceptQuest(qc2);const b2=t.bandits.find(b=>b.qid===qc2.id),g3=P.gold,r3=t.repAt('Ashford'),ends=[],fn=e=>ends.push(e.how);t.worldOn('quest:ended',fn);

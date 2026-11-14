@@ -132,7 +132,7 @@ class Holding extends HoldingObject{
      that is no longer the kind it was made (kind), so a load puts the change back (holdingOf). (A save of the world as made is
      today's, byte for byte; v3 (doc/WORLD_DESIGN.md §9.3) will keep every holding's kind) */
   saveRec(){const t=this,d=MADE_HOLDINGS[TOWNS.indexOf(t)],x={s:t.sacked||0,r:t.raided||0,u:t.turmoil||0,g:t.grow,b:t.bld,w:t.wall,k:t.work,f:t.fear||0,cr:t.crime||null,wa:t.watches||null,
-      l:(t.lots||[]).map(l=>({id:l.id,k:l.k,type:l.type,x:l.x,y:l.y,n:l.n,lv:l.lv,seed:l.seed,st:l.st,plots:l.plots,yaw:l.yaw})),e:t.stock?{st:t.stock,pop:t.pop,pros:t.pros,tax:t.tax,vol:t.vol,pf:t.popF}:null};
+      l:(t.lots||[]).map(l=>({id:l.id,k:l.k,type:l.type,x:l.x,y:l.y,n:l.n,lv:l.lv,seed:l.seed,st:l.st,plots:l.plots,...(l.grow?{grow:l.grow}:{}),yaw:l.yaw})),e:t.stock?{st:t.stock,pop:t.pop,pros:t.pros,tax:t.tax,vol:t.vol,pf:t.popF}:null};
     if(t.fence!=null)x.fe=t.fence;// (its fence, once set: world/townwalls.js)
     if(t.angry>G.day)x.an=t.angry;{const sb=Object.entries(t.sab||{}).filter(([k,d])=>d>G.day);if(sb.length)x.sb=Object.fromEntries(sb)}if(t.paid&&Object.keys(t.paid).length)x.pd=t.paid;if(t.garKinds&&Object.keys(t.garKinds).length)x.gk=t.garKinds;// (the free folk's anger at you, siege.js foeAt; a sabotage's days, estates.js: a load forgave them)
     {const m=Object.entries(t.mem||{}).filter(([k,d])=>d>G.day);if(m.length)x.m=Object.fromEntries(m)}

@@ -31,6 +31,14 @@ const LandDefence={
   canBeat(pw,o){
     return pw>=o.power()*DEFEND.edge;
   },
+  // (a threat after you: hostile to you, within DEFEND.withYou of you, you out on the map; the watch weighs your army with its own)
+  afterYou(o){
+    return !!o&&!P.stay&&!P.inside&&!B&&armyRelation(o,P)<0&&Math.hypot(o.x-P.x,o.y-P.y)<DEFEND.withYou;
+  },
+  // (a defender's strength against o: its own, and yours with it when o is after you)
+  sidePower(pw,o){
+    return pw+(this.afterYou(o)?partyPower():0);
+  },
   // how near (x, y) is to where a holding's people live: its centre or one of its estates (territory.js homesOf)
   homeDist(t,x,y){
     return Math.min(...homesOf(t).map(o=>Math.hypot(o.x-x,o.y-y)));
@@ -39,7 +47,7 @@ const LandDefence={
   /* the watch (world/patrols.js Watches) */
   // a threat its watch may run down: still there to fight, on its land (patrols.js patrolLand), and one it can beat
   huntable(p,o){
-    return this.isThreat(o)&&o.here()&&patrolLand(p,o.x,o.y)&&this.canBeat(p.power(),o);
+    return this.isThreat(o)&&o.here()&&patrolLand(p,o.x,o.y)&&this.canBeat(this.sidePower(p.power(),o),o);
   },
   // what a watch runs down (PatrolBrain): the threat its holding set it on, else one on its land in its own sight (the first in
   // the threats' order: from the grid look filed them in this moment, which answers as the scan of them all does; one that
@@ -51,7 +59,7 @@ const LandDefence={
   // a threat on a holding's land (hd: how near its homes): seen by its watch or from its homes, and one the watch can beat, it
   // sends the watch on duty out (if it can go) and sets it on the threat, unless it already hunts another
   watchAt(t,o,hd){
-    const w=t.watch,p=w.out();if(!(hd<DEFEND.see||p&&Math.hypot(p.x-o.x,p.y-o.y)<PATROL.see)||!this.canBeat(w.power(),o))return;
+    const w=t.watch,p=w.out(),you=this.afterYou(o);if(!(hd<DEFEND.see||you||p&&Math.hypot(p.x-o.x,p.y-o.y)<PATROL.see)||!this.canBeat(this.sidePower(w.power(),o),o))return;
     if(!p)w.send();const q=p||w.out();if(!q||q.fight)return;
     const cur=q.hunt&&partyBy(q.hunt);if(!(cur&&this.huntable(q,cur)))q.hunt=uidOf(o);
   },

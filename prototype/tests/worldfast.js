@@ -12,18 +12,19 @@ Kit.suite(({ok,info})=>{
   // (the old look: through every band, as brains.js had it)
   const old=b=>{const gob=b.kind==='goblins',mine=b.power()*(b.nerve||1)*X.dare;let r=null,bd=X.see;
    for(const o of t.bandits){if(o===b||o.gone||t.inFight(o)||(o.kind==='goblins')===gob)continue;const dd=Math.hypot(o.x-b.x,o.y-b.y);if(dd<bd&&(dd<X.meet||o.power()<=mine)){bd=dd;r=o}}return r?{r,bd}:null};
-  let scans=0,found=0,bad=0,first='',stale=0,thinks=0,moved=0,keys=0,badKey=0;
+  // (goblins counted at their most in the run: they may all be beaten by its end)
+  let scans=0,found=0,bad=0,first='',stale=0,thinks=0,moved=0,keys=0,badKey=0,gobSeen=0;
   const r0=B.rival,M=t.BEAST_MIND,th=M.think,sys=t.Systems.list.find(x=>x.name==='monsters'),um=sys.frame;let sig=0,key=0,passes=0;
   // (the new first, as the game does; then the old: were a stale mark left by the new, the old would clear it and the next count shows it)
   B.rival=function(b){const a=r0.call(this,b);for(const o of t.bandits)if(o.fight&&!o.gone&&o!==b&&!t.fightOf(o))stale++;const z=old(b);scans++;if(z)found++;if((a&&a.r)!==(z&&z.r)||(a&&a.bd)!==(z&&z.bd)){bad++;first=first||'day '+G.day+' band at '+Math.round(b.x)+','+Math.round(b.y)}return a};
   M.think=function(m,d,h){const r=th.call(this,m,d,h);thinks++;if(t.landSigOf()!==sig||t.Outposts.landKey()!==key)moved++;return r};
   sys.frame=function(d){passes++;t.landFresh();sig=t.landSigOf();key=t.Outposts.landKey();return um(d)};// (the beasts' pass, as the systems run it)
   try{for(let i=0;i<2400;i++){G.encCool=1e9;if(G.mode!=='world'){t.hidePanel();G.mode='world';G.modal=false}t.updateWorld(1/60);
-    if(i%20===0){keys++;const a=t.Outposts.landKey();F.land=false;const z=t.Outposts.landKey();F.land=true;if(a!==z)badKey++}}}
+    if(i%20===0){gobSeen=Math.max(gobSeen,t.bandits.filter(b=>b.kind==='goblins'&&!b.gone).length);keys++;const a=t.Outposts.landKey();F.land=false;const z=t.Outposts.landKey();F.land=true;if(a!==z)badKey++}}}
   finally{delete B.rival;M.think=th;sys.frame=um}
   const gob=t.bandits.filter(b=>b.kind==='goblins').length,posts=(W.sites||[]).filter(s=>s.type===OUTPOST_TYPE).length;
-  info(t.bandits.length+' bands ('+gob+' goblins), '+W.monsters.length+' beasts, '+posts+' outposts, to day '+G.day+': '+scans+' feud looks ('+found+' found a rival), '+thinks+' beasts\' moments, '+keys+' keys');
-  ok(gob>0&&gob<t.bandits.length&&scans>2000&&found>50&&thinks>5000&&passes>2000&&posts>0,'the run has what the changes touch: goblins and other bands, feuds between them, beasts, outposts');
+  info(t.bandits.length+' bands ('+gob+' goblins; at most '+gobSeen+' in the run), '+W.monsters.length+' beasts, '+posts+' outposts, to day '+G.day+': '+scans+' feud looks ('+found+' found a rival), '+thinks+' beasts\' moments, '+keys+' keys');
+  ok(gobSeen>0&&gob<t.bandits.length&&scans>2000&&found>50&&thinks>5000&&passes>2000&&posts>0,'the run has what the changes touch: goblins and other bands, feuds between them, beasts, outposts');
   ok(bad===0,'every feud look picks the rival the old look through every band picks, as far off'+(first?' (first: '+first+')':''));
   ok(stale===0,'and leaves no band marked for a fight that is gone, as the old look left none');
   ok(moved===0,'the land held through the beasts\' moments: after each of them it is what it was when the pass began');

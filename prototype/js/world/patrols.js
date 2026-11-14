@@ -61,11 +61,12 @@ class Watches{
     const t=this.t;
     if(!t.owner||besieged(t)||ruined(t))return;const w=watchNow(),X=this.all()[w];if(X.off>worldTime()||W.patrols.some(p=>p.home===t.name&&watchOf(p)===w))return;
     const n=X.n;if(n*2<t.T.patrol.size||t.gar<t.T.patrol.keep+n)return;
-    t.gar-=n;W.patrols.push(asParty({pt:true,watch:w,home:t.name,fac:t.owner,troops:X.kinds.slice(0,n),sent:n,x:t.x+rint(-6,6),y:t.y+14,wx:null,wy:null,cool:0,dir:1}));
+    t.gar-=n;const p=asParty({pt:true,watch:w,home:t.name,fac:t.owner,troops:X.kinds.slice(0,n),sent:n,x:t.x+rint(-6,6),y:t.y+14,wx:null,wy:null,cool:0,dir:1});W.patrols.push(p);GateFile.out(p,t);// (out of the gate, a man after another: gatefile.js)
   }
   // home (or scattered): those still standing rejoin the garrison; the fallen are lost to the watch
   back(p){
     const t=this.t;
+    if(!p.fight)GateFile.start(p,t);// (in at the gate, a man after another: gatefile.js)
     t.gar+=p.troops.length;const X=this.all()[watchOf(p)];X.n=Math.max(0,X.n-((p.sent||p.troops.length)-p.troops.length));p.gone=true;
   }
   // a watch short of men takes WATCH.refill back while the whole garrison (in and out) can spare them

@@ -18,3 +18,8 @@ const outlawOf=(k,r)=>{const L=OUTLAWS.on&&OUTLAWS.pick[k];return L?L[Math.floor
 // while it fears you, lies in wait or cools from its last fight; it rides at pace × its speed, and its fight with the caravan's guards
 // (fights.js) plunders it if it wins
 const BAND_HUNT={on:true,see:110,dare:1.15,pace:1};
+// a band shy of a holding (the owner, 2026-11-14: "bandits keep chasing me into the holding area"; world/brains.js BandBrain shy):
+// you on a holding's land within near px of its homes (its centre, its estates), it hunts you no further, nor searches for you
+// there, and turns back for the wilds at back × its pace, unless it is dare times its watch's strength or more; a band a quest set
+// out, or one in a wave, keeps on. on false: as before
+const BAND_SHY={on:true,near:170,back:.7,dare:2};

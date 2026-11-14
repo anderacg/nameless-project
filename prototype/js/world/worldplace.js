@@ -47,8 +47,10 @@ const PLACE_PEOPLE={vale:'human',karn:'dwarf',sylvan:'elf',horde:'orc',salt:'lea
 // each realm's share of the holdings (37 at Normal: 8/7/7/7/8), and its kinds in the classic mix (from CLASSIC_PLACES)
 const PLACE_SHARE={vale:8,karn:7,sylvan:7,horde:7,salt:8};
 const PLACE_REALMS=Object.keys(PLACE_SHARE);
-// the least distance (tiles) between two kinds (§8.8; capitals: PLACE.cap x the map's diagonal)
-const PLACE_GAP={city:{town:30,castle:30,fort:24,village:24,hamlet:18},fort:{fort:16,castle:18,town:20,village:16,hamlet:14},town:{town:26,castle:24,village:20,hamlet:16},castle:{castle:24,village:18,hamlet:16},village:{village:16,hamlet:14},hamlet:{hamlet:12}};
+// the least distance (tiles) between two kinds (§8.8; capitals: PLACE.cap x the map's diagonal; the owner, 2026-11-14, "make sure
+// that holdings are not too close to each other (spread out more)": about 1.3 x the old, were city-town 30, town-town 26, village 16,
+// hamlet 12)
+const PLACE_GAP={city:{town:39,castle:39,fort:31,village:31,hamlet:23},fort:{fort:21,castle:23,town:26,village:21,hamlet:18},town:{town:34,castle:31,village:26,hamlet:21},castle:{castle:31,village:23,hamlet:21},village:{village:21,hamlet:18},hamlet:{hamlet:16}};
 const placeGap=(a,b)=>PLACE_GAP[a]&&PLACE_GAP[a][b]||PLACE_GAP[b]&&PLACE_GAP[b][a]||0;
 /* the numbers: reach (a new holding within this of its realm's own), cap (capitals apart, x the diagonal), skew (capitals' nearest
    rivals within this share of their mean), suit (a capital's least liking), day (tiles: a day's travel, for a fair start), land
@@ -266,7 +268,7 @@ function* genHoldings(g){
    such land; each PLACE_GAP from the holdings and from each other. A village share of them a small free village, the rest
    hamlets; their people the nearest holding's first; no realm (realm null: the free folk). Their data as a holding's, after the
    realms' in g.holdings (a retry drops the last try's first), so the roads join them ---------- */
-const PLACE_HAMLET={base:[[143360,24],[286720,45],[786432,100]],mult:{none:0,few:.5,normal:1,many:1.6},fringe:900,village:.25,margin:3,river:12,bank:6,step:2};
+const PLACE_HAMLET={base:[[143360,24],[286720,45],[786432,100]],mult:{none:0,few:.5,normal:1,many:1.6},fringe:900,village:.25,margin:6,river:12,bank:6,step:2};
 function* genHamlets(g){
   const m=g.map,W=m.w,H=m.h,K=m.kind,F=g.work.place,R=g.rng('hamlets',g.attempt),X=PLACE_HAMLET,own=g.holdings=g.holdings.filter(h=>h.realm);
   m.freeHoldings=[];const want=Math.round(areaTable(X.base,W*H)*(X.mult[g.s.hamlets]??1));if(!want||!F){yield 1;return}

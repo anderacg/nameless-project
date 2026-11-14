@@ -11,7 +11,9 @@
 const BAND_NAMES=['Red Vipers','Ash Crows','Black Hounds','Grey Wolves','Bone Saws','Mud Rats','Iron Jaws','Night Owls','Rusty Knives','Hollow Men','Crooked Spears','Burnt Hands'];
 // (the jobs' own dice: the stream 'quests', core/rng.js, so a job kind added or changed never moves the world's Math.random)
 const questRng=()=>rngOf('quests');
-const qScale=()=>1+G.day/60,qTiles=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)/TILE;
+// (a job's pay grows with the days, 1 + day/days, at most most times: it grew without end while a fight's gold and ransoms do not)
+const QUEST_PAY={days:90,most:2.5};
+const qScale=()=>Math.min(QUEST_PAY.most,1+G.day/QUEST_PAY.days),qTiles=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)/TILE;
 const questBy=id=>P.quests.find(q=>q.id===id);
 // (the way to a goal from you, in words: "here", or "12 tiles NE")
 const questWay=g=>{const d=Math.round(qTiles(g,P));return d<2?'here':d+' tiles '+compass(g.x-P.x,g.y-P.y)};
@@ -264,16 +266,23 @@ function bandFor(t,n,name,qid,more){
   return bandOut(t,n,name,qid,null,more);
 }
 // (a pack of mon (none: any) by t's fields, unmarked, marked qid; else one of mon (none: of its land) moved into a spot of its
-// habitat there (by its fields, else within PACK_FAR tiles); null when no such beast lives there)
-const PACK_FAR=26;// (no habitat by its fields: as far as this many tiles, where such beasts live)
+// habitat (beastSpot); null when no such beast lives there)
+// (where a beast a job names makes its lair: in its habitat (fit), far from every holding as the wild's are (WORLD_SCALE.spawn
+// monsterHold: 16 tiles; the owner, 2026-11-13: "Make sure the monster hunt quest spawn the monster far away from village"; it was 7
+// to 14 tiles out, by the fields), within QUEST_BEAST.far[0] tiles of t, else far[1])
+const QUEST_BEAST={far:[26,38]};
+function beastSpot(t,fit){const H=WORLD_SCALE.spawn.monsterHold,lo=Math.ceil(H/TILE),ok=(x,y)=>TOWNS.every(o=>o.gone||Math.hypot(o.x-x,o.y-y)>=H)&&(!fit||fit(x,y));
+  return spotNear(t,lo,QUEST_BEAST.far[0],ok)||spotNear(t,lo,QUEST_BEAST.far[1],ok)}
+// (of the beasts ids, the first, in a draw's order, with such a spot: [its id, the spot], else null; its habitat where it lives)
+function beastLair(t,ids){const R=questRng(),left=ids.slice();while(left.length){const id=left.splice(R.int(0,left.length-1),1)[0],M=MONSTERS[id];
+  const p=M&&beastSpot(t,(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)));if(p)return [id,p]}return null}
 function packFor(t,mon,n,lv,qid){
   const m=Troubles.packs(t).find(o=>!o.qid&&(!mon||o.id===mon));
   if(m){m.qid=qid;return m}
   if(Quiet.is(t,'beast'))return null;
   const ids=mon?[mon]:Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic&&(MONSTERS[id].where.includes(t.clim)||MONSTERS[id].where.includes('forest')&&t.clim==='grass'));
   if(!ids.length||!MONSTERS[ids[0]])return null;
-  const id=mon||questRng().pick(ids),M=MONSTERS[id],fit=(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)),p=spotNear(t,7,TROUBLE.folds,fit)||spotNear(t,7,PACK_FAR,fit);
-  if(!p)return null;
+  const L=beastLair(t,ids);if(!L)return null;const [id,p]=L,M=MONSTERS[id];
   const o=asMonster({id,x:p.x,y:p.y,hx:p.x,hy:p.y,lv,n:n||Math.max(...M.count),t:0,a:0,cool:0,qid});
   W.monsters.push(o);
   return o;
@@ -398,9 +407,8 @@ class BeastQuest extends JobQuest{
       if(Quiet.is(t,'beast'))return false;
       const c=t.clim,ids=Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic&&(MONSTERS[id].where.includes(c)||MONSTERS[id].where.includes('forest')&&c==='grass'));
       if(!ids.length)return false;
-      this.mon=questRng().pick(ids);
-      const M=MONSTERS[this.mon],p=spotNear(t,7,TROUBLE.folds,(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)));
-      if(!p)return false;
+      const L=beastLair(t,ids);if(!L)return false;const p=L[1];this.mon=L[0];
+      const M=MONSTERS[this.mon];
       this.n=Math.max(M.count[0],M.count[1]);
       this.lv=monLevel(questRng())+1;
       this.mx=Math.round(p.x);
@@ -521,7 +529,7 @@ class ClearQuest extends JobQuest{
 // a supply run: a lasting good the holding is short of, handed over into its stock; its days by how long its stock lasts
 // (SUPPLY_JOB.days: from min, the emptier the sooner, up to max), paid by its price there (× price) at the least as before;
 // as many as about worth gold of it buys at its price there (8–15 of a cheap good, least of a dear one: silver, wine)
-const SUPPLY_JOB={days:[5,16,20],price:1.25,worth:240,least:2};
+const SUPPLY_JOB={days:[5,16,20],price:1,cap:2,worth:240,least:2};// (price: × the holding's price for it, at most cap × its base: a regional ore short far from its veins paid ~200g for 2, 2026-11-13)
 class SupplyQuest extends JobQuest{
   // (its need read off the world: passed before it is taken, no work: story/quest.js accept)
   needless(){
@@ -540,7 +548,7 @@ class SupplyQuest extends JobQuest{
     this.cause=causeOf(Troubles.news(t,['caravan','siege','raid'])[0],t)||'Its stores of '+GOODS[this.good].n.toLowerCase()+' run low.';
     this.title='Supply run: '+GOODS[this.good].n.toLowerCase();
     this.text=t.name+' is short of '+GOODS[this.good].n.toLowerCase()+'. Bring '+this.n+' here.';
-    this.pays(Math.max(GOODS[this.good].base*1.6,marketPrice(t,this.good)*SUPPLY_JOB.price)*this.n,8,2,15);
+    this.pays(Math.max(GOODS[this.good].base*1.6,Math.min(marketPrice(t,this.good),GOODS[this.good].base*SUPPLY_JOB.cap)*SUPPLY_JOB.price)*this.n,8,2,15);
   }
   get handsOver(){
     return true;
@@ -590,7 +598,7 @@ class HuntQuest extends JobQuest{
     this.cause=cap1(K.n.toLowerCase())+' graze '+Math.round(qTiles(c,t))+' tiles '+compass(c.x-t.x,c.y-t.y)+' of '+t.name+'.';
     this.title=hides?'Hides for the tanner':'Meat for the table';
     this.text=hides?'The tanner of '+t.name+' wants '+this.n+' '+K.one+' hides.':t.name+' wants '+this.n+' meat for its tables.';
-    this.pays(hides?this.n*28:this.n*13,8,1,15);
+    this.pays(hides?this.n*28:this.n*20,8,1,15);
   }
   get handsOver(){
     return true;
@@ -668,7 +676,25 @@ class CourierQuest extends JobQuest{
     return {x:t.x,y:t.y,name:t.name};
   }
   todo(){
-    return 'Deliver to '+this.to+'.';
+    return 'Hand the letter to '+this.handTo()+'.';
+  }
+  /* handed over, not dropped at the gate (the owner, 2026-11-14: "sending a word quests should have player interact with the one who
+     should deliver a word, not just walk near"): reported at the holding it goes to, to its steward, its Jobs tab opened as you
+     come in (ui/town.js enterTown); ready while you carry the letter; paid as you hand it over */
+  handTo(){
+    return 'the steward of '+this.to;
+  }
+  get handsOver(){
+    return true;
+  }
+  reportableAt(t){
+    return t.name===this.to;
+  }
+  ready(){
+    return !this.letter||!!this.carried();
+  }
+  progress(){
+    return this.ready()?'the letter, '+(this.carried()?.seal===false?'its seal broken':'sealed'):'no letter';
   }
   lapse(){
     if(this.letter&&!this.done&&!this.carried())return this.fail('You no longer carry the letter.');
@@ -676,17 +702,17 @@ class CourierQuest extends JobQuest{
   }
   earned(){
     const L=this.carried();
-    return Math.round(super.earned()*(L&&!L.seal?COURIER.opened:1));
+    return Math.round(super.earned()*((L?!L.seal:this.opened)?COURIER.opened:1));
   }
   aim(){
-    return 'Carry the letter to '+this.to;
+    return 'Carry the letter to '+this.handTo();
   }
   tally(){
     return '';
   }
-  // (paid on arrival: nothing to report)
+  // (paid as you hand it over: nothing to report back)
   reportLine(){
-    return 'Paid on arrival at '+this.to;
+    return 'Paid when you hand it to '+this.handTo();
   }
   get reportsBack(){
     return false;
@@ -700,13 +726,12 @@ class CourierQuest extends JobQuest{
     const d=townBy(this.to);
     return super.gone()?super.goneWhy():d&&!d.gone?this.to+' is held by your enemies now.':this.to+' is no more.';
   }
-  arrive(t){
-    if(this.to!==t.name)return;
+  handOver(t){
     const L=this.carried();
-    if(this.letter&&!L)return;
-    if(L&&!L.seal)log('The lord of '+t.name+' frowns at the broken seal.','bad','story',this.journalKey);
+    log('You hand the letter to '+this.handTo()+'.'+(L&&!L.seal?' The steward frowns at the broken seal.':' The steward breaks the seal and reads.'),L&&!L.seal?'bad':'good','story',this.journalKey);
     addRep(t.name,L&&!L.seal?1:3,true);
-    this.pay(t.name);
+    // (its seal as it was handed over, for its pay after: earned)
+    this.opened=!!L&&!L.seal;
     if(L)P.inv[LETTER.slotOf(L.id)]=null;
   }
 }
@@ -1415,7 +1440,7 @@ function offerRow(q,act,arg){
 // who gave it, what you get, Report or Hand over first; the whole of it folded under Details (hereRow's). Not ready: its title and
 // what is left to do, the whole folded too)
 function readyRow(q){q=Quest.as(q);const g=q.person,hand=q.handsOver,late=!!q.reward&&q.reward.gold>0&&q.earned()<q.reward.gold;// (late: it pays less now)
-  return '<div class="row qw-ready"><div class="info"><strong>'+htmlText(q.title)+' <span class="qw-st done">Ready</span></strong>'+(g?'<small class="qw-who">'+htmlText(g.name+', the '+g.n)+'</small>':q.giver?'<small class="qw-who">'+htmlText(q.giver)+'</small>':'')+
+  return '<div class="row qw-ready"><div class="info"><strong>'+htmlText(q.title)+' <span class="qw-st done">Ready</span></strong>'+(q.handTo?'<small class="qw-who">For '+htmlText(q.handTo())+'</small>':g?'<small class="qw-who">'+htmlText(g.name+', the '+g.n)+'</small>':q.giver?'<small class="qw-who">'+htmlText(q.giver)+'</small>':'')+
     '<p class="qw-pay">'+icon('gold',14)+' '+q.rewardLine()+(late?' <span class="bad">(late: '+q.earned()+' gold)</span>':'')+'</p>'+qwMore(q)+'</div>'+
     '<div class="acts"><button class="btn primary" type="button" data-act="q-turnin" data-arg="'+q.id+'">'+(hand?'Hand over':'Report')+'</button></div></div>'}
 function laterRow(q){q=Quest.as(q);

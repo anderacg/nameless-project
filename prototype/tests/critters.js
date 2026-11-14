@@ -41,7 +41,7 @@ try{
  deer.escapeSta=0;const x1=deer.x,y1=deer.y;t.updateCritters(.1);const tired=Math.hypot(deer.x-x1,deer.y-y1);ok(tired>0&&tired<run*.8,'and slow down once tired ('+run.toFixed(2)+' px a moment fresh, '+tired.toFixed(2)+' spent)');
  // hunting: a whole-army hunt, a world battle round the herd (the owner, 4b309d5: world/hunting.js WildHunt, battle/hunting.js;
  // its own checks: tests/wildhunt.js); Auto Hunt runs it, the kills' meat and trophies come in the loot
- const hunted=c=>{c.cool=0;Kit.world();t.hunt(c);t.act('hunt-start');const b=t.B;if(!b||!b.hunt)return null;t.setAuto(true,true);let i=0;
+ const hunted=c=>{c.cool=0;Kit.world();t.hunt(c);const b=t.B;if(!b||!b.hunt)return null;t.setAuto(true,true);let i=0;
    for(;t.B===b&&i<3000;i++){t.updateBattle(.05);if(t.B===b&&b.hunt.animals.every(u=>u.hp<=0||u.left))b.hunt.end()}if(t.B===b)b.hunt.end();t.setAuto(false,true);
    const meat=(G.loot&&G.loot.pile||[]).filter(q=>q.k==='good'&&q.id==='meat').reduce((n,q)=>n+q.n,0),kills=b.kills;if(G.loot)t.act('lt-all');Kit.done({world:true});return{b,kills,meat,hunters:b.units.filter(u=>!u.team).length}};
  empty();P.troops={hum_bow:8};P.sk.hunt.lv=3*PROF.per;deer.x=deer.hx=P.x+20;deer.y=deer.hy=P.y;deer.n=3;deer.tire=0;deer.escapeSta=undefined;
@@ -71,7 +71,7 @@ try{
   const sp=t.penSpots(ash,0);ok(t.fieldsOf(ash,'pasture')&&sp.length===Math.min(cow.n,t.fieldsOf(ash,'pasture').tiles.length)&&sp.every(q=>t.fieldsOf(ash,'pasture').tiles.some(([x,y])=>x===q.tx&&y===q.ty)),'it is drawn in its pasture instead: '+sp.length+' cattle on its fenced tiles');
   const ents=[];t.penEnts(ash,ents,{x:0,y:0});ok(ents.length===sp.length&&ents.every(e=>e.y>0&&typeof e.f==='function'),'its animals are drawn among the rest by depth, with the estate (one entry each)')}
  // the pasture animals stay inside their fence over time, every kind of livestock, two of a small kind to a tile
- {const bad=[];let n=0;for(const id of ['cow','sheep','pig','goat','hen','camel','buffalo','tamereindeer']){cow.id=id;cow.n=9;for(let k=0;k<240;k++){const now=k*137.3;for(const q of t.penSpots(ash,now)){n++;const x0=q.tx*16,y0=q.ty*16,w=q.a.cw||q.a.width,h=q.a.ch||q.a.height;
+ {const bad=[];let n=0;for(const id of ['cow','sheep','pig','goat','hen','camel','buffalo','tamereindeer']){cow.id=id;cow.n=9;for(let k=0;k<240;k++){const now=k*137.3;for(const q of t.penSpots(ash,now)){n++;const x0=q.tx*16,y0=q.ty*16,w=q.a.w,h=q.a.h;
      if(q.x-w/2<x0+1||q.x+w/2>x0+15||q.y>y0+14||q.y-h<y0)bad.push(id+'@'+now+' '+q.x.toFixed(1)+','+q.y)}}}
   ok(n>1000&&!bad.length,'pasture animals stay inside their fenced tiles at every moment ('+n+' places, cattle one a tile, the small kinds two)'+(bad.length?': '+bad.slice(0,4).join('; '):''));
   cow.id='sheep';ok(t.penSpots(ash,0).length===Math.min(9,2*t.fieldsOf(ash,'pasture').tiles.length),'two sheep to a fenced tile');cow.id='cow';cow.n=4}
@@ -97,5 +97,6 @@ try{
   const strays=herds.filter(c=>W.critters.includes(c)&&!t.grazeOk(c.id,c.x,c.y,c.pen));ok(!strays.length,'after a long while grazing, none has strayed onto ground it cannot use'+(strays.length?': '+strays.map(c=>c.id+'@'+c.home).join(', '):''));
   const wild=W.critters.filter(c=>!c.home),out=wild.filter(c=>!t.habitatOk(c.id,c.x,c.y));ok(out.length<=wild.length*.1,'wild game keeps to its habitat when undisturbed ('+out.length+' of '+wild.length+' outside)')}
  W.critters.forEach(c=>{c.x=P.x+20;c.y=P.y});t.frame();
+ {const c=W.critters.find(q=>!q.pen),draw=()=>{const E=[];c.draw(E,{x:Math.round(c.x-100),y:Math.round(c.y-100)},{x:c.x-200,y:c.y-200,w:400,h:400});E.forEach(e=>e.f())};let v;if(c){c.inView=()=>true;draw();v=c.coat;c.hx+=37;c.hy+=11;draw();delete c.inView}ok(c&&v!=null&&c.coat===v,'a herd keeps its coats while its home moves (a fleeing herd\'s moves every frame: its coats flashed, the owner 2026-11-13)')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

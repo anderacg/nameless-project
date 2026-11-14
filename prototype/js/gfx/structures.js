@@ -80,7 +80,7 @@ function holdingEnts(t,ents,cam,V){
         if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
         if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(holdingFlag(t,col),X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N,s.flag?s.flag[1]:0)}}});// (no estate's name under it near you: no words on the map's places, the owner, 2026-11-08; its tip names it)
       if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)});
-      if(l.k==='pasture'&&l.st==='built'&&live)penEnts(t,ents,cam)}// (its herd, inside its fence: critters.js)
+      if(l.k==='pasture'&&l.st==='built'&&live)penEnts(t,PEN_ENTS,cam)}// (its herd, inside its fence: critters.js; with those who move, PEN_ENTS)
   TownWall.ents(t,ents,cam);// (its ring of walls: world/townwalls.js)
 }
 /* a building site: what is built so far (from the ground up, as the work goes on) behind scaffolding; for an upgrade (full) the
@@ -193,7 +193,7 @@ function pierOf(t){
 // Both fade out toward an edge with no plot beyond (soft: px)
 const FURROW={frost:[[228,234,242],.85],swamp:[[70,92,96],.3]},EDGE_SOFT=4;
 const PEN={grass:{a:[[132,152,72],[150,164,84]],b:[[118,100,62],[100,86,54]]},frost:{a:[[112,124,92],[94,108,78]],b:[[190,198,212],[166,176,194]]},
-  desert:{a:[[170,160,84],[142,134,66]],b:[[188,154,96],[168,136,84]]},swamp:{a:[[86,112,56],[70,94,46]],b:[[70,60,40],[84,106,108]]}};
+  desert:{a:[[170,160,84],[142,134,66]],b:[[156,124,80],[138,108,68]]},swamp:{a:[[86,112,56],[70,94,46]],b:[[70,60,40],[84,106,108]]}};
 // the flat part of an estate at its level, as one picture placed at (cv.x, cv.y) on the map; kept on its lot (l._eg) until its level
 // changes: an estate pulled down and placed again elsewhere, or another world's holding of the same name, draws its own
 function estateGround(t,k,lv){

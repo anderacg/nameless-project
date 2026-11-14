@@ -170,7 +170,8 @@ const lodIn=(b,x,y)=>!b||x>=b[0]&&y>=b[1]&&x<=b[2]&&y<=b[3];
 // near; mid, on every midEvery-th frame (k, its place in its list, spreads them out) with that many times d; far, farStep(o, d, x,
 // k) if the kind has one, else as mid. True when it opened an encounter
 const lodMid=(by,o,k,d,x)=>{const n=WORLD_LOD.midEvery;return (WORLD_LOD.n+k)%n===0&&by.think(o,n*d,x)};
-function lodThink(by,o,k,d,x){const t=tierOf(o);return t==='near'?by.think(o,d,x):t==='far'&&by.farStep?by.farStep(o,d,x,k):lodMid(by,o,k,d,x)}
+function lodThink(by,o,k,d,x){if(fightHolds(o))return false;const t=tierOf(o);// (one in the fight on the map, or stepped aside from it: the fight moves it, worldbattle.js)
+  return t==='near'?by.think(o,d,x):t==='far'&&by.farStep?by.farStep(o,d,x,k):lodMid(by,o,k,d,x)}
 // each of a list in turn, by its tier; true as soon as one opens an encounter (the rest wait). by: their thinker, else each one's brain
 function lodEach(list,by,d,x){let k=0;for(const o of list)if(lodThink(by||o.brain,o,k++,d,x))return true;return false}
 /* walk cycles by distance (doc §2.2 R13): walk (world.js) adds up how far each thing goes; a figure's frame is frameOf(o, stride,

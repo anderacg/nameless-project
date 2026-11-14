@@ -30,7 +30,11 @@ const FULLMAP={zooms:[.5,1,2,3,4,6],wide:640,open:4,ppt:1,pics:{},drag:null,pinc
   // (the icons' sizes, px at 1 px a tile, by kind (a place's: site); × fmIconScale)
   icon:{city:30,town:26,castle:28,fort:22,village:22,hamlet:18,site:16},
   // (the holdings' marks by kind; another kind is marked as a village; names shown at FULLMAP.names px a tile, or from tier 3)
-  kinds:{city:'City',town:'Town',castle:'Castle',fort:'Fort',village:'Village',hamlet:'Hamlet'},names:2};
+  kinds:{city:'City',town:'Town',castle:'Castle',fort:'Fort',village:'Village',hamlet:'Hamlet'},names:2,
+  // (the realms' tint and borders smooth (the owner, 2026-11-12: "make the full map borders smooth too"): the picture at smooth px a
+  // tile (fewer on a wider map, smoothPx at most across), the tint and the borders drawn over it cut at 45° as the world's are
+  // (world/territory.js LandArt), on the land you have seen; under 1 px a tile, and the minimap's, tile by tile as before)
+  smooth:4,smoothPx:2048};
 // (a rumour's "?": its look, inline)
 const fmRumour=()=>'color:'+RUMOUR_COL+';font:700 12px/1 Arial,sans-serif;text-shadow:0 0 2px #000,0 1px 1px #000',FM_RGB={},fmRgb=c=>FM_RGB[c]||(FM_RGB[c]=[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)]);
 // (a ground's colour as an ink wash on the paper: muted (FULLMAP.sat), laid over the paper (wash), toned by it)
@@ -39,8 +43,9 @@ const fmWash=c=>{const F=FULLMAP,P=fmRgb(F.paper),l=c[0]*.3+c[1]*.59+c[2]*.11;re
 const fmIconScale=ppt=>clamp(Math.sqrt(ppt)*.8,.65,2);
 /* the picture: map m at 1 px per k tiles, from its tile data, what you have seen (seen: a byte a tile) and the land (land: an index
    into towns a tile, -1 wild); a canvas. Its time in FULLMAP.ms. box: only that part of it, in tiles ({x, y, w, h}, inside the map;
-   none: all of it), as the minimap draws it (render.js MINIMAP) */
-function fullMapPic(m,k,seen,land,towns,box){
+   none: all of it), as the minimap draws it (render.js MINIMAP); smooth: the full map's, its realms drawn smooth (FULLMAP.smooth) */
+function fullMapPic(m,k,seen,land,towns,box,smooth){
+  const S=smooth&&!box&&k===1?F_SMOOTH(m):0;
   const t0=performance.now(),F=FULLMAP,W0=m.w,H0=m.h,bx=box?box.x:0,by=box?box.y:0,w=Math.ceil((box?box.w:W0)/k),h=Math.ceil((box?box.h:H0)/k),N=w*h,img=new ImageData(w,h),d=img.data,own=new Int16Array(N),sn=new Uint8Array(N);
   const lut=[],riv=F.river.map(c=>c&&fmRgb(c)),un=fmRgb(F.unknown),facs=[],fi=new Map();
   CLIMS.forEach((c,ci)=>PAL[c].mini.forEach((col,kd)=>lut[ci*8+kd]=fmWash(fmRgb(col))));const wat=new Uint8Array(N),rv=new Uint8Array(N);
@@ -55,12 +60,23 @@ function fullMapPic(m,k,seen,land,towns,box){
   // the realms' tint, its border inked (its colour × FULLMAP.ink) where another realm's land touches; the coast inked; the bare paper
   // over what you never saw
   for(let y=0,o=0;y<h;y++)for(let x=0;x<w;x++,o++){const p=o*4;if(!sn[o]){d[p]=un[0];d[p+1]=un[1];d[p+2]=un[2];continue}
-    if(!wat[o]&&!rv[o]&&(x>0&&wat[o-1]||x<w-1&&wat[o+1]||y>0&&wat[o-w]||y<h-1&&wat[o+w])){d[p]*=F.coast;d[p+1]*=F.coast;d[p+2]*=F.coast;continue}const f=own[o];if(f<0)continue;
+    if(!wat[o]&&!rv[o]&&(x>0&&wat[o-1]||x<w-1&&wat[o+1]||y>0&&wat[o-w]||y<h-1&&wat[o+w])){d[p]*=F.coast;d[p+1]*=F.coast;d[p+2]*=F.coast;continue}const f=own[o];if(f<0||S)continue;
     const l=x>0?own[o-1]:-1,r=x<w-1?own[o+1]:-1,u=y>0?own[o-w]:-1,b=y<h-1?own[o+w]:-1,e=l>=0&&l!==f||r>=0&&r!==f||u>=0&&u!==f||b>=0&&b!==f,a=e?F.edge:F.tint,c=facs[f],k=e?F.ink:1;
     d[p]+=(c[0]*k-d[p])*a;d[p+1]+=(c[1]*k-d[p+1])*a;d[p+2]+=(c[2]*k-d[p+2])*a}
   // (the holdings' walls and fences where you have seen them, a pixel each piece, its colour by its kind: world/townwalls.js)
   for(const t of towns){const r=TownWall.of(t);if(!r)continue;const c=fmRgb(TownWall.mapCol(t));for(const q of r.parts){const qx=Math.floor((q.x-bx)/k),qy=Math.floor((q.y-by)/k);if(!seen[q.i]||qx<0||qy<0||qx>=w||qy>=h)continue;const p=(qy*w+qx)*4;d[p]=c[0];d[p+1]=c[1];d[p+2]=c[2]}}
-  const cv=mkc(w,h,g=>g.putImageData(img,0,0));F.ms=performance.now()-t0;return cv}
+  const cv=S?fmSmooth(img,S,own,sn,facs,w,h):mkc(w,h,g=>g.putImageData(img,0,0));cv.tpp=k/(S||1);F.ms=performance.now()-t0;return cv}
+// (its px a tile when smooth: FULLMAP.smooth, fewer on a wide map; 0 off)
+const F_SMOOTH=m=>FULLMAP.smooth?Math.max(1,Math.min(FULLMAP.smooth,Math.floor(FULLMAP.smoothPx/Math.max(m.w,m.h)))):0;
+/* (smooth: the picture so far (the ground, rivers, coasts, the walls, the bare paper) at S px a tile, then on the land you have seen
+   each realm's tint and, where two realms meet, its border, each side its own colour inked, cut at 45° (territory.js LandArt with this
+   map's realms: own, -1 the wilds, water and rivers); the paper over what you never saw kept as it was, square) */
+function fmSmooth(img,S,own,sn,facs,w,h){const F=FULLMAP,rgb=c=>'rgb('+c.map(v=>Math.round(v)).join(',')+')',tint=facs.map(rgb),ink=facs.map(c=>rgb(c.map(v=>v*F.ink)));
+  const at=(x,y)=>x<0||y<0||x>=w||y>=h?-1:own[y*w+x],src={at,col:i=>i<0?null:tint[i],ink:i=>ink[i],side:(a,b)=>a>=0&&b>=0&&a!==b?[S/2,F.edge]:null};
+  const base=mkc(w,h,g=>g.putImageData(img,0,0));return mkc(w*S,h*S,g=>{g.imageSmoothingEnabled=false;g.drawImage(base,0,0,w*S,h*S);
+    const seen=new Path2D();for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(!sn[y*w+x])continue;let n=1;while(x+n<w&&sn[y*w+x+n])n++;seen.rect(x*S,y*S,n*S,S);x+=n-1}
+    g.save();g.clip(seen);g.globalAlpha=F.tint;for(const [c,p] of LandArt.tint(0,0,w-1,h-1,S,S/2,src)){g.fillStyle=c;g.fill(p)}
+    g.lineCap='square';for(const e of LandArt.lines(0,0,w-1,h-1,S,S/2,src).values()){g.globalAlpha=e.L[1];g.strokeStyle=e.c;g.lineWidth=e.L[0];g.stroke(e.p)}g.restore()})}
 // the marks over it at ppt px a tile: the crossings and holdings on land you have seen (each its name and kind on hover), your
 // quests' goals (the tracked one the strongest), the rumours' "?" (the rumour on hover), and you
 // (an icon: the picture cut to what is drawn on it, as an image's address, kept a holding or a place while its look holds: a
@@ -114,14 +130,14 @@ function fullMapPaper(w,h){const F=FULLMAP,key=w+'x'+h;if(F.paperOf===key)return
 // the names from FULLMAP.names, the zoom buttons
 function fullMapScale(ppt,c,tp){const F=FULLMAP,Z=F.zooms,v=panel.querySelector('.fm-view'),b=v&&v.querySelector('.fm-pic');if(!b)return;ppt=clamp(ppt,Z[0],Z[Z.length-1]);
   const vr=v.getBoundingClientRect();c=c||{x:vr.left+v.clientWidth/2,y:vr.top+v.clientHeight/2};const r0=b.getBoundingClientRect(),tx=tp?tp.x:(c.x-r0.left)/F.ppt,ty=tp?tp.y:(c.y-r0.top)/F.ppt;
-  const k=ppt<1?Math.round(1/ppt):1,pic=F.pics[k]||(F.pics[k]=fullMapPic(WM,k,seenArr(),LAND,TOWNS)),cv=b.querySelector('canvas');if(cv!==pic){pic.className='fm-cv';if(cv)cv.replaceWith(pic);else b.prepend(pic)}
-  F.ppt=ppt;v.dataset.ppt=ppt;b.style.width=pic.width*k*ppt+'px';b.style.height=pic.height*k*ppt+'px';b.style.setProperty('--z',ppt);b.style.setProperty('--zs',fmIconScale(ppt).toFixed(3));v.classList.toggle('names',ppt>=F.names);
+  const k=ppt<1?Math.round(1/ppt):1,pic=F.pics[k]||(F.pics[k]=fullMapPic(WM,k,seenArr(),LAND,TOWNS,null,true)),cv=b.querySelector('canvas');if(cv!==pic){pic.className='fm-cv';if(cv)cv.replaceWith(pic);else b.prepend(pic)}
+  F.ppt=ppt;v.dataset.ppt=ppt;b.style.width=pic.width*pic.tpp*ppt+'px';b.style.height=pic.height*pic.tpp*ppt+'px';b.style.setProperty('--z',ppt);b.style.setProperty('--zs',fmIconScale(ppt).toFixed(3));v.classList.toggle('names',ppt>=F.names);
   const r1=b.getBoundingClientRect();v.scrollLeft+=r1.left+tx*ppt-c.x;v.scrollTop+=r1.top+ty*ppt-c.y;
   for(const [a,ok] of [['out',ppt>Z[0]+1e-6],['in',ppt<Z[Z.length-1]-1e-6]]){const z=panel.querySelector('[data-act="map-zoom"][data-arg="'+a+'"]');if(z)z.disabled=!ok}}
 // the map drawn at ppt px a tile, tile point at in the middle of the view (else the point there now)
 function fullMapShow(ppt,at){const F=FULLMAP,v=panel.querySelector('.fm-view');if(!v)return;
   if(!at)at={x:(v.scrollLeft+v.clientWidth/2)/F.ppt,y:(v.scrollTop+v.clientHeight/2)/F.ppt};
-  const k=ppt<1?Math.round(1/ppt):1,pic=F.pics[k]||(F.pics[k]=fullMapPic(WM,k,seenArr(),LAND,TOWNS)),b=v.querySelector('.fm-pic'),pp=fullMapPaper(pic.width*k,pic.height*k);
+  const k=ppt<1?Math.round(1/ppt):1,pic=F.pics[k]||(F.pics[k]=fullMapPic(WM,k,seenArr(),LAND,TOWNS,null,true)),b=v.querySelector('.fm-pic'),pp=fullMapPaper(pic.width*pic.tpp,pic.height*pic.tpp);
   b.innerHTML=fullMapMarks(ppt);b.style.setProperty('--grain','url('+pp.grain+')');b.style.setProperty('--edge','url('+pp.edge+')');F.ppt=ppt;fullMapScale(ppt);
   v.scrollLeft=at.x*ppt-v.clientWidth/2;v.scrollTop=at.y*ppt-v.clientHeight/2}
 /* a drag (the mouse or a finger) pans the map; two fingers pinch it in or out about their middle, and pan with it; the wheel (a

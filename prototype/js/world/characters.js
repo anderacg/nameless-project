@@ -153,7 +153,7 @@ class Character extends Unit{
     const o=this.o,want=CLASS_PICK[this.cls()]||[];if(!o.tree)return;
     for(let k=0;k<64;k++){const open=Object.keys(TREE).filter(id=>TREE[id].prof&&canTakeOf(o,id));if(!open.length)break;
       const lv=id=>o.sk&&o.sk[TREE[id].prof]?o.sk[TREE[id].prof].lv:0;// (else its strongest proficiency's tree first (its nodes the strongest there), the lowest tier)
-      const T=talentsOf(o),aim=want.map(w=>T.pathTo(w)[0]).find(Boolean),id=aim||open.sort((a,b)=>lv(b)-lv(a)||TREE[a].tier-TREE[b].tier)[0];if(!takeNodeOf(o,id,true))break}}
+      const T=talentsOf(o),aim=want.map(w=>T.pathTo(w)[0]).find(id=>id&&T.canTake(id)),id=aim||open.sort((a,b)=>lv(b)-lv(a)||TREE[a].tier-TREE[b].tier)[0];if(!takeNodeOf(o,id,true))break}}
   // a lord's or chieftain's gear: of a tier by its level (one every three), a weapon of its people (outfitWeapons), armour and a
   // helm; better gear replaces worse
   outfit(){

@@ -15,11 +15,13 @@ try{
  const want={move:.68,travel:1.6,sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
   ai:{graceGap:24,grace:1.47,dread:70,bandCamp:220,refugeAt:24,refugeLane:24,lairHunt:140,lairLeash:60,mythicRoam:[120,90],mythicScorch:200,gameLeash:50,herdLeash:24,penLeash:99,
    compFoes:90,compFlee:70,compBeat:[80,60],compTake:60,compDraft:120,folkNear:520,folkForget:120,folkBandit:70,folkFear:90,slipAway:40},
-  spawn:{bandit:[220,260],monster:[180,240],monsterHold:256,mythic:200,critter:[120,200],critterHold:56,away:120,rim:3},
+  spawn:{bandit:[220,260],monster:[180,240],monsterHold:352,mythic:200,rare:1.2,rareK:2,critter:[120,200],critterHold:56,away:120,rim:3},
   econ:{caravanNear:10,caravanFar:90,caravanCost:150,refuge:70,resRange:10,homeRange:24},
   law:{repNear:15,eventNear:15,siegeOutrage:20},land:{shelter:48,healNear:80,estateGuard:7,friendly:50,pacify:35},war:{front:60,raidLeash:80,siegeLeash:80},battle:{elfR:10,bridge:2}};
+ // (spawn.monsterHold 352, was 256, 2026-11-14: the owner, "Caves, monster lair should be more far away as well": beasts' homes 22 tiles from
+ //  every holding, were 16)
  ok(JSON.stringify(S)===JSON.stringify(want),'WORLD_SCALE holds every moved distance at today\'s value, the lever and the grace at Phase 1\'s, campaign travel 1.6 times the base (twice at 696de87; 20% less, the owner, 2026-10-31) ('+Object.keys(S).join(', ')+')');
- const classic={bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18},daily:{bandits:1,monsters:3,critters:3}};
+ const classic={bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,sites:{cave:30,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}};
  ok(JSON.stringify(D.classic)===JSON.stringify(classic)&&t.density()===D.classic,'DENSITY.classic holds today\'s caps, and it is the one in use (the classic world: the classic seed)');
  // ---- every cap reads the table; the site kinds scattered at random are the table's, and none keeps a count of its own
  const C=D.classic,K=Object.keys(t.SITE_TYPES);
@@ -36,21 +38,22 @@ try{
   {const L=t.worldLand(t.WM),N=t.density(t.WM);
    ok(N.monsterStart===Math.round(C.monsterStart*L/g.land)&&N.monsterStart>C.monsterStart,
     'the classic seed grows as any world: '+L+' tiles of land, '+(L/g.land).toFixed(2)+' times the base: '+N.bandits+' bands, '+N.monsterStart+' / '+N.monsterCap+' beasts, '+N.critterStart+' / '+N.critterCap+' game')
-   // (the owner's play-test, 2026-10-22: caves, ruins and shrines "ok 1.5" on the classic seed; the travellers' camps a third of the
-   // 67 the land gave it or fewer)
-   const x=k=>N.sites[k]/C.sites[k],ks=['cave','ruins','shrine'];
-   ok(ks.every(k=>x(k)>=1.4&&x(k)<=1.6)&&N.sites.travelers<=Math.round(C.sites.travelers*L/g.land/3)+1,'on the classic seed caves, ruins and shrines about 1.5 times the base ('+ks.map(k=>N.sites[k]+' '+k+', '+x(k).toFixed(2)).join('; ')+'), the travellers\' camps by its road a third of the land\'s or fewer ('+N.sites.travelers+' of '+Math.round(C.sites.travelers*L/g.land)+')')}
+   // (the owner's play-test, 2026-10-22: caves, ruins and shrines "ok 1.5" on the classic seed; the camps where people live by kind,
+   // each its count x the land's growth^.5, one at least (data/encampments.js; the owner, 2026-11-14: "i dont want it to be too
+   // crowded", near the 21 travellers' camps it had)
+   const x=k=>N.sites[k]/C.sites[k],ks=['cave','ruins','shrine'],E=t.ENCAMP_KINDS.map((K,i)=>t.Encampment.count(i,t.WM)),nE=E.reduce((a,b)=>a+b,0);
+   ok(ks.every(k=>x(k)>=1.4&&x(k)<=1.6)&&E.every((n,i)=>n===Math.max(1,Math.round(t.ENCAMP_KINDS[i].count*Math.sqrt(L/g.land))))&&nE>=t.ENCAMP_KINDS.length&&nE<=30,'on the classic seed caves, ruins and shrines about 1.5 times the base ('+ks.map(k=>N.sites[k]+' '+k+', '+x(k).toFixed(2)).join('; ')+'), '+nE+' camps where people live ('+E.join(', ')+')')}
   ok(J(t.density(today))===J(C)&&t.worldLand(today)===g.land&&t.worldRoads(today)===g.roads&&!Object.keys(today).includes('_land')&&!J(today).includes('_dens')&&!J(today).includes('_roads'),'a world with today\'s land, holdings and road holds today\'s numbers (water and fords not land; the counts kept off its keys)');
   {const z=t.density(fake(g.land,g.holdings,false,0,0));
-   ok(t.worldRoads(fake(10,1,false,100,40))===100+40*g.track&&z.sites.travelers===0&&z.sites.cave===C.sites.cave,'the road: a great road\'s tiles 1 each, a track\'s '+g.track+', a tile on both once (the greater), an estate\'s track none; no road, no travellers\' camps ('+z.sites.travelers+'), the rest as the land')}
-  ok(d4.bandits===Math.round(30*Math.pow(4,.8))&&d4.daily.bandits===Math.round(Math.pow(4,.8))&&d4.camps===48&&d4.monsterStart===192&&d4.monsterCap===240&&d4.critterStart===384&&d4.critterCap===480&&d4.sites.cave===Math.round(30*Math.pow(4,.35))&&d4.sites.shrine===Math.round(18*Math.pow(4,.35))&&d4.sites.hideout===24&&d4.sites.travelers===42&&d4.daily.monsters===12&&d4.daily.critters===12,
-   'four times the land: four times the camps, beasts, game and the tries a day to bring them back; the bands and their tries 4^.8 times, the hideouts as the base (their wild land a world in\'s); caves, ruins and shrines 4^.35; twice the road, twice the travellers\' camps ('+d4.monsterStart+' / '+d4.monsterCap+' beasts, '+d4.critterStart+' / '+d4.critterCap+' game, '+d4.bandits+' bands, '+d4.sites.hideout+' hideouts, '+d4.sites.cave+' caves, '+d4.sites.travelers+' travellers\' camps)');
+   ok(t.worldRoads(fake(10,1,false,100,40))===100+40*g.track&&z.sites.cave===C.sites.cave,'the road: a great road\'s tiles 1 each, a track\'s '+g.track+', a tile on both once (the greater), an estate\'s track none; no road, the rest as the land')}
+  ok(d4.bandits===Math.round(30*Math.pow(4,.8))&&d4.daily.bandits===Math.round(Math.pow(4,.8))&&d4.camps===48&&d4.monsterStart===192&&d4.monsterCap===240&&d4.critterStart===384&&d4.critterCap===480&&d4.sites.cave===Math.round(30*Math.pow(4,.35))&&d4.sites.shrine===Math.round(18*Math.pow(4,.35))&&d4.sites.hideout===24&&t.ENCAMP_KINDS.every((K,i)=>t.Encampment.count(i,big)===Math.max(1,Math.round(K.count*2)))&&d4.daily.monsters===12&&d4.daily.critters===12,
+   'four times the land: four times the camps, beasts, game and the tries a day to bring them back; the bands and their tries 4^.8 times, the hideouts as the base (their wild land a world in\'s); caves, ruins and shrines 4^.35; the camps where people live 4^.5, twice ('+d4.monsterStart+' / '+d4.monsterCap+' beasts, '+d4.critterStart+' / '+d4.critterCap+' game, '+d4.bandits+' bands, '+d4.sites.hideout+' hideouts, '+d4.sites.cave+' caves, '+t.ENCAMP_KINDS.reduce((n,K,i)=>n+t.Encampment.count(i,big),0)+' camps where people live)');
   ok(d4.caravans===144&&d4.refugees===84&&d4.ships===30&&t.density(big)===d4,'twice the holdings: twice the caravans and refugees; the ships by the ports of the world in (another\'s: today\'s); kept on the map');
   try{g.by.monsterCap=['land',1.1];const a=t.density(fake(g.land,g.holdings)).monsterCap,b=t.density(fake(g.land*4,g.holdings)).monsterCap;
    ok(a===60&&b===Math.round(60*Math.pow(4,1.1)),'a pow above 1 makes a bigger world busier (cap '+b+' at four times the land, not 240), the base as ever ('+a+')');
    g.by.monsterCap=['land',1];ok(t.density(fake(g.land*4,g.holdings,true)).monsterStart===192,'a classic world grows as any world');
   }finally{g.by=JSON.parse(by)}}
- ok(JSON.stringify(K.filter(k=>!t.SITE_TYPES[k].spots))===JSON.stringify(Object.keys(C.sites))&&K.every(k=>!('count' in t.SITE_TYPES[k])),'the table counts every kind of site but the camps, and SITE_TYPES keeps no counts');
+ ok(JSON.stringify(K.filter(k=>!t.SITE_TYPES[k].spots&&!t.SITE_TYPES[k].place&&!t.SITE_TYPES[k].made))===JSON.stringify(Object.keys(C.sites))&&K.every(k=>!('count' in t.SITE_TYPES[k])),'the table counts every kind of site but the bandit camps, the camps where people live (data/encampments.js) and those made in play, and SITE_TYPES keeps no counts');
  {const core=get('js/core/core.js'),left=['js/core/core.js','js/world/sites.js','wiki.html','tests/sites.js'].filter(f=>/MAP_DENS|MAP_AREA/.test(get(f)));
   ok(!left.length&&!/BANDITS|MONSTER_CAP|MONSTER_START/.test(core)&&(0,eval)('typeof MAP_DENS')==='undefined','MAP_DENS is retired: core.js grows no caps and nothing reads it'+(left.length?': '+left.join(', '):''))}
  ok(t.GRACE_GAP===S.ai.graceGap&&t.RES_RANGE===S.econ.resRange&&t.HOME_RANGE===S.econ.homeRange,'the old names (GRACE_GAP, RES_RANGE, HOME_RANGE) read the table');

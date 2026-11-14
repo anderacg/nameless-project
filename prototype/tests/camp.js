@@ -37,9 +37,18 @@ try{
  reset();t.makeCamp();P.morale=60;G.enc={kind:'party',ref:{cool:0,x:P.x+8,y:P.y},list:['militia']};t.startBattle({enemies:['militia'],tournament:false});
  ok(!P.camp&&P.morale===60-S.camp.caught&&msgs(/catch your band in camp/)===1,'a band that finds you in camp catches you unready: morale −'+S.camp.caught+', the camp struck');
  ev('B.over=true;B=null');t.fieldDone();Kit.world();
+ // ---- caught in camp, your men come out of the tents one after another (the owner, 2026-11-14; world/campsite.js CampWake)
+ {reset();P.troops={hum_levy:8};t.pitchCamp();const L=t.CampSite.layout('you',P.x,P.y,t.partySize());G.enc={kind:'party',ref:{cool:0,x:P.x+40,y:P.y},list:['militia','militia']};t.startBattle({enemies:['militia','militia'],tournament:false});
+  const b=t.B,W=b.campWake,mine=b.units.filter(u=>u.team===0&&!u.hero&&u.sourceArmy===P),hero=b.hero,wait=()=>mine.filter(u=>u.waiting).length;
+  for(const u of b.units)if(u.team===1){u.hp=u.max=1e6;u.cd=99;u.s={...u.s,spd:0}}t.updateBattle(.001);
+  const atTent=mine.every(u=>L.some(q=>{const f=b.world.field({x:q.x,y:q.y+3});return Math.hypot(u.x-f.x,u.y-f.y)<=4*b.world.scale}));
+  ok(!!W&&!!b.world&&hero&&hero.hp>0&&wait()===mine.length&&mine.length>0&&atTent,'a band finds you in camp: your hero up at once, your '+mine.length+' men in the tents, at their doors, not yet in the fight');
+  const t0=b.t;let k=0,seen=[];while(wait()&&k++<4000){t.updateBattle(.02);if(k%25===0)seen.push(wait())}const took=b.t-t0;
+  ok(!wait()&&mine.every(u=>u.hp>0&&!u.left)&&seen.some(n=>n>0&&n<mine.length),'they come out one after another, a man every '+t.CAMP_WAKE.gap+' s of the battle (all out after '+took.toFixed(1)+' s; '+seen.slice(0,6).join(', ')+' still in)');
+  b.over=true;b.endT=0;ev('B=null');t.fieldDone();Kit.world()}
  // ---- drawn at your figure, and saved
- reset();t.makeCamp();{const e=t.bandCampEnt({x:Math.floor(P.x-t.VW/2),y:Math.floor(P.y-t.VH/2)});let err='';t.ctx.save();try{e.f()}catch(x){err=x.message}t.ctx.restore();ok(!err&&e.y<P.y,'the camp, two tents and a fire, is drawn behind your figure'+(err?' ('+err+')':''));
-  const c=t.campAt(P.x,P.y);ok(e.y===c.box[3]&&e.nf&&!e.st,'in the depth order by its feet (y '+e.y+', its lowest pixel), as everyone is: the trees in front drawn over it, none faded for it')}
+ reset();t.makeCamp();{const E=[];t.bandCampEnts(E,{x:Math.floor(P.x-t.VW/2),y:Math.floor(P.y-t.VH/2)});let err='';t.ctx.save();try{for(const e of E)e.f()}catch(x){err=x.message}t.ctx.restore();ok(!err&&E.length>=2,'the camp, its tents and a fire, is drawn ('+E.length+' pieces)'+(err?' ('+err+')':''));
+  ok(E.every(e=>e.nf&&!e.st&&Number.isFinite(e.y)),'each in the depth order by its feet, as everyone is: the trees in front drawn over it, none faded for it')}
  // ---- only on clear ground: beside a wood your band walks to the nearest and pitches there
  {const wood=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.tAt(tx,ty-1)===t.T_FOREST&&t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<160)&&!t.nearWater(x,y,4)&&t.campSpot&&(Kit.goTo(x,y),(s=>s&&Math.hypot(s.x-x,s.y-y)>S.camp.hop*16)(t.campSpot())))return [x,y]}})();
   reset();Kit.goTo(wood[0],wood[1]);ok(!t.campGround(P.x,P.y),'(by a wood: the camp would stand over its trees)');ok(t.makeCamp()&&!P.camp&&P.tx!=null&&!!G.pitch,'Make camp there: your band walks to clear ground first ('+Math.round(Math.hypot(P.tx-P.x,P.ty-P.y))+' px)');
@@ -56,9 +65,9 @@ try{
     window.drawTravelDetection=aside(dt);
     const wb=t.WORLD_BATTLE.on;t.WORLD_BATTLE.on=true;try{t.drawWorld()}finally{t.WORLD_BATTLE.on=wb;window.marchDraw=ps;window.bannerAt=ba;window.drawTravelDetection=dt}return{hero,bn}};
   reset();const a=draws();ok(a.hero>0&&!a.bn.includes(P),'(out of camp your figure is drawn, no banner over it: its banner is on its card)');
-  t.makeCamp();const b=draws(),pole=b.bn.find(o=>o!==P&&o.faction==='player'),c=t.campAt(P.x,P.y),px=pole&&pole.x-2,py=pole&&pole.headY()-t.BANNER_GAP;
+  t.makeCamp();{const p=t.CampSite.pitching('you',t.partySize());ok(p,'pitching: the camp goes up a tent after another, your men standing by (world/campsite.js)')}t.CampSite.t0.set('you',performance.now()/1000-99);const b=draws(),pole=b.bn.find(o=>o!==P&&o.faction==='player'),c=t.campAt(P.x,P.y),px=pole&&pole.x-2,py=pole&&pole.headY()-t.BANNER_GAP;
   ok(!!P.camp&&!b.hero&&!b.bn.includes(P),'in camp your figure, host and the banner over you are not drawn');
-  ok(pole&&px>=c.box[0]-4&&px<=c.box[2]+4&&py>=c.box[1]&&py<=c.box[3]+1,'your banner stands on a pole planted in the camp'+(pole?' ('+Math.round(px)+','+py+' in '+c.box.map(Math.round)+')':''));
+  {const L=t.CampSite.lay.get('you')?.p||[];ok(pole&&L.some(q=>Math.abs(pole.x-q.x)<=12&&Math.abs(pole.y-q.y)<=4),'your banner stands on a pole planted in the camp, beside its first tent'+(pole?' ('+Math.round(pole.x)+','+Math.round(pole.y)+')':''))}
   const at=[P.x,P.y];t.breakCamp();const d=draws();ok(d.hero>0&&!d.bn.some(o=>o!==P&&o.faction==='player')&&P.x===at[0]&&P.y===at[1],'the camp broken, your figure is drawn again at its spot')}
  // ---- only on allowed ground (the owner, 2026-10-23): from many spots on the roads and round the holdings, the camp never stands
  // on a road or track (its tile or its band as painted), a crossing, a ford, water (a pond's too), a lot, a holding's ring, a site,

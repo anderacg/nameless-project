@@ -8,13 +8,29 @@
    unit by unit, your standing and Trading); the bargain's prices are quoted as they would go (economy.js quote).
    Each row and line its item's picture (its kind's icon, ico). TradeDeal: the bargain (G.town.deal: {sell: {good: n}, buy: {good: n}, own: [bag slot], quiver: {id: n}, skin: n}; never
    saved), its lines, totals and why it cannot be struck, a haggle (economy.js TRADE_TERMS, tradeTerms: your standing and a
-   haggle in every good's price); TradeScreen: the page, your terms in the bargain. Verbs (town.js Market): deal (kind:key, the qty
-   more), undeal (kind:key, the qty less; all of a thing of yours), deal-clear, deal-ok, deal-haggle ---------- */
+   haggle in every good's price); TradeScreen: the page, your terms in the bargain; Buyback: what you sold from your bag, the market's
+   for a while, yours again at what it paid you (a row in the merchants' pane, the bargain's kind r: rebuy, its ids). Verbs (town.js
+   Market): deal (kind:key, the qty more), undeal (kind:key, the qty less; all of a thing of yours), deal-clear, deal-ok, deal-haggle ---------- */
+/* buying back (the owner, 2026-11-12: "let you buy things back in case player accidentally sold their items"; BUYBACK): each thing
+   sold from your bag (core/items.js SELL_VERB) kept by the market that bought it, as it was (its stack, its make), at the price it
+   paid you, for BUYBACK.days days; the last BUYBACK.max of them in all, the oldest going first. On your hero (P.buyback, saved with
+   it; made at your first sale, so a hero who sold nothing saves as before); a new life none of it */
+const Buyback={
+  list(){return (P.buyback||[]).filter(b=>G.day-b.day<BUYBACK.days)},
+  // (a thing sold at t: kept, the newest first, the old and the expired dropped; whether it was)
+  note(x,gold,t){if(!BUYBACK.on||!t||!x)return false;const L=this.list();L.unshift({id:(P.buyback?.[0]?.id||0)+1,x:{...x},gold,at:t.name,day:G.day});P.buyback=L.slice(0,BUYBACK.max);return true},
+  // (what the market at t holds of yours)
+  here(t){return this.list().filter(b=>b.at===t.name)},
+  of(id){return this.list().find(b=>b.id===+id)||null},
+  price(b){return Math.round(b.gold*(1+BUYBACK.markup))},
+  // (bought back: into your bag as it was; false, gone or no room or gold)
+  take(id){const b=this.of(id),p=b&&this.price(b);if(!b||P.gold<p||playerInventory.put({...b.x,back:1})<0)return false;P.gold-=p;P.buyback=P.buyback.filter(o=>o!==b);return b},
+};
 class TradeDeal{
-  constructor(o){Object.assign(this,{sell:{},buy:{},own:[],quiver:{},skin:0},o||{})}
+  constructor(o){Object.assign(this,{sell:{},buy:{},own:[],quiver:{},skin:0,rebuy:[]},o||{})}
   static of(){const T=G.town;if(!T)return new TradeDeal();if(!(T.deal instanceof TradeDeal))T.deal=new TradeDeal(T.deal);return T.deal}
   static clear(){if(G.town)G.town.deal=new TradeDeal()}
-  get empty(){return !Object.keys(this.sell).length&&!Object.keys(this.buy).length&&!this.own.length&&!Object.keys(this.quiver).length&&!this.skin}
+  get empty(){return !Object.keys(this.sell).length&&!Object.keys(this.buy).length&&!this.own.length&&!Object.keys(this.quiver).length&&!this.skin&&!this.rebuy.length}
   // (what is left to move: of your goods, of the market's)
   left(t,kind,key){
     if(kind==='s')return goodN(key)-(this.sell[key]||0);
@@ -24,6 +40,7 @@ class TradeDeal{
   // (a thing moved in: what is on the other side of the bargain of the same thing taken back first (buying grain you are selling
   // only sells less), the rest added; the owner: "it should deduct the one that the player first")
   add(t,kind,key,n){
+    if(kind==='r'){const b=Buyback.of(key);if(b&&b.at===t.name&&!this.rebuy.includes(b.id))this.rebuy.push(b.id);return}
     if(kind==='o'){const i=+key,x=P.inv[i];if(!x||this.own.includes(i))return;if(this.quiver[x.id]>0){this.sub('q',x.id,1);return}this.own.push(i);return}
     if(kind==='k'){if(this.sell[SKIN.empty]>0){const k=Math.min(n,this.sell[SKIN.empty]);this.sub('s',SKIN.empty,k);n-=k}if(n>0)this.skin+=n;return}
     if(kind==='q'){const i=this.own.find(j=>P.inv[j]&&P.inv[j].id===key);if(i!=null){this.sub('o',i);return}this.quiver[key]=(this.quiver[key]||0)+1;return}
@@ -34,6 +51,7 @@ class TradeDeal{
     const m=kind==='s'?this.sell:this.buy,k=Math.min(n,this.left(t,kind,key));if(k>0)m[key]=(m[key]||0)+k;
   }
   sub(kind,key,n){
+    if(kind==='r'){this.rebuy=this.rebuy.filter(i=>i!==+key);return}
     if(kind==='o'){this.own=this.own.filter(i=>i!==+key);return}
     if(kind==='k'){this.skin=Math.max(0,this.skin-n);return}
     const m=kind==='s'?this.sell:kind==='b'?this.buy:this.quiver;m[key]=(m[key]||0)-(kind==='q'?1:n);if(!(m[key]>0))delete m[key];
@@ -46,6 +64,7 @@ class TradeDeal{
     for(const [g,n] of Object.entries(this.buy))L.push({side:'buy',kind:'b',key:g,n,name:GOODS[g].n,gold:goodsQuote(t,g,n,true),ic:'good:'+g});
     if(this.skin)L.push({side:'buy',kind:'k',key:'skin',n:this.skin,name:GOODS[SKIN.empty].n,gold:GOODS[SKIN.empty].base*this.skin,ic:'good:'+SKIN.empty});
     for(const [id,n] of Object.entries(this.quiver))L.push({side:'buy',kind:'q',key:id,n,name:ITEM_KINDS.quiver.title({id}),gold:gearPrice(id)*n,ic:'quiver:'+id});
+    for(const id of this.rebuy){const b=Buyback.of(id);if(b)L.push({side:'buy',kind:'r',key:id,n:b.x.n||1,name:itemKind(b.x).name(b.x)+' (back)',gold:Buyback.price(b),ic:b.x.k+':'+b.x.id})}
     return L;
   }
   totals(t){const L=this.lines(t),get=L.filter(l=>l.side==='sell').reduce((a,l)=>a+l.gold,0),pay=L.filter(l=>l.side==='buy').reduce((a,l)=>a+l.gold,0);return{get,pay,net:get-pay,after:P.gold+get-pay}}
@@ -54,7 +73,7 @@ class TradeDeal{
     if(this.empty)return 'Nothing in the bargain yet';
     if(this.totals(t).after<0)return 'Not enough gold';
     const full=Object.entries(this.buy).find(([g,n])=>goodRoom(g)+(this.sell[g]||0)<n);
-    return full?BAG_FULL:'';
+    return full||this.rebuy.length>playerInventory.spare+this.own.length?BAG_FULL:'';
   }
   // (a haggle: once a visit, a bargain worth TRADE_TERMS.min or more; why not: '' when you may)
   haggleWhy(t){const T=this.totals(t);if(G.town.haggle)return G.town.haggle==='won'?'You have their best price':'They will not haggle again today';return T.get+T.pay<TRADE_TERMS.min?'Only over a bargain of '+TRADE_TERMS.min+' gold or more':''}
@@ -67,6 +86,7 @@ class TradeDeal{
     const before=P.gold,parts=[];
     for(const [g,n] of Object.entries(this.sell)){const r=sellGoods(t,g,n);train('trade',r.earned/20);addRep(t.name,r.earned/60,true);if(r.sold)parts.push('sold '+r.sold+' '+GOODS[g].n.toLowerCase())}
     for(const i of this.own.slice().sort((a,b)=>b-a)){const x=P.inv[i],v=x&&itemKind(x).verb('sell');if(v&&v.shown(i)){parts.push('sold '+itemKind(x).name(x));v.perform(i)}}
+    for(const id of this.rebuy){const b=Buyback.take(id);if(b)parts.push('bought back '+itemKind(b.x).name(b.x))}
     for(const [g,n] of Object.entries(this.buy)){const r=buyGoods(t,g,n);if(r.got){addRep(t.name,r.spent/60,true);parts.push('bought '+r.got+' '+GOODS[g].n.toLowerCase())}}
     if(this.skin&&skinsBuy(this.skin))parts.push('bought '+this.skin+' waterskins');
     for(const [id,n] of Object.entries(this.quiver))for(let k=0;k<n;k++)quiverBuy(id,t,'trade');
@@ -98,6 +118,10 @@ const TradeScreen={
       return this.row(GOODS[k].n+(ms?' <span class="'+(ms==='shortage'?'bad':'good')+'">'+cap1(ms)+'</span>':''),nextBuy(t,k)+'g each',l,'deal','b:'+k,'‹<span class="tr-w"> Buy</span>',l<1?'The market has none left':'','good:'+k)});
     const qs=quiverStock(t,'trade');
     if(qs.length)h+='<div class="lab lab-cat">Quivers</div>'+qs.map(id=>this.row('<span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEM_KINDS.quiver.title({id})+'</span>',gearPrice(id)+'g','','deal','q:'+id,'‹<span class="tr-w"> Buy</span>','','quiver:'+id)).join('');
+    // (what you sold here, theirs for a while: yours again at what they paid you, the newest first)
+    const bb=Buyback.here(t);
+    if(bb.length)h+='<div class="lab lab-cat">You sold here</div>'+bb.map(b=>{const K=itemKind(b.x),c=K.colour(b.x),left=BUYBACK.days-(G.day-b.day);
+      return this.row('<span'+(c?' style="color:'+c+'"':'')+'>'+K.name(b.x)+'</span>',Buyback.price(b)+'g, '+left+' day'+(left>1?'s':'')+' left',(b.x.n||1)>1?'×'+b.x.n:'','deal','r:'+b.id,'‹<span class="tr-w"> Buy back</span>',D.rebuy.includes(b.id)?'In the bargain':'',b.x.k+':'+b.x.id)}).join('');
     return h;
   },
   // the bargain: each side's lines (− takes one back), the totals, your gold before and after, Confirm and Clear

@@ -16,7 +16,7 @@
    The heir's company ends with its lord, gone or dead: its companions free (hour). Saved: the realms made and the companions kept
    (the save piece legacy, loaded before the holdings and the lords that name its realms). Numbers: data/death.js DEATH.heir ---------- */
 class Legacy{
-  static realms={};static kept={};static raised=null;static fallen=0;static plot=null;static restN=0;static family='';static line=[];static kin=null;// (family: your line's name; line: each of it who fell, Legacy.record)// (fallen: how many of your line have died; plot: your family's, world/death.js Grave.inPlot)
+  static realms={};static kept={};static raised=null;static fallen=0;static plot=null;static restN=0;static family='';static line=[];static kin=null;static held=[];static heldN=0;// (family: your line's name; line: each of it who fell, Legacy.record)// (fallen: how many of your line have died; plot: your family's, world/death.js Grave.inPlot)
   // the heir: the most loyal companion with you, at least DEATH.heir.ap, a tie to the higher level; null: none
   static heirOf(comps){return Object.keys(comps).filter(id=>(comps[id].ap||0)>=DEATH.heir.ap&&!comps[id].jail&&!comps[id].lost)
     .sort((a,b)=>(comps[b].ap-comps[a].ap)||((comps[b].lv||0)-(comps[a].lv||0)))[0]||null}
@@ -91,6 +91,8 @@ class Legacy{
   static heirloom(old){const r=Remains.list.find(o=>!o.grave&&o.who===old.who&&o.day===old.day);if(!r)return null;
     const i=r.items.findIndex(([k,id])=>k==='gear'&&ITEMS[id]?.slot==='weapon'),j=i>=0?i:r.items.findIndex(([k])=>k==='gear');if(j<0)return null;
     const [,id,n]=r.items[j];if(n>1)r.items[j][2]--;else r.items.splice(j,1);return id}
+  // (you of the blood of the n-th of your line: kin of them, or of kin of them, through each life since; a stranger in it breaks the line)
+  static kinTo(n){let k=this.kin;const seen=new Set();while(k&&k.rel&&k.of!=null&&!seen.has(k.of)){if(k.of===n)return true;seen.add(k.of);const L=this.line.find(o=>o.n===k.of);k=L?{rel:L.rel,of:L.of}:null}return false}
   // (one of your line fallen: their life, for your family's tree (ui/family.js): kin of whom, if they were)
   static record(s){this.line.push({rel:this.kin?.rel||null,of:this.kin?.of||null,n:s.n,who:s.who,race:s.race,bg:s.bg,born:s.born,day:s.day,days:s.days,level:s.level,renown:s.renown,earned:s.earned,by:s.by,near:s.near,family:this.family||'',g:s.g,face:s.face||null})}
   static reborn(k){const old=Death.slain,K=DEATH.kin,young=k==='kin';if(young&&this.kinWhy())return false;
@@ -131,9 +133,9 @@ class Legacy{
   // each hour: a company whose lord is gone breaks up, its companions free
   static hour(){this.prune();for(const l of W.lords){const h=l.heir;if(!h||h.ended||!(l.dead||l.gone))continue;h.ended=true;
     worldEvent({text:cap1(l.name)+'’s company breaks up: '+h.comps.map(id=>COMPS[id].short).join(', ')+' go their own ways.',x:l.x,y:l.y,fac:[l.fac],post:false,kind:''})}}
-  static save(){return Object.keys(this.realms).length||Object.keys(this.kept).length||this.fallen||this.restN?{realms:this.realms,kept:this.kept,fallen:this.fallen,plot:this.plot,restN:this.restN,family:this.family,line:this.line,kin:this.kin}:undefined}
-  static load(v){this.clear();for(const id in v?.realms||{}){this.realms[id]=v.realms[id];this.install(id,v.realms[id])}this.kept=v?.kept||{};this.fallen=v?.fallen||0;this.plot=v?.plot||null;this.restN=v?.restN||0;this.family=v?.family||'';this.line=v?.line||[];this.kin=v?.kin||null}
-  static clear(){for(const id in this.realms){delete FACS[id];const i=FIDS.indexOf(id);if(i>=0)FIDS.splice(i,1);REALMS.delete(id)}this.realms={};this.kept={};this.fallen=0;this.plot=null;this.restN=0;this.family='';this.line=[];this.kin=null}
+  static save(){return Object.keys(this.realms).length||Object.keys(this.kept).length||this.fallen||this.restN?{realms:this.realms,kept:this.kept,fallen:this.fallen,plot:this.plot,restN:this.restN,family:this.family,line:this.line,kin:this.kin,...(this.held.length?{held:this.held,heldN:this.heldN}:{})}:undefined}// (held: what lords and companions keep of your line's, world/claims.js)
+  static load(v){this.clear();for(const id in v?.realms||{}){this.realms[id]=v.realms[id];this.install(id,v.realms[id])}this.kept=v?.kept||{};this.fallen=v?.fallen||0;this.plot=v?.plot||null;this.restN=v?.restN||0;this.family=v?.family||'';this.line=v?.line||[];this.kin=v?.kin||null;this.held=v?.held||[];this.heldN=v?.heldN||0}
+  static clear(){for(const id in this.realms){delete FACS[id];const i=FIDS.indexOf(id);if(i>=0)FIDS.splice(i,1);REALMS.delete(id)}this.realms={};this.kept={};this.fallen=0;this.plot=null;this.restN=0;this.family='';this.line=[];this.kin=null;this.held=[];this.heldN=0}
 }
 // (kin: how one is kin of the one who fell)
 const KIN={child:{n:'Child'},sibling:{n:'Sibling'},cousin:{n:'Cousin'}};

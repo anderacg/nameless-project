@@ -30,8 +30,9 @@ const WORLD_SCALE={
   // where new things appear: never nearer you than [at the start, later], nor a holding. The owner, 2026-10-19: bands never
   // nearer a holding or any of its built estates than away (outlaws lurk out on a land's reaches, by the roads); a beast makes
   // its lair in the wilds, on no holding's land, or, its kind's ground not found there this time, within rim tiles of a land's
-  // edge and away from every holding and estate (monsters.js lairLand)
-  spawn:{bandit:[220,260],monster:[180,240],monsterHold:256,mythic:200,critter:[120,200],critterHold:56,away:120,rim:3},
+  // edge and away from every holding and estate (monsters.js lairLand); a rare kind (its weight w at most rare: a troll, a griffin, a
+  // wyrm) and a mythic one rareK times as far from the holdings, a rare one from you too (2026-11-13)
+  spawn:{bandit:[220,260],monster:[180,240],monsterHold:352,mythic:200,rare:1.2,rareK:2,critter:[120,200],critterHold:56,away:120,rim:3},
   // trade and work (tiles): realm caravans' range and their cost of distance, where refugees go, a holding's veins and its own
   econ:{caravanNear:10,caravanFar:90,caravanCost:150,refuge:70,resRange:10,homeRange:24},
   // deeds and who hears of them (tiles): field deeds and road events count for a holding this near, a sack angers those this near
@@ -63,12 +64,10 @@ const sightMost=()=>{const S=SIGHT_KIND;return Math.max(S.char,S.foot,S.shoot,S.
    in by ([measure, pow]; sites, a rule for each kind); daily: each kind's tries grow as the count named. The measures:
    land (tiles not water, a ford water: the base 32,042), holdings (the realm holdings the world was made with: the base 37),
    ports (the world in's holdings with a port as it first stood: the base 9), roads (the road's tiles between the holdings, a
-   great road's 1, a track's track, never an estate's track: the base 1,680, so the travellers' 21 make one camp to every 80 tiles
-   of road, their rate), wild (the land far from every holding and road, world/sites.js wildLand: the base 37,400, so the
+   great road's 1, a track's track, never an estate's track: the base 1,680), wild (the land far from every holding and road, world/sites.js wildLand: the base 37,400, so the
    classic seed's 46,773 make 30 hideouts). pow 1 keeps the base number per tile of land, per holding, per port or per tile of
-   road; above 1 a bigger world is busier, below 1 emptier (the bands .8: fewer to a holding than the land alone would give). The owner's
-   play-test of 2026-10-22: the travellers' camps by the roads, not the land ("too many pilgrim and wanderer camps": 67 on the
-   classic seed, now 21); caves, ruins and shrines about 1.5 x the base on the classic seed ("ok 1.5": its land 3.19 x the
+   road; above 1 a bigger world is busier, below 1 emptier (the bands .8: fewer to a holding than the land alone would give). The camps where
+   people live are counted by kind (data/encampments.js ENCAMP_KINDS count, ENCAMP.count: by the land, at least one each); caves, ruins and shrines about 1.5 x the base on the classic seed ("ok 1.5": its land 3.19 x the
    base's, ^.35), growing gently past it. The owner, 2026-10-23: the hideouts deep in the wilds, by the wild land, about half the
    land's (61 on the classic seed, now 30). The generated classic seed grows as any world */
 // the humble start (doc/START_AND_GATES_DESIGN.md §1.2; world/start.js StartPlace): on (the harness turns it off: the older suites
@@ -105,14 +104,28 @@ const GATE_WAYS={letter:80,writ:{town:60,city:160,rep:0},bribe:{town:25,city:60,
 // show: seconds its title stays over the map
 // a party stalled on its way (world/stalls.js): hours still, within px, before it is sent another way; keep: how many kept to read
 const WORLD_STALL={on:true,hours:12,px:16,keep:40};
-const DISCOVER={on:true,r:2,site:3,start:10,scout:6,show:4.2};
+// the land's borders and tint on the map (the owner, 2026-11-12: "make territory boundaries not look squared"; world/territory.js
+// drawLand): on, each border a line through its tiles' edges' middles, cut at 45° where a tile stands out at a corner (a stair of tiles
+// a straight slant), the tint cut the same; tint: its alpha; line: [between holdings of one realm, between realms or to the wilds],
+// each [width px, alpha]; margin: tiles round the view built with it (built again once the view leaves them). on false: tile by
+// tile, as before
+const LAND_SMOOTH={on:true,tint:.08,line:[[1,.22],[2,.7]],margin:16};
+// a holding or site learnt by name (world/discovery.js): r tiles from a holding's edge, its edge its farthest lot of core's kinds (its
+// heart, houses and market: not its farms, pastures, mines, lumber camps, quarries or port, out in its fields: the owner, 2026-11-12,
+// "need to be very close to the holding"); site tiles from a site; start: what a game begins near, known at once; scout: Scouting
+// practice for each; show: its title's seconds on the screen
+const DISCOVER={on:true,r:1,site:3,start:10,scout:6,show:4.2,core:['centre','house','nook','market']};
+// how far (tiles) a site of a kind stands from every holding (world/sites.js siteSpot; the owner, 2026-11-14: "camps are not too close
+// to the holding. Caves, monster lair should be more far away as well"): any (were all 6), caves 20, camps where people live 14 (a kind
+// may set its own: data/encampments.js away)
+const SITE_AWAY={any:6,cave:20,travelers:14};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
-    sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}},
+    sites:{cave:30,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}},
   grow:{land:32042,holdings:37,ports:9,roads:1680,track:.5,wild:37400,
     by:{bandits:['land',.8],camps:['land',1],monsterStart:['land',1],monsterCap:['land',1],critterStart:['land',1],critterCap:['land',1],
       caravans:['holdings',1],refugees:['holdings',1],ships:['ports',1],
-      sites:{cave:['land',.35],travelers:['roads',1],hideout:['wild',1],ruins:['land',.35],shrine:['land',.35],goblins:['wild',1]}},
+      sites:{cave:['land',.35],hideout:['wild',1],ruins:['land',.35],shrine:['land',.35],goblins:['wild',1]}},
     daily:{bandits:'bandits',monsters:'monsterCap',critters:'critterCap'}}
 };
 // a world's land: its tiles not water (a ford is water), counted once (kept off every list and hash, as WorldMap's _site)

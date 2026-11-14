@@ -122,6 +122,7 @@ tr:last-child td{border-bottom:0}
 <script src="../engine/ground.js"></script>
 <script src="../engine/worldnature.js"></script>
 <script src="../engine/beasts.js"></script>
+<script src="../engine/wildlife.js"></script>
 <script src="../engine/tiger-data.js"></script>
 <script src="../engine/tiger.js"></script>
 <script src="../engine/wolf-data.js"></script>
@@ -136,6 +137,7 @@ tr:last-child td{border-bottom:0}
 <script src="../engine/build-karn.js"></script>
 <script src="../engine/build-ashgor.js"></script>
 <script src="../engine/build-sylvan.js"></script>
+<script src="../engine/build-camp.js"></script>
 <script src="../engine/model.js"></script>
 <script src="js/core/core.js"></script>
 <script src="js/data/world.js"></script>
@@ -157,6 +159,8 @@ tr:last-child td{border-bottom:0}
 <script src="js/data/tree.js"></script>
 <script src="js/data/holdings.js"></script>
 <script src="js/data/places.js"></script>
+<script src="js/data/encampments.js"></script>
+<script src="js/data/dress.js"></script>
 <script src="js/data/items.js"></script>
 <script src="js/data/economy.js"></script>
 <script src="js/data/conduct.js"></script>
@@ -277,6 +281,8 @@ tr:last-child td{border-bottom:0}
 <script src="js/story/questbook.js"></script>
 <script src="js/world/incidents.js"></script>
 <script src="js/world/sites.js"></script>
+<script src="js/world/encampments.js"></script>
+<script src="js/gfx/campart.js"></script>
 <script src="js/world/goblins.js"></script>
 <script src="js/world/discovery.js"></script>
 <script src="js/world/encounters.js"></script>
@@ -325,9 +331,12 @@ tr:last-child td{border-bottom:0}
 <script src="js/world/death.js"></script>
 <script src="js/world/legacy.js"></script>
 <script src="js/world/lineage.js"></script>
+<script src="js/world/claims.js"></script>
+<script src="js/world/carcasses.js"></script>
 <script src="js/world/outposts.js"></script>
 <script src="js/ui/family.js"></script>
 <script src="js/gfx/graveart.js"></script>
+<script src="js/gfx/spirit.js"></script>
 <script src="js/world/news.js"></script>
 <script src="js/world/worldlog.js"></script>
 <script src="js/world/distractions.js"></script>
@@ -377,6 +386,8 @@ tr:last-child td{border-bottom:0}
 <script src="js/battle/siegeworks.js"></script>
 <script src="js/battle/drops.js"></script>
 <script src="js/world/march.js"></script>
+<script src="js/world/gatefile.js"></script>
+<script src="js/world/campsite.js"></script>
 <script src="js/world/marchstyles.js"></script>
 <script src="js/world/travelgroups.js"></script>
 <script src="js/ui/march.js"></script>
@@ -392,6 +403,7 @@ tr:last-child td{border-bottom:0}
 <script src="js/gfx/worldui.js"></script>
 <script src="js/gfx/mist.js"></script>
 <script src="js/gfx/ambient.js"></script>
+<script src="js/gfx/blessing.js"></script>
 <script src="js/gfx/tracks.js"></script>
 <script src="js/gfx/weather.js"></script>
 <script src="js/gfx/weapons.js"></script>
@@ -683,7 +695,7 @@ section('sites','Places and jobs','Away from the holdings lie places to explore.
     ['Ruins','Their treasure is found once: searched ruins never fill with treasure again. About '+pct(RUIN.wake)+' of searches wake its guardians, and then the fight starts at once: there is no leaving. Three checks can spare you: Awareness before you search (Scouting and Agility: you hear them stir, and may still leave), Stealth as you search (Agility, the night, a band of '+RUIN.small+' or fewer: you take it unheard) and Lore (read the walls, once a visit: Intellect tells what guards it). Beat the guardians and the treasure is yours; withdraw and the ruin remembers them, kind, count and level: Attack or Leave.'],
     ['Who moves in','After '+SITE_TYPES.ruins.respawn+' days searched ruins find new occupants, by the climate and whether a holding owns the land: homeless folk (give gold or food: honor +'+CONDUCT.helpRefugees.honor+'; or chase them off: honor −'+CONDUCT.chaseRefugees.honor+'), a travellers’ camp, a hermit (rumours or lore for a little gold, once a visit), rival treasure hunters (talk, their find, a map to ruins you have not found), bandits (the bandit camp’s page), creatures (the cave’s page), cultists or grave robbers (a fight, a purse, sometimes a find); or nobody. Clearing them pays their own loot or bounty, never the ruin’s treasure; then it lies empty a while, and others come.'],
     ['Sellswords','At the travellers’ fire, each sellsword is someone: a name, a look, a tier and a price of their own. Hire whom you like, one at a time; no standing needed.']]))+
-  sub('Travellers','Camps on the road that move on after a week or so. Trade with them, hire sellswords, rest and hear news.',table(['Who','Sells','Notes'],TRAVELERS.map(T=>['<b>'+T.n+'</b>',T.goods.map(g$).join(', '),T.d])))+
+  sub('Camps','Places where people live in tents: travellers, hunters, pilgrims, a hermit, refugees. The more people, the more tents. Some stay; others move on after some days. Trade with them, hire, rest by their fire and hear news.',table(['Who','Sells','Notes'],TRAVELERS.map(T=>['<b>'+T.n+'</b>',T.goods.map(g$).join(', '),T.d])))+
   sub('On the road','The people you meet travelling are small scenes on the map, not windows: a wounded man by the road, a peddler walking up, hunters round a fire, a thief running off with a purse, a wedding party dancing along the road. The game never pauses for them.',kv([
     ['How often','A pity timer counts the hours you travel (moving on the map; not in a holding, paused or in a window). Each hour the chance is '+pct(ENC_SPAWN.base)+' + '+(ENC_SPAWN.rate*100).toFixed(2)+'% for every hour since you last met one, at most '+pct(ENC_SPAWN.cap)+', × '+ENC_SPAWN.land.road+' on a road, × '+ENC_SPAWN.land.wild+' in the wild: about one every day or two of travel. At most '+ENC_SPAWN.perDay+' a day, the same kind not again within '+ENC_SPAWN.again+' days. Meeting one sets the timer back to 0; one you saw and passed by takes '+pct(ENC_SPAWN.pass[0])+'–'+pct(ENC_SPAWN.pass[1])+' off it.'],
     ['Where','Just past your sight, '+ENC_SPAWN.near.join('–')+' px out, ahead of the way you go, on its own ground (a road, a wood’s edge, hills, a bog, mud by the water, a lord’s wood), never in a holding. Some keep to daylight (a stuck cart, a thief, a funeral, a wedding), the lights of the bog to the night.'],

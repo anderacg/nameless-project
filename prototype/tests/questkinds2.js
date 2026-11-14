@@ -9,8 +9,8 @@ Kit.suite(({ok})=>{
  {let q=null;for(let k=0;k<10&&!q;k++)q=t.makeQuest('courier',ash);q.accept();const L=q.carried();
   ok(L&&L.to===q.to&&L.from==='Ashford'&&L.seal===1&&L.job===q.id&&t.LETTER.text(L).length>10,'taken: a real sealed letter in your bag, to '+q.to+': “'+(L&&t.LETTER.text(L))+'”');
   ok(!t.LETTER_VERBS.find(c=>c.label==='Deliver it').when(L),'it is delivered on arrival, not by hand');
-  const d=t.townBy(q.to),g0=P.gold,full=q.reward.gold;L.seal=0;t.questArrive(d);
-  ok(!P.quests.includes(q)&&P.gold-g0===Math.round(full*t.COURIER.opened)&&t.LETTER.slotOf(L.id)<0&&G.msgs.some(m=>/frowns at the broken seal/.test(m.m)),'read on the way: paid half ('+(P.gold-g0)+' of '+full+'), the lord frowns, the letter handed over')}
+  const d=t.townBy(q.to),g0=P.gold,full=q.reward.gold;L.seal=0;t.questArrive(d);ok(P.quests.includes(q)&&P.gold===g0&&t.canReportAt(q,d)&&t.questReady(q)&&!t.canReportAt(q,t.townBy('Ashford')),'come to '+q.to+': not paid by walking in; to be handed over there, to its steward');t.turnIn(q,d);
+  ok(!P.quests.includes(q)&&P.gold-g0===Math.round(full*t.COURIER.opened)&&t.LETTER.slotOf(L.id)<0&&G.msgs.some(m=>/frowns at the broken seal/.test(m.m)),'handed over, read on the way: paid half ('+(P.gold-g0)+' of '+full+'), the steward frowns, the letter gone')}
  {let q=null;for(let k=0;k<10&&!q;k++)q=t.makeQuest('courier',ash);q.accept();P.inv[t.LETTER.slotOf(q.letter)]=null;t.questDay();
   ok(!P.quests.includes(q)&&G.msgs.some(m=>/You no longer carry the letter/.test(m.m)),'sold or burnt: the job fails')}
  // ======== a lord's: relieve a siege

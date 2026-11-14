@@ -72,7 +72,7 @@ const worldBattleReach=o=>{if(!WORLD_BATTLE.on||!o||o===P)return REACH;const b=m
 // and how far that reaches from its point toward you (WorldObject reachRadius: REACH for one with none; null, at touching distance
 // only: a holding at war with you, its siege's leash as it was). Your army halts at its edge; your hero never walks into it. Your
 // army marched man by man, when your outline does: your man nearest its point, his disc and WORLD_BATTLE.interaction past him
-function ringReach(o){const r=o.reachRadius?o.reachRadius():REACH;if(r==null)return REACH;const g=marchPlaceGap(o,r);return g!=null?Math.hypot(o.x-P.x,o.y-P.y)-g:marchInteractRadius(P)+r}
+function ringReach(o){const r=o.reachRadius?o.reachRadius():REACH;if(r==null||!Number.isFinite(r))return REACH;const g=marchPlaceGap(o,r);return g!=null?Math.hypot(o.x-P.x,o.y-P.y)-g:marchInteractRadius(P)+r}
 // (an army marched man by man now: its MarchArmy with men, not left behind by a leap, yours not in camp or a holding; null with
 // MARCH_RING.meet off: the circles. Its men stand where they did, carried by how far its middle went since it last stepped)
 function marchLive(o){const a=MARCH_RING.meet&&MARCH_ARMIES.get(o);return a&&a.units.length&&Math.hypot(o.x-a.x,o.y-a.y)<=MARCH_MOVE.teleport&&!(o===P&&(P.stay||P.camp))?a:null}
@@ -173,7 +173,7 @@ const marchCart=(o,at=o)=>{const d=o.dir<0?-1:1;return MARCH_CART.map(([x,r])=>(
 // off, drawn apart: a flag's spear, gfx/marchgear.js).
 // (his look, as his sprite's: sprites.js spriteLook, kept on him)
 function marchLook(u,o){const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',col=o.look().col;
-  const cold=coldAt(o.x,o.y);if(!u.mLook||u.mLookC!==col||u.mLookW!==cold){u.mLook=dressed(cold,()=>spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col));u.mLookC=col;u.mLookW=cold}return u.mLook}
+  const cl=dressClimAt(o.x,o.y);if(!u.mLook||u.mLookC!==col||u.mLookW!==cl){u.mLook=dressedIn(cl,()=>spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col));u.mLookC=col;u.mLookW=cl}return u.mLook}
 // (his stride's frame on the march, 0-3: by the way he has walked, a step each WALK.foot × WALK.step px, so his feet keep to the ground)
 const marcherStep=u=>(Math.floor((u.walk||0)/(WALK.foot*WALK.step))+u.id)%4;
 // (drawn walking: stepping, and not yet at his place: there, he stands at once, not on his last stride frozen for the rest of
@@ -181,7 +181,7 @@ const marcherStep=u=>(Math.floor((u.walk||0)/(WALK.foot*WALK.step))+u.id)%4;
 const marchWalks=u=>!!u.walking&&!(u.tg&&Math.hypot(u.x-u.tg.x,u.y-u.tg.y)<MARCH_MOVE.home);
 function marchSprite(u,o,pose,bare){
   const type=chiefLookType(u.character?u.type.replace(/^comp_/,''):u.type,o.ld?.band),hero=type==='hero',lead=hero||u.row==='leader';
-  return dressed(coldAt(o.x,o.y),()=>unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(marchWalks(u)?2+marcherStep(u):0),!!bare,false,o.look().col));
+  return dressedIn(dressClimAt(o.x,o.y),()=>unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(marchWalks(u)?2+marcherStep(u):0),!!bare,false,o.look().col));
 }
 // Leaders use the same character kind and equipment as battle; cached cells also serve map picking and banner height.
 const MARCH_LEADERS=new WeakMap();
@@ -200,7 +200,7 @@ function marchDraw(ents,o,cam){
   const u0=army.units[0];if(u0&&o.mapKind==='monster')ents.push({y:o.y,f:()=>BANNERQ.push({o,marker:{h:marchSprite(u0,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})});return true;
 }
 // (drawn small without losing its lines when zoomed out: render.js reduced)
-function drawMarcher(u,o,cam){return reduced(()=>drawMarcherAt(u,o,cam))}
+function drawMarcher(u,o,cam){if(u.gateAt)return;return reduced(()=>drawMarcherAt(u,o,cam))}// (waiting his turn at a gate: unseen, gatefile.js)
 function drawMarcherAt(u,o,cam){
   // (standing: his fidgets, as in battle: render.js idleLife, on the real clock)
   const S=ST[u.type]||{},I=!marchWalks(u)?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
@@ -218,9 +218,10 @@ function drawMarcherAt(u,o,cam){
 // instead (MarchOutline, MARCH_RING), drawn as the circles are, about its middle
 function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDetectionColor(travelDetectionState()):o.look().col,army=null){
   const L=army&&MARCH_RING.on&&army.units.length?army.ring||(army.ring=new MarchOutline()):null;
-  if(L){L.update(army);ents.push({y:o.y+L.top,f:()=>{const x=o.x-cam.x,y=o.y-cam.y;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;L.path(L.out[0],x,y);ctx.stroke();
+  // (MARCH_RING.draw off: no ring drawn, its outline kept for the rules all the same)
+  if(L){L.update(army);if(!MARCH_RING.draw)return;ents.push({y:o.y+L.top,f:()=>{const x=o.x-cam.x,y=o.y-cam.y;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;L.path(L.out[0],x,y);ctx.stroke();
     ctx.globalAlpha=.28;ctx.setLineDash(RING_DASH);L.path(L.out[1],x,y);ctx.stroke();ctx.restore()}});return}
-  const m=MARCH_ARMIES.get(o)?.mid,c=m&&Math.hypot(m.x-o.x,m.y-o.y)<r?m:o;
+  if(!MARCH_RING.draw)return;const m=MARCH_ARMIES.get(o)?.mid,c=m&&Math.hypot(m.x-o.x,m.y-o.y)<r?m:o;
   ents.push({y:c.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,marchInteractRadius(o,r),0,Math.PI*2);ctx.stroke();ctx.restore()}});
 }
 
@@ -275,8 +276,11 @@ const MARCH_MOVE={slit:8,formGiveUp:true,formTry:5,formMove:8,formGain:2,cell:4,
    px about the middle, or while it eases (every cell within eps: settled); at most most cells (a straggler far off: coarser).
    Made afresh, no easing from its old shape, when a man moved jump px about the middle at once, or men moved with no time gone
    (a battle's end puts its survivors where they fought, a fallen man is left out: the outline round them at once).
-   Drawn only, for armies on screen: the rules (meetings, reach, interaction) measure the circle (marchOuter). on false: the circles */
-const MARCH_RING={on:true,meet:true,pad:2,merge:10,cell:3,grow:14,shrink:4,threshold:1,tol:.4,jump:12,eps:.004,most:30000};
+   Drawn only, for armies on screen: the rules (meetings, reach, interaction) measure the circle (marchOuter). on false: the circles.
+   draw: the rings (these outlines, or the circles) drawn on the map at all, off but for ring mode (the owner, 2026-11-13: "the army
+   rings on the map only draw when ring mode is on (enable by console)": MARCH_RING.draw=true in the console); off, the outline
+   is kept all the same, for a click on an army's ground (marchPicked) */
+const MARCH_RING={on:true,draw:false,meet:true,pad:2,merge:10,cell:3,grow:14,shrink:4,threshold:1,tol:.4,jump:12,eps:.004,most:30000};
 // (each corner case of a cell, tl 8, tr 4, br 2, bl 1 inside: its outline's pieces, from edge to edge, the inside on the right; edges
 // top 0, right 1, bottom 2, left 3; the two saddles, 5 and 10, by the cell's middle: MarchOutline trace)
 const RING_SEGS=[[],[3,2],[2,1],[3,1],[1,0],null,[2,0],[3,0],[0,3],[0,2],null,[0,1],[1,3],[1,2],[2,3],[]],RING_DASH=[3,4];
@@ -458,7 +462,7 @@ function lotFooting(t,l){const s=lotSprite(t,l),X=l.x*TILE,Y=l.y*TILE,hold=l.k==
 // graves are walked among, world/lineage.js)
 function siteModel(s){const c=climAt(s.x,s.y),k=s instanceof BanditCamp?'bandit':SITE_KIND[s.type]?s.type:null;
   return k?PX.clusterModel({kind:SITE_KIND[k],seed:s.seed*131+7,env:c,snow:0}):PX.buildingModel({type:s.type,seed:s.seed,env:c,snow:0,glow:c==='desert'?'#e8c040':'#7fd8e8'})}
-function siteFooting(s){if(s.type===OUTPOST_TYPE)return s.footing();const sp=siteSprite(s);if(!sp._ft)sp._ft=modelFooting(siteModel(s))||[];const X=s.x-sp.ax,Y=s.y+8-sp.ay;return sp._ft.map(r=>({x:X+r.x,y:Y+r.y,w:r.w,h:r.h}))}
+function siteFooting(s){if(typeof s.footing==='function')return s.footing();const sp=siteSprite(s);if(!sp._ft)sp._ft=modelFooting(siteModel(s))||[];const X=s.x-sp.ax,Y=s.y+8-sp.ay;return sp._ft.map(r=>({x:X+r.x,y:Y+r.y,w:r.w,h:r.h}))}
 // (every footing in the box x0..x1, y0..y1, world px: the lots standing there (not ruins, fields nor pastures), the sites you know of)
 const marchFootings=(x0,y0,x1,y1)=>TOWNS.flatMap(t=>(t.lots||[]).filter(l=>l.st!=='ruined'&&l.k!=='field'&&l.k!=='pasture'&&l.x*TILE<x1&&l.y*TILE<y1&&(l.x+l.n)*TILE>x0&&(l.y+l.n)*TILE>y0).flatMap(l=>lotFooting(t,l)))
   .concat((W.sites||[]).filter(s=>s.type!=='rest'&&s.known&&s.known()&&s.x>x0-96&&s.x<x1+96&&s.y>y0-96&&s.y<y1+96).flatMap(siteFooting));
@@ -774,7 +778,8 @@ class MarchArmy{
     requests.sort((a,b)=>a.needAt-b.needAt||a.id-b.id);for(const u of requests.slice(0,MARCH_MOVE.queries)){this.queries++;if(u.rescue)u.rescue=2;const p=nav.path(u,u.goal);delete u.needAt;
       const cf=PATHS.corridor&&marching&&!u.rescue&&u.cf&&this.cor&&u.cf.cid===this.cor.id?u.cf:null;if(cf&&marchStrays(this.cor.pts,u,p)){u.flow=cf;u.plan=null;continue}
       u.plan={ground:nav,p,i:0,goal:u.goal,at:this.time+MARCH_MOVE.repath+u.id%7*.025}}
-    for(const u of this.units){u.squeeze=false;const goal=u.goal,gd=goal?Math.hypot(goal.x-u.x,goal.y-u.y):0;if(!goal||gd<=MARCH_MOVE.settle){u.rest=!!goal;continue}
+    for(const u of this.units){u.squeeze=false;if(u.gateAt){if(this.time<u.gateAt){u.rest=true;continue}u.gateAt=0}// (out of a gate: he waits his turn there, unseen: gatefile.js out)
+      const goal=u.goal,gd=goal?Math.hypot(goal.x-u.x,goal.y-u.y):0;if(!goal||gd<=MARCH_MOVE.settle){u.rest=!!goal;continue}
       // (formGiveUp: one given up stands where he is, at rest)
       if(u.gave){u.rest=true;u.vel=0;continue}if(u.rest&&moved<=.001&&!this.loop&&gd<MARCH_MOVE.wake&&(!C||Math.abs(gap)<1e-3))continue;u.rest=false;
       // (PATHS.slide: one held by a wall (his step met one within PATHS.stuck s: u.wt; not a column's on the march, along its way),
@@ -1016,9 +1021,9 @@ const marchOwners=()=>[P,...W.parties,...W.caravans,...W.monsters.map(asMonster)
 // one moved since by other than its march (Kit.goTo, a gate between moments): a jump, re-placed at its next step)
 Systems.add({name:'march guides',order:{frame:48},frame:()=>{
   if(!WORLD_BATTLE.on||!MARCH_MOVE.menCentre)return;
-  for(const o of marchOwners()){const a=MARCH_ARMIES.get(o);if(!a||a.idle||a.lent)continue;if(o.x===a.wx&&o.y===a.wy&&a.x===a.wx&&a.y===a.wy){o.x=a.x=a.gx;o.y=a.y=a.gy;a.lent=true}else if(o.x!==a.x||o.y!==a.y)a.jumped=true}
+  for(const o of marchOwners()){const a=MARCH_ARMIES.get(o);if(!a||a.idle||a.lent||fightHolds(o))continue;if(o.x===a.wx&&o.y===a.wy&&a.x===a.wx&&a.y===a.wy){o.x=a.x=a.gx;o.y=a.y=a.gy;a.lent=true}else if(o.x!==a.x||o.y!==a.y)a.jumped=true}
 }});
 Systems.add({name:'march formations',order:{frame:145},frame:d=>{
   if(!WORLD_BATTLE.on)return;const range=vis()+MARCH_MOVE.active;
-  for(const o of marchOwners()){if(o===P?(P.stay||P.camp):o.dead||o.gone||o.inside||o.fight||Math.hypot(o.x-P.x,o.y-P.y)>range){const a=MARCH_ARMIES.get(o);if(a)a.idle=true;continue}MarchArmy.of(o).step(d)}
+  for(const o of marchOwners()){if(fightHolds(o))continue;if(o===P?(P.stay||P.camp):o.dead||o.gone||o.inside||o.fight||Math.hypot(o.x-P.x,o.y-P.y)>range){const a=MARCH_ARMIES.get(o);if(a)a.idle=true;continue}MarchArmy.of(o).step(d)}
 }});

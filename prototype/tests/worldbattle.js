@@ -1,6 +1,9 @@
 'use strict';
 Kit.suite(({ok,info})=>{
  const t=T,P=t.P,G=t.G,W=t.W;Kit.begin('soldier',51);Kit.clear();Kit.world();t.GUIDE.on=false;t.WORLD_BATTLE.on=true;t.BDEPLOY.on=true;
+ // (the field as wide as the ring was: an army joining walks in from past its edge, as these check; within hearing of a fight in the
+ // open field (OPEN_FIGHT.reach) it is already inside it, and comes in where it stands: tests/openfights.js)
+ const reach=t.OPEN_FIGHT.reach;t.OPEN_FIGHT.reach=1;try{
  // A real road far from buildings, with a controlled enemy and one distant helper.
  let tile=0;for(let i=0;i<t.WM.kind.length;i++)if(t.WM.kind[i]===t.T_OPEN&&i%t.MW>20&&i%t.MW<t.MW-20&&Math.floor(i/t.MW)>20){tile=i;break}
  Kit.goTo((tile%t.MW+.5)*t.TILE,(Math.floor(tile/t.MW)+.5)*t.TILE);P.troops={hum_foot:5,hum_bow:3};
@@ -48,4 +51,5 @@ Kit.suite(({ok,info})=>{
  const serial=JSON.stringify(P.army);ok(JSON.parse(serial).march[id].y===-9,'saved army data retains march offsets as plain records');
  Kit.world();t.saveGame(true);P.army.march={};t.loadGame();ok(P.army.march[id].y===-9,'march offsets survive an actual campaign save and load');
  t.MARCH_FACING.delete(P);let now=performance.now()/1000;P.dir=1;const startAngle=t.marchFacing(P);P.y+=2;let record=t.MARCH_FACING.get(P);record.at=now-.1;const turned=t.marchFacing(P);ok(Math.abs(turned-startAngle)<=t.WORLD_BATTLE.turn*.101&&Math.abs(turned-Math.PI/2)>.1,'a sharp turn advances by bounded angular speed instead of snapping');for(let i=0;i<20;i++){t.MARCH_FACING.get(P).at-=.1;t.marchFacing(P)}ok(Math.abs(t.marchFacing(P)-Math.PI/2)<.001,'the formation smoothly finishes its turn while retaining group identity');
+}finally{t.OPEN_FIGHT.reach=reach}
 });

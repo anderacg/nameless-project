@@ -69,20 +69,21 @@ function signIcon(g,icon,x,y,col){const r=(xx,yy,w,h)=>rect(g,col||'#3a2418',x+x
 // clothes and tools for a role. pose: 0-1 standing, 2-5 walking, like unitSprite
 // a townsperson: the template figure in its trade's clothes (people.js), walking or standing
 function personSprite(look,race,v,pose){
-  const k='ps'+look+race+v+'p'+pose;if(spr[k])return spr[k];
+  const k='ps'+look+race+v+'p'+pose+(DRESS.clim||'');if(spr[k])return spr[k];
   return spr[k]=cellOf(peopleSprite(folkLook(look,race,v),pose));
 }
 function drawScene(){
   const S=G.scene;if(!S)return;const Z=SCENE_ZOOM,c=sceneCv(S),cam=sceneCam(S),p=S.p,now=performance.now();
   ctx.fillStyle='#0b0d14';ctx.fillRect(0,0,VW,VH);
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.scale(Z,Z);ctx.translate(-cam.x,-cam.y);ctx.drawImage(c,0,0);
-  const race=townBy(S.ref).races[0],ents=[...S.npcs,...S.folk,p].sort((a,b)=>a.y-b.y);
+  const T0=townBy(S.ref),race=T0.races[0],ents=[...S.npcs,...S.folk,p].sort((a,b)=>a.y-b.y);DRESS.clim=dressClimAt(T0.x,T0.y);// (its folk in their land's clothes: sprites.js DRESS; back to none at the end)
   for(const o of ents){const hero=o===p,look=o.role?SCENE_ROLES[o.role].look:o.guard||o.lord?'guard':'folk',pose=o.moving?2+Math.floor((hero?p.t:o.t)*8)%4:Math.floor(now/600+(o.ph||0))%2;
     const s=hero?unitSprite('hero',0,true,0,pose):look==='guard'?unitSprite(RACES[o.race||race].melee,0,false,o.role?1:o.lord?0:3,pose):personSprite(look,o.race||race,o.v||(o.role||'').length,pose);
     ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(Math.round(o.x-5),Math.round(o.y-1),10,2);
     ctx.save();ctx.translate(Math.round(o.x),Math.round(o.y));if((o.dir||1)<0)ctx.scale(-1,1);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore();
     if(o.lord){const bx=Math.round(o.x)-4,by=Math.round(o.y)-26+(Math.floor(now/500+o.ph)%2);rect(ctx,'#1a1410',bx-1,by-1,9,9);rect(ctx,'#e8b94a',bx,by,7,7);signIcon(ctx,'crown',bx+2,by+2)}
     if(o.role&&!o.guard){const R=SCENE_ROLES[o.role],bx=Math.round(o.x)-4,by=Math.round(o.y)-26+(Math.floor(now/500+o.ph)%2);rect(ctx,'#1a1410',bx-1,by-1,9,9);rect(ctx,'#e8d8a0',bx,by,7,7);signIcon(ctx,R.icon,bx+2,by+2)}}
+  DRESS.clim=null;
   if(GRID.on)drawGrid(cam.x,cam.y,VW/Z,VH/Z,0,0,1/Z);
   // night: the dark, and warm light from windows and lamps
   const dk=darkness();if(dk>0){ctx.fillStyle='rgba(10,14,50,'+(dk*.55).toFixed(3)+')';ctx.fillRect(cam.x,cam.y,VW/Z,VH/Z);

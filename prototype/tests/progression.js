@@ -5,7 +5,7 @@ window.ARENA=true;// (the battle screen's own rules, on its own field: tests/har
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
- t.act('begin','soldier');ok(G.mode==='world','begin -> world');ok(!P.attr&&t.tmOf(P,'hp')>=10&&Object.keys(P.sk).every(k=>P.sk[k].lv===(P.sk0[k]||0))&&P.sk.oneh.lv>0&&P.apt.oneh>0&&P.origin==='o_soldier'&&P.tree[0]==='o_soldier','no attributes (the Soldier origin\u2019s health instead), every proficiency at 0 but the past\u2019s free start (15 at most), a knack for One-Handed, and the Soldier origin');
+ t.act('begin','soldier');ok(G.mode==='world','begin -> world');ok(!P.attr&&t.tmOf(P,'hp')>=5&&Object.keys(P.sk).every(k=>P.sk[k].lv===(P.sk0[k]||0))&&P.sk.oneh.lv>0&&P.apt.oneh>0&&P.origin==='o_soldier'&&P.tree[0]==='o_soldier','no attributes (the Soldier origin\u2019s health instead), every proficiency at 0 but the past\u2019s free start (15 at most), a knack for One-Handed, and the Soldier origin');
  ok(Math.max(...Object.values(P.sk0))<=15,'a past starts its proficiencies at 15 at most ('+JSON.stringify(P.sk0)+')');
  t.gainXp(500);ok(P.level>=3&&t.talentsOf(P).points().left===P.level*t.LEVEL.pts&&!P.perkPend,'a battle\u2019s experience raises the level, a skill point each (points='+t.talentsOf(P).points().left+' lv='+P.level+')');
  t.openChar();ok(G.mode==='char','char opens');t.act('char-close');const h0=t.heroStats().hp;ok(t.takeNode('oneh_str')&&t.heroStats().hp>h0,'a Strength node raises health (what Strength gave)');

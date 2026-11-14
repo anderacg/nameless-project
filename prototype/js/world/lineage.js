@@ -174,7 +174,12 @@ class RestSite extends Site{
   draw(){}
   view(){const ms=this.members(),ps=[];for(const g of ms){const S=GraveArt.sprite(g.kind,g.seed||1);ps.push([S.ground,g.x-S.ax,g.y-S.ay],[S.cv,g.x-S.ax,g.y-S.ay])}
     return{key:'rest:'+this.i+':'+ms.length+':'+ms.filter(g=>g.spent).length,x:this.x,y:this.y+8,alt:this.name,ps}}
-  box(box){const ms=this.members();if(!ms.length)return;box(this,Math.min(...ms.map(g=>g.x))-12,Math.min(...ms.map(g=>g.y))-14,Math.max(...ms.map(g=>g.x))+12,Math.max(...ms.map(g=>g.y))+8)}
+  box(box){const b=this.bounds();if(b)box(this,b.x0,b.y0,b.x1,b.y1)}
+  // (its graves' ground, and the reach your army meets it at (march.js ringReach): from its graves, not a site's picture, which it has
+  // none of (its reach was not a number, so walking up to remains, a grave or a crypt opened nothing: the owner, "cant claim it by
+  // pressing at the remains"))
+  bounds(){const ms=this.members();return ms.length?{x0:Math.min(...ms.map(g=>g.x))-12,y0:Math.min(...ms.map(g=>g.y))-14,x1:Math.max(...ms.map(g=>g.x))+12,y1:Math.max(...ms.map(g=>g.y))+8}:null}
+  reachRadius(){const b=this.bounds();return b?boxReach(this,b):REACH}
   tip(){const n=this.members().length;return '<b>'+Discovery.nameOf(this)+'</b><small>'+this.T.n+(this.kind==='plot'?', '+n+' of your line':this.kind==='crypt'?', '+(Houses.byId(this.ref)?.dead.length||0)+' lords':'')+'</small><span class="act">Click: go there</span>'}
   about(){const ms=this.members(),g=ms[0];
     if(this.kind==='plot')return '<p>The plot of the family of '+htmlText(g?.family||Legacy.plot?.family||'your line')+', by '+htmlText(g?.at||'')+': '+ms.length+' of your line lie here, within its low wall.</p>';
@@ -183,15 +188,17 @@ class RestSite extends Site{
   page(){const ms=this.members(),acts=[];let body=this.about();
     if(this.kind!=='crypt')body+='<div class="lab">Here lie</div>'+ms.map(g=>'<p><b>'+htmlText(g.who)+'</b><span class="muted">, '+g.words.label.toLowerCase()+', fell on day '+g.day+(g.n>1?', the '+ordinal(g.n)+' of your line':'')+', level '+(g.life?.level||0)+'</span>'+
       (g.spent?'<span class="muted">, prayed at</span>':g.xp?'<span class="gold">, '+g.xp+' experience lingers</span>':'')+(g.empty()?'':', with them: '+g.what())+'</p>').join('');
-    ms.forEach((g,i)=>{if(g.grave&&!g.spent&&g.xp>0)acts.push({icon:'altar',label:'Pray for '+htmlText(g.who),act:'site-rest',arg:'pray:'+i,facts:[g.xp+' experience']});
-      if(!g.empty())acts.push({icon:'gold',label:'Take what lies with '+htmlText(g.who),act:'site-rest',arg:'take:'+i,facts:[g.what()]});
-      if(g.unburied){acts.push({icon:'altar',label:'Bury '+htmlText(g.who)+' here',act:'site-rest',arg:'here:'+i,facts:[(g.life?.renown||0)>=DEATH.grave.tiers.cairn?'a cairn over them':'a small grave']});
-        const to=townBy(Legacy.plot?.at)||Spatial.nearestHolding(g.x,g.y,t=>!t.gone);if(to)acts.push({icon:'altar',label:'Carry them to '+(Legacy.plot?'the family plot':to.name),act:'site-rest',arg:'plot:'+i,facts:['by '+to.name]})}
+    // (who you are to them and where they lie decide the prayer and the cost of their things; a beast guarding them, nothing: world/claims.js)
+    ms.forEach((g,i)=>{const why=Claims.guardWhy(g),kin=Claims.kin(g);if(why)body+='<p class="bad">'+htmlText(why)+'.</p>';
+      if(g.grave&&!g.spent&&g.xp>0)acts.push({icon:'altar',label:'Pray for '+htmlText(g.who),act:'site-rest',arg:'pray:'+i,why,facts:[Claims.xp(g)+' experience'+(Claims.on?kin?', of their blood':', no kin of theirs':'')]});
+      if(!g.empty())acts.push({icon:'gold',label:'Take what lies with '+htmlText(g.who),act:'site-rest',arg:'take:'+i,why,facts:[g.what(),Claims.costFact(g)].filter(Boolean)});
+      if(g.unburied){acts.push({icon:'altar',label:'Bury '+htmlText(g.who)+' here',act:'site-rest',arg:'here:'+i,why,facts:[(g.life?.renown||0)>=DEATH.grave.tiers.cairn?'a cairn over them':'a small grave']});
+        const to=townBy(Legacy.plot?.at)||Spatial.nearestHolding(g.x,g.y,t=>!t.gone);if(to)acts.push({icon:'altar',label:'Carry them to '+(Legacy.plot?'the family plot':to.name),act:'site-rest',arg:'plot:'+i,why,facts:['by '+to.name,Claims.on?'the experience more there':''].filter(Boolean)})}
       if(g.crypt)acts.push({icon:'altar',label:'Pay your respects',act:'site-rest',arg:'respect:'+i,why:g.paid===G.day?'Paid today':'',facts:['its living lords think the better of you']})});
     return {body,acts}}
-  act(a,arg,done){if(a!=='site-rest')return false;const [k,n]=String(arg).split(':'),g=this.members()[+n];if(!g)return true;
+  act(a,arg,done){if(a!=='site-rest')return false;const [k,n]=String(arg).split(':'),g=this.members()[+n];if(!g)return true;const why=Claims.guardWhy(g);if(why&&k!=='respect'){done(why+'.');return true}
     if(k==='pray'){G.site=null;g.pray();return true}
-    if(k==='take'){const got=g.take();done(got?'From '+g.who+': '+got+'.':'Nothing you can carry.');return true}
+    if(k==='take'){const got=g.take();done(got?'From '+g.who+': '+got+'.'+Claims.took(g):'Nothing you can carry.');return true}
     if((k==='here'||k==='plot')&&g.unburied){Grave.rest(g,null,k);G.site=null;G.mode='world';hidePanel();log('You bury '+g.who+(g.at?' in the family plot at '+g.at:' where they lay')+'.','gold','story');return true}
     if(k==='respect'&&g.crypt){g.respect();done('You pay your respects.');return true}return true}
   // (the places for the graves: each made once, kept where its graves are; its name)

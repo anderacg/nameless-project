@@ -4,10 +4,17 @@
    you can still use the town. Free for as long as you like where they know you (your own fief, your employer's holding,
    standing 30 or more); elsewhere the inn charges for each day, and sends you out when you cannot pay. Castles take no
    paying guests. A siege on the holding is the one thing that interrupts you. ---------- */
-// P.stay: {town, paidTo (world time the paid days run to), warned (siege seen)}
+// P.stay: {town, paidTo (world time the paid days run to), warned (siege seen), camp (your army's camp by the gate, {x, y}: none
+// when the holding has room for them)}
+/* camped by the gate (the owner, 2026-11-14: "add auto camp near holding for exceed case"): a holding with no room for your army
+   (world/gatefile.js roomFor: its kind's quarter) still takes you; your men pitch camp beside its gate (its ground nearest the gate,
+   off the roads, as big as your army needs: world/campsite.js spotNear; none: an open spot STAY_CAMP.off px to its side), drawn there with your banner, and the inn charges for you alone (STAY_BASE). Off: no stay */
+const STAY_CAMP={on:true,off:[30,10]};
 const STAY_FREE=30,STAY_BASE=5;
 const stayMen=()=>troopCount()+woundedN()+compsInBand().length;
-const stayCost=()=>STAY_BASE+Math.ceil(stayMen()/2);
+// (a day's lodging: you and your men inside; your army camped outside (t has no room for it, or your stay's camp): you alone)
+const stayOut=t=>t?STAY_CAMP.on&&!!roomFor(t,partySize()):!!(P.stay&&P.stay.camp);
+const stayCost=t=>stayOut(t)?STAY_BASE:STAY_BASE+Math.ceil(stayMen()/2);
 const stayFree=t=>t.owner==='player'||!!P.fac&&t.owner===P.fac||standingAt(t)>=STAY_FREE||t.name===P.home;// (where you began, a bed for nothing: world/start.js)
 const worldTime=()=>Clock.worldTime();// (clock.js)
 const stayTown=()=>P.stay&&townBy(P.stay.town);
@@ -26,21 +33,24 @@ function yourShelterWhy(t,cost){
 }
 const stayWhy=t=>P.shelterWhy(t);
 // the terms, for the button
-const stayTerms=t=>stayFree(t)?'free (they know you)':stayCost()+'g a day';
+const stayTerms=t=>(stayFree(t)?'free (they know you)':stayCost(t)+'g a day')+(stayOut(t)?', your army camped by its gate':'');
 const stayBtn=t=>{const why=stayWhy(t);return '<button class="btn" type="button" data-act="sy-stay" data-arg="'+t.name+'"'+(why?' disabled title="'+why+'"':'')+'>Stay, '+(why||stayTerms(t))+'</button>'};
 // the day your gold runs out at this rate
 const stayUntil=()=>Math.floor((P.stay.paidTo+Math.floor(P.gold/stayCost())*DAY)/DAY);
 function startStay(t){
   if(stayWhy(t))return false;const free=stayFree(t);
-  if(!free)P.gold-=stayCost();
-  P.stay={town:t.name,paidTo:worldTime()+DAY,warned:false};P.tx=null;G.chase=null;P.x=t.x;P.y=t.y;G.lastTown=t;
+  if(!free)P.gold-=stayCost(t);
+  const out=stayOut(t),g=gateGoal(t),camp=out?CampSite.spotNear(t,partySize())||Router.open(g.x+STAY_CAMP.off[0]*(P.x<t.x?-1:1),g.y+STAY_CAMP.off[1],g):null;CampSite.strike('you');if(camp)CampSite.pitch('you');else GateFile.start(P,t);
+  P.stay={town:t.name,paidTo:worldTime()+DAY,warned:false,...(camp?{camp:{x:Math.round(camp.x),y:Math.round(camp.y)}}:{})};P.tx=null;G.chase=null;P.x=t.x;P.y=t.y;G.lastTown=t;
   G.town=null;G.scene=null;G.mode='world';hidePanel();
-  log('Your band takes lodgings in '+t.name+(free?'. They will not take your coin.':' for '+stayCost()+' gold a day.'),'good');
+  log((camp?t.name+' has no room for your '+partySize()+' men: they pitch camp by its gate, and you take a bed inside':'Your band takes lodgings in '+t.name)+(free?'. They will not take your coin.':' for '+stayCost()+' gold a day.'),'good');
   updateHUD(true);return true;
 }
+// (your army's camp by the gate while you stay: its tents, fire and your banner, by their feet among everyone: render.js drawWorld)
+function stayCampEnts(ents,cam){const C=P.stay&&P.stay.camp;if(C)CampSite.draw(ents,cam,{key:'you',x:C.x,y:C.y,n:partySize(),banner:()=>P.banner(),seed:0})}
 // out of the gate (why: the message, if it was not your choice)
 function leaveStay(why,cls){
-  const t=stayTown();P.stay=null;if(t){heroAtGate(t);G.lastTown=t}G.encCool=2;P.tx=null;G.chase=null;
+  const t=stayTown(),out=!!P.stay?.camp;P.stay=null;CampSite.strike('you');if(t){heroAtGate(t);G.lastTown=t;if(!out)GateFile.out(P,t)}G.encCool=2;P.tx=null;G.chase=null;
   log(why||'You leave '+(t?t.name:'your lodgings')+' and take the road again.',cls||'');updateHUD(true);
 }
 // each moment inside: stay at the gate (unseen), recover, and watch for trouble; true if it opened a window

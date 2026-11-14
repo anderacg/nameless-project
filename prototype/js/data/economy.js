@@ -76,3 +76,7 @@ const PCV={hire:50,guard:12,upkeep:2,guardUp:1,max:6};
 const JOBS={farmer:{col:'#c8a24a',tool:'#d8c890'},herder:{col:'#8a6a3a',tool:'#a8783a'},woodcutter:{col:'#5a7a3a',tool:'#c9ced8'},miner:{col:'#6a6a7a',tool:'#9aa3ad'},fisher:{col:'#4a7aa8',tool:'#d8c890'}};
 const JOB_GOODS={farmer:['grain',4],herder:['meat',3],woodcutter:['timber',3],miner:['iron',2],fisher:['fish',4]};// (a miner and a fisher carry their holding's own catch: jobGood)
 const REFUGEE_WHY={crowded:'there is no room left for them',sacked:'their home was sacked',raided:'raiders burned their fields',hunger:'there is no food',siege:'the siege',hardship:'hard times',conquest:'new masters'};
+/* buying back (ui/trade.js Buyback; the owner, 2026-11-12: "let you buy things back in case player accidentally sold their items"):
+   what you sell from your bag, each kept by the market that bought it for days days, the last max of them (the oldest go first),
+   at the price it paid you (markup: a share more; 0, the same, so nothing is made or lost by it) */
+const BUYBACK={on:true,max:30,days:7,markup:0};

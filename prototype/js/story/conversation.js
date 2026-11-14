@@ -54,7 +54,7 @@ class LordSpeaker extends Speaker{
   get key(){return 'lord:'+this.o.id}
   name(){return this.o.name}
   realm(){return FACS[this.o.fac].n}
-  temper(){return this.o.temper||(this.o.temper=rngOf('talk').pick(TEMPERS))}
+  temper(){return lordTemper(this.o)}
   knowsTemper(){return insightLv()>=2||!!TalkMemory.all[this.key]?.temper}
   sub(){const l=this.o,f=FACS[l.fac];return cap1(lordWord(l))+' of the <span style="color:'+f.col+'">'+f.n+'</span>, leading '+l.troops.length+' soldiers (power '+l.power()+' vs your '+partyPower()+')'+(this.knowsTemper()?', '+this.temper():'')}
   // (his first words: what he holds against you first (a threat a month, a slight a week), else by his temper)

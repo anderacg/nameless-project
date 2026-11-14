@@ -70,7 +70,7 @@ function battleArmiesHtml(report){
     (R?'<p class="battle-rewards"><b>Your army earned:</b> '+(got.join(', ')||'<span class="muted">nothing</span>')+'</p>':'')}
 function renderLoot(){
   const V=G.lootView,L=G.loot;if(!V||!L)return;const n=L.pile.reduce((a,s)=>a+s.n,0),any=L.pile.some(lootRoom);
-  showPanel(V.head+battleReportHtml(V.report)+lootHtml(V.lost,V.saved)+(L.pile.length?'<div class="btns"><button class="btn primary" type="button" data-act="lt-all"'+(any?'':' disabled title="'+BAG_FULL+'"')+'>Take all you can carry</button></div>'+nav(null,['lt-leave',null,'Continue, leave '+n+' behind',null,true])
+  showPanel(V.head+battleReportHtml(V.report)+lootHtml(V.lost,V.saved)+(L.pile.length?'<div class="btns"><button class="btn primary" type="button" data-act="lt-all"'+(any?'':' disabled title="'+BAG_FULL+'"')+'>Take all you can carry</button></div>'+nav(null,['lt-leave',null,V.keep?'Leave '+n+' here':'Continue, leave '+n+' behind',null,true])
     :nav(null,[V.next,null,V.next==='back-town'?'Back to town':'Continue'])));
   fillIcons();updateHUD(true);
 }
@@ -84,6 +84,7 @@ function lootAct(a,arg){
   if(a==='lt-all'){for(const s of L.pile)take(s);L.pile=L.pile.filter(x=>x.n>0)}
   // (a quest item stays in the bag: bound, as a letter, whose record goes nowhere else)
   if(a==='lt-drop'){const s=P.inv[+arg];if(s&&!lootBound(s)){P.inv[+arg]=null;if(s.k==='gear')L.pile.push({k:'gear',id:s.id,n:1});else{const x=L.pile.find(p=>p.k===s.k&&p.id===s.id);if(x){x.n+=s.n;x.mine=(x.mine||0)+s.n}else L.pile.push({...s,mine:s.n})}}}
+  if(a==='lt-leave'&&V.keep)return act(V.next);// (the fallen's window: what is left stays on them, world/carcasses.js)
   if(a==='lt-leave'){const left=L.pile.map(s=>(s.n>1?s.n+' ':'')+itemDef(s).n.toLowerCase());if(left.length)log('You leave '+left.join(', ')+' behind.','bad');const next=V.next;lootEnd();return act(next)}
   renderLoot();
 }

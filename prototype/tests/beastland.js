@@ -9,6 +9,13 @@ Kit.suite(({ok,info})=>{
  const near=m=>Math.min(...t.TOWNS.map(h=>Math.hypot(h.x-m.x,h.y-m.y)));
  {const L=mon(),d=L.map(near),close=d.filter(v=>v<H*.5).length;ok(L.length>10&&!close,L.length+' beasts at the start, each '+Math.round(H*.5)+' px at least from every holding (nearest '+Math.round(Math.min(...d))+', median '+Math.round(d.sort((a,b)=>a-b)[d.length>>1])+'; '+H+' px wanted, half that at the last tries)')}
  {const n0=W.monsters.length;for(let i=0;i<20;i++)t.spawnMonster(false);const L=W.monsters.slice(n0);ok(L.length>10&&L.every(m=>near(m)>=H*.5),'and those that come later ('+L.length+')')}
+ // (a rare kind far out: a troll, a griffin, a wyrm rareK times as far, never nearer than monsterHold; the owner, 2026-11-13: "Griffin or
+ // rare monster should be spawn in far away")
+ {const S=t.WORLD_SCALE.spawn,rare=Object.keys(t.MONSTERS).filter(k=>!t.MONSTERS[k].mythic&&t.MONSTERS[k].w<=S.rare),rnd=Math.random,M=t.MONSTERS,w0={};
+  for(const k in M)if(!M[k].mythic){w0[k]=M[k].w;if(!rare.includes(k))M[k].w=0}
+  try{const n0=W.monsters.length;for(let i=0;i<24;i++)t.spawnMonster(false);const L=W.monsters.slice(n0),d=L.map(near),far=d.filter(v=>v>=H*S.rareK).length;
+   ok(L.length>10&&L.every(m=>rare.includes(m.id))&&d.every(v=>v>=H)&&far>=L.length*.75,L.length+' rare beasts ('+rare.join(', ')+'): '+far+' of them '+H*S.rareK+' px or more from every holding, every one '+H+' at least (nearest '+Math.round(Math.min(...d))+')')}
+  finally{for(const k in w0)M[k].w=w0[k];Math.random=rnd}}
  // (one at the border of a holding's land, drawn in: it stays out, wandering and hunting)
  {const h=t.TOWNS.find(z=>z.owner),m=W.monsters.find(x=>!t.MONSTERS[x.id].mythic);let edge=null;
   for(let r=2;r<60&&!edge;r++)for(let a=0;a<16&&!edge;a++){const x=h.x+Math.cos(a*Math.PI/8)*r*t.TILE,y=h.y+Math.sin(a*Math.PI/8)*r*t.TILE,x2=h.x+Math.cos(a*Math.PI/8)*(r+1)*t.TILE,y2=h.y+Math.sin(a*Math.PI/8)*(r+1)*t.TILE;

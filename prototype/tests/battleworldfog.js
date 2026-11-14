@@ -21,7 +21,7 @@ Kit.suite(({ok})=>{
   const during=picture();window.eval('B=null');t.WORLD_BATTLE.on=false;const normal=picture();t.WORLD_BATTLE.on=true;for(const u of out)delete u.left;
   ok(during.every((v,i)=>v===normal[i]),'battle and normal world fog produce identical mist, dimming and edge pixels for the same eyes');
  }finally{window.eval('B=window.__normalFogBattle');delete window.__normalFogBattle;t.WORLD_BATTLE.on=true;b.t+=.01;window.reducedMotion=reduced;if(desc)Object.defineProperty(performance,'now',desc);else delete performance.now;ctx.restore()}
- const radius=a.r,arc=ctx.arc,arcs=[];try{ctx.arc=function(x,y,r,...rest){arcs.push({r,dash:this.getLineDash().slice()});return arc.call(this,x,y,r,...rest)};a.draw()}finally{ctx.arc=arc}
- ok(arcs.some(p=>p.r===a.radius&&p.dash.length===2)&&a.r===radius,'yellow dashed movement boundary keeps its size and drawing');
+ /* (the ring drawn only with OPEN_FIGHT.ring on: a fight on the map is open, none round it, 2026-11-14; tests/openfights.js) */const radius=a.r,arc=ctx.arc,arcs=[],ring=t.OPEN_FIGHT.ring;t.OPEN_FIGHT.ring=true;try{ctx.arc=function(x,y,r,...rest){arcs.push({r,dash:this.getLineDash().slice()});return arc.call(this,x,y,r,...rest)};a.draw()}finally{ctx.arc=arc;t.OPEN_FIGHT.ring=ring}
+ ok(arcs.some(p=>p.r===a.radius&&p.dash.length===2)&&a.r===radius,'yellow dashed movement boundary keeps its size and drawing (its ring on)');
  t.fogReset();t.reveal();const count=t.seenSave(),before=JSON.stringify(a.sight());a.r*=3;t.reveal();ok(t.seenSave()===count&&JSON.stringify(a.sight())===before,'changing the movement boundary neither reveals land nor changes vision');a.r=radius;
 });

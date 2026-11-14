@@ -32,7 +32,7 @@ Kit.suite(({ok})=>{
   const m=t.asMonster({id,x:ash.x+150,y:ash.y,hx:ash.x+150,hy:ash.y,lv:2,n:3,t:0,a:0,cool:0});W.monsters.push(m);const n0=W.monsters.length,q=t.makeQuest('beast',ash);
   ok(q&&q.mon===id&&q.n===3&&!q.stage,'a pack by its fields: the job is that pack ('+id+')');q.accept();ok(m.qid===q.id&&W.monsters.length===n0,'taken: it is marked, and none is made');
   Kit.clear();P.quests=[];const q2=t.makeQuest('beast',ash);
-  if(q2){const M=t.MONSTERS[q2.mon];ok(q2.stage&&M.where.some(w=>t.habitatAt(q2.mx,q2.my).includes(w))&&tiles({x:q2.mx,y:q2.my},ash)>=7,'none: one has made its lair where such beasts live ('+t.habitatAt(q2.mx,q2.my).join('/')+'), 7 tiles out or more')}
+  if(q2){const M=t.MONSTERS[q2.mon];const H=t.WORLD_SCALE.spawn.monsterHold,near=Math.min(...t.TOWNS.filter(z=>!z.gone).map(z=>Math.hypot(z.x-q2.mx,z.y-q2.my)));ok(q2.stage&&M.where.some(w=>t.habitatAt(q2.mx,q2.my).includes(w))&&near>=H,'none: one has made its lair where such beasts live ('+t.habitatAt(q2.mx,q2.my).join('/')+'), far from every holding ('+Math.round(near/16)+' tiles from the nearest, '+H/16+' at least: the owner, 2026-11-13)')}
   else ok(true,'(no habitat for the land\'s beasts near Ashford)')}
  // ======== game: only where it grazes
  {Kit.clear();ok(t.makeQuest('hunt',ash)===null,'no game near: no hunt');

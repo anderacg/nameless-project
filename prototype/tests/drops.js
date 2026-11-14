@@ -6,7 +6,9 @@
 // what the field gave off the fight's own spoils and listed in its report; a group ranked up flashes; off (the tests' harness), nothing.
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,W=t.W;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;
- const D=t.DROPS,keep={on:D.on,loot:D.loot,coin:D.coin.chance,gear:D.gear};
+ const D=t.DROPS,keep={on:D.on,loot:D.loot,coin:D.coin.chance,gear:D.gear,carc:t.CARCASS.on};
+ // (the field's drops as they are with CARCASS off; on, a fight on the map leaves its things on the fallen: tests/carcasses.js)
+ t.CARCASS.on=false;
  const fight=()=>{Kit.world();P.troops={hum_foot:4};const band=t.asParty({kind:'bandits',x:P.x+20,y:P.y,troops:Array(4).fill('militia')});W.lords=[];W.patrols=[];W.monsters=[];t.bandits.length=0;t.bandits.push(band);
   G.enc={kind:'party',ref:band,list:band.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});const b=t.B;for(let i=0;i<600&&b.muster?.active;i++)t.updateBattle(.05);t.battlePause(false);// (the armies formed up, then begun)
   const h=b.hero,mine=b.units.filter(u=>u.team===0&&!u.hero&&!u.comp),foes=b.units.filter(u=>u.team===1);for(const f of foes){f.cd=99;f.s={...f.s,spd:0};f.hp=f.max=1e6}/* (none falls but as the test fells it) */return {b,h,mine,foes,d:t.BattleDrops.of(b)}};
@@ -40,7 +42,19 @@ Kit.suite(({ok})=>{
   // ---- one who left the field alive, or has not come onto it, leaves nothing (a review of the rules, 2026-11-11: the routed burst as the slain)
   {const {foes,d}=fight();t.leaveField(foes[0]);foes[1].hp=0;foes[1].waiting=true;d.step(.05);ok(!d.ground.length&&!d.orbs.length,'a foe gone from the field alive, and one not yet come onto it: nothing falls');
    foes[2].hp=0;d.step(.05);ok(d.ground.length>0,'one who fell there: his coins and gear');t.B=null;G.mode='world';Kit.clear()}
+  // ---- a beast leaves its hide or nothing, never coins nor gear (a hunted animal, a breed); at most DROPS.gears pieces of gear a fight
+  // (the 2026-11-13 balance)
+  {const {b,h,foes,d}=fight(),bt=Object.keys(t.ST).find(k=>t.ST[k].beast&&!Object.values(t.MONSTERS).some(m=>m.unit===k));
+   if(bt){const f=foes[0],ty=f.type;f.type=bt;d.ground=[];try{for(let i=0;i<20;i++)d.fall(f)}finally{f.type=ty}ok(!d.ground.some(g=>g.k==='gold'||g.k==='gear'),'a beast of no monster\'s own type ('+bt+') leaves no coins nor gear')}
+   d.ground=[];d.gears=0;for(let i=0;i<12;i++)d.fall(foes[i%foes.length]);ok(d.ground.filter(g=>g.k==='gear'&&!t.ITEMS[g.id].damaged).length===D.gears,'at most '+D.gears+' pieces of gear a fight, every man sure to drop his');t.B=null;G.mode='world';Kit.clear()}
+  // ---- damaged gear and junk (the owner, 2026-11-13: "make drops for junk gears / damaged gear"): now and then, at most worn.most a
+  // fight; a damaged piece is not the fight's gear (its end loot still comes)
+  {const {foes,d}=fight(),W=D.worn,kw={...W};try{D.gear=0;W.damaged=.5;W.junk=.5;d.ground=[];d.worn=0;for(let i=0;i<20;i++)d.fall(foes[i%foes.length]);
+    const dm=d.ground.filter(g=>g.k==='gear'),jk=d.ground.filter(g=>g.k==='mat');
+    ok(dm.length&&jk.length&&dm.every(g=>t.ITEMS[g.id].damaged)&&jk.every(g=>t.MATS[g.id].junk)&&dm.length+jk.length===W.most,'men leave damaged pieces and junk ('+dm.length+' damaged, '+jk.length+' junk: '+[...new Set(d.ground.filter(g=>g.id).map(g=>(t.ITEMS[g.id]||t.MATS[g.id]).n))].slice(0,4).join(', ')+'), '+W.most+' at most a fight');
+    const g0=d.tally.gear;d.gain(dm[0]);d.gain(jk[0]);ok(d.tally.gear===g0&&d.tally.names.includes(t.ITEMS[dm[0].id].n)&&d.tally.mats[jk[0].id]===1,'taken: in the report\'s list, but not the fight\'s gear (its end loot still comes)')}
+   finally{Object.assign(W,kw);D.gear=1}t.B=null;G.mode='world';Kit.clear()}
   // ---- off: nothing falls
   {D.on=false;const {b,h,foes,d}=fight(),f=foes[0];f.hp=0;run(5);ok(!d.ground.length&&!d.orbs.length,'off (the tests\' harness): nothing falls');t.B=null;G.mode='world';Kit.clear()}
- }finally{D.on=keep.on;D.loot=keep.loot;D.coin.chance=keep.coin;D.gear=keep.gear}
+ }finally{D.on=keep.on;D.loot=keep.loot;D.coin.chance=keep.coin;D.gear=keep.gear;t.CARCASS.on=keep.carc}
 });

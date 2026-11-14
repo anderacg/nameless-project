@@ -6,7 +6,8 @@ Kit.suite(({ok})=>{
  const workers=[make('worker-world-1',0),make('worker-world-2',8)];W.folk=workers;P.troops={hum_foot:2};P.comps={};Kit.goTo(workers[0].x-12,workers[0].y);t.frame();
  const pixels=s=>Array.from(s.getContext('2d').getImageData(0,0,s.width,s.height).data).join(','),looks=new Map(),positions=new Map();
  for(const f of workers){const L=t.workerAppearance(f),draw=t.ctx.drawImage,images=[];const ents=[];f.draw(ents,{x:P.x-50,y:P.y-50},t.vis());try{t.ctx.drawImage=function(s,...args){images.push(s);return draw.call(this,s,...args)};ents.forEach(e=>e.f())}finally{t.ctx.drawImage=draw}
-  const expected=t.unitSprite(L.type,0,false,L.v,0,false,false,L.tint);ok(images.includes(expected),f.id+': world worker draws its actual battle unit sprite');looks.set(f,pixels(expected));positions.set(f,{x:f.x,y:f.y});
+  // (dressed for the land he stands in, as the map draws him: data/dress.js FOLK_DRESS, sprites.js dressedIn)
+  const expected=t.dressedIn(t.dressClimAt(f.x,f.y),()=>t.unitSprite(L.type,0,false,L.v,0,false,false,L.tint));ok(images.includes(expected),f.id+': world worker draws its actual battle unit sprite');looks.set(f,pixels(expected));positions.set(f,{x:f.x,y:f.y});
  }
  const guards=t.estateGuards(town,k),list=workers.map(f=>t.recruitKind(town,f)).concat(guards),view={x:G.cam.x,y:G.cam.y,z:t.VS,vw:t.VW,vh:t.VH};
  t.robFight(town,workers[0],{ws:workers,gs:guards,list});const e=G.enc;ok(e.kind==='villagers'&&t.worldBattleEligible({tournament:false}),'worker resistance selects world combat');

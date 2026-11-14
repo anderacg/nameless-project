@@ -29,7 +29,7 @@ const areaShort=n=>{const w=n.split(' ');return w.length>1?cap1(w[w.length-1]):n
 function estateRail(o,tab,w,key){const t=townBy(o.town),lv=bldLv(t,o.k);
   // (your gold only on an estate of yours, where building it up costs some: on another's, nothing there is paid in gold)
   const mine=t.owner==='player';
-  showRail({head:{act:['es-tab','home'],on:!tab,fac:t.owner,name:ESTATES[o.k].n,sub:(lv?'Level '+lv:'Not built')+', '+ownerTag(t),back:!!tab,gold:mine},label:'Estate of '+t.name,gold:mine,...w,
+  showRail({head:{act:['es-tab','home'],on:!tab,fac:t.owner,name:ESTATES[o.k].n,sub:(lv?'Level '+lv:'Not built')+', '+ownerTag(t),back:!!tab},label:'Estate of '+t.name,gold:mine,...w,
     items:estateMenus(o).map(([k,n,ico])=>({act:'es-tab',arg:k,ico,n,short:areaShort(n),on:k===tab}))},'est:'+t.name+':'+o.k+':'+(tab||'')+':'+(key||''));
 }
 function estateMeet(o){

@@ -190,7 +190,7 @@ function typeHtml(e){const bt=e.btype;
   return canSpring(e)?'<p class="muted">There is cover here: you can lie in wait beside the road and spring an ambush on them as they pass.</p>':''}
 // (Spring an ambush: your band hidden beside the road, theirs on it in march order; no deployment for either)
 onAct('bt-',a=>{const e=G.enc;if(a==='bt-spring'&&e&&G.mode==='dialog'&&canSpring(e)){e.btype={kind:'ambush',hid:0};if(WORLD_BATTLE.on)e.aware=TravelAwareness.level(e.ref?.src||e.ref);startBattle({enemies:e.list,tournament:false,lv:e.lv||1,deploy:false})}});
-function startEncounter(e){
+function startEncounter(e){if(B&&G.mode==='battle')return false;// (none while a fight goes on: the world runs on round one on the map, worldbattle.js openFightWorld)
   if(e.mine==null)e.mine=!!G.youAttack;G.youAttack=false;if(e.lv==null&&e.ref&&e.ref.ld)e.lv=chiefLv(e.ref);// did you start it (you may call that off)? a chieftain's band fights at its level
   if(e.btype==null){const bt=battleTypeFor(e);if(bt)e.btype=bt}// (a battle type: none with terrain off)
   e.list=e.list||makeEnemies(e.n,e.kind==='camp',e.band);const env=battleEnv(),wx=Weather.battleText(env.w),ground='<p class="muted">Battleground: '+env.name+'. '+terrainEnvText(env,e.kind,e.btype)+(wx?' '+wx:'')+'</p>',band=BANDS[e.band||'bandits'];G.enc=e;G.mode='dialog';P.tx=null;G.chase=null;
@@ -202,6 +202,7 @@ function startEncounter(e){
   // the garrison sallies: beside you when you fight a holding's besiegers, against you when an army comes to relieve your siege
   if(!given&&e.kind==='lord'){const t=townBy(e.ref.tgt);if(t&&t.gar>0){if(e.ref.state==='siege'&&!hostileTo(t.owner)&&t.owner!=='player')e.allies.push(garrisonForce(t));else if(e.ref.state==='relieve'&&mySiege(t))e.foes.push(garrisonForce(t))}}
   alignReinforcements(e);
+  if(seamless(e)){hidePanel();return startBattle({enemies:e.list,tournament:false,lv:e.lv||1,deploy:false})}Talk.clear();// (begun at once, no window: SEAMLESS; held and chosen Talk: its window, Talk)
   const inside=Interior.on(e)&&e.inside,mine=inside?Interior.list(inside):playerList();// (inside a cave: only those who went in, battle/interior.js)
   const ratio=(power(e.list)*lvPow(e.lv)+power(lordTroops(e.foes)))/(power(mine)+power(lordTroops(e.allies))),threat=ratio<.6?'Easy':ratio<1?'Even':ratio<1.5?'Risky':'Deadly';
   const vm=vitals(),hurt=reinfHtml(e)+(P.hp<vm[0]*.6?'<p class="bad">You are wounded: '+Math.round(P.hp)+' / '+vm[0]+' health. Rest at an inn or travel to recover.</p>':''),cls=ratio<.6?'good':ratio<1?'gold':'bad',vs='Your power <strong>'+(inside?rating(mine):partyPower())+'</strong> vs <strong>'+rating(e.list,e.lv)+'</strong>, threat <strong class="'+cls+'">'+threat+'</strong>',lord=e.kind==='lord'&&e.ref,f=lord&&FACS[lord.fac];

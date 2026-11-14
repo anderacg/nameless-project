@@ -26,7 +26,7 @@ try{
   before=snap();ok(!service.chooseFinisher('push').ok&&snap()===before,'a finisher cannot be chosen before its discipline is ready');ready=true;
   ok(!service.chooseFinisher('constructor').ok&&service.chooseFinisher('push').ok&&!service.chooseFinisher('stun').ok&&owner.fin==='push','only a defined finishing style can be chosen, and only once');
   ok(JSON.stringify(P)===globalBefore,'the injected talent service does not touch the live hero');
-  t.begin('soldier');G.quietEvents=true;const live=t.talentsOf(P);P.level=4;['oneh_str','oneh_p1','oneh_p2','oneh_whirl'].forEach(id=>t.takeNode(id));P.gold=1000;
+  t.begin('soldier');G.quietEvents=true;const live=t.talentsOf(P);P.level=5;P.sk.oneh.lv=Math.max(P.sk.oneh.lv,10);['oneh_str','oneh_p1','oneh_p2','oneh_whirl'].forEach(id=>t.takeNode(id));P.gold=1000;
   G.mode='world';G.modal=false;t.hidePanel();t.openSkills('talents');t.act('tree-prof','oneh');t.act('tree-sel','oneh_whirl');
   const refund=document.querySelector('[data-act="tree-refund"][data-arg="oneh_whirl"]');ok(refund&&!refund.disabled===live.quoteRefund('oneh_whirl').ok,'the refund button uses service eligibility');
   before=JSON.stringify({tree:P.tree,gold:P.gold});t.act('tree-take','missing');t.act('tree-refund','missing');t.act('tree-take','oneh_dash');
@@ -34,7 +34,7 @@ try{
   t.act('sk-close');t.saveGame(true);const saved=JSON.stringify({tree:P.tree,slots:P.slots});t.begin('hedge');
   ok(t.talentsOf(P)===live&&live.root()==='o_hedge'&&!live.knows('whirl'),'the cached service sees the new campaign origin and empty skill bar');
   t.loadGame();ok(t.talentsOf(P)===live&&JSON.stringify({tree:P.tree,slots:P.slots})===saved&&live.root()==='o_soldier','loading restores talents through the same live service');
-  P.comps={brann:{ap:3,role:''}};const c=t.compInit('brann'),ch=t.charOf(c,'brann');t.charKit(ch);c.lv=(c.lv||0)+1;
+  P.comps={brann:{ap:3,role:''}};const c=t.compInit('brann'),ch=t.charOf(c,'brann');t.charKit(ch);c.lv=(c.lv||0)+t.TREE_COST.a;
   const id=t.treePendingOf(c)[0]&&'oneh_third',heroTree=JSON.stringify(P.tree),gold=P.gold;
   ok(id&&t.takeNodeOf(c,id,true)&&t.treeHasOf(c,id)&&JSON.stringify(P.tree)===heroTree,'a companion\'s points are its own, by its own level ('+id+')');
   ok(t.refundNodeOf(c,id)&&P.gold===gold-t.refundCost()&&JSON.stringify(P.tree)===heroTree,'companion refunds use the shared purse without changing the hero tree');

@@ -195,6 +195,9 @@
 .tw-lv{font-size:12px;fill:#8a8270}.tw-sec.on .tw-lv{fill:#e8b94a}
 .tw-group{font:italic 700 22px Georgia,'Times New Roman',serif;fill:#5a5040;letter-spacing:.06em}
 .tp-node.far{opacity:.38}.tp-node.far .tp-name{display:none}.tp-link.far{opacity:.35}
+/* (the slices not shown, and the whole wheel: plain shapes, no glow or shadow to paint: ui/talents.js treeSvg) */
+.tp-node.far .tp-body,.tp-link.far,.tw.whole .tp-body,.tw.whole .tp-link{filter:none}
+.tp-glyph{opacity:1}.tp-node.locked .tp-glyph{opacity:.45}.tp-node.wait .tp-glyph{opacity:.75}
 .tw .tp-name{font-size:15px;stroke-width:5px}.tw .tp-glyph{font-size:15px}.tw.whole .tw-sec text{font-size:13px}.tw.whole .tw-sec.on text{font-size:16px}
 .tp-node.bonus .tp-body{stroke-width:2}.tp-node.bonus.have .tp-body{filter:drop-shadow(0 0 4px #e8b94acc)}
 .tp-roottext{font-size:13px}
@@ -213,3 +216,11 @@
   .tr-pane small{font-size:12px}.tr-pane h3{font-size:20px}.tr-pane p{font-size:15px}.tr-pane .btn{align-self:stretch;justify-content:center;font-size:15px;min-height:40px}}
 @container ovl (max-height:430px){.fb-tree-switch{padding:3px 6px}.fb-tree-switch .btn{min-height:28px}}
 @container ovl (max-height:430px){.fb-tree-head{padding:4px 8px}.fb-tree-head small{display:none}}
+/* Spacing (the owner, 2026-11-13: "reassess the menu margin for each sections and make sure that all follows the same"): one rhythm
+   in every field-book window: 8px within a group (a heading to what it heads, a field to its buttons, one row of buttons to the next),
+   12px between the groups of a section, 16px before a section's label */
+.fb-shell{--fb-s:8px;--fb-m:12px;--fb-l:16px}
+.fb-shell .lab{margin:var(--fb-l) 0 var(--fb-s)}.fb-shell .lab:first-child{margin-top:0}
+.fb-shell .fb-details>h3{margin:var(--fb-m) 0 var(--fb-s)}.fb-shell .fb-details>:is(.btn,.btns)+p{margin-top:var(--fb-s)}
+.fb-shell .army-editor>*+*{margin-top:var(--fb-s)}.fb-shell .army-editor>:is(.fb-edit-actions,.fb-details){margin-top:var(--fb-m)}.fb-shell .army-editor>.btns{margin-bottom:0}.fb-shell .army-editor :is(.btns,.fb-edit-actions){gap:var(--fb-s)}
+.fb-shell .fb-condition-tags:empty{display:none}.fb-shell .fb-condition-facts+.fb-note{margin-top:var(--fb-m)}

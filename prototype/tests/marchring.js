@@ -10,6 +10,10 @@
 Kit.suite(({ok,info})=>{
  const t=T,P=t.P,G=t.G,W=t.W,I=t.WORLD_BATTLE.interaction,K=t.MARCH_RING,TILE=t.TILE;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
  const home=Kit.goHome('Ashford');Kit.goTo(home.x+240,home.y+200);const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE);
+ // (ring mode: the rings drawn only with MARCH_RING.draw (the console's; the owner, 2026-11-13: "the army rings on the map only draw
+ // when ring mode is on"); off, nothing drawn, its outline kept for a click on its ground)
+ {const was=K.draw;try{K.draw=false;const a=t.MarchArmy.of(P);a.sync();a.ring=null;const E=[];t.marchCircle(E,P,{x:0,y:0},undefined,undefined,a);const E2=[];t.marchCircle(E2,P,{x:0,y:0});
+   K.draw=true;const E3=[];t.marchCircle(E3,P,{x:0,y:0},undefined,undefined,a);ok(!E.length&&!E2.length&&!!a.ring&&E3.length===1,'ring mode off: no ring drawn (its outline kept for the rules); on: drawn')}finally{K.draw=was}}
  for(let y=ty-20;y<=ty+20;y++)for(let x=tx-20;x<=tx+25;x++)if(t.WM.has(x,y)){const i=y*t.MW+x;t.WM.kind[i]=t.T_OPEN;t.WM.edge[i]=0;t.WM.elev[i]=64}
  const x0=P.x,y0=P.y,ring=a=>a.ring||(a.ring=new t.MarchOutline()),fresh=()=>{Object.assign(P,{x:x0,y:y0});t.MARCH_ARMIES.delete(P);return t.MarchArmy.of(P)};
  const lead=o=>t.MARCH_MOVE.lead[0]+t.MARCH_MOVE.lead[1]*t.moveStep(t.marchPace(o),1)*t.MARCH_MOVE.road;

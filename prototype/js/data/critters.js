@@ -11,14 +11,18 @@ const WILDLIFE_AWARE={cover:.6,switch:.8};
 const CRITTER_WOODS={keep:.3};
 // (rare: {habitat: share}: a spot of that habitat kept only that share of the time when one is placed: reindeer and snow hares mostly
 // in the snowy woods, some on the open snow. w: how often a kind is placed, against the others: hares are few)
+// a hunted animal's figure in a battle (gfx/sprites.js wildKind): on, its battle figure (engine/wildlife.js, the owner, 2026-11-12: "make
+// wildlife sprite a battle sprite too": shaded, outlined, walking, running and dying as the beasts do, at its real size); off, its map
+// figure, as before
+const WILD_ART={on:true};
 const CRITTERS={
   rabbit:{n:'Rabbits',one:'rabbit',where:['grass','forest'],herd:[2,4],meat:1,mat:['rabbitfur',.5],xp:2,spd:30,shy:50,w:4,size:1,col:'#b8a088'},
-  deer:{n:'Deer',one:'deer',where:['forest','grass'],herd:[2,4],meat:4,mat:['hide',.6],xp:5,spd:40,shy:70,w:3,size:2,col:'#a0683a'},
-  stag:{n:'Stag',one:'stag',where:['forest','hills'],herd:[1,1],meat:6,mat:['antler',.8],xp:12,spd:44,shy:80,w:1.2,size:3,col:'#8a5a30',antlers:true},
-  ibex:{n:'Mountain goats',one:'mountain goat',where:['hills'],herd:[2,3],meat:3,mat:['hide',.4],xp:4,spd:34,shy:60,w:2,size:2,col:'#d8d0c0',horns:true},
-  reindeer:{n:'Reindeer',one:'reindeer',where:['frost','snowwood'],rare:{frost:.3},herd:[3,5],meat:5,mat:['antler',.4],xp:6,spd:38,shy:70,w:3,size:2,col:'#7a6a5a',antlers:true},
+  deer:{n:'Deer',one:'deer',where:['forest','grass'],herd:[2,4],meat:3,mat:['hide',.6],xp:5,spd:40,shy:70,w:3,size:2,col:'#a0683a'},
+  stag:{n:'Stag',one:'stag',where:['forest','hills'],herd:[1,1],meat:4,mat:['antler',.8],xp:12,spd:44,shy:80,w:1.2,size:3,col:'#8a5a30',antlers:true},
+  ibex:{n:'Mountain goats',one:'mountain goat',where:['hills'],herd:[2,3],meat:2,mat:['hide',.4],xp:4,spd:34,shy:60,w:2,size:2,col:'#d8d0c0',horns:true},
+  reindeer:{n:'Reindeer',one:'reindeer',where:['frost','snowwood'],rare:{frost:.3},herd:[3,5],meat:3,mat:['antler',.4],xp:6,spd:38,shy:70,w:3,size:2,col:'#7a6a5a',antlers:true},
   hare:{n:'Snow hares',one:'snow hare',where:['frost','snowwood'],rare:{frost:.3},herd:[2,3],meat:1,mat:['rabbitfur',.6],xp:2,spd:32,shy:50,w:.8,size:1,col:'#eef3f8'},
-  gazelle:{n:'Gazelles',one:'gazelle',where:['desert'],herd:[2,4],meat:3,mat:['hide',.4],xp:5,spd:48,shy:85,w:3,size:2,col:'#d0a060',horns:true},
+  gazelle:{n:'Gazelles',one:'gazelle',where:['desert'],herd:[2,4],meat:2,mat:['hide',.4],xp:5,spd:48,shy:85,w:3,size:2,col:'#d0a060',horns:true},
   fowl:{n:'Marsh fowl',one:'marsh fowl',where:['swamp'],herd:[3,6],meat:1,mat:null,xp:2,spd:28,shy:45,w:3,size:1,col:'#6a7a5a',bird:true},
   cow:{n:'Cattle',one:'cow',live:true,herd:[2,4],meat:8,spd:12,size:3,col:'#e8e4d0',spots:'#3a2a20',horns:true},
   sheep:{n:'Sheep',one:'sheep',live:true,herd:[3,6],meat:4,spd:12,size:2,col:'#eeeae0',wool:true},

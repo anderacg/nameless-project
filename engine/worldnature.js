@@ -677,7 +677,10 @@
     oxbow:{reach:1.6,green:[74,126,50],k:.35,reeds:.9,bush:.25,flowers:.2,pads:.35},
     spring:{reach:1.4,green:[80,134,52],k:.45,reeds:.8,bush:.2,flowers:.5,pads:0},
     tarn:{reach:1.6,green:[132,132,126],k:.18,stone:.5,scree:.9,ice:[.8,.5]},
-    pool:{reach:1.4,green:[56,84,44],k:.35,reeds:1,moss:.6,pads:.8}};
+    pool:{reach:1.4,green:[56,84,44],k:.35,reeds:1,moss:.6,pads:.8},
+    // (in the frost (the owner, 2026-11-12: "why green in snow when neighbor tiles is also snow"): any pond's ring the snow's own, wet
+    //  and trodden, not a meadow's green, and its water iced as a tarn's; a tarn keeps its own grey)
+    frost:{green:[168,182,196],k:.24,ice:[.8,.5]}};
   // (the climates' covers read as weights (a hill's palette and details, a wood's floor): each other climate's (the frost's the
   // snow's) from 0 at cover lo to 1 at hi, the grass's the rest)
   PX.WN_BLEND={lo:.25,hi:.75};
@@ -825,7 +828,7 @@
     //  too, there only toned (a holding's yard over it takes its colour: no square of bare land where a lot stands, the owner,
     //  2026-10-23); its things (palms, tufts) keep off clear ground; a frost tarn's water iced in plates)
     if(P.RG){const RN=PX.WN_RING,GN=noiseF(W,H,RN.n,P.seed*977+140);
-      for(const q of P.RL){const Rn=RN[q.kind],e=(q.r+q.reach)*ts,cx=q.x*ts,cy=q.y*ts;if(cx+e<wx0||cx-e>=wx1||cy+e<wy0||cy-e>=wy1)continue;const G=Rn.green,ice=Rn.ice&&cAt(q.x|0,q.y|0)==='frost';
+      for(const q of P.RL){const Rn0=RN[q.kind],e=(q.r+q.reach)*ts,cx=q.x*ts,cy=q.y*ts;if(cx+e<wx0||cx-e>=wx1||cy+e<wy0||cy-e>=wy1)continue;const fr=cAt(q.x|0,q.y|0)==='frost',Rn=fr&&q.kind!=='tarn'&&RN.frost?RN.frost:Rn0,G=Rn.green,ice=fr&&Rn.ice;
         for(let Y=Math.max(wy0,Math.floor(cy-e));Y<Math.min(wy1,Math.ceil(cy+e));Y++)for(let X=Math.max(wx0,Math.floor(cx-e));X<Math.min(wx1,Math.ceil(cx+e));X++){const d=Math.hypot(X+.5-cx,Y+.5-cy)/ts-q.r;if(d>q.reach)continue;const i=at(X,Y);
           // (frozen: ice over all of the water as drawn, a few cracks in it, open water left in thin leads)
           if(wetP(X,Y)){if(ice&&!CLR.at(X,Y)){const m=GN(X+57,Y+23),cr=Math.abs(m-Rn.ice[1]);if(cr>.02){mixD(i,cr<.05?[150,176,204]:[226,236,246],Rn.ice[0]);touch(i,2)}}continue}

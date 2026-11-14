@@ -8,18 +8,24 @@ class TalentService{
   root(){const id=this.rules.root();return id&&this.has(id)?id:'start'}
   knows(id){const S=this.skillDef(id);return !!S&&(!S.learn||this.has(S.learn))}
   /* the round tree (data/tree.js TREE_RING, PROF_TREE, TREE_PATH; the owner, 2026-11-08, Skyrim's way): skill points, LEVEL.pts each
-     level of the character's, spent on any of its nodes; no milestone: a node opens once a node linked to it is learned (a path's first
-     pair at once: entry). What a node gives grows with its proficiency's level (treeScale: state.js tmOf) */
+     level of the character's, spent on any of its nodes, each its cost by kind (2026-11-13, the owner: "make skill harder to unlock":
+     TREE_COST); a node opens once a node linked to it is learned (a path's first pair at once: entry) and its proficiency has reached
+     its tier's level (TREE_GATE). What a node gives grows with its proficiency's level (treeScale: state.js tmOf) */
   profLv(k){const s=this.owner.sk&&this.owner.sk[k];return s?s.lv:0}
   reached(id){const N=this.node(id);return !!N&&!!N.prof}
   // (its tier's nodes, of proficiency k; how many of them it has)
   trees(){return this.rules.trees?this.rules.trees():PROF_TREE}
   tierHas(k,t){const R=this.trees(),T=R[k]&&R[k][t];return T?T.filter(([id])=>this.has(id)).length:0}
-  // its points: earned (its level × LEVEL.pts), spent (the trees' nodes it has; an origin is free), left
-  points(){const earned=Math.max(0,(this.owner.level??this.owner.lv??0)|0)*LEVEL.pts,spent=(this.owner.tree||[]).filter(id=>{const N=this.node(id);return N&&N.prof}).length;return{earned,spent,left:Math.max(0,earned-spent)}}
+  // (what a node costs, by its kind: rules.costs, data/tree.js TREE_COST; an origin free; and the level of its proficiency its tier
+  // waits for: rules.gates, TREE_GATE, a bonus node its tier below's)
+  cost(id){const N=this.node(id),C=this.rules.costs;return N&&N.prof?C&&C[N.t]||1:0}
+  gate(id){const N=this.node(id),L=this.rules.gates;return N&&N.prof&&L?L[Math.min(N.tier,L.length-1)]||0:0}
+  gated(id){const N=this.node(id);return !!N&&this.profLv(N.prof)<this.gate(id)}
+  // its points: earned (its level × LEVEL.pts), spent (the trees' nodes it has, each its cost), left
+  points(){const earned=Math.max(0,(this.owner.level??this.owner.lv??0)|0)*LEVEL.pts,spent=(this.owner.tree||[]).reduce((a,id)=>a+this.cost(id),0);return{earned,spent,left:Math.max(0,earned-spent)}}
   // (linked to one learned, or a path's first pair)
   reach(id){const N=this.node(id);return !!N&&!!N.prof&&(!!N.entry||(N.links||[]).some(l=>this.has(l)))}
-  canTake(id){return !this.has(id)&&this.reach(id)&&this.points().left>0}
+  canTake(id){return !this.has(id)&&this.reach(id)&&!this.gated(id)&&this.points().left>=this.cost(id)}
   // (unlearned, nothing left hanging: every other node learned still reached from the middle without it)
   canRefund(id){const N=this.node(id);if(!N||!N.prof||!this.has(id))return false;const L=(this.owner.tree||[]).filter(x=>x!==id&&this.node(x)?.prof),seen=new Set(L.filter(x=>this.node(x).entry)),q=[...seen];
     while(q.length){const x=q.pop();for(const l of this.node(x).links||[])if(L.includes(l)&&!seen.has(l)){seen.add(l);q.push(l)}}return seen.size===L.length}
@@ -72,7 +78,7 @@ class TalentService{
 const TALENTS=new WeakMap();
 function talentsOf(o){
   let service=TALENTS.get(o);if(!service){service=new TalentService(o,{nodes:TREE,skills:()=>HSKILLS,root:()=>o===P?o.origin:'start',slotCount:10,
-    wallet:P,refundCost:()=>15*P.level,ai:()=>['lord','chieftain'].includes(charRole(o)),effect:k=>tmOf(o,k),finisher:o===P?{styles:()=>FIN_STYLE,ready:()=>finReady()}:null});TALENTS.set(o,service)}return service;
+    wallet:P,refundCost:()=>15*P.level,costs:TREE_COST,gates:TREE_GATE,ai:()=>['lord','chieftain'].includes(charRole(o)),effect:k=>tmOf(o,k),finisher:o===P?{styles:()=>FIN_STYLE,ready:()=>finReady()}:null});TALENTS.set(o,service)}return service;
 }
 // Shorthand commands also serve character AI; presentation stays outside the service itself.
 const knowsOf=(o,id)=>talentsOf(o).knows(id),treeHasOf=(o,id)=>talentsOf(o).has(id),treeRootOf=o=>talentsOf(o).root();

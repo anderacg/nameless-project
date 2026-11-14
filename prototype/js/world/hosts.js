@@ -64,17 +64,22 @@ class Host{
   // one ahead of it, HOSTS.gap px between them; the leader's 0)
   back(o){let s=0,a=this.lead;for(const m of this.members){s+=hostRing(a)+hostRing(m)+HOSTS.gap;if(m===o)return s;a=m}return o===this.lead?0:s}
   // (every member's place: back along the trail from the leader, each where its ring stands HOSTS.gap px clear of the ring of the
-  // place ahead of it, straight, so round a bend too; one lagging behind its place holds those behind it back past it; the trail
+  // place ahead of it, straight, so round a bend too; one lagging behind its place holds those behind it back past it, more the more
+  // it lags past HOSTS.lagTol (2026-11-14, the owner: "lord army still moving back and forth": it was all at once past lagTol, so a
+  // place behind jumped back and forward again as the one ahead lagged and caught up); the trail
   // shorter, on past its oldest point the way it went, none yet: straight back from the leader toward the member)
   places(){
     const L=this.lead,at0=marchPoint(L),lx=at0.x,ly=at0.y,t=Host.trailOf(L),pts=[{x:lx,y:ly}];for(let k=t.length-1;k>=0;k--){const q=pts.at(-1);if(Math.hypot(t[k][0]-q.x,t[k][1]-q.y)>1e-6)pts.push({x:t[k][0],y:t[k][1]})}
     const out=new Map();let i=0,c=pts[0],prev=pts[0],a=L;
-    for(const m of this.members){const need=hostRing(a)+hostRing(m)+HOSTS.gap,far=a!==L?Math.hypot(a.x-lx,a.y-ly):0,lag=far>Math.hypot(prev.x-lx,prev.y-ly)+HOSTS.lagTol?far+need:0;
-      const ok=p=>Math.hypot(p.x-prev.x,p.y-prev.y)>=need&&Math.hypot(p.x-lx,p.y-ly)>=lag;let place=null;
-      while(!place){let r=pts[i+1],end=!r;if(end){const q=pts[i-1]||{x:lx,y:ly},u=i||c!==pts[0]?{x:c.x-q.x,y:c.y-q.y}:{x:m.x-lx,y:m.y-ly},d=Math.hypot(u.x,u.y)||1,k=need+lag+Math.hypot(c.x-prev.x,c.y-prev.y)+Math.hypot(c.x-lx,c.y-ly)+1;
-          r=i||Math.hypot(u.x,u.y)>1e-6?{x:c.x+u.x/d*k,y:c.y+u.y/d*k}:{x:c.x-k,y:c.y}}
-        if(!ok(r)&&!end){c=r;i++;continue}let lo=0,hi=1;const at=s=>({x:c.x+(r.x-c.x)*s,y:c.y+(r.y-c.y)*s});if(ok(c))hi=0;else for(let n=0;n<30;n++){const s=(lo+hi)/2;if(ok(at(s)))hi=s;else lo=s}
-        place=at(hi);c=place}
+    for(const m of this.members){const need=hostRing(a)+hostRing(m)+HOSTS.gap,far=a!==L?Math.hypot(a.x-lx,a.y-ly):0;
+      // (its place with no one lagging; then, the one ahead lagging past lagTol, as much farther from the leader as it lags past it)
+      const find=lag=>{let j=i,cc=c,place=null;const ok=p=>Math.hypot(p.x-prev.x,p.y-prev.y)>=need&&Math.hypot(p.x-lx,p.y-ly)>=lag;
+        while(!place){let r=pts[j+1],end=!r;if(end){const q=pts[j-1]||{x:lx,y:ly},u=j||cc!==pts[0]?{x:cc.x-q.x,y:cc.y-q.y}:{x:m.x-lx,y:m.y-ly},d=Math.hypot(u.x,u.y)||1,k=need+lag+Math.hypot(cc.x-prev.x,cc.y-prev.y)+Math.hypot(cc.x-lx,cc.y-ly)+1;
+            r=j||Math.hypot(u.x,u.y)>1e-6?{x:cc.x+u.x/d*k,y:cc.y+u.y/d*k}:{x:cc.x-k,y:cc.y}}
+          if(!ok(r)&&!end){cc=r;j++;continue}let lo=0,hi=1;const at=s=>({x:cc.x+(r.x-cc.x)*s,y:cc.y+(r.y-cc.y)*s});if(ok(cc))hi=0;else for(let n=0;n<30;n++){const s=(lo+hi)/2;if(ok(at(s)))hi=s;else lo=s}
+          place=at(hi);cc=place}return{place,j,cc}};
+      let f=find(0);const over=far-Math.hypot(prev.x-lx,prev.y-ly)-HOSTS.lagTol;if(over>0)f=find(Math.hypot(f.place.x-lx,f.place.y-ly)+over);
+      const place=f.place;i=f.j;c=f.cc;
       out.set(m,place);prev=place;a=m}
     return out}
   // a member's place (places)

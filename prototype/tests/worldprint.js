@@ -751,7 +751,65 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  B2 4df790ec; checked: with MONSTER_BREEDS.on false they are those again, and W1-W6 hold either way)
 // Merge 2026-11-12: keep the requested hidden holding banners and HUD map geometry (W6), alongside the remote
 // monster-breed and siege/save baselines (W7, W8, B2). Targeted combined world/view checks verify W1-W6.
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e41c',W6:'6d45a75b',W7:'311da16e',W8:'c590650a',B2:'ba5f45e6'};
+// (W6 re-recorded 2026-11-12, on purpose: the owner, "make territory boundaries not look squared": the land's borders lines through its
+//  tiles' edges' middles, cut at 45° where a tile stands out at a corner, the tint cut the same (world/territory.js LandArt,
+//  data/world.js LAND_SMOOTH); the three spots show borders. Was d9d0c82c; checked: with LAND_SMOOTH.on false it is d9d0c82c again,
+//  and W1-W5, W7, W8 and B2 hold either way)
+// (W6 again after merging the two, 2026-11-12: the hidden banners and HUD geometry, and the smooth borders, both on the three spots.
+//  Measured here: origin/codex alone (1dfa38a) gives 81e7015b, not its 6d45a75b (recorded on another machine?); merged with
+//  LAND_SMOOTH.on false it is 81e7015b too, so the borders are all this side adds; on, d598257f)
+// (W5, 2026-11-12: a pond's ring in the frost no longer a meadow's green (the owner: "why green in snow when neighbor tiles is also
+//  snow"; engine/worldnature.js PX.WN_RING.frost): the 19 spring ponds there painted as trodden snow, their water iced. Was c817e41c;
+//  checked: with the engine's change taken out it is c817e41c again, and W1-W4, W6-W8 and B2 hold either way)
+// (W3, W5-W8 and B2 re-recorded 2026-11-13, on purpose: the owner, "make the area bigger" (a pasture's): its pen 4, 6, 8 tiles a level,
+//  was 2, 3, 4 (world/estates.js PLOTS_AT), grown to 8 once its holding's tracks are laid (world/lots.js pensGrow, PLOTS_GROW), so the
+//  buildings and tracks lie as they did (W1, W2, W4 hold). W3 the pens' tiles on the lots, W5 and W6 more fenced ground in the spots,
+//  W7 and W8 more of each herd grazing in them, B2 the grown tiles in the save. Was W3 7fd84ad4, W5 e41cdb7c, W6 d598257f, W7
+//  311da16e, W8 c590650a, B2 ba5f45e6; checked: with PLOTS_GROW.pasture 4 and PLOTS_AT.pasture lv+1 (the camel, the pens' ground and
+//  the code that grows them kept) they are those again, all 16 holding)
+// (W7, W8 and B2 re-recorded 2026-11-13, on purpose: the owner, "Griffin or rare monster should be spawn in far away": a rare beast
+//  (a troll, a griffin, a wyrm: weight WORLD_SCALE.spawn.rare or less) lairs rareK (2) times as far from the holdings and from you,
+//  a mythic one away from the holdings too (world/monsters.js spawnMonster, spawnMythic), so the beasts on the map stand elsewhere
+//  (the land, holdings and herds hold: W1-W6). Was W7 c9c49005, W8 83997cd6, B2 83d3c7bb)
+// (W7 and B2 re-recorded 2026-11-13, on purpose: the owner, "starting hero power seems too strong", "reduce stats or attributes
+//  bonus", "make skill harder to unlock": your hero's numbers lower (data/progression.js HERO_BASE, LEVEL.dmg, a past's bonus), the
+//  origins halved, a node 60% at its proficiency's 100 (TREE_SCALE.most), nodes cost by kind and open at a proficiency's level
+//  (data/tree.js TREE_COST, TREE_GATE): the lords' trees and numbers, and yours in the save. Checked: with those put back (the new
+//  tiers kept) all 16 hold. Was W7 4e3e79b8, B2 2578c11d)
+// (W7 and W8 re-recorded 2026-11-14, on purpose: the owner, "lord army still moving back and forth or keep changing the formation
+//  between column and normal marching formation": a lord keeps his column till his goal is nearer than band × long and an enemy's
+//  land band × near, and holds a switch hold s of the world's time even far from you (world/marchstyles.js TravelStyle far,
+//  enemyLand, steady); a place in a host's column moves back smoothly behind one lagging (world/hosts.js places). The lords' columns
+//  take the roads' pace for other stretches, so where they stand moves. Checked: with those two files as they were (the bands' and
+//  the watch's changes kept) all 16 hold. Was W7 0f3b0aa9, W8 da69073e)
+// (W6 re-recorded 2026-11-14, on purpose: the owner, "make building transparent only player unit sprites when traveling", "make sure
+//  the transparent building, tree looks obvious": what covers your men fades to WDEPTH.fade 0.5 (was 0.3) and their hidden part shows
+//  as a ghost; a building no longer fades over another's (gfx/depth.js). The spots' figures drawn so. Checked: with depth.js as it
+//  was (the new boats, fish and gates kept) all 16 hold. Was 7ddeb99d)
+// (W6, W7, W8 and B2 re-recorded 2026-11-14, on purpose: the camps where people live (doc/ENCAMPMENTS_DESIGN.md, the owner: "make a
+//  camp or location like actual places", "at least one for each and scale based on the world"): ten kinds, each as many as the land
+//  gives (26 on this seed, were 21 travellers' camps), each on its kind's ground with its people (world/encampments.js). Placed from
+//  the start stream (core/session.js startDraws), they move every draw after them: the hideouts, ruins and shrines, the herds, the
+//  bands and the beasts stand elsewhere, so the spots draw other things (W6), the save holds other sites and a world 3 days on
+//  (W7), the parties move elsewhere (W8), and begin twice draws so (B2). Checked: with the old travellers' placement put back over
+//  everything else of this change (their class, DENSITY's 21 by the road, SITE_GAP 30) all nine hold. Was W6 9899ee85, W7
+//  5d33eddc, W8 63276c56, B2 d81ddd1f; W1-W5 unchanged)
+// (all nine re-recorded 2026-11-14, on purpose: the owner, “make sure that holdings are not too close to each other (spread out
+//  more) and camps are not too close to the holding. Caves, monster lair should be more far away as well”: the holdings about 1.3
+//  times as far apart (worldplace.js PLACE_GAP; a hamlet's margin 6, was 3), so every world's holdings, roads and land differ (W1-W5),
+//  and the sites further out (data/world.js SITE_AWAY: a camp where people live 14 tiles from every holding, refugees 10, a cave 20,
+//  were all 6; sites.js HIDEOUT_PLACE a hideout 18 from a hamlet, was 12; a monster's lair 352 px from one, monsterHold, was 256),
+//  so the spots, the save, the parties and begin twice differ (W6-W8, B2). Checked: with those numbers put back all nine and the five
+//  sums hold. Were W1 98411198, W2 8e3ee885, W3 781cbbb1, W4 50f147c1, W5 12a104e8, W6 6a9152f3, W7 114de65b, W8 de15fa32, B2 3db1d068)
+// (W7 and B2 re-recorded 2026-11-14, on purpose: the owner, “make sure the standard term is the outpost”: an outpost's site type
+//  in the save 'outpost' (data/outposts.js OUTPOST_TYPE, was 'standard'), so the save's words change; the world and its outposts
+//  as before. Checked: with OUTPOST_TYPE 'standard' both are as recorded above. Were W7 7bc521e3, B2 2c5e4c3d)
+// (W4-W8 and B2 re-recorded 2026-11-14, on purpose: the owner's rule, nothing built on a road: an outpost stands where none of the
+//  tiles its picture covers at its biggest is a road (world/outposts.js onRoad, data/outposts.js OUTPOST_PLACE.foot; only its flag's
+//  tile was looked at), so some stand elsewhere and two crossroads find no room (19 on seed 1, were 21): their land, the map's
+//  picture, the save and the parties' ways differ. Checked: with foot [0,0,0,0] (its flag's tile alone) all six are as before.
+//  Were W4 9bb821e8, W5 e1408b54, W6 99c0f3f4, W7 8d39cdc0, W8 8d52d85b, B2 447d8fea)
+const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'d9c9b503',W6:'3686da11',W7:'66401fd1',W8:'b871b922',B2:'f55d6365'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -808,7 +866,9 @@ const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'7fd84ad4',W4:'50f147c1',W5:'c817e4
 //  Were classic c2e6ebf4, Normal s1 7de4f831, s2 994d7cb0, s3 d0b32a24, Large s1 03a19dc7)
 // (all five re-recorded 2026-11-06, on purpose: the forts (above). Proof: no forts gives all five again. Were classic 313f5680,
 //  Normal s1 c05c2a0b, s2 71336fed, s3 88b17161, Large s1 66607a42)
-const SUMS={classic:'376eb788','Normal s1':'0620ac51','Normal s2':'8d537d0c','Normal s3':'3c103cb4','Large s1':'1a0f554e'};
+// (all five re-recorded 2026-11-14, on purpose: the holdings spread out (W1-W8 above). Proof: the old gaps give all five again.
+//  Were classic 376eb788, Normal s1 0620ac51, Normal s2 8d537d0c, Normal s3 3c103cb4, Large s1 1a0f554e)
+const SUMS={classic:'759ca6f8','Normal s1':'2d3eb194','Normal s2':'812260ff','Normal s3':'175fcc04','Large s1':'3b4ad7bf'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

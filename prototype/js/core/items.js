@@ -40,8 +40,9 @@ const SELL_VERB={id:'sell',icon:'gold',label:'Sell',tip:'Sell it at the market.'
     if(!catAllows(i,'sell'))return;
     P.gold+=g;
     P.inv[i]=null;
-    train('trade',g/20);
-    toast('You sell '+K.sold(x)+' for '+g+' gold.','gold');
+    if(!x.back)train('trade',g/20);// (a thing bought back (ui/trade.js Buyback) trains nothing sold again: sold and bought back over and over it trained Trading for nothing)
+    const back=Buyback.note(x,g,G.town&&G.town.ref);// (kept a while, to buy back: ui/trade.js)
+    toast('You sell '+K.sold(x)+' for '+g+' gold.'+(back?' You can buy it back here for '+BUYBACK.days+' days.':''),'gold');
   }};
 class ItemKind{
   // k: the records' kind

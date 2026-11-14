@@ -61,7 +61,10 @@ const REINF={r:110,max:3,foes:2,band:30,guards:2,chance:.5,fair:.8,honor:{beside
 // entity while travelling"): a beast falls on any other party it meets (a lord's army, a watch, a caravan, a companion's
 // party) when it is at least dare times as strong; a lord on the road or at home turns on a beast within pass px that he can
 // beat (on the same edge), and gives it up past leash
-const DEFEND={see:110,edge:1.2,home:200,near:80,ride:200,leash:260,cool:3,meet:12,rout:.5,look:.5,dare:.8,pass:48};
+// withYou (the owner, 2026-11-14: "guards not kill the bandits or not react to the bandits when chasing me"): a threat on the land
+// within withYou px of you, hostile to you, the watch weighs with your army beside it (they fight it with you: battle/sides.js
+// local duty), and goes after it wherever it is on the land, not only near the homes
+const DEFEND={see:110,edge:1.2,home:200,near:80,ride:200,leash:260,cool:3,meet:12,rout:.5,look:.5,dare:.8,pass:48,withYou:160};
 // personal relations (world/relations.js): you and each lord, and lords with each other, from -100 to 100, apart from
 // realm honor. levels name them; the rest is what moves them, and what they buy. A lord's friends and rivals feel some of
 // what you do to them (ripple). Relations drift back toward where they started by decay a day.

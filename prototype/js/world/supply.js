@@ -369,8 +369,8 @@ function campXings(){const L=WM.crossings||[];let X=CAMP_X.get(L);if(!X){X=new S
 function campRing(t){const b=centreBox(t),r=[b.x,b.y,b.x+b.n-1,b.y+b.n-1],g=SUPPLY.camp.ring;
   for(const l of t.lots||[])if(l.k==='centre'||l.k==='house'){r[0]=Math.min(r[0],l.x);r[1]=Math.min(r[1],l.y);r[2]=Math.max(r[2],l.x+l.n-1);r[3]=Math.max(r[3],l.y+l.n-1)}
   return[r[0]-g,r[1]-g,r[2]+g,r[3]+g]}
-// (a site's picture on the map, px: its sprite and yard where Site draw lays them, structures.js siteSprite)
-function siteBox(s){const sp=siteSprite(s),X=Math.round(s.x)-sp.ax,Y=Math.round(s.y)+8-sp.ay,a=opaqueBox(sp),g=sp.gr?opaqueBox(sp.gr):a;
+// (a site's picture on the map, px: its sprite and yard where Site draw lays them, structures.js siteSprite; a camp's ground: its area)
+function siteBox(s){if(s.area)return s.area();const sp=siteSprite(s),X=Math.round(s.x)-sp.ax,Y=Math.round(s.y)+8-sp.ay,a=opaqueBox(sp),g=sp.gr?opaqueBox(sp.gr):a;
   return[X+Math.min(a[0],g[0]),Y+Math.min(a[1],g[1]),X+Math.max(a[2],g[2]),Y+Math.max(a[3],g[3])]}
 // (any pixel of the px box the art keeps clear: worldart.js plan.clear, a PX.TileMask)
 function campKeptClear(x0,y0,x1,y1){const M=WorldArt.ensure().clear,ts=M.ts;x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.floor(x1);y1=Math.floor(y1);
@@ -394,11 +394,11 @@ function makeCamp(){if(P.camp||campWhy())return false;const s=campSpot();G.chase
   if(!s){toast('No clear ground to camp here.','bad','band');return false}
   if(!s.across&&Math.hypot(s.x-P.x,s.y-P.y)<=SUPPLY.camp.hop*TILE){P.x=s.x;P.y=s.y;P.stuck=0;return pitchCamp()}
   P.tx=s.x;P.ty=s.y;P.stuck=0;G.pitch={x:s.x,y:s.y};toast('Your band makes for clear ground to camp.',undefined,'band');return true}
-function pitchCamp(){G.pitch=null;P.camp={at:Clock.hours()};P.tx=P.ty=null;G.chase=null;
+function pitchCamp(){G.pitch=null;P.camp={at:Clock.hours()};CampSite.strike('you');CampSite.pitch('you');P.tx=P.ty=null;G.chase=null;
   toast('Your band makes camp. Stamina comes back faster, and the wounded mend.','good','band');updateHUD(true);return true}
 // your march ends (world.js marchStep): at the clear ground you made for, the band pitches; anywhere else the plan is dropped
 function campArrive(){const p=G.pitch;if(!p)return;G.pitch=null;if(Math.hypot(p.x-P.x,p.y-P.y)<3&&!campWhy()){P.x=p.x;P.y=p.y;pitchCamp()}}
-function breakCamp(why){if(!P.camp)return false;P.camp=null;toast(why||'Your band breaks camp.',undefined,'band');updateHUD(true);return true}
+function breakCamp(why){if(!P.camp)return false;P.camp=null;CampSite.strike('you');toast(why||'Your band breaks camp.',undefined,'band');updateHUD(true);return true}
 function toggleCamp(){return P.camp?breakCamp():makeCamp()}
 // each moment in camp (world.js marchStep): a travel order breaks it (true: the march goes on), but not a press on the map that may
 // yet open the action ring (ui/ring.js RING.press); going faster than 1x, anything hostile in sight brings it back to 1x
@@ -414,8 +414,8 @@ function campCaught(opts){if(!P.camp||opts.tournament||opts.sandbox)return;P.cam
    drawn while you camp (the owner, 2026-10-23: render.js drawWorld pushes this instead), and stand there again when it breaks. In
    the depth order by its feet as everyone is (depth.js worldOverdraw: the trees in front of it drawn over it, whole: nf, none
    faded for it) */
-function bandCampEnt(cam){const c=campAt(P.x,P.y);return{y:c.box[3],nf:1,f:()=>{subT(P);const s=c.s,X=Math.round(c.X-cam.x),Y=Math.round(c.Y-cam.y);
-  ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);BANNERQ.push({o:campPole(c)})}}}
+// (2026-11-14: its tents as many as your army needs, pitched one after another round the fire, world/campsite.js)
+function bandCampEnts(ents,cam){CampSite.draw(ents,cam,{key:'you',x:P.x,y:P.y,n:partySize(),banner:()=>P.banner(),seed:0})}
 // (your banner's pole in the camp: its foot on the ground SUPPLY.camp.pole px from the fire, drawn as yours with the parties'
 // banners, render.js drawBanners: bannerAt lays the pole 2 px right of x - 4, its foot BANNER_GAP over headY)
 const campPole=c=>{const f=c.s.fire,d=SUPPLY.camp.pole;return{x:c.X+f[0]+d[0]+2,y:P.y,faction:'player',banner:()=>P.banner(),headY:()=>Math.round(c.Y+f[1]+d[1])+BANNER_GAP}}
@@ -449,7 +449,6 @@ function bandFitness(){const F=P.fitness(),fit=F.fit-1,hp=P.hp==null?1:clamp(P.h
 function mapRingItems(wx,wy,o,cx,cy){
   const L=supplyLand(),ground=!o,look=o&&tipFor(o)||rumourTip(wx,wy)||trackTip(wx,wy);// (a rumour's "?", else tracks you see: world/tracks.js)
   return[
-    !P.stay&&{icon:'attack',label:'Hunting area',active:WildHunt.armed,run:()=>WildHunt.toggle()},
     !P.camp&&!campWhy()&&{icon:'fire',label:'Make camp',run:makeCamp},
     P.camp&&{icon:'fire',label:'Break camp',run:()=>breakCamp(),active:true},
     followItem(o),
@@ -461,8 +460,9 @@ function mapRingItems(wx,wy,o,cx,cy){
 
 // a click on another party (ui/input.js partyRing): Approach (today's chase: Attack one hostile, its crossed swords as the marker
 // over it while you go: icons.js ICONS.attack, else Meet), Follow (or Stop following, lit), and the map ring's Look on it
-function partyRingItems(o,cx,cy){const foe=wuiKind(o)==='foe';
-  return[{icon:foe?'attack':'people',label:foe?'Attack':'Meet',run:()=>worldApproach(o)},followItem(o),...mapRingItems(o.x,o.y,o,cx,cy).filter(it=>it.icon==='eye')].filter(Boolean)}
+function partyRingItems(o,cx,cy){const foe=wuiKind(o)==='foe'||objKind(o)==='monster',beast=objKind(o)==='monster';
+  // (a foe: Attack, the fight at once; Talk (a beast: Choose), its window when you meet, its talk and choices: SEAMLESS, Talk)
+  return[{icon:foe?'attack':'people',label:foe?'Attack':'Meet',run:()=>{Talk.clear();worldApproach(o)}},foe&&SEAMLESS.on&&{icon:beast?'eye':'people',label:beast?'Choose':'Talk',run:()=>{Talk.set(o);worldApproach(o)}},followItem(o),...mapRingItems(o.x,o.y,o,cx,cy).filter(it=>it.icon==='eye')].filter(Boolean)}
 
 /* ---------- the tavern's tapster (ui/town.js Tavern): liquor for the road and empty waterskins, at their base prices, and the
    well's water into your empty skins, free ---------- */
