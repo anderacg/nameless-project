@@ -251,6 +251,9 @@ function ambientWorld(ents,cam,V){
     if(k==='crow'){const have=new Set(L.filter(e=>e.k==='crow').map(e=>e.ak)),a=[...anc.values()].find(a=>!have.has(a[0]));if(a&&ambientCan(k,a[1],a[2]))L.push(Object.assign(ambSpawn(k,a[1],a[2]),{ak:a[0],species:climAt(a[1],a[2])==='desert'?'vulture':climAt(a[1],a[2])==='frost'?'raven':'crow'}));continue}
     const have=new Set(L.map(e=>e.hk));const candidates=homes.filter(h=>h.k===k&&!have.has(h.key)&&!S.quiet.has(h.key)&&inV(h.x,h.y)&&ambientCan(k,h.x,h.y)&&!(A.scare&&ambNear(F,h.x,h.y)[1]<A.scare*1.6));
     if(candidates.length){const h=candidates[Math.floor(ambR()*candidates.length)];L.push(ambPlace(ambSpawn(k,h.x,h.y),h))}}
+  // (a fish's leap and splash: among the figures by its water's line, so a pier, a moored boat or a house before it covers it; the owner,
+  // 2026-11-14: "the drawing layer between fish animation is not valid", it was drawn flat over all that stands)
+  for(const e of L)if(e.k==='fish')ents.push({y:e.y,nf:1,f:()=>{ctx.save();ambFish(e,cam);ctx.restore()}});
   for(const e of L)if(AMB_GROUND[e.k]&&!(e.k==='peck'&&e.st!=='peck'&&e.st!=='perch')&&!(e.k==='heron'&&e.st==='flee'))ents.push({y:e.y,nf:1,f:()=>ambGround(e,cam)})}
 // ---- the pictures: tiny, crisp, made once (rows of letters, each a colour; '.' clear), each also facing left
 let AMBS=null;
@@ -294,17 +297,18 @@ function ambBirds(e,f){const S=ambSpr(),rm=reducedMotion();
   else if(e.k==='crow'){const a=Math.max(0,Math.min(1,e.t,1-(e.go||0)));for(const m of e.m){const an=m.a+m.w*e.t;f(e.x+Math.cos(an)*m.r,e.y+Math.sin(an)*m.r*.5,m.alt+Math.sin(e.t*.7+m.ph)*2,(S[e.species==='raven'?'ravenAir':e.species]||S.crow)[ambWing(e.t+m.ph,rm)],a)}}
   else if(AMB_GLIDE[e.k])f(e.x,e.y,e.alt+Math.sin(e.t*.5+e.ph)*3,S[e.k][e.k==='bat'&&!rm?Math.floor(e.t*9)%3:ambWing(e.t*1.1+e.ph,rm)],Math.max(0,Math.min(1,e.t/.8,(e.life-e.t)/.8)));
   else if(e.k==='heron'&&e.st==='flee')f(e.x,e.y,e.alt,S.bird[ambWing(e.t,rm)],Math.max(0,Math.min(1,4-(e.t-e.ft))))}
-// flat on the ground, under everyone (render.js drawWorld): the fish's leaps and splashes, and the flyers' shadows, offset from
+// flat on the ground, under everyone (render.js drawWorld): the flyers' shadows, offset from
 // under them as the sun throws them
 function ambientFlat(cam){
   const L=AMBV.list;if(!AMBIENT.on||!L.length)return;ctx.save();ctx.fillStyle='rgb('+SHADOW.col.join(',')+')';
   for(const e of L){if(e.k==='fish')continue;ambBirds(e,(x,y,alt,s,a)=>{const w=s.width>3?3:2,sh=ambShadow(alt);ctx.globalAlpha=.22*a;ctx.fillRect(snapV(x+sh[0])-cam.x-(w>>1),snapV(y+sh[1])-cam.y,w,1)})}
-  for(const e of L){if(e.k!=='fish')continue;const p=e.t/e.life,X=snapV(e.x)-cam.x,Y=snapV(e.y)-cam.y;
+  ctx.restore()}
+// (a fish's leap, then its rings spreading: ambientWorld queues it among the figures)
+function ambFish(e,cam){const p=e.t/e.life,X=snapV(e.x)-cam.x,Y=snapV(e.y)-cam.y;
     if(p<.3){const q=p/.3;ctx.globalAlpha=1;ctx.fillStyle='#c8d4dc';ctx.fillRect(X-2+Math.round(q*4),Y-Math.round(Math.sin(q*Math.PI)*4),2,1)}
     else{const q=(p-.3)/.7,r=1+Math.round(q*4),ry=Math.max(1,Math.round(r*.45));ctx.globalAlpha=.8*(1-q);ctx.fillStyle='#e8f2f4';
       for(let dx=-r;dx<=r;dx++){const dy=Math.round(ry*Math.sqrt(Math.max(0,1-(dx/(r+.5))**2)));ctx.fillRect(X+dx,Y-dy,1,1);if(dy)ctx.fillRect(X+dx,Y+dy,1,1)}
       if(q<.4){ctx.fillRect(X-1,Y-2-Math.round(q*4),1,1);ctx.fillRect(X+1,Y-1-Math.round(q*5),1,1)}}}
-  ctx.restore()}
 // in the air, over everyone (render.js drawWorld: before the fog, which puts what is out of your sight under it)
 function ambientAir(cam){const L=AMBV.list;if(!AMBIENT.on||!L.length)return;ctx.save();
   for(const e of L)ambBirds(e,(x,y,alt,s,a)=>{if(a<=0)return;ctx.globalAlpha=a;ctx.drawImage(s,snapV(x)-cam.x-(s.width>>1),snapV(y-alt)-cam.y-1)});

@@ -782,7 +782,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  enemyLand, steady); a place in a host's column moves back smoothly behind one lagging (world/hosts.js places). The lords' columns
 //  take the roads' pace for other stretches, so where they stand moves. Checked: with those two files as they were (the bands' and
 //  the watch's changes kept) all 16 hold. Was W7 0f3b0aa9, W8 da69073e)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'7ddeb99d',W7:'5d33eddc',W8:'63276c56',B2:'d81ddd1f'};
+// (W6 re-recorded 2026-11-14, on purpose: the owner, "make building transparent only player unit sprites when traveling", "make sure
+//  the transparent building, tree looks obvious": what covers your men fades to WDEPTH.fade 0.5 (was 0.3) and their hidden part shows
+//  as a ghost; a building no longer fades over another's (gfx/depth.js). The spots' figures drawn so. Checked: with depth.js as it
+//  was (the new boats, fish and gates kept) all 16 hold. Was 7ddeb99d)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'9899ee85',W7:'5d33eddc',W8:'63276c56',B2:'d81ddd1f'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

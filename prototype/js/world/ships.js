@@ -174,12 +174,14 @@ function shipSprite(o){
     r.edge=true;poutline(r);rig=pcanvas(r)}
   // the crew: a sailor at the helm on the stern castle and one at the rail amidships, the fisherman in his boat: head and
   // shoulders over the side (people.js mapPerson, to the first row of the body); each [his head's middle, his last row, which]
-  const look=k=>({...folkLook('folk','human',(o.seed|0)+k*7),robe:false,helm:k%2?'cap':'bare',helmC:'leather',weapon:null}),crew=big?[[6,R-4,0],[21,R-1,1]]:o.moored?[]:[[7,R-1,0]];
+  // (each sits or stands in it: his last row two under the gunwale (a castle's parapet), the side hiding his legs; the owner,
+  // 2026-11-14: "the unit in boat is separated from the boat", he stood on its rim)
+  const look=k=>({...folkLook('folk','human',(o.seed|0)+k*7),robe:false,helm:k%2?'cap':'bare',helmC:'leather',weapon:null}),crew=big?[[6,R-2,0],[21,R+1,1]]:o.moored?[]:[[7,R+2,0]];
   // (ropes, a pixel thin, no outline: the stays from the masthead to bow and stern, behind the sail; the fisherman's oar. Painted z
   // times the map's scale, each man put in by man(x, his middle, his last row, which))
   const paint=(z,man)=>mkc(n*z,n*z,x=>{const line=(x0,y0,x1,y1,col)=>{const k=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));x.fillStyle=col;for(let i=0;i<=k;i++)x.fillRect(Math.round(x0+(x1-x0)*i/k),Math.round(y0+(y1-y0)*i/k),1,1)};
     x.save();x.scale(z,z);if(big){line(17,13,27,R-3,'#3e2e26');line(14,13,4,R-4,'#3e2e26');x.drawImage(rig,0,0)}x.restore();for(const [mx,row,k] of crew)man(x,mx,row,k);
-    x.save();x.scale(z,z);x.drawImage(hull,0,0);if(!big&&!o.moored)line(5,R,2,WL,Wo[1]);x.restore()});
+    if(z>1)x.drawImage(shipHullHi(o,z,R,WL),0,0);else{x.save();x.drawImage(hull,0,0);x.restore()}x.save();x.scale(z,z);if(!big&&!o.moored)line(5,R,2,WL,Wo[1]);x.restore()});
   // (MAP_FIGS: the crew the battle's figures (people.js figCrew), painted at their density (hi: drawn back to the map's size, Ship
   // draw) and the picture at the map's own size from it; else the map's small figures. His last row on the one over the hull's
   // outline, his shoulders showing over it, as the small figure's head and shoulders do)
@@ -187,6 +189,28 @@ function shipSprite(o){
   else c=paint(1,(x,mx,row,k)=>x.drawImage(mapPerson(look(k),0,3),mx-8,row-14));
   c.cw=n;c.ch=n;c.ax=n>>1;c.ay=WL;c.stern=(n>>1)-(big?3:2);c.net=big?0:6;c.posts=big?[[4,R-3],[27,R-2]]:[[1,12],[14,11]];c.hull=WL-R;c.top=big?WL-(R-3):WL-11;return spr[key]=c;
 }
+/* a hull painted at the battle's figures' density z (the owner, 2026-11-14: "the boat and old sprites may need to be updated"): its
+   sheer curving up to bow and stern, its stem and stern post standing over it, a gunwale cap, a rubbing strake, clinker strakes
+   with their seams, darker below the waterline's shadow; a cog's castles crenellated, a band of its owner's colour; moored, the
+   oar shipped and the net heaped (in map px, as before) */
+function shipHullHi(o,z,R,WL){
+  const big=!!o.big,n=big?32:16,H=SH_HULL,Wo=CV_WOOD,N=n*z,g=pgrid(N,N),s=(x,y,c)=>pset(g,x,y,c),x0=(big?3:1)*z,x1=(big?29:15)*z-1,mid=(x0+x1)/2,half=(x1-x0)/2;
+  const top=x=>{const u=(x-mid)/half;return R*z-z*(big?1.2:1.4)*u*u*(u>0?1.35:1)},bot=x=>{const u=Math.abs((x-mid)/half);return (WL+1)*z-1-z*(big?4.5:2.6)*Math.pow(u,big?3:4)};
+  for(let x=x0;x<=x1;x++){const t0=Math.round(top(x)),b0=Math.round(bot(x));if(b0<t0)continue;const end=x<=x0+z-1||x>=x1-z+1;
+    for(let y=t0;y<=b0;y++){const d=y-t0,fromB=b0-y;let c;
+      if(d===0)c=Wo[0];else if(d<=Math.max(1,z>>1))c=H[0];else if(d<=z+1)c=d===z+1?H[2]:Wo[1];
+      else if(fromB<z)c=H[3];else c=((y-t0-z-2)%(z+1)===z)?H[2]:H[1];
+      if(end&&d>0)c=H[2];s(x,y,c)}}
+  // (the stem at the bow and the stern post, rising over the sheer)
+  const post=(x,h,lean)=>{const t0=Math.round(top(x));for(let k=0;k<h;k++){s(Math.round(x+lean*k),t0-k,k===h-1?Wo[0]:H[2]);s(Math.round(x+lean*k)-1,t0-k,H[1])}};
+  post(x1-1,Math.round(z*(big?2:1.6)),.4);post(x0+1,Math.round(z*(big?1.4:1.1)),-.3);
+  if(big){const castle=(a,b,h)=>{const ya=(R-h)*z,yb=R*z;for(let y=ya;y<yb;y++)for(let x=a*z;x<(b+1)*z;x++){const top0=y<ya+z,cren=top0&&Math.floor((x-a*z)/z)%2===1&&y<ya+(z>>1);if(cren)continue;
+      s(x,y,top0?Wo[0]:y<ya+2*z?shade(o.col||'#a8483a',.8):(x-a*z)%(3*z)===0?H[2]:H[1])}};castle(3,8,3);castle(24,28,2)}
+  // (a rowlock on the small boat's gunwale)
+  else s(Math.round(mid+z),Math.round(top(mid+z))-1,H[2]);
+  if(!big&&o.moored){for(let x=5*z;x<=10*z;x++)s(x,Math.round((R-1)*z-((x-5*z)/(3*z))*z),Wo[1]);for(let x=11*z;x<13*z;x++)s(x,(R-3)*z,Wo[0]);
+    const Nt=[cvMix('#a89a78','#4a4a66',.15),cvMix('#7a6e58','#4a4a66',.25)];for(let x=3*z;x<5*z;x++)for(let y=(R-1)*z;y<R*z;y++)s(x,y,Nt[(x+y)%2])}
+  g.edge=true;poutline(g);return pcanvas(g)}
 // every ship in sight (Ship draw)
 function drawShips(ents,cam,V){for(const s of W.ships)asShip(s).draw(ents,cam,V)}
 // its work in the world's day and frame (core/systems.js)

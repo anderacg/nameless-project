@@ -676,7 +676,25 @@ class CourierQuest extends JobQuest{
     return {x:t.x,y:t.y,name:t.name};
   }
   todo(){
-    return 'Deliver to '+this.to+'.';
+    return 'Hand the letter to '+this.handTo()+'.';
+  }
+  /* handed over, not dropped at the gate (the owner, 2026-11-14: "sending a word quests should have player interact with the one who
+     should deliver a word, not just walk near"): reported at the holding it goes to, to its steward, its Jobs tab opened as you
+     come in (ui/town.js enterTown); ready while you carry the letter; paid as you hand it over */
+  handTo(){
+    return 'the steward of '+this.to;
+  }
+  get handsOver(){
+    return true;
+  }
+  reportableAt(t){
+    return t.name===this.to;
+  }
+  ready(){
+    return !this.letter||!!this.carried();
+  }
+  progress(){
+    return this.ready()?'the letter, '+(this.carried()?.seal===false?'its seal broken':'sealed'):'no letter';
   }
   lapse(){
     if(this.letter&&!this.done&&!this.carried())return this.fail('You no longer carry the letter.');
@@ -684,17 +702,17 @@ class CourierQuest extends JobQuest{
   }
   earned(){
     const L=this.carried();
-    return Math.round(super.earned()*(L&&!L.seal?COURIER.opened:1));
+    return Math.round(super.earned()*((L?!L.seal:this.opened)?COURIER.opened:1));
   }
   aim(){
-    return 'Carry the letter to '+this.to;
+    return 'Carry the letter to '+this.handTo();
   }
   tally(){
     return '';
   }
-  // (paid on arrival: nothing to report)
+  // (paid as you hand it over: nothing to report back)
   reportLine(){
-    return 'Paid on arrival at '+this.to;
+    return 'Paid when you hand it to '+this.handTo();
   }
   get reportsBack(){
     return false;
@@ -708,13 +726,12 @@ class CourierQuest extends JobQuest{
     const d=townBy(this.to);
     return super.gone()?super.goneWhy():d&&!d.gone?this.to+' is held by your enemies now.':this.to+' is no more.';
   }
-  arrive(t){
-    if(this.to!==t.name)return;
+  handOver(t){
     const L=this.carried();
-    if(this.letter&&!L)return;
-    if(L&&!L.seal)log('The lord of '+t.name+' frowns at the broken seal.','bad','story',this.journalKey);
+    log('You hand the letter to '+this.handTo()+'.'+(L&&!L.seal?' The steward frowns at the broken seal.':' The steward breaks the seal and reads.'),L&&!L.seal?'bad':'good','story',this.journalKey);
     addRep(t.name,L&&!L.seal?1:3,true);
-    this.pay(t.name);
+    // (its seal as it was handed over, for its pay after: earned)
+    this.opened=!!L&&!L.seal;
     if(L)P.inv[LETTER.slotOf(L.id)]=null;
   }
 }
@@ -1423,7 +1440,7 @@ function offerRow(q,act,arg){
 // who gave it, what you get, Report or Hand over first; the whole of it folded under Details (hereRow's). Not ready: its title and
 // what is left to do, the whole folded too)
 function readyRow(q){q=Quest.as(q);const g=q.person,hand=q.handsOver,late=!!q.reward&&q.reward.gold>0&&q.earned()<q.reward.gold;// (late: it pays less now)
-  return '<div class="row qw-ready"><div class="info"><strong>'+htmlText(q.title)+' <span class="qw-st done">Ready</span></strong>'+(g?'<small class="qw-who">'+htmlText(g.name+', the '+g.n)+'</small>':q.giver?'<small class="qw-who">'+htmlText(q.giver)+'</small>':'')+
+  return '<div class="row qw-ready"><div class="info"><strong>'+htmlText(q.title)+' <span class="qw-st done">Ready</span></strong>'+(q.handTo?'<small class="qw-who">For '+htmlText(q.handTo())+'</small>':g?'<small class="qw-who">'+htmlText(g.name+', the '+g.n)+'</small>':q.giver?'<small class="qw-who">'+htmlText(q.giver)+'</small>':'')+
     '<p class="qw-pay">'+icon('gold',14)+' '+q.rewardLine()+(late?' <span class="bad">(late: '+q.earned()+' gold)</span>':'')+'</p>'+qwMore(q)+'</div>'+
     '<div class="acts"><button class="btn primary" type="button" data-act="q-turnin" data-arg="'+q.id+'">'+(hand?'Hand over':'Report')+'</button></div></div>'}
 function laterRow(q){q=Quest.as(q);

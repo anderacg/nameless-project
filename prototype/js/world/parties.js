@@ -49,9 +49,9 @@ class Party extends WorldObject{
       BANNERQ.push({o,label:!o.fight&&L.label?[L.label,L.labelCol]:null})}})}
   // sheltering in a holding: inside is the holding's name. shelterWhy(t): why it may not go in there ('' if it may; each kind
   // has its rules); enter and leave by the gate
-  shelterWhy(t){return !t?'Nowhere':besieged(t)?'The gates are barred for the siege':''}
-  enter(t){this.inside=t.name;this.x=t.x;this.y=t.y+4}
-  leave(){const t=townBy(this.inside);this.inside=null;if(t){this.x=t.x+rint(-6,6);this.y=t.y+14}}
+  shelterWhy(t){return !t?'Nowhere':besieged(t)?'The gates are barred for the siege':roomFor(t,this.troops.length)}
+  enter(t){GateFile.start(this,t);this.inside=t.name;this.x=t.x;this.y=t.y+4}
+  leave(){const t=townBy(this.inside);this.inside=null;if(t){this.x=t.x+rint(-6,6);this.y=t.y+14;GateFile.out(this,t)}}
   // how it looks on the map (render.js drawParties): colour, rider, moving, label
   look(){return{col:'#888',dir:this.dir||1,moving:true,seed:0,label:String(this.fighters),labelCol:'#ccc'}}
   // its fighting strength (engage.js rating), and its realm; in a fight on the map, its fighters as they are (fights.js)
@@ -83,8 +83,8 @@ class CompanionParty extends Party{
   power(){return power(this.troops)*(1+.04*compSkill(this.cid,'lead'))}
   tip(){return '<b>'+this.label()+'</b><small>Your companion, '+this.fighters+' fighters, '+({follow:'following you',patrol:'patrolling '+this.base,return:'coming back'})[this.order]+'</small><span class="act">Click: actions, double-click: orders</span>'}
   get brain(){return BRAINS.cparty}
-  shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)}
-  enter(t){this.inside=t.name;this.x=t.x;this.y=t.y}
+  shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)||roomFor(t,this.troops.length)}
+  enter(t){GateFile.start(this,t);this.inside=t.name;this.x=t.x;this.y=t.y}
   inView(V){return this.onMap()&&yourSight(V).sees(this.x,this.y)}// (yours: always in sight)
   banner(){return{k:'banner',col:FACS.player.col,dev:'star'}}// (yours, a companion's mark on it)
   look(){return{col:FACS.player.col,race:P.race,dir:this.dir||1,moving:true,seed:this.cid.length*7,label:COMPS[this.cid].short+' '+this.fighters,labelCol:'#9fc0ff'}}
@@ -151,7 +151,7 @@ class PlayerParty extends Party{
   get brain(){return null}
   get inside(){return this.stay?this.stay.town:null}
   onMap(){return !this.stay}
-  shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t,stayCost())}
+  shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t,stayCost())||roomFor(t,partySize())}
   enter(t){return startStay(t)}
   leave(why,cls){if(this.stay)leaveStay(why,cls)}
   label(){return 'Your band'}
