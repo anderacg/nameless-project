@@ -24,7 +24,7 @@ class HuntTracks{
 }
 class HuntBattleArea extends WorldBattleArea{
   constructor(e){
-    super(e);const a=e.hunt;this.herds=a.herds;this.x=a.x;this.y=a.y;this.r=HUNT_AREA.radius;this.span=Math.ceil(2*(this.r+WORLD_BATTLE.apron));this.x0=this.x-this.span/2;this.y0=this.y-this.span/2;this.cx=this.cy=this.span*this.scale/2;this.radius=this.r*this.scale;
+    super(e);const a=e.hunt;this.herds=a.herds;this.x=a.x;this.y=a.y;this.r=HUNT_AREA.radius*(OPEN_FIGHT.on?OPEN_FIGHT.reach:1);this.span=Math.ceil(2*(this.r+WORLD_BATTLE.apron));this.x0=this.x-this.span/2;this.y0=this.y-this.span/2;this.cx=this.cy=this.span*this.scale/2;this.radius=this.r*this.scale;
     this.initial=new Set([P,...this.herds]);this.participants=new Set(this.initial);this.pending=[];this.animals=[];this.joinedFight=false;this.tracks=new HuntTracks();
   }
   reinforce(){}
@@ -94,6 +94,6 @@ class HuntBattleSetup extends WorldBattleSetup{
     for(const [id,g] of Object.entries(B.groups))if(!g.player){const m=B.units.filter(u=>u.grp===id);for(const u of m){const c=u.herd;if(!c)continue;const index=a.animals.filter(v=>v.herd===c).indexOf(u),offset=index?Math.ceil(index/2)*3:0;Object.assign(u,a.field({x:c.x+(index%2?-1:1)*offset,y:c.y-offset*.3}));u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;delete u.rout;delete u.left;u.hp=u.max;u.sx=u.sy=0;a.tracks.sight(u)}if(m.length){const p=centroid(m);g.ax=p.x;g.ay=p.y;g.order='hold'}}
     B.sight=null;sightStep(true);
   }
-  survey(){super.survey();this.env.name='Wildlife hunt';this.env.text='Auto Hunt is on for your whole army. Give orders or use AI to take command. Wildlife can escape beyond the circle; kills provide meat and trophies.'}
+  survey(){super.survey();this.env.name='Wildlife hunt';this.env.text='Auto Hunt is on for your whole army. Give orders or use AI to take command. '+(OPEN_FIGHT.on?'Game that runs out of reach gets away; what you kill lies where it fell: click it to take its meat and trophies.':'Wildlife can escape beyond the circle; kills provide meat and trophies.')}
   present(){super.present();let end=document.getElementById('huntEnd');if(!end){end=document.createElement('button');end.id='huntEnd';end.type='button';end.className='btn sm';end.textContent='End hunt';end.addEventListener('click',()=>B?.hunt?.end());bbar.querySelector('.btime').appendChild(end)}end.hidden=false;window.mobileBattleHud?.sync();autoUI()}
 }

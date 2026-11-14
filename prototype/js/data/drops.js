@@ -12,6 +12,11 @@
 // most of both a fight (the owner, 2026-11-13: "make drops for junk gears / damaged gear")
 const DROPS={on:true,art:14,loot:true,xp:8,dots:{xp:6,troop:3},speed:220,coin:{chance:.6,n:[1,4]},gear:.03,gears:2,worn:{damaged:.06,junk:.15,most:5},beast:.6,pick:26,bob:[1.5,1.6],
   col:{xp:'#ffd54a',xpCore:'#fff6c8',troop:'#7fc8ff',troopCore:'#e6f6ff',coin:'#f2c94c',coinEdge:'#a8781c'}};
+/* the fallen of a fight on the map (world/carcasses.js Carcass; the owner, 2026-11-14: "trophy required player to click at carcass
+   to loot them", "we need a window to decide which to take and inspect"): what the fight gave lies on them (DROPS then leaves no
+   gear, coins or hides about the field: only its dots), a click on one opens all within near px of it (pick: px a click finds one);
+   they rot: days with anything on them, bare once picked clean, most kept on the map; col: a plain one's (after a load), its glint */
+const CARCASS={on:true,near:40,pick:8,days:3,bare:1,most:120,col:{hide:'#7a5a3e',bone:'#e4dccb',cloth:'#6a5e50',glint:'#ffe08a'}};
 /* junk (the owner, 2026-11-13): broken pieces a fallen man leaves (DROPS.worn.junk), good for nothing but a few coins at any market,
    as a trophy is (data/monsters.js MATS: v its worth, icon and col its picture) */
 const JUNK={junk_blade:{n:'Broken Blade',v:3,icon:'blade',col:'#7d7b72'},junk_links:{n:'Rusted Mail Links',v:2,icon:'plate',col:'#8a6a4a'},

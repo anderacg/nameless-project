@@ -6,7 +6,9 @@
 // what the field gave off the fight's own spoils and listed in its report; a group ranked up flashes; off (the tests' harness), nothing.
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,W=t.W;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;
- const D=t.DROPS,keep={on:D.on,loot:D.loot,coin:D.coin.chance,gear:D.gear};
+ const D=t.DROPS,keep={on:D.on,loot:D.loot,coin:D.coin.chance,gear:D.gear,carc:t.CARCASS.on};
+ // (the field's drops as they are with CARCASS off; on, a fight on the map leaves its things on the fallen: tests/carcasses.js)
+ t.CARCASS.on=false;
  const fight=()=>{Kit.world();P.troops={hum_foot:4};const band=t.asParty({kind:'bandits',x:P.x+20,y:P.y,troops:Array(4).fill('militia')});W.lords=[];W.patrols=[];W.monsters=[];t.bandits.length=0;t.bandits.push(band);
   G.enc={kind:'party',ref:band,list:band.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});const b=t.B;for(let i=0;i<600&&b.muster?.active;i++)t.updateBattle(.05);t.battlePause(false);// (the armies formed up, then begun)
   const h=b.hero,mine=b.units.filter(u=>u.team===0&&!u.hero&&!u.comp),foes=b.units.filter(u=>u.team===1);for(const f of foes){f.cd=99;f.s={...f.s,spd:0};f.hp=f.max=1e6}/* (none falls but as the test fells it) */return {b,h,mine,foes,d:t.BattleDrops.of(b)}};
@@ -54,5 +56,5 @@ Kit.suite(({ok})=>{
    finally{Object.assign(W,kw);D.gear=1}t.B=null;G.mode='world';Kit.clear()}
   // ---- off: nothing falls
   {D.on=false;const {b,h,foes,d}=fight(),f=foes[0];f.hp=0;run(5);ok(!d.ground.length&&!d.orbs.length,'off (the tests\' harness): nothing falls');t.B=null;G.mode='world';Kit.clear()}
- }finally{D.on=keep.on;D.loot=keep.loot;D.coin.chance=keep.coin;D.gear=keep.gear}
+ }finally{D.on=keep.on;D.loot=keep.loot;D.coin.chance=keep.coin;D.gear=keep.gear;t.CARCASS.on=keep.carc}
 });

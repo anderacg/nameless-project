@@ -34,6 +34,7 @@ class BattleDrops{
     const D=DROPS,k=worldEffectScale(),h=B.hero,by=DROP_BY.get(u);
     if(h&&h.hp>0)for(let i=0;i<D.dots.xp;i++)this.burst(u,h,D.col.xp,D.col.xpCore,i?null:()=>B.floats.push({x:h.x,y:h.y-28*k,t:'+'+D.xp+' XP',life:.9,c:D.col.xp}));
     if(by&&by.team===0&&!by.hero&&!by.comp&&by.hp>0)for(let i=0;i<D.dots.troop;i++)this.burst(u,by,D.col.troop,D.col.troopCore,null);
+    if(CARCASS.on&&OPEN_FIGHT.on&&B.world)return;// (on the map, what he leaves lies on his body for you to look over: world/carcasses.js)
     const spot=()=>({x:u.x+(Math.random()-.5)*14*k,y:u.y+(Math.random()-.5)*8*k,ph:Math.random()*6.283}),M=Object.values(MONSTERS).find(m=>m.unit===u.type);
     // (a beast leaves its hide or nothing, never coins nor gear: a hunted animal (its meat and trophies the hunt's), a breed, an alpha
     // with no monster of its own type (they dropped a man's coins and gear, 2026-11-13))

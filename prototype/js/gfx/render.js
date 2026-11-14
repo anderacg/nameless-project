@@ -240,6 +240,7 @@ function drawWorld(){
   // the road (road.js) and fights
   for(const s of W.sites)s.draw(ents,cam,V);
   Remains.drawAll(ents,cam,V);// (the remains of a hero who fell, the graves, your family's plot, the lords' crypts: world/death.js, world/lineage.js)
+  Carcass.drawAll(ents,cam,V);// (the fallen of a fight on the map: world/carcasses.js)
   // the holdings (and their estates) are drawn as their placed buildings (lotEnts, called with the estates below)
   drawParties(ents,cam,V);// lords, bands, patrols and your companions' parties (each party draws itself: parties.js)
   for(const m of W.monsters)asMonster(m).draw(ents,cam,V);

@@ -89,6 +89,7 @@ class BattleResolution{
     if(!o.tournament){const K=b.grpKills||{};this.unitOfBattle=Object.values(b.groups).filter(g=>g.player&&g.sourceGroupId).map(g=>({id:g.sourceGroupId,name:g.name,kills:K[g.id]||0,damage:Math.round(g.resolve?.damageDealt||0)}))
       .filter(x=>x.kills||x.damage).sort((x,y)=>y.kills-x.kills||y.damage-x.damage)[0]||null}
     const armies=o.tournament?null:new ArmyReport(b);// (read off the field before it goes)
+    const fell=Carcass.from(b);// (the foes fallen on the map, laid there once the fight is settled: world/carcasses.js)
     this.wallsFell=b.units.filter(u=>u.team===1&&u.hp<=0&&!u.left&&!u.leader&&String(u.grp||'').startsWith('e0_')).length;// (the walls' own men slain: siege.js siegeFallen)
     B=null;fieldDone();updateHint();// (the field back to today's height: setup.js)
     if(o.tournament){
@@ -99,7 +100,7 @@ class BattleResolution{
     if(b.sides?.active)b.sides.settle(b,lost,groupLosses);
     else if(b.hunt)b.hunt.settle(b,lost,groupLosses);
     else this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,blocked:!!b.stalemate,carried:h.hp<=0&&!h.left},groupLosses);
-    armies?.present();
+    armies?.present();Carcass.lay(fell);
   }
   conclude(win,lost,kills,auto,slain,retreat,groupLosses){
     if(auto)BATTLE_MOOD=null;

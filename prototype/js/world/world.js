@@ -41,7 +41,7 @@ const REACH=14;
 // holding then its built estates, the parties (lords, bands, patrols, your companions'), the beasts, the sites, the herds, the
 // caravans, the refugees, the encounters on the road, the workers, the ships (never clicked), then the fights (none picked: a click on a party in one meets
 // it, interact). Not you.
-const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...roadList(),...W.folk.map(asWorker),...CampFolk.all(),...W.ships.map(asShip),...W.fights.map(asFight),...Remains.list];
+const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...roadList(),...W.folk.map(asWorker),...CampFolk.all(),...W.ships.map(asShip),...W.fights.map(asFight),...Remains.list,...Carcass.list];
 // a thing on the map made one of its kind if it is still plain data (new, from a save or a test), by its fields: a herd (crit),
 // refugees (rf), an encounter on the road (rd), a worker (folk), a ship (its path over the water), a beast (a MONSTERS kind). Parties are made theirs by asParty
 const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRefugees(o):o.rd?asRoadEnc(o):o.folk?asWorker(o):o.path?asShip(o):MONSTERS[o.id]&&!o.type?asMonster(o):o;
@@ -77,7 +77,7 @@ function pickAt(wx,wy){
 const objKind=o=>(o=asWorldObject(o)) instanceof WorldObject&&o.here()?o.mapKind:null;
 // meet whatever you have reached, each its own way (WorldObject meet; G.youAttack: you started whatever fight this opens at once:
 // engage.js startEncounter)
-function interact(o){
+function interact(o){if(B&&G.mode==='battle')return false;// (none while a fight goes on: worldbattle.js openFightWorld)
   const k=objKind(o);P.tx=null;G.chase=null;G.youAttack=true;if(k)breakCamp();
   try{
     if(o&&o.fight&&fightOf(o)){fightMeet(fightOf(o));return true}

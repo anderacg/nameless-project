@@ -1021,9 +1021,9 @@ const marchOwners=()=>[P,...W.parties,...W.caravans,...W.monsters.map(asMonster)
 // one moved since by other than its march (Kit.goTo, a gate between moments): a jump, re-placed at its next step)
 Systems.add({name:'march guides',order:{frame:48},frame:()=>{
   if(!WORLD_BATTLE.on||!MARCH_MOVE.menCentre)return;
-  for(const o of marchOwners()){const a=MARCH_ARMIES.get(o);if(!a||a.idle||a.lent)continue;if(o.x===a.wx&&o.y===a.wy&&a.x===a.wx&&a.y===a.wy){o.x=a.x=a.gx;o.y=a.y=a.gy;a.lent=true}else if(o.x!==a.x||o.y!==a.y)a.jumped=true}
+  for(const o of marchOwners()){const a=MARCH_ARMIES.get(o);if(!a||a.idle||a.lent||inMapFight(o))continue;if(o.x===a.wx&&o.y===a.wy&&a.x===a.wx&&a.y===a.wy){o.x=a.x=a.gx;o.y=a.y=a.gy;a.lent=true}else if(o.x!==a.x||o.y!==a.y)a.jumped=true}
 }});
 Systems.add({name:'march formations',order:{frame:145},frame:d=>{
   if(!WORLD_BATTLE.on)return;const range=vis()+MARCH_MOVE.active;
-  for(const o of marchOwners()){if(o===P?(P.stay||P.camp):o.dead||o.gone||o.inside||o.fight||Math.hypot(o.x-P.x,o.y-P.y)>range){const a=MARCH_ARMIES.get(o);if(a)a.idle=true;continue}MarchArmy.of(o).step(d)}
+  for(const o of marchOwners()){if(inMapFight(o))continue;if(o===P?(P.stay||P.camp):o.dead||o.gone||o.inside||o.fight||Math.hypot(o.x-P.x,o.y-P.y)>range){const a=MARCH_ARMIES.get(o);if(a)a.idle=true;continue}MarchArmy.of(o).step(d)}
 }});

@@ -60,21 +60,27 @@ const Systems={
     }
     this.slices=this.slices.filter(j=>j.i<j.list.length);
   },
-  // each moment on the map: every system's step in its order; true when one of them ended the frame
-  frame(d,dt){
+  // each moment on the map: every system's step in its order (but those named in still); true when one of them ended the frame
+  frame(d,dt,still){
     if(this.slices.length)this.drain(false);
     for(const s of this.of('frame')){
+      if(still&&still.includes(s.name))continue;
       if(this.run(s,'frame',()=>s.frame(d,dt))&&s.ends)return true;
     }
     return false;
   },
+  // held: the names whose hours and days wait (a fight on the map: battle/worldbattle.js OPEN_FIGHT.held), waiting: those that do,
+  // run in their order by release (the fight over: main.js)
+  hold:null,
+  waiting:[],
   hour(h){
-    for(const s of this.of('hour'))this.run(s,'hour',()=>s.hour(h));
+    for(const s of this.of('hour'))if(this.hold&&this.hold.has(s.name))this.waiting.push([s,'hour',h]);else this.run(s,'hour',()=>s.hour(h));
   },
   day(){
     if(this.slices.length)this.drain(true);
-    for(const s of this.of('day'))this.run(s,'day',()=>s.day());
+    for(const s of this.of('day'))if(this.hold&&this.hold.has(s.name))this.waiting.push([s,'day']);else this.run(s,'day',()=>s.day());
   },
+  release(){const w=this.waiting;this.hold=null;this.waiting=[];for(const [s,phase,h] of w)this.run(s,phase,()=>s[phase](h))},
   // (one system's run: timed while the frame timings are on, ui/frameprof.js; else as it is)
   timer:null,
   run(s,phase,f){return this.timer?this.timer(s.name+(phase==='frame'?'':' ('+phase+')'),f):f()}

@@ -18,6 +18,20 @@ const JOIN_RULES={reach:120,every:5,hear:{base:20,per:.5,max:60},band:{small:12,
   kin:(o,e)=>!!e&&(o.mapKind==='monster'?e.kind==='monster'&&o.id===e.ref?.id:e.kind==='party'&&(o.kind||'bandits')===((e.ref?.src||e.ref)?.kind||'bandits'))};// (kin: a pack or band of the kind you fight, riding to its own: as ever)
 // (clear: px kept between your army's room and a place's defenders' as a fight there begins: WorldBattleArea.clearOf)
 const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1,clear:24};
+/* a fight on the map in the open (doc/OPEN_FIGHTS_DESIGN.md; the owner, 2026-11-14: "remove the battle area for hunting ... the
+   same world speed", "the same as monsters", every fight on the map): ring: its circle drawn (false: none); reach: its field this
+   much wider than the ring was, an edge past your sight that no one sees (a foe past it has got away, yours stop at it); world: the
+   world runs on through it (openFightWorld): its clock and every other party, each frame's systems but still's (yours: your march,
+   a holding or the road reached, your camp's), the days and hours of held's (your band's: its wages, its wounded, its food) kept
+   till the fight is over, then run (Systems.hold). on false: as before (the ring, the world still) */
+const OPEN_FIGHT={on:true,ring:false,reach:1.3,world:true,still:['march','arrival','road','stay','capture','march guides','supply','raids','auto reinforce','travel awareness'],held:['band','wounded','companions','supply']};
+// (in the fight on the map now: you, or a party, a beast or a herd in it or riding to it; the world's own moments leave it be:
+// worldobject.js lodThink, march.js)
+const inMapFight=o=>!!B?.world&&!!o&&(o===P||B.world.participants?.has(o));
+// (the world's moment in a fight on the map (main.js, after the fight's): its clock and the systems but OPEN_FIGHT.still, your
+// band's days and hours held; nothing while the fight is paused, forming up or over)
+function openFightWorld(rt){const O=OPEN_FIGHT;if(!O.on||!O.world||!B?.world||B.paused||B.deploy||B.muster?.active||B.over||G.dead||G.modal)return;
+  Systems.hold=Systems.hold||new Set(O.held);lodTick(rt);Clock.advance(rt*G.speed*DAY/DAY_SECONDS);if(G.dead||!B)return;Systems.frame(rt*G.speed*WORLD_PACE,rt,O.still)}
 // a fight on the map begun at once (the owner, 2026-11-12: "make battle seamless without preparations, no talking"): an encounter of
 // these kinds opens no window first (no talk, no Attack, Auto-resolve or Flee: withdraw in the fight), and the armies form up where
 // they stand, no muster (BattleMuster); sieges, raids, tournaments and caves keep their own. on false: the window and the muster, as before
@@ -79,7 +93,7 @@ class WorldBattleArea{
     this.viewport={x:G.cam.x,y:G.cam.y};this.scale=WORLD_BATTLE.scale;this.x=r0>=d+r1?a.x:r1>=d+r0?b.x:a.x+(b.x-a.x)*at;this.y=r0>=d+r1?a.y:r1>=d+r0?b.y:a.y+(b.y-a.y)*at;this.r=r;
     // A joined fight has several existing armies, each with its own formation footprint.
     if(this.fight)for(const o of this.initial){if(o===P)continue;const reach=Math.max(marchOuter(o),MarchArmy.spread(o)),dx=o.x-this.x,dy=o.y-this.y,dist=Math.hypot(dx,dy);if(dist+reach<=this.r)continue;if(reach>=dist+this.r){this.x=o.x;this.y=o.y;this.r=reach}else{const size=(this.r+dist+reach)/2,k=dist?(size-this.r)/dist:0;this.x+=dx*k;this.y+=dy*k;this.r=size}}
-    this.r=Math.max(this.r,this.sightRadius*WORLD_BATTLE.sightBase+Math.sqrt(this.fighters)*WORLD_BATTLE.perFighter);
+    this.r=Math.max(this.r,this.sightRadius*WORLD_BATTLE.sightBase+Math.sqrt(this.fighters)*WORLD_BATTLE.perFighter)*(OPEN_FIGHT.on?OPEN_FIGHT.reach:1);
     this.span=Math.ceil(2*(this.r+WORLD_BATTLE.apron));this.x0=this.x-this.span/2;this.y0=this.y-this.span/2;this.cx=this.cy=this.span*this.scale/2;this.radius=this.r*this.scale;
     this.joinedFight=!!this.fight;this.made=made;this.held=other;this.starts=[a,{x:b.x,y:b.y,facing:other instanceof Party?marchFacing(other):Math.atan2(a.y-b.y,a.x-b.x)}];this.participants=new Set([...this.initial,other,this.fight,...(e.kind==='villagers'?other?.ws||[]:[])]);this.pending=[];this.turned=new Set();this.arrivals=[];this.serial=0;this.marchClamp=p=>this.world(this.constrain(this.field(p),18));this.marchInside=p=>this.inside(this.field(p),6);
   }
@@ -147,7 +161,7 @@ class WorldBattleArea{
   visible(p,team=0){const q=this.world(p);return this.seesWorld(q.x,q.y,team)}
   clipSight(){ctx.beginPath();for(const p of this.sight()){const q=this.field(p),r=p.r*this.scale;ctx.moveTo(q.x+r,q.y);ctx.arc(q.x,q.y,r,0,Math.PI*2)}ctx.clip()}
   draw(){
-    ctx.save();ctx.strokeStyle='#d1b464';ctx.lineWidth=this.scale;ctx.setLineDash([3*this.scale,4*this.scale]);ctx.beginPath();ctx.arc(this.cx,this.cy,this.radius,0,Math.PI*2);ctx.stroke();ctx.restore();
+    if(!OPEN_FIGHT.on||OPEN_FIGHT.ring){ctx.save();ctx.strokeStyle='#d1b464';ctx.lineWidth=this.scale;ctx.setLineDash([3*this.scale,4*this.scale]);ctx.beginPath();ctx.arc(this.cx,this.cy,this.radius,0,Math.PI*2);ctx.stroke();ctx.restore()}// (the ring: none in the open, OPEN_FIGHT)
     OutpostTower.draw(this);// (an outpost tower's ladder: world/outposts.js)
     this.drawArrivals();
     for(const a of this.arrivals){const p=this.field(a.mini);if(a.u.team&&!this.visible(p))continue;const s=marchSprite(a.mini,a.army.owner),k=WORLD_BATTLE.sprite;ctx.save();ctx.translate(p.x,p.y);ctx.scale(Math.cos(a.mini.dir??a.army.face)<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore()}
