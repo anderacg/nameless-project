@@ -1215,11 +1215,12 @@
   }
 
   function drawNose(g,a,c) {
-    const x=a.nose.x+(c.nose==='crooked'||c.nose==='dwarf-broken'?2:0),y=a.nose.y-(c.nose==='short'?1:0);
+    const x=a.nose.x,y=a.nose.y-(c.nose==='short'?1:0);
     const width={straight:5,broad:7,aquiline:5,button:4,crooked:5,slender:4,rounded:5.8,short:4.5,roman:5.5,'wide-tip':7,'soft-tip':4.8,'defined-tip':5.2,'orc-flat':8.3,'dwarf-bulb':8.1,'orc-broad':9.3,'dwarf-broad-bridge':9.6,'dwarf-broken':8}[c.nose];
     const noseWidth=width+c.adjustments.noseWidth*.6+(c.race==='dwarf'||c.race==='orc'?1:0);
     const bridge=c.nose==='dwarf-broad-bridge'?4:c.nose==='dwarf-broken'?3.4:c.nose==='slender'?1:c.nose==='soft-tip'?1.25:c.nose==='defined-tip'?1.7:c.nose==='wide-tip'?1.5:c.race==='dwarf'||c.race==='orc'?2.8:2,top=c.nose==='orc-flat'||c.nose==='orc-broad'?54:c.nose==='short'?53:c.nose==='soft-tip'?51:49,hook=c.nose==='aquiline'?1.5:0;
-    const outline=c.race==='orc'?[[x-bridge,top],[x+bridge,top],[x+4,y-4],[x+noseWidth-2,y-3],[x+noseWidth,y+1],[x+noseWidth-2,y+4],[x-noseWidth+2,y+4],[x-noseWidth,y+1],[x-noseWidth+2,y-3],[x-4,y-4]]:[[x-bridge,top],[x+bridge,top],[x+2.8,y-6],[x+noseWidth,y+hook],[x+noseWidth-1.5,y+3],[x,y+4],[x-noseWidth+1.5,y+3],[x-noseWidth,y],[x-2.5,y-5]];
+    const bend=c.nose==='crooked'?1.2:c.nose==='dwarf-broken'?-1.2:0;
+    const outline=c.race==='orc'?[[x-bridge,top],[x+bridge,top],[x+4,y-4],[x+noseWidth-2,y-3],[x+noseWidth,y+1],[x+noseWidth-2,y+4],[x-noseWidth+2,y+4],[x-noseWidth,y+1],[x-noseWidth+2,y-3],[x-4,y-4]]:[[x-bridge,top],[x+bridge,top],[x+2.8+bend,y-6],[x+noseWidth,y+hook],[x+noseWidth-1.5,y+3],[x,y+4],[x-noseWidth+1.5,y+3],[x-noseWidth,y],[x-2.5+bend,y-5]];
     surface(g,outline,(px,py)=>c.race==='orc'?145+25*falloff(px,py,x-3,y-2,6,3)-26*falloff(px,py,x+noseWidth-2,y,3,3)-18*falloff(px,py,x,y+3,noseWidth,1.4):154+38*falloff(px,py,x-1,y-7,2.5,9)-30*falloff(px,py,x+3,y-5,2.3,8)+25*falloff(px,py,x-1,y,4,3)-25*falloff(px,py,x,y+4,7,2));
     curve(g,[x-noseWidth+1,y+2,x-noseWidth+2,y+.4,x-3,y+1.7,x-2,y+2.8],70,.65);
     curve(g,[x+1,y+2.8,x+2,y+1+hook,x+noseWidth-1,y+1+hook,x+noseWidth-1,y+2.8+hook],69,.65);
@@ -1413,7 +1414,7 @@
     const layers={},a=portrait.anchors,c=portrait.config,painters={eyes:(g)=>naturalEyes(g,a,c,false),iris:(g)=>naturalEyes(g,a,c,true),eyelids:g=>eyelids(g,a,c),brows:g=>brows(g,a,c),nose:g=>drawNose(g,a,c),mouth:g=>mouth(g,a,c),teeth:g=>teeth(g,a,c)};
     for(const [id,paint] of Object.entries(painters)){const out=canvas(),g=out.getContext('2d');g.lineCap='round';g.lineJoin='round';g.save();g.translate(dx,dy);g.scale(scale,scale);paint(g);g.restore();
     if(id==='mouth'&&!mouthForm(c)[4]){const f=mouthForm(c),x=a.mouth.x*scale+dx,y=a.mouth.y*scale+dy,w=f[0]*scale,smile=f[2]*scale,half=v=>Math.round(v)+.5;g.strokeStyle=gray(80);g.lineWidth=1;g.beginPath();g.moveTo(half(x-w+scale),half(y+smile));g.bezierCurveTo(half(x-3*scale),half(y+.6*scale),half(x+3*scale),half(y+.6*scale),half(x+w-scale),half(y+smile));g.stroke();}
-    if(id==='nose'){const widths={broad:7,'orc-broad':9.3,'orc-flat':8.3,crooked:5},w=((widths[c.nose]||7)+c.adjustments.noseWidth*.6+1)*scale,x=(a.nose.x+(c.nose==='crooked'?2:0))*scale+dx,y=a.nose.y*scale+dy;g.fillStyle=gray(96);for(const side of [-1,1])g.fillRect(Math.round(x+side*(w-2))-(side>0&&w>=6?1:0),Math.round(y+1.5*scale),w>=6?2:1,1);}
+    if(id==='nose'){const widths={broad:7,'orc-broad':9.3,'orc-flat':8.3,crooked:5},w=((widths[c.nose]||7)+c.adjustments.noseWidth*.6+1)*scale,x=a.nose.x*scale+dx,y=a.nose.y*scale+dy;g.fillStyle=gray(96);for(const side of [-1,1])g.fillRect(Math.round(x+side*(w-2))-(side>0&&w>=6?1:0),Math.round(y+1.5*scale),w>=6?2:1,1);}
     layers[id]=rasterize(out,32,['brows','mouth','teeth'].includes(id));}
     const g=layers.iris.getContext('2d');g.save();g.globalCompositeOperation='destination-in';g.drawImage(layers.eyes,0,0);g.globalCompositeOperation='destination-out';g.drawImage(layers.eyelids,0,0);g.restore();
     return layers;
@@ -1932,6 +1933,7 @@ window.PAINTED_PORTRAIT_ASSETS=[{"width":1261,"height":1247,"frames":[[52,28,173
    for(let Y=Math.floor(b.y*scale);Y<Math.ceil((b.y+b.h)*scale);Y++)for(let X=Math.floor(b.x*scale);X<Math.ceil((b.x+b.w)*scale);X++){
     const x=(X+.5)/scale,y=(Y+.5)/scale,k=(Math.floor(y)*N+Math.floor(x))*4;if(!a[k+3])continue;
     let u=(x-b.x)/b.w,v=(y-b.y)/b.h;
+    if(id==='nose'&&['crooked','dwarf-broken'].includes(p.config.nose)){const t=(y-b.y)/b.h,bend=(p.config.nose==='crooked'?.8:-.8)*Math.sin(Math.PI*t);u-=bend/b.w;}
     if(body){u=(x-4)/120;if(id==='torso'){const X=Math.max(0,Math.min(f.w-1,Math.floor(u*f.w))),top=f.top[X];v=(top+(y-bodyTops[Math.floor(x)])*f.w/120)/f.h;}else{u=(anchor.x+(x-p.anchors.cx)/60*anchor.half)/f.w;v=(y<103?(y-94)/9*anchor.y:anchor.y+(y-103)/25*(f.h-anchor.y))/f.h;}}
     if((id==='clothing'||id==='armor')&&LEATHER_ARMOR.has(p.config.clothing)){put(d,(Y*size+X)*4,leatherMaterial(p,colors,id,x,y,a[k]),a[k+3]);continue;}
     const sampled=sample(f,u,v);
