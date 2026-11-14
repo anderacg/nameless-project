@@ -2,7 +2,7 @@
 
 The owner, 2026-11-14: "Why cant we make it like open world game no battle boundary just based on units range etc", then "I want option 2 but just that the fights or unit sprites are only draw when player is near". Option 2 means the fight runs on the world map itself, not in a patch of ground copied out of it.
 
-Status: **designed 2026-11-14; phase 1 in work.** It follows doc/OPEN_FIGHTS_DESIGN.md, the first step: no ring, the world running on, the fallen holding their loot.
+Status: **designed 2026-11-14; on hold** (the owner, the same day: "I'll stop that new battle for now"). Nothing of it is built; fights on the map are as doc/OPEN_FIGHTS_DESIGN.md has them. It follows doc/OPEN_FIGHTS_DESIGN.md, the first step: no ring, the world running on, the fallen holding their loot.
 
 ## 1. What changes for the player
 
