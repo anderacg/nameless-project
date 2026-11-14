@@ -825,7 +825,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  so a rim pixel on a chunk's first column came out darker than the one window paints it (61 pixels, worldchunks' seam checks).
 //  Now the ground covers the apron (gfx/worldart.js paintSteps) and the chunks stitched are the one window's picture. Proof: with
 //  the old code, W5 hashed from the map painted as one window (no chunks) is 38e3c118. W6 and the rest held. Was W5 7acf9f33)
-const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'38e3c118',W6:'b43ed88c',W7:'0cc26fac',W8:'b871b922',B2:'c315aa9a'};
+// (W5 re-recorded 2026-11-14, on purpose: a fix, a frost pond's ice plates on water only. Its ring reached a lake's tile, whose
+//  curved shore counted as wet by the tile, so 29 pixels of ice lay on the shore (worldnature's water check). Now ice goes only on
+//  the water as drawn (engine/worldnature.js, the rings). Proof: the old line gives 38e3c118 again. Was W5 38e3c118)
+const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'6fa8216f',W6:'b43ed88c',W7:'0cc26fac',W8:'b871b922',B2:'c315aa9a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

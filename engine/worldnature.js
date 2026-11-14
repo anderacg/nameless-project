@@ -830,8 +830,9 @@
     if(P.RG){const RN=PX.WN_RING,GN=noiseF(W,H,RN.n,P.seed*977+140);
       for(const q of P.RL){const Rn0=RN[q.kind],e=(q.r+q.reach)*ts,cx=q.x*ts,cy=q.y*ts;if(cx+e<wx0||cx-e>=wx1||cy+e<wy0||cy-e>=wy1)continue;const fr=cAt(q.x|0,q.y|0)==='frost',Rn=fr&&q.kind!=='tarn'&&RN.frost?RN.frost:Rn0,G=Rn.green,ice=fr&&Rn.ice;
         for(let Y=Math.max(wy0,Math.floor(cy-e));Y<Math.min(wy1,Math.ceil(cy+e));Y++)for(let X=Math.max(wx0,Math.floor(cx-e));X<Math.min(wx1,Math.ceil(cx+e));X++){const d=Math.hypot(X+.5-cx,Y+.5-cy)/ts-q.r;if(d>q.reach)continue;const i=at(X,Y);
-          // (frozen: ice over all of the water as drawn, a few cracks in it, open water left in thin leads)
-          if(wetP(X,Y)){if(ice&&!CLR.at(X,Y)){const m=GN(X+57,Y+23),cr=Math.abs(m-Rn.ice[1]);if(cr>.02){mixD(i,cr<.05?[150,176,204]:[226,236,246],Rn.ice[0]);touch(i,2)}}continue}
+          // (frozen: ice over all of the water as drawn (a lake's tile in reach: on its water only, not its curved shore), a few cracks
+          //  in it, open water left in thin leads)
+          if(wetP(X,Y)){if(ice&&!CLR.at(X,Y)&&(!P.wet||P.wet(X,Y))){const m=GN(X+57,Y+23),cr=Math.abs(m-Rn.ice[1]);if(cr>.02){mixD(i,cr<.05?[150,176,204]:[226,236,246],Rn.ice[0]);touch(i,2)}}continue}
           const k=Rn.k*Math.min(1,(1-d/q.reach)*1.6)-(GN(X,Y)-.5)*.5;if(k<=0)continue;mixD(i,G,Math.min(k,Rn.k+(k-Rn.k)*RN.soft));touch(i,CLR.at(X,Y)?3:1)}yield}}
     lap('floor');yield;
     // (2) hills: each group of hill tiles one rise (the owner, 2026-10-22: "one large hill sprite", not a bump a tile): its tiles
