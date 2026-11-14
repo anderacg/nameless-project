@@ -8,7 +8,15 @@ Kit.suite(({ok,info})=>{const t=T,P=t.P,G=t.G,W=t.W;Kit.begin('soldier',1);Kit.w
  const ham=t.TOWNS.find(h=>h.kind==='hamlet'||h.kind==='village'),big=t.TOWNS.find(h=>h.kind==='castle'||h.kind==='city');
  {const l=W.lords.find(x=>!x.dead),keep=l.troops;try{const f=l.fac,o=ham.owner;ham.owner=f;l.troops=Array(ham.T.quarter+5).fill('hum_spear');const why=l.shelterWhy(ham);l.troops=Array(Math.max(1,ham.T.quarter-1)).fill('hum_spear');const few=l.shelterWhy(ham);ham.owner=o;
    ok(/no room for/.test(why)&&!few,'a lord with '+(ham.T.quarter+5)+' men finds no room in '+ham.name+' ("'+why+'"); with fewer he is quartered')}finally{l.troops=keep}}
- {const keep=P.troops;try{P.troops={hum_spear:ham.T.quarter+4};const why=t.stayWhy(ham);P.troops={};const alone=t.roomFor(ham,t.partySize());ok(/no room for/.test(why)&&!alone,'your army too: '+why+'; alone, there is room')}finally{P.troops=keep}}
+ // ---- yours too big for it (the owner: "add auto camp near holding for exceed case"): you stay, your army camped by the gate
+ {const keep=P.troops,g0=P.gold,sf=t.standingAt;try{P.troops={hum_spear:ham.T.quarter+4};P.gold=500;window.standingAt=()=>0;const n=t.partySize(),why=t.stayWhy(ham),cost=t.stayCost(ham);
+   ok(!why&&t.stayOut(ham)&&cost===t.STAY_BASE&&/camped by its gate/.test(t.stayTerms(ham)),'your '+n+' men, too many for '+ham.name+': you may stay all the same, '+t.stayTerms(ham));
+   ok(t.startStay(ham)&&P.stay.camp&&Math.hypot(P.stay.camp.x-ham.x,P.stay.camp.y-ham.y-12)<60&&Math.hypot(P.stay.camp.x-ham.x,P.stay.camp.y-ham.y)>12&&G.msgs.some(m=>/pitch camp by its gate/.test(m.m)),'staying: your army pitches camp by its gate ('+(P.stay.camp?Math.round(Math.hypot(P.stay.camp.x-ham.x,P.stay.camp.y-ham.y)):'-')+' px from its middle), you take a bed inside');
+   const e=t.stayCampEnt({x:0,y:0});ok(!!e&&typeof e.f==='function'&&t.stayCost()===t.STAY_BASE,'its camp drawn on the map, the inn charging for you alone ('+t.STAY_BASE+'g)');
+   t.leaveStay();P.troops={};ok(!t.stayOut(ham)&&!t.stayWhy(ham),'alone, your band fits inside: no camp')}finally{P.troops=keep;P.gold=g0;window.standingAt=sf;P.stay=null}}
+ // ---- a companion's party told to stay where there is no room: it camps by the gate
+ {P.comps={brann:{ap:0,role:''}};const C=Object.setPrototypeOf({cid:'brann',troops:Array(ham.T.quarter+3).fill('hum_spear'),x:ham.x,y:ham.y+12,order:'stay',base:ham.name},t.CompanionParty.prototype);
+  if(C){C.enter(ham);ok(C.campOut===ham.name&&!C.inside,'a companion\'s party of '+C.troops.length+' told to stay there camps by its gate, not inside')}else ok(false,'fixture: a companion party')}
  // ---- a lord resting outside a holding with no room: his camp by its gate, in your sight
  {const l=W.lords.find(x=>!x.dead),keep={...l};try{const g=t.gateGoal(ham);Object.assign(l,{x:g.x,y:g.y,inside:null,fight:null,state:'rest',tgt:ham.name,troops:Array(ham.T.quarter+5).fill('hum_spear')});Kit.goTo(g.x+30,g.y+20);
    const ents=[];t.GateFile.camps(ents,{x:0,y:0},t.vis());ok(ents.length===1&&typeof ents[0].f==='function','resting outside '+ham.name+', his camp is pitched by its gate')}finally{Object.assign(l,keep)}}

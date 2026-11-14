@@ -28,10 +28,11 @@ class GateFile{
   // (each man filing in, by his feet among everyone, fading at the gate)
   static draw(ents,cam){const X=GATE_FILE;for(const f of this.list){const own=f.o===P||f.o.faction==='player';
     for(const u of f.men){const a=Math.min(1,Math.hypot(f.g.x-u.x,f.g.y-u.y)/X.fade);ents.push({y:u.y,own,f:()=>{ctx.save();ctx.globalAlpha*=a;drawMarcher(u,f.o,cam);ctx.restore()}})}}}
-  // (a lord at rest outside a holding with no room for his men: his camp beside its gate, in your sight)
+  // (a lord at rest outside a holding with no room for his men, or a companion's party told to stay there: its camp beside its
+  // gate, in your sight)
   static camps(ents,cam,V){if(!GATE_FILE.camp)return;const S=yourSight(V);
-    for(const l of W.lords){if(l.dead||l.inside||l.fight||l.state!=='rest')continue;const t=townBy(l.tgt),g=t&&gateGoal(t);if(!g||Math.hypot(l.x-g.x,l.y-g.y)>16||!roomFor(t,l.troops.length)||!S.sees(l.x,l.y))continue;
-      const side=(l.id.length%2?1:-1),s=campSprite(l.id.length*13+3,'travelers'),X=g.x+side*26,Y=g.y+6;
+    for(const l of [...W.lords.filter(l=>l.state==='rest'),...cparties().filter(p=>p.order==='stay'&&p.campOut)]){if(l.dead||l.inside||l.fight)continue;const t=townBy(l.mapKind==='cparty'?l.campOut:l.tgt),g=t&&gateGoal(t);if(!g||Math.hypot(l.x-g.x,l.y-g.y)>16||!roomFor(t,l.troops.length)||!S.sees(l.x,l.y))continue;
+      const id=String(l.id||l.cid||''),side=(id.length%2?1:-1),s=campSprite(id.length*13+3,'travelers'),X=g.x+side*26,Y=g.y+6;
       ents.push({y:Y,f:()=>{const x=Math.round(X-s.ax-cam.x),y=Math.round(Y-s.ay-cam.y);if(s.sh){ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,x,y);ctx.globalAlpha=1}ctx.drawImage(s,x,y)}})}}
 }
 onWorld(()=>{GateFile.list=[]});

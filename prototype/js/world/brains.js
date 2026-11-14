@@ -149,7 +149,7 @@ class CompanionBrain extends Brain{
     else if(prey&&p.cool<=0){go(prey[0].x,prey[0].y,sp);if(prey[1]<10){startFight([p],[prey[0]]);p.cool=3}}
     else if(p.order==='follow')Host.keep(p,sp,go);// (its place in your column: hosts.js)
     else if(p.order==='return'){go(P.x,P.y,sp*1.2);if(Math.hypot(P.x-p.x,P.y-p.y)<12)cpDisband(p.cid,true)}
-    else if(p.order==='stay'){const t=townBy(p.base);Router.travel(p,gateGoal(t),sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8){p.enter(t);log(COMPS[p.cid].short+'’s party takes lodgings in '+t.name+'.')}}
+    else if(p.order==='stay'){const t=townBy(p.base);if(p.campOut===t.name){this.face(p,ox);return false}Router.travel(p,gateGoal(t),sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8){p.enter(t);log(COMPS[p.cid].short+'’s party '+(p.campOut?'camps by the gate of '+t.name+', no room inside for its men':'takes lodgings in '+t.name)+'.')}}
     else{const t=townBy(p.base);if(!t){p.order='follow';return false}
       if(p.wx==null||Math.hypot(p.wx-p.x,p.wy-p.y)<6){for(let k=0;k<20;k++){const x=t.x+rint(-A.compBeat[0],A.compBeat[0]),y=t.y+rint(-A.compBeat[1],A.compBeat[1]);if(passable(terrAt(x,y))){p.wx=x;p.wy=y;break}}}
       if(p.wx!=null)go(p.wx,p.wy,sp*.8)}

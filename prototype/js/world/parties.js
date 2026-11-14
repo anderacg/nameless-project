@@ -83,8 +83,10 @@ class CompanionParty extends Party{
   power(){return power(this.troops)*(1+.04*compSkill(this.cid,'lead'))}
   tip(){return '<b>'+this.label()+'</b><small>Your companion, '+this.fighters+' fighters, '+({follow:'following you',patrol:'patrolling '+this.base,return:'coming back'})[this.order]+'</small><span class="act">Click: actions, double-click: orders</span>'}
   get brain(){return BRAINS.cparty}
-  shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)||roomFor(t,this.troops.length)}
-  enter(t){GateFile.start(this,t);this.inside=t.name;this.x=t.x;this.y=t.y}
+  shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)}
+  // (no room for its men (gatefile.js roomFor): it camps by the gate, on the map, its tents pitched there: campOut)
+  enter(t){if(STAY_CAMP.on&&roomFor(t,this.troops.length)){this.campOut=t.name;return}this.campOut=null;GateFile.start(this,t);this.inside=t.name;this.x=t.x;this.y=t.y}
+  leave(){this.campOut=null;super.leave()}
   inView(V){return this.onMap()&&yourSight(V).sees(this.x,this.y)}// (yours: always in sight)
   banner(){return{k:'banner',col:FACS.player.col,dev:'star'}}// (yours, a companion's mark on it)
   look(){return{col:FACS.player.col,race:P.race,dir:this.dir||1,moving:true,seed:this.cid.length*7,label:COMPS[this.cid].short+' '+this.fighters,labelCol:'#9fc0ff'}}
@@ -151,7 +153,7 @@ class PlayerParty extends Party{
   get brain(){return null}
   get inside(){return this.stay?this.stay.town:null}
   onMap(){return !this.stay}
-  shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t,stayCost())||roomFor(t,partySize())}
+  shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t,stayCost(t))}// (no room for your army: it camps by the gate, stay.js STAY_CAMP)
   enter(t){return startStay(t)}
   leave(why,cls){if(this.stay)leaveStay(why,cls)}
   label(){return 'Your band'}

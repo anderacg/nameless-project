@@ -178,8 +178,8 @@ class Tavern extends Place{
   body(t){
     const f=FACS[t.owner],here=P.stay&&P.stay.town===t.name,why=stayWhy(t),race=t.races[0];
     // the people in it: the innkeeper (lodgings), the ransom broker, the companions waiting for work
-    return railCards([{pic:personPic('innkeeper',race),name:'The innkeeper',role:'Lodgings',facts:[here?['Your band is staying here','good']:stayFree(t)?['Free: they know you here','good']:stayCost()+'g a day'],
-        note:here?'Your band is staying here: '+(stayFree(t)?'free, as long as you like':stayCost()+'g a day, your gold lasts until Day '+stayUntil())+'.':'Stay and let the days pass: you recover four times as fast, morale rises, the wounded heal twice as fast. '+(why||(stayFree(t)?'':'5g, and 1g for every 2 of your people.'))+' Food for the road: the market.',
+    return railCards([{pic:personPic('innkeeper',race),name:'The innkeeper',role:'Lodgings',facts:[here?['Your band is staying here','good']:stayFree(t)?['Free: they know you here','good']:stayCost(here?null:t)+'g a day'],
+        note:here?'Your band is staying here: '+(stayFree(t)?'free, as long as you like':stayCost()+'g a day, your gold lasts until Day '+stayUntil())+'.':'Stay and let the days pass: you recover four times as fast, morale rises, the wounded heal twice as fast. '+(why||(stayOut(t)?'There is no room here for your '+partySize()+' men: they camp by the gate'+(stayFree(t)?'':', and you pay '+STAY_BASE+'g a day for yourself')+'.':stayFree(t)?'':STAY_BASE+'g, and 1g for every 2 of your people.'))+' Food for the road: the market.',
         acts:[here?['sy-leave',null,'Leave']:['sy-stay',t.name,'Stay',why]]},
       tapsterCard(t,race),// (drink for the road: world/supply.js)
       t.T.broker&&{pic:personPic('merchant',race,1),name:'The ransom broker',role:'Buys prisoners you bring in',facts:[prisonerCount()?prisonerCount()+' prisoners with you':'No prisoners with you',prisonerCount()?['Worth '+ransomValue()+'g','gold']:''],acts:[['ransom-pick',null,'Ransom',prisonerCount()?'':'No prisoners']]},
