@@ -42,6 +42,18 @@ Every foe who falls in a fight on the map lies where he fell, as the fight drew 
 - **Saves:** carcasses are saved (key `carcasses`). After a load each is drawn as a plain shape, since its picture lived only in that session.
 - `CARCASS.on` false: no carcasses, and the field's drops and the end window work as before.
 
+## 4. After the fight: each where it stood
+
+The owner, 2026-11-14: "The hunting should not warp the wildlife back to the group, each will keep the state and position. Same goes for the army".
+
+- **Armies:** each man is handed back to his marcher where he stood (`WorldBattleArea#finish`), and walks back into the march from there. Checked on a win and on a withdrawal, for both sides: no man moves more than 0.1 px at the hand-back.
+- **Herds:** a herd was one point drawn as up to three animals, so a hunt's survivors used to jump to their middle. Now each animal keeps its own spot about the herd's point (`Herd` `m`: its offset, facing and wind; `battle/hunting.js` `finish`).
+  - The map draws each animal where it is. Each walks back to its place at `HERD_SCATTER.gather` (6 px a second, `data/exertion.js`), carried along as the herd moves. Once all are within `near` (1 px), the herd is drawn as before.
+  - Animals still bolting when the hunt ended keep the herd running their way for `HERD_SCATTER.run` (4 s), at their speed.
+  - A hunt begun on a scattered herd meets each animal where it stands, facing its way, with its own wind (`herdSpot`). If the herd is still running, each is already alert.
+  - The spots are not saved: after a load the herd is gathered.
+- `HERD_SCATTER.on` false: the herd as before. Tests: `tests/herdscatter.js`.
+
 ## Left
 
 - The field is still a fixed window, though now 2.2 times as wide. Moving it with the chase would mean moving every position the fight keeps (its men's ways and goals, groups, missiles, corpses, the blood layer, fog, the terrain grid, the tracks, the captains' memory), so a chase past its edge still ends there: the foe has got away.

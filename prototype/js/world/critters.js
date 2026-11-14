@@ -24,6 +24,7 @@ class Herd extends WorldObject{
     // coat picked once (coat), not from its home (hx, hy), which a fleeing herd moves every frame: its coats flashed, the owner
     // 2026-11-13: "The wildlife sprite flashing, like it changes the color")
     ents.push({y:c.y,f:()=>{subT(c);const v0=c.coat??(c.coat=Math.floor((c.hx||0)+(c.hy||0))),A=critterArt(c.id,0,v0),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(A.w*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
+      if(c.m){herdScattered(c,v0,A,sx,sy,sp,go,N);return}
       for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,A.w)/N,N)+i*3)%N:0,a=critterArt(c.id,fr,v0+i),w=Math.max(4,a.w-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
         ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);ctx.scale(c.dir<0?-a.k:a.k,a.k);ctx.drawImage(a.s,-(a.s.width>>1),-a.s.height+(a.k<1?2:1));ctx.restore()}
@@ -152,6 +153,23 @@ class WildlifeThreats{
   }
 }
 onWorld(()=>{WildlifeThreats.index.rebuild([]);WildlifeThreats.chosen=new WeakMap()});
+// (an animal's place in its herd, i: x, y px about its point, its facing's way: the first three as drawn (Herd draw), the rest on
+//  theirs in turn; sp: the herd's spacing, its art's)
+const herdSp=c=>Math.max(4,Math.round(critterArt(c.id,0,c.coat??Math.floor((c.hx||0)+(c.hy||0))).w*.55));
+function herdSlot(c,i,sp){const j=i%3,ox=j===0?0:j===1?-sp:Math.round(sp*.4),oy=j===0?0:j===1?-1:-3;return {x:c.dir<0?-ox:ox,y:oy}}
+// a herd scattered by a hunt (HERD_SCATTER, battle/hunting.js finish: m, each animal's spot about its point, its facing f, whether it
+// walks, go): each where it stands, back to front, until all are back in their places
+function herdScattered(c,v0,A,sx,sy,sp,go,N){const n=Math.max(1,c.n||1),L=[];for(let i=0;i<n;i++){const m=c.m[i];if(m)L.push([i,m.dx,m.dy,m.f,m.go]);else{const q=herdSlot(c,i,sp);L.push([i,q.x,q.y,c.dir,false])}}
+  L.sort((p,q)=>p[2]-q[2]);
+  for(const [i,dx,dy,f,mg] of L){const fr=go||mg?(frameOf(c,Math.max(4,A.w)/N,N)+i*3)%N:0,a=critterArt(c.id,fr,v0+i),w=Math.max(4,a.w-2),x=sx+Math.round(dx),y=sy+Math.round(dy);
+    ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),y-1,w,2);ctx.save();ctx.translate(x,y);ctx.scale(f<0?-a.k:a.k,a.k);ctx.drawImage(a.s,-(a.s.width>>1),-a.s.height+(a.k<1?2:1));ctx.restore()}
+  if(WORLD_BATTLE.on)BANNERQ.push({o:c,marker:{h:A.h,col:'#b4c985'}})}
+// (its animals walk back to their places, HERD_SCATTER.gather px a s, carried along as the herd moves (mx, my this step); all
+//  within near px of theirs: the herd as before)
+function herdGather(c,d,mx,my){const X=HERD_SCATTER,sp=herdSp(c),st=moveStep(X.gather,d);let back=true;if(c.m.length>(c.n||0))c.m.length=c.n||0;
+  c.m.forEach((m,i)=>{const q=herdSlot(c,i,sp),ex=q.x-m.dx,ey=q.y-m.dy,e=Math.hypot(ex,ey);let gx=0,gy=0;if(e>X.near){const k=Math.min(1,st/e);gx=ex*k;gy=ey*k;m.dx+=gx;m.dy+=gy;back=false}
+    const vx=gx+mx;m.go=Math.hypot(vx,gy+my)>.01;if(Math.abs(vx)>.05)m.f=vx>0?1:-1});
+  if(back)delete c.m}
 // Move every herd: wild game bolts from perceived threats and tires as it runs; livestock just grazes.
 // a herd's moment (parties.js lodThink; hide: how well you are hidden from it). Hunting is an explicit choice.
 const HERD_MIND={think(c,d,hide){
@@ -159,11 +177,13 @@ const HERD_MIND={think(c,d,hide){
     // (fleeing: its grazing ground goes with it, and it keeps on away a little after, so it does not turn back into you)
     if(threat){const sp=moveStep(D.spd*Math.min(1,speedAt(c.x,c.y)||1),d);Router.flee(c,threat,sp);
       c.hx=c.x;c.hy=c.y;c.a=Math.atan2(c.y-threat.y,c.x-threat.x);c.t=Math.max(c.t,1.5);c.idle=false}
+    // (still bolting from a hunt (HERD_SCATTER.run): on the way its animals ran, at their speed, till it tires of it or is stopped)
+    else if(c.run>0){c.run-=d;if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.spd*Math.min(1,speedAt(c.x,c.y)||1),d),(x,y)=>habitatOk(c.id,x,y)))c.run=0;c.hx=c.x;c.hy=c.y;c.idle=false}
     else{c.t-=d;if(c.t<=0){const R=critRng();c.t=2+R.next()*4;c.a=R.next()*6.283;c.idle=R.chance(.5)}
       const hx=c.hx-c.x,hy=c.hy-c.y;if(Math.hypot(hx,hy)>(D.live?(c.pen?A.penLeash:A.herdLeash):A.gameLeash))c.a=Math.atan2(hy,hx);
       if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):(x,y)=>habitatOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.live?4:8,d),ok)){c.a=Math.atan2(hy,hx)+(critRng().next()-.5);c.idle=true}}}
     // (it faces the way it went, turning only on a clear step sideways: no flicker as it swerves or runs straight up or down)
-    {const mx=c.x-ox,my=c.y-oy;if(Math.abs(mx)>Math.hypot(mx,my)*.35&&Math.abs(mx)>.01)c.dir=mx>0?1:-1}
+    {const mx=c.x-ox,my=c.y-oy;if(Math.abs(mx)>Math.hypot(mx,my)*.35&&Math.abs(mx)>.01)c.dir=mx>0?1:-1;if(c.m)herdGather(c,d,mx,my)}
 
     return false},
   // far from you (the far tier, worldobject.js): it holds where it grazes (doc/WORLD_DESIGN.md §3.5: game wanders only near you)
