@@ -3,7 +3,8 @@
    animations for preparations", "making the camp will require larger area and more tents based on army size") ----------
    A camp of n men pitches a tent for every CAMP_SITE.men of them (one at least, most at most) round its fire, ring after ring
    (ring px out, squash of it down the screen, the tents space px apart round it; a tent's ground tent px: half across, up from its
-   feet: a tent a man can stand in, at the figures' 5 px a metre), each where the ground lets it stand (tentOk: no
+   feet: a tent a man can stand in, at the figures' 5 px a metre; the owner, 2026-11-14, "space more": room to walk between
+   them), each where the ground lets it stand (tentOk: no
    road or track, nor within road of its band as drawn (roadband.js), water (a wood's clearing will do: no tree on it),
    peak or ford under it, no lot or field, nothing the map's art keeps clear (worldart.js plan.clear: the roads' bands, the gates),
    nothing standing on it, none in a holding's heart). By a holding it looks for its ground nearest the gate (spotNear: where need
@@ -11,7 +12,7 @@
    poles raised over pole s, its cloth hauled up over rise s; the fire lit when the last stands, smoke before it. Its men stand by
    while it goes up (yours: render.js drawWorld, pitching). Drawn only, on the real clock: a camp whose pitching was not seen (one
    loaded, one come upon) stands pitched; one not drawn for forget s is struck ---------- */
-const CAMP_SITE={men:8,most:14,ring:28,squash:.62,space:25,tent:[9,16],road:.25,gap:.4,pole:.3,rise:.55,fire:.5,forget:3,spot:{r:30,step:8,near:24,need:.7}};
+const CAMP_SITE={men:8,most:14,ring:36,squash:.7,space:34,tent:[9,16],road:.25,gap:.4,pole:.3,rise:.55,fire:.5,forget:3,spot:{r:30,step:8,near:24,need:.7}};
 class CampSite{
   static t0=new Map();static seen=new Map();static lay=new Map();static spots=new Map();
   // (its pitching begins now, unless it has begun)
