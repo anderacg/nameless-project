@@ -235,6 +235,10 @@ function holdShut(now){const H=HOLD_SHUT;if(!now&&H.n===WORLD_LOD.n)return;H.n=W
 // (every holding's walls read while the game loads, each centre's picture and footing made in turn (cached on its lot: structures.js
 // lotSprite, march.js lotFooting), then holdShut at once: its last step (session.js begin, save.js loadGame), so the first frame on
 // the map no longer makes them all (a code review's measure, 2026-11-03: a lord's first step took 3.4 s))
+// (their models alone, made before the world is set up (session.js begin: your start's ways go round them), nothing shut yet:
+// shut early, the lots laid out and the first patrols would find their ways otherwise)
+function* holdModelsWarm(){const cs=TOWNS.map(t=>[t,PATHS.holding&&t.lots?t.lots.find(l=>l.k==='centre'&&l.st!=='ruined'):null]).filter(x=>x[1]);
+  for(let i=0;i<cs.length;i++){lotModel(cs[i][0],cs[i][1]);yield (i+1)/cs.length}}
 function* holdShutWarm(){const cs=TOWNS.map(t=>[t,PATHS.holding&&t.lots?t.lots.find(l=>l.k==='centre'&&l.st!=='ruined'):null]).filter(x=>x[1]);
   for(let i=0;i<cs.length;i++){lotFooting(cs[i][0],cs[i][1]);yield (i+1)/cs.length}holdShut(true)}
 // (does graph edge e, a road's, run over a holding's walls: a tile of it shut so, but its two ends (a road ends at its holding's

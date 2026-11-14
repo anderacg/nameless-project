@@ -36,7 +36,9 @@ function forgeSteps(gen,settings,done){
 }
 // a made world put in (worldmap.js installWorld) and laid out as a fresh page lays out its own (main.js), from a fresh session
 // (what the last game left never reaches it), then kept as it first stands: every new game in it starts there
-function forgeInstall(r){resetSession();installWorld(r);worldFirst()}
+function forgeInstall(r){runGen(forgeInstallSteps(r))}
+// (the same as steps: loading.js runSteps)
+function* forgeInstallSteps(r){resetSession();installWorld(r);yield 0;heroAtGate(startHolding());yield* initWorldSteps();worldKeep()}
 // (the world in laid out as it first stands, from where you would start: initWorld, then kept: worldKeep)
 function worldFirst(){heroAtGate(startHolding());initWorld();worldKeep()}
 // the world let go (the main menu from the Esc menu or the game over: ui.js toTitle): a fresh session, no holdings, camps or map
@@ -64,8 +66,9 @@ function begin(k,settings){
   const b=BGS[k];if(!b)return false;if(settings===undefined)settings=newWorldSettings();
   const want=settings||!WM?{gen:'ashmark-1',settings:normSettings(settings||classicSettings())}:null,
     made=want&&worldKey(want)!==worldKey(WM)?{r:want.settings&&worldPreviewTake(want.settings)}:null,t0=performance.now();
-  runSteps('Forging the world…',[...(made?[...(made.r?[]:forgeSteps(want.gen,want.settings,r=>{made.r=r;if(want.settings)forgeTimed(want.settings,performance.now()-t0)})),{id:'install',label:'Drawing borders',w:150,run:()=>forgeInstall(made.r)}]:[]),
-    {id:'world',label:'Peopling the land',w:made?150:4,run:()=>startGame(k,b)},{id:'paint',label:'Painting the first lands',w:made?150:3,run:paintView},{id:'walls',label:'Raising the walls',w:made?150:3,run:holdShutWarm}],
+  runSteps('Forging the world…',[...(made?[...(made.r?[]:forgeSteps(want.gen,want.settings,r=>{made.r=r;if(want.settings)forgeTimed(want.settings,performance.now()-t0)})),{id:'install',label:'Drawing borders',w:150,run:()=>forgeInstallSteps(made.r)}]:[]),
+    {id:'holds',label:'Raising the holdings',w:made?150:3,run:holdModelsWarm},// (before your start is chosen: its ways go round them, world/start.js; once, a piece at a time, not at once in it)
+    {id:'world',label:'Peopling the land',w:made?150:4,run:()=>startGameSteps(k,b)},{id:'paint',label:'Painting the first lands',w:made?150:3,run:()=>paintViewSteps()},{id:'near',label:'Building the villages',w:made?60:2,run:buildNear},{id:'walls',label:'Raising the walls',w:made?150:3,run:holdShutWarm}],
     {back:['Back to the title',()=>showTitle()]}).catch(()=>{});// (a failure shows itself: its error view)
 }
 /* (a generated world but the classic one starts as its seed says (doc/WORLD_DESIGN.md §4.4, D30): its first sites, herds, bands and
@@ -73,15 +76,17 @@ function begin(k,settings){
    stream's, so one world code starts one world; then the game's number drawn, and what happens in play stays random. The classic
    world as ever: from the game's number) */
 const seededStart=()=>!WM.classic,startDraws=(own,fn)=>own?Rng.use('start',fn):fn();
-function startGame(k,b){
-  resetSession();heroFrom(k,b);
+function startGame(k,b){runGen(startGameSteps(k,b))}
+// (the same as steps, each part its own: loading.js runSteps; the same draws in the same order)
+function* startGameSteps(k,b){
+  resetSession();heroFrom(k,b);yield 0;
   // (a new game on the map: every system's world reset first, onWorld; the game's number for its random streams, core/rng.js,
   // drawn before the wild game and the beasts are placed from them)
   // (a generated world but the classic one: its first sites, herds, bands and beasts from its seed, seededStart)
   // (then the realms' outposts: a pure reckoning of the map, no draw, world/outposts.js)
-  const own=seededStart();useWorld(WM);initWorld();if(own)Rng.reset();
-  startDraws(own,()=>{W.sites=genSites()});W.sites.push(...Outposts.place());Outposts.reserve();fogReset();if(!own)Rng.newGame();startDraws(own,initCritters);
-  const {S,home}=heroHome(k,b),rc=RACES[P.race];
+  const own=seededStart();useWorld(WM);for(const v of initWorldSteps())yield v*.5;if(own)Rng.reset();
+  startDraws(own,()=>{W.sites=genSites()});W.sites.push(...Outposts.place());Outposts.reserve();fogReset();yield .6;if(!own)Rng.newGame();startDraws(own,initCritters);yield .7;
+  const {S,home}=heroHome(k,b),rc=RACES[P.race];yield .85;
   startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);goblinsStart();
     for(let i=0,n=Math.round(density(WM).monsterStart*spawnMul('monsters'));i<n;i++)spawnMonster(true)});
   if(own)Rng.newGame();Weather.fair(P.x,P.y);// (a clear sky over your start: data/weather.js WEATHER.start)
@@ -110,5 +115,17 @@ function heroHome(k,b){
 }
 // the land you are about to see, painted now, inside the loading steps, not in the first frame: the chunks under the view the
 // camera will take round you (render.js drawWorld; worldart.js WorldArt keeps them)
-function paintView(){const x0=Math.round(clamp(P.x-VW/2,0,MW*TILE-VW)),y0=Math.round(clamp(P.y-VH/2,0,MH*TILE-VH));
-  for(let cy=Math.floor(y0/CHUNK);cy<=Math.floor((y0+VH-1)/CHUNK);cy++)for(let cx=Math.floor(x0/CHUNK);cx<=Math.floor((x0+VW-1)/CHUNK);cx++)WorldArt.chunk(cx,cy)}
+function paintView(){runGen(paintViewSteps(false))}
+// (the same as steps for the loading screen (loading.js runSteps: a chunk's painting given back to it a piece at a time, so the bar
+// keeps moving; the owner, 2026-11-14, "the game lags when start"), and with ring the chunks round the view too (WorldArt.draw's ring,
+// as many as its cap leaves room for), which play would otherwise paint while you first walk (START_WARM)
+function* paintViewSteps(ring=START_WARM.ring>0){const x0=Math.round(clamp(P.x-VW/2,0,MW*TILE-VW)),y0=Math.round(clamp(P.y-VH/2,0,MH*TILE-VH)),A=WorldArt,
+    c0=Math.floor(x0/CHUNK),r0=Math.floor(y0/CHUNK),c1=Math.floor((x0+VW-1)/CHUNK),r1=Math.floor((y0+VH-1)/CHUNK),list=[];
+  for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)list.push([cx,cy]);
+  if(ring){const n=Math.min(START_WARM.ring,Math.max(0,A.cap-list.length)),mx=(c0+c1)/2,my=(r0+r1)/2,R=[];for(let cy=r0-1;cy<=r1+1;cy++)for(let cx=c0-1;cx<=c1+1;cx++)if(cx>=0&&cy>=0&&cx<A.cols&&cy<A.rows&&!(cx>=c0&&cx<=c1&&cy>=r0&&cy<=r1))R.push([Math.hypot(cx-mx,cy-my),cx,cy]);
+    R.sort((a,b)=>a[0]-b[0]);for(const [,cx,cy] of R.slice(0,n))list.push([cx,cy])}
+  for(let i=0;i<list.length;i++){const [cx,cy]=list[i],k=cy*A.cols+cx;if(A.chunks.has(k))continue;const j=A.start(cx,cy);while(!j.gen.next().done)yield (i+.5)/list.length;A.done(j);yield (i+1)/list.length}}
+// (the buildings round where you start, their models made in the loading steps, not as they first come into view; px round you)
+const START_WARM={ring:0,near:1200};
+function* buildNear(){const T=TOWNS.filter(t=>Math.hypot(t.x-P.x,t.y-P.y)<START_WARM.near),L=[];for(const t of T)for(const l of t.lots||[])if(l.type)L.push([t,l]);
+  for(let i=0;i<L.length;i++){lotSprite(L[i][0],L[i][1]);yield (i+1)/L.length}}

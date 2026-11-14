@@ -199,11 +199,13 @@ function addHolding(data){let name=data.name,n=2;while(townBy(name))name=data.na
   HOLDING_HOOKS.forEach(f=>f(t,'add'));return t}
 // a lost holding (a camp burnt or left): never taken out of TOWNS, so LAND's indices hold; gone, no one's, its lots cleared
 function loseHolding(t){if(t.gone)return;t.gone=true;t.owner=null;(t.lots||[]).slice().forEach(l=>lotDrop(t,l));HOLDING_HOOKS.forEach(f=>f(t,'gone'))}
-function initWorld(){
-  TOWNS.forEach(initHolding);lotsReset();TOWNS.forEach(initLots);W.caravans=[];W.folk=[];W.refugees=[];W.patrols=[];W.fights=[];W.lrel={};W.treas={};W.tolls={};
+function initWorld(){runGen(initWorldSteps())}
+// (the same as steps, a holding's lots at a time: the loading screen's, session.js; the owner, 2026-11-14, "the game lags when start")
+function* initWorldSteps(){
+  TOWNS.forEach(initHolding);lotsReset();for(let i=0;i<TOWNS.length;i++){initLots(TOWNS[i]);yield (i+1)/(TOWNS.length+2)}W.caravans=[];W.folk=[];W.refugees=[];W.patrols=[];W.fights=[];W.lrel={};W.treas={};W.tolls={};
   W.rel={};W.dead={};W.lords=[];W.exiles=[];W.monsters=[];W.mythic={};
   {const a=FIDS[rint(0,FIDS.length-1)],others=FIDS.filter(x=>x!==a),b=others[rint(0,others.length-1)];W.rel[rk(a,b)]={s:'war',since:1}}
-  addMissingLords();patrolDay();
+  addMissingLords();yield (TOWNS.length+1)/(TOWNS.length+2);patrolDay();
 }
 // every faction fields its listed lords (a generated world's when it needs more: WM.lords, doc/WORLD_DESIGN.md D10); also fills
 // in lords for factions an older save didn't have
