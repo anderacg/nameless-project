@@ -5,7 +5,8 @@
    model's parts (boxes, roofs, round towers, wheels, decals) so model.js draws them in the map's own view, lit, outlined and snowed
    as every building; a set of models, not a culture (set: PX.MODEL_CULTURES leaves it out). Their cloth and trim come from PX.CAMP_COLOURS (each colour three materials: cloth with seams, hide stitched,
    cloth striped with linen); a spec's lv carries them and a heap's count: lv = 1 + n + 8 * (trim + 64 * cloth) (PX.campLv).
-     tents: camp_ridge, camp_bell, camp_tepee, camp_yurt, camp_pavilion, camp_leanto, camp_pup
+     tents: camp_ridge, camp_bell, camp_tepee, camp_yurt, camp_pavilion, camp_leanto, camp_pup, camp_marquee, camp_porch, camp_hut
+     (each varying by its seed: size, door, porch, bands, gear)
      pieces: camp_barrels, camp_crates, camp_sacks, camp_logs (n of them heaped: a bottom row, the rest sitting on it), camp_wagon,
      camp_cart, camp_stall, camp_shrine, camp_rack, camp_mound. At the figures' scale (5 px a metre: a man 8 or 9 px): the tents,
      the wagon and the stall stand in 32 px cells (a door a man walks through, a yurt's wall a man high), the small pieces in 16 ---------- */
@@ -23,28 +24,48 @@
   PX.campLv=(cloth,trim,n)=>1+(n|0)+8*(near(trim||'#8a6a4a')+64*near(cloth||'#d8ccb0'));
   const lvOf=o=>{const k=Math.max(0,(o.lv|0)-1);return{n:k%8,t:(k>>3)%64,c:Math.floor(k/512)%64}};
   const C=o=>'campC'+lvOf(o).c,H=o=>'campH'+lvOf(o).c,S=o=>'campS'+lvOf(o).c,Tr=o=>'campC'+lvOf(o).t;
+  // (an awning striped in its trim before a tent: half wide w, from v0 to v1, at z, on two poles at its front corners)
+  const porch=(Q,o,w,v0,v1,z)=>{Q.box('aw',[-w,w],[v0,v1],[z,z+.5],'campS'+lvOf(o).t,{thin:true,keep:1});for(const a of [-w,w-2])Q.box('ap'+a,[a,a+2],[v1-2,v1],[0,z],'timber',{top:true,fine:true})};
+  // (gear by a tent, by its seed: a barrel, a crate, sacks, a woodpile or a stump to sit on; or nothing)
+  const gear=(Q,o,u,v)=>{const g=o.d.pick(['barrel','crate','sacks','woodpile','stump',null,null]);if(g)Q.prop(g,[u,v],0,1)};
   // (a thin pole and a pennant of its trim at its head)
   const pennant=(Q,o,u,v,z)=>{Q.box('pole',[u-1,u+1],[v-1,v+1],[z,z+3],'timber',{top:true,fine:true});Q.box('pen',[u+.5,u+2.5],[v-.5,v+.5],[z+2,z+3],Tr(o),{top:true,fine:true,thin:true})};
   const types={
+    // (each tent varies by its seed: its size, its door tied open or shut, a porch awning on poles, a painted band, gear before it)
     // a ridge tent (a scale of 5 px a metre, as the figures: a man 8 or 9 px): walls knee high, its ridge over a man's head, its
     // gable and flap to the front, a hem of its trim
-    camp_ridge:{cell:32,plan(Q,o){const c=C(o);Q.box('t',[-6.5,6.5],[-6,6],[0,3],c,{keep:1});Q.roof('t','gable','v',9,c,{o:0,ov:0,lip:1});Q.box('tv',[-6.6,6.6],[5.4,6.1],[0,1],Tr(o),{thin:true,top:true});Q.dec('t.S','Flap',.5,3,true)}},
+    camp_ridge:{cell:32,plan(Q,o){const c=C(o),d=o.d,w=d.pick([5.5,6.5,7.5]);Q.box('t',[-w,w],[-6,6],[0,3],c,{keep:1});Q.roof('t','gable','v',7+w/2.5,c,{o:0,ov:0,lip:1});
+      Q.box('tv',[-w-.1,w+.1],[5.4,6.1],[0,1],Tr(o),{thin:true,top:true});Q.dec('t.S',d.chance(.5)?'Flap':'Door',.5,d.chance(.5)?3:0,true);if(d.chance(.35))porch(Q,o,w-1,6,9,5);gear(Q,o,w+2,4)}},
     // a bell tent: its round wall shoulder high, its cone over it with a valance of its trim, a pennant on its pole
-    camp_bell:{cell:32,plan(Q,o){const c=C(o);Q.round('t',[0,0],7.5,[0,6],c,{form:'cone',rise:9,mat:c,o:1});Q.round('tb',[0,0],7.8,[5,6],Tr(o),null);Q.dec('t.S','Flap',.5,0);Q.dec('t.S','Flap',.5,4);pennant(Q,o,0,0,15)}},
-    // a hide tepee: a tall cone of stitched hides, its poles' tips out of its smoke hole, a bundle of hides by its door
-    camp_tepee:{cell:32,plan(Q,o){const h=H(o);Q.round('t',[0,0],6.5,[0,1],h,{form:'cone',rise:18,mat:h,o:0,lip:0});Q.round('tb',[0,0],6.6,[0,.8],Tr(o),null);
-      Q.box('pl',[-1,1],[-1,1],[17,21],'timber',{top:true,fine:true});Q.dec('t.S','Flap',.5,0);Q.dec('t.S','Flap',.5,4);Q.box('bd',[5,7.5],[4,6.5],[0,2],'hide',{top:true})}},
-    // a yurt: its felt wall a man high banded in its trim, a low cone roped to the crown ring, its wooden door
-    camp_yurt:{cell:32,plan(Q,o){const c=C(o);Q.round('t',[0,0],8.5,[0,8],c,{form:'cone',rise:5,mat:c,o:1});Q.round('tb',[0,0],8.8,[6,7],Tr(o),null);Q.round('cr',[0,0],2,[13,14],'timber',{form:'lid',mat:'timber'});
-      Q.dec('t.S','Door',.5,0)}},
-    // a pavilion: striped walls a man high and more, a hipped roof, a valance of its trim, a pennant over its middle
-    camp_pavilion:{cell:32,plan(Q,o){const c=C(o);Q.box('t',[-9,9],[-6.5,6.5],[0,10],S(o),{keep:1});Q.roof('t','hip','u',7,c,{o:1,ov:1,lip:1,finial:1});Q.box('tv',[-9.3,9.3],[6.1,6.9],[8,10],Tr(o),{thin:true,top:true});
-      Q.dec('t.S','Flap',.5,0);Q.dec('t.S','Flap',.5,4);pennant(Q,o,0,0,17)}},
+    camp_bell:{cell:32,plan(Q,o){const c=C(o),d=o.d,r=d.pick([6.5,7.5,8.5]),h=d.pick([5,6]);Q.round('t',[0,0],r,[0,h],c,{form:'cone',rise:r+1.5,mat:c,o:1});Q.round('tb',[0,0],r+.3,[h-1,h],Tr(o),null);
+      Q.dec('t.S','Flap',.5,0);Q.dec('t.S','Flap',.5,4);if(d.chance(.7))pennant(Q,o,0,0,h+r+1);gear(Q,o,r+1.5,3)}},
+    // a hide tepee: a tall cone of stitched hides, a band or two painted round it, its poles' tips out of its smoke hole, a bundle by its door
+    camp_tepee:{cell:32,plan(Q,o){const h=H(o),d=o.d,r=d.pick([5.5,6.5,7]),rise=d.pick([15,18,20]);Q.round('t',[0,0],r,[0,1],h,{form:'cone',rise,mat:h,o:0,lip:0});Q.round('tb',[0,0],r+.1,[0,.8],Tr(o),null);
+      if(d.chance(.5))Q.round('tb2',[0,0],r*.8,[rise*.22,rise*.22+.8],Tr(o),null);Q.box('pl',[-1,1],[-1,1],[rise-1,rise+3],'timber',{top:true,fine:true});Q.dec('t.S','Flap',.5,0);Q.dec('t.S','Flap',.5,4);
+      if(d.chance(.6))Q.box('bd',[r-1.5,r+1],[4,6.5],[0,2],'hide',{top:true});else gear(Q,o,-r-1,3)}},
+    // a yurt: its felt wall a man high banded in its trim, a low cone roped to the crown ring, its wooden door; a little store yurt by
+    // some
+    camp_yurt:{cell:32,plan(Q,o){const c=C(o),d=o.d,r=d.pick([7.5,8.5,9.5]);Q.round('t',[0,0],r,[0,8],c,{form:'cone',rise:5,mat:c,o:1});Q.round('tb',[0,0],r+.3,[6,7],Tr(o),null);Q.round('cr',[0,0],2,[13,14],'timber',{form:'lid',mat:'timber'});
+      Q.dec('t.S','Door',.5,0);if(d.chance(.4))Q.round('ta',[-r-2,1],3.5,[0,5],c,{form:'cone',rise:2.5,mat:c,o:1});else gear(Q,o,r+1.5,3)}},
+    // a pavilion: striped walls a man high and more, a hipped roof, a valance of its trim, a pennant over its middle, a porch on some
+    camp_pavilion:{cell:32,plan(Q,o){const c=C(o),d=o.d,w=d.pick([8,9,10]);Q.box('t',[-w,w],[-6.5,6.5],[0,10],S(o),{keep:1});Q.roof('t','hip','u',7,c,{o:1,ov:1,lip:1,finial:1});Q.box('tv',[-w-.3,w+.3],[6.1,6.9],[8,10],Tr(o),{thin:true,top:true});
+      Q.dec('t.S','Flap',.5,0);Q.dec('t.S','Flap',.5,4);pennant(Q,o,0,0,17);if(d.chance(.4))porch(Q,o,4,6.5,10,9);else gear(Q,o,w+1.5,4)}},
     // a lean-to: a patched sheet on a bar a man high on two poles, sloping to the ground at its back, a bedroll before it
-    camp_leanto:{cell:32,plan(Q,o){const c=C(o);Q.box('t',[-7,7],[-5,4],[0,1],c,{keep:1});Q.roof('t','shed','v',9,c,{o:0,ov:0,lip:1,hi:'b1'});
-      for(const a of [-7,5])Q.box('po'+a,[a,a+2],[3,5],[0,10],'timber',{top:true,fine:true});Q.box('pa',[-3,1],[-3,0],[5,5.5],Tr(o),{thin:true,top:true,fine:true});Q.box('bed',[-5,0],[5,8],[0,1],Tr(o),{top:true})}},
-    // a small pup tent: a ridge tent low to the ground
-    camp_pup:{cell:16,plan(Q,o){const c=C(o);Q.box('t',[-4,4],[-4,4],[0,1],c,{keep:1});Q.roof('t','gable','v',5,c,{o:0,ov:0,lip:1});Q.dec('t.S','Flap',.5,1,true)}},
+    camp_leanto:{cell:32,plan(Q,o){const c=C(o),d=o.d,w=d.pick([6,7]);Q.box('t',[-w,w],[-5,4],[0,1],c,{keep:1});Q.roof('t','shed','v',9,c,{o:0,ov:0,lip:1,hi:'b1'});
+      for(const a of [-w,w-2])Q.box('po'+a,[a,a+2],[3,5],[0,10],'timber',{top:true,fine:true});for(let k=0,n=d.int(1,3);k<n;k++){const a=d.int(-w+1,w-4),b=d.int(-4,-1);Q.box('pa'+k,[a,a+3],[b,b+2],[5,5.5],Tr(o),{thin:true,top:true,fine:true})}
+      Q.box('bed',[-5,0],[5,8],[0,1],Tr(o),{top:true});if(d.chance(.5))Q.prop('woodpile',[w-1,7],0,1);else gear(Q,o,w+1,6)}},
+    // a small pup tent: a ridge tent low to the ground, a pack by some
+    camp_pup:{cell:16,plan(Q,o){const c=C(o),d=o.d,w=d.pick([3.5,4]);Q.box('t',[-w,w],[-4,4],[0,1],c,{keep:1});Q.roof('t','gable','v',5,c,{o:0,ov:0,lip:1});Q.dec('t.S','Flap',.5,1,true);
+      if(d.chance(.5))Q.prop('sacks',[w+1.5,3],0,1)}},
+    // a marquee: a long tent of two poles, its gable along it, two pennants, its flaps along its front
+    camp_marquee:{cell:32,long:'a marquee is long',plan(Q,o){const c=C(o),d=o.d,w=d.pick([9,10.5]);Q.box('t',[-w,w],[-5,5],[0,4],c,{keep:1});Q.roof('t','gable','u',7,c,{o:0,ov:0,lip:1});
+      Q.box('tv',[-w-.2,w+.2],[4.5,5.2],[3,4],Tr(o),{thin:true,top:true});Q.dec('t.S','Flap',.3,0);Q.dec('t.S','Flap',.7,0);for(const a of [-w/2,w/2])pennant(Q,o,a,0,11);gear(Q,o,w+1.5,3)}},
+    // a wall tent: upright walls under a gable, an awning striped in its trim on poles before its door
+    camp_porch:{cell:32,plan(Q,o){const c=C(o),d=o.d,w=d.pick([6,7]);Q.box('t',[-w,w],[-6,2],[0,5],c,{keep:1});Q.roof('t','gable','v',6,c,{o:0,ov:0,lip:1});Q.dec('t.S','Door',.5,0);
+      porch(Q,o,w,2,7,6);gear(Q,o,-w-1.5,-2)}},
+    // a hide hut: a low vault of hides on bent poles, its flap to the front, smoke-stained, a rack of drying meat by some
+    camp_hut:{cell:32,plan(Q,o){const h=H(o),d=o.d,w=d.pick([6,7.5]);Q.box('t',[-w,w],[-5,5],[0,2],h,{keep:1});Q.roof('t','vault','u',8,h,{o:0,ov:0,lip:1});Q.dec('t.S','Flap',.5,0);
+      if(d.chance(.5))Q.box('mr',[w+1,w+3],[0,4],[0,6],'timber',{top:true});gear(Q,o,-w-1.5,3)}},
     // n barrels heaped: a row on the ground, the rest standing on them, hooped in iron
     camp_barrels:{cell:16,plan(Q,o){heap(o,(i,u,v,z)=>{Q.round('b'+i,[u,v],2.2,[z,z+5],'plank',{form:'lid',mat:'plank'});Q.dec('b'+i+'.S','Hoop',.5,1);Q.dec('b'+i+'.S','Hoop',.5,3.5)},4.6,5)}},
     // n crates heaped, their planks braced
