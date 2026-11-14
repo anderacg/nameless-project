@@ -21,7 +21,7 @@ Kit.suite(({ok,info})=>{
  // ---- people and tents
  ok(camps().every(s=>s.pop>=s.TR.pop[0]&&s.pop<=s.TR.pop[1]&&s.tents===Math.min(t.ENCAMP.tents.most,Math.max(1,Math.ceil(s.pop/t.ENCAMP.tents.per)))),'each camp’s people in its kind’s range, a tent for every '+t.ENCAMP.tents.per+' ('+camps().slice(0,6).map(s=>s.pop+':'+s.tents).join(', ')+')');
  {const s=of(4).sort((a,b)=>b.pop-a.pop)[0],h=of(8)[0];s.seen=true;h.seen=true;
-  const L=t.CampSite.layout(s.key,s.x,s.y,s.pop,t.ENCAMP.tents.per,t.ENCAMP.tents.most);
+  const L=s.layout();
   ok(L.length>=1&&L.length<=s.tents&&L.every(p=>t.CampSite.tentOk(p.x,p.y)),'its tents laid round its fire where they may stand: '+L.length+' of '+s.tents+' for '+s.pop+' pilgrims');
   ok(h.pop===1&&h.tents===1,'the hermit lives alone in one tent');
   // ---- their day (Clock.frac), as you come near: placed where the hour has them
@@ -48,9 +48,9 @@ Kit.suite(({ok,info})=>{
    const sv=S.sees;try{S.sees=()=>false;const e2=[];s.draw(e2,cam,t.vis());ok(e2.length===ents.length-n0,'out of your sight, its tents but none of them')}finally{S.sees=sv}
    const far=t.TOWNS.reduce((a,b)=>Math.hypot(b.x-s.x,b.y-s.y)>Math.hypot(a.x-s.x,a.y-s.y)?b:a);Kit.goTo(far.x,far.y);t.CampFolk.step(.05);ok(!t.CampFolk.of.has(s),'far off, they are forgotten (made again from its seed when you come back)')}
   // ---- each kind's pieces round its tents: as many as it has, where the ground lets them stand, clear of its tents and one another
-  {const bad=[];let n=0,w=0;for(const x of camps()){const L=t.CampSite.layout(x.key,x.x,x.y,x.pop,t.ENCAMP.tents.per,t.ENCAMP.tents.most),pr=x.props(),want=x.TR.props.reduce((a,b)=>a+b[1],0);n+=pr.length;w+=want;
-     if(pr.length>want||pr.some(q=>!t.CampSite.tentOk(q.x,q.y)||L.some(z=>Math.hypot(z.x-q.x,z.y-q.y)<t.ENCAMP_PROPS.gap)))bad.push(x.name)}
-   ok(!bad.length&&n>=w*.85,'each camp’s pieces (wagons, racks of hides, charcoal mounds...) round its tents: '+n+' of '+w+' laid'+(bad.length?' (wrong: '+bad.join(', ')+')':''));
+  {const bad=[];let n=0,w=0;for(const x of camps()){const L=x.layout(),pr=x.props(),want=x.TR.props.reduce((a,[ty,k])=>a+(t.ENCAMP_PROPS[ty].stack?1:k),0);n+=pr.length;w+=want;
+     if(pr.length>want||pr.some(q=>t.ENCAMP_PROPS[q.type].stack&&q.n!==x.TR.props.find(z=>z[0]===q.type)[1])||pr.some(q=>!t.CampSite.tentOk(q.x,q.y)||L.some(z=>Math.hypot(z.x-q.x,z.y-q.y)<t.ENCAMP_PROPS.gap)))bad.push(x.name)}
+   ok(!bad.length&&n>=w*.85,'each camp’s pieces (wagons, racks of hides, charcoal mounds...) round its tents, barrels, crates, sacks and logs each in one heap (the owner: "if they are a cluster then just stack them"): '+n+' of '+w+' laid'+(bad.length?' (wrong: '+bad.join(', ')+')':''));
    const bu=of(6)[0];ok(bu.props().some(q=>q.type==='mound')&&t.propPic({type:'mound',s:1},'grass').width===16&&t.propPic({type:'rack',s:1},'grass').width===16&&t.propPic({type:'wagon',s:1},'grass').width>0,'the charcoal burners’ mounds, the hunters’ racks drawn here, the wagons the engine’s')}
   // ---- their animals: the prospectors' goats, the nomads' camels and goats, tethered past the tents on ground they may stand,
   // grazing round it by day, still by night; and the woodpile drawn here, logs stacked
@@ -60,7 +60,13 @@ Kit.suite(({ok,info})=>{
    ok(moved>0&&far<=G2.r+.5,'by day it grazes round its tether (walked '+b.walked.toFixed(1)+' px, at most '+far.toFixed(1)+' px out)');
    G.clock=t.DAY*.7;const w0=b.walked;for(let i=0;i<100;i++)t.CampFolk.step(.1);ok(b.walked===w0,'by night it stands');
    const no=of(7)[0];if(no){no.seen=true;const N2=near(no,.2);ok(N2.beasts.some(z=>z.id==='camel')&&N2.beasts.some(z=>z.id==='goat'),'the nomads\u2019 camels and goats ('+N2.beasts.map(z=>z.id).join(', ')+')')}
-   ok(t.propPic({type:'woodpile',s:2},'grass').width===16&&!t.ENCAMP_PROPS.woodpile.model,'a woodpile drawn here: logs stacked, their cut ends out')}
+   const one=t.CampArt.prop('barrels',1,2,'grass'),three=t.CampArt.prop('barrels',3,2,'grass'),five=t.CampArt.prop('crates',5,2,'grass');
+   ok(three.height>one.height-1&&three.width>one.width&&five.width>=three.width-4&&t.CampArt.prop('woodpile',3,2,'grass').width>t.CampArt.prop('woodpile',1,2,'grass').width,'a heap grows with its count: '+[one,three,five].map(c=>c.width+'x'+c.height).join(', '))}
+  // ---- tents: each kind's own styles and colours (the owner: "make more tent variety"); an army's plain canvas, its commander's a pavilion
+  {const styles=new Set(),bad=[];for(const x of camps()){const T=x.TR.tents;for(let i=0;i<x.tents;i++){const L=x.look(i,i);styles.add(L.style);if(!T.styles.includes(L.style)||!T.cloth.includes(L.cloth))bad.push(x.name)}if(x.look(0).style!==T.styles[0])bad.push(x.name+' first')}
+   ok(!bad.length&&styles.size>=6&&Object.keys(t.CAMP_TENTS).length===7,'every camp’s tents in its kind’s styles and cloth: '+[...styles].join(', ')+(bad.length?' (wrong: '+bad.join(', ')+')':''));
+   ok(t.CampArt.tent('tepee',{cloth:'#a07850',trim:'#7e2a26'},1,'grass').width===16&&t.CampArt.tent('pavilion',{cloth:'#c58af0',trim:'#f0e070'},1,'grass').width===20,'each style its own size: a tepee 16 wide, a pavilion 20');
+   const a0=t.CampSite.pic(3,'grass',0,{faction:'vale'}),a1=t.CampSite.pic(3,'grass',1,{faction:'vale'});ok(a0.width===20&&a1.width<20,'an army’s first tent a pavilion in its colours, the rest plain canvas')}
   // ---- a click on one of them: his name, and the camp's page at his place there, his greeting over it
   {const m=of(0)[0];m.seen=true;W.monsters=W.monsters.filter(z=>Math.hypot(z.x-m.x,z.y-m.y)>F.danger*3);const D=near(m,.2);t.drawWorld();
    const talk=role=>{const p=D.ppl.find(z=>z.role===role&&!z.hid);if(!p)return null;Kit.world();G.lastSite=null;P.x=p.x;P.y=p.y+8;const o=t.pickAt(p.x,p.y-4);if(o!==p)return 'picked '+(o&&(o.name||o.mapKind));t.interact(o);return p};

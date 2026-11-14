@@ -76,24 +76,39 @@ class Encampment extends Site{
   reachRadius(){const a=this.area();return boxReach(this,{x0:a[0],y0:a[1],x1:a[2],y1:a[3]})}
   footing(){return []}// (walked among: its tents are cloth)
   inView(V){return this.known()}
-  draw(ents,cam,V){if(!this.inView(V))return;const a=this.area();if(a[2]<cam.x-16||a[0]>cam.x+VW+16||a[3]<cam.y-16||a[1]>cam.y+VH+40)return;
-    CampSite.draw(ents,cam,{key:this.key,x:this.x,y:this.y,n:this.pop,per:ENCAMP.tents.per,most:ENCAMP.tents.most,seed:this.seed});this.drawProps(ents,cam);CampFolk.draw(this,ents,cam,V)}
+  // (its tents round its fire: CampSite's, a tent for every ENCAMP.tents.per of its people, within ENCAMP.tents.rings rings)
+  layout(){const T=ENCAMP.tents;return CampSite.layout(this.key,this.x,this.y,this.pop,T.per,T.most,T.rings)}
+  /* (its fire's ground, once, when it is first drawn: where it was placed, if enough of its tents may stand round it (CAMP_SITE.spot
+     need); else the spot ENCAMP.ground.step px apart within ground.r of it, on ground a tent may take (no road: CampSite.tentOk), reachable from it, where the most do (trees and rocks
+     the generator does not see, worldart.js). Kept with it (grounded) */
+  ground(){if(this.grounded)return;this.grounded=true;const G=ENCAMP.ground,k=this.tents,need=Math.ceil(k*CAMP_SITE.spot.need),count=(x,y)=>CampSite.place(x,y,k,ENCAMP.tents.rings).length;
+    let best={x:this.x,y:this.y,n:count(this.x,this.y)};if(best.n>=need)return;
+    const c=[];for(let j=-G.r;j<=G.r;j+=G.step)for(let i=-G.r;i<=G.r;i+=G.step)if(i||j)c.push([Math.hypot(i,j),this.x+i,this.y+j]);c.sort((a,b)=>a[0]-b[0]);
+    for(const [,x,y] of c){if(!passable(tAt(Math.floor(x/TILE),Math.floor(y/TILE)))||!CampSite.tentOk(x,y+4)||!Router.reach(this,{x,y}))continue;const n=count(x,y);if(n>best.n)best={x,y,n};if(n>=need)break}
+    if(best.x!==this.x||best.y!==this.y){CampSite.strike(this.key);ENC_PROPS.delete(this.key);this.x=best.x;this.y=best.y;this.tx=Math.floor(best.x/TILE);this.ty=Math.floor(best.y/TILE)}}
+  draw(ents,cam,V){if(!this.inView(V))return;const a=this.area();if(a[2]<cam.x-16||a[0]>cam.x+VW+16||a[3]<cam.y-16||a[1]>cam.y+VH+40)return;this.ground();
+    CampSite.draw(ents,cam,{key:this.key,x:this.x,y:this.y,n:this.pop,per:ENCAMP.tents.per,most:ENCAMP.tents.most,rings:ENCAMP.tents.rings,seed:this.seed,pic:(q,i,clim)=>this.tentPic(q,i,clim)});this.drawProps(ents,cam);CampFolk.draw(this,ents,cam,V)}
   /* its pieces (ENCAMP_KINDS props: wagons, carts, crates, a shrine, drying racks, charcoal mounds), each where the ground lets it
      stand round its tents (CampSite.tentOk), ENCAMP_PROPS.gap from a tent and from one another, laid once from its seed */
   props(){const s=this,c=ENC_PROPS.get(s.key);if(c&&c.x===s.x&&c.y===s.y)return c.p;const X=ENCAMP_PROPS,sq=CAMP_SITE.squash,R=seeded(s.seed*131+71),out=[],
-      L=CampSite.layout(s.key,s.x,s.y,s.pop,ENCAMP.tents.per,ENCAMP.tents.most),r0=Math.max(10,...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/sq)))+X.ring,
+      L=s.layout(),r0=Math.max(10,...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/sq)))+X.ring,
       free=(x,y)=>Math.hypot(x-s.x,y-s.y)>=X.gap&&L.every(q=>Math.hypot(q.x-x,q.y-y)>=X.gap)&&out.every(q=>Math.hypot(q.x-x,q.y-y)>=X.gap)&&CampSite.tentOk(x,y);
-    for(const [type,n] of s.TR.props||[])for(let k=0;k<n;k++){const a0=R()*Math.PI*2;let put=null;
-      for(let r=r0-X.ring*.6;r<=r0+X.ring&&!put;r+=6)for(let j=0;j<16&&!put;j++){const a=a0+j/16*Math.PI*2,x=Math.round(s.x+Math.cos(a)*r),y=Math.round(s.y+Math.sin(a)*r*sq);if(free(x,y))put={type,x,y,s:Math.floor(R()*9)}}
+    // (a piece that stacks: one heap of all of it; else each its own)
+    for(const [type,n] of s.TR.props||[])for(let k=0,m=X[type].stack?1:n;k<m;k++){const a0=R()*Math.PI*2;let put=null;
+      for(let r=r0-X.ring*.6;r<=r0+X.ring&&!put;r+=6)for(let j=0;j<16&&!put;j++){const a=a0+j/16*Math.PI*2,x=Math.round(s.x+Math.cos(a)*r),y=Math.round(s.y+Math.sin(a)*r*sq);if(free(x,y))put={type,x,y,s:Math.floor(R()*9),n:X[type].stack?n:1}}
       if(put)out.push(put)}
     ENC_PROPS.set(s.key,{x:s.x,y:s.y,p:out});return out}
   drawProps(ents,cam){const clim=CLIMS[climate[Math.floor(this.y/TILE)*MW+Math.floor(this.x/TILE)]]||'grass';
-    for(const q of this.props()){const pic=propPic(q,clim);ents.push({y:q.y,nf:1,f:()=>{const x=Math.round(q.x-cam.x-pic.ax),y=Math.round(q.y-cam.y-pic.ay+1);
-      if(pic.sh){ctx.globalAlpha=SHADOW.a;ctx.drawImage(pic.sh,x,y);ctx.globalAlpha=1}ctx.drawImage(pic,x,y);if(ENCAMP_PROPS[q.type].smoke)propSmoke(x+8,y+9,q.s)}})}}
+    const look=this.look(0);for(const q of this.props()){const pic=propPic(q,clim,look);ents.push({y:q.y,nf:1,f:()=>{const x=Math.round(q.x-cam.x-pic.ax),y=Math.round(q.y-cam.y-pic.ay+1);
+      if(pic.sh){ctx.globalAlpha=SHADOW.a;ctx.drawImage(pic.sh,x,y);ctx.globalAlpha=1}ctx.drawImage(pic,x,y);if(ENCAMP_PROPS[q.type].smoke)propSmoke(x+(pic.width>>1),y+pic.height-7,q.s)}})}}
+  // (its tents' look (ENCAMP_KINDS tents): tent i's style, cloth and trim; its biggest, the first, in the first style)
+  look(i,seed=0){const T=this.TR.tents||{styles:['ridge'],cloth:CAMP_ART.canvas,trim:['#8a6a4a']},h=(this.seed+seed*7+i*13)>>>0;
+    return{style:i===0?T.styles[0]:T.styles[h%T.styles.length],cloth:T.cloth[(h>>2)%T.cloth.length],trim:T.trim[(h>>4)%T.trim.length]}}
+  tentPic(q,i,clim){const L=this.look(i,q.s);return CampArt.tent(L.style,L,this.seed+i,clim)}
   // (its picture on its page: its tents and fire as they stand)
-  view(){const s=this,L=CampSite.layout(s.key,s.x,s.y,s.pop,ENCAMP.tents.per,ENCAMP.tents.most),clim=CLIMS[climate[Math.floor(s.y/TILE)*MW+Math.floor(s.x/TILE)]]||'grass',fl=campFlame();
+  view(){const s=this,L=s.layout(),clim=CLIMS[climate[Math.floor(s.y/TILE)*MW+Math.floor(s.x/TILE)]]||'grass',fl=campFlame();
     if(!L.length)return super.view();
-    const all=[...L.map(q=>[q,CampSite.pic(q.s,clim)]),...s.props().map(q=>[q,propPic(q,clim)])].sort((a,b)=>a[0].y-b[0].y);
+    const all=[...L.map((q,i)=>[q,s.tentPic(q,i,clim)]),...s.props().map(q=>[q,propPic(q,clim,s.look(0))])].sort((a,b)=>a[0].y-b[0].y);
     return{key:'enc:'+s.seed+':'+s.kind+':'+all.length,x:s.x,y:s.y,alt:s.name,ps:[...all.map(([q,p])=>[p,q.x-p.ax,q.y-p.ay+1]),fl&&[fl.img,s.x-fl.ax,s.y-fl.ay]].filter(Boolean)}}
   about(r){const T=this.TR;return '<p>'+T.d+'</p><p class="muted">'+(this.pop>1?'About '+this.pop+' people live here, in '+this.tents+' tent'+(this.tents>1?'s':'')+'.':'He lives here alone.')+
     (this.until!=null?' They break camp in '+Math.max(1,this.until-G.day)+' days.':' They stay.')+'</p>'}
@@ -149,16 +164,8 @@ class Encampment extends Site{
 }
 const TravellersCamp=Encampment;// (the old name)
 const ENC_PROPS=new Map();onWorld(()=>ENC_PROPS.clear());
-// (a piece's picture: the engine's model of its type, of the ground's climate; a drying rack of hides, a charcoal mound, drawn here)
-function propPic(q,clim){const k='eprop'+q.type+q.s+clim;if(spr[k])return spr[k];let cv;
-  if(ENCAMP_PROPS[q.type].model){const m=PX.buildingModel({type:q.type,seed:q.s+1,env:clim,snow:clim==='frost'?1:0});cv=siteCanvas(m,m.cell/2,m.cell)}
-  else if(q.type==='woodpile')cv=mkc(16,16,g=>{const end=(x,y)=>{g.fillStyle='#7a5230';g.fillRect(x,y,3,3);g.fillStyle='#c8a070';g.fillRect(x+1,y+1,1,1);g.fillStyle='#a07848';g.fillRect(x,y,1,1)};
-    g.fillStyle='#5a4028';g.fillRect(1,9,14,6);for(let i=0;i<4;i++)end(1+i*3.5|0,12);for(let i=0;i<3;i++)end(3+i*3.5|0,9);end(5,6);end(8,6);g.fillStyle='#3e2c1c';g.fillRect(1,15,14,1)});
-  else if(q.type==='rack')cv=mkc(16,16,g=>{g.fillStyle='#5a4028';g.fillRect(3,4,1,12);g.fillRect(12,4,1,12);g.fillRect(2,4,12,1);
-    [['#8a5a3a',4,5,3,6],['#b08050',8,5,3,5],['#6e4630',11,5,1,4]].forEach(([c,x,y,w,h])=>{g.fillStyle=c;g.fillRect(x,y,w,h)});g.fillStyle='#d8d0bc';g.fillRect(5,11,1,1)});
-  else cv=mkc(16,16,g=>{const rows=[[6,9],[4,11],[3,12],[2,13],[2,13],[1,14]];rows.forEach(([a,b],i)=>{g.fillStyle=i<2?'#4e4640':'#3a3430';g.fillRect(a,10+i,b-a+1,1)});
-    g.fillStyle='#c0602a';g.fillRect(5,13,1,1);g.fillRect(10,12,1,1);g.fillStyle='#5a4028';g.fillRect(13,14,2,1)});
-  cv.ax=cv.ax??8;cv.ay=cv.ay??16;return spr[k]=cv}
+// (a piece's picture (gfx/campart.js), a heap of n for one that stacks, in its camp's colours, of the ground's climate)
+const propPic=(q,clim,L)=>CampArt.prop(q.type,q.n||1,q.s,clim,L);
 // (a mound's thin smoke, rising and fading on the real clock)
 function propSmoke(x,y,s){const t=performance.now()/1000;ctx.save();for(let k=0;k<3;k++){const u=(t*.4+k/3+s*.1)%1;ctx.globalAlpha=.45*(1-u);ctx.fillStyle='#bdb6a8';ctx.fillRect(Math.round(x+Math.sin(u*5+s)*2),Math.round(y-u*14),1,1)}ctx.restore()}
 /* a camp's person on the map (CampFolk makes them): a world object you can click within your sight, to talk to him: the camp's page
@@ -185,18 +192,19 @@ class CampFolk{
   static forget(s){this.of.delete(s)}
   // (who lives there: pop people (most at most), their roles filled in the kind's order and shares, each his tent, his seat at the
   // fire, his look, his own stream)
-  static make(s){const T=s.TR,F=ENCAMP.folk,n=Math.min(s.pop,F.most),L=CampSite.layout(s.key,s.x,s.y,s.pop,ENCAMP.tents.per,ENCAMP.tents.most).slice(),R=seeded(s.seed*7919+13),roles=[];
+  static make(s){s.ground();const T=s.TR,F=ENCAMP.folk,n=Math.min(s.pop,F.most),L=s.layout().slice(),R=seeded(s.seed*7919+13),roles=[];
     for(const [r,sh] of T.roles){const k=Math.max(1,Math.round(sh*n));for(let j=0;j<k&&roles.length<n;j++)roles.push(r)}while(roles.length<n)roles.push(T.roles[0][0]);
-    if(!L.length)L.push({x:s.x+10,y:s.y-4});
+    const bare=!L.length;if(bare)L.push({x:s.x+10,y:s.y-4});
     const N=FOLK_NAMES[s.folkRace]||FOLK_NAMES.human,ppl=roles.map((role,i)=>{const a=(i+.5)/n*Math.PI*2,q=L[i%L.length];return Object.assign(new CampDweller(),{site:s,name:N[folkHash(s.seed+'|'+i)%N.length],role,R:ENCAMP_ROLES[role],i,v:Math.floor(R()*7),door:{x:q.x+3,y:q.y+3},seat:{x:s.x+Math.cos(a)*F.seat,y:s.y+3+Math.sin(a)*F.seat*CAMP_SITE.squash},
       x:s.x,y:s.y,tx:s.x,ty:s.y,wait:0,walked:0,dir:R()<.5?-1:1,mode:null,hid:false,R2:seeded(s.seed*31+i*977+5)})});
     const watch=ppl.filter(p=>p.R.watch);watch.forEach((p,j)=>p.watch=j===0?'fire':j===1?'ring':null);
-    const C={s,L,ppl,P:s.props(),beasts:this.herd(s,L,s.props()),ring:Math.max(...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/CAMP_SITE.squash)),8)+F.ring};this.of.set(s,C);
+    const C={s,L,bare,ppl,P:s.props(),beasts:this.herd(s,L,s.props()),ring:Math.max(...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/CAMP_SITE.squash)),8)+F.ring};this.of.set(s,C);
     // (placed where the hour has them: as if you had watched all along)
     for(const p of ppl){this.aim(C,p,this.mode(C,p),true);p.x=p.tx;p.y=p.ty;p.wait=p.R2()*2;if(p.mode==='sleep')p.hid=true}
     return C}
   // (what he does now: sleep, watch (by the fire), ring (walking it), seat (at the fire), work, hide (in his tent: danger))
-  static mode(C,p){const f=Clock.frac,D=ENCAMP.day,night=f>=D.dusk,danger=C.danger;
+  static mode(C,p){const m=this.mode0(C,p);return m==='sleep'&&C.bare?'seat':m}// (no tent stands: they sleep round the fire)
+  static mode0(C,p){const f=Clock.frac,D=ENCAMP.day,night=f>=D.dusk,danger=C.danger;
     if(danger)return p.R.watch||p.role==='guard'?'seat':'sleep';
     if(night)return p.watch==='fire'?'seat':p.watch==='ring'?'ring':'sleep';
     if(f<D.dawn||f>=D.work)return 'seat';
