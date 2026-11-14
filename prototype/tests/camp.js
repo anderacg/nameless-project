@@ -37,6 +37,15 @@ try{
  reset();t.makeCamp();P.morale=60;G.enc={kind:'party',ref:{cool:0,x:P.x+8,y:P.y},list:['militia']};t.startBattle({enemies:['militia'],tournament:false});
  ok(!P.camp&&P.morale===60-S.camp.caught&&msgs(/catch your band in camp/)===1,'a band that finds you in camp catches you unready: morale −'+S.camp.caught+', the camp struck');
  ev('B.over=true;B=null');t.fieldDone();Kit.world();
+ // ---- caught in camp, your men come out of the tents one after another (the owner, 2026-11-14; world/campsite.js CampWake)
+ {reset();P.troops={hum_levy:8};t.pitchCamp();const L=t.CampSite.layout('you',P.x,P.y,t.partySize());G.enc={kind:'party',ref:{cool:0,x:P.x+40,y:P.y},list:['militia','militia']};t.startBattle({enemies:['militia','militia'],tournament:false});
+  const b=t.B,W=b.campWake,mine=b.units.filter(u=>u.team===0&&!u.hero&&u.sourceArmy===P),hero=b.hero,wait=()=>mine.filter(u=>u.waiting).length;
+  for(const u of b.units)if(u.team===1){u.hp=u.max=1e6;u.cd=99;u.s={...u.s,spd:0}}t.updateBattle(.001);
+  const atTent=mine.every(u=>L.some(q=>{const f=b.world.field({x:q.x,y:q.y+3});return Math.hypot(u.x-f.x,u.y-f.y)<=4*b.world.scale}));
+  ok(!!W&&!!b.world&&hero&&hero.hp>0&&wait()===mine.length&&mine.length>0&&atTent,'a band finds you in camp: your hero up at once, your '+mine.length+' men in the tents, at their doors, not yet in the fight');
+  const t0=b.t;let k=0,seen=[];while(wait()&&k++<4000){t.updateBattle(.02);if(k%25===0)seen.push(wait())}const took=b.t-t0;
+  ok(!wait()&&mine.every(u=>u.hp>0&&!u.left)&&seen.some(n=>n>0&&n<mine.length),'they come out one after another, a man every '+t.CAMP_WAKE.gap+' s of the battle (all out after '+took.toFixed(1)+' s; '+seen.slice(0,6).join(', ')+' still in)');
+  b.over=true;b.endT=0;ev('B=null');t.fieldDone();Kit.world()}
  // ---- drawn at your figure, and saved
  reset();t.makeCamp();{const E=[];t.bandCampEnts(E,{x:Math.floor(P.x-t.VW/2),y:Math.floor(P.y-t.VH/2)});let err='';t.ctx.save();try{for(const e of E)e.f()}catch(x){err=x.message}t.ctx.restore();ok(!err&&E.length>=2,'the camp, its tents and a fire, is drawn ('+E.length+' pieces)'+(err?' ('+err+')':''));
   ok(E.every(e=>e.nf&&!e.st&&Number.isFinite(e.y)),'each in the depth order by its feet, as everyone is: the trees in front drawn over it, none faded for it')}

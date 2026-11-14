@@ -265,6 +265,7 @@ class BattleSetup{
     B.speed=BSPEED.v;B.ready=!this.opts.sandbox&&!this.surprise;B.paused=this.surprise?false:B.ready||prefGet('bpause');
     if(BEAST_TACTICS.on)beastPacks();// (beasts in the pack spread, an AI group of them split into packs: beastmind.js)
     for(const g of Object.keys(B.groups))layForm(g);
+    CampWake.begin(B);// (caught in camp: your men in its tents, coming out one after another: world/campsite.js)
     campCaught(this.opts);// (a band that finds you in camp catches you unready: world/supply.js)
     moraleInit(this.units,this.opts);
     fatigueInit(this.units);

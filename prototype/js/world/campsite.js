@@ -62,3 +62,25 @@ class CampSite{
   static purge(){const now=performance.now()/1000;for(const [k,t] of this.seen)if(now-t>CAMP_SITE.forget)this.strike(k)}
 }
 onWorld(()=>{CampSite.t0.clear();CampSite.seen.clear();CampSite.lay.clear();CampSite.spots.clear()});
+/* ---------- caught in camp (the owner, 2026-11-14: "when attacked by camp (surprise) our men should slowly come out from tents") ----------
+   A world battle that finds you camped (battle/setup.js, before campCaught strikes it): the camp stays on the field (drawn under the
+   battle while it lasts: render.js drawWorld) and your men start in its tents: your hero up at once, the rest held at the tents'
+   doors, unseen and out of the fight (as late arrivals are: u.waiting, worldbattle.js), coming out first s in and then a man every
+   gap s of the battle's time, the tents in turn. CAMP_WAKE.on false: as before, every man formed up at the start ---------- */
+const CAMP_WAKE={on:true,first:.5,gap:.3};
+class CampWake{
+  static camp=null;
+  // (the battle b catches you in camp: your men into its tents)
+  static begin(b){CampWake.camp=null;const X=CAMP_WAKE;if(!X.on||!P.camp||!b.world||!WORLD_BATTLE.on)return null;const n=partySize(),L=CampSite.layout('you',P.x,P.y,n);if(!L.length)return null;
+    const h=x=>Math.sin((x||0)*12.9898)*43758.5453%1,mine=b.units.filter(u=>u.team===0&&!u.hero&&u.sourceArmy===P&&u.hp>0).sort((p,q)=>h(p.id)-h(q.id)),W=b.world;
+    mine.forEach((u,i)=>{const q=L[i%L.length],f=W.field({x:q.x+((i/L.length|0)%3-1)*2,y:q.y+3});Object.assign(u,{x:f.x,y:f.y,campAt:f,hpLeft:u.hp,hp:0,left:true,waiting:true,campWake:b.t+X.first+i*X.gap})});
+    CampWake.camp={x:P.x,y:P.y,n};return b.campWake=new CampWake(mine)}
+  constructor(men){this.men=men}
+  // (each moment of the battle: those whose turn has come step out of their tent's door into the fight)
+  // (each held at his tent's door till then, whatever the field's setting out did with him)
+  step(){if(!this.men.length)return;const now=B.t,out=[];this.men=this.men.filter(u=>{if(now<u.campWake||u.hpLeft==null){if(u.campAt){u.x=u.campAt.x;u.y=u.campAt.y}return true}out.push(u);return false});
+    for(const u of out){u.hp=u.hpLeft;delete u.hpLeft;delete u.waiting;delete u.left;delete u.campWake;delete u.campAt;if(typeof heralded==='function')heralded([u]);const r=B.groups[u.grp]?.resolve;if(r){r.refreshState();r.sync()}}
+    if(out.length){B.cmdT=0;B.moraleNext=0;if(typeof setOrderUI==='function')setOrderUI()}}
+  // (the camp on the field while the battle lasts)
+  static draw(ents,cam){const C=CampWake.camp;if(!C)return;if(!B||!B.world){CampWake.camp=null;return}CampSite.draw(ents,cam,{key:'you',x:C.x,y:C.y,n:C.n,banner:()=>P.banner(),seed:0})}
+}
