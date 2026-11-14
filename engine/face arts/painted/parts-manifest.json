@@ -668,20 +668,15 @@
       "vine-diadem"
     ],
     "activeFrames": [
-      0,
       1,
       2,
-      3,
       4,
-      5,
       6,
       7,
       8,
       10,
       11,
       12,
-      13,
-      14,
       15,
       16,
       17,
@@ -750,6 +745,51 @@
     ],
     "headwear": [
       "straw-hat"
+    ]
+  },
+  {
+    "file": "headwear-open-face.png",
+    "width": 2206,
+    "height": 713,
+    "sha256": "a8b4a0decb2205a6c2f0e05c1c6a718b5fbc1d0aa8d5355c190ddff76e5fac36",
+    "frames": [
+      [
+        20,
+        90,
+        415,
+        535
+      ],
+      [
+        461,
+        85,
+        407,
+        541
+      ],
+      [
+        892,
+        86,
+        411,
+        540
+      ],
+      [
+        1325,
+        83,
+        440,
+        547
+      ],
+      [
+        1765,
+        83,
+        422,
+        543
+      ]
+    ],
+    "headwear": [
+      "hood",
+      "wrapped-hood",
+      "veil",
+      "draped-veil",
+      "pearl-hood"
     ]
   }
 ]

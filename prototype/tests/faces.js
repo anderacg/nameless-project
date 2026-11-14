@@ -24,7 +24,7 @@ Kit.suite(({ok,info})=>{
  const hairs=E.partsFor('dwarf','hair'),h1=hairs.find(v=>v!==F.draft.rec.config.hair);F.set('hair',h1);const r1=JSON.stringify(F.draft.rec);
  F.tint('iris','#2a6a9a');const r2=JSON.stringify(F.draft.rec);F.adjust('jawWidth',2);const r3=JSON.stringify(F.draft.rec);
  const parts=(html.match(/data-fm-part=/g)||[]).length,tints=(html.match(/type="color"/g)||[]).length,adjs=(html.match(/type="range"/g)||[]).length;
- ok(/fm-pic/.test(html)&&parts>=10&&tints===7&&adjs===Object.keys(E.adjustments).length&&F.draft.rec.config.race==='dwarf'&&F.draft.rec.config.hair===h1&&F.draft.rec.colors.iris==='#2a6a9a'&&F.draft.rec.config.adjustments.jawWidth===2&&new Set([r0,r1,r2,r3]).size===4,
+ ok(/fm-portrait/.test(html)&&parts>=10&&tints===7&&adjs===Object.keys(E.adjustments).length&&F.draft.rec.config.race==='dwarf'&&F.draft.rec.config.hair===h1&&F.draft.rec.colors.iris==='#2a6a9a'&&F.draft.rec.config.adjustments.jawWidth===2&&new Set([r0,r1,r2,r3]).size===4,
    'the face maker: '+parts+' parts, '+tints+' colour pickers and '+adjs+' proportions, each changing your face');
  F.draft=null;
  // ---- dressed as they are (FACE_GEAR): armour and helm by tier and people, metal its material's; none worn, no armour drawn; lords armoured by standing

@@ -84,11 +84,11 @@
   x=Math.max(0,Math.min(N-1,x-.5));y=Math.max(0,Math.min(N-1,y-.5));const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,right=Math.min(N-1,ix+1),bottom=Math.min(N-1,iy+1);return (light[iy*N+ix]*(1-fx)+light[iy*N+right]*fx)*(1-fy)+(light[bottom*N+ix]*(1-fx)+light[bottom*N+right]*fx)*fy;
  }
  // Each cloth hat and crown has its own authored picture, uniformly fitted to the brow.
- const HEADWEAR=new Map(root.PAINTED_PORTRAIT_ASSETS.flatMap((a,sheet)=>(a.headwear||[]).map((id,index)=>[id,{sheet,index}])));
- const HEADWEAR_FIT={'wool-skullcap':[2.35,.94],'liripipe-cap':[2.9,.7],'fur-trimmed-cap':[2.55,.95],bycocket:[2.65,.94],'noble-chaperon':[2.95,.6],hood:[4.1,.39,.835],'wrapped-hood':[3.6,.26,.748],veil:[3.6,.18],'draped-veil':[3.6,.28],'pearl-hood':[3.9,.23,.78],'linen-wrap':[3.4,.42],'arming-cap':[2.35,.55],chaperon:[2.9,.42],turban:[2.4,.8],'straw-hat':[3.6,.69],'feathered-cap':[2.5,.94]};
+ const HEADWEAR=new Map(root.PAINTED_PORTRAIT_ASSETS.flatMap((a,sheet)=>(a.headwear||[]).flatMap((id,index)=>!a.activeFrames||a.activeFrames.includes(index)?[[id,{sheet,index}]]:[])));
+ const HEADWEAR_FIT={'wool-skullcap':[2.35,.94],'liripipe-cap':[2.9,.7],'fur-trimmed-cap':[2.55,.95],bycocket:[2.65,.94],'noble-chaperon':[2.95,.6],hood:[4,.25,.839],'wrapped-hood':[4,.25,.802],veil:[3.8,.25,.898],'draped-veil':[3.8,.25,1],'pearl-hood':[3.9,.25,.869],'linen-wrap':[3.4,.42],'arming-cap':[2.35,.55],chaperon:[2.9,.42],turban:[2.4,.8],'straw-hat':[3.6,.69],'feathered-cap':[2.5,.94]};
  function paintedHeadwear(p,colors,size,id){
   const out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,h=HEADWEAR.get(p.config.headwear);if(!h)return out;
-  const f=frame(h.sheet,h.index),A=p.anchors,[width,brow,opening]=HEADWEAR_FIT[p.config.headwear]||[2.35,.96],wanted=Math.max(A.w*width/f.w,opening?(A.mouth.y-A.eyes[0].y+19)/(f.h*(opening-brow)):0),fit=['fur-trimmed-cap','bycocket'].includes(p.config.headwear)?Math.min(wanted,(A.eyes[0].y-16)/(f.h*brow)):wanted,top=Math.max(1,A.eyes[0].y-14-f.h*brow*fit),left=A.cx-f.w*fit/2,scale=size/N,target=hex(colors.headwear),base=hex(E.colors.headwear);
+  const f=frame(h.sheet,h.index),A=p.anchors,[width,brow,opening]=HEADWEAR_FIT[p.config.headwear]||[2.35,.96],wanted=Math.max(A.w*width/f.w,opening?(A.chinY-A.eyes[0].y+19)/(f.h*(opening-brow)):0),fit=['fur-trimmed-cap','bycocket'].includes(p.config.headwear)?Math.min(wanted,(A.eyes[0].y-16)/(f.h*brow)):wanted,top=Math.max(1,A.eyes[0].y-14-f.h*brow*fit),left=A.cx-f.w*fit/2,scale=size/N,target=hex(colors.headwear),base=hex(E.colors.headwear);
   for(let Y=Math.max(0,Math.floor(top*scale));Y<Math.min(size,Math.ceil((top+f.h*fit)*scale));Y++)for(let X=Math.max(0,Math.floor(left*scale));X<Math.min(size,Math.ceil((left+f.w*fit)*scale));X++){
    const x=(X+.5)/scale,y=(Y+.5)/scale;if((id==='headwearBack')!==(y>=94))continue;
    const u=(x-left)/(f.w*fit),v=(y-top)/(f.h*fit);if(u<0||u>=1||v<0||v>=1)continue;const s=sample(f,u,v);if(s.alpha)put(d,(Y*size+X)*4,recolor(s.rgb,target,base),255);
@@ -183,6 +183,16 @@
   }for(const id of outputs)layers[id].getContext('2d').putImageData(images[id],0,0);
  }
  const SKIN_DETAIL=Object.freeze({age:{radius:2,sigma:.9,depth:.095},scar:{radius:2,sigma:.7,depth:.09},spot:{radius:1,sigma:.55,depth:.11}});
+ // Paint the moustache as one fitted cutout; a jaw texture must not become lip hair.
+ function fitFacialHair(p,colors,size,layers){
+  const c=p.config,kind=c.beard;if(['none','stubble','close-beard','chin-bristle','sideburns'].includes(kind))return;
+  const scale=size/N,A=p.anchors,out=canvas(size),g=out.getContext('2d'),im=g.createImageData(size,size),d=im.data,only=['moustache','walrus','dwarf-heavy-moustache','goatee'].includes(kind),form=E.mouthForms[c.mouth],width=kind==='dwarf-heavy-moustache'?A.w*1.28:kind==='walrus'?Math.min(A.w*1.05,form[0]*2.9):Math.min(A.w,form[0]*(kind==='scruffy'?1.95:2.55)),bottom=A.mouth.y-Math.max(1.4,form[1]*.6),target=hex(colors.hair);
+  if(!only){g.drawImage(layers.beard,0,0);g.clearRect((A.cx-width/2-2)*scale,(A.mouth.y-9)*scale,(width+4)*scale,11*scale);}
+  const draw=(f,w,y)=>{const h=w*f.h/f.w,left=A.cx-w/2;for(let Y=Math.max(0,Math.floor((y-h)*scale));Y<Math.min(size,Math.ceil(y*scale));Y++)for(let X=Math.max(0,Math.floor(left*scale));X<Math.min(size,Math.ceil((left+w)*scale));X++){const x=(X+.5)/scale,yy=(Y+.5)/scale,u=(x-left)/w,v=(yy-y+h)/h;if(u<0||u>=1||v<0||v>=1)continue;const q=sample(f,u,v);if(q.alpha)put(d,(Y*size+X)*4,recolor(q.rgb,target,BASE.hair),255);}};
+  draw(frame(1,8),width,bottom);
+  if(kind==='goatee'){const f=frame(1,9),w=Math.min(A.w*.55,13),h=w*f.h/f.w;draw(f,w,A.mouth.y+5+h);}
+  const hair=canvas(size);hair.getContext('2d').putImageData(im,0,0);if(kind!=='goatee'){const q=hair.getContext('2d');q.globalCompositeOperation='destination-in';q.drawImage(layers.face,0,0);}g.drawImage(hair,0,0);layers.beard=out;
+ }
  // Skin relief inherits the color and texture at each pixel instead of tinting gray strokes.
  function skinDetails(p,layers,size){
   const scale=size/N,face=layers.face.getContext('2d').getImageData(0,0,size,size).data,eyes=layers.eyes.getContext('2d').getImageData(0,0,size,size).data,iris=layers.iris.getContext('2d').getImageData(0,0,size,size).data;
@@ -225,9 +235,9 @@
   if(!loaded)throw Error('Painted portrait artwork is not ready');if(![128,256,512].includes(size))throw Error('Unsupported portrait size');
   colors=Object.fromEntries(Object.entries(E.colors).map(([key,value])=>[key,/^#[a-f0-9]{6}$/i.test(colors[key]||'')?colors[key]:value]));
   const layers={};for(const spec of E.order)layers[spec.id]=['eyes','iris','eyelids','mouth'].includes(spec.id)?canvas(size):paintMask(p,spec,colors,size);
-  fitEars(p,layers,size);clipNeck(p,layers,size);noseRoot(layers,size);feature(p,colors,size,'eyes',layers);feature(p,colors,size,'mouth',layers);skinDetails(p,layers,size);
+  fitEars(p,layers,size);clipNeck(p,layers,size);noseRoot(layers,size);feature(p,colors,size,'eyes',layers);feature(p,colors,size,'mouth',layers);skinDetails(p,layers,size);fitFacialHair(p,colors,size,layers);
   if(['small-tusks','heavy-tusks'].includes(p.config.mouth))layers.teeth=tusks(p,size);
-  for(const id of ['nose','eyes','iris','eyelids','mouth','teeth',...(['stubble','close-beard','chin-bristle'].includes(p.config.beard)?['beard']:[])]){const g=layers[id].getContext('2d');g.save();g.globalCompositeOperation='destination-in';g.drawImage(layers.face,0,0);g.restore();}
+  for(const id of ['nose','eyes','iris','eyelids','mouth','teeth',...(['stubble','close-beard','chin-bristle','sideburns','scruffy'].includes(p.config.beard)?['beard']:[])]){const g=layers[id].getContext('2d');g.save();g.globalCompositeOperation='destination-in';g.drawImage(layers.face,0,0);g.restore();}
   const gear=HEADWEAR.get(p.config.headwear);
   return {config:p.config,anchors:p.anchors,colors,layers,size,coordinateScale:size/N,template:p,headMaster:{file:root.PAINTED_PORTRAIT_ASSETS[headSpec(p.config).sheet].file,frame:headSpec(p.config).index,profile:headSpec(p.config).profile},headwearMaster:gear?{file:root.PAINTED_PORTRAIT_ASSETS[gear.sheet].file,frame:gear.index}:null,style:'painted-parts'};
  }

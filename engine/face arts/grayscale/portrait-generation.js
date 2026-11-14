@@ -15,7 +15,7 @@
     bandit:{clothing:['orc-bare-cross-harness','orc-bare-ring-harness','orc-leather-vest','orc-cross-harness','orc-ring-harness','orc-layered-hide','leather','fur','hide-harness','gambeson'],headwear:['hood','fur-trimmed-cap','wool-skullcap','warband','none']},
     companion:{clothing:['orc-leather-vest','orc-leather-guard','cloak','guild-doublet','rune-mail','leaf-mantle','brigandine'],headwear:['liripipe-cap','bycocket','headband','warband','vine-diadem','none']}
   });
-  const PALETTES=Object.freeze({human:{skin:'#b88b69',hair:'#45372e',cloth:'#70464b'},dwarf:{skin:'#ad886e',hair:'#76543a',cloth:'#685746'},orc:{skin:'#718454',hair:'#302f25',lips:'#716b50',cloth:'#574c3d'},elf:{skin:'#c3ac98',hair:'#a18c60',cloth:'#526d65'}});
+  const PALETTES=Object.freeze({human:{skin:'#b88b69',hair:'#45372e',cloth:'#70464b'},dwarf:{skin:'#ad886e',hair:'#76543a',cloth:'#685746'},orc:{skin:'#718454',hair:'#302f25',iris:'#bf983f',lips:'#716b50',cloth:'#574c3d'},elf:{skin:'#c3ac98',hair:'#a18c60',cloth:'#526d65'}});
   class GenerationError extends Error{constructor(code,message){super(message);this.name='GenerationError';this.code=code;}}
   function hash(value){let n=2166136261;for(const c of String(value)){n^=c.charCodeAt(0);n=Math.imul(n,16777619);}return n>>>0;}
   function stream(seed){let n=seed>>>0;return()=>{n+=0x6d2b79f5;let t=Math.imul(n^n>>>15,n|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
