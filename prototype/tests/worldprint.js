@@ -776,7 +776,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  origins halved, a node 60% at its proficiency's 100 (TREE_SCALE.most), nodes cost by kind and open at a proficiency's level
 //  (data/tree.js TREE_COST, TREE_GATE): the lords' trees and numbers, and yours in the save. Checked: with those put back (the new
 //  tiers kept) all 16 hold. Was W7 4e3e79b8, B2 2578c11d)
-const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'7ddeb99d',W7:'0f3b0aa9',W8:'da69073e',B2:'d81ddd1f'};
+// (W7 and W8 re-recorded 2026-11-14, on purpose: the owner, "lord army still moving back and forth or keep changing the formation
+//  between column and normal marching formation": a lord keeps his column till his goal is nearer than band × long and an enemy's
+//  land band × near, and holds a switch hold s of the world's time even far from you (world/marchstyles.js TravelStyle far,
+//  enemyLand, steady); a place in a host's column moves back smoothly behind one lagging (world/hosts.js places). The lords' columns
+//  take the roads' pace for other stretches, so where they stand moves. Checked: with those two files as they were (the bands' and
+//  the watch's changes kept) all 16 hold. Was W7 0f3b0aa9, W8 da69073e)
+const EXPECT={W1:'98411198',W2:'8e3ee885',W3:'781cbbb1',W4:'50f147c1',W5:'12a104e8',W6:'7ddeb99d',W7:'5d33eddc',W8:'63276c56',B2:'d81ddd1f'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

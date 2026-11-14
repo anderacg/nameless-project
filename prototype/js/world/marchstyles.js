@@ -125,6 +125,10 @@ class MarchStyle{
    holds hold s (its march's time) before it switches back, but a foe newly near breaks a column at once; a column whose forming ran
    out of time (most) with more than stuck of its men blocked short of their places (no straight way: a building, water) gives up,
    its formation kept retry s before it tries again. Hold and retry only for an army marched man by man (one far off is seen re-form by none).
+   (2026-11-14, the owner: "lord army still ... keep changing the formation between column and normal marching formation": a lord
+   riding his lands flipped as his goal came and went across long px, 17 times in ten minutes. Now a column is kept till its goal is
+   nearer than band × long and an enemy's land nearer than band × near (far, enemyLand), and the hold (now 5, was 3) counts for every
+   army: by its march's time when marched man by man, else the world's (clock.js worldTime))
    A trip shorter than trip × its column's length (TravelStyle len) and margin px (long) keeps its column (the owner, 2026-11-02:
    "you just form a column even though it's a short trip, just fix the reforming logic bug"), but yours goes there the plain way,
    not by the roads' nearest node behind it (router.js Router.travel). steady false: as before.
@@ -132,7 +136,7 @@ class MarchStyle{
    on and off himself"): yours by your By road alone, a foe near or seen none of its business (a battle still deploys it from where
    it stands; an ambush still springs on it as it is); every other army forms up near a foe as above. Off: yours too, as before ---------- */
 const TRAVEL_STYLES={on:true,every:6,long:400,near:160,alert:150,menSight:true,lordKeep:1.1,sample:8,share:.35,
-  steady:true,trip:1.5,margin:40,clear:1.25,hold:3,retry:8,stuck:.25,yourChoice:true,
+  steady:true,trip:1.5,margin:40,clear:1.25,hold:5,retry:8,stuck:.25,yourChoice:true,band:.75,
   column:{width:6,rank:1.6,crumb:3,leap:40,cart:34,form:.8,place:4,most:3,slow:[.6,.15],look:4,lag:18,glide:2,about:-.7},
   kinds:{caravan:'always',lord:'far',patrol:'beat',you:'byRoad',cparty:'far',band:null,monster:null}};
 // (each army's decision: {n: the frame it was made, col, k and k2: its trip then; steady: foe (one near when last asked), at (its
@@ -149,7 +153,7 @@ class TravelStyle{
   static foe(o,al){return !(o===P&&TRAVEL_STYLES.yourChoice)&&this.threat(o,al)}
   // (steady: decide's answer held as above)
   static steady(o,c){const T=TRAVEL_STYLES,r=T.kinds[o===P?'you':o.mapKind],a=MARCH_ARMIES.get(o)||null,was=c.col;if(a!==c.a){c.a=a;c.at=c.until=-Infinity}
-    const t=a?a.time:null,base=!!r&&!o.dead&&!o.gone&&!o.inside&&!inFight(o)&&this[r](o),foe=base&&this.foe(o,c.foe?T.alert*T.clear:T.alert);c.foe=foe;
+    const t=a?a.time:worldTime(),base=!!r&&!o.dead&&!o.gone&&!o.inside&&!inFight(o)&&this[r](o,was),foe=base&&this.foe(o,c.foe?T.alert*T.clear:T.alert);c.foe=foe;
     let want=base&&!foe&&!(t!=null&&t<c.until);
     if(want!==was&&t!=null&&t-c.at<T.hold&&!(was&&foe))want=was;if(want!==was&&t!=null)c.at=t;return want}
   // (its column's length, px: as made (marchLayout), else its men 2 abreast at their bodies' ranks)
@@ -170,17 +174,18 @@ class TravelStyle{
   // (a lord or a companion's party far from where it is bound: a lord about his realm's business, through land of no realm at war
   // with his. One in a host (following you, or a marshal: hosts.js) keeps its place in the host's own column of armies, its rings
   // one behind another, in its battle style)
-  static far(o){const L=TRAVEL_STYLES.long;
+  // (was: in its column now: it keeps it till nearer than band × long, and from an enemy's land band × near: no flip at the edge)
+  static far(o,was){const T=TRAVEL_STYLES,L=T.long*(was?T.band:1);
     if(o.follow||o.with||o.mapKind==='cparty'&&o.order==='follow')return false;
     if(o.mapKind==='cparty'){const t=o.order==='return'?P:o.order==='stay'?townBy(o.base):null;return !!t&&Math.hypot(t.x-o.x,t.y-o.y)>L}
     if(o.waylay||o.defend||!(o.state==='march'||o.state==='home'||o.state==='patrol'||o.state==='relieve'))return false;
-    const t=townBy(o.tgt);return !!t&&Math.hypot(t.x-o.x,t.y-o.y)>L&&!this.enemyLand(o)}
+    const t=townBy(o.tgt);return !!t&&Math.hypot(t.x-o.x,t.y-o.y)>L&&!this.enemyLand(o,was?T.near*T.band:T.near)}
   // (a patrol walking its beat, hunting nothing)
   static beat(p){return !p.hunt&&!p.waylay}
   // (yours: By road on and a road near the way you go, or where you stand; not in a lord's host, hosts.js)
   static byRoad(){return !!P.byRoad&&!P.stay&&!P.camp&&!Host.under&&(P.tx!=null?byRoadTo(P.tx,P.ty):roadNear(P.x,P.y,ROAD_GO.near))}
   // (land of a realm at war with o's within near px: where it stands and eight ways round, half and all the way out)
-  static enemyLand(o){const R=TRAVEL_STYLES.near,f=o.fac;if(!f)return false;
+  static enemyLand(o,R=TRAVEL_STYLES.near){const f=o.fac;if(!f)return false;
     for(let k=0;k<17;k++){const r=k?k>8?R:R/2:0,a=k*Math.PI/4,h=landHold(o.x+Math.cos(a)*r,o.y+Math.sin(a)*r);if(h&&h.owner&&h.owner!==f&&atWar(f,h.owner))return true}return false}
   // (a foe it has detected: your army, hostile to it, that it sees or fears (engage.js fearSeen); any other its men see (menSight:
   // marched man by man, its march), else within alert px)

@@ -79,6 +79,10 @@ class BandBrain extends Brain{
     if(!fear&&this.hunt(b,sp)){b.waylay=null;return false}// (a caravan it can take, ridden down before all else but its fear of you: BAND_HUNT)
     if(!fear&&this.feud(b,sp)){b.waylay=null;return false}// (a rival band, goblins against bandits: data/goblins.js BAND_FEUD)
     if(b.waylay||!TravelAwareness.sees(b)&&Waylay.consider(b,d)){const r=Waylay.step(b,sp,d);if(r==='met')return true;if(r)return false}// (lying in wait: waylay.js)
+    // (you near a holding's homes: it hunts and searches for you no further there, turning back for the wilds: BAND_SHY, shy)
+    const shy=!fear&&this.shy(b);
+    if(shy&&(TravelAwareness.sees(b)||TravelSearch.of(b))){TravelSearch.marks.delete(b);b.idle=false;b.waylay=null;walk(b,b.x-shy.x,b.y-shy.y,sp*BAND_SHY.back);
+      if(G.chase===b&&this.canMeet(b,v.d)){meetBand(b);return true}return false}
     const home=night&&campNear(b,fear);
     if(fear&&home||b.cool>0&&!fear||!stanceMove(b,st,v.d,v.dx,v.dy,TravelAwareness.sees(b)?travelDetection(b).range:0,sp,true)){
       if(home){const s=fear?sp*.85:moveStep(16,d);Router.travel(b,home,s)||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),s));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
@@ -86,6 +90,10 @@ class BandBrain extends Brain{
     if(this.canMeet(b,v.d)){meetBand(b);return true}
     return false;
   }
+  // (the holding whose homes you are near, on its land, that b is shy of: not ruined nor besieged, its watch more than a match for b
+  // (BAND_SHY dare); null: none, or b a quest's or a wave's)
+  shy(b){const X=BAND_SHY;if(!X.on||b.qid||b.wave||P.stay||P.inside)return null;const t=landHold(P.x,P.y);
+    if(!t||!t.owner||ruined(t)||besieged(t)||LandDefence.homeDist(t,P.x,P.y)>X.near)return null;return b.power()*(b.nerve||1)>=Watches.of(t).power()*X.dare?null:t}
   // (bandits, goblins, looters: the nearest caravan in sight it thinks it can take, ridden down (true); the caravan's own brain starts
   // the fight when it is upon it (CaravanBrain: its guards against it), data/outlaws.js BAND_HUNT)
   // (goblins against every other band: the nearest rival in sight it thinks it can take, ridden down (true); one within X.meet of it,
