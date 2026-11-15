@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>World Lab</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#1a2030;font:13px Arial,sans-serif;color:#ece4cf}
+  canvas{display:block;image-rendering:pixelated;cursor:crosshair}
+  #panel{position:fixed;left:10px;top:10px;width:300px;padding:10px 12px;background:rgba(21,19,15,.78);border:1px solid #a1814366;border-radius:4px;line-height:1.5}
+  #panel h1{margin:0 0 4px;font-size:15px;color:#e8c876}
+  #panel p{margin:0 0 8px;color:#c8bfa6;font-size:12px}
+  #panel label{display:flex;align-items:center;gap:8px;margin:3px 0}
+  #panel input[type=range]{flex:1}
+  #stats{margin-top:8px;padding-top:6px;border-top:1px solid #a1814355;font-size:12px}
+  #stats b{color:#e8c876}
+  #stats em{color:#ff9a90;font-style:normal}
+  .bar{display:inline-block;vertical-align:middle;width:120px;height:6px;margin-left:6px;background:#10161a;border:1px solid #556}
+  .bar i{display:block;height:100%;background:#d8b850}
+  @media (max-width:700px){#panel{width:220px;font-size:11px}}
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>World lab: one pixel scale</h1>
+  <p>Click to walk there, WASD to walk, Shift to run. 1 world px = 1 figure px.</p>
+  <label>Level height <input id="lh" type="range" step="1"> <span id="lhv"></span> px</label>
+  <label>Zoom <select id="zoom"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select></label>
+  <label><input id="climb" type="checkbox"> Climber (goes up cliffs, on stamina)</label>
+  <label><input id="walkmap" type="checkbox"> Walk map (green flat, yellow slope, orange steep, red cliff)</label>
+  <div id="stats"></div>
+</div>
+<div id="view"></div>
+<script src="pixel.js"></script>
+<script src="buildkit.js"></script>
+<script src="pieces.js"></script>
+<script src="ground.js"></script>
+<script src="worldnature.js"></script>
+<script src="beasts.js"></script>
+<script src="doll.js"></script>
+<script src="buildmodels.js"></script>
+<script src="build-vale.js"></script>
+<script src="model.js"></script>
+<script src="worldlab.js"></script>
+<script>PX.worldLab(document.getElementById('view'))</script>
+</body>
+</html>

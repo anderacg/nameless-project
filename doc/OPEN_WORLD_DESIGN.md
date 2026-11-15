@@ -1,6 +1,6 @@
 # One scale, a living world: design proposal
 
-**Status (2026-11-15): proposal for discussion. Nothing built.**
+**Status (2026-11-15): decided (§11); phase 0, the lab, built: `engine/worldlab.html` (open it from disk). Nothing in the game changed yet.**
 
 The owner, 2026-11-15:
 - "Add beach area and hill (like in the battle map) and others you can suggest. I want to transition all those features in the battle map to actual world as much as possible."
@@ -202,6 +202,15 @@ That is a separate decision, best made after this world exists.
 
 ## 11. Decisions for the owner
 
+**Decided (the owner, 2026-11-15):**
+1. **Size M:** neighbouring holdings about a minute's walk apart.
+2. **Level height 8 px for now, adjustable:** `LAB.lh`; the lab's slider, 4-16 px.
+3. **Cliffs:** some units can climb, or climb with a skill. In the lab: the Climber switch (a cliff at ×0.16, on stamina).
+4. **The day:** 6-8 minutes.
+5. **The lab first:** built (below).
+
+**The questions as they were put:**
+
 1. **World size:** S, **M** (recommended), or L (§4)?
 2. **Height:** levels of 8 px (recommended; a 12-level peak about 96 px high), or flatter (6 px) or taller (12 px)?
 3. **Cliffs:** block everyone and you go around by ramps and passes (recommended for now), or the hero can climb them with a skill?
@@ -210,7 +219,43 @@ That is a separate decision, best made after this world exists.
 6. **Godot:** stay in JS now (recommended), and judge after the lab?
 7. **Start with the lab (phase 0)?** Recommended: nothing else changes until the owner has seen it.
 
-## 12. Risks
+## 12. The lab as built (phase 0, 2026-11-15)
+
+`engine/worldlab.html` and `engine/worldlab.js` (`PX.worldLab`, its numbers in `LAB`): a stretch 2048×1280 px at the one pixel scale, made from a smooth height field in levels.
+
+**What it shows:**
+- **The land:** the sea and its shore (wet sand, the beach, marram dunes, driftwood and shells, foam riding the shoreline), meadows and terraces, a hill, oak, birch and fir woods (the battle map's 32 px trees), boulders on scree.
+- **The range:** two peaks stepped into shelves with rock bands between them (`LAB.steps`: a sharp rise every 3 levels, a cliff where its noise says, a natural ramp where it does not), bare rock with grass patches above level 9, and snow above 11.5.
+- **The village:** on a flat shelf, the game's own building models drawn on a cell twice the game's (a cottage, a townhouse, a fisher's hut, a tavern, a well, a cart). It has three villagers.
+- **The road:** from the village up to the saddle in switchbacks, its grade held to 1 level every 34 px, cut into the hill on one side and built up on the other.
+
+**How it's drawn:**
+- Each px stands `level × lh` px higher, painted north to south, column by column.
+- A terrace's south face shows below it: an earth bank for a gentle step, a rock face with a dark ledge at every level for a steep one.
+- A depth buffer (the world y of the ground at every screen px) hides what stands behind a ridge and turns a click into a place on the ground.
+- Trees, houses, people and the hero are drawn in order of their feet, each cut by the ground in front of it.
+
+**Walking:**
+- By the slope where he steps: flat, slope (uphill ×0.5, downhill ×1.15), steep (×0.3), cliff (only with Climber, ×0.16, on stamina), water no one.
+- Ground: the road ×1.1, sand ×0.85, dunes ×0.8, woods ×0.85, snow ×0.55.
+- Click to walk: an A* over the 16 px cells. A cell counts as a cliff if 4 of its px are, so a thin rock band still shuts it. The hero steps round a single rock on his way.
+- WASD to walk, Shift to run.
+- A walk map shows the classes.
+
+**Numbers (1280×720, zoom 2):**
+- **Frames:** 60 fps capped (about 300 uncapped), about 1-2 ms of work a frame.
+- **Making the land:** about 0.9 s.
+- **Painting:** about 0.55 s for the whole stretch, about 55 ms a 512 px chunk. The lab paints the plain way, a new array for every colour. The game's painter must do it in about 8 ms: fixed palettes, typed arrays and a few ms a frame, as `WorldArt` already paints.
+- **Walking:** from the village to the snowy summit takes about 50 s on foot by the ramps.
+
+**What the lab leaves for later:**
+- Rivers with waterfalls and ravines.
+- Lighting by the time of day.
+- Riders and carts on slopes.
+- More than one climate.
+- Making chunks on demand (§8).
+
+## 13. Risks
 
 - **Phase 1 touches almost everything** that measures in px: AI distances, sight, arrival radii, travel, camps and battle reach. It is one big, careful pass. All fingerprints and many tests change once.
 - **Building models at a 2× cell** should gain real detail, but fine details (planks, tiles, windows) may need retuning per culture.
