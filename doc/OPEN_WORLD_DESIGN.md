@@ -286,6 +286,13 @@ That is a separate decision, best made after this world exists.
 - **The terrain layer** (`Pn.cv`) is the ground alone: grass, meadow, woods floor, sand, dunes, rock, scree, snow, water, banks, roads, cuttings, the terraces' faces, and the bridge standing over it.
 - **The ground's small things are a layer of their own** (`Pn.decor`, transparent): tufts, flowers, marram, reeds, driftwood, shells, leaf litter and loose pebbles. Each is drawn only where its ground is seen (not under the bridge, not behind a ridge).
 - The lab shows the terrain alone by default. "Ground details" lays the second layer over it.
+- **The things standing on the land are a third layer** (`LAB.nature`; the owner: "another layer to add on boulder trees etc."). The switch "Trees and rocks" is on by default.
+  - It holds trees, bushes (in the woods, thick at their edges, a few in the grass), saplings at the woods' edges, and boulders and stones (on the grass, the rock and the scree).
+  - Also stones on the river's banks and in its shallows, and fallen logs and stumps in the woods.
+  - Each is drawn in order of its foot with the hero and cut by the ground in front of it. None stand on the road, the bridge, the village's shelf or water deeper than shallow.
+  - Stones, logs and stumps are the lab's own small sprites: lit from the upper left, moss now and then, a shadow under each. Bushes and saplings are the engine's (`PX.smallTree`), boulders the battle map's (`PX.battleObstacle`).
+  - About 4,500 objects in all; the frame rate holds.
+- Buildings and people stay as they were, always shown.
 
 **Depth (2026-11-15; the owner: "Do we have depth if river or ocean?", then "Ok"):**
 - **Every water px has a depth** (`LAB.depth`, in levels; a level is about 0.85 m):

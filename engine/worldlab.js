@@ -54,6 +54,11 @@
     speed:{flat:1,road:1.1,sand:.85,dune:.8,snow:.55,wood:.85,up:.5,down:1.15,steep:.3,cliff:.16},
     sta:{slope:.03,steep:.08,cliff:.18,wade:.04,swim:.12,rest:.06},
     woods:{sc:170,at:.56,step:11,fringe:.06},
+    // (the layer of things standing on the land (the owner, 2026-11-15: "another layer to add on boulder trees etc."): on a grid of
+    //  step px, the chance of each by its ground: bushes in the woods, at their edges and in the grass; saplings; boulders and
+    //  stones on the grass, the rock and the scree; stones on the river's banks and in its shallows (no deeper than shallow); logs
+    //  and stumps in the woods)
+    nature:{step:7,bush:{wood:.08,edge:.16,grass:.008},sapling:.012,boulder:{grass:.0015,rock:.012},stone:{grass:.004,rock:.03,scree:.05,bank:.05,river:.04},shallow:.3,log:.012,stump:.008},
     // (the biomes blended (the owner, 2026-11-15: "make the transition between biomes more blend"): each ground's own colour shifted
     //  toward its neighbours' over r px, k of the way, the edge ragged by a warp of warp px)
     blend:{r:8,k:.85,warp:10},
@@ -407,14 +412,50 @@
     if(c===2)m*=up?S.up:S.down;else if(c===3)m*=S.steep;else if(c===4){if(!climber||sta<=0)return 0;m*=S.cliff}
     return m}
 
+  // small things of the land's own, cached: a stone (n px wide, lit from the upper left, moss now and then, its shadow under it); a
+  // fallen log (n px long, its bark lit on top, its cut end pale, a broken branch); a stump (its top's rings, its bark)
+  const NAT={};
+  function stoneSprite(n,v){const k='s'+n+v;if(NAT[k])return NAT[k];const w=n+2,h=Math.ceil(n*.75)+2,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),RC=COL.rock,moss=hsh(n,v,61)<.35;
+    g.fillStyle='rgba(20,24,20,.28)';g.fillRect(1,h-2,w-1,2);
+    for(let y=0;y<h-1;y++)for(let x=0;x<w;x++){const dx=(x+.5-w/2)/(n/2),dy=(y+.5-(h-1)/2)/((h-1)/2)+(hsh(x,v,62)-.5)*.25;if(dx*dx+dy*dy>1)continue;
+      const l=-(dx*.6+dy*.8)+(hsh(x>>1,y,v)-.5)*.4;let col=l>.45?RC[0]:l>0?RC[1]:l>-.45?RC[2]:RC[3];if(moss&&dy<-.2&&hsh(x,y,v+3)<.5)col=mix(col,COL.grass[0],.6);g.fillStyle='rgb('+col.map(Math.round).join(',')+')';g.fillRect(x,y,1,1)}
+    return NAT[k]=c}
+  function logSprite(n,v){const k='l'+n+v;if(NAT[k])return NAT[k];const c=document.createElement('canvas');c.width=n+1;c.height=7;const g=c.getContext('2d'),B=[[132,98,62],[108,78,48],[84,60,38],[60,44,30]],P=(col,x,y)=>{g.fillStyle='rgb('+col.join(',')+')';g.fillRect(x,y,1,1)};
+    g.fillStyle='rgba(20,24,20,.3)';g.fillRect(1,6,n,1);
+    for(let x=0;x<n;x++)for(let y=2;y<6;y++){let col=B[y-2];if(hsh(x,y,v+70)<.12)col=B[Math.min(3,y-1)];P(col,x,y)}
+    for(let y=2;y<6;y++)P(y===2||y===5?[150,120,84]:[196,166,118],n-1,y);P([120,92,60],n-1,3);
+    if(hsh(n,v,71)<.6){const bx=2+Math.floor(hsh(n,v,72)*(n-5));P(B[1],bx,1);P(B[0],bx+1,0)}
+    return NAT[k]=c}
+  function stumpSprite(v){const k='t'+v;if(NAT[k])return NAT[k];const c=document.createElement('canvas');c.width=8;c.height=8;const g=c.getContext('2d'),P=(col,x,y)=>{g.fillStyle='rgb('+col.join(',')+')';g.fillRect(x,y,1,1)};
+    g.fillStyle='rgba(20,24,20,.3)';g.fillRect(0,7,8,1);
+    for(let x=1;x<7;x++)for(let y=3;y<7;y++)P(x<2?[132,98,62]:x>5?[70,50,32]:[104,76,48],x,y);
+    for(let x=1;x<7;x++)for(let y=1;y<3;y++)P((x===1||x===6||y===1)?[176,146,102]:[150,118,80],x,y);P([120,90,58],3,2);P([120,90,58],4,2);
+    if(v&1){P([104,76,48],0,6);P([104,76,48],7,6)}
+    return NAT[k]=c}
+
   // the props: trees in the woods (and a few in the open), boulders on the scree, the village's houses on its shelf (models drawn on a
   // cell twice the game's: twice the detail, the same size beside a man), its people; each {x, y (its foot), img, ax, ay}
   function makeProps(L){const W=LAB.W,H=LAB.H,s=LAB.seed,P=[],st=LAB.woods.step,S=LAB.shelf;
     for(let gy=st;gy<H;gy+=st)for(let gx=st;gx<W;gx+=st){const x=Math.round(gx+(hsh(gx,gy,s+50)-.5)*st*.9),y=Math.round(gy+(hsh(gx,gy,s+51)-.5)*st*.9);if(x<2||y<2||x>=W-2||y>=H)continue;
       const i=y*W+x,k=L.KD[i],r=hsh(gx,gy,s+52);
       const Wd=LAB.woods,wn=k===K.wood||k===K.grass||k===K.meadow?fbm(x/Wd.sc,y/Wd.sc,s+41,3):0,edge=k===K.wood?smooth((wn-Wd.at)/Wd.fringe):smooth((wn-(Wd.at-Wd.fringe))/Wd.fringe)*.35;
-      if(k===K.wood&&r<.62*(.35+.65*edge)||(k===K.grass||k===K.meadow)&&r<.025+.6*edge&&L.road.D[i]>30&&!L.river.RV[i]&&(k===K.wood||Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry)>1.25)){const e=L.E[i],sp=e>5.5?'fir':r<.12?'birch':e>3.5&&r<.3?'fir':'oak',t=PX.battleTree('grass',sp,Math.floor(hsh(gx,gy,s+53)*4));P.push({x,y,img:t,ax:16,ay:30,kind:'tree'})}
-      else if(k===K.scree&&r<.05&&L.road.D[i]>LAB.road.w/2+LAB.road.sh){const b=PX.battleObstacle('rock','grass',Math.floor(hsh(gx,gy,s+54)*6));P.push({x,y,img:b.s,ax:b.ax,ay:b.ay,kind:'rock'})}}
+      if(k===K.wood&&r<.62*(.35+.65*edge)||(k===K.grass||k===K.meadow)&&r<.025+.6*edge&&L.road.D[i]>30&&!L.river.RV[i]&&(k===K.wood||Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry)>1.25)){const e=L.E[i],sp=e>5.5?'fir':r<.12?'birch':e>3.5&&r<.3?'fir':'oak',t=PX.battleTree('grass',sp,Math.floor(hsh(gx,gy,s+53)*4));P.push({x,y,img:t,ax:16,ay:30,kind:'tree',layer:'nature'})}
+      else if(k===K.scree&&r<.05&&L.road.D[i]>LAB.road.w/2+LAB.road.sh){const b=PX.battleObstacle('rock','grass',Math.floor(hsh(gx,gy,s+54)*6));P.push({x,y,img:b.s,ax:b.ax,ay:b.ay,kind:'rock',layer:'nature'})}}
+    // (the rest of the nature layer: bushes and saplings, boulders and stones, logs and stumps, each by its ground; never on the
+    //  road, the bridge, the village's shelf, or water deeper than shallow)
+    {const N=LAB.nature,ns=N.step;
+      for(let gy=ns;gy<H;gy+=ns)for(let gx=ns;gx<W;gx+=ns){const x=Math.round(gx+(hsh(gx,gy,s+140)-.5)*ns),y=Math.round(gy+(hsh(gx,gy,s+141)-.5)*ns);if(x<3||y<3||x>=W-3||y>=H-1)continue;
+        const i=y*W+x,k=L.KD[i],r=hsh(gx,gy,s+142),v=Math.floor(hsh(gx,gy,s+143)*8);
+        if(L.road.D[i]<LAB.road.w/2+3||L.BR[i]||Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry)<1.15)continue;
+        const Wd=LAB.woods,wn=k===K.wood||k===K.grass||k===K.meadow?fbm(x/Wd.sc,y/Wd.sc,s+41,3):0,edge=smooth(1-Math.abs(wn-Wd.at)/Wd.fringe);
+        const put=(img,ax,ay,kind)=>P.push({x,y,img,ax,ay,kind,layer:'nature'});
+        let q=r;
+        if(k===K.wood){if((q-=N.bush.wood)<0){put(PX.smallTree('grass',hsh(gx,gy,s+144)<.7?'oak':'birch',v%3,true),4,7,'bush');continue}if((q-=N.log)<0){const n=10+Math.floor(hsh(gx,gy,s+145)*7);put(logSprite(n,v),n>>1,6,'log');continue}if((q-=N.stump)<0){put(stumpSprite(v),4,7,'stump');continue}}
+        if(k===K.grass||k===K.meadow){if((q-=N.bush.grass+N.bush.edge*edge)<0){put(PX.smallTree('grass',hsh(gx,gy,s+146)<.6?'oak':'birch',v%3,true),4,7,'bush');continue}if((q-=N.sapling*edge)<0){put(PX.smallTree('grass','birch',v%3,false),8,15,'sapling');continue}
+          if((q-=N.boulder.grass)<0){const b=PX.battleObstacle('rock','grass',v%6);put(b.s,b.ax,b.ay,'rock');continue}if((q-=N.stone.grass)<0){const n=3+(v%4);put(stoneSprite(n,v),(n+2)>>1,Math.ceil(n*.75)+1,'stone');continue}}
+        if(k===K.rock||k===K.scree){if(k===K.rock&&(q-=N.boulder.rock)<0&&L.G[i]<LAB.cls.cliff){const b=PX.battleObstacle('rock','grass',v%6);put(b.s,b.ax,b.ay,'rock');continue}if((q-=N.stone[k===K.rock?'rock':'scree'])<0){const n=3+(v%5);put(stoneSprite(n,v),(n+2)>>1,Math.ceil(n*.75)+1,'stone');continue}}
+        if(k===K.bank&&(q-=N.stone.bank)<0){const n=3+(v%3);put(stoneSprite(n,v),(n+2)>>1,Math.ceil(n*.75)+1,'stone');continue}
+        if((k===K.river||k===K.ford)&&L.DP[i]<N.shallow&&L.river.RW[i]<50&&(q-=N.stone.river)<0){const n=3+(v%3);put(stoneSprite(n,v),(n+2)>>1,Math.ceil(n*.75)+1,'stone');continue}}}
     const sx=S.x*W,sy=S.y*H,house=(type,dx,dy,seed,yaw)=>{try{const sp=PX.buildingModelSpec({type,culture:'vale',seed,yaw:yaw||0,env:'grass'});sp.cell*=2;const m=PX.model(sp);P.push({x:Math.round(sx+dx),y:Math.round(sy+dy),img:m.img,ax:0,ay:m.img.height,kind:'house',sh:m.shadow})}catch(e){console.warn('lab: no model',type,e)}};
     house('cottage',-150,-40,3);house('cottage',-60,-70,8,2);house('townhouse',40,-62,5);house('fisherhut',-170,58,9,6);house('well',-40,12,4);house('cart',30,24,6);house('tavern',90,40,12,4);
     // (the watermill beside the river, on its east bank)
@@ -435,7 +476,7 @@
     const panel=document.getElementById('panel'),out=document.getElementById('stats');
     let L=makeLand(),Pn=paint(L),props=makeProps(L);
     const hero={x:LAB.shelf.x*LAB.W+20,y:LAB.shelf.y*LAB.H+40,face:1,walked:0,sta:1,path:[],climber:false,heavy:false,moving:false};
-    let details=false,walkmap=false,cam={x:0,y:0},keys={},fps=0,fa=0,fn=0,frameMs=0;
+    let details=false,nature=true,walkmap=false,cam={x:0,y:0},keys={},fps=0,fa=0,fn=0,frameMs=0;
     // the props cut by the ground in front of them (kept until the land is painted again)
     const cut=()=>{for(const p of props){const lf=Pn.lift[p.y*LAB.W+p.x];p.X=p.x-p.ax;p.Y=p.y-lf+Pn.T-p.ay;p.pic=occluded(p.img,p.X,p.Y,p.y,Pn)}props.sort((a,b)=>a.y-b.y)};
     cut();
@@ -467,6 +508,7 @@
     lh.addEventListener('change',()=>{LAB.lh=+lh.value;lhv.textContent=LAB.lh;Pn=paint(L);cut()});lh.addEventListener('input',()=>{lhv.textContent=lh.value});
     document.getElementById('climb').addEventListener('change',e=>{hero.climber=e.target.checked});
     {const hv=document.getElementById('heavy');if(hv)hv.addEventListener('change',e=>{hero.heavy=e.target.checked})}
+    {const nt=document.getElementById('nature');if(nt)nt.addEventListener('change',e=>{nature=e.target.checked})}
     {const dt=document.getElementById('details');if(dt)dt.addEventListener('change',e=>{details=e.target.checked})}
     document.getElementById('walkmap').addEventListener('change',e=>{walkmap=e.target.checked});
     document.getElementById('zoom').addEventListener('change',e=>{LAB.zoom=+e.target.value;resize()});
@@ -500,7 +542,7 @@
       // the hero's picture, cut by the ground before him
       const fr=hero.moving?Math.floor(hero.walked/5)%4:0,dl=PX.doll({race:'human',uniform:'swordsman',team:'blue',hair:'brown',style:'short',pose:hero.moving?'walk':undefined,frame:fr}),
         HX=Math.round(hx)-(dl.width>>1),HY=Math.round(hy)-dl.height+1,hp=occluded(dl,HX,HY,Math.round(hero.y),Pn);
-      const ents=[];for(const p of props){if(p.X+p.pic.width<cam.x||p.X>cam.x+cv.width||p.Y+p.pic.height<cam.y||p.Y>cam.y+cv.height)continue;ents.push(p)}
+      const ents=[];for(const p of props){if(p.layer==='nature'&&!nature)continue;if(p.X+p.pic.width<cam.x||p.X>cam.x+cv.width||p.Y+p.pic.height<cam.y||p.Y>cam.y+cv.height)continue;ents.push(p)}
       ents.push({y:hero.y,hero:true});ents.sort((a,b)=>a.y-b.y);
       const hb=bandAt(L,Math.round(hero.y)*W+Math.round(hero.x)),cut=LAB.depth.cut[hb];
       for(const p of ents){if(p.hero){if(!hb){ctx.fillStyle='rgba(0,0,0,.28)';ctx.fillRect(Math.round(hx)-cam.x-4,Math.round(hy)-cam.y,9,2)}
