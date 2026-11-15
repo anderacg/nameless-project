@@ -50,7 +50,7 @@
     //  (px of a man under the water) by each (dry, ankle, knee, waist, swimming); clear: how deep the bed still shows; swimCost: a
     //  cell of deep water to the way-finder; river: its depth at its middle from source to mouth; ford: its share there; tarn: its
     //  depth at the middle)
-    depth:{bands:[.12,.35,.8],speed:[1,.85,.6,.35,.3],cut:[0,1,4,8,12],clear:.9,swimCost:9,river:[.2,1.5],ford:.25,tarn:1.6},
+    depth:{bands:[.12,.35,.8],speed:[1,.85,.6,.35,.3],cut:[0,1,4,8,12],clear:.9,riverClear:.55,swimCost:9,river:[.2,1.5],ford:.25,tarn:1.6},
     speed:{flat:1,road:1.1,sand:.85,dune:.8,snow:.55,wood:.85,up:.5,down:1.15,steep:.3,cliff:.16},
     sta:{slope:.03,steep:.08,cliff:.18,wade:.04,swim:.12,rest:.06},
     woods:{sc:170,at:.56,step:11,fringe:.06},
@@ -82,7 +82,10 @@
     scree:[[150,148,138],[118,116,110]],
     river:[[118,190,196],[84,156,184],[58,118,160]],tarn:[[96,160,190],[54,104,150]],fall:[[236,244,248],[182,216,232],[134,180,208]],
     mud:[[104,96,62],[86,80,52]],reed:[[120,150,64],[96,124,52],[150,118,72]],
-    shallow:[[150,212,204],[90,170,190],[52,118,170],[30,72,128]],seabed:[[214,196,146],[196,178,128]],pebble:[[150,140,118],[122,114,98],[170,160,136],[104,98,86]],tarnbed:[[96,100,98],[78,82,84]],
+    shallow:[[150,212,204],[90,170,190],[52,118,170],[30,72,128]],
+    // (a river's own water (the owner, 2026-11-15: "why river has darker color than ocean?"): clear in its shallows, then green-grey
+    //  and murky as it deepens, never the open sea's deep blue)
+    riverwater:[[150,196,184],[116,160,150],[90,130,124],[78,114,112]],seabed:[[214,196,146],[196,178,128]],pebble:[[150,140,118],[122,114,98],[170,160,136],[104,98,86]],tarnbed:[[96,100,98],[78,82,84]],
     plank:[[154,112,70],[138,98,60],[166,124,80]],beam:[[92,64,40],[70,48,30]],stone:[[176,170,156],[150,144,132],[118,114,106]],puddle:[[118,138,150],[150,172,184]]};
 
   // the land's height (levels) at a px, before the road and the shelf
@@ -227,8 +230,9 @@
     const pick=(L3,x,y,sd)=>L3[Math.min(L3.length-1,Math.floor((vn(x/5,y/5,sd)*.8+hsh(x,y,sd+1)*.2)*L3.length))];
     // water's colour by its depth (shallow, then deeper, then deep), the bed (bed) showing through it while it is shallow, and the
     // light caught in the shallows
-    const underWater=(x,y,i,bed)=>{const d=L.DP[i],S=COL.shallow,Dp=LAB.depth;let c=d<.4?mix(S[0],S[1],d/.4):d<1?mix(S[1],S[2],(d-.4)/.6):mix(S[2],S[3],Math.min(1,(d-1)));
-      const a=Math.pow(Math.max(0,1-d/Dp.clear),1.4);c=mix(c,bed,a*.8);if(a>.15&&vn(x/3,y/3,s+93)>.74)c=mix(c,[232,246,246],.22*a);return c};
+    // (S: its colours by depth, the sea's or a river's; clear: how deep its bed still shows (a river's murkier than the sea))
+    const underWater=(x,y,i,bed,S=COL.shallow,clear=LAB.depth.clear)=>{const d=L.DP[i];let c=d<.4?mix(S[0],S[1],d/.4):d<1?mix(S[1],S[2],(d-.4)/.6):mix(S[2],S[3],Math.min(1,(d-1)));
+      const a=Math.pow(Math.max(0,1-d/clear),1.4);c=mix(c,bed,a*.8);if(a>.15&&vn(x/3,y/3,s+93)>.74)c=mix(c,[232,246,246],.22*a);return c};
     /* a dirt road as it is worn: its side of the middle (sd: signed px), two wheel tracks (light, packed) wandering a little, a
        dark groove down each; between them the crown, a little higher, grass in tufts on it where the road is flat; outside them
        loose ground and gravel; at its edge the grass creeping in, dithered, a dark line of trodden soil inside it; puddles lying
@@ -265,7 +269,7 @@
     // a px's top colour
     const topCol=(x,y,i)=>{const k=KD[i],e=E[i],n=hsh(x,y,s+5);let c;
       switch(k){
-        case K.water:{c=underWater(x,y,i,COL.seabed[Math.sin(x*.35+y*.12+vn(x/12,y/12,s+90)*6)>.55?0:1]);if(L.river.PL[i]>0)c=mix(c,[128,148,118],L.river.PL[i]*(.7+.6*vn(x/9,y/9,s+134)));if(n<.006&&L.DP[i]>.5)c=mix(c,COL.foam,.4);break}
+        case K.water:{c=underWater(x,y,i,COL.seabed[Math.sin(x*.35+y*.12+vn(x/12,y/12,s+90)*6)>.55?0:1]);if(L.river.PL[i]>0){const rc=underWater(x,y,i,COL.seabed[1],COL.riverwater,LAB.depth.riverClear);c=mix(c,rc,Math.min(1,L.river.PL[i]/LAB.river.plume*(.75+.5*vn(x/9,y/9,s+134))))}if(n<.006&&L.DP[i]>.5)c=mix(c,COL.foam,.4);break}
         case K.wet:c=pick(COL.wet,x,y,s+6);break;case K.sand:c=pick(COL.sand,x,y,s+7);break;
         case K.dune:c=mix(pick(COL.sand,x,y,s+8),COL.dune[n<.5?0:1],.45);break;
         case K.road:c=roadCol(x,y,i,n);break;
@@ -275,8 +279,8 @@
           const RR=LAB.road,d=L.road.D[i],t=L.road.I[i]*2,hw=L.bridge.hw,pl=Math.floor(t/4);c=COL.plank[Math.floor(hsh(pl,7,s+77)*3)];if(t%4<.55)c=mul(COL.plank[1],.72);
           if(Math.abs(d-hw*RR.track)<1.3)c=mul(c,.92);if(hsh(pl,Math.floor(d),s+78)<.04)c=mul(c,.85);
           if(d>hw-2.2)c=t%8<1.6?COL.beam[0]:d>hw-1.1?mul(COL.plank[2],1.08):COL.plank[1];break}
-        case K.river:{const tarn=L.river.RW[i]>50;c=underWater(x,y,i,tarn?COL.tarnbed[hsh(x>>1,y>>1,s+78)<.5?0:1]:COL.pebble[Math.floor(hsh(x>>1,y>>1,s+91)*4)]);if(!tarn&&n<.004)c=COL.stone[1];break}
-        case K.ford:c=underWater(x,y,i,COL.pebble[Math.floor(hsh(x>>1,y>>1,s+92)*4)]);if(hsh(x>>1,y>>1,s+79)<.12)c=COL.stone[hsh(x,y,s+80)<.5?0:1];break;
+        case K.river:{const tarn=L.river.RW[i]>50;c=tarn?underWater(x,y,i,COL.tarnbed[hsh(x>>1,y>>1,s+78)<.5?0:1]):underWater(x,y,i,COL.pebble[Math.floor(hsh(x>>1,y>>1,s+91)*4)],COL.riverwater,LAB.depth.riverClear);if(!tarn&&n<.004)c=COL.stone[1];break}
+        case K.ford:c=underWater(x,y,i,COL.pebble[Math.floor(hsh(x>>1,y>>1,s+92)*4)],COL.riverwater,LAB.depth.riverClear);if(hsh(x>>1,y>>1,s+79)<.12)c=COL.stone[hsh(x,y,s+80)<.5?0:1];break;
         case K.cut:{
           // (earth showing as the bank steepens, gradually and in ragged patches; lighter and warmer up its sunlit upper part, darker
           //  at its foot; tufts regrowing on it, the fewer the steeper; the grass of its lip hanging over)

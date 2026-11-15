@@ -292,6 +292,11 @@ That is a separate decision, best made after this world exists.
   - The sea's is how far the land lies under it.
   - The river's is deepest down its middle and deeper downstream (0.2 to 1.5 levels at its middle). At the ford it is a quarter of that.
   - The tarn's is deepest at its middle (1.6).
+- **A river's own water** (`COL.riverwater`, `LAB.depth.riverClear`; the owner: "why river has darker color than ocean?"):
+  - Colour had been by depth alone, and the river's middle (about 1.1 m) is deeper than the shallow inlet beside it.
+  - Now a river is clear in its shallows, showing its pebbles, then turns a green-grey and murky as it deepens, never the open sea's deep blue.
+  - Its bed hides sooner than the sea's (0.55 levels, against 0.9).
+  - At its mouth its water gives way to the sea's as it fades. The mountain tarn keeps the clear lake blue.
 - **Looks:**
   - The bed shows through shallow water: rippled sand under the sea, pebbles in the river, dark rock in the tarn.
   - Light is caught in the shallows.
