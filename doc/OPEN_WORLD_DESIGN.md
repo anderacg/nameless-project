@@ -296,7 +296,13 @@ That is a separate decision, best made after this world exists.
   - Each corner is a round arc of 30 px (less where its legs are short): `filleted`, `LAB.road.bend`.
   - Climbed at a third of the grade (`turnGrade`), so a hairpin is nearly level.
   - The ground between two legs of a switchback takes both legs' heights, weighted by nearness (`bandOf2`, `legs`), so the inside of a hairpin is one smooth bank: no crease, no stray wall, nothing standing in it.
-  - A road's steep shoulders are a cutting (`K.cut`): bare earth with grass clinging to it, more earth the steeper.
+  - A road's steep shoulders are a cutting (`K.cut`), refined (the owner: "refine the edge cutting, make it more naturally blend"):
+    - The shoulders are wider (22 px), so cuttings are gentler banks.
+    - Earth shows gradually as the bank steepens (`LAB.cut`: from 0.04 to 0.2 levels a px), in ragged patches.
+    - It is warmer and lighter up its sunlit upper part, darker at its foot, and a shade darker where grass meets it.
+    - Tufts regrow on it, fewer the steeper.
+    - The little faces of smooth ground blend from the px above to the one below, with no vertical streaks.
+    - The slope's light is softer, so there is no pale halo round a cutting.
 - **Painting** is now about 180 ms a 512 px chunk in the lab.
 
 **What the lab leaves for later:**

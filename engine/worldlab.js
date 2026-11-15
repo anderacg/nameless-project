@@ -32,7 +32,7 @@
   const LAB={W:2048,H:1280,cell:16,lh:8,lhMin:4,lhMax:16,seed:7,
     beach:.45,dune:.95,rock:9,snow:11.5,shore:{wet:5,sand:34,dune:80},
     peaks:[[.66,.15,.26,11],[.93,.36,.24,9.5]],steps:{band:3,sharp:16,sc:110,at:.38},hill:[.40,.42,.14,2.2],shelf:{x:.21,y:.73,rx:190,ry:120,e:1.4},
-    road:{w:26,sh:14,grade:1/34,bend:30,turnGrade:.35,legs:40,rut:5,edge:3,puddle:.74,wall:2,vary:.18,track:.42,wander:1.3,gravel:.07,pts:[[.13,.80],[.21,.73],[.31,.69],[.42,.61],[.50,.53],[.60,.50],[.70,.47],[.62,.41],[.73,.36],[.67,.31],[.79,.26],[.86,.14],[.88,0]]},
+    road:{w:26,sh:22,grade:1/34,bend:30,turnGrade:.35,legs:40,rut:5,edge:3,puddle:.74,wall:2,vary:.18,track:.42,wander:1.3,gravel:.07,pts:[[.13,.80],[.21,.73],[.31,.69],[.42,.61],[.50,.53],[.60,.50],[.70,.47],[.62,.41],[.73,.36],[.67,.31],[.79,.26],[.86,.14],[.88,0]]},
     river:{pts:[[.588,.118],[.565,.20],[.525,.28],[.475,.36],[.435,.46],[.395,.55],[.355,.62],[.338,.70],[.343,.79],[.328,.88],[.31,1]],
       w:[2.5,11],bank:9,meander:14,ford:.5,mill:.64,mouth:.15,tarn:{x:.597,y:.10,rx:48,ry:26}},
     walk:38,run:1.6,
@@ -47,7 +47,10 @@
     woods:{sc:170,at:.56,step:11,fringe:.06},
     // (the biomes blended (the owner, 2026-11-15: "make the transition between biomes more blend"): each ground's own colour shifted
     //  toward its neighbours' over r px, k of the way, the edge ragged by a warp of warp px)
-    blend:{r:8,k:.85,warp:10},zoom:2,phoneZoom:1.5,phone:700};
+    blend:{r:8,k:.85,warp:10},
+    // (a road's cutting: earth begins to show at slope from, all earth (but its tufts) by to; rag: how ragged that is; earth: its most
+    //  share; lit: the warm earth of its upper part)
+    cut:{from:.04,to:.2,rag:.9,earth:.92,lit:[176,140,96]},zoom:2,phoneZoom:1.5,phone:700};
 
   const hsh=(x,y,s)=>{let h=Math.imul(x|0,374761393)+Math.imul(y|0,668265263)+Math.imul(s|0,1274126177);h=Math.imul(h^h>>>13,1274126177);return((h^h>>>16)>>>0)/4294967296};
   const vn=(x,y,s)=>{const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf),a=hsh(xi,yi,s),b=hsh(xi+1,yi,s),c=hsh(xi,yi+1,s),d=hsh(xi+1,yi+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v};
@@ -242,7 +245,13 @@
           if(d>RR.w/2-2.5)c=Math.floor(t)%6<1.5?COL.beam[1]:COL.plank[2];break}
         case K.river:{const tarn=L.river.RW[i]>50;c=underWater(x,y,i,tarn?COL.tarnbed[hsh(x>>1,y>>1,s+78)<.5?0:1]:COL.pebble[Math.floor(hsh(x>>1,y>>1,s+91)*4)]);if(!tarn&&n<.004)c=COL.stone[1];break}
         case K.ford:c=underWater(x,y,i,COL.pebble[Math.floor(hsh(x>>1,y>>1,s+92)*4)]);if(hsh(x>>1,y>>1,s+79)<.12)c=COL.stone[hsh(x,y,s+80)<.5?0:1];break;
-        case K.cut:{const t=smooth((L.G[i]-LAB.cls.slope*1.5)/(LAB.cls.cliff-LAB.cls.slope)),q=vn(x/4,y/3,s+110)*.6+hsh(x,y,s+111)*.4;c=q<t*.85?pick(COL.bank,x,y,s+112):pick(COL.grass,x,y,s+113);if(q<t*.85&&hsh(x,y,s+114)<.05)c=COL.stone[1];break}
+        case K.cut:{
+          // (earth showing as the bank steepens, gradually and in ragged patches; lighter and warmer up its sunlit upper part, darker
+          //  at its foot; tufts regrowing on it, the fewer the steeper; the grass of its lip hanging over)
+          const C=LAB.cut,t=smooth((L.G[i]-C.from)/(C.to-C.from)+(vn(x/6,y/6,s+110)-.5)*C.rag),up=smooth((L.road.D[i]-L.HW[i])/LAB.road.sh),q=vn(x/3,y/3,s+111)*.55+hsh(x,y,s+112)*.45;
+          if(q<t*C.earth){const E1=mix(COL.bank[2],COL.bank[0],.35+.65*up);c=mix(E1,C.lit,up*.35*vn(x/5,y/4,s+113));if(hsh(x,y,s+114)<.03)c=mix(c,COL.stone[1],.6)}
+          else c=pick(COL.grass,x,y,s+115);
+          if(q>=t*C.earth&&q<t*C.earth+.06)c=mul(c,.82);break}
         case K.bank:c=mix(pick(COL.mud,x,y,s+81),COL.grass[0],L.river.RW[i]>50?.5:Math.min(1,Math.max(0,(L.river.D[i]-L.river.RW[i])/4)));break;
         case K.scree:c=mix(pick(COL.scree,x,y,s+10),COL.grass[0],hsh(x>>2,y>>2,s+11)<.3?.4:0);break;
         case K.rock:{c=pick(COL.rock.slice(0,3),x,y,s+12);const gp=smooth((vn(x/14,y/14,s+13)-.56)/.12+(hsh(x,y,s+14)-.5)*.6);if(gp>0)c=mix(c,COL.grass[0],.55*gp);break}
@@ -253,7 +262,7 @@
       if(BLEND[k])c=blendAt(x,y,k,c);
       // (higher land a little cooler and darker; the smooth ground lit from the west by its slope)
       if(k>=K.grass&&k<=K.wood)c=mix(c,[60,84,64],Math.min(.35,Math.max(0,e-3)*.04));
-      if(SM[i]&&k!==K.water){const sl=(L.GX[i]*-1+L.GY[i]*-.6)*lh*.9;c=mul(c,1+Math.max(-.25,Math.min(.25,sl)))}
+      if(SM[i]&&k!==K.water){const sl=(L.GX[i]*-1+L.GY[i]*-.6)*lh*.55;c=mul(c,1+Math.max(-.16,Math.min(.12,sl)))}
       return c};
     for(let x=0;x<W;x++){
       for(let y=0;y<H;y++){const i=y*W+x,h=lift[i],sy=y-h+T,k=KD[i];let c=topCol(x,y,i);
@@ -268,7 +277,7 @@
         const sy2=(y+1<H?y+1-hs:H-1+0)+T;if(y+1>=H){for(let r=sy+1;r<CH;r++)put(x,r,COL.face[2],y);continue}
         if(sy2>sy+1&&wet){for(let r=sy+1;r<sy2;r++){const n=hsh(x,r,s+83),q=hsh(x,0,s+84);put(x,r,r>=sy2-2?COL.foam:COL.fall[q<.35?0:q<.75?1:2],y);if(n<.02)put(x,r,COL.foam,y)}}
         else if(sy2>sy+1&&k===K.bridge){for(let r=sy+1;r<sy2;r++){const dz=r-sy;put(x,r,dz<=2?COL.beam[0]:Math.floor(L.road.I[i]*2)%14<2?COL.beam[0]:mul(COL.beam[1],.85),y)}}
-        else if(sy2>sy+1&&SM[i]&&h-hs<=3){for(let r=sy+1;r<sy2;r++)put(x,r,mul(c,.94),y)}
+        else if(sy2>sy+1&&SM[i]&&h-hs<=3){const cn=topCol(x,y+1,i+W),n2=sy2-sy;for(let r=sy+1;r<sy2;r++)put(x,r,mul(mix(c,cn,(r-sy)/n2),.93),y)}
         else if(sy2>sy+1&&SM[i]&&L.RD[i]<L.HW[i]+5){for(let r=sy+1;r<sy2;r++){const dz=r-sy,row=Math.floor(dz/3),off=(row&1)*3;put(x,r,dz%3===0||(x+off)%6===0?COL.stone[2]:COL.stone[hsh(Math.floor((x+off)/6),row,s+85)<.5?0:1],y)}}
         else if(sy2>sy+1){const drop=h-hs,rocky=G[i]>=LAB.cls.steep||drop>=2*lh||k===K.rock||k===K.snow||k===K.scree,sand=k<=K.dune;
           for(let r=sy+1;r<sy2;r++){const dz=r-sy,zh=h-dz,f=dz/Math.max(1,drop),n=hsh(x,r,s+20);let c2;
