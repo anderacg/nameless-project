@@ -16,7 +16,7 @@
   // where the beach, dunes, bare rock and snow begin, the peaks and the hill ([x, y, radius as shares of W, height in levels]),
   // the village's shelf, the road (its width, shoulders and most levels a px along it), the walk (px a second, the battle's
   // militia), steps: the range's shelves (a rise every band levels, as sharp as sharp where its noise (sc px) passes at), the slope classes (g at least: slope, steep, cliff) and what each does (speed up and down, stamina a second), the
-  // woods (noise scale and threshold), the zoom (screen px a world px)
+  // woods (noise scale and threshold), the zoom (screen px a world px; phoneZoom on a screen narrower than phone px)
   const LAB={W:2048,H:1280,cell:16,lh:8,lhMin:4,lhMax:16,seed:7,
     beach:.45,dune:.95,rock:9,snow:11.5,shore:{wet:5,sand:34,dune:80},
     peaks:[[.66,.15,.26,11],[.93,.36,.24,9.5]],steps:{band:3,sharp:16,sc:110,at:.38},hill:[.40,.42,.14,2.2],shelf:{x:.21,y:.73,rx:190,ry:120,e:1.4},
@@ -25,7 +25,7 @@
     cls:{slope:.035,steep:.11,cliff:.22},
     speed:{flat:1,road:1.1,sand:.85,dune:.8,snow:.55,wood:.85,up:.5,down:1.15,steep:.3,cliff:.16},
     sta:{slope:.03,steep:.08,cliff:.18,rest:.06},
-    woods:{sc:170,at:.56,step:11},zoom:2};
+    woods:{sc:170,at:.56,step:11},zoom:2,phoneZoom:1.5,phone:700};
 
   const hsh=(x,y,s)=>{let h=Math.imul(x|0,374761393)+Math.imul(y|0,668265263)+Math.imul(s|0,1274126177);h=Math.imul(h^h>>>13,1274126177);return((h^h>>>16)>>>0)/4294967296};
   const vn=(x,y,s)=>{const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf),a=hsh(xi,yi,s),b=hsh(xi+1,yi,s),c=hsh(xi,yi+1,s),d=hsh(xi+1,yi+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v};
@@ -192,7 +192,7 @@
 
   /* the lab: the canvas, the hero (click to walk there by the cells, WASD to walk), the panel's controls and numbers */
   PX.worldLab=function(root){
-    const cv=document.createElement('canvas'),ctx=cv.getContext('2d');root.appendChild(cv);ctx.imageSmoothingEnabled=false;
+    const cv=document.createElement('canvas'),ctx=cv.getContext('2d');root.appendChild(cv);cv.style.touchAction='none';ctx.imageSmoothingEnabled=false;
     const panel=document.getElementById('panel'),out=document.getElementById('stats');
     let L=makeLand(),Pn=paint(L),props=makeProps(L);
     const hero={x:LAB.shelf.x*LAB.W+20,y:LAB.shelf.y*LAB.H+40,face:1,walked:0,sta:1,path:[],climber:false,moving:false};
@@ -200,6 +200,7 @@
     // the props cut by the ground in front of them (kept until the land is painted again)
     const cut=()=>{for(const p of props){const lf=Pn.lift[p.y*LAB.W+p.x];p.X=p.x-p.ax;p.Y=p.y-lf+Pn.T-p.ay;p.pic=occluded(p.img,p.X,p.Y,p.y,Pn)}props.sort((a,b)=>a.y-b.y)};
     cut();
+    if(innerWidth<LAB.phone)LAB.zoom=LAB.phoneZoom;{const z=document.getElementById('zoom');if(z)z.value=String(LAB.zoom)}
     const resize=()=>{const z=LAB.zoom;cv.width=Math.ceil(innerWidth/z);cv.height=Math.ceil(innerHeight/z);cv.style.width=cv.width*z+'px';cv.style.height=cv.height*z+'px';ctx.imageSmoothingEnabled=false};
     addEventListener('resize',resize);resize();
     // the cells' A*: a cell's cost by the class at its middle and the steepest of its corners (water and, but for a climber, cliffs shut)
