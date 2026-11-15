@@ -17,15 +17,16 @@ const ARRIVAL={r:5,pulse:1.2,fade:1.5,col:{own:'#6fa8e0',ally:'#8fd08a',foe:'#e0
 const JOIN_RULES={reach:120,every:5,hear:{base:20,per:.5,max:60},band:{small:12,after:40,worn:.4,chance:.5},beast:{near:240,chance:.25},wild:o=>o.mapKind==='band'||o.mapKind==='monster',
   kin:(o,e)=>!!e&&(o.mapKind==='monster'?e.kind==='monster'&&o.id===e.ref?.id:e.kind==='party'&&(o.kind||'bandits')===((e.ref?.src||e.ref)?.kind||'bandits'))};// (kin: a pack or band of the kind you fight, riding to its own: as ever)
 // (clear: px kept between your army's room and a place's defenders' as a fight there begins: WorldBattleArea.clearOf)
-const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1,clear:24};
+const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1,clear:24,escapeBlock:4};
 /* a fight on the map in the open (doc/OPEN_FIGHTS_DESIGN.md; the owner, 2026-11-14: "remove the battle area for hunting ... the
    same world speed", "the same as monsters", every fight on the map): ring: its circle drawn (false: none); reach: its field this
    much wider than the ring was, its edge twice your sight and more past where it began, that no one sees (a foe past it has got
    away, yours stop at it); lost: s a hunted beast none of yours sees may stay unseen before it has got away; world: the
    world runs on through it (openFightWorld): its clock and every other party, each frame's systems but still's (yours: your march,
    a holding or the road reached, your camp's), the days and hours of held's (your band's: its wages, its wounded, its food) kept
-   till the fight is over, then run (Systems.hold). on false: as before (the ring, the world still) */
-const OPEN_FIGHT={on:true,ring:false,reach:2.2,lost:20,world:true,still:['march','arrival','road','stay','capture','march guides','supply','raids','auto reinforce','travel awareness'],held:['band','wounded','companions','supply']};
+   till the fight is over, then run (Systems.hold); every: frames of the fight to one of the world's (their time run at once). on
+   false: as before (the ring, the world still) */
+const OPEN_FIGHT={on:true,ring:false,reach:2.2,lost:20,world:true,every:3,still:['march','arrival','road','stay','capture','march guides','supply','raids','auto reinforce','travel awareness'],held:['band','wounded','companions','supply']};
 // (in the fight on the map now: you, or a party, a beast or a herd in it or riding to it; the world's own moments leave it be:
 // worldobject.js lodThink, march.js)
 const inMapFight=o=>!!B?.world&&!!o&&(o===P||B.world.participants?.has(o));
@@ -33,7 +34,11 @@ const inMapFight=o=>!!B?.world&&!!o&&(o===P||B.world.participants?.has(o));
 const fightHolds=o=>inMapFight(o)||!!B?.world?.bystanders?.entries.has(o);
 // (the world's moment in a fight on the map (main.js, after the fight's): its clock and the systems but OPEN_FIGHT.still, your
 // band's days and hours held; nothing while the fight is paused, forming up or over)
-function openFightWorld(rt){const O=OPEN_FIGHT;if(!O.on||!O.world||!B?.world||B.paused||B.deploy||B.muster?.active||B.over||G.dead||G.modal)return;
+// (every OPEN_FIGHT.every frames, the time since run at once: the world's systems each frame of a fight cost it some 4 ms a frame;
+//  the owner, 2026-11-15: "fix the battle performance")
+let OPEN_FIGHT_RT=0,OPEN_FIGHT_N=0;
+function openFightWorld(rt){const O=OPEN_FIGHT;if(!O.on||!O.world||!B?.world||B.paused||B.deploy||B.muster?.active||B.over||G.dead||G.modal){OPEN_FIGHT_RT=0;OPEN_FIGHT_N=0;return}
+  OPEN_FIGHT_RT+=rt;if(++OPEN_FIGHT_N<(O.every|0||1))return;rt=OPEN_FIGHT_RT;OPEN_FIGHT_RT=0;OPEN_FIGHT_N=0;
   Systems.hold=Systems.hold||new Set(O.held);lodTick(rt);Clock.advance(rt*G.speed*DAY/DAY_SECONDS);if(G.dead||!B)return;Systems.frame(rt*G.speed*WORLD_PACE,rt,O.still,true)}
 // (the fight over, B gone: your band's days and hours held through it run now; never while its Esc menu is up over it)
 function openFightOver(){if(Systems.hold&&!B)Systems.release()}
@@ -191,9 +196,12 @@ class WorldBattleArea{
       if(m.b){const sp=bannerSprite(m.b,Math.floor(now*2)%2);ctx.drawImage(sp,-sp.px,-A.r-sp.py)}ctx.restore();
       ctx.save();ctx.globalAlpha=al;txt(m.name,Math.round(x),Math.round(y+(A.r+5)*k),m.col,'center');ctx.restore()}}
   // Choose once from the reachable apron, rather than chasing a radial point which can be rock or behind a cliff.
+  // (the way out reckoned from the middle of the block of WORLD_BATTLE.escapeBlock cells he stands in, so a group breaking together
+  //  shares one reckoning (routeDist keeps a few) instead of each man his own over the whole field, a frame's spike of a third of a
+  //  second; his own way there is still his own: the owner, 2026-11-15, "fix the battle performance")
   escapePlan(u){
     const g=this.escapeRoutes?.[routeWho(u.s)];if(!g)return null;const old=u.worldEscape;if(old&&old.g===g&&old.v===g.v)return old;
-    const D=routeDist(g,u.x,u.y);let at=-1,best=Infinity;
+    const c=g.cs*(WORLD_BATTLE.escapeBlock||1),D=routeDist(g,(Math.floor(u.x/c)+.5)*c,(Math.floor(u.y/c)+.5)*c);let at=-1,best=Infinity;
     for(let i=0;i<D.length;i++){if(!Number.isFinite(D[i])||!g.cost[i])continue;const x=(i%g.C+.5)*g.cs,y=(Math.floor(i/g.C)+.5)*g.cs;
       if(this.distance({x,y})<this.radius+2||x<8||x>BW-8||y<fieldTop()||y>fieldBot())continue;
       if(D[i]<best){at=i;best=D[i]}}

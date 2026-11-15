@@ -235,7 +235,11 @@ window.addEventListener('pointercancel',e=>{if(e.pointerType==='touch')touchUp(e
 document.addEventListener('pointerdown',e=>{if(e.target!==cv&&holdCardUp())hideTip()},true);
 // the screen's safe area (clear of a notch, rounded corners, a home bar), CSS px: style.css --sa-*, read off the HUD layer's
 // padding (its children are placed against its padding box, so the padding moves nothing)
-function safeInsets(){const h=$('.hudlayer'),s=h&&getComputedStyle(h),n=v=>parseFloat(v)||0;return s?{t:n(s.paddingTop),r:n(s.paddingRight),b:n(s.paddingBottom),l:n(s.paddingLeft)}:{t:0,r:0,b:0,l:0}}
+// (kept while the window keeps its size and the page its own style (--sa-* set by hand), read again at least each second: read each frame (render.js, the minimap's place), the
+// style worked out afresh cost a phone's battle frame a ms; the owner, 2026-11-15: "fix the battle performance")
+let SAFE_IN=null;
+function safeInsets(){const k=innerWidth+'x'+innerHeight+document.documentElement.style.cssText,now=performance.now();if(SAFE_IN&&SAFE_IN.k===k&&now-SAFE_IN.at<1000)return SAFE_IN.v;
+  const h=$('.hudlayer'),s=h&&getComputedStyle(h),n=v=>parseFloat(v)||0,v=s?{t:n(s.paddingTop),r:n(s.paddingRight),b:n(s.paddingBottom),l:n(s.paddingLeft)}:{t:0,r:0,b:0,l:0};SAFE_IN={k,at:now,v};return v}
 // the card: over the finger (not under it), kept on the screen and in its safe area; 'Tap' where the tooltip says 'Click'
 // a finger held on a button and let go on it still presses it (phones drop the click of a held tap), as does a quick tap the browser
 // gave up for a scroll that hardly moved; not a battle card's, whose
