@@ -50,11 +50,12 @@ const WORLD_FLORA={step:9,
    more cuts of its line); the lab's worn look: wheel
    tracks at track of the half-width wandering wander px, gravel, puddles past puddle, a ragged edge of edge px, shoulders sh px.
    road grade: levels a game px it climbs at most (the lab's 1 in 34 lab px), its shoulders cut or banked to it.
-   bridge: its deck clear levels over the water, the road ramped up to it within ramp game px of each end; a pile every pile px (a stone bridge's arch every arch), rails rail px tall, a
+   bridge: its deck clear levels over the water, the road ramped up to it within ramp game px of each end; along its road, turned at
+   most turn radians off its crossing's line, over game px onto each bank; a pile every pile px (a stone bridge's arch every arch), rails rail px tall, a
    post every post px */
 const WORLD_WAYS={river:{hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,meander:6,mouth:1.6,plume:7,tarn:{lv:3,w:3.2}},
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3},
-  bridge:{clear:1.4,ramp:28,pile:12,arch:26,rail:5,post:8}};
+  bridge:{clear:1.4,ramp:28,turn:.6,over:6,look:[24,72],pile:12,arch:26,rail:5,post:8}};
 const WORLD_TERRAIN={liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
   decor:{flower:[[236,220,90],[236,240,246],[200,150,210],[240,160,120]],marram:[[214,204,150],[180,172,116]],drift:[[160,138,108],[196,178,146]],shell:[238,230,216],litter:[[110,92,50],[96,80,44],[128,104,58]]},bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={

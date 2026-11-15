@@ -487,7 +487,7 @@ function marchOff(pts,x,y){let v=Infinity;for(let i=0;i<pts.length;i++){const a=
 function marchStrays(pts,u,p){let ax=u.x,ay=u.y;for(const q of p){const l=Math.hypot(q.x-ax,q.y-ay),n=Math.max(1,Math.ceil(l/4));for(let k=1;k<=n;k++)if(marchOff(pts,ax+(q.x-ax)*k/n,ay+(q.y-ay)*k/n)>PATHS.stray)return true;ax=q.x;ay=q.y}return false}
 class MarchGround{
   constructor(o,units,pad=MARCH_MOVE.pad){
-    const r=marchOuter(o),chunk=MARCH_MOVE.chunk,cs=MARCH_MOVE.cell,fly=o.mapKind==='monster'&&MONSTERS[o.id]?.mythic?.fly;this.fly=!!fly;
+    const r=marchOuter(o),chunk=MARCH_MOVE.chunk,cs=MARCH_MOVE.cell,fly=o.mapKind==='monster'&&MONSTERS[o.id]?.mythic?.fly;this.fly=!!fly;this.owner=o;const climb=this.climb=o===P&&heroClimbs();// (your small band climbs: map.js heroClimbs)
     this.x=Math.max(0,Math.floor((Math.min(o.x-r,...units.map(u=>u.x))-pad)/chunk)*chunk);this.y=Math.max(0,Math.floor((Math.min(o.y-r,...units.map(u=>u.y))-pad)/chunk)*chunk);
     const x1=Math.min(MW*TILE,Math.ceil((Math.max(o.x+r,...units.map(u=>u.x))+pad)/chunk)*chunk),y1=Math.min(MH*TILE,Math.ceil((Math.max(o.y+r,...units.map(u=>u.y))+pad)/chunk)*chunk);
     const g=this.grid=routeGrid(Math.max(1,Math.ceil((x1-this.x)/cs)),Math.max(1,Math.ceil((y1-this.y)/cs)),cs);this.version=WAYV;this.x1=x1;this.y1=y1;this.sig=marchBlocksSig(this.x,this.y,x1,y1);this.blocks=(PATHS.footing?marchFootings:marchFootprints)(this.x,this.y,x1,y1).filter(b=>b.x<x1&&b.y<y1&&b.x+b.w>this.x&&b.y+b.h>this.y);
@@ -497,7 +497,7 @@ class MarchGround{
     const shut=this.foot=new Uint8Array(g.cost.length);if(!fly)for(const b of this.blocks){const c0=Math.max(0,Math.floor((b.x-this.x)/cs)),c1=Math.min(g.C-1,Math.ceil((b.x+b.w-this.x)/cs)-1),r0=Math.max(0,Math.floor((b.y-this.y)/cs)),r1=Math.min(g.R-1,Math.ceil((b.y+b.h-this.y)/cs)-1);
       for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const x=this.x+(c+.5)*cs,y=this.y+(r+.5)*cs;if(x+cs/2>b.x&&x-cs/2<b.x+b.w&&y+cs/2>b.y&&y-cs/2<b.y+b.h)shut[r*g.C+c]=1}}
     for(let i=0;i<g.cost.length;i++){const x=this.x+(i%g.C+.5)*cs,y=this.y+(Math.floor(i/g.C)+.5)*cs,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),k=ty*MW+tx;
-      let open=WM.has(tx,ty)&&(fly||wayLand(k));if(!open&&tAt(tx,ty)===T_WATER)open=ferries.some(f=>{const dx=f.tx-f.x,dy=f.ty-f.y,d=dx*dx+dy*dy,t=clamp(((x-f.x)*dx+(y-f.y)*dy)/d,0,1);return Math.hypot(x-f.x-t*dx,y-f.y-t*dy)<fw});
+      let open=WM.has(tx,ty)&&(fly||wayLand(k)||climb&&tiles[k]===T_MOUNT&&!(SHUT&&SHUT[k]));if(!open&&tAt(tx,ty)===T_WATER)open=ferries.some(f=>{const dx=f.tx-f.x,dy=f.ty-f.y,d=dx*dx+dy*dy,t=clamp(((x-f.x)*dx+(y-f.y)*dy)/d,0,1);return Math.hypot(x-f.x-t*dx,y-f.y-t*dy)<fw});
       // (water by its depth, WATER.cost: waded, swum; map.js)
       const wb=open&&!fly&&tiles[k]===T_WATER?waterBand(k):0;g.cost[i]=open&&!shut[i]?Math.min(255,Math.round(ROUTE.unit*(wb?WATER.cost[wb]:1))):0;
       if(!fly&&WM.has(tx,ty)){const edge=WM.edge[k];if(x%TILE<cs&&edge&4)g.wall[i]|=4;if(x%TILE>TILE-cs&&edge&1)g.wall[i]|=1;if(y%TILE<cs&&edge&8)g.wall[i]|=8;if(y%TILE>TILE-cs&&edge&2)g.wall[i]|=2}
@@ -512,13 +512,13 @@ class MarchGround{
     for(let r=0;r<g.R;r++)run(c=>r*g.C+c,g.C);for(let c=0;c<g.C;c++)run(r=>r*g.C+c,g.R)}
   // (still true to the land: no world version since (terrain, a crossing shut, a holding's walls: router.js WAYV) and its buildings and
   // sites as they were (marchBlocksSig))
-  fresh(){if(this.version!==WAYV)return false;const a=this.sig,b=marchBlocksSig(this.x,this.y,this.x1,this.y1);if(a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true}
+  fresh(){if(this.version!==WAYV||this.climb!==(this.owner===P&&heroClimbs()))return false;const a=this.sig,b=marchBlocksSig(this.x,this.y,this.x1,this.y1);if(a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true}
   local(p){return{x:p.x-this.x,y:p.y-this.y}}
   world(p){return{x:p.x+this.x,y:p.y+this.y}}
   contains(p,pad=0){const g=this.grid;return p.x>=this.x+pad&&p.y>=this.y+pad&&p.x<this.x+g.C*g.cs-pad&&p.y<this.y+g.R*g.cs-pad}
   covers(p,pad){const g=this.grid,x1=this.x+g.C*g.cs,y1=this.y+g.R*g.cs;return p.x>=this.x+(this.x>0?pad:0)&&p.y>=this.y+(this.y>0?pad:0)&&p.x<x1-(x1<MW*TILE?pad:0)&&p.y<y1-(y1<MH*TILE?pad:0)}
   open(p){return this.contains(p)&&!!this.grid.cost[routeIx(this.grid,p.x-this.x,p.y-this.y)]}
-  stand(p){return this.open(p)&&(this.fly||walkAt(p.x,p.y))}
+  stand(p){return this.open(p)&&(this.fly||walkAt(p.x,p.y)||this.climb&&terrAt(p.x,p.y)===T_MOUNT)}
   // (PATHS.clear: a man's (one with a type) half his body (marchBody), the room he keeps off walls; else, or one squeezing out of a
   // pocket (tight: MarchArmy step), none)
   body(p){return PATHS.clear&&p.type&&!p.tight?marchBody(p)/2:0}

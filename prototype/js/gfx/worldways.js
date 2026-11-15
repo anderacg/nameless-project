@@ -56,6 +56,21 @@ function waysOf(P){if(P.ways)return P.ways;
   for(let k0=0;k0<n0;){let k1=k0;while(k1+1<n0&&S0[(k1+1)*5]===S0[k1*5+2]&&S0[(k1+1)*5+1]===S0[k1*5+3])k1++;let p=[[S0[k0*5],S0[k0*5+1]]];for(let k=k0;k<=k1;k++)p.push([S0[k*5+2],S0[k*5+3]]);
     for(let it=0;it<WORLD_WAYS.road.bend&&p.length>2;it++){const o=[p[0]];for(let k=0;k+1<p.length;k++){const a=p[k],b=p[k+1];o.push([a[0]*.75+b[0]*.25,a[1]*.75+b[1]*.25],[a[0]*.25+b[0]*.75,a[1]*.25+b[1]*.75])}o.push(p[p.length-1]);p=o}
     const kd=S0[k0*5+4];for(let k=0;k+1<p.length;k++)SX.push(p[k][0],p[k][1],p[k+1][0],p[k+1][1],kd);k0=k1+1}
+  /* (each bridge along its road, the lab's (a deck at the road's own angle, a true rectangle): its axis the crossing's, turned toward the
+     way the road comes in and goes out (at most turn radians off it), as long as it must be to span the crossing so turned; the road
+     joined to its two ends by a short piece each. BRG: {c, mx, my (its middle), ux, uy (along it), L (long), hw (half wide), dk (its
+     deck's level), stone}, game px) */
+  const BRG=[],BW=WORLD_WAYS.bridge;
+  for(const c of WM.crossings){if(c.kind!=='bridge')continue;const ex=((c.i%MW)+.5)*TILE,ey=(((c.i/MW)|0)+.5)*TILE,fx=((c.j%MW)+.5)*TILE,fy=(((c.j/MW)|0)+.5)*TILE,al=Math.hypot(fx-ex,fy-ey)||1,ax=(fx-ex)/al,ay=(fy-ey)/al;
+    // (the road's way in at one end and out at the other, past its straight run onto the bridge: from the road's points between near and
+    //  far game px off each end on its own side, toward the end)
+    const dirAt=(px,py,side)=>{let sx=0,sy=0,n=0;for(let k=0;k<SX.length;k+=5)for(const e of [0,1]){const x=SX[k+e*2],y=SX[k+1+e*2],d=Math.hypot(x-px,y-py);
+        if(d>BW.look[0]&&d<BW.look[1]&&((x-px)*ax+(y-py)*ay)*side>4){sx+=x;sy+=y;n++}}if(!n)return null;const dx=(px-sx/n)*-side,dy=(py-sy/n)*-side,l=Math.hypot(dx,dy)||1;return [dx/l,dy/l]};
+    const di=dirAt(ex,ey,-1),dj=dirAt(fx,fy,1);let ux=ax,uy=ay;if(di){ux+=di[0]*.5;uy+=di[1]*.5}if(dj){ux+=dj[0]*.5;uy+=dj[1]*.5}{const l=Math.hypot(ux,uy)||1;ux/=l;uy/=l}
+    let cs=ux*ax+uy*ay;if(cs<Math.cos(BW.turn)){const sg=Math.sign(ax*uy-ay*ux)||1,t=BW.turn*sg,cx=Math.cos(t),sn=Math.sin(t);ux=ax*cx-ay*sn;uy=ax*sn+ay*cx;cs=Math.cos(BW.turn)}
+    const mx=(ex+fx)/2,my=(ey+fy)/2,L=(al-TILE+BW.over*2)/cs,hw=(WORLD_WAYS.road.hw[1]-1)*WAY_LP;
+    BRG.push({c,mx,my,ux,uy,L,hw,dk:bridgeDeck(c),stone:!!c.stone});
+    SX.push(ex,ey,mx-ux*L/2,my-uy*L/2,1,mx+ux*L/2,my+uy*L/2,fx,fy,1)}
   const S=SX,nR=S.length/5,RA=new Float32Array(nR*6),RK=new Uint8Array(nR),RL=new Float32Array(nR);
   for(let k=0;k<nR;k++){const o=k*5,kd=S[o+4],road=kd<2?kd:(kd-2)&1,hw=RW[road]*WAY_LP;RK[k]=road;RA.set([S[o],S[o+1],S[o+2],S[o+3],hw,hw],k*6);
     RL[k]=k&&S[o]===S[o-3]&&S[o+1]===S[o-2]?RL[k-1]+Math.hypot(S[o-3]-S[o-5],S[o-2]-S[o-4]):0}
@@ -75,7 +90,7 @@ function waysOf(P){if(P.ways)return P.ways;
     lift();for(let it=0;it<3;it++){for(let i=1;i<n;i++)z[i]=Math.max(z[i],z[i-1]-G*d[i]);for(let i=n-2;i>=0;i--)z[i]=Math.max(z[i],z[i+1]-G*d[i+1])}
     for(let k=k0;k<=k1;k++){RZ[k*2]=z[k-k0];RZ[k*2+1]=z[k-k0+1]}
     k0=k1+1}
-  return P.ways={mouths:MO,RZ,land,X:Float32Array.from(X),Y:Float32Array.from(Y),HW:Float32Array.from(HW),LV:Float32Array.from(LL),DP:Float32Array.from(DP),SP:Int32Array.from(SP),SA:Float32Array.from(SA),RA,RK,RL,mouth}}
+  return P.ways={bridges:BRG,mouths:MO,RZ,land,X:Float32Array.from(X),Y:Float32Array.from(Y),HW:Float32Array.from(HW),LV:Float32Array.from(LL),DP:Float32Array.from(DP),SP:Int32Array.from(SP),SA:Float32Array.from(SA),RA,RK,RL,mouth}}
 
 /* the nearest of a set of segments (A: ax, ay, bx, by, ha, hb, game px) to every px of a window (x0, y0, w x h, in px sc a game px),
    within reach px past its edge: S how far past its edge (px; < 0 within it), Q the segment (-1 none), T how far along it (0-1) */
@@ -116,55 +131,46 @@ function wayRoad(fx,fy,sd,hw,t,flat,land,k){const RR=WORLD_WAYS.road,C=WAY_COL,r
   const v=Math.abs(sd)-(hw-3.5*k);if(v>0){if(hs(fx,fy,531)<v/(3.5*k)*.9+(wnoise2(fx/3,fy/3,532)-.5)*.5)c=land;else if(v<1.2*k)c=tmix(c,C.soil,.5)}
   return c}
 
-/* the bridges over a chunk (the lab's, standing over the land: only their parts drawn), into O (the chunk's fine picture, W2 x H2,
-   its corner the game px X, Y; r fine px a game px): each bridge of WM.crossings, straight across from its bank tile c.i to c.j,
-   its deck as wide as the road (planks across it, a thin gap between, worn where the wheels go; a stone one's setts) a little under
-   the road's width; a beam under every edge; under its near (south) edge the piles (a stone one's piers and arches) down to the
-   water or the bank, foam at their feet, braced between; the rails on posts (a stone one's parapets) along both sides. Its height:
-   clear levels over the water, never under its banks. Lv, at: the chunk's levels (game px) and their index; FM: what is covered */
-function waysBridges(O,W2,H2,X,Y,r,Lv,Wa,at,TOP,LF){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh,k=r/2,LVT=WM.lv;let DL=0;
-  // (each px put at the screen's place: up by the deck's lift (DL))
-  const fx0=X*r,fy0=Y*r,put=(x,y,c,mask)=>{x-=fx0;y-=fy0+DL;if(x<0||y<0||x>=W2||y>=H2)return;const o=(y*W2+x)*4;O[o]=c[0];O[o+1]=c[1];O[o+2]=c[2];O[o+3]=255;if(mask!==false)TOP[y*W2+x]=0};
-  const lvAt=(fx,fy)=>{const q=at(Math.floor(fx/r),Math.floor(fy/r));return q<0?null:Lv[q]},wetAt=(fx,fy)=>{const q=at(Math.floor(fx/r),Math.floor(fy/r));return q<0?0:Wa[q]};
-  for(const c of WM.crossings){if(c.kind!=='bridge')continue;const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/MW,hor=ay===by,lo=hor?Math.min(ax,bx):Math.min(ay,by),hi=hor?Math.max(ax,bx):Math.max(ay,by);
-    const u0=Math.round((lo*TILE+12)*r),u1=Math.round((hi*TILE+4)*r),mid=((hor?ay:ax)*TILE+8)*r,hw=Math.round((WORLD_WAYS.road.hw[1]-1)*k),v0=mid-hw,v1=mid+hw;
-    // (the chunk's box, and as far round it as the bridge's rails rise and its piles hang)
-    const deep=Math.ceil((BG.clear+4)*lh),bx0=hor?u0:v0,bx1=hor?u1:v1,by0=(hor?v0:u0)-BG.rail*k-2,by1=(hor?v1:u1)+deep;
-    if(bx1<fx0||bx0>=fx0+W2||by1<fy0||by0-24*lh>=fy0+H2)continue;
-    let wl=1e9;for(const t of c.tiles)wl=Math.min(wl,LVT[t]);const dk=bridgeDeck(c);DL=Math.round(dk*lh);const stone=!!c.stone,P=hor?(u,v)=>[u,v]:(u,v)=>[v,u];
-    // (the deck)
-    for(let u=u0;u<=u1;u++)for(let v=v0;v<=v1;v++){const [x,y]=P(u,v),pl=Math.floor((u-u0)/(4*k));let col;
-      if(stone){const row=Math.floor((v-v0)/(2*k)),o=(row&1)*1.5*k;col=C.sett[Math.floor(hs(Math.floor((u-u0+o)/(3*k)),row,541)*3)];if((u-u0+o)%(3*k)<k*.6||(v-v0)%(2*k)<k*.5)col=tmul(C.sett[1],.78)}
-      else{col=C.plank[Math.floor(hs(pl,7,542)*3)];if((u-u0)%(4*k)<.6*k)col=tmul(C.plank[1],.72);if(hs(pl,v>>1,543)<.04)col=tmul(col,.85)}
-      if(Math.abs(Math.abs(v-mid)-hw*WORLD_WAYS.road.track)<1.3*k)col=tmul(col,.92);
-      if(v===v0&&hor||u===u0&&!hor)col=tmul(col,1.1);put(x,y,col)}
-    // (under it: beams, then the piles or piers down to what lies under; along a crossing north to south its sides' beams and piles)
-    const pile=BG.pile*k,arch=BG.arch*k;
-    if(hor){for(let u=u0;u<=u1;u++){const fy=v1+1,lv=lvAt(u,fy+2),n=lv===null?Math.round(BG.clear*lh):Math.max(3,Math.round((dk-lv)*lh)),wet=wetAt(u,fy+2),tp=(u-u0)%pile,ta=(u-u0)%arch,end=Math.min(u-u0,u1-u);
-        for(let dz=0;dz<n;dz++){let col=null;
-          if(dz<3*k)col=dz<k?C.beam[0]:tmul(C.beam[0],.8);
-          else if(end<4*k||!wet)col=C.stone[(Math.floor(dz/(3*k))+((u>>1)&1))%2?0:1];
-          else if(stone){const q=(ta-5*k)/(arch-5*k);if(ta<5*k)col=C.stone[(Math.floor(dz/(3*k))+(u&1))%2?1:2];else{const top=3*k+(n-3*k)*(1-Math.sqrt(Math.max(0,1-(2*q-1)*(2*q-1))));col=dz<top?C.stone[(Math.floor(dz/(3*k))+(u>>1))%2?0:1]:dz<top+k?tmul(C.stone[2],.7):null}}
-          else if(tp<2*k)col=tp<k?C.plank[1]:C.beam[0];
-          else if(n>7*k&&(Math.abs(tp-2*k-(dz-3*k)*(pile-4*k)/Math.max(1,n-3*k))<.8*k||Math.abs(pile-2*k-tp-(dz-3*k)*(pile-4*k)/Math.max(1,n-3*k))<.8*k))col=tmul(C.beam[0],.9);
-          if(col)put(u,fy+dz,col)}
-        if(wet&&(tp<2*k||stone&&ta<5*k))put(u,fy+n,C.foam,false)}}
-    else{for(let u=u0;u<=u1;u++){const tp=(u-u0)%pile,wet=wetAt(v0-2,u)||wetAt(v1+2,u);for(const [x,s] of [[v0-1,-1],[v1+1,1]]){put(x,u,C.beam[1]);put(x+s,u,tmul(C.beam[0],.85),false);
-        if(wet&&(stone?(u-u0)%arch<5*k:tp<2*k)){for(let a=1;a<=2*k;a++)put(x+s*a,u,stone?C.stone[1]:C.beam[0]);put(x+s*(2*k+1),u,C.foam,false)}}}
-      // (its south end over the bank)
-      const lv=lvAt(mid,u1+2),n=lv===null?0:Math.round((dk-lv)*lh);for(let v=v0;v<=v1;v++)for(let dz=1;dz<=Math.max(2,n);dz++)put(v,u1+dz,dz<=2*k?C.beam[0]:C.stone[(Math.floor(dz/(3*k))+(v&1))%2?0:1])}
-    // (the rails on posts, or the parapets: along both sides, rising rail px over their edge)
-    const R=BG.rail*k,post=BG.post*k;
-    for(const e of [v0,v1])for(let u=u0+k;u<=u1-k;u++){const [x,y]=P(u,e),ps=(u-u0)%post<1.2*k;
-      if(stone){for(let j=1;j<=R-k;j++)put(x,y-j,j>=R-k-1?C.stone[0]:j===1?C.stone[2]:C.stone[((u>>1)+j)%3===0?2:1])}
-      else if(ps)for(let j=1;j<=R+1;j++)put(x,y-j,j>=R?C.lit:C.beam[1]);
-      else{put(x,y-R,C.lit);put(x,y-R+1,C.beam[1]);put(x,y-(R>>1),C.plank[0]);put(x,y-(R>>1)+1,C.beam[1])}}}}
+/* the bridges over a chunk, the lab's (engine/worldlab.js paint, the bridge: a structure over the land, only its parts drawn): each a
+   true rectangle along its road (P.ways.bridges), its deck at its level (DL fine px up): planks across it, a thin gap between, worn
+   where the wheels go (a stone one's setts); a beam under its every edge; under its near (south) edge piles every pile px (a stone
+   one's piers and arches) down to what lies under it, braced between, foam at their feet in water, stone at its ends on land; rails
+   on posts along both its sides (a stone one's parapets). Px by px, north to south, the nearer over the farther; into O (the chunk's
+   picture, its corner the game px X, Y; r fine px a game px); TOP: what is a top (no prop on it); LF, at: the land's lift and index */
+function waysBridges(O,W2,H2,X,Y,r,Lv,Wa,at,TOP,LF){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh,k=r/2,BRS=waysOf(WorldArt.ensure()).bridges;
+  const fx0=X*r,fy0=Y*r,put=(x,y,c,top)=>{x-=fx0;y-=fy0;if(x<0||y<0||x>=W2||y>=H2)return;const o=(y*W2+x)*4;O[o]=c[0];O[o+1]=c[1];O[o+2]=c[2];O[o+3]=255;TOP[y*W2+x]=top?1:0};
+  const liftF=(fx,fy)=>{const q=at(Math.floor(fx/r),Math.floor(fy/r));return q<0?null:LF[q]},wetF=(fx,fy)=>{const q=at(Math.floor(fx/r),Math.floor(fy/r));return q<0?0:Wa[q]};
+  for(const b of BRS){const DL=Math.round(b.dk*lh),mx=b.mx*r,my=b.my*r,ux=b.ux,uy=b.uy,nx=-uy,ny=ux,hl=b.L*r/2,hw=Math.round(b.hw*r),R=BG.rail*k,deep=Math.ceil((BG.clear+6)*lh);
+    const ext=Math.abs(ux)*hl+Math.abs(nx)*hw+2,eyt=Math.abs(uy)*hl+Math.abs(ny)*hw+2,bx0=Math.floor(mx-ext),bx1=Math.ceil(mx+ext),by0=Math.floor(my-eyt),by1=Math.ceil(my+eyt);
+    if(bx1<fx0||bx0>=fx0+W2||by1-DL-R<fy0-2||by0-DL-R>=fy0+H2+deep)continue;
+    const inB=(x,y)=>{const dx=x+.5-mx,dy=y+.5-my,t=dx*ux+dy*uy,v=dx*nx+dy*ny;return Math.abs(t)<=hl&&Math.abs(v)<=hw},TV=(x,y)=>{const dx=x+.5-mx,dy=y+.5-my;return [dx*ux+dy*uy+hl,dx*nx+dy*ny]};
+    const pile=BG.pile*k,arch=BG.arch*k,post=BG.post*k;
+    for(let y=by0;y<=by1;y++)for(let x=bx0;x<=bx1;x++){if(!inB(x,y))continue;const [t,v]=TV(x,y),sy=y-DL,pl=Math.floor(t/(4*k));
+      // (the deck)
+      let c;if(b.stone){const row=Math.floor((v+hw)/(2*k)),o=(row&1)*1.5*k;c=C.sett[Math.floor(hs(Math.floor((t+o)/(3*k)),row,541)*3)];if((t+o)%(3*k)<k*.6||(v+hw)%(2*k)<k*.5)c=tmul(C.sett[1],.78)}
+      else{c=C.plank[Math.floor(hs(pl,7,542)*3)];if(t%(4*k)<.6*k)c=tmul(C.plank[1],.72);if(hs(pl,Math.floor(v),543)<.04)c=tmul(c,.85)}
+      if(Math.abs(Math.abs(v)-hw*WORLD_WAYS.road.track)<1.3*k)c=tmul(c,.92);if(!inB(x,y-1))c=tmul(c,1.1);put(x,sy,c,true);
+      // (a beam under its every edge)
+      const south=!inB(x,y+1),edge=south||!inB(x-1,y)||!inB(x+1,y);if(edge)for(let j=1;j<=Math.round(3*k);j++)put(x,sy+j,j<=k?C.beam[0]:tmul(C.beam[0],.8),false);
+      // (under its near edge: piles to what lies under, braced between; a stone one's piers and arches; stone where land is under it)
+      if(south){const lf=liftF(x,y+1),gy=lf===null?sy+Math.round(BG.clear*lh):y+1-lf,top=sy+Math.round(3*k)+1;if(gy<=top)continue;const n2=gy-top,wet=wetF(x,y+1),tp=((t%pile)+pile)%pile,ta=((t%arch)+arch)%arch,end=Math.min(t,2*hl-t);
+        for(let yy=top;yy<gy;yy++){const dz=yy-top;let c2=null;
+          if(!wet||end<4*k)c2=C.stone[(Math.floor(yy/(3*k))+((x>>1)&1))%2?0:1];
+          else if(b.stone){const q=(ta-5*k)/(arch-5*k);if(ta<5*k)c2=C.stone[(Math.floor(yy/(3*k))+(x&1))%2?1:2];else{const ar=(n2)*(1-Math.sqrt(Math.max(0,1-(2*q-1)*(2*q-1))));c2=dz<ar?C.stone[(Math.floor(yy/(3*k))+(x>>1))%2?0:1]:dz<ar+k?tmul(C.stone[2],.7):null}}
+          else if(tp<2*k)c2=tp<k?C.plank[1]:C.beam[0];
+          else if(n2>5*k&&(Math.abs(tp-2*k-dz*(pile-4*k)/Math.max(1,n2))<.8*k||Math.abs(pile-2*k-tp-dz*(pile-4*k)/Math.max(1,n2))<.8*k))c2=tmul(C.beam[0],.9);
+          if(c2)put(x,yy,c2,false)}
+        if(wet&&(tp<2*k||b.stone&&ta<5*k))put(x,gy,C.foam,false)}}
+    // (the rails on posts, or the parapets: along both its long sides, rising rail px over them)
+    for(let y=by0;y<=by1;y++)for(let x=bx0;x<=bx1;x++){if(!inB(x,y))continue;const [t,v]=TV(x,y);if(Math.abs(v)<hw-1.2*k||t<k||t>2*hl-k)continue;const sy=y-DL,ps=((t%post)+post)%post<1.2*k;
+      if(b.stone){for(let j=1;j<=R-k;j++)put(x,sy-j,j>=R-k-1?C.stone[0]:j===1?C.stone[2]:C.stone[((x>>1)+j)%3===0?2:1],false)}
+      else if(ps)for(let j=1;j<=R+1;j++)put(x,sy-j,j>=R?C.lit:C.beam[1],false);
+      else{put(x,sy-R,C.lit,false);put(x,sy-R+1,C.beam[1],false);put(x,sy-(R>>1),C.plank[0],false);put(x,sy-(R>>1)+1,C.beam[1],false)}}}}
 
 // (a bridge's deck's level: clear levels over its water, never under its banks)
 function bridgeDeck(c){const L=WM.lv;let wl=1e9;for(const t of c.tiles)wl=Math.min(wl,L[t]);return Math.max(wl+WORLD_WAYS.bridge.clear,L[c.i],L[c.j])}
 // (a bridge's deck at game px, for what sails under it (worldart.js WorldArt.deck, world/ships.js): its deck and rails, one colour:
 // only its shape is read)
-function wayDeck(c){const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/MW,hor=ay===by,lo=hor?Math.min(ax,bx):Math.min(ay,by),hi=hor?Math.max(ax,bx):Math.max(ay,by),
-    u0=lo*TILE+12,u1=hi*TILE+4,mid=(hor?ay:ax)*TILE+8,hw=Math.ceil((WORLD_WAYS.road.hw[1]-1)*WAY_LP),R=Math.ceil(WORLD_WAYS.bridge.rail*WAY_LP);
-  const x=hor?u0:mid-hw,y=(hor?mid-hw:u0)-R,w=hor?u1-u0+1:2*hw+1,h=(hor?2*hw+1:u1-u0+1)+R+2;
-  return {cv:mkc(w,h,g=>{g.fillStyle='#000';g.fillRect(0,0,w,h)}),x,y,foot:y+h-1}}
+function wayDeck(c){const b=(waysOf(WorldArt.ensure()).bridges||[]).find(q=>q.c===c);if(!b)return {cv:mkc(1,1,()=>{}),x:0,y:0,foot:0};
+  const R=Math.ceil(WORLD_WAYS.bridge.rail*WAY_LP),ex=Math.abs(b.ux)*b.L/2+Math.abs(b.uy)*b.hw+1,ey=Math.abs(b.uy)*b.L/2+Math.abs(b.ux)*b.hw+1,x=Math.floor(b.mx-ex),y=Math.floor(b.my-ey)-R,w=Math.ceil(2*ex)+1,h=Math.ceil(2*ey)+R+2;
+  return {cv:mkc(w,h,g=>{g.fillStyle='#000';g.translate(b.mx-x,b.my-y-R/2);g.rotate(Math.atan2(b.uy,b.ux));g.fillRect(-b.L/2,-b.hw-R/2,b.L,2*b.hw+R)}),x,y,foot:y+h-1}}

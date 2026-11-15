@@ -51,7 +51,8 @@ onWorld(()=>{FOOTM={m:null,key:'',t:-1e9}});
 // rm: off the roads x rm (a road keeper's)
 function findPath(x0,y0,x1,y1,pad,rm){
   holdShut();pad=pad||16;const sx=Math.floor(x0/TILE),sy=Math.floor(y0/TILE),gx=Math.floor(x1/TILE),gy=Math.floor(y1/TILE);if(sx===gx&&sy===gy)return[];
-  if(gx<0||gy<0||gx>=MW||gy>=MH||!walkTile(gy*MW+gx))return null;
+  const climb=(i,t)=>WAY_CLIMB&&t===T_MOUNT,canAt=i=>walkTile(i)||climb(i,tiles[i]);// (a climber's cliffs: map.js heroClimbs)
+  if(gx<0||gy<0||gx>=MW||gy>=MH||!canAt(gy*MW+gx))return null;
   const bx=Math.max(0,Math.min(sx,gx)-pad),by=Math.max(0,Math.min(sy,gy)-pad),bw=Math.min(MW,Math.max(sx,gx)+pad+1)-bx,bh=Math.min(MH,Math.max(sy,gy)+pad+1)-by;
   const N=bw*bh,g=new Float64Array(N).fill(Infinity),from=new Int32Array(N).fill(-1),heap=[],L=(x,y)=>(y-by)*bw+(x-bx);
   const push=(i,f)=>{heap.push([f,i]);let k=heap.length-1;while(k>0){const q=(k-1)>>1;if(heap[q][0]<=heap[k][0])break;[heap[q],heap[k]]=[heap[k],heap[q]];k=q}};
@@ -59,8 +60,8 @@ function findPath(x0,y0,x1,y1,pad,rm){
   const h=(x,y)=>Math.hypot(x-gx,y-gy)/1.3,s0=L(sx,sy),goal=L(gx,gy),F=WAY_FOOT&&footMask(),fc=WAY_FOOT_LOT.cost,LVW=WM&&WM.lv;g[s0]=0;push(s0,h(sx,sy));
   while(heap.length){const [,i]=pop();if(i===goal)break;const x=bx+i%bw,y=by+((i/bw)|0);
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<bx||ny<by||nx>=bx+bw||ny>=by+bh)continue;
-      const t=tiles[ny*MW+nx];if(!walkTile(ny*MW+nx)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!walkTile(y*MW+nx)||!walkTile(ny*MW+x)||SHUT&&(SHUT[y*MW+nx]&6||SHUT[ny*MW+x]&6)))continue;// (no corner of a holding's walls cut, its centre's or its ring's: holdShut)
-      const sp=t===T_ROAD?1.3:Math.max(.25,Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]])*slopeMulAt(ny*MW+nx)),j=L(nx,ny),wb=t===T_WATER?waterBand(ny*MW+nx):0,nd=g[i]+((dx&&dy?1.414:1)*(wb?(wb>=4&&WAY_NOSWIM?Infinity:WATER.cost[wb]):1/sp)+climbCost(LVW,y*MW+x,ny*MW+nx,t===T_ROAD))*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(F&&F[ny*MW+nx]?fc:1);
+      const t=tiles[ny*MW+nx];if(!canAt(ny*MW+nx)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!canAt(y*MW+nx)||!canAt(ny*MW+x)||SHUT&&(SHUT[y*MW+nx]&6||SHUT[ny*MW+x]&6)))continue;// (no corner of a holding's walls cut, its centre's or its ring's: holdShut)
+      const sp=t===T_ROAD?1.3:Math.max(.25,Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]])*slopeMulAt(ny*MW+nx)),j=L(nx,ny),wb=t===T_WATER?waterBand(ny*MW+nx):0,nd=g[i]+((dx&&dy?1.414:1)*(wb?(wb>=4&&WAY_NOSWIM?Infinity:WATER.cost[wb]):t===T_MOUNT?LAB_WALK.climbCost:1/sp)+climbCost(LVW,y*MW+x,ny*MW+nx,t===T_ROAD))*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(F&&F[ny*MW+nx]?fc:1);
       if(nd<g[j]){g[j]=nd;from[j]=i;push(j,nd+h(nx,ny))}}}
   if(!isFinite(g[goal]))return null;
   const out=[];for(let i=goal;i!==s0;i=from[i])out.push((by+((i/bw)|0))*MW+bx+i%bw);return out.reverse();
@@ -318,7 +319,7 @@ const wayGo=(x0,y0,x1,y1)=>WAY_SMOOTH.on?wayClear(x0,y0,x1,y1):wayLine(x0,y0,x1,
 function wayTrip(o,goal){const G=WM.graph,s=Math.floor(o.y/TILE)*MW+Math.floor(o.x/TILE),g=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE),sx=s%MW,gx=g%MW,rm=wayKeep(goal);
   if(Math.max(Math.abs(sx-gx),Math.abs((s-sx)/MW-(g-gx)/MW))<=WAY.near){const t0=performance.now(),p=rm===1&&wayGo(o.x,o.y,goal.x,goal.y)?[]:findPath(o.x,o.y,goal.x,goal.y,0,rm);WAYS.localMs+=performance.now()-t0;if(p)return{legs:[{k:'path',p}]}}
   const gn=goal.tw?wayNodes().get(goal.tw.ty*MW+goal.tw.tx):null,r=s>=0&&g>=0&&s<MW*MH&&g<MW*MH?wayRoute(G,s,g,gn,rm):null;
-  if(!r){if(!Router.reach(o,goal))return{legs:null};const t0=performance.now(),p=findPath(o.x,o.y,goal.x,goal.y,Math.max(MW,MH),rm);WAYS.localMs+=performance.now()-t0;return{legs:p?[{k:'path',p}]:null}}
+  if(!r){if(!WAY_CLIMB&&!Router.reach(o,goal))return{legs:null};const t0=performance.now(),p=findPath(o.x,o.y,goal.x,goal.y,Math.max(MW,MH),rm);WAYS.localMs+=performance.now()-t0;return{legs:p?[{k:'path',p}]:null}}
   const L=[{k:'tiles',b:G.tile[r.nodes[0]]}];
   for(let i=1;i<r.nodes.length;i++){const e=r.via[i],b=G.tile[r.nodes[i]];L.push(e<0?{k:'tiles',b}:G.ek[e]===2?{k:'xing',e,b}:G.ek[e]===5?{k:'step',b}:{k:'road',e})}
   L.push({k:'end'});return{legs:L}}
