@@ -132,7 +132,7 @@ function reliefClass(m,lv){const W=m.w,H=m.h,N=W*H,K=m.kind,R=GEN_RELIEF,S=new U
    levels, its rise sharp (to the power sharp) where the noise at tsc says (past at), a ramp where it does not; land never under
    floor. The land's tiles read it (reliefOf: their middles; landClasses: the steepest of it in them, the lab's classes cls, levels a
    lab px) and the world map draws it (gfx/worldterrain.js). Kept for the map (landHeight; fresh: made again, the elevation changed) */
-const LAB_LAND={amp:3.4,sc:240,calm:4,lift:4,band:3,sharp:16,tsc:110,at:.38,floor:.15,cls:{slope:.035,steep:.11,cliff:.22}};
+const LAB_LAND={amp:3.4,sc:240,calm:4,lift:4,band:3,sharp:16,tsc:110,at:.38,floor:.15,warp:.45,wsc:96,fr:3,fdrop:.35,cls:{slope:.035,steep:.11,cliff:.22}};
 const LANDH=new WeakMap();
 function landHeight(m,fresh){let f=!fresh&&LANDH.get(m);if(f)return f;const W=m.w,H=m.h,N=W*H,K=m.kind,L0=levelsOf(m),T=LAB_LAND,s=(m.seedNum|0)+911,C=new Float32Array(N);
   {const D=new Uint8Array(N).fill(255),q=[],BK=GEN_RIVER.brook;for(let i=0;i<N;i++)if(K[i]===T_WATER||(m.flow[i]&31)>=BK){D[i]=0;q.push(i)}
@@ -142,12 +142,20 @@ function landHeight(m,fresh){let f=!fresh&&LANDH.get(m);if(f)return f;const W=m.
   const F0=new Float32Array(N),BK=GEN_RIVER.brook,sea=i=>K[i]===T_WATER&&!(m.feat[i]&2)&&!(m.river[i]&3);
   for(let i=0;i<N;i++){if(K[i]===T_WATER)continue;const x=i%W,y=(i-x)/W;let f=(m.flow[i]&31)>=BK?L0[i]:0;
     for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(K[j]===T_WATER&&!sea(j))f=Math.max(f,L0[j]+GEN_RELIEF.bank/GEN_RELIEF.per)}F0[i]=f}
-  f=(x,y)=>{const u=Math.max(0,Math.min(W-1.001,x/32-.5)),v=Math.max(0,Math.min(H-1.001,y/32-.5)),tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,i=ty*W+tx,
+  // (the floor spread fr tiles round, falling fdrop levels a tile, so blended smooth as the land it leaves no shelf along the tiles)
+  const F1=new Float32Array(N);for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;let f=F0[i];for(let b=-T.fr;b<=T.fr;b++)for(let a=-T.fr;a<=T.fr;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const F=F0[v*W+u];if(F>0)f=Math.max(f,F-T.fdrop*Math.hypot(a,b))}F1[i]=f}
+  // (the tiles' levels between their middles by a cubic B-spline, smooth, at a place warped by noise (warp tiles at wsc lab px): the
+  //  land's lines never along the tiles' rows (the owner, 2026-11-15: "hill level still weird"; they were blended straight, bilinear))
+  const BS=t=>{const t2=t*t,t3=t2*t;return [(1-t)*(1-t)*(1-t)/6,(3*t3-6*t2+4)/6,(-3*t3+3*t2+3*t+1)/6,t3/6]},cl=(a,n)=>a<0?0:a>=n?n-1:a;
+  f=(x,y)=>{const wu=(fbm(x/T.wsc,y/T.wsc,s+31)-.5)*2*T.warp,wv=(fbm(x/T.wsc,y/T.wsc,s+32)-.5)*2*T.warp;
+    const u=Math.max(0,Math.min(W-1.001,x/32-.5)),v=Math.max(0,Math.min(H-1.001,y/32-.5)),tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,i=ty*W+tx,
       bl=A=>(A[i]*(1-fu)+A[i+1]*fu)*(1-fv)+(A[i+W]*(1-fu)+A[i+W+1]*fu)*fv;
-    let e=bl(L0)+(fbm(x/T.sc,y/T.sc,s)-.5)*T.amp*bl(C);
+    const su=Math.max(0,Math.min(W-1.001,u+wu)),sv=Math.max(0,Math.min(H-1.001,v+wv)),bx=Math.floor(su),by=Math.floor(sv),wx=BS(su-bx),wy=BS(sv-by);
+    let l0=0,f1=0;for(let b=0;b<4;b++){const row=cl(by+b-1,H)*W;let r=0,q=0;for(let a=0;a<4;a++){const j=row+cl(bx+a-1,W);r+=wx[a]*L0[j];q+=wx[a]*F1[j]}l0+=wy[b]*r;f1+=wy[b]*q}
+    let e=l0+(fbm(x/T.sc,y/T.sc,s)-.5)*T.amp*bl(C);
     if(e>T.lift){const k=(e-T.lift)/T.band,fl=Math.floor(k),fr=k-fl,sh=1+(T.sharp-1)*sstep((fbm(x/T.tsc,y/T.tsc,s+24)-T.at)/.2);e=T.lift+(fl+Math.pow(fr,sh))*T.band}
     const ti=Math.max(0,Math.min(H-1,Math.floor(y/32)))*W+Math.max(0,Math.min(W-1,Math.floor(x/32)));
-    return K[ti]===T_WATER?Math.min(e,L0[ti]):Math.max(T.floor,F0[ti],e)};
+    return K[ti]===T_WATER?Math.min(e,L0[ti]):Math.max(T.floor,f1,e)};
   LANDH.set(m,f);return f}
 // (each land tile's slope class, the lab's: the steepest of the land in it (samples over it, a lab px's rise between neighbours) against
 // LAB_LAND.cls: 0 flat, 1 a slope, 2 steep, 3 a cliff)

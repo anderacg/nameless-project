@@ -87,10 +87,14 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
         if(!wet){const ds=DG.S[k];if(ds<shG){const q=DG.Q[k],t=DG.T[k],rz=WY.RZ[q*2]+(WY.RZ[q*2+1]-WY.RZ[q*2])*t;e=ds<0?rz:rz+(e-rz)*wsm(ds/shG)}}}
       Lv[k]=Math.max(0,e);Wa[k]=wet?1:0}
     if(!(j&31))yield}
-  // (each px's slope, and its level stepped where it is steep: never on water, near a road, a lot)
-  for(let j=1;j<GH-1;j++)for(let i=1;i<GW-1;i++){const k=j*GW+i,gx=gx0+i,gy=gy0+j,gxl=(Lv[k+1]-Lv[k-1])/2,gyl=(Lv[k+GW]-Lv[k-GW])/2,g=Math.hypot(gxl,gyl);Gx[k]=gxl;Gy[k]=gyl;
-    const flat=Wa[k]||DG.S[k]<shG||(typeof occAt==='function'&&occAt(gx>>4,gy>>4)>0);
-    const sw=flat?0:Math.max(0,Math.min(1,(g-T.steps.from)/(T.steps.to-T.steps.from))),s3=sw*sw*(3-2*sw),e=Lv[k],B=T.steps.band;St[k]=e+(Math.floor(e/B)*B-e)*s3;SW[k]=s3}
+  // (each px's slope, and its level stepped where it is steep: never on water, near a road, a lot; a lot's ground (its tiles) eased
+  //  into the steps round it over flat game px, never a square edge (the owner, 2026-11-15: "hill level still weird"))
+  const OC=new Float32Array(GW*GH);if(typeof occAt==='function'){const R=T.flat,tmp=new Float32Array(GW*GH);for(let j=0;j<GH;j++)for(let i=0;i<GW;i++)OC[j*GW+i]=occAt((gx0+i)>>4,(gy0+j)>>4)>0?1:0;
+    for(let j=0;j<GH;j++){let a=0;for(let i=-R;i<GW+R;i++){if(i+R<GW&&i+R>=0)a+=OC[j*GW+i+R];if(i-R-1>=0&&i-R-1<GW)a-=OC[j*GW+i-R-1];if(i>=0&&i<GW)tmp[j*GW+i]=a/(2*R+1)}}
+    for(let i=0;i<GW;i++){let a=0;for(let j=-R;j<GH+R;j++){if(j+R<GH&&j+R>=0)a+=tmp[(j+R)*GW+i];if(j-R-1>=0&&j-R-1<GH)a-=tmp[(j-R-1)*GW+i];if(j>=0&&j<GH)OC[j*GW+i]=Math.min(1,a/(2*R+1)*2)}}}
+  for(let j=1;j<GH-1;j++)for(let i=1;i<GW-1;i++){const k=j*GW+i,gxl=(Lv[k+1]-Lv[k-1])/2,gyl=(Lv[k+GW]-Lv[k-GW])/2,g=Math.hypot(gxl,gyl);Gx[k]=gxl;Gy[k]=gyl;
+    const flat=Wa[k]||DG.S[k]<shG;
+    const sw=flat?0:Math.max(0,Math.min(1,(g-T.steps.from)/(T.steps.to-T.steps.from)))*(1-OC[k]),s3=sw*sw*(3-2*sw),e=Lv[k],B=T.steps.band;St[k]=e+(Math.floor(e/B)*B-e)*s3;SW[k]=s3}
   yield;
   const at=(gx,gy)=>(gy-gy0)*GW+gx-gx0,mi=(gx,gy)=>(gy-KP.Y0)*KP.RW+gx-KP.X0,inK=(gx,gy)=>gx>=KP.X0&&gy>=KP.Y0&&gx<KP.X0+KP.RW&&gy<KP.Y0+KP.RH;
   // the tops: every fine px its own ground (or what the game painted over it), shaded by its slope; a river's water, its bank; a road
@@ -180,6 +184,9 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     for(let fy=0;fy<HE2;fy++){const y=(fy/r)|0,gy=Y+y,k=at(gx,gy),L=LF[k],sy=fy-L,ci=(fy*W2+fx)*4;
       if(sy>=0&&sy<H2){const o=(sy*W2+fx)*4;let s=1;const kp=fy>0?at(gx,Y+(((fy-1)/r)|0)):k,kq=fy>1?at(gx,Y+(((fy-2)/r)|0)):k;
         if(LF[kp]>L+3&&!Wa[k])s=.78;else if(LF[kq]>L+3&&!Wa[k])s=.9;
+        // (an edge where the ground falls away north, west or east, its face unseen from the south (the owner, 2026-11-15: "make an edge
+        //  for the south ankle that we cannot see"): its crest's own px darkened)
+        else if(!Wa[k]){const RM=T.rim;if(kp!==k&&LF[kp]<L-RM.drop&&!Wa[kp])s=RM.north;else{const kw=fx%r===0?at(gx-1,gy):k,ke=fx%r===r-1?at(gx+1,gy):k;if(kw!==k&&LF[kw]<L-RM.drop&&!Wa[kw]||ke!==k&&LF[ke]<L-RM.drop&&!Wa[ke])s=RM.side}}
         O[o]=CW[ci]*s;O[o+1]=CW[ci+1]*s;O[o+2]=CW[ci+2]*s;O[o+3]=255;DEPF[sy*W2+fx]=fy;TOP[sy*W2+fx]=1;if(first<0)first=sy;
         const wk=WK[fy*W2+fx];if(wk===1){if(fx>0&&!WK[fy*W2+fx-1]||fx<W2-1&&!WK[fy*W2+fx+1]||fy>0&&!WK[(fy-1)*W2+fx]||fy<HE2-1&&!WK[(fy+1)*W2+fx])SH.push(fx,sy,(hs(fx+X*r,fy,540)*628)|0)}else if(wk===2)FL.push(fx,sy,Math.round(WA[fy*W2+fx])%30000,(hs(fx+X*r,fy,541)*100)|0);else if(wk===3)FL.push(fx,sy,-2,(hs(fx+X*r,fy,543)*100)|0)}
       if(fy+1>=HE2)continue;const kN=at(gx,Y+(((fy+1)/r)|0));if(kN===k)continue;const LN=LF[kN],syN=fy+1-LN;if(syN<=sy+1)continue;
