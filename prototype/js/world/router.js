@@ -56,11 +56,11 @@ function findPath(x0,y0,x1,y1,pad,rm){
   const N=bw*bh,g=new Float64Array(N).fill(Infinity),from=new Int32Array(N).fill(-1),heap=[],L=(x,y)=>(y-by)*bw+(x-bx);
   const push=(i,f)=>{heap.push([f,i]);let k=heap.length-1;while(k>0){const q=(k-1)>>1;if(heap[q][0]<=heap[k][0])break;[heap[q],heap[k]]=[heap[k],heap[q]];k=q}};
   const pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){heap[0]=last;let k=0;for(;;){const l=2*k+1,r=l+1;let m=k;if(l<heap.length&&heap[l][0]<heap[m][0])m=l;if(r<heap.length&&heap[r][0]<heap[m][0])m=r;if(m===k)break;[heap[m],heap[k]]=[heap[k],heap[m]];k=m}}return top};
-  const h=(x,y)=>Math.hypot(x-gx,y-gy)/1.3,s0=L(sx,sy),goal=L(gx,gy),F=WAY_FOOT&&footMask(),fc=WAY_FOOT_LOT.cost;g[s0]=0;push(s0,h(sx,sy));
+  const h=(x,y)=>Math.hypot(x-gx,y-gy)/1.3,s0=L(sx,sy),goal=L(gx,gy),F=WAY_FOOT&&footMask(),fc=WAY_FOOT_LOT.cost,LVW=WM&&WM.lv;g[s0]=0;push(s0,h(sx,sy));
   while(heap.length){const [,i]=pop();if(i===goal)break;const x=bx+i%bw,y=by+((i/bw)|0);
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<bx||ny<by||nx>=bx+bw||ny>=by+bh)continue;
       const t=tiles[ny*MW+nx];if(!passable(t)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])||SHUT&&(SHUT[y*MW+nx]&6||SHUT[ny*MW+x]&6)))continue;// (no corner of a holding's walls cut, its centre's or its ring's: holdShut)
-      const sp=t===T_ROAD?1.3:Math.max(.25,Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]])*slopeMulAt(ny*MW+nx)),j=L(nx,ny),nd=g[i]+(dx&&dy?1.414:1)/sp*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(F&&F[ny*MW+nx]?fc:1);
+      const sp=t===T_ROAD?1.3:Math.max(.25,Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]])*slopeMulAt(ny*MW+nx)),j=L(nx,ny),nd=g[i]+((dx&&dy?1.414:1)/sp+climbCost(LVW,y*MW+x,ny*MW+nx,t===T_ROAD))*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(F&&F[ny*MW+nx]?fc:1);
       if(nd<g[j]){g[j]=nd;from[j]=i;push(j,nd+h(nx,ny))}}}
   if(!isFinite(g[goal]))return null;
   const out=[];for(let i=goal;i!==s0;i=from[i])out.push((by+((i/bw)|0))*MW+bx+i%bw);return out.reverse();
@@ -137,7 +137,7 @@ const wayKeep=goal=>goal.road===true?WAY.keep:goal.road||1;
 const wayStep=(t,c)=>t===T_ROAD?1/1.3:1/Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[c]]);
 const wayDay=()=>TILE/moveStep(WAY.pace,DAY_SECONDS*WORLD_PACE);
 function buildWayGraph(g){
-  const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Cl=m.clim,CS=WAY.cs,cols=Math.ceil(W/CS),rows=Math.ceil(H/CS),DPT=wayDay(),cost=i=>wayStep(K[i],Cl[i])/(m.slope&&K[i]!==T_ROAD?SLOPE.mul[m.slope[i]]:1);
+  const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Cl=m.clim,CS=WAY.cs,cols=Math.ceil(W/CS),rows=Math.ceil(H/CS),DPT=wayDay(),cost=i=>wayStep(K[i],Cl[i])/(m.slope&&K[i]!==T_ROAD?SLOPE.mul[m.slope[i]]:1),LV=m.lv||null;
   const X=new Int32Array(N).fill(-1);m.crossings.forEach((c,k)=>{for(const i of c.tiles)X[i]=k});
   const tile=[],nk=[],at=new Map(),node=(i,k)=>{let v=at.get(i);if(v===undefined){v=tile.length;at.set(i,v);tile.push(i);nk.push(k)}return v};
   // (an edge a to b: [a, b, days, ek, xing, road, from, to]; the cheapest kept between two nodes)
@@ -159,7 +159,7 @@ function buildWayGraph(g){
   // the crossing's edge)
   m.roads.forEach((r,ri)=>{const p=r.path,ek=r.kind==='road'?0:1;let ka=-1;
     for(let k=0;k<p.length;k++){const v=at.get(p[k]);if(v===undefined)continue;
-      if(ka>=0){let ok=true,cf=0,cb=0;for(let q=ka+1;q<=k;q++){const a=p[q-1],b=p[q];if(K[b]===T_WATER||X[b]>=0&&q<k){ok=false;break}const d=a%W!==b%W&&(a/W|0)!==(b/W|0)?1.4142:1;cf+=cost(b)*d;cb+=cost(a)*d}
+      if(ka>=0){let ok=true,cf=0,cb=0;for(let q=ka+1;q<=k;q++){const a=p[q-1],b=p[q];if(K[b]===T_WATER||X[b]>=0&&q<k){ok=false;break}const d=a%W!==b%W&&(a/W|0)!==(b/W|0)?1.4142:1;cf+=cost(b)*d+climbCost(LV,a,b,K[b]===T_ROAD);cb+=cost(a)*d+climbCost(LV,b,a,K[a]===T_ROAD)}
         if(ok){const u=at.get(p[ka]);edge(u,v,cf*DPT,ek,-1,ri,ka,k);edge(v,u,cb*DPT,ek,-1,ri,k,ka)}}
       ka=k}});
   // the crossings: a bridge or a ford its tiles' costs, a ferry WAY.ferry days
@@ -167,7 +167,7 @@ function buildWayGraph(g){
     edge(at.get(c.i),at.get(c.j),f,2,xi,-1,0,0);edge(at.get(c.j),at.get(c.i),b,2,xi,-1,0,0)});
   // the chunk portals: along each border between two chunks, each open run (walkable on both sides, no crossing's tile) cut into
   // pieces of WAY.run tiles at most, a node each side of each piece's middle, a step between them
-  const open=i=>passable(K[i])&&X[i]<0,port=(i,j)=>{const a=node(i,5),b=node(j,5);edge(a,b,cost(j)*DPT,5,-1,-1,0,0);edge(b,a,cost(i)*DPT,5,-1,-1,0,0)};
+  const open=i=>passable(K[i])&&X[i]<0,port=(i,j)=>{const a=node(i,5),b=node(j,5);edge(a,b,(cost(j)+climbCost(LV,i,j))*DPT,5,-1,-1,0,0);edge(b,a,(cost(i)+climbCost(LV,j,i))*DPT,5,-1,-1,0,0)};
   const runs=(len,ok,put)=>{for(let s=0;s<len;){if(!ok(s)){s++;continue}let e=s;while(e<len&&ok(e))e++;const q=Math.ceil((e-s)/WAY.run);
     for(let k=0;k<q;k++)put((s+Math.floor((e-s)*k/q)+s+Math.floor((e-s)*(k+1)/q)-1)>>1);s=e}};
   for(let cx=1;cx<cols;cx++)for(let cy=0;cy<rows;cy++){const x=cx*CS,y0=cy*CS;runs(Math.min(CS,H-y0),k=>open((y0+k)*W+x-1)&&open((y0+k)*W+x),k=>port((y0+k)*W+x-1,(y0+k)*W+x))}
@@ -262,7 +262,7 @@ function wayLocal(s,x0,y0,x1,y1,rev){const bw=x1-x0,D=new Float64Array(bw*(y1-y0
   while(H.n){const d=H.top,q=H.pop();if(d>D[q])continue;const x=x0+q%bw,y=y0+((q/bw)|0),i=y*MW+x;if(q!==q0&&!wayOpen(i))continue;
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<x0||ny<y0||nx>=x1||ny>=y1)continue;const j=ny*MW+nx;
       if(!wayOpen(j)&&!NO.has(j)||dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])||SHUT&&(SHUT[y*MW+nx]&2||SHUT[ny*MW+x]&2)))continue;
-      const k=rev?i:j,c=d+(dx&&dy?1.414:1)*wayStep(tiles[k],climate[k]),r=(ny-y0)*bw+nx-x0;if(c<D[r]){D[r]=c;H.push(c,r)}}}
+      const k=rev?i:j,rd=tiles[k]===T_ROAD,c=d+(dx&&dy?1.414:1)*wayStep(tiles[k],climate[k])/(rd?1:slopeMulAt(k))+climbCost(WM.lv,rev?j:i,rev?i:j,rd),r=(ny-y0)*bw+nx-x0;if(c<D[r]){D[r]=c;H.push(c,r)}}}
   return D}
 // (a chunk's table: its nodes (ids) and the days between each two inside it (d, k x k), made on demand, kept for this graph's
 // lifetime: at most one per chunk. A fixed LRU thrashes when a large search visits more chunks than it holds.)
@@ -402,7 +402,7 @@ function wayDays(a,b){holdShut();const s=wayTile(a),g=wayTile(b);if(s<0||g<0)ret
   if(Math.max(Math.abs(sx-gx),Math.abs((s-sx)/MW-(g-gx)/MW))<=WAY.near){const p=findPath(x0,y0,x1,y1);if(p)return wayCost(s,p)}
   const r=wayRoute(WM.graph,s,g,b instanceof Holding?wayNodes().get(g):null);return r?r.cost:Infinity}
 // (the days a list of tiles takes from tile s, at WAY.pace: tests/router.js weighs ways by it)
-function wayCost(s,p){let c=0,a=s;for(const k of p){const d=a%MW!==k%MW&&(a/MW|0)!==(k/MW|0)?1.414:1;c+=d*wayStep(tiles[k],climate[k]);a=k}return c*wayDay()}
+function wayCost(s,p){let c=0,a=s;for(const k of p){const d=a%MW!==k%MW&&(a/MW|0)!==(k/MW|0)?1.414:1,rd=tiles[k]===T_ROAD;c+=d*wayStep(tiles[k],climate[k])/(rd?1:slopeMulAt(k))+climbCost(WM.lv,a,k,rd);a=k}return c*wayDay()}
 
 
 /* Escape routes stay committed around obstacles instead of alternating local steering angles. A search that finds no way (a dead

@@ -13,6 +13,12 @@ const SPEEDMUL=[1,.6,.75,0,1.3,0,.5];
 // is walked, times its kind's; from snow levels up (the map's lv) the cold heights slower still; how much farther one sees a level up)
 const SLOPE={mul:[1,.8,.55,.4],snow:14,cold:.6,sight:.03,sightMax:.5};
 const slopeMulAt=i=>{const S=WM&&WM.slope;if(!S)return 1;const v=SLOPE.mul[S[i]];return WM.lv&&WM.lv[i]>=SLOPE.snow?v*SLOPE.cold:v};
+/* the way's price of a climb (the owner, 2026-11-15: "feel free to change the path finding"): a step from tile a to tile b costs, over
+   its ground's, up tiles of open ground for each level climbed and down for each level gone down (the map's lv); a road's grade,
+   road of it. So a way goes round a hill, along a valley and over a range by its lowest pass rather than straight over the top
+   (router.js findPath, buildWayGraph) */
+const CLIMB={up:1.1,down:.3,road:.35};
+const climbCost=(L,a,b,road)=>{if(!L)return 0;const d=L[b]-L[a];return (d>0?d*CLIMB.up:-d*CLIMB.down)*(road?CLIMB.road:1)};
 const CLIMMUL={grass:1,frost:.7,desert:.85,swamp:.5};
 const tAt=(tx,ty)=>(tx<0||ty<0||tx>=MW||ty>=MH)?T_WATER:tiles[ty*MW+tx];
 const terrAt=(x,y)=>tAt(Math.floor(x/TILE),Math.floor(y/TILE));

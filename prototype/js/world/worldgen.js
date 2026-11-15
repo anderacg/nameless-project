@@ -104,7 +104,14 @@ const GEN_GLADE={min:80,every:420,apart:14,edge:4,r:[3.6,5],rough:.3,scale:3,rin
    stage 'relief' before the ways are charted): the levels again, a road or a ford smoothed smooth times into the land round it, so a
    way never meets a step; pure, so a saved map has it made the same. The land's slopes (map.js SLOPE_MUL), sight from high ground
    (visMulAt) and the ways' costs (router.js) read the classes (the map's slope) */
-const GEN_RELIEF={per:11,blur:1,rough:6,ridge:1.6,slope:.45,steep:.9,cliff:1.3,smooth:2};
+/* (rebuilt, the owner, 2026-11-15: "make sure all rivers and hills, steep hills and height map, sea levels are actually correctly
+   generated ... We NEED TO CHANGE THE WHOLE THING"): the levels are baked into the elevation once (genReliefKinds), so the rivers,
+   lakes, brooks, the land's kinds and the painter read one height field; after the water is laid (genValleys) the banks stand over
+   their water, every brook runs downhill (its bed cut down where its way crossed higher ground), and the slopes and kinds are made
+   again from the land as it lies: a cliff is rock (T_MOUNT; a brook's way never), steep ground hills, a slope hills from hill[0]
+   levels up, flat ground hills from hill[1] (a highland's plateau); else open (a wood stays a wood). levelsOf: the levels as they
+   are (the sea 0) */
+const GEN_RELIEF={per:11,blur:1,rough:6,ridge:1.6,slope:.45,steep:.9,cliff:1.3,smooth:2,hill:[3,8],bank:2};
 function reliefLevels(m){const W=m.w,H=m.h,N=W*H,E=m.elev,K=m.kind,R=GEN_RELIEF,sd=(m.seedNum|0)+7919;let lv=new Float32Array(N);
   for(let i=0;i<N;i++)lv[i]=K[i]===T_WATER&&E[i]<=64?0:Math.max(0,(E[i]-64)/R.per);
   for(let it=0;it<R.blur;it++){const o=new Float32Array(lv);for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(K[i]===T_WATER)continue;let s=0,n=0;
@@ -118,12 +125,48 @@ function reliefClass(m,lv){const W=m.w,H=m.h,N=W*H,K=m.kind,R=GEN_RELIEF,S=new U
   const lone=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;if(S[i]!==3)continue;let n=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if((a||b)&&S[i+b*W+a]===3)n++;if(!n)lone.push(i)}
   for(const i of lone)S[i]=2;
   return S}
-function* genReliefKinds(g){const m=g.map,K=m.kind,lv=reliefLevels(m),S=reliefClass(m,lv);
+function levelsOf(m){const N=m.w*m.h,E=m.elev,K=m.kind,R=GEN_RELIEF,lv=new Float32Array(N);for(let i=0;i<N;i++)lv[i]=K[i]===T_WATER&&E[i]<=64?0:Math.max(0,(E[i]-64)/R.per);return lv}
+function* genReliefKinds(g){const m=g.map,K=m.kind,E=m.elev,R=GEN_RELIEF,Ef=g.work.ef,lv=reliefLevels(m);
+  // (the levels, smoothed and roughened, baked into the elevation: every stage after reads the land as it is drawn)
+  for(let i=0;i<K.length;i++){if(K[i]===T_WATER)continue;const e=64+lv[i]*R.per;E[i]=Math.max(65,Math.min(255,Math.round(e)));if(Ef)Ef[i]=Math.max(65,e)}
+  g.work.elev0=E.slice();const S=reliefClass(m,levelsOf(m));
   for(let i=0;i<K.length;i++){const k=K[i];if(k===T_WATER||k===T_FORD||k===T_ROAD)continue;if(S[i]===3)K[i]=T_MOUNT;else if(k===T_MOUNT)K[i]=T_HILL}
   m.slope=S;yield}
-function reliefOf(m){const W=m.w,H=m.h,N=W*H,K=m.kind,R=GEN_RELIEF,lv=reliefLevels(m);
-  for(let it=0;it<R.smooth;it++)for(let i=0;i<N;i++){const k=K[i];if(k!==T_ROAD&&k!==T_FORD)continue;const x=i%W,y=(i/W)|0;let s=0,n=0;
-    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(K[j]===T_WATER||K[j]===T_MOUNT)continue;s+=lv[j];n++}if(n)lv[i]=s/n}
+/* the land made again from its water (the stage 'valleys', after the springs): the banks of every river and lake raised to bank over
+   its water where they lay under it; each brook's bed cut down its way (from its head, never rising); then the slopes and the
+   land's kinds from the land as it lies (GEN_RELIEF), and a hill's make (the map's high: rise, steep, cliffed beside a cliff; the way
+   it rises; scree; mixed) */
+function* genValleys(g){const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,E=m.elev,Rv=m.river,F=m.flow,R=GEN_RELIEF,B=GEN_RIVER.brook;
+  const sea=i=>K[i]===T_WATER&&!(m.feat[i]&2)&&!(Rv[i]&3);
+  for(let i=0;i<N;i++){if(K[i]!==T_WATER||sea(i))continue;const x=i%W,y=(i-x)/W,top=Math.min(255,E[i]+R.bank);
+    for(const [a,b] of DIR8){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(K[j]!==T_WATER&&E[j]<top)E[j]=top}}
+  yield;
+  const isB=i=>genBrook(m,i),down=i=>{const [a,b]=DIR8[F[i]>>5],u=i%W+a,v=((i/W)|0)+b;return u>=0&&v>=0&&u<W&&v<H?v*W+u:-1},deg=new Uint8Array(N),q=[];
+  for(let i=0;i<N;i++)if(isB(i)){const j=down(i);if(j>=0&&isB(j))deg[j]++}
+  // (each brook's floor: the water it runs into, and its bank over it; none ever under it)
+  const fl=new Int16Array(N).fill(-1),floorOf=i=>{const path=[];let c=i,f=0;while(c>=0&&fl[c]<0&&isB(c)&&path.length<4096){path.push(c);c=down(c)}
+    f=c<0?65:fl[c]>=0?fl[c]:Math.min(255,E[c]+(K[c]===T_WATER?R.bank:0));for(const t of path)fl[t]=f;return f};
+  for(let i=0;i<N;i++)if(isB(i)){const f=floorOf(i);if(E[i]<f)E[i]=f}
+  for(let i=0;i<N;i++)if(isB(i)&&!deg[i])q.push(i);
+  while(q.length){const i=q.pop(),j=down(i);if(j<0||K[j]===T_WATER)continue;const f=isB(j)?fl[j]:65;E[j]=Math.max(Math.min(E[j],E[i]),f);if(isB(j)&&--deg[j]===0)q.push(j)}
+  yield;
+  const lv=levelsOf(m),S=reliefClass(m,lv),Hi=m.high,brk=i=>(F[i]&31)>=B&&!(Rv[i]&3);
+  for(let i=0;i<N;i++){const k=K[i];if(k===T_WATER||k===T_FORD||k===T_ROAD)continue;const c=S[i],l=lv[i];
+    if(c===3&&!brk(i)){K[i]=T_MOUNT;continue}if(k===T_FOREST)continue;
+    K[i]=c>=2||c===1&&l>=R.hill[0]||l>=R.hill[1]?T_HILL:T_OPEN}
+  for(let i=0;i<N;i++)if(K[i]===T_MOUNT&&S[i]<3)S[i]=3;
+  m.slope=S;
+  const at=(x,y)=>E[Math.max(0,Math.min(H-1,y))*W+Math.max(0,Math.min(W-1,x))];Hi.fill(0);
+  for(let i=0;i<N;i++){if(K[i]!==T_HILL)continue;const x=i%W,y=(i-x)/W;let up=0,top=-1,peak=false;
+    DIR8.forEach(([a,b],k)=>{const v=at(x+a,y+b);if(v>top){top=v;up=k}if(m.kindAt(x+a,y+b)===T_MOUNT)peak=true});
+    const kind=peak?3:S[i]>=2?2:1;Hi[i]=kind|up<<2|(kind>=2&&(peak||E[i]>=GEN_HIGH.scree.elev)?32:0)}
+  for(let i=0;i<N;i++)if((Hi[i]&3)===2){const x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<N&&(Hi[j]&3)===1){Hi[i]|=64;break}}
+  yield}
+function reliefOf(m){const W=m.w,H=m.h,N=W*H,K=m.kind,R=GEN_RELIEF,lv=levelsOf(m);
+  for(let it=0;it<R.smooth;it++)for(let i=0;i<N;i++){const k=K[i];if(k!==T_ROAD&&k!==T_FORD||m.river[i]&3)continue;const x=i%W,y=(i/W)|0;let s=0,n=0;
+    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(K[j]===T_WATER||K[j]===T_MOUNT||m.river[j]&3)continue;s+=lv[j];n++}if(n)lv[i]=s/n}
+  // (never under the water beside it: a road along a bank stays over the river)
+  for(let i=0;i<N;i++){const k=K[i];if(k!==T_ROAD&&k!==T_FORD||m.river[i]&3)continue;const x=i%W,y=(i/W)|0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(K[j]===T_WATER&&lv[j]>lv[i])lv[i]=lv[j]+R.bank/R.per}}
   return lv}
 // the stages, in order (§15.2.1): id, the loading label (§5.2), w (its weight on the bar), run, and its check (§8.14), if any
 const GEN_STAGES=[
@@ -135,6 +178,7 @@ const GEN_STAGES=[
   {id:'rivers',label:'Carving rivers',w:250,run:g=>genRivers(g),check:g=>genRiverCheck(g.map)},
   {id:'forest',label:'Forests',w:80,run:g=>genForest(g)},
   {id:'ponds',label:'Springs and oases',w:40,run:g=>genPonds(g),check:g=>genRiverCheck(g.map,true)},
+  {id:'valleys',label:'Valleys and hills',w:30,run:g=>genValleys(g)},
   {id:'regions',label:'Wild lands',w:1,run:g=>genRegions(g)},
   {id:'holdings',label:'Founding holdings',w:250,run:g=>genHoldings(g)},
   {id:'hamlets',label:'Settling hamlets',w:30,run:g=>genHamlets(g)},
@@ -372,7 +416,7 @@ function* genElev(g){
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){let a=-1e9,b=1e9;for(let k=Math.max(0,x-2);k<=Math.min(W-1,x+2);k++){const v=Ef[y*W+k];if(v>a)a=v;if(v<b)b=v}rx[y*W+x]=a;rn[y*W+x]=b}
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){let a=-1e9,b=1e9;for(let k=Math.max(0,y-2);k<=Math.min(H-1,y+2);k++){const j=k*W+x;if(rx[j]>a)a=rx[j];if(rn[j]<b)b=rn[j]}mx[y*W+x]=a;mn[y*W+x]=b}
   for(let i=0;i<N;i++){if(K[i]===T_WATER){E[i]=Math.max(0,Math.min(63,Math.round(Ef[i])));if(m.feat[i]&2)E[i]=Math.round(Ef[i]);continue}
-    const e=Ef[i];E[i]=Math.max(65,Math.min(255,Math.round(e)));K[i]=e>=T.mount&&Rg[i]>=T.foot||Rg[i]>=T.ridge?T_MOUNT:e>=T.hill||mx[i]-mn[i]>=T.relief?T_HILL:T_OPEN}
+    const e=Ef[i]=genFloor(Ef[i]);E[i]=Math.max(65,Math.min(255,Math.round(e)));K[i]=e>=T.mount&&Rg[i]>=T.foot||Rg[i]>=T.ridge?T_MOUNT:e>=T.hill||mx[i]-mn[i]>=T.relief?T_HILL:T_OPEN}
   yield .7;
   // rough: the largest step to the 8 neighbours x4, smoothed once
   const U=m.rough,Tm=new Uint8Array(N),at=(x,y)=>E[Math.max(0,Math.min(H-1,y))*W+Math.max(0,Math.min(W-1,x))];
@@ -421,6 +465,10 @@ function genValleyHint(g,h,Ef,Rg,R){
     const i=Math.max(0,Math.min(H-1,y))*W+Math.max(0,Math.min(W-1,x));lo=Math.min(lo-.05,m.kind[i]===T_WATER?lo:Ef[i]-T.deep);bed[k]=lo}
   for(let i=0;i<N;i++){const d=D[i];if(d<0||d>=T.w)continue;Ef[i]=Math.min(Ef[i],bed[Math.round(At[i]*T.n)]+Math.max(0,d-T.floor)*T.wall);if(d<8)Rg[i]*=d/8}
 }
+// (the low land's floor: what fell under floor[1] (a valley's tilt, the coast's lowland) eased into floor[0] to floor[1], never flat at
+// the sea's level, its rolls kept)
+const GEN_FLOOR=[66,80];
+const genFloor=e=>{const [a,b]=GEN_FLOOR;return e>=b?e:a+(b-a)*Math.exp((e-b)/(b-a))};
 // (stage 2's check: a pass at least every 60 tiles of each range: along its spine, a cross-section with no mountain on it)
 function genPassCheck(g){const m=g.map;for(const q of g.work.spines){const p=q.pts;let run=0,last=0;
   for(let j=0;j<p.length;j++){const a=p[Math.max(0,j-2)],b=p[Math.min(p.length-1,j+2)],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.sqrt(dx*dx+dy*dy)||1,ux=-dy/l,uy=dx/l;
