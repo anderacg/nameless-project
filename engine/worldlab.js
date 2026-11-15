@@ -319,19 +319,6 @@
     // the small things on the ground (where its own px shows): tufts, flowers, pebbles; marram on the dunes; driftwood and shells on
     // the beach; snow's sparkle
     const vis=(x,y)=>{const sy=y-lift[y*W+x]+T;return sy>=2&&dep[sy*W+x]===y?sy:-1};
-    for(let y=2;y<H;y++)for(let x=1;x<W-1;x++){const i=y*W+x,k=KD[i],r=hsh(x,y,s+30);if(r>.06)continue;const sy=vis(x,y);if(sy<0)continue;
-      if(k===K.grass||k===K.meadow){if(r<.03){const c=COL.tuft[r<.012?0:1];put(x,sy-1,c,y);if(r<.015)put(x,sy-2,COL.tuft[0],y)}else if(k===K.meadow&&r<.05)put(x,sy-1,COL.flower[Math.floor(hsh(x,y,s+31)*4)],y)}
-      else if(k===K.dune&&r<.05){const h=2+Math.floor(hsh(x,y,s+32)*3);for(let j=1;j<=h;j++)put(x+(j>2&&r<.025?1:0),sy-j,COL.marram[j&1],y)}
-      // (driftwood (the owner: the dark dashes on the sand): a few sticks along the tide line only, 3-6 px, some aslant, some forked,
-      //  bleached on top, dark under, a faint shadow on the sand)
-      else if((k===K.sand||k===K.wet)&&r<.0013&&L.DW[i]<20){const n=3+Math.floor(hsh(x,y,s+130)*4),sl=hsh(x,y,s+131)<.4?(hsh(x,y,s+132)<.5?-1:1):0,
-          ok=(xx,yy)=>xx>0&&xx<W-1&&yy>0&&yy<CH&&dep[yy*W+xx]===y,shade=mul(COL.wet[0],.85);
-        for(let j=0;j<n;j++){const xx=x+j,yy=sy-Math.floor(j*sl/3);if(!ok(xx,yy))continue;put(xx,yy+1,shade,y);put(xx,yy,j===0||j===n-1?COL.drift:[196,178,146],y)}
-        if(hsh(x,y,s+133)<.35&&ok(x+1,sy-1))put(x+1,sy-1,[176,156,124],y)}
-      else if(k===K.sand&&r<.012)put(x,sy,COL.shell,y)
-      else if(k===K.wood&&r<.03)put(x,sy-1,r<.01?[110,76,48]:COL.tuft[2],y)
-      else if((k===K.scree||k===K.rock)&&r<.03)put(x,sy,COL.scree[1],y)
-      else if(k===K.bank&&r<.05){const h=3+Math.floor(hsh(x,y,s+86)*3);for(let j=1;j<=h;j++)put(x,sy-j,j===h&&r<.02?COL.reed[2]:COL.reed[j&1],y)}}
     /* the bridge, a structure standing over the land (the owner, 2026-11-15: "the bridge is draw over the terrain hence the bridge
        base or foundation should be transparent"): the land under it is the land (the river and its banks, in its shade), and only
        its parts are drawn, north to south so the nearer covers the farther, each px only over what lies behind it: the deck (planks
@@ -363,6 +350,25 @@
         const sy=y-dl+T,post=((t%Bg.post)+Bg.post)%Bg.post<1.2;
         if(post)for(let j=1;j<=Bg.rail+1;j++)putB(x,sy-j,j===Bg.rail+1?lit:COL.beam[1],y);
         else{putB(x,sy-Bg.rail,lit,y);putB(x,sy-Bg.rail+1,COL.beam[1],y);putB(x,sy-(Bg.rail>>1),COL.plank[0],y);putB(x,sy-(Bg.rail>>1)+1,COL.beam[1],y)}}}
+    /* the small things on the ground, on a layer of their own over the land (the owner, 2026-11-15: "only terrain without them,
+       those will be draw by separated layer"): tufts, flowers, pebbles; marram on the dunes; driftwood and shells on the beach;
+       leaf litter; reeds on the banks. Each only where its ground is seen (not under the bridge, not behind a ridge) */
+    const dcv=document.createElement('canvas');dcv.width=W;dcv.height=CH;const dg=dcv.getContext('2d'),dimg=dg.createImageData(W,CH),DD=dimg.data;
+    const putD=(x,yy,c)=>{if(yy<0||yy>=CH||x<0||x>=W)return;const o=(yy*W+x)*4;DD[o]=c[0];DD[o+1]=c[1];DD[o+2]=c[2];DD[o+3]=255};
+    for(let y=2;y<H;y++)for(let x=1;x<W-1;x++){const i=y*W+x,k=KD[i],r=hsh(x,y,s+30);if(r>.06)continue;const sy=vis(x,y);if(sy<0)continue;
+      if(k===K.grass||k===K.meadow){if(r<.03){const c=COL.tuft[r<.012?0:1];putD(x,sy-1,c);if(r<.015)putD(x,sy-2,COL.tuft[0])}else if(k===K.meadow&&r<.05)putD(x,sy-1,COL.flower[Math.floor(hsh(x,y,s+31)*4)])}
+      else if(k===K.dune&&r<.05){const h=2+Math.floor(hsh(x,y,s+32)*3);for(let j=1;j<=h;j++)putD(x+(j>2&&r<.025?1:0),sy-j,COL.marram[j&1])}
+      // (driftwood (the owner: the dark dashes on the sand): a few sticks along the tide line only, 3-6 px, some aslant, some forked,
+      //  bleached on top, dark under, a faint shadow on the sand)
+      else if((k===K.sand||k===K.wet)&&r<.0013&&L.DW[i]<20){const n=3+Math.floor(hsh(x,y,s+130)*4),sl=hsh(x,y,s+131)<.4?(hsh(x,y,s+132)<.5?-1:1):0,
+          ok=(xx,yy)=>xx>0&&xx<W-1&&yy>0&&yy<CH&&dep[yy*W+xx]===y,shade=mul(COL.wet[0],.85);
+        for(let j=0;j<n;j++){const xx=x+j,yy=sy-Math.floor(j*sl/3);if(!ok(xx,yy))continue;putD(xx,yy+1,shade);putD(xx,yy,j===0||j===n-1?COL.drift:[196,178,146])}
+        if(hsh(x,y,s+133)<.35&&ok(x+1,sy-1))putD(x+1,sy-1,[176,156,124])}
+      else if(k===K.sand&&r<.012)putD(x,sy,COL.shell,y)
+      else if(k===K.wood&&r<.03)putD(x,sy-1,r<.01?[110,76,48]:COL.tuft[2],y)
+      else if((k===K.scree||k===K.rock)&&r<.03)putD(x,sy,COL.scree[1],y)
+      else if(k===K.bank&&r<.05){const h=3+Math.floor(hsh(x,y,s+86)*3);for(let j=1;j<=h;j++)putD(x,sy-j,j===h&&r<.02?COL.reed[2]:COL.reed[j&1])}}
+    dg.putImageData(dimg,0,0);
     g.putImageData(img,0,0);
     // the shore's px (the foam rides them): water beside land, on the screen
     const shore=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;if(KD[i]!==K.water)continue;if(KD[i-1]||KD[i+1]||KD[i-W]||KD[i+W])shore.push(x,y+T,hsh(x,y,s+40)*6.283)}
@@ -373,7 +379,7 @@
     const wm=document.createElement('canvas');wm.width=W;wm.height=CH;{const wg=wm.getContext('2d'),wi=wg.createImageData(W,CH),WD=wi.data;
       for(let y=0;y<CH;y++)for(let x=0;x<W;x++){const wy=dep[y*W+x];if(wy<0)continue;const i=wy*W+x,c=classAt(L,i),b=bandAt(L,i),o=(y*W+x)*4,col=b?[0,[120,230,240],[90,200,240],[60,140,240],[40,50,200]][b]:[[60,120,255],[60,200,80],[230,210,60],[240,130,40],[230,40,40]][c];WD[o]=col[0];WD[o+1]=col[1];WD[o+2]=col[2];WD[o+3]=110}
       wg.putImageData(wi,0,0)}
-    return {cv,dep,lift,T,CH,shore,flow,wm,ms:performance.now()-t0}}
+    return {cv,decor:dcv,dep,lift,T,CH,shore,flow,wm,ms:performance.now()-t0}}
 
   // a px's walk class: 0 water, 1 flat, 2 slope, 3 steep, 4 cliff (the road always flat: its grade is held)
   // (water: its depth band (1 ankle, 2 knee, 3 waist, 4 swimming), 0 dry)
@@ -416,7 +422,7 @@
     const panel=document.getElementById('panel'),out=document.getElementById('stats');
     let L=makeLand(),Pn=paint(L),props=makeProps(L);
     const hero={x:LAB.shelf.x*LAB.W+20,y:LAB.shelf.y*LAB.H+40,face:1,walked:0,sta:1,path:[],climber:false,heavy:false,moving:false};
-    let walkmap=false,cam={x:0,y:0},keys={},fps=0,fa=0,fn=0,frameMs=0;
+    let details=false,walkmap=false,cam={x:0,y:0},keys={},fps=0,fa=0,fn=0,frameMs=0;
     // the props cut by the ground in front of them (kept until the land is painted again)
     const cut=()=>{for(const p of props){const lf=Pn.lift[p.y*LAB.W+p.x];p.X=p.x-p.ax;p.Y=p.y-lf+Pn.T-p.ay;p.pic=occluded(p.img,p.X,p.Y,p.y,Pn)}props.sort((a,b)=>a.y-b.y)};
     cut();
@@ -448,6 +454,7 @@
     lh.addEventListener('change',()=>{LAB.lh=+lh.value;lhv.textContent=LAB.lh;Pn=paint(L);cut()});lh.addEventListener('input',()=>{lhv.textContent=lh.value});
     document.getElementById('climb').addEventListener('change',e=>{hero.climber=e.target.checked});
     {const hv=document.getElementById('heavy');if(hv)hv.addEventListener('change',e=>{hero.heavy=e.target.checked})}
+    {const dt=document.getElementById('details');if(dt)dt.addEventListener('change',e=>{details=e.target.checked})}
     document.getElementById('walkmap').addEventListener('change',e=>{walkmap=e.target.checked});
     document.getElementById('zoom').addEventListener('change',e=>{LAB.zoom=+e.target.value;resize()});
     // a step of the hero: by the keys, else along his path; his speed by the ground where he steps; stamina spent climbing
@@ -475,6 +482,7 @@
       {const F=Pn.flow,t=now/1000;for(let k=0;k<F.length;k+=4){const x=F[k]-cam.x,y=F[k+1]-cam.y;if(x<0||y<0||x>=cv.width||y>=cv.height)continue;
         if(F[k+2]<0){if(((F[k+1]*.5-t*24+F[k+3])%5+5)%5<1){ctx.fillStyle='rgba(250,252,255,.8)';ctx.fillRect(x,y,1,1)}}
         else if(((F[k+2]*.35-t*6+F[k+3]*14)%9+9)%9<.6){ctx.fillStyle='rgba(225,240,245,.55)';ctx.fillRect(x,y,1,1)}}}
+      if(details)ctx.drawImage(Pn.decor,cam.x,cam.y,cv.width,cv.height,0,0,cv.width,cv.height);
       if(walkmap)ctx.drawImage(Pn.wm,cam.x,cam.y,cv.width,cv.height,0,0,cv.width,cv.height);
       // the hero's picture, cut by the ground before him
       const fr=hero.moving?Math.floor(hero.walked/5)%4:0,dl=PX.doll({race:'human',uniform:'swordsman',team:'blue',hair:'brown',style:'short',pose:hero.moving?'walk':undefined,frame:fr}),
