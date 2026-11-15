@@ -35,8 +35,10 @@
     peaks:[[.66,.15,.26,11],[.93,.36,.24,9.5]],steps:{band:3,sharp:16,sc:110,at:.38},hill:[.40,.42,.14,2.2],shelf:{x:.21,y:.73,rx:190,ry:120,e:1.4},
     road:{w:26,sh:22,grade:1/34,bend:30,turnGrade:.35,legs:40,rut:5,edge:3,puddle:.74,wall:2,vary:.18,track:.42,wander:1.3,gravel:.07,pts:[[.13,.80],[.21,.73],[.31,.69],[.42,.61],[.50,.53],[.60,.50],[.70,.47],[.62,.41],[.73,.36],[.67,.31],[.79,.26],[.86,.14],[.88,0]]},
     // (the bridge (the owner, 2026-11-15: "the bridge should be a full bridge structure"): its deck clear levels over the water, the
-    //  road ramped up to it; a pile every pile px along it, braced between; its rails rail px high on a post every post px)
-    bridge:{clear:1.4,pile:12,rail:5,post:8},
+    //  road ramped up to it; a pile every pile px along it, braced between; its rails rail px high on a post every post px; it is
+    //  a true rectangle (the owner: "the bridge edge should be equal"): as wide as the road less inset px a side, its sides straight
+    //  and parallel, its ends square across the road over points (2 px each) past the water each side, its deck level end to end)
+    bridge:{clear:1.4,pile:12,rail:5,post:8,over:7,inset:1},
     river:{pts:[[.588,.118],[.565,.20],[.525,.28],[.475,.36],[.435,.46],[.395,.55],[.355,.62],[.338,.70],[.343,.79],[.328,.88],[.31,1]],
       w:[2.5,11],bank:9,meander:14,ford:.5,mill:.64,mouth:.15,widen:1.2,tarn:{x:.597,y:.10,rx:48,ry:26}},
     walk:38,run:1.6,
@@ -167,13 +169,18 @@
       E[y*W+x]=(Cg[i]*(1-fx)+Cg[i+1]*fx)*(1-fy)+(Cg[i+CW]*(1-fx)+Cg[i+CW+1]*fx)*fy}}
     const road=roadOf(E),river=riverOf(E),RV=river.RV,R=LAB.road,SM=new Uint8Array(W*H),KD=new Uint8Array(W*H);
     // (where the road crosses the river its deck stands bridge.clear levels over the water, the road ramped to it at its grade)
-    {const r=road.r,n=r.length,dk=new Float32Array(n).fill(-1e9);
-      for(let i=0;i<n;i++){const [x,y]=road.pts[i],j=Math.round(y)*W+Math.round(x);if(j>=0&&j<W*H&&(RV[j]===1||RV[j]===3)){for(let k=Math.max(0,i-6);k<=Math.min(n-1,i+6);k++)dk[k]=Math.max(dk[k],Math.floor(E[j])+LAB.bridge.clear)}}
-      for(let i=0;i<n;i++)if(dk[i]>r[i])r[i]=dk[i];const ds=2*R.grade;for(let it=0;it<4;it++){for(let i=1;i<n;i++)r[i]=Math.max(r[i],r[i-1]-ds);for(let i=n-2;i>=0;i--)r[i]=Math.max(r[i],r[i+1]-ds)}
+    let span=null;
+    {const r=road.r,n=r.length,Bg=LAB.bridge;let a=-1,b=-1,wl=-1e9;
+      for(let i=0;i<n;i++){const [x,y]=road.pts[i],j=Math.round(y)*W+Math.round(x);if(j>=0&&j<W*H&&(RV[j]===1||RV[j]===3)){if(a<0)a=i;b=i;wl=Math.max(wl,Math.floor(E[j]))}}
+      if(a>=0){const i0=Math.max(0,a-Bg.over),i1=Math.min(n-1,b+Bg.over);let dh=wl+Bg.clear;for(let i=i0;i<=i1;i++)dh=Math.max(dh,r[i]);for(let i=i0;i<=i1;i++)r[i]=dh;span={i0,i1,hw:R.w/2-Bg.inset,h:dh}}
+      const ds=2*R.grade;for(let it=0;it<4;it++){for(let i=1;i<n;i++)r[i]=Math.max(r[i],r[i-1]-ds);for(let i=n-2;i>=0;i--)r[i]=Math.max(r[i],r[i+1]-ds)}
       for(let j=0;j<W*H;j++){if(road.D[j]<1e9)road.RE[j]=along(r,road.I[j]);if(road.D2[j]<1e9)road.RE2[j]=along(r,road.I2[j])}}
     // (the road's edge ragged; over the river its deck (a bridge), the water left beside it)
     const RD=new Float32Array(W*H),HW=new Float32Array(W*H);for(let i=0;i<W*H;i++){const d=road.D[i];RD[i]=d>=1e9?d:d-(fbm((i%W)/26,((i/W)|0)/26,s+73,2)-.5)*2*R.edge;HW[i]=d>=1e9?0:R.w/2*(1+R.vary*(vn(road.I[i]/30,.5,s+95)-.5)*2)}
-    for(let i=0;i<W*H;i++){const d=RD[i],hw=HW[i];if(d<hw){E[i]=road.RE[i];SM[i]=1}else if(d<hw+R.sh&&RV[i]!==1&&RV[i]!==3){let rt=road.RE[i],k=smooth((d-hw)/R.sh);
+    // (the bridge's rectangle: on the span, nearer the road's line than its half-width; the rest of the span's width is the river and
+    //  its banks as they are)
+    const BR=new Uint8Array(W*H);if(span)for(let i=0;i<W*H;i++){const f=road.I[i];if(road.D[i]<1e9&&f>=span.i0&&f<=span.i1){BR[i]=road.D[i]<span.hw?1:2}}
+    for(let i=0;i<W*H;i++){if(BR[i]===1){E[i]=span.h;SM[i]=1;continue}if(BR[i]===2&&road.D[i]<HW[i]+R.sh)continue;const d=RD[i],hw=HW[i];if(d<hw){E[i]=road.RE[i];SM[i]=1}else if(d<hw+R.sh&&RV[i]!==1&&RV[i]!==3){let rt=road.RE[i],k=smooth((d-hw)/R.sh);
         const d2=road.D2[i];if(d2<hw+R.sh){const w1=1/((d-hw+1)**2),w2=1/((Math.max(d2-hw,0)+1)**2);rt=(rt*w1+road.RE2[i]*w2)/(w1+w2);k*=smooth((d2-hw)/R.sh)}
         E[i]=rt+(E[i]-rt)*k;SM[i]=1}}
     const G=new Float32Array(W*H),GX=new Float32Array(W*H),GY=new Float32Array(W*H),o=3;
@@ -185,8 +192,8 @@
     const S=LAB.shelf,Wd=LAB.woods,B=LAB.shore;
     for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x,e=E[i],g=G[i];let k;
       const wob=fbm(x/50,y/50,s+63,2)-.5,dw=DW[i];
-      const rv=RV[i],onRoad=RD[i]<HW[i];
-      if(onRoad&&(rv===1||rv===3))k=K.bridge;else if(e<0&&!rv)k=K.water;else if(rv===1)k=e<0?K.water:K.river;else if(rv===3)k=K.ford;else if(onRoad)k=K.road;
+      const rv=RV[i],onRoad=RD[i]<HW[i]&&!BR[i];
+      if(BR[i]===1)k=K.bridge;else if(e<0&&!rv)k=K.water;else if(rv===1)k=e<0?K.water:K.river;else if(rv===3)k=K.ford;else if(onRoad)k=K.road;
       else if(rv===2&&(river.RW[i]>50||river.D[i]<river.RW[i]+4))k=K.bank;
       else if(SM[i]&&g>=LAB.cls.slope*1.5&&e>=LAB.dune)k=K.cut;else if(dw<B.wet+wob*4)k=K.wet;else if(dw<B.sand+wob*24&&e<LAB.dune)k=K.sand;else if(dw<B.dune+wob*40&&e<LAB.dune+.6)k=K.dune;
       else if(e>=LAB.snow+(fbm(x/40,y/40,s+61,2)-.5)*1.6)k=K.snow;else if(e>=LAB.rock+(fbm(x/50,y/50,s+62,2)-.5)*2||g>=LAB.cls.cliff)k=K.rock;
@@ -196,7 +203,7 @@
       KD[i]=k}
     // (every water px's depth: the sea's how far the land lies under it, the river's and the tarn's their own)
     const DP=new Float32Array(W*H);for(let i=0;i<W*H;i++){const k=KD[i];if(k===K.water)DP[i]=Math.max(-E[i],river.DP[i]);else if(k===K.river||k===K.ford)DP[i]=river.DP[i]}
-    return {E,SM,KD,G,GX,GY,road,river,RD,HW,DP,ms:performance.now()-t0}}
+    return {E,SM,KD,G,GX,GY,road,river,RD,HW,DP,bridge:span,ms:performance.now()-t0}}
 
   /* painting: the terrain canvas (W x H+T, T the highest lift), its depth (the world y of the ground at each of its px, -1 none)
      and the walk map. Column by column, north to south: each px's top at y - lift + T; where the ground ahead is lower, this px's
@@ -255,7 +262,7 @@
         case K.bridge:{
           // (planks across the deck, each its own tone and a thin dark gap between them, the wheels' wear down it; a rail each
           //  side, lit on top, on a post every 8 px)
-          const RR=LAB.road,d=L.road.D[i],t=L.road.I[i]*2,hw=L.HW[i],pl=Math.floor(t/4);c=COL.plank[Math.floor(hsh(pl,7,s+77)*3)];if(t%4<.55)c=mul(COL.plank[1],.72);
+          const RR=LAB.road,d=L.road.D[i],t=L.road.I[i]*2,hw=L.bridge.hw,pl=Math.floor(t/4);c=COL.plank[Math.floor(hsh(pl,7,s+77)*3)];if(t%4<.55)c=mul(COL.plank[1],.72);
           if(Math.abs(d-hw*RR.track)<1.3)c=mul(c,.92);if(hsh(pl,Math.floor(d),s+78)<.04)c=mul(c,.85);
           if(d>hw-2.2)c=t%8<1.6?COL.beam[0]:d>hw-1.1?mul(COL.plank[2],1.08):COL.plank[1];break}
         case K.river:{const tarn=L.river.RW[i]>50;c=underWater(x,y,i,tarn?COL.tarnbed[hsh(x>>1,y>>1,s+78)<.5?0:1]:COL.pebble[Math.floor(hsh(x>>1,y>>1,s+91)*4)]);if(!tarn&&n<.004)c=COL.stone[1];break}

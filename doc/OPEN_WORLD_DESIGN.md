@@ -262,7 +262,8 @@ That is a separate decision, best made after this world exists.
   - It has two wheel ruts, with puddles in them where it is flat, a grassy crown between them on the flat, and pebbles.
   - A stone parapet runs along its edge where the ground beyond drops two levels or more; its cuts and embankments are faced with dressed-stone retaining walls.
   - Over the river it is a whole wooden bridge (`LAB.bridge`; the owner: "the bridge should be a full bridge structure"):
-    - Its deck stands 1.4 levels over the water, the road ramped up to it at its grade. A ramp's side above the bank is faced with stone (its abutments).
+    - It is a true rectangle (the owner: "the bridge edge should be equal"). It is as wide as the road less 1 px a side, its sides straight and parallel whatever the road's ragged edge does. Its ends are square across the road, 7 points (14 px) past the water each side, resting on the banks.
+    - Its deck is level end to end, 1.4 levels over the water, the road ramped up to it at its grade. Beside it, the span's ground is the river and its banks as they are. A ramp's side above the bank is faced with stone (its abutments).
     - Planks run across the deck, each its own tone with a thin gap between, worn where the wheels go.
     - Under the deck's edge: a heavy side beam, a pile every 12 px standing in the water with foam at its foot, cross-braced between, and the shadowed water seen beneath. Its shadow lies on the water just downstream.
     - Railings stand along both edges: a dark post every 8 px, a sunlit top rail with its shadow under it, and a middle rail. Each railing is painted only over what lies behind it, so the far one shows behind the deck and the near one in front. Its heights come from the land before the river was carved, so it spans the river instead of dipping into it.
