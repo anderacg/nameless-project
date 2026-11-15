@@ -279,6 +279,21 @@ That is a separate decision, best made after this world exists.
   - The way-finder swims only when it must (a deep cell costs 9).
 - **The hero** is drawn as deep in it as the water is (1, 4, 8 or 12 px of him under it), with ripples round him.
 
+**Blended biomes and a worn road (2026-11-15; the owner: "make the transition between biomes more blend? And make the road more realistic"):**
+- **Blended grounds:** each ground's colour is shifted toward its neighbours' over 8 px (`LAB.blend`).
+  - How: a normalized blur of each ground's plain colour, sampled through a 10 px warp so the edge is ragged; the px's own grain is kept.
+  - Which grounds: grass, meadow, woods floor, beach, dunes, scree, rock, snow and banks. Water, roads and bridges keep their edges.
+  - The rock's grass patches fade in.
+  - Woods thin out at their edges (`LAB.woods.fringe`): fewer trees toward the edge, a few standing out in the grass.
+- **The road** (`roadCol`):
+  - Its width wanders (`vary`).
+  - Two packed wheel tracks wander a little (`track`, `wander`), each with a dark groove.
+  - A crown between them, with grass tufts where the road is flat.
+  - Loose ground and gravel outside the tracks.
+  - At its edge the grass creeps in, dithered, with a line of trodden soil.
+  - Muddy puddles with the sky in them lie in the tracks on the flat.
+- **Painting** is now about 180 ms a 512 px chunk in the lab.
+
 **What the lab leaves for later:**
 - Lakes in the lowland, deltas, and boats on the water.
 - Lighting by the time of day.
