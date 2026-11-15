@@ -179,9 +179,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 /* the overlay dims the game; the panel is one size whatever it holds: its title row and its action row stay put, the rest scrolls */
 .overlay{container:ovl/size;position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
   padding:calc(12px + var(--sa-t)) calc(12px + var(--sa-r)) calc(12px + var(--sa-b)) calc(12px + var(--sa-l));
-  background:radial-gradient(ellipse at center,rgba(16,12,8,.7),rgba(5,4,3,.92));overflow:auto}
+  background:radial-gradient(ellipse at center,rgba(16,12,8,.18),rgba(5,4,3,.42));overflow:auto}/* (the world seen behind a window, dimmed a little: the owner, 2026-11-15, "the background of game ui should be transparent not a black color background") */
 .panel{width:min(820px,100%);height:min(620px,100%);flex:none;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:18px 20px;
-  background:var(--grain),linear-gradient(180deg,#271e16,var(--panel) 140px);border:1px solid var(--trim);border-top:2px solid var(--trim-hi);border-radius:var(--r-lg);
+  background:var(--grain),linear-gradient(180deg,#271e16d0,#1a1712c8 140px);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);border:1px solid var(--trim);border-top:2px solid var(--trim-hi);border-radius:var(--r-lg);
   box-shadow:inset 0 0 0 1px #000,0 0 0 1px #000,0 0 0 4px #1f1810,0 0 0 5px #6b5530,var(--deep);
   animation:rise .14s ease-out;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
 .panel.wide{width:min(1040px,100%);height:min(720px,100%)}
