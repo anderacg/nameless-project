@@ -65,7 +65,12 @@ try{
  {world();P.troops={hum_spear:1};const q=W.patrols.filter(x=>x.troops.length>=3).sort((a,b)=>t.rating(b.troops)-t.rating(a.troops))[0],r0=Math.random;Math.random=t.seeded(77);try{
   const spot=[0,1,2,3,4,5,6,7].map(k=>[P.x+40*Math.cos(k*Math.PI/4),P.y+40*Math.sin(k*Math.PI/4)]).find(([x,y])=>t.passable(t.terrAt(x,y))&&t.clearLine(x,y,P.x,P.y))||[P.x+40,P.y];
   P.hostile[q.fac]=G.day+20;q.cool=0;q.x=spot[0];q.y=spot[1];t.lodFile();G.encCool=5;t.TravelAwareness.notice(q);// (set down by you, its tier sorted afresh; it has you in its eye, and keeps you there: worldobject.js)
-  const look=()=>{t.TravelAwareness.step(.05);t.updatePatrols(.05)};for(let i=0;i<60;i++)look();const d=Math.hypot(q.x-P.x,q.y-P.y);ok(d>=t.GRACE_GAP-4&&!G.enc,/* (4 px short of it at most, was 2, 2026-11-05: 21.6 px on the ground there now) */'in the grace after a fight, the guards hunting you hold off ('+Math.round(d)+' px, '+t.stance(t.rating(q.troops))+')');
+  const look=()=>{t.TravelAwareness.step(.05);t.updatePatrols(.05)};
+  // (the gap is kept from what it hunts, the nearest of your men it sees (worldobject.js travelDetection target): one of your marchers
+  //  may stand off your hero's point, so the gap to him can be less (2026-11-14: your spearman 10 px past you, the guards 24 px from
+  //  him); every step it takes ends no nearer that than the gap, 4 px short at most, and it then holds)
+  let near=Infinity,last=-1;for(let i=0;i<60;i++){const x0=q.x,y0=q.y;look();if(Math.hypot(q.x-x0,q.y-y0)>1e-6){last=i;const g=t.TravelAwareness.target(q)||P;near=Math.min(near,Math.hypot(q.x-g.x,q.y-g.y))}}const d=Math.hypot(q.x-P.x,q.y-P.y);
+  ok(near>=t.GRACE_GAP-4&&last<50&&!G.enc,'in the grace after a fight, the guards hunting you hold off: no step nearer what they hunt than '+(near===Infinity?'-':near.toFixed(1))+' px (the gap '+t.GRACE_GAP+'), still from step '+(last+1)+' ('+Math.round(d)+' px from you, '+t.stance(t.rating(q.troops))+')');
   G.encCool=0;for(let i=0;i<200&&!G.enc&&G.mode==='world';i++)look();ok(G.enc&&G.enc.kind==='patrol','once it is over, they close in and attack');world();delete P.hostile[q.fac]}finally{Math.random=r0}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

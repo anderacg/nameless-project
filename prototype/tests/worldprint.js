@@ -828,7 +828,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W5 re-recorded 2026-11-14, on purpose: a fix, a frost pond's ice plates on water only. Its ring reached a lake's tile, whose
 //  curved shore counted as wet by the tile, so 29 pixels of ice lay on the shore (worldnature's water check). Now ice goes only on
 //  the water as drawn (engine/worldnature.js, the rings). Proof: the old line gives 38e3c118 again. Was W5 38e3c118)
-const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'6fa8216f',W6:'b43ed88c',W7:'0cc26fac',W8:'b871b922',B2:'c315aa9a'};
+// (W7, W8 re-recorded 2026-11-14, on purpose: the owner, "reduce world moving speed for all": campaign travel 1.28 times the
+//  base, was 1.6 (data/world.js WORLD_SCALE.travel), so every party covers less ground in the 600 frames (W8) and the three days
+//  (W7). Proof: travel 1.6 gives both again (W1-W6, B2 held). Were W7 0cc26fac, W8 b871b922)
+const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'6fa8216f',W6:'b43ed88c',W7:'7492cbf5',W8:'1ffe8f1a',B2:'c315aa9a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

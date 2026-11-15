@@ -6,9 +6,10 @@ const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a
   // second on open ground at 1x, 100 tiles (25 km) a day
-  // Campaign travel is 1.6 times the base pace (was twice: the owner, 2026-10-31, "drop campaign speed about 20%"); world combat
-  // explicitly keeps the base scale.
-  move:.68,travel:1.6,
+  // Campaign travel is 1.28 times the base pace (was twice, then 1.6: the owner, 2026-10-31, "drop campaign speed about 20%", and
+  // 2026-11-14, "reduce world moving speed for all", 20% more); everything on the map moves by it, you and the world alike; world
+  // combat explicitly keeps the base scale.
+  move:.68,travel:1.28,
   // how far each kind sees you, before your cover cuts it (Brain.sight, hiddenAt)
   sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
   // what the parties weigh (brains.js, monsters.js, critters.js, folk.js, companions.js, patrols.js)

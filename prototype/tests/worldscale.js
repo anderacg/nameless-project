@@ -7,12 +7,13 @@
 // gap you open in it as before), the AI on the same lever, and the walk cycles by the distance walked.
 // Since then campaign travel goes at twice that (WORLD_SCALE.travel, moveStep's third argument); a world battle keeps the base.
 // (2026-10-31, the owner: "drop campaign speed about 20%": 1.6 times the base)
+// (2026-11-14, the owner: "reduce world moving speed for all": 1.28 times the base)
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,get=u=>{const x=new XMLHttpRequest();x.open('GET',u,false);x.send();return x.responseText};
  const S=t.WORLD_SCALE,D=t.DENSITY;
  // ---- the table: every moved number, at today's value
- const want={move:.68,travel:1.6,sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
+ const want={move:.68,travel:1.28,sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
   ai:{graceGap:24,grace:1.47,dread:70,bandCamp:220,refugeAt:24,refugeLane:24,lairHunt:140,lairLeash:60,mythicRoam:[120,90],mythicScorch:200,gameLeash:50,herdLeash:24,penLeash:99,
    compFoes:90,compFlee:70,compBeat:[80,60],compTake:60,compDraft:120,folkNear:520,folkForget:120,folkBandit:70,folkFear:90,slipAway:40},
   spawn:{bandit:[220,260],monster:[180,240],monsterHold:352,mythic:200,rare:1.2,rareK:2,critter:[120,200],critterHold:56,away:120,rim:3},
@@ -20,7 +21,7 @@ try{
   law:{repNear:15,eventNear:15,siegeOutrage:20},land:{shelter:48,healNear:80,estateGuard:7,friendly:50,pacify:35},war:{front:60,raidLeash:80,siegeLeash:80},battle:{elfR:10,bridge:2}};
  // (spawn.monsterHold 352, was 256, 2026-11-14: the owner, "Caves, monster lair should be more far away as well": beasts' homes 22 tiles from
  //  every holding, were 16)
- ok(JSON.stringify(S)===JSON.stringify(want),'WORLD_SCALE holds every moved distance at today\'s value, the lever and the grace at Phase 1\'s, campaign travel 1.6 times the base (twice at 696de87; 20% less, the owner, 2026-10-31) ('+Object.keys(S).join(', ')+')');
+ ok(JSON.stringify(S)===JSON.stringify(want),'WORLD_SCALE holds every moved distance at today\'s value, the lever and the grace at Phase 1\'s, campaign travel 1.28 times the base (twice at 696de87; 20% less, the owner, 2026-10-31; 20% less again, 2026-11-14) ('+Object.keys(S).join(', ')+')');
  const classic={bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,sites:{cave:30,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}};
  ok(JSON.stringify(D.classic)===JSON.stringify(classic)&&t.density()===D.classic,'DENSITY.classic holds today\'s caps, and it is the one in use (the classic world: the classic seed)');
  // ---- every cap reads the table; the site kinds scattered at random are the table's, and none keeps a count of its own
@@ -59,7 +60,7 @@ try{
  ok(t.GRACE_GAP===S.ai.graceGap&&t.RES_RANGE===S.econ.resRange&&t.HOME_RANGE===S.econ.homeRange,'the old names (GRACE_GAP, RES_RANGE, HOME_RANGE) read the table');
  // ---- one movement lever: at move 1 a step is exactly pace x d
  const R=t.seeded(5);let same=true;for(let i=0;i<2000;i++){const px=R()*90,d=R()*.2;same=same&&t.moveStep(px,d)===px*d*S.move*S.travel&&t.moveStep(px,d,false)===px*d*S.move}
- ok(S.move===.68&&S.travel===1.6&&same,'moveStep(pace, d) is exactly pace x d x move x travel on the campaign map, pace x d x move in a world battle (2000 samples)');
+ ok(S.move===.68&&S.travel===1.28&&same,'moveStep(pace, d) is exactly pace x d x move x travel on the campaign map, pace x d x move in a world battle (2000 samples)');
  // ---- no moved number left written out (the old expressions are gone; every step goes through moveStep)
  const gone={
   'world/brains.js':['const GRACE_GAP=24','this.sight(90)','this.sight(95)','this.sight(80)','o.y-l.y)<70','26*mul*d','16*d','12*d','.9*d','.75*d','dd<90','[1]<70','rint(-80,80)','rint(-60,60)','*d)'],
