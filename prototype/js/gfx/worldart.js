@@ -697,6 +697,7 @@ const OVER=[
 function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
   const t0=performance.now(),Wp=MW*TILE,Hp=MH*TILE,AP=PX.WN_APRON,x0=Math.max(0,X-AP),y0=Math.max(0,Y-AP),ww=Math.min(Wp,X+w+AP)-x0,wh=Math.min(Hp,Y+h+AP)-y0,img=new ImageData(ww,wh),D=img.data,NT=NATURE_TOUCH;
   yield* artGenGround(P,D,x0,y0,ww,wh,{x:x0,y:y0,w:ww,h:wh});
+  const G0=rec.fine>1?new Uint8ClampedArray(D):null;// (the ground alone, for the chunk's finer picture: fineChunk)
   for(const t of P.tramples)trample(P,D,x0,y0,ww,wh,t);
   yield* townGround(P,D,x0,y0,ww,wh);
   const road=yield* artGenRoads(P,D,x0,y0,ww,wh);
@@ -706,8 +707,47 @@ function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
   g.putImageData(img,ox+x0-X,oy+y0-Y,X-x0,Y-y0,w,h);
   const tx0=Math.max(0,(X>>4)-1),ty0=Math.max(0,(Y>>4)-1),tx1=Math.min(MW-1,((X+w-1)>>4)+1),ty1=Math.min(MH-1,((Y+h-1)>>4)+1),r=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x,y,w||1,h||1)};
   for(const pass of OVER){yield;g.save();g.beginPath();g.rect(ox,oy,w,h);g.clip();g.translate(ox-X,oy-Y);pass(P,r,tx0,ty0,tx1,ty1);g.restore()}
+  if(G0){yield;yield* fineChunk(rec,G0,g.getImageData(ox,oy,w,h).data,X,Y,w,h,x0,y0,ww,wh,rec.fine)}
   rec.ms=performance.now()-t0;
 }
+/* a chunk's finer picture (doc/OPEN_WORLD_DESIGN.md phase 1 step 2; WORLD_VIEW.fine: r px a game px). What lies over the ground (roads,
+   yards, trampled patches, the land's nature, the passes over it) is its game px, r x r. The ground and the water themselves (where the
+   picture is still the ground's own) are made finer: each px's colour smoothed among the like px round it (none across a shore or an
+   edge: FINE_GROUND.like), taken between it and its like neighbours at each fine px, then a grain of its own at the fine px (by its
+   tile and climate: the land's, the water's shimmer, the grass's darker blades, the desert's ripples, the frost's glitter, the
+   swamp's wet). Kept as rec.fcv (rec.fr its r) beside the game-px picture, which the whole map, the tests and the depth read */
+const FINE_GROUND={like:54,grain:.06,water:.025,blades:.05,ripple:.045,glitter:.012,wet:.05,shimmer:.09};
+function* fineChunk(rec,G,F,X,Y,w,h,x0,y0,ww,wh,r){
+  const Q=FINE_GROUND,W2=w*r,H2=h*r,out=new ImageData(W2,H2),O=out.data,SW=w+2,SH=h+2,S=new Float32Array(SW*SH*3),gi=(x,y)=>((y-y0)*ww+(x-x0))*4,
+    inG=(x,y)=>x>=x0&&y>=y0&&x<x0+ww&&y<y0+wh,like=(a,b)=>Math.abs(G[a]-G[b])+Math.abs(G[a+1]-G[b+1])+Math.abs(G[a+2]-G[b+2])<=Q.like;
+  // (each px's colour smoothed among the like px round it)
+  for(let j=0;j<SH;j++){const y=Y-1+j;for(let i=0;i<SW;i++){const x=X-1+i;if(!inG(x,y))continue;const o=gi(x,y);let n=0,a=0,b=0,c=0;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!inG(x+dx,y+dy))continue;const q=gi(x+dx,y+dy);if(!like(o,q))continue;a+=G[q];b+=G[q+1];c+=G[q+2];n++}
+      const s=(j*SW+i)*3;S[s]=a/n;S[s+1]=b/n;S[s+2]=c/n}
+    if(!(j&15))yield}
+  // (a fine px's weights toward its neighbours: the same for every px, by where it lies in it)
+  const C=[0,0,0],WU=[],WV=[];for(let i=0;i<r;i++){WU.push((i+.5)/r-.5)}for(let j=0;j<r;j++)WV.push((j+.5)/r-.5);
+  const LK=new Int8Array(9),SI=new Int32Array(9);
+  for(let y=0;y<h;y++){for(let x=0;x<w;x++){const fo=(y*w+x)*4,mx=X+x,my=Y+y,go=gi(mx,my),ti=(my>>4)*MW+(mx>>4),t=tiles[ti],cl=CLIMS[climate[ti]],
+      wet=t===T_WATER||t===T_FORD,ground=F[fo]===G[go]&&F[fo+1]===G[go+1]&&F[fo+2]===G[go+2];
+      if(!ground){for(let j=0;j<r;j++)for(let i=0;i<r;i++){const o=((y*r+j)*W2+x*r+i)*4;O[o]=F[fo];O[o+1]=F[fo+1];O[o+2]=F[fo+2];O[o+3]=F[fo+3]}continue}
+      // (its like neighbours, once: LK[(dy+1)*3+dx+1], and where their smoothed colours lie in S)
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const q=(dy+1)*3+dx+1;SI[q]=((y+1+dy)*SW+x+1+dx)*3;LK[q]=inG(mx+dx,my+dy)&&like(go,gi(mx+dx,my+dy))?1:0}
+      for(let j=0;j<r;j++)for(let i=0;i<r;i++){const o=((y*r+j)*W2+x*r+i)*4;
+        // (between its smoothed colour and its like neighbours' toward this fine px)
+        const u=WU[i],v=WV[j],sx=u<0?-1:1,sy=v<0?-1:1,au=Math.abs(u),av=Math.abs(v),qx=4+sx,qy=4+3*sy,qd=4+3*sy+sx,nx=LK[qx],ny=LK[qy],nd=nx&&ny&&LK[qd],
+          s0=SI[4],s1=nx?SI[qx]:s0,s2=ny?SI[qy]:s0,s3=nd?SI[qd]:nx?s1:s2;
+        for(let k=0;k<3;k++)C[k]=(S[s0+k]*(1-au)+S[s1+k]*au)*(1-av)+(S[s2+k]*(1-au)+S[s3+k]*au)*av
+        // (its grain at the fine px)
+        const fx=mx*r+i,fy=my*r+j,n=hs(fx,fy,201);let m=1+(n-.5)*2*(wet?Q.water:Q.grain),lit=0;
+        if(wet){if(!(fy&3)&&hs(fx>>2,fy>>2,203)<Q.shimmer)lit=.18}
+        else if(cl==='desert')m*=1+Q.ripple*Math.sin(fx*.32+fy*.9+wnoise2(fx/30,fy/30,205)*6);
+        else if(cl==='frost'){if(n<Q.glitter)lit=.55}
+        else if(cl==='swamp'){if(n<Q.wet)m*=.86}
+        else if(n<Q.blades)m*=.84;else if(n>1-Q.blades*.5)m*=1.1;
+        for(let k=0;k<3;k++)O[o+k]=Math.max(0,Math.min(255,C[k]*m+(255-C[k]*m)*lit));O[o+3]=255}}
+    if(!(y&7))yield}
+  rec.fcv=mkcv(W2,H2);rec.fcv.getContext('2d').putImageData(out,0,0);rec.fr=r}
 const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 // WorldArt: the painted map, by chunks (key cy*cols+cx).
 //   ensure(): the plan (made when first needed).
@@ -739,21 +779,24 @@ const WorldArt={
   ensure(){return this.plan||(this.plan=worldArtPlan())},
   rect(cx,cy){const X=cx*CHUNK,Y=cy*CHUNK;return[X,Y,Math.min(CHUNK,MW*TILE-X),Math.min(CHUNK,MH*TILE-Y)]},
   // a chunk's painting: its own canvas (one the LRU let go, if one fits), as steps
-  start(cx,cy){const k=cy*this.cols+cx;let j=this.jobs.get(k);if(j)return j;const [X,Y,w,h]=this.rect(cx,cy),i=this.pool.findIndex(c=>c.width===w&&c.height===h),cv=i>=0?this.pool.splice(i,1)[0]:mkcv(w,h),rec={cx,cy,cv};
+  // (fine: how much finer than a game px it is painted (render.js sceneRes); a fine chunk weighs r x r times as much, so fewer kept)
+  get capNow(){return typeof sceneRes==='function'&&sceneRes()>1?Math.max(10,this.cap>>1):this.cap},
+  start(cx,cy){const k=cy*this.cols+cx;let j=this.jobs.get(k);if(j)return j;const [X,Y,w,h]=this.rect(cx,cy),i=this.pool.findIndex(c=>c.width===w&&c.height===h),cv=i>=0?this.pool.splice(i,1)[0]:mkcv(w,h),rec={cx,cy,cv,fine:typeof sceneRes==='function'?sceneRes():1};
     j={k,rec,gen:paintSteps(this.ensure(),X,Y,w,h,cv.getContext('2d', { willReadFrequently: true }),0,0,rec)};this.jobs.set(k,j);return j},
-  done(j){this.jobs.delete(j.k);this.chunks.set(j.k,j.rec);for(const [k,c] of this.chunks){if(this.chunks.size<=this.cap)break;if(this.view.has(k))continue;this.chunks.delete(k);this.recycle(c.cv)}},
+  done(j){this.jobs.delete(j.k);this.chunks.set(j.k,j.rec);for(const [k,c] of this.chunks){if(this.chunks.size<=this.capNow)break;if(this.view.has(k))continue;this.chunks.delete(k);this.recycle(c.cv)}},
   recycle(cv){if(this.pool.length<4)this.pool.push(cv)},
   chunk(cx,cy){const k=cy*this.cols+cx,c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c);return c.cv}const j=this.start(cx,cy);runGen(j.gen);this.done(j);return j.rec.cv},
   draw(g,cam){const W=MW*TILE,H=MH*TILE,x0=Math.max(0,cam.x),y0=Math.max(0,cam.y),x1=Math.min(W,cam.x+VW),y1=Math.min(H,cam.y+VH);if(x1<=x0||y1<=y0)return;
     const c0=Math.floor(x0/CHUNK),r0=Math.floor(y0/CHUNK),c1=Math.floor((x1-1)/CHUNK),r1=Math.floor((y1-1)/CHUNK);this.view=new Set();
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)this.view.add(cy*this.cols+cx);
-    for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const cv=this.chunk(cx,cy),X=cx*CHUNK,Y=cy*CHUNK,sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+cv.width)-sx,sh=Math.min(y1,Y+cv.height)-sy;
-      g.drawImage(cv,sx-X,sy-Y,sw,sh,sx-cam.x,sy-cam.y,sw,sh)}
+    const fr=typeof sceneRes==='function'?sceneRes():1;
+    for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const cv=this.chunk(cx,cy),X=cx*CHUNK,Y=cy*CHUNK,sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+cv.width)-sx,sh=Math.min(y1,Y+cv.height)-sy,c=this.chunks.get(cy*this.cols+cx);
+      if(fr>1&&c&&c.fcv&&c.fr===fr)g.drawImage(c.fcv,(sx-X)*fr,(sy-Y)*fr,sw*fr,sh*fr,sx-cam.x,sy-cam.y,sw,sh);else g.drawImage(cv,sx-X,sy-Y,sw,sh,sx-cam.x,sy-cam.y,sw,sh)}
     // (ahead: the ring round the view, the way it moves first, as many as the cap leaves room for: those painted kept as freshly
     //  used, the rest queued; a job for a chunk no longer queued let go)
     const dx=this.last?Math.sign(cam.x-this.last.x):0,dy=this.last?Math.sign(cam.y-this.last.y):0,mx=(c0+c1)/2,my=(r0+r1)/2,ring=[];this.last={x:cam.x,y:cam.y};
     for(let cy=r0-1;cy<=r1+1;cy++)for(let cx=c0-1;cx<=c1+1;cx++){const k=cy*this.cols+cx;if(cx<0||cy<0||cx>=this.cols||cy>=this.rows||this.view.has(k))continue;ring.push([(cx-mx)*dx+(cy-my)*dy,Math.hypot(cx-mx,cy-my),k,cx,cy])}
-    ring.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);ring.length=Math.min(ring.length,Math.max(0,this.cap-this.view.size));
+    ring.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);ring.length=Math.min(ring.length,Math.max(0,this.capNow-this.view.size));
     for(let i=ring.length-1;i>=0;i--){const k=ring[i][2],c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c)}}
     this.queue=ring.filter(q=>!this.chunks.has(q[2])).map(q=>[q[3],q[4]]);const keep=new Set(this.queue.map(([cx,cy])=>cy*this.cols+cx));
     for(const [k,j] of this.jobs)if(!keep.has(k)){this.jobs.delete(k);this.recycle(j.rec.cv)}
