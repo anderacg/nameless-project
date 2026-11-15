@@ -838,7 +838,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  seed 1's 38 fords; the roads as they were), so the tiles (W1) and all placed after them move; and a field keeps a tile of land
 //  from any water, ford or brook (lots.js FIELD_SHORE, fieldShore: no field tile of seed 1 by water now). W2 held. Proof:
 //  PLACE.fordTown 0 and FIELD_SHORE 0 give every value again. Were W1 a5992687, W3 841fec64, W4 74e5a11d, W5 6fa8216f, W6 b43ed88c, W7 7492cbf5, W8 1ffe8f1a, B2 c315aa9a)
-const EXPECT={W1:'fcc9be4a',W2:'6ba3aa7f',W3:'0ba097f2',W4:'85a7d384',W5:'039fbe31',W6:'55f04aa1',W7:'a0041dfb',W8:'4d549b20',B2:'c916eeb1'};
+// (W5, W6 re-recorded 2026-11-15, on purpose: the owner, "what is that wooden with the line things, can we improve the visuals?
+//  Give it more detail": every ferry painted in detail (gfx/worldart.js FERRY_ART, ferryArt: planked landings on beams and piles,
+//  a tie post at each, the rope sagging between them with its shadow, a log raft with battens, a rail, its block on the rope and a
+//  crate or a barrel), so the painted world and its picture change. Proof: FERRY_ART.on false gives both again (all 16 hold). Were
+//  W5 039fbe31, W6 55f04aa1)
+const EXPECT={W1:'fcc9be4a',W2:'6ba3aa7f',W3:'0ba097f2',W4:'85a7d384',W5:'2ca5f850',W6:'b590379c',W7:'a0041dfb',W8:'4d549b20',B2:'c916eeb1'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

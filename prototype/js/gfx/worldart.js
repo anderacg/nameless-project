@@ -547,6 +547,48 @@ function roadPal(cv,o){const [lo,hi]=GENART.rblend,G=ROAD_RGB.grass,DG=DIRT.gras
 const BRIDGE_ART={on:true,
   stone:{shade:'#24323e',dark:'#121c26',gleam:'#3a5266',foam:'#e4eef4',arch:10,pier:['#b4ac9a','#7e7666'],deck:['#a69e8e','#a29a8a','#aaa292','#9e9686'],joint:'#928a7a',worn:'#b4ac9c',cope:['#d0c8b6','#7e7666','#544e46',5]},
   wood:{shade:'#22384c',ripple:'#8eb4cc',pile:8,plank:['#8a6038','#906640','#845c36','#94683e','#88603a'],gap:'#664426',nail:'#5a3c22',knot:'#704c2c',worn:'#9c7248',rail:['#b08458','#5a3c22'],post:['#c09464','#2a1a10'],postAt:6}};
+/* a ferry in detail (ferryArt; the owner, 2026-11-15: "what is that wooden with the line things, can we improve the visuals? Give
+   it more detail"): a landing out from each bank (len px long, its last 3 px on the shore) of planks across it (plank's tones, a
+   dark gap between, a nail here and there, a worn track), a beam each side (lit, dark), its shade on the water, two piles each
+   side standing in the water with a ripple at their feet, and a tall post at its tip (tie px high) the rope is made fast to; the
+   rope across from post top to post top, twisted (rope: lit, dark, a dark twist every twist px), sagging sag px at its middle
+   (east-west; seen from above, a north-south one runs straight), its shadow on the water below it (shadow px across, the posts'
+   height down), broken; the raft gap px out from one landing (raft: [long, wide] px) of logs along it (log's tones, a seam between,
+   pale ends), two battens across, a rail on its upstream side, its block on the rope (a post up to it), a crate or a barrel on
+   deck, its shade and ripples at its ends. Posts stand up the screen whichever way the ferry runs.
+   on false: as before */
+const FERRY_ART={on:true,len:10,shade:'#22384c',ripple:'#8eb4cc',plank:['#8a6038','#906640','#845c36','#94683e','#88603a'],gap:'#5a3c22',nail:'#3e2818',worn:'#9c7248',
+  beam:['#b08458','#3e2818'],post:['#c09464','#6a4628','#2a1a10'],pile:2,tie:5,rope:['#e0d0a0','#a8925e'],twist:3,sag:2,shadow:1,ropeShade:'#2e5270',
+  gap0:3,raft:[13,10],log:['#86592f','#94683e','#7e5530','#9a6e44'],seam:'#3e2818',end:'#c8a274',batten:'#5a3c22',rail:['#c09464','#4a3018'],
+  crate:['#b8915e','#6a4a2a','#dcb880'],barrel:['#7a5432','#3e2818','#a8a49a']};
+function ferryArt(r,R,c,hor,mid,dir){const F=FERRY_ART,Q=(col,a,e,v0,v1)=>{if(e>a&&v1>v0)R(col,a,e,v0,v1)},h=(a,b,n)=>hs(a,b,c.i*5+n),pk=(L,a,b,n)=>L[Math.floor(h(a,b,n)*L.length)],P=(col,u,v)=>Q(col,u,u+1,v,v+1),
+    S=(u,v)=>hor?[u,v]:[v,u],
+    // (a post at (u, v) standing ht px up the screen: lit top, its body, a ripple at its foot (wet))
+    post=(u,v,ht,wet)=>{const [x,y]=S(u,v);r(F.post[2],x,y-ht+1,1,ht);r(F.post[1],x,y-ht+2,1,Math.max(0,ht-3));r(F.post[0],x,y-ht+1,1,1);if(wet)r(F.ripple,x+(h(x,y,14)<.5?-1:1),y+1,1,1);return [x,y-ht+1]},tops=[];
+  // (each landing: d the way out over the water; its shade, planks, beams, piles and tie post)
+  for(const [t,d] of [[c.i,dir],[c.j,-dir]]){const e=hor?t%MW:(t/MW|0),u0=d>0?e*TILE+TILE-3:e*TILE+3-F.len,u1=u0+F.len,w0=d>0?u0+3:u0,w1=d>0?u1:u1-3,out=d>0?u1-1:u0,pin=out-d*(F.len-6);
+    Q(F.shade,w0+(d>0?1:0),w1-(d>0?0:1),mid+3,mid+5);
+    for(let u=u0,k=0;u<u1;u+=3,k++){const a=h(k,t,1)<.2?1:0,b=h(k,t,2)<.2?1:0,x=Math.min(u+2,u1);Q(pk(F.plank,k,t,3),u,x,mid-3+a,mid+3-b);Q(F.gap,x,Math.min(x+1,u1),mid-3,mid+3);
+      if(h(k,t,4)<.25)P(F.nail,u,h(k,t,9)<.5?mid-2:mid+1)}
+    for(let u=u0+1;u<u1-1;u++)if(h(u,t,5)<.3)P(F.worn,u,h(u,t,6)<.5?mid-1:mid);
+    Q(F.beam[0],u0,u1,mid-4,mid-3);Q(F.beam[1],u0,u1,mid+3,mid+4);
+    for(const u of [out,pin])for(const v of [mid-4,mid+3])post(u,v,F.pile,true);
+    tops.push(post(out+d,mid-5,F.tie,true))}
+  // (the rope from post top to post top: its sag, its twist, its broken shadow on the water below)
+  const [A,B]=tops,n=Math.max(Math.abs(B[0]-A[0]),Math.abs(B[1]-A[1])),at=k=>[Math.round(A[0]+(B[0]-A[0])*k/n),Math.round(A[1]+(B[1]-A[1])*k/n+(hor?Math.sin(Math.PI*k/n)*F.sag:0))];
+  for(let k=1;k<n;k++){const [x,y]=at(k);if(h(k,1,7)<.6)r(F.ropeShade,x+F.shadow,y+F.tie,1,1);r(k%F.twist?F.rope[0]:F.rope[1],x,y,1,1)}
+  // (the raft out from the first landing: shade, logs, battens, rail, its load, the pole, its block on the rope)
+  const [W,D]=F.raft,t0=dir>0?(hor?c.i%MW:c.i/MW|0)*TILE+TILE-3+F.len:(hor?c.i%MW:c.i/MW|0)*TILE+3-F.len,rf=dir>0?t0+F.gap0:t0-F.gap0-W,top=mid-4,bot=top+D;
+  Q(F.shade,rf+1,rf+W+1,bot,bot+2);Q(F.seam,rf,rf+W,top,bot);
+  for(let v=top+1,k=0;v<bot-1;v+=3,k++){const col=pk(F.log,k,c.i,8),s0=h(k,c.i,9)<.5?1:0,s1=h(k,c.i,10)<.5?1:0;Q(col,rf+s0,rf+W-s1,v,v+2);Q(F.end,rf+s0,rf+s0+1,v,v+2);Q(F.end,rf+W-1-s1,rf+W-s1,v,v+2)}
+  for(const u of [rf+2,rf+W-3])Q(F.batten,u,u+1,top+1,bot-1);
+  Q(F.rail[0],rf,rf+W,top,top+1);for(let u=rf;u<rf+W;u+=4)P(F.rail[1],u,top+1);
+  const cu=rf+3+Math.floor(h(1,c.i,11)*(W-8));if(h(2,c.i,12)<.5){Q(F.crate[1],cu,cu+3,top+2,top+5);Q(F.crate[0],cu,cu+3,top+2,top+4);P(F.crate[2],cu,top+2);P(F.crate[1],cu+1,top+3)}
+  else{Q(F.barrel[1],cu,cu+2,top+2,top+5);Q(F.barrel[0],cu,cu+2,top+2,top+4);P(F.barrel[2],cu,top+3);P(F.barrel[2],cu+1,top+3)}
+  for(const u of [rf-1,rf+W])for(const v of [top+2,bot-3])if(h(u,v,13)<.7)P(F.ripple,u,v);
+  const bu=rf+(W>>1),[bx,by]=S(bu,mid-5),ry=at(Math.round(n*(hor?(bx-A[0])/(B[0]-A[0]||1):(by-F.tie+1-A[1])/(B[1]-A[1]||1))))[1];
+  if(hor)r(F.post[2],bx,ry,1,by-ry+1);else post(bu,mid-5,F.tie,true);r(F.post[0],bx,hor?ry:by-F.tie+1,1,1)
+}
 // a crossing over the window (OVER): a bridge's deck from bank to bank (stone: grey courses, parapets, the arches' shade on the
 // water below; wood: planks, rails, posts) on an abutment at each end (abut: the owner's fourth play-test, no wider than the deck), a ford's rocks (a few, scattered over its shallows, never in a row: 1 to 3 px, lit,
 // a dark waterline under each and foam on its downstream side; capped with snow in the frost, mossy in the swamp) and a swamp
@@ -606,6 +648,7 @@ function artGenXing(P,r,c){const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/
     // (the swamp's: reeds at the shallows' edges, in the water and on the bank)
     if(cl==='swamp'){const [c0,c1]=REED.swamp;for(let q=0;q<10;q++){const u=lo*TILE+4+h(q*3+200)*(span+8),v=mid+(h(q*3+201)<.5?-1:1)*(GENART.ford.w+2+h(q*3+202)*5),x=Math.round(hor?u:v),y=Math.round(hor?v:u),sa=fordAt(P,f,x,y);
       if(sa<.02||sa>.45||P.clear.at(x,y))continue;r(c0,x,y-2,1,3);r(c1,x,y-2,1,1);if(h(q*3+203)<.6){r(c0,x+1,y-1,1,2);r(c1,x+1,y-1,1,1)}}}}
+  else if(FERRY_ART.on)ferryArt(r,R,c,hor,mid,hi===(hor?bx:by)?1:-1);
   else{const dir=hi===(hor?bx:by)?1:-1,ends=[[c.i,dir],[c.j,-dir]],tip=[];
     for(const [t,d] of ends){const e=hor?t%MW:(t/MW|0),u0=d>0?e*TILE+TILE-3:e*TILE+3-9,u1=u0+9;R('#7a5432',u0,u1,mid-3,mid+3);for(let u=u0;u<u1;u+=2)R('#5a3c22',u,u+1,mid-3,mid+3);
       R('#2a1a10',d>0?u1-1:u0,d>0?u1:u0+1,mid-4,mid-3);R('#2a1a10',d>0?u1-1:u0,d>0?u1:u0+1,mid+3,mid+5);tip.push(d>0?u1:u0)}
