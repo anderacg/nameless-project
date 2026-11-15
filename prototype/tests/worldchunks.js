@@ -275,14 +275,13 @@ try{
    finally{t.tiles.set(T0);delete t.WM.oases;delete t.WM.ponds;if(t.WM!==W0)t.useWorld(W0);WA.invalidate()}}}
  // ---- the prefetch at Large and Huge: the camera walks across the middle of each world at 8x's pace, the painter
  //      given 4 ms a frame; the chunks that come into view were painted before they did, the LRU held at its cap
- // ---- the finer picture (doc/OPEN_WORLD_DESIGN.md phase 1 step 2): a chunk painted fine (r 2) keeps its game-px picture and has one
- //      twice its size, what lies over the ground there its own game px 2 x 2, the ground itself made finer, its fine px about its colour
+ // ---- the finer terrain (doc/OPEN_WORLD_DESIGN.md phases 1 and 2: gfx/worldterrain.js): a chunk painted fine (r 2) keeps its game-px
+ //      picture and has one twice its size, the land's nature on it (props by their feet) and the grass's clumps
  {const [X,Y,w,h]=WA.rect(5,4),cv=document.createElement('canvas');cv.width=w;cv.height=h;const rec={fine:2},g=cv.getContext('2d',{willReadFrequently:true});
-  t.runGen(t.paintSteps(WA.ensure(),X,Y,w,h,g,0,0,rec));const F=img(cv,0,0,w,h),f=rec.fcv,good=!!f&&f.width===2*w&&f.height===2*h,D=good?img(f,0,0,2*w,2*h):null;let kept=0,fine=0,near=0;
-  if(D)for(let y=0;y<h;y+=3)for(let x=0;x<w;x+=3){const o=(y*w+x)*4,q=[0,1].flatMap(j=>[0,1].map(i=>((2*y+j)*2*w+2*x+i)*4));
-    if(q.every(p=>D[p]===F[o]&&D[p+1]===F[o+1]&&D[p+2]===F[o+2])){kept++;continue}fine++;let d=0;for(const p of q)for(let k=0;k<3;k++)d+=D[p+k];if(Math.abs(d/4-(F[o]+F[o+1]+F[o+2]))<=60)near++}
+  t.runGen(t.paintSteps(WA.ensure(),X,Y,w,h,g,0,0,rec));const f=rec.fcv,good=!!f&&f.width===2*w&&f.height===2*h,P=rec.props||[],Gr=rec.grass;
   ok(good,'a chunk painted fine has its picture and one twice its size ('+(f?f.width+' x '+f.height:'none')+')');
-  ok(kept>0&&fine>0&&near>=fine*.97,'its fine picture: of the px sampled, '+kept+' kept as they were (what lies over the ground), '+fine+' made finer, '+near+' of them about their own colour')}
+  ok(P.length>0&&P.every((p,i)=>!i||P[i-1].y<=p.y)&&P.every(p=>p.x>=X&&p.x<X+w&&p.y>=Y&&p.y<Y+h),'its nature: '+P.length+' things standing on it, by their feet, all on it ('+[...new Set(P.map(p=>p.kind))].join(', ')+')');
+  ok(Gr&&Gr.n>0,'its grass: '+(Gr?Gr.n:0)+' clumps')}
  {const W0=t.WM;
   try{for(const [name,s] of [['Large',{preset:'large',seed:'1'}],['Huge',{preset:'huge',seed:'1'}]]){const q=performance.now(),m=t.genWorld(s).map,gm=performance.now()-q;t.useWorld(m);
     const W=t.MW*TILE,H=t.MH*TILE,VW=t.VW,VH=t.VH,g=t.ctx,cam={x:0,y:Math.round(H/2-VH/2)},v=CS/420,cols=WA.cols;WA.cap=cap0;WA.slice=4;WA.last=null;let met=0,ready=0,over=0,frames=0,late=[];

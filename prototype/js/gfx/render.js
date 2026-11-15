@@ -247,6 +247,7 @@ function drawWorld(){
   try{
   WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
   drawEnv(cam,V,0);drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V);
+  terrainEnts(ents,cam);// (the finer terrain's grass, laid now, and its nature among the buildings: worldterrain.js)
   // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
   // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
   // the road (road.js) and fights

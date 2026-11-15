@@ -409,7 +409,7 @@ const WNEAR=[[0,0],[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
 function wnear(K,tx,ty,no){for(const [a,b] of WNEAR){const u=tx+a,v=ty+b;if(u>=0&&v>=0&&u<MW&&v<MH&&K[v*MW+u]&&K[v*MW+u]!==no)return v*MW+u}return no?wnear(K,tx,ty):-1}
 // the ground of the window x0, y0, w×h (px) into D, its RGBA, a row of pixels a step; only its pixels in I painted, what lies round
 // them read alike (paintSteps: the whole window, its apron too, since a range's foot and rim read the ground beside them)
-function* artGenGround(P,D,x0,y0,w,h,I){
+function* artGenGround(P,D,x0,y0,w,h,I,keep){
   const MG=GENART.margin,X0=x0-MG,Y0=y0-MG,RW=w+2*MG,RH=h+2*MG,M=new Uint8Array(RW*RH),N9=new Uint8Array(9),K=P.wk,Rv=WM.river,G=GENART;
   // (a tile whose 8 neighbours are all its kind is that kind to its every pixel: only the tiles at an edge are worked a pixel at a time)
   const kd=(u,v)=>u<0||v<0||u>=MW||v>=MH||K[v*MW+u]>0?1:0;
@@ -418,6 +418,7 @@ function* artGenGround(P,D,x0,y0,w,h,I){
       if(!same)wnb(K,tx,ty,N9);for(let y=ya;y<yb;y++){const o=(y-Y0)*RW-X0;if(same)M.fill(k,o+xa,o+xb);else for(let x=xa;x<xb;x++)M[o+x]=wpxN(N9,x,y)}}
     yield}
   const DT=yield* wdist(M,RW,RH);yield;
+  if(keep)Object.assign(keep,{M,DT,X0,Y0,RW,RH});// (the water mask and distances, for the finer terrain: worldterrain.js terrainChunk)
   const tx0=x0>>4,ty0=y0>>4,tx1=(x0+w-1)>>4,ty1=(y0+h-1)>>4,LW=tx1-tx0+2,LG=new Float32Array(LW*(ty1-ty0+2)),DG=new Float32Array(LW*(ty1-ty0+2)),dep=P.dep;
   for(let y=ty0;y<=ty1+1;y++)for(let x=tx0;x<=tx1+1;x++){const k=(y-ty0)*LW+x-tx0;LG[k]=(fbm(x/4.5,y/4.5,77)-.5)*2;
     let s=0,n=0;for(const [a,b] of [[0,0],[-1,0],[0,-1],[-1,-1]]){const tx=x+a,ty=y+b;if(tx<0||ty<0||tx>=MW||ty>=MH)continue;s+=Math.min(4,dep[ty*MW+tx]===9?4:dep[ty*MW+tx]);n++}DG[k]=n?s/n:4}
@@ -696,58 +697,23 @@ const OVER=[
 // counts of what it painted (and how long it took) into rec
 function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
   const t0=performance.now(),Wp=MW*TILE,Hp=MH*TILE,AP=PX.WN_APRON,x0=Math.max(0,X-AP),y0=Math.max(0,Y-AP),ww=Math.min(Wp,X+w+AP)-x0,wh=Math.min(Hp,Y+h+AP)-y0,img=new ImageData(ww,wh),D=img.data,NT=NATURE_TOUCH;
-  yield* artGenGround(P,D,x0,y0,ww,wh,{x:x0,y:y0,w:ww,h:wh});
-  const G0=rec.fine>1?new Uint8ClampedArray(D):null;// (the ground alone, for the chunk's finer picture: fineChunk)
+  // (painted finer (rec.fine: worldterrain.js): the ground alone and its water kept, the land's old nature left out (the lab's terrain
+  //  and nature stand in its place), the finer picture made last)
+  const KP=rec.fine>1?{}:null;
+  yield* artGenGround(P,D,x0,y0,ww,wh,{x:x0,y:y0,w:ww,h:wh},KP);
+  const G0=KP?new Uint8ClampedArray(D):null;
   for(const t of P.tramples)trample(P,D,x0,y0,ww,wh,t);
   yield* townGround(P,D,x0,y0,ww,wh);
   const road=yield* artGenRoads(P,D,x0,y0,ww,wh);
   const TO=NT?new Uint8Array(ww*wh):null;
-  rec.n=yield* PX.worldNatureSteps(P.nature,{x:x0,y:y0,w:ww,h:wh,inner:{x:X,y:Y,w,h},road},D,TO);
+  rec.n=KP?{trees:0,fen:0,hills:0,peaks:0,decor:0,flat:0,rock:0,ms:0,tm:{},stand:{X:x0,Y:y0,w:ww,h:wh,cell:32,C:1,R:1,at:new Int32Array(2),L:[],E:[]}}:yield* PX.worldNatureSteps(P.nature,{x:x0,y:y0,w:ww,h:wh,inner:{x:X,y:Y,w,h},road},D,TO);
   if(TO)for(let y=Y;y<Y+h;y++)NT.set(TO.subarray((y-y0)*ww+X-x0,(y-y0)*ww+X-x0+w),y*Wp+X);
   g.putImageData(img,ox+x0-X,oy+y0-Y,X-x0,Y-y0,w,h);
   const tx0=Math.max(0,(X>>4)-1),ty0=Math.max(0,(Y>>4)-1),tx1=Math.min(MW-1,((X+w-1)>>4)+1),ty1=Math.min(MH-1,((Y+h-1)>>4)+1),r=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x,y,w||1,h||1)};
   for(const pass of OVER){yield;g.save();g.beginPath();g.rect(ox,oy,w,h);g.clip();g.translate(ox-X,oy-Y);pass(P,r,tx0,ty0,tx1,ty1);g.restore()}
-  if(G0){yield;yield* fineChunk(rec,G0,g.getImageData(ox,oy,w,h).data,X,Y,w,h,x0,y0,ww,wh,rec.fine)}
+  if(KP){yield;yield* terrainChunk(rec,P,g.getImageData(ox,oy,w,h).data,G0,KP,X,Y,w,h,x0,y0,ww,rec.fine)}
   rec.ms=performance.now()-t0;
 }
-/* a chunk's finer picture (doc/OPEN_WORLD_DESIGN.md phase 1 step 2; WORLD_VIEW.fine: r px a game px). What lies over the ground (roads,
-   yards, trampled patches, the land's nature, the passes over it) is its game px, r x r. The ground and the water themselves (where the
-   picture is still the ground's own) are made finer: each px's colour smoothed among the like px round it (none across a shore or an
-   edge: FINE_GROUND.like), taken between it and its like neighbours at each fine px, then a grain of its own at the fine px (by its
-   tile and climate: the land's, the water's shimmer, the grass's darker blades, the desert's ripples, the frost's glitter, the
-   swamp's wet). Kept as rec.fcv (rec.fr its r) beside the game-px picture, which the whole map, the tests and the depth read */
-const FINE_GROUND={like:54,grain:.06,water:.025,blades:.05,ripple:.045,glitter:.012,wet:.05,shimmer:.09};
-function* fineChunk(rec,G,F,X,Y,w,h,x0,y0,ww,wh,r){
-  const Q=FINE_GROUND,W2=w*r,H2=h*r,out=new ImageData(W2,H2),O=out.data,SW=w+2,SH=h+2,S=new Float32Array(SW*SH*3),gi=(x,y)=>((y-y0)*ww+(x-x0))*4,
-    inG=(x,y)=>x>=x0&&y>=y0&&x<x0+ww&&y<y0+wh,like=(a,b)=>Math.abs(G[a]-G[b])+Math.abs(G[a+1]-G[b+1])+Math.abs(G[a+2]-G[b+2])<=Q.like;
-  // (each px's colour smoothed among the like px round it)
-  for(let j=0;j<SH;j++){const y=Y-1+j;for(let i=0;i<SW;i++){const x=X-1+i;if(!inG(x,y))continue;const o=gi(x,y);let n=0,a=0,b=0,c=0;
-      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!inG(x+dx,y+dy))continue;const q=gi(x+dx,y+dy);if(!like(o,q))continue;a+=G[q];b+=G[q+1];c+=G[q+2];n++}
-      const s=(j*SW+i)*3;S[s]=a/n;S[s+1]=b/n;S[s+2]=c/n}
-    if(!(j&15))yield}
-  // (a fine px's weights toward its neighbours: the same for every px, by where it lies in it)
-  const C=[0,0,0],WU=[],WV=[];for(let i=0;i<r;i++){WU.push((i+.5)/r-.5)}for(let j=0;j<r;j++)WV.push((j+.5)/r-.5);
-  const LK=new Int8Array(9),SI=new Int32Array(9);
-  for(let y=0;y<h;y++){for(let x=0;x<w;x++){const fo=(y*w+x)*4,mx=X+x,my=Y+y,go=gi(mx,my),ti=(my>>4)*MW+(mx>>4),t=tiles[ti],cl=CLIMS[climate[ti]],
-      wet=t===T_WATER||t===T_FORD,ground=F[fo]===G[go]&&F[fo+1]===G[go+1]&&F[fo+2]===G[go+2];
-      if(!ground){for(let j=0;j<r;j++)for(let i=0;i<r;i++){const o=((y*r+j)*W2+x*r+i)*4;O[o]=F[fo];O[o+1]=F[fo+1];O[o+2]=F[fo+2];O[o+3]=F[fo+3]}continue}
-      // (its like neighbours, once: LK[(dy+1)*3+dx+1], and where their smoothed colours lie in S)
-      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const q=(dy+1)*3+dx+1;SI[q]=((y+1+dy)*SW+x+1+dx)*3;LK[q]=inG(mx+dx,my+dy)&&like(go,gi(mx+dx,my+dy))?1:0}
-      for(let j=0;j<r;j++)for(let i=0;i<r;i++){const o=((y*r+j)*W2+x*r+i)*4;
-        // (between its smoothed colour and its like neighbours' toward this fine px)
-        const u=WU[i],v=WV[j],sx=u<0?-1:1,sy=v<0?-1:1,au=Math.abs(u),av=Math.abs(v),qx=4+sx,qy=4+3*sy,qd=4+3*sy+sx,nx=LK[qx],ny=LK[qy],nd=nx&&ny&&LK[qd],
-          s0=SI[4],s1=nx?SI[qx]:s0,s2=ny?SI[qy]:s0,s3=nd?SI[qd]:nx?s1:s2;
-        for(let k=0;k<3;k++)C[k]=(S[s0+k]*(1-au)+S[s1+k]*au)*(1-av)+(S[s2+k]*(1-au)+S[s3+k]*au)*av
-        // (its grain at the fine px)
-        const fx=mx*r+i,fy=my*r+j,n=hs(fx,fy,201);let m=1+(n-.5)*2*(wet?Q.water:Q.grain),lit=0;
-        if(wet){if(!(fy&3)&&hs(fx>>2,fy>>2,203)<Q.shimmer)lit=.18}
-        else if(cl==='desert')m*=1+Q.ripple*Math.sin(fx*.32+fy*.9+wnoise2(fx/30,fy/30,205)*6);
-        else if(cl==='frost'){if(n<Q.glitter)lit=.55}
-        else if(cl==='swamp'){if(n<Q.wet)m*=.86}
-        else if(n<Q.blades)m*=.84;else if(n>1-Q.blades*.5)m*=1.1;
-        for(let k=0;k<3;k++)O[o+k]=Math.max(0,Math.min(255,C[k]*m+(255-C[k]*m)*lit));O[o+3]=255}}
-    if(!(y&7))yield}
-  rec.fcv=mkcv(W2,H2);rec.fcv.getContext('2d').putImageData(out,0,0);rec.fr=r}
 const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 // WorldArt: the painted map, by chunks (key cy*cols+cx).
 //   ensure(): the plan (made when first needed).

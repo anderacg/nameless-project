@@ -7,6 +7,32 @@
    screen has that many (render.js sceneRes): a soldier then shows at his own 17 px, a house at 64. The simulation keeps its px.
    start: how many times closer than the whole-screen fit a desktop's map starts (core.js fitScreen; a phone's starts close as ever) */
 const WORLD_VIEW={fine:2,start:2};
+/* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): lh fine px of
+   face a level (the lab's 8); the land's levels between the tiles' (worldgen.js reliefOf) roughened by detail levels (noise of sc
+   fine px; a mountain's mount times more); steps: stepped (a terrace, its face hanging over the land south of it) where its slope
+   (levels a game px) is from or more, wholly by to; a face only where it steps min levels or more at once; gentle ground is shaded; never within flat game px of a road, a
+   holding's lot or a ford. Rock shows on land from rock levels up, snow from snow (each by noise of a level or two); the shore:
+   wet sand within wet fine px of the sea, the beach within sand, dunes within dune (on land below a level); a river's bank within
+   bank. Water: depth (levels) a tile's depth step (the plan's dep 0-9), the bed showing to clear levels */
+/* the world's nature drawn finer (gfx/worldterrain.js terrainProps; the world lab's, engine/worldflora.js): per climate its look (the
+   flora's rock tones, bush leaves, moss, snow on everything), its trees by where they stand (lowland, waterside: a river within a
+   tile; hills; mountain; village: a holding's lot within two tiles; each mix by weight) and the chance of each thing a cell of step
+   fine px by the ground: woods (a forest tile; trees at woods, thinner at its edge), open ground (grass and meadow), hills, the
+   mountains, the banks; grass: a clump's chance by the ground and the clumps' kinds (the flora's GRASS_KINDS) */
+const WORLD_FLORA={step:9,
+  look:{grass:{rock:'grey',bush:'oak',snow:false,moss:1},desert:{rock:'sand',bush:'dry',snow:false,moss:0},frost:{rock:'cold',bush:'dark',snow:true,moss:0},swamp:{rock:'grey',bush:'dark',snow:false,moss:1.6}},
+  trees:{grass:{lowland:{oak:5,beech:3,birch:2.5,ash:2,maple:.6,poplar:.4,dead:.25},waterside:{willow:4,alder:3,birch:1,poplar:1},hills:{pine:4,fir:3,birch:1.5,oak:1,dead:.3},mountain:{fir:4,spruce:4,pine:1,dead:.5},village:{apple:3,oak:1,poplar:1}},
+    desert:{lowland:{acacia:4,dead:2,palm:.5},waterside:{palm:6,acacia:1},hills:{acacia:2,dead:2},mountain:{dead:1,acacia:1},village:{palm:4,acacia:1}},
+    frost:{lowland:{spruce:4,fir:3,winterbirch:2,dead:.6},waterside:{winterbirch:3,spruce:2},hills:{spruce:4,fir:2,dead:.4},mountain:{spruce:3,fir:2,dead:1},village:{spruce:2,winterbirch:1}},
+    swamp:{lowland:{bogtree:4,alder:3,willow:2,dead:2},waterside:{willow:3,bogtree:3,alder:1},hills:{alder:2,birch:2,oak:1,dead:1},mountain:{fir:2,spruce:1,birch:1,dead:1},village:{willow:1,alder:1}}},
+  chance:{grass:{woods:.6,open:{tree:.012,bush:.012,boulder:.002,stone:.006,flowers:.02,fern:0},hills:{tree:.05,bush:.02,boulder:.012,stone:.02},mountain:{tree:.02,boulder:.03,stone:.05},woods2:{bush:.08,log:.012,stump:.008,fern:.06,mushroom:.014},bank:{cattail:.08,stone:.04}},
+    desert:{woods:.25,open:{tree:.01,bush:.006,boulder:.004,stone:.014,agave:.012,bones:.002},hills:{tree:.02,boulder:.02,stone:.03,agave:.01},mountain:{boulder:.03,stone:.05},woods2:{bush:.07,agave:.02},bank:{cattail:.05}},
+    frost:{woods:.6,open:{tree:.01,bush:.008,boulder:.003,stone:.006},hills:{tree:.05,bush:.01,boulder:.012,stone:.02},mountain:{tree:.015,boulder:.03,stone:.05},woods2:{bush:.05,log:.01,stump:.01},bank:{cattail:.03,stone:.03}},
+    swamp:{woods:.5,open:{tree:.02,bush:.02,stone:.0015,flowers:.006},hills:{tree:.05,bush:.02,boulder:.004},mountain:{tree:.02,boulder:.02,stone:.03},woods2:{bush:.06,log:.025,stump:.016,fern:.06,mushroom:.035},bank:{cattail:.2}}},
+  grass:{step:6,chance:{grass:{open:.38,meadow:.55,woods:.12,dune:.3},desert:{open:.05,meadow:.015,woods:.2,dune:.12},frost:{open:.3,meadow:.03,woods:.02,dune:.12},swamp:{open:.5,meadow:.3,woods:.22,dune:.35}},
+    kinds:{grass:{open:'grass',meadow:'meadow',woods:'wood',dune:'dune'},desert:{open:'dry',meadow:'dry',woods:'dry',dune:'dune'},frost:{open:'frost',meadow:'frost',woods:'frost',dune:'frost'},swamp:{open:'marsh',meadow:'marsh',woods:'wood',dune:'marsh'}},
+    patch:38,wind:1,gust:[90,.65],push:12,lean:3,spring:1.4}};
+const WORLD_TERRAIN={lh:8,detail:.7,sc:46,mount:2.4,steps:{from:.2,to:.34,min:.45},flat:6,rock:13,snow:19,wet:3,sand:9,dune:18,bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a

@@ -92,6 +92,19 @@ const GEN_FOREST={base:[.45,.35,0,.5],wood:.55,deep:.75,deepN:300,sparse:.4,bank
    roads and camps (stage 9b), hold tiles from a holding and site tiles from a camp, so none of them is placed otherwise for them. Never in
    the swamp (no band camps there) nor round a tile within brook tiles of running water (a river, a brook) */
 const GEN_GLADE={min:80,every:420,apart:14,edge:4,r:[3.6,5],rough:.3,scale:3,ring:1.2,brook:2,thin:3,hold:16,site:8};
+/* 16. relief (doc/OPEN_WORLD_DESIGN.md phase 2; the owner, 2026-11-15: "adding height, sea level that labs can do, and migrate them
+   into the world generator"): each tile's height in levels (a level some 0.85 m; the world map draws a level WORLD_TERRAIN.lh fine
+   px of face where the land steps down): the sea's water 0, a lake's or a river's at its own elevation; the land per levels of
+   elev over the sea's 64 (per), a mountain raised mount levels more and roughened by its ridges (ridge, by a hash of the map's
+   seed and the tile: no Math.random); a road or a ford smoothed smooth times into the land round it, so a way never meets a step.
+   Pure (reliefOf: the same from any map, a saved one too); the stage keeps it as the map's lv */
+const GEN_RELIEF={per:11,mount:3,ridge:3,smooth:2};
+function reliefOf(m){const W=m.w,H=m.h,N=W*H,lv=new Float32Array(N),E=m.elev,K=m.kind,R=GEN_RELIEF,sd=(m.seedNum|0)+7919,
+    hu=(x,y)=>{let h=Math.imul(x,374761393)+Math.imul(y,668265263)+Math.imul(sd,1274126177);h=Math.imul(h^h>>>13,1274126177);return((h^h>>>16)>>>0)/4294967296};
+  for(let i=0;i<N;i++){const k=K[i],x=i%W,y=(i/W)|0;let v=Math.max(0,(E[i]-64)/R.per);if(k===T_MOUNT)v+=R.mount+R.ridge*(hu(x,y)*.6+hu(x>>1,y>>1)*.4);lv[i]=v}
+  for(let it=0;it<R.smooth;it++)for(let i=0;i<N;i++){const k=K[i];if(k!==T_ROAD&&k!==T_FORD)continue;const x=i%W,y=(i/W)|0;let s=0,n=0;
+    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(K[j]===T_WATER||K[j]===T_MOUNT)continue;s+=lv[j];n++}if(n)lv[i]=s/n}
+  return lv}
 // the stages, in order (§15.2.1): id, the loading label (§5.2), w (its weight on the bar), run, and its check (§8.14), if any
 const GEN_STAGES=[
   {id:'land',label:'Raising the land',w:80,run:g=>genLand(g),check:g=>{const n=g.work.land/(g.map.w*g.map.h);return n<.6||n>.8?'land '+(n*100).toFixed(0)+'%':null}},
@@ -107,6 +120,7 @@ const GEN_STAGES=[
   {id:'roads',label:'Laying roads',w:500,run:g=>genRoads(g)},
   {id:'sites',label:'Placing camps',w:50,run:g=>genCamps(g)},
   {id:'glades',label:'Glades in the woods',w:20,run:g=>genGladeStage(g)},
+  {id:'relief',label:'Shaping the land',w:20,run:function*(g){g.map.lv=reliefOf(g.map)}},
   {id:'graph',label:'Charting the ways',w:150,run:g=>genGraph(g)}
 ];
 function genWorldSteps(settings){
