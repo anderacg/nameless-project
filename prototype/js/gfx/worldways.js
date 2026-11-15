@@ -19,11 +19,18 @@ function waysOf(P){if(P.ways)return P.ways;
   const MO=[],V=WORLD_WAYS.river,Rv=WM.river,LV=WM.lv||(WM.lv=reliefOf(WM)),N=MW*MH,X=[],Y=[],HW=[],LL=[],DP=[],SP=[],SA=[];
   // (a curve through pts ([x, y, hw, lv, dp, slack]): its corners cut three times (Chaikin's way, the ends kept; each new point
   //  keeps its nearer parent's level, so the surface steps where the tiles' did), then wandering off its line by its slack)
-  const curve=(pts,id)=>{let p=pts;if(p.length<2)return;
+  //  A river's (big) line is simplified first (Douglas-Peucker, within simp of a tile of its tiles' middles), so its tiles' stairs on a
+  //  slant never wiggle it, and it wanders in long, uneven bends (meanderL px, their reach varying along it, some reaches nearly
+  //  straight) (the owner, 2026-11-15: "avoid having so many s curve one after another, make it like natural river")
+  const simplify=(pts,eps)=>{const n=pts.length;if(n<3)return pts;const keep=new Uint8Array(n);keep[0]=keep[n-1]=1;const st=[[0,n-1]];
+    while(st.length){const [a,b]=st.pop(),ax=pts[a][0],ay=pts[a][1],dx=pts[b][0]-ax,dy=pts[b][1]-ay,l=Math.hypot(dx,dy)||1;let m=-1,md=eps;
+      for(let k=a+1;k<b;k++){const d=Math.abs((pts[k][0]-ax)*dy-(pts[k][1]-ay)*dx)/l;if(d>md){md=d;m=k}}if(m>=0){keep[m]=1;st.push([a,m],[m,b])}}
+    return pts.filter((_,k)=>keep[k])};
+  const curve=(pts,id,big)=>{let p=big?simplify(pts,V.simp*TILE):pts;if(p.length<2)return;
     for(let it=0;it<3;it++){const o=[p[0]];for(let k=0;k+1<p.length;k++){const a=p[k],b=p[k+1];o.push(a.map((v,j)=>j===3?a[3]:v*.75+b[j]*.25),a.map((v,j)=>j===3?b[3]:v*.25+b[j]*.75))}o.push(p[p.length-1]);p=o}
     const n=p.length,k0=X.length;let L=0;
     for(let k=0;k<n;k++){if(k)L+=Math.hypot(p[k][0]-p[k-1][0],p[k][1]-p[k-1][1]);const a=p[Math.max(0,k-1)],b=p[Math.min(n-1,k+1)],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,
-        f=Math.min(1,k/10,(n-1-k)/10),o=(wnoise2(L/26,id*3.7,501)-.5)*2*Math.max(0,Math.min(V.meander*WAY_LP,p[k][5]))*f;
+        f=Math.min(1,k/10,(n-1-k)/10),o=(big?(wnoise2(L/V.meanderL,id*3.7,501)-.5)*2*(.2+.8*wnoise2(L/(V.meanderL*3),id*1.9,502)):(wnoise2(L/26,id*3.7,501)-.5)*2)*Math.max(0,Math.min(V.meander*WAY_LP,p[k][5]))*f;
       X.push(p[k][0]-dy/l*o);Y.push(p[k][1]+dx/l*o);HW.push(p[k][2]);LL.push(p[k][3]);DP.push(p[k][4])}
     for(let k=k0;k+1<X.length;k++){SP.push(k);SA.push(X[k],Y[k],X[k+1],Y[k+1],HW[k],HW[k+1])}};
   // (a tile's point: its middle, a river two tiles wide the middle of its 2 x 2)
@@ -36,7 +43,7 @@ function waysOf(P){if(P.ways)return P.ways;
     // (its plume into the sea past its mouth; the tarn it rises from on high ground, the lab's: a pool at its head)
     if(sea(r.mouth)&&pts.length){const q=pts[pts.length-1];MO.push([q[0],q[1],Math.max(20,q[2]*V.plume)])}
     if(pts.length>2&&pts[0][3]>=V.tarn.lv){pts[0][2]*=V.tarn.w;pts[1][2]*=(1+V.tarn.w)/2}
-    curve(pts,r.id)}
+    curve(pts,r.id,true)}
   // the brooks (painted only: no tile of water; worldgen.js genBrook): from each head down its flow to the river, the water or the
   // brook it runs into, as wide as its flow
   const B=GEN_RIVER.brook,F=WM.flow,isB=i=>{const t=tiles[i];return t!==T_WATER&&t!==T_MOUNT&&!(Rv[i]&3)&&(F[i]&31)>=B},
@@ -91,7 +98,8 @@ function waysOf(P){if(P.ways)return P.ways;
   /* (a stream under every road it crosses (the owner, 2026-11-15: "There should be no river crossing the road like that"): a brook is
      painted only, no tile of water, so the roads were laid over it with no crossing; now where a road's line crosses a brook's
      (not within a river's or a crossing's tiles) the road crosses it: on a track, or over a brook narrower than brook.ford px, at a
-     stony ford (FO: stepping stones across its water, the road running down into it; the owner: "also add a small stony ford"),
+     ford (FO; the owner: "also add a small stony ford", then "No need to be human made stone ford": a natural one, the stream
+     spread shallow over gravel along the road, wet gravel on its banks: worldterrain.js),
      else on a small bridge along the road (BRG, small: stone), as long as the brook is wide and its banks (brook.span px each side,
      abut px more each end), its deck at the road's height or clear of the water by brook.clear levels, whichever is higher: the
      road's band cut away under its open span (bridgeOpen), the water running under it. The roads go round streams where they can
@@ -144,11 +152,12 @@ const WAY_COL={pack:[[176,148,104],[168,140,98]],groove:[118,94,66],crown:[[150,
    (px), flat (no puddle on a slope), land the ground's colour (its tufts on the crown, the grass creeping in at its verge): two
    wheel tracks wandering a little, a dark groove down each, the crown between them, loose ground and gravel outside them, puddles
    in the tracks where it is flat. k: px a lab px */
-function wayRoad(fx,fy,sd,hw,t,flat,land,k){const RR=WORLD_WAYS.road,C=WAY_COL,rk=hw*RR.track+(wnoise2(t/40/k,.5,521)-.5)*2*RR.wander*k,tr=Math.min(Math.abs(sd-rk),Math.abs(sd+rk))/k;let c;
-  if(tr<.7)c=C.groove;else if(tr<2.2)c=C.pack[wnoise2(fx/4,fy/4,522)>.5?0:1];
-  else if(Math.abs(sd)<rk){c=C.crown[wnoise2(fx/5,fy/5,523)>.5?0:1];if(flat&&wnoise2(fx/4,fy/4,524)>.58)c=tmix(c,land,.7)}
+function wayRoad(fx,fy,sd,hw,t,flat,land,k){const RR=WORLD_WAYS.road,C=WAY_COL,a=Math.abs(sd);let c;
+  // (no wheel ruts painted (the owner: "the road should not have that cart tracks, since we also have a cart tracks generated": the
+  //  bands' own tracks, world/tracks.js): its packed crown worn in patches, loose at its sides)
+  if(a<hw*.72){c=C.crown[wnoise2(fx/5,fy/5,523)>.5?0:1];const p=wnoise2(fx/(6*k),fy/(6*k),522);if(p>.6)c=C.pack[p>.72?0:1];if(flat&&wnoise2(fx/4,fy/4,524)>.6)c=tmix(c,land,.6)}
   else{c=C.loose[Math.floor(wnoise2(fx/3,fy/3,525)*2.99)];if(hs(fx,fy,526)<RR.gravel)c=C.gravel[Math.floor(hs(fx,fy,527)*3)]}
-  if(flat&&tr<2.6){const p=wnoise2(fx/14/k,fy/14/k,528)*.6+wnoise2(fx/5/k,fy/5/k,529)*.4;if(p>RR.puddle){c=p-RR.puddle<.02?C.soil:tmix(tmix(C.puddle,C.soil,.4),C.sky,hs(fx>>1,fy,530)<.15?.45:.1)}}
+  if(flat&&a<hw*.72){const p=wnoise2(fx/14/k,fy/14/k,528)*.6+wnoise2(fx/5/k,fy/5/k,529)*.4;if(p>RR.puddle){c=p-RR.puddle<.02?C.soil:tmix(tmix(C.puddle,C.soil,.4),C.sky,hs(fx>>1,fy,530)<.15?.45:.1)}}
   // (the verge: the grass creeping in, dithered, the trodden soil inside it)
   const v=Math.abs(sd)-(hw-3.5*k);if(v>0){if(hs(fx,fy,531)<v/(3.5*k)*.9+(wnoise2(fx/3,fy/3,532)-.5)*.5)c=land;else if(v<1.2*k)c=tmix(c,C.soil,.5)}
   return c}

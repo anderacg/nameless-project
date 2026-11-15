@@ -12,8 +12,10 @@
    (its phoneZoom, phone); the map never shows the world smaller than this (the owner, 2026-11-15: "Remove all old concepts that
    reduce the map scale"), and closer at most in times it */
 const WORLD_VIEW={fine:2,build:.5,zoom:2,phoneZoom:1.5,phone:700,in:2};
-/* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): the land
-   drawn lifted up the screen by its height, up to liftMax levels; lh fine px of
+/* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): its climates
+   read at a place warped climWarp game px by noise, each px's picked from their shares (dithered), so no climate's edge follows the
+   tiles; the sea's and lakes' shores a smooth curve over their tiles, read at a place warped shore.warp game px (noise at
+   shore.sc), shore.bias toward the water so no water tile's middle is land; the land drawn lifted up the screen by its height, up to liftMax levels; lh fine px of
    face a level (the lab's 8); the land's levels between the tiles' (worldgen.js reliefOf) roughened by detail levels (noise of sc
    fine px; a mountain's mount times more); steps: stepped (a terrace, its face hanging over the land south of it) where its slope
    (levels a game px) is from or more, wholly by to; a face only where it steps min levels or more at once (a river so stepped a fall: its white water falls.lip game px above it, its foam pool falls.pool below, seen whichever way it runs); rim: where the ground falls away north, west or east more than drop fine px (a face unseen), its crest px darkened to north (north) or side; gentle ground is shaded; never within flat game px of a road, a
@@ -46,10 +48,11 @@ const WORLD_FLORA={step:9,
    size (a brook's first), a ford's share of it; how far it wanders off its tiles' line (meander, px, never out of them); its last
    stretch into the sea or a lake mouth times wider, its plume out into the sea plume times its width; a river rising
    from tarn.lv levels up rises from a tarn (its head tarn.w times wide); its surface stepped step levels at a time, a fall at each
-   (the lab's; 0: smooth). A brook rises from a spring, a pool spring times its width at its head. road: the lab's (LAB.road, the owner: "why the road scale not match with the lab?"):
+   (the lab's; 0: smooth). A brook rises from a spring, a pool spring times its width at its head. A river's line simplified within simp of a tile of
+   its tiles' middles, then wandering in bends meanderL px long (a brook's 26). road: the lab's (LAB.road, the owner: "why the road scale not match with the lab?"):
    half-widths (a track, a road: both the lab's 13, 26 wide), its width wandering vary of it along it, its corners rounded (bend
-   more cuts of its line); the lab's worn look: wheel
-   tracks at track of the half-width wandering wander px, gravel, puddles past puddle, a ragged edge of edge px, shoulders sh px,
+   more cuts of its line); its worn look: a packed crown in
+   patches, no wheel ruts (the bands' tracks are drawn: world/tracks.js; track: the wear down a bridge's deck), gravel, puddles past puddle, a ragged edge of edge px, shoulders sh px,
    a stone wall only on faces within wall px of its edge (the lab's; its shoulders' faces earth or rock).
    road grade: levels a game px it climbs at most (the lab's 1 in 34 lab px), its shoulders cut or banked to it.
    Its look by the land it runs through (biome, the climates' order: grass, frost, desert, swamp; the owner: "make it blend more
@@ -61,11 +64,11 @@ const WORLD_FLORA={step:9,
    post every post px; its shadow shade px to the south-east, shadow its alpha (0-255); the road's fill under only abut game px of each
    end, its open span the river and its banks as they are (worldways.js bridgeOpen); a brook under a road: a small bridge along
    the road, the brook's width and brook.span px of bank each side, its deck brook.clear levels over the water at least, none within
-   brook.apart px of another bridge; on a track or over a brook under brook.ford px wide, a stony ford instead */
-const WORLD_WAYS={river:{step:1,spring:2.4,hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,meander:6,mouth:1.6,plume:7,tarn:{lv:3,w:3.2}},
+   brook.apart px of another bridge; on a track or over a brook under brook.ford px wide, a natural ford instead (shallow over gravel) */
+const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,meander:6,mouth:1.6,plume:7,tarn:{lv:3,w:3.2}},
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,fade:36,biome:{mix:[.1,.3,.35,.22],patch:[.72,.56,.58,.6]},track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3,wall:5},
   bridge:{clear:1.4,ramp:28,over:6,abut:4,open:3,brook:{span:3,clear:.6,apart:24,ford:1.6},pile:12,arch:26,rail:5,post:8,shade:3,shadow:96}};
-const WORLD_TERRAIN={liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
+const WORLD_TERRAIN={climWarp:14,shore:{warp:9,sc:34,bias:.15},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
   decor:{flower:[[236,220,90],[236,240,246],[200,150,210],[240,160,120]],marram:[[214,204,150],[180,172,116]],drift:[[160,138,108],[196,178,146]],shell:[238,230,216],litter:[[110,92,50],[96,80,44],[128,104,58]]},bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
