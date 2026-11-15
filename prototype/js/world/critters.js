@@ -132,17 +132,18 @@ class WildlifeThreats{
   static present(o){return o&&!o.dead&&!o.gone&&!o.inside&&Number.isFinite(o.x)&&Number.isFinite(o.y)}
   /* the threats indexed each frame: those where herds think (worldobject.js lodBox: the mid rings round you, the shyest's reach
      wider), from the chunk grid in the lists' order (the parties, caravans, refugees and beasts: tags to LOD_TAG.monster), and
-     the workers in sight; a herd asking from beyond it (the tiers off, or a test) has the whole world indexed for it (all), as
+     the workers in sight and the hunters out (world/hunters.js); a herd asking from beyond it (the tiers off, or a test) has the whole world indexed for it (all), as
      it always was */
   static rebuild(){const b=lodBox(this.shy()+WORLD_LOD.lag),L=this.list||(this.list=[]);L.length=0;this.all=null;this.box=lodBox(0);
-    if(b){const G=lodGrid();G.box(b[0],b[1],b[2],b[3],L);let n=0;for(const o of L)if(G.tag.get(o)<=LOD_TAG.monster&&o!==P&&this.present(o))L[n++]=o;L.length=n;for(const f of W.folk)if(folkSeen(f)&&this.present(f))L.push(f);this.index.rebuild(L)}
+    if(b){const G=lodGrid();G.box(b[0],b[1],b[2],b[3],L);let n=0;for(const o of L)if(G.tag.get(o)<=LOD_TAG.monster&&o!==P&&this.present(o))L[n++]=o;L.length=n;for(const f of W.folk)if(folkSeen(f)&&this.present(f))L.push(f);for(const h of Hunters.list)if(this.present(h))L.push(h);this.index.rebuild(L)}
     else this.index.rebuild(this.everyone())}
-  static everyone(){return [...new Set([...W.parties,...W.caravans,...W.refugees,...W.monsters,...W.folk.filter(folkSeen)])].filter(o=>o!==P&&this.present(o))}
+  static everyone(){return [...new Set([...W.parties,...W.caravans,...W.refugees,...W.monsters,...W.folk.filter(folkSeen),...Hunters.list])].filter(o=>o!==P&&this.present(o))}
   static shy(){if(this.most==null){this.most=0;for(const k in CRITTERS)this.most=Math.max(this.most,CRITTERS[k].shy||0)}return this.most}
   static indexFor(c){if(lodIn(this.box,c.x,c.y))return this.index;return this.all||(this.all=Spatial.index(this.everyone()))}
+  // (each seen within its shy reach, less under cover, and a hunter stalking it only within his share of it, noticeAt: world/hunters.js)
   static target(c){
     const D=CRITTERS[c.id];if(!D||D.live)return null;
-    const player=TravelAwareness.target(c),near=this.indexFor(c).within(c.x,c.y,D.shy).filter(o=>this.present(o)&&Math.hypot(o.x-c.x,o.y-c.y)<D.shy*(hiddenAt(o.x,o.y)?WILDLIFE_AWARE.cover:1));
+    const player=TravelAwareness.target(c),near=this.indexFor(c).within(c.x,c.y,D.shy).filter(o=>this.present(o)&&Math.hypot(o.x-c.x,o.y-c.y)<D.shy*(hiddenAt(o.x,o.y)?WILDLIFE_AWARE.cover:1)*(o.noticeAt??1));
     if(player)near.push(player);
     const distance=o=>Math.hypot(o.x-c.x,o.y-c.y),previous=this.chosen.get(c);
     let target=Spatial.nearest(near,c.x,c.y);

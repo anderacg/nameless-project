@@ -72,7 +72,7 @@ js/core/              core.js (DOM, canvas, constants, helpers, the action regis
                       he or she), spatial.js (Spatial: nearest, within), assign.js (assignSlots: places to men by the least
                       walking, SLOTFILL)
 js/data/              tables only, no game logic: races (and WILD_RACES: those no one plays, the goblins), factions, units,
-                      goblins (GOBLINS: their switch and every number, their troops), monsters (incl. mythic ones like the dragon), critters,
+                      goblins (GOBLINS: their switch and every number, their troops), monsters (incl. mythic ones like the dragon), critters, hunters (HUNTERS: the holdings' hunters),
                       kits (a unit's kit, its terms: ORDERS, STANCES, KITS (each kind's ladder; RANK_SKILLS its old name), the skill bar's
                       SKILL_KEYS: doc/UNIT_KITS_DESIGN.md), abilities (the characters' skills, HERO_SKILLS, and the traits, TRAITS), matchups, gear, progression (pasts, skills, perks, companions), tree, holdings (the kinds of holding and their
                       classes), places (goods, holdings, camp spots), encampments (ENCAMP_KINDS: the camps where people live, who
@@ -186,6 +186,8 @@ js/world/             the campaign map and everything on it
                         caravanSprite, CARAVAN_ART, drawCaravanArt)
   townfolk.js           the people of the holdings near you living their day (TownFolk), each a TownDweller (hovered: name,
                         role, holding); TownWalk: the ground they walk, round the buildings
+  hunters.js            Hunters, HunterBand: the villages' and hamlets' hunters near you (not saved), out by day after wild game in
+                        range, stalking it, a shot, the kill carried home as the holding's meat or left lying as a carcass
   companions.js         the Companion role: companions who grow as you do (level, gear, proficiencies, perks) and lead
                         parties of your soldiers
   ships.js              fishing boats out to the fishing grounds by day; trade ships between ports on the same sea; on the
@@ -1723,6 +1725,8 @@ After a hunt (2026-11-14, the owner: "the hunting should not warp the wildlife b
 
 Hunt tracking (2026-10-27): running animals leave prints in the hunt (battle/hunting.js HuntTracks, numbers in data/exertion.js HUNT_TRACK). With no prey in sight, Auto Hunt follows the freshest trail any hunter can read (70 px, 8 more a level of Scouting), a few prints ahead of the nearest, else goes to where an animal was last seen (the herd's place on the map counts as its first sighting), so game hidden in woods or gone out of sight is found instead of the hunters standing still. The prints your hunters read are drawn on the hunt field. Prints are small real shapes (gfx/tracks.js TRACK_GLYPH: a boot sole and heel, a hoof's curve, a paw's pad and toes), turned to the nearest of four ways, lit on their up-left edge (TRACKS.glow), in lanes TRACKS.lane px apart. Tests: hunttracks.
 
+**Hunters** (2026-11-15; the owner: "Add hunters and they will hunt wildlife"; `world/hunters.js` `Hunters`, `HunterBand`; numbers in `data/hunters.js` `HUNTERS`): the villages and hamlets near you keep a band or two of one to three hunters each (no holding has a hunting lodge), only while you are near, never saved, as the estates' workers. On their day (by the band and the day, a stream of their own: no Math.random) they set out from the gate in the morning for the nearest wild herd within 320 px of the holding, walk up to it and stalk it slowly: a herd notices a stalking band only within a share of its shy reach (`noticeAt`, read by `WildlifeThreats` in `world/critters.js`) and bolts from them as from anyone. In bow range they loose: a short arrow, a 25% chance each man to bring one down, and the herd runs. A kill comes off the herd (gone at none); they dress it and carry it home on their backs (one man, two for a stag), its meat into the holding's stock. Too few to lift it, or driven off by bandits or a beast first, it lies where it fell, a carcass with its meat (`world/carcasses.js`). A miss, or a herd that sees them first, costs a try; four a day, home by the afternoon's end, never out at night. Drawn as the road's hunter (`ENC_LOOK.hunter`) of their people in their land's clothes, their bows in hand; hover one for his name and holding. `HUNTERS.on` false: no hunters. Tests: hunters.
+
 Travel pace feedback: walking/running changes are silent. gfx/worldui.js draws a cached animated walking or running figure on the path; Hurry widens footprint spacing and accelerates the trail. Reduced motion keeps the guide still. Exhaustion refusal remains a warning. Tests: worldui, journalretention, clickhurry.
 
 Pace icon refinement: the path guide uses a footprint for walking and the same footprint with two upward chevrons for Hurry. The running chevrons pulse subtly; reduced motion holds them still.
@@ -1759,7 +1763,7 @@ Mobile awareness eyes now use opaque pixel-art eyelids and pupils, with integer-
 
 The player awareness eye uses the same 18 CSS-pixel size as observer eyes.
 
-Wildlife also flees nearby lords, bandits, patrols, companion parties, caravans, refugees, outdoor workers and monsters, including during hunts. `WildlifeThreats` (`world/critters.js`) indexes nearby threats and keeps escape headings stable; cover reduces detection range. Sheltered people and livestock do not trigger this behavior. Player stealth still uses travel awareness.
+Wildlife also flees nearby lords, bandits, patrols, companion parties, caravans, refugees, outdoor workers, hunters and monsters, including during hunts. `WildlifeThreats` (`world/critters.js`) indexes nearby threats and keeps escape headings stable; cover reduces detection range. Sheltered people and livestock do not trigger this behavior. Player stealth still uses travel awareness.
 
 Normal world battles preserve actual marching positions, then visibly form initial armies near their meeting positions, keeping saved march offsets and troop formations. They step back only for formation clearance (20 world pixels between fronts where space permits), capped at 16 world pixels per army; larger battle circles do not increase this retreat. Combat, cooldowns and morale stay frozen during this movement. Once all reachable positions are occupied, the battle pauses; Start Battle begins combat. Ambushes, surprise attacks and joining an ongoing fight skip preparation. Late reinforcements arrive normally without restarting preparation. The sandbox keeps its own start controls; impassable ground adjusts formation slots. Battle hold progress draws in CSS pixels over the completed frame, independent of map zoom and camera scale. Commander abilities act around the hero; unit abilities act on eligible selected troop groups, with separate labels in Orders.
 
