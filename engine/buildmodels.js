@@ -484,11 +484,13 @@
   PX.buildingModelSpec=spec=>{const type=spec.type;if(!T[type])throw new Error('no model for '+type);const o=opts(spec,type,saltOf(SALT,type)),Q=planOf(type,o);
     const s=Q.spec();s.yaw=o.yaw;s.fitYaws=FRONT.includes(type)?[0]:[0,2,4,6];s.snow=SNOW(spec);s.role=s.role||(Q.dwellings[0]&&Q.dwellings[0].role)||null;return s};
   // the cache: a model a spec (its snow overlay a third of an amount at a time inside it)
-  const CACHE=new Map(),key=(k,s)=>k+JSON.stringify([s.type||s.kind,s.people||s.style,s.culture||'',s.seed|0,s.yaw|0,s.env||'',s.lv|0,s.fort==null?-1:s.fort,!!s.stilts,s.glow||'',!!s.capital]);
+  // (detail: drawn that many times finer, the same building (model.js PX.model); a model of its own in the cache)
+  const CACHE=new Map(),key=(k,s)=>k+JSON.stringify([s.type||s.kind,s.people||s.style,s.culture||'',s.seed|0,s.yaw|0,s.env||'',s.lv|0,s.fort==null?-1:s.fort,!!s.stilts,s.glow||'',!!s.capital,s.detail>1?s.detail|0:1]);
+  const fine=(s,spec)=>{if(spec.detail>1)s.detail=spec.detail|0;return s};
   function cached(k,spec,make){const id=key(k,spec);let m=CACHE.get(id);if(!m){m=make();CACHE.set(id,m)}const a=SNOW(spec);
     return a?Object.assign({},m,{snow:PX.modelSeason(m,'snow',a)}):Object.assign({},m,{snow:null})}
   const FACING=['front','left','back','right'];
-  PX.buildingModel=spec=>cached('b',spec,()=>{const s=PX.buildingModelSpec(Object.assign({},spec,{snow:0})),m=PX.model(s);
+  PX.buildingModel=spec=>cached('b',spec,()=>{const s=fine(PX.buildingModelSpec(Object.assign({},spec,{snow:0})),spec),m=PX.model(s);
     return Object.assign(m,{type:spec.type,people:peopleOf(spec),culture:cultureOf(spec),facing:FACING[s.yaw/2],gateX:FRONT.includes(spec.type)?m.cell/2:null})});
   PX.objectModel=spec=>PX.buildingModel(Object.assign({},spec,{type:spec.type||spec.kind}));
 
@@ -573,7 +575,7 @@
     const Q={cell:SIZE.clusters[spec.kind],role:L.role,ground:L.ground||o.look.ground,parts:[],decals:[],dwellings:[],marks:{},flag:!!L.flag,env:o.env,seed:o.seed,yaw,fitYaws:[0,2,4,6]},C={Q,o,d:o.d,n:0,spec};
     const f=ownOf(o.culture,'clusters',spec.kind);if(f)f(C,L.make);else L.make(C);for(const w of Q.dwellings)w.dwellings=w.dwellings|0;Q.snow=SNOW(spec);return Q};
   PX.modelCacheClear=()=>{CACHE.clear();if(PX.modelFitClear)PX.modelFitClear()};
-  PX.clusterModel=spec=>cached('c',spec,()=>{const s=PX.clusterModelSpec(Object.assign({},spec,{snow:0})),m=PX.model(s);return Object.assign(m,{kind:spec.kind,people:peopleOf(spec),culture:cultureOf(spec),facing:FACING[s.yaw/2]})});
+  PX.clusterModel=spec=>cached('c',spec,()=>{const s=fine(PX.clusterModelSpec(Object.assign({},spec,{snow:0})),spec),m=PX.model(s);return Object.assign(m,{kind:spec.kind,people:peopleOf(spec),culture:cultureOf(spec),facing:FACING[s.yaw/2]})});
 
   /* a holding's centre by its tier (camp 0 ... city or castle): the generic (PX.MODEL_CENTRES: a type or a cluster kind, and options
      for its spec), else its culture's (centres) */

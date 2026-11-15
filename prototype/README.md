@@ -348,6 +348,11 @@ Before removing a global, check both HTML entry points, registered action callba
 
 ## What is on the map
 
+**The world drawn finer** (2026-11-15; doc/OPEN_WORLD_DESIGN.md phase 1; the owner: "apply this to the game"):
+- `WORLD_VIEW` (`data/world.js`): `fine` screen-art px a game px for the world's scene (2), `start` how much closer a desktop's map starts (2). The simulation keeps its px.
+- The scene canvas (`render.js` `memCv`) is drawn at `sceneRes()`: `fine`, or fewer where the screen's scale (`VS`) has not that many whole px for each. The fog's remembered scene (`fog.js` `fogMem`), the depth overdraw (`depth.js` `overdrawBox`) and a ship's underside (`ships.js` `shipUnder`) read it at its resolution. In the tests' fixed view (1 px a game px) it is 1: everything as before.
+- Buildings twice as fine: the engine's `detail` option (`PX.buildingModel`, `clusterModel`, `centreModel`: the plan's fit found at its own cell, then drawn at the fit's scale times `detail`; decals' pixel art enlarged). A lot's fine picture (`structures.js` `lotFine`, `drawLot`) and a site's (`siteCanvas` `mk`, `drawFine`, `FINE_Q`) are made ahead with the lots (`lotsAhead`), never mid-frame; until then the game-px picture is drawn. Footing, paths, icons, shadows and the depth mask keep the game-px pictures.
+
 Things in the world are plain data (so a save is plain JSON) read through a class for their kind. The class is put back on load.
 
 - **The classic seed's land** (the default world, seed `CLASSIC`; doc/WORLD_DESIGN.md §8.15): Ashmark drawn by the generator, steered by `CLASSIC_HINTS` (`data/places.js`), soft warped nudges read by the terrain stages (`world/worldgen.js`): frost in the north, desert at home in the south-east, the League's ports round one bay of the southern sea, Mirefen, Tidewatch and Brinewatch in fen, peaks over Karn Hold and in the north, and a great river from the northern peaks past Stonebridge to that sea (`genValleyHint`); land round every holding's anchor and no peak near one. Checked by `tests/worldgen.js` (the land at the anchors), `tests/rivers.js` (the great river) and `tests/classicseed.js` (the holdings on it).

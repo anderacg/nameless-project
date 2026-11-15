@@ -166,8 +166,9 @@ const FACE=new WeakMap();
 let LIGHTQ=[];
 // the scene of buildings, camps and sites, before anyone is drawn over it, in game pixels on the camera's whole pixels (a pixel
 // more each way, for the camera's fraction): drawn onto the screen, and what you remember of the land outside your sight
-// (the scene's resolution: fine px a game px where the screen has them (WORLD_VIEW); the scene canvas keeps its own, r)
-const sceneRes=()=>Math.max(1,Math.min(WORLD_VIEW.fine,Math.floor(VS)));
+// (the scene's resolution: fine px a game px where the screen has them (WORLD_VIEW), and only as many as divide the screen's own
+// (VS), so a fine px is always whole screen px and nothing is resampled; the scene canvas keeps its own, r)
+const sceneRes=()=>{const v=Math.floor(VS);for(let r=Math.min(WORLD_VIEW.fine,v);r>1;r--)if(v%r===0)return r;return 1};
 let MEM=null;const memCv=()=>{const r=sceneRes();return MEM&&MEM.r===r&&MEM.width===(VW+1)*r&&MEM.height===(VH+1)*r?MEM:(MEM=mkc((VW+1)*r,(VH+1)*r,()=>{}),MEM.r=r,MEM)};
 let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=mkc(VW+1,VH+1,()=>{}));
 // the minimap's layers, bottom first, by what each thing is (mapKind): the holdings, then the sites, the beasts, the parties and

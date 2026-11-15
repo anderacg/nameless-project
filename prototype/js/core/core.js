@@ -53,7 +53,7 @@ function fitScreen(){
   // (the screen in device pixels: the window, or the tests' fixed view at its scale; the view at a scale s: dw/s x dh/s)
   const dw=FIXED_VIEW?576*s0:aw*dpr,dh=FIXED_VIEW?360*s0:ah*dpr,fit=s=>Math.ceil(dw/s)*Math.ceil(dh/s)<=Z.OUT&&Math.ceil(dw/s)<=MW*TILE&&Math.ceil(dh/s)<=MH*TILE;
   Z.s0=s0;Z.vw=Math.ceil(dw/s0);Z.vh=Math.ceil(dh/s0);Z.hi=Math.max(s0,Math.floor(Math.min(dw/(phone?Z.PHONE_IN:Z.IN),dh/(phone?Z.PHONE_IN_H:Z.IN_H))));Z.lo=s0;while(Z.lo>1&&fit(Z.lo-1))Z.lo--;
-  if(phone){const far=Math.min(Z.hi,s0*Z.PHONE);Z.lo=far;Z.auto=Math.ceil(far*Z.PHONE_START);Z.hi=Math.max(Z.auto+1,Math.ceil(far*Z.PHONE_MAX))}else Z.auto=s0;
+  if(phone){const far=Math.min(Z.hi,s0*Z.PHONE);Z.lo=far;Z.auto=Math.ceil(far*Z.PHONE_START);Z.hi=Math.max(Z.auto+1,Math.ceil(far*Z.PHONE_MAX))}else Z.auto=FIXED_VIEW||typeof WORLD_VIEW==='undefined'?s0:Math.max(s0,Math.min(Z.hi,s0*WORLD_VIEW.start));// (a desktop's map starts closer: data/world.js WORLD_VIEW)
   const s=Z.map?Math.max(Z.lo,Math.min(Z.hi,Z.z||Z.auto)):s0;Z.on=s!==s0;
   VW=Math.ceil(dw/s);VH=Math.ceil(dh/s);BVH=FIELD_H;BVW=Math.round(FIELD_H*Z.vw/Z.vh);
   const w=VW*s/dpr,h=VH*s/dpr;HUD_PX=dpr/s0;VS=s;cv.style.width=w+'px';cv.style.height=h+'px';

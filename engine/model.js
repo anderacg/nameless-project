@@ -392,7 +392,7 @@
     const {F,G,yaw,base,beds}=build(spec,sc),N=spec.cell||16,sd=spec.seed|0;
     for(const f of F){if(f.cls==='roof'){const tp=f.P.reduce((a,q)=>q[2]>a[2]?q:a),d=sub(tp,f.O),pe=dot(d,f.eu);
         f.ev=nrm(sub(d,f.eu.map(x=>x*pe)));f.fh=dot(d,f.ev);f.fw=f.P.reduce((a,q)=>Math.max(a,dot(sub(q,f.O),f.eu)),0)*f.su}}
-    let di=0;for(const d of spec.decals||[]){di++;const f=F.find(q=>q.name===d.wall&&!q.gable===!d.gable),rows=DECAL[d.kind],w=rows[0].length,h=rows.length;
+    let di=0;for(const d of spec.decals||[]){di++;const f=F.find(q=>q.name===d.wall&&!q.gable===!d.gable),rows=bigRows(DECAL[d.kind],spec.detail),w=rows[0].length,h=rows.length;
       if(f){f.dec.push({id:di,kind:d.kind,rows,w,h,u0:Math.round((d.at==null?.5:d.at)*f.fw-w/2),v0:Math.max(f.foot&&!DOORISH.test(d.kind)?1:0,G.Z(d.z||0)),onGable:!!d.gable});continue}
       // (a round tower's side by its letter, 'name.S': the decal on its facets round the curve there, turned with the building)
       const dot=d.wall.lastIndexOf('.'),pn=d.wall.slice(0,dot),s=d.wall.slice(dot+1),fs=F.filter(q=>q.part===pn&&q.round);if(!fs.length||!SIDES[s])continue;
@@ -482,23 +482,27 @@
     for(const across of [true,false])for(let a=0;a<N;a++){let s=0;for(let b=1;b<=N;b++){const c0=across?a*N+s:s*N+a,c=across?a*N+b:b*N+a;
       if(b<N&&body[c]===1&&body[c0]===1&&same(c0*4,c*4))continue;
       const L=b-s;if(L>X.len&&body[c0]===1){const o=X.at+hsh(across?s:a,across?a:s)%X.step;for(let k=o;k<L-1;k+=X.step){const p=s+k;shade(across?a*N+p:p*N+a,across?p:a,across?a:p)}}s=b}}};
-  PX.model=spec=>{const t0=performance.now(),N=spec.cell||16,fit=N-2,sd=spec.seed|0;
+  // (detail: the model drawn that many times finer: its fit found at its own cell as ever, then drawn at the fit's scale times
+  // detail on a cell detail times its px: the same building, its walls, roofs and props with that many times the pixels (the
+  // world drawn finer: the game's WORLD_VIEW); a decal's pixel art each pixel detail px square)
+  const bigRows=(rows,k)=>!(k>1)?rows:rows.flatMap(r=>{const w=[...r].map(c=>c.repeat(k)).join('');return Array(k).fill(w)});
+  PX.model=spec=>{const t0=performance.now(),DK=spec.detail>1?spec.detail|0:1,N0=spec.cell||16,N=N0*DK,fit0=N0-2,fit=N-2,sd=spec.seed|0;
     // the scale: the first of the fit's choices whose points fit the cell (in every facing of spec.fitYaws, so a building turned is
     // the same building at the same scale); then drawn, and smaller again if its pixels do not
     // (W4: several facings are judged on their pixels together, and the scale kept for the plan, so a facing whose pixels run a pixel
     // over never draws the building smaller than its other facings)
-    const yaws=spec.fitYaws||[spec.yaw|0],at=y=>y===(spec.yaw|0)?spec:Object.assign({},spec,{yaw:y}),fits=R=>{clean(R);const b=bnd(R);return b.x1-b.x0+1<=fit&&b.y1-b.y0+1<=fit},key=yaws.length>1?JSON.stringify(Object.assign({},spec,{yaw:0,snow:0})):null;
+    const yaws=spec.fitYaws||[spec.yaw|0],at=y=>y===(spec.yaw|0)?spec:Object.assign({},spec,{yaw:y}),fits=R=>{clean(R);const b=bnd(R);return b.x1-b.x0+1<=fit0&&b.y1-b.y0+1<=fit0},key=yaws.length>1?JSON.stringify(Object.assign({},spec,{yaw:0,snow:0})):null;
     let sc=key&&FITS.get(key),R,bx,last=null;
     // (the fit's next choice when the pixels run over its points, up to three; then smaller all over. Its own facing's pixels at the
     // scale it ends on, already drawn and cleaned for the test, kept (last): never drawn again, the same pixels)
     // (lead: the facing that last ran over, tried first: it most often runs over again, so a scale is turned down after one build, not
     // up to all of them; the same scale found)
-    if(!sc){let i=-1,lead=0;const over=(y,S)=>{const B=build(at(y),S),[w,h]=extent(B.F),k=B.G.d?1:0;return!(w<=fit-k&&h<=fit-k)},
+    if(!sc){let i=-1,lead=0;const at0=y=>Object.assign({},at(y),{detail:0}),over=(y,S)=>{const B=build(at0(y),S),[w,h]=extent(B.F),k=B.G.d?1:0;return!(w<=fit0-k&&h<=fit0-k)},
         next=()=>{for(i++;i<SCALES.length;i++){if(over(yaws[lead],SCALES[i]))continue;let j=0;for(;j<yaws.length;j++)if(j!==lead&&over(yaws[j],SCALES[i])){lead=j;break}if(j===yaws.length)return SCALES[i]}return null},
-        test=y=>{const r=render(at(y),sc),ok=fits(r);if(y===(spec.yaw|0))last={sc,r};return ok};
+        test=y=>{const r=render(at0(y),sc),ok=fits(r);if(y===(spec.yaw|0)&&DK===1)last={sc,r};return ok};
       sc=next()||SCALES[SCALES.length-1];
       for(let k=0;k<12;k++){if(yaws.every(test)||sc.u<.2)break;sc=(k<3&&next())||{u:sc.u*.92,v:sc.v*.92,z:sc.z*.92,o:0}}if(key){if(FITS.size>2000)FITS.clear();FITS.set(key,sc)}}
-    if(last&&last.sc===sc)R=last.r;else{R=render(spec,sc);clean(R)}bx=bnd(R);
+    if(last&&last.sc===sc)R=last.r;else{R=render(spec,DK>1?{u:sc.u*DK,v:sc.v*DK,z:sc.z*DK,o:(sc.o||0)*DK}:sc);clean(R)}bx=bnd(R);
     const {M,A,col,DEC,FL,GZ,F}=R,cw=bx.x1-bx.x0+1,dx=bx.x0-1-Math.floor((fit-cw)/2),dy=bx.y1-(N-2);
     // the picture: the body and its navy outline round it (not round what lies low and flat: fences, beds), cropped to the cell
     const img=PX.canvas(N,N),g=img.getContext('2d', { willReadFrequently: true }),im=g.createImageData(N,N),D=im.data,body=new Uint8Array(N*N),fine=new Uint8Array(N*N),gap=new Uint8Array(N*N),gz=new Uint8Array(N*N),nv=hx(NAVY);
