@@ -198,6 +198,15 @@ That is a separate decision, best made after this world exists.
 | **4. Size** | The macro/ground split (§8), the world to M, more hamlets, sites and dens between holdings, the day longer. | |
 | **5. Battles on the world** | `BattleTerrain` reads the world's cells; no field of its own. | |
 
+**Phase 1 as it is built (the owner, 2026-11-15: "apply this to the game", phase by phase):**
+- **The simulation keeps its units.** A game px stays what it is today (a tile 16 px, every speed, radius and distance as tuned). The world is instead *drawn* at a finer resolution: `WORLD_VIEW.fine` screen-art px a game px (2). So a soldier (his 17 px sprite at ×0.5 a game px) shows at his own 17 px, a house's lot (32 game px) at 64 px, a tile at 32. Those are §3's numbers, without re-tuning some 900 uses of `TILE` and every px number in the data. The generator, the save and the parties' paths do not change, so W1-W4, W7 and W8 hold.
+- **Steps**, each shipped, tested and shown before the next:
+  1. **The fine scene:** the world's scene (ground, what lies flat, buildings, the remembered scene under the fog, what stands in front of a figure) is drawn at `fine` px a game px wherever the screen has that many (`min(fine, VS)`). Building models are made at `fine` times their cell (twice the detail, the same size). The camera starts twice as close (a view of about 20 men tall); zooming out stays for travel.
+  2. **The fine ground:** the chunks are painted at `fine` px a game px by the lab's ground painter, driven by the world's tiles and climates (flat for now): the lab's climate grounds, blends, roads, shores and water.
+  3. **The fine nature:** the lab's trees, rocks, logs, bushes, small things and the animated grass, moved into a shared engine file (used by the lab and the game), placed by climate on the world's tiles and sorted with the figures; footprints, snowfall and mist by climate.
+  4. **One speed:** a man walks about the same on the map and in a fight (§3); `WORLD_BATTLE.scale` and `sprite` re-set; px-tuned numbers re-measured; W7, W8 and the battle suites re-recorded once, with this reason.
+- Height (phase 2) comes after: the lab's levels, faces, cliffs and climbing on the fine ground.
+
 ---
 
 ## 11. Decisions for the owner
