@@ -51,9 +51,9 @@ const PROF_TREE={
     [['fist_iron','n','Iron Fist',{fistPct:.12,kick:.2},'Bare-handed blows land 12% harder, your kick 20% harder.'],['fist_points','n','Pressure Points',{crit:.05,grabDown:.2},'+5% crit chance, and a throw puts them down more surely.']]],
   athl:[
     [['athl_end','s','Endurance',{sp:20}],['athl_acro','n','Acrobat',{dodgeCost:.4,dodgeCd:.3},'Dodge rolls cost 40% less stamina and recover 30% faster.']],
-    [['athl_fleet','n','Fleet Foot',{spd:.1,travel:.08},'Move 10% faster in battle and 8% faster on the map.'],['athl_wind','s','Second Wind',{spRegen:.3,sp:10}]],
+    [['athl_fleet','n','Fleet Foot',{spd:.1,travel:.08},'Move 10% faster in battle and 8% faster on the map.'],['athl_climb','n','Climber',{perk:'climb'},'Climb cliffs on the map, slowly and tiring fast, with a band of six or fewer while you have stamina.']],
     [['athl_agi','s','Agility',{attr:{agi:2}}],['athl_slip','n','Slippery',{perk:'slippery'},'+15% to get away as a battle is lost, and easier to slip out of a cage.']],
-    [['athl_marathon','s','Marathon',{sp:15,spRegen:.2}],['athl_tumble','n','Tumbler',{dodgeCost:.25,dodgeCd:.2,spd:.04},'Dodge rolls cost 25% less and recover 20% faster. Move 4% faster.']]],
+    [['athl_marathon','s','Marathon',{sp:25,spRegen:.5}],['athl_tumble','n','Tumbler',{dodgeCost:.25,dodgeCd:.2,spd:.04},'Dodge rolls cost 25% less and recover 20% faster. Move 4% faster.']]],
   lead:[
     [['lead_cry','a','War Cry',{unlock:'cry'},'Active skill: nearby troops hit harder and move faster; enemies flinch.'],['lead_follow','s','Followers',{slots:1}]],
     [['lead_banner','a','War Banner',{unlock:'banner'},'Active skill: plant your banner; troops near it take 25% less damage.'],['lead_bearer','n','Banner Bearer',{tHp:.08,morale:5},'Troops get +8% health. Morale never falls below 5 more.']],

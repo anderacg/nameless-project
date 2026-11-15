@@ -45,13 +45,13 @@ let WAY_NOSWIM=false;
    ground steep either way (in place of the map's even SLOPE there: your band's, world.js heroGround, by where it is heading); Shift
    held, run times faster, its stamina going staRun times as fast; slopes and steep ground tire a band staSlope, staSteep times the
    march (supply.js staminaRate) */
-const LAB_WALK={up:.5,down:1.15,steep:.3,run:1.6,staRun:1.8,staSlope:1.25,staSteep:1.7,cliff:.16,staCliff:3.5,climbBand:6,climbSkill:10,climbCost:7};
-/* the lab's climbers: a cliff is rock no band walks, but a small one (climbBand men or fewer, its Athletics climbSkill or more) climbs it
+const LAB_WALK={up:.5,down:1.15,steep:.3,run:1.6,staRun:1.8,staSlope:1.25,staSteep:1.7,cliff:.16,staCliff:3.5,climbBand:6,climbCost:7};
+/* the lab's climbers: a cliff is rock no band walks, but a small one (climbBand men or fewer, its hero with the Climber node: data/tree.js athl_climb, perk 'climb') climbs it
    while it has stamina, at cliff of its pace (world.js heroGround), tiring climbing staCliff times the march (supply.js), a cliff's
    tile climbCost tiles of open ground to its way (router.js findPath, while WAY_CLIMB: world.js heroWay); its men climb with it (march.js
    MarchGround climb) */
 let WAY_CLIMB=false;
-function heroClimbs(){if(typeof P==='undefined'||!P||P.bsta!=null&&P.bsta<=0)return false;return partySize()<=LAB_WALK.climbBand&&(typeof skill!=='function'||skill('athl')>=LAB_WALK.climbSkill)}
+function heroClimbs(){if(typeof P==='undefined'||!P||P.bsta!=null&&P.bsta<=0)return false;return partySize()<=LAB_WALK.climbBand&&P.hasPerk('climb')}
 function headingMul(x,y,tx,ty){const S=WM&&WM.slope;if(!S||tx==null||ty==null)return 1;const i=Math.floor(y/TILE)*MW+Math.floor(x/TILE),c=S[i];if(c!==1&&c!==2)return 1;
   const dx=tx-x,dy=ty-y,l=Math.hypot(dx,dy);if(l<1)return 1;const hf=typeof landHeight==='function'?landHeight(WM):null;if(!hf)return 1;
   const up=hf((x+dx/l*6)*2,(y+dy/l*6)*2)>hf(x*2,y*2);return (c===2?LAB_WALK.steep:up?LAB_WALK.up:LAB_WALK.down)/SLOPE.mul[c]}
