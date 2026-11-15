@@ -67,6 +67,8 @@ const Behaviours={
       const g=e.goal(),ox=e.x,there=!!g&&Math.hypot(g.x-e.x,g.y-e.y)<10;
       if(there||!g||!Router.travel(e,g,moveStep(ENC_SPD.walk,m.d))){
         if(!m.see||there&&g.tw){
+          // (in sight at a holding's gate: in through it, as an army files in, world/gatefile.js)
+          if(m.see&&there&&e.tw)GateFile.walkIn(e,townBy(e.tw));
           e.over();
           return false;
         }

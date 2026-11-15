@@ -17,6 +17,10 @@ const DROPS={on:true,art:14,loot:true,xp:8,dots:{xp:6,troop:3},speed:220,coin:{c
    gear, coins or hides about the field: only its dots), a click on one opens all within near px of it (pick: px a click finds one);
    they rot: days with anything on them, bare once picked clean, most kept on the map; a band within seek px of ones you cannot see
    picks them over, by find an hour (its plunder yours if you beat it); col: a plain one's (after a load), its glint */
+// A thing lying to be taken (a carcass with something on it, world/carcasses.js; the field's drops, battle/drops.js): a soft glow round
+// it (col, rgb), breathing between a's alpha at speed, r px at the world's scale; a glint rising from it every 1/rise s (the owner,
+// 2026-11-15: "if there's item on ground and not picked yet, make sure we have a glowing or something noticeable")
+const LOOT_GLOW={on:true,r:12,a:[.3,.7],speed:2.6,rise:.7,col:'255,206,90'};// (added on the ground: it lights it)
 const CARCASS={on:true,near:40,pick:8,days:3,bare:1,most:120,seek:120,find:.2,col:{hide:'#7a5a3e',bone:'#e4dccb',cloth:'#6a5e50',glint:'#ffe08a'}};
 /* junk (the owner, 2026-11-13): broken pieces a fallen man leaves (DROPS.worn.junk), good for nothing but a few coins at any market,
    as a trophy is (data/monsters.js MATS: v its worth, icon and col its picture) */

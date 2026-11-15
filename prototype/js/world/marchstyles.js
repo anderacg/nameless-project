@@ -52,7 +52,7 @@ class MarchStyle{
   static pick(o,groups){const T=MARCH_STYLES;return T.kind[o.mapKind]||T.race[marchRace(groups)]||(o.mapKind==='lord'?T.errand[o.defend?'defend':o.follow||o.with?'host':o.state]:null)||T.base}
   // rows (march.js marchLayout: id, type, count, character) laid out: each its form, files, facing and spot (x forward, y right)
   lay(rows,o){
-    const D=this.def,laid=rows.map(r=>{const role=marchRole(r,o),[band,want='line',ranks=1]=D[role]||D.all||['main','line',3],form=D.own?r.form:[want,'loose','line'].find(f=>marchFormOk(r,f));
+    const D=this.def,laid=rows.map(r=>{const role=marchRole(r,o),[band,want='line',ranks=1]=D[role]||D.all||['main','line',3],form=D.own||o.marchForm?r.form:[want,'loose','line'].find(f=>marchFormOk(r,f));// (a crowd in its own form keeps it: refugees)
       const files=D.own?r.files:form==='line'||form==='loose'?Math.ceil(r.count/ranks):form==='column'?1:null,row={...r,face:D.own?r.face:0,form,files,role,band};return Object.assign(row,marchHalf(row))});
     if(this.def.ring)this.round(laid);else this.bands(laid);
     return laid.map(({role,band,hx,hy,...r})=>r);
@@ -144,7 +144,8 @@ const TRAVEL_STYLES={on:true,every:6,long:400,near:160,alert:150,menSight:true,l
 const TRAVEL_SEEN=new WeakMap();
 class TravelStyle{
   // whether o marches in a column now
-  static column(o){const T=TRAVEL_STYLES;if(!T.on||!o||B)return false;let c=TRAVEL_SEEN.get(o);if(!c)TRAVEL_SEEN.set(o,c={n:-Infinity,col:false,k:null,k2:null,foe:false,at:-Infinity,until:-Infinity,a:null,sw:0});
+  static column(o){const T=TRAVEL_STYLES;if(!T.on||!o||B||o.marchForm)return false;// (a crowd in its own form keeps it, no column: refugees)
+    let c=TRAVEL_SEEN.get(o);if(!c)TRAVEL_SEEN.set(o,c={n:-Infinity,col:false,k:null,k2:null,foe:false,at:-Infinity,until:-Infinity,a:null,sw:0});
     const n=WORLD_LOD.n,nt=this.trip(o,c);if(nt||n-c.n>=T.every||n<c.n){c.n=n;const was=c.col;c.col=T.steady?this.steady(o,c):this.decide(o);if(c.col!==was)c.sw++}return c.col}
   // (decided afresh when next asked)
   static forget(o){TRAVEL_SEEN.delete(o)}

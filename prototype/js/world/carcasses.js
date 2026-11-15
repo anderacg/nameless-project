@@ -64,7 +64,7 @@ class Carcass extends WorldObject{
     ents.push({y:c.y,f:()=>{const x=c.x-cam.x,y=c.y-cam.y,C=CARCASS.col,k=(B?.world?1:WORLD_BATTLE.sprite)/WORLD_BATTLE.scale;// (in a fight on the map drawBody makes it the fight's size itself)
       if(c.corpse?.sp){ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.translate(-c.corpse.x,-c.corpse.y);try{drawBody(ctx,c.corpse,1,1)}finally{ctx.restore()}}
       else{const X=Math.round(x),Y=Math.round(y),f=c.face<0?-1:1;ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(X-5,Y,10,2);ctx.fillStyle=c.beast?C.hide:C.cloth;ctx.fillRect(X-4,Y-3,8,3);ctx.fillStyle=C.bone;ctx.fillRect(X+(f>0?3:-5),Y-3,2,2)}
-      if(!c.empty()){const t=performance.now()/1000,g=(Math.sin(t*3+c.x)+1)/2;ctx.globalAlpha=.4+.5*g;ctx.fillStyle=C.glint;ctx.fillRect(Math.round(x)+1,Math.round(y)-5,1,1);ctx.globalAlpha=1}}})}
+      if(!c.empty())lootGlow(x,y-2,LOOT_GLOW.r*(B?.world?WORLD_BATTLE.sprite/2:1),performance.now()/1000,c.x*.13+c.y*.07)}})}// (something on it: its glow, battle/drops.js)
   static drawAll(ents,cam,V){for(const c of this.list)c.draw(ents,cam,V)}
   static save(){return this.list.length?this.list.map(c=>{const o={...c};delete o.corpse;return o}):undefined}// (its picture only what you see)
   static load(v){this.list=(v||[]).map(o=>asCarcass(o))}

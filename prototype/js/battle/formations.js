@@ -16,6 +16,8 @@ const FORMS={
   wedge:{n:'Wedge',wedge:true,gx:13,gy:12,who:'cav',key:'T',d:'Cavalry spearhead: 6 formed cavalry give +5% charge, +2.5 percentage points per additional rider, capped at +30% at 16. Scattered or routing riders do not count.'},
   // (beasts: no ranks, a ragged clump files wide, each beast off its place by a fixed jitter, beastmind.js; never one of yours to pick: FORM_ORDER)
   pack:{n:'Pack',pack:true,files:5,gx:17,gy:15,who:'beast',d:'Beasts keep no ranks: a loose, ragged spread.'},
+  // (folk on the road (refugees: world/refugees.js marchForm): close together, a tight ragged clump; on the map only, never one to pick)
+  huddle:{n:'Huddle',pack:true,files:4,gx:10,gy:9,who:'folk',d:'Folk on the road keep close together: a tight, ragged clump.'},
   // (a circle, a schiltron (the owner, 2026-11-01: "the circle size will determine whether to have unit stack by layers ... the
   // maximum circle size is where your unit can fill a whole circle without gap otherwise you may have a gap in circle"): every man
   // facing out, its outer ring files places (circleRings), the rest on rings a rank gy further in; foot who fight hand to hand,

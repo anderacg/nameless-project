@@ -818,7 +818,7 @@ const figsOn=()=>MAP_FIGS.on&&WORLD_BATTLE.on;
 const figK=()=>WORLD_BATTLE.sprite/WORLD_BATTLE.scale,figPose=(f,go)=>go?2+(f||0)%4:0;
 // one drawn with its feet at (x, y) on the screen, facing face, as a marcher is; its picture at the map's own size (a click, a
 // box, a page's banner: figPic)
-function drawFig(s,x,y,face){const k=figK();ctx.save();ctx.translate(x,y);ctx.scale(face<0?-k:k,k);ctx.drawImage(s,-(s.width>>1),2-s.height);ctx.restore()}
+function drawFig(s,x,y,face,sc=1){const k=figK()*sc;ctx.save();ctx.translate(x,y);ctx.scale(face<0?-k:k,k);ctx.drawImage(s,-(s.width>>1),2-s.height);ctx.restore()}
 const FIG_PICS=new WeakMap();
 function figPic(s){let m=FIG_PICS.get(s);if(m)return m;const k=figK();m=mkc(Math.ceil(s.width*k),Math.ceil(s.height*k),g=>g.drawImage(s,0,0,s.width*k,s.height*k));
   m.cw=Math.ceil((s.cw||s.width)*k);m.ch=Math.ceil((s.ch||s.height)*k);FIG_PICS.set(s,m);return m}
@@ -829,7 +829,10 @@ const figOf=(L,pose)=>cellOf(peopleSprite(L,pose));
 // encounter (ENC_LOOK[key]) on foot or riding (on a horse of coat, in col), a saddled horse no one rides
 function figFollower(col,v,race,band,pose){v=(v||0)%6;race=race||'human';return figKeep('mfw'+col+v+race+(band?'b':'')+'p'+pose,()=>figOf(followerLook(col,v,race,band),pose))}
 function figWorker(job,race,v,pose,carry){v=(v||0)%4;race=race||'human';return figKeep('mwk'+job+race+v+(carry?'c':'')+'p'+pose,()=>figOf(workerLook(job,race,v,carry),pose))}
-function figRefugee(v,race,pose){v=(v||0)%4;race=race||'human';return figKeep('mrf'+v+race+'p'+pose+(DRESS.clim||''),()=>figOf({...refugeeLook(v,race),load:'bundle'},pose))}
+// (who: an adult, his bundle on his back; a child, smaller (the short body), nothing carried; an elder, grey, on his stick (the owner,
+//  2026-11-15: "can you make refugee using child or old sprites"))
+const refugeeOf=(v,race,who)=>{const L={...refugeeLook(v,race),load:'bundle'};return who==='child'?{...L,short:true,beard:false,weapon:null,load:null,helm:'bare'}:who==='elder'?{...L,hair:'grey',weapon:'crook'}:L};
+function figRefugee(v,race,pose,who){v=(v||0)%4;race=race||'human';who=who||'adult';return figKeep('mrf'+v+race+(who==='adult'?'':who)+'p'+pose+(DRESS.clim||''),()=>figOf(refugeeOf(v,race,who),pose))}
 function figRoad(key,race,v,pose){return figKeep('mrp'+key+race+v+'p'+pose+(DRESS.clim||''),()=>figOf(ENC_LOOK[key](race,v),pose))}
 function figRider(key,race,v,col,coat,pose){return figKeep('mrr'+key+race+v+col+coat+'p'+pose,()=>figOf({...ENC_LOOK[key](race,v),team:col||'leather',mount:'horse',mountC:coat||'horse'},pose))}
 function figHorse(coat,pose){return figKeep('mrh'+coat+'p'+pose,()=>{const g=pgrid(32,32);g.edge=true;drawMount(g,{mount:'horse',mountC:coat,team:'red',saddled:true},pose>=2?pose-2:-1);poutline(g);return cellOf(pcanvas(g))})}

@@ -20,15 +20,20 @@ class GateFile{
   static start(o,t){const X=GATE_FILE;if(!X.on||!WORLD_BATTLE.on||!t)return;const a=typeof marchLive==='function'&&marchLive(o);if(!a)return;
     const g=gateGoal(t),d=u=>Math.hypot(u.x-g.x,u.y-g.y),men=a.units.filter(u=>!u.dead).sort((p,q)=>d(p)-d(q)).slice(0,X.most).map((u,i)=>({...u,walking:false,tg:null,plan:null,goal:null,wait:i*X.gap}));
     if(men.length)this.list.push({o,g,men,t:0})}
+  // (one drawn by itself, not marched (a road's encounter: a quest's or an event's people, story/encounter.js), going into t: itself
+  //  walked the last of its way to the gate, fading, as an army's men are (the owner, 2026-11-15: "make sure the refugee and all
+  //  characters from quest, events etc enter the building like army do"); x, y its own, moved as it walks)
+  static walkIn(o,t){const X=GATE_FILE;if(!X.on||!t||typeof o?.draw!=='function')return;this.list.push({o,g:gateGoal(t),fig:true,men:[{x:o.x,y:o.y,wait:0}],t:0})}
   // (o out of t: its march laid afresh, every man at the gate, a step apart, to walk out to his place)
   static out(o,t){const X=GATE_FILE;if(!X.on||!X.out||!WORLD_BATTLE.on||!t||typeof MarchArmy==='undefined'||Math.hypot(o.x-P.x,o.y-P.y)>vis()+MARCH_MOVE.active)return;
     MARCH_ARMIES.delete(o);const a=MarchArmy.of(o),g=gateGoal(t);a.units.forEach((u,i)=>{u.x=g.x+((i%3)-1)*X.spread;u.y=g.y+Math.floor(i/3)%3;u.plan=null;u.walking=false;u.gateAt=i?a.time+i*X.gap:0})}
   static step(d){const X=GATE_FILE;
     for(const f of this.list){f.t+=d;for(const u of f.men){if(f.t<u.wait)continue;const dx=f.g.x-u.x,dy=f.g.y-u.y,l=Math.hypot(dx,dy),s=Math.min(l,X.pace*d);if(l<.5){u.gone=true;continue}
-      u.walking=true;u.x+=dx/l*s;u.y+=dy/l*s;u.walk=(u.walk||0)+s;u.dir=Math.atan2(dy,dx)}f.men=f.men.filter(u=>!u.gone)}
+      u.walking=true;u.x+=dx/l*s;u.y+=dy/l*s;u.walk=(u.walk||0)+s;u.dir=Math.atan2(dy,dx);if(f.fig){f.o.x=u.x;f.o.y=u.y;if(Math.abs(dx)>.01)f.o.dir=dx>0?1:-1}}f.men=f.men.filter(u=>!u.gone)}
     this.list=this.list.filter(f=>f.men.length)}
   // (each man filing in, by his feet among everyone, fading at the gate)
   static draw(ents,cam){const X=GATE_FILE;for(const f of this.list){const own=f.o===P||f.o.faction==='player';
+    if(f.fig){const u=f.men[0];if(!u)continue;const a=Math.min(1,Math.hypot(f.g.x-u.x,f.g.y-u.y)/X.fade),L=[];f.o.draw(L,cam,vis());for(const e of L){const g=e.f;ents.push({...e,f:()=>{ctx.save();ctx.globalAlpha*=a;try{g()}finally{ctx.restore()}}})}continue}
     for(const u of f.men){const a=Math.min(1,Math.hypot(f.g.x-u.x,f.g.y-u.y)/X.fade);ents.push({y:u.y,own,f:()=>{ctx.save();ctx.globalAlpha*=a;drawMarcher(u,f.o,cam);ctx.restore()}})}}}
   // (a lord at rest outside a holding with no room for his men, or a companion's party told to stay there: its camp beside its
   // gate, in your sight)
