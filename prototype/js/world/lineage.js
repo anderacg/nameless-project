@@ -143,8 +143,8 @@ class Crypt extends Remains{
   respect(){if(this.paid===G.day)return;this.paid=G.day;const h=this.houseOf;for(const l of h?h.live:[])changeRel(l,DEATH.house.respect,'you paid your respects to the dead of '+h.name);
     log('You pay your respects at the crypt of '+this.who+'.'+(h&&h.live.length?' Its lords hear of it.':''),'gold')}
   draw(ents,cam,V){if(!this.inView(V))return;const c=this,S=GraveArt.sprite('crypt',1),t=performance.now()/1000,h=this.houseOf;
-    ents.push({y:c.y-1e5,f:()=>{ctx.drawImage(S.ground,Math.round(c.x-cam.x)-S.ax,Math.round(c.y-cam.y)-S.ay)}});
-    ents.push({y:c.y,f:()=>{const x=Math.round(c.x-cam.x),y=Math.round(c.y-cam.y);ctx.save();ctx.drawImage(S.cv,x-S.ax,y-S.ay);GraveArt.live(c,x,y,t,darkness()>.35,h&&FACS[h.fac]?FACS[h.fac].col:null);ctx.restore()}})}
+    ents.push({x:c.x,ly:c.y,y:c.y-1e5,f:()=>{ctx.drawImage(S.ground,Math.round(c.x-cam.x)-S.ax,Math.round(c.y-cam.y)-S.ay)}});
+    ents.push({x:c.x,y:c.y,f:()=>{const x=Math.round(c.x-cam.x),y=Math.round(c.y-cam.y);ctx.save();ctx.drawImage(S.cv,x-S.ax,y-S.ay);GraveArt.live(c,x,y,t,darkness()>.35,h&&FACS[h.fac]?FACS[h.fac].col:null);ctx.restore()}})}
 }
 const asCrypt=asClass(Crypt);
 onWorld(()=>{Houses.list=[];Houses.n=0});

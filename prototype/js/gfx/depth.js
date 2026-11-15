@@ -22,7 +22,7 @@
    what covers him, so he reads as behind it, never on its roof */
 const WDEPTH={on:true,fade:.5,ghost:{on:true,col:'#fff1c4',a:.62,min:8,most:30},gcv:null,trk:false,di:null,fr:null,pics:[],al:new Map(),cov:new Set(),t:0,cv:null,img:null,C:[],box:[0,0,0,0],boxes:[]};
 // a structure's picture as drawn this frame at (x, y) on the screen (before the shake): its opaque pixels stand by their feet
-function depthPic(img,x,y){if(img&&WDEPTH.on)WDEPTH.pics.push([img,Math.round(x),Math.round(y)])}
+function depthPic(img,x,y){if(img&&WDEPTH.on)WDEPTH.pics.push([img,Math.round(x),Math.round(y-LIFT_NOW)])}// (up by the lift it is drawn at: worldterrain.js liftDraw)
 // (a picture's feet: for each opaque pixel the row its column's run of opaque pixels ends on, -1 where it is clear; kept on it)
 function picFeet(img){if(img._df)return img._df;const w=img.width,h=img.height,d=img.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w,h).data,F=new Int16Array(w*h).fill(-1);let top=h,mx=-1;
   for(let x=0;x<w;x++)for(let y=0;y<h;y++){if(d[(y*w+x)*4+3]<250)continue;let y1=y;while(y1+1<h&&d[((y1+1)*w+x)*4+3]>=250)y1++;for(let k=y;k<=y1;k++)F[k*w+x]=y1;if(y<top)top=y;if(y1>mx)mx=y1;y=y1}

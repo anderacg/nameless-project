@@ -125,15 +125,15 @@ class TownWall{
   static ents(t,ents,cam){const r=TownWall.of(t);if(!r)return;const L=wallOf(t),S=TownWall.look(t),H=TOWN_WALL.h[L]||TOWN_WALL.fh;
     // (its gates shut: their doors across them)
     if(HOLD_SHUT.ring.get(t)?.closed)for(const i of r.gates){const x=i%MW,y=(i-x)/MW;if(!seenTile(x,y))continue;const X=x*TILE-cam.x,foot=(y+1)*TILE,Y=foot-cam.y;if(X<-24||X>VW+24||Y<-4||Y-H-40>VH)continue;
-      const s=TownWall.sprite(S,L,(y===r.y0||y===r.y1)&&x>r.x0+r.c-1&&x<r.x1-r.c+1?'dh':'dv');ents.push({y:foot-2,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}
+      const s=TownWall.sprite(S,L,(y===r.y0||y===r.y1)&&x>r.x0+r.c-1&&x<r.x1-r.c+1?'dh':'dv');ents.push({x:X+cam.x,ly:foot-1,y:foot-2,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}
     // (its diagonal stretches: a segment a step, by its lower end's feet)
     for(const d of r.diags||[]){const yb=Math.max(d.a[1],d.b[1]);if(!seenTile(d.a[0],d.a[1])&&!seenTile(d.b[0],d.b[1]))continue;const X=(d.x+.5)*TILE-cam.x,foot=(yb+.5)*TILE+8,Y=foot-cam.y;if(X<-24||X>VW+24||Y<-4||Y-H-60>VH)continue;
-      const s=TownWall.sprite(S,L,d.up?'d/':'d\\');ents.push({y:foot-1,f:()=>ctx.drawImage(s,Math.round(X),Math.round(Y-s.height))})}
+      const s=TownWall.sprite(S,L,d.up?'d/':'d\\');ents.push({x:X+cam.x+8,ly:foot-1,y:foot-1,f:()=>ctx.drawImage(s,Math.round(X),Math.round(Y-s.height))})}
     // (its gateways over the roads: walls' arches, never a fence's)
     if(L>0)for(const a of r.arches||[]){if(!seenTile(a.x,a.y))continue;const X=a.x*TILE-cam.x,foot=(a.y+1)*TILE,Y=foot-cam.y;if(X<-24||X>VW+24||Y<-4||Y-H-40>VH)continue;
-      const s=TownWall.archPic(S,L,a.k,a.p,a.w);ents.push({y:foot-1,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}
+      const s=TownWall.archPic(S,L,a.k,a.p,a.w);ents.push({x:X+cam.x,ly:foot-1,y:foot-1,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}
     for(const p of r.parts){const X=p.x*TILE-cam.x,foot=(p.y+1)*TILE,Y=foot-cam.y;if(X<-24||X>VW+24||Y<-4||Y-H-40>VH)continue;if(!seenTile(p.x,p.y))continue;
-      const s=TownWall.sprite(S,L,p.k);ents.push({y:foot-1,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}}
+      const s=TownWall.sprite(S,L,p.k);ents.push({x:X+cam.x,ly:foot-1,y:foot-1,f:()=>ctx.drawImage(s,Math.round(X-s.ax),Math.round(Y-s.height))})}}
   // (its culture's colours: stone for stone and great walls (its arena's, a stone culture's, else the Vale's), timber for a palisade)
   static look(t){const A=TOURNEY_ARENA.walls,cul=holdingCulture(t),st=A[cul]&&A[cul].kind==='stone'?A[cul]:A.vale,wd=A[cul]&&A[cul].kind!=='stone'?A[cul]:A.timber;
     return{cul,stone:st.c,wood:wd.c,trim:st.trim}}

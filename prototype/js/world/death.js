@@ -226,7 +226,7 @@ class Remains extends WorldObject{
   // is on it: your fall as the fight drew it, else your kind lying)
   paint(g){const c=this.corpse,k=(B?.world?1:WORLD_BATTLE.sprite)/WORLD_BATTLE.scale;if(c?.sp){g.scale(k,k);g.translate(-c.x,-c.y);drawBody(g,c,1,1)}else BodyRot.plain(g,{type:this.grave&&!ST[this.type]?'militia':this.type||'militia',team:0,v:this.v||0,hero:!this.grave})}// (yours as you were; buried later, a plain man's)
   draw(ents,cam,V){if(!this.inView(V))return;const r=this;
-    ents.push({y:r.y,f:()=>{const x=r.x-cam.x,y=r.y-cam.y;BodyRot.draw(r,x,y,r.fell??r.day,g=>r.paint(g),false,r.face||1);
+    ents.push({x:r.x,y:r.y,f:()=>{const x=r.x-cam.x,y=r.y-cam.y;BodyRot.draw(r,x,y,r.fell??r.day,g=>r.paint(g),false,r.face||1);
       if(!r.empty())lootGlow(x,y-2,LOOT_GLOW.r,performance.now()/1000,r.x*.13+r.y*.07)}})}
   // each hour: a band near finds remains not yet picked clean, and carries all of it off (its plunder); never before your eyes
   static hour(){const X=DEATH.remains;
@@ -350,8 +350,8 @@ class Grave extends Remains{
   draw(ents,cam,V){const g=this,X=DEATH.grave,C=X.col,t=performance.now()/1000;if(g.flow)this.drawFlow(ents,cam);if(!g.inView(V))return;
     if(g.unburied&&g.kind==='remains'&&BodyRot.stage(g.fell??g.day)!=='bones')return super.draw(ents,cam,V);// (unburied and not yet bones: the body as it lies)
     const S=GraveArt.sprite(g.kind,g.seed||(g.seed=1+Math.floor(Math.abs(g.x*7+g.y*13))%997)),night=darkness()>.35;
-    ents.push({y:g.y-1e5,f:()=>{ctx.drawImage(S.ground,Math.round(g.x-cam.x)-S.ax,Math.round(g.y-cam.y)-S.ay)}});
-    ents.push({y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.glows();ctx.save();
+    ents.push({x:g.x,ly:g.y,y:g.y-1e5,f:()=>{ctx.drawImage(S.ground,Math.round(g.x-cam.x)-S.ax,Math.round(g.y-cam.y)-S.ay)}});
+    ents.push({x:g.x,y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.glows();ctx.save();
       if(lit){const [gw,gh]=X.art.groundOf[g.kind]||[13,6];ctx.globalAlpha=.14+.12*pulse;ctx.fillStyle=C.glow;ctx.beginPath();ctx.ellipse(x,y-2,gw*.8+pulse*2,gh*.8+pulse,0,0,6.283);ctx.fill();ctx.globalAlpha=1}
       ctx.drawImage(S.cv,x-S.ax,y-S.ay);GraveArt.live(g,x,y,t,night);
       if(lit){const top=y-({cairn:17,grave:15,small:9,remains:5,stone:12,tomb:28}[g.kind]||12);

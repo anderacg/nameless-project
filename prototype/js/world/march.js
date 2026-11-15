@@ -195,9 +195,9 @@ function marchDraw(ents,o,cam){
   // (another's men only those in your sight, each by his own ground (worldobject.js spotted, manSpotted): a host's van seen as it comes
   // on, the rest still in the fog; yours and your companions' all)
   const own=o===P||o.faction==='player',S=!own&&SIGHT_EYES.armies&&G.mode==='world'&&!B?yourSight():null;
-  for(const u of army.units)if(!S||manSpotted(S,u))ents.push({y:u.y,own,f:()=>drawMarcher(u,o,cam)});
+  for(const u of army.units)if(!S||manSpotted(S,u))ents.push({x:u.x,y:u.y,own,f:()=>drawMarcher(u,o,cam)});
   // (a beast's marker over its middle)
-  const u0=army.units[0];if(u0&&o.mapKind==='monster')ents.push({y:o.y,f:()=>BANNERQ.push({o,marker:{h:marchSprite(u0,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})});return true;
+  const u0=army.units[0];if(u0&&o.mapKind==='monster')ents.push({x:o.x,y:o.y,f:()=>BANNERQ.push({o,marker:{h:marchSprite(u0,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})});return true;
 }
 // (drawn small without losing its lines when zoomed out: render.js reduced)
 function drawMarcher(u,o,cam){if(u.gateAt)return;if(o.drawMan)return o.drawMan(u,cam);return reduced(()=>drawMarcherAt(u,o,cam))}// (an army of no soldiers draws its own men: refugees.js)// (waiting his turn at a gate: unseen, gatefile.js)
@@ -223,10 +223,10 @@ function drawMarcherAt(u,o,cam){
 function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDetectionColor(travelDetectionShown(travelDetectionState())):o.look().col,army=null){
   const L=army&&MARCH_RING.on&&army.units.length?army.ring||(army.ring=new MarchOutline()):null;
   // (MARCH_RING.draw off: no ring drawn, its outline kept for the rules all the same)
-  if(L){L.update(army);if(!MARCH_RING.draw)return;ents.push({y:o.y+L.top,f:()=>{const x=o.x-cam.x,y=o.y-cam.y;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;L.path(L.out[0],x,y);ctx.stroke();
+  if(L){L.update(army);if(!MARCH_RING.draw)return;ents.push({x:o.x,ly:o.y,y:o.y+L.top,f:()=>{const x=o.x-cam.x,y=o.y-cam.y;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;L.path(L.out[0],x,y);ctx.stroke();
     ctx.globalAlpha=.28;ctx.setLineDash(RING_DASH);L.path(L.out[1],x,y);ctx.stroke();ctx.restore()}});return}
   if(!MARCH_RING.draw)return;const m=MARCH_ARMIES.get(o)?.mid,c=m&&Math.hypot(m.x-o.x,m.y-o.y)<r?m:o;
-  ents.push({y:c.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,marchInteractRadius(o,r),0,Math.PI*2);ctx.stroke();ctx.restore()}});
+  ents.push({x:c.x,ly:c.y,y:c.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,marchInteractRadius(o,r),0,Math.PI*2);ctx.stroke();ctx.restore()}});
 }
 
 // Positions are runtime state. Saved group offsets remain the destination, never a rigid transform of the men.

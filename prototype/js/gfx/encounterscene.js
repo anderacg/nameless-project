@@ -71,7 +71,7 @@ class EncounterScene{
     return b||[e.x-6,e.y-12,e.x+6,e.y+2]}
   // onto the frame's list, each piece by its feet (a trace fading over its last six hours)
   draw(e,ents,cam){const fade=e.trace?clamp((e.end-roadNow())/6,0,1):1,t=performance.now()/1000,rm=reducedMotion();
-    for(const p of this.lay(e,false))ents.push({y:p.y,top:p.k==='rustle',f:()=>{if(!p.o.at)subT(e);const X=Math.round(p.x-cam.x),Y=Math.round(p.y-cam.y);ctx.globalAlpha=p.a*fade;
+    for(const p of this.lay(e,false))ents.push({x:p.x,y:p.y,top:p.k==='rustle',f:()=>{if(!p.o.at)subT(e);const X=Math.round(p.x-cam.x),Y=Math.round(p.y-cam.y);ctx.globalAlpha=p.a*fade;
       if(p.k==='wisp'){const ph=e.seed%7+p.o.v*2.1,x=X+(rm?0:Math.round(Math.sin(t*.9+ph)*3)),y=Y-6+(rm?0:Math.round(Math.sin(t*1.7+ph)*2)),g=ctx.createRadialGradient(x,y,0,x,y,7);
         g.addColorStop(0,'rgba(170,255,235,.55)');g.addColorStop(1,'rgba(120,230,220,0)');ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(x-7,y-7,14,14);ctx.restore();rect(ctx,'#c8fff0',x-1,y-1,2,2);rect(ctx,'#ffffff',x,y-1)}
       else if(p.k==='dust'){for(let i=0;i<5;i++){const a=t*3+i*1.26,r=5+2*Math.sin(t*5+i);ctx.fillStyle='rgba(200,184,150,'+(.35+.15*Math.sin(t*6.7+i)).toFixed(2)+')';ctx.fillRect(Math.round(X+Math.cos(a)*r)-2,Math.round(Y-4+Math.sin(a)*r*.5)-1,3,2)}

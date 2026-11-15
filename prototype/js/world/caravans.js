@@ -65,7 +65,7 @@ class CaravanParty extends Party{
   // (its cart, ox and drover at its guards' size (caravanSprite): its walk by its gait, its wheel by the way it has rolled; its
   // shadow under them)
   draw(ents,cam,V){if(!this.inView(V))return;const c=this;if(WORLD_BATTLE.on&&!B?.world?.hides(c))marchDraw(ents,c,cam);
-    ents.push({y:c.y,f:()=>{subT(c);const L=c.look(),s=caravanSprite(L.col,caravanGait(c),frameOf(c,caravanRoll(),CARAVAN_ART.turns)),b=opaqueBox(s),k=cvK(),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),
+    ents.push({x:c.x,y:c.y,f:()=>{subT(c);const L=c.look(),s=caravanSprite(L.col,caravanGait(c),frameOf(c,caravanRoll(),CARAVAN_ART.turns)),b=opaqueBox(s),k=cvK(),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),
         e=[(b[0]-(s.width>>1))*k,(b[2]+1-(s.width>>1))*k].map(v=>v*(c.dir<0?-1:1)),x0=Math.round(Math.min(...e));ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x0+sx+2,sy-1,Math.round(Math.abs(e[1]-e[0]))-4,2);
       drawCaravanArt(s,sx,sy,c.dir);
       BANNERQ.push({o:c,label:c.fromYou()<90?[L.label,L.labelCol]:null})}})}

@@ -84,8 +84,8 @@ const GraveArt={
     const x0=Math.min(...graves.map(g=>g.x))-M,x1=Math.max(...graves.map(g=>g.x))+M,y0=Math.min(...graves.map(g=>g.y))-M,y1=Math.max(...graves.map(g=>g.y))+M*.7,gx=Math.round((x0+x1)/2);
     const wall=(ax,ay,bx,by)=>{const n=Math.max(1,Math.round(Math.hypot(bx-ax,by-ay)/3));for(let i=0;i<=n;i++){const x=Math.round(ax+(bx-ax)*i/n-cam.x),y=Math.round(ay+(by-ay)*i/n-cam.y);
       ctx.fillStyle=i%2?C.stone:C.stone2;ctx.fillRect(x-1,y-2,3,2);ctx.fillStyle=C.dark;ctx.fillRect(x-1,y,3,1)}};
-    ents.push({y:y0-1e5+1,f:()=>{ctx.save();wall(x0,y0,x1,y0);wall(x0,y0,x0,y1);wall(x1,y0,x1,y1);wall(x0,y1,gx-5,y1);wall(gx+5,y1,x1,y1);ctx.restore()}});
-    ents.push({y:y1,f:()=>{const x=Math.round(gx-cam.x),y=Math.round(y1-cam.y);ctx.save();ctx.fillStyle=C.wood;ctx.fillRect(x-5,y-9,1,9);ctx.fillRect(x+4,y-9,1,9);ctx.fillRect(x-5,y-10,10,1);
+    ents.push({x:gx,ly:y1,y:y0-1e5+1,f:()=>{ctx.save();wall(x0,y0,x1,y0);wall(x0,y0,x0,y1);wall(x1,y0,x1,y1);wall(x0,y1,gx-5,y1);wall(gx+5,y1,x1,y1);ctx.restore()}});
+    ents.push({x:gx,y:y1,f:()=>{const x=Math.round(gx-cam.x),y=Math.round(y1-cam.y);ctx.save();ctx.fillStyle=C.wood;ctx.fillRect(x-5,y-9,1,9);ctx.fillRect(x+4,y-9,1,9);ctx.fillRect(x-5,y-10,10,1);
       ctx.fillStyle=C.wood2;ctx.fillRect(x-3,y-13,7,3);ctx.fillStyle=C.carve;ctx.fillRect(x-2,y-12,5,1);ctx.restore()}})},
   // what moves on it this frame (o: the grave; x, y: its foot on the screen; t: seconds; night)
   live(o,x,y,t,night,banner){const C=DEATH.grave.col,A=DEATH.grave.art;

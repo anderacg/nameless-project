@@ -253,8 +253,8 @@ function ambientWorld(ents,cam,V){
     if(candidates.length){const h=candidates[Math.floor(ambR()*candidates.length)];L.push(ambPlace(ambSpawn(k,h.x,h.y),h))}}
   // (a fish's leap and splash: among the figures by its water's line, so a pier, a moored boat or a house before it covers it; the owner,
   // 2026-11-14: "the drawing layer between fish animation is not valid", it was drawn flat over all that stands)
-  for(const e of L)if(e.k==='fish')ents.push({y:e.y,nf:1,f:()=>{ctx.save();ambFish(e,cam);ctx.restore()}});
-  for(const e of L)if(AMB_GROUND[e.k]&&!(e.k==='peck'&&e.st!=='peck'&&e.st!=='perch')&&!(e.k==='heron'&&e.st==='flee'))ents.push({y:e.y,nf:1,f:()=>ambGround(e,cam)})}
+  for(const e of L)if(e.k==='fish')ents.push({x:e.x,y:e.y,nf:1,f:()=>{ctx.save();ambFish(e,cam);ctx.restore()}});
+  for(const e of L)if(AMB_GROUND[e.k]&&!(e.k==='peck'&&e.st!=='peck'&&e.st!=='perch')&&!(e.k==='heron'&&e.st==='flee'))ents.push({x:e.x,y:e.y,nf:1,f:()=>ambGround(e,cam)})}
 // ---- the pictures: tiny, crisp, made once (rows of letters, each a colour; '.' clear), each also facing left
 let AMBS=null;
 const AMB_PAL={fly:['#f4f0dc','#f0e08a','#c8dcf0','#f0c8d8']};

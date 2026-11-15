@@ -136,12 +136,12 @@ const p=b.world.world(c),M=Object.keys(MONSTERS).find(k=>MONSTERS[k].unit===u.ty
   paint(g){const c=this,k=(B?.world?1:WORLD_BATTLE.sprite)/WORLD_BATTLE.scale;// (in a fight on the map drawBody makes it the fight's size itself)
     if(c.corpse?.sp){g.scale(k,k);g.translate(-c.corpse.x,-c.corpse.y);drawBody(g,c.corpse,1,1)}else BodyRot.plain(g,{type:c.wild?wildTroop(c.wild):c.type,team:c.ours?0:1,v:Math.abs(Math.round(c.x+c.y))%6})}
   draw(ents,cam,V){if(!this.inView(V))return;const c=this;
-    ents.push({y:c.y,f:()=>{const x=c.x-cam.x,y=c.y-cam.y;BodyRot.draw(c,x,y,c.day,g=>c.paint(g),c.beast,c.face);
+    ents.push({x:c.x,y:c.y,f:()=>{const x=c.x-cam.x,y=c.y-cam.y;BodyRot.draw(c,x,y,c.day,g=>c.paint(g),c.beast,c.face);
       if(!c.empty())lootGlow(x,y-2,LOOT_GLOW.r*(B?.world?WORLD_BATTLE.sprite/2:1),performance.now()/1000,c.x*.13+c.y*.07)}})}// (something on it: its glow, battle/drops.js)
   static drawAll(ents,cam,V){for(const c of this.list)c.draw(ents,cam,V);
     // (the clearers: their holding's folk (folk.js workerAppearance), walking, or at the fallen swinging their tools)
     const S=yourSight(V),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;for(const f of this.diggers){if(!S.sees(f.x,f.y))continue;
-      ents.push({y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{const L=workerAppearance(f),pose=f.st==='dig'?6+Math.floor(performance.now()/260)%3:2+footFrame(f.walk),sp=unitSprite(L.type,0,false,L.v,pose,false,false,L.tint);
+      ents.push({x:f.x,y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{const L=workerAppearance(f),pose=f.st==='dig'?6+Math.floor(performance.now()/260)%3:2+footFrame(f.walk),sp=unitSprite(L.type,0,false,L.v,pose,false,false,L.tint);
         ctx.save();ctx.translate(Math.round(f.x-cam.x),Math.round(f.y-cam.y));ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(-2,-1,5,2);ctx.scale(f.dir<0?-k:k,k);ctx.drawImage(sp,-(sp.width>>1),-sp.height+2);ctx.restore()})})}}
   static save(){return this.list.length?this.list.map(c=>{const o={...c};delete o.corpse;delete o.digger;return o}):undefined}// (its picture only what you see)
   static load(v){this.list=(v||[]).map(o=>asCarcass(o))}

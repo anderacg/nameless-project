@@ -64,9 +64,9 @@ class CampSite{
      makeshift (bedrolls by its fire; ring, space: its ring's, else CAMP_SITE's)}. Each tent by its feet among
      everyone, going up in its turn; the fire and the banner's pole at its middle */
   static draw(ents,cam,c){const X=CAMP_SITE,now=performance.now()/1000,t0=this.t0.get(c.key),T=t0==null?1e9:now-t0,L=this.layoutOf(c),clim=CLIMS[climate[Math.floor(c.y/TILE)*MW+Math.floor(c.x/TILE)]]||'grass';this.seen.set(c.key,now);
-    L.forEach((q,i)=>{const p=T-i*X.gap;if(p<=0)return;const pic=c.pic?c.pic(q,i,clim):c.makeshift?this.rough(q,i,clim):this.pic(q.s,clim,i,c);ents.push({y:q.y,nf:1,f:()=>this.tent(pic,q,p,cam)})});
+    L.forEach((q,i)=>{const p=T-i*X.gap;if(p<=0)return;const pic=c.pic?c.pic(q,i,clim):c.makeshift?this.rough(q,i,clim):this.pic(q.s,clim,i,c);ents.push({x:q.x,y:q.y,nf:1,f:()=>this.tent(pic,q,p,cam)})});
     const lit=(L.length-1)*X.gap+X.pole+X.rise;
-    ents.push({y:c.y+1,nf:1,f:()=>{const fx=Math.round(c.x-cam.x),fy=Math.round(c.y-cam.y);
+    ents.push({x:c.x,y:c.y+1,nf:1,f:()=>{const fx=Math.round(c.x-cam.x),fy=Math.round(c.y-cam.y);
       if(T>=lit+X.fire)drawFire(fx,fy,c.seed||0);else if(T>=lit){const a=(T-lit)/X.fire;ctx.save();ctx.globalAlpha=.5*a;ctx.fillStyle='#bdb6a8';for(let k=0;k<3;k++)ctx.fillRect(fx-1+k,fy-2-Math.round(a*6)-k*2,1,1);ctx.restore()}
       ctx.fillStyle='#4a3a28';ctx.fillRect(fx-3,fy,7,1);
       // (a makeshift camp's bedrolls round its fire, once it is lit)

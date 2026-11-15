@@ -87,7 +87,7 @@ class Outpost extends Site{
   // the battle's figure with his weapon in hand (march.js drawMarcher); not while a battle is fought on the map: its guards are in
   // it, OutpostTower)
   draw(ents,cam,V){super.draw(ents,cam,V);const w=OutpostWatch.of.get(this);if(!w||!this.realm||!FACS[this.realm]||B&&B.world||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
-    const o=this.sentryOwner();for(const u of w.men)ents.push({y:u.y,f:()=>drawMarcher(u,o,cam)})}
+    const o=this.sentryOwner();for(const u of w.men)ents.push({x:u.x,y:u.y,f:()=>drawMarcher(u,o,cam)})}
   // (who the sentries march for, as drawMarcher reads an army: its realm's colours, where it stands)
   sentryOwner(){const f=this.realm,col=FACS[f].col;return{x:this.x,y:this.y,fac:f,faction:f,mapKind:'patrol',look:()=>({col,dir:1}),banner:()=>({k:'banner',col,dev:f})}}
   // (its beat: the posts round the flag, each outpost's turned by its seed; its tower's door, where a sentry goes in to rest, or the

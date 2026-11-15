@@ -53,7 +53,9 @@ function fitScreen(){
   // (the screen in device pixels: the window, or the tests' fixed view at its scale; the view at a scale s: dw/s x dh/s)
   const dw=FIXED_VIEW?576*s0:aw*dpr,dh=FIXED_VIEW?360*s0:ah*dpr,fit=s=>Math.ceil(dw/s)*Math.ceil(dh/s)<=Z.OUT&&Math.ceil(dw/s)<=MW*TILE&&Math.ceil(dh/s)<=MH*TILE;
   Z.s0=s0;Z.vw=Math.ceil(dw/s0);Z.vh=Math.ceil(dh/s0);Z.hi=Math.max(s0,Math.floor(Math.min(dw/(phone?Z.PHONE_IN:Z.IN),dh/(phone?Z.PHONE_IN_H:Z.IN_H))));Z.lo=s0;while(Z.lo>1&&fit(Z.lo-1))Z.lo--;
-  if(phone){const far=Math.min(Z.hi,s0*Z.PHONE);Z.lo=far;Z.auto=fineZ(Math.ceil(far*Z.PHONE_START),far);Z.hi=Math.max(Z.auto+1,Math.ceil(far*Z.PHONE_MAX))}else Z.auto=FIXED_VIEW||typeof WORLD_VIEW==='undefined'?s0:Math.max(s0,Math.min(Z.hi,s0*WORLD_VIEW.start));// (a desktop's map starts closer: data/world.js WORLD_VIEW)
+  // (the map at the world lab's scale (data/world.js WORLD_VIEW: CSS px a fine px, a whole number of fine px a game px, so the scale is
+  //  even): where it starts and the farthest it goes; closer at most WORLD_VIEW.in times. The tests' fixed view as it was)
+  if(!FIXED_VIEW&&typeof WORLD_VIEW!=='undefined'){const V=WORLD_VIEW,lab=V.fine*Math.max(1,Math.round((aw<V.phone?V.phoneZoom:V.zoom)*dpr));Z.lo=lab;Z.auto=lab;Z.hi=lab*V.in}else Z.auto=s0;
   const s=Z.map?Math.max(Z.lo,Math.min(Z.hi,Z.z||Z.auto)):s0;Z.on=s!==s0;
   VW=Math.ceil(dw/s);VH=Math.ceil(dh/s);BVH=FIELD_H;BVW=Math.round(FIELD_H*Z.vw/Z.vh);
   const w=VW*s/dpr,h=VH*s/dpr;HUD_PX=dpr/s0;VS=s;cv.style.width=w+'px';cv.style.height=h+'px';
@@ -67,7 +69,7 @@ function fitScreen(){
 // (a phone's zoom on the scales the world's finer art fits, whole: even ones while WORLD_VIEW.fine is 2 (render.js sceneRes), a step
 // two at a time; never below lo)
 function fineZ(s,lo){const f=typeof WORLD_VIEW!=='undefined'?WORLD_VIEW.fine:1;return f>1&&s>=2*f&&s%f&&s-s%f>=lo?s-s%f:s}
-function mapZoom(d){const Z=MAPZOOM,cur=Z.map?VS:Z.auto,f=typeof WORLD_VIEW!=='undefined'&&Z.phone(innerWidth,innerHeight)?WORLD_VIEW.fine:1,
+function mapZoom(d){const Z=MAPZOOM,cur=Z.map?VS:Z.auto,f=typeof WORLD_VIEW!=='undefined'&&!FIXED_VIEW?WORLD_VIEW.fine:1,
     n=f>1?(d>0?cur+f-cur%f:cur%f?cur-cur%f:cur-f):cur+d,s=Math.max(Z.lo,Math.min(Z.hi,n));if(s===cur)return false;prefSet('mapzoom',s===Z.auto?0:s);return true}
 addEventListener('resize',fitScreen);fitScreen();
 const ov=$('#ov'),panel=$('#panel'),bbar=$('#bbar');
@@ -83,7 +85,7 @@ const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 // the first half is daylight, then dusk, night and dawn fill the other half (NIGHT_AT on; the owner, 2026-10-19: 50/50). A day of 180 s at a world pace of .4
 // (doc/WORLD_DESIGN.md D9: it was 120 s at .6) keeps 72 units of the world's time to a day, so every timer counted in it lasts
 // the same share of a day; what moves goes slower on screen (data/world.js WORLD_SCALE.move)
-const DAY_SECONDS=180,NIGHT_AT=.5;
+const DAY_SECONDS=293,NIGHT_AT=.5;// (180, times the world lab's walk over the map's old one: data/world.js WORLD_SCALE.move)
 const WORLD_PACE=.4,BATTLE_PACE=.6,HERO_PACE=.85;
 // the world's time controls (D23): 1x, 2x and 4x (keys 1-3), and Travel fast (key 4, the top bar's 8×), 8x till you change the
 // speed (the owner, 2026-10-22: back on the bar)

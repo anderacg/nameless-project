@@ -5,11 +5,15 @@
 /* the world drawn finer (doc/OPEN_WORLD_DESIGN.md phase 1, the owner, 2026-11-15: "apply this to the game"): fine screen-art px
    a game px for the world's scene (its ground, what lies flat, its buildings, the scene remembered under the fog), wherever the
    screen has that many (render.js sceneRes): a soldier then shows at his own 17 px, a house at 64. The simulation keeps its px.
-   start: how many times closer than the whole-screen fit a desktop's map starts (core.js fitScreen; a phone's starts close as ever) */
+   */
 /* build: how large a building, a camp or a site stands to its game px: the world lab's scale (the owner, 2026-11-15: "Lab scale (~2
    men)"): a model's px a fine px, a cottage some two men tall; a holding's centre (its walls on the world's ways) at its own size */
-const WORLD_VIEW={fine:2,start:2,build:.5};
-/* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): lh fine px of
+/* zoom: CSS px a fine px on the map, the world lab's (engine/worldlab.js LAB.zoom), phoneZoom on a window narrower than phone CSS px
+   (its phoneZoom, phone); the map never shows the world smaller than this (the owner, 2026-11-15: "Remove all old concepts that
+   reduce the map scale"), and closer at most in times it */
+const WORLD_VIEW={fine:2,build:.5,zoom:2,phoneZoom:1.5,phone:700,in:2};
+/* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): the land
+   drawn lifted up the screen by its height, up to liftMax levels; lh fine px of
    face a level (the lab's 8); the land's levels between the tiles' (worldgen.js reliefOf) roughened by detail levels (noise of sc
    fine px; a mountain's mount times more); steps: stepped (a terrace, its face hanging over the land south of it) where its slope
    (levels a game px) is from or more, wholly by to; a face only where it steps min levels or more at once; gentle ground is shaded; never within flat game px of a road, a
@@ -40,12 +44,13 @@ const WORLD_FLORA={step:9,
    size (a brook's first), a ford's share of it; how far it wanders off its tiles' line (meander, px, never out of them); its last
    stretch into the sea or a lake mouth times wider. road: half-widths (a track, a road); the lab's worn look: wheel tracks at track
    of the half-width wandering wander px, gravel, puddles past puddle, a ragged edge of edge px, shoulders sh px kept unstepped.
-   bridge: its deck clear levels over the water; a pile every pile px (a stone bridge's arch every arch), rails rail px tall, a
+   road grade: levels a game px it climbs at most (the lab's 1 in 34 lab px), its shoulders cut or banked to it.
+   bridge: its deck clear levels over the water, the road ramped up to it within ramp game px of each end; a pile every pile px (a stone bridge's arch every arch), rails rail px tall, a
    post every post px */
 const WORLD_WAYS={river:{hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,meander:6,mouth:1.6},
-  road:{hw:[9,13],sh:10,track:.42,wander:1.3,gravel:.07,puddle:.74,edge:2.5},
-  bridge:{clear:1.4,pile:12,arch:26,rail:5,post:8}};
-const WORLD_TERRAIN={lh:8,detail:.7,sc:46,mount:2.4,steps:{from:.2,to:.34,min:.45},flat:6,rock:11,snow:14,wet:3,sand:9,dune:18,bank:5,depth:.32,clear:.9,shade:.55};
+  road:{hw:[9,13],sh:10,grade:.06,track:.42,wander:1.3,gravel:.07,puddle:.74,edge:2.5},
+  bridge:{clear:1.4,ramp:28,pile:12,arch:26,rail:5,post:8}};
+const WORLD_TERRAIN={liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:3},flat:6,rock:11,snow:14,wet:3,sand:9,dune:18,bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a
@@ -53,7 +58,10 @@ const WORLD_SCALE={
   // Campaign travel is 1.28 times the base pace (was twice, then 1.6: the owner, 2026-10-31, "drop campaign speed about 20%", and
   // 2026-11-14, "reduce world moving speed for all", 20% more); everything on the map moves by it, you and the world alike; world
   // combat explicitly keeps the base scale.
-  move:.68,travel:1.28,
+  // (the world lab's walk (the owner, 2026-11-15: "the lab's walking speed"): a man on open ground some 19 game px a second at 1x (the
+  // lab's 38 lab px), 1.63 times the 11.7 measured before; a day as many times longer (core.js DAY_SECONDS), so a day's march is
+  // the same ground and everything counted in days keeps its pace)
+  move:1.11,travel:1.28,
   // how far each kind sees you, before your cover cuts it (Brain.sight, hiddenAt)
   sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
   // what the parties weigh (brains.js, monsters.js, critters.js, folk.js, companions.js, patrols.js)

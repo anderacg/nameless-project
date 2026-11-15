@@ -434,7 +434,7 @@ function itemIcon(def){const k='ic'+def.icon+def.col;return spr[k]||(spr[k]=mkc(
 // txt and txtPic keep the existing small pixel font for other canvas text.
 let TXTQ=null;
 const TXT_FONT='8px Silkscreen, "Courier New", monospace';
-function txt(s,x,y,col,al){if(TXTQ&&(ctx===TXTQ.ctx||ctx===TXTQ.lo)){TXTQ.push([s,x,y,col,al]);return}
+function txt(s,x,y,col,al){if(TXTQ&&(ctx===TXTQ.ctx||ctx===TXTQ.lo)){TXTQ.push([s,x,y-(typeof LIFT_NOW==='number'?LIFT_NOW:0),col,al]);return}
   // (on the map's canvas of VS px a game px, its picture enlarged; a battle drawn sharp (core.js bview) writes it at its own px)
   if(CVS>1&&ctx===ctx0&&MAPZOOM.map){const c=txtPic(s,col,al);ctx.drawImage(c,x-c.ox,y-c.oy);return}
   ctx.font=TXT_FONT;ctx.textAlign=al||'left';ctx.textBaseline='alphabetic';ctx.fillStyle='#000';ctx.fillText(s,x+1,y+1);ctx.fillStyle=col||'#e4e0cf';ctx.fillText(s,x,y)}

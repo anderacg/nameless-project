@@ -23,7 +23,7 @@ class Herd extends WorldObject{
     // (each animal its battle figure, as it is in a hunt, at the marchers' scale (gfx/sprites.js critterArt), its own coat: the herd's
     // coat picked once (coat), not from its home (hx, hy), which a fleeing herd moves every frame: its coats flashed, the owner
     // 2026-11-13: "The wildlife sprite flashing, like it changes the color")
-    ents.push({y:c.y,f:()=>{subT(c);const v0=c.coat??(c.coat=Math.floor((c.hx||0)+(c.hy||0))),A=critterArt(c.id,0,v0),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(A.w*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
+    ents.push({x:c.x,y:c.y,f:()=>{subT(c);const v0=c.coat??(c.coat=Math.floor((c.hx||0)+(c.hy||0))),A=critterArt(c.id,0,v0),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(A.w*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
       if(c.m){herdScattered(c,v0,A,sx,sy,sp,go,N);return}
       for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,A.w)/N,N)+i*3)%N:0,a=critterArt(c.id,fr,v0+i),w=Math.max(4,a.w-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
@@ -51,7 +51,7 @@ function penSpots(t,now){const c=herdOf(t),F=c&&fieldsOf(t,'pasture');if(!F)retu
 // the marchers' scale lost every other pixel: "sticks") to those who move (render.js drawWorld), drawn at the screen's pixels as
 // in a battle; the owner, 2026-11-13: "For pasture use the same drawing in battle")
 const PEN_ENTS=[];
-function penEnts(t,ents,cam){penSpots(t,0).forEach((s0,j)=>ents.push({y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;ctx.save();subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),w=Math.max(4,s.a.w-2);// (its fraction of a pixel kept inside save/restore: drawn into the scene, a shift left over would pile up frame on frame)
+function penEnts(t,ents,cam){penSpots(t,0).forEach((s0,j)=>ents.push({x:s0.x,y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;ctx.save();subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),w=Math.max(4,s.a.w-2);// (its fraction of a pixel kept inside save/restore: drawn into the scene, a shift left over would pile up frame on frame)
   ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.translate(x,sy);ctx.scale(s.flip?-s.a.k:s.a.k,s.a.k);ctx.drawImage(s.a.s,-(s.a.s.width>>1),-s.a.s.height+(s.a.k<1?2:1));ctx.restore()}}))}
 // (the wild game's and the herds' own dice: the stream 'critters', core/rng.js, so a kind added or a spawning rule changed never
 // moves the world's Math.random)

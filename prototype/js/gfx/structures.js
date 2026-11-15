@@ -92,14 +92,14 @@ function holdingEnts(t,ents,cam,V){
     for(const l of t.lots){const N=l.n*TILE,X=Math.round(l.x*TILE-cam.x),Y=Math.round((l.y+l.n)*TILE-cam.y);if(X>VW||X+N<0||Y-N>VH+20||Y<-12)continue;const [bx,by,bn,k]=lotDrawBox(l,X,Y,N);
       // (its shadow, in the shadow pass: where its building is drawn, as you last saw it outside your sight; none while it is going up)
       const live=inSight((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE),sm=live?l.st!=='building'&&lotSprite(t,l):(seenTile(l.x,l.y)||seenTile(l.x+l.n-1,l.y+l.n-1))&&(l._mem||lotSprite(t,l));
-      ents.push({y:(l.y+l.n)*TILE-1,sh:sm&&sm.sh?[scaledPic(sm.sh,k),bx,by]:null,f:()=>{
+      ents.push({x:(l.x+l.n/2)*TILE,y:(l.y+l.n)*TILE-1,sh:sm&&sm.sh?[scaledPic(sm.sh,k),bx,by]:null,f:()=>{
         // outside your sight: the building as you last saw it (fog.js), or nothing if you never saw its ground
         if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);drawLot(t,l,m,bx,by,bn);depthPic(scaledPic(m,k),bx,by);drawRotors(m,bx,by,l.seed,true,k);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(holdingFlag(t,col),bx+m.flag[0]*k,by+m.flag[1]*k,t.seed);holdingPlaque(t,cam,by+Math.min(0,m.flag?m.flag[1]*k:0),false)}return}
         const s=lotSprite(t,l),w=t.work&&(t.work.lot?t.work.lot===l.id:t.work.k===l.k||t.work.k==='wall'&&l.k==='centre'),p=w?workProg(t):0;l._mem=s;l._memSt=l.st;
         if(l.st==='building')drawSite(s,bx,Y,bn,p,false,l.seed,t.races?.[0]);else{drawLot(t,l,s,bx,by,bn);depthPic(scaledPic(s,k),bx,by);drawRotors(s,bx,by,l.seed,false,k);if(w&&l.st==='built')drawSite(s,bx,Y,bn,p,true,l.seed,t.races?.[0])}
         if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
         if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(holdingFlag(t,col),bx+s.flag[0]*k,by+s.flag[1]*k,t.seed);holdingLabel(t,cam,bx,Y,bn,s.flag?s.flag[1]*k:0)}}});// (no estate's name under it near you: no words on the map's places, the owner, 2026-11-08; its tip names it)
-      if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)});
+      if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({x:o.x,y:o.y,f:()=>drawMoored(o,cam)});
       if(l.k==='pasture'&&l.st==='built'&&live)penEnts(t,PEN_ENTS,cam)}// (its herd, inside its fence: critters.js; with those who move, PEN_ENTS)
   TownWall.ents(t,ents,cam);// (its ring of walls: world/townwalls.js)
 }
@@ -131,7 +131,7 @@ function drawSite(s,X,Y,N,p,full,seed,race){
 }
 // placing a building by hand: its ghost under the pointer, its tiles green where it may stand and red where not
 function drawPlace(cam){
-  const pl=G.place,t=townBy(pl.town);if(!t||!G.mouse.in)return;const n=pl.n,N=n*TILE,{x,y}=placeAt(G.cam.x+G.mouse.x,G.cam.y+G.mouse.y,n),ok=placeOk(t,pl.k,x,y,n),X=x*TILE-cam.x,Y=y*TILE-cam.y;
+  const pl=G.place,t=townBy(pl.town);if(!t||!G.mouse.in)return;const n=pl.n,N=n*TILE,{x,y}=placeAt(G.cam.x+G.mouse.x,groundAt(G.cam.x+G.mouse.x,G.cam.y+G.mouse.y).y,n),ok=placeOk(t,pl.k,x,y,n),X=x*TILE-cam.x,Y=y*TILE-cam.y;
   if(!pl._s){const s={culture:holdingCulture(t),people:t.races[0],seed:pl.seed,env:climAt(t.x,t.y)},b=PX.MODEL_SIZES.types[pl.type]?PX.buildingModel({...s,type:pl.type}):PX.clusterModel({...s,kind:pl.type});pl._s=b.img}
   ctx.fillStyle=ok?'rgba(120,220,110,.28)':'rgba(230,90,80,.32)';ctx.fillRect(X,Y,N,N);ctx.globalAlpha=.75;ctx.drawImage(pl._s,X,Y);ctx.globalAlpha=1;
   ctx.strokeStyle=ok?'#78dc6e':'#e65a50';ctx.lineWidth=1;ctx.strokeRect(X+.5,Y+.5,N-1,N-1);
@@ -159,7 +159,7 @@ const HOLD_PLAQUE={on:false,h:30,pad:11,gap:5,over:10,most:4,art:2,text:15,full:
 let PLAQUE_FONT=null;
 const plaqueFont=()=>PLAQUE_FONT||(PLAQUE_FONT=(typeof getComputedStyle==='function'&&getComputedStyle(document.documentElement).getPropertyValue('--display').trim())||'Georgia, serif');
 let PLAQUEQ=[];
-function holdingPlaque(t,cam,top,live){PLAQUEQ.push({t,top:top+cam.y,live})}
+function holdingPlaque(t,cam,top,live){PLAQUEQ.push({t,top:top+cam.y-LIFT_NOW,live})}
 function lockPic(){const L=GATE_LOCK;if(!L.pic)L.pic=mkc(L.art[0].length,L.art.length,g=>L.art.forEach((r,y)=>[...r].forEach((c,x)=>{if(L.col[c]){g.fillStyle=L.col[c];g.fillRect(x,y,1,1)}})));return L.pic}
 // (its owner's shield: a heater, flat-topped, in its colours with a pale down it, gold-rimmed, lit on its left; made once a colour)
 const PLAQUE_SHIELD=['ooooooooo','orrrrrrro','oxxxpxxdo','oxxxpxxdo','oxxxpxxdo','oxxxpxxdo','.oxxpxdo.','.oxxpxdo.','..oxpdo..','...oxo...','....o....'],SHIELD_PICS=new Map();
@@ -312,7 +312,7 @@ function drawMoored(o,cam){
 const SHADOW={a:PX.MODEL_SHADE,col:[20,24,12]};let SHM=null;
 // the shadow pass: the entries' sh ([picture, x, y] on the screen) as one mask, laid once
 function drawShadows(list){let any=false;for(const e of list)if(e.sh){any=true;break}if(!any)return;const W=ctx.canvas.width,H=ctx.canvas.height;
-  if(!SHM||SHM.width!==W||SHM.height!==H)SHM=mkc(W,H,()=>{});const g=SHM.getContext('2d', { willReadFrequently: true });g.clearRect(0,0,W,H);for(const e of list)if(e.sh)g.drawImage(e.sh[0],e.sh[1],e.sh[2]);
+  if(!SHM||SHM.width!==W||SHM.height!==H)SHM=mkc(W,H,()=>{});const g=SHM.getContext('2d', { willReadFrequently: true });g.clearRect(0,0,W,H);for(const e of list)if(e.sh)g.drawImage(e.sh[0],e.sh[1],e.sh[2]-(e.x!=null?liftAt(e.x,e.ly??e.y):0));
   ctx.globalAlpha=SHADOW.a;ctx.drawImage(SHM,0,0);ctx.globalAlpha=1}
 
 /* camps and sites (sites.js), each its model (engine/buildmodels.js) in its climate's make, the frost's snow on it: a bandits' camp

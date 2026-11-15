@@ -99,7 +99,7 @@ class Encampment extends Site{
       if(put)out.push(put)}
     ENC_PROPS.set(s.key,{x:s.x,y:s.y,p:out});return out}
   drawProps(ents,cam){const clim=CLIMS[climate[Math.floor(this.y/TILE)*MW+Math.floor(this.x/TILE)]]||'grass';
-    const look=this.look(0);for(const q of this.props()){const pic=propPic(q,clim,look);ents.push({y:q.y,nf:1,f:()=>{const x=Math.round(q.x-cam.x-pic.ax),y=Math.round(q.y-cam.y-pic.ay+1);
+    const look=this.look(0);for(const q of this.props()){const pic=propPic(q,clim,look);ents.push({x:q.x,y:q.y,nf:1,f:()=>{const x=Math.round(q.x-cam.x-pic.ax),y=Math.round(q.y-cam.y-pic.ay+1);
       if(pic.sh){ctx.globalAlpha=SHADOW.a;ctx.drawImage(pic.sh,x,y);ctx.globalAlpha=1}ctx.drawImage(pic,x,y);if(ENCAMP_PROPS[q.type].smoke)propSmoke(x+(pic.width>>1),y+pic.height-7,q.s)}})}}
   // (its tents' look (ENCAMP_KINDS tents): tent i's style, cloth and trim; its biggest, the first, in the first style)
   look(i,seed=0){const T=this.TR.tents||{styles:['ridge'],cloth:CAMP_ART.canvas,trim:['#8a6a4a']},h=(this.seed+seed*7+i*13)>>>0;
@@ -276,10 +276,10 @@ class CampFolk{
   // (people.js folkLook); sitting or kneeling at the fire: his legs hidden; a child smaller; the players bob to their tune)
   static draw(s,ents,cam,V){const C=this.of.get(s);if(!C)return;const cl=dressClimAt(s.x,s.y),S=yourSight(V),k0=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,race=s.folkRace,now=performance.now()/1000;
     // (its animals as the herds are drawn (critters.js, gfx/sprites.js critterArt): their battle figure at the marchers' scale)
-    for(const b of C.beasts){if(!S.sees(b.x,b.y,1.2))continue;ents.push({y:b.y,f:()=>{const A0=critterArt(b.id,0,b.v),N=PX.MAP_STEPS,fr=b.moving?Math.floor(b.walked/Math.max(4,A0.w)*N)%N:0,A=critterArt(b.id,fr,b.v),sx=Math.round(b.x-cam.x),sy=Math.round(b.y-cam.y),w=Math.max(4,A.w-2);
+    for(const b of C.beasts){if(!S.sees(b.x,b.y,1.2))continue;ents.push({x:b.x,y:b.y,f:()=>{const A0=critterArt(b.id,0,b.v),N=PX.MAP_STEPS,fr=b.moving?Math.floor(b.walked/Math.max(4,A0.w)*N)%N:0,A=critterArt(b.id,fr,b.v),sx=Math.round(b.x-cam.x),sy=Math.round(b.y-cam.y),w=Math.max(4,A.w-2);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-(w>>1),sy-1,w,2);ctx.save();ctx.translate(sx,sy);ctx.scale(b.dir<0?-A.k:A.k,A.k);ctx.drawImage(A.s,-(A.s.width>>1),-A.s.height+(A.k<1?2:1));ctx.restore()}})}
     for(const p of C.ppl){if(p.hid||!S.sees(p.x,p.y,1.2))continue;
-      ents.push({y:p.y,f:()=>dressedIn(cl,()=>{const pose=p.moving?2+footFrame(p.walked,p.v):0,sp=p.R.unit?unitSprite(RACES[race][p.R.unit],0,false,p.v,pose,false,false,s.TR.col):personSprite(p.R.look,race,p.v+p.i,pose),
+      ents.push({x:p.x,y:p.y,f:()=>dressedIn(cl,()=>{const pose=p.moving?2+footFrame(p.walked,p.v):0,sp=p.R.unit?unitSprite(RACES[race][p.R.unit],0,false,p.v,pose,false,false,s.TR.col):personSprite(p.R.look,race,p.v+p.i,pose),
         k=k0*(p.R.child?.72:1),low=!p.moving&&(p.kneel||p.mode==='seat'&&!p.R.watch&&!p.play)?4:0,bob=p.play&&!p.moving&&Math.floor(now*3+p.i)%2?1:0,sx=Math.round(p.x-cam.x),sy=Math.round(p.y-cam.y),W2=sp.width,H=sp.height;
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy-bob);ctx.scale(p.dir<0?-k:k,k);ctx.drawImage(sp,0,0,W2,H-low,-Math.floor(W2/2),-H+2+low,W2,H-low);ctx.restore()})})}}
 }

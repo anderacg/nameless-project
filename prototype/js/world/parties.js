@@ -41,7 +41,7 @@ class Party extends WorldObject{
     // (its step by how far it has walked: on foot a step each WALK.foot px, a rider each WALK.ride; standing still, or resting,
     // the first; drawn at its own place to the screen's pixel: render.js subT)
     // (its label over it: render.js drawBanners)
-    ents.push({y:o.y,own:o.faction==='player',f:()=>{subT(o);const sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,rider=!!L.rider&&!L.bandit,go=L.moving&&mapStepping(o),fr=go?frameOf(o,rider?WALK.ride:WALK.foot,WALK.n):0;
+    ents.push({x:o.x,y:o.y,own:o.faction==='player',f:()=>{subT(o);const sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,rider=!!L.rider&&!L.bandit,go=L.moving&&mapStepping(o),fr=go?frameOf(o,rider?WALK.ride:WALK.foot,WALK.n):0;
       const s=partyFig(o,L,fr).s;// (a rider: his host behind his horse)
       if(!WORLD_BATTLE.on)drawHost(o.size,L.col,sx-(rider?fd*4:0),sy+12,fd,go?o.wd:null,L.seed,L.race,L.bandit);
       if(!WORLD_BATTLE.on){ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();}// (marching, its leader is one of its army: march.js)

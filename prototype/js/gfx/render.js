@@ -31,7 +31,7 @@ const snapV=v=>Math.round(v*VS)/VS;
 let SUBD=null;
 const subOf=o=>[snapV(o.x)-Math.round(o.x),snapV(o.y)-Math.round(o.y)];
 function subT(o){if(VS<=1)return;const d=subOf(o);if(!d[0]&&!d[1])return;ctx.translate(d[0],d[1]);SUBD=d}
-function drawMover(e){if(VS<=1){e.f();return}const nt=TXTQ?TXTQ.length:0,nl=LIGHTQ.length;SUBD=null;ctx.save();try{e.f()}finally{ctx.restore()}
+function drawMover(e){if(VS<=1){liftDraw(e,true);return}const nt=TXTQ?TXTQ.length:0,nl=LIGHTQ.length;SUBD=null;ctx.save();try{liftDraw(e,true)}finally{ctx.restore()}
   const d=SUBD;SUBD=null;if(!d)return;if(TXTQ)for(let i=nt;i<TXTQ.length;i++){TXTQ[i][1]+=d[0];TXTQ[i][2]+=d[1]}for(let i=nl;i<LIGHTQ.length;i++){LIGHTQ[i].x+=d[0];LIGHTQ[i].y+=d[1]}}
 /* the parties' tags over their armies (the owner, 2026-11-01: "remove a floating banner, show the banner detail only when you
    inspect them along with the detail window": no banner flies over an army, its banner is on its card: ui.js tipFlag). Each over
@@ -140,11 +140,13 @@ function drawTravelDetection(cam){
 // real time, still under reducedMotion (vfx.js), the only one drawn on the map: not a party's (a WorldObject), whose is on its card)
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
-  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1&&DEV.on)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}// (its count: dev mode only, ui/ui.js PREFS.dev)
-    // (a party's or caravan's label, its count (a band's chief and level with it): dev mode only, ui/ui.js PREFS.dev)
-    if(q.o instanceof WorldObject){if(q.label&&DEV.on){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}continue}
-    const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(B){const d=VS>1?subOf(B.c):[0,0];ctx.drawImage(B.s,B.x-cam.x+d[0],B.y-cam.y+d[1])}}
+  for(const q of BANNERQ){const LQ=q.lift??liftAt(q.o.x,q.o.y);if(LQ){ctx.save();ctx.translate(0,-LQ);try{drawBanner1(q,cam,now,still)}finally{ctx.restore()}}else drawBanner1(q,cam,now,still)}
   BANNERQ=[]}
+// (one banner, a marker or a label: drawBanners)
+function drawBanner1(q,cam,now,still){{if(q.marker){if(!inSight(q.o.x,q.o.y))return;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1&&DEV.on)txt(String(n),r.x+4,r.y-3,m.col,'center');return}// (its count: dev mode only, ui/ui.js PREFS.dev)
+    // (a party's or caravan's label, its count (a band's chief and level with it): dev mode only, ui/ui.js PREFS.dev)
+    if(q.o instanceof WorldObject){if(q.label&&DEV.on){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}return}
+    const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(B){const d=VS>1?subOf(B.c):[0,0];ctx.drawImage(B.s,B.x-cam.x+d[0],B.y-cam.y+d[1])}}}
 // (an animal's step on the map, ms a frame)
 const D_STEP=150;
 // the tile grid over the view: a line along every tile edge from (x0, y0) for w by h world pixels, drawn offset by (ox, oy),
@@ -259,8 +261,8 @@ function drawWorld(){
   for(const m of W.monsters)asMonster(m).draw(ents,cam,V);
   drawHerds(ents,cam,V);// (a pasture's herd: one animal on each worked field tile; the rest as herds: critters.js)
   // (your siege camp, raid and camp: not while a battle is fought on the map round you (B.world): its men stand there instead)
-  if(P.raid&&!B?.world)ents.push({y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
-  if(P.siege&&!B?.world)ents.push({y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(P.banner(),X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
+  if(P.raid&&!B?.world)ents.push({x:P.x,y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
+  if(P.siege&&!B?.world)ents.push({x:P.x,y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(P.banner(),X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
   if(P.camp&&!B?.world){if(WORLD_BATTLE.on)marchCircle(ents,P,cam);bandCampEnts(ents,cam);}
   if(P.stay&&P.stay.camp&&!B?.world)stayCampEnts(ents,cam);
   CampWake.draw(ents,cam);// (the camp a battle caught you in, on the field while it lasts: world/campsite.js)// (your army camped by the gate while you stay: world/stay.js STAY_CAMP)// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
@@ -268,7 +270,7 @@ function drawWorld(){
   // (marching: you are one of your army, in your own place in it: march.js)
   // (pitching camp: your men stand by while the tents go up, world/campsite.js)
   if(!P.stay&&(!P.camp||WORLD_BATTLE.on&&CampSite.pitching('you',partySize()))&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam)}
-    else ents.push({y:P.y,own:1,id:P,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
+    else ents.push({x:P.x,y:P.y,own:1,id:P,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore()}}); }
   GateFile.draw(ents,cam);GateFile.camps(ents,cam,V);// (armies filing in at a gate, camps by a gate with no room: world/gatefile.js)
   drawFolk(ents,cam,V);drawTownFolk(ents,cam,V);Hunters.drawAll(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
@@ -279,7 +281,7 @@ function drawWorld(){
   // smoke and weather, the fog, the night and its lights, the way you walk, and over it all the banners and every label, the
   // quest marks, your goal and the pointer's brackets (worldui.js), and the minimap
   TXTQ=[];TXTQ.ctx=scr;TXTQ.lo=ctx;LIGHTQ=[];BANNERQ=[];PLAQUEQ=[];WDEPTH.pics.length=0;const bents=[];PEN_ENTS.length=0;estateEnts(bents,cam,V);for(const e of PEN_ENTS)ents.push(e);PEN_ENTS.length=0;for(const e of ents.filter(e=>e.st))bents.push(e);
-  drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());// (their shadows first, in one pass: structures.js)
+  drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>liftDraw(e));// (each up by its ground's lift: worldterrain.js liftDraw)// (their shadows first, in one pass: structures.js)
   drawLand(cam,'line');// (the borders over all that stands and the water's glints, under everyone who moves: territory.js)
   nPlace=TXTQ.length}finally{ctx=scr;if(hi){VW--;VH--}}
   // onto the screen, shifted by the camera's fraction, as is everything over it up to the minimap

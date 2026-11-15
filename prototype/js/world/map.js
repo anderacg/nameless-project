@@ -37,6 +37,12 @@ function waterDepths(m){let D=WDEPTHS.get(m);if(D)return D;const W=m.w,H=m.h,N=W
 // (a tile's water: 0 dry land, 1 ankle, 2 knee, 3 waist deep, 4 swum, 5 open water; walkTile: one may be there, on foot or swimming)
 const waterBand=(i,m=WM)=>{if(m.kind[i]!==T_WATER)return 0;const d=waterDepths(m)[i],B=WATER.bands;return d<0?5:d<B[0]?1:d<B[1]?2:d<B[2]?3:4};
 const walkTile=(i,m=WM)=>{const t=m.kind[i];return t!==T_MOUNT&&(t!==T_WATER||waterBand(i,m)<5)};
+/* the lab's swimmers: heavy armour cannot swim, nor can one with no stamina left (engine/worldlab.js speedAt heavy, sta). Your band
+   swims while fewer than half its men are in heavy armour and it has stamina (heroSwims); while your way is found (world.js heroWay)
+   deep water is shut to it if not (WAY_NOSWIM: router.js findPath, wayLocal) and your step never goes into it (world.js walk) */
+let WAY_NOSWIM=false;
+function heroSwims(){if(typeof P==='undefined'||!P)return true;if(P.bsta!=null&&P.bsta<=0)return false;let h=0,n=0;
+  for(const k in P.troops||{}){const c=P.troops[k];if(!(c>0))continue;n+=c;if(ST[k]&&tagsOf(ST[k]).includes('heavy'))h+=c}return !(n&&h/n>=.5)}
 const walkAt=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return tx>=0&&ty>=0&&tx<MW&&ty<MH&&walkTile(ty*MW+tx)};
 const CLIMMUL={grass:1,frost:.7,desert:.85,swamp:.5};
 const tAt=(tx,ty)=>(tx<0||ty<0||tx>=MW||ty>=MH)?T_WATER:tiles[ty*MW+tx];
