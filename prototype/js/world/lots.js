@@ -408,14 +408,18 @@ class Layout{
     t._spots=null}
 }
 // the field tiles a farm, pasture or quarry may grow over (all it will ever need, kept now): one connected patch beside it (a
-// farm's fertile: ESTATE_LAND)
+// farm's fertile: ESTATE_LAND), FIELD_SHORE tiles of land at least between it and any water, ford or brook (the owner, 2026-11-15:
+// "The farm tile or pasture tile should not overlap with water or invalid tile": a shore drawn round its tile reached into a field
+// on the tile beside it; 0: as before)
+const FIELD_SHORE=1;
+function fieldShore(x,y){const R=FIELD_SHORE;for(let j=-R;j<=R;j++)for(let i=-R;i<=R;i++){if(!i&&!j)continue;const X=x+i,Y=y+j;if(X<0||Y<0||X>=MW||Y>=MH)continue;const k=tiles[Y*MW+X];if(k===T_WATER||k===T_FORD||brookAt(X,Y))return true}return false}
 function fieldsFor(t,l,k,most=PLOTS[k],have=[],no=null){
   const fert=ESTATE_LAND[k].fertile,g=k==='quarry'?(x,y)=>tAt(x,y)===T_HILL||tAt(x,y)===T_OPEN:(x,y)=>tAt(x,y)===T_OPEN&&(!fert||fertileAt(x,y)),out=[],cand=[],ti=TOWNS.indexOf(t);
   const wb=wallBox(t),inRing=(x,y)=>wb&&x>=wb.x0-1&&x<=wb.x1+1&&y>=wb.y0-1&&y<=wb.y1+1,RB=roadPaint();// fields stay clear of the town, and off the roads
   // (and within its workers' reach of its door: every corner of a plot within folk.js FIELD.reach of the estate's spot, lotMid; a
   // farmstead of 64 px reaches less far past its back)
   const m=lotMid(l),far=FIELD.reach*TILE,reach=(x,y)=>[[x*TILE+1,y*TILE+4],[(x+1)*TILE-1,y*TILE+4],[x*TILE+1,(y+1)*TILE],[(x+1)*TILE-1,(y+1)*TILE]].every(([a,b])=>Math.hypot(a-m.x,b-m.y)<=far);
-  for(let y=l.y-3;y<=l.y+l.n+2;y++)for(let x=l.x-3;x<=l.x+l.n+2;x++){if(x>=l.x&&x<l.x+l.n&&y>=l.y&&y<l.y+l.n||OCC[y*MW+x]||RB[y*MW+x]||no&&(no[y*MW+x]||tiles[y*MW+x]===T_ROAD)||!g(x,y)||brookAt(x,y)||x<1||y<1||x>=MW-1||y>=MH-1||inRing(x,y)||!reach(x,y)||!walkTo(t,x,y))continue;const L=LAND[y*MW+x];if(L>=0&&L!==ti)continue;
+  for(let y=l.y-3;y<=l.y+l.n+2;y++)for(let x=l.x-3;x<=l.x+l.n+2;x++){if(x>=l.x&&x<l.x+l.n&&y>=l.y&&y<l.y+l.n||OCC[y*MW+x]||RB[y*MW+x]||no&&(no[y*MW+x]||tiles[y*MW+x]===T_ROAD)||!g(x,y)||brookAt(x,y)||fieldShore(x,y)||x<1||y<1||x>=MW-1||y>=MH-1||inRing(x,y)||!reach(x,y)||!walkTo(t,x,y))continue;const L=LAND[y*MW+x];if(L>=0&&L!==ti)continue;
     const d=Math.hypot(x-(l.x+l.n/2-.5),y-(l.y+l.n/2-.5));cand.push([x,y,d+hash(x,y,t.seed)*.6])}
   cand.sort((a,c)=>a[2]-c[2]);const touch=[...have];lotTiles(l,(x,y)=>touch.push([x,y]));out.push(...have);
   while(out.length<most){const c=cand.find(c=>!out.includes(c)&&touch.some(q=>Math.abs(q[0]-c[0])+Math.abs(q[1]-c[1])===1));if(!c)break;out.push(c);touch.push(c)}

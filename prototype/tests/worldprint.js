@@ -831,7 +831,14 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W7, W8 re-recorded 2026-11-14, on purpose: the owner, "reduce world moving speed for all": campaign travel 1.28 times the
 //  base, was 1.6 (data/world.js WORLD_SCALE.travel), so every party covers less ground in the 600 frames (W8) and the three days
 //  (W7). Proof: travel 1.6 gives both again (W1-W6, B2 held). Were W7 0cc26fac, W8 b871b922)
-const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'6fa8216f',W6:'b43ed88c',W7:'7492cbf5',W8:'1ffe8f1a',B2:'c315aa9a'};
+// (W1, W3, W4, W5, W6, W7, W8, B2 re-recorded 2026-11-15, on purpose: two fixes of the owner's, "There's case where the city not build a bridge
+//  which is weird because it has a road connected to the edge" and "The farm tile or pasture tile should not overlap with water or
+//  invalid tile". Once every road is laid, a ford with a road joined to the holdings at both its ends and an end within 8 tiles of a
+//  town, city, castle or fort is built a bridge (worldplace.js PLACE.fordTown, placeTownBridges: its tiles road, not ford; 5 of
+//  seed 1's 38 fords; the roads as they were), so the tiles (W1) and all placed after them move; and a field keeps a tile of land
+//  from any water, ford or brook (lots.js FIELD_SHORE, fieldShore: no field tile of seed 1 by water now). W2 held. Proof:
+//  PLACE.fordTown 0 and FIELD_SHORE 0 give every value again. Were W1 a5992687, W3 841fec64, W4 74e5a11d, W5 6fa8216f, W6 b43ed88c, W7 7492cbf5, W8 1ffe8f1a, B2 c315aa9a)
+const EXPECT={W1:'fcc9be4a',W2:'6ba3aa7f',W3:'0ba097f2',W4:'85a7d384',W5:'039fbe31',W6:'55f04aa1',W7:'a0041dfb',W8:'4d549b20',B2:'c916eeb1'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -890,7 +897,9 @@ const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'6fa821
 //  Normal s1 c05c2a0b, s2 71336fed, s3 88b17161, Large s1 66607a42)
 // (all five re-recorded 2026-11-14, on purpose: the holdings spread out (W1-W8 above). Proof: the old gaps give all five again.
 //  Were classic 376eb788, Normal s1 0620ac51, Normal s2 8d537d0c, Normal s3 3c103cb4, Large s1 1a0f554e)
-const SUMS={classic:'759ca6f8','Normal s1':'2d3eb194','Normal s2':'812260ff','Normal s3':'175fcc04','Large s1':'3b4ad7bf'};
+// (classic, Normal s1, Normal s3, Large s1 re-recorded 2026-11-15, on purpose: the fords by towns built bridges (W1-W8 above; Normal s2 has
+//  none such). Proof: PLACE.fordTown 0 gives them again. Were classic 759ca6f8, Normal s1 2d3eb194, Normal s3 175fcc04, Large s1 3b4ad7bf)
+const SUMS={classic:'88f2e7f8','Normal s1':'69fdd482','Normal s2':'812260ff','Normal s3':'4638513a','Large s1':'127d2d4d'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}
