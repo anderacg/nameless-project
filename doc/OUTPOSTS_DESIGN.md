@@ -36,7 +36,7 @@ Its name by where it stands: "the Highmoor ford outpost", "the Iron Hill outpost
 
 ## 3. Guards and levels
 
-- **Guards:** its garrison (`OUTPOST.guards`: 3, 6, 10 by level), drawn from its realm's nearest holding; one watch patrols a ring round it (`world/patrols.js`, its home the outpost).
+- **Guards:** its garrison (`OUTPOST.guards`: 3, 6, 10 by level), drawn from its realm's nearest holding; one watch patrols a ring round it (`world/patrols.js`, its home the outpost). On the map, up to three of them keep a watch by the flag as one group (2026-11-15, the owner: "They should be a group of three sentry guarding around there"; `world/outposts.js` `OutpostWatch`): they walk together from post to post in front of it at a man on foot's stroll (`data/world.js` `ON_FOOT`), stand a while at each, and rest by the tower's door after each round.
 - **Growth:** held in peace a while, it grows a level, paid in resources by its nearest holding (timber, then stone).
 - **Damage:** taken, it drops a level (its tower broken), and mends slowly, again on resources. Short of them, it waits: a repair quest.
 

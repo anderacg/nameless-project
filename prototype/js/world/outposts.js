@@ -11,8 +11,6 @@
 // (what stands there by its level, in words: the owner, 2026-11-10, "can we rename it to something more straightforward?": an outpost;
 // in the code too since 2026-11-12, "refactor the name standards to outpost", and its sites' saved type since 2026-11-14: OUTPOST_TYPE)
 const OUTPOST_LV=['','a flag post','a flag post and a watchtower','a flag post and a stone tower'];
-// (each outpost's sentries as they walk on the map: drawn only, never saved)
-const SENTRY_MEN=new WeakMap();
 class Outpost extends Site{
   get T(){return OUTPOST.T}
   get screen(){return PAGE_SCREEN}
@@ -85,20 +83,11 @@ class Outpost extends Site{
   mapDot(V){return this.known()?[this.col(),2]:null}
   tip(){const f=this.ownerName();return '<b>'+Discovery.nameOf(this)+'</b><small>'+(f?'Held by '+f:'Held by no one')+', '+OUTPOST_LV[this.lv]+(this.broken?' (broken)':'')+(this.guards?', '+roughly(this.guards)+' guards':'')+'</small><span class="act">Click: go there</span>'}
   sprite(){return outpostSprite(this)}
-  // (on the map: it, and its sentries on their beat round it in your sight, those resting in its tower not seen: sentryAt)
-  // (not while a battle is fought on the map: its guards are in it, OutpostTower)
-  draw(ents,cam,V){super.draw(ents,cam,V);const X=OUTPOST.sentries,n=Math.min(X.most,this.guards),f=this.realm;if(!n||!f||B&&B.world||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
-    const type=this.sentryType(),col=FACS[f].col,mins=(G.day+Clock.frac)*1440;
-    /* (each walks as a marcher of an army does (the owner, 2026-11-14: "the outpost patrol still walking weird why dont use the same
-       concepts as guard or sentry"): a man of his own, kept (SENTRY_MEN), on toward where his beat has him now (sentryAt) on the real
-       clock, at least X.walk px a second, his steps by the way he has walked, facing the way he goes, standing his fidgets at a post,
-       drawn as the map's men are, the battle's figure with his weapon in hand (march.js drawMarcher)) */
-    const now=performance.now()/1000,men=SENTRY_MEN.get(this)||(SENTRY_MEN.set(this,[]),SENTRY_MEN.get(this)),o=this.sentryOwner();
-    for(let i=0;i<n;i++){const p=this.sentryAt(i,n,mins);let u=men[i];if(p.inside){if(u)u.gone=true;continue}
-      if(!u||u.gone||Math.hypot(u.x-p.x,u.y-p.y)>X.snap)u=men[i]={id:(this.seed||0)*7+i,type,x:p.x,y:p.y,walk:0,walking:false,dir:p.dir<0?Math.PI:0,t:now};
-      const dt=clamp(now-u.t,0,.1),dx=p.x-u.x,dy=p.y-u.y,d=Math.hypot(dx,dy),s=Math.min(d,Math.max(X.walk*dt,d*Math.min(1,dt*6)));u.t=now;u.type=type;
-      if(s>.02){u.x+=dx/d*s;u.y+=dy/d*s;u.walk+=s;u.walking=true;if(Math.abs(dx)>.3)u.dir=dx<0?Math.PI:0}else{u.walking=p.moving&&d>.5;if(!p.moving)u.dir=p.dir<0?Math.PI:0}
-      ents.push({y:u.y,f:()=>drawMarcher(u,o,cam)})}}
+  // (on the map: it, and its sentries walking their beat round it in your sight (OutpostWatch), each as the map's men are drawn,
+  // the battle's figure with his weapon in hand (march.js drawMarcher); not while a battle is fought on the map: its guards are in
+  // it, OutpostTower)
+  draw(ents,cam,V){super.draw(ents,cam,V);const w=OutpostWatch.of.get(this);if(!w||!this.realm||!FACS[this.realm]||B&&B.world||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
+    const o=this.sentryOwner();for(const u of w.men)ents.push({y:u.y,f:()=>drawMarcher(u,o,cam)})}
   // (who the sentries march for, as drawMarcher reads an army: its realm's colours, where it stands)
   sentryOwner(){const f=this.realm,col=FACS[f].col;return{x:this.x,y:this.y,fac:f,faction:f,mapKind:'patrol',look:()=>({col,dir:1}),banner:()=>({k:'banner',col,dev:f})}}
   // (its beat: the posts round the flag, each outpost's turned by its seed; its tower's door, where a sentry goes in to rest, or the
@@ -107,20 +96,8 @@ class Outpost extends Site{
   // tower), r px either side and a little forward, each outpost's arc shifted by its seed)
   posts(){const X=OUTPOST.sentries,k=X.posts,sh=((this.seed||0)%7-3)*.03;
     return Array.from({length:k},(_,j)=>{const a=Math.PI*(.12+.76*(j+.5)/k+sh);return{x:this.x+Math.cos(a)*X.r,y:this.y+11+Math.sin(a)*X.r*.3}})}
-  // (where sentry i of n rests: in its tower, at its door; with no tower standing, a spot of his own below the flag's foot)
+  // (where its watch rests: by its tower's door; with no tower standing, below the flag's foot (i of n: a spot of one's own there))
   door(i=0,n=1){const f=this.towerLv&&this.footing()[1];return f?{x:f.x+f.w/2,y:f.y+f.h+1,tower:true}:{x:this.x+(i-(n-1)/2)*9,y:this.y+13,tower:false}}
-  // (sentry i of n at game minute mins: {x, y, dir, moving, inside}. From his rest to the post nearest it, round the others, a stand at
-  // each, back to that post and to his rest; each a share of the round behind the one before (the same round for all: one is
-  // always out). Of the time alone, so nothing is kept or saved)
-  sentryAt(i,n,mins){const X=OUTPOST.sentries,P=this.posts(),D=this.door(i,n),k=P.length,d=p=>Math.hypot(p.x-D.x,p.y-D.y),s0=P.reduce((b,p,j)=>d(p)<d(P[b])?j:b,0);
-    const way=[...Array(k).keys()].map(j=>P[(s0+j)%k]).concat([P[s0],D]),legs=[];let at=D;
-    way.forEach((to,j)=>{const st=j<k?X.stand[0]+((this.seed||0)*7+j*13)%(X.stand[1]-X.stand[0]+1):0,via=this.around(at,to);
-      for(const v of via)legs.push({from:at,to:v,w:Math.hypot(v.x-at.x,v.y-at.y)/X.pace,st:0}),at=v;legs.push({from:at,to,w:Math.hypot(to.x-at.x,to.y-at.y)/X.pace,st});at=to});
-    const round=legs.reduce((a,l)=>a+l.w+l.st,0),rest=Math.min(X.rest,round),cyc=round+rest;let t=((mins+i*cyc/n)%cyc+cyc)%cyc,walked=0;
-    // (walked: how far along its beat, px, for its stride)
-    for(const l of legs){if(t<l.w){const u=t/l.w,dx=l.to.x-l.from.x;return{x:l.from.x+dx*u,y:l.from.y+(l.to.y-l.from.y)*u,dir:dx<0?-1:1,moving:true,inside:false,walked:walked+l.w*X.pace*u}}t-=l.w;walked+=l.w*X.pace;
-      if(t<l.st)return{x:l.to.x,y:l.to.y,dir:l.to.x<this.x?1:-1,moving:false,inside:false};t-=l.st}
-    return{x:D.x,y:D.y,dir:i%2?-1:1,moving:false,inside:D.tower}}
   // (the corners to walk by from a to b, if the straight way crosses its plinth or tower: [] none, else those of the box in the way
   // (4 px clear of it))
   around(a,b){const F=this.footing(),inB=(f,x,y,m)=>x>f.x-m&&x<f.x+f.w+m&&y>f.y-m&&y<f.y+f.h+m,cross=(p,q,m)=>{for(let u=0;u<=1;u+=.05){const x=p.x+(q.x-p.x)*u,y=p.y+(q.y-p.y)*u;if(F.some(f=>inB(f,x,y,m)))return true}return false};
@@ -250,7 +227,40 @@ const Outposts={
   // (a held outpost of a realm's or yours within OUTPOST.safe tiles of a point: no band is raised there, world.js spawnBandit)
   guarded(x,y){const r=OUTPOST.safe*TILE;return this.all().some(s=>s.realm&&s.guards>0&&Math.hypot(s.x-x,s.y-y)<r)}
 };
+/* ---------- an outpost's watch (the owner, 2026-11-15: "The speed is too fast and not matching with walking speed. They should be a
+   group of three sentry guarding around there"; data/outposts.js OUTPOST.sentries): its sentries walk together, a knot of men round
+   their leader, from post to post round the flag at a man on foot's gait (data/world.js ON_FOOT, as everyone walking the map), a stand
+   at each, then a rest by its tower's door; each man to his place in the knot, his steps by the way he has walked (march.js
+   drawMarcher). Only near you, by the world's clock, its own stream (the world's Math.random untouched); drawn only, never saved ---------- */
+class OutpostWatch{
+  static of=new WeakMap();
+  // (its stops: its posts, then its door to rest at)
+  static stops(s){return [...s.posts(),s.door()]}
+  static step(d){const X=OUTPOST.sentries;
+    for(const s of W.sites||[]){if(s.type!==OUTPOST_TYPE)continue;const n=Math.min(X.most,s.guards||0);
+      if(!n||!s.realm||!FACS[s.realm]||B?.world||Math.hypot(s.x-P.x,s.y-P.y)>X.near){this.of.delete(s);continue}
+      let w=this.of.get(s);if(!w){const D=s.door(),R=seeded((s.seed||1)*977+13);w={k:this.stops(s).length-1,x:D.x,y:D.y,way:[],wait:R()*X.rest,h:0,look:0,moving:false,men:[],R};this.of.set(s,w)}
+      this.lead(s,w,d);this.knot(s,w,n,d)}}
+  // (its leader: standing out his stand, else on to the next stop, round its plinth (Outpost around); there, a stand (at its door,
+  // the rest), facing out from the flag)
+  static lead(s,w,d){const X=OUTPOST.sentries;w.moving=false;if(w.wait>0){w.wait-=d;return}const S=this.stops(s);
+    if(!w.way.length){w.k=(w.k+1)%S.length;const to=S[w.k];w.way=[...s.around(w,to),to]}
+    const q=w.way[0],dx=q.x-w.x,dy=q.y-w.y,dd=Math.hypot(dx,dy),st=footStep(X.gait,d);w.moving=true;if(dd>.01)w.h=Math.atan2(dy,dx);
+    if(dd>st){w.x+=dx/dd*st;w.y+=dy/dd*st;return}
+    w.x=q.x;w.y=q.y;w.way.shift();if(w.way.length)return;const rest=w.k===S.length-1;
+    w.wait=rest?X.rest:X.stand[0]+w.R()*(X.stand[1]-X.stand[0]);w.look=rest?(s.seed||0)%2?Math.PI:0:w.x<s.x?Math.PI:0}
+  // (its men: each to his place in the knot (X.knot, turned the way it goes), walking up at catch × the gait; there, standing,
+  // facing as it does)
+  static knot(s,w,n,d){const X=OUTPOST.sentries,type=s.sentryType(),ch=Math.cos(w.h),sh=Math.sin(w.h),cap=footStep(X.gait,d)*X.catch;
+    for(let i=0;i<n;i++){const [a,c]=X.knot[i]||[-6*i,0],tx=w.x+ch*a-sh*c,ty=w.y+sh*a+ch*c;let u=w.men[i];
+      if(!u)u=w.men[i]={id:(s.seed||0)*7+i,type,x:tx,y:ty,walk:0,walking:false,dir:w.look};
+      u.type=type;const dx=tx-u.x,dy=ty-u.y,dd=Math.hypot(dx,dy);
+      if(dd>.3){const st=Math.min(dd,cap);u.x+=dx/dd*st;u.y+=dy/dd*st;u.walk+=st;u.walking=true;if(Math.abs(dx)>.05)u.dir=dx<0?Math.PI:0}
+      else{u.walking=false;if(!w.moving)u.dir=w.look}}
+    w.men.length=n}
+}
 Systems.add({name:'outposts',order:{hour:45,day:72},hour:()=>Outposts.hour(),day:()=>Outposts.day()});
+Systems.add({name:'outpost watch',order:{frame:147},frame:d=>OutpostWatch.step(d)});
 onWorld(()=>{Outposts.live=false});// (a new world: no claims till this game's are placed)
 
 /* ---------- its tower in battle (doc/OUTPOSTS_DESIGN.md §7, phase 5; the owner: "Its tower in battle: yes", archers shooting

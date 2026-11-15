@@ -1,9 +1,10 @@
 'use strict';
 // The main menu (ui/mainmenu.js) on the game's own page, loaded in a frame as a player opens it (no ?test=, so no world made at
 // load): no map, holdings or camps until a campaign starts or a save loads; the menu alone, its five buttons, Continue dimmed with
-// no save; the arrows move between the buttons and Esc does nothing there; New Campaign opens the New game page (a
-// past then the New world screen, whose Back comes back); it fits a phone on its side (844 x 390) and a desktop (1600 x 900); its
-// scene is seeded (drawn twice, the same pixels); a campaign started makes the world, and the Esc menu's Main menu lets it go again.
+// no save; the arrows move between the buttons and Esc does nothing there; New Campaign opens the New game page (your
+// hero, Next to your past, a past then the New world screen; each Back a page back); it fits a phone on its side (844 x 390) and
+// a desktop (1600 x 900); its scene is seeded (drawn twice, the same pixels); a campaign started makes the world, and the Esc
+// menu's Main menu lets it go again.
 window.RUN=()=>{
   const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);let done=false;
   window.requestAnimationFrame=()=>0;Kit.fresh();
@@ -38,11 +39,14 @@ window.RUN=()=>{
     ok(a1==='Load game'&&a2==='Quit'&&ev('G.menu')==='main'&&ev('G.mode')==='title','the arrows move between the open buttons (down: '+a1+', up twice: '+a2+'); Esc does nothing on the main menu');
     q('[data-mm="load"]').click();ok(ev('G.menu')==='load'&&d.querySelectorAll('.save-slot').length===7,'Load game below Continue opens all seven slots, even with no save');
     d.querySelector('#panel .nav [data-nav="back"]').click();
-    // ---- New Campaign: the New game page over the scene; a past opens the New world screen, Back comes back
+    // ---- New Campaign: the New game page over the scene, in two pages since 2026-11-07 (ui.js showTitle: your hero, Next, then
+    // your past); a past opens the New world screen, each Back a page back
     q('[data-mm="new"]').click();
     ok(ev('G.menu')==='new'&&mm.dataset.page==='new'&&w.getComputedStyle(q('.mm-banner')).display==='none'&&!d.getElementById('ov').hidden,'New Campaign: the New game page, the scene behind it, the banner put away');
-    {d.querySelector('#panel [data-act="begin"][data-arg="world:soldier"]').click();ok(ev('G.menu')==='world'&&/New world/.test(d.getElementById('panel').textContent)&&ev('WM')===null,'a past: the New world screen, still no world made');
-      d.querySelector('#panel [data-act="ws-back"]').click();ok(ev('G.menu')==='new','its Back: the New game page')}
+    {d.querySelector('#panel .nav [data-act="menu"][data-arg="past"]').click();ok(ev('G.menu')==='past','its Next: your past');
+      d.querySelector('#panel [data-act="begin"][data-arg="world:soldier"]').click();ok(ev('G.menu')==='world'&&/New world/.test(d.getElementById('panel').textContent)&&ev('WM')===null,'a past: the New world screen, still no world made');
+      d.querySelector('#panel [data-act="ws-back"]').click();ok(ev('G.menu')==='past','its Back: your past again');
+      d.querySelector('#panel .nav [data-nav="back"]').click();ok(ev('G.menu')==='new','and Back: your hero')}
     d.querySelector('#panel .nav [data-nav="back"]').click();ok(ev('G.menu')==='main'&&!mm.hidden&&mm.dataset.page==='main'&&d.getElementById('ov').hidden,'Back: the main menu again');
     // ---- portrait, then back to the desktop's illustrated menu
     frame.width=390;frame.height=844;

@@ -41,7 +41,7 @@ function marchLayout(o){
   const r=partyRoster(o),gs=r.groups,lead=marchLeaderOf(o),saved=o.army?.march,ids=o===P?r.order.filter(id=>id==='hero'||(id.startsWith('comp_')?compsInBand().includes(id.slice(5)):gs.some(g=>g.id===id&&g.count>0))):[...(lead?['leader']:[]),...gs.filter(g=>g.count>0).map(g=>g.id)];
   const style=o===P||saved?MARCH_STYLES.yours:MarchStyle.pick(o,gs),col=TravelStyle.column(o),key=style+'|'+r.size+'|'+r.reserved+'|'+lead+'|'+ids.map(id=>{const g=gs.find(g=>g.id===id);return g?id+':'+g.type+':'+g.count+':'+g.form+':'+g.files:id}).join()+(saved?'|'+JSON.stringify(saved):'')+(o.army?.column?'|c'+o.army.column.join():'')+(col?'|column':'');
   let L=MARCH_LAYOUTS.get(o);if(L?.key===key)return L;
-  const base=ids.map(id=>{const g=gs.find(g=>g.id===id);return{id,type:g?.type||(id==='leader'?lead:id),count:g?.count||1,face:Number.isFinite(saved?.[id]?.face)?saved[id].face:0,form:g?.form||'line',files:g?.files||null,character:!g}});
+  const base=ids.map(id=>{const g=gs.find(g=>g.id===id);return{id,type:g?.type||(id==='leader'?lead:id),count:g?.count||1,face:Number.isFinite(saved?.[id]?.face)?saved[id].face:0,form:o.marchForm||g?.form||'line',files:g?.files||null,character:!g}});
   // (a group you placed where you placed it, inside the room you have to place it in)
   const laid=MarchStyle.of(style).lay(base,o),room=Math.max(marchSpace(o),...laid.map(row=>marchFoot(row,row.x,row.y)));
   const rows=laid.map(row=>{const s=saved?.[row.id];if(!(s&&Number.isFinite(s.x)&&Number.isFinite(s.y)))return row;const q=marchPlace(row,s.x,s.y,room);return{...row,x:q.x,y:q.y}});
@@ -173,15 +173,15 @@ const marchCart=(o,at=o)=>{const d=o.dir<0?-1:1;return MARCH_CART.map(([x,r])=>(
 // off, drawn apart: a flag's spear, gfx/marchgear.js).
 // (his look, as his sprite's: sprites.js spriteLook, kept on him)
 function marchLook(u,o){const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',col=o.look().col;
-  const cl=dressClimAt(o.x,o.y);if(!u.mLook||u.mLookC!==col||u.mLookW!==cl){u.mLook=dressedIn(cl,()=>spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col));u.mLookC=col;u.mLookW=cl}return u.mLook}
+  const cl=dressClimAt(o.x,o.y);if(!u.mLook||u.mLookC!==col||u.mLookW!==cl){const L=dressedIn(cl,()=>spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col));u.mLook=o.unarmed?{...L,weapon:null,slung:WPN[L.weapon]?null:L.weapon}:L;u.mLookC=col;u.mLookW=cl}return u.mLook}// (unarmed (refugees): their tools slung on their backs, nothing in hand)
 // (his stride's frame on the march, 0-3: by the way he has walked, a step each WALK.foot × WALK.step px, so his feet keep to the ground)
-const marcherStep=u=>(Math.floor((u.walk||0)/(WALK.foot*WALK.step))+u.id)%4;
+const marcherStep=u=>footFrame(u.walk,u.id);
 // (drawn walking: stepping, and not yet at his place: there, he stands at once, not on his last stride frozen for the rest of
 // MARCH_MOVE.stride; the owner, "leg stuck before going to idle". Drawn only: the march itself reads u.walking)
 const marchWalks=u=>!!u.walking&&!(u.tg&&Math.hypot(u.x-u.tg.x,u.y-u.tg.y)<MARCH_MOVE.home);
 function marchSprite(u,o,pose,bare){
   const type=chiefLookType(u.character?u.type.replace(/^comp_/,''):u.type,o.ld?.band),hero=type==='hero',lead=hero||u.row==='leader';
-  return dressedIn(dressClimAt(o.x,o.y),()=>unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(marchWalks(u)?2+marcherStep(u):0),!!bare,false,o.look().col));
+  return dressedIn(dressClimAt(o.x,o.y),()=>unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(marchWalks(u)?2+marcherStep(u):0),!!bare,!!o.unarmed,o.look().col));
 }
 // Leaders use the same character kind and equipment as battle; cached cells also serve map picking and banner height.
 const MARCH_LEADERS=new WeakMap();
@@ -200,7 +200,7 @@ function marchDraw(ents,o,cam){
   const u0=army.units[0];if(u0&&o.mapKind==='monster')ents.push({y:o.y,f:()=>BANNERQ.push({o,marker:{h:marchSprite(u0,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})});return true;
 }
 // (drawn small without losing its lines when zoomed out: render.js reduced)
-function drawMarcher(u,o,cam){if(u.gateAt)return;return reduced(()=>drawMarcherAt(u,o,cam))}// (waiting his turn at a gate: unseen, gatefile.js)
+function drawMarcher(u,o,cam){if(u.gateAt)return;if(o.drawMan)return o.drawMan(u,cam);return reduced(()=>drawMarcherAt(u,o,cam))}// (an army of no soldiers draws its own men: refugees.js)// (waiting his turn at a gate: unseen, gatefile.js)
 function drawMarcherAt(u,o,cam){
   // (standing: his fidgets, as in battle: render.js idleLife, on the real clock)
   const S=ST[u.type]||{},I=!marchWalks(u)?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
@@ -216,7 +216,7 @@ function drawMarcherAt(u,o,cam){
 // middle its men make (MarchArmy mid: each man's spot less his place in it, their median), so they go as the men go, and settle
 // on the army's own as they do; no men formed near, on the army's own. Its army given (marchDraw), the outline of its men's ground
 // instead (MarchOutline, MARCH_RING), drawn as the circles are, about its middle
-function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDetectionColor(travelDetectionState()):o.look().col,army=null){
+function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDetectionColor(travelDetectionShown(travelDetectionState())):o.look().col,army=null){
   const L=army&&MARCH_RING.on&&army.units.length?army.ring||(army.ring=new MarchOutline()):null;
   // (MARCH_RING.draw off: no ring drawn, its outline kept for the rules all the same)
   if(L){L.update(army);if(!MARCH_RING.draw)return;ents.push({y:o.y+L.top,f:()=>{const x=o.x-cam.x,y=o.y-cam.y;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;L.path(L.out[0],x,y);ctx.stroke();
@@ -1016,7 +1016,7 @@ const MARCH_FIGS=new WeakMap();
 function marchPicked(o){const a=WORLD_BATTLE.on&&MARCH_ARMIES.get(o);return a&&a.units.some(u=>!u.dead)&&Math.hypot(o.x-a.x,o.y-a.y)<=MARCH_MOVE.teleport&&!(o===P&&(P.stay||P.camp))?a:null}
 onWorld(()=>{MARCH_ARMIES=new WeakMap()});
 // (every army that marches man by man, near you: yours, the parties, the caravans, the beasts)
-const marchOwners=()=>[P,...W.parties,...W.caravans,...W.monsters.map(asMonster)];
+const marchOwners=()=>[P,...W.parties,...W.caravans,...W.monsters.map(asMonster),...W.refugees.map(asRefugees)];// (refugees marched as an army: refugees.js)
 // (menCentre: before anything moves (the brains, your march), each army marched last moment gives its owner its guide back to move;
 // one moved since by other than its march (Kit.goTo, a gate between moments): a jump, re-placed at its next step)
 Systems.add({name:'march guides',order:{frame:48},frame:()=>{

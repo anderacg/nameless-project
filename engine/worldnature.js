@@ -423,7 +423,7 @@
             for(let c2=0;c2<4;c2++){const l=LK[c2];if(l===la||l===lb||!(LW[l]>0))continue;if(la<0||LW[l]>LW[la]){lb=la;la=l}else if(lb<0||LW[l]>LW[lb])lb=l}
             if(la<0)la=LK[0];CL[k]=la;CL2[k]=lb<0?la:lb;CT[k]=lb<0?0:Math.round(255*LW[lb]/(LW[la]+LW[lb]))}
           else CL[k]=ki>=0?ki:CLIMS.indexOf(o.clim(Math.floor((x-ox)/ts),Math.floor((y-oy)/ts)))}}
-      if(!((y-y0+1)&31))yield}
+      if(!((y-y0+1)&7))yield}
     for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){const k=y*bw+x;if(!A[k])continue;A[k]=Math.min(A[k],x?A[k-1]+3:3,y?A[k-bw]+3:3,x&&y?A[k-bw-1]+4:4,y&&x<bw-1?A[k-bw+1]+4:4)}
     for(let y=bh-1;y>=0;y--)for(let x=bw-1;x>=0;x--){const k=y*bw+x;if(!A[k])continue;A[k]=Math.min(A[k],x<bw-1?A[k+1]+3:3,y<bh-1?A[k+bw]+3:3,x<bw-1&&y<bh-1?A[k+bw+1]+4:4,y<bh-1&&x?A[k+bw-1]+4:4)}
     yield;
@@ -441,7 +441,7 @@
       for(let j=0;j<ph;j++){for(let i=0;i<pw;i++){const x=x0+2*i,y=y0+2*j;let z=0;for(const p of PK){const dx=x-p.x,dy=(y-p.y)*1.15,r0=Math.sqrt(dx*dx+dy*dy),u=dx*p.cf+dy*p.sf,v=dy*p.cf-dx*p.sf,r=p.e===1?r0:Math.sqrt(u*u*p.e*p.e+v*v/(p.e*p.e));if(p.h-p.s*r*.68<=z)continue;
           const c=r0?dx/r0:1,s=r0?dy/r0:0,c2=c*c,s2=s*s,cn=p.n===3?c*(4*c2-3):p.n===4?8*c2*c2-8*c2+1:c*(16*c2*c2-20*c2+5),sn=p.n===3?s*(3-4*s2):p.n===4?4*s*c*(c2-s2):s*(16*s2*s2-20*s2+5);
           const q=p.h-p.s*r*(1+.32*(cn*p.cf-sn*p.sf));if(q>z)z=q}PZ[j*pw+i]=z}
-        if(!((j+1)&15))yield}}
+        if(!((j+1)&3))yield}}
     // (3) the height: a butte in the desert (flat on top, sheer), a spire if small, else the cones over a low body, steep at its edge;
     //     never rising over kept-clear ground behind it (UP: the free pixels above each point)
     const UP=new Uint16Array(bw*bh);for(let x=x0;x<x1;x++){let run=0;for(let y=Math.max(0,y0-96);y<y1;y++){if(kept(x,y))run=0;else run++;if(y>=y0)UP[(y-y0)*bw+x-x0]=run-1}}
@@ -454,7 +454,7 @@
         else{const u=(x-x0)/2,v=(y-y0)/2,iu=u|0,iv=v|0,fu=u-iu,fv=v-iv,q=iv*pw+iu,a=PZ[q],b=PZ[q+1],c=PZ[q+pw],e=PZ[q+pw+1];
           const cg=KD?KD.crag:1;z=Math.max(Hp*.3*Math.min(1,d/12),a+(b-a)*fu+(c-a)*fv+(a-b-c+e)*fu*fv);z=Math.min(z*(1+cr*.12*cg)+rid*2*cg,d*(2+1.6*NR2(x+57,y+31))*(KD?KD.edge:1))}
         z=Math.max(.6,Math.min(z,UP[k]-2));ZR[k]=z;if(z>zmax)zmax=z}
-      if(!((y-y0+1)&31))yield}
+      if(!((y-y0+1)&7))yield}
     // (what it paints: the rock up to zmax over its box, its outline round it, its shadow K to the right and below)
     const K=Math.ceil(zmax/SK)+1,X1=Math.min(W,x1+K+2),Y1=Math.min(H,y1+Math.ceil(K*.45)+2);
     const md={x0,x1,y0,y1,bw,bh,ZR,CL,CL2,CT,zmax,K,c:m.c,pk:kind||m.c,X1,Y1,ex0:Math.max(0,x0-1),ey0:Math.max(0,y0-Math.ceil(zmax)-2),ex1:Math.max(o.shade?X1:0,Math.min(W,x1+1)),ey1:o.shade?Math.max(Y1,y1):y1,bytes:bw*bh*(MK?7:5)};
@@ -575,9 +575,9 @@
   // (a box blur of a whole-number field A (w x h, nothing beyond it), n times r points each way (a step a pass): its sums whole
   //  numbers, so any window reckons a point alike; divide by (2r+1)^(2n))
   function* boxBlur(A,w,h,r,n){const T=new Int32Array(w),S=new Int32Array(w);let O=new Int32Array(w*h);
-    for(let k=0;k<n;k++){for(let y=0;y<h;y++){if(!((y+1)&63))yield;const o=y*w;let s=0;for(let x=0;x<=r&&x<w;x++)s+=A[o+x];for(let x=0;x<w;x++){T[x]=s;if(x+r+1<w)s+=A[o+x+r+1];if(x-r>=0)s-=A[o+x-r]}A.set(T,o)}yield;
+    for(let k=0;k<n;k++){for(let y=0;y<h;y++){if(!((y+1)&15))yield;const o=y*w;let s=0;for(let x=0;x<=r&&x<w;x++)s+=A[o+x];for(let x=0;x<w;x++){T[x]=s;if(x+r+1<w)s+=A[o+x+r+1];if(x-r>=0)s-=A[o+x-r]}A.set(T,o)}yield;
       S.fill(0);for(let y=0;y<=r&&y<h;y++){const o=y*w;for(let x=0;x<w;x++)S[x]+=A[o+x]}
-      for(let y=0;y<h;y++){if(!((y+1)&63))yield;const o=y*w;O.set(S,o);if(y+r+1<h){const p=(y+r+1)*w;for(let x=0;x<w;x++)S[x]+=A[p+x]}if(y-r>=0){const p=(y-r)*w;for(let x=0;x<w;x++)S[x]-=A[p+x]}}
+      for(let y=0;y<h;y++){if(!((y+1)&15))yield;const o=y*w;O.set(S,o);if(y+r+1<h){const p=(y+r+1)*w;for(let x=0;x<w;x++)S[x]+=A[p+x]}if(y-r>=0){const p=(y-r)*w;for(let x=0;x<w;x++)S[x]-=A[p+x]}}
       const Q=A;A=O;O=Q;yield}
     return A}
   const HSOFT=[1,2,3,4,5,6,7].map(k=>1/(PX.WN_HILL.soft[0]+PX.WN_HILL.soft[1]*k));
@@ -822,17 +822,18 @@
         if(!lane&&cAt(tx,ty)==='swamp')for(let n=0;n<BOG.n;n++){if(h(tx*4+n,ty,30)>=BOG.p)continue;const cx=tx*ts+3+h(tx*4+n,ty,31)*10,cy=ty*ts+3+h(tx*4+n,ty,32)*10,rx=BOG.rx*(.6+.4*h(tx*4+n,ty,33)),ry=BOG.ry*(.7+.3*h(tx*4+n,ty,34));
           for(let Y=Math.max(ty*ts,Math.floor(cy-ry));Y<=Math.min(ty*ts+ts-1,cy+ry);Y++)for(let X=Math.max(tx*ts,Math.floor(cx-rx));X<=Math.min(tx*ts+ts-1,cx+rx);X++){if(X<wx0||Y<wy0||X>=wx1||Y>=wy1)continue;const i=at(X,Y);const kb=S[i]&128;if(kb&&!(LT&&CLR.at(X,Y)&&!wetP(X,Y)&&RS&&RS(X,Y)<-2.5)||nearWet(X,Y))continue;const d=((X+.5-cx)/rx)**2+((Y+.5-cy)/ry)**2;if(d>1-h(X,Y,35)*.3)continue;
             const o=i*4,c=BOG.water[Y+.5<cy-ry*.3?2:d>.55&&Y+.5>cy?1:0];D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2];touch(i,kb?3:1)}}}
-      if(!((ty-ty0+1)&1))yield}
-    for(let i=0;i<ww*wh;i++)if(FK[i]>0){mixD(i,floorAt(wx0+i%ww,wy0+((i/ww)|0)),FK[i]);touch(i,1)}
+      yield}
+    for(let y=0;y<wh;y++){for(let i=y*ww,e=i+ww;i<e;i++)if(FK[i]>0){mixD(i,floorAt(wx0+i-y*ww,wy0+y),FK[i]);touch(i,1)}if(!((y+1)&15))yield}
     // (the rings round the oases and ponds: the ground leaning green (a tarn's grey), ragged, to the water's edge, under clear ground
     //  too, there only toned (a holding's yard over it takes its colour: no square of bare land where a lot stands, the owner,
     //  2026-10-23); its things (palms, tufts) keep off clear ground; a frost tarn's water iced in plates)
     if(P.RG){const RN=PX.WN_RING,GN=noiseF(W,H,RN.n,P.seed*977+140);
       for(const q of P.RL){const Rn0=RN[q.kind],e=(q.r+q.reach)*ts,cx=q.x*ts,cy=q.y*ts;if(cx+e<wx0||cx-e>=wx1||cy+e<wy0||cy-e>=wy1)continue;const fr=cAt(q.x|0,q.y|0)==='frost',Rn=fr&&q.kind!=='tarn'&&RN.frost?RN.frost:Rn0,G=Rn.green,ice=fr&&Rn.ice;
         for(let Y=Math.max(wy0,Math.floor(cy-e));Y<Math.min(wy1,Math.ceil(cy+e));Y++)for(let X=Math.max(wx0,Math.floor(cx-e));X<Math.min(wx1,Math.ceil(cx+e));X++){const d=Math.hypot(X+.5-cx,Y+.5-cy)/ts-q.r;if(d>q.reach)continue;const i=at(X,Y);
-          // (frozen: ice over all of the water as drawn, a few cracks in it, open water left in thin leads)
-          if(wetP(X,Y)){if(ice&&!CLR.at(X,Y)){const m=GN(X+57,Y+23),cr=Math.abs(m-Rn.ice[1]);if(cr>.02){mixD(i,cr<.05?[150,176,204]:[226,236,246],Rn.ice[0]);touch(i,2)}}continue}
-          const k=Rn.k*Math.min(1,(1-d/q.reach)*1.6)-(GN(X,Y)-.5)*.5;if(k<=0)continue;mixD(i,G,Math.min(k,Rn.k+(k-Rn.k)*RN.soft));touch(i,CLR.at(X,Y)?3:1)}}}
+          // (frozen: ice over all of the water as drawn (a lake's tile in reach: on its water only, not its curved shore), a few cracks
+          //  in it, open water left in thin leads)
+          if(wetP(X,Y)){if(ice&&!CLR.at(X,Y)&&(!P.wet||P.wet(X,Y))){const m=GN(X+57,Y+23),cr=Math.abs(m-Rn.ice[1]);if(cr>.02){mixD(i,cr<.05?[150,176,204]:[226,236,246],Rn.ice[0]);touch(i,2)}}continue}
+          const k=Rn.k*Math.min(1,(1-d/q.reach)*1.6)-(GN(X,Y)-.5)*.5;if(k<=0)continue;mixD(i,G,Math.min(k,Rn.k+(k-Rn.k)*RN.soft));touch(i,CLR.at(X,Y)?3:1)}yield}}
     lap('floor');yield;
     // (2) hills: each group of hill tiles one rise (the owner, 2026-10-22: "one large hill sprite", not a bump a tile): its tiles
     //     (P.HT: a hill's, or a road's over the hills) a footprint, its edge read through a wobble (PX.WN_HILL.wob px), blurred into a
@@ -858,9 +859,9 @@
       //  between its points over the pixels it reaches)
       if(any){i0=Math.max(0,i0-RR);j0=Math.max(0,j0-RR);i1=Math.min(GW-1,i1+RR);j1=Math.min(GH-1,j1+RR);const ew=i1-i0+1,eh=j1-j0+1,E=new Int32Array(ew*eh);for(let j=0;j<eh;j++)E.set(MK.subarray((j+j0)*GW+i0,(j+j0)*GW+i1+1),j*ew);
         const B1=yield* boxBlur(E.slice(),ew,eh,r1,n1),D1=(2*r1+1)**(2*n1),B2=yield* boxBlur(E,ew,eh,r2,n2),D2=(2*r2+1)**(2*n2),KN=P.HN[2],F=new Float32Array(GW*GH);
-        for(let j=0;j<eh;j++){if(!((j+1)&63))yield;for(let i=0;i<ew;i++){const q=j*ew+i;if(B1[q])F[(j+j0)*GW+i+i0]=B1[q]/D1*(HW.h[0]+HW.h[1]*B2[q]/D2*KN((gx0+i0+i)*G,(gy0+j0+j)*G))}}
+        for(let j=0;j<eh;j++){if(!((j+1)&15))yield;for(let i=0;i<ew;i++){const q=j*ew+i;if(B1[q])F[(j+j0)*GW+i+i0]=B1[q]/D1*(HW.h[0]+HW.h[1]*B2[q]/D2*KN((gx0+i0+i)*G,(gy0+j0+j)*G))}}
         yield;
-        for(let y=Math.max(0,(gy0+j0)*G-zy0);y<Math.min(ZN,(gy0+j1)*G-zy0);y++){if(!((y+1)&31))yield;const Y=zy0+y,v=Y/G-gy0,j=Math.floor(v),fy=v-j;for(let x=Math.max(0,(gx0+i0)*G-zx0);x<Math.min(ZW,(gx0+i1)*G-zx0);x++){const X=zx0+x,u=X/G-gx0,i=Math.floor(u),fx=u-i,q=j*GW+i,a=F[q],b=F[q+1],c=F[q+GW],d=F[q+GW+1];if(!(a||b||c||d))continue;
+        for(let y=Math.max(0,(gy0+j0)*G-zy0);y<Math.min(ZN,(gy0+j1)*G-zy0);y++){if(!((y+1)&7))yield;const Y=zy0+y,v=Y/G-gy0,j=Math.floor(v),fy=v-j;for(let x=Math.max(0,(gx0+i0)*G-zx0);x<Math.min(ZW,(gx0+i1)*G-zx0);x++){const X=zx0+x,u=X/G-gx0,i=Math.floor(u),fx=u-i,q=j*GW+i,a=F[q],b=F[q+1],c=F[q+GW],d=F[q+GW+1];if(!(a||b||c||d))continue;
           ZH[y*ZW+x]=a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy;BK[Math.min(byn-1,Math.max(0,(Y>>3)-by0))*bxn+Math.min(bxn-1,Math.max(0,(X>>3)-bx0))]=1}}
         // (a block reached by a rise's shadow: those to the right and below a risen one)
         for(let by=byn-1;by>=0;by--)for(let bx=bxn-1;bx>=0;bx--){if(BK[by*bxn+bx]!==1)continue;for(let b=0;b<=1;b++)for(let a=0;a<=2;a++)if(bx+a<bxn&&by+b<byn&&!BK[(by+b)*bxn+bx+a])BK[(by+b)*bxn+bx+a]=2}
@@ -948,7 +949,7 @@
     //  not fit drawn nearer the middle, and the free spots filled up to min); now and then a tree or a bush stands out on the open
     //  ground beside it; deeper trees (another wood tile in front) dimmer. A lane (a road through a wood, PX.WN_LANE) is a wood's tile
     //  too, its trees and undergrowth those off the path)
-    for(let ty=Math.max(0,ty0-3);ty<=Math.min(R-1,ty1+3);ty++){if(ty>ty0-3)yield;for(let tx=Math.max(0,tx0-3);tx<=Math.min(C-1,tx1+3);tx++){const k=K[ty*C+tx],X=tx*ts,Y=ty*ts,c=cAt(tx,ty),c0=c,hh=n=>h(tx,ty,n+40);own=ownT(tx,ty);
+    let tk=0;for(let ty=Math.max(0,ty0-3);ty<=Math.min(R-1,ty1+3);ty++){if(ty>ty0-3)yield;for(let tx=Math.max(0,tx0-3);tx<=Math.min(C-1,tx1+3);tx++){if(!(++tk&7))yield;const k=K[ty*C+tx],X=tx*ts,Y=ty*ts,c=cAt(tx,ty),c0=c,hh=n=>h(tx,ty,n+40);own=ownT(tx,ty);
       if(k===KIND.forest||(k===KIND.road||k===KIND.water)&&woodT(tx,ty)){const op=(a,b)=>{const q=kAt(tx+a,ty+b);return(q===KIND.open||q===KIND.ford||q===KIND.hill||q===KIND.road)&&!woodT(tx+a,ty+b)},below=woodT(tx,ty+1),ln=!!LT;
         const bog=c==='swamp',dim=below?1:0,wood=k===KIND.forest;let got=0;
         const put=(sx,sy,n,edge)=>{const jx=Math.round((hh(n+6)-.5)*(bog?3:4)),jy=Math.round((hh(n+12)-.5)*3),[sp,tc]=pickTree(c,tx,ty,n+20,edge,null,X+sx+jx,Y+sy+jy,wood),v=Math.floor(hh(n+18)*4);
@@ -1022,12 +1023,12 @@
     items.sort((p,q)=>p[0]-q[0]||p[1]-q[1]);const TLc=PX.WN_MOUNT.trees.light;
     for(const [y,x,sp,,,lz] of items){const o=sp.sh;for(let k=0;k<o.length;k+=2){const X=x+o[k],Y=y+o[k+1]-(lz|0);if(X<wx0||Y<wy0||X>=wx1||Y>=wy1)continue;const q=at(X,Y);
         if(lz){if((S[q]&7)!==2||S[q]&(64|8)||Math.abs(Y+ZO[q]-1-y)>4)continue}else if(S[q]&(64|7)||S[q]&128&&!laneOK(X,Y,false)||nearWet(X,Y))continue;S[q]|=64;mixD(q,SHC,.3);touch(q,S[q]&128?3:1)}
-      if(!(++n&511))yield}
+      if(!(++n&127))yield}
     yield;
     for(const [y,x,sp,cls,mine,lz,tn] of items){const N=sp.width,X0=x-sp.ax,Y0=y-(lz|0)-sp.ay,[i0,i1,j0,j1]=clip(N,X0,Y0),TC=tn>0?TLc.dark:TLc.light,ta=Math.abs(tn||0);if(!mine&&inI(X0,Y0,X0+N,Y0+N))out.cross.things++;for(let j=j0;j<j1;j++)for(let i=i0;i<i1;i++){const a=j*N+i,t=sp.a[a];if(!t)continue;const q=at(X0+i,Y0+j),o=q*4,low=S[q]&7;
         if(ZO[q]&&Y0+j+ZO[q]-1>y)continue;
         if(t===2){if(low===cls)continue;D[o]=sp.rgb[a*3];D[o+1]=sp.rgb[a*3+1];D[o+2]=sp.rgb[a*3+2]}else{D[o]=sp.rgb[a*3];D[o+1]=sp.rgb[a*3+1];D[o+2]=sp.rgb[a*3+2];if(ta){D[o]+=(TC[0]-D[o])*ta;D[o+1]+=(TC[1]-D[o+1])*ta;D[o+2]+=(TC[2]-D[o+2])*ta}}S[q]=(S[q]&~15)|cls;ZO[q]=0;touch(q,S[q]&128?(CLR.at(X0+i,Y0+j)?3:4):cls===3&&nearWet(X0+i,Y0+j)?4:1)}
-      if(!(++n&127))yield}
+      if(!(++n&31))yield}
     lap('stand');out.stand=standIndex(items,I,ZO,wx0,wy0,ww,wh);out.ms=performance.now()-t0;return out};
   /* the standing index of a window's inner rect I (what PX.worldNatureSteps hands back as stand, for the game's depth order:
      gfx/depth.js draws what stands in front of a figure again over it): each standing thing whose drawn pixels reach into I (a

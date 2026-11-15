@@ -11,8 +11,14 @@
    of its tents stand, and you can walk to it). Pitched (CampSite.pitch(key)): the banner first, then a tent every gap s, its two
    poles raised over pole s, its cloth hauled up over rise s; the fire lit when the last stands, smoke before it. Its men stand by
    while it goes up (yours: render.js drawWorld, pitching). Drawn only, on the real clock: a camp whose pitching was not seen (one
-   loaded, one come upon) stands pitched; one not drawn for forget s is struck ---------- */
-const CAMP_SITE={men:8,most:14,ring:36,squash:.7,space:34,tent:[9,16],road:.25,gap:.4,pole:.3,rise:.55,fire:.5,forget:3,spot:{r:30,step:8,near:24,need:.7}};
+   loaded, one come upon) stands pitched; one not drawn for forget s is struck.
+   A makeshift camp (the owner, 2026-11-15: "The player camp seems too big for the first level, make it like makeshift camp. Same
+   goes for poor group of people"; makeshift): yours while you are under its level or lead fewer than its men (CampSite.humble), and
+   a poor group's (data/encampments.js poor): a few lean-tos and pup tents of drab cloth (styles, cloth, trim), a tent for every per
+   of them (most at most) in a tighter ring (ring, space; yours only: a group's ground was found for its own), bedrolls by the fire
+   (rolls at most, a roll for every three), no pavilion ---------- */
+const CAMP_SITE={men:8,most:14,ring:36,squash:.7,space:34,tent:[9,16],road:.25,gap:.4,pole:.3,rise:.55,fire:.5,forget:3,spot:{r:30,step:8,near:24,need:.7},
+  makeshift:{level:4,men:16,per:5,most:4,rings:2,ring:22,space:24,styles:['leanto','pup','leanto'],cloth:['#8a7a5c','#9a8a6a','#7a6c54'],trim:['#5a4a3a','#6a5440'],rolls:4,roll:['#6a5a44','#7a6248','#5a5040']}};
 class CampSite{
   static t0=new Map();static seen=new Map();static lay=new Map();static spots=new Map();
   // (its pitching begins now, unless it has begun)
@@ -31,29 +37,40 @@ class CampSite{
     if(typeof RoadBand!=='undefined')for(const [dx,dy] of [[0,0],[-7,0],[7,0],[0,-8],[-5,-5],[5,-5]])if((RoadBand.at(x+dx,y+dy)&63)>=CAMP_SITE.road*63)return false;
     return !WorldArt.standing(x0,y0,x1,y1).some(e=>e.box[0]<=x1&&e.box[2]>=x0&&e.box[1]<=y1&&e.box[3]>=y0)}
   // (where its k tents stand round a fire at (x, y): ring after ring (rings at most), the nearest first)
-  static place(x,y,k,rings=5){const X=CAMP_SITE,p=[];
-    for(let r=1;p.length<k&&r<=rings;r++){const m=Math.max(1,Math.round(2*Math.PI*r*X.ring/X.space));
-      for(let j=0;j<m&&p.length<k;j++){const a=(j+(r%2)*.5)/m*2*Math.PI,px=Math.round(x+Math.cos(a)*r*X.ring),py=Math.round(y+Math.sin(a)*r*X.ring*X.squash);if(this.tentOk(px,py))p.push({x:px,y:py,s:Math.abs(j*7+r*13+Math.round(x))%9})}}
+  static place(x,y,k,rings=5,ring=CAMP_SITE.ring,space=CAMP_SITE.space){const X=CAMP_SITE,p=[];
+    for(let r=1;p.length<k&&r<=rings;r++){const m=Math.max(1,Math.round(2*Math.PI*r*ring/space));
+      for(let j=0;j<m&&p.length<k;j++){const a=(j+(r%2)*.5)/m*2*Math.PI,px=Math.round(x+Math.cos(a)*r*ring),py=Math.round(y+Math.sin(a)*r*ring*X.squash);if(this.tentOk(px,py))p.push({x:px,y:py,s:Math.abs(j*7+r*13+Math.round(x))%9})}}
     return p}
-  static layout(key,x,y,n,per,most,rings){const k=this.tents(n,per,most),L=this.lay.get(key);if(L&&L.x===x&&L.y===y&&L.k===k)return L.p;const p=this.place(x,y,k,rings);this.lay.set(key,{x,y,k,p});return p}
-  // (its ground by a holding: the spot nearest its gate where need of its tents stand and you can walk to it; null: none)
-  static spotNear(t,n,key){if(key&&this.spots.has(key))return this.spots.get(key);const X=CAMP_SITE.spot,k=this.tents(n),g=gateGoal(t),c=[];
+  static layout(key,x,y,n,per,most,rings,ring,space){const k=this.tents(n,per,most),L=this.lay.get(key);if(L&&L.x===x&&L.y===y&&L.k===k&&L.r===ring)return L.p;const p=this.place(x,y,k,rings,ring,space);this.lay.set(key,{x,y,k,r:ring,p});return p}
+  // (whether your camp is a makeshift one: under makeshift.level, or fewer than its men)
+  static humble(){const M=CAMP_SITE.makeshift;return (P.level||1)<M.level||partySize()<M.men}
+  // (your camp at (x, y): its men, banner and, while humble, the makeshift's tents and ring; what's drawn and where your men wake)
+  static yours(x,y){const M=CAMP_SITE.makeshift,c={key:'you',x,y,n:partySize(),banner:()=>P.banner(),seed:0};return this.humble()?{...c,makeshift:true,per:M.per,most:M.most,rings:M.rings,ring:M.ring,space:M.space}:c}
+  static layoutOf(c){return this.layout(c.key,c.x,c.y,c.n,c.per,c.most,c.rings,c.ring,c.space)}
+  // (a makeshift tent i: a lean-to or a pup tent of drab cloth)
+  static rough(q,i,clim){const M=CAMP_SITE.makeshift,h=q.s+i*3;return CampArt.tent(M.styles[h%M.styles.length],{cloth:M.cloth[h%M.cloth.length],trim:M.trim[h%M.trim.length]},q.s+i,clim)}
+  // (its ground by a holding: the spot nearest its gate where need of its tents stand and you can walk to it (o: its camp's tents
+  // and ring, as yours); null: none)
+  static spotNear(t,n,key,o){if(key&&this.spots.has(key))return this.spots.get(key);const X=CAMP_SITE.spot,k=this.tents(n,o?.per,o?.most),g=gateGoal(t),c=[];
     for(let j=-X.r;j<=X.r;j++)for(let i=-X.r;i<=X.r;i++){const x=Math.round(g.x+i*X.step),y=Math.round(g.y+j*X.step),d=Math.hypot(x-g.x,y-g.y);if(d>=X.near&&d<=X.r*X.step)c.push([d,x,y])}
     // (the nearest where need of its tents stand; else the nearest where any does)
-    c.sort((a,b)=>a[0]-b[0]);let s=null,any=null;for(const [,x,y] of c){if(!this.tentOk(x,y+4)||!Router.reach(g,{x,y}))continue;const m=this.place(x,y,k).length;if(m>=Math.ceil(k*X.need)){s={x,y};break}if(m&&!any)any={x,y}}s=s||any;
+    c.sort((a,b)=>a[0]-b[0]);let s=null,any=null;for(const [,x,y] of c){if(!this.tentOk(x,y+4)||!Router.reach(g,{x,y}))continue;const m=this.place(x,y,k,o?.rings,o?.ring,o?.space).length;if(m>=Math.ceil(k*X.need)){s={x,y};break}if(m&&!any)any={x,y}}s=s||any;
     if(key)this.spots.set(key,s);return s}
   // (an army's tent i: plain canvas of a few styles, its first, its commander's, a pavilion in its side's colour (gfx/campart.js
   // CampArt.army; the owner, 2026-11-14: "make more tent variety"), of the ground's climate)
   static pic(s,clim,i=1,c){return CampArt.army(i,s,clim,c&&c.faction&&FACS[c.faction]?FACS[c.faction].col:null)}
   /* a camp on the map: c {key, x, y (its fire), n (its men), per (men to a tent: CAMP_SITE.men unless said), most (tents at most), rings (at most: 5),
-     banner (its banner's look, or none), seed, pic (q, i, clim: tent i's picture; none: an army's, CampSite.pic)}. Each tent by its feet among
+     banner (its banner's look, or none), seed, pic (q, i, clim: tent i's picture; none: an army's, CampSite.pic, or a makeshift's, rough),
+     makeshift (bedrolls by its fire; ring, space: its ring's, else CAMP_SITE's)}. Each tent by its feet among
      everyone, going up in its turn; the fire and the banner's pole at its middle */
-  static draw(ents,cam,c){const X=CAMP_SITE,now=performance.now()/1000,t0=this.t0.get(c.key),T=t0==null?1e9:now-t0,L=this.layout(c.key,c.x,c.y,c.n,c.per,c.most,c.rings),clim=CLIMS[climate[Math.floor(c.y/TILE)*MW+Math.floor(c.x/TILE)]]||'grass';this.seen.set(c.key,now);
-    L.forEach((q,i)=>{const p=T-i*X.gap;if(p<=0)return;const pic=c.pic?c.pic(q,i,clim):this.pic(q.s,clim,i,c);ents.push({y:q.y,nf:1,f:()=>this.tent(pic,q,p,cam)})});
+  static draw(ents,cam,c){const X=CAMP_SITE,now=performance.now()/1000,t0=this.t0.get(c.key),T=t0==null?1e9:now-t0,L=this.layoutOf(c),clim=CLIMS[climate[Math.floor(c.y/TILE)*MW+Math.floor(c.x/TILE)]]||'grass';this.seen.set(c.key,now);
+    L.forEach((q,i)=>{const p=T-i*X.gap;if(p<=0)return;const pic=c.pic?c.pic(q,i,clim):c.makeshift?this.rough(q,i,clim):this.pic(q.s,clim,i,c);ents.push({y:q.y,nf:1,f:()=>this.tent(pic,q,p,cam)})});
     const lit=(L.length-1)*X.gap+X.pole+X.rise;
     ents.push({y:c.y+1,nf:1,f:()=>{const fx=Math.round(c.x-cam.x),fy=Math.round(c.y-cam.y);
       if(T>=lit+X.fire)drawFire(fx,fy,c.seed||0);else if(T>=lit){const a=(T-lit)/X.fire;ctx.save();ctx.globalAlpha=.5*a;ctx.fillStyle='#bdb6a8';for(let k=0;k<3;k++)ctx.fillRect(fx-1+k,fy-2-Math.round(a*6)-k*2,1,1);ctx.restore()}
       ctx.fillStyle='#4a3a28';ctx.fillRect(fx-3,fy,7,1);
+      // (a makeshift camp's bedrolls round its fire, once it is lit)
+      if(c.makeshift&&T>=lit){const M=X.makeshift,k=Math.min(M.rolls,Math.ceil((c.n||1)/3));for(let j=0;j<k;j++){const a=j/k*2*Math.PI+.4,bx=Math.round(fx+Math.cos(a)*10),by=Math.round(fy+Math.sin(a)*5);ctx.fillStyle=M.roll[j%M.roll.length];ctx.fillRect(bx-2,by,5,2);ctx.fillStyle='#c8b898';ctx.fillRect(bx+(Math.cos(a)<0?-2:2),by,1,1)}}
       // (its banner on a pole beside its first tent, on its clear ground; none yet: beside the fire)
       const b=L[0]?{x:L[0].x+9,y:L[0].y}:{x:c.x+10,y:c.y};if(c.banner)BANNERQ.push({o:{x:b.x,y:b.y,faction:c.faction||'player',banner:c.banner,headY:()=>Math.round(b.y-14)+BANNER_GAP}})}})}
   // (one tent: its poles going up, then its cloth hauled up them, then standing, its shadow under it)
@@ -75,10 +92,10 @@ const CAMP_WAKE={on:true,first:.5,gap:.3};
 class CampWake{
   static camp=null;
   // (the battle b catches you in camp: your men into its tents)
-  static begin(b){CampWake.camp=null;const X=CAMP_WAKE;if(!X.on||!P.camp||!b.world||!WORLD_BATTLE.on)return null;const n=partySize(),L=CampSite.layout('you',P.x,P.y,n);if(!L.length)return null;
+  static begin(b){CampWake.camp=null;const X=CAMP_WAKE;if(!X.on||!P.camp||!b.world||!WORLD_BATTLE.on)return null;const c=CampSite.yours(P.x,P.y),n=c.n,L=CampSite.layoutOf(c);if(!L.length)return null;
     const h=x=>Math.sin((x||0)*12.9898)*43758.5453%1,mine=b.units.filter(u=>u.team===0&&!u.hero&&u.sourceArmy===P&&u.hp>0).sort((p,q)=>h(p.id)-h(q.id)),W=b.world;
     mine.forEach((u,i)=>{const q=L[i%L.length],f=W.field({x:q.x+((i/L.length|0)%3-1)*2,y:q.y+3});Object.assign(u,{x:f.x,y:f.y,campAt:f,hpLeft:u.hp,hp:0,left:true,waiting:true,campWake:b.t+X.first+i*X.gap})});
-    CampWake.camp={x:P.x,y:P.y,n};return b.campWake=new CampWake(mine)}
+    CampWake.camp={x:P.x,y:P.y,n,c};return b.campWake=new CampWake(mine)}
   constructor(men){this.men=men}
   // (each moment of the battle: those whose turn has come step out of their tent's door into the fight)
   // (each held at his tent's door till then, whatever the field's setting out did with him)
@@ -86,5 +103,5 @@ class CampWake{
     for(const u of out){u.hp=u.hpLeft;delete u.hpLeft;delete u.waiting;delete u.left;delete u.campWake;delete u.campAt;if(typeof heralded==='function')heralded([u]);const r=B.groups[u.grp]?.resolve;if(r){r.refreshState();r.sync()}}
     if(out.length){B.cmdT=0;B.moraleNext=0;if(typeof setOrderUI==='function')setOrderUI()}}
   // (the camp on the field while the battle lasts)
-  static draw(ents,cam){const C=CampWake.camp;if(!C)return;if(!B||!B.world){CampWake.camp=null;return}CampSite.draw(ents,cam,{key:'you',x:C.x,y:C.y,n:C.n,banner:()=>P.banner(),seed:0})}
+  static draw(ents,cam){const C=CampWake.camp;if(!C)return;if(!B||!B.world){CampWake.camp=null;return}CampSite.draw(ents,cam,C.c||{...CampSite.yours(C.x,C.y),n:C.n})}// (as it was laid when the battle found you)
 }

@@ -114,7 +114,8 @@ try{
    for(let y=0;y<TILE;y++)for(let x=0;x<TILE;x++){const o=((Y+y)*Wp+X+x)*4;if(d[o]===50&&d[o+1]===70&&d[o+2]===72){pools++;y=TILE;break}}}
   ok(!nB||bogs>nB&&!sw.willow&&pools>seen*.2,(nB?nB+' tiles of the swamp’s forest stand with bog trees ('+(sw.mangrove||0)+' mangroves, '+(sw.bogwillow||0)+' bog willows, '+((sw.snag||0)+(sw.dead||0))+' snags and dead trees with the fen’s), its pools showing on '+pools+' of '+seen+' tiles':'no swamp forest on this map'))}
  // ---- the frost blended: the snow's cover (gfx/worldart.js snowCover) thins out over the grass beside the frost in patches, rises
- //      over the frost's edge and lies whole deep in it; no grass far from it is touched (snow: a pale blue-white pixel)
+ //      over the frost's edge and lies whole deep in it (over 90% of its pixels; was 93%, and seed 1's deep frost is 92.5-93% since the
+ //      frost's small things, hills' shading and ponds' rings came: 2026-11-14); no grass far from it is touched (snow: a pale blue-white pixel)
  {const S=t.WorldArt.ensure().snow,d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,Wp,Hp).data,F=t.CLIMS.indexOf('frost'),G=t.CLIMS.indexOf('grass');
   const share=(tx,ty)=>{let n=0,m=0;for(let y=1;y<TILE;y+=2)for(let x=1;x<TILE;x+=2){const o=((ty*TILE+y)*Wp+tx*TILE+x)*4;m++;if(d[o]>185&&d[o+1]>190&&d[o+2]>200)n++}return n/m};
   // (the open tiles with only open ground round them, by how far they lie from the frost's edge: -1 grass beside it, 1 frost beside
@@ -124,7 +125,7 @@ try{
   for(let ty=6;ty<MH-6;ty++)for(let tx=6;tx<MW-6;tx++){let open=true;for(let b=-1;b<=1&&open;b++)for(let a=-1;a<=1;a++)if(t.tiles[(ty+b)*MW+tx+a]!==t.T_OPEN){open=false;break}if(!open)continue;
     const c=t.climate[ty*MW+tx];if(c===G&&near(tx,ty,1,F))B[-1].push(share(tx,ty));else if(c===F&&near(tx,ty,1,G))B[1].push(share(tx,ty));else if(c===F&&!near(tx,ty,4,G))B[4].push(share(tx,ty));else if(c===G&&!near(tx,ty,6,F)&&B[0].length<4000)B[0].push(share(tx,ty))}
   const mean=a=>a.reduce((s,v)=>s+v,0)/Math.max(1,a.length),M={};for(const k in B)M[k]=mean(B[k]);
-  ok(B[-1].length>20&&B[1].length>20&&B[4].length>20&&M[0]<.01&&M[-1]>.03&&M[-1]<.45&&M[1]>M[-1]+.15&&M[1]<.95&&M[4]>.93,'the frost’s snow blends into the grass: snow on '+(M[0]*100).toFixed(1)+'% of the grass far from it, '+(M[-1]*100).toFixed(0)+'% of the grass beside it ('+B[-1].length+' tiles: patches), '+(M[1]*100).toFixed(0)+'% of the frost at its edge ('+B[1].length+'), '+(M[4]*100).toFixed(0)+'% 4 tiles in ('+B[4].length+')');
+  ok(B[-1].length>20&&B[1].length>20&&B[4].length>20&&M[0]<.01&&M[-1]>.03&&M[-1]<.45&&M[1]>M[-1]+.15&&M[1]<.95&&M[4]>.9,'the frost’s snow blends into the grass: snow on '+(M[0]*100).toFixed(1)+'% of the grass far from it, '+(M[-1]*100).toFixed(0)+'% of the grass beside it ('+B[-1].length+' tiles: patches), '+(M[1]*100).toFixed(0)+'% of the frost at its edge ('+B[1].length+'), '+(M[4]*100).toFixed(0)+'% 4 tiles in ('+B[4].length+')');
   let lo=0,hi=0;for(let i=0;i<MW*MH;i++){if(t.climate[i]===F&&S[i]<.55)lo++;if(t.climate[i]!==F&&S[i]>.45)hi++}
   ok(!lo&&!hi,'the snow’s cover a tile: every frost tile’s at least .55, every other’s at most .45 ('+lo+', '+hi+' off)')}
  // ---- the swamp's and the desert's edges blended as the frost's (gfx/worldart.js coverOf, landRGB; the owner's third play-test: no

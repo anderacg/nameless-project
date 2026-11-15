@@ -45,12 +45,14 @@ Kit.suite(({ok,info})=>{
   const old=past(c.x*TILE-90,cy,(c.x+c.n)*TILE+90,cy,{corridor:false,holding:false});info(say('west to east, both off (today)',old));
   ok(old.inFoot>0,'today its men walk through the citadel ('+old.inFoot+' looks of a man in its walls)')}
  // ---- a citadel its guide walks straight through (a copy laid on cleared land: no world's way round it), the corridor round one side
+ //      (its guide led .4 px a step over 900 of 1200 steps at travel 1.6: the same way and the same time to settle, in its men's
+ //      own pace, at any WORLD_SCALE.travel)
  const scene=(troops,lay)=>{Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;const hh=Kit.goHome('Ashford');Kit.goTo(hh.x+240,hh.y+200);P.troops={...troops};delete P.army.march;
   const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE);openLand(tx-24,ty-24,tx+44,ty+24);const town=t.townBy('Ashford'),src=k=>town.lots.find(l=>l.st==='built'&&(l.type===k||l.k===k)),lots=lay.map(([dx,dy,k],i)=>({...src(k),x:tx+dx,y:ty+dy,id:'corlot'+i,_ft:null}));
   town.lots.push(...lots);const a=t.MarchArmy.of(P);a.ground=null;return{a,tx,ty,town,lots,done:()=>{town.lots=town.lots.filter(l=>!lots.includes(l))}}};
  const through=(on,dy)=>{sw(on);const S=scene({hum_foot:40,hum_bow:20},[[8,-4,'centre']]),a=S.a,x0=(S.tx+8)*TILE,x1=(S.tx+16)*TILE,y0=(S.ty-2)*TILE,y1=(S.ty+4)*TILE,sides=new Map(),n0=t.MARCH_COR.n;
   for(let i=0;i<60;i++)a.step(D);P.y+=dy;let ms=0;const t0=performance.now();
-  for(let i=0;i<1200;i++){if(i<900)P.x+=.4;a.step(D);for(const u of a.units)if(u.x>x0&&u.x<x1&&(u.y<y0||u.y>y1)){let q=sides.get(u);if(!q)sides.set(u,q=new Set());q.add(u.y<y0?'N':'S')}}ms=(performance.now()-t0)/1200;
+  const k=t.WORLD_SCALE.travel/1.6,nm=Math.round(900/k),nt=Math.round(1200/k);for(let i=0;i<nt;i++){if(i<nm)P.x+=.4*k;a.step(D);for(const u of a.units)if(u.x>x0&&u.x<x1&&(u.y<y0||u.y>y1)){let q=sides.get(u);if(!q)sides.set(u,q=new Set());q.add(u.y<y0?'N':'S')}}ms=(performance.now()-t0)/nt;
   let N=0,So=0,B2=0;for(const q of sides.values()){if(q.size>1)B2++;else if(q.has('N'))N++;else So++}const o={N,S:So,both:B2,left:off(a),ms,made:t.MARCH_COR.n-n0};S.done();back();return o};
  {const rs=[0,-10,10].map(dy=>[dy,through({},dy),through({corridor:false},dy)]);
   for(const [dy,on,o] of rs)info('a citadel walked through, '+dy+' px off its middle: now N '+on.N+' S '+on.S+' both '+on.both+' ('+on.made+' corridors, '+on.ms.toFixed(3)+' ms a step), today N '+o.N+' S '+o.S+' both '+o.both+' ('+o.ms.toFixed(3)+' ms)');

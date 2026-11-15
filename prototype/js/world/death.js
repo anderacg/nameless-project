@@ -193,12 +193,13 @@ defineKind('step','reunion',{cls:ReunionQuest});
    them in the grave ---------- */
 class Remains extends WorldObject{
   static list=[];
-  // (laid where you fell: all you wore and carried, and the share of your gold)
-  static lay(x,y,who){const items=[];
+  // (laid where you fell: all you wore and carried, and the share of your gold; your body as the fight on the map drew you falling
+  // (corpse, its picture only while the game is open), else your kind lying (type, v): it rots as every body does (BodyRot, fell))
+  static lay(x,y,who){const items=[],cp=B?.world&&B.corpses?.find(c=>c.hero),at=cp?B.world.world(cp):null,ch=typeof charOf==='function'?charOf(P):null;if(at){x=at.x;y=at.y}
     for(const k in P.gear){const id=P.gear[k];if(id){items.push(['gear',id,1]);P.gear[k]=null}}
     P.inv=P.inv.map(s=>{if(s)items.push([s.k,s.id,s.n||1]);return null});
     const gold=Math.floor((P.gold||0)*DEATH.remains.gold);P.gold=0;
-    const r=asRemains({rm:1,x:Math.round(x),y:Math.round(y),who,day:G.day,gold,items});this.list.push(r);return r}
+    const r=asRemains({rm:1,x:Math.round(x),y:Math.round(y),who,day:G.day,fell:G.day+Clock.frac,type:ch?.key||'militia',v:0,face:cp?.face||1,gold,items});if(cp)r.corpse=cp;this.list.push(r);return r}
   get mapKind(){return 'remains'}
   // (a grave or a crypt is met through its resting place, a site: world/lineage.js RestSite; remains not yet buried, as they are)
   get placed(){return !!(this.grave||this.crypt)}
@@ -221,10 +222,12 @@ class Remains extends WorldObject{
   // (taken by you: the gold, and what fits in your bag; the rest left)
   take(){if(Claims.guard(this))return '';const g=this.gold;P.gold+=g;this.gold=0;let n=0;this.items=this.items.filter(it=>{const put=invAdd(it[0],it[1],it[2]);n+=put;it[2]-=put;return it[2]>0});
     return [g&&g+' gold',n&&n+' piece'+(n>1?'s':'')].filter(Boolean).join(' and ')}
+  // (your body where it lies, as it has rotted (world/carcasses.js BodyRot: as the fallen of every fight do), a glow while anything
+  // is on it: your fall as the fight drew it, else your kind lying)
+  paint(g){const c=this.corpse,k=(B?.world?1:WORLD_BATTLE.sprite)/WORLD_BATTLE.scale;if(c?.sp){g.scale(k,k);g.translate(-c.x,-c.y);drawBody(g,c,1,1)}else BodyRot.plain(g,{type:this.grave&&!ST[this.type]?'militia':this.type||'militia',team:0,v:this.v||0,hero:!this.grave})}// (yours as you were; buried later, a plain man's)
   draw(ents,cam,V){if(!this.inView(V))return;const r=this;
-    ents.push({y:r.y,f:()=>{const x=Math.round(r.x-cam.x),y=Math.round(r.y-cam.y),C=DEATH.remains.col;
-      ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x-5,y,10,2);ctx.fillStyle=C.cloth;ctx.fillRect(x-4,y-2,7,2);ctx.fillStyle=C.bone;ctx.fillRect(x+3,y-3,2,2);ctx.fillRect(x-5,y-1,1,1);
-      if(!r.empty()){ctx.fillStyle=C.steel;ctx.fillRect(x-3,y-4,6,1);ctx.fillStyle=C.glint;ctx.fillRect(x+2,y-4,1,1)}}})}
+    ents.push({y:r.y,f:()=>{const x=r.x-cam.x,y=r.y-cam.y;BodyRot.draw(r,x,y,r.fell??r.day,g=>r.paint(g),false,r.face||1);
+      if(!r.empty())lootGlow(x,y-2,LOOT_GLOW.r,performance.now()/1000,r.x*.13+r.y*.07)}})}
   // each hour: a band near finds remains not yet picked clean, and carries all of it off (its plunder); never before your eyes
   static hour(){const X=DEATH.remains;
     for(const r of this.list){if(r.empty()||!r.robbable()||!Death.unseenAt(r.x,r.y))continue;const b=bandits.find(o=>!o.dead&&Math.hypot(o.x-r.x,o.y-r.y)<X.seek);if(!b||Math.random()>=X.find)continue;
@@ -232,7 +235,7 @@ class Remains extends WorldObject{
   // (a band beaten that carried off remains: its plunder yours)
   static beaten(b){const p=b?.plunder;if(!p)return;b.plunder=null;P.gold+=p.gold;let n=0;for(const [k,id,c] of p.items)n+=invAdd(k,id,c);
     log('Among their plunder, the goods of '+p.of.join(' and ')+': '+[p.gold&&p.gold+' gold',n&&n+' piece'+(n>1?'s':'')].filter(Boolean).join(' and ')+'.','gold')}
-  static save(){return this.list.length?this.list.map(r=>{const o={...r};delete o.flow;return o}):undefined}// (its flow is only what you see)
+  static save(){return this.list.length?this.list.map(r=>{const o={...r};delete o.flow;delete o.corpse;return o}):undefined}// (its flow and its picture are only what you see)
   static load(v){this.list=(v||[]).map(o=>o.crypt?asCrypt(o):o.grave?asGrave(o):asRemains(o))}
   // (all of them drawn, and your family's plot round its graves: gfx/graveart.js)
   static drawAll(ents,cam,V){const plots=new Map();for(const o of this.list)if(o.grave&&o.plot){if(!plots.has(o.plot))plots.set(o.plot,[]);plots.get(o.plot).push(o)}
@@ -345,6 +348,7 @@ class Grave extends Remains{
   // (its place: its ground under everything, what stands on it among the figures, what moves on it; its light while its
   // experience waits (glows): a glow breathing, a faint column, motes rising and turning: gfx/graveart.js)
   draw(ents,cam,V){const g=this,X=DEATH.grave,C=X.col,t=performance.now()/1000;if(g.flow)this.drawFlow(ents,cam);if(!g.inView(V))return;
+    if(g.unburied&&g.kind==='remains'&&BodyRot.stage(g.fell??g.day)!=='bones')return super.draw(ents,cam,V);// (unburied and not yet bones: the body as it lies)
     const S=GraveArt.sprite(g.kind,g.seed||(g.seed=1+Math.floor(Math.abs(g.x*7+g.y*13))%997)),night=darkness()>.35;
     ents.push({y:g.y-1e5,f:()=>{ctx.drawImage(S.ground,Math.round(g.x-cam.x)-S.ax,Math.round(g.y-cam.y)-S.ay)}});
     ents.push({y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.glows();ctx.save();

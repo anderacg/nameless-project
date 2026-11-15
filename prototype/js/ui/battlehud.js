@@ -214,11 +214,13 @@ function bhudTop(){
   {const b=$id('bAmove');if(b){b.classList.toggle('on',!!B.amArm);b.setAttribute('aria-pressed',String(!!B.amArm));b.disabled=!!B.deploy}}// (armed: commands.js armAttackMove)
   bhudSkills();bhudRing();bhudArmies();withdrawView.hud();bhudSkip();
 }
-// (your army down, others fighting on for you: a bar saying so, and Skip to the end: sides.js skipBattle)
-function bhudSkip(){let el=document.getElementById('bSkip');const on=ownDown();
+// (your army down, others fighting on without you: a bar saying so, and Skip to the end: sides.js skipBattle (it settles the fight by
+// the strength left if playing it out does not; Auto-resolve beside it was the same choice twice: the owner, 2026-11-14, "redundant");
+// none when no one fights on, fightsOn)
+function bhudSkip(){let el=document.getElementById('bSkip');const on=ownDown()&&fightsOn();
   if(!el){if(!on)return;const top=document.querySelector('.btop');if(!top)return;el=document.createElement('div');el.id='bSkip';el.className='bwithdraw';el.setAttribute('role','status');top.appendChild(el);
-    el.addEventListener('click',e=>{if(e.target.closest('[data-bskip]'))skipBattle();else if(e.target.closest('[data-bres]'))resolveBattle()})}
-  const h=on?'<b>Your army is down</b> <em>'+(B.rivals?'Your foes fight on against each other.':'The others fight on.')+'</em> <button type="button" class="wgo" data-bskip>Skip to the end</button> <button type="button" class="wgo" data-bres>Auto-resolve</button>':'';
+    el.addEventListener('click',e=>{if(e.target.closest('[data-bskip]'))skipBattle()})}
+  const h=on?'<b>Your army is down</b> <em>'+(B.rivals?'Your foes fight on against each other.':'The others fight on.')+'</em> <button type="button" class="wgo" data-bskip>Skip to the end</button>':'';
   el.hidden=!on;if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h}}
 // Army banners open a relationship view without changing selection or issuing an order.
 class BattleArmyHud{

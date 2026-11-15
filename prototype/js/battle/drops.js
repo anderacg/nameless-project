@@ -10,6 +10,11 @@
    kept by the battle), so nothing it does moves a battle's numbers.
    Numbers: data/drops.js DROPS ---------- */
 const DROP_OF=new WeakMap(),DROP_BY=new WeakMap();
+// (a thing lying to be taken: a soft glow round x, y (radius r), breathing, and a glint rising from it now and then (LOOT_GLOW,
+//  data/drops.js); seed: its own beat)
+function lootGlow(x,y,r,t,seed){const L=LOOT_GLOW;if(!L.on)return;const b=(Math.sin(t*L.speed+seed)+1)/2,a=L.a[0]+(L.a[1]-L.a[0])*b,R=r*(1+.15*b);
+  ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(x,y,0,x,y,R);g.addColorStop(0,'rgba('+L.col+','+a.toFixed(3)+')');g.addColorStop(1,'rgba('+L.col+',0)');ctx.fillStyle=g;ctx.fillRect(x-R,y-R,2*R,2*R);ctx.globalCompositeOperation='source-over';
+  const p=((t*L.rise+seed)%1+1)%1;ctx.globalAlpha=1-p;ctx.fillStyle='#fff6d0';ctx.fillRect(Math.round(x+Math.sin(seed*7)*r*.4),Math.round(y-2-p*r),1,1);ctx.restore()}
 class BattleDrops{
   constructor(){this.ground=[];this.orbs=[];this.done=new WeakSet();this.tally={gold:0,gear:0,mats:{},names:[]}}
   static of(b){if(!b)return null;let d=DROP_OF.get(b);if(!d)DROP_OF.set(b,d=new BattleDrops());return d}
@@ -67,6 +72,7 @@ class BattleDrops{
     for(const o of this.orbs){ctx.save();effectTransform(o.x,o.y);if(o.item)this.icon(o.item,o.x,o.y,1,false);
       else{ctx.globalAlpha=.3;ctx.fillStyle=o.c;ctx.beginPath();ctx.arc(o.x,o.y,3.2,0,6.283);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle=o.c2;ctx.fillRect(Math.round(o.x)-1,Math.round(o.y)-1,2,2)}ctx.restore()}}
   icon(g,x,y,gl,shade){
+    if(shade)lootGlow(x,y+2,LOOT_GLOW.r*1.3,performance.now()/1000,g.ph||0);// (lying to be taken: its glow, as a carcass's)
     if(shade){ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y+7,4.5,1.6,0,0,6.283);ctx.fill()}
     if(g.k==='gold'){const C=DROPS.col;for(const [dx,dy] of [[-2,1],[2,1],[0,-1]].slice(0,Math.min(3,g.n))){ctx.fillStyle=C.coinEdge;ctx.beginPath();ctx.ellipse(x+dx,y+dy+.6,2.6,1.6,0,0,6.283);ctx.fill();ctx.fillStyle=C.coin;ctx.beginPath();ctx.ellipse(x+dx,y+dy,2.6,1.6,0,0,6.283);ctx.fill()}
       ctx.globalAlpha=gl*.9;ctx.fillStyle='#fffbe6';ctx.fillRect(Math.round(x+1),Math.round(y-2),1,1);ctx.globalAlpha=1;return}

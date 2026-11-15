@@ -26,6 +26,9 @@ Kit.suite(({ok,info})=>{
  ok(others.some((l,i)=>Math.hypot(l.x-at[i][0],l.y-at[i][1])>.5),'the lords not in it go about their business');
  ok(enemy.x===e0[0]&&enemy.y===e0[1],'the band in the fight is the fight\'s: its own moment leaves it be');
  ok(P.x===p0[0]&&P.y===p0[1],'your march waits: you are in the fight');
+ // (the world's moment every OPEN_FIGHT.every frames of the fight, their time at once: none before, then as much as each frame's)
+ {const S=t.Systems;for(let k=0;k<(O.every|0||1)*2;k++)t.openFightWorld(.05);const c0=G.day+t.Clock.frac;let mid=0;for(let k=0;k<(O.every|0||1);k++){t.openFightWorld(.05);if(k<(O.every|0||1)-1&&G.day+t.Clock.frac!==c0)mid++}
+  const c1=G.day+t.Clock.frac,want=(O.every|0||1)*.05*G.speed*t.DAY/t.DAY_SECONDS/t.DAY;ok(O.every>=2&&!mid&&Math.abs((c1-c0)-want)<1e-9,'the world moves every '+O.every+' frames of a fight, with their time at once (none between; '+((c1-c0)*t.DAY_SECONDS).toFixed(3)+' s of a day, '+(want*t.DAY_SECONDS).toFixed(3)+' wanted)')}
  {const c1=G.day+t.Clock.frac;b.paused=true;for(let i=0;i<20;i++)t.openFightWorld(.05);ok(G.day+t.Clock.frac===c1,'the fight paused: the world waits too');b.paused=false}
  // (your band's day held through the fight, run once it is over)
  {const S=t.Systems;S.waiting.length=0;const day=G.day;let n=0;for(;G.day===day&&n<5000;n++)t.openFightWorld(.05);const held=S.waiting.map(([s,ph])=>s.name+' '+ph);
@@ -41,7 +44,7 @@ Kit.suite(({ok,info})=>{
   ok(cv.x===p[0]&&cv.y===p[1],'and waits there: the world running on leaves it be till the fight is over')}
  // (a party that would meet you, turned away, never stops the rest of the world's moment: Systems.frame through)
  {const S=t.Systems,L=S.list,pa=L.find(s=>s.name==='parties'),pm=L.find(s=>s.name==='patrol moves'),f0=pa.frame,f1=pm.frame;let n=0;b.paused=false;
-  pa.frame=()=>true;pm.frame=()=>{n++};try{t.openFightWorld(.05)}finally{pa.frame=f0;pm.frame=f1}ok(n===1,'a party that would meet you (and is turned away) does not stop the systems after it in a fight')}
+  pa.frame=()=>true;pm.frame=()=>{n++};try{for(let k=0;k<(O.every|0||1);k++)t.openFightWorld(.05)}finally{pa.frame=f0;pm.frame=f1}ok(n===1,'a party that would meet you (and is turned away) does not stop the systems after it in a fight')}
  // (Esc's menu over the fight: your band's days still held; the fight gone, they run)
  {const S=t.Systems;S.hold=new Set(t.OPEN_FIGHT.held);S.waiting.length=0;S.waiting.push([S.list.find(s=>s.name==='band'),'day']);const m=G.mode;G.mode='esc';
   t.openFightOver();ok(S.hold&&S.waiting.length===1,'Esc\'s menu over the fight: your band\'s day still held');G.mode=m;

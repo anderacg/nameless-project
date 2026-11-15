@@ -80,6 +80,10 @@ const PREFS={
   bfog:prefOnOff(true),// fog of war in battle: each side sees only what its soldiers can (FOG.on, battlefog.js)
   bshake:prefOnOff(true),// screen shake and flash in battle, up close only (SHAKE.on, gfx/vfx.js screenFx)
   bfx:{def:'full',read:s=>s==='light'?'light':'full',write:String},// battle effects: Full, or Light (the rings, colours and stars only, no particles: gfx/vfx.js STATE_FX)
+  // dev mode (Settings → Developer tools, or the developer console's devmode): what only a developer wants on the map: the count
+  // over an army's or a herd's banner, the tally over a fight (the owner, 2026-11-14: "remove the numbers above the group, make it
+  // available for dev mode only"; gfx/render.js drawBanners, world/fights.js, world/critters.js)
+  dev:prefOnOff(false),
   opaths:{def:'sel',read:s=>['all','sel','off'].includes(s)?s:'sel',write:String},// order paths in battle: every group's, the selected (and pointed at, and just ordered) only, or none (ui/orderpaths.js)
   // the sound (audio.js): all of it off (Shift+M), and the volumes 0–1 (everything, the music, the effects); each change goes straight
   // to the speakers (audioPrefs)
@@ -91,7 +95,7 @@ const RES_CAP={full:Infinity,bal:2,fast:1.5};RENDER.cap=RES_CAP[PREFS.res.v];REN
 const prefGet=k=>PREFS[k].v;
 function prefSet(k,v){const p=PREFS[k],s=p.write(v);p.v=p.read(s);try{localStorage.setItem('ashmark.'+k,s)}catch(e){}if(p.apply)p.apply(p.v)}
 const prefView=(k,f='on')=>Object.defineProperty({},f,{get:()=>prefGet(k),set:v=>{PREFS[k].v=v},enumerable:true});
-const GRID=prefView('grid'),BSPEED=prefView('bspeed','v'),GUIDE=prefView('guide'),HPBARS=prefView('hpbars'),BLOOD=prefView('blood');
+const DEV=prefView('dev'),GRID=prefView('grid'),BSPEED=prefView('bspeed','v'),GUIDE=prefView('guide'),HPBARS=prefView('hpbars'),BLOOD=prefView('blood');
 function setGrid(on){prefSet('grid',on)}
 function setGuide(on){prefSet('guide',on)}
 function setHpBars(on){prefSet('hpbars',on)}
@@ -102,6 +106,7 @@ function toggleMute(){prefSet('mute',!prefGet('mute'));if(G.mode==='title'){if(G
 // economy.js; sound: on/off; volmaster, volmusic, volsfx: a volume 0–1), and the page redraws; false if the action is no setting
 function settingAct(a,arg){
   if(a==='dev-open'){DevConsole.show();return true}
+  if(a==='dev-mode'){prefSet('dev',!DEV.on);toast(DEV.on?'Dev mode on.':'Dev mode off.');if(G.mode==='esc')escSettings();else showTitle('settings');return true}
   if(a==='dev-perf'){toast(FrameProf.toggle());if(G.mode==='esc')escSettings();else showTitle('settings');return true}// (the frame timings, ui/frameprof.js)// (Settings → Developer tools: what the old DEV tab opened, developer.js)
   if(a==='res')prefSet('res',arg);else if(a==='fps')prefSet('fps',+arg);else if(a==='econmode')setEconMode(arg);else if(a==='bspeed')setBattleSpeed(+arg,true);else if(['grid','blood','hpbars','bdeploy','bpause','guide','bfog','ambient','bshake'].includes(a))prefSet(a,arg==='on');
   else if(a==='opaths'||a==='bfx')prefSet(a,arg);else if(a==='mapzoom')prefSet('mapzoom',+arg||0);
@@ -162,7 +167,7 @@ function settingsPage(){
     VOLUMES.map(([k,n])=>{const cur=prefGet(k),near=VOL_STEPS.reduce((a,x)=>Math.abs(x-cur)<Math.abs(a-cur)?x:a);return '<div class="lab">'+n+'</div><div class="tabs" role="group" aria-label="'+n+'">'+VOL_STEPS.map(x=>'<button class="btn sm'+(x===near?' on':'')+'" type="button" data-act="'+k+'" data-arg="'+x+'" aria-pressed="'+(x===near)+'">'+Math.round(x*100)+'%</button>').join('')+'</div>'}).join('')+
     '<p class="muted">Music and sound effects, all made as you play (nothing to download). Shift+M turns the sound off and on anywhere.</p>'+
     '<div class="lab">Controls</div><p class="muted">'+CONTROLS+'</p>'+
-    '<div class="lab">Developer tools</div><div class="btns"><button class="btn" type="button" data-act="dev-open">Open developer tools</button><button class="btn'+(FRAMEPROF.on?' on':'')+'" type="button" data-act="dev-perf" aria-pressed="'+FRAMEPROF.on+'">Frame timings</button></div><p class="muted">The console and the battle test bench (also ` or F2).</p>';
+    '<div class="lab">Developer tools</div><div class="btns"><button class="btn" type="button" data-act="dev-open">Open developer tools</button><button class="btn'+(FRAMEPROF.on?' on':'')+'" type="button" data-act="dev-perf" aria-pressed="'+FRAMEPROF.on+'">Frame timings</button><button class="btn'+(DEV.on?' on':'')+'" type="button" data-act="dev-mode" aria-pressed="'+DEV.on+'">Dev mode</button></div><p class="muted">The console and the battle test bench (also ` or F2).</p>';
 }
 /* the title: the main menu (ui/mainmenu.js: New Campaign, Continue, Settings, Quit, and Load game, Wiki), and its pages as windows
    over its scene: New game, Load game, Settings (settingAct), the farewell (exit) */

@@ -49,11 +49,14 @@ Kit.suite(({ok,info})=>{
    const d=paint();let r;try{window.townGround=function*(){};r=paint()}finally{window.townGround=keep}
    for(const l of z.lots){cells++;const x0=l.x*TL-X,y0=l.y*TL-Y,N=l.n*TL;let worst=0,diff=0;
     for(let y=y0;y<y0+N;y++)for(let x=x0;x<x0+N;x++){const o=(y*w+x)*4;if(Math.abs(d[o]-r[o])+Math.abs(d[o+1]-r[o+1])+Math.abs(d[o+2]-r[o+2])>6)diff++}if(diff>N)yard++;
-    // (along each edge of its cell and 3 px in, any run of 8 px or more across which the yard alone makes a step of light)
+    // (along each edge of its cell and 3 px in, any run of 8 px or more across which the yard alone makes a step of light; not
+    // between two px of a field's beds, its crop rows striped across by design (engine/model.js groundOf: a Vale farmstead's reach
+    // to 2 px of its cell's edge, its rows' runs as long as the land under them lets them show: 8 px at Ashford since 2026-11-14))
+    const gb=t.lotModel(z,l).ground.info?.beds,bed=(x,y)=>{const u=x-x0,v=y-y0;return !!gb&&u>=0&&v>=0&&u<N&&v<N&&gb[v*N+u]===1};
     const scan=(len,at)=>{let run=0,sg=0;for(let s=0;s<len;s++){const q=at(s);if(!q){run=0;continue}const dl=L(d,q[0])-L(d,q[1]),dr=L(r,q[0])-L(r,q[1]),zz=Math.abs(dl)>14&&Math.abs(dl-dr)>14?Math.sign(dl):0;if(zz&&zz===sg)run++;else run=zz?1:0;sg=zz;if(run>worst)worst=run}};
-    const P2=(x,y)=>(y*w+x)*4,inW=(x,y)=>x>=1&&y>=1&&x<w&&y<h;
-    for(const k of [0,1,2,3])for(const [xx,dir] of [[x0+k,1],[x0+N-1-k,-1]])scan(N+16,s=>{const y=y0-8+s;return inW(xx,y)&&inW(xx-dir,y)?[P2(xx,y),P2(xx-dir,y)]:null});
-    for(const k of [0,1,2,3])for(const [yy,dir] of [[y0+k,1],[y0+N-1-k,-1]])scan(N+16,s=>{const x=x0-8+s;return inW(x,yy)&&inW(x,yy-dir)?[P2(x,yy),P2(x,yy-dir)]:null});
+    const P2=(x,y)=>(y*w+x)*4,inW=(x,y)=>x>=1&&y>=1&&x<w&&y<h,rows=(x,y,a,b)=>bed(x,y)&&bed(a,b);
+    for(const k of [0,1,2,3])for(const [xx,dir] of [[x0+k,1],[x0+N-1-k,-1]])scan(N+16,s=>{const y=y0-8+s;return inW(xx,y)&&inW(xx-dir,y)&&!rows(xx,y,xx-dir,y)?[P2(xx,y),P2(xx-dir,y)]:null});
+    for(const k of [0,1,2,3])for(const [yy,dir] of [[y0+k,1],[y0+N-1-k,-1]])scan(N+16,s=>{const x=x0-8+s;return inW(x,yy)&&inW(x,yy-dir)&&!rows(x,yy,x,yy-dir)?[P2(x,yy),P2(x,yy-dir)]:null});
     runs.push(worst)}
    // (the land's colour just round the town's yards: the yard taken into the land there (its edge), not a patch of another colour)
    let A=[0,0,0],B=[0,0,0],n=0;for(const l of z.lots){const x0=l.x*TL-X,y0=l.y*TL-Y,N=l.n*TL;for(let s=0;s<N;s++)for(const [x,y] of [[x0+s,y0],[x0+s,y0+N-1],[x0,y0+s],[x0+N-1,y0+s]]){const o=(y*w+x)*4;for(let c=0;c<3;c++){A[c]+=d[o+c];B[c]+=r[o+c]}n++}}
@@ -70,7 +73,9 @@ Kit.suite(({ok,info})=>{
  // ---- sites and camps: their models, their fires and flags
  {const want={cave:32,ruins:32,shrine:16,camp:32,hideout:64,travelers:32,goblins:64},bad=[],seen=new Set();// (a goblin camp drawn as a hideout, the Horde's: structures.js SITE_KIND; a warren in the hills its tunnel, 32)
   // (a bandit lair (the owner, 2026-11-06): a cave's mouth or a minehead, 32, its banner painted on)
-  for(const s of W.sites){const sp=t.siteSprite(s),N=s.tunnel?32:want[s.type];seen.add(s.type);if(sp.width!==N||!sp.gr||!sp.sh)bad.push(s.type+' '+sp.width);if(['camp','hideout','travelers'].includes(s.type)&&!s.tunnel&&(!sp.fire||!sp.flag))bad.push(s.type+' fire/flag')}
+  // (an outpost not among them: its own picture, a flag post of 22 px with its tower beside it from level 2: world/outposts.js
+  // outpostSprite, tests/outposts.js)
+  for(const s of W.sites){if(s.type===t.OUTPOST_TYPE)continue;const sp=t.siteSprite(s),N=s.tunnel?32:want[s.type];seen.add(s.type);if(sp.width!==N||!sp.gr||!sp.sh)bad.push(s.type+' '+sp.width);if(['camp','hideout','travelers'].includes(s.type)&&!s.tunnel&&(!sp.fire||!sp.flag))bad.push(s.type+' fire/flag')}
   ok(!bad.length&&seen.size>=5,'every site and camp its model ('+[...seen].map(k=>k+' '+want[k]).join(', ')+' px), its yard and shadow, a camp\'s fire (its flame at marks.fire) and flag'+(bad.length?': '+bad.slice(0,6).join('; '):''))}
  // ---- the old hand-drawn art retired
  {const scripts=[...document.querySelectorAll('script[src]')].map(s=>s.getAttribute('src'));

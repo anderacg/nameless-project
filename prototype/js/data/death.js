@@ -34,7 +34,7 @@
    heir (phase 3): the approval a companion needs to be your heir (Loyal), the approval the others need to ride with them (Content),
    the men they start with when they led no party of their own;
    remains (phase 2, dying): the share of your gold left with them (the rest scattered), how near a band finds them (seek px) and its
-   chance an hour, their look;
+   chance an hour (their look: they rot as every body does, data/drops.js BODY_ROT);
    claim (world/claims.js; the owner, 2026-11-12: "anyone can get it just that they reward differently based on the situations"): on:
    the rule (off: the same for anyone, as before); kin: the experience's share kin of the fallen pray for; stranger: one of no blood of
    theirs, its share, and the standing lost at the family's holding for taking their things; rest: the experience by where they lie
@@ -73,7 +73,7 @@ const DEATH={on:true,die:true,live:.3,min:.1,max:.6,
     art:{w:56,h:44,foot:12,ground:[22,10],groundOf:{remains:[10,5],small:[12,6],stone:[14,7],tomb:[26,12],crypt:[24,11]},rail:{w:34,h:16,gap:3},tufts:16,flowers:9,flies:6,ring:{n:7,rx:17,ry:8},rows:[14,12,9,6,3],blade:8,fence:{w:30,h:14,gap:4}},
     col:{stone:'#8d8f95',stone2:'#7a7c82',light:'#b3b5bb',shade:'#5c5e64',dark:'#3e3f44',moss:'#6f8a4a',mound:'#5b4a3a',earth:'#7a6a50',earth2:'#6b5a44',grass:'#5f7d3c',grass2:'#7a9a4c',
       flowers:['#e06a6a','#f2d16b','#f4f0e6','#b88ae0'],blade:'#c8ccd2',guard:'#b08a3a',grip:'#5a3a22',cloth:'#f0d060',wood:'#6a4a2e',cloak:'#4a3a30',iron:'#3a3c42',bone:'#e8dfc8',wood2:'#4e3520',carve:'#5c5e64',wax:'#f3ead2',flame:'#ffb347',flame2:'#fff2a8',fly:'#d8ff8a',
-      glow:'#ffe7a0',mote:'#ffd54a',mote2:'#9fd8ff',core:'#fffbe6',text:'#ffe08a'}},pass:.5,remains:{gold:.6,seek:160,find:.15,col:{cloth:'#5b4a3a',bone:'#e8dfc8',steel:'#9aa4ad',glint:'#ffffff'}},
+      glow:'#ffe7a0',mote:'#ffd54a',mote2:'#9fd8ff',core:'#fffbe6',text:'#ffe08a'}},pass:.5,remains:{gold:.6,seek:160,find:.15},
   claim:{on:true,kin:{xp:1},stranger:{xp:.5,rep:5},rest:{plot:1.15,grave:1.1,tomb:1.3},wild:{xp:.05,floor:.5,gold:.08,item:.05},
     lord:{seek:140,find:.2,force:['greedy','cunning','proud'],price:{kin:.4,stranger:.8}},heir:{find:.3},comp:{near:25,find:.15,price:.3,other:.5},guard:4},
   eater:{chance:.6,lv:2,n:1,bounty:1.5,renown:12,slayer:{base:100,lv:30},first:['Grey','Red','Black','Old','Scarred','Pale','Hollow','Silent'],last:['Widow','Maw','Hunger','Shadow','Fang','Reaver','Ghost','Butcher']}};

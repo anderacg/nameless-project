@@ -6,9 +6,10 @@ const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a
   // second on open ground at 1x, 100 tiles (25 km) a day
-  // Campaign travel is 1.6 times the base pace (was twice: the owner, 2026-10-31, "drop campaign speed about 20%"); world combat
-  // explicitly keeps the base scale.
-  move:.68,travel:1.6,
+  // Campaign travel is 1.28 times the base pace (was twice, then 1.6: the owner, 2026-10-31, "drop campaign speed about 20%", and
+  // 2026-11-14, "reduce world moving speed for all", 20% more); everything on the map moves by it, you and the world alike; world
+  // combat explicitly keeps the base scale.
+  move:.68,travel:1.28,
   // how far each kind sees you, before your cover cuts it (Brain.sight, hiddenAt)
   sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
   // what the parties weigh (brains.js, monsters.js, critters.js, folk.js, companions.js, patrols.js)
@@ -47,6 +48,13 @@ const WORLD_SCALE={
   battle:{elfR:10,bridge:2}
 };
 const moveStep=(px,d,travel=true)=>px*d*WORLD_SCALE.move*(travel?WORLD_SCALE.travel:1);
+/* on foot (the owner, 2026-11-15: "ensure that all characters in the game use the same speed system not separated"): everyone
+   walking the map by himself (the holdings' and the camps' people, the estates' workers, the hunters, the clearers, an outpost's
+   sentries, an army's men filing in at a gate) goes at a man on foot's pace in an army (unit's: world.js footPace), times his
+   gait, by the world's clock (moveStep); his legs a step each WALK.foot × WALK.step px as the marchers' (footFrame). stroll: about
+   his day; walk: on his way, a marcher's own; laden: carrying; stalk: creeping up on game; hurry: home from danger; run: fleeing (a walk 34 px a s
+   on open ground: stroll, laden and hurry the estates' workers' own paces as they were, 26, 18.2 and 37 px) */
+const ON_FOOT={unit:'militia',gait:{stroll:26/34,walk:1,laden:18.2/34,stalk:12/34,hurry:37/34,run:1.5}};
 /* sight by kind (the owner, 2026-11-01: "Every unit spots now and has its vision range, so the army should depend on all units'
    capabilities"): each man's share of a character's sight, the one table for the map (fog.js Sight: your army's eyes, and every
    army's eyes for a threat on the march, marchstyles.js TravelStyle) and for battle (battlefog.js fogRange: FOG.char px times it,

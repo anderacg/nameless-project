@@ -76,11 +76,13 @@ function worldOverdraw(list,cam){
   for(const [k,a] of AL){const to=cov.has(k)?WDEPTH.fade:1,v=a<to?Math.min(to,a+st):Math.max(to,a-st);if(v>=1&&to>=1)AL.delete(k);else AL.set(k,v)}
   cov.clear();WDEPTH.boxes.length=0;let ghosts=0;const top=[],m=ctx.getTransform(),k=m.a||1,mem=memCv(),cw=mem.width,ch=mem.height,B=WDEPTH.box;
   const own=k=>Object.prototype.hasOwnProperty.call(ctx,k),di=own('drawImage'),fr=own('fillRect');WDEPTH.di=ctx.drawImage;WDEPTH.fr=ctx.fillRect;if(WDEPTH.on){ctx.drawImage=dbImage;ctx.fillRect=dbRect}
-  try{for(const e of list){if(e.top){top.push(e);continue}if(!WDEPTH.on){drawMover(e);continue}
-    B[0]=B[1]=1e9;B[2]=B[3]=-1e9;WDEPTH.trk=true;drawMover(e);WDEPTH.trk=false;
+  // (one that fails to draw is left out, the canvas as it was, the rest drawn: its error told, main.js loopError)
+  const one=e=>{try{drawMover(e);return true}catch(err){ctx.setTransform(m);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';loopError(err);return false}};
+  try{for(const e of list){if(e.top){top.push(e);continue}if(!WDEPTH.on){one(e);continue}
+    B[0]=B[1]=1e9;B[2]=B[3]=-1e9;WDEPTH.trk=true;const ok=one(e);WDEPTH.trk=false;if(!ok)continue;
     const x0=Math.max(0,Math.floor((B[0]-m.e)/k)),y0=Math.max(0,Math.floor((B[1]-m.f)/k)),x1=Math.min(cw,Math.ceil((B[2]-m.e)/k))-1,y1=Math.min(ch,Math.ceil((B[3]-m.f)/k))-1;
     if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);const hid=overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam,!!e.nf);if(e.own&&hid>=WDEPTH.ghost.min&&ghosts++<WDEPTH.ghost.most)ghostOver(e,x0,y0,x1-x0+1,y1-y0+1)}}}
   finally{WDEPTH.trk=false;if(di)ctx.drawImage=WDEPTH.di;else delete ctx.drawImage;if(fr)ctx.fillRect=WDEPTH.fr;else delete ctx.fillRect}
-  for(const e of top)drawMover(e);WDEPTH.pics.length=0}
+  for(const e of top)one(e);WDEPTH.pics.length=0}
 // a world goes in: no fades carried over
 onWorld(()=>{WDEPTH.al.clear();WDEPTH.cov.clear();WDEPTH.t=0});

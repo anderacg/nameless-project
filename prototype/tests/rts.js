@@ -137,7 +137,14 @@ try{
   const w=t.grpMorale(inf).weak;ok(['flanked','outnumbered','charged','leader','losing'].every(k=>w.includes(k)),'and outnumbered, charged, its leader fallen, its side losing ('+w.join(', ')+')');
   t.setOrderUI();const card=document.querySelector('[data-grp="'+testGroup('inf')+'"]');ok(card.querySelectorAll('.cmi svg.mico').length===t.CARD.show&&['flanked','overwhelmed','charged','leader fallen','army depleted'].every(w=>card.title.includes(w)),'the card shows a badge for its weaknesses, '+t.CARD.show+' at most, all five in its tooltip (steady: no morale badge) ('+card.title+')');
   B.t+=10;B.losing=[false,false];ok(!t.grpMorale(inf).weak.length,'weaknesses pass once it is left alone');
-  let drawn=0;const fr=t.ctx.fillRect.bind(t.ctx);t.ctx.fillRect=(...a)=>{drawn++;return fr(...a)};t.drawUnitIcons();t.ctx.fillRect=fr;ok(drawn>60,'icons over the groups, yours and theirs: plate, type and health ('+drawn+' rects)');
+  // (counted by what is drawn: since cd4ec51 a flag is one cached picture (moraleicons.js flagPic) and its type the illustration
+  // (ui/icons.js uiCanvasIcon, at 2,3 on the flag; its pixel glyph, a rect a pixel, while that sheet loads), no longer all rects;
+  // its health is battlehud.js drawGroupHealth's since 2026-10-31)
+  let drawn=0,flags=0,art=0,glyph=0;const fr=t.ctx.fillRect.bind(t.ctx),di=t.ctx.drawImage.bind(t.ctx),ci=window.uiCanvasIcon;
+  t.ctx.fillRect=(...a)=>{drawn++;return fr(...a)};t.ctx.drawImage=(img,...a)=>{if([...t.FLAG_PICS.values()].includes(img))flags++;return di(img,...a)};
+  window.uiCanvasIcon=(g,name,x,y,w,h)=>{const r=ci(g,name,x,y,w,h);if(x===2&&y===3){if(r)art++;else glyph++}return r};
+  try{t.drawUnitIcons()}finally{t.ctx.fillRect=fr;t.ctx.drawImage=di;window.uiCanvasIcon=ci}const n=B.icons.length,sides=new Set(B.icons.map(r=>r.team));
+  ok(n>=2&&sides.has(0)&&sides.has(1)&&flags===n&&art+glyph===n&&drawn>=glyph*10,'icons over the groups, yours and theirs: a flag and its type each ('+n+' icons: '+flags+' flags, '+art+' pictures, '+glyph+' glyphs in '+drawn+' rects)');
   ok(t.unitIcon('hero',[B.hero])==='hero'&&t.unitIcon(testGroup('inf'),t.grpUnits(testGroup('inf')))==='spear'&&t.unitIcon(testGroup('arc'),t.grpUnits(testGroup('arc')))==='bow','each icon shows what the unit is (your hero: a crown; spearmen: a spear; archers: a bow)');
   ok(t.unitIcon('x',[{type:'hum_knight',s:t.ST.hum_knight}])==='horse'&&t.unitIcon('x',[{type:'troll',s:t.ST.troll}])==='beast'&&t.unitIcon('x',[{type:'militia',s:t.ST.militia}])==='sword','knights a horse, a troll a paw, militia a sword');
   ok(!document.querySelector('[data-grp="hero"] .cmi'),'your hero never breaks: no banner');t.frame();B.over=true;B.endT=0;t.B=null}

@@ -20,7 +20,9 @@ Kit.suite(({ok})=>{
    ok(d.ground.some(g=>g.k==='gold'&&g.n>=D.coin.n[0]&&g.n<=D.coin.n[1])&&d.ground.some(g=>g.k==='gear'&&t.ITEMS[g.id]),'a bandit falls: coins and a piece of gear on the ground where he fell ('+d.ground.map(g=>g.k).join(', ')+')');
    ok(d.orbs.filter(o=>o.to===h).length===D.dots.xp&&d.orbs.filter(o=>o.to===mine[0]).length===D.dots.troop,'its dots: '+D.dots.xp+' gold to your hero, '+D.dots.troop+' blue to the soldier who felled it');
    ok(!Object.keys(b).some(k=>/drop|orb/i.test(k))&&!Object.keys(f).some(k=>/drop|orb/i.test(k)),'nothing of it on the battle or its men (its own state, so no battle\'s numbers move)');
-   const fl=b.floats.length;run(30);ok(!d.orbs.some(o=>o.to===h&&!o.item)&&b.floats.some(x=>/\+\d+ XP/.test(x.t)),'the dots reach your hero: "+'+D.xp+' XP" over him');
+   // (its line seen while they fly in, as "Bag full" below: it shows .9 s from the first dot home, so read only after 30 frames it was
+   // gone where the first came home within .6 s (the dots' burst by Math.random: the seed's draws moved with 711050a's camps))
+   let saw=false;for(let i=0;i<30;i++){run(1);saw=saw||b.floats.some(x=>/\+\d+ XP/.test(x.t))}ok(!d.orbs.some(o=>o.to===h&&!o.item)&&saw,'the dots reach your hero: "+'+D.xp+' XP" over him');
    // ---- walked near, drawn in: the gold into your purse, the gear into your bag
    const g0=P.gold,gear=d.ground.find(g=>g.k==='gear').id,n0=P.inv.filter(s=>s&&s.id===gear).length;h.x=f.x;h.y=f.y;run(40);
    ok(!d.ground.length&&P.gold>g0&&P.inv.filter(s=>s&&s.id===gear).length===n0+1&&d.tally.gold===P.gold-g0&&d.tally.gear===1,'your hero comes near: they fly in, the gold into your purse (+'+(P.gold-g0)+'), the '+t.ITEMS[gear].n+' into your bag');

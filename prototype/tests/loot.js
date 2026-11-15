@@ -15,7 +15,7 @@ try{
  t.startMonster(m);t.concludeEncounter(true,{hum_knight:1},1,true,['bear']);M.gear=gear0;
  ok(/Spoils/.test(html())&&tiles().some(s=>/Bear Hide/.test(s))&&tiles().some(s=>/Bear Hide Coat/.test(s)),'a victory lists the spoils: '+tiles().join(', '));
  ok(tiles()[0]&&/Coat/.test(tiles()[0]),'gear comes first');
- ok(panel().querySelectorAll('.loot-item canvas').length===tiles().length,'every item shows its icon');
+ ok(panel().querySelectorAll('.loot-item canvas, .loot-item svg.item-illustration').length===tiles().length,'every item shows its icon (a drawn icon, or its illustration: ui/icons.js itemIllustration)');
  ok((P.gold===g0?chip('Gold')==='':chip('Gold')==='+'+(P.gold-g0))&&/^\+\d+/.test(chip('XP')),'with the XP ('+chip('XP')+') it brought, and no gold line when beasts carry none');
  ok(/Your losses/.test(html())&&/1 knight|knight/i.test(html()),'and your losses');
  const has=id=>P.inv.some(x=>x&&x.id===id);ok(!has('bearcoat')&&!has('bearhide')&&/On the ground/.test(html()),'nothing goes into your bag until you take it');

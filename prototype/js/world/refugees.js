@@ -4,6 +4,7 @@
 // besieged or miserable for a friendly holding nearby that is doing better: they come off its people when they set out and
 // join the other's when they arrive. Bandits rob them on the way; you can feed, settle, recruit or rob them.
 // refugees on the road (plain data, saved as they are; made Refugees in place: asRefugees): a world object (parties.js)
+const REFUGEE_TC=new WeakMap();
 class Refugees extends WorldObject{
   get mapKind(){return 'refugee'}
   here(){return W.refugees.includes(this)}
@@ -11,16 +12,36 @@ class Refugees extends WorldObject{
   meet(){refugeeMeet(this)}
   inView(V){return yourSight(V).sees(this.x,this.y,1.2)}// (on the road: seen a little past your sight, woods or not)
   pick(at){at.add(this,10,4)}
+  // (marched as an army is, each of them his own figure (march.js MarchArmy, the owner, 2026-11-15: "why don't you make them like
+  //  army group but just a group of refugee"): their people's peasants (data/units.js peasantLevy), so many as they are; their count
+  //  over them in dev mode only)
+  get tc(){const k=peasantLevy(this.race),c=REFUGEE_TC.get(this);if(c&&c[k]===this.n)return c;const d={[k]:this.n};REFUGEE_TC.set(this,d);return d}// (kept off the record: saved as it is)
+  get troops(){return expandCounts(this.tc)}
+  changed(){}
+  get marchForm(){return 'huddle'}// (standing: a loose clump, no ranks (battle/formations.js FORMS.huddle); on a long way, a close,
+  // straggling column (marchstyles.js TRAVEL_STYLES.crowd); afraid, the clump again)
+  get unarmed(){return true}// (their tools on their backs, march.js marchLook)
+  // (each of them on the march: their people's figure with his bundle on his back (people.js figRefugee), walking in step with the
+  //  way he has walked, as a marcher)
+  drawMan(u,cam){subT(u);const x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y),face=Math.cos(u.dir??marchFacing(this))<0?-1:1;
+    if(!MAP_FIGS.on){const s=refugeeSprite(marchWalks(u)?marcherStep(u):0,u.id%6);ctx.save();ctx.translate(x,y);if(face<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore();return}// (MAP_FIGS off: the old small ones)
+    const who=REFUGEE_FOLK[u.id%REFUGEE_FOLK.length];dressedIn(dressClimAt(this.x,this.y),()=>drawFig(figRefugee(u.id,this.race,figPose(marcherStep(u),marchWalks(u)),who),x,y,face,who==='child'?REFUGEE_CHILD:1))}
+  look(){return{col:'#8a7a5a',race:this.race,dir:this.dir||1,moving:true,seed:0,label:'',labelCol:this.fear?'#ff9a90':'#c8c2ae'}}
+  label(){return 'Refugees from '+this.from}
   // a few of them walking (people.js refugeeSprite: a step each WALK.foot px walked, each a little out of time), how many near you;
-  // (MAP_FIGS) as the battle's figures, of their people, their bundles on their backs (people.js figRefugee)
-  draw(ents,cam,V){if(!this.inView(V))return;const r=this;
+  // (MAP_FIGS) as the battle's figures, of their people, their bundles on their backs (people.js figRefugee); marched (WORLD_BATTLE)
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const r=this;
+    if(WORLD_BATTLE.on){marchDraw(ents,r,cam);if(DEV.on)ents.push({y:r.y,f:()=>{subT(r);if(r.fromYou()<90)txt('Refugees '+r.n,Math.round(r.x-cam.x),Math.round(r.y-cam.y)-18,r.fear?'#ff9a90':'#c8c2ae','center')}});return}
     ents.push({y:r.y,f:()=>dressedIn(dressClimAt(r.x,r.y),()=>{subT(r);const sx=Math.round(r.x-cam.x),sy=Math.round(r.y-cam.y),k=Math.min(6,Math.max(3,Math.ceil(r.n/3))),go=mapStepping(r),fig=figsOn();ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-6,sy-1,12,2);
       for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*4-4)+(i>2?-r.dir*2:0),py=sy-(i>2?2:0),fr=go?(frameOf(r,WALK.foot,WALK.n)+i*2)%WALK.n:0;if(fig){drawFig(figRefugee(i,r.race,figPose(fr,go)),px,py,r.dir);continue}
         const s=refugeeSprite(fr,i);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
-      if(r.fromYou()<90)txt('Refugees '+r.n,sx,sy-13,r.fear?'#ff9a90':'#c8c2ae','center')})})}
+      if(DEV.on&&r.fromYou()<90)txt('Refugees '+r.n,sx,sy-13,r.fear?'#ff9a90':'#c8c2ae','center')})})}
   tip(){return '<b>Refugees</b><small>From '+this.from+' to '+this.to+'</small><span class="act">Click: actions, double-click: meet</span>'}
 }
 const asRefugees=asClass(Refugees);
+// (who walks among them, a marcher's place in the group (u.id) round this: adults with bundles, children, elders on sticks)
+const REFUGEE_FOLK=['adult','child','elder','adult','child','adult','elder','child'];
+const REFUGEE_CHILD=.72;// (a child drawn this much an adult's size)
 const REFUGEE_CAP=density().refugees,REFUGEE_SPD=11;// (REFUGEE_CAP: today's; a world's own: density(WM), data/world.js)
 // why people would leave a holding, or '' if they stay; where they go (holding.js Holding fleeReason, refuge)
 const fleeReason=t=>t.fleeReason();
@@ -52,7 +73,7 @@ function updateRefugees(d){
     const dx=P.x-r.x,dy=P.y-r.y,pd=Math.hypot(dx,dy),o=asRefugees(r),afraid=r.fear&&(TravelAwareness.sees(o)||fearSeen(o)&&!safeRefuge(r,gateGoal(to),armyMid(P)));
     if(afraid){Router.flee(r,{x:r.x+dx,y:r.y+dy},moveStep(REFUGEE_SPD,d));r.dir=dx>0?-1:1}
     else{const ox=r.x;Router.travel(r,gateGoal(to),moveStep(REFUGEE_SPD*Math.max(.5,speedAt(r.x,r.y)||1),d));r.dir=r.x>=ox?1:-1}
-    if(Math.hypot(to.x-r.x,to.y+12-r.y)<8){refugeesArrive(r,to);r.gone=true;continue}
+    if(Math.hypot(to.x-r.x,to.y+12-r.y)<8){GateFile.start(asRefugees(r),to);refugeesArrive(r,to);r.gone=true;continue}// (in at the gate, one after another, as an army: gatefile.js)
     // bandits rob them of what they carry, and some do not survive it
     const b=!r.robbed&&bandits.find(o=>Math.hypot(o.x-r.x,o.y-r.y)<12);
     if(b){r.robbed=true;r.goods={};r.purse=0;r.n=Math.max(2,r.n-rint(0,2));if(inSight(r.x,r.y))log('Bandits fall on refugees from '+r.from+'.','bad')}
@@ -64,7 +85,7 @@ function updateRefugees(d){
 /* meeting refugees */
 /* refugees */
 function refugeeMeet(r){
-  G.rf=r;G.mode='dialog';P.tx=null;G.chase=null;r.cool=4;const mine=playerFiefs().filter(t=>!besieged(t)),k=Math.min(3,Math.floor(r.n/4),partyRoom(),partyRoster(P).groupRoom(levyOf(r.race)));
+  G.rf=r;G.mode='dialog';P.tx=null;G.chase=null;r.cool=4;const mine=playerFiefs().filter(t=>!besieged(t)),k=Math.min(3,Math.floor(r.n/4),partyRoom(),partyRoster(P).groupRoom(peasantLevy(r.race)));
   showPanel('<div class="top"><h2>Refugees from '+r.from+'</h2><span class="muted">Bound for '+r.to+'</span></div>'+
     '<p>'+r.n+' '+RACES[r.race].n.toLowerCase()+' folk on the road, because '+REFUGEE_WHY[r.why]+'. They carry '+(Object.keys(r.goods).length?Object.keys(r.goods).map(g=>r.goods[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+' and ':'')+(r.purse?'a few coins':'almost nothing')+'.</p><div class="btns">'+
     dlgBtn('rf-feed',null,'Share '+CONDUCT.feedRefugees.food+' food',r.fed?'Already fed':foodN()<CONDUCT.feedRefugees.food?'Not enough food':'')+
@@ -80,7 +101,8 @@ function refugeeAct(a){
     return notice('Fed','They bless your name. Reputation in '+r.from+' +'+c.rep+' and in '+r.to+' +'+c.repTo+'.','good')}
   if(a==='rf-settle'){const home=Spatial.nearest(playerFiefs().filter(t=>!besieged(t)),r.x,r.y);if(!home)return;r.to=home.name;const c=C.settleRefugees;if(from)addRep(from.name,c.rep,true);if(from&&from.owner&&from.owner!=='player')addHonor(from.owner,-c.honor,true);
     return notice('A new home','They turn toward '+home.name+'. '+r.n+' more people will live and pay taxes there. The '+(from&&from.owner&&from.owner!=='player'?FACS[from.owner].n+' grumbles at losing them (−'+c.honor+' honor).':'road is long.'),'good')}
-  if(a==='rf-recruit'&&!r.asked){const k=Math.min(3,Math.floor(r.n/4),partyRoom(),partyRoster(P).groupRoom(levyOf(r.race)));if(k<1)return;const lv=levyOf(r.race);if(!partyRoster(P).canAdd(lv))return;r.asked=true;P.add(lv,k);r.n-=k;if(from)addRep(from.name,-2,true);
+  if(a==='rf-recruit'&&!r.asked){const k=Math.min(3,Math.floor(r.n/4),partyRoom(),partyRoster(P).groupRoom(peasantLevy(r.race)));if(k<1)return;const lv=peasantLevy(r.race);// (their people's Peasant Levy, the owner, 2026-11-15: "the refugee should give player peasant troops instead of spearman")
+if(!partyRoster(P).canAdd(lv))return;r.asked=true;P.add(lv,k);r.n-=k;if(from)addRep(from.name,-2,true);
     return notice('Volunteers',k+' of them take up arms with you as '+ST[lv].n.toLowerCase()+(k>1?'s':'')+'. Fewer will reach '+r.to+'.','good')}
   if(a==='rf-rob'&&!r.robbed){const got=Object.keys(r.goods).map(g=>{const k=invAdd('good',g,r.goods[g]);return k?k+' '+GOODS[g].n.toLowerCase():''}).filter(Boolean),gold=r.purse;P.gold+=gold;r.goods={};r.purse=0;r.robbed=true;r.fear=true;r.n=Math.max(2,r.n-rint(1,3));
     const c=C.robRefugees,cost=[from&&wrong(from,{rep:c.rep,honor:c.honor,morale:c.morale}),to&&to!==from&&wrong(to,{rep:c.repTo,honor:c.honorTo})].filter(Boolean).join(', ');mood('cruel');

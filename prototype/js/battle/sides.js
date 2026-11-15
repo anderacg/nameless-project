@@ -24,6 +24,11 @@ const BATTLE_SPOILS={lostXp:4};
 // (what an army has left on the field: each man's health by his tier, a character as four)
 const armyPower=u=>u.hp/Math.max(1,u.max)*(isChar(u)?4:ST[u.type]?.tier||1);
 const ownDown=()=>!!B&&!B.over&&!B.opts?.tournament&&!B.units.some(u=>u.team===0&&(u.hero||B.groups[u.grp]?.player)&&fighting(u));
+// (with your army down, still a fight without you: an army of your side's fighting on, or two of your foes' sides fighting each
+// other; else it is over the next moment (checkBattleOver), and nothing to skip: the owner, 2026-11-14, "even without reinforce or
+// other party, I still get to see a skip or auto resolve battle button (but just a few mili sec)")
+const fightsOn=()=>{if(!B)return false;const foes=new Set();let ally=false;for(const u of B.units){if(!fighting(u)||u.team===0&&(u.hero||B.groups[u.grp]?.player))continue;if(battleEnemy(0,u))foes.add(u.team);else ally=true}
+  return foes.size>0&&(ally||foes.size>1&&[...foes].some(a=>[...foes].some(b=>a!==b&&battleEnemy(a,b))))};
 function skipBattle(){if(!ownDown())return;B.paused=false;if(B.sides?.active)return B.sides.skip();runOn(B);if(!B.over)settleBy(B,...teamPowers(B),false)}
 function resolveBattle(){if(!ownDown())return;if(B.sides?.active)return B.sides.skip(true);settleBy(B,...teamPowers(B),true)}
 function runOn(b){const X=BATTLE_SKIP,st=b.world?WORLD_BATTLE.step:X.step;for(let i=0;i<X.max/st&&!b.over&&B===b;i++)battleStep(st,!!b.world)}

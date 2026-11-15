@@ -67,7 +67,8 @@ try{
    {const c=cases[0],T=c.tiles[c.tiles.length>>1],tx=T%MW,ty=(T/MW)|0,mid=(hor(c)?ty:tx)*TILE+8,x=hor(c)?(tx+.5)*TILE:mid-3,y=hor(c)?mid-4:(ty+.5)*TILE-4;
     const ss=[0,1,2,3].map(k=>t.asShip({k:k?'fish':'trade',home:t.TOWNS[0].name,to:t.TOWNS[0].name,x:x+(hor(c)?k*5-8:0),y:y+(hor(c)?0:k*5-8),path:[],i:0,seed:4+k,dir:1,state:'out',big:!k,goods:{}}));clear();P.x=x+30;P.y=y+60;t.reveal();W.ships=ss;
     const time=f=>{const t0=pn.call(performance);for(let i=0;i<40;i++)f();return(pn.call(performance)-t0)/40},sc=()=>t.drawWorld();shot();
-    const a=time(sc),b=forced(()=>time(sc));let u=0;{const t0=pn.call(performance);for(let i=0;i<2000;i++)for(const s of ss)t.decksOver(s,t.shipSprite(s));u=(pn.call(performance)-t0)/2000/ss.length*1000}
+    // (warmed first: a deck's picture is cut once, when first drawn over a ship, not each frame)
+    sc();sc();const a=time(sc),b=forced(()=>time(sc));let u=0;{const t0=pn.call(performance);for(let i=0;i<2000;i++)for(const s of ss)t.decksOver(s,t.shipSprite(s));u=(pn.call(performance)-t0)/2000/ss.length*1000}
     ok(a-b<1.5,'its cost: a world frame with 4 ships under a bridge '+a.toFixed(2)+' ms, '+b.toFixed(2)+' ms with the decks left out; looking for the bridges over a ship '+u.toFixed(1)+' µs')}
   }finally{performance.now=pn;W.ships=[];clear()}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

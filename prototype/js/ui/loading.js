@@ -110,7 +110,8 @@ function runSteps(title,steps,opt){const L=LOADING,list=typeof steps==='function
           else{const n=it.next();if(n.done){v=n.value;it=null;loadingStep(s.id,1);i++}else if(typeof n.value==='number')loadingStep(s.id,n.value)}
           if(i<list.length&&performance.now()-t0>=L.slice){away();requestAnimationFrame(slice);return}}}
       catch(e){fail(e);return}
-      // (done: once shown, it stays its least time, the game still waiting)
-      L.stop=null;const wait=L.shownAt?L.hold-(performance.now()-L.shownAt):0;
-      if(wait>0){away();setTimeout(()=>{if(L.run===run)loadingHide();res(v)},wait)}else{loadingHide();res(v)}};
+      // (done: once shown, it stays its least time, the game still waiting; then the HUD for the mode the game is back in: while
+      // it waited its refresh saw 'loading' and put the campaign HUD's minimap slot away, ui/campaignhud.js sync)
+      L.stop=null;const wait=L.shownAt?L.hold-(performance.now()-L.shownAt):0,end=()=>{loadingHide();if(G.mode==='world'&&WM)updateHUD(true)};
+      if(wait>0){away();setTimeout(()=>{if(L.run===run)end();res(v)},wait)}else{end();res(v)}};
     slice()})}

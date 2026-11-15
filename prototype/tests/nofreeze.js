@@ -29,4 +29,13 @@ window.RUN=()=>{const R=Kit.report(),{ok,info}=R,t=T,G=t.G,P=t.P,W=t.W;
  Kit.begin('soldier',3);Kit.world();t.GUIDE.on=false;const u0=window.updateWorld;let n=0,thrown=0;
  window.updateWorld=function(dt){n++;if(n===3){thrown++;throw new Error('nofreeze probe: a step throws')}return u0.apply(this,arguments)};
  setTimeout(()=>{window.updateWorld=u0;const i=ERR.findIndex(e=>/nofreeze probe/.test(e));
-  ok(thrown===1&&n>10&&i>=0,'a step that throws: the game goes on ('+n+' steps, the error still raised: '+(i>=0)+')');if(i>=0)ERR.splice(i,1);R.out()},2000)};
+  ok(thrown===1&&n>10&&i>=0,'a step that throws: the game goes on ('+n+' steps, the error still raised: '+(i>=0)+')');if(i>=0)ERR.splice(i,1);
+  // (the frame: one figure that throws as it is drawn; the rest of the frame drawn all the same, the fog and the weather, you among
+  //  the movers; the error told once on the screen, where it was (the owner, 2026-11-15: a phone's map lost its fog, people and night))
+  const f0=window.drawFolk,g0=window.drawWorldFog,m0=window.marchDraw;let fog=0,you=0;
+  window.drawFolk=function(ents){const r=f0.apply(this,arguments);ents.push({y:P.y+1,f:()=>{throw new Error('nofreeze probe: a figure throws')}});return r};
+  window.drawWorldFog=function(){fog++;return g0.apply(this,arguments)};window.marchDraw=function(ents,o){const k=ents.length,r=m0.apply(this,arguments);if(o===P)for(let j=k;j<ents.length;j++){const f=ents[j].f;ents[j].f=function(){you++;return f.apply(this,arguments)}}return r};
+  try{G.mode='world';t.frame();t.frame()}finally{window.drawFolk=f0;window.drawWorldFog=g0;window.marchDraw=m0}
+  const seen=t.LOOP_SEEN.filter(x=>/a figure throws/.test(x.k)),told=/Something went wrong: nofreeze probe: a figure throws \(nofreeze\.js:\d+\)/.test(document.getElementById('log')?.textContent||'');
+  ok(fog===2&&you>0&&seen.length===1&&told,'a figure that throws as it is drawn: left out, the frame drawn all the same (the fog '+fog+' times in 2 frames, your army '+you+' figures), the error told once on the screen: "'+(seen[0]?seen[0].k+' ('+seen[0].w+')':'')+'"');
+  setTimeout(()=>{for(let j=ERR.length-1;j>=0;j--)if(/nofreeze probe: a figure/.test(ERR[j]))ERR.splice(j,1);R.out()},300)},2000)};

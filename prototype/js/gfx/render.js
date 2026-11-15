@@ -89,10 +89,11 @@ function drawTravelConcealment(cam){
 // (both badges put to the screen's own pixel (snapV), as the figure under them and the eye beside them are (the owner, 2026-11-08:
 // "the moving icon seems to not smooth attach to the army"): rounded to whole game px, they stepped a game px at a time, several
 // screen px on a phone, while the army glided under them)
-// Pace shares the battle unit cards' walk/run badges, in a row after travel concealment.
+// Pace shares the battle unit cards' walk/run badges, in a row after travel concealment; in dev mode only (the owner, 2026-11-15:
+// "remove moving icon and make it to dev console": the console's devmode, ui/ui.js DEV)
 const TRAVEL_PACE={size:14,gap:4,cache:new Map()};
 function drawTravelPace(cam){
-  if(B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;
+  if(!DEV.on||B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;
   const e=heroTagAt(cam),kind='walk',k=e.k,size=TRAVEL_PACE.size*k,x=e.right+(TRAVEL_PACE.gap+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0))*k,y=e.bottom-size;
   let s=TRAVEL_PACE.cache.get(kind);if(!s){s=mkc(9,9,g=>{for(const [x,y,c] of badgePx(kind))rect(g,c,x,y)});TRAVEL_PACE.cache.set(kind,s)}
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,snapV(x),snapV(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
@@ -121,12 +122,16 @@ function travelDetectionNow(){
   const rows=[];for(const o of travelObservers()){const d=travelDetection(o);if(d)rows.push(d)}
   const seen=rows.filter(d=>d.sees),exposure=Math.max(0,...rows.map(d=>d.exposure));return{rows,seen,exposure,danger:seen.some(d=>d.danger)};
 }
+// (what of it you can read (worldobject.js detectSkill): none; those who have seen you alone (the rest left out, your exposure theirs);
+//  or all of it)
+function travelDetectionShown(s){const S=detectSkill();if(S.near)return s;if(!S.seen)return{rows:[],seen:[],exposure:0,danger:false,none:true};
+  const rows=s.rows.filter(d=>d.sees);return{rows,seen:s.seen,exposure:Math.max(0,...rows.map(d=>d.exposure)),danger:s.danger}}
 const travelDetectionColor=state=>state.seen.length?state.danger?'#ef8c73':'#dbca91':state.exposure?'#d9ad57':'#82c6b3';
 function drawTravelDetection(cam){
-  if(B||P.stay)return null;const state=travelDetectionState(),k=dprOf()/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)])),labels=new Map(BANNERQ.map(q=>[q.o,q.label]));ctx.save();ctx.imageSmoothingEnabled=false;
+  if(B||P.stay)return null;const state=travelDetectionShown(travelDetectionState());if(state.none)return state;const k=dprOf()/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)])),labels=new Map(BANNERQ.map(q=>[q.o,q.label]));ctx.save();ctx.imageSmoothingEnabled=false;
   for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const m=markers.get(o)||o instanceof Party&&armyTagAt(o,labels.get(o),cam),w=STEALTH_EYE.size*k,h=w*2/3,x=m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=m?m.top:o.y-cam.y-18-h;
     drawStealthEye(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94',x,y,STEALTH_EYE.size);
-    const q=!d.sees&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,q.y-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)
+    const q=!d.sees&&detectSkill().near&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,q.y-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)
   }
   const e=heroTagAt(cam);drawStealthEye(state.exposure,travelDetectionColor(state),e.x,e.y,STEALTH_EYE.player);ctx.restore();
   return state;
@@ -135,8 +140,9 @@ function drawTravelDetection(cam){
 // real time, still under reducedMotion (vfx.js), the only one drawn on the map: not a party's (a WorldObject), whose is on its card)
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
-  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}
-    if(q.o instanceof WorldObject){if(q.label){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}continue}
+  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1&&DEV.on)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}// (its count: dev mode only, ui/ui.js PREFS.dev)
+    // (a party's or caravan's label, its count (a band's chief and level with it): dev mode only, ui/ui.js PREFS.dev)
+    if(q.o instanceof WorldObject){if(q.label&&DEV.on){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}continue}
     const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(B){const d=VS>1?subOf(B.c):[0,0];ctx.drawImage(B.s,B.x-cam.x+d[0],B.y-cam.y+d[1])}}
   BANNERQ=[]}
 // (an animal's step on the map, ms a frame)
@@ -195,7 +201,7 @@ function worldMiniRect(){const campaign=window.campaignHud?.miniRect();if(campai
    holdings and places as their sprites (fmIcon, icon x the full map's sizes; the marks by the minimap's width, 112 px one), the screen's own view inked on it (view), you as on
    the full map. Its picture: a box x as wide round the view, made again when the view leaves it, the realms change (landVer) or,
    at most each refresh ms, what you have seen in it does. on false: the whole map as before (WorldArt.mini and its dark) */
-const MINIMAP={on:true,tiles:96,over:3,box:2,refresh:1000,icon:.42,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
+const MINIMAP={on:true,tiles:96,over:3,box:2,refresh:1000,battle:100,icon:.42,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
 // what the minimap shows (its rectangle, worldMiniRect, and s its px a tile; ox, oy its top left tile, tw x th tiles of it),
 // round the screen's middle (cam: G.cam)
 function worldMiniView(cam=G.cam){const r=worldMiniRect();if(!MINIMAP.on)return{...r,ox:0,oy:0,tw:MW,th:MH};
@@ -226,6 +232,9 @@ function camFollow(px,py){const F=CAM_FOLLOW,o=F.out,now=performance.now()/1000,
   if(!F.on||FIXED_VIEW&&!F.force||!(Math.abs(F.x-px)<F.snap&&Math.abs(F.y-py)<F.snap)){F.x=px;F.y=py}
   else{const dx=px-F.x,dy=py-F.y,d=Math.hypot(dx,dy);if(d>F.dead){const k=1-Math.exp(-dt/F.ease),m=(d-F.dead)*k;F.x+=dx/d*m;F.y+=dy/d*m}}
   o.x=F.x;o.y=F.y;return o}
+// (a stage of the frame that fails is left out and the rest drawn, the canvas's state put back: its error told once, main.js loopError;
+//  the owner, 2026-11-15: one throw had cut a phone's frames short after the map, its fog, people, rain and night gone)
+function drawSafe(f,...a){const c=ctx;c.save();try{f(...a)}catch(e){loopError(e)}finally{c.restore()}}
 function drawWorld(){
   // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
   reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){const F=camFollow(P.x,P.y);C.x=snapV(clamp(F.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(F.y-VH/2,0,MH*TILE-VH));}
@@ -258,7 +267,7 @@ function drawWorld(){
     else ents.push({y:P.y,own:1,id:P,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore()}}); }
   GateFile.draw(ents,cam);GateFile.camps(ents,cam,V);// (armies filing in at a gate, camps by a gate with no room: world/gatefile.js)
-  drawFolk(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
+  drawFolk(ents,cam,V);drawTownFolk(ents,cam,V);Hunters.drawAll(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
   ambientWorld(ents,cam,V);// (the birds, critters and butterflies on the ground, with everyone; the rest stepped: ambient.js)
   // the order: the ground (the chunks: their trees, woods and ranges painted in), what lies flat (fields, yards, borders), the
   // shadows of what is built (one pass), the buildings, moored boats, camps and sites (in their own order, by their feet), then everyone who moves by their feet, each with
@@ -273,18 +282,18 @@ function drawWorld(){
   ctx.drawImage(low,-fx,-fy);ctx.save();ctx.translate(-fx,-fy);
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
-  ambientFlat(cam);worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);ambientAir(cam);BlessFx.draw(cam);// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
+  drawSafe(ambientFlat,cam);drawSafe(worldOverdraw,ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
   // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
-  fogMem(low,cam,V);
-  drawEnv(cam,V,1);
+  drawSafe(fogMem,low,cam,V);
+  drawSafe(drawEnv,cam,V,1);
   // the weather where you are (gfx/weather.js; in a battle on the map, over the field instead: drawBattle), under the fog: seen
   // where you see, dim where you remember, none on land you have never seen (the owner, 2026-11-08)
-  if(!B?.world)WeatherArt.draw(ambWeather(),VW+1,VH+1,Weather.strength(P.x,P.y));
+  if(!B?.world)drawSafe(()=>WeatherArt.draw(ambWeather(),VW+1,VH+1,Weather.strength(P.x,P.y)));
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
-  drawWorldFog(cam,V);
+  drawSafe(drawWorldFog,cam,V);
   }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
   // the tile grid and a building being placed lie over the fog
   if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
@@ -324,8 +333,11 @@ function drawWorld(){
 }
 // the minimap as a piece of the full map (MINIMAP): drawn on its own canvas at the screen's own pixels (MINI_FACE), then laid on the
 // map whole (no picture resampled on the map: tests/mapzoom.js)
-let MINI_FACE=null;
+// (in a fight on the map its face drawn afresh at most each MINIMAP.battle ms, the last one put up between: its dots for every
+// fighter each frame cost a battle's frame 2 ms (the owner, 2026-11-15: "fix the battle performance"))
+let MINI_FACE=null,MINI_AT=-1e9;
 function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y:my,w:mw,h:mh,s:MS}=v,u=mw/112,pic=miniPic(v),T=ctx.getTransform(),K=Math.abs(T.a)||1,fw=Math.max(1,Math.round(mw*K)),fh=Math.max(1,Math.round(mh*K));
+  {const now=performance.now();if(B&&MINI_FACE&&MINI_FACE.width===fw&&MINI_FACE.height===fh&&now-MINI_AT<M.battle){drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh);return}MINI_AT=now}
   if(!MINI_FACE||MINI_FACE.width!==fw||MINI_FACE.height!==fh)MINI_FACE=mkc(fw,fh,()=>{});const g=MINI_FACE.getContext('2d'),X=x=>mx+(x/TILE-v.ox)*MS,Y=y=>my+(y/TILE-v.oy)*MS,
     dot=(x,y,col,s)=>{s=Math.max(1,Math.round(s*zk));rect(g,col,Math.floor(X(x))-(s>>1),Math.floor(Y(y))-(s>>1),s,s)};
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,fw,fh);g.setTransform(fw/mw,0,0,fh/mh,-mx*fw/mw,-my*fh/mh);g.imageSmoothingEnabled=false;

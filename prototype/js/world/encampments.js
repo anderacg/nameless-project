@@ -87,7 +87,7 @@ class Encampment extends Site{
     for(const [,x,y] of c){if(!passable(tAt(Math.floor(x/TILE),Math.floor(y/TILE)))||!CampSite.tentOk(x,y+4)||!Router.reach(this,{x,y}))continue;const n=count(x,y);if(n>best.n)best={x,y,n};if(n>=need)break}
     if(best.x!==this.x||best.y!==this.y){CampSite.strike(this.key);ENC_PROPS.delete(this.key);this.x=best.x;this.y=best.y;this.tx=Math.floor(best.x/TILE);this.ty=Math.floor(best.y/TILE)}}
   draw(ents,cam,V){if(!this.inView(V))return;const a=this.area();if(a[2]<cam.x-16||a[0]>cam.x+VW+16||a[3]<cam.y-16||a[1]>cam.y+VH+40)return;this.ground();
-    CampSite.draw(ents,cam,{key:this.key,x:this.x,y:this.y,n:this.pop,per:ENCAMP.tents.per,most:ENCAMP.tents.most,rings:ENCAMP.tents.rings,seed:this.seed,pic:(q,i,clim)=>this.tentPic(q,i,clim)});this.drawProps(ents,cam);CampFolk.draw(this,ents,cam,V)}
+    CampSite.draw(ents,cam,{key:this.key,x:this.x,y:this.y,n:this.pop,per:ENCAMP.tents.per,most:ENCAMP.tents.most,rings:ENCAMP.tents.rings,seed:this.seed,makeshift:!!this.TR.poor,pic:(q,i,clim)=>this.tentPic(q,i,clim)});this.drawProps(ents,cam);CampFolk.draw(this,ents,cam,V)}
   /* its pieces (ENCAMP_KINDS props: wagons, carts, crates, a shrine, drying racks, charcoal mounds), each where the ground lets it
      stand round its tents (CampSite.tentOk), ENCAMP_PROPS.gap from a tent and from one another, laid once from its seed */
   props(){const s=this,c=ENC_PROPS.get(s.key);if(c&&c.x===s.x&&c.y===s.y)return c.p;const X=ENCAMP_PROPS,sq=CAMP_SITE.squash,R=seeded(s.seed*131+71),out=[],
@@ -265,7 +265,7 @@ class CampFolk{
         if(p.wait>0){p.wait-=d;p.moving=false;continue}
         const dx=p.tx-p.x,dy=p.ty-p.y,dd=Math.hypot(dx,dy);
         // (a long walk, out to his work or home from it, by the router's ways (WAY.folk: a worker's); within the camp, or none found, straight)
-        if(dd>1){const st=Math.min(dd,moveStep(F.speed*(p.R.child?F.run:1)*(C.danger?1.6:1),d)),x0=p.x,y0=p.y;
+        if(dd>1){const st=Math.min(dd,footStep(C.danger?'hurry':F.gait,d)*(p.R.child?F.run:1)),x0=p.x,y0=p.y;
           if(!(dd>F.route*TILE&&Router.travel(p,{x:p.tx,y:p.ty,road:WAY.folk},st)&&Math.hypot(p.x-x0,p.y-y0)>st*.2)){p.x=x0+dx/dd*st;p.y=y0+dy/dd*st}
           const m=Math.hypot(p.x-x0,p.y-y0);p.walked+=m;if(Math.abs(p.x-x0)>.05)p.dir=p.x>x0?1:-1;p.moving=true;continue}
         p.moving=false;if(p.mode==='sleep'){p.hid=true;continue}
@@ -279,7 +279,7 @@ class CampFolk{
     for(const b of C.beasts){if(!S.sees(b.x,b.y,1.2))continue;ents.push({y:b.y,f:()=>{const A0=critterArt(b.id,0,b.v),N=PX.MAP_STEPS,fr=b.moving?Math.floor(b.walked/Math.max(4,A0.w)*N)%N:0,A=critterArt(b.id,fr,b.v),sx=Math.round(b.x-cam.x),sy=Math.round(b.y-cam.y),w=Math.max(4,A.w-2);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-(w>>1),sy-1,w,2);ctx.save();ctx.translate(sx,sy);ctx.scale(b.dir<0?-A.k:A.k,A.k);ctx.drawImage(A.s,-(A.s.width>>1),-A.s.height+(A.k<1?2:1));ctx.restore()}})}
     for(const p of C.ppl){if(p.hid||!S.sees(p.x,p.y,1.2))continue;
-      ents.push({y:p.y,f:()=>dressedIn(cl,()=>{const pose=p.moving?2+Math.floor(p.walked/WALK.foot)%4:0,sp=p.R.unit?unitSprite(RACES[race][p.R.unit],0,false,p.v,pose,false,false,s.TR.col):personSprite(p.R.look,race,p.v+p.i,pose),
+      ents.push({y:p.y,f:()=>dressedIn(cl,()=>{const pose=p.moving?2+footFrame(p.walked,p.v):0,sp=p.R.unit?unitSprite(RACES[race][p.R.unit],0,false,p.v,pose,false,false,s.TR.col):personSprite(p.R.look,race,p.v+p.i,pose),
         k=k0*(p.R.child?.72:1),low=!p.moving&&(p.kneel||p.mode==='seat'&&!p.R.watch&&!p.play)?4:0,bob=p.play&&!p.moving&&Math.floor(now*3+p.i)%2?1:0,sx=Math.round(p.x-cam.x),sy=Math.round(p.y-cam.y),W2=sp.width,H=sp.height;
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy-bob);ctx.scale(p.dir<0?-k:k,k);ctx.drawImage(sp,0,0,W2,H-low,-Math.floor(W2/2),-H+2+low,W2,H-low);ctx.restore()})})}}
 }

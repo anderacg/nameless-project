@@ -52,7 +52,7 @@ class MarchStyle{
   static pick(o,groups){const T=MARCH_STYLES;return T.kind[o.mapKind]||T.race[marchRace(groups)]||(o.mapKind==='lord'?T.errand[o.defend?'defend':o.follow||o.with?'host':o.state]:null)||T.base}
   // rows (march.js marchLayout: id, type, count, character) laid out: each its form, files, facing and spot (x forward, y right)
   lay(rows,o){
-    const D=this.def,laid=rows.map(r=>{const role=marchRole(r,o),[band,want='line',ranks=1]=D[role]||D.all||['main','line',3],form=D.own?r.form:[want,'loose','line'].find(f=>marchFormOk(r,f));
+    const D=this.def,laid=rows.map(r=>{const role=marchRole(r,o),[band,want='line',ranks=1]=D[role]||D.all||['main','line',3],form=D.own||o.marchForm?r.form:[want,'loose','line'].find(f=>marchFormOk(r,f));// (a crowd in its own form keeps it: refugees)
       const files=D.own?r.files:form==='line'||form==='loose'?Math.ceil(r.count/ranks):form==='column'?1:null,row={...r,face:D.own?r.face:0,form,files,role,band};return Object.assign(row,marchHalf(row))});
     if(this.def.ring)this.round(laid);else this.bands(laid);
     return laid.map(({role,band,hx,hy,...r})=>r);
@@ -138,13 +138,17 @@ class MarchStyle{
 const TRAVEL_STYLES={on:true,every:6,long:400,near:160,alert:150,menSight:true,lordKeep:1.1,sample:8,share:.35,
   steady:true,trip:1.5,margin:40,clear:1.25,hold:5,retry:8,stuck:.25,yourChoice:true,band:.75,
   column:{width:6,rank:1.6,crumb:3,leap:40,cart:34,form:.8,place:4,most:3,slow:[.6,.15],look:4,lag:18,glide:2,about:-.7},
-  kinds:{caravan:'always',lord:'far',patrol:'beat',you:'byRoad',cparty:'far',band:null,monster:null}};
+  kinds:{caravan:'always',lord:'far',patrol:'beat',you:'byRoad',cparty:'far',refugee:'long',band:null,monster:null},
+  // (a crowd's column (refugees: one with its own form, o.marchForm): abreast, in turn, as many as files says, rank × its bodies
+  // apart, closer than soldiers; each one up to side px off his place across and off px along it: a straggling file, close)
+  crowd:{files:[2,3,2,1,3,2,2,3],rank:1.05,side:2.5,off:3}};
 // (each army's decision: {n: the frame it was made, col, k and k2: its trip then; steady: foe (one near when last asked), at (its
 // march's time it last switched), until (no column before), a (its march then), sw (its switches, counted for the tests)})
 const TRAVEL_SEEN=new WeakMap();
 class TravelStyle{
   // whether o marches in a column now
-  static column(o){const T=TRAVEL_STYLES;if(!T.on||!o||B)return false;let c=TRAVEL_SEEN.get(o);if(!c)TRAVEL_SEEN.set(o,c={n:-Infinity,col:false,k:null,k2:null,foe:false,at:-Infinity,until:-Infinity,a:null,sw:0});
+  static column(o){const T=TRAVEL_STYLES;if(!T.on||!o||B)return false;
+    let c=TRAVEL_SEEN.get(o);if(!c)TRAVEL_SEEN.set(o,c={n:-Infinity,col:false,k:null,k2:null,foe:false,at:-Infinity,until:-Infinity,a:null,sw:0});
     const n=WORLD_LOD.n,nt=this.trip(o,c);if(nt||n-c.n>=T.every||n<c.n){c.n=n;const was=c.col;c.col=T.steady?this.steady(o,c):this.decide(o);if(c.col!==was)c.sw++}return c.col}
   // (decided afresh when next asked)
   static forget(o){TRAVEL_SEEN.delete(o)}
@@ -161,7 +165,7 @@ class TravelStyle{
     for(const g of partyRoster(o).groups)s+=g.count/2*C.rank*marchBodyOf(g.type)*k;return s}
   // (the straight way left to where o goes: yours to your goal, a lord's or a companion's to his holding (or you), a caravan's to
   // its market's gate, a patrol's to its beat's stop; null when it goes nowhere)
-  static left(o){const m=o.mapKind,t=o===P?(P.tx!=null?{x:P.tx,y:P.ty}:null):m==='lord'?townBy(o.tgt):m==='cparty'?(o.order==='return'?P:o.order==='stay'?townBy(o.base):null):m==='caravan'?townBy(o.to):m==='patrol'&&o.wx!=null?{x:o.wx,y:o.wy}:null;
+  static left(o){const m=o.mapKind,t=o===P?(P.tx!=null?{x:P.tx,y:P.ty}:null):m==='lord'?townBy(o.tgt):m==='cparty'?(o.order==='return'?P:o.order==='stay'?townBy(o.base):null):m==='caravan'||m==='refugee'?townBy(o.to):m==='patrol'&&o.wx!=null?{x:o.wx,y:o.wy}:null;
     return t?Math.hypot(t.x-o.x,t.y-o.y):null}
   // (a trip long enough for its column: yours shorter goes the plain way, router.js Router.travel)
   static long(o){const T=TRAVEL_STYLES,l=this.left(o);return l==null||l>=this.len(o)*T.trip+T.margin}
@@ -234,11 +238,11 @@ class MarchColumn{
   constructor(rows,o){
     const C=TRAVEL_STYLES.column,k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,men=[],S=[],T=this.T=[];let s=0,d0=0;this.mid=null;
     for(const r of columnOrder(o,rows))for(let i=0;i<r.count;i++)men.push([r,i]);
-    const cart=marchCentrePiece(o),cut=cart?2*Math.ceil(men.length/4):-1,rank=d=>{s+=S.length?(d0+d)/2:0;S.push(s);d0=d};
+    const K=o.marchForm?TRAVEL_STYLES.crowd:null,cart=marchCentrePiece(o),cut=cart?2*Math.ceil(men.length/4):-1,rank=d=>{s+=S.length?(d0+d)/2:0;S.push(s);d0=d};
     for(let i=0;i<men.length;){
       if(i===cut&&this.mid==null){rank(C.cart);this.mid=s;continue}
-      const pair=men.slice(i,i+2),body=Math.max(...pair.map(([r])=>marchBodyOf(r.type)*k)),w=Math.max(C.width,body)/2;rank(C.rank*body);
-      pair.forEach(([r,j],q)=>T.push({row:r.id,index:j,type:r.type,character:r.character,rank:S.length-1,side:pair.length>1?(q?-w:w):0,x:0,y:0,hx:1,hy:0}));i+=2}
+      const f=K?K.files[S.length%K.files.length]:2,pair=men.slice(i,i+f),body=Math.max(...pair.map(([r])=>marchBodyOf(r.type)*k)),w=Math.max(C.width,body)/2;rank((K?K.rank:C.rank)*body);
+      pair.forEach(([r,j],q)=>{const m=i+q;T.push({row:r.id,index:j,type:r.type,character:r.character,rank:S.length-1,side:((pair.length-1)/2-q)*2*w+(K?((m*53)%9-4)/4*K.side:0),off:K?((m*37)%11-5)/5*K.off:0,x:0,y:0,hx:1,hy:0})});i+=f}
     if(cart&&this.mid==null){rank(C.cart);this.mid=s}
     const n=S.length;this.s=Float32Array.from(S);this.rx=new Float32Array(n);this.ry=new Float32Array(n);this.ru=new Float32Array(n);this.rv=new Float32Array(n);this.ri=new Int32Array(n);
     if(this.mid==null)this.mid=s/2;this.len=s;this.reach=Math.max(this.mid,s-this.mid)+Math.max(C.width,...T.map(t=>marchBodyOf(t.type)*k))+MARCH_RING.pad;this.cx=this.cy=this.ox=this.oy=0;
@@ -277,7 +281,7 @@ class MarchColumn{
     // (each rank on it: its point, the way back there (ru, rv), the piece it lies on (ri))
     for(let r=0,i=0;r<n;r++){const s=S[r];while(i<m-2&&A[i+1]<s)i++;const L=A[i+1]-A[i],f=L?(s-A[i])/L:0;
       this.rx[r]=X[i]+(X[i+1]-X[i])*f;this.ry[r]=Y[i]+(Y[i+1]-Y[i])*f;this.ru[r]=L?(X[i+1]-X[i])/L:ux;this.rv[r]=L?(Y[i+1]-Y[i])/L:uy;this.ri[r]=i}
-    for(const t of this.T){const r=t.rank,ux=this.ru[r],uy=this.rv[r];t.x=this.rx[r]+uy*t.side;t.y=this.ry[r]-ux*t.side;t.hx=-ux;t.hy=-uy}
+    for(const t of this.T){const r=t.rank,ux=this.ru[r],uy=this.rv[r];t.x=this.rx[r]+uy*t.side+ux*t.off;t.y=this.ry[r]-ux*t.side+uy*t.off;t.hx=-ux;t.hy=-uy}
     // (its point: between the two ranks round its middle)
     if(!n){this.cx=hx;this.cy=hy}else{let r=0;while(r<n-2&&S[r+1]<this.mid)r++;const r1=Math.min(n-1,r+1),f=r1>r?clamp((this.mid-S[r])/((S[r1]-S[r])||1),0,1):0;
       this.cx=this.rx[r]+(this.rx[r1]-this.rx[r])*f;this.cy=this.ry[r]+(this.ry[r1]-this.ry[r])*f}

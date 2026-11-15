@@ -415,7 +415,7 @@ function campCaught(opts){if(!P.camp||opts.tournament||opts.sandbox)return;P.cam
    the depth order by its feet as everyone is (depth.js worldOverdraw: the trees in front of it drawn over it, whole: nf, none
    faded for it) */
 // (2026-11-14: its tents as many as your army needs, pitched one after another round the fire, world/campsite.js)
-function bandCampEnts(ents,cam){CampSite.draw(ents,cam,{key:'you',x:P.x,y:P.y,n:partySize(),banner:()=>P.banner(),seed:0})}
+function bandCampEnts(ents,cam){CampSite.draw(ents,cam,CampSite.yours(P.x,P.y))}
 // (your banner's pole in the camp: its foot on the ground SUPPLY.camp.pole px from the fire, drawn as yours with the parties'
 // banners, render.js drawBanners: bannerAt lays the pole 2 px right of x - 4, its foot BANNER_GAP over headY)
 const campPole=c=>{const f=c.s.fire,d=SUPPLY.camp.pole;return{x:c.X+f[0]+d[0]+2,y:P.y,faction:'player',banner:()=>P.banner(),headY:()=>Math.round(c.Y+f[1]+d[1])+BANNER_GAP}}

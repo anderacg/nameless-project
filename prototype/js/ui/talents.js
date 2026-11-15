@@ -47,7 +47,7 @@ const NODE_ICON={
   ability:{whirl:'blade',dash:'dagger',leap:'hammer',quake:'stone',volley:'volley',fireball:'fire',nova:'wand',heal:'vial',cry:'rally',banner:'banner'},
   fin:{stun:'mask',push:'hammer'},
   perk:{shieldwall:'shieldWall',bloodlust:'attack',guide:'eye',rearguard:'withdraw',slippery:'boots',drill:'anvil',silver:'coin',oldsoldier:'crest',warden:'prisoners',
-    vanish:'cloak',forced:'boots',path:'map',quarter:'food'},
+    vanish:'cloak',forced:'boots',path:'map',quarter:'food',watch:'scout',sense:'scout'},
   sk:{archery:'bow',spell:'staff',lead:'leader',tact:'map',med:'vial',eng:'tools',pers:'scroll',trade:'coin',stew:'crown',scout:'scout',hunt:'pelt',wood:'axe',surv:'fire',ride:'mount',athl:'stamina'},
   stat:{combo3:'sword',dmg:'sword',dmgPct:'sword',hp:'fitness',hpPct:'fitness',dr:'shield',block:'shield',crit:'dagger',reach:'spear',cd:'speed',spd:'speed',sp:'stamina',spRegen:'stamina',
     mp:'tome',mpPct:'tome',mpRegen:'tome',regen:'vial',travel:'boots',vis:'eye',slots:'troops',tHp:'garrison',tDmg:'attack',food:'food',hire:'recruit',train:'anvil',prison:'prisoners',
@@ -176,7 +176,7 @@ function skTreeBody(){
    fbBtn('tree-prof',p,'<strong>'+SKILLS[p].n+'</strong><small>'+S.sk[p].lv+'</small>'+treeWait(T.pending(p).length?'•':0),'',p===k?'on':'')).join('')+'</nav>';
  const sw='<div class="fb-tree-switch">'+side(-1)+tsBtn('tree-list',null,'<strong>'+SKILLS[k].n+'</strong><small>'+T.profLv(k)+'</small>'+treeWait(pts.left)+'<i class="fb-ts-more'+(more?' wait':'')+'" aria-hidden="true">'+(open?'▴':'▾')+'</i>',open?'Hide the list':'All proficiencies','fb-ts-now'+(open?' on':''))+side(1)+'</div>';
  const out='<div class="fb-skill-work fb-trees"><section class="fb-tree-pane" aria-label="'+SKILLS[k].n+' skill tree"><div class="fb-tree-head"><strong>'+SKILLS[k].n+', '+T.profLv(k)+'</strong><small>'+
-   '<b class="'+(pts.left?'gold':'')+'">'+pts.left+' skill point'+(pts.left===1?'':'s')+' to spend</b>, one each level, on any tree (a passive 1, a notable or a skill 2, a keystone 3), its nodes '+Math.round(100*treeScale(T.profLv(k)))+'% strong at '+SKILLS[k].n+' '+T.profLv(k)+'</small></div>'+
+   '<b class="'+(pts.left?'gold':'')+'">'+pts.left+' skill point'+(pts.left===1?'':'s')+' to spend</b></small></div>'+
    '<div class="tr-stage">'+treeSvg(S,k)+'<div class="tw-tools">'+tsBtn('tree-whole',null,G.skWhole?'◉':'◎',G.skWhole?'Back to '+SKILLS[k].n:'The whole tree','fb-ts-whole'+(G.skWhole?' on':''))+tsBtn('tree-zoom','in','+','Zoom in','tw-zoom')+tsBtn('tree-zoom','out','−','Zoom out','tw-zoom')+'</div>'+treeNodePane(S,k)+list+'</div>'+sw+'</section></div>';
  G.skGrow=false;G.skJust=null;return out;
 }

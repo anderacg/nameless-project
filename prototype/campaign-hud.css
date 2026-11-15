@@ -194,6 +194,9 @@
 }
 :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):is(:active,.ui-clicked):not(:disabled,[aria-disabled="true"]){filter:brightness(1.4) saturate(1.12);translate:0 1px;outline:2px solid #f1d394;outline-offset:-3px;transition-duration:.04s}
 :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):focus-visible{outline:2px solid #ffe0a0!important;outline-offset:3px!important}
+/* (none on a picture's parts: an SVG's buttons (the skill tree's nodes and its proficiencies' names) would be boxed by their whole
+   bounds; they mark their own state and focus: fieldbook.css .tp-node, .tw-sec) */
+svg [role="button"],svg [role="button"]:focus-visible{outline:none!important;filter:none}
 :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):is(:disabled,[aria-disabled="true"]){filter:brightness(.7) saturate(.45);opacity:.55;cursor:not-allowed}
 @media(prefers-reduced-motion:reduce){
  :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]){transition:none!important}

@@ -2,8 +2,9 @@
 /* ---------- the hiring desk: one way to hire soldiers wherever they are hired (the owner, 2026-10-29: the camp's recruiting the
    same as the barracks; 2026-10-31: "newly purchase will always provide 1 full units ... then you have another section to
    replenish your troop", from a pool: "if it has 19 then you can only hire 1 unit and 9 is for replenish"). Two sections:
-   New units, a row for each kind on offer (its face with i for its card, tier, role, its unit's men and price; Recruit unit, one
-   whole unit of its kind's size, data/units.js unitSize, into a free unit slot), and Replenish, a row for each of your units of a
+   New units, a row for each kind on offer (its face with i for its card, tier, role, its unit's men and price; Recruit unit, as many
+   as are willing and you can pay for, its kind's size at most (data/units.js unitSize: the owner, 2026-11-15, "no need to recruit at
+   full unit cap"), into a free unit slot), and Replenish, a row for each of your units of a
    kind on offer that is short (its men, its wounded, the men and price to fill it; Refill, as many as the willing and your gold
    allow; Refill all). The picked kind's card beside the list (on a small screen over it, Back the list where you were); asked
    first when a press spends more than RECRUIT_UI.ask of your gold. Its acts are its prefix's (p: 'rec-' in a town's Barracks,
@@ -25,9 +26,11 @@ class HireDesk{
   // (the willing for k: the pool, and as many of k as there are)
   pool(k){const S=this.src;return Math.max(0,Math.min(Math.floor(S.willing||0),S.avail?S.avail(k):Infinity))}
   why(k){return this.src.why?this.src.why(k):''}
-  // a new unit of k: its men, its price, or why not
-  unit(k){const r=partyRoster(P),n=unitSize(k),cost=n*this.src.cost(k),w=this.why(k);
-    return{n,cost,why:w||(r.slots>=r.groupLimit?'No free unit slot (units '+r.slots+' / '+r.groupLimit+')':!r.accepts(k)?'Not in your band':this.pool(k)<n?'Needs '+n+' willing ('+this.pool(k)+' here: they can only refill)':P.gold<cost?'Needs '+cost+'g':'')}}
+  // a new unit of k: as many as are willing and your gold pays for, a full unit's size at most (the owner, 2026-11-15: "recruit from
+  // camp, holding and etc. can be recruited based on availability, no need to recruit at full unit cap"; was a full unit or none):
+  // its men (of size), its price, or why not
+  unit(k){const r=partyRoster(P),size=unitSize(k),c=this.src.cost(k),n=Math.min(size,this.pool(k),Math.floor(P.gold/Math.max(1,c))),cost=n*c,w=this.why(k);
+    return{n,size,cost,why:w||(r.slots>=r.groupLimit?'No free unit slot (units '+r.slots+' / '+r.groupLimit+')':!r.accepts(k)?'Not in your band':!this.pool(k)?'None willing':n<1?'Needs '+c+'g a man':'')}}
   // your units it could refill: of a kind on offer, short of their size (wounded count: they come back to it)
   short(){const r=partyRoster(P);return r.groups.filter(g=>this.src.kinds.includes(g.type)&&r.groupRoom(g.type,g.id)>0)}
   // a unit's refill: the men it lacks, how many it gets now (the willing, your gold), their price, or why not
@@ -40,7 +43,7 @@ class HireDesk{
     const S=this.src,ks=S.kinds,r=partyRoster(P),kind=s=>s.range?'ranged':s.mounted?'mounted':'melee';let pick=s.pick;if(!ks.includes(pick))pick=ks[0]||null;
     const units=ks.map(k=>{const st=ST[k],u=this.unit(k);
       return '<div class="rec-row'+(pick===k?' sel':'')+'" data-act="'+this.p+'pick" data-arg="'+k+'"><button class="rec-pic" type="button" data-act="'+this.p+'info" data-arg="'+k+'" aria-label="'+htmlText(st.n)+': its card"><img src="'+portrait(k)+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
-        '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(k),14)+' '+st.n+'</strong><small>Tier '+st.tier+(st.race?', '+raceOf(st.race).n:'')+', '+kind(st)+', <b>'+u.n+' men</b>, <b class="gold">'+u.cost+'g</b></small><small>'+S.line(k)+(u.why?', <span class="bad">'+htmlText(u.why)+'</span>':'')+'</small></div>'+
+        '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(k),14)+' '+st.n+'</strong><small>Tier '+st.tier+(st.race?', '+raceOf(st.race).n:'')+', '+kind(st)+', <b>'+(u.n||u.size)+(u.n&&u.n<u.size?' of '+u.size:'')+' men</b>, <b class="gold">'+(u.n?u.cost:u.size*this.src.cost(k))+'g</b></small><small>'+S.line(k)+(u.why?', <span class="bad">'+htmlText(u.why)+'</span>':'')+'</small></div>'+
         '<div class="rec-step">'+this.btn('unit',k,'Recruit unit',u.why,u.why?'':' primary')+'</div></div>'}).join('');
     const gs=this.short(),fills=gs.map(g=>{const f=this.fill(g),n=unitSize(g.type),w=r.wounded(g.id);
       return '<div class="rec-row rec-refill"><div class="rec-txt"><strong>'+groupBadge(g,12)+' '+htmlText(armyGroupLabel(g.id))+'</strong><span class="rec-meter" aria-hidden="true"><i style="width:'+Math.round(g.count/n*100)+'%"></i><b style="width:'+Math.round(w/n*100)+'%"></b></span>'+
@@ -49,7 +52,7 @@ class HireDesk{
       all=gs.map(g=>this.fill(g)).filter(f=>!f.why),allCost=all.reduce((a,f)=>a+f.cost,0);
     const ask=s.recAsk?'<div class="recruit-confirm" role="status">Spend '+s.recAsk.cost+'g, more than half your gold?<div class="btns">'+this.btn('ok',null,'Yes, hire','',' primary')+this.btn('no',null,'Cancel','')+'</div></div>':'';
     return '<div class="recwrap"><div class="reclist">'+ask+(s.recruitNotice?'<p class="rec-notice" role="status">'+s.recruitNotice+'</p>':'')+
-      '<div class="lab">New units <small class="muted">each a full unit</small></div><div class="rec-rows">'+units+'</div>'+
+      '<div class="lab">New units <small class="muted">as many as will come, a full unit at most</small></div><div class="rec-rows">'+units+'</div>'+
       '<div class="lab">Replenish your units</div><div class="rec-rows">'+(S.extra||'')+(fills||'<p class="muted">None of your units of these kinds is short.</p>')+'</div>'+
       (gs.length>1?'<div class="btns rec-all">'+this.btn('refillall',null,'Refill all'+(allCost?', '+allCost+'g':''),all.length?'':'None can be refilled now')+'</div>':'')+
       (S.note?'<p class="muted" style="font-size:12px">'+S.note+'</p>':'')+'</div><div class="reccard">'+(pick?unitCard(pick):'')+'</div></div>'}

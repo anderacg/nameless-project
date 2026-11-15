@@ -353,8 +353,18 @@ const UI_UNIT_ART={sword:'sword',spear:'spear',axe:'axe',hammer:'hammer',bow:'bo
 const UI_ICON_IMAGES=[];
 function uiAtlasImage(i){if(!UI_ICON_IMAGES[i]){const im=new Image();im.src=UI_ICON_SHEETS[i][0];UI_ICON_IMAGES[i]=im}return UI_ICON_IMAGES[i]}
 function uiIconReady(name){if(name==='tree'||name==='ai')return true;const A=UI_ILLUSTRATIONS[name];if(!A)return false;const im=uiAtlasImage(A[4]||0);return im.complete&&im.naturalWidth>0}
-function uiCanvasIcon(g,name,x,y,w,h){if(!uiIconReady(name))return false;g.save();g.imageSmoothingEnabled=true;
+// (an icon or a badge on the canvas is drawn from a picture of it made once at the size it shows, in device px (g's transform): an
+//  atlas crop smoothed down for each flag and badge each frame took a fifth of a battle's frame (the owner, 2026-11-15: "fix the
+//  battle performance"); at most UI_ICON_KEEP kept)
+const UI_ICON_CACHE=new Map(),UI_ICON_KEEP=400;
+function uiIconAt(g,key,w,h,make){const m=g.getTransform(),pw=Math.max(1,Math.round(w*Math.hypot(m.a,m.b))),ph=Math.max(1,Math.round(h*Math.hypot(m.c,m.d))),k=key+'|'+pw+'x'+ph;
+  let c=UI_ICON_CACHE.get(k);if(!c){c=document.createElement('canvas');c.width=pw;c.height=ph;const q=c.getContext('2d');q.scale(pw/w,ph/h);make(q);UI_ICON_CACHE.set(k,c);if(UI_ICON_CACHE.size>UI_ICON_KEEP)UI_ICON_CACHE.delete(UI_ICON_CACHE.keys().next().value)}return c}
+function uiCanvasIcon(g,name,x,y,w,h){if(!uiIconReady(name))return false;
+ if(name!=='ai'&&name!=='tree'){const A=UI_ILLUSTRATIONS[name],im=uiAtlasImage(A[4]||0),k=Math.min(w/A[2],h/A[3]),iw=A[2]*k,ih=A[3]*k;
+  g.drawImage(uiIconAt(g,'i:'+name,w,h,q=>{q.imageSmoothingEnabled=true;q.drawImage(im,A[0],A[1],A[2],A[3],(w-iw)/2,(h-ih)/2,iw,ih)}),x,y,w,h);return true}
+ g.save();g.imageSmoothingEnabled=true;
  if(name==='ai'){g.fillStyle='#d8c8ff';g.font='700 '+(Math.min(w,h)*.64)+'px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('AI',x+w/2,y+h/2)}
  else if(name==='tree'){g.translate(x,y);g.scale(w/100,h/100);g.fillStyle='#8c663b';g.fillRect(44,68,12,27);const path=new Path2D('M50 5L74 35H64L86 61H72L96 84H4L28 61H14L36 35H26Z'),light=g.createLinearGradient(0,0,100,0);light.addColorStop(0,'#b6c781');light.addColorStop(.5,'#65854c');light.addColorStop(1,'#344e32');g.fillStyle=light;g.fill(path);g.strokeStyle='#c2a567';g.lineWidth=3;g.stroke(path)}
- else{const A=UI_ILLUSTRATIONS[name],im=uiAtlasImage(A[4]||0),k=Math.min(w/A[2],h/A[3]),iw=A[2]*k,ih=A[3]*k;g.drawImage(im,A[0],A[1],A[2],A[3],x+(w-iw)/2,y+(h-ih)/2,iw,ih)}g.restore();return true}
-function uiCanvasBadge(g,key,x,y,size,rim){const A=UI_STATUS_ART[key];if(!A||!uiIconReady(A[0]))return false;g.save();g.translate(x,y);g.scale(size/100,size/100);g.fillStyle='#221f18';g.strokeStyle=rim;g.lineWidth=7;g.beginPath();g.arc(50,50,46,0,Math.PI*2);g.fill();g.stroke();g.strokeStyle='#c4a365';g.lineWidth=2;g.beginPath();g.arc(50,50,39,0,Math.PI*2);g.stroke();uiCanvasIcon(g,A[0],14,14,72,72);if(UI_ICON_MARKS[A[1]]){g.translate(14,14);g.scale(.72,.72);const path=new Path2D(UI_ICON_MARKS[A[1]]);g.lineCap=g.lineJoin='round';g.lineWidth=10;g.strokeStyle='#211c14';g.stroke(path);g.lineWidth=5;g.strokeStyle='#f1d18a';g.stroke(path)}g.restore();return true}
+g.restore();return true}
+function uiCanvasBadge(g,key,x,y,size,rim){const A=UI_STATUS_ART[key];if(!A||!uiIconReady(A[0]))return false;g.drawImage(uiIconAt(g,'b:'+key+':'+rim,size,size,q=>uiBadgeArt(q,A,size,rim)),x,y,size,size);return true}
+function uiBadgeArt(g,A,size,rim){g.save();g.scale(size/100,size/100);g.fillStyle='#221f18';g.strokeStyle=rim;g.lineWidth=7;g.beginPath();g.arc(50,50,46,0,Math.PI*2);g.fill();g.stroke();g.strokeStyle='#c4a365';g.lineWidth=2;g.beginPath();g.arc(50,50,39,0,Math.PI*2);g.stroke();uiCanvasIcon(g,A[0],14,14,72,72);if(UI_ICON_MARKS[A[1]]){g.translate(14,14);g.scale(.72,.72);const path=new Path2D(UI_ICON_MARKS[A[1]]);g.lineCap=g.lineJoin='round';g.lineWidth=10;g.strokeStyle='#211c14';g.stroke(path);g.lineWidth=5;g.strokeStyle='#f1d18a';g.stroke(path)}g.restore()}

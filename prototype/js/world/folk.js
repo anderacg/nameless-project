@@ -21,7 +21,7 @@ class EstateWorker extends WorldObject{
   // (subT) kept inside save/restore
   draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const f=this;
     ents.push({y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{ctx.save();subT(f);const fr=f.moving&&mapStepping(f)?(frameOf(f,WALK.foot,WALK.n)+Math.floor(f.ph*WALK.n))%WALK.n:0,t=townBy(f.home),carry=f.st==='out'||f.load,s=WORLD_BATTLE.on?null:folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),carry),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
-      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);if(WORLD_BATTLE.on){const L=workerAppearance(f),pose=f.moving&&mapStepping(f)?2+Math.floor((WALKED.get(f)||0)/WALK.foot)%4:0,sp=carry&&figsOn()?figCarrier(L.type,L.v,L.tint,f.job,pose):unitSprite(L.type,0,false,L.v,pose,false,false,L.tint),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;ctx.scale(f.dir<0?-k:k,k);ctx.drawImage(sp,-Math.floor(sp.width/2),-sp.height+2)}else{if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14)}ctx.restore();ctx.restore()})})}
+      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);if(WORLD_BATTLE.on){const L=workerAppearance(f),pose=f.moving&&mapStepping(f)?2+footFrame(WALKED.get(f)):0,sp=carry&&figsOn()?figCarrier(L.type,L.v,L.tint,f.job,pose):unitSprite(L.type,0,false,L.v,pose,false,false,L.tint),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;ctx.scale(f.dir<0?-k:k,k);ctx.drawImage(sp,-Math.floor(sp.width/2),-sp.height+2)}else{if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14)}ctx.restore();ctx.restore()})})}
   tip(){return '<b>'+(this.name?this.name+', '+this.job:cap1(this.job))+'</b><small>Of '+this.home+'</small><span class="act">Click: talk</span>'}
 }
 const asWorker=asClass(EstateWorker);
@@ -32,9 +32,9 @@ const dayPart=()=>Clock.frac;
 // late past them one whose hour fell at their very end still sets out (grace)
 const DELIVER={from:.375,to:.575,stop:[1.5,3.5],grace:.02};// (afternoon to dusk, the day half of 50/50: core.js NIGHT_AT)
 // the hours of field work (the morning and midday, to the first delivery), the share of workers out on a day (each by his id and
-// the day), their pace (px), how long they stop at a stop of their round and at its work (a tree, the rock, the pier's end), how
+// the day), their gaits (data/world.js ON_FOOT: about their round, laden, hurrying from danger), how long they stop at a stop of their round and at its work (a tree, the rock, the pier's end), how
 // far from the estate their round may go (tiles), and how many spots one works just outside the door
-const FIELD={from:.07,to:DELIVER.from,out:.6,speed:26,carry:.7,hurry:37,pause:[1.5,5],work:[3,6],reach:4,spots:[2,3],stall:2};
+const FIELD={from:.07,to:DELIVER.from,out:.6,gait:'stroll',carry:'laden',hurry:'hurry',pause:[1.5,5],work:[3,6],reach:4,spots:[2,3],stall:2};
 /* each worker is someone: id (his holding, estate and number there), a name and a look (v) of his people, seeded from that id
    (FOLK_COUNT: how many each estate has had, this session; never saved). Recruited where he works (workerRecruit), he leaves his
    estate a pair of hands short (t.lost[k]: the days the gaps fill again) until someone new moves in, REFILL_DAYS later */
@@ -172,7 +172,7 @@ function goField(t,f,now){const pl=f.plan&&f.plan.day===G.day?f.plan:f.plan=fiel
 function fieldRest(f){const R=f.plan.R,w=f.plan.loop[f.si].w;f.wait=w[0]+R()*(w[1]-w[0]);f.turn=R()<.6?f.wait*R():0}
 // a step toward the next point of his way (in haste on his way in), on the land's ways (world.js walk: round what is in the way),
 // a fisher's over the planks; true once there
-function fieldStep(f,d,fast,s=moveStep(fast?FIELD.hurry:FIELD.speed*(f.load?FIELD.carry:1),d)){const p=f.wp[0],dx=p.x-f.x,dy=p.y-f.y,dd=Math.hypot(dx,dy);
+function fieldStep(f,d,fast,s=footStep(fast?FIELD.hurry:f.load?FIELD.carry:FIELD.gait,d)){const p=f.wp[0],dx=p.x-f.x,dy=p.y-f.y,dd=Math.hypot(dx,dy);
   if(Math.abs(dx)>.2)f.dir=dx>0?1:-1;f.moving=true;
   if(dd<=s){WALKED.set(f,(WALKED.get(f)||0)+dd);f.x=p.x;f.y=p.y;f.wp.shift();if(p.i>=0)f.si=p.i;return true}
   // (sliding along a fence or a wall, or to and fro by it, and come no nearer his stop than he has been for FIELD.stall s: he steps
@@ -187,7 +187,7 @@ function fieldWork(t,f,d,now){const pl=f.plan,risk=fieldDanger(t,f);
   // (in by his round to home, then his way round the pens back to the door: by the corners he has passed, if still on his way out)
   if(!f.gin&&(!fieldTime(now)||!fieldOut(f)||risk||pl.day!==G.day)){f.gin=true;const at=f.wp.length&&f.wp[0].i>=0?f.wp[0].i:f.si,o=at>=0?pl.out.length:f.wp.length&&f.wp[0].o!=null?f.wp[0].o:0;
     f.wp=(at<0?[]:fieldWay(pl,at,pl.home)).concat(pl.out.slice(0,o).reverse(),[{...pl.door,i:-1}])}
-  if(f.wp.length){if((risk?EscapeStamina.run(f,null,moveStep(FIELD.hurry,d),n=>fieldStep(f,d,true,n)):fieldStep(f,d,f.gin))&&!f.wp.length&&!f.gin){f.load=false;fieldRest(f)}return}
+  if(f.wp.length){if((risk?EscapeStamina.run(f,null,footStep(FIELD.hurry,d),n=>fieldStep(f,d,true,n)):fieldStep(f,d,f.gin))&&!f.wp.length&&!f.gin){f.load=false;fieldRest(f)}return}
   f.moving=false;if(f.gin){f.st='in';f.gin=false;f.load=false;return}
   f.wait-=d;if(f.turn&&f.wait<f.turn){f.dir=-f.dir;f.turn=0}
   if(f.wait<=0){const n=pl.loop.length;if(n<2)return fieldRest(f);let i=f.si+(pl.ping?f.dn:1);if(pl.ping&&(i<0||i>=n)){f.dn=-f.dn;i=f.si+f.dn}
@@ -220,7 +220,7 @@ function updateFolk(d){
     const dx=f.tx-f.x,dy=f.ty-f.y,dd=Math.hypot(dx,dy);
     // (laden on the way to the holding: slower; on the roads and the estates' tracks where they go, a little off his way for them:
     // router.js WAY.folk, lots.js estTrack)
-    if(dd>1.5){f.dir=dx>=0?1:-1;f.moving=true;if((threat?EscapeStamina.run(f,typeof threat==='object'?threat:P,moveStep(FIELD.hurry,d),n=>Router.travel(f,{x:f.tx,y:f.ty,road:WAY.folk},n)):Router.travel(f,{x:f.tx,y:f.ty,road:WAY.folk},moveStep(FIELD.speed*(f.st==='out'?FIELD.carry:1),d))))continue}
+    if(dd>1.5){f.dir=dx>=0?1:-1;f.moving=true;if((threat?EscapeStamina.run(f,typeof threat==='object'?threat:P,footStep(FIELD.hurry,d),n=>Router.travel(f,{x:f.tx,y:f.ty,road:WAY.folk},n)):Router.travel(f,{x:f.tx,y:f.ty,road:WAY.folk},footStep(f.st==='out'?FIELD.carry:FIELD.gait,d))))continue}
     // (there, or no way there: in at the gate, or in at the estate's door; a new hour for tomorrow's load)
     f.moving=false;
     if(f.st==='out'){f.st='town';f.wait=DELIVER.stop[0]+Math.random()*(DELIVER.stop[1]-DELIVER.stop[0]);f.done=G.day;f.leave=DELIVER.from+Math.random()*(DELIVER.to-DELIVER.from)}

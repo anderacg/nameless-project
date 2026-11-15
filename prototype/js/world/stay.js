@@ -40,14 +40,14 @@ const stayUntil=()=>Math.floor((P.stay.paidTo+Math.floor(P.gold/stayCost())*DAY)
 function startStay(t){
   if(stayWhy(t))return false;const free=stayFree(t);
   if(!free)P.gold-=stayCost(t);
-  const out=stayOut(t),g=gateGoal(t),camp=out?CampSite.spotNear(t,partySize())||Router.open(g.x+STAY_CAMP.off[0]*(P.x<t.x?-1:1),g.y+STAY_CAMP.off[1],g):null;CampSite.strike('you');if(camp)CampSite.pitch('you');else GateFile.start(P,t);
+  const out=stayOut(t),g=gateGoal(t),camp=out?CampSite.spotNear(t,partySize(),null,CampSite.yours(0,0))||Router.open(g.x+STAY_CAMP.off[0]*(P.x<t.x?-1:1),g.y+STAY_CAMP.off[1],g):null;CampSite.strike('you');if(camp)CampSite.pitch('you');else GateFile.start(P,t);
   P.stay={town:t.name,paidTo:worldTime()+DAY,warned:false,...(camp?{camp:{x:Math.round(camp.x),y:Math.round(camp.y)}}:{})};P.tx=null;G.chase=null;P.x=t.x;P.y=t.y;G.lastTown=t;
   G.town=null;G.scene=null;G.mode='world';hidePanel();
   log((camp?t.name+' has no room for your '+partySize()+' men: they pitch camp by its gate, and you take a bed inside':'Your band takes lodgings in '+t.name)+(free?'. They will not take your coin.':' for '+stayCost()+' gold a day.'),'good');
   updateHUD(true);return true;
 }
 // (your army's camp by the gate while you stay: its tents, fire and your banner, by their feet among everyone: render.js drawWorld)
-function stayCampEnts(ents,cam){const C=P.stay&&P.stay.camp;if(C)CampSite.draw(ents,cam,{key:'you',x:C.x,y:C.y,n:partySize(),banner:()=>P.banner(),seed:0})}
+function stayCampEnts(ents,cam){const C=P.stay&&P.stay.camp;if(C)CampSite.draw(ents,cam,CampSite.yours(C.x,C.y))}
 // out of the gate (why: the message, if it was not your choice)
 function leaveStay(why,cls){
   const t=stayTown(),out=!!P.stay?.camp;P.stay=null;CampSite.strike('you');if(t){heroAtGate(t);G.lastTown=t;if(!out)GateFile.out(P,t)}G.encCool=2;P.tx=null;G.chase=null;

@@ -99,13 +99,15 @@ try{
     for(let k=0;k<S.length;k+=5)for(let f=0;f<=1;f+=.125){const x=S[k]+(S[k+2]-S[k])*f,y=S[k+1]+(S[k+3]-S[k+1])*f;if(x>b.x*TILE+1&&x<(b.x+b.n)*TILE-1&&y>b.y*TILE+1&&y<gy-1)under++}}
   ok(led===gates.length&&!under,'every holding\'s roads are led round its centre into its gate: '+led+' of '+gates.length+' gates met by a road coming up from below, '+under+' road points under a centre');
   // (every bridge a road comes to: a ramp at that end on its deck's axis, from under the deck outward; the roads there on that axis
-  //  as far as the ramp runs)
+  //  as far as the ramp runs: a road beside the ramp running along it counts as off; one turning off sideways at the bank, its bend
+  //  passing the ramp's end, does not (seed 1's bridge at tile 388, 84-88: a great road east along the landing's row, 2026-11-14))
   let br=0,ramps=0,stray=0,off=0;for(let k=0;k<S.length;k+=5)if(S[k+4]>=2)ramps++;
   for(const c of t.WM.crossings){if(c.kind!=='bridge')continue;const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/MW,hor=ay===by,mid=(hor?ay:ax)*TILE+8,lo=hor?Math.min(ax,bx):Math.min(ay,by),hi=hor?Math.max(ax,bx):Math.max(ay,by);
     const E=[lo*TILE+TILE-4,hi*TILE+4],u=(x,y)=>hor?x:y,v=(x,y)=>hor?y:x,run=[0,0];
     for(let k=0;k<S.length;k+=5)if(S[k+4]>=2&&Math.abs(v(S[k],S[k+1])-mid)<.01&&Math.abs(v(S[k+2],S[k+3])-mid)<.01)E.forEach((e,n)=>{const s=n?1:-1,a=(u(S[k],S[k+1])-e)*s,b=(u(S[k+2],S[k+3])-e)*s;if(a<0&&a>=-3&&b>a){run[n]=Math.max(run[n],b);stray++}});
     if(!run[0]&&!run[1])continue;br++;
     for(let k=0;k<S.length;k+=5){if(S[k+4]>=2)continue;const a=S[k],b=S[k+1],c2=S[k+2],d=S[k+3];
+      if(Math.abs(u(c2,d)-u(a,b))<=Math.abs(v(c2,d)-v(a,b)))continue;
       for(let f=0;f<=1;f+=.1){const x=a+(c2-a)*f,y=b+(d-b)*f;E.forEach((e,n)=>{const du=(u(x,y)-e)*(n?1:-1);if(du>=0&&du<=run[n]&&Math.abs(v(x,y)-mid)<10&&Math.abs(v(x,y)-mid)>1.5)off++})}}}
   ok(br&&stray===ramps&&!off,br+' bridges with roads: each deck met by a ramp on its axis where a road comes to it ('+ramps+' ramps, '+(ramps-stray)+' off a deck’s end), the roads onto them on that axis as far as the ramps run ('+off+' points of a road off it)');
   // (every line's loose end (an end of one segment only, not at a gate, on land) lies on another road's way)
@@ -119,12 +121,14 @@ try{
     const n=s.length,c=n>>1,top=Math.max(...s.slice(c-2,c+3));if(top>.4&&top>s[c-6]&&top>s[c+6]&&!s[0]&&!s[n-1]&&s.filter(v=>v>0&&v<1).length>=4)soft++}
   ok(fd===t.WM.crossings.filter(c=>c.kind==='ford').length&&soft===fd,fd+' fords: shallow on their line, fading out over some '+G.ford.soft+' px either side of it ('+soft+' soft)');
   // (every ford as a real one (the owner's third play-test): its shallows told from the river beside them (the bed showing through:
-  //  their mean colour some way off the river's), a worn track on its line up each bank, past the end tile's middle, kept clear)
+  //  their mean colour some way off the river's: over 20 (was 30; seed 1's frost ford on a narrow river, at 6376-6408, 1432, its pale
+  //  slush over the frost's pale water, is 25 off, and reads as a ford by its pebbles, ice plate and tracks), a worn track on its line
+  //  up each bank, past the end tile's middle, kept clear)
   {let bed=0,trk=0,n=0;const px=(x,y)=>{const o=(y*W+x)*4;return[ref[o],ref[o+1],ref[o+2]]};
    for(const [ax,ay,bx,by] of P.fords){const f=++n,L=Math.hypot(bx-ax,by-ay),ux=(bx-ax)/L,uy=(by-ay)/L,a=[0,0,0],b=[0,0,0];let na=0,nb=0;
     for(let s2=8;s2<=L-8;s2+=2)for(let d=-40;d<=40;d++){const x=Math.floor(ax+ux*s2-uy*d),y=Math.floor(ay+uy*s2+ux*d);if(!t.wpx(P.wk,x,y))continue;const v=t.fordAt(P,f,x,y),c=px(x,y);
      if(v>.8){for(let k=0;k<3;k++)a[k]+=c[k];na++}else if(!v&&Math.abs(d)>20){for(let k=0;k<3;k++)b[k]+=c[k];nb++}}
-    if(na&&(!nb||[0,1,2].reduce((q,k)=>q+Math.abs(a[k]/na-b[k]/nb),0)>30))bed++;
+    if(na&&(!nb||[0,1,2].reduce((q,k)=>q+Math.abs(a[k]/na-b[k]/nb),0)>20))bed++;
     for(const e of [-1,1]){const x=Math.floor((e<0?ax:bx)+e*ux*6),y=Math.floor((e<0?ay:by)+e*uy*6);if(Math.max(...[-1,0,1].map(d=>t.fordTrack(P,f,x-uy*d,y+ux*d)))>.5&&P.clear.at(x,y))trk++}}
    ok(n&&bed===n&&trk===2*n,n+' fords: the shallows told from the river beside them (the bed showing through) on '+bed+', a worn track up each bank, kept clear, at '+trk+' of '+2*n+' ends')}
   // (the shores are curves (wpx, the second play-test): water and land drawn by the water's field, not the tiles' squares, yet

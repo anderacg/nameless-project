@@ -488,12 +488,17 @@
     // (W4: several facings are judged on their pixels together, and the scale kept for the plan, so a facing whose pixels run a pixel
     // over never draws the building smaller than its other facings)
     const yaws=spec.fitYaws||[spec.yaw|0],at=y=>y===(spec.yaw|0)?spec:Object.assign({},spec,{yaw:y}),fits=R=>{clean(R);const b=bnd(R);return b.x1-b.x0+1<=fit&&b.y1-b.y0+1<=fit},key=yaws.length>1?JSON.stringify(Object.assign({},spec,{yaw:0,snow:0})):null;
-    let sc=key&&FITS.get(key),R,bx;
-    // (the fit's next choice when the pixels run over its points, up to three; then smaller all over)
-    if(!sc){let i=-1;const next=()=>{for(i++;i<SCALES.length;i++)if(yaws.every(y=>{const B=build(at(y),SCALES[i]),[w,h]=extent(B.F),k=B.G.d?1:0;return w<=fit-k&&h<=fit-k}))return SCALES[i];return null};
+    let sc=key&&FITS.get(key),R,bx,last=null;
+    // (the fit's next choice when the pixels run over its points, up to three; then smaller all over. Its own facing's pixels at the
+    // scale it ends on, already drawn and cleaned for the test, kept (last): never drawn again, the same pixels)
+    // (lead: the facing that last ran over, tried first: it most often runs over again, so a scale is turned down after one build, not
+    // up to all of them; the same scale found)
+    if(!sc){let i=-1,lead=0;const over=(y,S)=>{const B=build(at(y),S),[w,h]=extent(B.F),k=B.G.d?1:0;return!(w<=fit-k&&h<=fit-k)},
+        next=()=>{for(i++;i<SCALES.length;i++){if(over(yaws[lead],SCALES[i]))continue;let j=0;for(;j<yaws.length;j++)if(j!==lead&&over(yaws[j],SCALES[i])){lead=j;break}if(j===yaws.length)return SCALES[i]}return null},
+        test=y=>{const r=render(at(y),sc),ok=fits(r);if(y===(spec.yaw|0))last={sc,r};return ok};
       sc=next()||SCALES[SCALES.length-1];
-      for(let k=0;k<12;k++){if(yaws.every(y=>fits(render(at(y),sc)))||sc.u<.2)break;sc=(k<3&&next())||{u:sc.u*.92,v:sc.v*.92,z:sc.z*.92,o:0}}if(key){if(FITS.size>2000)FITS.clear();FITS.set(key,sc)}}
-    R=render(spec,sc);clean(R);bx=bnd(R);
+      for(let k=0;k<12;k++){if(yaws.every(test)||sc.u<.2)break;sc=(k<3&&next())||{u:sc.u*.92,v:sc.v*.92,z:sc.z*.92,o:0}}if(key){if(FITS.size>2000)FITS.clear();FITS.set(key,sc)}}
+    if(last&&last.sc===sc)R=last.r;else{R=render(spec,sc);clean(R)}bx=bnd(R);
     const {M,A,col,DEC,FL,GZ,F}=R,cw=bx.x1-bx.x0+1,dx=bx.x0-1-Math.floor((fit-cw)/2),dy=bx.y1-(N-2);
     // the picture: the body and its navy outline round it (not round what lies low and flat: fences, beds), cropped to the cell
     const img=PX.canvas(N,N),g=img.getContext('2d', { willReadFrequently: true }),im=g.createImageData(N,N),D=im.data,body=new Uint8Array(N*N),fine=new Uint8Array(N*N),gap=new Uint8Array(N*N),gz=new Uint8Array(N*N),nv=hx(NAVY);

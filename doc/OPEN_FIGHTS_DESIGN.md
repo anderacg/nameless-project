@@ -2,7 +2,7 @@
 
 The owner, 2026-11-14: "Can you remove the battle area for hunting? The hunting is just using the same world speed and battle sprites and hunt drops, trophy required player to click at carcass to loot them. This is also the same as monsters etc." Asked to choose, the owner picked: the world keeps running, every fight on the map, and the loot in a window where you decide what to take and look it over.
 
-Status: **built 2026-11-14** (phases 1–3 below). Switches: `OPEN_FIGHT` (`battle/worldbattle.js`) and `CARCASS` (`data/drops.js`). Tests: `tests/openfights.js` and `tests/carcasses.js`.
+Status: **built 2026-11-14** (phases 1–3 below). Switches: `OPEN_FIGHT` (`battle/worldbattle.js`) and `CARCASS` (`data/drops.js`). Tests: `tests/openfights.js`, `tests/carcasses.js` and `tests/fallenlife.js` (yours too, looters, clearers).
 
 ## 1. No ring
 
@@ -31,16 +31,35 @@ Tests call `updateBattle` directly, so their fights run without the world, and e
 
 ## 3. The fallen and their loot
 
-Every foe who falls in a fight on the map lies where he fell, as the fight drew him (`world/carcasses.js` `Carcass`).
+Everyone who falls in a fight on the map lies where he fell, as the fight drew him (`world/carcasses.js` `Carcass`). That means the foe, and also your men and your allies' (2026-11-15, the owner: "make every unit the same way"). Your own fallen are marked `ours`. The fight's things go on the foe's fallen only, so yours lie empty.
 
 - **Where the loot goes:** the things the fight gives (what the end window's pile would hold) lie on the fallen, not in your bag. Meat, furs and a beast's trophy go on beasts, its own kind first. Gear and goods go on the men. Gold, experience, renown and prisoners are still paid at the fight's end.
 - **Ground drops:** in a fight on the map, `DROPS` leaves no coins, gear or hides about the field. Only its experience dots fly.
 - **The end window:** it says how many things lie on the fallen.
 - **Looting:** a click on a carcass walks you there. Met, it opens the spoils window (`ui/loot.js`) for everything on the fallen within `CARCASS.near` (40 px), beside your bag. Take one thing at a time or Take all, and put things back. Leave the rest here: it stays on the one you clicked.
-- **Scavengers:** each hour, a band within `CARCASS.seek` (120 px) of fallen you cannot see picks them over, at `CARCASS.find` (0.2) an hour. It takes everything on them, and the carcass reads "picked clean by bandits". The goods become its plunder, yours if you beat it, as with a fallen hero's remains (`Remains.beaten`).
-- **Rotting:** a carcass lasts `CARCASS.days` (3) with anything on it, or `bare` (1) once it is picked clean. At most `most` (120) are kept on the map.
-- **Saves:** carcasses are saved (key `carcasses`). After a load each is drawn as a plain shape, since its picture lived only in that session.
+- **Looters** (2026-11-15, the owner: "make random looters loot or check body"): each hour, every fallen with something on them may draw a band. A band within `CARCASS.seek` (160 px) sets out for them, at `CARCASS.find` (0.35) an hour (`b.corpse`). With none near, fresh fallen (under `loot.fresh`, 1 day old) may draw looters out of the wilds instead: at `loot.spawn` (0.25), a band of 2–4 `band_looter` from 220–320 px off, out of your sight, with at most `loot.most` (3) at once (`Carcass.looters`). The band walks there, seen or not (`BandBrain.think` runs `Carcass.seek` while it neither fears nor sees you). Within `loot.at` (24 px), it stands searching for `loot.check` (6 s). Then it takes everything on the fallen within `near`, and the carcass reads "picked clean by bandits". The goods become its plunder, yours if you beat it, as with a fallen hero's remains (`Remains.beaten`). A town's patrol may ride the looters down first.
+- **Clearers** (the owner: "make people work to clear those corpses"): each hour, the fallen near a holding are cleared once they are past their time. That means picked clean for `clear.bare` (0.25 day), or `clear.after` (1.5 days) with anything on them, and the holding's gate within `clear.reach` (420 px). Out of your sight they are simply gone. In it, one of the holding's folk walks out (a farmer, `Carcass.diggers`, at most `clear.most` 3 at once), digs for `clear.dig` (8 s) and walks home. The fallen is gone when the digging is done. Diggers are not saved: a load clears them, and the fallen they were digging stay until the next hour.
+- **Rotting** (2026-11-15, the owner: "the corpse should still be there like others, but after a while the corpse can start rotting and finally turns into bones. This should be the same for all dead bodies"): every body on the map goes through the same stages (`world/carcasses.js` `BodyRot`, tunables in `BODY_ROT`, `data/drops.js`). That covers the fallen of a fight, beasts, and your own remains (`world/death.js` `Remains`, and an unburied grave).
+  - **Fresh:** for its first day (`rot`) it lies as it fell.
+  - **Rotting:** until `bones` (3 days) it is darker and greener. It draws no flies of its own (2026-11-15, the owner: "we can use different sprite for flies to draw over").
+  - **Bones:** after that it is a skeleton: a man's skull, ribs and limbs on a rag of his clothes, or a beast's long skull, arched ribs and legs on a scrap of hide.
+  - **Gone:** the fallen of a fight are removed at `gone` (8 days), picked clean or not. Your remains stay as bones until they are buried.
+  - Each body's picture is made once (`BodyRot.pic`), from the fight's drawing of its fall, or after a load from its kind lying as the battle's fallen lie (`corpseOf`). Your hero's own fall is kept the same way (`Remains.lay` reads it off the fight on the map).
+  - At most `CARCASS.most` (240) fallen are kept on the map.
+- **Saves:** carcasses are saved (key `carcasses`). After a load each is drawn as its kind lying, since the picture of its fall lived only in that session.
 - `CARCASS.on` false: no carcasses, and the field's drops and the end window work as before.
+
+## 4. After the fight: each where it stood
+
+The owner, 2026-11-14: "The hunting should not warp the wildlife back to the group, each will keep the state and position. Same goes for the army".
+
+- **Armies:** each man is handed back to his marcher where he stood (`WorldBattleArea#finish`), and walks back into the march from there. Checked on a win and on a withdrawal, for both sides: no man moves more than 0.1 px at the hand-back.
+- **Herds:** a herd was one point drawn as up to three animals, so a hunt's survivors used to jump to their middle. Now each animal keeps its own spot about the herd's point (`Herd` `m`: its offset, facing and wind; `battle/hunting.js` `finish`).
+  - The map draws each animal where it is. Each walks back to its place at `HERD_SCATTER.gather` (6 px a second, `data/exertion.js`), carried along as the herd moves. Once all are within `near` (1 px), the herd is drawn as before.
+  - Animals still bolting when the hunt ended keep the herd running their way for `HERD_SCATTER.run` (4 s), at their speed.
+  - A hunt begun on a scattered herd meets each animal where it stands, facing its way, with its own wind (`herdSpot`). If the herd is still running, each is already alert.
+  - The spots are not saved: after a load the herd is gathered.
+- `HERD_SCATTER.on` false: the herd as before. Tests: `tests/herdscatter.js`.
 
 ## Left
 
