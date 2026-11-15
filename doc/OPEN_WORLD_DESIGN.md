@@ -248,8 +248,24 @@ That is a separate decision, best made after this world exists.
 - **Painting:** about 0.55 s for the whole stretch, about 55 ms a 512 px chunk. The lab paints the plain way, a new array for every colour. The game's painter must do it in about 8 ms: fixed palettes, typed arrays and a few ms a frame, as `WorldArt` already paints.
 - **Walking:** from the village to the snowy summit takes about 50 s on foot by the ramps.
 
+**Water and roads (2026-11-15; the owner: "make those road more realistic and add rivers water and etc"):**
+- **The river:** it rises in a tarn high on the range and runs down to the sea, meandering (`LAB.river`).
+  - It widens from a stream (5 px) to a river (22 px), in a channel carved into the land with muddy banks and reeds.
+  - Its surface never rises downstream and steps by levels, so it falls white wherever it drops a level. Over the rock bands the falls stack into cascades, with foam at their foot.
+  - The water moves: streaks run downstream, and the falls pour.
+  - It ends where it meets the sea, as an estuary.
+  - A stream (no wider than 3.5 px a side) is waded at ×0.4. The river is crossed only at its ford (shallow, with stepping stones, ×0.4) or by the road's bridge.
+  - A watermill stands on its bank.
+- **The road:**
+  - A curve through its points, so its switchbacks are hairpins.
+  - Its edge is ragged into the verge.
+  - It has two wheel ruts, with puddles in them where it is flat, a grassy crown between them on the flat, and pebbles.
+  - A stone parapet runs along its edge where the ground beyond drops two levels or more; its cuts and embankments are faced with dressed-stone retaining walls.
+  - Over the river it is a wooden bridge: plank deck, rails on posts, beams on its side. Its heights come from the land before the river was carved, so it spans the river instead of dipping into it.
+- **Painting** is slower with all this: about 90-100 ms a 512 px chunk. That makes the game painter's rewrite (§8's 8 ms) more pressing.
+
 **What the lab leaves for later:**
-- Rivers with waterfalls and ravines.
+- Lakes in the lowland, deltas, and boats on the water.
 - Lighting by the time of day.
 - Riders and carts on slopes.
 - More than one climate.

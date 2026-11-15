@@ -15,15 +15,24 @@
   // the lab's numbers: the stretch (px), the cell (the battle's), lh (px a level: the owner's slider, lhMin to lhMax), the levels
   // where the beach, dunes, bare rock and snow begin, the peaks and the hill ([x, y, radius as shares of W, height in levels]),
   // the village's shelf, the road (its width, shoulders and most levels a px along it), the walk (px a second, the battle's
-  // militia), steps: the range's shelves (a rise every band levels, as sharp as sharp where its noise (sc px) passes at), the slope classes (g at least: slope, steep, cliff) and what each does (speed up and down, stamina a second), the
-  // woods (noise scale and threshold), the zoom (screen px a world px; phoneZoom on a screen narrower than phone px)
+  // militia), steps: the range's shelves (a rise every band levels, as sharp as sharp where its noise (sc px) passes at), the
+  // slope classes (g at least: slope, steep, cliff) and what each does (speed up and down, stamina a second), the woods (noise
+  // scale and threshold), the zoom (screen px a world px; phoneZoom on a screen narrower than phone px).
+  // The river (the owner, 2026-11-15: "add rivers water and etc"): from a tarn (its ellipse) high on the range down to the sea along
+  // pts (shares of W, H), meandering meander px; half as wide as w[0] at its source to w[1] at its mouth (px), its banks bank px; its
+  // surface never rising downstream, stepped by levels (a fall where it drops); a stream no wider than wade px is waded; a ford at
+  // ford (a share of its length), the mill beside it at mill; it ends where its surface comes down to mouth levels (the sea). The road (the owner: "make those road more realistic"): a curve
+  // through its points, ruts rut px either side of its crown, a grassy crown on its flat stretches, puddles in the ruts where it is
+  // flat (puddle: the noise past which), its edge ragged by edge px; a stone parapet where it runs along a drop of wall levels
   const LAB={W:2048,H:1280,cell:16,lh:8,lhMin:4,lhMax:16,seed:7,
     beach:.45,dune:.95,rock:9,snow:11.5,shore:{wet:5,sand:34,dune:80},
     peaks:[[.66,.15,.26,11],[.93,.36,.24,9.5]],steps:{band:3,sharp:16,sc:110,at:.38},hill:[.40,.42,.14,2.2],shelf:{x:.21,y:.73,rx:190,ry:120,e:1.4},
-    road:{w:30,sh:14,grade:1/34,pts:[[.13,.80],[.21,.73],[.31,.69],[.42,.61],[.50,.53],[.60,.50],[.70,.47],[.62,.41],[.73,.36],[.67,.31],[.79,.26],[.86,.14],[.88,0]]},
+    road:{w:26,sh:14,grade:1/34,rut:5,edge:3,puddle:.7,wall:2,pts:[[.13,.80],[.21,.73],[.31,.69],[.42,.61],[.50,.53],[.60,.50],[.70,.47],[.62,.41],[.73,.36],[.67,.31],[.79,.26],[.86,.14],[.88,0]]},
+    river:{pts:[[.588,.118],[.565,.20],[.525,.28],[.475,.36],[.435,.46],[.395,.55],[.355,.62],[.338,.70],[.343,.79],[.328,.88],[.31,1]],
+      w:[2.5,11],bank:9,meander:14,wade:3.5,ford:.5,mill:.64,mouth:.15,tarn:{x:.597,y:.10,rx:48,ry:26}},
     walk:38,run:1.6,
     cls:{slope:.035,steep:.11,cliff:.22},
-    speed:{flat:1,road:1.1,sand:.85,dune:.8,snow:.55,wood:.85,up:.5,down:1.15,steep:.3,cliff:.16},
+    speed:{wade:.4,flat:1,road:1.1,sand:.85,dune:.8,snow:.55,wood:.85,up:.5,down:1.15,steep:.3,cliff:.16},
     sta:{slope:.03,steep:.08,cliff:.18,rest:.06},
     woods:{sc:170,at:.56,step:11},zoom:2,phoneZoom:1.5,phone:700};
 
@@ -45,7 +54,10 @@
     face:GP.face.map(hex),bank:[[120,98,66],[98,80,56],[78,64,46]],lip:[70,104,48],
     sea:[[120,196,200],[70,150,186],[44,104,160],[30,72,128]],foam:[236,244,246],
     tuft:GP.tuft.map(hex),flower:[[230,214,120],[220,140,160],[236,236,236],[150,150,220]],drift:[126,100,72],shell:[244,236,220],marram:[[168,170,96],[132,140,74]],
-    scree:[[150,148,138],[118,116,110]]};
+    scree:[[150,148,138],[118,116,110]],
+    river:[[118,190,196],[84,156,184],[58,118,160]],tarn:[[96,160,190],[54,104,150]],fall:[[236,244,248],[182,216,232],[134,180,208]],
+    mud:[[104,96,62],[86,80,52]],reed:[[120,150,64],[96,124,52],[150,118,72]],
+    plank:[[154,112,70],[138,98,60],[166,124,80]],beam:[[92,64,40],[70,48,30]],stone:[[176,170,156],[150,144,132],[118,114,106]],puddle:[[118,138,150],[150,172,184]]};
 
   // the land's height (levels) at a px, before the road and the shelf
   function elev(x,y){const W=LAB.W,H=LAB.H,u=x/W,v=y/H,s=LAB.seed;
@@ -57,33 +69,59 @@
     const S=LAB.shelf,ds=Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry);if(ds<1.4){const k=smooth((1.4-ds)/.4);e=e+(S.e-e)*k}
     return e}
 
+  // a Catmull-Rom curve through P (px), a point every step px
+  function spline(P,step){const out=[];for(let i=0;i+1<P.length;i++){const p0=P[Math.max(0,i-1)],p1=P[i],p2=P[i+1],p3=P[Math.min(P.length-1,i+2)],n=Math.max(1,Math.ceil(Math.hypot(p2[0]-p1[0],p2[1]-p1[1])/step));
+      for(let k=0;k<n;k++){const t=k/n,t2=t*t,t3=t2*t;out.push([0,1].map(j=>.5*(2*p1[j]+(-p0[j]+p2[j])*t+(2*p0[j]-5*p1[j]+4*p2[j]-p3[j])*t2+(-p0[j]+3*p1[j]-3*p2[j]+p3[j])*t3)))}}
+    out.push(P[P.length-1].slice());return out}
+  // every px within reach of the polyline pts: D its distance, I where along it (a fractional index)
+  function bandOf(pts,reach){const W=LAB.W,H=LAB.H,D=new Float32Array(W*H).fill(1e9),I=new Float32Array(W*H);
+    for(let i=0;i+1<pts.length;i++){const [ax,ay]=pts[i],[bx,by]=pts[i+1],dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy||1;
+      for(let y=Math.max(0,Math.floor(Math.min(ay,by)-reach));y<=Math.min(H-1,Math.ceil(Math.max(ay,by)+reach));y++)
+        for(let x=Math.max(0,Math.floor(Math.min(ax,bx)-reach));x<=Math.min(W-1,Math.ceil(Math.max(ax,bx)+reach));x++){
+          const t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/l2)),d=Math.hypot(x-ax-dx*t,y-ay-dy*t),j=y*W+x;if(d<D[j]){D[j]=d;I[j]=i+t}}}
+    return {D,I}}
+  const along=(A,f)=>{const i=Math.min(A.length-1,Math.floor(f)),j=Math.min(A.length-1,i+1),t=f-Math.floor(f);return A[i]+(A[j]-A[i])*t};
+
   // the road: its polyline (px), heights along it (the land's, the grade held by passes both ways, then smoothed), and every px
   // near it: its distance and the road's height there
-  function roadOf(E){const W=LAB.W,H=LAB.H,R=LAB.road,P=R.pts.map(([u,v])=>[u*W,v*H]),pts=[];
-    for(let i=0;i+1<P.length;i++){const [ax,ay]=P[i],[bx,by]=P[i+1],n=Math.max(1,Math.ceil(Math.hypot(bx-ax,by-ay)/2));for(let k=0;k<n;k++){const t=k/n;pts.push([ax+(bx-ax)*t,ay+(by-ay)*t])}}
-    pts.push(P[P.length-1]);
+  function roadOf(E){const W=LAB.W,H=LAB.H,R=LAB.road,pts=spline(R.pts.map(([u,v])=>[u*W,v*H]),2);
     const at=(x,y)=>E[Math.min(H-1,Math.max(0,Math.round(y)))*W+Math.min(W-1,Math.max(0,Math.round(x)))];
     let r=pts.map(([x,y])=>at(x,y));const ds=2*R.grade;
     for(let it=0;it<6;it++){for(let i=1;i<r.length;i++)r[i]=Math.min(Math.max(r[i],r[i-1]-ds),r[i-1]+ds);for(let i=r.length-2;i>=0;i--)r[i]=Math.min(Math.max(r[i],r[i+1]-ds),r[i+1]+ds)}
     for(let it=0;it<3;it++){const q=r.slice();for(let i=0;i<r.length;i++){let s=0,n=0;for(let j=-8;j<=8;j++){const k=i+j;if(k>=0&&k<r.length){s+=q[k];n++}}r[i]=s/n}}
-    const D=new Float32Array(W*H).fill(1e9),RE=new Float32Array(W*H),reach=R.w/2+R.sh;
-    for(let i=0;i+1<pts.length;i++){const [ax,ay]=pts[i],[bx,by]=pts[i+1],dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy||1;
-      for(let y=Math.max(0,Math.floor(Math.min(ay,by)-reach));y<=Math.min(H-1,Math.ceil(Math.max(ay,by)+reach));y++)
-        for(let x=Math.max(0,Math.floor(Math.min(ax,bx)-reach));x<=Math.min(W-1,Math.ceil(Math.max(ax,bx)+reach));x++){
-          const t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/l2)),d=Math.hypot(x-ax-dx*t,y-ay-dy*t),j=y*W+x;if(d<D[j]){D[j]=d;RE[j]=r[i]+(r[i+1]-r[i])*t}}}
-    return {pts,r,D,RE}}
+    const {D,I}=bandOf(pts,R.w/2+R.sh+2),RE=new Float32Array(W*H);for(let j=0;j<W*H;j++)if(D[j]<1e9)RE[j]=along(r,I[j]);
+    return {pts,r,D,I,RE}}
+
+  // the river: its course (a curve, meandering), its surface along it (the land's, never rising downstream), its half-width; every
+  // px near it: RV 1 water, 2 bank, 3 ford; RW the half-width there, RT px along it
+  function riverOf(E){const W=LAB.W,H=LAB.H,V=LAB.river,s=LAB.seed,c=spline(V.pts.map(([u,v])=>[u*W,v*H]),2),n=c.length;
+    const pts=c.map((p,i)=>{const a=c[Math.max(0,i-1)],b=c[Math.min(n-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,o=(fbm(i/45,.5,s+70,2)-.5)*2*V.meander*Math.min(1,i/40);return [p[0]-dy/l*o,p[1]+dx/l*o]});
+    const at=(x,y)=>E[Math.min(H-1,Math.max(0,Math.round(y)))*W+Math.min(W-1,Math.max(0,Math.round(x)))];
+    const rh=pts.map(([x,y])=>at(x,y));for(let i=1;i<n;i++)rh[i]=Math.min(rh[i],rh[i-1]-.0004);
+    const rw=pts.map((_,i)=>V.w[0]+(V.w[1]-V.w[0])*Math.pow(i/(n-1),.8)+(fbm(i/30,2.5,s+71,2)-.5)*1.6);
+    const {D,I}=bandOf(pts,V.w[1]+V.bank+3),RV=new Uint8Array(W*H),RW=new Float32Array(W*H),RT=new Float32Array(W*H),fi=V.ford*(n-1);
+    for(let j=0;j<W*H;j++){if(D[j]>=1e9)continue;const f=I[j],w=along(rw,f),h=along(rh,f),d=D[j];if(h<V.mouth)continue;
+      if(d<w){E[j]=Math.min(E[j],h)-.001;RV[j]=Math.abs(f-fi)<w/2+5?3:1;RW[j]=w;RT[j]=f*2}
+      else if(d<w+V.bank){const tg=h+.5;if(E[j]>tg)E[j]=tg+(E[j]-tg)*smooth((d-w)/V.bank);RV[j]=2;RW[j]=w;RT[j]=f*2}}
+    // (the tarn it rises from: still water, its rim a bank)
+    const T=V.tarn,tx=T.x*W,ty=T.y*H,tl=Math.floor(at(tx,ty))-.001;
+    for(let y=Math.max(0,Math.floor(ty-T.ry*1.6));y<Math.min(H,ty+T.ry*1.6);y++)for(let x=Math.max(0,Math.floor(tx-T.rx*1.6));x<Math.min(W,tx+T.rx*1.6);x++){const j=y*W+x,q=Math.hypot((x-tx)/T.rx,(y-ty)/T.ry)+(fbm(x/20,y/20,s+72,2)-.5)*.3;
+      if(q<1){E[j]=tl;RV[j]=1;RW[j]=99;RT[j]=0}else if(q<1.5&&RV[j]!==1){const tg=tl+.5;if(E[j]>tg)E[j]=tg+(E[j]-tg)*smooth((q-1)/.5);RV[j]=2;RW[j]=99}}
+    return {pts,rh,rw,D,RV,RW,RT}}
 
   /* the land made: E (levels, the road and its shoulders in), smooth (1 where the ground is not stepped), kind (by px), g (slope:
      levels a px), gx/gy its way uphill. Kinds: 0 water, 1 wet sand, 2 sand, 3 dune, 4 grass, 5 meadow, 6 wood floor, 7 road,
-     8 scree, 9 rock, 10 snow */
-  const K={water:0,wet:1,sand:2,dune:3,grass:4,meadow:5,wood:6,road:7,scree:8,rock:9,snow:10};
-  const KNAME=['water','wet sand','sand','dunes','grass','meadow','woods','road','scree','rock','snow'];
+     8 scree, 9 rock, 10 snow, 11 river (or the tarn), 12 ford, 13 bridge, 14 river bank */
+  const K={water:0,wet:1,sand:2,dune:3,grass:4,meadow:5,wood:6,road:7,scree:8,rock:9,snow:10,river:11,ford:12,bridge:13,bank:14};
+  const KNAME=['sea','wet sand','sand','dunes','grass','meadow','woods','road','scree','rock','snow','river','ford','bridge','river bank'];
   function makeLand(){const t0=performance.now(),W=LAB.W,H=LAB.H,s=LAB.seed,E=new Float32Array(W*H),st=4,CW=W/st+2,CH=H/st+2,Cg=new Float32Array(CW*CH);
     for(let cy=0;cy<CH;cy++)for(let cx=0;cx<CW;cx++)Cg[cy*CW+cx]=elev(cx*st,cy*st);
     for(let y=0;y<H;y++){const cy=Math.floor(y/st),fy=y/st-cy;for(let x=0;x<W;x++){const cx=Math.floor(x/st),fx=x/st-cx,i=cy*CW+cx;
       E[y*W+x]=(Cg[i]*(1-fx)+Cg[i+1]*fx)*(1-fy)+(Cg[i+CW]*(1-fx)+Cg[i+CW+1]*fx)*fy}}
-    const road=roadOf(E),R=LAB.road,SM=new Uint8Array(W*H),KD=new Uint8Array(W*H);
-    for(let i=0;i<W*H;i++){const d=road.D[i];if(d<R.w/2){E[i]=road.RE[i];SM[i]=1}else if(d<R.w/2+R.sh){const k=smooth((d-R.w/2)/R.sh);E[i]=road.RE[i]+(E[i]-road.RE[i])*k;SM[i]=1}}
+    const road=roadOf(E),river=riverOf(E),RV=river.RV,R=LAB.road,SM=new Uint8Array(W*H),KD=new Uint8Array(W*H);
+    // (the road's edge ragged; over the river its deck (a bridge), the water left beside it)
+    const RD=new Float32Array(W*H);for(let i=0;i<W*H;i++){const d=road.D[i];RD[i]=d>=1e9?d:d-(fbm((i%W)/26,((i/W)|0)/26,s+73,2)-.5)*2*R.edge}
+    for(let i=0;i<W*H;i++){const d=RD[i];if(d<R.w/2){E[i]=road.RE[i];SM[i]=1}else if(d<R.w/2+R.sh&&RV[i]!==1&&RV[i]!==3){const k=smooth((d-R.w/2)/R.sh);E[i]=road.RE[i]+(E[i]-road.RE[i])*k;SM[i]=1}}
     const G=new Float32Array(W*H),GX=new Float32Array(W*H),GY=new Float32Array(W*H),o=3;
     for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x,a=E[y*W+Math.min(W-1,x+o)]-E[y*W+Math.max(0,x-o)],b=E[Math.min(H-1,y+o)*W+x]-E[Math.max(0,y-o)*W+x];GX[i]=a/(2*o);GY[i]=b/(2*o);G[i]=Math.hypot(GX[i],GY[i])}
     // (how far each px is from the water: two chamfer passes)
@@ -93,13 +131,15 @@
     const S=LAB.shelf,Wd=LAB.woods,B=LAB.shore;
     for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x,e=E[i],g=G[i];let k;
       const wob=fbm(x/50,y/50,s+63,2)-.5,dw=DW[i];
-      if(e<0)k=K.water;else if(road.D[i]<R.w/2)k=K.road;else if(dw<B.wet+wob*4)k=K.wet;else if(dw<B.sand+wob*24&&e<LAB.dune)k=K.sand;else if(dw<B.dune+wob*40&&e<LAB.dune+.6)k=K.dune;
+      const rv=RV[i],onRoad=RD[i]<R.w/2;
+      if(onRoad&&(rv===1||rv===3))k=K.bridge;else if(e<0&&!rv)k=K.water;else if(rv===1)k=e<0?K.water:K.river;else if(rv===3)k=K.ford;else if(onRoad)k=K.road;
+      else if(rv===2&&(river.RW[i]>50||river.D[i]<river.RW[i]+4))k=K.bank;else if(dw<B.wet+wob*4)k=K.wet;else if(dw<B.sand+wob*24&&e<LAB.dune)k=K.sand;else if(dw<B.dune+wob*40&&e<LAB.dune+.6)k=K.dune;
       else if(e>=LAB.snow+(fbm(x/40,y/40,s+61,2)-.5)*1.6)k=K.snow;else if(e>=LAB.rock+(fbm(x/50,y/50,s+62,2)-.5)*2||g>=LAB.cls.cliff)k=K.rock;
       else if(g>=LAB.cls.steep&&e>2)k=K.scree;
       else{const inShelf=Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry)<1.2,w=fbm(x/Wd.sc,y/Wd.sc,s+41,3);
-        k=!inShelf&&road.D[i]>R.w/2+10&&e>=1&&e<8&&w>Wd.at?K.wood:fbm(x/60,y/60,s+44,2)>.62?K.meadow:K.grass}
+        k=!inShelf&&RD[i]>R.w/2+10&&!rv&&e>=1&&e<8&&w>Wd.at?K.wood:fbm(x/60,y/60,s+44,2)>.62?K.meadow:K.grass}
       KD[i]=k}
-    return {E,SM,KD,G,GX,GY,road,ms:performance.now()-t0}}
+    return {E,SM,KD,G,GX,GY,road,river,RD,ms:performance.now()-t0}}
 
   /* painting: the terrain canvas (W x H+T, T the highest lift), its depth (the world y of the ground at each of its px, -1 none)
      and the walk map. Column by column, north to south: each px's top at y - lift + T; where the ground ahead is lower, this px's
@@ -117,7 +157,19 @@
         case K.water:{const d=-e,S=COL.sea;c=d<.15?mix(S[0],S[1],d/.15):d<.7?mix(S[1],S[2],(d-.15)/.55):mix(S[2],S[3],Math.min(1,(d-.7)/1.2));if(n<.012)c=mix(c,COL.foam,.5);break}
         case K.wet:c=pick(COL.wet,x,y,s+6);break;case K.sand:c=pick(COL.sand,x,y,s+7);break;
         case K.dune:c=mix(pick(COL.sand,x,y,s+8),COL.dune[n<.5?0:1],.45);break;
-        case K.road:{c=pick(COL.road,x,y,s+9);const d=L.road.D[i];if(Math.abs(d-5)<.8)c=mix(c,COL.rut,.55);if(d>LAB.road.w/2-2)c=mix(c,COL.grass[1],.5);break}
+        case K.road:{const RR=LAB.road,d=L.road.D[i],dr=L.RD[i],flat=L.G[i]<.02;c=pick(COL.road,x,y,s+9);
+          // (the ruts, worn dark, a puddle in them on the flat; the crown between them grassy on the flat; the verge into the grass;
+          //  a pebble here and there)
+          const rut=Math.abs(d-RR.rut)<1.6;if(rut){c=mix(c,COL.rut,.6);if(L.G[i]<.012&&fbm(x/16,y/16,s+74,2)>RR.puddle)c=COL.puddle[hsh(x,y,s+75)<.2?1:0]}
+          else if(d<RR.rut-1.8&&flat&&vn(x/7,y/7,s+76)>.45)c=mix(c,COL.grass[1],.55);
+          if(dr>RR.w/2-3)c=mix(c,COL.grass[1],Math.min(.75,(dr-(RR.w/2-3))/3));if(n<.015)c=COL.stone[0];break}
+        case K.bridge:{const RR=LAB.road,d=L.road.D[i],t=L.road.I[i]*2;c=pick(COL.plank,Math.floor(t/3),3,s+77);if(t%3<.9)c=COL.beam[1];if(Math.abs(d-RR.rut)<1.2)c=mul(c,.9);
+          if(d>RR.w/2-2.5)c=Math.floor(t)%6<1.5?COL.beam[1]:COL.plank[2];break}
+        case K.river:{const w=L.river.RW[i],dd=L.river.D[i];if(w>50){c=hsh(x>>2,y>>2,s+78)<.5?COL.tarn[0]:mix(COL.tarn[0],COL.tarn[1],.4)}
+          else{const t=Math.min(1,w/LAB.river.w[1]);c=mix(COL.river[0],COL.river[2],t*.8);if(dd>w-1.5)c=mix(c,COL.river[0],.6)}
+          if(n<.004)c=COL.stone[1];break}
+        case K.ford:c=mix(COL.river[0],COL.wet[0],.3);if(hsh(x>>1,y>>1,s+79)<.12)c=COL.stone[hsh(x,y,s+80)<.5?0:1];break;
+        case K.bank:c=mix(pick(COL.mud,x,y,s+81),COL.grass[0],L.river.RW[i]>50?.5:Math.min(1,Math.max(0,(L.river.D[i]-L.river.RW[i])/4)));break;
         case K.scree:c=mix(pick(COL.scree,x,y,s+10),COL.grass[0],hsh(x>>2,y>>2,s+11)<.3?.4:0);break;
         case K.rock:c=pick(COL.rock.slice(0,3),x,y,s+12);if(vn(x/14,y/14,s+13)>.62)c=mix(c,COL.grass[0],.55);break;
         case K.snow:c=pick(COL.snow,x,y,s+14);break;
@@ -132,11 +184,17 @@
       for(let y=0;y<H;y++){const i=y*W+x,h=lift[i],sy=y-h+T,k=KD[i];let c=topCol(x,y,i);
         // (the lip: a step's edge lit; the foot of a face in its shade)
         const hs=y+1<H?lift[i+W]:0,hn=y>0?lift[i-W]:h;
-        if(hs<h-1&&k!==K.water)c=mul(c,1.12);if(hn>h+1)c=mul(c,.78);else if(y>1&&lift[i-2*W]>h+1)c=mul(c,.9);
+        const wet=k===K.river||k===K.ford;
+        if(hs<h-1&&k!==K.water&&!wet)c=mul(c,1.12);if(wet&&hn>h+1)c=mix(c,COL.foam,.75);else if(wet&&y>1&&lift[i-2*W]>h+1)c=mix(c,COL.foam,.4);else if(hn>h+1)c=mul(c,.78);else if(y>1&&lift[i-2*W]>h+1)c=mul(c,.9);
+        // (a stone parapet along the road's edge where the ground beyond it drops wall levels or more)
+        if(k===K.road&&L.RD[i]>LAB.road.w/2-2.2){let lo=h;for(const [a,b] of [[4,0],[-4,0],[0,4],[0,-4]]){const xx=x+a,yy=y+b;if(xx>=0&&yy>=0&&xx<W&&yy<H)lo=Math.min(lo,lift[yy*W+xx])}if(lo<=h-LAB.road.wall*lh)c=COL.stone[(x+y)%5===0?2:hsh(x,y,s+82)<.5?0:1]}
         put(x,sy,c,y);
         // the south face, down to where the next px's top starts
         const sy2=(y+1<H?y+1-hs:H-1+0)+T;if(y+1>=H){for(let r=sy+1;r<CH;r++)put(x,r,COL.face[2],y);continue}
-        if(sy2>sy+1&&SM[i]&&h-hs<=3){for(let r=sy+1;r<sy2;r++)put(x,r,mul(c,.94),y)}
+        if(sy2>sy+1&&wet){for(let r=sy+1;r<sy2;r++){const n=hsh(x,r,s+83),q=hsh(x,0,s+84);put(x,r,r>=sy2-2?COL.foam:COL.fall[q<.35?0:q<.75?1:2],y);if(n<.02)put(x,r,COL.foam,y)}}
+        else if(sy2>sy+1&&k===K.bridge){for(let r=sy+1;r<sy2;r++){const dz=r-sy;put(x,r,dz<=2?COL.beam[0]:Math.floor(L.road.I[i]*2)%14<2?COL.beam[0]:mul(COL.beam[1],.85),y)}}
+        else if(sy2>sy+1&&SM[i]&&h-hs<=3){for(let r=sy+1;r<sy2;r++)put(x,r,mul(c,.94),y)}
+        else if(sy2>sy+1&&SM[i]&&L.RD[i]<LAB.road.w/2+5){for(let r=sy+1;r<sy2;r++){const dz=r-sy,row=Math.floor(dz/3),off=(row&1)*3;put(x,r,dz%3===0||(x+off)%6===0?COL.stone[2]:COL.stone[hsh(Math.floor((x+off)/6),row,s+85)<.5?0:1],y)}}
         else if(sy2>sy+1){const drop=h-hs,rocky=G[i]>=LAB.cls.steep||drop>=2*lh||k===K.rock||k===K.snow||k===K.scree,sand=k<=K.dune;
           for(let r=sy+1;r<sy2;r++){const dz=r-sy,zh=h-dz,f=dz/Math.max(1,drop),n=hsh(x,r,s+20);let c2;
             if(sand)c2=mix(COL.sand[0],COL.wet[1],f*.8);
@@ -153,20 +211,24 @@
       else if(k===K.sand&&r<.004){for(let j=-2;j<=2;j++)if(dep[sy*W+x+j]===y)put(x+j,sy,COL.drift,y)}
       else if(k===K.sand&&r<.012)put(x,sy,COL.shell,y)
       else if(k===K.wood&&r<.03)put(x,sy-1,r<.01?[110,76,48]:COL.tuft[2],y)
-      else if((k===K.scree||k===K.rock)&&r<.03)put(x,sy,COL.scree[1],y)}
+      else if((k===K.scree||k===K.rock)&&r<.03)put(x,sy,COL.scree[1],y)
+      else if(k===K.bank&&r<.05){const h=3+Math.floor(hsh(x,y,s+86)*3);for(let j=1;j<=h;j++)put(x,sy-j,j===h&&r<.02?COL.reed[2]:COL.reed[j&1],y)}}
     g.putImageData(img,0,0);
     // the shore's px (the foam rides them): water beside land, on the screen
     const shore=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;if(KD[i]!==K.water)continue;if(KD[i-1]||KD[i+1]||KD[i-W]||KD[i+W])shore.push(x,y+T,hsh(x,y,s+40)*6.283)}
+    // the river's moving water: each surface px seen (x, screen y, px along, a phase) and each fall's px (flagged by a negative)
+    const flow=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x,k=KD[i];if(k!==K.river&&k!==K.ford)continue;if(L.river.RW[i]>50)continue;const sy=vis(x,y);if(sy<0)continue;
+      flow.push(x,sy,L.river.RT[i],hsh(x,y,s+87));const hs=lift[i+W],sy2=y+1-hs+T;for(let r=sy+1;r<sy2-2;r++)if(dep[r*W+x]===y)flow.push(x,r,-1,hsh(x,0,s+88)*20)}
     // the walk map: each px's class as a tint
     const wm=document.createElement('canvas');wm.width=W;wm.height=CH;{const wg=wm.getContext('2d'),wi=wg.createImageData(W,CH),WD=wi.data;
       for(let y=0;y<CH;y++)for(let x=0;x<W;x++){const wy=dep[y*W+x];if(wy<0)continue;const i=wy*W+x,c=classAt(L,i),o=(y*W+x)*4,col=[[60,120,255],[60,200,80],[230,210,60],[240,130,40],[230,40,40]][c];WD[o]=col[0];WD[o+1]=col[1];WD[o+2]=col[2];WD[o+3]=110}
       wg.putImageData(wi,0,0)}
-    return {cv,dep,lift,T,CH,shore,wm,ms:performance.now()-t0}}
+    return {cv,dep,lift,T,CH,shore,flow,wm,ms:performance.now()-t0}}
 
   // a px's walk class: 0 water, 1 flat, 2 slope, 3 steep, 4 cliff (the road always flat: its grade is held)
-  function classAt(L,i){const k=L.KD[i];if(k===K.water)return 0;if(k===K.road)return 1;const g=L.G[i],C=LAB.cls;return g>=C.cliff?4:g>=C.steep?3:g>=C.slope?2:1}
+  function classAt(L,i){const k=L.KD[i];if(k===K.water)return 0;if(k===K.road||k===K.bridge)return 1;if(k===K.ford)return 2;if(k===K.river)return L.river.RW[i]<=LAB.river.wade?2:0;const g=L.G[i],C=LAB.cls;return g>=C.cliff?4:g>=C.steep?3:g>=C.slope?2:1}
   // how fast a man goes at px i heading (dx, dy) (a unit vector), times the walk; 0 he cannot. climber: a cliff is slow, not shut
-  function speedAt(L,i,dx,dy,climber,sta){const S=LAB.speed,k=L.KD[i],c=classAt(L,i);if(c===0)return 0;
+  function speedAt(L,i,dx,dy,climber,sta){const S=LAB.speed,k=L.KD[i],c=classAt(L,i);if(c===0)return 0;if(k===K.river||k===K.ford)return S.wade;if(k===K.bridge)return S.road;
     let m=k===K.road?S.road:k===K.sand||k===K.wet?S.sand:k===K.dune?S.dune:k===K.snow?S.snow:k===K.wood?S.wood:S.flat;
     const up=(dx*L.GX[i]+dy*L.GY[i])>0;
     if(c===2)m*=up?S.up:S.down;else if(c===3)m*=S.steep;else if(c===4){if(!climber||sta<=0)return 0;m*=S.cliff}
@@ -177,10 +239,13 @@
   function makeProps(L){const W=LAB.W,H=LAB.H,s=LAB.seed,P=[],st=LAB.woods.step,S=LAB.shelf;
     for(let gy=st;gy<H;gy+=st)for(let gx=st;gx<W;gx+=st){const x=Math.round(gx+(hsh(gx,gy,s+50)-.5)*st*.9),y=Math.round(gy+(hsh(gx,gy,s+51)-.5)*st*.9);if(x<2||y<2||x>=W-2||y>=H)continue;
       const i=y*W+x,k=L.KD[i],r=hsh(gx,gy,s+52);
-      if(k===K.wood&&r<.62||(k===K.grass||k===K.meadow)&&r<.025&&L.road.D[i]>30){const e=L.E[i],sp=e>5.5?'fir':r<.12?'birch':e>3.5&&r<.3?'fir':'oak',t=PX.battleTree('grass',sp,Math.floor(hsh(gx,gy,s+53)*4));P.push({x,y,img:t,ax:16,ay:30,kind:'tree'})}
+      if(k===K.wood&&r<.62||(k===K.grass||k===K.meadow)&&r<.025&&L.road.D[i]>30&&!L.river.RV[i]){const e=L.E[i],sp=e>5.5?'fir':r<.12?'birch':e>3.5&&r<.3?'fir':'oak',t=PX.battleTree('grass',sp,Math.floor(hsh(gx,gy,s+53)*4));P.push({x,y,img:t,ax:16,ay:30,kind:'tree'})}
       else if(k===K.scree&&r<.05){const b=PX.battleObstacle('rock','grass',Math.floor(hsh(gx,gy,s+54)*6));P.push({x,y,img:b.s,ax:b.ax,ay:b.ay,kind:'rock'})}}
     const sx=S.x*W,sy=S.y*H,house=(type,dx,dy,seed,yaw)=>{try{const sp=PX.buildingModelSpec({type,culture:'vale',seed,yaw:yaw||0,env:'grass'});sp.cell*=2;const m=PX.model(sp);P.push({x:Math.round(sx+dx),y:Math.round(sy+dy),img:m.img,ax:0,ay:m.img.height,kind:'house',sh:m.shadow})}catch(e){console.warn('lab: no model',type,e)}};
     house('cottage',-150,-40,3);house('cottage',-60,-70,8,2);house('townhouse',40,-62,5);house('fisherhut',-170,58,9,6);house('well',-40,12,4);house('cart',30,24,6);house('tavern',90,40,12,4);
+    // (the watermill beside the river, on its east bank)
+    {const V=L.river,j=Math.round(LAB.river.mill*(V.pts.length-1)),[px,py]=V.pts[j];try{const sp=PX.buildingModelSpec({type:'watermill',culture:'vale',seed:21,yaw:6,env:'grass'});sp.cell*=2;const m=PX.model(sp);
+      P.push({x:Math.round(px+V.rw[j]+4),y:Math.round(py+20),img:m.img,ax:0,ay:m.img.height,kind:'house'})}catch(e){console.warn('lab: no watermill',e)}}
     const folk=[['peasant',-20,30],['peasant',-90,20],['spearman',60,-10]];for(const [u,dx,dy] of folk){const d=PX.doll({race:'human',uniform:u,team:'blue',hair:'brown',style:'short'});P.push({x:Math.round(sx+dx),y:Math.round(sy+dy),img:d,ax:d.width>>1,ay:d.height-1,kind:'folk'})}
     return P}
 
@@ -205,10 +270,11 @@
     addEventListener('resize',resize);resize();
     // the cells' A*: a cell's cost by the class at its middle and the steepest of its corners (water and, but for a climber, cliffs shut)
     const C=LAB.W/LAB.cell,R=LAB.H/LAB.cell;
-    // (each cell's class, counted once over all its px: water if half of it is, a cliff if a few px are (a thin band still shuts it),
+    // (each cell's class, counted once over all its px: water if a few px are (a river shuts it, but at its ford), a cliff if a few
+    //  px are (a thin band still shuts it),
     //  else the steepest class enough of it has)
     let CC=null;const cells=()=>{CC=new Uint8Array(C*R);const cs=LAB.cell;for(let cy=0;cy<R;cy++)for(let cx=0;cx<C;cx++){const n=[0,0,0,0,0];
-      for(let y=0;y<cs;y++)for(let x=0;x<cs;x++)n[classAt(L,(cy*cs+y)*LAB.W+cx*cs+x)]++;CC[cy*C+cx]=n[0]>cs*cs/2?0:n[4]>=4?4:n[3]>=16?3:n[2]>=32?2:1}};
+      let ford=0;for(let y=0;y<cs;y++)for(let x=0;x<cs;x++){const i=(cy*cs+y)*LAB.W+cx*cs+x;n[classAt(L,i)]++;if(L.KD[i]===K.ford)ford++}CC[cy*C+cx]=n[0]>=4&&ford<4?0:n[4]>=4?4:n[3]>=16?3:n[2]>=32?2:1}};
     function cellCost(cx,cy){const c=CC[cy*C+cx];if(c===0||c===4&&!hero.climber)return Infinity;return [0,1,1.8,3.5,7][c]}
     cells();
     function route(tx,ty){const s0=Math.floor(hero.y/LAB.cell)*C+Math.floor(hero.x/LAB.cell),g0=Math.floor(ty/LAB.cell)*C+Math.floor(tx/LAB.cell),N=C*R,gs=new Float32Array(N).fill(Infinity),from=new Int32Array(N).fill(-1),open=[s0];gs[s0]=0;
@@ -248,6 +314,9 @@
       ctx.fillStyle='#1a2030';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(Pn.cv,cam.x,cam.y,cv.width,cv.height,0,0,cv.width,cv.height);
       // (the foam: the shore's px that are cresting now)
       {const S=Pn.shore,t=now/1000;ctx.fillStyle='rgba(236,244,246,.85)';for(let k=0;k<S.length;k+=3){const x=S[k]-cam.x,y=S[k+1]-cam.y;if(x<0||y<0||x>=cv.width||y>=cv.height)continue;if(Math.sin(t*1.6+S[k+2]+S[k]*.02)>.55)ctx.fillRect(x,y,1,1)}}
+      {const F=Pn.flow,t=now/1000;for(let k=0;k<F.length;k+=4){const x=F[k]-cam.x,y=F[k+1]-cam.y;if(x<0||y<0||x>=cv.width||y>=cv.height)continue;
+        if(F[k+2]<0){if(((F[k+1]*.5-t*24+F[k+3])%5+5)%5<1){ctx.fillStyle='rgba(250,252,255,.8)';ctx.fillRect(x,y,1,1)}}
+        else if(((F[k+2]*.35-t*6+F[k+3]*14)%9+9)%9<.6){ctx.fillStyle='rgba(225,240,245,.55)';ctx.fillRect(x,y,1,1)}}}
       if(walkmap)ctx.drawImage(Pn.wm,cam.x,cam.y,cv.width,cv.height,0,0,cv.width,cv.height);
       // the hero's picture, cut by the ground before him
       const fr=hero.moving?Math.floor(hero.walked/5)%4:0,dl=PX.doll({race:'human',uniform:'swordsman',team:'blue',hair:'brown',style:'short',pose:hero.moving?'walk':undefined,frame:fr}),
