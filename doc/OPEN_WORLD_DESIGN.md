@@ -266,7 +266,11 @@ That is a separate decision, best made after this world exists.
     - Its deck is level end to end, 1.4 levels over the water, the road ramped up to it at its grade. Beside it, the span's ground is the river and its banks as they are. A ramp's side above the bank is faced with stone (its abutments).
     - Planks run across the deck, each its own tone with a thin gap between, worn where the wheels go.
     - Under the deck's edge: a heavy side beam, a pile every 12 px standing in the water with foam at its foot, cross-braced between, and the shadowed water seen beneath. Its shadow lies on the water just downstream.
-    - Railings stand along both edges: a dark post every 8 px, a sunlit top rail with its shadow under it, and a middle rail. Each railing is painted only over what lies behind it, so the far one shows behind the deck and the near one in front. Its heights come from the land before the river was carved, so it spans the river instead of dipping into it.
+    - Railings stand along both edges: a dark post every 8 px, a sunlit top rail with its shadow under it, and a middle rail. Each railing is painted only over what lies behind it, so the far one shows behind the deck and the near one in front.
+    - It stands over the land as a structure of its own (the owner: "the bridge is draw over the terrain hence the bridge base or foundation should be transparent").
+      - The land under it stays the land: the river and its banks run on beneath it, in its shade.
+      - Only its parts are drawn: the deck, a beam under each edge, the piles reaching down to the real ground or water under them, the bracing, and a stone pier at each end. Each px is drawn only over what lies behind it, and the land shows between them.
+      - A man walks on its deck at its height (`standLift`): the bridge is road to walking and to the way-finder, and a tap on it finds it. Its heights come from the land before the river was carved, so it spans the river instead of dipping into it.
 - **Painting** is slower with all this: about 90-100 ms a 512 px chunk. That makes the game painter's rewrite (§8's 8 ms) more pressing.
 
 **Depth (2026-11-15; the owner: "Do we have depth if river or ocean?", then "Ok"):**
