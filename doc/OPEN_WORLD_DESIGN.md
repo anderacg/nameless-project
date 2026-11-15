@@ -292,6 +292,11 @@ That is a separate decision, best made after this world exists.
   - Loose ground and gravel outside the tracks.
   - At its edge the grass creeps in, dithered, with a line of trodden soil.
   - Muddy puddles with the sky in them lie in the tracks on the flat.
+- **Bends** (the owner: "looks weird for roads when have a sharp turn"):
+  - Each corner is a round arc of 30 px (less where its legs are short): `filleted`, `LAB.road.bend`.
+  - Climbed at a third of the grade (`turnGrade`), so a hairpin is nearly level.
+  - The ground between two legs of a switchback takes both legs' heights, weighted by nearness (`bandOf2`, `legs`), so the inside of a hairpin is one smooth bank: no crease, no stray wall, nothing standing in it.
+  - A road's steep shoulders are a cutting (`K.cut`): bare earth with grass clinging to it, more earth the steeper.
 - **Painting** is now about 180 ms a 512 px chunk in the lab.
 
 **What the lab leaves for later:**

@@ -25,11 +25,14 @@
   // through its points, ruts rut px either side of its crown, a grassy crown on its flat stretches, puddles in the ruts where it is
   // flat (puddle: the noise past which), its edge ragged by edge px; a stone parapet where it runs along a drop of wall levels.
   // Its half-width wanders by vary of itself; its two wheel tracks at track of it from the middle, wandering wander px; gravel: a
-  // share of its outer ground that is loose stones
+  // share of its outer ground that is loose stones. Its bends (the owner, 2026-11-15: "looks weird for roads when have a sharp
+  // turn"): each corner a round arc of bend px (less where its legs are short), climbed at turnGrade of the grade (a hairpin
+  // nearly level); the ground between two legs of it more than legs points apart takes both legs' heights, so a switchback's
+  // inside is one smooth bank
   const LAB={W:2048,H:1280,cell:16,lh:8,lhMin:4,lhMax:16,seed:7,
     beach:.45,dune:.95,rock:9,snow:11.5,shore:{wet:5,sand:34,dune:80},
     peaks:[[.66,.15,.26,11],[.93,.36,.24,9.5]],steps:{band:3,sharp:16,sc:110,at:.38},hill:[.40,.42,.14,2.2],shelf:{x:.21,y:.73,rx:190,ry:120,e:1.4},
-    road:{w:26,sh:14,grade:1/34,rut:5,edge:3,puddle:.74,wall:2,vary:.18,track:.42,wander:1.3,gravel:.07,pts:[[.13,.80],[.21,.73],[.31,.69],[.42,.61],[.50,.53],[.60,.50],[.70,.47],[.62,.41],[.73,.36],[.67,.31],[.79,.26],[.86,.14],[.88,0]]},
+    road:{w:26,sh:14,grade:1/34,bend:30,turnGrade:.35,legs:40,rut:5,edge:3,puddle:.74,wall:2,vary:.18,track:.42,wander:1.3,gravel:.07,pts:[[.13,.80],[.21,.73],[.31,.69],[.42,.61],[.50,.53],[.60,.50],[.70,.47],[.62,.41],[.73,.36],[.67,.31],[.79,.26],[.86,.14],[.88,0]]},
     river:{pts:[[.588,.118],[.565,.20],[.525,.28],[.475,.36],[.435,.46],[.395,.55],[.355,.62],[.338,.70],[.343,.79],[.328,.88],[.31,1]],
       w:[2.5,11],bank:9,meander:14,ford:.5,mill:.64,mouth:.15,tarn:{x:.597,y:.10,rx:48,ry:26}},
     walk:38,run:1.6,
@@ -95,13 +98,34 @@
 
   // the road: its polyline (px), heights along it (the land's, the grade held by passes both ways, then smoothed), and every px
   // near it: its distance and the road's height there
-  function roadOf(E){const W=LAB.W,H=LAB.H,R=LAB.road,pts=spline(R.pts.map(([u,v])=>[u*W,v*H]),2);
+  // a path through P with each corner rounded: straight legs and a circular arc of radius r (less where the legs are short) at each
+  // turn; its points every step px, turn[i] 1 on an arc
+  function filleted(P,r,step){const pts=[],turn=[],line=(a,b,f)=>{const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/step));for(let k=0;k<n;k++){pts.push([a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n]);turn.push(f)}};
+    let from=P[0];
+    for(let i=1;i<P.length-1;i++){const a=P[i-1],b=P[i],c=P[i+1],l1=Math.hypot(b[0]-a[0],b[1]-a[1]),l2=Math.hypot(c[0]-b[0],c[1]-b[1]),d1=[(b[0]-a[0])/l1,(b[1]-a[1])/l1],d2=[(c[0]-b[0])/l2,(c[1]-b[1])/l2],
+        th=Math.acos(Math.max(-1,Math.min(1,d1[0]*d2[0]+d1[1]*d2[1]))),cr=d1[0]*d2[1]-d1[1]*d2[0];
+      if(th<.05){line(from,b,0);from=b;continue}
+      const L=Math.min(r*Math.tan(th/2),.45*l1,.45*l2),rr=L/Math.tan(th/2),A=[b[0]-d1[0]*L,b[1]-d1[1]*L],sg=cr>0?1:-1,O=[A[0]-d1[1]*rr*sg,A[1]+d1[0]*rr*sg];
+      line(from,A,0);const a0=Math.atan2(A[1]-O[1],A[0]-O[0]),n=Math.max(2,Math.ceil(rr*th/step));for(let k=0;k<n;k++){const q=a0+sg*th*k/n;pts.push([O[0]+Math.cos(q)*rr,O[1]+Math.sin(q)*rr]);turn.push(1)}
+      from=[b[0]+d2[0]*L,b[1]+d2[1]*L]}
+    line(from,P[P.length-1],0);pts.push(P[P.length-1].slice());turn.push(0);return {pts,turn}}
+  // every px near the polyline pts: as bandOf, and D2, I2 the nearest of another part of it (gap points or more along it away)
+  function bandOf2(pts,reach,gap){const W=LAB.W,H=LAB.H,D=new Float32Array(W*H).fill(1e9),I=new Float32Array(W*H),D2=new Float32Array(W*H).fill(1e9),I2=new Float32Array(W*H);
+    for(let i=0;i+1<pts.length;i++){const [ax,ay]=pts[i],[bx,by]=pts[i+1],dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy||1;
+      for(let y=Math.max(0,Math.floor(Math.min(ay,by)-reach));y<=Math.min(H-1,Math.ceil(Math.max(ay,by)+reach));y++)
+        for(let x=Math.max(0,Math.floor(Math.min(ax,bx)-reach));x<=Math.min(W-1,Math.ceil(Math.max(ax,bx)+reach));x++){
+          const t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/l2)),d=Math.hypot(x-ax-dx*t,y-ay-dy*t),j=y*W+x,f=i+t;
+          if(d<D[j]){if(D[j]<1e9&&Math.abs(I[j]-f)>gap){D2[j]=D[j];I2[j]=I[j]}D[j]=d;I[j]=f}else if(d<D2[j]&&Math.abs(I[j]-f)>gap){D2[j]=d;I2[j]=f}}}
+    for(let j=0;j<W*H;j++)if(D2[j]<1e9&&Math.abs(I2[j]-I[j])<=gap)D2[j]=1e9;
+    return {D,I,D2,I2}}
+
+  function roadOf(E){const W=LAB.W,H=LAB.H,R=LAB.road,F=filleted(R.pts.map(([u,v])=>[u*W,v*H]),R.bend,2),pts=F.pts;
     const at=(x,y)=>E[Math.min(H-1,Math.max(0,Math.round(y)))*W+Math.min(W-1,Math.max(0,Math.round(x)))];
-    let r=pts.map(([x,y])=>at(x,y));const ds=2*R.grade;
-    for(let it=0;it<6;it++){for(let i=1;i<r.length;i++)r[i]=Math.min(Math.max(r[i],r[i-1]-ds),r[i-1]+ds);for(let i=r.length-2;i>=0;i--)r[i]=Math.min(Math.max(r[i],r[i+1]-ds),r[i+1]+ds)}
+    let r=pts.map(([x,y])=>at(x,y));const ds=i=>2*R.grade*(F.turn[i]?R.turnGrade:1);
+    for(let it=0;it<6;it++){for(let i=1;i<r.length;i++)r[i]=Math.min(Math.max(r[i],r[i-1]-ds(i)),r[i-1]+ds(i));for(let i=r.length-2;i>=0;i--)r[i]=Math.min(Math.max(r[i],r[i+1]-ds(i)),r[i+1]+ds(i))}
     for(let it=0;it<3;it++){const q=r.slice();for(let i=0;i<r.length;i++){let s=0,n=0;for(let j=-8;j<=8;j++){const k=i+j;if(k>=0&&k<r.length){s+=q[k];n++}}r[i]=s/n}}
-    const {D,I}=bandOf(pts,R.w/2+R.sh+2),RE=new Float32Array(W*H);for(let j=0;j<W*H;j++)if(D[j]<1e9)RE[j]=along(r,I[j]);
-    return {pts,r,D,I,RE}}
+    const {D,I,D2,I2}=bandOf2(pts,R.w/2+R.sh+2,R.legs),RE=new Float32Array(W*H),RE2=new Float32Array(W*H);for(let j=0;j<W*H;j++){if(D[j]<1e9)RE[j]=along(r,I[j]);if(D2[j]<1e9)RE2[j]=along(r,I2[j])}
+    return {pts,r,turn:F.turn,D,I,RE,D2,RE2}}
 
   // the river: its course (a curve, meandering), its surface along it (the land's, never rising downstream), its half-width; every
   // px near it: RV 1 water, 2 bank, 3 ford; RW the half-width there, RT px along it
@@ -124,9 +148,10 @@
 
   /* the land made: E (levels, the road and its shoulders in), smooth (1 where the ground is not stepped), kind (by px), g (slope:
      levels a px), gx/gy its way uphill. Kinds: 0 water, 1 wet sand, 2 sand, 3 dune, 4 grass, 5 meadow, 6 wood floor, 7 road,
-     8 scree, 9 rock, 10 snow, 11 river (or the tarn), 12 ford, 13 bridge, 14 river bank */
-  const K={water:0,wet:1,sand:2,dune:3,grass:4,meadow:5,wood:6,road:7,scree:8,rock:9,snow:10,river:11,ford:12,bridge:13,bank:14};
-  const KNAME=['sea','wet sand','sand','dunes','grass','meadow','woods','road','scree','rock','snow','river','ford','bridge','river bank'];
+     8 scree, 9 rock, 10 snow, 11 river (or the tarn), 12 ford, 13 bridge, 14 river bank, 15 a road's cutting or embankment (its
+     shoulders where they are steep: earth, grass clinging to it) */
+  const K={water:0,wet:1,sand:2,dune:3,grass:4,meadow:5,wood:6,road:7,scree:8,rock:9,snow:10,river:11,ford:12,bridge:13,bank:14,cut:15};
+  const KNAME=['sea','wet sand','sand','dunes','grass','meadow','woods','road','scree','rock','snow','river','ford','bridge','river bank','road cutting'];
   function makeLand(){const t0=performance.now(),W=LAB.W,H=LAB.H,s=LAB.seed,E=new Float32Array(W*H),st=4,CW=W/st+2,CH=H/st+2,Cg=new Float32Array(CW*CH);
     for(let cy=0;cy<CH;cy++)for(let cx=0;cx<CW;cx++)Cg[cy*CW+cx]=elev(cx*st,cy*st);
     for(let y=0;y<H;y++){const cy=Math.floor(y/st),fy=y/st-cy;for(let x=0;x<W;x++){const cx=Math.floor(x/st),fx=x/st-cx,i=cy*CW+cx;
@@ -134,7 +159,9 @@
     const road=roadOf(E),river=riverOf(E),RV=river.RV,R=LAB.road,SM=new Uint8Array(W*H),KD=new Uint8Array(W*H);
     // (the road's edge ragged; over the river its deck (a bridge), the water left beside it)
     const RD=new Float32Array(W*H),HW=new Float32Array(W*H);for(let i=0;i<W*H;i++){const d=road.D[i];RD[i]=d>=1e9?d:d-(fbm((i%W)/26,((i/W)|0)/26,s+73,2)-.5)*2*R.edge;HW[i]=d>=1e9?0:R.w/2*(1+R.vary*(vn(road.I[i]/30,.5,s+95)-.5)*2)}
-    for(let i=0;i<W*H;i++){const d=RD[i],hw=HW[i];if(d<hw){E[i]=road.RE[i];SM[i]=1}else if(d<hw+R.sh&&RV[i]!==1&&RV[i]!==3){const k=smooth((d-hw)/R.sh);E[i]=road.RE[i]+(E[i]-road.RE[i])*k;SM[i]=1}}
+    for(let i=0;i<W*H;i++){const d=RD[i],hw=HW[i];if(d<hw){E[i]=road.RE[i];SM[i]=1}else if(d<hw+R.sh&&RV[i]!==1&&RV[i]!==3){let rt=road.RE[i],k=smooth((d-hw)/R.sh);
+        const d2=road.D2[i];if(d2<hw+R.sh){const w1=1/((d-hw+1)**2),w2=1/((Math.max(d2-hw,0)+1)**2);rt=(rt*w1+road.RE2[i]*w2)/(w1+w2);k*=smooth((d2-hw)/R.sh)}
+        E[i]=rt+(E[i]-rt)*k;SM[i]=1}}
     const G=new Float32Array(W*H),GX=new Float32Array(W*H),GY=new Float32Array(W*H),o=3;
     for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x,a=E[y*W+Math.min(W-1,x+o)]-E[y*W+Math.max(0,x-o)],b=E[Math.min(H-1,y+o)*W+x]-E[Math.max(0,y-o)*W+x];GX[i]=a/(2*o);GY[i]=b/(2*o);G[i]=Math.hypot(GX[i],GY[i])}
     // (how far each px is from the water: two chamfer passes)
@@ -146,7 +173,8 @@
       const wob=fbm(x/50,y/50,s+63,2)-.5,dw=DW[i];
       const rv=RV[i],onRoad=RD[i]<HW[i];
       if(onRoad&&(rv===1||rv===3))k=K.bridge;else if(e<0&&!rv)k=K.water;else if(rv===1)k=e<0?K.water:K.river;else if(rv===3)k=K.ford;else if(onRoad)k=K.road;
-      else if(rv===2&&(river.RW[i]>50||river.D[i]<river.RW[i]+4))k=K.bank;else if(dw<B.wet+wob*4)k=K.wet;else if(dw<B.sand+wob*24&&e<LAB.dune)k=K.sand;else if(dw<B.dune+wob*40&&e<LAB.dune+.6)k=K.dune;
+      else if(rv===2&&(river.RW[i]>50||river.D[i]<river.RW[i]+4))k=K.bank;
+      else if(SM[i]&&g>=LAB.cls.slope*1.5&&e>=LAB.dune)k=K.cut;else if(dw<B.wet+wob*4)k=K.wet;else if(dw<B.sand+wob*24&&e<LAB.dune)k=K.sand;else if(dw<B.dune+wob*40&&e<LAB.dune+.6)k=K.dune;
       else if(e>=LAB.snow+(fbm(x/40,y/40,s+61,2)-.5)*1.6)k=K.snow;else if(e>=LAB.rock+(fbm(x/50,y/50,s+62,2)-.5)*2||g>=LAB.cls.cliff)k=K.rock;
       else if(g>=LAB.cls.steep&&e>2)k=K.scree;
       else{const inShelf=Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry)<1.2,w=fbm(x/Wd.sc,y/Wd.sc,s+41,3);
@@ -191,9 +219,9 @@
       return c};
     // the biomes blended: each px's ground's plain colour (its palette's middle), averaged over blend.r px round it among the grounds
     // that blend (not water, roads, bridges), sampled through a warp so the edge is ragged; a px's colour shifts by the difference
-    const KB=[],mean=L3=>[0,1,2].map(j=>L3.reduce((a,c)=>a+c[j],0)/L3.length),BLEND=new Uint8Array(15);
+    const KB=[],mean=L3=>[0,1,2].map(j=>L3.reduce((a,c)=>a+c[j],0)/L3.length),BLEND=new Uint8Array(16);
     KB[K.wet]=mean(COL.wet);KB[K.sand]=mean(COL.sand);KB[K.dune]=mix(mean(COL.sand),COL.dune[0],.45);KB[K.grass]=mean(COL.grass);KB[K.meadow]=mean(COL.meadow);KB[K.wood]=mean(COL.wood);
-    KB[K.scree]=mean(COL.scree);KB[K.rock]=mean(COL.rock.slice(0,3));KB[K.snow]=mean(COL.snow);KB[K.bank]=mix(mean(COL.mud),mean(COL.grass),.5);
+    KB[K.scree]=mean(COL.scree);KB[K.rock]=mean(COL.rock.slice(0,3));KB[K.snow]=mean(COL.snow);KB[K.bank]=mix(mean(COL.mud),mean(COL.grass),.5);KB[K.cut]=mix(mean(COL.bank),mean(COL.grass),.5);
     for(const k of [K.wet,K.sand,K.dune,K.grass,K.meadow,K.wood,K.scree,K.rock,K.snow,K.bank])BLEND[k]=1;
     const BR=new Float32Array(W*H),BG=new Float32Array(W*H),BB=new Float32Array(W*H),BM=new Float32Array(W*H);
     for(let i=0;i<W*H;i++){const k=KD[i];if(!BLEND[k])continue;const c=KB[k];BR[i]=c[0];BG[i]=c[1];BB[i]=c[2];BM[i]=1}
@@ -214,6 +242,7 @@
           if(d>RR.w/2-2.5)c=Math.floor(t)%6<1.5?COL.beam[1]:COL.plank[2];break}
         case K.river:{const tarn=L.river.RW[i]>50;c=underWater(x,y,i,tarn?COL.tarnbed[hsh(x>>1,y>>1,s+78)<.5?0:1]:COL.pebble[Math.floor(hsh(x>>1,y>>1,s+91)*4)]);if(!tarn&&n<.004)c=COL.stone[1];break}
         case K.ford:c=underWater(x,y,i,COL.pebble[Math.floor(hsh(x>>1,y>>1,s+92)*4)]);if(hsh(x>>1,y>>1,s+79)<.12)c=COL.stone[hsh(x,y,s+80)<.5?0:1];break;
+        case K.cut:{const t=smooth((L.G[i]-LAB.cls.slope*1.5)/(LAB.cls.cliff-LAB.cls.slope)),q=vn(x/4,y/3,s+110)*.6+hsh(x,y,s+111)*.4;c=q<t*.85?pick(COL.bank,x,y,s+112):pick(COL.grass,x,y,s+113);if(q<t*.85&&hsh(x,y,s+114)<.05)c=COL.stone[1];break}
         case K.bank:c=mix(pick(COL.mud,x,y,s+81),COL.grass[0],L.river.RW[i]>50?.5:Math.min(1,Math.max(0,(L.river.D[i]-L.river.RW[i])/4)));break;
         case K.scree:c=mix(pick(COL.scree,x,y,s+10),COL.grass[0],hsh(x>>2,y>>2,s+11)<.3?.4:0);break;
         case K.rock:{c=pick(COL.rock.slice(0,3),x,y,s+12);const gp=smooth((vn(x/14,y/14,s+13)-.56)/.12+(hsh(x,y,s+14)-.5)*.6);if(gp>0)c=mix(c,COL.grass[0],.55*gp);break}
@@ -291,7 +320,7 @@
       const i=y*W+x,k=L.KD[i],r=hsh(gx,gy,s+52);
       const Wd=LAB.woods,wn=k===K.wood||k===K.grass||k===K.meadow?fbm(x/Wd.sc,y/Wd.sc,s+41,3):0,edge=k===K.wood?smooth((wn-Wd.at)/Wd.fringe):smooth((wn-(Wd.at-Wd.fringe))/Wd.fringe)*.35;
       if(k===K.wood&&r<.62*(.35+.65*edge)||(k===K.grass||k===K.meadow)&&r<.025+.6*edge&&L.road.D[i]>30&&!L.river.RV[i]&&(k===K.wood||Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry)>1.25)){const e=L.E[i],sp=e>5.5?'fir':r<.12?'birch':e>3.5&&r<.3?'fir':'oak',t=PX.battleTree('grass',sp,Math.floor(hsh(gx,gy,s+53)*4));P.push({x,y,img:t,ax:16,ay:30,kind:'tree'})}
-      else if(k===K.scree&&r<.05){const b=PX.battleObstacle('rock','grass',Math.floor(hsh(gx,gy,s+54)*6));P.push({x,y,img:b.s,ax:b.ax,ay:b.ay,kind:'rock'})}}
+      else if(k===K.scree&&r<.05&&L.road.D[i]>LAB.road.w/2+LAB.road.sh){const b=PX.battleObstacle('rock','grass',Math.floor(hsh(gx,gy,s+54)*6));P.push({x,y,img:b.s,ax:b.ax,ay:b.ay,kind:'rock'})}}
     const sx=S.x*W,sy=S.y*H,house=(type,dx,dy,seed,yaw)=>{try{const sp=PX.buildingModelSpec({type,culture:'vale',seed,yaw:yaw||0,env:'grass'});sp.cell*=2;const m=PX.model(sp);P.push({x:Math.round(sx+dx),y:Math.round(sy+dy),img:m.img,ax:0,ay:m.img.height,kind:'house',sh:m.shadow})}catch(e){console.warn('lab: no model',type,e)}};
     house('cottage',-150,-40,3);house('cottage',-60,-70,8,2);house('townhouse',40,-62,5);house('fisherhut',-170,58,9,6);house('well',-40,12,4);house('cart',30,24,6);house('tavern',90,40,12,4);
     // (the watermill beside the river, on its east bank)
