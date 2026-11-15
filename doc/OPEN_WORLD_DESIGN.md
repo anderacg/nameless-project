@@ -297,8 +297,14 @@ That is a separate decision, best made after this world exists.
     - **Stumps** (`stumpPic`): grooved bark lit on the west, roots flaring along the ground, the top sawn (rings, a crack, the heart) or broken off in splinters; moss, or mushrooms at the foot.
     - **Bushes** (`bushPic`, in place of the engine's): a dome of leafy lumps with a ragged edge, in oak, birch or the woods' dark green; berries or blossom on some.
     - **New:** ferns (in the woods and at their edges), mushrooms (red and spotted, brown or pale), patches of flowers in one colour (mostly in the meadows), and cattails and reeds on the banks. Chances are in `LAB.nature`.
-    - Saplings and trees stay the engine's.
-  - About 5,400 objects in all; the frame rate holds (about 3 ms a frame at 2×).
+    - **Trees** (`treePic`; the owner: "improve variety of trees"), in place of the battle map's three kinds (11 pictures, one size). 13 kinds, each in three sizes (young, grown, an old giant) and six variants with their tones shifted a little:
+      - Broadleaves (crown of leafy lumps, two limbs up into it, holes showing the branches): oak (wide, dark, thick trunk), beech (smooth grey trunk), ash (airy), maple (autumn red or gold), alder (dark, narrow), apple (small, with fruit or blossom).
+      - Birch (slender white trunk with black marks, leaning a little, a light crown, gold now and then), poplar (tall and narrow, streaked), willow (strands hanging nearly to the ground).
+      - Fir and spruce (tiers of drooping boughs, the spruce bluer and narrower; snow on their tops near the bare rock), pine (tall bare red trunk, flat clouds of needles), dead (grey, bare forking limbs, broken top).
+      - **Where:** each place has its mix (`LAB.trees`): lowland woods mostly oak, beech, birch and ash, a few maples, poplars and dead trees; by the river willows and alders; in the hills pines and firs; on the mountain firs and spruces; round the village apple trees.
+      - **Size:** young trees at the woods' edge (half of them), an old giant now and then deep in them, small and grown ones in the open.
+      - Each carries its own soft shadow. Saplings stay the engine's.
+  - About 5,400 objects in all; the frame rate holds (about 3 ms a frame at 2×, with the grass).
   - Low things (flowers, ferns, mushrooms) leave the grass in front of them standing; the others leave it bare (see the grass below).
 - **The ground details** also got leaf litter (pairs of autumn leaves) and twigs on the woods' floor, and pebbles lit on top on the rock and the scree.
 - Buildings and people stay as they were, always shown.

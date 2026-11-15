@@ -54,6 +54,13 @@
     speed:{flat:1,road:1.1,sand:.85,dune:.8,snow:.55,wood:.85,up:.5,down:1.15,steep:.3,cliff:.16},
     sta:{slope:.03,steep:.08,cliff:.18,wade:.04,swim:.12,rest:.06},
     woods:{sc:170,at:.56,step:11,fringe:.06},
+    // (the trees' kinds by where they stand (the owner, 2026-11-15: "improve variety of trees"): each place's mix, by weight. Waterside:
+    //  within near.river px of the river's middle; village: within near.village of the shelf's size; hills and mountain: from those
+    //  levels (from); snow: from this many levels below the bare rock's line the conifers carry snow. young: the chance a tree at the woods' edge is young; old: that one deep
+    //  in them is an old giant)
+    trees:{lowland:{oak:5,beech:3,birch:2.5,ash:2,maple:.6,poplar:.4,dead:.25},waterside:{willow:4,alder:3,birch:1,poplar:1},
+      hills:{pine:4,fir:3,birch:1.5,oak:1,dead:.3},mountain:{fir:4,spruce:4,pine:1,dead:.5},village:{apple:3,oak:1,poplar:1},
+      near:{river:40,village:1.8},from:{hills:3.5,mountain:5.5,snow:-1.6},young:.5,old:.1},
     // (the layer of things standing on the land (the owner, 2026-11-15: "another layer to add on boulder trees etc."): on a grid of
     //  step px, the chance of each by its ground: bushes in the woods, at their edges and in the grass; saplings; boulders and
     //  stones on the grass, the rock and the scree; stones on the river's banks and in its shallows (no deeper than shallow); logs
@@ -503,19 +510,101 @@
       if(v%4===1){const red=v&2;for(const [mx,mh] of [[cx+rx+1.5,1],[cx+rx+3,0]]){const x=Math.round(mx);set(x,base,[226,218,200]);if(mh)set(x,base-1,[226,218,200]);const cy=base-1-mh;
         set(x-1,cy,red?[168,36,32]:[132,90,54]);set(x,cy,red?[196,52,40]:[160,114,70]);set(x+1,cy,red?[150,30,28]:[118,80,48]);set(x,cy-1,red?[220,80,64]:[184,136,88]);if(red)set(x-1,cy,[240,236,226])}}});
     return {img,ax:Math.floor(cx),ay:base}})}
-  // a bush (pal: its leaves' tones): a dome of leafy lumps, lit up and left, darker toward its foot, its edge ragged with leaves;
-  // berries or blossom on some
+  // a mass of leaves: lumps ([x, y, rx, ry]), the first the whole's own shape; lit up and left (and each lump on its own), darker
+  // toward the bottom and the east, its edge ragged with leaves (rag), now and then a hole (gaps) showing the branches behind or the
+  // dark inside; o.cut: the row below which nothing is drawn (the ground); o.streak: up-and-down grain (a poplar's); o.dots: [chance,
+  // [two colours]] of berries, blossom or fruit
+  function leafMass(set,has,B,P,v,o){o=o||{};const m=B[0],inB=(x,y)=>{if(o.cut!==undefined&&y>o.cut)return null;let best=null;for(const b of B){const d=((x+.5-b[0])/b[2])**2+((y+.5-b[1])/b[3])**2;if(d<=1&&(!best||b[1]<best[1]))best=b}return best};
+    let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const b of B){x0=Math.min(x0,b[0]-b[2]);x1=Math.max(x1,b[0]+b[2]);y0=Math.min(y0,b[1]-b[3]);y1=Math.max(y1,b[1]+b[3])}
+    for(let y=Math.floor(y0);y<=Math.ceil(y1);y++)for(let x=Math.floor(x0);x<=Math.ceil(x1);x++){const b=inB(x,y);if(!b)continue;
+      const edge=!inB(x+1,y)||!inB(x-1,y)||!inB(x,y-1)||!inB(x,y+1);if(edge&&hsh(x,y,v+32)<(o.rag===undefined?.3:o.rag))continue;
+      const dx=(x+.5-m[0])/m[2],dy=(y+.5-m[1])/m[3],bx=(x+.5-b[0])/b[2],by=(y+.5-b[1])/b[3];
+      if(o.gaps&&!edge&&by>0&&hsh(x>>1,y>>1,v+36)<o.gaps){if(!has(x,y))set(x,y,P[0]);continue}
+      let l=-(dx*.5+dy*.7)*.7-(bx*.3+by*.45)*.55+(hsh(x,y,v+33)-.5)*.55;if(o.cut!==undefined&&y>=o.cut-1)l-=.4;if(!inB(x+1,y)||!inB(x,y+1))l-=.3;
+      if(o.streak)l+=(hsh(x,Math.floor(y/3),v+37)-.5)*o.streak;
+      let col=ramp(P,Math.max(-1,Math.min(.99,l)));if(l>.35&&hsh(x,y,v+34)<.12)col=P[4];
+      if(o.dots&&!edge&&l>-.3){const r=hsh(x,y,v+35);if(r<o.dots[0])col=o.dots[1][r<o.dots[0]*.4?0:1]}
+      set(x,y,col)}}
+  // a bush (pal: its leaves' tones): a dome of leafy lumps, its foot in the ground; berries or blossom on some
   function bushPic(v,pal){return nat('u'+v+pal,()=>{const s=9+(v%3)*2,w=s+4,hb=Math.round(s*.74),h=hb+4,base=h-3,P=LEAF[pal],B=[[w/2,base-hb*.45,s*.48,hb*.52]];
     const n=3+v%3;for(let j=0;j<n;j++){const a=Math.PI*(1.1+.8*j/Math.max(1,n-1))+(hsh(v,j,30)-.5)*.3,r=2.2+hsh(v,j,31)*1.4;B.push([w/2+Math.cos(a)*s*.3,base-hb*.45+Math.sin(a)*hb*.4,r,r*.9])}
     const img=pixPic(w,h,(set,has)=>{shade(set,w/2+1,base+.6,s*.5+1,1.7,.4);
-      const inB=(x,y)=>{if(y>base)return null;let best=null;for(const b of B){const d=((x+.5-b[0])/b[2])**2+((y+.5-b[1])/b[3])**2;if(d<=1&&(!best||b[1]<best[1]))best=b}return best};
-      for(let y=0;y<=base;y++)for(let x=0;x<w;x++){const b=inB(x,y);if(!b)continue;const edge=!inB(x+1,y)||!inB(x-1,y)||!inB(x,y-1)||!inB(x,y+1);if(edge&&hsh(x,y,v+32)<.3)continue;
-        const m=B[0],dx=(x+.5-m[0])/m[2],dy=(y+.5-m[1])/m[3],bx=(x+.5-b[0])/b[2],by=(y+.5-b[1])/b[3];
-        let l=-(dx*.5+dy*.7)*.7-(bx*.3+by*.4)*.5+(hsh(x,y,v+33)-.5)*.55;if(y>=base-1)l-=.4;if(!inB(x+1,y)||!inB(x,y+1))l-=.3;
-        let col=ramp(P,Math.max(-1,Math.min(.99,l)));if(l>.35&&hsh(x,y,v+34)<.12)col=P[4];
-        if(!edge&&l>-.3){const r=hsh(x,y,v+35);if(v%4===1&&r<.07)col=r<.03?[214,84,70]:[170,34,40];else if(v%4===2&&r<.07)col=pal==='birch'?[236,232,214]:[226,164,184]}
-        set(x,y,col)}});
+      leafMass(set,has,B,P,v,{cut:base,dots:v%4===1?[.07,[[214,84,70],[170,34,40]]]:v%4===2?[.07,pal==='birch'?[[236,232,214],[236,232,214]]:[[226,164,184],[226,164,184]]]:null})});
     return {img,ax:w>>1,ay:base}})}
+
+  // trees, the lab's own (the owner, 2026-11-15: "improve variety of trees"): each kind its own shape, bark and leaves, in three sizes
+  // (young, grown, an old giant) and six variants, the variant shifting its tones a little
+  const BARKS={brown:[[44,32,24],[62,46,32],[84,62,42],[106,80,54],[128,100,70]],grey:[[70,70,66],[94,94,88],[120,118,110],[146,144,134],[172,170,158]],
+      red:[[74,40,28],[104,58,36],[136,80,48],[164,104,62],[190,130,80]],dead:[[66,62,56],[90,86,78],[116,110,100],[142,136,124],[168,162,148]]},
+    LEAVES={oak:LEAF.oak,beech:[[34,62,28],[50,88,34],[72,114,44],[100,142,58],[136,172,80]],ash:[[44,70,32],[62,94,40],[86,120,52],[116,148,68],[150,176,92]],
+      birch:LEAF.birch,alder:LEAF.dark,willow:[[56,78,34],[80,106,44],[108,134,58],[140,162,76],[176,190,104]],poplar:[[28,56,30],[42,78,38],[60,102,48],[84,128,60],[116,156,78]],
+      apple:[[40,72,30],[58,98,40],[80,124,50],[108,150,64],[140,176,84]],maple:[[110,40,24],[150,62,30],[190,96,40],[222,140,56],[242,186,92]],
+      gold:[[104,84,28],[146,120,38],[188,158,52],[220,194,76],[244,226,122]],fir:[[18,40,30],[26,58,40],[38,78,50],[54,100,62],[80,126,80]],
+      spruce:[[18,36,38],[26,52,52],[36,70,66],[50,90,82],[74,114,102]],pine:[[22,46,32],[32,64,42],[46,86,54],[64,108,68],[92,134,88]]},
+    // (the broadleaves: crown rx, its ry by rx, trunk px below it, trunk thickness, bark, lumps, holes)
+    BROAD={oak:[12,.8,7,3.4,'brown',8,.05],beech:[10,.95,8,2.6,'grey',5,.04],ash:[10,.85,9,2.4,'brown',7,.14],maple:[9,.9,7,2.4,'brown',6,.07],
+      alder:[7,1.15,7,2.2,'brown',5,.06],apple:[7,.8,4,2.6,'brown',6,.05]};
+  // (a trunk from its foot (x, base) up to row top, w px thick, leaning lean px a px up: lit west, grooved, flaring at its foot; a
+  //  birch's white with black marks)
+  function trunk(set,x,base,top,w,BK,v,lean,birch){for(let y=base;y>=top;y--){const up=base-y,cx=x+lean*up,tw=Math.max(1,Math.round(w+(up<2?2-up:0)-(up>(base-top)*.7&&w>2?1:0)));
+      for(let k=0;k<tw;k++){const px=Math.round(cx-tw/2+k),f=tw>1?k/(tw-1):.4;let col;
+        if(birch)col=hsh(Math.floor(y/2),k,v+81)<.2?[40,36,32]:f>.7?[168,164,150]:[228,224,210];
+        else{let l=.6-f*1.4+(hsh(px,y,v+80)-.5)*.3;if(hsh(px-Math.round(cx),0,v+82)<.3)l-=.35;col=ramp(BK,Math.max(-1,Math.min(.99,l)))}
+        set(px,y,col)}}}
+  // (a limb, a line one or two px thick)
+  function limb(set,x0,y0,x1,y1,col,t){const n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)));for(let k=0;k<=n;k++){const x=x0+(x1-x0)*k/n,y=y0+(y1-y0)*k/n;set(x,y,col);if(t>1)set(x+1,y,col)}}
+  function treePic(sp,v,sz,snow){return nat('T'+sp+v+'_'+sz+(snow?'s':''),()=>{const S=[.72,1,1.3][sz],tn=c=>mul(c,.93+(v%3)*.06),R=Math.round;
+    // (a broadleaf: a trunk, two limbs up into it, a crown of lumps round its middle)
+    if(BROAD[sp]){const [R0,asp,T0,th,bk,nb,gaps]=BROAD[sp],rx=R(R0*S),ry=R(rx*asp),tH=R(T0*S),w=2*rx+8,h=tH+2*ry+5,cx=w>>1,base=h-3,cy=base-tH-ry*.85;
+      const P=LEAVES[sp==='maple'&&v&1?'gold':sp].map(tn),B=[[cx,cy,rx,ry]];
+      for(let j=0;j<nb;j++){const a=j/nb*Math.PI*2+hsh(v,j,84)*.7,d=.5+hsh(v,j,85)*.18,r=rx*(.32+hsh(v,j,86)*.22);B.push([cx+Math.cos(a)*rx*d,cy+Math.sin(a)*ry*d*.85-ry*.08,r,r*asp*.95])}
+      const img=pixPic(w,h,(set,has)=>{shade(set,cx+3,base+.5,rx*.55+2,2.2,.38);const BK=BARKS[bk];
+        trunk(set,cx,base,R(cy+ry*.1),Math.max(1.6,th*Math.min(1.25,S)),BK,v,0);for(const d of [-1,1])limb(set,cx,cy+ry*.45,cx+d*rx*.5,cy-ry*.15,BK[1],th>2.5?2:1);
+        leafMass(set,has,B,P,v,{gaps,dots:sp==='apple'?[.06,v%3===0?[[244,240,232],[236,184,198]]:[[204,40,36],[230,84,62]]]:null})});
+      return {img,ax:cx,ay:base}}
+    // (a birch: a slender white trunk, leaning a little, a light crown of small lumps up and down it, gold in autumn now and then)
+    if(sp==='birch'){const tH=R((14+v%3*2)*S),rx=R(6*S+1),ry=R(rx*1.5),lean=((v%3)-1)*.08,w=2*rx+10,h=tH+ry+6,base=h-3,cx=w>>1,top=base-tH,mx=cx+lean*tH*.8;
+      const P=LEAVES[v===4?'gold':'birch'].map(tn),B=[[mx,top+ry*.2,rx,ry]];for(let j=0;j<6;j++){const r=rx*(.4+hsh(v,j,87)*.2);B.push([mx+(hsh(v,j,88)-.5)*rx*1.1,top+ry*.2+(j/5-.5)*ry*1.3,r,r*1.15])}
+      const img=pixPic(w,h,(set,has)=>{shade(set,cx+2,base+.5,rx*.6+1,1.8,.35);trunk(set,cx,base,R(top+ry*.9),2,null,v,lean,true);limb(set,cx+lean*(base-top-ry*.9),top+ry*.9,mx,top-ry*.3,BARKS.dead[1],1);
+        leafMass(set,has,B,P,v,{gaps:.16,rag:.42})});
+      return {img,ax:cx,ay:base}}
+    // (a poplar: tall and narrow, its leaves in up-and-down streaks)
+    if(sp==='poplar'){const rx=R(4.5*S+.5),ry=R(15*S),tH=R(4*S),w=2*rx+6,h=tH+2*ry+5,cx=w>>1,base=h-3,cy=base-tH-ry*.92,P=LEAVES.poplar.map(tn),B=[[cx,cy,rx,ry]];
+      for(let j=0;j<6;j++){B.push([cx+(hsh(v,j,89)-.5)*rx*.6,cy+(j/5-.5)*ry*1.4,rx*.72,ry*.3])}
+      const img=pixPic(w,h,(set,has)=>{shade(set,cx+2,base+.5,rx+1,1.8,.35);trunk(set,cx,base,R(cy),2,BARKS.grey,v,0);leafMass(set,has,B,P,v,{streak:.55,gaps:.04,rag:.25})});
+      return {img,ax:cx,ay:base}}
+    // (a willow: a thick short trunk, a round crown, strands hanging from it nearly to the ground, lighter at their tips)
+    if(sp==='willow'){const rx=R(11*S),ry=R(rx*.68),tH=R(8*S),w=2*rx+8,h=tH+2*ry+5,cx=w>>1,base=h-3,cy=base-tH-ry*.7,P=LEAVES.willow.map(tn),B=[[cx,cy,rx,ry]];
+      for(let j=0;j<6;j++){const a=Math.PI*(1+j/5),r=rx*(.38+hsh(v,j,90)*.15);B.push([cx+Math.cos(a)*rx*.55,cy+Math.sin(a)*ry*.45,r,r*.75])}
+      const img=pixPic(w,h,(set,has)=>{shade(set,cx+3,base+.5,rx*.8,2.2,.38);trunk(set,cx,base,R(cy),3.2*Math.min(1.2,S),BARKS.grey,v,0);limb(set,cx,cy+ry*.4,cx-rx*.5,cy-ry*.2,BARKS.grey[1],2);
+        leafMass(set,has,B,P,v,{gaps:.05,rag:.2});
+        for(let x=Math.round(cx-rx+1);x<cx+rx;x++){if(hsh(x,0,v+91)<.35)continue;let y=Math.round(cy);while(y<base&&has(x,y+1))y++;if(y<=cy)continue;const L=Math.round((base-3-y)*(.45+hsh(x,1,v+92)*.5));
+          for(let k=1;k<=L;k++){const f=k/L;set(x+(f>.6&&hsh(x,2,v+93)<.4?1:0),y+k,ramp(P,.3-f*.5+(x<cx?.25:-.25)+(hsh(x,k,v+94)-.5)*.3))}}});
+      return {img,ax:cx,ay:base}}
+    // (a fir or a spruce: tiers of drooping boughs from a wide skirt to a tip, lit west, dark under each; snow on their tops up high)
+    if(sp==='fir'||sp==='spruce'){const Ht=R((28+v%3*4)*S),W2=R(Ht*(sp==='spruce'?.3:.36)),tH=R(3*S+1),w=2*W2+6,h=Ht+tH+5,cx=w>>1,base=h-3,top=base-tH-Ht,n=R(5+S*1.5),P=LEAVES[sp].map(tn);
+      const img=pixPic(w,h,(set,has)=>{shade(set,cx+3,base+.5,W2*.8,2,.38);trunk(set,cx,base,base-tH-3,2,BARKS.brown,v,0);
+        for(let j=n-1;j>=0;j--){const ty=top+Ht*j/n*.92,by=top+Ht*(j+1)/n+2,wb=W2*(.25+.75*(j+1)/n)+(hsh(v,j,95)-.5)*1.5;
+          for(let y=Math.floor(ty);y<=by;y++){const fr=(y-ty)/Math.max(1,by-ty),half=wb*(.2+.8*fr);
+            for(let x=Math.floor(cx-half);x<=cx+half;x++){const dx=(x+.5-cx)/Math.max(1,half);if(y>=by-1&&hsh(x,j,v+96)<.45)continue;
+              let l=-dx*.75+(1-fr)*.35-.05-j/n*.3+(hsh(x,y,v+97)-.5)*.35;if(y>=by-1)l-=.5;if(Math.abs(dx)>.85)l-=.2;
+              let col=ramp(P,Math.max(-1,Math.min(.99,l)));if(snow&&fr<.4&&dx<.5&&hsh(x,y,v+98)<.75-fr)col=dx<-.2?[238,242,248]:[204,214,228];set(x,y,col)}}}
+        set(cx,top-1,P[3])});
+      return {img,ax:cx,ay:base}}
+    // (a pine: a tall bare trunk, red up high, limbs out to flat clouds of needles at its top)
+    if(sp==='pine'){const tH=R((17+v%3*3)*S),rx=R(8*S),w=2*rx+8,h=tH+R(6*S)+6,cx=w>>1,base=h-3,top=base-tH,lean=((v%3)-1)*.07,tx=cx+lean*tH,P=LEAVES.pine.map(tn),B=[[tx,top+2,rx*.85,R(3.5*S)]];
+      for(let j=0;j<3+v%2;j++){const r=rx*(.4+hsh(v,j,99)*.25);B.push([tx+(hsh(v,j,100)-.5)*rx*1.3,top+2+(hsh(v,j,101)-.6)*5*S,r,r*.45])}
+      const sideY=top+R(tH*.35),side=v&1?1:-1;B.push([tx+side*rx*.55+lean*(top-sideY),sideY,rx*.45,R(2.6*S)]);
+      const img=pixPic(w,h,(set,has)=>{shade(set,cx+3,base+.5,rx*.6,2,.35);trunk(set,cx,base,top+2,2+(S>1?1:0),BARKS.red,v,lean);
+        limb(set,cx+lean*(base-sideY),sideY+2,tx+side*rx*.5+lean*(top-sideY),sideY,BARKS.red[1],1);for(const d of [-1,1])limb(set,tx,top+4,tx+d*rx*.6,top+2,BARKS.red[1],1);
+        leafMass(set,has,B,P,v,{gaps:.08,rag:.35})});
+      return {img,ax:cx,ay:base}}
+    // (a dead tree: grey, bare limbs forking twice, its top broken off)
+    {const tH=R((13+v%3*3)*S),w=R(28*S),h=tH+R(13*S)+5,cx=w>>1,base=h-3,top=base-tH,BK=BARKS.dead;
+      const img=pixPic(w,h,(set,has)=>{shade(set,cx+2,base+.5,4,1.6,.35);trunk(set,cx,base,top,2.4*Math.min(1.2,S),BK,v,0);
+        const br=(x,y,a,len,t,d,k)=>{const x2=x+Math.cos(a)*len,y2=y+Math.sin(a)*len;limb(set,x,y,x2,y2,BK[t>1?2:1+(k&1)],t);if(d>0){br(x2,y2,a-.42-hsh(v,k,102)*.35,len*.68,t-1,d-1,k*2+1);if(hsh(v,k,103)<.85)br(x2,y2,a+.38+hsh(v,k,104)*.35,len*.64,t-1,d-1,k*2+2)}};
+        br(cx,top+2,-Math.PI/2-.5,6*S,2,2,1);br(cx,top+4,-Math.PI/2+.55,5.5*S,2,2,2);set(cx,top-1,BK[3])});
+      return {img,ax:cx,ay:base}}})}
   // a fern: fronds fanning up from one root, drooping at their tips, leaflets on both sides
   function fernPic(v){return nat('f'+v,()=>{const w=17,h=13,base=11,cx=8,n=5+(v&1);
     const img=pixPic(w,h,(set,has)=>{shade(set,cx+1,base+.5,5,1.4,.3);
@@ -566,7 +655,7 @@
   // as a clump is tall, as wide as the prop's lowest rows), which would stand over it: props never move, so it is trodden bare there
   function makeGrass(L,Pn,props){const W=LAB.W,H=LAB.H,s=LAB.seed,G=LAB.grass,X=[],Y=[],T=[],V=[],names=['grass','meadow','dune','wood','bank','cut'],kinds=[K.grass,K.meadow,K.dune,K.wood,K.bank,K.cut];
     const bare=new Uint8Array(W*H);for(const p of props){if(p.low)continue;const im=p.img;if(!im.foot){const d=im.getContext('2d').getImageData(0,Math.max(0,im.height-GH),im.width,Math.min(GH,im.height)).data;let a=im.width,b=-1;
-        for(let k=3;k<d.length;k+=4)if(d[k]){const x=((k>>2)%im.width);if(x<a)a=x;if(x>b)b=x}im.foot=[a,b]}
+        for(let k=3;k<d.length;k+=4)if(d[k]===255){const x=((k>>2)%im.width);if(x<a)a=x;if(x>b)b=x}im.foot=[a,b]}
       if(im.foot[1]<0)continue;const xa=p.x-p.ax+im.foot[0]-4,xb=p.x-p.ax+im.foot[1]+4;for(let y=p.y+1;y<=Math.min(H-1,p.y+GH);y++)for(let x=Math.max(0,xa);x<=Math.min(W-1,xb);x++)bare[y*W+x]=1}
     for(let gy=3;gy<H-1;gy+=G.step)for(let gx=3;gx<W-3;gx+=G.step){const x=Math.round(gx+(hsh(gx,gy,s+160)-.5)*G.step),y=Math.round(gy+(hsh(gx,gy,s+161)-.5)*G.step);if(x<1||y<1||x>=W-1||y>=H-1)continue;
       const i=y*W+x,ki=kinds.indexOf(L.KD[i]);if(ki<0||L.BR[i]||L.road.D[i]<LAB.road.w/2+2)continue;const nm=names[ki],ch=G.chance[nm]*(.35+1.3*vn(x/G.patch,y/G.patch,s+162));if(hsh(gx,gy,s+163)>ch)continue;
@@ -580,7 +669,10 @@
     for(let gy=st;gy<H;gy+=st)for(let gx=st;gx<W;gx+=st){const x=Math.round(gx+(hsh(gx,gy,s+50)-.5)*st*.9),y=Math.round(gy+(hsh(gx,gy,s+51)-.5)*st*.9);if(x<2||y<2||x>=W-2||y>=H)continue;
       const i=y*W+x,k=L.KD[i],r=hsh(gx,gy,s+52);
       const Wd=LAB.woods,wn=k===K.wood||k===K.grass||k===K.meadow?fbm(x/Wd.sc,y/Wd.sc,s+41,3):0,edge=k===K.wood?smooth((wn-Wd.at)/Wd.fringe):smooth((wn-(Wd.at-Wd.fringe))/Wd.fringe)*.35;
-      if(k===K.wood&&r<.62*(.35+.65*edge)||(k===K.grass||k===K.meadow)&&r<.025+.6*edge&&L.road.D[i]>30&&!L.river.RV[i]&&(k===K.wood||Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry)>1.25)){const e=L.E[i],sp=e>5.5?'fir':r<.12?'birch':e>3.5&&r<.3?'fir':'oak',t=PX.battleTree('grass',sp,Math.floor(hsh(gx,gy,s+53)*4));P.push({x,y,img:t,ax:16,ay:30,kind:'tree',layer:'nature'})}
+      if(k===K.wood&&r<.62*(.35+.65*edge)||(k===K.grass||k===K.meadow)&&r<.025+.6*edge&&L.road.D[i]>30&&!L.river.RV[i]&&(k===K.wood||Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry)>1.25)){const e=L.E[i],T=LAB.trees,zone=e>T.from.mountain?'mountain':e>T.from.hills?'hills':L.river.D[i]<T.near.river?'waterside':Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry)<T.near.village?'village':'lowland',mix=T[zone];
+        let tot=0,sp;for(const q in mix)tot+=mix[q];let q=hsh(gx,gy,s+55)*tot;for(const k2 in mix){sp=k2;if((q-=mix[k2])<0)break}
+        const v=Math.floor(hsh(gx,gy,s+53)*6),sz=k===K.wood?(edge<.5&&hsh(gx,gy,s+56)<T.young?0:hsh(gx,gy,s+57)<T.old?2:1):(hsh(gx,gy,s+56)<.4?0:1),t=treePic(sp,v,sz,e>LAB.rock+T.from.snow);
+        P.push({x,y,img:t.img,ax:t.ax,ay:t.ay,kind:'tree',sp,layer:'nature'})}
       else if(k===K.scree&&r<.05&&L.road.D[i]>LAB.road.w/2+LAB.road.sh){const v=Math.floor(hsh(gx,gy,s+54)*8),b=boulderPic(v,13+(v%3)*3,0);P.push({x,y,img:b.img,ax:b.ax,ay:b.ay,kind:'rock',layer:'nature'})}}
     // (the rest of the nature layer: bushes and saplings, boulders and stones, logs and stumps, each by its ground; never on the
     //  road, the bridge, the village's shelf, or water deeper than shallow)
@@ -695,7 +787,7 @@
           ctx.save();ctx.translate(Math.round(hx)-cam.x,0);if(hero.face<0)ctx.scale(-1,1);const sh=hp.height-cut;if(sh>0)ctx.drawImage(hp,0,0,hp.width,sh,HX-Math.round(hx),HY-cam.y,hp.width,sh);ctx.restore();
           if(hb){const wy=HY-cam.y+sh,ph=Math.floor(now/180);ctx.fillStyle='rgba(232,246,250,.75)';for(let k=-6;k<=6;k++)if((k+ph)%3)ctx.fillRect(Math.round(hx)-cam.x+k,wy-(Math.abs(k)>4?0:0),1,1);
             if(hb>=3){ctx.fillStyle='rgba(232,246,250,.4)';for(let k=-8;k<=8;k+=2)if((k+ph)%4)ctx.fillRect(Math.round(hx)-cam.x+k,wy+1,1,1)}}return}
-        if(p.kind==='tree'){ctx.fillStyle='rgba(0,0,0,.22)';ctx.fillRect(p.x-cam.x-6,p.Y+p.ay-cam.y-1,13,3)}ctx.drawImage(p.pic,p.X-cam.x,p.Y-cam.y)};
+        ctx.drawImage(p.pic,p.X-cam.x,p.Y-cam.y)};
       // the grass: every clump in view written into one buffer (south over north), laid under everything standing; then those just in front
       // of the man, over his feet, drawn again after him, so he wades through the grass rather than over it
       const A=grassOn&&grassAtlas(),n=LAB.grass.lean,Gr=grass;let front=null;
