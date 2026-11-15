@@ -32,6 +32,7 @@ Kit.suite(({ok,info})=>{
  // ---- the badges and the eye over your hero
  {const i=Math.floor(P.y/TILE)*t.MW+Math.floor(P.x/TILE),old=t.tiles[i],ba=window.bannerAt,eye=window.drawStealthEye;let asked=0,eyes=[];
   window.bannerAt=function(o){if(o===P)asked++;return ba.apply(this,arguments)};window.drawStealthEye=function(...a){eyes.push(a);return eye.apply(this,a)};
+  t.prefSet('dev',true);// (the pace badge: dev mode only, render.js drawTravelPace)
   try{t.tiles[i]=t.T_FOREST;P.tx=P.x+80;P.ty=P.y;t.drawWorld();eyes=[];const cam=G.cam,cover=t.drawTravelConcealment(cam),pace=t.drawTravelPace(cam);t.drawTravelDetection(cam);
    const a=t.marchPicked(P),u=a&&a.carrier,T1=u&&{x:t.snapV(u.x)-cam.x,y:t.snapV(u.y)+a.figure(u)[1]-cam.y},me=eyes[eyes.length-1],k=t.dprOf()/t.VS,w=t.STEALTH_EYE.player*k,h=w*2/3;
    ok(cover&&pace&&u&&/hero/.test(u.type),'in a wood, on the move: the cover and pace badges drawn ('+(u?u.type:'no hero')+' carries the army)');
@@ -39,7 +40,7 @@ Kit.suite(({ok,info})=>{
    ok(cover.x>=me[2]+w-.01&&pace.x>=cover.x+cover.w-.01&&cover.y===pace.y&&cover.y+cover.h<=T1.y+.01,'the badges in a row right of it, the cover then the pace, over your head too ('+[cover,pace].map(r=>r.x.toFixed(1)+','+r.y.toFixed(1)).join(' / ')+')');
    ok(cover.x-T1.x<(w/2+t.TRAVEL_HIDE.gap*k)+.01&&T1.y-cover.y<40*k,'and close by your figure, not where the banner was ('+(cover.x-T1.x).toFixed(1)+' px right, '+(T1.y-cover.y).toFixed(1)+' px up)');
    ok(!asked,'nothing asks where a banner over you would stand ('+asked+')')}
-  finally{t.tiles[i]=old;P.tx=null;window.bannerAt=ba;window.drawStealthEye=eye}}
+  finally{t.tiles[i]=old;P.tx=null;window.bannerAt=ba;window.drawStealthEye=eye;t.prefSet('dev',false)}}
  // ---- the card's tab: a lord, a band, a caravan; none for a beast or a place
  const tab=o=>/<img class="tipflag"/.test(t.tipFor(o));
  ok(tab(lord)&&tab(band)&&tab(car),'the card shows the banner tab for a lord, a band and a caravan');

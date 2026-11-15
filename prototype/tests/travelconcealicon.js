@@ -1,6 +1,8 @@
 'use strict';
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();P.stay=null;P.camp=null;t.GUIDE.on=false;
+ // (the pace badge in dev mode only (render.js drawTravelPace): off, none even on the move; on for the rest)
+ {t.prefSet('dev',false);P.tx=P.x+80;P.ty=P.y;ok(t.drawTravelPace(G.cam)===null,'not in dev mode: no pace badge, even on the move');P.tx=null;t.prefSet('dev',true)}
  const i=Math.floor(P.y/t.TILE)*t.MW+Math.floor(P.x/t.TILE),old=t.tiles[i],ctx=t.ctx,draw=ctx.drawImage,scale=t.VS;
  try{t.tiles[i]=t.T_OPEN;ok(t.drawTravelConcealment(G.cam)===null,'open ground shows no concealment badge');
   t.tiles[i]=t.T_FOREST;const calls=[];ctx.drawImage=function(...a){calls.push(a);return draw.apply(this,a)};const r=t.drawTravelConcealment(G.cam);
@@ -25,5 +27,5 @@ Kit.suite(({ok})=>{
    for(let i=0;i<24;i++){P.x=base+i*.13;const e=t.heroTagAt(G.cam);calls.length=0;t.drawTravelPace(G.cam);const c=calls.find(a=>a[0]===t.TRAVEL_PACE.cache.get('walk'));if(!c)continue;
      if(Math.abs(c[1]*VS-Math.round(c[1]*VS))>1e-6)fine=false;offs.add(Math.round((c[1]-e.right)*VS))}
    P.x=base;ok(fine&&offs.size===1,'walking on by fractions of a pixel, the pace badge keeps the same place beside the figure under it, to the screen\'s own pixel (VS '+VS+', offsets '+[...offs].join(',')+')')}
- }finally{ctx.drawImage=draw;t.tiles[i]=old;P.stay=null;window.eval('B=null')}
+ }finally{ctx.drawImage=draw;t.tiles[i]=old;P.stay=null;window.eval('B=null');t.prefSet('dev',false)}
 });

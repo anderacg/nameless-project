@@ -89,10 +89,11 @@ function drawTravelConcealment(cam){
 // (both badges put to the screen's own pixel (snapV), as the figure under them and the eye beside them are (the owner, 2026-11-08:
 // "the moving icon seems to not smooth attach to the army"): rounded to whole game px, they stepped a game px at a time, several
 // screen px on a phone, while the army glided under them)
-// Pace shares the battle unit cards' walk/run badges, in a row after travel concealment.
+// Pace shares the battle unit cards' walk/run badges, in a row after travel concealment; in dev mode only (the owner, 2026-11-15:
+// "remove moving icon and make it to dev console": the console's devmode, ui/ui.js DEV)
 const TRAVEL_PACE={size:14,gap:4,cache:new Map()};
 function drawTravelPace(cam){
-  if(B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;
+  if(!DEV.on||B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;
   const e=heroTagAt(cam),kind='walk',k=e.k,size=TRAVEL_PACE.size*k,x=e.right+(TRAVEL_PACE.gap+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0))*k,y=e.bottom-size;
   let s=TRAVEL_PACE.cache.get(kind);if(!s){s=mkc(9,9,g=>{for(const [x,y,c] of badgePx(kind))rect(g,c,x,y)});TRAVEL_PACE.cache.set(kind,s)}
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,snapV(x),snapV(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
