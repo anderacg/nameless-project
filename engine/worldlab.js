@@ -58,6 +58,11 @@
     //  step px, the chance of each by its ground: bushes in the woods, at their edges and in the grass; saplings; boulders and
     //  stones on the grass, the rock and the scree; stones on the river's banks and in its shallows (no deeper than shallow); logs
     //  and stumps in the woods)
+    // (the grass (the owner, 2026-11-15: "grasses ... animated like flow with the wind or when character move on"): a clump every
+    //  step px where its ground grows it, at the chance of its kind, thicker in patches (patch: their noise's scale); swaying with the
+    //  wind (wind: its strength, the panel's slider; gust: px a wave of it spans, and how fast it rolls), bent away from a man
+    //  within push px (most lean px at most), springing back over spring s)
+    grass:{step:6,chance:{grass:.38,meadow:.55,dune:.32,wood:.12,bank:.3,cut:.15},patch:38,wind:1,gust:[90,.65],push:12,lean:3,spring:1.4},
     nature:{step:7,bush:{wood:.08,edge:.16,grass:.008},sapling:.012,boulder:{grass:.0015,rock:.012},stone:{grass:.004,rock:.03,scree:.05,bank:.05,river:.04},shallow:.3,log:.012,stump:.008},
     // (the biomes blended (the owner, 2026-11-15: "make the transition between biomes more blend"): each ground's own colour shifted
     //  toward its neighbours' over r px, k of the way, the edge ragged by a warp of warp px)
@@ -433,6 +438,37 @@
     if(v&1){P([104,76,48],0,6);P([104,76,48],7,6)}
     return NAT[k]=c}
 
+  // a grass clump: a few blades from its foot, each bending lean px at its tip (the more toward the tip), dark at the foot, light at
+  // the tip; a meadow's now and then flowering. Cached by kind, variant and lean
+  const GRASS_PAL={grass:[[48,84,36],[78,122,50],[126,168,76]],meadow:[[54,94,40],[92,138,56],[148,184,88]],dune:[[118,126,68],[152,158,90],[194,188,118]],
+    wood:[[36,64,30],[50,84,38],[70,106,48]]},GRASS_KINDS=['grass','meadow','dune','wood'],GW=11,GH=10;
+  // (all of them on one sheet, a row for each kind and variant, a column for each lean; and each also as its list of pixels (where, what
+  //  colour), which a frame writes straight into one buffer: thousands of clumps cost one picture drawn, not thousands)
+  let GATLAS=null;
+  function grassAtlas(){if(GATLAS)return GATLAS;const n=LAB.grass.lean,c=document.createElement('canvas');c.width=GW*(2*n+1);c.height=GH*GRASS_KINDS.length*4;const g=c.getContext('2d');
+    GRASS_KINDS.forEach((t,ti)=>{for(let v=0;v<4;v++)for(let l=-n;l<=n;l++)g.drawImage(grassSprite(t,v,l),(l+n)*GW,(ti*4+v)*GH)});
+    const U=new Uint32Array(g.getImageData(0,0,c.width,c.height).data.buffer),px=[];
+    for(let r=0;r<GRASS_KINDS.length*4;r++)for(let l=0;l<=2*n;l++){const D=[],C=[];for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const u=U[(r*GH+y)*c.width+l*GW+x];if(u>>>24)D.push(x,y),C.push(u)}
+      px.push({D:Int8Array.from(D),C:Uint32Array.from(C)})}
+    c.px=px;return GATLAS=c}
+  function grassSprite(t,v,lean){const w=GW,h=GH,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),P=GRASS_PAL[t],n=3+(v&1)+(t==='meadow'?1:0);
+    for(let b=0;b<n;b++){const bx=2.5+b*(5.5/n)+(hsh(v,b,150)-.5),hb=4+Math.floor(hsh(v,b,151)*(t==='dune'?5:4)),sk=(hsh(v,b,152)-.5)*1.2;
+      for(let j=0;j<hb;j++){const f=j/Math.max(1,hb-1),x=Math.round(bx+(lean+sk)*Math.pow(f,1.6)),y=h-1-j;if(x<0||x>=w)continue;const col=f<.34?P[0]:f<.7?P[1]:P[2];g.fillStyle='rgb('+col.join(',')+')';g.fillRect(x,y,1,1)}
+      if(t==='meadow'&&v===3&&b===1){const x=Math.round(bx+(lean+sk)),y=h-hb;g.fillStyle=['#e6d678','#dc8ca0','#ececec'][b%3];g.fillRect(x,y,1,1)}}
+    return c}
+  // the clumps: where each stands (sorted by y), its kind and variant, how far it is bent now by someone passing (P); only those whose
+  // foot is seen (none behind a ridge, under the bridge, on the road or in water), and none just in front of a prop's foot (a strip as deep
+  // as a clump is tall, as wide as the prop's lowest rows), which would stand over it: props never move, so it is trodden bare there
+  function makeGrass(L,Pn,props){const W=LAB.W,H=LAB.H,s=LAB.seed,G=LAB.grass,X=[],Y=[],T=[],V=[],names=['grass','meadow','dune','wood','bank','cut'],kinds=[K.grass,K.meadow,K.dune,K.wood,K.bank,K.cut];
+    const bare=new Uint8Array(W*H);for(const p of props){const im=p.img;if(!im.foot){const d=im.getContext('2d').getImageData(0,Math.max(0,im.height-GH),im.width,Math.min(GH,im.height)).data;let a=im.width,b=-1;
+        for(let k=3;k<d.length;k+=4)if(d[k]){const x=((k>>2)%im.width);if(x<a)a=x;if(x>b)b=x}im.foot=[a,b]}
+      if(im.foot[1]<0)continue;const xa=p.x-p.ax+im.foot[0]-4,xb=p.x-p.ax+im.foot[1]+4;for(let y=p.y+1;y<=Math.min(H-1,p.y+GH);y++)for(let x=Math.max(0,xa);x<=Math.min(W-1,xb);x++)bare[y*W+x]=1}
+    for(let gy=3;gy<H-1;gy+=G.step)for(let gx=3;gx<W-3;gx+=G.step){const x=Math.round(gx+(hsh(gx,gy,s+160)-.5)*G.step),y=Math.round(gy+(hsh(gx,gy,s+161)-.5)*G.step);if(x<1||y<1||x>=W-1||y>=H-1)continue;
+      const i=y*W+x,ki=kinds.indexOf(L.KD[i]);if(ki<0||L.BR[i]||L.road.D[i]<LAB.road.w/2+2)continue;const nm=names[ki],ch=G.chance[nm]*(.35+1.3*vn(x/G.patch,y/G.patch,s+162));if(hsh(gx,gy,s+163)>ch)continue;
+      if(bare[i])continue;const sy=y-Pn.lift[i]+Pn.T;if(sy<0||sy>=Pn.CH||Pn.dep[sy*W+x]!==y)continue;
+      X.push(x);Y.push(y);T.push(GRASS_KINDS.indexOf(nm==='bank'||nm==='cut'?'grass':nm));V.push(Math.floor(hsh(gx,gy,s+164)*4))}
+    const ord=X.map((_,k)=>k).sort((a,b)=>Y[a]-Y[b]);return {X:Int16Array.from(ord.map(k=>X[k])),Y:Int16Array.from(ord.map(k=>Y[k])),T:Uint8Array.from(ord.map(k=>T[k])),V:Uint8Array.from(ord.map(k=>V[k])),P:new Float32Array(ord.length),L:new Int8Array(ord.length),S:new Int16Array(ord.length),n:ord.length}}
+
   // the props: trees in the woods (and a few in the open), boulders on the scree, the village's houses on its shelf (models drawn on a
   // cell twice the game's: twice the detail, the same size beside a man), its people; each {x, y (its foot), img, ax, ay}
   function makeProps(L){const W=LAB.W,H=LAB.H,s=LAB.seed,P=[],st=LAB.woods.step,S=LAB.shelf;
@@ -480,6 +516,7 @@
     // the props cut by the ground in front of them (kept until the land is painted again)
     const cut=()=>{for(const p of props){const lf=Pn.lift[p.y*LAB.W+p.x];p.X=p.x-p.ax;p.Y=p.y-lf+Pn.T-p.ay;p.pic=occluded(p.img,p.X,p.Y,p.y,Pn)}props.sort((a,b)=>a.y-b.y)};
     cut();
+    let grass=makeGrass(L,Pn,props),grassOn=true,maxLift=0,gbuf=null;const gcv=document.createElement('canvas');for(let i=0;i<Pn.lift.length;i+=97)maxLift=Math.max(maxLift,Pn.lift[i]);
     if(innerWidth<LAB.phone)LAB.zoom=LAB.phoneZoom;{const z=document.getElementById('zoom');if(z)z.value=String(LAB.zoom)}
     const resize=()=>{const z=LAB.zoom;cv.width=Math.ceil(innerWidth/z);cv.height=Math.ceil(innerHeight/z);cv.style.width=cv.width*z+'px';cv.style.height=cv.height*z+'px';ctx.imageSmoothingEnabled=false};
     addEventListener('resize',resize);resize();
@@ -505,9 +542,11 @@
     let note='';
     // the panel's controls
     const lh=document.getElementById('lh'),lhv=document.getElementById('lhv');lh.min=LAB.lhMin;lh.max=LAB.lhMax;lh.value=LAB.lh;lhv.textContent=LAB.lh;
-    lh.addEventListener('change',()=>{LAB.lh=+lh.value;lhv.textContent=LAB.lh;Pn=paint(L);cut()});lh.addEventListener('input',()=>{lhv.textContent=lh.value});
+    lh.addEventListener('change',()=>{LAB.lh=+lh.value;lhv.textContent=LAB.lh;Pn=paint(L);cut();grass=makeGrass(L,Pn,props);maxLift=0;for(let i=0;i<Pn.lift.length;i+=97)maxLift=Math.max(maxLift,Pn.lift[i])});lh.addEventListener('input',()=>{lhv.textContent=lh.value});
     document.getElementById('climb').addEventListener('change',e=>{hero.climber=e.target.checked});
     {const hv=document.getElementById('heavy');if(hv)hv.addEventListener('change',e=>{hero.heavy=e.target.checked})}
+    {const gt=document.getElementById('grass');if(gt)gt.addEventListener('change',e=>{grassOn=e.target.checked});
+      const wd=document.getElementById('wind'),wv=document.getElementById('windv');if(wd){wd.value=LAB.grass.wind;if(wv)wv.textContent=LAB.grass.wind;wd.addEventListener('input',()=>{LAB.grass.wind=+wd.value;if(wv)wv.textContent=wd.value})}}
     {const nt=document.getElementById('nature');if(nt)nt.addEventListener('change',e=>{nature=e.target.checked})}
     {const dt=document.getElementById('details');if(dt)dt.addEventListener('change',e=>{details=e.target.checked})}
     document.getElementById('walkmap').addEventListener('change',e=>{walkmap=e.target.checked});
@@ -545,11 +584,32 @@
       const ents=[];for(const p of props){if(p.layer==='nature'&&!nature)continue;if(p.X+p.pic.width<cam.x||p.X>cam.x+cv.width||p.Y+p.pic.height<cam.y||p.Y>cam.y+cv.height)continue;ents.push(p)}
       ents.push({y:hero.y,hero:true});ents.sort((a,b)=>a.y-b.y);
       const hb=bandAt(L,Math.round(hero.y)*W+Math.round(hero.x)),cut=LAB.depth.cut[hb];
-      for(const p of ents){if(p.hero){if(!hb){ctx.fillStyle='rgba(0,0,0,.28)';ctx.fillRect(Math.round(hx)-cam.x-4,Math.round(hy)-cam.y,9,2)}
+      const drawEnt=p=>{if(p.hero){if(!hb){ctx.fillStyle='rgba(0,0,0,.28)';ctx.fillRect(Math.round(hx)-cam.x-4,Math.round(hy)-cam.y,9,2)}
           ctx.save();ctx.translate(Math.round(hx)-cam.x,0);if(hero.face<0)ctx.scale(-1,1);const sh=hp.height-cut;if(sh>0)ctx.drawImage(hp,0,0,hp.width,sh,HX-Math.round(hx),HY-cam.y,hp.width,sh);ctx.restore();
           if(hb){const wy=HY-cam.y+sh,ph=Math.floor(now/180);ctx.fillStyle='rgba(232,246,250,.75)';for(let k=-6;k<=6;k++)if((k+ph)%3)ctx.fillRect(Math.round(hx)-cam.x+k,wy-(Math.abs(k)>4?0:0),1,1);
-            if(hb>=3){ctx.fillStyle='rgba(232,246,250,.4)';for(let k=-8;k<=8;k+=2)if((k+ph)%4)ctx.fillRect(Math.round(hx)-cam.x+k,wy+1,1,1)}}continue}
-        if(p.kind==='tree'){ctx.fillStyle='rgba(0,0,0,.22)';ctx.fillRect(p.x-cam.x-6,p.Y+p.ay-cam.y-1,13,3)}ctx.drawImage(p.pic,p.X-cam.x,p.Y-cam.y)}
+            if(hb>=3){ctx.fillStyle='rgba(232,246,250,.4)';for(let k=-8;k<=8;k+=2)if((k+ph)%4)ctx.fillRect(Math.round(hx)-cam.x+k,wy+1,1,1)}}return}
+        if(p.kind==='tree'){ctx.fillStyle='rgba(0,0,0,.22)';ctx.fillRect(p.x-cam.x-6,p.Y+p.ay-cam.y-1,13,3)}ctx.drawImage(p.pic,p.X-cam.x,p.Y-cam.y)};
+      // the grass: every clump in view written into one buffer (south over north), laid under everything standing; then those just in front
+      // of the man, over his feet, drawn again after him, so he wades through the grass rather than over it
+      const A=grassOn&&grassAtlas(),n=LAB.grass.lean,Gr=grass;let front=null;
+      if(grassOn){const G=LAB.grass,t=now/1000,y0=cam.y-Pn.T-12,y1=cam.y+cv.height+maxLift+12,R2=G.push,dec=Math.exp(-dt/G.spring*2.3),
+          w1=t*1.9,w2=t*G.gust[1]*6.28/3,g2=6.28/G.gust[0],x0=cam.x-GW,x1=cam.x+cv.width+GW,s0=cam.y-2,s1=cam.y+cv.height+GH,bw=cv.width,bh=cv.height;
+        if(!gbuf||gbuf.width!==bw||gbuf.height!==bh){gbuf=new ImageData(bw,bh);gbuf.u=new Uint32Array(gbuf.data.buffer);gcv.width=bw;gcv.height=bh}
+        const U=gbuf.u;U.fill(0);
+        let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<y0)lo=m+1;else hi=m}
+        for(let k=lo;k<Gr.n&&Gr.Y[k]<=y1;k++){const X=Gr.X[k],Y=Gr.Y[k];if(X<x0||X>x1)continue;const sy=Y-Pn.lift[Y*W+X]+Pn.T;if(sy<s0||sy>s1)continue;
+          // (the wind: two waves rolling across the land, the gusts; the hero's push, kept and fading as the grass springs back)
+          const wind=G.wind*(Math.sin(w1+X*.05+Y*.03)+.8*Math.sin(w2+X*g2-Y*.01));
+          let P=Gr.P[k];if(P){P*=dec;if(P<.05&&P>-.05)P=0}const dx=X-hero.x,dy=(Y-hero.y)*1.5;
+          if(dx<R2&&dx>-R2&&dy<R2&&dy>-R2){const d=Math.hypot(dx,dy);if(d<R2){const p=(dx>=0?1:-1)*n*(1-d/R2)*1.2;if(Math.abs(p)>Math.abs(P))P=p}}Gr.P[k]=P;
+          const lean=Math.max(-n,Math.min(n,Math.round(P?wind*(1-Math.min(1,Math.abs(P)/n)*.7)+P:wind)));Gr.L[k]=lean;Gr.S[k]=sy;
+          const sp=A.px[(Gr.T[k]*4+Gr.V[k])*(2*n+1)+lean+n],D=sp.D,C=sp.C,bx=X-cam.x-5,by=sy-cam.y-9;
+          for(let j=0,q=0;j<C.length;j++,q+=2){const x=bx+D[q],y=by+D[q+1];if(x>=0&&y>=0&&x<bw&&y<bh)U[y*bw+x]=C[j]}}
+        gcv.getContext('2d').putImageData(gbuf,0,0);ctx.drawImage(gcv,0,0);
+        // (in front of one standing: a clump south of his foot, by less than its height, within his width)
+        front=(y,xa,xb)=>{let a=0,b=Gr.n;while(a<b){const m=(a+b)>>1;if(Gr.Y[m]<=y)a=m+1;else b=m}
+          for(let k=a;k<Gr.n&&Gr.Y[k]<=y+GH;k++){const X=Gr.X[k];if(X<xa-5||X>xb+5)continue;ctx.drawImage(A,(Gr.L[k]+n)*GW,(Gr.T[k]*4+Gr.V[k])*GH,GW,GH,X-cam.x-5,Gr.S[k]-cam.y-9,GW,GH)}}}
+      for(const p of ents){drawEnt(p);if(p.hero&&front)front(hero.y,hx-6,hx+6)}
       // (his path ahead, a dot at each turn)
       ctx.fillStyle='rgba(255,230,140,.8)';for(const [x,y] of hero.path){const l2=standLift(Math.min(LAB.H-1,Math.round(y))*W+Math.min(W-1,Math.round(x)));ctx.fillRect(Math.round(x)-cam.x-1,Math.round(y)-l2+Pn.T-cam.y-1,2,2)}
       frameMs=frameMs*.9+(performance.now()-f0)*.1;fn++;fa+=dt;if(fa>=.5){fps=Math.round(fn/fa);fn=0;fa=0}
@@ -559,7 +619,7 @@
         `stamina <span class="bar"><i style="width:${Math.round(hero.sta*100)}%"></i></span>${note?'<br><em>'+note+'</em>':''}`;
       requestAnimationFrame(frame)}
     requestAnimationFrame(frame);
-    PX.worldLab.state={LAB,get L(){return L},get Pn(){return Pn},hero,props,classAt:i=>classAt(L,i),route};
+    PX.worldLab.state={LAB,get L(){return L},get Pn(){return Pn},get grass(){return grass},hero,props,classAt:i=>classAt(L,i),route};
   };
   PX.WORLD_LAB=LAB;
 })(window.PX);

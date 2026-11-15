@@ -293,6 +293,14 @@ That is a separate decision, best made after this world exists.
   - Stones, logs and stumps are the lab's own small sprites: lit from the upper left, moss now and then, a shadow under each. Bushes and saplings are the engine's (`PX.smallTree`), boulders the battle map's (`PX.battleObstacle`).
   - About 4,500 objects in all; the frame rate holds.
 - Buildings and people stay as they were, always shown.
+- **Grass is a fourth layer, alive** (`LAB.grass`; the owner: "grasses ... animated like flow with the wind or when character move on"). The switch "Grass" is on by default; "Wind" sets how hard it blows (0 to 3).
+  - Clumps of a few blades (11×10 px), dark at the foot and light at the tip, on a jittered 6 px grid, thicker in patches.
+  - Kinds: grass, meadow (now and then a flower at a tip), marram on the dunes, and a sparse, dark one in the woods. Banks and cuttings take the grass kind.
+  - None on the road, the bridge, water, behind a ridge, or in the strip just in front of a prop's foot (it would stand over the clump, so the ground is bare there). About 14,000 clumps.
+  - **Wind:** each clump leans by two waves rolling across the land (a quick sway and a slower gust about 90 px across), so the bending runs over the field in bands.
+  - **Walking through:** clumps within 12 px of the hero bend away from him and spring back over about 1.4 s, leaving a trail behind him. The clumps just south of his feet are drawn over him, so he wades through the grass.
+  - **How it stays cheap:** each clump is one of 7 leans drawn once on a sheet (`grassAtlas`). A frame writes the pixels of every clump in view into one buffer, laid in one draw under everything standing. Only the few in front of the hero are drawn again after him.
+  - **Cost:** about 0.8 ms a frame at 2× zoom, and 2.6 ms at 1× with the whole map in view.
 
 **Depth (2026-11-15; the owner: "Do we have depth if river or ocean?", then "Ok"):**
 - **Every water px has a depth** (`LAB.depth`, in levels; a level is about 0.85 m):
