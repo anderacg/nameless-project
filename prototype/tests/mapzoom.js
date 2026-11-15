@@ -101,12 +101,14 @@ try{
   ev('B=null');world();t.frame()}
  // ---- a phone (the window's shorter side MAPZOOM.SMALL CSS px or less; the fixed view here, so phone() is told so): the map
  // Auto starts closer, with the former default as the zoom-out limit; the HUD and the minimap
- // at the window's scale; a step from there stored, a step back Auto again; off the map the window's own scale
- {const ph=Z.phone;try{Z.phone=()=>true;t.act('mapzoom','0');world();t.fitScreen();t.frame();const A=Math.ceil(Z.lo*Z.PHONE_START);
+ // at the window's scale; a step from there stored, a step back Auto again; off the map the window's own scale. With the world drawn
+ // finer (WORLD_VIEW.fine 2, doc/OPEN_WORLD_DESIGN.md phase 1, 2026-11-15) a phone's Auto is the even scale at or below it and a step
+ // is two, so the finer art (which wants whole screen px a fine px) is drawn
+ {const ph=Z.phone;try{Z.phone=()=>true;t.act('mapzoom','0');world();t.fitScreen();t.frame();const f=t.WORLD_VIEW.fine,A0=Math.ceil(Z.lo*Z.PHONE_START),A=f>1&&A0>=2*f&&A0%f&&A0-A0%f>=Z.lo?A0-A0%f:A0,F=f>1?f:1;
    ok(Z.auto===A&&A>s0&&t.VS===A&&Z.z===0&&t.HUD_PX===3/s0&&Math.abs(Z.k()-s0/t.VS)<1e-9&&view(),'on a phone the map is drawn at '+A+' by default, not the window\'s '+s0+' ('+t.VW+' x '+t.VH+' game px); the HUD at the window\'s scale');
    const m=t.worldMiniRect();ok(Math.abs(m.w*t.VS-112*s0)<=t.VS*2,'the minimap keeps its size on the screen ('+m.w*t.VS+' device px across)');
    const a1=t.mapZoom(-1);t.frame();const v1=t.VS,st=localStorage.getItem('ashmark.mapzoom');const a2=t.mapZoom(1);t.frame();
-   ok(a1&&a2&&v1===A-1&&st===String(A-1)&&t.VS===A&&Z.z===0&&localStorage.getItem('ashmark.mapzoom')==='0','a step out from it is stored ('+st+'), a step back is Auto again');
+   ok(a1&&a2&&v1===A-F&&st===String(A-F)&&t.VS===A&&Z.z===0&&localStorage.getItem('ashmark.mapzoom')==='0','a step out from it is stored ('+st+'), a step back is Auto again');
    ok(document.getElementById('zoomIn').disabled===(A>=Z.hi)&&!document.getElementById('zoomOut').disabled,'the zoom buttons dimmed from the phone\'s default ('+A+', in to '+Z.hi+')');
    Z.map=false;t.fitScreen();const off=t.VS;Z.map=true;t.fitScreen();ok(off===s0&&t.VS===A,'off the map (a battle, a scene) the window\'s own scale, '+off)}
   finally{Z.phone=ph;t.act('mapzoom','0');world();t.fitScreen();t.frame()}
