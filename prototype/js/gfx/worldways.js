@@ -46,6 +46,8 @@ function waysOf(P){if(P.ways)return P.ways;
   for(let h=0;h<N;h++){if(!isB(h)||fed[h])continue;const pts=[];let i=h,lv=1e9;
     while(i>=0){const b=isB(i),own=Rv[i]&3,[x,y]=mid(i,own&&!sea(i)?own:1),q=Math.max(0,Math.min(1,((F[i]&31)-B)/2)),hw=(V.brook[0]+(V.brook[1]-V.brook[0])*q)*WAY_LP;
       lv=Math.min(lv,LV[i]);pts.push([x,y,b?hw:pts.length?pts[pts.length-1][2]:hw,lv,V.depth[0],8-hw]);if(!b||seen[i])break;seen[i]=1;i=down(i)}
+    // (its spring: a small pool where it rises (the owner: "rework the stream system to make it make more sense"))
+    if(pts.length>2){pts[0][2]*=V.spring;pts[1][2]*=(1+V.spring)/2}
     curve(pts,bid++)}
   const mouth=new Uint8Array(N);for(let i=0;i<N;i++){if(!(Rv[i]&3)||sea(i))continue;const x=i%MW,y=(i-x)/MW;
     for(let b=-1;b<=1&&!mouth[i];b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u>=0&&v>=0&&u<MW&&v<MH&&sea(v*MW+u)){mouth[i]=1;break}}}
@@ -60,7 +62,7 @@ function waysOf(P){if(P.ways)return P.ways;
      2026-11-15: "make sure the bridge just align with the road, no need to always diagonal"; it was turned toward the road's way in
      and out further back), as long as the water plus over each side; the road joined to its two ends by a short piece each. BRG: {c, mx, my (its middle), ux, uy (along it), L (long), hw (half wide), dk (its
      deck's level), stone}, game px) */
-  const BRG=[],BW=WORLD_WAYS.bridge;
+  const BRG=[],FO=[],BW=WORLD_WAYS.bridge;
   for(const c of WM.crossings){if(c.kind!=='bridge')continue;const ex=((c.i%MW)+.5)*TILE,ey=(((c.i/MW)|0)+.5)*TILE,fx=((c.j%MW)+.5)*TILE,fy=(((c.j/MW)|0)+.5)*TILE,al=Math.hypot(fx-ex,fy-ey)||1,ax=(fx-ex)/al,ay=(fy-ey)/al;
     const ux=ax,uy=ay,mx=(ex+fx)/2,my=(ey+fy)/2,L=al-TILE+BW.over*2,hw=(WORLD_WAYS.road.hw[1]-1)*WAY_LP;
     BRG.push({c,mx,my,ux,uy,L,hw,dk:bridgeDeck(c),stone:!!c.stone});
@@ -88,21 +90,29 @@ function waysOf(P){if(P.ways)return P.ways;
     k0=k1+1}
   /* (a stream under every road it crosses (the owner, 2026-11-15: "There should be no river crossing the road like that"): a brook is
      painted only, no tile of water, so the roads were laid over it with no crossing; now where a road's line crosses a brook's
-     (not within a river's or a crossing's tiles) a small bridge stands along the road (BRG, small: a plank one on a track, a stone
-     one on a road), as long as the brook is wide and its banks (brook.span px each side, abut px more each end), its deck at the
-     road's height or clear of the water by brook.clear levels, whichever is higher: the road's band cut away under its open span
-     (bridgeOpen), the water running under it) */
+     (not within a river's or a crossing's tiles) the road crosses it: on a track, or over a brook narrower than brook.ford px, at a
+     stony ford (FO: stepping stones across its water, the road running down into it; the owner: "also add a small stony ford"),
+     else on a small bridge along the road (BRG, small: stone), as long as the brook is wide and its banks (brook.span px each side,
+     abut px more each end), its deck at the road's height or clear of the water by brook.clear levels, whichever is higher: the
+     road's band cut away under its open span (bridgeOpen), the water running under it. The roads go round streams where they can
+     (worldplace.js PLACE_ROAD.brook), so there are few) */
   {const BB=WORLD_WAYS.bridge.brook,bmax=V.brook[1]*WAY_LP+.01,nS=SA.length/6,G=new Map(),cs=32,key=(x,y)=>Math.floor(x/cs)*65536+Math.floor(y/cs);
     for(let q=0;q<nS;q++){const o=q*6;if(Math.max(SA[o+4],SA[o+5])>bmax)continue;const x0=Math.min(SA[o],SA[o+2]),x1=Math.max(SA[o],SA[o+2]),y0=Math.min(SA[o+1],SA[o+3]),y1=Math.max(SA[o+1],SA[o+3]);
       for(let gx=Math.floor(x0/cs);gx<=Math.floor(x1/cs);gx++)for(let gy=Math.floor(y0/cs);gy<=Math.floor(y1/cs);gy++){const k=gx*65536+gy;let L=G.get(k);if(!L)G.set(k,L=[]);L.push(q)}}
-    const near=(x,y,d)=>BRG.some(b=>(b.mx-x)*(b.mx-x)+(b.my-y)*(b.my-y)<d*d),wetT=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return true;const i=ty*MW+tx;return tiles[i]===T_WATER||tiles[i]===T_FORD||(Rv[i]&3)>0};
+    const near=(x,y,d)=>BRG.some(b=>(b.mx-x)*(b.mx-x)+(b.my-y)*(b.my-y)<d*d)||FO.some(b=>(b.mx-x)*(b.mx-x)+(b.my-y)*(b.my-y)<d*d),wetT=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return true;const i=ty*MW+tx;return tiles[i]===T_WATER||tiles[i]===T_FORD||(Rv[i]&3)>0};
     for(let k=0;k<nR;k++){const o=k*6,ax=RA[o],ay=RA[o+1],bx=RA[o+2],by=RA[o+3],dx=bx-ax,dy=by-ay,seen=new Set();
       for(let gx=Math.floor(Math.min(ax,bx)/cs);gx<=Math.floor(Math.max(ax,bx)/cs);gx++)for(let gy=Math.floor(Math.min(ay,by)/cs);gy<=Math.floor(Math.max(ay,by)/cs);gy++){const L=G.get(gx*65536+gy);if(!L)continue;
         for(const q of L){if(seen.has(q))continue;seen.add(q);const p=q*6,cx=SA[p],cy=SA[p+1],ex=SA[p+2]-cx,ey=SA[p+3]-cy,den=dx*ey-dy*ex;if(Math.abs(den)<1e-6)continue;
           const t=((cx-ax)*ey-(cy-ay)*ex)/den,u=((cx-ax)*dy-(cy-ay)*dx)/den;if(t<0||t>1||u<0||u>1)continue;const mx=ax+dx*t,my=ay+dy*t;
           if(wetT(mx,my)||near(mx,my,BB.apart))continue;const l=Math.sqrt(dx*dx+dy*dy)||1,a=SP[q],hb=SA[p+4]+(SA[p+5]-SA[p+4])*u,wl=riverSurf(LL[a],LL[a+1],u),rz=RZ[k*2]+(RZ[k*2+1]-RZ[k*2])*t;
-          BRG.push({c:null,small:true,mx,my,ux:dx/l,uy:dy/l,L:2*(hb+BB.span+WORLD_WAYS.bridge.abut),hw:(RW[RK[k]]-1)*WAY_LP,dk:Math.max(rz,wl+BB.clear),stone:RK[k]===1})}}}}
-  return P.ways={bridges:BRG,mouths:MO,RZ,RB,land,X:Float32Array.from(X),Y:Float32Array.from(Y),HW:Float32Array.from(HW),LV:Float32Array.from(LL),DP:Float32Array.from(DP),SP:Int32Array.from(SP),SA:Float32Array.from(SA),RA,RK,RL,mouth}}
+          const b={c:null,small:true,mx,my,ux:dx/l,uy:dy/l,L:2*(hb+BB.span+WORLD_WAYS.bridge.abut),hw:(RW[RK[k]]-1)*WAY_LP,dk:Math.max(rz,wl+BB.clear),stone:true,hb};
+          (RK[k]===0||hb<BB.ford?FO:BRG).push(b)}}}}
+  /* (the roads' dead ends: a segment's end no other segment of a road meets, and no bridge's deck: there the road fades into the land
+     over WORLD_WAYS.road.fade game px (the owner: "at the end of the road should blend completely")) */
+  const EN=[];{const deg=new Map(),kk=(x,y)=>Math.round(x*2)+','+Math.round(y*2);for(let k=0;k<nR;k++){const o=k*6;for(const e of [0,2]){const q=kk(RA[o+e],RA[o+e+1]);deg.set(q,(deg.get(q)||0)+1)}}
+    for(let k=0;k<nR;k++){const o=k*6;for(const e of [0,2]){const x=RA[o+e],y=RA[o+e+1];if(deg.get(kk(x,y))!==1)continue;if(BRG.some(b=>{const dx=x-b.mx,dy=y-b.my;return dx*dx+dy*dy<(b.L/2+10)*(b.L/2+10)}))continue;EN.push(x,y)}}}
+
+  return P.ways={bridges:BRG,fords:FO,ends:Float32Array.from(EN),mouths:MO,RZ,RB,land,X:Float32Array.from(X),Y:Float32Array.from(Y),HW:Float32Array.from(HW),LV:Float32Array.from(LL),DP:Float32Array.from(DP),SP:Int32Array.from(SP),SA:Float32Array.from(SA),RA,RK,RL,mouth}}
 
 /* the nearest of a set of segments (A: ax, ay, bx, by, ha, hb, game px) to every px of a window (x0, y0, w x h, in px sc a game px),
    within reach px past its edge: S how far past its edge (px; < 0 within it), Q the segment (-1 none), T how far along it (0-1) */

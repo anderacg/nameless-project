@@ -731,6 +731,16 @@ function genFed(m,i){for(let k=0;k<8;k++){const j=genStep(m,i,k);if(j>=0&&genBro
 function genSourced(m,i){const K=m.kind;if(K[i]===T_FOREST||K[i]===T_HILL)return true;
   for(let k=0;k<8;k++){const j=genStep(m,i,k);if(j<0)continue;const t=K[j];if(t===T_HILL||t===T_MOUNT||t===T_WATER&&(m.feat[j]&2||(m.flow[j]>>5)===(k+4)%8))return true}
   return false}
+/* (the streams that make sense (the owner, 2026-11-15: "rework the stream system to make it make more sense"): a brook ends only in
+   water (a river, a lake, the sea, a ford) or in another brook, never on dry land; once the roads and holdings are laid, each brook
+   whose way down leads to neither is cut, and every brook running into it, back to their springs (so none stops at a road or in a
+   field). Returns the tiles cut) */
+function genDeadBrooks(m){const N=m.w*m.h,F=m.flow,K=m.kind,q=[];let n=0;
+  const ends=j=>j>=0&&(genBrook(m,j)||K[j]===T_WATER||K[j]===T_FORD||(m.river[j]&3)>0);
+  for(let i=0;i<N;i++)if(genBrook(m,i)&&!ends(genStep(m,i,F[i]>>5)))q.push(i);
+  while(q.length){const i=q.pop();if(!genBrook(m,i))continue;F[i]=F[i]&~31|(GEN_RIVER.brook-1);n++;
+    for(let k=0;k<8;k++){const j=genStep(m,i,k);if(j>=0&&genBrook(m,j)&&genStep(m,j,F[j]>>5)===i)q.push(j)}}
+  return n}
 // (the brook rising at i cut back, down to where another joins it or away: its flow under the brook's)
 function genCutBrook(m,i){const F=m.flow;for(let c=i;c>=0&&genBrook(m,c)&&(c===i||!genFed(m,c));c=genStep(m,c,F[c]>>5))F[c]=F[c]&~31|(GEN_RIVER.brook-1)}
 /* (the land's patches tidied (the owner's play-test, 2026-10-22: "there shouldn't be a 1-tile spawn of forest or any terrain"): each
@@ -835,7 +845,7 @@ function* genRegions(g){g.map.region.fill(0);g.map.regions=[];yield 1}
 // Phase 2 wave 2's), then the checksum; the result (tidied: the tiles each tidying moved, the brooks' tiles cut by the holdings)
 function* genGraph(g){const m=g.map;g.tidied=g.tidied||{ponds:0,graph:0,brooks:0};g.tidied.graph=yield* genPatchTidy(g,[T_OPEN,T_FOREST,T_HILL,T_MOUNT],[T_OPEN,T_FOREST,T_HILL]);
   g.tidied.brooks=genHoldBrooks(m,g.holdings);
-  for(let i=0;i<m.w*m.h;i++)if(genBrook(m,i)&&!genFed(m,i)&&!genSourced(m,i))genCutBrook(m,i);m.graph=buildWayGraph(g);yield .5;m.sum=m.checksum(g.holdings);g.work=null;
+  for(let i=0;i<m.w*m.h;i++)if(genBrook(m,i)&&!genFed(m,i)&&!genSourced(m,i))genCutBrook(m,i);g.tidied.dead=genDeadBrooks(m);m.graph=buildWayGraph(g);yield .5;m.sum=m.checksum(g.holdings);g.work=null;
   return{map:m,holdings:g.holdings,camps:g.camps,lords:g.lords,hamlets:g.holdings.filter(h=>!h.realm).map(h=>h.name),sacred:[],lair:null,regions:m.regions,rivers:m.rivers,crossings:m.crossings,graph:m.graph,tries:g.tries,relaxed:g.relaxed,tidied:g.tidied}}
 /* (the brooks through the holdings (the owner's play-test, 2026-10-22: "small streams should not cross a holding or an estate"):
    each brook tile within a holding's ring and GEN_HOLD_BROOK.margin more (HOLDING_TYPES' ring, from the middle of its centre's

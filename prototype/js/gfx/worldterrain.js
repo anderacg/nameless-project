@@ -61,6 +61,9 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   // (no road under a bridge's open span, as the lab's OPEN: the river and its banks stay as they are under it, only its ends rest on
   //  the road's fill)
   bridgeOpen(WY.bridges,DG,gx0,gy0,GW,GH,1,shG);bridgeOpen(WY.bridges,DF,X*r,Y*r,W2,HE2,r,(edgeF+varyF)/r);
+  // (the roads' dead ends and the streams' fords near: worldways.js waysOf ends, fords)
+  const RDf=WV.road.fade,ENc=[],FOc=[];{const E=WY.ends||[];for(let q=0;q<E.length;q+=2){const x=E[q],y=E[q+1];if(x>X-RDf&&x<X+w+RDf&&y>Y-RDf&&y<Y+HE+RDf)ENc.push(x,y)}
+    for(const f of WY.fords||[])if(f.mx>X-32&&f.mx<X+w+32&&f.my>Y-32&&f.my<Y+HE+32)FOc.push(f)}
   /* (the sea's and the lakes' water, the lab's way: no tile's square: a field between the tiles' middles (-1 open water, +1 land; a
      river's tiles land, its curve its own) roughened by a noise of a lab px or two, water under 0; then each px's distance (game px) to
      the water (DW: the beach, wet sand and dunes, the lab's shore widths) and the water's to the land (DL: its depth, its foam), over the
@@ -112,6 +115,9 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
       for(let j=0;j<r;j++)for(let i=0;i<r;i++){const fi=(y*r+j)*W2+x*r+i,o=fi*4,fx=gx*r+i,fy=gy*r+j,rs=RF.S[fi];let col,shade=true;
         if(!m&&rs<0){const a=WY.SP[RF.Q[fi]],tt=RF.T[fi],hw=(WY.HW[a]+(WY.HW[a+1]-WY.HW[a])*tt)*r,q=Math.min(1,(rs+hw)/hw),dp=WY.DP[a]+(WY.DP[a+1]-WY.DP[a])*tt;
           col=wayWater(Q,CLIMS[ci],fx,fy,(dp*(1-q*q)+.04)*(ford?WV.river.ford:1),q,ford);shade=false;WK[fi]=2;WA[fi]=(a+tt)*4*r/2;
+          // (a stony ford where a track crosses a stream: stepping stones across it along the road, the water shallow between them)
+          for(const f of FOc){const tx2=fx/r-f.mx,ty2=fy/r-f.my,t=tx2*f.ux+ty2*f.uy,v=ty2*f.ux-tx2*f.uy;if(Math.abs(v)>f.hw*.85||Math.abs(t)>f.hb+2)continue;
+            const n=wnoise2(fx/(2.6*k2),fy/(2.6*k2),579);col=n>.52?tmix([150,146,134],[188,184,170],Math.min(1,(n-.52)*5)):n>.47?[96,92,84]:tmix(col,[176,196,196],.35);break}
           // (a fall's white water, seen whichever way its river runs: its lip whitening as it goes over, a pool churning foam at its foot)
           const FD=WY.FD||(WY.FD=fallDist(WY)),f0=FD[a],f1=FD[a+1];if(f0<1e8||f1<1e8){const fd=f0<1e8&&f1<1e8?f0+(f1-f0)*tt:f0<1e8?f0:f1,FA=T.falls,nz=hs(fx,fy,577);
             if(fd<0&&fd>-FA.lip){const u=1+fd/FA.lip;col=tmix(col,Q.fall[nz<.4?0:1],.35+.6*u);WK[fi]=3}
@@ -132,10 +138,14 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
           else if(rs<bankF){const tb=rs/bankF;col=tb<.45?tmix(tpick(Q.mud,fx,fy,519),tmul(col,.86),tb/.45):tmix(tmul(col,.86),col,(tb-.45)/.55)}}
         // (a road over it: the lab's worn track, its edge ragged; never over water)
         // (its width wandering along it and its edge ragged, the lab's: vary, edge)
-        const ds=DF.S[fi];if(!m&&!(rs<0)&&ds<edgeF+varyF){const sg=DF.Q[fi],o6=sg*6,A=WY.RA,hwR=A[o6+4]*r,along=(WY.RL[sg]+DF.T[fi]*Math.hypot(A[o6+2]-A[o6],A[o6+3]-A[o6+1]))*r,
-            hv=hwR*(1+WV.road.vary*(wnoise2(along/(30*k2),.5,534)-.5)*2),rg=ds+hwR-hv-(wnoise2(fx/(13*k2),fy/(13*k2),533)-.5)*2*edgeF;
-          if(rg<0){const ax=A[o6]*r,ay=A[o6+1]*r,bx=A[o6+2]*r,by=A[o6+3]*r,side=Math.sign((bx-ax)*(fy+.5-ay)-(by-ay)*(fx+.5-ax))||1;
-            col=wayRoad(fx,fy,(ds+hwR)*side,hv,along,flat,col,k2)}}
+        // (by the land it runs through: the ground's colour mixed in, the ground over it in patches (snow, sand, mud); at a dead end it
+        //  narrows and fades into the land, dithered, over road.fade game px)
+        const ds=DF.S[fi];if(!m&&!(rs<0)&&ds<edgeF+varyF){const sg=DF.Q[fi],o6=sg*6,A=WY.RA,hwR=A[o6+4]*r,along=(WY.RL[sg]+DF.T[fi]*Math.hypot(A[o6+2]-A[o6],A[o6+3]-A[o6+1]))*r;
+          let fe=1;for(let q=0;q<ENc.length;q+=2){const ex=fx/r-ENc[q],ey=fy/r-ENc[q+1],d2=ex*ex+ey*ey;if(d2<RDf*RDf)fe=Math.min(fe,sstep(Math.sqrt(d2)/RDf))}
+          const hv=hwR*(1+WV.road.vary*(wnoise2(along/(30*k2),.5,534)-.5)*2)*(.35+.65*fe),rg=ds+hwR-hv-(wnoise2(fx/(13*k2),fy/(13*k2),533)-.5)*2*edgeF;
+          if(rg<0){const ax=A[o6]*r,ay=A[o6+1]*r,bx=A[o6+2]*r,by=A[o6+3]*r,side=Math.sign((bx-ax)*(fy+.5-ay)-(by-ay)*(fx+.5-ax))||1,BM=WV.road.biome,land=col;
+            let rc=tmix(wayRoad(fx,fy,(ds+hwR)*side,hv,along,flat,col,k2),land,BM.mix[ci]);if(wnoise2(fx/(9*k2),fy/(9*k2),538)>BM.patch[ci])rc=tmix(rc,land,.75);
+            col=fe>=1?rc:hs(fx,fy,539)>fe*1.15?land:tmix(land,rc,.35+.65*fe)}}
         // (a road's cutting or embankment where its shoulder is steep: earth showing in ragged patches, the lab's cut)
         if(!m&&!(rs<0)&&ds>=0&&ds<WV.road.sh*k2){const gq=Math.hypot(Gx[k],Gy[k]);if(gq>=.1&&hs(fx,fy,560)<Math.min(1,(gq-.1)/.25)*.9)col=tmix(tpick(Q.bank,fx,fy,561),col,.25)}
         const s=shade?1+sl:1;CW[o]=col[0]*s;CW[o+1]=col[1]*s;CW[o+2]=col[2]*s;CW[o+3]=255}}
