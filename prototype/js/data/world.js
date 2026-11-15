@@ -6,7 +6,9 @@
    a game px for the world's scene (its ground, what lies flat, its buildings, the scene remembered under the fog), wherever the
    screen has that many (render.js sceneRes): a soldier then shows at his own 17 px, a house at 64. The simulation keeps its px.
    start: how many times closer than the whole-screen fit a desktop's map starts (core.js fitScreen; a phone's starts close as ever) */
-const WORLD_VIEW={fine:2,start:2};
+/* build: how large a building, a camp or a site stands to its game px: the world lab's scale (the owner, 2026-11-15: "Lab scale (~2
+   men)"): a model's px a fine px, a cottage some two men tall; a holding's centre (its walls on the world's ways) at its own size */
+const WORLD_VIEW={fine:2,start:2,build:.5};
 /* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): lh fine px of
    face a level (the lab's 8); the land's levels between the tiles' (worldgen.js reliefOf) roughened by detail levels (noise of sc
    fine px; a mountain's mount times more); steps: stepped (a terrace, its face hanging over the land south of it) where its slope
@@ -32,6 +34,17 @@ const WORLD_FLORA={step:9,
   grass:{step:6,chance:{grass:{open:.38,meadow:.55,woods:.12,dune:.3},desert:{open:.05,meadow:.015,woods:.2,dune:.12},frost:{open:.3,meadow:.03,woods:.02,dune:.12},swamp:{open:.5,meadow:.3,woods:.22,dune:.35}},
     kinds:{grass:{open:'grass',meadow:'meadow',woods:'wood',dune:'dune'},desert:{open:'dry',meadow:'dry',woods:'dry',dune:'dune'},frost:{open:'frost',meadow:'frost',woods:'frost',dune:'frost'},swamp:{open:'marsh',meadow:'marsh',woods:'wood',dune:'marsh'}},
     patch:38,wind:1,gust:[90,.65],push:12,lean:3,spring:1.4}};
+/* the world's ways drawn finer (gfx/worldways.js; the owner, 2026-11-15: "make the lab river several sizes, there can be a big
+   river"), in the lab's px (two a game px). river: half-widths by size (hw: [unused], a river one, two and three tiles wide (the
+   generator's widths); a brook's from brook[0] to brook[1] by its flow); its bank (mud) bank px; depth (levels) down its middle by
+   size (a brook's first), a ford's share of it; how far it wanders off its tiles' line (meander, px, never out of them); its last
+   stretch into the sea or a lake mouth times wider. road: half-widths (a track, a road); the lab's worn look: wheel tracks at track
+   of the half-width wandering wander px, gravel, puddles past puddle, a ragged edge of edge px, shoulders sh px kept unstepped.
+   bridge: its deck clear levels over the water; a pile every pile px (a stone bridge's arch every arch), rails rail px tall, a
+   post every post px */
+const WORLD_WAYS={river:{hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,meander:6,mouth:1.6},
+  road:{hw:[9,13],sh:10,track:.42,wander:1.3,gravel:.07,puddle:.74,edge:2.5},
+  bridge:{clear:1.4,pile:12,arch:26,rail:5,post:8}};
 const WORLD_TERRAIN={lh:8,detail:.7,sc:46,mount:2.4,steps:{from:.2,to:.34,min:.45},flat:6,rock:11,snow:14,wet:3,sand:9,dune:18,bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices

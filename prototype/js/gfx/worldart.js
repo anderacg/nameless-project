@@ -692,6 +692,9 @@ const OVER=[
   // an ore vein: a few bright flecks of its metal low on the hill or mountain
   (P,r,tx0,ty0,tx1,ty1)=>{for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){const t=tAt(tx,ty);if((t!==T_HILL&&t!==T_MOUNT)||DEP_AT[ty*MW+tx]<0)continue;const X=tx*TILE,Y=ty*TILE,h=k=>hs(tx,ty,k+40),col=GOODS[DEPOSITS[DEP_AT[ty*MW+tx]].g].col;
     for(let k=0;k<4;k++){const x=X+4+Math.floor(h(20+k)*8),y=Y+9+Math.floor(h(24+k)*5);r('#2a2620',x,y+1,2,1);r(col,x,y,2,1);if(k<2)r('#ffffff',x,y,1,1)}}}];
+// (painted finer: the reeds, the bridges and fords and the rapids are the lab's (worldways.js, worldterrain.js); a ferry's
+// landings and raft and the ore stay the game's)
+const OVER_FINE=[(P,r,tx0,ty0,tx1,ty1)=>{const inW=t=>{const x=t%MW,y=(t-x)/MW;return x>=tx0&&x<=tx1&&y>=ty0&&y<=ty1};for(const c of WM.crossings)if(c.kind!=='bridge'&&c.kind!=='ford'&&(inW(c.i)||inW(c.j)||c.tiles.some(inW)))artGenXing(P,r,c)},OVER[3]];
 // the map's rect X, Y, w×h (px) painted onto g at (ox, oy), as steps (a generator: each a ms or so; the rect a chunk, or any rect):
 // its window's ground, the trampled patches and the land's nature, kept to the rect, then what lies over them, clipped to it. The
 // counts of what it painted (and how long it took) into rec
@@ -704,13 +707,13 @@ function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
   const G0=KP?new Uint8ClampedArray(D):null;
   for(const t of P.tramples)trample(P,D,x0,y0,ww,wh,t);
   yield* townGround(P,D,x0,y0,ww,wh);
-  const road=yield* artGenRoads(P,D,x0,y0,ww,wh);
+  const road=KP?null:yield* artGenRoads(P,D,x0,y0,ww,wh);// (painted finer, the roads are the lab's: worldways.js)
   const TO=NT?new Uint8Array(ww*wh):null;
   rec.n=KP?{trees:0,fen:0,hills:0,peaks:0,decor:0,flat:0,rock:0,ms:0,tm:{},stand:{X:x0,Y:y0,w:ww,h:wh,cell:32,C:1,R:1,at:new Int32Array(2),L:[],E:[]}}:yield* PX.worldNatureSteps(P.nature,{x:x0,y:y0,w:ww,h:wh,inner:{x:X,y:Y,w,h},road},D,TO);
   if(TO)for(let y=Y;y<Y+h;y++)NT.set(TO.subarray((y-y0)*ww+X-x0,(y-y0)*ww+X-x0+w),y*Wp+X);
   g.putImageData(img,ox+x0-X,oy+y0-Y,X-x0,Y-y0,w,h);
   const tx0=Math.max(0,(X>>4)-1),ty0=Math.max(0,(Y>>4)-1),tx1=Math.min(MW-1,((X+w-1)>>4)+1),ty1=Math.min(MH-1,((Y+h-1)>>4)+1),r=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x,y,w||1,h||1)};
-  for(const pass of OVER){yield;g.save();g.beginPath();g.rect(ox,oy,w,h);g.clip();g.translate(ox-X,oy-Y);pass(P,r,tx0,ty0,tx1,ty1);g.restore()}
+  for(const pass of KP?OVER_FINE:OVER){yield;g.save();g.beginPath();g.rect(ox,oy,w,h);g.clip();g.translate(ox-X,oy-Y);pass(P,r,tx0,ty0,tx1,ty1);g.restore()}
   if(KP){yield;yield* terrainChunk(rec,P,g.getImageData(ox,oy,w,h).data,G0,KP,X,Y,w,h,x0,y0,ww,rec.fine)}
   rec.ms=performance.now()-t0;
 }
@@ -796,7 +799,7 @@ const WorldArt={
       // whole on a small map: WM.river and feat's road bits)
       if(k>1){let rd=-1,rv=-1;for(let b=0;b<k&&y*k+b<MH;b++)for(let a=0;a<k&&x*k+a<MW;a++){const j=(y*k+b)*MW+x*k+a;if(Rv[j]&3&&tiles[j]===T_WATER)rv=j;else if(Fe[j]&192&&tiles[j]===T_ROAD)rd=j}if(rv>=0)i=rv;else if(rd>=0)i=rd}
       rect(g,PAL[CLIMS[climate[i]]].mini[tiles[i]],x,y,1,1)}}))},
-  deck(c){let d=this.decks.get(c);if(d)return d;const L=[];let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  deck(c){let d=this.decks.get(c);if(d)return d;if(typeof sceneRes==='function'&&sceneRes()>1){d=wayDeck(c);this.decks.set(c,d);return d}const L=[];let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
     artGenXing(this.ensure(),(col,x,y,w,h)=>{w=w||1;h=h||1;L.push(col,x,y,w,h);x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x+w);y1=Math.max(y1,y+h)},c);
     const cv=mkc(x1-x0,y1-y0,g=>{for(let i=0;i<L.length;i+=5){g.fillStyle=L[i];g.fillRect(L[i+1]-x0,L[i+2]-y0,L[i+3],L[i+4])}});
     d={cv,x:x0,y:y0,foot:y1-1};this.decks.set(c,d);return d},

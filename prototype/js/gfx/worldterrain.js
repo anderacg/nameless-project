@@ -38,40 +38,66 @@ const tmix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t],t
 // (a tone of a palette by patches a few px across, a little grain within: the lab's pick)
 const tpick=(L3,x,y,s)=>L3[Math.min(L3.length-1,Math.floor((wnoise2(x/5,y/5,s)*.8+hs(x,y,s+1)*.2)*L3.length))];
 
-// the chunk X, Y, w x h (game px) painted r times finer into rec.fcv: F its game-px picture as painted, G its ground alone (the window
-// x0, y0, ww wide), KP the ground's water mask and distances (artGenGround's: M, DT, X0, Y0, RW)
+// the chunk X, Y, w x h (game px) painted r times finer into rec.fcv: F its game-px picture as painted (the yards, trampled ground,
+// ferries, ore), G its ground alone (the window x0, y0, ww wide), KP the ground's water mask and distances (artGenGround's: M, DT,
+// X0, Y0, RW: the sea's and the lakes'); its ways the lab's (worldways.js: the rivers and brooks as curves, their surface stepping
+// down the land; the roads worn tracks; the bridges standing over the water)
 function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r){
-  const T=WORLD_TERRAIN,PAL=terrainPal(),LV=WM.lv||(WM.lv=reliefOf(WM)),W2=w*r,H2=h*r,out=new ImageData(W2,H2),O=out.data,TS=16;
+  const T=WORLD_TERRAIN,PAL=terrainPal(),LV=WM.lv||(WM.lv=reliefOf(WM)),W2=w*r,H2=h*r,out=new ImageData(W2,H2),O=out.data,TS=16,WY=waysOf(P),WV=WORLD_WAYS,Rv=WM.river,k2=r/2;
   // (the game px whose levels are worked: the chunk, a px round it, and above it as far as the tallest face can hang)
   const up=Math.ceil(24*T.lh/r),gx0=X-2,gy0=Y-up,GW=w+4,GH=h+up+3,Lv=new Float32Array(GW*GH),St=new Float32Array(GW*GH),Gx=new Float32Array(GW*GH),Gy=new Float32Array(GW*GH),Wa=new Uint8Array(GW*GH);
-  const tlv=(tx,ty)=>LV[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))],tk=(tx,ty)=>tiles[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))];
-  for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i,u=(gx-8)/TS,v=(gy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,
-      t=tk(gx>>4,gy>>4),wet=t===T_WATER||t===T_FORD;
-      let e=(tlv(tx,ty)*(1-fu)+tlv(tx+1,ty)*fu)*(1-fv)+(tlv(tx,ty+1)*(1-fu)+tlv(tx+1,ty+1)*fu)*fv;
-      if(wet)e=tlv(gx>>4,gy>>4);else e+=((wnoise2(gx*r/T.sc,gy*r/T.sc,311)-.5)*1.4+(wnoise2(gx*r/(T.sc*.35),gy*r/(T.sc*.35),312)-.5)*.6)*2*T.detail*(t===T_MOUNT?T.mount:1);
-      Lv[j*GW+i]=Math.max(0,e);Wa[j*GW+i]=wet?1:0}
+  const tlv=(tx,ty)=>LV[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))],tix=(gx,gy)=>Math.max(0,Math.min(MH-1,gy>>4))*MW+Math.max(0,Math.min(MW-1,gx>>4));
+  // (the ways near: the rivers' and brooks' curves and the roads, at game px over the levels' window and at fine px over the chunk;
+  //  the sea's and the lakes' tiles (a river's mouth on them with them) keep the shore's water)
+  const bankG=WV.river.bank*WAY_LP,shG=WV.road.sh*WAY_LP,bankF=WV.river.bank*k2,edgeF=WV.road.edge*k2;
+  const RG=yield* waysBand(WY.SA,gx0,gy0,GW,GH,1,bankG+2),DG=yield* waysBand(WY.RA,gx0,gy0,GW,GH,1,shG+1);
+  const RF=yield* waysBand(WY.SA,X*r,Y*r,W2,H2,r,bankF+2),DF=yield* waysBand(WY.RA,X*r,Y*r,W2,H2,r,edgeF+2);
+  const seaT=ti=>tiles[ti]===T_WATER&&(!(Rv[ti]&3)||WY.mouth[ti]),surf=(q,t)=>{const a=WY.SP[q];return WY.LV[t<.5?a:a+1]};
+  for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i,u=(gx-8)/TS,v=(gy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,ti=tix(gx,gy),t=tiles[ti],sea=seaT(ti),k=j*GW+i;
+      let e,wet=sea;
+      if(sea)e=LV[ti];
+      else{e=(tlv(tx,ty)*(1-fu)+tlv(tx+1,ty)*fu)*(1-fv)+(tlv(tx,ty+1)*(1-fu)+tlv(tx+1,ty+1)*fu)*fv;
+        e+=((wnoise2(gx*r/T.sc,gy*r/T.sc,311)-.5)*1.4+(wnoise2(gx*r/(T.sc*.35),gy*r/(T.sc*.35),312)-.5)*.6)*2*T.detail*(t===T_MOUNT?T.mount:1);
+        // (a river's or a brook's water at its surface, flat across; its banks eased to it)
+        const s=RG.S[k];if(s<0){e=surf(RG.Q[k],RG.T[k]);wet=true}else if(s<bankG){const sv=surf(RG.Q[k],RG.T[k])+.3;e=sv+(e-sv)*wsm(s/bankG)}}
+      Lv[k]=Math.max(0,e);Wa[k]=wet?1:0}
     if(!(j&31))yield}
-  // (each px's slope, and its level stepped where it is steep: never near a road, a lot or a ford, nor on water)
+  // (each px's slope, and its level stepped where it is steep: never on water, near a road, a lot)
   for(let j=1;j<GH-1;j++)for(let i=1;i<GW-1;i++){const k=j*GW+i,gx=gx0+i,gy=gy0+j,gxl=(Lv[k+1]-Lv[k-1])/2,gyl=(Lv[k+GW]-Lv[k-GW])/2,g=Math.hypot(gxl,gyl);Gx[k]=gxl;Gy[k]=gyl;
-    const t=tk(gx>>4,gy>>4),flat=Wa[k]||t===T_ROAD||t===T_FORD||(typeof occAt==='function'&&occAt(gx>>4,gy>>4)>0);
+    const flat=Wa[k]||DG.S[k]<shG||(typeof occAt==='function'&&occAt(gx>>4,gy>>4)>0);
     const sw=flat?0:Math.max(0,Math.min(1,(g-T.steps.from)/(T.steps.to-T.steps.from))),s3=sw*sw*(3-2*sw),e=Lv[k];St[k]=e+(Math.floor(e)-e)*s3}
   yield;
   const at=(gx,gy)=>(gy-gy0)*GW+gx-gx0,mi=(gx,gy)=>(gy-KP.Y0)*KP.RW+gx-KP.X0,inK=(gx,gy)=>gx>=KP.X0&&gy>=KP.Y0&&gx<KP.X0+KP.RW&&gy<KP.Y0+KP.RH;
-  // the tops: every fine px its own ground (or what the game painted over it), shaded by its slope
+  // the tops: every fine px its own ground (or what the game painted over it), shaded by its slope; a river's water, its bank; a road
   const C=[0,0,0];
-  for(let y=0;y<h;y++){for(let x=0;x<w;x++){const gx=X+x,gy=Y+y,fo=(y*w+x)*4,go=((gy-y0)*ww+gx-x0)*4,k=at(gx,gy),ti=(gy>>4)*MW+(gx>>4),t=tiles[ti],
-      over=F[fo]!==G[go]||F[fo+1]!==G[go+1]||F[fo+2]!==G[go+2]||!!(P.fd&&P.fd[ti]);
-      if(over){for(let j=0;j<r;j++)for(let i=0;i<r;i++){const o=((y*r+j)*W2+x*r+i)*4;O[o]=F[fo];O[o+1]=F[fo+1];O[o+2]=F[fo+2];O[o+3]=255}continue}
-      const m=inK(gx,gy)?KP.M[mi(gx,gy)]:0,dd=inK(gx,gy)?KP.DT[mi(gx,gy)]:99,e=Lv[k],sl=Math.max(-.16,Math.min(.12,(-Gx[k]-.6*Gy[k])/1*T.lh*T.shade/r));
+  for(let y=0;y<h;y++){for(let x=0;x<w;x++){const gx=X+x,gy=Y+y,fo=(y*w+x)*4,go=((gy-y0)*ww+gx-x0)*4,k=at(gx,gy),ti=(gy>>4)*MW+(gx>>4),t=tiles[ti],ford=t===T_FORD&&DF.S[(y*r)*W2+x*r]<4*r,
+      over=F[fo]!==G[go]||F[fo+1]!==G[go+1]||F[fo+2]!==G[go+2];
+      let m=inK(gx,gy)?KP.M[mi(gx,gy)]:0;if(m&&!seaT(ti))m=0;
+      const dd=inK(gx,gy)?KP.DT[mi(gx,gy)]:99,e=Lv[k],sl=Math.max(-.16,Math.min(.12,(-Gx[k]-.6*Gy[k])/1*T.lh*T.shade/r)),flat=Math.hypot(Gx[k],Gy[k])<.03;
       // (its climates, by the tiles' round it: their shares)
-      const u=(gx-8)/TS,v=(gy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,cw=[0,0,0,0],cl=(a,b)=>climate[Math.max(0,Math.min(MH-1,b))*MW+Math.max(0,Math.min(MW-1,a))];
+      const u=(gx-8)/TS,v=(gy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,cw=[0,0,0,0],cl=(a,b)=>climate[Math.max(0,Math.min(MH-1,b))*MW+Math.max(0,Math.min(MW-1,a))],ci=climate[ti],Q=PAL[ci];
       cw[cl(tx,ty)]+=(1-fu)*(1-fv);cw[cl(tx+1,ty)]+=fu*(1-fv);cw[cl(tx,ty+1)]+=(1-fu)*fv;cw[cl(tx+1,ty+1)]+=fu*fv;
-      // (the nearest water's kind: the sea's or a lake's open water, or a river's)
-      let open=true;if(!m&&dd<T.dune){const j=wnear(P.wk,gx>>4,gy>>4,4);if(j>=0){const kj=P.wk[j];open=kj===1||kj===5}}
-      for(let j=0;j<r;j++)for(let i=0;i<r;i++){const o=((y*r+j)*W2+x*r+i)*4,fx=gx*r+i,fy=gy*r+j;C[0]=C[1]=C[2]=0;
-        for(let c=0;c<4;c++){if(cw[c]<.02)continue;const c3=m?terWater(PAL[c],c,m,dd,P,gx,gy,fx,fy):terLand(PAL[c],c,t,e,Math.hypot(Gx[k],Gy[k]),dd,open,fx,fy);C[0]+=c3[0]*cw[c];C[1]+=c3[1]*cw[c];C[2]+=c3[2]*cw[c]}
-        const s=m?1:1+sl;O[o]=C[0]*s;O[o+1]=C[1]*s;O[o+2]=C[2]*s;O[o+3]=255}}
+      // (the nearest water's kind: the sea's or a lake's open water (its beach), or a river's (its bank is the river's own))
+      let open=true;if(!m&&dd<T.dune){const j=wnear(P.wk,gx>>4,gy>>4,4);if(j>=0){const kj=P.wk[j];open=kj===1||kj===5}}const ddL=open?dd:99;
+      for(let j=0;j<r;j++)for(let i=0;i<r;i++){const fi=(y*r+j)*W2+x*r+i,o=fi*4,fx=gx*r+i,fy=gy*r+j,rs=RF.S[fi];let col,shade=true;
+        if(!m&&rs<0){const a=WY.SP[RF.Q[fi]],tt=RF.T[fi],hw=(WY.HW[a]+(WY.HW[a+1]-WY.HW[a])*tt)*r,q=Math.min(1,(rs+hw)/hw),dp=WY.DP[a]+(WY.DP[a+1]-WY.DP[a])*tt;
+          col=wayWater(Q,CLIMS[ci],fx,fy,(dp*(1-q*q)+.04)*(ford?WV.river.ford:1),q,ford);shade=false}
+        else if(over)col=[F[fo],F[fo+1],F[fo+2]];
+        else{C[0]=C[1]=C[2]=0;
+          for(let c=0;c<4;c++){if(cw[c]<.02)continue;const c3=m?terWater(PAL[c],c,m,dd,P,gx,gy,fx,fy):terLand(PAL[c],c,WY.land[ti],e,Math.hypot(Gx[k],Gy[k]),ddL,open,fx,fy);C[0]+=c3[0]*cw[c];C[1]+=c3[1]*cw[c];C[2]+=c3[2]*cw[c]}
+          col=[C[0],C[1],C[2]];if(m)shade=false;
+          // (a river's bank: mud at the water, dark grass up it, then the land)
+          else if(rs<bankF){const tb=rs/bankF;col=tb<.45?tmix(tpick(Q.mud,fx,fy,519),tmul(col,.86),tb/.45):tmix(tmul(col,.86),col,(tb-.45)/.55)}}
+        // (a road over it: the lab's worn track, its edge ragged; never over water)
+        const ds=DF.S[fi];if(!m&&!(rs<0)&&ds<edgeF){const rg=ds-(wnoise2(fx/(13*k2),fy/(13*k2),533)-.5)*2*edgeF;
+          if(rg<0){const sg=DF.Q[fi],o6=sg*6,A=WY.RA,hwR=A[o6+4]*r,ax=A[o6]*r,ay=A[o6+1]*r,bx=A[o6+2]*r,by=A[o6+3]*r,side=Math.sign((bx-ax)*(fy+.5-ay)-(by-ay)*(fx+.5-ax))||1;
+            col=wayRoad(fx,fy,(ds+hwR)*side,hwR,(WY.RL[sg]+DF.T[fi]*Math.hypot(A[o6+2]-A[o6],A[o6+3]-A[o6+1]))*r,flat,col,k2)}}
+        const s=shade?1+sl:1;O[o]=col[0]*s;O[o+1]=col[1]*s;O[o+2]=col[2]*s;O[o+3]=255}}
     if(!(y&7))yield}
+  // (reeds on the rivers' banks: a few px tall, up from the mud)
+  for(let fy=Y*r+6;fy<(Y+h)*r;fy++)for(let fx=X*r;fx<(X+w)*r;fx++){const fi=(fy-Y*r)*W2+fx-X*r,rs=RF.S[fi];if(!(rs>=0&&rs<bankF*.6)||hs(fx,fy,535)>.035)continue;
+    const n=Math.round((3+hs(fx,fy,536)*3)*k2);for(let j=1;j<=n;j++){const o=(fi-j*W2)*4,c=j===n&&hs(fx,fy,537)<.4?WAY_COL.reed[2]:WAY_COL.reed[j&1];O[o]=c[0];O[o+1]=c[1];O[o+2]=c[2]}}
+  yield;
   // the faces: north to south, each step down (the stepped level dropping between a game px and the one south of it) hangs its face
   // over the px south of the edge, lh fine px a level; the edge's lip lit (snow on a high one), the foot in the face's shade
   const FM=new Uint8Array(W2*H2);// (what the faces cover, fine px: no prop nor grass stands on a face)
@@ -90,8 +116,10 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r){
       // (the foot of the face in its shade)
       const fy=fy0+n,yy=fy-Y*r;if(yy>=0&&yy<H2)for(let i=0;i<r;i++){const o=(yy*W2+x*r+i)*4;O[o]*=.78;O[o+1]*=.78;O[o+2]*=.78}}
     if(!(x&15))yield}
+  // (the bridges, standing over it all: worldways.js)
+  waysBridges(O,W2,H2,X,Y,r,Lv,Wa,(gx,gy)=>gx<gx0||gy<gy0||gx>=gx0+GW||gy>=gy0+GH?-1:at(gx,gy),FM);
   rec.fcv=mkcv(W2,H2);rec.fcv.getContext('2d').putImageData(out,0,0);rec.fr=r;
-  yield* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,FM,Lv,St,at)}
+  yield* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,FM,Lv,St,at,{RF,DF,seaT,bankF})}
 
 /* the land's nature on the chunk (the world lab's: engine/worldflora.js, WORLD_FLORA): on a grid of step fine px, each cell's
    thing by its ground and climate: trees in the woods (their kind by where they stand: lowland, waterside, hills, mountain, a
@@ -99,11 +127,11 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r){
    the desert) on open ground and hills; boulders and stones up the mountains; cattails on the banks. None on water, a road, a lot, a
    ford, what the game painted over the ground or a face. rec.props: {x, y (its foot, game px), s (its picture, fine px), ax, ay,
    low (flat: no cover)}, sorted by y; rec.grass: the clumps (fine px, kind, variant), sorted by y */
-function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,FM,Lv,St,at){
+function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,FM,Lv,St,at,WB){
   const FL=PX.flora,WF=WORLD_FLORA,st=WF.step,out=[],GX=[],GY=[],GT=[],GV=[],W2=w*r,H2=h*r,near=(gx,gy,d,f)=>{for(let b=-d;b<=d;b++)for(let a=-d;a<=d;a++){const u=(gx>>4)+a,v=(gy>>4)+b;if(u>=0&&v>=0&&u<MW&&v<MH&&f(v*MW+u,u,v))return true}return false};
-  const ok=(gx,gy,fx,fy)=>{const fo=((gy-Y)*w+gx-X)*4,go=((gy-y0)*ww+gx-x0)*4,ti=(gy>>4)*MW+(gx>>4),t=tiles[ti];if(t===T_WATER||t===T_ROAD||t===T_FORD)return false;
+  const ok=(gx,gy,fx,fy)=>{const fo=((gy-Y)*w+gx-X)*4,go=((gy-y0)*ww+gx-x0)*4,ti=(gy>>4)*MW+(gx>>4),fi=(fy-Y*r)*W2+fx-X*r;if(WB.seaT(ti)||WB.RF.S[fi]<2*r||WB.DF.S[fi]<3*r)return false;
     if(F[fo]!==G[go]||F[fo+1]!==G[go+1]||F[fo+2]!==G[go+2])return false;if(FM[(fy-Y*r)*W2+fx-X*r])return false;if(typeof occAt==='function'&&occAt(gx>>4,gy>>4)>0)return false;
-    const mx=gx-KP.X0,my=gy-KP.Y0;if(mx>=0&&my>=0&&mx<KP.RW&&my<KP.RH&&KP.M[my*KP.RW+mx])return false;return true};
+    return true};
   const pickOf=(mix,h)=>{let tot=0,sp=null;for(const q in mix)tot+=mix[q];let q=h*tot;for(const k in mix){sp=k;if((q-=mix[k])<0)break}return sp};
   let lastLook=null;const look=cl=>{if(lastLook===cl)return;lastLook=cl;FL.look=WF.look[cl];FL.cap=WF.look[cl].snow};
   for(let fy=Y*r+2;fy<(Y+h)*r;fy+=st){for(let fx=X*r+2;fx<(X+w)*r;fx+=st){const jx=Math.round(fx+(hs(fx,fy,401)-.5)*st),jy=Math.round(fy+(hs(fx,fy,402)-.5)*st);
@@ -122,7 +150,7 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,FM,Lv,St,at){
         if(Z.boulder&&(q-=Z.boulder)<0){put(FL.boulderPic(v,11+(v%4)*3,FL.look.moss),'rock');continue}if(Z.stone&&(q-=Z.stone)<0){put(FL.stonePic(3+(v%4),v),'stone',true);continue}
         if(Z.flowers&&(q-=Z.flowers)<0){put(FL.flowersPic(v+Math.floor(hs(fx,fy,408)*3)*8),'flowers',true);continue}if(Z.agave&&(q-=Z.agave)<0){put(FL.agavePic(v),'agave',true);continue}
         if(Z.bones&&(q-=Z.bones)<0){put(FL.bonesPic(v),'bones',true);continue}
-        const dd=KP.DT?KP.DT[(gy-KP.Y0)*KP.RW+gx-KP.X0]:99;if(dd<4&&C.bank.cattail&&(q-=C.bank.cattail)<0){put(FL.cattailPic(v),'reeds');continue}}}
+        const rb=WB.RF.S[(jy-Y*r)*W2+jx-X*r];if(rb<WB.bankF*1.5&&C.bank.cattail&&(q-=C.bank.cattail)<0){put(FL.cattailPic(v),'reeds');continue}}}
     if(!(fy&63))yield}
   FL.cap=false;
   // (the grass's clumps: on a grid of its step, by the ground's kind (open, meadow, woods, dunes) and climate, thicker in patches)
