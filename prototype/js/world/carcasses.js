@@ -127,7 +127,7 @@ const p=b.world.world(c),M=Object.keys(MONSTERS).find(k=>MONSTERS[k].unit===u.ty
       if(this.diggers.length>=C.most)continue;const g=gateGoal(t);c.digger=true;this.diggers.push({c,home:t.name,x:g.x,y:g.y,st:'out',t:0,id:t.name+'|dig|'+Math.round(c.x),job:'farmer',dir:c.x>=g.x?1:-1,walk:0})}}
   static diggers=[];
   // (each clearer's moment: out to the fallen, digging there C.dig s, the fallen gone, home to the gate and in)
-  static dig(d){const C=CARCASS.clear,s=moveStep(C.pace,d,false);
+  static dig(d){const C=CARCASS.clear,s=footStep(C.gait,d);
     for(const f of this.diggers){const to=f.st==='back'?gateGoal(townBy(f.home)||{x:f.x,y:f.y-12}):f.c;if(f.st==='dig'){f.t-=d;if(f.t<=0){this.list=this.list.filter(o=>o!==f.c);f.st='back'}continue}
       const dx=to.x-f.x,dy=to.y-f.y,dd=Math.hypot(dx,dy);if(dd<2){if(f.st==='out'){f.st='dig';f.t=C.dig}else f.gone=true;continue}
       const k=Math.min(dd,s);f.x+=dx/dd*k;f.y+=dy/dd*k;f.walk+=k;if(Math.abs(dx)>.01)f.dir=dx>0?1:-1;if(f.st==='out'&&!this.list.includes(f.c))f.st='back'}
@@ -142,7 +142,7 @@ const p=b.world.world(c),M=Object.keys(MONSTERS).find(k=>MONSTERS[k].unit===u.ty
   static drawAll(ents,cam,V){for(const c of this.list)c.draw(ents,cam,V);
     // (the clearers: their holding's folk (folk.js workerAppearance), walking, or at the fallen swinging their tools)
     const S=yourSight(V),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;for(const f of this.diggers){if(!S.sees(f.x,f.y))continue;
-      ents.push({y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{const L=workerAppearance(f),pose=f.st==='dig'?6+Math.floor(performance.now()/260)%3:2+Math.floor(f.walk/WALK.foot)%4,sp=unitSprite(L.type,0,false,L.v,pose,false,false,L.tint);
+      ents.push({y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{const L=workerAppearance(f),pose=f.st==='dig'?6+Math.floor(performance.now()/260)%3:2+footFrame(f.walk),sp=unitSprite(L.type,0,false,L.v,pose,false,false,L.tint);
         ctx.save();ctx.translate(Math.round(f.x-cam.x),Math.round(f.y-cam.y));ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(-2,-1,5,2);ctx.scale(f.dir<0?-k:k,k);ctx.drawImage(sp,-(sp.width>>1),-sp.height+2);ctx.restore()})})}}
   static save(){return this.list.length?this.list.map(c=>{const o={...c};delete o.corpse;delete o.digger;return o}):undefined}// (its picture only what you see)
   static load(v){this.list=(v||[]).map(o=>asCarcass(o))}

@@ -52,7 +52,11 @@ Kit.suite(({ok,info})=>{
  {const C=near(city,.25),cam={x:Math.floor(city.x-t.VW/2),y:Math.floor(city.y-t.VH/2)},V=t.vis(),S=t.yourSight(V),e=[];TF.draw(e,cam,V);
   const n=C.ppl.filter(p=>!p.hid&&S.sees(p.x,p.y,1.3)&&Math.abs(p.x-cam.x-t.VW/2)<t.VW/2&&Math.abs(p.y-cam.y-t.VH/2)<t.VH/2).length;ok(n>0&&e.length>=n,'drawn about the town within your sight ('+e.length+')');
   const sv=S.sees;try{S.sees=()=>false;const e2=[];TF.draw(e2,cam,V);ok(!e2.length,'out of your sight, none')}finally{S.sees=sv}
-  const p=C.ppl.find(q=>!q.hid);ok(p&&t.TownFolk.all().includes(p)&&p.tip().includes(p.name)&&p.tip().includes(city.name)&&t.worldObjects().includes(p),'one hovered: '+p.tip().replace(/<[^>]+>/g,' ').trim())}
+  const p=C.ppl.find(q=>!q.hid);ok(p&&t.TownFolk.all().includes(p)&&p.tip().includes(p.name)&&p.tip().includes(city.name)&&t.worldObjects().includes(p),'one hovered: '+p.tip().replace(/<[^>]+>/g,' ').trim())
+  // (clicked: he greets you, nothing more (the owner, 2026-11-15: "clicking at town folks should not open the city dialogue"))
+  {const m0=G.mode,n0=(G.msgs||[]).length,tt=window.toast,said=[];try{window.toast=x=>said.push(String(x));p.meet()}finally{window.toast=tt}
+   const hit=t.pickAt(p.x,p.y-3);ok(hit===p,'clicked on, it is him that is picked, not '+(hit&&hit!==p?(hit.name||hit.mapKind):'his holding'));
+   ok(G.mode===m0&&!G.town&&said.length===1&&said[0].includes(p.name)&&/“.+”/.test(said[0]),'clicked, he greets you, no holding window: '+said[0])}}
  // ---- TOWNFOLK.on false: none at all
  {F.on=false;try{Kit.goTo(city.x,city.y+40);G.clock=t.DAY*.25;TF.step(.05);const e=[];TF.draw(e,{x:0,y:0},t.vis());ok(!TF.of.size&&!TF.all().length&&!e.length,'TOWNFOLK.on false: no townsfolk')}finally{F.on=true}}
  ok(!draws,'their life draws nothing from the world’s Math.random ('+draws+')');

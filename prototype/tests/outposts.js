@@ -54,23 +54,22 @@ Kit.suite(({ok,info})=>{
    const sup2=s.supplier(),st2=sup2.stock,k2={...st2};try{st2.timber=0;st2.stone=0;for(let i=0;i<S.repair.days;i++)s.day();ok(s.broken&&s.need,'mended only once paid');
     st2.timber=50;st2.stone=50;s.day();ok(!s.broken&&st2.timber===50-S.repair.cost.timber&&s.most===S.guards[2],'paid: its tower mended ('+s.costText(S.repair.cost)+')')}finally{Object.assign(st2,k2)}
   }finally{Object.assign(st,keep);s.owner=f;s.lv=1;s.broken=false;s.guards=S.guards[1];G.mode='world';t.hidePanel()}}
- {const s=all().find(x=>x.guards>0&&t.FACS[x.realm]&&x.realm!=='player');P.x=s.x;P.y=s.y+30;s.seen=true;const ents=[],cam={x:P.x-200,y:P.y-150};t.frame();s.draw(ents,cam,200);
-  const mins=(t.G.day+t.Clock.frac)*1440,n=Math.min(S.sentries.most,s.guards),out=[...Array(n).keys()].filter(i=>!s.sentryAt(i,n,mins).inside).length;
-  ok(ents.length===1+out&&t.FACS[s.realm]&&typeof s.sentryType()==='string','in your sight its sentries on their beat round it, those resting in its tower not seen ('+out+' of '+n+', '+s.sentryType()+')')}
- // ---- their beat (the owner, 2026-11-11: "patrol around the flag and stop, dont make them always walk, and they should go rest in the tower like garrison")
- // (a sentry steps by the way he walks, as a marcher, at a man's pace: by the clock's minutes, at 1.5 px a minute, a step a second
- //  ("Why the outpost guards looks low framerate", the owner 2026-11-13))
- {const X=S.sentries,s=all().find(x=>t.FACS[x.realm]),perSec=X.pace*1440/(t.DAY*60)/(t.WALK.foot*t.WALK.step);let m=0,p=null;for(;m<3000;m+=.5){p=s.sentryAt(0,3,m);if(p.moving)break}
-  const q=p&&s.sentryAt(0,3,m+.1);ok(p&&p.moving&&q.moving&&Math.abs(q.walked-p.walked-X.pace*.1)<1e-6&&perSec>=4,'a sentry steps by the way he walks ('+perSec.toFixed(1)+' steps a second at 1×), never by the clock')}
- {const X=S.sentries;for(const lv of [1,2]){const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'),keep={lv:s.lv,broken:s.broken};s.lv=lv;s.broken=false;delete s._sp;
-   const n=3,F=s.footing(),c={walk:0,stand:0,inside:0},on=(p)=>F.some(f=>p.x>f.x&&p.x<f.x+f.w&&p.y>f.y&&p.y<f.y+f.h);let onF=0,far=0,jump=0,last=[];
-   for(let m=0;m<3000;m+=.5){for(let i=0;i<n;i++){const p=s.sentryAt(i,n,m);c[p.inside?'inside':p.moving?'walk':'stand']++;if(!p.inside&&on(p))onF++;far=Math.max(far,Math.hypot(p.x-s.x,p.y-s.y));if(last[i]&&!last[i].inside&&!p.inside)jump=Math.max(jump,Math.hypot(p.x-last[i].x,p.y-last[i].y));last[i]=p}}
-   const T=c.walk+c.stand+c.inside,pc=k=>Math.round(c[k]/T*100);
-   ok(c.stand>c.walk*.5&&c.walk>0,(lv>1?'a watchtower':'the banner alone')+': they walk to a post and stand there a while ('+pc('walk')+'% walking, '+pc('stand')+'% standing)');
-   ok(lv>1?c.inside>T*.15&&c.inside<T*.6:c.inside===0,lv>1?'and take turns resting in the tower ('+pc('inside')+'% of the time)':'no tower: none goes in (they rest by the flag\'s foot)');
-   ok(!onF&&far<X.r*3+20&&jump<=X.pace*.5+.01,'never on the plinth or in the tower, near the flag (at most '+Math.round(far)+' px), no jumps');
-   if(lv>1){let both=0;for(let m=0;m<3000;m+=5)if([0,1,2].filter(i=>s.sentryAt(i,n,m).inside).length===n)both++;ok(both===0,'never all three in at once: one always on watch')}
-   Object.assign(s,keep);delete s._sp}}
+ // ---- its watch (the owner, 2026-11-11: "patrol around the flag and stop, dont make them always walk, and they should go rest in the
+ // tower like garrison"; 2026-11-15: "The speed is too fast and not matching with walking speed. They should be a group of three
+ // sentry guarding around there"; world/outposts.js OutpostWatch): three of its guards together, post to post at a man on foot's
+ // gait (data/world.js ON_FOOT, everyone's), a stand at each, a rest by its door after a round; in your sight, each drawn as a marcher
+ {const X=S.sentries,OW=t.OutpostWatch,s=all().find(x=>x.guards>=3&&t.FACS[x.realm]&&x.realm!=='player');P.x=s.x;P.y=s.y+30;s.seen=true;OW.of.delete(s);OW.step(.05);
+  const w=OW.of.get(s),ents=[],cam={x:P.x-200,y:P.y-150};t.frame();s.draw(ents,cam,200);
+  ok(w&&w.men.length===3&&ents.length===4&&typeof s.sentryType()==='string','in your sight its watch: three of its guards together ('+s.sentryType()+')');
+  const pace=t.footStep(X.gait,1),F=s.footing(),on=p=>F.some(f=>p.x>f.x&&p.x<f.x+f.w&&p.y>f.y&&p.y<f.y+f.h),last=OW.stops(s).length-1;
+  let fast=0,c={walk:0,stand:0},apart=0,onF=0,far=0,rests=0,was=w.k,steps=0;w.wait=0;
+  for(let i=0;i<8000;i++){const x0=w.x,y0=w.y,f0=t.footFrame(w.men[1].walk);OW.step(.05);const v=Math.hypot(w.x-x0,w.y-y0)/.05;fast=Math.max(fast,v);c[w.moving?'walk':'stand']++;
+    if(t.footFrame(w.men[1].walk)!==f0)steps++;for(const u of w.men){apart=Math.max(apart,Math.hypot(u.x-w.x,u.y-w.y));if(on(u))onF++;far=Math.max(far,Math.hypot(u.x-s.x,u.y-s.y))}
+    if(w.k!==was&&w.k===last)rests++;was=w.k}
+  ok(fast<=pace+1e-6&&fast>=pace*.9&&pace<t.footStep('walk',1),'they walk at a man on foot\'s '+X.gait+' ('+fast.toFixed(1)+' px a s; a marcher '+t.footStep('walk',1).toFixed(1)+'), a step each '+(t.WALK.foot*t.WALK.step)+' px as a marcher ('+steps+' steps)');
+  ok(apart<=16,'together: none of them more than '+apart.toFixed(1)+' px from their leader');
+  ok(c.stand>c.walk*.3&&c.walk>0&&rests>=1,'post to post, a stand at each ('+Math.round(c.walk/(c.walk+c.stand)*100)+'% walking), a rest by its door after each round ('+rests+')');
+  ok(!onF&&far<X.r*3+20,'never on its plinth or in its tower, near the flag (at most '+Math.round(far)+' px)')}
  // ---- a lost fight: those of its guards you slew stay dead; your own outposts' guards from your nearest holding
  {const s=all().find(x=>x.guards>=3&&t.FACS[x.realm]&&x.realm!=='player'),g0=s.guards;t.ON_WIN.outpost.lost({ref:s},['hum_spear','hum_spear','chief']);ok(s.guards===g0-2,'beaten off it: the two guards you slew stay dead ('+g0+' to '+s.guards+')');s.guards=g0}
  {const s=all().find(x=>t.FACS[x.realm]&&x.realm!=='player'&&!x.choose&&!x.taking),f=s.realm,h=t.TOWNS.find(x=>x.owner===f&&!x.gone),o0=h.owner,g0=h.gar,keep=s.guards;

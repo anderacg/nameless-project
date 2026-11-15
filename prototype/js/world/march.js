@@ -175,7 +175,7 @@ const marchCart=(o,at=o)=>{const d=o.dir<0?-1:1;return MARCH_CART.map(([x,r])=>(
 function marchLook(u,o){const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',col=o.look().col;
   const cl=dressClimAt(o.x,o.y);if(!u.mLook||u.mLookC!==col||u.mLookW!==cl){const L=dressedIn(cl,()=>spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col));u.mLook=o.unarmed?{...L,weapon:null,slung:WPN[L.weapon]?null:L.weapon}:L;u.mLookC=col;u.mLookW=cl}return u.mLook}// (unarmed (refugees): their tools slung on their backs, nothing in hand)
 // (his stride's frame on the march, 0-3: by the way he has walked, a step each WALK.foot × WALK.step px, so his feet keep to the ground)
-const marcherStep=u=>(Math.floor((u.walk||0)/(WALK.foot*WALK.step))+u.id)%4;
+const marcherStep=u=>footFrame(u.walk,u.id);
 // (drawn walking: stepping, and not yet at his place: there, he stands at once, not on his last stride frozen for the rest of
 // MARCH_MOVE.stride; the owner, "leg stuck before going to idle". Drawn only: the march itself reads u.walking)
 const marchWalks=u=>!!u.walking&&!(u.tg&&Math.hypot(u.x-u.tg.x,u.y-u.tg.y)<MARCH_MOVE.home);

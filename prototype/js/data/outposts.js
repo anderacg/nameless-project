@@ -4,16 +4,17 @@
 // your banner; renown for one you take, and thanks (honour) from the realm you take it for; regrow: a realm's guards back a day;
 // hostile: attacking one of a realm not at war with you (days hostile, honour); I0: their site numbers (far past the world's own)
 // grow: held in peace days[lv] days, it grows to lv + 1, paid cost[lv + 1] from its realm's nearest holding's stores; repair: a
-// tower broken in its taking mended days on, paid cost; sentries (walk: the least px a real second a sentry walks on toward his place
-// on his beat, as a marcher; snap: farther behind it than this, he is put there): at most most on the map, a breath at a post each stride × 4 game minutes (walking, a step by the way walked: outposts.js draw); their
-// beat (the owner, 2026-11-11: "patrol around the flag and stop, dont make them always walk, and they should go rest in the tower like
-// garrison"): posts in an arc in front of the flag, r px either side, walked at pace px a game minute, a stand of stand game
-// minutes at each; after a round of them, rest game minutes in its tower (none standing: by the flag's foot), each sentry's turn
-// a share of the round apart, so one rests while the others walk
+// tower broken in its taking mended days on, paid cost; sentries (the owner, 2026-11-11: "patrol around the flag and stop, dont
+// make them always walk, and they should go rest in the tower like garrison"; 2026-11-15: "The speed is too fast and not matching
+// with walking speed. They should be a group of three sentry guarding around there"; world/outposts.js OutpostWatch): at most most
+// of its guards, one knot of men (knot: each one's place, px along and across the way it goes, its leader first) walking together
+// at their gait (data/world.js ON_FOOT) from post to post in an arc in front of the flag (posts of them, r px either side), a stand of
+// stand world seconds at each, then rest s by its tower's door (none standing: the flag's foot); a man behind his place walks up
+// at catch × the gait; only within near px of you
 // (an outpost's site type in W.sites, as saves keep it; 'standard' till 2026-11-14, the owner: "make sure the standard term is the outpost")
 const OUTPOST_TYPE='outpost';
 const OUTPOST={on:true,guards:[0,3,6,10],hold:4,r:44,renown:4,thanks:6,regrow:1,I0:200000,hostile:{days:20,honor:-10},
-  grow:{days:[0,8,14],cost:{2:{timber:14},3:{timber:8,stone:20}}},repair:{days:4,cost:{timber:6,stone:6}},sentries:{most:3,r:28,stride:2,posts:4,pace:4,stand:[20,40],rest:120,walk:16,snap:40},
+  grow:{days:[0,8,14],cost:{2:{timber:14},3:{timber:8,stone:20}}},repair:{days:4,cost:{timber:6,stone:6}},sentries:{most:3,r:28,posts:4,gait:'stroll',stand:[5,10],rest:25,knot:[[0,0],[-6,-4],[-6,4]],catch:1.3,near:640},
   // (phase 3) capture: a lord with more times its guards within r tiles takes it, chance a day; a band takes one held by weak guards
   // or fewer, its men its guards (lairMost at most); lair: the bands that make one their lair (kinds), a band out of it every
   // days while fewer than most are out, of n men (and the days'); own: yours keeps a man a day from your nearest holding's

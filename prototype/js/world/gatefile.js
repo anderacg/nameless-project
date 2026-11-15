@@ -3,7 +3,7 @@
    disappeared right before my eye. How can we improve this?"; "I also see the small village can store up mounts and entire army
    with in just a small house?") ----------
    An army you see marched man by man (march.js) going into a holding files in at its gate: its men, the nearest first, a man every
-   gap s, walk to the gate at pace px a second, each fading over his last fade px (at most most of them). Coming out, its march is
+   gap s, walk to the gate at their gait (data/world.js ON_FOOT: a marcher's own), each fading over his last fade px (at most most of them). Coming out, its march is
    laid afresh with every man at the gate, and they step out one after another, a man every gap s (each unseen till his turn:
    march.js u.gateAt), to their places in it. So every army: a lord's, a companion's, the watch's patrols, caravans, and yours
    when you stay inside and leave. Drawn only: the army's own march is idle while it
@@ -11,7 +11,7 @@
    A holding quarters at most its kind's quarter men (data/holdings.js HOLDING_TYPES; roomFor: why not, ''); an army with more
    (yours, a companion's, a lord's) stays outside, camped by its gate: a lord at rest there has his tents pitched beside it, by
    their feet among everyone (camp: on) ---------- */
-const GATE_FILE={on:true,gap:.07,pace:26,fade:8,most:80,out:true,camp:true,spread:3};
+const GATE_FILE={on:true,gap:.07,gait:'walk',fade:8,most:80,out:true,camp:true,spread:3};
 // (why t has no room for n men: its quarter; '' if it has)
 const roomFor=(t,n)=>{const q=t&&t.T&&t.T.quarter;return q&&n>q?'A '+(t.label||t.T.n)+' has no room for '+n+' men (it quarters '+q+')':''};
 class GateFile{
@@ -28,7 +28,7 @@ class GateFile{
   static out(o,t){const X=GATE_FILE;if(!X.on||!X.out||!WORLD_BATTLE.on||!t||typeof MarchArmy==='undefined'||Math.hypot(o.x-P.x,o.y-P.y)>vis()+MARCH_MOVE.active)return;
     MARCH_ARMIES.delete(o);const a=MarchArmy.of(o),g=gateGoal(t);a.units.forEach((u,i)=>{u.x=g.x+((i%3)-1)*X.spread;u.y=g.y+Math.floor(i/3)%3;u.plan=null;u.walking=false;u.gateAt=i?a.time+i*X.gap:0})}
   static step(d){const X=GATE_FILE;
-    for(const f of this.list){f.t+=d;for(const u of f.men){if(f.t<u.wait)continue;const dx=f.g.x-u.x,dy=f.g.y-u.y,l=Math.hypot(dx,dy),s=Math.min(l,X.pace*d);if(l<.5){u.gone=true;continue}
+    for(const f of this.list){f.t+=d;for(const u of f.men){if(f.t<u.wait)continue;const dx=f.g.x-u.x,dy=f.g.y-u.y,l=Math.hypot(dx,dy),s=Math.min(l,footStep(X.gait,d));if(l<.5){u.gone=true;continue}
       u.walking=true;u.x+=dx/l*s;u.y+=dy/l*s;u.walk=(u.walk||0)+s;u.dir=Math.atan2(dy,dx);if(f.fig){f.o.x=u.x;f.o.y=u.y;if(Math.abs(dx)>.01)f.o.dir=dx>0?1:-1}}f.men=f.men.filter(u=>!u.gone)}
     this.list=this.list.filter(f=>f.men.length)}
   // (each man filing in, by his feet among everyone, fading at the gate)

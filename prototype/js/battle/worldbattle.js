@@ -81,7 +81,7 @@ class BattleBystanders{
     for(const o of objects)if(!this.entries.has(o)&&this.eligible(o)&&Math.hypot(o.x-this.area.x,o.y-this.area.y)<this.area.r+this.margin(o)){const p=this.plan(o);if(p)this.entries.set(o,p)}
     for(const [o,p] of this.entries)if(!objects.has(o)||!this.eligible(o)){if(o.mapKind==='worker')o.moving=p.moving;this.entries.delete(o)}
   }
-  speed(o){if(o.mapKind==='ship')return o.k==='trade'?SHIP_SPD:BOAT_SPD;if(o.mapKind==='worker')return FIELD.hurry;if(o.mapKind==='critter')return CRITTERS[o.id].spd||20;if(o instanceof Party)return partySpeed(o,o.troops);return ENC_SPD.run}
+  speed(o){if(o.mapKind==='ship')return o.k==='trade'?SHIP_SPD:BOAT_SPD;if(o.mapKind==='worker')return footPace(FIELD.hurry);if(o.mapKind==='critter')return CRITTERS[o.id].spd||20;if(o instanceof Party)return partySpeed(o,o.troops);return ENC_SPD.run}
   step(dt){
     this.time+=dt;if(this.time>=this.next){this.next=this.time+WORLD_BATTLE.avoidScan;this.scan()}
     for(const [o,p] of this.entries){if(!this.eligible(o))continue;if(p.nav.version!==WAYV){const q=this.plan(o);if(!q)continue;Object.assign(p,q)}

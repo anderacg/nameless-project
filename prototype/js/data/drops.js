@@ -28,8 +28,8 @@ const CARCASS={on:true,near:40,pick:8,most:240,seek:160,find:.35,
   loot:{at:24,check:6,fresh:1,spawn:.25,n:[2,4],from:[220,320],most:3,kind:'band_looter'},
   // (clearers (the owner: "make people work to clear those corpses"): folk of the nearest holding within reach px of its gate come
   //  out to the fallen, picked clean ones after bare days, any after after days (what is on them theirs), and dig a while (dig s),
-  //  their pace px a s; out of your sight they are simply gone)
-  clear:{after:1.5,bare:.25,reach:420,dig:8,pace:20,most:3}};
+  //  at their gait (data/world.js ON_FOOT); out of your sight they are simply gone)
+  clear:{after:1.5,bare:.25,reach:420,dig:8,gait:'stroll',most:3}};
 /* every body on the map rots (the owner, 2026-11-15: "the corpse should still be there like others, but after a while the corpse
    can start rotting and finally turns into bones. This should be the same for all dead bodies"; world/carcasses.js BodyRot): the
    fallen of a fight (Carcass) and your own remains (world/death.js Remains) lie as they fell for rot days, then rot (their picture

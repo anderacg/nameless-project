@@ -54,10 +54,10 @@ class HunterBand extends WorldObject{
     if(!c||!(c.n>0)||!W.critters.includes(c)||fightHolds(c)||Math.hypot(c.x-t.x,c.y-t.y)>X.range+X.close){c=this.herd=this.prey(t);this.st='out';this.noticeAt=1;if(!c)return this.homeward()}
     const dx=c.x-this.x,dy=c.y-this.y,dd=Math.hypot(dx,dy);
     // (out after it: at a walk to stalking distance, past its shy reach, and while it runs from them)
-    if(this.st==='out'){if(dd>X.close||WildlifeThreats.chosen.get(c)===this){this.go(c.x,c.y,moveStep(X.speed,d));return}this.st='stalk';this.noticeAt=X.quiet[0]+this.R()*(X.quiet[1]-X.quiet[0]);this.aimT=X.aim}
+    if(this.st==='out'){if(dd>X.close||WildlifeThreats.chosen.get(c)===this){this.go(c.x,c.y,footStep(X.walk,d));return}this.st='stalk';this.noticeAt=X.quiet[0]+this.R()*(X.quiet[1]-X.quiet[0]);this.aimT=X.aim}
     // (stalking: slowly in to bow range, then draw and loose; seen (it bolts from them) or lost, a try spent and after it again)
     if(WildlifeThreats.chosen.get(c)===this||dd>X.close*1.2){this.tries++;this.st='out';this.noticeAt=1;return}
-    if(dd>X.bow){this.aimT=X.aim;this.go(c.x,c.y,moveStep(X.stalk,d),true);return}
+    if(dd>X.bow){this.aimT=X.aim;this.go(c.x,c.y,footStep(X.stalk,d),true);return}
     this.moving=false;if(Math.abs(dx)>.5)this.dir=dx>0?1:-1;if((this.aimT-=d)<=0)this.shoot(c)}
   // a shot: its arrow, each man's chance, and the herd sees them now; one down, the herd one less (none left: gone) and they go to it
   shoot(c){const X=HUNTERS,R=this.R;this.tries++;this.noticeAt=1;this.aimT=X.aim;this.arrow={x0:this.x,y0:this.y,x1:c.x,y1:c.y,t:X.arrow};
@@ -65,11 +65,11 @@ class HunterBand extends WorldObject{
     const a=R()*6.283,r=R()*4;this.fell={x:c.x+Math.cos(a)*r,y:c.y+Math.sin(a)*r*.6,id:c.id,face:c.dir||1};c.n--;if(!c.n){c.gone=true;W.critters=W.critters.filter(o=>o!==c)}
     this.herd=null;this.st='fetch';this.wait=X.pick;this.lost=0}
   // (to the kill, a while to dress it, and on their backs if they are men enough to lift it; else it stays, and home)
-  fetch(d){const X=HUNTERS,f=this.fell;if(Math.hypot(f.x-this.x,f.y-this.y)>3){if(!this.go(f.x,f.y,moveStep(X.speed,d),true)&&(this.lost+=d)>X.pick*5)this.homeward();return}
+  fetch(d){const X=HUNTERS,f=this.fell;if(Math.hypot(f.x-this.x,f.y-this.y)>3){if(!this.go(f.x,f.y,footStep(X.walk,d),true)&&(this.lost+=d)>X.pick*5)this.homeward();return}
     this.moving=false;if((this.wait-=d)>0)return;if(this.men.length>=(X.lift[CRITTERS[f.id].size]||1)){this.load.push(f.id);this.fell=null}this.homeward()}
   // (home: a kill not lifted left where it fell)
   homeward(){this.st='home';this.herd=null;this.noticeAt=1;this.drop()}
-  walkHome(t,d,fear){const X=HUNTERS,g={x:t.x,y:t.y+12,tw:t};if(Math.hypot(g.x-this.x,g.y-this.y)>3){const x0=this.x,y0=this.y;Router.travel(this,g,moveStep(fear?X.run:this.load.length?X.carry:X.speed,d));
+  walkHome(t,d,fear){const X=HUNTERS,g={x:t.x,y:t.y+12,tw:t};if(Math.hypot(g.x-this.x,g.y-this.y)>3){const x0=this.x,y0=this.y;Router.travel(this,g,footStep(fear?X.run:this.load.length?X.carry:X.walk,d));
     const mx=this.x-x0;if(Math.abs(mx)>.05)this.dir=mx>0?1:-1;if(this.moving=Math.hypot(mx,this.y-y0)>.01)return}
     this.goIn(t)}
   // in at the gate: what they carry into the holding's stock (its meat, up to the store's room)
@@ -80,7 +80,7 @@ class HunterBand extends WorldObject{
     Carcass.list.push(asCarcass({x:f.x,y:f.y,type:null,wild:f.id,mon:null,bst:true,face:f.face,items,day:G.day+Clock.frac}));Carcass.prune()}
   // each man by his feet, his people's hunter in his land's clothes with his bow (the road's hunter, world/encounters.js ENC_LOOK),
   // those carrying a kill with it on their backs; a shot's arrow in flight
-  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const h=this,cl=dressClimAt(h.x,h.y),go=h.moving,st=go?Math.floor((WALKED.get(h)||0)/WALK.foot):0,
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const h=this,cl=dressClimAt(h.x,h.y),go=h.moving,st=go?footFrame(WALKED.get(h)):0,
       lift=h.load.reduce((a,id)=>a+(HUNTERS.lift[CRITTERS[id]?.size]||1),0);
     h.men.forEach((m,i)=>{const [ox,oy]=HUNTER_AT[i%HUNTER_AT.length];ents.push({y:h.y+oy,f:()=>{const sx=Math.round(h.x+ox*h.dir-cam.x),sy=Math.round(h.y+oy-cam.y);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);dressedIn(cl,()=>drawFig(hunterFig(h.race,m.v,cl,figPose(st+i,go),i<lift),sx,sy,h.dir))}})});

@@ -170,6 +170,11 @@ const sizeMul=n=>Math.max(.7,1-.006*Math.max(0,n-12));
 const mountedShare=sp=>{let n=0,m=0;for(const [s,c] of sp){n+=c;if(s>=60)m+=c}return n?m/n:0};
 const ROUGH_NONE=[],roughFor=(x,y,ign)=>{const t=RoadBand.on(x,y)?T_ROAD:terrAt(x,y);ign=ign||ROUGH_NONE;return t===T_FOREST&&!ign.includes('forest')||t===T_HILL&&!ign.includes('hills')||climAt(x,y)==='swamp'&&!ign.includes('swamp')};
 function listSpeeds(list){const m={};for(const k of list){const s=(ST[k]&&ST[k].spd)||PACE_REF;m[s]=(m[s]||0)+1}return Object.entries(m).map(([s,c])=>[+s,c])}
+// (a man on foot's pace, px a world second, at gait g (ON_FOOT.gait, or a number: times his walk): an army of one of ON_FOOT.unit's on
+// open ground (partySpeed); footStep: his px this moment; footFrame: his stride's frame, 0-3, by the px he has walked (id: his
+// own offset in it), as the marchers' (march.js marcherStep))
+function footPace(g='walk'){return MAP_BASE*paceRatio(listSpeeds([ON_FOOT.unit]))*sizeMul(1)*(typeof g==='number'?g:ON_FOOT.gait[g]??1)}
+const footStep=(g,d)=>moveStep(footPace(g),d),footFrame=(walked,id=0)=>(Math.floor((walked||0)/(WALK.foot*WALK.step))+(id|0))%4;
 function partySpeed(o,list){const sp=listSpeeds(list);return MAP_BASE*paceRatio(sp)*sizeMul(list.length)*armyGround(o,partyGround,mountedShare(sp)>=.5)*EscapeStamina.factor(o)*marchOutriders(o)}// (Outriders: march.js)
 /* (the owner, 2026-11-01: the road's speed earned by the men on it, doc/LIVE_WORLD_DESIGN.md §6) an army's ground, at(x, y, arg)
    where its men stand: the mean of TRAVEL_STYLES.sample of them (the same ones each time, spread through it) while it is marched

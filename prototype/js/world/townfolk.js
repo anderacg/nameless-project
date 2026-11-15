@@ -50,15 +50,15 @@ class TownWalk{
 }
 
 /* a holding's person on the map (TownFolk makes them): a world object seen within your sight while out of doors, his name, role
-   and holding over him; a click on him walks you to him and into his holding */
+   and holding over him; a click on him walks you to him and he greets you (TOWNFOLK.greet: by what he is about), nothing more */
 class TownDweller extends WorldObject{
   get mapKind(){return 'townsfolk'}
   here(){const C=TownFolk.of.get(this.holding);return !!C&&!this.hid&&C.ppl.includes(this)}
   get meetsAnyTime(){return true}
   inView(V){return !this.hid&&yourSight(V).sees(this.x,this.y,1.3)}
   pick(at){if(this.inView(at.V))at.add(this,5,4)}
-  meet(){if(TOWNS.includes(this.holding))approachHolding(this.holding)}
-  tip(){const n=Discovery.nameOf(this.holding);return '<b>'+htmlText(this.name)+'</b><small>'+cap1(this.role)+', of '+htmlText(n)+'</small><span class="act">Click: visit '+htmlText(n)+'</span>'}
+  meet(){const L=TOWNFOLK.greet[this.mode]||TOWNFOLK.greet.chat,line=L[folkHash(this.id+'|'+G.day+'|'+this.mode)%L.length];toast(this.name+', '+this.role+' of '+Discovery.nameOf(this.holding)+': “'+line+'”')}
+  tip(){const n=Discovery.nameOf(this.holding);return '<b>'+htmlText(this.name)+'</b><small>'+cap1(this.role)+', of '+htmlText(n)+'</small><span class="act">Click: greet</span>'}
 }
 
 /* ---------- a holding's people (C: its ground, walk; its spots: homes, places of work, the square (before the centre's gate), the
@@ -137,7 +137,7 @@ class TownFolk{
   static live(C,p,d){const F=TOWNFOLK,f=Clock.frac,m=this.mode(C,p,f);if(m!==p.mode)this.aim(C,p,m);if(p.hid)return;
     if(m==='home'&&(f>=F.day.late||f<p.wake)&&!C.danger){p.hid=true;p.moving=false;p.wp=[];return}
     if(p.pend){if(!this.route(C,p))p.moving=false;return}
-    if(p.wp.length){const q=p.wp[0],dx=q.x-p.x,dy=q.y-p.y,dd=Math.hypot(dx,dy),st=moveStep((p.hurry?F.hurry:F.speed)*(p.child?F.kid:1),d);
+    if(p.wp.length){const q=p.wp[0],dx=q.x-p.x,dy=q.y-p.y,dd=Math.hypot(dx,dy),st=footStep(p.hurry?F.haste:F.gait,d)*(p.child?F.kid:1);
       if(Math.abs(dx)>.2)p.dir=dx>0?1:-1;p.moving=true;
       if(dd<=st){p.x=q.x;p.y=q.y;p.walked+=dd;p.wp.shift();if(!p.wp.length)this.arrive(C,p)}else{p.x+=dx/dd*st;p.y+=dy/dd*st;p.walked+=st}return}
     p.moving=false;if((p.wait-=d)>0)return;const I=F.idle,r=p.R();
@@ -158,7 +158,7 @@ class TownFolk{
   static draw(ents,cam,V){if(!this.of.size)return;const S=yourSight(V),k0=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
     for(const [t,C] of this.of){const cl=dressClimAt(t.x,t.y),tint=FACS[t.owner]?.col||'#bda882';
       for(const p of C.ppl){const sx=Math.round(p.x-cam.x),sy=Math.round(p.y-cam.y);if(p.hid||sx<-16||sy<-8||sx>VW+16||sy>VH+40||!S.sees(p.x,p.y,1.3)||B?.world?.hides(p))continue;
-        ents.push({y:p.y,f:()=>dressedIn(cl,()=>{const pose=p.moving?2+Math.floor(p.walked/WALK.foot)%4:0,k=k0*(p.child?.72:1),
+        ents.push({y:p.y,f:()=>dressedIn(cl,()=>{const pose=p.moving?2+footFrame(p.walked,p.i):0,k=k0*(p.child?.72:1),
           sp=p.trade?unitSprite(peasantKind(p.race,p.trade),0,false,p.v%6,pose,false,false,tint):personSprite(p.look,p.race,p.v,pose);
           ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);ctx.scale(p.dir<0?-k:k,k);ctx.drawImage(sp,-Math.floor(sp.width/2),-sp.height+2);ctx.restore()})})}}}
 }
