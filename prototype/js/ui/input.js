@@ -108,7 +108,7 @@ cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.
   const tip=$('#tip');if(holdCardUp()&&e.pointerType==='touch')return;// (a long press's card stays until the next tap: below)
   if(G.mode!=='world'||G.modal||e.pointerType==='touch'){tip.hidden=true;if(G.mode!=='battle')cv.style.cursor='';return}
   const mini=!G.place&&fullMapHit(p);cv.style.cursor=mini?'pointer':'';// (over the minimap: it opens the full map, not what lies under it)
-  const o=!mini&&pickAt(G.cam.x+p.x,groundAt(G.cam.x+p.x,G.cam.y+p.y).y),h=mini?MINI_TIP:o&&tipFor(o)||rumourTip(G.cam.x+p.x,groundAt(G.cam.x+p.x,G.cam.y+p.y).y)||trackTip(G.cam.x+p.x,groundAt(G.cam.x+p.x,G.cam.y+p.y).y);if(!h){tip.hidden=true;return}// (nothing there: a rumour's "?", news.js; else tracks you see, world/tracks.js)
+  const o=!mini&&pickAt(G.cam.x+p.x,liftGround(G.cam.x+p.x,G.cam.y+p.y).y),h=mini?MINI_TIP:o&&tipFor(o)||rumourTip(G.cam.x+p.x,liftGround(G.cam.x+p.x,G.cam.y+p.y).y)||trackTip(G.cam.x+p.x,liftGround(G.cam.x+p.x,G.cam.y+p.y).y);if(!h){tip.hidden=true;return}// (nothing there: a rumour's "?", news.js; else tracks you see, world/tracks.js)
   tip.innerHTML=h;tip.classList.remove('hold');tip.hidden=false;const r=cv.getBoundingClientRect(),x=e.clientX-r.left+16,y=e.clientY-r.top+14,[ox,oy]=tipOver(tip);
   tip.style.left=Math.max(ox,Math.min(x,r.width-tip.offsetWidth-6))+'px';tip.style.top=Math.max(oy,Math.min(y,r.height-tip.offsetHeight-6))+'px'});
 // (px a card's banner tab stands out past its left and top edges (ui.js tipFlag): kept on the screen with it)
@@ -120,7 +120,7 @@ cv.addEventListener('pointerdown',e=>{
   if(G.modal)return;
   if(G.mode==='world'&&!G.place&&e.button===0&&fullMapHit(p)){if(fullMapOpen())eatClick();return}// (a click or a tap on the minimap: the full map, map.js; the click its letting go still sends goes nowhere)
   if(e.pointerType==='touch'&&touchDown(e,p))return;// (a finger in battle or on the map: below; it acts when it lifts)
-  if(G.mode==='world'){const wx=G.cam.x+p.x,wy=groundAt(G.cam.x+p.x,G.cam.y+p.y).y;if(G.place){if(e.button===2){G.place=null;toast('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);
+  if(G.mode==='world'){const wx=G.cam.x+p.x,wy=liftGround(G.cam.x+p.x,G.cam.y+p.y).y;if(G.place){if(e.button===2){G.place=null;toast('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);
     if(e.button===0)ringPress(e,wx,wy);else worldMove(wx,wy)}// (the left button: nothing yet; let go, you travel (on a party, its ring: worldGo); held still, the action ring: ring.js. The right one travels, or chases, at once)
   else if(G.mode==='scene')sceneClick(p.x,p.y);
   // battle: RTS command (commands.js): left-click or drag to select, right-click to move or attack (a touch: select, then a
@@ -174,7 +174,7 @@ function partyRing(o,wx,wy){if(!o||!(FOLLOW.kinds.includes(objKind(o))||SEAMLESS
   const R=new ActionRing(cx,cy,items).open();PARTY_CLICK.last={R,o,t:performance.now()};return true}
 // (a press at canvas point p with a ring open: the party it is on, if a click opened that ring on it within PARTY_CLICK.dbl ms)
 function partyAgain(p){const q=PARTY_CLICK.last;PARTY_CLICK.last=null;if(!q||ActionRing.now!==q.R||performance.now()-q.t>PARTY_CLICK.dbl||G.mode!=='world'||G.modal||!objKind(q.o))return null;
-  const wx=G.cam.x+p.x,wy=groundAt(G.cam.x+p.x,G.cam.y+p.y).y;return pickAt(wx,wy)===q.o||Math.hypot(wx-q.o.x,wy-q.o.y)<PARTY_CLICK.r?q.o:null}
+  const wx=G.cam.x+p.x,wy=liftGround(G.cam.x+p.x,G.cam.y+p.y).y;return pickAt(wx,wy)===q.o||Math.hypot(wx-q.o.x,wy-q.o.y)<PARTY_CLICK.r?q.o:null}
 // its ring's Approach (or the double click): today's chase of o, or met at once beside it (world.js approach)
 function worldApproach(o){followStop();G.pitch=null;G.byRoad=null;approach(o);wuiClick(o.x,o.y)}
 /* ---------- touch (a phone on its side): Pointer Events with pointerType 'touch' only; the mouse, pen and keys above are as they were.
@@ -195,7 +195,7 @@ function touchDown(e,p){const T=TOUCH,id=e.pointerId;
   if(e.isPrimary&&T.pts.size){touchDrop();T.pts.clear();T.spent.clear();T.pinch=null}// (the first finger of a new touch: anything a lost lift left behind goes)
   if(G.mode==='world'){if(holdCardUp()){hideTip();touchDrop();T.pts.set(id,p);T.spent.add(id);return true}if(G.place||P.stay)return false;// (the card up: this tap only puts it away)
     p.cx=e.clientX;p.cy=e.clientY;T.pts.set(id,p);if(T.pts.size>1){touchDrop();T.spent.add(id);if(T.pts.size===2){for(const k of T.pts.keys())T.spent.add(k);T.pinch={map:true,d0:touchSpan()}}return true}// (two fingers: a pinch, never a tap: zooms the map by steps, touchMove)
-    T.lp={id,mode:'world',cx:e.clientX,cy:e.clientY,wx:G.cam.x+p.x,wy:groundAt(G.cam.x+p.x,G.cam.y+p.y).y,t0:performance.now()};touchTimer();return true}
+    T.lp={id,mode:'world',cx:e.clientX,cy:e.clientY,wx:G.cam.x+p.x,wy:liftGround(G.cam.x+p.x,G.cam.y+p.y).y,t0:performance.now()};touchTimer();return true}
   if(G.mode!=='battle'||!B)return false;T.pts.set(id,p);
   if(T.pts.size===2){touchDrop();for(const k of T.pts.keys())T.spent.add(k);const m=touchMid();T.pinch={d0:m.d,z0:B.cam?B.cam.z:1,w:toField(m)};return true}
   if(T.pts.size>2){T.spent.add(id);return true}

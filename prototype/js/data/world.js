@@ -42,13 +42,15 @@ const WORLD_FLORA={step:9,
    river"), in the lab's px (two a game px). river: half-widths by size (hw: [unused], a river one, two and three tiles wide (the
    generator's widths); a brook's from brook[0] to brook[1] by its flow); its bank (mud) bank px; depth (levels) down its middle by
    size (a brook's first), a ford's share of it; how far it wanders off its tiles' line (meander, px, never out of them); its last
-   stretch into the sea or a lake mouth times wider. road: half-widths (a track, a road); the lab's worn look: wheel tracks at track
-   of the half-width wandering wander px, gravel, puddles past puddle, a ragged edge of edge px, shoulders sh px kept unstepped.
+   stretch into the sea or a lake mouth times wider. road: the lab's (LAB.road, the owner: "why the road scale not match with the lab?"):
+   half-widths (a track, a road: both the lab's 13, 26 wide), its width wandering vary of it along it, its corners rounded (bend
+   more cuts of its line); the lab's worn look: wheel
+   tracks at track of the half-width wandering wander px, gravel, puddles past puddle, a ragged edge of edge px, shoulders sh px.
    road grade: levels a game px it climbs at most (the lab's 1 in 34 lab px), its shoulders cut or banked to it.
    bridge: its deck clear levels over the water, the road ramped up to it within ramp game px of each end; a pile every pile px (a stone bridge's arch every arch), rails rail px tall, a
    post every post px */
 const WORLD_WAYS={river:{hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,meander:6,mouth:1.6},
-  road:{hw:[9,13],sh:10,grade:.06,track:.42,wander:1.3,gravel:.07,puddle:.74,edge:2.5},
+  road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3},
   bridge:{clear:1.4,ramp:28,pile:12,arch:26,rail:5,post:8}};
 const WORLD_TERRAIN={liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:3},flat:6,rock:11,snow:14,wet:3,sand:9,dune:18,bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={

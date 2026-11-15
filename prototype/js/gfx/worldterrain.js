@@ -54,9 +54,9 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   const tlv=(tx,ty)=>LV[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))],tix=(gx,gy)=>Math.max(0,Math.min(MH-1,gy>>4))*MW+Math.max(0,Math.min(MW-1,gx>>4));
   // (the ways near: the rivers' and brooks' curves and the roads, at game px over the levels' window and at fine px over the chunk;
   //  the sea's and the lakes' tiles (a river's mouth on them with them) keep the shore's water)
-  const bankG=WV.river.bank*WAY_LP,shG=WV.road.sh*WAY_LP,bankF=WV.river.bank*k2,edgeF=WV.road.edge*k2;
+  const bankG=WV.river.bank*WAY_LP,shG=WV.road.sh*WAY_LP,bankF=WV.river.bank*k2,edgeF=WV.road.edge*k2,varyF=WV.road.hw[1]*WV.road.vary*k2;
   const RG=yield* waysBand(WY.SA,gx0,gy0,GW,GH,1,bankG+2),DG=yield* waysBand(WY.RA,gx0,gy0,GW,GH,1,shG+1);
-  const RF=yield* waysBand(WY.SA,X*r,Y*r,W2,HE2,r,bankF+2),DF=yield* waysBand(WY.RA,X*r,Y*r,W2,HE2,r,edgeF+2);
+  const RF=yield* waysBand(WY.SA,X*r,Y*r,W2,HE2,r,bankF+2),DF=yield* waysBand(WY.RA,X*r,Y*r,W2,HE2,r,edgeF+varyF+2);
   const seaT=ti=>tiles[ti]===T_WATER&&(!(Rv[ti]&3)||WY.mouth[ti]),surf=(q,t)=>{const a=WY.SP[q],A=WY.LV[a],B=WY.LV[a+1];return A-B<T.steps.min?A+(B-A)*t:t<.5?A:B};
   for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i,u=(gx-8)/TS,v=(gy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,ti=tix(gx,gy),t=tiles[ti],sea=seaT(ti),k=j*GW+i;
       let e,wet=sea;
@@ -98,9 +98,11 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
           // (a river's bank: mud at the water, dark grass up it, then the land)
           else if(rs<bankF){const tb=rs/bankF;col=tb<.45?tmix(tpick(Q.mud,fx,fy,519),tmul(col,.86),tb/.45):tmix(tmul(col,.86),col,(tb-.45)/.55)}}
         // (a road over it: the lab's worn track, its edge ragged; never over water)
-        const ds=DF.S[fi];if(!m&&!(rs<0)&&ds<edgeF){const rg=ds-(wnoise2(fx/(13*k2),fy/(13*k2),533)-.5)*2*edgeF;
-          if(rg<0){const sg=DF.Q[fi],o6=sg*6,A=WY.RA,hwR=A[o6+4]*r,ax=A[o6]*r,ay=A[o6+1]*r,bx=A[o6+2]*r,by=A[o6+3]*r,side=Math.sign((bx-ax)*(fy+.5-ay)-(by-ay)*(fx+.5-ax))||1;
-            col=wayRoad(fx,fy,(ds+hwR)*side,hwR,(WY.RL[sg]+DF.T[fi]*Math.hypot(A[o6+2]-A[o6],A[o6+3]-A[o6+1]))*r,flat,col,k2)}}
+        // (its width wandering along it and its edge ragged, the lab's: vary, edge)
+        const ds=DF.S[fi];if(!m&&!(rs<0)&&ds<edgeF+varyF){const sg=DF.Q[fi],o6=sg*6,A=WY.RA,hwR=A[o6+4]*r,along=(WY.RL[sg]+DF.T[fi]*Math.hypot(A[o6+2]-A[o6],A[o6+3]-A[o6+1]))*r,
+            hv=hwR*(1+WV.road.vary*(wnoise2(along/(30*k2),.5,534)-.5)*2),rg=ds+hwR-hv-(wnoise2(fx/(13*k2),fy/(13*k2),533)-.5)*2*edgeF;
+          if(rg<0){const ax=A[o6]*r,ay=A[o6+1]*r,bx=A[o6+2]*r,by=A[o6+3]*r,side=Math.sign((bx-ax)*(fy+.5-ay)-(by-ay)*(fx+.5-ax))||1;
+            col=wayRoad(fx,fy,(ds+hwR)*side,hv,along,flat,col,k2)}}
         // (a road's cutting or embankment where its shoulder is steep: earth showing in ragged patches, the lab's cut)
         if(!m&&!(rs<0)&&ds>=0&&ds<WV.road.sh*k2){const gq=Math.hypot(Gx[k],Gy[k]);if(gq>=.1&&hs(fx,fy,560)<Math.min(1,(gq-.1)/.25)*.9)col=tmix(tpick(Q.bank,fx,fy,561),col,.25)}
         const s=shade?1+sl:1;CW[o]=col[0]*s;CW[o+1]=col[1]*s;CW[o+2]=col[2]*s;CW[o+3]=255}}
@@ -284,7 +286,7 @@ function liftAt(x,y){if(!isFinite(x)||!isFinite(y)||typeof WorldArt==='undefined
     e=(L[ty*MW+tx]*(1-fu)+L[ty*MW+tx+1]*fu)*(1-fv)+(L[(ty+1)*MW+tx]*(1-fu)+L[(ty+1)*MW+tx+1]*fu)*fv,r=typeof sceneRes==='function'?sceneRes():1;
   return Math.round(e*WORLD_TERRAIN.lh)/r}
 // the map point whose ground shows at the view's point (x, y) (the camera's map px plus the screen's): the chunk's own (rec.dep)
-function groundAt(x,y){if(typeof WorldArt==='undefined')return{x,y};const fx=Math.floor(x),fy=Math.floor(y),WA=WorldArt,cx=Math.floor(fx/CHUNK),cy=Math.floor(fy/CHUNK),c=WA.chunks.get(cy*WA.cols+cx);
+function liftGround(x,y){if(typeof WorldArt==='undefined')return{x,y};const fx=Math.floor(x),fy=Math.floor(y),WA=WorldArt,cx=Math.floor(fx/CHUNK),cy=Math.floor(fy/CHUNK),c=WA.chunks.get(cy*WA.cols+cx);
   if(c&&c.dep){const w=c.cv.width,d=c.dep[(fy-cy*CHUNK)*w+fx-cx*CHUNK];if(d>=0)return{x,y:d+(y-fy)}}return{x,y}}
 // a thing drawn up by its ground's lift (e.x, e.ly or e.y: where it stands); a mover (front) has the ground in front of it drawn again
 // over it, where a ridge nearer hides it (liftFront)

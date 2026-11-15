@@ -47,7 +47,13 @@ function waysOf(P){if(P.ways)return P.ways;
   const mouth=new Uint8Array(N);for(let i=0;i<N;i++){if(!(Rv[i]&3)||sea(i))continue;const x=i%MW,y=(i-x)/MW;
     for(let b=-1;b<=1&&!mouth[i];b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u>=0&&v>=0&&u<MW&&v<MH&&sea(v*MW+u)){mouth[i]=1;break}}}
   // (the roads: the plan's segments, a road's or a track's half-width; along: from the first of a run of joined segments)
-  const S=P.segs,nR=S.length/5,RA=new Float32Array(nR*6),RK=new Uint8Array(nR),RL=new Float32Array(nR),RW=WORLD_WAYS.road.hw;
+  // (the plan's lines (P.segs) joined into runs and their corners rounded as the lab's road bends (its filleted arcs): cut bend times
+  //  more, Chaikin's way, the ends kept; then a segment between each two points)
+  const S0=P.segs,n0=S0.length/5,SX=[],RW=WORLD_WAYS.road.hw;
+  for(let k0=0;k0<n0;){let k1=k0;while(k1+1<n0&&S0[(k1+1)*5]===S0[k1*5+2]&&S0[(k1+1)*5+1]===S0[k1*5+3])k1++;let p=[[S0[k0*5],S0[k0*5+1]]];for(let k=k0;k<=k1;k++)p.push([S0[k*5+2],S0[k*5+3]]);
+    for(let it=0;it<WORLD_WAYS.road.bend&&p.length>2;it++){const o=[p[0]];for(let k=0;k+1<p.length;k++){const a=p[k],b=p[k+1];o.push([a[0]*.75+b[0]*.25,a[1]*.75+b[1]*.25],[a[0]*.25+b[0]*.75,a[1]*.25+b[1]*.75])}o.push(p[p.length-1]);p=o}
+    const kd=S0[k0*5+4];for(let k=0;k+1<p.length;k++)SX.push(p[k][0],p[k][1],p[k+1][0],p[k+1][1],kd);k0=k1+1}
+  const S=SX,nR=S.length/5,RA=new Float32Array(nR*6),RK=new Uint8Array(nR),RL=new Float32Array(nR);
   for(let k=0;k<nR;k++){const o=k*5,kd=S[o+4],road=kd<2?kd:(kd-2)&1,hw=RW[road]*WAY_LP;RK[k]=road;RA.set([S[o],S[o+1],S[o+2],S[o+3],hw,hw],k*6);
     RL[k]=k&&S[o]===S[o-3]&&S[o+1]===S[o-2]?RL[k-1]+Math.hypot(S[o-3]-S[o-5],S[o-2]-S[o-4]):0}
   // (the land a river's, a ford's or a road's tile shows beside its way: its neighbours' (the woods' floor only where most are woods))
