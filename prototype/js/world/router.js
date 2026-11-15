@@ -60,7 +60,7 @@ function findPath(x0,y0,x1,y1,pad,rm){
   while(heap.length){const [,i]=pop();if(i===goal)break;const x=bx+i%bw,y=by+((i/bw)|0);
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<bx||ny<by||nx>=bx+bw||ny>=by+bh)continue;
       const t=tiles[ny*MW+nx];if(!passable(t)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])||SHUT&&(SHUT[y*MW+nx]&6||SHUT[ny*MW+x]&6)))continue;// (no corner of a holding's walls cut, its centre's or its ring's: holdShut)
-      const sp=t===T_ROAD?1.3:Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]]),j=L(nx,ny),nd=g[i]+(dx&&dy?1.414:1)/sp*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(F&&F[ny*MW+nx]?fc:1);
+      const sp=t===T_ROAD?1.3:Math.max(.25,Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]])*slopeMulAt(ny*MW+nx)),j=L(nx,ny),nd=g[i]+(dx&&dy?1.414:1)/sp*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(F&&F[ny*MW+nx]?fc:1);
       if(nd<g[j]){g[j]=nd;from[j]=i;push(j,nd+h(nx,ny))}}}
   if(!isFinite(g[goal]))return null;
   const out=[];for(let i=goal;i!==s0;i=from[i])out.push((by+((i/bw)|0))*MW+bx+i%bw);return out.reverse();
@@ -137,7 +137,7 @@ const wayKeep=goal=>goal.road===true?WAY.keep:goal.road||1;
 const wayStep=(t,c)=>t===T_ROAD?1/1.3:1/Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[c]]);
 const wayDay=()=>TILE/moveStep(WAY.pace,DAY_SECONDS*WORLD_PACE);
 function buildWayGraph(g){
-  const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Cl=m.clim,CS=WAY.cs,cols=Math.ceil(W/CS),rows=Math.ceil(H/CS),DPT=wayDay(),cost=i=>wayStep(K[i],Cl[i]);
+  const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Cl=m.clim,CS=WAY.cs,cols=Math.ceil(W/CS),rows=Math.ceil(H/CS),DPT=wayDay(),cost=i=>wayStep(K[i],Cl[i])/(m.slope&&K[i]!==T_ROAD?SLOPE.mul[m.slope[i]]:1);
   const X=new Int32Array(N).fill(-1);m.crossings.forEach((c,k)=>{for(const i of c.tiles)X[i]=k});
   const tile=[],nk=[],at=new Map(),node=(i,k)=>{let v=at.get(i);if(v===undefined){v=tile.length;at.set(i,v);tile.push(i);nk.push(k)}return v};
   // (an edge a to b: [a, b, days, ek, xing, road, from, to]; the cheapest kept between two nodes)

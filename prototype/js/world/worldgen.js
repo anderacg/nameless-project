@@ -92,16 +92,36 @@ const GEN_FOREST={base:[.45,.35,0,.5],wood:.55,deep:.75,deepN:300,sparse:.4,bank
    roads and camps (stage 9b), hold tiles from a holding and site tiles from a camp, so none of them is placed otherwise for them. Never in
    the swamp (no band camps there) nor round a tile within brook tiles of running water (a river, a brook) */
 const GEN_GLADE={min:80,every:420,apart:14,edge:4,r:[3.6,5],rough:.3,scale:3,ring:1.2,brook:2,thin:3,hold:16,site:8};
-/* 16. relief (doc/OPEN_WORLD_DESIGN.md phase 2; the owner, 2026-11-15: "adding height, sea level that labs can do, and migrate them
-   into the world generator"): each tile's height in levels (a level some 0.85 m; the world map draws a level WORLD_TERRAIN.lh fine
-   px of face where the land steps down): the sea's water 0, a lake's or a river's at its own elevation; the land per levels of
-   elev over the sea's 64 (per), a mountain raised mount levels more and roughened by its ridges (ridge, by a hash of the map's
-   seed and the tile: no Math.random); a road or a ford smoothed smooth times into the land round it, so a way never meets a step.
-   Pure (reliefOf: the same from any map, a saved one too); the stage keeps it as the map's lv */
-const GEN_RELIEF={per:11,mount:3,ridge:3,smooth:2};
-function reliefOf(m){const W=m.w,H=m.h,N=W*H,lv=new Float32Array(N),E=m.elev,K=m.kind,R=GEN_RELIEF,sd=(m.seedNum|0)+7919,
-    hu=(x,y)=>{let h=Math.imul(x,374761393)+Math.imul(y,668265263)+Math.imul(sd,1274126177);h=Math.imul(h^h>>>13,1274126177);return((h^h>>>16)>>>0)/4294967296};
-  for(let i=0;i<N;i++){const k=K[i],x=i%W,y=(i/W)|0;let v=Math.max(0,(E[i]-64)/R.per);if(k===T_MOUNT)v+=R.mount+R.ridge*(hu(x,y)*.6+hu(x>>1,y>>1)*.4);lv[i]=v}
+/* 2b. the land by its height (doc/OPEN_WORLD_DESIGN.md §5; the owner, 2026-11-15: "adding height, sea level that labs can do, and
+   migrate them into the world generator", then "make the world generation based on the new concept"): one height field, in levels
+   (a level some 0.85 m; the world map draws a level WORLD_TERRAIN.lh fine px of face where the land steps down), and the land
+   follows it. reliefLevels: the sea's water 0; land per levels of elev over the sea's 64 (per), smoothed blur times among the land
+   round it, its high ground (from rough levels) roughened by a smooth ridge noise of ridge levels (map.js fbm on the seed: no
+   Math.random). reliefClass: each tile by its steepest drop to a neighbour: flat, a slope (slope levels or more), steep (steep), a
+   cliff (cliff; only in a run of them, a lone one steep). The stage after the mountains (genReliefKinds): a cliff is bare rock no one walks (T_MOUNT); a mountain's tile that
+   is no cliff is high ground anyone climbs, slowly (T_HILL); so a range is crossed wherever no band of cliffs runs: its passes. Every
+   stage after builds on this land (rivers, forests, holdings, roads at a price by slope, camps). reliefOf (the map's lv, kept by the
+   stage 'relief' before the ways are charted): the levels again, a road or a ford smoothed smooth times into the land round it, so a
+   way never meets a step; pure, so a saved map has it made the same. The land's slopes (map.js SLOPE_MUL), sight from high ground
+   (visMulAt) and the ways' costs (router.js) read the classes (the map's slope) */
+const GEN_RELIEF={per:11,blur:1,rough:6,ridge:1.6,slope:.45,steep:.9,cliff:1.3,smooth:2};
+function reliefLevels(m){const W=m.w,H=m.h,N=W*H,E=m.elev,K=m.kind,R=GEN_RELIEF,sd=(m.seedNum|0)+7919;let lv=new Float32Array(N);
+  for(let i=0;i<N;i++)lv[i]=K[i]===T_WATER&&E[i]<=64?0:Math.max(0,(E[i]-64)/R.per);
+  for(let it=0;it<R.blur;it++){const o=new Float32Array(lv);for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(K[i]===T_WATER)continue;let s=0,n=0;
+      for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;s+=o[v*W+u];n++}lv[i]=s/n}}
+  for(let i=0;i<N;i++){if(K[i]===T_WATER||lv[i]<R.rough)continue;const x=i%W,y=(i/W)|0;lv[i]+=R.ridge*(fbm(x/3,y/3,sd)-.5)*2*Math.min(1,(lv[i]-R.rough)/4)}
+  return lv}
+function reliefClass(m,lv){const W=m.w,H=m.h,N=W*H,K=m.kind,R=GEN_RELIEF,S=new Uint8Array(N);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(K[i]===T_WATER)continue;let d=0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;d=Math.max(d,lv[i]-lv[v*W+u])}
+    S[i]=d>=R.cliff?3:d>=R.steep?2:d>=R.slope?1:0}
+  // (a cliff runs: one with no cliff round it is steep ground instead, so the cliffs stand in bands, not single rocks)
+  const lone=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;if(S[i]!==3)continue;let n=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if((a||b)&&S[i+b*W+a]===3)n++;if(!n)lone.push(i)}
+  for(const i of lone)S[i]=2;
+  return S}
+function* genReliefKinds(g){const m=g.map,K=m.kind,lv=reliefLevels(m),S=reliefClass(m,lv);
+  for(let i=0;i<K.length;i++){const k=K[i];if(k===T_WATER||k===T_FORD||k===T_ROAD)continue;if(S[i]===3)K[i]=T_MOUNT;else if(k===T_MOUNT)K[i]=T_HILL}
+  m.slope=S;yield}
+function reliefOf(m){const W=m.w,H=m.h,N=W*H,K=m.kind,R=GEN_RELIEF,lv=reliefLevels(m);
   for(let it=0;it<R.smooth;it++)for(let i=0;i<N;i++){const k=K[i];if(k!==T_ROAD&&k!==T_FORD)continue;const x=i%W,y=(i/W)|0;let s=0,n=0;
     for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(K[j]===T_WATER||K[j]===T_MOUNT)continue;s+=lv[j];n++}if(n)lv[i]=s/n}
   return lv}
@@ -109,6 +129,7 @@ function reliefOf(m){const W=m.w,H=m.h,N=W*H,lv=new Float32Array(N),E=m.elev,K=m
 const GEN_STAGES=[
   {id:'land',label:'Raising the land',w:80,run:g=>genLand(g),check:g=>{const n=g.work.land/(g.map.w*g.map.h);return n<.6||n>.8?'land '+(n*100).toFixed(0)+'%':null}},
   {id:'elev',label:'Mountains',w:200,run:g=>genElev(g),check:g=>genPassCheck(g)},
+  {id:'heights',label:'Cliffs and passes',w:30,run:g=>genReliefKinds(g)},
   {id:'climate',label:'Climates',w:150,run:g=>genClimate(g),check:g=>{const m=g.map,n=[0,0,0,0];let L=0;for(let i=0;i<m.kind.length;i++)if(m.kind[i]!==T_WATER){n[m.clim[i]]++;L++}
     const low=n.findIndex(c=>c<L*.06);return low>=0?CLIMS[low]+' '+(n[low]*100/L).toFixed(1)+'%':null}},
   {id:'rivers',label:'Carving rivers',w:250,run:g=>genRivers(g),check:g=>genRiverCheck(g.map)},

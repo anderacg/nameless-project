@@ -32,7 +32,7 @@ const WORLD_FLORA={step:9,
   grass:{step:6,chance:{grass:{open:.38,meadow:.55,woods:.12,dune:.3},desert:{open:.05,meadow:.015,woods:.2,dune:.12},frost:{open:.3,meadow:.03,woods:.02,dune:.12},swamp:{open:.5,meadow:.3,woods:.22,dune:.35}},
     kinds:{grass:{open:'grass',meadow:'meadow',woods:'wood',dune:'dune'},desert:{open:'dry',meadow:'dry',woods:'dry',dune:'dune'},frost:{open:'frost',meadow:'frost',woods:'frost',dune:'frost'},swamp:{open:'marsh',meadow:'marsh',woods:'wood',dune:'marsh'}},
     patch:38,wind:1,gust:[90,.65],push:12,lean:3,spring:1.4}};
-const WORLD_TERRAIN={lh:8,detail:.7,sc:46,mount:2.4,steps:{from:.2,to:.34,min:.45},flat:6,rock:13,snow:19,wet:3,sand:9,dune:18,bank:5,depth:.32,clear:.9,shade:.55};
+const WORLD_TERRAIN={lh:8,detail:.7,sc:46,mount:2.4,steps:{from:.2,to:.34,min:.45},flat:6,rock:11,snow:14,wet:3,sand:9,dune:18,bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a

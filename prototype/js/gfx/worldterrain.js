@@ -109,7 +109,7 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,FM,Lv,St,at){
   for(let fy=Y*r+2;fy<(Y+h)*r;fy+=st){for(let fx=X*r+2;fx<(X+w)*r;fx+=st){const jx=Math.round(fx+(hs(fx,fy,401)-.5)*st),jy=Math.round(fy+(hs(fx,fy,402)-.5)*st);
       if(jx<X*r||jy<Y*r||jx>=(X+w)*r||jy>=(Y+h)*r)continue;const gx=Math.floor(jx/r),gy=Math.floor(jy/r);if(!ok(gx,gy,jx,jy))continue;
       const ti=(gy>>4)*MW+(gx>>4),t=tiles[ti],cl=CLIMS[climate[ti]],C=WF.chance[cl],v=Math.floor(hs(fx,fy,403)*8),q0=hs(fx,fy,404),e=Lv[at(gx,gy)];
-      const mix=WF.trees[cl],zone=t===T_MOUNT?'mountain':t===T_HILL?'hills':near(gx,gy,1,i=>(WM.river[i]&3)&&tiles[i]===T_WATER)?'waterside':near(gx,gy,2,(i,u,v)=>typeof occAt==='function'&&occAt(u,v)>0)?'village':'lowland';
+      const mix=WF.trees[cl],zone=t===T_MOUNT||e>=WORLD_TERRAIN.rock-1?'mountain':t===T_HILL?'hills':near(gx,gy,1,i=>(WM.river[i]&3)&&tiles[i]===T_WATER)?'waterside':near(gx,gy,2,(i,u,v)=>typeof occAt==='function'&&occAt(u,v)>0)?'village':'lowland';
       const put=(o,kind,low)=>{if(o)out.push({x:jx/r,y:jy/r,s:o.img,ax:o.ax,ay:o.ay,kind,low:!!low})};
       look(cl);let q=q0;
       if(t===T_FOREST){if((q-=C.woods*.4)<0){put(FL.treePic(pickOf(mix[zone],hs(fx,fy,405)),v%6,hs(fx,fy,406)<.15?0:hs(fx,fy,407)<.1?2:1,cl==='frost'||e>=WORLD_TERRAIN.snow-3),'tree');continue}

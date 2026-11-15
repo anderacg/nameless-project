@@ -120,7 +120,7 @@ function battleSiteOf(o){const S={tx:0,ty:0,t:T_OPEN,c:'grass',name:'',kinds:nul
 // (the battle at world point (x,y), px)
 const battleSiteAt=(x,y)=>WM.battleSite(Math.floor(x/TILE),Math.floor(y/TILE));
 let WM=null,tiles=null,climate=null;
-function useWorld(map){WM=map;MW=map.w;MH=map.h;tiles=map.kind;climate=map.clim;for(const fn of WORLD_HOOKS)fn(map);return map}
+function useWorld(map){WM=map;MW=map.w;MH=map.h;tiles=map.kind;climate=map.clim;if(map.elev&&!map.slope&&typeof reliefClass==='function')map.slope=reliefClass(map,reliefLevels(map));for(const fn of WORLD_HOOKS)fn(map);return map}
 // a generated world put in (worldgen.js genWorld's result r): its holdings and camps (holdings.js setHoldings, setCamps), its
 // lords, its deposits, then the map (useWorld)
 function installWorld(r){setHoldings(r.holdings);setCamps(r.camps);r.map.lords=r.lords||null;genDeposits(r.map,TOWNS);return useWorld(r.map)}

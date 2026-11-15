@@ -437,7 +437,7 @@ function* genRoads(g){
   // so nothing leads it round the centre (once a road from behind was led round it over the river beside it)
   const boxed=new Uint8Array(N);for(const h of Hd){const b=placeBox(h);for(let y=b.y-1;y<=h.ty;y++)for(let x=b.x-1;x<=b.x+b.n;x++)if(m.has(x,y))boxed[y*W+x]=1}
   for(const h of Hd)boxed[(h.ty+1)*W+h.tx]=0;
-  const tc=(i,great)=>great&&K[i]===T_FORD?Infinity:cost[i],cost=new Float32Array(N),price=i=>{const k=K[i];cost[i]=boxed[i]?Infinity:(k===T_ROAD||k===T_FORD?.5:k===T_OPEN?jit[i]:k===T_FOREST?1.8*jit[i]:k===T_HILL?2.2*jit[i]:Infinity)*(m.region[i]?4:1)};
+  const tc=(i,great)=>great&&K[i]===T_FORD?Infinity:cost[i],cost=new Float32Array(N),price=i=>{const k=K[i];cost[i]=boxed[i]?Infinity:(k===T_ROAD||k===T_FORD?.5:k===T_OPEN?jit[i]:k===T_FOREST?1.8*jit[i]:k===T_HILL?2.2*jit[i]:Infinity)*(m.region[i]?4:1)*(m.slope?[1,1.4,2.8,4][m.slope[i]]:1)};
   for(let i=0;i<N;i++)price(i);
   const shut=i=>K[i]===T_WATER||K[i]===T_MOUNT,cut=(i,dx,dy)=>dx>0&&E[i]&1||dx<0&&E[i]&4||dy>0&&E[i]&2||dy<0&&E[i]&8,DX=DIR8.map(d=>d[0]),DY=DIR8.map(d=>d[1]);
   // (the crossing a straight run of k water tiles from land tile i (step s) would be: [kind, its cost]; kind 0 none, and none new

@@ -9,6 +9,10 @@ const T_OPEN=0,T_FOREST=1,T_HILL=2,T_WATER=3,T_ROAD=4,T_MOUNT=5,T_FORD=6;
 // (tiles, climate: the layers of the map that is in, by these names for the hot loops: world/worldmap.js useWorld)
 const CLIMS=['grass','frost','desert','swamp'],CLIM=Object.fromEntries(CLIMS.map((c,i)=>[c,i]));
 const SPEEDMUL=[1,.6,.75,0,1.3,0,.5];
+// (the land by its slope (worldgen.js reliefClass, the map's slope: flat, a slope, steep; a cliff is rock no one walks), how fast it
+// is walked, times its kind's; from snow levels up (the map's lv) the cold heights slower still; how much farther one sees a level up)
+const SLOPE={mul:[1,.8,.55,.4],snow:14,cold:.6,sight:.03,sightMax:.5};
+const slopeMulAt=i=>{const S=WM&&WM.slope;if(!S)return 1;const v=SLOPE.mul[S[i]];return WM.lv&&WM.lv[i]>=SLOPE.snow?v*SLOPE.cold:v};
 const CLIMMUL={grass:1,frost:.7,desert:.85,swamp:.5};
 const tAt=(tx,ty)=>(tx<0||ty<0||tx>=MW||ty>=MH)?T_WATER:tiles[ty*MW+tx];
 const terrAt=(x,y)=>tAt(Math.floor(x/TILE),Math.floor(y/TILE));
@@ -31,11 +35,12 @@ function speedAt(x,y,race,extra){
   const b=t===T_FORD?0:RoadBand.at(x,y);if(t===T_ROAD)return RoadBand.speed(b,race)*w;
   const tm=(t===T_FOREST&&home.includes('forest'))||(t===T_HILL&&home.includes('hills'))?1:SPEEDMUL[t];
   const cm=home.includes(c)?1:CLIMMUL[c];
-  const land=Math.max(.35,tm*cm)*(race==='human'&&c==='grass'&&t===T_OPEN?1.1:1);
+  const land=Math.max(.25,Math.max(.35,tm*cm)*slopeMulAt(Math.floor(y/TILE)*MW+Math.floor(x/TILE)))*(race==='human'&&c==='grass'&&t===T_OPEN?1.1:1);
   return (b?Math.max(land,land+(RoadBand.speed(b,race)-land)*RoadBand.share(b)):land)*w;
 }
 // (sight by the ground, times the weather's: fog, a blizzard or a sandstorm short)
-function visMulAt(x,y){const t=terrAt(x,y),c=climAt(x,y);return (t===T_HILL?1.3:t===T_FOREST?.7:c==='swamp'?.8:c==='desert'?1.2:1)*Weather.sight(x,y)}
+function visMulAt(x,y){const t=terrAt(x,y),c=climAt(x,y),tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),lv=WM&&WM.lv&&tx>=0&&ty>=0&&tx<MW&&ty<MH?WM.lv[ty*MW+tx]:0;
+  return (t===T_HILL?1.3:t===T_FOREST?.7:c==='swamp'?.8:c==='desert'?1.2:1)*(1+Math.min(SLOPE.sightMax,lv*SLOPE.sight))*Weather.sight(x,y)}
 const hiddenAt=(x,y)=>terrAt(x,y)===T_FOREST;
 function nearWater(x,y,r){const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(tAt(tx+i,ty+j)===T_WATER&&tx+i>0&&ty+j>0&&tx+i<MW-1&&ty+j<MH-1)return true;return false}
 // move something stuck on water or a mountain (old saves, map changes) to the nearest open tile
