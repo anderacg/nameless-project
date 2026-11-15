@@ -211,6 +211,7 @@ function staminaRate(moving,dr,L){
   const S=SUPPLY,why=[],x=m=>'×'+Math.round(m*100)/100;
   if(moving){let n=S.march;why.push('marching −'+S.march);const mul=(m,w)=>{if(m!==1){n*=m;why.push(w+' '+x(m))}};
     if(L.rough)mul(S.rough,'rough ground');
+    {const b=waterBand(Math.floor(P.y/TILE)*MW+Math.floor(P.x/TILE));if(b>=4)mul(WATER.swim,'swimming');else if(b===3)mul(WATER.wade,'wading')}
     if(Clock.isNight)mul(S.night,'night');
     if(P.hasPerk('forced'))mul(S.forced,'Forced March');
     if(!dr)mul(L.desert?S.desertDry:S.dry,L.desert?'no water in the desert':'nothing to drink');

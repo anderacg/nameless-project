@@ -19,6 +19,25 @@ const slopeMulAt=i=>{const S=WM&&WM.slope;if(!S)return 1;const v=SLOPE.mul[S[i]]
    (router.js findPath, buildWayGraph) */
 const CLIMB={up:1.1,down:.3,road:.35};
 const climbCost=(L,a,b,road)=>{if(!L)return 0;const d=L[b]-L[a];return (d>0?d*CLIMB.up:-d*CLIMB.down)*(road?CLIMB.road:1)};
+/* water as the world lab has it (engine/worldlab.js LAB.depth; the owner, 2026-11-15: "Use the same concept in the lab. Use that as
+   a baseline, we can swim as well right?"): every water tile is walked by its depth (levels, a level some 0.85 m): ankle, knee,
+   waist deep past bands' each, deeper swum; how fast by each (speed: dry, ankle, knee, waist, swimming) and what a tile of it
+   costs a way (cost: tiles of open ground; swimming the lab's swimCost); how much of a man is under it (cut: figure px). A river is as deep as it is wide (river: by its width, 1-3
+   tiles); the sea and a lake by how far out a tile lies (shore: 1, 2, 3 tiles from the land); farther out than reach tiles it is
+   open water no one swims (to cross it, a ship or a ferry). Wading and swimming tire a band (supply.js staminaRate: wade, swim
+   times the march's drain). waterDepths: the depths of a map (0 land, -1 open water), kept for it */
+const WATER={bands:[.12,.35,.8],speed:[1,.85,.6,.35,.3],cost:[1,1.2,1.8,3.5,9],cut:[0,1,4,8,12],river:[0,.5,1,1.5],shore:[.3,.7,1.2],reach:3,wade:1.4,swim:3};
+const WDEPTHS=new WeakMap();
+function waterDepths(m){let D=WDEPTHS.get(m);if(D)return D;const W=m.w,H=m.h,N=W*H,K=m.kind,Rv=m.river,R=WATER;D=new Float32Array(N);
+  const far=new Uint8Array(N).fill(255),q=[];for(let i=0;i<N;i++)if(K[i]!==T_WATER){far[i]=0;q.push(i)}
+  for(let h=0;h<q.length;h++){const i=q[h],x=i%W,y=(i-x)/W,d=far[i]+1;if(d>R.reach+1)continue;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(far[j]>d){far[j]=d;q.push(j)}}}
+  for(let i=0;i<N;i++){if(K[i]!==T_WATER)continue;const x=i%W,y=(i-x)/W;if(x<1||y<1||x>=W-1||y>=H-1){D[i]=-1;continue}
+    D[i]=Rv[i]&3?R.river[Rv[i]&3]:far[i]>R.reach?-1:R.shore[far[i]-1]}
+  WDEPTHS.set(m,D);return D}
+// (a tile's water: 0 dry land, 1 ankle, 2 knee, 3 waist deep, 4 swum, 5 open water; walkTile: one may be there, on foot or swimming)
+const waterBand=(i,m=WM)=>{if(m.kind[i]!==T_WATER)return 0;const d=waterDepths(m)[i],B=WATER.bands;return d<0?5:d<B[0]?1:d<B[1]?2:d<B[2]?3:4};
+const walkTile=(i,m=WM)=>{const t=m.kind[i];return t!==T_MOUNT&&(t!==T_WATER||waterBand(i,m)<5)};
+const walkAt=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return tx>=0&&ty>=0&&tx<MW&&ty<MH&&walkTile(ty*MW+tx)};
 const CLIMMUL={grass:1,frost:.7,desert:.85,swamp:.5};
 const tAt=(tx,ty)=>(tx<0||ty<0||tx>=MW||ty>=MH)?T_WATER:tiles[ty*MW+tx];
 const terrAt=(x,y)=>tAt(Math.floor(x/TILE),Math.floor(y/TILE));
@@ -36,8 +55,9 @@ function regionAt(x,y,tile){const t=terrAt(x,y),c=climAt(x,y),road=tile?0:RoadBa
 // speed, blended to the land's over its shoulder; a road's own tile its road's; a ford, water and the peaks by their tiles; all of it
 // times the weather's there (world/weather.js Weather.speed: rain and snow slower, a blizzard or a sandstorm much slower)
 function speedAt(x,y,race,extra){
-  const t=terrAt(x,y),c=climAt(x,y);if(!passable(t))return 0;
+  const t=terrAt(x,y),c=climAt(x,y);if(t===T_MOUNT||t===T_WATER&&!walkAt(x,y))return 0;
   const home=(race?RACES[race].home:[]).concat(extra||[]),w=Weather.speed(x,y,c,home);
+  if(t===T_WATER)return WATER.speed[waterBand(Math.floor(y/TILE)*MW+Math.floor(x/TILE))]*w;// (wading, swimming: WATER)
   const b=t===T_FORD?0:RoadBand.at(x,y);if(t===T_ROAD)return RoadBand.speed(b,race)*w;
   const tm=(t===T_FOREST&&home.includes('forest'))||(t===T_HILL&&home.includes('hills'))?1:SPEEDMUL[t];
   const cm=home.includes(c)?1:CLIMMUL[c];

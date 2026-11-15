@@ -210,7 +210,11 @@ function drawMarcherAt(u,o,cam){
   // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld (a sword worn out of sight: SHEATH); a flag-bearer's
   // (your hero's, carrying your banner) only if it is sheathed (SHEATH.show), his hands on the pole; none for a beast)
   const s=marchSprite(u,o,I?.pose,true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
-  ctx.save();ctx.translate(x,y);ctx.scale(sx,k);G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
+  // (in water, the world lab's way: under it from his feet up as deep as it is (WATER.cut figure px by its band), a ripple at its line)
+  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),wb=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH?waterBand(ty*MW+tx):0,cut=wb?WATER.cut[Math.min(4,wb)]:0;
+  ctx.save();ctx.translate(x,y);ctx.scale(sx,k);if(cut){ctx.beginPath();ctx.rect(bx-8,by-8,s.width+16,s.height+8-cut);ctx.clip()}
+  G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
+  if(cut){const w=Math.max(4,Math.round(s.width*.45)),f=(performance.now()/300+u.id)%2<1?0:1;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.fillStyle='rgba(232,244,248,.75)';ctx.fillRect(-(w>>1)-f,2-cut,w+2*f,1);ctx.fillStyle='rgba(232,244,248,.35)';ctx.fillRect(-(w>>1)-2,3-cut,w+4,1);ctx.restore()}
 }
 // (the owner, 2026-10-31: "the army ring speed is based on the overall unit speed so it can keep centered") its rings drawn on the
 // middle its men make (MarchArmy mid: each man's spot less his place in it, their median), so they go as the men go, and settle
@@ -494,7 +498,8 @@ class MarchGround{
       for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const x=this.x+(c+.5)*cs,y=this.y+(r+.5)*cs;if(x+cs/2>b.x&&x-cs/2<b.x+b.w&&y+cs/2>b.y&&y-cs/2<b.y+b.h)shut[r*g.C+c]=1}}
     for(let i=0;i<g.cost.length;i++){const x=this.x+(i%g.C+.5)*cs,y=this.y+(Math.floor(i/g.C)+.5)*cs,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),k=ty*MW+tx;
       let open=WM.has(tx,ty)&&(fly||wayLand(k));if(!open&&tAt(tx,ty)===T_WATER)open=ferries.some(f=>{const dx=f.tx-f.x,dy=f.ty-f.y,d=dx*dx+dy*dy,t=clamp(((x-f.x)*dx+(y-f.y)*dy)/d,0,1);return Math.hypot(x-f.x-t*dx,y-f.y-t*dy)<fw});
-      g.cost[i]=open&&!shut[i]?ROUTE.unit:0;
+      // (water by its depth, WATER.cost: waded, swum; map.js)
+      const wb=open&&!fly&&tiles[k]===T_WATER?waterBand(k):0;g.cost[i]=open&&!shut[i]?Math.min(255,Math.round(ROUTE.unit*(wb?WATER.cost[wb]:1))):0;
       if(!fly&&WM.has(tx,ty)){const edge=WM.edge[k];if(x%TILE<cs&&edge&4)g.wall[i]|=4;if(x%TILE>TILE-cs&&edge&1)g.wall[i]|=1;if(y%TILE<cs&&edge&8)g.wall[i]|=8;if(y%TILE>TILE-cs&&edge&2)g.wall[i]|=2}
     }
     if(!fly&&MARCH_MOVE.slit)this.shutSlits(Math.floor(MARCH_MOVE.slit/cs));
@@ -513,7 +518,7 @@ class MarchGround{
   contains(p,pad=0){const g=this.grid;return p.x>=this.x+pad&&p.y>=this.y+pad&&p.x<this.x+g.C*g.cs-pad&&p.y<this.y+g.R*g.cs-pad}
   covers(p,pad){const g=this.grid,x1=this.x+g.C*g.cs,y1=this.y+g.R*g.cs;return p.x>=this.x+(this.x>0?pad:0)&&p.y>=this.y+(this.y>0?pad:0)&&p.x<x1-(x1<MW*TILE?pad:0)&&p.y<y1-(y1<MH*TILE?pad:0)}
   open(p){return this.contains(p)&&!!this.grid.cost[routeIx(this.grid,p.x-this.x,p.y-this.y)]}
-  stand(p){return this.open(p)&&(this.fly||terrAt(p.x,p.y)!==T_WATER)}
+  stand(p){return this.open(p)&&(this.fly||walkAt(p.x,p.y))}
   // (PATHS.clear: a man's (one with a type) half his body (marchBody), the room he keeps off walls; else, or one squeezing out of a
   // pocket (tight: MarchArmy step), none)
   body(p){return PATHS.clear&&p.type&&!p.tight?marchBody(p)/2:0}
@@ -860,7 +865,7 @@ class MarchArmy{
         // put on the nearest a man could stand on, else its way on the map (from its guide, march guides) starts in the water, finds
         // none, and every order is dropped (the owner, 2026-11-01: "my army get stuck when the unit try to form a formation near
         // blocking or water"); a ferry's water is open; a building's feet are not the map's, so its way starts there as ever)
-        const foot=(x,y)=>{const p={x,y};return MARCH_MOVE.footing&&!passable(terrAt(x,y))&&nav.contains(p)&&!nav.open(p)?nav.snap(p,null):null};{const q=foot(this.gx,this.gy);if(q){this.gx=q.x;this.gy=q.y}}let px=col?this.gx+col.ox:c.x,py=col?this.gy+col.oy:c.y;
+        const foot=(x,y)=>{const p={x,y};return MARCH_MOVE.footing&&!walkAt(x,y)&&nav.contains(p)&&!nav.open(p)?nav.snap(p,null):null};{const q=foot(this.gx,this.gy);if(q){this.gx=q.x;this.gy=q.y}}let px=col?this.gx+col.ox:c.x,py=col?this.gy+col.oy:c.y;
         if(col&&!jump){const ex=px-this.wx,ey=py-this.wy,e=Math.hypot(ex,ey),g=F.glide*step;if(e>g){px=this.wx+ex/e*g;py=this.wy+ey/e*g}}
         {const q=foot(px,py);if(q){px=q.x;py=q.y}}
         this.mid=col?{x:px,y:py}:c;o.x=this.x=this.wx=px;o.y=this.y=this.wy=py}
