@@ -36,9 +36,10 @@ class Carcass extends WorldObject{
   static done(){const V=G.lootView;if(V?.keep)V.keep(G.loot?.pile||[]);lootEnd();hidePanel();toWorld()}
   // the foes fallen in a fight on the map, read off its field before it goes (resolution.js finish): each where his body lies
   static from(b){if(!CARCASS.on||!OPEN_FIGHT.on||!b?.world||!b.corpses)return null;const out=[];
-    // (your foes' only: an ally's fallen hold nothing of yours)
-    for(const c of b.corpses){const u=DEATH_OF.get(c);if(!u||u.hp>0||u.left||u.waiting||!battleEnemy(0,u))continue;const p=b.world.world(c),M=Object.keys(MONSTERS).find(k=>MONSTERS[k].unit===u.type);
-      out.push({x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,type:u.type,wild:u.wildlife||null,mon:M||null,bst:!!ST[u.type]?.beast,face:c.face||1,corpse:c})}
+    // (every one fallen, yours and your allies' too (the owner, 2026-11-15: "make every unit the same way"): ours, holding nothing of
+    // yours (share puts the spoils on your foes))
+    for(const c of b.corpses){const u=DEATH_OF.get(c);if(!u||u.hp>0||u.left||u.waiting)continue;const p=b.world.world(c),M=Object.keys(MONSTERS).find(k=>MONSTERS[k].unit===u.type);
+      out.push({x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,type:u.type,wild:u.wildlife||null,mon:M||null,bst:!!ST[u.type]?.beast,face:c.face||1,corpse:c,...(battleEnemy(0,u)?{}:{ours:true})})}
     return out}
   // laid on the map once the fight is settled: what its window would have held shared among them (share), the window told
   static lay(fell){if(!fell?.length)return;const cs=fell.map(f=>asCarcass({cc:1,...f,day:G.day+Clock.frac,items:[]})),L=G.loot,V=G.lootView;this.list.push(...cs);
@@ -48,16 +49,47 @@ class Carcass extends WorldObject{
     this.prune()}
   // (a pile entry onto the fallen it belongs to: meat, furs and a beast's trophy on beasts (its own kind's first), gear and goods
   // on the men; else on any; split among them, a piece at a time)
-  static share(cs,s){const mat=c=>c.mon?MONSTERS[c.mon]?.mat:c.wild?CRITTERS[c.wild]?.mat?.[0]:null,beasty=s.k==='good'&&['meat','furs'].includes(s.id)||s.k==='mat',
+  static share(cs,s){const foes=cs.filter(c=>!c.ours);if(foes.length)cs=foes;const mat=c=>c.mon?MONSTERS[c.mon]?.mat:c.wild?CRITTERS[c.wild]?.mat?.[0]:null,beasty=s.k==='good'&&['meat','furs'].includes(s.id)||s.k==='mat',
       pick=[s.k==='mat'&&cs.filter(c=>mat(c)===s.id),beasty&&cs.filter(c=>c.beast),!beasty&&cs.filter(c=>!c.beast),cs].find(l=>l&&l.length);
     this.turn=this.turn||0;for(let i=0;i<s.n;i++){const c=pick[this.turn++%pick.length],x=s.k!=='gear'&&c.items.find(q=>q.k===s.k&&q.id===s.id);if(x)x.n++;else c.items.push({k:s.k,id:s.id,n:1})}}
   // (rotted: CARCASS.days with anything on them, bare once picked clean; the oldest first past CARCASS.most)
   static prune(){const X=CARCASS,now=G.day+Clock.frac;this.list=this.list.filter(c=>now-c.day<(c.empty()?X.bare:X.days));if(this.list.length>X.most)this.list=this.list.slice(-X.most)}
   static day(){this.prune()}
-  // each hour: a band near the fallen you cannot see takes all on them within CARCASS.near of one (its plunder: Remains.beaten)
-  static hour(){const X=CARCASS;
-    for(const c of this.list){if(c.empty()||!Death.unseenAt(c.x,c.y))continue;const b=bandits.find(o=>!o.dead&&!o.gone&&!fightHolds(o)&&Math.hypot(o.x-c.x,o.y-c.y)<X.seek);if(!b||Math.random()>=X.find)continue;
-      const p=b.plunder||(b.plunder={gold:0,items:[],of:[]}),who=robberOf(b);for(const o of c.near()){for(const s of o.items)p.items.push([s.k,s.id,s.n]);o.items=[];o.robbed=who}if(!p.of.includes('the fallen of your fight'))p.of.push('the fallen of your fight')}}
+  // each hour: a band near the fallen with something on them sets out for them (b.corpse: BandBrain walks it there, seek), seen or
+  // not; fresh ones may draw looters out of the wilds (looters); then the clearers (clear)
+  static hour(){const X=CARCASS,L=X.loot,now=G.day+Clock.frac,sought=bandits.filter(o=>o.corpse&&!o.dead&&!o.gone);
+    for(const c of this.list){if(c.empty()||sought.some(o=>Math.hypot(o.corpse.x-c.x,o.corpse.y-c.y)<X.near))continue;
+      let b=bandits.find(o=>!o.dead&&!o.gone&&!o.inside&&!fightHolds(o)&&!o.corpse&&!o.qid&&!o.wave&&Math.hypot(o.x-c.x,o.y-c.y)<X.seek);
+      if(!b&&now-c.day<L.fresh&&Math.random()<L.spawn)b=this.looters(c);if(!b||Math.random()>=X.find)continue;b.corpse={x:c.x,y:c.y,wait:L.check};sought.push(b)}
+    this.clear(now)}
+  // (a band of looters out of the wilds for the fallen at c: L.from px off, out of your sight, on open ground; none past L.most)
+  static looters(c){const L=CARCASS.loot;if(bandits.filter(o=>o.looters&&!o.dead&&!o.gone).length>=L.most)return null;
+    for(let k=0;k<8;k++){const a=Math.random()*6.283,r=L.from[0]+Math.random()*(L.from[1]-L.from[0]),x=c.x+Math.cos(a)*r,y=c.y+Math.sin(a)*r;
+      if(x<16||y<16||x>MW*TILE-16||y>MH*TILE-16||!passable(terrAt(x,y))||!Death.unseenAt(x,y))continue;const kind=ST[L.kind]?L.kind:'militia',n=L.n[0]+Math.floor(Math.random()*(L.n[1]-L.n[0]+1));
+      const b=asParty({kind:'bandits',troops:Array(n).fill(kind),x,y,cool:0});b.looters=true;bandits.push(b);return b}
+    return null}
+  // (a band at the fallen it set out for (BandBrain): there, it stands searching them L.check s, then takes all on them within
+  //  CARCASS.near (its plunder, yours if you beat it: Remains.beaten); true while it is about it)
+  static seek(b,d){const q=b.corpse;if(!q)return false;const dx=q.x-b.x,dy=q.y-b.y,dd=Math.hypot(dx,dy);
+    if(dd>CARCASS.loot.at){const s=moveStep(partySpeed(b,b.troops),d);if(dd<2*CARCASS.loot.at||!Router.travel(b,q,s))walk(b,dx,dy,Math.min(dd,s));b.idle=false;return true}// (the last of the way straight: the router's cells stop short; at L.at its men stand round them, its middle off them)
+    b.idle=true;q.wait-=d;if(q.wait>0)return true;b.corpse=null;
+    const c=this.list.find(o=>Math.hypot(o.x-q.x,o.y-q.y)<1);if(c){const p=b.plunder||(b.plunder={gold:0,items:[],of:[]}),who=robberOf(b);let n=0;
+      for(const o of c.near()){for(const s of o.items){p.items.push([s.k,s.id,s.n]);n+=s.n}o.items=[];o.robbed=who}if(n&&!p.of.includes('the fallen of your fight'))p.of.push('the fallen of your fight')}
+    return true}
+  // (the clearers: each of the fallen past its time (C.bare picked clean, C.after any) with a holding's gate within C.reach: out of
+  //  your sight gone at once; in it, one of its folk walks out to it (Carcass.diggers), digs, and walks home)
+  static clear(now){const C=CARCASS.clear;
+    for(const c of this.list.slice()){if(c.digger)continue;const age=now-c.day;if(age<(c.empty()?C.bare:C.after))continue;
+      let t=null,best=C.reach;for(const h of TOWNS){if(ruined(h)||besieged(h))continue;const g=gateGoal(h),d=Math.hypot(g.x-c.x,g.y-c.y);if(d<best){best=d;t=h}}if(!t)continue;
+      if(Death.unseenAt(c.x,c.y)){this.list=this.list.filter(o=>o!==c);continue}
+      if(this.diggers.length>=C.most)continue;const g=gateGoal(t);c.digger=true;this.diggers.push({c,home:t.name,x:g.x,y:g.y,st:'out',t:0,id:t.name+'|dig|'+Math.round(c.x),job:'farmer',dir:c.x>=g.x?1:-1,walk:0})}}
+  static diggers=[];
+  // (each clearer's moment: out to the fallen, digging there C.dig s, the fallen gone, home to the gate and in)
+  static dig(d){const C=CARCASS.clear,s=moveStep(C.pace,d,false);
+    for(const f of this.diggers){const to=f.st==='back'?gateGoal(townBy(f.home)||{x:f.x,y:f.y-12}):f.c;if(f.st==='dig'){f.t-=d;if(f.t<=0){this.list=this.list.filter(o=>o!==f.c);f.st='back'}continue}
+      const dx=to.x-f.x,dy=to.y-f.y,dd=Math.hypot(dx,dy);if(dd<2){if(f.st==='out'){f.st='dig';f.t=C.dig}else f.gone=true;continue}
+      const k=Math.min(dd,s);f.x+=dx/dd*k;f.y+=dy/dd*k;f.walk+=k;if(Math.abs(dx)>.01)f.dir=dx>0?1:-1;if(f.st==='out'&&!this.list.includes(f.c))f.st='back'}
+    this.diggers=this.diggers.filter(f=>!f.gone)}
   // drawn where it lies: its fall as the fight drew it (vfx.js drawBody, at the fight's scale), else a plain one; a glint while
   // anything is on it
   draw(ents,cam,V){if(!this.inView(V))return;const c=this;
@@ -65,12 +97,16 @@ class Carcass extends WorldObject{
       if(c.corpse?.sp){ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.translate(-c.corpse.x,-c.corpse.y);try{drawBody(ctx,c.corpse,1,1)}finally{ctx.restore()}}
       else{const X=Math.round(x),Y=Math.round(y),f=c.face<0?-1:1;ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(X-5,Y,10,2);ctx.fillStyle=c.beast?C.hide:C.cloth;ctx.fillRect(X-4,Y-3,8,3);ctx.fillStyle=C.bone;ctx.fillRect(X+(f>0?3:-5),Y-3,2,2)}
       if(!c.empty())lootGlow(x,y-2,LOOT_GLOW.r*(B?.world?WORLD_BATTLE.sprite/2:1),performance.now()/1000,c.x*.13+c.y*.07)}})}// (something on it: its glow, battle/drops.js)
-  static drawAll(ents,cam,V){for(const c of this.list)c.draw(ents,cam,V)}
-  static save(){return this.list.length?this.list.map(c=>{const o={...c};delete o.corpse;return o}):undefined}// (its picture only what you see)
+  static drawAll(ents,cam,V){for(const c of this.list)c.draw(ents,cam,V);
+    // (the clearers: their holding's folk (folk.js workerAppearance), walking, or at the fallen swinging their tools)
+    const S=yourSight(V),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;for(const f of this.diggers){if(!S.sees(f.x,f.y))continue;
+      ents.push({y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{const L=workerAppearance(f),pose=f.st==='dig'?6+Math.floor(performance.now()/260)%3:2+Math.floor(f.walk/WALK.foot)%4,sp=unitSprite(L.type,0,false,L.v,pose,false,false,L.tint);
+        ctx.save();ctx.translate(Math.round(f.x-cam.x),Math.round(f.y-cam.y));ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(-2,-1,5,2);ctx.scale(f.dir<0?-k:k,k);ctx.drawImage(sp,-(sp.width>>1),-sp.height+2);ctx.restore()})})}}
+  static save(){return this.list.length?this.list.map(c=>{const o={...c};delete o.corpse;delete o.digger;return o}):undefined}// (its picture only what you see)
   static load(v){this.list=(v||[]).map(o=>asCarcass(o))}
 }
 const asCarcass=asClass(Carcass);
 onAct('carc-',()=>Carcass.done());
-Systems.add({name:'carcasses',order:{hour:168,day:235},hour:()=>Carcass.hour(),day:()=>Carcass.day()});
+Systems.add({name:'carcasses',order:{hour:168,day:235,frame:142},hour:()=>Carcass.hour(),day:()=>Carcass.day(),frame:d=>Carcass.dig(d)});
 Saves.add({key:'carcasses',order:333,defaults:null,save:()=>Carcass.save(),load:v=>Carcass.load(v)});
-onWorld(()=>{Carcass.list=[]});
+onWorld(()=>{Carcass.list=[];Carcass.diggers=[]});

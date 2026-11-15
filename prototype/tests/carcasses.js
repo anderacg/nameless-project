@@ -22,9 +22,10 @@ Kit.suite(({ok,info})=>{
  ok(t.goodN('meat')>meat0&&t.goodN('meat')-meat0===on-1,'taken: into your bag ('+(t.goodN('meat')-meat0)+' meat)');
  G.loot.pile.push({k:'good',id:'meat',n:1});t.act('lt-leave');
  ok(G.mode==='world'&&!G.loot&&c.items.some(s=>s.id==='meat'&&s.n===1)&&C.list.filter(o=>o!==c).every(o=>o.empty()),'left: what you leave stays on the one you clicked, the others picked clean');
- // (a band near the fallen you cannot see picks them over: its plunder yours if you beat it)
+ // (a band near the fallen you cannot see sets out for them, searches them and picks them over (world/carcasses.js seek, which
+ // BandBrain runs): its plunder yours if you beat it)
  {const o=C.list.find(c=>!c.empty())||C.list[0];if(o.empty())o.items.push({k:'good',id:'meat',n:2});const n=o.items.reduce((a,s)=>a+s.n,0),band=t.asParty({kind:'bandits',troops:['militia'],x:o.x+30,y:o.y,cool:0});t.bandits.push(band);
-  const home=[P.x,P.y];Kit.goTo(o.x>t.MW*t.TILE/2?o.x-1500:o.x+1500,o.y);const f=t.CARCASS.find;t.CARCASS.find=1;try{ok(t.Death.unseenAt(o.x,o.y),'(far from them: out of your sight)');C.hour()}finally{t.CARCASS.find=f;Kit.goTo(home[0],home[1])}
+  const home=[P.x,P.y];Kit.goTo(o.x>t.MW*t.TILE/2?o.x-1500:o.x+1500,o.y);const f=t.CARCASS.find;t.CARCASS.find=1;try{ok(t.Death.unseenAt(o.x,o.y),'(far from them: out of your sight)');C.hour();for(let i=0;i<4000&&band.corpse;i++)C.seek(band,.1)}finally{t.CARCASS.find=f;Kit.goTo(home[0],home[1])}
   ok(o.empty()&&band.plunder?.items.reduce((a,x)=>a+x[2],0)===n&&/picked clean by/.test(o.tip()),'a band near the fallen you cannot see picks them over ('+n+' things), the carcass "'+o.what()+'"');
   const m=t.goodN('meat');t.Remains.beaten(band);ok(t.goodN('meat')===m+n,'beaten, its plunder is yours');o.items.push({k:'good',id:'meat',n:1})}
  // (saved; rotted)

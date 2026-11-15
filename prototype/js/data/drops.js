@@ -21,7 +21,15 @@ const DROPS={on:true,art:14,loot:true,xp:8,dots:{xp:6,troop:3},speed:220,coin:{c
 // it (col, rgb), breathing between a's alpha at speed, r px at the world's scale; a glint rising from it every 1/rise s (the owner,
 // 2026-11-15: "if there's item on ground and not picked yet, make sure we have a glowing or something noticeable")
 const LOOT_GLOW={on:true,r:12,a:[.3,.7],speed:2.6,rise:.7,col:'255,206,90'};// (added on the ground: it lights it)
-const CARCASS={on:true,near:40,pick:8,days:3,bare:1,most:120,seek:120,find:.2,col:{hide:'#7a5a3e',bone:'#e4dccb',cloth:'#6a5e50',glint:'#ffe08a'}};
+const CARCASS={on:true,near:40,pick:8,days:3,bare:1,most:240,seek:160,find:.35,col:{hide:'#7a5a3e',bone:'#e4dccb',cloth:'#6a5e50',glint:'#ffe08a'},
+  // (looters (the owner, 2026-11-15: "make random looters loot or check body"): a band near the fallen walks to them, searches them
+  //  check s of world time once within at px (its men round them), takes what is on them; while fresh ones (laid within fresh days) hold something and no band is near, a
+  //  band of n looters may come out of the wilds for them each hour (spawn), from px off, out of your sight, most of them at once)
+  loot:{at:24,check:6,fresh:1,spawn:.25,n:[2,4],from:[220,320],most:3,kind:'band_looter'},
+  // (clearers (the owner: "make people work to clear those corpses"): folk of the nearest holding within reach px of its gate come
+  //  out to the fallen, picked clean ones after bare days, any after after days (what is on them theirs), and dig a while (dig s),
+  //  their pace px a s; out of your sight they are simply gone)
+  clear:{after:1.5,bare:.25,reach:420,dig:8,pace:20,most:3}};
 /* junk (the owner, 2026-11-13): broken pieces a fallen man leaves (DROPS.worn.junk), good for nothing but a few coins at any market,
    as a trophy is (data/monsters.js MATS: v its worth, icon and col its picture) */
 const JUNK={junk_blade:{n:'Broken Blade',v:3,icon:'blade',col:'#7d7b72'},junk_links:{n:'Rusted Mail Links',v:2,icon:'plate',col:'#8a6a4a'},

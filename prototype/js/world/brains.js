@@ -79,6 +79,8 @@ class BandBrain extends Brain{
     const st=stance(b.power()*b.nerve,b),fear=fearOf(b,st),sp=moveStep(partySpeed(b,b.troops),d);
     if(!fear&&this.hunt(b,sp)){b.waylay=null;return false}// (a caravan it can take, ridden down before all else but its fear of you: BAND_HUNT)
     if(!fear&&this.feud(b,sp)){b.waylay=null;return false}// (a rival band, goblins against bandits: data/goblins.js BAND_FEUD)
+    // (to the fallen it set out for, to search them (world/carcasses.js Carcass.seek), while it neither fears nor sees you)
+    if(b.corpse&&!fear&&!b.waylay&&!TravelAwareness.sees(b)&&Carcass.seek(b,d))return false;
     if(b.waylay||!TravelAwareness.sees(b)&&Waylay.consider(b,d)){const r=Waylay.step(b,sp,d);if(r==='met')return true;if(r)return false}// (lying in wait: waylay.js)
     // (you near a holding's homes: it hunts and searches for you no further there, turning back for the wilds: BAND_SHY, shy)
     const shy=!fear&&this.shy(b);
