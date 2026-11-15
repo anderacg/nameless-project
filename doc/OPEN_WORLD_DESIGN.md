@@ -254,6 +254,7 @@ That is a separate decision, best made after this world exists.
   - Its surface never rises downstream and steps by levels, so it falls white wherever it drops a level. Over the rock bands the falls stack into cascades, with foam at their foot.
   - The water moves: streaks run downstream, and the falls pour.
   - Where its surface comes down to sea level it runs on at that level, widening (`widen`), as a channel through the beach into the sea. Its deep channel shows through the shallows, and its water keeps moving (the owner: "What about the river and steams? This one looks weird": it had stopped short of the sea).
+  - Past the shore it fans out and fades into the sea (the owner: "the water from river to ocean is not realistic": it had run on as a dark stripe across the flats to the map's edge). Over 60 points (120 px) it widens by 1.6 of itself, shallows, and stops being a channel. Its channel's edges are soft (deepest at its middle). Its muddy plume (a grey-green tint, at most 0.35) fades with it, and so does its current (`fan`, `fanW`, `plume`).
   - A stream (no wider than 3.5 px a side) is waded at ×0.4. The river is crossed only at its ford (shallow, with stepping stones, ×0.4) or by the road's bridge.
   - A watermill stands on its bank.
 - **The road:**

@@ -23,7 +23,8 @@
   // pts (shares of W, H), meandering meander px; half as wide as w[0] at its source to w[1] at its mouth (px), its banks bank px; its
   // surface never rising downstream, stepped by levels (a fall where it drops); a stream no wider than wade px is waded; a ford at
   // ford (a share of its length), the mill beside it at mill; where its surface comes down to mouth levels it runs on at the sea's
-  // level through the beach into the sea, widening by widen of itself (its mouth). The road (the owner: "make those road more realistic"): a curve
+  // level through the beach into the sea, widening by widen of itself (its mouth); past the shore it fans out (fanW more of its width)
+  // and fades into the sea over fan points (2 px each), its muddy plume (plume at most) fading with it. The road (the owner: "make those road more realistic"): a curve
   // through its points, ruts rut px either side of its crown, a grassy crown on its flat stretches, puddles in the ruts where it is
   // flat (puddle: the noise past which), its edge ragged by edge px; a stone parapet where it runs along a drop of wall levels.
   // Its half-width wanders by vary of itself; its two wheel tracks at track of it from the middle, wandering wander px; gravel: a
@@ -42,7 +43,7 @@
     //  its ends resting on abut points of the road's own fill (its abutments), so no cut face stands under them)
     bridge:{clear:1.4,pile:12,rail:5,post:8,over:7,inset:1,abut:4},
     river:{pts:[[.588,.118],[.565,.20],[.525,.28],[.475,.36],[.435,.46],[.395,.55],[.355,.62],[.338,.70],[.343,.79],[.328,.88],[.31,1]],
-      w:[2.5,11],bank:9,meander:14,ford:.5,mill:.64,mouth:.15,widen:1.2,tarn:{x:.597,y:.10,rx:48,ry:26}},
+      w:[2.5,11],bank:9,meander:14,ford:.5,mill:.64,mouth:.15,widen:1.2,fan:60,fanW:1.6,plume:.35,tarn:{x:.597,y:.10,rx:48,ry:26}},
     walk:38,run:1.6,
     cls:{slope:.035,steep:.11,cliff:.22},
     // (depth, in levels (a level about 0.85 m): past bands[0] ankle-deep, [1] knee, [2] waist, beyond it you swim; speed and cut
@@ -145,10 +146,14 @@
     const at=(x,y)=>E[Math.min(H-1,Math.max(0,Math.round(y)))*W+Math.min(W-1,Math.max(0,Math.round(x)))];
     const rh=pts.map(([x,y])=>at(x,y));for(let i=1;i<n;i++)rh[i]=Math.min(rh[i],rh[i-1]-.0004);
     const rw=pts.map((_,i)=>V.w[0]+(V.w[1]-V.w[0])*Math.pow(i/(n-1),.8)+(fbm(i/30,2.5,s+71,2)-.5)*1.6);
-    const {D,I}=bandOf(pts,V.w[1]+V.bank+3),RV=new Uint8Array(W*H),RW=new Float32Array(W*H),RT=new Float32Array(W*H),DP=new Float32Array(W*H),fi=V.ford*(n-1),Dp=LAB.depth;
+    // (where it meets the sea: the first of its points on the sea, as the land lay)
+    let sea=n;for(let i=0;i<n;i++){if(at(pts[i][0],pts[i][1])<0){sea=i;break}}
+    const {D,I}=bandOf(pts,V.w[1]*(1+V.widen+V.fanW)+V.bank+3),PL=new Float32Array(W*H),RV=new Uint8Array(W*H),RW=new Float32Array(W*H),RT=new Float32Array(W*H),DP=new Float32Array(W*H),fi=V.ford*(n-1),Dp=LAB.depth;
     for(let j=0;j<W*H;j++){if(D[j]>=1e9)continue;const f=I[j],h=along(rh,f),d=D[j];let w=along(rw,f);
       // (its mouth: once its surface is down to mouth levels it runs on at the sea's level, widening, through the beach into the sea)
-      if(h<V.mouth){w*=1+V.widen*smooth((V.mouth-h)/V.mouth);if(d<w){const q=d/w;E[j]=Math.min(E[j],-.06);RV[j]=1;RW[j]=w;RT[j]=f*2;DP[j]=Math.max(DP[j],(Dp.river[1]*(1-q*q))*.8+.05)}continue}
+      // (past the shore it fans out and fades into the sea: shallower, wider, its channel's edges soft, its plume fading)
+      if(h<V.mouth){const out=Math.max(0,f-sea),fade=1-smooth(out/V.fan);if(fade<=0)continue;w*=1+V.widen*smooth((V.mouth-h)/V.mouth)+V.fanW*(1-fade);
+        if(d<w){const q=d/w,soft=1-q*q;E[j]=Math.min(E[j],-.06*fade);if(fade>.15){RV[j]=1;RW[j]=w;RT[j]=f*2}DP[j]=Math.max(DP[j],(Dp.river[1]*soft*soft)*.8*fade+.05*fade);PL[j]=Math.max(PL[j],V.plume*fade*soft)}continue}
       if(d<w){E[j]=Math.min(E[j],h)-.001;RV[j]=Math.abs(f-fi)<w/2+5?3:1;RW[j]=w;RT[j]=f*2;
         // (deepest down its middle, deeper downstream; shallow at the ford)
         const base=Dp.river[0]+(Dp.river[1]-Dp.river[0])*f/(n-1),q=d/w;DP[j]=(base*(1-q*q)+.04)*(RV[j]===3?Dp.ford:1)}
@@ -157,7 +162,7 @@
     const T=V.tarn,tx=T.x*W,ty=T.y*H,tl=Math.floor(at(tx,ty))-.001;
     for(let y=Math.max(0,Math.floor(ty-T.ry*1.6));y<Math.min(H,ty+T.ry*1.6);y++)for(let x=Math.max(0,Math.floor(tx-T.rx*1.6));x<Math.min(W,tx+T.rx*1.6);x++){const j=y*W+x,q=Math.hypot((x-tx)/T.rx,(y-ty)/T.ry)+(fbm(x/20,y/20,s+72,2)-.5)*.3;
       if(q<1){E[j]=tl;RV[j]=1;RW[j]=99;RT[j]=0;DP[j]=(1-q)*Dp.tarn+.05}else if(q<1.5&&RV[j]!==1){const tg=tl+.5;if(E[j]>tg)E[j]=tg+(E[j]-tg)*smooth((q-1)/.5);RV[j]=2;RW[j]=99}}
-    return {pts,rh,rw,D,RV,RW,RT,DP}}
+    return {pts,rh,rw,D,RV,RW,RT,DP,PL}}
 
   /* the land made: E (levels, the road and its shoulders in), smooth (1 where the ground is not stepped), kind (by px), g (slope:
      levels a px), gx/gy its way uphill. Kinds: 0 water, 1 wet sand, 2 sand, 3 dune, 4 grass, 5 meadow, 6 wood floor, 7 road,
@@ -260,7 +265,7 @@
     // a px's top colour
     const topCol=(x,y,i)=>{const k=KD[i],e=E[i],n=hsh(x,y,s+5);let c;
       switch(k){
-        case K.water:{c=underWater(x,y,i,COL.seabed[Math.sin(x*.35+y*.12+vn(x/12,y/12,s+90)*6)>.55?0:1]);if(n<.006&&L.DP[i]>.5)c=mix(c,COL.foam,.4);break}
+        case K.water:{c=underWater(x,y,i,COL.seabed[Math.sin(x*.35+y*.12+vn(x/12,y/12,s+90)*6)>.55?0:1]);if(L.river.PL[i]>0)c=mix(c,[128,148,118],L.river.PL[i]*(.7+.6*vn(x/9,y/9,s+134)));if(n<.006&&L.DP[i]>.5)c=mix(c,COL.foam,.4);break}
         case K.wet:c=pick(COL.wet,x,y,s+6);break;case K.sand:c=pick(COL.sand,x,y,s+7);break;
         case K.dune:c=mix(pick(COL.sand,x,y,s+8),COL.dune[n<.5?0:1],.45);break;
         case K.road:c=roadCol(x,y,i,n);break;
@@ -377,7 +382,7 @@
     // the shore's px (the foam rides them): water beside land, on the screen
     const shore=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;if(KD[i]!==K.water)continue;if(KD[i-1]||KD[i+1]||KD[i-W]||KD[i+W])shore.push(x,y+T,hsh(x,y,s+40)*6.283)}
     // the river's moving water: each surface px seen (x, screen y, px along, a phase) and each fall's px (flagged by a negative)
-    const flow=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x,k=KD[i];if(k!==K.river&&k!==K.ford&&!(k===K.water&&L.river.RV[i]===1))continue;if(L.river.RW[i]>50)continue;const sy=vis(x,y);if(sy<0)continue;
+    const flow=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x,k=KD[i];if(k!==K.river&&k!==K.ford&&!(k===K.water&&L.river.RV[i]===1&&L.river.PL[i]>.2))continue;if(L.river.RW[i]>50)continue;const sy=vis(x,y);if(sy<0)continue;
       flow.push(x,sy,L.river.RT[i],hsh(x,y,s+87));const hs=lift[i+W],sy2=y+1-hs+T;for(let r=sy+1;r<sy2-2;r++)if(dep[r*W+x]===y)flow.push(x,r,-1,hsh(x,0,s+88)*20)}
     // the walk map: each px's class as a tint
     const wm=document.createElement('canvas');wm.width=W;wm.height=CH;{const wg=wm.getContext('2d'),wi=wg.createImageData(W,CH),WD=wi.data;
