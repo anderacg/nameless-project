@@ -179,22 +179,36 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
      view; the land south of it (HE: as far as the highest lift reaches) seen in it lifted. DEPF: each screen px's ground (its world
      row, fine, -1 none); TOP: 1 where it is a top (no prop nor grass stands on a face) */
   const LF=new Int16Array(GW*GH);for(let k=0;k<GW*GH;k++)LF[k]=Math.max(0,Math.round((Wa[k]?Lv[k]:St[k])*T.lh));
+  /* (each fine px's own lift, the lab's resolution (the owner, 2026-11-15: "Why i see a lot of square edge in the game version but
+     not in the lab? Is it generated using a different scales?": it was each game px's, two lab px, so every edge a stair of two):
+     land's level between its game px's middles (bilinear; water beside it never pulling it down), stepped by its own share of the
+     step (SW's, between); water (its colour's, WK) flat at its game px's level, or at the wet one's beside it. LFF its lift, WF wet,
+     SF its step's share) */
+  const LFF=new Int16Array(W2*HE2),WF=new Uint8Array(W2*HE2),SF=new Float32Array(W2*HE2),SB=T.steps.band;
+  for(let fy=0;fy<HE2;fy++){const gy=Y+((fy/r)|0);for(let fx=0;fx<W2;fx++){const fi=fy*W2+fx,gx=X+((fx/r)|0),kc=at(gx,gy);
+    if(WK[fi]){let l=Wa[kc]?Lv[kc]:1e9;if(l>1e8){for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]]){const j=kc+b*GW+a;if(j>=0&&j<GW*GH&&Wa[j])l=Math.min(l,Lv[j])}if(l>1e8)l=Lv[kc]}
+      WF[fi]=1;LFF[fi]=Math.max(0,Math.round(l*T.lh));continue}
+    const u=(X*r+fx+.5)/r-.5-gx0,v=(Y*r+fy+.5)/r-.5-gy0,i0=Math.max(0,Math.min(GW-2,Math.floor(u))),j0=Math.max(0,Math.min(GH-2,Math.floor(v))),fu=Math.max(0,Math.min(1,u-i0)),fv=Math.max(0,Math.min(1,v-j0)),k0=j0*GW+i0;
+    const ks=[k0,k0+1,k0+GW,k0+GW+1],ws=[(1-fu)*(1-fv),fu*(1-fv),(1-fu)*fv,fu*fv];let land=-1e9;for(const q of ks)if(!Wa[q])land=Math.max(land,Lv[q]);if(land<-1e8)land=Lv[kc]+.3;
+    let e=0,sw=0;for(let q=0;q<4;q++){e+=ws[q]*(Wa[ks[q]]?land:Lv[ks[q]]);sw+=ws[q]*SW[ks[q]]}
+    SF[fi]=sw;LFF[fi]=Math.max(0,Math.round((e+(Math.floor(e/SB)*SB-e)*sw)*T.lh))}}
+  const lfAt=(jx,jy)=>{const fx=jx-X*r,fy=jy-Y*r;return fx>=0&&fy>=0&&fx<W2&&fy<HE2?LFF[fy*W2+fx]:LF[at(Math.floor(jx/r),Math.floor(jy/r))]};
   const DEPF=new Int32Array(W2*H2).fill(-1),TOP=new Uint8Array(W2*H2),lh=T.lh,SH=[],FL=[];
   for(let fx=0;fx<W2;fx++){const x=(fx/r)|0,gx=X+x;let first=-1;
-    for(let fy=0;fy<HE2;fy++){const y=(fy/r)|0,gy=Y+y,k=at(gx,gy),L=LF[k],sy=fy-L,ci=(fy*W2+fx)*4;
-      if(sy>=0&&sy<H2){const o=(sy*W2+fx)*4;let s=1;const kp=fy>0?at(gx,Y+(((fy-1)/r)|0)):k,kq=fy>1?at(gx,Y+(((fy-2)/r)|0)):k;
-        if(LF[kp]>L+3&&!Wa[k])s=.78;else if(LF[kq]>L+3&&!Wa[k])s=.9;
+    for(let fy=0;fy<HE2;fy++){const y=(fy/r)|0,gy=Y+y,k=at(gx,gy),fi=fy*W2+fx,L=LFF[fi],wt=WF[fi],sy=fy-L,ci=fi*4;
+      if(sy>=0&&sy<H2){const o=(sy*W2+fx)*4;let s=1;const fp=fy>0?fi-W2:fi,fq=fy>1?fi-2*W2:fi;
+        if(LFF[fp]>L+3&&!wt)s=.78;else if(LFF[fq]>L+3&&!wt)s=.9;
         // (an edge where the ground falls away north, west or east, its face unseen from the south (the owner, 2026-11-15: "make an edge
         //  for the south ankle that we cannot see"): its crest's own px darkened)
-        else if(!Wa[k]){const RM=T.rim;if(kp!==k&&LF[kp]<L-RM.drop&&!Wa[kp])s=RM.north;else{const kw=fx%r===0?at(gx-1,gy):k,ke=fx%r===r-1?at(gx+1,gy):k;if(kw!==k&&LF[kw]<L-RM.drop&&!Wa[kw]||ke!==k&&LF[ke]<L-RM.drop&&!Wa[ke])s=RM.side}}
+        else if(!wt){const RM=T.rim;if(fp!==fi&&LFF[fp]<L-RM.drop&&!WF[fp])s=RM.north;else{const fw=fx>0?fi-1:fi,fe=fx<W2-1?fi+1:fi;if(fw!==fi&&LFF[fw]<L-RM.drop&&!WF[fw]||fe!==fi&&LFF[fe]<L-RM.drop&&!WF[fe])s=RM.side}}
         O[o]=CW[ci]*s;O[o+1]=CW[ci+1]*s;O[o+2]=CW[ci+2]*s;O[o+3]=255;DEPF[sy*W2+fx]=fy;TOP[sy*W2+fx]=1;if(first<0)first=sy;
         const wk=WK[fy*W2+fx];if(wk===1){if(fx>0&&!WK[fy*W2+fx-1]||fx<W2-1&&!WK[fy*W2+fx+1]||fy>0&&!WK[(fy-1)*W2+fx]||fy<HE2-1&&!WK[(fy+1)*W2+fx])SH.push(fx,sy,(hs(fx+X*r,fy,540)*628)|0)}else if(wk===2)FL.push(fx,sy,Math.round(WA[fy*W2+fx])%30000,(hs(fx+X*r,fy,541)*100)|0);else if(wk===3)FL.push(fx,sy,-2,(hs(fx+X*r,fy,543)*100)|0)}
-      if(fy+1>=HE2)continue;const kN=at(gx,Y+(((fy+1)/r)|0));if(kN===k)continue;const LN=LF[kN],syN=fy+1-LN;if(syN<=sy+1)continue;
+      if(fy+1>=HE2)continue;const fN=fi+W2,kN=at(gx,Y+(((fy+1)/r)|0)),LN=LFF[fN],syN=fy+1-LN;if(syN<=sy+1)continue;
       // (the lip, lit; snow on a high one)
-      const wet=Wa[k],wetB=Wa[kN],n=syN-sy-1,ti=tix(gx,gy),t=tiles[ti],Q=PAL[climate[ti]],road=DG.S[k]<shG,wall=DG.S[k]<WORLD_WAYS.road.wall*WAY_LP&&!WY.RB[DG.Q[k]],rocky=!road&&!(RG.S[k]<bankG+2)&&(Math.hypot(Gx[k],Gy[k])>=T.steepG||Lv[k]>=T.rock-1||(L-LN)>=2*lh),snowy=Lv[k]>=T.snow-1,sand=!rocky&&Lv[k]<1.2&&!road;
-      if(sy>=0&&sy<H2&&!wet&&!(n<=3&&SW[k]<.5&&SW[kN]<.5)){const o=(sy*W2+fx)*4;if(snowy){O[o]=242;O[o+1]=246;O[o+2]=252}else{O[o]=Math.min(255,O[o]*1.12);O[o+1]=Math.min(255,O[o+1]*1.12);O[o+2]=Math.min(255,O[o+2]*1.12)}}
+      const wet=wt,wetB=WF[fN],n=syN-sy-1,ti=tix(gx,gy),t=tiles[ti],Q=PAL[climate[ti]],road=DG.S[k]<shG,wall=DG.S[k]<WORLD_WAYS.road.wall*WAY_LP&&!WY.RB[DG.Q[k]],rocky=!road&&!(RG.S[k]<bankG+2)&&(Math.hypot(Gx[k],Gy[k])>=T.steepG||Lv[k]>=T.rock-1||(L-LN)>=2*lh),snowy=Lv[k]>=T.snow-1,sand=!rocky&&Lv[k]<1.2&&!road;
+      if(sy>=0&&sy<H2&&!wet&&!(n<=3&&SF[fi]<.5&&SF[fN]<.5)){const o=(sy*W2+fx)*4;if(snowy){O[o]=242;O[o+1]=246;O[o+2]=252}else{O[o]=Math.min(255,O[o]*1.12);O[o+1]=Math.min(255,O[o+1]*1.12);O[o+2]=Math.min(255,O[o+2]*1.12)}}
       // (a small drop on smooth ground or along water: no face, the lab's way: this top shading into the next)
-      if(n<=3&&(SW[k]<.5&&SW[kN]<.5||wet&&wetB)){const ci2=((fy+1)*W2+fx)*4;for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0||yy>=H2)continue;const f=dz/(n+1),o=(yy*W2+fx)*4;
+      if(n<=3&&(SF[fi]<.5&&SF[fN]<.5||wet&&wetB)){const ci2=((fy+1)*W2+fx)*4;for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0||yy>=H2)continue;const f=dz/(n+1),o=(yy*W2+fx)*4;
           O[o]=CW[ci]+(CW[ci2]-CW[ci])*f;O[o+1]=CW[ci+1]+(CW[ci2+1]-CW[ci+1])*f;O[o+2]=CW[ci+2]+(CW[ci2+2]-CW[ci+2])*f;O[o+3]=255;DEPF[yy*W2+fx]=fy;TOP[yy*W2+fx]=1}continue}
       for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0)continue;if(yy>=H2)break;const f=dz/Math.max(1,n),zh=L-dz,nz=hs(gx*r+fx%r,fy+dz,331),afx=X*r+fx;let c;
         if(wet&&wetB){const q=hs(afx,0,332);c=dz>=n-1?Q.foam:Q.fall[q<.35?0:q<.75?1:2];if(nz<.03)c=Q.foam;if(yy>=0&&yy<H2&&dz<n-1)FL.push(fx,yy,-1,(hs(afx,0,542)*20)|0)}
@@ -213,9 +227,9 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   //  along, a phase; along -1 a fall's))
   rec.shore=Int16Array.from(SH);rec.flow=Int16Array.from(FL);
   // (what the view reads of it: each game px's lift (fine px) on the chunk's ground, and each screen game px's ground row, game px)
-  {const LI=rec.lift=new Int16Array(w*h),DE=rec.dep=new Int16Array(w*h).fill(-1);for(let y=0;y<h;y++)for(let x=0;x<w;x++){LI[y*w+x]=LF[at(X+x,Y+y)];const d=DEPF[(y*r)*W2+x*r];DE[y*w+x]=d<0?-1:Y+((d/r)|0)}}
-  const vis=(jx,jy)=>{const L=LF[at(Math.floor(jx/r),Math.floor(jy/r))],sy=jy-Y*r-L,sx=jx-X*r;return sy<0?-2:sy>=H2||sx<0||sx>=W2?-3:DEPF[sy*W2+sx]===jy-Y*r&&TOP[sy*W2+sx]?sy:-1};
-  yield* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,{RF,DF,seaT,seaAt,dw:(gx,gy)=>{const q=eq(gx,gy);return q>=0&&q<EW*EH?DW[q]:99},bankF,LF,DEPF,W2,H2})}
+  {const LI=rec.lift=new Int16Array(w*h),DE=rec.dep=new Int16Array(w*h).fill(-1);for(let y=0;y<h;y++)for(let x=0;x<w;x++){LI[y*w+x]=LFF[(y*r+(r>>1))*W2+x*r+(r>>1)];const d=DEPF[(y*r)*W2+x*r];DE[y*w+x]=d<0?-1:Y+((d/r)|0)}}
+  const vis=(jx,jy)=>{const L=lfAt(jx,jy),sy=jy-Y*r-L,sx=jx-X*r;return sy<0?-2:sy>=H2||sx<0||sx>=W2?-3:DEPF[sy*W2+sx]===jy-Y*r&&TOP[sy*W2+sx]?sy:-1};
+  yield* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,{RF,DF,seaT,seaAt,dw:(gx,gy)=>{const q=eq(gx,gy);return q>=0&&q<EW*EH?DW[q]:99},bankF,LF,lfAt,DEPF,W2,H2})}
 
 /* the land's nature on the chunk (the world lab's: engine/worldflora.js, WORLD_FLORA): on a grid of step fine px, each cell's
    thing by its ground and climate: trees in the woods (their kind by where they stand: lowland, waterside, hills, mountain, a
@@ -230,7 +244,7 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
     return true};
   // (a prop's picture cut where the ground in front of it is drawn over it: a ridge nearer hides what stands behind it, as the lab's
   //  occluded; within this chunk's picture)
-  const cutPic=(o,jx,jy)=>{const L=WB.LF[at(Math.floor(jx/r),Math.floor(jy/r))],img=o.img,w0=img.width,h0=img.height,sx0=jx-o.ax-X*r,sy0=jy-L-o.ay-Y*r,D=WB.DEPF,W2=WB.W2,lim=jy-Y*r+r;let any=false;
+  const cutPic=(o,jx,jy)=>{const L=WB.lfAt(jx,jy),img=o.img,w0=img.width,h0=img.height,sx0=jx-o.ax-X*r,sy0=jy-L-o.ay-Y*r,D=WB.DEPF,W2=WB.W2,lim=jy-Y*r+r;let any=false;
     for(let y=Math.max(0,sy0);y<Math.min(WB.H2,sy0+h0)&&!any;y++)for(let x=Math.max(0,sx0);x<Math.min(W2,sx0+w0);x++)if(D[y*W2+x]>lim){any=true;break}
     if(!any)return img;const c=mkcv(w0,h0),g=c.getContext('2d');g.drawImage(img,0,0);const d=g.getImageData(0,0,w0,h0),A=d.data;
     for(let y=0;y<h0;y++){const yy=sy0+y;if(yy<0||yy>=WB.H2)continue;for(let x=0;x<w0;x++){const xx=sx0+x;if(xx>=0&&xx<W2&&D[yy*W2+xx]>lim)A[(y*w0+x)*4+3]=0}}g.putImageData(d,0,0);return c};
@@ -261,7 +275,7 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
       if(jx<X*r||jy<Y*r||jx>=(X+w)*r||jy>=(Y+h)*r)continue;const gx=Math.floor(jx/r),gy=Math.floor(jy/r);if(!ok(gx,gy,jx,jy))continue;const ti=(gy>>4)*MW+(gx>>4),t=tiles[ti];if(t===T_MOUNT)continue;
       const cl=CLIMS[climate[ti]],dd=WB.dw(gx,gy),g=terWood(LAND,gx,gy)>.5?'woods':dd*2<WORLD_TERRAIN.dune?'dune':wnoise2(jx/120,jy/120,344)>.62?'meadow':'open';
       const ch=GS.chance[cl][g]*(.35+1.3*wnoise2(jx/GS.patch,jy/GS.patch,413));if(hs(fx,fy,414)>ch)continue;
-      {const L=WB.LF[at(gx,gy)];GX.push(jx);GY.push(jy-L)}GT.push(Math.max(0,KI.indexOf(GS.kinds[cl][g])));GV.push(Math.floor(hs(fx,fy,415)*4))}
+      {const L=WB.lfAt(jx,jy);GX.push(jx);GY.push(jy-L)}GT.push(Math.max(0,KI.indexOf(GS.kinds[cl][g])));GV.push(Math.floor(hs(fx,fy,415)*4))}
     if(!(fy&63))yield}
   out.sort((a,b)=>a.y-b.y);rec.props=out;
   const ord=GX.map((_,k)=>k).sort((a,b)=>GY[a]-GY[b]);rec.grass={X:Int32Array.from(ord.map(k=>GX[k])),Y:Int32Array.from(ord.map(k=>GY[k])),T:Uint8Array.from(ord.map(k=>GT[k])),V:Uint8Array.from(ord.map(k=>GV[k])),P:new Float32Array(ord.length),n:ord.length}}

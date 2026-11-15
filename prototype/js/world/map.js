@@ -9,7 +9,7 @@ const T_OPEN=0,T_FOREST=1,T_HILL=2,T_WATER=3,T_ROAD=4,T_MOUNT=5,T_FORD=6;
 // (tiles, climate: the layers of the map that is in, by these names for the hot loops: world/worldmap.js useWorld)
 const CLIMS=['grass','frost','desert','swamp'],CLIM=Object.fromEntries(CLIMS.map((c,i)=>[c,i]));
 const SPEEDMUL=[1,.6,.75,0,1.3,0,.5];
-// (the land by its slope (worldgen.js reliefClass, the map's slope: flat, a slope, steep; a cliff is rock no one walks), how fast it
+// (the land by its slope (worldgen.js landClasses, the map's slope: flat, a slope, steep; a cliff is rock no one walks), how fast it
 // is walked, times its kind's; from snow levels up (the map's lv) the cold heights slower still; how much farther one sees a level up)
 const SLOPE={mul:[1,.8,.55,.4],snow:14,cold:.6,sight:.03,sightMax:.5};
 const slopeMulAt=i=>{const S=WM&&WM.slope;if(!S)return 1;const v=SLOPE.mul[S[i]];return WM.lv&&WM.lv[i]>=SLOPE.snow?v*SLOPE.cold:v};
