@@ -37,8 +37,9 @@
     // (the bridge (the owner, 2026-11-15: "the bridge should be a full bridge structure"): its deck clear levels over the water, the
     //  road ramped up to it; a pile every pile px along it, braced between; its rails rail px high on a post every post px; it is
     //  a true rectangle (the owner: "the bridge edge should be equal"): as wide as the road less inset px a side, its sides straight
-    //  and parallel, its ends square across the road over points (2 px each) past the water each side, its deck level end to end)
-    bridge:{clear:1.4,pile:12,rail:5,post:8,over:7,inset:1},
+    //  and parallel, its ends square across the road over points (2 px each) past the water each side, its deck level end to end;
+    //  its ends resting on abut points of the road's own fill (its abutments), so no cut face stands under them)
+    bridge:{clear:1.4,pile:12,rail:5,post:8,over:7,inset:1,abut:4},
     river:{pts:[[.588,.118],[.565,.20],[.525,.28],[.475,.36],[.435,.46],[.395,.55],[.355,.62],[.338,.70],[.343,.79],[.328,.88],[.31,1]],
       w:[2.5,11],bank:9,meander:14,ford:.5,mill:.64,mouth:.15,widen:1.2,tarn:{x:.597,y:.10,rx:48,ry:26}},
     walk:38,run:1.6,
@@ -179,8 +180,8 @@
     const RD=new Float32Array(W*H),HW=new Float32Array(W*H);for(let i=0;i<W*H;i++){const d=road.D[i];RD[i]=d>=1e9?d:d-(fbm((i%W)/26,((i/W)|0)/26,s+73,2)-.5)*2*R.edge;HW[i]=d>=1e9?0:R.w/2*(1+R.vary*(vn(road.I[i]/30,.5,s+95)-.5)*2)}
     // (the bridge's rectangle: on the span, nearer the road's line than its half-width; the rest of the span's width is the river and
     //  its banks as they are)
-    const BR=new Uint8Array(W*H);if(span)for(let i=0;i<W*H;i++){const f=road.I[i];if(road.D[i]<1e9&&f>=span.i0&&f<=span.i1){BR[i]=road.D[i]<span.hw?1:2}}
-    for(let i=0;i<W*H;i++){if(BR[i]&&road.D[i]<HW[i]+R.sh)continue;const d=RD[i],hw=HW[i];if(d<hw){E[i]=road.RE[i];SM[i]=1}else if(d<hw+R.sh&&RV[i]!==1&&RV[i]!==3){let rt=road.RE[i],k=smooth((d-hw)/R.sh);
+    const BR=new Uint8Array(W*H),OPEN=new Uint8Array(W*H);if(span)for(let i=0;i<W*H;i++){const f=road.I[i];if(road.D[i]<1e9&&f>=span.i0&&f<=span.i1){BR[i]=road.D[i]<span.hw?1:2;OPEN[i]=f>span.i0+LAB.bridge.abut&&f<span.i1-LAB.bridge.abut?1:0}}
+    for(let i=0;i<W*H;i++){if(OPEN[i]&&road.D[i]<HW[i]+R.sh)continue;const d=RD[i],hw=HW[i];if(d<hw){E[i]=road.RE[i];SM[i]=1}else if(d<hw+R.sh&&RV[i]!==1&&RV[i]!==3){let rt=road.RE[i],k=smooth((d-hw)/R.sh);
         const d2=road.D2[i];if(d2<hw+R.sh){const w1=1/((d-hw+1)**2),w2=1/((Math.max(d2-hw,0)+1)**2);rt=(rt*w1+road.RE2[i]*w2)/(w1+w2);k*=smooth((d2-hw)/R.sh)}
         E[i]=rt+(E[i]-rt)*k;SM[i]=1}}
     const G=new Float32Array(W*H),GX=new Float32Array(W*H),GY=new Float32Array(W*H),o=3;
@@ -192,7 +193,7 @@
     const S=LAB.shelf,Wd=LAB.woods,B=LAB.shore;
     for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x,e=E[i],g=G[i];let k;
       const wob=fbm(x/50,y/50,s+63,2)-.5,dw=DW[i];
-      const rv=RV[i],onRoad=RD[i]<HW[i]&&!BR[i];
+      const rv=RV[i],onRoad=RD[i]<HW[i]&&!OPEN[i];
       if(e<0&&!rv)k=K.water;else if(rv===1)k=e<0?K.water:K.river;else if(rv===3)k=K.ford;else if(onRoad)k=K.road;
       else if(rv===2&&(river.RW[i]>50||river.D[i]<river.RW[i]+4))k=K.bank;
       else if(SM[i]&&g>=LAB.cls.slope*1.5&&e>=LAB.dune)k=K.cut;else if(dw<B.wet+wob*4)k=K.wet;else if(dw<B.sand+wob*24&&e<LAB.dune)k=K.sand;else if(dw<B.dune+wob*40&&e<LAB.dune+.6)k=K.dune;
@@ -344,7 +345,7 @@
         // (the beam under its edge)
         const edge=!inB(x,y+1)||!inB(x-1,y)||!inB(x+1,y);if(edge)for(let j=1;j<=3;j++)putB(x,sy+j,j===1?COL.beam[0]:mul(COL.beam[0],.8),y);
         // (its near edge: piles to the ground, braced between; stone piers at its ends)
-        if(!inB(x,y+1)){const gy=y-lift[i]+T,top=sy+4;if(gy<=top)continue;const tp=((t%Bg.pile)+Bg.pile)%Bg.pile,n2=gy-top,wet=KD[i]===K.river||KD[i]===K.water||KD[i]===K.ford,pier=end(t)<4;
+        if(!inB(x,y+1)){const gy=y-lift[i]+T,top=sy+4;if(gy<=top)continue;const tp=((t%Bg.pile)+Bg.pile)%Bg.pile,n2=gy-top,wet=KD[i]===K.river||KD[i]===K.water||KD[i]===K.ford,pier=false;
           for(let r=top;r<gy;r++){const dz=r-top;let c2=null;
             if(pier)c2=COL.stone[(Math.floor(r/3)+(x&1))%2?0:1];
             else if(tp<2)c2=tp<1?COL.plank[1]:COL.beam[0];
