@@ -253,7 +253,7 @@ That is a separate decision, best made after this world exists.
   - It widens from a stream (5 px) to a river (22 px), in a channel carved into the land with muddy banks and reeds.
   - Its surface never rises downstream and steps by levels, so it falls white wherever it drops a level. Over the rock bands the falls stack into cascades, with foam at their foot.
   - The water moves: streaks run downstream, and the falls pour.
-  - It ends where it meets the sea, as an estuary.
+  - Where its surface comes down to sea level it runs on at that level, widening (`widen`), as a channel through the beach into the sea. Its deep channel shows through the shallows, and its water keeps moving (the owner: "What about the river and steams? This one looks weird": it had stopped short of the sea).
   - A stream (no wider than 3.5 px a side) is waded at ×0.4. The river is crossed only at its ford (shallow, with stepping stones, ×0.4) or by the road's bridge.
   - A watermill stands on its bank.
 - **The road:**
@@ -261,7 +261,7 @@ That is a separate decision, best made after this world exists.
   - Its edge is ragged into the verge.
   - It has two wheel ruts, with puddles in them where it is flat, a grassy crown between them on the flat, and pebbles.
   - A stone parapet runs along its edge where the ground beyond drops two levels or more; its cuts and embankments are faced with dressed-stone retaining walls.
-  - Over the river it is a wooden bridge: plank deck, rails on posts, beams on its side. Its heights come from the land before the river was carved, so it spans the river instead of dipping into it.
+  - Over the river it is a wooden bridge: planks across its deck (each its own tone, a thin gap between, worn where the wheels go), a rail each side lit on top on a post every 8 px, beams on its side. Its heights come from the land before the river was carved, so it spans the river instead of dipping into it.
 - **Painting** is slower with all this: about 90-100 ms a 512 px chunk. That makes the game painter's rewrite (§8's 8 ms) more pressing.
 
 **Depth (2026-11-15; the owner: "Do we have depth if river or ocean?", then "Ok"):**
