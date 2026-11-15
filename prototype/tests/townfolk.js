@@ -56,7 +56,13 @@ Kit.suite(({ok,info})=>{
   // (clicked: he greets you, nothing more (the owner, 2026-11-15: "clicking at town folks should not open the city dialogue"))
   {const m0=G.mode,n0=(G.msgs||[]).length,tt=window.toast,said=[];try{window.toast=x=>said.push(String(x));p.meet()}finally{window.toast=tt}
    const hit=t.pickAt(p.x,p.y-3);ok(hit===p,'clicked on, it is him that is picked, not '+(hit&&hit!==p?(hit.name||hit.mapKind):'his holding'));
-   ok(G.mode===m0&&!G.town&&said.length===1&&said[0].includes(p.name)&&/“.+”/.test(said[0]),'clicked, he greets you, no holding window: '+said[0])}}
+   ok(G.mode===m0&&!G.town&&said.length===1&&said[0].includes(p.name)&&/“.+”/.test(said[0]),'clicked, he greets you, no holding window: '+said[0])}
+  // (clicked from afar: he greets you where he is, and you stay put: no walk to him into his holding (the owner, 2026-11-15))
+  {const P=t.P,x0=P.x,y0=P.y,tx=P.tx,tt=window.toast,said=[];P.x=p.x+200;P.y=p.y;G.chase=null;P.tx=null;
+   try{window.toast=x=>said.push(String(x));t.approach(p);ok(!G.chase&&P.tx==null&&said.length===1&&G.mode==='world','clicked from afar: greeted where he is, no walk ('+said.length+' said)')}
+   finally{window.toast=tt;P.x=x0;P.y=y0;P.tx=tx;G.chase=null}}
+  // (drawn as the workers and the armies are: their figures, to the screen's own pixel)
+  {let bad='';for(const q of e)try{t.ctx.save();q.f()}catch(x){bad=x.message}finally{t.ctx.restore()}ok(!bad,'each drawn as a figure, no error'+(bad?': '+bad:''))}}
  // ---- where they live (the owner, 2026-11-15: "Are townfolks also live in houses?", then link them): a house's page lists who lives
  // there, each where he is now; one's tip names his house
  {const T=t.TownFolk,C=T.of.get(city)||T.make(city),p=C.ppl.find(q=>q.home?.lot?.k==='house'),l=p&&p.home.lot,R=l?T.residents(city,l):[];

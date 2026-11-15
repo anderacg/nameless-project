@@ -20,7 +20,7 @@ class Ship extends WorldObject{
       ctx.save();ctx.translate(sx,sy);if(s.dir<0)ctx.scale(-1,1);if(b.hi)ctx.drawImage(b.hi,-b.ax,-b.ay,b.width,b.height);else ctx.drawImage(b,-b.ax,-b.ay);ctx.restore();// (hi: its crew at the battle's density, MAP_FIGS)
       if(!sailing){const ph=(now/700+s.seed)%2;ctx.fillStyle='#d8c890';ctx.fillRect(sx+s.dir*b.net,sy-3,1,3);if(ph<1){ctx.fillStyle='#e8f4fa';ctx.fillRect(sx+s.dir*b.net-1,sy+1,3,1)}}
       if(D)shipUnder(D.list,shipBox(b,sx,sy),cam);
-      if(s.k==='trade'&&s.fromYou()<110)txt('Trade ship',sx,sy-b.ay+opaqueBox(b)[1]-2,hostileTo(s.fac)?'#ff9a90':'#e8d8a0','center')}})}
+      if(DEV.on&&s.k==='trade'&&s.fromYou()<110)txt('Trade ship',sx,sy-b.ay+opaqueBox(b)[1]-2,hostileTo(s.fac)?'#ff9a90':'#e8d8a0','center')}})}
 }
 const asShip=asClass(Ship);
 /* under a bridge (the owner's play-test, 2026-10-23: boats sailed over the decks). A ship whose waterline lies above a bridge's

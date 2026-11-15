@@ -255,8 +255,8 @@ class OutpostWatch{
     for(let i=0;i<n;i++){const [a,c]=X.knot[i]||[-6*i,0],tx=w.x+ch*a-sh*c,ty=w.y+sh*a+ch*c;let u=w.men[i];
       if(!u)u=w.men[i]={id:(s.seed||0)*7+i,type,x:tx,y:ty,walk:0,walking:false,dir:w.look};
       u.type=type;const dx=tx-u.x,dy=ty-u.y,dd=Math.hypot(dx,dy);
-      if(dd>.3){const st=Math.min(dd,cap);u.x+=dx/dd*st;u.y+=dy/dd*st;u.walk+=st;u.walking=true;if(Math.abs(dx)>.05)u.dir=dx<0?Math.PI:0}
-      else{u.walking=false;if(!w.moving)u.dir=w.look}}
+      if(dd>.01){const st=Math.min(dd,cap);u.x+=dx/dd*st;u.y+=dy/dd*st;u.walk+=st}
+      u.walking=w.moving||dd>.3;u.dir=u.walking?(Math.abs(dx)>.3?(dx<0?Math.PI:0):Math.abs(ch)>.05?(ch<0?Math.PI:0):u.dir):w.look}
     w.men.length=n}
 }
 Systems.add({name:'outposts',order:{hour:45,day:72},hour:()=>Outposts.hour(),day:()=>Outposts.day()});
