@@ -1990,3 +1990,5 @@ Character creator combination repair (2026-11-14): open-face hood/veil paintings
 AI control label (2026-11-14): the battle toggle and shared AI status mark show only “AI” using the same clear lettering on SVG and canvas. The extra visible A key label is removed from the toggle; its tooltip, keyboard shortcut, accessibility label and selection states remain.
 
 Portrait nose alignment (2026-11-14): nose bridges align with the face/mouth axis for all races and profiles. Crooked/broken noses keep an internal bend without moving the entire part sideways; reduced orc nostrils follow the same axis. Source artwork and saved nose choices remain. `nosefit` covers all variants/widths and verifies unchanged eyes, mouth, skin, beard and gear; offline portrait editors share the fix.
+
+Straight nose appearance (2026-11-15): the reported nose selection now has a straight narrow bridge and centered tip, labeled “Narrow bridge”; saved selections still load without migration. Intentional broken dwarf noses remain manually selectable and are excluded from random defaults. Both portrait renderers and all portable editors share the correction.
