@@ -193,8 +193,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     // (above the first: the map's north edge lifted away, its ground carried up)
     if(first>0){const o0=(first*W2+fx)*4;for(let yy=0;yy<first;yy++){const o=(yy*W2+fx)*4;O[o]=O[o0];O[o+1]=O[o0+1];O[o+2]=O[o0+2];O[o+3]=255}}
     if(!(fx&31))yield}
-  // (the bridges, standing over it all, at their deck's height: worldways.js)
-  waysBridges(O,W2,H2,X,Y,r,Lv,Wa,(gx,gy)=>gx<gx0||gy<gy0||gx>=gx0+GW||gy>=gy0+GH?-1:at(gx,gy),TOP,LF);
+  // (the bridges are a layer of their own over it, the land whole under them: worldways.js bridgeEnts)
   rec.fcv=mkcv(W2,H2);rec.fcv.getContext('2d').putImageData(out,0,0);rec.fr=r;
   // (the water that moves (the lab's): the shore's px the foam rides (x, y on the picture, a phase), the rivers' px (x, y, how far
   //  along, a phase; along -1 a fall's))
@@ -260,7 +259,7 @@ const terrainHalf=(s,r)=>s._h||(s._h=mkc(Math.ceil(s.width/r),Math.ceil(s.height
    grass first, flat on the ground: each clump leaning by the wind (two waves rolling across the land) and bent away from you as you
    pass (WORLD_FLORA.grass push px; springing back over spring s), written into one buffer at the scene's resolution and laid once */
 const TGRASS={buf:null,cv:null,t:0};
-function terrainEnts(ents,cam){const r=sceneRes();if(r<=1)return;const WA=WorldArt,x0=cam.x-48,x1=cam.x+VW+48,y0=cam.y-8,y1=cam.y+VH+64,FL=PX.flora;
+function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)return;const WA=WorldArt,x0=cam.x-48,x1=cam.x+VW+48,y0=cam.y-8,y1=cam.y+VH+64,FL=PX.flora;
   const c0=Math.max(0,Math.floor(x0/CHUNK)),c1=Math.min(WA.cols-1,Math.floor(x1/CHUNK)),r0=Math.max(0,Math.floor(y0/CHUNK)),r1=Math.min(WA.rows-1,Math.floor(y1/CHUNK));
   const recs=[];for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const c=WA.chunks.get(cy*WA.cols+cx);if(c&&c.props&&c.fr===r)recs.push(c)}
   // (the grass)
@@ -338,9 +337,9 @@ function liftGround(x,y){if(typeof WorldArt==='undefined')return{x,y};const fx=M
   if(c&&c.dep){const w=c.cv.width,d=c.dep[(fy-cy*CHUNK)*w+fx-cx*CHUNK];if(d>=0)return{x,y:d+(y-fy)}}return{x,y}}
 // a thing drawn up by its ground's lift (e.x, e.ly or e.y: where it stands); a mover (front) has the ground in front of it drawn again
 // over it, where a ridge nearer hides it (liftFront)
-function liftDraw(e,front){const x=e.lx??e.x;if(x==null){e.f();return}const y=e.ly??e.y,L=liftAt(x,y);if(!L){e.f();if(front)liftFront(x,y,0);return}
+function liftDraw(e,front){const x=e.lx??e.x;if(x==null){e.f();return}const y=e.ly??e.y,L=liftAt(x,y);if(!L){e.f();if(front){liftFront(x,y,0);bridgeOver(x,y,0)}return}
   const was=LIFT_NOW,nl=LIGHTQ.length,nb=BANNERQ.length;LIFT_NOW=L;ctx.save();ctx.translate(0,-L);try{e.f()}finally{ctx.restore();LIFT_NOW=was}
-  for(let i=nl;i<LIGHTQ.length;i++)LIGHTQ[i].y-=L;for(let i=nb;i<BANNERQ.length;i++)BANNERQ[i].lift=L;if(front)liftFront(x,y,L)}
+  for(let i=nl;i<LIGHTQ.length;i++)LIGHTQ[i].y-=L;for(let i=nb;i<BANNERQ.length;i++)BANNERQ[i].lift=L;if(front){liftFront(x,y,L);bridgeOver(x,y,L)}}
 // (the ground nearer than (x, y) where it shows over the man standing there: his box, a column at a time, from the chunk's picture)
 function liftFront(x,y,L){const cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)},WA=WorldArt,top=Math.floor(y-L-26),bot=Math.floor(y-L),x0=Math.floor(x-9),x1=Math.floor(x+9),cx=Math.floor(x/CHUNK);
   const depAt=(px,py)=>{const c=WA.chunks.get(Math.floor(py/CHUNK)*WA.cols+Math.floor(px/CHUNK));if(!c||!c.dep||px<0||py<0)return -1;return c.dep[(py-Math.floor(py/CHUNK)*CHUNK)*c.cv.width+px-Math.floor(px/CHUNK)*CHUNK]};

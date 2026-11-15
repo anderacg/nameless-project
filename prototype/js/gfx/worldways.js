@@ -131,18 +131,21 @@ function wayRoad(fx,fy,sd,hw,t,flat,land,k){const RR=WORLD_WAYS.road,C=WAY_COL,r
   const v=Math.abs(sd)-(hw-3.5*k);if(v>0){if(hs(fx,fy,531)<v/(3.5*k)*.9+(wnoise2(fx/3,fy/3,532)-.5)*.5)c=land;else if(v<1.2*k)c=tmix(c,C.soil,.5)}
   return c}
 
-/* the bridges over a chunk, the lab's (engine/worldlab.js paint, the bridge: a structure over the land, only its parts drawn): each a
-   true rectangle along its road (P.ways.bridges), its deck at its level (DL fine px up): planks across it, a thin gap between, worn
-   where the wheels go (a stone one's setts); a beam under its every edge; under its near (south) edge piles every pile px (a stone
-   one's piers and arches) down to what lies under it, braced between, foam at their feet in water, stone at its ends on land; rails
-   on posts along both its sides (a stone one's parapets). Px by px, north to south, the nearer over the farther; into O (the chunk's
-   picture, its corner the game px X, Y; r fine px a game px); TOP: what is a top (no prop on it); LF, at: the land's lift and index */
-function waysBridges(O,W2,H2,X,Y,r,Lv,Wa,at,TOP,LF){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh,k=r/2,BRS=waysOf(WorldArt.ensure()).bridges;
-  const fx0=X*r,fy0=Y*r,put=(x,y,c,top)=>{x-=fx0;y-=fy0;if(x<0||y<0||x>=W2||y>=H2)return;const o=(y*W2+x)*4;O[o]=c[0];O[o+1]=c[1];O[o+2]=c[2];O[o+3]=255;TOP[y*W2+x]=top?1:0};
-  const liftF=(fx,fy)=>{const q=at(Math.floor(fx/r),Math.floor(fy/r));return q<0?null:LF[q]},wetF=(fx,fy)=>{const q=at(Math.floor(fx/r),Math.floor(fy/r));return q<0?0:Wa[q]};
-  for(const b of BRS){const DL=Math.round(b.dk*lh),mx=b.mx*r,my=b.my*r,ux=b.ux,uy=b.uy,nx=-uy,ny=ux,hl=b.L*r/2,hw=Math.round(b.hw*r),R=BG.rail*k,deep=Math.ceil((BG.clear+6)*lh);
+/* a bridge's own picture, the lab's (engine/worldlab.js paint, the bridge: a structure over the land, only its parts drawn; the owner,
+   2026-11-15: "Can you confirm me that the bridge is draw over the terrain (separated layer)"): a layer of its own over the land, which
+   lies whole under it. A true rectangle along its road (P.ways.bridges), its deck at its level (DL fine px up): planks across it, a
+   thin gap between, worn where the wheels go (a stone one's setts); a beam under its every edge; under its near (south) edge piles
+   every pile px (a stone one's piers and arches) down to what lies under it (its lift where its chunk is painted: worldterrain.js
+   liftAt), braced between, foam at their feet in water, stone at its ends on land; rails on posts along both its sides (a stone one's
+   parapets). Px by px, north to south, the nearer over the farther. At r fine px a game px: {cv, x, y (its corner, map px), y1 (its
+   south edge on the ground, map px)} */
+function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh,k=r/2;
+  {const DL=Math.round(b.dk*lh),mx=b.mx*r,my=b.my*r,ux=b.ux,uy=b.uy,nx=-uy,ny=ux,hl=b.L*r/2,hw=Math.round(b.hw*r),R=BG.rail*k,deep=Math.ceil((BG.clear+6)*lh);
     const ext=Math.abs(ux)*hl+Math.abs(nx)*hw+2,eyt=Math.abs(uy)*hl+Math.abs(ny)*hw+2,bx0=Math.floor(mx-ext),bx1=Math.ceil(mx+ext),by0=Math.floor(my-eyt),by1=Math.ceil(my+eyt);
-    if(bx1<fx0||bx0>=fx0+W2||by1-DL-R<fy0-2||by0-DL-R>=fy0+H2+deep)continue;
+    const py0=by0-DL-R-2,PW=bx1-bx0+1,PH=by1+2-py0+1,img=new ImageData(PW,PH),O=img.data;
+    const put=(x,y,c)=>{x-=bx0;y-=py0;if(x<0||y<0||x>=PW||y>=PH)return;const o=(y*PW+x)*4;O[o]=c[0];O[o+1]=c[1];O[o+2]=c[2];O[o+3]=255};
+    // (what lies under it: the land's lift there (fine px) and whether it is water)
+    const liftF=(fx,fy)=>Math.round(liftAt(fx/r,fy/r)*r),wetF=(fx,fy)=>{const tx=Math.floor(fx/r/TILE),ty=Math.floor(fy/r/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return 0;const i=ty*MW+tx;return tiles[i]===T_WATER||WM.river[i]&3?1:0};
     const inB=(x,y)=>{const dx=x+.5-mx,dy=y+.5-my,t=dx*ux+dy*uy,v=dx*nx+dy*ny;return Math.abs(t)<=hl&&Math.abs(v)<=hw},TV=(x,y)=>{const dx=x+.5-mx,dy=y+.5-my;return [dx*ux+dy*uy+hl,dx*nx+dy*ny]};
     const pile=BG.pile*k,arch=BG.arch*k,post=BG.post*k;
     for(let y=by0;y<=by1;y++)for(let x=bx0;x<=bx1;x++){if(!inB(x,y))continue;const [t,v]=TV(x,y),sy=y-DL,pl=Math.floor(t/(4*k));
@@ -165,8 +168,21 @@ function waysBridges(O,W2,H2,X,Y,r,Lv,Wa,at,TOP,LF){const BG=WORLD_WAYS.bridge,C
     for(let y=by0;y<=by1;y++)for(let x=bx0;x<=bx1;x++){if(!inB(x,y))continue;const [t,v]=TV(x,y);if(Math.abs(v)<hw-1.2*k||t<k||t>2*hl-k)continue;const sy=y-DL,ps=((t%post)+post)%post<1.2*k;
       if(b.stone){for(let j=1;j<=R-k;j++)put(x,sy-j,j>=R-k-1?C.stone[0]:j===1?C.stone[2]:C.stone[((x>>1)+j)%3===0?2:1],false)}
       else if(ps)for(let j=1;j<=R+1;j++)put(x,sy-j,j>=R?C.lit:C.beam[1],false);
-      else{put(x,sy-R,C.lit,false);put(x,sy-R+1,C.beam[1],false);put(x,sy-(R>>1),C.plank[0],false);put(x,sy-(R>>1)+1,C.beam[1],false)}}}}
+      else{put(x,sy-R,C.lit,false);put(x,sy-R+1,C.beam[1],false);put(x,sy-(R>>1),C.plank[0],false);put(x,sy-(R>>1)+1,C.beam[1],false)}}
+    const cv=mkcv(PW,PH);cv.getContext('2d').putImageData(img,0,0);return {cv,x:bx0/r,y:py0/r,y1:(by1+1)/r}}}
 
+/* the bridges as their own layer (render.js drawWorld, through worldterrain.js terrainEnts): each in view among what stands, by its south
+   edge, its picture made once its land is painted (its chunk's lift known) and kept for the scene's resolution; one in water under a
+   bridge has the bridge drawn again over him (bridgeOver: worldterrain.js liftDraw) */
+function bridgeEnts(ents,cam){const r=sceneRes(),P0=WorldArt.plan;if(!P0)return;const BRS=waysOf(P0).bridges;if(!BRS)return;
+  for(const b of BRS){const ex=b.L/2+b.hw+8;if(b.mx+ex<cam.x||b.mx-ex>cam.x+VW||b.my+ex<cam.y||b.my-ex-40>cam.y+VH)continue;
+    if(!b.pic||b.picR!==r){const c=WorldArt.chunks.get(Math.floor(b.my/CHUNK)*WorldArt.cols+Math.floor(b.mx/CHUNK));if(!c||!c.lift)continue;b.pic=bridgePic(b,r);b.picR=r}
+    const q=b.pic;ents.push({st:true,y:q.y1,f:()=>ctx.drawImage(q.cv,q.x-cam.x,q.y-cam.y,q.cv.width/r,q.cv.height/r)})}}
+function bridgeOver(x,y,L){const P0=WorldArt.plan;if(!P0||!P0.ways)return;const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH||!waterBand(ty*MW+tx))return;
+  const r=sceneRes(),cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)};
+  for(const b of P0.ways.bridges||[]){const q=b.pic;if(!q||b.picR!==r||x<q.x||x>q.x+q.cv.width/r||y<q.y||y>q.y1+4)continue;
+    const bx0=Math.max(q.x,x-10),bx1=Math.min(q.x+q.cv.width/r,x+10),by0=Math.max(q.y,y-L-30),by1=Math.min(q.y+q.cv.height/r,y-L+3);if(bx1<=bx0||by1<=by0)continue;
+    ctx.drawImage(q.cv,(bx0-q.x)*r,(by0-q.y)*r,(bx1-bx0)*r,(by1-by0)*r,bx0-cam.x,by0-cam.y,bx1-bx0,by1-by0)}}
 // (a bridge's deck's level: clear levels over its water, never under its banks)
 function bridgeDeck(c){const L=WM.lv;let wl=1e9;for(const t of c.tiles)wl=Math.min(wl,L[t]);return Math.max(wl+WORLD_WAYS.bridge.clear,L[c.i],L[c.j])}
 // (a bridge's deck at game px, for what sails under it (worldart.js WorldArt.deck, world/ships.js): its deck and rails, one colour:
