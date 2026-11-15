@@ -224,7 +224,7 @@ That is a separate decision, best made after this world exists.
 `engine/worldlab.html` and `engine/worldlab.js` (`PX.worldLab`, its numbers in `LAB`): a stretch 2048×1280 px at the one pixel scale, made from a smooth height field in levels.
 
 **What it shows:**
-- **The land:** the sea and its shore (wet sand, the beach, marram dunes, driftwood and shells, foam riding the shoreline), meadows and terraces, a hill, oak, birch and fir woods (the battle map's 32 px trees), boulders on scree.
+- **The land:** the sea and its shore (wet sand, the beach, marram dunes, driftwood and shells, foam riding the shoreline). The driftwood lies only along the tide line: a few sticks 3-6 px long, some aslant, some forked, bleached on top, dark under, with a faint shadow. It had been a flat dark 5 px dash all over the sand, which read as black lines (the owner: "I mean the black line on the grouns"), meadows and terraces, a hill, oak, birch and fir woods (the battle map's 32 px trees), boulders on scree.
 - **The range:** two peaks stepped into shelves with rock bands between them (`LAB.steps`: a sharp rise every 3 levels, a cliff where its noise says, a natural ramp where it does not), bare rock with grass patches above level 9, and snow above 11.5.
 - **The village:** on a flat shelf, the game's own building models drawn on a cell twice the game's (a cottage, a townhouse, a fisher's hut, a tavern, a well, a cart). It has three villagers.
 - **The road:** from the village up to the saddle in switchbacks, its grade held to 1 level every 34 px, cut into the hill on one side and built up on the other.

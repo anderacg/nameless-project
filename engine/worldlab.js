@@ -204,7 +204,7 @@
       KD[i]=k}
     // (every water px's depth: the sea's how far the land lies under it, the river's and the tarn's their own)
     const DP=new Float32Array(W*H);for(let i=0;i<W*H;i++){const k=KD[i];if(k===K.water)DP[i]=Math.max(-E[i],river.DP[i]);else if(k===K.river||k===K.ford)DP[i]=river.DP[i]}
-    return {E,SM,KD,G,GX,GY,road,river,RD,HW,DP,bridge:span,BR,ms:performance.now()-t0}}
+    return {E,SM,KD,G,GX,GY,road,river,RD,HW,DP,DW,bridge:span,BR,ms:performance.now()-t0}}
 
   /* painting: the terrain canvas (W x H+T, T the highest lift), its depth (the world y of the ground at each of its px, -1 none)
      and the walk map. Column by column, north to south: each px's top at y - lift + T; where the ground ahead is lower, this px's
@@ -322,7 +322,12 @@
     for(let y=2;y<H;y++)for(let x=1;x<W-1;x++){const i=y*W+x,k=KD[i],r=hsh(x,y,s+30);if(r>.06)continue;const sy=vis(x,y);if(sy<0)continue;
       if(k===K.grass||k===K.meadow){if(r<.03){const c=COL.tuft[r<.012?0:1];put(x,sy-1,c,y);if(r<.015)put(x,sy-2,COL.tuft[0],y)}else if(k===K.meadow&&r<.05)put(x,sy-1,COL.flower[Math.floor(hsh(x,y,s+31)*4)],y)}
       else if(k===K.dune&&r<.05){const h=2+Math.floor(hsh(x,y,s+32)*3);for(let j=1;j<=h;j++)put(x+(j>2&&r<.025?1:0),sy-j,COL.marram[j&1],y)}
-      else if(k===K.sand&&r<.004){for(let j=-2;j<=2;j++)if(dep[sy*W+x+j]===y)put(x+j,sy,COL.drift,y)}
+      // (driftwood (the owner: the dark dashes on the sand): a few sticks along the tide line only, 3-6 px, some aslant, some forked,
+      //  bleached on top, dark under, a faint shadow on the sand)
+      else if((k===K.sand||k===K.wet)&&r<.0013&&L.DW[i]<20){const n=3+Math.floor(hsh(x,y,s+130)*4),sl=hsh(x,y,s+131)<.4?(hsh(x,y,s+132)<.5?-1:1):0,
+          ok=(xx,yy)=>xx>0&&xx<W-1&&yy>0&&yy<CH&&dep[yy*W+xx]===y,shade=mul(COL.wet[0],.85);
+        for(let j=0;j<n;j++){const xx=x+j,yy=sy-Math.floor(j*sl/3);if(!ok(xx,yy))continue;put(xx,yy+1,shade,y);put(xx,yy,j===0||j===n-1?COL.drift:[196,178,146],y)}
+        if(hsh(x,y,s+133)<.35&&ok(x+1,sy-1))put(x+1,sy-1,[176,156,124],y)}
       else if(k===K.sand&&r<.012)put(x,sy,COL.shell,y)
       else if(k===K.wood&&r<.03)put(x,sy-1,r<.01?[110,76,48]:COL.tuft[2],y)
       else if((k===K.scree||k===K.rock)&&r<.03)put(x,sy,COL.scree[1],y)
