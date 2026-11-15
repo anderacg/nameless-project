@@ -227,6 +227,9 @@ function camFollow(px,py){const F=CAM_FOLLOW,o=F.out,now=performance.now()/1000,
   if(!F.on||FIXED_VIEW&&!F.force||!(Math.abs(F.x-px)<F.snap&&Math.abs(F.y-py)<F.snap)){F.x=px;F.y=py}
   else{const dx=px-F.x,dy=py-F.y,d=Math.hypot(dx,dy);if(d>F.dead){const k=1-Math.exp(-dt/F.ease),m=(d-F.dead)*k;F.x+=dx/d*m;F.y+=dy/d*m}}
   o.x=F.x;o.y=F.y;return o}
+// (a stage of the frame that fails is left out and the rest drawn, the canvas's state put back: its error told once, main.js loopError;
+//  the owner, 2026-11-15: one throw had cut a phone's frames short after the map, its fog, people, rain and night gone)
+function drawSafe(f,...a){const c=ctx;c.save();try{f(...a)}catch(e){loopError(e)}finally{c.restore()}}
 function drawWorld(){
   // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
   reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){const F=camFollow(P.x,P.y);C.x=snapV(clamp(F.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(F.y-VH/2,0,MH*TILE-VH));}
@@ -274,18 +277,18 @@ function drawWorld(){
   ctx.drawImage(low,-fx,-fy);ctx.save();ctx.translate(-fx,-fy);
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
-  ambientFlat(cam);worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);ambientAir(cam);BlessFx.draw(cam);// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
+  drawSafe(ambientFlat,cam);drawSafe(worldOverdraw,ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
   // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
-  fogMem(low,cam,V);
-  drawEnv(cam,V,1);
+  drawSafe(fogMem,low,cam,V);
+  drawSafe(drawEnv,cam,V,1);
   // the weather where you are (gfx/weather.js; in a battle on the map, over the field instead: drawBattle), under the fog: seen
   // where you see, dim where you remember, none on land you have never seen (the owner, 2026-11-08)
-  if(!B?.world)WeatherArt.draw(ambWeather(),VW+1,VH+1,Weather.strength(P.x,P.y));
+  if(!B?.world)drawSafe(()=>WeatherArt.draw(ambWeather(),VW+1,VH+1,Weather.strength(P.x,P.y)));
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
-  drawWorldFog(cam,V);
+  drawSafe(drawWorldFog,cam,V);
   }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
   // the tile grid and a building being placed lie over the fog
   if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);

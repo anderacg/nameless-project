@@ -8,8 +8,14 @@ let last=performance.now(),hudCards=false;
 // (an error in a step or a frame never stops the game: the loop goes on, the error still raised a moment later for the tests and
 // the console, each one once a second at most (the owner, 2026-11-12: "games freeze after the new battle": one throw in a battle's
 // drawing ended the loop, and the game stood still))
-const LOOP_ERR=new Map();
-function loopError(e){const k=String(e&&e.message||e),t=performance.now();if(t-(LOOP_ERR.get(k)||-1e9)<1000)return;LOOP_ERR.set(k,t);setTimeout(()=>{throw e})}
+// Each one is also told on the screen the first time (its message and where, file:line), so a phone with no console can tell of it
+// (the owner, 2026-11-15: a phone's map lost its fog, people and night in the rain); the last LOOP_KEEP kept for the developer
+// console's "errors"
+const LOOP_ERR=new Map(),LOOP_SEEN=[],LOOP_KEEP=20;
+function loopWhere(e){const L=String(e&&e.stack||'').split('\n').find(l=>/\.js:\d+/.test(l))||'',m=L.match(/([^\/\s(@]+\.js):(\d+)/);return m?m[1]+':'+m[2]:''}
+function loopError(e){const k=String(e&&e.message||e),t=performance.now();
+  if(!LOOP_SEEN.some(x=>x.k===k)){const w=loopWhere(e);LOOP_SEEN.push({k,w,day:typeof G!=='undefined'?G.day:0,mode:typeof G!=='undefined'?G.mode:''});if(LOOP_SEEN.length>LOOP_KEEP)LOOP_SEEN.shift();try{toast('Something went wrong: '+k+(w?' ('+w+')':''),'bad')}catch(_){}}
+  if(t-(LOOP_ERR.get(k)||-1e9)<1000)return;LOOP_ERR.set(k,t);setTimeout(()=>{throw e})}
 function loop(now){
   if(now-last<650/RENDER.fps){requestAnimationFrame(loop);return}
   const dt=Math.min(.05,(now-last)/1000);last=now;

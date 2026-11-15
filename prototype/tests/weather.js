@@ -77,7 +77,7 @@ Kit.suite(({ok,info})=>{
    Wx.set(P.x,P.y,'rain');ok(Wx.strength(P.x,P.y)===1,'one put there (a story’s, the tests’) is whole at once')}
   // ---- under the fog of war: on the map drawn before the fog, in a battle before its fog
   {const w=String(t.drawWorld),b=String(t.drawBattle);
-   ok(w.indexOf('WeatherArt.draw')>0&&w.indexOf('WeatherArt.draw')<w.indexOf('drawWorldFog(cam,V)')&&b.indexOf('WeatherArt.draw')<b.indexOf('fogDraw()'),'the weather is drawn under the fog of war, on the map and on a battle’s field')}
+   ok(w.indexOf('WeatherArt.draw')>0&&w.indexOf('WeatherArt.draw')<w.indexOf('drawWorldFog,cam,V')&&b.indexOf('WeatherArt.draw')<b.indexOf('fogDraw()'),'the weather is drawn under the fog of war, on the map and on a battle’s field')}
   // ---- in a battle
   {const env={c:'grass',t:t.T_OPEN},s=t.ST.hum_bow,a=t.envStats(s,'human',env),b=t.envStats(s,'human',{...env,w:'storm'}),W=WX.kinds.storm.battle;
    ok(Math.abs(b.spd-a.spd*W.spd)<1e-9&&Math.abs(b.range-a.range*W.range)<1e-9,'a storm on the field: pace ×'+W.spd+', reach ×'+W.range+' (a bowman '+a.range+' to '+b.range.toFixed(1)+')');
