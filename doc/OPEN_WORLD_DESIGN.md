@@ -261,7 +261,11 @@ That is a separate decision, best made after this world exists.
   - Its edge is ragged into the verge.
   - It has two wheel ruts, with puddles in them where it is flat, a grassy crown between them on the flat, and pebbles.
   - A stone parapet runs along its edge where the ground beyond drops two levels or more; its cuts and embankments are faced with dressed-stone retaining walls.
-  - Over the river it is a wooden bridge: planks across its deck (each its own tone, a thin gap between, worn where the wheels go), a rail each side lit on top on a post every 8 px, beams on its side. Its heights come from the land before the river was carved, so it spans the river instead of dipping into it.
+  - Over the river it is a whole wooden bridge (`LAB.bridge`; the owner: "the bridge should be a full bridge structure"):
+    - Its deck stands 1.4 levels over the water, the road ramped up to it at its grade. A ramp's side above the bank is faced with stone (its abutments).
+    - Planks run across the deck, each its own tone with a thin gap between, worn where the wheels go.
+    - Under the deck's edge: a heavy side beam, a pile every 12 px standing in the water with foam at its foot, cross-braced between, and the shadowed water seen beneath. Its shadow lies on the water just downstream.
+    - Railings stand along both edges: a dark post every 8 px, a sunlit top rail with its shadow under it, and a middle rail. Each railing is painted only over what lies behind it, so the far one shows behind the deck and the near one in front. Its heights come from the land before the river was carved, so it spans the river instead of dipping into it.
 - **Painting** is slower with all this: about 90-100 ms a 512 px chunk. That makes the game painter's rewrite (§8's 8 ms) more pressing.
 
 **Depth (2026-11-15; the owner: "Do we have depth if river or ocean?", then "Ok"):**

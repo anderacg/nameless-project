@@ -34,6 +34,9 @@
     beach:.45,dune:.95,rock:9,snow:11.5,shore:{wet:5,sand:34,dune:80},
     peaks:[[.66,.15,.26,11],[.93,.36,.24,9.5]],steps:{band:3,sharp:16,sc:110,at:.38},hill:[.40,.42,.14,2.2],shelf:{x:.21,y:.73,rx:190,ry:120,e:1.4},
     road:{w:26,sh:22,grade:1/34,bend:30,turnGrade:.35,legs:40,rut:5,edge:3,puddle:.74,wall:2,vary:.18,track:.42,wander:1.3,gravel:.07,pts:[[.13,.80],[.21,.73],[.31,.69],[.42,.61],[.50,.53],[.60,.50],[.70,.47],[.62,.41],[.73,.36],[.67,.31],[.79,.26],[.86,.14],[.88,0]]},
+    // (the bridge (the owner, 2026-11-15: "the bridge should be a full bridge structure"): its deck clear levels over the water, the
+    //  road ramped up to it; a pile every pile px along it, braced between; its rails rail px high on a post every post px)
+    bridge:{clear:1.4,pile:12,rail:5,post:8},
     river:{pts:[[.588,.118],[.565,.20],[.525,.28],[.475,.36],[.435,.46],[.395,.55],[.355,.62],[.338,.70],[.343,.79],[.328,.88],[.31,1]],
       w:[2.5,11],bank:9,meander:14,ford:.5,mill:.64,mouth:.15,widen:1.2,tarn:{x:.597,y:.10,rx:48,ry:26}},
     walk:38,run:1.6,
@@ -129,7 +132,7 @@
     for(let it=0;it<6;it++){for(let i=1;i<r.length;i++)r[i]=Math.min(Math.max(r[i],r[i-1]-ds(i)),r[i-1]+ds(i));for(let i=r.length-2;i>=0;i--)r[i]=Math.min(Math.max(r[i],r[i+1]-ds(i)),r[i+1]+ds(i))}
     for(let it=0;it<3;it++){const q=r.slice();for(let i=0;i<r.length;i++){let s=0,n=0;for(let j=-8;j<=8;j++){const k=i+j;if(k>=0&&k<r.length){s+=q[k];n++}}r[i]=s/n}}
     const {D,I,D2,I2}=bandOf2(pts,R.w/2+R.sh+2,R.legs),RE=new Float32Array(W*H),RE2=new Float32Array(W*H);for(let j=0;j<W*H;j++){if(D[j]<1e9)RE[j]=along(r,I[j]);if(D2[j]<1e9)RE2[j]=along(r,I2[j])}
-    return {pts,r,turn:F.turn,D,I,RE,D2,RE2}}
+    return {pts,r,turn:F.turn,D,I,RE,D2,I2,RE2}}
 
   // the river: its course (a curve, meandering), its surface along it (the land's, never rising downstream), its half-width; every
   // px near it: RV 1 water, 2 bank, 3 ford; RW the half-width there, RT px along it
@@ -163,6 +166,11 @@
     for(let y=0;y<H;y++){const cy=Math.floor(y/st),fy=y/st-cy;for(let x=0;x<W;x++){const cx=Math.floor(x/st),fx=x/st-cx,i=cy*CW+cx;
       E[y*W+x]=(Cg[i]*(1-fx)+Cg[i+1]*fx)*(1-fy)+(Cg[i+CW]*(1-fx)+Cg[i+CW+1]*fx)*fy}}
     const road=roadOf(E),river=riverOf(E),RV=river.RV,R=LAB.road,SM=new Uint8Array(W*H),KD=new Uint8Array(W*H);
+    // (where the road crosses the river its deck stands bridge.clear levels over the water, the road ramped to it at its grade)
+    {const r=road.r,n=r.length,dk=new Float32Array(n).fill(-1e9);
+      for(let i=0;i<n;i++){const [x,y]=road.pts[i],j=Math.round(y)*W+Math.round(x);if(j>=0&&j<W*H&&(RV[j]===1||RV[j]===3)){for(let k=Math.max(0,i-6);k<=Math.min(n-1,i+6);k++)dk[k]=Math.max(dk[k],Math.floor(E[j])+LAB.bridge.clear)}}
+      for(let i=0;i<n;i++)if(dk[i]>r[i])r[i]=dk[i];const ds=2*R.grade;for(let it=0;it<4;it++){for(let i=1;i<n;i++)r[i]=Math.max(r[i],r[i-1]-ds);for(let i=n-2;i>=0;i--)r[i]=Math.max(r[i],r[i+1]-ds)}
+      for(let j=0;j<W*H;j++){if(road.D[j]<1e9)road.RE[j]=along(r,road.I[j]);if(road.D2[j]<1e9)road.RE2[j]=along(r,road.I2[j])}}
     // (the road's edge ragged; over the river its deck (a bridge), the water left beside it)
     const RD=new Float32Array(W*H),HW=new Float32Array(W*H);for(let i=0;i<W*H;i++){const d=road.D[i];RD[i]=d>=1e9?d:d-(fbm((i%W)/26,((i/W)|0)/26,s+73,2)-.5)*2*R.edge;HW[i]=d>=1e9?0:R.w/2*(1+R.vary*(vn(road.I[i]/30,.5,s+95)-.5)*2)}
     for(let i=0;i<W*H;i++){const d=RD[i],hw=HW[i];if(d<hw){E[i]=road.RE[i];SM[i]=1}else if(d<hw+R.sh&&RV[i]!==1&&RV[i]!==3){let rt=road.RE[i],k=smooth((d-hw)/R.sh);
@@ -276,6 +284,7 @@
         // (the lip: a step's edge lit; the foot of a face in its shade)
         const hs=y+1<H?lift[i+W]:0,hn=y>0?lift[i-W]:h;
         const wet=k===K.river||k===K.ford;
+        if((wet||k===K.water)&&y>2&&(KD[i-W]===K.bridge||KD[i-2*W]===K.bridge||KD[i-3*W]===K.bridge))c=mul(c,.7);
         if(hs<h-1&&k!==K.water&&!wet)c=mul(c,1.12);if(wet&&hn>h+1)c=mix(c,COL.foam,.75);else if(wet&&y>1&&lift[i-2*W]>h+1)c=mix(c,COL.foam,.4);else if(hn>h+1)c=mul(c,.78);else if(y>1&&lift[i-2*W]>h+1)c=mul(c,.9);
         // (a stone parapet along the road's edge where the ground beyond it drops wall levels or more)
         if(k===K.road&&L.RD[i]>L.HW[i]-2.2){let lo=h;for(const [a,b] of [[4,0],[-4,0],[0,4],[0,-4]]){const xx=x+a,yy=y+b;if(xx>=0&&yy>=0&&xx<W&&yy<H)lo=Math.min(lo,lift[yy*W+xx])}if(lo<=h-LAB.road.wall*lh)c=COL.stone[(x+y)%5===0?2:hsh(x,y,s+82)<.5?0:1]}
@@ -283,7 +292,13 @@
         // the south face, down to where the next px's top starts
         const sy2=(y+1<H?y+1-hs:H-1+0)+T;if(y+1>=H){for(let r=sy+1;r<CH;r++)put(x,r,COL.face[2],y);continue}
         if(sy2>sy+1&&wet){for(let r=sy+1;r<sy2;r++){const n=hsh(x,r,s+83),q=hsh(x,0,s+84);put(x,r,r>=sy2-2?COL.foam:COL.fall[q<.35?0:q<.75?1:2],y);if(n<.02)put(x,r,COL.foam,y)}}
-        else if(sy2>sy+1&&k===K.bridge){for(let r=sy+1;r<sy2;r++){const dz=r-sy;put(x,r,dz<=2?COL.beam[0]:Math.floor(L.road.I[i]*2)%14<2?COL.beam[0]:mul(COL.beam[1],.85),y)}}
+        else if(sy2>sy+1&&k===K.bridge){const Bg=LAB.bridge,t=L.road.I[i]*2,tp=((t%Bg.pile)+Bg.pile)%Bg.pile,n2=sy2-sy,under=mix(COL.river[2],[20,28,40],.55);
+          for(let r=sy+1;r<sy2;r++){const dz=r-sy;let c2;
+            if(dz===1)c2=COL.plank[2];else if(dz<=3)c2=dz===2?COL.beam[0]:mul(COL.beam[0],.8);
+            else if(tp<2)c2=tp<1?COL.plank[1]:COL.beam[0];
+            else if(n2>7&&(Math.abs(tp-2-(dz-4)*(Bg.pile-4)/Math.max(1,n2-5))<.8||Math.abs(Bg.pile-2-tp-(dz-4)*(Bg.pile-4)/Math.max(1,n2-5))<.8))c2=mul(COL.beam[0],.9);
+            else c2=mix(under,COL.river[1],Math.max(0,(dz-n2+3)/6)*.5);
+            if(r===sy2-1&&tp<2)c2=COL.foam;put(x,r,c2,y)}}
         else if(sy2>sy+1&&SM[i]&&h-hs<=3){const cn=topCol(x,y+1,i+W),n2=sy2-sy;for(let r=sy+1;r<sy2;r++)put(x,r,mul(mix(c,cn,(r-sy)/n2),.93),y)}
         else if(sy2>sy+1&&SM[i]&&L.RD[i]<L.HW[i]+5){for(let r=sy+1;r<sy2;r++){const dz=r-sy,row=Math.floor(dz/3),off=(row&1)*3;put(x,r,dz%3===0||(x+off)%6===0?COL.stone[2]:COL.stone[hsh(Math.floor((x+off)/6),row,s+85)<.5?0:1],y)}}
         else if(sy2>sy+1){const drop=h-hs,rocky=G[i]>=LAB.cls.steep||drop>=2*lh||k===K.rock||k===K.snow||k===K.scree,sand=k<=K.dune;
@@ -295,6 +310,14 @@
             put(x,r,c2,y)}}}}
     // the small things on the ground (where its own px shows): tufts, flowers, pebbles; marram on the dunes; driftwood and shells on
     // the beach; snow's sparkle
+    // (a bridge's rails: a post every bridge.post px along each edge, a top and a middle rail between, lit on top; painted only over
+    //  what lies behind them)
+    {const Bg=LAB.bridge,putB=(x,yy,c,wy)=>{if(yy<0||yy>=CH||x<0||x>=W)return;const q=dep[yy*W+x];if(q>wy)return;put(x,yy,c,wy)};
+      for(let y=1;y<H;y++)for(let x=1;x<W-1;x++){const i=y*W+x;if(KD[i]!==K.bridge)continue;const nb=[i-1,i+1,i-W,i+W].map(q=>KD[q]);if(nb.every(q=>q===K.bridge||q===K.road))continue;
+        const t=L.road.I[i]*2,sy=y-lift[i]+T,post=((t%Bg.post)+Bg.post)%Bg.post<1.2;
+        const lit=[204,170,120];
+        if(post)for(let j=1;j<=Bg.rail+1;j++)putB(x,sy-j,j===Bg.rail+1?lit:COL.beam[1],y);
+        else{putB(x,sy-Bg.rail,lit,y);putB(x,sy-Bg.rail+1,COL.beam[1],y);putB(x,sy-(Bg.rail>>1),COL.plank[0],y);putB(x,sy-(Bg.rail>>1)+1,COL.beam[1],y)}}}
     const vis=(x,y)=>{const sy=y-lift[y*W+x]+T;return sy>=2&&dep[sy*W+x]===y?sy:-1};
     for(let y=2;y<H;y++)for(let x=1;x<W-1;x++){const i=y*W+x,k=KD[i],r=hsh(x,y,s+30);if(r>.06)continue;const sy=vis(x,y);if(sy<0)continue;
       if(k===K.grass||k===K.meadow){if(r<.03){const c=COL.tuft[r<.012?0:1];put(x,sy-1,c,y);if(r<.015)put(x,sy-2,COL.tuft[0],y)}else if(k===K.meadow&&r<.05)put(x,sy-1,COL.flower[Math.floor(hsh(x,y,s+31)*4)],y)}
