@@ -47,7 +47,7 @@ const NODE_ICON={
   ability:{whirl:'blade',dash:'dagger',leap:'hammer',quake:'stone',volley:'volley',fireball:'fire',nova:'wand',heal:'vial',cry:'rally',banner:'banner'},
   fin:{stun:'mask',push:'hammer'},
   perk:{shieldwall:'shieldWall',bloodlust:'attack',guide:'eye',rearguard:'withdraw',slippery:'boots',drill:'anvil',silver:'coin',oldsoldier:'crest',warden:'prisoners',
-    vanish:'cloak',forced:'boots',path:'map',quarter:'food'},
+    vanish:'cloak',forced:'boots',path:'map',quarter:'food',watch:'scout',sense:'scout'},
   sk:{archery:'bow',spell:'staff',lead:'leader',tact:'map',med:'vial',eng:'tools',pers:'scroll',trade:'coin',stew:'crown',scout:'scout',hunt:'pelt',wood:'axe',surv:'fire',ride:'mount',athl:'stamina'},
   stat:{combo3:'sword',dmg:'sword',dmgPct:'sword',hp:'fitness',hpPct:'fitness',dr:'shield',block:'shield',crit:'dagger',reach:'spear',cd:'speed',spd:'speed',sp:'stamina',spRegen:'stamina',
     mp:'tome',mpPct:'tome',mpRegen:'tome',regen:'vial',travel:'boots',vis:'eye',slots:'troops',tHp:'garrison',tDmg:'attack',food:'food',hire:'recruit',train:'anvil',prison:'prisoners',

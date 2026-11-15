@@ -81,8 +81,8 @@ const PROF_TREE={
     [['pers_envoy','s','Envoy',{sk:{pers:2,trade:1}}],['pers_captor','s','Captor',{prison:4}]],
     [['pers_diplo','n','Diplomat',{sk:{pers:2},hire:.06},'+2 Persuasion. Hiring troops costs 6% less.'],['pers_jailer','s','Jailer',{prison:3}]]],
   scout:[
-    [['scout_eye','n','Scout’s Eye',{sk:{scout:1},vis:.15},'+1 Scouting. See 15% farther.'],['scout_keen','s','Keen Eyes',{vis:.1}]],
-    [['scout_vanish','n','Vanish',{perk:'vanish'},'+15% to get away when you flee in forest, hills or at night.'],['scout_track','s','Tracker',{sk:{scout:1,hunt:1}}]],
+    [['scout_eye','n','Scout’s Eye',{sk:{scout:1},vis:.15,perk:'watch'},'+1 Scouting. See 15% farther. The eye shows who has seen your army.'],['scout_keen','s','Keen Eyes',{vis:.1}]],
+    [['scout_vanish','n','Vanish',{perk:'vanish'},'+15% to get away when you flee in forest, hills or at night.'],['scout_track','s','Tracker',{sk:{scout:1,hunt:1},perk:'sense'},'+1 Scouting, +1 Hunting. The eye also shows who is close to spotting you, and where a search last saw you.']],
     [['scout_march','n','Forced March',{perk:'forced'},'Your band travels 15% faster, and eats 20% more.'],['scout_far','s','Far Sight',{vis:.15,sk:{scout:1}}]],
     [['scout_watch','n','Pathwatcher',{vis:.1,travel:.05},'See 10% farther, travel 5% faster.'],['scout_sense','s','Ambush Sense',{sk:{scout:2}}]]],
   ride:[
@@ -143,6 +143,11 @@ const PATH_NAME={hp:'Hardiness',dmg:'Weight',dmgPct:'Edge',dr:'Grit',block:'Firm
    entry (its first pair: open from the middle), ring (its place out from the middle: data/tree.js's layers, ui/talents.js draws by it). Each past begins with its origin (a node of no tree: its small head
    start: what its old attributes gave, attr, as their bonuses); your race its own (r_<race>, never on P.tree: state.js tmOf, from
    data/races.js attr); a companion, a lord or a chieftain with 'start' (nothing) */
+// Reading who watches you on the map (the owner, 2026-11-15: "make an eye detection unlock via skills"; world/worldobject.js
+// detectSkill): none of it at first; the Scouting tree's perk seen (Scout's Eye) shows who has seen your army (an eye over each, your
+// own over you, your army's ring by them), near (Tracker) also who is close to spotting you, how close, and where a search last saw you.
+// on false: all of it, as before
+const DETECT_SKILL={on:true,seen:'watch',near:'sense'};
 const TREE={start:{id:'start',n:'Start',t:'start',m:{},links:[],d:'Where a companion, a lord or a chieftain begins: nothing yet.'}};
 // (halved, 2026-11-13, the owner: "starting hero seems too strong"; was soldier str 3, hp 10; guard str 1, cha 1, block .03;
 // woodcutter str 2, hp 8, sp 10; exile agi 2, vis .05; apprentice int 1, agi 1, mp 5, sp 5; hedge int 2, mp 10; merchant cha 2,

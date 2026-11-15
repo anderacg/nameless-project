@@ -216,7 +216,7 @@ function drawMarcherAt(u,o,cam){
 // middle its men make (MarchArmy mid: each man's spot less his place in it, their median), so they go as the men go, and settle
 // on the army's own as they do; no men formed near, on the army's own. Its army given (marchDraw), the outline of its men's ground
 // instead (MarchOutline, MARCH_RING), drawn as the circles are, about its middle
-function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDetectionColor(travelDetectionState()):o.look().col,army=null){
+function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDetectionColor(travelDetectionShown(travelDetectionState())):o.look().col,army=null){
   const L=army&&MARCH_RING.on&&army.units.length?army.ring||(army.ring=new MarchOutline()):null;
   // (MARCH_RING.draw off: no ring drawn, its outline kept for the rules all the same)
   if(L){L.update(army);if(!MARCH_RING.draw)return;ents.push({y:o.y+L.top,f:()=>{const x=o.x-cam.x,y=o.y-cam.y;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;L.path(L.out[0],x,y);ctx.stroke();

@@ -121,12 +121,16 @@ function travelDetectionNow(){
   const rows=[];for(const o of travelObservers()){const d=travelDetection(o);if(d)rows.push(d)}
   const seen=rows.filter(d=>d.sees),exposure=Math.max(0,...rows.map(d=>d.exposure));return{rows,seen,exposure,danger:seen.some(d=>d.danger)};
 }
+// (what of it you can read (worldobject.js detectSkill): none; those who have seen you alone (the rest left out, your exposure theirs);
+//  or all of it)
+function travelDetectionShown(s){const S=detectSkill();if(S.near)return s;if(!S.seen)return{rows:[],seen:[],exposure:0,danger:false,none:true};
+  const rows=s.rows.filter(d=>d.sees);return{rows,seen:s.seen,exposure:Math.max(0,...rows.map(d=>d.exposure)),danger:s.danger}}
 const travelDetectionColor=state=>state.seen.length?state.danger?'#ef8c73':'#dbca91':state.exposure?'#d9ad57':'#82c6b3';
 function drawTravelDetection(cam){
-  if(B||P.stay)return null;const state=travelDetectionState(),k=dprOf()/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)])),labels=new Map(BANNERQ.map(q=>[q.o,q.label]));ctx.save();ctx.imageSmoothingEnabled=false;
+  if(B||P.stay)return null;const state=travelDetectionShown(travelDetectionState());if(state.none)return state;const k=dprOf()/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)])),labels=new Map(BANNERQ.map(q=>[q.o,q.label]));ctx.save();ctx.imageSmoothingEnabled=false;
   for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const m=markers.get(o)||o instanceof Party&&armyTagAt(o,labels.get(o),cam),w=STEALTH_EYE.size*k,h=w*2/3,x=m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=m?m.top:o.y-cam.y-18-h;
     drawStealthEye(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94',x,y,STEALTH_EYE.size);
-    const q=!d.sees&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,q.y-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)
+    const q=!d.sees&&detectSkill().near&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,q.y-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)
   }
   const e=heroTagAt(cam);drawStealthEye(state.exposure,travelDetectionColor(state),e.x,e.y,STEALTH_EYE.player);ctx.restore();
   return state;
