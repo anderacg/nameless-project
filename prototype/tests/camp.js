@@ -38,7 +38,7 @@ try{
  ok(!P.camp&&P.morale===60-S.camp.caught&&msgs(/catch your band in camp/)===1,'a band that finds you in camp catches you unready: morale −'+S.camp.caught+', the camp struck');
  ev('B.over=true;B=null');t.fieldDone();Kit.world();
  // ---- caught in camp, your men come out of the tents one after another (the owner, 2026-11-14; world/campsite.js CampWake)
- {reset();P.troops={hum_levy:8};t.pitchCamp();const L=t.CampSite.layout('you',P.x,P.y,t.partySize());G.enc={kind:'party',ref:{cool:0,x:P.x+40,y:P.y},list:['militia','militia']};t.startBattle({enemies:['militia','militia'],tournament:false});
+ {reset();P.troops={hum_levy:8};t.pitchCamp();const L=t.CampSite.layoutOf(t.CampSite.yours(P.x,P.y));G.enc={kind:'party',ref:{cool:0,x:P.x+40,y:P.y},list:['militia','militia']};t.startBattle({enemies:['militia','militia'],tournament:false});
   const b=t.B,W=b.campWake,mine=b.units.filter(u=>u.team===0&&!u.hero&&u.sourceArmy===P),hero=b.hero,wait=()=>mine.filter(u=>u.waiting).length;
   for(const u of b.units)if(u.team===1){u.hp=u.max=1e6;u.cd=99;u.s={...u.s,spd:0}}t.updateBattle(.001);
   const atTent=mine.every(u=>L.some(q=>{const f=b.world.field({x:q.x,y:q.y+3});return Math.hypot(u.x-f.x,u.y-f.y)<=4*b.world.scale}));
@@ -107,5 +107,11 @@ try{
   for(let k=0;k<6000&&n<120;k++){const i=Math.floor(rr()*K.length);if(K[i]!==t.T_FOREST||!(t.WM.feat[i]&8))continue;n++;P.x=(i%W+.5)*t.TILE;P.y=(Math.floor(i/W)+.5)*t.TILE;if(t.campSpot())found++}
   ok(n>=60&&found>=n*.6,'deep in a wood your band finds ground to camp from '+found+' of '+n+' places (it was about 1 in 9)')}
  Kit.begin('soldier',4242);ok(!P.camp,'a new game: no camp');
+ // ---- a makeshift camp (the owner, 2026-11-15: "The player camp seems too big for the first level, make it like makeshift camp. Same
+ // goes for poor group of people"; world/campsite.js CAMP_SITE.makeshift)
+ {const M=t.CAMP_SITE.makeshift,C=t.CampSite,lv=P.level,tr=P.troops;try{P.level=1;P.troops={hum_levy:8};const c=C.yours(P.x,P.y);
+   ok(C.humble()&&c.makeshift&&c.per===M.per&&C.tents(c.n,c.per,c.most)===2,'your first camp a makeshift one: '+C.tents(c.n,c.per,c.most)+' tents for '+c.n+' men, lean-tos and pup tents ('+M.styles.join(', ')+'), bedrolls by the fire');
+   P.level=M.level;P.troops={hum_levy:M.men+4};const f=C.yours(P.x,P.y);ok(!C.humble()&&!f.makeshift&&C.tents(f.n)===Math.ceil(f.n/t.CAMP_SITE.men),'grown (level '+M.level+', '+f.n+' men): an army\'s camp, its commander\'s pavilion and tents')}finally{P.level=lv;P.troops=tr}
+  const poor=t.ENCAMP_KINDS.filter(k=>k.poor).map(k=>k.key);ok(poor.includes('refugees')&&t.ENCAMP_KINDS.filter(k=>k.poor).every(k=>k.tents.styles.every(s=>['leanto','pup','hut'].includes(s))),'poor groups\' camps makeshift too: '+poor.join(', '))}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{window.toast=toast0}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

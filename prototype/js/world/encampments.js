@@ -87,7 +87,7 @@ class Encampment extends Site{
     for(const [,x,y] of c){if(!passable(tAt(Math.floor(x/TILE),Math.floor(y/TILE)))||!CampSite.tentOk(x,y+4)||!Router.reach(this,{x,y}))continue;const n=count(x,y);if(n>best.n)best={x,y,n};if(n>=need)break}
     if(best.x!==this.x||best.y!==this.y){CampSite.strike(this.key);ENC_PROPS.delete(this.key);this.x=best.x;this.y=best.y;this.tx=Math.floor(best.x/TILE);this.ty=Math.floor(best.y/TILE)}}
   draw(ents,cam,V){if(!this.inView(V))return;const a=this.area();if(a[2]<cam.x-16||a[0]>cam.x+VW+16||a[3]<cam.y-16||a[1]>cam.y+VH+40)return;this.ground();
-    CampSite.draw(ents,cam,{key:this.key,x:this.x,y:this.y,n:this.pop,per:ENCAMP.tents.per,most:ENCAMP.tents.most,rings:ENCAMP.tents.rings,seed:this.seed,pic:(q,i,clim)=>this.tentPic(q,i,clim)});this.drawProps(ents,cam);CampFolk.draw(this,ents,cam,V)}
+    CampSite.draw(ents,cam,{key:this.key,x:this.x,y:this.y,n:this.pop,per:ENCAMP.tents.per,most:ENCAMP.tents.most,rings:ENCAMP.tents.rings,seed:this.seed,makeshift:!!this.TR.poor,pic:(q,i,clim)=>this.tentPic(q,i,clim)});this.drawProps(ents,cam);CampFolk.draw(this,ents,cam,V)}
   /* its pieces (ENCAMP_KINDS props: wagons, carts, crates, a shrine, drying racks, charcoal mounds), each where the ground lets it
      stand round its tents (CampSite.tentOk), ENCAMP_PROPS.gap from a tent and from one another, laid once from its seed */
   props(){const s=this,c=ENC_PROPS.get(s.key);if(c&&c.x===s.x&&c.y===s.y)return c.p;const X=ENCAMP_PROPS,sq=CAMP_SITE.squash,R=seeded(s.seed*131+71),out=[],
