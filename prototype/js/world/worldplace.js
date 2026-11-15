@@ -413,7 +413,7 @@ function placeLords(R,n){if(n<=4)return null;const used=new Set(PLACE_REALMS.fla
 /* 8. roads (above). The search's buffers kept for the stage; a tile's cost: open 1, forest 1.8, hill 2.2, a road or ford 0.5,
    x4 in a wild region, x0.8-1.25 by a noise (so a road wanders as the land leads it), +1.5 a terrace climbed or
    descended; peaks, water (but straight across, below) and cliff edges closed */
-const PLACE_ROAD={hm:1,pull:40,slack:1.04,round:[6,3,1.5,.75],xing:{bridge:[2,8,12],ford:[1.5,4],ferry:[2,16],reuse:.5}};
+const PLACE_ROAD={hm:1,grade:2.5,pull:40,slack:1.04,round:[6,3,1.5,.75],xing:{bridge:[2,8,12],ford:[1.5,4],ferry:[2,16],reuse:.5}};
 // (a holding's centre as lots.js lays it (centreBox): a village's hall 2 x 2, any other's 4 x 4, its bottom row on the holding's
 // tile, its gate the tile below: {x, y, n})
 const placeBox=h=>{const n=h.kind==='village'?2:4;return{x:h.tx-(n>>1),y:h.ty-n+1,n}};
@@ -429,6 +429,9 @@ function* genRoads(g){
   {const salt=genSalt(g.rng('roads',0));for(const h of Hd)placeClear(m,h,salt)}
   const X=new Int32Array(N).fill(-1),LI=new Int32Array(N).fill(-1),lines=[],jit=new Float32Array(N),ter=new Uint8Array(N),ferry=new Uint8Array(N),nearH=new Uint8Array(N);
   for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;jit[i]=.8+.45*fbm(x/9,y/9,salt);ter[i]=clamp((m.elev[i]-64)>>5,0,3)}
+  // (the land's height at each tile's middle, the lab's (worldgen.js landHeight): a step pays the square of its grade (PLACE_ROAD.grade), so
+  //  a road climbs a hillside aslant and in turns, as the lab's switchbacks, rather than straight up it)
+  const LHt=new Float32Array(N);{const hf=typeof landHeight==='function'?landHeight(m):null;if(hf)for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;LHt[i]=K[i]===T_WATER?0:hf(x*32+16,y*32+16)}}
   // ferries land within 8 tiles of a town, a city or a port; nearH: within 6 tiles of a holding (the larger of dx, dy)
   for(const h of Hd)for(let b=-6;b<=6;b++)for(let a=-6;a<=6;a++)if(m.has(h.tx+a,h.ty+b))nearH[(h.ty+b)*W+h.tx+a]=1;
   for(const h of Hd)if(h.kind==='town'||h.kind==='city'||h.style==='port')for(let b=-8;b<=8;b++)for(let a=-8;a<=8;a++)if(a*a+b*b<=64&&m.has(h.tx+a,h.ty+b))ferry[(h.ty+b)*W+h.tx+a]=1;
@@ -461,7 +464,7 @@ function* genRoads(g){
       const x=i%W,y=(i-x)/W,gi=G[i],te=ter[i];
       for(let d=0;d<8;d++){const dx=DX[d],dy=DY[d],nx=x+dx,ny=y+dy;if(nx<x0||ny<y0||nx>x1||ny>y1)continue;const j=ny*W+nx;let c=tc(j,great);
         if(c===Infinity||E[i]&&cut(i,dx,dy))continue;if(d&1){if(shut(i+dx)||shut(i+dy*W))continue;c*=1.4142}
-        relax(i,j,gi+c+1.5*(ter[j]>te?ter[j]-te:te-ter[j]))}
+        const dz=LHt[j]-LHt[i],ln=d&1?1.4142:1;relax(i,j,gi+c+1.5*(ter[j]>te?ter[j]-te:te-ter[j])+PLACE_ROAD.grade*dz*dz/ln)}
       // over water: straight on, 4 ways, from land to land
       if(K[i]!==T_WATER)for(let d=0;d<8;d+=2){const dx=DX[d],dy=DY[d],s=dx+dy*W;if(K[i+s]!==T_WATER)continue;let k=0,nx=x+dx,ny=y+dy;
         while(k<=PLACE.ferry&&nx>=x0&&ny>=y0&&nx<=x1&&ny<=y1&&K[ny*W+nx]===T_WATER){k++;nx+=dx;ny+=dy}

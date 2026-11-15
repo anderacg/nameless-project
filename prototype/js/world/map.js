@@ -41,6 +41,14 @@ const walkTile=(i,m=WM)=>{const t=m.kind[i];return t!==T_MOUNT&&(t!==T_WATER||wa
    swims while fewer than half its men are in heavy armour and it has stamina (heroSwims); while your way is found (world.js heroWay)
    deep water is shut to it if not (WAY_NOSWIM: router.js findPath, wayLocal) and your step never goes into it (world.js walk) */
 let WAY_NOSWIM=false;
+/* the lab's walk (engine/worldlab.js speedAt, LAB.speed, LAB.run): on a slope a man goes up at up of his pace and down at down; steep
+   ground steep either way (in place of the map's even SLOPE there: your band's, world.js heroGround, by where it is heading); Shift
+   held, run times faster, its stamina going staRun times as fast; slopes and steep ground tire a band staSlope, staSteep times the
+   march (supply.js staminaRate) */
+const LAB_WALK={up:.5,down:1.15,steep:.3,run:1.6,staRun:1.8,staSlope:1.25,staSteep:1.7};
+function headingMul(x,y,tx,ty){const S=WM&&WM.slope;if(!S||tx==null||ty==null)return 1;const i=Math.floor(y/TILE)*MW+Math.floor(x/TILE),c=S[i];if(c!==1&&c!==2)return 1;
+  const dx=tx-x,dy=ty-y,l=Math.hypot(dx,dy);if(l<1)return 1;const hf=typeof landHeight==='function'?landHeight(WM):null;if(!hf)return 1;
+  const up=hf((x+dx/l*6)*2,(y+dy/l*6)*2)>hf(x*2,y*2);return (c===2?LAB_WALK.steep:up?LAB_WALK.up:LAB_WALK.down)/SLOPE.mul[c]}
 function heroSwims(){if(typeof P==='undefined'||!P)return true;if(P.bsta!=null&&P.bsta<=0)return false;let h=0,n=0;
   for(const k in P.troops||{}){const c=P.troops[k];if(!(c>0))continue;n+=c;if(ST[k]&&tagsOf(ST[k]).includes('heavy'))h+=c}return !(n&&h/n>=.5)}
 const walkAt=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return tx>=0&&ty>=0&&tx<MW&&ty<MH&&walkTile(ty*MW+tx)};

@@ -16,7 +16,7 @@ const wsm=t=>t<=0?0:t>=1?1:t*t*(3-2*t);
    each one's first point SP; the roads' segments RA (as SA, from P.segs) with their kind and how far along their line each starts
    (RL); mouth: the river tiles beside the sea or a lake (their water as the shore has it) */
 function waysOf(P){if(P.ways)return P.ways;
-  const V=WORLD_WAYS.river,Rv=WM.river,LV=WM.lv||(WM.lv=reliefOf(WM)),N=MW*MH,X=[],Y=[],HW=[],LL=[],DP=[],SP=[],SA=[];
+  const MO=[],V=WORLD_WAYS.river,Rv=WM.river,LV=WM.lv||(WM.lv=reliefOf(WM)),N=MW*MH,X=[],Y=[],HW=[],LL=[],DP=[],SP=[],SA=[];
   // (a curve through pts ([x, y, hw, lv, dp, slack]): its corners cut three times (Chaikin's way, the ends kept; each new point
   //  keeps its nearer parent's level, so the surface steps where the tiles' did), then wandering off its line by its slack)
   const curve=(pts,id)=>{let p=pts;if(p.length<2)return;
@@ -30,9 +30,12 @@ function waysOf(P){if(P.ways)return P.ways;
   const sea=i=>tiles[i]===T_WATER&&!(Rv[i]&3),mid=(i,w)=>{const x=i%MW,y=(i-x)/MW,o=w===2?16:8;return [x*TILE+o,y*TILE+o]};
   for(const r of WM.rivers){const p=r.path.slice();if(r.mouth>=0&&p[p.length-1]!==r.mouth)p.push(r.mouth);let lv=1e9,w0=1;const pts=[];
     for(let k=0;k<p.length;k++){const i=p[k],own=Rv[i]&3,w=k<r.path.length?Math.max(1,Math.min(r.width,own||w0)):w0;w0=w;lv=Math.min(lv,LV[i]);
-      const [x,y]=mid(i,own&&!sea(i)?own:w),hw=V.hw[w]*WAY_LP;pts.push([x,y,hw,lv,V.depth[w],(w===1?8:w===2?16:24)-hw])}
+      const [x,y]=mid(i,own&&!sea(i)?own:w),hw=V.hw[w]*WAY_LP;pts.push([x,y,hw,lv,V.depth[w]*(.75+.5*k/Math.max(1,p.length-1)),(w===1?8:w===2?16:24)-hw])}// (deeper downstream, the lab's)
     // (its mouth on the sea or a lake: wider into it)
     if(sea(r.mouth))for(let k=Math.max(0,pts.length-3);k<pts.length;k++)pts[k][2]*=V.mouth;
+    // (its plume into the sea past its mouth; the tarn it rises from on high ground, the lab's: a pool at its head)
+    if(sea(r.mouth)&&pts.length){const q=pts[pts.length-1];MO.push([q[0],q[1],Math.max(20,q[2]*V.plume)])}
+    if(pts.length>2&&pts[0][3]>=V.tarn.lv){pts[0][2]*=V.tarn.w;pts[1][2]*=(1+V.tarn.w)/2}
     curve(pts,r.id)}
   // the brooks (painted only: no tile of water; worldgen.js genBrook): from each head down its flow to the river, the water or the
   // brook it runs into, as wide as its flow
@@ -72,7 +75,7 @@ function waysOf(P){if(P.ways)return P.ways;
     lift();for(let it=0;it<3;it++){for(let i=1;i<n;i++)z[i]=Math.max(z[i],z[i-1]-G*d[i]);for(let i=n-2;i>=0;i--)z[i]=Math.max(z[i],z[i+1]-G*d[i+1])}
     for(let k=k0;k<=k1;k++){RZ[k*2]=z[k-k0];RZ[k*2+1]=z[k-k0+1]}
     k0=k1+1}
-  return P.ways={RZ,land,X:Float32Array.from(X),Y:Float32Array.from(Y),HW:Float32Array.from(HW),LV:Float32Array.from(LL),DP:Float32Array.from(DP),SP:Int32Array.from(SP),SA:Float32Array.from(SA),RA,RK,RL,mouth}}
+  return P.ways={mouths:MO,RZ,land,X:Float32Array.from(X),Y:Float32Array.from(Y),HW:Float32Array.from(HW),LV:Float32Array.from(LL),DP:Float32Array.from(DP),SP:Int32Array.from(SP),SA:Float32Array.from(SA),RA,RK,RL,mouth}}
 
 /* the nearest of a set of segments (A: ax, ay, bx, by, ha, hb, game px) to every px of a window (x0, y0, w x h, in px sc a game px),
    within reach px past its edge: S how far past its edge (px; < 0 within it), Q the segment (-1 none), T how far along it (0-1) */

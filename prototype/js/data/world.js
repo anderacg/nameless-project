@@ -19,7 +19,9 @@ const WORLD_VIEW={fine:2,build:.5,zoom:2,phoneZoom:1.5,phone:700,in:2};
    (levels a game px) is from or more, wholly by to; a face only where it steps min levels or more at once; gentle ground is shaded; never within flat game px of a road, a
    holding's lot or a ford. Rock shows on land from rock levels up, snow from snow (each by noise of a level or two); the shore:
    wet sand within wet fine px of the sea, the beach within sand, dunes within dune (on land below a level); a river's bank within
-   bank. Water: depth (levels) a tile's depth step (the plan's dep 0-9), the bed showing to clear levels */
+   bank (shore widths in lab px: the lab's wet 5, sand 34, dunes 80); oasis: the desert green within it of a river; pools: the swamp's
+   (its noise past at at sc lab px, on land under lo levels, as deep as its excess times deep); blend: the lab's (r lab px, k, warp);
+   decor: the small things' colours. Water: depth (levels) a tile's depth step (the plan's dep 0-9), the bed showing to clear levels */
 /* the world's nature drawn finer (gfx/worldterrain.js terrainProps; the world lab's, engine/worldflora.js): per climate its look (the
    flora's rock tones, bush leaves, moss, snow on everything), its trees by where they stand (lowland, waterside: a river within a
    tile; hills; mountain; village: a holding's lot within two tiles; each mix by weight) and the chance of each thing a cell of step
@@ -42,17 +44,19 @@ const WORLD_FLORA={step:9,
    river"), in the lab's px (two a game px). river: half-widths by size (hw: [unused], a river one, two and three tiles wide (the
    generator's widths); a brook's from brook[0] to brook[1] by its flow); its bank (mud) bank px; depth (levels) down its middle by
    size (a brook's first), a ford's share of it; how far it wanders off its tiles' line (meander, px, never out of them); its last
-   stretch into the sea or a lake mouth times wider. road: the lab's (LAB.road, the owner: "why the road scale not match with the lab?"):
+   stretch into the sea or a lake mouth times wider, its plume out into the sea plume times its width; a river rising
+   from tarn.lv levels up rises from a tarn (its head tarn.w times wide). road: the lab's (LAB.road, the owner: "why the road scale not match with the lab?"):
    half-widths (a track, a road: both the lab's 13, 26 wide), its width wandering vary of it along it, its corners rounded (bend
    more cuts of its line); the lab's worn look: wheel
    tracks at track of the half-width wandering wander px, gravel, puddles past puddle, a ragged edge of edge px, shoulders sh px.
    road grade: levels a game px it climbs at most (the lab's 1 in 34 lab px), its shoulders cut or banked to it.
    bridge: its deck clear levels over the water, the road ramped up to it within ramp game px of each end; a pile every pile px (a stone bridge's arch every arch), rails rail px tall, a
    post every post px */
-const WORLD_WAYS={river:{hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,meander:6,mouth:1.6},
+const WORLD_WAYS={river:{hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,meander:6,mouth:1.6,plume:7,tarn:{lv:3,w:3.2}},
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3},
   bridge:{clear:1.4,ramp:28,pile:12,arch:26,rail:5,post:8}};
-const WORLD_TERRAIN={liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},flat:6,rock:11,snow:14,wet:3,sand:9,dune:18,bank:5,depth:.32,clear:.9,shade:.55};
+const WORLD_TERRAIN={liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
+  decor:{flower:[[236,220,90],[236,240,246],[200,150,210],[240,160,120]],marram:[[214,204,150],[180,172,116]],drift:[[160,138,108],[196,178,146]],shell:[238,230,216],litter:[[110,92,50],[96,80,44],[128,104,58]]},bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a

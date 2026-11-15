@@ -198,7 +198,7 @@ const caravanGround=(x,y)=>Math.max(.5,speedAt(x,y)||1);
 // (your band's: the land for your race and mounts, a Pathfinder's and Woodcraft's ease, rough ground for riders; HERO_GROUND: what
 // travelMul knows of your band for it)
 const HERO_GROUND={ign:null,ride:false};
-function heroGround(x,y){const H=HERO_GROUND;let t=speedAt(x,y,P.race,H.ign)||1;if(t<1&&has('path'))t=1-(1-t)/2;if(t<1&&terrAt(x,y)===T_FOREST)t=1-(1-t)*(1-Math.min(WOODCRAFT.cap,WOODCRAFT.per*skill('wood')));return t*(H.ride&&roughFor(x,y,H.ign)?.8:1)}
+function heroGround(x,y){const H=HERO_GROUND;let t=(speedAt(x,y,P.race,H.ign)||1)*headingMul(x,y,P.tx,P.ty)*(G.keys&&G.keys.shift?LAB_WALK.run:1);if(t<1&&has('path'))t=1-(1-t)/2;if(t<1&&terrAt(x,y)===T_FOREST)t=1-(1-t)*(1-Math.min(WOODCRAFT.cap,WOODCRAFT.per*skill('wood')));return t*(H.ride&&roughFor(x,y,H.ign)?.8:1)}
 // your hero's own pace: on foot a fit 40; mounted, by the mount
 // a lord's army: its pace, slowed by its baggage train unless it is mostly mounted
 const lordSpeed=l=>partySpeed(l,l.troops)*(mountedShare(listSpeeds(l.troops))>=.5?1:.85);

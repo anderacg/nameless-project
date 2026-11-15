@@ -298,6 +298,7 @@ function drawWorld(){
   // the weather where you are (gfx/weather.js; in a battle on the map, over the field instead: drawBattle), under the fog: seen
   // where you see, dim where you remember, none on land you have never seen (the owner, 2026-11-08)
   if(!B?.world)drawSafe(()=>WeatherArt.draw(ambWeather(),VW+1,VH+1,Weather.strength(P.x,P.y)));
+  drawSafe(climateAir,cam);// (the frost's flakes, the swamp's mist: worldterrain.js)
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
   drawSafe(drawWorldFog,cam,V);
   }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
@@ -427,7 +428,8 @@ function bowAim(u){const t=u.tgt;if(!t||t.hp<=0)return 0;const d=Math.hypot(t.x-
   // only for a long shot)
   const dh=(levelAt(u.x,u.y)-levelAt(t.x,t.y))*(PX.ROCK_PX||4),rise=Math.max(ARC_RISE.min,d*d/ARC_RISE.d2-dh*ARC_RISE.lvl),deg=Math.min(45,Math.atan(BOW_AIM.k*rise/d)*180/Math.PI);
   return BOW_AIM.steps.reduce((b,s)=>Math.abs(s-deg)<Math.abs(b-deg)?s:b,0)}
-function drawUnit(u){if(B.world)return reduced(()=>drawUnitAt(u));return drawUnitAt(u)}
+// (in a battle on the map, a man up by his ground's lift, as everyone on it: worldterrain.js liftAt; the field's px B.world.scale a game px)
+function drawUnit(u){if(B.world){const p=B.world.world(u),L=liftAt(p.x,p.y)*B.world.scale;if(!L)return reduced(()=>drawUnitAt(u));ctx.save();ctx.translate(0,-L);try{return reduced(()=>drawUnitAt(u))}finally{ctx.restore()}}return drawUnitAt(u)}
 function drawUnitAt(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
   const q=camPx(),big=u.s.big?2:1,s=actorSprite(u),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;

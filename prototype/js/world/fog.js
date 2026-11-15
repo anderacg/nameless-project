@@ -158,11 +158,13 @@ function wfogAt(O,x,y){const cs=WFOG.cell,C=O.C,R=O.R;let u=x/cs-.5,v=y/cs-.5;u=
 // (your sight's edge (Sight edge: px out of it), less the ring easing to V (off); each cell's middle read once for both levels)
 function drawWorldFog(cam,V){
   const O=wfogStep(cam,V),v=O.v,S=yourSight(V),off=v-V,rw=v*(1-WFOG.ring),tn=v*.1,W=MIST.warp,flat=mistFlat(O.fl||(O.fl={}),O.b,O.C,O.R,WFOG.cell,cam.x,cam.y,cam.x+VW,cam.y+VH);
-  let lx=NaN,ly=NaN,le=0;const far=W+Math.abs(off)+1,at=(X,Y)=>X===lx&&Y===ly?le:(lx=X,ly=Y,le=S.edge(X,Y,far)-off);
+  // (each point of the view by the ground seen there, the land drawn lifted by its height: worldterrain.js liftGround)
+  const gy=(x,y)=>typeof liftGround==='function'?liftGround(x,y).y:y;
+  let lx=NaN,ly=NaN,le=0;const far=W+Math.abs(off)+1,at=(X,Y)=>X===lx&&Y===ly?le:(lx=X,ly=Y,le=S.edge(X,gy(X,Y),far)-off);
   const E=mistFog(O.edge,cam.x,cam.y,VW,VH,WFOG.cell,4,[
-    {s:(x,y)=>{const e=S.edge(x,y)-off;return e<=-rw?0:e>=0?1:(e+rw)/rw},flat:(X,Y)=>{const e=at(X,Y);return e+W<=-rw?0:e-W>=0?1:-1},a:FOG.dark,col:FOG.col,m:FOG.dark,haze:WFOG.ringHaze,hz:WFOG.ringHz},
+    {s:(x,y)=>{const e=S.edge(x,gy(x,y))-off;return e<=-rw?0:e>=0?1:(e+rw)/rw},flat:(X,Y)=>{const e=at(X,Y);return e+W<=-rw?0:e-W>=0?1:-1},a:FOG.dark,col:FOG.col,m:FOG.dark,haze:WFOG.ringHaze,hz:WFOG.ringHz},
     // (the unknown's dark kept out of your sight but for its last tenth, so its puffs never hide what you see)
-    {s:(x,y,X,Y)=>{const e=at(X,Y),u=wfogAt(O,x,y);return e<=-tn?0:e>=0?u:Math.min(u,(e+tn)/tn)},flat:(X,Y)=>{const e=at(X,Y);if(e<=-tn)return 0;const f=flat(X,Y);return f===0||e>=0?f:-1},a:WFOG.deep,col:WFOG.col,m:FOG.dark,haze:WFOG.haze,hz:WFOG.hz}]);
+    {s:(x,y,X,Y)=>{const e=at(X,Y),u=wfogAt(O,x,gy(x,y));return e<=-tn?0:e>=0?u:Math.min(u,(e+tn)/tn)},flat:(X,Y)=>{const e=at(X,Y);if(e<=-tn)return 0;const f=flat(X,Y);return f===0||e>=0?f:-1},a:WFOG.deep,col:WFOG.col,m:FOG.dark,haze:WFOG.haze,hz:WFOG.hz}]);
   // (bilinear: as soft, a quarter of the cost of the smoothest)
   ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='low';ctx.drawImage(E.comp,0,0,E.cw,E.ch,E.gx-cam.x,E.gy-cam.y,E.cw*E.k,E.ch*E.k);ctx.restore()}
 // the remembered scene (render.js memCv: the structures before anyone was drawn, its corner at cam) put back over all but your
