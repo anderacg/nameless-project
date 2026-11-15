@@ -58,7 +58,10 @@ class TownDweller extends WorldObject{
   inView(V){return !this.hid&&yourSight(V).sees(this.x,this.y,1.3)}
   pick(at){if(this.inView(at.V))at.add(this,5,4)}
   meet(){const L=TOWNFOLK.greet[this.mode]||TOWNFOLK.greet.chat,line=L[folkHash(this.id+'|'+G.day+'|'+this.mode)%L.length];toast(this.name+', '+this.role+' of '+Discovery.nameOf(this.holding)+': “'+line+'”')}
-  tip(){const n=Discovery.nameOf(this.holding);return '<b>'+htmlText(this.name)+'</b><small>'+cap1(this.role)+', of '+htmlText(n)+'</small><span class="act">Click: greet</span>'}
+  // (where he lives: a house of its (houses.js House: its kind) or its centre (its keep, hall or citadel); where he is now)
+  lives(){const l=this.home?.lot;return !l?'':l.k==='house'?'lives in a '+housePick(this.holding,l).kindN().toLowerCase():'lives in the '+String(l.type||'hall').replace(/_/g,' ')}
+  where(){return TOWNFOLK.where[this.hid?'home':this.mode==='work'&&!this.job&&!this.child?'errand':this.mode]||''}
+  tip(){const n=Discovery.nameOf(this.holding),L=this.lives();return '<b>'+htmlText(this.name)+'</b><small>'+cap1(this.role)+', of '+htmlText(n)+(L?', '+L:'')+'</small><span class="act">Click: greet</span>'}
 }
 
 /* ---------- a holding's people (C: its ground, walk; its spots: homes, places of work, the square (before the centre's gate), the
@@ -77,7 +80,7 @@ class TownFolk{
   // (a lot's door: the free tile before its face (lots.js lotDoor), else the nearest round it; its people stand there and beside it)
   static door(C,l,r){const [dx,dy]=lotDoor(l),W=C.walk,ring=[];for(let j=-1;j<=l.n;j++)for(let i=-1;i<=l.n;i++)if(i<0||j<0||i>=l.n||j>=l.n)ring.push([l.x+i,l.y+j]);
     ring.sort((a,b)=>Math.hypot(a[0]-dx,a[1]-dy)-Math.hypot(b[0]-dx,b[1]-dy));
-    for(const [x,y] of ring){const k=W.at(x,y);if(k>=0&&W.free[k]&&C.reach[k]<Infinity)return this.spot(C,'lot'+l.id,x,y,r||0,(l.x+l.n/2)*TILE)}return null}
+    for(const [x,y] of ring){const k=W.at(x,y);if(k>=0&&W.free[k]&&C.reach[k]<Infinity){const s=this.spot(C,'lot'+l.id,x,y,r||0,(l.x+l.n/2)*TILE);if(s)s.lot=l;return s}}return null}
   /* who lives there (count): homes by the room each gives (its households, its centre's; lots.js HOUSING), the places of work
      filled first one a place, then the second of each, children and those of no trade the rest; each his home, name, look and
      stream */
@@ -151,6 +154,8 @@ class TownFolk{
     this.budget=F.searches;const f=Clock.frac;
     for(const t of TOWNS){if(!t.lots||Math.hypot(t.x-P.x,t.y-P.y)>F.near)continue;const C=this.of.get(t)||this.make(t);C.danger=this.danger(t);
       if(((f-C.f)%1+1)%1>.03)this.place(C);C.f=f;for(const p of C.ppl)this.live(C,p,d)}}
+  // (those living in lot l of t (a house, or its centre), made if you are not near (ui/house.js: a house's page lists them))
+  static residents(t,l){if(!TOWNFOLK.on||!t?.lots||!l)return [];const C=this.of.get(t)||this.make(t);return C.ppl.filter(p=>p.home?.lot===l)}
   // (everyone out of doors, for a click: world.js worldObjects)
   static all(){const out=[];for(const C of this.of.values())for(const p of C.ppl)if(!p.hid)out.push(p);return out}
   // within your sight, each by his feet: a trade's peasant (data/units.js peasantKind: as the estates' workers, in the owner's

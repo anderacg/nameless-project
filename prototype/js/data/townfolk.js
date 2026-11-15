@@ -16,7 +16,8 @@
    work: each place of work, an estate's building by its key or a street's nook by its type (world/lots.js INNER,
    LOT_STREET.nooks): who works there (role), how many, and their look (gfx/people.js folkLook) or a peasant's trade (data/units.js
    peasantKind: the estates' workers' figures). greet: what one says when you click him, by what he is about (TownFolk mode; the
-   owner, 2026-11-15: "clicking at town folks should not open the city dialogue") */
+   owner, 2026-11-15: "clicking at town folks should not open the city dialogue"); where: where one is, by the same, as his
+   house's page tells it (ui/house.js) */
 const TOWNFOLK={on:true,near:520,forget:120,per:8,least:3,most:28,child:.15,folk:.3,gait:'stroll',haste:'hurry',kid:1.25,pad:3,square:{w:2,d:3},danger:110,searches:12,
   day:{wake:[.004,.04],work:[.05,.09],noon:[.19,.23],back:[.28,.32],eve:[.39,.44],home:[.47,.53],late:.6},noon:.55,tavern:.6,
   idle:{wait:[1.5,5],shift:.35,turn:.4,chat:16},cost:{road:1,open:1.3,hill:1.8,forest:2.4,other:1.6},
@@ -26,4 +27,5 @@ const TOWNFOLK={on:true,near:520,forget:120,per:8,least:3,most:28,child:.15,folk
     crates:{role:'porter',n:1,trade:'farmer'},woodpile:{role:'woodcutter',n:1,trade:'woodcutter'},haystack:{role:'farmhand',n:1,trade:'herder'}},
   greet:{work:['Busy day. Mind the cart.','Can\'t stop, there\'s work to do.','Good day to you.'],noon:['Fine weather for the market.','Heard the roads are bad of late.','Good day, traveller.'],
     tavern:['The ale here is the best for leagues.','Buy a round, will you?','Evening, stranger.'],chat:['Evening.','Mind how you go.','A quiet day, thank the gods.'],
-    door:['Morning.','Up early, are we?','Good morning.'],play:['Are you a knight?','Can I see your sword?','Catch me if you can!'],home:['Off home, it\'s late.','Stay safe out there.']}};
+    door:['Morning.','Up early, are we?','Good morning.'],play:['Are you a knight?','Can I see your sword?','Catch me if you can!'],home:['Off home, it\'s late.','Stay safe out there.']},
+  where:{home:'at home',door:'at the door',work:'at work',errand:'on errands',noon:'out at midday',tavern:'at the tavern',chat:'outside, talking',play:'at play in the square'}};

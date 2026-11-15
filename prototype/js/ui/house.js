@@ -13,6 +13,8 @@ function showHouse(){const o=G.house,t=o.holding,l=o.lot,s=lotSprite(t,l),qs=o.q
   PAGE_SCREEN.show({ico:'house',title:name?cap1(name):o.kindN(),sub:(name?o.kindN()+', a':'A')+' house of '+t.name+(t.owner&&FACS[t.owner]?', '+FACS[t.owner].n:''),
     banner:{key:'house:'+t.name+':'+l.id+':'+l.st,x:o.x,y:cy,ps,alt:o.kindN()+' in '+t.name},
     body:state+pageFacts([l.st==='built'?o.households()+' household'+(o.households()>1?'s':'')+', about '+o.people()+' people':'',t.name+': '+pop+' people, homes for '+homes])+
+      // (who lives here: its townsfolk you may meet about the holding (world/townfolk.js), each where he is now)
+      (()=>{const R=l.st==='built'?TownFolk.residents(t,l):[];return R.length?'<div class="lab">Living here</div>'+R.map(p=>'<p>'+htmlText(p.name)+'<small class="muted">, '+htmlText(p.role)+', '+htmlText(p.where())+'</small></p>').join(''):''})()+
       (qs.length?'<div class="lab">Your quests here</div>'+qs.map(q=>'<p class="gold">'+htmlText(q.title)+'<small class="muted">, '+htmlText(q.todo?q.todo():'')+'</small></p>').join(''):''),
     acts:give,close:['house-close',null,'Back to map']},'house:'+l.id)}
 onAct('house-',(a,arg)=>{G.house=null;hidePanel();G.mode='world';

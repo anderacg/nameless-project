@@ -57,6 +57,11 @@ Kit.suite(({ok,info})=>{
   {const m0=G.mode,n0=(G.msgs||[]).length,tt=window.toast,said=[];try{window.toast=x=>said.push(String(x));p.meet()}finally{window.toast=tt}
    const hit=t.pickAt(p.x,p.y-3);ok(hit===p,'clicked on, it is him that is picked, not '+(hit&&hit!==p?(hit.name||hit.mapKind):'his holding'));
    ok(G.mode===m0&&!G.town&&said.length===1&&said[0].includes(p.name)&&/“.+”/.test(said[0]),'clicked, he greets you, no holding window: '+said[0])}}
+ // ---- where they live (the owner, 2026-11-15: "Are townfolks also live in houses?", then link them): a house's page lists who lives
+ // there, each where he is now; one's tip names his house
+ {const T=t.TownFolk,C=T.of.get(city)||T.make(city),p=C.ppl.find(q=>q.home?.lot?.k==='house'),l=p&&p.home.lot,R=l?T.residents(city,l):[];
+  ok(p&&R.includes(p)&&R.every(q=>q.home.lot===l)&&/lives in a /.test(p.tip()),'each lives somewhere: '+(p?p.name+' '+p.lives()+', with '+(R.length-1)+' more there':'none'));
+  t.houseMeet(t.housePick(city,l));const txt=Kit.text();ok(/Living here/.test(txt)&&R.every(q=>txt.includes(q.name))&&txt.includes(p.where()),'the house\'s page lists them, each where he is now ('+R.map(q=>q.name+', '+q.where()).join('; ')+')');t.act('house-close')}
  // ---- TOWNFOLK.on false: none at all
  {F.on=false;try{Kit.goTo(city.x,city.y+40);G.clock=t.DAY*.25;TF.step(.05);const e=[];TF.draw(e,{x:0,y:0},t.vis());ok(!TF.of.size&&!TF.all().length&&!e.length,'TOWNFOLK.on false: no townsfolk')}finally{F.on=true}}
  ok(!draws,'their life draws nothing from the world’s Math.random ('+draws+')');
