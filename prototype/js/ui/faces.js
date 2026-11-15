@@ -119,7 +119,7 @@ class Faces{
      share (FACE_LOOK.bald); its skin and hair one of its people's tones, unless chosen (colours not the engine's own); mine: your
      own face, its people's marks only) */
   static kin(rec,race,mine){if(!rec)return rec;const r=rec.config.race,r0=race&&this.raceOf(race)===r?race:r,K=FACE_KIN[r0],c={...rec.config,adjustments:{...rec.config.adjustments}},f=c.profile==='female'?'f':'m',
-      H=k=>PortraitCharacters.hash(c.seed+'/'+r0+'/'+k),pick=(k,L)=>L[H(k)%L.length],set=(k,L)=>{if(L&&!L.includes(c[k])){const v=pick(k,L.filter(x=>this.fits(r,k,x)));if(v)c[k]=v}};
+      H=k=>PortraitCharacters.hash(c.seed+'/'+r0+'/'+k),pick=(k,L)=>L[H(k)%L.length],set=(k,L)=>{if(L&&!L.includes(c[k])){const v=pick(k,L.filter(x=>this.fits(r,k,x)&&(k!=='nose'||x!=='dwarf-broken')));if(v)c[k]=v}};
     if(K&&!(mine&&K.world)){for(const k of['face','nose','ears','eyes','brows','mouth'])set(k,Array.isArray(K[k])?K[k]:K[k]?.[f]);
       const B=K.beard?.[f];if(B&&(!K.thin||K.thin.includes(c.beard)))set('beard',B);
       for(const k in K.adj||{}){const A=PortraitEngine.adjustments[k],R=Array.isArray(K.adj[k])?K.adj[k]:K.adj[k][f],[lo,hi]=R,n=lo+H('adj/'+k)%(hi-lo+1),v=c.adjustments[k]||0;

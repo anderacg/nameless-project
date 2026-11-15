@@ -507,7 +507,7 @@
     if(kind==='open-bascinet')curve(g,[x,10,x-2,20,x-1,29,x,35],207,1);
     return true;
   }
-  const PART_LABELS=Object.freeze({'cap':'Cap · manual only / AI excluded','beret':'Beret · manual only / AI excluded','fur-cap':'Fur cap · manual only / AI excluded','feathered-cap':'Feathered cap · manual only / AI excluded','heraldic-cap':'Heraldic cap · manual only / AI excluded','wool-skullcap':'Medieval wool skullcap','liripipe-cap':'Medieval liripipe cap','fur-trimmed-cap':'Medieval fur-trimmed cap',bycocket:'Medieval bycocket','noble-chaperon':'Medieval noble chaperon','barrel-great-helm':'Barrel great helm','rivet-banded-helm':'Rivet-banded helm','fluted-knight-helm':'Fluted knight helm','horned-closed-helm':'Horned closed helm','leaf-visor-helm':'Leaf visor helm','tusked-closed-helm':'Tusked closed helm','great-helm':'Great helm','closed-knight-helm':'Closed knight helm','visored-bascinet':'Visored bascinet','closed-sallet':'Closed sallet','beaked-bascinet':'Beaked bascinet','slit-mask-helm':'Slitted war mask','war-crest':'Mohawk / war crest','orc-leather-vest':'Laced leather vest','orc-studded-leather':'Studded leather','orc-cross-harness':'Cross harness over leather vest','orc-ring-harness':'Ring harness over leather vest','orc-layered-hide':'Layered hide armor','orc-leather-guard':'Leather with shoulder guards','orc-bare-cross-harness':'Cross harness over bare skin','orc-bare-ring-harness':'Ring harness over bare skin'});
+  const PART_LABELS=Object.freeze({crooked:'Narrow bridge','cap':'Cap · manual only / AI excluded','beret':'Beret · manual only / AI excluded','fur-cap':'Fur cap · manual only / AI excluded','feathered-cap':'Feathered cap · manual only / AI excluded','heraldic-cap':'Heraldic cap · manual only / AI excluded','wool-skullcap':'Medieval wool skullcap','liripipe-cap':'Medieval liripipe cap','fur-trimmed-cap':'Medieval fur-trimmed cap',bycocket:'Medieval bycocket','noble-chaperon':'Medieval noble chaperon','barrel-great-helm':'Barrel great helm','rivet-banded-helm':'Rivet-banded helm','fluted-knight-helm':'Fluted knight helm','horned-closed-helm':'Horned closed helm','leaf-visor-helm':'Leaf visor helm','tusked-closed-helm':'Tusked closed helm','great-helm':'Great helm','closed-knight-helm':'Closed knight helm','visored-bascinet':'Visored bascinet','closed-sallet':'Closed sallet','beaked-bascinet':'Beaked bascinet','slit-mask-helm':'Slitted war mask','war-crest':'Mohawk / war crest','orc-leather-vest':'Laced leather vest','orc-studded-leather':'Studded leather','orc-cross-harness':'Cross harness over leather vest','orc-ring-harness':'Ring harness over leather vest','orc-layered-hide':'Layered hide armor','orc-leather-guard':'Leather with shoulder guards','orc-bare-cross-harness':'Cross harness over bare skin','orc-bare-ring-harness':'Ring harness over bare skin'});
   const ORC_LEATHER=new Set(['orc-bare-cross-harness','orc-bare-ring-harness','orc-leather-vest','orc-studded-leather','orc-cross-harness','orc-ring-harness','orc-layered-hide','orc-leather-guard']);
   const ORC_OPEN_HARNESS=new Set(['orc-bare-cross-harness','orc-bare-ring-harness']);
   function bareTorso(g,a,c){
@@ -1212,8 +1212,8 @@
     const x=a.nose.x,y=a.nose.y-(c.nose==='short'?1:0);
     const width={straight:5,broad:7,aquiline:5,button:4,crooked:5,slender:4,rounded:5.8,short:4.5,roman:5.5,'wide-tip':7,'soft-tip':4.8,'defined-tip':5.2,'orc-flat':8.3,'dwarf-bulb':8.1,'orc-broad':9.3,'dwarf-broad-bridge':9.6,'dwarf-broken':8}[c.nose];
     const noseWidth=width+c.adjustments.noseWidth*.6+(c.race==='dwarf'||c.race==='orc'?1:0);
-    const bridge=c.nose==='dwarf-broad-bridge'?4:c.nose==='dwarf-broken'?3.4:c.nose==='slender'?1:c.nose==='soft-tip'?1.25:c.nose==='defined-tip'?1.7:c.nose==='wide-tip'?1.5:c.race==='dwarf'||c.race==='orc'?2.8:2,top=c.nose==='orc-flat'||c.nose==='orc-broad'?54:c.nose==='short'?53:c.nose==='soft-tip'?51:49,hook=c.nose==='aquiline'?1.5:0;
-    const bend=c.nose==='crooked'?1.2:c.nose==='dwarf-broken'?-1.2:0;
+    const bridge=c.nose==='dwarf-broad-bridge'?4:c.nose==='dwarf-broken'?3.4:c.nose==='slender'?1:c.nose==='crooked'?1.4:c.nose==='soft-tip'?1.25:c.nose==='defined-tip'?1.7:c.nose==='wide-tip'?1.5:c.race==='dwarf'||c.race==='orc'?2.8:2,top=c.nose==='orc-flat'||c.nose==='orc-broad'?54:c.nose==='short'?53:c.nose==='soft-tip'?51:49,hook=c.nose==='aquiline'?1.5:0;
+    const bend=c.nose==='dwarf-broken'?-1.2:0;
     const outline=c.race==='orc'?[[x-bridge,top],[x+bridge,top],[x+4,y-4],[x+noseWidth-2,y-3],[x+noseWidth,y+1],[x+noseWidth-2,y+4],[x-noseWidth+2,y+4],[x-noseWidth,y+1],[x-noseWidth+2,y-3],[x-4,y-4]]:[[x-bridge,top],[x+bridge,top],[x+2.8+bend,y-6],[x+noseWidth,y+hook],[x+noseWidth-1.5,y+3],[x,y+4],[x-noseWidth+1.5,y+3],[x-noseWidth,y],[x-2.5+bend,y-5]];
     surface(g,outline,(px,py)=>c.race==='orc'?145+25*falloff(px,py,x-3,y-2,6,3)-26*falloff(px,py,x+noseWidth-2,y,3,3)-18*falloff(px,py,x,y+3,noseWidth,1.4):154+38*falloff(px,py,x-1,y-7,2.5,9)-30*falloff(px,py,x+3,y-5,2.3,8)+25*falloff(px,py,x-1,y,4,3)-25*falloff(px,py,x,y+4,7,2));
     curve(g,[x-noseWidth+1,y+2,x-noseWidth+2,y+.4,x-3,y+1.7,x-2,y+2.8],70,.65);
@@ -1228,7 +1228,6 @@
     if(c.nose==='defined-tip')curve(g,[x-.6,52,x-1,57,x-1.3,60,x-1.4,62],188,.7);
     if(c.nose==='roman')curve(g,[x+1,52,x+3,55,x+1,59,x+2,61],127,.8);
     if(c.nose==='wide-tip')curve(g,[x-4,y+.3,x-1,y-1.3,x+2,y-1.3,x+4,y+.3],187,.8);
-    if(c.nose==='crooked')curve(g,[x-2,52,x-1,56,x-3,58,x-2,61],139,.65);
     curve(g,[x-1,y+5,x-1,y+6,x,y+7,x,y+8],131,.5);
   }
   function refineHair(g,id,a,c) {
@@ -1461,7 +1460,7 @@
     const injuries=new Set(['scar','twin-scars','brow-scar']);
     for(const spec of LAYERS){
       if(ids&&!ids.includes(spec.id))continue;
-      if(spec.id==='marks'&&injuries.has(c.marks)||spec.id==='nose'&&['crooked','dwarf-broken'].includes(c.nose))continue;
+      if(spec.id==='marks'&&injuries.has(c.marks)||spec.id==='nose'&&c.nose==='dwarf-broken')continue;
       const g=layers[spec.id].getContext('2d'),im=g.getImageData(0,0,SIZE,SIZE),d=im.data;
       const lit=['skin','metal','headwear','cloth'].includes(spec.channel);
       for(let y=0;y<SIZE;y++)for(let x=0;x<64;x++){
@@ -1775,7 +1774,7 @@
   function random(seed,profile='custom',race='human') {
     const selected=PROFILES.includes(profile)?profile:'custom',kind=OPTIONS.race.includes(race)?race:'human',R=rng(seed),c={seed:seed>>>0,profile:selected,race:kind};
     const pick=values=>values[Math.floor(R()*values.length)];
-    for(const key of Object.keys(RACE_PARTS[kind])){const allowed=partsFor(kind,key),preferred=((PROFILE_CHOICES[selected]||PROFILE_CHOICES.male)[key]||[]).filter(v=>allowed.includes(v));if(key==='hair')c[key]=randomHair(R,kind,selected);else if(key==='mouth'&&preferred.length)c[key]=pick(preferred);else{let n=R()*allowed.reduce((sum,v)=>sum+(preferred.includes(v)?4:1),0);c[key]=allowed.find(v=>(n-=preferred.includes(v)?4:1)<0)||allowed[allowed.length-1];}}
+    for(const key of Object.keys(RACE_PARTS[kind])){const allowed=partsFor(kind,key).filter(v=>key!=='nose'||v!=='dwarf-broken'),preferred=((PROFILE_CHOICES[selected]||PROFILE_CHOICES.male)[key]||[]).filter(v=>allowed.includes(v));if(key==='hair')c[key]=randomHair(R,kind,selected);else if(key==='mouth'&&preferred.length)c[key]=pick(preferred);else{let n=R()*allowed.reduce((sum,v)=>sum+(preferred.includes(v)?4:1),0);c[key]=allowed.find(v=>(n-=preferred.includes(v)?4:1)<0)||allowed[allowed.length-1];}}
     if(selected==='female'){c.beard='none';c.hair=randomHair(R,kind,selected);}
     if(kind==='dwarf'&&selected!=='female'&&R()<.9)c.beard=pick(['full','forked','braided','bound-beard','rounded','dwarf-fan','dwarf-twin-braids']);
     if(kind==='orc'){if(R()<.7)c.mouth=pick(['small-tusks','heavy-tusks']);if(R()<.7)c.beard='none';}
