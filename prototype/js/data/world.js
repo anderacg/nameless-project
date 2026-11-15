@@ -2,6 +2,10 @@
 /* ---------- data: the world's scale: its named distances, one lever for how fast everything moves on screen, and how many wild
    things each size of map holds. Arrival and touch radii (8-20 px) are not here: they follow the figures, not the world.
    Units: px unless the group says tiles. ---------- */
+/* the world drawn finer (doc/OPEN_WORLD_DESIGN.md phase 1, the owner, 2026-11-15: "apply this to the game"): fine screen-art px
+   a game px for the world's scene (its ground, what lies flat, its buildings, the scene remembered under the fog), wherever the
+   screen has that many (render.js sceneRes): a soldier then shows at his own 17 px, a house at 64. The simulation keeps its px */
+const WORLD_VIEW={fine:1};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a

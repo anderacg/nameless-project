@@ -55,7 +55,12 @@ function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
       for(let y=Math.max(wy0,Y+D.top);y<=Math.min(wy1,Y+D.h-1);y++){const ro=(y-Y)*D.w-X,mo=(y-wy0)*st-wx0;for(let x=Math.max(wx0,X);x<=Math.min(wx1,X+D.w-1);x++){const f=F[ro+x];if(f>=0&&Y+f>fy){M[(mo+x)*4+3]=A;n++}}}}
     if(n){any=1;hid+=n;if(!nf&&(S||own))WDEPTH.cov.add(key)}}
   if(!any)return false;
-  const cv=WDEPTH.cv,g=cv.getContext('2d', { willReadFrequently: true });g.putImageData(I,0,0,0,0,w,h);g.globalCompositeOperation='source-in';g.drawImage(memCv(),x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
+  const cv=WDEPTH.cv,g=cv.getContext('2d', { willReadFrequently: true }),mem=memCv(),r=mem.r||1;g.putImageData(I,0,0,0,0,w,h);
+  if(r>1){// (the scene finer than a game px (render.js sceneRes): the mask brought up to it, the scene's own fine px kept in it)
+    const W=w*r,H=h*r;if(!WDEPTH.fcv||WDEPTH.fcv.width<W||WDEPTH.fcv.height<H)WDEPTH.fcv=mkc(Math.max(W,WDEPTH.fcv?WDEPTH.fcv.width:0,64),Math.max(H,WDEPTH.fcv?WDEPTH.fcv.height:0,64),()=>{});
+    const f=WDEPTH.fcv.getContext('2d');f.clearRect(0,0,W,H);f.imageSmoothingEnabled=false;f.drawImage(cv,0,0,w,h,0,0,W,H);f.globalCompositeOperation='source-in';f.drawImage(mem,x0*r,y0*r,W,H,0,0,W,H);f.globalCompositeOperation='source-over';
+    ctx.drawImage(WDEPTH.fcv,0,0,W,H,x0,y0,w,h);return hid}
+  g.globalCompositeOperation='source-in';g.drawImage(mem,x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
   ctx.drawImage(cv,0,0,w,h,x0,y0,w,h);return hid}
 // (yours, covered: his figure drawn again on its own (e.f, into a canvas of the box's screen pixels, the queues it fills put back),
 // made flat in the ghost's colour, kept only where something covers him (the mask overdrawBox made), and laid over him)
@@ -74,7 +79,7 @@ function worldOverdraw(list,cam){
   const now=performance.now(),st=WDEPTH.t?Math.min(.1,Math.max(0,now-WDEPTH.t)/1000)*PROPFADE.rate:1,AL=WDEPTH.al,cov=WDEPTH.cov;WDEPTH.t=now;
   for(const k of cov)if(!AL.has(k))AL.set(k,1);
   for(const [k,a] of AL){const to=cov.has(k)?WDEPTH.fade:1,v=a<to?Math.min(to,a+st):Math.max(to,a-st);if(v>=1&&to>=1)AL.delete(k);else AL.set(k,v)}
-  cov.clear();WDEPTH.boxes.length=0;let ghosts=0;const top=[],m=ctx.getTransform(),k=m.a||1,mem=memCv(),cw=mem.width,ch=mem.height,B=WDEPTH.box;
+  cov.clear();WDEPTH.boxes.length=0;let ghosts=0;const top=[],m=ctx.getTransform(),k=m.a||1,mem=memCv(),cw=mem.width/(mem.r||1),ch=mem.height/(mem.r||1),B=WDEPTH.box;
   const own=k=>Object.prototype.hasOwnProperty.call(ctx,k),di=own('drawImage'),fr=own('fillRect');WDEPTH.di=ctx.drawImage;WDEPTH.fr=ctx.fillRect;if(WDEPTH.on){ctx.drawImage=dbImage;ctx.fillRect=dbRect}
   // (one that fails to draw is left out, the canvas as it was, the rest drawn: its error told, main.js loopError)
   const one=e=>{try{drawMover(e);return true}catch(err){ctx.setTransform(m);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';loopError(err);return false}};

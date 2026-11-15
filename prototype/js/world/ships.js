@@ -42,10 +42,10 @@ function decksOver(s,b){const wl=s.y+4,[x0,y0,x1,y1]=shipBox(b,s.x,wl);let list=
   return list&&{list,top}}
 // (the decks put back over a ship just drawn, within its box B (the scene's pixels), its own shift to 1/VS px undone: render.js subT)
 let UNDER_CV=null;
-function shipUnder(L,B,cam){const mem=memCv();ctx.save();if(SUBD)ctx.translate(-SUBD[0],-SUBD[1]);
-  for(const d of L){const X=d.x-cam.x,Y=d.y-cam.y,x0=Math.max(B[0],X,0),y0=Math.max(B[1],Y,0),x1=Math.min(B[2],X+d.cv.width,mem.width),y1=Math.min(B[3],Y+d.cv.height,mem.height),w=x1-x0,h=y1-y0;if(w<=0||h<=0)continue;
+function shipUnder(L,B,cam){const mem=memCv(),r=mem.r||1;ctx.save();if(SUBD)ctx.translate(-SUBD[0],-SUBD[1]);
+  for(const d of L){const X=d.x-cam.x,Y=d.y-cam.y,x0=Math.max(B[0],X,0),y0=Math.max(B[1],Y,0),x1=Math.min(B[2],X+d.cv.width,mem.width/r),y1=Math.min(B[3],Y+d.cv.height,mem.height/r),w=x1-x0,h=y1-y0;if(w<=0||h<=0)continue;
     if(!UNDER_CV||UNDER_CV.width<w||UNDER_CV.height<h)UNDER_CV=mkc(Math.max(w,64,UNDER_CV?UNDER_CV.width:0),Math.max(h,64,UNDER_CV?UNDER_CV.height:0),()=>{});const g=UNDER_CV.getContext('2d', { willReadFrequently: true });
-    g.clearRect(0,0,w,h);g.drawImage(d.cv,x0-X,y0-Y,w,h,0,0,w,h);g.globalCompositeOperation='source-in';g.drawImage(mem,x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
+    g.clearRect(0,0,w,h);g.drawImage(d.cv,x0-X,y0-Y,w,h,0,0,w,h);g.globalCompositeOperation='source-in';g.drawImage(mem,x0*r,y0*r,w*r,h*r,0,0,w,h);g.globalCompositeOperation='source-over';
     ctx.drawImage(UNDER_CV,0,0,w,h,x0,y0,w,h)}
   ctx.restore()}
 const SHIP_SPD=26,BOAT_SPD=13,SHIP_CAP=density().ships;// (SHIP_CAP: trade ships at sea at once, today's; a world's own: density(WM), data/world.js)

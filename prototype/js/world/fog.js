@@ -169,9 +169,9 @@ function drawWorldFog(cam,V){
 // sight, each eye's edge fading in over WFOG.feather px inside it: nothing that moves shows outside your sight, and none is cut
 // off sharp at its edge. Each eye cut out by its feathered disk (fogDisk), one after another
 function fogMem(mem,cam,V){
-  const g=mem.getContext('2d', { willReadFrequently: true }),E=yourSight(V).eyes;g.save();g.globalCompositeOperation='destination-out';
+  const g=mem.getContext('2d', { willReadFrequently: true }),E=yourSight(V).eyes,r=mem.r||1;g.save();g.setTransform(r,0,0,r,0,0);g.globalCompositeOperation='destination-out';
   for(let j=0;j<E.length;j++){const e=E[j],s=fogDisk(e.r),h=s.width>>1;g.drawImage(s,Math.round(e.x-cam.x)-h,Math.round(e.y-cam.y)-h)}
-  g.restore();ctx.drawImage(mem,0,0)}
+  g.restore();ctx.drawImage(mem,0,0,mem.width/r,mem.height/r)}
 // (a black disk r px wide (rounded), its rim fading over WFOG.feather px: drawn once a radius and kept, keep of them (a gradient
 // drawn afresh for a dozen eyes a frame cost ms; a stamp a tenth of it))
 const FOG_DISK={keep:12,pics:new Map()};
