@@ -1,5 +1,7 @@
 'use strict';
 /* Hunting is a world battle: ordinary armies and attacks, individual fleeing wildlife, species loot. */
+// (a wild animal's troop kind, made the first time it is asked: 'wild_' + its kind; the fallen's too, world/carcasses.js)
+function wildTroop(id){const D=CRITTERS[id],key='wild_'+id;if(!ST[key]&&D)ST[key]={n:D.n,hp:D.size*HUNT_AREA.hp,dmg:0,spd:D.spd,reach:2,range:0,cd:1,tier:1,beast:true,wildlife:id,arm:0};return key}
 /* the hunt's tracks: each animal's prints as it runs (HUNT_TRACK), where each was last seen, what your hunters can read of them,
    and where a group with no prey in sight goes to find some: along the freshest trail it reads, else to the nearest last sighting */
 class HuntTracks{
@@ -91,7 +93,7 @@ class HuntBattleSetup extends WorldBattleSetup{
   createUnits(){
     super.createUnits();const a=this.area;
     for(const [index,c] of a.herds.entries()){
-      const D=CRITTERS[c.id],key='wild_'+c.id;if(!ST[key])ST[key]={n:D.n,hp:D.size*HUNT_AREA.hp,dmg:0,spd:D.spd,reach:2,range:0,cd:1,tier:1,beast:true,wildlife:c.id,arm:0};
+      const key=wildTroop(c.id);
       for(let i=0;i<c.n;i++){const m=c.m?.[i],u=this.spawn(troopOf(key),1,0,0);Object.assign(u,a.field(herdSpot(c,i)),{grp:'wild_'+index,wildlife:c.id,herd:c,alert:c.run>0?1:0,escapeCap:EscapeStamina.capacity(c),escapeSta:m?.sta??c.escapeSta??EscapeStamina.capacity(c)});this.units.push(u);a.animals.push(u)}
     }
   }

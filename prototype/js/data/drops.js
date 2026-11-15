@@ -15,13 +15,13 @@ const DROPS={on:true,art:14,loot:true,xp:8,dots:{xp:6,troop:3},speed:220,coin:{c
 /* the fallen of a fight on the map (world/carcasses.js Carcass; the owner, 2026-11-14: "trophy required player to click at carcass
    to loot them", "we need a window to decide which to take and inspect"): what the fight gave lies on them (DROPS then leaves no
    gear, coins or hides about the field: only its dots), a click on one opens all within near px of it (pick: px a click finds one);
-   they rot: days with anything on them, bare once picked clean, most kept on the map; a band within seek px of ones you cannot see
-   picks them over, by find an hour (its plunder yours if you beat it); col: a plain one's (after a load), its glint */
+   they rot as every body does (BODY_ROT), most kept on the map; a band within seek px of ones you cannot see
+   picks them over, by find an hour (its plunder yours if you beat it) */
 // A thing lying to be taken (a carcass with something on it, world/carcasses.js; the field's drops, battle/drops.js): a soft glow round
 // it (col, rgb), breathing between a's alpha at speed, r px at the world's scale; a glint rising from it every 1/rise s (the owner,
 // 2026-11-15: "if there's item on ground and not picked yet, make sure we have a glowing or something noticeable")
 const LOOT_GLOW={on:true,r:12,a:[.3,.7],speed:2.6,rise:.7,col:'255,206,90'};// (added on the ground: it lights it)
-const CARCASS={on:true,near:40,pick:8,days:3,bare:1,most:240,seek:160,find:.35,col:{hide:'#7a5a3e',bone:'#e4dccb',cloth:'#6a5e50',glint:'#ffe08a'},
+const CARCASS={on:true,near:40,pick:8,most:240,seek:160,find:.35,
   // (looters (the owner, 2026-11-15: "make random looters loot or check body"): a band near the fallen walks to them, searches them
   //  check s of world time once within at px (its men round them), takes what is on them; while fresh ones (laid within fresh days) hold something and no band is near, a
   //  band of n looters may come out of the wilds for them each hour (spawn), from px off, out of your sight, most of them at once)
@@ -30,6 +30,13 @@ const CARCASS={on:true,near:40,pick:8,days:3,bare:1,most:240,seek:160,find:.35,c
   //  out to the fallen, picked clean ones after bare days, any after after days (what is on them theirs), and dig a while (dig s),
   //  their pace px a s; out of your sight they are simply gone)
   clear:{after:1.5,bare:.25,reach:420,dig:8,pace:20,most:3}};
+/* every body on the map rots (the owner, 2026-11-15: "the corpse should still be there like others, but after a while the corpse
+   can start rotting and finally turns into bones. This should be the same for all dead bodies"; world/carcasses.js BodyRot): the
+   fallen of a fight (Carcass) and your own remains (world/death.js Remains) lie as they fell for rot days, then rot (their picture
+   tinted tint, flies about them: flies of them, fly px round) till bones days, then lie as bones; the fallen of a fight are gone at
+   gone days (your remains stay as bones till buried). box: the px of a body's picture, its foot foot px down; col: the bones' */
+const BODY_ROT={on:true,rot:1,bones:3,gone:8,tint:'rgba(58,72,30,.45)',flies:4,fly:5,box:[64,40],foot:30,
+  col:{bone:'#e4dccb',bone2:'#b9ae97',dark:'#4a443a',stain:'rgba(52,40,26,.35)',cloth:'#5b4e40',hide:'#6b5038',fly:'#1c1c1c'}};
 /* junk (the owner, 2026-11-13): broken pieces a fallen man leaves (DROPS.worn.junk), good for nothing but a few coins at any market,
    as a trophy is (data/monsters.js MATS: v its worth, icon and col its picture) */
 const JUNK={junk_blade:{n:'Broken Blade',v:3,icon:'blade',col:'#7d7b72'},junk_links:{n:'Rusted Mail Links',v:2,icon:'plate',col:'#8a6a4a'},

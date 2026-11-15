@@ -30,7 +30,12 @@ Kit.suite(({ok,info})=>{
   const m=t.goodN('meat');t.Remains.beaten(band);ok(t.goodN('meat')===m+n,'beaten, its plunder is yours');o.items.push({k:'good',id:'meat',n:1})}
  // (saved; rotted)
  t.saveGame(true);C.list=[];t.loadGame();ok(C.list.length===2&&C.list.some(o=>o.items.some(s=>s.id==='meat'))&&C.list.every(o=>o instanceof C&&!o.corpse),'the fallen are saved (their picture a plain one after a load)');
- {const d=G.day;G.day+=t.CARCASS.bare;C.day();ok(C.list.length===1&&!C.list[0].empty(),'picked clean, one rots in '+t.CARCASS.bare+' day');G.day=d+t.CARCASS.days;C.day();ok(!C.list.length,'with things on it, in '+t.CARCASS.days+' days');G.day=d}
+ // (every body rots the same way (BODY_ROT, world/carcasses.js BodyRot): fresh, rotting, bones, then gone; yours too (Remains))
+ {const d=G.day,R=t.BODY_ROT,BR=t.BodyRot,c=C.list[0],at=k=>{G.day=d+k;return BR.stage(c.day)},r=t.asRemains({rm:1,x:P.x,y:P.y,who:'you',day:G.day,fell:c.day,type:'militia',v:0,face:1,gold:0,items:[]});
+  ok(at(0)==='fresh'&&at(R.rot+.01)==='rot'&&at(R.bones+.01)==='bones','each lies fresh, rots after '+R.rot+' day, is bones after '+R.bones);
+  let bad=null;for(const k of [0,R.rot+.01,R.bones+.01]){G.day=d+k;try{for(const o of [c,r])BR.draw(o,40,40,o===r?r.fell:o.day,g=>o.paint(g),o.beast,1)}catch(e){bad=e.message}}
+  const pic=BR.pics.get(c);ok(!bad&&pic&&pic.w>=6&&BR.BONES.size>=1&&BR.pics.get(r),'drawn at each, the fallen and your remains alike: as they fell, rotted, bones'+(bad?' ('+bad+')':''));
+  G.day=d+R.bones+.01;C.day();ok(C.list.length===2,'as bones they still lie there, picked clean or not');G.day=d+R.gone+.01;C.day();ok(!C.list.length,'gone after '+R.gone+' days');G.day=d}
  // (a quest item the fight gave stays in its window, yours: never left on the fallen to rot)
  {const q=Object.keys(t.QUEST_ITEMS)[0];G.loot={from:t.lootSnap(),pile:[{k:'quest',id:q,n:1,by:'quest:0'},{k:'good',id:'meat',n:2}],capture:false};G.lootView={head:'<h2>x</h2>',next:'cont'};
   const n0=C.list.length;C.lay([{x:P.x,y:P.y,type:'militia',wild:null,mon:null,bst:false,face:1}]);const c=C.list[C.list.length-1];
