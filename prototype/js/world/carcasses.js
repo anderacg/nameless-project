@@ -10,7 +10,7 @@
    picture with them only till the game is closed: their fall as the fight drew it, corpse; after a load a plain one) ---------- */
 /* ---------- how every body on the map rots (data/drops.js BODY_ROT; the owner, 2026-11-15: "after a while the corpse can start
    rotting and finally turns into bones. This should be the same for all dead bodies"): the fallen of a fight (Carcass) and your
-   remains (world/death.js Remains, an unburied Grave) lie as they fell, then rot (tinted, flies about them), then lie as bones.
+   remains (world/death.js Remains, an unburied Grave) lie as they fell, then rot (tinted; flies, if any, are another sprite's to draw over), then lie as bones.
    Each one's picture made once into a canvas of its own (pic, never saved); the bones by kind and length (bonesOf) ---------- */
 class BodyRot{
   static age(day){return G.day+Clock.frac-day}
@@ -42,12 +42,11 @@ class BodyRot{
       r(3,y0-1,L-5,1,C.bone2);for(let x=Math.round(L*.5);x<L-2;x+=2)r(1+x,y0-2,1,2,C.bone);r(1+L*.3,y0-2,2,1,C.bone);
       r(1,y0-1+(h(1)<.5?0:1),L*.3,1,C.bone);r(1,y0,L*.25,1,C.bone2);r(1+L*.55,y0+(h(2)<.5?0:-2),L*.25,1,C.bone2)}
     s={cv:c,ax:W>>1,ay:y0};this.BONES.set(key,s);return s}
-  // o at screen (x, y), fallen on day, as its stage has it: its picture (paint), rotted with flies about it, or its bones (beast: a
+  // o at screen (x, y), fallen on day, as its stage has it: its picture (paint), rotted, or its bones (beast: a
   // beast's; face: the way its head lies)
   static draw(o,x,y,day,paint,beast,face){const st=this.stage(day),R=BODY_ROT,p=this.pic(o,paint);x=Math.round(x);y=Math.round(y);
     if(st==='bones'){const b=this.bonesOf(beast,Math.max(7,Math.min(40,Math.round(p.w))),Math.abs(Math.round(o.x*3+o.y*7))%5);ctx.save();ctx.translate(x,y);if(face<0)ctx.scale(-1,1);ctx.drawImage(b.cv,-b.ax,-b.ay);ctx.restore();return}
-    ctx.drawImage(st==='rot'?p.rot:p.fresh,x-(R.box[0]>>1),y-R.foot);if(st!=='rot')return;
-    const t=performance.now()/1000;ctx.fillStyle=R.col.fly;for(let i=0;i<R.flies;i++){const a=t*(2.4+i*.7)+i*2.1+o.x;ctx.fillRect(Math.round(x+Math.cos(a)*R.fly),Math.round(y-4+Math.sin(a*1.3)*R.fly*.45),1,1)}}
+    ctx.drawImage(st==='rot'?p.rot:p.fresh,x-(R.box[0]>>1),y-R.foot)}
 }
 class Carcass extends WorldObject{
   static list=[];

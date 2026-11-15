@@ -33,10 +33,10 @@ const CARCASS={on:true,near:40,pick:8,most:240,seek:160,find:.35,
 /* every body on the map rots (the owner, 2026-11-15: "the corpse should still be there like others, but after a while the corpse
    can start rotting and finally turns into bones. This should be the same for all dead bodies"; world/carcasses.js BodyRot): the
    fallen of a fight (Carcass) and your own remains (world/death.js Remains) lie as they fell for rot days, then rot (their picture
-   tinted tint, flies about them: flies of them, fly px round) till bones days, then lie as bones; the fallen of a fight are gone at
+   tinted tint; no flies of its own, those a sprite of their own to draw over) till bones days, then lie as bones; the fallen of a fight are gone at
    gone days (your remains stay as bones till buried). box: the px of a body's picture, its foot foot px down; col: the bones' */
-const BODY_ROT={on:true,rot:1,bones:3,gone:8,tint:'rgba(58,72,30,.45)',flies:4,fly:5,box:[64,40],foot:30,
-  col:{bone:'#e4dccb',bone2:'#b9ae97',dark:'#4a443a',stain:'rgba(52,40,26,.35)',cloth:'#5b4e40',hide:'#6b5038',fly:'#1c1c1c'}};
+const BODY_ROT={on:true,rot:1,bones:3,gone:8,tint:'rgba(58,72,30,.45)',box:[64,40],foot:30,
+  col:{bone:'#e4dccb',bone2:'#b9ae97',dark:'#4a443a',stain:'rgba(52,40,26,.35)',cloth:'#5b4e40',hide:'#6b5038'}};
 /* junk (the owner, 2026-11-13): broken pieces a fallen man leaves (DROPS.worn.junk), good for nothing but a few coins at any market,
    as a trophy is (data/monsters.js MATS: v its worth, icon and col its picture) */
 const JUNK={junk_blade:{n:'Broken Blade',v:3,icon:'blade',col:'#7d7b72'},junk_links:{n:'Rusted Mail Links',v:2,icon:'plate',col:'#8a6a4a'},
