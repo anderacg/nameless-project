@@ -196,10 +196,14 @@ function bridgeOver(x,y,L){const P0=WorldArt.plan;if(!P0||!P0.ways)return;const 
   for(const b of P0.ways.bridges||[]){const q=b.pic;if(!q||b.picR!==r||x<q.x||x>q.x+q.cv.width/r||y<q.y||y>q.y1+4)continue;
     const bx0=Math.max(q.x,x-10),bx1=Math.min(q.x+q.cv.width/r,x+10),by0=Math.max(q.y,y-L-30),by1=Math.min(q.y+q.cv.height/r,y-L+3);if(bx1<=bx0||by1<=by0)continue;
     ctx.drawImage(q.cv,(bx0-q.x)*r,(by0-q.y)*r,(bx1-bx0)*r,(by1-by0)*r,bx0-cam.x,by0-cam.y,bx1-bx0,by1-by0)}}
+// (a river's surface between two of its points (levels, t 0-1 along): the lab's, stepped a whole step (WORLD_WAYS.river.step) at a
+//  time, a fall at each (the owner, 2026-11-15: "Look how the river and hill work in the lab": its surface runs flat, then drops a
+//  level over a fall, down the hills); one dropping steps.min levels or more at once falls at its middle)
+function riverSurf(A,B,t){const s=A-B<WORLD_TERRAIN.steps.min?A+(B-A)*t:t<.5?A:B,st=WORLD_WAYS.river.step;return st>0?Math.floor(s/st+1e-4)*st:s}
 // (how far each river point lies from a fall along its river (game px; less than 0 above it, more below), within a fall's lip above and
-//  its pool below (WORLD_TERRAIN.falls); else 1e9: a fall where its surface drops steps.min levels or more from one point to the next)
-function fallDist(WY){const X=WY.X,Y=WY.Y,LV=WY.LV,n=LV.length,FD=new Float32Array(n).fill(1e9),FA=WORLD_TERRAIN.falls,mn=WORLD_TERRAIN.steps.min,gap=(a,b)=>Math.hypot(X[b]-X[a],Y[b]-Y[a]);
-  for(let a=0;a+1<n;a++){const g=gap(a,a+1);if(g>24||LV[a]-LV[a+1]<mn)continue;
+//  its pool below (WORLD_TERRAIN.falls); else 1e9: a fall where its stepped surface (riverSurf) drops from one point to the next)
+function fallDist(WY){const X=WY.X,Y=WY.Y,LV=WY.LV,n=LV.length,FD=new Float32Array(n).fill(1e9),FA=WORLD_TERRAIN.falls,gap=(a,b)=>Math.hypot(X[b]-X[a],Y[b]-Y[a]);
+  for(let a=0;a+1<n;a++){const g=gap(a,a+1);if(g>24||riverSurf(LV[a],LV[a+1],0)-riverSurf(LV[a],LV[a+1],1)<.5)continue;
     let d=g/2;for(let b=a;b>=0&&d<FA.lip;b--){if(Math.abs(FD[b])>d)FD[b]=-d;if(b>0){const h=gap(b-1,b);if(h>24)break;d+=h}}
     d=g/2;for(let b=a+1;b<n&&d<FA.pool;b++){if(Math.abs(FD[b])>d)FD[b]=d;if(b+1<n){const h=gap(b,b+1);if(h>24)break;d+=h}}}
   return FD}
