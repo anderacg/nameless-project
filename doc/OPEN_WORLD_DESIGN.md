@@ -274,6 +274,13 @@ That is a separate decision, best made after this world exists.
       - A man walks on its deck at its height (`standLift`): the bridge is road to walking and to the way-finder, and a tap on it finds it. Its heights come from the land before the river was carved, so it spans the river instead of dipping into it.
 - **Painting** is slower with all this: about 90-100 ms a 512 px chunk. That makes the game painter's rewrite (§8's 8 ms) more pressing.
 
+**Steps only where it is steep (2026-11-15; the owner: "the layer line is unrealistic"):**
+- **The problem:** every level's edge had been a sharp 8 px bank, so a meadow's gentle slope was a staircase of dirt lines.
+- **Now:** a px's height lies between its smooth height and its terrace's by how steep it is (`LAB.steps.from` 0.08 to `to` 0.16 levels a px).
+  - Gentle ground (meadows, rolling hills, the beach behind the dunes, the snowfield) rises smoothly, with no banks. Its slope shows by its light only, and its small steps blend from the px above to the one below with no darkening, so no contour lines.
+  - Steep ground (the rock bands, cliffs, the range's shelves) keeps its layers, a ledge at every level.
+  - Ground in between blends from one to the other.
+
 **Layers (2026-11-15; the owner: "only terrain without them, those will be draw by separated layer"):**
 - **The terrain layer** (`Pn.cv`) is the ground alone: grass, meadow, woods floor, sand, dunes, rock, scree, snow, water, banks, roads, cuttings, the terraces' faces, and the bridge standing over it.
 - **The ground's small things are a layer of their own** (`Pn.decor`, transparent): tufts, flowers, marram, reeds, driftwood, shells, leaf litter and loose pebbles. Each is drawn only where its ground is seen (not under the bridge, not behind a ridge).

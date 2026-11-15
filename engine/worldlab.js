@@ -15,7 +15,8 @@
   // the lab's numbers: the stretch (px), the cell (the battle's), lh (px a level: the owner's slider, lhMin to lhMax), the levels
   // where the beach, dunes, bare rock and snow begin, the peaks and the hill ([x, y, radius as shares of W, height in levels]),
   // the village's shelf, the road (its width, shoulders and most levels a px along it), the walk (px a second, the battle's
-  // militia), steps: the range's shelves (a rise every band levels, as sharp as sharp where its noise (sc px) passes at), the
+  // militia), steps: the range's shelves (a rise every band levels, as sharp as sharp where its noise (sc px) passes at; the
+  // ground drawn in steps only as steep as from levels a px, wholly by to: gentler ground is smooth), the
   // slope classes (g at least: slope, steep, cliff) and what each does (speed up and down, stamina a second), the woods (noise
   // scale and threshold), the zoom (screen px a world px; phoneZoom on a screen narrower than phone px).
   // The river (the owner, 2026-11-15: "add rivers water and etc"): from a tarn (its ellipse) high on the range down to the sea along
@@ -32,7 +33,7 @@
   // inside is one smooth bank
   const LAB={W:2048,H:1280,cell:16,lh:8,lhMin:4,lhMax:16,seed:7,
     beach:.45,dune:.95,rock:9,snow:11.5,shore:{wet:5,sand:34,dune:80},
-    peaks:[[.66,.15,.26,11],[.93,.36,.24,9.5]],steps:{band:3,sharp:16,sc:110,at:.38},hill:[.40,.42,.14,2.2],shelf:{x:.21,y:.73,rx:190,ry:120,e:1.4},
+    peaks:[[.66,.15,.26,11],[.93,.36,.24,9.5]],steps:{band:3,sharp:16,sc:110,at:.38,from:.08,to:.16},hill:[.40,.42,.14,2.2],shelf:{x:.21,y:.73,rx:190,ry:120,e:1.4},
     road:{w:26,sh:22,grade:1/34,bend:30,turnGrade:.35,legs:40,rut:5,edge:3,puddle:.74,wall:2,vary:.18,track:.42,wander:1.3,gravel:.07,pts:[[.13,.80],[.21,.73],[.31,.69],[.42,.61],[.50,.53],[.60,.50],[.70,.47],[.62,.41],[.73,.36],[.67,.31],[.79,.26],[.86,.14],[.88,0]]},
     // (the bridge (the owner, 2026-11-15: "the bridge should be a full bridge structure"): its deck clear levels over the water, the
     //  road ramped up to it; a pile every pile px along it, braced between; its rails rail px high on a post every post px; it is
@@ -211,7 +212,10 @@
      south face fills down to it (a bank or a rock face, a ledge line at every level, snow on a high ledge's lip) */
   function paint(L){const t0=performance.now(),W=LAB.W,H=LAB.H,lh=LAB.lh,s=LAB.seed,E=L.E,SM=L.SM,KD=L.KD,G=L.G;
     const lift=new Int16Array(W*H);let top=0;
-    for(let i=0;i<W*H;i++){const e=E[i];const h=e<=0?0:SM[i]?Math.round(e*lh):Math.floor(e)*lh;lift[i]=h;if(h>top)top=h}
+    // (gentle ground rises smoothly, steep ground in steps: a px's height between its smooth height and its terrace's by how steep it
+    //  is (the owner, 2026-11-15: "the layer line is unrealistic": every level's edge had been a sharp bank, on a meadow too))
+    const STW=new Float32Array(W*H),St=LAB.steps;
+    for(let i=0;i<W*H;i++){const e=E[i];let h;if(e<=0)h=0;else if(SM[i])h=Math.round(e*lh);else{const w=smooth((G[i]-St.from)/(St.to-St.from));STW[i]=w;h=Math.round(e*lh+(Math.floor(e)*lh-e*lh)*w)}lift[i]=h;if(h>top)top=h}
     const T=top+8,CH=H+T,cv=document.createElement('canvas');cv.width=W;cv.height=CH;const g=cv.getContext('2d'),img=g.createImageData(W,CH),D=img.data,dep=new Int16Array(W*CH).fill(-1);
     const put=(x,y,c,wy)=>{if(y<0||y>=CH)return;const o=(y*W+x)*4;D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2];D[o+3]=255;dep[y*W+x]=wy};
     // (a tone by patches a few px across, a little grain within)
@@ -285,7 +289,7 @@
       if(BLEND[k])c=blendAt(x,y,k,c);
       // (higher land a little cooler and darker; the smooth ground lit from the west by its slope)
       if(k>=K.grass&&k<=K.wood)c=mix(c,[60,84,64],Math.min(.35,Math.max(0,e-3)*.04));
-      if(SM[i]&&k!==K.water){const sl=(L.GX[i]*-1+L.GY[i]*-.6)*lh*.55;c=mul(c,1+Math.max(-.16,Math.min(.12,sl)))}
+      if((SM[i]||STW[i]<.5)&&k!==K.water){const sl=(L.GX[i]*-1+L.GY[i]*-.6)*lh*.55;c=mul(c,1+Math.max(-.16,Math.min(.12,sl)))}
       return c};
     for(let x=0;x<W;x++){
       for(let y=0;y<H;y++){const i=y*W+x,h=lift[i],sy=y-h+T,k=KD[i];let c=topCol(x,y,i);
@@ -307,7 +311,7 @@
             else if(n2>7&&(Math.abs(tp-2-(dz-4)*(Bg.pile-4)/Math.max(1,n2-5))<.8||Math.abs(Bg.pile-2-tp-(dz-4)*(Bg.pile-4)/Math.max(1,n2-5))<.8))c2=mul(COL.beam[0],.9);
             else c2=mix(under,COL.river[1],Math.max(0,(dz-n2+3)/6)*.5);
             if(r===sy2-1&&tp<2)c2=COL.foam;put(x,r,c2,y)}}
-        else if(sy2>sy+1&&SM[i]&&h-hs<=3){const cn=topCol(x,y+1,i+W),n2=sy2-sy;for(let r=sy+1;r<sy2;r++)put(x,r,mul(mix(c,cn,(r-sy)/n2),.93),y)}
+        else if(sy2>sy+1&&(SM[i]||STW[i]<.5)&&h-hs<=3){const cn=topCol(x,y+1,i+W),n2=sy2-sy,dk=SM[i]?.93:1;for(let r=sy+1;r<sy2;r++)put(x,r,mul(mix(c,cn,(r-sy)/n2),dk),y)}
         else if(sy2>sy+1&&SM[i]&&L.RD[i]<L.HW[i]+5){for(let r=sy+1;r<sy2;r++){const dz=r-sy,row=Math.floor(dz/3),off=(row&1)*3;put(x,r,dz%3===0||(x+off)%6===0?COL.stone[2]:COL.stone[hsh(Math.floor((x+off)/6),row,s+85)<.5?0:1],y)}}
         else if(sy2>sy+1){const drop=h-hs,rocky=G[i]>=LAB.cls.steep||drop>=2*lh||k===K.rock||k===K.snow||k===K.scree,sand=k<=K.dune;
           for(let r=sy+1;r<sy2;r++){const dz=r-sy,zh=h-dz,f=dz/Math.max(1,drop),n=hsh(x,r,s+20);let c2;
