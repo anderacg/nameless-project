@@ -18,7 +18,8 @@ class Refugees extends WorldObject{
   get tc(){const k=peasantLevy(this.race),c=REFUGEE_TC.get(this);if(c&&c[k]===this.n)return c;const d={[k]:this.n};REFUGEE_TC.set(this,d);return d}// (kept off the record: saved as it is)
   get troops(){return expandCounts(this.tc)}
   changed(){}
-  get marchForm(){return 'huddle'}// (close together, no column: battle/formations.js FORMS.huddle)
+  get marchForm(){return 'huddle'}// (standing: a loose clump, no ranks (battle/formations.js FORMS.huddle); on a long way, a close,
+  // straggling column (marchstyles.js TRAVEL_STYLES.crowd); afraid, the clump again)
   get unarmed(){return true}// (their tools on their backs, march.js marchLook)
   // (each of them on the march: their people's figure with his bundle on his back (people.js figRefugee), walking in step with the
   //  way he has walked, as a marcher)

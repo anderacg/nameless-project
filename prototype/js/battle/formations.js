@@ -17,7 +17,7 @@ const FORMS={
   // (beasts: no ranks, a ragged clump files wide, each beast off its place by a fixed jitter, beastmind.js; never one of yours to pick: FORM_ORDER)
   pack:{n:'Pack',pack:true,files:5,gx:17,gy:15,who:'beast',d:'Beasts keep no ranks: a loose, ragged spread.'},
   // (folk on the road (refugees: world/refugees.js marchForm): close together, a tight ragged clump; on the map only, never one to pick)
-  huddle:{n:'Huddle',pack:true,files:4,gx:10,gy:9,who:'folk',d:'Folk on the road keep close together: a tight, ragged clump.'},
+  huddle:{n:'Huddle',pack:true,blob:true,files:4,gx:10,gy:9,jit:2,who:'folk',d:'Folk on the road keep close together: a loose clump, no ranks.'},
   // (a circle, a schiltron (the owner, 2026-11-01: "the circle size will determine whether to have unit stack by layers ... the
   // maximum circle size is where your unit can fill a whole circle without gap otherwise you may have a gap in circle"): every man
   // facing out, its outer ring files places (circleRings), the rest on rings a rank gy further in; foot who fight hand to hand,
@@ -91,6 +91,8 @@ function formSlots(f,n,a,files,space=1){
   if(F.wedge){const W=files||Infinity;let r=0,i=0;while(i<n){const k=Math.min(r+1,W,n-i);for(let j=0;j<k;j++)out.push([-r*F.gy,(j-(k-1)/2)*F.gx]);i+=k;r++}}
   else if(F.col){const k=Math.max(1,Math.min(Math.ceil(n/F.cw),files||1)),a=k*F.cw,at=j=>Math.floor(j/F.cw)*(F.cw+1)+j%F.cw;// (at: a file's place across, a gap after each column's)
     for(let i=0;i<n;i++){const r=Math.floor(i/a),rowN=Math.min(a,n-r*a);out.push([-r*F.gy,(at(i%a)-at(rowN-1)/2)*F.gx])}}
+  // (a blob: no ranks at all, each one a little off a sunflower spiral (gx apart or so, jit px off): folk standing about)
+  else if(F.blob){for(let i=0;i<n;i++){const r=F.gx*.55*Math.sqrt(i+.5),t=i*2.39996;out.push([r*Math.cos(t)+((i*37)%11-5)/5*F.jit,r*Math.sin(t)+((i*53)%9-4)/4*F.jit])}}
   else if(F.pack){const w=Math.max(1,Math.min(n,files||F.files));for(let i=0;i<n;i++){const r=Math.floor(i/w),c=i%w,rowN=Math.min(w,n-r*w);out.push([-r*F.gy+((i*37)%11-5)*1.6,(c-(rowN-1)/2+(r%2)*.5)*F.gx+((i*53)%9-4)*1.5])}}
   else{const w=Math.max(1,Math.min(n,files||F.files));for(let i=0;i<n;i++){const r=Math.floor(i/w),c=i%w,rowN=Math.min(w,n-r*w);out.push([-r*F.gy,(c-(rowN-1)/2)*F.gx])}}
   const mr=out.reduce((s,p)=>s+p[0],0)/out.length,ca=Math.cos(a),sa=Math.sin(a);
