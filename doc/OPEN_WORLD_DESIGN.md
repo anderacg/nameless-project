@@ -264,6 +264,21 @@ That is a separate decision, best made after this world exists.
   - Over the river it is a wooden bridge: plank deck, rails on posts, beams on its side. Its heights come from the land before the river was carved, so it spans the river instead of dipping into it.
 - **Painting** is slower with all this: about 90-100 ms a 512 px chunk. That makes the game painter's rewrite (§8's 8 ms) more pressing.
 
+**Depth (2026-11-15; the owner: "Do we have depth if river or ocean?", then "Ok"):**
+- **Every water px has a depth** (`LAB.depth`, in levels; a level is about 0.85 m):
+  - The sea's is how far the land lies under it.
+  - The river's is deepest down its middle and deeper downstream (0.2 to 1.5 levels at its middle). At the ford it is a quarter of that.
+  - The tarn's is deepest at its middle (1.6).
+- **Looks:**
+  - The bed shows through shallow water: rippled sand under the sea, pebbles in the river, dark rock in the tarn.
+  - Light is caught in the shallows.
+  - The water darkens with depth and hides the bed past 0.9 levels, so sandbars and the river's deep channel show.
+- **Wading:**
+  - Ankle-deep (under 0.12 levels) ×0.85, knee-deep (under 0.35) ×0.6, waist-deep (under 0.8) ×0.35, with stamina spent.
+  - Deeper, you swim at ×0.3 on stamina: no swimming with none left, nor in heavy armour (the lab's "Heavy armour" switch).
+  - The way-finder swims only when it must (a deep cell costs 9).
+- **The hero** is drawn as deep in it as the water is (1, 4, 8 or 12 px of him under it), with ripples round him.
+
 **What the lab leaves for later:**
 - Lakes in the lowland, deltas, and boats on the water.
 - Lighting by the time of day.
