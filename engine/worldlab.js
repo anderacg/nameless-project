@@ -57,13 +57,15 @@
     // (the layer of things standing on the land (the owner, 2026-11-15: "another layer to add on boulder trees etc."): on a grid of
     //  step px, the chance of each by its ground: bushes in the woods, at their edges and in the grass; saplings; boulders and
     //  stones on the grass, the rock and the scree; stones on the river's banks and in its shallows (no deeper than shallow); logs
-    //  and stumps in the woods)
+    //  and stumps in the woods; ferns in the woods and at their edges, mushrooms on their floor, patches of flowers in the grass,
+    //  most in the meadows; cattails on the banks)
     // (the grass (the owner, 2026-11-15: "grasses ... animated like flow with the wind or when character move on"): a clump every
     //  step px where its ground grows it, at the chance of its kind, thicker in patches (patch: their noise's scale); swaying with the
     //  wind (wind: its strength, the panel's slider; gust: px a wave of it spans, and how fast it rolls), bent away from a man
     //  within push px (most lean px at most), springing back over spring s)
     grass:{step:6,chance:{grass:.38,meadow:.55,dune:.32,wood:.12,bank:.3,cut:.15},patch:38,wind:1,gust:[90,.65],push:12,lean:3,spring:1.4},
-    nature:{step:7,bush:{wood:.08,edge:.16,grass:.008},sapling:.012,boulder:{grass:.0015,rock:.012},stone:{grass:.004,rock:.03,scree:.05,bank:.05,river:.04},shallow:.3,log:.012,stump:.008},
+    nature:{step:7,bush:{wood:.08,edge:.16,grass:.008},sapling:.012,boulder:{grass:.0015,rock:.012},stone:{grass:.004,rock:.03,scree:.05,bank:.05,river:.04},shallow:.3,log:.012,stump:.008,
+      fern:{wood:.06,edge:.03},mushroom:.014,flowers:{meadow:.035,grass:.008},cattail:.08},
     // (the biomes blended (the owner, 2026-11-15: "make the transition between biomes more blend"): each ground's own colour shifted
     //  toward its neighbours' over r px, k of the way, the edge ragged by a warp of warp px)
     blend:{r:8,k:.85,warp:10},
@@ -388,8 +390,10 @@
         for(let j=0;j<n;j++){const xx=x+j,yy=sy-Math.floor(j*sl/3);if(!ok(xx,yy))continue;putD(xx,yy+1,shade);putD(xx,yy,j===0||j===n-1?COL.drift:[196,178,146])}
         if(hsh(x,y,s+133)<.35&&ok(x+1,sy-1))putD(x+1,sy-1,[176,156,124])}
       else if(k===K.sand&&r<.012)putD(x,sy,COL.shell,y)
-      else if(k===K.wood&&r<.03)putD(x,sy-1,r<.01?[110,76,48]:COL.tuft[2],y)
-      else if((k===K.scree||k===K.rock)&&r<.03)putD(x,sy,COL.scree[1],y)
+      // (the woods' floor: fallen leaves in pairs, now and then a twig; pebbles lit on top, dark under)
+      else if(k===K.wood&&r<.03){if(r<.003){const d=hsh(x,y,s+34)<.5?1:-1;for(let j=0;j<3;j++)putD(x+j,sy-1-(j*d>0?j>>1:0),j===1?[104,74,46]:[84,60,38])}
+        else if(r<.012){const c=[[150,96,44],[172,124,52],[128,82,42]][Math.floor(hsh(x,y,s+35)*3)];putD(x,sy-1,c);putD(x+1,sy-1,mul(c,.8))}else putD(x,sy-1,COL.tuft[2])}
+      else if((k===K.scree||k===K.rock)&&r<.03){putD(x,sy,COL.scree[1]);if(r<.015){putD(x,sy-1,COL.scree[0]);putD(x+1,sy,mul(COL.scree[1],.8))}}
       else if(k===K.bank&&r<.05){const h=3+Math.floor(hsh(x,y,s+86)*3);for(let j=1;j<=h;j++)putD(x,sy-j,j===h&&r<.02?COL.reed[2]:COL.reed[j&1])}}
     dg.putImageData(dimg,0,0);
     g.putImageData(img,0,0);
@@ -417,26 +421,127 @@
     if(c===2)m*=up?S.up:S.down;else if(c===3)m*=S.steep;else if(c===4){if(!climber||sta<=0)return 0;m*=S.cliff}
     return m}
 
-  // small things of the land's own, cached: a stone (n px wide, lit from the upper left, moss now and then, its shadow under it); a
-  // fallen log (n px long, its bark lit on top, its cut end pale, a broken branch); a stump (its top's rings, its bark)
-  const NAT={};
-  function stoneSprite(n,v){const k='s'+n+v;if(NAT[k])return NAT[k];const w=n+2,h=Math.ceil(n*.75)+2,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),RC=COL.rock,moss=hsh(n,v,61)<.35;
-    g.fillStyle='rgba(20,24,20,.28)';g.fillRect(1,h-2,w-1,2);
-    for(let y=0;y<h-1;y++)for(let x=0;x<w;x++){const dx=(x+.5-w/2)/(n/2),dy=(y+.5-(h-1)/2)/((h-1)/2)+(hsh(x,v,62)-.5)*.25;if(dx*dx+dy*dy>1)continue;
-      const l=-(dx*.6+dy*.8)+(hsh(x>>1,y,v)-.5)*.4;let col=l>.45?RC[0]:l>0?RC[1]:l>-.45?RC[2]:RC[3];if(moss&&dy<-.2&&hsh(x,y,v+3)<.5)col=mix(col,COL.grass[0],.6);g.fillStyle='rgb('+col.map(Math.round).join(',')+')';g.fillRect(x,y,1,1)}
-    return NAT[k]=c}
-  function logSprite(n,v){const k='l'+n+v;if(NAT[k])return NAT[k];const c=document.createElement('canvas');c.width=n+1;c.height=7;const g=c.getContext('2d'),B=[[132,98,62],[108,78,48],[84,60,38],[60,44,30]],P=(col,x,y)=>{g.fillStyle='rgb('+col.join(',')+')';g.fillRect(x,y,1,1)};
-    g.fillStyle='rgba(20,24,20,.3)';g.fillRect(1,6,n,1);
-    for(let x=0;x<n;x++)for(let y=2;y<6;y++){let col=B[y-2];if(hsh(x,y,v+70)<.12)col=B[Math.min(3,y-1)];P(col,x,y)}
-    for(let y=2;y<6;y++)P(y===2||y===5?[150,120,84]:[196,166,118],n-1,y);P([120,92,60],n-1,3);
-    if(hsh(n,v,71)<.6){const bx=2+Math.floor(hsh(n,v,72)*(n-5));P(B[1],bx,1);P(B[0],bx+1,0)}
-    return NAT[k]=c}
-  function stumpSprite(v){const k='t'+v;if(NAT[k])return NAT[k];const c=document.createElement('canvas');c.width=8;c.height=8;const g=c.getContext('2d'),P=(col,x,y)=>{g.fillStyle='rgb('+col.join(',')+')';g.fillRect(x,y,1,1)};
-    g.fillStyle='rgba(20,24,20,.3)';g.fillRect(0,7,8,1);
-    for(let x=1;x<7;x++)for(let y=3;y<7;y++)P(x<2?[132,98,62]:x>5?[70,50,32]:[104,76,48],x,y);
-    for(let x=1;x<7;x++)for(let y=1;y<3;y++)P((x===1||x===6||y===1)?[176,146,102]:[150,118,80],x,y);P([120,90,58],3,2);P([120,90,58],4,2);
-    if(v&1){P([104,76,48],0,6);P([104,76,48],7,6)}
-    return NAT[k]=c}
+  // small things of the land's own, drawn px by px and cached (the owner, 2026-11-15: "improve boulders, tree stumps, logs and other
+  // map details"): all lit from the upper left, with shaded rims (no black outline, as on the world map), a soft shadow under each
+  const NAT={},nat=(k,f)=>NAT[k]||(NAT[k]=f());
+  // (a picture made px by px: set(x, y, colour, alpha) lays a colour over what is there; has(x, y): whether a px is painted solid)
+  function pixPic(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),im=g.createImageData(w,h),D=im.data;
+    const set=(x,y,col,a)=>{x=Math.round(x);y=Math.round(y);if(x<0||y<0||x>=w||y>=h)return;const o=(y*w+x)*4;if(a===undefined||a>=1){D[o]=col[0];D[o+1]=col[1];D[o+2]=col[2];D[o+3]=255;return}
+        const b=D[o+3]/255,na=a+b*(1-a);for(let k=0;k<3;k++)D[o+k]=(col[k]*a+D[o+k]*b*(1-a))/na;D[o+3]=na*255},
+      has=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&D[(y*w+x)*4+3]===255;
+    draw(set,has);g.putImageData(im,0,0);return c}
+  // (a tone of a ramp (darkest first) by light l, -1 to 1; a soft shadow, an ellipse)
+  const ramp=(R,l)=>R[Math.max(0,Math.min(R.length-1,Math.floor((l+1)*.5*R.length)))];
+  const shade=(set,cx,cy,rx,ry,a)=>{for(let y=Math.floor(cy-ry);y<=cy+ry;y++)for(let x=Math.floor(cx-rx);x<=cx+rx;x++){const d=((x+.5-cx)/rx)**2+((y+.5-cy)/ry)**2;if(d<=1)set(x,y,[18,24,14],a*(1-d*.6))}};
+  const ROCK=[[56,58,60],[80,82,82],[106,106,102],[132,130,122],[158,154,142],[186,182,166]],MOSS=[[54,80,36],[74,104,44],[98,128,56],[124,150,70]],
+    BARK=[[48,34,24],[68,48,32],[90,64,42],[114,84,56],[140,106,72]],WOOD=[[146,108,66],[180,144,96],[212,182,130]],
+    LEAF={oak:[[30,54,26],[44,76,34],[62,100,42],[86,126,54],[118,154,72]],birch:[[48,70,28],[70,96,38],[96,124,50],[126,152,66],[164,184,90]],dark:[[20,42,26],[30,58,34],[42,76,42],[58,96,52],[84,122,66]]},
+    FERN=[[36,66,30],[54,94,38],[80,124,50],[112,156,68]];
+  // a rock: lumps ([x, y, rx, ry], y its middle) of one height field, sunk in the ground at row base; dark seams where two lumps meet,
+  // a lit rim up and left and a shaded one down and right, moss on the tops (moss: how much), lichen, a tuft at its foot now and then
+  function rockPic(w,h,base,lumps,v,moss){return pixPic(w,h,(set,has)=>{
+    let x0=w,x1=0;for(const [cx,,rx] of lumps){x0=Math.min(x0,cx-rx);x1=Math.max(x1,cx+rx)}shade(set,(x0+x1)/2+1,base+.6,(x1-x0)/2+1,1.8,.4);
+    const Z=new Float32Array(w*h),S=new Uint8Array(w*h);
+    for(let y=0;y<=base;y++)for(let x=0;x<w;x++){let a=0,b=0;for(const [cx,cy,rx,ry] of lumps){const d=1-((x+.5-cx)/rx)**2-((y+.5-cy)/ry)**2;if(d>0){const z=Math.sqrt(d)*Math.min(rx,ry);if(z>a){b=a;a=z}else if(z>b)b=z}}
+      Z[y*w+x]=a;S[y*w+x]=b>.3&&a-b<.5?1:0}
+    const z=(x,y)=>x<0||y<0||x>=w||y>base?0:Z[y*w+x],in_=(x,y)=>z(x,y)>0;
+    // (moss and the top's light keep to the top of each column: within top px of its first)
+    const top=new Int16Array(w).fill(99);for(let x=0;x<w;x++)for(let y=0;y<=base;y++)if(in_(x,y)){top[x]=y;break}
+    for(let y=0;y<=base;y++)for(let x=0;x<w;x++){if(!in_(x,y))continue;const gx=z(x+1,y)-z(x-1,y),gy=z(x,y+1)-z(x,y-1),up=y-top[x];
+      let l=(gx*.6+gy*.75)*.55+(up<2?.4:0)-(up/(base-top[x]+1))*.85+.3+(hsh(x>>1,y>>1,v+5)-.5)*.35+(hsh(x,y,v+6)-.5)*.15;
+      if(y>=base-1)l-=.35;if(S[y*w+x])l-=.7;if(!in_(x+1,y)||!in_(x,y+1))l-=.45;else if(!in_(x-1,y)||!in_(x,y-1))l+=.3;
+      let col=ramp(ROCK,Math.max(-1,Math.min(.99,l)));
+      if(moss&&up<2+moss*2&&vn(x/3.5,y/3.5,v+7)>.6-moss*.2)col=ramp(MOSS,l*.8);else if(hsh(x,y,v+8)<.025&&l>-.2)col=[178,172,120];
+      set(x,y,col)}
+    if(v&1)for(let k=0;k<2;k++){const tx=Math.round(x0+1+hsh(v,k,9)*(x1-x0-2));for(let j=0;j<2+(k^v&1);j++)set(tx+(j>1?k*2-1:0),base-j,FERN[j?2:1])}})}
+  // a boulder (s px across, by v: round, heaped, tall or a flat slab)
+  function boulderPic(v,s,moss){return nat('b'+v+'_'+s+'_'+moss,()=>{const w=s+4,hb=Math.round(s*.78),h=hb+4,base=h-3,L=[],f=v%5;
+    const mx=f===3?s*.34:f===4?s*.48:s*.42,my=f===3?hb*.56:f===4?hb*.32:hb*.5;L.push([w/2,base-my*.82,mx,my]);
+    const n=f===4?1:1+v%3;for(let j=1;j<=n;j++){const rx=s*(.17+hsh(v,j,91)*.13),ry=rx*(.7+hsh(v,j,92)*.45),side=(j+v)%2?-1:1;
+      const cx=w/2+side*Math.max(0,Math.min(s*.32,s/2-rx)*(.5+hsh(v,j,93)*.5)),cy=Math.max(ry+1,base-ry*.75-hsh(v,j,94)*Math.max(0,hb-ry*1.9));L.push([cx,cy,rx,ry])}
+    return {img:rockPic(w,h,base,L,v,moss),ax:w>>1,ay:base}})}
+  // a stone (n px across): one, or (now and then) two or three together
+  function stonePic(n,v){return nat('s'+n+'_'+v,()=>{const w=n+5,hb=Math.max(2,Math.ceil(n*.7)),h=hb+3,base=h-2,L=[];
+    if(v%4===0&&n>3){const r=n*.3;L.push([2+r,base-r*.5,r,r*.75],[w-2-r*.8,base-r*.4,r*.8,r*.6]);if(v&4)L.push([w/2,base-r*.3,r*.55,r*.45])}
+    else{L.push([w/2,base-hb*.42,n/2,hb*.5]);if(v&2)L.push([w/2+n*.35,base-hb*.2,n*.25,hb*.25])}
+    return {img:rockPic(w,h,base,L,v,v%3===0?.5:0),ax:w>>1,ay:base}})}
+  // a fallen log (n px long; by v: lying straight or aslant, 4 or 5 px thick): bark round its length (lit on top, dark under, streaks
+  // along it, cracks across), its east end a sawn face with rings; its west end sawn, broken or a plate of roots; a branch stub, moss
+  // on its top, fungi on its side now and then
+  function logPic(n,v){return nat('l'+n+'_'+v,()=>{const d=4+(v&1),sl=[0,.2,-.2,.36,-.36,0,.1,-.1][v%8],rise=Math.ceil(Math.abs(sl)*n),w=n+7,h=d+rise+6,y0=3+(sl<0?rise:0),ox=3,end=(v>>1)%4;
+    let ay=0;const img=pixPic(w,h,(set,has)=>{
+      for(let t=-1;t<=n;t++){const yc=Math.round(y0+t*sl);set(ox+t+1,yc+d,[18,24,14],.38);set(ox+t+1,yc+d+1,[18,24,14],.16)}
+      // (the root plate, behind its west end)
+      if(end===1){const yc=Math.round(y0);for(let y=yc-3;y<=yc+d+1;y++)for(let x=ox-3;x<=ox;x++){const e=((x-ox+1.2)/2.4)**2+((y-yc-d/2+.5)/(d/2+2.2))**2;if(e>1)continue;
+        set(x,y,hsh(x,y,v+11)<.3?[96,72,48]:ramp(BARK,(x-ox)*.25-(y-yc)*.08+(hsh(x,y,v+12)-.5)*.5))}}
+      for(let t=0;t<n;t++){const x=ox+t,yc=Math.round(y0+t*sl);let lo=0,hi=d-1;
+        if(end===2&&t<3){if(hsh(t,1,v+13)<.6)lo+=1;if(hsh(t,2,v+13)<.5)hi-=1;if(t===0){lo++;hi--}}
+        for(let j=lo;j<=hi;j++){const f=j/(d-1);let l=.75-1.6*f+(hsh(t,j,v+14)-.5)*.25;
+          if(hsh(Math.floor((t+j*2)/3),j,v+15)<.28)l-=.45;if(j>0&&j<d-1&&hsh(t,0,v+16)<.05)l-=.6;if(j===lo&&t>0)l+=.2;
+          let col=ramp(BARK,Math.max(-1,Math.min(.99,l)));if(f<.45&&v%3!==1&&vn(t/4,j,v+17)>.6)col=ramp(MOSS,l*.7);
+          if(end===2&&t<3&&(j===lo||j===hi))col=WOOD[1+(t&1)];set(x,yc+j,col)}}
+      // (its sawn east end: a face of rings, bark round it)
+      {const x=ox+n,yc=Math.round(y0+(n-1)*sl),m=(d-1)/2;for(let j=0;j<d;j++){const r=Math.abs(j-m)/(m+.5);set(x,yc+j,r>.8?BARK[3]:r<.25?WOOD[0]:WOOD[2-((Math.floor(r*3))&1)]);if(j>0&&j<d-1)set(x+1,yc+j,BARK[1])}}
+      if(end===0){const yc=Math.round(y0);for(let j=1;j<d-1;j++)set(ox-1,yc+j,WOOD[1])}
+      // (a branch stub up from its top; bracket fungi on its side)
+      if(hsh(n,v,18)<.65){const t=2+Math.floor(hsh(n,v,19)*(n-5)),yc=Math.round(y0+t*sl);set(ox+t,yc-1,BARK[3]);set(ox+t+1,yc-2,BARK[3]);if(v&2)set(ox+t+2,yc-3,BARK[2])}
+      if(v%3===0)for(let k=0;k<2;k++){const t=1+Math.floor(hsh(k,v,20)*(n-3)),yc=Math.round(y0+t*sl)+d-2;set(ox+t,yc,[226,206,156]);set(ox+t+1,yc,[196,164,112]);set(ox+t,yc+1,[150,120,80])}
+      ay=Math.round(y0+(n>>1)*sl)+d-1});
+    return {img,ax:ox+(n>>1),ay}})}
+  // a stump: a short trunk (lit west, dark east, grooved bark), flaring into roots at its foot; its top sawn (rings, a crack, its
+  // heart) or broken off in splinters; moss on it, or mushrooms at its foot, now and then
+  function stumpPic(v){return nat('t'+v,()=>{const w=15,h=15,base=h-3,cx=7.5,rx=3+(v&1)*.6,th=3+v%3,broken=v%3===2,ry=1.6,cyT=base-th-1;
+    const img=pixPic(w,h,(set,has)=>{shade(set,cx+1.5,base+.6,rx+3.5,1.8,.4);
+      // (roots: west and east along the ground, one toward you)
+      for(const [dx,len] of [[-1,2+(v&2?1:0)],[1,3],[.35,1]]){const sx=cx+dx*rx;for(let k=0;k<=len;k++){const x=Math.round(sx+(dx>.5?k:dx<-.5?-k:k*.5)),y=base-1+Math.min(1,k>>1);set(x,y,k===len?BARK[1]:BARK[2]);if(k<len-1)set(x,y-1,BARK[3])}}
+      for(let y=Math.floor(cyT);y<=base;y++){const fl=y>=base-1?1:0;for(let x=Math.floor(cx-rx-fl);x<=cx+rx+fl;x++){const dx=(x+.5-cx)/(rx+fl);if(Math.abs(dx)>1)continue;
+        let top=cyT;if(broken)top=cyT-1+Math.round(hsh(x,v,21)*3)-(Math.abs(dx)<.5?1:0);if(y<top)continue;
+        let l=-dx*.85+.15+(hsh(x,y,v+22)-.5)*.2;if(hsh(x,0,v+23)<.35)l-=.4;if(y===base)l-=.3;
+        let col=ramp(BARK,Math.max(-1,Math.min(.99,l)));if(broken&&y===top)col=WOOD[hsh(x,y,v)<.5?2:1];else if(v&1&&dx<.2&&y>base-3&&vn(x/2,y/2,v+24)>.5)col=ramp(MOSS,l);set(x,y,col)}}
+      if(!broken)for(let y=Math.floor(cyT-ry);y<=cyT+ry;y++)for(let x=Math.floor(cx-rx);x<=cx+rx;x++){const dx=(x+.5-cx)/rx,dy=(y+.5-cyT)/ry,r=Math.hypot(dx,dy);if(r>1)continue;
+        set(x,y,r>.78?(dx<0&&dy<0?BARK[4]:BARK[3]):r<.22?[134,98,62]:Math.abs(dy)<.35&&dx>.3?WOOD[0]:WOOD[2-(Math.floor(r*3.4)&1)])}
+      if(v%4===1){const red=v&2;for(const [mx,mh] of [[cx+rx+1.5,1],[cx+rx+3,0]]){const x=Math.round(mx);set(x,base,[226,218,200]);if(mh)set(x,base-1,[226,218,200]);const cy=base-1-mh;
+        set(x-1,cy,red?[168,36,32]:[132,90,54]);set(x,cy,red?[196,52,40]:[160,114,70]);set(x+1,cy,red?[150,30,28]:[118,80,48]);set(x,cy-1,red?[220,80,64]:[184,136,88]);if(red)set(x-1,cy,[240,236,226])}}});
+    return {img,ax:Math.floor(cx),ay:base}})}
+  // a bush (pal: its leaves' tones): a dome of leafy lumps, lit up and left, darker toward its foot, its edge ragged with leaves;
+  // berries or blossom on some
+  function bushPic(v,pal){return nat('u'+v+pal,()=>{const s=9+(v%3)*2,w=s+4,hb=Math.round(s*.74),h=hb+4,base=h-3,P=LEAF[pal],B=[[w/2,base-hb*.45,s*.48,hb*.52]];
+    const n=3+v%3;for(let j=0;j<n;j++){const a=Math.PI*(1.1+.8*j/Math.max(1,n-1))+(hsh(v,j,30)-.5)*.3,r=2.2+hsh(v,j,31)*1.4;B.push([w/2+Math.cos(a)*s*.3,base-hb*.45+Math.sin(a)*hb*.4,r,r*.9])}
+    const img=pixPic(w,h,(set,has)=>{shade(set,w/2+1,base+.6,s*.5+1,1.7,.4);
+      const inB=(x,y)=>{if(y>base)return null;let best=null;for(const b of B){const d=((x+.5-b[0])/b[2])**2+((y+.5-b[1])/b[3])**2;if(d<=1&&(!best||b[1]<best[1]))best=b}return best};
+      for(let y=0;y<=base;y++)for(let x=0;x<w;x++){const b=inB(x,y);if(!b)continue;const edge=!inB(x+1,y)||!inB(x-1,y)||!inB(x,y-1)||!inB(x,y+1);if(edge&&hsh(x,y,v+32)<.3)continue;
+        const m=B[0],dx=(x+.5-m[0])/m[2],dy=(y+.5-m[1])/m[3],bx=(x+.5-b[0])/b[2],by=(y+.5-b[1])/b[3];
+        let l=-(dx*.5+dy*.7)*.7-(bx*.3+by*.4)*.5+(hsh(x,y,v+33)-.5)*.55;if(y>=base-1)l-=.4;if(!inB(x+1,y)||!inB(x,y+1))l-=.3;
+        let col=ramp(P,Math.max(-1,Math.min(.99,l)));if(l>.35&&hsh(x,y,v+34)<.12)col=P[4];
+        if(!edge&&l>-.3){const r=hsh(x,y,v+35);if(v%4===1&&r<.07)col=r<.03?[214,84,70]:[170,34,40];else if(v%4===2&&r<.07)col=pal==='birch'?[236,232,214]:[226,164,184]}
+        set(x,y,col)}});
+    return {img,ax:w>>1,ay:base}})}
+  // a fern: fronds fanning up from one root, drooping at their tips, leaflets on both sides
+  function fernPic(v){return nat('f'+v,()=>{const w=17,h=13,base=11,cx=8,n=5+(v&1);
+    const img=pixPic(w,h,(set,has)=>{shade(set,cx+1,base+.5,5,1.4,.3);
+      for(let j=0;j<n;j++){const u=j/(n-1),a=-Math.PI*(.18+.64*u)+(hsh(v,j,40)-.5)*.15,L=6+hsh(v,j,41)*2.5-Math.abs(u-.5)*2,dr=.25+Math.abs(u-.5)*1.1;let lx=-9,ly=-9;
+        for(let t=0;t<=1;t+=.06){const x=Math.round(cx+Math.cos(a)*t*L*1.2),y=Math.round(base+Math.sin(a)*t*L*1.15+t*t*L*dr);if(x===lx&&y===ly)continue;lx=x;ly=y;
+          set(x,y,t>.75?FERN[3]:FERN[1]);if(t>.2&&t<.85&&Math.round(t*12)%2===0){set(x,y-1,FERN[2]);set(x+(Math.cos(a)>0?1:-1),y+1,FERN[0])}}}});
+    return {img,ax:cx,ay:base}})}
+  // mushrooms at the woods' floor: one to three, red and spotted, brown, or pale
+  function mushroomPic(v){return nat('m'+v,()=>{const w=9,h=7,base=5,k=v%3,C=[[[150,30,28],[186,44,36],[214,72,58]],[[110,74,44],[140,98,60],[172,128,82]],[[176,164,138],[204,194,168],[228,220,198]]][k];
+    const img=pixPic(w,h,(set,has)=>{shade(set,4.5,base+.5,4,1.2,.3);
+      for(let j=0;j<1+v%3;j++){const x=2+j*2+(j&1),sh=j?0:1,cy=base-1-sh;set(x,base,[226,218,200]);if(sh)set(x,base-1,[226,218,200]);
+        set(x-1,cy,C[1]);set(x,cy,C[1]);set(x+1,cy,C[0]);if(!j){set(x,cy-1,C[2]);if(!k)set(x-1,cy,[240,236,226])}}});
+    return {img,ax:4,ay:base}})}
+  // a patch of flowers: stems and a few leaves, the heads one colour
+  function flowersPic(v){return nat('w'+v,()=>{const w=10,h=7,base=5,C=[[236,206,80],[238,236,226],[130,146,224],[226,146,176],[170,118,196]][v%5];
+    const img=pixPic(w,h,(set,has)=>{for(let j=0;j<4+v%4;j++){const x=1+Math.floor(hsh(v,j,50)*8),t=1+Math.floor(hsh(v,j,51)*2),y=base-Math.floor(hsh(v,j,52)*2);
+      for(let k=0;k<t;k++)set(x,y-k,[70,112,46]);set(x,y-t,C);if(hsh(v,j,53)<.4)set(x+1,y-t,mul(C,.8));if(hsh(v,j,54)<.5)set(x-1,y,[56,94,38])}});
+    return {img,ax:5,ay:base}})}
+  // reeds and cattails on a bank: stems leaning a little, brown heads on some, a blade or two bent over
+  function cattailPic(v){return nat('c'+v,()=>{const w=10,h=13,base=11;
+    const img=pixPic(w,h,(set,has)=>{shade(set,5,base+.5,4,1.2,.3);
+      for(let j=0;j<3+v%3;j++){const x0=2+Math.floor(hsh(v,j,60)*6),ht=6+Math.floor(hsh(v,j,61)*4),lean=(hsh(v,j,62)-.5)*.3,head=hsh(v,j,63)<.55;
+        for(let k=0;k<ht;k++){const x=Math.round(x0+lean*k);set(x,base-k,k<2?[70,96,46]:[96,124,58])}const tx=Math.round(x0+lean*ht);
+        if(head){set(tx,base-ht+1,[110,70,38]);set(tx,base-ht,[132,88,48]);set(tx,base-ht-1,[150,150,96])}else set(tx,base-ht,[160,170,96])}
+      for(let j=0;j<2;j++){const x0=3+j*3,d=j?1:-1;for(let k=0;k<5;k++)set(x0+(k>2?d*(k-2):0),base-k+(k>3?1:0),[112,140,66])}});
+    return {img,ax:5,ay:base}})}
 
   // a grass clump: a few blades from its foot, each bending lean px at its tip (the more toward the tip), dark at the foot, light at
   // the tip; a meadow's now and then flowering. Cached by kind, variant and lean
@@ -460,7 +565,7 @@
   // foot is seen (none behind a ridge, under the bridge, on the road or in water), and none just in front of a prop's foot (a strip as deep
   // as a clump is tall, as wide as the prop's lowest rows), which would stand over it: props never move, so it is trodden bare there
   function makeGrass(L,Pn,props){const W=LAB.W,H=LAB.H,s=LAB.seed,G=LAB.grass,X=[],Y=[],T=[],V=[],names=['grass','meadow','dune','wood','bank','cut'],kinds=[K.grass,K.meadow,K.dune,K.wood,K.bank,K.cut];
-    const bare=new Uint8Array(W*H);for(const p of props){const im=p.img;if(!im.foot){const d=im.getContext('2d').getImageData(0,Math.max(0,im.height-GH),im.width,Math.min(GH,im.height)).data;let a=im.width,b=-1;
+    const bare=new Uint8Array(W*H);for(const p of props){if(p.low)continue;const im=p.img;if(!im.foot){const d=im.getContext('2d').getImageData(0,Math.max(0,im.height-GH),im.width,Math.min(GH,im.height)).data;let a=im.width,b=-1;
         for(let k=3;k<d.length;k+=4)if(d[k]){const x=((k>>2)%im.width);if(x<a)a=x;if(x>b)b=x}im.foot=[a,b]}
       if(im.foot[1]<0)continue;const xa=p.x-p.ax+im.foot[0]-4,xb=p.x-p.ax+im.foot[1]+4;for(let y=p.y+1;y<=Math.min(H-1,p.y+GH);y++)for(let x=Math.max(0,xa);x<=Math.min(W-1,xb);x++)bare[y*W+x]=1}
     for(let gy=3;gy<H-1;gy+=G.step)for(let gx=3;gx<W-3;gx+=G.step){const x=Math.round(gx+(hsh(gx,gy,s+160)-.5)*G.step),y=Math.round(gy+(hsh(gx,gy,s+161)-.5)*G.step);if(x<1||y<1||x>=W-1||y>=H-1)continue;
@@ -476,7 +581,7 @@
       const i=y*W+x,k=L.KD[i],r=hsh(gx,gy,s+52);
       const Wd=LAB.woods,wn=k===K.wood||k===K.grass||k===K.meadow?fbm(x/Wd.sc,y/Wd.sc,s+41,3):0,edge=k===K.wood?smooth((wn-Wd.at)/Wd.fringe):smooth((wn-(Wd.at-Wd.fringe))/Wd.fringe)*.35;
       if(k===K.wood&&r<.62*(.35+.65*edge)||(k===K.grass||k===K.meadow)&&r<.025+.6*edge&&L.road.D[i]>30&&!L.river.RV[i]&&(k===K.wood||Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry)>1.25)){const e=L.E[i],sp=e>5.5?'fir':r<.12?'birch':e>3.5&&r<.3?'fir':'oak',t=PX.battleTree('grass',sp,Math.floor(hsh(gx,gy,s+53)*4));P.push({x,y,img:t,ax:16,ay:30,kind:'tree',layer:'nature'})}
-      else if(k===K.scree&&r<.05&&L.road.D[i]>LAB.road.w/2+LAB.road.sh){const b=PX.battleObstacle('rock','grass',Math.floor(hsh(gx,gy,s+54)*6));P.push({x,y,img:b.s,ax:b.ax,ay:b.ay,kind:'rock',layer:'nature'})}}
+      else if(k===K.scree&&r<.05&&L.road.D[i]>LAB.road.w/2+LAB.road.sh){const v=Math.floor(hsh(gx,gy,s+54)*8),b=boulderPic(v,13+(v%3)*3,0);P.push({x,y,img:b.img,ax:b.ax,ay:b.ay,kind:'rock',layer:'nature'})}}
     // (the rest of the nature layer: bushes and saplings, boulders and stones, logs and stumps, each by its ground; never on the
     //  road, the bridge, the village's shelf, or water deeper than shallow)
     {const N=LAB.nature,ns=N.step;
@@ -484,14 +589,16 @@
         const i=y*W+x,k=L.KD[i],r=hsh(gx,gy,s+142),v=Math.floor(hsh(gx,gy,s+143)*8);
         if(L.road.D[i]<LAB.road.w/2+3||L.BR[i]||Math.hypot((x-S.x*W)/S.rx,(y-S.y*H)/S.ry)<1.15)continue;
         const Wd=LAB.woods,wn=k===K.wood||k===K.grass||k===K.meadow?fbm(x/Wd.sc,y/Wd.sc,s+41,3):0,edge=smooth(1-Math.abs(wn-Wd.at)/Wd.fringe);
-        const put=(img,ax,ay,kind)=>P.push({x,y,img,ax,ay,kind,layer:'nature'});
+        const put=(img,ax,ay,kind)=>P.push({x,y,img,ax,ay,kind,layer:'nature'}),pic=(o,kind,low)=>P.push({x,y,img:o.img,ax:o.ax,ay:o.ay,kind,layer:'nature',low});
         let q=r;
-        if(k===K.wood){if((q-=N.bush.wood)<0){put(PX.smallTree('grass',hsh(gx,gy,s+144)<.7?'oak':'birch',v%3,true),4,7,'bush');continue}if((q-=N.log)<0){const n=10+Math.floor(hsh(gx,gy,s+145)*7);put(logSprite(n,v),n>>1,6,'log');continue}if((q-=N.stump)<0){put(stumpSprite(v),4,7,'stump');continue}}
-        if(k===K.grass||k===K.meadow){if((q-=N.bush.grass+N.bush.edge*edge)<0){put(PX.smallTree('grass',hsh(gx,gy,s+146)<.6?'oak':'birch',v%3,true),4,7,'bush');continue}if((q-=N.sapling*edge)<0){put(PX.smallTree('grass','birch',v%3,false),8,15,'sapling');continue}
-          if((q-=N.boulder.grass)<0){const b=PX.battleObstacle('rock','grass',v%6);put(b.s,b.ax,b.ay,'rock');continue}if((q-=N.stone.grass)<0){const n=3+(v%4);put(stoneSprite(n,v),(n+2)>>1,Math.ceil(n*.75)+1,'stone');continue}}
-        if(k===K.rock||k===K.scree){if(k===K.rock&&(q-=N.boulder.rock)<0&&L.G[i]<LAB.cls.cliff){const b=PX.battleObstacle('rock','grass',v%6);put(b.s,b.ax,b.ay,'rock');continue}if((q-=N.stone[k===K.rock?'rock':'scree'])<0){const n=3+(v%5);put(stoneSprite(n,v),(n+2)>>1,Math.ceil(n*.75)+1,'stone');continue}}
-        if(k===K.bank&&(q-=N.stone.bank)<0){const n=3+(v%3);put(stoneSprite(n,v),(n+2)>>1,Math.ceil(n*.75)+1,'stone');continue}
-        if((k===K.river||k===K.ford)&&L.DP[i]<N.shallow&&L.river.RW[i]<50&&(q-=N.stone.river)<0){const n=3+(v%3);put(stoneSprite(n,v),(n+2)>>1,Math.ceil(n*.75)+1,'stone');continue}}}
+        if(k===K.wood){if((q-=N.bush.wood)<0){pic(bushPic(v,hsh(gx,gy,s+144)<.6?'dark':'oak'),'bush');continue}if((q-=N.log)<0){pic(logPic(10+Math.floor(hsh(gx,gy,s+145)*8),v),'log');continue}
+          if((q-=N.stump)<0){pic(stumpPic(v),'stump');continue}if((q-=N.fern.wood)<0){pic(fernPic(v),'fern',true);continue}if((q-=N.mushroom)<0){pic(mushroomPic(v),'mushroom',true);continue}}
+        if(k===K.grass||k===K.meadow){if((q-=N.bush.grass+N.bush.edge*edge)<0){pic(bushPic(v,hsh(gx,gy,s+146)<.6?'oak':'birch'),'bush');continue}if((q-=N.sapling*edge)<0){put(PX.smallTree('grass','birch',v%3,false),8,15,'sapling');continue}
+          if((q-=N.boulder.grass)<0){pic(boulderPic(v,11+(v%4)*2,1),'rock');continue}if((q-=N.stone.grass)<0){pic(stonePic(3+(v%4),v),'stone');continue}
+          if((q-=N.fern.edge*edge)<0){pic(fernPic(v),'fern',true);continue}if((q-=N.flowers[k===K.meadow?'meadow':'grass'])<0){pic(flowersPic(v+Math.floor(hsh(gx,gy,s+147)*3)*8),'flowers',true);continue}}
+        if(k===K.rock||k===K.scree){if(k===K.rock&&(q-=N.boulder.rock)<0&&L.G[i]<LAB.cls.cliff){pic(boulderPic(v,14+(v%4)*3,0),'rock');continue}if((q-=N.stone[k===K.rock?'rock':'scree'])<0){pic(stonePic(3+(v%5),v),'stone');continue}}
+        if(k===K.bank){if((q-=N.cattail)<0){pic(cattailPic(v),'reeds');continue}if((q-=N.stone.bank)<0){pic(stonePic(3+(v%3),v),'stone');continue}}
+        if((k===K.river||k===K.ford)&&L.DP[i]<N.shallow&&L.river.RW[i]<50&&(q-=N.stone.river)<0){pic(stonePic(3+(v%3),v),'stone');continue}}}
     const sx=S.x*W,sy=S.y*H,house=(type,dx,dy,seed,yaw)=>{try{const sp=PX.buildingModelSpec({type,culture:'vale',seed,yaw:yaw||0,env:'grass'});sp.cell*=2;const m=PX.model(sp);P.push({x:Math.round(sx+dx),y:Math.round(sy+dy),img:m.img,ax:0,ay:m.img.height,kind:'house',sh:m.shadow})}catch(e){console.warn('lab: no model',type,e)}};
     house('cottage',-150,-40,3);house('cottage',-60,-70,8,2);house('townhouse',40,-62,5);house('fisherhut',-170,58,9,6);house('well',-40,12,4);house('cart',30,24,6);house('tavern',90,40,12,4);
     // (the watermill beside the river, on its east bank)

@@ -290,8 +290,17 @@ That is a separate decision, best made after this world exists.
   - It holds trees, bushes (in the woods, thick at their edges, a few in the grass), saplings at the woods' edges, and boulders and stones (on the grass, the rock and the scree).
   - Also stones on the river's banks and in its shallows, and fallen logs and stumps in the woods.
   - Each is drawn in order of its foot with the hero and cut by the ground in front of it. None stand on the road, the bridge, the village's shelf or water deeper than shallow.
-  - Stones, logs and stumps are the lab's own small sprites: lit from the upper left, moss now and then, a shadow under each. Bushes and saplings are the engine's (`PX.smallTree`), boulders the battle map's (`PX.battleObstacle`).
-  - About 4,500 objects in all; the frame rate holds.
+  - **Their own pictures** (the owner: "improve boulders, tree stumps, logs and other map details"). Each is drawn px by px and cached (`pixPic`): lit from the upper left, with a lit rim up and left and a shaded one down and right (no black outline, as on the world map), and a soft shadow under it.
+    - **Boulders** (`boulderPic`, 11 to 23 px): lumps of one height field sunk in the ground: round, heaped, tall or a flat slab. Light on the top, darker toward the foot, dark seams where lumps meet, moss on the tops in the grass (none on the mountain), lichen, a tuft at the foot now and then. They replace the battle map's outlined boulders.
+    - **Stones** (`stonePic`): the same, small; now and then two or three together.
+    - **Logs** (`logPic`, 10 to 17 px): lying straight or aslant, round (lit on top, dark under), bark streaks along them and cracks across. The east end is a sawn face with rings; the west end is sawn, broken in splinters, or a plate of roots. A branch stub, moss on top, bracket fungi on the side.
+    - **Stumps** (`stumpPic`): grooved bark lit on the west, roots flaring along the ground, the top sawn (rings, a crack, the heart) or broken off in splinters; moss, or mushrooms at the foot.
+    - **Bushes** (`bushPic`, in place of the engine's): a dome of leafy lumps with a ragged edge, in oak, birch or the woods' dark green; berries or blossom on some.
+    - **New:** ferns (in the woods and at their edges), mushrooms (red and spotted, brown or pale), patches of flowers in one colour (mostly in the meadows), and cattails and reeds on the banks. Chances are in `LAB.nature`.
+    - Saplings and trees stay the engine's.
+  - About 5,400 objects in all; the frame rate holds (about 3 ms a frame at 2×).
+  - Low things (flowers, ferns, mushrooms) leave the grass in front of them standing; the others leave it bare (see the grass below).
+- **The ground details** also got leaf litter (pairs of autumn leaves) and twigs on the woods' floor, and pebbles lit on top on the rock and the scree.
 - Buildings and people stay as they were, always shown.
 - **Grass is a fourth layer, alive** (`LAB.grass`; the owner: "grasses ... animated like flow with the wind or when character move on"). The switch "Grass" is on by default; "Wind" sets how hard it blows (0 to 3).
   - Clumps of a few blades (11×10 px), dark at the foot and light at the tip, on a jittered 6 px grid, thicker in patches.
