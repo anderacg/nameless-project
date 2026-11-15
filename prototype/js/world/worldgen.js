@@ -125,6 +125,38 @@ function reliefClass(m,lv){const W=m.w,H=m.h,N=W*H,K=m.kind,R=GEN_RELIEF,S=new U
   const lone=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;if(S[i]!==3)continue;let n=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if((a||b)&&S[i+b*W+a]===3)n++;if(!n)lone.push(i)}
   for(const i of lone)S[i]=2;
   return S}
+/* the world lab's land (engine/worldlab.js elev; the owner, 2026-11-15: "Can you just use the same logic to generate the world? Just
+   replace the old engine"): the height (levels) at any lab px (two a game px, 32 a tile), the lab's way: the land's lie (the tiles'
+   levels as the stages before made them, levelsOf, between their middles) rolled by the lab's noise (amp levels at sc lab px; calm
+   within calm tiles of water or a brook, so the shores and banks keep the water's level); over lift levels the lab's shelves: a step every band
+   levels, its rise sharp (to the power sharp) where the noise at tsc says (past at), a ramp where it does not; land never under
+   floor. The land's tiles read it (reliefOf: their middles; landClasses: the steepest of it in them, the lab's classes cls, levels a
+   lab px) and the world map draws it (gfx/worldterrain.js). Kept for the map (landHeight; fresh: made again, the elevation changed) */
+const LAB_LAND={amp:3.4,sc:240,calm:4,lift:4,band:3,sharp:16,tsc:110,at:.38,floor:.15,cls:{slope:.035,steep:.11,cliff:.22}};
+const LANDH=new WeakMap();
+function landHeight(m,fresh){let f=!fresh&&LANDH.get(m);if(f)return f;const W=m.w,H=m.h,N=W*H,K=m.kind,L0=levelsOf(m),T=LAB_LAND,s=(m.seedNum|0)+911,C=new Float32Array(N);
+  {const D=new Uint8Array(N).fill(255),q=[],BK=GEN_RIVER.brook;for(let i=0;i<N;i++)if(K[i]===T_WATER||(m.flow[i]&31)>=BK){D[i]=0;q.push(i)}
+    for(let h=0;h<q.length;h++){const i=q[h],x=i%W,y=(i-x)/W,d=D[i]+1;if(d>T.calm)continue;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(D[j]>d){D[j]=d;q.push(j)}}}
+    for(let i=0;i<N;i++)C[i]=sstep(D[i]/T.calm)}
+  // (the floor of each land tile: the river or lake beside it (over it by bank), a brook's own bed; the shelves never cut under them)
+  const F0=new Float32Array(N),BK=GEN_RIVER.brook,sea=i=>K[i]===T_WATER&&!(m.feat[i]&2)&&!(m.river[i]&3);
+  for(let i=0;i<N;i++){if(K[i]===T_WATER)continue;const x=i%W,y=(i-x)/W;let f=(m.flow[i]&31)>=BK?L0[i]:0;
+    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(K[j]===T_WATER&&!sea(j))f=Math.max(f,L0[j]+GEN_RELIEF.bank/GEN_RELIEF.per)}F0[i]=f}
+  f=(x,y)=>{const u=Math.max(0,Math.min(W-1.001,x/32-.5)),v=Math.max(0,Math.min(H-1.001,y/32-.5)),tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,i=ty*W+tx,
+      bl=A=>(A[i]*(1-fu)+A[i+1]*fu)*(1-fv)+(A[i+W]*(1-fu)+A[i+W+1]*fu)*fv;
+    let e=bl(L0)+(fbm(x/T.sc,y/T.sc,s)-.5)*T.amp*bl(C);
+    if(e>T.lift){const k=(e-T.lift)/T.band,fl=Math.floor(k),fr=k-fl,sh=1+(T.sharp-1)*sstep((fbm(x/T.tsc,y/T.tsc,s+24)-T.at)/.2);e=T.lift+(fl+Math.pow(fr,sh))*T.band}
+    const ti=Math.max(0,Math.min(H-1,Math.floor(y/32)))*W+Math.max(0,Math.min(W-1,Math.floor(x/32)));
+    return K[ti]===T_WATER?Math.min(e,L0[ti]):Math.max(T.floor,F0[ti],e)};
+  LANDH.set(m,f);return f}
+// (each land tile's slope class, the lab's: the steepest of the land in it (samples over it, a lab px's rise between neighbours) against
+// LAB_LAND.cls: 0 flat, 1 a slope, 2 steep, 3 a cliff)
+function landClasses(m,fresh){const W=m.w,H=m.h,N=W*H,K=m.kind,hf=landHeight(m,fresh),C=LAB_LAND.cls,S=new Uint8Array(N),L0=levelsOf(m);
+  // (high ground, where the shelves rise, 6 x 6 samples 6 lab px apart; low ground 3 x 3, 12 apart)
+  for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){const i=ty*W+tx;if(K[i]===T_WATER)continue;const hi=L0[i]>LAB_LAND.lift-2,n=hi?6:3,st=hi?6:12,x0=tx*32+1,y0=ty*32+1,v=[];for(let b=0;b<n;b++)for(let a=0;a<n;a++)v.push(hf(x0+a*st,y0+b*st));
+    let g=0;for(let b=0;b<n;b++)for(let a=0;a<n;a++){const q=v[b*n+a];if(a<n-1)g=Math.max(g,Math.abs(v[b*n+a+1]-q));if(b<n-1)g=Math.max(g,Math.abs(v[(b+1)*n+a]-q))}g/=st;
+    S[i]=g>=C.cliff?3:g>=C.steep?2:g>=C.slope?1:0}
+  return S}
 function levelsOf(m){const N=m.w*m.h,E=m.elev,K=m.kind,R=GEN_RELIEF,lv=new Float32Array(N);for(let i=0;i<N;i++)lv[i]=K[i]===T_WATER&&E[i]<=64?0:Math.max(0,(E[i]-64)/R.per);return lv}
 function* genReliefKinds(g){const m=g.map,K=m.kind,E=m.elev,R=GEN_RELIEF,Ef=g.work.ef,lv=reliefLevels(m);
   // (the levels, smoothed and roughened, baked into the elevation: every stage after reads the land as it is drawn)
@@ -150,7 +182,9 @@ function* genValleys(g){const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,E=m.elev,Rv=m.r
   for(let i=0;i<N;i++)if(isB(i)&&!deg[i])q.push(i);
   while(q.length){const i=q.pop(),j=down(i);if(j<0||K[j]===T_WATER)continue;const f=isB(j)?fl[j]:65;E[j]=Math.max(Math.min(E[j],E[i]),f);if(isB(j)&&--deg[j]===0)q.push(j)}
   yield;
-  const lv=levelsOf(m),S=reliefClass(m,lv),Hi=m.high,brk=i=>(F[i]&31)>=B&&!(Rv[i]&3);
+  // (the lab's land over the land as it now lies: each tile's level at its middle, its slope class from the steepest of it)
+  const hf=landHeight(m,true),S=landClasses(m),lv=new Float32Array(N);for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;lv[i]=K[i]===T_WATER?0:hf(x*32+16,y*32+16)}
+  const Hi=m.high,brk=i=>(F[i]&31)>=B&&!(Rv[i]&3);
   for(let i=0;i<N;i++){const k=K[i];if(k===T_WATER||k===T_FORD||k===T_ROAD)continue;const c=S[i],l=lv[i];
     if(c===3&&!brk(i)){K[i]=T_MOUNT;continue}if(k===T_FOREST)continue;
     K[i]=c>=2||c===1&&l>=R.hill[0]||l>=R.hill[1]?T_HILL:T_OPEN}
@@ -162,7 +196,7 @@ function* genValleys(g){const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,E=m.elev,Rv=m.r
     const kind=peak?3:S[i]>=2?2:1;Hi[i]=kind|up<<2|(kind>=2&&(peak||E[i]>=GEN_HIGH.scree.elev)?32:0)}
   for(let i=0;i<N;i++)if((Hi[i]&3)===2){const x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<N&&(Hi[j]&3)===1){Hi[i]|=64;break}}
   yield}
-function reliefOf(m){const W=m.w,H=m.h,N=W*H,K=m.kind,R=GEN_RELIEF,lv=levelsOf(m);
+function reliefOf(m){const W=m.w,H=m.h,N=W*H,K=m.kind,R=GEN_RELIEF,lv=levelsOf(m),hf=landHeight(m);for(let i=0;i<N;i++)if(K[i]!==T_WATER&&!(m.river[i]&3)){const x=i%W,y=(i-x)/W;lv[i]=hf(x*32+16,y*32+16)}
   for(let it=0;it<R.smooth;it++)for(let i=0;i<N;i++){const k=K[i];if(k!==T_ROAD&&k!==T_FORD||m.river[i]&3)continue;const x=i%W,y=(i/W)|0;let s=0,n=0;
     for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(K[j]===T_WATER||K[j]===T_MOUNT||m.river[j]&3)continue;s+=lv[j];n++}if(n)lv[i]=s/n}
   // (never under the water beside it: a road along a bank stays over the river)

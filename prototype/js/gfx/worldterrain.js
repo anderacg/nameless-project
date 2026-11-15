@@ -48,7 +48,7 @@ const tpick=(L3,x,y,s)=>L3[Math.min(L3.length-1,Math.floor((wnoise2(x/5,y/5,s)*.
 // X0, Y0, RW: the sea's and the lakes'); its ways the lab's (worldways.js: the rivers and brooks as curves, their surface stepping
 // down the land; the roads worn tracks; the bridges standing over the water)
 function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
-  const T=WORLD_TERRAIN,PAL=terrainPal(),LV=WM.lv||(WM.lv=reliefOf(WM)),W2=w*r,H2=h*r,HE2=HE*r,out=new ImageData(W2,H2),O=out.data,CW=new Uint8ClampedArray(W2*HE2*4),WK=new Uint8Array(W2*HE2),WA=new Float32Array(W2*HE2),TS=16,WY=waysOf(P),WV=WORLD_WAYS,Rv=WM.river,k2=r/2;
+  const T=WORLD_TERRAIN,PAL=terrainPal(),LV=WM.lv||(WM.lv=reliefOf(WM)),LH=landHeight(WM),W2=w*r,H2=h*r,HE2=HE*r,out=new ImageData(W2,H2),O=out.data,CW=new Uint8ClampedArray(W2*HE2*4),WK=new Uint8Array(W2*HE2),WA=new Float32Array(W2*HE2),TS=16,WY=waysOf(P),WV=WORLD_WAYS,Rv=WM.river,k2=r/2;
   // (the game px whose levels are worked: the chunk, a px round it, and south of it as far as the highest lift reaches (HE rows))
   const gx0=X-2,gy0=Y-2,GW=w+4,GH=HE+4,Lv=new Float32Array(GW*GH),St=new Float32Array(GW*GH),Gx=new Float32Array(GW*GH),Gy=new Float32Array(GW*GH),Wa=new Uint8Array(GW*GH),SW=new Float32Array(GW*GH);
   const tlv=(tx,ty)=>LV[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))],tix=(gx,gy)=>Math.max(0,Math.min(MH-1,gy>>4))*MW+Math.max(0,Math.min(MW-1,gx>>4));
@@ -61,8 +61,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i,u=(gx-8)/TS,v=(gy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,ti=tix(gx,gy),t=tiles[ti],sea=seaT(ti),k=j*GW+i;
       let e,wet=sea;
       if(sea)e=LV[ti];
-      else{e=(tlv(tx,ty)*(1-fu)+tlv(tx+1,ty)*fu)*(1-fv)+(tlv(tx,ty+1)*(1-fu)+tlv(tx+1,ty+1)*fu)*fv;
-        e+=((wnoise2(gx*r/T.sc,gy*r/T.sc,311)-.5)*1.4+(wnoise2(gx*r/(T.sc*.35),gy*r/(T.sc*.35),312)-.5)*.6)*2*T.detail*(1+(T.mount-1)*Math.max(0,Math.min(1,(e-T.rock+3)/4)));
+      else{e=LH(gx*2+1,gy*2+1);// (the lab's land: worldgen.js landHeight, at this game px's middle in lab px)
         // (a river's or a brook's water at its surface, flat across; its banks eased to it)
         const s=RG.S[k];if(s<0){e=surf(RG.Q[k],RG.T[k]);wet=true}else if(s<bankG){const sv=surf(RG.Q[k],RG.T[k])+.3;e=sv+(e-sv)*wsm(s/bankG)}
         // (a road at its graded height (the lab's), its shoulders cut into the land or banked up to it)
@@ -282,9 +281,7 @@ let LIFT_NOW=0;
 function liftAt(x,y){if(!isFinite(x)||!isFinite(y)||typeof WorldArt==='undefined')return 0;x=Math.floor(x);y=Math.floor(y);if(x<0||y<0||x>=MW*TILE||y>=MH*TILE)return 0;
   const WA=WorldArt,cx=Math.floor(x/CHUNK),cy=Math.floor(y/CHUNK),c=WA.chunks.get(cy*WA.cols+cx);
   if(c&&c.lift){const w=c.cv.width,v=c.lift[(y-cy*CHUNK)*w+x-cx*CHUNK];if(v!==undefined)return v/(c.fr||1)}
-  const L=WM&&WM.lv;if(!L)return 0;const u=Math.max(0,(x-8)/TILE),v=Math.max(0,(y-8)/TILE),tx=Math.min(MW-2,Math.floor(u)),ty=Math.min(MH-2,Math.floor(v)),fu=u-tx,fv=v-ty,
-    e=(L[ty*MW+tx]*(1-fu)+L[ty*MW+tx+1]*fu)*(1-fv)+(L[(ty+1)*MW+tx]*(1-fu)+L[(ty+1)*MW+tx+1]*fu)*fv,r=typeof sceneRes==='function'?sceneRes():1;
-  return Math.round(e*WORLD_TERRAIN.lh)/r}
+  if(!WM||typeof landHeight!=='function')return 0;const r=typeof sceneRes==='function'?sceneRes():1;return Math.round(Math.max(0,landHeight(WM)(x*2+1,y*2+1))*WORLD_TERRAIN.lh)/r}
 // the map point whose ground shows at the view's point (x, y) (the camera's map px plus the screen's): the chunk's own (rec.dep)
 function liftGround(x,y){if(typeof WorldArt==='undefined')return{x,y};const fx=Math.floor(x),fy=Math.floor(y),WA=WorldArt,cx=Math.floor(fx/CHUNK),cy=Math.floor(fy/CHUNK),c=WA.chunks.get(cy*WA.cols+cx);
   if(c&&c.dep){const w=c.cv.width,d=c.dep[(fy-cy*CHUNK)*w+fx-cx*CHUNK];if(d>=0)return{x,y:d+(y-fy)}}return{x,y}}

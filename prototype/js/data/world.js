@@ -52,7 +52,7 @@ const WORLD_FLORA={step:9,
 const WORLD_WAYS={river:{hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,meander:6,mouth:1.6},
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3},
   bridge:{clear:1.4,ramp:28,pile:12,arch:26,rail:5,post:8}};
-const WORLD_TERRAIN={liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:3},flat:6,rock:11,snow:14,wet:3,sand:9,dune:18,bank:5,depth:.32,clear:.9,shade:.55};
+const WORLD_TERRAIN={liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},flat:6,rock:11,snow:14,wet:3,sand:9,dune:18,bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a

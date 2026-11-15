@@ -62,8 +62,7 @@ function waysOf(P){if(P.ways)return P.ways;
     land[i]=best===T_FOREST&&bn<5?T_OPEN:best}
   // (each road's height along it, the lab's (roadOf): the land's under it, held to grade levels a game px either way over its runs and
   //  smoothed; raised to a bridge's deck within its ramp of each end, falling away from it at the grade: RZ, each segment's ends)
-  const RZ=new Float32Array(nR*2),G=WORLD_WAYS.road.grade,lvAt=(x,y)=>{const u=Math.max(0,(x-8)/TILE),v=Math.max(0,(y-8)/TILE),tx=Math.min(MW-2,Math.floor(u)),ty=Math.min(MH-2,Math.floor(v)),fu=u-tx,fv=v-ty;
-      return (LV[ty*MW+tx]*(1-fu)+LV[ty*MW+tx+1]*fu)*(1-fv)+(LV[(ty+1)*MW+tx]*(1-fu)+LV[(ty+1)*MW+tx+1]*fu)*fv},
+  const LHf=landHeight(WM),RZ=new Float32Array(nR*2),G=WORLD_WAYS.road.grade,lvAt=(x,y)=>LHf(x*2,y*2),
     decks=WM.crossings.filter(c=>c.kind==='bridge').map(c=>{const d=bridgeDeck(c);return [((c.i%MW)+.5)*TILE,(((c.i/MW)|0)+.5)*TILE,((c.j%MW)+.5)*TILE,(((c.j/MW)|0)+.5)*TILE,d]});
   for(let k0=0;k0<nR;){let k1=k0;while(k1+1<nR&&RL[k1+1]>0)k1++;const px=[S[k0*5]],py=[S[k0*5+1]];for(let k=k0;k<=k1;k++){px.push(S[k*5+2]);py.push(S[k*5+3])}
     const n=px.length,z=px.map((x,i)=>lvAt(x,py[i])),d=[0];for(let i=1;i<n;i++)d.push(Math.hypot(px[i]-px[i-1],py[i]-py[i-1]));
