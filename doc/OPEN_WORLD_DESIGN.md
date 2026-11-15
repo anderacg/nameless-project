@@ -363,6 +363,32 @@ That is a separate decision, best made after this world exists.
     - The slope's light is softer, so there is no pale halo round a cutting.
 - **Painting** is now about 180 ms a 512 px chunk in the lab.
 
+**Climates (2026-11-15; the owner: "add them to the lab first before implement the map generator"):**
+- **The panel's Climate** (Temperate, Desert, Frost, Swamp) makes the same stretch of land again in that climate: the same sea, river, peaks, road and village. It takes about 4 to 5 s.
+- **How:** each climate is a patch in `LAB.climates` over the lab's own numbers (its tree mixes, grass kinds and footprint grounds replaced whole, the rest merged), and over the colours (`CLIMATE_COL`, taken from the battle map's `PX.GROUND_PAL` where it has them: its rock, faces and tufts). This is the shape the map generator can take later: one table per climate.
+- **Three new grounds:** `K.oasis` (green ground by water in the desert), `K.pool` (standing water, wadeable, its depth from noise), `K.ice` (walkable, slippery: ×0.8).
+- **Desert:**
+  - Firm sand with wind ripples, cracked clay where the meadows were, sparse scrub where the woods were; sandstone cliffs and faces in warm bands; no snow; a turquoise sea.
+  - Green ground (an oasis) along the river and round the tarn, out to about 22 px from the water.
+  - Trees: acacias and dead trees in the open, date palms by the water and in the village. Small things: dry thornbushes, agaves (some in flower), bleached bones, sandstone boulders and stones.
+  - Dry tufts of grass, sparse; green grass on the oasis.
+  - The heat: walking out of the green and the water costs stamina (`sta.heat`).
+  - Sun-baked village houses (the buildings' own desert look, `env`).
+- **Frost:**
+  - Tundra with snow lying in patches, snowfields where the meadows were, snow on the woods' floor; snow on the land from level 6.5 (not on cliffs).
+  - Ice: along the sea's edge where it is shallow (with floes beyond), the tarn frozen, shelf ice along the river's sides.
+  - Trees: spruces and firs, all snow-laden, winter birches (bare white trunks and twigs), a few dead trees. Snow lies on top of every rock, log, stump and bush.
+  - Frosted tufts of grass; snow falling (it drifts with the Wind slider); snowy village roofs.
+  - Snow slows you (snowfields ×0.62, the woods ×0.7).
+- **Swamp:**
+  - Pools of standing water on the low land (below level 4), wadeable, with sky in them, duckweed, a dark mud rim and wet mud round them; bog (soft mud with a wet shine) where the meadows were; marsh grass, tall and dark; mudflats on the shore; murky water.
+  - Trees: swamp cypresses (a flared foot, knees in the mud, flat dark crowns, grey moss hanging), alders, willows, dead trees.
+  - Small things: lily pads on the pools (some in flower), cattails round them and on the banks, mossy logs and boulders, many mushrooms, ferns.
+  - Mist drifting east over the low land.
+  - Bog slows you (×0.6); pools are waded.
+- **Footprints** in every climate, on the grounds that take them: snow, sand, dunes and wet sand (and the frost's snowfields and woods, the desert's sand, the swamp's mud). One every 4 px walked, fading over about 20 s.
+- **Frame time:** at most about 3 ms at 2× zoom in any climate, about 9 ms at 1×.
+
 **What the lab leaves for later:**
 - Lakes in the lowland, deltas, and boats on the water.
 - Lighting by the time of day.
