@@ -86,6 +86,22 @@ function waysOf(P){if(P.ways)return P.ways;
     const nearB=i=>decks.some(([ax,ay,bx,by])=>Math.min(Math.hypot(px[i]-ax,py[i]-ay),Math.hypot(px[i]-bx,py[i]-by))<2*WORLD_WAYS.bridge.ramp);
     for(let k=k0;k<=k1;k++){RZ[k*2]=z[k-k0];RZ[k*2+1]=z[k-k0+1];RB[k]=nearB(k-k0)||nearB(k-k0+1)?1:0}
     k0=k1+1}
+  /* (a stream under every road it crosses (the owner, 2026-11-15: "There should be no river crossing the road like that"): a brook is
+     painted only, no tile of water, so the roads were laid over it with no crossing; now where a road's line crosses a brook's
+     (not within a river's or a crossing's tiles) a small bridge stands along the road (BRG, small: a plank one on a track, a stone
+     one on a road), as long as the brook is wide and its banks (brook.span px each side, abut px more each end), its deck at the
+     road's height or clear of the water by brook.clear levels, whichever is higher: the road's band cut away under its open span
+     (bridgeOpen), the water running under it) */
+  {const BB=WORLD_WAYS.bridge.brook,bmax=V.brook[1]*WAY_LP+.01,nS=SA.length/6,G=new Map(),cs=32,key=(x,y)=>Math.floor(x/cs)*65536+Math.floor(y/cs);
+    for(let q=0;q<nS;q++){const o=q*6;if(Math.max(SA[o+4],SA[o+5])>bmax)continue;const x0=Math.min(SA[o],SA[o+2]),x1=Math.max(SA[o],SA[o+2]),y0=Math.min(SA[o+1],SA[o+3]),y1=Math.max(SA[o+1],SA[o+3]);
+      for(let gx=Math.floor(x0/cs);gx<=Math.floor(x1/cs);gx++)for(let gy=Math.floor(y0/cs);gy<=Math.floor(y1/cs);gy++){const k=gx*65536+gy;let L=G.get(k);if(!L)G.set(k,L=[]);L.push(q)}}
+    const near=(x,y,d)=>BRG.some(b=>(b.mx-x)*(b.mx-x)+(b.my-y)*(b.my-y)<d*d),wetT=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return true;const i=ty*MW+tx;return tiles[i]===T_WATER||tiles[i]===T_FORD||(Rv[i]&3)>0};
+    for(let k=0;k<nR;k++){const o=k*6,ax=RA[o],ay=RA[o+1],bx=RA[o+2],by=RA[o+3],dx=bx-ax,dy=by-ay,seen=new Set();
+      for(let gx=Math.floor(Math.min(ax,bx)/cs);gx<=Math.floor(Math.max(ax,bx)/cs);gx++)for(let gy=Math.floor(Math.min(ay,by)/cs);gy<=Math.floor(Math.max(ay,by)/cs);gy++){const L=G.get(gx*65536+gy);if(!L)continue;
+        for(const q of L){if(seen.has(q))continue;seen.add(q);const p=q*6,cx=SA[p],cy=SA[p+1],ex=SA[p+2]-cx,ey=SA[p+3]-cy,den=dx*ey-dy*ex;if(Math.abs(den)<1e-6)continue;
+          const t=((cx-ax)*ey-(cy-ay)*ex)/den,u=((cx-ax)*dy-(cy-ay)*dx)/den;if(t<0||t>1||u<0||u>1)continue;const mx=ax+dx*t,my=ay+dy*t;
+          if(wetT(mx,my)||near(mx,my,BB.apart))continue;const l=Math.sqrt(dx*dx+dy*dy)||1,a=SP[q],hb=SA[p+4]+(SA[p+5]-SA[p+4])*u,wl=riverSurf(LL[a],LL[a+1],u),rz=RZ[k*2]+(RZ[k*2+1]-RZ[k*2])*t;
+          BRG.push({c:null,small:true,mx,my,ux:dx/l,uy:dy/l,L:2*(hb+BB.span+WORLD_WAYS.bridge.abut),hw:(RW[RK[k]]-1)*WAY_LP,dk:Math.max(rz,wl+BB.clear),stone:RK[k]===1})}}}}
   return P.ways={bridges:BRG,mouths:MO,RZ,RB,land,X:Float32Array.from(X),Y:Float32Array.from(Y),HW:Float32Array.from(HW),LV:Float32Array.from(LL),DP:Float32Array.from(DP),SP:Int32Array.from(SP),SA:Float32Array.from(SA),RA,RK,RL,mouth}}
 
 /* the nearest of a set of segments (A: ax, ay, bx, by, ha, hb, game px) to every px of a window (x0, y0, w x h, in px sc a game px),
