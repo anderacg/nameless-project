@@ -84,7 +84,20 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     const cham=(D,src)=>{for(let q=0;q<EW*EH;q++)D[q]=src(q)?0:1e6;
       for(let y=0;y<EH;y++)for(let x=0;x<EW;x++){const q=y*EW+x;let d=D[q];if(!d)continue;if(x>0)d=Math.min(d,D[q-1]+1);if(y>0){d=Math.min(d,D[q-EW]+1);if(x>0)d=Math.min(d,D[q-EW-1]+1.414);if(x<EW-1)d=Math.min(d,D[q-EW+1]+1.414)}D[q]=d}
       for(let y=EH-1;y>=0;y--)for(let x=EW-1;x>=0;x--){const q=y*EW+x;let d=D[q];if(!d)continue;if(x<EW-1)d=Math.min(d,D[q+1]+1);if(y<EH-1){d=Math.min(d,D[q+EW]+1);if(x<EW-1)d=Math.min(d,D[q+EW+1]+1.414);if(x>0)d=Math.min(d,D[q+EW-1]+1.414)}D[q]=d}};
-    cham(DW,q=>WAT[q]);cham(DL,q=>!WAT[q]);yield}
+    cham(DW,q=>WAT[q]);cham(DL,q=>!WAT[q]);yield
+    /* (a wide river's banks (two tiles or more): one smooth curve over its tiles, read the same way, its water every px inside it
+       (the river's own curves there giving its flow; its depth by how far in it is), drawn shore.river wider than its tiles so its
+       curves lie inside it: its banks never show a bulge for each of its curves' points (the
+       owner, 2026-11-15: "the wide water has a scalloped edge, a round bulge per tile")) */
+    const wr=(tx,ty)=>{tx=Math.max(0,Math.min(MW-1,tx));ty=Math.max(0,Math.min(MH-1,ty));const i=ty*MW+tx;return tiles[i]===T_WATER&&(Rv[i]&3)>=2&&!WY.mouth[i]};
+    for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i,wx=gx+(wnoise2(gx/SH.sc,gy/SH.sc,575)-.5)*2*SH.warp*.6,wy=gy+(wnoise2(gx/SH.sc,gy/SH.sc,576)-.5)*2*SH.warp*.6,
+        u=(wx-8)/TS,v=(wy-8)/TS,tx=Math.floor(u),ty=Math.floor(v);let any=false;for(let q=-1;q<=2&&!any;q++)for(let p=-1;p<=2;p++)if(wr(tx+p,ty+q)){any=true;break}if(!any)continue;
+        const bx=labBS(u-tx),by=labBS(v-ty);let bs=0;for(let q=0;q<4;q++){let rr=0;for(let p=0;p<4;p++)rr+=bx[p]*(wr(tx+p-1,ty+q-1)?-1:1);bs+=by[q]*rr}
+        const f=bs-SH.river+(wnoise2(gx/7,gy/7,577)-.5)*.3;if(f<0){const k=j*GW+i,dq=Math.max(.08,Math.min(.6,-f*.9));
+          if(RG.Q[k]>=0)RG.S[k]=-WY.HW[WY.SP[RG.Q[k]]]*dq;
+          for(let b=0;b<r;b++)for(let a=0;a<r;a++){const fx=(gx-X)*r+a,fy=(gy-Y)*r+b;if(fx<0||fy<0||fx>=W2||fy>=HE2)continue;const fi=fy*W2+fx;if(RF.Q[fi]>=0)RF.S[fi]=-WY.HW[WY.SP[RF.Q[fi]]]*r*dq}}else if(f<.25){const k=j*GW+i;if(RG.Q[k]>=0&&RG.S[k]<0)RG.S[k]=.5;
+          for(let b=0;b<r;b++)for(let a=0;a<r;a++){const fx=(gx-X)*r+a,fy=(gy-Y)*r+b;if(fx<0||fy<0||fx>=W2||fy>=HE2)continue;const fi=fy*W2+fx;if(RF.Q[fi]>=0&&RF.S[fi]<0)RF.S[fi]=.5}}}}
+    yield}
   const WB0dw=(gx,gy)=>{const q=(gy-ey0)*EW+gx-ex0;return q>=0&&q<EW*EH?DW[q]:99},eq=(gx,gy)=>(gy-ey0)*EW+gx-ex0,seaAt=(gx,gy)=>{const q=eq(gx,gy);return q>=0&&q<EW*EH&&WAT[q]===1};
   const seaT=ti=>ow(ti),surf=(q,t)=>{const a=WY.SP[q];return riverSurf(WY.LV[a],WY.LV[a+1],t)};
   for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i,u=(gx-8)/TS,v=(gy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,ti=tix(gx,gy),t=tiles[ti],sea=seaAt(gx,gy),k=j*GW+i;
