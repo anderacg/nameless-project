@@ -31,7 +31,8 @@ const snapV=v=>Math.round(v*VS)/VS;
 let SUBD=null;
 const subOf=o=>[snapV(o.x)-Math.round(o.x),snapV(o.y)-Math.round(o.y)];
 function subT(o){if(VS<=1)return;const d=subOf(o);if(!d[0]&&!d[1])return;ctx.translate(d[0],d[1]);SUBD=d}
-function drawMover(e){if(VS<=1){liftDraw(e,true);return}const nt=TXTQ?TXTQ.length:0,nl=LIGHTQ.length;SUBD=null;ctx.save();try{liftDraw(e,true)}finally{ctx.restore()}
+function drawMover(e){const bs=e.x!=null&&typeof bridgeShift==='function'?bridgeShift(e.x,e.ly??e.y):null;// (on a bridge: drawn on its deck, worldways.js)
+  ON_DECK=!!(bs&&bs[2]);if(VS<=1){ctx.save();if(bs)ctx.translate(bs[0],bs[1]);try{liftDraw(e,true)}finally{ctx.restore();ON_DECK=false}return}const nt=TXTQ?TXTQ.length:0,nl=LIGHTQ.length;SUBD=null;ctx.save();if(bs)ctx.translate(bs[0],bs[1]);try{liftDraw(e,true)}finally{ctx.restore();ON_DECK=false}
   const d=SUBD;SUBD=null;if(!d)return;if(TXTQ)for(let i=nt;i<TXTQ.length;i++){TXTQ[i][1]+=d[0];TXTQ[i][2]+=d[1]}for(let i=nl;i<LIGHTQ.length;i++){LIGHTQ[i].x+=d[0];LIGHTQ[i].y+=d[1]}}
 /* the parties' tags over their armies (the owner, 2026-11-01: "remove a floating banner, show the banner detail only when you
    inspect them along with the detail window": no banner flies over an army, its banner is on its card: ui.js tipFlag). Each over

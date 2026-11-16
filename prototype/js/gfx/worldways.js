@@ -71,8 +71,14 @@ function waysOf(P){if(P.ways)return P.ways;
      deck's level), stone}, game px) */
   const BRG=[],FO=[],BW=WORLD_WAYS.bridge;
   for(const c of WM.crossings){if(c.kind!=='bridge')continue;const ex=((c.i%MW)+.5)*TILE,ey=(((c.i/MW)|0)+.5)*TILE,fx=((c.j%MW)+.5)*TILE,fy=(((c.j/MW)|0)+.5)*TILE,al=Math.hypot(fx-ex,fy-ey)||1,ax=(fx-ex)/al,ay=(fy-ey)/al;
-    const ux=ax,uy=ay,mx=(ex+fx)/2,my=(ey+fy)/2,L=al-TILE+BW.over*2,hw=(WORLD_WAYS.road.hw[1]-1)*WAY_LP;
-    BRG.push({c,mx,my,ux,uy,L,hw,dk:bridgeDeck(c),stone:!!c.stone});
+    let ux=ax,uy=ay,L=al-TILE+BW.over*2,diag=false;const mx=(ex+fx)/2,my=(ey+fy)/2,hw=(WORLD_WAYS.road.hw[1]-1)*WAY_LP;
+    /* (where its river runs on a slant (its river's square across within BW.diag radians of the diagonal to its tiles' way), it crosses it square instead, on the
+       slant (the owner, 2026-11-16: "Where is diagonal bridge variation"): its axis the river's own across, turned to the nearest
+       eighth of a turn, the road joined to its ends; those crossing walk its tiles straight, drawn along its deck: bridgeShift) */
+    {let bd=1e9,rx=0,ry=0;for(let q=0;q<SA.length;q+=6){const x1=SA[q],y1=SA[q+1],dx=SA[q+2]-x1,dy=SA[q+3]-y1,l2=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((mx-x1)*dx+(my-y1)*dy)/l2)),d=Math.hypot(mx-x1-dx*t,my-y1-dy*t);if(d<bd){bd=d;rx=dx;ry=dy}}
+      const rl=Math.hypot(rx,ry);if(bd<TILE*1.5&&rl>0){let nx=-ry/rl,ny=rx/rl;if(nx*ax+ny*ay<0){nx=-nx;ny=-ny}const sn=Math.round(Math.atan2(ny,nx)/(Math.PI/4))*(Math.PI/4),qx=Math.round(Math.cos(sn)*1e6)/1e6,qy=Math.round(Math.sin(sn)*1e6)/1e6,dot=qx*ax+qy*ay;
+        if(dot<.99&&Math.abs(Math.acos(Math.min(1,nx*ax+ny*ay))-Math.PI/4)<BW.diag){ux=qx;uy=qy;L=(al-TILE)*dot+BW.over*2;diag=true}}}
+    BRG.push({c,mx,my,ux,uy,L,hw,dk:bridgeDeck(c),stone:!!c.stone,diag,ex,ey,fx,fy,al,ax,ay});
     SX.push(ex,ey,mx-ux*L/2,my-uy*L/2,1,mx+ux*L/2,my+uy*L/2,fx,fy,1)}
   const S=SX,nR=S.length/5,RA=new Float32Array(nR*6),RK=new Uint8Array(nR),RL=new Float32Array(nR);
   for(let k=0;k<nR;k++){const o=k*5,kd=S[o+4],road=kd<2?kd:(kd-2)&1,hw=RW[road]*WAY_LP;RK[k]=road;RA.set([S[o],S[o+1],S[o+2],S[o+3],hw,hw],k*6);
@@ -183,7 +189,7 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
     const wetAt=s=>wetF(mx+ux*s,my+uy*s),upAt=s=>liftF(mx+ux*s,my+uy*s),runOn=sg=>{let e=0;while(e<BG.reach*r){const s1=sg*(hl+e+1);if(!(wetAt(s1)||wetAt(sg*(hl+e+3))||upAt(sg*(hl+e+4*k))>upAt(s1)+k))break;e++}return e};
     const eA=runOn(-1),eB=runOn(1),lA=Math.max(0,liftF(mx-ux*(hl+eA+2),my-uy*(hl+eA+2))),lB=Math.max(0,liftF(mx+ux*(hl+eB+2),my+uy*(hl+eB+2))),DL=Math.max(Math.round(b.dk*lh),lA,lB);
     const rA=Math.ceil((DL-lA)/BG.slope),rB=Math.ceil((DL-lB)/BG.slope),lo=-(hl+eA+rA),hi=hl+eB+rB,LEN=hi-lo,sA=-(hl+eA)-lo,sB=hl+eB-lo,
-      H=t=>t<sA?DL-(sA-t)*BG.slope:t>sB?DL-(t-sB)*BG.slope:DL,HL=Math.max(-lo,hi);
+      H=t=>t<sA?DL-(sA-t)*BG.slope:t>sB?DL-(t-sB)*BG.slope:DL,HL=Math.max(-lo,hi);b.pr={lo,hi,sA,sB,DL,r};
     const ext=Math.abs(ux)*HL+Math.abs(nx)*hw+2,eyt=Math.abs(uy)*HL+Math.abs(ny)*hw+2,bx0=Math.floor(mx-ext),bx1=Math.ceil(mx+ext)+SH,by0=Math.floor(my-eyt),by1=Math.ceil(my+eyt);
     const py0=by0-DL-R-3,PW=bx1-bx0+1,PH=by1+SH+2-py0+1,img=new ImageData(PW,PH),O=img.data;
     const put=(x,y,c,a=255)=>{x-=bx0;y-=py0;if(x<0||y<0||x>=PW||y>=PH)return;const o=(y*PW+x)*4;if(a<255&&O[o+3]===255)return;O[o]=c[0];O[o+1]=c[1];O[o+2]=c[2];O[o+3]=a};
@@ -219,7 +225,10 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
       else{c=C.plank[Math.floor(hs(pl,7,542)*3)];if(t%(4*k)<.6*k)c=tmul(C.plank[1],.72);else if(hs(pl,Math.floor(v/k),543)<.05)c=tmul(c,.82);if((Math.abs(v)>hw-2.2*k)&&hs(pl,v>0?1:2,544)<.5)c=tmul(c,.9)}
       if(Math.abs(Math.abs(v)-hw*WORLD_WAYS.road.track)<1.3*k)c=tmul(c,.92);if(v*north>hw-1.5*k-2.5*k&&v*north<hw-1.5*k)c=tmul(c,.82);if(!inB(x,y-1))c=tmul(c,1.1);put(x,sy,c);
       // (a beam under its every edge)
-      const south=!inB(x,y+1),edge=south||!inB(x-1,y)||!inB(x+1,y);if(edge)for(let j=1;j<=Math.round(3*k);j++)put(x,sy+j,j<=k?C.beam[0]:tmul(C.beam[0],.8));
+      //  (its face under its edge where it stands over the ground: a stone one's dressed stone, its lit lip and its shade under it, not
+      //   timber; a wooden one's beam; none where its end lies on the land)
+      const south=!inB(x,y+1),edge=south||!inB(x-1,y)||!inB(x+1,y),hg=Math.round(H(t))-liftF(x,y+1);
+      if(edge&&hg>1)for(let j=1;j<=Math.min(hg,beam);j++)put(x,sy+j,b.stone?(j===1?C.cap:j===beam?tmul(C.stone[2],.82):course(x,sy+j,.94)):j<=k?C.beam[0]:tmul(C.beam[0],.8));
       // (under its near (south) edge, down to what lies under it: piles braced between (a stone one's piers and arches), stone only at its
       //  very ends (its abutments); foam and a ripple at their feet in water)
       // (past its supports, on the land: its abutment, stone in courses down to the ground under it)
@@ -235,7 +244,7 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
     // (the rails on posts, or the parapets, along both its long sides on its very edge, rising rail px over it: a post every post px,
     //  a taller one at each corner, its top rail lit, its shadow under it, a middle rail; a stone one's parapet capped and coursed)
     for(let y=by0;y<=by1;y++)for(let x=bx0;x<=bx1;x++){if(!inB(x,y))continue;const [t,v]=TV(x,y);if(!side(x,y,v))continue;const sy=y-Math.round(H(t)),end=Math.min(t,LEN-t),ps=((t%post)+post)%post<1.2*k;
-      if(b.stone){const H=R-(end<2.5*k?-k:0);for(let j=1;j<=H;j++)put(x,sy-j,j===H?C.cap:j===H-1?C.stone[0]:j===1?tmul(C.stone[2],.8):(j===Math.ceil(H/2)||((x>>1)+(j>H/2?1:0))%3===0)?C.stone[2]:tmul(C.stone[1],1.04))}
+      if(b.stone){const pier=end<2.5*k||Math.abs(t-sA)<2*k||Math.abs(t-sB)<2*k,H=R+(pier?k:0);for(let j=1;j<=H;j++)put(x,sy-j,j===H?C.cap:j===H-1?C.stone[0]:j===1?tmul(C.stone[2],.8):(j===Math.ceil(H/2)||((x>>1)+(j>H/2?1:0))%3===0)?C.stone[2]:tmul(C.stone[1],1.04))}
       else if(end<1.5*k)for(let j=1;j<=R+2;j++)put(x,sy-j,j>=R+1?C.lit:j===1?C.beam[1]:C.beam[0]);
       else if(ps)for(let j=1;j<=R+1;j++)put(x,sy-j,j>=R?C.lit:C.beam[1]);
       else if(end>=k){put(x,sy-R,C.lit);put(x,sy-R+1,C.beam[1]);put(x,sy-(R>>1),C.plank[0]);put(x,sy-(R>>1)+1,C.beam[1])}}
@@ -250,7 +259,7 @@ function bridgeEnts(ents,cam){const r=sceneRes(),P0=WorldArt.plan;if(!P0)return;
     // (made again once the land at both its ends is painted, so its ends meet the land as it is drawn)
     if(!b.pic||b.picR!==r||(!b.picEnds&&ends())){const c=WorldArt.chunks.get(Math.floor(b.my/CHUNK)*WorldArt.cols+Math.floor(b.mx/CHUNK));if(!c||!c.lift)continue;b.picEnds=ends();b.pic=bridgePic(b,r);b.picR=r}
     const q=b.pic;ents.push({st:true,y:q.y1,f:()=>ctx.drawImage(q.cv,q.x-cam.x,q.y-cam.y,q.cv.width/r,q.cv.height/r)})}}
-function bridgeOver(x,y,L){const P0=WorldArt.plan;if(!P0||!P0.ways)return;const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH||!waterBand(ty*MW+tx))return;
+function bridgeOver(x,y,L){const P0=WorldArt.plan;if(!P0||!P0.ways||ON_DECK)return;const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH||!waterBand(ty*MW+tx))return;
   const r=sceneRes(),cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)};
   for(const b of P0.ways.bridges||[]){const q=b.pic;if(!q||b.picR!==r||x<q.x||x>q.x+q.cv.width/r||y<q.y||y>q.y1+4)continue;
     const bx0=Math.max(q.x,x-10),bx1=Math.min(q.x+q.cv.width/r,x+10),by0=Math.max(q.y,y-L-30),by1=Math.min(q.y+q.cv.height/r,y-L+3);if(bx1<=bx0||by1<=by0)continue;
@@ -266,6 +275,22 @@ function fallDist(WY){const X=WY.X,Y=WY.Y,LV=WY.LV,n=LV.length,FD=new Float32Arr
     let d=g/2;for(let b=a;b>=0&&d<FA.lip;b--){if(Math.abs(FD[b])>d)FD[b]=-d;if(b>0){const h=gap(b-1,b);if(h>24)break;d+=h}}
     d=g/2;for(let b=a+1;b<n&&d<FA.pool;b++){if(Math.abs(FD[b])>d)FD[b]=d;if(b+1<n){const h=gap(b,b+1);if(h>24)break;d+=h}}}
   return FD}
+// where one crossing a bridge is drawn (render.js drawMover): on its deck at its height (a deck stands over the water's lift), and on a
+// turned one, along it: its crossing walked straight between its end tiles (world.js walk), drawn along the road to its deck, the deck
+// and the road on from it. [dx, dy, on its deck] (game px to move him by), or null off every bridge; x, y his place.
+// ON_DECK: the one being drawn stands on a deck (bridgeOver draws no bridge over him)
+let ON_DECK=false;
+function bridgeShift(x,y){const P0=WorldArt.plan;if(!P0||!P0.ways||typeof liftAt!=='function')return null;
+  for(const b of P0.ways.bridges||[]){const p=b.pr;if(!p||b.ex===undefined)continue;const s=(x-b.ex)*b.ax+(y-b.ey)*b.ay,q=(y-b.ey)*b.ax-(x-b.ex)*b.ay;if(s<0||s>b.al||Math.abs(q)>b.hw+2)continue;
+    const r=p.r,A=[b.mx+b.ux*p.lo/r,b.my+b.uy*p.lo/r],Bp=[b.mx+b.ux*p.hi/r,b.my+b.uy*p.hi/r];let vx=x,vy=y,t;
+    if(b.diag){const la=Math.hypot(A[0]-b.ex,A[1]-b.ey),ld=(p.hi-p.lo)/r,lb=Math.hypot(b.fx-Bp[0],b.fy-Bp[1]),v=s/b.al*(la+ld+lb);
+      if(v<la){const f=v/la;vx=b.ex+(A[0]-b.ex)*f;vy=b.ey+(A[1]-b.ey)*f}else if(v<la+ld){const f=(v-la)/ld;vx=A[0]+(Bp[0]-A[0])*f;vy=A[1]+(Bp[1]-A[1])*f}else{const f=(v-la-ld)/(lb||1);vx=Bp[0]+(b.fx-Bp[0])*f;vy=Bp[1]+(b.fy-Bp[1])*f}
+      const qx=-b.uy,qy=b.ux;vx+=qx*q*.5;vy+=qy*q*.5}
+    t=((vx-b.mx)*b.ux+(vy-b.my)*b.uy)*r-p.lo;const dq=Math.abs((vy-b.my)*b.ux-(vx-b.mx)*b.uy);
+    const on=t>=0&&t<=p.hi-p.lo&&dq<=b.hw+1,H=t<p.sA?p.DL-(p.sA-t)*WORLD_WAYS.bridge.slope:t>p.sB?p.DL-(t-p.sB)*WORLD_WAYS.bridge.slope:p.DL,
+      want=on?Math.max(H/r,liftAt(vx,vy)):liftAt(vx,vy);
+    return [vx-x,vy-y-(want-liftAt(x,y)),on]}
+  return null}
 // (a bridge's open span cut out of a road's band (S, at sc px a game px over x0,y0 w x h): nearer its line than its half-width and
 //  reach, and more than abut game px in from its ends; the lab's OPEN: worldlab.js)
 function bridgeOpen(BRS,B,x0,y0,w,h,sc,reach){if(!BRS)return;const ab=WORLD_WAYS.bridge.abut;
