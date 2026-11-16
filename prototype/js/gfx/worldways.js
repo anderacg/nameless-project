@@ -135,13 +135,14 @@ function* waysBand(A,x0,y0,w,h,sc,reach){const S=new Float32Array(w*h).fill(1e9)
 
 // a river's water (the lab's underWater with its river's colours): d its depth (levels), its bed of pebbles showing in the shallows,
 // light caught there; a ford's stones; the frost's edges frozen (q: how far out from the middle, 0-1)
-function wayWater(Q,cl,fx,fy,d,q,ford){const S=Q.river;
+function wayWater(Q,cl,fx,fy,d,q,ford,fa,fc,fe){const S=Q.river;
   if(cl==='frost'&&q>.62+(wnoise2(fx/14,fy/14,511)-.5)*.5){let c=tpick(Q.ice,fx,fy,512);if(Math.abs(wnoise2(fx/10,fy/10,513)-.5)<.02)c=tmul(c,.86);return c}
   let c=d<.4?tmix(S[0],S[1],d/.4):d<1?tmix(S[1],S[2],(d-.4)/.6):tmix(S[2],S[3],Math.min(1,d-1));
   const a=Math.pow(Math.max(0,1-d/.55),1.4);c=tmix(c,Q.pebble[Math.floor(hs(fx>>1,fy>>1,514)*4)],a*.8);if(a>.15&&wnoise2(fx/3,fy/3,515)>.74)c=tmix(c,[232,246,246],.22*a);
-  if(ford&&hs(fx>>1,fy>>1,516)<.12)c=WAY_COL.stone[hs(fx,fy,517)<.5?0:1];else if(hs(fx,fy,518)<.004)c=WAY_COL.stone[1];
-  // (a ripple now and then along the current, lighter)
-  if(d>.3&&wnoise2(fx/9,fy/2.5,519)>.8)c=tmix(c,Q.fall[1],.25);
+  if(ford&&hs(fx>>1,fy>>1,516)<.12)c=WAY_COL.stone[hs(fx,fy,517)<.5?0:1];else if(d<.6&&hs(fx,fy,518)<.004)c=WAY_COL.stone[1];
+  // (a ripple now and then along the current, lighter (fa, fc: how far along its line and across it, fe how far out of its main
+  //  stream, fewer farther out; none given: along the screen's rows)
+  if(d>.3&&(fa===undefined?wnoise2(fx/9,fy/2.5,519)>.8:wnoise2(fa/9,fc/2.5,519)>.8+.08*Math.min(1.5,fe)))c=tmix(c,Q.fall[1],fe>1?.14:.22);
   return c}
 // the lab's colours of the ways (its RCOL, plank, beam, stone, reeds)
 const WAY_COL={pack:[[176,148,104],[168,140,98]],groove:[118,94,66],crown:[[150,124,86],[142,116,80]],loose:[[136,110,76],[126,102,70],[146,120,84]],

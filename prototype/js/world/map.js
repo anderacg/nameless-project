@@ -22,11 +22,12 @@ const climbCost=(L,a,b,road)=>{if(!L)return 0;const d=L[b]-L[a];return (d>0?d*CL
 /* water as the world lab has it (engine/worldlab.js LAB.depth; the owner, 2026-11-15: "Use the same concept in the lab. Use that as
    a baseline, we can swim as well right?"): every water tile is walked by its depth (levels, a level some 0.85 m): ankle, knee,
    waist deep past bands' each, deeper swum; how fast by each (speed: dry, ankle, knee, waist, swimming) and what a tile of it
-   costs a way (cost: tiles of open ground; swimming the lab's swimCost); how much of a man is under it (cut: figure px). A river is as deep as it is wide (river: by its width, 1-3
+   costs a way (cost: tiles of open ground; swimming the lab's swimCost); how much of a man is under it (cut: figure px); how a man
+   in it is drawn (draw: his body under the water at under of its alpha, the water's darker band about him, a ripple's rate a second still and moving, spreading out to spread of his width). A river is as deep as it is wide (river: by its width, 1-3
    tiles); the sea and a lake by how far out a tile lies (shore: 1, 2, 3 tiles from the land); farther out than reach tiles it is
    open water no one swims (to cross it, a ship or a ferry). Wading and swimming tire a band (supply.js staminaRate: wade, swim
    times the march's drain). waterDepths: the depths of a map (0 land, -1 open water), kept for it */
-const WATER={bands:[.12,.35,.8],speed:[1,.85,.6,.35,.3],cost:[1,1.2,1.8,3.5,9],cut:[0,1,4,8,12],river:[0,.5,1,1.5],shore:[.3,.7,1.2],reach:3,wade:1.4,swim:3};
+const WATER={bands:[.12,.35,.8],speed:[1,.85,.6,.35,.3],cost:[1,1.2,1.8,3.5,9],cut:[0,1,4,8,12],river:[0,.5,1,1.5],shore:[.3,.7,1.2],reach:3,wade:1.4,swim:3,draw:{under:.3,shade:'rgba(34,64,76,.28)',ripple:.6,rippleMove:1.5,spread:.5}};
 const WDEPTHS=new WeakMap();
 function waterDepths(m){let D=WDEPTHS.get(m);if(D)return D;const W=m.w,H=m.h,N=W*H,K=m.kind,Rv=m.river,R=WATER;D=new Float32Array(N);
   const far=new Uint8Array(N).fill(255),q=[];for(let i=0;i<N;i++)if(K[i]!==T_WATER){far[i]=0;q.push(i)}

@@ -210,11 +210,23 @@ function drawMarcherAt(u,o,cam){
   // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld (a sword worn out of sight: SHEATH); a flag-bearer's
   // (your hero's, carrying your banner) only if it is sheathed (SHEATH.show), his hands on the pole; none for a beast)
   const s=marchSprite(u,o,I?.pose,true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
-  // (in water, the world lab's way: under it from his feet up as deep as it is (WATER.cut figure px by its band), a ripple at its line)
-  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),wb=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH?waterBand(ty*MW+tx):0,cut=wb?WATER.cut[Math.min(4,wb)]:0;
+  // (in water, the world lab's way: under it from his feet up as deep as it is (WATER.cut figure px by its band), only where water is
+  //  drawn (worldterrain.js drawnWet: none wades on the drawn bank); his body under it faint and wavering, the water's line about him
+  //  a wavy ring of foam, a ripple spreading from him (the owner, 2026-11-16: "the water that wrap around unit looks too flat"))
+  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),wb=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH&&(typeof drawnWet!=='function'||drawnWet(u.x,u.y))?waterBand(ty*MW+tx):0,cut=wb?WATER.cut[Math.min(4,wb)]:0;
   ctx.save();ctx.translate(x,y);ctx.scale(sx,k);if(cut){ctx.beginPath();ctx.rect(bx-8,by-8,s.width+16,s.height+8-cut);ctx.clip()}
   G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
-  if(cut){const w=Math.max(4,Math.round(s.width*.45)),f=(performance.now()/300+u.id)%2<1?0:1;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.fillStyle='rgba(232,244,248,.75)';ctx.fillRect(-(w>>1)-f,2-cut,w+2*f,1);ctx.fillStyle='rgba(232,244,248,.35)';ctx.fillRect(-(w>>1)-2,3-cut,w+4,1);ctx.restore()}
+  if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u))}
+// (a man in water (march.js drawMarcherAt): his picture s drawn at (x, y) scaled (sx, k), its corner (bx, by); the water cut figure px up
+// his body. Under the line his body faint and wavering; at it a darker band of water and a broken ring of foam, wavering; a ripple ring
+// spreading from him, quicker while he moves)
+function drawWading(s,x,y,sx,k,bx,by,cut,id,moving){const t=performance.now()/1000,W=WATER.draw,yl=s.height+by-cut;
+  ctx.save();ctx.translate(x,y);ctx.scale(sx,k);ctx.beginPath();ctx.rect(bx-8,yl,s.width+16,cut+8);ctx.clip();ctx.globalAlpha=W.under;ctx.drawImage(s,bx+Math.round(Math.sin(t*3+id)*.8),by+1);ctx.restore();
+  ctx.save();ctx.translate(x,y);ctx.scale(k,k);const w=Math.max(6,Math.round(s.width*.55)),h=w>>1;
+  ctx.fillStyle=W.shade;ctx.beginPath();ctx.ellipse(0,yl+1.5,h+1,2,0,0,Math.PI*2);ctx.fill();
+  for(let i=-h;i<=h;i++){const wv=Math.sin(i*.9+t*6+id),a=1-Math.abs(i)/(h+1);if(wv<-.55)continue;ctx.fillStyle=`rgba(236,246,250,${(.35+.5*a).toFixed(2)})`;ctx.fillRect(i,Math.round(yl+(wv>.5?-1:0)),1,1)}
+  const ph=(t*(moving?W.rippleMove:W.ripple)+id*.37)%1;ctx.strokeStyle=`rgba(236,246,250,${(.4*(1-ph)*(1-ph)).toFixed(2)})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,yl+1,h+ph*w*W.spread,1+ph*1.6,0,0,Math.PI*2);ctx.stroke();
+  ctx.restore()
 }
 // (the owner, 2026-10-31: "the army ring speed is based on the overall unit speed so it can keep centered") its rings drawn on the
 // middle its men make (MarchArmy mid: each man's spot less his place in it, their median), so they go as the men go, and settle
