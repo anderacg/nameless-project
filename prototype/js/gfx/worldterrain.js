@@ -39,7 +39,7 @@ function terWood(land,gx,gy){const wu=(gx+(wnoise2(gx/12,gy/12,551)-.5)*16-8)/16
   return (isW(wx,wy)*(1-au)+isW(wx+1,wy)*au)*(1-av)+(isW(wx,wy+1)*(1-au)+isW(wx+1,wy+1)*au)*av}
 // (the land's kinds, by what they show)
 const TERK={water:0,wet:1,sand:2,dune:3,grass:4,meadow:5,wood:6,rock:7,scree:8,snow:9,bank:10,oasis:11};
-let TER_K=0,TER_MW=-1;// (the kind terLand last chose, and its meadow's share on open land: -1 none)
+let TER_K=0,TER_MW=-1,TER_CAVE=0;// (the kind terLand last chose, and its meadow's share on open land: -1 none; the cave's rock's share at the px it paints: caveShare)
 const tmix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t],tmul=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
 // (a tone of a palette by patches a few px across, a little grain within: the lab's pick)
 const tpick=(L3,x,y,s)=>L3[Math.min(L3.length-1,Math.floor((wnoise2(x/5,y/5,s)*.8+hs(x,y,s+1)*.2)*L3.length))];
@@ -51,6 +51,7 @@ const tpick=(L3,x,y,s)=>L3[Math.min(L3.length-1,Math.floor((wnoise2(x/5,y/5,s)*.
 function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   const T=WORLD_TERRAIN,PAL=terrainPal(),LV=WM.lv||(WM.lv=reliefOf(WM)),LH=landHeight(WM),W2=w*r,H2=h*r,HE2=HE*r,out=new ImageData(W2,H2),O=out.data,CW=new Uint8ClampedArray(W2*HE2*4),WK=new Uint8Array(W2*HE2),WA=new Float32Array(W2*HE2),WL=new Int16Array(W2*HE2),PL=new Uint8Array(W2*HE2),KD=new Uint8Array(W2*HE2),NT=new Uint8Array(W2*HE2),MWA=new Float32Array(W2*HE2).fill(-1),TS=16,WY=waysOf(P),WV=WORLD_WAYS,Rv=WM.river,k2=r/2;
   // (the game px whose levels are worked: the chunk, a px round it, and south of it as far as the highest lift reaches (HE rows))
+  const CV=caveRocks(X,Y,w,HE);// (the caves whose rocky ground reaches the chunk: caveShare)
   const gx0=X-2,gy0=Y-2,GW=w+4,GH=HE+4,Lv=new Float32Array(GW*GH),St=new Float32Array(GW*GH),Gx=new Float32Array(GW*GH),Gy=new Float32Array(GW*GH),Wa=new Uint8Array(GW*GH),SW=new Float32Array(GW*GH);
   const tlv=(tx,ty)=>LV[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))],tix=(gx,gy)=>Math.max(0,Math.min(MH-1,gy>>4))*MW+Math.max(0,Math.min(MW-1,gx>>4));
   // (the ways near: the rivers' and brooks' curves and the roads, at game px over the levels' window and at fine px over the chunk;
@@ -176,7 +177,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
           const FD=WY.FD||(WY.FD=fallDist(WY)),f0=FD[a],f1=FD[a+1],FA=T.falls,cw=1-c/(hw*FA.wide);if((f0<1e8||f1<1e8)&&cw>0){const fd=f0<1e8&&f1<1e8?f0+(f1-f0)*tt:f0<1e8?f0:f1,nz=hs(fx,fy,577);
             if(fd<0&&fd>-FA.lip){const u=(1+fd/FA.lip)*Math.min(1,cw*3);col=tmix(col,Q.fall[nz<.4?0:1],.95*u);if(u>.3)WK[fi]=3}
             else if(fd>=0&&fd<FA.pool){const u=(1-fd/FA.pool)*Math.min(1,cw*3);col=tmix(col,nz<u*.7?Q.foam:Q.fall[1],.3*u+.65*u*u);if(u>.35)WK[fi]=3}}}
-        else{C[0]=C[1]=C[2]=0;
+        else{C[0]=C[1]=C[2]=0;TER_CAVE=CV.length&&!m?caveShare(CV,(fx+.5)/r,(fy+.5)/r):0;
           for(let c=0;c<4;c++){if(cw[c]<.02)continue;const c3=m?terWater(PAL[c],c,m,dd,P,gx,gy,fx,fy):terLand(PAL[c],c,WY.land[ti],e,Math.hypot(Gx[k],Gy[k]),ddL,open,fx,fy,wd);if(c===cmax&&!m){KD[fi]=TER_K+1;MWA[fi]=TER_MW}C[0]+=c3[0]*cw[c];C[1]+=c3[1]*cw[c];C[2]+=c3[2]*cw[c]}
           col=[C[0],C[1],C[2]];
           // (the climates' own, the lab's: the desert green by its rivers (oasis lab px of the water); the swamp's pools on its low land,
@@ -345,6 +346,7 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
     if(!any)return img;const c=mkcv(w0,h0),g=c.getContext('2d');g.drawImage(img,0,0);const d=g.getImageData(0,0,w0,h0),A=d.data;
     for(let y=0;y<h0;y++){const yy=sy0+y;if(yy<0||yy>=WB.H2)continue;for(let x=0;x<w0;x++){const xx=sx0+x;if(xx>=0&&xx<W2&&D[yy*W2+xx]>lim)A[(y*w0+x)*4+3]=0}}g.putImageData(d,0,0);return c};
   const pickOf=(mix,h)=>{let tot=0,sp=null;for(const q in mix)tot+=mix[q];let q=h*tot;for(const k in mix){sp=k;if((q-=mix[k])<0)break}return sp};
+  const CVp=caveRocks(X,Y,w,h);
   let lastLook=null;const look=cl=>{if(lastLook===cl)return;lastLook=cl;FL.look=WF.look[cl];FL.cap=WF.look[cl].snow};
   for(let fy=Y*r+2;fy<(Y+h)*r;fy+=st){for(let fx=X*r+2;fx<(X+w)*r;fx+=st){const jx=Math.round(fx+(hs(fx,fy,401)-.5)*st),jy=Math.round(fy+(hs(fx,fy,402)-.5)*st);
       if(jx<X*r||jy<Y*r||jx>=(X+w)*r||jy>=(Y+h)*r)continue;const gx=Math.floor(jx/r),gy=Math.floor(jy/r);if(!ok(gx,gy,jx,jy))continue;
@@ -355,11 +357,12 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
       look(cl);let q=q0;
       // (the swamp's pools, the lab's: lily pads on them, reeds round their edges)
       {const fi=(jy-Y*r)*W2+jx-X*r,PO=C.pool;if(PO&&[4,-4,4*W2,-4*W2].some(o=>WB.PL[fi+o])&&(q-=PO.reeds)<0){put(FL.cattailPic(v),'reeds');continue}}
-      if(terWood(LAND,gx,gy)>.5){if((q-=C.woods*.4)<0){put(FL.treePic(pickOf(mix[zone],hs(fx,fy,405)),v%6,hs(fx,fy,406)<.15?0:hs(fx,fy,407)<.1?2:1,cl==='frost'||e>=WORLD_TERRAIN.snow-3),'tree');continue}
+      if(terWood(LAND,gx,gy)>.5){if(CVp.length&&caveShare(CVp,gx,gy)>CAVE_ROCK.bare)continue;if((q-=C.woods*.4)<0){put(FL.treePic(pickOf(mix[zone],hs(fx,fy,405)),v%6,hs(fx,fy,406)<.15?0:hs(fx,fy,407)<.1?2:1,cl==='frost'||e>=WORLD_TERRAIN.snow-3),'tree');continue}
         const W2c=C.woods2;if(W2c.bush&&(q-=W2c.bush)<0){put(FL.bushPic(v,FL.look.bush==='oak'?(v&1?'dark':'oak'):FL.look.bush),'bush');continue}if(W2c.log&&(q-=W2c.log)<0){put(FL.logPic(10+v,v),'log',true);continue}
         if(W2c.stump&&(q-=W2c.stump)<0){put(FL.stumpPic(v),'stump',true);continue}if(W2c.fern&&(q-=W2c.fern)<0){put(FL.fernPic(v),'fern',true);continue}
         if(W2c.mushroom&&(q-=W2c.mushroom)<0){put(FL.mushroomPic(v),'mushroom',true);continue}if(W2c.agave&&(q-=W2c.agave)<0){put(FL.agavePic(v),'agave',true);continue}}
       else{const Z=t===T_MOUNT?C.mountain:t===T_HILL?C.hills:C.open;
+        if(CVp.length){const cs=caveShare(CVp,gx,gy);if(cs>0){if((q-=cs*CAVE_ROCK.boulder)<0){put(FL.boulderPic(v,11+(v%4)*3,FL.look.moss),'rock');continue}if((q-=cs*CAVE_ROCK.stone)<0){put(FL.stonePic(3+(v%4),v),'stone',true);continue}if(cs>CAVE_ROCK.bare)continue}}// (round a cave's mouth: boulders and stones, no trees at its heart)
         if(Z.tree&&(q-=Z.tree)<0){put(FL.treePic(pickOf(mix[zone],hs(fx,fy,405)),v%6,hs(fx,fy,406)<.4?0:1,cl==='frost'||e>=WORLD_TERRAIN.snow-3),'tree');continue}
         if(Z.bush&&(q-=Z.bush)<0){put(FL.bushPic(v,FL.look.bush==='oak'?(v&1?'oak':'birch'):FL.look.bush),'bush');continue}
         if(Z.boulder&&(q-=Z.boulder)<0){put(FL.boulderPic(v,11+(v%4)*3,FL.look.moss),'rock');continue}if(Z.stone&&(q-=Z.stone)<0){put(FL.stonePic(3+(v%4),v),'stone',true);continue}
@@ -379,12 +382,13 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
         for(let k=3;k<d.length;k+=4)if(d[k]===255){const x=(k>>2)%im.width;if(x<a)a=x;if(x>b)b=x}}catch(e){}im.foot=[a,b]}
     if(im.foot[1]<0)continue;const jx=Math.round(p.x*r)-X*r,jy=Math.round(p.y*r)-Y*r,xa=Math.max(0,jx-p.ax+im.foot[0]-4),xb=Math.min(BW2-1,jx-p.ax+im.foot[1]+4);
     for(let y=Math.max(0,jy+1);y<=Math.min(BH2-1,jy+FL.GH);y++)BARE.fill(1,y*BW2+xa,y*BW2+xb+1)}
-  // (the grass's clumps: on a grid of its step, by the ground's kind (open, meadow, woods, dunes) and climate, thicker in patches)
+  // (the grass's clumps: on a grid of its step, by the ground's kind (open, meadow, woods, dunes) and climate, thicker in patches,
+//  thinning out on a cave's rocky ground (none at its heart: caveShare))
   const GS=WF.grass,KI=FL.GRASS_KINDS;
   for(let fy=Y*r+1;fy<(Y+h)*r;fy+=GS.step){for(let fx=X*r+1;fx<(X+w)*r;fx+=GS.step){const jx=Math.round(fx+(hs(fx,fy,411)-.5)*GS.step),jy=Math.round(fy+(hs(fx,fy,412)-.5)*GS.step);
       if(jx<X*r||jy<Y*r||jx>=(X+w)*r||jy>=(Y+h)*r||BARE[(jy-Y*r)*BW2+jx-X*r])continue;const gx=Math.floor(jx/r),gy=Math.floor(jy/r);if(!ok(gx,gy,jx,jy,true))continue;const ti=(gy>>4)*MW+(gx>>4),t=tiles[ti];if(t===T_MOUNT)continue;
       const cl=CLIMS[terClimate(gx,gy)],dd=WB.dw(gx,gy),g=terWood(LAND,gx,gy)>.5?'woods':dd*2<WORLD_TERRAIN.dune?'dune':meadowShare(jx,jy)>=.5?'meadow':'open';
-      const ch=GS.chance[cl][g]*(.35+1.3*wnoise2(jx/GS.patch,jy/GS.patch,413))*(cl==='frost'&&g==='open'?1-WORLD_TERRAIN.snowPatch.tufts*snowDrift(jx,jy):1);if(hs(fx,fy,414)>ch)continue;
+      const ch=GS.chance[cl][g]*(.35+1.3*wnoise2(jx/GS.patch,jy/GS.patch,413))*(cl==='frost'&&g==='open'?1-WORLD_TERRAIN.snowPatch.tufts*snowDrift(jx,jy):1)*(CVp.length?1-Math.min(1,caveShare(CVp,gx,gy)/CAVE_ROCK.bare):1);if(hs(fx,fy,414)>ch)continue;
       {const L=WB.lfAt(jx,jy);GX.push(jx);GY.push(jy-L)}GT.push(Math.max(0,KI.indexOf(GS.kinds[cl][g])));GV.push(Math.floor(hs(fx,fy,415)*4))}
     if(!(fy&63))yield}
   out.sort((a,b)=>a.y-b.y);rec.props=out;
@@ -488,6 +492,11 @@ function snowDrift(fx,fy){const SN=WORLD_TERRAIN.snowPatch,n=wnoise2(fx/26,fy/26
 // (the meadow's share of open land at fine px (fx, fy): 0 grass, 1 meadow, eased between over WORLD_TERRAIN.meadow's band of its noise,
 // a grain at its edge)
 function meadowShare(fx,fy){const M=WORLD_TERRAIN.meadow,n=wnoise2(fx/120,fy/120,344)*(1-M.quick)+wnoise2(fx/28,fy/28,368)*M.quick+(hs(fx,fy,369)-.5)*M.grain,a=Math.max(0,Math.min(1,(n-M.at+M.band)/(2*M.band)));return a*a*(3-2*a)}
+// (the caves near game px (X, Y) to (X + w, Y + h): their mouths, game px (CAVE_ROCK); a cave site's, a lair's or a warren's cut into a hill)
+function caveRocks(X,Y,w,h){const R=CAVE_ROCK,m=R.r+R.warp;return (typeof W!=='undefined'&&W.sites||[]).filter(s=>(s.type==='cave'||s.lairLook==='cave')&&s.x>X-m&&s.x<X+w+m&&s.y-R.up>Y-m&&s.y-R.up<Y+h+m).map(s=>[s.x,s.y-R.up])}
+// (the rock's share at game px (x, y) round those mouths, 0 to 1, eased)
+function caveShare(CV,x,y){const R=CAVE_ROCK,n=(wnoise2(x/16,y/16,611)*.6+wnoise2(x/6,y/6,614)*.4-.5)*2*R.warp+(hs(Math.floor(x*2),Math.floor(y*2),612)-.5)*R.grain;let a=0;
+  for(const [cx,cy] of CV)a=Math.max(a,Math.min(1,(R.r-Math.hypot(x-cx,(y-cy)*R.flat)-n)/R.feather));return a>0?a*a*(3-2*a):0}
 // a land px's top colour (the lab's topCol): its kind by its tile, height, slope and the water near it; its climate's grain on it
 function terLand(Q,c,t,e,g,dd,open,fx,fy,wd){const T=WORLD_TERRAIN,cl=CLIMS[c],wob=wnoise2(fx/50,fy/50,341)-.5,dw=dd*2;let k,col,mw=-1;
   // (the lab's: rock from its height up or where it is a cliff, snow over it but on a cliff; scree where it is steep)
@@ -518,6 +527,9 @@ function terLand(Q,c,t,e,g,dd,open,fx,fy,wd){const T=WORLD_TERRAIN,cl=CLIMS[c],w
     //  speckled)
     if(a>0){const sd=wnoise2(fx/T.snowPatch.shade,fy/T.snowPatch.shade,366),sc=sd<.45?tmix(Q.meadow[2],Q.meadow[0],sd/.45):tmix(Q.meadow[0],Q.meadow[1],Math.min(1,(sd-.45)/.4));col=tmix(col,sc,a)}}
   else if(cl==='swamp'&&k===TERK.meadow&&wnoise2(fx/5,fy/5,364)>.72)col=tmix(col,[120,136,130],.35);
+  // (round a cave's mouth: the land shading into scree and bare rock in patches, stony at its heart (TER_K: pebbles, no grass clumps))
+  const cr=TER_CAVE;if(cr>0&&k!==TERK.rock&&k!==TERK.snow&&k!==TERK.wet&&k!==TERK.bank){const R=CAVE_ROCK,rk=wnoise2(fx/12,fy/12,613)>R.rock?tpick(Q.rock.slice(0,3),fx,fy,346):tpick(Q.scree,fx,fy,348);
+    col=tmix(col,rk,cr*.92);if(cr>R.bare)TER_K=TERK.scree}
   // (higher land a little cooler)
   if(k>=TERK.grass&&k<=TERK.wood&&e>3)col=tmix(col,Q.cool,Math.min(.35,(e-3)*.04));
   return col}
