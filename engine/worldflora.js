@@ -111,9 +111,11 @@
     for(let y=Math.floor(y0);y<=Math.ceil(y1);y++)for(let x=Math.floor(x0);x<=Math.ceil(x1);x++){const b=inB(x,y);if(!b)continue;
       const edge=!inB(x+1,y)||!inB(x-1,y)||!inB(x,y-1)||!inB(x,y+1);if(edge&&hsh(x,y,v+32)<(o.rag===undefined?.3:o.rag))continue;
       const dx=(x+.5-m[0])/m[2],dy=(y+.5-m[1])/m[3],bx=(x+.5-b[0])/b[2],by=(y+.5-b[1])/b[3];
-      if(o.gaps&&!edge&&by>0&&hsh(x>>1,y>>1,v+36)<o.gaps){if(!has(x,y))set(x,y,P[0]);continue}
       let l=-(dx*.5+dy*.7)*.7-(bx*.3+by*.45)*.55+(hsh(x,y,v+33)-.5)*.55;if(o.cut!==undefined&&y>=o.cut-1)l-=.4;if(!inB(x+1,y)||!inB(x,y+1))l-=.3;
       if(o.streak)l+=(hsh(x,Math.floor(y/3),v+37)-.5)*o.streak;
+      // (a gap: a pocket of shade in the leaves, ragged, a tone or two under the leaves round it, only where they are in shade (the
+      //  owner, 2026-11-16: "What's the black dot on trees?": no hard square of the darkest tone, no bark showing as a grey dot))
+      if(o.gaps&&!edge&&by>0&&l<.15&&hsh(x>>1,y>>1,v+36)<o.gaps&&hsh(x,y,v+38)<.75){set(x,y,ramp(P,Math.max(-1,l-.5)));continue}
       let col=ramp(P,Math.max(-1,Math.min(.99,l)));if(l>.35&&hsh(x,y,v+34)<.12)col=P[4];
       if(o.dots&&!edge&&l>-.3){const r=hsh(x,y,v+35);if(r<o.dots[0])col=o.dots[1][r<o.dots[0]*.4?0:1]}
       set(x,y,col)}}

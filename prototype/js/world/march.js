@@ -216,13 +216,19 @@ function drawMarcherAt(u,o,cam){
   const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),wb=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH&&(typeof drawnWet!=='function'||drawnWet(u.x,u.y))?waterBand(ty*MW+tx):0,cut=wb?WATER.cut[Math.min(4,wb)]:0;
   ctx.save();ctx.translate(x,y);ctx.scale(sx,k);if(cut){ctx.beginPath();ctx.rect(bx-8,by-8,s.width+16,s.height+8-cut);ctx.clip()}
   G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
-  if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u))}
+  if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u),cam)}
 // (a man in water (march.js drawMarcherAt): his picture s drawn at (x, y) scaled (sx, k), its corner (bx, by); the water cut figure px up
 // his body. Under the line his body faint and wavering; at it a darker band of water and a broken ring of foam, wavering; a ripple ring
-// spreading from him, quicker while he moves)
-function drawWading(s,x,y,sx,k,bx,by,cut,id,moving){const t=performance.now()/1000,W=WATER.draw,yl=s.height+by-cut;
-  ctx.save();ctx.translate(x,y);ctx.scale(sx,k);ctx.beginPath();ctx.rect(bx-8,yl,s.width+16,cut+8);ctx.clip();ctx.globalAlpha=W.under;ctx.drawImage(s,bx+Math.round(Math.sin(t*3+id)*.8),by+1);ctx.restore();
-  ctx.save();ctx.translate(x,y);ctx.scale(k,k);const w=Math.max(6,Math.round(s.width*.55)),h=w>>1;
+// spreading from him, quicker while he moves; all of it only over the screen's px where water is drawn (the owner: "the water circle
+// is draw over the land"), the ground each px shows read through the land's lift (worldterrain.js liftGround, drawnWet)
+function drawWading(s,x,y,sx,k,bx,by,cut,id,moving,cam){const t=performance.now()/1000,W=WATER.draw,yl=s.height+by-cut;
+  const R=Math.ceil((s.width/2+10)*k),Y0=Math.floor((yl-4)*k),Y1=Math.ceil((s.height+by+8)*k),wet=new Path2D();let any=false;
+  if(cam&&typeof liftGround==='function'){const L=typeof LIFT_NOW==='number'?LIFT_NOW:0;
+    for(let ly=Y0;ly<=Y1;ly++){let a=null;for(let lx=-R;lx<=R+1;lx++){const g=lx<=R&&liftGround(cam.x+x+lx+.5,cam.y+y+ly+.5-L),on=g&&drawnWet(g.x,g.y);
+      if(on&&a===null)a=lx;else if(!on&&a!==null){wet.rect(a,ly,lx-a,1);any=true;a=null}}}
+    if(!any)return}else wet.rect(-R,Y0,2*R+1,Y1-Y0+1);
+  ctx.save();ctx.translate(x,y);ctx.clip(wet);ctx.scale(sx,k);ctx.beginPath();ctx.rect(bx-8,yl,s.width+16,cut+8);ctx.clip();ctx.globalAlpha=W.under;ctx.drawImage(s,bx+Math.round(Math.sin(t*3+id)*.8),by+1);ctx.restore();
+  ctx.save();ctx.translate(x,y);ctx.clip(wet);ctx.scale(k,k);const w=Math.max(6,Math.round(s.width*.55)),h=w>>1;
   ctx.fillStyle=W.shade;ctx.beginPath();ctx.ellipse(0,yl+1.5,h+1,2,0,0,Math.PI*2);ctx.fill();
   for(let i=-h;i<=h;i++){const wv=Math.sin(i*.9+t*6+id),a=1-Math.abs(i)/(h+1);if(wv<-.55)continue;ctx.fillStyle=`rgba(236,246,250,${(.35+.5*a).toFixed(2)})`;ctx.fillRect(i,Math.round(yl+(wv>.5?-1:0)),1,1)}
   const ph=(t*(moving?W.rippleMove:W.ripple)+id*.37)%1;ctx.strokeStyle=`rgba(236,246,250,${(.4*(1-ph)*(1-ph)).toFixed(2)})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,yl+1,h+ph*w*W.spread,1+ph*1.6,0,0,Math.PI*2);ctx.stroke();
