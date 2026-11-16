@@ -6,7 +6,8 @@
    lean drawn once and kept (FIRE_PICS); which frame shows is layered noise of the clock and the fire's id (fireFrameAt), so two
    fires never keep step and none blinks on a beat. Round a camp fire embers rise and fade and thin smoke drifts up; a light
    pulses unevenly, warm, with a pool of it on the ground beneath; a fire arrow streams its flame behind it, a short trail of
-   smoke after, and throws sparks where it strikes. Drawing only: never Math.random nor the story's streams (a hash of the
+   smoke after, and throws sparks where it strikes. A camp's fire at the world lab's scale (engine/worldlab.js: a sprite's px a fine
+   px): its flame made the scene's times finer (render.js sceneRes, 2) at its own size, its smoke and embers in fine px. Drawing only: never Math.random nor the story's streams (a hash of the
    clock and the id), and nothing off the screen. FLAMES.on false: every fire drawn as it was (PX.flame, the torch's two frames,
    the round glow with its own small flame) ---------- */
 /* FLAMES, the one table. on: this look (false: the old); frames: a flame's frames; fps: their pace; wander: how far (frames) the
@@ -26,28 +27,31 @@ const fireNoise=(t,id)=>.5*fireN1(t*1.7,id)+.3*fireN1(t*4.3+11,id)+.2*fireN1(t*9
 // (the frame a fire of id shows at t s: its pace pushed on and held back by the noise; its start by its id)
 const fireFrameAt=(t,id)=>{const n=FLAMES.frames;return((Math.floor(t*FLAMES.fps+FLAMES.wander*4*fireNoise(t*.5,id)+PX.hash(id|0,5,73)*n)%n)+n)%n};
 const fireTime=()=>performance.now()/1000;
-// a flame's picture by kind, frame and lean, drawn once and kept: {img, ax, ay}
+// a flame's picture by kind, frame and lean, r times finer than its size (r px a game px: none, 1), drawn once and kept: {img, ax, ay}
 const FIRE_PICS=new Map(),FIRE_SEED={camp:11,torch:23,arrow:37,blaze:41};
-function fireFlame(kind,f,lean){lean=lean|0;const key=kind+f+','+lean;let s=FIRE_PICS.get(key);if(s)return s;const [w,h]=FLAMES.size[kind];
-  s=PX.fireFlame({w,h,n:FLAMES.frames,f,lean,seed:FIRE_SEED[kind],ramp:FLAMES.ramp});FIRE_PICS.set(key,s);return s}
+function fireFlame(kind,f,lean,r=1){lean=lean|0;const key=kind+f+','+lean+','+r;let s=FIRE_PICS.get(key);if(s)return s;const [w,h]=FLAMES.size[kind];
+  s=PX.fireFlame({w:w*r,h:h*r,n:FLAMES.frames,f,lean:lean*r,seed:FIRE_SEED[kind],ramp:FLAMES.ramp});FIRE_PICS.set(key,s);return s}
 // (a camp fire's flame still, for a page's banner: the new look's first frame, or the old PX.flame's)
 const campFlame=()=>FLAMES.on?fireFlame('camp',0,0):spr.flm0||(spr.flm0=PX.flame(0));
-// a camp's or a site's fire, its foot at (x, y) in ctx's pixels (structures.js drawFire): thin smoke behind, its flame, embers rising
-// over it, and its light queued (LIGHTQ, with its pool on the ground)
+// a camp's or a site's fire, its foot at (x, y) in ctx's pixels (structures.js drawFire), game px: thin smoke behind, its flame,
+// embers rising over it, and its light queued (LIGHTQ, with its pool on the ground); at the scene's finer scale (r) its flame r
+// times finer at its own size, its smoke and embers in fine px
 function fireCamp(x,y,seed){x=Math.round(x);y=Math.round(y);const m=FLAMES.cull;if(x<-m||y<-m||x>VW+m||y>VH+m)return;
-  const t=fireTime(),id=seed|0,s=fireFlame('camp',fireFrameAt(t,id),0);fireSmoke(x,y-s.ay+3,t,id);ctx.drawImage(s.img,x-s.ax,y-s.ay);fireEmbers(x,y-3,t,id);
+  const t=fireTime(),id=seed|0,r=sceneRes(),s=fireFlame('camp',fireFrameAt(t,id),0,r),ay=s.ay/r;fireSmoke(x,y-ay+3,t,id,r);
+  ctx.drawImage(s.img,x-s.ax/r,y-ay,s.img.width/r,s.img.height/r);fireEmbers(x,y-3,t,id,r);
   if(LIGHTQ.length<FLAMES.lights)LIGHTQ.push({x,y:y-4,r:FLAMES.light,id,g:3})}
 // a torch's flame alone, its foot at (x, y), at the map's own scale (a party's torch when its men are not drawn: parties.js)
 function fireTorchAt(x,y,id){const s=fireFlame('torch',fireFrameAt(fireTime(),id|0),0);ctx.drawImage(s.img,Math.round(x)-s.ax,Math.round(y)-s.ay)}
-// (smoke over a fire: FLAMES.smoke puffs on their own loops, a pixel then two, fading as they climb and drift)
-function fireSmoke(x,y,t,id){const a=ctx.globalAlpha;ctx.fillStyle='#5e5854';
-  for(let k=0;k<FLAMES.smoke;k++){const q=(t/FLAMES.smokeLife+k/FLAMES.smoke+PX.hash(id,k,74))%1,r=q<.45?1:2;ctx.globalAlpha=a*.34*(1-q)*Math.min(1,q*5);
-    ctx.fillRect(Math.round(x+q*FLAMES.drift+Math.sin(t*1.3+k*2.1+id)*1.2)-(r>>1),Math.round(y-q*FLAMES.up),r,r)}
+// (smoke over a fire: FLAMES.smoke puffs (r times as many at r px a game px) on their own loops, a pixel growing to two then three
+// as they climb, drift and fade, each on the fine px grid)
+function fireSmoke(x,y,t,id,r=1){const a=ctx.globalAlpha,n=FLAMES.smoke*r,f=v=>Math.round(v*r)/r;ctx.fillStyle='#5e5854';
+  for(let k=0;k<n;k++){const q=(t/FLAMES.smokeLife+k/n+PX.hash(id,k,74))%1,d=(r>1?q<.3?1:q<.65?2:3:q<.45?1:2)/r;ctx.globalAlpha=a*.34*(1-q)*Math.min(1,q*5);
+    ctx.fillRect(f(x+q*FLAMES.drift+Math.sin(t*1.3+k*2.1+id)*1.2-d/2),f(y-q*FLAMES.up),d,d)}
   ctx.globalAlpha=a}
-// (embers: each on its own loop, some loops none; yellow as they leave the fire, red as they die)
-function fireEmbers(x,y,t,id){const R=FLAMES.ramp;
-  for(let k=0;k<FLAMES.embers;k++){const c=t/FLAMES.emberLife+PX.hash(id,k,75),n=Math.floor(c),q=c-n;if(q>.9||PX.hash(n,k,id+76)<.35)continue;
-    ctx.fillStyle=R[Math.min(R.length-2,1+Math.floor(q*4))];ctx.fillRect(Math.round(x+(PX.hash(n,k,id+77)-.5)*6+Math.sin(q*7+k)*1.2),Math.round(y-q*FLAMES.rise),1,1)}}
+// (embers: each on its own loop, some loops none; yellow as they leave the fire, red as they die; a fine px each, r times as many)
+function fireEmbers(x,y,t,id,r=1){const R=FLAMES.ramp,f=v=>Math.round(v*r)/r;
+  for(let k=0;k<FLAMES.embers*r;k++){const c=t/FLAMES.emberLife+PX.hash(id,k,75),n=Math.floor(c),q=c-n;if(q>.9||PX.hash(n,k,id+76)<.35)continue;
+    ctx.fillStyle=R[Math.min(R.length-2,1+Math.floor(q*4))];ctx.fillRect(f(x+(PX.hash(n,k,id+77)-.5)*6+Math.sin(q*7+k)*1.2),f(y-q*FLAMES.rise),1/r,1/r)}}
 // an ember's colour by its life left (a: 1 new, 0 gone): vfx.js's fire embers, marked so (fireMark: the vfx itself unchanged, so
 // the battle's own state holds whether fire burns or not)
 const FIRE_EMBERS=new WeakSet(),fireMark=p=>{if(p)FIRE_EMBERS.add(p);return p};

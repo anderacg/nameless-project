@@ -67,18 +67,20 @@ class CampSite{
     L.forEach((q,i)=>{const p=T-i*X.gap;if(p<=0)return;const pic=c.pic?c.pic(q,i,clim):c.makeshift?this.rough(q,i,clim):this.pic(q.s,clim,i,c);ents.push({x:q.x,y:q.y,nf:1,f:()=>this.tent(pic,q,p,cam)})});
     const lit=(L.length-1)*X.gap+X.pole+X.rise;
     ents.push({x:c.x,y:c.y+1,nf:1,f:()=>{const fx=Math.round(c.x-cam.x),fy=Math.round(c.y-cam.y);
-      if(T>=lit+X.fire)drawFire(fx,fy,c.seed||0);else if(T>=lit){const a=(T-lit)/X.fire;ctx.save();ctx.globalAlpha=.5*a;ctx.fillStyle='#bdb6a8';for(let k=0;k<3;k++)ctx.fillRect(fx-1+k,fy-2-Math.round(a*6)-k*2,1,1);ctx.restore()}
-      ctx.fillStyle='#4a3a28';ctx.fillRect(fx-3,fy,7,1);
-      // (a makeshift camp's bedrolls round its fire, once it is lit)
-      if(c.makeshift&&T>=lit){const M=X.makeshift,k=Math.min(M.rolls,Math.ceil((c.n||1)/3));for(let j=0;j<k;j++){const a=j/k*2*Math.PI+.4,bx=Math.round(fx+Math.cos(a)*10),by=Math.round(fy+Math.sin(a)*5);ctx.fillStyle=M.roll[j%M.roll.length];ctx.fillRect(bx-2,by,5,2);ctx.fillStyle='#c8b898';ctx.fillRect(bx+(Math.cos(a)<0?-2:2),by,1,1)}}
+      // (its pit under the flame (gfx/campart.js CampArt.pit: by its seed and its ground), lit, or its first smoke as it is lit, a
+      // fine px a puff)
+      CampArt.hand(CampArt.pit((c.seed||0)+(c.x>>4)+(c.y>>4)),fx+.5,fy+.5);
+      if(T>=lit+X.fire)drawFire(fx,fy,c.seed||0);else if(T>=lit){const a=(T-lit)/X.fire,w=1/WORLD_VIEW.fine;ctx.save();ctx.globalAlpha=.5*a;ctx.fillStyle='#bdb6a8';for(let k=0;k<5;k++)ctx.fillRect(fx-.5+k*w,fy-1-Math.round(a*12)*w-k*3*w,w,w);ctx.restore()}
+      // (a makeshift camp's bedrolls round its fire, once it is lit, their pillows away from it)
+      if(c.makeshift&&T>=lit){const M=X.makeshift,k=Math.min(M.rolls,Math.ceil((c.n||1)/3));for(let j=0;j<k;j++){const a=j/k*2*Math.PI+.4,bx=Math.round(fx+Math.cos(a)*10),by=Math.round(fy+Math.sin(a)*5);CampArt.hand(CampArt.roll(M.roll[j%M.roll.length],Math.cos(a)<0?-1:1),bx+.5,by+1)}}
       // (its banner on a pole beside its first tent, on its clear ground; none yet: beside the fire)
       const b=L[0]?{x:L[0].x+9,y:L[0].y}:{x:c.x+10,y:c.y};if(c.banner)BANNERQ.push({o:{x:b.x,y:b.y,faction:c.faction||'player',banner:c.banner,headY:()=>Math.round(b.y-14)+BANNER_GAP}})}})}
-  // (one tent: its poles going up, then its cloth hauled up them, then standing, its shadow under it)
-  static tent(pic,q,p,cam){const X=CAMP_SITE,x=Math.round(q.x-cam.x-pic.ax),y=Math.round(q.y-cam.y-pic.ay+1),W=pic.width,H=pic.height;
-    if(p<X.pole){const h=Math.round(11*p/X.pole);ctx.fillStyle='#5a4028';ctx.fillRect(x+3,y+H-1-h,1,h);ctx.fillRect(x+W-4,y+H-1-h,1,h);return}
-    const u=Math.min(1,(p-X.pole)/X.rise),h=Math.max(1,Math.round(H*u));
-    if(u>=1&&pic.sh){ctx.globalAlpha=SHADOW.a;ctx.drawImage(pic.sh,x,y);ctx.globalAlpha=1}
-    ctx.drawImage(pic,0,0,W,H,x,y+H-h,W,h);if(u<1){ctx.fillStyle='#5a4028';ctx.fillRect(x+3,y+H-12,1,11);ctx.fillRect(x+W-4,y+H-12,1,11)}}
+  // (one tent: its poles going up at its cloth's ends, then its cloth hauled up them, then standing, its shadow under it; at the
+  // lab's scale (CampArt.put: its model a fine px a px, at its own size), the poles a fine px wide)
+  static tent(pic,q,p,cam){const X=CAMP_SITE,x=Math.round(q.x-cam.x-pic.ax),y=Math.round(q.y-cam.y-pic.ay+1),H=pic.height,b=opaqueBox(pic),w=1/WORLD_VIEW.fine,
+      poles=h=>{ctx.fillStyle='#6a4a2e';ctx.fillRect(x+b[0]+1,y+H-1-h,w,h);ctx.fillRect(x+b[2]-1,y+H-1-h,w,h);ctx.fillStyle='#4a3220';ctx.fillRect(x+b[0]+1+w,y+H-1-h,w,h);ctx.fillRect(x+b[2]-1+w,y+H-1-h,w,h)};
+    if(p<X.pole){poles(Math.round(11*p/X.pole/w)*w);return}
+    const u=Math.min(1,(p-X.pole)/X.rise);CampArt.put(pic,x,y,Math.round(H*u/w)*w);if(u<1)poles(11)}
   // (camps not drawn a while are struck: their pitching, ground and layout forgotten)
   static purge(){const now=performance.now()/1000;for(const [k,t] of this.seen)if(now-t>CAMP_SITE.forget)this.strike(k)}
 }

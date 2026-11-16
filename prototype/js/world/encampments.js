@@ -100,7 +100,7 @@ class Encampment extends Site{
     ENC_PROPS.set(s.key,{x:s.x,y:s.y,p:out});return out}
   drawProps(ents,cam){const clim=CLIMS[climate[Math.floor(this.y/TILE)*MW+Math.floor(this.x/TILE)]]||'grass';
     const look=this.look(0);for(const q of this.props()){const pic=propPic(q,clim,look);ents.push({x:q.x,y:q.y,nf:1,f:()=>{const x=Math.round(q.x-cam.x-pic.ax),y=Math.round(q.y-cam.y-pic.ay+1);
-      if(pic.sh){ctx.globalAlpha=SHADOW.a;ctx.drawImage(pic.sh,x,y);ctx.globalAlpha=1}ctx.drawImage(pic,x,y);if(ENCAMP_PROPS[q.type].smoke)propSmoke(x+(pic.width>>1),y+pic.height-7,q.s)}})}}
+      CampArt.put(pic,x,y);if(ENCAMP_PROPS[q.type].smoke)propSmoke(x+(pic.width>>1),y+pic.height-7,q.s)}})}}// (at the lab's scale: gfx/campart.js)
   // (its tents' look (ENCAMP_KINDS tents): tent i's style, cloth and trim; its biggest, the first, in the first style)
   look(i,seed=0){const T=this.TR.tents||{styles:['ridge'],cloth:CAMP_ART.canvas,trim:['#8a6a4a']},h=(this.seed+seed*7+i*13)>>>0;
     return{style:i===0?T.styles[0]:T.styles[h%T.styles.length],cloth:T.cloth[(h>>2)%T.cloth.length],trim:T.trim[(h>>4)%T.trim.length]}}
@@ -166,8 +166,9 @@ const TravellersCamp=Encampment;// (the old name)
 const ENC_PROPS=new Map();onWorld(()=>ENC_PROPS.clear());
 // (a piece's picture (gfx/campart.js), a heap of n for one that stacks, in its camp's colours, of the ground's climate)
 const propPic=(q,clim,L)=>CampArt.prop(q.type,q.n||1,q.s,clim,L);
-// (a mound's thin smoke, rising and fading on the real clock)
-function propSmoke(x,y,s){const t=performance.now()/1000;ctx.save();for(let k=0;k<3;k++){const u=(t*.4+k/3+s*.1)%1;ctx.globalAlpha=.45*(1-u);ctx.fillStyle='#bdb6a8';ctx.fillRect(Math.round(x+Math.sin(u*5+s)*2),Math.round(y-u*14),1,1)}ctx.restore()}
+// (a mound's thin smoke, rising and fading on the real clock: puffs of fine px (the lab's scale), a px growing to two as they rise)
+function propSmoke(x,y,s){const t=performance.now()/1000,w=1/WORLD_VIEW.fine,f=v=>Math.round(v/w)*w;ctx.save();ctx.fillStyle='#bdb6a8';
+  for(let k=0;k<5;k++){const u=(t*.4+k/5+s*.1)%1,d=u<.4?w:2*w;ctx.globalAlpha=.45*(1-u);ctx.fillRect(f(x+Math.sin(u*5+s+k)*2),f(y-u*14),d,d)}ctx.restore()}
 /* a camp's person on the map (CampFolk makes them): a world object you can click within your sight, to talk to him: the camp's page
    opens at his place there (ENCAMP_ROLES at), his greeting over it */
 class CampDweller extends WorldObject{

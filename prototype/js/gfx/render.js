@@ -146,7 +146,42 @@ function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine
 function drawBanner1(q,cam,now,still){{if(q.marker){if(!inSight(q.o.x,q.o.y))return;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1&&DEV.on)txt(String(n),r.x+4,r.y-3,m.col,'center');return}// (its count: dev mode only, ui/ui.js PREFS.dev)
     // (a party's or caravan's label, its count (a band's chief and level with it): dev mode only, ui/ui.js PREFS.dev)
     if(q.o instanceof WorldObject){if(q.label&&DEV.on){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}return}
-    const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(B){const d=VS>1?subOf(B.c):[0,0];ctx.drawImage(B.s,B.x-cam.x+d[0],B.y-cam.y+d[1])}}}
+    // (at the lab's scale where the scene has fine px: bannerFine, its pole's foot where the banner's stands)
+    const f=still?0:Math.floor(now/420+q.o.x*.13)%2,B=bannerAt(q.o,f),r=sceneRes();if(!B)return;const d=VS>1?subOf(B.c):[0,0];
+    if(r>1){const s=bannerFine(q.o.banner(),f,r);ctx.drawImage(s,B.x+B.s.px-s.px/r-cam.x+d[0],B.y+B.s.py+1-s.py/r-cam.y+d[1],s.width/r,s.height/r)}else ctx.drawImage(B.s,B.x-cam.x+d[0],B.y-cam.y+d[1])}}
+/* a banner planted on a pole at the world lab's scale (engine/worldlab.js: a sprite's px a fine px): sprites.js bannerSprite's
+   (BANNER: its pole, finial, cloth of its shape, its device) r times finer at its own size: the pole lit on its left, a gilt knob
+   lit from the upper left, the cloth's folds shaded in three tones dithered where they meet and waving a game px (smoothly out
+   from the pole), its hem lit and its foot shaded, a banner's gilt fringe, its device r times its pattern, ringed a fine px in the
+   cloth's deepest shade; outlined inside as every figure is. Kept (spr); px, py: its pole's left and its foot's bottom edge */
+function bannerFine(b,f,r){f=f?1:0;const key='bnf'+b.k+b.col+b.dev+f+r;if(spr[key])return spr[key];
+  const N=BANNER,g=pgrid(N.w*r,N.h*r),s=(x,y,c)=>pset(g,x,y,c),Wd=PPAL.wood,G=PPAL.gold,R=PX.ramp(b.col),trade=b.k==='trade',pen=b.k==='pennant'||trade,
+    top=(trade?N.trade:N.top)*r,foot=(N.foot+1)*r-1,p0=2*r,x0=p0+r,[c0,h0]=N.cloth[b.k]||N.cloth.banner,cw=c0*r,ch=h0*r,fly=N.fly*r,cut=cw-(N.notch||3)*r,m=ch>>1;
+  // (the pole, lit on its left, its foot darker; the finial: a collar, a knob lit from the upper left, a point)
+  for(let y=top-r;y<=foot;y++)for(let i=0;i<r;i++)s(p0+i,y,Wd[(y>foot-4*r?2:1)+(i>=r/2?1:0)]);
+  for(let i=-1;i<=r;i++)s(p0+i,top-r-1,G[2]);
+  const kx=p0+(r-1)/2,ky=top-r-1-1.5*r;for(let y=Math.floor(ky-r);y<=Math.ceil(ky+r);y++)for(let x=Math.floor(kx-r);x<=Math.ceil(kx+r);x++){const dx=x-kx,dy=y-ky;if(dx*dx+dy*dy<=r*r*1.1)s(x,y,G[dx+dy<-r*.6?0:dx+dy>r*.6?2:1])}
+  for(let y=Math.floor(ky-r)-r;y<Math.floor(ky-r);y++)s(Math.round(kx),y,G[0]);
+  // (the cloth: each column's rows by its shape, waving and shaded by its folds)
+  const rows=i=>{if(pen){const t=Math.round(i*(ch-1)/(cw-1));return[[0,ch-1-t]]}
+      if(b.k==='rag'){const d=[0,1,0,2,1,0,3,1,2,0,2][(Math.floor(i/r)+f*3)%11];return[[0,ch-1-Math.min(d*r,m)-(PX.hash(i,f,61)<.35?1:0)]]}
+      const n=i-cut;return n<0?[[0,ch-1]]:[[0,m-2-n],[m+1+n,ch-1]]},
+    ph=i=>(i/cw*N.fold+f*.5)*Math.PI,wave=i=>Math.round(r*Math.sin(ph(i))*clamp((i-fly+r)/(2*r),0,1)),at=new Map();
+  for(let i=0;i<cw;i++){const sl=Math.cos(ph(i)),tone=j=>{const v=i<r?.2:sl,a=v>.5?0:v>-.2?1:2,e=Math.abs(v-.5)<.1?1:Math.abs(v+.2)<.1?2:0;return e&&(i+j)&1?e-(a===e?1:0):a};
+    for(const [r0,r1] of rows(i)){if(r1<r0)continue;for(let j=r0;j<=r1;j++){const y=top+j+wave(i),k=tone(j);at.set(i+','+j,y);s(x0+i,y,R[j===r0?Math.max(0,k-1):j===r1?Math.min(3,k+1):k])}
+      if(b.k==='banner'&&i<cut&&r1===ch-1&&!(i&1))s(x0+i,top+ch+wave(i),G[(i>>1)%2?1:2])}}
+  // (the device in the middle of the field, r px a dot of its pattern, ringed in the deepest shade; a pennant's small)
+  let T=BANNER_DEV[b.dev];if(T&&pen&&!trade&&b.dev!=='lantern')T=[0,2,4].map(y=>[0,2,4].map(x=>T[y][x]).join(''));
+  if(T){const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?['#4a2226','#2a1418']:['#f6eedc','#d0c4a6'],C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'},
+      i0=(trade?1:pen?1:N.dev!=null?N.dev:(c0-T[0].length)>>1)*r,j0=(trade?0:pen?Math.min(2,h0-T.length):(h0-T.length)>>1)*r,dev=new Map();
+    T.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')for(let v=0;v<r;v++)for(let u=0;u<r;u++)dev.set((i0+x*r+u)+','+(j0+y*r+v),C[c])}));
+    if(!trade)for(const p of dev.keys()){const [i,j]=p.split(',').map(Number);for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=(i+di)+','+(j+dj);if(!dev.has(q)&&at.has(q))s(x0+i+di,at.get(q),R[3])}}
+    for(const [p,c] of dev){const [i,j]=p.split(',').map(Number);if(at.has(p))s(x0+i,at.get(p),c)}}
+  g.edge=true;poutline(g);const c=pcanvas(g);c.px=p0;c.py=foot+1;return spr[key]=c}
+// (a banner planted on a pole, its foot at (x, y) in game px, waving on the clock: bannerFine where the scene has fine px, else the
+// map's flag (structures.js drawFlag))
+function drawPoleBanner(b,x,y,seed){const r=sceneRes();if(r<=1){drawFlag(b,x,y,seed);return}const s=bannerFine(b,Math.floor(performance.now()/400+(seed||0))%2,r);
+  ctx.drawImage(s,Math.round(x)-s.px/r,Math.round(y)+1-s.py/r,s.width/r,s.height/r)}
 // (an animal's step on the map, ms a frame)
 const D_STEP=150;
 // the tile grid over the view: a line along every tile edge from (x0, y0) for w by h world pixels, drawn offset by (ox, oy),
@@ -240,6 +275,8 @@ function camFollow(px,py){const F=CAM_FOLLOW,o=F.out,now=performance.now()/1000,
 // (a stage of the frame that fails is left out and the rest drawn, the canvas's state put back: its error told once, main.js loopError;
 //  the owner, 2026-11-15: one throw had cut a phone's frames short after the map, its fog, people, rain and night gone)
 function drawSafe(f,...a){const c=ctx;c.save();try{f(...a)}catch(e){loopError(e)}finally{c.restore()}}
+// (your siege camp: a camp's model (structures.js campSprite: seed, then one of looks by the holding), dx left and dy down of you)
+const SIEGE_CAMP={seed:77,looks:6,dx:24,dy:2};
 function drawWorld(){
   // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
   reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){const F=camFollow(P.x,P.y);C.x=snapV(clamp(F.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(F.y-VH/2,0,MH*TILE-VH));}
@@ -262,7 +299,10 @@ function drawWorld(){
   drawHerds(ents,cam,V);// (a pasture's herd: one animal on each worked field tile; the rest as herds: critters.js)
   // (your siege camp, raid and camp: not while a battle is fought on the map round you (B.world): its men stand there instead)
   if(P.raid&&!B?.world)ents.push({x:P.x,y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
-  if(P.siege&&!B?.world)ents.push({x:P.x,y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(P.banner(),X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
+  // (the siege camp: one of SIEGE_CAMP.looks by the holding besieged, of the ground's climate, at the lab's scale (gfx/campart.js
+  // CampArt.put: its model a fine px a px, at its own size) on its trampled yard, its fire lit and your banner planted)
+  if(P.siege&&!B?.world)ents.push({x:P.x,y:P.y-1,f:()=>{subT(P);const S=SIEGE_CAMP,t=townBy(P.siege.town),s=campSprite(S.seed+((t&&t.seed)|0)%S.looks,'camp',climAt(P.x,P.y)),X=Math.round(P.x-S.dx-s.ax-cam.x),Y=Math.round(P.y+S.dy-s.ay-cam.y),f=CampArt.fine(s);
+    ctx.drawImage(f.gr||s.gr,X,Y,s.width,s.height);CampArt.put(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],(t&&t.seed)|0);drawPoleBanner(P.banner(),X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
   if(P.camp&&!B?.world){if(WORLD_BATTLE.on)marchCircle(ents,P,cam);bandCampEnts(ents,cam);}
   if(P.stay&&P.stay.camp&&!B?.world)stayCampEnts(ents,cam);
   CampWake.draw(ents,cam);// (the camp a battle caught you in, on the field while it lasts: world/campsite.js)// (your army camped by the gate while you stay: world/stay.js STAY_CAMP)// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
