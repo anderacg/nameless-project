@@ -186,26 +186,33 @@ const FARM={ripe:1,
     horde:{hay:2,barley:1.5,wheat:.3,veg:.3,vines:0,orchard:0,flax:.3,irrigated:.4}},
   own:{sylvan:{herbs:3},karn:{potato:4,rye:2},horde:{grazed:7}},
   terrace:{karn:['wheat','barley','rye','veg','turnips','potato']},race:{human:'vale',dwarf:'karn',elf:'sylvan',orc:'horde'},
-  things:{stook:.4,haystack:.6,fruit:.9,palm:.55}};
+  things:{stook:.4,haystack:.6,fruit:.9,palm:.55},
+  fine:{lit:1.12,shade:.84,leaf:.07,soil:.12,rag:.3}};
 const cultureOf=t=>HOME[t.name]||FARM.race[(t.races||[])[0]]||'vale';
 function fieldCrop(t,tx,ty,c){const cu=cultureOf(t),M=FARM.people[cu]||{},A=FARM.own[cu]||{},L=(FARM.crops[c]||FARM.crops.grass).map(([k,w])=>[k,w*(M[k]==null?1:M[k])]);
   for(const k in A){const e=L.find(e=>e[0]===k);if(e)e[1]+=A[k];else L.push([k,A[k]])}let n=0;for(const e of L)n+=e[1];let r=hash(tx,ty,t.seed*7+21)*n;for(const e of L){r-=e[1];if(r<0)return e[0]}return L[0][0]}
 // a farm's plot at tile (tx, ty) of holding t in climate c (fr: how far into the frost, by the snow's cover; ed(x, y): px from an edge
 // with no plot beyond): its crop's rows (PX.worldCrop: the frost's snow in the troughs, the swamp's water), ragged into the ground
-// round it at an open edge, and what stands on it with its shadow, each pixel by px(rgb, x, y) (tile px)
-function farmPlot(t,tx,ty,c,fr,ed,px){const h=(x,y,s)=>hash(x,y,t.seed*7+s),cu=cultureOf(t),k=fieldCrop(t,tx,ty,fr>.5?'frost':c),v=Math.floor(h(tx,ty,22)*4),FT=FARM.things;
-  const sp=PX.worldCrop(k,c,v,{ripe:FARM.ripe,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k)}),T=new Uint8Array(256),Q=new Float32Array(768);
-  for(let i=0;i<256;i++){const x=i&15,y=i>>4,e=ed(x,y);if(e<2&&h(tx*16+x,ty*16+y,3)<(e?.25:.55))continue;T[i]=1;Q[i*3]=sp.rgb[i*3];Q[i*3+1]=sp.rgb[i*3+1];Q[i*3+2]=sp.rgb[i*3+2]}
+// round it at an open edge, and what stands on it with its shadow, each pixel by px(rgb, x, y) (tile px); fine (lit, shade: a plant's
+// top left and bottom right fine px, leaf, soil: their grain, rag: a fine px gone at an open edge) the lab's scale, by pxf(rgb, x, y) (fine px, z a tile px)
+function farmPlot(t,tx,ty,c,fr,ed,px,z=1,pxf=null){const h=(x,y,s)=>hash(x,y,t.seed*7+s),cu=cultureOf(t),k=fieldCrop(t,tx,ty,fr>.5?'frost':c),v=Math.floor(h(tx,ty,22)*4),FT=FARM.things;
+  const sp=PX.worldCrop(k,c,v,{ripe:FARM.ripe,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k)}),T=new Uint8Array(256),Q=new Float32Array(768),SK=new Uint8Array(256);
+  for(let i=0;i<256;i++){const x=i&15,y=i>>4,e=ed(x,y);if(e<2&&h(tx*16+x,ty*16+y,3)<(e?.25:.55))continue;T[i]=1;SK[i]=sp.tr&&sp.tr[i]?1:0;Q[i*3]=sp.rgb[i*3];Q[i*3+1]=sp.rgb[i*3+1];Q[i*3+2]=sp.rgb[i*3+2]}
   // (what stands: its shadow on the plot, then its pixels (navy round it) where they fall in the tile)
   const stand=(s,fx,fy)=>{for(let j=0;j<s.sh.length;j+=2){const x=fx+s.sh[j],y=fy+s.sh[j+1];if(x<0||y<0||x>15||y>15||!T[y*16+x])continue;const i=(y*16+x)*3;for(let n=0;n<3;n++)Q[i+n]+=([18,26,42][n]-Q[i+n])*.3}
-    const N=s.width;for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=s.a[j*N+i];if(!a)continue;const x=fx-s.ax+i,y=fy-s.ay+j;if(x<0||y<0||x>15||y>15)continue;const q=y*16+x;T[q]=1;
+    const N=s.width;for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=s.a[j*N+i];if(!a)continue;const x=fx-s.ax+i,y=fy-s.ay+j;if(x<0||y<0||x>15||y>15)continue;const q=y*16+x;T[q]=1;SK[q]=2;
       if(a===2){Q[q*3]=26;Q[q*3+1]=28;Q[q*3+2]=38}else{Q[q*3]=s.rgb[(j*N+i)*3];Q[q*3+1]=s.rgb[(j*N+i)*3+1];Q[q*3+2]=s.rgb[(j*N+i)*3+2]}}};
   if(k==='wheat'||k==='barley'||k==='rye'){let m=0;for(const [sx,sy,ex,ey] of [[8,0,0,1],[8,15,0,-1],[0,8,1,0],[15,8,-1,0]]){if(ed(sx,sy))continue;for(let n=0;n<2;n++){if(h(tx*4+m,ty,30+n)>=FT.stook)continue;m++;
       const along=4+n*7+Math.floor(h(tx,ty*4+m,32)*3),fx=ey?along:ex>0?4:11,fy=ey?(ey>0?7:15):along+3;stand(PX.worldCropThing('stook',m),Math.min(12,fx),Math.min(15,fy))}}}
   else if(k==='hay'&&h(tx,ty,33)<FT.haystack)stand(PX.worldCropThing('haystack',0),4+Math.floor(h(tx,ty,34)*8),8+Math.floor(h(tx,ty,35)*7));
   else if(k==='orchard')for(const [fx,fy] of [[4,7],[12,7],[4,15],[12,15]]){if(h(tx*2+fx,ty*2+fy,36)<FT.fruit)stand(PX.worldCropThing('fruit',(cu==='sylvan'?2:0)+Math.floor(h(tx,ty,37)*2)),fx+(fy>8?-1:0),fy)}
   else if(k==='irrigated'&&sp.ch>=0&&h(tx,ty,38)<FT.palm){const p=PX.worldTree('desert','palm',Math.floor(h(tx,ty,39)*4),0);stand(p,5+Math.floor(h(tx,ty,40)*6),sp.ch-1)}
-  for(let i=0;i<256;i++)if(T[i])px([Q[i*3],Q[i*3+1],Q[i*3+2]],i&15,i>>4)}
+  // (at the lab's scale (z fine px a game px, pxf drawing one): each game px of a plant lit at its top left and shaded at its bottom
+  //  right, a plant a little round, not a block; the soil grained by the fine px; the open edge ragged by the fine px; what stands on it as it is)
+  const F=FARM.fine;
+  for(let i=0;i<256;i++){if(!T[i])continue;const c0=[Q[i*3],Q[i*3+1],Q[i*3+2]],x=i&15,y=i>>4;if(z<=1||!pxf){px(c0,x,y);continue}
+    const e=SK[i]===2?9:ed(x,y);for(let j=0;j<z;j++)for(let q=0;q<z;q++){if(e<2&&h(tx*64+x*z+q,ty*64+y*z+j,42)<F.rag)continue;const n=h(tx*64+x*z+q,ty*64+y*z+j,41)-.5,m=SK[i]===2?1:SK[i]===1?1+n*F.soil:(q===0&&j===0?F.lit:q===z-1&&j===z-1?F.shade:1)+n*F.leaf;
+      pxf([Math.min(255,c0[0]*m),Math.min(255,c0[1]*m),Math.min(255,c0[2]*m)],x*z+q,y*z+j)}}}
 /* ---------- the world's water and roads (doc/WORLD_DESIGN.md §12.1). The water by the pixel (wpx): the water tiles (sea and lake, river, a ford's shallows, under a bridge:
    the plan's wk) read as a smooth field, its shore a curve (lakes rounded, rivers bending, a staircase of tiles a slope), wobbling
    a pixel or two. Over the window painted and a margin,

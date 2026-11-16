@@ -259,7 +259,7 @@ function estateGround(t,k,lv){
     for(const [tx,ty] of plots){const FX=tx*n2,FY=ty*n2,edge=(a,b)=>!has(tx+a,ty+b),f=(col,x,y,w,hh)=>rect(g,col,FX+x-x0*z,FY+y-y0*z,w||1,hh||1);// (against its building too: ragged into its yard; f: a fine px of the plot)
       // (how far a game px of the plot lies from an edge with no plot beyond, px)
       const eN=edge(0,-1),eS=edge(0,1),eW=edge(-1,0),eE=edge(1,0),ed=(x,y)=>Math.min(eW?x:9,eE?15-x:9,eN?y:9,eS?15-y:9),fr=frOf(tx,ty),hh=(x,y,s)=>h(FX+x,FY+y,s);
-      if(k==='farm')farmPlot(t,tx,ty,c,fr,ed,(col,x,y)=>f(hex(col),x*z,y*z,z,z));// a field: its crop in rows of plants, what stands on it (gfx/worldart.js farmPlot, by the game px)
+      if(k==='farm')farmPlot(t,tx,ty,c,fr,ed,(col,x,y)=>f(hex(col),x*z,y*z,z,z),z,(col,x,y)=>f(hex(col),x,y,1,1));// a field: its crop in rows of plants, what stands on it (gfx/worldart.js farmPlot, shaded by the fine px)
       else if(k==='pasture'){// grazing ground behind a rail fence (its herd walks on it: critters): the land's own ground, grazed,
         // trodden and fouled in patches (PEN) by the fine px, fewer toward an open edge
         const pn=penOf(fr),A=pn.a.map(hex),B=pn.b.map(hex);for(let y=0;y<n2;y++)for(let x=0;x<n2;x++){const n=wnoise2((FX+x)/z/5,(FY+y)/z/5,(t.seed%997)+61),q=hh(x,y,6),soft=Math.min(1,(ed(x/z|0,y/z|0)+1)/EDGE_SOFT);
