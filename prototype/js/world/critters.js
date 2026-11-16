@@ -39,19 +39,27 @@ const herdRec=o=>Array.isArray(o)?asHerd(unpackRec(o,HERD_KEYS,{crit:true,t:0,a:
 // the wild herds on the map (render.js drawWorld); livestock is drawn with its pasture (penEnts)
 function drawHerds(ents,cam,V){for(const c of W.critters.map(asHerd))if(c.wild)c.draw(ents,cam,V)}
 // a pasture's herd, drawn with its estate (structures.js holdingEnts, while its pasture is in sight): its animals inside the
-// fence, a cow to a fenced tile or two of the smaller kinds (one at the front of the tile, one at the back), each grazing to and
-// fro on its own tile by the clock, turning as it goes, never past its fence (penSpots: where each stands at time now: x, y its
+// fence, a cow to a fenced tile or two of the smaller kinds (one at the front of the tile, one at the back), each grazing a while
+// then walking to another spot by the clock (PEN_WALK), on its own tile or, every other walk, on the next tile of the pen (two
+// tiles side by side: a straight walk never crosses a fence), its legs moving only as it walks, never past its fence (penSpots: where each stands at time now: x, y its
 // feet, a its picture, flip). None while the pasture has no worked fields or no herd. Seen only: the pasture answers a click
 // (estates.js), its Pens tell of the herd
-function penSpots(t,now){const c=herdOf(t),F=c&&fieldsOf(t,'pasture');if(!F)return [];const T=F.tiles,per=CRITTERS[c.id].size>=3?1:2,out=[];
-  for(let j=0;j<Math.min(c.n,T.length*per);j++){const [tx,ty]=T[j%T.length],ph=now/2600+hash(tx,ty,t.seed+j)*6.283,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now*PX.MAP_STEPS/(2*D_STEP)+j*3)%PX.MAP_STEPS:0,
-    a=critterArt(c.id,fr,j),amp=Math.max(0,Math.min(3,(TILE-4-a.w)>>1));out.push({x:tx*TILE+TILE/2+Math.sin(ph)*amp,y:ty*TILE+(j<T.length?TILE-3:TILE-8),a,flip:mv<0,tx,ty})}
+function penSpots(t,now){const c=herdOf(t),F=c&&fieldsOf(t,'pasture');if(!F)return [];const T=F.tiles,per=CRITTERS[c.id].size>=3?1:2,out=[],W0=PEN_WALK,sec=now/1000;
+  for(let j=0;j<Math.min(c.n,T.length*per);j++){const [tx,ty]=T[j%T.length],sd=t.seed+j*31,h=hash(tx,ty,sd),L=W0.seg[0]+h*(W0.seg[1]-W0.seg[0]),
+    a0=critterArt(c.id,0,j),amp=Math.max(0,Math.min(W0.roam,(TILE-4-a0.w)>>1)),y0=ty*TILE+(j<T.length?TILE-3:TILE-8),
+    nb=[[0,0],...[[1,0],[-1,0],[0,1],[0,-1]].filter(([a,b])=>T.some(q=>q[0]===tx+a&&q[1]===ty+b))],
+    at=k=>{const [ox,oy]=k&1?nb[Math.floor(hash(k,tx+ty,sd)*nb.length)]:[0,0];return[(tx+ox)*TILE+TILE/2+(hash(tx*7+k,ty,sd)*2-1)*amp,y0+oy*TILE+(hash(tx,ty*7+k,sd)*2-1)*W0.yAmp]},
+    u=sec/L+h*7,k=Math.floor(u),A=at(k),B=at(k+1),Z=at(k-1),d=Math.hypot(B[0]-A[0],B[1]-A[1]),go=Math.min(d/W0.walk,L*.6),r=(u-k)*L-(L-go),
+    f=r>0&&go>0?r/go:0,x=A[0]+(B[0]-A[0])*f,y=A[1]+(B[1]-A[1])*f,fr=f>0?1+Math.floor(f*d/W0.stride)%(PX.MAP_STEPS-1):0,
+    dx=f>0?B[0]-A[0]:A[0]-Z[0];out.push({x,y,a:fr?critterArt(c.id,fr,j):a0,flip:dx<0,tx,ty})}
   return out}
+// (each at its pen's lift, its barn's, as its ground is drawn (structures.js drawLotGround), not its own spot's: on a slope it stood
+// past the fence (liftDraw lifts it by its own, LIFT_NOW))
 // (PEN_ENTS: the pens' animals, handed from the holdings' pass (structures.js, drawn into the scene at the game's pixels, where a figure at
 // the marchers' scale lost every other pixel: "sticks") to those who move (render.js drawWorld), drawn at the screen's pixels as
 // in a battle; the owner, 2026-11-13: "For pasture use the same drawing in battle")
 const PEN_ENTS=[];
-function penEnts(t,ents,cam){penSpots(t,0).forEach((s0,j)=>ents.push({x:s0.x,y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;ctx.save();subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),w=Math.max(4,s.a.w-2);// (its fraction of a pixel kept inside save/restore: drawn into the scene, a shift left over would pile up frame on frame)
+function penEnts(t,ents,cam){const p=bldSpots(t).pasture,L0=p&&typeof liftAt==='function'?liftAt(p.x,p.y):0;penSpots(t,performance.now()).forEach((s0,j)=>ents.push({x:s0.x,y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;ctx.save();subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y-(p?L0-LIFT_NOW:0)),w=Math.max(4,s.a.w-2);// (its fraction of a pixel kept inside save/restore: drawn into the scene, a shift left over would pile up frame on frame)
   ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.translate(x,sy);ctx.scale(s.flip?-s.a.k:s.a.k,s.a.k);ctx.drawImage(s.a.s,-(s.a.s.width>>1),-s.a.s.height+(s.a.k<1?2:1));ctx.restore()}}))}
 // (the wild game's and the herds' own dice: the stream 'critters', core/rng.js, so a kind added or a spawning rule changed never
 // moves the world's Math.random)
