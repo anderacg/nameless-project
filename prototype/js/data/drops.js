@@ -34,9 +34,11 @@ const CARCASS={on:true,near:40,pick:8,most:240,seek:160,find:.35,
    can start rotting and finally turns into bones. This should be the same for all dead bodies"; world/carcasses.js BodyRot): the
    fallen of a fight (Carcass) and your own remains (world/death.js Remains) lie as they fell for rot days, then rot (their picture
    tinted tint; no flies of its own, those a sprite of their own to draw over) till bones days, then lie as bones; the fallen of a fight are gone at
-   gone days (your remains stay as bones till buried). box: the px of a body's picture, its foot foot px down; col: the bones' */
-const BODY_ROT={on:true,rot:1,bones:3,gone:8,tint:'rgba(58,72,30,.45)',box:[64,40],foot:30,
-  col:{bone:'#e4dccb',bone2:'#b9ae97',dark:'#4a443a',stain:'rgba(52,40,26,.35)',cloth:'#5b4e40',hide:'#6b5038'}};
+   gone days (your remains stay as bones till buried). box: the px of a body's picture, its foot foot px down (game px: the picture
+   itself at the lab's scale, world/carcasses.js BodyRot); mottle: the share of a rotting body gone darker in blotches (mold, its
+   colour); col: the bones', lit (bone3) to dark, the rag's (cloth, cloth2 its folds) and the hide's (hide, hide2) */
+const BODY_ROT={on:true,rot:1,bones:3,gone:8,tint:'rgba(58,72,30,.45)',box:[64,40],foot:30,mottle:.2,mold:'rgba(30,38,18,.5)',
+  col:{bone:'#e4dccb',bone2:'#b9ae97',bone3:'#f6f1e4',dark:'#4a443a',stain:'rgba(52,40,26,.35)',cloth:'#5b4e40',cloth2:'#443a30',hide:'#6b5038',hide2:'#4f3a28'}};
 /* junk (the owner, 2026-11-13): broken pieces a fallen man leaves (DROPS.worn.junk), good for nothing but a few coins at any market,
    as a trophy is (data/monsters.js MATS: v its worth, icon and col its picture) */
 const JUNK={junk_blade:{n:'Broken Blade',v:3,icon:'blade',col:'#7d7b72'},junk_links:{n:'Rusted Mail Links',v:2,icon:'plate',col:'#8a6a4a'},

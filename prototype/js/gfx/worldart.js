@@ -730,37 +730,48 @@ function paintArena(c,steps){const W=BW,H=BH,P3=GROUND_RGB[c],seed=CLIMS.indexOf
       ()=>PX.canvas(Math.ceil(W/2),Math.ceil(H/2),g=>{const it=A.paintSteps(g,0,0,W,H,0,2);while(!it.next().done);})))}};
   return steps?(function*(){return A})():A}
 
-/* what moves on the map: water glints, cloud shadows drifting by day, smoke over holdings, snow in the frost, fireflies at night */
-// a cloud's shadow at full size, pixel by pixel (hard edges, never scaled)
-const CLOUD=(()=>{const c=document.createElement('canvas');c.width=192;c.height=96;const g=c.getContext('2d', { willReadFrequently: true });g.fillStyle='#000';
+/* what moves on the map: water glints, fish leaping, cloud shadows drifting by day, smoke over holdings, snow in the frost, fireflies
+   at night. At the lab's scale where the canvas drawn on holds fine px (envFine: the fine scene's, sceneRes), else a game px each */
+// a cloud's shadow at full size, pixel by pixel (hard edges, never scaled): 2 px a game px (drawn at half), its rim thinner and
+// broken a fine px at a time
+const CLOUD=(()=>{const c=document.createElement('canvas');c.width=384;c.height=192;const g=c.getContext('2d', { willReadFrequently: true });
   const E=[...Array(9)].map((_,i)=>[36+hs(i,1,3)*120,28+hs(i,2,3)*40,(20+hs(i,3,3)*20)*1.4,(20+hs(i,3,3)*20)*.8]);
-  for(let y=0;y<96;y++)for(let x=0;x<192;x++)if(E.some(([cx,cy,rx,ry])=>((x+.5-cx)/rx)**2+((y+.5-cy)/ry)**2<=1))g.fillRect(x,y,1,1);return c})();
-// layer 0 (under everything): water glints; layer 1 (over parties, under fog and night): clouds, smoke, snow, fireflies
+  for(let y=0;y<192;y++)for(let x=0;x<384;x++){let d=9;for(const [cx,cy,rx,ry] of E)d=Math.min(d,((x/2+.25-cx)/rx)**2+((y/2+.25-cy)/ry)**2);if(d>1)continue;
+    if(d>.84&&hs(x,y,7)<(d-.84)/.16*.8)continue;g.fillStyle=d>.84?'rgba(0,0,0,.55)':'#000';g.fillRect(x,y,1,1)}return c})();
+// (the px of the canvas drawn on, in game px: a fine px where its transform holds them, else one)
+const envFine=()=>{const r=typeof sceneRes==='function'?sceneRes():1;return r>1&&ctx.getTransform().a>=r?1/r:1};
+// layer 0 (under everything): water glints, fish; layer 1 (over parties, under fog and night): clouds, smoke, snow, fireflies
 function drawEnv(cam,V,layer){
-  const now=performance.now()/1000,dark=darkness(),x0=Math.max(0,Math.floor(cam.x/TILE)),y0=Math.max(0,Math.floor(cam.y/TILE)),x1=Math.min(MW-1,x0+Math.ceil(VW/TILE)+1),y1=Math.min(MH-1,y0+Math.ceil(VH/TILE)+1);
+  const now=performance.now()/1000,dark=darkness(),x0=Math.max(0,Math.floor(cam.x/TILE)),y0=Math.max(0,Math.floor(cam.y/TILE)),x1=Math.min(MW-1,x0+Math.ceil(VW/TILE)+1),y1=Math.min(MH-1,y0+Math.ceil(VH/TILE)+1),
+    q=envFine(),f=(x,y,w,h)=>ctx.fillRect(Math.round(x/q)*q,Math.round(y/q)*q,w*q,h*q);
   ctx.save();
+  // fish leap now and then over the fishing grounds (each its own colour: salmon, eel, pearl oysters' silver), lit on its back, its
+  // tail trailing as it turns over its arc, a splash and drops where it leaves the water and goes in
+  if(layer===0){for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const d=DEP_AT[ty*MW+tx];if(d<0||tiles[ty*MW+tx]!==T_WATER)continue;const ph=(now*.4+hs(tx,ty,3)*7)%3;if(ph>1)continue;
+    const g=DEPOSITS[d].g,fx=tx*TILE+4+Math.floor(hs(tx,ty,5)*6)+ph*6-cam.x,fy=ty*TILE+10-Math.sin(ph*Math.PI)*5-cam.y,wy=ty*TILE+11-cam.y,up=ph<.5,n=Math.round(2/q);
+    ctx.globalAlpha=1;ctx.fillStyle=GOODS[g].res==='fish'&&g!=='pearls'?GOODS[g].col:'#dfe4ea';f(fx,fy,n,1);if(q<1){f(up?fx-q:fx+n*q,fy+(up?q:-q),1,1);ctx.fillStyle='#eef4f8';f(fx+q,fy-q,1,1)}
+    if(ph<.15||ph>.85){ctx.fillStyle='#d8ecfa';f(fx-1,wy,Math.round(4/q),1);if(q<1){ctx.globalAlpha=.7;f(fx-1.5,wy-q,1,1);f(fx+3,wy-2*q,1,1);f(fx+1,wy-3*q,1,1)}}}ctx.globalAlpha=1}
   // glints on water, sliding with the wind; in the fine scene a fine px each (3 x 1 lab px), on the sea's and the lakes' water only
   // (a river's current runs in its own streaks: gfx/worldterrain.js terrainEnts; the owner: "make a water effect like water")
   if(layer===0){const r=typeof sceneRes==='function'?sceneRes():1,k1=1/r;for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){if(tiles[ty*MW+tx]!==T_WATER)continue;const c=CLIMS[climate[ty*MW+tx]];if(c==='frost')continue;
     for(let k=0;k<2;k++){const ph=(now*.35+hs(tx,ty,k))%1,a=Math.sin(ph*Math.PI);if(a<.15)continue;const gx=tx*TILE+2+Math.floor(hs(tx,ty,k+4)*9)+Math.floor(ph*3*r)*k1,gy=ty*TILE+2+Math.floor(hs(tx,ty,k+6)*12);
       if(r>1&&drawnWater(gx,gy)!==1)continue;ctx.globalAlpha=a*.55;ctx.fillStyle=c==='swamp'?'#8ab08a':'#d8ecfa';ctx.fillRect(gx-cam.x,gy-cam.y,r>1?3*k1:3,r>1?k1:1)}}ctx.restore();return}
-  // fish leap now and then over the fishing grounds (each its own colour: salmon, eel, pearl oysters' silver)
-  if(layer===0){for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const d=DEP_AT[ty*MW+tx];if(d<0||tiles[ty*MW+tx]!==T_WATER)continue;const ph=(now*.4+hs(tx,ty,3)*7)%3;if(ph>1)continue;
-    const fx=tx*TILE+4+Math.floor(hs(tx,ty,5)*6)+Math.floor(ph*6)-cam.x,fy=ty*TILE+10-Math.round(Math.sin(ph*Math.PI)*5)-cam.y;ctx.globalAlpha=1;ctx.fillStyle=GOODS[DEPOSITS[d].g].res==='fish'&&DEPOSITS[d].g!=='pearls'?GOODS[DEPOSITS[d].g].col:'#dfe4ea';ctx.fillRect(Math.round(fx),Math.round(fy),2,1);
-    if(ph<.15||ph>.85){ctx.fillStyle='#d8ecfa';ctx.fillRect(Math.round(fx)-1,ty*TILE+11-cam.y,4,1)}}ctx.globalAlpha=1}
   // cloud shadows by day
   if(dark<.8){ctx.globalAlpha=.1*(1-dark);for(let i=0;i<14;i++){const span=MW*TILE+300,x=((hs(i,1,21)*span+now*6*(1+hs(i,2,21)))%span)-150,y=hs(i,3,21)*MH*TILE;
-    if(x+192<cam.x||x>cam.x+VW||y+96<cam.y||y>cam.y+VH)continue;ctx.drawImage(CLOUD,Math.round(x-cam.x),Math.round(y-cam.y))}}
-  // smoke from the hearths of a few houses of each holding in view
+    if(x+192<cam.x||x>cam.x+VW||y+96<cam.y||y>cam.y+VH)continue;ctx.drawImage(CLOUD,Math.round((x-cam.x)/q)*q,Math.round((y-cam.y)/q)*q,192,96)}}
+  // smoke from the hearths of a few houses of each holding in view: puffs rounded at their corners, lit on top, greying as they rise
   for(const t of TOWNS){if(Math.hypot(t.x-P.x,t.y-P.y)>VW)continue;const hs0=(t.lots||[]).filter(l=>l.k==='house'&&l.st==='built').slice(0,t.T.smoke);
-    for(let j=0;j<hs0.length;j++){const l=hs0[j],sx=(l.x+l.n*.7)*TILE-cam.x,sy=l.y*TILE+2-cam.y,ox=0,oy=0;if(sx<-20||sy<-40||sx>VW+20||sy>VH+20)continue;
-      for(let k=0;k<5;k++){const ph=(now*.3+k/5+j*.37)%1;ctx.globalAlpha=(1-ph)*.45;ctx.fillStyle=ph<.3?'#8a8a8a':'#b4b4b4';const w=1+Math.round(ph*3);
-        ctx.fillRect(Math.round(sx+ox+Math.sin(ph*5+k)*2+ph*6-w/2),Math.round(sy+oy-ph*18),w,w)}}}
-  // snow falls in the frost (with the weather on, only when it snows: gfx/weather.js), fireflies glow on warm nights (all over the
-  // view: with ambient life on, its own fireflies in the woods and the marsh near you instead, ambient.js)
+    for(let j=0;j<hs0.length;j++){const l=hs0[j],sx=(l.x+l.n*.7)*TILE-cam.x,sy=l.y*TILE+2-cam.y;if(sx<-20||sy<-40||sx>VW+20||sy>VH+20)continue;
+      for(let k=0;k<5;k++){const ph=(now*.3+k/5+j*.37)%1,w=1+ph*3,n=Math.max(1,Math.round(w/q)),x=sx+Math.sin(ph*5+k)*2+ph*6-w/2,y=sy-ph*18,c=n>2?1:0;
+        ctx.globalAlpha=(1-ph)*.45;ctx.fillStyle=ph<.3?'#8a8a8a':'#b4b4b4';f(x+c*q,y,n-2*c,n);if(c)f(x,y+q,n,n-2);
+        if(q<1&&n>2){ctx.fillStyle=ph<.3?'#a2a2a2':'#cacaca';f(x+q,y,n-3,1);f(x,y+q,1,n-3)}}}}
+  // snow falls in the frost (with the weather on, only when it snows: gfx/weather.js), some flakes a little star; fireflies glow on
+  // warm nights (all over the view: with ambient life on, its own fireflies in the woods and the marsh near you instead, ambient.js)
   const here=climAt(P.x,P.y);
-  if(here==='frost'&&!WEATHER.on){ctx.fillStyle='#ffffff';for(let i=0;i<70;i++){const x=(hs(i,1,31)*VW+now*(8+hs(i,2,31)*10)+Math.sin(now+i)*6)%VW,y=(hs(i,3,31)*VH+now*(18+hs(i,4,31)*14))%VH;ctx.globalAlpha=.5+hs(i,5,31)*.5;ctx.fillRect(Math.round(x),Math.round(y),1,1)}}
-  else if(dark>.5&&(here==='grass'||here==='swamp')&&!AMBIENT.on){ctx.fillStyle='#e8f080';for(let i=0;i<22;i++){const x=(hs(i,1,41)*VW+Math.sin(now*.7+i)*20+VW)%VW,y=(hs(i,2,41)*VH+Math.cos(now*.5+i*2)*14+VH)%VH;ctx.globalAlpha=dark*(.4+.6*Math.max(0,Math.sin(now*2+i*1.7)));ctx.fillRect(Math.round(x),Math.round(y),1,1)}}
+  if(here==='frost'&&!WEATHER.on){ctx.fillStyle='#ffffff';for(let i=0;i<70;i++){const x=(hs(i,1,31)*VW+now*(8+hs(i,2,31)*10)+Math.sin(now+i)*6)%VW,y=(hs(i,3,31)*VH+now*(18+hs(i,4,31)*14))%VH,big=q<1&&hs(i,6,31)<.3;
+    ctx.globalAlpha=.5+hs(i,5,31)*.5;f(x,y,1,1);if(big){ctx.globalAlpha*=.6;f(x-q,y,1,1);f(x+q,y,1,1);f(x,y-q,1,1);f(x,y+q,1,1)}}}
+  else if(dark>.5&&(here==='grass'||here==='swamp')&&!AMBIENT.on){ctx.fillStyle='#e8f080';for(let i=0;i<22;i++){const x=(hs(i,1,41)*VW+Math.sin(now*.7+i)*20+VW)%VW,y=(hs(i,2,41)*VH+Math.cos(now*.5+i*2)*14+VH)%VH,a=dark*(.4+.6*Math.max(0,Math.sin(now*2+i*1.7)));
+    ctx.globalAlpha=a;f(x,y,1,1);if(q<1){ctx.globalAlpha=a*.35;f(x-q,y,1,1);f(x+q,y,1,1);f(x,y-q,1,1);f(x,y+q,1,1)}}}
   ctx.restore();
 }
 

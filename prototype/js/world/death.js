@@ -227,7 +227,7 @@ class Remains extends WorldObject{
   paint(g){const c=this.corpse,k=(B?.world?1:WORLD_BATTLE.sprite)/WORLD_BATTLE.scale;if(c?.sp){g.scale(k,k);g.translate(-c.x,-c.y);drawBody(g,c,1,1)}else BodyRot.plain(g,{type:this.grave&&!ST[this.type]?'militia':this.type||'militia',team:0,v:this.v||0,hero:!this.grave})}// (yours as you were; buried later, a plain man's)
   draw(ents,cam,V){if(!this.inView(V))return;const r=this;
     ents.push({x:r.x,y:r.y,f:()=>{const x=r.x-cam.x,y=r.y-cam.y;BodyRot.draw(r,x,y,r.fell??r.day,g=>r.paint(g),false,r.face||1);
-      if(!r.empty())lootGlow(x,y-2,LOOT_GLOW.r,performance.now()/1000,r.x*.13+r.y*.07)}})}
+      if(!r.empty())lootGlow(x,y-2,LOOT_GLOW.r,performance.now()/1000,r.x*.13+r.y*.07,WORLD_VIEW.build)}})}
   // each hour: a band near finds remains not yet picked clean, and carries all of it off (its plunder); never before your eyes
   static hour(){const X=DEATH.remains;
     for(const r of this.list){if(r.empty()||!r.robbable()||!Death.unseenAt(r.x,r.y))continue;const b=bandits.find(o=>!o.dead&&Math.hypot(o.x-r.x,o.y-r.y)<X.seek);if(!b||Math.random()>=X.find)continue;
@@ -350,15 +350,15 @@ class Grave extends Remains{
   draw(ents,cam,V){const g=this,X=DEATH.grave,C=X.col,t=performance.now()/1000;if(g.flow)this.drawFlow(ents,cam);if(!g.inView(V))return;
     if(g.unburied&&g.kind==='remains'&&BodyRot.stage(g.fell??g.day)!=='bones')return super.draw(ents,cam,V);// (unburied and not yet bones: the body as it lies)
     const S=GraveArt.sprite(g.kind,g.seed||(g.seed=1+Math.floor(Math.abs(g.x*7+g.y*13))%997)),night=darkness()>.35;
-    ents.push({x:g.x,ly:g.y,y:g.y-1e5,f:()=>{ctx.drawImage(S.ground,Math.round(g.x-cam.x)-S.ax,Math.round(g.y-cam.y)-S.ay)}});
-    ents.push({x:g.x,y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.glows();ctx.save();
+    ents.push({x:g.x,ly:g.y,y:g.y-1e5,f:()=>GraveArt.put(S,S.ground,Math.round(g.x-cam.x),Math.round(g.y-cam.y))});
+    ents.push({x:g.x,y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),q=WORLD_VIEW.build,I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.glows();ctx.save();
       if(lit){const [gw,gh]=X.art.groundOf[g.kind]||[13,6];ctx.globalAlpha=.14+.12*pulse;ctx.fillStyle=C.glow;ctx.beginPath();ctx.ellipse(x,y-2,gw*.8+pulse*2,gh*.8+pulse,0,0,6.283);ctx.fill();ctx.globalAlpha=1}
-      ctx.drawImage(S.cv,x-S.ax,y-S.ay);GraveArt.live(g,x,y,t,night);
+      GraveArt.put(S,S.cv,x,y);GraveArt.live(g,x,y,t,night);
       if(lit){const top=y-({cairn:17,grave:15,small:9,remains:5,stone:12,tomb:28}[g.kind]||12);
         const col=ctx.createLinearGradient(0,top-I.h,0,top+2);col.addColorStop(0,'rgba(255,231,160,0)');col.addColorStop(1,'rgba(255,231,160,'+(.1+.08*pulse).toFixed(2)+')');ctx.fillStyle=col;ctx.fillRect(x-2,top-I.h,5,I.h+2);
         for(let i=0;i<I.motes;i++){const p=(t*I.rise+i/I.motes)%1,mx=x+Math.sin(t*1.7+i*2.1)*6*(1-p),my=top-p*I.h;
           ctx.globalAlpha=(1-p)*.35;ctx.fillStyle=i%2?C.mote:C.mote2;ctx.beginPath();ctx.arc(mx,my,1.8,0,6.283);ctx.fill();
-          ctx.globalAlpha=(1-p)*.95;ctx.fillStyle=C.core;ctx.fillRect(Math.round(mx),Math.round(my),1,1)}}
+          ctx.globalAlpha=(1-p)*.95;ctx.fillStyle=C.core;ctx.fillRect(Math.round(mx/q)*q,Math.round(my/q)*q,q,q)}}
       ctx.restore()}})}
   // (on the minimap once you know it; found as a place is, its title rising: world/discovery.js)
   mapDot(V){return null}
@@ -367,10 +367,10 @@ class Grave extends Remains{
   // (the flow: motes from the grave to you along curves, one after another; you glow as they arrive; then the gain over you)
   drawFlow(ents,cam){const g=this,f=g.flow,X=DEATH.grave.flow,C=DEATH.grave.col,now=performance.now(),e=(now-f.t0)/1000/X.dur;
     if(f.end&&(now-f.end)/1000>X.show){g.flow=null;return}
-    ents.push({y:1e9,f:()=>{ctx.save();const gx=g.x-cam.x,gy=g.y-cam.y-6,hx=P.x-cam.x,hy=P.y-cam.y-10;
+    ents.push({y:1e9,f:()=>{ctx.save();const q=WORLD_VIEW.build,gx=g.x-cam.x,gy=g.y-cam.y-6,hx=P.x-cam.x,hy=P.y-cam.y-10;
       for(let i=0;i<X.motes;i++){const p=clamp((e-i/X.motes*X.spread)/(1-X.spread),0,1);if(p<=0||p>=1)continue;const s=Math.sin(i*2.39),q=1-p,
           cx=(gx+hx)/2+s*X.bend,cy=Math.min(gy,hy)-X.arc-Math.abs(s)*X.bend*.5,x=q*q*gx+2*q*p*cx+p*p*hx,y=q*q*gy+2*q*p*cy+p*p*hy;
-        ctx.globalAlpha=.35;ctx.fillStyle=i%2?C.mote:C.mote2;ctx.beginPath();ctx.arc(x,y,2.2,0,6.283);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle=C.core;ctx.fillRect(Math.round(x),Math.round(y),1,1)}
+        ctx.globalAlpha=.35;ctx.fillStyle=i%2?C.mote:C.mote2;ctx.beginPath();ctx.arc(x,y,2.2,0,6.283);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle=C.core;ctx.fillRect(Math.round(x/q)*q,Math.round(y/q)*q,q,q)}
       if(e>X.spread){const a=clamp(1-Math.abs(e-1)/.6,0,1);ctx.globalAlpha=.35*a;ctx.fillStyle=C.glow;ctx.beginPath();ctx.ellipse(hx,hy+4,10,14,0,0,6.283);ctx.fill()}
       if(f.end){const k=(now-f.end)/1000/X.show;ctx.globalAlpha=1-k;txt('+'+f.n+' XP',Math.round(hx),Math.round(hy-6-k*10),C.text,'center')}
       ctx.restore()}})}
