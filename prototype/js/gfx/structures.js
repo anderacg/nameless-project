@@ -36,7 +36,7 @@ const lotK=l=>l.k==='centre'?1:WORLD_VIEW.house;
 function lotDrawBox(l,X,Y,N){const k=lotK(l),n=N*k;return [X+(N-n)/2,Y-n,n,k]}
 function drawLot(t,l,s,X,Y,n){const r=sceneRes(),N=s.width;n=n||N;if(n===N&&r>1&&s._f&&s._fr===r)ctx.drawImage(s._f,X,Y,N,N);else ctx.drawImage(s,X,Y,n,n)}
 // (a picture taken down to k of its size, for what reads game px (the depth overdraw, the shadows): kept on it)
-const scaledPic=(s,k)=>k>=1||!s?s:(s._k&&s._kk===k?s._k:(s._kk=k,s._k=mkc(Math.max(1,Math.round(s.width*k)),Math.max(1,Math.round(s.height*k)),g=>{g.imageSmoothingEnabled=false;g.drawImage(s,0,0,s.width*k,s.height*k)})));
+const scaledPic=(s,k)=>k===1||!s?s:(s._k&&s._kk===k?s._k:(s._kk=k,s._k=mkc(Math.max(1,Math.round(s.width*k)),Math.max(1,Math.round(s.height*k)),g=>{g.imageSmoothingEnabled=false;g.drawImage(s,0,0,s.width*k,s.height*k)})));
 /* a building's rotors over its picture at (X, Y), its corner (the owner, 2026-11-08: "draw mills separately from the building to
    animate it"): a windmill's sails and a watermill's wheel turning (engine PX.ROTORS.spin turns a second, from the clock and its
    seed); still (at its seed's angle) where it stands outside your sight, as you last saw it */
@@ -52,16 +52,17 @@ function lotYard(t,l){const m=lotModel(t,l),N=m.cell,h=m.snow||m.ground;l._gimg=
 const LOT_AHEAD={r:600,ms:3};
 function lotsAhead(V){const t0=performance.now();for(const t of TOWNS.filter(q=>q.lots&&Math.hypot(q.x-P.x,q.y-P.y)<V+LOT_AHEAD.r).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)))
   for(const l of t.lots){if(l._s&&l._gimg&&(sceneRes()<=1||l._s._fr===sceneRes()))continue;lotSprite(t,l);lotYard(t,l);lotFine(t,l,sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}
-  for(const cv of FINE_Q){FINE_Q.delete(cv);if(sceneRes()>1)buildFine(cv,sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}
+  for(const cv of FINE_Q){FINE_Q.delete(cv);if(sceneRes()>1)buildFine(cv,cv._want||sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}
   // (the settled camps near you too: their tents and pieces (encampments.js warm), so none is made the frame it comes into view)
   const r=sceneRes();for(const s of W.sites){if(!s.warm||s._warmR===r||Math.hypot(s.x-P.x,s.y-P.y)>V+LOT_AHEAD.r)continue;if(s.warm(t0,LOT_AHEAD.ms))s._warmR=r;if(performance.now()-t0>LOT_AHEAD.ms)return}}
 // (a site's picture at the scene's finer resolution: its model made r times finer by its maker (siteCanvas mk), with its own touches
 // (deco) drawn r times larger; asked for when it is drawn (fineOf), made ahead with the lots (FINE_Q), drawn where it is made (drawFine),
 // else the picture itself)
 const FINE_Q=new Set();
-function fineOf(cv,r){if(r<=1||!cv.mk)return null;if(cv._f&&cv._fr===r)return cv._f;FINE_Q.add(cv);return null}
+function fineOf(cv,r){if(r<=1||!cv.mk)return null;if(cv._f&&cv._fr===r)return cv._f;cv._want=r;FINE_Q.add(cv);return null}
 function buildFine(cv,r){const m=cv.mk(r),N=m.cell;cv._f=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0);if(cv.deco){g.scale(r,r);cv.deco(g,cv.width)}});cv._fr=r}
-function drawFine(cv,X,Y,k=1){if(k<1){ctx.drawImage(cv,X,Y,cv.width*k,cv.height*k);return}const f=fineOf(cv,sceneRes());if(f)ctx.drawImage(f,X,Y,cv.width,cv.height);else ctx.drawImage(cv,X,Y)}
+// (k times its size: under 1 its own picture taken down; else made k times finer again (a whole k), drawn k times its size)
+function drawFine(cv,X,Y,k=1){if(k<1){ctx.drawImage(cv,X,Y,cv.width*k,cv.height*k);return}const f=fineOf(cv,sceneRes()*Math.round(k));if(f)ctx.drawImage(f,X,Y,cv.width*k,cv.height*k);else ctx.drawImage(cv,X,Y,cv.width*k,cv.height*k)}
 // burnt: every pixel darkened toward soot, a scatter of ash and the last embers (still whole pixels, never half-see-through)
 function charred(src,seed){return mkc(src.width,src.height,g=>{g.drawImage(src,0,0);const d=g.getImageData(0,0,src.width,src.height),a=d.data;
   for(let i=0;i<a.length;i+=4){if(a[i+3]<255)continue;const k=(i>>2),h=hash(k%src.width,k/src.width|0,seed);const f=h<.08?.25:.45;a[i]=a[i]*f+30*(1-f)|0;a[i+1]=a[i+1]*f+24*(1-f)|0;a[i+2]=a[i+2]*f+20*(1-f)|0;if(h>.995){a[i]=232;a[i+1]=106;a[i+2]=42}}

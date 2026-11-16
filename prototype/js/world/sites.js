@@ -140,7 +140,7 @@ class Site extends WorldObject{
   draw(ents,cam,V){if(!this.inView(V))return;const s=this;
     // (at WORLD_VIEW.house, as the holdings' buildings: its picture k of its size about its point, at its own size made finer (drawFine);
     //  its fire and flag at their own)
-    const sp0=siteSprite(s),k=WORLD_VIEW.house;ents.push({st:true,x:s.x,y:s.y,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(s.x-cam.x-sp0.ax*k),Math.round(s.y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=siteSprite(s),X=Math.round(s.x-cam.x-sp.ax*k),Y=Math.round(s.y-cam.y+8-sp.ay*k);
+    const sp0=siteSprite(s),k=WORLD_VIEW.house*(WORLD_VIEW.sites[s.type]||1);ents.push({st:true,x:s.x,y:s.y,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(s.x-cam.x-sp0.ax*k),Math.round(s.y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=siteSprite(s),X=Math.round(s.x-cam.x-sp.ax*k),Y=Math.round(s.y-cam.y+8-sp.ay*k);
       if(sp.gr)ctx.drawImage(sp.gr,X,Y,sp.gr.width*k,sp.gr.height*k);if(s.cleared)ctx.globalAlpha=.5;drawFine(sp,X,Y,k);if(!s.cleared)depthPic(scaledPic(sp,k),X,Y);if(sp.fire&&!s.cleared)drawFire(X+sp.fire[0]*k,Y+sp.fire[1]*k,s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),X+sp.flag[0]*k,Y+sp.flag[1]*k,s.seed);ctx.globalAlpha=1;}})}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
   tip(){return '<b>'+Discovery.nameOf(this)+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?', empty for now':'')+'</small><span class="act">Click: go there</span>'}
@@ -587,12 +587,16 @@ function genSites(){
 // spot sites in view, and forget the one you last left once you are well away from it (G.lastSite: REACH past where your army
 // reaches it). A site opens only when you clicked or tapped it (the owner, 2026-10-22): a click beside it opens it at once, one
 // further off walks you there and opens it on arrival (world.js clickAt, the chase: marchStep meets it); walking past one, or
-// stopping by one you did not click, opens nothing. Never opens anything itself (false)
+// stopping by one you did not click, opens nothing. Never opens anything itself (false). SITE_SPOT: px round a site your scouts
+// spot whose ground becomes known with it (fog.js revealDisk)
+const SITE_SPOT=40;
 function updateSites(){
   const S=yourSight();Discovery.check();
   for(const s of W.sites){
     const dd=Math.hypot(P.x-s.x,P.y-s.y);
-    if(!s.seen&&s.scoutable&&S.sees(s.x,s.y,.9)){s.seen=true;train('scout',4);log('Your scouts spot '+s.scoutLine()+'.')}
+    // (spotted: its ground known too, so it shows on the map past the fog of land you never saw (the owner, 2026-11-16: "why I cannot
+    //  see cave but in the map and scout can see"): SITE_SPOT px round it)
+    if(!s.seen&&s.scoutable&&S.sees(s.x,s.y,.9)){s.seen=true;revealDisk(s.x,s.y,SITE_SPOT);train('scout',4);log('Your scouts spot '+s.scoutLine()+'.')}
     if(G.lastSite===s&&dd>worldBattleReach(s)+REACH)G.lastSite=null;
   }
   return false;

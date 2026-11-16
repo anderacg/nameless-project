@@ -9,11 +9,12 @@
 /* build: how large a building, a camp or a site stands to its game px: the world lab's scale (the owner, 2026-11-15: "Lab scale (~2
    men)"): a model's px a fine px, a cottage some two men tall; a holding's centre (its walls on the world's ways) at its own size.
    house: how large the holdings' other buildings and the sites stand (1: their own size, their models made finer, a model's px a
-   fine px; the owner, 2026-11-16: "House scale too small need to change the sprite to be bigger") */
+   fine px; the owner, 2026-11-16: "House scale too small need to change the sprite to be bigger"); sites: a kind of site's own
+   times that (a whole number: its model made as many times finer again), the shrine's standing stones else no taller than a man */
 /* zoom: CSS px a fine px on the map, the world lab's (engine/worldlab.js LAB.zoom), phoneZoom on a window narrower than phone CSS px
    (its phoneZoom, phone); the map never shows the world smaller than this (the owner, 2026-11-15: "Remove all old concepts that
    reduce the map scale"), and closer at most in times it */
-const WORLD_VIEW={fine:2,build:.5,house:1,zoom:2,phoneZoom:1.5,phone:700,in:2};
+const WORLD_VIEW={fine:2,build:.5,house:1,sites:{shrine:2},zoom:2,phoneZoom:1.5,phone:700,in:2};
 /* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): its climates
    read at a place warped climWarp game px by noise, each px's picked from their shares (climPick: by a slow noise at sc game px, spread k, grain at its edge: ragged
    tongues and islands, not salt and pepper), so no climate's edge follows the tiles; the frost's snow in drifts (snowPatch: its noise from
