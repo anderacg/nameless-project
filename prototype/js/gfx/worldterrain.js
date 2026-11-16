@@ -377,6 +377,17 @@ function grassOver(x,y,hw){const r=typeof sceneRes==='function'?sceneRes():1,T=T
       for(let j=0,q=0;j<Cc.length;j++,q+=2){const px=bx+D[q],py=by+D[q+1];if(px>=0&&py>=0&&px<BW&&py<BH)U[py*BWb+px]=Cc[j]}}}
   if(!U)return;GRASS_OVER.cv.getContext('2d').putImageData(GRASS_OVER.buf,0,0,0,0,BW,BH);
   ctx.drawImage(GRASS_OVER.cv,0,0,BW,BH,fx0/r-T.cam.x,oy/r+L-T.cam.y,BW/r,BH/r)}
+// footprints, the lab's (LAB.prints; the owner, 2026-11-16: "Do all that"): a man walking leaves a print every step px, left and right of his
+// way, where the ground takes one (printGround: snow, sand, the marsh, wet ground by the water), fading over fade s; kept in a ring
+// (fine px x, y lifted with the land, the time, the ground, the side), drawn under the grass (terrainEnts)
+const FOOTPRINTS={buf:null,n:0,at:0,walk:new WeakMap()};
+function printGround(x,y){const t=terrAt(x,y);if(t===T_WATER||t===T_FORD||t===T_ROAD||t===T_MOUNT||RoadBand.on(x,y))return -1;const c=CLIMS[terClimate(Math.floor(x),Math.floor(y))],K=WORLD_TERRAIN.prints.kinds;
+  if(c==='frost'||(WM.lv&&WM.lv[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]>=SLOPE.snow))return K.snow;if(c==='desert')return K.sand;if(c==='swamp')return K.marsh;
+  const b=WORLD_TERRAIN.prints.bank;return drawnWet(x+b,y)||drawnWet(x-b,y)||drawnWet(x,y+b)||drawnWet(x,y-b)?K.wet:-1}
+function stepPrint(u){const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,r=typeof sceneRes==='function'?sceneRes():1;if(r<=1)return;let w=F.walk.get(u);if(!w){F.walk.set(u,{x:u.x,y:u.y,d:0,side:1});return}
+  const dx=u.x-w.x,dy=u.y-w.y,l=Math.hypot(dx,dy);w.x=u.x;w.y=u.y;if(!l||l>PR.step*4)return;w.d+=l;if(w.d<PR.step)return;w.d=0;w.side=-w.side;
+  const px=u.x-dy/l*w.side*PR.side,py=u.y+dx/l*w.side*PR.side,g=printGround(px,py);if(g<0)return;
+  if(!F.buf)F.buf=new Float32Array(PR.max*5);const o=F.at*5,B=F.buf;B[o]=px*r;B[o+1]=(py-liftAt(px,py))*r;B[o+2]=performance.now();B[o+3]=g;B[o+4]=w.side;F.at=(F.at+1)%PR.max;F.n=Math.min(PR.max,F.n+1)}
 // (a river's run, its current's line: its line smoothed over smooth times its half-width each way (a wide one's line wanders within
 // its water: its current runs straighter), and each point's distance along it, game px)
 function riverRun(WY){const X=WY.X,Y=WY.Y,n=X.length,SX=new Float32Array(n),SY=new Float32Array(n),C=new Float32Array(n),on=new Uint8Array(n),D=new Float32Array(n),K=WORLD_WAYS.river.flow.smooth;
@@ -401,7 +412,10 @@ function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)r
       w1=t*1.9,w2=t*G.gust[1]*6.28/3,g2=6.28/G.gust[0],hx=P.x*r,hy=P.y*r,R2=G.push,dec=Math.exp(-dt/G.spring*2.3);TGRASS.t=now;
     if(!TGRASS.buf||TGRASS.buf.width!==BW||TGRASS.buf.height!==BH){TGRASS.buf=new ImageData(BW,BH);TGRASS.buf.u=new Uint32Array(TGRASS.buf.data.buffer);TGRASS.cv=mkcv(BW,BH)}
     const U=TGRASS.buf.u;U.fill(0);let any=false;
-    // (the water moving, the lab's: foam riding the shore, the river's current in streaks running down it (a lit crest, a darker trough
+    // (footprints, the lab's, fading: under the grass)
+  {const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,nw=now,B=F.buf;for(let k=0;k<F.n;k++){const o=k*5,a=1-(nw-B[o+2])/1000/PR.fade;if(a<=0)continue;const x=Math.round(B[o]-cam.x*r),y=Math.round(B[o+1]-cam.y*r);
+      if(x<0||y<0||x>=BW-1||y>=BH-1)continue;const c=PR.col[B[o+3]],v=(Math.round(204*a)<<24|c[2]<<16|c[1]<<8|c[0])>>>0;U[y*BW+x]=v;U[y*BW+x+1]=v;U[(y+1)*BW+x+(B[o+4]>0?1:0)]=v;any=true}}
+  // (the water moving, the lab's: foam riding the shore, the river's current in streaks running down it (a lit crest, a darker trough
     //  behind it, each px of a streak sharing its phase with those beside it, so they run as lines, not dots), white down a fall)
     {const ts=now/1000,FO=0xd8f6f4ec,SP=0x5cf2ece0,SL=0x30eee4d4,WF=0x99fffcfa,RW=WORLD_WAYS.river.flow;
       for(const c of recs){const S=c.shore,F=c.flow,ox=c.cx*CHUNK*r-cam.x*r-5+5,oy=c.cy*CHUNK*r-cam.y*r;

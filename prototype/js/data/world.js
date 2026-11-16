@@ -75,7 +75,9 @@ const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,h
   flow:{lane:1.5,gate:22,on:.55,speed:10,period:30,len:7,edge:.7,smooth:2.5}},
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,fade:36,biome:{mix:[.1,.3,.35,.22],patch:[.72,.56,.58,.6]},track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3,wall:5},
   bridge:{clear:1.4,ramp:28,over:6,abut:4,open:3,brook:{span:3,clear:.6,apart:24,ford:1.6},pile:12,arch:26,rail:5,post:8,shade:3,shadow:96}};
-const WORLD_TERRAIN={climWarp:14,shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
+// (prints: footprints, the lab's: one every step px a man walks, side px off his way, fading over fade s, max kept; on snow, sand, the
+// marsh, and ground within bank px of drawn water, in their colours: worldterrain.js stepPrint)
+const WORLD_TERRAIN={prints:{step:2,side:.75,fade:18,max:1500,bank:6,kinds:{snow:0,sand:1,marsh:2,wet:3},col:[[110,130,170],[150,112,66],[44,38,24],[96,78,52]]},climWarp:14,shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
   decor:{flower:[[236,220,90],[236,240,246],[200,150,210],[240,160,120]],marram:[[214,204,150],[180,172,116]],drift:[[160,138,108],[196,178,146]],shell:[238,230,216],litter:[[110,92,50],[96,80,44],[128,104,58]]},bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
