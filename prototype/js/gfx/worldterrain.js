@@ -281,7 +281,13 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   //  along, a phase; along -1 a fall's))
   rec.shore=Int16Array.from(SH);rec.flow=Int16Array.from(FL);
   // (each game px drawn as water or not (its fine px's middle): what a man in water is drawn by, so none wades on the drawn bank)
-  {const WE=rec.wet=new Uint8Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const f=(y*r+(r>>1))*W2+x*r+(r>>1);WE[y*w+x]=WF[f]?WK[f]||1:0}}
+  {const WE=rec.wet=new Uint8Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const f=(y*r+(r>>1))*W2+x*r+(r>>1);WE[y*w+x]=WF[f]?WK[f]||1:0}
+    // (each water px's distance to the drawn land, game px (3 a step, 4 aslant, then /3; the chunk's edge not land), for how deep a man
+    //  there stands: drawnDepth)
+    const SD=rec.shd=new Uint8Array(w*h),D=new Uint16Array(w*h);for(let k=0;k<w*h;k++)D[k]=WE[k]?765:0;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=y*w+x;if(!D[k])continue;let v=D[k];if(x>0)v=Math.min(v,D[k-1]+3);if(y>0){v=Math.min(v,D[k-w]+3);if(x>0)v=Math.min(v,D[k-w-1]+4);if(x<w-1)v=Math.min(v,D[k-w+1]+4)}D[k]=v}
+    for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){const k=y*w+x;if(!D[k])continue;let v=D[k];if(x<w-1)v=Math.min(v,D[k+1]+3);if(y<h-1){v=Math.min(v,D[k+w]+3);if(x<w-1)v=Math.min(v,D[k+w+1]+4);if(x>0)v=Math.min(v,D[k+w-1]+4)}D[k]=v}
+    for(let k=0;k<w*h;k++)SD[k]=Math.min(255,Math.round(D[k]/3))}
   // (what the view reads of it: each game px's lift (fine px) on the chunk's ground, and each screen game px's ground row, game px)
   {const LI=rec.lift=new Int16Array(w*h),DE=rec.dep=new Int16Array(w*h).fill(-1);for(let y=0;y<h;y++)for(let x=0;x<w;x++){LI[y*w+x]=LFF[(y*r+(r>>1))*W2+x*r+(r>>1)];const d=DEPF[(y*r)*W2+x*r];DE[y*w+x]=d<0?-1:Y+((d/r)|0)}}
   const vis=(jx,jy)=>{const L=lfAt(jx,jy),sy=jy-Y*r-L,sx=jx-X*r;return sy<0?-2:sy>=H2||sx<0||sx>=W2?-3:DEPF[sy*W2+sx]===jy-Y*r&&TOP[sy*W2+sx]?sy:-1};
@@ -439,6 +445,11 @@ let LIFT_NOW=0;
 // its water's kind there, 1 the sea's or a lake's, 2 a river's, 3 a fall's, 0 none or not painted fine)
 function drawnWater(x,y){x=Math.floor(x);y=Math.floor(y);if(typeof WorldArt==='undefined'||x<0||y<0||x>=MW*TILE||y>=MH*TILE)return 0;const cx=Math.floor(x/CHUNK),cy=Math.floor(y/CHUNK),c=WorldArt.chunks.get(cy*WorldArt.cols+cx);
   return c&&c.wet&&c.wet[(y-cy*CHUNK)*c.cv.width+x-cx*CHUNK]||0}
+// (how deep a man at game px (x, y) stands, levels: his tile's depth (map.js waterDepths; open water as deep as WATER.open), eased in
+// from the drawn bank over WATER.draw.ramp px, the lab's (it reads the depth at his px); 0 where no water is drawn)
+function drawnDepth(x,y){x=Math.floor(x);y=Math.floor(y);if(!drawnWet(x,y))return 0;const i=Math.floor(y/TILE)*MW+Math.floor(x/TILE),dt=waterDepths(WM)[i],D=dt<0?WATER.open:dt;
+  const cx=Math.floor(x/CHUNK),cy=Math.floor(y/CHUNK),c=WorldArt.chunks.get(cy*WorldArt.cols+cx);if(!c||!c.shd)return D;
+  const sd=c.shd[(y-cy*CHUNK)*c.cv.width+x-cx*CHUNK];return D*Math.min(1,(sd+.5)/WATER.draw.ramp)}
 function drawnWet(x,y){x=Math.floor(x);y=Math.floor(y);if(typeof WorldArt==='undefined'||x<0||y<0||x>=MW*TILE||y>=MH*TILE)return false;const cx=Math.floor(x/CHUNK),cy=Math.floor(y/CHUNK),c=WorldArt.chunks.get(cy*WorldArt.cols+cx);
   if(c&&c.wet){const w=c.cv.width,v=c.wet[(y-cy*CHUNK)*w+x-cx*CHUNK];if(v!==undefined)return v>0}return waterBand(Math.floor(y/TILE)*MW+Math.floor(x/TILE))>0}
 function liftAt(x,y){if(!isFinite(x)||!isFinite(y)||typeof WorldArt==='undefined')return 0;x=Math.floor(x);y=Math.floor(y);if(x<0||y<0||x>=MW*TILE||y>=MH*TILE)return 0;

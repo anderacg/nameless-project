@@ -210,10 +210,10 @@ function drawMarcherAt(u,o,cam){
   // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld (a sword worn out of sight: SHEATH); a flag-bearer's
   // (your hero's, carrying your banner) only if it is sheathed (SHEATH.show), his hands on the pole; none for a beast)
   const s=marchSprite(u,o,I?.pose,true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
-  // (in water, the world lab's way: under it from his feet up as deep as it is (WATER.cut figure px by its band), only where water is
-  //  drawn (worldterrain.js drawnWet: none wades on the drawn bank); his body under it faint and wavering, the water's line about him
+  // (in water, the world lab's way: under it from his feet up as deep as it is where he stands (WATER.cut figure px by its band; worldterrain.js
+  //  drawnDepth: his tile's depth eased in from the drawn bank, none on the drawn bank); his body under it faint and wavering, the water's line about him
   //  a wavy ring of foam, a ripple spreading from him (the owner, 2026-11-16: "the water that wrap around unit looks too flat"))
-  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),wb=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH&&(typeof drawnWet!=='function'||drawnWet(u.x,u.y))?waterBand(ty*MW+tx):0,cut=wb?WATER.cut[Math.min(4,wb)]:0;
+  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),wb=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH?(typeof drawnDepth==='function'?depthBand(drawnDepth(u.x,u.y)):waterBand(ty*MW+tx)):0,cut=wb?WATER.cut[Math.min(4,wb)]:0;
   ctx.save();ctx.translate(x,y);ctx.scale(sx,k);if(cut){ctx.beginPath();ctx.rect(bx-8,by-8,s.width+16,s.height+8-cut);ctx.clip()}
   G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
   if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u),cam)}
