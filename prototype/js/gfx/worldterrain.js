@@ -147,21 +147,25 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
       const open=true,ddL=dd,cmax=cw.indexOf(Math.max(...cw));
       for(let j=0;j<r;j++)for(let i=0;i<r;i++){const fi=(y*r+j)*W2+x*r+i,o=fi*4,fx=gx*r+i,fy=gy*r+j,rs=RF.S[fi];let col,shade=true;
         if(!m&&rs<0){const a=WY.SP[RF.Q[fi]],tt=RF.T[fi],hw=(WY.HW[a]+(WY.HW[a+1]-WY.HW[a])*tt)*r,q=Math.min(1,(rs+hw)/hw),dp=WY.DP[a]+(WY.DP[a+1]-WY.DP[a])*tt;
+          // (the frost's shelf ice along its banks only on its own course, not where it runs out into a lake or the sea (the open water's
+          //  smooth mask, WAT) nor within shore.ice px of it (its mouth widening into it): there its edges are open water, the ice straight lines
+          //  across it; the open water's own ice: terWater)
           // (the current's run down it: the px's distance along the river's line, and across it, past its segment's ends as well,
           //  so the run never stands still over a bend's outer wedge); its ripples and streaks along it, in its main stream only,
           //  fewer out from its middle (a wide one's lanes would curl round a bend's inside)
           const RW=WV.river.flow,RN=WY.RN||(WY.RN=riverRun(WY)),ux=RN.X[a+1]-RN.X[a],uy=RN.Y[a+1]-RN.Y[a],L=Math.hypot(ux,uy)||1,px=(fx+.5)/r-RN.X[a],py=(fy+.5)/r-RN.Y[a],
             A=(RN.C[a]+(px*ux+py*uy)/L)*r,c=Math.abs(px*uy-py*ux)/L*r,ln=Math.round(c/RW.lane),e=c/hw/RW.edge;
-          col=wayWater(Q,CLIMS[ci],fx,fy,(dp*(1-q*q)+.04)*(ford?WV.river.ford:1),q,ford,A,c,e);shade=false;WK[fi]=2;WA[fi]=A;
+          col=wayWater(Q,CLIMS[ci],fx,fy,(dp*(1-q*q)+.04)*(ford?WV.river.ford:1),m||dd<T.shore.ice?0:q,ford,A,c,e);shade=false;WK[fi]=2;WA[fi]=A;
           WL[fi]=e>=1||hs(ln,1,546)<e||wnoise2(A/RW.gate,ln*.7,544)<RW.on?0:1+((hs(ln,0,545)*900)|0);
           // (a natural ford where a track crosses a stream (the owner: "No need to be human made stone ford"): the stream spread
           //  shallow over a gravel bed along the road, its pebbles showing, riffles where it runs over them)
           for(const f of FOc){const tx2=fx/r-f.mx,ty2=fy/r-f.my,t=tx2*f.ux+ty2*f.uy,v=ty2*f.ux-tx2*f.uy;if(Math.abs(v)>f.hw||Math.abs(t)>f.hb+3)continue;
             col=wayWater(Q,CLIMS[ci],fx,fy,.04+.08*Math.abs(v)/f.hw,q,false);if(wnoise2(fx/(3*k2),fy/(1.6*k2),579)>.72)col=tmix(col,Q.fall[0],.45);break}
-          // (a fall's white water, seen whichever way its river runs: its lip whitening as it goes over, a pool churning foam at its foot)
-          const FD=WY.FD||(WY.FD=fallDist(WY)),f0=FD[a],f1=FD[a+1];if(f0<1e8||f1<1e8){const fd=f0<1e8&&f1<1e8?f0+(f1-f0)*tt:f0<1e8?f0:f1,FA=T.falls,nz=hs(fx,fy,577);
-            if(fd<0&&fd>-FA.lip){const u=1+fd/FA.lip;col=tmix(col,Q.fall[nz<.4?0:1],.35+.6*u);WK[fi]=3}
-            else if(fd>=0&&fd<FA.pool){const u=1-fd/FA.pool;col=tmix(col,nz<u*.7?Q.foam:Q.fall[1],.25+.7*u*u);if(u>.35)WK[fi]=3}}}
+          // (a fall's white water, seen whichever way its river runs: its lip whitening as it goes over, a pool churning foam at its foot;
+          //  only across its own channel (falls.wide of its half-width), fading in from its ends and its sides, never spread across a wide river's or a lake's water)
+          const FD=WY.FD||(WY.FD=fallDist(WY)),f0=FD[a],f1=FD[a+1],FA=T.falls,cw=1-c/(hw*FA.wide);if((f0<1e8||f1<1e8)&&cw>0){const fd=f0<1e8&&f1<1e8?f0+(f1-f0)*tt:f0<1e8?f0:f1,nz=hs(fx,fy,577);
+            if(fd<0&&fd>-FA.lip){const u=(1+fd/FA.lip)*Math.min(1,cw*3);col=tmix(col,Q.fall[nz<.4?0:1],.95*u);if(u>.3)WK[fi]=3}
+            else if(fd>=0&&fd<FA.pool){const u=(1-fd/FA.pool)*Math.min(1,cw*3);col=tmix(col,nz<u*.7?Q.foam:Q.fall[1],.3*u+.65*u*u);if(u>.35)WK[fi]=3}}}
         else if(over&&!(BKF[fi]<1&&t===T_WATER))col=[F[fo],F[fo+1],F[fo+2]];
         else{C[0]=C[1]=C[2]=0;
           for(let c=0;c<4;c++){if(cw[c]<.02)continue;const c3=m?terWater(PAL[c],c,m,dd,P,gx,gy,fx,fy):terLand(PAL[c],c,WY.land[ti],e,Math.hypot(Gx[k],Gy[k]),ddL,open,fx,fy,wd);if(c===cmax&&!m)KD[fi]=TER_K+1;C[0]+=c3[0]*cw[c];C[1]+=c3[1]*cw[c];C[2]+=c3[2]*cw[c]}
