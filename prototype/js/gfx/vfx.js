@@ -145,12 +145,18 @@ function drawFallen(g,c,V,q,k){const X=Math.round(c.x),Y=Math.round(c.y),M=V.mou
 // all of them: the settled painted into the layer once (into each of its tiles the body reaches), and the layer drawn; those still
 // falling or bleeding drawn as they are
 function drawCorpses(){
-  if(!B.corpses)return;const L=goreLayer(),bake=c=>{const X=Math.round(c.x),Y=Math.round(c.y),S=c.sp,r=Math.max(48,S&&S.beast?Math.max(S.beast.width,S.beast.height)+12:0)*(B.world?WORLD_BATTLE.sprite:1);L.each(X-r,Y-r,X+r,Y+r,g=>drawBody(g,c,1,1))};
+  if(!B.corpses||B.world)return;// (on the world map each is drawn among the living, by its feet: corpseEnts)const L=goreLayer(),bake=c=>{const X=Math.round(c.x),Y=Math.round(c.y),S=c.sp,r=Math.max(48,S&&S.beast?Math.max(S.beast.width,S.beast.height)+12:0)*(B.world?WORLD_BATTLE.sprite:1);L.each(X-r,Y-r,X+r,Y+r,g=>drawBody(g,c,1,1))};
   if(B.goreOn!==BLOOD.on){B.goreOn=BLOOD.on;L.clear();for(const c of B.corpses)if(c.baked)bake(c)}// (blood switched: painted again)
   const live=[];
   for(const c of B.corpses){if(c.baked||!c.sp)continue;const t=B.t-(c.td||0),q=Math.min(1,t/GORE.fall),k=Math.min(1,Math.max(0,(t-GORE.fall)/GORE.pool));
     if(k>=1||q>=1&&(!BLOOD.on||c.dry)){bake(c);c.baked=true}else live.push([c,q,k])}
   drawLayer(L);for(const [c,q,k] of live)drawBody(ctx,c,q,k)}
+/* the fallen of a fight on the world map (B.world), each drawn by its feet among the living, so the map's trees and buildings in front
+   of one are drawn back over it (depth.js worldOverdraw; nf: none fades for a body behind it), never a body over a crown behind
+   which it lies (the owner, 2026-11-16: "Recheck dead, corpse layer when draw near tree"); its fall and its pool as drawCorpses' */
+function corpseEnts(v){if(!B.corpses)return [];const out=[],x0=v.x-48,x1=v.x+v.w+48,y0=v.y-48,y1=v.y+v.h+48;
+  for(const c of B.corpses){if(!c.sp||c.x<x0||c.x>x1||c.y<y0||c.y>y1)continue;const t=B.t-(c.td||0),q=Math.min(1,t/GORE.fall),k=Math.min(1,Math.max(0,(t-GORE.fall)/GORE.pool));
+    out.push({x:c.x,y:c.y-.5,corpse:c,q,k})}return out}
 /* ---------- C: movement. Feet kick up dust as they run (riders and big beasts a cloud), the colour of the ground; arrows stay
    where they strike, in the ground or in a man (in his shield, with splinters, when it takes them from the front) ---------- */
 const dustCol=()=>({desert:'214,190,140',frost:'232,238,244',swamp:'118,118,92'}[B&&B.env&&B.env.c]||'170,152,112');

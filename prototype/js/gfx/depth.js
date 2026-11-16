@@ -91,6 +91,10 @@ function worldOverdraw(list,cam){
     const x0=Math.max(0,Math.floor((B[0]-m.e)/k)),y0=Math.max(0,Math.floor((B[1]-m.f)/k)),x1=Math.min(cw,Math.ceil((B[2]-m.e)/k))-1,y1=Math.min(ch,Math.ceil((B[3]-m.f)/k))-1;
     if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);const hid=overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam,!!e.nf);if(e.own&&hid>=WDEPTH.ghost.min&&ghosts++<WDEPTH.ghost.most)ghostOver(e,x0,y0,x1-x0+1,y1-y0+1)}}}
   finally{WDEPTH.trk=false;if(di)ctx.drawImage=WDEPTH.di;else delete ctx.drawImage;if(fr)ctx.fillRect=WDEPTH.fr;else delete ctx.fillRect}
-  for(const e of top)one(e);WDEPTH.pics.length=0}
+  // (the structures' pictures kept while a fight on the map is drawn after the map, its men and fallen overdrawn by them too: render.js
+  //  drawBattle; drawWorld clears them as it begins)
+  for(const e of top)one(e);if(!fightOnMapDrawn())WDEPTH.pics.length=0}
+// (a fight on the map being drawn: the battle's B, not the box above)
+function fightOnMapDrawn(){return typeof B!=='undefined'&&!!B&&!!B.world}
 // a world goes in: no fades carried over
 onWorld(()=>{WDEPTH.al.clear();WDEPTH.cov.clear();WDEPTH.t=0});

@@ -646,7 +646,10 @@ function drawBattle(){
     // (the overdraw reckons in the map scene's pixels, on the camera's whole pixels as drawWorld keeps the scene (a fraction there
     //  left every pixel of the cover's mask off its grid: no tree drawn over anyone): under that transform, each drawn under the field's own)
     if(B.world){const T=ctx.getTransform(),w=B.world,k=T.a*w.scale,cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)};ctx.save();ctx.setTransform(k,0,0,k,T.e+k*(cam.x-w.x0),T.f+k*(cam.y-w.y0));
-      try{worldOverdraw(E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,id:o,f:()=>{ctx.setTransform(T);draw(o)}})),cam)}finally{ctx.restore()}}else E.forEach(draw)}
+      // (the fallen among them by their feet, just behind one standing where they lie: vfx.js corpseEnts)
+      const L=E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,id:o,f:()=>{ctx.setTransform(T);draw(o)}}));
+      for(const c of corpseEnts(camView()))L.push({y:w.world(c).y,nf:true,f:()=>{ctx.setTransform(T);drawBody(ctx,c.corpse,c.q,c.k)}});L.sort((a,b)=>a.y-b.y);
+      try{worldOverdraw(L,cam)}finally{ctx.restore()}}else E.forEach(draw)}
   for(const a of B.arrows){if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50),kind=missileOf(a);
       ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';const k=B.world?WORLD_BATTLE.sprite:1;ctx.fillRect(Math.round(a.x-2*k),Math.round(a.y),4*k,k);
       ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-4-z));ctx.scale(k,k);
