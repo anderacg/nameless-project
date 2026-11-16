@@ -17,7 +17,10 @@ const WORLD_VIEW={fine:2,build:.5,zoom:2,phoneZoom:1.5,phone:700,in:2};
    tongues and islands, not salt and pepper), so no climate's edge follows the tiles; the frost's snow in drifts (snowPatch: its noise from
    lo to hi eased in, grain at its edge, its tones by noise at shade fine px, tufts the share of its grass clumps gone under it);
    what the game painted over the ground (over: the trampled patches and yards) keep of the fine ground's own colour in it, grain its
-   grain, edge the share of its edge px it covers; the sea's and lakes' shores a smooth curve over their tiles, read at a place warped shore.warp game px (noise at
+   grain, feather the game px over which it thins into the ground round it, blur the game px its
+   colours are blurred over (a yard meets the worn ground round it softly); the grass's clumps thinned over a lot's
+   tiles read at a place warped warp game px; open land meadow where a slow noise (with quick of a quicker one in it) passes
+   meadow.at, the grass shading into it over band either side, grain at its edge; the sea's and lakes' shores a smooth curve over their tiles, read at a place warped shore.warp game px (noise at
    shore.sc), shore.bias toward the water so no water tile's middle is land; a wide river's banks the same curve over its tiles, shore.river toward the water
    (so its own curves lie inside it), its dirt bank along that curve to shore.bank of the field past it; a river's water shore.lip fine px under its banks, its dirt edge (an earth face) along it; no terrace
    step within shore.unstep banks' width of a river (its bank one smooth slope, never stairs); its curves read reach game px further out, so the smooth bank is never cut short; the land drawn lifted up the screen by its height, up to liftMax levels; lh fine px of
@@ -85,7 +88,7 @@ const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,h
     flag:{w:6,h:4,mortar:.86,kerb:2,vary:.14},cut:{out:5,half:3},reach:16,slope:.4}};
 // (prints: footprints, the lab's: one every step px a man walks, side px off his way, fading over fade s, max kept; on snow, sand, the
 // marsh, and ground within bank px of drawn water, in their colours: worldterrain.js stepPrint)
-const WORLD_TERRAIN={prints:{step:2,side:.75,fade:18,max:1500,bank:6,kinds:{snow:0,sand:1,marsh:2,wet:3},col:[[110,130,170],[150,112,66],[44,38,24],[96,78,52]]},climWarp:14,climPick:{sc:7,k:2.2,grain:.3},snowPatch:{lo:.5,hi:.63,grain:.06,shade:9,tufts:.85},over:{keep:.25,grain:.08,edge:.55},shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12,ice:16},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9,wide:1.2},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
+const WORLD_TERRAIN={prints:{step:2,side:.75,fade:18,max:1500,bank:6,kinds:{snow:0,sand:1,marsh:2,wet:3},col:[[110,130,170],[150,112,66],[44,38,24],[96,78,52]]},climWarp:14,climPick:{sc:7,k:2.2,grain:.3},snowPatch:{lo:.5,hi:.63,grain:.06,shade:9,tufts:.85},over:{keep:.25,grain:.08,feather:4,blur:3,warp:10},meadow:{at:.62,band:.06,quick:.3,grain:.025},shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12,ice:16},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9,wide:1.2},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
   decor:{flower:[[236,220,90],[236,240,246],[200,150,210],[240,160,120]],marram:[[214,204,150],[180,172,116]],drift:[[160,138,108],[196,178,146]],shell:[238,230,216],litter:[[110,92,50],[96,80,44],[128,104,58]]},bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices

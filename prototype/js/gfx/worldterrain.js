@@ -39,7 +39,7 @@ function terWood(land,gx,gy){const wu=(gx+(wnoise2(gx/12,gy/12,551)-.5)*16-8)/16
   return (isW(wx,wy)*(1-au)+isW(wx+1,wy)*au)*(1-av)+(isW(wx,wy+1)*(1-au)+isW(wx+1,wy+1)*au)*av}
 // (the land's kinds, by what they show)
 const TERK={water:0,wet:1,sand:2,dune:3,grass:4,meadow:5,wood:6,rock:7,scree:8,snow:9,bank:10,oasis:11};
-let TER_K=0;// (the kind terLand last chose)
+let TER_K=0,TER_MW=-1;// (the kind terLand last chose, and its meadow's share on open land: -1 none)
 const tmix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t],tmul=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
 // (a tone of a palette by patches a few px across, a little grain within: the lab's pick)
 const tpick=(L3,x,y,s)=>L3[Math.min(L3.length-1,Math.floor((wnoise2(x/5,y/5,s)*.8+hs(x,y,s+1)*.2)*L3.length))];
@@ -49,7 +49,7 @@ const tpick=(L3,x,y,s)=>L3[Math.min(L3.length-1,Math.floor((wnoise2(x/5,y/5,s)*.
 // X0, Y0, RW: the sea's and the lakes'); its ways the lab's (worldways.js: the rivers and brooks as curves, their surface stepping
 // down the land; the roads worn tracks; the bridges standing over the water)
 function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
-  const T=WORLD_TERRAIN,PAL=terrainPal(),LV=WM.lv||(WM.lv=reliefOf(WM)),LH=landHeight(WM),W2=w*r,H2=h*r,HE2=HE*r,out=new ImageData(W2,H2),O=out.data,CW=new Uint8ClampedArray(W2*HE2*4),WK=new Uint8Array(W2*HE2),WA=new Float32Array(W2*HE2),WL=new Int16Array(W2*HE2),PL=new Uint8Array(W2*HE2),KD=new Uint8Array(W2*HE2),TS=16,WY=waysOf(P),WV=WORLD_WAYS,Rv=WM.river,k2=r/2;
+  const T=WORLD_TERRAIN,PAL=terrainPal(),LV=WM.lv||(WM.lv=reliefOf(WM)),LH=landHeight(WM),W2=w*r,H2=h*r,HE2=HE*r,out=new ImageData(W2,H2),O=out.data,CW=new Uint8ClampedArray(W2*HE2*4),WK=new Uint8Array(W2*HE2),WA=new Float32Array(W2*HE2),WL=new Int16Array(W2*HE2),PL=new Uint8Array(W2*HE2),KD=new Uint8Array(W2*HE2),NT=new Uint8Array(W2*HE2),MWA=new Float32Array(W2*HE2).fill(-1),TS=16,WY=waysOf(P),WV=WORLD_WAYS,Rv=WM.river,k2=r/2;
   // (the game px whose levels are worked: the chunk, a px round it, and south of it as far as the highest lift reaches (HE rows))
   const gx0=X-2,gy0=Y-2,GW=w+4,GH=HE+4,Lv=new Float32Array(GW*GH),St=new Float32Array(GW*GH),Gx=new Float32Array(GW*GH),Gy=new Float32Array(GW*GH),Wa=new Uint8Array(GW*GH),SW=new Float32Array(GW*GH);
   const tlv=(tx,ty)=>LV[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))],tix=(gx,gy)=>Math.max(0,Math.min(MH-1,gy>>4))*MW+Math.max(0,Math.min(MW-1,gx>>4));
@@ -135,6 +135,11 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   const CLG=new Uint8Array(GW*GH);for(let j=0;j<GH;j++,(j&31)||(yield))for(let i=0;i<GW;i++)CLG[j*GW+i]=terClimate(gx0+i,gy0+j);
   const at=(gx,gy)=>(gy-gy0)*GW+gx-gx0,mi=(gx,gy)=>(gy-KP.Y0)*KP.RW+gx-KP.X0,inK=(gx,gy)=>gx>=KP.X0&&gy>=KP.Y0&&gx<KP.X0+KP.RW&&gy<KP.Y0+KP.RH;
   // the tops: every fine px its own ground (or what the game painted over it), shaded by its slope; a river's water, its bank; a road
+  // (what the game painted over the ground (yards, trampled patches) blurred over T.over.blur game px (FB: its colours), so one meets
+  //  another (a yard the worn ground round its holding) softly too, never along a lot's square)
+  const FB=new Float32Array(w*HE*3);{const Rb=T.over.blur,tmp=new Float32Array(w*HE*3);
+    for(let y=0;y<HE;y++)for(let x=0;x<w;x++){let a=0,b=0,c=0,n=0;for(let q=-Rb;q<=Rb;q++){const u=Math.min(w-1,Math.max(0,x+q)),o=(y*w+u)*4;a+=F[o];b+=F[o+1];c+=F[o+2];n++}const o=(y*w+x)*3;tmp[o]=a/n;tmp[o+1]=b/n;tmp[o+2]=c/n}
+    for(let y=0;y<HE;y++)for(let x=0;x<w;x++){let a=0,b=0,c=0,n=0;for(let q=-Rb;q<=Rb;q++){const v=Math.min(HE-1,Math.max(0,y+q)),o=(v*w+x)*3;a+=tmp[o];b+=tmp[o+1];c+=tmp[o+2];n++}const o=(y*w+x)*3;FB[o]=a/n;FB[o+1]=b/n;FB[o+2]=c/n}}
   const CWT=new Float32Array(w*HE*4),same=(fo,go)=>F[fo]===G[go]&&F[fo+1]===G[go+1]&&F[fo+2]===G[go+2],C=[0,0,0],MOU=WY.mouths.filter(([mx,my,mw])=>mx+mw>X&&mx-mw<X+w&&my+mw>Y&&my-mw<Y+HE);
   for(let y=0;y<HE;y++){for(let x=0;x<w;x++){const gx=X+x,gy=Y+y,fo=(y*w+x)*4,go=((gy-y0)*ww+gx-x0)*4,k=at(gx,gy),ti=(gy>>4)*MW+(gx>>4),t=tiles[ti],ford=t===T_FORD&&DF.S[(y*r)*W2+x*r]<4*r,
       over=F[fo]!==G[go]||F[fo+1]!==G[go+1]||F[fo+2]!==G[go+2];
@@ -143,7 +148,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
       //  read at a place warped by noise (T.climWarp game px), its own one picked from those shares, dithered: a climate's edge (and a
       //  river's colour across it) ragged, never along the tiles (the owner: "Recheck if there's any weird squared look")
       const wgx=gx+(wnoise2(gx/23,gy/23,601)-.5)*2*T.climWarp,wgy=gy+(wnoise2(gx/23,gy/23,602)-.5)*2*T.climWarp,u=(wgx-8)/TS,v=(wgy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,cw=[0,0,0,0],cl=(a,b)=>climate[Math.max(0,Math.min(MH-1,b))*MW+Math.max(0,Math.min(MW-1,a))];
-      cw[cl(tx,ty)]+=(1-fu)*(1-fv);cw[cl(tx+1,ty)]+=fu*(1-fv);cw[cl(tx,ty+1)]+=(1-fu)*fv;cw[cl(tx+1,ty+1)]+=fu*fv;
+      climShares(cw,cl,tx,ty,fu,fv);
       {const o=(y*w+x)*4;CWT[o]=cw[0];CWT[o+1]=cw[1];CWT[o+2]=cw[2];CWT[o+3]=cw[3]}
       let ci=0;{const pk=climPick(gx,gy);let acc=0;for(let c=0;c<4;c++){acc+=cw[c];if(pk<acc){ci=c;break}}}const Q=PAL[ci];
       // (how much of a wood it is, by the tiles round it seen through a warp: its edge ragged and soft, never a tile's square)
@@ -172,7 +177,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
             if(fd<0&&fd>-FA.lip){const u=(1+fd/FA.lip)*Math.min(1,cw*3);col=tmix(col,Q.fall[nz<.4?0:1],.95*u);if(u>.3)WK[fi]=3}
             else if(fd>=0&&fd<FA.pool){const u=(1-fd/FA.pool)*Math.min(1,cw*3);col=tmix(col,nz<u*.7?Q.foam:Q.fall[1],.3*u+.65*u*u);if(u>.35)WK[fi]=3}}}
         else{C[0]=C[1]=C[2]=0;
-          for(let c=0;c<4;c++){if(cw[c]<.02)continue;const c3=m?terWater(PAL[c],c,m,dd,P,gx,gy,fx,fy):terLand(PAL[c],c,WY.land[ti],e,Math.hypot(Gx[k],Gy[k]),ddL,open,fx,fy,wd);if(c===cmax&&!m)KD[fi]=TER_K+1;C[0]+=c3[0]*cw[c];C[1]+=c3[1]*cw[c];C[2]+=c3[2]*cw[c]}
+          for(let c=0;c<4;c++){if(cw[c]<.02)continue;const c3=m?terWater(PAL[c],c,m,dd,P,gx,gy,fx,fy):terLand(PAL[c],c,WY.land[ti],e,Math.hypot(Gx[k],Gy[k]),ddL,open,fx,fy,wd);if(c===cmax&&!m){KD[fi]=TER_K+1;MWA[fi]=TER_MW}C[0]+=c3[0]*cw[c];C[1]+=c3[1]*cw[c];C[2]+=c3[2]*cw[c]}
           col=[C[0],C[1],C[2]];
           // (the climates' own, the lab's: the desert green by its rivers (oasis lab px of the water); the swamp's pools on its low land,
           //  still and murky, duckweed on them)
@@ -185,9 +190,10 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
           // (a river's bank: mud at the water, dark grass up it, then the land)
           else if(rs<bankF||BKF[fi]<1){const tb=Math.min(rs<bankF?rs/bankF:1,BKF[fi]);col=tb<.45?tmix(tpick(Q.mud,fx,fy,519),tmul(col,.86),tb/.45):tmix(tmul(col,.86),col,(tb-.45)/.55)}
           // (what the game painted over it (the trampled patches, the yards: game px): its colour, a little of this fine px's own ground and a
-          //  grain kept in it, its edge ragged by the fine px, no tufts on it; never a flat square of one colour)
-          if(over&&!m){const OV=T.over,edge=x>0&&x<w-1&&y>0&&y<HE-1&&(same(fo-4,go-4)||same(fo+4,go+4)||same(fo-w*4,go-ww*4)||same(fo+w*4,go+ww*4));
-            if(!edge||hs(fx,fy,587)<OV.edge){col=tmul(tmix([F[fo],F[fo+1],F[fo+2]],col,OV.keep),1+(hs(fx,fy,588)-.5)*OV.grain);KD[fi]=0}}}
+          //  grain kept in it, no tufts on it; never a flat square of one colour)
+          //  feathered into the ground round it over feather game px (how far in from its edge: d), thinner and more ragged toward it
+          if(over&&!m){const OV=T.over;let d=OV.feather;for(let q=1;q<OV.feather;q++){if(x-q<0||x+q>=w||y-q<0||y+q>=HE)break;if(same(fo-4*q,go-4*q)||same(fo+4*q,go+4*q)||same(fo-w*4*q,go-ww*4*q)||same(fo+w*4*q,go+ww*4*q)){d=q;break}}
+            const a=d/OV.feather;if(hs(fx,fy,587)<a*1.3){const fb=(y*w+x)*3;col=tmul(tmix(col,tmix([FB[fb],FB[fb+1],FB[fb+2]],col,OV.keep),Math.min(1,a*1.6)),1+(hs(fx,fy,588)-.5)*OV.grain);if(a>.5)NT[fi]=1}}}
         // (a road over it: the lab's worn track, its edge ragged; never over water)
         // (its width wandering along it and its edge ragged, the lab's: vary, edge)
         // (by the land it runs through: the ground's colour mixed in, the ground over it in patches (snow, sand, mud); at a dead end it
@@ -217,8 +223,10 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
         o[TERK.scree]=mean(Q.scree);o[TERK.rock]=mean(Q.rock.slice(0,3));o[TERK.snow]=mean(Q.snow);o[TERK.bank]=tmix(mean(Q.mud),mean(Q.grass),.5);o[TERK.oasis]=mean(PAL[0].grass);return o});
     // (a px's plain colour: its kind's in its climates, by their shares (CWT, as its own colour was mixed), never the one climate picked
     //  for it, so a climate's border blends as smoothly as the ground)
+    //  open land's by its meadow's share (MWA), as its colour was mixed, so the blend never steps where grass turns meadow)
     const PLC=[0,0,0],plain=(fi,fx,fy)=>{const kd=KD[fi];if(!kd)return null;const x=Math.floor(fx/r)-X,y=Math.floor(fy/r)-Y;if(x<0||y<0||x>=w||y>=HE)return KB[CLG[at(x+X,y+Y)]][kd-1];
-      const o=(y*w+x)*4;PLC[0]=PLC[1]=PLC[2]=0;for(let c=0;c<4;c++){const q=CWT[o+c];if(!q)continue;const b=KB[c][kd-1];PLC[0]+=b[0]*q;PLC[1]+=b[1]*q;PLC[2]+=b[2]*q}return PLC};
+      const o=(y*w+x)*4,mw=MWA[fi],mx=mw>=0&&(kd===TERK.grass+1||kd===TERK.meadow+1);PLC[0]=PLC[1]=PLC[2]=0;
+      for(let c=0;c<4;c++){const q=CWT[o+c];if(!q)continue;const b=mx?tmix(KB[c][TERK.grass],KB[c][TERK.meadow],mw):KB[c][kd-1];PLC[0]+=b[0]*q;PLC[1]+=b[1]*q;PLC[2]+=b[2]*q}return PLC};
     for(let fy=0;fy<HE2;fy++,(fy&63)||(yield))for(let fx=0;fx<W2;fx++){const fi=fy*W2+fx,c=plain(fi,X*r+fx,Y*r+fy);if(!c)continue;BR[fi]=c[0];BG[fi]=c[1];BB[fi]=c[2];BM[fi]=1}
     const tmp=new Float32Array(Math.max(W2,HE2)),box=(A,len,stride,start)=>{let acc=0;for(let q=-R;q<=R;q++)acc+=A[start+Math.min(len-1,Math.max(0,q))*stride];
       for(let q=0;q<len;q++){tmp[q]=acc;acc+=A[start+Math.min(len-1,q+R+1)*stride]-A[start+Math.max(0,q-R)*stride]}for(let q=0;q<len;q++)A[start+q*stride]=tmp[q]};
@@ -235,9 +243,10 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
      along the tide line, shells on the beach, the woods' fallen leaves and twigs, pebbles on scree and rock; each a px or a few, up from
      its own px (lifted with the land) */
   {const DC=T.decor,put=(fx,fy,c)=>{if(fx<0||fy<0||fx>=W2||fy>=HE2)return;const o=(fy*W2+fx)*4;CW[o]=c[0];CW[o+1]=c[1];CW[o+2]=c[2]};
-    for(let fy=2;fy<HE2;fy++,(fy&63)||(yield))for(let fx=1;fx<W2-1;fx++){const kd=KD[fy*W2+fx]-1;if(kd<0)continue;const ax=X*r+fx,ay=Y*r+fy,q=hs(ax,ay,580);if(q>.06)continue;const gx=Math.floor(ax/r),gy=Math.floor(ay/r),Q=PAL[CLG[at(gx,gy)]];
-      // (the frost's: none on its snowy meadow, thinned under its drifts, so no dark grass px lies on the snow)
-      const fr=CLIMS[CLG[at(gx,gy)]]==='frost';if(fr&&(kd===TERK.meadow||kd===TERK.wood||kd===TERK.grass&&hs(ax,ay,586)<snowDrift(ax,ay)*1.2))continue;
+    for(let fy=2;fy<HE2;fy++,(fy&63)||(yield))for(let fx=1;fx<W2-1;fx++){const kd=KD[fy*W2+fx]-1;if(kd<0||NT[fy*W2+fx])continue;const ax=X*r+fx,ay=Y*r+fy,q=hs(ax,ay,580);if(q>.06)continue;const gx=Math.floor(ax/r),gy=Math.floor(ay/r),Q=PAL[CLG[at(gx,gy)]];
+      // (the frost's: thinned under its drifts and over its snowy meadow by their shares, so no dark grass px lies on the snow, and none
+      //  stops along a line)
+      const fr=CLIMS[CLG[at(gx,gy)]]==='frost';if(fr&&(kd===TERK.wood||(kd===TERK.grass||kd===TERK.meadow)&&hs(ax,ay,586)<Math.max(snowDrift(ax,ay),meadowShare(ax,ay))*1.2))continue;
       if(kd===TERK.grass||kd===TERK.meadow||kd===TERK.oasis){if(q<.03){const c=tmul(Q.grass[q<.012?0:1],.72);put(fx,fy-1,c);if(q<.015)put(fx,fy-2,tmul(Q.grass[0],.62))}else if(kd===TERK.meadow&&q<.05)put(fx,fy-1,DC.flower[Math.floor(hs(ax,ay,581)*4)])}
       else if(kd===TERK.dune&&q<.05){const n=2+Math.floor(hs(ax,ay,582)*3);for(let j=1;j<=n;j++)put(fx+(j>2&&q<.025?1:0),fy-j,DC.marram[j&1])}
       else if((kd===TERK.sand||kd===TERK.wet)&&q<.0013&&WB0dw(gx,gy)*2<20){const n=3+Math.floor(hs(ax,ay,583)*4);for(let j=0;j<n;j++){put(fx+j,fy+1,tmul(Q.wet[0],.85));put(fx+j,fy,j===0||j===n-1?DC.drift[0]:DC.drift[1])}}
@@ -322,8 +331,12 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
    low (flat: no cover)}, sorted by y; rec.grass: the clumps (fine px, kind, variant), sorted by y */
 function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
   const LAND=waysOf(P).land,FL=PX.flora,WF=WORLD_FLORA,st=WF.step,out=[],GX=[],GY=[],GT=[],GV=[],W2=w*r,H2=h*r,near=(gx,gy,d,f)=>{for(let b=-d;b<=d;b++)for(let a=-d;a<=d;a++){const u=(gx>>4)+a,v=(gy>>4)+b;if(u>=0&&v>=0&&u<MW&&v<MH&&f(v*MW+u,u,v))return true}return false};
-  const ok=(gx,gy,fx,fy)=>{const fo=((gy-Y)*w+gx-X)*4,go=((gy-y0)*ww+gx-x0)*4,ti=(gy>>4)*MW+(gx>>4),fi=(fy-Y*r)*W2+fx-X*r;if(WB.seaAt(gx,gy)||WB.RF.S[fi]<2*r||WB.DF.S[fi]<3*r||WB.PL[fi])return false;
-    if(F[fo]!==G[go]||F[fo+1]!==G[go+1]||F[fo+2]!==G[go+2])return false;if(vis(fx,fy)===-1)return false;if(typeof occAt==='function'&&occAt(gx>>4,gy>>4)>0)return false;
+  // (how much of a lot the ground at game px (gx, gy) is: its tiles' share, a B-spline over them read at a place warped
+  //  over.warp game px: the grass's clumps thin out over it, never stopping along a lot's tile edge)
+  const occ1=(u,v)=>typeof occAt==='function'&&occAt(Math.max(0,Math.min(MW-1,u)),Math.max(0,Math.min(MH-1,v)))>0?1:0,occSoft=(gx,gy)=>{const W=WORLD_TERRAIN.over.warp,wx=gx+(wnoise2(gx/20,gy/20,591)-.5)*2*W,wy=gy+(wnoise2(gx/20,gy/20,592)-.5)*2*W,u=(wx-8)/16,v=(wy-8)/16,a=Math.floor(u),b=Math.floor(v),bx=labBS(u-a),by=labBS(v-b);
+    let o=0;for(let q=0;q<4;q++)for(let p=0;p<4;p++)o+=bx[p]*by[q]*occ1(a+p-1,b+q-1);return o};
+  const ok=(gx,gy,fx,fy,soft)=>{const fo=((gy-Y)*w+gx-X)*4,go=((gy-y0)*ww+gx-x0)*4,ti=(gy>>4)*MW+(gx>>4),fi=(fy-Y*r)*W2+fx-X*r;if(WB.seaAt(gx,gy)||WB.RF.S[fi]<2*r||WB.DF.S[fi]<3*r||WB.PL[fi])return false;
+    if(F[fo]!==G[go]||F[fo+1]!==G[go+1]||F[fo+2]!==G[go+2])return false;if(vis(fx,fy)===-1)return false;if(soft?hs(fx,fy,589)<occSoft(gx,gy)*1.15:typeof occAt==='function'&&occAt(gx>>4,gy>>4)>0)return false;
     return true};
   // (a prop's picture cut where the ground in front of it is drawn over it: a ridge nearer hides what stands behind it, as the lab's
   //  occluded; within this chunk's picture)
@@ -369,8 +382,8 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
   // (the grass's clumps: on a grid of its step, by the ground's kind (open, meadow, woods, dunes) and climate, thicker in patches)
   const GS=WF.grass,KI=FL.GRASS_KINDS;
   for(let fy=Y*r+1;fy<(Y+h)*r;fy+=GS.step){for(let fx=X*r+1;fx<(X+w)*r;fx+=GS.step){const jx=Math.round(fx+(hs(fx,fy,411)-.5)*GS.step),jy=Math.round(fy+(hs(fx,fy,412)-.5)*GS.step);
-      if(jx<X*r||jy<Y*r||jx>=(X+w)*r||jy>=(Y+h)*r||BARE[(jy-Y*r)*BW2+jx-X*r])continue;const gx=Math.floor(jx/r),gy=Math.floor(jy/r);if(!ok(gx,gy,jx,jy))continue;const ti=(gy>>4)*MW+(gx>>4),t=tiles[ti];if(t===T_MOUNT)continue;
-      const cl=CLIMS[terClimate(gx,gy)],dd=WB.dw(gx,gy),g=terWood(LAND,gx,gy)>.5?'woods':dd*2<WORLD_TERRAIN.dune?'dune':wnoise2(jx/120,jy/120,344)>.62?'meadow':'open';
+      if(jx<X*r||jy<Y*r||jx>=(X+w)*r||jy>=(Y+h)*r||BARE[(jy-Y*r)*BW2+jx-X*r])continue;const gx=Math.floor(jx/r),gy=Math.floor(jy/r);if(!ok(gx,gy,jx,jy,true))continue;const ti=(gy>>4)*MW+(gx>>4),t=tiles[ti];if(t===T_MOUNT)continue;
+      const cl=CLIMS[terClimate(gx,gy)],dd=WB.dw(gx,gy),g=terWood(LAND,gx,gy)>.5?'woods':dd*2<WORLD_TERRAIN.dune?'dune':meadowShare(jx,jy)>=.5?'meadow':'open';
       const ch=GS.chance[cl][g]*(.35+1.3*wnoise2(jx/GS.patch,jy/GS.patch,413))*(cl==='frost'&&g==='open'?1-WORLD_TERRAIN.snowPatch.tufts*snowDrift(jx,jy):1);if(hs(fx,fy,414)>ch)continue;
       {const L=WB.lfAt(jx,jy);GX.push(jx);GY.push(jy-L)}GT.push(Math.max(0,KI.indexOf(GS.kinds[cl][g])));GV.push(Math.floor(hs(fx,fy,415)*4))}
     if(!(fy&63))yield}
@@ -426,8 +439,12 @@ function riverRun(WY){const X=WY.X,Y=WY.Y,n=X.length,SX=new Float32Array(n),SY=n
 // shares round it by a hash, so a prop's kind changes with the ground's, never along a tile's edge)
 function terClimate(gx,gy){const T=WORLD_TERRAIN,wgx=gx+(wnoise2(gx/23,gy/23,601)-.5)*2*T.climWarp,wgy=gy+(wnoise2(gx/23,gy/23,602)-.5)*2*T.climWarp,u=(wgx-8)/16,v=(wgy-8)/16,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,
     cl=(a,b)=>climate[Math.max(0,Math.min(MH-1,b))*MW+Math.max(0,Math.min(MW-1,a))],cw=[0,0,0,0];
-  cw[cl(tx,ty)]+=(1-fu)*(1-fv);cw[cl(tx+1,ty)]+=fu*(1-fv);cw[cl(tx,ty+1)]+=(1-fu)*fv;cw[cl(tx+1,ty+1)]+=fu*fv;
+  climShares(cw,cl,tx,ty,fu,fv);
   const pk=climPick(gx,gy);let acc=0;for(let c=0;c<4;c++){acc+=cw[c];if(pk<acc)return c}return cl(gx>>4,gy>>4)}
+// (a px's climates' shares cw from the tiles round it (cl(tx, ty): a tile's climate; fu, fv: where it lies between their middles): a cubic
+//  B-spline over the 4 x 4 tiles round it, so one climate shades into the next over two tiles, never cut along one (the owner, 2026-11-16:
+//  "It still feel cutted, need terrain blend"))
+function climShares(cw,cl,tx,ty,fu,fv){const bx=labBS(fu),by=labBS(fv);for(let q=0;q<4;q++)for(let p=0;p<4;p++)cw[cl(tx+p-1,ty+q-1)]+=bx[p]*by[q]}
 // (the pick among a px's climates' shares: by a slow noise, a little grain at its edge, so a climate's border runs in ragged tongues and
 //  islands, not px by px salt and pepper (the owner, 2026-11-16: "Snow area looks too hard"))
 function climPick(gx,gy){const C=WORLD_TERRAIN.climPick;return Math.max(0,Math.min(.999,.5+(wnoise2(gx/C.sc,gy/C.sc,604)-.5)*C.k+(hs(gx,gy,603)-.5)*C.grain))}
@@ -468,16 +485,21 @@ function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)r
 
 // (how deep the tundra's snow lies in its drifts at fine px (fx, fy), 0 to 1, eased: the open frost's ground, its grass clumps thinned under it)
 function snowDrift(fx,fy){const SN=WORLD_TERRAIN.snowPatch,n=wnoise2(fx/26,fy/26,361)*.7+wnoise2(fx/9,fy/9,362)*.3+(hs(fx,fy,365)-.5)*SN.grain,a=Math.max(0,Math.min(1,(n-SN.lo)/(SN.hi-SN.lo)));return a*a*(3-2*a)}
+// (the meadow's share of open land at fine px (fx, fy): 0 grass, 1 meadow, eased between over WORLD_TERRAIN.meadow's band of its noise,
+// a grain at its edge)
+function meadowShare(fx,fy){const M=WORLD_TERRAIN.meadow,n=wnoise2(fx/120,fy/120,344)*(1-M.quick)+wnoise2(fx/28,fy/28,368)*M.quick+(hs(fx,fy,369)-.5)*M.grain,a=Math.max(0,Math.min(1,(n-M.at+M.band)/(2*M.band)));return a*a*(3-2*a)}
 // a land px's top colour (the lab's topCol): its kind by its tile, height, slope and the water near it; its climate's grain on it
-function terLand(Q,c,t,e,g,dd,open,fx,fy,wd){const T=WORLD_TERRAIN,cl=CLIMS[c],wob=wnoise2(fx/50,fy/50,341)-.5,dw=dd*2;let k,col;
+function terLand(Q,c,t,e,g,dd,open,fx,fy,wd){const T=WORLD_TERRAIN,cl=CLIMS[c],wob=wnoise2(fx/50,fy/50,341)-.5,dw=dd*2;let k,col,mw=-1;
   // (the lab's: rock from its height up or where it is a cliff, snow over it but on a cliff; scree where it is steep)
   if(e>=T.rock+wob*3||g>=T.cliffG)k=e>=T.snow+wob*2.4&&g<T.cliffG?TERK.snow:TERK.rock;
   else if(g>=T.steepG&&e>2)k=TERK.scree;
   else if(dw<T.wet+wob*4&&open)k=TERK.wet;else if(dw<T.sand+wob*12&&open&&e<1.2)k=TERK.sand;else if(dw<T.dune+wob*20&&open&&e<1.6&&cl!=='swamp')k=TERK.dune;
   else if(!open&&dw<T.bank)k=TERK.bank;
   else if(wd>.5)k=TERK.wood;
-  else k=wnoise2(fx/120,fy/120,344)>.62?TERK.meadow:TERK.grass;
-  TER_K=k;
+  // (meadow or grass by a slow noise with a quicker one in it (its edge wandering, not a long straight line), the one shading into the
+  //  other over its band (WORLD_TERRAIN.meadow; the owner, 2026-11-16: "It still feel cutted, need terrain blend"): mw, the meadow's share)
+  else{mw=meadowShare(fx,fy);k=mw>=.5?TERK.meadow:TERK.grass}
+  TER_K=k;TER_MW=mw;
   switch(k){
     case TERK.snow:col=tpick(Q.snow,fx,fy,345);break;
     case TERK.rock:{col=tpick(Q.rock.slice(0,3),fx,fy,346);const gp=wnoise2(fx/14,fy/14,347);if(gp>.62&&e<T.snow-1)col=tmix(col,Q.grass[0],.5);break}
@@ -485,13 +507,13 @@ function terLand(Q,c,t,e,g,dd,open,fx,fy,wd){const T=WORLD_TERRAIN,cl=CLIMS[c],w
     case TERK.wet:col=tpick(Q.wet,fx,fy,350);break;case TERK.sand:col=tpick(Q.sand,fx,fy,351);break;
     case TERK.dune:col=tmix(tpick(Q.sand,fx,fy,352),Q.dune[hs(fx,fy,353)<.5?0:1],.45);break;
     case TERK.bank:col=tmix(tpick(Q.mud,fx,fy,354),Q.grass[0],Math.min(1,dw/T.bank));break;
-    case TERK.wood:col=tpick(Q.wood,fx,fy,355);break;case TERK.meadow:col=tpick(Q.meadow,fx,fy,356);break;
-    default:col=tpick(Q.grass,fx,fy,357)}
+    case TERK.wood:col=tpick(Q.wood,fx,fy,355);break;
+    default:col=mw<=0?tpick(Q.grass,fx,fy,357):mw>=1?tpick(Q.meadow,fx,fy,356):tmix(tpick(Q.grass,fx,fy,357),tpick(Q.meadow,fx,fy,356),mw)}
   // (the lab's blend: a wood's floor and the grass round it shading into each other over its ragged edge)
   if(wd>.2&&wd<.8&&(k===TERK.wood||k===TERK.grass||k===TERK.meadow))col=tmix(col,k===TERK.wood?tpick(Q.grass,fx,fy,357):tpick(Q.wood,fx,fy,355),.5-Math.abs(wd-.5));
   // (the climate's own grain: the desert's ripples and cracked clay; the tundra's snow lying in patches; the bog's wet shine)
   if(cl==='desert'){if(k===TERK.grass||k===TERK.dune)col=tmul(col,1+.05*Math.sin(fx*.3+fy*.85+wnoise2(fx/20,fy/20,358)*7));else if(k===TERK.meadow&&(Math.abs(wnoise2(fx/6,fy/6,359)-.5)<.03||Math.abs(wnoise2(fx/6+40,fy/6,360)-.5)<.03))col=tmul(col,.78)}
-  else if(cl==='frost'&&k===TERK.grass){const a=snowDrift(fx,fy);
+  else if(cl==='frost'&&(k===TERK.grass||k===TERK.meadow)){const a=snowDrift(fx,fy);
     // (the tundra's snow lying in drifts: thinning soft into the grass at its edge, its own tones by slow noise (blue in its hollows), not
     //  speckled)
     if(a>0){const sd=wnoise2(fx/T.snowPatch.shade,fy/T.snowPatch.shade,366),sc=sd<.45?tmix(Q.meadow[2],Q.meadow[0],sd/.45):tmix(Q.meadow[0],Q.meadow[1],Math.min(1,(sd-.45)/.4));col=tmix(col,sc,a)}}
