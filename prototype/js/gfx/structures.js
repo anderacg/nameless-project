@@ -98,7 +98,9 @@ const drawFire=(x,y,seed)=>{if(FLAMES.on){fireCamp(x,y,seed);return}const f=Math
 function drawLotGround(cam,V){
   lotsAhead(V);
   for(const t of TOWNS){if(!t.lots||Math.hypot(t.x-P.x,t.y-P.y)>V+340)continue;
-    for(const k in bldSpots(t)){const lv=bldLv(t,k);if(!lv)continue;const s=estateGround(t,k,lv);if(!s)continue;const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y);
+    // (each at its land's lift, as the land, its buildings and its herd are drawn: worldterrain.js liftAt; flat, the pen's animals stood
+    //  above their fence on raised ground (the owner, 2026-11-16: "Why pasture animals are outside of fence"))
+    for(const k in bldSpots(t)){const lv=bldLv(t,k);if(!lv)continue;const s=estateGround(t,k,lv);if(!s)continue;const p=bldSpots(t)[k],sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y-(typeof liftAt==='function'?liftAt(p.x,p.y):0));
       const w=s.width/s.z,h=s.height/s.z;if(sx>VW||sy>VH||sx+w<0||sy+h<0)continue;ctx.drawImage(s,sx,sy,w,h)}}
 }
 // the buildings themselves among the parties, each by its front edge: every holding's (HoldingObject draw, estates.js)
