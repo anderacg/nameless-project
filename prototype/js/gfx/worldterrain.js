@@ -68,7 +68,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
      river's tiles land, its curve its own) roughened by a noise of a lab px or two, water under 0; then each px's distance (game px) to
      the water (DW: the beach, wet sand and dunes, the lab's shore widths) and the water's to the land (DL: its depth, its foam), over the
      window and a margin as wide as the dunes reach) */
-  const ow=ti=>tiles[ti]===T_WATER&&(!(Rv[ti]&3)||WY.mouth[ti]),MG=Math.ceil(T.dune/2)+8,ex0=gx0-MG,ey0=gy0-MG,EW=GW+2*MG,EH=GH+2*MG,WAT=new Uint8Array(EW*EH),DW=new Float32Array(EW*EH),DL=new Float32Array(EW*EH),WLV=new Float32Array(EW*EH);
+  const BKF=new Float32Array(W2*HE2).fill(1),ow=ti=>tiles[ti]===T_WATER&&(!(Rv[ti]&3)||WY.mouth[ti]),MG=Math.ceil(T.dune/2)+8,ex0=gx0-MG,ey0=gy0-MG,EW=GW+2*MG,EH=GH+2*MG,WAT=new Uint8Array(EW*EH),DW=new Float32Array(EW*EH),DL=new Float32Array(EW*EH),WLV=new Float32Array(EW*EH);
   {const ovf=(tx,ty)=>{tx=Math.max(0,Math.min(MW-1,tx));ty=Math.max(0,Math.min(MH-1,ty));return ow(ty*MW+tx)};
     // (the field a cubic B-spline over the tiles, read at a place warped by noise (shore.warp game px at shore.sc): a lake's or a bay's
     //  shore rounded and wandering, never the tiles' straight runs and diamonds (the owner: "Recheck if there's any weird squared
@@ -89,14 +89,20 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
        (the river's own curves there giving its flow; its depth by how far in it is), drawn shore.river wider than its tiles so its
        curves lie inside it: its banks never show a bulge for each of its curves' points (the
        owner, 2026-11-15: "the wide water has a scalloped edge, a round bulge per tile")) */
-    const wr=(tx,ty)=>{tx=Math.max(0,Math.min(MW-1,tx));ty=Math.max(0,Math.min(MH-1,ty));const i=ty*MW+tx;return tiles[i]===T_WATER&&(Rv[i]&3)>=2&&!WY.mouth[i]};
-    for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i,wx=gx+(wnoise2(gx/SH.sc,gy/SH.sc,575)-.5)*2*SH.warp*.6,wy=gy+(wnoise2(gx/SH.sc,gy/SH.sc,576)-.5)*2*SH.warp*.6,
-        u=(wx-8)/TS,v=(wy-8)/TS,tx=Math.floor(u),ty=Math.floor(v);let any=false;for(let q=-1;q<=2&&!any;q++)for(let p=-1;p<=2;p++)if(wr(tx+p,ty+q)){any=true;break}if(!any)continue;
-        const bx=labBS(u-tx),by=labBS(v-ty);let bs=0;for(let q=0;q<4;q++){let rr=0;for(let p=0;p<4;p++)rr+=bx[p]*(wr(tx+p-1,ty+q-1)?-1:1);bs+=by[q]*rr}
+    // (the wide rivers' tiles, and the tiles within 3 of one, kept with the ways: WY.WR, WY.WRN)
+    if(!WY.WR){const A=WY.WR=new Uint8Array(MW*MH),B=WY.WRN=new Uint8Array(MW*MH);for(let i=0;i<MW*MH;i++)A[i]=tiles[i]===T_WATER&&(Rv[i]&3)>=2&&!WY.mouth[i]?1:0;
+      for(let i=0;i<MW*MH;i++){if(!A[i])continue;const x=i%MW,y=(i-x)/MW;for(let b=-3;b<=3;b++)for(let a=-3;a<=3;a++){const u=x+a,v=y+b;if(u>=0&&v>=0&&u<MW&&v<MH)B[v*MW+u]=1}}}
+    const WRA=WY.WR,WRB=WY.WRN,wr=(tx,ty)=>WRA[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))];
+    for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i;if(!WRB[Math.max(0,Math.min(MH-1,gy>>4))*MW+Math.max(0,Math.min(MW-1,gx>>4))])continue;
+        const wx=gx+(wnoise2(gx/SH.sc,gy/SH.sc,575)-.5)*2*SH.warp*.6,wy=gy+(wnoise2(gx/SH.sc,gy/SH.sc,576)-.5)*2*SH.warp*.6,u=(wx-8)/TS,v=(wy-8)/TS,tx=Math.floor(u),ty=Math.floor(v);
+        const bx=labBS(u-tx),by=labBS(v-ty);let bs=0,any=false;for(let q=0;q<4;q++){let rr=0;for(let p=0;p<4;p++){const w=wr(tx+p-1,ty+q-1);if(w)any=true;rr+=bx[p]*(w?-1:1)}bs+=by[q]*rr}if(!any)continue;
         const f=bs-SH.river+(wnoise2(gx/7,gy/7,577)-.5)*.3;if(f<0){const k=j*GW+i,dq=Math.max(.08,Math.min(.6,-f*.9));
           if(RG.Q[k]>=0)RG.S[k]=-WY.HW[WY.SP[RG.Q[k]]]*dq;
-          for(let b=0;b<r;b++)for(let a=0;a<r;a++){const fx=(gx-X)*r+a,fy=(gy-Y)*r+b;if(fx<0||fy<0||fx>=W2||fy>=HE2)continue;const fi=fy*W2+fx;if(RF.Q[fi]>=0)RF.S[fi]=-WY.HW[WY.SP[RF.Q[fi]]]*r*dq}}else if(f<.25){const k=j*GW+i;if(RG.Q[k]>=0&&RG.S[k]<0)RG.S[k]=.5;
-          for(let b=0;b<r;b++)for(let a=0;a<r;a++){const fx=(gx-X)*r+a,fy=(gy-Y)*r+b;if(fx<0||fy<0||fx>=W2||fy>=HE2)continue;const fi=fy*W2+fx;if(RF.Q[fi]>=0&&RF.S[fi]<0)RF.S[fi]=.5}}}}
+          for(let b=0;b<r;b++)for(let a=0;a<r;a++){const fx=(gx-X)*r+a,fy=(gy-Y)*r+b;if(fx<0||fy<0||fx>=W2||fy>=HE2)continue;const fi=fy*W2+fx;if(RF.Q[fi]>=0)RF.S[fi]=-WY.HW[WY.SP[RF.Q[fi]]]*r*dq}}else if(f<SH.bank){
+          // (its dirt bank along that curve, as wide all along: bare earth at the water (its lip lit), then mud, dark grass up it (BKF,
+          //  what the bank's colour reads; the owner: "keep that dirt edge"))
+          const k=j*GW+i,tb=f/SH.bank;if(RG.Q[k]>=0&&RG.S[k]<0)RG.S[k]=.5;
+          for(let b=0;b<r;b++)for(let a=0;a<r;a++){const fx=(gx-X)*r+a,fy=(gy-Y)*r+b;if(fx<0||fy<0||fx>=W2||fy>=HE2)continue;const fi=fy*W2+fx;BKF[fi]=Math.min(BKF[fi],tb);if(RF.Q[fi]>=0&&RF.S[fi]<0)RF.S[fi]=.5}}}}
     yield}
   const WB0dw=(gx,gy)=>{const q=(gy-ey0)*EW+gx-ex0;return q>=0&&q<EW*EH?DW[q]:99},eq=(gx,gy)=>(gy-ey0)*EW+gx-ex0,seaAt=(gx,gy)=>{const q=eq(gx,gy);return q>=0&&q<EW*EH&&WAT[q]===1};
   const seaT=ti=>ow(ti),surf=(q,t)=>{const a=WY.SP[q];return riverSurf(WY.LV[a],WY.LV[a+1],t)};
@@ -146,7 +152,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
           const FD=WY.FD||(WY.FD=fallDist(WY)),f0=FD[a],f1=FD[a+1];if(f0<1e8||f1<1e8){const fd=f0<1e8&&f1<1e8?f0+(f1-f0)*tt:f0<1e8?f0:f1,FA=T.falls,nz=hs(fx,fy,577);
             if(fd<0&&fd>-FA.lip){const u=1+fd/FA.lip;col=tmix(col,Q.fall[nz<.4?0:1],.35+.6*u);WK[fi]=3}
             else if(fd>=0&&fd<FA.pool){const u=1-fd/FA.pool;col=tmix(col,nz<u*.7?Q.foam:Q.fall[1],.25+.7*u*u);if(u>.35)WK[fi]=3}}}
-        else if(over)col=[F[fo],F[fo+1],F[fo+2]];
+        else if(over&&!(BKF[fi]<1&&t===T_WATER))col=[F[fo],F[fo+1],F[fo+2]];
         else{C[0]=C[1]=C[2]=0;
           for(let c=0;c<4;c++){if(cw[c]<.02)continue;const c3=m?terWater(PAL[c],c,m,dd,P,gx,gy,fx,fy):terLand(PAL[c],c,WY.land[ti],e,Math.hypot(Gx[k],Gy[k]),ddL,open,fx,fy,wd);if(c===cmax&&!m)KD[fi]=TER_K+1;C[0]+=c3[0]*cw[c];C[1]+=c3[1]*cw[c];C[2]+=c3[2]*cw[c]}
           col=[C[0],C[1],C[2]];
@@ -159,7 +165,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
             // (a river's water fanning out into the sea past its mouth: its plume)
             for(const [mx,my,mw] of MOU){const dq=Math.hypot(fx-mx*r,fy-my*r)/(mw*r);if(dq<1){const rc=wayWater(Q,CLIMS[ci],fx,fy,.6,0,false);col=tmix(col,rc,(1-dq)*(1-dq)*.7)}}}
           // (a river's bank: mud at the water, dark grass up it, then the land)
-          else if(rs<bankF){const tb=rs/bankF;col=tb<.45?tmix(tpick(Q.mud,fx,fy,519),tmul(col,.86),tb/.45):tmix(tmul(col,.86),col,(tb-.45)/.55)}}
+          else if(rs<bankF||BKF[fi]<1){const tb=Math.min(rs<bankF?rs/bankF:1,BKF[fi]);col=tb<.45?tmix(tpick(Q.mud,fx,fy,519),tmul(col,.86),tb/.45):tmix(tmul(col,.86),col,(tb-.45)/.55)}}
         // (a road over it: the lab's worn track, its edge ragged; never over water)
         // (its width wandering along it and its edge ragged, the lab's: vary, edge)
         // (by the land it runs through: the ground's colour mixed in, the ground over it in patches (snow, sand, mud); at a dead end it
@@ -224,7 +230,8 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   const LFF=new Int16Array(W2*HE2),WF=new Uint8Array(W2*HE2),SF=new Float32Array(W2*HE2),SB=T.steps.band;
   for(let fy=0;fy<HE2;fy++){const gy=Y+((fy/r)|0);for(let fx=0;fx<W2;fx++){const fi=fy*W2+fx,gx=X+((fx/r)|0),kc=at(gx,gy);
     if(WK[fi]){let l=Wa[kc]?Lv[kc]:1e9;if(l>1e8){for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]]){const j=kc+b*GW+a;if(j>=0&&j<GW*GH&&Wa[j])l=Math.min(l,Lv[j])}if(l>1e8)l=Lv[kc]}
-      WF[fi]=1;LFF[fi]=Math.max(0,Math.round(l*T.lh));continue}
+      // (a river's water a little under its banks (shore.lip fine px), so its dirt edge shows along it (the owner: "keep that dirt edge"))
+      WF[fi]=1;LFF[fi]=Math.max(0,Math.round(l*T.lh)-(WK[fi]===2?T.shore.lip:0));continue}
     const u=(X*r+fx+.5)/r-.5-gx0,v=(Y*r+fy+.5)/r-.5-gy0,i0=Math.max(0,Math.min(GW-2,Math.floor(u))),j0=Math.max(0,Math.min(GH-2,Math.floor(v))),fu=Math.max(0,Math.min(1,u-i0)),fv=Math.max(0,Math.min(1,v-j0)),k0=j0*GW+i0;
     const ks=[k0,k0+1,k0+GW,k0+GW+1],ws=[(1-fu)*(1-fv),fu*(1-fv),(1-fu)*fv,fu*fv];let land=-1e9;for(const q of ks)if(!Wa[q])land=Math.max(land,Lv[q]);if(land<-1e8)land=Lv[kc]+.3;
     let e=0,sw=0;for(let q=0;q<4;q++){e+=ws[q]*(Wa[ks[q]]?land:Lv[ks[q]]);sw+=ws[q]*SW[ks[q]]}
@@ -245,7 +252,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
       const wet=wt,wetB=WF[fN],n=syN-sy-1,ti=tix(gx,gy),t=tiles[ti],Q=PAL[climate[ti]],road=DG.S[k]<shG,wall=DG.S[k]<WORLD_WAYS.road.wall*WAY_LP&&!WY.RB[DG.Q[k]],rocky=!road&&!(RG.S[k]<bankG+2)&&(Math.hypot(Gx[k],Gy[k])>=T.steepG||Lv[k]>=T.rock-1||(L-LN)>=2*lh),snowy=Lv[k]>=T.snow-1,sand=!rocky&&Lv[k]<1.2&&!road;
       if(sy>=0&&sy<H2&&!wet&&!(n<=3&&SF[fi]<.5&&SF[fN]<.5)){const o=(sy*W2+fx)*4;if(snowy){O[o]=242;O[o+1]=246;O[o+2]=252}else{O[o]=Math.min(255,O[o]*1.12);O[o+1]=Math.min(255,O[o+1]*1.12);O[o+2]=Math.min(255,O[o+2]*1.12)}}
       // (a small drop on smooth ground or along water: no face, the lab's way: this top shading into the next)
-      if(n<=3&&(SF[fi]<.5&&SF[fN]<.5||wet&&wetB)){const ci2=((fy+1)*W2+fx)*4;for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0||yy>=H2)continue;const f=dz/(n+1),o=(yy*W2+fx)*4;
+      if(n<=3&&(SF[fi]<.5&&SF[fN]<.5&&!(wetB&&!wet&&WK[fN]===2)||wet&&wetB)){const ci2=((fy+1)*W2+fx)*4;for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0||yy>=H2)continue;const f=dz/(n+1),o=(yy*W2+fx)*4;
           O[o]=CW[ci]+(CW[ci2]-CW[ci])*f;O[o+1]=CW[ci+1]+(CW[ci2+1]-CW[ci+1])*f;O[o+2]=CW[ci+2]+(CW[ci2+2]-CW[ci+2])*f;O[o+3]=255;DEPF[yy*W2+fx]=fy;TOP[yy*W2+fx]=1}continue}
       for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0)continue;if(yy>=H2)break;const f=dz/Math.max(1,n),zh=L-dz,nz=hs(gx*r+fx%r,fy+dz,331),afx=X*r+fx;let c;
         if(wet&&wetB){const q=hs(afx,0,332);c=dz>=n-1?Q.foam:Q.fall[q<.35?0:q<.75?1:2];if(nz<.03)c=Q.foam;if(yy>=0&&yy<H2&&dz<n-1)FL.push(fx,yy,-1,(hs(afx,0,542)*20)|0)}
