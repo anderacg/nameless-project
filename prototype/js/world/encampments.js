@@ -99,7 +99,7 @@ class Encampment extends Site{
       if(put)out.push(put)}
     ENC_PROPS.set(s.key,{x:s.x,y:s.y,p:out});return out}
   drawProps(ents,cam){const clim=CLIMS[climate[Math.floor(this.y/TILE)*MW+Math.floor(this.x/TILE)]]||'grass';
-    const look=this.look(0);for(const q of this.props()){const pic=propPic(q,clim,look);ents.push({x:q.x,y:q.y,nf:1,f:()=>{const x=Math.round(q.x-cam.x-pic.ax),y=Math.round(q.y-cam.y-pic.ay+1);
+    const look=this.look(0);for(const q of this.props()){const pic=propPic(q,clim,look);ents.push({x:q.x,y:q.y,nf:1,st:true,f:()=>{const x=Math.round(q.x-cam.x-pic.ax),y=Math.round(q.y-cam.y-pic.ay+1);
       CampArt.put(pic,x,y);if(ENCAMP_PROPS[q.type].smoke)propSmoke(x+(pic.width>>1),y+pic.height-7,q.s)}})}}// (at the lab's scale: gfx/campart.js)
   // (its tents' look (ENCAMP_KINDS tents): tent i's style, cloth and trim; its biggest, the first, in the first style)
   look(i,seed=0){const T=this.TR.tents||{styles:['ridge'],cloth:CAMP_ART.canvas,trim:['#8a6a4a']},h=(this.seed+seed*7+i*13)>>>0;

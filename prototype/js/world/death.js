@@ -350,8 +350,8 @@ class Grave extends Remains{
   draw(ents,cam,V){const g=this,X=DEATH.grave,C=X.col,t=performance.now()/1000;if(g.flow)this.drawFlow(ents,cam);if(!g.inView(V))return;
     if(g.unburied&&g.kind==='remains'&&BodyRot.stage(g.fell??g.day)!=='bones')return super.draw(ents,cam,V);// (unburied and not yet bones: the body as it lies)
     const S=GraveArt.sprite(g.kind,g.seed||(g.seed=1+Math.floor(Math.abs(g.x*7+g.y*13))%997)),night=darkness()>.35;
-    ents.push({x:g.x,ly:g.y,y:g.y-1e5,f:()=>GraveArt.put(S,S.ground,Math.round(g.x-cam.x),Math.round(g.y-cam.y))});
-    ents.push({x:g.x,y:g.y,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),q=WORLD_VIEW.build,I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.glows();ctx.save();
+    ents.push({x:g.x,ly:g.y,y:g.y-1e5,st:true,f:()=>GraveArt.put(S,S.ground,Math.round(g.x-cam.x),Math.round(g.y-cam.y))});
+    ents.push({x:g.x,y:g.y,st:true,f:()=>{const x=Math.round(g.x-cam.x),y=Math.round(g.y-cam.y),q=WORLD_VIEW.build,I=X.idle,pulse=.5+.5*Math.sin(t*I.breathe),lit=g.glows();ctx.save();
       if(lit){const [gw,gh]=X.art.groundOf[g.kind]||[13,6];ctx.globalAlpha=.14+.12*pulse;ctx.fillStyle=C.glow;ctx.beginPath();ctx.ellipse(x,y-2,gw*.8+pulse*2,gh*.8+pulse,0,0,6.283);ctx.fill();ctx.globalAlpha=1}
       GraveArt.put(S,S.cv,x,y);GraveArt.live(g,x,y,t,night);
       if(lit){const top=y-({cairn:17,grave:15,small:9,remains:5,stone:12,tomb:28}[g.kind]||12);

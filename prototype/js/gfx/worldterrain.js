@@ -441,7 +441,7 @@ function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)r
   TGRASS.recs=recs;TGRASS.cam=cam;
   // (the props, by their feet, among the buildings)
   for(const c of recs)for(const p of c.props){const X=p.x-p.ax/r,Y=p.y-p.ay/r;if(X>x1||X+p.s.width/r<x0||p.y<y0||Y>y1)continue;
-    ents.push({st:true,x:p.x,y:p.y,f:()=>{const sx=Math.round((X-cam.x)*r)/r,sy=Math.round((Y-cam.y)*r)/r;ctx.drawImage(p.s,sx,sy,p.s.width/r,p.s.height/r);if(!p.low)depthPic(terrainHalf(p.s,r),sx,sy)}})}}
+    ents.push({st:true,x:p.x,y:p.y,f:()=>{const sx=Math.round((X-cam.x)*r)/r,sy=Math.round((Y-cam.y)*r)/r;ctx.drawImage(p.s,sx,sy,p.s.width/r,p.s.height/r);if(!p.low)depthPic(terrainHalf(p.s,r),sx,sy,p.ay/r)}})}}
 
 // a land px's top colour (the lab's topCol): its kind by its tile, height, slope and the water near it; its climate's grain on it
 function terLand(Q,c,t,e,g,dd,open,fx,fy,wd){const T=WORLD_TERRAIN,cl=CLIMS[c],wob=wnoise2(fx/50,fy/50,341)-.5,dw=dd*2;let k,col;

@@ -34,9 +34,10 @@ const CampArt={
     f.gr=mkc(N,N,g=>{g.drawImage(m.ground,0,0);if(m.snow)g.drawImage(m.snow.ground,0,0);g.globalCompositeOperation='source-atop';g.globalAlpha=SHADOW.a;g.drawImage(m.shadow,0,0)});
     B.ms+=performance.now()-t0;cv._labr=r;return cv._lab=f},budget:{tick:-1,ms:0},
   // (a picture cv at (x, y), its corner, at its own size in game px: its shadow once it stands whole, then it, h of its height risen
-  // from its foot (a tent's cloth hauled up))
+  // from its foot (a tent's cloth hauled up));
+  //  standing whole, it stands in front of those behind it as a building does (depth.js depthPic: they fade, yours show through)
   put(cv,x,y,h=cv.height){const f=CampArt.fine(cv),W=cv.width,H=cv.height;
-    if(h>=H&&f.sh){ctx.globalAlpha=SHADOW.a;ctx.drawImage(f.sh,x,y,W,H);ctx.globalAlpha=1}
+    if(h>=H&&f.sh){ctx.globalAlpha=SHADOW.a;ctx.drawImage(f.sh,x,y,W,H);ctx.globalAlpha=1}if(h>=H&&typeof depthPic==='function')depthPic(cv,x,y,cv.foot??H-1);
     ctx.drawImage(f,0,0,f.width,f.height,x,y+H-h,W,Math.max(1,h))},
   /* (a fire pit by its seed, in fine px (2 a game px), ax, ay: its middle, where the flame stands: a ring of stones round its ash and
      two charred logs crossed; look 1 a spit on forked sticks over it, 2 a roast on the spit, 3 no stones, the logs in the ash) */

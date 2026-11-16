@@ -233,8 +233,9 @@
       Q.prop(d.pick(['crate','sacks','barrel']),[-3,-1],0,1)},
     // a haystack, round under its own cone on a base of logs, a little stook beside it
     haystack(Q,o){Q.round('h',[0,0],5,[0,4],'thatch',{form:'cone',rise:6,mat:'thatch',o:0});Q.round('hb',[0,0],5.3,[0,1],'log',{form:'lid',mat:'log'});Q.prop('hay',[4.5,3],0,1)},
-    // a woodpile: split logs stacked, their ends to the front, a chopping block with its axe
-    woodpile(Q,o){Q.box('w',[-5,5],[-2.5,2.5],[0,5],'log',{top:true,topMat:'logend'});Q.dec('w.S','Logs',.5,0);Q.prop('stump',[3,4.5],0,1);Q.box('ax',[2.5,4.5],[4,6],[2,3],'iron',{top:true})},
+    // a woodpile: split logs stacked lengthwise, a chopping block with its axe (no ends to the front: at the map's size they read as a
+    // chequer)
+    woodpile(Q,o){Q.box('w',[-5,5],[-2.5,2.5],[0,5],'log',{top:true,topMat:'logend'});Q.prop('stump',[3,4.5],0,1);Q.box('ax',[2.5,4.5],[4,6],[2,3],'iron',{top:true})},
     // a fence piece: posts and rails, straight, a corner or with a gate
     fence(Q,o){const k=o.d.int(0,2);Q.fence(k===1?[[-7,-4],[6,-4],[6,5]]:[[-7,1],[7,1]],k===2?[[-2,2,0]]:null,5,'plank')},
     // crates stacked, a sack on them

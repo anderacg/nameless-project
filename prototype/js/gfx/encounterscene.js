@@ -5,9 +5,9 @@
 /* its figures: an EncounterScene lays out each kind's pieces from its data (scene(e): [piece, which, dx, dy, opts], dx
    mirrored as it faces left: walk / stand (a person of ENC_LOOK, stepping as it moves), kneel (one kneeling), down (the fallen pose), soldier (a
    follower: a realm's colour, or a band's; down with blood: lying in a pool of it), refugee, worker, beast (a herd's animal), cart (the caravan's), bld (a tent, a
-   shrine, a mine's head), prop, fire, cloth (dice on it), wreck; rider (a person of ENC_LOOK on a horse: o.coat, in o.col),
+   shrine, a mine's head), prop, fire, cloth (a dicers' cloth, dice on it), wreck; rider (a person of ENC_LOOK on a horse: o.coat, in o.col),
    horse (saddled, no rider), carcass (a herd's beast lying dead), mud, oldcart (the caravan's cart left behind), embers (a fire
-   burnt low, no flame), bedroll, basket (an herbalist's), barrier (a striped pole on trestles across a road); wisp, dust,
+   burnt low, no flame), bedroll, basket (an herbalist's), barrier (a barked log on crossed stakes across a road, the realm's cloth tied round it); wisp, dust,
    smoke and notes (music) drawn live), each its feet at its point (o.at: at that point of the map, not with the encounter: one
    left behind as it runs), for the map (draw: each piece by its feet in the depth order, at the encounter's own place to the
    screen's pixel: subT) and for its page's banner (pics). The new kinds' pieces are stand-ins until the props of phase 3 */
@@ -80,15 +80,25 @@ function roadBasket(n){n%=3;const k='rpBasket'+n;if(spr[k])return spr[k];const W
     if(n===2)for(const x of [3,7]){rect(g,C[1],x,3,2,1);rect(g,C[2],x,3);rect(g,C[0],x,4,2,1)}
     for(let y=5;y<10;y++)for(let x=1;x<11;x++){const e=y===5?4:y===9?0:((x>>1)+y)%2?2:3;rect(g,W[Math.max(0,e-(x>=8&&y>5?1:0)+(x<2&&y>5?1:0))],x,y)}
     rect(g,W[1],1,9);rect(g,W[1],10,9)})}
-// (a toll's barrier: a round pole striped in col and white, on two trestles of plain wood)
-function roadBarrier(col){const k='rpBar'+col;if(spr[k])return spr[k];const C=PX.ramp(col),Wh=ENC_INK.white,B=ENC_INK.bark;
-  return spr[k]=encPic(32,14,g=>{for(const c of [6,25]){for(let y=4;y<14;y++){const o=Math.round((y-4)*.38);rect(g,B[3],c-1-o,y);rect(g,B[2],c+1+o,y)}rect(g,B[2],c-3,9,7,1);rect(g,B[4],c-3,9,3,1);rect(g,B[1],c-2,5,5,1)}
-    for(let x=1;x<31;x++){const s=Math.floor((x-1)/4)%2;rect(g,s?Wh[2]:C[0],x,1);rect(g,s?Wh[1]:C[1],x,2,1,2);rect(g,s?Wh[0]:C[2],x,4)}
-    for(const x of [0,31]){rect(g,B[3],x,1,1,2);rect(g,B[2],x,3);rect(g,B[1],x,4)}})}
-// (a gaming cloth spread on the ground, its border a tone darker, two dice on it and a few coins; a cloth of three)
-function roadCloth(n){n%=6;const k='rpCloth'+n;if(spr[k])return spr[k];const C=ENC_INK.cloth[n%3],D=ENC_INK.die,M=ENC_INK.coin,die=(g,x,y)=>{rect(g,D[1],x,y,3,3);rect(g,D[2],x,y,2,1);rect(g,D[0],x+2,y+1,1,2);rect(g,ENC_INK.pip,x+1,y+1)};
-  return spr[k]=encPic(14,8,g=>{rect(g,C[1],0,1,14,7);rect(g,C[3],0,1,13,1);rect(g,C[3],0,2,1,5);rect(g,C[0],1,7,13,1);rect(g,C[0],13,2,1,5);rect(g,C[2],2,3,10,3);rect(g,C[3],2,3,10,1);
-    const s=n>2?1:0;die(g,3+s,2+s);die(g,8-s,4-s);rect(g,M[1],11-s*8,6,2,1);rect(g,M[2],11-s*8,6);rect(g,M[1],1+s*10,5,2,1);rect(g,M[0],2+s*10,5)})}
+// (a toll's barrier, as a medieval road was barred (the owner, 2026-11-16: "Make sure all sprites are medieval theme not modern"): a
+// barked log laid across on two pairs of crossed stakes, its end sawn, a strip of the toll's realm's cloth tied round its middle)
+function roadBarrier(col){const k='rpBar'+col;if(spr[k])return spr[k];const C=PX.ramp(col),B=ENC_INK.bark,E=ENC_INK.end;
+  return spr[k]=encPic(32,14,g=>{
+    // (the stakes, crossed under the pole, lashed where they cross)
+    for(const c of [6,25])for(let y=3;y<14;y++){const o=Math.round((y-6)*.55);rect(g,B[3],c-o,y);rect(g,B[1],c+o,y);if(y===6)rect(g,B[0],c-1,y,3,1)}
+    // (the log: lit on top, dark under, bark streaks and a knot or two, its left end tapering, its right sawn and ringed)
+    for(let x=1;x<31;x++){const kn=hash(x,1,col.length)<.08;rect(g,kn?B[1]:B[4],x,2);rect(g,hash(x,2,7)<.3?B[2]:B[3],x,3);rect(g,kn?B[0]:B[2],x,4);rect(g,B[1],x,5)}
+    rect(g,B[3],0,3,1,2);rect(g,E[0],31,2,1,4);rect(g,E[1],31,3,1,2);
+    // (the realm's cloth knotted round it, its ends hanging, one a little longer)
+    rect(g,C[0],15,2,3,4);rect(g,C[1],16,2,1,4);for(let y=6;y<11;y++){rect(g,C[y%2?1:2],15,y);if(y<10)rect(g,C[y%2?2:1],17,y)}rect(g,C[0],15,11);rect(g,C[3]||C[2],16,3)})}
+// (a gaming cloth spread on the ground, as the dicers' was: woven, a stripe worked along its border, fringed at its ends, two small
+// bone dice on it and a few coins; a cloth of three)
+function roadCloth(n){n%=6;const k='rpCloth'+n;if(spr[k])return spr[k];const C=ENC_INK.cloth[n%3],D=ENC_INK.die,M=ENC_INK.coin,die=(g,x,y)=>{rect(g,D[1],x,y,2,2);rect(g,D[2],x,y);rect(g,ENC_INK.pip,x+1,y+1)};
+  return spr[k]=encPic(14,8,g=>{
+    for(let y=1;y<8;y++)for(let x=1;x<13;x++)rect(g,(x+y*2)%5===0?C[2]:(x*3+y)%7===0?C[0]:C[1],x,y);
+    for(let x=2;x<12;x++){rect(g,C[3],x,2);rect(g,C[3],x,6)}rect(g,C[0],1,7,12,1);
+    for(let y=1;y<8;y++){if(y%2)continue;rect(g,C[2],0,y);rect(g,C[2],13,y)}
+    const s=n>2?1:0;die(g,4+s,3);die(g,8-s,4-s);rect(g,M[1],10-s*6,5);rect(g,M[2],2+s*8,4)})}
 // (the shadow under one standing on the ground, soft at its edge; crossed blades over a fight, as on the map's battles (fights.js),
 // lit steel with gilt guards and a soft shadow of their own)
 const encShadow=()=>spr.rpShade||(spr.rpShade=encPic(14,4,g=>encOval(7,2,7,2,0,0,(x,y,d)=>rect(g,'rgba(0,0,0,'+(.26*(1-d*.55)).toFixed(2)+')',x,y))));

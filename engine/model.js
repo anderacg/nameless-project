@@ -262,7 +262,7 @@
         default:return[m,cl(b+sp)]}}
     if(f.cls==='floor')return[m,cl(b+sp+(H(iu>>1,iv>>1,sd+4)<.1?1:0))];
     if(f.cls==='top'){if(m==='iron')return[m,3];if(m==='ember')return h<.25?['flame',2]:['iron',h<.6?3:2];// (a fire's ash and embers: the game's flame stands over it)
-      if(m==='crop')return iv%2?['soil',cl(b+1)]:[m,cl(b+(h<.2?1:0))];if(m==='logend')return['log',(iu+iv)%2?0:2];
+      if(m==='crop')return iv%2?['soil',cl(b+1)]:[m,cl(b+(h<.2?1:0))];if(m==='logend')return['log',iu%3===2?2:H(iu,iv>>1,sd+7)<.25?1:0];
       if(m==='water')return[m,h<.08?0:1];return[m,cl(b-1+sp)]}
     // walls: the chimney's cap, the band of shade under the eaves, the footing, weathering at the foot, the frame, the wall's courses
     if(f.cap&&v>=f.hz-1)return[m,0];
@@ -318,7 +318,7 @@
     Sign:['tttt..','...t..','.bbbbb','.byrrb','.bbbbb'],Lamp:['tt','.y','.y'],Cross:['.y.','yyy','.y.','.y.'],Bell:['.lll.','l###l','l#y#l','lyyyl','lllll'],
     Rune:['.llll.','lddddl','ldyydl','ldeedl','ldyedl','ldeedl','ldekdl','ldeedl','ldeedl','pppppp'],Slit:['h','h','h','h'],Hatch:['ttttt','tbebt','tbebt','tbebt','ttttt'],Beams:['t...t...t...t...t...t'],
     Barn:barnDoors(11,11),Gate:archOf(12,16,true),Arch:archOf(7,10,false),Ivy:['v.v.v','vvv.v','.vvvv','v.vv.','vv.vv','.v.v.','v..v.','..v..'],
-    Logs:gen(10,5,(c,r)=>(c+r)%2?'M':'L'),Goods:['rycrycry','bbbbbbbb','bbbbbbbb'],Crate:['tttt','t..t','t..t','tttt'],Hoop:['iiiiii'],Flap:['..n..','.n#n.','n###n','n###n','n###n'],
+    Logs:gen(10,5,(c,r)=>{const o=(r>>1)%2?1:0,q=(c+o*2)%3;return q===2?'D':r%2===0&&q===0?'L':'M'}),Goods:['rycrycry','bbbbbbbb','bbbbbbbb'],Crate:['tttt','t..t','t..t','tttt'],Hoop:['iiiiii'],Flap:['..n..','.n#n.','n###n','n###n','n###n'],
     Cave:['...XXX.....','..XDDDXX...','.XDDDDDDX..','XDDDDDDDDX.','XDDDDDDDDDX','XDDDDDDDDDX','.XDDDDDDDDX','XDDDDDDDDDX','XDDDDDDDDDX'],
     Cave2:['.....XX....','...XXDDX...','..XDDDDDXX.','.XDDDDDDDDX','XDDDDDDDDDX','XDDDDDDDDX.','XDDDDDDDDX.','XDDDDDDDDDX'],
     Adit:['.XDDDX.','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XiDDDiX'],

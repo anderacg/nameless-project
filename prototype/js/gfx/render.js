@@ -301,7 +301,7 @@ function drawWorld(){
   if(P.raid&&!B?.world)ents.push({x:P.x,y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
   // (the siege camp: one of SIEGE_CAMP.looks by the holding besieged, of the ground's climate, at the lab's scale (gfx/campart.js
   // CampArt.put: its model a fine px a px, at its own size) on its trampled yard, its fire lit and your banner planted)
-  if(P.siege&&!B?.world)ents.push({x:P.x,y:P.y-1,f:()=>{subT(P);const S=SIEGE_CAMP,t=townBy(P.siege.town),s=campSprite(S.seed+((t&&t.seed)|0)%S.looks,'camp',climAt(P.x,P.y)),X=Math.round(P.x-S.dx-s.ax-cam.x),Y=Math.round(P.y+S.dy-s.ay-cam.y),f=CampArt.fine(s);
+  if(P.siege&&!B?.world)ents.push({x:P.x,y:P.y-1,st:true,f:()=>{subT(P);const S=SIEGE_CAMP,t=townBy(P.siege.town),s=campSprite(S.seed+((t&&t.seed)|0)%S.looks,'camp',climAt(P.x,P.y)),X=Math.round(P.x-S.dx-s.ax-cam.x),Y=Math.round(P.y+S.dy-s.ay-cam.y),f=CampArt.fine(s);
     ctx.drawImage(f.gr||s.gr,X,Y,s.width,s.height);CampArt.put(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],(t&&t.seed)|0);drawPoleBanner(P.banner(),X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
   if(P.camp&&!B?.world){if(WORLD_BATTLE.on)marchCircle(ents,P,cam);bandCampEnts(ents,cam);}
   if(P.stay&&P.stay.camp&&!B?.world)stayCampEnts(ents,cam);

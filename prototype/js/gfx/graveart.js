@@ -43,7 +43,7 @@ const GraveArt={
     g=cv.getContext('2d');this[kind](ax,ay,px,rect,hash,D);
     S={ground:gcv,cv,ax,ay,k:1/s};this.cache.set(key,S);return S},
   // (one of its pictures, c (S.ground or S.cv), with its foot at screen (x, y): at the lab's scale)
-  put(S,c,x,y){const k=S.k;ctx.drawImage(c,x-S.ax*k,y-S.ay*k,c.width*k,c.height*k)},
+  put(S,c,x,y){const k=S.k;ctx.drawImage(c,x-S.ax*k,y-S.ay*k,c.width*k,c.height*k);if(c===S.cv&&typeof depthPic==='function')depthPic(scaledPic(c,k),x-S.ax*k,y-S.ay*k,S.ay*k)},
   // (a picture of it at the map's own px, for what lays pictures 1 px a game px (a page's banner: ui/window.js pageBanner))
   half(c){if(c._half)return c._half;const k=WORLD_VIEW.build;return c._half=mkc(Math.round(c.width*k),Math.round(c.height*k),g=>{g.imageSmoothingQuality='high';g.drawImage(c,0,0,c.width*k,c.height*k)})},
   // (remains no one buried: bones in the grass, a skull, ribs, a torn cloak, the sword fallen by them)
