@@ -8,7 +8,10 @@ const fbm=(x,y,s)=>noise(x,y,s)*.6+noise(x*2,y*2,s+1)*.3+noise(x*4,y*4,s+2)*.1;
 const T_OPEN=0,T_FOREST=1,T_HILL=2,T_WATER=3,T_ROAD=4,T_MOUNT=5,T_FORD=6;
 // (tiles, climate: the layers of the map that is in, by these names for the hot loops: world/worldmap.js useWorld)
 const CLIMS=['grass','frost','desert','swamp'],CLIM=Object.fromEntries(CLIMS.map((c,i)=>[c,i]));
-const SPEEDMUL=[1,.6,.75,0,1.3,0,.5];
+// (how fast each kind of ground is walked, the world lab's (LAB.speed, the owner, 2026-11-16: "Do all that"): open 1, woods 0.85, a
+// hill's ground 1 (its slope slows it: SLOPE), a road 1.1 (RoadBand: ROAD_BAND.speed), a ford knee-deep (WATER.speed[2]); by the
+// climate (CLIMMUL) the lab's climates' grounds: frost's tundra and snow, the desert's sand, the swamp's marsh)
+const SPEEDMUL=[1,.85,1,0,1.1,0,.6];
 // (the land by its slope (worldgen.js landClasses, the map's slope: flat, a slope, steep; a cliff is rock no one walks), how fast it
 // is walked, times its kind's; from snow levels up (the map's lv) the cold heights slower still; how much farther one sees a level up)
 const SLOPE={mul:[1,.8,.55,.4],snow:14,cold:.6,sight:.03,sightMax:.5};
@@ -61,7 +64,7 @@ function headingMul(x,y,tx,ty){const S=WM&&WM.slope;if(!S||tx==null||ty==null)re
 function heroSwims(){if(typeof P==='undefined'||!P)return true;if(P.bsta!=null&&P.bsta<=0)return false;let h=0,n=0;
   for(const k in P.troops||{}){const c=P.troops[k];if(!(c>0))continue;n+=c;if(ST[k]&&tagsOf(ST[k]).includes('heavy'))h+=c}return !(n&&h/n>=.5)}
 const walkAt=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return tx>=0&&ty>=0&&tx<MW&&ty<MH&&walkTile(ty*MW+tx)};
-const CLIMMUL={grass:1,frost:.7,desert:.85,swamp:.5};
+const CLIMMUL={grass:1,frost:.85,desert:.88,swamp:.75};
 const tAt=(tx,ty)=>(tx<0||ty<0||tx>=MW||ty>=MH)?T_WATER:tiles[ty*MW+tx];
 const terrAt=(x,y)=>tAt(Math.floor(x/TILE),Math.floor(y/TILE));
 const climAt=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return(tx<0||ty<0||tx>=MW||ty>=MH)?'grass':CLIMS[climate[ty*MW+tx]]};

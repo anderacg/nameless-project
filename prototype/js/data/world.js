@@ -30,7 +30,7 @@ const WORLD_VIEW={fine:2,build:.5,zoom:2,phoneZoom:1.5,phone:700,in:2};
    flora's rock tones, bush leaves, moss, snow on everything), its trees by where they stand (lowland, waterside: a river within a
    tile; hills; mountain; village: a holding's lot within two tiles; each mix by weight) and the chance of each thing a cell of step
    fine px by the ground: woods (a forest tile; trees at woods, thinner at its edge), open ground (grass and meadow), hills, the
-   mountains, the banks; grass: a clump's chance by the ground and the clumps' kinds (the flora's GRASS_KINDS) */
+   mountains, the banks, the swamp's pools (lily: a pad's chance on one, reeds: round its edge, the lab's); grass: a clump's chance by the ground and the clumps' kinds (the flora's GRASS_KINDS) */
 const WORLD_FLORA={step:9,
   look:{grass:{rock:'grey',bush:'oak',snow:false,moss:1},desert:{rock:'sand',bush:'dry',snow:false,moss:0},frost:{rock:'cold',bush:'dark',snow:true,moss:0},swamp:{rock:'grey',bush:'dark',snow:false,moss:1.6}},
   trees:{grass:{lowland:{oak:5,beech:3,birch:2.5,ash:2,maple:.6,poplar:.4,dead:.25},waterside:{willow:4,alder:3,birch:1,poplar:1},hills:{pine:4,fir:3,birch:1.5,oak:1,dead:.3},mountain:{fir:4,spruce:4,pine:1,dead:.5},village:{apple:3,oak:1,poplar:1}},
@@ -40,7 +40,7 @@ const WORLD_FLORA={step:9,
   chance:{grass:{woods:.6,open:{tree:.012,bush:.012,boulder:.002,stone:.006,flowers:.02,fern:0},hills:{tree:.05,bush:.02,boulder:.012,stone:.02},mountain:{tree:.02,boulder:.03,stone:.05},woods2:{bush:.08,log:.012,stump:.008,fern:.06,mushroom:.014},bank:{cattail:.08,stone:.04}},
     desert:{woods:.25,open:{tree:.01,bush:.006,boulder:.004,stone:.014,agave:.012,bones:.002},hills:{tree:.02,boulder:.02,stone:.03,agave:.01},mountain:{boulder:.03,stone:.05},woods2:{bush:.07,agave:.02},bank:{cattail:.05}},
     frost:{woods:.6,open:{tree:.01,bush:.008,boulder:.003,stone:.006},hills:{tree:.05,bush:.01,boulder:.012,stone:.02},mountain:{tree:.015,boulder:.03,stone:.05},woods2:{bush:.05,log:.01,stump:.01},bank:{cattail:.03,stone:.03}},
-    swamp:{woods:.5,open:{tree:.02,bush:.02,stone:.0015,flowers:.006},hills:{tree:.05,bush:.02,boulder:.004},mountain:{tree:.02,boulder:.02,stone:.03},woods2:{bush:.06,log:.025,stump:.016,fern:.06,mushroom:.035},bank:{cattail:.2}}},
+    swamp:{woods:.5,open:{tree:.02,bush:.02,stone:.0015,flowers:.006},hills:{tree:.05,bush:.02,boulder:.004},mountain:{tree:.02,boulder:.02,stone:.03},woods2:{bush:.06,log:.025,stump:.016,fern:.06,mushroom:.035},bank:{cattail:.2},pool:{lily:.1,reeds:.12}}},
   grass:{step:6,chance:{grass:{open:.38,meadow:.55,woods:.12,dune:.3},desert:{open:.05,meadow:.015,woods:.2,dune:.12},frost:{open:.3,meadow:.03,woods:.02,dune:.12},swamp:{open:.5,meadow:.3,woods:.22,dune:.35}},
     kinds:{grass:{open:'grass',meadow:'meadow',woods:'wood',dune:'dune'},desert:{open:'dry',meadow:'dry',woods:'dry',dune:'dune'},frost:{open:'frost',meadow:'frost',woods:'frost',dune:'frost'},swamp:{open:'marsh',meadow:'marsh',woods:'wood',dune:'marsh'}},
     patch:38,wind:1,gust:[90,.65],push:12,lean:3,spring:1.4}};

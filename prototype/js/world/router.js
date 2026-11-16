@@ -57,11 +57,11 @@ function findPath(x0,y0,x1,y1,pad,rm){
   const N=bw*bh,g=new Float64Array(N).fill(Infinity),from=new Int32Array(N).fill(-1),heap=[],L=(x,y)=>(y-by)*bw+(x-bx);
   const push=(i,f)=>{heap.push([f,i]);let k=heap.length-1;while(k>0){const q=(k-1)>>1;if(heap[q][0]<=heap[k][0])break;[heap[q],heap[k]]=[heap[k],heap[q]];k=q}};
   const pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){heap[0]=last;let k=0;for(;;){const l=2*k+1,r=l+1;let m=k;if(l<heap.length&&heap[l][0]<heap[m][0])m=l;if(r<heap.length&&heap[r][0]<heap[m][0])m=r;if(m===k)break;[heap[m],heap[k]]=[heap[k],heap[m]];k=m}}return top};
-  const h=(x,y)=>Math.hypot(x-gx,y-gy)/1.3,s0=L(sx,sy),goal=L(gx,gy),F=WAY_FOOT&&footMask(),fc=WAY_FOOT_LOT.cost,LVW=WM&&WM.lv;g[s0]=0;push(s0,h(sx,sy));
+  const h=(x,y)=>Math.hypot(x-gx,y-gy)/ROAD_BAND.speed,s0=L(sx,sy),goal=L(gx,gy),F=WAY_FOOT&&footMask(),fc=WAY_FOOT_LOT.cost,LVW=WM&&WM.lv;g[s0]=0;push(s0,h(sx,sy));
   while(heap.length){const [,i]=pop();if(i===goal)break;const x=bx+i%bw,y=by+((i/bw)|0);
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<bx||ny<by||nx>=bx+bw||ny>=by+bh)continue;
       const t=tiles[ny*MW+nx];if(!canAt(ny*MW+nx)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!canAt(y*MW+nx)||!canAt(ny*MW+x)||SHUT&&(SHUT[y*MW+nx]&6||SHUT[ny*MW+x]&6)))continue;// (no corner of a holding's walls cut, its centre's or its ring's: holdShut)
-      const sp=t===T_ROAD?1.3:Math.max(.25,Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]])*slopeMulAt(ny*MW+nx)),j=L(nx,ny),wb=t===T_WATER?waterBand(ny*MW+nx):0,nd=g[i]+((dx&&dy?1.414:1)*(wb?(wb>=4&&WAY_NOSWIM?Infinity:WATER.cost[wb]):t===T_MOUNT?LAB_WALK.climbCost:1/sp)+climbCost(LVW,y*MW+x,ny*MW+nx,t===T_ROAD))*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(F&&F[ny*MW+nx]?fc:1);
+      const sp=t===T_ROAD?ROAD_BAND.speed:Math.max(.25,Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]])*slopeMulAt(ny*MW+nx)),j=L(nx,ny),wb=t===T_WATER?waterBand(ny*MW+nx):0,nd=g[i]+((dx&&dy?1.414:1)*(wb?(wb>=4&&WAY_NOSWIM?Infinity:WATER.cost[wb]):t===T_MOUNT?LAB_WALK.climbCost:1/sp)+climbCost(LVW,y*MW+x,ny*MW+nx,t===T_ROAD))*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(F&&F[ny*MW+nx]?fc:1);
       if(nd<g[j]){g[j]=nd;from[j]=i;push(j,nd+h(nx,ny))}}}
   if(!isFinite(g[goal]))return null;
   const out=[];for(let i=goal;i!==s0;i=from[i])out.push((by+((i/bw)|0))*MW+bx+i%bw);return out.reverse();
@@ -135,7 +135,7 @@ const WAY={run:10,near:40,pairs:1024,ferry:.05,barge:[260,90],cs:32,pace:34,keep
 // (a goal's cost off the roads: road true a road keeper's, WAY.keep; a number, its own; none 1)
 const wayKeep=goal=>goal.road===true?WAY.keep:goal.road||1;
 // (the cost of stepping onto a tile of kind t, climate c: findPath's, in tiles at open-ground pace; the days one of those takes)
-const wayStep=(t,c)=>t===T_ROAD?1/1.3:1/Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[c]]);
+const wayStep=(t,c)=>t===T_ROAD?1/ROAD_BAND.speed:1/Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[c]]);
 // (a tile's: its water's by its depth (WATER.cost), else its ground's)
 const wayStepAt=(i,m=WM)=>{if(m.kind[i]!==T_WATER)return wayStep(m.kind[i],m.clim[i]);const b=waterBand(i,m);return b>=4&&WAY_NOSWIM?Infinity:WATER.cost[b]||Infinity};
 const wayDay=()=>TILE/moveStep(WAY.pace,DAY_SECONDS*WORLD_PACE);
@@ -286,7 +286,7 @@ function wayEnds(G,t,rev){const NO=wayNodes(),x=t%MW,y=(t-x)/MW;if(NO.has(t))ret
 // via (the edge taken into each node: its index; -1 a chunk's; -2 the start)}, or null)
 let WAYA=null;
 function wayGraph(G,A,B,gt,rm){rm=rm||1;const n=G.n,S=WAYA&&WAYA.g.length>=n?WAYA:(WAYA={g:new Float64Array(n),from:new Int32Array(n),via:new Int32Array(n),mark:new Uint32Array(n),done:new Uint32Array(n),st:0}),st=++S.st,H=WAYG;
-  const gx=gt%MW,gy=(gt-gx)/MW,hm=wayDay()/1.3,h=v=>{const t=G.tile[v],dx=Math.abs(t%MW-gx),dy=Math.abs((t/MW|0)-gy);return(dx>dy?dx+.414*dy:dy+.414*dx)*hm};
+  const gx=gt%MW,gy=(gt-gx)/MW,hm=wayDay()/ROAD_BAND.speed,h=v=>{const t=G.tile[v],dx=Math.abs(t%MW-gx),dy=Math.abs((t/MW|0)-gy);return(dx>dy?dx+.414*dy:dy+.414*dx)*hm};
   const relax=(u,v,c,e)=>{if(S.mark[v]!==st||c<S.g[v]){S.mark[v]=st;S.g[v]=c;S.from[v]=u;S.via[v]=e;H.push(c+h(v),v)}};
   H.n=0;for(const [v,c] of A)relax(-1,v,c,-2);let best=Infinity,bv=-1;
   while(H.n){if(H.top>=best)break;const u=H.pop();if(S.done[u]===st)continue;S.done[u]=st;const gu=S.g[u];

@@ -216,7 +216,7 @@ function drawMarcherAt(u,o,cam){
   const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),wb=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH?(typeof drawnDepth==='function'?depthBand(drawnDepth(u.x,u.y)):waterBand(ty*MW+tx)):0,cut=wb?WATER.cut[Math.min(4,wb)]:0;
   ctx.save();ctx.translate(x,y);ctx.scale(sx,k);if(cut){ctx.beginPath();ctx.rect(bx-8,by-8,s.width+16,s.height+8-cut);ctx.clip()}
   G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
-  if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u),cam)}
+  if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u),cam);else if(!S.fly&&typeof grassOver==='function')grassOver(u.x,u.y,s.width*k/2)}
 // (a man in water (march.js drawMarcherAt): his picture s drawn at (x, y) scaled (sx, k), its corner (bx, by); the water cut figure px up
 // his body. Under the line his body faint and wavering; at it a darker band of water and a broken ring of foam, wavering; a ripple ring
 // spreading from him, quicker while he moves; all of it only over the screen's px where water is drawn (the owner: "the water circle

@@ -11,9 +11,9 @@
    read, again whenever the ways change (router.js WAYV: a world going in, the estates' tracks laid or taken up, a crossing shut)
    ---------- */
 // great, track: [full, shoulder] px from the line as drawn, a great road's (its bridges' ramps too) and a track's; cell: the
-// field's square, px (TILE a whole number of them); speed: a road's (a great road or a track between places); trackSpeed: an
+// field's square, px (TILE a whole number of them); speed: a road's (a great road or a track between places; the lab's 1.1); trackSpeed: an
 // estate's track's (the owner: "a little slower"); human: humans' × on both; name: how far in (0-1) regionAt calls it the road
-const ROAD_BAND={great:[10,6],track:[8,6],cell:4,speed:1.3,trackSpeed:1.15,human:1.1,name:.5};
+const ROAD_BAND={great:[10,6],track:[8,6],cell:4,speed:1.1,trackSpeed:1.05,human:1.1,name:.5};
 const RoadBand={ix:null,blk:null,k:0,v:-1,
   // the byte at map point (x, y), px
   at(x,y){if(this.v!==WAYV)this.build();if(!this.ix||x<0||y<0)return 0;const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx>=MW||ty>=MH)return 0;

@@ -8,7 +8,8 @@
    read. Nothing here draws Math.random. ---------- */
 /* SUPPLY, every number in one place.
    Stamina an hour on the march: march, × rough (hills, forest, mountains, swamp, snow, sand), × night, × forced (Forced March),
-   × dry with nothing to drink (desertDry: the desert with no water), × 1 + cold × the share of furs you lack in the frost, ×
+   × dry with nothing to drink (desertDry: the desert with no water), × heat in the desert's sun (by day, out of the water and off
+   its green: the lab's sta.heat), × 1 + cold × the share of furs you lack in the frost, ×
    mounted (mostly riders), × 1 − skill a level of Athletics (on foot) or Riding (mounted, at most skillCap off), × guide (a Guide in
    the band). Stopped it comes back: rest (stop, in camp, staying in a
    holding), × dryRest with nothing to drink; none with no food, nor in the desert with no water.
@@ -46,7 +47,7 @@
    allowed (campGround); road: px past that no road or track tile's middle may lie; lot: tiles kept between it and any lot, field
    or bandits' camp; ring: tiles round a holding's centre and houses; site: px round a site's picture; pole: your banner's pole's
    foot, px from the camp's fire (bandCampEnt: planted beside the tents). hint: the first-run hint once stamina falls under this. hurt: causes kept for the card */
-const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
+const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,heat:1.25,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
   rest:{stop:4,camp:16,stay:20},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
   eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,recover:4,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
@@ -217,6 +218,7 @@ function staminaRate(moving,dr,L){
     if(Clock.isNight)mul(S.night,'night');
     if(P.hasPerk('forced'))mul(S.forced,'Forced March');
     if(!dr)mul(L.desert?S.desertDry:S.dry,L.desert?'no water in the desert':'nothing to drink');
+    if(L.desert&&!Clock.isNight&&!L.water&&!waterBand(Math.floor(P.y/TILE)*MW+Math.floor(P.x/TILE)))mul(S.heat,'the desert sun');
     if(L.frost)mul(1+S.cold*coldShare(),'short of furs');
     const ride=mountedShare(bandSpeeds())>=.5,sk=skill(ride?'ride':'athl');
     if(ride)mul(S.mounted,'mostly mounted');
