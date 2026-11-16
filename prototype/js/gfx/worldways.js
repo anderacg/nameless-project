@@ -30,14 +30,14 @@ function waysOf(P){if(P.ways)return P.ways;
     for(let it=0;it<3;it++){const o=[p[0]];for(let k=0;k+1<p.length;k++){const a=p[k],b=p[k+1];o.push(a.map((v,j)=>j===3?a[3]:v*.75+b[j]*.25),a.map((v,j)=>j===3?b[3]:v*.25+b[j]*.75))}o.push(p[p.length-1]);p=o}
     const n=p.length,k0=X.length;let L=0;
     for(let k=0;k<n;k++){if(k)L+=Math.hypot(p[k][0]-p[k-1][0],p[k][1]-p[k-1][1]);const a=p[Math.max(0,k-1)],b=p[Math.min(n-1,k+1)],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,
-        f=Math.min(1,k/10,(n-1-k)/10),o=(big?(wnoise2(L/V.meanderL,id*3.7,501)-.5)*2*(.2+.8*wnoise2(L/(V.meanderL*3),id*1.9,502)):(wnoise2(L/26,id*3.7,501)-.5)*2)*Math.max(0,Math.min(V.meander*WAY_LP,p[k][5]))*f;
+        f=Math.min(1,k/10,(n-1-k)/10),o=(big?((wnoise2(L/V.meanderL,id*3.7,501)-.5)*2*(.2+.8*wnoise2(L/(V.meanderL*3),id*1.9,502))+(wnoise2(L/(V.meanderL*.35),id*2.3,503)-.5)*.9):(wnoise2(L/26,id*3.7,501)-.5)*2)*Math.max(0,Math.min((big?V.meanderBig:V.meander)*WAY_LP,p[k][5]))*f;
       X.push(p[k][0]-dy/l*o);Y.push(p[k][1]+dx/l*o);HW.push(p[k][2]);LL.push(p[k][3]);DP.push(p[k][4])}
     for(let k=k0;k+1<X.length;k++){SP.push(k);SA.push(X[k],Y[k],X[k+1],Y[k+1],HW[k],HW[k+1])}};
   // (a tile's point: its middle, a river two tiles wide the middle of its 2 x 2)
   const sea=i=>tiles[i]===T_WATER&&!(Rv[i]&3),mid=(i,w)=>{const x=i%MW,y=(i-x)/MW,o=w===2?16:8;return [x*TILE+o,y*TILE+o]};
   for(const r of WM.rivers){const p=r.path.slice();if(r.mouth>=0&&p[p.length-1]!==r.mouth)p.push(r.mouth);let lv=1e9,w0=1;const pts=[];
     for(let k=0;k<p.length;k++){const i=p[k],own=Rv[i]&3,w=k<r.path.length?Math.max(1,Math.min(r.width,own||w0)):w0;w0=w;lv=Math.min(lv,LV[i]);
-      const [x,y]=mid(i,own&&!sea(i)?own:w),hw=V.hw[w]*WAY_LP;pts.push([x,y,hw,lv,V.depth[w]*(.75+.5*k/Math.max(1,p.length-1)),(w===1?8:w===2?16:24)-hw])}// (deeper downstream, the lab's)
+      const [x,y]=mid(i,own&&!sea(i)?own:w),hw=V.hw[w]*WAY_LP;pts.push([x,y,hw,lv,V.depth[w]*(.75+.5*k/Math.max(1,p.length-1)),(w===1?13:w===2?22:30)-hw])}// (deeper downstream, the lab's)
     // (its mouth on the sea or a lake: wider into it)
     if(sea(r.mouth))for(let k=Math.max(0,pts.length-3);k<pts.length;k++)pts[k][2]*=V.mouth;
     // (its plume into the sea past its mouth; the tarn it rises from on high ground, the lab's: a pool at its head)

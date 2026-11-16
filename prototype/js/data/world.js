@@ -51,7 +51,8 @@ const WORLD_FLORA={step:9,
    stretch into the sea or a lake mouth times wider, its plume out into the sea plume times its width; a river rising
    from tarn.lv levels up rises from a tarn (its head tarn.w times wide); its surface stepped step levels at a time, a fall at each
    (the lab's; 0: smooth). A brook rises from a spring, a pool spring times its width at its head. A river's line simplified within simp of a tile of
-   its tiles' middles, then wandering in bends meanderL px long (a brook's 26). road: the lab's (LAB.road, the owner: "why the road scale not match with the lab?"):
+   its tiles' middles, then wandering in bends meanderL px long, up to meanderBig px off it (a brook's 26 long, meander off), so no river runs
+   dead straight along a row of its tiles. road: the lab's (LAB.road, the owner: "why the road scale not match with the lab?"):
    half-widths (a track, a road: both the lab's 13, 26 wide), its width wandering vary of it along it, its corners rounded (bend
    more cuts of its line); its worn look: a packed crown in
    patches, no wheel ruts (the bands' tracks are drawn: world/tracks.js; track: the wear down a bridge's deck), gravel, puddles past puddle, a ragged edge of edge px, shoulders sh px,
@@ -67,7 +68,7 @@ const WORLD_FLORA={step:9,
    end, its open span the river and its banks as they are (worldways.js bridgeOpen); a brook under a road: a small bridge along
    the road, the brook's width and brook.span px of bank each side, its deck brook.clear levels over the water at least, none within
    brook.apart px of another bridge; on a track or over a brook under brook.ford px wide, a natural ford instead (shallow over gravel) */
-const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,meander:6,mouth:1.6,plume:7,tarn:{lv:3,w:3.2}},
+const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,meander:6,mouth:1.6,plume:7,tarn:{lv:3,w:3.2}},
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,fade:36,biome:{mix:[.1,.3,.35,.22],patch:[.72,.56,.58,.6]},track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3,wall:5},
   bridge:{clear:1.4,ramp:28,over:6,abut:4,open:3,brook:{span:3,clear:.6,apart:24,ford:1.6},pile:12,arch:26,rail:5,post:8,shade:3,shadow:96}};
 const WORLD_TERRAIN={climWarp:14,shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
