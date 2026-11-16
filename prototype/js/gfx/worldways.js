@@ -129,8 +129,8 @@ function* waysBand(A,x0,y0,w,h,sc,reach){const S=new Float32Array(w*h).fill(1e9)
     const xa=Math.max(0,Math.floor(Math.min(ax,bx)-R)),xb=Math.min(w-1,Math.ceil(Math.max(ax,bx)+R)),ya=Math.max(0,Math.floor(Math.min(ay,by)-R)),yb=Math.min(h-1,Math.ceil(Math.max(ay,by)+R));
     if(xa>xb||ya>yb)continue;const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy||1;
     for(let y=ya;y<=yb;y++){const py=y+.5-ay;for(let x=xa;x<=xb;x++){const px=x+.5-ax,t=Math.max(0,Math.min(1,(px*dx+py*dy)/l2)),ex=px-dx*t,ey=py-dy*t,d=Math.sqrt(ex*ex+ey*ey)-(ha+(hb-ha)*t),j=y*w+x;
-        if(d<S[j]){S[j]=d;Q[j]=s;T[j]=t}}}
-    if((work+=(xb-xa+1)*(yb-ya+1))>250000){work=0;yield}}
+        if(d<S[j]){S[j]=d;Q[j]=s;T[j]=t}}
+      if((work+=xb-xa+1)>60000){work=0;yield}}}
   return {S,Q,T}}
 
 // a river's water (the lab's underWater with its river's colours): d its depth (levels), its bed of pebbles showing in the shallows,
@@ -182,7 +182,7 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
     const inB=(x,y)=>{const dx=x+.5-mx,dy=y+.5-my,t=dx*ux+dy*uy,v=dx*nx+dy*ny;return Math.abs(t)<=hl&&Math.abs(v)<=hw},TV=(x,y)=>{const dx=x+.5-mx,dy=y+.5-my;return [dx*ux+dy*uy+hl,dx*nx+dy*ny]};
     // (its north side: the side whose rail shades the deck (the sun from the north-west); a side px: on its edge, along a long side)
     const north=ny<0||ny===0&&nx<0?1:-1,side=(x,y,v)=>Math.abs(v)>=hw-1.5*k&&(!inB(x-1,y)||!inB(x+1,y)||!inB(x,y-1)||!inB(x,y+1));
-    const pile=BG.pile*k,arch=BG.arch*k,post=BG.post*k,beam=Math.round(3*k);
+    const pile=BG.pile*k,arch=BG.arch*k,post=BG.post*k,beam=Math.round(3*k),FL=BG.flag,CW=BG.cut;
     /* (where it stands over open space: along its middle, over water or a drop under its beams of more than open px (the owner,
        2026-11-15: "if the foundation already cover like certain amount of the bridge then we should leave it open like real bridge"):
        its supports only there, evenly, a pile at each end of it and every pile px at most between (a stone one's piers, an arch every
@@ -193,10 +193,19 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
     const bay=t=>{let i=0;while(i+2<sup.length&&t>=sup[i+1])i++;return [t-sup[i],sup[i+1]-sup[i]]},nearS=t=>{let d=1e9;for(const s of sup)d=Math.min(d,Math.abs(t-s));return d};
     // (its shadow on the water or the land under it, SH px to the south-east)
     for(let y=by0;y<=by1;y++)for(let x=bx0;x<=bx1;x++)if(inB(x,y)){const lf=liftF(x,y);put(x+SH,y+SH-lf,[14,20,28],BG.shadow)}
+    // (a bridge running north and south: its piers stand out of its sides as cutwaters, pointed up- and downstream, each pier's lit
+    //  cap and south face down to the water under its deck's beams, foam at its foot; its long sides show no piers else)
+    if(Math.abs(uy)>Math.abs(ux)&&sup.length){const out=CW.out*k,half=(b.stone?CW.half:CW.half*.6)*k,inP=(x,y)=>{const [t,v]=TV(x,y),e=Math.abs(v)-hw;
+        for(const s0 of sup){const d=Math.abs(t-s0),w=e>0?half*(1-e/out):half;if(e<out&&d<=w){const [fx,fy]=atT(s0);if(wetF(fx,fy)||DL-liftF(fx,fy)>beam+BG.open*k)return true}}return false};
+      for(let y=by0-out;y<=by1+out;y++)for(let x=bx0-out;x<=bx1+out;x++){if(!inP(x,y))continue;const lf=liftF(x,y),top=y-DL+beam+1;if(y-lf<=top)continue;
+        put(x,top,inP(x,y-1)?C.stone[0]:C.cap);if(inP(x,y+1))continue;const lit=!inP(x-1,y);
+        for(let yy=top+1;yy<y-lf;yy++)put(x,yy,tmul(C.stone[(Math.floor((yy-top)/(3*k))+(x>>1))%2?1:2],lit?1.08:.94));if(wetF(x,y)){put(x,y-lf,C.foam);put(x+1,y-lf,C.foam,150)}}}
     for(let y=by0;y<=by1;y++)for(let x=bx0;x<=bx1;x++){if(!inB(x,y))continue;const [t,v]=TV(x,y),sy=y-DL,pl=Math.floor(t/(4*k));
       // (the deck: planks across, a thin gap between, knots, worn where the wheels go; a stone one's setts; shaded inside its north rail,
       //  lit along its north edge)
-      let c;if(b.stone){const row=Math.floor((v+hw)/(2*k)),o=(row&1)*1.5*k;c=C.sett[Math.floor(hs(Math.floor((t+o)/(3*k)),row,541)*3)];if((t+o)%(3*k)<k*.6||(v+hw)%(2*k)<k*.5)c=tmul(C.sett[1],.78)}
+      let c;if(b.stone){const vv=v+hw,FW=FL.w*k,FH=FL.h*k;
+        if(hw-Math.abs(v)<FL.kerb*k){c=tmul(C.stone[1],(Math.floor(t/FW)&1)?.96:1.03);if(t%FW<.8)c=tmul(c,FL.mortar)}
+        else{const row=Math.floor(vv/FH),o=(row&1)*FW/2,q=hs(Math.floor((t+o)/FW),row,541);c=tmul(C.sett[0],1-FL.vary/2+FL.vary*q);if((t+o)%FW<.8||vv%FH<.8)c=tmul(c,FL.mortar);else if(hs(x,y,545)<.06)c=tmul(c,.94)}}
       else{c=C.plank[Math.floor(hs(pl,7,542)*3)];if(t%(4*k)<.6*k)c=tmul(C.plank[1],.72);else if(hs(pl,Math.floor(v/k),543)<.05)c=tmul(c,.82);if((Math.abs(v)>hw-2.2*k)&&hs(pl,v>0?1:2,544)<.5)c=tmul(c,.9)}
       if(Math.abs(Math.abs(v)-hw*WORLD_WAYS.road.track)<1.3*k)c=tmul(c,.92);if(v*north>hw-1.5*k-2.5*k&&v*north<hw-1.5*k)c=tmul(c,.82);if(!inB(x,y-1))c=tmul(c,1.1);put(x,sy,c);
       // (a beam under its every edge)

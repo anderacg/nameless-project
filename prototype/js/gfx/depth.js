@@ -25,7 +25,7 @@ const WDEPTH={on:true,fade:.5,ghost:{on:true,col:'#fff1c4',a:.62,min:8,most:30},
 // (its row in the picture), one foot for all of it: a tree, a tent or a grave stands whole where it stands (a crown in front of a man
 // behind its trunk, though the crown's own columns end above his feet; the owner, 2026-11-16: "When character walk behind buildings,
 // tree, etc. bring those concept in")
-function depthPic(img,x,y,foot){if(img&&WDEPTH.on)WDEPTH.pics.push([img,Math.round(x),Math.round(y-LIFT_NOW),foot==null?null:Math.round(foot)])}// (up by the lift it is drawn at: worldterrain.js liftDraw)
+function depthPic(img,x,y,foot){if(img&&WDEPTH.on)WDEPTH.pics.push([img,Math.round(x),Math.round(y-LIFT_NOW),foot==null?null:Math.round(foot),Math.round(LIFT_NOW)])}// (up by the lift it is drawn at: worldterrain.js liftDraw; its feet compared on the ground, the lift put back)
 // (a picture's feet: for each opaque pixel the row its column's run of opaque pixels ends on, -1 where it is clear; kept on it)
 function picFeet(img){if(img._df)return img._df;const w=img.width,h=img.height,d=img.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w,h).data,F=new Int16Array(w*h).fill(-1);let top=h,mx=-1;
   for(let x=0;x<w;x++)for(let y=0;y<h;y++){if(d[(y*w+x)*4+3]<250)continue;let y1=y;while(y1+1<h&&d[((y1+1)*w+x)*4+3]>=250)y1++;for(let k=y;k<=y1;k++)F[k*w+x]=y1;if(y<top)top=y;if(y1>mx)mx=y1;y=y1}
@@ -44,7 +44,7 @@ function dbRect(x,y,w,h){dbAdd(x,y,w,h);return WDEPTH.fr.call(this,x,y,w,h)}
 function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
   const w=x1-x0+1,h=y1-y0+1,wx0=x0+ox,wy0=y0+oy,wx1=x1+ox,wy1=y1+oy,C=WDEPTH.C,AL=WDEPTH.al;C.length=0;
   WorldArt.standing(wx0,wy0,wx1,wy1,(S,k)=>{const f=S.Y+S.E[k*4+3];if(f>fy)C.push([f,S,k])});
-  for(const p of WDEPTH.pics){const D=picFeet(p[0]),px=p[1]+cam.x,py=p[2]+cam.y;if(py+(p[3]??D.foot)>fy&&px<=wx1&&px+D.w>wx0&&py+D.top<=wy1&&py+D.h>wy0)C.push([py+D.foot,null,p])}
+  for(const p of WDEPTH.pics){const D=picFeet(p[0]),px=p[1]+cam.x,py=p[2]+cam.y;if(py+p[4]+(p[3]??D.foot)>fy&&px<=wx1&&px+D.w>wx0&&py+D.top<=wy1&&py+D.h>wy0)C.push([py+D.foot,null,p])}
   if(!C.length)return;C.sort((a,b)=>a[0]-b[0]);
   if(!WDEPTH.img||WDEPTH.img.width<w||WDEPTH.img.height<h){const W=Math.max(w,WDEPTH.img?WDEPTH.img.width:0,64),H=Math.max(h,WDEPTH.img?WDEPTH.img.height:0,64);WDEPTH.img=new ImageData(W,H);WDEPTH.cv=mkc(W,H,()=>{})}
   const I=WDEPTH.img,M=I.data,st=I.width;for(let y=0;y<h;y++)M.fill(0,y*st*4,(y*st+w)*4);let any=0,hid=0;
@@ -54,8 +54,8 @@ function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
       if(r<0){if(dx<cx0||dx>cx1)continue;for(let y=Math.max(cy0,dy);y<=Math.min(cy1,dy-r-1);y++){M[((y-wy0)*st+dx-wx0)*4+3]=A;n++}}
       else{const s=PX.WN_SPR[r],N=s.width,a=s.a,b=s.box;for(let y=Math.max(cy0,dy+b[1]);y<=Math.min(cy1,dy+b[3]);y++){const ro=(y-dy)*N-dx,mo=(y-wy0)*st-wx0;
         for(let x=Math.max(cx0,dx+b[0]);x<=Math.min(cx1,dx+b[2]);x++)if(a[ro+x]){M[(mo+x)*4+3]=A;n++}}}}
-    else{const [img,px,py,ft]=k,D=picFeet(img),F=D.F,X=px+cam.x,Y=py+cam.y;key=img;const A=Math.round((AL.has(key)?AL.get(key):1)*255);
-      for(let y=Math.max(wy0,Y+D.top);y<=Math.min(wy1,Y+D.h-1);y++){const ro=(y-Y)*D.w-X,mo=(y-wy0)*st-wx0;for(let x=Math.max(wx0,X);x<=Math.min(wx1,X+D.w-1);x++){const f=F[ro+x];if(f>=0&&Y+(ft??f)>fy){M[(mo+x)*4+3]=A;n++}}}}
+    else{const [img,px,py,ft,L]=k,D=picFeet(img),F=D.F,X=px+cam.x,Y=py+cam.y;key=img;const A=Math.round((AL.has(key)?AL.get(key):1)*255);
+      for(let y=Math.max(wy0,Y+D.top);y<=Math.min(wy1,Y+D.h-1);y++){const ro=(y-Y)*D.w-X,mo=(y-wy0)*st-wx0;for(let x=Math.max(wx0,X);x<=Math.min(wx1,X+D.w-1);x++){const f=F[ro+x];if(f>=0&&Y+L+(ft??f)>fy){M[(mo+x)*4+3]=A;n++}}}}
     if(n){any=1;hid+=n;if(!nf&&(S||own))WDEPTH.cov.add(key)}}
   if(!any)return false;
   const cv=WDEPTH.cv,g=cv.getContext('2d', { willReadFrequently: true }),mem=memCv(),r=mem.r||1;g.putImageData(I,0,0,0,0,w,h);

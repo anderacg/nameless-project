@@ -243,8 +243,9 @@ function worldMiniRect(){const campaign=window.campaignHud?.miniRect();if(campai
    grain) cut round the screen's middle, tiles across (at least, else over x what the screen shows, never more than the map), the
    holdings and places as their sprites (fmIcon, icon x the full map's sizes; the marks by the minimap's width, 112 px one), the screen's own view inked on it (view), you as on
    the full map. Its picture: a box x as wide round the view, made again when the view leaves it, the realms change (landVer) or,
-   at most each refresh ms, what you have seen in it does. on false: the whole map as before (WorldArt.mini and its dark) */
-const MINIMAP={on:true,tiles:96,over:3,box:2,refresh:1000,battle:100,icon:.42,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
+   at most each refresh ms, what you have seen in it does. Its face drawn afresh at most each world ms on the map (battle ms in a fight),
+   the last one put up between (the owner, 2026-11-16: "The game performance lags on mobile"). on false: the whole map as before (WorldArt.mini and its dark) */
+const MINIMAP={on:true,tiles:96,over:3,box:2,refresh:1000,battle:100,world:100,icon:.42,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
 // what the minimap shows (its rectangle, worldMiniRect, and s its px a tile; ox, oy its top left tile, tw x th tiles of it),
 // round the screen's middle (cam: G.cam)
 function worldMiniView(cam=G.cam){const r=worldMiniRect();if(!MINIMAP.on)return{...r,ox:0,oy:0,tw:MW,th:MH};
@@ -385,11 +386,11 @@ function drawWorld(){
 }
 // the minimap as a piece of the full map (MINIMAP): drawn on its own canvas at the screen's own pixels (MINI_FACE), then laid on the
 // map whole (no picture resampled on the map: tests/mapzoom.js)
-// (in a fight on the map its face drawn afresh at most each MINIMAP.battle ms, the last one put up between: its dots for every
-// fighter each frame cost a battle's frame 2 ms (the owner, 2026-11-15: "fix the battle performance"))
+// (its face drawn afresh at most each MINIMAP.world ms (MINIMAP.battle in a fight on the map), the last one put up between: its dots
+// for every fighter each frame cost a battle's frame 2 ms (the owner, 2026-11-15: "fix the battle performance"))
 let MINI_FACE=null,MINI_AT=-1e9;
 function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y:my,w:mw,h:mh,s:MS}=v,u=mw/112,pic=miniPic(v),T=ctx.getTransform(),K=Math.abs(T.a)||1,fw=Math.max(1,Math.round(mw*K)),fh=Math.max(1,Math.round(mh*K));
-  {const now=performance.now();if(B&&MINI_FACE&&MINI_FACE.width===fw&&MINI_FACE.height===fh&&now-MINI_AT<M.battle){drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh);return}MINI_AT=now}
+  {const now=performance.now();if(MINI_FACE&&MINI_FACE.width===fw&&MINI_FACE.height===fh&&now-MINI_AT<(B?M.battle:M.world)){drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh);return}MINI_AT=now}
   if(!MINI_FACE||MINI_FACE.width!==fw||MINI_FACE.height!==fh)MINI_FACE=mkc(fw,fh,()=>{});const g=MINI_FACE.getContext('2d'),X=x=>mx+(x/TILE-v.ox)*MS,Y=y=>my+(y/TILE-v.oy)*MS,
     dot=(x,y,col,s)=>{s=Math.max(1,Math.round(s*zk));rect(g,col,Math.floor(X(x))-(s>>1),Math.floor(Y(y))-(s>>1),s,s)};
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,fw,fh);g.setTransform(fw/mw,0,0,fh/mh,-mx*fw/mw,-my*fh/mh);g.imageSmoothingEnabled=false;

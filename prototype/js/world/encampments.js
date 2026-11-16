@@ -105,6 +105,11 @@ class Encampment extends Site{
   look(i,seed=0){const T=this.TR.tents||{styles:['ridge'],cloth:CAMP_ART.canvas,trim:['#8a6a4a']},h=(this.seed+seed*7+i*13)>>>0;
     return{style:i===0?T.styles[0]:T.styles[h%T.styles.length],cloth:T.cloth[(h>>2)%T.cloth.length],trim:T.trim[(h>>4)%T.trim.length]}}
   tentPic(q,i,clim){const L=this.look(i,q.s);return CampArt.tent(L.style,L,this.seed+i,clim)}
+  // (its tents' and pieces' pictures made ahead while you near it (structures.js lotsAhead), one at a time while the frame's ms last
+  // from t0: true once all are made)
+  warm(t0,ms){if(!this.known())return false;const clim=CLIMS[climate[Math.floor(this.y/TILE)*MW+Math.floor(this.x/TILE)]]||'grass',look=this.look(0),L=this.layout();
+    for(let i=0;i<L.length;i++){if(performance.now()-t0>ms)return false;CampArt.fine(this.tentPic(L[i],i,clim))}
+    for(const q of this.props()){if(performance.now()-t0>ms)return false;CampArt.fine(propPic(q,clim,look))}return true}
   // (its picture on its page: its tents and fire as they stand)
   view(){const s=this,L=s.layout(),clim=CLIMS[climate[Math.floor(s.y/TILE)*MW+Math.floor(s.x/TILE)]]||'grass',fl=campFlame();
     if(!L.length)return super.view();

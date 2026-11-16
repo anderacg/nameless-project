@@ -48,11 +48,13 @@ function lotYard(t,l){const m=lotModel(t,l),N=m.cell,h=m.snow||m.ground;l._gimg=
   if(!h._gd)h._gd={N,key:m.groundKey,d:mkc(N,N,g=>{g.drawImage(m.ground,0,0);if(m.snow)g.drawImage(m.snow.ground,0,0)}).getContext('2d', { willReadFrequently: true }).getImageData(0,0,N,N).data};
   return h._gd}
 // the models of the lots near you made ahead, a few ms a frame (LOT_AHEAD: how far past the view, how long), the nearest holdings
-// first, so a town comes into view already built (its chunks are painted ahead with its yards: worldart.js)
+// first, so a town comes into view already built (its chunks are painted ahead with its yards: worldart.js); then the settled camps'
 const LOT_AHEAD={r:600,ms:3};
 function lotsAhead(V){const t0=performance.now();for(const t of TOWNS.filter(q=>q.lots&&Math.hypot(q.x-P.x,q.y-P.y)<V+LOT_AHEAD.r).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)))
   for(const l of t.lots){if(l._s&&l._gimg&&(sceneRes()<=1||l._s._fr===sceneRes()))continue;lotSprite(t,l);lotYard(t,l);lotFine(t,l,sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}
-  for(const cv of FINE_Q){FINE_Q.delete(cv);if(sceneRes()>1)buildFine(cv,sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}}
+  for(const cv of FINE_Q){FINE_Q.delete(cv);if(sceneRes()>1)buildFine(cv,sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}
+  // (the settled camps near you too: their tents and pieces (encampments.js warm), so none is made the frame it comes into view)
+  const r=sceneRes();for(const s of W.sites){if(!s.warm||s._warmR===r||Math.hypot(s.x-P.x,s.y-P.y)>V+LOT_AHEAD.r)continue;if(s.warm(t0,LOT_AHEAD.ms))s._warmR=r;if(performance.now()-t0>LOT_AHEAD.ms)return}}
 // (a site's picture at the scene's finer resolution: its model made r times finer by its maker (siteCanvas mk), with its own touches
 // (deco) drawn r times larger; asked for when it is drawn (fineOf), made ahead with the lots (FINE_Q), drawn where it is made (drawFine),
 // else the picture itself)
