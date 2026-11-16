@@ -331,10 +331,12 @@ function drawWorld(){
   drawSafe(ambientFlat,cam);drawSafe(worldOverdraw,ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
   // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
+  // (the clouds' shadows, smoke, snow and fireflies at the scene's fine px, before the fog: so only where you see (the owner,
+  //  2026-11-16: "draw them before the fog layer"))
+  drawSafe(drawEnv,cam,V,1);
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
   drawSafe(fogMem,low,cam,V);
-  drawSafe(drawEnv,cam,V,1);
   // the weather where you are (gfx/weather.js; in a battle on the map, over the field instead: drawBattle), under the fog: seen
   // where you see, dim where you remember, none on land you have never seen (the owner, 2026-11-08)
   if(!B?.world)drawSafe(()=>WeatherArt.draw(ambWeather(),VW+1,VH+1,Weather.strength(P.x,P.y)));
