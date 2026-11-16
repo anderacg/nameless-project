@@ -93,16 +93,18 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     if(!WY.WR){const A=WY.WR=new Uint8Array(MW*MH),B=WY.WRN=new Uint8Array(MW*MH);for(let i=0;i<MW*MH;i++)A[i]=tiles[i]===T_WATER&&(Rv[i]&3)>=2&&!WY.mouth[i]?1:0;
       for(let i=0;i<MW*MH;i++){if(!A[i])continue;const x=i%MW,y=(i-x)/MW;for(let b=-3;b<=3;b++)for(let a=-3;a<=3;a++){const u=x+a,v=y+b;if(u>=0&&v>=0&&u<MW&&v<MH)B[v*MW+u]=1}}}
     const WRA=WY.WR,WRB=WY.WRN,wr=(tx,ty)=>WRA[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))];
-    for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i;if(!WRB[Math.max(0,Math.min(MH-1,gy>>4))*MW+Math.max(0,Math.min(MW-1,gx>>4))])continue;
-        const wx=gx+(wnoise2(gx/SH.sc,gy/SH.sc,575)-.5)*2*SH.warp*.6,wy=gy+(wnoise2(gx/SH.sc,gy/SH.sc,576)-.5)*2*SH.warp*.6,u=(wx-8)/TS,v=(wy-8)/TS,tx=Math.floor(u),ty=Math.floor(v);
-        const bx=labBS(u-tx),by=labBS(v-ty);let bs=0,any=false;for(let q=0;q<4;q++){let rr=0;for(let p=0;p<4;p++){const w=wr(tx+p-1,ty+q-1);if(w)any=true;rr+=bx[p]*(w?-1:1)}bs+=by[q]*rr}if(!any)continue;
-        const f=bs-SH.river+(wnoise2(gx/7,gy/7,577)-.5)*.3;if(f<0){const k=j*GW+i,dq=Math.max(.08,Math.min(.6,-f*.9));
-          if(RG.Q[k]>=0)RG.S[k]=-WY.HW[WY.SP[RG.Q[k]]]*dq;
-          for(let b=0;b<r;b++)for(let a=0;a<r;a++){const fx=(gx-X)*r+a,fy=(gy-Y)*r+b;if(fx<0||fy<0||fx>=W2||fy>=HE2)continue;const fi=fy*W2+fx;if(RF.Q[fi]>=0)RF.S[fi]=-WY.HW[WY.SP[RF.Q[fi]]]*r*dq}}else if(f<SH.bank){
-          // (its dirt bank along that curve, as wide all along: bare earth at the water (its lip lit), then mud, dark grass up it (BKF,
-          //  what the bank's colour reads; the owner: "keep that dirt edge"))
-          const k=j*GW+i,tb=f/SH.bank;if(RG.Q[k]>=0&&RG.S[k]<0)RG.S[k]=.5;
-          for(let b=0;b<r;b++)for(let a=0;a<r;a++){const fx=(gx-X)*r+a,fy=(gy-Y)*r+b;if(fx<0||fy<0||fx>=W2||fy>=HE2)continue;const fi=fy*W2+fx;BKF[fi]=Math.min(BKF[fi],tb);if(RF.Q[fi]>=0&&RF.S[fi]<0)RF.S[fi]=.5}}}}
+    // (the field at game px (x, y), a float: under 0 the water, 0 to shore.bank its bank; null away from a wide river)
+    const fAt=(x,y)=>{const wx=x+(wnoise2(x/SH.sc,y/SH.sc,575)-.5)*2*SH.warp*.6,wy=y+(wnoise2(x/SH.sc,y/SH.sc,576)-.5)*2*SH.warp*.6,u=(wx-8)/TS,v=(wy-8)/TS,tx=Math.floor(u),ty=Math.floor(v);
+      const bx=labBS(u-tx),by=labBS(v-ty);let bs=0,any=false;for(let q=0;q<4;q++){let rr=0;for(let p=0;p<4;p++){const w=wr(tx+p-1,ty+q-1);if(w)any=true;rr+=bx[p]*(w?-1:1)}bs+=by[q]*rr}
+      return any?bs-SH.river+(wnoise2(x/7,y/7,577)-.5)*.3:null},near=(x,y)=>WRB[Math.max(0,Math.min(MH-1,y>>4))*MW+Math.max(0,Math.min(MW-1,x>>4))];
+    // (the land's heights by game px; the water, its depth and its bank by fine px, so its edge is smooth at the lab's px, never in
+    //  steps of two (the owner: "Make sure the edge are smooth not square"))
+    for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i;if(!near(gx,gy))continue;const f=fAt(gx+.5,gy+.5);if(f===null)continue;const k=j*GW+i;if(RG.Q[k]<0)continue;
+        if(f<0)RG.S[k]=-WY.HW[WY.SP[RG.Q[k]]]*Math.max(.08,Math.min(.6,-f*.9));else if(f<SH.bank&&RG.S[k]<0)RG.S[k]=.5}}
+    // (its dirt bank along that curve, as wide all along: an earth face at the water, then mud, dark grass up it (BKF, what the bank's
+    //  colour reads; the owner: "keep that dirt edge"))
+    for(let fy=0;fy<HE2;fy++){const y=Y+(fy+.5)/r;for(let fx=0;fx<W2;fx++){const x=X+(fx+.5)/r;if(!near(x|0,y|0))continue;const fi=fy*W2+fx;if(RF.Q[fi]<0)continue;const f=fAt(x,y);if(f===null)continue;
+        if(f<0)RF.S[fi]=-WY.HW[WY.SP[RF.Q[fi]]]*r*Math.max(.08,Math.min(.6,-f*.9));else if(f<SH.bank){BKF[fi]=Math.min(BKF[fi],f/SH.bank);if(RF.S[fi]<0)RF.S[fi]=.5}}}
     yield}
   const WB0dw=(gx,gy)=>{const q=(gy-ey0)*EW+gx-ex0;return q>=0&&q<EW*EH?DW[q]:99},eq=(gx,gy)=>(gy-ey0)*EW+gx-ex0,seaAt=(gx,gy)=>{const q=eq(gx,gy);return q>=0&&q<EW*EH&&WAT[q]===1};
   const seaT=ti=>ow(ti),surf=(q,t)=>{const a=WY.SP[q];return riverSurf(WY.LV[a],WY.LV[a+1],t)};
