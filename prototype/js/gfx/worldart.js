@@ -645,10 +645,12 @@ const WorldArt={
     for(let cy=r0-1;cy<=r1+1;cy++)for(let cx=c0-1;cx<=c1+1;cx++){const k=cy*this.cols+cx;if(cx<0||cy<0||cx>=this.cols||cy>=this.rows||this.view.has(k))continue;ring.push([(cx-mx)*dx+(cy-my)*dy,Math.hypot(cx-mx,cy-my),k,cx,cy])}
     ring.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);ring.length=Math.min(ring.length,Math.max(0,this.capNow-this.view.size));
     for(let i=ring.length-1;i>=0;i--){const k=ring[i][2],c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c)}}
-    this.queue=ring.filter(q=>!this.chunks.has(q[2])).map(q=>[q[3],q[4]]);const keep=new Set(this.queue.map(([cx,cy])=>cy*this.cols+cx));
+    // (a chunk painted coarser than the scene now is (painted while the game loaded) painted again in the background, those in view first)
+    const stale=k=>{const c=this.chunks.get(k);return !c||(c.fine||1)<fr};
+    this.queue=[...[...this.view].filter(k=>stale(k)&&this.chunks.has(k)).map(k=>[k%this.cols,(k/this.cols)|0]),...ring.filter(q=>stale(q[2])).map(q=>[q[3],q[4]])];const keep=new Set(this.queue.map(([cx,cy])=>cy*this.cols+cx));
     for(const [k,j] of this.jobs)if(!keep.has(k)){this.jobs.delete(k);this.recycle(j.rec.cv)}
     this.step(this.slice)},
-  step(ms){const t0=performance.now();while(this.queue.length&&performance.now()-t0<ms){const [cx,cy]=this.queue[0];if(this.chunks.has(cy*this.cols+cx)){this.queue.shift();continue}const j=this.start(cx,cy);
+  step(ms){const t0=performance.now();while(this.queue.length&&performance.now()-t0<ms){const [cx,cy]=this.queue[0],c0=this.chunks.get(cy*this.cols+cx);if(c0&&(c0.fine||1)>=(typeof sceneRes==='function'?sceneRes():1)){this.queue.shift();continue}const j=this.start(cx,cy);
       while(performance.now()-t0<ms)if(j.gen.next().done){this.done(j);this.queue.shift();break}}},
   invalidate(r){this.plan=null;CLEAR=null;this.minis={};this.decks.clear();this.queue=[];for(const j of this.jobs.values())this.recycle(j.rec.cv);this.jobs.clear();
     if(!r){for(const c of this.chunks.values())this.recycle(c.cv);this.chunks.clear();this.full=null;this.dirty.clear();this.cnt.clear();return}

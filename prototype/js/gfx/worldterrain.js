@@ -56,8 +56,8 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   // (the ways near: the rivers' and brooks' curves and the roads, at game px over the levels' window and at fine px over the chunk;
   //  the sea's and the lakes' tiles (a river's mouth on them with them) keep the shore's water)
   const bankG=WV.river.bank*WAY_LP,shG=WV.road.sh*WAY_LP,bankF=WV.river.bank*k2,edgeF=WV.road.edge*k2,varyF=WV.road.hw[1]*WV.road.vary*k2;
-  const RG=yield* waysBand(WY.SA,gx0,gy0,GW,GH,1,bankG+2),DG=yield* waysBand(WY.RA,gx0,gy0,GW,GH,1,shG+1);
-  const RF=yield* waysBand(WY.SA,X*r,Y*r,W2,HE2,r,bankF+2),DF=yield* waysBand(WY.RA,X*r,Y*r,W2,HE2,r,edgeF+varyF+2);
+  const RG=yield* waysBand(WY.SA,gx0,gy0,GW,GH,1,bankG+2+T.shore.reach),DG=yield* waysBand(WY.RA,gx0,gy0,GW,GH,1,shG+1);
+  const RF=yield* waysBand(WY.SA,X*r,Y*r,W2,HE2,r,bankF+2+T.shore.reach*r),DF=yield* waysBand(WY.RA,X*r,Y*r,W2,HE2,r,edgeF+varyF+2);
   // (no road under a bridge's open span, as the lab's OPEN: the river and its banks stay as they are under it, only its ends rest on
   //  the road's fill)
   bridgeOpen(WY.bridges,DG,gx0,gy0,GW,GH,1,shG);bridgeOpen(WY.bridges,DF,X*r,Y*r,W2,HE2,r,(edgeF+varyF)/r);
@@ -124,7 +124,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     for(let j=0;j<GH;j++){let a=0;for(let i=-R;i<GW+R;i++){if(i+R<GW&&i+R>=0)a+=OC[j*GW+i+R];if(i-R-1>=0&&i-R-1<GW)a-=OC[j*GW+i-R-1];if(i>=0&&i<GW)tmp[j*GW+i]=a/(2*R+1)}}
     for(let i=0;i<GW;i++){let a=0;for(let j=-R;j<GH+R;j++){if(j+R<GH&&j+R>=0)a+=tmp[(j+R)*GW+i];if(j-R-1>=0&&j-R-1<GH)a-=tmp[(j-R-1)*GW+i];if(j>=0&&j<GH)OC[j*GW+i]=Math.min(1,a/(2*R+1)*2)}}}
   for(let j=1;j<GH-1;j++)for(let i=1;i<GW-1;i++){const k=j*GW+i,gxl=(Lv[k+1]-Lv[k-1])/2,gyl=(Lv[k+GW]-Lv[k-GW])/2,g=Math.hypot(gxl,gyl);Gx[k]=gxl;Gy[k]=gyl;
-    const flat=Wa[k]||DG.S[k]<shG;
+    const flat=Wa[k]||DG.S[k]<shG||RG.S[k]<bankG*T.shore.unstep;
     const sw=flat?0:Math.max(0,Math.min(1,(g-T.steps.from)/(T.steps.to-T.steps.from)))*(1-OC[k]),s3=sw*sw*(3-2*sw),e=Lv[k],B=T.steps.band;St[k]=e+(Math.floor(e/B)*B-e)*s3;SW[k]=s3}
   yield;
   const at=(gx,gy)=>(gy-gy0)*GW+gx-gx0,mi=(gx,gy)=>(gy-KP.Y0)*KP.RW+gx-KP.X0,inK=(gx,gy)=>gx>=KP.X0&&gy>=KP.Y0&&gx<KP.X0+KP.RW&&gy<KP.Y0+KP.RH;
@@ -251,7 +251,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
         const wk=WK[fy*W2+fx];if(wk===1){if(fx>0&&!WK[fy*W2+fx-1]||fx<W2-1&&!WK[fy*W2+fx+1]||fy>0&&!WK[(fy-1)*W2+fx]||fy<HE2-1&&!WK[(fy+1)*W2+fx])SH.push(fx,sy,(hs(fx+X*r,fy,540)*628)|0)}else if(wk===2)FL.push(fx,sy,Math.round(WA[fy*W2+fx])%30000,(hs(fx+X*r,fy,541)*100)|0);else if(wk===3)FL.push(fx,sy,-2,(hs(fx+X*r,fy,543)*100)|0)}
       if(fy+1>=HE2)continue;const fN=fi+W2,kN=at(gx,Y+(((fy+1)/r)|0)),LN=LFF[fN],syN=fy+1-LN;if(syN<=sy+1)continue;
       // (the lip, lit; snow on a high one)
-      const wet=wt,wetB=WF[fN],n=syN-sy-1,ti=tix(gx,gy),t=tiles[ti],Q=PAL[climate[ti]],road=DG.S[k]<shG,wall=DG.S[k]<WORLD_WAYS.road.wall*WAY_LP&&!WY.RB[DG.Q[k]],rocky=!road&&!(RG.S[k]<bankG+2)&&(Math.hypot(Gx[k],Gy[k])>=T.steepG||Lv[k]>=T.rock-1||(L-LN)>=2*lh),snowy=Lv[k]>=T.snow-1,sand=!rocky&&Lv[k]<1.2&&!road;
+      const wet=wt,wetB=WF[fN],n=syN-sy-1,ti=tix(gx,gy),t=tiles[ti],Q=PAL[climate[ti]],road=DG.S[k]<shG,wall=DG.S[k]<WORLD_WAYS.road.wall*WAY_LP&&!WY.RB[DG.Q[k]],rocky=!road&&!(RG.S[k]<bankG+2)&&WK[fN]!==2&&(Math.hypot(Gx[k],Gy[k])>=T.steepG||Lv[k]>=T.rock-1||(L-LN)>=2*lh),snowy=Lv[k]>=T.snow-1,sand=!rocky&&Lv[k]<1.2&&!road;
       if(sy>=0&&sy<H2&&!wet&&!(n<=3&&SF[fi]<.5&&SF[fN]<.5)){const o=(sy*W2+fx)*4;if(snowy){O[o]=242;O[o+1]=246;O[o+2]=252}else{O[o]=Math.min(255,O[o]*1.12);O[o+1]=Math.min(255,O[o+1]*1.12);O[o+2]=Math.min(255,O[o+2]*1.12)}}
       // (a small drop on smooth ground or along water: no face, the lab's way: this top shading into the next)
       if(n<=3&&(SF[fi]<.5&&SF[fN]<.5&&!(wetB&&!wet&&WK[fN]===2)||wet&&wetB)){const ci2=((fy+1)*W2+fx)*4;for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0||yy>=H2)continue;const f=dz/(n+1),o=(yy*W2+fx)*4;
