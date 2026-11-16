@@ -205,7 +205,10 @@ let LIGHTQ=[];
 // more each way, for the camera's fraction): drawn onto the screen, and what you remember of the land outside your sight
 // (the scene's resolution: fine px a game px where the screen has them (WORLD_VIEW), and only as many as divide the screen's own
 // (VS), so a fine px is always whole screen px and nothing is resampled; the scene canvas keeps its own, r)
-const sceneRes=()=>{const v=Math.floor(VS);for(let r=Math.min(WORLD_VIEW.fine,v);r>1;r--)if(v%r===0)return r;return 1};
+const resAt=s=>{const v=Math.floor(s);for(let r=Math.min(WORLD_VIEW.fine,v);r>1;r--)if(v%r===0)return r;return 1},sceneRes=()=>resAt(VS);
+// (how fine the map's chunks are painted: the scene's, or, before the map's zoom is on (the game loading), the scale the map will
+// open at (core.js MAPZOOM.auto), so a chunk painted while it loads is not painted again once it opens)
+const paintRes=()=>{const Z=typeof MAPZOOM!=='undefined'?MAPZOOM:null;return !Z||Z.map||!Z.auto?sceneRes():resAt(Z.auto)};
 let MEM=null;const memCv=()=>{const r=sceneRes();return MEM&&MEM.r===r&&MEM.width===(VW+1)*r&&MEM.height===(VH+1)*r?MEM:(MEM=mkc((VW+1)*r,(VH+1)*r,()=>{}),MEM.r=r,MEM)};
 let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=mkc(VW+1,VH+1,()=>{}));
 // the minimap's layers, bottom first, by what each thing is (mapKind): the holdings, then the sites, the beasts, the parties and

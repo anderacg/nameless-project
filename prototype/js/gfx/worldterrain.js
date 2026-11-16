@@ -215,7 +215,11 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     for(let fy=0;fy<HE2;fy++)for(let fx=0;fx<W2;fx++){const fi=fy*W2+fx,c=plain(fi,X*r+fx,Y*r+fy);if(!c)continue;BR[fi]=c[0];BG[fi]=c[1];BB[fi]=c[2];BM[fi]=1}
     const tmp=new Float32Array(Math.max(W2,HE2)),box=(A,len,stride,start)=>{let acc=0;for(let q=-R;q<=R;q++)acc+=A[start+Math.min(len-1,Math.max(0,q))*stride];
       for(let q=0;q<len;q++){tmp[q]=acc;acc+=A[start+Math.min(len-1,q+R+1)*stride]-A[start+Math.max(0,q-R)*stride]}for(let q=0;q<len;q++)A[start+q*stride]=tmp[q]};
-    for(const A of [BR,BG,BB,BM]){for(let pass=0;pass<2;pass++){for(let y=0;y<HE2;y++)box(A,W2,1,y*W2);for(let x=0;x<W2;x++)box(A,HE2,W2,x)}yield}
+    // (down the columns all at once, row by row, a running sum for each column: the same box as box(A, HE2, W2, x) for every x, read
+    //  in memory's order, not a whole row's stride a step)
+    const VB=terBlurBuf(N2),acc=new Float64Array(W2),cl=q=>Math.min(HE2-1,Math.max(0,q))*W2,boxV=A=>{acc.fill(0);for(let q=-R;q<=R;q++){const o=cl(q);for(let x=0;x<W2;x++)acc[x]+=A[o+x]}
+      for(let y=0;y<HE2;y++){const o=y*W2,a=cl(y+R+1),b=cl(y-R);for(let x=0;x<W2;x++){VB[o+x]=acc[x];acc[x]+=A[a+x]-A[b+x]}}A.set(VB.subarray(0,N2))};
+    for(const A of [BR,BG,BB,BM]){for(let pass=0;pass<2;pass++){for(let y=0;y<HE2;y++)box(A,W2,1,y*W2);boxV(A)}yield}
     for(let fy=0;fy<HE2;fy++)for(let fx=0;fx<W2;fx++){const fi=fy*W2+fx,ax=X*r+fx,ay=Y*r+fy,c=plain(fi,ax,ay);if(!c)continue;
       const wx=Math.min(W2-1,Math.max(0,Math.round(fx+(wnoise2(ax/(12*k2),ay/(12*k2),578)-.5)*BL.warp*k2))),wy=Math.min(HE2-1,Math.max(0,Math.round(fy+(wnoise2(ax/(12*k2)+9,ay/(12*k2),579)-.5)*BL.warp*k2))),j=wy*W2+wx,mm=BM[j];if(!mm)continue;
       const o=fi*4;CW[o]+=(BR[j]/mm-c[0])*BL.k;CW[o+1]+=(BG[j]/mm-c[1])*BL.k;CW[o+2]+=(BB[j]/mm-c[2])*BL.k}
@@ -396,6 +400,9 @@ function stepPrint(u){const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,r=typeof sceneR
   const dx=u.x-w.x,dy=u.y-w.y,l=Math.hypot(dx,dy);w.x=u.x;w.y=u.y;if(!l||l>PR.step*4)return;w.d+=l;if(w.d<PR.step)return;w.d=0;w.side=-w.side;
   const px=u.x-dy/l*w.side*PR.side,py=u.y+dx/l*w.side*PR.side,g=printGround(px,py);if(g<0)return;
   if(!F.buf)F.buf=new Float32Array(PR.max*5);const o=F.at*5,B=F.buf;B[o]=px*r;B[o+1]=(py-liftAt(px,py))*r;B[o+2]=performance.now();B[o+3]=g;B[o+4]=w.side;F.at=(F.at+1)%PR.max;F.n=Math.min(PR.max,F.n+1)}
+// (the blend's scratch, kept between chunks)
+let TER_BLUR=null;
+const terBlurBuf=n=>TER_BLUR&&TER_BLUR.length>=n?TER_BLUR:(TER_BLUR=new Float32Array(n));
 // (a river's run, its current's line: its line smoothed over smooth times its half-width each way (a wide one's line wanders within
 // its water: its current runs straighter), and each point's distance along it, game px)
 function riverRun(WY){const X=WY.X,Y=WY.Y,n=X.length,SX=new Float32Array(n),SY=new Float32Array(n),C=new Float32Array(n),on=new Uint8Array(n),D=new Float32Array(n),K=WORLD_WAYS.river.flow.smooth;

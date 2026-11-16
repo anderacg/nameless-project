@@ -602,7 +602,7 @@ const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 //     below the 6 a view can show).
 //   draw(g, cam): blits the map under the view (cam.x, cam.y, VW×VH; whole pixels), painting a chunk in view at once if it must,
 //     then queues the ring round the view, those the way the view moves first (as many as the cap leaves room for), and paints
-//     them for slice ms (step).
+//     them for slice ms (step), sliceView ms while one in view still waits for its fine paint.
 //   step(ms): paints queued chunks for ms, a small step at a time (a chunk's painting resumes where it stopped).
 //   invalidate(r): the map or its holdings changed: forget the plan (remade when next needed) and the chunks, all of them, or (r, a
 //     rect of tiles) those within REACH tiles of it (enough for lots, plots, estates and camps; a change of tile kinds, mountains
@@ -620,7 +620,7 @@ const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 //     invalidate (world/ships.js: what sails under it).
 //   bytes(): what it holds.
 const WorldArt={
-  plan:null,chunks:new Map(),jobs:new Map(),queue:[],pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,REACH:8,
+  plan:null,chunks:new Map(),jobs:new Map(),queue:[],pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,sliceView:12,REACH:8,
   cap:typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<900?20:32,
   get cols(){return Math.ceil(MW*TILE/CHUNK)},get rows(){return Math.ceil(MH*TILE/CHUNK)},
   ensure(){return this.plan||(this.plan=worldArtPlan())},
@@ -628,7 +628,7 @@ const WorldArt={
   // a chunk's painting: its own canvas (one the LRU let go, if one fits), as steps
   // (fine: how much finer than a game px it is painted (render.js sceneRes); a fine chunk weighs r x r times as much, so fewer kept)
   get capNow(){return typeof sceneRes==='function'&&sceneRes()>1?Math.max(10,this.cap>>1):this.cap},
-  start(cx,cy){const k=cy*this.cols+cx;let j=this.jobs.get(k);if(j)return j;const [X,Y,w,h]=this.rect(cx,cy),i=this.pool.findIndex(c=>c.width===w&&c.height===h),cv=i>=0?this.pool.splice(i,1)[0]:mkcv(w,h),rec={cx,cy,cv,fine:typeof sceneRes==='function'?sceneRes():1};
+  start(cx,cy){const k=cy*this.cols+cx;let j=this.jobs.get(k);if(j)return j;const [X,Y,w,h]=this.rect(cx,cy),i=this.pool.findIndex(c=>c.width===w&&c.height===h),cv=i>=0?this.pool.splice(i,1)[0]:mkcv(w,h),rec={cx,cy,cv,fine:typeof paintRes==='function'?paintRes():1};
     j={k,rec,gen:paintSteps(this.ensure(),X,Y,w,h,cv.getContext('2d', { willReadFrequently: true }),0,0,rec)};this.jobs.set(k,j);return j},
   done(j){this.jobs.delete(j.k);this.chunks.set(j.k,j.rec);for(const [k,c] of this.chunks){if(this.chunks.size<=this.capNow)break;if(this.view.has(k))continue;this.chunks.delete(k);this.recycle(c.cv)}},
   recycle(cv){if(this.pool.length<4)this.pool.push(cv)},
@@ -649,8 +649,10 @@ const WorldArt={
     const stale=k=>{const c=this.chunks.get(k);return !c||(c.fine||1)<fr};
     this.queue=[...[...this.view].filter(k=>stale(k)&&this.chunks.has(k)).map(k=>[k%this.cols,(k/this.cols)|0]),...ring.filter(q=>stale(q[2])).map(q=>[q[3],q[4]])];const keep=new Set(this.queue.map(([cx,cy])=>cy*this.cols+cx));
     for(const [k,j] of this.jobs)if(!keep.has(k)){this.jobs.delete(k);this.recycle(j.rec.cv)}
-    this.step(this.slice)},
-  step(ms){const t0=performance.now();while(this.queue.length&&performance.now()-t0<ms){const [cx,cy]=this.queue[0],c0=this.chunks.get(cy*this.cols+cx);if(c0&&(c0.fine||1)>=(typeof sceneRes==='function'?sceneRes():1)){this.queue.shift();continue}const j=this.start(cx,cy);
+    // (sliceView ms a frame while a chunk in view still waits for its fine paint, slice for those ahead)
+    let inView=false;for(const k of this.view)if(stale(k)){inView=true;break}
+    this.step(inView?this.sliceView:this.slice)},
+  step(ms){const t0=performance.now();while(this.queue.length&&performance.now()-t0<ms){const [cx,cy]=this.queue[0],c0=this.chunks.get(cy*this.cols+cx);if(c0&&(c0.fine||1)>=(typeof paintRes==='function'?paintRes():1)){this.queue.shift();continue}const j=this.start(cx,cy);
       while(performance.now()-t0<ms)if(j.gen.next().done){this.done(j);this.queue.shift();break}}},
   invalidate(r){this.plan=null;CLEAR=null;this.minis={};this.decks.clear();this.queue=[];for(const j of this.jobs.values())this.recycle(j.rec.cv);this.jobs.clear();
     if(!r){for(const c of this.chunks.values())this.recycle(c.cv);this.chunks.clear();this.full=null;this.dirty.clear();this.cnt.clear();return}
