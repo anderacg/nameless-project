@@ -3,6 +3,8 @@
 /* melee: on the world map each fighter is drawn sprite times as big (and his formation's slots as wide), so his melee reach and
    the few fixed melee distances (meleeK: a duel's slack, the riders' contact, a bowman's blade) are that much more too (the owner,
    2026-10-29: "the units overlap in world battle"); off, as they were */
+/* walk: a formation's walk on the map, of its slowest's full pace (a fight apart's MARCH.base): with the fight on the world's own
+   clock (battle.js), its men walking near the pace of those marching by */
 // (an army coming in is told as it comes ("X enters the battle"): where its men stepped in, every other side has as last seen (BattleSight
 // lastSeen), so a captain who has not set eyes on them still knows where to go: commander.js search; the owner, 2026-10-30: his army
 // stood idle as bandits joined, the watch routing)
@@ -17,7 +19,7 @@ const ARRIVAL={r:5,pulse:1.2,fade:1.5,col:{own:'#6fa8e0',ally:'#8fd08a',foe:'#e0
 const JOIN_RULES={reach:120,every:5,hear:{base:20,per:.5,max:60},band:{small:12,after:40,worn:.4,chance:.5},beast:{near:240,chance:.25},wild:o=>o.mapKind==='band'||o.mapKind==='monster',
   kin:(o,e)=>!!e&&(o.mapKind==='monster'?e.kind==='monster'&&o.id===e.ref?.id:e.kind==='party'&&(o.kind||'bandits')===((e.ref?.src||e.ref)?.kind||'bandits'))};// (kin: a pack or band of the kind you fight, riding to its own: as ever)
 // (clear: px kept between your army's room and a place's defenders' as a fight there begins: WorldBattleArea.clearOf)
-const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1,clear:24,escapeBlock:4};
+const WORLD_BATTLE={on:true,melee:true,walk:.75,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1,clear:24,escapeBlock:4};
 /* a fight on the map in the open (doc/OPEN_FIGHTS_DESIGN.md; the owner, 2026-11-14: "remove the battle area for hunting ... the
    same world speed", "the same as monsters", every fight on the map): ring: its circle drawn (false: none); reach: its field this
    much wider than the ring was, its edge twice your sight and more past where it began, that no one sees (a foe past it has got

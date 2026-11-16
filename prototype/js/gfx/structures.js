@@ -27,12 +27,12 @@ function lotSprite(t,l){
 }
 // (its picture at the scene's finer resolution (render.js sceneRes, r px a game px): a holding's centre, at its own size, the same
 // model made r times finer, kept on its game-px picture, made ahead (LOT_AHEAD: a model takes tens of ms); every other building at
-// the lab's scale (WORLD_VIEW.build: lotDrawBox), its own picture, a model's px a fine px)
+// WORLD_VIEW.house (lotDrawBox): at its own size the same, else its own picture, a model's px a fine px)
 function lotFine(t,l,r){const s=lotSprite(t,l);if(r<=1||lotK(l)<1)return s;if(s._f&&s._fr===r)return s._f;
   const m=lotModel(t,l,r),N=m.cell;let cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0)});if(l.st==='ruined')cv=charred(cv,l.seed);s._f=cv;s._fr=r;return cv}
 // (a lot's scale, and where its picture stands: [x, y (its corner), n (its size), k], X the lot's left, Y its front edge, N its picture's
 // size: on the lot's front middle)
-const lotK=l=>l.k==='centre'?1:WORLD_VIEW.build;
+const lotK=l=>l.k==='centre'?1:WORLD_VIEW.house;
 function lotDrawBox(l,X,Y,N){const k=lotK(l),n=N*k;return [X+(N-n)/2,Y-n,n,k]}
 function drawLot(t,l,s,X,Y,n){const r=sceneRes(),N=s.width;n=n||N;if(n===N&&r>1&&s._f&&s._fr===r)ctx.drawImage(s._f,X,Y,N,N);else ctx.drawImage(s,X,Y,n,n)}
 // (a picture taken down to k of its size, for what reads game px (the depth overdraw, the shadows): kept on it)

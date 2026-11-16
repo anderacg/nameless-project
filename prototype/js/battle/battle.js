@@ -29,9 +29,9 @@ const grpUnits=g=>B.units.filter(u=>u.grp===g&&u.hp>0);
 // (a battle over: this long before its summary, the field left to settle)
 const END_WAIT=2;
 const GRP_FLAGS={walk:true,firm:false,cease:false,skirmish:false,melee:false,shieldWall:false};// Capability-filtered requests; soldiers keep their own equipment and stats.
-const MARCH={reached:10,skirmish:44,edge:40,walk:.55};
+const MARCH={reached:10,skirmish:44,edge:40,base:.55,get walk(){return typeof B!=='undefined'&&B&&B.world?WORLD_BATTLE.walk:this.base}};
 // walking: a group set to walk, unless this order is a run (g.run: a double right-click, a charge); a walk keeps the slowest's
-// pace at MARCH.walk of it, and builds no charge
+// pace at MARCH.walk of it (base; a fight on the map WORLD_BATTLE.walk, near the world's own march), and builds no charge
 const walking=g=>!!(g&&g.walk&&!g.run);
 /* a rock or tree: whoever walks into one is put back on its rim (r+3 out from its centre), and so slides round it as he
    keeps on. Walking dead at its centre (a stack withdrawing or routing straight back, a march exactly through it), the push
@@ -113,7 +113,9 @@ function updateBattle(rt){
 function battleStep(rt,world){
   // the battle's speed: everything runs on its clock; paused, nothing moves but you can still give orders
   if(B.paused||B.deploy)return;if(!world)rt*=B.speed||1;if(!world&&B.slow>0){B.slow-=rt;rt*=VFX.slow}// (a charge's impact: a moment of slow motion, vfx.js)
-  const dt=world?moveStep(1,rt*WORLD_PACE,false)*B.world.scale:rt*BATTLE_PACE;B.t+=dt;for(const u of B.units){rankUnit(u);buffUnit(u)}// (each soldier's rank passives and his group's upgrades, once: battle/rankskills.js, world/buffs.js)
+  // (a fight on the map on the world's own clock, its travel pace too (data/world.js moveStep): its men step as those marching by do
+  //  (the owner, 2026-11-16: "the speed between battle and world seems weird"))
+  const dt=world?moveStep(1,rt*WORLD_PACE,true)*B.world.scale:rt*BATTLE_PACE;B.t+=dt;for(const u of B.units){rankUnit(u);buffUnit(u)}// (each soldier's rank passives and his group's upgrades, once: battle/rankskills.js, world/buffs.js)
   // World combat keeps the campaign clock: a hero impact must not freeze every army.
   if(world){B.slow=0;if(B.hx)B.hx.stop=0}
   // hit-stop: heavy blows freeze the fight for a moment while effects keep moving

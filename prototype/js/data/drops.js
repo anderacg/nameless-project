@@ -20,7 +20,9 @@ const DROPS={on:true,art:14,loot:true,xp:8,dots:{xp:6,troop:3},speed:220,coin:{c
 // A thing lying to be taken (a carcass with something on it, world/carcasses.js; the field's drops, battle/drops.js): a soft glow round
 // it (col, rgb), breathing between a's alpha at speed, r px at the world's scale; a glint rising from it every 1/rise s (the owner,
 // 2026-11-15: "if there's item on ground and not picked yet, make sure we have a glowing or something noticeable")
-const LOOT_GLOW={on:true,r:12,a:[.3,.7],speed:2.6,rise:.7,col:'255,206,90'};// (added on the ground: it lights it)
+// (dimmer: the owner, 2026-11-16: "glowing item drop is too bright"; hid behind a building or a tree, its outline shows through in
+// outline's colour and strength: depth.js ghostOver)
+const LOOT_GLOW={on:true,r:9,a:[.1,.26],speed:2.6,rise:.7,col:'255,206,90',outline:{col:'#ffd66a',a:.85}};// (added on the ground: it lights it)
 const CARCASS={on:true,near:40,pick:8,most:240,seek:160,find:.35,
   // (looters (the owner, 2026-11-15: "make random looters loot or check body"): a band near the fallen walks to them, searches them
   //  check s of world time once within at px (its men round them), takes what is on them; while fresh ones (laid within fresh days) hold something and no band is near, a
