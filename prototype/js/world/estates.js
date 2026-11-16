@@ -23,7 +23,7 @@ class Estate extends WorldObject{
   get meetsAnyTime(){return true}
   meet(){estateMeet(this)}
   pick(at){}// (with its holding's lots, in their order: pickOn)
-  pickOn(at,t,l){at.box(this,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,0);this.plotsAt(bldLv(t,this.k)).forEach(([x,y])=>at.box(this,x*TILE,y*TILE,(x+1)*TILE,(y+1)*TILE))}
+  pickOn(at,t,l){if(at.lot)at.lot(this,t,l,0);else at.box(this,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,0);this.plotsAt(bldLv(t,this.k)).forEach(([x,y])=>at.box(this,x*TILE,y*TILE,(x+1)*TILE,(y+1)*TILE))}
   tip(){return '<b>'+ESTATES[this.k].n+'</b><small>Estate of '+this.town+'</small><span class="act">Click: look</span>'}
   // its holding
   get holding(){return this.#t}

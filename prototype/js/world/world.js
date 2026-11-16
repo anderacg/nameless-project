@@ -70,7 +70,10 @@ function pickAt(wx,wy){
   const army=o=>{const a=marchPicked(o);if(!a)return false;if(!o.inView(V))return true;const h=a.hit(wx,wy,tol);
     if(h&&(h.kind==='figure'||yours()==null||h.d<mine))c.push([h.kind==='figure'?10+2*Math.min(1,h.d):13+Math.min(h.d,999)/1000,o]);return !!(MARCH_RING.on&&a.ring)};
   // every world object says where a click answers on it (WorldObject pick), with these, in worldObjects' order (a tie keeps it)
-  const at={x:wx,y:wy,V,add,box,fig,camp,army};for(const o of worldObjects())o.pick(at);
+  // (a lot of holding t answers only on its building's own pixels as drawn (lotPicHit), not its whole square: a cluster's free ground
+  //  between its houses is walked on (the owner, 2026-11-16: "I always misclick at free space area belong to the cluster building"))
+  const lot=(o,t,l,dy)=>{if(lotPicHit(t,l,wx,wy)&&S.sees(o.x,o.y,1.2))c.push([Math.min(12,Math.hypot(o.x-wx,o.y-(dy||0)-wy))+Math.hypot(o.x-wx,o.y-wy)/1000,o])};
+  const at={x:wx,y:wy,V,add,box,fig,camp,army,lot};for(const o of worldObjects())o.pick(at);
   c.sort((a,b)=>a[0]-b[0]);return c.length?c[0][1]:null;
 }
 // what a thing on the map is (its mapKind), while it is still on the map (here); null for anything else

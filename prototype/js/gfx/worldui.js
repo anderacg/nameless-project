@@ -100,6 +100,11 @@ function wuiWay(x0,y0,x1,y1,now){const X=[x0],Y=[y0],o={x:x0,y:y0,dir:1},st=WUI_
 // drawn up with it, where the land and what stands on it are (the owner, 2026-11-16: "path guide display is invalid, clicking at
 // hill ... not showing where player click"))
 const wuiL=(x,y)=>typeof liftAt==='function'?liftAt(x,y):0;
+// (an army's own outline (march.js MarchOutline: round its men as they stand), drawn about it at its land's lift in col at alpha a,
+// for what the pointer is on and what you chase, instead of a square or a ring (the owner, 2026-11-16: "Can we change the square to
+// higlight the unit around them instead? Or using the army ring"); false for one with none)
+function wuiRing8(o,cam,col,a){const A=o&&typeof marchPicked==='function'?marchPicked(o):null,R=A&&A.ring;if(!R||!R.out||!R.out[0].n)return false;
+  ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1/WORLD_VIEW.fine;ctx.globalAlpha=a;R.path(R.out[0],o.x-cam.x,o.y-cam.y-wuiL(o.x,o.y));ctx.stroke();ctx.restore();return true}
 // (the point s px along it, world px)
 function wuiPt(w,s){s=Math.max(0,Math.min(w.S[w.n-1],s));let lo=0,hi=w.n-1;while(hi-lo>1){const m=(lo+hi)>>1;if(w.S[m]<=s)lo=m;else hi=m}
   const L=w.S[hi]-w.S[lo],q=L>0?(s-w.S[lo])/L:0;return[w.X[lo]+(w.X[hi]-w.X[lo])*q,w.Y[lo]+(w.Y[hi]-w.Y[lo])*q]}
@@ -128,6 +133,7 @@ function wuiBox(o,px,py){let b=null,f=null,inb=null,gate=null;const u=(x0,y0,x1,
   // (an army picked by its men, as world.js pickAt picks it: round all its men's figures as drawn, a caravan's cart with them)
   const A=marchPicked(o),men=!!(A&&MARCH_RING.on&&A.ring);
   const at={x:o.x,y:o.y,V:1e9,army:q=>q===o&&men,add:(q,r,dy)=>{if(q!==o)return;const h=Math.round(r*.7),y=q.y-(dy||0);u(q.x-h,y-h,q.x+h,y+h)},
+    lot:(q,t,l)=>{if(q!==o)return;const b=lotPicBox(t,l);at.box(q,b[0],b[1],b[2],b[3])},// (a lot: round its building as drawn, structures.js)
     box:(q,x0,y0,x1,y1)=>{if(q!==o)return;u(x0,y0,x1,y1);if(!gate){gate=[x0,y0,x1,y1];return}if(px>=x0&&px<x1&&py>=y0&&py<y1&&(!inb||(x1-x0)*(y1-y0)<(inb[2]-inb[0])*(inb[3]-inb[1])))inb=[x0,y0,x1,y1]},
     camp:(q,sp)=>{if(q!==o)return;const x0=q.x-sp.ax,y0=q.y+8-sp.ay;u(x0,y0,x0+sp.width,y0+sp.height)},
     fig:(q,s,x0,y0,flip)=>{if(q!==o)return;const k=opaqueBox(s),L=flip?x0+s.width-1-k[2]:x0+k[0];f=[L,y0+k[1],L+k[2]-k[0]+1,y0+k[3]+1]}};
@@ -203,8 +209,9 @@ function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(no
   wuiTrail(cam,now,rm);
   if(WUI.dest){const d=WUI.dest,x=Math.round(d.x)-cam.x,y=Math.round(d.y)-cam.y-Math.round(wuiL(d.x,d.y)),e=(now-d.t)/1000;if(rm||e>WUI_K.drop){const r=rm?4:4+Math.round((1+Math.sin((e-WUI_K.drop)/WUI_K.bob*6.2832))*.5),c=wuiRing(r,Math.ceil(r/2),WUI_K.col.gold);ctx.globalAlpha=.85;wuiPut(c,x,y,c.cx,c.cy);ctx.globalAlpha=1}}
   if(WUI.tgt&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam),col=WUI_K.col[wuiKind(o)],e=(now-WUI.tgt.t)/1000;
+    if(wuiRing8(o,cam,col,rm?.9:.75+.25*Math.sin(e*5.5))){}else{
     const c=wuiRing(T.rx,Math.ceil(T.rx*.45),col);ctx.globalAlpha=rm?.9:.8+.2*Math.sin(e*5.5);wuiPut(c,T.x,T.y,c.cx,c.cy);
-    if(!rm){const q=(e%WUI_K.ping)/WUI_K.ping,r=T.rx+Math.round(q*6),p=wuiRing(r,Math.ceil(r*.45),col);ctx.globalAlpha=.8*(1-q);wuiPut(p,T.x,T.y,p.cx,p.cy)}ctx.globalAlpha=1}
+    if(!rm){const q=(e%WUI_K.ping)/WUI_K.ping,r=T.rx+Math.round(q*6),p=wuiRing(r,Math.ceil(r*.45),col);ctx.globalAlpha=.8*(1-q);wuiPut(p,T.x,T.y,p.cx,p.cy)}}ctx.globalAlpha=1}
   wuiRoadUnder(cam,now,rm);
   for(const f of WUI.fx){const q=(now-f.t)/1000/(f.k==='ripple'?WUI_K.ripple:WUI_K.poof),x=f.x-cam.x,y=f.y-cam.y-Math.round(wuiL(f.x,f.y));if(q<0||q>=1)continue;const e=1-(1-q)*(1-q);
     if(f.k==='ripple'){for(const [d,m] of [[0,1],[.14,.6]]){const qq=Math.max(0,(q-d)/(1-d)),ee=1-(1-qq)*(1-qq),r=2+Math.round(ee*11),c=wuiRing(r,Math.max(1,Math.round(r*.5)),f.col);ctx.globalAlpha=m*(1-qq);wuiPut(c,x,y,c.cx,c.cy)}
@@ -219,6 +226,7 @@ function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.
   if(WUI.tgt&&!WUI.tgt.f&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam),k=wuiKind(o);wuiDrop(T.x,T.top,WUI.tgt.t,WUI_K.col[k],now,rm,false,k==='foe'?wuiDrawSwords:null)}// (one you follow: no arrow)
   wuiRoadOver(cam,now,rm);wuiDistractions(cam,now,rm);wuiEscorts(cam,now,rm);wuiFilling(cam);
   const h=WUI.hov;if(h){const b=h.b,col=WUI_K.col[h.kind],x0=wuiX(b[0],cam),y0=wuiY(b[1],cam),x1=wuiX(b[2],cam),y1=wuiY(b[3],cam),br=rm?0:(1+Math.sin(now/1000/WUI_K.breathe*6.2832))/2;
+    if(h.kind!=='ground'&&wuiRing8(WUI.hp.o,cam,col,.6+.4*br))return;
     wuiBrackets(x0,y0,x1,y1,col,h.kind==='ground'?.75:1,rm?0:Math.round(br),h.kind==='ground'?.5+.5*br:1+br)}}
 /* ---- the encounters on the road (world/road.js), each you know of and have not met (marked). Under the markers: sound
    waves rippling out from its feet while you see it. Over the labels: a pulsing "!" over it while it is on the screen (heard and

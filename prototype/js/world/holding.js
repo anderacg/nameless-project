@@ -23,7 +23,7 @@ class HoldingObject extends WorldObject{
   estates(){return Object.keys(bldSpots(this)).filter(k=>bldLv(this,k)).map(k=>estatePick(this,k))}
   // (structures answer anywhere on what is drawn of them: pickAt box)
   pick(at){if(Math.hypot(this.x-P.x,this.y-P.y)>at.V+340)return;at.box(this,this.x-8,this.y-18,this.x+8,this.y+8,4);// its gate
-    for(const l of this.lots||[]){if(ESTATES[l.k]&&bldLv(this,l.k))estatePick(this,l.k).pickOn(at,this,l);else if(l.k==='house')housePick(this,l).pickOn(at,this,l);else at.box(this,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,ESTATES[l.k]?0:4)}}// (a house its own: world/houses.js)
+    for(const l of this.lots||[]){if(ESTATES[l.k]&&bldLv(this,l.k))estatePick(this,l.k).pickOn(at,this,l);else if(l.k==='house')housePick(this,l).pickOn(at,this,l);else if(at.lot)at.lot(this,this,l,ESTATES[l.k]?0:4);else at.box(this,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,ESTATES[l.k]?0:4)}}// (a house its own: world/houses.js)
   // its own building, its centre's lot (the citadel, keep or hall: lots.js Layout centre), reached from your army's outline (march.js
   // ringReach); its houses and estates apart, each reached at its own lot (houses.js, estates.js reachRadius): walking up to a house or
   // a farm meets that, not the holding (the owner, 2026-11-01: "the holding interaction should be separated from estate buildings

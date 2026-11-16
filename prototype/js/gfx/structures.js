@@ -34,6 +34,14 @@ function lotFine(t,l,r){const s=lotSprite(t,l);if(r<=1||lotK(l)<1)return s;if(s.
 // size: on the lot's front middle)
 const lotK=l=>l.k==='centre'?1:WORLD_VIEW.house;
 function lotDrawBox(l,X,Y,N){const k=lotK(l),n=N*k;return [X+(N-n)/2,Y-n,n,k]}
+// (whether map point (wx, wy) falls on lot l's building as drawn: an opaque px of its picture there, or within LOT_PICK.slack game px of one;
+// its opaque box on the map, [x0, y0, x1, y1], for the pointer's brackets (worldui.js))
+const LOT_PICK={slack:1};
+function lotAlpha(s){if(s._al)return s._al;const w=s.width,h=s.height,d=s.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data,A=new Uint8Array(w*h);for(let i=0;i<w*h;i++)A[i]=d[i*4+3]>40?1:0;return s._al=A}
+function lotPicBox(t,l){const N=l.n*TILE,[bx,by,bn]=lotDrawBox(l,l.x*TILE,(l.y+l.n)*TILE,N),s=lotSprite(t,l),b=opaqueBox(s),q=bn/s.width;return b?[bx+b[0]*q,by+b[1]*q,bx+(b[2]+1)*q,by+(b[3]+1)*q]:[bx,by,bx+bn,by+bn]}
+function lotPicHit(t,l,wx,wy){const N=l.n*TILE,[bx,by,bn]=lotDrawBox(l,l.x*TILE,(l.y+l.n)*TILE,N),sl=LOT_PICK.slack;if(wx<bx-sl||wy<by-sl||wx>=bx+bn+sl||wy>=by+bn+sl)return false;
+  const s=lotSprite(t,l),w=s.width,h=s.height,q=w/bn,A=lotAlpha(s),r=Math.ceil(sl*q),cx=Math.floor((wx-bx)*q),cy=Math.floor((wy-by)*q);
+  for(let y=Math.max(0,cy-r);y<=Math.min(h-1,cy+r);y++)for(let x=Math.max(0,cx-r);x<=Math.min(w-1,cx+r);x++)if(A[y*w+x])return true;return false}
 function drawLot(t,l,s,X,Y,n){const r=sceneRes(),N=s.width;n=n||N;if(n===N&&r>1&&s._f&&s._fr===r)ctx.drawImage(s._f,X,Y,N,N);else ctx.drawImage(s,X,Y,n,n)}
 // (a picture taken down to k of its size, for what reads game px (the depth overdraw, the shadows): kept on it)
 const scaledPic=(s,k)=>k===1||!s?s:(s._k&&s._kk===k?s._k:(s._kk=k,s._k=mkc(Math.max(1,Math.round(s.width*k)),Math.max(1,Math.round(s.height*k)),g=>{g.imageSmoothingEnabled=false;g.drawImage(s,0,0,s.width*k,s.height*k)})));
