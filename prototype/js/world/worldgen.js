@@ -386,6 +386,57 @@ function* genLand(g){
     for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<N&&K[j]===T_WATER&&!(F[j]&2)){F[i]|=4;break}}
   g.work.land=land;
 }
+/* (the classic heights on the lab's grids, before the land is read off them (lost at a250c0a, put back 2026-11-17): each elev hint
+   (the northern peaks, the peaks north of Karn Hold) a range r tiles to its side of its point, span tiles each way across it, raised
+   as labTerrain raises one but h times as high (the lab's peak; a pass at each third of it, so stage 2's check finds one), and no range within held[0] tiles of a holding's anchor (M
+   eased back in over held[1] more: no peak by one); then the great river's line (stonebridge, GEN_VALLEY: genValleyHint) */
+const GEN_HINT_ELEV={span:40,h:1.25,held:[9,8]};
+function genElevHints(g,L,R){
+  const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,T=GEN_HINT_ELEV,RG=LAB_GEN.ranges,M=L.M,A=classicAnchors(),sn=genSalt(R);
+  const each=(px,py,r,f)=>{for(let y=Math.max(0,Math.floor(py-r));y<=Math.min(H-1,py+r);y++)for(let x=Math.max(0,Math.floor(px-r));x<=Math.min(W-1,px+r);x++){
+    const ex=x+.5-px,ey=y+.5-py,d=Math.sqrt(ex*ex+ey*ey)/r;if(d<1)f(y*W+x,d)}};
+  for(const h of genHints(g,'elev'))for(const [cx,cy] of h.pts){const dy=h.side==='n'?-h.r:h.side==='s'?h.r:0,dx=h.side==='w'?-h.r:h.side==='e'?h.r:0,pts=[];
+    for(let t=-T.span;t<=T.span;t+=1.5)pts.push([cx+dx+(dy?t:0),cy+dy+(dx?t:0)+(R()-.5)*3]);
+    for(let r=0;r<2;r++){const q=pts.map(p=>p.slice());for(let j=2;j<pts.length-2;j++)for(const c of [0,1])pts[j][c]=(q[j-2][c]+q[j-1][c]+q[j][c]+q[j+1][c]+q[j+2][c])/5}
+    const arc=[0];for(let j=1;j<pts.length;j++)arc.push(arc[j-1]+genLen(pts[j],pts[j-1]));
+    const Lr=arc[arc.length-1],w=RG.w[0]+R()*(RG.w[1]-RG.w[0]),hh=(RG.h[0]+R()*(RG.h[1]-RG.h[0]))*T.h,kk=L.spines.length*7.3,q={pts,arc,w,passes:[]};L.spines.push(q);
+    pts.forEach(([px,py],j)=>{const a=arc[j],st=Math.min(1,a/22,(Lr-a)/22);if(st<=0)return;const ww=w*(.75+.5*noise(a/22,kk,sn));
+      each(px,py,ww,(i,d)=>{if(K[i]===T_WATER)return;const c=1-d,v=hh*c*Math.sqrt(Math.sqrt(c))*st;if(v>M[i])M[i]=v})});
+    for(let a=Lr/3+(R()-.5)*8;a<Lr-10;a+=Lr/3+(R()-.5)*8){let j=0;while(j<arc.length-1&&arc[j]<a)j++;const p=pts[j];q.passes.push(p);
+      each(p[0],p[1],RG.passR*w,(i,d)=>{M[i]*=1-RG.passDip*sstep(1-d)})}}
+  for(let i=0;i<N;i++){if(!M[i])continue;const x=i%W,y=(i-x)/W;let d=1e9;for(const a of A){const ex=a.tx-x,ey=a.ty-y,e=ex*ex+ey*ey;if(e<d)d=e}M[i]*=sstep((Math.sqrt(d)-T.held[0])/T.held[1])}
+  for(const h of genHints(g,'river'))if(h.great&&h.pts.length)genValleyHint(g,h,L,R)}
+/* (the classic great river's line (stonebridge, GEN_VALLEY), made with the heights (genElevHints) and cut into the drainage surface
+   as the rivers are found (genValleyCut): from the highest ground of the north (within head tiles of the anchor's line, in the band
+   band of the map's height) past the anchor (just east of it, so the holding is on its west bank, east tiles off, unbent within
+   still[0] tiles of it and fully bent past still[0] + still[1]) to the south coast, bent by bend[0] tiles of noise bend[1] tiles
+   across, so it winds. The land within bowl tilted toward it (its height over the sea's level less by tilt at the line, none at
+   bowl), so the valley gathers a great river's water; its bed deep under the land along it and never rising downstream (the lowest
+   so far at n points along it), never under the sea's level and a hair (rise, falling to the coast); floor tiles across, its sides
+   rising wall a tile within w; a spring at its head, spring times a stream's flow, so the river rises there, in the peaks. The old
+   generator's valley (oldgen), cut into the drainage surface only: the lab's land cut so deep
+   would lie under the lowland's floor, flat (lost at a250c0a, put back 2026-11-17)) */
+const GEN_VALLEY={w:6,deep:3,bowl:90,tilt:.5,spring:1.2,head:60,band:[.05,.22],floor:1,wall:2.5,rise:1.5,bend:[60,26],east:5,still:[8,30],n:512};
+function genValleyHint(g,h,L,R){
+  const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,T=GEN_VALLEY,[cx,cy]=h.pts[0],sa=genSalt(R),f0=labField(L,W,H,1,m.seedNum);
+  let hx=cx,hy=H*T.band[0],top=-1e9;
+  for(let y=Math.round(H*T.band[0]);y<=H*T.band[1];y+=2)for(let x=Math.max(0,Math.round(cx-T.head));x<=Math.min(W-1,cx+T.head);x+=2){if(K[y*W+x]===T_WATER)continue;const e=f0(x*32+16,y*32+16);if(e>top){top=e;hx=x;hy=y}}
+  const P=[[hx,hy]];for(let k=1;k<=5;k++)P.push([hx+(cx+T.east-hx)*k/5+(k<5?(R()-.5)*20:0),hy+(cy-hy)*k/5]);for(let k=1;k<=4;k++)P.push([cx+T.east+(R()-.5)*30,cy+(H-cy)*k/4]);
+  const Lp=[0];for(let k=1;k<P.length;k++)Lp.push(Lp[k-1]+genLen(P[k],P[k-1]));
+  // (the tiles along the line (unwarped, n + 1 of them) and each tile within bowl of the warped line: its distance and where along it)
+  const line=new Int32Array(T.n+1),D=new Float32Array(N).fill(-1),At=new Float32Array(N);
+  for(let k=0;k<=T.n;k++){const s=k/T.n*Lp[Lp.length-1];let j=1;while(j<Lp.length-1&&Lp[j]<s)j++;const t=(s-Lp[j-1])/((Lp[j]-Lp[j-1])||1);
+    line[k]=Math.max(0,Math.min(H-1,Math.round(P[j-1][1]+(P[j][1]-P[j-1][1])*t)))*W+Math.max(0,Math.min(W-1,Math.round(P[j-1][0]+(P[j][0]-P[j-1][0])*t)))}
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(K[i]===T_WATER)continue;const st=sstep((Math.sqrt((x-cx)*(x-cx)+(y-cy)*(y-cy))-T.still[0])/T.still[1]),
+    [d,at]=genSeg(x+((gfbm(x/T.bend[1],y/T.bend[1],sa,2)-.5)*T.bend[0]+(gfbm(x/9,y/9,sa+3,2)-.5)*10)*st,y,P);if(d<T.bowl){D[i]=d;At[i]=at}}
+  g.work.valley={line,D,At}}
+// (the great river's valley cut into Z (and Z0, the surface as it was), the drainage surface, sea(i) the sea: the bowl tilted
+// toward it, its bed along the line from the head to the first water, then each tile within w down to the bed and its sides)
+function genValleyCut(g,Z,Z0,sea){const V=g.work.valley;if(!V)return;const T=GEN_VALLEY,N=Z.length,n=V.line.length-1;let end=n;
+  for(let i=0;i<N;i++){const d=V.D[i];if(d<0||sea(i))continue;Z[i]=Z0[i]=64+(Z[i]-64)*(1-T.tilt*sstep(1-d/T.bowl))}
+  for(let k=0;k<=n;k++)if(sea(V.line[k])){end=k;break}if(end<2)return;
+  const bed=new Float64Array(n+1);let lo=1e9;for(let k=0;k<end;k++){lo=Math.min(lo-.002,Z[V.line[k]]-T.deep);bed[k]=Math.max(lo,64+T.rise*(1-k/end))}
+  for(let i=0;i<N;i++){const d=V.D[i];if(d<0||d>=T.w||sea(i))continue;const k=Math.round(V.At[i]*n);if(k>=end)continue;const b=bed[k]+Math.max(0,d-T.floor)*T.wall;if(b<Z[i]){Z[i]=b;Z0[i]=b}}}
 /* 2. the land's height (the lab's: labTerrain, labField): each tile's level the lab's land at its middle (elev, per GEN_RELIEF.per
    a level over the sea's 64; ef the same unrounded); the sea deepening off the shore, each lake just under the lowest of its shores;
    kinds by the land's slope classes (landClasses: a cliff rock (T_MOUNT), steep ground or a slope from hill[0] levels or any land
@@ -396,7 +447,7 @@ function* genLand(g){
 function* genElev(g){
   const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,E=m.elev,R=g.rng('elev',g.attempt),P=GEN_RELIEF;
   const D=g.work.dist=new Uint16Array(N);yield* genDist(g,D);
-  const L=m.lab=labTerrain(g.s,R,W,H,1,K,D);g.work.spines=L.spines;g.work.plateau=new Float32Array(N);yield .3;
+  const L=m.lab=labTerrain(g.s,R,W,H,1,K,D);if(g.hints)genElevHints(g,L,R);g.work.spines=L.spines;g.work.plateau=new Float32Array(N);yield .3;
   const f=labField(L,W,H,1,m.seedNum),RAW=L.raw=new Float32Array(N),Ef=g.work.ef=new Float32Array(N);
   for(let y=0;y<H;y++){for(let x=0;x<W;x++)RAW[y*W+x]=f(x*32+16,y*32+16);if(g.tick())yield .3+y/H*.3}
   // water: the sea deepening off the shore; each lake just under the lowest of its shores; the land at its level
@@ -514,6 +565,7 @@ function* genRivers(g){
   const Z=new Float64Array(N),Z0=new Float32Array(N),sm=genSalt(R),sf=genSalt(R),TD=T.desert,dz=i=>K[i]!==T_WATER&&m.clim[i]===CLIM.desert,Dd=new Uint16Array(N);
   yield* genBfs(g,Dd,i=>!dz(i));
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(!sea(i))Z0[i]=Z[i]=Ef[i]+(gfbm(x/9,y/9,sm,2)-.5)*T.meander*2*(1-sstep((Ef[i]-100)/60))+TD.rise*Math.min(Dd[i],TD.cap)}
+  genValleyCut(g,Z,Z0,sea);// (classic: the great river past Stonebridge, GEN_VALLEY)
   yield* genFlood(g,Z,sea,0,.1);
   // (the pits' depth, filled over the land as it was: stage 5b's ponds lie in them)
   {const P=g.work.pit=new Float32Array(N);for(let i=0;i<N;i++)P[i]=Z[i]-Z0[i]}
@@ -533,7 +585,7 @@ function* genRivers(g){
     dn[i]=b;m.flow[i]=bk<<5}
   // (the flow gathered downstream: no rain on the desert's land, and with fs, the stream's flow, what runs onto it sinks into the
   // sand there but a stream's (its main inflow at fs or more); none out of a terminal lake (sink))
-  const sink=new Uint8Array(N),gather=fs=>{up.fill(-1);for(let i=0;i<N;i++)Fa[i]=sea(i)||dz(i)?0:.3+m.moist[i]/255;
+  const sink=new Uint8Array(N),VL=g.work.valley,gather=fs=>{up.fill(-1);for(let i=0;i<N;i++)Fa[i]=sea(i)||dz(i)?0:.3+m.moist[i]/255;if(fs&&VL)Fa[VL.line[0]]+=fs*GEN_VALLEY.spring;
     for(let k=no-1;k>=0;k--){const i=ord[k],d=dn[i];if(fs&&dz(i)&&!(up[i]>=0&&Fa[up[i]]>=fs))Fa[i]=0;if(d<0||sea(d)||sink[i])continue;Fa[d]+=Fa[i];if(up[d]<0||Fa[i]>Fa[up[d]])up[d]=i}};
   gather(0);
   yield .35;

@@ -113,7 +113,7 @@ const CLASSIC_HINTS=[
   {id:'desertSouthEast',kind:'temp',at:['Sunreach','Redspire','Skullrock','Greywell','Scorchwell','Bonepit','Dustfang'],r:22,d:1,dry:1,clim:'desert',note:'desert in the south-east, the Horde’s land'},
   {id:'greenWest',kind:'moist',at:['Elderglen','Mossdell','Willowmere','Fernhollow','Thistledown','Pearlbay','Gullhaven'],r:16,d:-.8,note:'the Sylvan woods and the League’s south coast green, not fen'},
   {id:'northPeaks',kind:'elev',at:[.44,.16],side:'n',r:16,note:'the northern peaks, where the great river rises'},
-  {id:'karnPeaks',kind:'elev',at:'Karn Hold',side:'n',r:20,note:'Karn Hold below the peaks'},
+  {id:'karnPeaks',kind:'elev',at:'Karn Hold',side:'n',r:14,note:'Karn Hold below the peaks'}/* (r 14, was 20, 2026-11-17: the lab's range is narrower than the old one and kept 9 tiles off every anchor (worldgen.js GEN_HINT_ELEV), so at 20 its peaks stood past the 16 tiles north of the hold) */,
   {id:'willowIsle',kind:'island',at:'Willowmere',bridges:true,note:'Willowmere an island village with bridges (tests/routes.js)'},
   {id:'stonebridge',kind:'river',at:'Stonebridge',from:'n',to:'s',great:true,bridge:true,note:'a great river from the northern peaks to the south coast, past Stonebridge, bridged there'},
   {id:'fens',kind:'moist',at:['Mirefen','Tidewatch','Brinewatch'],r:26,d:1,clim:'swamp',note:'Mirefen, Tidewatch and Brinewatch in fen'}/* (r 26, was 20, 2026-11-17: with the League's bay put back (worldgen.js genLandHints) the fen round Brinewatch and Mirefen ended in a disc at 13-15 tiles: tests/classicseed.js) */
