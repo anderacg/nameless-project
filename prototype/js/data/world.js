@@ -93,7 +93,7 @@ const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,h
 // (prints: footprints, the lab's: one every step px a man walks (a foot's stride: left, then right), side px off his way, fading over
 // fade s, max kept; on snow, sand, the marsh, and ground within bank px of drawn water, in their colours, a print's rim rim of its
 // strength: worldterrain.js stepPrint; each a foot's shape (PRINT_FOOT), pointing the way he walks)
-/* a footprint's shape (worldterrain.js footMask; the owner, 2026-11-17: "Tracks footprints is in the wrong position and not realistic"):
+/* a footprint's shape (worldterrain.js printFoot; the owner, 2026-11-17: "Tracks footprints is in the wrong position and not realistic"):
    at 2 fine px a game px, its sole (the ball and toes: its middle along the foot, its half-length, its half-width) a little to its
    inner side (inner), its heel apart behind it, the same; turned to one of dirs ways, a left foot the right one mirrored; deep within
    deep of its middle. The way's prints (worldui.js wuiFoot) and the tracks men leave (stepPrint) both */

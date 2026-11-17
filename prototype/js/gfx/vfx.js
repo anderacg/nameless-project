@@ -145,7 +145,8 @@ function drawFallen(g,c,V,q,k){const X=Math.round(c.x),Y=Math.round(c.y),M=V.mou
 // all of them: the settled painted into the layer once (into each of its tiles the body reaches), and the layer drawn; those still
 // falling or bleeding drawn as they are
 function drawCorpses(){
-  if(!B.corpses||B.world)return;// (on the world map each is drawn among the living, by its feet: corpseEnts)const L=goreLayer(),bake=c=>{const X=Math.round(c.x),Y=Math.round(c.y),S=c.sp,r=Math.max(48,S&&S.beast?Math.max(S.beast.width,S.beast.height)+12:0)*(B.world?WORLD_BATTLE.sprite:1);L.each(X-r,Y-r,X+r,Y+r,g=>drawBody(g,c,1,1))};
+  // (on the world map each is drawn among the living, by its feet: corpseEnts)
+  if(!B.corpses||B.world)return;const L=goreLayer(),bake=c=>{const X=Math.round(c.x),Y=Math.round(c.y),S=c.sp,r=Math.max(48,S&&S.beast?Math.max(S.beast.width,S.beast.height)+12:0)*(B.world?WORLD_BATTLE.sprite:1);L.each(X-r,Y-r,X+r,Y+r,g=>drawBody(g,c,1,1))};
   if(B.goreOn!==BLOOD.on){B.goreOn=BLOOD.on;L.clear();for(const c of B.corpses)if(c.baked)bake(c)}// (blood switched: painted again)
   const live=[];
   for(const c of B.corpses){if(c.baked||!c.sp)continue;const t=B.t-(c.td||0),q=Math.min(1,t/GORE.fall),k=Math.min(1,Math.max(0,(t-GORE.fall)/GORE.pool));

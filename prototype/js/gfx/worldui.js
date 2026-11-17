@@ -64,7 +64,7 @@ function wuiSwords(){let c=WUIP.get('x');if(c&&(c.uiIcon||!uiIconReady('attack')
 // (a picture with its point (px, py) at the screen's (x, y))
 const wuiPut=(c,x,y,px,py)=>c.k?ctx.drawImage(c,x-px,y-py,c.width*c.k,c.height*c.k):ctx.drawImage(c,x-px,y-py);// (k: a picture by the fine px, drawn back to its size)
 /* a footprint of the way (the owner, 2026-10-23: small footprints for its dots, in their gold, at their spacing): a foot's shape
-   (worldterrain.js footMask: its sole, the ball a little to its inner side, and its heel apart), a left one mirrored along its
+   (worldterrain.js printFoot: its sole, the ball a little to its inner side, and its heel apart), a left one mirrored along its
    length. d: one of WUI_FOOT.dirs (16) ways, 0 east,
    on clockwise; a pixel edge round it in the dark at WUI_FOOT.edge, its toe's tip lit. gap: px from one print to the next along
    the way (a left, then a right); side: px each sits off the way's middle; look: px before and after it the way's heading is read
@@ -75,8 +75,8 @@ const wuiPut=(c,x,y,px,py)=>c.k?ctx.drawImage(c,x-px,y-py,c.width*c.k,c.height*c
 // (by the fine px since 2026-11-17 (the owner: the prints blocky and white; then "not realistic"): a foot's shape (PRINT_FOOT, as the
 // tracks men leave), pointing one of dirs ways, its feet side px either side of the way (a walker's gauge, not two trails))
 const WUI_FOOT={gap:7,side:1.1,look:4,dirs:16,edge:.55};
-function wuiFoot(d,left,col){const z=wuiZ(),key='f'+d+(left?'l':'r')+col+z;let c=WUIP.get(key);if(c)return c;const M=footMask(d,left,Math.max(2,z)),F=WUI_FOOT,s=Math.max(2,z)/z;
-  // (a foot's shape (worldterrain.js footMask, as the tracks men leave): its rim in the dark at F.edge, its toe's px lit)
+function wuiFoot(d,left,col){const z=wuiZ(),key='f'+d+(left?'l':'r')+col+z;let c=WUIP.get(key);if(c)return c;const M=printFoot(d,left,Math.max(2,z)),F=WUI_FOOT,s=Math.max(2,z)/z;
+  // (a foot's shape (worldterrain.js printFoot, as the tracks men leave): its rim in the dark at F.edge, its toe's px lit)
   const x0=Math.min(...M.map(q=>q[0])),y0=Math.min(...M.map(q=>q[1])),W=Math.max(...M.map(q=>q[0]))-x0+1,H=Math.max(...M.map(q=>q[1]))-y0+1,A=new Uint8Array(W*H),at=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&A[y*W+x];
   let tu=-1e9;for(const q of M){A[(q[1]-y0)*W+q[0]-x0]=1;tu=Math.max(tu,q[3])}
   c=mkc(W+2,H+2,g=>{g.globalAlpha=F.edge;for(let y=-1;y<=H;y++)for(let x=-1;x<=W;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))rect(g,WUI_K.dark,x+1,y+1);

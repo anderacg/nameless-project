@@ -422,7 +422,7 @@ const FOOTPRINTS={buf:null,n:0,at:0,walk:new WeakMap()};
 // (a footprint's px pointing way d of PRINT_FOOT.dirs (0 east, on clockwise), a left or right foot, at z fine px a game px (its sizes
 // z/2 times PRINT_FOOT's): [x, y, deep (1 within its deep middle, else 0), along (px toward its toe)] about its middle, kept)
 const FOOT_MASK=new Map();
-function footMask(d,left,z=2){const F=PRINT_FOOT,key=d+(left?'l':'r')+z;let m=FOOT_MASK.get(key);if(m)return m;m=[];const a=d/F.dirs*6.2832,ux=Math.cos(a),uy=Math.sin(a),k=z/2,vc=(left?1:-1)*F.inner*k;
+function printFoot(d,left,z=2){const F=PRINT_FOOT,key=d+(left?'l':'r')+z;let m=FOOT_MASK.get(key);if(m)return m;m=[];const a=d/F.dirs*6.2832,ux=Math.cos(a),uy=Math.sin(a),k=z/2,vc=(left?1:-1)*F.inner*k;
   const S=F.sole.map(v=>v*k),H=F.heel.map(v=>v*k),R=Math.ceil(3*k)+1;
   for(let y=-R;y<=R;y++)for(let x=-R;x<=R;x++){const u=x*ux+y*uy,v=y*ux-x*uy,qs=((u-S[0])/S[1])**2+((v-vc)/S[2])**2,qh=((u-H[0])/H[1])**2+(v/H[2])**2,q=Math.min(qs,qh);if(q<=1)m.push([x,y,q<=F.deep*F.deep?1:0,u])}
   FOOT_MASK.set(key,m);return m}
@@ -468,10 +468,10 @@ function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)r
     if(!TGRASS.buf||TGRASS.buf.width!==BW||TGRASS.buf.height!==BH){TGRASS.buf=new ImageData(BW,BH);TGRASS.buf.u=new Uint32Array(TGRASS.buf.data.buffer);TGRASS.cv=mkcv(BW,BH)}
     const U=TGRASS.buf.u;U.fill(0);let any=false;
     // (footprints, the lab's, fading: under the grass)
-  //  each a foot's shape pointing his way (footMask), deeper in its middle
+  //  each a foot's shape pointing his way (printFoot), deeper in its middle
   {const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,nw=now,B=F.buf;for(let k=0;k<F.n;k++){const o=k*6,a=1-(nw-B[o+2])/1000/PR.fade;if(a<=0)continue;const x=Math.round(B[o]-cam.x*r),y=Math.round(B[o+1]-cam.y*r);
       if(x<4||y<4||x>=BW-4||y>=BH-4)continue;const c=PR.col[B[o+3]],c0=c[2]<<16|c[1]<<8|c[0],A1=Math.round(204*a),A0=Math.round(204*a*PR.rim);
-      for(const q of footMask(B[o+5],B[o+4]<0,r)){const i=(y+q[1])*BW+x+q[0],v=((q[2]?A1:A0)<<24|c0)>>>0;if((U[i]>>>24)<(v>>>24))U[i]=v}any=true}}
+      for(const q of printFoot(B[o+5],B[o+4]<0,r)){const i=(y+q[1])*BW+x+q[0],v=((q[2]?A1:A0)<<24|c0)>>>0;if((U[i]>>>24)<(v>>>24))U[i]=v}any=true}}
   // (the water moving, the lab's: foam riding the shore, the river's current in streaks running down it (a lit crest, a darker trough
     //  behind it, each px of a streak sharing its phase with those beside it, so they run as lines, not dots), white down a fall)
     {const ts=now/1000,FO=0xd8f6f4ec,SP=0x5cf2ece0,SL=0x30eee4d4,WF=0x99fffcfa,RW=WORLD_WAYS.river.flow;
