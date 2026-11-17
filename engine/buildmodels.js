@@ -565,7 +565,7 @@
       piece(C,'well',[0,14],0);piece(C,'cart',[-18,24],0);piece(C,'barrels',[20,24],0);P(C,'bench',[-6,30],1);C.Q.parts.push({k:'bed',name:'g1',u:[-60,-40],v:[-28,-18]},{k:'bed',name:'g2',u:[30,58],v:[-28,-18]})}},
     // camps: a bandits' camp (32: one or two tents round a fire, crates or a barrel, a log to sit on), a hideout (64: three tents and
     // their gear round the fire in a ring of spiked stakes, its way in at the front) and travellers (32: a tent, their wagon, the fire)
-    camp:{role:'camp',make:C=>{const two=C.d.chance(.5);piece(C,'tent',[two?-8:0,two?-13:-12],0);if(two)piece(C,'tent',[8,-9],0);fire(C,[0,8]);P(C,C.d.pick(['crate','barrel','sacks']),two?[-13,4]:[10,7]);P(C,'logs',[-8,12],0,1)}},
+    camp:{role:'camp',make:C=>{const two=C.d.chance(.5);piece(C,'tent',[two?-8:0,two?-10:-11],0);if(two)piece(C,'tent',[8,0],0);fire(C,[two?-5:0,two?9:8]);P(C,C.d.pick(['crate','barrel','sacks']),two?[-14,3]:[10,7]);P(C,'logs',two?[-12,12]:[-8,12],0,1)}},
     hideout:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-16,-20],0);piece(C,'tent',[16,-20],0);piece(C,'tent',[0,-12],0);fire(C,[0,9]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
       const e=29,b=27;for(const [n,u,v] of [['pN',[-e,e],[-b-3,-b-1]],['pW',[-e,-e+2],[-b-3,b]],['pE',[e-2,e],[-b-3,b]],['pS0',[-e,-6],[b-2,b]],['pS1',[6,e],[b-2,b]]])C.Q.parts.push({k:'box',name:n,u,v,z:[0,8],wall:'stakes',top:true,topMat:'log'})}},
     travelers:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-6,-12],0);piece(C,'wagon',[8,5],0);fire(C,[-7,10])}}

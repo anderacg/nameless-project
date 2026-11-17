@@ -75,9 +75,13 @@ try{
   ok(G.mode==='world'&&t.pickAt(free.x,free.y-3)!==free&&t.tipFor(free)===''&&!free.inView(999),'a herd standing loose by its holding is not picked, hovered or met, and not drawn there');
   const sp=t.penSpots(ash,0);ok(t.fieldsOf(ash,'pasture')&&sp.length===Math.min(cow.n,t.fieldsOf(ash,'pasture').tiles.length)&&sp.every(q=>t.fieldsOf(ash,'pasture').tiles.some(([x,y])=>x===q.tx&&y===q.ty)),'it is drawn in its pasture instead: '+sp.length+' cattle on its fenced tiles');
   const ents=[];t.penEnts(ash,ents,{x:0,y:0});ok(ents.length===sp.length&&ents.every(e=>e.y>0&&typeof e.f==='function'),'its animals are drawn among the rest by depth, with the estate (one entry each)')}
- // the pasture animals stay inside their fence over time, every kind of livestock, two of a small kind to a tile
- {const bad=[];let n=0;for(const id of ['cow','sheep','pig','goat','hen','camel','buffalo','tamereindeer']){cow.id=id;cow.n=9;for(let k=0;k<240;k++){const now=k*137.3;for(const q of t.penSpots(ash,now)){n++;const x0=q.tx*16,y0=q.ty*16,w=q.a.w,h=q.a.h;
-     if(q.x-w/2<x0+1||q.x+w/2>x0+15||q.y>y0+14||q.y-h<y0)bad.push(id+'@'+now+' '+q.x.toFixed(1)+','+q.y)}}}
+ // the pasture animals stay inside their fence over time, every kind of livestock, two of a small kind to a tile: on the pen's tiles
+ // (they graze over to the next one: the fence runs only round the pen's outer edge, critters.js PEN_WALK), clear of the fence on
+ // each side where it runs (the tile beyond not the pen's)
+ {const bad=[],PT=t.fieldsOf(ash,'pasture').tiles,pen=(x,y)=>PT.some(q=>q[0]===x&&q[1]===y);let n=0;
+  for(const id of ['cow','sheep','pig','goat','hen','camel','buffalo','tamereindeer']){cow.id=id;cow.n=9;for(let k=0;k<240;k++){const now=k*137.3;for(const q of t.penSpots(ash,now)){n++;
+     const tx=Math.floor(q.x/16),ty=Math.floor((q.y-.01)/16),x0=tx*16,y0=ty*16,w=q.a.w,h=q.a.h;
+     if(!pen(tx,ty)||!pen(tx-1,ty)&&q.x-w/2<x0+1||!pen(tx+1,ty)&&q.x+w/2>x0+15||!pen(tx,ty+1)&&q.y>y0+14||!pen(tx,ty-1)&&q.y-h<y0)bad.push(id+'@'+now+' '+q.x.toFixed(1)+','+q.y.toFixed(1))}}}
   ok(n>1000&&!bad.length,'pasture animals stay inside their fenced tiles at every moment ('+n+' places, cattle one a tile, the small kinds two)'+(bad.length?': '+bad.slice(0,4).join('; '):''));
   cow.id='sheep';ok(t.penSpots(ash,0).length===Math.min(9,2*t.fieldsOf(ash,'pasture').tiles.length),'two sheep to a fenced tile');cow.id='cow';cow.n=4}
  {const lv=t.bldLv(ash,'pasture');ash.bld.pasture=0;ok(!t.penSpots(ash,0).length,'a pasture pulled down or burnt to nothing shows no herd anywhere');ash.bld.pasture=lv}

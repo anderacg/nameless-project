@@ -48,7 +48,10 @@ try{
  t.frame();
  // structures answer wherever they are drawn: the centre's far corner, a house, a wall piece, but not the open ground beside
  reset();P.troops={};{const tw=t.townBy('Ashford'),c=t.lotCentre(tw),h=tw.lots.find(l=>l.k==='house'),w=tw.lots.find(l=>l.k==='wall');P.x=tw.x;P.y=tw.y+20;
-  const spots=[[c.x*16+3,c.y*16+3,'the centre\u2019s back corner'],...(w?[[w.x*16+8,w.y*16+8,'a wall']]:[])];
+  // (the centre's back: the first of its picture's px from the back of its lot, two px in; a lot is picked by its picture's own px,
+  //  the clear ground of its square is ground to walk to: structures.js lotPicHit, the owner, 2026-11-16)
+  const back=(()=>{const N=c.n*16,[bx,by,bn]=t.lotDrawBox(c,c.x*16,(c.y+c.n)*16,N);for(let y=Math.ceil(by);y<by+bn-2;y++)for(let x=Math.ceil(bx);x<bx+bn;x++)if(t.lotPicHit(tw,c,x,y)&&t.lotPicHit(tw,c,x,y+2))return[x,y+2];return[c.x*16+3,c.y*16+3]})();
+  const spots=[[back[0],back[1],'the back of the centre\u2019s picture'],...(w?[[w.x*16+8,w.y*16+8,'a wall']]:[])];
   ok(spots.every(([x,y])=>t.pickAt(x,y)===tw),'clicking any of a holding\u2019s buildings picks it: '+spots.map(q=>q[2]).join(', '));
   {const hn=tw.lots.filter(l=>l.k==='house').sort((a,b)=>Math.hypot(a.x*16-P.x,a.y*16-P.y)-Math.hypot(b.x*16-P.x,b.y*16-P.y))[0],o=t.pickAt(hn.x*16+8,hn.y*16+8);
    ok(o instanceof t.House&&o.holding===tw,'but a house in sight is its own (world/houses.js): the house')}

@@ -39,7 +39,7 @@ const CRITTERS={
 // a pasture's animals at their grazing (critters.js penSpots; the owner, 2026-11-16: "make animal in pasture walk instead of jumping
 // frequently"): each stands grazing, then walks to another spot in its pen (its tile or the next), a turn of seg s (from its own dice), walk game px a
 // second, a walk frame each stride px; x as far as its tile's room (up to roam px), y by yAmp
-const PEN_WALK={seg:[7,15],walk:2.5,stride:1.6,roam:4,yAmp:1.2};
+const PEN_WALK={seg:[7,15],walk:2.5,stride:1.6,roam:4,yAmp:1};
 // where each kind of livestock can graze: ground (open, hills, forest) and climates (null: any)
 const GRAZE={cow:{on:['open'],clim:['grass','swamp','frost']},sheep:{on:['open','hills'],clim:['grass','frost']},pig:{on:['open','forest'],clim:['grass','swamp','desert']},
   goat:{on:['open','hills'],clim:null},hen:{on:['open'],clim:null},camel:{on:['open','hills'],clim:['desert']},buffalo:{on:['open'],clim:['swamp','grass']},

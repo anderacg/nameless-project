@@ -48,7 +48,7 @@ function penSpots(t,now){const c=herdOf(t),F=c&&fieldsOf(t,'pasture');if(!F)retu
   for(let j=0;j<Math.min(c.n,T.length*per);j++){const [tx,ty]=T[j%T.length],sd=t.seed+j*31,h=hash(tx,ty,sd),L=W0.seg[0]+h*(W0.seg[1]-W0.seg[0]),
     a0=critterArt(c.id,0,j),amp=Math.max(0,Math.min(W0.roam,(TILE-4-a0.w)>>1)),y0=ty*TILE+(j<T.length?TILE-3:TILE-8),
     nb=[[0,0],...[[1,0],[-1,0],[0,1],[0,-1]].filter(([a,b])=>T.some(q=>q[0]===tx+a&&q[1]===ty+b))],
-    at=k=>{const [ox,oy]=k&1?nb[Math.floor(hash(k,tx+ty,sd)*nb.length)]:[0,0];return[(tx+ox)*TILE+TILE/2+(hash(tx*7+k,ty,sd)*2-1)*amp,y0+oy*TILE+(hash(tx,ty*7+k,sd)*2-1)*W0.yAmp]},
+    at=k=>{const [ox,oy]=k&1?nb[Math.floor(hash(k,tx+ty,sd)*nb.length)]:[0,0];return[(tx+ox)*TILE+TILE/2+(hash(tx*7+k,ty,sd)*2-1)*amp,y0+oy*TILE+(j<T.length?-1:1)*hash(tx,ty*7+k,sd)*W0.yAmp]},// (the front row a little back, the back row a little forward: both clear of the fence)
     u=sec/L+h*7,k=Math.floor(u),A=at(k),B=at(k+1),Z=at(k-1),d=Math.hypot(B[0]-A[0],B[1]-A[1]),go=Math.min(d/W0.walk,L*.6),r=(u-k)*L-(L-go),
     f=r>0&&go>0?r/go:0,x=A[0]+(B[0]-A[0])*f,y=A[1]+(B[1]-A[1])*f,fr=f>0?1+Math.floor(f*d/W0.stride)%(PX.MAP_STEPS-1):0,
     dx=f>0?B[0]-A[0]:A[0]-Z[0];out.push({x,y,a:fr?critterArt(c.id,fr,j):a0,flip:dx<0,tx,ty})}
