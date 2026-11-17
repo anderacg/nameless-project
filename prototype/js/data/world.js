@@ -97,7 +97,7 @@ const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,h
    at 2 fine px a game px, its sole (the ball and toes: its middle along the foot, its half-length, its half-width) a little to its
    inner side (inner), its heel apart behind it, the same; turned to one of dirs ways, a left foot the right one mirrored; deep within
    deep of its middle. The way's prints (worldui.js wuiFoot) and the tracks men leave (stepPrint) both */
-const PRINT_FOOT={sole:[1.1,1.6,1.1],heel:[-1.7,.95,.8],inner:.3,deep:.55,dirs:16};
+const PRINT_FOOT={sole:[1.2,1.7,1.2],heel:[-1.7,.8,.7],inner:.3,deep:.55,dirs:16};// (its heel smaller than its sole, so at 8-9 px a print it points the way walked on the slant too)
 /* rocky ground round a cave's mouth (gfx/worldterrain.js caveRocks, caveShare; the owner, 2026-11-16: "add rocky area that blend the
    caves"): whole within r - feather game px of its mouth (up px above its site's middle), thinning to the land over feather, its edge
    warped warp px by noise and grained; flat (y times flat); bare rock in patches over rock of it (its noise), the ground stony past bare
