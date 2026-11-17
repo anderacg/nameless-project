@@ -262,7 +262,8 @@ function bridgeEnts(ents,cam){const r=sceneRes(),P0=WorldArt.plan;if(!P0)return;
 function bridgeOver(x,y,L){const P0=WorldArt.plan;if(!P0||!P0.ways||ON_DECK)return;const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH||!waterBand(ty*MW+tx))return;
   const r=sceneRes(),cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)};
   for(const b of P0.ways.bridges||[]){const q=b.pic;if(!q||b.picR!==r||x<q.x||x>q.x+q.cv.width/r||y<q.y||y>q.y1+4)continue;
-    const bx0=Math.max(q.x,x-10),bx1=Math.min(q.x+q.cv.width/r,x+10),by0=Math.max(q.y,y-L-30),by1=Math.min(q.y+q.cv.height/r,y-L+3);if(bx1<=bx0||by1<=by0)continue;
+    // (on whole px of the map, as everything drawn: his place is not, 2026-11-17)
+    const bx0=Math.max(q.x,Math.floor(x-10)),bx1=Math.min(q.x+q.cv.width/r,Math.ceil(x+10)),by0=Math.max(q.y,Math.floor(y-L-30)),by1=Math.min(q.y+q.cv.height/r,Math.ceil(y-L+3));if(bx1<=bx0||by1<=by0)continue;
     ctx.drawImage(q.cv,(bx0-q.x)*r,(by0-q.y)*r,(bx1-bx0)*r,(by1-by0)*r,bx0-cam.x,by0-cam.y,bx1-bx0,by1-by0)}}
 // (a river's surface between two of its points (levels, t 0-1 along): the lab's, stepped a whole step (WORLD_WAYS.river.step) at a
 //  time, a fall at each (the owner, 2026-11-15: "Look how the river and hill work in the lab": its surface runs flat, then drops a

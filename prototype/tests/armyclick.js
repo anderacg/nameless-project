@@ -7,7 +7,7 @@
 // MARCH_PICK.tap CSS px of slack; with the world's battles off, the old circle
 Kit.suite(({ok,info})=>{
  const t=T,P=t.P,G=t.G,W=t.W,TILE=t.TILE;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
- const home=Kit.goHome('Ashford');Kit.goTo(home.x+240,home.y+200);const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE);
+ const home=Kit.goHome('Ashford');Kit.goTo(...Kit.field(home));/* (open land clear of the holdings' lots: since the bay, 2026-11-17, Wardenhall's lie by the old spot) */const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE);
  for(let y=ty-25;y<=ty+25;y++)for(let x=tx-25;x<=tx+30;x++)if(t.WM.has(x,y)){const i=y*t.MW+x;t.WM.kind[i]=t.T_OPEN;t.WM.edge[i]=0;t.WM.elev[i]=64}
  W.sites=W.sites.filter(s=>Math.hypot(s.x-P.x,s.y-P.y)>400);t.reveal();
  // (you see some 110 px about you: the armies within it)
@@ -41,7 +41,8 @@ Kit.suite(({ok,info})=>{
  {const gaps=scan(around(A),(x,y)=>{const h=hit(A,x,y);return h&&h.kind==='outline'},2);
   const bad=gaps.filter(([x,y])=>t.pickAt(x,y)!==lord);
   ok(gaps.length>20&&!bad.length,'inside his outline, between his men (on none of them): picked, at '+gaps.length+' points ('+bad.length+' not)');
-  const out=scan(around(A,12),(x,y)=>!hit(A,x,y),2),wrong=out.filter(([x,y])=>t.pickAt(x,y)===lord);
+  // (off his small ring too, which answers as ever: his middle may stand by the edge of his men, 2026-11-17)
+  const out=scan(around(A,12),(x,y)=>!hit(A,x,y)&&!ring(lord,x,y),2),wrong=out.filter(([x,y])=>t.pickAt(x,y)===lord);
   const edge=out.filter(([x,y])=>hit(A,x,y,6));
   ok(out.length&&edge.length&&!wrong.length,'just outside his outline and his men (at '+edge.length+' points within 6 px of them): not picked ('+wrong.length+' were)')}
  // ---- hover: the same army a click picks, its tooltip his; the brackets round all his men
@@ -82,7 +83,7 @@ Kit.suite(({ok,info})=>{
   ok(mineN.length&&!mw.length&&his.length&&!hw.length,'a lord\'s outline over yours (off his small ring): your man nearer, ground ('+mineN.length+' points, '+mw.length+' the lord); his nearer, the lord ('+his.length+', '+hw.length+' not)');
   move(lord,x0-70-lord.x,y0-lord.y)}
  // ---- a phone's tap: a little slack round his men and his outline
- {const tol=t.MARCH_PICK.tap*t.VW/(cv.clientWidth||t.VW),near=scan(around(A,12),(x,y)=>!hit(A,x,y)&&hit(A,x,y,tol),2);
+ {const tol=t.MARCH_PICK.tap*t.VW/(cv.clientWidth||t.VW),near=scan(around(A,12),(x,y)=>!hit(A,x,y)&&!ring(lord,x,y)&&hit(A,x,y,tol),2);
   mouse('touch');const tap=near.filter(([x,y])=>t.pickAt(x,y)===lord);mouse('mouse');const click=near.filter(([x,y])=>t.pickAt(x,y)===lord);
   ok(near.length&&tap.length===near.length&&!click.length,'just off his men and outline ('+near.length+' points, within '+tol.toFixed(1)+' px): a tap picks him ('+tap.length+'), a click does not ('+click.length+')');
   const [qx,qy]=near[near.length>>1];press(qx,qy,'touch');ok(ringOn()===lord,'tapped with a finger there: his ring opens');mouse('mouse')}
@@ -103,7 +104,9 @@ Kit.suite(({ok,info})=>{
   t.MARCH_RING.on=false;try{ok(t.pickAt(lord.x,lord.y-4)===lord&&t.pickAt(fx,fy)===lord,'the outline off (its circles): his circle and his men')}finally{t.MARCH_RING.on=true}}
  // ---- an army on a holding's lot: the building's picture over his outline, as ever
  {const h=t.townBy('Ashford');Kit.goTo(h.x,h.y+24);const c=l=>[(l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE];
-  const l=(h.lots||[]).filter(l=>l.st!=='ruined'&&l.k!=='field'&&l.k!=='pasture'&&Math.hypot(c(l)[0]-P.x,c(l)[1]-P.y)<80).sort((p,q)=>q.n-p.n)[0];
+  // (the biggest in sight of the gate; none there (the bay's Ashford, 2026-11-17), the nearest, you by it)
+  const ls=(h.lots||[]).filter(l=>l.st!=='ruined'&&l.k!=='field'&&l.k!=='pasture'),far=l=>Math.hypot(c(l)[0]-P.x,c(l)[1]-P.y);
+  const l=ls.filter(l=>far(l)<80).sort((p,q)=>q.n-p.n)[0]||ls.sort((p,q)=>far(p)-far(q))[0];if(l&&far(l)>=80)Kit.goTo(c(l)[0],c(l)[1]+24);
   if(!l)info('no lot of Ashford in sight');else{move(lord,c(l)[0]-lord.x,c(l)[1]-lord.y);const lb=[l.x*TILE,l.y*TILE,(l.x+l.n)*TILE-1,(l.y+l.n)*TILE-1];
    // (where the building's picture is drawn: a lot is picked by its picture's own px, its clear ground by what stands there: structures.js lotPicHit)
    const pts=scan(lb,(x,y)=>{const q=hit(A,x,y);return q&&q.kind==='outline'&&!ring(lord,x,y)&&t.lotPicHit(h,l,x,y)},2),won=pts.filter(([x,y])=>{const o=t.pickAt(x,y);return o===lord||!o});
