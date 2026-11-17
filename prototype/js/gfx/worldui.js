@@ -25,7 +25,7 @@
    the arrows and chevrons of the battle are (ui/orderpaths.js). Real time. Under reducedMotion all holds still: no ripple or
    puff, the arrow and brackets standing, the dots not marching ---------- */
 const WUI_K={swords:11,ripple:.42,drop:.3,land:.13,bob:1.3,poof:.42,ping:1.2,breathe:1.4,march:10,draw:.35,ease:20,repick:120,steps:8000,stride:2,off:8,rebuild:250,
-  col:{foe:'#ff5a48',friend:'#76d86a',neutral:'#ece6d4',comp:'#e8b94a',hold:'#e8b94a',ground:'#f2ecd8',gold:'#e8b94a',enc:'#4aa0f0'},dark:'#140e08'};
+  col:{foe:'#ff5a48',friend:'#76d86a',neutral:'#d6c69a',comp:'#e8b94a',hold:'#e8b94a',ground:'#f2ecd8',gold:'#e8b94a',enc:'#4aa0f0'},dark:'#140e08'};
 // (its state: the effects playing (ripples, puffs), the goal you walk to and when it was set, what you chase or follow (f), the
 // way there, its prints this frame (dots: screen x, y, alpha each; feet: the way each points (wuiFoot's d), 1 a left print), the
 // brackets (b: where they stand now, world px; to: where they go) and what the pointer was last picked on)
@@ -40,10 +40,13 @@ function wuiKind(o){const k=objKind(o);if(!k)return 'ground';
 /* ---- pictures, made once each ---- */
 const WUIP=new Map(),wuiMix=(h,t)=>'#'+[1,3,5].map(i=>{const v=parseInt(h.slice(i,i+2),16);return Math.round(t>0?v+(255-v)*t:v*(1+t)).toString(16).padStart(2,'0')}).join('');
 // a ring on the ground: an ellipse rx by ry, a pixel wide, its shadow a pixel under it; (cx, cy) its middle in the picture
-function wuiRing(rx,ry,col){const k='r'+rx+','+ry+col;let c=WUIP.get(k);if(c)return c;const pts=new Set(),n=Math.max(24,10*rx);
-  for(let i=0;i<n;i++){const a=i/n*6.2832;pts.add((Math.round(rx+1+Math.cos(a)*rx))+','+(Math.round(ry+1+Math.sin(a)*ry)))}
-  c=mkc(2*rx+3,2*ry+4,g=>{const P2=[...pts].map(p=>p.split(',').map(Number));g.globalAlpha=.7;for(const [x,y] of P2)rect(g,WUI_K.dark,x,y+1);g.globalAlpha=1;for(const [x,y] of P2)rect(g,col,x,y)});
-  c.cx=rx+1;c.cy=ry+1;WUIP.set(k,c);return c}
+const wuiZ=()=>Math.max(1,Math.round(typeof sceneRes==='function'?sceneRes():1));// (fine px a game px the scene is drawn at)
+function wuiRing(rx,ry,col){const z=wuiZ(),k='r'+rx+','+ry+col+z;let c=WUIP.get(k);if(c)return c;const pts=new Set(),n=Math.max(48,20*rx*z);
+  // (by the fine px, as the land and the men are (WORLD_VIEW.fine px a game px; wuiPut draws it back to its size): a line one fine px
+  //  wide, its shade a fine px under it; the owner, 2026-11-17: the ring blocky and white); z: wuiZ)
+  for(let i=0;i<n;i++){const a=i/n*6.2832;pts.add((Math.round((rx+1)*z+Math.cos(a)*rx*z))+','+(Math.round((ry+1)*z+Math.sin(a)*ry*z)))}
+  c=mkc((2*rx+3)*z,(2*ry+4)*z,g=>{const P2=[...pts].map(p=>p.split(',').map(Number));g.globalAlpha=.7;for(const [x,y] of P2)rect(g,WUI_K.dark,x,y+1);g.globalAlpha=1;for(const [x,y] of P2)rect(g,col,x,y)});
+  c.cx=rx+1;c.cy=ry+1;c.k=1/z;WUIP.set(k,c);return c}
 // the arrow, pointing down, outlined dark, lit on its upper left: standing, falling (drawn out), landing (squashed). tip: the
 // row of its point in the picture, cx its middle
 const WUI_ARROW={stand:['..###..','..###..','..###..','#######','.#####.','..###..','...#...'],fall:['.###.','.###.','.###.','.###.','.###.','#####','.###.','..#..'],squash:['..#####..','..#####..','#########','.#######.','...###...']};
@@ -59,7 +62,7 @@ function wuiSwords(){let c=WUIP.get('x');if(c&&(c.uiIcon||!uiIconReady('attack')
     for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(at(x,y))rect(g,I.p[M[y][x]],x+1,y+1)});
   c.cx=(w+2)>>1;c.tip=h;WUIP.set('x',c);return c}
 // (a picture with its point (px, py) at the screen's (x, y))
-const wuiPut=(c,x,y,px,py)=>ctx.drawImage(c,x-px,y-py);
+const wuiPut=(c,x,y,px,py)=>c.k?ctx.drawImage(c,x-px,y-py,c.width*c.k,c.height*c.k):ctx.drawImage(c,x-px,y-py);// (k: a picture by the fine px, drawn back to its size)
 /* a footprint of the way (the owner, 2026-10-23: small footprints for its dots, in their gold, at their spacing), drawn by hand
    as pixels: a right foot pointing north (N) and north-east (NE), its ball (the big toe on its inner side) and its heel apart; the
    other ways turned from them by quarter turns, a left one mirrored along its length. d: one of WUI_FOOT.dirs (8) ways, 0 east,
@@ -69,8 +72,9 @@ const wuiPut=(c,x,y,px,py)=>ctx.drawImage(c,x-px,y-py);
 // (shorter, 2026-11-05, the owner: "make footprint a bit shorter, currently look like a line": 4 px long, 10 apart, was 6 and 8;
 // closer and shorter, 2026-11-12, the owner: "make a step guide path a bit more closer for each foot", "make the footprints track a
 // bit short right now it's like a long dash": 7 apart, 3 px long (its ball, a gap, its heel), were 10 and 4)
-const WUI_FOOT={gap:7,side:2,look:4,dirs:8,edge:.55,N:['##','..','.#'],NE:['.##','...','#..']};
-function wuiFoot(d,left,col){const key='f'+d+(left?'l':'r')+col;let c=WUIP.get(key);if(c)return c;const F=WUI_FOOT,o=d%2,B=o?F.NE:F.N,bw=B[0].length,bh=B.length;let p=[];
+// (by the fine px since 2026-11-17 (the owner: the prints blocky and white): a sole and its heel, as long as before (3.5 game px))
+const WUI_FOOT={gap:7,side:2,look:4,dirs:8,edge:.55,N:['.##.','####','####','.##.','....','.##.','.##.'],NE:['...###','..####','..###.','......','.##...','##....']};
+function wuiFoot(d,left,col){const key='f'+d+(left?'l':'r')+col+wuiZ();let c=WUIP.get(key);if(c)return c;const F=WUI_FOOT,o=d%2,B=o?F.NE:F.N,bw=B[0].length,bh=B.length;let p=[];
   B.forEach((r,y)=>{for(let x=0;x<bw;x++)if(r[x]==='#')p.push([x-(bw-1)/2,y-(bh-1)/2])});
   if(left)p=p.map(([x,y])=>o?[-y,-x]:[-x,y]);for(let k=((d-6-o)/2%4+4)%4;k>0;k--)p=p.map(([x,y])=>[-y,x]);
   const x0=Math.min(...p.map(q=>q[0])),y0=Math.min(...p.map(q=>q[1])),W=Math.round(Math.max(...p.map(q=>q[0]))-x0)+1,H=Math.round(Math.max(...p.map(q=>q[1]))-y0)+1,M=new Uint8Array(W*H),at=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&M[y*W+x];
@@ -78,7 +82,7 @@ function wuiFoot(d,left,col){const key='f'+d+(left?'l':'r')+col;let c=WUIP.get(k
   const ux=Math.cos(d/F.dirs*6.2832),uy=Math.sin(d/F.dirs*6.2832);let tip=-1,tu=-1e9;for(let i=0;i<W*H;i++)if(M[i]){const u=(i%W)*ux+((i/W)|0)*uy;if(u>tu+1e-6){tu=u;tip=i}}
   c=mkc(W+2,H+2,g=>{g.globalAlpha=F.edge;for(let y=-1;y<=H;y++)for(let x=-1;x<=W;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))rect(g,WUI_K.dark,x+1,y+1);
     g.globalAlpha=1;for(let i=0;i<W*H;i++)if(M[i])rect(g,i===tip?wuiMix(col,.6):col,i%W+1,((i/W)|0)+1)});
-  c.cx=Math.round(-x0)+1;c.cy=Math.round(-y0)+1;WUIP.set(key,c);return c}
+  const z=wuiZ();c.cx=(Math.round(-x0)+1)/z;c.cy=(Math.round(-y0)+1)/z;c.k=1/z;WUIP.set(key,c);return c}
 /* ---- a click: the ripple, the arrow's drop (input.js worldGo, after the click has done what it does) ---- */
 function wuiClick(wx,wy){if(G.mode!=='world')return;const now=performance.now(),o=G.chase&&objKind(G.chase)?G.chase:null;if(!o&&P.tx==null)return;
   if(o&&WUI.tgt&&WUI.tgt.o===o)WUI.tgt.t=now;else if(!o&&WUI.dest)WUI.dest.t=now;WUI.way=null;
