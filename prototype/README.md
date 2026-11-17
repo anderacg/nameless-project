@@ -365,6 +365,7 @@ Before removing a global, check both HTML entry points, registered action callba
 - The ground blended, not cut (`worldterrain.js`): meadow shading into grass (`WORLD_TERRAIN.meadow`, `meadowShare`), climates by a B-spline of the tiles round (`climShares`), yards and trampled patches blurred and feathered in (`over.blur`, `feather`), the grass's clumps thinned over lots (`over.warp`), the grounds' blend reading the mix (`MWA`, `NT`).
 - Bridges on the slant where a river runs on one (`WORLD_WAYS.bridge.diag`), men drawn along and on their decks (`bridgeShift`, `ON_DECK`); a stone deck's edge dressed stone (no timber beam), a pier at each end of its span.
 - Buildings and sites at their own size (`WORLD_VIEW.house`); a fight on the map on the world's clock and pace (battle.js, `WORLD_BATTLE.walk`); less rain (data/weather.js); loot's glow dimmer, its outline through what hides it (`LOOT_GLOW.outline`, depth.js `ghostOver`).
+- Footprints shaped as feet, pointing the way walked: the tracks on snow, sand and mud and the way's prints (`worldterrain.js` `footMask`, `PRINT_FOOT`; worldui.js `wuiFoot`).
 - Camps' fires in the open before their tents, their pits smaller (engine/buildmodels.js `camp`, `hideout`, `travelers`).
 - A site's ring at the foot of its picture as drawn, its click and hover box its opaque px (`structures.js` `sitePicBox`, worldui.js `wuiTargetAt`).
 - The way's rings and footprints by the fine px, the neutral mark a warm parchment, not white (worldui.js `wuiRing`, `wuiFoot`, `WUI_K.col.neutral`).

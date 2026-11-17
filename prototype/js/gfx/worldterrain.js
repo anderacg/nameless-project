@@ -419,13 +419,20 @@ function grassOver(x,y,hw){const r=typeof sceneRes==='function'?sceneRes():1,T=T
 // way, where the ground takes one (printGround: snow, sand, the marsh, wet ground by the water), fading over fade s; kept in a ring
 // (fine px x, y lifted with the land, the time, the ground, the side), drawn under the grass (terrainEnts)
 const FOOTPRINTS={buf:null,n:0,at:0,walk:new WeakMap()};
+// (a footprint's px pointing way d of PRINT_FOOT.dirs (0 east, on clockwise), a left or right foot, at z fine px a game px (its sizes
+// z/2 times PRINT_FOOT's): [x, y, deep (1 within its deep middle, else 0), along (px toward its toe)] about its middle, kept)
+const FOOT_MASK=new Map();
+function footMask(d,left,z=2){const F=PRINT_FOOT,key=d+(left?'l':'r')+z;let m=FOOT_MASK.get(key);if(m)return m;m=[];const a=d/F.dirs*6.2832,ux=Math.cos(a),uy=Math.sin(a),k=z/2,vc=(left?1:-1)*F.inner*k;
+  const S=F.sole.map(v=>v*k),H=F.heel.map(v=>v*k),R=Math.ceil(3*k)+1;
+  for(let y=-R;y<=R;y++)for(let x=-R;x<=R;x++){const u=x*ux+y*uy,v=y*ux-x*uy,qs=((u-S[0])/S[1])**2+((v-vc)/S[2])**2,qh=((u-H[0])/H[1])**2+(v/H[2])**2,q=Math.min(qs,qh);if(q<=1)m.push([x,y,q<=F.deep*F.deep?1:0,u])}
+  FOOT_MASK.set(key,m);return m}
 function printGround(x,y){const t=terrAt(x,y);if(t===T_WATER||t===T_FORD||t===T_ROAD||t===T_MOUNT||RoadBand.on(x,y))return -1;const c=CLIMS[terClimate(Math.floor(x),Math.floor(y))],K=WORLD_TERRAIN.prints.kinds;
   if(c==='frost'||(WM.lv&&WM.lv[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]>=SLOPE.snow))return K.snow;if(c==='desert')return K.sand;if(c==='swamp')return K.marsh;
   const b=WORLD_TERRAIN.prints.bank;return drawnWet(x+b,y)||drawnWet(x-b,y)||drawnWet(x,y+b)||drawnWet(x,y-b)?K.wet:-1}
 function stepPrint(u){const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,r=typeof sceneRes==='function'?sceneRes():1;if(r<=1)return;let w=F.walk.get(u);if(!w){F.walk.set(u,{x:u.x,y:u.y,d:0,side:1});return}
   const dx=u.x-w.x,dy=u.y-w.y,l=Math.hypot(dx,dy);w.x=u.x;w.y=u.y;if(!l||l>PR.step*4)return;w.d+=l;if(w.d<PR.step)return;w.d=0;w.side=-w.side;
-  const px=u.x-dy/l*w.side*PR.side,py=u.y+dx/l*w.side*PR.side,g=printGround(px,py);if(g<0)return;
-  if(!F.buf)F.buf=new Float32Array(PR.max*5);const o=F.at*5,B=F.buf;B[o]=px*r;B[o+1]=(py-liftAt(px,py))*r;B[o+2]=performance.now();B[o+3]=g;B[o+4]=w.side;F.at=(F.at+1)%PR.max;F.n=Math.min(PR.max,F.n+1)}
+  const px=u.x-dy/l*w.side*PR.side,py=u.y+dx/l*w.side*PR.side,g=printGround(px,py);if(g<0)return;const D=PRINT_FOOT.dirs,d=((Math.round(Math.atan2(dy,dx)/6.2832*D))%D+D)%D;
+  if(!F.buf)F.buf=new Float32Array(PR.max*6);const o=F.at*6,B=F.buf;B[o]=px*r;B[o+1]=(py-liftAt(px,py))*r;B[o+2]=performance.now();B[o+3]=g;B[o+4]=w.side;B[o+5]=d;F.at=(F.at+1)%PR.max;F.n=Math.min(PR.max,F.n+1)}
 // (the blend's scratch, kept between chunks)
 let TER_BLUR=null;
 const terBlurBuf=n=>TER_BLUR&&TER_BLUR.length>=n?TER_BLUR:(TER_BLUR=new Float32Array(n));
@@ -461,8 +468,10 @@ function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)r
     if(!TGRASS.buf||TGRASS.buf.width!==BW||TGRASS.buf.height!==BH){TGRASS.buf=new ImageData(BW,BH);TGRASS.buf.u=new Uint32Array(TGRASS.buf.data.buffer);TGRASS.cv=mkcv(BW,BH)}
     const U=TGRASS.buf.u;U.fill(0);let any=false;
     // (footprints, the lab's, fading: under the grass)
-  {const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,nw=now,B=F.buf;for(let k=0;k<F.n;k++){const o=k*5,a=1-(nw-B[o+2])/1000/PR.fade;if(a<=0)continue;const x=Math.round(B[o]-cam.x*r),y=Math.round(B[o+1]-cam.y*r);
-      if(x<0||y<0||x>=BW-1||y>=BH-1)continue;const c=PR.col[B[o+3]],v=(Math.round(204*a)<<24|c[2]<<16|c[1]<<8|c[0])>>>0;U[y*BW+x]=v;U[y*BW+x+1]=v;U[(y+1)*BW+x+(B[o+4]>0?1:0)]=v;any=true}}
+  //  each a foot's shape pointing his way (footMask), deeper in its middle
+  {const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,nw=now,B=F.buf;for(let k=0;k<F.n;k++){const o=k*6,a=1-(nw-B[o+2])/1000/PR.fade;if(a<=0)continue;const x=Math.round(B[o]-cam.x*r),y=Math.round(B[o+1]-cam.y*r);
+      if(x<4||y<4||x>=BW-4||y>=BH-4)continue;const c=PR.col[B[o+3]],c0=c[2]<<16|c[1]<<8|c[0],A1=Math.round(204*a),A0=Math.round(204*a*PR.rim);
+      for(const q of footMask(B[o+5],B[o+4]<0,r)){const i=(y+q[1])*BW+x+q[0],v=((q[2]?A1:A0)<<24|c0)>>>0;if((U[i]>>>24)<(v>>>24))U[i]=v}any=true}}
   // (the water moving, the lab's: foam riding the shore, the river's current in streaks running down it (a lit crest, a darker trough
     //  behind it, each px of a streak sharing its phase with those beside it, so they run as lines, not dots), white down a fall)
     {const ts=now/1000,FO=0xd8f6f4ec,SP=0x5cf2ece0,SL=0x30eee4d4,WF=0x99fffcfa,RW=WORLD_WAYS.river.flow;

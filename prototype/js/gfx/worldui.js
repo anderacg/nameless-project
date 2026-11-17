@@ -63,26 +63,25 @@ function wuiSwords(){let c=WUIP.get('x');if(c&&(c.uiIcon||!uiIconReady('attack')
   c.cx=(w+2)>>1;c.tip=h;WUIP.set('x',c);return c}
 // (a picture with its point (px, py) at the screen's (x, y))
 const wuiPut=(c,x,y,px,py)=>c.k?ctx.drawImage(c,x-px,y-py,c.width*c.k,c.height*c.k):ctx.drawImage(c,x-px,y-py);// (k: a picture by the fine px, drawn back to its size)
-/* a footprint of the way (the owner, 2026-10-23: small footprints for its dots, in their gold, at their spacing), drawn by hand
-   as pixels: a right foot pointing north (N) and north-east (NE), its ball (the big toe on its inner side) and its heel apart; the
-   other ways turned from them by quarter turns, a left one mirrored along its length. d: one of WUI_FOOT.dirs (8) ways, 0 east,
+/* a footprint of the way (the owner, 2026-10-23: small footprints for its dots, in their gold, at their spacing): a foot's shape
+   (worldterrain.js footMask: its sole, the ball a little to its inner side, and its heel apart), a left one mirrored along its
+   length. d: one of WUI_FOOT.dirs (16) ways, 0 east,
    on clockwise; a pixel edge round it in the dark at WUI_FOOT.edge, its toe's tip lit. gap: px from one print to the next along
    the way (a left, then a right); side: px each sits off the way's middle; look: px before and after it the way's heading is read
    over. Its middle at (cx, cy) in the picture */
 // (shorter, 2026-11-05, the owner: "make footprint a bit shorter, currently look like a line": 4 px long, 10 apart, was 6 and 8;
 // closer and shorter, 2026-11-12, the owner: "make a step guide path a bit more closer for each foot", "make the footprints track a
 // bit short right now it's like a long dash": 7 apart, 3 px long (its ball, a gap, its heel), were 10 and 4)
-// (by the fine px since 2026-11-17 (the owner: the prints blocky and white): a sole and its heel, as long as before (3.5 game px))
-const WUI_FOOT={gap:7,side:2,look:4,dirs:8,edge:.55,N:['.##.','####','####','.##.','....','.##.','.##.'],NE:['...###','..####','..###.','......','.##...','##....']};
-function wuiFoot(d,left,col){const key='f'+d+(left?'l':'r')+col+wuiZ();let c=WUIP.get(key);if(c)return c;const F=WUI_FOOT,o=d%2,B=o?F.NE:F.N,bw=B[0].length,bh=B.length;let p=[];
-  B.forEach((r,y)=>{for(let x=0;x<bw;x++)if(r[x]==='#')p.push([x-(bw-1)/2,y-(bh-1)/2])});
-  if(left)p=p.map(([x,y])=>o?[-y,-x]:[-x,y]);for(let k=((d-6-o)/2%4+4)%4;k>0;k--)p=p.map(([x,y])=>[-y,x]);
-  const x0=Math.min(...p.map(q=>q[0])),y0=Math.min(...p.map(q=>q[1])),W=Math.round(Math.max(...p.map(q=>q[0]))-x0)+1,H=Math.round(Math.max(...p.map(q=>q[1]))-y0)+1,M=new Uint8Array(W*H),at=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&M[y*W+x];
-  for(const [x,y] of p)M[Math.round(y-y0)*W+Math.round(x-x0)]=1;
-  const ux=Math.cos(d/F.dirs*6.2832),uy=Math.sin(d/F.dirs*6.2832);let tip=-1,tu=-1e9;for(let i=0;i<W*H;i++)if(M[i]){const u=(i%W)*ux+((i/W)|0)*uy;if(u>tu+1e-6){tu=u;tip=i}}
+// (by the fine px since 2026-11-17 (the owner: the prints blocky and white; then "not realistic"): a foot's shape (PRINT_FOOT, as the
+// tracks men leave), pointing one of dirs ways, its feet side px either side of the way (a walker's gauge, not two trails))
+const WUI_FOOT={gap:7,side:1.1,look:4,dirs:16,edge:.55};
+function wuiFoot(d,left,col){const z=wuiZ(),key='f'+d+(left?'l':'r')+col+z;let c=WUIP.get(key);if(c)return c;const M=footMask(d,left,Math.max(2,z)),F=WUI_FOOT,s=Math.max(2,z)/z;
+  // (a foot's shape (worldterrain.js footMask, as the tracks men leave): its rim in the dark at F.edge, its toe's px lit)
+  const x0=Math.min(...M.map(q=>q[0])),y0=Math.min(...M.map(q=>q[1])),W=Math.max(...M.map(q=>q[0]))-x0+1,H=Math.max(...M.map(q=>q[1]))-y0+1,A=new Uint8Array(W*H),at=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&A[y*W+x];
+  let tu=-1e9;for(const q of M){A[(q[1]-y0)*W+q[0]-x0]=1;tu=Math.max(tu,q[3])}
   c=mkc(W+2,H+2,g=>{g.globalAlpha=F.edge;for(let y=-1;y<=H;y++)for(let x=-1;x<=W;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))rect(g,WUI_K.dark,x+1,y+1);
-    g.globalAlpha=1;for(let i=0;i<W*H;i++)if(M[i])rect(g,i===tip?wuiMix(col,.6):col,i%W+1,((i/W)|0)+1)});
-  const z=wuiZ();c.cx=(Math.round(-x0)+1)/z;c.cy=(Math.round(-y0)+1)/z;c.k=1/z;WUIP.set(key,c);return c}
+    g.globalAlpha=1;for(const q of M)rect(g,q[3]>tu-1.2?wuiMix(col,.6):col,q[0]-x0+1,q[1]-y0+1)});
+  c.cx=(1-x0)/z/s;c.cy=(1-y0)/z/s;c.k=1/z/s;WUIP.set(key,c);return c}
 /* ---- a click: the ripple, the arrow's drop (input.js worldGo, after the click has done what it does) ---- */
 function wuiClick(wx,wy){if(G.mode!=='world')return;const now=performance.now(),o=G.chase&&objKind(G.chase)?G.chase:null;if(!o&&P.tx==null)return;
   if(o&&WUI.tgt&&WUI.tgt.o===o)WUI.tgt.t=now;else if(!o&&WUI.dest)WUI.dest.t=now;WUI.way=null;

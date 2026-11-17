@@ -90,14 +90,20 @@ const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,h
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,fade:36,biome:{mix:[.1,.3,.35,.22],patch:[.72,.56,.58,.6]},track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3,wall:5},
   bridge:{clear:1.4,ramp:28,over:6,abut:4,open:3,brook:{span:3,clear:.6,apart:24,ford:1.6},pile:12,arch:26,rail:5,post:8,shade:3,shadow:96,
     flag:{w:6,h:4,mortar:.86,kerb:2,vary:.14},cut:{out:5,half:3},reach:16,slope:.4,diag:.45}};
-// (prints: footprints, the lab's: one every step px a man walks, side px off his way, fading over fade s, max kept; on snow, sand, the
-// marsh, and ground within bank px of drawn water, in their colours: worldterrain.js stepPrint)
+// (prints: footprints, the lab's: one every step px a man walks (a foot's stride: left, then right), side px off his way, fading over
+// fade s, max kept; on snow, sand, the marsh, and ground within bank px of drawn water, in their colours, a print's rim rim of its
+// strength: worldterrain.js stepPrint; each a foot's shape (PRINT_FOOT), pointing the way he walks)
+/* a footprint's shape (worldterrain.js footMask; the owner, 2026-11-17: "Tracks footprints is in the wrong position and not realistic"):
+   at 2 fine px a game px, its sole (the ball and toes: its middle along the foot, its half-length, its half-width) a little to its
+   inner side (inner), its heel apart behind it, the same; turned to one of dirs ways, a left foot the right one mirrored; deep within
+   deep of its middle. The way's prints (worldui.js wuiFoot) and the tracks men leave (stepPrint) both */
+const PRINT_FOOT={sole:[1.1,1.6,1.1],heel:[-1.7,.95,.8],inner:.3,deep:.55,dirs:16};
 /* rocky ground round a cave's mouth (gfx/worldterrain.js caveRocks, caveShare; the owner, 2026-11-16: "add rocky area that blend the
    caves"): whole within r - feather game px of its mouth (up px above its site's middle), thinning to the land over feather, its edge
    warped warp px by noise and grained; flat (y times flat); bare rock in patches over rock of it (its noise), the ground stony past bare
    (pebbles, no grass clumps, no trees); boulders and stones as props by their chance at its full share */
 const CAVE_ROCK={r:30,feather:16,warp:11,grain:3,up:6,flat:1.3,rock:.55,bare:.55,boulder:.05,stone:.12};
-const WORLD_TERRAIN={prints:{step:2,side:.75,fade:18,max:1500,bank:6,kinds:{snow:0,sand:1,marsh:2,wet:3},col:[[110,130,170],[150,112,66],[44,38,24],[96,78,52]]},climWarp:14,climPick:{sc:7,k:2.2,grain:.3},snowPatch:{lo:.5,hi:.63,grain:.06,shade:9,tufts:.85},over:{keep:.25,grain:.08,feather:4,blur:3,warp:10},meadow:{at:.62,band:.06,quick:.3,grain:.025},shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12,ice:16},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9,wide:1.2},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
+const WORLD_TERRAIN={prints:{step:2.6,side:.8,rim:.5,fade:18,max:1500,bank:6,kinds:{snow:0,sand:1,marsh:2,wet:3},col:[[110,130,170],[150,112,66],[44,38,24],[96,78,52]]},climWarp:14,climPick:{sc:7,k:2.2,grain:.3},snowPatch:{lo:.5,hi:.63,grain:.06,shade:9,tufts:.85},over:{keep:.25,grain:.08,feather:4,blur:3,warp:10},meadow:{at:.62,band:.06,quick:.3,grain:.025},shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12,ice:16},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9,wide:1.2},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
   decor:{flower:[[236,220,90],[236,240,246],[200,150,210],[240,160,120]],marram:[[214,204,150],[180,172,116]],drift:[[160,138,108],[196,178,146]],shell:[238,230,216],litter:[[110,92,50],[96,80,44],[128,104,58]]},bank:5,depth:.32,clear:.9,shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
