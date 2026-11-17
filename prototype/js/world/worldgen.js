@@ -338,9 +338,43 @@ function labCoast(s,W,H,R){const T=LAB_GEN.land,S=W*T.sc,SW=W*.16,AW=W*T.warp,sw
     let v=gfbm(wx/S,wy/S,sb,5)+(gfbm(wx/(S*.3),wy/(S*.3),sr,3)-.5)*(rag?.6:.35);
     const ex=2*(x+(wx-x)*.4)/W-1,ey=2*(y+(wy-y)*.4)/H-1;v-=sstep((Math.sqrt(ex*ex*.8+ey*ey*.8+ex*ex*ey*ey*.6)-.45)/.65)*1.1+(1-sstep(Math.min(x,W-1-x,y,H-1-y)/(W*T.frame)))*.6;
     for(const b of dips)v-=b.d*sstep(1-genReach(wx,wy,b.x,b.y,b.r,b.s));return v}}}
+
+/* (the classic land (GEN_HINT_LAND): each sea hint's bay, a ragged one at the heart of its ports (their middle), as wide as the
+   holdings round it leave room for, open to the frame on its side by a strait aimed between the holdings (of 9 ways within 60° of
+   side, the one passing farthest from any), and an inlet from beside each port to the bay; then land round each holding's anchor,
+   that high at least whatever the frame's falloff (a port's only close round it, so it stands on the shore), and a neck of land
+   neck tiles wide toward its realm's heart; Willowmere's isle
+   (willowIsle) ringed by a narrow lake) */
+const GEN_HINT_LAND={land:.3,r:13,port:3,neck:6,bay:{port:.8,room:16,deep:1.2},strait:.6,inlet:[2.5,4.5]};
+function genLandHints(g,V,R){
+  const m=g.map,W=m.w,H=m.h,A=classicAnchors(),T=GEN_HINT_LAND,sa=genSalt(R);
+  const add=(cx,cy,r,f)=>{for(let y=Math.max(0,cy-r*1.5|0);y<Math.min(H,cy+r*1.5+1);y++)for(let x=Math.max(0,cx-r*1.5|0);x<Math.min(W,cx+r*1.5+1);x++){const d=genReach(x,y,cx,cy,r,sa);if(d<1.4)f(y*W+x,d,x,y)}};
+  const cut=(x,y)=>{const ox=(gfbm(x/9,y/9,sa+3,2)-.5)*8,oy=(gfbm(x/9,y/9,sa+5,2)-.5)*8;return[x+ox,y+oy]},ports=new Set(genHints(g,'sea').flatMap(h=>h.ports));
+  for(const h of genHints(g,'sea')){const P=h.ports.map(p=>A.find(o=>o.name===p)).filter(Boolean);if(!P.length)continue;
+    const cx=P.reduce((a,p)=>a+p.tx,0)/P.length,cy=P.reduce((a,p)=>a+p.ty,0)/P.length,far=a=>genLen([a.tx,a.ty],[cx,cy]);
+    const r=Math.min(...P.map(far))*T.bay.port,room=Math.min(...A.filter(a=>!ports.has(a.name)).map(far))-T.bay.room,br=Math.max(6,Math.min(r,room));
+    const sx=h.side==='e'?1:h.side==='w'?-1:0,sy=h.side==='s'?1:h.side==='n'?-1:0;let S=null,best=-1;
+    for(let k=-1.6;k<=1.61;k+=.4){const ux=sx-sy*k,uy=sy+sx*k,l=Math.sqrt(ux*ux+uy*uy),L=[[cx,cy],[cx+ux/l*W*2,cy+uy/l*W*2]],d=Math.min(...A.map(a=>genSeg(a.tx,a.ty,L)[0]));if(d>best){best=d;S=L}}
+    const sw=Math.min(br,best*.8)*T.strait;
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const [u,v]=cut(x,y),[d]=genSeg(u,v,S),a=Math.max(sstep(1.1-genReach(x,y,cx,cy,br,sa+1)),sstep((sw-d)/(sw*.5)));if(a)V[y*W+x]-=T.bay.deep*a}
+    // (each port's inlet, from beside it (its widest half width and a tile off) to the bay's heart)
+    const [w0,w1]=T.inlet;for(const p of P){const l=far(p);if(l<1)continue;const o=(w1+1)/l,L=[[p.tx+(cx-p.tx)*o,p.ty+(cy-p.ty)*o],[cx,cy]];
+      const e=w1+12,x0=Math.max(0,Math.min(L[0][0],cx)-e|0),x1=Math.min(W-1,Math.max(L[0][0],cx)+e),y0=Math.max(0,Math.min(L[0][1],cy)-e|0),y1=Math.min(H-1,Math.max(L[0][1],cy)+e);
+      for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const [u,v]=cut(x,y),[d]=genSeg(u,v,L),w=w0+gfbm(x/14,y/14,sa+7,2)*(w1-w0);if(d<w+2)V[y*W+x]-=T.bay.deep*sstep((w+2-d)/2)}}}
+  // (the anchors' land, and a neck of land from each but a port toward its realm's heart (its holdings' middle), so none stands on an isle)
+  const C={};A.forEach((a,k)=>{const c=C[CLASSIC_PLACES[k].realm]||(C[CLASSIC_PLACES[k].realm]={x:0,y:0,n:0});c.x+=a.tx;c.y+=a.ty;c.n++});
+  A.forEach((a,k)=>{const c=C[CLASSIC_PLACES[k].realm],L=ports.has(a.name)?[]:[[a.tx,a.ty],[c.x/c.n,c.y/c.n]],x0=Math.max(0,Math.min(a.tx,c.x/c.n)-T.neck*2|0),x1=Math.min(W-1,Math.max(a.tx,c.x/c.n)+T.neck*2),
+    y0=Math.max(0,Math.min(a.ty,c.y/c.n)-T.neck*2|0),y1=Math.min(H-1,Math.max(a.ty,c.y/c.n)+T.neck*2);
+    if(L.length)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const [u,v]=cut(x,y),[d]=genSeg(u,v,L);if(d<T.neck)V[y*W+x]=Math.max(V[y*W+x],T.land*sstep((T.neck-d)/3))}
+    add(a.tx,a.ty,ports.has(a.name)?T.port:T.r,(i,d)=>{V[i]=Math.max(V[i],T.land*sstep(1.15-d))})});
+  for(const h of genHints(g,'island'))for(const [cx,cy] of h.pts)add(cx,cy,11,(i,d,x,y)=>{const r=Math.sqrt((x-cx)*(x-cx)+(y-cy)*(y-cy))*(.7+.6*gfbm(x/7,y/7,sa+11,3));
+    // (the isle's ring well under the sea's cut (-2: the lab's land field runs deeper than the old one's, where -.3 was enough))
+    V[i]=r<6?Math.max(V[i],.3):r<8.2?Math.min(V[i],-2):Math.max(V[i],.2)});
+}
 function* genLand(g){
   const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,F=m.feat,T=LAB_GEN.land,R=g.rng('land',g.attempt),LF=labCoast(g.s,W,H,R),want=LF.want,V=new Float32Array(N);
   for(let y=0;y<H;y++){for(let x=0;x<W;x++)V[y*W+x]=LF.at(x,y);if(g.tick())yield y/H*.6}
+  if(g.hints)genLandHints(g,V,R);// (classic: the League's bay, land round the anchors, Willowmere's isle; lost at a250c0a, put back 2026-11-17)
   {const q=V.slice().sort(),cut=q[Math.min(N-1,Math.floor((1-want)*N))];for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;K[i]=x<1||y<1||x>=W-1||y>=H-1||V[i]<cut?T_WATER:T_OPEN}}
   yield .7;
   // land under minLand tiles sunk; then the sea (water joined to the rim), water pockets under minSea filled, the rest lakes
