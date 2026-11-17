@@ -223,7 +223,7 @@ function travelMul(){const H=HERO_GROUND;H.ign=mountIgn();H.ride=mountedShare(ba
 // its cold short of furs and frostbite; the desert's thirst.) Each night short of furs in the frost costs a little morale; swamp fever
 function survive(){
   const clim=climAt(P.x,P.y),home=RACES[P.race].home,shelter=TOWNS.some(t=>Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.shelter);
-  if(shelter)return;
+  if(shelter||CHEAT.noNeeds)return;// (the console's no needs: the land takes nothing)
   // Survival: each day in harsh land teaches it, and it softens what the land costs (sv: the share still paid)
   const harsh=clim==='frost'&&!home.includes('frost')||clim==='desert'&&!home.includes('desert')||clim==='swamp'&&!home.includes('swamp');if(harsh)train('surv',4);
   const sv=survivalShare();
@@ -259,7 +259,8 @@ function bandPayroll(){const counts=[P.troops,P.wounded||{},...cparties().map(p=
 // (none while you are held captive: you are not with your band, world/captivity.js)
 // (a realm's contract for your band a day: BAND_PAY.merc of your fit soldiers' wages)
 const mercPay=()=>Math.round(Object.entries(P.troops).reduce((a,[k,n])=>a+n*soldierPay(k),0)*BAND_PAY.merc);
-function bandWages(){if(Captivity.held)return;const wage=bandPayroll().total;
+function bandWages(){if(Captivity.held||CHEAT.noNeeds)return;// (the console's no needs: no wages)
+  const wage=bandPayroll().total;
   if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad','band');mood('unpaid')}}}
 function bandLarder(){
   let rot=0;for(const g of FOODS){const r=GOODS[g].spoil,n=goodN(g);if(r&&n)rot+=goodTake(g,Math.min(n,Math.floor(n*r+Math.random())))}

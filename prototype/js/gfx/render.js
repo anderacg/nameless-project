@@ -242,11 +242,12 @@ function worldMiniRect(){const campaign=window.campaignHud?.miniRect();if(campai
 /* the minimap a piece of the full map, zoomed in (the owner, 2026-11-08: "the map show on the worldmap should be a zoomed in version
    of new map"): the parchment of ui/map.js (fullMapPic: the ink wash, realms, coasts, the bare paper where you never were, its
    grain) cut round the screen's middle, tiles across (at least, else over x what the screen shows, never more than the map), the
-   holdings and places as their sprites (fmIcon, icon x the full map's sizes; the marks by the minimap's width, 112 px one), the screen's own view inked on it (view), you as on
+   holdings and places as their sprites (fmIcon, icon x the full map's sizes, iconMin px at least: small marks over the land, the
+   owner 2026-11-17 "The mini map icon seems too big", was .42; the marks by the minimap's width, 112 px one), the screen's own view inked on it (view), you as on
    the full map. Its picture: a box x as wide round the view, made again when the view leaves it, the realms change (landVer) or,
    at most each refresh ms, what you have seen in it does. Its face drawn afresh at most each world ms on the map (battle ms in a fight),
    the last one put up between (the owner, 2026-11-16: "The game performance lags on mobile"). on false: the whole map as before (WorldArt.mini and its dark) */
-const MINIMAP={on:true,tiles:96,over:3,box:2,refresh:1000,battle:100,world:100,icon:.42,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
+const MINIMAP={on:true,tiles:96,over:3,box:2,refresh:1000,battle:100,world:100,icon:.26,iconMin:3,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
 // what the minimap shows (its rectangle, worldMiniRect, and s its px a tile; ox, oy its top left tile, tw x th tiles of it),
 // round the screen's middle (cam: G.cam)
 function worldMiniView(cam=G.cam){const r=worldMiniRect();if(!MINIMAP.on)return{...r,ox:0,oy:0,tw:MW,th:MH};
@@ -348,7 +349,7 @@ function drawWorld(){
   if(!B?.world)drawSafe(()=>WeatherArt.draw(ambWeather(),VW+1,VH+1,Weather.strength(P.x,P.y)));
   drawSafe(climateAir,cam);// (the frost's flakes, the swamp's mist: worldterrain.js)
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
-  drawSafe(drawWorldFog,cam,V);
+  if(!CHEAT.noFog)drawSafe(drawWorldFog,cam,V);// (the console's fog off: ui/developer.js)
   }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
   // the tile grid and a building being placed lie over the fog
   if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
@@ -407,7 +408,7 @@ function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y
   // its realm's colour), the rest their dots
   const P0=TILE*8,in_=o=>o.x>=(v.ox*TILE-P0)&&o.y>=(v.oy*TILE-P0)&&o.x<=(v.ox+v.tw)*TILE+P0&&o.y<=(v.oy+v.th)*TILE+P0;
   mapDots(V,(o,d)=>{if(B?.world?.hides(o)||!in_(o))return;const town=o.mapKind==='town',ic=(town||o.mapKind==='site')&&fmIcon(o);
-    if(!ic){dot(o.x,o.y,d[0],d[1]);return}const k=town?(FULLMAP.kinds[o.kind]?o.kind:'village'):'site',w=Math.max(4,FULLMAP.icon[k]*M.icon*u),h=w*ic.h/ic.w,cx=X(o.x),cy=Y(o.y);
+    if(!ic){dot(o.x,o.y,d[0],d[1]);return}const k=town?(FULLMAP.kinds[o.kind]?o.kind:'village'):'site',w=Math.max(M.iconMin,FULLMAP.icon[k]*M.icon*u),h=w*ic.h/ic.w,cx=X(o.x),cy=Y(o.y);
     if(town){g.fillStyle=o._memCol||facCol(o);g.globalAlpha=.8;g.beginPath();g.ellipse(cx,cy+h/2-u,w*.36,1.5*u,0,0,Math.PI*2);g.fill();g.globalAlpha=1}
     g.drawImage(ic.cv,cx-w/2,cy-h/2,w,h)});
   drawQuestDots(dot);// (the quests' goals, the tracked one the strongest: world/quests.js)

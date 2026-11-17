@@ -94,8 +94,9 @@ const WORLD_PACE=.4,BATTLE_PACE=.6,HERO_PACE=.85;
 // speed (the owner, 2026-10-22: back on the bar)
 const SPEEDS=[1,2,4],TRAVEL_FAST=8;
 // the developer console's cheats (ui/developer.js): your band's map speed × speed (world.js bandPace); noNeeds: no hunger, thirst
-// or stamina drain, nor their tolls on your hero (world/supply.js). Runtime only, never saved; off unless a test sets them
-const CHEAT={speed:1,noNeeds:false};
+// or stamina drain, nor their tolls on your hero (world/supply.js), no wages and no harsh land's toll (world.js bandWages, survive);
+// noFog: the map drawn whole, no fog over it (render.js, fog.js VIEW_SEEN). Runtime only, never saved; off unless a test sets them
+const CHEAT={speed:1,noNeeds:false,noFog:false};
 // actions: every button names one (data-act="prefix-name"); each system claims its prefix once with onAct, so two systems can
 // never answer the same button. Actions without a registered prefix fall through to act() in input.js (menu, encounters), and
 // a town's own (tab, hire, buy …) on to townAct in ui/town.js.
