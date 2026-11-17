@@ -232,7 +232,7 @@ function drawFigure(g,o,ox,oy,walk,style,atk,cut){if(dollable(o))return drawDoll
    arm (a shield slung there, its top left); guard, a shield raised before him, over his front (its top left); back, between the
    shoulders; free, the off hand (a marcher's torch: marchgear.js); sh, a dwarf's row less; rig, its blow drawn on the rig */
 function drawFigureBody(g,o,ox,oy,walk,style,atk,cut){
-  if(walk>=16)walk-=8;// (the old figure scrambles up a cliff as it climbs a slope)
+  if(walk>=20)walk=walk===20?1:12;else if(walk>=16)walk-=8;// (the old figure scrambles up a cliff as it climbs a slope; leaps and crawls as it steps down)
   const run=walk>=4&&walk<8,climb=walk>=8&&walk<12,desc=walk>=12,T=o.short?PEOPLE_T_SHORT:PEOPLE_T,Lc=lettersOf(o),sh=o.short?1:0,shield=shieldLook(o);
   const bob=run?RUN_BOB[walk-4]:climb?CLIMB_BOB[walk-8]:desc?DESC_BOB[walk-12]:walk===1||walk===3||walk===-2?-1:0,lean=run?9:desc?6:0;
   // (climbing: bent double, the head two pixels forward and the shoulders one, all above the belt a pixel lower)
@@ -658,8 +658,9 @@ function drawMountedRider(g,o,ox,oy,style,atk,lean=0){
    cellOf), its feet on the bottom row and its middle the cell's */
 function peopleSprite(o,pose,bare){
   // (pose 1: a breath in, walk -2)
-  // (19-22: climbing, walk 8-11; 23-26: descending, walk 12-15; CLIFF_POSE's four: scrambling up a cliff, walk 16-19; a rider's mount just walks)
-  const walk=pose===1?-2:pose>=2&&pose<=5?pose-2:pose>=15&&pose<=18?pose-11:pose>=19&&pose<=26?(o.mount?(pose-19)%4:pose-11):pose>=CLIFF_POSE&&pose<CLIFF_POSE+4?(o.mount?pose-CLIFF_POSE:16+pose-CLIFF_POSE):-1,blow=pose>=6&&pose<=14,
+  // (19-22: climbing, walk 8-11; 23-26: descending, walk 12-15; CLIFF_POSE's four: scrambling up a cliff, walk 16-19; JUMP_POSE: a leap,
+  //  walk 20; CRAWL_POSE's four: crawling out of the water, walk 21-24; a rider's mount just walks)
+  const walk=pose===1?-2:pose>=2&&pose<=5?pose-2:pose>=15&&pose<=18?pose-11:pose>=19&&pose<=26?(o.mount?(pose-19)%4:pose-11):pose>=CLIFF_POSE&&pose<CLIFF_POSE+4?(o.mount?pose-CLIFF_POSE:16+pose-CLIFF_POSE):pose===JUMP_POSE?(o.mount?1:20):pose>=CRAWL_POSE&&pose<CRAWL_POSE+4?(o.mount?pose-CRAWL_POSE:21+pose-CRAWL_POSE):-1,blow=pose>=6&&pose<=14,
     fist=pose>=FIST_POSE&&pose<FIST_POSE+12,atk=blow?(pose-6)%3:fist?(pose-FIST_POSE)%3:-1,style=fist?FIST_STYLES[(pose-FIST_POSE)/3|0]:LIFE_POSES[pose]||(!blow?null:pose>=12?'overhead':pose>=9?'thrust':'swing');// (fist: bare hands; LIFE_POSES: struck, glancing, shifting: sprites.js)
   // (bare: the melee weapon left off, to be held apart: weapons.js; DEF_POSE: standing, his shield raised before him)
   if(bare&&heldWeapon(o))o={...o,weapon:null,held:heldWeapon(o)};if(bare==='bow')o={...o,bowApart:true};// (bare 'bow': his bow drawn apart, aimed: figures.js bowPic)

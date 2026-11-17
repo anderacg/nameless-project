@@ -73,7 +73,12 @@ function dollSpec(o,pose,frame,moves){const parts=dollParts(o).map(([p,m,x])=>[p
    hold while the other pulls, a knee drawn up under him, in turn) */
 const DOLL_CLIMB={up:[0,1,2,3].map(i=>[['sfncbulh','',-1,1,0],...(i===0?[['ko','R',0,-1,0]]:i===2?[['ko','L',0,-1,0]]:[])]),
   down:[0,1,2,3].map(i=>[['sfncbulh','',1,0,0],...(i&1?[['sfncbulhpt','',0,1,0]]:[])]),
-  cliff:[0,1,2,3].map(i=>{const a=i<2?'R':'L',b=i<2?'L':'R';return[['sfncb','',-1,1,0],['ulh',a,-1,i&1?-2:-3,0],['ulh',b,-1,0,0],['tko',b,0,i&1?-1:-2,0]]})};
+  cliff:[0,1,2,3].map(i=>{const a=i<2?'R':'L',b=i<2?'L':'R';return[['sfncb','',-1,1,0],['ulh',a,-1,i&1?-2:-3,0],['ulh',b,-1,0,0],['tko',b,0,i&1?-1:-2,0]]}),
+  // (a leap down off a ledge (walk 20): his legs tucked under him, his arms up and out for the landing; crawling up out of the water
+  //  (walk 21-24): bent low on his hands and knees, his body a px forward and two down (so what he carries stays on him), a hand reaching forward onto the bank and
+  //  the other knee drawn up, in turn; the owner, 2026-11-17: "make jumping animation", "add crawling up animation from shore")
+  jump:[['tko','',0,-2,0],['ulh','',0,-2,0]],
+  crawl:[0,1,2,3].map(i=>{const a=i<2?'R':'L',b=i<2?'L':'R';return[['sfncbulhp','',-1,2,0],['ulh',a,-1,1,0],['tko',b,0,-1,0]]})};
 const DOLL_MOVES={lean:[],breath:[['ulh','',0,-1,0]],flinch:[['sfncbulhptko','',1,0,0]],look:[],shift:[],
   // (a run: the walk's steps (engine/doll.js POSES.walk), its arms swung higher; no knee lifted on top of the walk's, which folded
   // the leg back on itself (the owner, 2026-11-07: "make the leg not bending to the back too much"))
@@ -117,7 +122,7 @@ function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
   //  the weapon in the fist it ends in (figures.js HandWeapon): else no arm struck and the weapon hung in the air beside him)
   const held=o.held||(atk>=0&&WPN[o.weapon]?o.weapon:null);
   const rig=atk>=0?(FIST_STYLES.includes(style)?FIST_RIG[style][atk]:held&&BLOW_RIG[style]?blowRig({...o,held},style,atk):null):style==='flinch'?blowRig(o,'flinch',0):o.guardUp&&!shieldLook(o)&&!o.weapon?FIST_RIG.guard[0]:null;
-  const M=DOLL_MOVES,run=walk>=4&&walk<8,climb=walk>=8,C=DOLL_CLIMB,moves=[...(run?M.lean:[]),...(climb?(walk<12?C.up:walk<16?C.down:C.cliff)[walk&3]:[]),...(run?M.run[walk&3]:[]),...(walk===-2?M.breath:[]),...(atk>=0&&M.blow[atk]?M.blow[atk]:[]),...shootArms(o,style,atk),...lunge,...(M[style]&&M[style].length&&!Array.isArray(M[style][0][0])?M[style]:[])];
+  const M=DOLL_MOVES,run=walk>=4&&walk<8,climb=walk>=8,C=DOLL_CLIMB,moves=[...(run?M.lean:[]),...(climb?(walk===20?C.jump:walk>20?C.crawl[(walk-21)&3]:(walk<12?C.up:walk<16?C.down:C.cliff)[walk&3]):[]),...(run?M.run[walk&3]:[]),...(walk===-2?M.breath:[]),...(atk>=0&&M.blow[atk]?M.blow[atk]:[]),...shootArms(o,style,atk),...lunge,...(M[style]&&M[style].length&&!Array.isArray(M[style][0][0])?M[style]:[])];
   // (braced or gripping: both arms forward to the weapon, the near hand on it before him, the far one behind it along a pole levelled
   //  (brace) or just under the near one on a great weapon raised (grip): DOLL_GRIP)
   // (a great weapon carried on the move, walking or running (the owner, 2026-11-07: "two-handed weapons on the march"): both hands on it as

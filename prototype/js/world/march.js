@@ -205,6 +205,24 @@ function marchDraw(ents,o,cam){
 function marchSlope(u,o){const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return null;const i=ty*MW+tx;if(WM.kind[i]===T_MOUNT)return 'cliff';
   const c=WM.slope&&WM.slope[i];if(c!==1&&c!==2)return null;const a=u.dir??marchFacing(o),up=headingUp(u.x,u.y,u.x+Math.cos(a)*8,u.y+Math.sin(a)*8);return up==null?null:up?'up':'down'}
 function marchClimbPose(u,o){if(!marchWalks(u)||(ST[u.type]||{}).fly)return undefined;const s=marchSlope(u,o);if(!s)return undefined;return (s==='up'?19:s==='down'?23:CLIFF_POSE)+marcherStep(u)}
+/* a marcher's moment over a ledge or out of the water (the owner, 2026-11-17: "make jumping animation when ascending the hill edge (if
+   can go down)", "add crawling up animation from shore, edge of land and water"), drawn only: the land's lift under him dropping by
+   drop game px or more, at rate px a px he moved, as he steps (a ledge's face): he leaps, hopping hop px over jump s, eased from the
+   height he left down to the new (JUMP_POSE); rising so, he pulls himself up over up s (the cliff's scramble, CLIFF_POSE); out of water
+   wet deep (map.js WATER's bands: waist) within shore s (the drawn water shallows toward its bank) onto dry land, he crawls up the bank
+   on his hands and knees for crawl s (CRAWL_POSE). Its
+   pose and how far up from where the land would put him (dy, game px) */
+const MARCH_ACT={drop:3,rate:1.5,hop:3,jump:.35,up:.4,crawl:.7,wet:3,shore:2};
+function marchAct(u){const J=MARCH_ACT,now=performance.now()/1000,S=ST[u.type]||{},none={pose:undefined,dy:0};if(S.fly||typeof liftAt!=='function')return none;
+  const L=liftAt(u.x,u.y),wb=typeof drawnDepth==='function'?depthBand(drawnDepth(u.x,u.y)):0;
+  if(u._aL!=null&&marchWalks(u)){const d=u._aL-L,m=Math.hypot(u.x-u._ax,u.y-u._ay)||.01;
+    if(Math.abs(d)>=J.drop&&Math.abs(d)/m>=J.rate){if(d>0)u._act={k:'jump',t:now,d};else if(!S.beast)u._act={k:'up',t:now,d:-d}}
+    if(wb===0&&u._wetT!=null&&now-u._wetT<J.shore&&!S.beast&&!S.mounted){u._act={k:'crawl',t:now,d:0};u._wetT=null}}
+  if(wb>=J.wet)u._wetT=now;u._aL=L;u._ax=u.x;u._ay=u.y;
+  const A=u._act;if(!A)return none;const q=(now-A.t)/J[A.k];if(q>=1||q<0){u._act=null;return none}
+  if(A.k==='jump')return{pose:S.beast?undefined:JUMP_POSE,dy:A.d*(1-q)+J.hop*4*q*(1-q)};
+  if(A.k==='up')return{pose:CLIFF_POSE+marcherStep(u),dy:-A.d*(1-q)};
+  return{pose:CRAWL_POSE+Math.floor(q*8)%4,dy:0}}
 // (drawn small without losing its lines when zoomed out: render.js reduced)
 function drawMarcher(u,o,cam){if(u.gateAt)return;if(o.drawMan)return o.drawMan(u,cam);return reduced(()=>drawMarcherAt(u,o,cam))}// (an army of no soldiers draws its own men: refugees.js)// (waiting his turn at a gate: unseen, gatefile.js)
 function drawMarcherAt(u,o,cam){
@@ -212,10 +230,10 @@ function drawMarcherAt(u,o,cam){
   const S=ST[u.type]||{},I=!marchWalks(u)?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
   // (what he carries besides, gfx/marchgear.js: his army's flag (on a spear of its own, his body bare; else at his back, before
   // his body), a torch after dark)
-  subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
+  const act=marchAct(u);subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y-act.dy),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
   // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld (a sword worn out of sight: SHEATH); a flag-bearer's
   // (your hero's, carrying your banner) only if it is sheathed (SHEATH.show), his hands on the pole; none for a beast)
-  const s=marchSprite(u,o,I?.pose??marchClimbPose(u,o),true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
+  const s=marchSprite(u,o,I?.pose??act.pose??marchClimbPose(u,o),true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
   // (in water, the world lab's way: under it from his feet up as deep as it is where he stands (WATER.cut figure px by its band; worldterrain.js
   //  drawnDepth: his tile's depth eased in from the drawn bank, none on the drawn bank); his body under it faint and wavering, the water's line about him
   //  a wavy ring of foam, a ripple spreading from him (the owner, 2026-11-16: "the water that wrap around unit looks too flat"))
