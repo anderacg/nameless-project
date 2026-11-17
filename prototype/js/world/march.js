@@ -199,6 +199,12 @@ function marchDraw(ents,o,cam){
   // (a beast's marker over its middle)
   const u0=army.units[0];if(u0&&o.mapKind==='monster')ents.push({x:o.x,y:o.y,f:()=>BANNERQ.push({o,marker:{h:marchSprite(u0,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})});return true;
 }
+// (a marcher going up a slope, down one or up a cliff, by the land's height a few px ahead of him the way he faces (map.js headingUp):
+// 'up', 'down', 'cliff' (a rock tile, climbed: map.js heroClimbs) or null on the flat; and his pose for it, as in a fight (render.js
+// drawUnitAt's climbState): 19-22 up, 23-26 down, CLIFF_POSE's four a cliff (gfx/dollfigs.js DOLL_CLIMB); none standing)
+function marchSlope(u,o){const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return null;const i=ty*MW+tx;if(WM.kind[i]===T_MOUNT)return 'cliff';
+  const c=WM.slope&&WM.slope[i];if(c!==1&&c!==2)return null;const a=u.dir??marchFacing(o),up=headingUp(u.x,u.y,u.x+Math.cos(a)*8,u.y+Math.sin(a)*8);return up==null?null:up?'up':'down'}
+function marchClimbPose(u,o){if(!marchWalks(u)||(ST[u.type]||{}).fly)return undefined;const s=marchSlope(u,o);if(!s)return undefined;return (s==='up'?19:s==='down'?23:CLIFF_POSE)+marcherStep(u)}
 // (drawn small without losing its lines when zoomed out: render.js reduced)
 function drawMarcher(u,o,cam){if(u.gateAt)return;if(o.drawMan)return o.drawMan(u,cam);return reduced(()=>drawMarcherAt(u,o,cam))}// (an army of no soldiers draws its own men: refugees.js)// (waiting his turn at a gate: unseen, gatefile.js)
 function drawMarcherAt(u,o,cam){
@@ -209,7 +215,7 @@ function drawMarcherAt(u,o,cam){
   subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
   // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld (a sword worn out of sight: SHEATH); a flag-bearer's
   // (your hero's, carrying your banner) only if it is sheathed (SHEATH.show), his hands on the pole; none for a beast)
-  const s=marchSprite(u,o,I?.pose,true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
+  const s=marchSprite(u,o,I?.pose??marchClimbPose(u,o),true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
   // (in water, the world lab's way: under it from his feet up as deep as it is where he stands (WATER.cut figure px by its band; worldterrain.js
   //  drawnDepth: his tile's depth eased in from the drawn bank, none on the drawn bank); his body under it faint and wavering, the water's line about him
   //  a wavy ring of foam, a ripple spreading from him (the owner, 2026-11-16: "the water that wrap around unit looks too flat"))

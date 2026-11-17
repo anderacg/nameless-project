@@ -22,6 +22,8 @@ const ATK_BASE={swing:6,thrust:9,overhead:12,jab:29,hook:32,kick:35,grapple:38},
 // 44 braced, both hands on his pole levelled before him (a pike, a spear with no shield); 45 both hands on a great weapon in guard
 // (the owner, 2026-11-06: "bracing spear will adjust their pose to grip a spear and hold the shield to the front"; a shield-bearer
 // braces behind it: DEF_POSE)
+// (scrambling up a cliff: its four steps, walk 16-19 (people.js), on the map (march.js marchClimbPose))
+const CLIFF_POSE=50;
 const FLINCH_POSE=41,LOOK_POSE=42,SHIFT_POSE=43,BRACE_POSE=44,GRIP_POSE=45,LIFE_POSES={41:'flinch',42:'look',43:'shift',44:'brace',45:'grip'};
 // bare: in battle, a soldier's melee weapon is drawn apart (weapons.js); the sprite leaves it off, the body and the rest of its
 // gear kept by pose in spr (figures.js); else the finished figure, its weapon on it, kept in FIGURES (an LRU: the map, the cards)
