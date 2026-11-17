@@ -76,8 +76,9 @@ function ghostOver(e,x0,y0,w,h,ring){const G=ring||WDEPTH.ghost;if(!(ring||G.on)
   if(ring){const R=WDEPTH.rcv&&WDEPTH.rcv.width>=W&&WDEPTH.rcv.height>=H?WDEPTH.rcv:(WDEPTH.rcv=mkc(Math.max(W,WDEPTH.rcv?.width||0),Math.max(H,WDEPTH.rcv?.height||0),()=>{})),rg=R.getContext('2d'),d=Math.max(1,Math.round(k/2));
     rg.setTransform(1,0,0,1,0,0);rg.clearRect(0,0,W,H);for(const [a,b] of [[d,0],[-d,0],[0,d],[0,-d]])rg.drawImage(cv,0,0,W,H,a,b,W,H);rg.globalCompositeOperation='destination-out';rg.drawImage(cv,0,0,W,H,0,0,W,H);rg.globalCompositeOperation='source-over';
     g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);g.drawImage(R,0,0,W,H,0,0,W,H)}
-  // (flat in its colour, then kept where the cover is: the cover's own picture, overdrawBox's, its alpha the cover's fade)
-  g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-in';g.fillStyle=G.col;g.fillRect(0,0,W,H);g.globalCompositeOperation='destination-in';g.imageSmoothingEnabled=false;g.drawImage(WDEPTH.cv,0,0,w,h,0,0,W,H);g.globalCompositeOperation='source-over';
+  // (flat in its colour, then kept where the cover is: the cover's own picture, overdrawBox's, its alpha the cover's fade; a ring with
+  //  all, whole, seen or hid)
+  g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-in';g.fillStyle=G.col;g.fillRect(0,0,W,H);if(!(ring&&ring.all)){g.globalCompositeOperation='destination-in';g.imageSmoothingEnabled=false;g.drawImage(WDEPTH.cv,0,0,w,h,0,0,W,H)}g.globalCompositeOperation='source-over';
   ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=ring?G.a:Math.min(1,G.a/WDEPTH.fade);ctx.drawImage(cv,0,0,W,H,Math.round(m.a*x0+m.e),Math.round(m.d*y0+m.f),W,H);ctx.restore()}
 // the figures, by their feet (render.js drawWorld's ents that move: {y, f, own, top}), each with what stands in front of it put
 // back over it; those in flight after them all; each at its own place to the screen's pixel (render.js drawMover). The context's
@@ -93,7 +94,7 @@ function worldOverdraw(list,cam){
   try{for(const e of list){if(e.top){top.push(e);continue}if(!WDEPTH.on){one(e);continue}
     B[0]=B[1]=1e9;B[2]=B[3]=-1e9;WDEPTH.trk=true;const ok=one(e);WDEPTH.trk=false;if(!ok)continue;
     const x0=Math.max(0,Math.floor((B[0]-m.e)/k)),y0=Math.max(0,Math.floor((B[1]-m.f)/k)),x1=Math.min(cw,Math.ceil((B[2]-m.e)/k))-1,y1=Math.min(ch,Math.ceil((B[3]-m.f)/k))-1;
-    if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);const hid=overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam,!!e.nf);if(e.own&&hid>=WDEPTH.ghost.min&&ghosts++<WDEPTH.ghost.most)ghostOver(e,x0,y0,x1-x0+1,y1-y0+1);else if(e.loot&&hid>0&&ghosts++<WDEPTH.ghost.most)ghostOver(e,x0,y0,x1-x0+1,y1-y0+1,LOOT_GLOW.outline)}}}
+    if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);const hid=overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam,!!e.nf);if(e.own&&hid>=WDEPTH.ghost.min&&ghosts++<WDEPTH.ghost.most)ghostOver(e,x0,y0,x1-x0+1,y1-y0+1);else if(e.loot&&(LOOT_GLOW.outline.all||hid>0)&&ghosts++<WDEPTH.ghost.most)ghostOver(e,x0,y0,x1-x0+1,y1-y0+1,LOOT_GLOW.outline)}}}
   finally{WDEPTH.trk=false;if(di)ctx.drawImage=WDEPTH.di;else delete ctx.drawImage;if(fr)ctx.fillRect=WDEPTH.fr;else delete ctx.fillRect}
   // (the structures' pictures kept while a fight on the map is drawn after the map, its men and fallen overdrawn by them too: render.js
   //  drawBattle; drawWorld clears them as it begins)

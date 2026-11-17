@@ -131,7 +131,11 @@ class WorldBattleArea{
     const cs=TERRAIN.cs,C=Math.ceil(BW/cs),R=Math.ceil(BH/cs),N=C*R,T=new BattleTerrain({cs,C,R,kind:new Uint8Array(N),lvl:new Uint8Array(N),up:new Int8Array(N).fill(-1)});
     T.c0=CLIMS.indexOf(this.env.c);T.mix={c0:this.env.c,c:this.env.c,t:this.env.t,w:[]};T.clim=new Uint8Array(N);T.road=new Uint8Array(N);T.wall=new Uint8Array(N);
     for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=r*C+c,p=this.world({x:(c+.5)*cs,y:(r+.5)*cs}),tx=Math.floor(p.x/TILE),ty=Math.floor(p.y/TILE),j=ty*MW+tx,k=tAt(tx,ty);
-      T.kind[i]=k===T_WATER?TKIND.deep:k===T_MOUNT?TKIND.rock:k===T_FOREST?TKIND.wood:k===T_FORD?TKIND.ford:climAt(p.x,p.y)==='swamp'?TKIND.marsh:TKIND.open;
+      // (the water as the map walks it, by its drawn depth there (worldterrain.js drawnDepth, map.js WATER): ankle to waist deep a ford's
+      //  shallows, deeper (swum, open water) deep; a water tile's dry px land. Was every water tile deep: a stream the bands waded walled
+      //  the fight in two, the owner, 2026-11-17: "Fighting across river or stream is bugged")
+      const dd=typeof drawnDepth==='function'?drawnDepth(p.x,p.y):(k===T_WATER?1:0),wet=dd>0?(depthBand(dd)>=4?TKIND.deep:TKIND.ford):-1;
+      T.kind[i]=k===T_MOUNT?TKIND.rock:k===T_FORD?TKIND.ford:wet>=0?wet:k===T_FOREST?TKIND.wood:climAt(p.x,p.y)==='swamp'?TKIND.marsh:TKIND.open;
       if(k===T_ROAD){T.kind[i]=TKIND.open;T.road[i]=1}T.clim[i]=WM.climAt(tx,ty);
       if(WM.has(tx,ty)){T.lvl[i]=Math.max(0,Math.min(3,(WM.elev[j]-64)>>5));const edge=WM.edge[j];if(p.x%TILE<cs/this.scale&&edge&4)T.wall[i]|=4;if(p.x%TILE>TILE-cs/this.scale&&edge&1)T.wall[i]|=1;if(p.y%TILE<cs/this.scale&&edge&8)T.wall[i]|=8;if(p.y%TILE>TILE-cs/this.scale&&edge&2)T.wall[i]|=2}
     }
