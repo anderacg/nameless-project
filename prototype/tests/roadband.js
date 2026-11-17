@@ -101,8 +101,12 @@ Kit.suite(({ok,info})=>{
   else{Kit.clear();Kit.world({encCool:99});Kit.goTo(a[0],a[1]);t.setByRoad(true);const said=told(),said0=G.msgs.length;t.worldGo(b[0],b[1]);const plain=!t.byRoadTo(P.tx,P.ty),f=march(3000),said2=[...G.msgs.slice(said0).map(m=>m.m),...toldSince(said)].filter(m=>/road/i.test(m));
    ok(plain&&P.byRoad===true&&G.byRoad==null&&Math.hypot(P.x-b[0],P.y-b[1])<3&&!said2.length,'by-road mode on with no road within '+t.ROAD_GO.near+' tiles: the plain way there ('+f+' frames), still on, and nothing in the log'+(said2.length?': '+said2.join(' | '):''));t.setByRoad(false)}}
  // ---- the band follows the ways: an estate's track taken up and laid again (lots.js tracksUp, occRebuild) makes it again
- {const x=T2[0],b0=t.RoadBand.bytes(),v0=t.WAYV;t.tracksUp(t.WM);const up=t.speedAt(x[0],x[1]),b1=t.RoadBand.bytes();for(const h of t.TOWNS)if(h.lots)t.Layout.of(h).tracks(true);t.tracksDone();
-  ok(t.WAYV!==v0&&up<RB.trackSpeed&&b1<b0&&t.speedAt(x[0],x[1])===RB.trackSpeed&&t.RoadBand.bytes()===b0,'the estates\' tracks taken up (lots.js tracksUp): the band made again without them ('+up.toFixed(2)+' where one ran, '+b1+' bytes); laid again, with them ('+t.RoadBand.bytes()+' bytes)')}
+ {const b0=t.RoadBand.bytes(),v0=t.WAYV;t.tracksUp(t.WM);const ups=T2.map(([x,y])=>t.speedAt(x,y)),b1=t.RoadBand.bytes();for(const h of t.TOWNS)if(h.lots)t.Layout.of(h).tracks(true);t.tracksDone();
+  // (laid again all at once they may differ by a track from the first laying, town by town as each was placed (127 and 126 on
+  // the classic world, 2026-11-17): the band is the ways' as they now are, the points on a track laid again back at its speed)
+  const back=T2.map(([x,y])=>t.speedAt(x,y)===RB.trackSpeed),b2=t.RoadBand.bytes(),n=t.WM.roads.filter(r=>r.est).length,nb=back.filter(Boolean).length;t.RoadBand.build();
+  ok(t.WAYV!==v0&&ups.every(v=>v<RB.trackSpeed)&&b1<b0&&nb>=T2.length*.9&&b2>b1&&t.RoadBand.bytes()===b2,'the estates\' tracks taken up (lots.js tracksUp): the band made again without them (at most '+Math.max(...ups).toFixed(2)+' where they ran, '+b1+' bytes); laid again, with them ('+b2+' bytes, '+n+' tracks; '+nb+' of '+T2.length+' points on them back at '+RB.trackSpeed+'), the band the ways\' as they now are');
+  info('the tracks laid again '+(b2===b0?'as first laid':'differ from the first laying: '+b0+' bytes then, '+b2+' now'))}
  // ---- by-road mode is yours: saved with you and back on a load; off, nothing of it in the save (a new hero's is off)
  {Kit.clear();Kit.world({encCool:99});G.mode='world';t.setByRoad(true);t.saveGame(true,'quick');const sv=JSON.parse(localStorage.getItem(t.slotKey('quick')));t.setByRoad(false);t.loadGame('quick');const back=P.byRoad===true;t.updateHUD(true);const shown=pill();
   t.setByRoad(false);G.mode='world';t.saveGame(true,'quick');const sv0=JSON.parse(localStorage.getItem(t.slotKey('quick')));t.setByRoad(true);t.loadGame('quick');

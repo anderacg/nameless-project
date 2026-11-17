@@ -853,7 +853,14 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  Willowmere's isle; the fens' hint r 26) moved all nine to these. The fixes since (folk.js fieldStep, worldways.js bridgeOver) move
 //  none: measured the same before and after them. Were W1 fcc9be4a, W2 6ba3aa7f, W3 0ba097f2, W4 85a7d384, W5 2ca5f850, W6 b590379c,
 //  W7 a0041dfb, W8 4d549b20, B2 c916eeb1)
-const EXPECT={W1:'00614f13',W2:'c353914d',W3:'08463f33',W4:'d2fafb20',W5:'2245c050',W6:'cde2ee8f',W7:'76d16ba7',W8:'ef39e9b9',B2:'5ede72a2'};
+// (all nine re-recorded 2026-11-17 again, on purpose, the owner's "Go ahead", two steps measured apart: (1) the Classic world's
+//  northern and Karn peaks and its great river past Stonebridge back (7570e2c: worldgen.js genElevHints, genValleyHint,
+//  genValleyCut; Karn's hint r 14) gave W1 2fc54212, W2 5d0e0087, W3 e7fea2d6, W4 5b745ba8, W5 3c41e30e, W6 7b3e5bf6, W7 deacd6c3,
+//  W8 129faf85, B2 173ecde0 alone; (2) the outposts off every lot and climbable on each side (3993b56: outposts.js built, climbable,
+//  OUTPOST_PLACE.body), goblin camps seeking hillsides (3993b56: GOBLINS.warren.share) and the outposts held before the sites are
+//  drawn (4651eae: Outposts.hold) move what stands on the land: W4 (the outposts' claims) and W5-W8, B2; W1-W3 hold. Were W1
+//  00614f13, W2 c353914d, W3 08463f33, W4 d2fafb20, W5 2245c050, W6 cde2ee8f, W7 76d16ba7, W8 ef39e9b9, B2 5ede72a2)
+const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'c8fd11f3',W6:'3939e37e',W7:'a9fc5330',W8:'93ccd29a',B2:'1c3f6432'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -918,7 +925,9 @@ const EXPECT={W1:'00614f13',W2:'c353914d',W3:'08463f33',W4:'d2fafb20',W5:'2245c0
 //  anew; Normal s1-s3 and Large s1 are the same before this round (40efd91^) and now. The classic world moved again with its land
 //  hints back (c630feb: genLandHints; was b5072aae before it). Were classic 88f2e7f8, Normal s1 69fdd482, s2 812260ff, s3 4638513a,
 //  Large s1 127d2d4d)
-const SUMS={classic:'943ffc16','Normal s1':'91cae7e6','Normal s2':'3fd4482d','Normal s3':'43cecd26','Large s1':'37ce35ca'};
+// (classic re-recorded 2026-11-17 again, on purpose: its peaks and great river back (7570e2c: W1-W8 above); the random presets'
+//  sums hold, the hints the classic world's alone. Was classic 943ffc16)
+const SUMS={classic:'cddc33f6','Normal s1':'91cae7e6','Normal s2':'3fd4482d','Normal s3':'43cecd26','Large s1':'37ce35ca'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}
