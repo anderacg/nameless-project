@@ -395,6 +395,9 @@ function drawShadows(list){let any=false;for(const e of list)if(e.sh){any=true;b
 const SITE_KIND={bandit:'camp',camp:'camp',hideout:'hideout',travelers:'travelers',goblins:'hideout'};
 // (a camp built in a culture's style, by its kind: a goblin camp the Ashgor Horde's, its yurts in a ring of stakes; the rest the generic)
 const SITE_CULTURE={goblins:'ashgor'};
+// (a site's picture as drawn (sites.js draw: k of its size, WORLD_VIEW.house and its kind's own), its opaque px's box on the map:
+// [x0, y0, x1, y1]; what a click picks and its ring stands round (world.js pickAt, worldui.js wuiBox))
+function sitePicBox(o,sp){const k=WORLD_VIEW.house*((WORLD_VIEW.sites||{})[o.type]||1),b=opaqueBox(sp)||[0,0,sp.width-1,sp.height-1],X=o.x-sp.ax*k,Y=o.y+8-sp.ay*k;return [X+b[0]*k,Y+b[1]*k,X+(b[2]+1)*k,Y+(b[3]+1)*k]}
 // (a site's yard: its model's ground, the frost's snow on it, its own shadow shaded into it, its edge frayed into the land round it over
 // SITE_YARD.fray game px (r px a game px: a chamfer distance from its bare px, dithered by its hash: whole px, no square patch))
 const SITE_YARD={fray:3,grain:.7};

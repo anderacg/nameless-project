@@ -51,7 +51,7 @@ function pickAt(wx,wy){
   // structures answer anywhere on what is drawn of them, ranked as near as their own spot (a holding's gate) but never nearer
   // than 12 pixels away, so someone clicked on top of one is picked, and a click on the gate still picks the holding
   const box=(o,x0,y0,x1,y1,dy)=>{if(wx>=x0&&wx<x1&&wy>=y0&&wy<y1&&S.sees(o.x,o.y,1.2))c.push([Math.min(12,Math.hypot(o.x-wx,o.y-(dy||0)-wy))+Math.hypot(o.x-wx,o.y-wy)/1000,o])};
-  const camp=(o,sp)=>{const x0=o.x-sp.ax,y0=o.y+8-sp.ay;box(o,x0,y0,x0+sp.width,y0+sp.height)};// anywhere on its picture
+  const camp=(o,sp)=>{const b=sitePicBox(o,sp);box(o,b[0],b[1],b[2],b[3])};// anywhere on its picture as drawn (structures.js sitePicBox)
   // a big figure (a mounted lord, a caravan's cart, ox and drover) answers anywhere on what is drawn of it (its picture s, cell
   // top left x0, y0, mirrored when it faces left: render.js opaqueBox), ranked 10-12 by how far from its middle: after anyone's
   // ring (someone small beside it, clicked on, is still picked), before a building it stands in front of

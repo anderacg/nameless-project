@@ -139,7 +139,7 @@ function wuiBox(o,px,py){let b=null,f=null,inb=null,gate=null;const u=(x0,y0,x1,
   const at={x:o.x,y:o.y,V:1e9,army:q=>q===o&&men,add:(q,r,dy)=>{if(q!==o)return;const h=Math.round(r*.7),y=q.y-(dy||0);u(q.x-h,y-h,q.x+h,y+h)},
     lot:(q,t,l)=>{if(q!==o)return;const b=lotPicBox(t,l);at.box(q,b[0],b[1],b[2],b[3])},// (a lot: round its building as drawn, structures.js)
     box:(q,x0,y0,x1,y1)=>{if(q!==o)return;u(x0,y0,x1,y1);if(!gate){gate=[x0,y0,x1,y1];return}if(px>=x0&&px<x1&&py>=y0&&py<y1&&(!inb||(x1-x0)*(y1-y0)<(inb[2]-inb[0])*(inb[3]-inb[1])))inb=[x0,y0,x1,y1]},
-    camp:(q,sp)=>{if(q!==o)return;const x0=q.x-sp.ax,y0=q.y+8-sp.ay;u(x0,y0,x0+sp.width,y0+sp.height)},
+    camp:(q,sp)=>{if(q!==o)return;const c=sitePicBox(q,sp);u(c[0],c[1],c[2],c[3])},// (a site: round its picture's opaque px as drawn)
     fig:(q,s,x0,y0,flip)=>{if(q!==o)return;const k=opaqueBox(s),L=flip?x0+s.width-1-k[2]:x0+k[0];f=[L,y0+k[1],L+k[2]-k[0]+1,y0+k[3]+1]}};
   o.pick(at);if(!b&&!f&&o.town){const t=townBy(o.town);if(t)t.pick(at)}
   if(men){const q=A.figBox();f=f?[Math.min(f[0],q[0]),Math.min(f[1],q[1]),Math.max(f[2],q[2]),Math.max(f[3],q[3])]:[q[0],q[1],q[2],q[3]]}
@@ -206,7 +206,9 @@ function wuiTrail(cam,now,rm){const w=WUI.way,D=WUI.dots,FT=WUI.feet;D.length=0;
 // (a chased thing's feet, the top of what is drawn of it (a party's label over its army too: render.js armyTagAt) and its ring's
 // width, on the screen)
 function wuiTargetAt(o,cam){const b=wuiBox(o)||[o.x-6,o.y-12,o.x+6,o.y+2],top=o instanceof Party?Math.min(b[1],armyTagAt(o,null,{x:0,y:0}).y-MAP_TEXT.size-2):b[1];
-  const L=Math.round(wuiL(o.x,o.y));return{x:wuiX(o.x,cam),y:wuiY(o.y,cam)+1-L,top:Math.floor(top-cam.y)-L,rx:Math.round(clamp((b[2]-b[0])/2+3,7,22))}}
+  // (a site's ring at the foot of its picture as drawn, under its middle (its point stands above it, a camp's to one side: the owner,
+  //  2026-11-17: "highlight wrong place"); anything else's at its point)
+  const st=typeof Site!=='undefined'&&o instanceof Site&&wuiBox(o),fx=st?(b[0]+b[2])/2:o.x,fy=st?b[3]-3:o.y,L=Math.round(wuiL(o.x,o.y));return{x:wuiX(fx,cam),y:wuiY(fy,cam)+1-L,top:Math.floor(top-cam.y)-L,rx:Math.round(clamp((b[2]-b[0])/2+3,7,22))}}
 // under the markers and labels: the way, the goal's ring, the ripples and puffs, the ring round what you chase
 function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(now-(WUI.last||now))/1000)),rm=reducedMotion();WUI.last=now;
   if(G.mode==='title'){WUI.hov=null;return}wuiSync(now);wuiHover(now,dt);
