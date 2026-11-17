@@ -178,8 +178,17 @@ function trample(P,D,x0,y0,w,h,[cx,cy,rx,ry,amt]){if(cx+rx<x0||cy+ry<y0||cx-rx>=
 // wheat and hay, the Salt League vines, the Sylvan Court an orchard's and a forest garden's rows and herbs, the Karn terraced rye
 // and potatoes, the Ashgor Horde herd ground and few crops; terrace: whose crops' rows step down hillsides (a stone lip every 5); things:
 // what stands on a plot by its crop (stooks along an open edge, each a chance, a haystack, fruit trees on a 2 x 2 grid, a date palm
-// by the channel); ripe: how ripe the crops stand (1: as now; the seasons' hook, not built). A crop a plot (seeded by its tile)
-const FARM={ripe:1,
+// by the channel); ripe: how ripe the crops stand at the 16 px scale (by the season's stage: ripeOf); a crop's look by the season
+// (the owner, 2026-11-17: "make it more like other game where i can tell whether this is a wheat"): season (null: the clock's,
+// world/weather.js Weather.season; one of its keys to show it), each crop's growth (grow: its kind's, by season, a stage of
+// engine/worldnature.js PX.CROP_PLANTS: young, ripe, full, flower, fruit, leaf, stubble, bare; none: as it is all year). A crop a
+// plot (seeded by its tile)
+const FARM={ripe:1,season:null,ripeOf:{young:.15,ripe:1,full:1,flower:.7,fruit:1,leaf:.5,stubble:1,bare:.6},
+  grow:{wheat:{spring:'young',summer:'ripe',autumn:'stubble',winter:'bare'},barley:{spring:'young',summer:'ripe',autumn:'stubble',winter:'bare'},
+    rye:{spring:'young',summer:'ripe',autumn:'ripe',winter:'stubble'},veg:{spring:'young',summer:'full',autumn:'full',winter:'bare'},
+    turnips:{spring:'young',summer:'full',autumn:'full',winter:'full'},potato:{spring:'young',summer:'full',autumn:'full',winter:'bare'},
+    flax:{spring:'young',summer:'flower',autumn:'ripe',winter:'bare'},herbs:{spring:'young',summer:'flower',autumn:'flower',winter:'young'},
+    vines:{spring:'leaf',summer:'fruit',autumn:'fruit',winter:'bare'},irrigated:{spring:'full',summer:'full',autumn:'full',winter:'full'}},
   crops:{grass:[['wheat',4],['barley',2],['veg',2],['orchard',1],['vines',1],['flax',1],['hay',1.5]],frost:[['rye',4],['turnips',2],['fallow',2.5]],
     desert:[['irrigated',5],['barley',1],['veg',1]],swamp:[['veg',2],['hay',2],['flax',1],['turnips',1.5]]},
   people:{vale:{wheat:2.5,hay:1.5},salt:{vines:3,wheat:1.5},sylvan:{orchard:3,veg:1.5,wheat:.3,barley:.3},karn:{rye:3,wheat:.3,vines:.2,orchard:.3},
@@ -189,6 +198,9 @@ const FARM={ripe:1,
   things:{stook:.4,haystack:.6,fruit:.9,palm:.55},
   fine:{lit:1.12,shade:.84,leaf:.07,soil:.12,rag:.3}};
 const cultureOf=t=>HOME[t.name]||FARM.race[(t.races||[])[0]]||'vale';
+// (the season the fields show, and crop k's stage in it: FARM.grow)
+const farmSeason=()=>FARM.season||(typeof Weather!=='undefined'&&typeof Clock!=='undefined'?Weather.season().k:'summer');
+const cropStage=k=>(FARM.grow[k]||{})[farmSeason()]||'ripe';
 function fieldCrop(t,tx,ty,c){const cu=cultureOf(t),M=FARM.people[cu]||{},A=FARM.own[cu]||{},L=(FARM.crops[c]||FARM.crops.grass).map(([k,w])=>[k,w*(M[k]==null?1:M[k])]);
   for(const k in A){const e=L.find(e=>e[0]===k);if(e)e[1]+=A[k];else L.push([k,A[k]])}let n=0;for(const e of L)n+=e[1];let r=hash(tx,ty,t.seed*7+21)*n;for(const e of L){r-=e[1];if(r<0)return e[0]}return L[0][0]}
 // a farm's plot at tile (tx, ty) of holding t in climate c (fr: how far into the frost, by the snow's cover; ed(x, y): px from an edge
@@ -196,14 +208,14 @@ function fieldCrop(t,tx,ty,c){const cu=cultureOf(t),M=FARM.people[cu]||{},A=FARM
 // round it at an open edge, and what stands on it with its shadow, each pixel by px(rgb, x, y) (tile px); fine (lit, shade: a plant's
 // top left and bottom right fine px, leaf, soil: their grain, rag: a fine px gone at an open edge) the lab's scale, by pxf(rgb, x, y) (fine px, z a tile px)
 function farmPlot(t,tx,ty,c,fr,ed,px,z=1,pxf=null){const h=(x,y,s)=>hash(x,y,t.seed*7+s),cu=cultureOf(t),k=fieldCrop(t,tx,ty,fr>.5?'frost':c),v=Math.floor(h(tx,ty,22)*4),FT=FARM.things;
-  const sp=PX.worldCrop(k,c,v,{ripe:FARM.ripe,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k)}),T=new Uint8Array(256),Q=new Float32Array(768),SK=new Uint8Array(256);
+  const stg=cropStage(k),rp=FARM.season||FARM.grow[k]?FARM.ripeOf[stg]:FARM.ripe,sp=PX.worldCrop(k,c,v,{ripe:rp,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k)}),T=new Uint8Array(256),Q=new Float32Array(768),SK=new Uint8Array(256);
   for(let i=0;i<256;i++){const x=i&15,y=i>>4,e=ed(x,y);if(e<2&&h(tx*16+x,ty*16+y,3)<(e?.25:.55))continue;T[i]=1;SK[i]=sp.tr&&sp.tr[i]?1:0;Q[i*3]=sp.rgb[i*3];Q[i*3+1]=sp.rgb[i*3+1];Q[i*3+2]=sp.rgb[i*3+2]}
   // (what stands: its shadow on the plot, then its pixels (navy round it) where they fall in the tile)
   // (at the lab's scale the fine picture's (PX.worldCropThingFine), kept to be laid over the crop by the fine px: FS)
   const fine=z===2&&pxf,FS=[],stand=(s,fx,fy,kind,fv)=>{if(fine&&kind){FS.push([PX.worldCropThingFine(kind,fv),fx*z+(z>>1),fy*z+z-1]);return}for(let j=0;j<s.sh.length;j+=2){const x=fx+s.sh[j],y=fy+s.sh[j+1];if(x<0||y<0||x>15||y>15||!T[y*16+x])continue;const i=(y*16+x)*3;for(let n=0;n<3;n++)Q[i+n]+=([18,26,42][n]-Q[i+n])*.3}
     const N=s.width;for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=s.a[j*N+i];if(!a)continue;const x=fx-s.ax+i,y=fy-s.ay+j;if(x<0||y<0||x>15||y>15)continue;const q=y*16+x;T[q]=1;SK[q]=2;
       if(a===2){Q[q*3]=26;Q[q*3+1]=28;Q[q*3+2]=38}else{Q[q*3]=s.rgb[(j*N+i)*3];Q[q*3+1]=s.rgb[(j*N+i)*3+1];Q[q*3+2]=s.rgb[(j*N+i)*3+2]}}};
-  if(k==='wheat'||k==='barley'||k==='rye'){let m=0;for(const [sx,sy,ex,ey] of [[8,0,0,1],[8,15,0,-1],[0,8,1,0],[15,8,-1,0]]){if(ed(sx,sy))continue;for(let n=0;n<2;n++){if(h(tx*4+m,ty,30+n)>=FT.stook)continue;m++;
+  if((k==='wheat'||k==='barley'||k==='rye')&&(stg==='ripe'||stg==='stubble')){let m=0;for(const [sx,sy,ex,ey] of [[8,0,0,1],[8,15,0,-1],[0,8,1,0],[15,8,-1,0]]){if(ed(sx,sy))continue;for(let n=0;n<2;n++){if(h(tx*4+m,ty,30+n)>=FT.stook)continue;m++;
       const along=4+n*7+Math.floor(h(tx,ty*4+m,32)*3),fx=ey?along:ex>0?4:11,fy=ey?(ey>0?7:15):along+3;stand(PX.worldCropThing('stook',m),Math.min(12,fx),Math.min(15,fy),'stook',m)}}}
   else if(k==='hay'&&h(tx,ty,33)<FT.haystack)stand(PX.worldCropThing('haystack',0),4+Math.floor(h(tx,ty,34)*8),8+Math.floor(h(tx,ty,35)*7),'haystack',0);
   else if(k==='orchard')for(const [fx,fy] of [[4,7],[12,7],[4,15],[12,15]]){if(h(tx*2+fx,ty*2+fy,36)<FT.fruit){const fv=(cu==='sylvan'?2:0)+Math.floor(h(tx,ty,37)*2);stand(PX.worldCropThing('fruit',fv),fx+(fy>8?-1:0),fy,'fruit',fv)}}
@@ -213,7 +225,7 @@ function farmPlot(t,tx,ty,c,fr,ed,px,z=1,pxf=null){const h=(x,y,s)=>hash(x,y,t.s
   //  then its picture, its rim the ground's own darkened)); at any other scale each game px lit at its top left, shaded at its bottom right
   const F=FARM.fine;
   if(z<=1||!pxf){for(let i=0;i<256;i++)if(T[i])px([Q[i*3],Q[i*3+1],Q[i*3+2]],i&15,i>>4);return}
-  const Z=16*z,FC=new Float32Array(Z*Z*3),FD=new Uint8Array(Z*Z),sf=fine?PX.worldCrop(k,c,v,{ripe:FARM.ripe,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k),fine:z}):null;
+  const Z=16*z,FC=new Float32Array(Z*Z*3),FD=new Uint8Array(Z*Z),sf=fine?PX.worldCrop(k,c,PX.CROP_PLANTS[k]?Math.floor(h(0,0,23)*4):v,{ripe:rp,stage:stg,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k),fine:z}):null;
   for(let i=0;i<256;i++){if(!T[i])continue;const x=i&15,y=i>>4,e=SK[i]===2?9:ed(x,y);
     for(let j=0;j<z;j++)for(let q=0;q<z;q++){const X=x*z+q,Y=y*z+j;if(e<2&&h(tx*64+X,ty*64+Y,42)<F.rag)continue;const n=h(tx*64+X,ty*64+Y,41)-.5,o=(Y*Z+X)*3,fi=Y*Z+X;
       if(sf&&SK[i]!==2){const m=1+n*(sf.tr[fi]?F.soil:F.leaf);FC[o]=Math.min(255,sf.rgb[fi*3]*m);FC[o+1]=Math.min(255,sf.rgb[fi*3+1]*m);FC[o+2]=Math.min(255,sf.rgb[fi*3+2]*m)}

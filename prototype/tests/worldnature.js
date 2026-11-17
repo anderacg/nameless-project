@@ -210,7 +210,8 @@ try{
  //      Vale's wheat, the Sylvan Court's herbs and orchards, the Karn's rye and potatoes, terraced, the Ashgor's herd ground; the
  //      desert's irrigated plots with their channel, the frost's rye, turnips and fallow under snow), in rows of plants (the crop's
  //      own tones, soil between), what stands on them (stooks, haystacks, fruit trees, date palms: their navy outline)
- {const people=['vale','sylvan','karn','horde'],cl=['grass','desert','frost','swamp'],tally={},cols={},snowy=[0,0],water=[0,0],stand=[0,0],bad=[];
+ {const se0=t.FARM.season;t.FARM.season='summer';try{// (in summer: the crops ripe, as the coarse picture's c1 tones: worldart.js FARM.grow)
+  const people=['vale','sylvan','karn','horde'],cl=['grass','desert','frost','swamp'],tally={},cols={},snowy=[0,0],water=[0,0],stand=[0,0],bad=[];
   const pal=k=>new Set(PX.WORLD_CROPS[k].c1.map(c=>parseInt(c.slice(1,3),16)+','+parseInt(c.slice(3,5),16)+','+parseInt(c.slice(5,7),16)));
   for(const p of people)for(const c of cl){const tw={name:'(a test '+p+')',seed:7,races:[{vale:'human',sylvan:'elf',karn:'dwarf',horde:'orc'}[p]]};t.HOME[tw.name]=p;
    try{for(let k=0;k<60;k++){const tx=10+k%10,ty=10+((k/10)|0),Q=new Map(),kd=t.fieldCrop(tw,tx,ty,c);t.farmPlot(tw,tx,ty,c,c==='frost'?1:0,(x,y)=>y,(col,x,y)=>Q.set(y*16+x,col.map(Math.round).join()));
@@ -220,7 +221,7 @@ try{
      if(['wheat','barley','rye','hay','orchard','irrigated'].includes(kd)){stand[1]++;if(vals.includes('26,28,38'))stand[0]++}}}finally{delete t.HOME[tw.name]}}
   const top=key=>Object.entries(tally[key]).sort((a,b)=>b[1]-a[1]).map(e=>e[0]+' '+e[1]).slice(0,3).join(', '),mx=(key,k)=>(tally[key][k]||0);
   const culture=mx('vale grass','wheat')>mx('vale grass','herbs')+mx('vale grass','potato')&&mx('sylvan grass','herbs')+mx('sylvan grass','orchard')>mx('sylvan grass','wheat')&&mx('karn grass','rye')+mx('karn grass','potato')>20&&mx('horde grass','grazed')>20&&mx('vale desert','irrigated')>20&&mx('vale frost','rye')+mx('vale frost','turnips')+mx('vale frost','fallow')===60;
-  ok(!bad.length&&culture&&snowy[0]>=snowy[1]*.8&&water[0]===water[1]&&stand[0]>=stand[1]*.5,'a farm\u2019s plots show their crops in rows, by climate and people ('+['vale grass','sylvan grass','karn grass','horde grass','vale desert','vale frost','vale swamp'].map(k=>k+': '+top(k)).join('; ')+'); the frost\u2019s snow in the troughs on '+snowy[0]+' of '+snowy[1]+', the desert\u2019s channel on '+water[0]+' of '+water[1]+', stooks, haystacks, fruit trees or palms standing on '+stand[0]+' of '+stand[1]+(bad.length?' \u2014 not: '+bad.slice(0,5).join('; '):''))}
+  ok(!bad.length&&culture&&snowy[0]>=snowy[1]*.8&&water[0]===water[1]&&stand[0]>=stand[1]*.5,'a farm\u2019s plots show their crops in rows, by climate and people ('+['vale grass','sylvan grass','karn grass','horde grass','vale desert','vale frost','vale swamp'].map(k=>k+': '+top(k)).join('; ')+'); the frost\u2019s snow in the troughs on '+snowy[0]+' of '+snowy[1]+', the desert\u2019s channel on '+water[0]+' of '+water[1]+', stooks, haystacks, fruit trees or palms standing on '+stand[0]+' of '+stand[1]+(bad.length?' \u2014 not: '+bad.slice(0,5).join('; '):''))}finally{t.FARM.season=se0}}
  // ---- the same chunk, the same picture; and the time a chunk takes (the game paints them in the background, a few ms a frame:
  //      worldchunks checks that; here a chunk painted fine at once)
  {const R=recs[0],h=R0=>{const f=R0.fcv,d=f.getContext('2d',{willReadFrequently:true}).getImageData(0,0,f.width,f.height).data;let s=0;for(let i=0;i<d.length;i+=12)s=(s*31+d[i])|0;for(const p of R0.props)s=(s*31+Math.round(p.x*8)+Math.round(p.y*8)*7)|0;return s};

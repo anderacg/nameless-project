@@ -336,7 +336,9 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
   //  over.warp game px: the grass's clumps thin out over it, never stopping along a lot's tile edge)
   const occ1=(u,v)=>typeof occAt==='function'&&occAt(Math.max(0,Math.min(MW-1,u)),Math.max(0,Math.min(MH-1,v)))>0?1:0,occSoft=(gx,gy)=>{const W=WORLD_TERRAIN.over.warp,wx=gx+(wnoise2(gx/20,gy/20,591)-.5)*2*W,wy=gy+(wnoise2(gx/20,gy/20,592)-.5)*2*W,u=(wx-8)/16,v=(wy-8)/16,a=Math.floor(u),b=Math.floor(v),bx=labBS(u-a),by=labBS(v-b);
     let o=0;for(let q=0;q<4;q++)for(let p=0;p<4;p++)o+=bx[p]*by[q]*occ1(a+p-1,b+q-1);return o};
-  const ok=(gx,gy,fx,fy,soft)=>{const fo=((gy-Y)*w+gx-X)*4,go=((gy-y0)*ww+gx-x0)*4,ti=(gy>>4)*MW+(gx>>4),fi=(fy-Y*r)*W2+fx-X*r;if(WB.seaAt(gx,gy)||WB.RF.S[fi]<2*r||WB.DF.S[fi]<3*r||WB.PL[fi])return false;
+  // (a field's plot (a lot's tile outside its own box): no grass over its crop at all, its edge ragged by its own painter: worldart.js farmPlot)
+  const plot1=(u,v)=>{const l=typeof lotOf==='function'?lotOf(u,v):null;return !!l&&(u<l.x||u>=l.x+l.n||v<l.y||v>=l.y+l.n)};
+  const ok=(gx,gy,fx,fy,soft)=>{const fo=((gy-Y)*w+gx-X)*4,go=((gy-y0)*ww+gx-x0)*4,ti=(gy>>4)*MW+(gx>>4),fi=(fy-Y*r)*W2+fx-X*r;if(WB.seaAt(gx,gy)||WB.RF.S[fi]<2*r||WB.DF.S[fi]<3*r||WB.PL[fi]||plot1(gx>>4,gy>>4))return false;
     if(F[fo]!==G[go]||F[fo+1]!==G[go+1]||F[fo+2]!==G[go+2])return false;if(vis(fx,fy)===-1)return false;if(soft?hs(fx,fy,589)<occSoft(gx,gy)*1.15:typeof occAt==='function'&&occAt(gx>>4,gy>>4)>0)return false;
     return true};
   // (a prop's picture cut where the ground in front of it is drawn over it: a ridge nearer hides what stands behind it, as the lab's

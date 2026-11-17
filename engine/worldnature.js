@@ -280,7 +280,7 @@
   //  white, P and B a turnip's bulb, G grapes, K a stake, F and f flax's flowers, H and h a herb's flowers (a row's herb in turn);
   //  a plant now and then missing (gap) or a tone off)
   const CROP_GAP=.07;
-  PX.worldCrop=(kind,clim,v,o)=>{o=o||{};kind=PX.WORLD_CROPS[kind]?kind:'wheat';clim=PX.WORLD_SOIL[clim]?clim:'grass';v=((v|0)%4+4)%4;const CR=PX.WORLD_CROPS[kind];
+  PX.worldCrop=(kind,clim,v,o)=>{o=o||{};kind=PX.WORLD_CROPS[kind]?kind:'wheat';if((o.fine||1)>1&&PX.CROP_PLANTS[kind])return PX.worldCropFine(kind,clim,v,o);clim=PX.WORLD_SOIL[clim]?clim:'grass';v=((v|0)%4+4)%4;const CR=PX.WORLD_CROPS[kind];
     const q=x=>Math.round(Math.max(0,Math.min(1,x))*10)/10,ripe=q(o.ripe==null?1:o.ripe),snow=q(o.snow||0),wet=q(o.wet||0),ter=o.terrace?1:0,f=o.fine||1,key='f'+kind+clim+v+ripe+snow+wet+ter+'x'+f;if(CACHE[key])return CACHE[key];
     const N=16*f,a=new Uint8Array(N*N).fill(1),rgb=new Uint8Array(N*N*3),tr=new Uint8Array(N*N),s=v*37+kind.length*11+clim.length,X=CROP_X,H=(x,y,k)=>PX.hash(x,y,s+k);
     const pal=CR.c0.map((c,i)=>mixA(mixA(hx(c),hx(CR.c1[i]),ripe),CROP_X.dry[i],clim==='desert'&&!CR.pat&&!CR.rows?.45:0)),soil=hx(PX.WORLD_SOIL[clim]),dark=mixA(soil,[30,24,20],.3),lite=mixA(soil,[230,210,170],.18),across=CR.pat||CR.rows||ter||v&1,off=v>>1,ch=6+off*2;
@@ -306,6 +306,72 @@
       if(t&&snow&&H(x,y,2)<snow*(t>1?.85:.3))c=hx(X.snow);else if(!t&&snow&&kind!=='irrigated'&&H(x,y,3)<snow*.1)c=hx(X.frost);else if(t&&wet&&H(x,y,4)<wet*.3)c=X.wet;
       rgb[i*3]=c[0];rgb[i*3+1]=c[1];rgb[i*3+2]=c[2];tr[i]=t?1:0}
     const sp=finish(N,a,rgb,8*f,16*f-1,true);sp.tr=tr;sp.ch=kind==='irrigated'?ch:-1;sp.kind=kind;return CACHE[key]=sp};
+  /* a row crop by the fine px (the owner, 2026-11-17: "make it more like other game where i can tell whether this is a wheat or
+     something like that"): its plants you can tell apart, each its own small picture stood upright in rows across the plot, staggered
+     row by row, on furrowed soil (the ridge they stand on lit, the trough between dark), a contact shadow at each foot; the plot tiles
+     with its neighbours (rows and plants wrap round its edges, what reaches over its top drawn last, before the row below). Its look
+     by its stage (gfx/worldart.js FARM.grow: young, ripe, full, flower, fruit, leaf, stubble, bare). PX.CROP_PLANTS: each crop's row
+     (fine px between rows), step (between plants along one), its plants by stage (one, or one a row in turn: veg's cabbages, leeks
+     and carrots, the herbs' lavender, sage, marigold and camomile), each rows of letters top to bottom, its foot the bottom row's
+     middle, '.' none (row and step whole parts of a tile's 16 x fine px, so a field's plots meet seamlessly); and its tones by
+     stage (CROP_TONES: a letter a colour). The frost's snow lies in the troughs, the swamp's water
+     now and then; the desert's irrigated plot its channel along a row */
+  const WH={y:['.a.a.a.','abababa','bcbcbcb','cbcbcbc','.s.s.s.','sSsSsSs','.S.S.S.'],
+    yg:['l...l','.l.l.','l.m.l','.mdm.','..d..'],st:['s.s.s','SsSsS']};
+  PX.CROP_PLANTS={
+    wheat:{row:8,step:4,young:WH.yg,ripe:WH.y,stubble:WH.st},
+    barley:{row:8,step:4,young:WH.yg,ripe:['a..a..a','.a..a..','abababa','bcbcbcb','.s.s.s.','sSsSsSs','.S.S.S.'],stubble:WH.st},
+    rye:{row:8,step:4,young:['.l.','l.l','.m.','.m.','.m.','.d.','.d.'],ripe:['.a.','aba','bcb','.c.','.s.','s.s','.s.','.s.','.S.','.S.','.S.'],stubble:WH.st},
+    veg:{row:8,step:8,young:[['.l.l.','lmlml','.ddd.'],['l.l','.m.','.d.'],['l.l','.m.','.d.']],
+      full:[['..dmd..','.dmlmd.','dmlwlmd','dmllmmd','.ddmdd.'],['m.l','lmd','.m.','.w.','.w.','.W.'],['l.l.l','.lml.','..m..','.ooo.','..o..']]},
+    turnips:{row:8,step:8,young:['l.l','.m.','.d.'],full:['l.l.l','.lml.','.dmd.','.wpw.','..p..']},
+    potato:{row:8,step:8,young:['.l.l.','lmlml','.ddd.'],full:['..lwl..','.lmlml.','lmdmdml','mdmdmdm','.ddddd.']},
+    flax:{row:8,step:4,young:['l.l','.m.','.m.','.d.'],flower:['f.f','FfF','.s.','s.s','.s.','.s.','.S.'],ripe:['a.a','bab','.s.','s.s','.s.','.s.','.S.']},
+    herbs:{row:8,step:4,young:['..l..','.lml.','lmdml','.ddd.'],
+      flower:[['p.p.p','PpPpP','PmPmP','mmdmm','.ddd.'],['..g..','.ghg.','ghdhg','.ddd.'],['o.o.o','OoOoO','mlmlm','.ddd.'],['w.w.w','WwWwW','mlmlm','.ddd.']]},
+    vines:{row:8,step:8,bare:['K.......','kqqqqqqq','k.......','k.......','k.......','k.......'],leaf:['K.......','klmlmllm','kmdmdmdm','kdmddmdd','k.d..d..','k.......'],
+      fruit:['K.......','klmlmllm','kmdmgmdm','kdgdggdd','k.g..g..','k.......']},
+    irrigated:{row:8,step:4,full:['..l..','.lml.','lmdml','.ddd.']}};
+  const CROP_TONES={
+    grain:{l:'#b8d870',m:'#86b048',d:'#5a8a36',s:'#d8b860',S:'#9a7a3a'},
+    wheat:{a:'#fbe48a',b:'#e0b44e',c:'#a67a30'},barley:{a:'#f6ecc0',b:'#d8c486',c:'#a89458',s:'#d2c08a',S:'#968450'},
+    rye:{a:'#e6dcb0',b:'#b8a87a',c:'#86784e',s:'#b4ac84',S:'#7c7458',l:'#a8c094',m:'#7e9a74',d:'#56705a'},
+    row:{l:'#c4e08a',m:'#86b450',d:'#4e7c34',w:'#e6f2c4',W:'#b8cc94',o:'#ec8a30',p:'#a85a9a',s:'#7aa050',S:'#4e7434'},
+    turnips:{w:'#ece4ea'},potato:{w:'#f6f2e0',l:'#9ec060',m:'#6a9a42',d:'#42682e'},
+    flax:{f:'#9ab4f6',F:'#5a78d0',a:'#d0b070',b:'#a07c44',l:'#9ac46a',m:'#6e9a48',d:'#4a7434'},
+    herbs:{p:'#c4a8f0',P:'#8462bc',g:'#c4d0b4',h:'#94a888',o:'#f6c040',O:'#d0862a',w:'#f8f4e6',W:'#d8d0b0',l:'#94b46a',m:'#648a48',d:'#44663a'},
+    vines:{l:'#a8cc66',m:'#6e9a44',d:'#46702f',g:'#6a3a7a',k:'#6a4a2c',K:'#9a7a50',q:'#8a8478'},vinesGreen:{g:'#b4d066'},
+    irrigated:{l:'#a8dc6a',m:'#6aac44',d:'#46803a'}};
+  // (a stage's plants: the crop's own by that name, else the nearest it has; its tones: the crop's group's, then its own)
+  const cropPlants=(P,st)=>P[st]||P[{ripe:'full',full:'ripe',flower:'full',fruit:'leaf',leaf:'full',young:'full',stubble:'bare'}[st]]||(st==='bare'||st==='stubble'?null:P.young)||null;
+  const cropTones=(kind,st)=>{const T=CROP_TONES,g=['wheat','barley','rye'].includes(kind)?'grain':['veg','turnips','potato'].includes(kind)?'row':kind,o={};
+    Object.assign(o,T.grain,T.row,T[g]||{},T[kind]||{});if(kind==='vines'&&st!=='fruit')Object.assign(o,T.vinesGreen);
+    if(st==='young'&&g==='grain'){o.s=o.m;o.S=o.d}const q={};for(const k in o)q[k]=hx(o[k]);return q};
+  PX.worldCropFine=(kind,clim,v,o)=>{clim=PX.WORLD_SOIL[clim]?clim:'grass';v=((v|0)%4+4)%4;const q=x=>Math.round(Math.max(0,Math.min(1,x))*10)/10,st=o.stage||'ripe',snow=q(o.snow||0),wet=q(o.wet||0),ter=o.terrace?1:0,f=o.fine;
+    const key='cf'+kind+clim+v+st+snow+wet+ter+'x'+f;if(CACHE[key])return CACHE[key];
+    const P=PX.CROP_PLANTS[kind],N=16*f,R=P.row,a=new Uint8Array(N*N).fill(1),rgb=new Uint8Array(N*N*3),tr=new Uint8Array(N*N),s=v*37+kind.length*11+clim.length,H=(x,y,k)=>PX.hash(x,y,s+k);
+    const soil=hx(PX.WORLD_SOIL[clim]),dark=mixA(soil,[30,24,20],.38),lite=mixA(soil,[236,214,170],.2),shade=mixA(soil,[24,18,14],.5),X=CROP_X,off=(v>>1)*3,ch=6+(v>>1)*2;
+    // (the furrows: a row's ridge lit under its plants, the trough between rows dark)
+    for(let y=0;y<N;y++){const d=((y-off)%R+R)%R;for(let x=0;x<N;x++){const i=y*N+x,n=H(x,y,1);let c=d===R-1||d===0?lite:d===(R>>1)-1||d===R>>1?dark:soil;if(n<.12)c=mixA(c,dark,.4);else if(n>.92)c=mixA(c,lite,.5);
+      rgb.set(c.map(Math.round),i*3);tr[i]=1}}
+    const set=(x,y,c)=>{x=((x%N)+N)%N;if(y<0||y>=N)return;const i=y*N+x;rgb[i*3]=c[0];rgb[i*3+1]=c[1];rgb[i*3+2]=c[2];tr[i]=0};
+    // (the desert's irrigated plot: its channel along one row, its banks dark, no plants on it)
+    const chan=kind==='irrigated'?((Math.floor(ch*f/R)*R+off)%N):-99;
+    if(kind==='irrigated')for(let x=0;x<N;x++)for(let y=chan-3;y<=chan+1;y++){const yy=((y%N)+N)%N,i=yy*N+x;const c=y===chan-3||y===chan+1?mixA(dark,[20,30,40],.25):hx(X.water[y===chan-2?0:1]);rgb.set(c.map(Math.round),i*3);tr[i]=0}
+    const PL=cropPlants(P,st),T=cropTones(kind,st),late=[];
+    if(PL){const rows=Math.round(N/R);
+      for(let r=0;r<rows;r++){const fy=r*R+off+R-1,pat=Array.isArray(PL[0])?PL[(r+v)%PL.length]:PL,ph=pat.length,pw=pat[0].length,stg=(r*Math.max(1,P.step>>1)+v*3)%P.step,fyy=fy%N;
+        if(kind==='irrigated'&&Math.abs(fyy-chan)<4)continue;
+        for(let x0=stg;x0<N;x0+=P.step){if(H(x0,r,6)<CROP_GAP)continue;const jx=x0+(H(x0,r,7)<.25?1:0)-(pw>>1),flip=H(x0,r,8)<.5,cut=H(x0,r,9)<.25?1:0;
+          if(fyy+1<N){const i=(fyy+1)*N+((jx+(pw>>1)+1)%N);if(tr[i]){const c=mixA([rgb[i*3],rgb[i*3+1],rgb[i*3+2]],shade,.5);rgb.set(c.map(Math.round),i*3)}}// (its contact shadow)
+          for(let j=cut;j<ph;j++)for(let k=0;k<pw;k++){const L=pat[j][flip?pw-1-k:k];if(L==='.')continue;const c=T[L];if(!c)continue;const y=fyy-(ph-1-j);
+            if(y<0)late.push([jx+k,y+N,c]);else set(jx+k,y,c)}}}
+      for(const [x,y,c] of late)set(x,y,c)}
+    // (the Karn's terraces: a stone lip every fifth row of the coarse picture's)
+    if(ter)for(let y=0;y<N;y++){const ut=Math.floor(y/f);if((ut+(v>>1))%5===4)for(let x=0;x<N;x++){const i=y*N+x,c=hx(X.stone[H(x,y,10)<.6?0:1]);rgb.set(c,i*3);tr[i]=0}}
+    // (snow in the troughs, a little on the plants; the swamp's water in some)
+    for(let i=0;i<N*N;i++){const x=i%N,y=(i/N)|0;let c=null;if(tr[i]&&snow&&H(x,y,2)<snow*.85)c=hx(X.snow);else if(!tr[i]&&snow&&H(x,y,3)<snow*.12)c=hx(X.frost);else if(tr[i]&&wet&&H(x,y,4)<wet*.3)c=X.wet;if(c)rgb.set(c,i*3)}
+    const sp=finish(N,a,rgb,8*f,16*f-1,true);sp.tr=tr;sp.ch=kind==='irrigated'?Math.floor(chan/f):-1;sp.kind=kind;sp.stage=st;return CACHE[key]=sp};
   PX.worldCropThing=(kind,v)=>{v=((v|0)%4+4)%4;const key='ft'+kind+v;if(CACHE[key])return CACHE[key];const N=8,M=new Uint8Array(N*N),set=(x,y,t)=>{if(x>0&&y>0&&x<N-1&&y<N)M[y*N+x]=t};let col;
     if(kind==='haystack'){for(let y=2;y<7;y++)for(let x=1;x<7;x++){const d=((x+.5-4)/3)**2+((y+.5-6)/4)**2;if(d>1)continue;set(x,y,x+y<7?1:x>4||y>5?3:2)}for(let x=2;x<6;x++)set(x,7,4);set(4,1,2);col=[null,'#f0dc94','#cba85c','#8e7438','#6a5430']}
     else if(kind==='fruit'){clumps(M,N,[[4,3.4,2.6],[2.8,4.2,1.6],[5.2,4,1.7]],3,2.5,3,v*13+5);for(let i=0;i<N*N;i++)if(M[i]>=1&&M[i]<=3&&PX.hash(i,v,91)<.2)M[i]=6;set(4,6,5);set(4,7,5);

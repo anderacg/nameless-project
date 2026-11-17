@@ -267,7 +267,7 @@ const PEN_FENCE={post:8,rail:['#b08a5a','#7a5a38'],posts:['#9a7444','#5a3e24'],c
 // px: WORLD_VIEW.build; drawn back to its size, drawLotGround); kept on its lot (l._eg) until its level changes: an estate pulled
 // down and placed again elsewhere, or another world's holding of the same name, draws its own
 function estateGround(t,k,lv){
-  const l=lotAt(t,k),p=bldSpots(t)[k];if(!l||!p)return null;if(l._eg!==undefined&&l._egLv===lv)return l._eg;l._egLv=lv;
+  const l=lotAt(t,k),p=bldSpots(t)[k],se=k==='farm'?farmSeason():'';if(!l||!p)return null;if(l._eg!==undefined&&l._egLv===lv&&l._egSe===se)return l._eg;l._egLv=lv;l._egSe=se;// (a farm's again each season: its crops grow, worldart.js FARM.grow)
   const c=climAt(p.x,p.y),plots=plotsAt(t,k,lv),pier=k==='port'?pierOf(t):null,plen=pier?10+lv*6:0,tiles=[[l.x,l.y],[l.x+l.n-1,l.y+l.n-1],...plots];
   let x0=Math.min(...tiles.map(q=>q[0]))*TILE-2,y0=Math.min(...tiles.map(q=>q[1]))*TILE-2,x1=(Math.max(...tiles.map(q=>q[0]))+1)*TILE+2,y1=(Math.max(...tiles.map(q=>q[1]))+1)*TILE+2;
   if(pier){x0=Math.min(x0,pier.x-plen-6);x1=Math.max(x1,pier.x+plen+6);y0=Math.min(y0,pier.y-plen-6);y1=Math.max(y1,pier.y+plen+6)}

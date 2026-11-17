@@ -49,6 +49,24 @@ Kit.suite(({ok,info})=>{
  {const th=['haystack','stook','fruit'].map(k=>t.PX.worldCropThingFine(k,1)),cr=t.PX.worldCrop('wheat','grass',0,{fine:2}),c1=t.PX.worldCrop('wheat','grass',0);
   ok(th.every(s=>s.width===16&&s.ax===8&&s.ay===15),'a haystack, a stook and a fruit tree each its own 16 fine px picture, its foot at (8, 15)');
   ok(cr.width===32&&c1.width===16&&cr.tr.length===32*32,'a crop laid by the fine px: 32 to a tile\'s 16')}
+ // ---- crops you can tell apart (engine/worldnature.js PX.worldCropFine, PX.CROP_PLANTS; gfx/worldart.js FARM.grow; the owner,
+ //      2026-11-17: "make it more like other game where i can tell whether this is a wheat"): each row crop its own plants (its own
+ //      colours, more than a few of them over the soil), standing in rows (the soil's furrows between rows), whole steps of a tile so
+ //      a field's plots meet; by the season: young green in spring, the grain golden in summer, stubble and stooks in autumn, bare in
+ //      winter; a farm's ground painted again when the season turns
+ {const PX=t.PX,K=Object.keys(PX.CROP_PLANTS),pics={},bad=[],key=sp=>{const n=sp.rgb.length/3,S=new Map();for(let i=0;i<n;i++)if(!sp.tr[i]){const c=sp.rgb[i*3]+','+sp.rgb[i*3+1]+','+sp.rgb[i*3+2];S.set(c,(S.get(c)||0)+1)}return S};
+  for(const k of K){const st=t.FARM.grow[k].summer,sp=PX.worldCrop(k,'grass',0,{fine:2,stage:st}),S=key(sp),P=PX.CROP_PLANTS[k];pics[k]=[...S.keys()].sort().join('|');
+   let rows=0;for(let y=0;y<32;y++){let soil=0;for(let x=0;x<32;x++)soil+=sp.tr[y*32+x];if(soil>=24)rows++}
+   if(S.size<4||32%P.row||32%P.step||!rows)bad.push(k+' ('+S.size+' colours, '+rows+' soil lines, row '+P.row+', step '+P.step+')')}
+  const same=K.filter((a,i)=>K.some((b,j)=>j<i&&pics[a]===pics[b]));
+  ok(!bad.length&&!same.length,'each of '+K.length+' row crops its own plants in rows on furrowed soil ('+K.join(', ')+')'+(bad.length?'; not: '+bad.join('; '):'')+(same.length?'; alike: '+same.join(', '):''));
+  const gold=sp=>{let n=0;for(let i=0;i<sp.tr.length;i++)if(!sp.tr[i]&&sp.rgb[i*3]>200&&sp.rgb[i*3+1]>150&&sp.rgb[i*3+2]<140)n++;return n},green=sp=>{let n=0;for(let i=0;i<sp.tr.length;i++)if(!sp.tr[i]&&sp.rgb[i*3+1]>sp.rgb[i*3]+20)n++;return n};
+  const W=s=>PX.worldCrop('wheat','grass',0,{fine:2,stage:t.FARM.grow.wheat[s]}),sp=W('spring'),su=W('summer'),au=W('autumn'),wi=W('winter'),plants=x=>x.tr.length-x.tr.reduce((a,b)=>a+b,0);
+  ok(green(sp)>100&&gold(sp)<10&&gold(su)>150&&plants(au)<plants(su)/2&&plants(wi)===0,'wheat by the season: young and green in spring ('+green(sp)+' green px), golden in summer ('+gold(su)+'), cut to stubble in autumn ('+plants(au)+' px of plant, summer '+plants(su)+'), the bare furrows in winter ('+plants(wi)+')');
+  const tw=t.TOWNS.find(x=>x.lots&&t.bldLv(x,'farm')),l=tw&&t.lotAt(tw,'farm');if(!l)info('no farm');else{const se0=t.FARM.season;try{t.FARM.season='spring';const a=t.estateGround(tw,'farm',t.bldLv(tw,'farm'));t.FARM.season='summer';const b=t.estateGround(tw,'farm',t.bldLv(tw,'farm'));t.FARM.season='summer';const c=t.estateGround(tw,'farm',t.bldLv(tw,'farm'));
+   ok(a&&b&&a!==b&&b===c,tw.name+'\'s farm ground painted again when the season turns, kept within one')}finally{t.FARM.season=se0;l._eg=undefined}}
+  // (no grass over a field's crops: worldterrain.js terrainProps)
+  {const P0=tw&&t.plotsAt(tw,'farm',t.bldLv(tw,'farm'));if(P0&&P0.length){const [px,py]=P0[0];ok(!!t.lotOf(px,py),'a field\'s plot is its farm\'s (lotOf), so the grass keeps off it')}}}
  // ---- a camp's fire in the open, its flame on its pit at both scales (engine/buildmodels.js)
  {let bad=[];for(const kind of ['camp','hideout','travelers'])for(let i=1;i<4;i++){const m1=t.PX.clusterModel({kind,seed:i*131+7,env:'grass',snow:0,detail:1}),m2=t.PX.clusterModel({kind,seed:i*131+7,env:'grass',snow:0,detail:2});
    const f1=m1.marks.fire,f2=m2.marks.fire;if(!f1||!f2||Math.abs(f2[0]/2-f1[0])>1||Math.abs(f2[1]/2-f1[1])>1)bad.push(kind+i)}
