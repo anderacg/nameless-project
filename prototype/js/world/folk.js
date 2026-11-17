@@ -132,9 +132,9 @@ function fieldPlan(t,f){
     else{let best=[],run=[];for(let j=0;j<16;j++){const s=ring[j%8];if(s.ok&&(!run.length||leg[(j+7)%8])){run.push(s);if(run.length>best.length&&run.length<=8)best=run.slice()}else run=s.ok?[s]:[]}best.forEach(s=>loop.push(s))}
     if(!loop.length)loop.push(front())}
   else{const n=FIELD.spots[0]+Math.floor(R()*(FIELD.spots[1]-FIELD.spots[0]+1));for(let i=0;i<n;i++)loop.push(front())}
-  // (home: the stop nearest the door, a herder's one he reaches from it clear of the pens by a pixel)
+  // (home: the stop nearest the door that he reaches in a clear line (a pond by Pearlbay's pens), a herder's one clear of the pens by a pixel)
   const pen=s=>{if(f.k!=='pasture')return false;const n=Math.ceil(Math.hypot(s.x-door.x,s.y-door.y)*4);for(let k=0;k<=n;k++){const x=door.x+(s.x-door.x)*k/n,y=door.y+(s.y-door.y)*k/n;if(fs.some(c=>Math.abs(x-c[0]*TILE-8)<9&&Math.abs(y-c[1]*TILE-8)<9))return true}return false},
-    by=s=>Math.hypot(s.x-door.x,s.y-door.y)+(pen(s)?1e4:0);
+    by=s=>Math.hypot(s.x-door.x,s.y-door.y)+(pen(s)?1e4:0)+(clearLine(door.x,door.y,s.x,s.y)?0:2e4);
   loop.forEach((s,i)=>{if(by(s)<by(loop[pl.home]))pl.home=i});
   // (pens hemming the door in, no stop clear of them from it: his way to home and back round their fences (out); none, he works
   // at the door)
