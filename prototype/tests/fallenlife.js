@@ -20,7 +20,7 @@ Kit.suite(({ok,info})=>{
  {Kit.goTo(home.x+1500,home.y);const c=t.asCarcass({x:P.x+60,y:P.y+10,type:'militia',wild:null,mon:null,bst:false,face:1,items:[{k:'good',id:'meat',n:2},{k:'mat',id:'iron',n:1}],day:G.day+t.Clock.frac,at:G.day});C.list=[c];
   const b=t.asParty({kind:'bandits',troops:['militia','militia'],x:c.x+90,y:c.y,cool:0});t.bandits.push(b);Math.random=()=>0;try{C.hour()}finally{Math.random=r0}const px=P.x;P.x+=420;// (you off past its sight: it does not turn on you)
   ok(b.corpse&&Math.hypot(b.corpse.x-c.x,b.corpse.y-c.y)<1,'a band near the fallen sets out for them');let n=0,at=-1;
-  for(;n<3000&&b.corpse;n++){const d=Math.hypot(b.x-c.x,b.y-c.y);t.updateWorld(.05);if(at<0&&d<=X.loot.at)at=n}
+  for(;n<3000&&b.corpse;n++){const d=Math.hypot(b.x-c.x,b.y-c.y);t.updateWorld(.05);if(at<0&&d<=X.loot.at+1)at=n}// (+1: stopped at L.at, the world's step may leave it a hair past, 24.1 px)
   ok(at>=0&&n-at>=3&&c.empty()&&c.robbed&&b.plunder?.items.length===2,'it walks there ('+at+' steps), searches them a while ('+(n-at)+'), and takes all on them ('+(b.plunder?.items.map(q=>q[2]+' '+q[1]).join(', '))+')');
   P.x=px;t.bandits.length=0;C.list=[]}
  // ---- fresh fallen with something on them and no band near: looters may come out of the wilds for them

@@ -170,8 +170,8 @@ function goField(t,f,now){const pl=f.plan&&f.plan.day===G.day?f.plan:f.plan=fiel
   if(now){const i=Math.floor(pl.R()*pl.loop.length);f.si=i;f.x=pl.loop[i].x;f.y=pl.loop[i].y;f.wp=[];fieldRest(f)}else{f.si=-1;f.wp=pl.out.concat(fieldWay(pl,pl.home,pl.home))}}
 // a stop: a while, and maybe a turn the other way partway through
 function fieldRest(f){const R=f.plan.R,w=f.plan.loop[f.si].w;f.wait=w[0]+R()*(w[1]-w[0]);f.turn=R()<.6?f.wait*R():0}
-// a step toward the next point of his way (in haste on his way in), on the land's ways (world.js walk: round what is in the way),
-// a fisher's over the planks; true once there
+// a step toward the next point of his way (in haste on his way in), on the land's ways (world.js walk: round what is in the way,
+// on dry ground: never wading a pond as walkAt lets one, Pearlbay's by its door), a fisher's over the planks; true once there
 function fieldStep(f,d,fast,s=footStep(fast?FIELD.hurry:f.load?FIELD.carry:FIELD.gait,d)){const p=f.wp[0],dx=p.x-f.x,dy=p.y-f.y,dd=Math.hypot(dx,dy);
   if(Math.abs(dx)>.2)f.dir=dx>0?1:-1;f.moving=true;
   if(dd<=s){WALKED.set(f,(WALKED.get(f)||0)+dd);f.x=p.x;f.y=p.y;f.wp.shift();if(p.i>=0)f.si=p.i;return true}
@@ -179,7 +179,7 @@ function fieldStep(f,d,fast,s=footStep(fast?FIELD.hurry:f.load?FIELD.carry:FIELD
   // straight for it, as one barred does, onto ground he can walk. f.fb: the nearest he has come to it, f.fst: how long since)
   if(f.fp!==p){f.fp=p;f.fb=dd;f.fst=0}
   const go=()=>{const x=f.x+dx/dd*s,y=f.y+dy/dd*s;return passable(tAt(Math.floor(x/TILE),Math.floor(y/TILE)))};
-  if(f.plan.pier||f.fst>FIELD.stall&&go()||!walk(f,dx,dy,s,f.plan.pens&&((x,y)=>!inPen(f.plan.pens,x,y,1)))){WALKED.set(f,(WALKED.get(f)||0)+s);f.x+=dx/dd*s;f.y+=dy/dd*s}
+  if(f.plan.pier||f.fst>FIELD.stall&&go()||!walk(f,dx,dy,s,(x,y)=>passable(terrAt(x,y))&&!(f.plan.pens&&inPen(f.plan.pens,x,y,1)))){WALKED.set(f,(WALKED.get(f)||0)+s);f.x+=dx/dd*s;f.y+=dy/dd*s}
   const nd=Math.hypot(p.x-f.x,p.y-f.y);if(nd<f.fb-.5){f.fb=nd;f.fst=0}else f.fst+=d;return false}
 // at work out of doors: home by his round and in at the door when the hours end, his day is inside or danger comes; else stop to
 // stop, carrying what he got from a stop to the next

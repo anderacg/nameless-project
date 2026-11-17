@@ -30,7 +30,9 @@ Kit.suite(({ok,info})=>{
  // ---- the morning: from their doors they walk to work, and get there
  {const C=near(city,.045),wk=C.ppl.filter(p=>p.job&&!p.child),from=new Map(wk.map(p=>[p,{x:p.x,y:p.y}]));let moving=0;
   counted(()=>{for(let i=0;i<88;i++){G.clock+=t.DAY*.1/(t.WORLD_PACE*t.DAY_SECONDS);TF.step(.1);check(C);moving=Math.max(moving,wk.filter(p=>p.moving).length)}});
-  const there=wk.filter(p=>p.mode==='work'&&!p.wp.length&&!p.pend&&p.job.area.includes(C.walk.at(Math.floor(p.x/TILE),Math.floor(p.y/TILE))));
+  // (there: in his work's area, standing, or shifting to another spot of it (TownFolk live), never on his way still)
+  const inJob=(p,q)=>p.job.area.includes(C.walk.at(Math.floor(q.x/TILE),Math.floor(q.y/TILE)));
+  const there=wk.filter(p=>p.mode==='work'&&!p.pend&&inJob(p,p)&&p.wp.every(q=>inJob(p,q)));
   ok(wk.length&&moving>0&&there.length>=wk.length*.8&&there.some(p=>Math.hypot(p.x-from.get(p).x,p.y-from.get(p).y)>TILE),
    'in the morning they walk to work: '+there.length+' of '+wk.length+' at it by '+t.Clock.frac.toFixed(2)+' of the day ('+moving+' walking at once)')}
  // ---- midday: some at the square before the centre, the market or the well
