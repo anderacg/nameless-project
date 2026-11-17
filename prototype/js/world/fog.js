@@ -129,13 +129,13 @@ Saves.add({key:'seen',order:40,save:seenSave,load:seenLoad});
    distance out to its edge (Sight edge), the unknown's from the whole map in one small grid (WFOGV.b: a cell WFOG.cell px, 1 unknown, blurred), a cell
    coming to light fading WFOG.fade s (at once with reducedMotion). Only what changes is redone: tiles in view are watched against
    W.seen each frame (so whatever marks it shows), and the cells round them eased and blurred again. cell: px a cell; deep: the
-   unknown's darkness (0-1) over the dim (1: none of it shows, 2026-11-17); col: its colour; soft: blurs of its edge (each a cell's width); fade: s a cell takes to
+   unknown's darkness (0-1) over the dim (its land not drawn at all where none of a chunk is known: VIEW_SEEN); col: its colour; soft: blurs of its edge (each a cell's width); fade: s a cell takes to
    clear; ring: where your sight begins to dim (a share of vis(), inside its edge); feather: px inside your sight's edge over which movers fade into
    the land as you remember it; mini, miniDeep: the minimap's dark over land you know and land you do not; miniSoft: blurs of its edge
    (each a tile). haze: the unknown's edge a cool, pale haze (the owner's fifth play-test: its soft edge read as dark ground), its
    dark from hz[0] to hz[1] of its strength; your sight's edge a fainter haze (ringHaze, ringHz) into the dim of the land you
    remember; mistEvery: ms its misty picture is kept before it is made again (while it covers the view) */
-const WFOG={cell:8,deep:1,col:[5,7,12],soft:3,fade:.3,ring:.62,feather:10,mini:.2,miniDeep:1,miniSoft:3,haze:[132,144,166],hz:[.3,.85],ringHaze:[64,74,92],ringHz:[0,.5],mistEvery:60};
+const WFOG={cell:8,deep:.97,col:[5,7,12],soft:3,fade:.3,ring:.62,feather:10,mini:.2,miniDeep:1,miniSoft:3,haze:[132,144,166],hz:[.3,.85],ringHaze:[64,74,92],ringHz:[0,.5],mistEvery:60};
 let WFOGV=null;
 // (alphas a, a C-wide grid, blurred [1 2 1] across and down n times within the box x0..x1, y0..y1 (its edge held) into a (t: scratch))
 function fogBlur(a,t,C,x0,y0,x1,y1,n){
