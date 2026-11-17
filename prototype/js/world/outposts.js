@@ -182,7 +182,10 @@ const Outposts={
   landKey(){if(!this.live)return 0;let h=1,n=0;for(const s of this.posts())if(s.type===OUTPOST_TYPE){n++;h=Math.imul(h^landOwnId(s.owner)*8^s.lv*2^(s.broken?1:0)^(s.choose?64:0),0x9e3779b1)+s.i|0}return n?h>>>0||1:0},
   of(i){return this.all().find(s=>s.i===i)||null},
   // (their tiles kept free of every holding's building: lots.js occReserve, lotFits)
-  reserve(){this.live=true;if(typeof OCC==='undefined'||!OCC)return;for(const s of this.all())for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},// (-3: an outpost's, no lot's: Outposts.stand looks past them)
+  reserve(){this.live=true;this.hold(this.all())},
+  // (their tiles held (-3: an outpost's, no lot's: Outposts.stand looks past them); a new game holds them before the sites are drawn,
+  // so no cave, camp or shrine stands under one: session.js)
+  hold(L){if(typeof OCC==='undefined'||!OCC)return;for(const s of L)for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},
   spots(){const S=OUTPOST_PLACE,road=(x,y)=>{const k=tAt(x,y);return k===T_ROAD||k===T_FORD},peak=(x,y)=>tAt(x,y)===T_MOUNT,out=[];
     for(let ty=3;ty<MH-3;ty++)for(let tx=3;tx<MW-3;tx++){const k=tAt(tx,ty);let why=null;
       if(k===T_FORD)why='ford';

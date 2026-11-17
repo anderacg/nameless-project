@@ -103,11 +103,13 @@ Kit.suite(({ok,info})=>{
   const wall=B=>{const T=B.terrain,cc=T.C>>1,top=Math.ceil(t.fieldTop()/T.cs),bot=Math.floor(t.fieldBot()/T.cs),gap=Math.floor((top+bot)/2);
    for(let r=top;r<=bot;r++)if(Math.abs(r-gap)>1){T.kind[r*T.C+cc]=K.rock;T.kind[r*T.C+cc+1]=K.rock}
    for(let r=gap+3;r<gap+7;r++)for(let c=cc-6;c<cc-3;c++)T.kind[r*T.C+c]=K.wood;T.has.wood=true;T.index();T.routes.build();return{x:(cc+1)*T.cs,y:(gap+.5)*T.cs,cc}};
+  // (stuck: held over 3 s off his place by more than his room there (a big one's 32 px, as "in place" below: the troll stands formed
+  // 23 px off his slot, his bulk against his friends'))
   const watch=(B,mine,s)=>{const T=B.terrain,o={frames:0,solid:0,clip:0,worst:Infinity,stuck:0,ms:0,q:0,f:0};const last=new Map();B.paused=false;const q0=RN.search,f0=RN.flow;
    while(B.t<s){const t0=performance.now();t.updateBattle(1/60);o.ms+=performance.now()-t0;o.frames++;
     for(const g of mine)for(const u of g.units){if(u.hp<=0)continue;const gr=T.route[t.routeWho(u.s)],i=t.routeIx(gr,u.x,u.y);if(!gr.cost[i]){o.solid++;continue}
      if(PA.clear){t.routeRoom(gr);const w=t.routeNeed(gr,i,t.routeBody(u)),v=t.routeGap(gr,u.x,u.y,w);if(v<w-tol)o.clip++;o.worst=Math.min(o.worst,v-w)}
-     const sx=g.ax+(u.sx||0),sy=g.ay+(u.sy||0);let k=last.get(u);if(!k)last.set(u,k={x:u.x,y:u.y,t:B.t});if(Math.hypot(u.x-k.x,u.y-k.y)>2||Math.hypot(sx-u.x,sy-u.y)<20){k.x=u.x;k.y=u.y;k.t=B.t}else if(B.t-k.t>3){o.stuck++;k.t=B.t}}}
+     const sx=g.ax+(u.sx||0),sy=g.ay+(u.sy||0);let k=last.get(u);if(!k)last.set(u,k={x:u.x,y:u.y,t:B.t});if(Math.hypot(u.x-k.x,u.y-k.y)>2||Math.hypot(sx-u.x,sy-u.y)<(u.s.big?32:20)){k.x=u.x;k.y=u.y;k.t=B.t}else if(B.t-k.t>3){o.stuck++;k.t=B.t}}}
    B.paused=true;o.q=RN.search-q0;o.f=RN.flow-f0;return o};
   const through=on=>{set(on);const B=lab([{type:'hum_foot',count:16},{type:'hum_knight',count:8},{type:'troll',count:1}],[{type:'hum_foot',count:4}]),W=wall(B),[gf,gk,gt]=t.playerGroups().map(id=>B.groups[id]),foe=Object.values(B.groups).find(q=>q.foe);
    const Y=W.y;place(gf,W.x-200,Y-60);place(gk,W.x-220,Y+70);place(gt,W.x-160,Y+10);place(foe,t.BW-40,t.fieldBot()-30);
