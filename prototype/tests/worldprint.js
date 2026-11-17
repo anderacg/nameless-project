@@ -843,7 +843,17 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  a tie post at each, the rope sagging between them with its shadow, a log raft with battens, a rail, its block on the rope and a
 //  crate or a barrel), so the painted world and its picture change. Proof: FERRY_ART.on false gives both again (all 16 hold). Were
 //  W5 039fbe31, W6 55f04aa1)
-const EXPECT={W1:'fcc9be4a',W2:'6ba3aa7f',W3:'0ba097f2',W4:'85a7d384',W5:'2ca5f850',W6:'b590379c',W7:'a0041dfb',W8:'4d549b20',B2:'c916eeb1'};
+// (all nine re-recorded 2026-11-17, on purpose, three steps measured apart: (1) the lab's generator in the game (6bceba2 "World
+//  generation from height" through a250c0a "New generator": land, height, rivers, climates from one height field) moved the world
+//  itself: before this round's work (40efd91^) and on its last commit before the bay (a08040e) W1 71cb3034, W2 4d6b8d38, W3 7888b7c2,
+//  W4 251c8b71, B2 da83ff96 alike. (2) This round's map work moved what is drawn and kept over it: W5 473ccdc1 to 4da5d171 and W6
+//  e98dd0d0 to e6127b5d (rocky cave ground, crops at the fine px, camps' tents and fires spaced, prints shaped as feet), W7 4a1b6e1a to
+//  2accd6df (the sites' warm-up flags no longer saved: SITE_WARM), W8 b4b6b059 to 866a0ccb (marchers beside a map fight at their own
+//  pace: marchPace). (3) The Classic world's land hints back (c630feb: worldgen.js genLandHints, the League's bay, the ports' inlets,
+//  Willowmere's isle; the fens' hint r 26) moved all nine to these. The fixes since (folk.js fieldStep, worldways.js bridgeOver) move
+//  none: measured the same before and after them. Were W1 fcc9be4a, W2 6ba3aa7f, W3 0ba097f2, W4 85a7d384, W5 2ca5f850, W6 b590379c,
+//  W7 a0041dfb, W8 4d549b20, B2 c916eeb1)
+const EXPECT={W1:'00614f13',W2:'c353914d',W3:'08463f33',W4:'d2fafb20',W5:'2245c050',W6:'cde2ee8f',W7:'76d16ba7',W8:'ef39e9b9',B2:'5ede72a2'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -904,7 +914,11 @@ const EXPECT={W1:'fcc9be4a',W2:'6ba3aa7f',W3:'0ba097f2',W4:'85a7d384',W5:'2ca5f8
 //  Were classic 376eb788, Normal s1 0620ac51, Normal s2 8d537d0c, Normal s3 3c103cb4, Large s1 1a0f554e)
 // (classic, Normal s1, Normal s3, Large s1 re-recorded 2026-11-15, on purpose: the fords by towns built bridges (W1-W8 above; Normal s2 has
 //  none such). Proof: PLACE.fordTown 0 gives them again. Were classic 759ca6f8, Normal s1 2d3eb194, Normal s3 175fcc04, Large s1 3b4ad7bf)
-const SUMS={classic:'88f2e7f8','Normal s1':'69fdd482','Normal s2':'812260ff','Normal s3':'4638513a','Large s1':'127d2d4d'};
+// (all five re-recorded 2026-11-17, on purpose: the lab's generator (6bceba2 through a250c0a: W1-W8 above) makes every world
+//  anew; Normal s1-s3 and Large s1 are the same before this round (40efd91^) and now. The classic world moved again with its land
+//  hints back (c630feb: genLandHints; was b5072aae before it). Were classic 88f2e7f8, Normal s1 69fdd482, s2 812260ff, s3 4638513a,
+//  Large s1 127d2d4d)
+const SUMS={classic:'943ffc16','Normal s1':'91cae7e6','Normal s2':'3fd4482d','Normal s3':'43cecd26','Large s1':'37ce35ca'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}
