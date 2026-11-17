@@ -141,7 +141,8 @@ class Site extends WorldObject{
     // (at WORLD_VIEW.house, as the holdings' buildings: its picture k of its size about its point, at its own size made finer (drawFine);
     //  its fire and flag at their own)
     const sp0=siteSprite(s),k=WORLD_VIEW.house*(WORLD_VIEW.sites[s.type]||1);ents.push({st:true,x:s.x,y:s.y,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(s.x-cam.x-sp0.ax*k),Math.round(s.y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=siteSprite(s),X=Math.round(s.x-cam.x-sp.ax*k),Y=Math.round(s.y-cam.y+8-sp.ay*k);
-      if(sp.gr)ctx.drawImage(sp.gr,X,Y,sp.gr.width*k,sp.gr.height*k);if(s.cleared)ctx.globalAlpha=.5;drawFine(sp,X,Y,k);if(!s.cleared)depthPic(scaledPic(sp,k),X,Y);if(sp.fire&&!s.cleared)drawFire(X+sp.fire[0]*k,Y+sp.fire[1]*k,s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),X+sp.flag[0]*k,Y+sp.flag[1]*k,s.seed);ctx.globalAlpha=1;}})}
+      if(sp.gr)ctx.drawImage(sp._fg&&sp._fr===sceneRes()*Math.round(k)?sp._fg:sp.gr,X,Y,sp.gr.width*k,sp.gr.height*k);// (its yard made finer with it: structures.js buildFine)
+if(s.cleared)ctx.globalAlpha=.5;drawFine(sp,X,Y,k);if(!s.cleared)depthPic(scaledPic(sp,k),X,Y);if(sp.fire&&!s.cleared)drawFire(X+sp.fire[0]*k,Y+sp.fire[1]*k,s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),X+sp.flag[0]*k,Y+sp.flag[1]*k,s.seed);ctx.globalAlpha=1;}})}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
   tip(){return '<b>'+Discovery.nameOf(this)+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?', empty for now':'')+'</small><span class="act">Click: go there</span>'}
   // a job to clear it (quests.js)

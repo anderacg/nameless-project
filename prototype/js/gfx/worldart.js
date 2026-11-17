@@ -199,20 +199,30 @@ function farmPlot(t,tx,ty,c,fr,ed,px,z=1,pxf=null){const h=(x,y,s)=>hash(x,y,t.s
   const sp=PX.worldCrop(k,c,v,{ripe:FARM.ripe,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k)}),T=new Uint8Array(256),Q=new Float32Array(768),SK=new Uint8Array(256);
   for(let i=0;i<256;i++){const x=i&15,y=i>>4,e=ed(x,y);if(e<2&&h(tx*16+x,ty*16+y,3)<(e?.25:.55))continue;T[i]=1;SK[i]=sp.tr&&sp.tr[i]?1:0;Q[i*3]=sp.rgb[i*3];Q[i*3+1]=sp.rgb[i*3+1];Q[i*3+2]=sp.rgb[i*3+2]}
   // (what stands: its shadow on the plot, then its pixels (navy round it) where they fall in the tile)
-  const stand=(s,fx,fy)=>{for(let j=0;j<s.sh.length;j+=2){const x=fx+s.sh[j],y=fy+s.sh[j+1];if(x<0||y<0||x>15||y>15||!T[y*16+x])continue;const i=(y*16+x)*3;for(let n=0;n<3;n++)Q[i+n]+=([18,26,42][n]-Q[i+n])*.3}
+  // (at the lab's scale the fine picture's (PX.worldCropThingFine), kept to be laid over the crop by the fine px: FS)
+  const fine=z===2&&pxf,FS=[],stand=(s,fx,fy,kind,fv)=>{if(fine&&kind){FS.push([PX.worldCropThingFine(kind,fv),fx*z+(z>>1),fy*z+z-1]);return}for(let j=0;j<s.sh.length;j+=2){const x=fx+s.sh[j],y=fy+s.sh[j+1];if(x<0||y<0||x>15||y>15||!T[y*16+x])continue;const i=(y*16+x)*3;for(let n=0;n<3;n++)Q[i+n]+=([18,26,42][n]-Q[i+n])*.3}
     const N=s.width;for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=s.a[j*N+i];if(!a)continue;const x=fx-s.ax+i,y=fy-s.ay+j;if(x<0||y<0||x>15||y>15)continue;const q=y*16+x;T[q]=1;SK[q]=2;
       if(a===2){Q[q*3]=26;Q[q*3+1]=28;Q[q*3+2]=38}else{Q[q*3]=s.rgb[(j*N+i)*3];Q[q*3+1]=s.rgb[(j*N+i)*3+1];Q[q*3+2]=s.rgb[(j*N+i)*3+2]}}};
   if(k==='wheat'||k==='barley'||k==='rye'){let m=0;for(const [sx,sy,ex,ey] of [[8,0,0,1],[8,15,0,-1],[0,8,1,0],[15,8,-1,0]]){if(ed(sx,sy))continue;for(let n=0;n<2;n++){if(h(tx*4+m,ty,30+n)>=FT.stook)continue;m++;
-      const along=4+n*7+Math.floor(h(tx,ty*4+m,32)*3),fx=ey?along:ex>0?4:11,fy=ey?(ey>0?7:15):along+3;stand(PX.worldCropThing('stook',m),Math.min(12,fx),Math.min(15,fy))}}}
-  else if(k==='hay'&&h(tx,ty,33)<FT.haystack)stand(PX.worldCropThing('haystack',0),4+Math.floor(h(tx,ty,34)*8),8+Math.floor(h(tx,ty,35)*7));
-  else if(k==='orchard')for(const [fx,fy] of [[4,7],[12,7],[4,15],[12,15]]){if(h(tx*2+fx,ty*2+fy,36)<FT.fruit)stand(PX.worldCropThing('fruit',(cu==='sylvan'?2:0)+Math.floor(h(tx,ty,37)*2)),fx+(fy>8?-1:0),fy)}
+      const along=4+n*7+Math.floor(h(tx,ty*4+m,32)*3),fx=ey?along:ex>0?4:11,fy=ey?(ey>0?7:15):along+3;stand(PX.worldCropThing('stook',m),Math.min(12,fx),Math.min(15,fy),'stook',m)}}}
+  else if(k==='hay'&&h(tx,ty,33)<FT.haystack)stand(PX.worldCropThing('haystack',0),4+Math.floor(h(tx,ty,34)*8),8+Math.floor(h(tx,ty,35)*7),'haystack',0);
+  else if(k==='orchard')for(const [fx,fy] of [[4,7],[12,7],[4,15],[12,15]]){if(h(tx*2+fx,ty*2+fy,36)<FT.fruit){const fv=(cu==='sylvan'?2:0)+Math.floor(h(tx,ty,37)*2);stand(PX.worldCropThing('fruit',fv),fx+(fy>8?-1:0),fy,'fruit',fv)}}
   else if(k==='irrigated'&&sp.ch>=0&&h(tx,ty,38)<FT.palm){const p=PX.worldTree('desert','palm',Math.floor(h(tx,ty,39)*4),0);stand(p,5+Math.floor(h(tx,ty,40)*6),sp.ch-1)}
-  // (at the lab's scale (z fine px a game px, pxf drawing one): each game px of a plant lit at its top left and shaded at its bottom
-  //  right, a plant a little round, not a block; the soil grained by the fine px; the open edge ragged by the fine px; what stands on it as it is)
+  // (at the lab's scale (z fine px a game px, pxf drawing one): the crop laid by the fine px (PX.worldCrop's fine: its rows and plants
+  //  half the size), grained by the fine px; the open edge ragged by the fine px; what stands on it at the fine px (FS: its shadow,
+  //  then its picture, its rim the ground's own darkened)); at any other scale each game px lit at its top left, shaded at its bottom right
   const F=FARM.fine;
-  for(let i=0;i<256;i++){if(!T[i])continue;const c0=[Q[i*3],Q[i*3+1],Q[i*3+2]],x=i&15,y=i>>4;if(z<=1||!pxf){px(c0,x,y);continue}
-    const e=SK[i]===2?9:ed(x,y);for(let j=0;j<z;j++)for(let q=0;q<z;q++){if(e<2&&h(tx*64+x*z+q,ty*64+y*z+j,42)<F.rag)continue;const n=h(tx*64+x*z+q,ty*64+y*z+j,41)-.5,m=SK[i]===2?1:SK[i]===1?1+n*F.soil:(q===0&&j===0?F.lit:q===z-1&&j===z-1?F.shade:1)+n*F.leaf;
-      pxf([Math.min(255,c0[0]*m),Math.min(255,c0[1]*m),Math.min(255,c0[2]*m)],x*z+q,y*z+j)}}}
+  if(z<=1||!pxf){for(let i=0;i<256;i++)if(T[i])px([Q[i*3],Q[i*3+1],Q[i*3+2]],i&15,i>>4);return}
+  const Z=16*z,FC=new Float32Array(Z*Z*3),FD=new Uint8Array(Z*Z),sf=fine?PX.worldCrop(k,c,v,{ripe:FARM.ripe,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k),fine:z}):null;
+  for(let i=0;i<256;i++){if(!T[i])continue;const x=i&15,y=i>>4,e=SK[i]===2?9:ed(x,y);
+    for(let j=0;j<z;j++)for(let q=0;q<z;q++){const X=x*z+q,Y=y*z+j;if(e<2&&h(tx*64+X,ty*64+Y,42)<F.rag)continue;const n=h(tx*64+X,ty*64+Y,41)-.5,o=(Y*Z+X)*3,fi=Y*Z+X;
+      if(sf&&SK[i]!==2){const m=1+n*(sf.tr[fi]?F.soil:F.leaf);FC[o]=Math.min(255,sf.rgb[fi*3]*m);FC[o+1]=Math.min(255,sf.rgb[fi*3+1]*m);FC[o+2]=Math.min(255,sf.rgb[fi*3+2]*m)}
+      else{const m=SK[i]===2?1:SK[i]===1?1+n*F.soil:(q===0&&j===0?F.lit:q===z-1&&j===z-1?F.shade:1)+n*F.leaf;FC[o]=Math.min(255,Q[i*3]*m);FC[o+1]=Math.min(255,Q[i*3+1]*m);FC[o+2]=Math.min(255,Q[i*3+2]*m)}
+      FD[fi]=1}}
+  for(const [S,X,Y] of FS){for(let j=0;j<S.sh.length;j+=2){const x=X+S.sh[j],y=Y+S.sh[j+1];if(x<0||y<0||x>=Z||y>=Z||!FD[y*Z+x])continue;const o=(y*Z+x)*3;FC[o]+=(18-FC[o])*.3;FC[o+1]+=(26-FC[o+1])*.3;FC[o+2]+=(42-FC[o+2])*.3}
+    const N=S.width;for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=S.a[j*N+i];if(!a)continue;const x=X-S.ax+i,y=Y-S.ay+j;if(x<0||y<0||x>=Z||y>=Z)continue;const o=(y*Z+x)*3,u=(j*N+i)*3;
+      if(a===2){const g=FD[y*Z+x]?.55:1;FC[o]=FC[o]*(1-g)+30*g;FC[o+1]=FC[o+1]*(1-g)+28*g;FC[o+2]=FC[o+2]*(1-g)+30*g}else{FC[o]=S.rgb[u];FC[o+1]=S.rgb[u+1];FC[o+2]=S.rgb[u+2]}FD[y*Z+x]=1}}
+  for(let i=0;i<Z*Z;i++)if(FD[i])pxf([FC[i*3],FC[i*3+1],FC[i*3+2]],i%Z,(i/Z)|0)}
 /* ---------- the world's water and roads (doc/WORLD_DESIGN.md §12.1). The water by the pixel (wpx): the water tiles (sea and lake, river, a ford's shallows, under a bridge:
    the plan's wk) read as a smooth field, its shore a curve (lakes rounded, rivers bending, a staircase of tiles a slope), wobbling
    a pixel or two. Over the window painted and a margin,

@@ -60,6 +60,9 @@ function lotYard(t,l){const m=lotModel(t,l),N=m.cell,h=m.snow||m.ground;l._gimg=
 const LOT_AHEAD={r:600,ms:3};
 function lotsAhead(V){const t0=performance.now();for(const t of TOWNS.filter(q=>q.lots&&Math.hypot(q.x-P.x,q.y-P.y)<V+LOT_AHEAD.r).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)))
   for(const l of t.lots){if(l._s&&l._gimg&&(sceneRes()<=1||l._s._fr===sceneRes()))continue;lotSprite(t,l);lotYard(t,l);lotFine(t,l,sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}
+  // (the sites near you asked for at their fine scale before they come into view (sites.js draw's k), made with the rest: no site drawn
+  //  coarse its first frames, its yard with it)
+  const rs=sceneRes();if(rs>1)for(const s of W.sites){if(s._fq===rs||s.warm||!s.draw||Math.hypot(s.x-P.x,s.y-P.y)>V+LOT_AHEAD.r)continue;s._fq=rs;try{fineOf(siteSprite(s),rs*Math.round(WORLD_VIEW.house*(WORLD_VIEW.sites[s.type]||1)))}catch(e){}if(performance.now()-t0>LOT_AHEAD.ms)return}
   for(const cv of FINE_Q){FINE_Q.delete(cv);if(sceneRes()>1)buildFine(cv,cv._want||sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}
   // (the settled camps near you too: their tents and pieces (encampments.js warm), so none is made the frame it comes into view)
   const r=sceneRes();for(const s of W.sites){if(!s.warm||s._warmR===r||Math.hypot(s.x-P.x,s.y-P.y)>V+LOT_AHEAD.r)continue;if(s.warm(t0,LOT_AHEAD.ms))s._warmR=r;if(performance.now()-t0>LOT_AHEAD.ms)return}}
@@ -68,7 +71,7 @@ function lotsAhead(V){const t0=performance.now();for(const t of TOWNS.filter(q=>
 // else the picture itself)
 const FINE_Q=new Set();
 function fineOf(cv,r){if(r<=1||!cv.mk)return null;if(cv._f&&cv._fr===r)return cv._f;cv._want=r;FINE_Q.add(cv);return null}
-function buildFine(cv,r){const m=cv.mk(r),N=m.cell;cv._f=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0);if(cv.deco){g.scale(r,r);cv.deco(g,cv.width)}});cv._fr=r}
+function buildFine(cv,r){const m=cv.mk(r),N=m.cell;cv._f=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0);if(cv.deco){g.scale(r,r);cv.deco(g,cv.width)}});if(cv.gr)cv._fg=siteYard(m,r);cv._fr=r}
 // (k times its size: under 1 its own picture taken down; else made k times finer again (a whole k), drawn k times its size)
 function drawFine(cv,X,Y,k=1){if(k<1){ctx.drawImage(cv,X,Y,cv.width*k,cv.height*k);return}const f=fineOf(cv,sceneRes()*Math.round(k));if(f)ctx.drawImage(f,X,Y,cv.width*k,cv.height*k);else ctx.drawImage(cv,X,Y,cv.width*k,cv.height*k)}
 // burnt: every pixel darkened toward soot, a scatter of ash and the last embers (still whole pixels, never half-see-through)
@@ -392,8 +395,18 @@ function drawShadows(list){let any=false;for(const e of list)if(e.sh){any=true;b
 const SITE_KIND={bandit:'camp',camp:'camp',hideout:'hideout',travelers:'travelers',goblins:'hideout'};
 // (a camp built in a culture's style, by its kind: a goblin camp the Ashgor Horde's, its yurts in a ring of stakes; the rest the generic)
 const SITE_CULTURE={goblins:'ashgor'};
+// (a site's yard: its model's ground, the frost's snow on it, its own shadow shaded into it, its edge frayed into the land round it over
+// SITE_YARD.fray game px (r px a game px: a chamfer distance from its bare px, dithered by its hash: whole px, no square patch))
+const SITE_YARD={fray:3,grain:.7};
+function siteYard(m,r){const N=m.cell,c=mkc(N,N,g=>{g.drawImage(m.ground,0,0);if(m.snow)g.drawImage(m.snow.ground,0,0);g.globalCompositeOperation='source-atop';g.globalAlpha=SHADOW.a;g.drawImage(m.shadow,0,0)}),
+    g=c.getContext('2d',{willReadFrequently:true}),d=g.getImageData(0,0,N,N),A=d.data,D=new Float32Array(N*N),F=SITE_YARD.fray*r,at=(x,y)=>x<0||y<0||x>=N||y>=N?0:D[y*N+x];
+  for(let i=0;i<N*N;i++)D[i]=A[i*4+3]?1e9:0;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x;if(D[i])D[i]=Math.min(D[i],at(x-1,y)+1,at(x,y-1)+1,at(x-1,y-1)+1.41,at(x+1,y-1)+1.41)}
+  for(let y=N-1;y>=0;y--)for(let x=N-1;x>=0;x--){const i=y*N+x;if(D[i])D[i]=Math.min(D[i],at(x+1,y)+1,at(x,y+1)+1,at(x+1,y+1)+1.41,at(x-1,y+1)+1.41)}
+  for(let i=0;i<N*N;i++){if(!A[i*4+3]||D[i]>=F)continue;const f=D[i]/F+(hash(i%N,(i/N)|0,977)-.5)*SITE_YARD.grain;if(hash(i%N,(i/N)|0,978)>f)A[i*4+3]=0}
+  g.putImageData(d,0,0);return c}
 function siteCanvas(m,ax,ay,mk,deco){const N=m.cell,cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0);if(deco)deco(g,N)});cv.ax=ax;cv.ay=ay;cv.sh=m.shadow;cv.mk=mk;cv.deco=deco;
-  cv.gr=mkc(N,N,g=>{g.drawImage(m.ground,0,0);if(m.snow)g.drawImage(m.snow.ground,0,0);g.globalCompositeOperation='source-atop';g.globalAlpha=SHADOW.a;g.drawImage(m.shadow,0,0)});
+  cv.gr=siteYard(m,1);
   cv.fire=m.marks&&m.marks.fire||null;cv.flag=m.flag||(cv.fire&&[cv.fire[0]+7,cv.fire[1]+1]);return cv}
 // a camp of kind (bandit, hideout, travelers) and seed i, in climate c (the grass unless said)
 function campSprite(i,kind,c){c=c||'grass';const k='camp'+i+(kind||'')+c;if(spr[k])return spr[k];

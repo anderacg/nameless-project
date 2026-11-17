@@ -252,9 +252,11 @@
      PX.WORLD_SOIL: each climate's soil. In the desert the meadows and herd ground lean dry (CROP_X.dry).
      PX.worldCrop(kind, clim, v, o): the plot's rows, a flat 16 sprite (a, rgb; tr a byte a pixel, 1 a trough; ch the channel's
        row, -1 none), v 0-3 (rows across or along, their offset), o {ripe 0-1 (1 as drawn), snow 0-1 (the frost's: in the troughs,
-       a little on the crop), wet 0-1 (water in the troughs), terrace (the Karn's: a stone lip every 5 rows)}.
+       a little on the crop), wet 0-1 (water in the troughs), terrace (the Karn's: a stone lip every 5 rows), fine (the lab's scale: a
+       16 times fine sprite, its rows and plants laid by the fine px, half the size, the channel and terraces as wide as before)}.
      PX.worldCropThing(kind, v): what stands on a plot, an 8 box, its foot at (4, 7): stook (sheaves stood up and tied), haystack,
-       fruit (a small fruit tree, v 0-3: its fruit red, yellow, red, green-gold) */
+       fruit (a small fruit tree, v 0-3: its fruit red, yellow, red, green-gold); PX.worldCropThingFine(kind, v) the same at the lab's
+       scale (a 16 box of fine px, its foot at (8, 15)) */
   PX.WORLD_SOIL={grass:'#6e5434',frost:'#8a8070',desert:'#a07a48',swamp:'#4e4430'};
   PX.WORLD_CROPS={
     wheat:{pat:['.L.','LML','MDM','.D.','ttt'],st:1,c0:['#9cc05a','#76a040','#52803a'],c1:['#f6dc7c','#d8ae4c','#a07a36']},
@@ -279,14 +281,14 @@
   //  a plant now and then missing (gap) or a tone off)
   const CROP_GAP=.07;
   PX.worldCrop=(kind,clim,v,o)=>{o=o||{};kind=PX.WORLD_CROPS[kind]?kind:'wheat';clim=PX.WORLD_SOIL[clim]?clim:'grass';v=((v|0)%4+4)%4;const CR=PX.WORLD_CROPS[kind];
-    const q=x=>Math.round(Math.max(0,Math.min(1,x))*10)/10,ripe=q(o.ripe==null?1:o.ripe),snow=q(o.snow||0),wet=q(o.wet||0),ter=o.terrace?1:0,key='f'+kind+clim+v+ripe+snow+wet+ter;if(CACHE[key])return CACHE[key];
-    const N=16,a=new Uint8Array(N*N).fill(1),rgb=new Uint8Array(N*N*3),tr=new Uint8Array(N*N),s=v*37+kind.length*11+clim.length,X=CROP_X,H=(x,y,k)=>PX.hash(x,y,s+k);
+    const q=x=>Math.round(Math.max(0,Math.min(1,x))*10)/10,ripe=q(o.ripe==null?1:o.ripe),snow=q(o.snow||0),wet=q(o.wet||0),ter=o.terrace?1:0,f=o.fine||1,key='f'+kind+clim+v+ripe+snow+wet+ter+'x'+f;if(CACHE[key])return CACHE[key];
+    const N=16*f,a=new Uint8Array(N*N).fill(1),rgb=new Uint8Array(N*N*3),tr=new Uint8Array(N*N),s=v*37+kind.length*11+clim.length,X=CROP_X,H=(x,y,k)=>PX.hash(x,y,s+k);
     const pal=CR.c0.map((c,i)=>mixA(mixA(hx(c),hx(CR.c1[i]),ripe),CROP_X.dry[i],clim==='desert'&&!CR.pat&&!CR.rows?.45:0)),soil=hx(PX.WORLD_SOIL[clim]),dark=mixA(soil,[30,24,20],.3),lite=mixA(soil,[230,210,170],.18),across=CR.pat||CR.rows||ter||v&1,off=v>>1,ch=6+off*2;
     const grape=mixA(hx(X.unripe),hx(X.grape[0]),ripe),RW=CR.rows||(CR.pat?[CR.pat]:null);
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const u=across?y:x,w=across?x:y,n=H(x,y,1),i=y*N+x;let c=pal[1],t=0;
       if(RW){// (a row of plants)
         const ph=RW[0].length,rb=Math.floor((u+off)/ph),pat=RW[(rb+v)%RW.length],pu=(u+off)%ph,pw=pat[0].length,ws=w+rb*(CR.st||0)+off*3,pi=Math.floor(ws/pw);let L=pat[pu][ws%pw];
-        if(kind==='irrigated'&&(u===ch-1||u===ch||u===ch+1||u===ch+2))L=u===ch?'w':u===ch+1?'v':'b';
+        const ug=Math.floor(u/f);if(kind==='irrigated'&&(ug===ch-1||ug===ch||ug===ch+1||ug===ch+2))L=ug===ch?'w':ug===ch+1?'v':'b';
         else if(L!=='t'&&L!=='s'&&L!=='K'&&PX.hash(pi,rb,s+6)<CROP_GAP)L='.';
         const m=n<.12?1:0;
         switch(L){case 'L':c=m?pal[1]:pal[0];break;case 'M':c=m?pal[0]:pal[1];break;case 'D':c=pal[2];break;case 's':c=lite;break;case '.':c=soil;t=1;break;case 't':c=dark;t=2;break;
@@ -300,10 +302,10 @@
       else if(kind==='fallow'){c=n<.12?hx(X.stub):n<.4?pal[0]:n<.8?pal[1]:pal[2];t=1}
       else if(kind==='grazed'){const m=PX.hash(x>>2,y>>1,s+5);c=m<.22?(n<.5?hx(X.trod):mixA(hx(X.trod),pal[2],.4)):n<.15?pal[2]:n>.85?pal[0]:pal[1]}
       else c=n<.2?pal[0]:n>.85?pal[2]:pal[1];// (the orchard's meadow)
-      if(ter&&(u+off)%5===4){c=hx(X.stone[n<.6?0:1]);t=0}else if(ter&&(u+off)%5===0)c=mixA(c,[24,20,18],.3);
+      const ut=Math.floor(u/f);if(ter&&(ut+off)%5===4){c=hx(X.stone[n<.6?0:1]);t=0}else if(ter&&(ut+off)%5===0)c=mixA(c,[24,20,18],.3);
       if(t&&snow&&H(x,y,2)<snow*(t>1?.85:.3))c=hx(X.snow);else if(!t&&snow&&kind!=='irrigated'&&H(x,y,3)<snow*.1)c=hx(X.frost);else if(t&&wet&&H(x,y,4)<wet*.3)c=X.wet;
       rgb[i*3]=c[0];rgb[i*3+1]=c[1];rgb[i*3+2]=c[2];tr[i]=t?1:0}
-    const sp=finish(N,a,rgb,8,15,true);sp.tr=tr;sp.ch=kind==='irrigated'?ch:-1;sp.kind=kind;return CACHE[key]=sp};
+    const sp=finish(N,a,rgb,8*f,16*f-1,true);sp.tr=tr;sp.ch=kind==='irrigated'?ch:-1;sp.kind=kind;return CACHE[key]=sp};
   PX.worldCropThing=(kind,v)=>{v=((v|0)%4+4)%4;const key='ft'+kind+v;if(CACHE[key])return CACHE[key];const N=8,M=new Uint8Array(N*N),set=(x,y,t)=>{if(x>0&&y>0&&x<N-1&&y<N)M[y*N+x]=t};let col;
     if(kind==='haystack'){for(let y=2;y<7;y++)for(let x=1;x<7;x++){const d=((x+.5-4)/3)**2+((y+.5-6)/4)**2;if(d>1)continue;set(x,y,x+y<7?1:x>4||y>5?3:2)}for(let x=2;x<6;x++)set(x,7,4);set(4,1,2);col=[null,'#f0dc94','#cba85c','#8e7438','#6a5430']}
     else if(kind==='fruit'){clumps(M,N,[[4,3.4,2.6],[2.8,4.2,1.6],[5.2,4,1.7]],3,2.5,3,v*13+5);for(let i=0;i<N*N;i++)if(M[i]>=1&&M[i]<=3&&PX.hash(i,v,91)<.2)M[i]=6;set(4,6,5);set(4,7,5);
@@ -312,6 +314,25 @@
       col=[null,'#f2d880','#cfa850','#9a7836','#8a6a30']}
     return CACHE[key]=build(N,M,col,4,7,false)};
 
+  /* PX.worldCropThingFine(kind, v): the same at the lab's scale, a 16 box of fine px (twice the detail), its foot at (8, 15): a haystack's
+     dome of straw in strands, lit from the top left, a rope round it and its top knot; a stook's sheaves splayed at the foot, tied at
+     the waist, their ears fanned and grained; a fruit tree's crown in leafy clumps, lit top left, its fruit (v as worldCropThing's)
+     catching the light, its trunk */
+  PX.worldCropThingFine=(kind,v)=>{v=((v|0)%4+4)%4;const key='ftf'+kind+v;if(CACHE[key])return CACHE[key];const N=16,M=new Uint8Array(N*N),H=(x,y,k)=>PX.hash(x,y,v*31+k),
+    set=(x,y,t)=>{if(x>0&&y>0&&x<N-1&&y<N)M[y*N+x]=t};let col;
+    if(kind==='haystack'){for(let y=2;y<16;y++)for(let x=1;x<15;x++){const dx=(x+.5-8)/6.4,top=y<10,dy=top?(y+.5-10)/7.6:0,hw=6.4+(y>=10?(y-10)*.12:0);
+        if(top?dx*dx+dy*dy>1:Math.abs(x+.5-8)>hw)continue;const l=-dx*.7-(top?dy:0)*.6+(H(x,0,1)-.5)*.5+((x+(y>>1))%3===0?-.18:0);
+        let t=l>.55?1:l>.05?2:l>-.4?3:4;if(y===15)t=5;else if(y===14&&t>2)t=5;else if(y===9&&H(x,9,2)<.8)t=Math.min(5,t+1);set(x,y,t)}
+      set(8,2,6);set(8,1,6);set(7,2,4);col=[null,'#f6e6a4','#e2c474','#c29c52','#93773a','#6a5430','#5a3e24']}
+    else if(kind==='fruit'){for(let y=1;y<12;y++)for(let x=1;x<15;x++){let c=null;for(const q of [[8,6,4.6],[4.6,8,3.2],[11.4,8,3.2],[6,4,3],[10.4,4.4,2.8]])if((x+.5-q[0])**2+(y+.5-q[1])**2<=q[2]*q[2]){c=q;break}if(!c)continue;
+        const l=-(x+.5-c[0])/c[2]-(y+.5-c[1])/c[2]+(H(x,y,3)-.5)*.9;set(x,y,l>.7?1:l>-.2?2:l>-.9?3:4)}
+      for(let i=0;i<9;i++){const x=3+Math.floor(H(i,1,4)*10),y=3+Math.floor(H(i,2,5)*7);if(M[y*N+x]&&M[y*N+x]<4){set(x,y,7);if(M[(y-1)*N+x])set(x,y-1,8)}}
+      for(let y=10;y<16;y++){set(7,y,5);set(8,y,y>12?6:5)}set(6,15,6);set(9,15,6);
+      col=[null,'#a8cc66','#78a448','#557e3a','#3c5e30','#7a5636','#5a3e26',['#d8463a','#e8c440','#e05a3a','#c8c450'][v],['#f4a090','#fbeaa0','#f6b090','#eef0a0'][v]]}
+    else{for(let y=2;y<16;y++){const w=y<7?1.6+(7-y)*.45:y<10?1.2:1.2+(y-9)*.62;for(let x=1;x<15;x++){const d=x+.5-8;if(Math.abs(d)>w)continue;// (a stook: its sheaves splayed at the foot, tied, their ears fanned)
+        let t=d<-w*.35?1:d<w*.35?2:3;if(((x+y*(d<0?1:-1))&3)===0)t=Math.min(4,t+1);if(y<7&&H(x,y,6)<.3)t=t===3?4:6;set(x,y,t)}}
+      for(let x=6;x<11;x++)set(x,9,5);col=[null,'#f4dc84','#d8b25a','#a8823c','#8a6a30','#6a4a24','#fbeeb0']}
+    return CACHE[key]=build(N,M,col,8,15,false)};
   /* mountains: masses of rock tiles, each a height field drawn in projection (see PX.worldRange above). o: {W, H (px), C, R, ts,
      ox, oy (the tiles' grid on the pixels), h(i,j) (a tile's rock height in px, 0 none), clim(i,j) (its climate), kept(x,y) (kept
      clear: no rock stands there, nor rises over it), seed, shade (cast its shadow on the ground), wob}. massLabel finds the masses
