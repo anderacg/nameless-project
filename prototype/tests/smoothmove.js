@@ -29,9 +29,13 @@ try{
   ok(!isInt(C.x)&&isInt(C.x*S)&&isInt(C.y*S)&&Math.abs(C.x-(P.x-t.VW/2))<=.5/S&&Math.abs(C.y-(P.y-t.VH/2))<=.5/S,'the camera follows you to 1/'+S+' of a game pixel ('+C.x.toFixed(4)+', '+C.y.toFixed(4)+')');
   // ---- no picture is resampled: each drawn at its own size, the transform a whole VS (a mirror allowed), on device pixels
   // (art made at the display's density, the awareness eye's (a370b85), is drawn at its size / VS: one of its pixels, one device pixel)
-  {const bad=calls.filter(([img,a,m])=>{const w=img.width,h=img.height,dense=a.length===4&&Math.abs(Math.abs(a[2]*m.a)-w)<EPS&&Math.abs(a[3]*m.d-h)<EPS,scale=img.deviceText?1:S,sz=dense||a.length===2||(a.length===8&&a[2]===a[6]&&a[3]===a[7]);
+  // (the scene, drawn at r fine px a game px (render.js memCv, sceneRes; doc/OPEN_WORLD_DESIGN.md phase 1), is laid at its size / r: each
+  //  of its px S / r whole device px)
+  {const bad=calls.filter(([img,a,m])=>{const w=img.width,h=img.height,dense=a.length===4&&Math.abs(Math.abs(a[2]*m.a)-w)<EPS&&Math.abs(a[3]*m.d-h)<EPS,scale=img.deviceText?1:S,r=img.r||1,own=a.length===4&&a[2]*r===w&&a[3]*r===h&&isInt(S/r),sz=dense||own||a.length===2||(a.length===8&&a[2]===a[6]&&a[3]===a[7]);
     return !sz||Math.abs(Math.abs(m.a)-scale)>EPS||Math.abs(m.d-scale)>EPS||m.b||m.c||!isInt(m.e+m.a*(a.length===8?a[4]:a[0]))||!isInt(m.f+m.d*(a.length===8?a[5]:a[1]))});
-   ok(calls.length>8&&!bad.length,'every picture on the screen ('+calls.length+') is drawn at its own size, scaled by '+S+' whole (native labels at 1:1), on whole device pixels: never resampled'+(bad.length?': '+bad.slice(0,3).map(([img,a,m])=>img.width+'x'+img.height+' '+a.map(v=>+(+v).toFixed(3)).join(',')+' @'+[m.a,m.d,m.e,m.f].map(v=>+v.toFixed(3)).join(',')).join('; '):''))}
+   // (what stands is drawn into the scene, laid on the screen once (render.js memCv); the screen holds the scene, the fog's overlay,
+   //  the minimap and who moves outside the march)
+   ok(calls.length>=4&&calls.some(([img])=>img===t.memCv())&&!bad.length,'every picture on the screen ('+calls.length+') is drawn at its own size, scaled by '+S+' whole (native labels at 1:1), on whole device pixels: never resampled'+(bad.length?': '+bad.slice(0,3).map(([img,a,m])=>img.width+'x'+img.height+' '+a.map(v=>+(+v).toFixed(3)).join(',')+' @'+[m.a,m.d,m.e,m.f].map(v=>+v.toFixed(3)).join(',')).join('; '):''))}
   // ---- what stands keeps to the grid: the screen in whole S x S blocks on the camera's fraction, away from anyone who moves
   {const g=c.getImageData(0,0,t.cv.width,t.cv.height),d=g.data,W2=g.width,off=((-Math.round(C.x*S))%S+S)%S,offy=((-Math.round(C.y*S))%S+S)%S,px=(x,y)=>d.subarray((y*W2+x)*4,(y*W2+x)*4+4).join();
    let blocks=0,badB=0;for(let by=offy+S;by<60*S;by+=S)for(let bx=off+S;bx<200*S;bx+=S){const p0=px(bx,by);let same=true;for(let j=0;j<S&&same;j++)for(let i=0;i<S;i++)if(px(bx+i,by+j)!==p0){same=false;break}blocks++;if(!same)badB++}
@@ -40,7 +44,10 @@ try{
   {const cs=[];for(let i=0;i<30;i++){t.walk(P,1,0,.15);now+=16.7;frame();cs.push(G.cam.x)}const st=cs.slice(1).map((x,i)=>x-cs[i]);
    ok(cs.every(x=>isInt(x*S))&&st.every(s=>s>-EPS&&s<=1/S+EPS)&&st.some(s=>s>0)&&st.filter(s=>s>0).length>st.length/3,'as you walk the camera glides by 1/'+S+' px steps, most frames ('+st.filter(s=>s>0).length+' of '+st.length+')')}
   // ---- map labels are cached at final resolution and copied one device pixel to one device pixel (sprites.js mapTxt)
-  {const pics=calls.filter(([img])=>img.deviceText);ok(pics.length>0&&pics.every(([img,a,m])=>m.a===1&&m.d===1&&m.b===0&&m.c===0&&a.length===2&&isInt(a[0])&&isInt(a[1])),'map labels are laid on 1:1 in device pixels, without scaling or fractional anchors ('+pics.length+' this frame)')}
+  // (no label of its own stands here since the map lost its names and counts (the owner: no names on places, 2026-11-08; no numbers
+  //  over armies, 2026-11-01): one put over a man among those who move, queued as any map label is, sprites.js txt, by Hunters.drawAll's turn)
+  {const R=t.Hunters,da=R.drawAll;R.drawAll=function(ents,cam){const v=da.apply(this,arguments);ents.push({x:P.x,y:P.y,f:()=>t.txt('12',Math.round(P.x-cam.x),Math.round(P.y-12-cam.y),'#fff','center')});return v};try{frame()}finally{R.drawAll=da}
+   const pics=calls.filter(([img])=>img.deviceText);ok(pics.length>0&&pics.every(([img,a,m])=>m.a===1&&m.d===1&&m.b===0&&m.c===0&&a.length===2&&isInt(a[0])&&isInt(a[1])),'map labels are laid on 1:1 in device pixels, without scaling or fractional anchors ('+pics.length+' this frame)')}
   // ---- a click through the fractional camera: a real pointer event on a beast beside you meets it
   {world();clear();P.x=Math.floor(P.x)+.4;const m={id:'boar',x:P.x+12.3,y:P.y+.4,hx:P.x,hy:P.y,lv:1,n:2,t:0,a:0,cool:5};W.monsters=[m];G.encCool=0;frame();
    const r=t.cv.getBoundingClientRect(),x=r.left+(m.x-G.cam.x)*r.width/t.VW,y=r.top+(m.y-4-G.cam.y)*r.height/t.VH,p=t.toCanvas({clientX:x,clientY:y});

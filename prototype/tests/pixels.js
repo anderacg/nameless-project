@@ -30,10 +30,19 @@ try{
    for(const [x,y] of [[l,bm],[r,bm],[(l+r)>>1,bm],[l,tp],[r,tp]])if(x<0||y<0||x>=t.MW*TILE||y>=t.MH*TILE||t.tAt(Math.floor(x/TILE),Math.floor(y/TILE))!==t.T_WATER)eb.push(tw.name+' boat aground at '+x+','+y)}}
  ok(nb&&ncog&&!eb.length,nb+' boats moored at the ports’ piers (levels 1 to 3, '+ncog+' of them cogs): in power-of-two cells, afloat and clear of their piers'+(eb.length?': '+eb.slice(0,8).join('; '):''));
  // ---- sites: on open ground, nothing painted on the map inside or over them
- const sb=W.sites.filter(s=>s.type!=='camp'&&!t.SITE_CLASS[s.type].clear(s.tx,s.ty));/* (the camps: their own check below) */ok(!sb.length,W.sites.length+' sites, all on open ground clear of trees, hills and peaks (a cave: in the face of its hill or mountain)'+(sb.length?': '+sb.map(s=>s.type+'@'+s.tx+','+s.ty).slice(0,6).join(', '):''));
+ const sb=W.sites.filter(s=>s.type!=='camp'&&s.type!==t.OUTPOST_TYPE&&!t.SITE_CLASS[s.type].clear(s.tx,s.ty));/* (the camps: their own check below; the outposts after it) */ok(!sb.length,W.sites.length+' sites, all on open ground clear of trees, hills and peaks (a cave: in the face of its hill or mountain)'+(sb.length?': '+sb.map(s=>s.type+'@'+s.tx+','+s.ty).slice(0,6).join(', '):''));
+ // (an outpost stands by a road crossing, a ford, a pass or a deposit (world/outposts.js Outposts.stand; doc/OUTPOSTS_DESIGN.md §2,
+ //  2026-11-10), its tiles kept for it (-3, Outposts.reserve), so not on a site's 3 x 3 of open ground: on open ground of its own, the
+ //  tile before it passable, off the road under its picture, no building on its plinth's tiles or round it)
+ {const ob=t.Outposts,po=W.sites.filter(s=>s.type===t.OUTPOST_TYPE),own=(x,y)=>{const v=t.occAt(x,y);return !v||v===-3};
+  const bo=po.filter(s=>t.tAt(s.tx,s.ty)!==t.T_OPEN||!t.passable(t.tAt(s.tx,s.ty+1))||ob.onRoad(s.tx,s.ty)||ob.built(s.tx,s.ty)||!own(s.tx,s.ty)||!own(s.tx,s.ty+1)||!own(s.tx-1,s.ty));
+  ok(po.length&&!bo.length,po.length+' outposts, each on open ground of its own by its spot, off the road, nothing built on or round it'+(bo.length?': '+bo.map(s=>s.tx+','+s.ty).slice(0,6).join(' '):''))}
  {const on=[],foot=(o,sp)=>{const x0=Math.floor((o.x-sp.ax)/TILE),y0=Math.floor((o.y+8-sp.ay)/TILE);for(let j=0;j<sp.height/TILE;j++)for(let i=0;i<sp.width/TILE;i++)if(t.tAt(x0+i,y0+j)===t.T_ROAD)return true;return false};
   t.camps().forEach((c,i)=>{const sp=t.siteSprite(c);if(foot(c,sp))on.push('bandit camp '+i);if(sp.width!==2*TILE||sp.height!==2*TILE||(c.x-sp.ax)%TILE)on.push('bandit camp '+i+' is not its 2 x 2 tiles')});
-  W.sites.filter(s=>s.type==='hideout'||s.type==='travelers').forEach(s=>{const sp=t.siteSprite(s);if(foot(s,sp))on.push(s.type+'@'+s.tx+','+s.ty);if((s.x-sp.ax)%TILE||(s.y+8-sp.ay)%TILE)on.push(s.type+' off the grid')});
+  // (a hideout that is a lair (its mouth a cave in the hillside or a tunnel: sites.js Hideout lairLook, the owner, 2026-11-06) stands as a
+  //  cave does: its picture's middle over its tile, its foot on the tile's foot)
+  W.sites.filter(s=>s.type==='hideout'||s.type==='travelers').forEach(s=>{const sp=t.siteSprite(s);if(foot(s,sp))on.push(s.type+'@'+s.tx+','+s.ty);
+   const x0=s.x-sp.ax,y0=s.y+8-sp.ay,mouth=s.type==='hideout'&&s.lairLook;if(mouth?x0!==s.tx*TILE-TILE/2||y0+sp.height!==(s.ty+1)*TILE:x0%TILE||y0%TILE)on.push(s.type+(mouth?' ('+s.lairLook+')':'')+' off the grid')});
   ok(!on.length,t.camps().length+' bandit camps (2 x 2 tiles), hideouts and travellers\u2019 camps: on their own tiles, none over a road'+(on.length?': '+on.slice(0,6).join('; '):''))}
  {const cs=W.sites.filter(s=>s.type==='cave'),off=cs.filter(s=>![t.T_HILL,t.T_MOUNT].includes(t.tAt(s.tx,s.ty))||!t.passable(t.tAt(s.tx,s.ty+1)));
   ok(cs.length&&!off.length,cs.length+' caves, each cut into a hill or mountain, its mouth on ground parties can reach'+(off.length?': '+off.map(s=>s.tx+','+s.ty).join(' '):''));
@@ -43,19 +52,21 @@ try{
  // ---- the world drawn at whole pixels and its own size, with everything in view
  const tw=t.townBy('Ashford');P.x=tw.x+40;P.y=tw.y+30;G.mode='world';G.modal=false;t.hidePanel();W.sites.forEach(s=>s.seen=true);
  if(W.monsters[0]){W.monsters[0].x=P.x+60;W.monsters[0].y=P.y}const dm=t.mythicOf('dragon')||t.spawnMythic('dragon');if(dm){dm.x=P.x-60;dm.y=P.y-20}
- const ctx=t.ctx,orig=ctx.drawImage,off=[],unmarch=Kit.watchMarch();
- ctx.drawImage=function(img,...a){if(img===((t.WFOGV||{}).edge||{}).comp||Kit.marching)return orig.call(ctx,img,...a);// (the marching armies: drawn smaller on purpose, Kit.watchMarch)// (the fog: a soft overlay drawn up smooth, as the battle's: fog.js drawWorldFog)
+ // (drawn as a frame draws it (render.js frame): the map's canvas VS device px a game px (setRes), the scene at sceneRes fine px a game
+ //  px (render.js memCv; doc/OPEN_WORLD_DESIGN.md phase 1). Each picture laid at a whole number of device px to its own px, the same
+ //  both ways: VS for the map's own art, VS / sceneRes for the fine art (the scene, the grass, what is drawn over a man), 1 for art
+ //  made at the screen's density (the minimap, the awareness eyes: 251e298, aa3ed8d); at whole device px, never skewed)
+ const ctx=t.ctx,orig=ctx.drawImage,off=[],unmarch=Kit.watchMarch(),raf=window.requestAnimationFrame;let rec=false;window.requestAnimationFrame=()=>0;
+ ctx.drawImage=function(img,...a){if(!rec||img===((t.WFOGV||{}).edge||{}).comp||Kit.marching)return orig.call(ctx,img,...a);// (the marching armies: drawn smaller on purpose, Kit.watchMarch)// (the fog: a soft overlay drawn up smooth, as the battle's: fog.js drawWorldFog)
    const m=ctx.getTransform(),whole=v=>Math.abs(v-Math.round(v))<1e-6,[dx,dy]=a.length===8?[a[4],a[5]]:[a[0],a[1]];
    const sw=a.length===8?a[2]:img.width,sh=a.length===8?a[3]:img.height,dw=a.length>=4?(a.length===8?a[6]:a[2]):sw,dh=a.length>=4?(a.length===8?a[7]:a[3]):sh;
-   // (the awareness eyes are sized on the screen, not the map: a whole number of device pixels to a pixel of
-   // theirs at the map's scale VS, at whole device pixels: render.js drawStealthEye; 251e298, aa3ed8d)
-   const r=dw*t.VS/sw,dense=dw!==sw&&r>=1&&whole(r)&&Math.abs(dh*t.VS/sh-r)<1e-6,S=dense?t.VS:1;
-   if(Math.abs(Math.abs(m.a)-1)>1e-9||Math.abs(Math.abs(m.d)-1)>1e-9||m.b||m.c||!dense&&(dw!==sw||dh!==sh))off.push('scaled '+img.width+'x'+img.height);
-   else if(!whole((m.a*dx+m.e)*S)||!whole((m.d*dy+m.f)*S))off.push('at '+(m.a*dx+m.e).toFixed(2)+','+(m.d*dy+m.f).toFixed(2)+' ('+img.width+'x'+img.height+') '+(new Error().stack.split('\n')[2]||'').trim().split('/').pop());
+   const k=Math.abs(m.a)*dw/sw,kh=Math.abs(m.d)*dh/sh,V=t.VS,K=[V,V/t.sceneRes(),1];
+   if(m.b||m.c||Math.abs(k-kh)>1e-6||!K.some(q=>Math.abs(k-q)<1e-6))off.push('scaled '+img.width+'x'+img.height+' by '+k.toFixed(3)+' ('+(new Error().stack.split('\n')[2]||'').trim().split('/').pop());
+   else if(!whole(m.a*dx+m.e)||!whole(m.d*dy+m.f))off.push('at '+(m.a*dx+m.e).toFixed(2)+','+(m.d*dy+m.f).toFixed(2)+' ('+img.width+'x'+img.height+') '+(new Error().stack.split('\n')[2]||'').trim().split('/').pop());
    return orig.call(ctx,img,...a)};
- for(const at of ['Ashford','Saltmere','Highmoor','Sunreach']){const z=t.townBy(at);P.x=z.x+30;P.y=z.y+20;t.drawWorld()}
- ctx.drawImage=orig;unmarch();
- ok(!off.length,'the world map draws every picture unscaled, at whole pixels'+(off.length?': '+[...new Set(off)].slice(0,6).join('; '):''));
+ try{for(const at of ['Ashford','Saltmere','Highmoor','Sunreach']){const z=t.townBy(at);P.x=z.x+30;P.y=z.y+20;rec=true;try{t.frame()}finally{rec=false}}}
+ finally{ctx.drawImage=orig;unmarch();window.requestAnimationFrame=raf}
+ ok(!off.length,'the world map draws every picture at a whole number of device pixels to its own, at whole device pixels'+(off.length?': '+[...new Set(off)].slice(0,6).join('; '):''));
  // ---- sprite cells: every figure sits in an 8, 16, 32 or 64 pixel square, feet on its bottom row, never cut off
  {const pow=c=>c.width===c.height&&[8,16,32,64].includes(c.width)&&c.cw<=c.width&&c.ch<=c.height,list=[];
   const add=(n,c)=>list.push([n,c]);add('follower',t.followerSprite('#3d74d6',0));

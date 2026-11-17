@@ -87,9 +87,10 @@ try{
    ok(same&&n1-n0<=(A.steps+1)*A.turns&&keys()===n1&&new Set([0,1,2,3,4].map(f=>t.caravanSprite('#c74453',f,0))).size===A.steps+1&&new Set([0,1,2].map(w=>t.caravanSprite('#c74453',1,w))).size===A.turns,'each of its pictures built once and kept (spr: '+n1+' of them), the same one each time it is drawn: '+(A.steps+1)+' of its walk, '+A.turns+' of its wheel\'s turn');
    for(let i=0;i<30&&!W.caravans.length;i++)t.sendCaravan(t.TOWNS[i%t.TOWNS.length]);const c=W.caravans[0];
    if(c){c.x=P.x+30;c.y=P.y+12;c.dir=1;const ctx=t.ctx,di=ctx.drawImage,seen=[],unmarch=Kit.watchMarch(),pics=new Set();
-     ctx.drawImage=function(img,...a){if(Kit.marching)seen.push([img,Math.abs(this.getTransform().a)]);return di.call(this,img,...a)};try{t.drawWorld()}finally{ctx.drawImage=di;unmarch()}
+     // (the grass a man wades in, drawn over his feet as he is drawn: not his picture, worldterrain.js grassOver)
+     ctx.drawImage=function(img,...a){if(Kit.marching&&img!==t.GRASS_OVER.cv)seen.push([img,Math.abs(this.getTransform().a)]);return di.call(this,img,...a)};try{t.drawWorld()}finally{ctx.drawImage=di;unmarch()}
      Object.keys(t.spr).filter(q=>q.startsWith('cv#')).forEach(q=>pics.add(t.spr[q]));const a=seen.filter(q=>pics.has(q[0])).map(q=>q[1]),b=seen.filter(q=>!pics.has(q[0])).map(q=>q[1]);
-     ok(a.length&&b.length&&a.concat(b).every(v=>Math.abs(v-b[0])<1e-9),'on the map it is drawn as big as its guards marching round it ('+a.length+' cart, '+b.length+' guards, at '+(b[0]||0).toFixed(2)+' screen px to its pixel)');W.caravans.length=0}
+     ok(a.length&&b.length&&a.concat(b).every(v=>Math.abs(v-b[0])<1e-9),'on the map it is drawn as big as its guards marching round it ('+a.length+' cart, '+b.length+' guards, at '+(b[0]||0).toFixed(2)+' screen px to its pixel'+(a.concat(b).some(v=>Math.abs(v-b[0])>1e-9)?', the cart at '+[...new Set(a.map(v=>v.toFixed(2)))].join('/')+', its guards at '+[...new Set(b.map(v=>v.toFixed(2)))].join('/'):'')+')');W.caravans.length=0}
    // (its legs at the march's cadence while it moves (its own time walked, not the ground it covers), still once it stands)
    const q={},T0=1e6;let now=T0,fr=[];performance.now=()=>now;try{t.WALKED.set(q,0);t.caravanGait(q);for(let i=0;i<20;i++){now+=50;t.WALKED.set(q,i+1);fr.push(t.caravanGait(q))}now+=400;fr.push(t.caravanGait(q))}finally{delete performance.now}
    const walk=fr.slice(0,-1),flips=walk.filter((f,i)=>i&&f!==walk[i-1]).length,want=Math.floor(walk.length*.05*t.MARCH_MOVE.cadence);

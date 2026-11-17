@@ -42,10 +42,13 @@ const FIXED_VIEW=/[?&]test=/.test(location.search)&&!/[?&]v=/.test(location.sear
    in the tests' fixed view or on the map: today's BVW x BVH, the browser stretching it */
 function bview(){const Z=MAPZOOM;if(!RENDER.sharpBattle||FIXED_VIEW||typeof B!=='undefined'&&B?.world)return{w:BVW,h:BVH,k:1,cw:BVW,ch:BVH,sharp:false};
   const cw=Z.vw*Z.s0,ch=Z.vh*Z.s0,k=ch/BVH;return{w:cw/k,h:BVH,k,cw,ch,sharp:true}}
-/* Map art stays on whole device pixels. z: saved scale (0 Auto); lo/hi: zoom limits. Desktop Auto and limits follow the
-   window. On phones, the former default (PHONE × window scale, bounded by PHONE_IN/PHONE_IN_H) is now the farthest view.
-   Auto starts PHONE_START times closer, with further zoom up to PHONE_MAX times the former default. HUD scale stays s0. */
-const MAPZOOM={z:0,map:false,on:false,s0:1,auto:1,lo:1,hi:1,vw:576,vh:360,IN:320,IN_H:180,OUT:1.7e6,PINCH:1.25,WHEEL:140,SMALL:540,PHONE:3,PHONE_START:1.5,PHONE_MAX:2,PHONE_IN:240,PHONE_IN_H:120,wt:0,k(){return this.on?this.s0/VS:1},phone(w,h){return !FIXED_VIEW&&Math.min(w,h)<=this.SMALL}};
+/* Map art stays on whole device pixels. z: saved scale (0 Auto); lo/hi: zoom limits. A window's map is at the world lab's scale
+   (labScale: closer on a phone-narrow one), never farther, closer at most WORLD_VIEW.in times (2026-11-15, 7c4f44e); the tests'
+   fixed view keeps the window's scale, its range by the window (PHONE_IN/PHONE_IN_H on a phone). HUD scale stays s0. */
+const MAPZOOM={z:0,map:false,on:false,s0:1,auto:1,lo:1,hi:1,vw:576,vh:360,IN:320,IN_H:180,OUT:1.7e6,PINCH:1.25,WHEEL:140,SMALL:540,PHONE_IN:240,PHONE_IN_H:120,wt:0,k(){return this.on?this.s0/VS:1},phone(w,h){return !FIXED_VIEW&&Math.min(w,h)<=this.SMALL}};
+// the map's scale a window aw CSS px wide at dpr: CSS px a fine px (data/world.js WORLD_VIEW zoom, phoneZoom below phone px), a whole
+// number of fine px a game px
+const labScale=(aw,dpr)=>{const V=WORLD_VIEW;return V.fine*Math.max(1,Math.round((aw<V.phone?V.phoneZoom:V.zoom)*dpr))};
 // the screen is the window; the canvas fills it at a whole-number scale (a game pixel's last part may run past the edge)
 function fitScreen(){
   const scr=cv.parentElement,dpr=dprOf(),aw=innerWidth,ah=innerHeight,Z=MAPZOOM,phone=Z.phone(aw,ah);
@@ -55,7 +58,7 @@ function fitScreen(){
   Z.s0=s0;Z.vw=Math.ceil(dw/s0);Z.vh=Math.ceil(dh/s0);Z.hi=Math.max(s0,Math.floor(Math.min(dw/(phone?Z.PHONE_IN:Z.IN),dh/(phone?Z.PHONE_IN_H:Z.IN_H))));Z.lo=s0;while(Z.lo>1&&fit(Z.lo-1))Z.lo--;
   // (the map at the world lab's scale (data/world.js WORLD_VIEW: CSS px a fine px, a whole number of fine px a game px, so the scale is
   //  even): where it starts and the farthest it goes; closer at most WORLD_VIEW.in times. The tests' fixed view as it was)
-  if(!FIXED_VIEW&&typeof WORLD_VIEW!=='undefined'){const V=WORLD_VIEW,lab=V.fine*Math.max(1,Math.round((aw<V.phone?V.phoneZoom:V.zoom)*dpr));Z.lo=lab;Z.auto=lab;Z.hi=lab*V.in}else Z.auto=s0;
+  if(!FIXED_VIEW&&typeof WORLD_VIEW!=='undefined'){const lab=labScale(aw,dpr);Z.lo=lab;Z.auto=lab;Z.hi=lab*WORLD_VIEW.in}else Z.auto=s0;
   const s=Z.map?Math.max(Z.lo,Math.min(Z.hi,Z.z||Z.auto)):s0;Z.on=s!==s0;
   VW=Math.ceil(dw/s);VH=Math.ceil(dh/s);BVH=FIELD_H;BVW=Math.round(FIELD_H*Z.vw/Z.vh);
   const w=VW*s/dpr,h=VH*s/dpr;HUD_PX=dpr/s0;VS=s;cv.style.width=w+'px';cv.style.height=h+'px';

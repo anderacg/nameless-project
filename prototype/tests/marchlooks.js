@@ -12,7 +12,8 @@ Kit.suite(({ok})=>{
  const lord=t.W.lords[0],actual=t.marchLeaderSprite(lord,0),base=t.unitSprite(t.charOf(lord).key,0,false,0,0,false,false,lord.look().col),k=t.WORLD_BATTLE.sprite/t.WORLD_BATTLE.scale;
  const expected=t.mkc(Math.ceil(base.width*k),Math.ceil(base.height*k),g=>g.drawImage(base,0,0,base.width*k,base.height*k));
  ok(pixels(actual)===pixels(expected),'lord leader uses the battle character kind at marching scale and faction tint');
- {const L={id:1,row:'leader',type:t.charOf(lord).key,character:true,x:20,y:20,walking:false},oldDraw=t.ctx.drawImage,drawn=[];try{t.ctx.drawImage=s=>drawn.push(s);t.drawMarcher(L,lord,{x:0,y:0})}finally{t.ctx.drawImage=oldDraw}
+ // (on dry ground: at the map's corner (20, 20) the sea, where a man wading is drawn again faint under the water, march.js drawWading)
+ {const dry=t.P,L={id:1,row:'leader',type:t.charOf(lord).key,character:true,x:dry.x,y:dry.y,walking:false},oldDraw=t.ctx.drawImage,drawn=[];try{t.ctx.drawImage=s=>drawn.push(s);t.drawMarcher(L,lord,{x:0,y:0})}finally{t.ctx.drawImage=oldDraw}
   const bare=t.unitSprite(t.charOf(lord).key,0,false,0,0,true,false,lord.look().col),held=t.mapHeld(t.marchLook(L,lord),bare,false);
   // (zoomed out, each picture shrunk first, kept by its own (render.js reduced, mapPic: .src); the fist laid over the grip apart)
   const pics=drawn.map(x=>x.src||x).filter(x=>!x.fist);

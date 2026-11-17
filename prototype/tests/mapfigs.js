@@ -60,7 +60,8 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;Kit.begin('soldier');
  {const on=pieces(),boxOn=es.map(e=>t.ENC_SCENE.box(e)),picsOn=es.map(e=>t.ENC_SCENE.pics(e));
    t.MAP_FIGS.on=false;let off,boxOff,picsOff;try{off=pieces();boxOff=es.map(e=>t.ENC_SCENE.box(e));picsOff=es.map(e=>t.ENC_SCENE.pics(e))}finally{t.MAP_FIGS.on=true}
    ok(on.length>=10&&on.every(([e,p])=>p.s&&p.s.dense),on.length+' people in '+es.length+' road encounters ('+[...new Set(on.map(([e,p])=>p.k))].join(', ')+'): each the battle\'s figure');
-   const old=(e,p,w)=>{const r=e.race||'human',v=p.o.v||0;return p.k==='walk'||p.k==='stand'?t.roadPerson(w,r,v,0):p.k==='kneel'?t.roadKneel(w,r,v):p.k==='down'?t.roadDown(w,r,v,p.o.blood):p.k==='soldier'?t.followerSprite(p.o.col||t.ENC_RAIDER,0,v,r,p.o.band):p.k==='refugee'?t.refugeeSprite(0,v):p.k==='worker'?t.workerSprite(w,0,r,v):p.k==='rider'?t.roadRider(w,r,v,0,p.o.col,p.o.coat):t.roadHorse(p.o.coat||'horse',0)};
+   // (each dressed for its land as the encounter lays it: encounterscene.js lay, sprites.js dressedIn; 4f77837, villagers dressed for their land)
+   const old=(e,p,w)=>t.dressedIn(t.dressClimAt(e.x,e.y),()=>old0(e,p,w)),old0=(e,p,w)=>{const r=e.race||'human',v=p.o.v||0;return p.k==='walk'||p.k==='stand'?t.roadPerson(w,r,v,0):p.k==='kneel'?t.roadKneel(w,r,v):p.k==='down'?t.roadDown(w,r,v,p.o.blood):p.k==='soldier'?t.followerSprite(p.o.col||t.ENC_RAIDER,0,v,r,p.o.band):p.k==='refugee'?t.refugeeSprite(0,v):p.k==='worker'?t.workerSprite(w,0,r,v):p.k==='rider'?t.roadRider(w,r,v,0,p.o.col,p.o.coat):t.roadHorse(p.o.coat||'horse',0)};
    ok(off.length===on.length&&off.every(([e,p,w])=>!p.s.dense&&p.s===old(e,p,w)),'MAP_FIGS.on false: the old pictures, the very ones (roadPerson, roadKneel, roadDown, followerSprite, refugeeSprite, workerSprite, roadRider, roadHorse)');
    const feet=boxOn.every((b,j)=>Math.abs(b[3]-boxOff[j][3])<=1&&b[0]<=es[j].x&&b[2]>=es[j].x),dh=boxOn.map((b,j)=>(boxOff[j][3]-boxOff[j][1])-(b[3]-b[1]));
    ok(feet&&picsOn.every((L,j)=>L.length===picsOff[j].length),'their boxes stand on the same feet (bottoms within a px, about the same point; heights '+Math.min(...dh)+' to '+Math.max(...dh)+' px less), and their banners show as many pictures')}
@@ -83,7 +84,10 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;Kit.begin('soldier');
  {const keys=['ax','ay','cw','ch','stern','net','hull','top'],sh=o=>t.shipSprite(o),os=[{seed:4,big:true,col:'#a8483a'},{seed:5,big:false},{seed:6,big:true,col:'#3d74d6',moored:true},{seed:7,big:false,moored:true}];
    const nu=os.map(sh);t.MAP_FIGS.on=false;let old;try{old=os.map(sh)}finally{t.MAP_FIGS.on=true}
    const z=Math.round(1/k);
-   ok(nu.every((s,j)=>s!==old[j]&&s.hi&&s.hi.width===s.width*z&&!old[j].hi&&keys.every(q=>s[q]===old[j][q])&&JSON.stringify(s.posts)===JSON.stringify(old[j].posts)&&Math.abs(t.opaqueBox(s)[1]-t.opaqueBox(old[j])[1])<=1),'ships: their crews at the battle\'s density (hi, '+z+'x), drawn back to the map\'s size; the picture\'s anchors and top as before');
+   // (off, a ship is drawn at the lab's scale too (hi: doc/OPEN_WORLD_DESIGN.md phase 1, the fine scene), its crew the old small people:
+   //  the two pictures the same but for the crew; a moored rowing boat has none)
+   const px=c=>c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data.join(),crew=os.map(o=>o.big||!o.moored);
+   ok(nu.every((s,j)=>s!==old[j]&&s.hi&&s.hi.width===s.width*z&&old[j].hi&&old[j].hi.width===s.hi.width&&(px(s.hi)!==px(old[j].hi))===crew[j]&&keys.every(q=>s[q]===old[j][q])&&JSON.stringify(s.posts)===JSON.stringify(old[j].posts)&&Math.abs(t.opaqueBox(s)[1]-t.opaqueBox(old[j])[1])<=1),'ships: their crews at the battle\'s density (hi, '+z+'x), drawn back to the map\'s size; off, the same picture with the old crew; the picture\'s anchors and top as before');
    ok(pixels(nu[3])===pixels(old[3])&&pixels(nu[0])!==pixels(old[0]),'a moored rowing boat (no one in it) the same; a cog\'s crew changed')}
  // ---- a busy map's frame, both ways (the owner's PC: a few frames only)
  {Kit.goHome();t.roadSt().on=es;for(const e of es){e.x=P.x+(e.x-home.x);e.y=P.y+(e.y-home.y)}
