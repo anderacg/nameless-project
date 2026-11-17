@@ -860,7 +860,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  OUTPOST_PLACE.body), goblin camps seeking hillsides (3993b56: GOBLINS.warren.share) and the outposts held before the sites are
 //  drawn (4651eae: Outposts.hold) move what stands on the land: W4 (the outposts' claims) and W5-W8, B2; W1-W3 hold. Were W1
 //  00614f13, W2 c353914d, W3 08463f33, W4 d2fafb20, W5 2245c050, W6 cde2ee8f, W7 76d16ba7, W8 ef39e9b9, B2 5ede72a2)
-const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'c8fd11f3',W6:'3939e37e',W7:'a9fc5330',W8:'93ccd29a',B2:'1c3f6432'};
+// (W5, W6 re-recorded 2026-11-17 again, on purpose, the owner's map requests since: crops each its own plants in rows by the season
+//  and a date palm whole (worldart.js FARM, engine/worldnature.js PX.worldCropFine), no grass on fields, the flat props baked into
+//  the chunks' fine pictures (worldterrain.js p.bake) move the painted world (W5); and with them, in the view, the grass bent by every
+//  foot and drawn over a man's feet (grassFeet, grassOver), nothing drawn on land never seen and nothing moving out of your sight
+//  (fog.js VIEW_SEEN), the remembered scene cut at game px, pixel for pixel as before (fogMem) (W6). W1-W4, W7, W8, B2 and the sums
+//  hold. Were W5 c8fd11f3, W6 3939e37e)
+const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'26f08294',W6:'c306f4a3',W7:'a9fc5330',W8:'93ccd29a',B2:'1c3f6432'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
