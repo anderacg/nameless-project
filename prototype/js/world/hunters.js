@@ -81,7 +81,7 @@ class HunterBand extends WorldObject{
   // each man by his feet, his people's hunter in his land's clothes with his bow (the road's hunter, world/encounters.js ENC_LOOK),
   // those carrying a kill with it on their backs; a shot's arrow in flight
   draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const h=this,cl=dressClimAt(h.x,h.y),go=h.moving,st=go?footFrame(WALKED.get(h)):0,
-      lift=h.load.reduce((a,id)=>a+(HUNTERS.lift[CRITTERS[id]?.size]||1),0);grassFoot(h.x,h.y,go,false);
+      lift=h.load.reduce((a,id)=>a+(HUNTERS.lift[CRITTERS[id]?.size]||1),0);grassFoot(h.x,h.y,go,false,h);
     h.men.forEach((m,i)=>{const [ox,oy]=HUNTER_AT[i%HUNTER_AT.length];ents.push({x:h.x,y:h.y+oy,f:()=>{const sx=Math.round(h.x+ox*h.dir-cam.x),sy=Math.round(h.y+oy-cam.y);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);dressedIn(cl,()=>drawFig(hunterFig(h.race,m.v,cl,figPose(st+i,go),i<lift),sx,sy,h.dir))}})});
     const a=h.arrow;if(a)ents.push({x:a.x0,y:Math.max(a.y0,a.y1),f:()=>{const u=1-a.t/HUNTERS.arrow,L=Math.hypot(a.x1-a.x0,a.y1-a.y0+1)||1,ux=(a.x1-a.x0)/L,uy=(a.y1-a.y0+1)/L,

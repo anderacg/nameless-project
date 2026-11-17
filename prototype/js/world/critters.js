@@ -19,7 +19,7 @@ class Herd extends WorldObject{
   pick(at){if(this.wild)at.add(this,9,4)}
   // up to three of its animals, behind and beside the first, a walk of PX.MAP_STEPS frames to a body length walked (critterSprite;
   // render.js stepOf), its count near you; each at its own place to the screen's pixel (render.js subT)
-  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const c=this;grassFoot(c.x,c.y,mapStepping(c),true);if(WORLD_BATTLE.on)marchCircle(ents,c,cam,Math.max(WORLD_BATTLE.outer,WORLD_BATTLE.inner+Math.sqrt(c.n||1)*2),'#b4c985');
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const c=this;grassFoot(c.x,c.y,mapStepping(c),true,c);if(WORLD_BATTLE.on)marchCircle(ents,c,cam,Math.max(WORLD_BATTLE.outer,WORLD_BATTLE.inner+Math.sqrt(c.n||1)*2),'#b4c985');
     // (each animal its battle figure, as it is in a hunt, at the marchers' scale (gfx/sprites.js critterArt), its own coat: the herd's
     // coat picked once (coat), not from its home (hx, hy), which a fleeing herd moves every frame: its coats flashed, the owner
     // 2026-11-13: "The wildlife sprite flashing, like it changes the color")

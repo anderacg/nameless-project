@@ -19,7 +19,7 @@ class EstateWorker extends WorldObject{
   // World combat uses the trade's real battle unit, with stable variant and holding cloth; legacy mode keeps folkSprite; loaded
   // (MAP_FIGS), the same man with his load on his back, his tool left behind (people.js figCarrier). His fraction of a pixel
   // (subT) kept inside save/restore
-  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const f=this;grassFoot(f.x,f.y,f.moving,false);
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const f=this;grassFoot(f.x,f.y,f.moving,false,f);
     ents.push({x:f.x,y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{ctx.save();subT(f);const fr=f.moving&&mapStepping(f)?(frameOf(f,WALK.foot,WALK.n)+Math.floor(f.ph*WALK.n))%WALK.n:0,t=townBy(f.home),carry=f.st==='out'||f.load,s=WORLD_BATTLE.on?null:folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),carry),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);if(WORLD_BATTLE.on){const L=workerAppearance(f),pose=f.moving&&mapStepping(f)?2+footFrame(WALKED.get(f)):0,sp=carry&&figsOn()?figCarrier(L.type,L.v,L.tint,f.job,pose):unitSprite(L.type,0,false,L.v,pose,false,false,L.tint),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;ctx.scale(f.dir<0?-k:k,k);ctx.drawImage(sp,-Math.floor(sp.width/2),-sp.height+2)}else{if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14)}ctx.restore();ctx.restore()})})}
   tip(){return '<b>'+(this.name?this.name+', '+this.job:cap1(this.job))+'</b><small>Of '+this.home+'</small><span class="act">Click: talk</span>'}

@@ -40,9 +40,11 @@ const WORLD_VIEW={fine:2,build:.5,house:1,sites:{shrine:2},zoom:2,phoneZoom:1.5,
    tile; hills; mountain; village: a holding's lot within two tiles; each mix by weight) and the chance of each thing a cell of step
    fine px by the ground: woods (a forest tile; trees at woods, thinner at its edge), open ground (grass and meadow), hills, the
    mountains, the banks, the swamp's pools (lily: a pad's chance on one, reeds: round its edge, the lab's); grass: a clump's chance by the ground and the clumps' kinds (the flora's GRASS_KINDS); how it moves (gfx/worldterrain.js
-   grassFeet): wind, gust, push (fine px a foot bends it within), lean (its most, px), sway ([its spring's Hz, damping]: it swings back
-   past upright once left), flat ([the share of push under a foot it is pressed within, the most of its height pressed down, s to rise
-   again]), feet ([a man standing's share of a walker's push, a rider's or beast's push times]) */
+   grassFeet): wind, gust, push (fine px a foot bends it within), lean (its most, px), way (game px a frame across the screen a walker
+   bends it his way, else away from him), back ([s it eases back upright in, never past it; s more for each s it was trodden; the most
+   s counted]), flat ([the share of push under a foot it is pressed within, the most of its height pressed down, s to rise again]),
+   stay ([the share of clumps trodden at least stay[1] s that stay down]), feet ([a man standing's share of a walker's push, a rider's
+   or beast's push times]) */
 const WORLD_FLORA={step:9,
   look:{grass:{rock:'grey',bush:'oak',snow:false,moss:1},desert:{rock:'sand',bush:'dry',snow:false,moss:0},frost:{rock:'cold',bush:'dark',snow:true,moss:0},swamp:{rock:'grey',bush:'dark',snow:false,moss:1.6}},
   trees:{grass:{lowland:{oak:5,beech:3,birch:2.5,ash:2,maple:.6,poplar:.4,dead:.25},waterside:{willow:4,alder:3,birch:1,poplar:1},hills:{pine:4,fir:3,birch:1.5,oak:1,dead:.3},mountain:{fir:4,spruce:4,pine:1,dead:.5},village:{apple:3,oak:1,poplar:1}},
@@ -55,7 +57,7 @@ const WORLD_FLORA={step:9,
     swamp:{woods:.5,open:{tree:.02,bush:.02,stone:.0015,flowers:.006},hills:{tree:.05,bush:.02,boulder:.004},mountain:{tree:.02,boulder:.02,stone:.03},woods2:{bush:.06,log:.025,stump:.016,fern:.06,mushroom:.035},bank:{cattail:.2},pool:{lily:.1,reeds:.12}}},
   grass:{step:6,chance:{grass:{open:.38,meadow:.55,woods:.12,dune:.3},desert:{open:.05,meadow:.015,woods:.2,dune:.12},frost:{open:.3,meadow:.03,woods:.02,dune:.12},swamp:{open:.5,meadow:.3,woods:.22,dune:.35}},
     kinds:{grass:{open:'grass',meadow:'meadow',woods:'wood',dune:'dune'},desert:{open:'dry',meadow:'dry',woods:'dry',dune:'dune'},frost:{open:'frost',meadow:'frost',woods:'frost',dune:'frost'},swamp:{open:'marsh',meadow:'marsh',woods:'wood',dune:'marsh'}},
-    patch:38,wind:1,gust:[90,.65],push:12,lean:3,sway:[1.3,.35],flat:[.5,.55,3],feet:[.4,1.6]}};
+    patch:38,wind:1,gust:[90,.65],push:12,lean:3,way:.15,back:[1.6,1.2,8],flat:[.5,.55,3],stay:[.3,2.5],feet:[.4,1.6]}};
 /* the world's ways drawn finer (gfx/worldways.js; the owner, 2026-11-15: "make the lab river several sizes, there can be a big
    river"), in the lab's px (two a game px). river: half-widths by size (hw: [unused], a river one, two and three tiles wide (the
    generator's widths); a brook's from brook[0] to brook[1] by its flow); its bank (mud) bank px; depth (levels) down its middle by
