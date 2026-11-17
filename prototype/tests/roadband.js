@@ -58,20 +58,22 @@ Kit.suite(({ok,info})=>{
  const pairs=[];for(const r of t.WM.roads){if(!r.a||!r.b||r.est)continue;const h1=t.townBy(r.a),h2=t.townBy(r.b);if(!h1||!h2)continue;const d=Math.hypot(h1.x-h2.x,h1.y-h2.y);if(d<15*TL||d>45*TL)continue;
   let s=0;for(let i=0;i<=40;i++)if(t.climAt(h1.x+(h2.x-h1.x)*i/40,h1.y+(h2.y-h1.y)*i/40)==='swamp')s++;if(s>=12&&t.clearLine(t.gateSpot(h1).x,t.gateSpot(h1).y,t.gateSpot(h2).x,t.gateSpot(h2).y))pairs.push([h1,h2,s/41])}// (the straight line between their gates open: no holding's walls across it, router.js holdShut, so the plain way goes by it)
  pairs.sort((a,b)=>b[2]-a[2]);
- const onShare=w=>w.X.filter((x,i)=>t.regionAt(x,w.Y[i]).road).length/w.n;
+ // (its share on the road up to the last stretch before g: within ROAD_GO.near tiles of the point the way may leave the road for it,
+ // cutting across sooner (world.js ROAD_GO.keep): Bonefang's gate, 2026-11-17)
+ const onShare=(w,g)=>{const R=t.ROAD_GO.near*TL,I=[...Array(w.n).keys()].filter(i=>Math.hypot(w.X[i]-g.x,w.Y[i]-g.y)>R);return I.filter(i=>t.regionAt(w.X[i],w.Y[i]).road).length/Math.max(1,I.length)};
  const march=n=>Kit.frames(n,.05,dt=>t.marchStep(dt*t.WORLD_PACE),()=>P.tx==null||G.mode!=='world');
  if(!pairs.length)info('no two holdings with a road between them across a swamp');
  const pill=()=>!!document.querySelector('#underway [data-k="road"]');
  // what was said on the screen since (system lines are toasts, not the journal: state.js toast)
  const told=()=>new Set(document.querySelectorAll('#log>div')),toldSince=s=>[...document.querySelectorAll('#log>div')].filter(d=>!s.has(d)).map(d=>d.textContent);
  for(const [h1,h2,sw] of pairs.slice(0,1)){const s1=t.gateSpot(h1),s2=t.gateSpot(h2),from=on=>{Kit.clear();Kit.world({encCool:99});Kit.goTo(s1.x,s1.y);G.lastTown=h1;P.bsta=100;P.stuck=0;G.chase=null;t.setByRoad(on)};
-  from(false);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w0=t.WUI.way,p0=onShare(w0);
-  const said=told();from(true);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w1=t.WUI.way,p1=onShare(w1);
-  ok(P.byRoad===true&&G.byRoad&&G.byRoad.on&&w1!==w0&&w1.ok&&p1>p0&&p1>.9&&toldSince(said).some(m=>/keeps to the roads/.test(m)),h1.name+' to '+h2.name+' ('+Math.round(sw*100)+'% swamp on the straight line): by-road mode on, a plain click\'s way drawn keeps to the roads, '+Math.round(p1*100)+'% of it on them (the plain way '+Math.round(p0*100)+'%), and the log says it is on');
+  from(false);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w0=t.WUI.way,p0=onShare(w0,s2);
+  const said=told();from(true);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w1=t.WUI.way,p1=onShare(w1,s2);
+  ok(P.byRoad===true&&G.byRoad&&G.byRoad.on&&w1!==w0&&w1.ok&&p1>p0&&p1>.9&&toldSince(said).some(m=>/keeps to the roads/.test(m)),h1.name+' to '+h2.name+' ('+Math.round(sw*100)+'% swamp on the straight line): by-road mode on, a plain click\'s way drawn keeps to the roads, '+Math.round(p1*100)+'% of it on them up to the last '+t.ROAD_GO.near+' tiles (the plain way '+Math.round(p0*100)+'%), and the log says it is on');
   t.updateHUD(true);ok(pill(),'Under way shows By road while it is on ('+(document.querySelector('#underway [data-k="road"]')||{}).textContent+')');
   let on=0;const f1=Kit.frames(20000,.05,dt=>{t.marchStep(dt*t.WORLD_PACE);if(t.regionAt(P.x,P.y).road)on++},()=>P.tx==null||G.mode!=='world'),end=Math.hypot(P.x-s2.x,P.y-s2.y);
   // (still on for the next trip: back the way you came, a plain click again)
-  const back=P.byRoad===true;G.lastTown=h2;t.worldGo(s1.x,s1.y);t.wuiSync(performance.now());const p2=onShare(t.WUI.way);
+  const back=P.byRoad===true;G.lastTown=h2;t.worldGo(s1.x,s1.y);t.wuiSync(performance.now());const p2=onShare(t.WUI.way,s1);
   from(false);t.worldGo(s2.x,s2.y);let on0=0;const f0=Kit.frames(20000,.05,dt=>{t.marchStep(dt*t.WORLD_PACE);if(t.regionAt(P.x,P.y).road)on0++},()=>P.tx==null||G.mode!=='world');
   ok(end<3&&on/f1>on0/f0,'your band walks it there: '+Math.round(on/f1*100)+'% of its steps on the road (the plain way '+Math.round(on0/f0*100)+'%), '+t.Clock.hoursIn(f1*.05*t.WORLD_PACE).toFixed(1)+' h (the plain way '+t.Clock.hoursIn(f0*.05*t.WORLD_PACE).toFixed(1)+' h)');
   ok(back&&p2>.9,'arrived, it stays on: the next plain click (back again) keeps to the roads too ('+Math.round(p2*100)+'% on them)');

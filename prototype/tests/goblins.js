@@ -26,16 +26,21 @@ Kit.suite(({ok,info})=>{
  const root=n=>n.replace(/ (Camp|Warren)$/,'');
  ok(C.every(s=>s.band==='goblins'&&GB.names.some(n=>root(n)===root(s.name))&&s.lairLook!=='tunnel'&&s.ld&&t.CHIEF_NAMES.goblins[0].includes(s.ld.name.split(' ')[0]))&&new Set(C.map(s=>root(s.name))).size===C.length,'each its own name ('+C.slice(0,3).map(s=>s.name).join(', ')+'), never a dug tunnel, a goblin boss ('+C[0].ld.name+')');
  // (warrens: the owner, 2026-11-08, "add goblin warrens near hills": a camp among hills a cave in the hillside, stormed inside)
- // (camps fall where the draw puts them, few of them among hills (2026-11-17: 0 of 11 on some draws, before the bay came back
- // and after): with none among hills, one made on the wild land's first clear hillside, as genSites would place it)
- const hillAt=(x,y)=>{let n=0;for(let j=-3;j<=3;j++)for(let i=-3;i<=3;i++){const k=t.tAt(x+i,y+j);if(k===t.T_HILL||k===t.T_MOUNT)n++}return n>=4};
+ // (GOBLINS.warren.share of a camp's picks look for a hillside first (sites.js GoblinCamp.pick): over three streams of picks about that
+ // share among hills, and this game's draw has warrens; by the hideouts' pick alone, 0 of 11 on some draws, 2026-11-17)
+ {const hills=t.GoblinCamp.hills(wl),r0=Math.random,X=GB.warren;let n=0,hilly=0;const per=[];
+  try{for(const k of [1,2,3]){Math.random=t.seeded(k);let h=0;for(let i=0;i<100;i++){const [x,y]=t.GoblinCamp.pick();n++;if(t.hillyAt(x,y)){h++;hilly++}}per.push(h)}}finally{Math.random=r0}
+  ok(hills.length>0&&X.share>0&&per.every(h=>h>0)&&Math.abs(hilly/n-X.share)<.12,'a camp\'s picks look for a hillside first: '+per.join(', ')+' of 100 among hills on three streams (GOBLINS.warren.share '+X.share+'; '+hills.length+' wild tiles among hills)');
+  ok(C.some(s=>s.tunnel),'this game\'s draw has warrens ('+C.filter(s=>s.tunnel).length+' of '+C.length+' camps)')}
+ // (should a draw still have none among hills: one made on the wild land's first clear hillside, as genSites would place it)
+ const hillAt=t.hillyAt;
  const made=C.some(s=>s.tunnel)?null:(()=>{for(const i of wl.list){const x=i%t.MW,y=(i-x)/t.MW,s={tx:x,ty:y};if(hillAt(x,y)&&holdD(s)>=H.far&&t.Hideout.clear(x,y)&&t.Hideout.fits(x,y))return t.makeSite('goblins',x,y,W.sites)}return null})();
  if(made)info('no camp among hills on this draw: one made at '+made.tx+','+made.ty);
  {const Wr=C.concat(made||[]).filter(s=>s.tunnel),Cp=C.filter(s=>!s.tunnel),I0=t.INTERIOR.on;t.INTERIOR.on=true;// (the harness has interiors off)
   ok(Wr.length>0&&Cp.length>0&&Wr.every(s=>s.hilly&&s.lairLook==='cave'&&s.T.n==='Goblin warren'&&!/ Camp$/.test(s.name)&&t.Interior.on({kind:'camp',ref:s}))&&Cp.every(s=>!s.hilly&&!/ Warren$/.test(s.name)&&!t.Interior.on({kind:'camp',ref:s})),
    'among hills a warren ('+Wr.length+': '+Wr.slice(0,2).map(s=>s.name).join(', ')+'), a cave in the hillside stormed inside; elsewhere a camp of yurts ('+Cp.length+'), fought in the open');t.INTERIOR.on=I0;
   const s=Wr[0];ok(s&&t.lairSprite(s,'grass')&&s.lairCol===GB.warren.banner,'its banner by its mouth the goblins\u2019 green')}
- {const s=C[0],c=t.climAt(s.x,s.y),m=t.PX.clusterModel({kind:'hideout',culture:'ashgor',seed:s.seed*131+7,env:c,snow:c==='frost'?1:0}),sp=t.siteSprite(s),hd=t.campSprite(s.seed,'hideout',c);
+ {const s=C.find(s=>!s.tunnel)||C[0],c=t.climAt(s.x,s.y),m=t.PX.clusterModel({kind:'hideout',culture:'ashgor',seed:s.seed*131+7,env:c,snow:c==='frost'?1:0}),sp=t.siteSprite(s),hd=t.campSprite(s.seed,'hideout',c);
   const px=v=>v.getContext('2d').getImageData(0,0,v.width,v.height).data,same=(a,b)=>{const x=px(a),y=px(b);if(x.length!==y.length)return false;for(let i=0;i<x.length;i++)if(x[i]!==y[i])return false;return true};
   ok(m.culture==='ashgor'&&t.SITE_CULTURE.goblins==='ashgor'&&sp===t.campSprite(s.seed,'goblins',c)&&!same(sp,hd),'a camp is drawn as the Ashgor Horde builds (its yurts in a ring of stakes), not as a bandit hideout')}
  ok(t.nightCamps().filter(s=>s instanceof t.GoblinCamp).length===C.length&&t.camps().every(s=>s instanceof t.BanditCamp),'the camps bands shelter in by night count the goblins\', the bandit camps stay the bandits\'');

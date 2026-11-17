@@ -467,6 +467,8 @@ function wildGround(tx,ty){const H=HIDEOUT_PLACE,c=climate[ty*MW+tx];let n=0,r=0
 const HIDEOUT_LAIR={share:.45,salt:7171,r:3,hills:4,names:{bandits:'Bandit lair',raiders:'Raider tunnels',bog:'Bog raider warren'},T:{n:'Bandit lair',ico:'cave',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, dug in underground, their plunder deep in its tunnels.'}};
 const CAMP_WORN={on:true,days:7};// (a camp's losses kept after you withdrew: Lair worn, keep)
 const HIDEOUT_BAND={den:{size0:8,foes:[7,9],chief:[2,5],gold:1.5,gear:.4},ruin:{size0:6,foes:[5,7],chief:[1,3],gold:1,gear:0}};
+// (hills or peaks within HIDEOUT_LAIR.r tiles of a tile, HIDEOUT_LAIR.hills of them at least: a lair's mouth a cave in the hillside)
+function hillyAt(tx,ty){let n=0;const r=HIDEOUT_LAIR.r;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const k=tAt(tx+i,ty+j);if(k===T_HILL||k===T_MOUNT)n++}return n>=HIDEOUT_LAIR.hills}
 class Hideout extends Lair{
   static ground(tx,ty){return wildLand().at[ty*MW+tx]===1}
   static clear(tx,ty){return campClear('hideout',tx,ty)}
@@ -481,7 +483,7 @@ class Hideout extends Lair{
      hillside where hills or peaks stand by it, else a timbered tunnel dug into the ground, fought inside (battle/interior.js) */
   get lairLook(){if(this.within||hash(this.tx,this.ty,HIDEOUT_LAIR.salt)>=HIDEOUT_LAIR.share)return null;return this.hilly?'cave':'tunnel'}
   // (hills or peaks round it: HIDEOUT_LAIR.hills of them within r tiles)
-  get hilly(){let n=0;const r=HIDEOUT_LAIR.r;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const k=tAt(this.tx+i,this.ty+j);if(k===T_HILL||k===T_MOUNT)n++}return n>=HIDEOUT_LAIR.hills}
+  get hilly(){return hillyAt(this.tx,this.ty)}
   get tunnel(){return !!this.lairLook}
   get T(){return this.tunnel?HIDEOUT_LAIR.T:SITE_TYPES[this.type]}
   // (a lair its own name: HIDEOUT_LAIR.names)
@@ -524,6 +526,13 @@ class GoblinCamp extends Hideout{
   get T(){return this.tunnel?GOBLINS.warren.T:SITE_TYPES[this.type]}
   get lairCol(){return GOBLINS.warren.banner}
   get tune(){return GOBLINS.camp}
+  // (GOBLINS.warren.share of its picks a tile of the wild land among hills, clear for a camp, if one turns up in HIDEOUT_PLACE.draw
+  // looks; else a hideout's pick. By the hideouts' pick alone few camps stood by hills, a warren seldom made: 2026-11-17)
+  static pick(){const X=GOBLINS.warren,H=X.on?GoblinCamp.hills(wildLand()):[];
+    if(H.length&&Math.random()<X.share)for(let k=0;k<HIDEOUT_PLACE.draw;k++){const i=H[rint(0,H.length-1)],tx=i%MW,ty=(i-tx)/MW;if(this.clear(tx,ty))return[tx,ty]}
+    return super.pick()}
+  // (the wild land's tiles among hills (hillyAt) clear for a camp, once for each wild land)
+  static hills(L){const C=GoblinCamp.hillTiles;if(C&&C.of===L)return C.list;const list=L.list.filter(i=>{const x=i%MW,y=(i-x)/MW;return hillyAt(x,y)&&this.clear(x,y)});GoblinCamp.hillTiles={of:L,list};return list}
   // (its name in its own word: a warren's Warren, a camp's Camp; a name taken in either word taken; one draw, as before)
   setup(sites){this.band='goblins';const camp=n=>n.replace(/ Warren$/,' Camp'),used=new Set(sites.map(o=>camp(o.name))),free=GOBLINS.names.filter(n=>!used.has(camp(n))),
     n=camp(unusedName(free.length?free:GOBLINS.names,[]));this.name=this.tunnel?n.replace(/ Camp$/,' Warren'):n;this.ld=newChief('goblins',this.newLv(),sites)}

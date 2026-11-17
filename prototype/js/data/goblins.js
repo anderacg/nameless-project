@@ -12,13 +12,14 @@
    village, by chance a day: its workers run home for fear days and it carries off steal of its food. morale: the rank and
    file's nerve in battle (matchups.js unitMoraleOf: a levy's 50), the boss's bossMorale: they break and run early. warren: a camp
    among hills (sites.js HIDEOUT_LAIR's hills within its r tiles) is a warren dug into the hillside, fought inside (on: the switch;
-   banner: its banner by its mouth, [cloth, shade] (structures.js lairSprite); T: its type's words, as a site's) */
+   share: the share of its camps' picks that look for a hillside first (sites.js GoblinCamp.pick); banner: its banner by its mouth,
+   [cloth, shade] (structures.js lairSprite); T: its type's words, as a site's) */
 const GOBLINS={on:true,col:'#6f9a3a',band:[8,12],grow:12,bossAt:12,mix:[['gob_stab',.45],['gob_spear',.3],['gob_bow',.25]],boss:'gob_boss',
   bands:2,spawn:.35,leash:14,nerve:.7,camp:{size0:12,foes:[11,14],chief:[1,3],gold:1.2,gear:.3},respawn:20,
   loot:{goods:['grain','meat','cloth','tools','iron'],n:[3,6]},raid:{r:4,chance:.3,fear:2,steal:[3,6]},morale:28,bossMorale:45,
   names:['Snaggle Warren','Rotgut Camp','Mudhole Warren','Gristle Hill','Nettle Warren','Sourbog Camp','Gnawbone Camp','Mossrot Warren','Skulk Hollow','Grubpit Camp','Ratchew Warren','Thornmouth Camp'],
   d:'A goblin camp of hide yurts in a ring of stakes. Many weak goblins, their boss, and a pile of stolen goods.',
-  warren:{on:true,banner:['#6f9a3a','#3f5a1e'],T:{n:'Goblin warren',ico:'cave',col:'#6f9a3a',respawn:20,d:'A goblin warren dug into the hillside. Many weak goblins packed in its burrows, their boss, and a pile of stolen goods deep inside.'}},
+  warren:{on:true,share:.35,banner:['#6f9a3a','#3f5a1e'],T:{n:'Goblin warren',ico:'cave',col:'#6f9a3a',respawn:20,d:'A goblin warren dug into the hillside. Many weak goblins packed in its burrows, their boss, and a pile of stolen goods deep inside.'}},
   meet:'Small green shapes in ragged hoods scurry through the brush, yelling and waving knives. They keep their distance until they are sure of you.'};
 // goblins and every other band at feud (the owner, 2026-11-08: "Make sure that bandits and goblins are hostile to each other";
 // world/brains.js BandBrain feud): a band rides down a rival in sight (see, px) it thinks it can take (the rival's power at most
