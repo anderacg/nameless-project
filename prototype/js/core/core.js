@@ -17,7 +17,8 @@ let VS=1,CVS=1;
    Resolution, ui.js: Full none, Balanced 2, Fast 1.5). The game's art is whole pixels, so a canvas of fewer pixels shown at the
    window's size (pixelated, style.css) looks the same, its text a little coarser, and draws in a fraction of the time on a phone
    (at 3, Balanced fills 4/9 of the pixels, Fast 1/4) */
-// gpu: the screen's canvas left to the GPU (no willReadFrequently; Ashmark.html?gpu=1). Off by default: measured headless on a
+// gpu: the screen's canvas left to the GPU (no willReadFrequently; Ashmark.html?gpu=1), and with it every canvas drawn each frame
+// (sprites.js mkg: the scene, its overlay, the grass, the mist, the depth's masks). Off by default: measured headless on a
 // desktop GPU (doc/WORLD_DESIGN.md §3.5, "The frame's cost"), a GPU screen fed by the software canvases the frame is built in was
 // no faster, and every layer moved to the GPU was slower; for trying on a phone. sharpBattle: a battle fought apart drawn at the
 // screen's own pixels (bview, below); off, today's canvas of BVW x BVH stretched to the window

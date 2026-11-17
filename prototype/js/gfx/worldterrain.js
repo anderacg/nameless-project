@@ -377,10 +377,14 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
     if(jx<X*r||jy<Y*r||jx>=(X+w)*r||jy>=(Y+h)*r||!WB.PL[(jy-Y*r)*W2+jx-X*r]||vis(jx,jy)===-1)continue;const PO=WF.chance[CLIMS[terClimate(jx/r|0,jy/r|0)]].pool;
     if(PO&&hs(fx,fy,418)<PO.lily){const o=FL.lilyPic(Math.floor(hs(fx,fy,419)*8));out.push({x:jx/r,y:jy/r,s:o.img,ax:o.ax,ay:o.ay,kind:'lily',low:true})}}
   FL.cap=false;
+  // (a flat thing (low) whose picture lies within the chunk, at its lift as the view reads it (rec.lift), is laid into the chunk's
+  //  fine picture once (bake: its px there), not drawn each frame among what stands (terrainEnts): cheaper on a phone)
+  for(const p of out){if(!p.low)continue;const gx=Math.floor(p.x)-X,gy=Math.floor(p.y)-Y,L=gx>=0&&gy>=0&&gx<w&&gy<h?rec.lift[gy*w+gx]:0,bx=Math.round(p.x*r)-p.ax-X*r,by=Math.round(p.y*r)-p.ay-Y*r-L;
+    if(bx>=0&&by>=0&&bx+p.s.width<=W2&&by+p.s.height<=H2)p.bake=[bx,by]}
   // (the ground trodden bare just south of a prop's foot, the lab's (makeGrass): a strip as deep as a clump is tall, as wide as the
-  //  prop's lowest rows and 4 px more each side, where a clump would stand over its foot)
+  //  prop's lowest rows and 4 px more each side, where a clump would stand over its foot; a flat one laid into the ground the same)
   const BW2=W2,BH2=h*r,BARE=new Uint8Array(BW2*BH2);
-  for(const p of out){if(p.low)continue;const im=p.s;if(!im.foot){let a=1e9,b=-1;try{const y0=Math.max(0,im.height-FL.GH),d=im.getContext('2d').getImageData(0,y0,im.width,im.height-y0).data;
+  for(const p of out){if(p.low&&!p.bake)continue;const im=p.s;if(!im.foot){let a=1e9,b=-1;try{const y0=Math.max(0,im.height-FL.GH),d=im.getContext('2d').getImageData(0,y0,im.width,im.height-y0).data;
         for(let k=3;k<d.length;k+=4)if(d[k]===255){const x=(k>>2)%im.width;if(x<a)a=x;if(x>b)b=x}}catch(e){}im.foot=[a,b]}
     if(im.foot[1]<0)continue;const jx=Math.round(p.x*r)-X*r,jy=Math.round(p.y*r)-Y*r,xa=Math.max(0,jx-p.ax+im.foot[0]-4),xb=Math.min(BW2-1,jx-p.ax+im.foot[1]+4);
     for(let y=Math.max(0,jy+1);y<=Math.min(BH2-1,jy+FL.GH);y++)BARE.fill(1,y*BW2+xa,y*BW2+xb+1)}
@@ -393,7 +397,7 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
       const ch=GS.chance[cl][g]*(.35+1.3*wnoise2(jx/GS.patch,jy/GS.patch,413))*(cl==='frost'&&g==='open'?1-WORLD_TERRAIN.snowPatch.tufts*snowDrift(jx,jy):1)*(CVp.length?1-Math.min(1,caveShare(CVp,gx,gy)/CAVE_ROCK.bare):1);if(hs(fx,fy,414)>ch)continue;
       {const L=WB.lfAt(jx,jy);GX.push(jx);GY.push(jy-L)}GT.push(Math.max(0,KI.indexOf(GS.kinds[cl][g])));GV.push(Math.floor(hs(fx,fy,415)*4))}
     if(!(fy&63))yield}
-  out.sort((a,b)=>a.y-b.y);rec.props=out;
+  out.sort((a,b)=>a.y-b.y);rec.props=out;{const g=rec.fcv&&rec.fcv.getContext('2d');for(const p of out)if(p.bake)if(g)g.drawImage(p.s,p.bake[0],p.bake[1]);else p.bake=null}
   const ord=GX.map((_,k)=>k).sort((a,b)=>GY[a]-GY[b]);rec.grass={X:Int32Array.from(ord.map(k=>GX[k])),Y:Int32Array.from(ord.map(k=>GY[k])),T:Uint8Array.from(ord.map(k=>GT[k])),V:Uint8Array.from(ord.map(k=>GV[k])),P:new Float32Array(ord.length),n:ord.length}}
 
 // (a prop's picture at game px, for the depth overdraw's mask (gfx/depth.js depthPic): its fine picture taken down, kept on it)
@@ -416,13 +420,13 @@ function grassFoot(x,y,go,big,who){let vx=0;if(who&&typeof who==='object'){const
   GRASS_FEET.now.push(x,y,go?1:0,big?1:0,vx)}
 // a man standing in the grass, the lab's (its clumps in order of their feet with him): the clumps whose foot is just south of his (within
 // a clump's height) and within hw game px of him either side drawn again over him, as they lean this frame. (x, y): his foot, game px;
-// drawn where the scene's transform is (up by LIFT_NOW in liftDraw)
+// drawn where the scene's transform is (up by LIFT_NOW in liftDraw); none in his ghost behind a wall or a tree (depth.js ghostOver)
 const GRASS_OVER={buf:null,cv:null};
-function grassOver(x,y,hw){const r=typeof sceneRes==='function'?sceneRes():1,T=TGRASS;if(r<=1||!T.recs||!T.cam||!PX.flora||WDEPTH.ghosting)return;// (none in his ghost behind a wall or a tree: depth.js ghostOver)const FL=PX.flora,A=FL.grassAtlas(),n=FL.lean,GW=FL.GW,GH=FL.GH,
+function grassOver(x,y,hw){const r=typeof sceneRes==='function'?sceneRes():1,T=TGRASS;if(r<=1||!T.recs||!T.cam||!PX.flora||WDEPTH.ghosting)return;const FL=PX.flora,A=FL.grassAtlas(),n=FL.lean,GW=FL.GW,GH=FL.GH,
     L=typeof LIFT_NOW==='number'?LIFT_NOW:0,fy=Math.round((y-L)*r),fx0=Math.round((x-hw)*r)-GW,fx1=Math.round((x+hw)*r)+GW,BW=fx1-fx0+1,BH=2*GH+2,oy=fy-GH;let U=null,BWb=0;
   for(const c of T.recs){const Gr=c.grass;if(!Gr||!Gr.L)continue;let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<=fy)lo=m+1;else hi=m}
     for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy+GH;k++){const X=Gr.X[k];if(X<fx0+GW||X>fx1-GW)continue;
-      if(!U){if(!GRASS_OVER.buf||GRASS_OVER.buf.width<BW||GRASS_OVER.buf.height<BH){GRASS_OVER.buf=new ImageData(Math.max(BW,64),Math.max(BH,32));GRASS_OVER.buf.u=new Uint32Array(GRASS_OVER.buf.data.buffer);GRASS_OVER.cv=mkcv(GRASS_OVER.buf.width,GRASS_OVER.buf.height)}
+      if(!U){if(!GRASS_OVER.buf||GRASS_OVER.buf.width<BW||GRASS_OVER.buf.height<BH){GRASS_OVER.buf=new ImageData(Math.max(BW,64),Math.max(BH,32));GRASS_OVER.buf.u=new Uint32Array(GRASS_OVER.buf.data.buffer);GRASS_OVER.cv=mkg(GRASS_OVER.buf.width,GRASS_OVER.buf.height)}
         U=GRASS_OVER.buf.u;U.fill(0);BWb=GRASS_OVER.buf.width}
       const sp=A.px[(Gr.T[k]*4+Gr.V[k])*(2*n+1)+Gr.L[k]+n],D=sp.D,Cc=sp.C,bx=X-fx0-5,by=Gr.Y[k]-oy-9,cut=Gr.C?Gr.C[k]:0;
       for(let j=0,q=0;j<Cc.length;j++,q+=2){if(D[q+1]<cut)continue;const px=bx+D[q],py=by+D[q+1];if(px>=0&&py>=0&&px<BW&&py<BH)U[py*BWb+px]=Cc[j]}}}
@@ -494,7 +498,7 @@ function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)r
   {const now=performance.now(),dt=Math.min(.1,(now-(TGRASS.t||now))/1000),G=WORLD_FLORA.grass,t=now/1000,BW=(VW+1)*r,BH=(VH+1)*r,A=FL.grassAtlas(),n=FL.lean,GW=FL.GW,GH=FL.GH,
       w1=t*1.9,w2=t*G.gust[1]*6.28/3,g2=6.28/G.gust[0],B=G.back,SD=G.stay;TGRASS.t=now;
     grassFeet(recs,r,n,dt);
-    if(!TGRASS.buf||TGRASS.buf.width!==BW||TGRASS.buf.height!==BH){TGRASS.buf=new ImageData(BW,BH);TGRASS.buf.u=new Uint32Array(TGRASS.buf.data.buffer);TGRASS.cv=mkcv(BW,BH)}
+    if(!TGRASS.buf||TGRASS.buf.width!==BW||TGRASS.buf.height!==BH){TGRASS.buf=new ImageData(BW,BH);TGRASS.buf.u=new Uint32Array(TGRASS.buf.data.buffer);TGRASS.cv=mkg(BW,BH)}
     const U=TGRASS.buf.u;U.fill(0);let any=false;
     // (footprints, the lab's, fading: under the grass)
   //  each a foot's shape pointing his way (printFoot), deeper in its middle
@@ -524,10 +528,15 @@ function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)r
   // (the props, by their feet, among the buildings)
   //  (only those whose picture meets the screen across: the chunks' margin is for the lift down it; each drawn at its lift by fl, no
   //  context saved round it: liftDraw)
-  const px0=cam.x,px1=cam.x+VW;
-  for(const c of recs)for(const p of c.props){const X=p.x-p.ax/r,Y=p.y-p.ay/r;if(X>px1||X+p.s.width/r<px0||p.y<y0||Y>y1||!vs(p.x,p.y))continue;
-    const fl=L=>{const sx=Math.round((X-cam.x)*r)/r,sy=Math.round((Y-cam.y)*r)/r;ctx.drawImage(p.s,sx,sy-L,p.s.width/r,p.s.height/r);if(!p.low)depthPic(terrainHalf(p.s,r),sx,sy,p.ay/r)};
-    ents.push({st:true,x:p.x,y:p.y,fl,f:()=>fl(0)})}}
+  //  (a flat one laid into the chunk's picture (bake) is drawn with it; each other's entry made once and kept with it, the camera read
+  //  as it draws: TER_CAM)
+  const px0=cam.x,px1=cam.x+VW;TER_CAM=cam;
+  for(const c of recs)for(const p of c.props){if(p.bake)continue;const X=p.x-p.ax/r,Y=p.y-p.ay/r;if(X>px1||X+p.s.width/r<px0||p.y<y0||Y>y1||!vs(p.x,p.y))continue;
+    ents.push(p._e&&p._e.r===r?p._e:(p._e=propEnt(p,r)))}}
+let TER_CAM={x:0,y:0};
+// (a prop's entry among what stands: drawn at its lift by fl (liftDraw), what is not flat in the depth's pictures)
+function propEnt(p,r){const X=p.x-p.ax/r,Y=p.y-p.ay/r,w=p.s.width/r,h=p.s.height/r,fl=L=>{const c=TER_CAM,sx=Math.round((X-c.x)*r)/r,sy=Math.round((Y-c.y)*r)/r;ctx.drawImage(p.s,sx,sy-L,w,h);if(!p.low)depthPic(terrainHalf(p.s,r),sx,sy,p.ay/r)};
+  return {st:true,x:p.x,y:p.y,r,fl,f:()=>fl(0)}}
 
 // (how deep the tundra's snow lies in its drifts at fine px (fx, fy), 0 to 1, eased: the open frost's ground, its grass clumps thinned under it)
 function snowDrift(fx,fy){const SN=WORLD_TERRAIN.snowPatch,n=wnoise2(fx/26,fy/26,361)*.7+wnoise2(fx/9,fy/9,362)*.3+(hs(fx,fy,365)-.5)*SN.grain,a=Math.max(0,Math.min(1,(n-SN.lo)/(SN.hi-SN.lo)));return a*a*(3-2*a)}

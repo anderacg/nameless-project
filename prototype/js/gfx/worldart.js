@@ -650,7 +650,7 @@ const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 //     invalidate (world/ships.js: what sails under it).
 //   bytes(): what it holds.
 const WorldArt={
-  plan:null,chunks:new Map(),jobs:new Map(),queue:[],pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,sliceView:12,REACH:8,
+  plan:null,chunks:new Map(),jobs:new Map(),queue:[],pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,sliceView:12,REACH:8,idleAt:-1e9,ahead:2,
   cap:typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<900?20:32,
   get cols(){return Math.ceil(MW*TILE/CHUNK)},get rows(){return Math.ceil(MH*TILE/CHUNK)},
   ensure(){return this.plan||(this.plan=worldArtPlan())},
@@ -673,16 +673,20 @@ const WorldArt={
     // (ahead: the ring round the view, the way it moves first, as many as the cap leaves room for: those painted kept as freshly
     //  used, the rest queued; a job for a chunk no longer queued let go)
     const dx=this.last?Math.sign(cam.x-this.last.x):0,dy=this.last?Math.sign(cam.y-this.last.y):0,mx=(c0+c1)/2,my=(r0+r1)/2,ring=[];this.last={x:cam.x,y:cam.y};
-    for(let cy=r0-1;cy<=r1+1;cy++)for(let cx=c0-1;cx<=c1+1;cx++){const k=cy*this.cols+cx;if(cx<0||cy<0||cx>=this.cols||cy>=this.rows||this.view.has(k))continue;ring.push([(cx-mx)*dx+(cy-my)*dy,Math.hypot(cx-mx,cy-my),k,cx,cy])}
+    //  (ahead more rings the way it moves: a chunk walked into painted before, never in the frame)
+    const A=this.ahead;for(let cy=r0-1-(dy<0?A:0);cy<=r1+1+(dy>0?A:0);cy++)for(let cx=c0-1-(dx<0?A:0);cx<=c1+1+(dx>0?A:0);cx++){const k=cy*this.cols+cx;if(cx<0||cy<0||cx>=this.cols||cy>=this.rows||this.view.has(k))continue;ring.push([(cx-mx)*dx+(cy-my)*dy,Math.hypot(cx-mx,cy-my),k,cx,cy])}
     ring.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);ring.length=Math.min(ring.length,Math.max(0,this.capNow-this.view.size));
     for(let i=ring.length-1;i>=0;i--){const k=ring[i][2],c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c)}}
     // (a chunk painted coarser than the scene now is (painted while the game loaded) painted again in the background, those in view first)
     const stale=k=>{const c=this.chunks.get(k);return !c||(c.fine||1)<fr};
     this.queue=[...[...this.view].filter(k=>stale(k)&&this.chunks.has(k)).map(k=>[k%this.cols,(k/this.cols)|0]),...ring.filter(q=>stale(q[2])).map(q=>[q[3],q[4]])];const keep=new Set(this.queue.map(([cx,cy])=>cy*this.cols+cx));
     for(const [k,j] of this.jobs)if(!keep.has(k)){this.jobs.delete(k);this.recycle(j.rec.cv)}
-    // (sliceView ms a frame while a chunk in view still waits for its fine paint, slice for those ahead)
+    // (sliceView ms a frame while a chunk in view still waits for its fine paint; those ahead in the frame's time left over once it is
+    //  drawn (idle: main.js), slice ms here only while no game loop gives it that (the tests' frames))
     let inView=false;for(const k of this.view)if(stale(k)){inView=true;break}
-    this.step(inView?this.sliceView:this.slice)},
+    this.step(inView?this.sliceView:performance.now()-this.idleAt<250?0:this.slice)},
+  // (the frame drawn: ms of its time left for the chunks ahead, slice at least while any are queued; main.js loop)
+  idle(ms){this.idleAt=performance.now();if(this.queue.length)this.step(Math.max(this.slice,ms))},
   step(ms){const t0=performance.now();while(this.queue.length&&performance.now()-t0<ms){const [cx,cy]=this.queue[0],c0=this.chunks.get(cy*this.cols+cx);if(c0&&(c0.fine||1)>=(typeof paintRes==='function'?paintRes():1)){this.queue.shift();continue}const j=this.start(cx,cy);
       while(performance.now()-t0<ms)if(j.gen.next().done){this.done(j);this.queue.shift();break}}},
   invalidate(r){this.plan=null;CLEAR=null;this.minis={};this.decks.clear();this.queue=[];for(const j of this.jobs.values())this.recycle(j.rec.cv);this.jobs.clear();

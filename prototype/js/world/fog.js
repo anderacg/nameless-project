@@ -188,11 +188,16 @@ function drawWorldFog(cam,V){
 function fogPut(E,cam){ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='low';ctx.drawImage(E.comp,0,0,E.cw,E.ch,E.gx-cam.x,E.gy-cam.y,E.cw*E.k,E.ch*E.k);ctx.restore()}
 // the remembered scene (render.js memCv: the structures before anyone was drawn, its corner at cam) put back over all but your
 // sight, each eye's edge fading in over WFOG.feather px inside it: nothing that moves shows outside your sight, and none is cut
-// off sharp at its edge. Each eye cut out by its feathered disk (fogDisk), one after another
+// off sharp at its edge. Each eye cut out by its feathered disk (fogDisk), one after another. A scene finer than a game px (r) is
+// brought down to game px first (FOG_MEM: as it was laid, nearest) and cut there: a quarter of the px cut, the same picture (the
+// disk's px each game px's, as drawn up r times before; the scene itself left whole)
+let FOG_MEM=null;
 function fogMem(mem,cam,V){
-  const g=mem.getContext('2d', { willReadFrequently: true }),E=yourSight(V).eyes,r=mem.r||1;g.save();g.setTransform(r,0,0,r,0,0);g.globalCompositeOperation='destination-out';
-  for(let j=0;j<E.length;j++){const e=E[j],s=fogDisk(e.r),h=s.width>>1;g.drawImage(s,Math.round(e.x-cam.x)-h,Math.round(e.y-cam.y)-h)}
-  g.restore();ctx.drawImage(mem,0,0,mem.width/r,mem.height/r)}
+  const E=yourSight(V).eyes,r=mem.r||1,w=mem.width/r,h=mem.height/r;let c=mem;
+  if(r>1){if(!FOG_MEM||FOG_MEM.width!==w||FOG_MEM.height!==h)FOG_MEM=mkg(w,h);c=FOG_MEM;const q=c.getContext('2d');q.clearRect(0,0,w,h);q.imageSmoothingEnabled=ctx.imageSmoothingEnabled;q.drawImage(mem,0,0,w,h)}
+  const g=c.getContext('2d', { willReadFrequently: true });g.save();g.setTransform(1,0,0,1,0,0);if(c===mem&&r>1)g.setTransform(r,0,0,r,0,0);g.globalCompositeOperation='destination-out';
+  for(let j=0;j<E.length;j++){const e=E[j],s=fogDisk(e.r),hh=s.width>>1;g.drawImage(s,Math.round(e.x-cam.x)-hh,Math.round(e.y-cam.y)-hh)}
+  g.restore();ctx.drawImage(c,0,0,w,h)}
 // (a black disk r px wide (rounded), its rim fading over WFOG.feather px: drawn once a radius and kept, keep of them (a gradient
 // drawn afresh for a dozen eyes a frame cost ms; a stamp a tenth of it))
 const FOG_DISK={keep:12,pics:new Map()};

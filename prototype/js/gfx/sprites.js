@@ -1,6 +1,9 @@
 'use strict';
 /* ---------- sprites ---------- */
 const mkc=(w,h,f)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;f(g);return c};
+// a canvas drawn into every frame (the scene, the overlay over it, the grass, the fog's mist, the depth's masks): left to the GPU
+// with the screen's own (core.js RENDER.gpu, ?gpu=1), else as every other (willReadFrequently: the CPU's, read back cheaply)
+const mkg=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d',{willReadFrequently:!RENDER.gpu}).imageSmoothingEnabled=false;return c};
 const rect=(g,col,x,y,w=1,h=1)=>{g.fillStyle=col;g.fillRect(x,y,w,h)};
 const C={skin:'#e8c39e',dark:'#1a1410',steel:'#c9ced8',steel2:'#8e95a6',wood:'#8b5a2b',gold:'#e8b94a',hood:'#3d6b3a',team:['#3d74d6','#b8403a'],teamD:['#2a4f99','#7e2a26'],horse:'#7a4a26',horseD:'#573219'};
 const spr={};

@@ -46,7 +46,7 @@ function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
   WorldArt.standing(wx0,wy0,wx1,wy1,(S,k)=>{const f=S.Y+S.E[k*4+3];if(f>fy)C.push([f,S,k])});
   for(const p of WDEPTH.pics){const D=picFeet(p[0]),px=p[1]+cam.x,py=p[2]+cam.y;if(py+p[4]+(p[3]??D.foot)>fy&&px<=wx1&&px+D.w>wx0&&py+D.top<=wy1&&py+D.h>wy0)C.push([py+D.foot,null,p])}
   if(!C.length)return;C.sort((a,b)=>a[0]-b[0]);
-  if(!WDEPTH.img||WDEPTH.img.width<w||WDEPTH.img.height<h){const W=Math.max(w,WDEPTH.img?WDEPTH.img.width:0,64),H=Math.max(h,WDEPTH.img?WDEPTH.img.height:0,64);WDEPTH.img=new ImageData(W,H);WDEPTH.cv=mkc(W,H,()=>{})}
+  if(!WDEPTH.img||WDEPTH.img.width<w||WDEPTH.img.height<h){const W=Math.max(w,WDEPTH.img?WDEPTH.img.width:0,64),H=Math.max(h,WDEPTH.img?WDEPTH.img.height:0,64);WDEPTH.img=new ImageData(W,H);WDEPTH.cv=mkg(W,H)}
   const I=WDEPTH.img,M=I.data,st=I.width;for(let y=0;y<h;y++)M.fill(0,y*st*4,(y*st+w)*4);let any=0,hid=0;
   for(const [,S,k] of C){let key,n=0;
     if(S){const E=S.E,o=k*4,dx=S.X+E[o],dy=S.Y+E[o+1],r=E[o+2];key=(S.Y*MW*TILE+S.X)*65536+k;const A=Math.round((AL.has(key)?AL.get(key):1)*255);
@@ -60,7 +60,7 @@ function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
   if(!any)return false;
   const cv=WDEPTH.cv,g=cv.getContext('2d', { willReadFrequently: true }),mem=memCv(),r=mem.r||1;g.putImageData(I,0,0,0,0,w,h);
   if(r>1){// (the scene finer than a game px (render.js sceneRes): the mask brought up to it, the scene's own fine px kept in it)
-    const W=w*r,H=h*r;if(!WDEPTH.fcv||WDEPTH.fcv.width<W||WDEPTH.fcv.height<H)WDEPTH.fcv=mkc(Math.max(W,WDEPTH.fcv?WDEPTH.fcv.width:0,64),Math.max(H,WDEPTH.fcv?WDEPTH.fcv.height:0,64),()=>{});
+    const W=w*r,H=h*r;if(!WDEPTH.fcv||WDEPTH.fcv.width<W||WDEPTH.fcv.height<H)WDEPTH.fcv=mkg(Math.max(W,WDEPTH.fcv?WDEPTH.fcv.width:0,64),Math.max(H,WDEPTH.fcv?WDEPTH.fcv.height:0,64));
     const f=WDEPTH.fcv.getContext('2d');f.clearRect(0,0,W,H);f.imageSmoothingEnabled=false;f.drawImage(cv,0,0,w,h,0,0,W,H);f.globalCompositeOperation='source-in';f.drawImage(mem,x0*r,y0*r,W,H,0,0,W,H);f.globalCompositeOperation='source-over';
     ctx.drawImage(WDEPTH.fcv,0,0,W,H,x0,y0,w,h);return hid}
   g.globalCompositeOperation='source-in';g.drawImage(mem,x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
@@ -68,12 +68,12 @@ function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
 // (yours, covered: his figure drawn again on its own (e.f, into a canvas of the box's screen pixels, the queues it fills put back),
 // made flat in the ghost's colour, kept only where something covers him (the mask overdrawBox made), and laid over him)
 function ghostOver(e,x0,y0,w,h,ring){const G=ring||WDEPTH.ghost;if(!(ring||G.on)||typeof ctx==='undefined')return;const m=ctx.getTransform(),k=m.a||1,W=Math.ceil(w*k),H=Math.ceil(h*k);if(W<1||H<1||W*H>4e6)return;
-  if(!WDEPTH.gcv||WDEPTH.gcv.width<W||WDEPTH.gcv.height<H)WDEPTH.gcv=mkc(Math.max(W,WDEPTH.gcv?.width||0),Math.max(H,WDEPTH.gcv?.height||0),()=>{});
+  if(!WDEPTH.gcv||WDEPTH.gcv.width<W||WDEPTH.gcv.height<H)WDEPTH.gcv=mkg(Math.max(W,WDEPTH.gcv?.width||0),Math.max(H,WDEPTH.gcv?.height||0));
   const cv=WDEPTH.gcv,g=cv.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);g.setTransform(m.a,m.b,m.c,m.d,-m.a*x0,-m.d*y0);
   const q=[typeof TXTQ!=='undefined'&&TXTQ,typeof LIGHTQ!=='undefined'&&LIGHTQ,typeof BANNERQ!=='undefined'&&BANNERQ,typeof PLAQUEQ!=='undefined'&&PLAQUEQ].map(a=>a?[a,a.length]:null),was=ctx;
   WDEPTH.ghosting=true;ctx=g;try{drawMover(e)}catch(err){}finally{ctx=was;WDEPTH.ghosting=false;for(const p of q)if(p)p[0].length=p[1]}
   // (ring: only its rim, a fine px out round it (something lying to be taken, hid: LOOT_GLOW.outline), not its whole shape)
-  if(ring){const R=WDEPTH.rcv&&WDEPTH.rcv.width>=W&&WDEPTH.rcv.height>=H?WDEPTH.rcv:(WDEPTH.rcv=mkc(Math.max(W,WDEPTH.rcv?.width||0),Math.max(H,WDEPTH.rcv?.height||0),()=>{})),rg=R.getContext('2d'),d=Math.max(1,Math.round(k/2));
+  if(ring){const R=WDEPTH.rcv&&WDEPTH.rcv.width>=W&&WDEPTH.rcv.height>=H?WDEPTH.rcv:(WDEPTH.rcv=mkg(Math.max(W,WDEPTH.rcv?.width||0),Math.max(H,WDEPTH.rcv?.height||0))),rg=R.getContext('2d'),d=Math.max(1,Math.round(k/2));
     rg.setTransform(1,0,0,1,0,0);rg.clearRect(0,0,W,H);for(const [a,b] of [[d,0],[-d,0],[0,d],[0,-d]])rg.drawImage(cv,0,0,W,H,a,b,W,H);rg.globalCompositeOperation='destination-out';rg.drawImage(cv,0,0,W,H,0,0,W,H);rg.globalCompositeOperation='source-over';
     g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);g.drawImage(R,0,0,W,H,0,0,W,H)}
   // (flat in its colour, then kept where the cover is: the cover's own picture, overdrawBox's, its alpha the cover's fade; a ring with

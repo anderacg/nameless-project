@@ -210,8 +210,8 @@ const resAt=s=>{const v=Math.floor(s);for(let r=Math.min(WORLD_VIEW.fine,v);r>1;
 // (how fine the map's chunks are painted: the scene's, or, before the map's zoom is on (the game loading), the scale the map will
 // open at (core.js MAPZOOM.auto), so a chunk painted while it loads is not painted again once it opens)
 const paintRes=()=>{const Z=typeof MAPZOOM!=='undefined'?MAPZOOM:null;return !Z||Z.map||!Z.auto?sceneRes():resAt(Z.auto)};
-let MEM=null;const memCv=()=>{const r=sceneRes();return MEM&&MEM.r===r&&MEM.width===(VW+1)*r&&MEM.height===(VH+1)*r?MEM:(MEM=mkc((VW+1)*r,(VH+1)*r,()=>{}),MEM.r=r,MEM)};
-let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=mkc(VW+1,VH+1,()=>{}));
+let MEM=null;const memCv=()=>{const r=sceneRes();return MEM&&MEM.r===r&&MEM.width===(VW+1)*r&&MEM.height===(VH+1)*r?MEM:(MEM=mkg((VW+1)*r,(VH+1)*r),MEM.r=r,MEM)};
+let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=mkg(VW+1,VH+1));
 // the minimap's layers, bottom first, by what each thing is (mapKind): the holdings, then the sites, the beasts, the parties and
 // the caravans and the encounters on the road over them; a kind not here is not dotted
 const MAP_LAYER={town:0,site:1,monster:2,lord:3,band:3,patrol:3,cparty:3,caravan:4,road:4};

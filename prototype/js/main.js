@@ -16,6 +16,8 @@ function loopWhere(e){const L=String(e&&e.stack||'').split('\n').find(l=>/\.js:\
 function loopError(e){const k=String(e&&e.message||e),t=performance.now();
   if(!LOOP_SEEN.some(x=>x.k===k)){const w=loopWhere(e);LOOP_SEEN.push({k,w,day:typeof G!=='undefined'?G.day:0,mode:typeof G!=='undefined'?G.mode:''});if(LOOP_SEEN.length>LOOP_KEEP)LOOP_SEEN.shift();try{toast('Something went wrong: '+k+(w?' ('+w+')':''),'bad')}catch(_){}}
   if(t-(LOOP_ERR.get(k)||-1e9)<1000)return;LOOP_ERR.set(k,t);setTimeout(()=>{throw e})}
+// (the map's chunks ahead painted in what is left of the frame's time once it is drawn: gfx/worldart.js idle)
+function paintIdle(now){if(G.mode==='world'&&WM)try{WorldArt.idle(1000/RENDER.fps-(performance.now()-now)-2)}catch(e){loopError(e)}}
 function loop(now){
   if(now-last<650/RENDER.fps){requestAnimationFrame(loop);return}
   const dt=Math.min(.05,(now-last)/1000);last=now;
@@ -36,7 +38,8 @@ function loop(now){
   G.hudT+=dt;if(G.hudT>.25&&WM&&G.mode!=='loading'){G.hudT=0;try{updateHUD();if(G.mode==='battle'){updateSkillBar();if(B&&(hudCards=!hudCards))setOrderUI();else bhudAbilities()}}catch(e){setTimeout(()=>{throw e})}}
   audioWatch();// (the music follows the scene; a town, a meeting, a new day, a battle's start are heard: music.js)
   // (the main menu draws its own scene, never the world: ui/mainmenu.js; anything else, the game's frame)
-  const t1=FRAMEPROF.on?performance.now():0;try{MainMenu.frame(now);if(G.mode!=='title')frame()}catch(e){loopError(e);ctx.setTransform(1,0,0,1,0,0)}if(FRAMEPROF.on)FrameProf.frame(t1-t0,performance.now()-t1);requestAnimationFrame(loop);
+  const t1=FRAMEPROF.on?performance.now():0;try{MainMenu.frame(now);if(G.mode!=='title')frame()}catch(e){loopError(e);ctx.setTransform(1,0,0,1,0,0)}if(FRAMEPROF.on)FrameProf.frame(t1-t0,performance.now()-t1);
+  paintIdle(now);requestAnimationFrame(loop);
 }
 // the page opens on the main menu (ui/mainmenu.js) with no world: a new campaign or a load makes one (session.js begin, save.js
 // loadGame). The tests and the wiki make the classic world at load (worldmap.js): laid out here as it first stands (session.js worldFirst)

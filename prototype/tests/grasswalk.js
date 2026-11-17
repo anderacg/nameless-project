@@ -42,8 +42,8 @@ Kit.suite(({ok,info})=>{
     ok(Gr.K[k]===1&&Gr.P[k]===p0&&Gr.F[k]===f0&&p0>0,'trodden long enough, it may stay down (stay '+st0+'): bent '+p0.toFixed(2)+' and pressed '+(f0*100).toFixed(0)+'% still after 0.8 s')}
    finally{GR.stay[0]=st0[0];GR.stay[1]=st0[1];clr()}
    // (a man's ghost behind a wall or a tree (depth.js ghostOver) draws no grass)
-   {const di=t.ctx.drawImage;let n=0;t.ctx.drawImage=function(...a){n++;return di.apply(this,a)};try{t.WDEPTH.ghosting=true;t.grassOver(gx*1,gy,6)}finally{t.WDEPTH.ghosting=false;t.ctx.drawImage=di}
-    ok(n===0,'no grass drawn in a ghost ('+n+')')}}
+   {const di=t.ctx.drawImage;let n=0,m=0;t.ctx.drawImage=function(...a){n++;return di.apply(this,a)};try{t.grassOver(gx,gy-2,6);m=n;n=0;t.WDEPTH.ghosting=true;t.grassOver(gx,gy-2,6)}finally{t.WDEPTH.ghosting=false;t.ctx.drawImage=di}
+    ok(m>0&&n===0,'the grass by his feet drawn over a man ('+m+'), none in his ghost ('+n+')')}}
   // ---- your own men's feet bend it as they walk (marchDraw: a foot each)
   {t.drawWorld();const n=t.GRASS_FEET.now.length/5;ok(!A||n>=A.units.length,'each of your men drawn says where he stands to the grass ('+n+' feet, '+(A?A.units.length:1)+' men)')}}
  // ---- the view's cells (fog.js viewSeen): in your sight 2, land you remember 1, land you never saw 0
