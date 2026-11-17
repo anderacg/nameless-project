@@ -254,7 +254,7 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
    edge, its picture made once its land is painted (its chunk's lift known) and kept for the scene's resolution; one in water under a
    bridge has the bridge drawn again over him (bridgeOver: worldterrain.js liftDraw) */
 function bridgeEnts(ents,cam){const r=sceneRes(),P0=WorldArt.plan;if(!P0)return;const BRS=waysOf(P0).bridges;if(!BRS)return;
-  for(const b of BRS){const ex=b.L/2+b.hw+8+WORLD_WAYS.bridge.reach*2;if(b.mx+ex<cam.x||b.mx-ex>cam.x+VW||b.my+ex<cam.y||b.my-ex-40>cam.y+VH)continue;
+  for(const b of BRS){const ex=b.L/2+b.hw+8+WORLD_WAYS.bridge.reach*2;if(b.mx+ex<cam.x||b.mx-ex>cam.x+VW||b.my+ex<cam.y||b.my-ex-40>cam.y+VH||!seenAny(b.mx-b.L/2,b.my-b.L/2,b.mx+b.L/2+1,b.my+b.L/2+1))continue;// (none of it known: fog.js VIEW_SEEN)
     const ends=()=>[-1,1].every(sg=>{const x=b.mx+sg*b.ux*(b.L/2+12),y=b.my+sg*b.uy*(b.L/2+12),c=WorldArt.chunks.get(Math.floor(y/CHUNK)*WorldArt.cols+Math.floor(x/CHUNK));return c&&c.lift&&(c.fr||1)>=r});
     // (made again once the land at both its ends is painted, so its ends meet the land as it is drawn)
     if(!b.pic||b.picR!==r||(!b.picEnds&&ends())){const c=WorldArt.chunks.get(Math.floor(b.my/CHUNK)*WorldArt.cols+Math.floor(b.mx/CHUNK));if(!c||!c.lift)continue;b.picEnds=ends();b.pic=bridgePic(b,r);b.picR=r}

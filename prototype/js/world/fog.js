@@ -84,6 +84,20 @@ const ARMY_SIGHTS=new WeakMap();
 // (march a's eyes, a character's r px wide)
 const armySight=(a,r)=>{let s=ARMY_SIGHTS.get(a);if(!s)ARMY_SIGHTS.set(a,s=new ArmySight());return s.of(a,r)};
 const inSight=(x,y)=>yourSight().sees(x,y);
+/* what is drawn of the view (the owner, 2026-11-17: "Don't draw anything beyond visibility"): a cell of VIEW_SEEN.cell game px each,
+   0 land never seen (nothing drawn there: the fog alone), 1 land remembered out of your sight (drawn still: no wind in its grass, no
+   water moving, no prints), 2 in your sight now (all of it). The view and a margin (pad: px each way, more below for the land's lift),
+   made again when the view or your sight moved, or more land became known; on: the switch */
+const VIEW_SEEN={on:true,cell:8,pad:[48,8,48,64],a:null,C:0,R:0,x:0,y:0,key:''};
+function viewSeen(cam){const Q=VIEW_SEEN,S=yourSight(),key=cam.x+'|'+cam.y+'|'+VW+'|'+VH+'|'+S.ver+'|'+(W.seen&&W.seen.length)+'|'+lastReveal;if(Q.key===key&&Q.a)return Q;Q.key=key;
+  const c=Q.cell,[l,t,rt,b]=Q.pad,x0=Math.floor((cam.x-l)/c)*c,y0=Math.floor((cam.y-t)/c)*c,C=Math.ceil((cam.x+VW+rt-x0)/c),R=Math.ceil((cam.y+VH+b-y0)/c);
+  if(!Q.a||Q.a.length<C*R)Q.a=new Uint8Array(C*R);Q.x=x0;Q.y=y0;Q.C=C;Q.R=R;
+  for(let j=0;j<R;j++)for(let i=0;i<C;i++){const x=x0+i*c+c/2,y=y0+j*c+c/2;Q.a[j*C+i]=!Q.on||S.sees(x,y)?2:seenAt(x,y)?1:0}return Q}
+// (game px x, y: 0, 1 or 2 as above; outside the view's cells as the land is known)
+function viewState(x,y){const Q=VIEW_SEEN;if(!Q.on)return 2;const i=Math.floor((x-Q.x)/Q.cell),j=Math.floor((y-Q.y)/Q.cell);if(Q.a&&i>=0&&j>=0&&i<Q.C&&j<Q.R)return Q.a[j*Q.C+i];return inSight(x,y)?2:seenAt(x,y)?1:0}
+// (any tile known within the game px box x0..x1, y0..y1: a chunk of the painted land drawn only so)
+function seenAny(x0,y0,x1,y1){if(!VIEW_SEEN.on)return true;const S=seenArr(),a=Math.max(0,Math.floor(x0/TILE)),b=Math.max(0,Math.floor(y0/TILE)),c=Math.min(MW-1,Math.floor((x1-1)/TILE)),d=Math.min(MH-1,Math.floor((y1-1)/TILE));
+  for(let ty=b;ty<=d;ty++){const o=ty*MW;for(let tx=a;tx<=c;tx++)if(S[o+tx]===1)return true}return false}
 let fogDirty=true,lastReveal=-1;
 // what you see now becomes known (each tile whose middle lies within an eye of your sight, after each build)
 function revealDisk(px,py,V){
@@ -115,13 +129,13 @@ Saves.add({key:'seen',order:40,save:seenSave,load:seenLoad});
    distance out to its edge (Sight edge), the unknown's from the whole map in one small grid (WFOGV.b: a cell WFOG.cell px, 1 unknown, blurred), a cell
    coming to light fading WFOG.fade s (at once with reducedMotion). Only what changes is redone: tiles in view are watched against
    W.seen each frame (so whatever marks it shows), and the cells round them eased and blurred again. cell: px a cell; deep: the
-   unknown's darkness (0-1) over the dim; col: its colour; soft: blurs of its edge (each a cell's width); fade: s a cell takes to
+   unknown's darkness (0-1) over the dim (1: none of it shows, 2026-11-17); col: its colour; soft: blurs of its edge (each a cell's width); fade: s a cell takes to
    clear; ring: where your sight begins to dim (a share of vis(), inside its edge); feather: px inside your sight's edge over which movers fade into
    the land as you remember it; mini, miniDeep: the minimap's dark over land you know and land you do not; miniSoft: blurs of its edge
    (each a tile). haze: the unknown's edge a cool, pale haze (the owner's fifth play-test: its soft edge read as dark ground), its
    dark from hz[0] to hz[1] of its strength; your sight's edge a fainter haze (ringHaze, ringHz) into the dim of the land you
    remember; mistEvery: ms its misty picture is kept before it is made again (while it covers the view) */
-const WFOG={cell:8,deep:.97,col:[5,7,12],soft:3,fade:.3,ring:.62,feather:10,mini:.2,miniDeep:1,miniSoft:3,haze:[132,144,166],hz:[.3,.85],ringHaze:[64,74,92],ringHz:[0,.5],mistEvery:60};
+const WFOG={cell:8,deep:1,col:[5,7,12],soft:3,fade:.3,ring:.62,feather:10,mini:.2,miniDeep:1,miniSoft:3,haze:[132,144,166],hz:[.3,.85],ringHaze:[64,74,92],ringHz:[0,.5],mistEvery:60};
 let WFOGV=null;
 // (alphas a, a C-wide grid, blurred [1 2 1] across and down n times within the box x0..x1, y0..y1 (its edge held) into a (t: scratch))
 function fogBlur(a,t,C,x0,y0,x1,y1,n){

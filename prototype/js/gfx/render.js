@@ -289,6 +289,7 @@ function drawWorld(){
   // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
   ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(low.r>1){ctx.setTransform(low.r,0,0,low.r,0,0);ctx.imageSmoothingEnabled=false}if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
   try{
+  viewSeen(cam);// (what of the view you see, remember or never saw: fog.js VIEW_SEEN)
   WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
   drawEnv(cam,V,0);drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V);
   terrainEnts(ents,cam);// (the finer terrain's grass, laid now, and its nature among the buildings: worldterrain.js)
@@ -315,8 +316,8 @@ function drawWorld(){
   // (marching: you are one of your army, in your own place in it: march.js)
   // (pitching camp: your men stand by while the tents go up, world/campsite.js)
   if(!P.stay&&(!P.camp||WORLD_BATTLE.on&&CampSite.pitching('you',partySize()))&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam)}
-    else ents.push({x:P.x,y:P.y,own:1,id:P,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
-    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore()}}); }
+    else{grassFoot(P.x,P.y,mapStepping(P,atGoal()),!!mountDef());ents.push({x:P.x,y:P.y,own:1,id:P,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore()}})} }
   GateFile.draw(ents,cam);GateFile.camps(ents,cam,V);// (armies filing in at a gate, camps by a gate with no room: world/gatefile.js)
   drawFolk(ents,cam,V);drawTownFolk(ents,cam,V);Hunters.drawAll(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
   ambientWorld(ents,cam,V);// (the birds, critters and butterflies on the ground, with everyone; the rest stepped: ambient.js)

@@ -655,6 +655,7 @@ const WorldArt={
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)this.view.add(cy*this.cols+cx);
     const fr=typeof sceneRes==='function'?sceneRes():1;
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const cv=this.chunk(cx,cy),X=cx*CHUNK,Y=cy*CHUNK,sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+cv.width)-sx,sh=Math.min(y1,Y+cv.height)-sy,c=this.chunks.get(cy*this.cols+cx);
+      if(typeof seenAny==='function'&&!seenAny(sx,sy,sx+sw,sy+sh))continue;// (none of it known: nothing drawn, the fog alone: fog.js VIEW_SEEN)
       if(fr>1&&c&&c.fcv&&c.fr===fr)g.drawImage(c.fcv,(sx-X)*fr,(sy-Y)*fr,sw*fr,sh*fr,sx-cam.x,sy-cam.y,sw,sh);else g.drawImage(cv,sx-X,sy-Y,sw,sh,sx-cam.x,sy-cam.y,sw,sh)}
     // (ahead: the ring round the view, the way it moves first, as many as the cap leaves room for: those painted kept as freshly
     //  used, the rest queued; a job for a chunk no longer queued let go)
@@ -762,17 +763,17 @@ const envFine=()=>{const r=typeof sceneRes==='function'?sceneRes():1;return r>1&
 // layer 0 (under everything): water glints, fish; layer 1 (over parties, under fog and night): clouds, smoke, snow, fireflies
 function drawEnv(cam,V,layer){
   const now=performance.now()/1000,dark=darkness(),x0=Math.max(0,Math.floor(cam.x/TILE)),y0=Math.max(0,Math.floor(cam.y/TILE)),x1=Math.min(MW-1,x0+Math.ceil(VW/TILE)+1),y1=Math.min(MH-1,y0+Math.ceil(VH/TILE)+1),
-    q=envFine(),f=(x,y,w,h)=>ctx.fillRect(Math.round(x/q)*q,Math.round(y/q)*q,w*q,h*q);
+    q=envFine(),f=(x,y,w,h)=>ctx.fillRect(Math.round(x/q)*q,Math.round(y/q)*q,w*q,h*q),live=(x,y)=>viewState(x,y)===2;// (moving only where you see: fog.js VIEW_SEEN)
   ctx.save();
   // fish leap now and then over the fishing grounds (each its own colour: salmon, eel, pearl oysters' silver), lit on its back, its
   // tail trailing as it turns over its arc, a splash and drops where it leaves the water and goes in
-  if(layer===0){for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const d=DEP_AT[ty*MW+tx];if(d<0||tiles[ty*MW+tx]!==T_WATER)continue;const ph=(now*.4+hs(tx,ty,3)*7)%3;if(ph>1)continue;
+  if(layer===0){for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const d=DEP_AT[ty*MW+tx];if(d<0||tiles[ty*MW+tx]!==T_WATER||!live(tx*TILE+8,ty*TILE+8))continue;const ph=(now*.4+hs(tx,ty,3)*7)%3;if(ph>1)continue;
     const g=DEPOSITS[d].g,fx=tx*TILE+4+Math.floor(hs(tx,ty,5)*6)+ph*6-cam.x,fy=ty*TILE+10-Math.sin(ph*Math.PI)*5-cam.y,wy=ty*TILE+11-cam.y,up=ph<.5,n=Math.round(2/q);
     ctx.globalAlpha=1;ctx.fillStyle=GOODS[g].res==='fish'&&g!=='pearls'?GOODS[g].col:'#dfe4ea';f(fx,fy,n,1);if(q<1){f(up?fx-q:fx+n*q,fy+(up?q:-q),1,1);ctx.fillStyle='#eef4f8';f(fx+q,fy-q,1,1)}
     if(ph<.15||ph>.85){ctx.fillStyle='#d8ecfa';f(fx-1,wy,Math.round(4/q),1);if(q<1){ctx.globalAlpha=.7;f(fx-1.5,wy-q,1,1);f(fx+3,wy-2*q,1,1);f(fx+1,wy-3*q,1,1)}}}ctx.globalAlpha=1}
   // glints on water, sliding with the wind; in the fine scene a fine px each (3 x 1 lab px), on the sea's and the lakes' water only
   // (a river's current runs in its own streaks: gfx/worldterrain.js terrainEnts; the owner: "make a water effect like water")
-  if(layer===0){const r=typeof sceneRes==='function'?sceneRes():1,k1=1/r;for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){if(tiles[ty*MW+tx]!==T_WATER)continue;const c=CLIMS[climate[ty*MW+tx]];if(c==='frost')continue;
+  if(layer===0){const r=typeof sceneRes==='function'?sceneRes():1,k1=1/r;for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){if(tiles[ty*MW+tx]!==T_WATER||!live(tx*TILE+8,ty*TILE+8))continue;const c=CLIMS[climate[ty*MW+tx]];if(c==='frost')continue;
     for(let k=0;k<2;k++){const ph=(now*.35+hs(tx,ty,k))%1,a=Math.sin(ph*Math.PI);if(a<.15)continue;const gx=tx*TILE+2+Math.floor(hs(tx,ty,k+4)*9)+Math.floor(ph*3*r)*k1,gy=ty*TILE+2+Math.floor(hs(tx,ty,k+6)*12);
       if(r>1&&drawnWater(gx,gy)!==1)continue;ctx.globalAlpha=a*.55;ctx.fillStyle=c==='swamp'?'#8ab08a':'#d8ecfa';ctx.fillRect(gx-cam.x,gy-cam.y,r>1?3*k1:3,r>1?k1:1)}}ctx.restore();return}
   // cloud shadows by day
@@ -780,7 +781,7 @@ function drawEnv(cam,V,layer){
     if(x+192<cam.x||x>cam.x+VW||y+96<cam.y||y>cam.y+VH)continue;ctx.drawImage(CLOUD,Math.round((x-cam.x)/q)*q,Math.round((y-cam.y)/q)*q,192,96)}}
   // smoke from the hearths of a few houses of each holding in view: puffs rounded at their corners, lit on top, greying as they rise
   for(const t of TOWNS){if(Math.hypot(t.x-P.x,t.y-P.y)>VW)continue;const hs0=(t.lots||[]).filter(l=>l.k==='house'&&l.st==='built').slice(0,t.T.smoke);
-    for(let j=0;j<hs0.length;j++){const l=hs0[j],sx=(l.x+l.n*.7)*TILE-cam.x,sy=l.y*TILE+2-cam.y;if(sx<-20||sy<-40||sx>VW+20||sy>VH+20)continue;
+    for(let j=0;j<hs0.length;j++){const l=hs0[j],sx=(l.x+l.n*.7)*TILE-cam.x,sy=l.y*TILE+2-cam.y;if(sx<-20||sy<-40||sx>VW+20||sy>VH+20||!live(sx+cam.x,sy+cam.y))continue;
       for(let k=0;k<5;k++){const ph=(now*.3+k/5+j*.37)%1,w=1+ph*3,n=Math.max(1,Math.round(w/q)),x=sx+Math.sin(ph*5+k)*2+ph*6-w/2,y=sy-ph*18,c=n>2?1:0;
         ctx.globalAlpha=(1-ph)*.45;ctx.fillStyle=ph<.3?'#8a8a8a':'#b4b4b4';f(x+c*q,y,n-2*c,n);if(c)f(x,y+q,n,n-2);
         if(q<1&&n>2){ctx.fillStyle=ph<.3?'#a2a2a2':'#cacaca';f(x+q,y,n-3,1);f(x,y+q,1,n-3)}}}}

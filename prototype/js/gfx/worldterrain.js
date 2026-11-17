@@ -398,9 +398,17 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
 const terrainHalf=(s,r)=>s._h||(s._h=mkc(Math.ceil(s.width/r),Math.ceil(s.height/r),g=>{g.imageSmoothingEnabled=false;g.drawImage(s,0,0,s.width/r,s.height/r)}));
 /* the props and grass of the chunks in view, into the scene (render.js drawWorld): each prop among the buildings by its foot (st: kept
    with the scene, remembered under the fog), what stands put in the depth overdraw's pictures so a man behind it is covered; the
-   grass first, flat on the ground: each clump leaning by the wind (two waves rolling across the land) and bent away from you as you
-   pass (WORLD_FLORA.grass push px; springing back over spring s), written into one buffer at the scene's resolution and laid once */
-const TGRASS={buf:null,cv:null,t:0};
+   grass first, flat on the ground: each clump leaning by the wind (two waves rolling across the land), bent away from every foot
+   that goes by it and pressed down under it (GRASS_FEET; WORLD_FLORA.grass push, flat), swaying back on a spring once it is left
+   (sway) and rising again slowly (flat), written into one buffer at the scene's resolution and laid once. Only what you see moves:
+   land you remember is drawn still, land you never saw not at all (fog.js VIEW_SEEN; the owner, 2026-11-17: "Make grass more
+   realistic when player walk by", "Don't draw anything beyond visibility") */
+const TGRASS={buf:null,cv:null,t:0,fr:0};
+// (the feet that bend the grass: each drawn man, beast and worker on the map says where he stands as he is drawn (marchDraw, the
+//  workers', the herds', the hunters', you alone): game px x, y, walking or standing, big (a rider, a beast: wider); the grass reads
+//  last frame's, as it is laid before they are drawn)
+const GRASS_FEET={now:[]};
+function grassFoot(x,y,go,big){GRASS_FEET.now.push(x,y,go?1:0,big?1:0)}
 // a man standing in the grass, the lab's (its clumps in order of their feet with him): the clumps whose foot is just south of his (within
 // a clump's height) and within hw game px of him either side drawn again over him, as they lean this frame. (x, y): his foot, game px;
 // drawn where the scene's transform is (up by LIFT_NOW in liftDraw)
@@ -411,8 +419,8 @@ function grassOver(x,y,hw){const r=typeof sceneRes==='function'?sceneRes():1,T=T
     for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy+GH;k++){const X=Gr.X[k];if(X<fx0+GW||X>fx1-GW)continue;
       if(!U){if(!GRASS_OVER.buf||GRASS_OVER.buf.width<BW||GRASS_OVER.buf.height<BH){GRASS_OVER.buf=new ImageData(Math.max(BW,64),Math.max(BH,32));GRASS_OVER.buf.u=new Uint32Array(GRASS_OVER.buf.data.buffer);GRASS_OVER.cv=mkcv(GRASS_OVER.buf.width,GRASS_OVER.buf.height)}
         U=GRASS_OVER.buf.u;U.fill(0);BWb=GRASS_OVER.buf.width}
-      const sp=A.px[(Gr.T[k]*4+Gr.V[k])*(2*n+1)+Gr.L[k]+n],D=sp.D,Cc=sp.C,bx=X-fx0-5,by=Gr.Y[k]-oy-9;
-      for(let j=0,q=0;j<Cc.length;j++,q+=2){const px=bx+D[q],py=by+D[q+1];if(px>=0&&py>=0&&px<BW&&py<BH)U[py*BWb+px]=Cc[j]}}}
+      const sp=A.px[(Gr.T[k]*4+Gr.V[k])*(2*n+1)+Gr.L[k]+n],D=sp.D,Cc=sp.C,bx=X-fx0-5,by=Gr.Y[k]-oy-9,cut=Gr.C?Gr.C[k]:0;
+      for(let j=0,q=0;j<Cc.length;j++,q+=2){if(D[q+1]<cut)continue;const px=bx+D[q],py=by+D[q+1];if(px>=0&&py>=0&&px<BW&&py<BH)U[py*BWb+px]=Cc[j]}}}
   if(!U)return;GRASS_OVER.cv.getContext('2d').putImageData(GRASS_OVER.buf,0,0,0,0,BW,BH);
   ctx.drawImage(GRASS_OVER.cv,0,0,BW,BH,fx0/r-T.cam.x,oy/r+L-T.cam.y,BW/r,BH/r)}
 // footprints, the lab's (LAB.prints; the owner, 2026-11-16: "Do all that"): a man walking leaves a print every step px, left and right of his
@@ -459,40 +467,58 @@ function climShares(cw,cl,tx,ty,fu,fv){const bx=labBS(fu),by=labBS(fv);for(let q
 // (the pick among a px's climates' shares: by a slow noise, a little grain at its edge, so a climate's border runs in ragged tongues and
 //  islands, not px by px salt and pepper (the owner, 2026-11-16: "Snow area looks too hard"))
 function climPick(gx,gy){const C=WORLD_TERRAIN.climPick;return Math.max(0,Math.min(.999,.5+(wnoise2(gx/C.sc,gy/C.sc,604)-.5)*C.k+(hs(gx,gy,603)-.5)*C.grain))}
+/* (last frame's feet into the grass of the chunks in view (recs), r fine px a game px, n the most lean, GH a clump's height: a clump
+   within push px of a foot (a big one's push times feet[1]; nearer across than along, as a stride) bent away from it, the more the
+   nearer, and held so while he stands by it; within flat[0] of that pressed down flat[1] of its height at most; a man standing
+   pushes feet[0] as much. Each its arrays made as it is first laid: P, W (its spring), F (pressed), L, C (its lean and cut drawn),
+   H (the frame a foot last held it: no spring that frame)) */
+function grassFeet(recs,r,n,GH){const G=WORLD_FLORA.grass,F=GRASS_FEET.now,fr=++TGRASS.fr;GRASS_FEET.now=[];
+  for(const c of recs){const Gr=c.grass;if(Gr&&!Gr.W){Gr.W=new Float32Array(Gr.n);Gr.F=new Float32Array(Gr.n);Gr.L=Gr.L||new Int8Array(Gr.n);Gr.C=new Uint8Array(Gr.n);Gr.H=new Uint32Array(Gr.n)}}
+  for(let i=0;i<F.length;i+=4){const x=F[i],y=F[i+1],s=F[i+2]?1:G.feet[0],R=G.push*(F[i+3]?G.feet[1]:1),fx=x*r,fy=(y-liftAt(x,y))*r,Rf=R*G.flat[0];
+    if(viewState(x,y)<2)continue;// (out of your sight: still)
+    for(const c of recs){const Gr=c.grass;if(!Gr||!Gr.n)continue;let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<fy-R/1.5)lo=m+1;else hi=m}
+      for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy+R/1.5;k++){const dx=Gr.X[k]-fx;if(dx>=R||dx<=-R)continue;const dy=(Gr.Y[k]-fy)*1.5,d=Math.sqrt(dx*dx+dy*dy);if(d>=R)continue;
+        const p=(dx>=0?1:-1)*n*(1-d/R)*1.2*s;if(Math.abs(p)>=Math.abs(Gr.P[k])||Gr.H[k]!==fr){Gr.P[k]=Gr.H[k]===fr&&Math.abs(Gr.P[k])>Math.abs(p)?Gr.P[k]:p;Gr.W[k]=0;Gr.H[k]=fr}
+        if(d<Rf){const f=(1-d/Rf)*G.flat[1]*s;if(f>Gr.F[k])Gr.F[k]=f}}}}}
 function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)return;const WA=WorldArt,x0=cam.x-48,x1=cam.x+VW+48,y0=cam.y-8,y1=cam.y+VH+64,FL=PX.flora;
   const c0=Math.max(0,Math.floor(x0/CHUNK)),c1=Math.min(WA.cols-1,Math.floor(x1/CHUNK)),r0=Math.max(0,Math.floor(y0/CHUNK)),r1=Math.min(WA.rows-1,Math.floor(y1/CHUNK));
   const recs=[];for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const c=WA.chunks.get(cy*WA.cols+cx);if(c&&c.props&&c.fr===r)recs.push(c)}
   // (the grass)
+  const Q=typeof viewSeen==='function'?viewSeen(cam):null,vs=(x,y)=>Q?viewState(x,y):2;
   {const now=performance.now(),dt=Math.min(.1,(now-(TGRASS.t||now))/1000),G=WORLD_FLORA.grass,t=now/1000,BW=(VW+1)*r,BH=(VH+1)*r,A=FL.grassAtlas(),n=FL.lean,GW=FL.GW,GH=FL.GH,
-      w1=t*1.9,w2=t*G.gust[1]*6.28/3,g2=6.28/G.gust[0],hx=P.x*r,hy=P.y*r,R2=G.push,dec=Math.exp(-dt/G.spring*2.3);TGRASS.t=now;
+      w1=t*1.9,w2=t*G.gust[1]*6.28/3,g2=6.28/G.gust[0],R2=G.push,om=6.2832*G.sway[0],z=G.sway[1],rise=Math.exp(-dt/G.flat[2]);TGRASS.t=now;
+    grassFeet(recs,r,n,GH);
     if(!TGRASS.buf||TGRASS.buf.width!==BW||TGRASS.buf.height!==BH){TGRASS.buf=new ImageData(BW,BH);TGRASS.buf.u=new Uint32Array(TGRASS.buf.data.buffer);TGRASS.cv=mkcv(BW,BH)}
     const U=TGRASS.buf.u;U.fill(0);let any=false;
     // (footprints, the lab's, fading: under the grass)
   //  each a foot's shape pointing his way (printFoot), deeper in its middle
   {const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,nw=now,B=F.buf;for(let k=0;k<F.n;k++){const o=k*6,a=1-(nw-B[o+2])/1000/PR.fade;if(a<=0)continue;const x=Math.round(B[o]-cam.x*r),y=Math.round(B[o+1]-cam.y*r);
-      if(x<4||y<4||x>=BW-4||y>=BH-4)continue;const c=PR.col[B[o+3]],c0=c[2]<<16|c[1]<<8|c[0],A1=Math.round(204*a),A0=Math.round(204*a*PR.rim);
+      if(x<4||y<4||x>=BW-4||y>=BH-4||vs(B[o]/r,B[o+1]/r)<2)continue;const c=PR.col[B[o+3]],c0=c[2]<<16|c[1]<<8|c[0],A1=Math.round(204*a),A0=Math.round(204*a*PR.rim);
       for(const q of printFoot(B[o+5],B[o+4]<0,r)){const i=(y+q[1])*BW+x+q[0],v=((q[2]?A1:A0)<<24|c0)>>>0;if((U[i]>>>24)<(v>>>24))U[i]=v}any=true}}
   // (the water moving, the lab's: foam riding the shore, the river's current in streaks running down it (a lit crest, a darker trough
     //  behind it, each px of a streak sharing its phase with those beside it, so they run as lines, not dots), white down a fall)
     {const ts=now/1000,FO=0xd8f6f4ec,SP=0x5cf2ece0,SL=0x30eee4d4,WF=0x99fffcfa,RW=WORLD_WAYS.river.flow;
       for(const c of recs){const S=c.shore,F=c.flow,ox=c.cx*CHUNK*r-cam.x*r-5+5,oy=c.cy*CHUNK*r-cam.y*r;
-        if(S)for(let k=0;k<S.length;k+=3){const x=S[k]+ox,y=S[k+1]+oy;if(x<0||y<0||x>=BW||y>=BH)continue;if(Math.sin(ts*1.6+S[k+2]/100)>.45){U[y*BW+x]=FO;any=true}}
-        if(F)for(let k=0;k<F.length;k+=4){const x=F[k]+ox,y=F[k+1]+oy;if(x<0||y<0||x>=BW||y>=BH)continue;
+        if(S)for(let k=0;k<S.length;k+=3){const x=S[k]+ox,y=S[k+1]+oy;if(x<0||y<0||x>=BW||y>=BH||vs(x/r+cam.x,y/r+cam.y)<2)continue;if(Math.sin(ts*1.6+S[k+2]/100)>.45){U[y*BW+x]=FO;any=true}}
+        if(F)for(let k=0;k<F.length;k+=4){const x=F[k]+ox,y=F[k+1]+oy;if(x<0||y<0||x>=BW||y>=BH||vs(x/r+cam.x,y/r+cam.y)<2)continue;
           if(F[k+2]===-1){if((((F[k+1]+c.cy*CHUNK*r)*.5-ts*24+F[k+3])%5+5)%5<1){U[y*BW+x]=WF;any=true}}
           else if(F[k+2]===-2){if(((ts*7+F[k+3]*.37)|0)%4===0){U[y*BW+x]=(F[k+3]&1)?WF:SP;any=true}}else{const q=((F[k+2]-ts*RW.speed+F[k+3])%RW.period+RW.period)%RW.period;if(q<RW.len){U[y*BW+x]=q>RW.len-1.2?WF:q>RW.len*.4?SP:SL;any=true}}}}}
     for(const c of recs){const Gr=c.grass;if(!Gr)continue;const fy0=cam.y*r-4,fy1=(cam.y+VH)*r+GH;let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<fy0)lo=m+1;else hi=m}
-      for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy1;k++){const X=Gr.X[k],Y=Gr.Y[k],bx=X-cam.x*r-5,by=Y-cam.y*r-9;if(bx<-GW||bx>BW)continue;any=true;
-        const wind=G.wind*(Math.sin(w1+X*.05+Y*.03)+.8*Math.sin(w2+X*g2-Y*.01));let Pv=Gr.P[k];if(Pv){Pv*=dec;if(Pv<.05&&Pv>-.05)Pv=0}const dx=X-hx,dy=(Y-hy)*1.5;
-        if(dx<R2&&dx>-R2&&dy<R2&&dy>-R2){const d=Math.hypot(dx,dy);if(d<R2){const p=(dx>=0?1:-1)*n*(1-d/R2)*1.2;if(Math.abs(p)>Math.abs(Pv))Pv=p}}Gr.P[k]=Pv;
-        const lean=Math.max(-n,Math.min(n,Math.round(Pv?wind*(1-Math.min(1,Math.abs(Pv)/n)*.7)+Pv:wind))),sp=A.px[(Gr.T[k]*4+Gr.V[k])*(2*n+1)+lean+n],D=sp.D,Cc=sp.C;(Gr.L||(Gr.L=new Int8Array(Gr.n)))[k]=lean;
-        for(let j=0,q=0;j<Cc.length;j++,q+=2){const x=bx+D[q],y=by+D[q+1];if(x>=0&&y>=0&&x<BW&&y<BH)U[y*BW+x]=Cc[j]}}}
+      for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy1;k++){const X=Gr.X[k],Y=Gr.Y[k],bx=X-cam.x*r-5,by=Y-cam.y*r-9;if(bx<-GW||bx>BW)continue;const st=vs(X/r,Y/r);if(!st)continue;any=true;
+        // (its spring: bent P px from upright, swaying back at Vv px/s, damped; pressed F of its height, rising again; none of it out of sight)
+        let lean=0,cut=0;if(st===2){const wind=G.wind*(Math.sin(w1+X*.05+Y*.03)+.8*Math.sin(w2+X*g2-Y*.01));let Pv=Gr.P[k],Vv=Gr.W[k];
+          if((Pv||Vv)&&Gr.H[k]!==TGRASS.fr){Vv+=(-om*om*Pv-2*z*om*Vv)*dt;Pv+=Vv*dt;if(Pv<.05&&Pv>-.05&&Vv<.2&&Vv>-.2)Pv=Vv=0;Gr.P[k]=Pv;Gr.W[k]=Vv}
+          if(Gr.F[k]){Gr.F[k]*=rise;if(Gr.F[k]<.04)Gr.F[k]=0}cut=Math.round(Gr.F[k]*GH);
+          lean=Math.max(-n,Math.min(n,Math.round(Pv?wind*(1-Math.min(1,Math.abs(Pv)/n)*.7)+Pv:wind)))}
+        const sp=A.px[(Gr.T[k]*4+Gr.V[k])*(2*n+1)+lean+n],D=sp.D,Cc=sp.C;Gr.L[k]=lean;Gr.C[k]=cut;
+        for(let j=0,q=0;j<Cc.length;j++,q+=2){if(D[q+1]<cut)continue;const x=bx+D[q],y=by+D[q+1];if(x>=0&&y>=0&&x<BW&&y<BH)U[y*BW+x]=Cc[j]}}}
     if(any){TGRASS.cv.getContext('2d').putImageData(TGRASS.buf,0,0);ctx.drawImage(TGRASS.cv,0,0,BW/r,BH/r)}}
   TGRASS.recs=recs;TGRASS.cam=cam;
   // (the props, by their feet, among the buildings)
   //  (only those whose picture meets the screen across: the chunks' margin is for the lift down it; each drawn at its lift by fl, no
   //  context saved round it: liftDraw)
   const px0=cam.x,px1=cam.x+VW;
-  for(const c of recs)for(const p of c.props){const X=p.x-p.ax/r,Y=p.y-p.ay/r;if(X>px1||X+p.s.width/r<px0||p.y<y0||Y>y1)continue;
+  for(const c of recs)for(const p of c.props){const X=p.x-p.ax/r,Y=p.y-p.ay/r;if(X>px1||X+p.s.width/r<px0||p.y<y0||Y>y1||!vs(p.x,p.y))continue;
     const fl=L=>{const sx=Math.round((X-cam.x)*r)/r,sy=Math.round((Y-cam.y)*r)/r;ctx.drawImage(p.s,sx,sy-L,p.s.width/r,p.s.height/r);if(!p.low)depthPic(terrainHalf(p.s,r),sx,sy,p.ay/r)};
     ents.push({st:true,x:p.x,y:p.y,fl,f:()=>fl(0)})}}
 

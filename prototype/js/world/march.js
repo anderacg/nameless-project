@@ -195,7 +195,8 @@ function marchDraw(ents,o,cam){
   // (another's men only those in your sight, each by his own ground (worldobject.js spotted, manSpotted): a host's van seen as it comes
   // on, the rest still in the fog; yours and your companions' all)
   const own=o===P||o.faction==='player',S=!own&&SIGHT_EYES.armies&&G.mode==='world'&&!B?yourSight():null;
-  for(const u of army.units)if(!S||manSpotted(S,u))ents.push({x:u.x,y:u.y,own,f:()=>drawMarcher(u,o,cam)});
+  // (each one drawn bends the grass he walks through: worldterrain.js grassFoot)
+  for(const u of army.units)if(!S||manSpotted(S,u)){const D=ST[u.type]||{};grassFoot(u.x,u.y,marchWalks(u),D.mounted||D.big||D.beast);ents.push({x:u.x,y:u.y,own,f:()=>drawMarcher(u,o,cam)})}
   // (a beast's marker over its middle)
   const u0=army.units[0];if(u0&&o.mapKind==='monster')ents.push({x:o.x,y:o.y,f:()=>BANNERQ.push({o,marker:{h:marchSprite(u0,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})});return true;
 }
