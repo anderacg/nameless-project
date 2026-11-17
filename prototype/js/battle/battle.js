@@ -104,7 +104,7 @@ function battleEvent(type,d){for(const f of BATTLE_EARS)f(type,d)}
 function updateBattle(rt){
   if(B?.muster?.active){B.muster.step(rt);return}
   if(B?.world){
-    if(B.paused||B.deploy)return;const b=B,speed=G.speed,step=WORLD_BATTLE.step,total=rt*speed;B.speed=speed;
+    if(B.paused||B.deploy)return;const b=B,speed=B.speed||1,step=WORLD_BATTLE.step,total=rt*speed;// (its own speed, the world's its own: ui.js setBattleSpeed)
     // Bounded combat steps preserve collision, path corners and animation events at campaign fast speeds.
     let left=total;while(left>1e-9&&B===b){const n=Math.min(step,left);battleStep(n,true);left-=n}return;
   }

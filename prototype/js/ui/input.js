@@ -438,7 +438,7 @@ class MobileBattleHud{
   close(){const was=this.panels.some(p=>!p.panel.hidden);for(const p of this.panels){p.panel.hidden=true;p.button.setAttribute('aria-expanded','false')}return was}
   measure(){if(this.enabled){const height=this.root.getBoundingClientRect().height;if(height>0)this.screen.style.setProperty('--mobile-battle-height',height+'px')}}
   update(){
-    if(!this.enabled||!B)return;const speed=B.world?G.speed:B.speed,button=$('#battleSpeedToggle'),text=speed+'× ▴';if(button.textContent!==text)button.textContent=text;button.setAttribute('aria-label','Battle speed '+speed+' times');
+    if(!this.enabled||!B)return;const speed=B.speed||1,button=$('#battleSpeedToggle'),text=speed+'× ▴';if(button.textContent!==text)button.textContent=text;button.setAttribute('aria-label','Battle speed '+speed+' times');
     const labels={hold:'Hold',charge:KITS.keys2?'Run':'Charge',advance:'Walk',withdraw:'Retreat',firm:'Hold ground',cease:'Hold fire',skirmish:'Skirmish',melee:'Melee',shieldWall:'Shields'};
     for(const b of this.root.querySelectorAll('.obtn'))if(!b.querySelector('.mbh-label')){
       const label=b.id==='bAmove'?'Attack move':labels[b.dataset.order||b.dataset.flag]||(b.dataset.form&&FORMS[b.dataset.form]?.n)||(b.dataset.abil&&UNIT_SKILLS[b.dataset.abil]?.n);

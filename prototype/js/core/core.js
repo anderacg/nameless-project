@@ -90,6 +90,9 @@ const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 // the same share of a day; what moves goes slower on screen (data/world.js WORLD_SCALE.move)
 const DAY_SECONDS=293,NIGHT_AT=.5;// (180, times the world lab's walk over the map's old one: data/world.js WORLD_SCALE.move)
 const WORLD_PACE=.4,BATTLE_PACE=.6,HERO_PACE=.85;
+// a battle's tempo on screen (the owner, 2026-11-17: "Can you reduce the speed in battle?"): the real time a frame of a battle runs on,
+// at its 1x (main.js); its rules and its tests' steps untouched. The world round a fight on the map keeps its own speed
+const BATTLE_TEMPO=.7;
 // the world's time controls (D23): 1x, 2x and 4x (keys 1-3), and Travel fast (key 4, the top bar's 8×), 8x till you change the
 // speed (the owner, 2026-10-22: back on the bar)
 const SPEEDS=[1,2,4],TRAVEL_FAST=8;
