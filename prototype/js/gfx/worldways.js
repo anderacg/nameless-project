@@ -280,8 +280,15 @@ function fallDist(WY){const X=WY.X,Y=WY.Y,LV=WY.LV,n=LV.length,FD=new Float32Arr
 // and the road on from it. [dx, dy, on its deck] (game px to move him by), or null off every bridge; x, y his place.
 // ON_DECK: the one being drawn stands on a deck (bridgeOver draws no bridge over him)
 let ON_DECK=false;
-function bridgeShift(x,y){const P0=WorldArt.plan;if(!P0||!P0.ways||typeof liftAt!=='function')return null;
-  for(const b of P0.ways.bridges||[]){const p=b.pr;if(!p||b.ex===undefined)continue;const s=(x-b.ex)*b.ax+(y-b.ey)*b.ay,q=(y-b.ey)*b.ax-(x-b.ex)*b.ay;if(s<0||s>b.al||Math.abs(q)>b.hw+2)continue;
+// (the bridges whose span (and half its width either side) reaches each tile: a map from the tile's index, kept on the bridges' list,
+// so a mover asks only those by him, not every bridge in the world each frame)
+function bridgeTiles(BR){if(BR._bt)return BR._bt;const M=new Map();for(const b of BR){if(b.ex===undefined)continue;const m=b.hw+3,
+    x0=Math.floor((Math.min(b.ex,b.fx)-m)/TILE),x1=Math.floor((Math.max(b.ex,b.fx)+m)/TILE),y0=Math.floor((Math.min(b.ey,b.fy)-m)/TILE),y1=Math.floor((Math.max(b.ey,b.fy)+m)/TILE);
+    for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const k=ty*MW+tx;let L=M.get(k);if(!L)M.set(k,L=[]);L.push(b)}}
+  return BR._bt=M}
+function bridgeShift(x,y){const P0=WorldArt.plan;if(!P0||!P0.ways||!P0.ways.bridges||typeof liftAt!=='function')return null;
+  const near=bridgeTiles(P0.ways.bridges).get(Math.floor(y/TILE)*MW+Math.floor(x/TILE));if(!near)return null;
+  for(const b of near){const p=b.pr;if(!p||b.ex===undefined)continue;const s=(x-b.ex)*b.ax+(y-b.ey)*b.ay,q=(y-b.ey)*b.ax-(x-b.ex)*b.ay;if(s<0||s>b.al||Math.abs(q)>b.hw+2)continue;
     const r=p.r,A=[b.mx+b.ux*p.lo/r,b.my+b.uy*p.lo/r],Bp=[b.mx+b.ux*p.hi/r,b.my+b.uy*p.hi/r];let vx=x,vy=y,t;
     if(b.diag){const la=Math.hypot(A[0]-b.ex,A[1]-b.ey),ld=(p.hi-p.lo)/r,lb=Math.hypot(b.fx-Bp[0],b.fy-Bp[1]),v=s/b.al*(la+ld+lb);
       if(v<la){const f=v/la;vx=b.ex+(A[0]-b.ex)*f;vy=b.ey+(A[1]-b.ey)*f}else if(v<la+ld){const f=(v-la)/ld;vx=A[0]+(Bp[0]-A[0])*f;vy=A[1]+(Bp[1]-A[1])*f}else{const f=(v-la-ld)/(lb||1);vx=Bp[0]+(b.fx-Bp[0])*f;vy=Bp[1]+(b.fy-Bp[1])*f}

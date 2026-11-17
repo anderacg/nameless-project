@@ -108,8 +108,9 @@ class Encampment extends Site{
   // (its tents' and pieces' pictures made ahead while you near it (structures.js lotsAhead), one at a time while the frame's ms last
   // from t0: true once all are made)
   warm(t0,ms){if(!this.known())return false;const clim=CLIMS[climate[Math.floor(this.y/TILE)*MW+Math.floor(this.x/TILE)]]||'grass',look=this.look(0),L=this.layout();
-    for(let i=0;i<L.length;i++){if(performance.now()-t0>ms)return false;CampArt.fine(this.tentPic(L[i],i,clim))}
-    for(const q of this.props()){if(performance.now()-t0>ms)return false;CampArt.fine(propPic(q,clim,look))}return true}
+    const made=cv=>{const f=CampArt.fine(cv);return f!==cv||!cv.mk||sceneRes()<=1};// (CampArt's own budget spent: not made yet)
+    for(let i=0;i<L.length;i++){if(performance.now()-t0>ms||!made(this.tentPic(L[i],i,clim)))return false}
+    for(const q of this.props()){if(performance.now()-t0>ms||!made(propPic(q,clim,look)))return false}return true}
   // (its picture on its page: its tents and fire as they stand)
   view(){const s=this,L=s.layout(),clim=CLIMS[climate[Math.floor(s.y/TILE)*MW+Math.floor(s.x/TILE)]]||'grass',fl=campFlame();
     if(!L.length)return super.view();

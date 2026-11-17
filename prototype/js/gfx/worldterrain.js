@@ -582,10 +582,10 @@ function liftGround(x,y){if(typeof WorldArt==='undefined')return{x,y};const fx=M
   if(c&&c.dep){const w=c.cv.width,d=c.dep[(fy-cy*CHUNK)*w+fx-cx*CHUNK];if(d>=0)return{x,y:d+(y-fy)}}return{x,y}}
 // a thing drawn up by its ground's lift (e.x, e.ly or e.y: where it stands); a mover (front) has the ground in front of it drawn again
 // over it, where a ridge nearer hides it (liftFront)
-function liftDraw(e,front){const x=e.lx??e.x;if(x==null){e.f();return}const y=e.ly??e.y,L=liftAt(x,y);if(!L){e.f();if(front){liftFront(x,y,0);bridgeOver(x,y,0)}return}
+function liftDraw(e,front){const x=e.lx??e.x;if(x==null){e.f();return}const y=e.ly??e.y,L=liftAt(x,y);if(!L){e.f();if(front){if(!(typeof ON_DECK!=='undefined'&&ON_DECK))liftFront(x,y,0);bridgeOver(x,y,0)}return}
   if(e.fl&&!front){const was=LIFT_NOW;LIFT_NOW=L;try{e.fl(L)}finally{LIFT_NOW=was}return}// (what draws itself at its lift (a prop): no context saved round it)
   const was=LIFT_NOW,nl=LIGHTQ.length,nb=BANNERQ.length;LIFT_NOW=L;ctx.save();ctx.translate(0,-L);try{e.f()}finally{ctx.restore();LIFT_NOW=was}
-  for(let i=nl;i<LIGHTQ.length;i++)LIGHTQ[i].y-=L;for(let i=nb;i<BANNERQ.length;i++)BANNERQ[i].lift=L;if(front){liftFront(x,y,L);bridgeOver(x,y,L)}}
+  for(let i=nl;i<LIGHTQ.length;i++)LIGHTQ[i].y-=L;for(let i=nb;i<BANNERQ.length;i++)BANNERQ[i].lift=L;if(front){if(!(typeof ON_DECK!=='undefined'&&ON_DECK))liftFront(x,y,L);bridgeOver(x,y,L)}}// (on a bridge's deck (ON_DECK, render.js drawMover) no ground nearer is drawn over him: its lift is the water's, not the deck's)
 // (the ground nearer than (x, y) where it shows over the man standing there: his box, a column at a time, from the chunk's picture)
 function liftFront(x,y,L){const cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)},WA=WorldArt,top=Math.floor(y-L-26),bot=Math.floor(y-L),x0=Math.floor(x-9),x1=Math.floor(x+9),cx=Math.floor(x/CHUNK);
   const depAt=(px,py)=>{const c=WA.chunks.get(Math.floor(py/CHUNK)*WA.cols+Math.floor(px/CHUNK));if(!c||!c.dep||px<0||py<0)return -1;return c.dep[(py-Math.floor(py/CHUNK)*CHUNK)*c.cv.width+px-Math.floor(px/CHUNK)*CHUNK]};

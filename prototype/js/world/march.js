@@ -212,11 +212,11 @@ function marchClimbPose(u,o){if(!marchWalks(u)||(ST[u.type]||{}).fly)return unde
    wet deep (map.js WATER's bands: waist) within shore s (the drawn water shallows toward its bank) onto dry land, he crawls up the bank
    on his hands and knees for crawl s (CRAWL_POSE). Its
    pose and how far up from where the land would put him (dy, game px) */
-const MARCH_ACT={drop:3,rate:1.5,hop:3,jump:.35,up:.4,crawl:.7,wet:3,shore:2};
+const MARCH_ACT={drop:3,rate:1.5,moved:.1,hop:3,jump:.35,up:.4,crawl:.7,wet:3,shore:2};
 function marchAct(u){const J=MARCH_ACT,now=performance.now()/1000,S=ST[u.type]||{},none={pose:undefined,dy:0};if(S.fly||typeof liftAt!=='function')return none;
   const L=liftAt(u.x,u.y),wb=typeof drawnDepth==='function'?depthBand(drawnDepth(u.x,u.y)):0;
-  if(u._aL!=null&&marchWalks(u)){const d=u._aL-L,m=Math.hypot(u.x-u._ax,u.y-u._ay)||.01;
-    if(Math.abs(d)>=J.drop&&Math.abs(d)/m>=J.rate){if(d>0)u._act={k:'jump',t:now,d};else if(!S.beast)u._act={k:'up',t:now,d:-d}}
+  if(u._aL!=null&&marchWalks(u)){const d=u._aL-L,m=Math.hypot(u.x-u._ax,u.y-u._ay);
+    if(m>=J.moved&&Math.abs(d)>=J.drop&&Math.abs(d)/m>=J.rate){if(d>0)u._act={k:'jump',t:now,d};else if(!S.beast)u._act={k:'up',t:now,d:-d}}
     if(wb===0&&u._wetT!=null&&now-u._wetT<J.shore&&!S.beast&&!S.mounted){u._act={k:'crawl',t:now,d:0};u._wetT=null}}
   if(wb>=J.wet)u._wetT=now;u._aL=L;u._ax=u.x;u._ay=u.y;
   const A=u._act;if(!A)return none;const q=(now-A.t)/J[A.k];if(q>=1||q<0){u._act=null;return none}
@@ -510,7 +510,7 @@ function lotFooting(t,l){const s=lotSprite(t,l),X=l.x*TILE,Y=l.y*TILE,hold=l.k==
 // graves are walked among, world/lineage.js)
 function siteModel(s){const c=climAt(s.x,s.y),k=s instanceof BanditCamp?'bandit':SITE_KIND[s.type]?s.type:null;
   return k?PX.clusterModel({kind:SITE_KIND[k],seed:s.seed*131+7,env:c,snow:0}):PX.buildingModel({type:s.type,seed:s.seed,env:c,snow:0,glow:c==='desert'?'#e8c040':'#7fd8e8'})}
-function siteFooting(s){if(typeof s.footing==='function')return s.footing();const sp=siteSprite(s);if(!sp._ft)sp._ft=modelFooting(siteModel(s))||[];const k=WORLD_VIEW.build,X=s.x-sp.ax*k,Y=s.y+8-sp.ay*k;return sp._ft.map(r=>({x:X+r.x*k,y:Y+r.y*k,w:r.w*k,h:r.h*k}))}
+function siteFooting(s){if(typeof s.footing==='function')return s.footing();const sp=siteSprite(s);if(!sp._ft)sp._ft=modelFooting(siteModel(s))||[];const k=siteK(s),X=s.x-sp.ax*k,Y=s.y+8-sp.ay*k;return sp._ft.map(r=>({x:X+r.x*k,y:Y+r.y*k,w:r.w*k,h:r.h*k}))}
 // (every footing in the box x0..x1, y0..y1, world px: the lots standing there (not ruins, fields nor pastures), the sites you know of)
 const marchFootings=(x0,y0,x1,y1)=>TOWNS.flatMap(t=>(t.lots||[]).filter(l=>l.st!=='ruined'&&l.k!=='field'&&l.k!=='pasture'&&l.x*TILE<x1&&l.y*TILE<y1&&(l.x+l.n)*TILE>x0&&(l.y+l.n)*TILE>y0).flatMap(l=>lotFooting(t,l)))
   .concat((W.sites||[]).filter(s=>s.type!=='rest'&&s.known&&s.known()&&s.x>x0-96&&s.x<x1+96&&s.y>y0-96&&s.y<y1+96).flatMap(siteFooting));
@@ -746,7 +746,7 @@ class MarchArmy{
     // (each man his march pace; menCentre: the army's own step this moment, at least that, at most road times it: its step how far
     // its guide went over the time since it last moved, at most a mid tier's moment (worldobject.js WORLD_LOD: such a one steps
     // every few frames, its whole step at once). Without: the army's step, its road with it, a leap past it no march)
-    const nav=this.ground,walk=moveStep(marchPace(o),d,!B?.world);let step;
+    const nav=this.ground,walk=moveStep(marchPace(o),d,true);let step;
     // (turned, its column halted halt s, its men in their places (within place px: TRAVEL_STYLES.column; or most s gone): its loop
     // (MARCH_MOVE.about.loop), if there is room; its pace up over ease s, each man's place on by as far as he trails one going so,
     // braking for it (b × his kind's t: as below); half round, the chosen order)

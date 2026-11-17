@@ -58,14 +58,17 @@ function lotYard(t,l){const m=lotModel(t,l),N=m.cell,h=m.snow||m.ground;l._gimg=
 // the models of the lots near you made ahead, a few ms a frame (LOT_AHEAD: how far past the view, how long), the nearest holdings
 // first, so a town comes into view already built (its chunks are painted ahead with its yards: worldart.js); then the settled camps'
 const LOT_AHEAD={r:600,ms:3};
+// (the sites asked for at their fine scale, and the camps warmed, at the scene's resolution: kept apart from the sites themselves, which
+// are saved as they stand (core/save.js), so a loaded game warms them again)
+const SITE_WARM=new WeakMap();
 function lotsAhead(V){const t0=performance.now();for(const t of TOWNS.filter(q=>q.lots&&Math.hypot(q.x-P.x,q.y-P.y)<V+LOT_AHEAD.r).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)))
   for(const l of t.lots){if(l._s&&l._gimg&&(sceneRes()<=1||l._s._fr===sceneRes()))continue;lotSprite(t,l);lotYard(t,l);lotFine(t,l,sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}
   // (the sites near you asked for at their fine scale before they come into view (sites.js draw's k), made with the rest: no site drawn
   //  coarse its first frames, its yard with it)
-  const rs=sceneRes();if(rs>1)for(const s of W.sites){if(s._fq===rs||s.warm||!s.draw||Math.hypot(s.x-P.x,s.y-P.y)>V+LOT_AHEAD.r)continue;s._fq=rs;try{fineOf(siteSprite(s),rs*Math.round(WORLD_VIEW.house*(WORLD_VIEW.sites[s.type]||1)))}catch(e){}if(performance.now()-t0>LOT_AHEAD.ms)return}
-  for(const cv of FINE_Q){FINE_Q.delete(cv);if(sceneRes()>1)buildFine(cv,cv._want||sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}
+  const rs=sceneRes();if(rs>1)for(const s of W.sites){if(SITE_WARM.get(s)===rs||s.warm||!s.draw||Math.hypot(s.x-P.x,s.y-P.y)>V+LOT_AHEAD.r)continue;SITE_WARM.set(s,rs);try{fineOf(siteSprite(s),rs*Math.round(siteK(s)))}catch(e){}if(performance.now()-t0>LOT_AHEAD.ms)return}
+  for(const cv of FINE_Q){FINE_Q.delete(cv);const w=cv._want||sceneRes();if(w>1)buildFine(cv,w);if(performance.now()-t0>LOT_AHEAD.ms)return}
   // (the settled camps near you too: their tents and pieces (encampments.js warm), so none is made the frame it comes into view)
-  const r=sceneRes();for(const s of W.sites){if(!s.warm||s._warmR===r||Math.hypot(s.x-P.x,s.y-P.y)>V+LOT_AHEAD.r)continue;if(s.warm(t0,LOT_AHEAD.ms))s._warmR=r;if(performance.now()-t0>LOT_AHEAD.ms)return}}
+  const r=sceneRes();for(const s of W.sites){if(!s.warm||SITE_WARM.get(s)===r||Math.hypot(s.x-P.x,s.y-P.y)>V+LOT_AHEAD.r)continue;if(s.warm(t0,LOT_AHEAD.ms))SITE_WARM.set(s,r);if(performance.now()-t0>LOT_AHEAD.ms)return}}
 // (a site's picture at the scene's finer resolution: its model made r times finer by its maker (siteCanvas mk), with its own touches
 // (deco) drawn r times larger; asked for when it is drawn (fineOf), made ahead with the lots (FINE_Q), drawn where it is made (drawFine),
 // else the picture itself)
@@ -397,7 +400,9 @@ const SITE_KIND={bandit:'camp',camp:'camp',hideout:'hideout',travelers:'traveler
 const SITE_CULTURE={goblins:'ashgor'};
 // (a site's picture as drawn (sites.js draw: k of its size, WORLD_VIEW.house and its kind's own), its opaque px's box on the map:
 // [x0, y0, x1, y1]; what a click picks and its ring stands round (world.js pickAt, worldui.js wuiBox))
-function sitePicBox(o,sp){const k=WORLD_VIEW.house*((WORLD_VIEW.sites||{})[o.type]||1),b=opaqueBox(sp)||[0,0,sp.width-1,sp.height-1],X=o.x-sp.ax*k,Y=o.y+8-sp.ay*k;return [X+b[0]*k,Y+b[1]*k,X+(b[2]+1)*k,Y+(b[3]+1)*k]}
+// (a site's picture drawn k of its size: WORLD_VIEW.house, its kind's own times it (sites.js draw); its footing, reach and box with it)
+const siteK=s=>WORLD_VIEW.house*((WORLD_VIEW.sites||{})[s&&s.type]||1);
+function sitePicBox(o,sp){const k=siteK(o),b=opaqueBox(sp)||[0,0,sp.width-1,sp.height-1],X=o.x-sp.ax*k,Y=o.y+8-sp.ay*k;return [X+b[0]*k,Y+b[1]*k,X+(b[2]+1)*k,Y+(b[3]+1)*k]}
 // (a site's yard: its model's ground, the frost's snow on it, its own shadow shaded into it, its edge frayed into the land round it over
 // SITE_YARD.fray game px (r px a game px: a chamfer distance from its bare px, dithered by its hash: whole px, no square patch))
 const SITE_YARD={fray:3,grain:.7};

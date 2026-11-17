@@ -133,14 +133,14 @@ class Site extends WorldObject{
   box(box,camp){box(this,this.x-8,this.y-8,this.x+8,this.y+8)}
   // its footprint, what is drawn of it (structures.js siteSprite: its picture's opaque box, set as Site draw sets it), reached from
   // your army's ring (march.js ringReach)
-  reachRadius(){const sp=siteSprite(this),b=opaqueBox(sp),x=this.x-sp.ax,y=this.y+8-sp.ay;return boxReach(this,{x0:x+b[0],y0:y+b[1],x1:x+b[2]+1,y1:y+b[3]+1})}
+  reachRadius(){const b=sitePicBox(this,siteSprite(this));return boxReach(this,{x0:b[0],y0:b[1],x1:b[2],y1:b[3]})}
   // drawn once you know of it (as you last saw it, outside your sight: a building, render.js drawWorld), no words (its name in its tip); dotted
   // on the minimap in its kind's colour (grey, cleared)
   inView(V){return this.known()}
   draw(ents,cam,V){if(!this.inView(V))return;const s=this;
     // (at WORLD_VIEW.house, as the holdings' buildings: its picture k of its size about its point, at its own size made finer (drawFine);
     //  its fire and flag at their own)
-    const sp0=siteSprite(s),k=WORLD_VIEW.house*(WORLD_VIEW.sites[s.type]||1);ents.push({st:true,x:s.x,y:s.y,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(s.x-cam.x-sp0.ax*k),Math.round(s.y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=siteSprite(s),X=Math.round(s.x-cam.x-sp.ax*k),Y=Math.round(s.y-cam.y+8-sp.ay*k);
+    const sp0=siteSprite(s),k=siteK(s);ents.push({st:true,x:s.x,y:s.y,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(s.x-cam.x-sp0.ax*k),Math.round(s.y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=siteSprite(s),X=Math.round(s.x-cam.x-sp.ax*k),Y=Math.round(s.y-cam.y+8-sp.ay*k);
       if(sp.gr)ctx.drawImage(sp._fg&&sp._fr===sceneRes()*Math.round(k)?sp._fg:sp.gr,X,Y,sp.gr.width*k,sp.gr.height*k);// (its yard made finer with it: structures.js buildFine)
 if(s.cleared)ctx.globalAlpha=.5;drawFine(sp,X,Y,k);if(!s.cleared)depthPic(scaledPic(sp,k),X,Y);if(sp.fire&&!s.cleared)drawFire(X+sp.fire[0]*k,Y+sp.fire[1]*k,s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),X+sp.flag[0]*k,Y+sp.flag[1]*k,s.seed);ctx.globalAlpha=1;}})}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
