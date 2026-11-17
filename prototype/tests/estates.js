@@ -95,8 +95,10 @@ try{
  // the clock: a day lasts 3 minutes at 1x (Phase 1, D9: it was 2); 60% daylight, 40% dusk, night and dawn
  {W.lords=[];t.bandits.length=0;W.monsters=[];W.critters=[];W.caravans=[];G.mode='world';G.modal=false;t.hidePanel();t.setSpeed(1);G.paused=false;G.clock=0;G.encCool=99;
   const far=[30,60,90,120,150].flatMap(x=>[30,60,90,120].map(y=>({x:(x+.5)*16,y:(y+.5)*16}))).filter(p=>t.passable(t.terrAt(p.x,p.y))).sort((a,b)=>Math.min(...t.TOWNS.map(o=>Math.hypot(o.x-b.x,o.y-b.y)))-Math.min(...t.TOWNS.map(o=>Math.hypot(o.x-a.x,o.y-a.y))))[0];
-  P.x=far.x;P.y=far.y;P.tx=null;const d0=G.day;for(let i=0;i<179;i++){G.encCool=99;t.updateWorld(1)}const mid=G.day;for(let i=0;i<2;i++){G.encCool=99;t.updateWorld(1)}
-  ok(mid===d0&&G.day===d0+1,'a day on the map lasts 180 seconds at 1x');
+  // (DAY_SECONDS: 180 times the world lab's walk over the map's old one, 293 (core.js; the owner, 2026-11-15: "the lab's walking speed"),
+  //  so a day's march is the same ground)
+  P.x=far.x;P.y=far.y;P.tx=null;const DS=t.DAY_SECONDS,d0=G.day;for(let i=0;i<DS-1;i++){G.encCool=99;t.updateWorld(1)}const mid=G.day;for(let i=0;i<2;i++){G.encCool=99;t.updateWorld(1)}
+  ok(mid===d0&&G.day===d0+1,'a day on the map lasts '+DS+' seconds at 1x');
   G.clock=t.DAY*.49;const l=t.darkness();G.clock=t.DAY*.51;const dusk=t.darkness();G.clock=t.DAY*.75;const n=t.darkness();ok(l===0&&dusk>0&&dusk<1&&n===1,'daylight for half the day, then dusk and night ('+t.timeOfDay()+')');G.mode='world'}
  // ---- each estate's pieces stay with it: its fields, pens, pits and pier (estateGround), a port's moored boats (estateBoats), a
  // pasture's herd (critters.js penSpots) and its workers. Kept on the estate's lot: pulled down and placed again elsewhere (or a

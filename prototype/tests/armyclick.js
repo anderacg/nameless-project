@@ -22,8 +22,9 @@ Kit.suite(({ok,info})=>{
  const ring=(o,x,y)=>Math.hypot(o.x-x,o.y-4-y)<10;
  const scan=(b,pred,step=1)=>{const out=[];for(let y=Math.floor(b[1]);y<=b[3];y+=step)for(let x=Math.floor(b[0]);x<=b[2];x+=step)if(pred(x,y))out.push([x,y]);return out};
  const around=(a,m=30)=>{const b=a.figBox(),c=a.box();return[Math.min(b[0],c[0])-m,Math.min(b[1],c[1])-m,Math.max(b[2],c[2])+m,Math.max(b[3],c[3])+m]};
- // a real click on the canvas at a world point (pressed and let go: ring.js), or a finger's tap
- const press=(wx,wy,type='mouse')=>{t.drawWorld();const r=cv.getBoundingClientRect(),x=r.left+(wx-G.cam.x)*r.width/t.VW,y=r.top+(wy-G.cam.y)*r.height/t.VH,e={clientX:x,clientY:y,pointerType:type,pointerId:type==='touch'?7:1,isPrimary:true,bubbles:true};
+ // a real click on the canvas at a world point (pressed and let go: ring.js), or a finger's tap: on the screen where that point is
+ // drawn, up by its land's lift (a click picks the ground the pointer shows: input.js, worldterrain.js liftGround; the owner, 2026-11-16)
+ const press=(wx,wy,type='mouse')=>{t.drawWorld();const r=cv.getBoundingClientRect(),x=r.left+(wx-G.cam.x)*r.width/t.VW,y=r.top+(wy-t.liftAt(wx,wy)-G.cam.y)*r.height/t.VH,e={clientX:x,clientY:y,pointerType:type,pointerId:type==='touch'?7:1,isPrimary:true,bubbles:true};
   cv.dispatchEvent(new PointerEvent('pointerdown',e));window.dispatchEvent(new PointerEvent('pointerup',e));return{x,y}};
  const ringOn=()=>{const q=t.PARTY_CLICK.last,o=t.ActionRing.now&&q&&t.ActionRing.now===q.R?q.o:null;t.ActionRing.close();t.PARTY_CLICK.last=null;return o};
  P.troops={hum_foot:6};P.comps={};form(P);
@@ -33,7 +34,7 @@ Kit.suite(({ok,info})=>{
  {const far=A.units.filter(u=>!u.dead).map(u=>({u,d:Math.hypot(u.x-lord.x,u.y-lord.y)})).sort((p,q)=>q.d-p.d)[0],[fx,fy]=mid(rect(A,far.u));
   const old=Math.hypot(fx-lord.x,fy-4-lord.y)<10;
   ok(far.d>20&&!old&&t.pickAt(fx,fy)===lord,'a man on the flank of a lord\'s army of '+lord.troops.length+', '+far.d.toFixed(0)+' px off its middle (past the old circle\'s 10): picked ('+(t.pickAt(fx,fy)?.mapKind)+')');
-  press(fx,fy);{const R=t.ActionRing.now,r=t.cv.getBoundingClientRect(),ex=r.left+(fx-G.cam.x)*r.width/t.VW,ey=r.top+(fy-G.cam.y)*r.height/t.VH;
+  press(fx,fy);{const R=t.ActionRing.now,r=t.cv.getBoundingClientRect(),ex=r.left+(fx-G.cam.x)*r.width/t.VW,ey=r.top+(fy-t.liftAt(fx,fy)-G.cam.y)*r.height/t.VH;
    ok(!!R&&Math.hypot(R.cx-ex,R.cy-ey)<2,'(the owner, 2026-11-01) and it opens where you clicked his flank man, not at his army middle ('+(R?Math.round(Math.hypot(R.cx-ex,R.cy-ey)):'none')+' px off)')}
   ok(ringOn()===lord,'clicked: the lord\'s ring opens (Approach, Follow, Look)')}
  // ---- in the outline's gap between his men; just outside it

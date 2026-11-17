@@ -8,8 +8,9 @@ try{
  t.act('begin','soldier');W.critters=[];W.lords=[];
  // (nobody else wanders by: workers, patrols, caravans and refugees come and go at random and would take the click)
  const reset=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.town=null;G.site=null;P.tx=null;W.folk=[];W.patrols=[];W.caravans=[];W.refugees=[]};
- // a real click on the canvas, at a world position: pressed, then let go (it acts as it is let go: ui/ring.js)
- const click=(wx,wy)=>{t.drawWorld();const cv=document.querySelector('canvas'),r=cv.getBoundingClientRect(),x=r.left+(wx-G.cam.x)*r.width/t.VW,y=r.top+(wy-G.cam.y)*r.height/t.VH;
+ // a real click on the canvas, at a world position: pressed, then let go (it acts as it is let go: ui/ring.js); on the screen where
+ // that point is drawn, up by its land's lift (a click picks the ground the pointer shows: input.js liftGround; the owner, 2026-11-16)
+ const click=(wx,wy)=>{t.drawWorld();const cv=document.querySelector('canvas'),r=cv.getBoundingClientRect(),x=r.left+(wx-G.cam.x)*r.width/t.VW,y=r.top+(wy-t.liftAt(wx,wy)-G.cam.y)*r.height/t.VH;
    cv.dispatchEvent(new PointerEvent('pointerdown',{clientX:x,clientY:y,pointerType:'mouse',bubbles:true}));cv.dispatchEvent(new PointerEvent('pointerup',{clientX:x,clientY:y,pointerType:'mouse',bubbles:true}))};
  // town: leave it, stay close, click it again
  const ash=t.townBy('Ashford');reset();P.x=ash.x;P.y=ash.y+12;G.lastTown=ash;t.updateWorld(.01);ok(G.mode==='world','standing at a town you just left does not reopen it by itself');

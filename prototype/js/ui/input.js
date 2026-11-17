@@ -167,10 +167,10 @@ function worldMove(wx,wy){followStop();Talk.clear();G.pitch=null;G.byRoad=null;i
    press elsewhere closes it (ring.js). A second press on it within PARTY_CLICK.dbl ms (a double click or tap) approaches it at
    once, as one click did before. Which: world.js FOLLOW.kinds, not in a fight (a click on a fight meets it). last: the ring a
    click opened, its party, when. At (wx, wy), where you clicked it (the owner, 2026-11-01: a big army clicked on its flank opened its
-   ring far off at its middle); none given, at the party */
+   ring far off at its middle); none given, at the party. Up by the land's lift there, where it is drawn (worldterrain.js liftAt) */
 const PARTY_CLICK={dbl:400,r:16,last:null};
 function partyRing(o,wx,wy){if(!o||!(FOLLOW.kinds.includes(objKind(o))||SEAMLESS.on&&objKind(o)==='monster')||o.fight||G.mode!=='world'||G.modal)return false;
-  const at=Number.isFinite(wx)&&Number.isFinite(wy),x=at?wx:o.x,y=at?wy:o.y-6,r=cv.getBoundingClientRect(),cx=r.left+(x-G.cam.x)*r.width/VW,cy=r.top+(y-G.cam.y)*r.height/VH,items=partyRingItems(o,cx,cy);if(!items.length)return false;
+  const at=Number.isFinite(wx)&&Number.isFinite(wy),x=at?wx:o.x,y=at?wy:o.y-6,L=typeof liftAt==='function'?liftAt(x,at?y:o.y):0,r=cv.getBoundingClientRect(),cx=r.left+(x-G.cam.x)*r.width/VW,cy=r.top+(y-L-G.cam.y)*r.height/VH,items=partyRingItems(o,cx,cy);if(!items.length)return false;
   const R=new ActionRing(cx,cy,items).open();PARTY_CLICK.last={R,o,t:performance.now()};return true}
 // (a press at canvas point p with a ring open: the party it is on, if a click opened that ring on it within PARTY_CLICK.dbl ms)
 function partyAgain(p){const q=PARTY_CLICK.last;PARTY_CLICK.last=null;if(!q||ActionRing.now!==q.R||performance.now()-q.t>PARTY_CLICK.dbl||G.mode!=='world'||G.modal||!objKind(q.o))return null;
