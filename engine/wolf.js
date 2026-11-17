@@ -53,13 +53,15 @@
     if(!saved){
       const clip=down?down==='belly'?'lie_down':'death_back':step<0?'idle':step>=4?'run':'walk',frame=down?7:step<0?0:(step%4)*2;
       const source=alphaRender({pose:pose(clip,frame),team:1,v:0}),rgba=source.getContext('2d').getImageData(0,0,60,40).data,g=PX._beastKit.grid(MOUNT.w,down?MOUNT.downH-1:MOUNT.h),dy=down?-15:-4+(step>=4?GALLOP[step-4]:0);
-      const ramps=[['b9b9ae','92958d','696f6b','414a48'],['797f7a','59635f','424c4b','303b3b'],['eee6d2','d6d0bc','a8aa9b','777f76']],color=(r,g,b)=>'#'+[r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');
+      const coat=[],ramps=[['b9b9ae','92958d','696f6b','414a48'],['797f7a','59635f','424c4b','303b3b'],['eee6d2','d6d0bc','a8aa9b','777f76']],color=(r,g,b)=>'#'+[r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');
       for(let y=0;y<40;y++)for(let x=10;x<50;x++){
         const i=(y*60+x)*4;if(!rgba[i+3])continue;const X=x-10,Y=y+dy;if(Y<0||Y>=g.h)continue;
         const hex=color(rgba[i],rgba[i+1],rgba[i+2]).slice(1);let c='#'+hex;
-        for(let r=0;r<ramps.length;r++){const tone=ramps[r].indexOf(hex);if(tone>=0)c=r===2?pal.M[tone]:pal.C[Math.min(3,tone+(r===1?1:0))]}
+        for(let r=0;r<ramps.length;r++){const tone=ramps[r].indexOf(hex);if(tone>=0){c=r===2?pal.M[tone]:pal.C[Math.min(3,tone+(r===1?1:0))];coat.push(Y*g.w+X)}}
         g.p[Y*g.w+X]=c;
       }
+      // (no lone speck the alpha's 1.25 scale leaves in the coat: a coat pixel ringed by one other colour takes it; the eye, not a coat tone, kept)
+      const W=g.w,was=g.p.slice();for(const i of coat){const x=i%W,n=x>0&&x<W-1?[was[i-1],was[i+1],was[i-W],was[i+W]]:null;if(n&&n[0]&&n.every(q=>q===n[0])&&n[0]!==was[i])g.p[i]=n[0]}
       // The saddle follows the real back, not a fixed height above a moving body.
       const spine=[];for(let x=11+RIDER_X;x<=16+RIDER_X;x++)for(let y=10;y<MOUNT.h-2;y++)if(g.p[y*g.w+x]){spine.push(y);break}spine.sort((a,b)=>a-b);
       const seat=down?MOUNT.ground:spine[Math.floor(spine.length/2)]||22;

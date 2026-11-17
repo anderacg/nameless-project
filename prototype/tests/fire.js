@@ -43,11 +43,14 @@ Kit.suite(({ok,info})=>{
   lord.army={nextId:1,groups:[]};lord.tc={[kind('ranged')]:20,[kind('cav')]:10};lord.changed();t.MARCH_ARMIES.delete(lord);
   const A=t.MarchArmy.of(lord);A.sync();const R=t.marchRoles(A),bearers=A.units.filter(u=>R.get(u)?.torch);
   const VW=t.VW,VH=t.VH,cam={x:Math.round(lord.x-VW/2),y:Math.round(lord.y-VH/2)};G.clock=t.DAY*.75;
+  // (a picture as drawn: itself, or zoomed out its own shrunk picture (render.js reduced, mapPic: 01eb8c5, the owner, "figures small
+  //  without losing their lines"))
+  const is=(c,s)=>c===s||!!t.MAP_PICS.get(s)&&[...t.MAP_PICS.get(s).values()].includes(c);
   {const u=bearers[0];u.walking=false;clearLights();const w=watch(()=>window.drawMarcher(u,lord,cam)),L=lights()[0],fr=t.fireFrameAt(t.fireTime(),u.id);
-   ok(bearers.length>0&&w.img[w.img.length-1]===t.torchSprite(R.get(u).kit.skin,fr,0),'at night his torch: its flame\'s frame by the clock and his id ('+fr+')');
+   ok(bearers.length>0&&is(w.img[w.img.length-1],t.torchSprite(R.get(u).kit.skin,fr,0)),'at night his torch: its flame\'s frame by the clock and his id ('+fr+')');
    ok(w.rnd===0&&L&&L.id===u.id&&L.g>0,'its light keyed to him, its pool at his feet ('+L?.g+' px down), no Math.random');
    u.walking=true;u.stepT=.3;const w2=watch(()=>window.drawMarcher(u,lord,cam));u.walking=false;const lk=w2.img[w2.img.length-1];
-   ok([...Array(F.frames).keys()].some(f=>lk===t.torchSprite(R.get(u).kit.skin,f,-F.lean)),'walking, its flame trails back ('+(-F.lean)+' px)')}
+   ok([...Array(F.frames).keys()].some(f=>is(lk,t.torchSprite(R.get(u).kit.skin,f,-F.lean))),'walking, its flame trails back ('+(-F.lean)+' px)')}
   // (the night drawn whole, with this army's torches before you: render.js drawWorld)
   {Object.assign(lord,{x:P.x+30,y:P.y+10});t.reveal();const night=()=>watch(()=>t.drawWorld());
    const on=night(),n=lights().length,ownFlame=on.fill.filter(c=>c==='#e8803a'||c==='#ffe090').length,glows=new Set(t.FIRE_GLOWS.values());
@@ -57,10 +60,11 @@ Kit.suite(({ok,info})=>{
    ok(old>0&&old<=lights().length,'FLAMES off: each light paints its own small flame as before ('+old+')')}
   // ---- FLAMES off: today's pictures
   {F.on=false;const sk='#f3bfad';
-   // (the torch as it was drawn before fire.js: its haft, its pitch head, the two frames of MARCH_FLAME, outlined)
+   // (the torch as it was drawn before fire.js: its haft, its pitch head, the two frames of MARCH_FLAME, outlined as every figure is
+   //  since 9df57b4 (the owner: flags and torches "drawn as the figures are, its edge a shade darker": g.edge))
    const oldTorch=f=>{const [deg,n]=t.MARCH_GEAR.brand,R=n+4,g=t.pgrid(2*R+1,2*R+1),a=deg*Math.PI/180,Wd=t.PPAL.wood;let q=null;
     for(let i=0;i<n;i++){const x=Math.round(R+Math.cos(a)*i),y=Math.round(R+Math.sin(a)*i);if(q&&q[0]!==x&&q[1]!==y)t.pset(g,q[0],y,Wd[2]);t.pset(g,x,y,i===n-1?'#3a2a1a':Wd[i<2?2:1]);q=[x,y]}
-    for(const [dx,dy,col] of t.MARCH_FLAME[f])t.pset(g,q[0]+dx,q[1]+dy,col);t.pset(g,R,R,sk);t.poutline(g);return t.pcanvas(g)};
+    for(const [dx,dy,col] of t.MARCH_FLAME[f])t.pset(g,q[0]+dx,q[1]+dy,col);t.pset(g,R,R,sk);g.edge=true;t.poutline(g);return t.pcanvas(g)};
    ok([0,1].every(f=>px(t.torchSprite(sk,f))===px(oldTorch(f))),'the torch: its old two frames, pixel for pixel');
    const fl=[0,1,2,3].map(f=>{t.spr['flm'+f]=null;at(110*(4e5+f)+5);const w=watch(()=>t.drawFire(100,100,0));return w.img[0]});at(1e7);
    ok(fl.every((c,i)=>c===t.spr['flm'+i].img)&&px(fl[0])===px(t.PX.flame(0).img)&&t.campFlame()===t.spr.flm0,'a camp fire: the engine\'s four frames (PX.flame), and the banner\'s flm0');

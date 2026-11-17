@@ -251,10 +251,12 @@ class CampFolk{
       if(fresh||!p.leg||p.leg==='back'){p.leg='go';return go(p.spot.x,p.spot.y,fresh?0:F.pause[0]+R()*F.pause[1])}p.leg='back';return go(p.door.x,p.door.y)}
     const q=C.L[Math.floor(R()*C.L.length)];return go(q.x+R()*16-8,q.y+6+R()*6,F.pause[0]+R()*F.pause[1])}
   // (his work spot: a tile of his kind of ground (to) out ENCAMP.folk.out tiles, one he can walk to (Router.reach: round water and rock
-  // by the router's ways, step); none: near the camp)
+  // by the router's ways, step); drawn from the ring's own tiles of it, so a small grove is found as well as a forest; none: near the camp)
   static spot(C,p){const s=C.s,F=ENCAMP.folk,R=p.R2,to=p.R.to,ok=k=>to==='wood'?k===T_FOREST:to==='rock'?k===T_HILL||k===T_MOUNT:to==='grass'?k===T_OPEN:k!==T_WATER&&k!==T_ROAD&&k!==T_FORD;
-    for(let k=0;k<40;k++){const a=R()*Math.PI*2,d=(F.out[0]+R()*(F.out[1]-F.out[0]))*TILE,x=s.x+Math.cos(a)*d,y=s.y+Math.sin(a)*d,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),t=tAt(tx,ty);
-      if(!ok(t)||t===T_MOUNT&&!nearTile(tx,ty,T_HILL,0)||!passable(t))continue;if(Router.reach({x:s.x,y:s.y},{x,y}))return{x,y}}
+    const o=F.out[1]+1,cx=Math.floor(s.x/TILE),cy=Math.floor(s.y/TILE),L=[];
+    for(let ty=cy-o;ty<=cy+o;ty++)for(let tx=cx-o;tx<=cx+o;tx++){const t=tAt(tx,ty);if(!ok(t)||t===T_MOUNT&&!nearTile(tx,ty,T_HILL,0)||!passable(t))continue;
+      const x=(tx+.2+R()*.6)*TILE,y=(ty+.2+R()*.6)*TILE,d=Math.hypot(x-s.x,y-s.y)/TILE;if(d>=F.out[0]&&d<=F.out[1])L.push({x,y})}
+    for(let k=0;k<40&&L.length;k++){const q=L.splice(Math.floor(R()*L.length),1)[0];if(Router.reach({x:s.x,y:s.y},q))return q}
     return{x:s.x+(R()<.5?-1:1)*TILE*2,y:s.y+TILE}}
   // (everyone out of his tent, for a click: world.js worldObjects)
   static all(){const out=[];for(const C of this.of.values())for(const p of C.ppl)if(!p.hid)out.push(p);return out}

@@ -203,7 +203,9 @@ const Outposts={
   // (the realm holding the land at a tile, and whether another realm's land lies within r tiles)
   realmAt(tx,ty){const h=landHold((tx+.5)*TILE,(ty+.5)*TILE);return h&&h.owner&&h.owner!=='player'&&FACS[h.owner]?h.owner:null},
   border(tx,ty,f){const r=OUTPOST_PLACE.border.r;for(let a=0;a<16;a++){const o=this.realmAt(Math.round(tx+Math.cos(a*Math.PI/8)*r),Math.round(ty+Math.sin(a*Math.PI/8)*r));if(o&&o!==f)return true}return false},
-  place(){if(!OUTPOST.on)return [];const S=OUTPOST_PLACE,byProv=new Map();
+  // (on the land as the world made it, without the outposts' own claims (landKey: live), so it is the same reckoned again in play)
+  place(){if(!OUTPOST.on)return [];const live=this.live;this.live=false;try{return this.reckon()}finally{this.live=live}},
+  reckon(){const S=OUTPOST_PLACE,byProv=new Map();
         for(const p of this.spots()){const f=this.realmAt(p.tx,p.ty);if(!f||TOWNS.some(t=>Math.hypot(t.tx-p.tx,t.ty-p.ty)<S.town))continue;
       const at=this.stand(p.tx,p.ty);if(!at||this.built(at[0],at[1])||this.realmAt(at[0],at[1])!==f)continue;const pr=Provinces.at((at[0]+.5)*TILE,(at[1]+.5)*TILE);if(!pr)continue;
       const border=this.border(p.tx,p.ty,f);p.f=f;p.at=at;p.border=border;p.score=S.score[p.why]+(border?S.border.add:0)+hash(p.tx,p.ty,7717)*.01;

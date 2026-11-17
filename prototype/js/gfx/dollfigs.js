@@ -117,7 +117,7 @@ const shootArms=(o,style,atk)=>{if(atk<0||o.held)return leanArms(o,atk);const k=
    run, climb, descend, each its doll's step), style and atk (a blow's frame, its weapon arm along the rig). Its pixels are the
    body's (g.body: not outlined, figures.js FigureRig.frame); returns the template's anchors */
 function drawDollBody(g,o,ox,oy,walk,style,atk,cut){
-  const shooter=!o.held&&['bow','longbow','xbow','sling','staff'].includes(o.weapon),lunge=atk>=0&&!o.mount&&!shooter&&DOLL_LUNGE[style]?DOLL_LUNGE[style][atk]||[]:[];
+  const shooter=!o.held&&['bow','longbow','xbow','sling','staff'].includes(o.weapon),ls=style==='swing'&&POLE(o.held||o.weapon)?'thrust':style,lunge=atk>=0&&!o.mount&&!shooter&&DOLL_LUNGE[ls]?DOLL_LUNGE[ls][atk]||[]:[];// (a pole's swing a thrust, its legs too: people.js blowRig)
   // (a blow with the weapon on him (the map's and the cards' whole figures, not only the battle's bare ones): his arm the rig's as well,
   //  the weapon in the fist it ends in (figures.js HandWeapon): else no arm struck and the weapon hung in the air beside him)
   const held=o.held||(atk>=0&&WPN[o.weapon]?o.weapon:null);
