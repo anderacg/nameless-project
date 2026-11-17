@@ -511,8 +511,9 @@
   // a stable: planks under a single slope, three stalls open to the yard, a trough
   const stable=(C,at,face)=>made(C,at,face,Q=>{const dw=Q.home('stable','stable');Q.box('s',[-12,12],[-5,5],[0,10],'plank',{dw,foot:'stone',keep:1});Q.roof('s','shed','u',4,C.o.roofMat,{o:1,ov:0});
     for(const a of [.18,.5,.82])Q.dec('s.S','Barn',a);Q.prop('trough',[0,8])});
-  // the fire of a camp (the game's flame stands on marks.fire)
-  const fire=(C,at)=>{P(C,'firepit',at);C.Q.marks.fire=[at[0],at[1],2]};
+  // the fire of a camp (the game's flame stands on marks.fire); in the camps below set in the open before the tents, a flame's height
+  // clear of their fronts (the owner, 2026-11-17: the campfire sat at the tent)
+  const fire=(C,at)=>{P(C,'firepit',at,0,1.5);C.Q.marks.fire=[at[0],at[1],2]};
   const CL={
     // a town's row: three or four houses wall to wall along the street, the yards behind with a shed, a garden and a washing line
     row:{role:'housing',ground:'cobble',make:C=>{row(C,-30,30,26,0);const R=C.d;made(C,[R.pick([-16,14]),-18],0,Q=>shed(Q,'s',[0,0],14,8,9,C.o.roofMat,Q.home('shed','store')));
@@ -564,10 +565,10 @@
       piece(C,'well',[0,14],0);piece(C,'cart',[-18,24],0);piece(C,'barrels',[20,24],0);P(C,'bench',[-6,30],1);C.Q.parts.push({k:'bed',name:'g1',u:[-60,-40],v:[-28,-18]},{k:'bed',name:'g2',u:[30,58],v:[-28,-18]})}},
     // camps: a bandits' camp (32: one or two tents round a fire, crates or a barrel, a log to sit on), a hideout (64: three tents and
     // their gear round the fire in a ring of spiked stakes, its way in at the front) and travellers (32: a tent, their wagon, the fire)
-    camp:{role:'camp',make:C=>{const two=C.d.chance(.5);piece(C,'tent',[two?-7:0,-9],0);if(two)piece(C,'tent',[8,2],0);fire(C,[two?-4:0,6]);P(C,C.d.pick(['crate','barrel','sacks']),two?[-12,1]:[9,8]);P(C,'logs',[-8,11],0,1)}},
-    hideout:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-16,-20],0);piece(C,'tent',[16,-20],0);piece(C,'tent',[0,-8],0);fire(C,[0,6]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
+    camp:{role:'camp',make:C=>{const two=C.d.chance(.5);piece(C,'tent',[two?-8:0,two?-13:-12],0);if(two)piece(C,'tent',[8,-9],0);fire(C,[0,8]);P(C,C.d.pick(['crate','barrel','sacks']),two?[-13,4]:[10,7]);P(C,'logs',[-8,12],0,1)}},
+    hideout:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-16,-20],0);piece(C,'tent',[16,-20],0);piece(C,'tent',[0,-12],0);fire(C,[0,9]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
       const e=29,b=27;for(const [n,u,v] of [['pN',[-e,e],[-b-3,-b-1]],['pW',[-e,-e+2],[-b-3,b]],['pE',[e-2,e],[-b-3,b]],['pS0',[-e,-6],[b-2,b]],['pS1',[6,e],[b-2,b]]])C.Q.parts.push({k:'box',name:n,u,v,z:[0,8],wall:'stakes',top:true,topMat:'log'})}},
-    travelers:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-6,-9],0);piece(C,'wagon',[6,8],0);fire(C,[-7,8])}}
+    travelers:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-6,-12],0);piece(C,'wagon',[8,5],0);fire(C,[-7,10])}}
   };
   // the clusters whose look is the country's
   const RURAL_CL=['yard','farmstead','mill','lumber','mine','quarry','fishery','pasture','granary'];
