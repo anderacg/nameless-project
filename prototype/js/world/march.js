@@ -183,6 +183,12 @@ function marchSprite(u,o,pose,bare){
   const type=chiefLookType(u.character?u.type.replace(/^comp_/,''):u.type,o.ld?.band),hero=type==='hero',lead=hero||u.row==='leader';
   return dressedIn(dressClimAt(o.x,o.y),()=>unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(marchWalks(u)?2+marcherStep(u):0),!!bare,!!o.unarmed,o.look().col));
 }
+// (your army's pictures made ahead in a frame's spare time (main.js paintIdle): standing and its four strides, armed and bare, one man
+// of each kind and look a call, in turn; each first built as he set off had cost a frame 25-50 ms (the owner, 2026-11-17: "lag/freeze"))
+const MARCH_WARM={on:true,poses:[0,2,3,4,5],i:0};
+function marchWarm(ms){const Q=MARCH_WARM,A=Q.on&&WORLD_BATTLE.on&&MARCH_ARMIES.get(P);if(!A||!A.units.length)return;const t0=performance.now(),U=A.units,seen=new Set();
+  for(let n=0;n<U.length&&performance.now()-t0<ms;n++){const u=U[(Q.i+n)%U.length],k=u.type+'|'+(u.row==='leader'||u.character?0:u.id%6);if(seen.has(k))continue;seen.add(k);
+    for(const p of Q.poses)for(const b of [false,true]){const a=performance.now();marchSprite(u,P,p,b);if(performance.now()-a>2){Q.i=(Q.i+n)%U.length;return}}}Q.i=(Q.i+1)%U.length}// (one new picture a call at most)
 // Leaders use the same character kind and equipment as battle; cached cells also serve map picking and banner height.
 const MARCH_LEADERS=new WeakMap();
 function marchLeaderSprite(o,f){

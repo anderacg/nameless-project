@@ -273,6 +273,20 @@ function wayChunk(G,c){let T=G.chunk.get(c);if(T)return T;holdShut();T=G.chunk.g
   const ids=G.cnode.subarray(G.coff[c],G.coff[c+1]),k=ids.length,d=new Float32Array(k*k),cx=c%G.cols,cy=(c-cx)/G.cols,x0=cx*G.cs,y0=cy*G.cs,x1=Math.min(MW,x0+G.cs),y1=Math.min(MH,y0+G.cs),DPT=wayDay();
   for(let a=0;a<k;a++){const D=wayLocal(G.tile[ids[a]],x0,y0,x1,y1,false);for(let b=0;b<k;b++){const t=G.tile[ids[b]];d[a*k+b]=D[((t/MW|0)-y0)*(x1-x0)+t%MW-x0]*DPT}}
   T={ids,d};G.chunk.set(c,T);return T}
+/* (the chunks' tables worked out ahead round you in a frame's spare time (main.js paintIdle), the nearest first, within WAY_WARM.r
+   chunks: a long trip's first search finds them made, no freeze as it is ordered (the owner, 2026-11-17: "There always a lag/freeze
+   while loading a new area": 280 ms in one frame for a 160-tile trip). A table built a node at a time (G.warm), the same as wayChunk's,
+   dropped if the ways change meanwhile (WAYV)) */
+const WAY_WARM={on:true,r:4};
+function wayWarm(ms){if(!WAY_WARM.on||typeof WM==='undefined'||!WM||!WM.graph||!P)return;const G=WM.graph,t0=performance.now();holdShut();
+  if(G.warm&&(G.warm.v!==WAYV||G.chunk.has(G.warm.c)))G.warm=null;
+  while(performance.now()-t0<ms){let Q=G.warm;
+    if(!Q){const pc=Math.floor(P.x/TILE/G.cs),pr=Math.floor(P.y/TILE/G.cs),R=WAY_WARM.r;let best=-1,bd=1e9;
+      for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const cx=pc+dx,cy=pr+dy;if(cx<0||cy<0||cx>=G.cols||cy*G.cs>=MH)continue;const c=cy*G.cols+cx,d=dx*dx+dy*dy;if(d<bd&&!G.chunk.has(c)){bd=d;best=c}}
+      if(best<0)return;const ids=G.cnode.subarray(G.coff[best],G.coff[best+1]),k=ids.length,cx=best%G.cols,cy=(best-cx)/G.cols,x0=cx*G.cs,y0=cy*G.cs;
+      Q=G.warm={c:best,v:WAYV,ids,k,a:0,d:new Float32Array(k*k),x0,y0,x1:Math.min(MW,x0+G.cs),y1:Math.min(MH,y0+G.cs),DPT:wayDay()}}
+    if(Q.a<Q.k){const D=wayLocal(G.tile[Q.ids[Q.a]],Q.x0,Q.y0,Q.x1,Q.y1,false);for(let b=0;b<Q.k;b++){const t=G.tile[Q.ids[b]];Q.d[Q.a*Q.k+b]=D[((t/MW|0)-Q.y0)*(Q.x1-Q.x0)+t%MW-Q.x0]*Q.DPT}Q.a++}
+    if(Q.a>=Q.k){G.chunk.set(Q.c,{ids:Q.ids,d:Q.d});G.warm=null}}}
 // (the nodes a trip starts from at tile t (rev: those it ends at), with the days to (from) each: t's own node; else a gate beside
 // it (a party leaving or making for a holding, so the pair cache serves it); else every node of t's chunk it can reach in it)
 function wayEnds(G,t,rev){const NO=wayNodes(),x=t%MW,y=(t-x)/MW;if(NO.has(t))return[[NO.get(t),0]];

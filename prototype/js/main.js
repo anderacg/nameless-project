@@ -17,7 +17,7 @@ function loopError(e){const k=String(e&&e.message||e),t=performance.now();
   if(!LOOP_SEEN.some(x=>x.k===k)){const w=loopWhere(e);LOOP_SEEN.push({k,w,day:typeof G!=='undefined'?G.day:0,mode:typeof G!=='undefined'?G.mode:''});if(LOOP_SEEN.length>LOOP_KEEP)LOOP_SEEN.shift();try{toast('Something went wrong: '+k+(w?' ('+w+')':''),'bad')}catch(_){}}
   if(t-(LOOP_ERR.get(k)||-1e9)<1000)return;LOOP_ERR.set(k,t);setTimeout(()=>{throw e})}
 // (the map's chunks ahead painted in what is left of the frame's time once it is drawn: gfx/worldart.js idle)
-function paintIdle(now){if(G.mode==='world'&&WM)try{WorldArt.idle(1000/RENDER.fps-(performance.now()-now)-2)}catch(e){loopError(e)}}
+function paintIdle(now){if(G.mode==='world'&&WM)try{const left=()=>1000/RENDER.fps-(performance.now()-now)-2;marchWarm(Math.max(1,left()));WorldArt.idle(left());wayWarm(Math.max(1,left()))}catch(e){loopError(e)}}// (and the ways' chunks round you, your army's pictures: router.js wayWarm, march.js marchWarm)
 function loop(now){
   if(now-last<650/RENDER.fps){requestAnimationFrame(loop);return}
   const dt=Math.min(.05,(now-last)/1000);last=now;
