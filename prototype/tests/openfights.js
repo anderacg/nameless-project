@@ -19,6 +19,8 @@ Kit.suite(({ok,info})=>{
  {const J=t.WORLD_BATTLE.join,at=d=>({mapKind:'cparty',x:a.x+d,y:a.y});ok(a.ring<a.r&&a.knows(at(a.ring+J-5),0)&&!a.knows(at(a.ring+J+5),0),'armies hear of it and join from the ring\'s edge as before ('+Math.round(a.ring+J)+' px from its middle, not '+Math.round(a.r+J)+')')}
  // (the world's moment beside the fight's)
  b.paused=false;b.deploy=false;if(b.muster)b.muster.active=false;
+ // (Kit.clear parks the lords off the map, where none has business: a few set on the road from one of their holdings to another)
+ for(const l of W.lords.filter(l=>!l.dead&&!l.inside&&!a.participants.has(l)).slice(0,4)){const fs=t.TOWNS.filter(h=>h.owner===l.fac&&!t.ruined(h));if(fs.length>1)Object.assign(l,{x:fs[0].x,y:fs[0].y+14,state:'home',tgt:fs[1].name})}
  const others=W.lords.filter(l=>!l.dead&&!l.inside&&!a.participants.has(l)).slice(0,12),at=others.map(l=>[l.x,l.y]),e0=[enemy.x,enemy.y],p0=[P.x,P.y],c0=G.day+t.Clock.frac;
  P.tx=P.x+200;P.ty=P.y;
  for(let i=0;i<120;i++)t.openFightWorld(.05);
@@ -31,7 +33,7 @@ Kit.suite(({ok,info})=>{
   const c1=G.day+t.Clock.frac,want=(O.every|0||1)*.05*G.speed*t.DAY/t.DAY_SECONDS/t.DAY;ok(O.every>=2&&!mid&&Math.abs((c1-c0)-want)<1e-9,'the world moves every '+O.every+' frames of a fight, with their time at once (none between; '+((c1-c0)*t.DAY_SECONDS).toFixed(3)+' s of a day, '+(want*t.DAY_SECONDS).toFixed(3)+' wanted)')}
  {const c1=G.day+t.Clock.frac;b.paused=true;for(let i=0;i<20;i++)t.openFightWorld(.05);ok(G.day+t.Clock.frac===c1,'the fight paused: the world waits too');b.paused=false}
  // (your band's day held through the fight, run once it is over)
- {const S=t.Systems;S.waiting.length=0;const day=G.day;let n=0;for(;G.day===day&&n<5000;n++)t.openFightWorld(.05);const held=S.waiting.map(([s,ph])=>s.name+' '+ph);
+ {const S=t.Systems;S.waiting.length=0;const day=G.day;let n=0;for(const most=Math.ceil(t.DAY_SECONDS/.05/G.speed)+9;G.day===day&&n<most;n++)t.openFightWorld(.05);const held=S.waiting.map(([s,ph])=>s.name+' '+ph);
   ok(G.day===day+1&&held.includes('band day')&&held.includes('wounded day')&&!held.includes('realms day'),'a day passed in the fight: your band\'s day ('+held.filter(h=>/day/.test(h)).join(', ')+') waits, the realms\' runs');
   S.release();ok(!S.hold&&!S.waiting.length,'the fight over, your band\'s day is run')}
  {const other=t.asParty({kind:'bandits',troops:['militia'],x:P.x-60,y:P.y,cool:0}),e=G.enc;ok(t.startEncounter({kind:'party',ref:other,n:1})===false&&G.enc===e&&G.mode==='battle','no encounter opens while the fight goes on')}

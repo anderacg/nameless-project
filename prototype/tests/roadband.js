@@ -2,7 +2,7 @@
 // The road's band (world/roadband.js; the owner, 2026-10-23: "sometimes my character even stands on the road but the game still
 // reads it as swamp"): a road's speed follows the road as drawn (gfx/worldart.js artRoadSegs), not its tiles. On a diagonal stretch,
 // on the drawn line where the tile is the land's, road speed; over the shoulder, between the land's and the road's; far off,
-// the land's (the band's widths 0: the tile rule); water never passable; an estate's track a little slower (ROAD_BAND.trackSpeed);
+// the land's (the band's widths 0: the tile rule); water the water's (waded or swum by its depth), never the road; an estate's track a little slower (ROAD_BAND.trackSpeed);
 // regionAt names the road there. By road (world.js setByRoad: a mode, P.byRoad; the action ring's By road, key B): while it is
 // on, a plain click's way, drawn and walked, keeps to the roads between two holdings across a swamp, more of it on the road than
 // the plain way; it stays on for the next trip, and across a save and a load; the day bar shows it; with no road near, a trip
@@ -43,11 +43,13 @@ Kit.suite(({ok,info})=>{
   const was=bare(()=>pts.map(([x,y])=>[t.speedAt(x,y),t.speedAt(x,y,'human'),t.speedAt(x,y,'orc'),t.regionAt(x,y).name]));
   pts.forEach(([x,y],i)=>{const q=near(x,y);if(Math.min(q.road,q.est)<RB.great[0]+RB.great[1]+3||t.terrAt(x,y)===t.T_ROAD)return;n++;const w=was[i];if(t.speedAt(x,y)!==w[0]||t.speedAt(x,y,'human')!==w[1]||t.speedAt(x,y,'orc')!==w[2]||t.regionAt(x,y).name!==w[3])bad.push(Math.round(x)+','+Math.round(y))});
   ok(n>1000&&!bad.length,'far from every road ('+n+' points): the land\'s speed for anyone (orcs, humans, none) and its own name, as by the tiles'+(bad.length?': not at '+bad.slice(0,5).join(' '):''));
-  let wet=0,dry=[];for(let ty=0;ty<t.MH;ty++)for(let tx=0;tx<t.MW;tx++){if(t.tAt(tx,ty)!==t.T_WATER)continue;for(const [a,b] of [[2,2],[8,8],[14,14],[2,14],[14,2]]){const x=tx*TL+a,y=ty*TL+b;if(!t.RoadBand.at(x,y))continue;wet++;if(t.speedAt(x,y)!==0||t.speedAt(x,y,'human')!==0||t.regionAt(x,y).road)dry.push(tx+','+ty)}}
-  ok(wet>50&&!dry.length,'water within a road\'s band ('+wet+' points by bridges and shores): never passable, never the road'+(dry.length?': '+dry.slice(0,5).join(' '):''))}
+  // (water is waded and swum by its depth since 5677a03 (WATER.speed): the band leaves it the water's, as by the tiles)
+  const wp=[];for(let ty=0;ty<t.MH;ty++)for(let tx=0;tx<t.MW;tx++){if(t.tAt(tx,ty)!==t.T_WATER)continue;for(const [a,b] of [[2,2],[8,8],[14,14],[2,14],[14,2]]){const x=tx*TL+a,y=ty*TL+b;if(t.RoadBand.at(x,y))wp.push([x,y])}}
+  const ww=bare(()=>wp.map(([x,y])=>[t.speedAt(x,y),t.speedAt(x,y,'human')])),dry=wp.filter(([x,y],i)=>t.speedAt(x,y)!==ww[i][0]||t.speedAt(x,y,'human')!==ww[i][1]||t.regionAt(x,y).road).map(([x,y])=>Math.floor(x/TL)+','+Math.floor(y/TL));
+  ok(wp.length>50&&!dry.length,'water within a road\'s band ('+wp.length+' points by bridges and shores): the water\'s own speed, waded or swum ('+[...new Set(ww.map(v=>v[0].toFixed(2)))].slice(0,4).join(', ')+'), never the road\'s, never named the road'+(dry.length?': '+dry.slice(0,5).join(' '):''))}
  // ---- in the swamp (the owner's shot: "Swamp" read on the road): on the drawn line where the tile is swamp, its way's speed
  {const sw=R.concat(T2).filter(([x,y])=>t.climAt(x,y)==='swamp'),was=bare(()=>sw.map(([x,y])=>t.speedAt(x,y))),now=sw.map(([x,y])=>t.speedAt(x,y)),want=sw.map(([x,y])=>near(x,y).est<1?RB.trackSpeed:RB.speed);
-  ok(sw.length>=4&&now.every((v,i)=>v===want[i])&&was.every(v=>v<=.5),'on the drawn line through the swamp, where the tile is swamp ('+sw.length+' points): its way\'s speed ('+[...new Set(now)].join(', ')+'), by the tiles alone '+[...new Set(was)].join(', ')+'; regionAt '+[...new Set(sw.map(([x,y])=>t.regionAt(x,y).name))].join(', '))}
+  ok(sw.length>=4&&now.every((v,i)=>v===want[i])&&was.every(v=>v<=t.CLIMMUL.swamp),'on the drawn line through the swamp, where the tile is swamp ('+sw.length+' points): its way\'s speed ('+[...new Set(now)].join(', ')+'), by the tiles alone '+[...new Set(was)].join(', ')+'; regionAt '+[...new Set(sw.map(([x,y])=>t.regionAt(x,y).name))].join(', '))}
  // ---- an estate's track: a little slower than a road, its own name
  {const now=T2.map(([x,y])=>t.speedAt(x,y)),hum=T2.map(([x,y])=>t.speedAt(x,y,'human')),nm=T2.filter(([x,y])=>{const r=t.regionAt(x,y);return r.road===2&&r.name===t.TRACK_NAMES[r.c]}).length;
   ok(T2.length>=20&&now.every(v=>v===RB.trackSpeed)&&hum.every(v=>Math.abs(v-RB.trackSpeed*RB.human)<1e-9)&&RB.trackSpeed<RB.speed,'on the drawn line of an estate\'s track ('+T2.length+' points): '+RB.trackSpeed+' (humans '+(RB.trackSpeed*RB.human).toFixed(3)+'), a little slower than a road\'s '+RB.speed);
