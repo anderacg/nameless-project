@@ -178,7 +178,7 @@ function trample(P,D,x0,y0,w,h,[cx,cy,rx,ry,amt]){if(cx+rx<x0||cy+ry<y0||cx-rx>=
 // wheat and hay, the Salt League vines, the Sylvan Court an orchard's and a forest garden's rows and herbs, the Karn terraced rye
 // and potatoes, the Ashgor Horde herd ground and few crops; terrace: whose crops' rows step down hillsides (a stone lip every 5); things:
 // what stands on a plot by its crop (stooks along an open edge, each a chance, a haystack, fruit trees on a 2 x 2 grid, a date palm
-// by the channel); ripe: how ripe the crops stand at the 16 px scale (by the season's stage: ripeOf); a crop's look by the season
+// by the channel; palmFoot: the tile row its foot needs at least, so all of it stands on the plot); ripe: how ripe the crops stand at the 16 px scale (by the season's stage: ripeOf); a crop's look by the season
 // (the owner, 2026-11-17: "make it more like other game where i can tell whether this is a wheat"): season (null: the clock's,
 // world/weather.js Weather.season; one of its keys to show it), each crop's growth (grow: its kind's, by season, a stage of
 // engine/worldnature.js PX.CROP_PLANTS: young, ripe, full, flower, fruit, leaf, stubble, bare; none: as it is all year). A crop a
@@ -195,7 +195,7 @@ const FARM={ripe:1,season:null,ripeOf:{young:.15,ripe:1,full:1,flower:.7,fruit:1
     horde:{hay:2,barley:1.5,wheat:.3,veg:.3,vines:0,orchard:0,flax:.3,irrigated:.4}},
   own:{sylvan:{herbs:3},karn:{potato:4,rye:2},horde:{grazed:7}},
   terrace:{karn:['wheat','barley','rye','veg','turnips','potato']},race:{human:'vale',dwarf:'karn',elf:'sylvan',orc:'horde'},
-  things:{stook:.4,haystack:.6,fruit:.9,palm:.55},
+  things:{stook:.4,haystack:.6,fruit:.9,palm:.55,palmFoot:7},
   fine:{lit:1.12,shade:.84,leaf:.07,soil:.12,rag:.3}};
 const cultureOf=t=>HOME[t.name]||FARM.race[(t.races||[])[0]]||'vale';
 // (the season the fields show, and crop k's stage in it: FARM.grow)
@@ -219,7 +219,8 @@ function farmPlot(t,tx,ty,c,fr,ed,px,z=1,pxf=null){const h=(x,y,s)=>hash(x,y,t.s
       const along=4+n*7+Math.floor(h(tx,ty*4+m,32)*3),fx=ey?along:ex>0?4:11,fy=ey?(ey>0?7:15):along+3;stand(PX.worldCropThing('stook',m),Math.min(12,fx),Math.min(15,fy),'stook',m)}}}
   else if(k==='hay'&&h(tx,ty,33)<FT.haystack)stand(PX.worldCropThing('haystack',0),4+Math.floor(h(tx,ty,34)*8),8+Math.floor(h(tx,ty,35)*7),'haystack',0);
   else if(k==='orchard')for(const [fx,fy] of [[4,7],[12,7],[4,15],[12,15]]){if(h(tx*2+fx,ty*2+fy,36)<FT.fruit){const fv=(cu==='sylvan'?2:0)+Math.floor(h(tx,ty,37)*2);stand(PX.worldCropThing('fruit',fv),fx+(fy>8?-1:0),fy,'fruit',fv)}}
-  else if(k==='irrigated'&&sp.ch>=0&&h(tx,ty,38)<FT.palm){const p=PX.worldTree('desert','palm',Math.floor(h(tx,ty,39)*4),0);stand(p,5+Math.floor(h(tx,ty,40)*6),sp.ch-1)}
+  // (a date palm by the channel: on its upper bank, or its lower where the palm would stand out past the plot's top (its crown cut off, 2026-11-17))
+  else if(k==='irrigated'&&sp.ch>=0&&h(tx,ty,38)<FT.palm){const pv=Math.floor(h(tx,ty,39)*4),p=PX.worldTree('desert','palm',pv,0),fy=sp.ch-1>=FT.palmFoot?sp.ch-1:Math.min(15,sp.ch+3);stand(p,5+Math.floor(h(tx,ty,40)*6),fy,'palm',pv)}
   // (at the lab's scale (z fine px a game px, pxf drawing one): the crop laid by the fine px (PX.worldCrop's fine: its rows and plants
   //  half the size), grained by the fine px; the open edge ragged by the fine px; what stands on it at the fine px (FS: its shadow,
   //  then its picture, its rim the ground's own darkened)); at any other scale each game px lit at its top left, shaded at its bottom right

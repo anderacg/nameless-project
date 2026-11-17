@@ -383,7 +383,8 @@
   /* PX.worldCropThingFine(kind, v): the same at the lab's scale, a 16 box of fine px (twice the detail), its foot at (8, 15): a haystack's
      dome of straw in strands, lit from the top left, a rope round it and its top knot; a stook's sheaves splayed at the foot, tied at
      the waist, their ears fanned and grained; a fruit tree's crown in leafy clumps, lit top left, its fruit (v as worldCropThing's)
-     catching the light, its trunk */
+     catching the light, its trunk; a date palm's (the desert's irrigated plot) ringed trunk leaning a little, its fronds arching out
+     and drooping from its crown, lit above, dates hanging under it */
   PX.worldCropThingFine=(kind,v)=>{v=((v|0)%4+4)%4;const key='ftf'+kind+v;if(CACHE[key])return CACHE[key];const N=16,M=new Uint8Array(N*N),H=(x,y,k)=>PX.hash(x,y,v*31+k),
     set=(x,y,t)=>{if(x>0&&y>0&&x<N-1&&y<N)M[y*N+x]=t};let col;
     if(kind==='haystack'){for(let y=2;y<16;y++)for(let x=1;x<15;x++){const dx=(x+.5-8)/6.4,top=y<10,dy=top?(y+.5-10)/7.6:0,hw=6.4+(y>=10?(y-10)*.12:0);
@@ -395,6 +396,11 @@
       for(let i=0;i<9;i++){const x=3+Math.floor(H(i,1,4)*10),y=3+Math.floor(H(i,2,5)*7);if(M[y*N+x]&&M[y*N+x]<4){set(x,y,7);if(M[(y-1)*N+x])set(x,y-1,8)}}
       for(let y=10;y<16;y++){set(7,y,5);set(8,y,y>12?6:5)}set(6,15,6);set(9,15,6);
       col=[null,'#a8cc66','#78a448','#557e3a','#3c5e30','#7a5636','#5a3e26',['#d8463a','#e8c440','#e05a3a','#c8c450'][v],['#f4a090','#fbeaa0','#f6b090','#eef0a0'][v]]}
+    else if(kind==='palm'){const ln=(v&1?1:-1)*(.1+(v>>1)*.06),cx=Math.round(8+ln*10),cy=5;
+      for(let y=cy+1;y<16;y++){const x=Math.round(8+ln*(15-y));set(x,y,(y&1)?5:6);if(y>13)set(x+(ln>0?-1:1),y,6)}
+      for(const [a,L,c] of [[-2.9,6,3],[-2.4,6,2],[-1.9,5,1],[-1.25,5,1],[-.75,6,2],[-.25,6,3],[-3.3,5,4],[.15,5,4]]){const ux=Math.cos(a),uy=Math.sin(a);
+        for(let t=1;t<=L;t++){const x=Math.round(cx+ux*t),y=Math.round(cy+uy*t+.13*t*t);set(x,y,t===L?4:c);if(t>1&&t<L)set(x,y+1,Math.min(4,c+1))}}
+      set(cx,cy,2);set(cx-1,cy+2,7);set(cx+1,cy+2,7);set(cx,cy+3,8);col=[null,'#b4d46a','#7eaa44','#557e34','#3c5c2a','#a07a4c','#6e5032','#b0642c','#7a4220']}
     else{for(let y=2;y<16;y++){const w=y<7?1.6+(7-y)*.45:y<10?1.2:1.2+(y-9)*.62;for(let x=1;x<15;x++){const d=x+.5-8;if(Math.abs(d)>w)continue;// (a stook: its sheaves splayed at the foot, tied, their ears fanned)
         let t=d<-w*.35?1:d<w*.35?2:3;if(((x+y*(d<0?1:-1))&3)===0)t=Math.min(4,t+1);if(y<7&&H(x,y,6)<.3)t=t===3?4:6;set(x,y,t)}}
       for(let x=6;x<11;x++)set(x,9,5);col=[null,'#f4dc84','#d8b25a','#a8823c','#8a6a30','#6a4a24','#fbeeb0']}
