@@ -131,7 +131,10 @@ function battleStep(rt,world){
     if(B.world&&!B.over){checkBattleOver();if(!B.over)B.world.step(dw)}
     // (RTS command: your hero fights on their own, as every unit does; the manual control is set aside for now)
     const was=new Map(B.units.map(u=>[u,[u.x,u.y]]));// (where each stood as the frame began: its motion, for the way round a rock or tree)
-    if(MANUAL_HERO)updateHero(rt*HERO_PACE);else if(B.hero)CharacterMind.of(B.hero).auto(rt*HERO_PACE);// (your hero on HERO_PACE in both kinds of battle, quicker than his men, the owner, 2026-11-18: "Give the hero the same speed boost on the map")
+    // (your hero on HERO_PACE, quicker than his men, in both kinds of battle (the owner, 2026-11-18: "Give the hero the same speed boost on
+    //  the map"), but marching with them in his group's formation, his place in it, on their clock ("for the marching in army he need to be at
+    //  the position": actors.js u.ranks, last step's)
+    const hp=B.hero&&B.hero.ranks?dt:rt*HERO_PACE;if(MANUAL_HERO)updateHero(hp);else if(B.hero)CharacterMind.of(B.hero).auto(hp);
     for(const id in B.groups)B.groups[id].step(dt);command(dt);CharacterMind.command(dt);// (every group minds itself, then the captains give their orders: battlecontrol.js, commander.js)// (your hero fights on their own, as every character does: charmind.js; the enemy's captain: commander.js)
     for(const u of B.units){if(u.hp<=0)continue;if(u.kx||u.ky){u.x+=u.kx*dt;u.y+=u.ky*dt;if(Math.abs(u.kx)+Math.abs(u.ky)>60&&Math.random()<.4)vfx({k:'dust',x:u.x,y:u.y-1,vx:-u.kx*.1,vy:-u.ky*.05,r:2,grow:8,life:.4,col:'196,180,140'});const k=Math.pow(.004,dt);u.kx*=k;u.ky*=k;if(Math.abs(u.kx)+Math.abs(u.ky)<2)u.kx=u.ky=0}if(u.buffT>0)u.buffT-=dt;if(u.wardT>0)u.wardT-=dt}
     for(const u of B.units){if(u.hp<=0)continue;if(u.slow>0)u.slow-=dt;if(u.hero&&gm('regen'))u.hp=Math.min(u.max,u.hp+gm('regen')*dt)}
