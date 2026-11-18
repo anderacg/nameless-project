@@ -107,12 +107,13 @@ const WORLD_FLORA={step:9,
    their tones; a bridge running north and south: its piers cutwaters out cut.out lab px past its sides, cut.half lab px half-wide;
    its ends run on past the water as drawn to dry ground (reach game px at most), its deck at the higher bank, a ramp falling to the
    lower at slope (fine px a fine px) over a stone abutment; where its river runs on a slant (within diag radians
-   of the diagonal), it is turned to cross it square, on the slant */
+   of the diagonal), it is turned to cross it square, on the slant; walked only inside its rails, walk game px in from each side (world/router.js
+   deckLane) */
 const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,fordBar:{band:3,warp:3,blend:.42,gravel:.42,riffle:.6,stone:.2,cell:5},meander:6,mouth:1.6,tarn:{lv:3,w:3.2},
   flow:{lane:1.5,gate:22,on:.55,speed:10,period:30,len:7,edge:.7,smooth:2.5}},
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,fade:36,biome:{mix:[.1,.3,.35,.22],patch:[.72,.56,.58,.6]},track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3,wall:5},
   bridge:{clear:1.4,ramp:28,over:6,abut:4,open:3,brook:{span:3,clear:.6,apart:24,ford:1.6},pile:12,arch:26,rail:5,post:8,shade:3,shadow:96,
-    flag:{w:6,h:4,mortar:.86,kerb:2,vary:.14},cut:{out:5,half:3},reach:16,slope:.4,diag:.45}};
+    flag:{w:6,h:4,mortar:.86,kerb:2,vary:.14},cut:{out:5,half:3},reach:28,slope:.4,diag:.45,walk:2}};
 // (prints: footprints, the lab's: one every step px a man walks (a foot's stride: left, then right), side px off his way, fading over
 // fade s, max kept; on snow, sand, the marsh, and ground within bank px of drawn water, in their colours, a print's rim rim of its
 // strength: worldterrain.js stepPrint; each a foot's shape (PRINT_FOOT), pointing the way he walks)

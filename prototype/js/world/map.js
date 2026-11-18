@@ -69,6 +69,8 @@ function ledgeOpen(m,B,holds){const W=m.w,H=m.h,N=W*H,FE=new Map(),D=[[1,0,1,4],
 // estate's track laid since); a diagonal step only with all four edges round its corner open, as route.js's; anything farther, or the
 // same tile, passes. ledgePass: a move from (x0, y0) to (x1, y1), px)
 function ledgeOk(i,j,m=WM){if(i===j)return true;const W=m.w,B=ledgeBits(m),ix=i%W,jx=j%W,dx=jx-ix,dy=(j-jx)/W-(i-ix)/W;if(dx>1||dx<-1||dy>1||dy<-1)return true;
+  {const Li=deckLane(i,m),Lj=deckLane(j,m);if(Li&&Lj?Li[5]!==Lj[5]:Li?j!==Li[5]&&j!==Li[6]:Lj&&i!==Lj[5]&&i!==Lj[6])return false}// (onto a bridge's deck and off it only at its two ends, never over its rails: router.js deckLane)
+ 
   const K=m.kind,g=a=>K[a]===T_ROAD||K[a]===T_FORD,e=(a,b)=>{const d=b-a;return !(B[a]&(d===1?1:d===W?2:d===-1?4:8))||g(a)&&g(b)};if(!dx||!dy)return e(i,j);const a=i+dx,b=i+dy*W;return e(i,a)&&e(a,j)&&e(i,b)&&e(b,j)}
 const ledgePass=(x0,y0,x1,y1)=>{const tx=Math.floor(x0/TILE),ty=Math.floor(y0/TILE),ux=Math.floor(x1/TILE),uy=Math.floor(y1/TILE);
   return tx===ux&&ty===uy||tx<0||ty<0||ux<0||uy<0||tx>=MW||ux>=MW||ty>=MH||uy>=MH||ledgeOk(ty*MW+tx,uy*MW+ux)};

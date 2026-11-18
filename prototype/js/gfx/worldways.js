@@ -123,7 +123,13 @@ function waysOf(P){if(P.ways)return P.ways;
   /* (the roads' dead ends: a segment's end no other segment of a road meets, and no bridge's deck: there the road fades into the land
      over WORLD_WAYS.road.fade game px (the owner: "at the end of the road should blend completely")) */
   const EN=[];{const deg=new Map(),kk=(x,y)=>Math.round(x*2)+','+Math.round(y*2);for(let k=0;k<nR;k++){const o=k*6;for(const e of [0,2]){const q=kk(RA[o+e],RA[o+e+1]);deg.set(q,(deg.get(q)||0)+1)}}
-    for(let k=0;k<nR;k++){const o=k*6;for(const e of [0,2]){const x=RA[o+e],y=RA[o+e+1];if(deg.get(kk(x,y))!==1)continue;if(BRG.some(b=>{const dx=x-b.mx,dy=y-b.my;return dx*dx+dy*dy<(b.L/2+10)*(b.L/2+10)}))continue;EN.push(x,y)}}}
+    // (an end that meets another road at a T, on its line not its corner, or a bridge's end as far as its deck may run on: joined, no fade
+    //  (the owner, 2026-11-18: "Why bridge not connect to the land?": the track off a bridge's end faded out where it met the road))
+    const cs=32,SG=new Map(),gk=(x,y)=>Math.floor(x/cs)*65536+Math.floor(y/cs);for(let k=0;k<nR;k++){const o=k*6;for(let gx=Math.floor(Math.min(RA[o],RA[o+2])/cs);gx<=Math.floor(Math.max(RA[o],RA[o+2])/cs);gx++)for(let gy=Math.floor(Math.min(RA[o+1],RA[o+3])/cs);gy<=Math.floor(Math.max(RA[o+1],RA[o+3])/cs);gy++){const q=gx*65536+gy;let L=SG.get(q);if(!L)SG.set(q,L=[]);L.push(k)}}
+    const run=new Int32Array(nR);for(let k=0;k<nR;k++)run[k]=k&&RL[k]>0?run[k-1]:k;
+    const meets=(k,x,y)=>{for(let gx=Math.floor((x-8)/cs);gx<=Math.floor((x+8)/cs);gx++)for(let gy=Math.floor((y-8)/cs);gy<=Math.floor((y+8)/cs);gy++)for(const j of SG.get(gx*65536+gy)||[]){if(run[j]===run[k])continue;
+      const o=j*6,ax=RA[o],ay=RA[o+1],dx=RA[o+2]-ax,dy=RA[o+3]-ay,l2=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/l2));if(Math.hypot(x-ax-dx*t,y-ay-dy*t)<RA[o+4])return true}return false};
+    for(let k=0;k<nR;k++){const o=k*6;for(const e of [0,2]){const x=RA[o+e],y=RA[o+e+1];if(deg.get(kk(x,y))!==1)continue;const R=WORLD_WAYS.bridge.reach+10;if(BRG.some(b=>{const dx=x-b.mx,dy=y-b.my;return dx*dx+dy*dy<(b.L/2+R)*(b.L/2+R)}))continue;if(meets(k,x,y))continue;EN.push(x,y)}}}
 
   return P.ways={bridges:BRG,fords:FO,ends:Float32Array.from(EN),RZ,RB,land,X:Float32Array.from(X),Y:Float32Array.from(Y),HW:Float32Array.from(HW),LV:Float32Array.from(LL),DP:Float32Array.from(DP),SP:Int32Array.from(SP),SA:Float32Array.from(SA),RA,RK,RL,mouth}}
 
@@ -190,11 +196,19 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
     const liftF=(fx,fy)=>Math.round(liftAt(fx/r,fy/r)*r),wetT=(fx,fy)=>{const tx=Math.floor(fx/r/TILE),ty=Math.floor(fy/r/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return 0;const i=ty*MW+tx;return tiles[i]===T_WATER||WM.river[i]&3?1:0},
       wetF=(fx,fy)=>typeof drawnWet==='function'&&drawnWet(fx/r,fy/r)?1:wetT(fx,fy);
     /* (its ends on the land (the owner, 2026-11-16: "Make sure bridge fully connect to the land"): each runs on past the water as it is
-       drawn under its middle to dry ground, and up a bank's face to its top, reach game px at most; its deck at its level or the higher bank's; to a lower
+       drawn under its middle to dry ground, and up a bank's face to its top (on to the first dry ground at its deck's level within reach),
+       reach game px at most; its deck at its level or the higher bank's; to a lower
        bank a ramp falls at slope (fine px a fine px), a stone abutment under it: never a step nor a gap at its end) */
-    const wetAt=s=>wetF(mx+ux*s,my+uy*s),upAt=s=>liftF(mx+ux*s,my+uy*s),runOn=sg=>{let e=0;while(e<BG.reach*r){const s1=sg*(hl+e+1);if(!(wetAt(s1)||wetAt(sg*(hl+e+3))||upAt(sg*(hl+e+4*k))>upAt(s1)+k))break;e++}return e};
+    const wetAt=s=>wetF(mx+ux*s,my+uy*s),upAt=s=>liftF(mx+ux*s,my+uy*s),D0=Math.round(b.dk*lh),
+      // (a bank's top at the deck's level within reach: the deck runs on to it, over the low shore or the water before it (the owner,
+      //  2026-11-18: "Why bridge not connect to the land?"), never ending on a strip of shore against the bank's face; its end already on
+      //  such ground: no further, never on over the water past a strip of land; none: as below)
+      top=sg=>{for(let e=-1;e<=BG.reach*r;e++){const s1=sg*(hl+e+1);if(!wetAt(s1)&&upAt(s1)>=D0-k)return Math.max(0,e)}return -1},
+      runOn=sg=>{const t0=top(sg);if(t0>=0)return t0;let e=0;while(e<BG.reach*r){const s1=sg*(hl+e+1);if(!(wetAt(s1)||wetAt(sg*(hl+e+3))||upAt(sg*(hl+e+4*k))>upAt(s1)+k))break;e++}return e};
     const eA=runOn(-1),eB=runOn(1),lA=Math.max(0,liftF(mx-ux*(hl+eA+2),my-uy*(hl+eA+2))),lB=Math.max(0,liftF(mx+ux*(hl+eB+2),my+uy*(hl+eB+2))),DL=Math.max(Math.round(b.dk*lh),lA,lB);
-    const rA=Math.ceil((DL-lA)/BG.slope),rB=Math.ceil((DL-lB)/BG.slope),lo=-(hl+eA+rA),hi=hl+eB+rB,LEN=hi-lo,sA=-(hl+eA)-lo,sB=hl+eB-lo,
+    // (each ramp falls at slope from the deck till it meets the land under it, never past it into a hollow with the land rising again)
+    const ramp=(sg,e0)=>{const n=Math.ceil(DL/BG.slope);for(let e=0;e<=n;e++)if(upAt(sg*(hl+e0+e))>=DL-e*BG.slope-k)return e;return n};
+    const rA=ramp(-1,eA),rB=ramp(1,eB),lo=-(hl+eA+rA),hi=hl+eB+rB,LEN=hi-lo,sA=-(hl+eA)-lo,sB=hl+eB-lo,
       H=t=>t<sA?DL-(sA-t)*BG.slope:t>sB?DL-(t-sB)*BG.slope:DL,HL=Math.max(-lo,hi);b.pr={lo,hi,sA,sB,DL,r};
     const ext=Math.abs(ux)*HL+Math.abs(nx)*hw+2,eyt=Math.abs(uy)*HL+Math.abs(ny)*hw+2,bx0=Math.floor(mx-ext),bx1=Math.ceil(mx+ext)+SH,by0=Math.floor(my-eyt),by1=Math.ceil(my+eyt);
     const py0=by0-DL-R-3,PW=bx1-bx0+1,PH=by1+SH+2-py0+1,img=new ImageData(PW,PH),O=img.data;

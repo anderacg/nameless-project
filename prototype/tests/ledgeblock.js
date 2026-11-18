@@ -12,9 +12,11 @@ Kit.suite(({ok,info})=>{
  info('the ledges: '+nb+' steps barred one way or both ('+(nb/(4*N)*100).toFixed(2)+'% of them; up '+L.up+' px, down '+L.down+' px; '+ms.toFixed(0)+' ms, made with the world)');
  ok(nb>0&&nb<.02*4*N,'some steps are barred, a small share ('+nb+')');
  // ---- roads, fords and bridges always pass
- {const X=new Set();for(const c of WM.crossings)for(const i of c.tiles)X.add(i);const gr=i=>K[i]===t.T_ROAD||K[i]===t.T_FORD;let bad=0;
-  for(let i=0;i<N;i++){if(X.has(i)&&B[i])bad++;const x=i%MW;if(x+1<MW&&gr(i)&&gr(i+1)&&(!t.ledgeOk(i,i+1)||!t.ledgeOk(i+1,i)))bad++;if(i+MW<N&&gr(i)&&gr(i+MW)&&(!t.ledgeOk(i,i+MW)||!t.ledgeOk(i+MW,i)))bad++}
-  ok(!bad,'no step barred along a road or a ford, nor on a crossing ('+bad+')')}
+ {const X=new Set();for(const c of WM.crossings)for(const i of c.tiles)X.add(i);const gr=i=>K[i]===t.T_ROAD||K[i]===t.T_FORD;let bad=0,rail=0;
+  // (but over a bridge deck's rails: onto a deck and off it only at its ends, router.js deckLane, map.js ledgeOk)
+  const side=(a,b)=>{const A=t.deckLane(a),D=t.deckLane(b);return A&&D?A[5]!==D[5]:A?b!==A[5]&&b!==A[6]:D?a!==D[5]&&a!==D[6]:false},step=(a,b)=>{if(side(a,b)){rail++;return}if(!t.ledgeOk(a,b)||!t.ledgeOk(b,a))bad++};
+  for(let i=0;i<N;i++){if(X.has(i)&&B[i])bad++;const x=i%MW;if(x+1<MW&&gr(i)&&gr(i+1))step(i,i+1);if(i+MW<N&&gr(i)&&gr(i+MW))step(i,i+MW)}
+  ok(!bad,'no step barred along a road or a ford, nor on a crossing ('+bad+'; '+rail+' over a deck\'s rails, barred on purpose)')}
  // ---- every holding and place reached from the first holding and back (4 ways over the ledges, a ferry's ends joined)
  {const D=[[1,0,1,4],[0,1,2,8],[-1,0,4,1],[0,-1,8,2]],FE=new Map();for(const c of WM.crossings)if(c.kind==='ferry'){FE.set(c.i,(FE.get(c.i)||[]).concat(c.j));FE.set(c.j,(FE.get(c.j)||[]).concat(c.i))}
   const flood=(s,back,bl)=>{const seen=new Uint8Array(N),q=[s];seen[s]=1;for(let h=0;h<q.length;h++){const i=q[h],x=i%MW,y=(i-x)/MW;

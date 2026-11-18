@@ -211,6 +211,23 @@ const BRIDGE_SIDE=new WeakMap();
 function bridgeSide(k,m=WM){let S=BRIDGE_SIDE.get(m);if(!S){const W=m.w,H=m.h,K=m.kind;S=new Uint8Array(W*H);const X=new Set();for(const c of m.crossings)for(const i of c.tiles)X.add(i);
     for(const c of m.crossings){if(c.kind!=='bridge')continue;for(const i of [c.i,c.j,...c.tiles]){const x=i%W,y=(i-x)/W;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b,j=v*W+u;if(u>=0&&v>=0&&u<W&&v<H&&K[j]===T_WATER&&!X.has(j))S[j]=1}}}
     BRIDGE_SIDE.set(m,S)}return S[k]===1}
+/* (a bridge's deck walked only inside its rails (the owner, 2026-11-18: "make sure that the units avoid bridge edge/beam because it's not
+   passable"): on its tiles (and its two end tiles) the line from end to end, and how far off it one may stand, its deck's half-width less
+   WORLD_WAYS.bridge.walk game px each side (its rails or parapets and a body's room), never so narrow its tile's middle (where a
+   route steps) lies outside it; a tile for each map: [ex, ey, ax, ay, its middle's distance off the line + 1, its two end tiles].
+   deckKeep(x, y): the point moved back inside, or null where it already is (or on no bridge); deckOut(x, y): off its lane) */
+const DECK_LANE=new WeakMap();
+function deckLane(k,m=WM){let D=DECK_LANE.get(m);if(!D){D=new Map();const W=m.w;
+    for(const c of m.crossings){if(c.kind!=='bridge')continue;const ex=((c.i%W)+.5)*TILE,ey=(((c.i/W)|0)+.5)*TILE,fx=((c.j%W)+.5)*TILE,fy=(((c.j/W)|0)+.5)*TILE,l=Math.hypot(fx-ex,fy-ey)||1,ax=(fx-ex)/l,ay=(fy-ey)/l;
+      for(const i of c.tiles){const cx=((i%W)+.5)*TILE,cy=(((i/W)|0)+.5)*TILE;D.set(i,[ex,ey,ax,ay,Math.abs((cy-ey)*ax-(cx-ex)*ay)+1,c.i,c.j])}}
+    DECK_LANE.set(m,D)}return D.get(k)}
+const DECK_AT=[0,0],deckHalf=()=>Math.max(1,(WORLD_WAYS.road.hw[1]-1)*WAY_LP-WORLD_WAYS.bridge.walk);// (WAY_LP: gfx/worldways.js, read when a walker asks, never while the world is made)
+function deckKeep(x,y){const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return null;const L=deckLane(ty*MW+tx);if(!L)return null;
+  const [ex,ey,ax,ay,c0]=L,h=Math.max(deckHalf(),c0),q=(y-ey)*ax-(x-ex)*ay;if(Math.abs(q)<=h)return null;
+  // (its rails on both sides, by the water, the bank or another bridge's deck beside it: map.js ledgeOk lets a route onto a deck and
+  //  off it only at its two ends)
+  const d=q-Math.sign(q)*h;DECK_AT[0]=x+ay*d;DECK_AT[1]=y-ax*d;return DECK_AT}
+const deckOut=(x,y)=>!!deckKeep(x,y);
 const wayOpen=i=>walkTile(i)&&!(SHUT&&SHUT[i]);
 // (open but for a holding's walls: the map's march grids, which shut the walls by their footings: march.js MarchGround)
 const wayLand=i=>walkTile(i)&&!(SHUT&&SHUT[i]&5);// (a town's ring of walls shut to them too: world/townwalls.js)
