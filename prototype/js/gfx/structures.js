@@ -413,7 +413,17 @@ function siteYard(m,r){const N=m.cell,c=mkc(N,N,g=>{g.drawImage(m.ground,0,0);if
   for(let y=N-1;y>=0;y--)for(let x=N-1;x>=0;x--){const i=y*N+x;if(D[i])D[i]=Math.min(D[i],at(x+1,y)+1,at(x,y+1)+1,at(x+1,y+1)+1.41,at(x-1,y+1)+1.41)}
   for(let i=0;i<N*N;i++){if(!A[i*4+3]||D[i]>=F)continue;const f=D[i]/F+(hash(i%N,(i/N)|0,977)-.5)*SITE_YARD.grain;if(hash(i%N,(i/N)|0,978)>f)A[i*4+3]=0}
   g.putImageData(d,0,0);return c}
-function siteCanvas(m,ax,ay,mk,deco){const N=m.cell,cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0);if(deco)deco(g,N)});cv.ax=ax;cv.ay=ay;cv.sh=m.shadow;cv.mk=mk;cv.deco=deco;
+/* (a site's shadow as the buildings' fall (the models' light, engine/model.js: a px of height sun[0] px right, sun[1] down): each
+   opaque px of its picture its height over its column's foot, laid on the ground along the light, off the picture, on a canvas
+   with room for it; with the model's own. A site's model fills its cell, so the model's shadow, kept within the cell, was all but
+   none (a ruin's 11 px, a camp's 2, a shrine's 0, a house's 44): the sites stood flat beside the buildings (the owner, 2026-11-17:
+   "the sites is not in the same level as building?"). A cave keeps its model's: it is cut into its hill) */
+const SITE_SHADOW={sun:[.6,.15],room:[14,6]};
+function siteCast(cv,own){const N=cv.width,H=cv.height,S=SITE_SHADOW,W=N+S.room[0],Hh=H+S.room[1],a=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,N,H).data,o=new Uint8ClampedArray(W*Hh*4),op=(x,y)=>a[(y*N+x)*4+3]>0;
+  for(let x=0;x<N;x++){let f=-1;for(let y=H-1;y>=0;y--)if(op(x,y)){f=y;break}if(f<0)continue;
+    for(let y=0;y<=f;y++){if(!op(x,y))continue;const z=f-y,X=Math.round(x+z*S.sun[0]),Y=Math.round(f+z*S.sun[1]);for(const [u,v] of [[X,Y],[X+1,Y]]){if(u>=W||v>=Hh||u<N&&v<H&&op(u,v))continue;const i=(v*W+u)*4;o[i]=20;o[i+1]=24;o[i+2]=12;o[i+3]=255}}}
+  return mkc(W,Hh,g=>{g.putImageData(new ImageData(o,W,Hh),0,0);if(own){g.globalCompositeOperation='destination-over';g.drawImage(own,0,0);g.globalCompositeOperation='source-over'}})}
+function siteCanvas(m,ax,ay,mk,deco){const N=m.cell,cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0);if(deco)deco(g,N)});cv.ax=ax;cv.ay=ay;cv.sh=siteCast(cv,m.shadow);cv.mk=mk;cv.deco=deco;
   cv.gr=siteYard(m,1);
   cv.fire=m.marks&&m.marks.fire||null;cv.flag=m.flag||(cv.fire&&[cv.fire[0]+7,cv.fire[1]+1]);return cv}
 // a camp of kind (bandit, hideout, travelers) and seed i, in climate c (the grass unless said)
@@ -441,5 +451,5 @@ function siteSprite(s){s=siteOf(s);// (plain data too)
   const big=s.type==='ruins'||s.type==='cave',bad=(x,y)=>tAt(x,y)===T_ROAD||occAt(x,y)>0?1:0,B=big?bad(s.tx,s.ty-1):0,
     R=big?bad(s.tx+1,s.ty)+bad(s.tx+1,s.ty-1)+B:0,L=big?bad(s.tx-1,s.ty)+bad(s.tx-1,s.ty-1)+B:0,side=!big||!(R+L-B)?0:L<R?-1:1;
   const k='site'+s.type+s.seed+c+side;if(spr[k])return spr[k];
-  const mk=d=>PX.buildingModel({type:s.type,seed:s.seed,env:c,snow:c==='frost'?1:0,glow:c==='desert'?'#e8c040':'#7fd8e8',detail:d}),m=mk(1);
-  return spr[k]=siteCanvas(m,side>0?TILE/2:side<0?m.cell-TILE/2:m.cell/2,m.cell+(s.mouth?8+CAVE_MOUTH:0),mk)}
+  const mk=d=>PX.buildingModel({type:s.type,seed:s.seed,env:c,snow:c==='frost'?1:0,glow:c==='desert'?'#e8c040':'#7fd8e8',detail:d}),m=mk(1),cv=siteCanvas(m,side>0?TILE/2:side<0?m.cell-TILE/2:m.cell/2,m.cell+(s.mouth?8+CAVE_MOUTH:0),mk);
+  if(s.type==='cave')cv.sh=m.shadow;return spr[k]=cv}

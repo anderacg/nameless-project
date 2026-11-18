@@ -38,7 +38,7 @@ class Encampment extends Site{
   // on the world"); no world: the base)
   static count(i,m){const K=ENCAMP_KINDS[i];return m?Math.max(1,Math.round(K.count*Math.pow(worldMeasures(m).land,ENCAMP.count.pow))):K.count}
   // (a world's camps, kind by kind; a kind whose ground the world lacks (no desert) has none)
-  static genAll(sites){ENCAMP_KINDS.forEach((K,i)=>{for(let n=Encampment.count(i,WM);n>0;n--){const p=siteSpot('travelers',sites,9,Encampment.spec(i));if(p)sites.push(makeSite('travelers',p[0],p[1],sites,{kind:i}))}})}
+  static genAll(sites){ENCAMP_KINDS.forEach((K,i)=>{for(let n=Encampment.count(i,WM);n>0;n--){const p=siteSpot('travelers',sites,SITE_SPACE.gap,Encampment.spec(i));if(p)sites.push(makeSite('travelers',p[0],p[1],sites,{kind:i}))}})}
   get TR(){return ENCAMP_KINDS[this.kind]||ENCAMP_KINDS[0]}
   // (their people: the kind's, or those of the land it stands in (pilgrims, minstrels, refugees: race, set when made))
   get folkRace(){return this.TR.race||this.race||'human'}
@@ -62,7 +62,7 @@ class Encampment extends Site{
   // (a seasonal or wandering camp moves on at its time, unseen (in your sight, it waits): the same people, to their kind's ground
   // elsewhere, new wares)
   day(){super.day();if(this.until==null||G.day<this.until||G.site===this||yourSight().sees(this.x,this.y,1.3))return;
-    const p=siteSpot('travelers',W.sites.filter(o=>o!==this),9,Encampment.spec(this.kind));if(p){this.tx=p[0];this.ty=p[1];this.placed()}
+    const p=siteSpot('travelers',W.sites.filter(o=>o!==this),SITE_SPACE.gap,Encampment.spec(this.kind));if(p){this.tx=p[0];this.ty=p[1];this.placed()}
     this.seen=false;this.stockUp();CampFolk.forget(this);if(G.lastSite===this)G.lastSite=null}
   // (its flag: a travelling band's pennant in its colour, its people's device (figures.js SHIELD_ART))
   flag(){return{k:'pennant',col:this.TR.col,dev:SHIELD_ART.dev[this.folkRace]||null}}

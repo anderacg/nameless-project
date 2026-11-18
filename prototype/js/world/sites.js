@@ -139,8 +139,8 @@ class Site extends WorldObject{
   inView(V){return this.known()}
   draw(ents,cam,V){if(!this.inView(V))return;const s=this;
     // (at WORLD_VIEW.house, as the holdings' buildings: its picture k of its size about its point, at its own size made finer (drawFine);
-    //  its fire and flag at their own)
-    const sp0=siteSprite(s),k=siteK(s);ents.push({st:true,x:s.x,y:s.y,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(s.x-cam.x-sp0.ax*k),Math.round(s.y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=siteSprite(s),X=Math.round(s.x-cam.x-sp.ax*k),Y=Math.round(s.y-cam.y+8-sp.ay*k);
+    //  its fire and flag at their own; lifted by the land at its foot, as a building is at its front (ly), a cave at its mouth)
+    const sp0=siteSprite(s),k=siteK(s);ents.push({st:true,x:s.x,y:s.y,ly:s.type==='cave'?s.y:s.y+7,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(s.x-cam.x-sp0.ax*k),Math.round(s.y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=siteSprite(s),X=Math.round(s.x-cam.x-sp.ax*k),Y=Math.round(s.y-cam.y+8-sp.ay*k);
       if(sp.gr)ctx.drawImage(sp._fg&&sp._fr===sceneRes()*Math.round(k)?sp._fg:sp.gr,X,Y,sp.gr.width*k,sp.gr.height*k);// (its yard made finer with it: structures.js buildFine)
 if(s.cleared)ctx.globalAlpha=.5;drawFine(sp,X,Y,k);if(!s.cleared)depthPic(scaledPic(sp,k),X,Y);if(sp.fire&&!s.cleared)drawFire(X+sp.fire[0]*k,Y+sp.fire[1]*k,s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),X+sp.flag[0]*k,Y+sp.flag[1]*k,s.seed);ctx.globalAlpha=1;}})}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
@@ -470,6 +470,9 @@ const HIDEOUT_BAND={den:{size0:8,foes:[7,9],chief:[2,5],gold:1.5,gear:.4},ruin:{
 // (hills or peaks within HIDEOUT_LAIR.r tiles of a tile, HIDEOUT_LAIR.hills of them at least: a lair's mouth a cave in the hillside)
 function hillyAt(tx,ty){let n=0;const r=HIDEOUT_LAIR.r;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const k=tAt(tx+i,ty+j);if(k===T_HILL||k===T_MOUNT)n++}return n>=HIDEOUT_LAIR.hills}
 class Hideout extends Lair{
+  // (wild ground first (wildGround), for half of siteSpot's tries: its pick's best of a few draws, once the gaps to the other sites
+  // took it, fell back to plain clear ground, so barely more than half stood in the wilds)
+  static wildFirst=true;
   static ground(tx,ty){return wildLand().at[ty*MW+tx]===1}
   static clear(tx,ty){return campClear('hideout',tx,ty)}
   static fits(tx,ty){return !estateNear(tx,ty,BANDIT_GAP)}
@@ -559,18 +562,22 @@ const nightCamps=()=>W.sites.filter(s=>s instanceof BanditCamp||s instanceof Gob
 // traders' fire beside a bandits' den; a bandit camp stands on its spot first, a hideout keeps the gap to the travellers before it);
 // a hideout far from another and from the bandit camps (the owner, 2026-10-23: deep in the wilds, each its own stretch of them)
 const SITE_GAP={travelers:{travelers:ENCAMP.gap,camp:16,hideout:16},hideout:{travelers:16,camp:16,hideout:20},goblins:{travelers:16,camp:16,hideout:16,goblins:20}};
-const siteGap=(a,b)=>SITE_GAP[a]&&SITE_GAP[a][b]||0;
+// (either way round: a kind placed first (SITE_SPACE.first) keeps its gap from those after it)
+const siteGap=(a,b)=>Math.max(SITE_GAP[a]&&SITE_GAP[a][b]||0,SITE_GAP[b]&&SITE_GAP[b][a]||0);
 // a free tile for a site of this kind: reachable from the roads, on its ground, its kind's tiles from every holding (C.away, else
-// data/world.js SITE_AWAY), clear of other sites (the camps among
-// them; SITE_GAP's kinds farther); each try a tile its kind picks (Site pick)
+// data/world.js SITE_AWAY) and SITE_SPACE.lots from any holding's lots, clear of other sites by gap (the camps among
+// them; SITE_GAP's kinds farther; past half its tries SITE_SPACE.relax of gap); each try a tile its kind picks (Site pick)
 let ROAD_TILES=null;onWorld(()=>{ROAD_TILES=null});
+// (a holding's lot within r tiles of a tile: occAt above 0, its estates, fields and walls)
+function nearLot(tx,ty,r){for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(i*i+j*j<=r*r&&occAt(tx+i,ty+j)>0)return true;return false}
 function siteSpot(type,sites,gap,C=SITE_CLASS[type]){
   const from=startHolding();
   for(let k=0;k<5000;k++){
-    const g=k<2500?gap:gap*.6,[tx,ty]=C.pick(),fy=C.reachRow(ty);// where parties reach it
+    const g=k<2500?gap:gap*SITE_SPACE.relax,[tx,ty]=C.pick(),fy=C.reachRow(ty);// where parties reach it
     if(tx<3||ty<3||tx>MW-4||ty>MH-4)continue;
     if(!passable(tAt(tx,fy))||!Router.reach(from,{x:(tx+.5)*TILE,y:(fy+.5)*TILE})||!C.ground(tx,ty)||!C.clear(tx,ty)||!C.fits(tx,ty))continue;
-    if(TOWNS.some(t=>Math.hypot(t.tx-tx,t.ty-ty)<(C.away||SITE_AWAY[type]||SITE_AWAY.any))||sites.some(s=>Math.hypot(s.tx-tx,s.ty-ty)<Math.max(g,siteGap(type,s.type))))continue;
+    if(k<2500&&Object.hasOwn(C,'wildFirst')&&!wildGround(tx,ty))continue;// (a hideout on wild ground while one is to be had: Hideout.wildFirst)
+    if(TOWNS.some(t=>Math.hypot(t.tx-tx,t.ty-ty)<(C.away||SITE_AWAY[type]||SITE_AWAY.any))||nearLot(tx,ty,SITE_SPACE.lots)||sites.some(s=>Math.hypot(s.tx-tx,s.ty-ty)<Math.max(g,siteGap(type,s.type))))continue;
     return[tx,ty];
   }
   return null;
@@ -587,9 +594,10 @@ function makeSite(type,tx,ty,sites,more){
 // a world's sites: a camp on each of its camp spots, then of each other kind as many as the world holds (density(WM), data/world.js)
 function genSites(){
   const sites=[],N=density(WM).sites;for(const c of CAMP_SPOTS)sites.push(makeSite('camp',c.tx,c.ty,sites));
-  // (a kind with a switch (on) only while it is on; one with its own stream (stream: core/rng.js) placed from it)
-  for(const type of Object.keys(SITE_TYPES)){const T=SITE_TYPES[type];if(T.spots||T.on&&!T.on())continue;if(T.place){T.place(sites);continue}
-    const place=()=>{for(let n=0;n<(N[type]||0);n++){const p=siteSpot(type,sites,9);if(p)sites.push(makeSite(type,p[0],p[1],sites))}};if(T.stream)Rng.use(T.stream,place);else place()}
+  // (SITE_SPACE.first's kinds first; a kind with a switch (on) only while it is on; one with its own stream (stream: core/rng.js) placed from it)
+  const F=SITE_SPACE.first.filter(k=>k in SITE_TYPES);
+  for(const type of F.concat(Object.keys(SITE_TYPES).filter(k=>!F.includes(k)))){const T=SITE_TYPES[type];if(T.spots||T.on&&!T.on())continue;if(T.place){T.place(sites);continue}
+    const place=()=>{for(let n=0;n<(N[type]||0);n++){const p=siteSpot(type,sites,SITE_SPACE.own[type]??SITE_SPACE.gap);if(p)sites.push(makeSite(type,p[0],p[1],sites))}};if(T.stream)Rng.use(T.stream,place);else place()}
   return sites;
 }
 

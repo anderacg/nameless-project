@@ -241,7 +241,15 @@ const DISCOVER={on:true,r:1,site:3,start:10,scout:6,show:4.2,core:['centre','hou
 // how far (tiles) a site of a kind stands from every holding (world/sites.js siteSpot; the owner, 2026-11-14: "camps are not too close
 // to the holding. Caves, monster lair should be more far away as well"): any (were all 6), caves 20, camps where people live 14 (a kind
 // may set its own: data/encampments.js away)
-const SITE_AWAY={any:6,cave:20,travelers:14};
+const SITE_AWAY={any:12,cave:20,travelers:14};
+// how far a site stands from the others and from a holding's lots (world/sites.js siteSpot; the owner, 2026-11-17: "sites such as stone
+// pillar, abandon places, are too close to each other and even too close to the holding"): gap tiles from every other site (was 9;
+// past half its tries relax of it), lots tiles from any holding's lots, its fields, farms and works too (none before: only SITE_AWAY
+// from its middle, a ruin 2 tiles from a town's farms); SITE_AWAY.any 12 (was 6); own: a kind's own gap (the outlaws', deep in the
+// wilds and kept from each other by their own SITE_GAP: the wider gap only cost them their wild spots; the places drawn after them keep
+// theirs from them); first: kinds placed ahead of the others (the goblins' warrens want the wild land's few tiles among hills, which
+// the hideouts, on wild ground first, took before them)
+const SITE_SPACE={gap:14,relax:.6,lots:8,own:{hideout:9,goblins:9},first:['goblins']};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}},
