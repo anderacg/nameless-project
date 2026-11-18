@@ -407,7 +407,7 @@ class MobileBattleHud{
     this.screen=$('#screen');this.enabled=false;this.nodes=[];
     this.root=document.createElement('div');this.root.className='mobile-battle-hud';this.root.hidden=true;
     const drawer=(id,title,body)=>'<section id="'+id+'" class="mbh-drawer" aria-label="'+title+'" hidden><header><strong>'+title+'</strong><button type="button" class="mbh-close" aria-label="Close '+title+'">×</button></header>'+body+'</section>';
-    this.root.innerHTML='<div data-bplace="status"></div><div data-bplace="cards"></div><nav class="mbh-dock" aria-label="Battle controls"><div data-bplace="pause"></div><button type="button" id="battleSpeedToggle" aria-expanded="false" aria-controls="battleSpeedChoices">1× ▴</button><button type="button" id="battleOrdersToggle" aria-expanded="false" aria-controls="battleOrderChoices">Orders ▴</button><button type="button" id="battleMoreToggle" aria-expanded="false" aria-controls="battleMoreChoices">More ▴</button><div data-bplace="menu"></div></nav>'+
+    this.root.innerHTML='<div data-bplace="status"></div><div data-bplace="cards"></div><div class="mbh-action" data-bplace="action"></div><nav class="mbh-dock" aria-label="Battle controls"><div data-bplace="pause"></div><button type="button" id="battleSpeedToggle" aria-expanded="false" aria-controls="battleSpeedChoices">1× ▴</button><button type="button" id="battleOrdersToggle" aria-expanded="false" aria-controls="battleOrderChoices">Orders ▴</button><button type="button" id="battleMoreToggle" aria-expanded="false" aria-controls="battleMoreChoices">More ▴</button><div data-bplace="menu"></div></nav>'+
       drawer('battleSpeedChoices','Battle speed','<div class="mbh-speed-grid" data-bplace="speed"></div>')+
       drawer('battleOrderChoices','Orders & formations','<p class="mbh-help">Unit abilities affect selected troop groups. Commander abilities affect friendly groups near your hero.</p><div data-bplace="orders"></div><div data-bplace="powers"></div>')+
       drawer('battleMoreChoices','Battle view','<div class="mbh-options" data-bplace="options"><button type="button" data-bview="out">Zoom −</button><button type="button" data-bview="in">Zoom +</button><button type="button" data-bview="reset">Reset view</button></div><div data-bplace="info"></div>');
@@ -433,7 +433,8 @@ class MobileBattleHud{
       }else{for(const n of this.nodes){n.home.after(n.el);n.home.remove()}this.nodes=[]}
       this.measure();
     }
-    if(enabled){this.move($('#huntEnd'),'options');this.move($('#bCmd'),'powers');if(this.battle!==B){this.battle=B;this.update()}}
+    if(enabled){this.move($('#huntEnd'),'action');// (End hunt an action button over the dock, always in reach in a hunt: the owner, 2026-11-18)
+      this.move($('#bCmd'),'powers');if(this.battle!==B){this.battle=B;this.update()}}
   }
   close(){const was=this.panels.some(p=>!p.panel.hidden);for(const p of this.panels){p.panel.hidden=true;p.button.setAttribute('aria-expanded','false')}return was}
   measure(){if(this.enabled){const height=this.root.getBoundingClientRect().height;if(height>0)this.screen.style.setProperty('--mobile-battle-height',height+'px')}}
