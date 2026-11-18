@@ -37,7 +37,8 @@ Kit.suite(({ok,info})=>{
   window.bannerAt=function(o){if(o===P)asked++;return ba.apply(this,arguments)};window.drawStealthEye=function(...a){eyes.push(a);return eye.apply(this,a)};
   t.prefSet('dev',true);// (the pace badge: dev mode only, render.js drawTravelPace)
   try{t.tiles[i]=t.T_FOREST;P.tx=P.x+80;P.ty=P.y;t.drawWorld();eyes=[];const cam=G.cam,cover=t.drawTravelConcealment(cam),pace=t.drawTravelPace(cam);t.drawTravelDetection(cam);
-   const a=t.marchPicked(P),u=a&&a.carrier,T1=u&&{x:t.snapV(u.x)-cam.x,y:t.snapV(u.y)+a.figure(u)[1]-cam.y},me=eyes[eyes.length-1],k=t.dprOf()/t.VS,w=t.STEALTH_EYE.player*k,h=w*2/3;
+   const a=t.marchPicked(P),u=a&&a.carrier,T1=u&&{x:t.snapV(u.x)-cam.x,y:t.snapV(u.y)+a.figure(u)[1]-t.liftAt(u.x,u.y)-cam.y},// (his head as drawn: up by his ground's lift, worldterrain.js liftY)
+   me=eyes[eyes.length-1],k=t.dprOf()/t.VS,w=t.STEALTH_EYE.player*k,h=w*2/3;
    ok(cover&&pace&&u&&/hero/.test(u.type),'in a wood, on the move: the cover and pace badges drawn ('+(u?u.type:'no hero')+' carries the army)');
    ok(me&&Math.abs(me[2]+w/2-T1.x)<.01&&me[3]+h<=T1.y+.01,'the eye watching you: centred over your hero\'s head ('+(me?me[2].toFixed(1)+','+me[3].toFixed(1):'none')+'; his head '+T1.x.toFixed(1)+','+T1.y.toFixed(1)+')');
    ok(cover.x>=me[2]+w-.01&&pace.x>=cover.x+cover.w-.01&&cover.y===pace.y&&cover.y+cover.h<=T1.y+.01,'the badges in a row right of it, the cover then the pace, over your head too ('+[cover,pace].map(r=>r.x.toFixed(1)+','+r.y.toFixed(1)).join(' / ')+')');

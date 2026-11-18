@@ -140,12 +140,17 @@ function* waysBand(A,x0,y0,w,h,sc,reach){const S=new Float32Array(w*h).fill(1e9)
   return {S,Q,T}}
 
 // a river's water (the lab's underWater with its river's colours): d its depth (levels), its bed of pebbles showing in the shallows,
-// light caught there; a ford's stones; the frost's edges frozen (q: how far out from the middle, 0-1)
+// light caught there; a ford's gravel bar (ford: how much of one, 0-1: its bed's gravel showing, riffles running white where it meets
+// the deeper water, stepping stones down its middle; WORLD_WAYS.river.fordBar); the frost's edges frozen (q: how far out from the middle, 0-1)
 function wayWater(Q,cl,fx,fy,d,q,ford,fa,fc,fe){const S=Q.river;
   if(cl==='frost'&&q>.62+(wnoise2(fx/14,fy/14,511)-.5)*.5){let c=tpick(Q.ice,fx,fy,512);if(Math.abs(wnoise2(fx/10,fy/10,513)-.5)<.02)c=tmul(c,.86);return c}
   let c=d<.4?tmix(S[0],S[1],d/.4):d<1?tmix(S[1],S[2],(d-.4)/.6):tmix(S[2],S[3],Math.min(1,d-1));
-  const a=Math.pow(Math.max(0,1-d/.55),1.4);c=tmix(c,Q.pebble[Math.floor(hs(fx>>1,fy>>1,514)*4)],a*.8);if(a>.15&&wnoise2(fx/3,fy/3,515)>.74)c=tmix(c,[232,246,246],.22*a);
-  if(ford&&hs(fx>>1,fy>>1,516)<.12)c=WAY_COL.stone[hs(fx,fy,517)<.5?0:1];else if(d<.6&&hs(fx,fy,518)<.004)c=WAY_COL.stone[1];
+  const a=Math.pow(Math.max(0,1-d/.55),1.4)*(ford>0?1-.75*ford:1);c=tmix(c,Q.pebble[Math.floor(hs(fx>>1,fy>>1,514)*4)],a*.8);// (over a ford's bar its own fine gravel instead)if(a>.15&&wnoise2(fx/3,fy/3,515)>.74)c=tmix(c,[232,246,246],.22*a);
+  if(ford>0){const B=WORLD_WAYS.river.fordBar,g=tmix(WAY_COL.gravel[Math.floor(hs(fx,fy,516)*3)],S[1],.35);c=tmix(c,g,ford*B.gravel*(.55+.9*wnoise2(fx/3.5,fy/3.5,520)));
+    if(ford>.12&&ford<.75&&wnoise2((fa??fx)/5,(fc??fy)/1.4,521)>B.riffle)c=tmix(c,WAY_COL.foam,.62*(1-Math.abs(ford-.42)/.34));
+    if(ford>.55){const C=B.cell,cx=Math.floor(fx/C),cy=Math.floor(fy/C);if(hs(cx,cy,522)<B.stone){const sx=(cx+.25+hs(cx,cy,523)*.5)*C,sy=(cy+.25+hs(cx,cy,524)*.5)*C,dx=fx+.5-sx,dy=fy+.5-sy,R=1.2+hs(cx,cy,525)*.9;
+      if(dx*dx+dy*dy<R*R)c=WAY_COL.stone[dx+dy<-.4?0:dx+dy>.8?2:1];else if(dy>0&&dy<R+1&&dx*dx+(dy-1)*(dy-1)<R*R)c=tmul(c,.82)}}}
+  else if(d<.6&&hs(fx,fy,518)<.004)c=WAY_COL.stone[1];
   // (a ripple now and then along the current, lighter (fa, fc: how far along its line and across it, fe how far out of its main
   //  stream, fewer farther out; none given: along the screen's rows)
   if(d>.3&&(fa===undefined?wnoise2(fx/9,fy/2.5,519)>.8:wnoise2(fa/9,fc/2.5,519)>.8+.08*Math.min(1.5,fe)))c=tmix(c,Q.fall[1],fe>1?.14:.22);

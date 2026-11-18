@@ -10,7 +10,8 @@ Kit.suite(({ok})=>{
    Object.defineProperty(window,'devicePixelRatio',{configurable:true,value:density});window.eval('VS='+zoom+';BANNERQ=[]');herd.n=n;const cam={x:Math.floor(P.x-60),y:Math.floor(P.y-80)},ents=[];herd.draw(ents,cam,t.vis());ents.forEach(e=>e.f());
    // (the canvas's density at most RENDER.cap since 60c5ebe: a density of 3 is drawn at 2, dprOf)
    const dpr=Math.min(density,t.RENDER.cap),queued=t.BANNERQ.find(q=>q.o===herd&&q.marker);calls=[];t.drawTravelDetection(cam);const eye=calls[0],marker=t.bandMarkerAt(herd,queued.marker,cam),pic=t.mapTxtPic(String(n),queued.marker.col,'center',zoom,dpr),labelRight=marker.x+4+(pic.width-pic.ox)/zoom,actualX=Math.round(eye[2]*zoom)/zoom;
-   ok(calls.length===2&&actualX>=Math.max(marker.x+marker.s.width,labelRight)+t.STEALTH_EYE.gap*dpr/zoom-1/zoom&&eye[3]===marker.y&&eye[4]===18,'wildlife eye clears the group icon and count '+n+' at density '+density+', zoom '+zoom);
+   ok(calls.length===2&&actualX>=Math.max(marker.x+marker.s.width,labelRight)+t.STEALTH_EYE.gap*dpr/zoom-1/zoom&&eye[3]===marker.y-t.liftAt(herd.x,herd.y)&&eye[4]===18,// (the marker drawn up by its ground's lift, drawBanners; the eye beside it the same)
+   'wildlife eye clears the group icon and count '+n+' at density '+density+', zoom '+zoom);
    t.drawBanners(cam);
   }
  }finally{window.drawStealthEye=draw;window.eval('VS='+scale+';BANNERQ=[]');if(dpr)Object.defineProperty(window,'devicePixelRatio',dpr);else delete window.devicePixelRatio;t.fitScreen()}

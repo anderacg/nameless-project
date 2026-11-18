@@ -1055,6 +1055,9 @@ class MarchArmy{
     if(marchCentrePiece(o)){const s=o.dir<0?-1:1;for(const c of MARCH_CART){const d=Math.hypot(o.x+s*c[0]-x,o.y-y)-c[1]/2;if(d<v)v=d}}return Math.max(0,v)}
   // (the box round its men's figures as drawn, world px x0, y0, x1, y1: the pointer's brackets round it, worldui.js wuiBox; made
   // again when they have moved)
+  // (where a man of it is drawn, game px: his x across his figure's middle, his foot up by its ground's lift (worldterrain.js liftY),
+  // his figure's middle and top (figure): what is drawn on him after the scene, centred on him as he stands, gfx/blessing.js)
+  body(u){const F=this.figure(u),fl=Math.cos(u.dir??this.face)<0,mx=(F[0]+F[2])/2,f=liftY(u.x,u.y);return{x:u.x+(fl?-mx:mx),foot:f,mid:f+(F[1]+F[3])/2,top:f+F[1]}}
   figBox(){const b=this.fbx||(this.fbx=[0,0,0,0]);if(this.fbT===this.time&&this.fbU===this.units&&this.fbX===this.x&&this.fbY===this.y)return b;b[0]=b[1]=Infinity;b[2]=b[3]=-Infinity;
     for(const u of this.units){if(u.dead)continue;const F=this.figure(u),fl=Math.cos(u.dir??this.face)<0,x0=u.x+(fl?-F[2]:F[0]),x1=u.x+(fl?-F[0]:F[2]);
       if(x0<b[0])b[0]=x0;if(x1>b[2])b[2]=x1;if(u.y+F[1]<b[1])b[1]=u.y+F[1];if(u.y+F[3]>b[3])b[3]=u.y+F[3]}this.fbT=this.time;this.fbU=this.units;this.fbX=this.x;this.fbY=this.y;return b}

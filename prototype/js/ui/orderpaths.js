@@ -108,6 +108,8 @@ function drawOrderPaths(){
   const D=OPS.dash;if(D.u!==u){D.u=u;D.d=OPATH.dash.map(v=>v*u);D.o=OPATH.dot.map(v=>v*u)}
   let tallied=false;OPS.drawn.length=0;OPS.ph=ph;
   for(const id in B.groups){const al=orderPathAlpha(id,sel,now),pv=withdrawView.shows(id)&&B.groups[id].order!=='withdraw';if(al<=.01)continue;if(!tallied){opTally();tallied=true}if(!opBuild(B.groups[id],pv))continue;
+    // (each point up by its ground's lift in a fight on the map, as the men on it: vfx.js fieldLift)
+    if(B.world)for(let i=0;i<OPS.n;i++)OPS.y[i]-=fieldLift(OPS.x[i],OPS.y[i]);
     // (culled: none of it in view)
     let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(let i=0;i<OPS.n;i++){const x=OPS.x[i],y=OPS.y[i];if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
     if(x1<vx-12*u||x0>vx+vw+12*u||y1<vy-12*u||y0>vy+vh+12*u)continue;
@@ -125,7 +127,7 @@ function drawOrderPaths(){
     // (a withdrawal's end, previewed or under way: where they leave the field)
     if(OPS.kind==='withdraw'&&q>1&&(pv||full))txt(pv?'Would leave here':'Leaving here',Math.round(clamp(OPS.x[q-1],vx+44*u,vx+vw-44*u)),Math.round(clamp(OPS.y[q-1]-7*u,vy+10*u,vy+vh-4*u)),'rgba('+col+','+al.toFixed(2)+')','center');
     // (a move's men's places where it ends, faint, when it is yours to look at)
-    if(OPS.kind==='move'&&full&&q>1){ctx.fillStyle='rgba('+col+','+(.55*al).toFixed(2)+')';const s=Math.max(2,u*2,B.world?4*WORLD_BATTLE.sprite:2);for(const m of B.units)if(m.grp===id&&m.hp>0&&!m.rout)ctx.fillRect(Math.round(g.ax+(m.sx||0))-s/2,Math.round(g.ay+(m.sy||0))-s/2,s,s)}}
+    if(OPS.kind==='move'&&full&&q>1){ctx.fillStyle='rgba('+col+','+(.55*al).toFixed(2)+')';const s=Math.max(2,u*2,B.world?4*WORLD_BATTLE.sprite:2);for(const m of B.units)if(m.grp===id&&m.hp>0&&!m.rout){const px=g.ax+(m.sx||0),py=g.ay+(m.sy||0);ctx.fillRect(Math.round(px)-s/2,Math.round(py-fieldLift(px,py))-s/2,s,s)}}}
   ctx.setLineDash(OPS.none);ctx.lineDashOffset=0;ctx.lineWidth=1;return true}
 // (points i0 … i1-1 as a line, over a dark copy a pixel down and right, so it reads on grass, snow and sand alike: one field pixel
 // wide, one screen pixel zoomed out; thin lines, as a wide or soft edge costs the canvas several times more)

@@ -193,12 +193,20 @@ function vfxStep(dt){
   B.vfx=L.filter(p=>p.life>0)}
 // Cosmetic geometry grows around its own origin, never moving the effect or changing combat radii.
 const worldEffectScale=()=>B?.world?WORLD_BATTLE.sprite:1;
-function effectTransform(x,y,k=worldEffectScale()){ctx.translate(x,y);ctx.scale(k,k);ctx.translate(-x,-y)}
+// (in a battle on the map, field px up the screen at field px (x, y): the lift of its ground, as each man there is drawn (render.js
+// drawUnit), so what is drawn on him or at his feet stays on him on a hill; 0 on a field of its own)
+function fieldLift(x,y){const w=B?.world;if(!w||typeof liftAt!=='function')return 0;return liftAt(w.x0+x/w.scale,w.y0+y/w.scale)*w.scale}
+// (the field y of the ground drawn at field point (x, y) of the screen: up the lift there, the land's own (a tap means the ground it
+// lands on); y itself on a field of its own)
+function fieldGround(x,y){if(!B?.world)return y;let g=y;for(let i=0;i<4;i++)g=y+fieldLift(x,g);return g}
+// (each of list drawn by f, up by the lift at its x, y: its own context while lifted)
+function fxEach(list,f){for(const p of list){const L=fieldLift(p.x,p.y);if(!L){f(p);continue}ctx.save();ctx.translate(0,-L);try{f(p)}finally{ctx.restore()}}}
+function effectTransform(x,y,k=worldEffectScale()){ctx.translate(x,y-fieldLift(x,y));ctx.scale(k,k);ctx.translate(-x,-y)}
 const vfxA=p=>Math.max(0,Math.min(1,p.life/p.max));
 // the ground layer: under the fighters
 function vfxGround(){
   const L=B&&B.vfx;if(!L)return;
-  for(const p of L){const a=vfxA(p),k=worldEffectScale();ctx.save();if(p.k==='dust'||p.k==='frost'||p.k==='shock'&&!p.area)effectTransform(p.x,p.y,k);
+  for(const p of L){const a=vfxA(p),k=worldEffectScale();ctx.save();if(p.k==='dust'||p.k==='frost'||p.k==='shock'&&!p.area)effectTransform(p.x,p.y,k);else ctx.translate(0,-fieldLift(p.x,p.y));
     if(p.k==='crack'){const al=Math.min(1,a*2)*.7;ctx.strokeStyle='rgba(58,40,24,'+al.toFixed(2)+')';ctx.lineWidth=k;const mx=p.x+Math.cos(p.a)*p.len*.55,my=p.y+Math.sin(p.a)*p.len*.55*.5;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(mx,my);ctx.lineTo(p.x+Math.cos(p.a+p.br*.4)*p.len,p.y+Math.sin(p.a+p.br*.4)*p.len*.5);ctx.moveTo(mx,my);ctx.lineTo(mx+Math.cos(p.a+p.br)*p.len*.35,my+Math.sin(p.a+p.br)*p.len*.35*.5);ctx.stroke()}
     else if(p.k==='frost'){ctx.fillStyle='rgba(200,230,255,'+(.5*Math.min(1,a*2)).toFixed(2)+')';ctx.fillRect(Math.round(p.x),Math.round(p.y),2,1)}
     else if(p.k==='shock'){const q=1-a;ctx.strokeStyle='rgba('+p.col+','+(a*.8).toFixed(2)+')';ctx.lineWidth=(2+2*a)*(p.area?k:1);ctx.beginPath();ctx.ellipse(p.x,p.y,p.r*(.3+.9*q),p.r*(.3+.9*q)*.45,0,0,6.283);ctx.stroke()}
@@ -209,7 +217,7 @@ function vfxAir(){
   fireArrows();fireBlazes();const L=B&&B.vfx;if(!L)return;
   for(const p of L)if(p.k==='blood'){ctx.save();effectTransform(p.x,p.y);ctx.fillStyle='#c03232';ctx.fillRect(Math.round(p.x),Math.round(p.y-p.z),1,1);ctx.restore()}
   ctx.save();ctx.globalCompositeOperation='lighter';
-  for(const p of L){const a=vfxA(p),k=worldEffectScale();ctx.save();if(p.k!=='swirl'&&!p.area)effectTransform(p.x,p.y,k);
+  for(const p of L){const a=vfxA(p),k=worldEffectScale();ctx.save();if(p.k!=='swirl'&&!p.area)effectTransform(p.x,p.y,k);else ctx.translate(0,-fieldLift(p.x,p.y));
     if(p.k==='spark'){ctx.strokeStyle=p.col;ctx.globalAlpha=a;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*.05,p.y-p.vy*.05);ctx.stroke()}
     else if(p.k==='ember'){ctx.fillStyle=FLAMES.on&&FIRE_EMBERS.has(p)?fireAge(a):p.col;ctx.globalAlpha=a*(Math.random()<.2?.4:1);ctx.fillRect(Math.round(p.x),Math.round(p.y),1+(a>.6),1+(a>.6))}
     else if(p.k==='swirl'){ctx.lineWidth=2*k;for(let k=0;k<3;k++){const b=p.a+k*2.094;ctx.strokeStyle=k?p.col:'#ffffff';ctx.globalAlpha=a*(k?.6:.9);ctx.beginPath();ctx.arc(p.x,p.y,p.r*(.7+.3*(1-a)),b,b+1.1);ctx.stroke()}}
@@ -269,10 +277,10 @@ battleOn((type,d)=>{if(!STATE_FX.on||!B)return;const men=r=>r?B.units.filter(u=>
   if(type==='power'&&d.id==='rally')for(const g of d.gs||[])if(g.resolve)stateMark(g.resolve).rally=B.t});
 // (their particles, by the real clock: rings and dust on the ground (stateGround), the rest in the air (stateFxAir))
 function fxpStep(){const now=performance.now()/1000,dt=FXT?Math.min(.1,now-FXT):0;FXT=now;for(const p of FXP){p.age+=dt;if(p.g){p.vz-=p.g*dt;p.z=Math.max(0,p.z+p.vz*dt);if(!p.z&&p.vz<0)p.vx=p.vy=0}if(p.vy)p.y+=p.vy*dt;if(p.vx)p.x+=p.vx*dt}for(let i=FXP.length-1;i>=0;i--)if(FXP[i].age>=FXP[i].life)FXP.splice(i,1)}
-function stateGround(){if(!B||!FXP.length)return;fxpStep();for(const p of FXP){const a=1-p.age/p.life;
+function stateGround(){if(!B||!FXP.length)return;fxpStep();fxEach(FXP,p=>{const a=1-p.age/p.life;
   if(p.k==='ring'){const q=p.age/p.life;ctx.strokeStyle='rgba('+p.col+','+(a*.7).toFixed(2)+')';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p.x,p.y,p.r*(.3+.8*q),p.r*(.3+.8*q)*.42,0,0,6.283);ctx.stroke()}
-  else if(p.k==='dust'){ctx.fillStyle='rgba(196,180,140,'+(a*.4).toFixed(2)+')';ctx.beginPath();ctx.arc(p.x,p.y,p.r+p.age*4,0,6.283);ctx.fill()}}}
-function stateFxAir(){if(!B||!FXP.length)return;ctx.save();ctx.globalCompositeOperation='lighter';for(const p of FXP){const a=1-p.age/p.life;
+  else if(p.k==='dust'){ctx.fillStyle='rgba(196,180,140,'+(a*.4).toFixed(2)+')';ctx.beginPath();ctx.arc(p.x,p.y,p.r+p.age*4,0,6.283);ctx.fill()}})}
+function stateFxAir(){if(!B||!FXP.length)return;ctx.save();ctx.globalCompositeOperation='lighter';fxEach(FXP,p=>{const a=1-p.age/p.life;
   if(p.k==='spark'){ctx.fillStyle=p.col;ctx.globalAlpha=a;ctx.fillRect(Math.round(p.x),Math.round(p.y),1,1)}
-  else if(p.k==='flash'){const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);g.addColorStop(0,'rgba('+p.col+','+a.toFixed(2)+')');g.addColorStop(1,'rgba('+p.col+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill()}}
-  ctx.globalCompositeOperation='source-over';for(const p of FXP)if(p.k==='sweat'){ctx.globalAlpha=1-p.age/p.life;ctx.fillStyle='#bfe4ff';ctx.fillRect(Math.round(p.x),Math.round(p.y+p.age*8),1,1)}ctx.restore()}
+  else if(p.k==='flash'){const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);g.addColorStop(0,'rgba('+p.col+','+a.toFixed(2)+')');g.addColorStop(1,'rgba('+p.col+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill()}});
+  ctx.globalCompositeOperation='source-over';for(const p of FXP)if(p.k==='sweat'){ctx.globalAlpha=1-p.age/p.life;ctx.fillStyle='#bfe4ff';ctx.fillRect(Math.round(p.x),Math.round(p.y+p.age*8-fieldLift(p.x,p.y)),1,1)}ctx.restore()}

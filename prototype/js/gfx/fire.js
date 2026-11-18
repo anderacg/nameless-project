@@ -81,7 +81,7 @@ const FIRE_IDS=new WeakMap();let FIRE_N=0;
 const fireId=a=>{let i=FIRE_IDS.get(a);if(i==null)FIRE_IDS.set(a,i=++FIRE_N);return i};
 function fireArrows(){if(!FLAMES.on||!B||!B.arrows||!B.arrows.length)return;const t=fireTime(),T=ctx.getTransform(),k=B.world?WORLD_BATTLE.sprite:1,cw=ctx.canvas.width,ch=ctx.canvas.height;
   for(const a of B.arrows){if(!a.src||!a.src.fireArrow||!(a.life>0))continue;
-    const z=a.arc?Math.max(0,a.z):0,vx=a.vx,vy=a.arc?a.vy-a.vz:a.vy,ang=a.arc?Math.atan2(vy,vx):a.a,hx=Math.round(a.x)+Math.cos(ang)*4*k,hy=Math.round(a.arc?a.y-4-z:a.y)+Math.sin(ang)*4*k;
+    const z=a.arc?Math.max(0,a.z):0,vx=a.vx,vy=a.arc?a.vy-a.vz:a.vy,ang=a.arc?Math.atan2(vy,vx):a.a,hx=Math.round(a.x)+Math.cos(ang)*4*k,hy=Math.round((a.arc?a.y-4-z:a.y)-fieldLift(a.x,a.y))+Math.sin(ang)*4*k;
     const sx=T.a*hx+T.c*hy+T.e,sy=T.b*hx+T.d*hy+T.f;if(sx<-40||sy<-40||sx>cw+40||sy>ch+40)continue;
     const id=fireId(a),sp=Math.hypot(vx,vy)||1,ux=vx/sp,uy=vy/sp;ctx.save();ctx.fillStyle='#4e4a48';
     for(let i=0;i<FLAMES.trail;i++){const d=(3+i*3)*k,j=(PX.hash(Math.floor(t*20)+i,id,78)-.5)*2*k,s=(i>1?2:1)*k;ctx.globalAlpha=.42*(1-i/FLAMES.trail);
@@ -99,5 +99,5 @@ function fireSparks(x,y,n){if(!FLAMES.on||!B)return;n=n??FLAMES.sparks;
 const fireBlazeAt=(x,y)=>fxp({k:'blaze',x,y,life:.7});
 function fireBlazes(){if(!FLAMES.on||!B||FXP.b!==B)return;for(const p of FXP)if(p.k==='blaze')fireBlaze(p,1-p.age/p.life)}
 // (one blaze, p, a its life left)
-function fireBlaze(p,a){const k=worldEffectScale(),f=fireFlame('blaze',fireFrameAt(fireTime(),fireId(p)),0);ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,a*2.5));ctx.translate(Math.round(p.x),Math.round(p.y));ctx.scale(k,k);
+function fireBlaze(p,a){const k=worldEffectScale(),f=fireFlame('blaze',fireFrameAt(fireTime(),fireId(p)),0);ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,a*2.5));ctx.translate(Math.round(p.x),Math.round(p.y-fieldLift(p.x,p.y)));ctx.scale(k,k);
   ctx.drawImage(f.img,-f.ax,-f.ay+3);ctx.restore()}

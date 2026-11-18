@@ -111,6 +111,12 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     for(let fy=0;fy<HE2;fy++,(fy&31)||(yield)){const y=Y+(fy+.5)/r;for(let fx=0;fx<W2;fx++){const x=X+(fx+.5)/r;if(!near(x|0,y|0))continue;const fi=fy*W2+fx;if(RF.Q[fi]<0)continue;const f=fAt(x,y);if(f===null)continue;
         if(f<0)RF.S[fi]=-WY.HW[WY.SP[RF.Q[fi]]]*r*Math.max(.08,Math.min(.6,-f*.9));else if(f<SH.bank&&!(RF.S[fi]<0&&!SWD[RF.Q[fi]])){BKF[fi]=Math.min(BKF[fi],f/SH.bank);if(RF.S[fi]<0)RF.S[fi]=.5}}}
     yield}
+  // (a river's ford, its weight by game px: its tiles blended over a warped B-spline, so the bar has no tile's square (the owner,
+  //  2026-11-17: "The walkable path on river is not realistic"); NF: the tiles within two of a ford's, where it is asked)
+  const FB2=WV.river.fordBar,NF=WY.NF||(WY.NF=(()=>{const A=new Uint8Array(MW*MH);for(let i=0;i<MW*MH;i++){if(tiles[i]!==T_FORD)continue;const x=i%MW,y=(i-x)/MW;for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const u=x+a,v=y+b;if(u>=0&&v>=0&&u<MW&&v<MH)A[v*MW+u]=1}}return A})()),
+    isF=(tx,ty)=>tiles[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))]===T_FORD?1:0,
+    fordShare=(gx,gy)=>{const wx=gx+(wnoise2(gx/11,gy/11,527)-.5)*2*FB2.warp,wy=gy+(wnoise2(gx/11,gy/11,528)-.5)*2*FB2.warp,u=(wx-8)/TS,v=(wy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),bx=labBS(u-tx),by=labBS(v-ty);
+      let s=0;for(let q=0;q<4;q++)for(let p=0;p<4;p++)s+=bx[p]*by[q]*isF(tx+p-1,ty+q-1);return sstep(Math.min(1,s/FB2.blend))};
   const WB0dw=(gx,gy)=>{const q=(gy-ey0)*EW+gx-ex0;return q>=0&&q<EW*EH?DW[q]:99},eq=(gx,gy)=>(gy-ey0)*EW+gx-ex0,seaAt=(gx,gy)=>{const q=eq(gx,gy);return q>=0&&q<EW*EH&&WAT[q]===1};
   const seaT=ti=>ow(ti),surf=(q,t)=>{const a=WY.SP[q];return riverSurf(WY.LV[a],WY.LV[a+1],t)};
   for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i,u=(gx-8)/TS,v=(gy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,ti=tix(gx,gy),t=tiles[ti],sea=seaAt(gx,gy),k=j*GW+i;
@@ -123,6 +129,18 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
         if(!wet){const ds=DG.S[k];if(ds<shG){const q=DG.Q[k],t=DG.T[k],rz=WY.RZ[q*2]+(WY.RZ[q*2+1]-WY.RZ[q*2])*t;e=ds<0?rz:rz+(e-rz)*wsm(ds/shG)}}}
       Lv[k]=Math.max(0,e);Wa[k]=wet?1:0}
     if(!(j&7))yield}
+  // (the dry land within a lake's or a pool's tiles (the generator's levels hold it at the water's level: a flat square floor stepped
+  //  up at the tile's edge; the owner, 2026-11-17: "Small water have a square shape around it") eased from the land round it down to its
+  //  water: the levels blurred over shore.basin game px there, twice, the water's own kept)
+  const PB=new Float32Array(GW*GH);// (how near a lake's or a pool's eased land, 0-1: its steps fading out there, its bank one slope, as a river's)
+  {const R=T.shore.basin,M=new Uint8Array(GW*GH);let any=false;
+    for(let j=0;j<GH;j++)for(let i=0;i<GW;i++){const k=j*GW+i,ti=tix(gx0+i,gy0+j);if(!Wa[k]&&tiles[ti]===T_WATER&&!(Rv[ti]&3)){M[k]=1;any=true}}
+    if(any){const B=new Float32Array(GW*GH),blur=A=>{for(let pass=0;pass<2;pass++){for(let j=0;j<GH;j++){let s=0,n=0;for(let i=-R;i<GW+R;i++){if(i+R<GW){s+=A[j*GW+i+R];n++}if(i-R-1>=0){s-=A[j*GW+i-R-1];n--}if(i>=0)B[j*GW+i]=s/n}}
+        for(let i=0;i<GW;i++){let s=0,n=0;for(let j=-R;j<GH+R;j++){if(j+R<GH){s+=B[(j+R)*GW+i];n++}if(j-R-1>=0){s-=B[(j-R-1)*GW+i];n--}if(j>=0)A[j*GW+i]=s/n}}}return A};
+      // (the eased levels laid in by the mask blurred the same way, so no crease where the easing ends)
+      const A=blur(Float32Array.from(Lv)),Wm=blur(Float32Array.from(M));
+      for(let k=0;k<GW*GH;k++){const u=Math.min(1,Wm[k]*3);PB[k]=u;if(u>0&&!Wa[k])Lv[k]=Math.max(0,Lv[k]+(A[k]-Lv[k])*u)}}
+    yield}
   // (each px's slope, and its level stepped where it is steep: never on water, near a road, a lot; a lot's ground (its tiles) eased
   //  into the steps round it over flat game px, never a square edge (the owner, 2026-11-15: "hill level still weird"))
   const OC=new Float32Array(GW*GH);if(typeof occAt==='function'){const R=T.flat,tmp=new Float32Array(GW*GH);for(let j=0;j<GH;j++)for(let i=0;i<GW;i++)OC[j*GW+i]=occAt((gx0+i)>>4,(gy0+j)>>4)>0?1:0;
@@ -130,7 +148,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     for(let i=0;i<GW;i++){let a=0;for(let j=-R;j<GH+R;j++){if(j+R<GH&&j+R>=0)a+=tmp[(j+R)*GW+i];if(j-R-1>=0&&j-R-1<GH)a-=tmp[(j-R-1)*GW+i];if(j>=0&&j<GH)OC[j*GW+i]=Math.min(1,a/(2*R+1)*2)}}}
   for(let j=1;j<GH-1;j++)for(let i=1;i<GW-1;i++){const k=j*GW+i,gxl=(Lv[k+1]-Lv[k-1])/2,gyl=(Lv[k+GW]-Lv[k-GW])/2,g=Math.hypot(gxl,gyl);Gx[k]=gxl;Gy[k]=gyl;
     const flat=Wa[k]||DG.S[k]<shG||RG.S[k]<bankG*T.shore.unstep;
-    const sw=flat?0:Math.max(0,Math.min(1,(g-T.steps.from)/(T.steps.to-T.steps.from)))*(1-OC[k]),s3=sw*sw*(3-2*sw),e=Lv[k],B=T.steps.band;St[k]=e+(Math.floor(e/B)*B-e)*s3;SW[k]=s3}
+    const sw=flat?0:Math.max(0,Math.min(1,(g-T.steps.from)/(T.steps.to-T.steps.from)))*(1-OC[k])*(1-PB[k]),s3=sw*sw*(3-2*sw),e=Lv[k],B=T.steps.band;St[k]=e+(Math.floor(e/B)*B-e)*s3;SW[k]=s3}
   yield;
   // (each game px's climate as the ground's colour picks it (terClimate: warped, dithered), for the blend, the decor and the faces)
   const CLG=new Uint8Array(GW*GH);for(let j=0;j<GH;j++,(j&31)||(yield))for(let i=0;i<GW;i++)CLG[j*GW+i]=terClimate(gx0+i,gy0+j);
@@ -142,14 +160,14 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     for(let y=0;y<HE;y++)for(let x=0;x<w;x++){let a=0,b=0,c=0,n=0;for(let q=-Rb;q<=Rb;q++){const u=Math.min(w-1,Math.max(0,x+q)),o=(y*w+u)*4;a+=F[o];b+=F[o+1];c+=F[o+2];n++}const o=(y*w+x)*3;tmp[o]=a/n;tmp[o+1]=b/n;tmp[o+2]=c/n}
     for(let y=0;y<HE;y++)for(let x=0;x<w;x++){let a=0,b=0,c=0,n=0;for(let q=-Rb;q<=Rb;q++){const v=Math.min(HE-1,Math.max(0,y+q)),o=(v*w+x)*3;a+=tmp[o];b+=tmp[o+1];c+=tmp[o+2];n++}const o=(y*w+x)*3;FB[o]=a/n;FB[o+1]=b/n;FB[o+2]=c/n}}
   const CWT=new Float32Array(w*HE*4),same=(fo,go)=>F[fo]===G[go]&&F[fo+1]===G[go+1]&&F[fo+2]===G[go+2],C=[0,0,0],MOU=WY.mouths.filter(([mx,my,mw])=>mx+mw>X&&mx-mw<X+w&&my+mw>Y&&my-mw<Y+HE);
-  for(let y=0;y<HE;y++){for(let x=0;x<w;x++){const gx=X+x,gy=Y+y,fo=(y*w+x)*4,go=((gy-y0)*ww+gx-x0)*4,k=at(gx,gy),ti=(gy>>4)*MW+(gx>>4),t=tiles[ti],ford=t===T_FORD&&DF.S[(y*r)*W2+x*r]<4*r,
+  for(let y=0;y<HE;y++){for(let x=0;x<w;x++){const gx=X+x,gy=Y+y,fo=(y*w+x)*4,go=((gy-y0)*ww+gx-x0)*4,k=at(gx,gy),ti=(gy>>4)*MW+(gx>>4),t=tiles[ti],fordT=NF[ti]?fordShare(gx,gy):0,
       over=F[fo]!==G[go]||F[fo+1]!==G[go+1]||F[fo+2]!==G[go+2];
       const qe=eq(gx,gy),m=WAT[qe]?1:0,dd=m?DL[qe]:DW[qe],e=Lv[k],sl=Math.max(-.16,Math.min(.12,(-Gx[k]-.6*Gy[k])/1*T.lh*T.shade/r)),flat=Math.hypot(Gx[k],Gy[k])<.03;
       // (its climates, by the tiles' round it: their shares)
       //  read at a place warped by noise (T.climWarp game px), its own one picked from those shares, dithered: a climate's edge (and a
       //  river's colour across it) ragged, never along the tiles (the owner: "Recheck if there's any weird squared look")
       const wgx=gx+(wnoise2(gx/23,gy/23,601)-.5)*2*T.climWarp,wgy=gy+(wnoise2(gx/23,gy/23,602)-.5)*2*T.climWarp,u=(wgx-8)/TS,v=(wgy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,cw=[0,0,0,0],cl=(a,b)=>climate[Math.max(0,Math.min(MH-1,b))*MW+Math.max(0,Math.min(MW-1,a))];
-      climShares(cw,cl,tx,ty,fu,fv);
+      climShares(cw,cl,tx,ty,fu,fv);const csh=cw;// (kept by this name: a fall's own cw shadows it below)
       {const o=(y*w+x)*4;CWT[o]=cw[0];CWT[o+1]=cw[1];CWT[o+2]=cw[2];CWT[o+3]=cw[3]}
       let ci=0;{const pk=climPick(gx,gy);let acc=0;for(let c=0;c<4;c++){acc+=cw[c];if(pk<acc){ci=c;break}}}const Q=PAL[ci];
       // (how much of a wood it is, by the tiles round it seen through a warp: its edge ragged and soft, never a tile's square)
@@ -166,7 +184,11 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
           //  fewer out from its middle (a wide one's lanes would curl round a bend's inside)
           const RW=WV.river.flow,RN=WY.RN||(WY.RN=riverRun(WY)),ux=RN.X[a+1]-RN.X[a],uy=RN.Y[a+1]-RN.Y[a],L=Math.hypot(ux,uy)||1,px=(fx+.5)/r-RN.X[a],py=(fy+.5)/r-RN.Y[a],
             A=(RN.C[a]+(px*ux+py*uy)/L)*r,c=Math.abs(px*uy-py*ux)/L*r,ln=Math.round(c/RW.lane),e=c/hw/RW.edge;
-          col=wayWater(Q,CLIMS[ci],fx,fy,(dp*(1-q*q)+.04)*(ford?WV.river.ford:1),m||dd<T.shore.ice?0:q,ford,A,c,e);shade=false;WK[fi]=2;WA[fi]=A;
+          const fw=fordT>0?fordT*sstep(1-(DF.S[fi]/r+(wnoise2(fx/(9*k2),fy/(9*k2),526)-.5)*2*FB2.warp)/FB2.band):0;
+          // (its colour by the climates' shares there, as the land's and the open water's, never one climate's picked: a climate's edge
+          //  across a river no stair of game px squares, the owner's "lighter rectangular blocks over the water")
+          {const dq=(dp*(1-q*q)+.04)*(1-fw*(1-WV.river.ford)),qq=m||dd<T.shore.ice?0:q;if(csh[ci]>.98)col=wayWater(Q,CLIMS[ci],fx,fy,dq,qq,fw,A,c,e);
+            else{let a0=0,a1=0,a2=0,sw=0;for(let cc=0;cc<4;cc++){if(csh[cc]<.02)continue;const v=wayWater(PAL[cc],CLIMS[cc],fx,fy,dq,qq,fw,A,c,e);a0+=v[0]*csh[cc];a1+=v[1]*csh[cc];a2+=v[2]*csh[cc];sw+=csh[cc]}col=[a0/sw,a1/sw,a2/sw]}}shade=false;WK[fi]=2;WA[fi]=A;
           WL[fi]=e>=1||hs(ln,1,546)<e||wnoise2(A/RW.gate,ln*.7,544)<RW.on?0:1+((hs(ln,0,545)*900)|0);
           // (a natural ford where a track crosses a stream (the owner: "No need to be human made stone ford"): the stream spread
           //  shallow over a gravel bed along the road, its pebbles showing, riffles where it runs over them)
@@ -619,6 +641,9 @@ function liftAt(x,y){if(!isFinite(x)||!isFinite(y)||typeof WorldArt==='undefined
   const WA=WorldArt,cx=Math.floor(x/CHUNK),cy=Math.floor(y/CHUNK),c=WA.chunks.get(cy*WA.cols+cx);
   if(c&&c.lift){const w=c.cv.width,v=c.lift[(y-cy*CHUNK)*w+x-cx*CHUNK];if(v!==undefined)return v/(c.fr||1)}
   if(!WM||typeof landHeight!=='function')return 0;const r=typeof sceneRes==='function'?sceneRes():1;return Math.round(Math.max(0,landHeight(WM)(x*2+1,y*2+1))*WORLD_TERRAIN.lh)/r}
+// (where a thing standing at map px (x, y) is drawn: its y up by its ground's lift, as liftDraw draws it; what is drawn on it after
+//  the scene, out of liftDraw (a blessing's light, the eye over your hero, a quest's mark), there too)
+const liftY=(x,y)=>y-liftAt(x,y);
 // the map point whose ground shows at the view's point (x, y) (the camera's map px plus the screen's): the chunk's own (rec.dep)
 function liftGround(x,y){if(typeof WorldArt==='undefined')return{x,y};const fx=Math.floor(x),fy=Math.floor(y),WA=WorldArt,cx=Math.floor(fx/CHUNK),cy=Math.floor(fy/CHUNK),c=WA.chunks.get(cy*WA.cols+cx);
   if(c&&c.dep){const w=c.cv.width,d=c.dep[(fy-cy*CHUNK)*w+fx-cx*CHUNK];if(d>=0)return{x,y:d+(y-fy)}}return{x,y}}

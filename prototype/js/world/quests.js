@@ -1511,7 +1511,7 @@ function lordJobHtml(l){
 const QUEST_MARK={col:'#ffe040',on:'#fff6c0',ring:'#ffd040',edge:14,mini:2,miniOn:4};
 function drawQuestMarks(cam){
   const t=performance.now()/300,M=QUEST_MARK,bob=Math.round(Math.sin(t)*2);
-  for(const q of P.quests){const Q=Quest.as(q),on=QuestTrack.on(Q),g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round(g.y-cam.y);
+  for(const q of P.quests){const Q=Quest.as(q),on=QuestTrack.on(Q),g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round((typeof liftY==='function'?liftY(g.x,g.y):g.y)-cam.y);// (over its goal as drawn, up by its ground's lift)
     if(sx<-10||sy<-10||sx>VW+10||sy>VH+10){if(on)questEdgeMark(sx,sy,t);continue}
     // (a lead: its circle, dashed, a ? at its middle: where to look, Q4)
     if(g.r){ctx.save();ctx.strokeStyle=on?M.on:M.col;ctx.globalAlpha=on?.8:.5;ctx.setLineDash([4,3]);ctx.lineWidth=1;ctx.beginPath();ctx.arc(sx,sy,g.r*TILE,0,6.283);ctx.stroke();ctx.restore();txt('?',sx,sy-4+bob,on?M.on:M.col,'center');continue}
