@@ -16,6 +16,11 @@ Kit.suite(({ok,info})=>{
   // (a toggle: lit while on, off again on a second tap)
   const nn=[...btn].find(b=>b.textContent==='No needs');nn.click();const lit=R.querySelector('[data-dev-quick="0,0"]').getAttribute('aria-pressed');
   ok(C.noNeeds&&lit==='true','No needs: one tap on, its button lit');R.querySelector('[data-dev-quick="0,0"]').click();ok(!C.noNeeds&&R.querySelector('[data-dev-quick="0,0"]').getAttribute('aria-pressed')==='false','a second tap off');
+  // (the realm economy, out of Settings: one button that names its mode, each tap the next, and the command econ)
+  {const m0=t.ECON.mode,eb=()=>[...R.querySelectorAll('[data-dev-quick]')].find(b=>/^Economy: /.test(b.textContent)),seen=[];
+   for(let i=0;i<3;i++){const b=eb();seen.push(b.textContent.slice(9));b.click()}
+   ok(seen.length===3&&new Set(seen).size===3&&t.ECON.mode===m0&&eb().textContent==='Economy: '+t.ECON_MODES[m0][0],'the realm economy a tool: its button names the mode, a tap each the next ('+seen.join(' → ')+'), back to '+t.ECON_MODES[m0][0]);
+   D.execute('econ light');const l=t.ECON.mode;D.execute('econ '+m0);ok(l==='light'&&t.ECON.mode===m0,'econ light sets it, econ '+m0+' back')}
   // ---- no needs over a whole day: no food, water, wages or stamina spent
   {P.troops={militia:12};if(typeof P.changed==='function')P.changed();P.gold=500;t.BAND.hungry=0;t.BAND.dry=0;P.bsta=60;D.execute('supplies');
    const gold=P.gold,food=t.foodN(),water=t.goodN('water');D.execute('noNeeds on');D.execute('day');

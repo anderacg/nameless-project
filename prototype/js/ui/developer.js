@@ -4,15 +4,18 @@
 // disable all needs"): groups of one-tap buttons, each a console command (or one made from the state: a toggle, lit while on);
 // [command, label, its state for a toggle, a tooltip]. DEV_QUICK: the amounts they give
 const DEV_QUICK={food:30,drink:30,troops:10,near:90};
+// (the realm economy's modes in turn, a tap each: Settings had it till the owner, 2026-11-18: "make real economy as dev console instead of option")
+const DEV_ECON_NEXT={full:'light',light:'off',off:'full'};
 const DEV_TOOLS=[
   ['Cheats',[[()=>'noNeeds '+(CHEAT.noNeeds?'off':'on'),'No needs',()=>CHEAT.noNeeds,'No hunger, thirst, stamina drain, wages or harsh-land tolls'],[()=>'speed '+(CHEAT.speed>1?1:3),'Travel ×3',()=>CHEAT.speed>1],
     [()=>'fog '+(CHEAT.noFog?'on':'off'),'No fog',()=>CHEAT.noFog,'Draw the whole map as it is'],['devmode','Dev marks',()=>DEV.on,'Counts over armies, herds and fights'],['perf','Timings',()=>FRAMEPROF.on,'Frame timings at the top']]],
   ['Give',[['money 1000','+1000 gold'],['supplies','Food & water'],['heal','Heal all',null,'Health, stamina, the wounded and the sick'],['level','Level up'],['troops','+10 troops']]],
-  ['World',[['reveal','Reveal map'],['day','Next day'],['bandits','Bandits near'],['battle','Battle test']]],
+  ['World',[['reveal','Reveal map'],['day','Next day'],['bandits','Bandits near'],['battle','Battle test'],
+    [()=>'econ '+DEV_ECON_NEXT[ECON.mode],()=>'Economy: '+ECON_MODES[ECON.mode][0],null,()=>ECON_MODES[ECON.mode][1]+' Tap for '+ECON_MODES[DEV_ECON_NEXT[ECON.mode]][0]+'.']]],
   ['Look',[['where','Where'],['nearby','Nearby'],['stalls','Stalls'],['errors','Errors'],['clear','Clear']]]];
 const DevConsole={
   opened:false,root:null,history:[],historyAt:0,previousFocus:null,
-  help:'Tools: noNeeds on|off · speed 3 · fog off|on · devmode · perf\nGive: money 1000 · supplies · heal · level 1 · troops [id] [n]\nWorld: reveal · day 1 · bandits · where · tp x y · tp tile x y · goto Ashford · nearby · stalls · errors\nEdit: get player.gold · set player.sk.athl.lv 50 · units bow · roster · get unit.0 · set unit.0.s.spd 80 · set group.<id>.resolve.mor 50\nBattle test: battle · battle hum_bow 5 hum_foot 5 · pause · step 60 · restart · exit\nStory: enc [kind] · quest [kind] · book <id> · chains · chain 1 [go] · passengers · escort [n] · ander\nNone of the tools is saved; coordinates are world px.',
+  help:'Tools: noNeeds on|off · speed 3 · fog off|on · devmode · perf\nGive: money 1000 · supplies · heal · level 1 · troops [id] [n]\nWorld: reveal · day 1 · bandits · econ full|light|off · where · tp x y · tp tile x y · goto Ashford · nearby · stalls · errors\nEdit: get player.gold · set player.sk.athl.lv 50 · units bow · roster · get unit.0 · set unit.0.s.spd 80 · set group.<id>.resolve.mor 50\nBattle test: battle · battle hum_bow 5 hum_foot 5 · pause · step 60 · restart · exit\nStory: enc [kind] · quest [kind] · book <id> · chains · chain 1 [go] · passengers · escort [n] · ander\nNone of the tools is saved; coordinates are world px.',
   text(value){const seen=new WeakSet();return typeof value==='string'?value:JSON.stringify(value,(k,v)=>{if(v&&typeof v==='object'){if(seen.has(v))return '[reference]';seen.add(v)}return v},2)},
   write(value,error=false){if(!this.root)return;const out=this.root.querySelector('[data-dev-output]'),line=document.createElement('div');line.className=error?'dev-error':'';line.textContent=String(this.text(value)).slice(0,10000);out.append(line);while(out.children.length>100)out.firstChild.remove();out.scrollTop=out.scrollHeight},
   // (a battle test needs a world in: from the main menu with none, it says so; ui/mainmenu.js)
@@ -55,7 +58,7 @@ const DevConsole={
   // (all well: your hero's health and stamina full, the wounded back in the ranks, no one sick, hungry or thirsty)
   heal(){P.hp=null;vitals();P.bsta=100;for(const k in P.wounded||{})P.troops[k]=(P.troops[k]||0)+P.wounded[k];P.wounded={};BAND.sick={};BAND.hungry=BAND.dry=0;if(typeof P.changed==='function')P.changed();updateHUD(true);return 'All well: health, stamina, the wounded and the sick.'},
   // (the quick tools: each a tap, its group's row; a toggle lit while on)
-  quickHtml(){return DEV_TOOLS.map(([g,L],i)=>'<section class="dev-group"><h3>'+g+'</h3><div class="dev-tools">'+L.map((t,j)=>'<button type="button" data-dev-quick="'+i+','+j+'"'+(t[2]?' aria-pressed="'+!!t[2]()+'"':'')+(t[3]?' title="'+htmlText(t[3])+'"':'')+'>'+t[1]+'</button>').join('')+'</div></section>').join('')+
+  quickHtml(){return DEV_TOOLS.map(([g,L],i)=>'<section class="dev-group"><h3>'+g+'</h3><div class="dev-tools">'+L.map((t,j)=>'<button type="button" data-dev-quick="'+i+','+j+'"'+(t[2]?' aria-pressed="'+!!t[2]()+'"':'')+(t[3]?' title="'+htmlText(typeof t[3]==='function'?t[3]():t[3])+'"':'')+'>'+(typeof t[1]==='function'?t[1]():t[1])+'</button>').join('')+'</div></section>').join('')+
     '<section class="dev-group"><h3>Go to</h3><div class="dev-tools"><select data-dev-goto aria-label="Holding">'+[...TOWNS].sort((a,b)=>a.name.localeCompare(b.name)).map(t=>'<option>'+htmlText(t.name)+'</option>').join('')+'</select><button type="button" data-dev-go>Go</button></div></section>'},
   quickRefresh(){const q=this.root&&this.root.querySelector('[data-dev-quick-box]');if(q)q.innerHTML=TOWNS.length?this.quickHtml():''},
   quick(i,j){const t=DEV_TOOLS[i][1][j],c=typeof t[0]==='function'?t[0]():t[0];const r=this.submit(c);this.quickRefresh();return r},
@@ -93,6 +96,7 @@ const DevConsole={
     if(cmd==='noneeds'){const v=this.onOff(arg);CHEAT.noNeeds=v;updateHUD(true);return v?'No needs: no hunger, thirst, stamina drain, wages or harsh-land tolls.':'Needs are back.'}
     if(cmd==='fog'){const v=this.onOff(arg,!CHEAT.noFog);CHEAT.noFog=!v;VIEW_SEEN.on=v;VIEW_SEEN.key='';return v?'Fog on.':'Fog off: all the map drawn as it is.'}
     if(cmd==='heal')return this.heal();
+    if(cmd==='econ'){if(!ECON_MODES[arg])throw Error('Usage: econ full|light|off (the realm economy; now '+ECON.mode+').');setEconMode(arg);return 'Realm economy: '+ECON_MODES[arg][0]+'. '+ECON_MODES[arg][1]}
     if(cmd==='level'){const n=arg?this.number(arg):1;if(!Number.isInteger(n)||n<1||n>50)throw Error('Usage: level 3 (1 to 50 levels).');const h=leaderOf(P);for(let i=0;i<n;i++)h.addXp(h.xpNeed()-(h.xp||0),true);updateHUD(true);return 'Level '+h.lv+'.'}
     if(cmd==='supplies'){const Q=DEV_QUICK,f=FOODS[FOODS.length-1],a=invAdd('good',f,Q.food),b=invAdd('good','water',Q.drink);updateHUD(true);return '+'+a+' '+(GOODS[f].n||f)+', +'+b+' water.'}
     if(cmd==='reveal'){seenArr().fill(1);WFOGV=null;fogDirty=true;VIEW_SEEN.key='';return 'The whole map known.'}
