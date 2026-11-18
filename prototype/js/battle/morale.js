@@ -192,7 +192,7 @@ function sideOf(t,src){
   return df<1.05?'front':df<2.1?'flank':'rear';
 }
 // a word over a soldier, unless the same word is already up close by (a whole line breaking says it once)
-function moraleSay(u,t,c,life){if(B.floats.some(f=>f.t===t&&Math.abs(f.x-u.x)<40&&Math.abs(f.y-u.y+22)<30))return;B.floats.push({x:u.x,y:u.y-22,t,life:life||.8,c})}
+function moraleSay(u,t,c,life){if(B.floats.some(f=>f.t===t&&Math.abs(f.x-u.x)<40&&Math.abs(f.y-u.y+fxUp(22))<fxUp(30)))return;B.floats.push({x:u.x,y:u.y-fxUp(22),t,life:life||.8,c})}
 // a blow's weight by the side it lands on (and a shake to its morale)
 /* an ambush on the world map. Yours (engage.js canWorldAmbush; hard): the foes there at its start are taken by surprise, the
    longer the less they suspected (stage: their awareness's, the map's eye: 0 unaware .. 3 all but sure; stages: [s, morale
@@ -243,7 +243,7 @@ function moraleDeath(t,source){
     if(battleFriend(r,t)){if(lead){r.confidence=0;r.confidenceBlockedUntil=Math.max(r.confidenceBlockedUntil,B.t+CONFIDENCE.leaderPause);r.breakUrgentUntil=B.t+CONFIDENCE.leaderPause;r.shock(MORALE.lead,false)}else if(r!==own&&d<MORALE.near)r.shock(MORALE.death/Math.max(1,own?.initialCount||r.initialCount))}
     else if(battleEnemy(r,t)&&lead){r.mor=Math.min(100,r.mor+MORALE.lead/2);r.sync()}else if(battleEnemy(r,t)&&(d<MORALE.near||r===resolveOf(source)))r.reassure()}
   if(lead){(B.leadFell=B.leadFell||[])[t.team]=B.t}
-  if(lead){B.floats.push({x:t.x,y:t.y-30,t:t.team?'Their leader falls!':'Your leader falls!',life:1.4,c:t.team?'#ffe08a':'#ff9a90'});battleEvent('leader',{u:t})}
+  if(lead){B.floats.push({x:t.x,y:t.y-fxUp(30),t:t.team?'Their leader falls!':'Your leader falls!',life:1.4,c:t.team?'#ffe08a':'#ff9a90'});battleEvent('leader',{u:t})}
 }
 // a leader close by steadies them: your hero, a lord or chieftain of theirs
 // (during moraleTick only the heroes and leaders are looked at, gathered once for it: nobody else can steady them)
@@ -457,7 +457,7 @@ function spearBraced(t,u){if(unitClass(t.s)!=='spear'||t.rout||withdrawing(t)||P
 function chargeMul(u,t){const k=chargeHit(u,t);return RANKS.mastery5&&t.rout?k*(rankSkill(u,'rideDown')?.rideDown||1):k}
 function chargeHit(u,t){
   const m=momentum(u),s=u.s;u.run=0;if(s.range&&!s.charge||m<(s.charge?CHARGE.min:CHARGE.foot_min))return 1;fatigueCharge(u,m);// (the charge spends the runner's stamina: fatigue.js)
-  if(spearBraced(t,u)){if(PHYSICS.on){physBraced(u,t,m);moraleSay(t,'Braced!','#cfe0ff',.7)}else B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});if(KITS.brace)braceCounter(u,t,m);return 1}// (physics: the charge stopped dead, the riders hurt: physics.js)
+  if(spearBraced(t,u)){if(PHYSICS.on){physBraced(u,t,m);moraleSay(t,'Braced!','#cfe0ff',.7)}else B.floats.push({x:t.x,y:t.y-fxUp(22),t:'Braced',life:.6,c:'#cfe0ff'});if(KITS.brace)braceCounter(u,t,m);return 1}// (physics: the charge stopped dead, the riders hurt: physics.js)
   // (out of hiding: a group unseen till it charged shakes them harder, once: terrain.js ambushMul)
   const amb=Math.max(B.terrain?ambushMul(u):1,B.surprise?.shock(u,t)||1);
   // (physics on: the impact throws them by the two masses in place of chargeJolt and chargePush, physics.js physImpact)

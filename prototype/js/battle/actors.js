@@ -133,7 +133,7 @@ class Actor extends Fighter{
     if(ab==='regen')u.hp=Math.min(u.max,u.hp+4*dt);
     else if(ab==='pounce'){u.ab=(u.ab??1.5)-dt;if(u.ab>0)return;const t=nearest(u);if(!t)return;const d=Math.hypot(t.x-u.x,t.y-u.y);if(d<24||d>110)return;
       const a=Math.atan2(t.y-u.y,t.x-u.x);fx(u.x,u.y-6,'#e8d8a0',6);u.x=t.x-Math.cos(a)*10;u.y=t.y-Math.sin(a)*10;u.face=Math.cos(a)>=0?1:-1;
-      if(u.type==='tiger'&&PX.tiger)PX.tiger.pounce(u,B.t);this.hit(t,u.s.dmg*1.6);B.floats.push({x:u.x,y:u.y-20,t:'POUNCE',life:.6,c:'#ffb070'});u.ab=4.5}
+      if(u.type==='tiger'&&PX.tiger)PX.tiger.pounce(u,B.t);this.hit(t,u.s.dmg*1.6);B.floats.push({x:u.x,y:u.y-fxUp(20),t:'POUNCE',life:.6,c:'#ffb070'});u.ab=4.5}
   }
   shotKind(){
     const u=this.u;if(u.s.magic)return 'magic';if(ST[u.type]&&ST[u.type].beast)return 'throw';
@@ -298,7 +298,7 @@ class HeroActor extends CharActor{
   crowd(dt,s){}
   dodging(){return B.hx&&B.hx.inv}
   taken(amt){amt*=1-tm('dr');if(this.u.wardT>0)amt*=.75;return amt}
-  fell(){const t=this.u;B.heroDown=true;B.floats.push({x:t.x,y:t.y-22,t:'You are down!',life:1.6,c:'#fff'});log('You are knocked down. Your troops fight on.','bad')}
+  fell(){const t=this.u;B.heroDown=true;B.floats.push({x:t.x,y:t.y-fxUp(22),t:'You are down!',life:1.6,c:'#fff'});log('You are knocked down. Your troops fight on.','bad')}
   guards(a,dm){return B.blocking&&angGap(a,B.aim)<1.25&&HeroHands.of().guard(dm)}
   flatShot(){return heroShot().flat}
   race(){return P.race}

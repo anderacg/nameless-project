@@ -104,7 +104,7 @@ function bowLanding(p){const h=B.hero;if(!h)return null;const d=Math.min(bowRang
 const heroShots=()=>quiverShots(P.gear,P.gear.weapon,null);
 function heroShotsLeft(){const h=B&&B.hero;if(!h)return heroShots();if(h.ammo==null)h.ammo=heroShots();return h.ammo}
 function heroSpendShots(n){if(heroShotsLeft()!=null)B.hero.ammo=Math.max(0,B.hero.ammo-n)}
-function haveShots(){const n=heroShotsLeft();if(n==null||n>0)return true;if(B&&B.hero)B.floats.push({x:B.hero.x,y:B.hero.y-26,t:'Out of '+(isBow()?'arrows':'bolts'),life:.8,c:'#ff9a90'});return false}
+function haveShots(){const n=heroShotsLeft();if(n==null||n>0)return true;if(B&&B.hero)B.floats.push({x:B.hero.x,y:B.hero.y-fxUp(26),t:'Out of '+(isBow()?'arrows':'bolts'),life:.8,c:'#ff9a90'});return false}
 // her quiver in words (the Skills page: ui/talents.js), '' when she shoots none
 function heroQuiverText(){const n=heroShots(),id=P.gear.quiver,Q=id&&ITEMS[id]&&QUIVERS[ITEMS[id].quiver];if(n==null)return '';
   return Q&&n===Q.shots?'Your '+Q.n.toLowerCase()+': '+arrowsText(Q)+' a battle, full again at each start. ':'No quiver that fits it: '+n+' shots a battle. '}
@@ -128,20 +128,20 @@ class HeroHands{
   spend(sp,mp){
     const X=this,h=B.hero;
     // (the warning is for the manual control: under RTS command your hero never tries what they cannot pay: commander.js)
-    if(X.sp<sp){if(MANUAL_HERO)B.floats.push({x:h.x,y:h.y-26,t:'Too tired',life:.6,c:'#9aa3ad'});return false}
-    if(X.mp<mp){if(MANUAL_HERO)B.floats.push({x:h.x,y:h.y-26,t:'Not enough mana',life:.6,c:'#6a9cf0'});return false}
+    if(X.sp<sp){if(MANUAL_HERO)B.floats.push({x:h.x,y:h.y-fxUp(26),t:'Too tired',life:.6,c:'#9aa3ad'});return false}
+    if(X.mp<mp){if(MANUAL_HERO)B.floats.push({x:h.x,y:h.y-fxUp(26),t:'Not enough mana',life:.6,c:'#6a9cf0'});return false}
     X.sp-=sp;X.mp-=mp;if(sp)X.spT=0;return true;
   }
   // a blocked hit drains stamina; with none left the guard breaks and the hit lands in full
   guard(dm){
-    const X=this,h=B.hero;if(X.sp<=0){B.floats.push({x:h.x,y:h.y-18,t:'Guard broken',life:.6,c:'#e8675f'});return false}
+    const X=this,h=B.hero;if(X.sp<=0){B.floats.push({x:h.x,y:h.y-fxUp(18),t:'Guard broken',life:.6,c:'#e8675f'});return false}
     X.sp=Math.max(0,X.sp-dm*STAM.guard*(1-.03*skillSafe('block')));X.spT=0;train('block',1);return true;
   }
   // one hero blow on one enemy: matchup, crit, knockback, stagger, combo count
   hitFoe(e,mult,o){
     Duel.meet(B.hero,e);if(!this.hard&&this.step!==heroCombo().length-1&&Defence.stops(B.hero,e))return;// (met in his stance: defence.js; the finisher, a hard attack never)
     const h=B.hero,X=this,dt=o.dt||shapeDt(o.shape,h.s.dt),mu=matchup(h.s,e.s,dt);let dm=h.s.dmg*(.85+Math.random()*.3)*mu*mult*(h.buffT>0?1.3:1)*(MANUAL_HERO?1:tiredMul(h).dmg);
-    if(!o.noCrit&&Math.random()<(has('bloodlust')?.2:.1)+gm('crit')){dm*=1.8;B.floats.push({x:e.x,y:e.y-22,t:'Crit',life:.6,c:'#ffd24a'})}
+    if(!o.noCrit&&Math.random()<(has('bloodlust')?.2:.1)+gm('crit')){dm*=1.8;B.floats.push({x:e.x,y:e.y-fxUp(22),t:'Crit',life:.6,c:'#ffd24a'})}
     Actor.of(e).wound(dm*formTaken(e,h),mu,dt,h,false);vfxHit(h,e,dm,{crit:dm>h.s.dmg*1.7});battleEvent('blow',{u:h,e,crit:dm>h.s.dmg*1.7,kill:e.hp<=0});train(meleeSk(),2);
     knock(e,h.x,h.y,o.kb||0);if(o.stun)stun(e,o.stun);if(X.hard&&PHYSICS.on)physBlow(h,e,X.hard);// (your hero's hard attack: charmind.js)
     X.combo++;X.comboT=2.2;B.bestCombo=Math.max(B.bestCombo||0,X.combo);// (the longest chain: told in the log when the battle ends)
@@ -149,14 +149,14 @@ class HeroHands{
   // the grapple (your hero's hard attack with bare hands, H: movesets.js): t seized in both hands and thrown, its blow hard (it may throw him down)
   grab(t,H){const h=B.hero,X=this,G=FISTS.grab;if(!h||h.hp<=0||X.busy()||!t||t.hp<=0)return;const a=Math.atan2(t.y-h.y,t.x-h.x);B.aim=a;
     h.cd=H.wind*(h.s.cd/.45);h.atkAt=B.t;h.atkStyle='grapple';h.face=Math.cos(a)>=0?1:-1;X.hard=H;
-    try{X.hitFoe(t,H.dmg,{kb:G.kb,stun:G.stun,dt:'blunt',noCrit:true})}finally{X.hard=null}B.floats.push({x:h.x,y:h.y-28,t:'Throw',life:.6,c:'#ffb04a'})}
+    try{X.hitFoe(t,H.dmg,{kb:G.kb,stun:G.stun,dt:'blunt',noCrit:true})}finally{X.hard=null}B.floats.push({x:h.x,y:h.y-fxUp(28),t:'Throw',life:.6,c:'#ffb04a'})}
   drawStart(){const h=B.hero;if(!h||h.hp<=0||B.blocking||this.busy()||h.cd>0||!haveShots())return;B.draw={t:0}}
   drawRelease(force){const p=force!=null?force:clamp(B.draw.t/DRAW_TIME,.15,1);B.draw=null;this.shoot('ranged',p)}
   // holding a full draw: stamina drains; at zero the arm gives out
   drawHold(dt){
     const X=this,h=B.hero;B.draw.t+=dt;if(B.draw.t<DRAW_TIME)return;
     X.sp=Math.max(0,X.sp-BOW_HOLD*dt);X.spT=0;
-    if(X.sp<=0){B.floats.push({x:h.x,y:h.y-28,t:'Arm gives out',life:.8,c:'#9aa3ad'});X.sp=heroShot().sp;X.drawRelease(.35)}
+    if(X.sp<=0){B.floats.push({x:h.x,y:h.y-fxUp(28),t:'Arm gives out',life:.8,c:'#9aa3ad'});X.sp=heroShot().sp;X.drawRelease(.35)}
   }
   shoot(kind,power){
     const h=B.hero,X=this,S=heroShot();if(h.cd>0){X.buf=true;return}X.buf=false;if(!haveShots()||!X.spend(S.sp,S.mp))return;
@@ -180,20 +180,20 @@ class HeroHands{
     const lean=c.shape==='thrust'||c.shape==='twin'?(c.reach>15?8:5):c.shape==='arc'?3:0;
     h.x=clamp(h.x+Math.cos(B.aim)*lean,8,BW-8);h.y=clamp(h.y+Math.sin(B.aim)*lean,fieldTop(),fieldBot());
     const R=h.s.reach+c.reach,life=c.shape==='slam'||c.shape==='spin'?.32:.2;
-    B.slashes.push({kind:c.shape,x:h.x,y:h.y-6,a:B.aim,life,max:life,arc:c.arc,r:R,col:c.col,w:c.w,dir:c.dir,area:c.area,wid:c.wid});
+    B.slashes.push(fxAt({kind:c.shape,x:h.x,y:h.y-fxUp(6),a:B.aim,life,max:life,arc:c.arc,r:R,col:c.col,w:c.w,dir:c.dir,area:c.area,wid:c.wid},fxUp(6),h.y-fxUp(6)-bodyY(h,FX_BODY.swing)));
     if(c.shape==='slam'){const cx=h.x+Math.cos(B.aim)*R*.6,cy=h.y+Math.sin(B.aim)*R*.6;fx(cx,cy,'#a89a78',8)}
     // a thrust pierces: everyone along the line, each one behind for a little less
     const hits=B.units.filter(e=>battleEnemy(h,e)&&e.hp>0&&inShape(h.x,h.y,B.aim,R,c,e)).sort((p,q)=>Math.hypot(p.x-h.x,p.y-h.y)-Math.hypot(q.x-h.x,q.y-h.y));
     const pierce=c.shape==='thrust'||c.shape==='twin';let n=0;
     for(const e of hits){X.hitFoe(e,c.mult*(pierce?Math.max(.5,1-.2*n):1),c);n++;if(c.one)break}// (a fist strikes one)
     if(n&&c.stop){X.stop=c.stop;shakeIt(c.shake)}
-    if(n&&X.step===2)B.floats.push({x:h.x,y:h.y-28,t:c.n,life:.6,c:'#ffb04a'});
+    if(n&&X.step===2)B.floats.push({x:h.x,y:h.y-fxUp(28),t:c.n,life:.6,c:'#ffb04a'});
     battleEvent('swing',{u:h,c,a:B.aim,r:R,n,last:step===CB.length-1});
     return n;
   }
   shove(){
     const h=B.hero,X=this;if(!h||h.hp<=0||X.busy()||(X.shoveCd||0)>0)return;if(!X.spend((grip()==='shield'?BASH:SHOVE).sp,0))return;
-    const S=grip()==='shield'?BASH:SHOVE;X.shoveCd=S.cd;B.draw=null;h.face=Math.cos(B.aim)>=0?1:-1;h.atkAt=B.t;if(S===BASH)B.floats.push({x:h.x,y:h.y-26,t:'Shield Bash',life:.6,c:'#cfe0ff'});
+    const S=grip()==='shield'?BASH:SHOVE;X.shoveCd=S.cd;B.draw=null;h.face=Math.cos(B.aim)>=0?1:-1;h.atkAt=B.t;if(S===BASH)B.floats.push({x:h.x,y:h.y-fxUp(26),t:'Shield Bash',life:.6,c:'#cfe0ff'});
     B.slashes.push({x:h.x,y:h.y-6,a:B.aim,life:.15,r:h.s.reach+2,arc:.9,col:'200,220,255',w:2});
     for(const e of B.units){if(!battleEnemy(h,e)||e.hp<=0)continue;const d=Math.hypot(e.x-h.x,e.y-h.y)-(e.s.big?12:0),ea=Math.atan2(e.y-h.y,e.x-h.x),df=angGap(ea,B.aim);
       if(d<=h.s.reach+6&&df<1.1)X.hitFoe(e,S.mult,{kb:S.kb,stun:S.stun,noCrit:true,dt:'blunt'})}
@@ -207,9 +207,9 @@ class HeroHands{
   }
   cast(id){
     const h=B.hero,S=HSKILLS[id];if(!h||h.hp<=0||this.busy())return;
-    if(!knows(id)){B.floats.push({x:h.x,y:h.y-26,t:'Learn '+S.n+' on the skill tree',life:.9,c:'#98a0ba'});return}
-    if(S.needs==='bow'&&(!isBow()||heroShotsLeft()<4)){B.floats.push({x:h.x,y:h.y-26,t:S.n+' needs a bow and 4 arrows',life:.9,c:'#98a0ba'});return}
-    {const w=Weather.skillBan(id,B.env&&B.env.w);if(w){B.floats.push({x:h.x,y:h.y-26,t:w,life:.9,c:'#98a0ba'});return}}// (the field's weather)
+    if(!knows(id)){B.floats.push({x:h.x,y:h.y-fxUp(26),t:'Learn '+S.n+' on the skill tree',life:.9,c:'#98a0ba'});return}
+    if(S.needs==='bow'&&(!isBow()||heroShotsLeft()<4)){B.floats.push({x:h.x,y:h.y-fxUp(26),t:S.n+' needs a bow and 4 arrows',life:.9,c:'#98a0ba'});return}
+    {const w=Weather.skillBan(id,B.env&&B.env.w);if(w){B.floats.push({x:h.x,y:h.y-fxUp(26),t:w,life:.9,c:'#98a0ba'});return}}// (the field's weather)
     castAbility(h,id);// (one cast for every caster: battle/abilities.js)
   }
   // called from your hero's moment with their own time step; returns true while a roll or leap owns the hero's movement

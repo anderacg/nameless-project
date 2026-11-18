@@ -483,7 +483,7 @@ function bowAim(u){const t=u.tgt;if(!t||t.hp<=0)return 0;const d=Math.hypot(t.x-
 function drawUnit(u){if(B.world){const p=B.world.world(u),L=liftAt(p.x,p.y)*B.world.scale;if(!L)return reduced(()=>drawUnitAt(u));ctx.save();ctx.translate(0,-L);try{return reduced(()=>drawUnitAt(u))}finally{ctx.restore()}}return drawUnitAt(u)}
 function drawUnitAt(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
-  const q=camPx(),big=u.s.big?2:1,s=actorSprite(u),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;
+  const q=camPx(),big=u.s.big?2:1,s=actorSprite(u),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;FX_FIG.set(u,h);// (his figure's height as drawn, where effects on him are born: vfx.js bodyY)
   if(B.world){const k=WORLD_BATTLE.sprite;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.translate(-x,-y)}
   // (in a river (terrain.js groundAt; engine/ground.js paints it): deep water hides him to the waist, sunk 2 px, a ring of ripples
   // round him, its back half behind him; a ford wets his feet and splashes as he walks; a frozen ford (frost) is ice. From the
@@ -555,7 +555,7 @@ function waterRing(x,y,rx,u,half,moved){x=Math.round(x);y=Math.round(y);const ph
 // an attack's trail by its shape: a sweeping crescent, a darting streak, a chop and its shockwave, a full circle, claw marks
 function drawSlash(s){
   const p=1-s.life/(s.max||.2),fade=Math.min(1,s.life/(s.max||.2)*1.6),col=s.col||'255,255,255',st=a=>'rgba('+col+','+Math.max(0,a).toFixed(2)+')';
-  ctx.save();const scale=worldEffectScale();effectTransform(s.x,s.y,scale);s={...s,r:s.r/scale,area:s.area/scale};ctx.lineCap='round';
+  ctx.save();const scale=worldEffectScale(),A=fxA(s);effectTransform(s.x,s.y,scale,A.dz,A.up);s={...s,r:s.r/scale,area:s.area/scale};ctx.lineCap='round';
   if(s.kind==='arc'||s.kind==='spin'){const span=s.kind==='spin'?Math.PI*2:2*s.arc,q=Math.min(1,p*2.4),a0=s.kind==='spin'?s.a:s.a-s.dir*s.arc,a1=a0+s.dir*span*q,tail=Math.max(0,q-.55)*span;
     const lo=Math.min(a0+s.dir*tail,a1),hi=Math.max(a0+s.dir*tail,a1);
     for(let k=0;k<3;k++){ctx.strokeStyle=st(fade*(1-k*.3));ctx.lineWidth=Math.max(1,(s.w||3)-k);ctx.beginPath();ctx.arc(s.x,s.y,Math.max(.5,s.r-k*2),lo,hi);ctx.stroke()}
@@ -659,7 +659,7 @@ function drawBattle(){
   // (each missile and its shadow up by the lift of the ground under it, as the men it flies between: vfx.js fieldLift)
   for(const a of B.arrows){const Lf=fieldLift(a.x,a.y);if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50),kind=missileOf(a);
       ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';const k=B.world?WORLD_BATTLE.sprite:1;ctx.fillRect(Math.round(a.x-2*k),Math.round(a.y-Lf),4*k,k);
-      ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-4-z-Lf));ctx.scale(k,k);
+      ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-arrowUp(a)-Lf));ctx.scale(k,k);
       // (its look by what it is: a spider's web a sticky white clot with loose strands, a sling's stone, a javelin's long shaft; else an arrow)
       if(kind==='web'){const sp=Math.floor(a.t*12)%2;ctx.fillStyle='#eef0f4';ctx.fillRect(-1,-1,3,3);ctx.fillStyle='#c8ccd6';if(sp){ctx.fillRect(-3,-2,2,1);ctx.fillRect(2,2,2,1)}else{ctx.fillRect(-3,2,2,1);ctx.fillRect(2,-2,2,1)}ctx.fillStyle='#ffffff';ctx.fillRect(0,-1,1,1)}
       else if(kind==='stone'){ctx.fillStyle='#7a776e';ctx.fillRect(-1,-1,2,2);ctx.fillStyle='#a8a498';ctx.fillRect(-1,-1,1,1)}

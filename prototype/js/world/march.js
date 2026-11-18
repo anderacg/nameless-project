@@ -250,6 +250,8 @@ function marchWaterBehind(x,y,hx,hy,J=MARCH_ACT){if(typeof drawnWet!=='function'
   for(let k=0;k<=J.ramp;k+=2){const px=x-hx*k,py=y-hy*k;if(!drawnWet(px,py))continue;const i=Math.floor(py/TILE)*MW+Math.floor(px/TILE),d=D[i]<0?WATER.open:D[i];if(d>w)w=d}
   return w}
 // (where a move A draws him at its share q: the land's lift there, eased from the height he left to the new, a hop's or a jump's arc over it)
+// (how far up each marcher is drawn by his move over an edge this frame (marchDraw): where effects on him are, MarchArmy body)
+const MARCH_UP=new WeakMap();
 function marchActLift(A,q,J=MARCH_ACT){const k=A.k,sm=q*q*(3-2*q);return A.from+A.h*(k==='hop'||k==='jump'?q*q:sm)+(J.arc[k]?J.arc[k]*4*q*(1-q):0)}
 function marchAct(u){const J=MARCH_ACT,now=performance.now()/1000,S=ST[u.type]||{},none={pose:undefined,dy:0};if(S.fly||typeof liftAt!=='function')return none;
   const walks=marchWalks(u),m=u._ax!=null?Math.hypot(u.x-u._ax,u.y-u._ay):0,hx=m>0?(u.x-u._ax)/m:0,hy=m>0?(u.y-u._ay)/m:0,L=liftAt(u.x,u.y),aL=u._aL;
@@ -276,7 +278,7 @@ function drawMarcherAt(u,o,cam){
   const S=ST[u.type]||{},I=!marchWalks(u)?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
   // (what he carries besides, gfx/marchgear.js: his army's flag (on a spear of its own, his body bare; else at his back, before
   // his body), a torch after dark)
-  const act=marchAct(u);subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y-act.dy),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
+  const act=marchAct(u);MARCH_UP.set(u,act.dy);subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y-act.dy),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
   // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld (a sword worn out of sight: SHEATH); a flag-bearer's
   // (your hero's, carrying your banner) only if it is sheathed (SHEATH.show), his hands on the pole; none for a beast)
   const s=marchSprite(u,o,I?.pose??act.pose??marchClimbPose(u,o),true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
@@ -1096,7 +1098,7 @@ class MarchArmy{
   // again when they have moved)
   // (where a man of it is drawn, game px: his x across his figure's middle, his foot up by its ground's lift (worldterrain.js liftY),
   // his figure's middle and top (figure): what is drawn on him after the scene, centred on him as he stands, gfx/blessing.js)
-  body(u){const F=this.figure(u),fl=Math.cos(u.dir??this.face)<0,mx=(F[0]+F[2])/2,f=liftY(u.x,u.y);return{x:u.x+(fl?-mx:mx),foot:f,mid:f+(F[1]+F[3])/2,top:f+F[1]}}
+  body(u){const F=this.figure(u),fl=Math.cos(u.dir??this.face)<0,mx=(F[0]+F[2])/2,f=liftY(u.x,u.y)-(MARCH_UP.get(u)||0);return{x:u.x+(fl?-mx:mx),foot:f,mid:f+(F[1]+F[3])/2,top:f+F[1]}}
   figBox(){const b=this.fbx||(this.fbx=[0,0,0,0]);if(this.fbT===this.time&&this.fbU===this.units&&this.fbX===this.x&&this.fbY===this.y)return b;b[0]=b[1]=Infinity;b[2]=b[3]=-Infinity;
     for(const u of this.units){if(u.dead)continue;const F=this.figure(u),fl=Math.cos(u.dir??this.face)<0,x0=u.x+(fl?-F[2]:F[0]),x1=u.x+(fl?-F[0]:F[2]);
       if(x0<b[0])b[0]=x0;if(x1>b[2])b[2]=x1;if(u.y+F[1]<b[1])b[1]=u.y+F[1];if(u.y+F[3]>b[3])b[3]=u.y+F[3]}this.fbT=this.time;this.fbU=this.units;this.fbX=this.x;this.fbY=this.y;return b}
