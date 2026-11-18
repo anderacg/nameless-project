@@ -887,7 +887,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  the bridges": steps up over 9 px or down over 16 px block every mover (world/map.js LEDGE, router.js, world.js walk, MarchGround), and
 //  the river beside a bridge is shut to routes and formations (bridgeSide), which moves where every party is (W7, W8) and the view (W6).
 //  W1-W5, B2 and the sums hold. Were W6 76d8ceca, W7 2dafadb3, W8 1cdbeaf3)
-const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'7762de70',W6:'db7ef1b3',W7:'cc683a1e',W8:'ed3f924a',B2:'9fa9d7f3'};
+// (W6-W8, B2 re-recorded 2026-11-18 again, on purpose, the owner's "a duck ... when it move onto the land it doesnt have leg", "add
+//  more wildlife behavior and recheck correctness": herds drawn grazing, wary, bedded down, drinking, galloping (herdPose, PX.BEAST_GRAZE,
+//  BEAST_REST) (W6), wild game kept off holdings' lots and 48 px round them when placed and walking off them, and new moves between
+//  flights on the critters' own stream (WILD_LIFE) (W7, W8, B2). W1-W5 and the sums hold. Were W6 db7ef1b3, W7 cc683a1e, W8 ed3f924a,
+//  B2 9fa9d7f3)
+const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'7762de70',W6:'6f514d91',W7:'3abd9f22',W8:'cd18c93b',B2:'05b4d278'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

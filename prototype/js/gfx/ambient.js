@@ -26,7 +26,8 @@ const AMBIENT={homes:{tiles:8,tries:8,chance:.65,cache:256,quiet:2,memories:96,r
   flock:{every:25,max:1,n:[3,7],speed:[24,34],alt:[46,72]},
   // resident birds peck in meadows or woods, with a local tree or roof to roost in; off they fly
   // when anyone comes within scare px (or after life s), climbing rise px a second to top px up
-  peck:{every:12,max:1,n:[2,4],scare:30,life:[14,28],speed:[50,70],rise:30,top:42},
+  // (perched in their roost perch s, with no one by they come down to feed again, back times at most: flushed, then settled)
+  peck:{every:12,max:1,n:[2,4],scare:30,life:[14,28],speed:[50,70],rise:30,top:42,perch:8,back:2},
   // crows circling a place (a fight, a trace on the road, ruins), r px round it, spin radians a second
   crow:{every:1.2,max:1,n:[2,3],r:[12,22],spin:.45,alt:[22,36]},
   // a gull over water within shore tiles of land, gliding about where it came (range px) for life s, then on its way
@@ -45,8 +46,14 @@ const AMBIENT={homes:{tiles:8,tries:8,chance:.65,cache:256,quiet:2,memories:96,r
   owl:{every:24,max:1,speed:[16,22],alt:[14,24],life:[16,24],range:48},
   // on the ground by their home, off when anyone comes within scare px: herons by water, ducks on the shore's water, lizards
   // on desert ground
-  heron:{every:22,max:1,scare:40,speed:[20,28],life:[24,40]},
-  duck:{every:16,max:1,scare:32,speed:[5,9],life:[20,34]},
+  // (a heron in the drawn water wades: its legs cut at the waterline by how deep it stands, wade px at most, a ripple round them)
+  heron:{every:22,max:1,scare:40,speed:[20,28],life:[24,40],wade:4},
+  // ducks (the owner, 2026-11-18: "a duck that goes on water but when it move onto the land it doesnt have leg"): n of them paddle
+  // together (speed px a second) on the drawn water, drawn swimming there (no legs, a waterline) and walking on land (legs, a
+  // waddle); on a new turn (turn s) ashore of the time they waddle (walk px a second) to the bank within bank px and rest there rest s,
+  // then back to the water; scared they fly up and off (fly: px a second, rising rise px a second to top px up) and come down on the
+  // water again after settle px of it, wheeling back toward the water it left (turn radians a second) till it is over water
+  duck:{every:16,max:1,scare:32,speed:[5,9],life:[30,50],n:[2,4],turn:[4,8],ashore:.35,walk:6,bank:28,rest:[5,10],fly:{speed:[38,50],rise:20,top:24,settle:[60,110],turn:1.4}},
   lizard:{every:22,max:1,scare:24,speed:[28,40],life:[14,26]},
   vulture:{every:28,max:1,speed:[12,18],alt:[30,46],life:[22,36],range:48},
   // battle: birds out of trees trees (n each), flying off at speed, climbing rise px a second; crows over the fallen
@@ -187,7 +194,14 @@ function ambSpawn(k,x,y){
   else if(k==='fish')e.life=A.life;
   else if(k==='hare')Object.assign(e,{life:ambIn(A.life),st:'sit',dir:ambR()<.5?1:-1,hop:1+ambR()*2,white:climAt(x,y)==='frost'?1:0});
   else if(k==='squirrel')Object.assign(e,{st:'sit',wait:ambIn(A.wait),dir:ambR()<.5?1:-1,dd:10+ambR()*6});
-  else if(k==='heron'||k==='duck'||k==='lizard')Object.assign(e,{st:'sit',dir:ambR()<.5?1:-1,h:e.ph,v:ambIn(A.speed)*s,life:ambIn(A.life),run:0});
+  else if(k==='duck'){Object.assign(e,{st:'swim',dir:ambR()<.5?1:-1,h:e.ph,v:ambIn(A.speed)*s,life:ambIn(A.life),turn:ambIn(A.turn),m:[]});
+    for(let i=0,n=ambInt(A.n);i<n;i++)e.m.push({dx:i?Math.round((ambR()-.5)*14):0,dy:i?Math.round((ambR()-.5)*6):0,ph:ambR()*6.283});
+    // (its home's tile is water, but the water drawn on it may lie a little off: onto the nearest drawn water, else resting on the bank)
+    if(!drawnWet(x,y)){let w=null;for(let r=2;r<=16&&!w;r+=2)for(let a=0;a<8&&!w;a++){const X=x+Math.cos(a*.785)*r,Y=y+Math.sin(a*.785)*r*.7;if(ambDuckWet(X,Y))w={x:X,y:Y}}
+      if(w){e.x=w.x;e.y=w.y}else Object.assign(e,{st:'rest',wp:{x,y}})}}
+  else if(k==='heron'||k==='lizard')Object.assign(e,{st:'sit',dir:ambR()<.5?1:-1,h:e.ph,v:ambIn(A.speed)*s,life:ambIn(A.life),run:0});
+  // (a heron often out in the shallows by its bank, wading: on drawn water within 10 px no deeper than WATER's second band)
+  if(k==='heron'&&ambR()<.5)for(let r=2;r<=10;r+=2){let hit=false;for(let a=0;a<8&&!hit;a++){const X=x+Math.cos(a*.785+e.ph)*r,Y=y+Math.sin(a*.785+e.ph)*r*.7;if(drawnWet(X,Y)&&depthBand(drawnDepth(X,Y))<=2){e.x=X;e.y=Y;hit=true}}if(hit)break}
   return e}
 // (the birds pecking, up and away from (fx, fy): each its own way, a little apart)
 function ambScatter(e,fx,fy){ambQuiet(e);const A=AMBIENT.peck,s=reducedMotion()?AMBIENT.slow:1,a0=Math.atan2(e.y-fy,e.x-fx);e.st='fly';e.ft=e.t;
@@ -205,7 +219,13 @@ function ambStep(e,dt,F,inV){
     if(e.home.roost){ambScatter(e,e.x+1,e.y);e.roost=e.home.roost}else return false;
   }
   if(e.k==='peck'){
-    if(e.st==='perch'){e.perched+=dt;return e.perched<8}
+    if(e.st==='perch'){e.perched+=dt;if(e.perched<A.perch)return true;
+      // (with no one by its feeding place, down to it again, back times at most: flushed, then settled)
+      if(e.home&&(e.backs||0)<A.back&&inV(e.home.x,e.home.y)&&ambNear(F,e.home.x,e.home.y)[1]>A.scare*1.6){e.backs=(e.backs||0)+1;e.st='land';e.roost=null;for(const m of e.m){m.x=e.x;m.y=e.y;m.alt=e.alt}return true}
+      return false}
+    if(e.st==='land'){let any=false;for(const m of e.m){const tx=e.home.x+m.dx,ty=e.home.y+m.dy,d=Math.hypot(tx-m.x,ty-m.y),st=Math.min(d,A.speed[0]*s*dt);
+        if(d>1){m.x+=(tx-m.x)/d*st;m.y+=(ty-m.y)/d*st;any=true}m.alt=Math.max(0,m.alt-A.rise*s*dt*(d>20?.3:1));if(m.alt>0)any=true}
+      if(!any){e.x=e.home.x;e.y=e.home.y;e.alt=0;e.st='peck';e.life=e.t+ambIn(A.life)}return true}
     if(e.st==='peck'){const [o,d]=ambNear(F,e.x,e.y);if(d<A.scare)ambScatter(e,o.x,o.y);else if(e.t>e.life)ambScatter(e,e.x+ambR()-.5,e.y+ambR()-.5);return inV(e.x,e.y)}
     let any=false;for(const m of e.m){
       if(e.roost){const d=Math.hypot(e.roost.x-m.x,e.roost.y-m.y),step=Math.min(d,A.speed[0]*s*dt);if(d>2){m.x+=(e.roost.x-m.x)/d*step;m.y+=(e.roost.y-m.y)/d*step;any=true}m.alt+=(e.roost.alt-m.alt)*Math.min(1,dt*4)}
@@ -227,13 +247,42 @@ function ambStep(e,dt,F,inV){
   if(e.k==='squirrel'){
     if(e.st==='sit'){const [o,d]=ambNear(F,e.x,e.y);if(d<A.scare){ambQuiet(e);Object.assign(e,{st:'dart',dir:e.x>=o.x?1:-1,v:ambIn(A.speed)*s,run:0})}else if(e.t>e.wait)Object.assign(e,{st:'dart',v:ambIn(A.speed)*s,run:0});return true}
     if(!ambMove(e,e.dir*e.v*dt,-e.v*.25*dt))e.dir=-e.dir;e.run+=e.v*dt;return e.run<e.dd}
-  if(e.k==='heron'||e.k==='duck'||e.k==='lizard'){
+  if(e.k==='duck')return ambDuck(e,dt,F,inV);
+  if(e.k==='heron'||e.k==='lizard'){
     const [o,d]=ambNear(F,e.x,e.y),scared=d<A.scare;if(scared&&e.st==='sit'){ambQuiet(e);e.st='flee';e.ft=e.t;e.h=Math.atan2(e.y-o.y,e.x-o.x)}
     if(e.k==='heron'&&e.st==='flee'){e.x+=Math.cos(e.h)*e.v*dt;e.y+=Math.sin(e.h)*e.v*dt;e.alt=Math.min(28,e.alt+16*s*dt);return e.t-e.ft<4&&inV(e.x,e.y)}
-    if(e.k==='duck'||e.st==='flee'){const v=e.v*(scared?2:1);e.h+=Math.sin(e.t+e.ph)*dt*.5;if(!ambMove(e,Math.cos(e.h)*v*dt,Math.sin(e.h)*v*.6*dt))e.h+=Math.PI;e.dir=Math.cos(e.h)<0?-1:1}
+    if(e.st==='flee'){const v=e.v*(scared?2:1);e.h+=Math.sin(e.t+e.ph)*dt*.5;if(!ambMove(e,Math.cos(e.h)*v*dt,Math.sin(e.h)*v*.6*dt))e.h+=Math.PI;e.dir=Math.cos(e.h)<0?-1:1}
     return e.t<e.life&&(!e.home||ambientCan(e.k,e.x,e.y))&&inV(e.x,e.y)}
 
   return false}
+// (a duck's water is the drawn water of its habitat; its bank the dry land drawn by it (on a water tile too, where the drawn bank
+//  reaches over it: the owner's screenshot), never a road, a building or a yard)
+const ambDuckWet=(x,y)=>drawnWet(x,y)&&ambHabitat('duck',x,y);
+function ambDuckLand(x,y){const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<1||ty<1||tx>=MW-1||ty>=MH-1||drawnWet(x,y))return false;const t=tAt(tx,ty);
+  return (t===T_WATER||passable(t)&&t!==T_ROAD&&nearTile(tx,ty,T_WATER,1))&&ambLot(tx,ty)<2}
+// (a dry spot by the water within r px, the bank it waddles up onto: on rings out from it, one with drawn water just behind it)
+function ambBank(e,r){for(let d=6;d<=r;d+=4)for(let a=0;a<12;a++){const an=a/12*6.283+e.ph,c=Math.cos(an),sn=Math.sin(an),x=e.x+c*d,y=e.y+sn*d*.7;
+    if(ambDuckLand(x,y)&&drawnWet(x-c*5,y-sn*3.5))return{x,y}}return null}
+/* a duck's moment (AMBIENT.duck): swimming about on the drawn water (it turns back at its edge); on a new turn, now and then, it
+   waddles ashore onto the bank and rests there, then back into the water where it left it; anyone near, or its time up, and it
+   flies, coming down on the water again settle px on (not at its time's end: then it flies off) */
+function ambDuck(e,dt,F,inV){const A=AMBIENT.duck,s=reducedMotion()?AMBIENT.slow:1,[o,d]=ambNear(F,e.x,e.y);
+  if(e.st!=='fly'&&(d<A.scare||e.t>e.life)){if(d<A.scare)ambQuiet(e);const a0=d<A.scare?Math.atan2(e.y-o.y,e.x-o.x)+(ambR()-.5)*.6:ambR()*6.283;
+    Object.assign(e,{st:'fly',ft:e.t,fv:ambIn(A.fly.speed)*s,h:a0,far:e.t>e.life?1e9:ambIn(A.fly.settle),flown:0,from:{x:e.x,y:e.y},dir:Math.cos(a0)<0?-1:1})}
+  if(e.st==='fly'){const Y=A.fly;e.x+=Math.cos(e.h)*e.fv*dt;e.y+=Math.sin(e.h)*e.fv*.6*dt;e.flown+=e.fv*dt;
+    // (flown its settle px and over no water: it wheels back toward the water it left, to come down on it)
+    if(e.flown>=e.far&&e.far<1e9&&!ambDuckWet(e.x,e.y)){let dh=Math.atan2(e.from.y-e.y,e.from.x-e.x)-e.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));e.h+=Math.sign(dh)*Math.min(Math.abs(dh),Y.turn*dt);e.dir=Math.cos(e.h)<0?-1:1}
+    if(e.flown<e.far||!ambDuckWet(e.x,e.y))e.alt=Math.min(Y.top,e.alt+Y.rise*s*dt);
+    else{e.alt=Math.max(0,e.alt-Y.rise*s*dt);if(!e.alt){e.st='swim';e.turn=e.t+ambIn(A.turn)}}
+    return inV(e.x,e.y)&&e.t-e.ft<(e.far<1e9?40:14)}
+  if(e.t>e.turn){e.turn=e.t+ambIn(A.turn);
+    if(e.st==='swim'&&ambR()<A.ashore){const b=ambBank(e,A.bank);if(b){e.st='ashore';e.to=b;e.wp={x:e.x,y:e.y}}}
+    else if(e.st==='rest')e.st='back';
+    else if(e.st==='swim')e.h=ambR()*6.283}
+  if(e.st==='swim'){e.h+=Math.sin(e.t+e.ph)*dt*.5;const dx=Math.cos(e.h)*e.v*dt,dy=Math.sin(e.h)*e.v*.6*dt;if(ambDuckWet(e.x+dx,e.y+dy)){e.x+=dx;e.y+=dy}else e.h+=Math.PI*.6+ambR();e.dir=Math.cos(e.h)<0?-1:1}
+  else if(e.st==='ashore'||e.st==='back'){const to=e.st==='ashore'?e.to:e.wp,tx=to.x-e.x,ty=to.y-e.y,dl=Math.hypot(tx,ty),st=Math.min(dl,A.walk*s*dt);
+    if(dl>.5){e.x+=tx/dl*st;e.y+=ty/dl*st;if(Math.abs(tx)>.2)e.dir=tx<0?-1:1}else if(e.st==='ashore'){e.st='rest';e.turn=e.t+ambIn(A.rest)}else e.st='swim'}
+  return inV(e.x,e.y)&&(!e.home||e.st!=='swim'||ambientCan(e.k,e.x,e.y))}
 /* each frame of the map (render.js drawWorld, while the frame's list is made): every one stepped on real time, the gone let go,
    new ones born, and those on the ground put on the list by their feet (ents: drawn with everyone, behind what stands in front:
    depth.js worldOverdraw; nf: nothing over them fades for them). V: your sight */
@@ -254,7 +303,7 @@ function ambientWorld(ents,cam,V){
   // (a fish's leap and splash: among the figures by its water's line, so a pier, a moored boat or a house before it covers it; the owner,
   // 2026-11-14: "the drawing layer between fish animation is not valid", it was drawn flat over all that stands)
   for(const e of L)if(e.k==='fish')ents.push({x:e.x,y:e.y,nf:1,f:()=>{ctx.save();ambFish(e,cam);ctx.restore()}});
-  for(const e of L)if(AMB_GROUND[e.k]&&!(e.k==='peck'&&e.st!=='peck'&&e.st!=='perch')&&!(e.k==='heron'&&e.st==='flee'))ents.push({x:e.x,y:e.y,nf:1,f:()=>ambGround(e,cam)})}
+  for(const e of L)if(AMB_GROUND[e.k]&&!(e.k==='peck'&&e.st!=='peck'&&e.st!=='perch')&&!(e.k==='heron'&&e.st==='flee')&&!(e.k==='duck'&&e.st==='fly'))ents.push({x:e.x,y:e.y,nf:1,f:()=>ambGround(e,cam)})}
 // ---- the pictures: tiny, crisp, made once (rows of letters, each a colour; '.' clear), each also facing left. At the lab's scale:
 // each px of them a fine px (drawn at ambK, WORLD_VIEW.build, of their size: ambPut), as big on the map as they were with twice the
 // detail; a kind's lit (l) and shaded (d, s) letters a ramp of its colour (ambRamp)
@@ -294,8 +343,14 @@ function ambSpr(){if(AMBS)return AMBS;const both=s=>[s,ambFlip(s)],
     owl:big.map(r=>ambPic(r,birdOf('#c5aa7b','#8a7450',1.12))),ravenAir:big.map(r=>ambPic(r,birdOf('#303644',null,1.3))),vulture:big.map(r=>ambPic(r,birdOf('#685545','#3e3228',1.2))),
     heron:both(ambPic(['......hh..','.....hhekk','......nn..','.....nn...','.....nn...','..LLLnb...','.bbbbbbb..','tbbbbbbs..','..ssbbs...','...l.l....','...l.l....','...l.l....','...l..l...','..ll..ll..'],
       {h:'#6b838c',n:'#c4d0c9',b:'#809699',l:'#705a38',e:'#1a1a1a',k:'#c8a040',L:'#a0b4b6',s:'#64787a',t:'#5a6c70'})),
-    duck:both(ambPic(['........hh..','.......hhhe.','.......hhhkk','........hw..','..LLLLbbbb..','.tbbbbbbbbb.','tbbbsbbbbbb.','.bbbbbbbbbs.','..llllllll..','...rrrrrr...'],
-      {h:'#51775c',b:'#a38258',l:'#d3b382',e:'#101010',k:'#d8b040',w:'#e8e8e0',L:'#bc9c70',s:'#7c6242',t:'#3a3a3a',r:'rgba(220,235,240,.45)'})),
+    // (a duck: swimming, its body low in the water, a waterline under it, no legs; on land standing on its orange legs and webbed feet,
+    //  two steps of a waddle, and preening, its head turned back to its wing; in the air its wings beating)
+    duck:(()=>{const pal={h:'#51775c',b:'#a38258',l:'#d3b382',e:'#101010',k:'#d8b040',w:'#e8e8e0',L:'#bc9c70',s:'#7c6242',t:'#3a3a3a',r:'rgba(220,235,240,.45)',y:'#e08a2c',f:'#c8701e'},
+        top=['........hh..','.......hhhe.','.......hhhkk','........hw..','..LLLLbbbb..','.tbbbbbbbbb.','tbbbsbbbbbb.','.bbbbbbbbbs.','..llllllll..'],
+        preen=['............','............','......hh....','.....hhhe...','..LLhhhkbb..','.tbbbbbbbbb.','tbbbsbbbbbb.','.bbbbbbbbbs.','..llllllll..'],
+        legs=[['.....y.y....','....ff.ff...'],['....y...y...','...ff...ff..']];
+      return{swim:both(ambPic([...top,'...rrrrrr...'],pal)),walk:legs.map(l=>both(ambPic([...top,...l],pal))),preen:both(ambPic([...preen,...legs[0]],pal))}})(),
+    duckAir:big.map(r=>ambPic(r,birdOf('#8c7050','#51775c',1.15))),heronAir:big.map(r=>ambPic(r,birdOf('#809699','#5a6c70',1.12))),
     lizard:both(ambPic(['..........hh..','......LLLLhhe.','ttttbbbbbbbhhh','.....sbsbbs...','....ll...ll...','...l.....l....'],{h:'#bfa270',t:'#9a794b',b:'#b0925b',l:'#785d3a',L:'#c8ac78',s:'#8a7046',e:'#202020'}))}}
 // (a big bird's wings by its clock: gliding mostly, a few flaps now and then; held gliding with reducedMotion)
 const ambWing=(t,rm)=>{const c=((t%4)+4)%4;return rm||c>.7?1:Math.floor(c*8)%2?2:0};
@@ -306,7 +361,17 @@ function ambGround(e,cam){const S=ambSpr(),X=snapV(e.x)-cam.x,Y=snapV(e.y)-cam.y
   if(e.k==='fly'){const a=Math.min(1,e.t/.6,(e.life-e.t)/.6),hv=Math.round((3+Math.sin(e.t*7+e.ph)*1.5)/q)*q;if(a<=0)return;ctx.globalAlpha=a;ctx.fillStyle=e.col;
     if(Math.floor(e.t*11+e.ph)%2){ctx.fillRect(X-2*q,Y-hv-q,2*q,2*q);ctx.fillRect(X+q,Y-hv-q,2*q,2*q);ctx.fillStyle='#3a3020';ctx.fillRect(X,Y-hv-q,q,2*q)}
     else{ctx.fillRect(X,Y-hv-2*q,q,2*q);ctx.fillStyle=PX.shade(e.col,.75);ctx.fillRect(X+q,Y-hv-q,q,q)}ctx.globalAlpha=1;return}
-  if(e.k==='heron'||e.k==='duck'||e.k==='lizard'){const sp=S[e.k][e.dir<0?1:0];ctx.globalAlpha=Math.max(0,Math.min(1,e.t/.6,(e.life-e.t)/.6));
+  // (each duck by where it is: on the drawn water swimming, bobbing; on land on its legs, waddling as it goes, preening as it rests)
+  if(e.k==='duck'){ctx.globalAlpha=Math.min(1,e.t/.6);const f=e.dir<0?1:0,D=S.duck,go=e.st==='ashore'||e.st==='back';
+    for(const m of e.m){const x=e.x+m.dx,y=e.y+m.dy,mx=snapV(x)-cam.x,my=snapV(y)-cam.y;
+      if(drawnWet(x,y))ambPut(D.swim[f],mx,my+1+(Math.floor(e.t*1.4+m.ph)%2)*q);
+      else ambPut(go?D.walk[Math.floor(e.t*6+m.ph)%2][f]:Math.floor(e.t*.5+m.ph)%3===0?D.preen[f]:D.walk[0][f],mx,my+1)}
+    ctx.globalAlpha=1;return}
+  // (a heron in the drawn water: its legs cut at the waterline by how deep it stands (AMBIENT.heron.wade), a ripple round them)
+  if(e.k==='heron'&&drawnWet(e.x,e.y)){const sp=S.heron[e.dir<0?1:0],cut=Math.min(AMBIENT.heron.wade,[1,2,3,4,4][depthBand(drawnDepth(e.x,e.y))]),k=q,h=sp.height-cut;
+    ctx.globalAlpha=Math.max(0,Math.min(1,e.t/.6,(e.life-e.t)/.6));ctx.drawImage(sp,0,0,sp.width,h,X-(sp.width>>1)*k,Y+1-h*k,sp.width*k,h*k);
+    ctx.fillStyle='rgba(220,235,240,.5)';ctx.fillRect(X-3*k,Y,6*k,k);ctx.globalAlpha=1;return}
+  if(e.k==='heron'||e.k==='lizard'){const sp=S[e.k][e.dir<0?1:0];ctx.globalAlpha=Math.max(0,Math.min(1,e.t/.6,(e.life-e.t)/.6));
     ambPut(sp,X,Y+1);ctx.globalAlpha=1;return}
   let s,a=1;
   if(e.k==='hare'){const go=e.st==='bolt'||e.hx!=null&&e.t-e.hx<.25;s=S.hare[e.white][go&&Math.floor(e.t*9)%2?1:0][e.dir<0?1:0];if(e.st==='bolt')a=Math.max(0,Math.min(1,(90-e.run)/30))}
@@ -315,10 +380,11 @@ function ambGround(e,cam){const S=ambSpr(),X=snapV(e.x)-cam.x,Y=snapV(e.y)-cam.y
 // (each bird of e in the air: f(x, y: its ground point, alt: px up, its picture now, alpha))
 function ambBirds(e,f){const S=ambSpr(),rm=reducedMotion();
   if(e.k==='flock'){const a=Math.max(0,Math.min(1,e.t/.8,(e.life-e.t)/.8));for(const m of e.m){const dx=e.route?-Math.cos(e.h)*m.back-Math.sin(e.h)*m.side:m.dx,dy=e.route?-Math.sin(e.h)*m.back+Math.cos(e.h)*m.side:m.dy;f(e.x+dx+Math.sin(e.t*1.3+m.ph)*1.2,e.y+dy,e.alt+m.da,(e.species==='raven'?S.ravenAir:e.species==='pigeon'?S.bird:S.flock)[ambWing(e.t+m.ph,rm)],a)}}
-  else if(e.k==='peck'){if(e.st!=='fly')return;const a=Math.max(0,Math.min(1,6-(e.t-e.ft)));for(const m of e.m)f(m.x,m.y,m.alt,S.brown[Math.floor(e.t*(rm?5:9)+m.ph)%2],a)}
+  else if(e.k==='duck'){if(e.st!=='fly')return;const a=Math.max(0,Math.min(1,14-(e.t-e.ft)));for(const m of e.m)f(e.x+m.dx,e.y+m.dy*.5,e.alt+Math.sin(e.t*3+m.ph),S.duckAir[rm?1:Math.floor(e.t*10+m.ph)%2?0:2],a)}
+  else if(e.k==='peck'){if(e.st!=='fly'&&e.st!=='land')return;const a=e.st==='land'?1:Math.max(0,Math.min(1,6-(e.t-e.ft)));for(const m of e.m)f(m.x,m.y,m.alt,S.brown[Math.floor(e.t*(rm?5:9)+m.ph)%2],a)}
   else if(e.k==='crow'){const a=Math.max(0,Math.min(1,e.t,1-(e.go||0)));for(const m of e.m){const an=m.a+m.w*e.t;f(e.x+Math.cos(an)*m.r,e.y+Math.sin(an)*m.r*.5,m.alt+Math.sin(e.t*.7+m.ph)*2,(S[e.species==='raven'?'ravenAir':e.species]||S.crow)[ambWing(e.t+m.ph,rm)],a)}}
   else if(AMB_GLIDE[e.k])f(e.x,e.y,e.alt+Math.sin(e.t*.5+e.ph)*3,S[e.k][e.k==='bat'&&!rm?Math.floor(e.t*9)%3:ambWing(e.t*1.1+e.ph,rm)],Math.max(0,Math.min(1,e.t/.8,(e.life-e.t)/.8)));
-  else if(e.k==='heron'&&e.st==='flee')f(e.x,e.y,e.alt,S.bird[ambWing(e.t,rm)],Math.max(0,Math.min(1,4-(e.t-e.ft))))}
+  else if(e.k==='heron'&&e.st==='flee')f(e.x,e.y,e.alt,S.heronAir[ambWing(e.t,rm)],Math.max(0,Math.min(1,4-(e.t-e.ft))))}
 // flat on the ground, under everyone (render.js drawWorld): the flyers' shadows, offset from
 // under them as the sun throws them (a lens of fine px, a bird's span)
 function ambientFlat(cam){

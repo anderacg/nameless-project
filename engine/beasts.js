@@ -17,6 +17,7 @@
 // from its two steps (its leg rows under it, then apart), the frame f of PX.MAP_STEPS (the map's herds and the caravan's ox too). PX._beastFit(kind): how far each kind's poses reach (none may touch its canvas's edge: the gallery's ?view=beasts&fit=1).
 (function(PX){
   const OUT='#1a1c26',DEAD=99;
+  const GRAZE=80,REST=85;PX.BEAST_GRAZE=GRAZE;PX.BEAST_REST=REST;
   PX.BEAST_DEAD=DEAD;PX.BEAST_POSES=[0,1,2,3,4,5,15,16,17,18,6,7,8,9,10,11];
   /* colour: a hue-shifted ramp from one muted base (light warm toward yellow, shadows cool toward blue) */
   const h2r=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
@@ -105,7 +106,9 @@
     return m}
 
   /* the frame: what a pose asks of the body. act: idle, walk, run, atk, alt, dead; i: its step */
-  function act(pose){if(pose>=DEAD)return['dead',pose-DEAD];if(pose<=1)return['idle',pose];if(pose<=5)return['walk',pose-2];if(pose<=8)return['atk',pose-6];
+  // (PX.BEAST_GRAZE + i: its head down to the grass, nibbling (i 0-1); PX.BEAST_REST: lying with its legs folded under it, its head
+  //  up: the map's wild game between its flights, world/critters.js; never in a battle)
+  function act(pose){if(pose>=DEAD)return['dead',pose-DEAD];if(pose===GRAZE||pose===GRAZE+1)return['graze',pose-GRAZE];if(pose===REST)return['rest',0];if(pose<=1)return['idle',pose];if(pose<=5)return['walk',pose-2];if(pose<=8)return['atk',pose-6];
     if(pose<=11)return['alt',pose-9];if(pose<=14)return['atk',pose-12];if(pose<=18)return['run',pose-15];return['walk',(pose-19)%4]}
   /* a four-legged gait: legs [far hind, far fore, near hind, near fore] each [dx, lift]; bob (the body's rise, negative up); head
      [dx, dy]; jaw (open 0-2); tail (-1 down .. 1 up); paw (the near fore raised for a blow: 0-2); wing (fold, up, mid, down) */
@@ -131,6 +134,8 @@
     o.back=S.back.map(r);o.legs=S.legs.map((v,i)=>i===2?Math.round(v*k):Math.max(1,Math.round(v*k)));if(S.fore)o.fore=S.fore.map((v,i)=>i===2?Math.round(v*k):Math.max(1,Math.round(v*k)));if(S.hump)o.hump=S.hump.map(r);
     if(S.pawUp)o.pawUp=Math.max(1,Math.round(S.pawUp*k));if(S.head){const h=S.head;o.head={...h,x:Math.round(h.x*k),y:r(h.y),w:Math.max(3,Math.round(h.w*k)),h:Math.max(3,Math.round(h.h*k)),snout:h.snout&&h.snout.map(r)}}return o};
   function quad(g,S,F,o){S=scaleS(S,PX.BEAST_SIZE[o.kind]);
+    // (grazing: its head down by its own height to just over the grass, a step forward, nibbling)
+    if(F.a==='graze'&&S.head)F={...F,head:[2+F.i,Math.max(0,Math.round(S.head.y-S.head.h/2-2))-F.i],tail:0};
     const Y=S.Y,b=F.bob,lx=F.lean?1:0,hip=S.hip,sho=S.sho+lx,top=[Y-S.back[0]+b,Y-S.back[1]+b],bel=Y-S.belly+b,C=S.C,Dk=S.D,P={Y,b,lx,hip,sho,top,bel};
     // (a leg: from its root under the body to its foot on the ground (lift: raised), a hind one bent back at the hock)
     const leg=(i,near)=>{const fore=i%2===1,[dx,lift]=F.legs[i]||[0,0],up=fore&&near&&S.pawUp?[0,S.pawUp,Math.ceil(S.pawUp/2)][F.paw]||0:0,rx=(fore?sho:hip)+(near?0:-1),ry=bel-1,
@@ -187,6 +192,11 @@
     const F=gait('idle',0),sl=how==='slump',lay={...S,belly:2,back:[sl?S.back[0]-1:S.back[0]-S.belly+2,S.back[1]-S.belly+(sl?1:2)],legs:[S.legs[0],S.legs[1],0],fore:S.fore?[S.fore[0],S.fore[1],0]:null,pawUp:0,
       head:S.head?{...S.head,y:S.head.h/2+1,x:S.head.x+(sl?3:2)}:null,wing:S.wing?(g,F,P,far)=>S.wing(g,{...F,wing:'down'},P,far):null};
     F.dead=true;F.raise=how==='wing';F.legs=sl?[[2,0],[-1,0],[2,0],[-1,0]]:[[-2,0],[2,0],[-3,0],[3,0]];F.tail=-1;return quad(g,lay,F,o)}
+  // (one bedded down alive (PX.BEAST_REST): its body on the ground as one lying on its side, its legs folded under it, its head held
+  //  up over its chest, its eye open)
+  function quadRest(g,S,o){const k=S.belly-2,F=gait('idle',0),lay={...S,belly:2,back:[S.back[0]-k,S.back[1]-k],legs:[S.legs[0],S.legs[1],0],fore:S.fore?[S.fore[0],S.fore[1],0]:null,pawUp:0,
+      head:S.head?{...S.head,y:Math.max(S.head.h,S.head.y-k)}:null};
+    F.legs=[[-2,0],[2,0],[-3,0],[3,0]];F.tail=-1;return quad(g,lay,F,o)}
   // (one that falls on its back: the standing figure turned over, its legs in the air, lying on the ground)
   function onBack(g,draw){const s=grid(g.w,g.h);draw(s);let lo=0,hi=g.h;for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(at(s,x,y)){hi=Math.min(hi,y);lo=Math.max(lo,y)}
     const Y=g.h-2;for(let y=hi;y<=lo;y++)for(let x=0;x<g.w;x++){const c=at(s,x,y);if(c)putR(g,x,Y-(y-hi),c)}}
@@ -587,7 +597,7 @@
   // the world map: the dragon on the wing (its own drake, wings up, then level: 32, it should look huge); the rest their own small
   // figures (MAPF), f their step (0 to PX.MAP_STEPS-1)
   PX.beastMap=(kind,f)=>{f=f||0;if(kind!=='dragon')return mapBeast(kind,f);const c=canvas(figure(DRAKE,'drake',{pose:15+(f%2),team:1},true));c.fh=c.height;c.kind='drake';return c};
-  PX._beastKit={grid,put,at,mask,shade,flat,outline,canvas,R,gait,quad,quadDead,tube,wing,turn,TEAM,KINDS};
+  PX._beastKit={grid,put,at,mask,shade,flat,outline,canvas,R,gait,quad,quadDead,quadRest,tube,wing,turn,TEAM,KINDS};
   // PX.breed(name, kind, coats): a breed of a kind (the game's MONSTER_BREEDS): its kind's figure in its own coats, its kind's size,
   // deaths and map figure; once
   PX.breed=(name,kind,coats)=>{const B=KINDS[kind];if(!B||KINDS[name])return false;KINDS[name]=Object.assign(Object.create(B),{coats});

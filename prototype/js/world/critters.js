@@ -25,13 +25,25 @@ class Herd extends WorldObject{
     // 2026-11-13: "The wildlife sprite flashing, like it changes the color")
     ents.push({x:c.x,y:c.y,f:()=>{subT(c);const v0=c.coat??(c.coat=Math.floor((c.hx||0)+(c.hy||0))),A=critterArt(c.id,0,v0),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(A.w*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
       if(c.m){herdScattered(c,v0,A,sx,sy,sp,go,N);return}
-      for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,A.w)/N,N)+i*3)%N:0,a=critterArt(c.id,fr,v0+i),w=Math.max(4,a.w-2);
+      for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,q=herdPose(c,i,go,go?(frameOf(c,Math.max(4,A.w)/N,N)+i*3)%N:0),a=critterArt(c.id,q.fr,v0+i,q.how),w=Math.max(4,a.w-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
-        ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);ctx.scale(c.dir<0?-a.k:a.k,a.k);ctx.drawImage(a.s,-(a.s.width>>1),-a.s.height+(a.k<1?2:1));ctx.restore()}
+        ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy-q.up);ctx.scale(c.dir<0?-a.k:a.k,a.k);ctx.drawImage(a.s,-(a.s.width>>1),-a.s.height+(a.k<1?2:1));ctx.restore()}
       if(WORLD_BATTLE.on)BANNERQ.push({o:c,marker:{h:A.h,col:'#b4c985'}});else if(c.n>1&&DEV.on&&c.fromYou()<90)txt(String(c.n),sx,sy-A.h-4,'#c8e0a0','center')}})}
   tip(){const D=CRITTERS[this.id];return this.wild?'<b>'+D.n+(this.n>1?' ×'+this.n:'')+'</b><small>Wild game</small><span class="act">Click: hunt</span>':''}// (livestock: never hovered)
 }
 const asHerd=asClass(Herd);
+/* (each of a herd's animals drawn by what the herd does (HERD_MIND st): fleeing, a gallop, its bounders leaping (WILD_LIFE.bound px,
+   the hoppers hop) its own beat behind the first; bedded down at night, lying; grazing, its head down to the grass for graze s, then
+   up for look s, each animal on its own time; drinking at the water's edge, its head down; wary, its head up, still; else walking as
+   it steps. how: critterArt's pose; fr: its step; up: px over its shadow) */
+function herdPose(c,i,go,fr){const L=WILD_LIFE,st=c.st,now=performance.now()/1000;
+  if(st==='flee'&&go){const b=L.bounders.includes(c.id)?L.bound:L.hoppers.includes(c.id)?L.hop:0;return{how:'run',fr,up:b?Math.round(b*Math.abs(Math.sin((now*L.bounce+i*.37)*Math.PI))):0}}
+  if(go)return{how:null,fr,up:0};
+  if(st==='bed')return{how:'rest',fr:0,up:0};
+  if(st==='drink')return{how:'graze',fr:Math.floor(now*2+i)&1,up:0};
+  if(st==='graze'){const g=L.graze,l=L.look,h=PX.hash((c.hx|0)+i,(c.hy|0),7),per=g[0]+h*(g[1]-g[0])+l[0]+h*(l[1]-l[0]),u=(now+h*per)%per;
+    if(u<g[0]+h*(g[1]-g[0]))return{how:'graze',fr:Math.floor(now*2.5+i)&1,up:0}}
+  return{how:null,fr:0,up:0}}
 // (its record in a save: packed on a generated world, worldobject.js packRec, its grazing drawn again on its next moment (t, a:
 // 0); herdRec reads it back, either way)
 const HERD_KEYS=['id','x','y','hx','hy','n','dir','tire','cool','idle','escapeSta'];
@@ -71,7 +83,7 @@ function spawnCritter(initial){
   const D=CRITTERS[id];
   for(let k=0;k<200;k++){
     const x=R.int(2,MW-3)*TILE+8,y=R.int(2,MH-3)*TILE+8,tags=habitatAt(x,y);
-    if(!D.where.some(w=>tags.includes(w))||D.where.includes('forest')&&!tags.includes('forest')&&R.next()>CRITTER_WOODS.keep||D.rare&&tags.some(g=>D.rare[g]!=null&&R.next()>D.rare[g])||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.critter[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.critterHold))continue;
+    if(!D.where.some(w=>tags.includes(w))||wildTame(x,y)||D.where.includes('forest')&&!tags.includes('forest')&&R.next()>CRITTER_WOODS.keep||D.rare&&tags.some(g=>D.rare[g]!=null&&R.next()>D.rare[g])||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.critter[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.critterHold))continue;
     W.critters.push(asHerd({crit:true,id,x,y,hx:x,hy:y,n:R.int(D.herd[0],D.herd[1]),t:0,a:0,dir:1,tire:0,cool:0}));return;
   }
 }
@@ -86,6 +98,23 @@ function grazeOk(id,x,y,pen){
 }
 // wild game wanders inside its habitat
 const habitatOk=(id,x,y)=>{const tags=habitatAt(x,y);return CRITTERS[id].where.some(w=>tags.includes(w))};
+// (the holdings' ground wild game keeps out of: a tile of a lot, or within WILD_LIFE.town px of a holding; a tile each, made again each
+//  day and as lots are placed (lots.js lotN))
+const WILD_TAME={key:null,m:null};
+function wildTame(x,y){const T=WILD_TAME,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return true;
+  const key=G.day+':'+lotN+':'+TOWNS.length;if(!T.m||T.key!==key||T.m.length!==MW*MH){const m=T.m=new Uint8Array(MW*MH),r=WILD_LIFE.town,R=Math.ceil(r/TILE);T.key=key;
+    for(const t of TOWNS){const cx=Math.floor(t.x/TILE),cy=Math.floor(t.y/TILE);for(let j=Math.max(0,cy-R);j<=Math.min(MH-1,cy+R);j++)for(let i=Math.max(0,cx-R);i<=Math.min(MW-1,cx+R);i++)if(Math.hypot((i+.5)*TILE-t.x,(j+.5)*TILE-t.y)<r)m[j*MW+i]=1}
+    if(OCC)for(let j=0;j<MH;j++)for(let i=0;i<MW;i++)if(occAt(i,j))m[j*MW+i]=1}
+  return T.m[ty*MW+tx]===1}
+onWorld(()=>{WILD_TAME.m=null});
+// (where wild game may step: its habitat, off the holdings' ground)
+const wildOk=(id,x,y)=>habitatOk(id,x,y)&&!wildTame(x,y);
+// (water within r tiles of a herd: a dry tile of its habitat at its edge, the nearest, to drink from; null for none)
+function wildWater(c,r){const tx=Math.floor(c.x/TILE),ty=Math.floor(c.y/TILE);let best=null,bd=1e9;
+  for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const a=tx+i,b=ty+j;if(a<1||b<1||a>=MW-1||b>=MH-1||tAt(a,b)!==T_WATER)continue;
+    for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]){const x=(a+ox+.5)*TILE,y=(b+oy+.5)*TILE;if(tAt(a+ox,b+oy)===T_WATER||!wildOk(c.id,x,y))continue;const d=Math.hypot(x-c.x,y-c.y);
+      if(d<bd){bd=d;best={x:x-ox*(TILE/2-2),y:y-oy*(TILE/2-2)}}}}
+  return best}
 // (a copy of a shuffled by binary insertion, a draw a comparison: what sort(()=>Math.random()-.5) did on a fresh page. That sort
 // is not a function of its draws: once the browser optimizes its caller it compares in another order and draws fewer, so a
 // new game's later draws hung on how warm the page was)
@@ -185,16 +214,31 @@ const HERD_MIND={think(c,d,hide){
     const A=WORLD_SCALE.ai,D=CRITTERS[c.id],threat=WildlifeThreats.target(c),ox=c.x,oy=c.y;c.cool=Math.max(0,c.cool-d);
     // (fleeing: its grazing ground goes with it, and it keeps on away a little after, so it does not turn back into you)
     if(threat){const sp=moveStep(D.spd*Math.min(1,speedAt(c.x,c.y)||1),d);Router.flee(c,threat,sp);
-      c.hx=c.x;c.hy=c.y;c.a=Math.atan2(c.y-threat.y,c.x-threat.x);c.t=Math.max(c.t,1.5);c.idle=false}
+      c.hx=c.x;c.hy=c.y;c.a=Math.atan2(c.y-threat.y,c.x-threat.x);c.t=Math.max(c.t,1.5);c.idle=false;c.st='flee';c.drink=null}
     // (still bolting from a hunt (HERD_SCATTER.run): on the way its animals ran, at their speed, till it tires of it or is stopped)
-    else if(c.run>0){c.run-=d;if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.spd*Math.min(1,speedAt(c.x,c.y)||1),d),(x,y)=>habitatOk(c.id,x,y)))c.run=0;c.hx=c.x;c.hy=c.y;c.idle=false}
-    else{c.t-=d;if(c.t<=0){const R=critRng();c.t=2+R.next()*4;c.a=R.next()*6.283;c.idle=R.chance(.5)}
+    else if(c.run>0){c.run-=d;if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.spd*Math.min(1,speedAt(c.x,c.y)||1),d),(x,y)=>habitatOk(c.id,x,y)))c.run=0;c.hx=c.x;c.hy=c.y;c.idle=false;c.st='flee'}
+    // (else, its moment between flights (between: wary, bedded down; not on a holding's ground, which it walks off first), or grazing
+    //  and wandering, now and then to water)
+    else if(D.live||wildTame(c.x,c.y)||!this.between(c,D,d)){c.t-=d;if(c.t<=0){const R=critRng();c.t=2+R.next()*4;c.a=R.next()*6.283;c.idle=R.chance(.5);c.st=null;
+        // (a wild one now and then walks to water near it to drink: WILD_LIFE.drink)
+        const L=WILD_LIFE.drink;if(!D.live&&R.chance(L.chance)){const w=wildWater(c,L.r);if(w){c.drink=w;c.idle=false}}}
       const hx=c.hx-c.x,hy=c.hy-c.y;if(Math.hypot(hx,hy)>(D.live?(c.pen?A.penLeash:A.herdLeash):A.gameLeash))c.a=Math.atan2(hy,hx);
-      if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):(x,y)=>habitatOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.live?4:8,d),ok)){c.a=Math.atan2(hy,hx)+(critRng().next()-.5);c.idle=true}}}
+      if(c.drink){const dx=c.drink.x-c.x,dy=c.drink.y-c.y;if(Math.hypot(dx,dy)<=WILD_LIFE.drink.at){c.st='drink';c.t=critRng().next()*(WILD_LIFE.drink.time[1]-WILD_LIFE.drink.time[0])+WILD_LIFE.drink.time[0];c.idle=true;c.dir=dx>=0?1:-1;c.drink=null}else c.a=Math.atan2(dy,dx)}
+      // (wild game on a holding's ground (a lot, or by the holding) walks off it, away from the holding: WILD_LIFE.town)
+      const tame=!D.live&&wildTame(c.x,c.y);if(tame){let t=null,td=1e9;for(const h of TOWNS){const e=Math.hypot(h.x-c.x,h.y-c.y);if(e<td){td=e;t=h}}if(t)c.a=Math.atan2(c.y-t.y,c.x-t.x);c.idle=false;c.drink=null}
+      if(c.st!=='drink')c.st=c.idle?'graze':'walk';
+      if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):tame?(x,y)=>habitatOk(c.id,x,y):(x,y)=>wildOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.live?4:8,d),ok)){c.a=Math.atan2(hy,hx)+(critRng().next()-.5);c.idle=true;c.drink=null;c.st='graze'}}}
     // (it faces the way it went, turning only on a clear step sideways: no flicker as it swerves or runs straight up or down)
     {const mx=c.x-ox,my=c.y-oy;if(Math.abs(mx)>Math.hypot(mx,my)*.35&&Math.abs(mx)>.01)c.dir=mx>0?1:-1;if(c.m)herdGather(c,d,mx,my)}
 
     return false},
+  // (between its flights (WILD_LIFE): anyone within wary × its shy reach and it stops, its head up, facing him; in the dark it beds
+  //  down where it stands. true while it holds so)
+  between(c,D,d){const L=WILD_LIFE,r=D.shy*L.wary,P0=!P.stay&&!P.inside?P:null;let w=P0&&Math.hypot(P0.x-c.x,P0.y-c.y)<r?P0:null;
+    if(!w)for(const o of WildlifeThreats.indexFor(c).within(c.x,c.y,r))if(WildlifeThreats.present(o)){w=o;break}
+    if(w){c.st='wary';c.idle=true;c.drink=null;if(Math.abs(w.x-c.x)>1)c.dir=w.x>c.x?1:-1;return true}
+    if(darkness()>=L.night){c.st='bed';c.idle=true;c.drink=null;return true}
+    if(c.st==='bed'||c.st==='wary')c.st=null;return false},
   // far from you (the far tier, worldobject.js): it holds where it grazes (doc/WORLD_DESIGN.md §3.5: game wanders only near you)
   farStep(){return false}};
 function updateCritters(d){WildlifeThreats.rebuild();return lodEach(W.critters,HERD_MIND,d,P.stay?0:hiddenAt(P.x,P.y)?.6:1)}

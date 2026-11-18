@@ -80,8 +80,10 @@ const wildKindOf=id=>{if(!id||!WILD_ART.on||!PX.WILD_KINDS)return null;const D=C
 // an animal on the map as in a battle (the owner, 2026-11-12: "the sprite in world map should be the same as battle"): its battle figure, s,
 // drawn at k (the marchers' scale: march.js), w its body's width there and h its height; its map step fr (0 standing) a walking pose;
 // v its coat. WILD_ART off: its map figure, at 1
-function critterArt(id,fr,v){const kd=wildKindOf(id);if(!kd){const s=critterSprite(id,fr);return{s,k:1,w:s.cw,h:s.ch}}
-  const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,s=beastSprite(kd,1,v,fr?2+(fr>>1)%4:0),[bw,bh]=artBox(s);return{s,k,w:Math.ceil(bw*k),h:Math.ceil(bh*k)}}
+// (how: its pose on the map, the wild game's between its flights (critters.js Herd draw): 'run' its gallop (fr its step), 'graze' its head
+//  down nibbling, 'rest' bedded down; else walking by fr, standing at 0)
+function critterArt(id,fr,v,how){const kd=wildKindOf(id);if(!kd){const s=critterSprite(id,how?0:fr);return{s,k:1,w:s.cw,h:s.ch}}
+  const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,s=beastSprite(kd,1,v,how==='run'?15+(fr>>1)%4:how==='graze'?PX.BEAST_GRAZE+(fr&1):how==='rest'?PX.BEAST_REST:fr?2+(fr>>1)%4:0),[bw,bh]=artBox(s);return{s,k,w:Math.ceil(bw*k),h:Math.ceil(bh*k)}}
 // (a picture's drawn width, and its height over its feet: its pixels' box, kept)
 const ART_BOX=new WeakMap();
 function artBox(c){let b=ART_BOX.get(c);if(b)return b;const d=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data;let x0=c.width,x1=-1,y0=c.height;
@@ -95,7 +97,7 @@ const DOWN_LOOK=new WeakMap();
    (team 0) wears the side's blue; a wild one nothing. Cached by kind, side, variant and pose (the climbs walk, the other blows
    strike) */
 const BEAST_POSES=PX.BEAST_POSES;
-const beastPoseOf=(type,p)=>type==='tiger'?p:p>=PX.BEAST_DEAD?p:p>=19?2+(p-19)%4:p>=12&&p<=14?p-6:p>=9&&p<=11&&type!=='dragon'?p-3:p;
+const beastPoseOf=(type,p)=>type==='tiger'?p:p>=PX.BEAST_DEAD?p:p>=PX.BEAST_GRAZE&&p<=PX.BEAST_REST?p:p>=19?2+(p-19)%4:p>=12&&p<=14?p-6:p>=9&&p<=11&&type!=='dragon'?p-3:p;
 function beastSprite(type,team,v,pose){v=(v||0)%3;pose=beastPoseOf(type,pose||0);const k='bst'+type+(team?1:0)+v+'p'+pose;
   return spr[k]||(spr[k]=cellOf(PX.beast(type,{v,pose,team:team?1:0})))}
 // a beast's pose now: striking (or breathing fire, winding up a spit), running or walking as it moves, leaping (a pounce), breathing

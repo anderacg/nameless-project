@@ -15,6 +15,14 @@ const CRITTER_WOODS={keep:.3};
 // wildlife sprite a battle sprite too": shaded, outlined, walking, running and dying as the beasts do, at its real size); off, its map
 // figure, as before
 const WILD_ART={on:true};
+/* how wild game lives between its flights (critters.js HERD_MIND and Herd draw; the owner, 2026-11-18: "add more wildlife behavior and
+   recheck correctness"): night, as dark as this (darkness()), it beds down where it stands, lying with its legs folded under it;
+   wary, anyone within this share past its shy reach stops it, its head up, facing him; drink, on a new turn this chance it walks to
+   water within r tiles and stands at its edge (within at px of it) time s, its head down; town, px round a holding it keeps out of
+   (and its lots: it walks off them, away from the holding); graze, s with its head down to the grass, then look s with it up;
+   bound, px the leaps of its bounders reach as they flee, hop its hoppers' (bounce: their leaps a second) */
+const WILD_LIFE={night:.55,wary:1.6,drink:{chance:.25,r:4,at:6,time:[4,8]},town:48,graze:[2.5,5],look:[.8,1.6],bound:3,hop:2,bounce:3,
+  bounders:['deer','stag','reindeer','gazelle','ibex'],hoppers:['rabbit','hare']};
 const CRITTERS={
   rabbit:{n:'Rabbits',one:'rabbit',where:['grass','forest'],herd:[2,4],meat:1,mat:['rabbitfur',.5],xp:2,spd:30,shy:50,w:4,size:1,col:'#b8a088'},
   deer:{n:'Deer',one:'deer',where:['forest','grass'],herd:[2,4],meat:3,mat:['hide',.6],xp:5,spd:40,shy:70,w:3,size:2,col:'#a0683a'},
