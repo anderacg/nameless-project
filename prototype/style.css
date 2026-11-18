@@ -197,11 +197,11 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .log div{color:var(--muted)}.log div:last-child{color:var(--fg)}
 
 /* ---------- 4b. loading ---------- */
-/* the loading overlay (loading.js): over every window and the HUD; until it shows (300 ms) it is clear and only takes the
+/* the loading overlay (loading.js): over every window and the HUD, hiding them; until it shows (300 ms) it is clear and only takes the
    pointer. Its window has the panels' look, small and centred (at most 90% wide: a phone on its side), its bar square pixels */
 .loading{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
   padding:calc(12px + var(--sa-t)) calc(12px + var(--sa-r)) calc(12px + var(--sa-b)) calc(12px + var(--sa-l));
-  background:radial-gradient(ellipse at center,rgba(14,11,12,.72),rgba(6,5,6,.9))}
+  background:radial-gradient(ellipse at center,#0e0b0c,#060506)}/* (solid: nothing but the loading window shows while it works, the owner 2026-11-18) */
 .loading.wait{opacity:0}
 .loading .lwin{width:min(540px,90%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:14px 18px;
   background:linear-gradient(180deg,#2c2320,var(--panel) 120px);border:1px solid var(--line-2);border-top:2px solid var(--trim);border-radius:var(--r-lg);box-shadow:var(--deep)}
