@@ -110,19 +110,25 @@ function updateBattle(rt){
   }
   battleStep(rt,false);
 }
+// (how many times as far a man steps on this field as on a classic one: a fight on the map draws its men WORLD_BATTLE.sprite times
+// their size, so they step as many times as far a battle second to cross as many of their own lengths: battleStep)
+const fightSpace=()=>typeof B!=='undefined'&&B&&B.world?WORLD_BATTLE.sprite:1;
 function battleStep(rt,world){
   // the battle's speed: everything runs on its clock; paused, nothing moves but you can still give orders
   if(B.paused||B.deploy)return;if(!world)rt*=B.speed||1;if(!world&&B.slow>0){B.slow-=rt;rt*=VFX.slow}// (a charge's impact: a moment of slow motion, vfx.js)
-  // (a fight on the map on the world's own clock, its travel pace too (data/world.js moveStep): its men step as those marching by do
-  //  (the owner, 2026-11-16: "the speed between battle and world seems weird"))
-  const dt=world?moveStep(1,rt*WORLD_PACE,true)*B.world.scale:rt*BATTLE_PACE;B.t+=dt;for(const u of B.units){rankUnit(u);buffUnit(u)}// (each soldier's rank passives and his group's upgrades, once: battle/rankskills.js, world/buffs.js)
+  // (one clock for both kinds of battle (the owner, 2026-11-18: "make battle map and world battle use the same speed"): the fighting
+  //  on BATTLE_PACE, at BATTLE_TEMPO on screen (main.js), so a swing, a shot, a cooldown and a morale tick take as long on the map as on
+  //  a field; its men drawn WORLD_BATTLE.sprite times their size step as many times as far (fightSpace: groundMul, the missiles), so
+  //  they cross as many of their own lengths a second. The world inside a fight on the map (its comers, bystanders, the regrouping)
+  //  keeps the map's own travel clock, dw (data/world.js moveStep), as those marching by)
+  const dt=rt*BATTLE_PACE,dw=world?moveStep(1,rt*WORLD_PACE,true)*B.world.scale:dt;B.t+=dt;for(const u of B.units){rankUnit(u);buffUnit(u)}// (each soldier's rank passives and his group's upgrades, once: battle/rankskills.js, world/buffs.js)
   // World combat keeps the campaign clock: a hero impact must not freeze every army.
   if(world){B.slow=0;if(B.hx)B.hx.stop=0}
   // hit-stop: heavy blows freeze the fight for a moment while effects keep moving
   const frozen=B.hx&&B.hx.stop>0;if(frozen)B.hx.stop-=rt;
   // (the battle over: the field runs on, routers running, the dead falling, till the summary comes up: END_WAIT)
   if(!frozen){
-    if(B.world&&!B.over){checkBattleOver();if(!B.over)B.world.step(dt)}
+    if(B.world&&!B.over){checkBattleOver();if(!B.over)B.world.step(dw)}
     // (RTS command: your hero fights on their own, as every unit does; the manual control is set aside for now)
     const was=new Map(B.units.map(u=>[u,[u.x,u.y]]));// (where each stood as the frame began: its motion, for the way round a rock or tree)
     if(MANUAL_HERO)updateHero(world?dt:rt*HERO_PACE);else if(B.hero)CharacterMind.of(B.hero).auto(world?dt:rt*HERO_PACE);for(const id in B.groups)B.groups[id].step(dt);command(dt);CharacterMind.command(dt);// (every group minds itself, then the captains give their orders: battlecontrol.js, commander.js)// (your hero fights on their own, as every character does: charmind.js; the enemy's captain: commander.js)
@@ -132,7 +138,7 @@ function battleStep(rt,world){
     // (soldiers jostle apart; those running off the field, withdrawn or routed, slip through their own side)
     jostle(dt);
     keepOffObstacles(was);if(PHYSICS.on)physPost(was,dt);// (one who ran into a wall stops: physics.js)
-    updateProjectiles(dt);
+    updateProjectiles(dt*fightSpace());// (a missile as many of his lengths a second: fightSpace)
     if(B.works)B.works.step(dt);// (a siege's gate under the ram: battle/siegeworks.js)
     sightStep();// (who sees whom, every SIGHT.every s: hidden in woods or behind a rise, out of sight in the fog, terrain.js; nothing with neither)
     moraleTick(dt);if(B.opts.sandbox&&BattleLab.active)BattleLab.sampleMorale();// (morale.js)
